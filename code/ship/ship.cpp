@@ -9161,7 +9161,8 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 	Assertion(Ship_registry_map.find(shipp->ship_name) != Ship_registry_map.end(), "Ship %s was destroyed, but was never stored in the ship registry!", shipp->ship_name);
 
 	// Goober5000 - handle ship registry, part 1
-	auto entry = &Ship_registry[Ship_registry_map[shipp->ship_name]];
+	auto entry_index = Ship_registry_map[shipp->ship_name];
+	auto entry = &Ship_registry[entry_index];
 	entry->status = ShipStatus::EXITED;
 	entry->cleanup_mode = cleanup_mode;
 
@@ -9295,7 +9296,7 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 	if (The_mission.ai_profile->flags[AI::Profile_Flags::Cancel_future_waves_of_any_wing_launched_from_an_exited_ship]) {
 		for (int child_wingnum = 0; child_wingnum < Num_wings; ++child_wingnum) {
 			auto child_wingp = &Wings[child_wingnum];
-			if (child_wingp->arrival_location == ArrivalLocation::FROM_DOCK_BAY && Parse_names.in_bounds(child_wingp->arrival_anchor) && !stricmp(Parse_names[child_wingp->arrival_anchor].c_str(), shipp->ship_name)) {
+			if (child_wingp->arrival_location == ArrivalLocation::FROM_DOCK_BAY && child_wingp->arrival_anchor.value() == entry_index) {
 				// prevent any more waves from arriving by marking this as the last wave
 				child_wingp->num_waves = child_wingp->current_wave;
 
@@ -17285,7 +17286,7 @@ bool ship_can_bay_depart(ship* sp)
 	if ( departure_location == DepartureLocation::TO_DOCK_BAY )
 	{
 		Assertion( departure_anchor >= 0, "Ship %s must have a valid departure anchor", sp->ship_name );
-		auto anchor_ship_entry = ship_registry_get(Parse_names[departure_anchor]);
+		auto anchor_ship_entry = ship_registry_get(departure_anchor);
 		if (anchor_ship_entry && anchor_ship_entry->has_shipp() && ship_useful_for_departure(anchor_ship_entry->shipnum, departure_path_mask)) {
 			// can bay depart at this time
 			return true;
@@ -19431,7 +19432,7 @@ int is_support_allowed(object *objp, bool do_simple_check)
 			Assert(The_mission.support_ships.arrival_anchor != -1);
 
 			// ensure it's in-mission
-			auto anchor_ship_entry = ship_registry_get(Parse_names[The_mission.support_ships.arrival_anchor]);
+			auto anchor_ship_entry = ship_registry_get(The_mission.support_ships.arrival_anchor);
 			if (!anchor_ship_entry || !anchor_ship_entry->has_shipp())
 			{
 				return 0;

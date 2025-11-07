@@ -4437,7 +4437,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, 
 		// (or will exist).
 		if ( wingp->arrival_location == ArrivalLocation::FROM_DOCK_BAY ) {
 			Assert( wingp->arrival_anchor >= 0 );
-			auto anchor_ship_entry = ship_registry_get(Parse_names[wingp->arrival_anchor]);
+			auto anchor_ship_entry = ship_registry_get(wingp->arrival_anchor);
 
 			// see if ship is yet to arrive.  If so, then return 0 so we can evaluate again later.
 			if (!anchor_ship_entry || anchor_ship_entry->status == ShipStatus::NOT_YET_PRESENT)
@@ -5217,6 +5217,60 @@ void parse_props(mission* pm)
 }
 
 // Goober5000
+void resolve_and_check_anchor(bool check_for_hangar, SCP_set<int> &anchors_checked, int &anchor, const char *other_name, bool other_is_ship, bool is_arrival)
+{
+	if ((anchor < 0) || (anchor & SPECIAL_ARRIVAL_ANCHOR_FLAG))
+		return;
+
+	if (Parse_names.in_bounds(anchor))
+		anchor = ship_registry_get_index(Parse_names[anchor]);
+	else
+		anchor = -1;
+
+	if (check_for_hangar && anchor >= 0)
+	{
+		SCP_string message;
+		check_anchor_for_hangar_bay(message, anchors_checked, anchor, other_name, other_is_ship, is_arrival);
+		if (!message.empty())
+			Warning(LOCATION, "%s", message.c_str());
+	}
+}
+
+/**
+ * Resolve parse names, particularly for arrival/departure anchors
+ * NB: between parsing and the time this function is run, the anchors store the index into Parse_names;
+ * at all other times, they store the index into the ship registry
+ */
+void post_process_parse_names()
+{
+	SCP_set<int> anchors_checked;
+
+	// check the parse names
+	for (const auto &parse_name : Parse_names)
+	{
+		auto ship_entry = ship_registry_get(parse_name);
+		if (!ship_entry)
+			Warning(LOCATION, "Ship name \"%s\" was referenced, but this ship doesn't exist!", parse_name.c_str());
+	}
+
+	// resolve anchors for parse objects (ships)
+	for (auto &pobj: Parse_objects)
+	{
+		resolve_and_check_anchor(pobj.arrival_location == ArrivalLocation::FROM_DOCK_BAY, anchors_checked, pobj.arrival_anchor, pobj.name, true, true);
+		resolve_and_check_anchor(pobj.departure_location == DepartureLocation::TO_DOCK_BAY, anchors_checked, pobj.departure_anchor, pobj.name, true, false);
+	}
+
+	// resolve anchors for wings
+	for (int i = 0; i < Num_wings; ++i)
+	{
+		auto wingp = &Wings[i];
+
+		resolve_and_check_anchor(wingp->arrival_location == ArrivalLocation::FROM_DOCK_BAY, anchors_checked, wingp->arrival_anchor, wingp->name, false, true);
+		resolve_and_check_anchor(wingp->departure_location == DepartureLocation::TO_DOCK_BAY, anchors_checked, wingp->departure_anchor, wingp->name, false, false);
+	}
+}
+
+// Goober5000
 void resolve_path_masks(int anchor, int *path_mask)
 {
 	path_restriction_t *prp;
@@ -5235,16 +5289,14 @@ void resolve_path_masks(int anchor, int *path_mask)
 	if (prp->cached_mask & (1 << MAX_SHIP_BAY_PATHS))
 	{
 		int j, bay_path, modelnum;
-		p_object *parent_pobjp;
 
 		// get anchor ship
 		Assert(!(anchor & SPECIAL_ARRIVAL_ANCHOR_FLAG));
-		auto parent_ship_entry = ship_registry_get(Parse_names[anchor]);
-		parent_pobjp = parent_ship_entry->p_objp();
+		auto anchor_ship_entry = ship_registry_get(anchor);
 
 		// Load the anchor ship model with subsystems and all; it'll need to be done for this mission anyway
-		ship_info *sip = &Ship_info[parent_pobjp->ship_class];
-		modelnum = model_load(sip->pof_file, sip);
+		auto anchor_sip = anchor_ship_entry->sip();
+		modelnum = model_load(anchor_sip->pof_file, anchor_sip);
 
 		// resolve names to indexes
 		*path_mask = 0;
@@ -5350,6 +5402,9 @@ void post_process_ships_wings()
 		Ship_registry.push_back(entry);
 		Ship_registry_map[p_obj.name] = static_cast<int>(Ship_registry.size() - 1);
 	}
+
+	// Goober5000 - resolve the parse names.  Needs to be done once the ship registry is valid but before the path masks are resolved.
+	post_process_parse_names();
 
 	// Goober5000 - resolve the path masks.  Needs to be done early because
 	// mission_parse_maybe_create_parse_object relies on it.
@@ -6669,9 +6724,8 @@ bool parse_mission(mission *pm, int flags)
 
 bool post_process_mission(mission *pm)
 {
-	int			i;
-	int			indices[MAX_SHIPS], objnum;
-	ship_weapon	*swp;
+	int i, objnum;
+	ship_weapon *swp;
 	ship_obj *so;
 
 	post_process_mission_props();
@@ -6737,55 +6791,6 @@ bool post_process_mission(mission *pm)
 	// clear out information about arriving support ships
 	Arriving_support_ship = nullptr;
 	Num_arriving_repair_targets = 0;
-
-	// convert all ship name indices to ship indices now that mission has been loaded
-	if (Fred_running) {
-		// lambda for seeing whether the anchors actually work for arrival/departure
-		SCP_string message;
-		SCP_set<int> anchors_checked;
-		auto check_anchor = [&message, &anchors_checked](int anchor_shipnum, const char *other_name, bool other_is_ship, bool is_arrival) {
-			check_anchor_for_hangar_bay(message, anchors_checked, anchor_shipnum, other_name, other_is_ship, is_arrival);
-			if (!message.empty())
-				Warning(LOCATION, "%s", message.c_str());
-		};
-
-		i = 0;
-		for (const auto &parse_name: Parse_names) {
-			auto ship_entry = ship_registry_get(parse_name);
-			indices[i] = ship_entry ? ship_entry->shipnum : -1;
-			if (indices[i] < 0)
-				Warning(LOCATION, "Ship name \"%s\" referenced, but this ship doesn't exist", parse_name.c_str());
-			i++;
-		}
-
-		for (i=0; i<MAX_SHIPS; i++) {
-			if ((Ships[i].objnum >= 0) && (Ships[i].arrival_anchor >= 0) && (Ships[i].arrival_anchor < SPECIAL_ARRIVAL_ANCHOR_FLAG)) {
-				Ships[i].arrival_anchor = indices[Ships[i].arrival_anchor];
-				if (Ships[i].arrival_location == ArrivalLocation::FROM_DOCK_BAY)
-					check_anchor(Ships[i].arrival_anchor, Ships[i].ship_name, true, true);
-			}
-
-			if ((Ships[i].objnum >= 0) && (Ships[i].departure_anchor >= 0)) {
-				Ships[i].departure_anchor = indices[Ships[i].departure_anchor];
-				if (Ships[i].departure_location == DepartureLocation::TO_DOCK_BAY)
-					check_anchor(Ships[i].departure_anchor, Ships[i].ship_name, true, false);
-			}
-		}
-
-		for (i=0; i<MAX_WINGS; i++) {
-			if (Wings[i].wave_count && (Wings[i].arrival_anchor >= 0) && (Wings[i].arrival_anchor < SPECIAL_ARRIVAL_ANCHOR_FLAG)) {
-				Wings[i].arrival_anchor = indices[Wings[i].arrival_anchor];
-				if (Wings[i].arrival_location == ArrivalLocation::FROM_DOCK_BAY)
-					check_anchor(Wings[i].arrival_anchor, Wings[i].name, false, true);
-			}
-
-			if (Wings[i].wave_count && (Wings[i].departure_anchor >= 0)) {
-				Wings[i].departure_anchor = indices[Wings[i].departure_anchor];
-				if (Wings[i].departure_location == DepartureLocation::TO_DOCK_BAY)
-					check_anchor(Wings[i].departure_anchor, Wings[i].name, false, false);
-			}
-		}
-	}
 
 	// before doing anything else, we must validate all of the sexpressions that were loaded into the mission.
 	// Loop through the Sexp_nodes array and send the top level functions to the check_sexp_syntax parser
@@ -7817,11 +7822,10 @@ int mission_set_arrival_location(int anchor, ArrivalLocation location, int dist,
 		// get ship
 		shipnum = ship_get_random_team_ship(iff_get_mask(iff_index), get_players ? SHIP_GET_ONLY_PLAYERS : SHIP_GET_ANY_SHIP);
 	}
-	// if we didn't find the arrival anchor in the list of special nodes, then do a
-	// ship name lookup on the anchor
+	// if we didn't find the arrival anchor in the list of special nodes, then it must be a ship registry index
 	else
 	{
-		auto anchor_entry = ship_registry_get(Parse_names[anchor]);
+		auto anchor_entry = ship_registry_get(anchor);
 		shipnum = anchor_entry ? anchor_entry->shipnum : -1;
 	}
 
@@ -8019,7 +8023,7 @@ int mission_did_ship_arrive(p_object *objp, bool force_arrival)
 		// doesn't exist, don't create.
 		if ( objp->arrival_location == ArrivalLocation::FROM_DOCK_BAY ) {
 			Assert( objp->arrival_anchor >= 0 );
-			auto anchor_ship_entry = ship_registry_get(Parse_names[objp->arrival_anchor]);
+			auto anchor_ship_entry = ship_registry_get(objp->arrival_anchor);
 
 			// see if ship is yet to arrive.  If so, then return -1 so we can evaluate again later.
 			if (!anchor_ship_entry || anchor_ship_entry->status == ShipStatus::NOT_YET_PRESENT)
@@ -8430,13 +8434,13 @@ int mission_do_departure(object *objp, bool goal_is_to_warp)
 	{
 		Assert(anchor >= 0);
 		auto anchor_ship_entry = (anchor >= 0)
-			? ship_registry_get(Parse_names[anchor])
+			? ship_registry_get(anchor)
 			: nullptr;	// should never happen, but if it does, fail gracefully
 
 		// see if ship is yet to arrive.  If so, then warp.
 		if (!anchor_ship_entry || anchor_ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		{
-			mprintf(("Anchor ship %s hasn't arrived yet!  Trying to warp...\n", Parse_names[anchor].c_str()));
+			mprintf(("Anchor ship %s hasn't arrived yet!  Trying to warp...\n", anchor_ship_entry ? anchor_ship_entry->name : "<unknown>"));
 			goto try_to_warp;
 		}
 
@@ -8822,21 +8826,29 @@ int get_anchor(const char *name)
 /**
  * See if an arrival/departure anchor is missing a hangar bay.  If it is, the message parameter will be populated with an appropriate error.
  */
-void check_anchor_for_hangar_bay(SCP_string &message, SCP_set<int> &anchor_shipnums_checked, int anchor_shipnum, const char *other_name, bool other_is_ship, bool is_arrival)
+void check_anchor_for_hangar_bay(SCP_string &message, SCP_set<int> &anchors_checked, int anchor, const char *other_name, bool other_is_ship, bool is_arrival)
 {
 	message.clear();
 
-	if (anchor_shipnum < 0)
+	if (anchor < 0)
 		return;
-	if (anchor_shipnums_checked.contains(anchor_shipnum))
+	if (anchors_checked.contains(anchor))
 		return;
-	anchor_shipnums_checked.insert(anchor_shipnum);
+	anchors_checked.insert(anchor);
 
-	if (!ship_has_hangar_bay(anchor_shipnum))
+	auto anchor_ship_entry = ship_registry_get(anchor);
+	if (anchor_ship_entry)
 	{
-		auto shipp = &Ships[anchor_shipnum];
-		sprintf(message, "%s (%s) is used as a%s anchor by %s %s (and possibly elsewhere too), but it does not have a hangar bay!", shipp->ship_name,
-			Ship_info[shipp->ship_info_index].name, is_arrival ? "n arrival" : " departure", other_is_ship ? "ship" : "wing", other_name);
+		// Load the anchor ship model with subsystems and all; it'll need to be done for this mission anyway
+		auto anchor_sip = anchor_ship_entry->sip();
+		int modelnum = model_load(anchor_sip->pof_file, anchor_sip);
+
+		// Check if this model has a hangar bay
+		if (!model_has_hangar_bay(modelnum))
+		{
+			sprintf(message, "%s (%s) is used as a%s anchor by %s %s (and possibly elsewhere too), but it does not have a hangar bay!", anchor_ship_entry->name,
+				anchor_sip->name, is_arrival ? "n arrival" : " departure", other_is_ship ? "ship" : "wing", other_name);
+		}
 	}
 };
 

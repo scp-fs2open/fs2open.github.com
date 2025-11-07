@@ -23594,8 +23594,8 @@ void sexp_set_support_ship(int n)
 	}
 	else
 	{
-		// find or create the anchor
-		The_mission.support_ships.arrival_anchor = get_parse_name_index(CTEXT(n));
+		// find the anchor
+		The_mission.support_ships.arrival_anchor = ship_registry_get_index(CTEXT(n));
 	}
 
 	// get departure location
@@ -23620,8 +23620,8 @@ void sexp_set_support_ship(int n)
 	}
 	else
 	{
-		// find or create the anchor
-		The_mission.support_ships.departure_anchor = get_parse_name_index(CTEXT(n));
+		// find the anchor
+		The_mission.support_ships.departure_anchor = ship_registry_get_index(CTEXT(n));
 	}
 
 	// get ship class
@@ -23691,8 +23691,8 @@ void sexp_set_arrival_info(int node)
 	}
 	else
 	{
-		// find or create the anchor
-		arrival_anchor = get_parse_name_index(CTEXT(n));
+		// find the anchor
+		arrival_anchor = ship_registry_get_index(CTEXT(n));
 	}
 	n = CDR(n);
 
@@ -23791,8 +23791,8 @@ void sexp_set_departure_info(int node)
 	}
 	else
 	{
-		// find or create the anchor
-		departure_anchor = get_parse_name_index(CTEXT(n));
+		// find the anchor
+		departure_anchor = ship_registry_get_index(CTEXT(n));
 	}
 	n = CDR(n);
 

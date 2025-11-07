@@ -633,13 +633,13 @@ public:
 
 	ArrivalLocation arrival_location;
 	int	arrival_distance;		// how far away this ship should arrive
-	int	arrival_anchor;			// name of object this ship arrives near (or in front of)
+	int	arrival_anchor;			// ship registry index of object this ship arrives near (or in front of)
 	int	arrival_path_mask;		// Goober5000 - possible restrictions on which bay paths to use
 	int	arrival_cue;
 	int	arrival_delay;
 
 	DepartureLocation departure_location;	// depart to hyperspace or someplace else (like docking bay)
-	int	departure_anchor;		// when docking bay -- index of ship to use
+	int	departure_anchor;		// when docking bay -- ship registry index of ship to use
 	int departure_path_mask;	// Goober5000 - possible restrictions on which bay paths to use
 	int	departure_cue;			// sexpression to eval when departing
 	int	departure_delay;		// time in seconds after sexp is true that we delay.
@@ -1596,13 +1596,13 @@ typedef struct wing {
 
 	ArrivalLocation arrival_location;			// arrival and departure information for wings -- similar to info for ships
 	int	arrival_distance;						// distance from some ship where this ship arrives
-	int	arrival_anchor;						// name of object this ship arrives near (or in front of)
+	int	arrival_anchor;						// ship registry index of object this wing arrives near (or in front of)
 	int	arrival_path_mask;					// Goober5000 - possible restrictions on which bay paths to use
 	int	arrival_cue;
 	int	arrival_delay;
 
 	DepartureLocation departure_location;
-	int	departure_anchor;						// name of object that we depart to (in case of dock bays)
+	int	departure_anchor;						// ship registry index of object that we depart to (in case of dock bays)
 	int departure_path_mask;				// Goober5000 - possible restrictions on which bay paths to use
 	int	departure_cue;
 	int	departure_delay;

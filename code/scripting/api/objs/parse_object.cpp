@@ -10,11 +10,10 @@
 #include "team_colors.h"
 #include "globalincs/alphacolors.h" //Needed for team colors
 
-#include "mission/missionparse.h"
-
 #include "network/multi.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
+#include "ship/ship.h"
 
 extern bool sexp_check_flag_arrays(const char *flag_name, Object::Object_Flags &object_flag, Ship::Ship_Flags &ship_flags, Mission::Parse_Object_Flags &parse_obj_flag, AI::AI_Flags &ai_flag);
 extern void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future_ships, Object::Object_Flags object_flag, Ship::Ship_Flags ship_flag, Mission::Parse_Object_Flags parse_obj_flag, AI::AI_Flags ai_flag, bool set_flag);
@@ -514,10 +513,11 @@ static int parse_object_getset_anchor_helper(lua_State* L, int p_object::* field
 
 	if (ADE_SETTING_VAR && s != nullptr)
 	{
-		poh->getObject()->*field = (stricmp(s, "<no anchor>") == 0) ? -1 : get_parse_name_index(s);
+		poh->getObject()->*field = (stricmp(s, "<no anchor>") == 0) ? -1 : ship_registry_get_index(s);
 	}
 
-	return ade_set_args(L, "s", (poh->getObject()->*field >= 0) ? Parse_names[poh->getObject()->*field].c_str() : "<no anchor>");
+	auto anchor_entry = ship_registry_get(poh->getObject()->*field);
+	return ade_set_args(L, "s", anchor_entry ? anchor_entry->name : "<no anchor>");
 }
 
 ADE_VIRTVAR(ArrivalAnchor, l_ParseObject, "string", "The ship's arrival anchor", "string", "Arrival anchor, or nil if handle is invalid")

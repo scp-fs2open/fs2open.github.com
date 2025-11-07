@@ -240,8 +240,9 @@ int WingEditorDialogModel::getMinArrivalDistance() const
 		return 0;
 
 	// Anchor should be a real ship
-	if (anchor >= 0 && anchor < MAX_SHIPS) {
-		const int objnum = Ships[anchor].objnum;
+	const int shipnum = anchor_to_target(anchor);
+	if (shipnum >= 0 && shipnum < MAX_SHIPS) {
+		const int objnum = Ships[shipnum].objnum;
 		if (objnum >= 0) {
 			const object& obj = Objects[objnum];
 
@@ -779,15 +780,15 @@ void WingEditorDialogModel::setArrivalType(ArrivalLocation newArrivalType)
 			return;
 		}
 
-		const int currentAnchor = w->arrival_anchor;
+		const int currentTarget = anchor_to_target(w->arrival_anchor);
 
-		bool valid_anchor = std::find_if(targets.begin(), targets.end(), [currentAnchor](const auto& entry) {
-			return entry.first == currentAnchor;
+		bool valid_target = std::find_if(targets.begin(), targets.end(), [currentTarget](const auto& entry) {
+			return entry.first == currentTarget;
 		}) != targets.end();
 
-		if (!valid_anchor) {
+		if (!valid_target) {
 			// Set to the first available target
-			modify(w->arrival_anchor, targets[0].first);
+			modify(w->arrival_anchor, target_to_anchor(targets[0].first));
 		}
 
 		// Set the distance to minimum if current is smaller
@@ -880,7 +881,7 @@ int WingEditorDialogModel::getArrivalTarget() const
 		return -1;
 	}
 	
-	return w->arrival_anchor;
+	return anchor_to_target(w->arrival_anchor);
 }
 
 void WingEditorDialogModel::setArrivalTarget(int targetIndex)
@@ -908,11 +909,11 @@ void WingEditorDialogModel::setArrivalTarget(int targetIndex)
 		targetIndex = -1;
 	}
 
-	if (w->arrival_anchor == targetIndex) {
+	if (w->arrival_anchor == target_to_anchor(targetIndex)) {
 		return; // no change
 	}
 
-	modify(w->arrival_anchor, targetIndex);
+	modify(w->arrival_anchor, target_to_anchor(targetIndex));
 
 	// Set the distance to minimum if current is smaller
 	int minDistance = getMinArrivalDistance();
@@ -960,7 +961,7 @@ std::vector<std::pair<SCP_string, bool>> WingEditorDialogModel::getArrivalPaths(
 	if (w->arrival_location != ArrivalLocation::FROM_DOCK_BAY)
 		return {};
 
-	return getDockBayPathsForWingMask(w->arrival_path_mask, w->arrival_anchor);
+	return getDockBayPathsForWingMask(w->arrival_path_mask, anchor_to_target(w->arrival_anchor));
 }
 
 void WingEditorDialogModel::setArrivalPaths(const std::vector<std::pair<SCP_string, bool>>& chosen)
@@ -973,8 +974,8 @@ void WingEditorDialogModel::setArrivalPaths(const std::vector<std::pair<SCP_stri
 	if (w->arrival_location != ArrivalLocation::FROM_DOCK_BAY)
 		return;
 
-	const int anchor = w->arrival_anchor;
-	if (anchor < 0 || !ship_has_hangar_bay(anchor))
+	const int shipnum = anchor_to_target(w->arrival_anchor);
+	if (shipnum < 0 || !ship_has_hangar_bay(shipnum))
 		return;
 
 	// Rebuild mask in the same order we produced the list
@@ -1110,15 +1111,15 @@ void WingEditorDialogModel::setDepartureType(DepartureLocation newDepartureType)
 			return;
 		}
 
-		const int currentAnchor = w->departure_anchor;
+		const int currentTarget = anchor_to_target(w->departure_anchor);
 
-		bool valid_anchor = std::find_if(targets.begin(), targets.end(), [currentAnchor](const auto& entry) {
-			return entry.first == currentAnchor;
+		bool valid_target = std::find_if(targets.begin(), targets.end(), [currentTarget](const auto& entry) {
+			return entry.first == currentTarget;
 		}) != targets.end();
 
-		if (!valid_anchor) {
+		if (!valid_target) {
 			// Set to the first available target
-			modify(w->departure_anchor, targets[0].first);
+			modify(w->departure_anchor, target_to_anchor(targets[0].first));
 		}
 	}
 }
@@ -1155,7 +1156,7 @@ int WingEditorDialogModel::getDepartureTarget() const
 		return -1;
 	}
 
-	return w->departure_anchor;
+	return anchor_to_target(w->departure_anchor);
 }
 
 void WingEditorDialogModel::setDepartureTarget(int targetIndex)
@@ -1182,11 +1183,11 @@ void WingEditorDialogModel::setDepartureTarget(int targetIndex)
 		targetIndex = -1; // invalid choice -> clear
 	}
 
-	if (w->departure_anchor == targetIndex) {
+	if (w->departure_anchor == target_to_anchor(targetIndex)) {
 		return; // no change
 	}
 
-	modify(w->departure_anchor, targetIndex);
+	modify(w->departure_anchor, target_to_anchor(targetIndex));
 	modify(w->departure_path_mask, 0);
 }
 
@@ -1199,7 +1200,7 @@ std::vector<std::pair<SCP_string, bool>> WingEditorDialogModel::getDeparturePath
 	if (w->departure_location != DepartureLocation::TO_DOCK_BAY)
 		return {};
 
-	return getDockBayPathsForWingMask(w->departure_path_mask, w->departure_anchor);
+	return getDockBayPathsForWingMask(w->departure_path_mask, anchor_to_target(w->departure_anchor));
 }
 
 void WingEditorDialogModel::setDeparturePaths(const std::vector<std::pair<SCP_string, bool>>& chosen)
@@ -1212,8 +1213,8 @@ void WingEditorDialogModel::setDeparturePaths(const std::vector<std::pair<SCP_st
 	if (w->departure_location != DepartureLocation::TO_DOCK_BAY)
 		return;
 
-	const int anchor = w->departure_anchor;
-	if (anchor < 0 || !ship_has_hangar_bay(anchor))
+	const int shipnum = anchor_to_target(w->departure_anchor);
+	if (shipnum < 0 || !ship_has_hangar_bay(shipnum))
 		return;
 
 	// Rebuild mask in the same order we produced the list
