@@ -2212,8 +2212,8 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 	popup_menu->addSection(tr("Annotations"));
 	auto edit_comment_act = popup_menu->addAction(tr("Edit Comment"), this, [this, h]() { editNoteForItem(h); });
 	auto edit_color_act = popup_menu->addAction(tr("Edit Color"), this, [this, h]() { editBgColorForItem(h); });
-	edit_comment_act->setEnabled(_interface->getFlags()[TreeFlags::AnnotationsAllowed]);
-	edit_color_act->setEnabled(_interface->getFlags()[TreeFlags::AnnotationsAllowed]);
+	edit_comment_act->setEnabled(state.can_edit_comment);
+	edit_color_act->setEnabled(state.can_edit_bg_color);
 
 	popup_menu->addSection(tr("Copy operations"));
 	auto cut_act = popup_menu->addAction(tr("Cut"), this, [this]() { cutActionHandler(); }, QKeySequence::Cut);
@@ -2281,207 +2281,41 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 		}
 	}
 
-	// check not root (-1)
-	if (item_index >= 0) {
-		// get type of sexp_tree item clicked on
-		type = get_type(h);
+	auto state = _model.compute_context_menu_state(_model.m_mode);
 
-		int parent = tree_nodes[item_index].parent;
-		if (parent >= 0) {
-			op = get_operator_index(tree_nodes[parent].text);
-			Assertion(op >= 0 || tree_nodes[parent].type & SEXPT_CONTAINER_DATA,
-				"Encountered unknown SEXP operator %s. Please report!",
-				tree_nodes[parent].text);
-			int first_arg = tree_nodes[parent].child;
+	// Build variable menu from state
+	for (const auto& var : state.replace_variables) {
+		char buf[128];
+		sprintf(buf, "%s (%s)", Sexp_variables[var.var_index].variable_name, Sexp_variables[var.var_index].text);
+		auto action = replace_variable_menu->addAction(QString::fromUtf8(buf),
+			this, [this, idx = var.var_index]() { handleReplaceVariableAction(idx); });
+		action->setEnabled(var.enabled);
+	}
 
-			// get arg count of item to replace
-			Replace_count = 0;
-			int temp = first_arg;
-			while (temp != item_index) {
-				Replace_count++;
-				temp = tree_nodes[temp].next;
+	// Build container name menu from state
+	if (state.show_container_names) {
+		const auto& containers = get_all_sexp_containers();
+		for (int idx = 0; idx < (int)state.replace_container_names.size(); idx++) {
+			auto action = replace_container_name_menu->addAction(
+				QString::fromStdString(containers[idx].container_name),
+				this, [this, idx]() { handleReplaceContainerNameAction(idx); });
+			action->setEnabled(state.replace_container_names[idx].enabled);
+		}
+	}
 
-				// DB - added 3/4/99
-				if (temp == -1) {
-					break;
-				}
-			}
-
-			int op_type = 0;
-
-			if (op >= 0) {
-				op_type =
-					query_operator_argument_type(op, Replace_count); // check argument type at this position
-			} else {
-				Assertion(tree_nodes[parent].type & SEXPT_CONTAINER_DATA,
-					"Unknown SEXP operator %s. Please report!",
-					tree_nodes[parent].text);
-				const auto *p_container = get_sexp_container(tree_nodes[parent].text);
-				Assertion(p_container != nullptr,
-					"Found modifier for unknown container %s. Please report!",
-					tree_nodes[parent].text);
-				op_type = p_container->opf_type;
-			}
-			Assertion(op_type > 0,
-				"Could not find valid operand type for node %s with type %d (op %d). Please report!",
-				tree_nodes[parent].text,
-				tree_nodes[parent].type,
-				op);
-
-			// special case don't allow replace data for variable names
-			// Goober5000 - why?  the only place this happens is when replacing the ambiguous argument in
-			// modify-variable with a variable, which seems legal enough.
-			//if (op_type != OPF_AMBIGUOUS) {
-
-			// Goober5000 - given the above, we have to figure out what type this stands for
-			if (op_type == OPF_AMBIGUOUS) {
-				int modify_type = get_modify_variable_type(parent);
-				if (modify_type == OPF_NUMBER) {
-					type = SEXPT_NUMBER;
-				} else if (modify_type == OPF_AMBIGUOUS) {
-					type = SEXPT_STRING;
-				} else {
-					Int3();
-					type = tree_nodes[first_arg].type;
-				}
-			}
-
-			// Goober5000 - certain types accept both integers and a list of strings
-			if (op_type == OPF_GAME_SND || op_type == OPF_FIREBALL || op_type == OPF_WEAPON_BANK_NUMBER) {
-				type = SEXPT_NUMBER | SEXPT_STRING;
-			}
-
-			// jg18 - container values (container data/map keys) can be anything
-			// the type is checked in check_sexp_syntax()
-			if (op_type == OPF_CONTAINER_VALUE)
-			{
-				type = SEXPT_NUMBER | SEXPT_STRING;
-			}
-
-			if ((type & SEXPT_STRING) || (type & SEXPT_NUMBER)) {
-
-				int max_sexp_vars = MAX_SEXP_VARIABLES;
-				// prevent collisions in id numbers: ID_VARIABLE_MENU + 512 = ID_ADD_MENU
-				Assert(max_sexp_vars < 512);
-
-				for (int idx = 0; idx < max_sexp_vars; idx++) {
-					if (Sexp_variables[idx].type & SEXP_VARIABLE_SET) {
-						// skip block variables
-						if (Sexp_variables[idx].type & SEXP_VARIABLE_BLOCK) {
-							continue;
-						}
-
-						auto disabled = true;
-						// maybe gray flag MF_GRAYED
-
-						// get type -- gray "string" or number accordingly
-						if (type & SEXPT_STRING) {
-							if (Sexp_variables[idx].type & SEXP_VARIABLE_STRING) {
-								disabled = false;
-							}
-						}
-						if (type & SEXPT_NUMBER) {
-							if (Sexp_variables[idx].type & SEXP_VARIABLE_NUMBER) {
-								disabled = false;
-							}
-						}
-
-						// if modify-variable and changing variable, enable all variables
-						if (op_type == OPF_VARIABLE_NAME) {
-							Modify_variable = 1;
-							disabled = false;
-						} else {
-							Modify_variable = 0;
-						}
-
-						// enable navsystem always
-						if (op_type == OPF_NAV_POINT) {
-							disabled = false;
-						}
-
-						// enable all for container multidimensionality
-						if ((type & SEXPT_MODIFIER) && Replace_count > 0) {
-							disabled = false;
-						}
-
-						char buf[128];
-						// append list of variable names and values
-						// set id as ID_VARIABLE_MENU + idx
-						sprintf(buf, "%s (%s)", Sexp_variables[idx].variable_name, Sexp_variables[idx].text);
-
-						auto action = replace_variable_menu->addAction(QString::fromUtf8(buf),
-																	   this,
-																	   [this, idx]() { handleReplaceVariableAction(idx); });
-						action->setEnabled(!disabled);
-					}
-				}
-
-				// Replace Container Name submenu
-				if (is_container_name_opf_type(op_type) || (op_type == OPF_DATA_OR_STR_CONTAINER)) {
-					const auto &containers = get_all_sexp_containers();
-					for (int idx = 0; idx < (int)containers.size(); ++idx) {
-						const auto &container = containers[idx];
-
-						auto disabled = true;
-						// maybe gray flag MF_GRAYED
-
-						if (op_type == OPF_CONTAINER_NAME) {
-							// allow all containers
-							disabled = false;
-						} else if ((op_type == OPF_LIST_CONTAINER_NAME) && container.is_list()) {
-							disabled = false;
-						} else if ((op_type == OPF_MAP_CONTAINER_NAME) && container.is_map()) {
-							disabled = false;
-						} else if (op_type == OPF_DATA_OR_STR_CONTAINER && container.is_of_string_type()) {
-							disabled = false;
-						}
-
-						auto action =
-							replace_container_name_menu->addAction(QString::fromStdString(container.container_name),
-								this,
-								[this, idx]() { handleReplaceContainerNameAction(idx); });
-						action->setEnabled(!disabled);
-					}
-				}
-
-				// Replace Container Data submenu
-				// disallowed on variable-type SEXP args, to prevent FSO/FRED crashes
-				// also disallowed for special argument options (not supported for now)
-				// op < 0 means we're on a container modifier, and nested Replace Container Data is allowed
-				if (op_type != OPF_VARIABLE_NAME && (op < 0 || !is_argument_provider_op(Operators[op].value))) {
-					const auto &containers = get_all_sexp_containers();
-					for (int idx = 0; idx < (int)containers.size(); ++idx) {
-						const auto &container = containers[idx];
-						auto disabled = true;
-						// maybe gray flag MF_GRAYED
-
-						if ((type & SEXPT_STRING) && any(container.type & ContainerType::STRING_DATA)) {
-							disabled = false;
-						}
-
-						if ((type & SEXPT_NUMBER) && any(container.type & ContainerType::NUMBER_DATA)) {
-							disabled = false;
-						}
-
-						// enable all for container multidimensionality
-						if ((tree_nodes[item_index].type & SEXPT_MODIFIER) && Replace_count > 0) {
-							disabled = false;
-						}
-
-						auto action =
-							replace_container_data_menu->addAction(QString::fromStdString(container.container_name),
-								this,
-								[this, idx]() { handleReplaceContainerDataAction(idx); });
-						action->setEnabled(!disabled);
-					}
-				}
-			}
-			//}
+	// Build container data menu from state
+	if (state.show_container_data) {
+		const auto& containers = get_all_sexp_containers();
+		for (int idx = 0; idx < (int)state.replace_container_data.size(); idx++) {
+			auto action = replace_container_data_menu->addAction(
+				QString::fromStdString(containers[idx].container_name),
+				this, [this, idx]() { handleReplaceContainerDataAction(idx); });
+			action->setEnabled(state.replace_container_data[idx].enabled);
 		}
 	}
 
 	// can't modify if no variables
-	modify_variable_act->setEnabled(sexp_variable_count() > 0);
+	modify_variable_act->setEnabled(state.can_modify_variable);
 
 	// add popup menus for all the operator categories
 	QMenu* add_op_submenu[MAX_OP_MENUS];

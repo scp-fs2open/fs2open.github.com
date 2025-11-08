@@ -516,216 +516,40 @@ void sexp_tree::right_clicked(int mode)
 			menu.EnableMenuItem(ID_EDIT_BG_COLOR, MF_GRAYED);
 		}
 
-		/*
-		Goober5000 - allow variables in all modes;
-		the restriction seems unnecessary IMHO
-		
-		// Do SEXP_VARIABLE stuff here.
-		if (m_mode != MODE_EVENTS)
-		{
-			// only allow variables in event mode
-			menu.EnableMenuItem(ID_SEXP_TREE_ADD_VARIABLE, MF_GRAYED);
+		menu.EnableMenuItem(ID_SEXP_TREE_ADD_VARIABLE, MF_ENABLED);
+		if (state.can_modify_variable) {
+			menu.EnableMenuItem(ID_SEXP_TREE_MODIFY_VARIABLE, MF_ENABLED);
+		} else {
 			menu.EnableMenuItem(ID_SEXP_TREE_MODIFY_VARIABLE, MF_GRAYED);
 		}
-		else
-		*/
-		{
-			menu.EnableMenuItem(ID_SEXP_TREE_ADD_VARIABLE, MF_ENABLED);
-			menu.EnableMenuItem(ID_SEXP_TREE_MODIFY_VARIABLE, MF_ENABLED);
-			
-			// check not root (-1)
-			if (item_index >= 0) {
-				// get type of sexp_tree item clicked on
-				type = get_type(h);
 
-				int parent = tree_nodes[item_index].parent;
-				if (parent >= 0) {
-					op = get_operator_index(tree_nodes[parent].text);
-					Assertion(op >= 0 || tree_nodes[parent].type & SEXPT_CONTAINER_DATA,
-						"Encountered unknown SEXP operator %s. Please report!",
-						tree_nodes[parent].text);
-					int first_arg = tree_nodes[parent].child;
+		// Build variable menu from state
+		for (const auto& var : state.replace_variables) {
+			UINT flags = MF_STRING;
+			if (!var.enabled) flags |= MF_GRAYED;
+			if (!((var.var_index + 3) % 30)) flags |= MF_MENUBARBREAK;
+			char buf[128];
+			sprintf(buf, "%s (%s)", Sexp_variables[var.var_index].variable_name, Sexp_variables[var.var_index].text);
+			replace_variable_menu->AppendMenu(flags, (ID_VARIABLE_MENU + var.var_index), buf);
+		}
 
-					// get arg count of item to replace
-					Replace_count = 0;
-					int temp = first_arg;
-					while (temp != item_index) {
-						Replace_count++;
-						temp = tree_nodes[temp].next;
-
-						// DB - added 3/4/99
-						if(temp == -1){
-							break;
-						}
-					}
-
-					int op_type = 0;
-
-					if (op >= 0) {
-						op_type =
-							query_operator_argument_type(op, Replace_count); // check argument type at this position
-					} else {
-						Assertion(tree_nodes[parent].type & SEXPT_CONTAINER_DATA,
-							"Unknown SEXP operator %s. Please report!",
-							tree_nodes[parent].text);
-						const auto* p_container = get_sexp_container(tree_nodes[parent].text);
-						Assertion(p_container != nullptr,
-							"Found modifier for unknown container %s. Please report!",
-							tree_nodes[parent].text);
-						op_type = p_container->opf_type;
-					}
-					Assertion(op_type > 0,
-						"Found invalid operator type %d for node with text %s. Please report!",
-						op_type,
-						tree_nodes[parent].text);
-
-					// special case don't allow replace data for variable names
-					// Goober5000 - why?  the only place this happens is when replacing the ambiguous argument in
-					// modify-variable with a variable, which seems legal enough.
-					//if (op_type != OPF_AMBIGUOUS) {
-
-						// Goober5000 - given the above, we have to figure out what type this stands for
-						if (op_type == OPF_AMBIGUOUS)
-						{
-							int modify_type = get_modify_variable_type(parent);
-							if (modify_type == OPF_NUMBER) {
-								type = SEXPT_NUMBER;
-							} else if (modify_type == OPF_AMBIGUOUS) {
-								type = SEXPT_STRING;
-							} else {
-								Int3();
-								type = tree_nodes[first_arg].type;
-							}
-						}
-
-						// Goober5000 - certain types accept both integers and a list of strings
-						if (op_type == OPF_GAME_SND || op_type == OPF_FIREBALL || op_type == OPF_WEAPON_BANK_NUMBER)
-						{
-							type = SEXPT_NUMBER | SEXPT_STRING;
-						}
-
-						// jg18 - container values (container data/map keys) can be anything
-						// the type is checked in check_sexp_syntax()
-						if (op_type == OPF_CONTAINER_VALUE)
-						{
-							type = SEXPT_NUMBER | SEXPT_STRING;
-						}
-						
-						if ( (type & SEXPT_STRING) || (type & SEXPT_NUMBER) ) {
-
-							int max_sexp_vars = MAX_SEXP_VARIABLES;
-							// prevent collisions in id numbers: ID_VARIABLE_MENU + 512 = ID_ADD_MENU
-							Assert(max_sexp_vars < 512);
-
-							for (int idx=0; idx<max_sexp_vars; idx++) {
-								if (Sexp_variables[idx].type & SEXP_VARIABLE_SET) {
-									// skip block variables
-									if (Sexp_variables[idx].type & SEXP_VARIABLE_BLOCK) {
-										continue;
-									}
-
-									UINT flags = MF_STRING | MF_GRAYED;
-									// maybe gray flag MF_GRAYED
-
-									// get type -- gray "string" or number accordingly
-									if ( type & SEXPT_STRING ) {
-										if ( Sexp_variables[idx].type & SEXP_VARIABLE_STRING ) {
-											flags &= ~MF_GRAYED;
-										}
-									}
-									if ( type & SEXPT_NUMBER ) {
-										if ( Sexp_variables[idx].type & SEXP_VARIABLE_NUMBER ) {
-											flags &= ~MF_GRAYED;
-										}
-									}
-
-									// if modify-variable and changing variable, enable all variables
-									if (op_type == OPF_VARIABLE_NAME) {
-										Modify_variable = 1;
-										flags &= ~MF_GRAYED;
-									} else {
-										Modify_variable = 0;
-									}
-
-									// enable navsystem always
-									if (op_type == OPF_NAV_POINT)
-										flags &= ~MF_GRAYED;
-
-									// enable all for container multidimensionality
-									if ((type & SEXPT_MODIFIER) && Replace_count > 0)
-										flags &= ~MF_GRAYED;
-
-									if (!( (idx + 3) % 30)) {
-										flags |= MF_MENUBARBREAK;
-									}
-
-									char buf[128];
-									// append list of variable names and values
-									// set id as ID_VARIABLE_MENU + idx
-									sprintf(buf, "%s (%s)", Sexp_variables[idx].variable_name, Sexp_variables[idx].text);
-
-									replace_variable_menu->AppendMenu(flags, (ID_VARIABLE_MENU + idx), buf);
-								}
-							}
-
-							// Replace Container Name submenu
-							if (is_container_name_opf_type(op_type) || op_type == OPF_DATA_OR_STR_CONTAINER) {
-								int container_name_index = 0;
-								for (const auto &container : get_all_sexp_containers()) {
-									UINT flags = MF_STRING | MF_GRAYED;
-
-									if (op_type == OPF_CONTAINER_NAME) {
-										// allow all containers
-										flags &= ~MF_GRAYED;
-									} else if ((op_type == OPF_LIST_CONTAINER_NAME) && container.is_list()) {
-										flags &= ~MF_GRAYED;
-									} else if ((op_type == OPF_MAP_CONTAINER_NAME) && container.is_map()) {
-										flags &= ~MF_GRAYED;
-									} else if ((op_type == OPF_DATA_OR_STR_CONTAINER) &&
-											   container.is_of_string_type()) {
-										flags &= ~MF_GRAYED;
-									}
-
-									replace_container_name_menu->AppendMenu(flags,
-										(ID_CONTAINER_NAME_MENU + container_name_index++),
-										container.container_name.c_str());
-								}
-							}
-
-							// Replace Container Data submenu
-							// disallowed on variable-type SEXP args, to prevent FSO/FRED crashes
-							// also disallowed for special argument options (not supported for now)
-							// op < 0 means we're on a container modifier, and nested Replace Container Data is allowed
-							if (op_type != OPF_VARIABLE_NAME && (op < 0 || !is_argument_provider_op(Operators[op].value))) {
-								int container_data_index = 0;
-								for (const auto &container : get_all_sexp_containers()) {
-									UINT flags = MF_STRING | MF_GRAYED;
-
-									if ((type & SEXPT_STRING) && any(container.type & ContainerType::STRING_DATA)) {
-										flags &= ~MF_GRAYED;
-									}
-
-									if ((type & SEXPT_NUMBER) && any(container.type & ContainerType::NUMBER_DATA)) {
-										flags &= ~MF_GRAYED;
-									}
-
-									// enable all for container multidimensionality
-									if ((tree_nodes[item_index].type & SEXPT_MODIFIER) && Replace_count > 0)
-										flags &= ~MF_GRAYED;
-
-									replace_container_data_menu->AppendMenu(flags,
-										(ID_CONTAINER_DATA_MENU + container_data_index++),
-										container.container_name.c_str());
-								}
-							}
-						}
-					//}
-				}
+		// Build container name menu from state
+		if (state.show_container_names) {
+			const auto& containers = get_all_sexp_containers();
+			for (int idx = 0; idx < (int)state.replace_container_names.size(); idx++) {
+				UINT flags = MF_STRING;
+				if (!state.replace_container_names[idx].enabled) flags |= MF_GRAYED;
+				replace_container_name_menu->AppendMenu(flags, (ID_CONTAINER_NAME_MENU + idx), containers[idx].container_name.c_str());
 			}
+		}
 
-			// can't modify if no variables
-			if (sexp_variable_count() == 0) {
-				menu.EnableMenuItem(ID_SEXP_TREE_MODIFY_VARIABLE, MF_GRAYED);
+		// Build container data menu from state
+		if (state.show_container_data) {
+			const auto& containers = get_all_sexp_containers();
+			for (int idx = 0; idx < (int)state.replace_container_data.size(); idx++) {
+				UINT flags = MF_STRING;
+				if (!state.replace_container_data[idx].enabled) flags |= MF_GRAYED;
+				replace_container_data_menu->AppendMenu(flags, (ID_CONTAINER_DATA_MENU + idx), containers[idx].container_name.c_str());
 			}
 		}
 
@@ -760,53 +584,8 @@ void sexp_tree::right_clicked(int mode)
 				{
 					if (op_menu[j].id == get_category(Operators[i].value))
 					{
-						switch (Operators[i].value) {
-// Commented out by Goober5000 to allow these operators to be selectable
-/*#ifdef NDEBUG
-							// various campaign operators
-							case OP_WAS_PROMOTION_GRANTED:
-							case OP_WAS_MEDAL_GRANTED:
-							case OP_GRANT_PROMOTION:
-							case OP_GRANT_MEDAL:
-							case OP_TECH_ADD_SHIP:
-							case OP_TECH_ADD_WEAPON:
-							case OP_TECH_ADD_INTEL_XSTR:
-							case OP_TECH_REMOVE_INTEL_XSTR:
-							case OP_TECH_RESET_TO_DEFAULT:
-#endif*/
-
-							// hide these operators per GitHub issue #6400
-							case OP_GET_VARIABLE_BY_INDEX:
-							case OP_SET_VARIABLE_BY_INDEX:
-							case OP_COPY_VARIABLE_FROM_INDEX:
-							case OP_COPY_VARIABLE_BETWEEN_INDEXES:
-
-							// unlike the various campaign operators, these are deprecated
-							case OP_HITS_LEFT_SUBSYSTEM:
-							case OP_CUTSCENES_SHOW_SUBTITLE:
-							case OP_ORDER:
-							case OP_TECH_ADD_INTEL:
-							case OP_TECH_REMOVE_INTEL:
-							case OP_HUD_GAUGE_SET_ACTIVE:
-							case OP_HUD_ACTIVATE_GAUGE_TYPE:
-							case OP_JETTISON_CARGO_DELAY:
-							case OP_STRING_CONCATENATE:
-							case OP_SET_OBJECT_SPEED_X:
-							case OP_SET_OBJECT_SPEED_Y:
-							case OP_SET_OBJECT_SPEED_Z:
-							case OP_DISTANCE:
-							case OP_SCRIPT_EVAL:
-							case OP_TRIGGER_SUBMODEL_ANIMATION:
-							case OP_ADD_BACKGROUND_BITMAP:
-							case OP_ADD_SUN_BITMAP:
-							case OP_JUMP_NODE_SET_JUMPNODE_NAME:
-							case OP_KEY_RESET:
-							case OP_SET_ASTEROID_FIELD:
-							case OP_SET_DEBRIS_FIELD:
-							case OP_NEBULA_TOGGLE_POOF:
-							case OP_NEBULA_FADE_POOF:
-								j = (int)op_menu.size();	// don't allow these operators to be visible
-								break;
+						if (SexpTreeModel::is_operator_hidden(Operators[i].value)) {
+							j = (int)op_menu.size();	// don't allow these operators to be visible
 						}
 
 						if (j < (int)op_menu.size()) {
@@ -827,53 +606,8 @@ void sexp_tree::right_clicked(int mode)
 				{
 					if (op_submenu[j].id == subcategory_id)
 					{
-						switch (Operators[i].value) {
-// Commented out by Goober5000 to allow these operators to be selectable
-/*#ifdef NDEBUG
-							// various campaign operators
-							case OP_WAS_PROMOTION_GRANTED:
-							case OP_WAS_MEDAL_GRANTED:
-							case OP_GRANT_PROMOTION:
-							case OP_GRANT_MEDAL:
-							case OP_TECH_ADD_SHIP:
-							case OP_TECH_ADD_WEAPON:
-							case OP_TECH_ADD_INTEL_XSTR:
-							case OP_TECH_REMOVE_INTEL_XSTR:
-							case OP_TECH_RESET_TO_DEFAULT:
-#endif*/
-
-							// hide these operators per GitHub issue #6400
-							case OP_GET_VARIABLE_BY_INDEX:
-							case OP_SET_VARIABLE_BY_INDEX:
-							case OP_COPY_VARIABLE_FROM_INDEX:
-							case OP_COPY_VARIABLE_BETWEEN_INDEXES:
-
-							// unlike the various campaign operators, these are deprecated
-							case OP_HITS_LEFT_SUBSYSTEM:
-							case OP_CUTSCENES_SHOW_SUBTITLE:
-							case OP_ORDER:
-							case OP_TECH_ADD_INTEL:
-							case OP_TECH_REMOVE_INTEL:
-							case OP_HUD_GAUGE_SET_ACTIVE:
-							case OP_HUD_ACTIVATE_GAUGE_TYPE:
-							case OP_JETTISON_CARGO_DELAY:
-							case OP_STRING_CONCATENATE:
-							case OP_SET_OBJECT_SPEED_X:
-							case OP_SET_OBJECT_SPEED_Y:
-							case OP_SET_OBJECT_SPEED_Z:
-							case OP_DISTANCE:
-							case OP_SCRIPT_EVAL:
-							case OP_TRIGGER_SUBMODEL_ANIMATION:
-							case OP_ADD_BACKGROUND_BITMAP:
-							case OP_ADD_SUN_BITMAP:
-							case OP_JUMP_NODE_SET_JUMPNODE_NAME:
-							case OP_KEY_RESET:
-							case OP_SET_ASTEROID_FIELD:
-							case OP_SET_DEBRIS_FIELD:
-							case OP_NEBULA_TOGGLE_POOF:
-							case OP_NEBULA_FADE_POOF:
-								j = (int)op_submenu.size();	// don't allow these operators to be visible
-								break;
+						if (SexpTreeModel::is_operator_hidden(Operators[i].value)) {
+							j = (int)op_submenu.size();	// don't allow these operators to be visible
 						}
 
 						if (j < (int)op_submenu.size()) {
@@ -893,8 +627,8 @@ void sexp_tree::right_clicked(int mode)
 		update_item(h);
 
 		// special case: item is a ROOT node, and a label that can be edited (not an item in the sexp tree)
-		if ((item_index == -1) && (m_mode & ST_LABELED_ROOT)) {
-			if (m_mode & ST_ROOT_EDITABLE) {
+		if (state.is_labeled_root) {
+			if (state.is_root_editable) {
 				menu.EnableMenuItem(ID_EDIT_TEXT, MF_ENABLED);
 			} else {
 				menu.EnableMenuItem(ID_EDIT_TEXT, MF_GRAYED);
@@ -907,6 +641,7 @@ void sexp_tree::right_clicked(int mode)
 			}
 
 			gray_menu_tree(popup_menu);
+			state.cleanup();
 			popup_menu->TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON, mouse.x, mouse.y, this);
 			return;
 		}
