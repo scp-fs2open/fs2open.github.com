@@ -2195,12 +2195,24 @@ void sexp_tree::customMenuHandler(const QPoint& pos) {
 	menu->exec(mapToGlobal(pos));
 }
 std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
-	int i, j, z, count, op, add_type, replace_type, type, subcategory_id;
-	sexp_list_item* list;
+	int i, j, z, subcategory_id;
 
 	add_instance = replace_instance = -1;
 	Assert((int) op_menu.size() < MAX_OP_MENUS);
 	Assert((int) op_submenu.size() < MAX_SUBMENUS);
+
+	update_help(h);
+
+	// get item_index
+	item_index = -1;
+	for (i = 0; i < (int) tree_nodes.size(); i++) {
+		if (tree_nodes[i].handle == h) {
+			setCurrentItemIndex(i);
+			break;
+		}
+	}
+
+	auto state = _model.compute_context_menu_state(_model.m_mode);
 
 	std::unique_ptr<QMenu> popup_menu(new QMenu(tr("Edit SEXP tree")));
 
@@ -2268,20 +2280,6 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
   
   // TODO: Context menu extras will be handled through a Qt-specific interface extension
   // when needed. Currently no dialog provides extras (all return empty list).
-
-	update_help(h);
-	//SelectDropTarget(h);  // WTF: Why was this here???
-
-	// get item_index
-	item_index = -1;
-	for (i = 0; i < (int) tree_nodes.size(); i++) {
-		if (tree_nodes[i].handle == h) {
-			setCurrentItemIndex(i);
-			break;
-		}
-	}
-
-	auto state = _model.compute_context_menu_state(_model.m_mode);
 
 	// Build variable menu from state
 	for (const auto& var : state.replace_variables) {
@@ -2357,53 +2355,8 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 			// put it in the appropriate menu
 			for (j = 0; j < (int) op_menu.size(); j++) {
 				if (op_menu[j].id == get_category(Operators[i].value)) {
-					switch (Operators[i].value) {
-// Commented out by Goober5000 to allow these operators to be selectable
-/*#ifdef NDEBUG
-						// various campaign operators
-						case OP_WAS_PROMOTION_GRANTED:
-						case OP_WAS_MEDAL_GRANTED:
-						case OP_GRANT_PROMOTION:
-						case OP_GRANT_MEDAL:
-						case OP_TECH_ADD_SHIP:
-						case OP_TECH_ADD_WEAPON:
-						case OP_TECH_ADD_INTEL_XSTR:
-						case OP_TECH_REMOVE_INTEL_XSTR:
-						case OP_TECH_RESET_TO_DEFAULT:
-#endif*/
-
-					// hide these operators per GitHub issue #6400
-					case OP_GET_VARIABLE_BY_INDEX:
-					case OP_SET_VARIABLE_BY_INDEX:
-					case OP_COPY_VARIABLE_FROM_INDEX:
-					case OP_COPY_VARIABLE_BETWEEN_INDEXES:
-
-					// unlike the various campaign operators, these are deprecated
-					case OP_HITS_LEFT_SUBSYSTEM:
-					case OP_CUTSCENES_SHOW_SUBTITLE:
-					case OP_ORDER:
-					case OP_TECH_ADD_INTEL:
-					case OP_TECH_REMOVE_INTEL:
-					case OP_HUD_GAUGE_SET_ACTIVE:
-					case OP_HUD_ACTIVATE_GAUGE_TYPE:
-					case OP_JETTISON_CARGO_DELAY:
-					case OP_STRING_CONCATENATE:
-					case OP_SET_OBJECT_SPEED_X:
-					case OP_SET_OBJECT_SPEED_Y:
-					case OP_SET_OBJECT_SPEED_Z:
-					case OP_DISTANCE:
-					case OP_SCRIPT_EVAL:
-					case OP_TRIGGER_SUBMODEL_ANIMATION:
-					case OP_ADD_BACKGROUND_BITMAP:
-					case OP_ADD_SUN_BITMAP:
-					case OP_JUMP_NODE_SET_JUMPNODE_NAME:
-					case OP_KEY_RESET:
-					case OP_SET_ASTEROID_FIELD:
-					case OP_SET_DEBRIS_FIELD:
-					case OP_NEBULA_TOGGLE_POOF:
-					case OP_NEBULA_FADE_POOF:
-						j = (int) op_menu.size();    // don't allow these operators to be visible
-						break;
+					if (SexpTreeModel::is_operator_hidden(Operators[i].value)) {
+						j = (int) op_menu.size();
 					}
 
 					if (j < (int) op_menu.size()) {
@@ -2441,53 +2394,8 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 			// put it in the appropriate submenu
 			for (j = 0; j < (int) op_submenu.size(); j++) {
 				if (op_submenu[j].id == subcategory_id) {
-					switch (Operators[i].value) {
-// Commented out by Goober5000 to allow these operators to be selectable
-/*#ifdef NDEBUG
-						// various campaign operators
-						case OP_WAS_PROMOTION_GRANTED:
-						case OP_WAS_MEDAL_GRANTED:
-						case OP_GRANT_PROMOTION:
-						case OP_GRANT_MEDAL:
-						case OP_TECH_ADD_SHIP:
-						case OP_TECH_ADD_WEAPON:
-						case OP_TECH_ADD_INTEL_XSTR:
-						case OP_TECH_REMOVE_INTEL_XSTR:
-						case OP_TECH_RESET_TO_DEFAULT:
-#endif*/
-
-					// hide these operators per GitHub issue #6400
-					case OP_GET_VARIABLE_BY_INDEX:
-					case OP_SET_VARIABLE_BY_INDEX:
-					case OP_COPY_VARIABLE_FROM_INDEX:
-					case OP_COPY_VARIABLE_BETWEEN_INDEXES:
-
-					// unlike the various campaign operators, these are deprecated
-					case OP_HITS_LEFT_SUBSYSTEM:
-					case OP_CUTSCENES_SHOW_SUBTITLE:
-					case OP_ORDER:
-					case OP_TECH_ADD_INTEL:
-					case OP_TECH_REMOVE_INTEL:
-					case OP_HUD_GAUGE_SET_ACTIVE:
-					case OP_HUD_ACTIVATE_GAUGE_TYPE:
-					case OP_JETTISON_CARGO_DELAY:
-					case OP_STRING_CONCATENATE:
-					case OP_SET_OBJECT_SPEED_X:
-					case OP_SET_OBJECT_SPEED_Y:
-					case OP_SET_OBJECT_SPEED_Z:
-					case OP_DISTANCE:
-					case OP_SCRIPT_EVAL:
-					case OP_TRIGGER_SUBMODEL_ANIMATION:
-					case OP_ADD_BACKGROUND_BITMAP:
-					case OP_ADD_SUN_BITMAP:
-					case OP_JUMP_NODE_SET_JUMPNODE_NAME:
-					case OP_KEY_RESET:
-					case OP_SET_ASTEROID_FIELD:
-					case OP_SET_DEBRIS_FIELD:
-					case OP_NEBULA_TOGGLE_POOF:
-					case OP_NEBULA_FADE_POOF:
-						j = (int) op_submenu.size();    // don't allow these operators to be visible
-						break;
+					if (SexpTreeModel::is_operator_hidden(Operators[i].value)) {
+						j = (int) op_submenu.size();
 					}
 
 					if (j < (int) op_submenu.size()) {
@@ -2525,37 +2433,23 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 		}
 	}
 
-	// find local index (i) of current item (from its handle)
-	for (i = 0; i < (int) tree_nodes.size(); i++) {
-		if (tree_nodes[i].handle == h) {
-			break;
-		}
-	}
-
 	// special case: item is a ROOT node, and a label that can be edited (not an item in the sexp tree)
-	if ((item_index == -1) && _interface->getFlags()[TreeFlags::LabeledRoot]) {
-		edit_data_act->setEnabled(_interface->getFlags()[TreeFlags::RootEditable]);
+	if (state.is_labeled_root) {
+		edit_data_act->setEnabled(state.is_root_editable);
 
 		// disable copy, insert op
 		copy_act->setEnabled(false);
 		insert_op_menu->setEnabled(false);
-		/*
-		for (j = 0; j < (int) Operators.size(); j++) {
-			menu.EnableMenuItem(Operators[j].value | OP_INSERT_FLAG, MF_GRAYED);
-		}
-		*/
 
 		util::propagate_disabled_status(popup_menu.get());
+		state.cleanup();
 		return popup_menu;
 	}
 
 	Assert(item_index != -1);  // handle not found, which should be impossible.
-	if (!(tree_nodes[item_index].flags & EDITABLE)) {
-		edit_data_act->setEnabled(false);
-	}
-
-	if (tree_nodes[item_index].parent == -1) {  // root node
-		delete_act->setEnabled(false); // can't delete the root item.
+	edit_data_act->setEnabled(state.can_edit_text);
+	if (!state.can_delete) {
+		delete_act->setEnabled(false);
 	}
 
 /*		if ((tree_nodes[item_index].flags & OPERAND) && (tree_nodes[item_index].flags & EDITABLE))  // expandable?
@@ -2570,130 +2464,30 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 		menu.EnableMenuItem(ID_SPLIT_LINE, MF_ENABLED);*/
 
 	// change enabled status of 'add' type menu options.
-	add_type = 0;
+	Add_count = state.add_count;
+	add_number_act->setEnabled(state.can_add_number);
+	add_string_act->setEnabled(state.can_add_string);
 
-	// container multidimensionality
-	if (tree_nodes[item_index].type & SEXPT_CONTAINER_DATA) {
-		// using local var for add count to avoid breaking implicit assumptions about Add_count
-		const int modifier_node = tree_nodes[item_index].child;
-		Assertion(modifier_node != -1,
-			"No modifier found for container data node %s. Please report!",
-			tree_nodes[item_index].text);
-		const int modifier_add_count = count_args(modifier_node);
+	// Enable operators from add data list
+	for (int op_idx : state.add_enabled_op_indices) {
+		auto iter = operator_action_mapping.find(Operators[op_idx].value);
+		if (iter != operator_action_mapping.end()) {
+			iter->second->setEnabled(true);
+		}
+	}
 
-		const auto *p_container = get_sexp_container(tree_nodes[item_index].text);
-		Assertion(p_container,
-			"Found modifier for unknown container %s. Please report!",
-			tree_nodes[item_index].text);
-
-		if (modifier_add_count == 1 && p_container->is_list() &&
-			get_list_modifier(tree_nodes[modifier_node].text) == ListModifier::AT_INDEX) {
-			// only valid value is a list index
-			add_type = OPR_NUMBER;
-			add_number_act->setEnabled(true);
-		} else {
-			// container multidimensionality
-			add_type = OPR_STRING;
-
-			// the next thing we want to add could literally be any legal key for any map or the legal entries for a list container
-			// so give the FREDder a hand and offer the list modifiers, but only the FREDder can know if they're relevant
-			list = get_container_multidim_modifiers(item_index);
-
-			if (list) {
-				sexp_list_item *ptr = nullptr;
-
-				int data_idx = 0;
-				ptr = list;
-				while (ptr) {
-					if (ptr->op >= 0) {
-						// enable operators with correct return type
-						auto iter = operator_action_mapping.find(Operators[ptr->op].value);
-						if (iter != operator_action_mapping.end()) {
-							iter->second->setEnabled(true);
-						}
-					} else {
-						// add data
-						add_data_menu->addAction(QString::fromStdString(ptr->text),
-							this,
-							[this, data_idx]() { addReplaceTypedDataHandler(data_idx, false); });
-					}
-
-					data_idx++;
-					ptr = ptr->next;
-				}
+	// Build add data menu items
+	if (state.add_data_list) {
+		sexp_list_item* ptr = state.add_data_list;
+		int data_idx = 0;
+		while (ptr) {
+			if (ptr->op < 0) {
+				add_data_menu->addAction(QString::fromStdString(ptr->text),
+					this, [this, data_idx]() { addReplaceTypedDataHandler(data_idx, false); });
 			}
-
-			add_number_act->setEnabled(true);
-			add_string_act->setEnabled(true);
+			data_idx++;
+			ptr = ptr->next;
 		}
-	} else if (tree_nodes[item_index].flags & OPERAND) {
-		add_type = OPR_STRING;
-		int child = tree_nodes[item_index].child;
-		Add_count = count_args(child);
-		op = get_operator_index(tree_nodes[item_index].text);
-		Assert(op >= 0);
-
-		// get listing of valid argument values and add to menus
-		type = query_operator_argument_type(op, Add_count);
-		list = get_listing_opf(type, item_index, Add_count);
-		if (list) {
-			sexp_list_item* ptr;
-
-			int data_idx = 0;
-			ptr = list;
-			while (ptr) {
-				if (ptr->op >= 0) {
-					// enable operators with correct return type
-					auto iter = operator_action_mapping.find(Operators[ptr->op].value);
-					if (iter != operator_action_mapping.end()) {
-						iter->second->setEnabled(true);
-					}
-				} else {
-					// add data
-					add_data_menu->addAction(QString::fromStdString(ptr->text),
-											 this,
-											 [this, data_idx]() { addReplaceTypedDataHandler(data_idx, false); });
-				}
-
-				data_idx++;
-				ptr = ptr->next;
-			}
-		}
-
-		// special handling for the non-string formats
-		if (type == OPF_NONE) {  // an argument can't be added
-			add_type = 0;
-
-		} else if (type == OPF_NULL) {  // arguments with no return values
-			add_type = OPR_NULL;
-
-			// Goober5000
-		} else if (type == OPF_FLEXIBLE_ARGUMENT) {
-			add_type = OPR_FLEXIBLE_ARGUMENT;
-
-		} else if (type == OPF_NUMBER) {  // takes numbers
-			add_type = OPR_NUMBER;
-			add_number_act->setEnabled(true);
-		} else if (type == OPF_POSITIVE) {  // takes non-negative numbers
-			add_type = OPR_POSITIVE;
-			add_number_act->setEnabled(true);
-		} else if (type == OPF_BOOL) {  // takes true/false bool values
-			add_type = OPR_BOOL;
-
-		} else if (type == OPF_AI_GOAL) {
-			add_type = OPR_AI_GOAL;
-		} else if (type == OPF_CONTAINER_VALUE) {
-			// allow both strings and numbers
-			// types are checked in check_sepx_syntax()
-			add_number_act->setEnabled(true);
-		}
-
-		// add_type unchanged from above
-		if (add_type == OPR_STRING && !is_container_name_opf_type(type)) {
-			add_string_act->setEnabled(true);
-		}
-
-		list->destroy();
 	}
 
 	// disable operators that do not have arguments available
@@ -2708,235 +2502,40 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 
 
 	// change enabled status of 'replace' type menu options.
-	replace_type = 0;
-	int parent = tree_nodes[item_index].parent;
-	if (parent >= 0) {
-		replace_type = OPR_STRING;
-		op = get_operator_index(tree_nodes[parent].text);
-		Assertion(op >= 0 || tree_nodes[parent].type & SEXPT_CONTAINER_DATA,
-			"Encountered unknown SEXP operator %s. Please report!",
-			tree_nodes[parent].text);
-		int first_arg = tree_nodes[parent].child;
-		count = count_args(tree_nodes[parent].child);
+	Replace_count = state.replace_count;
+	Modify_variable = state.modify_variable;
+	replace_number_act->setEnabled(state.can_replace_number);
+	replace_string_act->setEnabled(state.can_replace_string);
+	if (!state.can_delete) {
+		delete_act->setEnabled(false);
+	}
 
-		if (op >= 0) {
-			// already at minimum number of arguments?
-			if (count <= Operators[op].min) {
-				delete_act->setEnabled(false);
+	// Enable operators from replace data list
+	for (int op_idx : state.replace_enabled_op_indices) {
+		auto iter = operator_action_mapping.find(Operators[op_idx].value | OP_REPLACE_FLAG);
+		if (iter != operator_action_mapping.end()) {
+			iter->second->setEnabled(true);
+		}
+	}
+
+	// Build replace data menu items
+	if (state.replace_data_list) {
+		sexp_list_item* ptr = state.replace_data_list;
+		int data_idx = 0;
+		while (ptr) {
+			if (ptr->op < 0) {
+				replace_data_menu->addAction(QString::fromStdString(ptr->text),
+					this, [this, data_idx]() { addReplaceTypedDataHandler(data_idx, true); });
 			}
-		} else if ((tree_nodes[parent].type & SEXPT_CONTAINER_DATA) && (item_index == first_arg)) {
-			// a container data node's initial modifier can't be deleted
-			Assertion(tree_nodes[item_index].type & SEXPT_MODIFIER,
-				"Container data %s node's first modifier %s is not a modifier. Please report!",
-				tree_nodes[parent].text,
-				tree_nodes[item_index].text);
-			delete_act->setEnabled(false);
+			data_idx++;
+			ptr = ptr->next;
 		}
+	}
 
-
-		// get arg count of item to replace
-		Replace_count = 0;
-		int temp = first_arg;
-		while (temp != item_index) {
-			Replace_count++;
-			temp = tree_nodes[temp].next;
-
-			// DB - added 3/4/99
-			if (temp == -1) {
-				break;
-			}
-		}
-
-		if (op >= 0) {
-			// maybe gray delete
-			for (i = Replace_count + 1; i < count; i++) {
-				if (query_operator_argument_type(op, i - 1) != query_operator_argument_type(op, i)) {
-					delete_act->setEnabled(false);
-					break;
-				}
-			}
-
-			type = query_operator_argument_type(op, Replace_count); // check argument type at this position
-		} else {
-			Assertion(tree_nodes[parent].type& SEXPT_CONTAINER_DATA,
-				"Unknown SEXP operator %s. Please report!",
-				tree_nodes[parent].text);
-			const auto *p_container = get_sexp_container(tree_nodes[parent].text);
-			Assertion(p_container != nullptr,
-				"Found modifier for unknown container %s. Please report!",
-				tree_nodes[parent].text);
-			type = p_container->opf_type;
-		}
-
-		// special case reset type for ambiguous
-		if (type == OPF_AMBIGUOUS) {
-			type = get_modify_variable_type(parent);
-		}
-
-		// Container modifiers use their own list of possible arguments
-		if (tree_nodes[item_index].type & SEXPT_MODIFIER) {
-			const auto *p_container = get_sexp_container(tree_nodes[parent].text);
-			Assertion(p_container != nullptr,
-				"Found modifier for unknown container %s. Please report!",
-				tree_nodes[parent].text);
-			const int first_modifier = tree_nodes[parent].child;
-			if (Replace_count == 1 && p_container->is_list() &&
-				get_list_modifier(tree_nodes[first_modifier].text) == ListModifier::AT_INDEX) {
-				// only valid value is a list index (number)
-				list = nullptr;
-				replace_type = OPR_NUMBER;
-			} else {
-				list = get_container_modifiers(parent);
-			}
-		} else {
-			list = get_listing_opf(type, parent, Replace_count);
-		}
-
-		// special case don't allow replace data for variable or container names
-		if ((type != OPF_VARIABLE_NAME) && !is_container_name_opf_type(type) && list) {
-			sexp_list_item* ptr;
-
-			int data_idx = 0;
-			ptr = list;
-			while (ptr) {
-				if (ptr->op >= 0) {
-					auto iter = operator_action_mapping.find(Operators[ptr->op].value | OP_REPLACE_FLAG);
-					if (iter != operator_action_mapping.end()) {
-						iter->second->setEnabled(true);
-					}
-				} else {
-					replace_data_menu->addAction(QString::fromStdString(ptr->text),
-											 this,
-											 [this, data_idx]() { addReplaceTypedDataHandler(data_idx, true); });
-				}
-
-				data_idx++;
-				ptr = ptr->next;
-			}
-		}
-
-		if (type == OPF_NONE) {  // takes no arguments
-			replace_type = 0;
-
-		} else if (type == OPF_NUMBER) {  // takes numbers
-			replace_type = OPR_NUMBER;
-			replace_number_act->setEnabled(true);
-		} else if (type == OPF_POSITIVE) {  // takes non-negative numbers
-			replace_type = OPR_POSITIVE;
-			replace_number_act->setEnabled(true);
-		} else if (type == OPF_BOOL) {  // takes true/false bool values
-			replace_type = OPR_BOOL;
-
-		} else if (type == OPF_NULL) {  // takes operator that doesn't return a value
-			replace_type = OPR_NULL;
-		} else if (type == OPF_AI_GOAL) {
-			replace_type = OPR_AI_GOAL;
-		}
-
-			// Goober5000
-		else if (type == OPF_FLEXIBLE_ARGUMENT) {
-			replace_type = OPR_FLEXIBLE_ARGUMENT;
-		}
-			// Goober5000
-		else if (type == OPF_GAME_SND || type == OPF_FIREBALL || type == OPF_WEAPON_BANK_NUMBER) {
-			// even though these default to strings, we allow replacing them with index values
-			replace_type = OPR_POSITIVE;
-			replace_number_act->setEnabled(true);
-
-		} else if (type == OPF_CONTAINER_VALUE) {
-			// allow strings and numbers
-			// type is checked in check_sexp_syntax()
-			add_number_act->setEnabled(true);
-		}
-
-		// default to string, except for container names
-		if (replace_type == OPR_STRING && !is_container_name_opf_type(type)) {
-			replace_string_act->setEnabled(true);
-		}
-
-		if (op >= 0) { // skip when handling "replace container data"
-			// modify string or number if (modify_variable)
-			if (Operators[op].value == OP_MODIFY_VARIABLE) {
-				int modify_type = get_modify_variable_type(parent);
-
-				if (modify_type == OPF_NUMBER) {
-					replace_number_act->setEnabled(true);
-					replace_string_act->setEnabled(false);
-				}
-				// no change for string type
-			} else if (Operators[op].value == OP_SET_VARIABLE_BY_INDEX) {
-				// it depends on which argument we are modifying
-				// first argument is always a number
-				if (Replace_count == 0) {
-					replace_number_act->setEnabled(true);
-					replace_string_act->setEnabled(false);
-				}
-				// second argument could be anything
-				else {
-					int modify_type = get_modify_variable_type(parent);
-
-					if (modify_type == OPF_NUMBER) {
-						replace_number_act->setEnabled(true);
-						replace_string_act->setEnabled(false);
-					}
-					// no change for string type
-				}
-			}
-		}
-
-		if (tree_nodes[item_index].type & SEXPT_MODIFIER) {
-			Assertion(tree_nodes[parent].type & SEXPT_CONTAINER_DATA,
-				"Attempt to check modifier of non-container node %s. Please report!",
-				tree_nodes[parent].text);
-			const int first_modifier_node = tree_nodes[parent].child;
-			Assertion(first_modifier_node != -1,
-				"Could not find first modifier of container data node %s. Please report!",
-				tree_nodes[parent].text);
-			const auto *p_container = get_sexp_container(tree_nodes[parent].text);
-			Assertion(p_container,
-				"Attempt to get first modifier for unknown container %s. Please report!",
-				tree_nodes[parent].text);
-			const auto &container = *p_container;
-
-			if (Replace_count == 0) {
-				if (container.is_list()) {
-					// the only valid values are either the list modifiers or Replace Variable/Cotnainer Data with string data
-					replace_number_act->setEnabled(false);
-					replace_string_act->setEnabled(false);
-					edit_data_act->setEnabled(false);
-				} else if (container.is_map()) {
-					if (any(container.type & ContainerType::STRING_KEYS)) {
-						replace_number_act->setEnabled(false);
-						replace_string_act->setEnabled(true);
-					} else if (any(container.type & ContainerType::NUMBER_KEYS)) {
-						replace_number_act->setEnabled(true);
-						replace_string_act->setEnabled(false);
-					} else {
-						UNREACHABLE("Map container with type %d has unknown key type", (int)container.type);
-					}
-				} else {
-					UNREACHABLE("Unknown container type %d", (int)container.type);
-				}
-			} else if (Replace_count == 1 && container.is_list() &&
-				get_list_modifier(tree_nodes[first_modifier_node].text) ==
-				ListModifier::AT_INDEX) {
-				// only valid value is a list index
-				replace_number_act->setEnabled(true);
-				replace_string_act->setEnabled(false);
-			} else {
-				// multidimensional modifiers can be anything, including possibly a list modifier
-				// the value can be validated only at runtime (i.e., in-mission)
-				replace_number_act->setEnabled(true);
-				replace_string_act->setEnabled(true);
-			}
-		}
-
-		list->destroy();
-
-	} else {  // top node, so should be a Boolean type.
-		replace_type = _interface->getRootReturnType();
+	// Enable replace operators for top-level nodes
+	if (tree_nodes[item_index].parent < 0) {
 		for (j = 0; j < (int) Operators.size(); j++) {
-			if (query_operator_return_type(j) == replace_type) {
+			if (query_operator_return_type(j) == state.replace_type) {
 				auto iter = operator_action_mapping.find(Operators[j].value | OP_REPLACE_FLAG);
 				if (iter != operator_action_mapping.end()) {
 					iter->second->setEnabled(true);
@@ -2957,40 +2556,9 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 
 
 	// change enabled status of 'insert' type menu options.
-	z = tree_nodes[item_index].parent;
-	Assert(z >= -1);
-	if (z != -1) {
-		op = get_operator_index(tree_nodes[z].text);
-		Assertion(op != -1 || tree_nodes[z].type & SEXPT_CONTAINER_DATA,
-			"Encountered unknown SEXP operator %s. Please report!",
-			tree_nodes[z].text);
-		j = tree_nodes[z].child;
-		count = 0;
-		while (j != item_index) {
-			count++;
-			j = tree_nodes[j].next;
-		}
-
-		if (op >= 0) {
-			type = query_operator_argument_type(op, count); // check argument type at this position
-		} else {
-			Assertion(tree_nodes[z].type & SEXPT_CONTAINER_DATA,
-				"Unknown SEXP operator %s. Please report!",
-				tree_nodes[z].text);
-			const auto *p_container = get_sexp_container(tree_nodes[z].text);
-			Assertion(p_container != nullptr,
-				"Found modifier for unknown container %s. Please report!",
-				tree_nodes[z].text);
-			type = p_container->opf_type;
-		}
-
-	} else {
-		type = _interface->getRootReturnType();
-	}
-
 	for (j = 0; j < (int) Operators.size(); j++) {
 		z = query_operator_return_type(j);
-		if (!sexp_query_type_match(type, z) || (Operators[j].min < 1)) {
+		if (!sexp_query_type_match(state.insert_opf_type, z) || (Operators[j].min < 1)) {
 			auto iter = operator_action_mapping.find(Operators[j].value | OP_INSERT_FLAG);
 			if (iter != operator_action_mapping.end()) {
 				iter->second->setEnabled(false);
@@ -2998,16 +2566,16 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 		}
 
 		z = query_operator_argument_type(j, 0);
-		if ((type == OPF_NUMBER) && (z == OPF_POSITIVE)) {
+		if ((state.insert_opf_type == OPF_NUMBER) && (z == OPF_POSITIVE)) {
 			z = OPF_NUMBER;
 		}
 
 		// Goober5000's number hack
-		if ((type == OPF_POSITIVE) && (z == OPF_NUMBER)) {
+		if ((state.insert_opf_type == OPF_POSITIVE) && (z == OPF_NUMBER)) {
 			z = OPF_POSITIVE;
 		}
 
-		if (z != type) {
+		if (z != state.insert_opf_type) {
 			auto iter = operator_action_mapping.find(Operators[j].value | OP_INSERT_FLAG);
 			if (iter != operator_action_mapping.end()) {
 				iter->second->setEnabled(false);
@@ -3027,128 +2595,32 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 
 
 	// disable non campaign operators if in campaign mode
-	for (j = 0; j < (int) Operators.size(); j++) {
-		z = 0;
-		if (_interface->requireCampaignOperators()) {
-			if (!usable_in_campaign(Operators[j].value))
-				z = 1;
-		}
-
-		if (z) {
-			auto iter = operator_action_mapping.find(Operators[j].value);
-			if (iter != operator_action_mapping.end()) {
-				iter->second->setEnabled(false);
-			}
-			iter = operator_action_mapping.find(Operators[j].value | OP_REPLACE_FLAG);
-			if (iter != operator_action_mapping.end()) {
-				iter->second->setEnabled(false);
-			}
-			iter = operator_action_mapping.find(Operators[j].value | OP_INSERT_FLAG);
-			if (iter != operator_action_mapping.end()) {
-				iter->second->setEnabled(false);
-			}
-		}
-	}
-
-	if ((Sexp_clipboard > -1) && (Sexp_nodes[Sexp_clipboard].type != SEXP_NOT_USED)) {
-		Assert(Sexp_nodes[Sexp_clipboard].subtype != SEXP_ATOM_LIST);
-		Assertion(Sexp_nodes[Sexp_clipboard].subtype != SEXP_ATOM_CONTAINER_NAME,
-			"Attempt to use container name %s from SEXP clipboard. Please report!",
-			Sexp_nodes[Sexp_clipboard].text);
-
-		if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_OPERATOR) {
-			j = get_operator_const(CTEXT(Sexp_clipboard));
-			Assert(j);
-			z = query_operator_return_type(j);
-
-			if ((z == OPR_POSITIVE) && (replace_type == OPR_NUMBER)) {
-				z = OPR_NUMBER;
-			}
-
-			// Goober5000's number hack
-			if ((z == OPR_NUMBER) && (replace_type == OPR_POSITIVE)) {
-				z = OPR_POSITIVE;
-			}
-
-			if (replace_type == z) {
-				paste_act->setEnabled(true);
-			}
-
-			z = query_operator_return_type(j);
-			if ((z == OPR_POSITIVE) && (add_type == OPR_NUMBER)) {
-				z = OPR_NUMBER;
-			}
-
-			if (add_type == z) {
-				add_paste_act->setEnabled(true);
-			}
-
-		} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_CONTAINER_DATA) {
-			// TODO: check for strictly typed container keys/data
-			const auto *p_container = get_sexp_container(Sexp_nodes[Sexp_clipboard].text);
-			// if-check in case the container was renamed/deleted after the container data was cut/copied
-			if (p_container != nullptr) {
-				const auto &container = *p_container;
-				if (any(container.type & ContainerType::NUMBER_DATA)) {
-					// there's no way to check for OPR_POSITIVE, since the value
-					// is known only in-mission, so we'll handle OPR_NUMBER only
-					if (replace_type == OPR_NUMBER)
-						paste_act->setEnabled(true);
-					if (add_type == OPR_NUMBER)
-						add_paste_act->setEnabled(true);
-				} else if (any(container.type & ContainerType::STRING_DATA)) {
-					if (replace_type == OPR_STRING && !is_container_name_opf_type(type))
-						paste_act->setEnabled(true);
-					if (add_type == OPR_STRING && !is_container_name_opf_type(type))
-						add_paste_act->setEnabled(true);
-				} else {
-					UNREACHABLE("Unknown container data type %d", (int)container.type);
+	if (state.campaign_mode) {
+		for (j = 0; j < (int) Operators.size(); j++) {
+			if (!usable_in_campaign(Operators[j].value)) {
+				auto iter = operator_action_mapping.find(Operators[j].value);
+				if (iter != operator_action_mapping.end()) {
+					iter->second->setEnabled(false);
+				}
+				iter = operator_action_mapping.find(Operators[j].value | OP_REPLACE_FLAG);
+				if (iter != operator_action_mapping.end()) {
+					iter->second->setEnabled(false);
+				}
+				iter = operator_action_mapping.find(Operators[j].value | OP_INSERT_FLAG);
+				if (iter != operator_action_mapping.end()) {
+					iter->second->setEnabled(false);
 				}
 			}
-
-		} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_NUMBER) {
-			if ((replace_type == OPR_POSITIVE) && (atoi(CTEXT(Sexp_clipboard)) > -1)) {
-				edit_data_act->setEnabled(true);
-			} else if (replace_type == OPR_NUMBER) {
-				edit_data_act->setEnabled(true);
-			}
-
-			if ((add_type == OPR_POSITIVE) && (atoi(CTEXT(Sexp_clipboard)) > -1)) {
-				add_paste_act->setEnabled(true);
-			} else if (add_type == OPR_NUMBER) {
-				add_paste_act->setEnabled(true);
-			}
-
-		} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_STRING) {
-			if (replace_type == OPR_STRING && !is_container_name_opf_type(type)) {
-				edit_data_act->setEnabled(true);
-			}
-
-			if (add_type == OPR_STRING && !is_container_name_opf_type(type)) {
-				add_paste_act->setEnabled(true);
-			}
-
-		} else
-			Int3();  // unknown and/or invalid sexp type
+		}
 	}
 
-	if (delete_act->isEnabled()) {
-		cut_act->setEnabled(true);
-	}
+	paste_act->setEnabled(state.can_paste);
+	add_paste_act->setEnabled(state.can_paste_add);
 
-	// all of the following restrictions may be revisited in the future
-	if (tree_nodes[item_index].type & (SEXPT_MODIFIER | SEXPT_CONTAINER_NAME)) {
-		// modifiers and container names don't support cut/copy/paste
-		cut_act->setEnabled(false);
-		copy_act->setEnabled(false);
-		paste_act->setEnabled(false);
-	}
-	// can't use else-if here, because container data is a valid modifier
-	if (tree_nodes[item_index].type & SEXPT_CONTAINER_DATA) {
-		// container data nodes don't support add-pasting modifiers
-		add_paste_act->setEnabled(false);
-	}
+	cut_act->setEnabled(state.can_cut);
+	copy_act->setEnabled(state.can_copy);
 
+	state.cleanup();
 	util::propagate_disabled_status(popup_menu.get());
 	return popup_menu;
 }

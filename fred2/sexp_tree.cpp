@@ -410,8 +410,7 @@ void sexp_tree::update_item(HTREEITEM h)
 // handler for right mouse button clicks.
 void sexp_tree::right_clicked(int mode)
 {
-	int i, j, z, count, op, add_type, replace_type, type = 0, subcategory_id;
-	sexp_list_item *list;
+	int i, j, z, subcategory_id;
 	UINT _flags;
 	HTREEITEM h;
 	POINT click_point, mouse;
@@ -647,12 +646,12 @@ void sexp_tree::right_clicked(int mode)
 		}
 
 		Assert(item_index != -1);  // handle not found, which should be impossible.
-		if (!(tree_nodes[item_index].flags & EDITABLE)) {
+		if (!state.can_edit_text) {
 			menu.EnableMenuItem(ID_EDIT_TEXT, MF_GRAYED);
 		}
 
-		if (tree_nodes[item_index].parent == -1) {  // root node
-			menu.EnableMenuItem(ID_DELETE, MF_GRAYED);  // can't delete the root item.
+		if (!state.can_delete) {
+			menu.EnableMenuItem(ID_DELETE, MF_GRAYED);
 		}
 
 /*		if ((tree_nodes[item_index].flags & OPERAND) && (tree_nodes[item_index].flags & EDITABLE))  // expandable?
@@ -667,140 +666,34 @@ void sexp_tree::right_clicked(int mode)
 			menu.EnableMenuItem(ID_SPLIT_LINE, MF_ENABLED);*/
 
 		// change enabled status of 'add' type menu options.
-		add_type = 0;
+		Add_count = state.add_count;
+		if (state.can_add_number) menu.EnableMenuItem(ID_ADD_NUMBER, MF_ENABLED);
+		if (state.can_add_string) menu.EnableMenuItem(ID_ADD_STRING, MF_ENABLED);
 
-		// container multidimensionality
-		if (tree_nodes[item_index].type & SEXPT_CONTAINER_DATA) {
-			// using local var for add count to avoid breaking implicit assumptions about Add_count
-			const int modifier_node = tree_nodes[item_index].child;
-			Assertion(modifier_node != -1,
-				"No modifier found for container data node %s. Please report!",
-				tree_nodes[item_index].text);
-			const int modifier_add_count = count_args(modifier_node);
+		// Enable operators from add data list
+		for (int op_idx : state.add_enabled_op_indices) {
+			menu.EnableMenuItem(Operators[op_idx].value, MF_ENABLED);
+		}
 
-			const auto *p_container = get_sexp_container(tree_nodes[item_index].text);
-			Assertion(p_container,
-				"Found modifier for unknown container %s. Please report!",
-				tree_nodes[item_index].text);
-
-			if (modifier_add_count == 1 && p_container->is_list() &&
-				get_list_modifier(tree_nodes[modifier_node].text) == ListModifier::AT_INDEX) {
-				// only valid value is a list index
-				add_type = OPR_NUMBER;
-				menu.EnableMenuItem(ID_ADD_NUMBER, MF_ENABLED);
-			} else {
-				// container multidimensionality
-				add_type = OPR_STRING;
-
-				// the next thing we want to add could literally be any legal key for any map or the legal entries for a list container
-				// so give the FREDder a hand and offer the list modifiers, but only the FREDder can know if they're relevant
-				list = get_container_multidim_modifiers(item_index);
-
-				if (list) {
-					sexp_list_item *ptr = nullptr;
-
-					int data_idx = 0;
-					ptr = list;
-					while (ptr) {
-						if (ptr->op >= 0) {
-							// enable operators with correct return type
-							menu.EnableMenuItem(Operators[ptr->op].value, MF_ENABLED);
-						} else {
-							// add data
-							if ((data_idx + 3) % 30) {
-								add_data_menu->AppendMenu(MF_STRING | MF_ENABLED, ID_ADD_MENU + data_idx, ptr->text.c_str());
-							} else {
-								add_data_menu->AppendMenu(MF_MENUBARBREAK | MF_STRING | MF_ENABLED, ID_ADD_MENU + data_idx, ptr->text.c_str());
-							}
-						}
-
-						data_idx++;
-						ptr = ptr->next;
-					}
-				}
-
-				menu.EnableMenuItem(ID_ADD_NUMBER, MF_ENABLED);
-				menu.EnableMenuItem(ID_ADD_STRING, MF_ENABLED);
-			}
-		} else if (tree_nodes[item_index].flags & OPERAND)	{
-			add_type = OPR_STRING;
-			int child = tree_nodes[item_index].child;
-			Add_count = count_args(child);
-			op = get_operator_index(tree_nodes[item_index].text);
-			Assert(op >= 0);
-
-			// get listing of valid argument values and add to menus
-			type = query_operator_argument_type(op, Add_count);
-			list = get_listing_opf(type, item_index, Add_count);
-			if (list) {
-				sexp_list_item *ptr;
-
-				int data_idx = 0;
-				ptr = list;
-				while (ptr) {
-					if (ptr->op >= 0) {
-						// enable operators with correct return type
-						menu.EnableMenuItem(Operators[ptr->op].value, MF_ENABLED);
-
+		// Build add data menu items from the data list
+		if (state.add_data_list) {
+			sexp_list_item* ptr = state.add_data_list;
+			int data_idx = 0;
+			while (ptr) {
+				if (ptr->op < 0) {
+					UINT flags = MF_STRING | MF_ENABLED;
+					if (!((data_idx + 3) % 30)) flags |= MF_MENUBARBREAK;
+					if (state.add_data_opf_type == OPF_VARIABLE_NAME) {
+						char buf[128];
+						sprintf(buf, "%s (%s)", Sexp_variables[data_idx].variable_name, Sexp_variables[data_idx].text);
+						add_data_menu->AppendMenu(flags, ID_ADD_MENU + data_idx, buf);
 					} else {
-						UINT flags = MF_STRING | MF_ENABLED;
-
-						if (!((data_idx + 3) % 30)) {
-							flags |= MF_MENUBARBREAK;
-						}
-
-						// add data
-						if (type == OPF_VARIABLE_NAME) {
-							char buf[128];
-							sprintf(buf, "%s (%s)", Sexp_variables[data_idx].variable_name, Sexp_variables[data_idx].text);
-							add_data_menu->AppendMenu(flags, ID_ADD_MENU + data_idx, buf);
-						} else {
-							add_data_menu->AppendMenu(flags, ID_ADD_MENU + data_idx, ptr->text.c_str());
-						}
+						add_data_menu->AppendMenu(flags, ID_ADD_MENU + data_idx, ptr->text.c_str());
 					}
-
-					data_idx++;
-					ptr = ptr->next;
 				}
+				data_idx++;
+				ptr = ptr->next;
 			}
-
-			// special handling for the non-string formats
-			if (type == OPF_NONE) {  // an argument can't be added
-				add_type = 0;
-
-			} else if (type == OPF_NULL) {  // arguments with no return values
-				add_type = OPR_NULL;
-
-			// Goober5000
-			} else if (type == OPF_FLEXIBLE_ARGUMENT) {
-				add_type = OPR_FLEXIBLE_ARGUMENT;
-		
-			} else if (type == OPF_NUMBER) {  // takes numbers
-				add_type = OPR_NUMBER;
-				menu.EnableMenuItem(ID_ADD_NUMBER, MF_ENABLED);
-
-			} else if (type == OPF_POSITIVE) {  // takes non-negative numbers
-				add_type = OPR_POSITIVE;
-				menu.EnableMenuItem(ID_ADD_NUMBER, MF_ENABLED);
-
-			} else if (type == OPF_BOOL) {  // takes true/false bool values
-				add_type = OPR_BOOL;
-
-			} else if (type == OPF_AI_GOAL) {
-				add_type = OPR_AI_GOAL;
-
-			} else if (type == OPF_CONTAINER_VALUE) {
-				// allow both strings and numbers
-				// types are checked in check_sepx_syntax()
-				menu.EnableMenuItem(ID_ADD_NUMBER, MF_ENABLED);
-			}
-
-			// add_type unchanged from above
-			if (add_type == OPR_STRING && !is_container_name_opf_type(type)) {
-				menu.EnableMenuItem(ID_ADD_STRING, MF_ENABLED);
-			}
-
-			list->destroy();
 		}
 
 		// disable operators that do not have arguments available
@@ -812,244 +705,41 @@ void sexp_tree::right_clicked(int mode)
 
 
 		// change enabled status of 'replace' type menu options.
-		replace_type = 0;
+		Replace_count = state.replace_count;
+		Modify_variable = state.modify_variable;
+		if (!state.can_delete) {
+			menu.EnableMenuItem(ID_DELETE, MF_GRAYED);
+		}
+		if (state.can_replace_number) menu.EnableMenuItem(ID_REPLACE_NUMBER, MF_ENABLED);
+		if (state.can_replace_string) menu.EnableMenuItem(ID_REPLACE_STRING, MF_ENABLED);
+
+		// Enable operators from replace data list
+		for (int op_idx : state.replace_enabled_op_indices) {
+			menu.EnableMenuItem(Operators[op_idx].value | OP_REPLACE_FLAG, MF_ENABLED);
+		}
+
+		// Build replace data menu items
+		if (state.replace_data_list) {
+			sexp_list_item* ptr = state.replace_data_list;
+			int data_idx = 0;
+			while (ptr) {
+				if (ptr->op < 0) {
+					if ((data_idx + 3) % 30)
+						replace_data_menu->AppendMenu(MF_STRING | MF_ENABLED, ID_REPLACE_MENU + data_idx, ptr->text.c_str());
+					else
+						replace_data_menu->AppendMenu(MF_MENUBARBREAK | MF_STRING | MF_ENABLED, ID_REPLACE_MENU + data_idx, ptr->text.c_str());
+				}
+				data_idx++;
+				ptr = ptr->next;
+			}
+		}
+
+		// For top-node case, enable matching replace operators
 		int parent = tree_nodes[item_index].parent;
-		if (parent >= 0) {
-			replace_type = OPR_STRING;
-			op = get_operator_index(tree_nodes[parent].text);
-			Assertion(op >= 0 || tree_nodes[parent].type & SEXPT_CONTAINER_DATA,
-				"Encountered unknown SEXP operator %s. Please report!",
-				tree_nodes[parent].text);
-			int first_arg = tree_nodes[parent].child;
-			count = count_args(tree_nodes[parent].child);
-
-			if (op >= 0) {
-				// already at minimum number of arguments?
-				if (count <= Operators[op].min) {
-					menu.EnableMenuItem(ID_DELETE, MF_GRAYED);
-				}
-			} else if ((tree_nodes[parent].type & SEXPT_CONTAINER_DATA) && (item_index == first_arg)) {
-				// a container data node's initial modifier can't be deleted
-				Assertion(tree_nodes[item_index].type & SEXPT_MODIFIER,
-					"Container data %s node's first modifier %s is not a modifier. Please report!",
-					tree_nodes[parent].text,
-					tree_nodes[item_index].text);
-				menu.EnableMenuItem(ID_DELETE, MF_GRAYED);
-			}
-
-			// get arg count of item to replace
-			Replace_count = 0;
-			int temp = first_arg;
-			while (temp != item_index) {
-				Replace_count++;
-				temp = tree_nodes[temp].next;
-
-				// DB - added 3/4/99
-				if(temp == -1){
-					break;
-				}
-			}
-
-			if (op >= 0) {
-				// maybe gray delete
-				for (i = Replace_count + 1; i < count; i++) {
-					if (query_operator_argument_type(op, i - 1) != query_operator_argument_type(op, i)) {
-						menu.EnableMenuItem(ID_DELETE, MF_GRAYED);
-						break;
-					}
-				}
-
-				type = query_operator_argument_type(op, Replace_count); // check argument type at this position
-			} else {
-				Assertion(tree_nodes[parent].type & SEXPT_CONTAINER_DATA,
-					"Unknown SEXP operator %s. Please report!",
-					tree_nodes[parent].text);
-				const auto *p_container = get_sexp_container(tree_nodes[parent].text);
-				Assertion(p_container != nullptr,
-					"Found modifier for unknown container %s. Please report!",
-					tree_nodes[parent].text);
-				type = p_container->opf_type;
-			}
-
-			// special case reset type for ambiguous
-			if (type == OPF_AMBIGUOUS) {
-				type = get_modify_variable_type(parent);
-			}
-
-			// Container modifiers use their own list of possible arguments
-			if (tree_nodes[item_index].type & SEXPT_MODIFIER) {
-				const auto *p_container = get_sexp_container(tree_nodes[parent].text);
-				Assertion(p_container != nullptr,
-					"Found modifier for unknown container %s. Please report!",
-					tree_nodes[parent].text);
-				const int first_modifier = tree_nodes[parent].child;
-				if (Replace_count == 1 && p_container->is_list() &&
-					get_list_modifier(tree_nodes[first_modifier].text) == ListModifier::AT_INDEX) {
-					// only valid value is a list index (number)
-					list = nullptr;
-					replace_type = OPR_NUMBER;
-				} else {
-					list = get_container_modifiers(parent);
-				}
-			} else {
-				list = get_listing_opf(type, parent, Replace_count);
-			}
-
-			// special case don't allow replace data for variable or container names
-			if ((type != OPF_VARIABLE_NAME) && !is_container_name_opf_type(type) && list) {
-				sexp_list_item *ptr;
-
-				int data_idx = 0;
-				ptr = list;
-				while (ptr) {
-					if (ptr->op >= 0) {
-						menu.EnableMenuItem(Operators[ptr->op].value | OP_REPLACE_FLAG, MF_ENABLED);
-
-					} else {
-						if ( (data_idx + 3) % 30)
-							replace_data_menu->AppendMenu(MF_STRING | MF_ENABLED, ID_REPLACE_MENU + data_idx, ptr->text.c_str());
-						else
-							replace_data_menu->AppendMenu(MF_MENUBARBREAK | MF_STRING | MF_ENABLED, ID_REPLACE_MENU + data_idx, ptr->text.c_str());
-					}
-
-					data_idx++;
-					ptr = ptr->next;
-				}
-			}
-
-			if (type == OPF_NONE) {  // takes no arguments
-				replace_type = 0;
-
-			} else if (type == OPF_NUMBER) {  // takes numbers
-				replace_type = OPR_NUMBER;
-				menu.EnableMenuItem(ID_REPLACE_NUMBER, MF_ENABLED);
-
-			} else if (type == OPF_POSITIVE) {  // takes non-negative numbers
-				replace_type = OPR_POSITIVE;
-				menu.EnableMenuItem(ID_REPLACE_NUMBER, MF_ENABLED);
-
-			} else if (type == OPF_BOOL) {  // takes true/false bool values
-				replace_type = OPR_BOOL;
-
-			} else if (type == OPF_NULL) {  // takes operator that doesn't return a value
-				replace_type = OPR_NULL;
-			} else if (type == OPF_AI_GOAL) {
-				replace_type = OPR_AI_GOAL;
-			}
-
-			// Goober5000
-			else if (type == OPF_FLEXIBLE_ARGUMENT) {
-				replace_type = OPR_FLEXIBLE_ARGUMENT;
-			}
-			// Goober5000
-			else if (type == OPF_GAME_SND || type == OPF_FIREBALL || type == OPF_WEAPON_BANK_NUMBER) {
-				// even though these default to strings, we allow replacing them with index values
-				replace_type = OPR_POSITIVE;
-				menu.EnableMenuItem(ID_REPLACE_NUMBER, MF_ENABLED);
-
-			} else if (type == OPF_CONTAINER_VALUE) {
-				// allow strings and numbers
-				// type is checked in check_sexp_syntax()
-				menu.EnableMenuItem(ID_REPLACE_NUMBER, MF_ENABLED);
-			}
-
-			// default to string, except for container names
-			if (replace_type == OPR_STRING && !is_container_name_opf_type(type)) {
-				menu.EnableMenuItem(ID_REPLACE_STRING, MF_ENABLED);
-			}
-
-			if (op >= 0) { // skip when handling "replace container data"
-				// modify string or number if (modify_variable)
-				if (Operators[op].value == OP_MODIFY_VARIABLE) {
-					int modify_type = get_modify_variable_type(parent);
-
-					if (modify_type == OPF_NUMBER) {
-						menu.EnableMenuItem(ID_REPLACE_NUMBER, MF_ENABLED);
-						menu.EnableMenuItem(ID_REPLACE_STRING, MF_GRAYED);
-					}
-					// no change for string type
-				}
-				else if (Operators[op].value == OP_SET_VARIABLE_BY_INDEX) {
-					// it depends on which argument we are modifying
-					// first argument is always a number
-					if (Replace_count == 0) {
-						menu.EnableMenuItem(ID_REPLACE_NUMBER, MF_ENABLED);
-						menu.EnableMenuItem(ID_REPLACE_STRING, MF_GRAYED);
-					}
-					// second argument could be anything
-					else {
-						int modify_type = get_modify_variable_type(parent);
-
-						if (modify_type == OPF_NUMBER) {
-							menu.EnableMenuItem(ID_REPLACE_NUMBER, MF_ENABLED);
-							menu.EnableMenuItem(ID_REPLACE_STRING, MF_GRAYED);
-						}
-						// no change for string type
-					}
-				}
-			}
-
-			if (tree_nodes[item_index].type & SEXPT_MODIFIER) {
-				Assertion(tree_nodes[parent].type & SEXPT_CONTAINER_DATA,
-					"Container modifier found whose parent %s is not a container. Please report!",
-					tree_nodes[parent].text);
-				const int first_modifier_node = tree_nodes[parent].child;
-				Assertion(first_modifier_node != -1,
-					"Container data node named %s has no modifier. Please report!",
-					tree_nodes[parent].text);
-				const auto *p_container = get_sexp_container(tree_nodes[parent].text);
-				Assertion(p_container,
-					"Attempt to get first modifier for unknown container %s. Please report!",
-					tree_nodes[parent].text);
-				const auto &container = *p_container;
-
-				if (Replace_count == 0) {
-					if (container.is_list()) {
-						// the only valid values are either the list modifiers or Replace Variable/Cotnainer Data with string data
-						menu.EnableMenuItem(ID_REPLACE_NUMBER, MF_GRAYED);
-						menu.EnableMenuItem(ID_REPLACE_STRING, MF_GRAYED);
-						menu.EnableMenuItem(ID_EDIT_TEXT, MF_GRAYED);
-					} else if (container.is_map()) {
-						if (any(container.type & ContainerType::STRING_KEYS)) {
-							menu.EnableMenuItem(ID_REPLACE_NUMBER, MF_GRAYED);
-							menu.EnableMenuItem(ID_REPLACE_STRING, MF_ENABLED);
-						} else if (any(container.type & ContainerType::NUMBER_KEYS)) {
-							menu.EnableMenuItem(ID_REPLACE_NUMBER, MF_ENABLED);
-							menu.EnableMenuItem(ID_REPLACE_STRING, MF_GRAYED);
-						} else {
-							UNREACHABLE("Map container with type %d has unknown key type", (int)container.type);
-						}
-					} else {
-						UNREACHABLE("Unknown container type %d", (int)container.type);
-					}
-				} else if (Replace_count == 1 && container.is_list() &&
-						   get_list_modifier(tree_nodes[first_modifier_node].text) ==
-							   ListModifier::AT_INDEX) {
-					// only valid value is a list index
-					menu.EnableMenuItem(ID_REPLACE_NUMBER, MF_ENABLED);
-					menu.EnableMenuItem(ID_REPLACE_STRING, MF_GRAYED);
-				} else {
-					// multidimensional modifiers can be anything, including possibly a list modifier
-					// the value can be validated only at runtime (i.e., in-mission)
-					menu.EnableMenuItem(ID_REPLACE_NUMBER, MF_ENABLED);
-					menu.EnableMenuItem(ID_REPLACE_STRING, MF_ENABLED);
-				}
-			}
-
-			list->destroy();
-
-		} else {  // top node, so should be a Boolean type.
-			if (m_mode == MODE_EVENTS) {  // return type should be null
-				replace_type = OPR_NULL;
-				for (j=0; j<(int)Operators.size(); j++)
-					if (query_operator_return_type(j) == OPR_NULL)
-						menu.EnableMenuItem(Operators[j].value | OP_REPLACE_FLAG, MF_ENABLED);
-
-			} else {
-				replace_type = OPR_BOOL;
-				for (j=0; j<(int)Operators.size(); j++)
-					if (query_operator_return_type(j) == OPR_BOOL)
-						menu.EnableMenuItem(Operators[j].value | OP_REPLACE_FLAG, MF_ENABLED);
+		if (parent < 0) {
+			for (j=0; j<(int)Operators.size(); j++) {
+				if (query_operator_return_type(j) == state.replace_type)
+					menu.EnableMenuItem(Operators[j].value | OP_REPLACE_FLAG, MF_ENABLED);
 			}
 		}
 
@@ -1062,53 +752,15 @@ void sexp_tree::right_clicked(int mode)
 
 
 		// change enabled status of 'insert' type menu options.
-		z = tree_nodes[item_index].parent;
-		Assert(z >= -1);
-		if (z != -1) {
-			op = get_operator_index(tree_nodes[z].text);
-			Assertion(op != -1 || tree_nodes[z].type & SEXPT_CONTAINER_DATA,
-				"Encountered unknown SEXP operator %s. Please report!",
-				tree_nodes[z].text);
-			j = tree_nodes[z].child;
-			count = 0;
-			while (j != item_index) {
-				count++;
-				j = tree_nodes[j].next;
-			}
-
-			if (op >= 0) {
-				type = query_operator_argument_type(op, count);
-			} else {
-				Assertion(tree_nodes[z].type & SEXPT_CONTAINER_DATA,
-					"Unknown SEXP operator %s. Please report!",
-					tree_nodes[z].text);
-				const auto *p_container = get_sexp_container(tree_nodes[z].text);
-				Assertion(p_container != nullptr,
-					"Found modifier for unknown container %s. Please report!",
-					tree_nodes[z].text);
-				type = p_container->opf_type;
-			}
-		} else {
-			if (m_mode == MODE_EVENTS)
-				type = OPF_NULL;
-			else
-				type = OPF_BOOL;
-		}
-
 		for (j=0; j<(int)Operators.size(); j++) {
 			z = query_operator_return_type(j);
-			if (!sexp_query_type_match(type, z) || (Operators[j].min < 1))
+			if (!sexp_query_type_match(state.insert_opf_type, z) || (Operators[j].min < 1))
 				menu.EnableMenuItem(Operators[j].value | OP_INSERT_FLAG, MF_GRAYED);
 
 			z = query_operator_argument_type(j, 0);
-			if ((type == OPF_NUMBER) && (z == OPF_POSITIVE))
-				z = OPF_NUMBER;
-
-			// Goober5000's number hack
-			if ((type == OPF_POSITIVE) && (z == OPF_NUMBER))
-				z = OPF_POSITIVE;
-
-			if (z != type)
+			if ((state.insert_opf_type == OPF_NUMBER) && (z == OPF_POSITIVE)) z = OPF_NUMBER;
+			if ((state.insert_opf_type == OPF_POSITIVE) && (z == OPF_NUMBER)) z = OPF_POSITIVE;
+			if (z != state.insert_opf_type)
 				menu.EnableMenuItem(Operators[j].value | OP_INSERT_FLAG, MF_GRAYED);
 		}
 
@@ -1121,112 +773,26 @@ void sexp_tree::right_clicked(int mode)
 
 
 		// disable non campaign operators if in campaign mode
-		for (j=0; j<(int)Operators.size(); j++) {
-			z = 0;
-			if (m_mode == MODE_CAMPAIGN) {
-				if (!usable_in_campaign(Operators[j].value))
-					z = 1;
-			}
-
-			if (z) {
-				menu.EnableMenuItem(Operators[j].value, MF_GRAYED);
-				menu.EnableMenuItem(Operators[j].value | OP_REPLACE_FLAG, MF_GRAYED);
-				menu.EnableMenuItem(Operators[j].value | OP_INSERT_FLAG, MF_GRAYED);
-			}
-		}
-
-		if ((Sexp_clipboard > -1) && (Sexp_nodes[Sexp_clipboard].type != SEXP_NOT_USED)) {
-			Assert(Sexp_nodes[Sexp_clipboard].subtype != SEXP_ATOM_LIST);
-			Assertion(Sexp_nodes[Sexp_clipboard].subtype != SEXP_ATOM_CONTAINER_NAME,
-				"Attempt to use container name %s from SEXP clipboard. Please report!",
-				Sexp_nodes[Sexp_clipboard].text);
-
-			if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_OPERATOR) {
-				j = get_operator_const(CTEXT(Sexp_clipboard));
-				Assert(j);
-				z = query_operator_return_type(j);
-
-				if ((z == OPR_POSITIVE) && (replace_type == OPR_NUMBER))
-					z = OPR_NUMBER;
-
-				// Goober5000's number hack
-				if ((z == OPR_NUMBER) && (replace_type == OPR_POSITIVE))
-					z = OPR_POSITIVE;
-
-				if (replace_type == z)
-					menu.EnableMenuItem(ID_EDIT_PASTE, MF_ENABLED);
-
-				z = query_operator_return_type(j);
-				if ((z == OPR_POSITIVE) && (add_type == OPR_NUMBER))
-					z = OPR_NUMBER;
-
-				if (add_type == z)
-					menu.EnableMenuItem(ID_EDIT_PASTE_SPECIAL, MF_ENABLED);
-
-			} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_CONTAINER_DATA) {
-				// TODO: check for strictly typed container keys/data
-				const auto *p_container = get_sexp_container(Sexp_nodes[Sexp_clipboard].text);
-				// if-check in case the container was renamed/deleted after the container data was cut/copied
-				if (p_container != nullptr) {
-					const auto &container = *p_container;
-					if (any(container.type & ContainerType::NUMBER_DATA)) {
-						// there's no way to check for OPR_POSITIVE, since the value
-						// is known only in-mission, so we'll handle OPR_NUMBER only
-						if (replace_type == OPR_NUMBER)
-							menu.EnableMenuItem(ID_EDIT_PASTE, MF_ENABLED);
-						if (add_type == OPR_NUMBER)
-							menu.EnableMenuItem(ID_EDIT_PASTE_SPECIAL, MF_ENABLED);
-					} else if (any(container.type & ContainerType::STRING_DATA)) {
-						if (replace_type == OPR_STRING && !is_container_name_opf_type(type))
-							menu.EnableMenuItem(ID_EDIT_PASTE, MF_ENABLED);
-						if (add_type == OPR_STRING && !is_container_name_opf_type(type))
-							menu.EnableMenuItem(ID_EDIT_PASTE_SPECIAL, MF_ENABLED);
-					} else {
-						UNREACHABLE("Unknown container data type %d", (int)container.type);
-					}
+		if (state.campaign_mode) {
+			for (j=0; j<(int)Operators.size(); j++) {
+				if (!usable_in_campaign(Operators[j].value)) {
+					menu.EnableMenuItem(Operators[j].value, MF_GRAYED);
+					menu.EnableMenuItem(Operators[j].value | OP_REPLACE_FLAG, MF_GRAYED);
+					menu.EnableMenuItem(Operators[j].value | OP_INSERT_FLAG, MF_GRAYED);
 				}
-
-			} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_NUMBER) {
-				if ((replace_type == OPR_POSITIVE) && (atoi(CTEXT(Sexp_clipboard)) > -1))
-					menu.EnableMenuItem(ID_EDIT_PASTE, MF_ENABLED);
-
-				else if (replace_type == OPR_NUMBER)
-					menu.EnableMenuItem(ID_EDIT_PASTE, MF_ENABLED);
-
-				if ((add_type == OPR_POSITIVE) && (atoi(CTEXT(Sexp_clipboard)) > -1))
-					menu.EnableMenuItem(ID_EDIT_PASTE_SPECIAL, MF_ENABLED);
-
-				else if (add_type == OPR_NUMBER)
-					menu.EnableMenuItem(ID_EDIT_PASTE_SPECIAL, MF_ENABLED);
-
-			} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_STRING) {
-				if (replace_type == OPR_STRING && !is_container_name_opf_type(type))
-					menu.EnableMenuItem(ID_EDIT_PASTE, MF_ENABLED);
-
-				if (add_type == OPR_STRING && !is_container_name_opf_type(type))
-					menu.EnableMenuItem(ID_EDIT_PASTE_SPECIAL, MF_ENABLED);
-
-			} else
-				Int3();  // unknown and/or invalid sexp type
+			}
 		}
 
-		if (!(menu.GetMenuState(ID_DELETE, MF_BYCOMMAND) & MF_GRAYED))
-			menu.EnableMenuItem(ID_EDIT_CUT, MF_ENABLED);
+		if (state.can_paste) menu.EnableMenuItem(ID_EDIT_PASTE, MF_ENABLED);
+		if (state.can_paste_add) menu.EnableMenuItem(ID_EDIT_PASTE_SPECIAL, MF_ENABLED);
 
-		// all of the following restrictions may be revisited in the future
-		if (tree_nodes[item_index].type & (SEXPT_MODIFIER | SEXPT_CONTAINER_NAME)) {
-			// modifiers and container names don't support cut/copy/paste
-			menu.EnableMenuItem(ID_EDIT_CUT, MF_GRAYED);
-			menu.EnableMenuItem(ID_EDIT_COPY, MF_GRAYED);
-			menu.EnableMenuItem(ID_EDIT_PASTE, MF_GRAYED);
-		}
-		// can't use else-if here, because container data is a valid modifier
-		if (tree_nodes[item_index].type & SEXPT_CONTAINER_DATA) {
-			// container data nodes don't support add-pasting modifiers
-			menu.EnableMenuItem(ID_EDIT_PASTE_SPECIAL, MF_GRAYED);
-		}
+		if (state.can_cut) menu.EnableMenuItem(ID_EDIT_CUT, MF_ENABLED);
+		if (!state.can_copy) menu.EnableMenuItem(ID_EDIT_COPY, MF_GRAYED);
+		if (!state.can_paste) menu.EnableMenuItem(ID_EDIT_PASTE, MF_GRAYED);
+		if (!state.can_paste_add) menu.EnableMenuItem(ID_EDIT_PASTE_SPECIAL, MF_GRAYED);
 
 		gray_menu_tree(popup_menu);
+		state.cleanup();
 		popup_menu->TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON, mouse.x, mouse.y, this);
 	}
 }
