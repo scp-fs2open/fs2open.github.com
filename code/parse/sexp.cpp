@@ -2981,7 +2981,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 					int valid = 0;
 
 					// <any friendly>, etc.
-					if (get_special_anchor(CTEXT(node)) >= 0)
+					if (get_special_anchor(CTEXT(node)).isValid())
 					{
 						valid = 1;
 					}
@@ -23595,7 +23595,7 @@ void sexp_set_support_ship(int n)
 	else
 	{
 		// find the anchor
-		The_mission.support_ships.arrival_anchor = ship_registry_get_index(CTEXT(n));
+		The_mission.support_ships.arrival_anchor = anchor_t(ship_registry_get_index(CTEXT(n)));
 	}
 
 	// get departure location
@@ -23621,7 +23621,7 @@ void sexp_set_support_ship(int n)
 	else
 	{
 		// find the anchor
-		The_mission.support_ships.departure_anchor = ship_registry_get_index(CTEXT(n));
+		The_mission.support_ships.departure_anchor = anchor_t(ship_registry_get_index(CTEXT(n)));
 	}
 
 	// get ship class
@@ -23662,7 +23662,7 @@ void sexp_set_support_ship(int n)
 // Goober5000 - set stuff for arriving ships or wings
 void sexp_set_arrival_info(int node)
 {
-	int arrival_anchor, arrival_mask, arrival_distance, arrival_delay, n = node;
+	int arrival_mask, arrival_distance, arrival_delay, n = node;
 	bool show_warp, adjust_warp_when_docked, is_nan, is_nan_forever;
 	object_ship_wing_point_team oswpt;
 
@@ -23683,7 +23683,7 @@ void sexp_set_arrival_info(int node)
 	n = CDR(n);
 
 	// get arrival anchor
-	arrival_anchor = -1;
+	anchor_t arrival_anchor;
 	if ((n < 0) || !stricmp(CTEXT(n), "<no anchor>"))
 	{
 		// if no anchor, set arrival location to hyperspace
@@ -23692,7 +23692,7 @@ void sexp_set_arrival_info(int node)
 	else
 	{
 		// find the anchor
-		arrival_anchor = ship_registry_get_index(CTEXT(n));
+		arrival_anchor = anchor_t(ship_registry_get_index(CTEXT(n)));
 	}
 	n = CDR(n);
 
@@ -23762,7 +23762,7 @@ void sexp_set_arrival_info(int node)
 // Goober5000 - set stuff for departing ships or wings
 void sexp_set_departure_info(int node)
 {
-	int departure_anchor, departure_mask, departure_delay, n = node;
+	int departure_mask, departure_delay, n = node;
 	bool show_warp, adjust_warp_when_docked, is_nan, is_nan_forever;
 	object_ship_wing_point_team oswpt;
 
@@ -23783,7 +23783,7 @@ void sexp_set_departure_info(int node)
 	n = CDR(n);
 
 	// get departure anchor
-	departure_anchor = -1;
+	anchor_t departure_anchor;
 	if ((n < 0) || !stricmp(CTEXT(n), "<no anchor>"))
 	{
 		// if no anchor, set departure location to hyperspace
@@ -23792,7 +23792,7 @@ void sexp_set_departure_info(int node)
 	else
 	{
 		// find the anchor
-		departure_anchor = ship_registry_get_index(CTEXT(n));
+		departure_anchor = anchor_t(ship_registry_get_index(CTEXT(n)));
 	}
 	n = CDR(n);
 

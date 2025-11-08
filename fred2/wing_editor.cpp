@@ -382,7 +382,7 @@ void wing_editor::initialize_data_safe(int full_update)
 		// of the drop-down list.
 		if (m_arrival_target >= 0)
 		{
-			if (m_arrival_target & SPECIAL_ARRIVAL_ANCHOR_FLAG)
+			if (m_arrival_target & ANCHOR_SPECIAL_ARRIVAL)
 			{
 				// figure out what the box represents this as
 				char tmp[NAME_LENGTH + 15];
@@ -821,7 +821,7 @@ void wing_editor::update_data_safe()
 		MODIFY(Wings[cur_wing].arrival_anchor, target_to_anchor(i));
 
 		// when arriving near or in front of a ship, be sure that we are far enough away from it!!!
-		if (((m_arrival_location != static_cast<int>(ArrivalLocation::AT_LOCATION)) && (m_arrival_location != static_cast<int>(ArrivalLocation::FROM_DOCK_BAY))) && (i >= 0) && !(i & SPECIAL_ARRIVAL_ANCHOR_FLAG)) {
+		if (((m_arrival_location != static_cast<int>(ArrivalLocation::AT_LOCATION)) && (m_arrival_location != static_cast<int>(ArrivalLocation::FROM_DOCK_BAY))) && (i >= 0) && !(i & ANCHOR_SPECIAL_ARRIVAL)) {
 			d = int(std::min(MIN_TARGET_ARRIVAL_DISTANCE, MIN_TARGET_ARRIVAL_MULTIPLIER * Objects[Ships[i].objnum].radius));
 			if ((Wings[cur_wing].arrival_distance < d) && (Wings[cur_wing].arrival_distance > -d)) {
 				if (!bypass_errors) {

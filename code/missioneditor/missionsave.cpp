@@ -3559,10 +3559,10 @@ int Fred_mission_save::save_objects()
 				fout("\n$Arrival Anchor:");
 			}
 
-			z = shipp->arrival_anchor;
+			z = shipp->arrival_anchor.value();
 			if (z < 0) {
 				fout(" <error>");
-			} else if (z & SPECIAL_ARRIVAL_ANCHOR_FLAG) {
+			} else if (z & ANCHOR_SPECIAL_ARRIVAL) {
 				// get name
 				char tmp[NAME_LENGTH + 15];
 				stuff_special_arrival_anchor_name(tmp, z, save_config.save_format == MissionFormat::RETAIL);
@@ -4929,10 +4929,10 @@ int Fred_mission_save::save_wings()
 			else
 				fout("\n$Arrival Anchor:");
 
-			int z = w.arrival_anchor;
+			int z = w.arrival_anchor.value();
 			if (z < 0) {
 				fout(" <error>");
-			} else if (z & SPECIAL_ARRIVAL_ANCHOR_FLAG) {
+			} else if (z & ANCHOR_SPECIAL_ARRIVAL) {
 				// get name
 				char tmp[NAME_LENGTH + 15];
 				stuff_special_arrival_anchor_name(tmp, z, save_config.save_format == MissionFormat::RETAIL);

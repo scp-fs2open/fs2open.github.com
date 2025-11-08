@@ -25,6 +25,7 @@
 #include "sound/sound.h"
 #include "mission/mission_flags.h"
 #include "nebula/volumetrics.h"
+#include "ship/anchor_t.h"
 #include "stats/scoring.h"
 
 //WMC - This should be here
@@ -40,16 +41,11 @@ enum class DepartureLocation;
 
 #define DEFAULT_AMBIENT_LIGHT_LEVEL			0x00787878
 
-// arrival anchor types
-// mask should be high enough to avoid conflicting with ship anchors
-#define SPECIAL_ARRIVAL_ANCHOR_FLAG				0x1000
-#define SPECIAL_ARRIVAL_ANCHOR_PLAYER_FLAG		0x0100
-
 #define MIN_TARGET_ARRIVAL_DISTANCE             500.0f // float because that's how FRED does the math
 #define MIN_TARGET_ARRIVAL_MULTIPLIER           2.0f // minimum distance is 2 * target radius, but at least 500
 
-int get_special_anchor(const char *name);
-void check_anchor_for_hangar_bay(SCP_string &message, SCP_set<int> &anchors_checked, int anchor, const char *other_name, bool other_is_ship, bool is_arrival);
+anchor_t get_special_anchor(const char *name);
+void check_anchor_for_hangar_bay(SCP_string &message, SCP_set<anchor_t> &anchors_checked, anchor_t anchor, const char *other_name, bool other_is_ship, bool is_arrival);
 
 // MISSION_VERSION should be the earliest version of FSO that can load the current mission format without
 // requiring version-specific comments.  It should be updated whenever the format changes, but it should
@@ -102,19 +98,22 @@ inline const std::vector<std::pair<SCP_string, int>> Mission_event_teams_tvt = [
 }();
 
 // Goober5000
-typedef struct support_ship_info {
-	ArrivalLocation		arrival_location;				// arrival location
-	int		arrival_anchor;					// arrival anchor
-	DepartureLocation	departure_location;				// departure location
-	int		departure_anchor;				// departure anchor
-	float	max_hull_repair_val;			// % of a ship's hull that can be repaired -C
-	float	max_subsys_repair_val;			// same thing, except for subsystems -C
-	int		max_support_ships;				// max number of consecutive support ships
-	int		max_concurrent_ships;			// max number of concurrent support ships in mission per team
-	int		ship_class;						// ship class of support ship
-	int		tally;							// number of support ships so far
-	int		support_available_for_species;	// whether support is available for a given species (this is a bitfield)
-} support_ship_info;
+struct support_ship_info
+{
+	ArrivalLocation     arrival_location;   // arrival location
+	anchor_t            arrival_anchor;     // arrival anchor
+	DepartureLocation   departure_location; // departure location
+	anchor_t            departure_anchor;   // departure anchor
+	float   max_hull_repair_val;            // % of a ship's hull that can be repaired -C
+	float   max_subsys_repair_val;          // same thing, except for subsystems -C
+	int     max_support_ships;              // max number of consecutive support ships
+	int     max_concurrent_ships;           // max number of concurrent support ships in mission per team
+	int     ship_class;                     // ship class of support ship
+	int     tally;                          // number of support ships so far
+	int     support_available_for_species;  // whether support is available for a given species (this is a bitfield)
+
+	void reset();
+};
 
 // movie type defines
 // If you add one here, you must also add a description to missioncutscenedlg.cpp for FRED
@@ -448,13 +447,13 @@ public:
 
 	ArrivalLocation arrival_location = ArrivalLocation::AT_LOCATION;
 	int	arrival_distance = 0;					// used when arrival location is near or in front of some ship
-	int	arrival_anchor = -1;						// ship registry entry used for anchoring an arrival point
+	anchor_t arrival_anchor = anchor_t::invalid();	// ship registry entry used for anchoring an arrival point
 	int arrival_path_mask = 0;					// Goober5000
 	int	arrival_cue = -1;				//	Index in Sexp_nodes of this sexp.
 	int	arrival_delay = 0;
 
 	DepartureLocation departure_location = DepartureLocation::AT_LOCATION;
-	int	departure_anchor = -1;
+	anchor_t departure_anchor = anchor_t::invalid();
 	int departure_path_mask = 0;				// Goober5000
 	int	departure_cue = -1;			//	Index in Sexp_nodes of this sexp.
 	int	departure_delay = 0;

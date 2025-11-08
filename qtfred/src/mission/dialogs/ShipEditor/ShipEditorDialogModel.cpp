@@ -12,6 +12,7 @@
 #include "iff_defs/iff_defs.h"
 #include "jumpnode/jumpnode.h"
 #include "mission/missionmessage.h"
+#include "missioneditor/common.h"
 
 #include <globalincs/linklist.h>
 #include <hud/hudsquadmsg.h>
@@ -824,7 +825,7 @@ bool ShipEditorDialogModel::update_ship(int ship)
 			// greater than 2*radius of target.
 			if (((_m_arrival_location != static_cast<int>(ArrivalLocation::FROM_DOCK_BAY)) &&
 					(_m_arrival_location != static_cast<int>(ArrivalLocation::AT_LOCATION))) &&
-				(_m_arrival_target >= 0) && !(_m_arrival_target & SPECIAL_ARRIVAL_ANCHOR_FLAG)) {
+				(_m_arrival_target >= 0) && !(_m_arrival_target & ANCHOR_SPECIAL_ARRIVAL)) {
 				d = int(std::min(500.0f, 2.0f * Objects[Ships[ship].objnum].radius));
 				if ((Ships[ship].arrival_distance < d) && (Ships[ship].arrival_distance > -d)) {
 					sprintf(str,

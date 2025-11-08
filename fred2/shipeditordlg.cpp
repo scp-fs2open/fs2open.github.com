@@ -806,7 +806,7 @@ void CShipEditorDlg::initialize_data(int full_update)
 	// of the drop-down list.
 	if (m_arrival_target >= 0)
 	{
-		if (m_arrival_target & SPECIAL_ARRIVAL_ANCHOR_FLAG)
+		if (m_arrival_target & ANCHOR_SPECIAL_ARRIVAL)
 		{
 			// figure out what the box represents this as
 			char tmp[NAME_LENGTH + 15];
@@ -1412,7 +1412,7 @@ int CShipEditorDlg::update_ship(int ship)
 
 			// if the arrival is not hyperspace or docking bay -- force arrival distance to be
 			// greater than 2*radius of target.
-			if (((m_arrival_location != static_cast<int>(ArrivalLocation::FROM_DOCK_BAY)) && (m_arrival_location != static_cast<int>(ArrivalLocation::AT_LOCATION))) && (z >= 0) && !(z & SPECIAL_ARRIVAL_ANCHOR_FLAG)) {
+			if (((m_arrival_location != static_cast<int>(ArrivalLocation::FROM_DOCK_BAY)) && (m_arrival_location != static_cast<int>(ArrivalLocation::AT_LOCATION))) && (z >= 0) && !(z & ANCHOR_SPECIAL_ARRIVAL)) {
 			d = int(std::min(500.0f, 2.0f * Objects[Ships[ship].objnum].radius));
 				if ((Ships[ship].arrival_distance < d) && (Ships[ship].arrival_distance > -d)) {
 					str.Format("Ship must arrive at least %d meters away from target.\n"

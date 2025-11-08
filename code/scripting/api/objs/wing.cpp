@@ -310,7 +310,7 @@ ADE_VIRTVAR(DepartureLocation, l_Wing, "string", "The wing's departure location"
 	return wing_getset_location_helper(L, &wing::departure_location, "Departure", Departure_location_names, MAX_DEPARTURE_NAMES);
 }
 
-static int wing_getset_anchor_helper(lua_State* L, int wing::* field)
+static int wing_getset_anchor_helper(lua_State* L, anchor_t wing::* field)
 {
 	int wingnum;
 	const char* s = nullptr;
@@ -322,7 +322,7 @@ static int wing_getset_anchor_helper(lua_State* L, int wing::* field)
 
 	if (ADE_SETTING_VAR && s != nullptr)
 	{
-		Wings[wingnum].*field = (stricmp(s, "<no anchor>") == 0) ? -1 : ship_registry_get_index(s);
+		Wings[wingnum].*field = (stricmp(s, "<no anchor>") == 0) ? anchor_t::invalid() : anchor_t(ship_registry_get_index(s));
 	}
 
 	auto anchor_entry = ship_registry_get(Wings[wingnum].*field);

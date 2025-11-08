@@ -1580,6 +1580,7 @@ add_file_folder("Scripting\\\\Lua\\\\BitOp"
 
 # Ship files
 add_file_folder("Ship"
+	ship/anchor_t.h
 	ship/afterburner.cpp
 	ship/afterburner.h
 	ship/awacs.cpp

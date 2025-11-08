@@ -1272,7 +1272,7 @@ ADE_VIRTVAR(DepartureLocation, l_Ship, "string", "The ship's departure location"
 	return ship_getset_location_helper(L, &ship::departure_location, "Departure", Departure_location_names, MAX_DEPARTURE_NAMES);
 }
 
-static int ship_getset_anchor_helper(lua_State* L, int ship::* field)
+static int ship_getset_anchor_helper(lua_State* L, anchor_t ship::* field)
 {
 	object_h* objh;
 	const char* s = nullptr;
@@ -1286,7 +1286,7 @@ static int ship_getset_anchor_helper(lua_State* L, int ship::* field)
 
 	if (ADE_SETTING_VAR && s != nullptr)
 	{
-		shipp->*field = (stricmp(s, "<no anchor>") == 0) ? -1 : ship_registry_get_index(s);
+		shipp->*field = (stricmp(s, "<no anchor>") == 0) ? anchor_t::invalid() : anchor_t(ship_registry_get_index(s));
 	}
 
 	auto anchor_entry = ship_registry_get(shipp->*field);

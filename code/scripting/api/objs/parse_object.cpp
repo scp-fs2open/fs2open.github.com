@@ -501,7 +501,7 @@ ADE_VIRTVAR(DepartureLocation, l_ParseObject, "string", "The ship's departure lo
 	return parse_object_getset_location_helper(L, &p_object::departure_location, "Departure", Departure_location_names, MAX_DEPARTURE_NAMES);
 }
 
-static int parse_object_getset_anchor_helper(lua_State* L, int p_object::* field)
+static int parse_object_getset_anchor_helper(lua_State* L, anchor_t p_object::* field)
 {
 	parse_object_h* poh;
 	const char* s = nullptr;
@@ -513,7 +513,7 @@ static int parse_object_getset_anchor_helper(lua_State* L, int p_object::* field
 
 	if (ADE_SETTING_VAR && s != nullptr)
 	{
-		poh->getObject()->*field = (stricmp(s, "<no anchor>") == 0) ? -1 : ship_registry_get_index(s);
+		poh->getObject()->*field = (stricmp(s, "<no anchor>") == 0) ? anchor_t::invalid() : anchor_t(ship_registry_get_index(s));
 	}
 
 	auto anchor_entry = ship_registry_get(poh->getObject()->*field);
