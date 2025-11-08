@@ -502,15 +502,17 @@ void sexp_tree::right_clicked(int mode)
 		// get item_index
 		update_item(h);
 
+		auto state = _model.compute_context_menu_state(mode);
+
 		// annotations only work in the event editor
-		if (m_mode == MODE_EVENTS)
-		{
+		if (state.can_edit_comment) {
 			menu.EnableMenuItem(ID_EDIT_COMMENT, MF_ENABLED);
-			menu.EnableMenuItem(ID_EDIT_BG_COLOR, MF_ENABLED);
-		}
-		else
-		{
+		} else {
 			menu.EnableMenuItem(ID_EDIT_COMMENT, MF_GRAYED);
+		}
+		if (state.can_edit_bg_color) {
+			menu.EnableMenuItem(ID_EDIT_BG_COLOR, MF_ENABLED);
+		} else {
 			menu.EnableMenuItem(ID_EDIT_BG_COLOR, MF_GRAYED);
 		}
 
