@@ -638,8 +638,8 @@ bool post_process_mission(mission *pm);
 int allocate_subsys_status();
 void parse_common_object_data(p_object	*objp);
 void parse_asteroid_fields(mission *pm);
-int mission_set_arrival_location(int anchor, ArrivalLocation location, int distance, int objnum, int path_mask, vec3d *new_pos, matrix *new_orient);
-int get_anchor(const char *name);
+int mission_set_arrival_location(anchor_t anchor, ArrivalLocation location, int distance, int objnum, int path_mask, vec3d *new_pos, matrix *new_orient);
+anchor_t get_anchor(const char *name);
 void mission_parse_set_up_initial_docks();
 void mission_parse_set_arrival_locations();
 void mission_set_wing_arrival_location( wing *wingp, int num_to_set );
@@ -4408,7 +4408,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, 
 		// if wing is coming from docking bay, then be sure that ship we are arriving from actually exists
 		// (or will exist).
 		if ( wingp->arrival_location == ArrivalLocation::FROM_DOCK_BAY ) {
-			Assert( wingp->arrival_anchor >= 0 );
+			Assert( wingp->arrival_anchor.isValid() );
 			auto anchor_ship_entry = ship_registry_get(wingp->arrival_anchor);
 
 			// see if ship is yet to arrive.  If so, then return 0 so we can evaluate again later.
@@ -5118,17 +5118,21 @@ void parse_wings(mission* pm)
 }
 
 // Goober5000
-void resolve_and_check_anchor(bool check_for_hangar, SCP_set<int> &anchors_checked, int &anchor, const char *other_name, bool other_is_ship, bool is_arrival)
+void resolve_and_check_anchor(bool check_for_hangar, SCP_set<anchor_t, util::ID_Less> &anchors_checked, anchor_t &anchor, const char *other_name, bool other_is_ship, bool is_arrival)
 {
-	if ((anchor < 0) || (anchor & SPECIAL_ARRIVAL_ANCHOR_FLAG))
+	if (!anchor.isValid())
 		return;
+	int anchor_val = anchor.value();
 
-	if (Parse_names.in_bounds(anchor))
-		anchor = ship_registry_get_index(Parse_names[anchor]);
-	else
-		anchor = -1;
+	// if it's a parse names index, convert it to a ship registry index
+	if (anchor_val & ANCHOR_IS_PARSE_NAMES_INDEX)
+	{
+		anchor_val &= ~ANCHOR_IS_PARSE_NAMES_INDEX;
+		anchor_val = ship_registry_get_index(Parse_names[anchor_val]);
+		anchor = anchor_t(anchor_val);
+	}
 
-	if (check_for_hangar && anchor >= 0)
+	if (check_for_hangar)
 	{
 		SCP_string message;
 		check_anchor_for_hangar_bay(message, anchors_checked, anchor, other_name, other_is_ship, is_arrival);
@@ -5144,7 +5148,7 @@ void resolve_and_check_anchor(bool check_for_hangar, SCP_set<int> &anchors_check
  */
 void post_process_parse_names()
 {
-	SCP_set<int> anchors_checked;
+	SCP_set<anchor_t, util::ID_Less> anchors_checked;
 
 	// check the parse names
 	for (const auto &parse_name : Parse_names)
@@ -5172,7 +5176,7 @@ void post_process_parse_names()
 }
 
 // Goober5000
-void resolve_path_masks(int anchor, int *path_mask)
+void resolve_path_masks(anchor_t anchor, int *path_mask)
 {
 	path_restriction_t *prp;
 
@@ -5192,7 +5196,7 @@ void resolve_path_masks(int anchor, int *path_mask)
 		int j, bay_path, modelnum;
 
 		// get anchor ship
-		Assert(!(anchor & SPECIAL_ARRIVAL_ANCHOR_FLAG));
+		Assert(anchor.isValid() && !(anchor.value() & ANCHOR_SPECIAL_ARRIVAL));
 		auto anchor_ship_entry = ship_registry_get(anchor);
 
 		// Load the anchor ship model with subsystems and all; it'll need to be done for this mission anyway
@@ -6950,8 +6954,8 @@ void mission::Reset()
 	memset(&Ignored_keys, 0, sizeof(int)*CCFG_MAX);
 
 	memset( &support_ships, 0, sizeof( support_ships ) );
-	support_ships.arrival_anchor = -1;
-	support_ships.departure_anchor = -1;
+	support_ships.arrival_anchor = anchor_t::invalid();
+	support_ships.departure_anchor = anchor_t::invalid();
 	support_ships.max_subsys_repair_val = 100.0f;	//ASSUMPTION: full repair capabilities
 	support_ships.max_support_ships = -1;	// infinite
 	support_ships.max_concurrent_ships = 1;
@@ -7666,7 +7670,7 @@ bool mission_check_ship_yet_to_arrive(const char *name)
  * Sets the arrival location of a parse object according to the arrival location of the object.
  * @return objnum of anchor ship if there is one, -1 otherwise.
  */
-int mission_set_arrival_location(int anchor, ArrivalLocation location, int dist, int objnum, int path_mask, vec3d *new_pos, matrix *new_orient)
+int mission_set_arrival_location(anchor_t anchor, ArrivalLocation location, int dist, int objnum, int path_mask, vec3d *new_pos, matrix *new_orient)
 {
 	int shipnum, anchor_objnum;
 	vec3d anchor_pos, rand_vec, new_fvec;
@@ -7675,20 +7679,20 @@ int mission_set_arrival_location(int anchor, ArrivalLocation location, int dist,
 	if ( location == ArrivalLocation::AT_LOCATION )
 		return -1;
 
-	Assert(anchor >= 0);
-	if (anchor < 0)
+	Assert(anchor.isValid());
+	if (!anchor.isValid())
 		return -1;	// should never happen, but if it does, fail gracefully
 
 	// this ship might possibly arrive at another location.  The location is based on the
 	// proximity of some ship (and some other special tokens)
-	if (anchor & SPECIAL_ARRIVAL_ANCHOR_FLAG)
+	if (anchor.value() & ANCHOR_SPECIAL_ARRIVAL)
 	{
-		bool get_players = (anchor & SPECIAL_ARRIVAL_ANCHOR_PLAYER_FLAG) > 0;
+		bool get_players = (anchor.value() & ANCHOR_SPECIAL_ARRIVAL_PLAYER) > 0;
 
 		// filter out iff
-		int iff_index = anchor;
-		iff_index &= ~SPECIAL_ARRIVAL_ANCHOR_FLAG;
-		iff_index &= ~SPECIAL_ARRIVAL_ANCHOR_PLAYER_FLAG;
+		int iff_index = anchor.value();
+		iff_index &= ~ANCHOR_SPECIAL_ARRIVAL;
+		iff_index &= ~ANCHOR_SPECIAL_ARRIVAL_PLAYER;
 
 		// get ship
 		shipnum = ship_get_random_team_ship(iff_get_mask(iff_index), get_players ? SHIP_GET_ONLY_PLAYERS : SHIP_GET_ANY_SHIP);
@@ -7893,7 +7897,7 @@ int mission_did_ship_arrive(p_object *objp, bool force_arrival)
 		// check to see if this ship is to arrive via a docking bay.  If so, and the ship to arrive from
 		// doesn't exist, don't create.
 		if ( objp->arrival_location == ArrivalLocation::FROM_DOCK_BAY ) {
-			Assert( objp->arrival_anchor >= 0 );
+			Assert( objp->arrival_anchor.isValid() );
 			auto anchor_ship_entry = ship_registry_get(objp->arrival_anchor);
 
 			// see if ship is yet to arrive.  If so, then return -1 so we can evaluate again later.
@@ -8236,7 +8240,8 @@ int mission_do_departure(object *objp, bool goal_is_to_warp)
 	Assert(objp->type == OBJ_SHIP);
 	bool beginning_departure;
 	DepartureLocation location;
-	int anchor, path_mask;
+	anchor_t anchor;
+	int path_mask;
 	ship *shipp = &Ships[objp->instance];
 	ai_info *aip = &Ai_info[shipp->ai_index];
 
@@ -8303,10 +8308,7 @@ int mission_do_departure(object *objp, bool goal_is_to_warp)
 	// just make it warp out like anything else.
 	if (location == DepartureLocation::TO_DOCK_BAY)
 	{
-		Assert(anchor >= 0);
-		auto anchor_ship_entry = (anchor >= 0)
-			? ship_registry_get(anchor)
-			: nullptr;	// should never happen, but if it does, fail gracefully
+		auto anchor_ship_entry = ship_registry_get(anchor);
 
 		// see if ship is yet to arrive.  If so, then warp.
 		if (!anchor_ship_entry || anchor_ship_entry->status == ShipStatus::NOT_YET_PRESENT)
@@ -8655,19 +8657,19 @@ continue_outer_loop:
 /**
  * Look for \<any friendly\>, \<any hostile player\>, etc.
  */
-int get_special_anchor(const char *name)
+anchor_t get_special_anchor(const char *name)
 {
 	char tmp[NAME_LENGTH + 15];
 	const char *iff_name;
 	int iff_index;
 	
 	if (strnicmp(name, "<any ", 5) != 0)
-		return -1;
+		return anchor_t::invalid();
 
 	strcpy_s(tmp, name+5);
 	iff_name = strtok(tmp, " >");
 	if (iff_name == nullptr)
-		return -1;
+		return anchor_t::invalid();
 
 	// hack substitute "hostile" for "enemy"
 	if (!stricmp(iff_name, "enemy"))
@@ -8675,34 +8677,32 @@ int get_special_anchor(const char *name)
 
 	iff_index = iff_lookup(iff_name);
 	if (iff_index < 0)
-		return -1;
+		return anchor_t::invalid();
 
 	// restrict to players?
 	if (stristr(name+5, "player") != NULL)
-		return (iff_index | SPECIAL_ARRIVAL_ANCHOR_FLAG | SPECIAL_ARRIVAL_ANCHOR_PLAYER_FLAG);
+		return anchor_t(iff_index | ANCHOR_SPECIAL_ARRIVAL | ANCHOR_SPECIAL_ARRIVAL_PLAYER);
 	else
-		return (iff_index | SPECIAL_ARRIVAL_ANCHOR_FLAG);
+		return anchor_t(iff_index | ANCHOR_SPECIAL_ARRIVAL);
 }
 
-int get_anchor(const char *name)
+anchor_t get_anchor(const char *name)
 {
-	int special_anchor = get_special_anchor(name);
+	auto special_anchor = get_special_anchor(name);
 
-	if (special_anchor >= 0)
+	if (special_anchor.isValid())
 		return special_anchor;
 
-	return get_parse_name_index(name);
+	return anchor_t(get_parse_name_index(name) | ANCHOR_IS_PARSE_NAMES_INDEX);
 }
 
 /**
  * See if an arrival/departure anchor is missing a hangar bay.  If it is, the message parameter will be populated with an appropriate error.
  */
-void check_anchor_for_hangar_bay(SCP_string &message, SCP_set<int> &anchors_checked, int anchor, const char *other_name, bool other_is_ship, bool is_arrival)
+void check_anchor_for_hangar_bay(SCP_string &message, SCP_set<anchor_t, util::ID_Less> &anchors_checked, anchor_t anchor, const char *other_name, bool other_is_ship, bool is_arrival)
 {
 	message.clear();
 
-	if (anchor < 0)
-		return;
 	if (anchors_checked.contains(anchor))
 		return;
 	anchors_checked.insert(anchor);

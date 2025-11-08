@@ -2396,7 +2396,7 @@ void management_add_ships_to_combo( CComboBox *box, int flags )
 				stuff_special_arrival_anchor_name(tmp, i, restrict_to_players, 0);
 
 				id = box->AddString(tmp);
-				box->SetItemData(id, get_special_anchor(tmp));
+				box->SetItemData(id, get_special_anchor(tmp).value());
 			}
 		}
 	}
@@ -2547,11 +2547,11 @@ void stuff_special_arrival_anchor_name(char *buf, int anchor_num, int retail_for
 {
 	// filter out iff
 	int iff_index = anchor_num;
-	iff_index &= ~SPECIAL_ARRIVAL_ANCHOR_FLAG;
-	iff_index &= ~SPECIAL_ARRIVAL_ANCHOR_PLAYER_FLAG;
+	iff_index &= ~ANCHOR_SPECIAL_ARRIVAL;
+	iff_index &= ~ANCHOR_SPECIAL_ARRIVAL_PLAYER;
 
 	// filter players
-	int restrict_to_players = (anchor_num & SPECIAL_ARRIVAL_ANCHOR_PLAYER_FLAG);
+	int restrict_to_players = (anchor_num & ANCHOR_SPECIAL_ARRIVAL_PLAYER);
 
 	// get name
 	stuff_special_arrival_anchor_name(buf, iff_index, restrict_to_players, retail_format);
@@ -2560,21 +2560,21 @@ void stuff_special_arrival_anchor_name(char *buf, int anchor_num, int retail_for
 // Ship and wing arrival and departure anchors should always be ship registry entry indexes, except for a very brief window during mission parsing.
 // But FRED and QtFRED dialogs use ship indexes instead.  So, rather than refactor all the dialogs, this converts between the two.  If an anchor
 // is a valid ship registry index, the equivalent ship index is returned; otherwise the special value (-1 or a flag) is returned instead.
-int anchor_to_target(int anchor)
+int anchor_to_target(anchor_t anchor)
 {
 	auto anchor_entry = ship_registry_get(anchor);
-	return anchor_entry ? anchor_entry->shipnum : anchor;
+	return anchor_entry ? anchor_entry->shipnum : anchor.value();
 }
 
 // Ship and wing arrival and departure anchors should always be ship registry entry indexes, except for a very brief window during mission parsing.
 // But FRED and QtFRED dialogs use ship indexes instead.  So, rather than refactor all the dialogs, this converts between the two.  If a target
 // is a valid ship index, the equivalent ship registry index is returned; otherwise the special value (-1 or a flag) is returned instead.
-int target_to_anchor(int target)
+anchor_t target_to_anchor(int target)
 {
 	if (target >= 0 && target < MAX_SHIPS)
-		return ship_registry_get_index(Ships[target].ship_name);
+		return anchor_t(ship_registry_get_index(Ships[target].ship_name));
 	else
-		return target;
+		return anchor_t(target);
 }
 
 // Goober5000

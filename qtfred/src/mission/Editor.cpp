@@ -1965,7 +1965,7 @@ int Editor::global_error_check_impl() {
 	object* ptr;
 	brief_stage* sp;
 	SCP_string anchor_message;
-	SCP_set<int> anchors_checked;
+	SCP_set<anchor_t, util::ID_Less> anchors_checked;
 
 	g_err = multi = 0;
 	if (The_mission.game_type & MISSION_TYPE_MULTI) {
@@ -2155,7 +2155,7 @@ int Editor::global_error_check_impl() {
 			}
 
 			if (Ships[i].arrival_location != ArrivalLocation::AT_LOCATION) {
-				if (Ships[i].arrival_anchor < 0) {
+				if (!Ships[i].arrival_anchor.isValid()) {
 					if (error("Ship \"%s\" requires a valid arrival target", Ships[i].ship_name)) {
 						return 1;
 					}
@@ -2169,7 +2169,7 @@ int Editor::global_error_check_impl() {
 			}
 
 			if (Ships[i].departure_location != DepartureLocation::AT_LOCATION) {
-				if (Ships[i].departure_anchor < 0) {
+				if (!Ships[i].departure_anchor.isValid()) {
 					if (error("Ship \"%s\" requires a valid departure target", Ships[i].ship_name)) {
 						return 1;
 					}
@@ -2383,7 +2383,7 @@ int Editor::global_error_check_impl() {
 			}
 
 			if (Wings[i].arrival_location != ArrivalLocation::AT_LOCATION) {
-				if (Wings[i].arrival_anchor < 0) {
+				if (!Wings[i].arrival_anchor.isValid()) {
 					if (error("Wing \"%s\" requires a valid arrival target", Wings[i].name)) {
 						return 1;
 					}
@@ -2397,7 +2397,7 @@ int Editor::global_error_check_impl() {
 			}
 
 			if (Wings[i].departure_location != DepartureLocation::AT_LOCATION) {
-				if (Wings[i].departure_anchor < 0) {
+				if (!Wings[i].departure_anchor.isValid()) {
 					if (error("Wing \"%s\" requires a valid departure target", Wings[i].name)) {
 						return 1;
 					}

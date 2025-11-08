@@ -635,13 +635,13 @@ public:
 
 	ArrivalLocation arrival_location;
 	int	arrival_distance;		// how far away this ship should arrive
-	int	arrival_anchor;			// ship registry index of object this ship arrives near (or in front of)
+	anchor_t arrival_anchor;		// ship registry index of object this ship arrives near (or in front of)
 	int	arrival_path_mask;		// Goober5000 - possible restrictions on which bay paths to use
 	int	arrival_cue;
 	int	arrival_delay;
 
 	DepartureLocation departure_location;	// depart to hyperspace or someplace else (like docking bay)
-	int	departure_anchor;		// when docking bay -- ship registry index of ship to use
+	anchor_t departure_anchor;		// when docking bay -- ship registry index of ship to use
 	int departure_path_mask;	// Goober5000 - possible restrictions on which bay paths to use
 	int	departure_cue;			// sexpression to eval when departing
 	int	departure_delay;		// time in seconds after sexp is true that we delay.
@@ -965,12 +965,15 @@ extern SCP_unordered_map<SCP_string, int, SCP_string_lcase_hash, SCP_string_lcas
 
 extern int ship_registry_get_index(const char *name);
 extern int ship_registry_get_index(const SCP_string &name);
+extern anchor_t ship_registry_get_anchor(const char *name);
+extern anchor_t ship_registry_get_anchor(const SCP_string &name);
 extern bool ship_registry_exists(const char *name);
 extern bool ship_registry_exists(const SCP_string &name);
 extern bool ship_registry_exists(int index);
 extern const ship_registry_entry *ship_registry_get(const char *name);
 extern const ship_registry_entry *ship_registry_get(const SCP_string &name);
 extern const ship_registry_entry *ship_registry_get(int index);
+extern const ship_registry_entry *ship_registry_get(anchor_t anchor);
 
 #define REGULAR_WEAPON	(1<<0)
 #define DOGFIGHT_WEAPON (1<<1)
@@ -1601,13 +1604,13 @@ typedef struct wing {
 
 	ArrivalLocation arrival_location;			// arrival and departure information for wings -- similar to info for ships
 	int	arrival_distance;						// distance from some ship where this ship arrives
-	int	arrival_anchor;						// ship registry index of object this wing arrives near (or in front of)
+	anchor_t arrival_anchor;						// ship registry index of object this wing arrives near (or in front of)
 	int	arrival_path_mask;					// Goober5000 - possible restrictions on which bay paths to use
 	int	arrival_cue;
 	int	arrival_delay;
 
 	DepartureLocation departure_location;
-	int	departure_anchor;						// ship registry index of object that we depart to (in case of dock bays)
+	anchor_t departure_anchor;						// ship registry index of object that we depart to (in case of dock bays)
 	int departure_path_mask;				// Goober5000 - possible restrictions on which bay paths to use
 	int	departure_cue;
 	int	departure_delay;

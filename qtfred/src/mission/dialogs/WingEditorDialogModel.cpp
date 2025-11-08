@@ -232,10 +232,10 @@ int WingEditorDialogModel::getMinArrivalDistance() const
 			break;
 	}
 
-	const int anchor = w->arrival_anchor;
+	const anchor_t anchor = w->arrival_anchor;
 
 	// If special anchor or invalid, no radius to enforce
-	if (anchor < 0 || (anchor & SPECIAL_ARRIVAL_ANCHOR_FLAG))
+	if (!anchor.isValid() || (anchor.value() & ANCHOR_SPECIAL_ARRIVAL))
 		return 0;
 
 	// Anchor should be a real ship
@@ -350,7 +350,7 @@ std::vector<std::pair<int, std::string>> WingEditorDialogModel::getArrivalTarget
 		for (int restrict_to_players = 0; restrict_to_players < 2; ++restrict_to_players) {
 			for (int iff = 0; iff < (int)::Iff_info.size(); ++iff) {
 				stuff_special_arrival_anchor_name(buf, iff, restrict_to_players, 0);
-				items.emplace_back(get_special_anchor(buf), buf);
+				items.emplace_back(anchor_to_target(get_special_anchor(buf)), buf);
 			}
 		}
 	}
@@ -765,7 +765,7 @@ void WingEditorDialogModel::setArrivalType(ArrivalLocation newArrivalType)
 
 	// If the new arrival type does not need a target, clear it
 	if (newArrivalType == ArrivalLocation::AT_LOCATION) {
-		modify(w->arrival_anchor, -1);
+		modify(w->arrival_anchor, anchor_t::invalid());
 		modify(w->arrival_distance, 0);
 	} else {
 
@@ -774,7 +774,7 @@ void WingEditorDialogModel::setArrivalType(ArrivalLocation newArrivalType)
 
 		if (targets.empty()) {
 			// No targets available, set to -1
-			modify(w->arrival_anchor, -1);
+			modify(w->arrival_anchor, anchor_t::invalid());
 			modify(w->arrival_distance, 0);
 			return;
 		}
@@ -1098,7 +1098,7 @@ void WingEditorDialogModel::setDepartureType(DepartureLocation newDepartureType)
 
 	// If the new departure type does not need a target, clear it
 	if (newDepartureType == DepartureLocation::AT_LOCATION) {
-		modify(w->departure_anchor, -1);
+		modify(w->departure_anchor, anchor_t::invalid());
 	} else {
 
 		// Set the target to the first available
@@ -1106,7 +1106,7 @@ void WingEditorDialogModel::setDepartureType(DepartureLocation newDepartureType)
 
 		if (targets.empty()) {
 			// No targets available, set to -1
-			modify(w->departure_anchor, -1);
+			modify(w->departure_anchor, anchor_t::invalid());
 			return;
 		}
 

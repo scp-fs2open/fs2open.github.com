@@ -296,6 +296,12 @@ const ship_registry_entry *ship_registry_get(int index)
 	return nullptr;
 }
 
+const ship_registry_entry *ship_registry_get(anchor_t anchor)
+{
+	// anchors are just ship registry indexes (if in bounds) under the hood
+	return ship_registry_get(anchor.value());
+}
+
 
 int	Num_engine_wash_types;
 int	Num_ship_subobj_types;
@@ -7193,13 +7199,13 @@ void ship::clear()
 
 	arrival_location = ArrivalLocation::AT_LOCATION;
 	arrival_distance = 0;
-	arrival_anchor = -1;
+	arrival_anchor = anchor_t::invalid();
 	arrival_path_mask = 0;
 	arrival_cue = -1;
 	arrival_delay = 0;
 
 	departure_location = DepartureLocation::AT_LOCATION;
-	departure_anchor = -1;
+	departure_anchor = anchor_t::invalid();
 	departure_path_mask = 0;
 	departure_cue = -1;
 	departure_delay = 0;
@@ -7554,13 +7560,13 @@ void wing::clear()
 
 	arrival_location = ArrivalLocation::AT_LOCATION;
 	arrival_distance = 0;
-	arrival_anchor = -1;
+	arrival_anchor = anchor_t::invalid();
 	arrival_path_mask = 0;
 	arrival_cue = -1;
 	arrival_delay = 0;
 
 	departure_location = DepartureLocation::AT_LOCATION;
-	departure_anchor = -1;
+	departure_anchor = anchor_t::invalid();
 	departure_path_mask = 0;
 	departure_cue = -1;
 	departure_delay = 0;
@@ -9298,7 +9304,7 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 	if (The_mission.ai_profile->flags[AI::Profile_Flags::Cancel_future_waves_of_any_wing_launched_from_an_exited_ship]) {
 		for (int child_wingnum = 0; child_wingnum < Num_wings; ++child_wingnum) {
 			auto child_wingp = &Wings[child_wingnum];
-			if (child_wingp->arrival_location == ArrivalLocation::FROM_DOCK_BAY && child_wingp->arrival_anchor == entry_index) {
+			if (child_wingp->arrival_location == ArrivalLocation::FROM_DOCK_BAY && child_wingp->arrival_anchor.value() == entry_index) {
 				// prevent any more waves from arriving by marking this as the last wave
 				child_wingp->num_waves = child_wingp->current_wave;
 
@@ -17255,7 +17261,7 @@ bool ship_can_bay_depart(ship* sp)
 {
 	// if this ship belongs to a wing, then use the wing departure information
 	DepartureLocation departure_location;
-	int departure_anchor;
+	anchor_t departure_anchor;
 	int departure_path_mask;
 	if (sp->wingnum >= 0)
 	{
@@ -17271,7 +17277,7 @@ bool ship_can_bay_depart(ship* sp)
 	
 	if ( departure_location == DepartureLocation::TO_DOCK_BAY )
 	{
-		Assertion( departure_anchor >= 0, "Ship %s must have a valid departure anchor", sp->ship_name );
+		Assertion( departure_anchor.isValid(), "Ship %s must have a valid departure anchor", sp->ship_name );
 		auto anchor_ship_entry = ship_registry_get(departure_anchor);
 		if (anchor_ship_entry && anchor_ship_entry->has_shipp() && ship_useful_for_departure(anchor_ship_entry->shipnum, departure_path_mask)) {
 			// can bay depart at this time
@@ -19424,7 +19430,7 @@ int is_support_allowed(object *objp, bool do_simple_check)
 		// make sure, if exiting from bay, that parent ship is in the mission!
 		if ((result == 0 || result == 2) && (The_mission.support_ships.arrival_location == ArrivalLocation::FROM_DOCK_BAY))
 		{
-			Assert(The_mission.support_ships.arrival_anchor != -1);
+			Assert(The_mission.support_ships.arrival_anchor.isValid());
 
 			// ensure it's in-mission
 			auto anchor_ship_entry = ship_registry_get(The_mission.support_ships.arrival_anchor);
