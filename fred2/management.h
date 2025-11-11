@@ -130,10 +130,6 @@ extern void management_add_ships_to_combo(CComboBox* box, int flags);
 // Goober5000
 extern int wing_is_player_wing(int wing);
 extern void update_custom_wing_indexes();
-extern void stuff_special_arrival_anchor_name(char* buf, int iff_index, int restrict_to_players, int retail_format);
-extern void stuff_special_arrival_anchor_name(char* buf, int anchor_num, int retail_format);
 extern void update_texture_replacements(const char* old_name, const char* new_name);
-
-extern void time_to_mission_info_string(const std::tm* src, char* dest, size_t dest_max_len);
 
 #endif
