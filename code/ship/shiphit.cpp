@@ -1747,7 +1747,7 @@ void ship_generic_kill_stuff( object *objp, float percent_killed )
 			delta_time = 2;
 	}
 
-	sp->death_time = sp->final_death_time = timestamp(delta_time);	// Give him 3 secs to explode
+	sp->final_death_time = timestamp(delta_time);	// Give him 3 secs to explode
 
 	//SUSHI: What are the chances of an instant explosion? Check the ship type (objecttypes.tbl) as well as the ship (ships.tbl)
 	float skipChance;
