@@ -182,6 +182,7 @@ bool Show_locked_status_scramble_missions;
 bool Disable_expensive_turret_target_check;
 float Shield_percent_skips_damage;
 float Min_radius_for_persistent_debris;
+bool Zero_radius_explosions_skip_fireballs;
 
 
 #ifdef WITH_DISCORD
@@ -1638,6 +1639,10 @@ void parse_mod_table(const char *filename)
 				stuff_float(&Min_radius_for_persistent_debris);
 			}
 
+			if (optional_string("$Zero-radius explosions skip fireballs:")) {
+				stuff_boolean(&Zero_radius_explosions_skip_fireballs);
+			}
+
 			// end of options ----------------------------------------
 
 			// if we've been through once already and are at the same place, force a move
@@ -1884,6 +1889,7 @@ void mod_table_reset()
 	Disable_expensive_turret_target_check = false;
 	Shield_percent_skips_damage = 0.1f;
 	Min_radius_for_persistent_debris = 50.0f;
+	Zero_radius_explosions_skip_fireballs = false;
 }
 
 void mod_table_set_version_flags()
@@ -1911,5 +1917,8 @@ void mod_table_set_version_flags()
 		Fix_asteroid_bounding_box_check = true;
 		Disable_expensive_turret_target_check = true;
 		Skybox_internal_depth_consistency = true;
+	}
+	if (mod_supports_version(26, 0, 0)) {
+		Zero_radius_explosions_skip_fireballs = true;
 	}
 }
