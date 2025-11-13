@@ -9271,7 +9271,7 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 	if (The_mission.ai_profile->flags[AI::Profile_Flags::Cancel_future_waves_of_any_wing_launched_from_an_exited_ship]) {
 		for (int child_wingnum = 0; child_wingnum < Num_wings; ++child_wingnum) {
 			auto child_wingp = &Wings[child_wingnum];
-			if (child_wingp->arrival_location == ArrivalLocation::FROM_DOCK_BAY && child_wingp->arrival_anchor == shipnum) {
+			if (child_wingp->arrival_location == ArrivalLocation::FROM_DOCK_BAY && Parse_names.in_bounds(child_wingp->arrival_anchor) && !stricmp(Parse_names[child_wingp->arrival_anchor].c_str(), shipp->ship_name)) {
 				// prevent any more waves from arriving by marking this as the last wave
 				child_wingp->num_waves = child_wingp->current_wave;
 
