@@ -217,6 +217,19 @@ ship* ship_registry_entry::shipp_or_null() const
 	return (shipnum < 0) ? nullptr : &Ships[shipnum];
 }
 
+ship_info* ship_registry_entry::sip() const
+{
+	if (shipnum >= 0)
+		return &Ship_info[Ships[shipnum].ship_info_index];
+	else if (pobj_num >= 0)
+		return &Ship_info[Parse_objects[pobj_num].ship_class];
+	else
+	{
+		Assertion(false, "A ship registry entry must have either a parse object or a ship!");
+		return nullptr;
+	}
+}
+
 SCP_vector<ship_registry_entry> Ship_registry;
 SCP_unordered_map<SCP_string, int, SCP_string_lcase_hash, SCP_string_lcase_equal_to> Ship_registry_map;
 
@@ -248,6 +261,11 @@ bool ship_registry_exists(const SCP_string &name)
 	return Ship_registry_map.find(name) != Ship_registry_map.end();
 }
 
+bool ship_registry_exists(int index)
+{
+	return Ship_registry.in_bounds(index);
+}
+
 const ship_registry_entry *ship_registry_get(const char *name)
 {
 	auto ship_it = Ship_registry_map.find(name);
@@ -262,6 +280,14 @@ const ship_registry_entry *ship_registry_get(const SCP_string &name)
 	auto ship_it = Ship_registry_map.find(name);
 	if (ship_it != Ship_registry_map.end())
 		return &Ship_registry[ship_it->second];
+
+	return nullptr;
+}
+
+const ship_registry_entry *ship_registry_get(int index)
+{
+	if (Ship_registry.in_bounds(index))
+		return &Ship_registry[index];
 
 	return nullptr;
 }
@@ -20064,7 +20090,7 @@ void wing_load_squad_bitmap(wing *w)
 
 // Goober5000 - needed by new hangar depart code
 // check whether this ship has a docking bay
-bool ship_has_dock_bay(int shipnum)
+bool ship_has_hangar_bay(int shipnum)
 {
 	Assert(shipnum >= 0 && shipnum < MAX_SHIPS);
 
@@ -20082,10 +20108,7 @@ bool ship_has_dock_bay(int shipnum)
 		return false;
 	}
 
-	auto pm = model_get(sip->model_num);
-	Assert( pm );
-
-	return ( pm->ship_bay && (pm->ship_bay->num_paths > 0) );
+	return model_has_hangar_bay(sip->model_num);
 }
 
 // Goober5000
@@ -20100,7 +20123,7 @@ bool ship_useful_for_departure(int shipnum, int  /*path_mask*/)
 		return false;
 
 	// no dockbay, can't depart to it
-	if (!ship_has_dock_bay(shipnum))
+	if (!ship_has_hangar_bay(shipnum))
 		return false;
 
 	// make sure that the bays are not all destroyed

@@ -1260,6 +1260,7 @@ int model_get_dock_types(int modelnum);
 // Goober5000
 // returns index in [0, MAX_SHIP_BAY_PATHS)
 int model_find_bay_path(int modelnum, char *bay_path_name);
+bool model_has_hangar_bay(int modelnum);
 
 // Returns number of polygons in a submodel;
 int submodel_get_num_polys(int model_num, int submodel_num);

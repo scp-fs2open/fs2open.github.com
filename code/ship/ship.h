@@ -954,6 +954,8 @@ struct ship_registry_entry
 	p_object* p_objp_or_null() const;
 	object* objp_or_null() const;
 	ship* shipp_or_null() const;
+
+	ship_info* sip() const;
 };
 
 extern SCP_vector<ship_registry_entry> Ship_registry;
@@ -963,8 +965,10 @@ extern int ship_registry_get_index(const char *name);
 extern int ship_registry_get_index(const SCP_string &name);
 extern bool ship_registry_exists(const char *name);
 extern bool ship_registry_exists(const SCP_string &name);
+extern bool ship_registry_exists(int index);
 extern const ship_registry_entry *ship_registry_get(const char *name);
 extern const ship_registry_entry *ship_registry_get(const SCP_string &name);
+extern const ship_registry_entry *ship_registry_get(int index);
 
 #define REGULAR_WEAPON	(1<<0)
 #define DOGFIGHT_WEAPON (1<<1)
@@ -2013,7 +2017,7 @@ extern void ship_subsystem_set_new_ai_class(ship_subsys *ss, int new_ai_class);
 extern void wing_load_squad_bitmap(wing *w);
 
 // Goober5000 - needed by new hangar depart code
-extern bool ship_has_dock_bay(int shipnum);
+extern bool ship_has_hangar_bay(int shipnum);
 extern bool ship_useful_for_departure(int shipnum, int path_mask = 0);
 extern int ship_get_ship_for_departure(int team);
 
