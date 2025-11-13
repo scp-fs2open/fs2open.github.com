@@ -61,4 +61,13 @@ struct ID_Hash
 	}
 };
 
+struct ID_Less
+{
+	template <class Tag, class Impl, Impl default_value>
+	bool operator()(const ID<Tag, Impl, default_value> &lhs, const ID<Tag, Impl, default_value> &rhs) const
+	{
+		return std::less<Impl>{}(lhs.value(), rhs.value());
+	}
+};
+
 }
