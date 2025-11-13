@@ -5431,6 +5431,14 @@ int model_find_bay_path(int modelnum, char *bay_path_name)
 	return -1;
 }
 
+bool model_has_hangar_bay(int modelnum)
+{
+	auto pm = model_get(modelnum);
+	Assertion(pm, "modelnum %d does not exist!", modelnum);
+
+	return ( pm->ship_bay && (pm->ship_bay->num_paths > 0) );
+}
+
 int model_create_bsp_collision_tree()
 {
 	// first find an open slot

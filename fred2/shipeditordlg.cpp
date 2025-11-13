@@ -2495,7 +2495,7 @@ void CShipEditorDlg::OnRestrictArrival()
 
 	arrive_from_ship = (int)box->GetItemData(m_arrival_target);
 
-	if (!ship_has_dock_bay(arrive_from_ship))
+	if (!ship_has_hangar_bay(arrive_from_ship))
 	{
 		Int3();
 		return;
@@ -2539,7 +2539,7 @@ void CShipEditorDlg::OnRestrictDeparture()
 
 	depart_to_ship = (int)box->GetItemData(m_departure_target);
 
-	if (!ship_has_dock_bay(depart_to_ship))
+	if (!ship_has_hangar_bay(depart_to_ship))
 	{
 		Int3();
 		return;
