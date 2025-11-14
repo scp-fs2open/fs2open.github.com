@@ -14121,8 +14121,30 @@ void sexp_load_music(const char *filename, int type = -1, int sexp_var = -1)
 	int index;
 	if (sexp_var >= 0)
 	{
-		index = static_cast<int>(Sexp_music_handles.size());
-		Sexp_music_handles.push_back(-1);
+		// if any handle has expired, it can be closed; and any closed or expired index can be reused
+		// (note that handles are not unique across an entire mission; any variables pointing to handles
+		// that have been closed will see those handles reused for new sounds)
+		int found_i = -1, n = sz2i(Sexp_music_handles.size());
+		for (int i = 1; i < n; ++i)	// skip the default handle
+		{
+			int this_handle = Sexp_music_handles[i];
+
+			if ((this_handle < 0) || (!audiostream_is_playing(this_handle) && !audiostream_is_paused(this_handle)))
+			{
+				audiostream_close_file(this_handle, false);
+				found_i = i;
+				break;
+			}
+		}
+
+		// either reuse an index or choose a new index
+		if (found_i >= 0)
+			index = found_i;
+		else
+		{
+			index = static_cast<int>(Sexp_music_handles.size());
+			Sexp_music_handles.push_back(-1);
+		}
 	}
 	// otherwise we'll be reusing the default handle, so close anything that's already playing
 	else
@@ -14133,6 +14155,8 @@ void sexp_load_music(const char *filename, int type = -1, int sexp_var = -1)
 
 	// open the stream and save the handle in our list
 	Sexp_music_handles[index] = audiostream_open(filename, type);
+	if (Sexp_music_handles[index] < 0)
+		Warning(LOCATION, "In sexp_load_music, could not create audio handle for '%s'!  You might be trying to play too many sounds at once.", filename);
 
 	// if we have a variable, save it there too
 	if (sexp_var >= 0)
@@ -39154,7 +39178,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t2: Enter a non-zero number to loop. default is off (optional).\r\n"
 		"\t3: Enter a non-zero number to use environment effects. default is off (optional).\r\n"
 		"\t4: Numeric variable in which to store the music handle (optional).  If no variable is specified, the 'default' handle is used.  "
-		"Only one 'default' track can be played at a time, but multiple variable-managed tracks can be played.\r\n"
+		"Only one 'default' track can be played at a time, but multiple variable-managed tracks can be played.  NOTE: Handles are not globally unique.  If a sound "
+		"finishes playing, its handle may be reused for another sound played later in the mission.\r\n"
 	},
 
 	// Goober5000
