@@ -188,6 +188,7 @@ ADE_FUNC(getType, l_Order, NULL, "Gets the type of the order.", "enumeration", "
 // helper function
 void maybe_start_waypoints(order_h* ohp, bool force)
 {
+	Assertion(ohp->isValid(), "The order should be valid at this point!");
 	Assertion(ohp->aigp->wp_list_index >= 0, "This function requires wp_list to be assigned already!");
 	Assertion(ohp->aigp->target_name && !stricmp(Waypoint_lists[ohp->aigp->wp_list_index].get_name(), ohp->aigp->target_name), "wp_list name does not match target_name!");
 
@@ -363,10 +364,14 @@ ADE_VIRTVAR(Target, l_Order, "object", "Target of the order. Value may also be a
 		case AI_GOAL_STAY_STILL:
 		case AI_GOAL_REARM_REPAIR:
 		case AI_GOAL_DOCK:
-		case AI_GOAL_UNDOCK:
-			shipnum = ship_name_lookup(ohp->aigp->target_name);
-			objnum = (shipnum >= 0) ? Ships[shipnum].objnum : -1;
+		case AI_GOAL_UNDOCK: {
+			auto target_entry = ship_registry_get(ohp->aigp->target_name);
+			if (target_entry && target_entry->has_shipp()) {
+				shipnum = target_entry->shipnum;
+				objnum = target_entry->objnum;
+			}
 			break;
+		}
 
 		case AI_GOAL_CHASE_WEAPON:
 			objnum = Weapons[ohp->aigp->target_instance].objnum;
@@ -413,7 +418,6 @@ ADE_VIRTVAR(TargetSubsystem, l_Order, "subsystem", "Target subsystem of the orde
 	order_h *ohp = NULL;
 	ship_subsys_h *newh = NULL;
 	ai_info *aip = NULL;
-	object *objp = NULL;
 	if(!ade_get_args(L, "o|o", l_Order.GetPtr(&ohp), l_Subsystem.GetPtr(&newh)))
 		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
 
@@ -426,18 +430,19 @@ ADE_VIRTVAR(TargetSubsystem, l_Order, "subsystem", "Target subsystem of the orde
 	{
 		if(newh && newh->isValid() && (ohp->aigp->ai_mode == AI_GOAL_DESTROY_SUBSYSTEM))
 		{
-			objp = &Objects[newh->ss->parent_objnum];
-			if (stricmp(Ships[objp->instance].ship_name, ohp->aigp->target_name)) {
-				ohp->aigp->target_name = ai_get_goal_target_name(Ships[objp->instance].ship_name, &ohp->aigp->target_name_index);
+			auto ss_objp = &Objects[newh->ss->parent_objnum];
+			auto ss_shipp = &Ships[ss_objp->instance];
+			if (stricmp(ss_shipp->ship_name, ohp->aigp->target_name)) {
+				ohp->aigp->target_name = ai_get_goal_target_name(ss_shipp->ship_name, &ohp->aigp->target_name_index);
 				ohp->aigp->time = (ohp->odx == 0) ? Missiontime : 0;
 				if(ohp->odx == 0) {
 					aip->ok_to_target_timestamp = timestamp(0);
-					set_target_objnum(aip, OBJ_INDEX(objp));
+					set_target_objnum(aip, OBJ_INDEX(ss_objp));
 				}
 			}
-			ohp->aigp->ai_submode = ship_find_subsys( &Ships[objp->instance], newh->ss->system_info->subobj_name );
+			ohp->aigp->ai_submode = ship_find_subsys( ss_shipp, newh->ss->system_info->subobj_name );
 			if(ohp->odx == 0) {
-				set_targeted_subsys(aip, newh->ss, OBJ_INDEX(objp));
+				set_targeted_subsys(aip, newh->ss, OBJ_INDEX(ss_objp));
 			}
 			if (aip == Player_ai) {
 				Ships[newh->ss->parent_objnum].last_targeted_subobject[Player_num] = newh->ss;
@@ -446,10 +451,12 @@ ADE_VIRTVAR(TargetSubsystem, l_Order, "subsystem", "Target subsystem of the orde
 	}
 
 	if(ohp->aigp->ai_mode == AI_GOAL_DESTROY_SUBSYSTEM){
-		return ade_set_args(L, "o", l_Subsystem.Set(ship_subsys_h(&Objects[Ships[ship_name_lookup(ohp->aigp->target_name)].objnum], ship_get_indexed_subsys(&Ships[ship_name_lookup(ohp->aigp->target_name)],ohp->aigp->ai_submode))));
-	} else {
-		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
+		auto target_entry = ship_registry_get(ohp->aigp->target_name);
+		if (target_entry && target_entry->has_shipp() && ohp->aigp->ai_submode >= 0 && ohp->aigp->ai_submode < ship_get_num_subsys(target_entry->shipp())) {
+			return ade_set_args(L, "o", l_Subsystem.Set(ship_subsys_h(target_entry->objp(), ship_get_indexed_subsys(target_entry->shipp(), ohp->aigp->ai_submode))));
+		}
 	}
+	return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
 }
 
 ADE_VIRTVAR(WaypointList, l_Order, "waypointlist", "Waypoint list of the order.", "waypointlist", "Waypoint list, or invalid handle if order handle is invalid or if this is not a waypoints order.")

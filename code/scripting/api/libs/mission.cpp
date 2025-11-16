@@ -482,22 +482,21 @@ ADE_INDEXER(l_Mission_Ships, "number/string IndexOrName", "Gets ship", "ship", "
 	if(!ade_get_args(L, "*s", &name))
 		return ade_set_error(L, "o", l_Ship.Set(object_h()));
 
-	int idx = ship_name_lookup(name);
-
-	if (idx >= 0)
+	int objnum = -1;
+	auto entry = ship_registry_get(name);
+	if (entry)
 	{
-		return ade_set_args(L, "o", l_Ship.Set(object_h(&Objects[Ships[idx].objnum])));
+		if (entry->has_shipp())
+			objnum = entry->objnum;
 	}
 	else
 	{
-		idx = atoi(name);
-
-		int objnum = -1;
+		int idx = atoi(name);
 		if (idx > 0)
 			objnum = object_subclass_at_index(Ships, MAX_SHIPS, idx);
-
-		return ade_set_args(L, "o", l_Ship.Set(object_h(objnum)));
 	}
+
+	return ade_set_args(L, "o", l_Ship.Set(object_h(objnum)));
 }
 
 ADE_FUNC(__len, l_Mission_Ships, NULL,
