@@ -8703,7 +8703,7 @@ void check_anchor_for_hangar_bay(SCP_string &message, SCP_set<int> &anchor_shipn
 		return;
 	anchor_shipnums_checked.insert(anchor_shipnum);
 
-	if (!ship_has_dock_bay(anchor_shipnum))
+	if (!ship_has_hangar_bay(anchor_shipnum))
 	{
 		auto shipp = &Ships[anchor_shipnum];
 		sprintf(message, "%s (%s) is used as a%s anchor by %s %s (and possibly elsewhere too), but it does not have a hangar bay!", shipp->ship_name,
