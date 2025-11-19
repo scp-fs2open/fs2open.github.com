@@ -22,6 +22,7 @@ struct batch_vertex {
 struct batch_info {
 	enum material_type {
 		FLAT_EMISSIVE,
+		FLAT_EMISSIVE_WITH_BACKFACES,
 		VOLUME_EMISSIVE,
 		DISTORTION,
 		FLAT_OPAQUE,
@@ -129,6 +130,7 @@ void batching_add_tri(int texture, vertex *verts);
 
 //these require some blurring the lines between things, but finding the batch in every call gets expensive in some cases such as trails.
 void batching_add_quad(int texture, vertex *verts, primitive_batch* batch, float trapezoidal_correction = 1.0f);
+void batching_add_quad_twisted(int texture, vertex *verts, primitive_batch* batch);
 void batching_add_tri(int texture, vertex *verts, primitive_batch* batch);
 
 void batching_render_all(bool render_distortions = false);
