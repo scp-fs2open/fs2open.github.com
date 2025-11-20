@@ -1,0 +1,31 @@
+# Cursor Rules for FreeSpace 2 Open
+
+This file provides context for Cursor IDE when working with the FreeSpace 2 codebase.
+
+## Key Development Guidelines
+
+- Always run `git submodule update --init --recursive` before building
+- Use `clang-format` for code formatting (config in .clang-format)
+- Run `clang-tidy` on changes before committing
+- Build with `ninja -k 20 all` to catch all errors in a run
+- Use precompiled headers (Cotire) enabled by default for faster builds
+
+## Important Code Areas
+
+Avoid breaking changes in these highly-coupled monolithic files:
+- `code/ai/aicode.cpp` (581 KB) - Core AI decision making
+- `code/parse/sexp.cpp` (1.3 MB) - SEXP expression evaluation
+- `code/weapon/weapons.cpp` (360 KB) - Weapon behavior
+- `code/ship/ship.cpp` (755 KB) - Ship systems
+- `code/network/multimsgs.cpp` (263 KB) - Network protocol
+
+Changes to these files can have far-reaching effects throughout the codebase.
+
+## Testing
+
+All tests use Google Test framework. Run with:
+```bash
+./bin/unittests --gtest_shuffle
+```
+
+Test data location: `/home/daniel/freespace2/test/test_data/`
