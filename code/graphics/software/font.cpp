@@ -71,7 +71,7 @@ namespace
 		}
 	}
 
-	void parse_nvg_font(const SCP_string& fontFilename)
+	bool parse_nvg_font(const SCP_string& fontFilename)
 	{
 		float size = 8.0f;
 		SCP_string fontStr;
@@ -122,26 +122,26 @@ namespace
 			if (hasName)
 			{
 				error_display(0, "Font with name \"%s\" is already present! Font names have to be unique!", fontStr.c_str());
-				return;
+				return false;
 			}
 			else
 			{
 				error_display(0, "Found font with same default name (\"%s\"). This is most likely a duplicate.", fontStr.c_str());
-				return;
+				return false;
 			}
 		}
 
 		auto nvgPair = FontManager::loadNVGFont(fontFilename, size);
 		auto nvgFont = nvgPair.first;
 
-		// Now we can set the auto size behavior which is used for special character rendering
-		nvgFont->setAutoScaleBehavior(autoSize);
-
 		if (nvgFont == NULL)
 		{
 			error_display(0, "Couldn't load font \"%s\".", fontFilename.c_str());
-			return;
+			return false;
 		}
+
+		// Now we can set the auto size behavior which is used for special character rendering
+		nvgFont->setAutoScaleBehavior(autoSize);
 
 		if (optional_string("+Can Scale:")) {
 			bool temp;
@@ -289,9 +289,11 @@ namespace
 
 		// Make sure that the height is not invalid
 		nvgFont->computeFontMetrics();
+
+		return true;
 	}
 
-	void parse_vfnt_font(const SCP_string& fontFilename)
+	bool parse_vfnt_font(const SCP_string& fontFilename)
 	{
 		auto vfntPair = FontManager::loadVFNTFont(fontFilename);
 		auto font = vfntPair.first;
@@ -299,7 +301,7 @@ namespace
 		if (font == NULL)
 		{
 			error_display(0, "Couldn't load font\"%s\".", fontFilename.c_str());
-			return;
+			return false;
 		}
 
 		SCP_string fontName;
@@ -421,8 +423,11 @@ namespace
 
 			font->setBottomOffset(temp);
 		}
+
 		// Make sure that the height is not invalid
 		font->computeFontMetrics();
+
+		return true;
 	}
 
 	void font_parse_setup(const char *fileName)
@@ -464,23 +469,27 @@ namespace
 
 			while (parse_type(type, fontName))
 			{
+				bool parsed = false;
+
 				switch (type)
 				{
 				case VFNT_FONT:
 					if (Unicode_text_mode) {
 						skipped_font_names.push_back(fontName);
-						skip_to_start_of_string_one_of({"$TrueType:", "$Font:", "#End"});
 					} else {
-						parse_vfnt_font(fontName);
+						parsed = parse_vfnt_font(fontName);
 					}
 					break;
 				case NVG_FONT:
-					parse_nvg_font(fontName);
+					parsed = parse_nvg_font(fontName);
 					break;
 				default:
 					error_display(0, "Unknown font type %d! Get a coder!", (int)type);
 					break;
 				}
+
+				if (!parsed)
+					skip_to_start_of_string_one_of({ "$TrueType:", "$Font:", "#End" });
 			}
 
 			// check if we skipped any fonts
