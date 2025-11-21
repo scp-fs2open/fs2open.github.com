@@ -486,7 +486,7 @@ ADE_INDEXER(l_Mission_Ships, "number/string IndexOrName", "Gets ship", "ship", "
 	auto entry = ship_registry_get(name);
 	if (entry)
 	{
-		if (entry->has_shipp())
+		if (entry->has_objp())
 			objnum = entry->objnum;
 	}
 	else

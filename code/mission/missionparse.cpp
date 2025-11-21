@@ -663,7 +663,7 @@ MONITOR(NumShipArrivals)
 MONITOR(NumShipDepartures)
 
 const std::shared_ptr<scripting::Hook<scripting::hooks::ShipDepartConditions>> OnDepartureStartedHook = scripting::Hook<scripting::hooks::ShipDepartConditions>::Factory(
-	"On Departure Started", "Called when a ship starts the departure process.",
+	"On Departure Started", "Called when a ship initiates a departure (acquires a hangar bay path or begins to warp) but is not actually exiting the mission yet.",
 	{
 		{"Self", "ship", "An alias for Ship."},
 		{"Ship", "ship", "The ship that has begun the departure process."},

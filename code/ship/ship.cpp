@@ -9134,11 +9134,9 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 	// this should never happen
 	Assertion(Ship_registry_map.find(shipp->ship_name) != Ship_registry_map.end(), "Ship %s was destroyed, but was never stored in the ship registry!", shipp->ship_name);
 
-	// Goober5000 - handle ship registry
+	// Goober5000 - handle ship registry, part 1
 	auto entry = &Ship_registry[Ship_registry_map[shipp->ship_name]];
 	entry->status = ShipStatus::EXITED;
-	entry->objnum = -1;
-	entry->shipnum = -1;
 	entry->cleanup_mode = cleanup_mode;
 
 	// add the information to the exited ship list
@@ -9289,6 +9287,10 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 	// (for exploding ships, this list should have already been cleared by now, via
 	// do_dying_undock_physics, except in the case of the destroy-instantly sexp)
 	dock_dead_undock_all(objp);
+
+	// Goober5000 - handle ship registry, part 2
+	entry->objnum = -1;
+	entry->shipnum = -1;
 }
 
 /**

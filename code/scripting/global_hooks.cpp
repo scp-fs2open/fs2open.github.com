@@ -304,7 +304,7 @@ const std::shared_ptr<Hook<ShipDepartConditions>> OnShipDepart = Hook<ShipDepart
 	"Invoked when a ship departs the mission without being destroyed.",
 	{
 		{"Ship", "ship", "The ship departing the mission"},
-		{"JumpNode", "string", "The name of the jump node the ship jumped out of. Can be nil."},
+		{"JumpNode", "string", "The name of the jump node the ship was in when it departed. Can be nil."},
 		{"Method", "ship", "The name of the method the ship used to depart. One of: 'SHIP_DEPARTED', 'SHIP_DEPARTED_WARP', 'SHIP_DEPARTED_BAY', 'SHIP_VANISHED', 'SHIP_DEPARTED_REDALERT'."},
 	});
 
