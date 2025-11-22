@@ -21,7 +21,9 @@
 #include "object/object.h"
 #include "object/waypoint.h"
 #include "ship/ship.h"
+#include "ai/ai.h"
 #include "ai/ailua.h"
+#include "localization/localize.h"
 #include "asteroid/asteroid.h"
 #include "fireball/fireballs.h"
 #include "gamesnd/gamesnd.h"
@@ -2474,4 +2476,294 @@ SexpContextMenuState SexpTreeModel::compute_context_menu_state(int mode)
 	}
 
 	return state;
+}
+
+// -----------------------------------------------------------------------
+// compute_help_text — extract help/mini-help text for a node
+// -----------------------------------------------------------------------
+SexpTreeModel::HelpTextResult SexpTreeModel::compute_help_text(int node_index, const SCP_string& node_comment) const
+{
+	HelpTextResult result;
+
+	if (node_index < 0 || node_index >= (int)tree_nodes.size() || !tree_nodes[node_index].type) {
+		result.help_text = node_comment;
+		return result;
+	}
+
+	int i = node_index;
+
+	// Prepend empty lines if we have a comment (for non-root nodes)
+	SCP_string adjusted_comment = node_comment;
+	if (!adjusted_comment.empty())
+		adjusted_comment.insert(0, "\r\n\r\n");
+
+	if (SEXPT_TYPE(tree_nodes[i].type) == SEXPT_OPERATOR) {
+		// For operators, mini-help stays empty
+	} else {
+		int z = tree_nodes[i].parent;
+		if (z < 0) {
+			Warning(LOCATION, "Sexp data \"%s\" has no parent!", tree_nodes[i].text);
+			return result;
+		}
+
+		int code = get_operator_const(tree_nodes[z].text);
+		int index = get_operator_index(tree_nodes[z].text);
+		int sibling_place = get_sibling_place(i) + 1;
+
+		// Mini-help box
+		if ((SEXPT_TYPE(tree_nodes[i].type) == SEXPT_NUMBER)
+			|| ((SEXPT_TYPE(tree_nodes[i].type) == SEXPT_STRING) && sibling_place > 0)) {
+			char buffer[10240] = {""};
+
+			const char* helpstr = help(code);
+			bool display_number = true;
+
+			if (helpstr != nullptr) {
+				char searchstr[32];
+				const char* loc = nullptr;
+				const char* loc2 = nullptr;
+
+				sprintf(searchstr, "\n%d:", sibling_place);
+				loc = strstr(helpstr, searchstr);
+
+				if (loc == nullptr) {
+					sprintf(searchstr, "\t%d:", sibling_place);
+					loc = strstr(helpstr, searchstr);
+				}
+				if (loc == nullptr) {
+					sprintf(searchstr, " %d:", sibling_place);
+					loc = strstr(helpstr, searchstr);
+				}
+				if (loc == nullptr) {
+					sprintf(searchstr, "%d:", sibling_place);
+					loc = strstr(helpstr, searchstr);
+				}
+				if (loc == nullptr) {
+					loc = strstr(helpstr, "Rest:");
+				}
+				if (loc == nullptr) {
+					loc = strstr(helpstr, "All:");
+				}
+
+				if (loc != nullptr) {
+					while (*loc == '\r' || *loc == '\n' || *loc == ' ' || *loc == '\t')
+						loc++;
+
+					loc2 = strpbrk(loc, "\r\n");
+					if (loc2 != nullptr) {
+						size_t size = loc2 - loc;
+						strncpy(buffer, loc, size);
+						if (size < sizeof(buffer)) {
+							buffer[size] = '\0';
+						}
+						display_number = false;
+					} else {
+						strcpy_s(buffer, loc);
+						display_number = false;
+					}
+				}
+			}
+
+			if (display_number) {
+				sprintf(buffer, "%d:", sibling_place);
+			}
+
+			result.mini_help_text = buffer;
+		}
+
+		if (index >= 0) {
+			int c = 0;
+			int j = tree_nodes[z].child;
+			while ((j >= 0) && (j != i)) {
+				j = tree_nodes[j].next;
+				c++;
+			}
+
+			Assert(j >= 0);
+
+			// Message text display
+			if (query_operator_argument_type(index, c) == OPF_MESSAGE) {
+				for (j = 0; j < Num_messages; j++) {
+					if (!stricmp(Messages[j].name, tree_nodes[i].text)) {
+						SCP_string text;
+						sprintf(text, "Message Text:\r\n%s%s", Messages[j].message, adjusted_comment.c_str());
+						result.help_text = text;
+						return result;
+					}
+				}
+			}
+
+			// Ship flag description
+			if (query_operator_argument_type(index, c) == OPF_SHIP_FLAG) {
+				Object::Object_Flags object_flag = Object::Object_Flags::NUM_VALUES;
+				Ship::Ship_Flags ship_flag = Ship::Ship_Flags::NUM_VALUES;
+				Mission::Parse_Object_Flags parse_obj_flag = Mission::Parse_Object_Flags::NUM_VALUES;
+				AI::AI_Flags ai_flag = AI::AI_Flags::NUM_VALUES;
+				SCP_string desc;
+
+				sexp_check_flag_arrays(tree_nodes[i].text, object_flag, ship_flag, parse_obj_flag, ai_flag);
+
+				if (object_flag != Object::Object_Flags::NUM_VALUES) {
+					for (size_t n = 0; n < (size_t)Num_object_flag_names; n++) {
+						if (object_flag == Object_flag_descriptions[n].flag) {
+							desc = Object_flag_descriptions[n].flag_desc;
+							break;
+						}
+					}
+				}
+
+				if (ship_flag != Ship::Ship_Flags::NUM_VALUES) {
+					for (size_t n = 0; n < (size_t)Num_ship_flag_names; n++) {
+						if (ship_flag == Ship_flag_descriptions[n].flag) {
+							desc = Ship_flag_descriptions[n].flag_desc;
+							break;
+						}
+					}
+				}
+
+				if (ai_flag != AI::AI_Flags::NUM_VALUES) {
+					for (size_t n = 0; n < (size_t)Num_ai_flag_names; n++) {
+						if (ai_flag == Ai_flag_descriptions[n].flag) {
+							desc = Ai_flag_descriptions[n].flag_desc;
+							break;
+						}
+					}
+				}
+
+				if (desc.empty()) {
+					if (parse_obj_flag != Mission::Parse_Object_Flags::NUM_VALUES) {
+						for (size_t n = 0; n < (size_t)Num_parse_object_flags; n++) {
+							if (parse_obj_flag == Parse_object_flag_descriptions[n].def) {
+								desc = Parse_object_flag_descriptions[n].flag_desc;
+								break;
+							}
+						}
+					}
+				}
+
+				if (desc.empty())
+					desc = "Unknown flag. Let a coder know!";
+
+				result.help_text = desc;
+				return result;
+			}
+
+			// Wing flag description
+			if (query_operator_argument_type(index, c) == OPF_WING_FLAG) {
+				Ship::Wing_Flags wing_flag = Ship::Wing_Flags::NUM_VALUES;
+				SCP_string desc;
+
+				sexp_check_flag_array(tree_nodes[i].text, wing_flag);
+
+				if (wing_flag != Ship::Wing_Flags::NUM_VALUES) {
+					for (size_t n = 0; n < (size_t)Num_wing_flag_names; n++) {
+						if (wing_flag == Wing_flag_descriptions[n].flag) {
+							desc = Wing_flag_descriptions[n].flag_desc;
+							break;
+						}
+					}
+				}
+
+				if (desc.empty())
+					desc = "Unknown flag. Let a coder know!";
+
+				result.help_text = desc;
+				return result;
+			}
+		}
+
+		i = z;
+	}
+
+	int code = get_operator_const(tree_nodes[i].text);
+	auto str = help(code);
+	if (!str) {
+		result.help_text = SCP_string("No help available") + adjusted_comment;
+	} else {
+		result.help_text = SCP_string(str) + adjusted_comment;
+	}
+
+	return result;
+}
+
+// -----------------------------------------------------------------------
+// validate_label_edit — validate and resolve edited node text
+// -----------------------------------------------------------------------
+SexpTreeModel::LabelEditResult SexpTreeModel::validate_label_edit(int node_index, const SCP_string& new_text) const
+{
+	LabelEditResult result;
+	result.resolved_text = new_text;
+
+	if (tree_nodes[node_index].type & SEXPT_OPERATOR) {
+		result.is_operator = true;
+		auto op = match_closest_operator(new_text, node_index);
+		if (op.empty()) {
+			result.update_node = false;
+			return result;
+		}
+
+		result.resolved_text = op;
+		result.operator_index = get_operator_index(op.c_str());
+		if (result.operator_index < 0) {
+			result.update_node = false;
+		}
+	} else if (tree_nodes[node_index].type & SEXPT_NUMBER) {
+		if (query_node_argument_type(node_index) == OPF_POSITIVE) {
+			int val = atoi(new_text.c_str());
+			if (val < 0) {
+				result.negative_number_error = true;
+				result.update_node = false;
+			}
+		}
+	}
+
+	// Truncate to TOKEN_LENGTH
+	if (result.resolved_text.size() >= TOKEN_LENGTH) {
+		result.resolved_text.resize(TOKEN_LENGTH - 1);
+	}
+
+	return result;
+}
+
+// -----------------------------------------------------------------------
+// apply_label_edit — apply validated edit to node text
+// -----------------------------------------------------------------------
+void SexpTreeModel::apply_label_edit(int node_index, const SCP_string& resolved_text)
+{
+	auto len = resolved_text.size();
+	if (len >= TOKEN_LENGTH)
+		len = TOKEN_LENGTH - 1;
+
+	strncpy(tree_nodes[node_index].text, resolved_text.c_str(), len);
+	tree_nodes[node_index].text[len] = 0;
+
+	// Sanitize for invalid characters (Mantis #2893)
+	lcl_fred_replace_stuff(tree_nodes[node_index].text, TOKEN_LENGTH - 1);
+}
+
+// -----------------------------------------------------------------------
+// compute_node_visual_info — determine flags and image for a tree node
+// -----------------------------------------------------------------------
+SexpTreeModel::NodeVisualInfo SexpTreeModel::compute_node_visual_info(int node_index) const
+{
+	NodeVisualInfo info;
+
+	if (tree_nodes[node_index].type & SEXPT_OPERATOR) {
+		info.flags = OPERAND;
+		info.image = NodeImage::OPERATOR;
+	} else if (tree_nodes[node_index].type & SEXPT_VARIABLE) {
+		info.flags = NOT_EDITABLE;
+		info.image = NodeImage::VARIABLE;
+	} else if (tree_nodes[node_index].type & SEXPT_CONTAINER_NAME) {
+		info.flags = NOT_EDITABLE;
+		info.image = NodeImage::CONTAINER_NAME;
+	} else if (tree_nodes[node_index].type & SEXPT_CONTAINER_DATA) {
+		info.flags = NOT_EDITABLE;
+		info.image = NodeImage::CONTAINER_DATA;
+	} else {
+		info.flags = EDITABLE;
+		info.image = get_data_image(node_index);
+	}
+
+	return info;
 }

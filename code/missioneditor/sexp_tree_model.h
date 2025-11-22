@@ -377,6 +377,31 @@ public:
 	static const char* help(int code);
 	int find_text(const char* text, int* find, int max_depth) const;
 
+	// --- Help text computation ---
+	struct HelpTextResult {
+		SCP_string help_text;
+		SCP_string mini_help_text;
+	};
+	HelpTextResult compute_help_text(int node_index, const SCP_string& node_comment) const;
+
+	// --- Label edit validation ---
+	struct LabelEditResult {
+		bool update_node = true;
+		bool is_operator = false;
+		SCP_string resolved_text;   // text after operator matching / validation
+		int operator_index = -1;    // operator index if resolved, -1 otherwise
+		bool negative_number_error = false;  // true if user entered negative for OPF_POSITIVE
+	};
+	LabelEditResult validate_label_edit(int node_index, const SCP_string& new_text) const;
+	void apply_label_edit(int node_index, const SCP_string& resolved_text);
+
+	// --- Node visual info for tree building ---
+	struct NodeVisualInfo {
+		int flags;
+		NodeImage image;
+	};
+	NodeVisualInfo compute_node_visual_info(int node_index) const;
+
 	// --- Variable / container utilities ---
 	int get_item_index_to_var_index() const;
 	static int get_tree_name_to_sexp_variable_index(const char* tree_name);

@@ -2509,11 +2509,9 @@ int sexp_tree::get_type(HTREEITEM h)
 
 void sexp_tree::update_help(HTREEITEM h)
 {
-	int i, j, z, c, code, index, sibling_place;
-	CString text;
-
-	for (i=0; i<(int)Operators.size(); i++) {
-		for (j=0; j<(int)op_menu.size(); j++) {
+	// Validate operator help strings
+	for (int i = 0; i < (int)Operators.size(); i++) {
+		for (int j = 0; j < (int)op_menu.size(); j++) {
 			if (get_category(Operators[i].value) == op_menu[j].id) {
 				if (!help(Operators[i].value)) {
 					mprintf(("Allender!  If you add new sexp operators, add help for them too! :) Sexp %s has no help.\n", Operators[i].text.c_str()));
@@ -2530,246 +2528,30 @@ void sexp_tree::update_help(HTREEITEM h)
 	if (mini_help_box && !::IsWindow(mini_help_box->m_hWnd))
 		return;
 
-	for (i=0; i<(int)tree_nodes.size(); i++)
-		if (tree_nodes[i].handle == h)
+	// Find node index from handle
+	int node_index = -1;
+	for (int i = 0; i < (int)tree_nodes.size(); i++) {
+		if (tree_nodes[i].handle == h) {
+			node_index = i;
 			break;
+		}
+	}
 
-	int thisIndex = event_annotation_lookup(h);
+	// Build annotation comment
 	SCP_string nodeComment;
-
+	int thisIndex = event_annotation_lookup(h);
 	if (thisIndex >= 0) {
 		if (!Event_annotations[thisIndex].comment.empty()) {
 			nodeComment = "Node Comments:\r\n   " + Event_annotations[thisIndex].comment;
 		}
-	} else {
-		nodeComment = "";
 	}
 
-	if ((i >= (int)tree_nodes.size()) || !tree_nodes[i].type) {
-		help_box->SetWindowText(nodeComment.c_str());
-		if (mini_help_box)
-			mini_help_box->SetWindowText("");
-		return;
-	}
+	// Delegate to model for help text computation
+	auto result = _model.compute_help_text(node_index, nodeComment);
 
-	// Now that we're done with top level nodes we can add the empty lines because
-	// everything else below is supposed to have help text
-	if (!nodeComment.empty())
-		nodeComment.insert(0, "\r\n\r\n");
-
-	if (SEXPT_TYPE(tree_nodes[i].type) == SEXPT_OPERATOR)
-	{
-		if (mini_help_box)
-			mini_help_box->SetWindowText("");
-	}
-	else
-	{
-		z = tree_nodes[i].parent;
-		if (z < 0) {
-			Warning(LOCATION, "Sexp data \"%s\" has no parent!", tree_nodes[i].text);
-			return;
-		}
-
-		code = get_operator_const(tree_nodes[z].text);
-		index = get_operator_index(tree_nodes[z].text);
-		sibling_place = get_sibling_place(i) + 1;	//We want it to start at 1
-
-		//*****Minihelp box
-		if((SEXPT_TYPE(tree_nodes[i].type) == SEXPT_NUMBER) || (SEXPT_TYPE(tree_nodes[i].type) == SEXPT_STRING) && sibling_place > 0)
-		{
-			char buffer[10240] = {""};
-
-			//Get the help for the current operator
-			const char *helpstr = help(code);
-			bool display_number = true;
-
-			//If a help string exists, try to display it
-			if(helpstr != NULL)
-			{
-				char searchstr[32];
-				const char *loc=NULL, *loc2=NULL;
-
-				if(loc == NULL)
-				{
-					sprintf(searchstr, "\n%d:", sibling_place);
-					loc = strstr(helpstr, searchstr);
-				}
-
-				if(loc == NULL)
-				{
-					sprintf(searchstr, "\t%d:", sibling_place);
-					loc = strstr(helpstr, searchstr);
-				}
-				if(loc == NULL)
-				{
-					sprintf(searchstr, " %d:", sibling_place);
-					loc = strstr(helpstr, searchstr);
-				}
-				if(loc == NULL)
-				{
-					sprintf(searchstr, "%d:", sibling_place);
-					loc = strstr(helpstr, searchstr);
-				}
-				if(loc == NULL)
-				{
-					loc = strstr(helpstr, "Rest:");
-				}
-				if(loc == NULL)
-				{
-					loc = strstr(helpstr, "All:");
-				}
-
-				if(loc != NULL)
-				{
-					//Skip whitespace
-					while(*loc=='\r' || *loc == '\n' || *loc == ' ' || *loc == '\t') loc++;
-
-					//Find EOL
-					loc2 = strpbrk(loc, "\r\n");
-					if(loc2 != NULL)
-					{
-						size_t size = loc2-loc;
-						strncpy(buffer, loc, size);
-						if(size < sizeof(buffer))
-						{
-							buffer[size] = '\0';
-						}
-						display_number = false;
-					}
-					else
-					{
-						strcpy_s(buffer, loc);
-						display_number = false;
-					}
-				}
-			}
-
-			//Display argument number
-			if(display_number)
-			{
-				sprintf(buffer, "%d:", sibling_place);
-			}
-
-			if (mini_help_box)
-				mini_help_box->SetWindowText(buffer);
-		}
-
-		if (index >= 0) {
-			c = 0;
-			j = tree_nodes[z].child;
-			while ((j >= 0) && (j != i)) {
-				j = tree_nodes[j].next;
-				c++;
-			}
-
-			Assert(j >= 0);
-			// If the node is a message then display it
-			if (query_operator_argument_type(index, c) == OPF_MESSAGE) {
-				for (j=0; j<Num_messages; j++)
-					if (!stricmp(Messages[j].name, tree_nodes[i].text)) {
-						text.Format("Message Text:\r\n%s%s", Messages[j].message, nodeComment.c_str());
-						help_box->SetWindowText((LPCSTR)text);
-						return;
-					}
-			}
-			
-			// If the node is a ship flag, then display the flag's description
-			if (query_operator_argument_type(index, c) == OPF_SHIP_FLAG) {
-				Object::Object_Flags object_flag = Object::Object_Flags::NUM_VALUES;
-				Ship::Ship_Flags ship_flag = Ship::Ship_Flags::NUM_VALUES;
-				Mission::Parse_Object_Flags parse_obj_flag = Mission::Parse_Object_Flags::NUM_VALUES;
-				AI::AI_Flags ai_flag = AI::AI_Flags::NUM_VALUES;
-				SCP_string desc;
-
-				sexp_check_flag_arrays(tree_nodes[i].text, object_flag, ship_flag, parse_obj_flag, ai_flag);
-
-				// Ship flags are pulled from multiple categories, so we have to search them all. Ew.
-				if (object_flag != Object::Object_Flags::NUM_VALUES){
-					for (size_t n = 0; n < (size_t)Num_object_flag_names; n++) {
-						if (object_flag == Object_flag_descriptions[n].flag) {
-							desc = Object_flag_descriptions[n].flag_desc;
-							break;
-						}
-					}
-				}
-
-				if (ship_flag != Ship::Ship_Flags::NUM_VALUES) {
-					for (size_t n = 0; n < (size_t)Num_ship_flag_names; n++) {
-						if (ship_flag == Ship_flag_descriptions[n].flag) {
-							desc = Ship_flag_descriptions[n].flag_desc;
-							break;
-						}
-					}
-				}
-
-				if (ai_flag != AI::AI_Flags::NUM_VALUES) {
-					for (size_t n = 0; n < (size_t)Num_ai_flag_names; n++) {
-						if (ai_flag == Ai_flag_descriptions[n].flag) {
-							desc = Ai_flag_descriptions[n].flag_desc;
-							break;
-						}
-					}
-				}
-
-				// Only check through parse object flags if we haven't found anything yet
-				if (desc.empty()) {
-					if (parse_obj_flag != Mission::Parse_Object_Flags::NUM_VALUES) {
-						for (size_t n = 0; n < (size_t)Num_parse_object_flags; n++) {
-							if (parse_obj_flag == Parse_object_flag_descriptions[n].def) {
-								desc = Parse_object_flag_descriptions[n].flag_desc;
-								break;
-							}
-						}
-					}
-				}
-
-				//If we still didn't find anything, say so!
-				if (desc.empty())
-					desc = "Unknown flag. Let a coder know!";
-
-				text.Format("%s", desc.c_str());
-				help_box->SetWindowText((LPCSTR)text);
-				return;
-			}
-
-			// If the node is a wing flag, then display the flag's description
-			if (query_operator_argument_type(index, c) == OPF_WING_FLAG) {
-				Ship::Wing_Flags wing_flag = Ship::Wing_Flags::NUM_VALUES;
-				SCP_string desc;
-
-				sexp_check_flag_array(tree_nodes[i].text, wing_flag);
-
-				if (wing_flag != Ship::Wing_Flags::NUM_VALUES) {
-					for (size_t n = 0; n < (size_t)Num_wing_flag_names; n++) {
-						if (wing_flag == Wing_flag_descriptions[n].flag) {
-							desc = Wing_flag_descriptions[n].flag_desc;
-							break;
-						}
-					}
-				}
-
-				// If we still didn't find anything, say so!
-				if (desc.empty())
-					desc = "Unknown flag. Let a coder know!";
-
-				text.Format("%s", desc.c_str());
-				help_box->SetWindowText((LPCSTR)text);
-				return;
-			}
-		}
-
-		i = z;
-	}
-
-	code = get_operator_const(tree_nodes[i].text);
-	auto str = help(code);
-	if (!str) {
-		text.Format("No help available%s", nodeComment.c_str());
-	} else {
-		text.Format("%s%s", str, nodeComment.c_str());
-	}
-
-	help_box->SetWindowText((LPCSTR)text);
+	help_box->SetWindowText(result.help_text.c_str());
+	if (mini_help_box)
+		mini_help_box->SetWindowText(result.mini_help_text.c_str());
 }
 
 // find list of sexp_tree nodes with text
