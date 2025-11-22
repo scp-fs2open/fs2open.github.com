@@ -410,7 +410,7 @@ void sexp_tree::update_item(HTREEITEM h)
 // handler for right mouse button clicks.
 void sexp_tree::right_clicked(int mode)
 {
-	int i, j, z, subcategory_id;
+	int i, j, subcategory_id;
 	UINT _flags;
 	HTREEITEM h;
 	POINT click_point, mouse;
@@ -574,48 +574,38 @@ void sexp_tree::right_clicked(int mode)
 		// add operator menu items to the various CATEGORY submenus they belong in
 		for (i=0; i<(int)Operators.size(); i++)
 		{
+			if (SexpTreeModel::is_operator_hidden(Operators[i].value))
+				continue;
+
+			UINT add_flags = MF_STRING | (state.op_add_enabled[i] ? 0 : MF_GRAYED);
+			UINT replace_flags = MF_STRING | (state.op_replace_enabled[i] ? 0 : MF_GRAYED);
+			UINT insert_flags = MF_STRING | (state.op_insert_enabled[i] ? 0 : MF_GRAYED);
+
 			// add only if it is not in a subcategory
 			subcategory_id = get_subcategory(Operators[i].value);
 			if (subcategory_id == OP_SUBCATEGORY_NONE)
 			{
-				// put it in the appropriate menu
 				for (j=0; j<(int)op_menu.size(); j++)
 				{
 					if (op_menu[j].id == get_category(Operators[i].value))
 					{
-						if (SexpTreeModel::is_operator_hidden(Operators[i].value)) {
-							j = (int)op_menu.size();	// don't allow these operators to be visible
-						}
-
-						if (j < (int)op_menu.size()) {
-							add_op_submenu[j].AppendMenu(MF_STRING | MF_GRAYED, Operators[i].value, Operators[i].text.c_str());
-							replace_op_submenu[j].AppendMenu(MF_STRING | MF_GRAYED, Operators[i].value | OP_REPLACE_FLAG, Operators[i].text.c_str());
-							insert_op_submenu[j].AppendMenu(MF_STRING, Operators[i].value | OP_INSERT_FLAG, Operators[i].text.c_str());
-						}
-
-						break;	// only 1 category valid
+						add_op_submenu[j].AppendMenu(add_flags, Operators[i].value, Operators[i].text.c_str());
+						replace_op_submenu[j].AppendMenu(replace_flags, Operators[i].value | OP_REPLACE_FLAG, Operators[i].text.c_str());
+						insert_op_submenu[j].AppendMenu(insert_flags, Operators[i].value | OP_INSERT_FLAG, Operators[i].text.c_str());
+						break;
 					}
 				}
 			}
-			// if it is in a subcategory, handle it
 			else
 			{
-				// put it in the appropriate submenu
 				for (j=0; j<(int)op_submenu.size(); j++)
 				{
 					if (op_submenu[j].id == subcategory_id)
 					{
-						if (SexpTreeModel::is_operator_hidden(Operators[i].value)) {
-							j = (int)op_submenu.size();	// don't allow these operators to be visible
-						}
-
-						if (j < (int)op_submenu.size()) {
-							add_op_subcategory_menu[j].AppendMenu(MF_STRING | MF_GRAYED, Operators[i].value, Operators[i].text.c_str());
-							replace_op_subcategory_menu[j].AppendMenu(MF_STRING | MF_GRAYED, Operators[i].value | OP_REPLACE_FLAG, Operators[i].text.c_str());
-							insert_op_subcategory_menu[j].AppendMenu(MF_STRING, Operators[i].value | OP_INSERT_FLAG, Operators[i].text.c_str());
-						}
-
-						break;	// only 1 subcategory valid
+						add_op_subcategory_menu[j].AppendMenu(add_flags, Operators[i].value, Operators[i].text.c_str());
+						replace_op_subcategory_menu[j].AppendMenu(replace_flags, Operators[i].value | OP_REPLACE_FLAG, Operators[i].text.c_str());
+						insert_op_subcategory_menu[j].AppendMenu(insert_flags, Operators[i].value | OP_INSERT_FLAG, Operators[i].text.c_str());
+						break;
 					}
 				}
 			}
@@ -633,11 +623,7 @@ void sexp_tree::right_clicked(int mode)
 				menu.EnableMenuItem(ID_EDIT_TEXT, MF_GRAYED);
 			}
 
-			// disable copy, insert op
 			menu.EnableMenuItem(ID_EDIT_COPY, MF_GRAYED);
-			for (j=0; j<(int)Operators.size(); j++) {
-				menu.EnableMenuItem(Operators[j].value | OP_INSERT_FLAG, MF_GRAYED);
-			}
 
 			gray_menu_tree(popup_menu);
 			state.cleanup();
@@ -654,26 +640,15 @@ void sexp_tree::right_clicked(int mode)
 			menu.EnableMenuItem(ID_DELETE, MF_GRAYED);
 		}
 
-/*		if ((tree_nodes[item_index].flags & OPERAND) && (tree_nodes[item_index].flags & EDITABLE))  // expandable?
-			menu.EnableMenuItem(ID_SPLIT_LINE, MF_ENABLED);
-
-		z = tree_nodes[item_index].child;
-		if (z != -1 && tree_nodes[z].next == -1 && tree_nodes[z].child == -1)
-			menu.EnableMenuItem(ID_SPLIT_LINE, MF_ENABLED);
-
-		z = tree_nodes[tree_nodes[item_index].parent].child;
-		if (z != -1 && tree_nodes[z].next == -1 && tree_nodes[z].child == -1)
-			menu.EnableMenuItem(ID_SPLIT_LINE, MF_ENABLED);*/
-
-		// change enabled status of 'add' type menu options.
+		// Set add/replace state from pre-computed values
 		Add_count = state.add_count;
+		Replace_count = state.replace_count;
+		Modify_variable = state.modify_variable;
+
 		if (state.can_add_number) menu.EnableMenuItem(ID_ADD_NUMBER, MF_ENABLED);
 		if (state.can_add_string) menu.EnableMenuItem(ID_ADD_STRING, MF_ENABLED);
-
-		// Enable operators from add data list
-		for (int op_idx : state.add_enabled_op_indices) {
-			menu.EnableMenuItem(Operators[op_idx].value, MF_ENABLED);
-		}
+		if (state.can_replace_number) menu.EnableMenuItem(ID_REPLACE_NUMBER, MF_ENABLED);
+		if (state.can_replace_string) menu.EnableMenuItem(ID_REPLACE_STRING, MF_ENABLED);
 
 		// Build add data menu items from the data list
 		if (state.add_data_list) {
@@ -696,28 +671,6 @@ void sexp_tree::right_clicked(int mode)
 			}
 		}
 
-		// disable operators that do not have arguments available
-		for (j=0; j<(int)Operators.size(); j++) {
-			if (!query_default_argument_available(j)) {
-				menu.EnableMenuItem(Operators[j].value, MF_GRAYED);
-			}
-		}
-
-
-		// change enabled status of 'replace' type menu options.
-		Replace_count = state.replace_count;
-		Modify_variable = state.modify_variable;
-		if (!state.can_delete) {
-			menu.EnableMenuItem(ID_DELETE, MF_GRAYED);
-		}
-		if (state.can_replace_number) menu.EnableMenuItem(ID_REPLACE_NUMBER, MF_ENABLED);
-		if (state.can_replace_string) menu.EnableMenuItem(ID_REPLACE_STRING, MF_ENABLED);
-
-		// Enable operators from replace data list
-		for (int op_idx : state.replace_enabled_op_indices) {
-			menu.EnableMenuItem(Operators[op_idx].value | OP_REPLACE_FLAG, MF_ENABLED);
-		}
-
 		// Build replace data menu items
 		if (state.replace_data_list) {
 			sexp_list_item* ptr = state.replace_data_list;
@@ -734,58 +687,9 @@ void sexp_tree::right_clicked(int mode)
 			}
 		}
 
-		// For top-node case, enable matching replace operators
-		int parent = tree_nodes[item_index].parent;
-		if (parent < 0) {
-			for (j=0; j<(int)Operators.size(); j++) {
-				if (query_operator_return_type(j) == state.replace_type)
-					menu.EnableMenuItem(Operators[j].value | OP_REPLACE_FLAG, MF_ENABLED);
-			}
-		}
-
-		// disable operators that do not have arguments available
-		for (j=0; j<(int)Operators.size(); j++) {
-			if (!query_default_argument_available(j)) {
-				menu.EnableMenuItem(Operators[j].value | OP_REPLACE_FLAG, MF_GRAYED);
-			}
-		}
-
-
-		// change enabled status of 'insert' type menu options.
-		for (j=0; j<(int)Operators.size(); j++) {
-			z = query_operator_return_type(j);
-			if (!sexp_query_type_match(state.insert_opf_type, z) || (Operators[j].min < 1))
-				menu.EnableMenuItem(Operators[j].value | OP_INSERT_FLAG, MF_GRAYED);
-
-			z = query_operator_argument_type(j, 0);
-			if ((state.insert_opf_type == OPF_NUMBER) && (z == OPF_POSITIVE)) z = OPF_NUMBER;
-			if ((state.insert_opf_type == OPF_POSITIVE) && (z == OPF_NUMBER)) z = OPF_POSITIVE;
-			if (z != state.insert_opf_type)
-				menu.EnableMenuItem(Operators[j].value | OP_INSERT_FLAG, MF_GRAYED);
-		}
-
-		// disable operators that do not have arguments available
-		for (j=0; j<(int)Operators.size(); j++) {
-			if (!query_default_argument_available(j)) {
-				menu.EnableMenuItem(Operators[j].value | OP_INSERT_FLAG, MF_GRAYED);
-			}
-		}
-
-
-		// disable non campaign operators if in campaign mode
-		if (state.campaign_mode) {
-			for (j=0; j<(int)Operators.size(); j++) {
-				if (!usable_in_campaign(Operators[j].value)) {
-					menu.EnableMenuItem(Operators[j].value, MF_GRAYED);
-					menu.EnableMenuItem(Operators[j].value | OP_REPLACE_FLAG, MF_GRAYED);
-					menu.EnableMenuItem(Operators[j].value | OP_INSERT_FLAG, MF_GRAYED);
-				}
-			}
-		}
-
+		// Clipboard and copy operations
 		if (state.can_paste) menu.EnableMenuItem(ID_EDIT_PASTE, MF_ENABLED);
 		if (state.can_paste_add) menu.EnableMenuItem(ID_EDIT_PASTE_SPECIAL, MF_ENABLED);
-
 		if (state.can_cut) menu.EnableMenuItem(ID_EDIT_CUT, MF_ENABLED);
 		if (!state.can_copy) menu.EnableMenuItem(ID_EDIT_COPY, MF_GRAYED);
 		if (!state.can_paste) menu.EnableMenuItem(ID_EDIT_PASTE, MF_GRAYED);

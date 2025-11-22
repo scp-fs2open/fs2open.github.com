@@ -282,6 +282,13 @@ struct SexpContextMenuState {
 	SCP_vector<int> add_enabled_op_indices;
 	SCP_vector<int> replace_enabled_op_indices;
 
+	// Per-operator enabled state (indexed by operator index, sized to Operators.size())
+	// These incorporate all enable/disable logic: data list matches, default argument
+	// availability, return type matching, insert type matching, and campaign mode.
+	SCP_vector<bool> op_add_enabled;
+	SCP_vector<bool> op_replace_enabled;
+	SCP_vector<bool> op_insert_enabled;
+
 	// Variable replacement menu entries
 	struct VariableEntry {
 		int var_index;

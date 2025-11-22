@@ -1935,6 +1935,11 @@ SexpContextMenuState SexpTreeModel::compute_context_menu_state(int mode)
 			state.is_root_editable = _interface && _interface->getFlags()[TreeFlags::RootEditable];
 			state.can_edit_text = state.is_root_editable;
 			state.can_copy = false;
+			// Initialize per-operator vectors to all-false
+			int num_ops = (int)Operators.size();
+			state.op_add_enabled.assign(num_ops, false);
+			state.op_replace_enabled.assign(num_ops, false);
+			state.op_insert_enabled.assign(num_ops, false);
 			return state;
 		}
 	}
@@ -2394,6 +2399,66 @@ SexpContextMenuState SexpTreeModel::compute_context_menu_state(int mode)
 			state.insert_opf_type = OPF_NULL;
 		else
 			state.insert_opf_type = OPF_BOOL;
+	}
+
+	// --- Per-operator enabled state ---
+	// Pre-compute which operators are enabled for add/replace/insert so the UI
+	// layers don't need to duplicate this logic.
+	{
+		int num_ops = (int)Operators.size();
+		state.op_add_enabled.assign(num_ops, false);
+		state.op_replace_enabled.assign(num_ops, false);
+		state.op_insert_enabled.assign(num_ops, false);
+
+		// Seed from data list matches
+		for (int op_idx : state.add_enabled_op_indices) {
+			state.op_add_enabled[op_idx] = true;
+		}
+		for (int op_idx : state.replace_enabled_op_indices) {
+			state.op_replace_enabled[op_idx] = true;
+		}
+
+		// Enable replace operators for top-level nodes based on return type
+		if (parent < 0) {
+			for (int j = 0; j < num_ops; j++) {
+				if (query_operator_return_type(j) == state.replace_type)
+					state.op_replace_enabled[j] = true;
+			}
+		}
+
+		// Insert: enable based on return type matching and first-arg type matching
+		for (int j = 0; j < num_ops; j++) {
+			int ret = query_operator_return_type(j);
+			int arg0 = query_operator_argument_type(j, 0);
+
+			// Number/positive equivalence hacks
+			if ((state.insert_opf_type == OPF_NUMBER) && (arg0 == OPF_POSITIVE)) arg0 = OPF_NUMBER;
+			if ((state.insert_opf_type == OPF_POSITIVE) && (arg0 == OPF_NUMBER)) arg0 = OPF_POSITIVE;
+
+			if (sexp_query_type_match(state.insert_opf_type, ret) && (Operators[j].min >= 1) && (arg0 == state.insert_opf_type)) {
+				state.op_insert_enabled[j] = true;
+			}
+		}
+
+		// Disable operators that don't have default arguments available
+		for (int j = 0; j < num_ops; j++) {
+			if (!query_default_argument_available(j)) {
+				state.op_add_enabled[j] = false;
+				state.op_replace_enabled[j] = false;
+				state.op_insert_enabled[j] = false;
+			}
+		}
+
+		// Disable non-campaign operators in campaign mode
+		if (state.campaign_mode) {
+			for (int j = 0; j < num_ops; j++) {
+				if (!usable_in_campaign(Operators[j].value)) {
+					state.op_add_enabled[j] = false;
+					state.op_replace_enabled[j] = false;
+					state.op_insert_enabled[j] = false;
+				}
+			}
+		}
 	}
 
 	// --- Clipboard paste validation ---

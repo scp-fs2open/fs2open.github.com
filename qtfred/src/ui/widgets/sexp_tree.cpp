@@ -2195,7 +2195,7 @@ void sexp_tree::customMenuHandler(const QPoint& pos) {
 	menu->exec(mapToGlobal(pos));
 }
 std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
-	int i, j, z, subcategory_id;
+	int i, j, subcategory_id;
 
 	add_instance = replace_instance = -1;
 	Assert((int) op_menu.size() < MAX_OP_MENUS);
@@ -2342,92 +2342,49 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 		}
 	}
 
-	// The MFC code could use some internal WinAPI IDs for keeping this mapping but that is not available in Qt so we
-	// need to do this ourself. This could be improved by applying the actions for the operator actions when the action
-	// is added.
-	std::unordered_map<int, QAction*> operator_action_mapping;
-
-	// add operator menu items to the various CATEGORY submenus they belong in
+	// add operator menu items to the various CATEGORY submenus they belong in,
+	// with enabled state from the pre-computed vectors
 	for (i = 0; i < (int) Operators.size(); i++) {
-		// add only if it is not in a subcategory
+		if (SexpTreeModel::is_operator_hidden(Operators[i].value))
+			continue;
+
+		bool add_en = state.op_add_enabled[i];
+		bool replace_en = state.op_replace_enabled[i];
+		bool insert_en = state.op_insert_enabled[i];
+
 		subcategory_id = get_subcategory(Operators[i].value);
 		if (subcategory_id == OP_SUBCATEGORY_NONE) {
-			// put it in the appropriate menu
 			for (j = 0; j < (int) op_menu.size(); j++) {
 				if (op_menu[j].id == get_category(Operators[i].value)) {
-					if (SexpTreeModel::is_operator_hidden(Operators[i].value)) {
-						j = (int) op_menu.size();
-					}
+					auto add_act = add_op_submenu[j]->addAction(QString::fromStdString(Operators[i].text),
+						this, [this, i]() { add_or_replace_operator(i, 0); });
+					add_act->setEnabled(add_en);
 
-					if (j < (int) op_menu.size()) {
-						auto add_act =
-							add_op_submenu[j]->addAction(QString::fromStdString(Operators[i].text), this, [this, i]() {
-								add_or_replace_operator(i, 0);
-							});
-						add_act->setEnabled(false);
-						operator_action_mapping.insert(std::make_pair(Operators[i].value, add_act));
+					auto replace_act = replace_op_submenu[j]->addAction(QString::fromStdString(Operators[i].text),
+						this, [this, i]() { add_or_replace_operator(i, 1); });
+					replace_act->setEnabled(replace_en);
 
-						auto replace_act = replace_op_submenu[j]->addAction(QString::fromStdString(Operators[i].text),
-																			this,
-																			[this, i]() {
-																				add_or_replace_operator(i, 1);
-																			});
-						replace_act->setEnabled(false);
-						operator_action_mapping.insert(std::make_pair(Operators[i].value | OP_REPLACE_FLAG,
-																	  replace_act));
-
-						auto insert_act = insert_op_submenu[j]->addAction(QString::fromStdString(Operators[i].text),
-																		  this,
-																		  [this, i]() {
-																			  insertOperatorAction(i);
-																		  });
-						insert_act->setEnabled(true);
-						operator_action_mapping.insert(std::make_pair(Operators[i].value | OP_INSERT_FLAG, insert_act));
-					}
-
-					break;    // only 1 category valid
+					auto insert_act = insert_op_submenu[j]->addAction(QString::fromStdString(Operators[i].text),
+						this, [this, i]() { insertOperatorAction(i); });
+					insert_act->setEnabled(insert_en);
+					break;
 				}
 			}
-		}
-			// if it is in a subcategory, handle it
-		else {
-			// put it in the appropriate submenu
+		} else {
 			for (j = 0; j < (int) op_submenu.size(); j++) {
 				if (op_submenu[j].id == subcategory_id) {
-					if (SexpTreeModel::is_operator_hidden(Operators[i].value)) {
-						j = (int) op_submenu.size();
-					}
+					auto add_act = add_op_subcategory_menu[j]->addAction(QString::fromStdString(Operators[i].text),
+						this, [this, i]() { add_or_replace_operator(i, 0); });
+					add_act->setEnabled(add_en);
 
-					if (j < (int) op_submenu.size()) {
-						auto add_act = add_op_subcategory_menu[j]->addAction(QString::fromStdString(Operators[i].text),
-																			 this,
-																			 [this, i]() {
-																				 add_or_replace_operator(i, 0);
-																			 });
-						add_act->setEnabled(false);
-						operator_action_mapping.insert(std::make_pair(Operators[i].value, add_act));
+					auto replace_act = replace_op_subcategory_menu[j]->addAction(QString::fromStdString(Operators[i].text),
+						this, [this, i]() { add_or_replace_operator(i, 1); });
+					replace_act->setEnabled(replace_en);
 
-						auto replace_act =
-							replace_op_subcategory_menu[j]->addAction(QString::fromStdString(Operators[i].text),
-																	  this,
-																	  [this, i]() {
-																		  add_or_replace_operator(i, 1);
-																	  });
-						replace_act->setEnabled(false);
-						operator_action_mapping.insert(std::make_pair(Operators[i].value | OP_REPLACE_FLAG,
-																	  replace_act));
-
-						auto insert_act =
-							insert_op_subcategory_menu[j]->addAction(QString::fromStdString(Operators[i].text),
-																	 this,
-																	 [this, i]() {
-																		 insertOperatorAction(i);
-																	 });
-						insert_act->setEnabled(true);
-						operator_action_mapping.insert(std::make_pair(Operators[i].value | OP_INSERT_FLAG, insert_act));
-					}
-
-					break;    // only 1 subcategory valid
+					auto insert_act = insert_op_subcategory_menu[j]->addAction(QString::fromStdString(Operators[i].text),
+						this, [this, i]() { insertOperatorAction(i); });
+					insert_act->setEnabled(insert_en);
+					break;
 				}
 			}
 		}
@@ -2436,8 +2393,6 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 	// special case: item is a ROOT node, and a label that can be edited (not an item in the sexp tree)
 	if (state.is_labeled_root) {
 		edit_data_act->setEnabled(state.is_root_editable);
-
-		// disable copy, insert op
 		copy_act->setEnabled(false);
 		insert_op_menu->setEnabled(false);
 
@@ -2448,33 +2403,17 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 
 	Assert(item_index != -1);  // handle not found, which should be impossible.
 	edit_data_act->setEnabled(state.can_edit_text);
-	if (!state.can_delete) {
-		delete_act->setEnabled(false);
-	}
+	delete_act->setEnabled(state.can_delete);
 
-/*		if ((tree_nodes[item_index].flags & OPERAND) && (tree_nodes[item_index].flags & EDITABLE))  // expandable?
-		menu.EnableMenuItem(ID_SPLIT_LINE, MF_ENABLED);
-
-	z = tree_nodes[item_index].child;
-	if (z != -1 && tree_nodes[z].next == -1 && tree_nodes[z].child == -1)
-		menu.EnableMenuItem(ID_SPLIT_LINE, MF_ENABLED);
-
-	z = tree_nodes[tree_nodes[item_index].parent].child;
-	if (z != -1 && tree_nodes[z].next == -1 && tree_nodes[z].child == -1)
-		menu.EnableMenuItem(ID_SPLIT_LINE, MF_ENABLED);*/
-
-	// change enabled status of 'add' type menu options.
+	// Set add/replace state from pre-computed values
 	Add_count = state.add_count;
+	Replace_count = state.replace_count;
+	Modify_variable = state.modify_variable;
+
 	add_number_act->setEnabled(state.can_add_number);
 	add_string_act->setEnabled(state.can_add_string);
-
-	// Enable operators from add data list
-	for (int op_idx : state.add_enabled_op_indices) {
-		auto iter = operator_action_mapping.find(Operators[op_idx].value);
-		if (iter != operator_action_mapping.end()) {
-			iter->second->setEnabled(true);
-		}
-	}
+	replace_number_act->setEnabled(state.can_replace_number);
+	replace_string_act->setEnabled(state.can_replace_string);
 
 	// Build add data menu items
 	if (state.add_data_list) {
@@ -2487,34 +2426,6 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 			}
 			data_idx++;
 			ptr = ptr->next;
-		}
-	}
-
-	// disable operators that do not have arguments available
-	for (j = 0; j < (int) Operators.size(); j++) {
-		if (!query_default_argument_available(j)) {
-			auto iter = operator_action_mapping.find(Operators[j].value);
-			if (iter != operator_action_mapping.end()) {
-				iter->second->setEnabled(false);
-			}
-		}
-	}
-
-
-	// change enabled status of 'replace' type menu options.
-	Replace_count = state.replace_count;
-	Modify_variable = state.modify_variable;
-	replace_number_act->setEnabled(state.can_replace_number);
-	replace_string_act->setEnabled(state.can_replace_string);
-	if (!state.can_delete) {
-		delete_act->setEnabled(false);
-	}
-
-	// Enable operators from replace data list
-	for (int op_idx : state.replace_enabled_op_indices) {
-		auto iter = operator_action_mapping.find(Operators[op_idx].value | OP_REPLACE_FLAG);
-		if (iter != operator_action_mapping.end()) {
-			iter->second->setEnabled(true);
 		}
 	}
 
@@ -2532,91 +2443,9 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 		}
 	}
 
-	// Enable replace operators for top-level nodes
-	if (tree_nodes[item_index].parent < 0) {
-		for (j = 0; j < (int) Operators.size(); j++) {
-			if (query_operator_return_type(j) == state.replace_type) {
-				auto iter = operator_action_mapping.find(Operators[j].value | OP_REPLACE_FLAG);
-				if (iter != operator_action_mapping.end()) {
-					iter->second->setEnabled(true);
-				}
-			}
-		}
-	}
-
-	// disable operators that do not have arguments available
-	for (j = 0; j < (int) Operators.size(); j++) {
-		if (!query_default_argument_available(j)) {
-			auto iter = operator_action_mapping.find(Operators[j].value | OP_REPLACE_FLAG);
-			if (iter != operator_action_mapping.end()) {
-				iter->second->setEnabled(false);
-			}
-		}
-	}
-
-
-	// change enabled status of 'insert' type menu options.
-	for (j = 0; j < (int) Operators.size(); j++) {
-		z = query_operator_return_type(j);
-		if (!sexp_query_type_match(state.insert_opf_type, z) || (Operators[j].min < 1)) {
-			auto iter = operator_action_mapping.find(Operators[j].value | OP_INSERT_FLAG);
-			if (iter != operator_action_mapping.end()) {
-				iter->second->setEnabled(false);
-			}
-		}
-
-		z = query_operator_argument_type(j, 0);
-		if ((state.insert_opf_type == OPF_NUMBER) && (z == OPF_POSITIVE)) {
-			z = OPF_NUMBER;
-		}
-
-		// Goober5000's number hack
-		if ((state.insert_opf_type == OPF_POSITIVE) && (z == OPF_NUMBER)) {
-			z = OPF_POSITIVE;
-		}
-
-		if (z != state.insert_opf_type) {
-			auto iter = operator_action_mapping.find(Operators[j].value | OP_INSERT_FLAG);
-			if (iter != operator_action_mapping.end()) {
-				iter->second->setEnabled(false);
-			}
-		}
-	}
-
-	// disable operators that do not have arguments available
-	for (j = 0; j < (int) Operators.size(); j++) {
-		if (!query_default_argument_available(j)) {
-			auto iter = operator_action_mapping.find(Operators[j].value | OP_INSERT_FLAG);
-			if (iter != operator_action_mapping.end()) {
-				iter->second->setEnabled(false);
-			}
-		}
-	}
-
-
-	// disable non campaign operators if in campaign mode
-	if (state.campaign_mode) {
-		for (j = 0; j < (int) Operators.size(); j++) {
-			if (!usable_in_campaign(Operators[j].value)) {
-				auto iter = operator_action_mapping.find(Operators[j].value);
-				if (iter != operator_action_mapping.end()) {
-					iter->second->setEnabled(false);
-				}
-				iter = operator_action_mapping.find(Operators[j].value | OP_REPLACE_FLAG);
-				if (iter != operator_action_mapping.end()) {
-					iter->second->setEnabled(false);
-				}
-				iter = operator_action_mapping.find(Operators[j].value | OP_INSERT_FLAG);
-				if (iter != operator_action_mapping.end()) {
-					iter->second->setEnabled(false);
-				}
-			}
-		}
-	}
-
+	// Clipboard and copy operations
 	paste_act->setEnabled(state.can_paste);
 	add_paste_act->setEnabled(state.can_paste_add);
-
 	cut_act->setEnabled(state.can_cut);
 	copy_act->setEnabled(state.can_copy);
 
