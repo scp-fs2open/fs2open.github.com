@@ -266,7 +266,7 @@ namespace particle
 
 		const auto& curve_input = std::forward_as_tuple(*part, part_velocity * vel_scalar);
 
-		if (source_effect.m_light_source) {
+		if (Detail.lighting > 3 && source_effect.m_light_source) {
 			const auto& light_source = *source_effect.m_light_source;
 
 			vec3d p_pos;
@@ -286,6 +286,10 @@ namespace particle
 			float r = light_source.r * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::LIGHT_R_MULT, curve_input);
 			float g = light_source.g * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::LIGHT_G_MULT, curve_input);
 			float b = light_source.b * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::LIGHT_B_MULT, curve_input);
+
+			if (light_radius <= 0.0f || intensity <= 0.0f) {
+				return false;
+			}
 
 			switch (light_source.light_source_mode) {
 			case ParticleEffect::LightInformation::LightSourceMode::POINT:
