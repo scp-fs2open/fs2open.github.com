@@ -287,6 +287,7 @@ namespace particle
 			float g = light_source.g * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::LIGHT_G_MULT, curve_input);
 			float b = light_source.b * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::LIGHT_B_MULT, curve_input);
 
+			// after this point it is only lighting code, so we can early return
 			if (light_radius <= 0.0f || intensity <= 0.0f) {
 				return false;
 			}
