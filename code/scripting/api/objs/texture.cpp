@@ -145,8 +145,6 @@ ADE_FUNC(destroyRenderTarget, l_Texture, nullptr, "Destroys a texture's render t
 
 	bm_release_rendertarget(th->handle);
 
-	th->handle = -1;
-
 	return ADE_RETURN_NIL;
 }
 
