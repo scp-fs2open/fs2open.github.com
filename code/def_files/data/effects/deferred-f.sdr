@@ -14,6 +14,7 @@ uniform sampler2DArray shadow_map;
 #ifdef ENV_MAP
 uniform samplerCube sEnvmap;
 uniform samplerCube sIrrmap;
+uniform sampler2D sBRDFLUT;
 #endif
 
 layout (std140) uniform globalDeferredData {
@@ -172,46 +173,46 @@ void GetLightInfo(vec3 position, in float alpha, in vec3 reflectDir, out vec3 li
 
 #ifdef ENV_MAP
 void ComputeEnvLight(float alpha, float ao, vec3 light_dir, vec3 eyeDir, vec3 normal, vec4 baseColor, vec4 specColor, out vec3 envLight) {
-	// Bit of a hack here, pretend we're doing blinn-phong shading and use a (modified version of) the derivation from
-	// Plausible Blinn-Phong Reflection of Standard Cube MIP-Maps - McGuire et al.
-	// to determine the mip bias.
-	// We use the specular term listed at http://graphicrants.blogspot.com/2013/08/specular-brdf-reference.html
-	// 1/(pi*alpha^2) * NdotM^((2/alpha^2)-2)
-	// so let s = (2/alpha^2 - 2)
-	// 1/2 log(s + 1) = 1/2 log(2/alpha^2 -1)
+	// Proper split-sum IBL using pre-computed BRDF LUT
+	// Based on "Real Shading in Unreal Engine 4" by Brian Karis, Epic Games
 
-	const float ENV_REZ = 512; // Ideally this would be #define'd and shader recompiled with envmap rez changes
-	const float REZ_BIAS = log2(ENV_REZ * sqrt(3));
+	float roughness = sqrt(alpha); // Convert from alpha (roughness^2) back to roughness
+	float NdotV = max(dot(normal, eyeDir), 0.0);
 
-	float alphaSqr = alpha * alpha;
-	float rough_bias = 0.5 * log2(2/alphaSqr - 1);
-	float mip_bias = REZ_BIAS - rough_bias;
+	// Transform reflection direction to world space for cubemap sampling
+	vec3 reflectDir = reflect(-eyeDir, normal);
+	vec3 worldReflect = vec3(modelViewMatrix * vec4(reflectDir, 0.0));
 
-	// Sample light, using mip bias to blur it.
-	vec3 env_light_dir = vec3(modelViewMatrix * vec4(light_dir, 0.0));
-	vec4 specEnvColour = srgb_to_linear(textureLod(sEnvmap, env_light_dir, mip_bias));
+	// Calculate mip level based on roughness (rough = blurry = higher mip)
+	// Assume env map has 6-7 mip levels for 512x512 base
+	const float MAX_REFLECTION_LOD = 6.0;
+	float mipLevel = roughness * MAX_REFLECTION_LOD;
 
-	vec3 halfVec = normal;
+	// Sample pre-filtered environment map
+	vec3 prefilteredColor = srgb_to_linear(textureLod(sEnvmap, worldReflect, mipLevel).rgb);
 
-	// Lots of hacks here to get things to look right. We aren't loading a BRDF split-sum integral texture
-	// or properly calculating IBL levels.
-	// Fresnel calculation as with standard lights.
+	// Sample BRDF LUT with NdotV and roughness
+	vec2 envBRDF = texture(sBRDFLUT, vec2(NdotV, roughness)).rg;
 
-	vec3 fresnel = mix(specColor.rgb, FresnelSchlick(halfVec, eyeDir, specColor.rgb), specColor.a);
+	// Fresnel at normal incidence (F0)
+	vec3 F0 = specColor.rgb;
 
-	// Pseudo-IBL, so use k_IBL
-	float k = alpha * alpha/ 2.0f;
+	// Apply split-sum approximation: specular = prefilteredColor * (F0 * scale + bias)
+	vec3 specularIBL = prefilteredColor * (F0 * envBRDF.x + vec3(envBRDF.y));
 
-	float NdotL = max(dot(light_dir, normal),0);
+	// Diffuse IBL from irradiance map
+	vec3 worldNormal = vec3(modelViewMatrix * vec4(normal, 0.0));
+	vec3 irradiance = srgb_to_linear(texture(sIrrmap, worldNormal).rgb);
 
-	float g1vNL = GeometrySchlickGGX(NdotL, k);
-	vec3 specEnvLighting = specEnvColour.rgb * fresnel * g1vNL;
+	// Energy conservation: kD is reduced by specular contribution
+	// Using Fresnel-Schlick at NdotV for energy balance
+	vec3 F = F0 + (vec3(1.0) - F0) * pow(1.0 - NdotV, 5.0);
+	vec3 kD = (vec3(1.0) - F) * (vec3(1.0) - specColor.rgb);
 
-	vec3 kD = vec3(1.0)-fresnel;
-	kD *= (vec3(1.0) - specColor.rgb);
-	vec3 diffEnvColor = srgb_to_linear(texture(sIrrmap, vec3(modelViewMatrix * vec4(normal, 0.0))).rgb);
-	vec3 diffEnvLighting = kD * baseColor.rgb * diffEnvColor * ao;
-	envLight = (specEnvLighting + diffEnvLighting) * baseColor.a;
+	vec3 diffuseIBL = kD * baseColor.rgb * irradiance;
+
+	// Combine diffuse and specular IBL with AO
+	envLight = (diffuseIBL + specularIBL) * ao * baseColor.a;
 }
 #endif
 

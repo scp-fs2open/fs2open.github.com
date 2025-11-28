@@ -24,13 +24,159 @@
 #include "tracing/tracing.h"
 
 #include <math/bitarray.h>
+#include <cmath>
+
+// BRDF LUT for IBL split-sum approximation
+static GLuint BRDF_LUT_texture = 0;
+static const int BRDF_LUT_SIZE = 512;
+
+// Hammersley sequence for quasi-random sampling
+static float RadicalInverse_VdC(uint32_t bits) {
+	bits = (bits << 16u) | (bits >> 16u);
+	bits = ((bits & 0x55555555u) << 1u) | ((bits & 0xAAAAAAAAu) >> 1u);
+	bits = ((bits & 0x33333333u) << 2u) | ((bits & 0xCCCCCCCCu) >> 2u);
+	bits = ((bits & 0x0F0F0F0Fu) << 4u) | ((bits & 0xF0F0F0F0u) >> 4u);
+	bits = ((bits & 0x00FF00FFu) << 8u) | ((bits & 0xFF00FF00u) >> 8u);
+	return static_cast<float>(bits) * 2.3283064365386963e-10f; // / 0x100000000
+}
+
+static void Hammersley(uint32_t i, uint32_t N, float& xi1, float& xi2) {
+	xi1 = static_cast<float>(i) / static_cast<float>(N);
+	xi2 = RadicalInverse_VdC(i);
+}
+
+// GGX importance sampling
+static void ImportanceSampleGGX(float xi1, float xi2, float roughness,
+                                float& hx, float& hy, float& hz) {
+	float a = roughness * roughness;
+	float phi = 2.0f * PI * xi1;
+	float cosTheta = sqrtf((1.0f - xi2) / (1.0f + (a * a - 1.0f) * xi2));
+	float sinTheta = sqrtf(1.0f - cosTheta * cosTheta);
+
+	hx = cosf(phi) * sinTheta;
+	hy = sinf(phi) * sinTheta;
+	hz = cosTheta;
+}
+
+// Geometry function for IBL (uses k = roughness^2 / 2)
+static float GeometrySchlickGGX_IBL(float NdotV, float roughness) {
+	float a = roughness;
+	float k = (a * a) / 2.0f;
+	return NdotV / (NdotV * (1.0f - k) + k);
+}
+
+static float GeometrySmith_IBL(float NdotV, float NdotL, float roughness) {
+	float ggx1 = GeometrySchlickGGX_IBL(NdotV, roughness);
+	float ggx2 = GeometrySchlickGGX_IBL(NdotL, roughness);
+	return ggx1 * ggx2;
+}
+
+// Integrate BRDF for split-sum approximation
+// Returns (scale, bias) for F0 * scale + bias
+static void IntegrateBRDF(float NdotV, float roughness, float& scale, float& bias) {
+	// View vector in tangent space where N = (0, 0, 1)
+	float vx = sqrtf(1.0f - NdotV * NdotV);
+	float vy = 0.0f;
+	float vz = NdotV;
+
+	float A = 0.0f;
+	float B = 0.0f;
+
+	const uint32_t SAMPLE_COUNT = 1024;
+
+	for (uint32_t i = 0; i < SAMPLE_COUNT; ++i) {
+		float xi1, xi2;
+		Hammersley(i, SAMPLE_COUNT, xi1, xi2);
+
+		float hx, hy, hz;
+		ImportanceSampleGGX(xi1, xi2, roughness, hx, hy, hz);
+
+		// Reflect V around H to get L
+		float VdotH = vx * hx + vy * hy + vz * hz;
+		float lx = 2.0f * VdotH * hx - vx;
+		float ly = 2.0f * VdotH * hy - vy;
+		float lz = 2.0f * VdotH * hz - vz;
+
+		float NdotL = std::max(lz, 0.0f);
+		float NdotH = std::max(hz, 0.0f);
+		VdotH = std::max(VdotH, 0.0f);
+
+		if (NdotL > 0.0f) {
+			float G = GeometrySmith_IBL(NdotV, NdotL, roughness);
+			float G_Vis = (G * VdotH) / (NdotH * NdotV + 0.0001f);
+			float Fc = powf(1.0f - VdotH, 5.0f);
+
+			A += (1.0f - Fc) * G_Vis;
+			B += Fc * G_Vis;
+		}
+	}
+
+	scale = A / static_cast<float>(SAMPLE_COUNT);
+	bias = B / static_cast<float>(SAMPLE_COUNT);
+}
+
+// Generate the BRDF LUT texture
+static void generate_brdf_lut() {
+	if (BRDF_LUT_texture != 0) {
+		return; // Already generated
+	}
+
+	mprintf(("Generating BRDF LUT for IBL (%dx%d)...\n", BRDF_LUT_SIZE, BRDF_LUT_SIZE));
+
+	// Allocate data (RG16F = 2 floats per pixel)
+	SCP_vector<float> data(BRDF_LUT_SIZE * BRDF_LUT_SIZE * 2);
+
+	for (int y = 0; y < BRDF_LUT_SIZE; ++y) {
+		float roughness = static_cast<float>(y + 1) / static_cast<float>(BRDF_LUT_SIZE);
+		// Clamp roughness to avoid numerical issues
+		roughness = std::max(roughness, 0.01f);
+
+		for (int x = 0; x < BRDF_LUT_SIZE; ++x) {
+			float NdotV = static_cast<float>(x + 1) / static_cast<float>(BRDF_LUT_SIZE);
+			// Clamp NdotV to avoid numerical issues
+			NdotV = std::max(NdotV, 0.01f);
+
+			float scale, bias;
+			IntegrateBRDF(NdotV, roughness, scale, bias);
+
+			int idx = (y * BRDF_LUT_SIZE + x) * 2;
+			data[idx + 0] = scale;
+			data[idx + 1] = bias;
+		}
+	}
+
+	// Create OpenGL texture
+	glGenTextures(1, &BRDF_LUT_texture);
+	GL_state.Texture.SetActiveUnit(0);
+	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
+	GL_state.Texture.Enable(BRDF_LUT_texture);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, BRDF_LUT_SIZE, BRDF_LUT_SIZE, 0, GL_RG, GL_FLOAT, data.data());
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	mprintf(("BRDF LUT generation complete.\n"));
+}
+
+GLuint gr_opengl_get_brdf_lut() {
+	return BRDF_LUT_texture;
+}
 
 void gr_opengl_deferred_init()
 {
 	gr_opengl_deferred_light_cylinder_init(16);
 	gr_opengl_deferred_light_sphere_init(16, 16);
+	generate_brdf_lut();
 }
-void gr_opengl_deferred_shutdown() {}
+void gr_opengl_deferred_shutdown() {
+	if (BRDF_LUT_texture != 0) {
+		glDeleteTextures(1, &BRDF_LUT_texture);
+		BRDF_LUT_texture = 0;
+	}
+}
 
 void opengl_clear_deferred_buffers()
 {
@@ -254,11 +400,14 @@ void gr_opengl_deferred_lighting_finish()
 	if (ENVMAP > 0) {
 		Current_shader->program->Uniforms.setTextureUniform("sEnvmap", 5);
 		Current_shader->program->Uniforms.setTextureUniform("sIrrmap", 6);
+		Current_shader->program->Uniforms.setTextureUniform("sBRDFLUT", 7);
 		float u_scale, v_scale;
 		uint32_t array_index;
 		gr_opengl_tcache_set(ENVMAP, TCACHE_TYPE_CUBEMAP, &u_scale, &v_scale, &array_index, 5);
 		gr_opengl_tcache_set(IRRMAP, TCACHE_TYPE_CUBEMAP, &u_scale, &v_scale, &array_index, 6);
 		Assertion(array_index == 0, "Cube map arrays are not supported yet!");
+		// Bind BRDF LUT for proper split-sum IBL
+		GL_state.Texture.Enable(7, GL_TEXTURE_2D, BRDF_LUT_texture);
 	}
 
 	// We need to use stable sorting here to make sure that the relative ordering of the same light types is the same as
@@ -287,6 +436,10 @@ void gr_opengl_deferred_lighting_finish()
 	SCP_vector<light> full_frame_lights = SCP_vector<light>();
 	SCP_vector<light> sphere_lights = SCP_vector<light>();
 	SCP_vector<light> cylinder_lights = SCP_vector<light>();
+
+	// Accumulate additional ambient lights from the Lights vector
+	vec3d accumulated_ambient = ZERO_VECTOR;
+
 	for (auto& l : Lights) {
 		switch (l.type) {
 		case Light_Type::Directional:
@@ -301,7 +454,11 @@ void gr_opengl_deferred_lighting_finish()
 			cylinder_lights.push_back(l);
 			break;
 		case Light_Type::Ambient:
-			UNREACHABLE("Multiple ambient lights are not supported!");
+			// Accumulate ambient contributions instead of failing
+			accumulated_ambient.xyz.x += l.r * l.intensity;
+			accumulated_ambient.xyz.y += l.g * l.intensity;
+			accumulated_ambient.xyz.z += l.b * l.intensity;
+			break;
 		}
 	}
 	{
@@ -329,13 +486,14 @@ void gr_opengl_deferred_lighting_finish()
 		header->nearPlane = gr_near_plane;
 
 		{
-			//Prepare ambient light
+			//Prepare ambient light (global + accumulated from multiple ambient lights)
 			light& l = full_frame_lights.emplace_back();
 			vec3d ambient;
 			gr_get_ambient_light(&ambient);
-			l.r = ambient.xyz.x;
-			l.g = ambient.xyz.y;
-			l.b = ambient.xyz.z;
+			// Add any accumulated ambient contributions from additional ambient lights
+			l.r = ambient.xyz.x + accumulated_ambient.xyz.x;
+			l.g = ambient.xyz.y + accumulated_ambient.xyz.y;
+			l.b = ambient.xyz.z + accumulated_ambient.xyz.z;
 			l.type = Light_Type::Ambient;
 			l.intensity = 1.f;
 			l.source_radius = 0.f;

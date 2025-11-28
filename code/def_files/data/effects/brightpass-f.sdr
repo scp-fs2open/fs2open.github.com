@@ -1,22 +1,29 @@
 in vec4 fragTexCoord;
 out vec4 fragOut0;
 uniform sampler2D tex;
-const float Luminance = 0.08;
-const float fMiddleGray = 0.2;
-const float fWhiteCutoff = 0.4;
+
+// Soft knee bloom threshold parameters
 const float threshold = 1.0;
-// High-pass filter
+const float knee = 0.5;
+
+// Attempt to match ITU BT.709 luminance coefficients
 float luminance(vec3 color)
 {
-	return dot(color, vec3(0.299, 0.587, 0.114));
+	return dot(color, vec3(0.2126, 0.7152, 0.0722));
 }
+
 void main() {
-	vec4 ColorOut = texture(tex, fragTexCoord.xy);
-	//ColorOut *= fMiddleGray / (Luminance + 0.001);
-	//ColorOut *= (1.0 + (ColorOut / (fWhiteCutoff * fWhiteCutoff)));
-	//ColorOut -= 6.0;
-	//ColorOut /= (10.0 + ColorOut);
-	fragOut0 = vec4(max(vec3(0.0, 0.0, 0.0), ColorOut.rgb - vec3(1.0, 1.0, 1.0)), 1.0);
-	//float luminance = luminance(ColorOut.rgb);
-	//gl_FragColor.rgb = luminance > threshold ? ColorOut.rgb : vec3(0.0);
+	vec4 color = texture(tex, fragTexCoord.xy);
+	float brightness = luminance(color.rgb);
+
+	// Soft knee threshold - provides gradual transition instead of hard cutoff
+	// This produces more natural-looking bloom without harsh edges
+	float soft = brightness - threshold + knee;
+	soft = clamp(soft, 0.0, 2.0 * knee);
+	soft = soft * soft / (4.0 * knee + 0.00001);
+
+	float contribution = max(soft, brightness - threshold);
+	contribution /= max(brightness, 0.00001);
+
+	fragOut0 = vec4(color.rgb * contribution, 1.0);
 }

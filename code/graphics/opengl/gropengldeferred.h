@@ -5,10 +5,12 @@
 #include "graphics/util/uniform_structs.h"
 #include "lighting/lighting.h"
 #include "lighting/lighting_profiles.h"
+#include <glad/glad.h>
 namespace ltp = lighting_profiles;
-using namespace ltp; 
+using namespace ltp;
 
 void gr_opengl_deferred_init();
+GLuint gr_opengl_get_brdf_lut();
 
 void opengl_clear_deferred_buffers();
 void gr_opengl_deferred_lighting_begin(bool clearNonColorBufs = false);
