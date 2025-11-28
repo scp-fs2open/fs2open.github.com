@@ -17,4 +17,7 @@ void gr_opengl_post_process_end();
 
 void opengl_post_shader_header(SCP_stringstream &sflags, shader_type shader_t, int flags);
 
+// TAA jitter for projection matrix
+void gr_opengl_get_taa_jitter(float* jitter_x, float* jitter_y);
+
 #endif	// _GROPENGLPOSTPROCESSING_H

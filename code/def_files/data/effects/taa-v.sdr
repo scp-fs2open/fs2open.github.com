@@ -1,0 +1,13 @@
+//? #version 150
+// Temporal Anti-Aliasing vertex shader
+
+in vec4 vertPosition;
+in vec4 vertTexCoord;
+
+out vec4 fragTexCoord;
+
+void main()
+{
+	gl_Position = vertPosition;
+	fragTexCoord = vertTexCoord;
+}

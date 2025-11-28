@@ -61,12 +61,15 @@ enum class AntiAliasMode {
 	SMAA_Medium = 5,
 	SMAA_High = 6,
 	SMAA_Ultra = 7,
+
+	TAA = 8,
 };
 extern AntiAliasMode Gr_aa_mode;
 extern AntiAliasMode Gr_aa_mode_last_frame;
 
 bool gr_is_fxaa_mode(AntiAliasMode mode);
 bool gr_is_smaa_mode(AntiAliasMode mode);
+bool gr_is_taa_mode(AntiAliasMode mode);
 
 extern bool Gr_post_processing_enabled;
 
@@ -213,6 +216,8 @@ enum shader_type {
 	SDR_TYPE_ENVMAP_SPHERE_WARP,
 
 	SDR_TYPE_IRRADIANCE_MAP_GEN,
+
+	SDR_TYPE_POST_PROCESS_TAA,
 
 	NUM_SHADER_TYPES
 };

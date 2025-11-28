@@ -2,6 +2,8 @@
 #include "matrix.h"
 
 #include "graphics/util/UniformBuffer.h"
+#include "graphics/opengl/gropenglpostprocessing.h"
+#include "graphics/2d.h"
 
 #include <graphics/util/uniform_structs.h>
 
@@ -149,6 +151,16 @@ void gr_set_proj_matrix(fov_t fov, float aspect, float z_near, float z_far) {
 		else {
 			create_perspective_projection_matrix(&gr_projection_matrix, clip_l, clip_r, clip_d, clip_u, z_near, z_far);
 		}
+	}
+
+	// Apply TAA jitter if enabled
+	if (gr_is_taa_mode(Gr_aa_mode)) {
+		float jitter_x, jitter_y;
+		gr_opengl_get_taa_jitter(&jitter_x, &jitter_y);
+		// Convert pixel jitter to NDC space and apply to projection matrix
+		// Elements [8] and [9] are the off-center offsets
+		gr_projection_matrix.a1d[8] += jitter_x * 2.0f / i2fl(gr_screen.clip_width);
+		gr_projection_matrix.a1d[9] += jitter_y * 2.0f / i2fl(gr_screen.clip_height);
 	}
 
 	gr_htl_projection_matrix_set = true;

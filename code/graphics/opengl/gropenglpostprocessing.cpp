@@ -59,6 +59,23 @@ static GLuint Smaa_output_tex               = 0;
 static GLuint Smaa_search_tex = 0;
 static GLuint Smaa_area_tex   = 0;
 
+// TAA (Temporal Anti-Aliasing) resources
+static GLuint TAA_history_fb = 0;
+static GLuint TAA_history_tex[2] = { 0 }; // Double-buffered history
+static int TAA_history_index = 0;
+static GLuint TAA_velocity_tex = 0; // Simple zero-velocity for now
+static int TAA_frame_count = 0;
+
+// Halton sequence for jitter (first 16 values for 2,3 base)
+static const float Halton_2[16] = {
+	0.5f, 0.25f, 0.75f, 0.125f, 0.625f, 0.375f, 0.875f, 0.0625f,
+	0.5625f, 0.3125f, 0.8125f, 0.1875f, 0.6875f, 0.4375f, 0.9375f, 0.03125f
+};
+static const float Halton_3[16] = {
+	0.333333f, 0.666667f, 0.111111f, 0.444444f, 0.777778f, 0.222222f, 0.555556f, 0.888889f,
+	0.037037f, 0.370370f, 0.703704f, 0.148148f, 0.481481f, 0.814815f, 0.259259f, 0.592593f
+};
+
 namespace ltp = lighting_profiles;
 using namespace ltp;
 
@@ -425,6 +442,67 @@ void opengl_post_pass_smaa()
 	smaa_resolve();
 }
 
+void opengl_post_pass_taa()
+{
+	GR_DEBUG_SCOPE("TAA");
+
+	GL_state.PushFramebufferState();
+
+	// We only want to draw to ATTACHMENT0
+	glDrawBuffer(GL_COLOR_ATTACHMENT0);
+	GL_state.ColorMask(true, true, true, true);
+
+	// Current history buffer index (ping-pong)
+	int current_history = TAA_history_index;
+	int previous_history = 1 - TAA_history_index;
+
+	// Set up the TAA shader
+	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_TAA, 0));
+
+	// Bind textures
+	Current_shader->program->Uniforms.setTextureUniform("scene", 0);
+	Current_shader->program->Uniforms.setTextureUniform("history", 1);
+	Current_shader->program->Uniforms.setTextureUniform("depthTex", 2);
+	Current_shader->program->Uniforms.setTextureUniform("velocityTex", 3);
+
+	GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_ldr_texture);
+	GL_state.Texture.Enable(1, GL_TEXTURE_2D, TAA_history_tex[previous_history]);
+	GL_state.Texture.Enable(2, GL_TEXTURE_2D, Scene_depth_texture);
+	GL_state.Texture.Enable(3, GL_TEXTURE_2D, TAA_velocity_tex);
+
+	// Set uniform data
+	opengl_set_generic_uniform_data<graphics::generic_data::taa_data>([](graphics::generic_data::taa_data* data) {
+		data->texelSize.x = 1.0f / i2fl(Post_texture_width);
+		data->texelSize.y = 1.0f / i2fl(Post_texture_height);
+		data->feedbackMin = 0.88f;
+		data->feedbackMax = 0.97f;
+	});
+
+	// Write TAA output to the current history buffer
+	GL_state.BindFrameBuffer(TAA_history_fb);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, TAA_history_tex[current_history], 0);
+
+	opengl_draw_full_screen_textured(0.0f, 0.0f, Scene_texture_u_scale, Scene_texture_u_scale);
+
+	// Copy TAA result back to Scene_ldr_texture for further processing
+	GL_state.PopFramebufferState();
+	GL_state.PushFramebufferState();
+	GL_state.BindFrameBuffer(Bloom_framebuffer);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Scene_ldr_texture, 0);
+
+	opengl_shader_set_passthrough(true, false);
+	GL_state.Texture.Enable(0, GL_TEXTURE_2D, TAA_history_tex[current_history]);
+
+	glViewport(0, 0, Post_texture_width, Post_texture_height);
+	opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
+
+	GL_state.PopFramebufferState();
+
+	// Swap history buffers for next frame
+	TAA_history_index = current_history;
+	TAA_frame_count++;
+}
+
 extern GLuint Shadow_map_depth_texture;
 extern GLuint Scene_depth_texture;
 extern GLuint Cockpit_depth_texture;
@@ -519,6 +597,8 @@ void gr_opengl_post_process_end()
 			opengl_post_pass_smaa();
 		} else if (gr_is_fxaa_mode(Gr_aa_mode) && !fxaa_unavailable) {
 			opengl_post_pass_fxaa();
+		} else if (gr_is_taa_mode(Gr_aa_mode)) {
+			opengl_post_pass_taa();
 		}
 	}
 
@@ -915,6 +995,10 @@ bool opengl_post_init_shaders()
 		gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_SMAA_NEIGHBORHOOD_BLENDING, 0);
 	}
 
+	if (gr_is_taa_mode(Gr_aa_mode)) {
+		gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_TAA, 0);
+	}
+
 	return true;
 }
 
@@ -1075,6 +1159,87 @@ static GLuint load_smaa_texture(GLsizei width, GLsizei height, GLenum format, co
 	return tex;
 }
 
+// TAA (Temporal Anti-Aliasing) setup
+static void setup_taa_resources()
+{
+	GL_state.PushFramebufferState();
+
+	// Create history framebuffer
+	glGenFramebuffers(1, &TAA_history_fb);
+	GL_state.BindFrameBuffer(TAA_history_fb);
+
+	// Create double-buffered history textures
+	glGenTextures(2, TAA_history_tex);
+
+	for (int i = 0; i < 2; i++) {
+		GL_state.Texture.SetActiveUnit(0);
+		GL_state.Texture.SetTarget(GL_TEXTURE_2D);
+		GL_state.Texture.Enable(TAA_history_tex[i]);
+
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, Post_texture_width, Post_texture_height, 0,
+		             GL_RGBA, GL_FLOAT, nullptr);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	}
+
+	// Create a simple zero-velocity texture (for scenes without motion vectors)
+	glGenTextures(1, &TAA_velocity_tex);
+	GL_state.Texture.SetActiveUnit(0);
+	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
+	GL_state.Texture.Enable(TAA_velocity_tex);
+
+	// Initialize with zeros (no motion)
+	SCP_vector<float> zero_velocity(Post_texture_width * Post_texture_height * 2, 0.0f);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, Post_texture_width, Post_texture_height, 0,
+	             GL_RG, GL_FLOAT, zero_velocity.data());
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, TAA_history_tex[0], 0);
+
+	GL_state.PopFramebufferState();
+
+	mprintf(("TAA resources initialized (%dx%d)\n", Post_texture_width, Post_texture_height));
+}
+
+static void shutdown_taa_resources()
+{
+	if (TAA_history_tex[0]) {
+		glDeleteTextures(2, TAA_history_tex);
+		TAA_history_tex[0] = 0;
+		TAA_history_tex[1] = 0;
+	}
+	if (TAA_velocity_tex) {
+		glDeleteTextures(1, &TAA_velocity_tex);
+		TAA_velocity_tex = 0;
+	}
+	if (TAA_history_fb) {
+		glDeleteFramebuffers(1, &TAA_history_fb);
+		TAA_history_fb = 0;
+	}
+}
+
+// Get jitter offset for current frame (in pixels)
+void gr_opengl_get_taa_jitter(float* jitter_x, float* jitter_y)
+{
+	if (!gr_is_taa_mode(Gr_aa_mode)) {
+		*jitter_x = 0.0f;
+		*jitter_y = 0.0f;
+		return;
+	}
+
+	int index = TAA_frame_count % 16;
+	// Convert to -0.5 to 0.5 range (sub-pixel offset)
+	*jitter_x = Halton_2[index] - 0.5f;
+	*jitter_y = Halton_3[index] - 0.5f;
+}
+
 static void setup_smaa_resources()
 {
 	GL_state.PushFramebufferState();
@@ -1111,8 +1276,12 @@ static bool opengl_post_init_framebuffer()
 
 	opengl_setup_bloom_textures();
 
-	if (Gr_aa_mode != AntiAliasMode::None) {
+	if (gr_is_smaa_mode(Gr_aa_mode)) {
 		setup_smaa_resources();
+	}
+
+	if (gr_is_taa_mode(Gr_aa_mode)) {
+		setup_taa_resources();
 	}
 
 	GL_state.BindFrameBuffer(0);
@@ -1208,6 +1377,7 @@ void opengl_post_process_shutdown()
 	graphics::Post_processing_manager = nullptr;
 
 	opengl_post_process_shutdown_bloom();
+	shutdown_taa_resources();
 
 	Post_in_frame = false;
 	Post_active_shader_index = 0;

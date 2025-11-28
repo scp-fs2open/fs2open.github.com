@@ -175,6 +175,9 @@ static opengl_shader_type_t GL_shader_types[] = {
 
 	{ SDR_TYPE_IRRADIANCE_MAP_GEN, "post-v.sdr", "irrmap-f.sdr", nullptr,
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Irradiance Map Generation", false },
+
+	{ SDR_TYPE_POST_PROCESS_TAA, "taa-v.sdr", "taa-f.sdr", nullptr,
+		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Temporal Anti-Aliasing", false },
 };
 // clang-format on
 

@@ -210,8 +210,8 @@ Flag exe_params[] =
 	{ "-startgame",			"Skip mainhall and start hosting",			false,	0,									EASY_DEFAULT,					"Multiplayer",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-startgame", },
 	{ "-closed",			"Start hosted server as closed",			false,	0,									EASY_DEFAULT,					"Multiplayer",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-closed", },
 	{ "-restricted",		"Host confirms join requests",				false,	0,									EASY_DEFAULT,					"Multiplayer",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-restricted", },
-	{ "-multilog",			"",											false,	0,									EASY_DEFAULT,					"Multiplayer",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-multilog", },
-	{ "-clientdamage",		"",											false,	0,									EASY_DEFAULT,					"Multiplayer",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-clientdamage", },
+	{ "-multilog",			"Enable multiplayer event logging",			false,	0,									EASY_DEFAULT,					"Multiplayer",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-multilog", },
+	{ "-clientdamage",		"Allow multiplayer clients to do damage",	false,	0,									EASY_DEFAULT,					"Multiplayer",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-clientdamage", },
 	{ "-mpnoreturn",		"Disable flight deck option",				true,	0,									EASY_DEFAULT,					"Multiplayer",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-mpnoreturn", },
 	{ "-gateway_ip",		"Set gateway IP address",					false,	0,									EASY_DEFAULT,					"Multiplayer",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-gateway_ip", },
 	{ "-ingame_join",		"Disable in-game joining",					true,	0,									EASY_DEFAULT,					"Multiplayer",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-ingame_join", },
@@ -347,11 +347,11 @@ cmdline_parm softparticles_arg("-soft_particles", NULL, AT_NONE);
 cmdline_parm no_postprocess_arg("-no_post_process", "Disables post-processing", AT_NONE);
 cmdline_parm post_process_aa_arg("-aa", "Enables post-process antialiasing", AT_NONE);
 cmdline_parm post_process_aa_preset_arg("-aa_preset", "Sets the AA effect to use. See the wiki for details", AT_INT);
-cmdline_parm deprecated_fxaa_arg("-fxaa", nullptr, AT_NONE);
+cmdline_parm deprecated_fxaa_arg("-fxaa", "Deprecated - use -aa instead", AT_NONE);
 cmdline_parm deprecated_fxaa_preset_arg("-fxaa_preset", "FXAA quality (0-2), requires post-processing and -fxaa", AT_INT);
-cmdline_parm deprecated_smaa_arg("-smaa", nullptr, AT_NONE);
+cmdline_parm deprecated_smaa_arg("-smaa", "Deprecated - use -aa instead", AT_NONE);
 cmdline_parm deprecated_smaa_preset_arg("-smaa_preset", "SMAA quality (0-3), requires post-processing and -smaa", AT_INT);
-cmdline_parm msaa_enabled_arg("-msaa", nullptr, AT_INT);
+cmdline_parm msaa_enabled_arg("-msaa", "Enable multisample anti-aliasing", AT_INT);
 cmdline_parm fb_explosions_arg("-fb_explosions", NULL, AT_NONE);
 cmdline_parm fb_thrusters_arg("-fb_thrusters", NULL, AT_NONE);
 cmdline_parm shadow_quality_arg("-shadow_quality", NULL, AT_INT);
@@ -2041,8 +2041,11 @@ bool SetCmdlineParams()
 			case 5: 
 				Gr_aa_mode = AntiAliasMode::SMAA_High;
 				break;
-			case 6: 
+			case 6:
 				Gr_aa_mode = AntiAliasMode::SMAA_Ultra;
+				break;
+			case 7:
+				Gr_aa_mode = AntiAliasMode::TAA;
 				break;
 			}
 		}
@@ -2430,13 +2433,22 @@ int parse_cmdline(int argc, char *argv[])
 
 const char * get_param_desc(const char *flag_name)
 {
-	int i;
-	int flag_size = sizeof(Flag);
-	int num_flags = sizeof(exe_params) / flag_size;
-	for (i = 0; i < num_flags; ++i) {
+	static const char fallback_desc[] = "No description available.";
+
+	const int flag_size = sizeof(Flag);
+	const int num_flags = sizeof(exe_params) / flag_size;
+	for (int i = 0; i < num_flags; ++i) {
 		if (!strcmp(flag_name, exe_params[i].name)) {
-			return exe_params[i].desc;
+			// Return the description if present, otherwise fallback
+			if (exe_params[i].desc[0] != '\0') {
+				return exe_params[i].desc;
+			}
+			// Flag is in exe_params but has blank description - return fallback
+			return fallback_desc;
 		}
 	}
-	return "UNKNOWN - FIXME!";
+
+	// Not all cmdline flags are in exe_params (which is for launcher UI).
+	// Internal/debug flags don't need to be there. Return fallback silently.
+	return fallback_desc;
 }

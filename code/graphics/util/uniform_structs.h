@@ -281,6 +281,12 @@ struct fxaa_data {
 	float pad[2];
 };
 
+struct taa_data {
+	vec2d texelSize;        // 1.0 / screen resolution
+	float feedbackMin;      // Minimum blend factor (0.88)
+	float feedbackMax;      // Maximum blend factor (0.97)
+};
+
 struct fog_data {
 	vec3d fog_color;
 	float fog_start;

@@ -688,6 +688,9 @@ bool gr_is_fxaa_mode(AntiAliasMode mode)
 bool gr_is_smaa_mode(AntiAliasMode mode) {
 	return mode == AntiAliasMode::SMAA_Low || mode == AntiAliasMode::SMAA_Medium || mode == AntiAliasMode::SMAA_High || mode == AntiAliasMode::SMAA_Ultra;
 }
+bool gr_is_taa_mode(AntiAliasMode mode) {
+	return mode == AntiAliasMode::TAA;
+}
 
 static void parse_post_processing_func()
 {
