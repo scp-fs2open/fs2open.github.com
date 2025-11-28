@@ -11,6 +11,14 @@ uniform sampler2DArray baseMap;
 layout (std140) uniform genericData {
 	vec4 color;
 	float intensity;
+	float ambientFactor;
+	float pad[2];
+	vec3 ambientLight;
+	float pad2;
+	vec3 sunDirection;
+	float sunIntensity;
+	vec3 sunColor;
+	float pad3;
 };
 
 void main()
@@ -21,5 +29,26 @@ void main()
 	baseColor.rgb = srgb_to_linear(baseColor.rgb);
 	vec4 blendColor = vec4(srgb_to_linear(fragColor.rgb), fragColor.a);
 
-	fragOut0 = baseColor * blendColor * intensity;
+	// Base emissive color
+	vec3 emissive = baseColor.rgb * blendColor.rgb * intensity;
+
+	// Simple hemisphere lighting for particles
+	// Particles face the camera, so we use a view-aligned "up" normal
+	// This gives them some sense of directionality
+	vec3 viewNormal = vec3(0.0, 0.0, 1.0); // Facing camera
+
+	// Ambient contribution
+	vec3 ambient = ambientLight * ambientFactor;
+
+	// Simple directional light with wrap-around (hemisphere)
+	// Particles get some light even when not directly facing the sun
+	float NdotL = dot(viewNormal, -sunDirection);
+	float wrapFactor = (NdotL + 1.0) * 0.5; // Wrap lighting for soft look
+	vec3 directional = sunColor * sunIntensity * wrapFactor * ambientFactor;
+
+	// Combine: emissive + ambient + directional lighting
+	// The ambientFactor controls how much scene lighting affects the particle
+	vec3 finalColor = emissive + (ambient + directional) * baseColor.rgb * blendColor.rgb;
+
+	fragOut0 = vec4(finalColor, baseColor.a * blendColor.a);
 }

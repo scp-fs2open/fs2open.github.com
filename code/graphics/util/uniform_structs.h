@@ -383,8 +383,17 @@ struct batched_data {
 	vec4 color;
 
 	float intensity;
+	float ambientFactor;  // How much ambient light affects particles (0-1)
+	float pad[2];
 
-	float pad[3];
+	vec3d ambientLight;   // Scene ambient light color
+	float pad2;
+
+	vec3d sunDirection;   // Primary sun direction (view space)
+	float sunIntensity;   // Sun intensity
+
+	vec3d sunColor;       // Sun color
+	float pad3;
 };
 
 struct post_data {

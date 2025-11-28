@@ -1012,6 +1012,38 @@ void opengl_tnl_set_material_batched(batched_bitmap_material* material_info)
 		[&](graphics::generic_data::batched_data* data) {
 			data->intensity = material_info->get_color_scale();
 			data->color     = material_info->get_color();
+
+			// Particle lighting parameters
+			// Set ambient factor - particles receive partial scene lighting
+			data->ambientFactor = 0.25f;  // 25% of scene lighting affects particles
+
+			// Get ambient light from the scene
+			// Use a default soft gray ambient
+			data->ambientLight.xyz.x = 0.15f;
+			data->ambientLight.xyz.y = 0.15f;
+			data->ambientLight.xyz.z = 0.18f;
+
+			// Get primary sun direction and color
+			if (light_get_global_count() > 0) {
+				vec3d sunDir;
+				if (light_get_global_dir(&sunDir, 0)) {
+					// Transform to view space
+					vm_vec_rotate(&data->sunDirection, &sunDir, &Eye_matrix);
+					data->sunIntensity = 0.8f;
+					// Warm sun color
+					data->sunColor.xyz.x = 1.0f;
+					data->sunColor.xyz.y = 0.95f;
+					data->sunColor.xyz.z = 0.85f;
+				} else {
+					vm_vec_zero(&data->sunDirection);
+					data->sunIntensity = 0.0f;
+					vm_vec_zero(&data->sunColor);
+				}
+			} else {
+				vm_vec_zero(&data->sunDirection);
+				data->sunIntensity = 0.0f;
+				vm_vec_zero(&data->sunColor);
+			}
 		});
 
 	gr_matrix_set_uniforms();
