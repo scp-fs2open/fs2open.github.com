@@ -156,6 +156,7 @@ $Praise Destruction:	YES
 $On Hotkey List:		YES												
 $Target as Threat:		YES												
 $Show Attack Direction:	YES												
+$Scannable:				YES												
 $Max Debris Speed:		150												
 $FF Multiplier:			1.0												
 $EMP Multiplier:		2.0												
@@ -186,7 +187,6 @@ $Praise Destruction:	YES
 $On Hotkey List:		YES												
 $Target as Threat:		YES												
 $Show Attack Direction:	YES												
-$Scannable:				YES												
 $Max Debris Speed:		150												
 $FF Multiplier:			1.0												
 $EMP Multiplier:		1.75											
