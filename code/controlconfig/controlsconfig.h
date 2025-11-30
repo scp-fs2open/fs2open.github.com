@@ -929,6 +929,19 @@ const char *textify_scancode_universal(int code);
  */
 const char* textify_button(int btn);
 
+/*!
+ * @brief Translates btn to its text equivalent with gamepad support
+ *
+ * @param[in] cid The controller ID (CID_JOY0-3) to identify which joystick
+ * @param[in] btn The btn ID.  May be a Button or a Hat position. See: JOY_NUM_BUTTONS
+ *
+ * @return The text representation of the btn, using gamepad button names (A, B, X, Y, etc.)
+ *         if the specified joystick is a recognized gamepad
+ *
+ * @note Not thread safe. Has an internal buffer for the return value which is overwritten on each call.
+ */
+const char* textify_button(short cid, int btn);
+
 	/*!
  * @brief Checks how long a control has been active
  *

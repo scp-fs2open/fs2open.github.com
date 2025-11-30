@@ -105,12 +105,12 @@ void control_config_common_init_bindings() {
 	// Ship targeting
 	(TARGET_NEXT,                                         KEY_T, -1, TARGET_TAB, 1, "Target Next Ship",                      CC_TYPE_TRIGGER)
 	(TARGET_PREV,                           KEY_SHIFTED | KEY_T, -1, TARGET_TAB, 1, "Target Previous Ship",                  CC_TYPE_TRIGGER)
-	(TARGET_NEXT_CLOSEST_HOSTILE,                         KEY_H,  2, TARGET_TAB, 1, "Target Next Closest Hostile Ship",      CC_TYPE_TRIGGER)
+	(TARGET_NEXT_CLOSEST_HOSTILE,                         KEY_H, 10, TARGET_TAB, 1, "Target Next Closest Hostile Ship",      CC_TYPE_TRIGGER)
 	(TARGET_PREV_CLOSEST_HOSTILE,           KEY_SHIFTED | KEY_H, -1, TARGET_TAB, 1, "Target Previous Closest Hostile Ship",  CC_TYPE_TRIGGER)
 	(TOGGLE_AUTO_TARGETING,                 KEY_ALTED   | KEY_H, -1, TARGET_TAB, 1, "Toggle Auto Targeting",                 CC_TYPE_TRIGGER)
 	(TARGET_NEXT_CLOSEST_FRIENDLY,                        KEY_F, -1, TARGET_TAB, 1, "Target Next Closest Friendly Ship",     CC_TYPE_TRIGGER)
 	(TARGET_PREV_CLOSEST_FRIENDLY,          KEY_SHIFTED | KEY_F, -1, TARGET_TAB, 1, "Target Previous Closest Friendly Ship", CC_TYPE_TRIGGER)
-	(TARGET_SHIP_IN_RETICLE,                              KEY_Y,  4, TARGET_TAB, 1, "Target Ship in Reticle",                CC_TYPE_TRIGGER)
+	(TARGET_SHIP_IN_RETICLE,                              KEY_Y,  3, TARGET_TAB, 1, "Target Ship in Reticle",                CC_TYPE_TRIGGER)
 	(TARGET_CLOSEST_SHIP_ATTACKING_TARGET,                KEY_G, -1, TARGET_TAB, 1, "Target Target's Nearest Attacker",      CC_TYPE_TRIGGER)
 	(TARGET_LAST_TRANMISSION_SENDER,        KEY_ALTED   | KEY_Y, -1, TARGET_TAB, 1, "Target Last Ship to Send Transmission", CC_TYPE_TRIGGER)
 	(STOP_TARGETING_SHIP,                   KEY_ALTED   | KEY_T, -1, TARGET_TAB, 1, "Turn Off Targeting",                    CC_TYPE_TRIGGER)
@@ -120,7 +120,7 @@ void control_config_common_init_bindings() {
 	(TARGET_PREV_SUBOBJECT,                 KEY_SHIFTED | KEY_S, -1, TARGET_TAB, 1, "Target Previous Subsystem",             CC_TYPE_TRIGGER)
 	(STOP_TARGETING_SUBSYSTEM,              KEY_ALTED   | KEY_S, -1, TARGET_TAB, 1, "Turn Off Targeting of Subsystems",      CC_TYPE_TRIGGER)
 
-	(TARGET_CLOSEST_SHIP_ATTACKING_SELF,                  KEY_R,  6, TARGET_TAB, 1, "Target Closest Attacking Ship",         CC_TYPE_TRIGGER)
+	(TARGET_CLOSEST_SHIP_ATTACKING_SELF,                  KEY_R,  0, TARGET_TAB, 1, "Target Closest Attacking Ship",         CC_TYPE_TRIGGER)
 	(TARGET_TARGETS_TARGET,                               KEY_J, -1, TARGET_TAB, 1, "Target Target's Target",                CC_TYPE_TRIGGER)
 
 	(TARGET_NEXT_ESCORT_SHIP,                             KEY_E, -1, TARGET_TAB, 1, "Target Next Escort Ship",           CC_TYPE_TRIGGER)
@@ -152,7 +152,7 @@ void control_config_common_init_bindings() {
 	(MINUS_5_PERCENT_THROTTLE,                        KEY_MINUS, -1, SHIP_TAB, 1, "Decrease Throttle 5 Percent",    CC_TYPE_TRIGGER)
 
 	// flight controls (Thrust)
-	(FORWARD_THRUST,                                      KEY_A, -1, SHIP_TAB, 1, "Forward Thrust", CC_TYPE_CONTINUOUS)
+	(FORWARD_THRUST,                                      KEY_A, 21, SHIP_TAB, 1, "Forward Thrust", CC_TYPE_CONTINUOUS)
 	(REVERSE_THRUST,                                      KEY_Z, -1, SHIP_TAB, 1, "Reverse Thrust", CC_TYPE_CONTINUOUS)
 	(RIGHT_SLIDE_THRUST,                    KEY_SHIFTED | KEY_3, -1, SHIP_TAB, 1, "Right Thrust",   CC_TYPE_CONTINUOUS)
 	(LEFT_SLIDE_THRUST,                     KEY_SHIFTED | KEY_1, -1, SHIP_TAB, 1, "Left Thrust",    CC_TYPE_CONTINUOUS)
@@ -161,7 +161,7 @@ void control_config_common_init_bindings() {
 
 	// flight controls (flight modes)
 	(BANK_WHEN_PRESSED,                                      -1, -1, SHIP_TAB, 1, "Bank When Pressed",  CC_TYPE_CONTINUOUS)
-	(AFTERBURNER,                                       KEY_TAB,  5, SHIP_TAB, 1, "Afterburner",        CC_TYPE_CONTINUOUS)
+	(AFTERBURNER,                                       KEY_TAB,  9, SHIP_TAB, 1, "Afterburner",        CC_TYPE_CONTINUOUS)
 	(GLIDE_WHEN_PRESSED,                                     -1, -1, SHIP_TAB, 1774, "Glide When Pressed", CC_TYPE_CONTINUOUS)
 	(TOGGLE_GLIDING,                          KEY_ALTED | KEY_G, -1, SHIP_TAB, 1775, "Toggle Gliding",     CC_TYPE_TRIGGER)
 
@@ -173,18 +173,18 @@ void control_config_common_init_bindings() {
 	(JOY_REL_THROTTLE_AXIS,                        -1,           -1, SHIP_TAB, 1020, "Relative Throttle Axis", CC_TYPE_AXIS_REL)
 
 	// weapons
-	(FIRE_PRIMARY,                                    KEY_LCTRL,  0, WEAPON_TAB, 1, "Fire Primary Weapon",                    CC_TYPE_CONTINUOUS)
+	(FIRE_PRIMARY,                                    KEY_LCTRL, 22, WEAPON_TAB, 1, "Fire Primary Weapon",                    CC_TYPE_CONTINUOUS)
 	(FIRE_SECONDARY,                               KEY_SPACEBAR,  1, WEAPON_TAB, 1, "Fire Secondary Weapon",                  CC_TYPE_CONTINUOUS)
-	(CYCLE_NEXT_PRIMARY,                             KEY_PERIOD, -1, WEAPON_TAB, 1, "Cycle Primary Weapon Forward",           CC_TYPE_TRIGGER)
+	(CYCLE_NEXT_PRIMARY,                             KEY_PERIOD, 13, WEAPON_TAB, 1, "Cycle Primary Weapon Forward",           CC_TYPE_TRIGGER)
 	(CYCLE_PREV_PRIMARY,                              KEY_COMMA, -1, WEAPON_TAB, 1, "Cycle Primary Weapon Backward",          CC_TYPE_TRIGGER)
 	(CYCLE_PRIMARY_WEAPON_SEQUENCE,                       KEY_O, -1, WEAPON_TAB, 1776, "Cycle Primary Weapon Firing Rate",       CC_TYPE_TRIGGER)
 	(CYCLE_PRIMARY_WEAPON_PATTERN,			  KEY_ALTED | KEY_O, -1, WEAPON_TAB, 1859, "Cycle Primary Weapon Firing Pattern",	  CC_TYPE_TRIGGER)
-	(CYCLE_SECONDARY,                                KEY_DIVIDE, -1, WEAPON_TAB, 1, "Cycle Secondary Weapon Forward",         CC_TYPE_TRIGGER)
+	(CYCLE_SECONDARY,                                KEY_DIVIDE, 14, WEAPON_TAB, 1, "Cycle Secondary Weapon Forward",         CC_TYPE_TRIGGER)
 	(CYCLE_NUM_MISSLES,                KEY_SHIFTED | KEY_DIVIDE, -1, WEAPON_TAB, 1, "Cycle Secondary Weapon Firing Rate",     CC_TYPE_TRIGGER)
-	(LAUNCH_COUNTERMEASURE,                               KEY_X,  3, WEAPON_TAB, 1, "Launch Countermeasure",                  CC_TYPE_TRIGGER)
+	(LAUNCH_COUNTERMEASURE,                               KEY_X,  2, WEAPON_TAB, 1, "Launch Countermeasure",                  CC_TYPE_TRIGGER)
 
 	// matching speed
-	(MATCH_TARGET_SPEED,                                  KEY_M, -1, COMPUTER_TAB, 1, "Match Target Speed",                    CC_TYPE_TRIGGER)
+	(MATCH_TARGET_SPEED,                                  KEY_M,  8, COMPUTER_TAB, 1, "Match Target Speed",                    CC_TYPE_TRIGGER)
 	(TOGGLE_AUTO_MATCH_TARGET_SPEED,        KEY_ALTED   | KEY_M, -1, COMPUTER_TAB, 1, "Toggle Auto Speed Matching",            CC_TYPE_TRIGGER)
 
 	// squadmate messaging
@@ -220,7 +220,7 @@ void control_config_common_init_bindings() {
 	(RADAR_RANGE_CYCLE,                            KEY_RAPOSTRO, -1, COMPUTER_TAB, 1, "Cycle Radar Range",                 CC_TYPE_TRIGGER)
 	(SQUADMSG_MENU,                                       KEY_C, -1, COMPUTER_TAB, 1, "Communications Menu",               CC_TYPE_TRIGGER)
 	(SHOW_GOALS,                                             -1, -1, NO_TAB,       1, "Show Objectives",                   CC_TYPE_TRIGGER, true)
-	(END_MISSION,                             KEY_ALTED | KEY_J, -1, COMPUTER_TAB, 1, "Enter Subspace (End Mission)",      CC_TYPE_TRIGGER)
+	(END_MISSION,                             KEY_ALTED | KEY_J, 12, COMPUTER_TAB, 1, "Enter Subspace (End Mission)",      CC_TYPE_TRIGGER)
 
 	(INCREASE_WEAPON,                                KEY_INSERT, -1, COMPUTER_TAB, 1, "Weapon Energy Increase",            CC_TYPE_TRIGGER)
 	(DECREASE_WEAPON,                                KEY_DELETE, -1, COMPUTER_TAB, 1, "Weapon Energy Decrease",            CC_TYPE_TRIGGER)
@@ -230,7 +230,7 @@ void control_config_common_init_bindings() {
 	(DECREASE_ENGINE,                              KEY_PAGEDOWN, -1, COMPUTER_TAB, 1, "Engine Energy Decrease",            CC_TYPE_TRIGGER)
 	(ETS_EQUALIZE,                            KEY_ALTED | KEY_D, -1, COMPUTER_TAB, 1, "Equalize Energy Settings",          CC_TYPE_TRIGGER)
 
-	(SHIELD_EQUALIZE,                                     KEY_Q,  7, COMPUTER_TAB, 1, "Equalize Shields",                  CC_TYPE_TRIGGER)
+	(SHIELD_EQUALIZE,                                     KEY_Q, -1, COMPUTER_TAB, 1, "Equalize Shields",                  CC_TYPE_TRIGGER)
 	(SHIELD_XFER_TOP,                                    KEY_UP, -1, COMPUTER_TAB, 1, "Augment Shield Forward",            CC_TYPE_TRIGGER)
 	(SHIELD_XFER_BOTTOM,                               KEY_DOWN, -1, COMPUTER_TAB, 1, "Augment Shield Rear",               CC_TYPE_TRIGGER)
 	(SHIELD_XFER_LEFT,                                 KEY_LEFT, -1, COMPUTER_TAB, 1, "Augment Shield Left",               CC_TYPE_TRIGGER)
@@ -261,7 +261,7 @@ void control_config_common_init_bindings() {
 	(TIME_SLOW_DOWN,                    KEY_SHIFTED | KEY_COMMA, -1, COMPUTER_TAB, 1, "Time Compression Decrease",  CC_TYPE_TRIGGER)
 
 	// HUD
-	(TOGGLE_HUD,                                    KEY_SHIFTED | KEY_O, -1, COMPUTER_TAB, 1, "Toggle HUD",                       CC_TYPE_TRIGGER)
+	(TOGGLE_HUD,                                    KEY_SHIFTED | KEY_O,  4, COMPUTER_TAB, 1, "Toggle HUD",                       CC_TYPE_TRIGGER)
 	(TOGGLE_HUD_CONTRAST,                                         KEY_L, -1, COMPUTER_TAB, 1, "Toggle High HUD Contrast",         CC_TYPE_TRIGGER)
 	(TOGGLE_HUD_SHADOWS,                              KEY_ALTED | KEY_L, -1, COMPUTER_TAB, 1781, "Toggle HUD Drop Shadows",          CC_TYPE_TRIGGER)
 	(HUD_TARGETBOX_TOGGLE_WIREFRAME,    KEY_ALTED | KEY_SHIFTED | KEY_Q, -1, COMPUTER_TAB, 1, "Toggle HUD Wireframe Target View", CC_TYPE_TRIGGER)
@@ -294,6 +294,54 @@ void control_config_common_init_bindings() {
 	}
 
 	Control_config_presets.push_back(preset);
+
+	// Add gamepad preset with SDL GameController standardized button indices
+	// SDL GameController button indices:
+	// A = 0, B = 1, X = 2, Y = 3, BACK/VIEW = 4, GUIDE = 5, START/MENU = 6
+	// LEFTSTICK = 7, RIGHTSTICK = 8, LEFTSHOULDER/LB = 9, RIGHTSHOULDER/RB = 10
+	// DPAD_UP = 11, DPAD_DOWN = 12, DPAD_LEFT = 13, DPAD_RIGHT = 14
+	// Virtual trigger buttons: LT = 21, RT = 22
+	CC_preset gamepad_preset;
+	gamepad_preset.bindings.reserve(Control_config.size());
+	gamepad_preset.name = "Gamepad";
+	gamepad_preset.type = Preset_t::hardcode;
+
+	// Start with all defaults from keyboard preset
+	for (auto &item : Control_config) {
+		gamepad_preset.bindings.push_back(CCB(item));
+	}
+
+	// Override secondary bindings with gamepad mappings (CID_JOY0 = 3)
+	// Note: These use SDL GameController standardized button indices
+	auto set_joy_secondary = [&gamepad_preset](IoActionId action, int btn) {
+		if (action < gamepad_preset.bindings.size()) {
+			gamepad_preset.bindings[action].second = CC_bind(CID_JOY0, btn);
+		}
+	};
+
+	// Combat
+	set_joy_secondary(FIRE_PRIMARY, 22);                   // RT (Right Trigger)
+	set_joy_secondary(FIRE_SECONDARY, 1);                  // B button
+	set_joy_secondary(LAUNCH_COUNTERMEASURE, 2);           // X button
+	set_joy_secondary(AFTERBURNER, 10);                    // RB (Right Bumper)
+
+	// Weapons
+	set_joy_secondary(CYCLE_NEXT_PRIMARY, 13);             // D-Pad Left
+	set_joy_secondary(CYCLE_SECONDARY, 14);                // D-Pad Right
+
+	// Targeting
+	set_joy_secondary(TARGET_NEXT_CLOSEST_HOSTILE, 9);     // LB (Left Bumper)
+	set_joy_secondary(TARGET_SHIP_IN_RETICLE, 3);          // Y button
+
+	// Navigation
+	set_joy_secondary(END_MISSION, 12);                    // D-Pad Down (Subspace Jump)
+
+	// Other useful bindings
+	set_joy_secondary(TARGET_CLOSEST_SHIP_ATTACKING_SELF, 0); // A button
+	set_joy_secondary(MATCH_TARGET_SPEED, 8);              // Right Stick Click
+	set_joy_secondary(TOGGLE_HUD, 4);                      // View button
+
+	Control_config_presets.push_back(gamepad_preset);
 };
 
 // Map used to convert strings in the Controlconfigdefaults.tbl into their respective IoActionId
@@ -756,6 +804,41 @@ const char* textify_button(int btn) {
 	}
 
 	return text;
+}
+
+const char* textify_button(short cid, int btn) {
+	static char text[BTN_MSG_LEN];
+
+	if ((btn < 0) || (btn >= JOY_TOTAL_BUTTONS))
+		return "None";
+
+	// Check if this joystick is a gamepad and try to get the gamepad button name
+	auto* joy = io::joystick::getPlayerJoystick(cid);
+	if (joy != nullptr && joy->isGamepad() && btn < JOY_NUM_BUTTONS) {
+		// Try to map the raw button index to a GameController button
+		// SDL GameController buttons have standardized indices
+		SDL_GameController* controller = joy->getController();
+		if (controller != nullptr) {
+			// Try to get the button binding for this raw button
+			// We need to iterate through GameController buttons to find which one maps to this raw button
+			for (int gcBtn = 0; gcBtn < SDL_CONTROLLER_BUTTON_MAX; gcBtn++) {
+				SDL_GameControllerButtonBind bind = SDL_GameControllerGetBindForButton(controller,
+					static_cast<SDL_GameControllerButton>(gcBtn));
+				if (bind.bindType == SDL_CONTROLLER_BINDTYPE_BUTTON && bind.value.button == btn) {
+					// Found a match - get the friendly name
+					const char* name = joy->getGamepadButtonName(static_cast<SDL_GameControllerButton>(gcBtn));
+					if (name != nullptr) {
+						strcpy_s(text, name);
+						return text;
+					}
+					break;
+				}
+			}
+		}
+	}
+
+	// Fall back to the generic button naming
+	return textify_button(btn);
 }
 	//XSTR:ON
 
@@ -2712,7 +2795,7 @@ SCP_string CC_bind::textify() const {
 		case CID_JOY2:
 		case CID_JOY3:
 			Assert((btn >= 0) && (btn < JOY_TOTAL_BUTTONS));
-			retval = SCP_string(textify_button(btn));
+			retval = SCP_string(textify_button(cid, btn));
 			break;
 
 		case CID_NONE:

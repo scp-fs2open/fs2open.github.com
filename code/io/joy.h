@@ -15,6 +15,7 @@
 
 #include "libs/jansson.h"
 #include "SDL_joystick.h"
+#include "SDL_gamecontroller.h"
 
 // z64: Moved up here for compatibility. Bye bye, organization!
 const int JOY_NUM_BUTTONS = 128;	// Max number of buttons FSO can handle.  OS max may differ.
@@ -99,6 +100,29 @@ namespace io
 			 * @return @c true if the joystick is a gamepad, @c false otherwise
 			 */
 			bool isGamepad() const;
+
+			/**
+			 * @brief Gets the SDL_GameController handle for this device
+			 *
+			 * @return The SDL_GameController pointer, or nullptr if not a gamepad
+			 */
+			SDL_GameController* getController() const;
+
+			/**
+			 * @brief Gets a human-readable name for a gamepad button
+			 *
+			 * @param btn The SDL_GameControllerButton value
+			 * @return A string like "A", "B", "LB", etc., or nullptr if not a gamepad or invalid button
+			 */
+			const char* getGamepadButtonName(SDL_GameControllerButton btn) const;
+
+			/**
+			 * @brief Gets a human-readable name for a gamepad axis
+			 *
+			 * @param axis The SDL_GameControllerAxis value
+			 * @return A string like "Left Stick X", "Right Trigger", etc., or nullptr if not a gamepad or invalid axis
+			 */
+			const char* getGamepadAxisName(SDL_GameControllerAxis axis) const;
 
 			/**
 			 * @brief Determines if this joystick has haptic features
@@ -271,6 +295,7 @@ namespace io
 
 			int _device_id; //!< The OS device index
 			SDL_Joystick *_joystick; //!< The SDL joystick handle
+			SDL_GameController *_controller = nullptr; //!< The SDL GameController handle (if this is a gamepad)
 
 			SCP_string _guidStr;    //!< The GUID string
 			SCP_string _name;       //!< The joystick name
