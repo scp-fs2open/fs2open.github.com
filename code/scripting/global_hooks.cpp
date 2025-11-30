@@ -308,6 +308,14 @@ const std::shared_ptr<Hook<ShipDepartConditions>> OnShipDepart = Hook<ShipDepart
 		{"Method", "ship", "The name of the method the ship used to depart. One of: 'SHIP_DEPARTED', 'SHIP_DEPARTED_WARP', 'SHIP_DEPARTED_BAY', 'SHIP_VANISHED', 'SHIP_DEPARTED_REDALERT'."},
 	});
 
+const std::shared_ptr<Hook<ShipDepartConditions>> OnShipDeparted = Hook<ShipDepartConditions>::Factory("On Ship Departed",
+	"Invoked after a ship has departed the mission and its departure cleanup is complete.",
+	{
+		{"Ship", "ship", "The ship that has departed the mission"},
+		{"JumpNode", "string", "The name of the jump node the ship jumped out of. Can be nil."},
+		{"Method", "ship", "The name of the method the ship used to depart. One of: 'SHIP_DEPARTED', 'SHIP_DEPARTED_WARP', 'SHIP_DEPARTED_BAY', 'SHIP_VANISHED', 'SHIP_DEPARTED_REDALERT'."},
+	});
+
 const std::shared_ptr<Hook<WeaponDeathConditions>> OnWeaponDelete = Hook<WeaponDeathConditions>::Factory("On Weapon Delete",
 	"Invoked whenever a weapon is deleted from the scene.",
 	{

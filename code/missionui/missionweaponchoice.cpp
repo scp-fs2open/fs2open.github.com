@@ -2483,14 +2483,31 @@ void wl_render_weapon_desc(float frametime)
 	} else {
 
 		// draw full version
-		// FIXME - change to use a for loop 
 		gr_set_color_fast(&Color_white);
-		gr_string(weapon_title_coords[0], weapon_title_coords[1], Weapon_desc_lines[0], GR_RESIZE_MENU);
-		gr_string(weapon_title_coords[0], weapon_title_coords[1] + line_height, Weapon_desc_lines[1], GR_RESIZE_MENU);
-		gr_string(weapon_desc_coords[0], weapon_desc_coords[1], Weapon_desc_lines[2], GR_RESIZE_MENU);
-		gr_string(weapon_desc_coords[0], weapon_desc_coords[1] + line_height, Weapon_desc_lines[3], GR_RESIZE_MENU);
-		gr_string(weapon_desc_coords[0], weapon_desc_coords[1] + line_height * 2, Weapon_desc_lines[4], GR_RESIZE_MENU);
-		gr_string(weapon_desc_coords[0], weapon_desc_coords[1] + line_height * 3, Weapon_desc_lines[5], GR_RESIZE_MENU);
+
+		for (int i = 0; i < 2; ++i) {
+			if (Weapon_desc_lines[i][0] == '\0') {
+				continue;
+			}
+
+			gr_string(weapon_title_coords[0],
+				weapon_title_coords[1] + (line_height * i),
+				Weapon_desc_lines[i],
+				GR_RESIZE_MENU);
+		}
+
+		constexpr int first_desc_line = 2;
+		const int last_desc_line = MIN(WEAPON_DESC_MAX_LINES, 6);
+		for (int i = first_desc_line; i < last_desc_line; ++i) {
+			if (Weapon_desc_lines[i][0] == '\0') {
+				continue;
+			}
+
+			gr_string(weapon_desc_coords[0],
+				weapon_desc_coords[1] + (line_height * (i - first_desc_line)),
+				Weapon_desc_lines[i],
+				GR_RESIZE_MENU);
+		}
 	}
 }
 

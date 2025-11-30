@@ -122,6 +122,15 @@ int Tech_desc_coords[GR_NUM_RESOLUTIONS][4] = {
 	}
 };
 
+int Tech_more_indicator_offset[GR_NUM_RESOLUTIONS][2] = {
+	{ // GR_640
+		-10, 0
+	},
+	{ // GR_1024
+		-10, 0
+	}
+};
+
 int Tech_ani_centre_coords[GR_NUM_RESOLUTIONS][2] = {
 	{ // GR_640
 		416, 215
@@ -454,8 +463,9 @@ void techroom_render_desc(int xo, int yo, int ho)
 	// maybe output 'more' indicator
 	if ( z < Text_size ) {
 		// can be scrolled down
-		int more_txt_x = Tech_desc_coords[gr_screen.res][0] + (Tech_desc_coords[gr_screen.res][2]/2) - 10;	// FIXME should move these to constants since they don't move
-		int more_txt_y = Tech_desc_coords[gr_screen.res][1] + Tech_desc_coords[gr_screen.res][3];				// located below brief text, centered
+		const auto res = gr_screen.res;
+		const int more_txt_x = Tech_desc_coords[res][SHIP_X_COORD] + (Tech_desc_coords[res][SHIP_W_COORD] / 2) + Tech_more_indicator_offset[res][0];
+		const int more_txt_y = Tech_desc_coords[res][SHIP_Y_COORD] + Tech_desc_coords[res][SHIP_H_COORD] + Tech_more_indicator_offset[res][1];
 		int w, h;
 		gr_get_string_size(&w, &h, XSTR("more", 1469), 1.0f, static_cast<int>(strlen(XSTR("more", 1469))));
 		gr_set_color_fast(&Color_black);
