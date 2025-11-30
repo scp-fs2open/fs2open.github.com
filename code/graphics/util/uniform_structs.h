@@ -421,6 +421,31 @@ struct irrmap_data {
 	int face;
 };
 
+struct ssao_data {
+	vec2d texelSize;           // 1.0 / screen resolution
+	float aoRadius;            // AO sample radius in view-space units
+	float aoIntensity;         // Strength multiplier
+
+	float aoBias;              // Self-occlusion bias
+	int aoSamples;             // Sample count per pixel
+	float aoFalloff;           // Distance-based falloff
+	float aoSharpness;         // Bilateral blur sharpness
+
+	vec4 projInfo;             // Projection reconstruction: (2/P[0][0], 2/P[1][1], -(1+P[0][2])/P[0][0], -(1+P[1][2])/P[1][1])
+
+	float nearPlane;
+	float farPlane;
+	float pad[2];
+};
+
+struct ssao_blur_data {
+	vec2d texelSize;
+	vec2d blurDirection;       // (1,0) for horizontal, (0,1) for vertical
+
+	float blurSharpness;       // Edge-aware blur sharpness
+	float pad[3];
+};
+
 } // namespace generic_data
 
 } // namespace graphics

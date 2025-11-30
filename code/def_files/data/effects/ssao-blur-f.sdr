@@ -1,0 +1,81 @@
+// SSAO Bilateral Blur
+// Edge-aware blur that preserves depth discontinuities
+
+out vec4 fragOut0;
+
+in vec4 fragTexCoord;
+
+uniform sampler2D ssaoTex;
+uniform sampler2D PositionBuffer;
+
+layout (std140) uniform genericData {
+	vec2 texelSize;
+	vec2 blurDirection;       // (1,0) for horizontal, (0,1) for vertical
+
+	float blurSharpness;      // Edge-aware blur sharpness (higher = sharper edges)
+	float pad0;
+	float pad1;
+	float pad2;
+};
+
+// Gaussian weights for 7-tap filter
+const float gaussianWeights[4] = float[4](
+	0.2270270270, // center
+	0.1945945946, // +/- 1
+	0.1216216216, // +/- 2
+	0.0540540541  // +/- 3
+);
+
+void main() {
+	vec2 uv = fragTexCoord.xy;
+
+	// Get center values
+	float centerAO = texture(ssaoTex, uv).r;
+	float centerDepth = -texture(PositionBuffer, uv).z; // View-space depth (positive)
+
+	// Handle background pixels (no blur needed)
+	if (centerDepth < 0.01) {
+		fragOut0 = vec4(1.0);
+		return;
+	}
+
+	float totalWeight = gaussianWeights[0];
+	float totalAO = centerAO * totalWeight;
+
+	// Sample in both directions along blur axis
+	for (int i = 1; i <= 3; i++) {
+		vec2 offset = blurDirection * texelSize * float(i);
+
+		// Positive direction
+		vec2 uvPos = uv + offset;
+		float aoPos = texture(ssaoTex, uvPos).r;
+		float depthPos = -texture(PositionBuffer, uvPos).z;
+
+		// Negative direction
+		vec2 uvNeg = uv - offset;
+		float aoNeg = texture(ssaoTex, uvNeg).r;
+		float depthNeg = -texture(PositionBuffer, uvNeg).z;
+
+		// Bilateral weight based on depth difference
+		// Larger depth difference = smaller weight (preserve edges)
+		float depthDiffPos = abs(depthPos - centerDepth);
+		float depthDiffNeg = abs(depthNeg - centerDepth);
+
+		// Compute bilateral weights
+		// Exponential falloff based on depth difference
+		float bilateralWeightPos = exp(-depthDiffPos * blurSharpness);
+		float bilateralWeightNeg = exp(-depthDiffNeg * blurSharpness);
+
+		// Combine with Gaussian weight
+		float weightPos = gaussianWeights[i] * bilateralWeightPos;
+		float weightNeg = gaussianWeights[i] * bilateralWeightNeg;
+
+		totalAO += aoPos * weightPos + aoNeg * weightNeg;
+		totalWeight += weightPos + weightNeg;
+	}
+
+	// Normalize
+	float finalAO = totalAO / totalWeight;
+
+	fragOut0 = vec4(finalAO, finalAO, finalAO, 1.0);
+}

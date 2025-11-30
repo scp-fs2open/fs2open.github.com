@@ -13,6 +13,7 @@
 #include "cmdline/cmdline.h"
 #include "def_files/def_files.h"
 #include "graphics/grinternal.h"
+#include "graphics/matrix.h"
 #include "graphics/openxr.h"
 #include "graphics/util/uniform_structs.h"
 #include "io/timer.h"
@@ -75,6 +76,12 @@ static const float Halton_3[16] = {
 	0.333333f, 0.666667f, 0.111111f, 0.444444f, 0.777778f, 0.222222f, 0.555556f, 0.888889f,
 	0.037037f, 0.370370f, 0.703704f, 0.148148f, 0.481481f, 0.814815f, 0.259259f, 0.592593f
 };
+
+// SSAO (Screen Space Ambient Occlusion) resources
+static GLuint SSAO_framebuffer = 0;
+static GLuint SSAO_texture = 0;
+static GLuint SSAO_blur_texture = 0;
+SSAOQuality Gr_ssao_quality = SSAOQuality::Ultra;
 
 namespace ltp = lighting_profiles;
 using namespace ltp;
@@ -510,6 +517,139 @@ extern GLuint Scene_position_texture;
 extern GLuint Scene_normal_texture;
 extern GLuint Scene_specular_texture;
 extern float Sun_spot;
+
+// SSAO quality preset parameters
+struct SSAOPreset {
+	int samples;
+	int blurPasses;
+	float radius;
+	float intensity;
+	float bias;
+	float falloff;
+	float sharpness;
+};
+
+static const SSAOPreset SSAO_presets[] = {
+	{0, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},           // Off
+	{4, 0, 50.0f, 0.8f, 0.02f, 1.5f, 4.0f},         // Low
+	{8, 1, 50.0f, 1.0f, 0.02f, 1.5f, 4.0f},         // Medium
+	{12, 2, 50.0f, 1.0f, 0.02f, 1.5f, 4.0f},        // High
+	{16, 2, 50.0f, 1.2f, 0.02f, 1.5f, 4.0f},        // Ultra
+};
+
+bool gr_ssao_enabled()
+{
+	return Gr_ssao_quality != SSAOQuality::Off;
+}
+
+GLuint gr_opengl_get_ssao_texture()
+{
+	return gr_ssao_enabled() ? SSAO_blur_texture : 0;
+}
+
+void opengl_post_pass_ssao()
+{
+	if (!gr_ssao_enabled() || !Post_initialized) {
+		return;
+	}
+
+	GR_DEBUG_SCOPE("SSAO");
+	TRACE_SCOPE(tracing::SSAO);
+
+	const SSAOPreset& preset = SSAO_presets[static_cast<int>(Gr_ssao_quality)];
+
+	GL_state.PushFramebufferState();
+
+	// We only want to draw to ATTACHMENT0
+	glDrawBuffer(GL_COLOR_ATTACHMENT0);
+	GL_state.ColorMask(true, true, true, true);
+
+	// ========== SSAO Pass ==========
+	GL_state.BindFrameBuffer(SSAO_framebuffer);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, SSAO_texture, 0);
+
+	glViewport(0, 0, Post_texture_width, Post_texture_height);
+
+	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_SSAO, 0));
+
+	Current_shader->program->Uniforms.setTextureUniform("NormalBuffer", 0);
+	Current_shader->program->Uniforms.setTextureUniform("PositionBuffer", 1);
+
+	GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_normal_texture);
+	GL_state.Texture.Enable(1, GL_TEXTURE_2D, Scene_position_texture);
+
+	opengl_set_generic_uniform_data<graphics::generic_data::ssao_data>([&](graphics::generic_data::ssao_data* data) {
+		data->texelSize.x = 1.0f / i2fl(Post_texture_width);
+		data->texelSize.y = 1.0f / i2fl(Post_texture_height);
+		data->aoRadius = preset.radius;
+		data->aoIntensity = preset.intensity;
+		data->aoBias = preset.bias;
+		data->aoSamples = preset.samples;
+		data->aoFalloff = preset.falloff;
+		data->aoSharpness = preset.sharpness;
+		// Projection info for reconstructing view-space position (not used since we sample PositionBuffer directly)
+		data->projInfo.xyzw.x = 0.0f;
+		data->projInfo.xyzw.y = 0.0f;
+		data->projInfo.xyzw.z = 0.0f;
+		data->projInfo.xyzw.w = 0.0f;
+		data->nearPlane = gr_near_plane;
+		data->farPlane = Max_draw_distance;
+	});
+
+	opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
+
+	// ========== Blur Pass(es) ==========
+	if (preset.blurPasses > 0) {
+		opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_SSAO_BLUR, 0));
+
+		Current_shader->program->Uniforms.setTextureUniform("ssaoTex", 0);
+		Current_shader->program->Uniforms.setTextureUniform("PositionBuffer", 1);
+
+		GL_state.Texture.Enable(1, GL_TEXTURE_2D, Scene_position_texture);
+
+		for (int pass = 0; pass < preset.blurPasses * 2; pass++) {
+			// Ping-pong between textures
+			GLuint src_tex = (pass % 2 == 0) ? SSAO_texture : SSAO_blur_texture;
+			GLuint dst_tex = (pass % 2 == 0) ? SSAO_blur_texture : SSAO_texture;
+
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, dst_tex, 0);
+
+			GL_state.Texture.Enable(0, GL_TEXTURE_2D, src_tex);
+
+			// Alternate horizontal/vertical blur
+			bool horizontal = (pass % 2 == 0);
+
+			opengl_set_generic_uniform_data<graphics::generic_data::ssao_blur_data>([&](graphics::generic_data::ssao_blur_data* data) {
+				data->texelSize.x = 1.0f / i2fl(Post_texture_width);
+				data->texelSize.y = 1.0f / i2fl(Post_texture_height);
+				data->blurDirection.x = horizontal ? 1.0f : 0.0f;
+				data->blurDirection.y = horizontal ? 0.0f : 1.0f;
+				data->blurSharpness = preset.sharpness;
+			});
+
+			opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
+		}
+
+		// After even number of passes, result is in SSAO_texture. Copy to blur texture if needed.
+		if ((preset.blurPasses * 2) % 2 == 0) {
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, SSAO_blur_texture, 0);
+			GL_state.Texture.Enable(0, GL_TEXTURE_2D, SSAO_texture);
+			opengl_shader_set_passthrough(true, false);
+			opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
+		}
+	} else {
+		// No blur - copy SSAO directly to blur texture
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, SSAO_blur_texture, 0);
+		GL_state.Texture.Enable(0, GL_TEXTURE_2D, SSAO_texture);
+		opengl_shader_set_passthrough(true, false);
+		opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
+	}
+
+	GL_state.PopFramebufferState();
+
+	// Restore viewport
+	glViewport(0, 0, gr_screen.max_w, gr_screen.max_h);
+}
 void opengl_post_lightshafts()
 {
 	GR_DEBUG_SCOPE("Lightshafts");
@@ -999,6 +1139,11 @@ bool opengl_post_init_shaders()
 		gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_TAA, 0);
 	}
 
+	if (gr_ssao_enabled()) {
+		gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_SSAO, 0);
+		gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_SSAO_BLUR, 0);
+	}
+
 	return true;
 }
 
@@ -1225,6 +1370,61 @@ static void shutdown_taa_resources()
 	}
 }
 
+// SSAO (Screen Space Ambient Occlusion) setup
+static void setup_ssao_resources()
+{
+	GL_state.PushFramebufferState();
+
+	// Create SSAO framebuffer
+	glGenFramebuffers(1, &SSAO_framebuffer);
+	GL_state.BindFrameBuffer(SSAO_framebuffer);
+
+	// Create SSAO textures
+	glGenTextures(1, &SSAO_texture);
+	GL_state.Texture.SetActiveUnit(0);
+	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
+	GL_state.Texture.Enable(SSAO_texture);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, Post_texture_width, Post_texture_height, 0, GL_RED, GL_UNSIGNED_BYTE, nullptr);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	glGenTextures(1, &SSAO_blur_texture);
+	GL_state.Texture.Enable(SSAO_blur_texture);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, Post_texture_width, Post_texture_height, 0, GL_RED, GL_UNSIGNED_BYTE, nullptr);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, SSAO_texture, 0);
+
+	GL_state.PopFramebufferState();
+
+	mprintf(("SSAO resources initialized (%dx%d)\n", Post_texture_width, Post_texture_height));
+}
+
+static void shutdown_ssao_resources()
+{
+	if (SSAO_texture) {
+		glDeleteTextures(1, &SSAO_texture);
+		SSAO_texture = 0;
+	}
+	if (SSAO_blur_texture) {
+		glDeleteTextures(1, &SSAO_blur_texture);
+		SSAO_blur_texture = 0;
+	}
+	if (SSAO_framebuffer) {
+		glDeleteFramebuffers(1, &SSAO_framebuffer);
+		SSAO_framebuffer = 0;
+	}
+}
+
 // Get jitter offset for current frame (in pixels)
 void gr_opengl_get_taa_jitter(float* jitter_x, float* jitter_y)
 {
@@ -1282,6 +1482,10 @@ static bool opengl_post_init_framebuffer()
 
 	if (gr_is_taa_mode(Gr_aa_mode)) {
 		setup_taa_resources();
+	}
+
+	if (gr_ssao_enabled()) {
+		setup_ssao_resources();
 	}
 
 	GL_state.BindFrameBuffer(0);
@@ -1378,6 +1582,7 @@ void opengl_post_process_shutdown()
 
 	opengl_post_process_shutdown_bloom();
 	shutdown_taa_resources();
+	shutdown_ssao_resources();
 
 	Post_in_frame = false;
 	Post_active_shader_index = 0;

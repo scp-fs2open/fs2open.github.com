@@ -71,6 +71,18 @@ bool gr_is_fxaa_mode(AntiAliasMode mode);
 bool gr_is_smaa_mode(AntiAliasMode mode);
 bool gr_is_taa_mode(AntiAliasMode mode);
 
+// SSAO (Screen Space Ambient Occlusion) quality settings
+enum class SSAOQuality {
+	Off = 0,
+	Low = 1,      // 4 samples, no blur, half-res
+	Medium = 2,   // 8 samples, 1 blur pass, half-res
+	High = 3,     // 12 samples, 2 blur passes, full-res
+	Ultra = 4,    // 16 samples, 2 blur passes, full-res
+};
+extern SSAOQuality Gr_ssao_quality;
+
+bool gr_ssao_enabled();
+
 extern bool Gr_post_processing_enabled;
 
 extern bool Gr_enable_vsync;
@@ -219,6 +231,9 @@ enum shader_type {
 
 	SDR_TYPE_POST_PROCESS_TAA,
 
+	SDR_TYPE_POST_PROCESS_SSAO,
+	SDR_TYPE_POST_PROCESS_SSAO_BLUR,
+
 	NUM_SHADER_TYPES
 };
 
@@ -245,6 +260,7 @@ enum shader_type {
 #define SDR_FLAG_TONEMAPPING_LINEAR_OUT (1 << 0)
 
 #define SDR_FLAG_ENV_MAP (1 << 0)
+#define SDR_FLAG_SSAO (1 << 1)
 
 
 enum class uniform_block_type {

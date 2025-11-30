@@ -1,0 +1,198 @@
+// Screen Space Ambient Occlusion (GTAO - Ground Truth Ambient Occlusion)
+// Based on "Practical Realtime Strategies for Accurate Indirect Occlusion"
+// by Jorge Jimenez, Xian-Chun Wu, Angelo Pesce, Adrian Jarabo
+
+out vec4 fragOut0;
+
+in vec4 fragTexCoord;
+
+// G-buffer samplers
+uniform sampler2D NormalBuffer;
+uniform sampler2D PositionBuffer;
+
+layout (std140) uniform genericData {
+	vec2 texelSize;           // 1.0 / screen resolution
+	float aoRadius;           // AO sample radius in view-space units
+	float aoIntensity;        // Strength multiplier
+
+	float aoBias;             // Self-occlusion bias
+	int aoSamples;            // Sample count per pixel
+	float aoFalloff;          // Distance-based falloff
+	float aoSharpness;        // Not used in main pass
+
+	vec4 projInfo;            // (2/P[0][0], 2/P[1][1], -(1+P[0][2])/P[0][0], -(1+P[1][2])/P[1][1])
+
+	float nearPlane;
+	float farPlane;
+};
+
+// Interleaved gradient noise for temporal stability
+float interleavedGradientNoise(vec2 position) {
+	vec3 magic = vec3(0.06711056, 0.00583715, 52.9829189);
+	return fract(magic.z * fract(dot(position, magic.xy)));
+}
+
+// Spatial hash for random rotation per pixel
+float spatialHash(vec2 p) {
+	return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
+}
+
+// Get view-space position from screen UV
+vec3 getViewPos(vec2 uv) {
+	return texture(PositionBuffer, uv).xyz;
+}
+
+// Get view-space normal from screen UV
+vec3 getViewNormal(vec2 uv) {
+	return normalize(texture(NormalBuffer, uv).xyz);
+}
+
+// Compute GTAO (horizon-based)
+// For each direction, find the horizon angle and integrate occlusion
+float gtao(vec3 viewPos, vec3 viewNormal, vec2 uv) {
+	if (length(viewPos) < nearPlane) {
+		return 1.0; // No AO for sky/background
+	}
+
+	float ao = 0.0;
+
+	// Random rotation angle per pixel for temporal stability
+	float noise = interleavedGradientNoise(gl_FragCoord.xy);
+	float rotationAngle = noise * 6.28318530718; // 2*PI
+
+	// Project radius to screen space (approximate)
+	float projectedRadius = aoRadius / max(-viewPos.z, 0.1);
+	float screenRadius = projectedRadius / texelSize.x;
+
+	// Clamp radius to avoid excessive samples
+	screenRadius = clamp(screenRadius, 2.0, 256.0);
+
+	// Number of directions and steps
+	int numDirections = max(aoSamples / 2, 2);
+	int numSteps = max(aoSamples / numDirections, 2);
+
+	float stepSize = screenRadius / float(numSteps);
+	float angleStep = 6.28318530718 / float(numDirections);
+
+	// For each direction
+	for (int d = 0; d < numDirections; d++) {
+		float angle = rotationAngle + float(d) * angleStep;
+		vec2 direction = vec2(cos(angle), sin(angle));
+
+		// Find horizon angle in this direction
+		float horizonCos = -1.0; // Start with no occlusion (horizon at -90 degrees)
+
+		for (int s = 1; s <= numSteps; s++) {
+			// Sample position along the direction
+			vec2 sampleOffset = direction * float(s) * stepSize * texelSize;
+			vec2 sampleUV = uv + sampleOffset;
+
+			// Skip samples outside screen
+			if (sampleUV.x < 0.0 || sampleUV.x > 1.0 || sampleUV.y < 0.0 || sampleUV.y > 1.0) {
+				continue;
+			}
+
+			vec3 samplePos = getViewPos(sampleUV);
+
+			// Skip invalid samples (background)
+			if (length(samplePos) < nearPlane) {
+				continue;
+			}
+
+			// Vector from current pixel to sample
+			vec3 horizonVec = samplePos - viewPos;
+			float horizonDist = length(horizonVec);
+
+			// Skip samples too far away
+			if (horizonDist > aoRadius * 2.0) {
+				continue;
+			}
+
+			// Compute the angle to this sample relative to normal
+			vec3 horizonDir = horizonVec / horizonDist;
+			float sampleCos = dot(viewNormal, horizonDir);
+
+			// Apply distance falloff
+			float falloff = 1.0 - smoothstep(aoRadius * 0.5, aoRadius * 2.0, horizonDist);
+
+			// Update horizon if this sample is higher (more occluding)
+			// Weight by falloff to reduce importance of distant samples
+			float weightedCos = mix(-1.0, sampleCos, falloff);
+			horizonCos = max(horizonCos, weightedCos);
+		}
+
+		// Also check the opposite direction
+		float horizonCosNeg = -1.0;
+
+		for (int s = 1; s <= numSteps; s++) {
+			vec2 sampleOffset = -direction * float(s) * stepSize * texelSize;
+			vec2 sampleUV = uv + sampleOffset;
+
+			if (sampleUV.x < 0.0 || sampleUV.x > 1.0 || sampleUV.y < 0.0 || sampleUV.y > 1.0) {
+				continue;
+			}
+
+			vec3 samplePos = getViewPos(sampleUV);
+
+			if (length(samplePos) < nearPlane) {
+				continue;
+			}
+
+			vec3 horizonVec = samplePos - viewPos;
+			float horizonDist = length(horizonVec);
+
+			if (horizonDist > aoRadius * 2.0) {
+				continue;
+			}
+
+			vec3 horizonDir = horizonVec / horizonDist;
+			float sampleCos = dot(viewNormal, horizonDir);
+
+			float falloff = 1.0 - smoothstep(aoRadius * 0.5, aoRadius * 2.0, horizonDist);
+			float weightedCos = mix(-1.0, sampleCos, falloff);
+			horizonCosNeg = max(horizonCosNeg, weightedCos);
+		}
+
+		// Compute occlusion for this direction pair using GTAO integration
+		// For a hemisphere, full visibility = 1, full occlusion = 0
+
+		// Convert horizon angles to visibility
+		// Horizon angle h: visibility = 1 - sin(h) = 1 - sqrt(1 - cos^2(h))
+		// But for GTAO, we use: visibility = (1 - horizonCos) / 2 approximately
+
+		// Clamp horizon to be above the tangent plane (bias)
+		float biasedHorizon = max(horizonCos, aoBias);
+		float biasedHorizonNeg = max(horizonCosNeg, aoBias);
+
+		// Integrate occlusion: higher horizon = more occlusion
+		// Using simplified GTAO integration
+		float visibility = (1.0 - biasedHorizon) * 0.5 + (1.0 - biasedHorizonNeg) * 0.5;
+		ao += visibility;
+	}
+
+	ao /= float(numDirections);
+
+	// Apply intensity and ensure valid range
+	ao = pow(ao, aoFalloff);
+	ao = mix(1.0, ao, aoIntensity);
+
+	return clamp(ao, 0.0, 1.0);
+}
+
+void main() {
+	vec2 uv = fragTexCoord.xy;
+
+	vec3 viewPos = getViewPos(uv);
+	vec3 viewNormal = getViewNormal(uv);
+
+	// Skip background pixels
+	if (length(viewPos) < nearPlane) {
+		fragOut0 = vec4(1.0);
+		return;
+	}
+
+	float ao = gtao(viewPos, viewNormal, uv);
+
+	// Output AO value (R channel, rest for potential bent normals later)
+	fragOut0 = vec4(ao, ao, ao, 1.0);
+}

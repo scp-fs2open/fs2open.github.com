@@ -11,6 +11,10 @@ uniform sampler2D PositionBuffer;
 uniform sampler2D SpecBuffer;
 uniform sampler2DArray shadow_map;
 
+#ifdef SSAO
+uniform sampler2D ssaoTex;
+#endif
+
 #ifdef ENV_MAP
 uniform samplerCube sEnvmap;
 uniform samplerCube sIrrmap;
@@ -241,6 +245,11 @@ void main()
 
 	if (lightType == LT_AMBIENT) {
 		float ao = position_buffer.w;
+#ifdef SSAO
+		// Multiply baked AO with dynamic SSAO
+		float ssao = texture(ssaoTex, screenPos).r;
+		ao *= ssao;
+#endif
 		fragmentColor.rgb = diffuseLightColor * diffColor * ao;
 
 #ifdef ENV_MAP

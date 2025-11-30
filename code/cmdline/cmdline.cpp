@@ -15,6 +15,7 @@
 #include "globalincs/pstypes.h"
 #include "globalincs/systemvars.h"
 #include "globalincs/version.h"
+#include "graphics/2d.h"
 #include "graphics/openxr.h"
 #include "graphics/shadows.h"
 #include "hud/hudconfig.h"
@@ -356,6 +357,7 @@ cmdline_parm fb_explosions_arg("-fb_explosions", NULL, AT_NONE);
 cmdline_parm fb_thrusters_arg("-fb_thrusters", NULL, AT_NONE);
 cmdline_parm shadow_quality_arg("-shadow_quality", NULL, AT_INT);
 cmdline_parm enable_shadows_arg("-enable_shadows", NULL, AT_NONE);
+cmdline_parm ssao_preset_arg("-ssao_preset", "SSAO quality (0=Off, 1=Low, 2=Medium, 3=High, 4=Ultra)", AT_INT);
 cmdline_parm no_deferred_lighting_arg("-no_deferred", NULL, AT_NONE);	// Cmdline_no_deferred
 cmdline_parm deferred_lighting_cockpit_arg("-deferred_cockpit", nullptr, AT_NONE);
 cmdline_parm anisotropy_level_arg("-anisotropic_filter", NULL, AT_INT);
@@ -2048,6 +2050,31 @@ bool SetCmdlineParams()
 				Gr_aa_mode = AntiAliasMode::TAA;
 				break;
 			}
+		}
+	}
+
+	if (ssao_preset_arg.found()) {
+		int preset = ssao_preset_arg.get_int();
+		switch (preset) {
+		case 0:
+			Gr_ssao_quality = SSAOQuality::Off;
+			break;
+		case 1:
+			Gr_ssao_quality = SSAOQuality::Low;
+			break;
+		case 2:
+			Gr_ssao_quality = SSAOQuality::Medium;
+			break;
+		case 3:
+			Gr_ssao_quality = SSAOQuality::High;
+			break;
+		case 4:
+			Gr_ssao_quality = SSAOQuality::Ultra;
+			break;
+		default:
+			Warning(LOCATION, "Requested illegal SSAO preset %d. Allowed are: 0 (Off), 1 (Low), 2 (Medium), 3 (High), 4 (Ultra). Setting to 0 (Off).", preset);
+			Gr_ssao_quality = SSAOQuality::Off;
+			break;
 		}
 	}
 

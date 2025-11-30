@@ -20,4 +20,8 @@ void opengl_post_shader_header(SCP_stringstream &sflags, shader_type shader_t, i
 // TAA jitter for projection matrix
 void gr_opengl_get_taa_jitter(float* jitter_x, float* jitter_y);
 
+// SSAO (Screen Space Ambient Occlusion)
+void opengl_post_pass_ssao();
+unsigned int gr_opengl_get_ssao_texture();
+
 #endif	// _GROPENGLPOSTPROCESSING_H

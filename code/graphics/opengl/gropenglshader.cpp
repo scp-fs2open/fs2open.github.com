@@ -178,6 +178,12 @@ static opengl_shader_type_t GL_shader_types[] = {
 
 	{ SDR_TYPE_POST_PROCESS_TAA, "taa-v.sdr", "taa-f.sdr", nullptr,
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Temporal Anti-Aliasing", false },
+
+	{ SDR_TYPE_POST_PROCESS_SSAO, "post-v.sdr", "ssao-f.sdr", nullptr,
+		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Screen Space Ambient Occlusion", false },
+
+	{ SDR_TYPE_POST_PROCESS_SSAO_BLUR, "post-v.sdr", "ssao-blur-f.sdr", nullptr,
+		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "SSAO Bilateral Blur", false },
 };
 // clang-format on
 
@@ -194,6 +200,8 @@ static opengl_shader_variant_t GL_shader_variants[] = {
 	{SDR_TYPE_EFFECT_PARTICLE, true, SDR_FLAG_PARTICLE_POINT_GEN, "FLAG_EFFECT_GEOMETRY", {opengl_vert_attrib::UVEC}, "Geometry shader point-based particles"},
 
 	{SDR_TYPE_DEFERRED_LIGHTING, false, SDR_FLAG_ENV_MAP, "ENV_MAP", {}, "Render ambient light with env and irrmaps"},
+
+	{SDR_TYPE_DEFERRED_LIGHTING, false, SDR_FLAG_SSAO, "SSAO", {}, "Apply screen-space ambient occlusion"},
 
 	{SDR_TYPE_POST_PROCESS_BLUR, false, SDR_FLAG_BLUR_HORIZONTAL, "PASS_0", {}, "Horizontal blur pass"},
 

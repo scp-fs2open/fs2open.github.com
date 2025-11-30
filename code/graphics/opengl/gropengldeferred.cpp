@@ -5,6 +5,7 @@
 
 #include "ShaderProgram.h"
 #include "gropengldraw.h"
+#include "gropenglpostprocessing.h"
 #include "gropenglstate.h"
 #include "gropengltnl.h"
 
@@ -367,13 +368,26 @@ void gr_opengl_deferred_lighting_finish()
 		return;
 	}
 
+	// Run SSAO pass if enabled (before deferred lighting)
+	if (gr_ssao_enabled()) {
+		opengl_post_pass_ssao();
+	}
+
 	GL_state.SetAlphaBlendMode(ALPHA_BLEND_ADDITIVE);
 	gr_zbuffer_set(GR_ZBUFF_NONE);
 
 	// GL_state.DepthFunc(GL_GREATER);
 	// GL_state.DepthMask(GL_FALSE);
 
-	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_DEFERRED_LIGHTING, ENVMAP > 0 ? SDR_FLAG_ENV_MAP : 0));
+	// Build shader flags
+	int shader_flags = 0;
+	if (ENVMAP > 0) {
+		shader_flags |= SDR_FLAG_ENV_MAP;
+	}
+	if (gr_ssao_enabled()) {
+		shader_flags |= SDR_FLAG_SSAO;
+	}
+	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_DEFERRED_LIGHTING, shader_flags));
 
 	// Render on top of the composite buffer texture
 	glDrawBuffer(GL_COLOR_ATTACHMENT5);
@@ -408,6 +422,11 @@ void gr_opengl_deferred_lighting_finish()
 		Assertion(array_index == 0, "Cube map arrays are not supported yet!");
 		// Bind BRDF LUT for proper split-sum IBL
 		GL_state.Texture.Enable(7, GL_TEXTURE_2D, BRDF_LUT_texture);
+	}
+
+	if (gr_ssao_enabled()) {
+		Current_shader->program->Uniforms.setTextureUniform("ssaoTex", 8);
+		GL_state.Texture.Enable(8, GL_TEXTURE_2D, gr_opengl_get_ssao_texture());
 	}
 
 	// We need to use stable sorting here to make sure that the relative ordering of the same light types is the same as

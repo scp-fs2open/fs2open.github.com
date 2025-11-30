@@ -44,6 +44,7 @@ extern Category SMAAEdgeDetection;
 extern Category SMAACalculateBlendingWeights;
 extern Category SMAANeighborhoodBlending;
 extern Category SMAAResolve;
+extern Category SSAO;
 extern Category Lightshafts;
 extern Category DrawPostEffects;
 
