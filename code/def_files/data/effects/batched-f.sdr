@@ -12,7 +12,7 @@ layout (std140) uniform genericData {
 	vec4 color;
 	float intensity;
 	float ambientFactor;
-	float pad[2];
+	vec2 pad;
 	vec3 ambientLight;
 	float pad2;
 	vec3 sunDirection;

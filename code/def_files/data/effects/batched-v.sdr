@@ -13,6 +13,14 @@ layout (std140) uniform matrixData {
 layout (std140) uniform genericData {
 	vec4 color;
 	float intensity;
+	float ambientFactor;
+	vec2 pad;
+	vec3 ambientLight;
+	float pad2;
+	vec3 sunDirection;
+	float sunIntensity;
+	vec3 sunColor;
+	float pad3;
 };
 
 void main()
