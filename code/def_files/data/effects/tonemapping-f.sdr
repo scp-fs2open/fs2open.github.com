@@ -19,6 +19,13 @@ layout (std140) uniform genericData {
 	float sh_lnA;
 	float sh_offsetX;
 	float sh_offsetY;
+	float pad0;
+
+	// HDR output parameters (used when HDR10_OUTPUT is defined)
+	float hdrMaxNits;       // Display max brightness (typically 400-2000 nits)
+	float hdrPaperWhite;    // SDR content reference white (typically 203 nits)
+	float hdrSdrWhite;      // SDR reference white (80 nits)
+	float hdrPad;
 };
 //Tonemapping options, aside from the previous standard UC2, pulled from wookiejedi and qazwsxal's
 //work on testing them for FSO, which itself was based on these references:
@@ -207,9 +214,17 @@ void main()
 			break;
 
 	}
-#ifdef LINEAR_OUT
+#ifdef HDR10_OUTPUT
+	// HDR10 output: Scale to paper white reference, then apply PQ transfer function
+	// Paper white (typically 203 nits) is the reference level for SDR content on HDR displays
+	float nitsScale = hdrPaperWhite / hdrSdrWhite;
+	vec3 hdrColor = color.rgb * nitsScale;
+	fragOut0 = vec4(linear_to_pq(hdrColor, hdrMaxNits), 1.0);
+#elif defined(LINEAR_OUT)
+	// OpenXR linear output (no gamma correction)
 	fragOut0 = vec4(color.rgb, 1.0);
 #else
+	// Standard SDR sRGB output
 	fragOut0 = vec4(linear_to_srgb(color.rgb), 1.0);
 #endif
 }

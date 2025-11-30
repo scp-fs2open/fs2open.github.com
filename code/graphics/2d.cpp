@@ -306,6 +306,16 @@ bool Save_custom_screen_size;
 bool Deferred_lighting = false;
 bool High_dynamic_range = false;
 
+HDROutputMode Gr_hdr_output_mode = HDROutputMode::Auto;
+bool Gr_hdr_output_capable = false;
+float Gr_hdr_max_nits = 1000.0f;
+float Gr_hdr_paper_white_nits = 203.0f;   // ITU-R BT.2408 recommendation
+float Gr_hdr_sdr_white_nits = 80.0f;      // Standard SDR reference
+
+bool gr_hdr_output_enabled() {
+	return Gr_hdr_output_capable && Gr_hdr_output_mode != HDROutputMode::SDR;
+}
+
 static ushort* Gr_original_gamma_ramp = nullptr;
 
 static int videodisplay_deserializer(const json_t* value)
@@ -590,8 +600,8 @@ static auto FramebufferEffectsOption __UNUSED = options::OptionBuilder<flagset<F
                      .parser(parse_framebuffer_func)
                      .finish();
 
-AntiAliasMode Gr_aa_mode = AntiAliasMode::None;
-AntiAliasMode Gr_aa_mode_last_frame = AntiAliasMode::None;
+AntiAliasMode Gr_aa_mode = AntiAliasMode::TAA;
+AntiAliasMode Gr_aa_mode_last_frame = AntiAliasMode::TAA;
 
 static void parse_anti_aliasing_func() {
 	SCP_string value;

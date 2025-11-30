@@ -3,6 +3,11 @@
 #include "osapi/osapi.h"
 
 #include "RenderFrame.h"
+#include "VulkanBuffer.h"
+#include "VulkanDescriptorManager.h"
+#include "VulkanFramebuffer.h"
+#include "VulkanPipelineManager.h"
+#include "VulkanShader.h"
 
 #include <vulkan/vulkan.hpp>
 
@@ -36,6 +41,10 @@ struct PhysicalDeviceValues {
 	QueueIndex graphicsQueueIndex;
 	QueueIndex transferQueueIndex;
 	QueueIndex presentQueueIndex;
+
+	// HDR capability detection
+	bool supportsHDR10 = false;
+	vk::ColorSpaceKHR preferredHDRColorSpace = vk::ColorSpaceKHR::eSrgbNonlinear;
 };
 
 class VulkanRenderer {
@@ -67,9 +76,13 @@ class VulkanRenderer {
 
 	void createGraphicsPipeline();
 
-	void createRenderPass();
+	bool createRenderPasses();
 
-	void createFrameBuffers();
+	bool createSceneFramebuffer();
+
+	void createSwapchainFramebuffers();
+
+	vk::Format findDepthFormat();
 
 	void createCommandPool(const PhysicalDeviceValues& values);
 
@@ -94,15 +107,22 @@ class VulkanRenderer {
 
 	vk::UniqueSwapchainKHR m_swapChain;
 	vk::Format m_swapChainImageFormat;
+	vk::ColorSpaceKHR m_swapChainColorSpace;
 	vk::Extent2D m_swapChainExtent;
 	SCP_vector<vk::Image> m_swapChainImages;
 	SCP_vector<vk::UniqueImageView> m_swapChainImageViews;
-	SCP_vector<vk::UniqueFramebuffer> m_swapChainFramebuffers;
 	SCP_vector<RenderFrame*> m_swapChainImageRenderImage;
 
 	uint32_t m_currentSwapChainImage = 0;
 
-	vk::UniqueRenderPass m_renderPass;
+	// Render pass management
+	std::unique_ptr<VulkanRenderPassManager> m_renderPassManager;
+	vk::Format m_depthFormat = vk::Format::eUndefined;
+
+	// Framebuffer management
+	std::unique_ptr<VulkanFramebuffer> m_sceneFramebuffer;
+	SCP_vector<std::unique_ptr<VulkanFramebuffer>> m_swapchainFramebuffers;
+
 	vk::UniquePipelineLayout m_pipelineLayout;
 	vk::UniquePipeline m_graphicsPipeline;
 
@@ -110,6 +130,19 @@ class VulkanRenderer {
 	std::array<std::unique_ptr<RenderFrame>, MAX_FRAMES_IN_FLIGHT> m_frames;
 
 	vk::UniqueCommandPool m_graphicsCommandPool;
+
+	// Buffer management
+	std::unique_ptr<VulkanBufferManager> m_bufferManager;
+	vk::PhysicalDevice m_physicalDevice;  // Cached for buffer manager
+
+	// Shader management
+	std::unique_ptr<VulkanShaderManager> m_shaderManager;
+
+	// Descriptor management
+	std::unique_ptr<VulkanDescriptorManager> m_descriptorManager;
+
+	// Pipeline management
+	std::unique_ptr<VulkanPipelineManager> m_pipelineManager;
 
 #if SDL_SUPPORTS_VULKAN
 	bool m_debugReportEnabled = false;

@@ -174,6 +174,8 @@ Flag exe_params[] =
 	{ "-no_deferred",		"Disable Deferred Lighting",				true,	EASY_DEFAULT | EASY_HI_MEM_OFF,		EASY_ALL_ON | EASY_HI_MEM_ON,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_deferred"},
 	{ "-enable_shadows",	"Enable Shadows",							true,	EASY_ALL_ON  | EASY_HI_MEM_ON,		EASY_DEFAULT | EASY_HI_MEM_OFF,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-enable_shadows"},
 	{ "-deferred_cockpit",	"Enable Deferred Lighting for Cockpits",	true,	EASY_ALL_ON	 | EASY_HI_MEM_ON,		EASY_DEFAULT | EASY_HI_MEM_OFF,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-deferred_cockpit"},
+	{ "-no_auto_exposure",	"Disable automatic exposure adjustment",	true,	0,									EASY_DEFAULT,					"Graphics",		""},
+	{ "-hdr_output",		"HDR output (0=Off,1=HDR10,2=Auto)",	true,	0,									EASY_DEFAULT,					"Graphics",		""},
 
 	//flag					launcher text								FSO		on_flags							off_flags						category		reference URL
 	{ "-no_vsync",			"Disable vertical sync",					true,	0,									EASY_DEFAULT,					"Game Speed",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_vsync", },
@@ -360,6 +362,8 @@ cmdline_parm enable_shadows_arg("-enable_shadows", NULL, AT_NONE);
 cmdline_parm ssao_preset_arg("-ssao_preset", "SSAO quality (0=Off, 1=Low, 2=Medium, 3=High, 4=Ultra)", AT_INT);
 cmdline_parm no_deferred_lighting_arg("-no_deferred", NULL, AT_NONE);	// Cmdline_no_deferred
 cmdline_parm deferred_lighting_cockpit_arg("-deferred_cockpit", nullptr, AT_NONE);
+cmdline_parm no_auto_exposure_arg("-no_auto_exposure", "Disable automatic exposure adjustment", AT_NONE);
+cmdline_parm hdr_output_arg("-hdr_output", "HDR output mode (0=Off, 1=HDR10, 2=Auto)", AT_INT);
 cmdline_parm anisotropy_level_arg("-anisotropic_filter", NULL, AT_INT);
 
 float Cmdline_ambient_power = 1.0f;
@@ -376,6 +380,8 @@ int Cmdline_height = 1;
 int Cmdline_softparticles = 0;
 int Cmdline_no_deferred_lighting = 0;
 bool Cmdline_deferred_lighting_cockpit = false;
+bool Cmdline_no_auto_exposure = false;
+int Cmdline_hdr_output = 2;    // Default: Auto (2)
 int Cmdline_aniso_level = 0;
 int Cmdline_msaa_enabled = 0;
 
@@ -2078,6 +2084,20 @@ bool SetCmdlineParams()
 		}
 	}
 
+	// Process HDR output mode from command-line (default is Auto)
+	switch (Cmdline_hdr_output) {
+	case 0:
+		Gr_hdr_output_mode = HDROutputMode::SDR;
+		break;
+	case 1:
+		Gr_hdr_output_mode = HDROutputMode::HDR10;
+		break;
+	case 2:
+	default:
+		Gr_hdr_output_mode = HDROutputMode::Auto;
+		break;
+	}
+
 	if (msaa_enabled_arg.found()) {
 		Cmdline_msaa_enabled = msaa_enabled_arg.get_int();
 		switch (Cmdline_msaa_enabled) {
@@ -2282,6 +2302,20 @@ bool SetCmdlineParams()
 	if( deferred_lighting_cockpit_arg.found() )
 	{
 		Cmdline_deferred_lighting_cockpit = true;
+	}
+
+	if( no_auto_exposure_arg.found() )
+	{
+		Cmdline_no_auto_exposure = true;
+	}
+
+	if (hdr_output_arg.found())
+	{
+		Cmdline_hdr_output = hdr_output_arg.get_int();
+		// Clamp to valid range: 0=Off, 1=HDR10, 2=Auto
+		if (Cmdline_hdr_output < 0 || Cmdline_hdr_output > 2) {
+			Cmdline_hdr_output = 2;  // Default to Auto
+		}
 	}
 
 	if (anisotropy_level_arg.found()) 

@@ -227,7 +227,13 @@ struct tonemapping_data {
 	float sh_lnA;
 	float sh_offsetX;
 	float sh_offsetY;
-	float pad[1];
+	float pad0;
+
+	// HDR output parameters (used when HDR10_OUTPUT is defined)
+	float hdrMaxNits;       // Display max brightness (typically 400-2000 nits)
+	float hdrPaperWhite;    // SDR content reference white (typically 203 nits)
+	float hdrSdrWhite;      // SDR reference white (80 nits)
+	float hdrPad;
 };
 
 struct smaa_data {
@@ -444,6 +450,12 @@ struct ssao_blur_data {
 
 	float blurSharpness;       // Edge-aware blur sharpness
 	float pad[3];
+};
+
+struct luminance_data {
+	vec2d texelSize;           // 1.0 / screen resolution
+	float minLogLuminance;     // Log2 of minimum luminance (e.g., -10.0)
+	float logLuminanceRange;   // Range in stops (e.g., 12.0)
 };
 
 } // namespace generic_data

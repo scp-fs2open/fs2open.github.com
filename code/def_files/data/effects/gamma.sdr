@@ -27,3 +27,35 @@ vec3 linear_to_srgb(vec3 val) {
 vec4 linear_to_srgb(vec4 val) {
 	return pow(val, vec4(SRGB_GAMMA_INVERSE));
 }
+
+// SMPTE ST 2084 (PQ) transfer function for HDR10
+// Reference: https://en.wikipedia.org/wiki/Perceptual_quantizer
+const float PQ_m1 = 0.1593017578125;      // 2610/16384
+const float PQ_m2 = 78.84375;             // 2523/32 * 128
+const float PQ_c1 = 0.8359375;            // 3424/4096
+const float PQ_c2 = 18.8515625;           // 2413/128
+const float PQ_c3 = 18.6875;              // 2392/128
+
+// Convert linear light (in nits, normalized to maxNits) to PQ encoded value
+vec3 linear_to_pq(vec3 linear_color, float maxNits) {
+	// Normalize to 10000 nits reference (PQ absolute luminance standard)
+	vec3 Y = clamp(linear_color * (maxNits / 10000.0), 0.0, 1.0);
+
+	// Apply PQ OETF (Optical-Electro Transfer Function)
+	vec3 Ym1 = pow(Y, vec3(PQ_m1));
+	vec3 numerator = PQ_c1 + PQ_c2 * Ym1;
+	vec3 denominator = 1.0 + PQ_c3 * Ym1;
+	return pow(numerator / denominator, vec3(PQ_m2));
+}
+
+// Convert PQ encoded value back to linear light (in nits, normalized to maxNits)
+vec3 pq_to_linear(vec3 pq_color, float maxNits) {
+	// Apply PQ EOTF (Electro-Optical Transfer Function)
+	vec3 Vm2 = pow(pq_color, vec3(1.0 / PQ_m2));
+	vec3 numerator = max(Vm2 - PQ_c1, vec3(0.0));
+	vec3 denominator = PQ_c2 - PQ_c3 * Vm2;
+	vec3 Y = pow(numerator / denominator, vec3(1.0 / PQ_m1));
+
+	// Convert from 10000 nits reference to maxNits
+	return Y * (10000.0 / maxNits);
+}

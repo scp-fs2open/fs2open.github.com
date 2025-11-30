@@ -276,6 +276,7 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/smaa-neighbour-f.sdr
 	def_files/data/effects/ssao-f.sdr
 	def_files/data/effects/ssao-blur-f.sdr
+	def_files/data/effects/luminance-f.sdr
 	def_files/data/effects/taa-f.sdr
 	def_files/data/effects/taa-v.sdr
 	def_files/data/effects/tonemapping-f.sdr
@@ -564,6 +565,8 @@ add_file_folder("Graphics\\\\SoftwareGr\\\\Font"
 add_file_folder("Graphics\\\\Util"
 	graphics/util/GPUMemoryHeap.cpp
 	graphics/util/GPUMemoryHeap.h
+	graphics/util/ShaderPreprocessor.cpp
+	graphics/util/ShaderPreprocessor.h
 	graphics/util/uniform_structs.h
 	graphics/util/UniformAligner.h
 	graphics/util/UniformAligner.cpp
@@ -579,6 +582,16 @@ if (FSO_BUILD_WITH_VULKAN)
 		graphics/vulkan/gr_vulkan.h
 		graphics/vulkan/RenderFrame.cpp
 		graphics/vulkan/RenderFrame.h
+		graphics/vulkan/VulkanBuffer.cpp
+		graphics/vulkan/VulkanBuffer.h
+		graphics/vulkan/VulkanDescriptorManager.cpp
+		graphics/vulkan/VulkanDescriptorManager.h
+		graphics/vulkan/VulkanFramebuffer.cpp
+		graphics/vulkan/VulkanFramebuffer.h
+		graphics/vulkan/VulkanPipelineManager.cpp
+		graphics/vulkan/VulkanPipelineManager.h
+		graphics/vulkan/VulkanShader.cpp
+		graphics/vulkan/VulkanShader.h
 		graphics/vulkan/vulkan_stubs.cpp
 		graphics/vulkan/vulkan_stubs.h
 		graphics/vulkan/VulkanRenderer.cpp

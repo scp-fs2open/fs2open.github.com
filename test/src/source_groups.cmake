@@ -25,6 +25,7 @@ add_file_folder("Globalincs"
 
 add_file_folder("Graphics"
 	   graphics/test_font.cpp
+	   graphics/test_vulkan.cpp
 )
 
 add_file_folder("Math"

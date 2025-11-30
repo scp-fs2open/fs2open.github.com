@@ -4,12 +4,92 @@
 #include "SDLGraphicsOperations.h"
 
 #include "cmdline/cmdline.h"
+#include "graphics/2d.h"
 
 #if SDL_VERSION_ATLEAST(2, 0, 6)
 #include <SDL_vulkan.h>
 #include "backends/imgui_impl_sdl.h"
 #include "backends/imgui_impl_opengl3.h"
 #endif
+
+#ifdef _WIN32
+#include <SDL_syswm.h>
+#include <dxgi1_6.h>
+#pragma comment(lib, "dxgi.lib")
+
+// Detect HDR capability using DXGI 1.6
+static void detectWindowsHDRSupport(int display_index) {
+	if (Gr_hdr_output_mode == HDROutputMode::SDR) {
+		// User explicitly disabled HDR
+		mprintf(("HDR: Disabled by user setting\n"));
+		return;
+	}
+
+	IDXGIFactory1* factory = nullptr;
+	HRESULT hr = CreateDXGIFactory1(__uuidof(IDXGIFactory1), reinterpret_cast<void**>(&factory));
+	if (FAILED(hr)) {
+		mprintf(("HDR: Failed to create DXGI factory (0x%08X)\n", hr));
+		return;
+	}
+
+	IDXGIAdapter1* adapter = nullptr;
+	hr = factory->EnumAdapters1(0, &adapter);
+	if (FAILED(hr)) {
+		mprintf(("HDR: Failed to enumerate adapters (0x%08X)\n", hr));
+		factory->Release();
+		return;
+	}
+
+	// Try to find the output corresponding to our display
+	IDXGIOutput* output = nullptr;
+	hr = adapter->EnumOutputs(display_index, &output);
+	if (FAILED(hr)) {
+		// Fall back to primary output
+		hr = adapter->EnumOutputs(0, &output);
+		if (FAILED(hr)) {
+			mprintf(("HDR: Failed to enumerate outputs (0x%08X)\n", hr));
+			adapter->Release();
+			factory->Release();
+			return;
+		}
+	}
+
+	// Query for DXGI 1.6 interface for HDR support
+	IDXGIOutput6* output6 = nullptr;
+	hr = output->QueryInterface(__uuidof(IDXGIOutput6), reinterpret_cast<void**>(&output6));
+	if (SUCCEEDED(hr)) {
+		DXGI_OUTPUT_DESC1 desc;
+		hr = output6->GetDesc1(&desc);
+		if (SUCCEEDED(hr)) {
+			// Check color space for HDR support
+			bool hdr_supported = (desc.ColorSpace == DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020 ||
+			                      desc.ColorSpace == DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709);
+
+			if (hdr_supported) {
+				Gr_hdr_output_capable = true;
+				Gr_hdr_max_nits = desc.MaxLuminance;
+				mprintf(("HDR: Display supports HDR output\n"));
+				mprintf(("HDR:   Max luminance: %.0f nits\n", desc.MaxLuminance));
+				mprintf(("HDR:   Min luminance: %.4f nits\n", desc.MinLuminance));
+				mprintf(("HDR:   Max full-frame luminance: %.0f nits\n", desc.MaxFullFrameLuminance));
+				mprintf(("HDR:   Color space: %s\n",
+					desc.ColorSpace == DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020 ? "HDR10 (PQ)" : "scRGB (Linear)"));
+			} else {
+				mprintf(("HDR: Display does not support HDR (color space: %d)\n", desc.ColorSpace));
+			}
+		} else {
+			mprintf(("HDR: Failed to get output description (0x%08X)\n", hr));
+		}
+		output6->Release();
+	} else {
+		mprintf(("HDR: DXGI 1.6 not available, HDR detection not possible\n"));
+	}
+
+	output->Release();
+	adapter->Release();
+	factory->Release();
+}
+#endif // _WIN32
 
 namespace {
 void setOGLProperties(const os::ViewPortProperties& props)
@@ -164,6 +244,15 @@ SDLGraphicsOperations::~SDLGraphicsOperations() {
 }
 std::unique_ptr<os::Viewport> SDLGraphicsOperations::createViewport(const os::ViewPortProperties& props)
 {
+#ifdef _WIN32
+	// Detect HDR capability before creating the window
+	detectWindowsHDRSupport(props.display);
+#else
+	if (Gr_hdr_output_mode != HDROutputMode::SDR) {
+		mprintf(("HDR: HDR output is only supported on Windows at this time\n"));
+	}
+#endif
+
 	uint32_t windowflags = SDL_WINDOW_SHOWN;
 	if (props.enable_opengl) {
 		windowflags |= SDL_WINDOW_OPENGL;

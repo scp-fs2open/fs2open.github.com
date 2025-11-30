@@ -1,6 +1,7 @@
 #include "vulkan_stubs.h"
 
 #include "graphics/2d.h"
+#include "VulkanBuffer.h"
 
 #define BMPMAN_INTERNAL
 #include "bmpman/bm_internal.h"
@@ -305,14 +306,14 @@ void init_stub_pointers()
 	gr_screen.gf_zbias = stub_zbias_stub;
 	gr_screen.gf_set_fill_mode = gr_set_fill_mode_stub;
 
-	gr_screen.gf_create_buffer = stub_create_buffer;
-	gr_screen.gf_delete_buffer = stub_delete_buffer;
+	gr_screen.gf_create_buffer = gr_vulkan_create_buffer;
+	gr_screen.gf_delete_buffer = gr_vulkan_delete_buffer;
 
 	gr_screen.gf_update_transform_buffer = stub_update_transform_buffer;
-	gr_screen.gf_update_buffer_data = stub_update_buffer_data;
-	gr_screen.gf_update_buffer_data_offset = stub_update_buffer_data_offset;
-	gr_screen.gf_map_buffer = [](gr_buffer_handle) -> void* { return nullptr; };
-	gr_screen.gf_flush_mapped_buffer = [](gr_buffer_handle, size_t, size_t) {};
+	gr_screen.gf_update_buffer_data = gr_vulkan_update_buffer_data;
+	gr_screen.gf_update_buffer_data_offset = gr_vulkan_update_buffer_data_offset;
+	gr_screen.gf_map_buffer = gr_vulkan_map_buffer;
+	gr_screen.gf_flush_mapped_buffer = gr_vulkan_flush_mapped_buffer;
 
 	gr_screen.gf_post_process_set_effect = stub_post_process_set_effect;
 	gr_screen.gf_post_process_set_defaults = stub_post_process_set_defaults;
@@ -375,7 +376,7 @@ void init_stub_pointers()
 	gr_screen.gf_create_viewport = [](const os::ViewPortProperties&) { return std::unique_ptr<os::Viewport>(); };
 	gr_screen.gf_use_viewport = [](os::Viewport*) {};
 
-	gr_screen.gf_bind_uniform_buffer = [](uniform_block_type, size_t, size_t, gr_buffer_handle) {};
+	gr_screen.gf_bind_uniform_buffer = gr_vulkan_bind_uniform_buffer;
 
 	gr_screen.gf_sync_fence = []() -> gr_sync { return nullptr; };
 	gr_screen.gf_sync_wait = [](gr_sync /*sync*/, uint64_t /*timeoutns*/) { return true; };

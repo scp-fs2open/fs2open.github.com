@@ -115,10 +115,95 @@ endif()
 if (FSO_BUILD_WITH_VULKAN)
 	find_package(Vulkan REQUIRED)
 	if (Vulkan_FOUND)
-		target_compile_definitions(code PUBLIC WITH_VULKAN)
-		target_link_libraries(code PRIVATE Vulkan::Vulkan)
-
 		target_compile_definitions(code PUBLIC WITH_VULKAN VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1 VK_NO_PROTOTYPES)
+		target_link_libraries(code PRIVATE Vulkan::Vulkan)
+		# Make Vulkan include directory available to targets that link against code (e.g., unittests)
+		target_include_directories(code PUBLIC ${Vulkan_INCLUDE_DIR})
+
+		# Add shaderc for runtime GLSL->SPIR-V compilation
+		# shaderc is included in Vulkan SDK but not as a CMake component
+		# Use shared library on Windows to avoid /MT vs /MD runtime mismatch
+		if (WIN32)
+			set(SHADERC_LIB_NAME "shaderc_shared")
+		else()
+			set(SHADERC_LIB_NAME "shaderc_combined")
+		endif()
+
+		find_library(SHADERC_LIBRARY
+			NAMES ${SHADERC_LIB_NAME}
+			HINTS ${Vulkan_INCLUDE_DIR}/../Lib $ENV{VULKAN_SDK}/Lib
+		)
+
+		if (SHADERC_LIBRARY)
+			message(STATUS "Found shaderc: ${SHADERC_LIBRARY}")
+			target_link_libraries(code PRIVATE ${SHADERC_LIBRARY})
+			target_compile_definitions(code PUBLIC FSO_HAVE_SHADERC)
+
+			# On Windows, find and copy shaderc_shared.dll to output directory
+			if (WIN32)
+				find_file(SHADERC_DLL
+					NAMES "shaderc_shared.dll"
+					HINTS ${Vulkan_INCLUDE_DIR}/../Bin $ENV{VULKAN_SDK}/Bin
+				)
+				if (SHADERC_DLL)
+					message(STATUS "Found shaderc DLL: ${SHADERC_DLL}")
+					add_target_copy_files("${SHADERC_DLL}")
+				else()
+					message(WARNING "shaderc_shared.dll not found - runtime shader compilation may fail")
+				endif()
+			endif()
+		else()
+			message(WARNING "shaderc not found - Vulkan shader compilation will not be available")
+		endif()
+
+		# Add SPIRV-Cross for SPIR-V reflection (descriptor layouts, bindings)
+		# SPIRV-Cross is included in Vulkan SDK
+		# Use shared library on Windows to avoid /MT vs /MD runtime mismatch
+		if (WIN32)
+			# On Windows, use the C API shared library
+			find_library(SPIRV_CROSS_LIBRARY
+				NAMES "spirv-cross-c-shared"
+				HINTS ${Vulkan_INCLUDE_DIR}/../Lib $ENV{VULKAN_SDK}/Lib
+			)
+			if (SPIRV_CROSS_LIBRARY)
+				message(STATUS "Found SPIRV-Cross (shared): ${SPIRV_CROSS_LIBRARY}")
+				target_link_libraries(code PRIVATE ${SPIRV_CROSS_LIBRARY})
+				target_compile_definitions(code PUBLIC FSO_HAVE_SPIRV_CROSS FSO_SPIRV_CROSS_C_API)
+
+				# Copy DLL to output directory
+				find_file(SPIRV_CROSS_DLL
+					NAMES "spirv-cross-c-shared.dll"
+					HINTS ${Vulkan_INCLUDE_DIR}/../Bin $ENV{VULKAN_SDK}/Bin
+				)
+				if (SPIRV_CROSS_DLL)
+					message(STATUS "Found SPIRV-Cross DLL: ${SPIRV_CROSS_DLL}")
+					add_target_copy_files("${SPIRV_CROSS_DLL}")
+				else()
+					message(WARNING "spirv-cross-c-shared.dll not found - shader reflection may fail at runtime")
+				endif()
+			else()
+				message(WARNING "SPIRV-Cross shared library not found - shader reflection will not be available")
+			endif()
+		else()
+			# On Linux/macOS, use the static C++ library
+			find_library(SPIRV_CROSS_CORE_LIBRARY
+				NAMES "spirv-cross-core"
+				HINTS ${Vulkan_INCLUDE_DIR}/../Lib $ENV{VULKAN_SDK}/Lib
+			)
+			find_library(SPIRV_CROSS_CPP_LIBRARY
+				NAMES "spirv-cross-cpp"
+				HINTS ${Vulkan_INCLUDE_DIR}/../Lib $ENV{VULKAN_SDK}/Lib
+			)
+
+			if (SPIRV_CROSS_CORE_LIBRARY AND SPIRV_CROSS_CPP_LIBRARY)
+				message(STATUS "Found SPIRV-Cross core: ${SPIRV_CROSS_CORE_LIBRARY}")
+				message(STATUS "Found SPIRV-Cross cpp: ${SPIRV_CROSS_CPP_LIBRARY}")
+				target_link_libraries(code PRIVATE ${SPIRV_CROSS_CPP_LIBRARY} ${SPIRV_CROSS_CORE_LIBRARY})
+				target_compile_definitions(code PUBLIC FSO_HAVE_SPIRV_CROSS)
+			else()
+				message(WARNING "SPIRV-Cross not found - Vulkan shader reflection will not be available")
+			endif()
+		endif()
 	else()
 		message(WARNING "FSO_BUILD_WITH_VULKAN was set, but the package was unable to be found. Forcing OFF.")
 		set(FSO_BUILD_WITH_VULKAN OFF CACHE BOOL "Enable compilation of the Vulkan renderer" FORCE)

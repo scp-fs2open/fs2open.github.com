@@ -65,6 +65,8 @@ extern int Cmdline_height;
 extern int Cmdline_softparticles;
 extern int Cmdline_no_deferred_lighting;
 extern bool Cmdline_deferred_lighting_cockpit;
+extern bool Cmdline_no_auto_exposure;
+extern int Cmdline_hdr_output;    // 0=Off, 1=HDR10, 2=Auto (default)
 extern int Cmdline_emissive;
 extern int Cmdline_aniso_level;
 extern int Cmdline_msaa_enabled;

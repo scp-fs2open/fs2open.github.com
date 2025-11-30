@@ -25,7 +25,7 @@ target_compile_features(Freespace2 PUBLIC cxx_std_17)
 
 include(resources.cmake)
 
-SET_TARGET_PROPERTIES(Freespace2 PROPERTIES OUTPUT_NAME "fs2_open_${FSO_BINARY_SUFFIX}")
+SET_TARGET_PROPERTIES(Freespace2 PROPERTIES OUTPUT_NAME "fs2_${FSO_VERSION_MAJOR}_${FSO_VERSION_MINOR}_${FSO_VERSION_BUILD}")
 
 TARGET_LINK_LIBRARIES(Freespace2 code)
 TARGET_LINK_LIBRARIES(Freespace2 platform)

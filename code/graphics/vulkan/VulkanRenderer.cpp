@@ -1,5 +1,6 @@
 
 #include "VulkanRenderer.h"
+#include "VulkanBuffer.h"
 
 #include "globalincs/version.h"
 
@@ -188,14 +189,54 @@ void printPhysicalDevice(const PhysicalDeviceValues& values)
 
 vk::SurfaceFormatKHR chooseSurfaceFormat(const PhysicalDeviceValues& values)
 {
+	// Debug: force file output for HDR debugging
+	FILE* dbg = fopen("vulkan_hdr_debug.txt", "w");
+	if (dbg) {
+		fprintf(dbg, "Vulkan HDR state: capable=%d, mode=%d, enabled=%d\n",
+			Gr_hdr_output_capable ? 1 : 0,
+			static_cast<int>(Gr_hdr_output_mode),
+			gr_hdr_output_enabled() ? 1 : 0);
+		fprintf(dbg, "Available surface formats (%zu):\n", values.surfaceFormats.size());
+		for (const auto& fmt : values.surfaceFormats) {
+			fprintf(dbg, "  Format: %s, ColorSpace: %s\n",
+				vk::to_string(fmt.format).c_str(),
+				vk::to_string(fmt.colorSpace).c_str());
+		}
+		fflush(dbg);
+	}
+
+	// Debug: show HDR state
+	mprintf(("Vulkan HDR state: capable=%d, mode=%d, enabled=%d\n",
+		Gr_hdr_output_capable ? 1 : 0,
+		static_cast<int>(Gr_hdr_output_mode),
+		gr_hdr_output_enabled() ? 1 : 0));
+
+	// HDR10 path: select 10-bit format with PQ transfer function when HDR is enabled
+	if (gr_hdr_output_enabled()) {
+		for (const auto& availableFormat : values.surfaceFormats) {
+			if (availableFormat.format == vk::Format::eA2B10G10R10UnormPack32 &&
+				availableFormat.colorSpace == vk::ColorSpaceKHR::eHdr10St2084EXT) {
+				if (dbg) { fprintf(dbg, "SELECTED: HDR10 (A2B10G10R10 + ST2084 PQ)\n"); fclose(dbg); }
+				mprintf(("Vulkan: SELECTED HDR10 swapchain (A2B10G10R10 + ST2084 PQ)\n"));
+				return availableFormat;
+			}
+		}
+		if (dbg) { fprintf(dbg, "HDR requested but no HDR10 format found!\n"); }
+		mprintf(("Vulkan: HDR requested but no HDR10 format found, falling back to SDR\n"));
+	}
+
+	// SDR path: standard 8-bit sRGB
 	for (const auto& availableFormat : values.surfaceFormats) {
-		// Simple check is enough for now
 		if (availableFormat.format == vk::Format::eB8G8R8A8Srgb &&
 			availableFormat.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear) {
+			if (dbg) { fprintf(dbg, "SELECTED: SDR sRGB\n"); fclose(dbg); }
+			mprintf(("Vulkan: SELECTED SDR sRGB swapchain\n"));
 			return availableFormat;
 		}
 	}
 
+	if (dbg) { fprintf(dbg, "SELECTED: Fallback (first available)\n"); fclose(dbg); }
+	mprintf(("Vulkan: SELECTED fallback format\n"));
 	return values.surfaceFormats.front();
 }
 
@@ -275,14 +316,64 @@ bool VulkanRenderer::initialize()
 		return false;
 	}
 
+	// Cache physical device and initialize buffer manager
+	m_physicalDevice = deviceValues.device;
+	m_bufferManager = std::make_unique<VulkanBufferManager>(m_device.get(), m_physicalDevice);
+	g_vulkanBufferManager = m_bufferManager.get();
+
+#ifdef FSO_HAVE_SHADERC
+	// Initialize shader manager for runtime GLSL->SPIR-V compilation
+	m_shaderManager = std::make_unique<VulkanShaderManager>(m_device.get());
+	if (!m_shaderManager->initialize()) {
+		mprintf(("Warning: Vulkan shader manager initialization failed - will use precompiled shaders only\n"));
+		m_shaderManager.reset();
+	} else {
+		mprintf(("Vulkan shader manager initialized (runtime GLSL compilation available)\n"));
+	}
+#endif
+
+	// Initialize descriptor manager for allocating and binding descriptor sets
+	m_descriptorManager = std::make_unique<VulkanDescriptorManager>();
+	if (!m_descriptorManager->initialize(m_device.get(), m_physicalDevice)) {
+		mprintf(("Failed to initialize Vulkan descriptor manager\n"));
+		return false;
+	}
+
+	// Initialize pipeline manager for creating and caching graphics pipelines
+	m_pipelineManager = std::make_unique<VulkanPipelineManager>();
+	if (!m_pipelineManager->initialize(m_device.get(), m_physicalDevice, m_shaderManager.get())) {
+		mprintf(("Failed to initialize Vulkan pipeline manager\n"));
+		return false;
+	}
+	g_vulkanPipelineManager = m_pipelineManager.get();
+
 	if (!createSwapChain(deviceValues)) {
 		mprintf(("Failed to create swap chain.\n"));
 		return false;
 	}
 
-	createRenderPass();
+	// Initialize render pass manager and create render passes
+	m_renderPassManager = std::make_unique<VulkanRenderPassManager>();
+	if (!m_renderPassManager->initialize(m_device.get())) {
+		mprintf(("Failed to initialize render pass manager\n"));
+		return false;
+	}
+
+	if (!createRenderPasses()) {
+		mprintf(("Failed to create render passes\n"));
+		return false;
+	}
+
+	// Create scene framebuffer (color + depth render target)
+	if (!createSceneFramebuffer()) {
+		mprintf(("Failed to create scene framebuffer\n"));
+		return false;
+	}
+
+	// Create swapchain framebuffers for presentation
+	createSwapchainFramebuffers();
+
 	createGraphicsPipeline();
-	createFrameBuffers();
 	createPresentSyncObjects();
 	createCommandPool(deviceValues);
 
@@ -518,6 +609,27 @@ bool VulkanRenderer::pickPhysicalDevice(PhysicalDeviceValues& deviceValues)
 		mprintf(("  Found support for %s version %" PRIu32 "\n", extProp.extensionName.data(), extProp.specVersion));
 	}
 
+	// Detect HDR10 support by checking for the required surface format
+	mprintf(("Surface formats:\n"));
+	for (const auto& format : deviceValues.surfaceFormats) {
+		mprintf(("  Format: %s, ColorSpace: %s\n",
+			to_string(format.format).c_str(),
+			to_string(format.colorSpace).c_str()));
+
+		if (format.format == vk::Format::eA2B10G10R10UnormPack32 &&
+			format.colorSpace == vk::ColorSpaceKHR::eHdr10St2084EXT) {
+			deviceValues.supportsHDR10 = true;
+			deviceValues.preferredHDRColorSpace = format.colorSpace;
+		}
+	}
+
+	if (deviceValues.supportsHDR10) {
+		Gr_hdr_output_capable = true;
+		mprintf(("Vulkan: HDR10 output is supported\n"));
+	} else {
+		mprintf(("Vulkan: HDR10 output is not supported (no A2B10G10R10 + ST2084 format)\n"));
+	}
+
 	return true;
 }
 
@@ -594,6 +706,7 @@ bool VulkanRenderer::createSwapChain(const PhysicalDeviceValues& deviceValues)
 	std::vector<vk::Image> swapChainImages = m_device->getSwapchainImagesKHR(m_swapChain.get());
 	m_swapChainImages = SCP_vector<vk::Image>(swapChainImages.begin(), swapChainImages.end());
 	m_swapChainImageFormat = surfaceFormat.format;
+	m_swapChainColorSpace = surfaceFormat.colorSpace;
 	m_swapChainExtent = createInfo.imageExtent;
 
 	m_swapChainImageViews.reserve(m_swapChainImages.size());
@@ -629,67 +742,89 @@ vk::UniqueShaderModule VulkanRenderer::loadShader(const SCP_string& name)
 
 	return m_device->createShaderModuleUnique(createInfo);
 }
-void VulkanRenderer::createFrameBuffers()
+vk::Format VulkanRenderer::findDepthFormat()
 {
-	m_swapChainFramebuffers.reserve(m_swapChainImageViews.size());
-	for (const auto& imageView : m_swapChainImageViews) {
-		const vk::ImageView attachments[] = {
-			imageView.get(),
-		};
+	// Prefer D32, fall back to D24S8, then D16
+	SCP_vector<vk::Format> candidates = {
+	    vk::Format::eD32Sfloat,
+	    vk::Format::eD32SfloatS8Uint,
+	    vk::Format::eD24UnormS8Uint,
+	    vk::Format::eD16Unorm,
+	};
 
-		vk::FramebufferCreateInfo framebufferInfo;
-		framebufferInfo.renderPass = m_renderPass.get();
-		framebufferInfo.attachmentCount = 1;
-		framebufferInfo.pAttachments = attachments;
-		framebufferInfo.width = m_swapChainExtent.width;
-		framebufferInfo.height = m_swapChainExtent.height;
-		framebufferInfo.layers = 1;
-
-		m_swapChainFramebuffers.push_back(m_device->createFramebufferUnique(framebufferInfo));
+	for (vk::Format format : candidates) {
+		vk::FormatProperties props = m_physicalDevice.getFormatProperties(format);
+		if (props.optimalTilingFeatures & vk::FormatFeatureFlagBits::eDepthStencilAttachment) {
+			mprintf(("Vulkan: Selected depth format %s\n", vk::to_string(format).c_str()));
+			return format;
+		}
 	}
+
+	mprintf(("Vulkan: No suitable depth format found, using D16\n"));
+	return vk::Format::eD16Unorm; // Fallback
 }
-void VulkanRenderer::createRenderPass()
+
+bool VulkanRenderer::createRenderPasses()
 {
-	vk::AttachmentDescription colorAttachment;
-	colorAttachment.format = m_swapChainImageFormat;
-	colorAttachment.samples = vk::SampleCountFlagBits::e1;
+	// Find suitable depth format
+	m_depthFormat = findDepthFormat();
 
-	colorAttachment.loadOp = vk::AttachmentLoadOp::eClear;
-	colorAttachment.storeOp = vk::AttachmentStoreOp::eStore;
+	// Create scene render pass (color + depth) for 3D geometry rendering
+	// Uses R16G16B16A16_SFLOAT for HDR scene rendering
+	if (!m_renderPassManager->createSceneRenderPass(vk::Format::eR16G16B16A16Sfloat, m_depthFormat)) {
+		mprintf(("Vulkan: Failed to create scene render pass\n"));
+		return false;
+	}
 
-	colorAttachment.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
-	colorAttachment.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
+	// Create present render pass (color only) for final output to swapchain
+	if (!m_renderPassManager->createPresentRenderPass(m_swapChainImageFormat)) {
+		mprintf(("Vulkan: Failed to create present render pass\n"));
+		return false;
+	}
 
-	colorAttachment.initialLayout = vk::ImageLayout::eUndefined;
-	colorAttachment.finalLayout = vk::ImageLayout::ePresentSrcKHR;
+	return true;
+}
 
-	vk::AttachmentReference colorAttachRef;
-	colorAttachRef.attachment = 0;
-	colorAttachRef.layout = vk::ImageLayout::eColorAttachmentOptimal;
+bool VulkanRenderer::createSceneFramebuffer()
+{
+	m_sceneFramebuffer = std::make_unique<VulkanFramebuffer>();
 
-	vk::SubpassDescription subpass;
-	subpass.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
-	subpass.colorAttachmentCount = 1;
-	subpass.pColorAttachments = &colorAttachRef;
+	// Create scene framebuffer with HDR color + depth
+	if (!m_sceneFramebuffer->create(m_device.get(),
+	        m_physicalDevice,
+	        m_renderPassManager->getSceneRenderPass(),
+	        m_swapChainExtent.width,
+	        m_swapChainExtent.height,
+	        {vk::Format::eR16G16B16A16Sfloat}, // HDR color
+	        m_depthFormat)) {
+		mprintf(("Vulkan: Failed to create scene framebuffer\n"));
+		return false;
+	}
 
-	vk::SubpassDependency dependency;
-	dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-	dependency.dstSubpass = 0;
+	return true;
+}
 
-	dependency.srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+void VulkanRenderer::createSwapchainFramebuffers()
+{
+	m_swapchainFramebuffers.clear();
+	m_swapchainFramebuffers.reserve(m_swapChainImageViews.size());
 
-	dependency.dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-	dependency.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
+	// Create framebuffer for each swapchain image (no depth - present pass doesn't need it)
+	for (size_t i = 0; i < m_swapChainImageViews.size(); ++i) {
+		auto fb = std::make_unique<VulkanFramebuffer>();
+		if (!fb->createFromImageViews(m_device.get(),
+		        m_renderPassManager->getPresentRenderPass(),
+		        m_swapChainExtent.width,
+		        m_swapChainExtent.height,
+		        {m_swapChainImageViews[i].get()},
+		        nullptr)) { // No depth for present pass
+			mprintf(("Vulkan: Failed to create swapchain framebuffer %zu\n", i));
+			continue;
+		}
+		m_swapchainFramebuffers.push_back(std::move(fb));
+	}
 
-	vk::RenderPassCreateInfo renderPassInfo;
-	renderPassInfo.attachmentCount = 1;
-	renderPassInfo.pAttachments = &colorAttachment;
-	renderPassInfo.subpassCount = 1;
-	renderPassInfo.pSubpasses = &subpass;
-	renderPassInfo.dependencyCount = 1;
-	renderPassInfo.pDependencies = &dependency;
-
-	m_renderPass = m_device->createRenderPassUnique(renderPassInfo);
+	mprintf(("Vulkan: Created %zu swapchain framebuffers\n", m_swapchainFramebuffers.size()));
 }
 void VulkanRenderer::createGraphicsPipeline()
 {
@@ -804,7 +939,7 @@ void VulkanRenderer::createGraphicsPipeline()
 	pipelineInfo.pColorBlendState = &colorBlending;
 	pipelineInfo.pDynamicState = nullptr;
 	pipelineInfo.layout = m_pipelineLayout.get();
-	pipelineInfo.renderPass = m_renderPass.get();
+	pipelineInfo.renderPass = m_renderPassManager->getPresentRenderPass();
 	pipelineInfo.subpass = 0;
 	pipelineInfo.basePipelineHandle = nullptr;
 	pipelineInfo.basePipelineIndex = -1;
@@ -848,7 +983,7 @@ void VulkanRenderer::drawScene(vk::Framebuffer destinationFb, vk::CommandBuffer 
 	cmdBuffer.begin(beginInfo);
 
 	vk::RenderPassBeginInfo renderPassBegin;
-	renderPassBegin.renderPass = m_renderPass.get();
+	renderPassBegin.renderPass = m_renderPassManager->getPresentRenderPass();
 	renderPassBegin.framebuffer = destinationFb;
 	renderPassBegin.renderArea.offset.x = 0;
 	renderPassBegin.renderArea.offset.y = 0;
@@ -882,7 +1017,7 @@ void VulkanRenderer::flip()
 	auto allocatedBuffers = m_device->allocateCommandBuffers(cmdBufferAlloc);
 	auto& cmdBuffer = allocatedBuffers.front();
 
-	drawScene(m_swapChainFramebuffers[m_currentSwapChainImage].get(), cmdBuffer);
+	drawScene(m_swapchainFramebuffers[m_currentSwapChainImage]->getFramebuffer(), cmdBuffer);
 	m_frames[m_currentFrame]->onFrameFinished([this, allocatedBuffers]() mutable {
 		m_device->freeCommandBuffers(m_graphicsCommandPool.get(), allocatedBuffers);
 		allocatedBuffers.clear();
@@ -903,6 +1038,39 @@ void VulkanRenderer::shutdown()
 	}
 	// For good measure, also wait until the device is idle
 	m_device->waitIdle();
+
+	// Cleanup framebuffers before render passes (framebuffers reference render passes)
+	m_sceneFramebuffer.reset();
+	m_swapchainFramebuffers.clear();
+
+	// Cleanup render pass manager
+	if (m_renderPassManager) {
+		m_renderPassManager->shutdown();
+		m_renderPassManager.reset();
+	}
+
+	// Cleanup shader manager before device destruction
+	if (m_shaderManager) {
+		m_shaderManager->shutdown();
+		m_shaderManager.reset();
+	}
+
+	// Cleanup pipeline manager before device destruction
+	if (m_pipelineManager) {
+		m_pipelineManager->shutdown();
+		m_pipelineManager.reset();
+	}
+	g_vulkanPipelineManager = nullptr;
+
+	// Cleanup descriptor manager before device destruction
+	if (m_descriptorManager) {
+		m_descriptorManager->shutdown();
+		m_descriptorManager.reset();
+	}
+
+	// Cleanup buffer manager before device destruction
+	g_vulkanBufferManager = nullptr;
+	m_bufferManager.reset();
 }
 
 } // namespace vulkan

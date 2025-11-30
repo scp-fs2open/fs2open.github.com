@@ -10,6 +10,8 @@ target_link_libraries(unittests PRIVATE code)
 
 target_include_directories(unittests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 
+# Note: Vulkan include directories are now inherited from the 'code' target (PUBLIC)
+
 set_target_properties(unittests PROPERTIES FOLDER "tests")
 
 file(TO_NATIVE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../test_data" TEST_DATA_PATH)

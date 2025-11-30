@@ -1,0 +1,197 @@
++Version: 1
+
++Gauge: Builtin::DirectivesView
++Visible: 1
++Popup: 0
++Color: 0 255 0 144
+
++Gauge: Builtin::LeadIndicator
++Visible: 1
++Popup: 0
++Color: 0 255 0 144
+
++Gauge: Builtin::WeaponsEnergy
++Visible: 1
++Popup: 0
++Color: 0 255 0 144
+
++Gauge: Builtin::ClosestAttackingHostile
++Visible: 1
++Popup: 0
++Color: 0 255 0 144
+
++Gauge: Builtin::TargetOrientation
++Visible: 1
++Popup: 0
++Color: 0 255 0 144
+
++Gauge: Builtin::CurrentTargetDirection
++Visible: 1
++Popup: 0
++Color: 0 255 0 144
+
++Gauge: Builtin::MissionTime
++Visible: 1
++Popup: 0
++Color: 0 255 0 144
+
++Gauge: Builtin::PlayerShield
++Visible: 1
++Popup: 0
++Color: 0 255 0 144
+
++Gauge: Builtin::Reticle
++Visible: 1
++Popup: 0
++Color: 0 255 0 144
+
++Gauge: Builtin::KillsGauge
++Visible: 1
++Popup: 0
++Color: 0 255 0 144
+
++Gauge: Builtin::AfterburnerEnergy
++Visible: 1
++Popup: 0
++Color: 0 255 0 144
+
++Gauge: Builtin::Radar
++Visible: 1
++Popup: 0
++Color: 0 255 0 144
+
++Gauge: Builtin::TargetShield
++Visible: 1
++Popup: 0
++Color: 0 255 0 144
+
++Gauge: Builtin::Throttle
++Visible: 1
++Popup: 0
++Color: 0 255 0 144
+
++Gauge: Builtin::Countermeasures
++Visible: 1
++Popup: 0
++Color: 0 255 0 144
+
++Gauge: Builtin::TargetMonitor
++Visible: 1
++Popup: 0
++Color: 0 255 0 144
+
++Gauge: Builtin::CenterOfReticle
++Visible: 1
++Popup: 0
++Color: 0 255 0 144
+
++Gauge: Builtin::WingmenStatus
++Visible: 1
++Popup: 0
++Color: 0 255 0 144
+
++Gauge: Builtin::ExtraTargetInfo
++Visible: 1
++Popup: 0
++Color: 0 255 0 144
+
++Gauge: Builtin::PowerManagement
++Visible: 1
++Popup: 0
++Color: 0 255 0 144
+
++Gauge: Builtin::CommMenu
++Visible: 1
++Popup: 0
++Color: 0 255 0 144
+
++Gauge: Builtin::AutoTargetIcon
++Visible: 1
++Popup: 0
++Color: 0 255 0 144
+
++Gauge: Builtin::OffscreenIndicator
++Visible: 1
++Popup: 0
++Color: 0 255 0 144
+
++Gauge: Builtin::AutoSpeedMatchIcon
++Visible: 1
++Popup: 0
++Color: 0 255 0 144
+
++Gauge: Builtin::WeaponsDisplay
++Visible: 1
++Popup: 0
++Color: 0 255 0 144
+
++Gauge: Builtin::CommVideo
++Visible: 1
++Popup: 0
++Color: 0 255 0 144
+
++Gauge: Builtin::ThreatGauge
++Visible: 1
++Popup: 0
++Color: 0 255 0 144
+
++Gauge: Builtin::MonitoringView
++Visible: 1
++Popup: 0
++Color: 0 255 0 144
+
++Gauge: Builtin::WeaponLinking
++Visible: 1
++Popup: 0
++Color: 0 255 0 144
+
++Gauge: Builtin::TargetHullShieldIcon
++Visible: 1
++Popup: 0
++Color: 0 255 0 144
+
++Gauge: Builtin::DamageDisplay
++Visible: 1
++Popup: 0
++Color: 0 255 0 144
+
++Gauge: Builtin::MessageOutput
++Visible: 1
++Popup: 0
++Color: 0 255 0 144
+
++Gauge: Builtin::LockedMissileDirection
++Visible: 1
++Popup: 0
++Color: 0 255 0 144
+
++Gauge: Builtin::WarningFlash
++Visible: 1
++Popup: 0
++Color: 0 255 0 144
+
++Gauge: Builtin::ObjectiveNotify
++Visible: 1
++Popup: 0
++Color: 0 255 0 144
+
++Gauge: Builtin::SupportGauge
++Visible: 1
++Popup: 0
++Color: 0 255 0 144
+
++Gauge: Builtin::OffscreenRange
++Visible: 1
++Popup: 0
++Color: 0 255 0 144
+
++Gauge: Builtin::AttackingTargetCount
++Visible: 1
++Popup: 0
++Color: 0 255 0 144
+
++Gauge: Builtin::LagGauge
++Visible: 1
++Popup: 0
++Color: 0 255 0 144
+

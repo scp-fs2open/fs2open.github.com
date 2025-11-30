@@ -6,6 +6,37 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 FreeSpace 2 Open Source Code Project (FS2_Open) - A comprehensive 3D space combat simulation game engine based on the original FreeSpace 2 source code. This is a mature C++17 codebase with ~449,000 lines of code across 79 subsystems.
 
+## Fork Information
+
+This is a fork of FSO with version **26.0.0**. Key differences from upstream:
+- Removed joystick support
+- Enhanced graphics defaults (TAA, SSAO Ultra, Auto-exposure enabled by default)
+- Output binary: `fs2_26_0_0.exe`
+
+### Graphics Enhancements
+
+**Auto-Exposure (Eye Adaptation):**
+- Enabled by default for realistic HDR rendering
+- Prevents sun/bright light whitewash by dynamically adjusting exposure
+- Uses mipmap-based luminance averaging with async GPU readback
+- Configurable via `lighting_profiles.tbl` with `auto_exposure_settings`
+- Disable with `-no_auto_exposure` command-line flag
+- Implementation: `code/graphics/opengl/gropenglpostprocessing.cpp`
+
+**Default Post-Processing:**
+- **TAA (Temporal Anti-Aliasing)**: Default AA mode (was None)
+- **SSAO**: Default Ultra quality (16 samples, 2 blur passes)
+- **Tonemapper**: Uncharted2 (best highlight rolloff)
+
+### Version Override
+
+Version is set via `version_override.cmake` in the project root:
+```cmake
+set(FSO_VERSION_MAJOR 26)
+set(FSO_VERSION_MINOR 0)
+set(FSO_VERSION_BUILD 0)
+```
+
 ## Essential Setup
 
 **CRITICAL: Before any build, update git submodules:**

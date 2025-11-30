@@ -48,12 +48,23 @@ struct piecewise_power_curve_intermediates {
 	float sh_offsetY;
 };
 
+struct auto_exposure_settings {
+	bool enabled = true;               // Master enable/disable
+	float min_exposure = 0.5f;         // Minimum exposure clamp
+	float max_exposure = 16.0f;        // Maximum exposure clamp
+	float adaptation_speed_up = 3.0f;  // Speed adapting to brighter scenes
+	float adaptation_speed_down = 1.5f;// Speed adapting to darker scenes
+	float key_value = 0.18f;           // 18% gray key
+	float luminance_range = 12.0f;     // Dynamic range in stops
+};
+
 class profile {
   public:
 	SCP_string name;
 	TonemapperAlgorithm tonemapper;
 	piecewise_power_curve_values ppc_values;
 	float exposure;
+	auto_exposure_settings auto_exposure;
 	adjustment missile_light_brightness;
 	adjustment missile_light_radius;
 	adjustment laser_light_brightness;
@@ -91,6 +102,7 @@ const piecewise_power_curve_values& current_piecewise_values();
 piecewise_power_curve_intermediates current_piecewise_intermediates();
 piecewise_power_curve_intermediates calc_intermediates(piecewise_power_curve_values input);
 float current_exposure();
+const auto_exposure_settings& current_auto_exposure();
 void lab_set_exposure(float exIn);
 void lab_set_tonemapper(TonemapperAlgorithm tnin);
 void lab_set_ppc(const piecewise_power_curve_values &ppcin);

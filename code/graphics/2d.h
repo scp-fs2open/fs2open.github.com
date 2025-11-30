@@ -81,7 +81,21 @@ enum class SSAOQuality {
 };
 extern SSAOQuality Gr_ssao_quality;
 
+// HDR display output modes
+enum class HDROutputMode {
+	SDR = 0,    // Standard SDR output (sRGB)
+	HDR10,      // PQ transfer function with Rec.2020 (RGB10A2)
+	Auto        // Auto-detect (default) - enables HDR10 if display supports it
+};
+extern HDROutputMode Gr_hdr_output_mode;
+extern bool Gr_hdr_output_capable;
+extern float Gr_hdr_max_nits;           // Display max brightness (from DXGI)
+extern float Gr_hdr_paper_white_nits;   // SDR content reference white (typically 203 nits)
+extern float Gr_hdr_sdr_white_nits;     // SDR reference white (80 nits)
+
 bool gr_ssao_enabled();
+bool gr_auto_exposure_enabled();
+bool gr_hdr_output_enabled();
 
 extern bool Gr_post_processing_enabled;
 
@@ -234,6 +248,8 @@ enum shader_type {
 	SDR_TYPE_POST_PROCESS_SSAO,
 	SDR_TYPE_POST_PROCESS_SSAO_BLUR,
 
+	SDR_TYPE_POST_PROCESS_LUMINANCE,
+
 	NUM_SHADER_TYPES
 };
 
@@ -258,6 +274,7 @@ enum shader_type {
 #define SDR_FLAG_COPY_FROM_ARRAY (1 << 0)
 
 #define SDR_FLAG_TONEMAPPING_LINEAR_OUT (1 << 0)
+#define SDR_FLAG_TONEMAPPING_HDR10_OUT (1 << 1)
 
 #define SDR_FLAG_ENV_MAP (1 << 0)
 #define SDR_FLAG_SSAO (1 << 1)

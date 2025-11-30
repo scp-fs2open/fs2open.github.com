@@ -1,0 +1,42 @@
+// Luminance extraction for auto-exposure
+// Outputs log-space luminance for mipmap-based averaging
+
+in vec4 fragTexCoord;
+out vec4 fragOut0;
+
+uniform sampler2D tex;
+
+layout (std140) uniform genericData {
+	vec2 texelSize;           // 1.0 / screen resolution
+	float minLogLuminance;    // Log2 of minimum luminance (e.g., -10.0)
+	float logLuminanceRange;  // Range in stops (e.g., 12.0)
+};
+
+// ITU BT.709 luminance coefficients
+float luminance(vec3 color)
+{
+	return dot(color, vec3(0.2126, 0.7152, 0.0722));
+}
+
+void main()
+{
+	vec3 color = texture(tex, fragTexCoord.xy).rgb;
+
+	// Calculate luminance
+	float lum = luminance(color);
+
+	// Clamp to avoid log(0)
+	lum = max(lum, 0.0001);
+
+	// Convert to log space for better averaging of high dynamic range
+	// This gives more weight to darker areas, matching human perception
+	float logLum = log2(lum);
+
+	// Normalize to 0-1 range for texture storage
+	float normalizedLogLum = (logLum - minLogLuminance) / logLuminanceRange;
+	normalizedLogLum = clamp(normalizedLogLum, 0.0, 1.0);
+
+	// Output: R = normalized log luminance, G = 1.0 (weight for averaging)
+	// Using two channels allows weighted average during mipmap generation
+	fragOut0 = vec4(normalizedLogLum, 1.0, 0.0, 1.0);
+}

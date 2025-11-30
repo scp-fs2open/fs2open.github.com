@@ -83,6 +83,23 @@ static GLuint SSAO_texture = 0;
 static GLuint SSAO_blur_texture = 0;
 SSAOQuality Gr_ssao_quality = SSAOQuality::Ultra;
 
+// Auto-exposure resources
+static GLuint AutoExposure_luminance_fb = 0;
+static GLuint AutoExposure_luminance_tex = 0;
+static int AutoExposure_luminance_mip_levels = 0;
+static int AutoExposure_lum_width = 0;
+static int AutoExposure_lum_height = 0;
+
+// PBO for async readback (double-buffered to avoid stalls)
+static GLuint AutoExposure_pbo[2] = {0, 0};
+static int AutoExposure_pbo_index = 0;
+static bool AutoExposure_pbo_ready = false;
+
+// Temporal smoothing state
+static float AutoExposure_current_luminance = 0.2f;  // Start at mid-gray
+static float AutoExposure_adapted_exposure = 4.0f;   // Default exposure
+static bool AutoExposure_initialized = false;
+
 namespace ltp = lighting_profiles;
 using namespace ltp;
 
@@ -91,10 +108,18 @@ void opengl_post_pass_tonemap()
 	GR_DEBUG_SCOPE("Tonemapping");
 	TRACE_SCOPE(tracing::Tonemapping);
 
-	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_TONEMAPPING, openxr_enabled() ? SDR_FLAG_TONEMAPPING_LINEAR_OUT : 0));
+	// Select shader based on output mode: HDR10, OpenXR linear, or SDR
+	int shader_flags = 0;
+	if (gr_hdr_output_enabled()) {
+		shader_flags = SDR_FLAG_TONEMAPPING_HDR10_OUT;
+	} else if (openxr_enabled()) {
+		shader_flags = SDR_FLAG_TONEMAPPING_LINEAR_OUT;
+	}
+
+	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_TONEMAPPING, shader_flags));
 
 	Current_shader->program->Uniforms.setTextureUniform("tex", 0);
-	
+
 	opengl_set_generic_uniform_data<graphics::generic_data::tonemapping_data>(
 		[](graphics::generic_data::tonemapping_data* data) {
 		auto ppc = ltp::current_piecewise_intermediates();
@@ -108,8 +133,16 @@ void opengl_post_pass_tonemap()
 		data->toe_lnA = ppc.toe_lnA;
 		data->x0 = ppc.x0;
 		data->x1 = ppc.x1;
-		data->y0 = ppc.y0; 
-		data->exposure = ltp::current_exposure(); });
+		data->y0 = ppc.y0;
+		// Use adapted exposure if auto-exposure is enabled, otherwise use profile exposure
+		data->exposure = gr_auto_exposure_enabled() ? AutoExposure_adapted_exposure : ltp::current_exposure();
+
+		// HDR output parameters
+		data->hdrMaxNits = Gr_hdr_max_nits;
+		data->hdrPaperWhite = Gr_hdr_paper_white_nits;
+		data->hdrSdrWhite = Gr_hdr_sdr_white_nits;
+		data->hdrPad = 0.0f;
+	});
 
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Scene_ldr_texture, 0);
 
@@ -542,6 +575,15 @@ bool gr_ssao_enabled()
 	return Gr_ssao_quality != SSAOQuality::Off;
 }
 
+bool gr_auto_exposure_enabled()
+{
+	if (Cmdline_no_auto_exposure) {
+		return false;
+	}
+	const auto& settings = ltp::current_auto_exposure();
+	return settings.enabled;
+}
+
 GLuint gr_opengl_get_ssao_texture()
 {
 	return gr_ssao_enabled() ? SSAO_blur_texture : 0;
@@ -650,6 +692,121 @@ void opengl_post_pass_ssao()
 	// Restore viewport
 	glViewport(0, 0, gr_screen.max_w, gr_screen.max_h);
 }
+
+void opengl_post_pass_auto_exposure()
+{
+	if (!gr_auto_exposure_enabled() || !AutoExposure_initialized) {
+		return;
+	}
+
+	GR_DEBUG_SCOPE("Auto Exposure");
+	TRACE_SCOPE(tracing::AutoExposure);
+
+	const auto& settings = ltp::current_auto_exposure();
+
+	GL_state.PushFramebufferState();
+
+	// Disable blending and depth testing
+	GLboolean blend = GL_state.Blend(GL_FALSE);
+	GLboolean scissor_test = GL_state.ScissorTest(GL_FALSE);
+
+	// === Step 1: Render luminance to texture ===
+	GL_state.BindFrameBuffer(AutoExposure_luminance_fb);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, AutoExposure_luminance_tex, 0);
+	glDrawBuffer(GL_COLOR_ATTACHMENT0);
+
+	glViewport(0, 0, AutoExposure_lum_width, AutoExposure_lum_height);
+
+	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_LUMINANCE, 0));
+
+	Current_shader->program->Uniforms.setTextureUniform("tex", 0);
+
+	// Set uniform data for luminance calculation
+	opengl_set_generic_uniform_data<graphics::generic_data::luminance_data>(
+		[&](graphics::generic_data::luminance_data* data) {
+			data->texelSize.x = 1.0f / i2fl(Post_texture_width);
+			data->texelSize.y = 1.0f / i2fl(Post_texture_height);
+			data->minLogLuminance = -10.0f; // Very dark
+			data->logLuminanceRange = settings.luminance_range;
+		});
+
+	GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_color_texture);
+
+	opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
+
+	// === Step 2: Generate mipmaps to compute average luminance ===
+	GL_state.Texture.Enable(0, GL_TEXTURE_2D, AutoExposure_luminance_tex);
+	glGenerateMipmap(GL_TEXTURE_2D);
+
+	// === Step 3: Async readback of 1x1 mip level via PBO ===
+	// Read from the previous frame's PBO (if ready) to avoid GPU stalls
+	int read_pbo_index = AutoExposure_pbo_index;
+	int write_pbo_index = 1 - AutoExposure_pbo_index;
+
+	// First, read back from the previous frame's PBO if data is ready
+	if (AutoExposure_pbo_ready) {
+		glBindBuffer(GL_PIXEL_PACK_BUFFER, AutoExposure_pbo[read_pbo_index]);
+		float* mapped = static_cast<float*>(glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY));
+		if (mapped != nullptr) {
+			float normalized_log_lum = *mapped;
+			glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
+
+			// Convert from normalized log space back to actual luminance
+			float log_lum = normalized_log_lum * settings.luminance_range + (-10.0f);
+			float avg_luminance = exp2f(log_lum);
+
+			// Clamp to reasonable range to avoid extreme values
+			CLAMP(avg_luminance, 0.001f, 100.0f);
+
+			AutoExposure_current_luminance = avg_luminance;
+		}
+		glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+	}
+
+	// Start async read of the current frame's 1x1 mip into the write PBO
+	glBindBuffer(GL_PIXEL_PACK_BUFFER, AutoExposure_pbo[write_pbo_index]);
+
+	// Bind the smallest mip level for reading
+	GL_state.BindFrameBuffer(AutoExposure_luminance_fb);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+		AutoExposure_luminance_tex, AutoExposure_luminance_mip_levels - 1);
+
+	// Initiate async read (will complete by next frame)
+	glReadPixels(0, 0, 1, 1, GL_RED, GL_FLOAT, nullptr);
+
+	glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+
+	// Swap PBO indices for next frame
+	AutoExposure_pbo_index = write_pbo_index;
+	AutoExposure_pbo_ready = true;
+
+	// === Step 4: Temporal smoothing and exposure calculation ===
+	// Calculate target exposure using Reinhard-style formula
+	float target_exposure = settings.key_value / (AutoExposure_current_luminance + 0.0001f);
+
+	// Clamp to configured range
+	CLAMP(target_exposure, settings.min_exposure, settings.max_exposure);
+
+	// Determine adaptation speed based on direction
+	float frametime = flFrametime;
+	float speed = (target_exposure > AutoExposure_adapted_exposure)
+		? settings.adaptation_speed_up
+		: settings.adaptation_speed_down;
+
+	// Exponential smoothing for smooth adaptation
+	float adaptation_factor = 1.0f - expf(-frametime * speed);
+	AutoExposure_adapted_exposure = AutoExposure_adapted_exposure +
+		(target_exposure - AutoExposure_adapted_exposure) * adaptation_factor;
+
+	// Restore state
+	GL_state.ScissorTest(scissor_test);
+	GL_state.Blend(blend);
+	GL_state.PopFramebufferState();
+
+	// Restore viewport
+	glViewport(0, 0, gr_screen.max_w, gr_screen.max_h);
+}
+
 void opengl_post_lightshafts()
 {
 	GR_DEBUG_SCOPE("Lightshafts");
@@ -724,6 +881,9 @@ void gr_opengl_post_process_end()
 	GL_state.Texture.SetShaderMode(GL_TRUE);
 
 	GL_state.PushFramebufferState();
+
+	// compute auto-exposure before bloom (needs HDR scene data)
+	opengl_post_pass_auto_exposure();
 
 	// do bloom, hopefully ;)
 	opengl_post_pass_bloom();
@@ -1144,6 +1304,9 @@ bool opengl_post_init_shaders()
 		gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_SSAO_BLUR, 0);
 	}
 
+	// Always compile the luminance shader for auto-exposure (enabled/disabled checked at runtime)
+	gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_LUMINANCE, 0);
+
 	return true;
 }
 
@@ -1425,6 +1588,75 @@ static void shutdown_ssao_resources()
 	}
 }
 
+// Auto-exposure setup
+static void setup_auto_exposure_resources()
+{
+	GL_state.PushFramebufferState();
+
+	// Calculate mipmap levels needed to reduce to 1x1
+	// Use power-of-two size for clean mipmapping
+	int size = 256; // Fixed size luminance texture for efficiency
+	AutoExposure_lum_width = size;
+	AutoExposure_lum_height = size;
+	AutoExposure_luminance_mip_levels = static_cast<int>(log2f(static_cast<float>(size))) + 1;
+
+	// Create luminance framebuffer
+	glGenFramebuffers(1, &AutoExposure_luminance_fb);
+	GL_state.BindFrameBuffer(AutoExposure_luminance_fb);
+
+	// Create luminance texture with mipmaps
+	glGenTextures(1, &AutoExposure_luminance_tex);
+	GL_state.Texture.SetActiveUnit(0);
+	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
+	GL_state.Texture.Enable(AutoExposure_luminance_tex);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_R16F, AutoExposure_lum_width, AutoExposure_lum_height, 0, GL_RED, GL_FLOAT, nullptr);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, AutoExposure_luminance_mip_levels - 1);
+
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, AutoExposure_luminance_tex, 0);
+
+	// Create PBOs for async readback (double-buffered)
+	glGenBuffers(2, AutoExposure_pbo);
+	for (int i = 0; i < 2; i++) {
+		glBindBuffer(GL_PIXEL_PACK_BUFFER, AutoExposure_pbo[i]);
+		glBufferData(GL_PIXEL_PACK_BUFFER, sizeof(float), nullptr, GL_STREAM_READ);
+	}
+	glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+
+	AutoExposure_pbo_index = 0;
+	AutoExposure_pbo_ready = false;
+	AutoExposure_initialized = true;
+
+	GL_state.PopFramebufferState();
+
+	mprintf(("Auto-exposure resources initialized (%dx%d, %d mip levels)\n",
+		AutoExposure_lum_width, AutoExposure_lum_height, AutoExposure_luminance_mip_levels));
+}
+
+static void shutdown_auto_exposure_resources()
+{
+	if (AutoExposure_luminance_tex) {
+		glDeleteTextures(1, &AutoExposure_luminance_tex);
+		AutoExposure_luminance_tex = 0;
+	}
+	if (AutoExposure_luminance_fb) {
+		glDeleteFramebuffers(1, &AutoExposure_luminance_fb);
+		AutoExposure_luminance_fb = 0;
+	}
+	if (AutoExposure_pbo[0]) {
+		glDeleteBuffers(2, AutoExposure_pbo);
+		AutoExposure_pbo[0] = 0;
+		AutoExposure_pbo[1] = 0;
+	}
+	AutoExposure_initialized = false;
+	AutoExposure_pbo_ready = false;
+}
+
 // Get jitter offset for current frame (in pixels)
 void gr_opengl_get_taa_jitter(float* jitter_x, float* jitter_y)
 {
@@ -1487,6 +1719,9 @@ static bool opengl_post_init_framebuffer()
 	if (gr_ssao_enabled()) {
 		setup_ssao_resources();
 	}
+
+	// Always set up auto-exposure resources (enabled/disabled is checked at runtime)
+	setup_auto_exposure_resources();
 
 	GL_state.BindFrameBuffer(0);
 
@@ -1583,6 +1818,7 @@ void opengl_post_process_shutdown()
 	opengl_post_process_shutdown_bloom();
 	shutdown_taa_resources();
 	shutdown_ssao_resources();
+	shutdown_auto_exposure_resources();
 
 	Post_in_frame = false;
 	Post_active_shader_index = 0;

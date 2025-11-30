@@ -77,6 +77,11 @@ float current_exposure()
 	return _current.exposure;
 }
 
+const auto_exposure_settings& current_auto_exposure()
+{
+	return _current.auto_exposure;
+}
+
 piecewise_power_curve_intermediates current_piecewise_intermediates()
 {
 	return calc_intermediates(_current.ppc_values);
@@ -410,6 +415,9 @@ void profile::reset()
 	ppc_values.shoulder_angle = 0.1f;
 
 	exposure = 4.0f;
+
+	// Reset auto-exposure to defaults
+	auto_exposure = auto_exposure_settings();
 
 	missile_light_brightness.reset();
 	missile_light_radius.reset();

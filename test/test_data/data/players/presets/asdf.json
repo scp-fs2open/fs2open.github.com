@@ -1,0 +1,1748 @@
+{
+    "signature": 1599361872,
+    "version": 0,
+    "actions": [
+        {
+            "bind": "TARGET_NEXT",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_T"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "TARGET_PREV",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "SHIFT-KEY_T"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "TARGET_NEXT_CLOSEST_HOSTILE",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_H"
+            },
+            "secondary": {
+                "cid": "CID_JOY0",
+                "flags": "NONE",
+                "input": "2"
+            }
+        },
+        {
+            "bind": "TARGET_PREV_CLOSEST_HOSTILE",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "SHIFT-KEY_H"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "TOGGLE_AUTO_TARGETING",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "ALT-KEY_H"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "TARGET_NEXT_CLOSEST_FRIENDLY",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_F"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "TARGET_PREV_CLOSEST_FRIENDLY",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "SHIFT-KEY_F"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "TARGET_SHIP_IN_RETICLE",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_Y"
+            },
+            "secondary": {
+                "cid": "CID_JOY0",
+                "flags": "NONE",
+                "input": "4"
+            }
+        },
+        {
+            "bind": "TARGET_CLOSEST_SHIP_ATTACKING_TARGET",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_G"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "TARGET_LAST_TRANMISSION_SENDER",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "ALT-KEY_Y"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "STOP_TARGETING_SHIP",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "ALT-KEY_T"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "TARGET_SUBOBJECT_IN_RETICLE",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_V"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "TARGET_NEXT_SUBOBJECT",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_S"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "TARGET_PREV_SUBOBJECT",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "SHIFT-KEY_S"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "STOP_TARGETING_SUBSYSTEM",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "ALT-KEY_S"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "MATCH_TARGET_SPEED",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_M"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "TOGGLE_AUTO_MATCH_TARGET_SPEED",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "ALT-KEY_M"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "FIRE_PRIMARY",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_LCTRL"
+            },
+            "secondary": {
+                "cid": "CID_JOY0",
+                "flags": "NONE",
+                "input": "0"
+            }
+        },
+        {
+            "bind": "FIRE_SECONDARY",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_SPACEBAR"
+            },
+            "secondary": {
+                "cid": "CID_JOY0",
+                "flags": "NONE",
+                "input": "1"
+            }
+        },
+        {
+            "bind": "CYCLE_NEXT_PRIMARY",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_PERIOD"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "CYCLE_PREV_PRIMARY",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_COMMA"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "CYCLE_SECONDARY",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_DIVIDE"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "CYCLE_NUM_MISSLES",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "SHIFT-KEY_DIVIDE"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "LAUNCH_COUNTERMEASURE",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_X"
+            },
+            "secondary": {
+                "cid": "CID_JOY0",
+                "flags": "NONE",
+                "input": "3"
+            }
+        },
+        {
+            "bind": "FORWARD_THRUST",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_A"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "REVERSE_THRUST",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_Z"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "BANK_LEFT",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_PAD7"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "BANK_RIGHT",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_PAD9"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "PITCH_FORWARD",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_PAD8"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "PITCH_BACK",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_PAD2"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "YAW_LEFT",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_PAD4"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "YAW_RIGHT",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_PAD6"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "ZERO_THROTTLE",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_BACKSP"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "MAX_THROTTLE",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_SLASH"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "ONE_THIRD_THROTTLE",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_LBRACKET"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "TWO_THIRDS_THROTTLE",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_RBRACKET"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "PLUS_5_PERCENT_THROTTLE",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_EQUAL"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "MINUS_5_PERCENT_THROTTLE",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_MINUS"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "ATTACK_MESSAGE",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "SHIFT-KEY_A"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "DISARM_MESSAGE",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "SHIFT-KEY_Z"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "DISABLE_MESSAGE",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "SHIFT-KEY_D"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "ATTACK_SUBSYSTEM_MESSAGE",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "SHIFT-KEY_V"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "CAPTURE_MESSAGE",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "SHIFT-KEY_X"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "ENGAGE_MESSAGE",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "SHIFT-KEY_E"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "FORM_MESSAGE",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "SHIFT-KEY_W"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "IGNORE_MESSAGE",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "SHIFT-KEY_I"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "PROTECT_MESSAGE",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "SHIFT-KEY_P"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "COVER_MESSAGE",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "SHIFT-KEY_C"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "WARP_MESSAGE",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "SHIFT-KEY_J"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "REARM_MESSAGE",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "SHIFT-KEY_R"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "TARGET_CLOSEST_SHIP_ATTACKING_SELF",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_R"
+            },
+            "secondary": {
+                "cid": "CID_JOY0",
+                "flags": "NONE",
+                "input": "6"
+            }
+        },
+        {
+            "bind": "VIEW_CHASE",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_PADMULTIPLY"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "VIEW_EXTERNAL",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_PADPERIOD"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "VIEW_EXTERNAL_TOGGLE_CAMERA_LOCK",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_PADENTER"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "VIEW_SLEW",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_PAD0"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "VIEW_OTHER_SHIP",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_PADDIVIDE"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "VIEW_DIST_INCREASE",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_PADPLUS"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "VIEW_DIST_DECREASE",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_PADMINUS"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "VIEW_CENTER",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_PAD5"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "PADLOCK_UP",
+            "primary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            },
+            "secondary": {
+                "cid": "CID_JOY0",
+                "flags": "NONE",
+                "input": "33"
+            }
+        },
+        {
+            "bind": "PADLOCK_DOWN",
+            "primary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            },
+            "secondary": {
+                "cid": "CID_JOY0",
+                "flags": "NONE",
+                "input": "32"
+            }
+        },
+        {
+            "bind": "PADLOCK_LEFT",
+            "primary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            },
+            "secondary": {
+                "cid": "CID_JOY0",
+                "flags": "NONE",
+                "input": "34"
+            }
+        },
+        {
+            "bind": "PADLOCK_RIGHT",
+            "primary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            },
+            "secondary": {
+                "cid": "CID_JOY0",
+                "flags": "NONE",
+                "input": "35"
+            }
+        },
+        {
+            "bind": "RADAR_RANGE_CYCLE",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_RAPOSTRO"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "SQUADMSG_MENU",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_C"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "SHOW_GOALS",
+            "primary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "END_MISSION",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "ALT-KEY_J"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "TARGET_TARGETS_TARGET",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_J"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "AFTERBURNER",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_TAB"
+            },
+            "secondary": {
+                "cid": "CID_JOY0",
+                "flags": "NONE",
+                "input": "5"
+            }
+        },
+        {
+            "bind": "INCREASE_WEAPON",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_INSERT"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "DECREASE_WEAPON",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_DELETE"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "INCREASE_SHIELD",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_HOME"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "DECREASE_SHIELD",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_END"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "INCREASE_ENGINE",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_PAGEUP"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "DECREASE_ENGINE",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_PAGEDOWN"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "ETS_EQUALIZE",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "ALT-KEY_D"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "SHIELD_EQUALIZE",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_Q"
+            },
+            "secondary": {
+                "cid": "CID_JOY0",
+                "flags": "NONE",
+                "input": "7"
+            }
+        },
+        {
+            "bind": "SHIELD_XFER_TOP",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_UP"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "SHIELD_XFER_BOTTOM",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_DOWN"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "SHIELD_XFER_LEFT",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_LEFT"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "SHIELD_XFER_RIGHT",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_RIGHT"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "XFER_SHIELD",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_SCROLLOCK"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "XFER_LASER",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "SHIFT-KEY_SCROLLOCK"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "GLIDE_WHEN_PRESSED",
+            "primary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "BANK_WHEN_PRESSED",
+            "primary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "SHOW_NAVMAP",
+            "primary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "ADD_REMOVE_ESCORT",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "ALT-KEY_E"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "ESCORT_CLEAR",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "ALT-SHIFT-KEY_E"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "TARGET_NEXT_ESCORT_SHIP",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_E"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "TARGET_CLOSEST_REPAIR_SHIP",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "ALT-KEY_R"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "TARGET_NEXT_UNINSPECTED_CARGO",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_U"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "TARGET_PREV_UNINSPECTED_CARGO",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "SHIFT-KEY_U"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "TARGET_NEWEST_SHIP",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_N"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "TARGET_NEXT_LIVE_TURRET",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_K"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "TARGET_PREV_LIVE_TURRET",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "SHIFT-KEY_K"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "TARGET_NEXT_BOMB",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_B"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "TARGET_PREV_BOMB",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "SHIFT-KEY_B"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "MULTI_MESSAGE_ALL",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_1"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "MULTI_MESSAGE_FRIENDLY",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_2"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "MULTI_MESSAGE_HOSTILE",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_3"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "MULTI_MESSAGE_TARGET",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_4"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "MULTI_OBSERVER_ZOOM_TO",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "ALT-KEY_X"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "TIME_SPEED_UP",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "SHIFT-KEY_PERIOD"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "TIME_SLOW_DOWN",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "SHIFT-KEY_COMMA"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "TOGGLE_HUD_CONTRAST",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_L"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "MULTI_TOGGLE_NETINFO",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "SHIFT-KEY_N"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "MULTI_SELF_DESTRUCT",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "SHIFT-KEY_END"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "TOGGLE_HUD",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "SHIFT-KEY_O"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "RIGHT_SLIDE_THRUST",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "SHIFT-KEY_3"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "LEFT_SLIDE_THRUST",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "SHIFT-KEY_1"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "UP_SLIDE_THRUST",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "SHIFT-KEY_PADPLUS"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "DOWN_SLIDE_THRUST",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "SHIFT-KEY_PADENTER"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "HUD_TARGETBOX_TOGGLE_WIREFRAME",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "ALT-SHIFT-KEY_Q"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "VIEW_TOPDOWN",
+            "primary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "VIEW_TRACK_TARGET",
+            "primary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "AUTO_PILOT_TOGGLE",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "ALT-KEY_A"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "NAV_CYCLE",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "ALT-KEY_N"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "TOGGLE_GLIDING",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "ALT-KEY_G"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "CYCLE_PRIMARY_WEAPON_SEQUENCE",
+            "primary": {
+                "cid": "CID_KEYBOARD",
+                "flags": "NONE",
+                "input": "KEY_O"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "CUSTOM_CONTROL_1",
+            "primary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "CUSTOM_CONTROL_2",
+            "primary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "CUSTOM_CONTROL_3",
+            "primary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "CUSTOM_CONTROL_4",
+            "primary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "CUSTOM_CONTROL_5",
+            "primary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "JOY_HEADING_AXIS",
+            "primary": {
+                "cid": "CID_JOY0",
+                "flags": "AXIS",
+                "input": "X_AXIS"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "JOY_PITCH_AXIS",
+            "primary": {
+                "cid": "CID_JOY0",
+                "flags": "AXIS",
+                "input": "Y_AXIS"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "JOY_BANK_AXIS",
+            "primary": {
+                "cid": "CID_JOY0",
+                "flags": "AXIS",
+                "input": "RX_AXIS"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "JOY_ABS_THROTTLE_AXIS",
+            "primary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "JOY_REL_THROTTLE_AXIS",
+            "primary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "COMMS_MENU_MOVE_UP",
+            "primary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "COMMS_MENU_MOVE_DOWN",
+            "primary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "COMMS_MENU_SELECT",
+            "primary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "TOGGLE_HUD_SHADOWS",
+            "primary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        },
+        {
+            "bind": "CYCLE_PRIMARY_WEAPON_PATTERN",
+            "primary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            },
+            "secondary": {
+                "cid": "CID_NONE",
+                "flags": "NONE",
+                "input": "NONE"
+            }
+        }
+    ]
+}
