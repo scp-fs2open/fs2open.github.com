@@ -340,18 +340,16 @@ auto ParticleEffect::processSourceInternal(float interp, const ParticleSource& s
 		Assertion(bm_is_valid(info.bitmap), "Invalid bitmap handle passed to particle create.");
 		bm_get_info(info.bitmap, nullptr, nullptr, nullptr, &info.nframes, &fps);
 
-		if (m_hasLifetime) {
-			if (m_keep_anim_length_if_available && info.nframes > 1) {
-				// Recalculate max life for ani's
-				info.max_life = i2fl(info.nframes) / i2fl(fps);
-			}
-			else {
-				if (m_parentLifetime)
-					// if we were spawned by a particle, parentLifetime is the parent's remaining lifetime and m_lifetime is a factor of that
-					info.max_life = parentLifetime * m_lifetime.next() * lifetimeMultiplier;
-				else
-					info.max_life = m_lifetime.next() * lifetimeMultiplier;
-			}
+		if (!m_hasLifetime || (m_keep_anim_length_if_available && info.nframes > 1)) {
+			// Recalculate max life for ani's
+			info.max_life = i2fl(info.nframes) / i2fl(fps);
+		}
+		else {
+			if (m_parentLifetime)
+				// if we were spawned by a particle, parentLifetime is the parent's remaining lifetime and m_lifetime is a factor of that
+				info.max_life = parentLifetime * m_lifetime.next() * lifetimeMultiplier;
+			else
+				info.max_life = m_lifetime.next() * lifetimeMultiplier;
 		}
 		
 		info.age = interp * f2fl(Frametime);
