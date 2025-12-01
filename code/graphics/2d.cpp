@@ -619,6 +619,7 @@ static void parse_anti_aliasing_func() {
 		{"smaa medium", AntiAliasMode::SMAA_Medium},
 		{"smaa high", AntiAliasMode::SMAA_High},
 		{"smaa ultra", AntiAliasMode::SMAA_Ultra},
+		{"taa", AntiAliasMode::TAA},
 	};
 
 	// Look up the value in the map
@@ -642,7 +643,8 @@ static auto AAOption __UNUSED = options::OptionBuilder<AntiAliasMode>("Graphics.
                               {AntiAliasMode::SMAA_Low, {"SMAA Low", 1684}},
                               {AntiAliasMode::SMAA_Medium, {"SMAA Medium", 1685}},
                               {AntiAliasMode::SMAA_High, {"SMAA High", 1686}},
-                              {AntiAliasMode::SMAA_Ultra, {"SMAA Ultra", 1687}}})
+                              {AntiAliasMode::SMAA_Ultra, {"SMAA Ultra", 1687}},
+                              {AntiAliasMode::TAA, {"TAA", 0}}})
                      .default_func([]() { return Gr_aa_mode; } )
                      .bind_to(&Gr_aa_mode)
                      .importance(79)

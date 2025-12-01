@@ -57,7 +57,7 @@ static const ShaderTypeInfo SHADER_TYPE_INFO[] = {
 	{ SDR_TYPE_PASSTHROUGH_RENDER, "passthrough-v.sdr", "passthrough-f.sdr", nullptr },
 	{ SDR_TYPE_SHIELD_DECAL, "shield-impact-v.sdr", "shield-impact-f.sdr", nullptr },
 	{ SDR_TYPE_BATCHED_BITMAP, "batched-v.sdr", "batched-f.sdr", nullptr },
-	{ SDR_TYPE_DEFAULT_MATERIAL, "default-material.vert.spv.glsl", "default-material.frag.spv.glsl", nullptr },
+	{ SDR_TYPE_DEFAULT_MATERIAL, "default-material.vert", "default-material.frag", nullptr },
 	{ SDR_TYPE_NANOVG, "nanovg-v.sdr", "nanovg-f.sdr", nullptr },
 	{ SDR_TYPE_DECAL, "decal-v.sdr", "decal-f.sdr", nullptr },
 	{ SDR_TYPE_SCENE_FOG, "post-v.sdr", "fog-f.sdr", nullptr },
@@ -203,8 +203,8 @@ VulkanShaderCompiler::VulkanShaderCompiler() {
 	m_options.SetSourceLanguage(shaderc_source_language_glsl);
 	m_options.SetOptimizationLevel(shaderc_optimization_level_performance);
 
-	// Add standard defines
-	m_options.AddMacroDefinition("VULKAN", "1");
+	// Note: shaderc automatically defines VULKAN=1 when targeting Vulkan environment
+	// Do not manually add it or you'll get "Macro redefined" errors
 }
 
 uint32_t VulkanShaderCompiler::getShadercVersion() const {
@@ -616,6 +616,8 @@ SCP_string VulkanShaderManager::preprocessShader(shader_type type, uint32_t flag
 	if (!filename) {
 		return "";
 	}
+	mprintf(("VulkanShaderManager: preprocess type=%d flags=0x%x stage=%d file=%s\n",
+		static_cast<int>(type), flags, static_cast<int>(stage), filename));
 
 	// Load raw shader source
 	auto source = loadShaderSource(filename);
@@ -624,6 +626,16 @@ SCP_string VulkanShaderManager::preprocessShader(shader_type type, uint32_t flag
 		return "";
 	}
 
+	// Check if shader already has #version directive (Vulkan-native shaders)
+	// These shaders don't need header generation but may still need include processing
+	bool hasVersion = source.find("#version") != SCP_string::npos;
+	if (hasVersion) {
+		// Vulkan-native shader - process includes but skip header generation
+		nprintf(("VulkanShader", "Shader %s has #version, processing includes only\n", filename));
+		return handleIncludes(filename, source);
+	}
+
+	// Legacy FSO shader - needs header and full preprocessing
 	// Determine if we need geometry shader
 	bool hasGeo = requiresGeometryShader(type, flags);
 

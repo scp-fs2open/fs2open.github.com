@@ -453,7 +453,9 @@ bool VulkanRenderPassManager::createPresentRenderPass(vk::Format colorFormat)
 	vk::AttachmentDescription colorAttachment;
 	colorAttachment.format = colorFormat;
 	colorAttachment.samples = vk::SampleCountFlagBits::e1;
-	colorAttachment.loadOp = vk::AttachmentLoadOp::eDontCare; // Fullscreen quad overwrites everything
+	// Use eClear so direct pass (menu rendering) can clear to background color.
+	// For blit pass, the fullscreen quad overwrites everything anyway.
+	colorAttachment.loadOp = vk::AttachmentLoadOp::eClear;
 	colorAttachment.storeOp = vk::AttachmentStoreOp::eStore;
 	colorAttachment.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
 	colorAttachment.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;

@@ -279,6 +279,12 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/luminance-f.sdr
 	def_files/data/effects/taa-f.sdr
 	def_files/data/effects/taa-v.sdr
+	def_files/data/effects/default-material.frag
+	def_files/data/effects/default-material.vert
+	def_files/data/effects/vulkan.frag
+	def_files/data/effects/vulkan.vert
+	def_files/data/effects/vulkan_blit.frag
+	def_files/data/effects/vulkan_blit.vert
 	def_files/data/effects/tonemapping-f.sdr
 	def_files/data/effects/video-f.sdr
 	def_files/data/effects/video-v.sdr
@@ -590,8 +596,12 @@ if (FSO_BUILD_WITH_VULKAN)
 		graphics/vulkan/VulkanFramebuffer.h
 		graphics/vulkan/VulkanPipelineManager.cpp
 		graphics/vulkan/VulkanPipelineManager.h
+		graphics/vulkan/VulkanPostProcessing.cpp
+		graphics/vulkan/VulkanPostProcessing.h
 		graphics/vulkan/VulkanShader.cpp
 		graphics/vulkan/VulkanShader.h
+		graphics/vulkan/VulkanTexture.cpp
+		graphics/vulkan/VulkanTexture.h
 		graphics/vulkan/vulkan_stubs.cpp
 		graphics/vulkan/vulkan_stubs.h
 		graphics/vulkan/VulkanRenderer.cpp

@@ -5,7 +5,10 @@
 #ifdef WITH_VULKAN
 
 #include "bmpman/bm_internal.h"
+#include "VulkanFramebuffer.h"
 
+#include <array>
+#include <memory>
 #include <vulkan/vulkan.hpp>
 #include <unordered_map>
 
@@ -14,6 +17,29 @@ namespace vulkan {
 
 // Forward declarations
 class VulkanRenderer;
+class VulkanFramebuffer;
+
+/**
+ * @brief Render target data associated with a bitmap handle
+ *
+ * Contains the Vulkan resources needed to render to a texture:
+ * - The texture itself (VulkanTexture with color attachment usage)
+ * - A dedicated render pass for this RT
+ * - A framebuffer binding the texture to the render pass
+ * - Optional depth attachment for 3D rendering to RT
+ */
+struct VulkanRenderTarget {
+	vk::UniqueRenderPass renderPass;        // Render pass for this RT
+	std::unique_ptr<VulkanFramebuffer> framebuffer;  // Framebuffer with color + optional depth
+	int workingHandle = -1;                 // Bitmap handle being rendered to
+	bool isStatic = false;                  // Static RT (save on unbind)
+	bool isCubemap = false;                 // Is this a cubemap RT
+	int activeFace = 0;                     // Current cubemap face (0-5)
+	
+	// For cubemaps, we need per-face framebuffers and image views
+	std::array<vk::UniqueImageView, 6> cubeFaceViews;
+	std::array<std::unique_ptr<VulkanFramebuffer>, 6> cubeFaceFramebuffers;
+};
 
 /**
  * @brief Vulkan texture resource - inherits from gr_bitmap_info for bmpman integration
@@ -208,6 +234,7 @@ private:
  * - Format conversion (24-bit -> 32-bit on CPU)
  * - Compressed texture support (DXT/BC direct upload)
  * - Render target management
+ * - Non-blocking batched uploads (per-frame command buffer batching)
  */
 class VulkanTextureManager {
 public:
@@ -217,6 +244,11 @@ public:
 	// Non-copyable
 	VulkanTextureManager(const VulkanTextureManager&) = delete;
 	VulkanTextureManager& operator=(const VulkanTextureManager&) = delete;
+
+	/**
+	 * @brief Number of frames in flight - must match VulkanRenderer
+	 */
+	static constexpr uint32_t FRAMES_IN_FLIGHT = 2;
 
 	/**
 	 * @brief Initialize texture manager
@@ -264,20 +296,71 @@ public:
 	VulkanTexture* getTexture(int bitmapHandle);
 
 	/**
+	 * @brief Get currently active render target
+	 */
+	VulkanRenderTarget* getActiveRenderTarget() const { return m_activeRenderTarget; }
+
+	/**
 	 * @brief Get sampler cache
 	 */
 	VulkanSamplerCache& getSamplerCache() { return m_samplerCache; }
 
 	/**
-	 * @brief Called at frame start to manage staging buffer
-	 * @param frameIndex Current frame index (for ring buffer partitioning)
+	 * @brief Queue a texture for deferred deletion
+	 *
+	 * Called when bmpman frees texture data. Instead of immediately destroying
+	 * the texture (which may still be referenced by in-flight command buffers),
+	 * we queue it for deletion after the GPU finishes using it.
+	 *
+	 * @param texture The texture to delete (ownership transferred to manager)
+	 */
+	void queueTextureForDeletion(VulkanTexture* texture);
+
+	/**
+	 * @brief Called at frame start AFTER the frame's fence has been waited on
+	 *
+	 * Processes deferred staging offset reset for the current frame.
+	 * Since we've waited on the fence, we know the GPU is done with uploads
+	 * from when this frame index was last active.
+	 *
+	 * @param frameIndex Current frame index (0 to FRAMES_IN_FLIGHT-1)
 	 */
 	void beginFrame(uint32_t frameIndex);
+
+	/**
+	 * @brief Submit all pending upload commands for the current frame
+	 *
+	 * Called by VulkanRenderer before graphics work submission. If no uploads
+	 * were recorded this frame, this is a no-op.
+	 *
+	 * @note Upload commands use the graphics queue and synchronize with the frame fence,
+	 * so staging memory is safe to reuse when beginFrame() is called for this frame again.
+	 */
+	void submitUploads();
 
 	/**
 	 * @brief Check if format supports GPU mipmap generation
 	 */
 	bool canGenerateMipmaps(vk::Format format) const;
+
+	// =========================================================================
+	// Static Utility Functions (for unit testing)
+	// =========================================================================
+
+	/**
+	 * @brief Calculate number of mip levels for dimensions (static version)
+	 */
+	static uint32_t calculateMipLevelsStatic(uint32_t width, uint32_t height);
+
+	/**
+	 * @brief Calculate data size for a mip level (static version)
+	 */
+	static size_t calculateMipSizeStatic(uint32_t width, uint32_t height, vk::Format format);
+
+	/**
+	 * @brief Check if format is block-compressed (static version)
+	 */
+	static bool isCompressedFormatStatic(vk::Format format);
 
 private:
 	/**
@@ -301,34 +384,42 @@ private:
 	bool isCompressedFormat(vk::Format format) const;
 
 	/**
-	 * @brief Allocate region from staging buffer
+	 * @brief Allocate region from staging buffer for current frame
 	 * @param size Size needed
 	 * @param outOffset Returns the offset into the staging buffer
-	 * @return Pointer to staging memory, or nullptr if full
+	 * @return Pointer to staging memory, or nullptr if partition full
+	 *
+	 * @note Each frame uses its own partition of the staging buffer to avoid
+	 * GPU/CPU synchronization issues. If the partition is full, returns nullptr
+	 * and the caller should submit pending uploads and try again next frame.
 	 */
 	void* allocateStagingMemory(vk::DeviceSize size, vk::DeviceSize& outOffset);
 
 	/**
-	 * @brief Begin recording upload commands
+	 * @brief Ensure upload command buffer is recording for current frame
 	 */
-	void beginUpload();
+	void ensureUploadRecording();
 
 	/**
-	 * @brief Submit upload commands and signal fence
+	 * @brief Get the command buffer for recording upload commands
 	 */
-	void endUpload();
+	vk::CommandBuffer getUploadCommandBuffer();
 
 	vk::Device m_device;
 	vk::PhysicalDevice m_physicalDevice;
 	vk::CommandPool m_commandPool;
 	vk::Queue m_transferQueue;
 
-	// Upload command buffer and synchronization
-	vk::UniqueCommandBuffer m_uploadCommandBuffer;
-	vk::UniqueFence m_uploadFence;
+	// Per-frame upload command buffers for batched non-blocking uploads
+	std::array<vk::CommandBuffer, FRAMES_IN_FLIGHT> m_uploadCmds{};
+	std::array<bool, FRAMES_IN_FLIGHT> m_uploadCmdRecording{};
+	std::array<vk::Fence, FRAMES_IN_FLIGHT> m_uploadFences{};
+	std::array<bool, FRAMES_IN_FLIGHT> m_uploadFenceSubmitted{};  // True if fence was submitted and needs wait
 
-	// Staging buffer (16MB ring buffer, partitioned by frame)
+	// Staging buffer (16MB ring buffer)
+	// Each frame gets half the buffer to avoid overlap
 	static constexpr vk::DeviceSize STAGING_BUFFER_SIZE = 16 * 1024 * 1024;
+	static constexpr vk::DeviceSize STAGING_PARTITION_SIZE = STAGING_BUFFER_SIZE / FRAMES_IN_FLIGHT;
 	vk::UniqueBuffer m_stagingBuffer;
 	vk::UniqueDeviceMemory m_stagingMemory;
 	void* m_stagingMapped = nullptr;
@@ -343,8 +434,81 @@ private:
 	// and is owned by bitmap_slot::gr_info
 	SCP_unordered_map<int, VulkanTexture*> m_textures;
 
+	// Render target registry - keyed by bitmap handle
+	SCP_unordered_map<int, std::unique_ptr<VulkanRenderTarget>> m_renderTargets;
+
+	// Currently active render target (nullptr = scene framebuffer)
+	VulkanRenderTarget* m_activeRenderTarget = nullptr;
+	int m_activeRenderTargetHandle = -1;
+
+	// Per-frame deferred texture deletion queues
+	// Textures are queued here when bmpman frees them, then actually deleted
+	// in beginFrame() after the frame fence ensures GPU is done using them
+	std::array<SCP_vector<VulkanTexture*>, FRAMES_IN_FLIGHT> m_pendingTextureDeletions;
+
 	bool m_initialized = false;
-	bool m_uploadInProgress = false;
+
+public:
+	// Render target API
+	/**
+	 * @brief Create a render target for a bitmap handle
+	 * @param handle Bitmap handle
+	 * @param width Width in pixels
+	 * @param height Height in pixels
+	 * @param bpp Bits per pixel (output)
+	 * @param mm_lvl Mipmap levels (output)
+	 * @param flags BMP_FLAG_RENDER_TARGET_* flags
+	 * @return 1 on success, 0 on failure
+	 */
+	int createRenderTarget(int handle, int* width, int* height, int* bpp, int* mm_lvl, int flags);
+
+	/**
+	 * @brief Set the active render target
+	 * @param handle Bitmap handle (-1 to restore scene framebuffer)
+	 * @param face Cubemap face (0-5, or -1 for 2D)
+	 * @return 1 on success, 0 on failure
+	 */
+	int setRenderTarget(int handle, int face);
+
+	/**
+	 * @brief Get render target by handle
+	 * @param handle Bitmap handle
+	 * @return Render target or nullptr
+	 */
+	VulkanRenderTarget* getRenderTarget(int handle);
+
+	/**
+	 * @brief Get currently active render target handle
+	 */
+	int getActiveRenderTargetHandle() const { return m_activeRenderTargetHandle; }
+
+	/**
+	 * @brief Check if currently rendering to a render target
+	 */
+	bool isRenderingToTexture() const { return m_activeRenderTarget != nullptr; }
+
+	/**
+	 * @brief Read back texture data to CPU memory
+	 * @param data_out Output buffer (must be pre-allocated)
+	 * @param handle Bitmap handle
+	 */
+	void readbackTexture(void* data_out, int handle);
+
+	/**
+	 * @brief Destroy a render target
+	 * @param handle Bitmap handle
+	 */
+	void destroyRenderTarget(int handle);
+
+private:
+	/**
+	 * @brief Create a render pass for a render target
+	 * @param colorFormat Color attachment format
+	 * @param withDepth Whether to include depth attachment
+	 * @param isCubemap Whether this is for a cubemap
+	 * @return Unique render pass handle
+	 */
+	vk::UniqueRenderPass createRenderTargetRenderPass(vk::Format colorFormat, bool withDepth, bool isCubemap);
 };
 
 // Global texture manager instance (set by VulkanRenderer)

@@ -1,11 +1,24 @@
 
 #include "VulkanBuffer.h"
 
+#include "VulkanDescriptorManager.h"
 #include "globalincs/pstypes.h"
 #include <cstdint>
+#include <limits>
+#include <vector>
 
 namespace graphics {
 namespace vulkan {
+
+// Direct file logging for debugging crashes
+static void buf_debug(const char* msg) {
+	FILE* f = fopen("vulkan_debug.log", "a");
+	if (f) {
+		fprintf(f, "VulkanBuffer: %s\n", msg);
+		fflush(f);
+		fclose(f);
+	}
+}
 
 // Global buffer manager instance
 VulkanBufferManager* g_vulkanBufferManager = nullptr;
@@ -14,10 +27,10 @@ VulkanBufferManager* g_vulkanBufferManager = nullptr;
 // VulkanBufferManager Implementation
 // ============================================================================
 
-VulkanBufferManager::VulkanBufferManager(vk::Device device, vk::PhysicalDevice physicalDevice)
-    : m_device(device), m_physicalDevice(physicalDevice)
+VulkanBufferManager::VulkanBufferManager(vk::Device device, vk::PhysicalDevice physicalDevice, vk::Queue graphicsQueue, uint32_t graphicsQueueFamily)
+    : m_device(device), m_physicalDevice(physicalDevice), m_graphicsQueue(graphicsQueue), m_graphicsQueueFamily(graphicsQueueFamily)
 {
-	initialize(device, physicalDevice);
+	initialize(device, physicalDevice, graphicsQueue, graphicsQueueFamily);
 }
 
 VulkanBufferManager::~VulkanBufferManager()
@@ -25,7 +38,7 @@ VulkanBufferManager::~VulkanBufferManager()
 	shutdown();
 }
 
-void VulkanBufferManager::initialize(vk::Device device, vk::PhysicalDevice physicalDevice)
+void VulkanBufferManager::initialize(vk::Device device, vk::PhysicalDevice physicalDevice, vk::Queue graphicsQueue, uint32_t graphicsQueueFamily)
 {
 	if (m_initialized) {
 		return;
@@ -33,6 +46,8 @@ void VulkanBufferManager::initialize(vk::Device device, vk::PhysicalDevice physi
 
 	m_device = device;
 	m_physicalDevice = physicalDevice;
+	m_graphicsQueue = graphicsQueue;
+	m_graphicsQueueFamily = graphicsQueueFamily;
 	m_memoryProperties = physicalDevice.getMemoryProperties();
 
 	// Query device limits
@@ -41,6 +56,34 @@ void VulkanBufferManager::initialize(vk::Device device, vk::PhysicalDevice physi
 
 	mprintf(("Vulkan Buffer Manager initialized\n"));
 	mprintf(("  Min UBO alignment: %zu bytes\n", m_minUboAlignment));
+
+	// Create command pool for transfer operations (on graphics queue for sync)
+	vk::CommandPoolCreateInfo poolInfo;
+	poolInfo.queueFamilyIndex = m_graphicsQueueFamily;
+	poolInfo.flags = vk::CommandPoolCreateFlagBits::eTransient | vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
+	m_commandPool = m_device.createCommandPool(poolInfo);
+
+	// Allocate per-frame transfer command buffers
+	vk::CommandBufferAllocateInfo cmdAlloc;
+	cmdAlloc.commandPool = m_commandPool;
+	cmdAlloc.level = vk::CommandBufferLevel::ePrimary;
+	cmdAlloc.commandBufferCount = FRAMES_IN_FLIGHT;
+
+	auto cmdBuffers = m_device.allocateCommandBuffers(cmdAlloc);
+	for (uint32_t i = 0; i < FRAMES_IN_FLIGHT; ++i) {
+		m_transferCmds[i] = cmdBuffers[i];
+		m_transferCmdRecording[i] = false;
+		m_transferFenceSubmitted[i] = false;  // No pending work to wait for
+		// Create unsignaled fence - we track whether to wait via m_transferFenceSubmitted
+		vk::FenceCreateInfo fenceInfo;
+		m_transferFences[i] = m_device.createFence(fenceInfo);
+		char fbuf[128];
+		sprintf(fbuf, "init: created transfer fence[%u]=%p", i,
+			(void*)static_cast<VkFence>(m_transferFences[i]));
+		buf_debug(fbuf);
+		mprintf(("VulkanBuffer: created transfer fence[%u]=%p\n",
+			i, reinterpret_cast<void*>(static_cast<VkFence>(m_transferFences[i]))));
+	}
 
 	m_initialized = true;
 }
@@ -51,7 +94,7 @@ void VulkanBufferManager::shutdown()
 		return;
 	}
 
-	// Delete all buffers
+	// Delete all active buffers
 	for (auto& buffer : m_buffers) {
 		if (buffer.buffer) {
 			if (buffer.mappedPtr) {
@@ -66,6 +109,45 @@ void VulkanBufferManager::shutdown()
 	}
 	m_buffers.clear();
 	m_freeSlots.clear();
+
+	// Clean up any pending deferred deletions from all frame queues
+	for (auto& frameQueue : m_pendingDeletions) {
+		for (auto& pending : frameQueue) {
+			m_device.destroyBuffer(pending.buffer);
+			m_device.freeMemory(pending.memory);
+		}
+		frameQueue.clear();
+	}
+
+	// Clean up any pending staging buffer deletions
+	for (auto& frameQueue : m_pendingStagingDeletions) {
+		for (auto& pending : frameQueue) {
+			m_device.destroyBuffer(pending.buffer);
+			m_device.freeMemory(pending.memory);
+		}
+		frameQueue.clear();
+	}
+
+	// Free per-frame command buffers before destroying the pool
+	if (m_commandPool && m_transferCmds[0]) {
+		m_device.freeCommandBuffers(m_commandPool, m_transferCmds);
+		for (auto& cmd : m_transferCmds) {
+			cmd = nullptr;
+		}
+	}
+
+	// Destroy transfer fences
+	for (auto& fence : m_transferFences) {
+		if (fence) {
+			m_device.destroyFence(fence);
+			fence = nullptr;
+		}
+	}
+
+	if (m_commandPool) {
+		m_device.destroyCommandPool(m_commandPool);
+		m_commandPool = nullptr;
+	}
 
 	m_initialized = false;
 	mprintf(("Vulkan Buffer Manager shut down\n"));
@@ -93,8 +175,9 @@ void VulkanBufferManager::createVkBuffer(VulkanBufferData& bufferData, size_t si
 			m_device.unmapMemory(bufferData.memory);
 			bufferData.mappedPtr = nullptr;
 		}
-		m_device.destroyBuffer(bufferData.buffer);
-		m_device.freeMemory(bufferData.memory);
+
+		// Always defer deletion - the old buffer may be in-flight on the GPU
+		queueDeferredDeletion(bufferData.buffer, bufferData.memory);
 	}
 
 	// Create buffer
@@ -128,7 +211,7 @@ gr_buffer_handle VulkanBufferManager::createBuffer(BufferType type, BufferUsageH
 	VulkanBufferData bufferData;
 	bufferData.type = type;
 	bufferData.usage = usage;
-	bufferData.lastUsedFrame = m_currentFrame;
+	bufferData.lastUsedFrame = m_currentFrameIndex;
 
 	// Determine handle slot
 	int slot;
@@ -156,13 +239,17 @@ void VulkanBufferManager::deleteBuffer(gr_buffer_handle handle)
 	VulkanBufferData& buffer = m_buffers[handle.value()];
 
 	if (buffer.buffer) {
-		// TODO: Check if buffer is in-flight and defer deletion
+		// Unmap if mapped
 		if (buffer.mappedPtr) {
 			m_device.unmapMemory(buffer.memory);
 			buffer.mappedPtr = nullptr;
 		}
-		m_device.destroyBuffer(buffer.buffer);
-		m_device.freeMemory(buffer.memory);
+
+		// Always defer deletion - the buffer may be in-flight on the GPU
+		// It will be destroyed when beginFrame() processes this frame's queue
+		// after the corresponding fence has been waited on
+		queueDeferredDeletion(buffer.buffer, buffer.memory);
+
 		buffer.buffer = nullptr;
 		buffer.memory = nullptr;
 	}
@@ -203,8 +290,13 @@ void VulkanBufferManager::updateBufferData(gr_buffer_handle handle, size_t size,
 	vk::MemoryPropertyFlags memProperties;
 	switch (buffer.usage) {
 	case BufferUsageHint::Static:
-		// Device-local for best GPU performance, will need staging buffer
-		memProperties = vk::MemoryPropertyFlagBits::eDeviceLocal;
+		// Prefer device-local; will use staging copy if graphics queue available, otherwise fall back to host visible
+		if (m_graphicsQueue) {
+			memProperties = vk::MemoryPropertyFlagBits::eDeviceLocal;
+		} else {
+			memProperties = vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent;
+			buffer.hostVisible = true;
+		}
 		break;
 	case BufferUsageHint::Dynamic:
 	case BufferUsageHint::Streaming:
@@ -247,7 +339,7 @@ void VulkanBufferManager::updateBufferData(gr_buffer_handle handle, size_t size,
 		buffer.mappedPtr = m_device.mapMemory(buffer.memory, 0, buffer.size);
 	}
 
-	buffer.lastUsedFrame = m_currentFrame;
+	buffer.lastUsedFrame = m_currentFrameIndex;
 }
 
 void VulkanBufferManager::updateBufferDataOffset(gr_buffer_handle handle, size_t offset, size_t size, const void* data)
@@ -272,7 +364,7 @@ void VulkanBufferManager::updateBufferDataOffset(gr_buffer_handle handle, size_t
 		copyViaStaging(buffer, offset, size, data);
 	}
 
-	buffer.lastUsedFrame = m_currentFrame;
+	buffer.lastUsedFrame = m_currentFrameIndex;
 }
 
 void* VulkanBufferManager::mapBuffer(gr_buffer_handle handle)
@@ -304,7 +396,7 @@ void VulkanBufferManager::flushMappedBuffer(gr_buffer_handle handle, size_t offs
 	// For coherent memory, no explicit flush needed
 	// If using non-coherent memory, would need vkFlushMappedMemoryRanges here
 
-	buffer.lastUsedFrame = m_currentFrame;
+	buffer.lastUsedFrame = m_currentFrameIndex;
 }
 
 void VulkanBufferManager::bindUniformBuffer(uniform_block_type bindPoint, size_t offset, size_t size,
@@ -315,20 +407,87 @@ void VulkanBufferManager::bindUniformBuffer(uniform_block_type bindPoint, size_t
 	          "UBO offset %zu must be aligned to %zu!", offset, m_minUboAlignment);
 
 	if (!handle.isValid()) {
-		// Unbind - nothing to do in Vulkan (handled by descriptor set)
+		// Unbind - clear the binding
+		auto it = m_boundUniformBuffers.find(bindPoint);
+		if (it != m_boundUniformBuffers.end()) {
+			it->second = BoundUniformBuffer(); // Clear but keep entry
+		}
+		// NOTE: Don't update descriptor set here - unbinding is handled by
+		// not including this binding in dynamic offsets, or by binding a null buffer
+		// at frame start if needed.
 		return;
 	}
 
-	Assertion(static_cast<size_t>(handle.value()) < m_buffers.size(), "Buffer handle out of range!");
+	Assertion(static_cast<size_t>(handle.value()) < m_buffers.size(),
+	          "Buffer handle out of range!");
 
 	VulkanBufferData& buffer = m_buffers[handle.value()];
-	Assertion(buffer.type == BufferType::Uniform, "Only uniform buffers can be bound to UBO points!");
+	Assertion(buffer.type == BufferType::Uniform,
+	          "Only uniform buffers can be bound to UBO points!");
 
-	// In Vulkan, binding is done through descriptor sets, not direct binding
-	// This will be implemented when descriptor management is added
-	// For now, just track the binding request
+	vk::Buffer vkBuffer = buffer.buffer;
+	if (!vkBuffer) {
+		mprintf(("VulkanBufferManager: Invalid buffer handle for uniform binding\n"));
+		return;
+	}
 
-	buffer.lastUsedFrame = m_currentFrame;
+	// Check if this is a new buffer (different from what was previously bound)
+	BoundUniformBuffer& bound = m_boundUniformBuffers[bindPoint];
+	bool bufferChanged = (bound.vkBuffer != vkBuffer);
+
+	// Store binding info - offset and size are used as dynamic offsets
+	bound.handle = handle;
+	bound.offset = offset;
+	bound.size = size;
+	bound.vkBuffer = vkBuffer;
+
+	buffer.lastUsedFrame = m_currentFrameIndex;
+
+	// Only update descriptor set if the underlying buffer changed.
+	// For dynamic uniform buffers, we bind the whole buffer once, then use
+	// dynamic offsets to select the range. This avoids updating descriptors
+	// during command buffer recording (which would invalidate the command buffer).
+	if (bufferChanged && m_uniformDescriptorSet && m_descriptorManager) {
+		// For dynamic uniform buffers, the "range" in the descriptor is the size
+		// of data accessed per-draw (not the full buffer). The dynamic offset
+		// selects which portion of the buffer to access. Dynamic offset + range
+		// must not exceed buffer size, so we use the per-binding size here.
+		m_descriptorManager->updateUniformBuffer(m_uniformDescriptorSet,
+		                                         static_cast<uint32_t>(bindPoint),
+		                                         vkBuffer, 0, size, true);
+	}
+}
+
+VulkanBufferManager::BoundUniformBuffer VulkanBufferManager::getBoundUniformBuffer(uniform_block_type bindPoint) const
+{
+	auto it = m_boundUniformBuffers.find(bindPoint);
+	if (it != m_boundUniformBuffers.end()) {
+		return it->second;
+	}
+	return BoundUniformBuffer(); // Invalid
+}
+
+bool VulkanBufferManager::initializeUniformDescriptorSet(vk::DescriptorSetLayout layout)
+{
+	if (!m_descriptorManager || !layout) {
+		return false;
+	}
+	
+	m_uniformDescriptorSetLayout = layout;
+	m_uniformDescriptorSet = m_descriptorManager->allocateSet(layout, "UniformBuffers");
+	
+	if (!m_uniformDescriptorSet) {
+		mprintf(("VulkanBufferManager: Failed to allocate uniform buffer descriptor set\n"));
+		return false;
+	}
+	
+	// Initialize all bindings to null (will be updated on first bind)
+	for (int i = 0; i < static_cast<int>(uniform_block_type::NUM_BLOCK_TYPES); ++i) {
+		auto blockType = static_cast<uniform_block_type>(i);
+		m_boundUniformBuffers[blockType] = BoundUniformBuffer();
+	}
+	
+	return true;
 }
 
 vk::Buffer VulkanBufferManager::getBuffer(gr_buffer_handle handle) const
@@ -347,17 +506,141 @@ const VulkanBufferData* VulkanBufferManager::getBufferData(gr_buffer_handle hand
 	return &m_buffers[handle.value()];
 }
 
-void VulkanBufferManager::endFrame()
+void VulkanBufferManager::beginFrame(uint32_t frameIndex)
 {
-	m_currentFrame++;
+	char buf[128];
+	sprintf(buf, "beginFrame: frameIndex=%u, old_currentFrameIndex=%u", frameIndex, m_currentFrameIndex);
+	buf_debug(buf);
+
+	Assertion(frameIndex < FRAMES_IN_FLIGHT, "Frame index %u out of range!", frameIndex);
+
+	m_currentFrameIndex = frameIndex;
+
+	// Wait for this frame's transfer fence to ensure the per-frame transfer
+	// command buffer and staging allocations are no longer in-flight.
+	// Only wait if transfers were actually submitted for this frame.
+	if (m_transferFenceSubmitted[frameIndex]) {
+		auto tfence = m_transferFences[frameIndex];
+		if (tfence) {
+			mprintf(("VulkanBuffer: beginFrame idx=%u waiting transfer fence=%p\n",
+				frameIndex, reinterpret_cast<void*>(static_cast<VkFence>(tfence))));
+			char fbuf[128];
+			sprintf(fbuf, "beginFrame: waiting transfer fence[%u]=%p",
+				frameIndex, (void*)static_cast<VkFence>(tfence));
+			buf_debug(fbuf);
+			auto waitResult = m_device.waitForFences(tfence, true, std::numeric_limits<uint64_t>::max());
+			if (waitResult != vk::Result::eSuccess) {
+				mprintf(("VulkanBuffer: WARNING - waitForFences returned %d\n", static_cast<int>(waitResult)));
+			}
+			m_device.resetFences(tfence);
+			mprintf(("VulkanBuffer: beginFrame idx=%u transfer fence reset\n",
+				frameIndex));
+			sprintf(fbuf, "beginFrame: reset transfer fence[%u]=%p",
+				frameIndex, (void*)static_cast<VkFence>(tfence));
+			buf_debug(fbuf);
+		}
+		m_transferFenceSubmitted[frameIndex] = false;
+	} else {
+		mprintf(("VulkanBuffer: beginFrame idx=%u no transfer fence wait needed\n", frameIndex));
+	}
+
+	// Process deferred deletions for this frame index
+	// Since VulkanRenderer calls this AFTER waiting on this frame's fence,
+	// and we just waited on the transfer fence above, it is now safe to free.
+	auto& deletionQueue = m_pendingDeletions[frameIndex];
+	sprintf(buf, "beginFrame: processing %zu pending deletions", deletionQueue.size());
+	buf_debug(buf);
+	for (auto& pending : deletionQueue) {
+		m_device.destroyBuffer(pending.buffer);
+		m_device.freeMemory(pending.memory);
+	}
+	deletionQueue.clear();
+
+	// Process deferred staging buffer deletions
+	auto& stagingQueue = m_pendingStagingDeletions[frameIndex];
+	sprintf(buf, "beginFrame: processing %zu pending staging deletions", stagingQueue.size());
+	buf_debug(buf);
+	for (auto& pending : stagingQueue) {
+		m_device.destroyBuffer(pending.buffer);
+		m_device.freeMemory(pending.memory);
+	}
+	stagingQueue.clear();
+
+	// Reset transfer command buffer recording state for this frame
+	m_transferCmdRecording[frameIndex] = false;
+	mprintf(("VulkanBuffer: beginFrame idx=%u cmd=%p recording=%d\n",
+		frameIndex,
+		reinterpret_cast<void*>(static_cast<VkCommandBuffer>(m_transferCmds[frameIndex])),
+		0));
+	buf_debug("beginFrame: done");
+}
+
+void VulkanBufferManager::queueDeferredDeletion(vk::Buffer buffer, vk::DeviceMemory memory)
+{
+	if (!buffer) {
+		return;
+	}
+
+	PendingBufferDeletion pending;
+	pending.buffer = buffer;
+	pending.memory = memory;
+
+	// Queue for deletion when this frame index is next processed
+	// That happens after VulkanRenderer waits on this frame's fence
+	m_pendingDeletions[m_currentFrameIndex].push_back(pending);
+}
+
+void VulkanBufferManager::queueStagingDeletion(vk::Buffer buffer, vk::DeviceMemory memory)
+{
+	if (!buffer) {
+		return;
+	}
+
+	PendingBufferDeletion pending;
+	pending.buffer = buffer;
+	pending.memory = memory;
+
+	// Queue staging buffer for deletion when this frame's fence is waited on
+	m_pendingStagingDeletions[m_currentFrameIndex].push_back(pending);
+
+	char debugbuf[256];
+	sprintf(debugbuf, "queueStagingDeletion: staging=%p queued to frame %u (queue now has %zu entries)",
+		(void*)static_cast<VkBuffer>(buffer),
+		m_currentFrameIndex,
+		m_pendingStagingDeletions[m_currentFrameIndex].size());
+	buf_debug(debugbuf);
 }
 
 void VulkanBufferManager::copyViaStaging(VulkanBufferData& dst, size_t offset, size_t size, const void* data)
 {
-	// TODO: Implement proper staging buffer pool
-	// For now, create a temporary staging buffer per copy (inefficient but functional)
+	char debugbuf[256];
+	sprintf(debugbuf, "copyViaStaging: frameIndex=%u, size=%zu, offset=%zu, wasRecording=%d",
+		m_currentFrameIndex, size, offset, m_transferCmdRecording[m_currentFrameIndex] ? 1 : 0);
+	buf_debug(debugbuf);
 
-	// Create staging buffer
+	// Log destination buffer state - this is a critical suspect for DEVICE_LOST
+	sprintf(debugbuf, "copyViaStaging: dst.buffer=%p, dst.size=%zu, dst.type=%d, dst.hostVisible=%d",
+		(void*)static_cast<VkBuffer>(dst.buffer), dst.size, static_cast<int>(dst.type), dst.hostVisible ? 1 : 0);
+	buf_debug(debugbuf);
+
+	if (!dst.buffer) {
+		buf_debug("copyViaStaging: ERROR - dst.buffer is NULL! Aborting copy.");
+		return;
+	}
+
+	if (offset + size > dst.size) {
+		sprintf(debugbuf, "copyViaStaging: ERROR - copy would overflow! offset=%zu + size=%zu > dst.size=%zu",
+			offset, size, dst.size);
+		buf_debug(debugbuf);
+		return;
+	}
+
+	if (!m_commandPool || !m_graphicsQueue) {
+		buf_debug("copyViaStaging: no command pool or queue, skipping");
+		return;
+	}
+
+	// Create a staging buffer for this copy
 	vk::BufferCreateInfo stagingBufferInfo;
 	stagingBufferInfo.size = size;
 	stagingBufferInfo.usage = vk::BufferUsageFlagBits::eTransferSrc;
@@ -375,21 +658,193 @@ void VulkanBufferManager::copyViaStaging(VulkanBufferData& dst, size_t offset, s
 	auto stagingMemory = m_device.allocateMemory(allocInfo);
 	m_device.bindBufferMemory(stagingBuffer, stagingMemory, 0);
 
+	// Log staging buffer info
+	sprintf(debugbuf, "copyViaStaging: staging=%p, stagingMem=%p, allocSize=%zu",
+		(void*)static_cast<VkBuffer>(stagingBuffer),
+		(void*)static_cast<VkDeviceMemory>(stagingMemory),
+		static_cast<size_t>(allocInfo.allocationSize));
+	buf_debug(debugbuf);
+
 	// Copy data to staging buffer
 	void* mapped = m_device.mapMemory(stagingMemory, 0, size);
-	auto* dstPtr = reinterpret_cast<std::uint8_t*>(mapped);
-	auto* src = reinterpret_cast<const std::uint8_t*>(data);
-	memcpy(dstPtr, src, size);
+	auto* dstPtr = static_cast<uint8_t*>(mapped);
+	auto* srcPtr = static_cast<const uint8_t*>(data);
+	memcpy(dstPtr, srcPtr, size);
 	m_device.unmapMemory(stagingMemory);
 
-	// TODO: Record and submit transfer command
-	// For now, this is a placeholder - we need command buffer infrastructure
-	mprintf(("Vulkan: WARNING - copyViaStaging not fully implemented, transfer commands needed\n"));
+	// Begin recording to per-frame command buffer if not already recording
+	vk::CommandBuffer cmdBuffer = m_transferCmds[m_currentFrameIndex];
+	char cmdbuf[256];
+	sprintf(cmdbuf, "copyViaStaging: cmdBuffer[%u]=%p, wasRecording=%d",
+		m_currentFrameIndex, (void*)static_cast<VkCommandBuffer>(cmdBuffer),
+		m_transferCmdRecording[m_currentFrameIndex] ? 1 : 0);
+	buf_debug(cmdbuf);
+	// Log destination buffer slot/index for debugging
+	int dstIndex = -1;
+	for (size_t i = 0; i < m_buffers.size(); ++i) {
+		if (&m_buffers[i] == &dst) {
+			dstIndex = static_cast<int>(i);
+			break;
+		}
+	}
+	mprintf(("VulkanBuffer: copyViaStaging frame=%u cmd=%p recording=%d size=%zu dstBufIdx=%d dstVkBuf=%p dstOffset=%zu stagingOffset=%d\n",
+		m_currentFrameIndex,
+		reinterpret_cast<void*>(static_cast<VkCommandBuffer>(cmdBuffer)),
+		m_transferCmdRecording[m_currentFrameIndex] ? 1 : 0,
+		size,
+		dstIndex,
+		reinterpret_cast<void*>(static_cast<VkBuffer>(dst.buffer)),
+		offset,
+		0));
 
-	// Cleanup staging buffer
-	// In a real implementation, this would be deferred until the transfer completes
-	m_device.destroyBuffer(stagingBuffer);
-	m_device.freeMemory(stagingMemory);
+	if (!m_transferCmdRecording[m_currentFrameIndex]) {
+		buf_debug("copyViaStaging: calling vkResetCommandBuffer");
+		cmdBuffer.reset();
+		buf_debug("copyViaStaging: calling vkBeginCommandBuffer");
+		vk::CommandBufferBeginInfo beginInfo;
+		beginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
+		cmdBuffer.begin(beginInfo);
+		m_transferCmdRecording[m_currentFrameIndex] = true;
+		buf_debug("copyViaStaging: command buffer now recording");
+		mprintf(("VulkanBuffer: copyViaStaging reset/begin frame=%u cmd=%p\n",
+			m_currentFrameIndex,
+			reinterpret_cast<void*>(static_cast<VkCommandBuffer>(cmdBuffer))));
+	} else {
+		buf_debug("copyViaStaging: SKIPPING reset/begin - already recording");
+	}
+
+	// Record copy command
+	vk::BufferCopy copyRegion;
+	copyRegion.srcOffset = 0;
+	copyRegion.dstOffset = offset;
+	copyRegion.size = size;
+
+	sprintf(debugbuf, "copyViaStaging: COPY src=%p[0] -> dst=%p[%zu], size=%zu",
+		(void*)static_cast<VkBuffer>(stagingBuffer),
+		(void*)static_cast<VkBuffer>(dst.buffer),
+		offset, size);
+	buf_debug(debugbuf);
+
+	cmdBuffer.copyBuffer(stagingBuffer, dst.buffer, copyRegion);
+
+	// Pipeline barrier to ensure transfer writes are visible to subsequent operations
+	vk::BufferMemoryBarrier bufferBarrier;
+	bufferBarrier.buffer = dst.buffer;
+	bufferBarrier.offset = offset;
+	bufferBarrier.size = size;
+	bufferBarrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
+	bufferBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	bufferBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+
+	// Set destination access and stage based on buffer type
+	vk::PipelineStageFlags dstStage;
+	switch (dst.type) {
+	case BufferType::Vertex:
+		bufferBarrier.dstAccessMask = vk::AccessFlagBits::eVertexAttributeRead;
+		dstStage = vk::PipelineStageFlagBits::eVertexInput;
+		break;
+	case BufferType::Index:
+		bufferBarrier.dstAccessMask = vk::AccessFlagBits::eIndexRead;
+		dstStage = vk::PipelineStageFlagBits::eVertexInput;
+		break;
+	case BufferType::Uniform:
+		bufferBarrier.dstAccessMask = vk::AccessFlagBits::eUniformRead;
+		dstStage = vk::PipelineStageFlagBits::eVertexShader | vk::PipelineStageFlagBits::eFragmentShader;
+		break;
+	default:
+		// Generic case for any shader read
+		bufferBarrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+		dstStage = vk::PipelineStageFlagBits::eVertexShader | vk::PipelineStageFlagBits::eFragmentShader;
+		break;
+	}
+
+	cmdBuffer.pipelineBarrier(
+	    vk::PipelineStageFlagBits::eTransfer,
+	    dstStage,
+	    {},
+	    nullptr,
+	    bufferBarrier,
+	    nullptr);
+
+	// Queue staging buffer for deferred deletion (will be destroyed when frame fence is waited on)
+	queueStagingDeletion(stagingBuffer, stagingMemory);
+
+	// NOTE: Do NOT submit or wait here. Transfers are batched and submitted
+	// by submitTransfers() before graphics work, synchronized with the frame fence.
+}
+
+void VulkanBufferManager::submitTransfers()
+{
+	char buf[128];
+	sprintf(buf, "submitTransfers: frameIndex=%u, recording=%d",
+		m_currentFrameIndex, m_transferCmdRecording[m_currentFrameIndex] ? 1 : 0);
+	buf_debug(buf);
+
+	// If no transfers were recorded this frame, nothing to do
+	if (!m_transferCmdRecording[m_currentFrameIndex]) {
+		buf_debug("submitTransfers: no transfers, returning early");
+		return;
+	}
+
+	// End recording
+	vk::CommandBuffer cmdBuffer = m_transferCmds[m_currentFrameIndex];
+	char cmdbuf[256];
+	sprintf(cmdbuf, "submitTransfers: ending cmdBuffer[%u]=%p",
+		m_currentFrameIndex, (void*)static_cast<VkCommandBuffer>(cmdBuffer));
+	buf_debug(cmdbuf);
+	mprintf(("VulkanBuffer: submitTransfers end frame=%u cmd=%p\n",
+		m_currentFrameIndex,
+		reinterpret_cast<void*>(static_cast<VkCommandBuffer>(cmdBuffer))));
+	cmdBuffer.end();
+
+	sprintf(cmdbuf, "submitTransfers: submitting cmdBuffer[%u]=%p to queue",
+		m_currentFrameIndex, (void*)static_cast<VkCommandBuffer>(cmdBuffer));
+	buf_debug(cmdbuf);
+	mprintf(("VulkanBuffer: submitTransfers submit frame=%u cmd=%p\n",
+		m_currentFrameIndex,
+		reinterpret_cast<void*>(static_cast<VkCommandBuffer>(cmdBuffer))));
+	// Submit to graphics queue (ensures ordering with subsequent graphics work)
+	// NOTE: We don't use a fence here because synchronization is handled by
+	// the frame fence in VulkanRenderer. When beginFrame() is called for this
+	// frame index again, the fence will have been waited on, guaranteeing all
+	// transfer work is complete and staging buffers can be safely deleted.
+	vk::SubmitInfo submitInfo;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &cmdBuffer;
+	try {
+		// Ensure the transfer fence is unsignaled before submitting
+		if (m_transferFences[m_currentFrameIndex]) {
+			m_device.resetFences(m_transferFences[m_currentFrameIndex]);
+		}
+		mprintf(("VulkanBuffer: submitTransfers submitting frame=%u fence=%p cmd=%p\n",
+			m_currentFrameIndex,
+			reinterpret_cast<void*>(static_cast<VkFence>(m_transferFences[m_currentFrameIndex])),
+			reinterpret_cast<void*>(static_cast<VkCommandBuffer>(cmdBuffer))));
+		char fbuf2[128];
+		sprintf(fbuf2, "submitTransfers: frame=%u fence=%p cmd=%p",
+			m_currentFrameIndex,
+			(void*)static_cast<VkFence>(m_transferFences[m_currentFrameIndex]),
+			(void*)static_cast<VkCommandBuffer>(cmdBuffer));
+		buf_debug(fbuf2);
+		m_graphicsQueue.submit(submitInfo, m_transferFences[m_currentFrameIndex]);
+		m_transferFenceSubmitted[m_currentFrameIndex] = true;  // Mark fence as needing wait
+		buf_debug("submitTransfers: submit succeeded");
+		// TEMP: block to catch issues early
+		m_graphicsQueue.waitIdle();
+		buf_debug("submitTransfers: queue idle after submit");
+	} catch (const vk::SystemError& e) {
+		sprintf(cmdbuf, "submitTransfers: VULKAN ERROR: %s", e.what());
+		buf_debug(cmdbuf);
+		throw;
+	} catch (const std::exception& e) {
+		sprintf(cmdbuf, "submitTransfers: EXCEPTION: %s", e.what());
+		buf_debug(cmdbuf);
+		throw;
+	}
+
+	buf_debug("submitTransfers: done");
+	// Mark as no longer recording (will be reset in beginFrame)
+	m_transferCmdRecording[m_currentFrameIndex] = false;
 }
 
 // ============================================================================

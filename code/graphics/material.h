@@ -92,6 +92,7 @@ public:
 	material();
 
 	int get_shader_handle() const;
+	shader_type get_shader_type() const;
 
 	// get_shader_flags should return a full set of all flags set for this shader
 	virtual uint get_shader_flags() const;

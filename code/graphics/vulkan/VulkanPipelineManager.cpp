@@ -142,6 +142,14 @@ bool VulkanPipelineManager::initialize(vk::Device device, vk::PhysicalDevice phy
 		return false;
 	}
 
+	if (!createMaterialDescriptorLayout()) {
+		return false;
+	}
+
+	if (!createUniformDescriptorLayout()) {
+		return false;
+	}
+
 	m_initialized = true;
 	mprintf(("VulkanPipelineManager: Initialized successfully\n"));
 	return true;
@@ -153,11 +161,12 @@ void VulkanPipelineManager::shutdown()
 		return;
 	}
 
-	mprintf(("VulkanPipelineManager: Shutting down with %zu cached pipelines, %zu layouts\n",
-	         m_pipelineCache.size(), m_layoutCache.size()));
+	mprintf(("VulkanPipelineManager: Shutting down with %zu cached pipelines, %zu layouts, %zu vertex layouts\n",
+	         m_pipelineCache.size(), m_layoutCache.size(), m_vertexLayoutCache.size()));
 
 	// Clear all caches - unique handles will destroy automatically
 	m_pipelineCache.clear();
+	m_vertexLayoutCache.clear();
 	m_layoutCache.clear();
 	m_vkPipelineCache.reset();
 
@@ -207,10 +216,64 @@ vk::PipelineLayout VulkanPipelineManager::getPipelineLayout(shader_type type, ui
 	return getOrCreateLayout(type, flags);
 }
 
+vk::DescriptorSetLayout VulkanPipelineManager::getMaterialDescriptorSetLayout() const
+{
+	return m_materialDescriptorSetLayout ? m_materialDescriptorSetLayout.get() : vk::DescriptorSetLayout();
+}
+
+bool VulkanPipelineManager::createUniformDescriptorLayout()
+{
+	if (!m_device) {
+		return false;
+	}
+
+	// Create bindings for all uniform block types
+	// IMPORTANT: Using eUniformBufferDynamic because FSO uses ring-buffer suballocation.
+	// UniformBufferManager creates a single large buffer (triple-buffered) that all uniform
+	// block types share. Each block gets a range within this buffer via offset.
+	// This matches OpenGL's glBindBufferRange() pattern (see gropengltnl.cpp:390).
+	// Therefore we use dynamic offsets passed via pDynamicOffsets when binding descriptor sets.
+	SCP_vector<vk::DescriptorSetLayoutBinding> bindings;
+	bindings.reserve(static_cast<size_t>(uniform_block_type::NUM_BLOCK_TYPES));
+
+	for (int i = 0; i < static_cast<int>(uniform_block_type::NUM_BLOCK_TYPES); ++i) {
+		vk::DescriptorSetLayoutBinding binding;
+		binding.binding = static_cast<uint32_t>(i);
+		binding.descriptorType = vk::DescriptorType::eUniformBufferDynamic;
+		binding.descriptorCount = 1;
+		binding.stageFlags = vk::ShaderStageFlagBits::eVertex | 
+		                     vk::ShaderStageFlagBits::eFragment | 
+		                     vk::ShaderStageFlagBits::eGeometry;
+		binding.pImmutableSamplers = nullptr;
+		bindings.push_back(binding);
+	}
+
+	vk::DescriptorSetLayoutCreateInfo layoutInfo;
+	layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+	layoutInfo.pBindings = bindings.data();
+
+	try {
+		m_uniformDescriptorSetLayout = m_device.createDescriptorSetLayoutUnique(layoutInfo);
+		mprintf(("VulkanPipelineManager: Created uniform buffer descriptor set layout with %zu bindings (dynamic offsets)\n", 
+		         bindings.size()));
+		return true;
+	} catch (const vk::SystemError& e) {
+		mprintf(("VulkanPipelineManager: Failed to create uniform descriptor set layout: %s\n", e.what()));
+		return false;
+	}
+}
+
+vk::DescriptorSetLayout VulkanPipelineManager::getUniformDescriptorSetLayout() const
+{
+	return m_uniformDescriptorSetLayout ? m_uniformDescriptorSetLayout.get() : vk::DescriptorSetLayout();
+}
+
 void VulkanPipelineManager::clearCache()
 {
-	mprintf(("VulkanPipelineManager: Clearing %zu cached pipelines\n", m_pipelineCache.size()));
+	mprintf(("VulkanPipelineManager: Clearing %zu cached pipelines, %zu vertex layouts\n",
+	         m_pipelineCache.size(), m_vertexLayoutCache.size()));
 	m_pipelineCache.clear();
+	m_vertexLayoutCache.clear();
 }
 
 void VulkanPipelineManager::invalidatePipelinesForRenderPass(vk::RenderPass renderPass)
@@ -398,12 +461,24 @@ vk::UniquePipeline VulkanPipelineManager::createPipeline(const PipelineKey& key)
 		}
 	}
 
-	// Vertex input state - we need to reconstruct from hash
-	// For now, create empty vertex input (will be set when we have the layout)
-	// In practice, the caller provides the vertex_layout via getOrCreatePipeline(material&, ...)
+	// Vertex input state - look up cached layout from hash
+	SCP_vector<vk::VertexInputBindingDescription> vertexBindings;
+	SCP_vector<vk::VertexInputAttributeDescription> vertexAttributes;
+	
+	auto layoutIt = m_vertexLayoutCache.find(key.vertexLayoutHash);
+	if (layoutIt != m_vertexLayoutCache.end()) {
+		createVertexInputState(layoutIt->second, vertexBindings, vertexAttributes);
+	} else if (key.vertexLayoutHash != 0) {
+		// Hash is set but layout not found - this shouldn't happen if used correctly
+		mprintf(("VulkanPipelineManager: Vertex layout hash %zu not found in cache\n", key.vertexLayoutHash));
+	}
+	// If hash is 0, we use empty vertex input (e.g., for fullscreen passes)
+	
 	vk::PipelineVertexInputStateCreateInfo vertexInputInfo;
-	// Vertex bindings and attributes will be empty for now
-	// This is a limitation - we need to cache the vertex_layout with the key
+	vertexInputInfo.vertexBindingDescriptionCount = static_cast<uint32_t>(vertexBindings.size());
+	vertexInputInfo.pVertexBindingDescriptions = vertexBindings.data();
+	vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(vertexAttributes.size());
+	vertexInputInfo.pVertexAttributeDescriptions = vertexAttributes.data();
 
 	// Input assembly
 	vk::PipelineInputAssemblyStateCreateInfo inputAssembly;
@@ -486,11 +561,16 @@ PipelineKey VulkanPipelineManager::buildKeyFromMaterial(const material& mat,
 	PipelineKey key;
 
 	// Shader identification
-	key.shaderType = static_cast<shader_type>(mat.get_shader_handle());
+	key.shaderType = mat.get_shader_type();
 	key.shaderFlags = mat.get_shader_flags();
 
-	// Vertex layout hash
+	// Vertex layout hash and cache
 	key.vertexLayoutHash = layout.hash();
+	
+	// Cache the layout so createPipeline can retrieve it
+	if (m_vertexLayoutCache.find(key.vertexLayoutHash) == m_vertexLayoutCache.end()) {
+		m_vertexLayoutCache[key.vertexLayoutHash] = layout;
+	}
 
 	// Primitive topology
 	key.primitiveType = primType;
@@ -538,6 +618,48 @@ PipelineKey VulkanPipelineManager::buildKeyFromMaterial(const material& mat,
 	return key;
 }
 
+// Map vertex format type to shader location
+// This matches the opengl_vert_attrib enum order used by FSO shaders
+static uint32_t getVertexFormatLocation(vertex_format_data::vertex_format format) {
+	switch (format) {
+		// POSITION variants -> location 0
+		case vertex_format_data::POSITION4:
+		case vertex_format_data::POSITION3:
+		case vertex_format_data::POSITION2:
+		case vertex_format_data::SCREEN_POS:
+			return 0;
+		// COLOR variants -> location 1
+		case vertex_format_data::COLOR3:
+		case vertex_format_data::COLOR4:
+		case vertex_format_data::COLOR4F:
+			return 1;
+		// TEXCOORD variants -> location 2
+		case vertex_format_data::TEX_COORD2:
+		case vertex_format_data::TEX_COORD4:
+			return 2;
+		// NORMAL -> location 3
+		case vertex_format_data::NORMAL:
+			return 3;
+		// TANGENT -> location 4
+		case vertex_format_data::TANGENT:
+			return 4;
+		// MODEL_ID -> location 5
+		case vertex_format_data::MODEL_ID:
+			return 5;
+		// RADIUS -> location 6
+		case vertex_format_data::RADIUS:
+			return 6;
+		// UVEC -> location 7
+		case vertex_format_data::UVEC:
+			return 7;
+		// MATRIX4 -> locations 8-11 (uses 4 locations)
+		case vertex_format_data::MATRIX4:
+			return 8;
+		default:
+			return 0;
+	}
+}
+
 void VulkanPipelineManager::createVertexInputState(const vertex_layout& layout,
                                                      SCP_vector<vk::VertexInputBindingDescription>& bindings,
                                                      SCP_vector<vk::VertexInputAttributeDescription>& attributes)
@@ -565,9 +687,10 @@ void VulkanPipelineManager::createVertexInputState(const vertex_layout& layout,
 		}
 
 		// Add attribute description
+		// Location is determined by the vertex format type, not the component index
 		vk::VertexInputAttributeDescription attr;
 		attr.binding = bindingIndex;
-		attr.location = static_cast<uint32_t>(i);
+		attr.location = getVertexFormatLocation(component->format_type);
 		attr.format = convertVertexFormat(component->format_type);
 		attr.offset = static_cast<uint32_t>(component->offset);
 		attributes.push_back(attr);
@@ -602,7 +725,9 @@ vk::PipelineRasterizationStateCreateInfo VulkanPipelineManager::createRasterizat
 	rasterizer.polygonMode = key.polygonMode;
 	rasterizer.lineWidth = 1.0f;  // Dynamic state
 	rasterizer.cullMode = key.cullEnabled ? key.cullMode : vk::CullModeFlagBits::eNone;
-	rasterizer.frontFace = vk::FrontFace::eCounterClockwise;
+	// Use clockwise winding because we flip Y-axis via negative viewport height
+	// This reverses the apparent winding order, so we compensate here
+	rasterizer.frontFace = vk::FrontFace::eClockwise;
 	rasterizer.depthBiasEnable = VK_FALSE;  // Could be enabled for shadow maps
 	rasterizer.depthBiasConstantFactor = 0.0f;
 	rasterizer.depthBiasClamp = 0.0f;
@@ -690,6 +815,112 @@ void VulkanPipelineManager::createColorBlendState(const PipelineKey& key,
 	blendInfo.blendConstants[3] = 0.0f;
 }
 
+bool VulkanPipelineManager::createMaterialDescriptorLayout()
+{
+	if (!m_device) {
+		return false;
+	}
+
+	// Create bindings for all texture slots used by materials
+	// Binding order matches texture unit usage in shaders
+	SCP_vector<vk::DescriptorSetLayoutBinding> bindings;
+	
+	// Base texture (diffuseMap) - binding 0
+	bindings.push_back({
+		0,  // binding
+		vk::DescriptorType::eCombinedImageSampler,
+		1,  // descriptorCount
+		vk::ShaderStageFlagBits::eFragment,
+		nullptr  // pImmutableSamplers
+	});
+	
+	// Glow texture (glowMap) - binding 1
+	bindings.push_back({
+		1,
+		vk::DescriptorType::eCombinedImageSampler,
+		1,
+		vk::ShaderStageFlagBits::eFragment,
+		nullptr
+	});
+	
+	// Normal texture (normalMap) - binding 2
+	bindings.push_back({
+		2,
+		vk::DescriptorType::eCombinedImageSampler,
+		1,
+		vk::ShaderStageFlagBits::eFragment,
+		nullptr
+	});
+	
+	// Specular texture (specularMap) - binding 3
+	bindings.push_back({
+		3,
+		vk::DescriptorType::eCombinedImageSampler,
+		1,
+		vk::ShaderStageFlagBits::eFragment,
+		nullptr
+	});
+	
+	// Environment map (sEnvmap) - binding 4
+	bindings.push_back({
+		4,
+		vk::DescriptorType::eCombinedImageSampler,
+		1,
+		vk::ShaderStageFlagBits::eFragment,
+		nullptr
+	});
+	
+	// Irradiance map (sIrrmap) - binding 5
+	bindings.push_back({
+		5,
+		vk::DescriptorType::eCombinedImageSampler,
+		1,
+		vk::ShaderStageFlagBits::eFragment,
+		nullptr
+	});
+	
+	// BRDF LUT (sBRDFLUT) - binding 6
+	bindings.push_back({
+		6,
+		vk::DescriptorType::eCombinedImageSampler,
+		1,
+		vk::ShaderStageFlagBits::eFragment,
+		nullptr
+	});
+	
+	// SSAO texture (ssaoTex) - binding 7
+	bindings.push_back({
+		7,
+		vk::DescriptorType::eCombinedImageSampler,
+		1,
+		vk::ShaderStageFlagBits::eFragment,
+		nullptr
+	});
+	
+	// Shadow map (Shadow_map_texture) - binding 8
+	bindings.push_back({
+		8,
+		vk::DescriptorType::eCombinedImageSampler,
+		1,
+		vk::ShaderStageFlagBits::eFragment,
+		nullptr
+	});
+
+	vk::DescriptorSetLayoutCreateInfo layoutInfo;
+	layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+	layoutInfo.pBindings = bindings.data();
+
+	try {
+		m_materialDescriptorSetLayout = m_device.createDescriptorSetLayoutUnique(layoutInfo);
+		mprintf(("VulkanPipelineManager: Created material descriptor set layout with %zu bindings\n", 
+		         bindings.size()));
+		return true;
+	} catch (const vk::SystemError& e) {
+		mprintf(("VulkanPipelineManager: Failed to create material descriptor set layout: %s\n", e.what()));
+		return false;
+	}
+}
+
 vk::PipelineLayout VulkanPipelineManager::getOrCreateLayout(shader_type type, uint32_t flags)
 {
 	SCP_string key = makeLayoutKey(type, flags);
@@ -699,15 +930,43 @@ vk::PipelineLayout VulkanPipelineManager::getOrCreateLayout(shader_type type, ui
 		return it->second.get();
 	}
 
-	// Create a simple pipeline layout
-	// In a full implementation, we would use shader reflection to determine
-	// descriptor set layouts and push constant ranges
-
+	// Create pipeline layout with descriptor sets
+	// Set 0: Uniform buffers (global)
+	// Set 1: Material textures (per-material)
 	vk::PipelineLayoutCreateInfo layoutInfo;
+	SCP_vector<vk::DescriptorSetLayout> setLayouts;
 
-	// For now, create an empty layout
-	// TODO: Integrate with VulkanDescriptorSetLayoutBuilder from VulkanShader.h
-	// to create proper descriptor set layouts based on shader reflection
+	// Set 0: Uniform buffers (global)
+	if (m_uniformDescriptorSetLayout) {
+		setLayouts.push_back(m_uniformDescriptorSetLayout.get());
+	}
+
+	// Set 1: Material textures (per-material)
+	if (m_materialDescriptorSetLayout) {
+		setLayouts.push_back(m_materialDescriptorSetLayout.get());
+	}
+
+	layoutInfo.setLayoutCount = static_cast<uint32_t>(setLayouts.size());
+	layoutInfo.pSetLayouts = setLayouts.data();
+	layoutInfo.pushConstantRangeCount = 0;
+	layoutInfo.pPushConstantRanges = nullptr;
+
+	// TODO: Integrate shader reflection for dynamic descriptor set layout creation
+	// Query shader reflection for descriptor set layouts to ensure pipeline layouts match shader expectations
+	// This would use VulkanShaderManager::getShaderReflection(type, flags) and VulkanDescriptorSetLayoutBuilder
+	// to dynamically build descriptor set layouts from SPIR-V reflection data.
+	// For now, we use hardcoded layouts (uniform buffers at Set 0, material textures at Set 1) which work
+	// for the current shader set, but reflection-based layout creation would be more robust and future-proof.
+	//
+	// Example integration (when reflection is available):
+	// if (m_shaderManager) {
+	//     auto reflection = m_shaderManager->getShaderReflection(type, flags);
+	//     if (reflection && !reflection.descriptors.empty()) {
+	//         VulkanDescriptorSetLayoutBuilder builder(m_device);
+	//         auto layouts = builder.build(reflection);
+	//         // Use reflection-based layouts instead of hardcoded ones
+	//     }
+	// }
 
 	try {
 		m_layoutCache[key] = m_device.createPipelineLayoutUnique(layoutInfo);
@@ -898,6 +1157,68 @@ vk::Format VulkanPipelineManager::convertVertexFormat(vertex_format_data::vertex
 	default:
 		mprintf(("VulkanPipelineManager: Unknown vertex format %d\n", static_cast<int>(format)));
 		return vk::Format::eUndefined;
+	}
+}
+
+// ============================================================================
+// Static Conversion Functions (for unit testing)
+// ============================================================================
+
+vk::Format VulkanPipelineManager::convertVertexFormatStatic(vertex_format_data::vertex_format format)
+{
+	switch (format) {
+	case vertex_format_data::POSITION4:
+		return vk::Format::eR32G32B32A32Sfloat;
+	case vertex_format_data::POSITION3:
+		return vk::Format::eR32G32B32Sfloat;
+	case vertex_format_data::POSITION2:
+		return vk::Format::eR32G32Sfloat;
+	case vertex_format_data::SCREEN_POS:
+		return vk::Format::eR32G32B32Sfloat;
+	case vertex_format_data::COLOR3:
+		return vk::Format::eR8G8B8Unorm;
+	case vertex_format_data::COLOR4:
+		return vk::Format::eR8G8B8A8Unorm;
+	case vertex_format_data::COLOR4F:
+		return vk::Format::eR32G32B32A32Sfloat;
+	case vertex_format_data::TEX_COORD2:
+		return vk::Format::eR32G32Sfloat;
+	case vertex_format_data::TEX_COORD4:
+		return vk::Format::eR32G32B32A32Sfloat;
+	case vertex_format_data::NORMAL:
+		return vk::Format::eR32G32B32Sfloat;
+	case vertex_format_data::TANGENT:
+		return vk::Format::eR32G32B32A32Sfloat;
+	case vertex_format_data::MODEL_ID:
+		return vk::Format::eR32Sfloat;
+	case vertex_format_data::RADIUS:
+		return vk::Format::eR32Sfloat;
+	case vertex_format_data::UVEC:
+		return vk::Format::eR32G32B32Sfloat;
+	case vertex_format_data::MATRIX4:
+		return vk::Format::eR32G32B32A32Sfloat;
+	default:
+		return vk::Format::eUndefined;
+	}
+}
+
+vk::PrimitiveTopology VulkanPipelineManager::convertPrimitiveTypeStatic(primitive_type primType)
+{
+	switch (primType) {
+	case PRIM_TYPE_POINTS:
+		return vk::PrimitiveTopology::ePointList;
+	case PRIM_TYPE_LINES:
+		return vk::PrimitiveTopology::eLineList;
+	case PRIM_TYPE_LINESTRIP:
+		return vk::PrimitiveTopology::eLineStrip;
+	case PRIM_TYPE_TRIS:
+		return vk::PrimitiveTopology::eTriangleList;
+	case PRIM_TYPE_TRISTRIP:
+		return vk::PrimitiveTopology::eTriangleStrip;
+	case PRIM_TYPE_TRIFAN:
+		return vk::PrimitiveTopology::eTriangleFan;
+	default:
+		return vk::PrimitiveTopology::eTriangleList;
 	}
 }
 

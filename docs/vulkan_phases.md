@@ -23,22 +23,23 @@ Keeping track of the Vulkan bring-up so work stays organized and scoped.
 - HDR10 swapchain (A2B10G10R10 + ST2084 PQ)
 
 ## Phase 7: Textures [IN PROGRESS]
-- VulkanTexture + VulkanSamplerCache + VulkanTextureManager (implemented but not wired into gr_screen; texture function pointers still stubbed)
+- VulkanTexture + VulkanSamplerCache + VulkanTextureManager (per-frame staging, palette expansion, render-target API). `gr_screen.gf_bm_*` now routes to the Vulkan upload path, but sampler addressing/partial updates will be wired up once descriptor binding is finished.
 
 ## Phase 8: Framebuffers [COMPLETE]
 - VulkanFramebuffer + VulkanRenderPassManager
 
-## Phase 9: Frame Execution [COMPLETE]
-- Command buffer strategy (per-frame pools, recording patterns)
-
+## Phase 9: Frame Execution [IN PROGRESS]
+- Non-blocking buffer and texture transfers (`copyViaStaging`, `submitTransfers`, `submitUploads`)
+- Scene-pass control (`beginScenePass`, `endScenePass`, `recordBlitToSwapchain`) plus the `gr_vulkan_scene_texture_*` hooks
+ 
 ## Phase 10: Synchronization [COMPLETE]
 - Frame sync (semaphores, fences, MAX_FRAMES_IN_FLIGHT)
 
-## Phase 11: Draw Calls [PLANNED]
-- Wire up gr_screen, actual geometry rendering
+## Phase 11: Draw Calls [IN PROGRESS]
+- `gr_screen.gf_render_*` now call `gr_vulkan_render_*`, pipelines are selected via `VulkanPipelineManager`, but descriptors/uniform updates remain TODO.
 
-## Phase 12: Render Targets [PLANNED]
-- FBO equivalents, render-to-texture
+## Phase 12: Render Targets [IN PROGRESS]
+- Scene framebuffer + swapchain-target blit are functional, and `VulkanTextureManager` exposes `createRenderTarget`/`setRenderTarget`/`readback`, yet the draw path still needs to honor the active render target.
 
 ## Phase 13: Post-Processing [PLANNED]
 - Multi-pass pipeline (bloom, SSAO, TAA, tonemapping)

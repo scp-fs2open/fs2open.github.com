@@ -1,7 +1,10 @@
 #include "vulkan_stubs.h"
 
 #include "graphics/2d.h"
+#include "gr_vulkan.h"
 #include "VulkanBuffer.h"
+#include "VulkanPostProcessing.h"
+#include "VulkanTexture.h"
 
 #define BMPMAN_INTERNAL
 #include "bmpman/bm_internal.h"
@@ -75,15 +78,7 @@ void stub_stencil_clear() {}
 
 int stub_alpha_mask_set(int /*mode*/, float /*alpha*/) { return 0; }
 
-void stub_post_process_set_effect(const char* /*name*/, int /*x*/, const vec3d* /*rgb*/) {}
-
-void stub_post_process_set_defaults() {}
-
-void stub_post_process_save_zbuffer() {}
-
-void stub_post_process_begin() {}
-
-void stub_post_process_end() {}
+// Post-processing stubs removed - using VulkanPostProcessing implementations
 
 void stub_scene_texture_begin() {}
 
@@ -262,21 +257,21 @@ bool stub_openxr_flip() { return false; }
 void init_stub_pointers()
 {
 	// function pointers...
-	gr_screen.gf_setup_frame = stub_setup_frame;
-	gr_screen.gf_set_clip = stub_set_clip;
-	gr_screen.gf_reset_clip = stub_reset_clip;
+	gr_screen.gf_setup_frame = gr_vulkan_setup_frame;
+	gr_screen.gf_set_clip = gr_vulkan_set_clip;
+	gr_screen.gf_reset_clip = gr_vulkan_reset_clip;
 
-	gr_screen.gf_clear = stub_clear;
+	gr_screen.gf_clear = gr_vulkan_clear;
 
 	gr_screen.gf_print_screen = stub_print_screen;
 	gr_screen.gf_blob_screen = stub_blob_screen;
 
-	gr_screen.gf_zbuffer_get = stub_zbuffer_get;
-	gr_screen.gf_zbuffer_set = stub_zbuffer_set;
-	gr_screen.gf_zbuffer_clear = stub_zbuffer_clear;
+	gr_screen.gf_zbuffer_get = gr_vulkan_zbuffer_get;
+	gr_screen.gf_zbuffer_set = gr_vulkan_zbuffer_set;
+	gr_screen.gf_zbuffer_clear = gr_vulkan_zbuffer_clear;
 
-	gr_screen.gf_stencil_set = stub_stencil_set;
-	gr_screen.gf_stencil_clear = stub_stencil_clear;
+	gr_screen.gf_stencil_set = gr_vulkan_stencil_set;
+	gr_screen.gf_stencil_clear = gr_vulkan_stencil_clear;
 
 	gr_screen.gf_alpha_mask_set = stub_alpha_mask_set;
 
@@ -286,23 +281,23 @@ void init_stub_pointers()
 
 	gr_screen.gf_get_region = stub_get_region;
 
-	// now for the bitmap functions
-	gr_screen.gf_bm_free_data = stub_bm_free_data;
-	gr_screen.gf_bm_create = stub_bm_create;
-	gr_screen.gf_bm_init = stub_bm_init;
-	gr_screen.gf_bm_page_in_start = stub_bm_page_in_start;
-	gr_screen.gf_bm_data = stub_bm_data;
-	gr_screen.gf_bm_make_render_target = stub_bm_make_render_target;
-	gr_screen.gf_bm_set_render_target = stub_bm_set_render_target;
+	// Bitmap/texture functions - use real Vulkan implementations
+	gr_screen.gf_bm_free_data = gr_vulkan_bm_free_data;
+	gr_screen.gf_bm_create = gr_vulkan_bm_create;
+	gr_screen.gf_bm_init = gr_vulkan_bm_init;
+	gr_screen.gf_bm_page_in_start = stub_bm_page_in_start;  // Keep stub (trivial)
+	gr_screen.gf_bm_data = gr_vulkan_bm_data;
+	gr_screen.gf_bm_make_render_target = gr_vulkan_bm_make_render_target;
+	gr_screen.gf_bm_set_render_target = gr_vulkan_bm_set_render_target;
 
-	gr_screen.gf_set_cull = stub_set_cull;
-	gr_screen.gf_set_color_buffer = stub_set_color_buffer;
+	gr_screen.gf_set_cull = gr_vulkan_set_cull;
+	gr_screen.gf_set_color_buffer = gr_vulkan_set_color_buffer;
 
-	gr_screen.gf_set_clear_color = stub_set_clear_color;
+	gr_screen.gf_set_clear_color = gr_vulkan_set_clear_color;
 
 	gr_screen.gf_preload = stub_preload;
 
-	gr_screen.gf_set_texture_addressing = stub_set_texture_addressing;
+	gr_screen.gf_set_texture_addressing = gr_vulkan_set_texture_addressing;
 	gr_screen.gf_zbias = stub_zbias_stub;
 	gr_screen.gf_set_fill_mode = gr_set_fill_mode_stub;
 
@@ -315,16 +310,16 @@ void init_stub_pointers()
 	gr_screen.gf_map_buffer = gr_vulkan_map_buffer;
 	gr_screen.gf_flush_mapped_buffer = gr_vulkan_flush_mapped_buffer;
 
-	gr_screen.gf_post_process_set_effect = stub_post_process_set_effect;
-	gr_screen.gf_post_process_set_defaults = stub_post_process_set_defaults;
+	gr_screen.gf_post_process_set_effect = gr_vulkan_post_process_set_effect;
+	gr_screen.gf_post_process_set_defaults = gr_vulkan_post_process_set_defaults;
 
-	gr_screen.gf_post_process_begin = stub_post_process_begin;
-	gr_screen.gf_post_process_end = stub_post_process_end;
-	gr_screen.gf_post_process_save_zbuffer = stub_post_process_save_zbuffer;
-	gr_screen.gf_post_process_restore_zbuffer = []() {};
+	gr_screen.gf_post_process_begin = gr_vulkan_post_process_begin;
+	gr_screen.gf_post_process_end = gr_vulkan_post_process_end;
+	gr_screen.gf_post_process_save_zbuffer = gr_vulkan_post_process_save_zbuffer;
+	gr_screen.gf_post_process_restore_zbuffer = gr_vulkan_post_process_restore_zbuffer;
 
-	gr_screen.gf_scene_texture_begin = stub_scene_texture_begin;
-	gr_screen.gf_scene_texture_end = stub_scene_texture_end;
+	gr_screen.gf_scene_texture_begin = gr_vulkan_scene_texture_begin;
+	gr_screen.gf_scene_texture_end = gr_vulkan_scene_texture_end;
 	gr_screen.gf_copy_effect_texture = stub_copy_effect_texture;
 
 	gr_screen.gf_deferred_lighting_begin = stub_deferred_lighting_begin;
@@ -341,28 +336,28 @@ void init_stub_pointers()
 
 	gr_screen.gf_start_decal_pass = stub_start_decal_pass;
 	gr_screen.gf_stop_decal_pass = stub_stop_decal_pass;
-	gr_screen.gf_render_decals = stub_render_decals;
+	gr_screen.gf_render_decals = gr_vulkan_render_decals;
 
-	gr_screen.gf_render_shield_impact = stub_render_shield_impact;
+	gr_screen.gf_render_shield_impact = gr_vulkan_render_shield_impact;
 
-	gr_screen.gf_maybe_create_shader = stub_maybe_create_shader;
+	gr_screen.gf_maybe_create_shader = gr_vulkan_maybe_create_shader;
 
 	gr_screen.gf_clear_states = stub_clear_states;
 
-	gr_screen.gf_update_texture = stub_update_texture;
-	gr_screen.gf_get_bitmap_from_texture = stub_get_bitmap_from_texture;
+	gr_screen.gf_update_texture = gr_vulkan_update_texture;
+	gr_screen.gf_get_bitmap_from_texture = gr_vulkan_get_bitmap_from_texture;
 
-	gr_screen.gf_render_model = stub_render_model;
-	gr_screen.gf_render_primitives = stub_render_primitives;
-	gr_screen.gf_render_primitives_particle = stub_render_primitives_particle;
-	gr_screen.gf_render_primitives_distortion = stub_render_primitives_distortion;
-	gr_screen.gf_render_movie = stub_render_movie;
-	gr_screen.gf_render_nanovg = stub_render_nanovg;
-	gr_screen.gf_render_primitives_batched = stub_render_primitives_batched;
-	gr_screen.gf_render_rocket_primitives = stub_render_rocket_primitives;
+	gr_screen.gf_render_model = gr_vulkan_render_model;
+	gr_screen.gf_render_primitives = gr_vulkan_render_primitives;
+	gr_screen.gf_render_primitives_particle = gr_vulkan_render_primitives_particle;
+	gr_screen.gf_render_primitives_distortion = gr_vulkan_render_primitives_distortion;
+	gr_screen.gf_render_movie = gr_vulkan_render_movie;
+	gr_screen.gf_render_nanovg = gr_vulkan_render_nanovg;
+	gr_screen.gf_render_primitives_batched = gr_vulkan_render_primitives_batched;
+	gr_screen.gf_render_rocket_primitives = gr_vulkan_render_rocket_primitives;
 
-	gr_screen.gf_is_capable = stub_is_capable;
-	gr_screen.gf_get_property = stub_get_property;
+	gr_screen.gf_is_capable = gr_vulkan_is_capable;
+	gr_screen.gf_get_property = gr_vulkan_get_property;
 
 	gr_screen.gf_push_debug_group = stub_push_debug_group;
 	gr_screen.gf_pop_debug_group = stub_pop_debug_group;

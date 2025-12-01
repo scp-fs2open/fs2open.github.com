@@ -70,6 +70,11 @@ struct PipelineKey {
 	bool operator==(const PipelineKey& other) const;
 
 	/**
+	 * @brief Inequality comparison for testing
+	 */
+	bool operator!=(const PipelineKey& other) const { return !(*this == other); }
+
+	/**
 	 * @brief Compute hash for unordered_map
 	 */
 	size_t hash() const;
@@ -163,6 +168,16 @@ public:
 	 */
 	vk::PipelineLayout getPipelineLayout(shader_type type, uint32_t flags);
 
+	/**
+	 * @brief Descriptor set layout used by material shaders
+	 */
+	vk::DescriptorSetLayout getMaterialDescriptorSetLayout() const;
+
+	/**
+	 * @brief Get descriptor set layout for uniform buffers
+	 */
+	vk::DescriptorSetLayout getUniformDescriptorSetLayout() const;
+
 	// =========================================================================
 	// Cache Management
 	// =========================================================================
@@ -229,8 +244,18 @@ private:
 	// Pipeline cache - key is PipelineKey
 	std::unordered_map<PipelineKey, vk::UniquePipeline> m_pipelineCache;
 
+	// Vertex layout cache - key is layout hash, value is the layout
+	// Needed because PipelineKey only stores the hash
+	std::unordered_map<size_t, vertex_layout> m_vertexLayoutCache;
+
 	// Pipeline layout cache - key is "shaderType_flags"
 	std::map<SCP_string, vk::UniquePipelineLayout> m_layoutCache;
+
+	// Descriptor set layout for material textures
+	vk::UniqueDescriptorSetLayout m_materialDescriptorSetLayout;
+
+	// Descriptor set layout for uniform buffers (Set 0)
+	vk::UniqueDescriptorSetLayout m_uniformDescriptorSetLayout;
 
 	// Vulkan pipeline cache object (for driver-level caching)
 	vk::UniquePipelineCache m_vkPipelineCache;
@@ -286,8 +311,18 @@ private:
 	 * @param[out] blendInfo Color blend state create info
 	 */
 	void createColorBlendState(const PipelineKey& key,
-	                            SCP_vector<vk::PipelineColorBlendAttachmentState>& attachments,
-	                            vk::PipelineColorBlendStateCreateInfo& blendInfo);
+                                    SCP_vector<vk::PipelineColorBlendAttachmentState>& attachments,
+                                    vk::PipelineColorBlendStateCreateInfo& blendInfo);
+
+	/**
+	 * @brief Create the per-material descriptor set layout
+	 */
+	bool createMaterialDescriptorLayout();
+
+	/**
+	 * @brief Create the uniform buffer descriptor set layout
+	 */
+	bool createUniformDescriptorLayout();
 
 	/**
 	 * @brief Create or get pipeline layout for shader type
@@ -330,6 +365,21 @@ private:
 	 * @brief Convert FSO vertex format to Vulkan format
 	 */
 	vk::Format convertVertexFormat(vertex_format_data::vertex_format format);
+
+public:
+	// =========================================================================
+	// Static Conversion Functions (for unit testing)
+	// =========================================================================
+
+	/**
+	 * @brief Convert FSO vertex format to Vulkan format (static version)
+	 */
+	static vk::Format convertVertexFormatStatic(vertex_format_data::vertex_format format);
+
+	/**
+	 * @brief Convert FSO primitive type to Vulkan topology (static version)
+	 */
+	static vk::PrimitiveTopology convertPrimitiveTypeStatic(primitive_type primType);
 };
 
 // Global instance (set by VulkanRenderer)

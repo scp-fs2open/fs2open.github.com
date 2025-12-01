@@ -275,6 +275,11 @@ int material::get_shader_handle() const
 	return gr_maybe_create_shader(Sdr_type, get_shader_flags());
 }
 
+shader_type material::get_shader_type() const
+{
+	return Sdr_type;
+}
+
 void material::set_texture_map(int tex_type, int texture_num)
 {
 	Assert(tex_type > -1 && tex_type < TM_NUM_TYPES);

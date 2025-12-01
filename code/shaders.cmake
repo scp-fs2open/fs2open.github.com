@@ -8,6 +8,8 @@ set(SHADERS
 	${SHADER_DIR}/default-material.vert
 	${SHADER_DIR}/vulkan.frag
 	${SHADER_DIR}/vulkan.vert
+	${SHADER_DIR}/vulkan_blit.frag
+	${SHADER_DIR}/vulkan_blit.vert
 )
 
 target_sources(code PRIVATE ${SHADERS})

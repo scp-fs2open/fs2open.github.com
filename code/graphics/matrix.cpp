@@ -392,6 +392,17 @@ void gr_matrix_set_uniforms()
 
 	GR_DEBUG_SCOPE("Updating matrix uniforms");
 
+	// Debug: Log first row of each matrix to diagnose rendering issues
+	static int log_count = 0;
+	if (log_count < 20) {
+		mprintf(("gr_matrix_set_uniforms: modelView[0]=[%.3f,%.3f,%.3f,%.3f] proj[0]=[%.3f,%.3f,%.3f,%.3f]\n",
+			gr_model_view_matrix.a1d[0], gr_model_view_matrix.a1d[1],
+			gr_model_view_matrix.a1d[2], gr_model_view_matrix.a1d[3],
+			gr_projection_matrix.a1d[0], gr_projection_matrix.a1d[1],
+			gr_projection_matrix.a1d[2], gr_projection_matrix.a1d[3]));
+		log_count++;
+	}
+
 	auto uniform_buffer = gr_get_uniform_buffer(uniform_block_type::Matrices, 1);
 	auto& aligner       = uniform_buffer.aligner();
 

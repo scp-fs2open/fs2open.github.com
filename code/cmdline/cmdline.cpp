@@ -2052,7 +2052,12 @@ bool SetCmdlineParams()
 			case 6:
 				Gr_aa_mode = AntiAliasMode::SMAA_Ultra;
 				break;
-			case 7:
+			case 7: // Historical mapping for TAA (kept for compatibility)
+			case 8: // Align preset number with enum value (AntiAliasMode::TAA = 8)
+				Gr_aa_mode = AntiAliasMode::TAA;
+				break;
+			default:
+				Warning(LOCATION, "Requested illegal AA preset %d. Allowed are 0-8. Setting to TAA.", post_process_aa_preset_arg.get_int());
 				Gr_aa_mode = AntiAliasMode::TAA;
 				break;
 			}

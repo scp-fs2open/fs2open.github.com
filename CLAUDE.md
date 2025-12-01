@@ -28,6 +28,28 @@ This is a fork of FSO with version **26.0.0**. Key differences from upstream:
 - **SSAO**: Default Ultra quality (16 samples, 2 blur passes)
 - **Tonemapper**: Uncharted2 (best highlight rolloff)
 
+### Vulkan Renderer Development (In Progress)
+
+The Vulkan renderer is under active development. Located in `code/graphics/vulkan/`.
+
+**Completed Infrastructure:**
+- **VulkanRenderer** - Core renderer with swapchain, surface, device selection, HDR10 support
+- **VulkanBuffer** - GPU buffer management (vertex, index, uniform, staging with ring buffer)
+- **VulkanShader** - Runtime GLSL->SPIR-V compilation via shaderc, reflection via SPIRV-Cross, disk caching
+- **VulkanDescriptorManager** - Descriptor set/pool management with per-frame cycling
+- **VulkanPipelineManager** - Graphics pipeline creation with hash-based caching, VkPipelineCache persistence
+- **VulkanFramebuffer** - Framebuffer attachments (owned or external), image/memory/view management
+- **VulkanRenderPassManager** - Scene pass (color+depth) and present pass (color only)
+- **RenderFrame** - Per-frame synchronization (semaphores, fences, command buffers)
+
+**Not Yet Implemented:**
+- **VulkanTexture** - Image creation, texture uploads, samplers, mipmap generation
+- Model rendering integration (connecting to FSO's model/batch systems)
+- Post-processing pipeline (bloom, SSAO, TAA, tonemapping)
+- MSAA support
+
+**Build:** Enable with `-DFSO_BUILD_WITH_VULKAN=ON` (requires Vulkan SDK)
+
 ### Version Override
 
 Version is set via `version_override.cmake` in the project root:

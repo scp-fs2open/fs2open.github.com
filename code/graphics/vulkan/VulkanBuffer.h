@@ -2,6 +2,7 @@
 
 #include "graphics/2d.h"
 
+#include <array>
 #include <vulkan/vulkan.hpp>
 
 namespace graphics {
@@ -9,6 +10,7 @@ namespace vulkan {
 
 // Forward declarations
 class VulkanRenderer;
+class VulkanDescriptorManager;
 
 /**
  * @brief Buffer data tracking synchronization, memory, and mapping state
@@ -25,6 +27,14 @@ struct VulkanBufferData {
 };
 
 /**
+ * @brief Pending buffer deletion entry for deferred destruction
+ */
+struct PendingBufferDeletion {
+	vk::Buffer buffer;
+	vk::DeviceMemory memory;
+};
+
+/**
  * @brief Manages Vulkan buffer allocation, updates, and lifecycle
  *
  * Design notes:
@@ -35,7 +45,7 @@ struct VulkanBufferData {
  */
 class VulkanBufferManager {
 public:
-	explicit VulkanBufferManager(vk::Device device, vk::PhysicalDevice physicalDevice);
+	explicit VulkanBufferManager(vk::Device device, vk::PhysicalDevice physicalDevice, vk::Queue graphicsQueue, uint32_t graphicsQueueFamily);
 	~VulkanBufferManager();
 
 	// Disable copy
@@ -46,8 +56,14 @@ public:
 	 * @brief Initialize the buffer manager
 	 * @param device Logical Vulkan device
 	 * @param physicalDevice Physical device for memory properties
+	 * @param graphicsQueue Graphics queue for transfer commands (ensures ordering with graphics work)
+	 * @param graphicsQueueFamily Graphics queue family index for command pool creation
+	 *
+	 * @note We use the graphics queue rather than a dedicated transfer queue to ensure
+	 * proper synchronization between buffer transfers and graphics work without semaphores.
+	 * This sacrifices potential async transfer parallelism for simplicity and correctness.
 	 */
-	void initialize(vk::Device device, vk::PhysicalDevice physicalDevice);
+	void initialize(vk::Device device, vk::PhysicalDevice physicalDevice, vk::Queue graphicsQueue, uint32_t graphicsQueueFamily);
 
 	/**
 	 * @brief Shutdown and release all buffers
@@ -110,6 +126,49 @@ public:
 	void bindUniformBuffer(uniform_block_type bindPoint, size_t offset, size_t size, gr_buffer_handle handle);
 
 	/**
+	 * @brief Information about a bound uniform buffer
+	 */
+	struct BoundUniformBuffer {
+		gr_buffer_handle handle;
+		size_t offset = 0;
+		size_t size = 0;
+		vk::Buffer vkBuffer = nullptr;
+		
+		bool isValid() const { 
+			return handle.isValid() && vkBuffer != nullptr; 
+		}
+	};
+
+	/**
+	 * @brief Get current uniform buffer binding for a binding point
+	 * @param bindPoint Uniform block binding point
+	 * @return Bound uniform buffer info, or invalid if not bound
+	 */
+	BoundUniformBuffer getBoundUniformBuffer(uniform_block_type bindPoint) const;
+
+	/**
+	 * @brief Get descriptor set for uniform buffers
+	 * @return Current uniform buffer descriptor set (may be null)
+	 */
+	vk::DescriptorSet getUniformDescriptorSet() const { 
+		return m_uniformDescriptorSet; 
+	}
+
+	/**
+	 * @brief Set descriptor manager reference
+	 */
+	void setDescriptorManager(VulkanDescriptorManager* manager) { 
+		m_descriptorManager = manager; 
+	}
+
+	/**
+	 * @brief Initialize uniform buffer descriptor set
+	 * @param layout Descriptor set layout for uniform buffers
+	 * @return true on success
+	 */
+	bool initializeUniformDescriptorSet(vk::DescriptorSetLayout layout);
+
+	/**
 	 * @brief Get the Vulkan buffer handle for a gr_buffer_handle
 	 * @param handle Buffer handle
 	 * @return Vulkan buffer, or null handle if invalid
@@ -124,16 +183,55 @@ public:
 	const VulkanBufferData* getBufferData(gr_buffer_handle handle) const;
 
 	/**
-	 * @brief Called at end of frame to advance frame counter
+	 * @brief Called at start of frame AFTER the frame's fence has been waited on
+	 *
+	 * This is the safe point to process deferred deletions for resources that were
+	 * queued when this frame index was last active. Since we've waited on the fence,
+	 * we know the GPU is done with all work from that frame.
+	 *
+	 * @param frameIndex Current frame index (0 to FRAMES_IN_FLIGHT-1)
 	 */
-	void endFrame();
+	void beginFrame(uint32_t frameIndex);
+
+	/**
+	 * @brief Submit all pending transfer commands for the current frame
+	 *
+	 * Called by VulkanRenderer before graphics work submission. If no transfers
+	 * were recorded this frame, this is a no-op.
+	 *
+	 * @note Transfer commands use the same queue and synchronize with the frame fence,
+	 * so staging buffers are safe to delete when beginFrame() processes deferred deletions.
+	 */
+	void submitTransfers();
 
 	/**
 	 * @brief Get minimum UBO offset alignment
 	 */
 	size_t getMinUniformBufferOffsetAlignment() const { return m_minUboAlignment; }
 
+	/**
+	 * @brief Number of frames in flight
+	 * Must match VulkanRenderer::MAX_FRAMES_IN_FLIGHT
+	 */
+	static constexpr uint32_t FRAMES_IN_FLIGHT = 2;
+
 private:
+	/**
+	 * @brief Queue a buffer for deferred deletion on current frame
+	 *
+	 * The buffer will be destroyed when beginFrame() is called for this frame index
+	 * again, which happens after the GPU fence for this frame has been waited on.
+	 *
+	 * @param buffer Vulkan buffer handle
+	 * @param memory Device memory handle
+	 */
+	void queueDeferredDeletion(vk::Buffer buffer, vk::DeviceMemory memory);
+
+	/**
+	 * @brief Queue a staging buffer for deferred deletion on current frame
+	 */
+	void queueStagingDeletion(vk::Buffer buffer, vk::DeviceMemory memory);
+
 	/**
 	 * @brief Find suitable memory type for buffer allocation
 	 * @param typeFilter Bitmask of acceptable memory types
@@ -164,13 +262,36 @@ private:
 	// Device limits
 	size_t m_minUboAlignment = 256;
 
-	// Frame tracking
-	uint32_t m_currentFrame = 0;
+	// Uniform buffer bindings - tracked per binding point
+	std::map<uniform_block_type, BoundUniformBuffer> m_boundUniformBuffers;
+	
+	// Descriptor set for uniform buffers (allocated per frame)
+	vk::DescriptorSet m_uniformDescriptorSet = nullptr;
+	vk::DescriptorSetLayout m_uniformDescriptorSetLayout = nullptr;
+	
+	// Reference to descriptor manager (set by VulkanRenderer)
+	VulkanDescriptorManager* m_descriptorManager = nullptr;
 
-	// Staging resources (for device-local buffer updates)
-	// TODO: Implement staging buffer pool
-	vk::CommandPool m_transferCommandPool;
-	vk::Queue m_transferQueue;
+	// Frame tracking - index into frames in flight (0 to FRAMES_IN_FLIGHT-1)
+	uint32_t m_currentFrameIndex = 0;
+
+	// Per-frame deferred deletion queues
+	// Queue[i] contains resources to delete when frame i's fence is next waited on
+	std::array<SCP_vector<PendingBufferDeletion>, FRAMES_IN_FLIGHT> m_pendingDeletions;
+
+	// Per-frame staging buffer deletion queues (separate from regular buffers)
+	std::array<SCP_vector<PendingBufferDeletion>, FRAMES_IN_FLIGHT> m_pendingStagingDeletions;
+
+	// Command pool and queue for transfer operations (uses graphics queue for synchronization)
+	vk::CommandPool m_commandPool;
+	vk::Queue m_graphicsQueue;
+	uint32_t m_graphicsQueueFamily = 0;
+
+	// Per-frame transfer command buffers for batched async transfers
+	std::array<vk::CommandBuffer, FRAMES_IN_FLIGHT> m_transferCmds{};
+	std::array<bool, FRAMES_IN_FLIGHT> m_transferCmdRecording{};
+	std::array<vk::Fence, FRAMES_IN_FLIGHT> m_transferFences{};
+	std::array<bool, FRAMES_IN_FLIGHT> m_transferFenceSubmitted{};  // True if fence was submitted and needs wait
 
 	bool m_initialized = false;
 };
