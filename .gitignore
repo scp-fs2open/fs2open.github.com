@@ -262,3 +262,13 @@ CMakePresets.json
 !/docker/build
 CMakeFiles/cmake.check_cache
 CMakeCache.txt
+
+# Local tooling and generated artifacts
+.claude/
+symlookup.exe
+symlookup.pdb
+symlookup.cpp
+vc*.pdb
+tmp_py/
+vulkan_hdr_debug.txt
+test/test_data/vulkan_hdr_debug.txt
