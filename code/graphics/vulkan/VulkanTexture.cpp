@@ -399,28 +399,29 @@ bool VulkanTextureManager::initialize(vk::Device device, vk::PhysicalDevice phys
 	m_commandPool = commandPool;
 	m_transferQueue = transferQueue;
 
-	// Create upload command buffer
+	mprintf(("VulkanTextureManager: init with commandPool=%p\n",
+		reinterpret_cast<void*>(static_cast<VkCommandPool>(commandPool))));
+
+	// Create per-frame upload command buffers
 	vk::CommandBufferAllocateInfo allocInfo{};
 	allocInfo.commandPool = commandPool;
 	allocInfo.level = vk::CommandBufferLevel::ePrimary;
-	allocInfo.commandBufferCount = 1;
+	allocInfo.commandBufferCount = FRAMES_IN_FLIGHT;
 
 	try {
-		auto cmdBuffers = device.allocateCommandBuffersUnique(allocInfo);
-		m_uploadCommandBuffer = std::move(cmdBuffers[0]);
-	} catch (const vk::SystemError& e) {
-		mprintf(("Vulkan: Failed to allocate upload command buffer: %s\n", e.what()));
-		return false;
+		auto cmdBuffers = device.allocateCommandBuffers(allocInfo);
+	for (uint32_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
+		m_uploadCmds[i] = cmdBuffers[i];
+		m_uploadCmdRecording[i] = false;
+		m_uploadFenceSubmitted[i] = false;  // No pending work to wait for initially
+		// Create per-frame upload fences (unsignaled - we track submission state)
+		vk::FenceCreateInfo fenceInfo;
+		m_uploadFences[i] = m_device.createFence(fenceInfo);
+		mprintf(("VulkanTextureManager: created upload fence[%u]=%p\n",
+			i, reinterpret_cast<void*>(static_cast<VkFence>(m_uploadFences[i]))));
 	}
-
-	// Create upload fence
-	vk::FenceCreateInfo fenceInfo{};
-	fenceInfo.flags = vk::FenceCreateFlagBits::eSignaled; // Start signaled
-
-	try {
-		m_uploadFence = device.createFenceUnique(fenceInfo);
 	} catch (const vk::SystemError& e) {
-		mprintf(("Vulkan: Failed to create upload fence: %s\n", e.what()));
+		mprintf(("Vulkan: Failed to allocate upload command buffers: %s\n", e.what()));
 		return false;
 	}
 
@@ -474,8 +475,8 @@ bool VulkanTextureManager::initialize(vk::Device device, vk::PhysicalDevice phys
 	}
 
 	m_initialized = true;
-	mprintf(("Vulkan: Texture manager initialized (staging buffer: %zu MB)\n",
-	         STAGING_BUFFER_SIZE / (1024 * 1024)));
+	mprintf(("Vulkan: Texture manager initialized (staging buffer: %zu MB, %u partitions)\n",
+	         STAGING_BUFFER_SIZE / (1024 * 1024), FRAMES_IN_FLIGHT));
 	return true;
 }
 
@@ -485,14 +486,29 @@ void VulkanTextureManager::shutdown()
 		return;
 	}
 
-	// Wait for any pending uploads
-	if (m_uploadFence) {
-		(void)m_device.waitForFences(m_uploadFence.get(), VK_TRUE, UINT64_MAX);
-	}
+	// Wait for device idle to ensure all uploads complete
+	m_device.waitIdle();
 
 	// Textures are owned by bitmap_slot::gr_info and destroyed via gr_vulkan_bm_free_data
 	// Just clear our tracking map
 	m_textures.clear();
+
+	// Clean up any pending texture deletions that haven't been processed yet
+	for (auto& queue : m_pendingTextureDeletions) {
+		for (auto* tex : queue) {
+			tex->destroy();
+			delete tex;
+		}
+		queue.clear();
+	}
+
+	// Destroy upload fences
+	for (auto& fence : m_uploadFences) {
+		if (fence) {
+			m_device.destroyFence(fence);
+			fence = nullptr;
+		}
+	}
 
 	m_samplerCache.shutdown();
 
@@ -503,8 +519,21 @@ void VulkanTextureManager::shutdown()
 
 	m_stagingMemory.reset();
 	m_stagingBuffer.reset();
-	m_uploadFence.reset();
-	m_uploadCommandBuffer.reset();
+
+	// Free command buffers
+	if (m_commandPool) {
+		SCP_vector<vk::CommandBuffer> cmdsToFree;
+		for (uint32_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
+			if (m_uploadCmds[i]) {
+				cmdsToFree.push_back(m_uploadCmds[i]);
+				m_uploadCmds[i] = nullptr;
+			}
+			m_uploadCmdRecording[i] = false;
+		}
+		if (!cmdsToFree.empty()) {
+			m_device.freeCommandBuffers(m_commandPool, cmdsToFree);
+		}
+	}
 
 	m_initialized = false;
 }
@@ -602,44 +631,58 @@ bool VulkanTextureManager::uploadTextureData(int bitmapHandle, const bitmap* bm)
 	// Copy/convert data to staging buffer
 	if (needsPaletteExpansion) {
 		// Palettized 8bpp texture: expand to RGBA using bitmap palette
-		if (!bm->palette) {
-			mprintf(("Vulkan: 8bpp texture without palette is unsupported\n"));
-			return false;
-		}
-
 		const uint8_t* src = reinterpret_cast<const uint8_t*>(bm->data);
 		uint8_t* dst = static_cast<uint8_t*>(stagingPtr);
-		const uint8_t* pal = bm->palette; // Expected 3 bytes per entry
+		const uint8_t* pal = bm->palette; // Expected 3 bytes per entry (PCX stores palette as RGB)
+
+		// Graceful fallback: if palette is missing, treat index as grayscale to avoid crashes
+		static bool warnedMissingPalette = false;
+		if (!pal) {
+			if (!warnedMissingPalette) {
+				mprintf(("Vulkan: 8bpp texture without palette, falling back to grayscale expansion (handle=%d, %dx%d)\n",
+					bitmapHandle, bm->w, bm->h));
+				warnedMissingPalette = true;
+			}
+		}
 
 		const size_t pixelCount = static_cast<size_t>(bm->w) * bm->h;
 		for (size_t i = 0; i < pixelCount; i++) {
 			const uint8_t idx = src[i];
-			const size_t palOffset = static_cast<size_t>(idx) * 3;
-			dst[i * 4 + 0] = pal[palOffset + 0];
-			dst[i * 4 + 1] = pal[palOffset + 1];
-			dst[i * 4 + 2] = pal[palOffset + 2];
+			if (pal) {
+				const size_t palOffset = static_cast<size_t>(idx) * 3;
+				// Convert RGB palette entry to BGRA texel expected by vk::Format::eB8G8R8A8Unorm
+				dst[i * 4 + 0] = pal[palOffset + 2]; // B
+				dst[i * 4 + 1] = pal[palOffset + 1]; // G
+				dst[i * 4 + 2] = pal[palOffset + 0]; // R
+			} else {
+				dst[i * 4 + 0] = idx;
+				dst[i * 4 + 1] = idx;
+				dst[i * 4 + 2] = idx;
+			}
 			dst[i * 4 + 3] = 255;
 		}
 	} else if (needsConversion) {
-		// RGB -> RGBA conversion
+		// BGR -> BGRA conversion (bmpman 24-bit data is BGR in memory)
 		const uint8_t* src = reinterpret_cast<const uint8_t*>(bm->data);
 		uint8_t* dst = static_cast<uint8_t*>(stagingPtr);
 		int pixelCount = bm->w * bm->h;
 		for (int i = 0; i < pixelCount; i++) {
-			dst[i * 4 + 0] = src[i * 3 + 0]; // R
+			dst[i * 4 + 0] = src[i * 3 + 0]; // B
 			dst[i * 4 + 1] = src[i * 3 + 1]; // G
-			dst[i * 4 + 2] = src[i * 3 + 2]; // B
+			dst[i * 4 + 2] = src[i * 3 + 2]; // R
 			dst[i * 4 + 3] = 255;             // A
 		}
 	} else {
-		std::memcpy(stagingPtr, reinterpret_cast<const void*>(bm->data), totalDataSize);
+		auto* dstPtr = static_cast<uint8_t*>(stagingPtr);
+		auto* srcPtr = reinterpret_cast<const uint8_t*>(bm->data);
+		memcpy(dstPtr, srcPtr, totalDataSize);
 	}
 
-	// Begin upload command buffer
-	beginUpload();
+	// Get command buffer for this frame's uploads (starts recording if needed)
+	vk::CommandBuffer cmd = getUploadCommandBuffer();
 
 	// Transition entire image to transfer dst
-	texture->transitionLayout(m_uploadCommandBuffer.get(),
+	texture->transitionLayout(cmd,
 	                          vk::ImageLayout::eUndefined,
 	                          vk::ImageLayout::eTransferDstOptimal);
 
@@ -652,7 +695,7 @@ bool VulkanTextureManager::uploadTextureData(int bitmapHandle, const bitmap* bm)
 		for (uint32_t mip = 0; mip < textureMipLevels; mip++) {
 			size_t mipSize = calculateMipSize(mipWidth, mipHeight, format);
 
-			texture->uploadData(m_uploadCommandBuffer.get(), m_stagingBuffer.get(),
+			texture->uploadData(cmd, m_stagingBuffer.get(),
 			                    mipOffset, mipSize, mip, 0);
 
 			mipOffset += mipSize;
@@ -661,7 +704,7 @@ bool VulkanTextureManager::uploadTextureData(int bitmapHandle, const bitmap* bm)
 		}
 
 		// All mips uploaded, transition to shader read
-		texture->transitionLayout(m_uploadCommandBuffer.get(),
+		texture->transitionLayout(cmd,
 		                          vk::ImageLayout::eTransferDstOptimal,
 		                          vk::ImageLayout::eShaderReadOnlyOptimal);
 	} else {
@@ -671,22 +714,20 @@ bool VulkanTextureManager::uploadTextureData(int bitmapHandle, const bitmap* bm)
 		                         : needsPaletteExpansion ? static_cast<size_t>(bm->w) * bm->h * 4
 		                         : calculateMipSize(bm->w, bm->h, format);
 
-		texture->uploadData(m_uploadCommandBuffer.get(), m_stagingBuffer.get(),
+		texture->uploadData(cmd, m_stagingBuffer.get(),
 		                    stagingOffset, baseMipSize, 0, 0);
 
 		// Generate mipmaps or transition to shader read
 		if (textureMipLevels > 1 && canGenerateMipmaps(format)) {
-			texture->generateMipmaps(m_uploadCommandBuffer.get());
+			texture->generateMipmaps(cmd);
 		} else {
-			texture->transitionLayout(m_uploadCommandBuffer.get(),
+			texture->transitionLayout(cmd,
 			                          vk::ImageLayout::eTransferDstOptimal,
 			                          vk::ImageLayout::eShaderReadOnlyOptimal);
 		}
 	}
 
-	// Submit upload
-	endUpload();
-
+	// Upload commands are batched and submitted later via submitUploads()
 	return true;
 }
 
@@ -707,8 +748,160 @@ VulkanTexture* VulkanTextureManager::getTexture(int bitmapHandle)
 
 void VulkanTextureManager::beginFrame(uint32_t frameIndex)
 {
+	// Crash-safe logging
+	FILE* f = fopen("vulkan_debug.log", "a");
+	if (f) {
+		fprintf(f, "VulkanTextureManager::beginFrame: frameIndex=%u, pendingDeletions=%zu\n",
+			frameIndex, m_pendingTextureDeletions[frameIndex].size());
+		fflush(f);
+		fclose(f);
+	}
+
 	m_currentFrameIndex = frameIndex;
-	// Could partition staging buffer by frame here for deadlock avoidance
+
+	// Only wait on upload fence if we actually submitted work last time
+	if (m_uploadFenceSubmitted[frameIndex]) {
+		FILE* flog = fopen("vulkan_debug.log", "a");
+		if (flog) {
+			fprintf(flog, "VulkanTextureManager::beginFrame: waiting on upload fence[%u]\n", frameIndex);
+			fflush(flog);
+			fclose(flog);
+		}
+		auto waitResult = m_device.waitForFences(m_uploadFences[frameIndex], true, std::numeric_limits<uint64_t>::max());
+		if (waitResult != vk::Result::eSuccess) {
+			mprintf(("VulkanTextureManager: WARNING - waitForFences returned %d\n", static_cast<int>(waitResult)));
+		}
+		m_device.resetFences(m_uploadFences[frameIndex]);
+		m_uploadFenceSubmitted[frameIndex] = false;
+	} else {
+		FILE* flog = fopen("vulkan_debug.log", "a");
+		if (flog) {
+			fprintf(flog, "VulkanTextureManager::beginFrame: no upload fence wait needed for frame %u\n", frameIndex);
+			fflush(flog);
+			fclose(flog);
+		}
+	}
+
+	// Process deferred texture deletions for this frame
+	// Safe because we've waited on this frame's fence, so GPU is done using these textures
+	for (auto* tex : m_pendingTextureDeletions[frameIndex]) {
+		f = fopen("vulkan_debug.log", "a");
+		if (f) {
+			fprintf(f, "VulkanTextureManager::beginFrame: deleting texture=%p\n", reinterpret_cast<void*>(tex));
+			fflush(f);
+			fclose(f);
+		}
+		tex->destroy();
+		delete tex;
+	}
+	m_pendingTextureDeletions[frameIndex].clear();
+
+	// Reset staging offset to this frame's partition start
+	// This is safe because we've waited on this frame's fence, so the GPU
+	// is done with any uploads that used this partition
+	m_stagingOffset = frameIndex * STAGING_PARTITION_SIZE;
+
+	// Reset recording state for this frame's command buffer
+	m_uploadCmdRecording[frameIndex] = false;
+}
+
+void VulkanTextureManager::queueTextureForDeletion(VulkanTexture* texture)
+{
+	if (texture) {
+		// Remove from m_textures map to prevent dangling pointer lookups
+		// The texture pointer is still valid until actually deleted in beginFrame()
+		for (auto it = m_textures.begin(); it != m_textures.end(); ++it) {
+			if (it->second == texture) {
+				// Crash-safe logging
+				FILE* f = fopen("vulkan_debug.log", "a");
+				if (f) {
+					fprintf(f, "queueTextureForDeletion: removing handle %d from m_textures\n", it->first);
+					fflush(f);
+					fclose(f);
+				}
+				m_textures.erase(it);
+				break;
+			}
+		}
+
+		// Crash-safe logging
+		FILE* f = fopen("vulkan_debug.log", "a");
+		if (f) {
+			fprintf(f, "queueTextureForDeletion: tex=%p queued to frame %u (queue now has %zu entries)\n",
+				reinterpret_cast<void*>(texture), m_currentFrameIndex,
+				m_pendingTextureDeletions[m_currentFrameIndex].size() + 1);
+			fflush(f);
+			fclose(f);
+		}
+		m_pendingTextureDeletions[m_currentFrameIndex].push_back(texture);
+	}
+}
+
+void VulkanTextureManager::submitUploads()
+{
+	// Crash-safe logging
+	FILE* f = fopen("vulkan_debug.log", "a");
+	if (f) {
+		fprintf(f, "VulkanTextureManager::submitUploads: frame=%u, recording=%d\n",
+			m_currentFrameIndex, m_uploadCmdRecording[m_currentFrameIndex] ? 1 : 0);
+		fflush(f);
+		fclose(f);
+	}
+
+	if (!m_uploadCmdRecording[m_currentFrameIndex]) {
+		return; // No uploads recorded this frame
+	}
+
+	try {
+		// End recording
+		m_uploadCmds[m_currentFrameIndex].end();
+
+		// Submit to graphics queue (no fence - uses frame fence for synchronization)
+		vk::SubmitInfo submitInfo{};
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &m_uploadCmds[m_currentFrameIndex];
+
+		// Submit with per-frame upload fence (fence is unsignaled since we track submission state)
+		m_transferQueue.submit(submitInfo, m_uploadFences[m_currentFrameIndex]);
+		m_uploadFenceSubmitted[m_currentFrameIndex] = true;  // Mark fence as needing wait
+
+		f = fopen("vulkan_debug.log", "a");
+		if (f) {
+			fprintf(f, "VulkanTextureManager::submitUploads: submit succeeded, fence submitted\n");
+			fflush(f);
+			fclose(f);
+		}
+	} catch (const vk::SystemError& e) {
+		f = fopen("vulkan_debug.log", "a");
+		if (f) {
+			fprintf(f, "VulkanTextureManager::submitUploads: EXCEPTION: %s\n", e.what());
+			fflush(f);
+			fclose(f);
+		}
+		throw;
+	}
+
+	m_uploadCmdRecording[m_currentFrameIndex] = false;
+}
+
+void VulkanTextureManager::ensureUploadRecording()
+{
+	if (m_uploadCmdRecording[m_currentFrameIndex]) {
+		return; // Already recording
+	}
+
+	// Reset and begin recording
+	m_uploadCmds[m_currentFrameIndex].reset(vk::CommandBufferResetFlags{});
+	m_uploadCmds[m_currentFrameIndex].begin(vk::CommandBufferBeginInfo{
+	    vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
+
+	m_uploadCmdRecording[m_currentFrameIndex] = true;
+}
+
+vk::CommandBuffer VulkanTextureManager::getUploadCommandBuffer()
+{
+	ensureUploadRecording();
+	return m_uploadCmds[m_currentFrameIndex];
 }
 
 bool VulkanTextureManager::canGenerateMipmaps(vk::Format format) const
@@ -743,17 +936,21 @@ vk::Format VulkanTextureManager::selectFormat(const bitmap* bm) const
 #endif
 
 	// Uncompressed based on bpp
+	// bmpman stores pixels as BGRA in memory (matches OpenGL's GL_BGRA + GL_UNSIGNED_INT_8_8_8_8_REV)
+	// Use BGRA format so Vulkan interprets the bytes correctly.
+	// The blit shader then swaps R/B for the swapchain, making everything consistent.
+	// DO NOT CHANGE THIS - the blit shader R/B swap depends on this being BGRA.
 	switch (bm->bpp) {
 		case 32:
-			return vk::Format::eR8G8B8A8Unorm;
+			return vk::Format::eB8G8R8A8Unorm;
 		case 24:
-			return vk::Format::eR8G8B8A8Unorm; // CPU converts RGB->RGBA before upload
+			return vk::Format::eB8G8R8A8Unorm;
 		case 16:
 			return vk::Format::eR5G6B5UnormPack16;
 		case 8:
-			return (bm->flags & BMP_AABITMAP) ? vk::Format::eR8Unorm : vk::Format::eR8G8B8A8Unorm;
+			return (bm->flags & BMP_AABITMAP) ? vk::Format::eR8Unorm : vk::Format::eB8G8R8A8Unorm;
 		default:
-			return vk::Format::eR8G8B8A8Unorm;
+			return vk::Format::eB8G8R8A8Unorm;
 	}
 }
 
@@ -825,11 +1022,21 @@ bool VulkanTextureManager::isCompressedFormat(vk::Format format) const
 
 void* VulkanTextureManager::allocateStagingMemory(vk::DeviceSize size, vk::DeviceSize& outOffset)
 {
-	const vk::DeviceSize alignedNext = (m_stagingOffset + size + 3) & ~vk::DeviceSize(3);
-	if (alignedNext > STAGING_BUFFER_SIZE) {
-		// Need to wrap - wait for previous uploads to complete
-		(void)m_device.waitForFences(m_uploadFence.get(), VK_TRUE, UINT64_MAX);
-		m_stagingOffset = 0;
+	// Calculate partition bounds for current frame
+	vk::DeviceSize partitionStart = m_currentFrameIndex * STAGING_PARTITION_SIZE;
+	vk::DeviceSize partitionEnd = partitionStart + STAGING_PARTITION_SIZE;
+
+	// Calculate aligned next offset
+	vk::DeviceSize alignedNext = (m_stagingOffset + size + 3) & ~vk::DeviceSize(3);
+
+	// Check if allocation fits in current frame's partition
+	if (alignedNext > partitionEnd) {
+		// Partition full - cannot allocate without blocking
+		// Caller should submit pending uploads and wait for next frame
+		mprintf(("Vulkan: Staging buffer partition full (need %llu bytes, %llu available)\n",
+		         static_cast<unsigned long long>(size),
+		         static_cast<unsigned long long>(partitionEnd - m_stagingOffset)));
+		return nullptr;
 	}
 
 	// Capture offset before advancing
@@ -838,44 +1045,564 @@ void* VulkanTextureManager::allocateStagingMemory(vk::DeviceSize size, vk::Devic
 	m_stagingOffset += size;
 
 	// Align to 4 bytes for next allocation
-	m_stagingOffset = (m_stagingOffset + 3) & ~3;
+	m_stagingOffset = (m_stagingOffset + 3) & ~vk::DeviceSize(3);
 
 	return ptr;
 }
 
-void VulkanTextureManager::beginUpload()
+// ============================================================================
+// Static Utility Functions (for unit testing)
+// ============================================================================
+
+uint32_t VulkanTextureManager::calculateMipLevelsStatic(uint32_t width, uint32_t height)
 {
-	if (m_uploadInProgress) {
-		return;
-	}
-
-	// Wait for previous upload to complete
-	(void)m_device.waitForFences(m_uploadFence.get(), VK_TRUE, UINT64_MAX);
-	(void)m_device.resetFences(m_uploadFence.get());
-
-	// Reset command buffer before re-recording
-	m_uploadCommandBuffer->reset(vk::CommandBufferResetFlags{});
-
-	m_uploadCommandBuffer->begin(vk::CommandBufferBeginInfo{
-	    vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
-	m_uploadInProgress = true;
+	return static_cast<uint32_t>(std::floor(std::log2(std::max(width, height)))) + 1;
 }
 
-void VulkanTextureManager::endUpload()
+size_t VulkanTextureManager::calculateMipSizeStatic(uint32_t width, uint32_t height, vk::Format format)
 {
-	if (!m_uploadInProgress) {
+	if (isCompressedFormatStatic(format)) {
+		// Block-compressed formats use 4x4 blocks
+		uint32_t blockWidth = (width + 3) / 4;
+		uint32_t blockHeight = (height + 3) / 4;
+		size_t blockSize = 0;
+
+		switch (format) {
+			case vk::Format::eBc1RgbaUnormBlock:
+			case vk::Format::eBc1RgbUnormBlock:
+				blockSize = 8; // 64 bits per block
+				break;
+			case vk::Format::eBc2UnormBlock:
+			case vk::Format::eBc3UnormBlock:
+			case vk::Format::eBc7UnormBlock:
+				blockSize = 16; // 128 bits per block
+				break;
+			default:
+				blockSize = 16;
+				break;
+		}
+
+		return static_cast<size_t>(blockWidth) * blockHeight * blockSize;
+	}
+
+	// Uncompressed
+	size_t bytesPerPixel = 4; // Default RGBA8
+	switch (format) {
+		case vk::Format::eR8Unorm:
+			bytesPerPixel = 1;
+			break;
+		case vk::Format::eR5G6B5UnormPack16:
+			bytesPerPixel = 2;
+			break;
+		case vk::Format::eR8G8B8A8Unorm:
+		case vk::Format::eB8G8R8A8Unorm:
+			bytesPerPixel = 4;
+			break;
+		case vk::Format::eR16G16B16A16Sfloat:
+			bytesPerPixel = 8;
+			break;
+		default:
+			bytesPerPixel = 4;
+			break;
+	}
+
+	return static_cast<size_t>(width) * height * bytesPerPixel;
+}
+
+bool VulkanTextureManager::isCompressedFormatStatic(vk::Format format)
+{
+	switch (format) {
+		case vk::Format::eBc1RgbUnormBlock:
+		case vk::Format::eBc1RgbaUnormBlock:
+		case vk::Format::eBc2UnormBlock:
+		case vk::Format::eBc3UnormBlock:
+		case vk::Format::eBc7UnormBlock:
+			return true;
+		default:
+			return false;
+	}
+}
+
+// ============================================================================
+// Render Target Implementation
+// ============================================================================
+
+vk::UniqueRenderPass VulkanTextureManager::createRenderTargetRenderPass(vk::Format colorFormat, bool withDepth, bool isCubemap)
+{
+	(void)isCubemap; // Cubemap uses same render pass structure, just different framebuffer
+
+	SCP_vector<vk::AttachmentDescription> attachments;
+
+	// Color attachment
+	vk::AttachmentDescription colorAttachment;
+	colorAttachment.format = colorFormat;
+	colorAttachment.samples = vk::SampleCountFlagBits::e1;
+	colorAttachment.loadOp = vk::AttachmentLoadOp::eClear;
+	colorAttachment.storeOp = vk::AttachmentStoreOp::eStore;
+	colorAttachment.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
+	colorAttachment.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
+	colorAttachment.initialLayout = vk::ImageLayout::eUndefined;
+	colorAttachment.finalLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+	attachments.push_back(colorAttachment);
+
+	// Depth attachment (optional)
+	vk::AttachmentDescription depthAttachment;
+	if (withDepth) {
+		depthAttachment.format = vk::Format::eD24UnormS8Uint;
+		depthAttachment.samples = vk::SampleCountFlagBits::e1;
+		depthAttachment.loadOp = vk::AttachmentLoadOp::eClear;
+		depthAttachment.storeOp = vk::AttachmentStoreOp::eDontCare;
+		depthAttachment.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
+		depthAttachment.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
+		depthAttachment.initialLayout = vk::ImageLayout::eUndefined;
+		depthAttachment.finalLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+		attachments.push_back(depthAttachment);
+	}
+
+	// Subpass
+	vk::AttachmentReference colorRef;
+	colorRef.attachment = 0;
+	colorRef.layout = vk::ImageLayout::eColorAttachmentOptimal;
+
+	vk::AttachmentReference depthRef;
+	if (withDepth) {
+		depthRef.attachment = 1;
+		depthRef.layout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+	}
+
+	vk::SubpassDescription subpass;
+	subpass.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
+	subpass.colorAttachmentCount = 1;
+	subpass.pColorAttachments = &colorRef;
+	subpass.pDepthStencilAttachment = withDepth ? &depthRef : nullptr;
+
+	// Dependencies
+	std::array<vk::SubpassDependency, 2> dependencies;
+	
+	dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
+	dependencies[0].dstSubpass = 0;
+	dependencies[0].srcStageMask = vk::PipelineStageFlagBits::eFragmentShader;
+	dependencies[0].srcAccessMask = vk::AccessFlagBits::eShaderRead;
+	dependencies[0].dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+	dependencies[0].dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
+	if (withDepth) {
+		dependencies[0].dstStageMask |= vk::PipelineStageFlagBits::eEarlyFragmentTests;
+		dependencies[0].dstAccessMask |= vk::AccessFlagBits::eDepthStencilAttachmentWrite;
+	}
+
+	dependencies[1].srcSubpass = 0;
+	dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
+	dependencies[1].srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+	dependencies[1].srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
+	dependencies[1].dstStageMask = vk::PipelineStageFlagBits::eFragmentShader;
+	dependencies[1].dstAccessMask = vk::AccessFlagBits::eShaderRead;
+
+	vk::RenderPassCreateInfo renderPassInfo;
+	renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+	renderPassInfo.pAttachments = attachments.data();
+	renderPassInfo.subpassCount = 1;
+	renderPassInfo.pSubpasses = &subpass;
+	renderPassInfo.dependencyCount = static_cast<uint32_t>(dependencies.size());
+	renderPassInfo.pDependencies = dependencies.data();
+
+	try {
+		return m_device.createRenderPassUnique(renderPassInfo);
+	} catch (const vk::SystemError& e) {
+		mprintf(("Vulkan: Failed to create render target render pass: %s\n", e.what()));
+		return {};
+	}
+}
+
+int VulkanTextureManager::createRenderTarget(int handle, int* width, int* height, int* bpp, int* mm_lvl, int flags)
+{
+	if (!m_initialized) {
+		mprintf(("Vulkan: Texture manager not initialized\n"));
+		return 0;
+	}
+
+	// Validate parameters
+	if (!width || !height) {
+		return 0;
+	}
+
+	bool isCubemap = (flags & BMP_FLAG_CUBEMAP) != 0;
+	bool withMipmaps = (flags & BMP_FLAG_RENDER_TARGET_MIPMAP) != 0;
+	bool isStatic = (flags & BMP_FLAG_RENDER_TARGET_STATIC) != 0;
+
+	// Clamp dimensions to device limits
+	vk::PhysicalDeviceProperties props = m_physicalDevice.getProperties();
+	uint32_t maxDim = props.limits.maxImageDimension2D;
+	if (static_cast<uint32_t>(*width) > maxDim) *width = static_cast<int>(maxDim);
+	if (static_cast<uint32_t>(*height) > maxDim) *height = static_cast<int>(maxDim);
+
+	// Select format - render targets use RGBA8
+	vk::Format colorFormat = vk::Format::eR8G8B8A8Unorm;
+	if (bpp) *bpp = 32;
+
+	// Calculate mip levels
+	uint32_t mipLevels = 1;
+	if (withMipmaps) {
+		mipLevels = calculateMipLevels(*width, *height);
+	}
+	if (mm_lvl) *mm_lvl = static_cast<int>(mipLevels);
+
+	// Create the texture with render target usage
+	vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eColorAttachment |
+	                            vk::ImageUsageFlagBits::eSampled |
+	                            vk::ImageUsageFlagBits::eTransferSrc |
+	                            vk::ImageUsageFlagBits::eTransferDst;
+
+	uint32_t arrayLayers = isCubemap ? 6 : 1;
+	vk::ImageCreateFlags imageFlags = isCubemap ? vk::ImageCreateFlagBits::eCubeCompatible : vk::ImageCreateFlags{};
+
+	// Create texture
+	auto texture = new VulkanTexture();
+	
+	// Need special create for cubemap
+	vk::ImageCreateInfo imageInfo{};
+	imageInfo.imageType = vk::ImageType::e2D;
+	imageInfo.format = colorFormat;
+	imageInfo.extent = vk::Extent3D{static_cast<uint32_t>(*width), static_cast<uint32_t>(*height), 1};
+	imageInfo.mipLevels = mipLevels;
+	imageInfo.arrayLayers = arrayLayers;
+	imageInfo.samples = vk::SampleCountFlagBits::e1;
+	imageInfo.tiling = vk::ImageTiling::eOptimal;
+	imageInfo.usage = usage;
+	imageInfo.sharingMode = vk::SharingMode::eExclusive;
+	imageInfo.initialLayout = vk::ImageLayout::eUndefined;
+	imageInfo.flags = imageFlags;
+
+	if (!texture->create(m_device, m_physicalDevice, *width, *height, colorFormat, mipLevels, arrayLayers, usage)) {
+		delete texture;
+		mprintf(("Vulkan: Failed to create render target texture\n"));
+		return 0;
+	}
+
+	// Store texture in bmpman
+	auto* slot = bm_get_slot(handle, true);
+	if (slot) {
+		if (slot->gr_info) {
+			delete static_cast<VulkanTexture*>(slot->gr_info);
+		}
+		slot->gr_info = texture;
+	}
+	m_textures[handle] = texture;
+
+	// Create render target structure
+	auto rt = std::make_unique<VulkanRenderTarget>();
+	rt->isCubemap = isCubemap;
+	rt->isStatic = isStatic;
+	rt->workingHandle = handle;
+
+	// Create render pass for this RT (with depth for 3D rendering)
+	rt->renderPass = createRenderTargetRenderPass(colorFormat, true, isCubemap);
+	if (!rt->renderPass) {
+		m_textures.erase(handle);
+		delete texture;
+		return 0;
+	}
+
+	if (isCubemap) {
+		// Create per-face image views and framebuffers
+		for (int face = 0; face < 6; ++face) {
+			vk::ImageViewCreateInfo viewInfo;
+			viewInfo.image = texture->getImage();
+			viewInfo.viewType = vk::ImageViewType::e2D;
+			viewInfo.format = colorFormat;
+			viewInfo.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+			viewInfo.subresourceRange.baseMipLevel = 0;
+			viewInfo.subresourceRange.levelCount = 1;
+			viewInfo.subresourceRange.baseArrayLayer = face;
+			viewInfo.subresourceRange.layerCount = 1;
+
+			try {
+				rt->cubeFaceViews[face] = m_device.createImageViewUnique(viewInfo);
+			} catch (const vk::SystemError& e) {
+				mprintf(("Vulkan: Failed to create cubemap face %d view: %s\n", face, e.what()));
+				m_textures.erase(handle);
+				delete texture;
+				return 0;
+			}
+
+			// Create framebuffer for this face
+			rt->cubeFaceFramebuffers[face] = std::make_unique<VulkanFramebuffer>();
+			SCP_vector<vk::ImageView> views = {rt->cubeFaceViews[face].get()};
+			
+			if (!rt->cubeFaceFramebuffers[face]->createFromImageViews(
+				m_device, rt->renderPass.get(), *width, *height, views, nullptr)) {
+				mprintf(("Vulkan: Failed to create cubemap face %d framebuffer\n", face));
+				m_textures.erase(handle);
+				delete texture;
+				return 0;
+			}
+		}
+	} else {
+		// Create single framebuffer for 2D render target
+		rt->framebuffer = std::make_unique<VulkanFramebuffer>();
+		SCP_vector<vk::Format> colorFormats = {colorFormat};
+		
+		if (!rt->framebuffer->create(m_device, m_physicalDevice, rt->renderPass.get(),
+			*width, *height, colorFormats, vk::Format::eD24UnormS8Uint)) {
+			mprintf(("Vulkan: Failed to create render target framebuffer\n"));
+			m_textures.erase(handle);
+			delete texture;
+			return 0;
+		}
+	}
+
+	mprintf(("Vulkan: Created render target %d (%dx%d, %s%s)\n",
+		handle, *width, *height,
+		isCubemap ? "cubemap" : "2D",
+		withMipmaps ? ", mipmapped" : ""));
+
+	m_renderTargets[handle] = std::move(rt);
+	return 1;
+}
+
+int VulkanTextureManager::setRenderTarget(int handle, int face)
+{
+	if (!m_initialized) {
+		return 0;
+	}
+
+	// Handle -1 = restore default (scene framebuffer)
+	if (handle < 0) {
+		if (m_activeRenderTarget != nullptr) {
+			// Generate mipmaps if needed
+			VulkanTexture* tex = getTexture(m_activeRenderTargetHandle);
+			if (tex && tex->getMipLevels() > 1) {
+				// TODO: Generate mipmaps - requires command buffer
+				// For now, skip this
+			}
+		}
+
+		m_activeRenderTarget = nullptr;
+		m_activeRenderTargetHandle = -1;
+		return 1;
+	}
+
+	// Find render target
+	auto it = m_renderTargets.find(handle);
+	if (it == m_renderTargets.end()) {
+		mprintf(("Vulkan: Render target %d not found\n", handle));
+		return 0;
+	}
+
+	VulkanRenderTarget* rt = it->second.get();
+	
+	// For cubemaps, validate and store face
+	if (rt->isCubemap) {
+		if (face < 0 || face > 5) {
+			mprintf(("Vulkan: Invalid cubemap face %d\n", face));
+			return 0;
+		}
+		rt->activeFace = face;
+	}
+
+	rt->workingHandle = handle;
+	m_activeRenderTarget = rt;
+	m_activeRenderTargetHandle = handle;
+
+	return 1;
+}
+
+VulkanRenderTarget* VulkanTextureManager::getRenderTarget(int handle)
+{
+	auto it = m_renderTargets.find(handle);
+	if (it != m_renderTargets.end()) {
+		return it->second.get();
+	}
+	return nullptr;
+}
+
+void VulkanTextureManager::destroyRenderTarget(int handle)
+{
+	auto it = m_renderTargets.find(handle);
+	if (it != m_renderTargets.end()) {
+		// If this is the active RT, deactivate it
+		if (m_activeRenderTargetHandle == handle) {
+			m_activeRenderTarget = nullptr;
+			m_activeRenderTargetHandle = -1;
+		}
+		m_renderTargets.erase(it);
+	}
+
+	// Also remove from texture map (but don't delete - bmpman owns it)
+	m_textures.erase(handle);
+}
+
+void VulkanTextureManager::readbackTexture(void* data_out, int handle)
+{
+	if (!data_out || !m_initialized) {
 		return;
 	}
 
-	m_uploadCommandBuffer->end();
+	VulkanTexture* tex = getTexture(handle);
+	if (!tex || !tex->isValid()) {
+		mprintf(("Vulkan: Cannot read back texture %d - not found or invalid\n", handle));
+		return;
+	}
 
-	vk::SubmitInfo submitInfo{};
+	uint32_t width = tex->getWidth();
+	uint32_t height = tex->getHeight();
+	vk::Format format = tex->getFormat();
+
+	// Calculate data size
+	size_t dataSize = calculateMipSize(width, height, format);
+	if (dataSize == 0) {
+		return;
+	}
+
+	// Create staging buffer for readback
+	vk::BufferCreateInfo bufferInfo;
+	bufferInfo.size = dataSize;
+	bufferInfo.usage = vk::BufferUsageFlagBits::eTransferDst;
+	bufferInfo.sharingMode = vk::SharingMode::eExclusive;
+
+	vk::UniqueBuffer stagingBuffer;
+	vk::UniqueDeviceMemory stagingMemory;
+
+	try {
+		stagingBuffer = m_device.createBufferUnique(bufferInfo);
+	} catch (const vk::SystemError& e) {
+		mprintf(("Vulkan: Failed to create readback staging buffer: %s\n", e.what()));
+		return;
+	}
+
+	// Allocate memory
+	vk::MemoryRequirements memReqs = m_device.getBufferMemoryRequirements(stagingBuffer.get());
+	
+	vk::PhysicalDeviceMemoryProperties memProps = m_physicalDevice.getMemoryProperties();
+	uint32_t memTypeIndex = UINT32_MAX;
+	vk::MemoryPropertyFlags desiredProps = vk::MemoryPropertyFlagBits::eHostVisible |
+	                                       vk::MemoryPropertyFlagBits::eHostCoherent;
+	
+	for (uint32_t i = 0; i < memProps.memoryTypeCount; ++i) {
+		if ((memReqs.memoryTypeBits & (1 << i)) &&
+			(memProps.memoryTypes[i].propertyFlags & desiredProps) == desiredProps) {
+			memTypeIndex = i;
+			break;
+		}
+	}
+
+	if (memTypeIndex == UINT32_MAX) {
+		mprintf(("Vulkan: Failed to find suitable memory for readback\n"));
+		return;
+	}
+
+	vk::MemoryAllocateInfo allocInfo;
+	allocInfo.allocationSize = memReqs.size;
+	allocInfo.memoryTypeIndex = memTypeIndex;
+
+	try {
+		stagingMemory = m_device.allocateMemoryUnique(allocInfo);
+		m_device.bindBufferMemory(stagingBuffer.get(), stagingMemory.get(), 0);
+	} catch (const vk::SystemError& e) {
+		mprintf(("Vulkan: Failed to allocate readback memory: %s\n", e.what()));
+		return;
+	}
+
+	// Create command buffer for copy
+	vk::CommandBufferAllocateInfo cmdAllocInfo;
+	cmdAllocInfo.commandPool = m_commandPool;
+	cmdAllocInfo.level = vk::CommandBufferLevel::ePrimary;
+	cmdAllocInfo.commandBufferCount = 1;
+
+	std::vector<vk::CommandBuffer> cmdBuffers;
+	try {
+		cmdBuffers = m_device.allocateCommandBuffers(cmdAllocInfo);
+	} catch (const vk::SystemError& e) {
+		mprintf(("Vulkan: Failed to allocate readback command buffer: %s\n", e.what()));
+		return;
+	}
+
+	vk::CommandBuffer cmd = cmdBuffers[0];
+
+	// Record copy command
+	vk::CommandBufferBeginInfo beginInfo;
+	beginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
+	cmd.begin(beginInfo);
+
+	// Transition image to transfer src
+	vk::ImageMemoryBarrier barrier;
+	barrier.oldLayout = tex->getCurrentLayout();
+	barrier.newLayout = vk::ImageLayout::eTransferSrcOptimal;
+	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.image = tex->getImage();
+	barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+	barrier.subresourceRange.baseMipLevel = 0;
+	barrier.subresourceRange.levelCount = 1;
+	barrier.subresourceRange.baseArrayLayer = 0;
+	barrier.subresourceRange.layerCount = 1;
+	barrier.srcAccessMask = vk::AccessFlagBits::eShaderRead;
+	barrier.dstAccessMask = vk::AccessFlagBits::eTransferRead;
+
+	cmd.pipelineBarrier(
+		vk::PipelineStageFlagBits::eFragmentShader,
+		vk::PipelineStageFlagBits::eTransfer,
+		{}, {}, {}, barrier);
+
+	// Copy image to buffer
+	vk::BufferImageCopy region;
+	region.bufferOffset = 0;
+	region.bufferRowLength = 0;
+	region.bufferImageHeight = 0;
+	region.imageSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
+	region.imageSubresource.mipLevel = 0;
+	region.imageSubresource.baseArrayLayer = 0;
+	region.imageSubresource.layerCount = 1;
+	region.imageOffset = vk::Offset3D{0, 0, 0};
+	region.imageExtent = vk::Extent3D{width, height, 1};
+
+	cmd.copyImageToBuffer(tex->getImage(), vk::ImageLayout::eTransferSrcOptimal,
+		stagingBuffer.get(), region);
+
+	// Transition image back to shader read
+	barrier.oldLayout = vk::ImageLayout::eTransferSrcOptimal;
+	barrier.newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+	barrier.srcAccessMask = vk::AccessFlagBits::eTransferRead;
+	barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+
+	cmd.pipelineBarrier(
+		vk::PipelineStageFlagBits::eTransfer,
+		vk::PipelineStageFlagBits::eFragmentShader,
+		{}, {}, {}, barrier);
+
+	cmd.end();
+
+	// Submit and wait
+	vk::SubmitInfo submitInfo;
 	submitInfo.commandBufferCount = 1;
-	vk::CommandBuffer cmdBuf = m_uploadCommandBuffer.get();
-	submitInfo.pCommandBuffers = &cmdBuf;
+	submitInfo.pCommandBuffers = &cmd;
 
-	m_transferQueue.submit(submitInfo, m_uploadFence.get());
-	m_uploadInProgress = false;
+	try {
+		m_transferQueue.submit(submitInfo, nullptr);
+		m_transferQueue.waitIdle();
+	} catch (const vk::SystemError& e) {
+		mprintf(("Vulkan: Failed to submit readback commands: %s\n", e.what()));
+		m_device.freeCommandBuffers(m_commandPool, cmdBuffers);
+		return;
+	}
+
+	// Map and copy data
+	void* mapped = nullptr;
+	try {
+		mapped = m_device.mapMemory(stagingMemory.get(), 0, dataSize);
+	} catch (const vk::SystemError& e) {
+		mprintf(("Vulkan: Failed to map readback memory: %s\n", e.what()));
+		m_device.freeCommandBuffers(m_commandPool, cmdBuffers);
+		return;
+	}
+
+	memcpy(data_out, mapped, dataSize);
+	m_device.unmapMemory(stagingMemory.get());
+
+	// Cleanup
+	m_device.freeCommandBuffers(m_commandPool, cmdBuffers);
+
+	// Update texture layout state
+	tex->notifyLayoutChanged(vk::ImageLayout::eShaderReadOnlyOptimal);
 }
 
 // ============================================================================
@@ -891,8 +1618,14 @@ void gr_vulkan_bm_create(bitmap_slot* entry)
 
 void gr_vulkan_bm_init(bitmap_slot* slot)
 {
-	// Initialize texture slot
-	(void)slot;
+	if (!slot) {
+		return;
+	}
+
+	// Initialize the gr_info pointer to null
+	// The actual VulkanTexture object is created on-demand in gr_vulkan_bm_data
+	// when texture data is uploaded for the first time
+	slot->gr_info = nullptr;
 }
 
 bool gr_vulkan_bm_data(int handle, bitmap* bm)
@@ -909,12 +1642,35 @@ void gr_vulkan_bm_free_data(bitmap_slot* slot, bool release)
 		return;
 	}
 
-	// The VulkanTexture is stored in gr_info - just delete it directly
-	// (similar to OpenGL's approach with tcache_slot_opengl)
+	// The VulkanTexture is stored in gr_info
+	// Use deferred deletion because the texture memory may still be referenced
+	// by in-flight command buffers (e.g., upload commands not yet submitted/completed)
 	if (slot->gr_info) {
 		auto* texture = static_cast<VulkanTexture*>(slot->gr_info);
-		texture->destroy();
-		delete texture;
+		if (g_vulkanTextureManager) {
+			// Crash-safe logging for debugging
+			FILE* f = fopen("vulkan_debug.log", "a");
+			if (f) {
+				fprintf(f, "gr_vulkan_bm_free_data: DEFERRED deletion for texture=%p\n",
+					reinterpret_cast<void*>(texture));
+				fflush(f);
+				fclose(f);
+			}
+			// Queue for deferred deletion - will be deleted after GPU is done using it
+			g_vulkanTextureManager->queueTextureForDeletion(texture);
+		} else {
+			// Crash-safe logging for debugging
+			FILE* f = fopen("vulkan_debug.log", "a");
+			if (f) {
+				fprintf(f, "gr_vulkan_bm_free_data: IMMEDIATE deletion (no manager) for texture=%p\n",
+					reinterpret_cast<void*>(texture));
+				fflush(f);
+				fclose(f);
+			}
+			// No manager available (shutdown), delete immediately
+			texture->destroy();
+			delete texture;
+		}
 		slot->gr_info = nullptr;
 	}
 
@@ -930,25 +1686,25 @@ void gr_vulkan_update_texture(int handle, int bpp, const ubyte* data, int width,
 
 int gr_vulkan_bm_make_render_target(int handle, int* width, int* height, int* bpp, int* mm_lvl, int flags)
 {
-	// Render target creation - TODO implement in Phase 10
-	(void)handle; (void)width; (void)height; (void)bpp; (void)mm_lvl; (void)flags;
-	mprintf(("Vulkan: gr_vulkan_bm_make_render_target not yet implemented\n"));
+	if (g_vulkanTextureManager) {
+		return g_vulkanTextureManager->createRenderTarget(handle, width, height, bpp, mm_lvl, flags);
+	}
 	return 0;
 }
 
 int gr_vulkan_bm_set_render_target(int handle, int face)
 {
-	// Render target binding - TODO implement in Phase 10
-	(void)handle; (void)face;
-	mprintf(("Vulkan: gr_vulkan_bm_set_render_target not yet implemented\n"));
+	if (g_vulkanTextureManager) {
+		return g_vulkanTextureManager->setRenderTarget(handle, face);
+	}
 	return 0;
 }
 
 void gr_vulkan_get_bitmap_from_texture(void* data_out, int handle)
 {
-	// Readback - TODO implement
-	(void)data_out; (void)handle;
-	mprintf(("Vulkan: gr_vulkan_get_bitmap_from_texture not yet implemented\n"));
+	if (g_vulkanTextureManager) {
+		g_vulkanTextureManager->readbackTexture(data_out, handle);
+	}
 }
 
 void gr_vulkan_set_texture_addressing(int mode)
