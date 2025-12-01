@@ -3,6 +3,7 @@
 #include "globalincs/pstypes.h"
 
 #include <vulkan/vulkan.hpp>
+#include <vector>
 
 namespace graphics {
 namespace vulkan {
@@ -53,6 +54,13 @@ class RenderFrame {
 	PresentResult submitAndPresent(const std::vector<vk::CommandBuffer>& cmdBuffers,
 	                               vk::Semaphore imageAvailableSemaphore,
 	                               vk::Semaphore renderingFinishedSemaphore);
+
+	/**
+	 * @brief Submit command buffers without presenting and wait for completion.
+	 *
+	 * Uses the frame fence to synchronize and runs any queued onFrameFinished callbacks.
+	 */
+	void submitImmediateBlocking(const std::vector<vk::CommandBuffer>& cmdBuffers);
 
 	/**
 	 * @brief Update the swapchain handle after recreation

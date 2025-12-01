@@ -152,6 +152,38 @@ PresentResult RenderFrame::submitAndPresent(const std::vector<vk::CommandBuffer>
 	return PresentResult::Success;
 }
 
+void RenderFrame::submitImmediateBlocking(const std::vector<vk::CommandBuffer>& cmdBuffers)
+{
+	if (cmdBuffers.empty()) {
+		return;
+	}
+
+	// Ensure previous work tied to this frame is finished before reusing the fence
+	if (m_inFlight) {
+		waitForFinish();
+	}
+
+	vk::SubmitInfo submitInfo;
+	submitInfo.commandBufferCount = static_cast<uint32_t>(cmdBuffers.size());
+	submitInfo.pCommandBuffers = cmdBuffers.data();
+
+	vk_logf("RenderFrame",
+		"submitImmediateBlocking fence=%p submitCount=%u",
+		reinterpret_cast<void*>(static_cast<VkFence>(m_frameInFlightFence.get())),
+		submitInfo.commandBufferCount);
+
+	try {
+		m_graphicsQueue.submit(submitInfo, m_frameInFlightFence.get());
+	} catch (const vk::SystemError& e) {
+		vk_logf("RenderFrame", "Vulkan: Failed to submit immediate command buffers: %s", e.what());
+		return;
+	}
+
+	m_inFlight = true;
+	// Block until GPU work is complete so downstream CPU code can safely use outputs
+	waitForFinish();
+}
+
 void RenderFrame::updateSwapchain(vk::SwapchainKHR newSwapchain)
 {
 	m_swapChain = newSwapchain;

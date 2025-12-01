@@ -435,6 +435,209 @@ void gr_vulkan_scene_texture_end()
 	}
 }
 
+// ============================================================================
+// Irradiance map generation
+// ============================================================================
+
+// Uniform data for irradiance map generation (matches genericData in irrmap-f.sdr)
+// Must use std140 layout rules - int is aligned to 4 bytes, padded to 16 bytes
+struct alignas(16) VulkanIrrmapData {
+	int face;
+	int _pad[3]; // Pad to 16 bytes for std140
+};
+
+void gr_vulkan_calculate_irrmap()
+{
+	// Validate required resources
+	if (!renderer_instance || !g_vulkanTextureManager || !g_vulkanPipelineManager) {
+		static bool warned = false;
+		if (!warned) {
+			mprintf(("Vulkan: gr_vulkan_calculate_irrmap - missing required managers\n"));
+			warned = true;
+		}
+		return;
+	}
+
+	// Get envmap texture
+	VulkanTexture* envmapTex = g_vulkanTextureManager->getTexture(ENVMAP);
+	if (!envmapTex || !envmapTex->isValid()) {
+		static bool warned = false;
+		if (!warned) {
+			mprintf(("Vulkan: gr_vulkan_calculate_irrmap - ENVMAP texture not available\n"));
+			warned = true;
+		}
+		return;
+	}
+
+	// Check that irrmap render target exists
+	if (gr_screen.irrmap_render_target < 0) {
+		static bool warned = false;
+		if (!warned) {
+			mprintf(("Vulkan: gr_vulkan_calculate_irrmap - irrmap render target not created\n"));
+			warned = true;
+		}
+		return;
+	}
+
+	// Save current render target
+	int previous_target = gr_screen.rendering_to_texture;
+
+	// Get the render target info for accessing its render pass
+	VulkanRenderTarget* irrmapRT = nullptr;
+
+	// Set up the irrmap render target to get the RT info
+	bm_set_render_target(gr_screen.irrmap_render_target, 0);
+	irrmapRT = g_vulkanTextureManager->getActiveRenderTarget();
+
+	if (!irrmapRT || !irrmapRT->renderPass) {
+		mprintf(("Vulkan: gr_vulkan_calculate_irrmap - failed to get irrmap render target\n"));
+		bm_set_render_target(previous_target);
+		return;
+	}
+
+	// Build pipeline key for irradiance map generation shader
+	// This is a fullscreen pass with no vertex input (vertexless drawing)
+	PipelineKey pipelineKey;
+	pipelineKey.shaderType = SDR_TYPE_IRRADIANCE_MAP_GEN;
+	pipelineKey.shaderFlags = 0;
+	pipelineKey.vertexLayoutHash = 0;  // No vertex input - fullscreen triangle via gl_VertexIndex
+	pipelineKey.primitiveType = PRIM_TYPE_TRIS;
+	pipelineKey.cullEnabled = false;
+	pipelineKey.cullMode = vk::CullModeFlagBits::eNone;
+	pipelineKey.polygonMode = vk::PolygonMode::eFill;
+	pipelineKey.depthMode = ZBUFFER_TYPE_NONE;  // No depth testing for post-process
+	pipelineKey.stencilEnabled = false;
+	pipelineKey.blendMode = ALPHA_BLEND_NONE;  // No blending
+	pipelineKey.hasPerBufferBlend = false;
+	pipelineKey.colorMask = {true, true, true, true};
+	pipelineKey.renderPass = irrmapRT->renderPass.get();
+	pipelineKey.subpass = 0;
+	pipelineKey.sampleCount = vk::SampleCountFlagBits::e1;  // No MSAA for cubemap RT
+
+	// Get or create the pipeline
+	vk::Pipeline pipeline = g_vulkanPipelineManager->getOrCreatePipeline(pipelineKey);
+	if (!pipeline) {
+		mprintf(("Vulkan: gr_vulkan_calculate_irrmap - failed to create pipeline\n"));
+		bm_set_render_target(previous_target);
+		return;
+	}
+
+	// Get pipeline layout
+	vk::PipelineLayout pipelineLayout = g_vulkanPipelineManager->getPipelineLayout(
+	    SDR_TYPE_IRRADIANCE_MAP_GEN, 0);
+	if (!pipelineLayout) {
+		mprintf(("Vulkan: gr_vulkan_calculate_irrmap - failed to get pipeline layout\n"));
+		bm_set_render_target(previous_target);
+		return;
+	}
+
+	auto* descriptorManager = renderer_instance->getDescriptorManager();
+	if (!descriptorManager) {
+		mprintf(("Vulkan: gr_vulkan_calculate_irrmap - no descriptor manager\n"));
+		bm_set_render_target(previous_target);
+		return;
+	}
+
+	// Get a sampler for the envmap cubemap
+	vk::Sampler envmapSampler = g_vulkanTextureManager->getSamplerCache().getSampler(
+	    vk::Filter::eLinear, vk::Filter::eLinear,
+	    vk::SamplerAddressMode::eClampToEdge, 1.0f, true);
+
+	if (!envmapSampler) {
+		mprintf(("Vulkan: gr_vulkan_calculate_irrmap - failed to get sampler\n"));
+		bm_set_render_target(previous_target);
+		return;
+	}
+
+	mprintf(("Vulkan: Generating irradiance map from envmap\n"));
+
+	// Process each face of the irradiance cubemap
+	// Use auxiliary render pass to avoid interfering with the main scene pass state
+	for (int face = 0; face < 6; face++) {
+		// Set render target to this cubemap face (updates active face in RT)
+		bm_set_render_target(gr_screen.irrmap_render_target, face);
+
+		// Get the per-face framebuffer from the render target
+		VulkanFramebuffer* faceFramebuffer = nullptr;
+		if (irrmapRT->isCubemap && irrmapRT->cubeFaceFramebuffers[face]) {
+			faceFramebuffer = irrmapRT->cubeFaceFramebuffers[face].get();
+		} else {
+			faceFramebuffer = irrmapRT->framebuffer.get();
+		}
+
+		if (!faceFramebuffer) {
+			mprintf(("Vulkan: gr_vulkan_calculate_irrmap - no framebuffer for face %d\n", face));
+			continue;
+		}
+
+		// Begin auxiliary render pass for this face
+		// This does NOT set m_scenePassActive, allowing gr_scene_texture_begin() to work later
+		vk::Extent2D faceExtent = {16, 16};
+		renderer_instance->beginAuxiliaryRenderPass(irrmapRT->renderPass.get(), faceFramebuffer, faceExtent, true);
+
+		auto cmdBuffer = renderer_instance->getCurrentCommandBuffer();
+		if (!cmdBuffer) {
+			mprintf(("Vulkan: gr_vulkan_calculate_irrmap - no command buffer for face %d\n", face));
+			renderer_instance->endAuxiliaryRenderPass();
+			continue;
+		}
+
+		auto& drawState = renderer_instance->getDrawState();
+
+		// Bind pipeline
+		bindPipeline(cmdBuffer, pipeline, drawState);
+
+		// Set viewport and scissor for 16x16 irrmap face
+		setViewportAndScissor(cmdBuffer, faceExtent, drawState);
+
+		// Set up the face uniform using GenericData (binding 8 in Set 0)
+		auto uniformBuffer = gr_get_uniform_buffer(uniform_block_type::GenericData, 1, sizeof(VulkanIrrmapData));
+		auto& aligner = uniformBuffer.aligner();
+		auto* irrmapData = aligner.addTypedElement<VulkanIrrmapData>();
+		irrmapData->face = face;
+		uniformBuffer.submitData();
+		gr_bind_uniform_buffer(uniform_block_type::GenericData, uniformBuffer.getBufferOffset(0),
+		                       sizeof(VulkanIrrmapData), uniformBuffer.bufferHandle());
+
+		// Bind uniform descriptor set (Set 0 - includes GenericData at binding 8)
+		bindUniformDescriptors(cmdBuffer, pipelineLayout, drawState);
+
+		// Allocate and update material descriptor set for envmap (Set 1, binding 4)
+		vk::DescriptorSetLayout materialLayout = g_vulkanPipelineManager->getMaterialDescriptorSetLayout();
+		if (materialLayout) {
+			vk::DescriptorSet materialSet = descriptorManager->allocateSet(materialLayout, "IrrmapEnvmap");
+			if (materialSet) {
+				// Update binding 4 with envmap cubemap
+				descriptorManager->updateCombinedImageSampler(
+				    materialSet, 4,  // binding 4 = envmap in material layout
+				    envmapTex->getImageView(),
+				    envmapSampler,
+				    vk::ImageLayout::eShaderReadOnlyOptimal);
+
+				// Bind material descriptor set at Set 1
+				descriptorManager->bindDescriptorSet(cmdBuffer, pipelineLayout, materialSet, {}, 1);
+
+				// Queue for cleanup after frame
+				renderer_instance->queueDescriptorSetFree(materialSet);
+			}
+		}
+
+		// Draw fullscreen triangle (3 vertices, no vertex buffer - uses gl_VertexIndex)
+		cmdBuffer.draw(3, 1, 0, 0);
+
+		// End auxiliary render pass for this face
+		renderer_instance->endAuxiliaryRenderPass();
+	}
+
+	// Submit recorded auxiliary passes so the irradiance cubemap is ready immediately
+	renderer_instance->submitAuxiliaryCommandBuffer();
+
+	// Restore previous render target
+	bm_set_render_target(previous_target);
+
+	mprintf(("Vulkan: Irradiance map generation complete\n"));
+}
+
 void gr_vulkan_render_primitives(material* material_info,
     primitive_type prim_type,
     vertex_layout* layout,

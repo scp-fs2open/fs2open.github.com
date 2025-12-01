@@ -3,6 +3,8 @@
 #include "VulkanBuffer.h"
 #include "VulkanDebug.h"
 
+#include <vector>
+
 #include <cerrno>
 #include <cstring>
 
@@ -1476,6 +1478,106 @@ void VulkanRenderer::endScenePass()
 	// and flip() will finalize and submit it
 }
 
+void VulkanRenderer::beginAuxiliaryRenderPass(vk::RenderPass renderPass, VulkanFramebuffer* framebuffer,
+                                               vk::Extent2D extent, bool clearColor)
+{
+	if (m_auxiliaryPassActive) {
+		vk_logf("VulkanRenderer",
+			"beginAuxiliaryRenderPass called while auxiliary pass already active (frame=%u)",
+			m_currentFrame);
+		return;
+	}
+
+	if (m_scenePassActive || m_directPassActive) {
+		vk_logf("VulkanRenderer",
+			"beginAuxiliaryRenderPass called while scene/direct pass active - this is not supported (frame=%u)",
+			m_currentFrame);
+		return;
+	}
+
+	if (!renderPass || !framebuffer) {
+		vk_logf("VulkanRenderer",
+			"beginAuxiliaryRenderPass: invalid renderPass=%p or framebuffer=%p",
+			reinterpret_cast<void*>(static_cast<VkRenderPass>(renderPass)),
+			static_cast<void*>(framebuffer));
+		return;
+	}
+
+	// Allocate command buffer if not already allocated
+	if (!m_sceneCommandBuffer) {
+		vk::CommandBufferAllocateInfo cmdBufferAlloc;
+		cmdBufferAlloc.commandPool = m_graphicsCommandPool.get();
+		cmdBufferAlloc.level = vk::CommandBufferLevel::ePrimary;
+		cmdBufferAlloc.commandBufferCount = 1;
+
+		auto allocatedBuffers = m_device->allocateCommandBuffers(cmdBufferAlloc);
+		m_sceneCommandBuffer = allocatedBuffers.front();
+		vk_logf("VulkanRenderer",
+			"beginAuxiliaryRenderPass: allocated command buffer %p frame=%u",
+			reinterpret_cast<void*>(static_cast<VkCommandBuffer>(m_sceneCommandBuffer)),
+			m_currentFrame);
+
+		// Begin command buffer recording
+		vk::CommandBufferBeginInfo beginInfo;
+		beginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
+		m_sceneCommandBuffer.begin(beginInfo);
+	}
+
+	// Begin the auxiliary render pass
+	vk::RenderPassBeginInfo renderPassBegin;
+	renderPassBegin.renderPass = renderPass;
+	renderPassBegin.framebuffer = framebuffer->getFramebuffer();
+	renderPassBegin.renderArea.offset = vk::Offset2D{0, 0};
+	renderPassBegin.renderArea.extent = extent;
+
+	// Set up clear values
+	std::array<vk::ClearValue, 2> clearValues;
+	uint32_t clearCount = 0;
+	if (clearColor) {
+		clearValues[0].color.setFloat32({m_clearColor[0], m_clearColor[1], m_clearColor[2], m_clearColor[3]});
+		clearCount = 1;
+	}
+	if (framebuffer->hasDepthAttachment()) {
+		clearValues[clearCount].depthStencil = vk::ClearDepthStencilValue{1.0f, 0};
+		clearCount++;
+	}
+	renderPassBegin.clearValueCount = clearCount;
+	renderPassBegin.pClearValues = clearValues.data();
+
+	m_sceneExtent = extent;
+
+	vk_logf("VulkanRenderer",
+		"beginAuxiliaryRenderPass: cmd=%p renderPass=%p framebuffer=%p extent=%ux%u",
+		reinterpret_cast<void*>(static_cast<VkCommandBuffer>(m_sceneCommandBuffer)),
+		reinterpret_cast<void*>(static_cast<VkRenderPass>(renderPass)),
+		reinterpret_cast<void*>(static_cast<VkFramebuffer>(framebuffer->getFramebuffer())),
+		extent.width, extent.height);
+
+	m_sceneCommandBuffer.beginRenderPass(renderPassBegin, vk::SubpassContents::eInline);
+	m_auxiliaryPassActive = true;
+
+	// Reset draw state for new pass
+	m_drawState.reset();
+}
+
+void VulkanRenderer::endAuxiliaryRenderPass()
+{
+	if (!m_auxiliaryPassActive) {
+		vk_logf("VulkanRenderer",
+			"endAuxiliaryRenderPass called but no auxiliary pass is active (frame=%u)",
+			m_currentFrame);
+		return;
+	}
+
+	vk_logf("VulkanRenderer",
+		"endAuxiliaryRenderPass: ending render pass for cmd=%p",
+		reinterpret_cast<void*>(static_cast<VkCommandBuffer>(m_sceneCommandBuffer)));
+	m_sceneCommandBuffer.endRenderPass();
+	m_auxiliaryPassActive = false;
+
+	// Note: Command buffer is left open for further commands (more auxiliary passes or scene pass)
+}
+
 void VulkanRenderer::ensureRenderPassActive()
 {
 	// If scene pass or direct pass already active, nothing to do
@@ -1542,8 +1644,8 @@ void VulkanRenderer::ensureRenderPassActive()
 
 vk::CommandBuffer VulkanRenderer::getCurrentCommandBuffer() const
 {
-	// Return the scene command buffer if we're in an active pass
-	if ((m_scenePassActive || m_directPassActive) && m_sceneCommandBuffer) {
+	// Return the scene command buffer if we're in an active pass (scene, direct, or auxiliary)
+	if ((m_scenePassActive || m_directPassActive || m_auxiliaryPassActive) && m_sceneCommandBuffer) {
 		return m_sceneCommandBuffer;
 	}
 	return nullptr;
@@ -1626,6 +1728,47 @@ void VulkanRenderer::queueDescriptorSetFree(vk::DescriptorSet set)
 	} else {
 		m_descriptorManager->freeSet(set);
 	}
+}
+
+void VulkanRenderer::submitAuxiliaryCommandBuffer()
+{
+	if (m_auxiliaryPassActive) {
+		vk_logf("VulkanRenderer",
+			"submitAuxiliaryCommandBuffer called while auxiliary pass still active (frame=%u)",
+			m_currentFrame);
+		return;
+	}
+
+	if (!m_sceneCommandBuffer) {
+		return; // Nothing recorded
+	}
+
+	vk_logf("VulkanRenderer",
+		"submitAuxiliaryCommandBuffer: ending and submitting cmd=%p frame=%u",
+		reinterpret_cast<void*>(static_cast<VkCommandBuffer>(m_sceneCommandBuffer)),
+		m_currentFrame);
+
+	// Finish recording
+	m_sceneCommandBuffer.end();
+
+	std::vector<vk::CommandBuffer> cmdBuffers = {m_sceneCommandBuffer};
+
+	// Submit and block until complete so results are usable immediately
+	if (m_frames[m_currentFrame]) {
+		m_frames[m_currentFrame]->submitImmediateBlocking(cmdBuffers);
+	} else {
+		vk::SubmitInfo submitInfo;
+		submitInfo.commandBufferCount = static_cast<uint32_t>(cmdBuffers.size());
+		submitInfo.pCommandBuffers = cmdBuffers.data();
+		m_graphicsQueue.submit(submitInfo, nullptr);
+		m_graphicsQueue.waitIdle();
+	}
+
+	// Command buffer is no longer needed
+	m_device->freeCommandBuffers(m_graphicsCommandPool.get(), {m_sceneCommandBuffer});
+	m_sceneCommandBuffer = nullptr;
+	m_drawState.reset();
+	m_sceneExtent = vk::Extent2D{0, 0};
 }
 
 void VulkanRenderer::flip()

@@ -86,8 +86,30 @@ class VulkanRenderer {
 	void endScenePass();
 
 	/**
+	 * @brief Begin an auxiliary render pass for off-screen rendering (e.g., cubemap faces)
+	 *
+	 * Unlike beginScenePass(), this does NOT set m_scenePassActive, allowing multiple
+	 * auxiliary render passes to be recorded before the main scene pass begins.
+	 * Use for render-to-texture operations like irradiance map generation.
+	 *
+	 * @param renderPass The render pass to use
+	 * @param framebuffer The framebuffer to render to
+	 * @param extent The extent of the render area
+	 * @param clearColor Whether to clear the color attachment (default true)
+	 */
+	void beginAuxiliaryRenderPass(vk::RenderPass renderPass, VulkanFramebuffer* framebuffer,
+	                              vk::Extent2D extent, bool clearColor = true);
+
+	/**
+	 * @brief End an auxiliary render pass
+	 *
+	 * Must be called after beginAuxiliaryRenderPass() to properly end the render pass.
+	 */
+	void endAuxiliaryRenderPass();
+
+	/**
 	 * @brief Ensure a render pass is active for drawing
-	 * 
+	 *
 	 * If scene pass is active, does nothing.
 	 * Otherwise, starts a direct-to-swapchain render pass for menu/UI rendering.
 	 * This is called automatically by draw functions.
@@ -141,6 +163,13 @@ class VulkanRenderer {
 	 * @brief Queue descriptor set for freeing after the current frame
 	 */
 	void queueDescriptorSetFree(vk::DescriptorSet set);
+
+	/**
+	 * @brief Submit any recorded auxiliary render pass command buffer and wait for completion.
+	 *
+	 * Used by off-screen renderers (e.g., irradiance map generation) that run before the main scene pass.
+	 */
+	void submitAuxiliaryCommandBuffer();
 
 	/**
 	 * @brief Reset draw state (call at start of scene pass)
@@ -302,6 +331,7 @@ class VulkanRenderer {
 	// Scene pass state
 	bool m_scenePassActive = false;
 	bool m_directPassActive = false;  // Direct-to-swapchain pass (for menus)
+	bool m_auxiliaryPassActive = false;  // Auxiliary render pass (for off-screen rendering like cubemap faces)
 	vk::CommandBuffer m_sceneCommandBuffer;  // Allocated per-frame for scene rendering
 	DrawState m_drawState;
 	vk::Extent2D m_sceneExtent = {0, 0};
