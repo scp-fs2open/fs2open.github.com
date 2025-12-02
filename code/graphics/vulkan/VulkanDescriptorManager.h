@@ -6,10 +6,37 @@
 
 #include <vulkan/vulkan.hpp>
 #include <map>
+#include <unordered_map>
 #include <vector>
 
 namespace graphics {
 namespace vulkan {
+
+/**
+ * @brief Descriptor set lifecycle states for debugging
+ */
+enum class DescriptorSetState {
+	Allocated,      // Just allocated from pool
+	Updated,        // Had descriptors written to it
+	Bound,          // Bound to command buffer (cannot update without UPDATE_AFTER_BIND)
+	QueuedForFree,  // Queued for deferred deletion
+	Freed           // Returned to pool
+};
+
+/**
+ * @brief Tracking info for descriptor set lifecycle debugging
+ */
+struct DescriptorSetTrackingInfo {
+	uint64_t uniqueId = 0;
+	DescriptorSetState state = DescriptorSetState::Allocated;
+	uint32_t allocFrame = 0;
+	uint32_t updateFrame = 0;
+	uint32_t boundFrame = 0;
+	uint32_t queuedFrame = 0;
+	uint32_t freedFrame = 0;
+	SCP_string allocSite;
+	SCP_string lastUpdateSite;
+};
 
 /**
  * @brief Manages Vulkan descriptor pools and sets
@@ -82,6 +109,14 @@ public:
 	                                vk::ImageLayout layout = vk::ImageLayout::eShaderReadOnlyOptimal);
 
 	/**
+	 * @brief Update a uniform texel buffer binding in a descriptor set
+	 * @param set The descriptor set to update
+	 * @param binding The binding slot
+	 * @param bufferView The buffer view to bind
+	 */
+	void updateUniformTexelBuffer(vk::DescriptorSet set, uint32_t binding, vk::BufferView bufferView);
+
+	/**
 	 * @brief Update a storage buffer binding in a descriptor set
 	 * @param set The descriptor set to update
 	 * @param binding The binding slot
@@ -127,6 +162,44 @@ public:
 	 */
 	bool isInitialized() const { return m_initialized; }
 
+	// Expose device and pool for batched allocations when needed (internal use)
+	vk::Device getDevice() const { return m_device; }
+	vk::DescriptorPool getPool() const { return m_pool.get(); }
+
+	/**
+	 * @brief Set the current frame number for tracking
+	 * @param frame The current absolute frame number
+	 */
+	void setCurrentFrame(uint32_t frame) { m_currentFrameNumber = frame; }
+
+	/**
+	 * @brief Mark a descriptor set as queued for deferred free
+	 * @param set The descriptor set
+	 * @param frame The frame when it was queued
+	 */
+	void markQueuedForFree(vk::DescriptorSet set, uint32_t frame);
+
+	/**
+	 * @brief Get tracking info for a descriptor set (for debugging)
+	 * @param set The descriptor set
+	 * @return Pointer to tracking info, or nullptr if not found
+	 */
+	const DescriptorSetTrackingInfo* getTrackingInfo(vk::DescriptorSet set) const;
+
+	/**
+	 * @brief Reset tracking state for a descriptor set being reused from a freelist
+	 * @param set The descriptor set
+	 * @param newSite The new allocation site name
+	 *
+	 * This resets the state to Allocated so the set can be updated and bound again.
+	 */
+	void resetTrackingForReuse(vk::DescriptorSet set, const SCP_string& newSite = "");
+
+	/**
+	 * @brief Enable/disable verbose tracking output
+	 */
+	void setVerboseTracking(bool enabled) { m_verboseTracking = enabled; }
+
 private:
 	vk::Device m_device;
 	vk::UniqueDescriptorPool m_pool;
@@ -134,6 +207,12 @@ private:
 
 	// Track allocated sets for debugging
 	std::map<vk::DescriptorSet, SCP_string> m_allocatedSets;
+
+	// Lifecycle tracking for descriptor set debugging
+	std::unordered_map<VkDescriptorSet, DescriptorSetTrackingInfo> m_tracking;
+	uint64_t m_nextUniqueId = 1;
+	uint32_t m_currentFrameNumber = 0;
+	bool m_verboseTracking = true;  // Enable by default for debugging
 
 	bool m_initialized = false;
 

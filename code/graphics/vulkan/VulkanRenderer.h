@@ -289,6 +289,7 @@ class VulkanRenderer {
 	vk::UniquePipeline m_graphicsPipeline;
 
 	uint32_t m_currentFrame = 0;
+	uint32_t m_absoluteFrameCounter = 0;  // Monotonically increasing frame number for tracking
 	std::array<std::unique_ptr<RenderFrame>, MAX_FRAMES_IN_FLIGHT> m_frames;
 
 	// Per-swapchain-image semaphores (indexed by acquired image index, not frame index)

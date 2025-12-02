@@ -1251,6 +1251,12 @@ void VulkanRenderer::acquireNextSwapChainImage()
 	}
 	vk_debug("acquireNextSwapChainImage() managers updated");
 
+	// Update absolute frame counter for descriptor tracking
+	m_absoluteFrameCounter++;
+	if (m_descriptorManager) {
+		m_descriptorManager->setCurrentFrame(m_absoluteFrameCounter);
+	}
+
 	uint32_t imageIndex = 0;
 	// Use frame-indexed acquire semaphore (safe because we wait for frame fence first)
 	vk::Semaphore acquireSem = m_imageAvailableSemaphores[m_currentFrame].get();
