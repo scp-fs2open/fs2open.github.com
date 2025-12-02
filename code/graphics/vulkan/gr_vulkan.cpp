@@ -160,6 +160,26 @@ void bindPipeline(vk::CommandBuffer cmd, vk::Pipeline pipeline, VulkanRenderer::
 	state.boundPipeline = pipeline;
 }
 
+// Helper: Push uniform buffer addresses via push constants (BDA)
+// This provides GPU addresses for all uniform blocks to shaders using buffer_reference
+void pushUniformAddresses(vk::CommandBuffer cmd, vk::PipelineLayout layout)
+{
+	if (!cmd || !layout || !g_vulkanBufferManager) {
+		return;
+	}
+
+	// Get all bound uniform buffer addresses
+	auto addresses = g_vulkanBufferManager->getUniformAddresses();
+
+	// Push addresses to all shader stages (vertex, fragment, geometry)
+	cmd.pushConstants(
+	    layout,
+	    vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment | vk::ShaderStageFlagBits::eGeometry,
+	    0,  // offset
+	    VulkanBufferManager::UniformAddressPushConstants::size(),
+	    &addresses);
+}
+
 // Helper: Bind uniform buffer descriptor set (Set 0)
 bool bindUniformDescriptors(vk::CommandBuffer cmd, vk::PipelineLayout layout, VulkanRenderer::DrawState& state)
 {
@@ -203,6 +223,11 @@ bool bindUniformDescriptors(vk::CommandBuffer cmd, vk::PipelineLayout layout, Vu
 
 	// Mark the set as bound - prevents any further descriptor updates this frame
 	g_vulkanBufferManager->markUniformSetBound();
+
+	// Also push uniform addresses for BDA-enabled shaders
+	// This allows shaders to access uniforms via buffer_reference pointers
+	pushUniformAddresses(cmd, layout);
+
 	return true;
 }
 
@@ -253,10 +278,28 @@ bool bindMaterialDescriptors(vk::CommandBuffer cmd, material* mat,
 		return false;
 	}
 
-	// Helper to bind a texture slot
+	// Get placeholder texture and sampler for unbound slots
+	VulkanTexture* placeholderTex = g_vulkanTextureManager->getPlaceholderTexture();
+	vk::Sampler defaultSampler = g_vulkanTextureManager->getSamplerCache().getSampler(
+	    vk::Filter::eLinear, vk::Filter::eLinear, vk::SamplerAddressMode::eRepeat, 1.0f, true);
+
+	// Initialize all bindings to placeholder texture to ensure valid descriptors
+	// This prevents validation errors for unused texture slots
+	// Use getImageViewArray() for compatibility with sampler2DArray shaders (e.g., nanovg)
+	if (placeholderTex && placeholderTex->isValid() && defaultSampler) {
+		for (uint32_t binding = 0; binding < 9; ++binding) {
+			descriptorManager->updateCombinedImageSampler(descriptorSet,
+			                                               binding,
+			                                               placeholderTex->getImageViewArray(),
+			                                               defaultSampler,
+			                                               vk::ImageLayout::eShaderReadOnlyOptimal);
+		}
+	}
+
+	// Helper to bind a texture slot (overrides placeholder if texture exists)
 	auto bindTextureSlot = [&](int textureHandle, uint32_t binding, const char* name) {
 		if (textureHandle < 0) {
-			return; // Texture not used
+			return; // Texture not used - placeholder already bound
 		}
 
 		// Check if texture already exists in our manager
@@ -336,9 +379,10 @@ bool bindMaterialDescriptors(vk::CommandBuffer cmd, material* mat,
 			return;
 		}
 
+		// Use array view for compatibility with sampler2DArray shaders
 		descriptorManager->updateCombinedImageSampler(descriptorSet,
 		                                               binding,
-		                                               texture->getImageView(),
+		                                               texture->getImageViewArray(),
 		                                               sampler,
 		                                               vk::ImageLayout::eShaderReadOnlyOptimal);
 	};

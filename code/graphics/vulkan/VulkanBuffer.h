@@ -24,6 +24,7 @@ struct VulkanBufferData {
 	void* mappedPtr = nullptr;           // For persistent mapping
 	uint32_t lastUsedFrame = 0;          // Frame sync tracking
 	bool hostVisible = false;            // Memory property
+	vk::DeviceAddress deviceAddress = 0; // GPU address for BDA (Vulkan 1.2+)
 };
 
 /**
@@ -133,9 +134,17 @@ public:
 		size_t offset = 0;
 		size_t size = 0;
 		vk::Buffer vkBuffer = nullptr;
-		
-		bool isValid() const { 
-			return handle.isValid() && vkBuffer != nullptr; 
+		vk::DeviceAddress deviceAddress = 0;  // GPU address for BDA
+
+		bool isValid() const {
+			return handle.isValid() && vkBuffer != nullptr;
+		}
+
+		/**
+		 * @brief Get effective GPU address (base + offset)
+		 */
+		vk::DeviceAddress getEffectiveAddress() const {
+			return deviceAddress + offset;
 		}
 	};
 
@@ -189,6 +198,33 @@ public:
 	 * @return Pointer to buffer data, or nullptr if invalid
 	 */
 	const VulkanBufferData* getBufferData(gr_buffer_handle handle) const;
+
+	/**
+	 * @brief Get buffer device address (BDA) for a buffer
+	 * @param handle Buffer handle
+	 * @return GPU device address, or 0 if invalid or BDA not supported
+	 */
+	vk::DeviceAddress getBufferDeviceAddress(gr_buffer_handle handle) const;
+
+	/**
+	 * @brief Push constant structure for uniform buffer addresses (BDA)
+	 *
+	 * Contains GPU addresses for all uniform block types.
+	 * Used with vkCmdPushConstants to pass addresses to shaders.
+	 */
+	struct UniformAddressPushConstants {
+		vk::DeviceAddress addresses[static_cast<size_t>(uniform_block_type::NUM_BLOCK_TYPES)];
+
+		static constexpr uint32_t size() {
+			return static_cast<uint32_t>(sizeof(addresses));
+		}
+	};
+
+	/**
+	 * @brief Get all bound uniform buffer addresses for push constants
+	 * @return Push constant structure with effective addresses (base + offset)
+	 */
+	UniformAddressPushConstants getUniformAddresses() const;
 
 	/**
 	 * @brief Called at start of frame AFTER the frame's fence has been waited on

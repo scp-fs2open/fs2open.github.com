@@ -2,6 +2,7 @@
 
 #ifdef WITH_VULKAN
 
+#include "VulkanBuffer.h"
 #include "VulkanShader.h"
 #include "cfile/cfile.h"
 #include "osapi/osapi.h"
@@ -334,9 +335,9 @@ bool VulkanPipelineManager::loadPipelineCacheFromDisk(const SCP_string& path)
 	// Get physical device properties for validation
 	vk::PhysicalDeviceProperties props = m_physicalDevice.getProperties();
 
-	// Extract header fields
-	uint32_t headerSize = *reinterpret_cast<uint32_t*>(data.data());
-	uint32_t headerVersion = *reinterpret_cast<uint32_t*>(data.data() + 4);
+	// Extract header fields for validation
+	// Header format: [headerSize(4), headerVersion(4), vendorId(4), deviceId(4), pipelineCacheUUID(16)]
+	// We only validate vendorId, deviceId, and UUID - driver validates headerSize/headerVersion
 	uint32_t vendorId = *reinterpret_cast<uint32_t*>(data.data() + 8);
 	uint32_t deviceId = *reinterpret_cast<uint32_t*>(data.data() + 12);
 
@@ -953,8 +954,19 @@ vk::PipelineLayout VulkanPipelineManager::getOrCreateLayout(shader_type type, ui
 
 	layoutInfo.setLayoutCount = static_cast<uint32_t>(setLayouts.size());
 	layoutInfo.pSetLayouts = setLayouts.data();
-	layoutInfo.pushConstantRangeCount = 0;
-	layoutInfo.pPushConstantRanges = nullptr;
+
+	// Push constants for Buffer Device Address (BDA) uniform buffer addresses
+	// Contains 9 x 8-byte GPU addresses (one per uniform_block_type)
+	// This allows shaders to access uniform data via buffer_reference without descriptor sets
+	vk::PushConstantRange pushConstantRange;
+	pushConstantRange.stageFlags = vk::ShaderStageFlagBits::eVertex |
+	                                vk::ShaderStageFlagBits::eFragment |
+	                                vk::ShaderStageFlagBits::eGeometry;
+	pushConstantRange.offset = 0;
+	pushConstantRange.size = VulkanBufferManager::UniformAddressPushConstants::size();
+
+	layoutInfo.pushConstantRangeCount = 1;
+	layoutInfo.pPushConstantRanges = &pushConstantRange;
 
 	// TODO: Integrate shader reflection for dynamic descriptor set layout creation
 	// Query shader reflection for descriptor set layouts to ensure pipeline layouts match shader expectations
@@ -975,6 +987,8 @@ vk::PipelineLayout VulkanPipelineManager::getOrCreateLayout(shader_type type, ui
 
 	try {
 		m_layoutCache[key] = m_device.createPipelineLayoutUnique(layoutInfo);
+		mprintf(("VulkanPipelineManager: Created pipeline layout with %u push constant bytes (BDA uniform addresses)\n",
+		         pushConstantRange.size));
 		return m_layoutCache[key].get();
 	} catch (const vk::SystemError& e) {
 		mprintf(("VulkanPipelineManager: Failed to create pipeline layout: %s\n", e.what()));

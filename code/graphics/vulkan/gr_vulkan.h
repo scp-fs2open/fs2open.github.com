@@ -98,6 +98,9 @@ bool gr_vulkan_get_property(gr_property prop, void* dest);
 // Shader management
 int gr_vulkan_maybe_create_shader(shader_type type, unsigned int flags);
 
+// Environment mapping
+void gr_vulkan_calculate_irrmap();
+
 // Z-buffer control
 int gr_vulkan_zbuffer_get();
 int gr_vulkan_zbuffer_set(int mode);

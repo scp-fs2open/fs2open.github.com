@@ -101,12 +101,27 @@ bool VulkanTexture::create(vk::Device device, vk::PhysicalDevice physicalDevice,
 		return false;
 	}
 
+	// Create a 2D array view for single-layer images when shaders expect sampler2DArray
+	// This allows single textures to be bound to sampler2DArray uniforms (e.g., nanovg)
+	if (arrayLayers == 1) {
+		vk::ImageViewCreateInfo arrayViewInfo = viewInfo;
+		arrayViewInfo.viewType = vk::ImageViewType::e2DArray;
+		arrayViewInfo.subresourceRange.layerCount = 1;
+		try {
+			m_imageViewArray = device.createImageViewUnique(arrayViewInfo);
+		} catch (const vk::SystemError& e) {
+			mprintf(("Vulkan: Failed to create array image view for single-layer texture: %s\n", e.what()));
+			// Continue - caller can still use getImageView() for sampler2D
+		}
+	}
+
 	m_currentLayout = vk::ImageLayout::eUndefined;
 	return true;
 }
 
 void VulkanTexture::destroy()
 {
+	m_imageViewArray.reset();
 	m_imageView.reset();
 	m_memory.reset();
 	m_image.reset();
@@ -474,6 +489,43 @@ bool VulkanTextureManager::initialize(vk::Device device, vk::PhysicalDevice phys
 		return false;
 	}
 
+	// Create placeholder texture (1x1 white pixel) for unbound material descriptor slots
+	// This ensures all descriptor bindings are valid even when materials don't use all texture slots
+	m_placeholderTexture = std::make_unique<VulkanTexture>();
+	if (!m_placeholderTexture->create(device, physicalDevice, 1, 1, vk::Format::eR8G8B8A8Unorm, 1, 1,
+	                                   vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst)) {
+		mprintf(("Vulkan: Failed to create placeholder texture\n"));
+		return false;
+	}
+
+	// Upload white pixel data to placeholder texture
+	{
+		// Allocate one-time staging memory for 4 bytes (RGBA white)
+		vk::DeviceSize offset = 0;
+		void* stagingPtr = allocateStagingMemory(4, offset);
+		if (stagingPtr) {
+			uint8_t whitePixel[4] = {255, 255, 255, 255};
+			memcpy(stagingPtr, whitePixel, 4);
+
+			// Record upload command
+			ensureUploadRecording();
+			vk::CommandBuffer cmd = getUploadCommandBuffer();
+
+			// Transition to transfer dst
+			m_placeholderTexture->transitionLayout(cmd, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal);
+
+			// Upload
+			m_placeholderTexture->uploadData(cmd, m_stagingBuffer.get(), offset, 4, 0, 0);
+
+			// Transition to shader read
+			m_placeholderTexture->transitionLayout(cmd, vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal);
+
+			// Submit immediately so placeholder is ready
+			submitUploads();
+		}
+	}
+	mprintf(("Vulkan: Created placeholder texture (1x1 white)\n"));
+
 	m_initialized = true;
 	mprintf(("Vulkan: Texture manager initialized (staging buffer: %zu MB, %u partitions)\n",
 	         STAGING_BUFFER_SIZE / (1024 * 1024), FRAMES_IN_FLIGHT));
@@ -508,6 +560,12 @@ void VulkanTextureManager::shutdown()
 			m_device.destroyFence(fence);
 			fence = nullptr;
 		}
+	}
+
+	// Destroy placeholder texture
+	if (m_placeholderTexture) {
+		m_placeholderTexture->destroy();
+		m_placeholderTexture.reset();
 	}
 
 	m_samplerCache.shutdown();

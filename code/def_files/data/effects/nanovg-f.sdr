@@ -2,7 +2,8 @@
 // Enabled at all times but the define is kept here in case this should be configurable in the future
 #define EDGE_AA
 
-layout(std140) uniform NanoVGUniformData {
+// Uniform block - set 0, binding 2 matches uniform_block_type::NanoVGData
+layout(std140, set = 0, binding = 2) uniform NanoVGUniformData {
     mat3 scissorMat;
 
     mat3 paintMat;
@@ -27,11 +28,15 @@ layout(std140) uniform NanoVGUniformData {
     int texArrayIndex;
 };
 
-uniform sampler2DArray nvg_tex;
+// Material sampler - set 1, binding 0 (base texture slot)
+layout(set = 1, binding = 0) uniform sampler2DArray nvg_tex;
 
-in vec2 ftcoord;
-in vec2 fpos;
-out vec4 outColor;
+// Fragment inputs from vertex shader
+layout(location = 0) in vec2 ftcoord;
+layout(location = 1) in vec2 fpos;
+
+// Fragment output
+layout(location = 0) out vec4 outColor;
 
 float sdroundrect(vec2 pt, vec2 ext, float rad) {
 	vec2 ext2 = ext - vec2(rad,rad);

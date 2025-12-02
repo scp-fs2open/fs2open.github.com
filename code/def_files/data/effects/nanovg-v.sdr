@@ -1,5 +1,6 @@
 
-layout(std140) uniform NanoVGUniformData {
+// Uniform block - set 0, binding 2 matches uniform_block_type::NanoVGData
+layout(std140, set = 0, binding = 2) uniform NanoVGUniformData {
     mat3 scissorMat;
 
     mat3 paintMat;
@@ -24,11 +25,13 @@ layout(std140) uniform NanoVGUniformData {
     int texArrayIndex;
 };
 
-in vec2 vertPosition;
-in vec2 vertTexCoord;
+// Vertex inputs - NanoVG uses locations 0 and 1 (no color vertex)
+layout(location = 0) in vec2 vertPosition;
+layout(location = 1) in vec2 vertTexCoord;
 
-out vec2 ftcoord;
-out vec2 fpos;
+// Vertex outputs to fragment shader
+layout(location = 0) out vec2 ftcoord;
+layout(location = 1) out vec2 fpos;
 
 void main(void) {
 	ftcoord = vertTexCoord;

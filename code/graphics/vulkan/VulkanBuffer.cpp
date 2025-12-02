@@ -207,6 +207,12 @@ void VulkanBufferManager::createVkBuffer(VulkanBufferData& bufferData, size_t si
 		queueDeferredDeletion(bufferData.buffer, bufferData.memory);
 	}
 
+	// Check if this is a uniform buffer - enable BDA for uniform buffers
+	bool enableBDA = (usage & vk::BufferUsageFlagBits::eUniformBuffer) == vk::BufferUsageFlagBits::eUniformBuffer;
+	if (enableBDA) {
+		usage |= vk::BufferUsageFlagBits::eShaderDeviceAddress;
+	}
+
 	// Create buffer
 	vk::BufferCreateInfo bufferInfo;
 	bufferInfo.size = size;
@@ -218,10 +224,17 @@ void VulkanBufferManager::createVkBuffer(VulkanBufferData& bufferData, size_t si
 	// Get memory requirements
 	auto memRequirements = m_device.getBufferMemoryRequirements(bufferData.buffer);
 
-	// Allocate memory
+	// Allocate memory with device address support for BDA-enabled buffers
 	vk::MemoryAllocateInfo allocInfo;
 	allocInfo.allocationSize = memRequirements.size;
 	allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
+
+	// For BDA, add memory allocate flags info
+	vk::MemoryAllocateFlagsInfo allocFlagsInfo;
+	if (enableBDA) {
+		allocFlagsInfo.flags = vk::MemoryAllocateFlagBits::eDeviceAddress;
+		allocInfo.pNext = &allocFlagsInfo;
+	}
 
 	bufferData.memory = m_device.allocateMemory(allocInfo);
 	m_device.bindBufferMemory(bufferData.buffer, bufferData.memory, 0);
@@ -229,6 +242,15 @@ void VulkanBufferManager::createVkBuffer(VulkanBufferData& bufferData, size_t si
 	bufferData.size = size;
 	bufferData.hostVisible = (properties & vk::MemoryPropertyFlagBits::eHostVisible) ==
 	                         vk::MemoryPropertyFlagBits::eHostVisible;
+
+	// Get device address for BDA-enabled buffers
+	if (enableBDA) {
+		vk::BufferDeviceAddressInfo addressInfo;
+		addressInfo.buffer = bufferData.buffer;
+		bufferData.deviceAddress = m_device.getBufferAddress(addressInfo);
+	} else {
+		bufferData.deviceAddress = 0;
+	}
 }
 
 gr_buffer_handle VulkanBufferManager::createBuffer(BufferType type, BufferUsageHint usage)
@@ -467,6 +489,7 @@ void VulkanBufferManager::bindUniformBuffer(uniform_block_type bindPoint, size_t
 	bound.offset = offset;
 	bound.size = size;
 	bound.vkBuffer = vkBuffer;
+	bound.deviceAddress = buffer.deviceAddress;  // Store BDA address
 
 	buffer.lastUsedFrame = m_currentFrameIndex;
 
@@ -504,6 +527,32 @@ VulkanBufferManager::BoundUniformBuffer VulkanBufferManager::getBoundUniformBuff
 		return it->second;
 	}
 	return BoundUniformBuffer(); // Invalid
+}
+
+vk::DeviceAddress VulkanBufferManager::getBufferDeviceAddress(gr_buffer_handle handle) const
+{
+	if (!handle.isValid() || static_cast<size_t>(handle.value()) >= m_buffers.size()) {
+		return 0;
+	}
+	return m_buffers[handle.value()].deviceAddress;
+}
+
+VulkanBufferManager::UniformAddressPushConstants VulkanBufferManager::getUniformAddresses() const
+{
+	UniformAddressPushConstants result = {};
+
+	for (int i = 0; i < static_cast<int>(uniform_block_type::NUM_BLOCK_TYPES); ++i) {
+		auto bindPoint = static_cast<uniform_block_type>(i);
+		auto it = m_boundUniformBuffers.find(bindPoint);
+		if (it != m_boundUniformBuffers.end() && it->second.isValid()) {
+			// Use effective address (base + offset) for direct shader access
+			result.addresses[i] = it->second.getEffectiveAddress();
+		} else {
+			result.addresses[i] = 0;  // Invalid/unbound
+		}
+	}
+
+	return result;
 }
 
 bool VulkanBufferManager::initializeUniformDescriptorSet(vk::DescriptorSetLayout layout)

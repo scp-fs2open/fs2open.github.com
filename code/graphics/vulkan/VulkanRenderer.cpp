@@ -818,6 +818,7 @@ bool VulkanRenderer::createLogicalDevice(const PhysicalDeviceValues& deviceValue
 	vk::PhysicalDeviceVulkan13Features features13{};
 	features13.dynamicRendering = VK_TRUE;
 	features13.synchronization2 = VK_TRUE;
+	features13.shaderDemoteToHelperInvocation = VK_TRUE;  // Required for SPIR-V DemoteToHelperInvocation capability
 
 	// Chain: DeviceCreateInfo -> Features2 -> Features12 -> Features13
 	vk::PhysicalDeviceFeatures2 features2{};
@@ -839,6 +840,7 @@ bool VulkanRenderer::createLogicalDevice(const PhysicalDeviceValues& deviceValue
 	mprintf(("  descriptorIndexing: enabled\n"));
 	mprintf(("  dynamicRendering: enabled\n"));
 	mprintf(("  synchronization2: enabled\n"));
+	mprintf(("  shaderDemoteToHelperInvocation: enabled\n"));
 
 	m_device = deviceValues.device.createDeviceUnique(deviceCreate);
 

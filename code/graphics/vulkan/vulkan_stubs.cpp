@@ -341,6 +341,7 @@ void init_stub_pointers()
 	gr_screen.gf_render_shield_impact = gr_vulkan_render_shield_impact;
 
 	gr_screen.gf_maybe_create_shader = gr_vulkan_maybe_create_shader;
+	gr_screen.gf_calculate_irrmap = gr_vulkan_calculate_irrmap;
 
 	gr_screen.gf_clear_states = stub_clear_states;
 
