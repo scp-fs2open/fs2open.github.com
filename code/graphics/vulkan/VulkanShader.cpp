@@ -527,6 +527,7 @@ SCP_string VulkanShaderManager::generateShaderHeader(shader_type type, uint32_t 
 
 	// Use GLSL 450 for Vulkan (SPIR-V compatible)
 	header << "#version 450 core\n";
+	header << "#ifndef VULKAN\n#define VULKAN 1\n#endif\n";
 
 	// Vulkan-specific extensions
 	header << "#extension GL_ARB_separate_shader_objects : enable\n";
@@ -586,14 +587,23 @@ SCP_string VulkanShaderManager::handleIncludes(const char* filename, const SCP_s
 	// Capture 'this' to use loadShaderSource
 	callbacks.loadSource = [this](const char* fname) { return loadShaderSource(fname); };
 
-	// Vulkan currently doesn't use conditional includes, but we can check capabilities
-	// if needed via gr_is_capable. For now, treat all capabilities as available
-	// since Vulkan has broader capability support.
+	// Check capabilities via gr_is_capable to determine which shader variants to use
+	// This ensures shaders use the correct code paths (e.g., LARGE_SHADER vs small variants)
 	callbacks.checkCapability = [](const SCP_string& capabilityName) {
-		// For Vulkan, we typically have all modern features
-		// More sophisticated checking could be added if needed
-		mprintf(("VulkanShaderManager: Checking capability '%s' - defaulting to true\n", capabilityName.c_str()));
-		return true;
+		auto capability = std::find_if(&gr_capabilities[0], &gr_capabilities[gr_capabilities_num],
+		                               [&capabilityName](const gr_capability_def& cap_def) {
+			                               return !stricmp(cap_def.parse_name, capabilityName.c_str());
+		                               });
+
+		if (capability == &gr_capabilities[gr_capabilities_num]) {
+			// Capability not found - treat as unsupported
+			mprintf(("VulkanShaderManager: Unknown capability '%s', defaulting to false\n", capabilityName.c_str()));
+			return false;
+		}
+
+		bool supported = gr_is_capable(capability->capability);
+		mprintf(("VulkanShaderManager: Capability '%s' is %s\n", capabilityName.c_str(), supported ? "supported" : "not supported"));
+		return supported;
 	};
 
 	graphics::ShaderPreprocessor preprocessor(std::move(callbacks));
@@ -626,13 +636,38 @@ SCP_string VulkanShaderManager::preprocessShader(shader_type type, uint32_t flag
 		return "";
 	}
 
-	// Check if shader already has #version directive (Vulkan-native shaders)
-	// These shaders don't need header generation but may still need include processing
-	bool hasVersion = source.find("#version") != SCP_string::npos;
+	auto containsActiveVersion = [](const SCP_string& text) {
+		size_t searchPos = text.find("#version");
+		while (searchPos != SCP_string::npos) {
+			size_t lineStart = text.rfind('\n', searchPos);
+			lineStart = (lineStart == SCP_string::npos) ? 0 : lineStart + 1;
+			auto lineCommentPos = text.find("//", lineStart);
+			bool inLineComment = (lineCommentPos != SCP_string::npos && lineCommentPos < searchPos);
+
+			bool inBlockComment = false;
+			size_t blockStart = text.rfind("/*", searchPos);
+			if (blockStart != SCP_string::npos) {
+				size_t blockEnd = text.rfind("*/", searchPos);
+				if (blockEnd == SCP_string::npos || blockEnd < blockStart) {
+					inBlockComment = true;
+				}
+			}
+
+			if (!inLineComment && !inBlockComment) {
+				return true;
+			}
+
+			searchPos = text.find("#version", searchPos + 8);
+		}
+		return false;
+	};
+
+	bool hasVersion = containsActiveVersion(source);
 	if (hasVersion) {
-		// Vulkan-native shader - process includes but skip header generation
-		nprintf(("VulkanShader", "Shader %s has #version, processing includes only\n", filename));
-		return handleIncludes(filename, source);
+		// Vulkan-native shader - process includes and predefines but skip header generation
+		nprintf(("VulkanShader", "Shader %s has #version, processing includes/predefines only\n", filename));
+		auto processed = handleIncludes(filename, source);
+		return handlePredefines(filename, processed);
 	}
 
 	// Legacy FSO shader - needs header and full preprocessing
