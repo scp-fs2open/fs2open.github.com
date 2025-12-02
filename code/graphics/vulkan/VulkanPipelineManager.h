@@ -57,9 +57,10 @@ struct PipelineKey {
 	// Color write mask
 	bvec4 colorMask = {true, true, true, true};
 
-	// Render pass compatibility
-	vk::RenderPass renderPass;
-	uint32_t subpass = 0;
+	// Dynamic rendering formats (Vulkan 1.3+)
+	// These replace renderPass for pipeline compatibility
+	vk::Format colorFormat = vk::Format::eR8G8B8A8Srgb;
+	vk::Format depthFormat = vk::Format::eUndefined;  // eUndefined = no depth
 
 	// Multisampling
 	vk::SampleCountFlagBits sampleCount = vk::SampleCountFlagBits::e1;
@@ -150,15 +151,15 @@ public:
 	 * @param mat Material containing render state
 	 * @param layout Vertex layout for this draw call
 	 * @param primType Primitive topology
-	 * @param renderPass Current render pass
-	 * @param subpass Current subpass index
+	 * @param colorFormat Color attachment format for dynamic rendering
+	 * @param depthFormat Depth attachment format (eUndefined if no depth)
 	 * @return Pipeline handle
 	 */
 	vk::Pipeline getOrCreatePipeline(const material& mat,
 	                                  const vertex_layout& layout,
 	                                  primitive_type primType,
-	                                  vk::RenderPass renderPass,
-	                                  uint32_t subpass = 0);
+	                                  vk::Format colorFormat,
+	                                  vk::Format depthFormat = vk::Format::eUndefined);
 
 	/**
 	 * @brief Get pipeline layout for a shader type
@@ -279,8 +280,8 @@ private:
 	PipelineKey buildKeyFromMaterial(const material& mat,
 	                                  const vertex_layout& layout,
 	                                  primitive_type primType,
-	                                  vk::RenderPass renderPass,
-	                                  uint32_t subpass);
+	                                  vk::Format colorFormat,
+	                                  vk::Format depthFormat);
 
 	/**
 	 * @brief Create vertex input state from vertex_layout

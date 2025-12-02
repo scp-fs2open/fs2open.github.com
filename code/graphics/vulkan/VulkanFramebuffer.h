@@ -54,16 +54,17 @@ class VulkanFramebuffer {
 	 * @brief Create framebuffer with owned attachments
 	 * @param device Vulkan device
 	 * @param physicalDevice For memory type queries
-	 * @param renderPass Compatible render pass
 	 * @param width Framebuffer width
 	 * @param height Framebuffer height
 	 * @param colorFormats Color attachment formats (can be empty for depth-only)
 	 * @param depthFormat Depth format (eUndefined for no depth)
 	 * @return true on success
+	 *
+	 * @note With dynamic rendering (Vulkan 1.3+), VkFramebuffer objects are not created.
+	 *       This class now only manages the images and their views.
 	 */
 	bool create(vk::Device device,
 	            vk::PhysicalDevice physicalDevice,
-	            vk::RenderPass renderPass,
 	            uint32_t width,
 	            uint32_t height,
 	            const SCP_vector<vk::Format>& colorFormats,
@@ -72,19 +73,24 @@ class VulkanFramebuffer {
 	/**
 	 * @brief Create framebuffer wrapping external image views (e.g., swapchain)
 	 * @param device Vulkan device
-	 * @param renderPass Compatible render pass
 	 * @param width Framebuffer width
 	 * @param height Framebuffer height
 	 * @param colorViews External color image views to wrap
+	 * @param colorFormat Format of the external color views (for getColorFormat())
 	 * @param depthView Optional external depth view (nullptr for no depth)
+	 * @param depthFormat Format of depth view (for getDepthFormat())
 	 * @return true on success
+	 *
+	 * @note With dynamic rendering (Vulkan 1.3+), VkFramebuffer objects are not created.
+	 *       This class now only manages the image views.
 	 */
 	bool createFromImageViews(vk::Device device,
-	                          vk::RenderPass renderPass,
 	                          uint32_t width,
 	                          uint32_t height,
 	                          const SCP_vector<vk::ImageView>& colorViews,
-	                          vk::ImageView depthView = nullptr);
+	                          vk::Format colorFormat,
+	                          vk::ImageView depthView = nullptr,
+	                          vk::Format depthFormat = vk::Format::eUndefined);
 
 	void destroy();
 
@@ -99,18 +105,32 @@ class VulkanFramebuffer {
 	vk::ImageView getDepthImageView() const;
 	vk::Image getDepthImage() const;
 
+	/**
+	 * @brief Get color attachment format (for dynamic rendering)
+	 * @param index Color attachment index
+	 * @return Format of the attachment, or eUndefined if invalid index
+	 */
+	vk::Format getColorFormat(size_t index = 0) const;
+
+	/**
+	 * @brief Get depth attachment format (for dynamic rendering)
+	 * @return Format of depth attachment, or eUndefined if no depth
+	 */
+	vk::Format getDepthFormat() const;
+
   private:
 	vk::Device m_device;
-	vk::UniqueFramebuffer m_framebuffer;
 	vk::Extent2D m_extent = {0, 0};
 
 	SCP_vector<FramebufferAttachment> m_colorAttachments;
 	FramebufferAttachment m_depthAttachment;
 	bool m_ownsAttachments = true; // false when wrapping external views
 
-	// For external views (swapchain)
+	// For external views (swapchain) - stores views and their formats
 	SCP_vector<vk::ImageView> m_externalColorViews;
+	vk::Format m_externalColorFormat = vk::Format::eUndefined;
 	vk::ImageView m_externalDepthView;
+	vk::Format m_externalDepthFormat = vk::Format::eUndefined;
 
 	bool createAttachment(vk::PhysicalDevice physicalDevice,
 	                      FramebufferAttachment& attachment,

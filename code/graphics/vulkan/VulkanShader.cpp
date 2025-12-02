@@ -199,7 +199,7 @@ void VulkanShaderCache::saveSpirvToCache(const SCP_string& cacheKey, const std::
 
 VulkanShaderCompiler::VulkanShaderCompiler() {
 	// Set up compile options for Vulkan target
-	m_options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_1);
+	m_options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_4);
 	m_options.SetSourceLanguage(shaderc_source_language_glsl);
 	m_options.SetOptimizationLevel(shaderc_optimization_level_performance);
 

@@ -23,7 +23,7 @@ Handles disk caching of compiled SPIR-V shaders to avoid recompilation.
 Compiles GLSL source code to SPIR-V bytecode using the shaderc library.
 
 **Configuration:**
-- Target: Vulkan 1.1
+- Target: Vulkan 1.4
 - Optimization level: Performance
 - Supports vertex, fragment, and geometry shaders
 - Full error reporting and compilation warnings

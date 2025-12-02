@@ -44,7 +44,6 @@ bool FramebufferAttachment::isStencilFormat() const
 
 bool VulkanFramebuffer::create(vk::Device device,
                                vk::PhysicalDevice physicalDevice,
-                               vk::RenderPass renderPass,
                                uint32_t width,
                                uint32_t height,
                                const SCP_vector<vk::Format>& colorFormats,
@@ -88,94 +87,43 @@ bool VulkanFramebuffer::create(vk::Device device,
 		}
 	}
 
-	// Collect image views for framebuffer creation
-	SCP_vector<vk::ImageView> attachmentViews;
-	attachmentViews.reserve(m_colorAttachments.size() + 1);
+	// Note: With dynamic rendering (Vulkan 1.3+), VkFramebuffer objects are not needed.
+	// The image views are used directly in VkRenderingAttachmentInfo.
 
-	for (const auto& colorAttachment : m_colorAttachments) {
-		attachmentViews.push_back(colorAttachment.view.get());
-	}
-
-	if (m_depthAttachment.view) {
-		attachmentViews.push_back(m_depthAttachment.view.get());
-	}
-
-	// Create framebuffer
-	vk::FramebufferCreateInfo framebufferInfo;
-	framebufferInfo.renderPass = renderPass;
-	framebufferInfo.attachmentCount = static_cast<uint32_t>(attachmentViews.size());
-	framebufferInfo.pAttachments = attachmentViews.data();
-	framebufferInfo.width = width;
-	framebufferInfo.height = height;
-	framebufferInfo.layers = 1;
-
-	try {
-		m_framebuffer = device.createFramebufferUnique(framebufferInfo);
-	} catch (const vk::SystemError& e) {
-		mprintf(("Vulkan: Failed to create framebuffer: %s\n", e.what()));
-		destroy();
-		return false;
-	}
-
-	mprintf(("Vulkan: Created framebuffer %ux%u with %zu color attachment(s)%s\n", width, height,
+	mprintf(("Vulkan: Created framebuffer attachments %ux%u with %zu color attachment(s)%s\n", width, height,
 	    m_colorAttachments.size(), m_depthAttachment.view ? " + depth" : ""));
 
 	return true;
 }
 
 bool VulkanFramebuffer::createFromImageViews(vk::Device device,
-                                             vk::RenderPass renderPass,
                                              uint32_t width,
                                              uint32_t height,
                                              const SCP_vector<vk::ImageView>& colorViews,
-                                             vk::ImageView depthView)
+                                             vk::Format colorFormat,
+                                             vk::ImageView depthView,
+                                             vk::Format depthFormat)
 {
 	m_device = device;
 	m_extent = vk::Extent2D{width, height};
 	m_ownsAttachments = false;
 
-	// Store external views
+	// Store external views and their formats
 	m_externalColorViews = colorViews;
+	m_externalColorFormat = colorFormat;
 	m_externalDepthView = depthView;
+	m_externalDepthFormat = depthFormat;
 
-	// Collect all views for framebuffer creation
-	SCP_vector<vk::ImageView> attachmentViews;
-	attachmentViews.reserve(colorViews.size() + (depthView ? 1 : 0));
-
-	for (vk::ImageView view : colorViews) {
-		attachmentViews.push_back(view);
-	}
-
-	if (depthView) {
-		attachmentViews.push_back(depthView);
-	}
-
-	// Create framebuffer
-	vk::FramebufferCreateInfo framebufferInfo;
-	framebufferInfo.renderPass = renderPass;
-	framebufferInfo.attachmentCount = static_cast<uint32_t>(attachmentViews.size());
-	framebufferInfo.pAttachments = attachmentViews.data();
-	framebufferInfo.width = width;
-	framebufferInfo.height = height;
-	framebufferInfo.layers = 1;
-
-	try {
-		m_framebuffer = device.createFramebufferUnique(framebufferInfo);
-	} catch (const vk::SystemError& e) {
-		mprintf(("Vulkan: Failed to create framebuffer from external views: %s\n", e.what()));
-		return false;
-	}
+	// Note: With dynamic rendering (Vulkan 1.3+), VkFramebuffer objects are not needed.
+	// The image views are used directly in VkRenderingAttachmentInfo.
 
 	return true;
 }
 
 void VulkanFramebuffer::destroy()
 {
-	// UniqueHandle types automatically clean up when reset
-	m_framebuffer.reset();
-
 	if (m_ownsAttachments) {
-		// Clean up owned attachments
+		// Clean up owned attachments (UniqueHandle types automatically clean up when reset)
 		for (auto& attachment : m_colorAttachments) {
 			attachment.view.reset();
 			attachment.image.reset();
@@ -189,11 +137,17 @@ void VulkanFramebuffer::destroy()
 	}
 
 	m_externalColorViews.clear();
+	m_externalColorFormat = vk::Format::eUndefined;
 	m_externalDepthView = nullptr;
+	m_externalDepthFormat = vk::Format::eUndefined;
 	m_extent = vk::Extent2D{0, 0};
 }
 
-vk::Framebuffer VulkanFramebuffer::getFramebuffer() const { return m_framebuffer.get(); }
+vk::Framebuffer VulkanFramebuffer::getFramebuffer() const
+{
+	// VkFramebuffer is not used with dynamic rendering (Vulkan 1.3+)
+	return nullptr;
+}
 
 vk::Extent2D VulkanFramebuffer::getExtent() const { return m_extent; }
 
@@ -250,6 +204,29 @@ vk::Image VulkanFramebuffer::getDepthImage() const
 		return m_depthAttachment.image.get();
 	}
 	return nullptr;
+}
+
+vk::Format VulkanFramebuffer::getColorFormat(size_t index) const
+{
+	if (m_ownsAttachments) {
+		if (index < m_colorAttachments.size()) {
+			return m_colorAttachments[index].format;
+		}
+		return vk::Format::eUndefined;
+	}
+	// For external views, return the stored format (same for all views)
+	if (index < m_externalColorViews.size()) {
+		return m_externalColorFormat;
+	}
+	return vk::Format::eUndefined;
+}
+
+vk::Format VulkanFramebuffer::getDepthFormat() const
+{
+	if (m_ownsAttachments) {
+		return m_depthAttachment.format;
+	}
+	return m_externalDepthFormat;
 }
 
 bool VulkanFramebuffer::createAttachment(vk::PhysicalDevice physicalDevice,

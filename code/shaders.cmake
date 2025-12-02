@@ -45,7 +45,7 @@ foreach (_shader ${SHADERS})
 
 		add_custom_command(OUTPUT "${_spirvFile}"
 			COMMAND ${CMAKE_COMMAND} -E make_directory "${_depFileDir}"
-			COMMAND glslc "${_shader}" -o "${_spirvFile}" --target-env=vulkan1.0 -O -g "-I${SHADER_DIR}"
+			COMMAND glslc "${_shader}" -o "${_spirvFile}" --target-env=vulkan1.4 -O -g "-I${SHADER_DIR}"
 				"-I${LEGACY_SHADER_DIR}" -MD -MF "${_depFile}" -MT "${_relativeSpirvPath}" -Werror -x glsl
 			MAIN_DEPENDENCY "${shader}"
 			COMMENT "Compiling shader ${_fileName}"

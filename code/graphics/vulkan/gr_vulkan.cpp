@@ -513,8 +513,9 @@ void gr_vulkan_calculate_irrmap()
 	pipelineKey.blendMode = ALPHA_BLEND_NONE;  // No blending
 	pipelineKey.hasPerBufferBlend = false;
 	pipelineKey.colorMask = {true, true, true, true};
-	pipelineKey.renderPass = irrmapRT->renderPass.get();
-	pipelineKey.subpass = 0;
+	// Dynamic rendering (Vulkan 1.3+) - use formats instead of render pass
+	pipelineKey.colorFormat = irrmapRT->framebuffer->getColorFormat(0);
+	pipelineKey.depthFormat = vk::Format::eUndefined;  // No depth for irradiance map
 	pipelineKey.sampleCount = vk::SampleCountFlagBits::e1;  // No MSAA for cubemap RT
 
 	// Get or create the pipeline
@@ -666,14 +667,16 @@ void gr_vulkan_render_primitives(material* material_info,
 		return;
 	}
 	
-	auto renderPass = renderer_instance->getCurrentRenderPass();
-	if (!renderPass) {
-		return;
+	// Get current rendering formats for pipeline creation
+	vk::Format colorFormat = renderer_instance->getCurrentColorFormat();
+	vk::Format depthFormat = renderer_instance->getCurrentDepthFormat();
+	if (colorFormat == vk::Format::eUndefined) {
+		return;  // No active rendering
 	}
-	
+
 	// Get or create pipeline from material and layout
 	vk::Pipeline pipeline = g_vulkanPipelineManager->getOrCreatePipeline(
-	    *material_info, *layout, prim_type, renderPass);
+	    *material_info, *layout, prim_type, colorFormat, depthFormat);
 	
 	if (!pipeline) {
 		mprintf(("Vulkan: Failed to get pipeline for render_primitives\n"));
@@ -726,13 +729,15 @@ void gr_vulkan_render_primitives_particle(particle_material* material_info,
 		return;
 	}
 	
-	auto renderPass = renderer_instance->getCurrentRenderPass();
-	if (!renderPass) {
-		return;
+	// Get current rendering formats for pipeline creation
+	vk::Format colorFormat = renderer_instance->getCurrentColorFormat();
+	vk::Format depthFormat = renderer_instance->getCurrentDepthFormat();
+	if (colorFormat == vk::Format::eUndefined) {
+		return;  // No active rendering
 	}
-	
+
 	vk::Pipeline pipeline = g_vulkanPipelineManager->getOrCreatePipeline(
-	    *material_info, *layout, prim_type, renderPass);
+	    *material_info, *layout, prim_type, colorFormat, depthFormat);
 	
 	if (!pipeline) {
 		return;
@@ -772,13 +777,15 @@ void gr_vulkan_render_primitives_batched(batched_bitmap_material* material_info,
 		return;
 	}
 	
-	auto renderPass = renderer_instance->getCurrentRenderPass();
-	if (!renderPass) {
-		return;
+	// Get current rendering formats for pipeline creation
+	vk::Format colorFormat = renderer_instance->getCurrentColorFormat();
+	vk::Format depthFormat = renderer_instance->getCurrentDepthFormat();
+	if (colorFormat == vk::Format::eUndefined) {
+		return;  // No active rendering
 	}
-	
+
 	vk::Pipeline pipeline = g_vulkanPipelineManager->getOrCreatePipeline(
-	    *material_info, *layout, prim_type, renderPass);
+	    *material_info, *layout, prim_type, colorFormat, depthFormat);
 	
 	if (!pipeline) {
 		return;
@@ -818,13 +825,15 @@ void gr_vulkan_render_primitives_distortion(distortion_material* material_info,
 		return;
 	}
 	
-	auto renderPass = renderer_instance->getCurrentRenderPass();
-	if (!renderPass) {
-		return;
+	// Get current rendering formats for pipeline creation
+	vk::Format colorFormat = renderer_instance->getCurrentColorFormat();
+	vk::Format depthFormat = renderer_instance->getCurrentDepthFormat();
+	if (colorFormat == vk::Format::eUndefined) {
+		return;  // No active rendering
 	}
-	
+
 	vk::Pipeline pipeline = g_vulkanPipelineManager->getOrCreatePipeline(
-	    *material_info, *layout, prim_type, renderPass);
+	    *material_info, *layout, prim_type, colorFormat, depthFormat);
 	
 	if (!pipeline) {
 		return;
@@ -864,13 +873,15 @@ void gr_vulkan_render_movie(movie_material* material_info,
 		return;
 	}
 	
-	auto renderPass = renderer_instance->getCurrentRenderPass();
-	if (!renderPass) {
-		return;
+	// Get current rendering formats for pipeline creation
+	vk::Format colorFormat = renderer_instance->getCurrentColorFormat();
+	vk::Format depthFormat = renderer_instance->getCurrentDepthFormat();
+	if (colorFormat == vk::Format::eUndefined) {
+		return;  // No active rendering
 	}
-	
+
 	vk::Pipeline pipeline = g_vulkanPipelineManager->getOrCreatePipeline(
-	    *material_info, *layout, prim_type, renderPass);
+	    *material_info, *layout, prim_type, colorFormat, depthFormat);
 	
 	if (!pipeline) {
 		return;
@@ -910,13 +921,15 @@ void gr_vulkan_render_nanovg(nanovg_material* material_info,
 		return;
 	}
 	
-	auto renderPass = renderer_instance->getCurrentRenderPass();
-	if (!renderPass) {
-		return;
+	// Get current rendering formats for pipeline creation
+	vk::Format colorFormat = renderer_instance->getCurrentColorFormat();
+	vk::Format depthFormat = renderer_instance->getCurrentDepthFormat();
+	if (colorFormat == vk::Format::eUndefined) {
+		return;  // No active rendering
 	}
-	
+
 	vk::Pipeline pipeline = g_vulkanPipelineManager->getOrCreatePipeline(
-	    *material_info, *layout, prim_type, renderPass);
+	    *material_info, *layout, prim_type, colorFormat, depthFormat);
 	
 	if (!pipeline) {
 		return;
@@ -957,13 +970,15 @@ void gr_vulkan_render_decals(decal_material* material_info,
 		return;
 	}
 	
-	auto renderPass = renderer_instance->getCurrentRenderPass();
-	if (!renderPass) {
-		return;
+	// Get current rendering formats for pipeline creation
+	vk::Format colorFormat = renderer_instance->getCurrentColorFormat();
+	vk::Format depthFormat = renderer_instance->getCurrentDepthFormat();
+	if (colorFormat == vk::Format::eUndefined) {
+		return;  // No active rendering
 	}
-	
+
 	vk::Pipeline pipeline = g_vulkanPipelineManager->getOrCreatePipeline(
-	    *material_info, *layout, prim_type, renderPass);
+	    *material_info, *layout, prim_type, colorFormat, depthFormat);
 	
 	if (!pipeline) {
 		return;
@@ -1010,13 +1025,15 @@ void gr_vulkan_render_rocket_primitives(interface_material* material_info,
 		return;
 	}
 	
-	auto renderPass = renderer_instance->getCurrentRenderPass();
-	if (!renderPass) {
-		return;
+	// Get current rendering formats for pipeline creation
+	vk::Format colorFormat = renderer_instance->getCurrentColorFormat();
+	vk::Format depthFormat = renderer_instance->getCurrentDepthFormat();
+	if (colorFormat == vk::Format::eUndefined) {
+		return;  // No active rendering
 	}
-	
+
 	vk::Pipeline pipeline = g_vulkanPipelineManager->getOrCreatePipeline(
-	    *material_info, *layout, prim_type, renderPass);
+	    *material_info, *layout, prim_type, colorFormat, depthFormat);
 	
 	if (!pipeline) {
 		return;
@@ -1055,16 +1072,18 @@ void gr_vulkan_render_model(model_material* material_info,
 		return;
 	}
 	
-	auto renderPass = renderer_instance->getCurrentRenderPass();
-	if (!renderPass) {
-		return;
+	// Get current rendering formats for pipeline creation
+	vk::Format colorFormat = renderer_instance->getCurrentColorFormat();
+	vk::Format depthFormat = renderer_instance->getCurrentDepthFormat();
+	if (colorFormat == vk::Format::eUndefined) {
+		return;  // No active rendering
 	}
-	
+
 	// Get vertex layout from vertex_buffer
 	vertex_layout* layout = &bufferp->layout;
-	
+
 	vk::Pipeline pipeline = g_vulkanPipelineManager->getOrCreatePipeline(
-	    *material_info, *layout, PRIM_TYPE_TRIS, renderPass);
+	    *material_info, *layout, PRIM_TYPE_TRIS, colorFormat, depthFormat);
 	
 	if (!pipeline) {
 		return;
@@ -1126,13 +1145,15 @@ void gr_vulkan_render_shield_impact(shield_material* material_info,
 		return;
 	}
 	
-	auto renderPass = renderer_instance->getCurrentRenderPass();
-	if (!renderPass) {
-		return;
+	// Get current rendering formats for pipeline creation
+	vk::Format colorFormat = renderer_instance->getCurrentColorFormat();
+	vk::Format depthFormat = renderer_instance->getCurrentDepthFormat();
+	if (colorFormat == vk::Format::eUndefined) {
+		return;  // No active rendering
 	}
-	
+
 	vk::Pipeline pipeline = g_vulkanPipelineManager->getOrCreatePipeline(
-	    *material_info, *layout, prim_type, renderPass);
+	    *material_info, *layout, prim_type, colorFormat, depthFormat);
 	
 	if (!pipeline) {
 		return;

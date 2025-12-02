@@ -50,8 +50,11 @@ bool PipelineKey::operator==(const PipelineKey& other) const
 
 	if (colorMask.x != other.colorMask.x || colorMask.y != other.colorMask.y ||
 	    colorMask.z != other.colorMask.z || colorMask.w != other.colorMask.w) return false;
-	if (renderPass != other.renderPass) return false;
-	if (subpass != other.subpass) return false;
+
+	// Dynamic rendering formats (Vulkan 1.3+)
+	if (colorFormat != other.colorFormat) return false;
+	if (depthFormat != other.depthFormat) return false;
+
 	if (sampleCount != other.sampleCount) return false;
 
 	return true;
@@ -98,9 +101,10 @@ size_t PipelineKey::hash() const
 	hashCombine(static_cast<size_t>(colorMask.z));
 	hashCombine(static_cast<size_t>(colorMask.w));
 
-	// Hash render pass handle
-	hashCombine(reinterpret_cast<size_t>(static_cast<VkRenderPass>(renderPass)));
-	hashCombine(static_cast<size_t>(subpass));
+	// Dynamic rendering formats (Vulkan 1.3+)
+	hashCombine(static_cast<size_t>(colorFormat));
+	hashCombine(static_cast<size_t>(depthFormat));
+
 	hashCombine(static_cast<size_t>(sampleCount));
 
 	return h;
@@ -204,10 +208,10 @@ vk::Pipeline VulkanPipelineManager::getOrCreatePipeline(const PipelineKey& key)
 vk::Pipeline VulkanPipelineManager::getOrCreatePipeline(const material& mat,
                                                           const vertex_layout& layout,
                                                           primitive_type primType,
-                                                          vk::RenderPass renderPass,
-                                                          uint32_t subpass)
+                                                          vk::Format colorFormat,
+                                                          vk::Format depthFormat)
 {
-	PipelineKey key = buildKeyFromMaterial(mat, layout, primType, renderPass, subpass);
+	PipelineKey key = buildKeyFromMaterial(mat, layout, primType, colorFormat, depthFormat);
 	return getOrCreatePipeline(key);
 }
 
@@ -276,21 +280,12 @@ void VulkanPipelineManager::clearCache()
 	m_vertexLayoutCache.clear();
 }
 
-void VulkanPipelineManager::invalidatePipelinesForRenderPass(vk::RenderPass renderPass)
+void VulkanPipelineManager::invalidatePipelinesForRenderPass(vk::RenderPass /*renderPass*/)
 {
-	size_t removed = 0;
-	for (auto it = m_pipelineCache.begin(); it != m_pipelineCache.end();) {
-		if (it->first.renderPass == renderPass) {
-			it = m_pipelineCache.erase(it);
-			++removed;
-		} else {
-			++it;
-		}
-	}
-
-	if (removed > 0) {
-		mprintf(("VulkanPipelineManager: Invalidated %zu pipelines for render pass\n", removed));
-	}
+	// With dynamic rendering (Vulkan 1.3+), render passes no longer exist.
+	// Pipelines are keyed by attachment formats, not render passes.
+	// This function is retained for API compatibility but is now a no-op.
+	// If format-based invalidation is needed, call clearCache() instead.
 }
 
 void VulkanPipelineManager::getCacheStats(size_t& numPipelines, size_t& numLayouts) const
@@ -525,8 +520,18 @@ vk::UniquePipeline VulkanPipelineManager::createPipeline(const PipelineKey& key)
 		return vk::UniquePipeline();
 	}
 
+	// Dynamic rendering (Vulkan 1.3+) - specify attachment formats directly
+	// This replaces VkRenderPass/VkFramebuffer with inline format specification
+	vk::PipelineRenderingCreateInfo renderingCreateInfo;
+	vk::Format colorFormats[] = { key.colorFormat };
+	renderingCreateInfo.colorAttachmentCount = 1;
+	renderingCreateInfo.pColorAttachmentFormats = colorFormats;
+	renderingCreateInfo.depthAttachmentFormat = key.depthFormat;
+	renderingCreateInfo.stencilAttachmentFormat = vk::Format::eUndefined;
+
 	// Create the pipeline
 	vk::GraphicsPipelineCreateInfo pipelineInfo;
+	pipelineInfo.pNext = &renderingCreateInfo;  // Dynamic rendering via pNext chain
 	pipelineInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
 	pipelineInfo.pStages = shaderStages.data();
 	pipelineInfo.pVertexInputState = &vertexInputInfo;
@@ -538,8 +543,8 @@ vk::UniquePipeline VulkanPipelineManager::createPipeline(const PipelineKey& key)
 	pipelineInfo.pColorBlendState = &colorBlending;
 	pipelineInfo.pDynamicState = &dynamicState;
 	pipelineInfo.layout = layout;
-	pipelineInfo.renderPass = key.renderPass;
-	pipelineInfo.subpass = key.subpass;
+	pipelineInfo.renderPass = nullptr;  // No render pass with dynamic rendering
+	pipelineInfo.subpass = 0;
 	pipelineInfo.basePipelineHandle = nullptr;
 	pipelineInfo.basePipelineIndex = -1;
 
@@ -555,8 +560,8 @@ vk::UniquePipeline VulkanPipelineManager::createPipeline(const PipelineKey& key)
 PipelineKey VulkanPipelineManager::buildKeyFromMaterial(const material& mat,
                                                           const vertex_layout& layout,
                                                           primitive_type primType,
-                                                          vk::RenderPass renderPass,
-                                                          uint32_t subpass)
+                                                          vk::Format colorFormat,
+                                                          vk::Format depthFormat)
 {
 	PipelineKey key;
 
@@ -566,7 +571,7 @@ PipelineKey VulkanPipelineManager::buildKeyFromMaterial(const material& mat,
 
 	// Vertex layout hash and cache
 	key.vertexLayoutHash = layout.hash();
-	
+
 	// Cache the layout so createPipeline can retrieve it
 	if (m_vertexLayoutCache.find(key.vertexLayoutHash) == m_vertexLayoutCache.end()) {
 		m_vertexLayoutCache[key.vertexLayoutHash] = layout;
@@ -608,9 +613,9 @@ PipelineKey VulkanPipelineManager::buildKeyFromMaterial(const material& mat,
 	// Color mask
 	key.colorMask = mat.get_color_mask();
 
-	// Render pass
-	key.renderPass = renderPass;
-	key.subpass = subpass;
+	// Dynamic rendering formats (Vulkan 1.3+)
+	key.colorFormat = colorFormat;
+	key.depthFormat = depthFormat;
 
 	// MSAA
 	key.sampleCount = m_currentMsaaSamples;

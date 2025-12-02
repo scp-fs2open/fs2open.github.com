@@ -1324,12 +1324,12 @@ int VulkanTextureManager::createRenderTarget(int handle, int* width, int* height
 				return 0;
 			}
 
-			// Create framebuffer for this face
+			// Create framebuffer wrapper for this face (dynamic rendering - no VkFramebuffer)
 			rt->cubeFaceFramebuffers[face] = std::make_unique<VulkanFramebuffer>();
 			SCP_vector<vk::ImageView> views = {rt->cubeFaceViews[face].get()};
-			
+
 			if (!rt->cubeFaceFramebuffers[face]->createFromImageViews(
-				m_device, rt->renderPass.get(), *width, *height, views, nullptr)) {
+				m_device, *width, *height, views, colorFormat, nullptr, vk::Format::eUndefined)) {
 				mprintf(("Vulkan: Failed to create cubemap face %d framebuffer\n", face));
 				m_textures.erase(handle);
 				delete texture;
@@ -1337,11 +1337,11 @@ int VulkanTextureManager::createRenderTarget(int handle, int* width, int* height
 			}
 		}
 	} else {
-		// Create single framebuffer for 2D render target
+		// Create single framebuffer for 2D render target (dynamic rendering - no VkFramebuffer)
 		rt->framebuffer = std::make_unique<VulkanFramebuffer>();
 		SCP_vector<vk::Format> colorFormats = {colorFormat};
-		
-		if (!rt->framebuffer->create(m_device, m_physicalDevice, rt->renderPass.get(),
+
+		if (!rt->framebuffer->create(m_device, m_physicalDevice,
 			*width, *height, colorFormats, vk::Format::eD24UnormS8Uint)) {
 			mprintf(("Vulkan: Failed to create render target framebuffer\n"));
 			m_textures.erase(handle);

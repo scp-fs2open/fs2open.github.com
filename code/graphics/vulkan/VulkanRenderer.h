@@ -32,6 +32,10 @@ struct PhysicalDeviceValues {
 	vk::PhysicalDeviceProperties properties;
 	vk::PhysicalDeviceFeatures features;
 
+	// Vulkan 1.2 and 1.3 features (core in Vulkan 1.4)
+	vk::PhysicalDeviceVulkan12Features features12{};
+	vk::PhysicalDeviceVulkan13Features features13{};
+
 	std::vector<vk::ExtensionProperties> extensions;
 
 	vk::SurfaceCapabilitiesKHR surfaceCapabilities;
@@ -46,6 +50,9 @@ struct PhysicalDeviceValues {
 	// HDR capability detection
 	bool supportsHDR10 = false;
 	vk::ColorSpaceKHR preferredHDRColorSpace = vk::ColorSpaceKHR::eSrgbNonlinear;
+
+	// Vulkan 1.4 required features support
+	bool supportsVulkan14Features = false;
 };
 
 class VulkanRenderer {
@@ -126,8 +133,21 @@ class VulkanRenderer {
 	/**
 	 * @brief Get current render pass for pipeline creation
 	 * @return Current render pass if active, null handle otherwise
+	 * @deprecated Use getCurrentColorFormat()/getCurrentDepthFormat() with dynamic rendering
 	 */
 	vk::RenderPass getCurrentRenderPass() const;
+
+	/**
+	 * @brief Get current color attachment format for dynamic rendering pipelines
+	 * @return Current color format, or eUndefined if no rendering active
+	 */
+	vk::Format getCurrentColorFormat() const { return m_currentColorFormat; }
+
+	/**
+	 * @brief Get current depth attachment format for dynamic rendering pipelines
+	 * @return Current depth format, or eUndefined if no depth attachment
+	 */
+	vk::Format getCurrentDepthFormat() const { return m_currentDepthFormat; }
 
 	/**
 	 * @brief Get scene extent for viewport/scissor setup
@@ -337,6 +357,13 @@ class VulkanRenderer {
 	DrawState m_drawState;
 	vk::Extent2D m_sceneExtent = {0, 0};
 	std::array<float, 4> m_clearColor = {0.0f, 0.0f, 0.0f, 1.0f};
+
+	// Dynamic rendering state (Vulkan 1.3+)
+	// Track current attachment formats for pipeline creation
+	vk::Format m_currentColorFormat = vk::Format::eUndefined;
+	vk::Format m_currentDepthFormat = vk::Format::eUndefined;
+	vk::ImageView m_currentColorView;  // Current color attachment view for dynamic rendering
+	vk::ImageView m_currentDepthView;  // Current depth attachment view for dynamic rendering
 
 	// Blit pipeline for scene-to-swapchain copy
 	vk::UniquePipelineLayout m_blitPipelineLayout;

@@ -30,7 +30,7 @@ namespace {
 #if SDL_SUPPORTS_VULKAN
 const char* EngineName = "FreeSpaceOpen";
 
-const gameversion::version MinVulkanVersion(1, 1, 0, 0);
+const gameversion::version MinVulkanVersion(1, 4, 0, 0);
 
 VkBool32 VKAPI_PTR debugReportCallback(
 #if VK_HEADER_VERSION >= 304
@@ -149,6 +149,33 @@ bool isDeviceUnsuitable(PhysicalDeviceValues& values, const vk::UniqueSurfaceKHR
 		mprintf(("Rejecting %s (%d) because the device swap chain was not compatible.\n",
 			values.properties.deviceName.data(),
 			values.properties.deviceID));
+		return true;
+	}
+
+	// Require Vulkan 1.4 API version
+	if (values.properties.apiVersion < VK_API_VERSION_1_4) {
+		mprintf(("Rejecting %s (%d) because device API version %d.%d.%d is less than required 1.4.0.\n",
+			values.properties.deviceName.data(),
+			values.properties.deviceID,
+			VK_VERSION_MAJOR(values.properties.apiVersion),
+			VK_VERSION_MINOR(values.properties.apiVersion),
+			VK_VERSION_PATCH(values.properties.apiVersion)));
+		return true;
+	}
+
+	// Require Vulkan 1.4 features (BDA, descriptor indexing, dynamic rendering)
+	if (!values.supportsVulkan14Features) {
+		mprintf(("Rejecting %s (%d) because it does not support required Vulkan 1.4 features.\n",
+			values.properties.deviceName.data(),
+			values.properties.deviceID));
+		mprintf(("  bufferDeviceAddress: %s\n", values.features12.bufferDeviceAddress ? "yes" : "NO"));
+		mprintf(("  descriptorIndexing: %s\n", values.features12.descriptorIndexing ? "yes" : "NO"));
+		mprintf(("  descriptorBindingPartiallyBound: %s\n", values.features12.descriptorBindingPartiallyBound ? "yes" : "NO"));
+		mprintf(("  descriptorBindingSampledImageUpdateAfterBind: %s\n", values.features12.descriptorBindingSampledImageUpdateAfterBind ? "yes" : "NO"));
+		mprintf(("  runtimeDescriptorArray: %s\n", values.features12.runtimeDescriptorArray ? "yes" : "NO"));
+		mprintf(("  shaderSampledImageArrayNonUniformIndexing: %s\n", values.features12.shaderSampledImageArrayNonUniformIndexing ? "yes" : "NO"));
+		mprintf(("  dynamicRendering: %s\n", values.features13.dynamicRendering ? "yes" : "NO"));
+		mprintf(("  synchronization2: %s\n", values.features13.synchronization2 ? "yes" : "NO"));
 		return true;
 	}
 
@@ -598,7 +625,7 @@ bool VulkanRenderer::initializeInstance()
 			VK_VERSION_MINOR(layer.specVersion),
 			VK_VERSION_PATCH(layer.specVersion),
 			layer.implementationVersion));
-		// Modern unified validation layer (Vulkan SDK 1.1.106+)
+		// Modern unified validation layer (Vulkan SDK 1.3.0+)
 		if (!stricmp(layer.layerName, "VK_LAYER_KHRONOS_validation")) {
 			layers.push_back("VK_LAYER_KHRONOS_validation");
 		}
@@ -608,7 +635,7 @@ bool VulkanRenderer::initializeInstance()
 		}
 	}
 
-	vk::ApplicationInfo appInfo(Window_title.c_str(), 1, EngineName, 1, VK_API_VERSION_1_1);
+	vk::ApplicationInfo appInfo(Window_title.c_str(), 1, EngineName, 1, VK_API_VERSION_1_4);
 
 	// Now we can make the Vulkan instance
 	vk::InstanceCreateInfo createInfo(vk::Flags<vk::InstanceCreateFlagBits>(), &appInfo);
@@ -690,7 +717,27 @@ bool VulkanRenderer::pickPhysicalDevice(PhysicalDeviceValues& deviceValues)
 		PhysicalDeviceValues vals;
 		vals.device = dev;
 		vals.properties = dev.getProperties2().properties;
-		vals.features = dev.getFeatures2().features;
+
+		// Query Vulkan 1.2 and 1.3 features (core in Vulkan 1.4) using chained structures
+		vk::PhysicalDeviceFeatures2 features2;
+		vals.features12.sType = vk::StructureType::ePhysicalDeviceVulkan12Features;
+		vals.features13.sType = vk::StructureType::ePhysicalDeviceVulkan13Features;
+		features2.pNext = &vals.features12;
+		vals.features12.pNext = &vals.features13;
+		dev.getFeatures2(&features2);
+		vals.features = features2.features;
+
+		// Check if all required Vulkan 1.4 features are supported
+		vals.supportsVulkan14Features =
+			vals.features12.bufferDeviceAddress &&
+			vals.features12.descriptorIndexing &&
+			vals.features12.descriptorBindingPartiallyBound &&
+			vals.features12.descriptorBindingSampledImageUpdateAfterBind &&
+			vals.features12.runtimeDescriptorArray &&
+			vals.features12.shaderSampledImageArrayNonUniformIndexing &&
+			vals.features13.dynamicRendering &&
+			vals.features13.synchronization2;
+
 		vals.queueProperties = dev.getQueueFamilyProperties();
 		return vals;
 	});
@@ -758,13 +805,40 @@ bool VulkanRenderer::createLogicalDevice(const PhysicalDeviceValues& deviceValue
 		queueInfos.emplace_back(vk::DeviceQueueCreateFlags(), index, 1, &queuePriority);
 	}
 
+	// Enable Vulkan 1.2 features (core in Vulkan 1.4) - BDA, descriptor indexing
+	vk::PhysicalDeviceVulkan12Features features12{};
+	features12.bufferDeviceAddress = VK_TRUE;
+	features12.descriptorIndexing = VK_TRUE;
+	features12.descriptorBindingPartiallyBound = VK_TRUE;
+	features12.descriptorBindingSampledImageUpdateAfterBind = VK_TRUE;
+	features12.runtimeDescriptorArray = VK_TRUE;
+	features12.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
+
+	// Enable Vulkan 1.3 features (core in Vulkan 1.4) - dynamic rendering, sync2
+	vk::PhysicalDeviceVulkan13Features features13{};
+	features13.dynamicRendering = VK_TRUE;
+	features13.synchronization2 = VK_TRUE;
+
+	// Chain: DeviceCreateInfo -> Features2 -> Features12 -> Features13
+	vk::PhysicalDeviceFeatures2 features2{};
+	features2.features = deviceValues.features;
+	features2.pNext = &features12;
+	features12.pNext = &features13;
+
 	vk::DeviceCreateInfo deviceCreate;
 	deviceCreate.pQueueCreateInfos = queueInfos.data();
 	deviceCreate.queueCreateInfoCount = static_cast<uint32_t>(queueInfos.size());
-	deviceCreate.pEnabledFeatures = &deviceValues.features;
+	deviceCreate.pNext = &features2;  // Use pNext chain instead of pEnabledFeatures
+	deviceCreate.pEnabledFeatures = nullptr;  // Must be null when using pNext
 
 	deviceCreate.ppEnabledExtensionNames = RequiredDeviceExtensions.data();
 	deviceCreate.enabledExtensionCount = static_cast<uint32_t>(RequiredDeviceExtensions.size());
+
+	mprintf(("Vulkan: Creating device with Vulkan 1.4 features enabled\n"));
+	mprintf(("  bufferDeviceAddress: enabled\n"));
+	mprintf(("  descriptorIndexing: enabled\n"));
+	mprintf(("  dynamicRendering: enabled\n"));
+	mprintf(("  synchronization2: enabled\n"));
 
 	m_device = deviceValues.device.createDeviceUnique(deviceCreate);
 
@@ -902,10 +976,10 @@ bool VulkanRenderer::createSceneFramebuffer()
 {
 	m_sceneFramebuffer = std::make_unique<VulkanFramebuffer>();
 
-	// Create scene framebuffer with HDR color + depth
+	// Create scene framebuffer attachments with HDR color + depth
+	// Note: With dynamic rendering (Vulkan 1.3+), we only create the images/views, not VkFramebuffer
 	if (!m_sceneFramebuffer->create(m_device.get(),
 	        m_physicalDevice,
-	        m_renderPassManager->getSceneRenderPass(),
 	        m_swapChainExtent.width,
 	        m_swapChainExtent.height,
 	        {vk::Format::eR16G16B16A16Sfloat}, // HDR color
@@ -924,15 +998,17 @@ void VulkanRenderer::createSwapchainFramebuffers()
 	m_swapchainFramebuffers.clear();
 	m_swapchainFramebuffers.reserve(m_swapChainImageViews.size());
 
-	// Create framebuffer for each swapchain image (no depth - present pass doesn't need it)
+	// Create framebuffer wrapper for each swapchain image (no depth - present pass doesn't need it)
+	// Note: With dynamic rendering, we just store the image views, no VkFramebuffer is created
 	for (size_t i = 0; i < m_swapChainImageViews.size(); ++i) {
 		auto fb = std::make_unique<VulkanFramebuffer>();
 		if (!fb->createFromImageViews(m_device.get(),
-		        m_renderPassManager->getPresentRenderPass(),
 		        m_swapChainExtent.width,
 		        m_swapChainExtent.height,
 		        {m_swapChainImageViews[i].get()},
-		        nullptr)) { // No depth for present pass
+		        m_swapChainImageFormat,  // Color format for getColorFormat()
+		        nullptr,                  // No depth view
+		        vk::Format::eUndefined)) { // No depth format
 			mprintf(("Vulkan: Failed to create swapchain framebuffer %zu\n", i));
 			continue;
 		}
@@ -1042,7 +1118,15 @@ void VulkanRenderer::createGraphicsPipeline()
 
 	m_pipelineLayout = m_device->createPipelineLayoutUnique(pipelineLayout);
 
+	// Dynamic rendering (Vulkan 1.3+) - specify attachment format directly
+	vk::PipelineRenderingCreateInfo renderingCreateInfo;
+	vk::Format colorFormats[] = { m_swapChainImageFormat };
+	renderingCreateInfo.colorAttachmentCount = 1;
+	renderingCreateInfo.pColorAttachmentFormats = colorFormats;
+	renderingCreateInfo.depthAttachmentFormat = vk::Format::eUndefined;  // No depth for test pipeline
+
 	vk::GraphicsPipelineCreateInfo pipelineInfo;
+	pipelineInfo.pNext = &renderingCreateInfo;  // Dynamic rendering via pNext chain
 	pipelineInfo.stageCount = 2;
 	pipelineInfo.pStages = shaderStages.data();
 	pipelineInfo.pVertexInputState = &vertInCreate;
@@ -1054,7 +1138,7 @@ void VulkanRenderer::createGraphicsPipeline()
 	pipelineInfo.pColorBlendState = &colorBlending;
 	pipelineInfo.pDynamicState = nullptr;
 	pipelineInfo.layout = m_pipelineLayout.get();
-	pipelineInfo.renderPass = m_renderPassManager->getPresentRenderPass();
+	pipelineInfo.renderPass = nullptr;  // No render pass with dynamic rendering
 	pipelineInfo.subpass = 0;
 	pipelineInfo.basePipelineHandle = nullptr;
 	pipelineInfo.basePipelineIndex = -1;
@@ -1166,7 +1250,15 @@ bool VulkanRenderer::createBlitPipeline()
 	colorBlending.attachmentCount = 1;
 	colorBlending.pAttachments = &colorBlendAttachment;
 
+	// Dynamic rendering (Vulkan 1.3+) - specify attachment format directly
+	vk::PipelineRenderingCreateInfo renderingCreateInfo;
+	vk::Format colorFormats[] = { m_swapChainImageFormat };
+	renderingCreateInfo.colorAttachmentCount = 1;
+	renderingCreateInfo.pColorAttachmentFormats = colorFormats;
+	renderingCreateInfo.depthAttachmentFormat = vk::Format::eUndefined;  // No depth for blit
+
 	vk::GraphicsPipelineCreateInfo pipelineInfo;
+	pipelineInfo.pNext = &renderingCreateInfo;  // Dynamic rendering via pNext chain
 	pipelineInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
 	pipelineInfo.pStages = shaderStages.data();
 	pipelineInfo.pVertexInputState = &vertexInputInfo;
@@ -1178,7 +1270,7 @@ bool VulkanRenderer::createBlitPipeline()
 	pipelineInfo.pColorBlendState = &colorBlending;
 	pipelineInfo.pDynamicState = nullptr;
 	pipelineInfo.layout = m_blitPipelineLayout.get();
-	pipelineInfo.renderPass = m_renderPassManager->getPresentRenderPass();
+	pipelineInfo.renderPass = nullptr;  // No render pass with dynamic rendering
 	pipelineInfo.subpass = 0;
 
 	auto result = m_device->createGraphicsPipelineUnique(nullptr, pipelineInfo);
@@ -1313,42 +1405,90 @@ void VulkanRenderer::acquireNextSwapChainImage()
 	// Reserve the image as in use
 	m_swapChainImageRenderImage[m_currentSwapChainImage] = m_frames[m_currentFrame].get();
 }
-void VulkanRenderer::drawScene(vk::Framebuffer destinationFb, vk::CommandBuffer cmdBuffer)
+void VulkanRenderer::drawScene(vk::Framebuffer /*destinationFb*/, vk::CommandBuffer cmdBuffer)
 {
+	// Note: destinationFb parameter is ignored with dynamic rendering (Vulkan 1.3+)
+	// Kept for API compatibility - uses current swapchain image instead
+
 	vk::CommandBufferBeginInfo beginInfo;
 	beginInfo.flags |= vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
 
+	vk::ImageView swapchainView = m_swapChainImageViews[m_currentSwapChainImage].get();
+
 	vk_logf("VulkanRenderer",
-		"drawScene: cmd=%p framebuffer=%p extent=%ux%u",
+		"drawScene: cmd=%p swapchainView=%p extent=%ux%u",
 		reinterpret_cast<void*>(static_cast<VkCommandBuffer>(cmdBuffer)),
-		reinterpret_cast<void*>(static_cast<VkFramebuffer>(destinationFb)),
+		reinterpret_cast<void*>(static_cast<VkImageView>(swapchainView)),
 		m_swapChainExtent.width,
 		m_swapChainExtent.height);
 
 	cmdBuffer.begin(beginInfo);
 
-	vk::RenderPassBeginInfo renderPassBegin;
-	renderPassBegin.renderPass = m_renderPassManager->getPresentRenderPass();
-	renderPassBegin.framebuffer = destinationFb;
-	renderPassBegin.renderArea.offset.x = 0;
-	renderPassBegin.renderArea.offset.y = 0;
-	renderPassBegin.renderArea.extent = m_swapChainExtent;
+	// Transition swapchain image to COLOR_ATTACHMENT_OPTIMAL
+	vk::ImageMemoryBarrier2 colorBarrier;
+	colorBarrier.srcStageMask = vk::PipelineStageFlagBits2::eTopOfPipe;
+	colorBarrier.srcAccessMask = vk::AccessFlagBits2::eNone;
+	colorBarrier.dstStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
+	colorBarrier.dstAccessMask = vk::AccessFlagBits2::eColorAttachmentWrite;
+	colorBarrier.oldLayout = vk::ImageLayout::eUndefined;
+	colorBarrier.newLayout = vk::ImageLayout::eColorAttachmentOptimal;
+	colorBarrier.image = m_swapChainImages[m_currentSwapChainImage];
+	colorBarrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+	colorBarrier.subresourceRange.baseMipLevel = 0;
+	colorBarrier.subresourceRange.levelCount = 1;
+	colorBarrier.subresourceRange.baseArrayLayer = 0;
+	colorBarrier.subresourceRange.layerCount = 1;
 
-	vk::ClearValue clearColor;
-	clearColor.color.setFloat32({0.0f, 0.0f, 0.0f, 1.0f});
+	vk::DependencyInfo depInfo;
+	depInfo.imageMemoryBarrierCount = 1;
+	depInfo.pImageMemoryBarriers = &colorBarrier;
+	cmdBuffer.pipelineBarrier2(depInfo);
 
-	renderPassBegin.clearValueCount = 1;
-	renderPassBegin.pClearValues = &clearColor;
+	// Set up dynamic rendering
+	vk::RenderingAttachmentInfo colorAttachment;
+	colorAttachment.imageView = swapchainView;
+	colorAttachment.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+	colorAttachment.loadOp = vk::AttachmentLoadOp::eClear;
+	colorAttachment.storeOp = vk::AttachmentStoreOp::eStore;
+	colorAttachment.clearValue.color.setFloat32({0.0f, 0.0f, 0.0f, 1.0f});
 
-	cmdBuffer.beginRenderPass(renderPassBegin, vk::SubpassContents::eInline);
+	vk::RenderingInfo renderingInfo;
+	renderingInfo.renderArea.offset = vk::Offset2D{0, 0};
+	renderingInfo.renderArea.extent = m_swapChainExtent;
+	renderingInfo.layerCount = 1;
+	renderingInfo.colorAttachmentCount = 1;
+	renderingInfo.pColorAttachments = &colorAttachment;
+
+	cmdBuffer.beginRendering(renderingInfo);
 
 	cmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, m_graphicsPipeline.get());
 
 	cmdBuffer.draw(3, 1, 0, 0);
 
-	cmdBuffer.endRenderPass();
+	cmdBuffer.endRendering();
+
+	// Transition swapchain image to PRESENT_SRC_KHR
+	vk::ImageMemoryBarrier2 presentBarrier;
+	presentBarrier.srcStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
+	presentBarrier.srcAccessMask = vk::AccessFlagBits2::eColorAttachmentWrite;
+	presentBarrier.dstStageMask = vk::PipelineStageFlagBits2::eBottomOfPipe;
+	presentBarrier.dstAccessMask = vk::AccessFlagBits2::eNone;
+	presentBarrier.oldLayout = vk::ImageLayout::eColorAttachmentOptimal;
+	presentBarrier.newLayout = vk::ImageLayout::ePresentSrcKHR;
+	presentBarrier.image = m_swapChainImages[m_currentSwapChainImage];
+	presentBarrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+	presentBarrier.subresourceRange.baseMipLevel = 0;
+	presentBarrier.subresourceRange.levelCount = 1;
+	presentBarrier.subresourceRange.baseArrayLayer = 0;
+	presentBarrier.subresourceRange.layerCount = 1;
+
+	vk::DependencyInfo presentDepInfo;
+	presentDepInfo.imageMemoryBarrierCount = 1;
+	presentDepInfo.pImageMemoryBarriers = &presentBarrier;
+	cmdBuffer.pipelineBarrier2(presentDepInfo);
+
 	vk_logf("VulkanRenderer",
-		"drawScene: end render pass cmd=%p",
+		"drawScene: endRendering cmd=%p",
 		reinterpret_cast<void*>(static_cast<VkCommandBuffer>(cmdBuffer)));
 
 	cmdBuffer.end();
@@ -1385,8 +1525,7 @@ void VulkanRenderer::beginScenePass()
 	beginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
 	m_sceneCommandBuffer.begin(beginInfo);
 
-	// Determine target framebuffer/render pass (scene framebuffer by default)
-	vk::RenderPass targetRenderPass = m_renderPassManager->getSceneRenderPass();
+	// Determine target framebuffer (scene framebuffer by default)
 	VulkanFramebuffer* targetFramebuffer = m_sceneFramebuffer.get();
 	vk::Extent2D targetExtent = m_swapChainExtent;
 	bool usingActiveRenderTarget = false;
@@ -1396,8 +1535,6 @@ void VulkanRenderer::beginScenePass()
 	if (m_activeRenderTarget.isActive && m_activeRenderTarget.framebuffer) {
 		targetFramebuffer = m_activeRenderTarget.framebuffer;
 		targetExtent = m_activeRenderTarget.extent;
-		// Use scene render pass for render targets (TODO: Create dedicated render pass if needed)
-		targetRenderPass = m_renderPassManager->getSceneRenderPass();
 		usingActiveRenderTarget = true;
 	} else if (m_textureManager && m_textureManager->isRenderingToTexture()) {
 		// Fallback to texture manager's render target tracking (for compatibility)
@@ -1409,8 +1546,7 @@ void VulkanRenderer::beginScenePass()
 				rtFramebuffer = activeRT->framebuffer.get();
 			}
 
-			if (rtFramebuffer && activeRT->renderPass) {
-				targetRenderPass = activeRT->renderPass.get();
+			if (rtFramebuffer) {
 				targetFramebuffer = rtFramebuffer;
 				targetExtent = rtFramebuffer->getExtent();
 				usingTextureManagerRT = true;
@@ -1418,46 +1554,107 @@ void VulkanRenderer::beginScenePass()
 		}
 	}
 
-	if (!targetRenderPass || !targetFramebuffer) {
+	if (!targetFramebuffer) {
 		vk_logf("VulkanRenderer",
-			"beginScenePass failed: missing render pass/framebuffer (renderPass=%p framebuffer=%p)",
-			reinterpret_cast<void*>(static_cast<VkRenderPass>(targetRenderPass)),
-			targetFramebuffer ? reinterpret_cast<void*>(static_cast<VkFramebuffer>(targetFramebuffer->getFramebuffer())) : nullptr);
+			"beginScenePass failed: missing framebuffer");
 		return;
 	}
 
-	// Begin scene render pass
-	vk::RenderPassBeginInfo renderPassBegin;
-	renderPassBegin.renderPass = targetRenderPass;
-	renderPassBegin.framebuffer = targetFramebuffer->getFramebuffer();
-	renderPassBegin.renderArea.offset = vk::Offset2D{0, 0};
-	renderPassBegin.renderArea.extent = targetExtent;
+	// Get attachment views and formats for dynamic rendering
+	vk::ImageView colorView = targetFramebuffer->getColorImageView(0);
+	vk::ImageView depthView = targetFramebuffer->getDepthImageView();
+	vk::Format colorFormat = targetFramebuffer->getColorFormat(0);
+	vk::Format depthFormat = targetFramebuffer->getDepthFormat();
 
-	// Clear values: always clear color; depth only if attachment present
-	std::array<vk::ClearValue, 2> clearValues;
-	clearValues[0].color.setFloat32({m_clearColor[0], m_clearColor[1], m_clearColor[2], m_clearColor[3]});
-	uint32_t clearCount = 1;
-	if (targetFramebuffer->hasDepthAttachment()) {
-		clearValues[1].depthStencil = vk::ClearDepthStencilValue{1.0f, 0};
-		clearCount = 2;
+	// Transition color attachment to COLOR_ATTACHMENT_OPTIMAL
+	if (colorView) {
+		vk::ImageMemoryBarrier2 colorBarrier;
+		colorBarrier.srcStageMask = vk::PipelineStageFlagBits2::eTopOfPipe;
+		colorBarrier.srcAccessMask = vk::AccessFlagBits2::eNone;
+		colorBarrier.dstStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
+		colorBarrier.dstAccessMask = vk::AccessFlagBits2::eColorAttachmentWrite;
+		colorBarrier.oldLayout = vk::ImageLayout::eUndefined;
+		colorBarrier.newLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		colorBarrier.image = targetFramebuffer->getColorImage(0);
+		colorBarrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+		colorBarrier.subresourceRange.baseMipLevel = 0;
+		colorBarrier.subresourceRange.levelCount = 1;
+		colorBarrier.subresourceRange.baseArrayLayer = 0;
+		colorBarrier.subresourceRange.layerCount = 1;
+
+		vk::DependencyInfo depInfo;
+		depInfo.imageMemoryBarrierCount = 1;
+		depInfo.pImageMemoryBarriers = &colorBarrier;
+		m_sceneCommandBuffer.pipelineBarrier2(depInfo);
 	}
 
-	renderPassBegin.clearValueCount = clearCount;
-	renderPassBegin.pClearValues = clearValues.data();
+	// Transition depth attachment to DEPTH_STENCIL_ATTACHMENT_OPTIMAL
+	if (depthView && targetFramebuffer->getDepthImage()) {
+		vk::ImageMemoryBarrier2 depthBarrier;
+		depthBarrier.srcStageMask = vk::PipelineStageFlagBits2::eTopOfPipe;
+		depthBarrier.srcAccessMask = vk::AccessFlagBits2::eNone;
+		depthBarrier.dstStageMask = vk::PipelineStageFlagBits2::eEarlyFragmentTests;
+		depthBarrier.dstAccessMask = vk::AccessFlagBits2::eDepthStencilAttachmentRead |
+		                              vk::AccessFlagBits2::eDepthStencilAttachmentWrite;
+		depthBarrier.oldLayout = vk::ImageLayout::eUndefined;
+		depthBarrier.newLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+		depthBarrier.image = targetFramebuffer->getDepthImage();
+		depthBarrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eDepth;
+		depthBarrier.subresourceRange.baseMipLevel = 0;
+		depthBarrier.subresourceRange.levelCount = 1;
+		depthBarrier.subresourceRange.baseArrayLayer = 0;
+		depthBarrier.subresourceRange.layerCount = 1;
+
+		vk::DependencyInfo depInfo;
+		depInfo.imageMemoryBarrierCount = 1;
+		depInfo.pImageMemoryBarriers = &depthBarrier;
+		m_sceneCommandBuffer.pipelineBarrier2(depInfo);
+	}
+
+	// Set up dynamic rendering (Vulkan 1.3+)
+	vk::RenderingAttachmentInfo colorAttachment;
+	colorAttachment.imageView = colorView;
+	colorAttachment.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+	colorAttachment.loadOp = vk::AttachmentLoadOp::eClear;
+	colorAttachment.storeOp = vk::AttachmentStoreOp::eStore;
+	colorAttachment.clearValue.color.setFloat32({m_clearColor[0], m_clearColor[1], m_clearColor[2], m_clearColor[3]});
+
+	vk::RenderingAttachmentInfo depthAttachment;
+	if (depthView) {
+		depthAttachment.imageView = depthView;
+		depthAttachment.imageLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+		depthAttachment.loadOp = vk::AttachmentLoadOp::eClear;
+		depthAttachment.storeOp = vk::AttachmentStoreOp::eDontCare;
+		depthAttachment.clearValue.depthStencil = vk::ClearDepthStencilValue{1.0f, 0};
+	}
+
+	vk::RenderingInfo renderingInfo;
+	renderingInfo.renderArea.offset = vk::Offset2D{0, 0};
+	renderingInfo.renderArea.extent = targetExtent;
+	renderingInfo.layerCount = 1;
+	renderingInfo.colorAttachmentCount = 1;
+	renderingInfo.pColorAttachments = &colorAttachment;
+	renderingInfo.pDepthAttachment = depthView ? &depthAttachment : nullptr;
 
 	m_sceneExtent = targetExtent;
 
+	// Track current formats for pipeline creation
+	m_currentColorFormat = colorFormat;
+	m_currentDepthFormat = depthFormat;
+	m_currentColorView = colorView;
+	m_currentDepthView = depthView;
+
 	vk_logf("VulkanRenderer",
-		"beginScenePass: beginRenderPass cmd=%p renderPass=%p framebuffer=%p extent=%ux%u activeRT=%d textureRT=%d",
+		"beginScenePass: beginRendering cmd=%p colorView=%p depthView=%p extent=%ux%u activeRT=%d textureRT=%d",
 		reinterpret_cast<void*>(static_cast<VkCommandBuffer>(m_sceneCommandBuffer)),
-		reinterpret_cast<void*>(static_cast<VkRenderPass>(targetRenderPass)),
-		reinterpret_cast<void*>(static_cast<VkFramebuffer>(targetFramebuffer->getFramebuffer())),
+		reinterpret_cast<void*>(static_cast<VkImageView>(colorView)),
+		reinterpret_cast<void*>(static_cast<VkImageView>(depthView)),
 		targetExtent.width,
 		targetExtent.height,
 		usingActiveRenderTarget ? 1 : 0,
 		usingTextureManagerRT ? 1 : 0);
 
-	m_sceneCommandBuffer.beginRenderPass(renderPassBegin, vk::SubpassContents::eInline);
+	m_sceneCommandBuffer.beginRendering(renderingInfo);
 
 	m_scenePassActive = true;
 	
@@ -1474,19 +1671,50 @@ void VulkanRenderer::endScenePass()
 		return;
 	}
 
-	// End the scene render pass (this triggers layout transition to ShaderReadOnlyOptimal)
+	// End dynamic rendering
 	vk_logf("VulkanRenderer",
-		"endScenePass: ending render pass for cmd=%p",
+		"endScenePass: endRendering for cmd=%p",
 		reinterpret_cast<void*>(static_cast<VkCommandBuffer>(m_sceneCommandBuffer)));
-	m_sceneCommandBuffer.endRenderPass();
+	m_sceneCommandBuffer.endRendering();
+
+	// Transition color attachment to SHADER_READ_ONLY_OPTIMAL for sampling in post-processing
+	if (m_currentColorView && m_sceneFramebuffer && m_sceneFramebuffer->getColorImage(0)) {
+		vk::ImageMemoryBarrier2 colorBarrier;
+		colorBarrier.srcStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
+		colorBarrier.srcAccessMask = vk::AccessFlagBits2::eColorAttachmentWrite;
+		colorBarrier.dstStageMask = vk::PipelineStageFlagBits2::eFragmentShader;
+		colorBarrier.dstAccessMask = vk::AccessFlagBits2::eShaderSampledRead;
+		colorBarrier.oldLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		colorBarrier.newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		colorBarrier.image = m_sceneFramebuffer->getColorImage(0);
+		colorBarrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+		colorBarrier.subresourceRange.baseMipLevel = 0;
+		colorBarrier.subresourceRange.levelCount = 1;
+		colorBarrier.subresourceRange.baseArrayLayer = 0;
+		colorBarrier.subresourceRange.layerCount = 1;
+
+		vk::DependencyInfo depInfo;
+		depInfo.imageMemoryBarrierCount = 1;
+		depInfo.pImageMemoryBarriers = &colorBarrier;
+		m_sceneCommandBuffer.pipelineBarrier2(depInfo);
+	}
+
+	// Clear current format tracking
+	m_currentColorFormat = vk::Format::eUndefined;
+	m_currentDepthFormat = vk::Format::eUndefined;
+	m_currentColorView = nullptr;
+	m_currentDepthView = nullptr;
 
 	// Note: We don't end the command buffer here - recordBlitToSwapchain will continue using it
 	// and flip() will finalize and submit it
 }
 
-void VulkanRenderer::beginAuxiliaryRenderPass(vk::RenderPass renderPass, VulkanFramebuffer* framebuffer,
+void VulkanRenderer::beginAuxiliaryRenderPass(vk::RenderPass /*renderPass*/, VulkanFramebuffer* framebuffer,
                                                vk::Extent2D extent, bool clearColor)
 {
+	// Note: renderPass parameter is ignored with dynamic rendering (Vulkan 1.3+)
+	// Kept for API compatibility
+
 	if (m_auxiliaryPassActive) {
 		vk_logf("VulkanRenderer",
 			"beginAuxiliaryRenderPass called while auxiliary pass already active (frame=%u)",
@@ -1501,10 +1729,9 @@ void VulkanRenderer::beginAuxiliaryRenderPass(vk::RenderPass renderPass, VulkanF
 		return;
 	}
 
-	if (!renderPass || !framebuffer) {
+	if (!framebuffer) {
 		vk_logf("VulkanRenderer",
-			"beginAuxiliaryRenderPass: invalid renderPass=%p or framebuffer=%p",
-			reinterpret_cast<void*>(static_cast<VkRenderPass>(renderPass)),
+			"beginAuxiliaryRenderPass: invalid framebuffer=%p",
 			static_cast<void*>(framebuffer));
 		return;
 	}
@@ -1529,37 +1756,102 @@ void VulkanRenderer::beginAuxiliaryRenderPass(vk::RenderPass renderPass, VulkanF
 		m_sceneCommandBuffer.begin(beginInfo);
 	}
 
-	// Begin the auxiliary render pass
-	vk::RenderPassBeginInfo renderPassBegin;
-	renderPassBegin.renderPass = renderPass;
-	renderPassBegin.framebuffer = framebuffer->getFramebuffer();
-	renderPassBegin.renderArea.offset = vk::Offset2D{0, 0};
-	renderPassBegin.renderArea.extent = extent;
+	// Get attachment views and formats
+	vk::ImageView colorView = framebuffer->getColorImageView(0);
+	vk::ImageView depthView = framebuffer->getDepthImageView();
+	vk::Format colorFormat = framebuffer->getColorFormat(0);
+	vk::Format depthFormat = framebuffer->getDepthFormat();
 
-	// Set up clear values
-	std::array<vk::ClearValue, 2> clearValues;
-	uint32_t clearCount = 0;
-	if (clearColor) {
-		clearValues[0].color.setFloat32({m_clearColor[0], m_clearColor[1], m_clearColor[2], m_clearColor[3]});
-		clearCount = 1;
+	// Transition color attachment to COLOR_ATTACHMENT_OPTIMAL
+	if (colorView && framebuffer->getColorImage(0)) {
+		vk::ImageMemoryBarrier2 colorBarrier;
+		colorBarrier.srcStageMask = vk::PipelineStageFlagBits2::eTopOfPipe;
+		colorBarrier.srcAccessMask = vk::AccessFlagBits2::eNone;
+		colorBarrier.dstStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
+		colorBarrier.dstAccessMask = vk::AccessFlagBits2::eColorAttachmentWrite;
+		colorBarrier.oldLayout = vk::ImageLayout::eUndefined;
+		colorBarrier.newLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		colorBarrier.image = framebuffer->getColorImage(0);
+		colorBarrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+		colorBarrier.subresourceRange.baseMipLevel = 0;
+		colorBarrier.subresourceRange.levelCount = 1;
+		colorBarrier.subresourceRange.baseArrayLayer = 0;
+		colorBarrier.subresourceRange.layerCount = 1;
+
+		vk::DependencyInfo depInfo;
+		depInfo.imageMemoryBarrierCount = 1;
+		depInfo.pImageMemoryBarriers = &colorBarrier;
+		m_sceneCommandBuffer.pipelineBarrier2(depInfo);
 	}
-	if (framebuffer->hasDepthAttachment()) {
-		clearValues[clearCount].depthStencil = vk::ClearDepthStencilValue{1.0f, 0};
-		clearCount++;
+
+	// Transition depth attachment
+	if (depthView && framebuffer->getDepthImage()) {
+		vk::ImageMemoryBarrier2 depthBarrier;
+		depthBarrier.srcStageMask = vk::PipelineStageFlagBits2::eTopOfPipe;
+		depthBarrier.srcAccessMask = vk::AccessFlagBits2::eNone;
+		depthBarrier.dstStageMask = vk::PipelineStageFlagBits2::eEarlyFragmentTests;
+		depthBarrier.dstAccessMask = vk::AccessFlagBits2::eDepthStencilAttachmentRead |
+		                              vk::AccessFlagBits2::eDepthStencilAttachmentWrite;
+		depthBarrier.oldLayout = vk::ImageLayout::eUndefined;
+		depthBarrier.newLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+		depthBarrier.image = framebuffer->getDepthImage();
+		depthBarrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eDepth;
+		depthBarrier.subresourceRange.baseMipLevel = 0;
+		depthBarrier.subresourceRange.levelCount = 1;
+		depthBarrier.subresourceRange.baseArrayLayer = 0;
+		depthBarrier.subresourceRange.layerCount = 1;
+
+		vk::DependencyInfo depInfo;
+		depInfo.imageMemoryBarrierCount = 1;
+		depInfo.pImageMemoryBarriers = &depthBarrier;
+		m_sceneCommandBuffer.pipelineBarrier2(depInfo);
 	}
-	renderPassBegin.clearValueCount = clearCount;
-	renderPassBegin.pClearValues = clearValues.data();
+
+	// Set up dynamic rendering
+	vk::RenderingAttachmentInfo colorAttachment;
+	if (colorView) {
+		colorAttachment.imageView = colorView;
+		colorAttachment.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		colorAttachment.loadOp = clearColor ? vk::AttachmentLoadOp::eClear : vk::AttachmentLoadOp::eLoad;
+		colorAttachment.storeOp = vk::AttachmentStoreOp::eStore;
+		if (clearColor) {
+			colorAttachment.clearValue.color.setFloat32({m_clearColor[0], m_clearColor[1], m_clearColor[2], m_clearColor[3]});
+		}
+	}
+
+	vk::RenderingAttachmentInfo depthAttachment;
+	if (depthView) {
+		depthAttachment.imageView = depthView;
+		depthAttachment.imageLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+		depthAttachment.loadOp = vk::AttachmentLoadOp::eClear;
+		depthAttachment.storeOp = vk::AttachmentStoreOp::eDontCare;
+		depthAttachment.clearValue.depthStencil = vk::ClearDepthStencilValue{1.0f, 0};
+	}
+
+	vk::RenderingInfo renderingInfo;
+	renderingInfo.renderArea.offset = vk::Offset2D{0, 0};
+	renderingInfo.renderArea.extent = extent;
+	renderingInfo.layerCount = 1;
+	renderingInfo.colorAttachmentCount = colorView ? 1u : 0u;
+	renderingInfo.pColorAttachments = colorView ? &colorAttachment : nullptr;
+	renderingInfo.pDepthAttachment = depthView ? &depthAttachment : nullptr;
 
 	m_sceneExtent = extent;
 
+	// Track current formats for pipeline creation
+	m_currentColorFormat = colorFormat;
+	m_currentDepthFormat = depthFormat;
+	m_currentColorView = colorView;
+	m_currentDepthView = depthView;
+
 	vk_logf("VulkanRenderer",
-		"beginAuxiliaryRenderPass: cmd=%p renderPass=%p framebuffer=%p extent=%ux%u",
+		"beginAuxiliaryRenderPass: beginRendering cmd=%p colorView=%p depthView=%p extent=%ux%u",
 		reinterpret_cast<void*>(static_cast<VkCommandBuffer>(m_sceneCommandBuffer)),
-		reinterpret_cast<void*>(static_cast<VkRenderPass>(renderPass)),
-		reinterpret_cast<void*>(static_cast<VkFramebuffer>(framebuffer->getFramebuffer())),
+		reinterpret_cast<void*>(static_cast<VkImageView>(colorView)),
+		reinterpret_cast<void*>(static_cast<VkImageView>(depthView)),
 		extent.width, extent.height);
 
-	m_sceneCommandBuffer.beginRenderPass(renderPassBegin, vk::SubpassContents::eInline);
+	m_sceneCommandBuffer.beginRendering(renderingInfo);
 	m_auxiliaryPassActive = true;
 
 	// Reset draw state for new pass
@@ -1576,9 +1868,16 @@ void VulkanRenderer::endAuxiliaryRenderPass()
 	}
 
 	vk_logf("VulkanRenderer",
-		"endAuxiliaryRenderPass: ending render pass for cmd=%p",
+		"endAuxiliaryRenderPass: endRendering for cmd=%p",
 		reinterpret_cast<void*>(static_cast<VkCommandBuffer>(m_sceneCommandBuffer)));
-	m_sceneCommandBuffer.endRenderPass();
+	m_sceneCommandBuffer.endRendering();
+
+	// Clear current format tracking
+	m_currentColorFormat = vk::Format::eUndefined;
+	m_currentDepthFormat = vk::Format::eUndefined;
+	m_currentColorView = nullptr;
+	m_currentDepthView = nullptr;
+
 	m_auxiliaryPassActive = false;
 
 	// Note: Command buffer is left open for further commands (more auxiliary passes or scene pass)
@@ -1596,7 +1895,7 @@ void VulkanRenderer::ensureRenderPassActive()
 		m_currentFrame,
 		m_currentSwapChainImage);
 
-	// Start a direct-to-swapchain render pass for menu/UI rendering
+	// Start a direct-to-swapchain rendering for menu/UI rendering
 	// This is similar to beginScenePass but renders directly to the swapchain image
 
 	// NOTE: Do NOT submit transfers here - transfers are batched and submitted
@@ -1620,28 +1919,58 @@ void VulkanRenderer::ensureRenderPassActive()
 	beginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
 	m_sceneCommandBuffer.begin(beginInfo);
 
-	// Begin present render pass directly on swapchain
-	vk::RenderPassBeginInfo renderPassBegin;
-	renderPassBegin.renderPass = m_renderPassManager->getPresentRenderPass();
-	renderPassBegin.framebuffer = m_swapchainFramebuffers[m_currentSwapChainImage]->getFramebuffer();
-	renderPassBegin.renderArea.offset = vk::Offset2D{0, 0};
-	renderPassBegin.renderArea.extent = m_swapChainExtent;
+	// Get swapchain image view for direct rendering
+	vk::ImageView swapchainView = m_swapChainImageViews[m_currentSwapChainImage].get();
 
-	// Clear to background color
-	vk::ClearValue clearColor;
-	clearColor.color.setFloat32({m_clearColor[0], m_clearColor[1], m_clearColor[2], m_clearColor[3]});
-	renderPassBegin.clearValueCount = 1;
-	renderPassBegin.pClearValues = &clearColor;
+	// Transition swapchain image to COLOR_ATTACHMENT_OPTIMAL
+	vk::ImageMemoryBarrier2 colorBarrier;
+	colorBarrier.srcStageMask = vk::PipelineStageFlagBits2::eTopOfPipe;
+	colorBarrier.srcAccessMask = vk::AccessFlagBits2::eNone;
+	colorBarrier.dstStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
+	colorBarrier.dstAccessMask = vk::AccessFlagBits2::eColorAttachmentWrite;
+	colorBarrier.oldLayout = vk::ImageLayout::eUndefined;
+	colorBarrier.newLayout = vk::ImageLayout::eColorAttachmentOptimal;
+	colorBarrier.image = m_swapChainImages[m_currentSwapChainImage];
+	colorBarrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+	colorBarrier.subresourceRange.baseMipLevel = 0;
+	colorBarrier.subresourceRange.levelCount = 1;
+	colorBarrier.subresourceRange.baseArrayLayer = 0;
+	colorBarrier.subresourceRange.layerCount = 1;
+
+	vk::DependencyInfo depInfo;
+	depInfo.imageMemoryBarrierCount = 1;
+	depInfo.pImageMemoryBarriers = &colorBarrier;
+	m_sceneCommandBuffer.pipelineBarrier2(depInfo);
+
+	// Set up dynamic rendering directly on swapchain
+	vk::RenderingAttachmentInfo colorAttachment;
+	colorAttachment.imageView = swapchainView;
+	colorAttachment.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+	colorAttachment.loadOp = vk::AttachmentLoadOp::eClear;
+	colorAttachment.storeOp = vk::AttachmentStoreOp::eStore;
+	colorAttachment.clearValue.color.setFloat32({m_clearColor[0], m_clearColor[1], m_clearColor[2], m_clearColor[3]});
+
+	vk::RenderingInfo renderingInfo;
+	renderingInfo.renderArea.offset = vk::Offset2D{0, 0};
+	renderingInfo.renderArea.extent = m_swapChainExtent;
+	renderingInfo.layerCount = 1;
+	renderingInfo.colorAttachmentCount = 1;
+	renderingInfo.pColorAttachments = &colorAttachment;
+
+	// Track current formats for pipeline creation
+	m_currentColorFormat = m_swapChainImageFormat;
+	m_currentDepthFormat = vk::Format::eUndefined;  // No depth for direct pass
+	m_currentColorView = swapchainView;
+	m_currentDepthView = nullptr;
 
 	vk_logf("VulkanRenderer",
-		"ensureRenderPassActive: beginRenderPass cmd=%p renderPass=%p framebuffer=%p extent=%ux%u",
+		"ensureRenderPassActive: beginRendering cmd=%p swapchainView=%p extent=%ux%u",
 		reinterpret_cast<void*>(static_cast<VkCommandBuffer>(m_sceneCommandBuffer)),
-		reinterpret_cast<void*>(static_cast<VkRenderPass>(m_renderPassManager->getPresentRenderPass())),
-		reinterpret_cast<void*>(static_cast<VkFramebuffer>(m_swapchainFramebuffers[m_currentSwapChainImage]->getFramebuffer())),
+		reinterpret_cast<void*>(static_cast<VkImageView>(swapchainView)),
 		m_swapChainExtent.width,
 		m_swapChainExtent.height);
 
-	m_sceneCommandBuffer.beginRenderPass(renderPassBegin, vk::SubpassContents::eInline);
+	m_sceneCommandBuffer.beginRendering(renderingInfo);
 
 	m_directPassActive = true;
 	m_sceneExtent = m_swapChainExtent;
@@ -1671,25 +2000,49 @@ vk::RenderPass VulkanRenderer::getCurrentRenderPass() const
 
 void VulkanRenderer::recordBlitToSwapchain(vk::CommandBuffer cmdBuffer)
 {
-	// Begin present render pass on swapchain framebuffer
+	// Transition swapchain image to COLOR_ATTACHMENT_OPTIMAL
+	vk::ImageView swapchainView = m_swapChainImageViews[m_currentSwapChainImage].get();
+
 	vk_logf("VulkanRenderer",
-		"recordBlitToSwapchain: cmd=%p swapImage=%u framebuffer=%p",
+		"recordBlitToSwapchain: cmd=%p swapImage=%u swapchainView=%p",
 		reinterpret_cast<void*>(static_cast<VkCommandBuffer>(cmdBuffer)),
 		m_currentSwapChainImage,
-		reinterpret_cast<void*>(static_cast<VkFramebuffer>(m_swapchainFramebuffers[m_currentSwapChainImage]->getFramebuffer())));
-	vk::RenderPassBeginInfo renderPassBegin;
-	renderPassBegin.renderPass = m_renderPassManager->getPresentRenderPass();
-	renderPassBegin.framebuffer = m_swapchainFramebuffers[m_currentSwapChainImage]->getFramebuffer();
-	renderPassBegin.renderArea.offset = vk::Offset2D{0, 0};
-	renderPassBegin.renderArea.extent = m_swapChainExtent;
+		reinterpret_cast<void*>(static_cast<VkImageView>(swapchainView)));
 
-	// Don't care about clear - fullscreen quad overwrites everything
-	vk::ClearValue clearColor;
-	clearColor.color.setFloat32({0.0f, 0.0f, 0.0f, 1.0f});
-	renderPassBegin.clearValueCount = 1;
-	renderPassBegin.pClearValues = &clearColor;
+	vk::ImageMemoryBarrier2 colorBarrier;
+	colorBarrier.srcStageMask = vk::PipelineStageFlagBits2::eTopOfPipe;
+	colorBarrier.srcAccessMask = vk::AccessFlagBits2::eNone;
+	colorBarrier.dstStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
+	colorBarrier.dstAccessMask = vk::AccessFlagBits2::eColorAttachmentWrite;
+	colorBarrier.oldLayout = vk::ImageLayout::eUndefined;
+	colorBarrier.newLayout = vk::ImageLayout::eColorAttachmentOptimal;
+	colorBarrier.image = m_swapChainImages[m_currentSwapChainImage];
+	colorBarrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+	colorBarrier.subresourceRange.baseMipLevel = 0;
+	colorBarrier.subresourceRange.levelCount = 1;
+	colorBarrier.subresourceRange.baseArrayLayer = 0;
+	colorBarrier.subresourceRange.layerCount = 1;
 
-	cmdBuffer.beginRenderPass(renderPassBegin, vk::SubpassContents::eInline);
+	vk::DependencyInfo depInfo;
+	depInfo.imageMemoryBarrierCount = 1;
+	depInfo.pImageMemoryBarriers = &colorBarrier;
+	cmdBuffer.pipelineBarrier2(depInfo);
+
+	// Set up dynamic rendering on swapchain
+	vk::RenderingAttachmentInfo colorAttachment;
+	colorAttachment.imageView = swapchainView;
+	colorAttachment.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+	colorAttachment.loadOp = vk::AttachmentLoadOp::eDontCare;  // Fullscreen quad overwrites everything
+	colorAttachment.storeOp = vk::AttachmentStoreOp::eStore;
+
+	vk::RenderingInfo renderingInfo;
+	renderingInfo.renderArea.offset = vk::Offset2D{0, 0};
+	renderingInfo.renderArea.extent = m_swapChainExtent;
+	renderingInfo.layerCount = 1;
+	renderingInfo.colorAttachmentCount = 1;
+	renderingInfo.pColorAttachments = &colorAttachment;
+
+	cmdBuffer.beginRendering(renderingInfo);
 
 	// Allocate descriptor set for scene texture
 	if (m_descriptorManager && m_blitDescriptorSetLayout) {
@@ -1713,9 +2066,30 @@ void VulkanRenderer::recordBlitToSwapchain(vk::CommandBuffer cmdBuffer)
 		cmdBuffer.draw(3, 1, 0, 0);
 	}
 
-	cmdBuffer.endRenderPass();
+	cmdBuffer.endRendering();
+
+	// Transition swapchain image to PRESENT_SRC_KHR for presentation
+	vk::ImageMemoryBarrier2 presentBarrier;
+	presentBarrier.srcStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
+	presentBarrier.srcAccessMask = vk::AccessFlagBits2::eColorAttachmentWrite;
+	presentBarrier.dstStageMask = vk::PipelineStageFlagBits2::eBottomOfPipe;
+	presentBarrier.dstAccessMask = vk::AccessFlagBits2::eNone;
+	presentBarrier.oldLayout = vk::ImageLayout::eColorAttachmentOptimal;
+	presentBarrier.newLayout = vk::ImageLayout::ePresentSrcKHR;
+	presentBarrier.image = m_swapChainImages[m_currentSwapChainImage];
+	presentBarrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+	presentBarrier.subresourceRange.baseMipLevel = 0;
+	presentBarrier.subresourceRange.levelCount = 1;
+	presentBarrier.subresourceRange.baseArrayLayer = 0;
+	presentBarrier.subresourceRange.layerCount = 1;
+
+	vk::DependencyInfo presentDepInfo;
+	presentDepInfo.imageMemoryBarrierCount = 1;
+	presentDepInfo.pImageMemoryBarriers = &presentBarrier;
+	cmdBuffer.pipelineBarrier2(presentDepInfo);
+
 	vk_logf("VulkanRenderer",
-		"recordBlitToSwapchain: end render pass cmd=%p",
+		"recordBlitToSwapchain: endRendering cmd=%p",
 		reinterpret_cast<void*>(static_cast<VkCommandBuffer>(cmdBuffer)));
 }
 
@@ -1843,8 +2217,35 @@ void VulkanRenderer::flip()
 			reinterpret_cast<void*>(static_cast<VkCommandBuffer>(m_sceneCommandBuffer)),
 			m_currentSwapChainImage);
 		// Direct pass was used (menu/UI rendering) - already rendered to swapchain
-		// Just need to end the render pass and submit
-		m_sceneCommandBuffer.endRenderPass();
+		// Just need to end dynamic rendering and transition to present
+		m_sceneCommandBuffer.endRendering();
+
+		// Transition swapchain image to PRESENT_SRC_KHR
+		vk::ImageMemoryBarrier2 presentBarrier;
+		presentBarrier.srcStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
+		presentBarrier.srcAccessMask = vk::AccessFlagBits2::eColorAttachmentWrite;
+		presentBarrier.dstStageMask = vk::PipelineStageFlagBits2::eBottomOfPipe;
+		presentBarrier.dstAccessMask = vk::AccessFlagBits2::eNone;
+		presentBarrier.oldLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		presentBarrier.newLayout = vk::ImageLayout::ePresentSrcKHR;
+		presentBarrier.image = m_swapChainImages[m_currentSwapChainImage];
+		presentBarrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+		presentBarrier.subresourceRange.baseMipLevel = 0;
+		presentBarrier.subresourceRange.levelCount = 1;
+		presentBarrier.subresourceRange.baseArrayLayer = 0;
+		presentBarrier.subresourceRange.layerCount = 1;
+
+		vk::DependencyInfo presentDepInfo;
+		presentDepInfo.imageMemoryBarrierCount = 1;
+		presentDepInfo.pImageMemoryBarriers = &presentBarrier;
+		m_sceneCommandBuffer.pipelineBarrier2(presentDepInfo);
+
+		// Clear format tracking
+		m_currentColorFormat = vk::Format::eUndefined;
+		m_currentDepthFormat = vk::Format::eUndefined;
+		m_currentColorView = nullptr;
+		m_currentDepthView = nullptr;
+
 		vk_logf("VulkanRenderer",
 			"flip direct: ending command buffer %p",
 			reinterpret_cast<void*>(static_cast<VkCommandBuffer>(m_sceneCommandBuffer)));

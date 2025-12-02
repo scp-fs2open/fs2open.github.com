@@ -314,7 +314,7 @@ bool VulkanPostProcessing::createBloomResources()
 
 		SCP_vector<vk::ImageView> fbViews = {mip0View.get()};
 		if (!m_bloomFramebuffers[i]->createFromImageViews(
-			m_device, m_postProcessRenderPass.get(), m_bloomWidth, m_bloomHeight, fbViews, nullptr)) {
+			m_device, m_bloomWidth, m_bloomHeight, fbViews, bloomFormat, nullptr, vk::Format::eUndefined)) {
 			mprintf(("Vulkan PostProcess: Failed to create bloom framebuffer %d\n", i));
 			return false;
 		}
