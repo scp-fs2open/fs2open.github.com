@@ -85,6 +85,23 @@ void VulkanBufferManager::initialize(vk::Device device, vk::PhysicalDevice physi
 			i, reinterpret_cast<void*>(static_cast<VkFence>(m_transferFences[i]))));
 	}
 
+	// Create placeholder buffer for uninitialized uniform bindings
+	// This ensures all descriptor bindings are valid even before real buffers are bound
+	vk::BufferCreateInfo placeholderInfo;
+	placeholderInfo.size = PLACEHOLDER_BUFFER_SIZE;
+	placeholderInfo.usage = vk::BufferUsageFlagBits::eUniformBuffer;
+	placeholderInfo.sharingMode = vk::SharingMode::eExclusive;
+	m_placeholderUniformBuffer = m_device.createBuffer(placeholderInfo);
+
+	auto memReqs = m_device.getBufferMemoryRequirements(m_placeholderUniformBuffer);
+	vk::MemoryAllocateInfo memAlloc;
+	memAlloc.allocationSize = memReqs.size;
+	memAlloc.memoryTypeIndex = findMemoryType(memReqs.memoryTypeBits,
+	    vk::MemoryPropertyFlagBits::eDeviceLocal);
+	m_placeholderUniformMemory = m_device.allocateMemory(memAlloc);
+	m_device.bindBufferMemory(m_placeholderUniformBuffer, m_placeholderUniformMemory, 0);
+	mprintf(("VulkanBuffer: created placeholder uniform buffer (%zu bytes)\n", PLACEHOLDER_BUFFER_SIZE));
+
 	m_initialized = true;
 }
 
@@ -147,6 +164,16 @@ void VulkanBufferManager::shutdown()
 	if (m_commandPool) {
 		m_device.destroyCommandPool(m_commandPool);
 		m_commandPool = nullptr;
+	}
+
+	// Destroy placeholder uniform buffer
+	if (m_placeholderUniformBuffer) {
+		m_device.destroyBuffer(m_placeholderUniformBuffer);
+		m_placeholderUniformBuffer = nullptr;
+	}
+	if (m_placeholderUniformMemory) {
+		m_device.freeMemory(m_placeholderUniformMemory);
+		m_placeholderUniformMemory = nullptr;
 	}
 
 	m_initialized = false;
@@ -443,15 +470,27 @@ void VulkanBufferManager::bindUniformBuffer(uniform_block_type bindPoint, size_t
 
 	buffer.lastUsedFrame = m_currentFrameIndex;
 
-	// Only update descriptor set if the underlying buffer changed.
-	// For dynamic uniform buffers, we bind the whole buffer once, then use
-	// dynamic offsets to select the range. This avoids updating descriptors
-	// during command buffer recording (which would invalidate the command buffer).
+	// Handle buffer changes - the underlying VkBuffer may have been reallocated
+	// (e.g., FSO's UniformBufferManager::changeSegmentSize() grows the ring buffer)
 	if (bufferChanged && m_uniformDescriptorSet && m_descriptorManager) {
+		if (m_uniformSetEverBound) {
+			// The descriptor set has been bound to a command buffer.
+			// We CANNOT update the existing set - it's in-flight on the GPU.
+			// We MUST recreate the descriptor set to point to the new buffer.
+			mprintf(("VulkanBufferManager: Buffer changed after bind for binding %d! Recreating descriptor set.\n",
+			         static_cast<int>(bindPoint)));
+			if (!recreateUniformDescriptorSet()) {
+				mprintf(("VulkanBufferManager: CRITICAL - Failed to recreate descriptor set!\n"));
+				return;
+			}
+			// After recreation, m_uniformSetEverBound is false and all bindings
+			// have been re-initialized. Now update this specific binding with the new buffer.
+		}
+
+		// Update the descriptor with the new buffer
 		// For dynamic uniform buffers, the "range" in the descriptor is the size
 		// of data accessed per-draw (not the full buffer). The dynamic offset
-		// selects which portion of the buffer to access. Dynamic offset + range
-		// must not exceed buffer size, so we use the per-binding size here.
+		// selects which portion of the buffer to access.
 		m_descriptorManager->updateUniformBuffer(m_uniformDescriptorSet,
 		                                         static_cast<uint32_t>(bindPoint),
 		                                         vkBuffer, 0, size, true);
@@ -472,21 +511,80 @@ bool VulkanBufferManager::initializeUniformDescriptorSet(vk::DescriptorSetLayout
 	if (!m_descriptorManager || !layout) {
 		return false;
 	}
-	
+
 	m_uniformDescriptorSetLayout = layout;
 	m_uniformDescriptorSet = m_descriptorManager->allocateSet(layout, "UniformBuffers");
-	
+
 	if (!m_uniformDescriptorSet) {
 		mprintf(("VulkanBufferManager: Failed to allocate uniform buffer descriptor set\n"));
 		return false;
 	}
-	
-	// Initialize all bindings to null (will be updated on first bind)
+
+	// Initialize all bindings to placeholder buffer to ensure descriptors are valid
+	// Real buffers will update these as they are bound (before first command buffer bind)
 	for (int i = 0; i < static_cast<int>(uniform_block_type::NUM_BLOCK_TYPES); ++i) {
 		auto blockType = static_cast<uniform_block_type>(i);
 		m_boundUniformBuffers[blockType] = BoundUniformBuffer();
+
+		// Initialize descriptor to point to placeholder buffer
+		// This ensures all bindings are valid even if never explicitly bound
+		if (m_placeholderUniformBuffer) {
+			m_descriptorManager->updateUniformBuffer(m_uniformDescriptorSet,
+			    static_cast<uint32_t>(i), m_placeholderUniformBuffer, 0, PLACEHOLDER_BUFFER_SIZE, true);
+		}
 	}
-	
+	mprintf(("VulkanBufferManager: Initialized %d uniform buffer bindings with placeholder\n",
+	         static_cast<int>(uniform_block_type::NUM_BLOCK_TYPES)));
+
+	return true;
+}
+
+bool VulkanBufferManager::recreateUniformDescriptorSet()
+{
+	if (!m_descriptorManager || !m_uniformDescriptorSetLayout) {
+		mprintf(("VulkanBufferManager: Cannot recreate uniform descriptor set - missing manager or layout\n"));
+		return false;
+	}
+
+	// Queue old set for deferred deletion (GPU may still be using it)
+	if (m_uniformDescriptorSet) {
+		mprintf(("VulkanBufferManager: Queueing old uniform descriptor set %p for deletion\n",
+		         (void*)static_cast<VkDescriptorSet>(m_uniformDescriptorSet)));
+		queueDescriptorSetDeletion(m_uniformDescriptorSet);
+	}
+
+	// Allocate fresh descriptor set
+	m_uniformDescriptorSet = m_descriptorManager->allocateSet(
+	    m_uniformDescriptorSetLayout, "UniformBuffers-Recreated");
+
+	if (!m_uniformDescriptorSet) {
+		mprintf(("VulkanBufferManager: CRITICAL - Failed to recreate uniform descriptor set\n"));
+		return false;
+	}
+
+	// Reset the bound flag so we can update descriptors
+	m_uniformSetEverBound = false;
+
+	// Re-initialize all bindings with current state
+	for (int i = 0; i < static_cast<int>(uniform_block_type::NUM_BLOCK_TYPES); ++i) {
+		auto blockType = static_cast<uniform_block_type>(i);
+		auto& bound = m_boundUniformBuffers[blockType];
+
+		vk::Buffer bufferToBind = m_placeholderUniformBuffer;
+		size_t sizeToBind = PLACEHOLDER_BUFFER_SIZE;
+
+		// Use real buffer if one is bound and valid
+		if (bound.isValid() && bound.vkBuffer) {
+			bufferToBind = bound.vkBuffer;
+			sizeToBind = bound.size;
+		}
+
+		m_descriptorManager->updateUniformBuffer(m_uniformDescriptorSet,
+		    static_cast<uint32_t>(i), bufferToBind, 0, sizeToBind, true);
+	}
+
+	mprintf(("VulkanBufferManager: Recreated uniform descriptor set %p due to buffer reallocation\n",
+	         (void*)static_cast<VkDescriptorSet>(m_uniformDescriptorSet)));
 	return true;
 }
 
@@ -515,6 +613,14 @@ void VulkanBufferManager::beginFrame(uint32_t frameIndex)
 	Assertion(frameIndex < FRAMES_IN_FLIGHT, "Frame index %u out of range!", frameIndex);
 
 	m_currentFrameIndex = frameIndex;
+
+	// Reset uniform set bound flag at frame start - allows descriptor updates before first bind
+	m_uniformSetEverBound = false;
+
+	// Also reset tracking state for the current descriptor set so it can be updated
+	if (m_uniformDescriptorSet && m_descriptorManager) {
+		m_descriptorManager->resetTrackingForReuse(m_uniformDescriptorSet, "UniformBuffers-FrameReset");
+	}
 
 	// Wait for this frame's transfer fence to ensure the per-frame transfer
 	// command buffer and staging allocations are no longer in-flight.
@@ -547,6 +653,22 @@ void VulkanBufferManager::beginFrame(uint32_t frameIndex)
 	// Process deferred deletions for this frame index
 	// Since VulkanRenderer calls this AFTER waiting on this frame's fence,
 	// and we just waited on the transfer fence above, it is now safe to free.
+	//
+	// IMPORTANT: Descriptor sets must be freed FIRST because they reference buffers.
+	// Freeing buffers while descriptor sets still reference them causes validation errors.
+
+	// 1. Process deferred descriptor set deletions FIRST
+	auto& descriptorSetQueue = m_pendingDescriptorSetDeletions[frameIndex];
+	sprintf(buf, "beginFrame: processing %zu pending descriptor set deletions", descriptorSetQueue.size());
+	buf_debug(buf);
+	for (auto& set : descriptorSetQueue) {
+		if (set && m_descriptorManager) {
+			m_descriptorManager->freeSet(set);
+		}
+	}
+	descriptorSetQueue.clear();
+
+	// 2. Process deferred buffer deletions (now safe - no descriptors reference them)
 	auto& deletionQueue = m_pendingDeletions[frameIndex];
 	sprintf(buf, "beginFrame: processing %zu pending deletions", deletionQueue.size());
 	buf_debug(buf);
@@ -556,7 +678,7 @@ void VulkanBufferManager::beginFrame(uint32_t frameIndex)
 	}
 	deletionQueue.clear();
 
-	// Process deferred staging buffer deletions
+	// 3. Process deferred staging buffer deletions
 	auto& stagingQueue = m_pendingStagingDeletions[frameIndex];
 	sprintf(buf, "beginFrame: processing %zu pending staging deletions", stagingQueue.size());
 	buf_debug(buf);
@@ -608,6 +730,22 @@ void VulkanBufferManager::queueStagingDeletion(vk::Buffer buffer, vk::DeviceMemo
 		(void*)static_cast<VkBuffer>(buffer),
 		m_currentFrameIndex,
 		m_pendingStagingDeletions[m_currentFrameIndex].size());
+	buf_debug(debugbuf);
+}
+
+void VulkanBufferManager::queueDescriptorSetDeletion(vk::DescriptorSet set)
+{
+	if (!set) {
+		return;
+	}
+
+	m_pendingDescriptorSetDeletions[m_currentFrameIndex].push_back(set);
+
+	char debugbuf[256];
+	sprintf(debugbuf, "queueDescriptorSetDeletion: set=%p queued to frame %u (queue now has %zu entries)",
+		(void*)static_cast<VkDescriptorSet>(set),
+		m_currentFrameIndex,
+		m_pendingDescriptorSetDeletions[m_currentFrameIndex].size());
 	buf_debug(debugbuf);
 }
 

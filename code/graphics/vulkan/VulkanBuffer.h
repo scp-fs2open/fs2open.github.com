@@ -169,6 +169,14 @@ public:
 	bool initializeUniformDescriptorSet(vk::DescriptorSetLayout layout);
 
 	/**
+	 * @brief Mark uniform descriptor set as bound (permanently)
+	 * After this is called, no descriptor updates will EVER occur again.
+	 * All uniform data changes must use dynamic offsets only.
+	 * This prevents UPDATE_AFTER_BIND violations.
+	 */
+	void markUniformSetBound() { m_uniformSetEverBound = true; }
+
+	/**
 	 * @brief Get the Vulkan buffer handle for a gr_buffer_handle
 	 * @param handle Buffer handle
 	 * @return Vulkan buffer, or null handle if invalid
@@ -233,6 +241,22 @@ private:
 	void queueStagingDeletion(vk::Buffer buffer, vk::DeviceMemory memory);
 
 	/**
+	 * @brief Queue a descriptor set for deferred deletion on current frame
+	 */
+	void queueDescriptorSetDeletion(vk::DescriptorSet set);
+
+	/**
+	 * @brief Recreate uniform descriptor set when underlying buffer changes
+	 *
+	 * Called when a uniform buffer is reallocated (e.g., ring buffer grows) after
+	 * the descriptor set has already been bound. Creates a new descriptor set,
+	 * re-initializes all bindings, and queues the old set for deferred deletion.
+	 *
+	 * @return true if recreation was successful
+	 */
+	bool recreateUniformDescriptorSet();
+
+	/**
 	 * @brief Find suitable memory type for buffer allocation
 	 * @param typeFilter Bitmask of acceptable memory types
 	 * @param properties Required memory properties
@@ -268,9 +292,18 @@ private:
 	// Descriptor set for uniform buffers (allocated per frame)
 	vk::DescriptorSet m_uniformDescriptorSet = nullptr;
 	vk::DescriptorSetLayout m_uniformDescriptorSetLayout = nullptr;
-	
+
+	// Placeholder buffer for uninitialized uniform bindings (16 bytes, all zeros)
+	vk::Buffer m_placeholderUniformBuffer = nullptr;
+	vk::DeviceMemory m_placeholderUniformMemory = nullptr;
+	static constexpr size_t PLACEHOLDER_BUFFER_SIZE = 256;  // Must be >= largest UBO alignment
+
 	// Reference to descriptor manager (set by VulkanRenderer)
 	VulkanDescriptorManager* m_descriptorManager = nullptr;
+
+	// Track if uniform descriptor set has EVER been bound (prevents update-after-bind)
+	// Once bound to any command buffer, we can NEVER update it again - only use dynamic offsets
+	bool m_uniformSetEverBound = false;
 
 	// Frame tracking - index into frames in flight (0 to FRAMES_IN_FLIGHT-1)
 	uint32_t m_currentFrameIndex = 0;
@@ -281,6 +314,10 @@ private:
 
 	// Per-frame staging buffer deletion queues (separate from regular buffers)
 	std::array<SCP_vector<PendingBufferDeletion>, FRAMES_IN_FLIGHT> m_pendingStagingDeletions;
+
+	// Per-frame deferred deletion queue for descriptor sets
+	// Used when uniform buffer is reallocated and descriptor set must be recreated
+	std::array<SCP_vector<vk::DescriptorSet>, FRAMES_IN_FLIGHT> m_pendingDescriptorSetDeletions;
 
 	// Command pool and queue for transfer operations (uses graphics queue for synchronization)
 	vk::CommandPool m_commandPool;

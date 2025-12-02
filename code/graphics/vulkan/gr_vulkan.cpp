@@ -200,6 +200,9 @@ bool bindUniformDescriptors(vk::CommandBuffer cmd, vk::PipelineLayout layout, Vu
 
 	// Bind descriptor set at set 0
 	descriptorManager->bindDescriptorSet(cmd, layout, uniformSet, dynamicOffsets, 0);
+
+	// Mark the set as bound - prevents any further descriptor updates this frame
+	g_vulkanBufferManager->markUniformSetBound();
 	return true;
 }
 
