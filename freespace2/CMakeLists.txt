@@ -34,6 +34,8 @@ TARGET_LINK_LIBRARIES(Freespace2 compiler)
 IF(WIN32)
 	# Link sdl main only here as it interferes with fred
 	TARGET_LINK_LIBRARIES(Freespace2 sdlmain)
+	# Suppress linker noise about missing third-party PDBs in Debug builds
+	target_link_options(Freespace2 PRIVATE "$<$<CONFIG:Debug>:/IGNORE:4204>")
 ENDIF(WIN32)
 
 if(FSO_BUILD_WITH_OPENGL_DEBUG)

@@ -8,6 +8,10 @@ Before you do anything, make sure you have updated your git submodules, either b
 
 The main instructions for building can be found at our github wiki, on the [Building](https://github.com/scp-fs2open/fs2open.github.com/wiki/Building) page.
 
+Vulkan Target
+--
+The Vulkan renderer targets **Vulkan 1.4** and assumes the associated core features (buffer device address, descriptor indexing, dynamic rendering). When building or testing the Vulkan backend, use a Vulkan SDK/driver stack that exposes API version 1.4 so the required feature set is available.
+
 Shader Pipeline (OpenGL/Vulkan Reuse)
 --
 

@@ -122,14 +122,6 @@ public:
 	// Accessors
 	vk::Image getImage() const { return m_image.get(); }
 	vk::ImageView getImageView() const { return m_imageView.get(); }
-	/**
-	 * @brief Get 2D array view for use with sampler2DArray shaders
-	 * For single-layer textures, returns a 2DArray view of the same image.
-	 * For multi-layer textures, returns the same as getImageView().
-	 */
-	vk::ImageView getImageViewArray() const {
-		return m_imageViewArray ? m_imageViewArray.get() : m_imageView.get();
-	}
 	vk::Format getFormat() const { return m_format; }
 	uint32_t getWidth() const { return m_extent.width; }
 	uint32_t getHeight() const { return m_extent.height; }
@@ -143,7 +135,6 @@ private:
 	vk::UniqueImage m_image;
 	vk::UniqueDeviceMemory m_memory;
 	vk::UniqueImageView m_imageView;
-	vk::UniqueImageView m_imageViewArray;  // 2DArray view for single-layer textures (for sampler2DArray)
 
 	vk::Extent3D m_extent = {0, 0, 1};
 	vk::Format m_format = vk::Format::eUndefined;
@@ -248,7 +239,7 @@ private:
 class VulkanTextureManager {
 public:
 	VulkanTextureManager() = default;
-	~VulkanTextureManager() = default;
+	~VulkanTextureManager() { shutdown(); }
 
 	// Non-copyable
 	VulkanTextureManager(const VulkanTextureManager&) = delete;

@@ -109,6 +109,8 @@ namespace vulkan {
  */
 class VulkanPipelineManager {
 public:
+	static constexpr uint32_t MATERIAL_DESCRIPTOR_BINDING_COUNT = 12;
+
 	VulkanPipelineManager() = default;
 	~VulkanPipelineManager() = default;
 

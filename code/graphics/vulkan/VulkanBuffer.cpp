@@ -77,12 +77,6 @@ void VulkanBufferManager::initialize(vk::Device device, vk::PhysicalDevice physi
 		// Create unsignaled fence - we track whether to wait via m_transferFenceSubmitted
 		vk::FenceCreateInfo fenceInfo;
 		m_transferFences[i] = m_device.createFence(fenceInfo);
-		char fbuf[128];
-		sprintf(fbuf, "init: created transfer fence[%u]=%p", i,
-			(void*)static_cast<VkFence>(m_transferFences[i]));
-		buf_debug(fbuf);
-		mprintf(("VulkanBuffer: created transfer fence[%u]=%p\n",
-			i, reinterpret_cast<void*>(static_cast<VkFence>(m_transferFences[i]))));
 	}
 
 	// Create placeholder buffer for uninitialized uniform bindings

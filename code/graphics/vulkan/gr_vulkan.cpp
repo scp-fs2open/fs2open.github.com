@@ -285,12 +285,11 @@ bool bindMaterialDescriptors(vk::CommandBuffer cmd, material* mat,
 
 	// Initialize all bindings to placeholder texture to ensure valid descriptors
 	// This prevents validation errors for unused texture slots
-	// Use getImageViewArray() for compatibility with sampler2DArray shaders (e.g., nanovg)
 	if (placeholderTex && placeholderTex->isValid() && defaultSampler) {
-		for (uint32_t binding = 0; binding < 9; ++binding) {
+		for (uint32_t binding = 0; binding < VulkanPipelineManager::MATERIAL_DESCRIPTOR_BINDING_COUNT; ++binding) {
 			descriptorManager->updateCombinedImageSampler(descriptorSet,
 			                                               binding,
-			                                               placeholderTex->getImageViewArray(),
+			                                               placeholderTex->getImageView(),
 			                                               defaultSampler,
 			                                               vk::ImageLayout::eShaderReadOnlyOptimal);
 		}
@@ -379,10 +378,9 @@ bool bindMaterialDescriptors(vk::CommandBuffer cmd, material* mat,
 			return;
 		}
 
-		// Use array view for compatibility with sampler2DArray shaders
 		descriptorManager->updateCombinedImageSampler(descriptorSet,
 		                                               binding,
-		                                               texture->getImageViewArray(),
+		                                               texture->getImageView(),
 		                                               sampler,
 		                                               vk::ImageLayout::eShaderReadOnlyOptimal);
 	};
@@ -392,6 +390,8 @@ bool bindMaterialDescriptors(vk::CommandBuffer cmd, material* mat,
 	bindTextureSlot(mat->get_texture_map(TM_GLOW_TYPE), 1, "glow");
 	bindTextureSlot(mat->get_texture_map(TM_NORMAL_TYPE), 2, "normal");
 	bindTextureSlot(mat->get_texture_map(TM_SPECULAR_TYPE), 3, "specular");
+	bindTextureSlot(mat->get_texture_map(TM_AMBIENT_TYPE), 9, "ambient");
+	bindTextureSlot(mat->get_texture_map(TM_MISC_TYPE), 10, "misc");
 	
 	// Environment maps (if used by shader)
 	// Note: These may need to be set globally, not per-material
@@ -542,6 +542,23 @@ void gr_vulkan_calculate_irrmap()
 		return;
 	}
 
+	// Determine a framebuffer we can sample metadata from (cubemaps only have per-face FBs)
+	VulkanFramebuffer* pipelineFramebuffer = irrmapRT->framebuffer.get();
+	if (!pipelineFramebuffer && irrmapRT->isCubemap) {
+		for (auto& faceFramebuffer : irrmapRT->cubeFaceFramebuffers) {
+			if (faceFramebuffer) {
+				pipelineFramebuffer = faceFramebuffer.get();
+				break;
+			}
+		}
+	}
+
+	if (!pipelineFramebuffer) {
+		mprintf(("Vulkan: gr_vulkan_calculate_irrmap - unable to find framebuffer for pipeline setup\n"));
+		bm_set_render_target(previous_target);
+		return;
+	}
+
 	// Build pipeline key for irradiance map generation shader
 	// This is a fullscreen pass with no vertex input (vertexless drawing)
 	PipelineKey pipelineKey;
@@ -558,7 +575,7 @@ void gr_vulkan_calculate_irrmap()
 	pipelineKey.hasPerBufferBlend = false;
 	pipelineKey.colorMask = {true, true, true, true};
 	// Dynamic rendering (Vulkan 1.3+) - use formats instead of render pass
-	pipelineKey.colorFormat = irrmapRT->framebuffer->getColorFormat(0);
+	pipelineKey.colorFormat = pipelineFramebuffer->getColorFormat(0);
 	pipelineKey.depthFormat = vk::Format::eUndefined;  // No depth for irradiance map
 	pipelineKey.sampleCount = vk::SampleCountFlagBits::e1;  // No MSAA for cubemap RT
 
@@ -620,7 +637,7 @@ void gr_vulkan_calculate_irrmap()
 
 		// Begin auxiliary render pass for this face
 		// This does NOT set m_scenePassActive, allowing gr_scene_texture_begin() to work later
-		vk::Extent2D faceExtent = {16, 16};
+		vk::Extent2D faceExtent = faceFramebuffer->getExtent();
 		renderer_instance->beginAuxiliaryRenderPass(irrmapRT->renderPass.get(), faceFramebuffer, faceExtent, true);
 
 		auto cmdBuffer = renderer_instance->getCurrentCommandBuffer();

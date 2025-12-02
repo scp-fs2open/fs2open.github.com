@@ -912,6 +912,33 @@ bool VulkanPipelineManager::createMaterialDescriptorLayout()
 		nullptr
 	});
 
+	// Ambient occlusion texture (sAmbientmap) - binding 9
+	bindings.push_back({
+		9,
+		vk::DescriptorType::eCombinedImageSampler,
+		1,
+		vk::ShaderStageFlagBits::eFragment,
+		nullptr
+	});
+
+	// Misc/utility texture (sMiscmap) - binding 10
+	bindings.push_back({
+		10,
+		vk::DescriptorType::eCombinedImageSampler,
+		1,
+		vk::ShaderStageFlagBits::eFragment,
+		nullptr
+	});
+
+	// Scene framebuffer texture (sFramebuffer) - binding 11
+	bindings.push_back({
+		11,
+		vk::DescriptorType::eCombinedImageSampler,
+		1,
+		vk::ShaderStageFlagBits::eFragment,
+		nullptr
+	});
+
 	vk::DescriptorSetLayoutCreateInfo layoutInfo;
 	layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
 	layoutInfo.pBindings = bindings.data();

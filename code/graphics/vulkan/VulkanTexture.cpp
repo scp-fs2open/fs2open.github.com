@@ -101,27 +101,12 @@ bool VulkanTexture::create(vk::Device device, vk::PhysicalDevice physicalDevice,
 		return false;
 	}
 
-	// Create a 2D array view for single-layer images when shaders expect sampler2DArray
-	// This allows single textures to be bound to sampler2DArray uniforms (e.g., nanovg)
-	if (arrayLayers == 1) {
-		vk::ImageViewCreateInfo arrayViewInfo = viewInfo;
-		arrayViewInfo.viewType = vk::ImageViewType::e2DArray;
-		arrayViewInfo.subresourceRange.layerCount = 1;
-		try {
-			m_imageViewArray = device.createImageViewUnique(arrayViewInfo);
-		} catch (const vk::SystemError& e) {
-			mprintf(("Vulkan: Failed to create array image view for single-layer texture: %s\n", e.what()));
-			// Continue - caller can still use getImageView() for sampler2D
-		}
-	}
-
 	m_currentLayout = vk::ImageLayout::eUndefined;
 	return true;
 }
 
 void VulkanTexture::destroy()
 {
-	m_imageViewArray.reset();
 	m_imageView.reset();
 	m_memory.reset();
 	m_image.reset();
@@ -544,6 +529,9 @@ void VulkanTextureManager::shutdown()
 	// Textures are owned by bitmap_slot::gr_info and destroyed via gr_vulkan_bm_free_data
 	// Just clear our tracking map
 	m_textures.clear();
+
+	// Clear render targets (releases framebuffers and their VkImages)
+	m_renderTargets.clear();
 
 	// Clean up any pending texture deletions that haven't been processed yet
 	for (auto& queue : m_pendingTextureDeletions) {

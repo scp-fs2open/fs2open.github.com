@@ -4,7 +4,7 @@ This folder contains technical documentation for the FreeSpace Open codebase, fo
 
 ## Vulkan Renderer
 
-The Vulkan renderer is an alternative graphics backend under active development.
+The Vulkan renderer is an alternative graphics backend under active development. It targets Vulkan 1.4, so development/testing should use an SDK/driver that exposes that API level and its promoted features (BDA, descriptor indexing, dynamic rendering).
 
 ### Reference Documentation
 | Document | Description |

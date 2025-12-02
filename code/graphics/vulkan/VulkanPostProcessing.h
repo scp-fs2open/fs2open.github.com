@@ -28,7 +28,7 @@ class VulkanRenderer;
 class VulkanPostProcessing {
 public:
 	VulkanPostProcessing() = default;
-	~VulkanPostProcessing() = default;
+	~VulkanPostProcessing() { shutdown(); }
 
 	// Non-copyable
 	VulkanPostProcessing(const VulkanPostProcessing&) = delete;

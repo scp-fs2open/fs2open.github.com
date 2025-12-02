@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Vulkan renderer is an alternative graphics backend to OpenGL, located in `code/graphics/vulkan/`. It integrates with FSO's existing graphics abstraction layer via `gr_screen` function pointers.
+The Vulkan renderer is an alternative graphics backend to OpenGL, located in `code/graphics/vulkan/`. It integrates with FSO's existing graphics abstraction layer via `gr_screen` function pointers and targets the Vulkan 1.4 API level (buffer device address, descriptor indexing, dynamic rendering).
 
 ## File Structure
 

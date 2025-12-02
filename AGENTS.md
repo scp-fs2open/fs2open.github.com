@@ -29,4 +29,11 @@
 - PRs: describe the change, reproduction steps, and validation (tests run, logs). Link issues/threads if applicable and include screenshots/log snippets for rendering or crash fixes.
 
 ## Agent-Specific Notes
+- On session start, if a `CONTEXT.md` file exists at the repository root, read it fully before performing any other actions.
+- Keep `CONTEXT.md` up to date for the areas it covers (currently the Vulkan backend):
+  - When you change the architecture or behavior of systems described there (API version, dynamic rendering, key managers, etc.).
+  - When you fix a non-trivial crash/bug or discover a pitfall that future LLM sessions should avoid (add to “Crash fix” or “Mistakes to avoid” sections).
+  - When you add/remove important files, tools, or workflows that should be reflected in its “File map” or “Testing & debugging” sections.
 - Do not revert user changes. Avoid destructive git commands. Prefer `rg` for search and `cmake --build` for builds. Log and test before handing off.***
+- `gr_vulkan_calculate_irrmap` now relies on per-face cubemap framebuffers to pull format/extent metadata; if you touch this path ensure you handle the `irrmapRT->framebuffer` null case by scanning `cubeFaceFramebuffers` before dereferencing and by using `faceFramebuffer->getExtent()` instead of hard-coded sizes.
+- When running `git show`/`git diff` in this repo, always pass `--no-pager` (or set `GIT_PAGER=cat`) so automated tooling is not blocked by the interactive pager/“spacebar to continue” prompt.

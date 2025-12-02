@@ -2455,6 +2455,7 @@ void VulkanRenderer::shutdown()
 	// Cleanup framebuffers before render passes (framebuffers reference render passes)
 	m_sceneFramebuffer.reset();
 	m_swapchainFramebuffers.clear();
+	m_renderTargetFramebuffers.clear();
 
 	// Cleanup render pass manager
 	if (m_renderPassManager) {
