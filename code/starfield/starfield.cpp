@@ -221,7 +221,7 @@ void stars_load_motion_debris(motion_debris_bitmaps* vclips)
 
 		if ( vclips[i].bm < 0 ) {
 			// try loading it as a single bitmap
-			vclips[i].bm = bm_load(Motion_debris_ptr[i].name);
+			vclips[i].bm = bm_load(vclips[i].name);
 			vclips[i].nframes = 1;
 
 			if (vclips[i].bm <= 0) {
