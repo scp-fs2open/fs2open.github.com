@@ -26,48 +26,59 @@ float sampleNoPCF(sampler2DArray shadow_map, float shadowDepth, int cascade, vec
 	return computeShadowFactor(shadowDepth, sampleShadowMap(shadow_map, shadowUV[cascade].xy, vec2(0.0, 0.0), cascade, 1.0/1024.0), 0.05);
 }
 
-float samplePoissonPCF(sampler2DArray shadow_map, float shadowDepth, int cascade, vec4 shadowUV[4])
+float samplePoissonPCF(sampler2DArray shadow_map, float shadowDepth, int cascade, vec4 shadowUV[4], bool use_simple_pass)
 {
 	if(cascade > 3 || cascade < 0) return 1.0;
-	vec2 poissonDisc[16];
-	poissonDisc[0] = vec2(-0.76275, -0.3432573);
-	poissonDisc[1] = vec2(-0.5226235, -0.8277544);
-	poissonDisc[2] = vec2(-0.3780261, 0.01528688);
-	poissonDisc[3] = vec2(-0.7742821, 0.4245702);
-	poissonDisc[4] = vec2(0.04196143, -0.02622231);
-	poissonDisc[5] = vec2(-0.2974772, -0.4722782);
-	poissonDisc[6] = vec2(-0.516093, 0.71495);
-	poissonDisc[7] = vec2(-0.3257416, 0.3910343);
-	poissonDisc[8] = vec2(0.2705966, 0.6670476);
-	poissonDisc[9] = vec2(0.4918377, 0.1853267);
-	poissonDisc[10] = vec2(0.4428544, -0.6251478);
-	poissonDisc[11] = vec2(-0.09204347, 0.9267113);
-	poissonDisc[12] = vec2(0.391505, -0.2558275);
-	poissonDisc[13] = vec2(0.05605913, -0.7570801);
-	poissonDisc[14] = vec2(0.81772, -0.02475523);
-	poissonDisc[15] = vec2(0.6890262, 0.5191521);
+
+	vec2 poissonDisc[16] = { 
+		vec2(-0.76275, -0.3432573),
+		vec2(-0.5226235, -0.8277544),
+		vec2(-0.3780261, 0.01528688),
+		vec2(-0.7742821, 0.4245702),
+		vec2(0.04196143, -0.02622231),
+		vec2(-0.2974772, -0.4722782),
+		vec2(-0.516093, 0.71495),
+		vec2(-0.3257416, 0.3910343),
+		vec2(0.2705966, 0.6670476),
+		vec2(0.4918377, 0.1853267),
+		vec2(0.4428544, -0.6251478),
+		vec2(-0.09204347, 0.9267113),
+		vec2(0.391505, -0.2558275),
+		vec2(0.05605913, -0.7570801),
+		vec2(0.81772, -0.02475523),
+		vec2(0.6890262, 0.5191521)
+	};
+
 	float maxUVOffset[4];
 	maxUVOffset[0] = 1.0/300.0;
 	maxUVOffset[1] = 1.0/250.0;
 	maxUVOffset[2] = 1.0/200.0;
 	maxUVOffset[3] = 1.0/200.0;
-	vec2 sum = sampleShadowMap(shadow_map, shadowUV[cascade].xy, poissonDisc[0], cascade, maxUVOffset[cascade])*(1.0/16.0);
-	sum += sampleShadowMap(shadow_map, shadowUV[cascade].xy, poissonDisc[1], cascade, maxUVOffset[cascade])*(1.0/16.0);
-	sum += sampleShadowMap(shadow_map, shadowUV[cascade].xy, poissonDisc[2], cascade, maxUVOffset[cascade])*(1.0/16.0);
-	sum += sampleShadowMap(shadow_map, shadowUV[cascade].xy, poissonDisc[3], cascade, maxUVOffset[cascade])*(1.0/16.0);
-	sum += sampleShadowMap(shadow_map, shadowUV[cascade].xy, poissonDisc[4], cascade, maxUVOffset[cascade])*(1.0/16.0);
-	sum += sampleShadowMap(shadow_map, shadowUV[cascade].xy, poissonDisc[5], cascade, maxUVOffset[cascade])*(1.0/16.0);
-	sum += sampleShadowMap(shadow_map, shadowUV[cascade].xy, poissonDisc[6], cascade, maxUVOffset[cascade])*(1.0/16.0);
-	sum += sampleShadowMap(shadow_map, shadowUV[cascade].xy, poissonDisc[7], cascade, maxUVOffset[cascade])*(1.0/16.0);
-	sum += sampleShadowMap(shadow_map, shadowUV[cascade].xy, poissonDisc[8], cascade, maxUVOffset[cascade])*(1.0/16.0);
-	sum += sampleShadowMap(shadow_map, shadowUV[cascade].xy, poissonDisc[9], cascade, maxUVOffset[cascade])*(1.0/16.0);
-	sum += sampleShadowMap(shadow_map, shadowUV[cascade].xy, poissonDisc[10], cascade, maxUVOffset[cascade])*(1.0/16.0);
-	sum += sampleShadowMap(shadow_map, shadowUV[cascade].xy, poissonDisc[11], cascade, maxUVOffset[cascade])*(1.0/16.0);
-	sum += sampleShadowMap(shadow_map, shadowUV[cascade].xy, poissonDisc[12], cascade, maxUVOffset[cascade])*(1.0/16.0);
-	sum += sampleShadowMap(shadow_map, shadowUV[cascade].xy, poissonDisc[13], cascade, maxUVOffset[cascade])*(1.0/16.0);
-	sum += sampleShadowMap(shadow_map, shadowUV[cascade].xy, poissonDisc[14], cascade, maxUVOffset[cascade])*(1.0/16.0);
-	sum += sampleShadowMap(shadow_map, shadowUV[cascade].xy, poissonDisc[15], cascade, maxUVOffset[cascade])*(1.0/16.0);
-	return computeShadowFactor(shadowDepth, sum, 0.1);
+
+	if (use_simple_pass) {
+		// internal cockpit shadows
+		// bias is a bit smaller to pick up on close/sharp cockpit geometry
+		// favors shadow over light to avoid complex geometry halos
+		float visibility = 1.0f;
+		for (int i=0; i<16; i++) {
+			vec2 shadow_sample = sampleShadowMap(shadow_map, shadowUV[cascade].xy, poissonDisc[i], cascade, maxUVOffset[cascade]);
+			// extra bias value tuned for this distance
+			if( ((shadow_sample.x - 0.002f) > shadowDepth) ) {
+				visibility -= (1.0f/16.0f);
+			}
+		}
+		return visibility;
+	} else {
+		// default external shadows 
+		// bias is a bit larger to only pick up larger geometry
+		// favors light over shadow to avoid flickering/spotty shadows
+		vec2 sum = vec2(0.0f);
+		for (int i=0; i<16; i++) {
+			sum += sampleShadowMap(shadow_map, shadowUV[cascade].xy, poissonDisc[i], cascade, maxUVOffset[cascade]);
+		}
+		return computeShadowFactor(shadowDepth, sum*(1.0f/16.0f), 0.1f);
+	}
+
 }
 
 float getShadowValue(sampler2DArray shadow_map, float depth, float shadowDepth, vec4 shadowUV[4], float fardist,
@@ -86,10 +97,20 @@ float getShadowValue(sampler2DArray shadow_map, float depth, float shadowDepth, 
 	cascade_start_dist[3] = middist;
 	cascade_start_dist[4] = fardist;
 	if(cascade > 3 || cascade < 0) return 1.0;
+
+    bool use_simple_pass;
+    if (fardist < 50.0f) {
+        // internal cockpit shadows
+        use_simple_pass = true;
+    } else {
+        // default external shadows
+        use_simple_pass = false;
+    }
+
 	float dist_threshold = (cascade_start_dist[cascade+1] - cascade_start_dist[cascade])*0.2;
 	if(cascade_start_dist[cascade+1] - dist_threshold > depth)
-		return samplePoissonPCF(shadow_map, shadowDepth, cascade, shadowUV);
-	return mix(samplePoissonPCF(shadow_map, shadowDepth, cascade, shadowUV), samplePoissonPCF(shadow_map, shadowDepth, cascade+1, shadowUV),
+		return samplePoissonPCF(shadow_map, shadowDepth, cascade, shadowUV, use_simple_pass);
+	return mix(samplePoissonPCF(shadow_map, shadowDepth, cascade, shadowUV, use_simple_pass), samplePoissonPCF(shadow_map, shadowDepth, cascade+1, shadowUV),
 			smoothstep(cascade_start_dist[cascade+1] - dist_threshold, cascade_start_dist[cascade+1], depth));
 }
 
