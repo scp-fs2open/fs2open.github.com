@@ -79,7 +79,6 @@ float samplePoissonPCF(sampler2DArray shadow_map, float shadowDepth, int cascade
 		return computeShadowFactor(shadowDepth, sum*(1.0f/16.0f), 0.1f);
 	}
 
-	return computeShadowFactor(shadowDepth, sum, 0.1);
 }
 
 float getShadowValue(sampler2DArray shadow_map, float depth, float shadowDepth, vec4 shadowUV[4], float fardist,
