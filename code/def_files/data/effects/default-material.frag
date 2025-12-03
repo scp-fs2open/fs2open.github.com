@@ -10,7 +10,11 @@ layout (location = 0) out vec4 fragOut0;
 
 // Set 0: Uniform buffers (bindings match uniform_block_type enum)
 // GenericData = 8
+#ifdef VULKAN
 layout (set = 0, binding = 8, std140) uniform genericData {
+#else
+layout (std140) uniform genericData {
+#endif
 	mat4 modelMatrix;
 
 	vec4 color;
@@ -29,7 +33,11 @@ layout (set = 0, binding = 8, std140) uniform genericData {
 
 // Set 1: Material textures
 // Using sampler2D for now (not sampler2DArray) until texture array support is added
+#ifdef VULKAN
 layout(set = 1, binding = 0) uniform sampler2D baseMap;
+#else
+uniform sampler2D baseMap;
+#endif
 
 void main()
 {

@@ -1,6 +1,10 @@
 
 // Uniform block - set 0, binding 2 matches uniform_block_type::NanoVGData
+#ifdef VULKAN
 layout(std140, set = 0, binding = 2) uniform NanoVGUniformData {
+#else
+layout(std140) uniform NanoVGUniformData {
+#endif
     mat3 scissorMat;
 
     mat3 paintMat;

@@ -10,6 +10,10 @@
 #include "gropenglshader.h"
 #include "gropenglstate.h"
 
+#ifdef _WIN32
+#include "graphics/opengl/win32/OGLHDRPresenter.h"
+#endif
+
 #include "cmdline/cmdline.h"
 #include "def_files/def_files.h"
 #include "graphics/grinternal.h"
@@ -110,6 +114,12 @@ void opengl_post_pass_tonemap()
 
 	// Select shader based on output mode: HDR10, OpenXR linear, or SDR
 	int shader_flags = 0;
+
+#ifdef _WIN32
+	if (g_hdr_presenter != nullptr && g_hdr_presenter->isInitialized()) {
+		shader_flags = SDR_FLAG_TONEMAPPING_HDR10_OUT;
+	} else
+#endif
 	if (gr_hdr_output_enabled()) {
 		shader_flags = SDR_FLAG_TONEMAPPING_HDR10_OUT;
 	} else if (openxr_enabled()) {

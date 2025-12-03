@@ -11,12 +11,20 @@ layout (location = 1) out vec4 fragColor;
 
 // Set 0: Uniform buffers (bindings match uniform_block_type enum)
 // Matrices = 6, GenericData = 8
+#ifdef VULKAN
 layout (set = 0, binding = 6, std140) uniform matrixData {
+#else
+layout (std140) uniform matrixData {
+#endif
 	mat4 modelViewMatrix;
 	mat4 projMatrix;
 };
 
+#ifdef VULKAN
 layout (set = 0, binding = 8, std140) uniform genericData {
+#else
+layout (std140) uniform genericData {
+#endif
 	mat4 modelMatrix;
 
 	vec4 color;

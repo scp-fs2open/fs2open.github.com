@@ -1,6 +1,9 @@
 
 
 #if defined(_WIN32)
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
 #include <windows.h>
 #include <windowsx.h>
 #include <direct.h>
@@ -45,6 +48,10 @@
 
 #include <glad/glad.h>
 
+#ifdef _WIN32
+#include "graphics/opengl/win32/OGLHDRPresenter.h"
+#endif
+
 // minimum GL version we can reliably support is 3.2
 static const int MIN_REQUIRED_GL_VERSION = 32;
 
@@ -86,6 +93,41 @@ static std::unique_ptr<os::OpenGLContext> GL_context = nullptr;
 
 static std::unique_ptr<os::GraphicsOperations> graphic_operations = nullptr;
 static os::Viewport* current_viewport = nullptr;
+
+#ifdef _WIN32
+OGLHDRPresenter* g_hdr_presenter = nullptr;
+
+static void opengl_try_initialize_hdr_presenter()
+{
+	if (g_hdr_presenter != nullptr || !gr_hdr_output_enabled()) {
+		return;
+	}
+
+	if (current_viewport == nullptr) {
+		mprintf(("OpenGL: Cannot initialize HDR presenter without an active viewport\n"));
+		return;
+	}
+
+	auto hwnd = current_viewport->getHWND();
+	if (hwnd == nullptr) {
+		mprintf(("OpenGL: HDR presenter initialization failed (no HWND)\n"));
+		return;
+	}
+
+	auto [width, height] = current_viewport->getSize();
+	if (width == 0 || height == 0) {
+		mprintf(("OpenGL: HDR presenter initialization failed (invalid size %ux%u)\n", width, height));
+		return;
+	}
+
+	g_hdr_presenter = new OGLHDRPresenter();
+	if (!g_hdr_presenter->initialize(hwnd, static_cast<int>(width), static_cast<int>(height))) {
+		mprintf(("OpenGL: Failed to initialize HDR presenter, reverting to SDR path\n"));
+		delete g_hdr_presenter;
+		g_hdr_presenter = nullptr;
+	}
+}
+#endif
 
 void gr_opengl_clear()
 {
@@ -131,6 +173,24 @@ void gr_opengl_flip()
 		glFinish();
 
 	Assertion(GL_state.ValidForFlip(), "OpenGL state is invalid!");
+
+#ifdef _WIN32
+	if (g_hdr_presenter != nullptr && g_hdr_presenter->isInitialized()) {
+		const int hdr_width = Scene_texture_width;
+		const int hdr_height = Scene_texture_height;
+
+		if (hdr_width > 0 && hdr_height > 0 &&
+		    g_hdr_presenter->presentFromGL(Scene_ldr_texture, hdr_width, hdr_height, Gr_enable_vsync)) {
+			opengl_tcache_frame();
+			return;
+		} else {
+			mprintf(("OpenGL: HDR present failed, falling back to SDR\n"));
+			g_hdr_presenter->shutdown();
+			delete g_hdr_presenter;
+			g_hdr_presenter = nullptr;
+		}
+	}
+#endif
 
 	current_viewport->swapBuffers();
 
@@ -470,6 +530,13 @@ void gr_opengl_shutdown()
 
 void gr_opengl_cleanup(bool closing, int  /*minimize*/)
 {
+#ifdef _WIN32
+	if (g_hdr_presenter != nullptr) {
+		g_hdr_presenter->shutdown();
+		delete g_hdr_presenter;
+		g_hdr_presenter = nullptr;
+	}
+#endif
 	if ( !GL_initted ) {
 		return;
 	}
@@ -1400,6 +1467,10 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	opengl_setup_scene_textures();
 	opengl_post_process_init();
 
+#ifdef _WIN32
+	opengl_try_initialize_hdr_presenter();
+#endif
+
 	// must be called after extensions are setup
 	opengl_set_vsync(Gr_enable_vsync);
 
@@ -1460,6 +1531,10 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 
 	// This stops fred crashing if no textures are set
 	gr_screen.current_bitmap = -1;
+
+#ifdef _WIN32
+	opengl_try_initialize_hdr_presenter();
+#endif
 
 	mprintf(("... OpenGL init is complete!\n"));
 

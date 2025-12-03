@@ -636,14 +636,18 @@ SCP_string VulkanShaderManager::preprocessShader(shader_type type, uint32_t flag
 		return "";
 	}
 
+	// Check if shader already has an active #version directive (Vulkan-native shader)
+	// Ignore commented lines like "//? #version 150" which are only hints for OpenGL
 	auto containsActiveVersion = [](const SCP_string& text) {
 		size_t searchPos = text.find("#version");
 		while (searchPos != SCP_string::npos) {
+			// Check for preceding line comment on the same line
 			size_t lineStart = text.rfind('\n', searchPos);
 			lineStart = (lineStart == SCP_string::npos) ? 0 : lineStart + 1;
 			auto lineCommentPos = text.find("//", lineStart);
 			bool inLineComment = (lineCommentPos != SCP_string::npos && lineCommentPos < searchPos);
 
+			// Check if inside an open block comment
 			bool inBlockComment = false;
 			size_t blockStart = text.rfind("/*", searchPos);
 			if (blockStart != SCP_string::npos) {

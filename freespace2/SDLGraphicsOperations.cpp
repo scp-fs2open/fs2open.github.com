@@ -164,9 +164,16 @@ class SDLOpenGLContext: public os::OpenGLContext {
 class SDLWindowViewPort: public os::Viewport {
 	SDL_Window* _window;
 	os::ViewPortProperties _props;
+	HWND _hwnd;
  public:
-	SDLWindowViewPort(SDL_Window* window, const os::ViewPortProperties& props) : _window(window), _props(props) {
+	SDLWindowViewPort(SDL_Window* window, const os::ViewPortProperties& props) : _window(window), _props(props), _hwnd(nullptr) {
 		Assertion(window != nullptr, "Invalid window specified");
+		
+		SDL_SysWMinfo wmInfo;
+		SDL_VERSION(&wmInfo.version);
+		if (SDL_GetWindowWMInfo(window, &wmInfo)) {
+			_hwnd = wmInfo.info.win.window;
+		}
 	}
 	~SDLWindowViewPort() override {
 		SDL_DestroyWindow(_window);
@@ -175,6 +182,9 @@ class SDLWindowViewPort: public os::Viewport {
 
 	const os::ViewPortProperties& getProps() const {
 		return _props;
+	}
+	HWND getHWND() const override {
+		return _hwnd;
 	}
 	SDL_Window* toSDLWindow() override {
 		return _window;

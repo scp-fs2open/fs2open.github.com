@@ -524,6 +524,14 @@ if (FSO_BUILD_WITH_OPENGL)
 		graphics/opengl/SmaaAreaTex.h
 		graphics/opengl/SmaaSearchTex.h
 	)
+
+	IF(WIN32)
+		# Graphics -> OpenGLGr -> Win32 files
+		add_file_folder("Graphics\\\\OpenGLGr\\\\Win32"
+			graphics/opengl/win32/OGLHDRPresenter.cpp
+			graphics/opengl/win32/OGLHDRPresenter.h
+		)
+	ENDIF(WIN32)
 endif()
 
 # Graphics -> Paths

@@ -6,11 +6,12 @@
 #conditional_include +"LARGE_SHADER" "main_large.sdr"
 #conditional_include -"LARGE_SHADER" "main_small.sdr"
 
-in vec4 vertPosition;
-in vec4 vertTexCoord;
-in vec3 vertNormal;
-in vec4 vertTangent;
-in float vertModelID;
+// Vertex inputs with explicit locations for Vulkan/SPIR-V
+layout(location = 0) in vec4 vertPosition;
+layout(location = 2) in vec4 vertTexCoord;
+layout(location = 3) in vec3 vertNormal;
+layout(location = 4) in vec4 vertTangent;
+layout(location = 5) in float vertModelID;
 
 #define MAX_LIGHTS 8
 
@@ -26,7 +27,12 @@ struct model_light {
 	float ml_sourceRadius;
 };
 
-layout (std140) uniform modelData {
+#ifdef VULKAN
+layout(std140, set = 0, binding = 1)
+#else
+layout(std140)
+#endif
+uniform modelData {
 	mat4 modelViewMatrix;
 	mat4 modelMatrix;
 	mat4 viewMatrix;
@@ -97,34 +103,39 @@ layout (std140) uniform modelData {
 };
 
 #prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_TRANSFORM
+#ifdef VULKAN
+layout(set = 2, binding = 0)
+#endif
 uniform samplerBuffer transform_tex;
 #prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_TRANSFORM
 
-out VertexOutput {
-	mat3 tangentMatrix;
+// Vertex outputs - using explicit locations instead of interface block
+layout(location = 0) out vec3 tangentMatrix_col0;
+layout(location = 1) out vec3 tangentMatrix_col1;
+layout(location = 2) out vec3 tangentMatrix_col2;
 
 #prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_FOG
-	float fogDist;
+layout(location = 3) out float fogDist;
 #prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_FOG
 
 #ifdef MODEL_SDR_FLAG_SHADOW_MAP
  #if !defined(GL_ARB_gpu_shader5)
-	float instance;
+layout(location = 4) out float v_instance;
  #endif
-	// This flag is needed to let the geometry shader know that it doesn't need to apply the
-	// shadow projection to gl_Position
-	float clipModel;
+layout(location = 5) out float clipModel_out;
 #else
-	vec4 position;
+layout(location = 4) out vec4 v_position;
 #endif
-	vec3 normal;
-	vec4 texCoord;
+layout(location = 6) out vec3 v_normal;
+layout(location = 7) out vec4 v_texCoord;
 
 #prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
-	vec4 shadowUV[4];
-	vec4 shadowPos;
+layout(location = 8) out vec4 shadowUV_0;
+layout(location = 9) out vec4 shadowUV_1;
+layout(location = 10) out vec4 shadowUV_2;
+layout(location = 11) out vec4 shadowUV_3;
+layout(location = 12) out vec4 shadowPos_out;
 #prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
-} vertOut;
 
 #define TEXELS_PER_MATRIX 4
 #prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_TRANSFORM
@@ -166,9 +177,9 @@ void main()
 		gl_Position = position;
 		#if !defined(GL_ARB_gpu_shader5)
 			#ifdef APPLE
-				vertOut.instance = float(gl_InstanceIDARB);
+				v_instance = float(gl_InstanceIDARB);
 			#else
-				vertOut.instance = float(gl_InstanceID);
+				v_instance = float(gl_InstanceID);
 			#endif
 		#endif
 	#else
@@ -176,20 +187,23 @@ void main()
 	#endif
 	#prereplace IF_FLAG MODEL_SDR_FLAG_SHADOWS
 		vec4 shadowPos = shadow_mv_matrix * modelMatrix * orient * vertPosition;
-		vertOut.shadowPos = shadow_mv_matrix * modelMatrix * orient * vertPosition;
-		vertOut.shadowUV[0] = transformToShadowMap(shadow_proj_matrix[0], 0, shadowPos);
-		vertOut.shadowUV[1] = transformToShadowMap(shadow_proj_matrix[1], 1, shadowPos);
-		vertOut.shadowUV[2] = transformToShadowMap(shadow_proj_matrix[2], 2, shadowPos);
-		vertOut.shadowUV[3] = transformToShadowMap(shadow_proj_matrix[3], 3, shadowPos);
+		shadowPos_out = shadow_mv_matrix * modelMatrix * orient * vertPosition;
+		shadowUV_0 = transformToShadowMap(shadow_proj_matrix[0], 0, shadowPos);
+		shadowUV_1 = transformToShadowMap(shadow_proj_matrix[1], 1, shadowPos);
+		shadowUV_2 = transformToShadowMap(shadow_proj_matrix[2], 2, shadowPos);
+		shadowUV_3 = transformToShadowMap(shadow_proj_matrix[3], 3, shadowPos);
 	#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_SHADOWS
 
 	// Setup stuff for normal maps and envmaps
 	vec3 t = normalize(mat3(modelViewMatrix) * mat3(orient) * vertTangent.xyz);
 	vec3 b = cross(normal, t) * vertTangent.w;
-	vertOut.tangentMatrix = mat3(t, b, normal);
+	mat3 tangentMatrix = mat3(t, b, normal);
+	tangentMatrix_col0 = tangentMatrix[0];
+	tangentMatrix_col1 = tangentMatrix[1];
+	tangentMatrix_col2 = tangentMatrix[2];
 
 	#prereplace IF_FLAG MODEL_SDR_FLAG_FOG
-		vertOut.fogDist = clamp((gl_Position.z - fogStart) * 0.75 * fogScale, 0.0, 1.0);
+		fogDist = clamp((gl_Position.z - fogStart) * 0.75 * fogScale, 0.0, 1.0);
 	#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_FOG
 
 	#prereplace IF_FLAG MODEL_SDR_FLAG_TRANSFORM
@@ -198,7 +212,7 @@ void main()
 			gl_Position = vec4(vec3(-2.0), 1.0);
 		}
 		#ifdef MODEL_SDR_FLAG_SHADOW_MAP
-			vertOut.clipModel = clipModel ? 1.0 : 0.0;
+			clipModel_out = clipModel ? 1.0 : 0.0;
 		#endif
 	#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_TRANSFORM
 
@@ -209,11 +223,11 @@ void main()
 	}
 
 	#ifndef MODEL_SDR_FLAG_SHADOW_MAP
-		vertOut.position = position;
-		vertOut.normal = normal;
-		vertOut.texCoord = texCoord;
+		v_position = position;
+		v_normal = normal;
+		v_texCoord = texCoord;
 	#else
-		vertOut.normal = normal;
-		vertOut.texCoord = texCoord;
+		v_normal = normal;
+		v_texCoord = texCoord;
 	#endif
 }

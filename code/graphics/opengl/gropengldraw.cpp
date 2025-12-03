@@ -11,6 +11,10 @@
 
 #include "globalincs/pstypes.h"
 
+#ifdef _WIN32
+#include "graphics/opengl/win32/OGLHDRPresenter.h"
+#endif
+
 #include "ShaderProgram.h"
 #include "freespace.h"
 #include "gropengl.h"
@@ -158,8 +162,9 @@ void opengl_setup_scene_textures()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, Scene_texture_width, Scene_texture_height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
-	opengl_set_object_label(GL_TEXTURE, Scene_ldr_texture, "Scene LDR texture");
+	// Use GL_RGB10_A2 for 10-bit precision - required for HDR10 PQ encoding, also beneficial for SDR banding reduction
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB10_A2, Scene_texture_width, Scene_texture_height, 0, GL_RGBA, GL_UNSIGNED_INT_2_10_10_10_REV, NULL);
+	opengl_set_object_label(GL_TEXTURE, Scene_ldr_texture, "Scene LDR texture (10-bit)");
 
 	// setup position render texture
 	glGenTextures(1, &Scene_position_texture);
@@ -611,6 +616,14 @@ void opengl_setup_scene_textures()
 
 	Scene_texture_initialized = 1;
 	Scene_framebuffer_in_frame = false;
+
+#ifdef _WIN32
+	if (g_hdr_presenter != nullptr && g_hdr_presenter->isInitialized()) {
+		if (!g_hdr_presenter->resize(Scene_texture_width, Scene_texture_height)) {
+			mprintf(("OpenGL: Failed to resize HDR presenter\n"));
+		}
+	}
+#endif
 }
 
 void opengl_scene_texture_shutdown()

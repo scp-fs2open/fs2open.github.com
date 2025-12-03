@@ -29,6 +29,13 @@
 
 #include <SDL_events.h>
 
+#ifdef _WIN32
+#ifndef _WINDEF_
+struct HWND__;
+typedef HWND__* HWND;
+#endif
+#endif
+
 // --------------------------------------------------------------------------------------------------
 // OSAPI DEFINES/VARS
 //
@@ -245,6 +252,17 @@ namespace os
 		 * @return The window handle or @c nullptr if the viewport can't be represented as an SDL_Window
 		 */
 		virtual SDL_Window* toSDLWindow() = 0;
+
+#ifdef _WIN32
+		/**
+		 * @brief Returns a Windows HWND handle for this viewport
+		 *
+		 * @note The returned handle is owned by the viewport and may not be destroyed by the caller.
+		 *
+		 * @return The window handle or @c nullptr if the viewport can't be represented as a Windows window
+		 */
+		virtual HWND getHWND() const { return nullptr; }
+#endif
 
 		/**
 		 * @brief Gets the size of this viewport
