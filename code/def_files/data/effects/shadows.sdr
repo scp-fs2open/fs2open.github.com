@@ -110,7 +110,7 @@ float getShadowValue(sampler2DArray shadow_map, float depth, float shadowDepth, 
 	float dist_threshold = (cascade_start_dist[cascade+1] - cascade_start_dist[cascade])*0.2;
 	if(cascade_start_dist[cascade+1] - dist_threshold > depth)
 		return samplePoissonPCF(shadow_map, shadowDepth, cascade, shadowUV, use_simple_pass);
-	return mix(samplePoissonPCF(shadow_map, shadowDepth, cascade, shadowUV, use_simple_pass), samplePoissonPCF(shadow_map, shadowDepth, cascade+1, shadowUV),
+	return mix(samplePoissonPCF(shadow_map, shadowDepth, cascade, shadowUV, use_simple_pass), samplePoissonPCF(shadow_map, shadowDepth, cascade+1, shadowUV, use_simple_pass),
 			smoothstep(cascade_start_dist[cascade+1] - dist_threshold, cascade_start_dist[cascade+1], depth));
 }
 
