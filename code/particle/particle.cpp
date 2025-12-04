@@ -422,7 +422,9 @@ namespace particle
 			p_pos = part->pos;
 		}
 
-		if (part->length == 0.0f && vm_vec_dot_to_point(&Eye_matrix.vec.fvec, &Eye_position, &p_pos) <= 0.0f)
+		bool part_has_length = part->length != 0.0f;
+
+		if (!part_has_length && vm_vec_dot_to_point(&Eye_matrix.vec.fvec, &Eye_position, &p_pos) <= 0.0f)
 		{
 			return false;
 		}
@@ -435,7 +437,7 @@ namespace particle
 			
 		vec3d p1 = vmd_x_vector;
 
-		if (part->length != 0.0f) {
+		if (part_has_length) {
 			vm_vec_copy_normalize_safe(&p1, &part->velocity);
 			if (part->attached_objnum >= 0) {
 				vm_vec_unrotate(&p1, &p1, &Objects[part->attached_objnum].orient);
@@ -443,7 +445,10 @@ namespace particle
 			p1 *= part->length * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::LENGTH_MULT, curve_input);
 			p1 += p_pos;
 
-			if (vm_vec_dot_to_point(&Eye_matrix.vec.fvec, &Eye_position, &p_pos) <= 0.0f && vm_vec_dot_to_point(&Eye_matrix.vec.fvec, &Eye_position, &p1) <= 0.0f) {
+			float dot0 = vm_vec_dot_to_point(&Eye_matrix.vec.fvec, &Eye_position, &p_pos);
+			float dot1 = vm_vec_dot_to_point(&Eye_matrix.vec.fvec, &Eye_position, &p1);
+
+			if (dot0 <= 0.0f && dot1 <= 0.0f) {
 				return false;
 			}
 		}
@@ -460,7 +465,7 @@ namespace particle
 		vertex pos;
 		auto flags = g3_rotate_vertex(&pos, &p_pos);
 
-		if (flags)
+		if (flags && !part_has_length)
 		{
 			return false;
 		}
@@ -490,7 +495,7 @@ namespace particle
 
 		float radius = part->radius * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::RADIUS_MULT, curve_input);
 
-		if (part->length != 0.0f) {
+		if (part_has_length) {
 			vec3d p0 = p_pos;
 			batching_add_laser(framenum + cur_frame, &p0, radius, &p1, radius);
 		}
