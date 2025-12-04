@@ -875,7 +875,11 @@ std::unique_ptr<os::Viewport> gr_opengl_create_viewport(const os::ViewPortProper
 	attrs.pixel_format.multi_samples = os_config_read_uint(NULL, "OGL_AntiAliasSamples", 0);
 
 	attrs.enable_opengl = true;
+#ifndef USE_OPENGL_ES
 	attrs.gl_attributes.profile = os::OpenGLProfile::Core;
+#else
+	attrs.gl_attributes.profile = os::OpenGLProfile::ES;
+#endif
 
 	return graphic_operations->createViewport(attrs);
 }
@@ -900,7 +904,11 @@ int opengl_init_display_device()
 	attrs.gl_attributes.flags.set(os::OpenGLContextFlags::Debug);
 #endif
 
+#ifndef USE_OPENGL_ES
 	attrs.gl_attributes.profile = os::OpenGLProfile::Core;
+#else
+	attrs.gl_attributes.profile = os::OpenGLProfile::ES;
+#endif
 
 	attrs.display = os_config_read_uint("Video", "Display", 0);
 	attrs.width = (uint32_t) gr_screen.max_w;
@@ -1250,7 +1258,11 @@ static void init_extensions() {
 	int ver = 0, major = 0, minor = 0;
 	const char *glsl_ver = (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION);
 
+#ifndef USE_OPENGL_ES
 	sscanf(glsl_ver, "%d.%d", &major, &minor);
+#else
+	sscanf(glsl_ver, "OpenGL ES GLSL ES %d.%d", &major, &minor);
+#endif
 	ver = (major * 100) + minor;
 
 	GLSL_version = ver;
