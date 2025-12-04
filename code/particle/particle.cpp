@@ -469,7 +469,8 @@ namespace particle
 		{
 			if (part_has_length) {
 				vertex pos2;
-				if (g3_rotate_vertex(&pos2, &p1)) {
+				auto flags2 = g3_rotate_vertex(&pos2, &p1);
+				if (flags & flags2) {
 					return false;
 				}
 			} else {
