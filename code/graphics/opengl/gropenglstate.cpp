@@ -320,7 +320,7 @@ void opengl_state::SetPolygonMode(GLenum face, GLenum mode)
 {
 	if ( polygon_mode_Face != face || polygon_mode_Mode != mode ) {
 		glPolygonMode(face, mode);
-		
+
 		polygon_mode_Face = face;
 		polygon_mode_Mode = mode;
 	}

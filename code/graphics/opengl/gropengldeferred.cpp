@@ -244,6 +244,7 @@ void gr_opengl_deferred_lighting_finish()
 
 	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_DEFERRED_LIGHTING, ENVMAP > 0 ? SDR_FLAG_ENV_MAP : 0));
 	
+	// Render on top of the composite buffer texture
 	#ifndef USE_OPENGL_ES
 	glDrawBuffer(GL_COLOR_ATTACHMENT5);
 	glReadBuffer(GL_COLOR_ATTACHMENT4);
