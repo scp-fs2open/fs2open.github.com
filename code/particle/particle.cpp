@@ -422,9 +422,30 @@ namespace particle
 			p_pos = part->pos;
 		}
 
-		if (vm_vec_dot_to_point(&Eye_matrix.vec.fvec, &Eye_position, &p_pos) <= 0.0f)
+		if (part->length == 0.0f && vm_vec_dot_to_point(&Eye_matrix.vec.fvec, &Eye_position, &p_pos) <= 0.0f)
 		{
 			return false;
+		}
+		
+		const auto& source_effect = part->parent_effect.getParticleEffect();
+
+		//For anything apart from the velocity curve, "Post-Curves Velocity" is well defined. This is needed to facilitate complex but common particle scaling and appearance curves.
+		const auto& curve_input = std::forward_as_tuple(*part,
+			vm_vec_mag_quick(&part->velocity) * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::ANIM_STATE, std::forward_as_tuple(*part, vm_vec_mag_quick(&part->velocity))));
+			
+		vec3d p1 = vmd_x_vector;
+
+		if (part->length != 0.0f) {
+			vm_vec_copy_normalize_safe(&p1, &part->velocity);
+			if (part->attached_objnum >= 0) {
+				vm_vec_unrotate(&p1, &p1, &Objects[part->attached_objnum].orient);
+			}
+			p1 *= part->length * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::LENGTH_MULT, curve_input);
+			p1 += p_pos;
+
+			if (vm_vec_dot_to_point(&Eye_matrix.vec.fvec, &Eye_position, &p_pos) <= 0.0f && vm_vec_dot_to_point(&Eye_matrix.vec.fvec, &Eye_position, &p1) <= 0.0f) {
+				return false;
+			}
 		}
 
 		// calculate the alpha to draw at
@@ -445,12 +466,6 @@ namespace particle
 		}
 
 		g3_transfer_vertex(&pos, &p_pos);
-
-		const auto& source_effect = part->parent_effect.getParticleEffect();
-
-		//For anything apart from the velocity curve, "Post-Curves Velocity" is well defined. This is needed to facilitate complex but common particle scaling and appearance curves.
-		const auto& curve_input = std::forward_as_tuple(*part,
-			vm_vec_mag_quick(&part->velocity) * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::ANIM_STATE, std::forward_as_tuple(*part, vm_vec_mag_quick(&part->velocity))));
 
 		// figure out which frame we should be using
 		int framenum;
@@ -477,15 +492,6 @@ namespace particle
 
 		if (part->length != 0.0f) {
 			vec3d p0 = p_pos;
-
-			vec3d p1;
-			vm_vec_copy_normalize_safe(&p1, &part->velocity);
-			if (part->attached_objnum >= 0) {
-				vm_vec_unrotate(&p1, &p1, &Objects[part->attached_objnum].orient);
-			}
-			p1 *= part->length * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::LENGTH_MULT, curve_input);
-			p1 += p_pos;
-
 			batching_add_laser(framenum + cur_frame, &p0, radius, &p1, radius);
 		}
 		else {
