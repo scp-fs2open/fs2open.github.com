@@ -465,9 +465,16 @@ namespace particle
 		vertex pos;
 		auto flags = g3_rotate_vertex(&pos, &p_pos);
 
-		if (flags && !part_has_length)
+		if (flags)
 		{
-			return false;
+			if (part_has_length) {
+				vertex pos2;
+				if (g3_rotate_vertex(&pos2, &p1)) {
+					return false;
+				}
+			} else {
+				return false;
+			}
 		}
 
 		g3_transfer_vertex(&pos, &p_pos);
