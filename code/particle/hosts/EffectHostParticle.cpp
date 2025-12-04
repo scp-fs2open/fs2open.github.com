@@ -81,7 +81,7 @@ float EffectHostParticle::getScale() const {
 	const auto& particle = m_particle.lock();
 	//For anything apart from the velocity curve, "Post-Curves Velocity" is well defined. This is needed to facilitate complex but common particle scaling and appearance curves.
 	const auto& curve_input = std::forward_as_tuple(*particle,
-		vm_vec_mag_quick(&particle->velocity) * particle->parent_effect.getParticleEffect().m_lifetime_curves.get_output(particle::ParticleEffect::ParticleLifetimeCurvesOutput::ANIM_STATE, std::forward_as_tuple(*particle, vm_vec_mag_quick(&particle->velocity))));
+		vm_vec_mag_quick(&particle->velocity) * particle->parent_effect.getParticleEffect().m_lifetime_curves.get_output(particle::ParticleEffect::ParticleLifetimeCurvesOutput::VELOCITY_MULT, std::forward_as_tuple(*particle, vm_vec_mag_quick(&particle->velocity))));
 
 	return particle->radius * particle->parent_effect.getParticleEffect().m_lifetime_curves.get_output(particle::ParticleEffect::ParticleLifetimeCurvesOutput::RADIUS_MULT, curve_input);
 }

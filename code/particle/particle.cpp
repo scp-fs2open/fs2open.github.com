@@ -433,7 +433,7 @@ namespace particle
 
 		//For anything apart from the velocity curve, "Post-Curves Velocity" is well defined. This is needed to facilitate complex but common particle scaling and appearance curves.
 		const auto& curve_input = std::forward_as_tuple(*part,
-			vm_vec_mag_quick(&part->velocity) * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::ANIM_STATE, std::forward_as_tuple(*part, vm_vec_mag_quick(&part->velocity))));
+			vm_vec_mag_quick(&part->velocity) * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::VELOCITY_MULT, std::forward_as_tuple(*part, vm_vec_mag_quick(&part->velocity))));
 			
 		vec3d p1 = vmd_x_vector;
 
