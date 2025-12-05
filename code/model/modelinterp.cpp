@@ -137,8 +137,6 @@ struct interp_vertex {
 static uint Num_interp_verts_allocated = 0;
 vec3d **Interp_verts = NULL;
 static vertex *Interp_points = NULL;
-static vertex *Interp_splode_points = NULL;
-vec3d *Interp_splode_verts = NULL;
 static uint Interp_num_verts = 0;
 
 static float Interp_box_scale = 1.0f; // this is used to scale both detail boxes and spheres
@@ -220,16 +218,6 @@ void model_deallocate_interp_data()
 		Interp_points = nullptr;
 	}
 
-	if (Interp_splode_points != nullptr) {
-		vm_free(Interp_splode_points);
-		Interp_splode_points = nullptr;
-	}
-
-	if (Interp_splode_verts != nullptr) {
-		vm_free(Interp_splode_verts);
-		Interp_splode_verts = nullptr;
-	}
-
 	if (Interp_norms != nullptr) {
 		vm_free(Interp_norms);
 		Interp_norms = nullptr;
@@ -273,8 +261,6 @@ void model_allocate_interp_data(uint n_verts, uint n_norms)
 		Interp_verts = (vec3d**) vm_malloc( n_verts * sizeof(vec3d *) );
 
 		Interp_points = (vertex*) vm_realloc( Interp_points, n_verts * sizeof(vertex) );
-		Interp_splode_points = (vertex*) vm_realloc( Interp_splode_points, n_verts * sizeof(vertex) );
-		Interp_splode_verts = (vec3d*) vm_realloc( Interp_splode_verts, n_verts * sizeof(vec3d) );
 
 		Num_interp_verts_allocated = n_verts;
 
@@ -315,9 +301,7 @@ void model_allocate_interp_data(uint n_verts, uint n_norms)
 
 	// check that everything is still usable (works in release and debug builds)
 	Verify( Interp_points != NULL );
-	Verify( Interp_splode_points != NULL );
 	Verify( Interp_verts != NULL );
-	Verify( Interp_splode_verts != NULL );
 	Verify( Interp_norms != NULL );
 	Verify( Interp_light_applied != NULL );
 }
@@ -392,62 +376,7 @@ void model_set_thrust(int  /*model_num*/, mst_info *mst)
 	Interp_draw_distortion = mst->draw_distortion;
 }
 
-bool splodeing = false;
-int splodeingtexture = -1;
-float splode_level = 0.0f;
-
 float GEOMETRY_NOISE = 0.0f;
-
-// Point list
-// +0      int         id
-// +4      int         size
-// +8      int         n_verts
-// +12     int         n_norms
-// +16     int         offset from start of chunk to vertex data
-// +20     n_verts*char    norm_counts
-// +offset             vertex data. Each vertex n is a point followed by norm_counts[n] normals.
-void model_interp_splode_defpoints(ubyte * p, polymodel * /*pm*/, bsp_info * /*sm*/, float dist)
-{
-	if(dist==0.0f)return;
-
-	if(dist<0.0f)dist*=-1.0f;
-
-	int n;
-	int nverts = w(p+8);	
-	int offset = w(p+16);
-	int nnorms = 0;
-
-	ubyte * normcount = p+20;
-	vertex *dest = Interp_splode_points;
-	vec3d *src = vp(p+offset);
-
-	for (n = 0; n < nverts; n++) {
-		nnorms += normcount[n];
-	}
-
-	model_allocate_interp_data(nverts, nnorms);
-
-	vec3d dir;
-
-	for (n=0; n<nverts; n++ )	{	
-		Interp_splode_verts[n] = *src;		
-			
-		src++;
-
-		vm_vec_avg_n(&dir, normcount[n], src);
-		vm_vec_normalize(&dir);
-
-		for(int i=0; i<normcount[n]; i++)src++;
-
-		vm_vec_scale_add2(&Interp_splode_verts[n], &dir, dist);
-
-		g3_rotate_vertex(dest, &Interp_splode_verts[n]);
-		
-		dest++;
-
-	}
-
-}
 
 // Point list
 // +0      int         id
@@ -459,7 +388,8 @@ void model_interp_splode_defpoints(ubyte * p, polymodel * /*pm*/, bsp_info * /*s
 // +offset             vertex data. Each vertex n is a point followed by norm_counts[n] normals.
 void model_interp_defpoints(ubyte * p, polymodel *pm, bsp_info *sm)
 {
-	if(splodeing)model_interp_splode_defpoints(p, pm, sm, splode_level*model_radius);
+	SCP_UNUSED(pm);
+	SCP_UNUSED(sm);
 
 	uint i, n;
 	uint nverts = uw(p+8);	
