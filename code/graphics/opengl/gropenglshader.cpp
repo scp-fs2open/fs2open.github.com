@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
  * All source code herein is the property of Volition, Inc. You may not sell
@@ -27,6 +27,9 @@
 #include "math/vecmat.h"
 #include "mod_table/mod_table.h"
 #include "render/3d.h"
+#ifdef USE_OPENGL_ES
+#include "es_compatibility.h"
+#endif
 
 #include <jansson.h>
 #include <md5.h>
@@ -304,8 +307,11 @@ void opengl_shader_shutdown()
 static SCP_string opengl_shader_get_header(shader_type type_id, int flags, bool has_geo_shader) {
 	SCP_stringstream sflags;
 
+#ifndef USE_OPENGL_ES
 	sflags << "#version " << GLSL_version << " core\n";
-
+#else
+	sflags << "#version " << GLSL_version << " es\n";
+#endif
 	if (Detail.lighting < 3) {
 		sflags << "#define FLAG_LIGHT_MODEL_BLINN_PHONG\n";
 	}
@@ -872,7 +878,7 @@ void opengl_compile_shader_actual(shader_type sdr, const uint &flags, opengl_sha
 		}
 		catch (const std::exception&) {
 			// Since all shaders are required a compilation failure is a fatal error
-			Error(LOCATION, "A shader failed to compile! Check the debug log for more information.");
+			Error(LOCATION, "A shader failed to compile! %s. Check the debug log for more information.", sdr_info->description );
 		}
 
 		cache_program_binary(program->getShaderHandle(), shader_hash);

@@ -39,6 +39,10 @@ QSurfaceFormat getSurfaceFormat(const os::ViewPortProperties& viewProps, const o
 	case os::OpenGLProfile::Compatibility:
 		format.setProfile(QSurfaceFormat::CompatibilityProfile);
 		break;
+	case os::OpenGLProfile::ES:
+		format.setProfile(QSurfaceFormat::NoProfile);
+		format.setRenderableType(QSurfaceFormat::OpenGLES);
+		break;
 	}
 
 	if (glAttrs.flags[os::OpenGLContextFlags::Debug]) {
