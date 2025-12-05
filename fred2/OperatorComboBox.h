@@ -62,6 +62,8 @@ protected:
 	afx_msg void OnDestroy();
 	afx_msg BOOL OnEditChange();
 
+	void set_popup_operators(const SCP_vector<int> &operator_indexes);
+
 	const char* (*m_help_callback)(int);
 	bool m_pressed_enter;
 
