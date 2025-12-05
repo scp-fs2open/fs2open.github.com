@@ -1608,7 +1608,7 @@ int hud_target_ship_can_be_scanned(ship *shipp)
 		return 1;
 	} else if (Use_new_scanning_behavior) {
 		return 0;
-	} else if ((sip->class_type < 0) || !(Ship_types[sip->class_type].flags[Ship::Type_Info_Flags::Scannable])) {
+	} else if ((sip->class_type < 0) || !(Ship_types[sip->class_type].flags[Ship::Type_Info_Flags::Targetable_as_unscanned])) {
 		return 0;
 	}
 
