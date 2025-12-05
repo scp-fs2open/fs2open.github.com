@@ -620,10 +620,16 @@ static void enumerate_playback_devices(OpenALInformation* info) {
 	info->playback_devices.clear();
 	info->default_playback_device.clear();
 
-	auto default_device = alcGetString( NULL, ALC_DEFAULT_DEVICE_SPECIFIER );
-	if (default_device != nullptr) {
+	const char *default_device = nullptr;
+
+	if (alcIsExtensionPresent(nullptr, reinterpret_cast<const ALCchar*>("ALC_ENUMERATE_ALL_EXT")) == AL_TRUE) {
+		default_device = alcGetString(nullptr, ALC_DEFAULT_ALL_DEVICES_SPECIFIER);
+	} else {
+		default_device = alcGetString(nullptr, ALC_DEFAULT_DEVICE_SPECIFIER);
+	}
+
+	if (default_device) {
 		info->default_playback_device = default_device;
-		info->efx_support.push_back(std::make_pair(SCP_string(default_device), device_supports_efx(default_device)));
 	}
 
 	if ( alcIsExtensionPresent(NULL, (const ALCchar*)"ALC_ENUMERATION_EXT") == AL_TRUE ) {
@@ -640,8 +646,8 @@ static void enumerate_playback_devices(OpenALInformation* info) {
 
 		if ( (str_list != NULL) && ((ext_length = strlen(str_list)) > 0) ) {
 			while (ext_length) {
-				info->playback_devices.push_back( SCP_string(str_list) );
-				info->efx_support.push_back(std::make_pair(SCP_string(str_list), device_supports_efx(str_list)));
+				info->playback_devices.emplace_back(SCP_string(str_list));
+				info->efx_support.emplace_back(SCP_string(str_list), device_supports_efx(str_list));
 
 				str_list += (ext_length + 1);
 				ext_length = strlen(str_list);
@@ -649,7 +655,8 @@ static void enumerate_playback_devices(OpenALInformation* info) {
 		}
 	} else {
 		if (default_device) {
-			info->playback_devices.push_back(SCP_string(default_device));
+			info->playback_devices.emplace_back(SCP_string(default_device));
+			info->efx_support.emplace_back(SCP_string(default_device), device_supports_efx(default_device));
 		}
 	}
 }

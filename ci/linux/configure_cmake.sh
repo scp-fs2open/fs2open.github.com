@@ -42,7 +42,7 @@ export CXXFLAGS
 export CFLAGS
 export LD_LIBRARY_PATH
 
-if [ "$RUNNER_OS" = "macOS" ]; then
+if [ "$RUNNER_OS" = "macOS" ] && [ ! -x "$(which ninja)" ]; then
     brew install ninja
 fi
 
