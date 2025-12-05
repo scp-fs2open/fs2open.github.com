@@ -1052,7 +1052,7 @@ static HWND Player_stats[MAX_PLAYER_STAT_FIELDS];		// text boxes for player allt
 static HWND Player_mstats[MAX_PLAYER_STAT_FIELDS];		// text boxes for player mission statistics info
 
 // sprintf and set window text to the passed int
-#define STD_ADDSTRING(hwnd,val) { snprintf(txt,sizeof(txt)-1,"%d",(int)val); SetWindowText(hwnd,txt); }
+#define STD_ADDSTRING(hwnd,val) { snprintf(txt,sizeof(txt),"%d",sz2i(val)); SetWindowText(hwnd,txt); }
 
 // intialize all the controls in the player info tab
 void std_pinfo_init_player_info_controls();
@@ -2036,17 +2036,17 @@ void std_build_title_string(char *str)
 	memset(ver_str, 0, sizeof(ver_str));
 
 	if (FS_VERSION_BUILD == 0 && FS_VERSION_HAS_REVIS == 0) { //-V547
-		snprintf(ver_str, sizeof(ver_str)-1, "%i.%i", FS_VERSION_MAJOR, FS_VERSION_MINOR);
+		snprintf(ver_str, sizeof(ver_str), "%i.%i", FS_VERSION_MAJOR, FS_VERSION_MINOR);
 	} else if (FS_VERSION_HAS_REVIS == 0) {
-		snprintf(ver_str, sizeof(ver_str)-1, "%i.%i.%i", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD);
+		snprintf(ver_str, sizeof(ver_str), "%i.%i.%i", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD);
 	} else {
-		snprintf(ver_str, sizeof(ver_str)-1, "%i.%i.%i.%i", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD, FS_VERSION_REVIS);
+		snprintf(ver_str, sizeof(ver_str), "%i.%i.%i.%i", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD, FS_VERSION_REVIS);
 	}
 
 	// now build the title
 	memset(temp, 0, 256);
 
-	snprintf(temp, sizeof(temp)-1, "%s %s", XSTR("FreeSpace Standalone", 935), ver_str);
+	snprintf(temp, sizeof(temp), "%s %s", XSTR("FreeSpace Standalone", 935), ver_str);
 
 	// output first part
 	strcpy(str, temp);
@@ -2105,22 +2105,22 @@ static HMENU std_create_systray_menu()
 	HMENU stdPopup = CreatePopupMenu();
 
 	// Type of connection:
-	snprintf(tstr, sizeof(tstr)-1, "Connection Type: %s", MULTI_IS_TRACKER_GAME ? "PXO" : "Local/IP");
+	snprintf(tstr, sizeof(tstr), "Connection Type: %s", MULTI_IS_TRACKER_GAME ? "PXO" : "Local/IP");
 	AppendMenu(stdPopup, MF_STRING | MF_GRAYED, 0, tstr);
 
 	// ----------------------------------------------
 	AppendMenu(stdPopup, MF_SEPARATOR, 0, NULL);
 
 	// Game name:
-	snprintf(tstr, sizeof(tstr)-1, "Name: %s", Netgame.name);
+	snprintf(tstr, sizeof(tstr), "Name: %s", Netgame.name);
 	AppendMenu(stdPopup, MF_STRING | MF_GRAYED, 0, tstr);
 
 	// Mission name:
-	snprintf(tstr, sizeof(tstr)-1, "Mission: %s", strlen(Netgame.mission_name) ? Netgame.mission_name : "<none>");
+	snprintf(tstr, sizeof(tstr), "Mission: %s", strlen(Netgame.mission_name) ? Netgame.mission_name : "<none>");
 	AppendMenu(stdPopup, MF_STRING | MF_GRAYED, 0, tstr);
 
 	// Number of players:
-	snprintf(tstr, sizeof(tstr)-1, "Num Players: %d", multi_num_players());
+	snprintf(tstr, sizeof(tstr), "Num Players: %d", multi_num_players());
 	AppendMenu(stdPopup, MF_STRING | MF_GRAYED, 0, tstr);
 
 	// ----------------------------------------------

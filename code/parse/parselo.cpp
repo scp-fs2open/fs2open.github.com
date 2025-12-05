@@ -68,23 +68,41 @@ static const SCP_unordered_map<SCP_string, SCP_string> retail_hashes = {
 
 
 //	Return true if this character is white space, else false.
-int is_white_space(char ch)
+bool is_white_space(char ch)
 {
 	return ((ch == ' ') || (ch == '\t') || (ch == EOLN) || (ch == CARRIAGE_RETURN));
 }
-int is_white_space(unicode::codepoint_t cp)
+
+//	Return true if this character is white space, else false.
+bool is_white_space(unicode::codepoint_t cp)
 {
 	return ((cp == UNICODE_CHAR(' ')) || (cp == UNICODE_CHAR('\t')) || (cp == (unicode::codepoint_t)EOLN) || (cp == (unicode::codepoint_t)CARRIAGE_RETURN));
 }
 
+//  Returns the length of the string up to but excluding any white space.  This could be the entire string if the string contains no white space.
+//	Equivalently, returns the position of the first white space character, or the string length if no white space is found.
+size_t find_white_space(const char *str)
+{
+	return strcspn(str, " \t\n\r");
+}
+
 // Returns true if this character is gray space, else false (gray space is white space except for EOLN).
-int is_gray_space(char ch)
+bool is_gray_space(char ch)
 {
 	return ((ch == ' ') || (ch == '\t'));
 }
 
-bool is_gray_space(unicode::codepoint_t cp) {
+// Returns true if this character is gray space, else false (gray space is white space except for EOLN).
+bool is_gray_space(unicode::codepoint_t cp)
+{
 	return cp == UNICODE_CHAR(' ') || cp == UNICODE_CHAR('\t');
+}
+
+//  Returns the length of the string up to but excluding any white space.  This could be the entire string if the string contains no white space.
+//	Equivalently, returns the position of the first white space character, or the string length if no white space is found.
+size_t find_gray_space(const char *str)
+{
+	return strcspn(str, " \t");
 }
 
 bool is_parenthesis(char ch)
