@@ -143,7 +143,7 @@ SCP_string get_ship_table_text(ship_info* sip)
 				if (!stricmp(line2 + i, sip->name)) {
 					memset(file_text, 0, sizeof(file_text));
 					snprintf(file_text,
-						sizeof(file_text) - 1,
+						sizeof(file_text),
 						"--  %s  -------------------------------\r\n",
 						tbl_file_names[n].c_str());
 					result += file_text;
@@ -269,7 +269,7 @@ SCP_string get_weapon_table_text(weapon_info* wip)
 				if (!stricmp(line2 + i, wip->name)) {
 					memset(file_text, 0, sizeof(file_text));
 					snprintf(file_text,
-						sizeof(file_text) - 1,
+						sizeof(file_text),
 						"--  %s  -------------------------------\r\n",
 						tbl_file_names[n].c_str());
 					result += file_text;
@@ -391,7 +391,7 @@ SCP_string get_asteroid_table_text(const asteroid_info* aip)
 				if (!stricmp(line2 + i, aip->name)) {
 					memset(file_text, 0, sizeof(file_text));
 					snprintf(file_text,
-						sizeof(file_text) - 1,
+						sizeof(file_text),
 						"--  %s  -------------------------------\r\n",
 						tbl_file_names[n].c_str());
 					result += file_text;
