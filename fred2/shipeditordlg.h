@@ -12,7 +12,7 @@
 #ifndef _SHIPEDITORDLG_H
 #define _SHIPEDITORDLG_H
 
-#include "Sexp_tree.h"
+#include "sexp_tree_ui.h"
 #include "ShipGoalsDlg.h"
 #include "Management.h"
 

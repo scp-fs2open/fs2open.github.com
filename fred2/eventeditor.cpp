@@ -15,7 +15,7 @@
 #include "EventEditor.h"
 #include "FREDView.h"
 #include "Management.h"
-#include "Sexp_tree.h"
+#include "sexp_tree_ui.h"
 #include "textviewdlg.h"
 #include "mission/missionmessage.h"
 #include "cfile/cfile.h"

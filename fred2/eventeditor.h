@@ -12,7 +12,7 @@
 #ifndef _EVENTEDITOR_H
 #define _EVENTEDITOR_H
 
-#include "Sexp_tree.h"
+#include "sexp_tree_ui.h"
 #include "mission/missiongoals.h"
 #include "mission/missionmessage.h"
 

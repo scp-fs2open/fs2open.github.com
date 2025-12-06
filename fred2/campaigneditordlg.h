@@ -11,7 +11,7 @@
 //
 
 #include "resource.h"
-#include "Sexp_tree.h"
+#include "sexp_tree_ui.h"
 #include "CampaignFilelistBox.h"
 
 /////////////////////////////////////////////////////////////////////////////

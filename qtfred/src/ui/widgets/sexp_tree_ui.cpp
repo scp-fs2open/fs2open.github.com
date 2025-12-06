@@ -2571,8 +2571,8 @@ void sexp_tree::insertOperatorAction(int op) {
 		}
 	}
 
-	auto item_handle = tree_nodes[node].handle =
-						   insert(Operators[op].text.c_str(), NodeImage::OPERATOR, h, tree_item_handle(tree_nodes[item_index]));
+	auto item_handle = static_cast<QTreeWidgetItem*>(tree_nodes[node].handle =
+						   insert(Operators[op].text.c_str(), NodeImage::OPERATOR, h, tree_item_handle(tree_nodes[item_index])));
 	move_branch(item_index, node);
 
 	setCurrentItemIndex(node);

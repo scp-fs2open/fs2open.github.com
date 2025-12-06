@@ -1755,7 +1755,7 @@ int SexpTreeModel::get_modify_variable_type(int parent) const
 	int op_const = get_operator_const(tree_nodes[parent].text);
 
 	Assert(tree_nodes[parent].child >= 0);
-	char* node_text = tree_nodes[tree_nodes[parent].child].text;
+	const char* node_text = tree_nodes[tree_nodes[parent].child].text;
 
 	if (op_const == OP_MODIFY_VARIABLE) {
 		sexp_var_index = get_tree_name_to_sexp_variable_index(node_text);

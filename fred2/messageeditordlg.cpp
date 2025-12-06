@@ -14,7 +14,7 @@
 #include "MessageEditorDlg.h"
 #include "FREDDoc.h"
 #include "Management.h"
-#include "Sexp_tree.h"
+#include "sexp_tree_ui.h"
 #include "EventEditor.h"
 #include "mission/missionmessage.h"
 
