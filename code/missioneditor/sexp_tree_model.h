@@ -333,6 +333,7 @@ public:
 	int root_item;
 	int select_sexp_node;  // translates global sexp node index to tree node during load
 	int flag;              // "found select_sexp_node" flag during load
+	void post_load();      // reset select_sexp_node if not found during load
 
 	// Editor context interface (set by UI layer)
 	SexpTreeEditorInterface* _interface;

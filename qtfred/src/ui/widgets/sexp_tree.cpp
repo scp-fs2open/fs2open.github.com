@@ -360,14 +360,6 @@ int sexp_tree::save_tree(int node) {
 }
 
 // get variable name from sexp_tree node .text
-void var_name_from_sexp_tree_text(char* var_name, const char* text) {
-	auto var_name_length = strcspn(text, "(");
-	Assert(var_name_length < TOKEN_LENGTH - 1);
-
-	strncpy(var_name, text, var_name_length);
-	var_name[var_name_length] = '\0';
-}
-
 #define NO_PREVIOUS_NODE -9
 // called recursively to save a tree branch and everything under it
 // SEXPT_CONTAINER_NAME and SEXPT_MODIFIER require no special handling here
@@ -425,9 +417,7 @@ void sexp_tree::set_node(int node, int type, const char* text) {
 }
 
 void sexp_tree::post_load() {
-	if (!flag) {
-		select_sexp_node = -1;
-	}
+	_model.post_load();
 }
 
 // build or rebuild a CTreeCtrl object with the current tree data
@@ -449,38 +439,9 @@ void sexp_tree::add_sub_tree(int node, QTreeWidgetItem* root) {
 	Assert(node >= 0 && node < (int) tree_nodes.size());
 	node2 = tree_nodes[node].child;
 
-	// check for single argument operator case (prints as one line)
-/*	if (node2 != -1 && tree_nodes[node2].child == -1 && tree_nodes[node2].next == -1) {
-		sprintf(str, "%s %s", tree_nodes[node].text, tree_nodes[node2].text);
-		tree_nodes[node].handle = insert(str, root);
-		tree_nodes[node].flags = OPERAND | EDITABLE;
-		tree_nodes[node2].flags = COMBINED;
-		return;
-	}*/
-
-	// bitmap to draw in tree
-	NodeImage bitmap;
-
-	if (tree_nodes[node].type & SEXPT_OPERATOR) {
-		tree_nodes[node].flags = OPERAND;
-		bitmap = NodeImage::OPERATOR;
-	} else {
-		if (tree_nodes[node].type & SEXPT_VARIABLE) {
-			tree_nodes[node].flags = NOT_EDITABLE;
-			bitmap = NodeImage::VARIABLE;
-		} else if (tree_nodes[node].type & SEXPT_CONTAINER_NAME) {
-			tree_nodes[node].flags = NOT_EDITABLE;
-			bitmap = NodeImage::CONTAINER_NAME;
-		} else if (tree_nodes[node].type & SEXPT_CONTAINER_DATA) {
-			tree_nodes[node].flags = NOT_EDITABLE;
-			bitmap = NodeImage::CONTAINER_DATA;
-		} else {
-			tree_nodes[node].flags = EDITABLE;
-			bitmap = get_data_image(node);
-		}
-	}
-
-	tree_nodes[node].handle = insert(tree_nodes[node].text, bitmap, root);
+	auto info = _model.compute_node_visual_info(node);
+	tree_nodes[node].flags = info.flags;
+	tree_nodes[node].handle = insert(tree_nodes[node].text, info.image, root);
 	root = tree_item_handle(tree_nodes[node]);
 
 	tree_item_handle(tree_nodes[node])->setFlags(
@@ -492,21 +453,11 @@ void sexp_tree::add_sub_tree(int node, QTreeWidgetItem* root) {
 		Assert(tree_nodes[node].type & SEXPT_VALID);
 		if (tree_nodes[node].type & (SEXPT_OPERATOR | SEXPT_CONTAINER_DATA)) {
 			add_sub_tree(node, root);
-
 		} else {
 			Assert(tree_nodes[node].child == -1);
-			if (tree_nodes[node].type & SEXPT_VARIABLE) {
-				tree_nodes[node].handle = insert(tree_nodes[node].text, NodeImage::VARIABLE, root);
-				tree_nodes[node].flags = NOT_EDITABLE;
-			} else if (tree_nodes[node].type & SEXPT_CONTAINER_NAME) {
-				tree_nodes[node].handle = insert(tree_nodes[node].text, NodeImage::CONTAINER_NAME, root);
-				tree_nodes[node].flags = NOT_EDITABLE;
-			// SEXPT_MODIFIER doesn't require special treatment here
-			} else {
-				auto bmap = get_data_image(node);
-				tree_nodes[node].handle = insert(tree_nodes[node].text, bmap, root);
-				tree_nodes[node].flags = EDITABLE;
-			}
+			auto child_info = _model.compute_node_visual_info(node);
+			tree_nodes[node].flags = child_info.flags;
+			tree_nodes[node].handle = insert(tree_nodes[node].text, child_info.image, root);
 
 			tree_item_handle(tree_nodes[node])->setFlags(
 				tree_item_handle(tree_nodes[node])->flags().setFlag(Qt::ItemIsEditable, (tree_nodes[node].flags & EDITABLE)));
@@ -910,28 +861,6 @@ void sexp_tree::ensure_visible(int node) {
 	}
 }
 
-void get_variable_default_text_from_variable_text(char* text, char* default_text) {
-	char* start;
-
-	// find '('
-	start = strstr(text, "(");
-	Assert(start);
-	start++;
-
-	// get length and copy all but last char ")"
-	auto len = strlen(start);
-	strncpy(default_text, start, len - 1);
-
-	// add null termination
-	default_text[len - 1] = '\0';
-}
-
-void get_variable_name_from_sexp_tree_node_text(const char* text, char* var_name) {
-	auto length = strcspn(text, "(");
-
-	strncpy(var_name, text, length);
-	var_name[length] = '\0';
-}
 
 int sexp_tree::get_modify_variable_type(int parent) {
 	return _model.get_modify_variable_type(parent);
@@ -1342,12 +1271,12 @@ void sexp_tree::update_help(QTreeWidgetItem* h) {
 	if (h == nullptr) {
 		helpChanged("");
 		miniHelpChanged("");
+		return;
 	}
 
-	int i, j, z, c, code, index, sibling_place;
-
-	for (i = 0; i < (int) Operators.size(); i++) {
-		for (j = 0; j < (int) op_menu.size(); j++) {
+	// Validate operator help strings
+	for (int i = 0; i < (int) Operators.size(); i++) {
+		for (int j = 0; j < (int) op_menu.size(); j++) {
 			if (get_category(Operators[i].value) == op_menu[j].id) {
 				if (!help(Operators[i].value)) {
 					mprintf(("Allender!  If you add new sexp operators, add help for them too! :) Sexp %s has no help.\n", Operators[i].text.c_str()));
@@ -1356,235 +1285,30 @@ void sexp_tree::update_help(QTreeWidgetItem* h) {
 		}
 	}
 
-	for (i = 0; i < (int) tree_nodes.size(); i++) {
+	// Find node index from handle
+	int node_index = -1;
+	for (int i = 0; i < (int) tree_nodes.size(); i++) {
 		if (tree_nodes[i].handle == h) {
+			node_index = i;
 			break;
 		}
 	}
 
 	// Node comments are not yet implemented in qtFRED, so just adding some base code here
 	// that can be used when the feature is completed - Mjn
-
-	//int thisIndex = event_annotation_lookup(h);
 	SCP_string nodeComment;
-
+	//int thisIndex = event_annotation_lookup(h);
 	//if (thisIndex >= 0) {
-		//if (!Event_annotations[thisIndex].comment.empty()) {
-			//nodeComment = "Node Comments:\r\n   " + Event_annotations[thisIndex].comment;
-		//}
-	//} else {
-		nodeComment = "";
+	//	if (!Event_annotations[thisIndex].comment.empty()) {
+	//		nodeComment = "Node Comments:\r\n   " + Event_annotations[thisIndex].comment;
+	//	}
 	//}
 
-	if ((i >= (int) tree_nodes.size()) || !tree_nodes[i].type) {
-		helpChanged(nodeComment.c_str());
-		miniHelpChanged("");
-		return;
-	}
+	// Delegate to model for help text computation
+	auto result = _model.compute_help_text(node_index, nodeComment);
 
-	// Now that we're done with top level nodes we can add the empty lines because
-	// everything else below is supposed to have help text
-	if (!nodeComment.empty())
-		nodeComment.insert(0, "\r\n\r\n");
-
-	if (SEXPT_TYPE(tree_nodes[i].type) == SEXPT_OPERATOR) {
-		miniHelpChanged("");
-	} else {
-		z = tree_nodes[i].parent;
-		if (z < 0) {
-			Warning(LOCATION, "Sexp data \"%s\" has no parent!", tree_nodes[i].text);
-			return;
-		}
-
-		code = get_operator_const(tree_nodes[z].text);
-		index = get_operator_index(tree_nodes[z].text);
-		sibling_place = get_sibling_place(i) + 1;    //We want it to start at 1
-
-		//*****Minihelp box
-		if ((SEXPT_TYPE(tree_nodes[i].type) == SEXPT_NUMBER)
-			|| ((SEXPT_TYPE(tree_nodes[i].type) == SEXPT_STRING) && sibling_place > 0)) {
-			char buffer[10240] = { "" };
-
-			//Get the help for the current operator
-			const char* helpstr = help(code);
-			bool display_number = true;
-
-			//If a help string exists, try to display it
-			if (helpstr != NULL) {
-				char searchstr[32];
-				const char* loc = NULL, * loc2 = NULL;
-
-				if (loc == NULL) {
-					sprintf(searchstr, "\n%d:", sibling_place);
-					loc = strstr(helpstr, searchstr);
-				}
-
-				if (loc == NULL) {
-					sprintf(searchstr, "\t%d:", sibling_place);
-					loc = strstr(helpstr, searchstr);
-				}
-				if (loc == NULL) {
-					sprintf(searchstr, " %d:", sibling_place);
-					loc = strstr(helpstr, searchstr);
-				}
-				if (loc == NULL) {
-					sprintf(searchstr, "%d:", sibling_place);
-					loc = strstr(helpstr, searchstr);
-				}
-				if (loc == NULL) {
-					loc = strstr(helpstr, "Rest:");
-				}
-				if (loc == NULL) {
-					loc = strstr(helpstr, "All:");
-				}
-
-				if (loc != NULL) {
-					//Skip whitespace
-					while (*loc == '\r' || *loc == '\n' || *loc == ' ' || *loc == '\t') {
-						loc++;
-					}
-
-					//Find EOL
-					loc2 = strpbrk(loc, "\r\n");
-					if (loc2 != NULL) {
-						size_t size = loc2 - loc;
-						strncpy(buffer, loc, size);
-						if (size < sizeof(buffer)) {
-							buffer[size] = '\0';
-						}
-						display_number = false;
-					} else {
-						strcpy_s(buffer, loc);
-						display_number = false;
-					}
-				}
-			}
-
-			//Display argument number
-			if (display_number) {
-				sprintf(buffer, "%d:", sibling_place);
-			}
-
-			miniHelpChanged(QString::fromUtf8(buffer));
-		}
-
-		if (index >= 0) {
-			c = 0;
-			j = tree_nodes[z].child;
-			while ((j >= 0) && (j != i)) {
-				j = tree_nodes[j].next;
-				c++;
-			}
-
-			Assert(j >= 0);
-			if (query_operator_argument_type(index, c) == OPF_MESSAGE) {
-				for (j = 0; j < Num_messages; j++) {
-					if (!stricmp(Messages[j].name, tree_nodes[i].text)) {
-						auto text = QString("Message Text:\n%1%2").arg(Messages[j].message, nodeComment.c_str());
-						helpChanged(text);
-						return;
-					}
-				}
-			}
-
-			// If the node is a ship flag, then display the flag's description
-			if (query_operator_argument_type(index, c) == OPF_SHIP_FLAG) {
-				Object::Object_Flags object_flag = Object::Object_Flags::NUM_VALUES;
-				Ship::Ship_Flags ship_flag = Ship::Ship_Flags::NUM_VALUES;
-				Mission::Parse_Object_Flags parse_obj_flag = Mission::Parse_Object_Flags::NUM_VALUES;
-				AI::AI_Flags ai_flag = AI::AI_Flags::NUM_VALUES;
-				SCP_string desc;
-
-				sexp_check_flag_arrays(tree_nodes[i].text, object_flag, ship_flag, parse_obj_flag, ai_flag);
-
-				// Ship flags are pulled from multiple categories, so we have to search them all. Ew.
-				if (object_flag != Object::Object_Flags::NUM_VALUES) {
-					for (size_t n = 0; n < (size_t)Num_object_flag_names; n++) {
-						if (object_flag == Object_flag_descriptions[n].flag) {
-							desc = Object_flag_descriptions[n].flag_desc;
-							break;
-						}
-					}
-				}
-
-				if (ship_flag != Ship::Ship_Flags::NUM_VALUES) {
-					for (size_t n = 0; n < (size_t)Num_ship_flag_names; n++) {
-						if (ship_flag == Ship_flag_descriptions[n].flag) {
-							desc = Ship_flag_descriptions[n].flag_desc;
-							break;
-						}
-					}
-				}
-
-				if (ai_flag != AI::AI_Flags::NUM_VALUES) {
-					for (size_t n = 0; n < (size_t)Num_ai_flag_names; n++) {
-						if (ai_flag == Ai_flag_descriptions[n].flag) {
-							desc = Ai_flag_descriptions[n].flag_desc;
-							break;
-						}
-					}
-				}
-
-				// Only check through parse object flags if we haven't found anything yet
-				if (desc.empty()) {
-					if (parse_obj_flag != Mission::Parse_Object_Flags::NUM_VALUES) {
-						for (size_t n = 0; n < (size_t)Num_parse_object_flags; n++) {
-							if (parse_obj_flag == Parse_object_flag_descriptions[n].def) {
-								desc = Parse_object_flag_descriptions[n].flag_desc;
-								break;
-							}
-						}
-					}
-				}
-
-				// If we still didn't find anything, say so!
-				if (desc.empty())
-					desc = "Unknown flag. Let a coder know!";
-
-				auto text = QString("%s").arg(desc.c_str());
-				helpChanged(text);
-				return;
-			}
-
-			// If the node is a wing flag, then display the flag's description
-			if (query_operator_argument_type(index, c) == OPF_WING_FLAG) {
-				Ship::Wing_Flags wing_flag = Ship::Wing_Flags::NUM_VALUES;
-				SCP_string desc;
-
-				sexp_check_flag_array(tree_nodes[i].text, wing_flag);
-
-				if (wing_flag != Ship::Wing_Flags::NUM_VALUES) {
-					for (size_t n = 0; n < (size_t)Num_wing_flag_names; n++) {
-						if (wing_flag == Wing_flag_descriptions[n].flag) {
-							desc = Wing_flag_descriptions[n].flag_desc;
-							break;
-						}
-					}
-				}
-
-				// If we still didn't find anything, say so!
-				if (desc.empty())
-					desc = "Unknown flag. Let a coder know!";
-
-				auto text = QString("%s").arg(desc.c_str());
-				helpChanged(text);
-				return;
-			}
-		}
-
-		i = z;
-	}
-
-	code = get_operator_const(tree_nodes[i].text);
-	auto str = help(code);
-	QString text;
-	if (!str) {
-		text = QString("No help available%1").arg(nodeComment.c_str());
-	} else {
-		text = QString("%1%2").arg(str, nodeComment.c_str());
-	}
-
-	helpChanged(text);
+	helpChanged(QString::fromStdString(result.help_text));
+	miniHelpChanged(QString::fromStdString(result.mini_help_text));
 }
 
 // find list of sexp_tree nodes with text
@@ -2769,7 +2493,6 @@ void sexp_tree::handleItemChange(QTreeWidgetItem* item, int  /*column*/) {
 	_currently_editing = false;
 
 	auto str = item->text(0);
-	bool update_node = true;
 	uint node;
 
 	if (str.isEmpty()) {
@@ -2791,55 +2514,33 @@ void sexp_tree::handleItemChange(QTreeWidgetItem* item, int  /*column*/) {
 	}
 
 	Assert(node < tree_nodes.size());
-	if (tree_nodes[node].type & SEXPT_OPERATOR) {
-		SCP_string text = str.toUtf8().constData();
-		auto op = match_closest_operator(text, node);
-		if (op.empty()) {
-			return;
-		}    // Goober5000 - avoids crashing
+	SCP_string text = str.toUtf8().constData();
+	auto result = _model.validate_label_edit(node, text);
+
+	if (result.is_operator) {
+		if (!result.update_node && result.resolved_text == text) {
+			return;	// Goober5000 - avoids crashing (no match found)
+		}
 
 		// use the text of the operator we found
-		str = QString::fromStdString(op);
+		str = QString::fromStdString(result.resolved_text);
 		item->setText(0, str);
 
 		setCurrentItemIndex(node);
-		int op_num = get_operator_index(op.c_str());
-		if (op_num >= 0) {
-			add_or_replace_operator(op_num, 1);
-		} else {
-			update_node = false;
+		if (result.operator_index >= 0) {
+			add_or_replace_operator(result.operator_index, 1);
 		}
-	}
-	// gotta sidestep Goober5000's number hack and check entries are actually positive.
-	else if (tree_nodes[node].type & SEXPT_NUMBER) {
-		if (query_node_argument_type(node) == OPF_POSITIVE) {
-			int val = str.toInt();
-			if (val < 0) {
-				QMessageBox::critical(this, "Invalid Number", "Can not enter a negative value");
-				update_node = false;
-			}
-		}
+	} else if (result.negative_number_error) {
+		QMessageBox::critical(this, "Invalid Number", "Can not enter a negative value");
 	}
 
-	// Error checking would not hurt here
-	auto len = str.size();
-	if (len >= TOKEN_LENGTH) {
-		len = TOKEN_LENGTH - 1;
-	}
-
-	if (update_node) {
+	if (result.update_node) {
 		modified();
-
 		nodeChanged(node);
-
-		auto strBytes = str.toUtf8(); // avoid using dangling ptr
-		strncpy(tree_nodes[node].text, strBytes.constData(), len);
-		tree_nodes[node].text[len] = 0;
-
-		// let's make sure we aren't introducing any invalid characters, per Mantis #2893
-		lcl_fred_replace_stuff(tree_nodes[node].text, TOKEN_LENGTH - 1);
+		_model.apply_label_edit(node, result.resolved_text);
 	} else {
-		item->setText(0, QString::fromUtf8(tree_nodes[node].text, len));
+		auto len = strlen(tree_nodes[node].text);
+		item->setText(0, QString::fromUtf8(tree_nodes[node].text, static_cast<int>(len)));
 	}
 }
 void sexp_tree::copyActionHandler() {

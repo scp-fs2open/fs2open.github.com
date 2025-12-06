@@ -233,15 +233,6 @@ int sexp_tree::save_tree(int node)
 }
 
 // get variable name from sexp_tree node .text
-void var_name_from_sexp_tree_text(char *var_name, const char *text)
-{
-	auto var_name_length = strcspn(text, "(");
-	Assert(var_name_length < TOKEN_LENGTH - 1);
-
-	strncpy(var_name, text, var_name_length);
-	var_name[var_name_length] = '\0';
-}
-
 #define NO_PREVIOUS_NODE -9
 // called recursively to save a tree branch and everything under it
 // SEXPT_CONTAINER_NAME and SEXPT_MODIFIER require no special handling here
@@ -295,8 +286,7 @@ void sexp_tree::set_node(int node, int type, const char *text)
 
 void sexp_tree::post_load()
 {
-	if (!flag)
-		select_sexp_node = -1;
+	_model.post_load();
 }
 
 // build or rebuild a CTreeCtrl object with the current tree data
@@ -319,37 +309,9 @@ void sexp_tree::add_sub_tree(int node, HTREEITEM root)
 	Assert(node >= 0 && node < (int)tree_nodes.size());
 	node2 = tree_nodes[node].child;
 
-	// check for single argument operator case (prints as one line)
-/*	if (node2 != -1 && tree_nodes[node2].child == -1 && tree_nodes[node2].next == -1) {
-		sprintf(str, "%s %s", tree_nodes[node].text, tree_nodes[node2].text);
-		tree_nodes[node].handle = insert(str, root);
-		tree_nodes[node].flags = OPERAND | EDITABLE;
-		tree_nodes[node2].flags = COMBINED;
-		return;
-	}*/
-
-	// bitmap to draw in tree
-	int bitmap;
-
-	if (tree_nodes[node].type & SEXPT_OPERATOR) {
-		tree_nodes[node].flags = OPERAND;
-		bitmap = BITMAP_OPERATOR;
-	} else {
-		if (tree_nodes[node].type & SEXPT_VARIABLE) {
-			tree_nodes[node].flags = NOT_EDITABLE;
-			bitmap = BITMAP_VARIABLE;
-		} else if (tree_nodes[node].type & SEXPT_CONTAINER_NAME) {
-			tree_nodes[node].flags = NOT_EDITABLE;
-			bitmap = BITMAP_CONTAINER_NAME;
-		} else if (tree_nodes[node].type & SEXPT_CONTAINER_DATA) {
-			tree_nodes[node].flags = NOT_EDITABLE;
-			bitmap = BITMAP_CONTAINER_DATA;
-		} else {
-			tree_nodes[node].flags = EDITABLE;
-			bitmap = get_data_image(node);
-		}
-	}
-
+	auto info = _model.compute_node_visual_info(node);
+	tree_nodes[node].flags = info.flags;
+	int bitmap = static_cast<int>(info.image);
 	tree_nodes[node].handle = insert(tree_nodes[node].text, bitmap, bitmap, root);
 	root = tree_item_handle(tree_nodes[node]);
 
@@ -359,21 +321,12 @@ void sexp_tree::add_sub_tree(int node, HTREEITEM root)
 		Assert(tree_nodes[node].type & SEXPT_VALID);
 		if (tree_nodes[node].type & (SEXPT_OPERATOR | SEXPT_CONTAINER_DATA)) {
 			add_sub_tree(node, root);
-
 		} else {
 			Assert(tree_nodes[node].child == -1);
-			if (tree_nodes[node].type & SEXPT_VARIABLE) {
-				tree_nodes[node].handle = insert(tree_nodes[node].text, BITMAP_VARIABLE, BITMAP_VARIABLE, root);
-				tree_nodes[node].flags = NOT_EDITABLE;
-			} else if (tree_nodes[node].type & SEXPT_CONTAINER_NAME) {
-				tree_nodes[node].handle = insert(tree_nodes[node].text, BITMAP_CONTAINER_NAME, BITMAP_CONTAINER_NAME, root);
-				tree_nodes[node].flags = NOT_EDITABLE;
-			// SEXPT_MODIFIER doesn't require special treatment here
-			} else {
-				int bmap = get_data_image(node);
-				tree_nodes[node].handle = insert(tree_nodes[node].text, bmap, bmap, root);
-				tree_nodes[node].flags = EDITABLE;
-			}
+			auto child_info = _model.compute_node_visual_info(node);
+			tree_nodes[node].flags = child_info.flags;
+			int bmap = static_cast<int>(child_info.image);
+			tree_nodes[node].handle = insert(tree_nodes[node].text, bmap, bmap, root);
 		}
 
 		node = tree_nodes[node].next;
@@ -799,8 +752,7 @@ int sexp_tree::end_label_edit(TVITEMA &item)
 
 	HTREEITEM h = item.hItem; 
 	SCP_string str(item.pszText);
-	int r = 1;	
-	bool update_node = true; 
+	int r = 1;
 	uint node;
 
 	for (node=0; node<tree_nodes.size(); node++)
@@ -819,47 +771,29 @@ int sexp_tree::end_label_edit(TVITEMA &item)
 	}
 
 	Assert(node < tree_nodes.size());
-	if (tree_nodes[node].type & SEXPT_OPERATOR) {
-		auto op = match_closest_operator(str, node);
-		if (op.empty()) return 0;	// Goober5000 - avoids crashing
+	auto result = _model.validate_label_edit(node, str);
+
+	if (result.is_operator) {
+		if (!result.update_node && result.resolved_text == str) {
+			return 0;	// Goober5000 - avoids crashing (no match found)
+		}
 
 		// use the text of the operator we found
-		SetItemText(h, op.c_str());
-		str = op;
+		SetItemText(h, result.resolved_text.c_str());
+		str = result.resolved_text;
 
 		item_index = node;
-		int op_num = get_operator_index(op.c_str()); 
-		if (op_num >= 0 ) {
-			add_or_replace_operator(op_num, 1);
-		}
-		else {
-			update_node = false;
+		if (result.operator_index >= 0) {
+			add_or_replace_operator(result.operator_index, 1);
 		}
 		r = 0;
-	}
-	// gotta sidestep Goober5000's number hack and check entries are actually positive. 
-	else if (tree_nodes[node].type & SEXPT_NUMBER) {
-		if (query_node_argument_type(node) == OPF_POSITIVE) {
-			int val = atoi(str.c_str()); 
-			if (val < 0) {
-				MessageBox("Can not enter a negative value", "Invalid Number", MB_ICONEXCLAMATION); 
-				update_node = false;
-			}
-		}
+	} else if (result.negative_number_error) {
+		MessageBox("Can not enter a negative value", "Invalid Number", MB_ICONEXCLAMATION);
 	}
 
-	// Error checking would not hurt here
-	auto len = str.size();
-	if (len >= TOKEN_LENGTH)
-		len = TOKEN_LENGTH - 1;
-
-	if (update_node) {
+	if (result.update_node) {
 		*modified = 1;
-		strncpy(tree_nodes[node].text, str.c_str(), len);
-		tree_nodes[node].text[len] = 0;
-
-		// let's make sure we aren't introducing any invalid characters, per Mantis #2893
-		lcl_fred_replace_stuff(tree_nodes[node].text, TOKEN_LENGTH - 1);
+		_model.apply_label_edit(node, result.resolved_text);
 	}
 	else {
 		item.pszText = tree_nodes[node].text;
@@ -1937,30 +1871,6 @@ void sexp_tree::link_modified(int *ptr)
 	modified = ptr;
 }
 
-void get_variable_default_text_from_variable_text(char *text, char *default_text)
-{
-	char *start;
-
-	// find '('
-	start = strstr(text, "(");
-	Assert(start);
-	start++;
-
-	// get length and copy all but last char ")"
-	auto len = strlen(start);
-	strncpy(default_text, start, len-1);
-
-	// add null termination
-	default_text[len-1] = '\0';
-}
-
-void get_variable_name_from_sexp_tree_node_text(const char *text, char *var_name)
-{
-	auto length = strcspn(text, "(");
-
-	strncpy(var_name, text, length);
-	var_name[length] = '\0';
-}
 
 int sexp_tree::get_modify_variable_type(int parent)
 {

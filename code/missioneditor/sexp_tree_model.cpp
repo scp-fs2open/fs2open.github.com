@@ -400,6 +400,12 @@ void SexpTreeModel::clear_tree_data(const char* op)
 	}
 }
 
+void SexpTreeModel::post_load()
+{
+	if (!flag)
+		select_sexp_node = -1;
+}
+
 void SexpTreeModel::load_tree_data(int index, const char* deflt)
 {
 	int cur;
