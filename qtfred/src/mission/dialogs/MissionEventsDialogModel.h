@@ -2,7 +2,7 @@
 
 #include "AbstractDialogModel.h"
 
-#include "ui/widgets/sexp_tree.h"
+#include "ui/widgets/sexp_tree_ui.h"
 
 #include <mission/missiongoals.h>
 #include <mission/missionmessage.h>

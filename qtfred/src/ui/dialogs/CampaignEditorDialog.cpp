@@ -3,7 +3,7 @@
 #include "ui/Theme.h"
 
 #include <globalincs/globals.h>
-#include "ui/widgets/sexp_tree.h"
+#include "ui/widgets/sexp_tree_ui.h"
 #include "ui/widgets/SimpleListSelectDialog.h"
 #include "ui/util/SignalBlockers.h"
 #include "mission/util.h"

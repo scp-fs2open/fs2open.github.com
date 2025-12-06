@@ -12,7 +12,7 @@
 #ifndef __BRIEFINGEDITORDLG_H__
 #define __BRIEFINGEDITORDLG_H__
 
-#include "sexp_tree.h"
+#include "sexp_tree_ui.h"
 
 #include "parse/sexp.h"
 #include "mission/missionbriefcommon.h"

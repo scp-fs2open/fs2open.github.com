@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ui/widgets/sexp_tree.h"
+#include "ui/widgets/sexp_tree_ui.h"
 
 #include <mission/dialogs/BriefingEditorDialogModel.h>
 #include <ui/FredView.h>

@@ -6,7 +6,7 @@
 #include <QAbstractButton>
 #include <QtWidgets/QDialog>
 
-#include "ui/widgets/sexp_tree.h"
+#include "ui/widgets/sexp_tree_ui.h"
 
 
 namespace fso::fred::dialogs {

@@ -10,7 +10,7 @@
 
 
 #include "stdafx.h"
-#include "Sexp_tree.h"
+#include "sexp_tree_ui.h"
 #include "FRED.h"
 #include "FREDDoc.h"
 #include "Management.h"

@@ -9,7 +9,7 @@
 
 
 
-#include "sexp_tree.h"
+#include "sexp_tree_ui.h"
 #include "mission/util.h"
 #include "mission/Editor.h"
 #include "mission/object.h"

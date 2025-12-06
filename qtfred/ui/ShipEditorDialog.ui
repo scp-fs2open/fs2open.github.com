@@ -896,7 +896,7 @@
   <customwidget>
    <class>fso::fred::sexp_tree</class>
    <extends>QTreeView</extends>
-   <header>ui/widgets/sexp_tree.h</header>
+   <header>ui/widgets/sexp_tree_ui.h</header>
   </customwidget>
   <customwidget>
    <class>fso::fred::PersonaColorComboBox</class>

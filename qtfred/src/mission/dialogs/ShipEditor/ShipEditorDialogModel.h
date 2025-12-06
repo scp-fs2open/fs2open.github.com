@@ -3,7 +3,7 @@
 #include "../AbstractDialogModel.h"
 #include "mission/util.h"
 #include "ship/ship.h"
-#include "ui/widgets/sexp_tree.h"
+#include "ui/widgets/sexp_tree_ui.h"
 
 namespace fso::fred::dialogs {
 /**
