@@ -15,7 +15,7 @@
 
 #include "missioneditor/sexp_tree_model.h"
 
-class sexp_container;
+struct sexp_container;
 
 class SexpTreeActions {
 public:
