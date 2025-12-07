@@ -30,7 +30,7 @@ float samplePoissonPCF(sampler2DArray shadow_map, float shadowDepth, int cascade
 {
 	if(cascade > 3 || cascade < 0) return 1.0;
 
-	vec2 poissonDisc[16] = { 
+	vec2 poissonDisc[16] = vec2[](  
 		vec2(-0.76275, -0.3432573),
 		vec2(-0.5226235, -0.8277544),
 		vec2(-0.3780261, 0.01528688),
@@ -47,7 +47,7 @@ float samplePoissonPCF(sampler2DArray shadow_map, float shadowDepth, int cascade
 		vec2(0.05605913, -0.7570801),
 		vec2(0.81772, -0.02475523),
 		vec2(0.6890262, 0.5191521)
-	};
+	);
 
 	float maxUVOffset[4];
 	maxUVOffset[0] = 1.0/300.0;
