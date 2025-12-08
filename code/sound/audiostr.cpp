@@ -1,17 +1,6 @@
 
-
-#ifdef _WIN32
-#define VC_EXTRALEAN
-#ifndef STRICT
-#define STRICT
-#endif
-
-#include <windows.h>
-#include <mmsystem.h>
-#endif
-
-#include "cfile/cfile.h"
 #include "globalincs/pstypes.h"
+#include "cfile/cfile.h"
 #include "io/timer.h"
 #include "sound/audiostr.h"
 #include "sound/IAudioFile.h"
@@ -26,15 +15,6 @@
 // status
 #define ASF_FREE	0
 #define ASF_USED	1
-
-// constants
-static constexpr uint32_t BIGBUF_SIZE = 352800;	// enough for 1 second of 44.1kHz 16-bit stereo
-static ubyte *Wavedata_load_buffer = nullptr;		// buffer used for cueing audiostreams
-static ubyte *Wavedata_service_buffer = nullptr;	// buffer used for servicing audiostreams
-
-static SDL_Mutex* Global_service_lock;
-
-typedef bool (*TIMERCALLBACK)(ptr_u);
 
 // Globalize the list of audio extensions for use in several sound related files
 const char *audio_ext_list[] = { ".ogg", ".wav" };
@@ -75,21 +55,6 @@ static int Audiostream_inited = 0;
 static SDL_AudioDeviceID Audiostream_device = 0;
 static SDL_AudioSpec Audiostream_spec;
 
-class Timer
-{
-public:
-	void constructor();
-	void destructor();
-	bool Create (uint nPeriod, uint nRes, ptr_u dwUser, TIMERCALLBACK pfnCallback);
-protected:
-	static uint TimeProc(void *dwUser, SDL_TimerID timerID, Uint32 interval);
-	TIMERCALLBACK m_pfnCallback;
-	ptr_u m_dwUser;
-	uint m_nPeriod;
-	uint m_nRes;
-	SDL_TimerID m_nIDTimer;
-};
-
 class AudioStream
 {
 public:
@@ -115,6 +80,7 @@ public:
 	float	Get_Default_Volume() { return m_lDefaultVolume; }
 	uint	Get_Samples_Committed();
 	int	Is_looping() { return m_bLooping; }
+	void Do_Frame();
 	int	status;
 	int	type;
 	bool paused_via_sexp_or_script;
@@ -122,22 +88,19 @@ public:
 protected:
 	bool prepareOpened(const char *filename);
 	void Cue ();
-	bool WriteWaveData (uint cbSize, uint *num_bytes_written, int service = 1);
-	uint GetMaxWriteSize ();
-	bool ServiceBuffer ();
-	static bool TimerCallback (ptr_u dwUser);
+	bool WriteWaveData(uint* num_bytes_written = nullptr);
 	bool PlaybackDone();
+
+	static void SDLCALL ServiceBuffer(void *userdata, SDL_AudioStream *stream,
+									  int additional_amount, int total_amount);
 
 	SDL_AudioStream *m_audio_stream;
 
-	Timer m_timer;			// ptr to Timer object
 	std::unique_ptr<sound::IAudioFile> m_pwavefile;	// ptr to WaveFile object
 	sound::AudioFileProperties m_fileProps;
 	bool m_fCued;			// semaphore (stream cued)
 	bool m_fPlaying;		// semaphore (stream playing)
-	uint m_cbBufOffset;		// last write position
-	uint m_cbBufSize;		// size of sound buffer in bytes
-	uint m_nBufService;		// service interval in msec
+	SCP_vector<uint8_t> m_cbBuffer;	// sound buffer for reading wave data
 	uint m_nTimeStarted;	// time (in system time) playback started
 
 	bool	m_bLooping;				// whether or not to loop playback
@@ -147,102 +110,29 @@ protected:
 	float	m_lCutoffVolume;
 	bool	m_bIsPaused;			// stream is stopped, but not rewinded
 	bool	m_bReadingDone;			// no more bytes to be read from disk, still have remaining buffer to play
-	uint	m_fade_timer_id;		// timestamp so we know when to start fade
-	uint	m_finished_id;			// timestamp so we know when we've played #bytes required
+	int		m_fade_timer_id;		// timestamp so we know when to start fade
+	int		m_finished_id;			// timestamp so we know when we've played #bytes required
 	bool	m_bPastLimit;			// flag to show we've played past the number of bytes requred
 	float	m_lDefaultVolume;
 
 	size_t m_total_uncompressed_bytes_read;
 	size_t m_max_uncompressed_bytes_to_read;
-
-	SDL_Mutex* write_lock;
-
 };
 
-
-// Timer class implementation
-//
-////////////////////////////////////////////////////////////
-
-// constructor
-void Timer::constructor(void)
-{
-	m_nIDTimer = 0;
-}
-
-
-// Destructor
-void Timer::destructor(void)
-{
-	if (m_nIDTimer) {
-		SDL_RemoveTimer(m_nIDTimer);
-		m_nIDTimer = 0;
-	}
-}
-
-// Create
-bool Timer::Create (uint nPeriod, uint nRes, ptr_u dwUser, TIMERCALLBACK pfnCallback)
-{
-	bool bRtn = true;	// assume success
-
-	Assert(pfnCallback);
-	Assert(nPeriod > 10);
-	Assert(nPeriod >= nRes);
-
-	m_nPeriod = nPeriod;
-	m_nRes = nRes;
-	m_dwUser = dwUser;
-	m_pfnCallback = pfnCallback;
-
-	if ((m_nIDTimer = SDL_AddTimer(m_nPeriod, TimeProc, (void*)this)) == 0) {
-	  bRtn = false;
-	}
-
-	return (bRtn);
-}
-
-
-// Timer proc for multimedia timer callback set with timeSetTime().
-//
-// Calls procedure specified when Timer object was created. The 
-// dwUser parameter contains "this" pointer for associated Timer object.
-// 
-uint Timer::TimeProc(void *dwUser, SDL_TimerID /* timerID */, Uint32 interval)
-{
-	// dwUser contains ptr to Timer object
-	Timer * ptimer = (Timer *) dwUser;
-
-	// Call user-specified callback and pass back user specified data
-	(ptimer->m_pfnCallback) (ptimer->m_dwUser);
-
-	if (ptimer->m_nPeriod) {
-		return interval;
-	} else {
-		SDL_RemoveTimer(ptimer->m_nIDTimer);
-		ptimer->m_nIDTimer = 0;
-		return 0;
-	}
-}
 
 //
 // AudioStream class implementation
 //
 ////////////////////////////////////////////////////////////
 
-// The following constants are the defaults for our streaming buffer operation.
-static const ushort DefBufferLength          = 2000; // default buffer length in msec
-static const ushort DefBufferServiceInterval = 250;  // default buffer service interval in msec
-
 // Constructor
 AudioStream::AudioStream (void) : m_total_uncompressed_bytes_read(0), m_max_uncompressed_bytes_to_read(0)
 {
-	write_lock = SDL_CreateMutex();
 }
 
 // Destructor
 AudioStream::~AudioStream (void)
 {
-	SDL_DestroyMutex( write_lock );
 }
 
 void AudioStream::Init_Data ()
@@ -263,10 +153,10 @@ void AudioStream::Init_Data ()
 
 	m_pwavefile = nullptr;
 	m_fPlaying = m_fCued = false;
-	m_cbBufOffset = 0;
-	m_cbBufSize = 0;
-	m_nBufService = DefBufferServiceInterval;
 	m_nTimeStarted = 0;
+
+	m_cbBuffer.clear();
+	m_cbBuffer.shrink_to_fit();
 
 	m_total_uncompressed_bytes_read = 0;
 	m_max_uncompressed_bytes_to_read = std::numeric_limits<size_t>::max();
@@ -277,14 +167,16 @@ bool AudioStream::prepareOpened(const char *filename)
 {
 	m_fileProps = m_pwavefile->getFileProperties();
 
-	// desired # of seconds to buffer x audio data rate in bytes
-	m_cbBufSize = (DefBufferLength/1000) * m_fileProps.bytes_per_sample * m_fileProps.num_channels * m_fileProps.sample_rate;
-	// align buffer to format
-	m_cbBufSize += m_cbBufSize % (m_fileProps.bytes_per_sample * m_fileProps.num_channels);
-	// if the requested buffer size is too big then cap it
-	m_cbBufSize = (m_cbBufSize > BIGBUF_SIZE) ? BIGBUF_SIZE : m_cbBufSize;
+	size_t buf_size = 0;
 
-	//				nprintf(("SOUND", "SOUND => Stream buffer created using %d bytes\n", m_cbBufSize));
+	// audio data rate in bytes for 1 second of audio
+	buf_size = m_fileProps.bytes_per_sample * m_fileProps.num_channels * m_fileProps.sample_rate;
+	// shouldn't need more than 250ms worth at a time
+	buf_size /= 4;
+
+	m_cbBuffer.reserve(buf_size);
+
+//	nprintf(("SOUND", "SOUND => Stream buffer created using %d bytes\n", static_cast<int>(m_cbBuffer.capacity())));
 
 	SDL_AudioSpec spec{};
 
@@ -319,7 +211,7 @@ bool AudioStream::prepareOpened(const char *filename)
 		return false;
 	}
 
-	Snd_sram += m_cbBufSize;
+	Snd_sram += m_cbBuffer.capacity();
 
 	return true;
 }
@@ -371,8 +263,6 @@ bool AudioStream::Destroy (void)
 {
 	bool fRtn = true;
 
-	SDL_LockMutex(write_lock);
-
 	// Stop playback
 	Stop ();
 
@@ -380,14 +270,15 @@ bool AudioStream::Destroy (void)
 	SDL_DestroyAudioStream(m_audio_stream);
 	m_audio_stream = nullptr;
 
-	Snd_sram -= m_cbBufSize;
+	Snd_sram -= m_cbBuffer.capacity();
+
+	m_cbBuffer.clear();
+	m_cbBuffer.shrink_to_fit();
 
 	// Delete WaveFile object
 	m_pwavefile = nullptr;
 
 	status = ASF_FREE;
-
-	SDL_UnlockMutex(write_lock);
 
 	return fRtn;
 }
@@ -396,13 +287,13 @@ bool AudioStream::Destroy (void)
 //
 // Writes wave data to sound buffer. This is a helper method used by Create and
 // ServiceBuffer; it's not exposed to users of the AudioStream class.
-bool AudioStream::WriteWaveData (uint size, uint *num_bytes_written, int service)
+bool AudioStream::WriteWaveData(uint *num_bytes_written)
 {
-	ubyte *uncompressed_wave_data;
+	if (num_bytes_written) {
+		*num_bytes_written = 0;
+	}
 
-	*num_bytes_written = 0;
-
-	if ( size == 0 || m_bReadingDone ) {
+	if (m_bReadingDone) {
 		return true;
 	}
 
@@ -410,25 +301,15 @@ bool AudioStream::WriteWaveData (uint size, uint *num_bytes_written, int service
 		return true;
 	}
 
-	if ( service ) {
-		SDL_LockMutex(Global_service_lock);
-	}
-
-	if ( service ) {
-		uncompressed_wave_data = Wavedata_service_buffer;
-	} else {
-		uncompressed_wave_data = Wavedata_load_buffer;
-	}
-
 	int num_bytes_read = 0;
 
-	num_bytes_read = m_pwavefile->Read(uncompressed_wave_data, m_cbBufSize);
+	num_bytes_read = m_pwavefile->Read(m_cbBuffer.data(), m_cbBuffer.capacity());
 
 	// if looping then maybe reset wavefile and keep going
 	if ((num_bytes_read < 0) && m_bLooping) {
 		m_pwavefile->Cue();
 		m_total_uncompressed_bytes_read = 0;
-		num_bytes_read = m_pwavefile->Read(uncompressed_wave_data, m_cbBufSize);
+		num_bytes_read = m_pwavefile->Read(m_cbBuffer.data(), m_cbBuffer.capacity());
 	}
 
 	if (num_bytes_read < 0) {
@@ -436,150 +317,40 @@ bool AudioStream::WriteWaveData (uint size, uint *num_bytes_written, int service
 		// we're done adding more data so let SDL know to use all that's left
 		SDL_FlushAudioStream(m_audio_stream);
 	} else if (num_bytes_read > 0) {
-		SDL_PutAudioStreamData(m_audio_stream, uncompressed_wave_data, num_bytes_read);
-		*num_bytes_written += num_bytes_read;
-	}
+		SDL_PutAudioStreamData(m_audio_stream, m_cbBuffer.data(), num_bytes_read);
 
-	if ( service ) {
-		SDL_UnlockMutex(Global_service_lock);
+		if (num_bytes_written) {
+			*num_bytes_written += num_bytes_read;
+		}
 	}
 
 	return true;
 }
 
-// GetMaxWriteSize
-//
-// Helper function to calculate max size of sound buffer write operation, i.e. how much
-// free space there is in buffer.
-uint AudioStream::GetMaxWriteSize (void)
+void SDLCALL AudioStream::ServiceBuffer(void *userdata, SDL_AudioStream *stream __UNUSED,
+										int additional_amount, int total_amount __UNUSED)
 {
-	uint dwMaxSize = m_cbBufSize;
-
-	if (SDL_GetAudioStreamQueued(m_audio_stream) >= static_cast<int>(m_cbBufSize/2)) {
-		// don't need more data right now
-		dwMaxSize = 0;
+	// stream doesn't actually need more data, so bail
+	if (additional_amount <= 0) {
+		return;
 	}
 
-	//	nprintf(("Alan","Max write size: %d\n", dwMaxSize));
-	return (dwMaxSize);
-}
+	auto info = reinterpret_cast<AudioStream *>(userdata);
 
-#define VOLUME_ATTENUATION_BEFORE_CUTOFF			0.03f
-#define VOLUME_ATTENUATION							0.65f
-bool AudioStream::ServiceBuffer (void)
-{
-	float vol;
-	bool fRtn = true;
-
-	if ( status != ASF_USED )
-		return false;
-
-	SDL_LockMutex( write_lock );
-
-	// status may have changed, so lets check once again
-	if ( status != ASF_USED ){
-		SDL_UnlockMutex( write_lock );
-
-		return false;
+	// adjust buffer size if necessary
+	if (static_cast<size_t>(additional_amount) > info->m_cbBuffer.capacity()) {
+		// NOTE: Snd_ram isn't modified here so we can avoid any possible threading
+		//       issues. Also, the chance of a resize being needed is quite small.
+		info->m_cbBuffer.reserve(additional_amount);
 	}
 
-	if ( m_bFade == true ) {
-		if ( m_lCutoffVolume == 0.0f ) {
-			vol = Get_Volume();
-//			nprintf(("Alan","Volume is: %d\n",vol));
-			m_lCutoffVolume = vol * VOLUME_ATTENUATION_BEFORE_CUTOFF;
-		}
-
-		vol = Get_Volume() * VOLUME_ATTENUATION;
-//		nprintf(("Alan","Volume is now: %d\n",vol));
-		Set_Volume(vol);
-
-//		nprintf(("Sound","SOUND => Volume for stream sound is %d\n",vol));
-//		nprintf(("Alan","Cuttoff Volume is: %d\n",m_lCutoffVolume));
-		if ( vol < m_lCutoffVolume ) {
-			m_bFade = false;
-			m_lCutoffVolume = 0.0f;
-
-			if ( m_bDestroy_when_faded == true ) {
-				SDL_UnlockMutex( write_lock );
-
-				Destroy();	
-				// Reset reentrancy semaphore
-
-				return false;
-			} else {
-				Stop_and_Rewind();
-				// Reset reentrancy semaphore
-				SDL_UnlockMutex( write_lock );
-
-				return true;
-			}
-		}
-	}
-
-	// All of sound not played yet, send more data to buffer
-	uint dwFreeSpace = GetMaxWriteSize ();
-
-	// Determine free space in sound buffer
-	if (dwFreeSpace) {
-
-		// Some wave data remains, but not enough to fill free space
-		// Send wave data to buffer, fill remainder of free space with silence
-		uint num_bytes_written;
-
-		if (WriteWaveData (dwFreeSpace, &num_bytes_written) == true) {
-//			nprintf(("Alan","Num bytes written: %d\n", num_bytes_written));
-
-			if ( m_total_uncompressed_bytes_read >= m_max_uncompressed_bytes_to_read ) {
-				m_fade_timer_id = timer_get_milliseconds() + 1700;		// start fading 1.7 seconds from now
-				m_finished_id = timer_get_milliseconds() + 2000;		// 2 seconds left to play out buffer
-				m_max_uncompressed_bytes_to_read = std::numeric_limits<uint>::max();
-			}
-
-			if ( (m_fade_timer_id>0) && ((uint)timer_get_milliseconds() > m_fade_timer_id) ) {
-				m_fade_timer_id = 0;
-				Fade_and_Stop();
-			}
-
-			if ( (m_finished_id>0) && ((uint)timer_get_milliseconds() > m_finished_id) ) {
-				m_finished_id = 0;
-				m_bPastLimit = true;
-			}
-
-			if ( PlaybackDone() ) {
-				if ( m_bDestroy_when_faded == true ) {
-					SDL_UnlockMutex( write_lock );
-
-					Destroy();
-					// Reset reentrancy semaphore
-
-					return false;
-				}
-				// All of sound has played, stop playback or loop again
-				if ( m_bLooping && !m_bFade) {
-					Play(m_lVolume, m_bLooping);
-				} else {
-					Stop_and_Rewind();
-				}
-			}
-		}
-		else {
-			// Error writing wave data
-			fRtn = false;
-			Int3(); 
-		}
-	}
-
-	SDL_UnlockMutex( write_lock );
-
-	return (fRtn);
+	// read in additional wave data
+	info->WriteWaveData();
 }
 
 // Cue
 void AudioStream::Cue (void)
 {
-	uint num_bytes_written;
-
 	if (!m_fCued) {
 		m_bFade = false;
 		m_fade_timer_id = 0;
@@ -590,9 +361,6 @@ void AudioStream::Cue (void)
 
 		m_bDestroy_when_faded = false;
 
-		// Reset buffer ptr
-		m_cbBufOffset = 0;
-
 		// Reset file ptr, etc
 		m_pwavefile->Cue ();
 
@@ -600,7 +368,7 @@ void AudioStream::Cue (void)
 		SDL_ClearAudioStream(m_audio_stream);
 
 		// Fill buffer with wave data
-		WriteWaveData (m_cbBufSize, &num_bytes_written, 0);
+		WriteWaveData();
 
 		m_fCued = true;
 
@@ -633,26 +401,13 @@ void AudioStream::Play (float volume, bool looping)
 	m_nTimeStarted = timer_get_milliseconds();
 	Set_Volume(volume);
 
-	// Kick off timer to service buffer
-	m_timer.constructor();
-
-	m_timer.Create (m_nBufService, m_nBufService, ptr_u (this), TimerCallback);
-
 	// once bound it should start playing immediately
 	SDL_BindAudioStream(Audiostream_device, m_audio_stream);
+	SDL_SetAudioStreamGetCallback(m_audio_stream, ServiceBuffer, this);
 
 	// Playback begun, no longer cued
 	m_fPlaying = true;
 	m_bIsPaused = false;
-}
-
-// Timer callback for Timer object created by ::Play method.
-bool AudioStream::TimerCallback (ptr_u dwUser)
-{
-	// dwUser contains ptr to AudioStream object
-	AudioStream * pas = (AudioStream *) dwUser;
-
-	return (pas->ServiceBuffer ());
 }
 
 void AudioStream::Set_Sample_Cutoff(unsigned int sample_cutoff)
@@ -700,6 +455,7 @@ void AudioStream::Fade_and_Stop (void)
 void AudioStream::Stop(int paused)
 {
 	if (m_fPlaying) {
+		SDL_SetAudioStreamGetCallback(m_audio_stream, nullptr, nullptr);
 		SDL_UnbindAudioStream(m_audio_stream);
 
 		if ( !paused ) {
@@ -708,9 +464,6 @@ void AudioStream::Stop(int paused)
 
 		m_fPlaying = false;
 		m_bIsPaused = (paused != 0);
-
-		// Delete Timer object
-		m_timer.destructor();
 	}
 }
 
@@ -719,11 +472,9 @@ void AudioStream::Stop_and_Rewind (void)
 {
 	if (m_fPlaying) {
 		// Stop playback
+		SDL_SetAudioStreamGetCallback(m_audio_stream, nullptr, nullptr);
 		SDL_UnbindAudioStream(m_audio_stream);
 		SDL_ClearAudioStream(m_audio_stream);
-
-		// Delete Timer object
-		m_timer.destructor();
 
 		m_fPlaying = false;
 		m_bIsPaused = false;
@@ -763,6 +514,72 @@ bool AudioStream::PlaybackDone()
 		return false;
 }
 
+#define VOLUME_ATTENUATION_BEFORE_CUTOFF			0.03f
+#define VOLUME_ATTENUATION							0.65f
+
+// Things that should be looked after at regular intervals (such as every frame)
+void AudioStream::Do_Frame()
+{
+	float vol;
+
+	if (m_bFade) {
+		if (m_lCutoffVolume == 0.0f) {
+			vol = Get_Volume();
+			//			nprintf(("Alan","Volume is: %d\n",vol));
+			m_lCutoffVolume = vol * VOLUME_ATTENUATION_BEFORE_CUTOFF;
+		}
+
+		vol = Get_Volume() * VOLUME_ATTENUATION;
+		//		nprintf(("Alan","Volume is now: %d\n",vol));
+		Set_Volume(vol);
+
+		//		nprintf(("Sound","SOUND => Volume for stream sound is %d\n",vol));
+		//		nprintf(("Alan","Cuttoff Volume is: %d\n",m_lCutoffVolume));
+		if (vol < m_lCutoffVolume) {
+			m_bFade = false;
+			m_lCutoffVolume = 0.0f;
+
+			if (m_bDestroy_when_faded) {
+				Destroy();
+			} else {
+				Stop_and_Rewind();
+			}
+
+			return;
+		}
+	}
+
+	if (m_total_uncompressed_bytes_read >= m_max_uncompressed_bytes_to_read) {
+		m_fade_timer_id = timer_get_milliseconds() + 1700;		// start fading 1.7 seconds from now
+		m_finished_id = timer_get_milliseconds() + 2000;		// 2 seconds left to play out buffer
+		m_max_uncompressed_bytes_to_read = std::numeric_limits<uint>::max();;
+	}
+
+	if ( (m_fade_timer_id > 0) && (timer_get_milliseconds() > m_fade_timer_id) ) {
+		m_fade_timer_id = 0;
+		Fade_and_Stop();
+	}
+
+	if ( (m_finished_id > 0) && (timer_get_milliseconds() > m_finished_id) ) {
+		m_finished_id = 0;
+		m_bPastLimit = true;
+	}
+
+	// see if we're done
+	if ( m_bReadingDone && (SDL_GetAudioStreamQueued(m_audio_stream) < 1) ) {
+		if (m_bDestroy_when_faded) {
+			// All of sound has played, and we're done with it
+			Destroy();
+		} else if (m_bLooping && !m_bFade) {
+			// All of sound has played, loop again
+			Play(m_lVolume, m_bLooping);
+		} else {
+			// All of sound has played, stop playback
+			Stop_and_Rewind();
+		}
+	}
+}
+
 
 static AudioStream Audio_streams[MAX_AUDIO_STREAMS];
 
@@ -789,28 +606,12 @@ void audiostream_init()
 	// now get actual format
 	SDL_GetAudioDeviceFormat(Audiostream_device, &Audiostream_spec, nullptr);
 
-	// Allocate memory for the buffer which holds the uncompressed wave data that is streamed from the
-	// disk during a load/cue
-	if ( Wavedata_load_buffer == NULL ) {
-		Wavedata_load_buffer = (ubyte*)vm_malloc(BIGBUF_SIZE);
-		Assert(Wavedata_load_buffer != NULL);
-	}
-
-	// Allocate memory for the buffer which holds the uncompressed wave data that is streamed from the
-	// disk during a service interval
-	if ( Wavedata_service_buffer == NULL ) {
-		Wavedata_service_buffer = (ubyte*)vm_malloc(BIGBUF_SIZE);
-		Assert(Wavedata_service_buffer != NULL);
-	}
-
 	for ( i = 0; i < MAX_AUDIO_STREAMS; i++ ) {
 		Audio_streams[i].Init_Data();
 		Audio_streams[i].status = ASF_FREE;
 		Audio_streams[i].type = ASF_NONE;
 		Audio_streams[i].paused_via_sexp_or_script = false;
 	}
-
-	Global_service_lock = SDL_CreateMutex();
 
 	Audiostream_inited = 1;
 }
@@ -830,19 +631,6 @@ void audiostream_close()
 			Audio_streams[i].Destroy();
 		}
 	}
-
-	// free global buffers
-	if ( Wavedata_load_buffer ) {
-		vm_free(Wavedata_load_buffer);
-		Wavedata_load_buffer = NULL;
-	}
-
-	if ( Wavedata_service_buffer ) {
-		vm_free(Wavedata_service_buffer);
-		Wavedata_service_buffer = NULL;
-	}
-
-	SDL_DestroyMutex( Global_service_lock );
 
 	if (Audiostream_device) {
 		SDL_CloseAudioDevice(Audiostream_device);
@@ -1217,5 +1005,15 @@ void audiostream_unpause_all(bool via_sexp_or_script)
 			continue;
 
 		audiostream_unpause(i, via_sexp_or_script);
+	}
+}
+
+void audiostream_do_frame()
+{
+	for (auto &item : Audio_streams) {
+		if (item.status == ASF_FREE)
+			continue;
+
+		item.Do_Frame();
 	}
 }
