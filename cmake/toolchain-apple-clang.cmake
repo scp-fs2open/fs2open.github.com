@@ -15,4 +15,4 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fcolor-diagnostics")
 
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wno-unused-variable -Wno-unused-parameter")
 
-set(CMAKE_CXX_FLAGS_DEBUG "-Og -g -Wshadow")
+set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -Wshadow")
