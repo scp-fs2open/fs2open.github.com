@@ -6448,14 +6448,14 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem_type(int parent_node)
 
 sexp_list_item *sexp_tree::get_listing_opf_point()
 {
-	char buf[NAME_LENGTH+8];
+	char buf[NAME_LENGTH];
 	sexp_list_item head;
 
 	for (const auto &ii: Waypoint_lists)
 	{
-		for (int j = 0; (uint) j < ii.get_waypoints().size(); ++j)
+		for (const auto &jj: ii.get_waypoints())
 		{
-			sprintf(buf, "%s:%d", ii.get_name(), j + 1);
+			waypoint_stuff_name(buf, jj);
 			head.add_data(buf);
 		}
 	}

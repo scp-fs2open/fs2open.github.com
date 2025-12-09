@@ -393,6 +393,49 @@ void waypoint_find_unique_name(char *dest_name, int start_index)
 	} while (collision != NULL);
 }
 
+void waypoint_stuff_name(char *dest, const char *waypoint_list_name, int waypoint_num)
+{
+	constexpr size_t name_max_len = NAME_LENGTH - 3 - 1 - 1;	// a colon, three digits, and a null terminator
+
+	if (waypoint_num < 1)
+	{
+		Assertion(LOCATION, "A waypoint number must be at least 1!");
+		*dest = 0;
+		return;
+	}
+	if (waypoint_num >= 1000)
+	{
+		Error(LOCATION, "This waypoint number has more than three digits!  If you actually need this, first convince a coder that you are sane and then ask for the limit to be increased.");
+		*dest = 0;
+		return;
+	}
+
+	strncpy(dest, waypoint_list_name, name_max_len);
+	sprintf(dest + name_max_len, ":%d", waypoint_num);
+}
+
+void waypoint_stuff_name(SCP_string &dest, const char *waypoint_list_name, int waypoint_num)
+{
+	constexpr size_t name_max_len = NAME_LENGTH - 3 - 1 - 1;	// a colon, three digits, and a null terminator
+
+	if (waypoint_num < 1)
+	{
+		Assertion(LOCATION, "A waypoint number must be at least 1!");
+		dest = "";
+		return;
+	}
+	if (waypoint_num >= 1000)
+	{
+		Error(LOCATION, "This waypoint number has more than three digits!  If you actually need this, first convince a coder that you are sane and then ask for the limit to be increased.");
+		dest = "";
+		return;
+	}
+
+	dest.assign(waypoint_list_name, name_max_len);
+	dest += ":";
+	dest.append(std::to_string(waypoint_num));
+}
+
 void waypoint_add_list(const char *name, const SCP_vector<vec3d> &vec_list)
 {
 	Assert(name != NULL);
