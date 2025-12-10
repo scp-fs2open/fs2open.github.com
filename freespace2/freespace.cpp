@@ -8111,3 +8111,10 @@ int main(int argc, char *argv[])
 
 	return result;
 }
+
+#ifdef __ANDROID__
+extern "C" int android_main(int argc, char* argv[])
+{
+	return main(argc, argv);
+}
+#endif
