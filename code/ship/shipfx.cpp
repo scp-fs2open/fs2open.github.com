@@ -887,7 +887,7 @@ bool shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int light_n )
 				mc.pos = &pos;
 				mc.p0 = &rp0;
 				mc.p1 = &rp1;
-				mc.flags = MC_CHECK_MODEL;
+				mc.flags = MC_CHECK_MODEL & MC_RESPECT_DETAIL_BOX_SPHERE;
 
 				int mc_result = model_collide(&mc);
 				mc.pos = NULL;
@@ -936,7 +936,7 @@ bool shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int light_n )
 				mc.pos = &Viewer_obj->pos;
 				mc.p0 = &rp0;
 				mc.p1 = &rp1;
-				mc.flags = MC_CHECK_MODEL;
+				mc.flags = MC_CHECK_MODEL & MC_RESPECT_DETAIL_BOX_SPHERE;
 
 				if( model_collide(&mc) ) {
 					if ( mc.t_poly ) {
