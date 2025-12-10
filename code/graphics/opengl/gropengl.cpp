@@ -1368,14 +1368,26 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	mprintf(("  Geo shader support : %s\n", GLAD_GL_ARB_gpu_shader5 ? NOX("YES") : NOX("NO")));
 	mprintf(("  S3TC texture support : %s\n", GLAD_GL_EXT_texture_compression_s3tc ? NOX("YES") : NOX("NO")));
 	mprintf(("  BPTC texture support : %s\n", GLAD_GL_ARB_texture_compression_bptc ? NOX("YES") : NOX("NO")));
+
 	#ifdef USE_OPENGL_ES
-	mprintf(("  ASTC texture support : %s\n", GLAD_GL_KHR_texture_compression_astc_ldr ? NOX("YES") : NOX("NO")));
-	mprintf(("  Cull distance support : %s\n", GLAD_GL_EXT_clip_cull_distance ? NOX("YES") : NOX("NO")));
+	GLint maxBuffers;
+	glGetIntegerv(GL_MAX_DRAW_BUFFERS, &maxBuffers);
+	mprintf(("  Max draw buffers : %d\n", maxBuffers));
+
+	if (maxBuffers < 6 && (Cmdline_deferred_lighting_cockpit || Cmdline_no_deferred_lighting != 0)) {
+		Warning(LOCATION,
+			"Deferred lightning is enabled in settings but the gpu does not support the minimum of 6 draw buffers. "
+			"This will result in rendering errors.");
+	}
+
 	mprintf(("  Precompiled shaders support : %s\n", GLAD_GL_OES_get_program_binary ? NOX("YES") : NOX("NO")));
 	mprintf(("  Immutable buffer storage support : %s\n", GLAD_GL_EXT_buffer_storage ? NOX("YES") : NOX("NO")));
 	mprintf(("  BGRA8888 format support: %s\n", GLAD_GL_EXT_texture_format_BGRA8888 ? NOX("YES") : NOX("NO")));
 	mprintf(("  Anisotropic filter support: %s\n", GLAD_GL_EXT_texture_filter_anisotropic ? NOX("YES") : NOX("NO")));
+	//for a theorical GLES MSAA implementation
 	mprintf(("  Multisampled render to texture support: %s\n", GLAD_GL_EXT_multisampled_render_to_texture ? NOX("YES") : NOX("NO")));
+	mprintf(("  Multisampled render to texture support 2: %s\n", GLAD_GL_EXT_multisampled_render_to_texture2 ? NOX("YES") : NOX("NO")));
+	glEnable(GL_BLEND); // needed for glBlendFunci
 	#endif
 	mprintf(("\n"));
 
