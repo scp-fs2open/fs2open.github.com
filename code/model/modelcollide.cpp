@@ -977,7 +977,10 @@ void mc_check_subobj( int mn )
 	if (sm->flags[Model::Submodel_flags::Nocollide_this_only]) goto NoHit; // Don't collide for this model, but keep checking others
 
 	if (Mc->flags & MC_RESPECT_DETAIL_BOX_SPHERE) {
-		if (!model_render_check_detail_box(&Eye_position, Mc_pm, mn, MR_NORMAL))
+		vec3d local;
+		vm_vec_sub(&local, &Eye_position, Mc->pos);
+		vm_vec_rotate(&local, &local, Mc->orient);
+		if (!model_render_check_detail_box(&local, Mc_pm, mn, MR_NORMAL))
 			goto NoHit; //This submodel is a detail box that is not displayed, skip it
 	}
 
