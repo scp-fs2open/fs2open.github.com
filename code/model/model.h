@@ -1316,6 +1316,7 @@ typedef struct mc_info {
 #define MC_CHECK_INVISIBLE_FACES (1<<8)		// Check the invisible faces.
 #define MC_COLLIDE_ALL (1<<9)				// Returns ALL hits via hit_points_all, including backfacing polies hits
 
+#define MC_RESPECT_DETAIL_BOX_SPHERE (1<<10) //Skip a submodel if it is an invisible detailbox
 
 /*
    Checks to see if a vector from p0 to p0 collides with a model of
