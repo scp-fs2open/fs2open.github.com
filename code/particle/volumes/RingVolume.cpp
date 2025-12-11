@@ -10,7 +10,7 @@ namespace particle {
 		auto curveSource = std::tuple_cat(source, std::make_tuple(particlesFraction));
 		vec3d pos;
 		// get an unbiased random point in the sphere
-		vm_vec_random_in_circle(&pos, &vmd_zero_vector, &orientation, m_radius * m_modular_curves.get_output(VolumeModularCurveOutput::RADIUS, curveSource, &m_modular_curve_instance), false);
+		vm_vec_random_in_circle(&pos, &vmd_zero_vector, &orientation, m_radius * m_modular_curves.get_output(VolumeModularCurveOutput::RADIUS, curveSource, &m_modular_curve_instance), m_onEdge);
 
 		return pointCompensateForOffsetAndRotOffset(pos, orientation,
 					m_modular_curves.get_output(VolumeModularCurveOutput::OFFSET_ROT, curveSource, &m_modular_curve_instance),
