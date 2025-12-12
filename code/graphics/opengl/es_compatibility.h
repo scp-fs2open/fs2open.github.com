@@ -342,6 +342,14 @@ inline void* glMapBuffer(GLenum target, GLenum access)
 	return glMapBufferRange(target, 0, bufSize, flags);
 }
 
+// No 64 bit version on ES, ill call the 32bit version
+inline void glGetQueryObjectui64v(GLuint id, GLenum pname, GLuint64 *params)
+{
+	GLuint available32 = 0;
+	glGetQueryObjectuiv(id, pname, &available32);
+	*params = static_cast<GLuint64>(available32);
+}
+
 // Debug Enums
 // glEnable flags
 #define GL_DEBUG_OUTPUT                     0x92E0

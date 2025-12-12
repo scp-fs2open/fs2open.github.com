@@ -70,14 +70,7 @@ std::uint64_t gr_opengl_get_query_value(int obj) {
 	auto& slot = get_query_slot(obj);
 
 	GLuint64 available;
-	#ifndef USE_OPENGL_ES
 	glGetQueryObjectui64v(slot.name, GL_QUERY_RESULT, &available);
-	#else
-	//No 64 bit version on ES, ill call the 32bit version
-	GLuint available32 = 0;
-	glGetQueryObjectuiv(slot.name, GL_QUERY_RESULT, &available32);
-	available = static_cast<std::uint64_t>(available32);
-	#endif
 
 	return available;
 }
