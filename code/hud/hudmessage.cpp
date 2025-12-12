@@ -475,7 +475,7 @@ void HudGaugeMessages::render(float  /*frametime*/, bool config)
 					setGaugeColor();
 				}
 				// print the message out
-				renderString(x + active_message.msg.x, y + active_message.y, active_message.msg.text.c_str(), scale);
+				renderString(active_message.msg.x, active_message.y, active_message.msg.text.c_str(), scale);
 			}
 		}
 	}
