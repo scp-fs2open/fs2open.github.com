@@ -403,6 +403,17 @@ ADE_FUNC(resetFlightCursor, l_Mouse, nullptr, "Resets flight cursor position to 
 	return ADE_RETURN_NIL;
 }
 
+ADE_VIRTVAR(FlightCursorSensitivity, l_Mouse, "number", "Flight cursor movement sensitivity multiplier", "number", "Flight cursor sensitivity multiplier")
+{
+	float val_sens;
+
+	if (ADE_SETTING_VAR && ade_get_args(L, "*f", &val_sens)) {
+		Player_flight_cursor_sensitivity = val_sens;
+	}
+
+	return ade_set_args(L, "f", Player_flight_cursor_sensitivity);
+}
+
 ADE_FUNC(setCursorImage, l_Mouse, "string filename", "Sets mouse cursor image, and allows you to lock/unlock the image. (A locked cursor may only be changed with the unlock parameter)", "boolean", "true if successful, false otherwise")
 {
 	using namespace io::mouse;
