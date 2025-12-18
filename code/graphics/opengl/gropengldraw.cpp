@@ -28,6 +28,9 @@
 #include "lighting/lighting.h"
 #include "render/3d.h"
 #include "tracing/tracing.h"
+#ifdef USE_OPENGL_ES
+#include "es_compatibility.h"
+#endif
 
 GLuint Scene_framebuffer;
 GLuint Scene_framebuffer_ms;
@@ -349,6 +352,13 @@ void opengl_setup_scene_textures()
 		Gr_enable_soft_particles = false;
 		return;
 	}
+
+#ifdef USE_OPENGL_ES
+	if (Cmdline_msaa_enabled > 0) {
+		Cmdline_msaa_enabled = 0;
+		Warning(LOCATION, "MSAA is not currently supported under OpenGL ES. Disabling MSAA.");
+	}
+#endif
 
 	if (Cmdline_msaa_enabled > 0) {
 		glEnable(GL_MULTISAMPLE);
