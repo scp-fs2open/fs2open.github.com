@@ -892,7 +892,12 @@ void draw_3d_overhead_view(int model_num,
 				gr_circle(bank_coords[x][0] + bank_prim_offset, bank_coords[x][1] + bank_y_offset, 5, resize_mode);
 				for (y = 0; y < pm->gun_banks[x].num_slots; y++) {
 					// Stuff
-					vm_vec_unrotate(&subobj_pos, &pm->gun_banks[x].pnt[y], &object_orient);
+					if (pm->flags & PM_FLAG_AUTOCEN) {
+						vm_vec_sub(&subobj_pos, &pm->gun_banks[x].pnt[y], &pm->autocenter);
+						vm_vec_unrotate(&subobj_pos, &subobj_pos, &object_orient);
+					} else {
+						vm_vec_unrotate(&subobj_pos, &pm->gun_banks[x].pnt[y], &object_orient);
+					}
 					g3_rotate_vertex(&draw_point, &subobj_pos);
 					g3_project_vertex(&draw_point);
 					int resize = resize_mode;
@@ -966,7 +971,12 @@ void draw_3d_overhead_view(int model_num,
 					5,
 					resize_mode);
 				for (y = 0; y < pm->missile_banks[x].num_slots; y++) {
-					vm_vec_unrotate(&subobj_pos, &pm->missile_banks[x].pnt[y], &object_orient);
+					if (pm->flags & PM_FLAG_AUTOCEN) {
+						vm_vec_sub(&subobj_pos, &pm->missile_banks[x].pnt[y], &pm->autocenter);
+						vm_vec_unrotate(&subobj_pos, &subobj_pos, &object_orient);
+					} else {
+						vm_vec_unrotate(&subobj_pos, &pm->missile_banks[x].pnt[y], &object_orient);
+					}
 					g3_rotate_vertex(&draw_point, &subobj_pos);
 					g3_project_vertex(&draw_point);
 					int resize = resize_mode;
