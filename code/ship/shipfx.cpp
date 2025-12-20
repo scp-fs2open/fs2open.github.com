@@ -232,8 +232,7 @@ static void shipfx_maybe_create_live_debris_at_ship_death( object *ship_objp )
 		return;
 	}
 
-	ship_subsys* pss = nullptr;
-	for (pss = GET_FIRST(&shipp->subsys_list); pss != END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss)) {
+	for (auto pss: list_range(&shipp->subsys_list)) {
 		if (pss->system_info != nullptr) {
 			int submodel_num = pss->system_info->subobj_num;
 			// find the submodels which aren't already blown up and have live debris
