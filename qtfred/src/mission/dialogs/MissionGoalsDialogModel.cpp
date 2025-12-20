@@ -43,7 +43,7 @@ bool MissionGoalsDialogModel::apply()
 	Mission_goals.clear();
 	for (const auto &dialog_goal: m_goals) {
 		Mission_goals.push_back(dialog_goal);
-		Mission_goals.back().formula = _sexp_tree->save_tree(dialog_goal.formula);
+		Mission_goals.back().formula = _sexp_tree->_model.save_tree(dialog_goal.formula);
 		if ( The_mission.game_type & MISSION_TYPE_MULTI_TEAMS ) {
 			Assertion(dialog_goal.team != -1, "Invalid goal team!");
 		}

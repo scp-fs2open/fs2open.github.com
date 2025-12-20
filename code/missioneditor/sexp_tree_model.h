@@ -365,7 +365,7 @@ public:
 	void move_branch_data(int source, int parent);
 
 	// --- Tree serialization ---
-	int save_tree(int node) const;
+	int save_tree(int node = -1) const;
 	int save_branch(int cur, int at_root = 0) const;
 
 	// --- Default argument values ---
@@ -380,7 +380,7 @@ public:
 	int query_restricted_opf_range(int opf) const;
 	int get_sibling_place(int node) const;
 	NodeImage get_data_image(int node) const;
-	int query_false(int node) const;
+	int query_false(int node = -1) const;
 	const SCP_string& match_closest_operator(const SCP_string& str, int node) const;
 	static const char* help(int code);
 	int find_text(const char* text, int* find, int max_depth) const;

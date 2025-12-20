@@ -339,9 +339,9 @@ BOOL CShipEditorDlg::Create()
 	m_departure_delay.setup(IDC_DEPARTURE_DELAY, this);
 
 	m_hotkey = 0;
-	m_arrival_tree.link_modified(&modified);  // provide way to indicate trees are modified in dialog
+	m_arrival_tree._model.modified = &modified;  // provide way to indicate trees are modified in dialog
 	m_arrival_tree.setup((CEdit *) GetDlgItem(IDC_HELP_BOX));
-	m_departure_tree.link_modified(&modified);
+	m_departure_tree._model.modified = &modified;
 	m_departure_tree.setup();
 	m_arrival_delay_spin.SetRange(0, 999);
 	m_departure_delay_spin.SetRange(0, 999);
@@ -1393,14 +1393,14 @@ int CShipEditorDlg::update_ship(int ship)
 			if (Ships[ship].arrival_cue >= 0)
 				free_sexp2(Ships[ship].arrival_cue);
 
-			Ships[ship].arrival_cue = m_arrival_tree.save_tree();
+			Ships[ship].arrival_cue = m_arrival_tree._model.save_tree();
 		}
 
 		if (!multi_edit || m_update_departure) {
 			if (Ships[ship].departure_cue >= 0)
 				free_sexp2(Ships[ship].departure_cue);
 
-			Ships[ship].departure_cue = m_departure_tree.save_tree();
+			Ships[ship].departure_cue = m_departure_tree._model.save_tree();
 		}
 
 		m_arrival_dist.save(&Ships[ship].arrival_distance);

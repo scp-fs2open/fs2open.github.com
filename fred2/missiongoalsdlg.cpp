@@ -51,7 +51,7 @@ CMissionGoalsDlg::CMissionGoalsDlg(CWnd* pParent /*=NULL*/)
 	m_team = -1;
 	//}}AFX_DATA_INIT
 	m_goals_tree.m_mode = MODE_GOALS;
-	m_goals_tree.link_modified(&modified);
+	m_goals_tree._model.modified = &modified;
 	modified = 0;
 	select_sexp_node = -1;
 }
@@ -144,10 +144,10 @@ void CMissionGoalsDlg::load_tree()
 		if (m_goals[i].name.empty())
 			m_goals[i].name = "<Unnamed>";
 
-		m_goals[i].formula = m_goals_tree.load_sub_tree(Mission_goals[i].formula, true, "true");
+		m_goals[i].formula = m_goals_tree._model.load_sub_tree(Mission_goals[i].formula, true, "true");
 	}
 
-	m_goals_tree.post_load();
+	m_goals_tree._model.post_load();
 	cur_goal = -1;
 	update_cur_goal();
 }
@@ -369,7 +369,7 @@ void CMissionGoalsDlg::OnButtonOk()
 	Mission_goals.clear();
 	for (const auto &dialog_goal: m_goals) {
 		Mission_goals.push_back(dialog_goal);
-		Mission_goals.back().formula = m_goals_tree.save_tree(dialog_goal.formula);
+		Mission_goals.back().formula = m_goals_tree._model.save_tree(dialog_goal.formula);
 		if ( The_mission.game_type & MISSION_TYPE_MULTI_TEAMS ) {
 			Assert( dialog_goal.team != -1 );
 		}

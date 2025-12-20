@@ -20,7 +20,7 @@ bool MissionCutscenesDialogModel::apply()
 	The_mission.cutscenes.reserve(m_cutscenes.size());
 	for (const auto& item : m_cutscenes) {
 		The_mission.cutscenes.push_back(item);
-		The_mission.cutscenes.back().formula = _sexp_tree->save_tree(item.formula);
+		The_mission.cutscenes.back().formula = _sexp_tree->_model.save_tree(item.formula);
 	}
 
 	// Only fire the signal after the changes have been applied to make sure the other parts of the code see the updated state

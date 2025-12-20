@@ -85,9 +85,6 @@ BEGIN_MESSAGE_MAP(sexp_tree, CTreeCtrl)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
-static int Add_count, Replace_count;
-static int Modify_variable;
-
 // constructor
 sexp_tree::sexp_tree()
 	: m_operator_box(help), _actions(_model, *this)
@@ -212,83 +209,6 @@ void sexp_tree::load_tree(int index, const char *deflt)
 	build_tree();
 }
 
-// creates a tree from a given Sexp_nodes[] point under a given parent.  Recursive.
-// Returns the allocated current node.
-int sexp_tree::load_branch(int index, int parent)
-{
-	return _model.load_branch(index, parent);
-}
-
-int sexp_tree::query_false(int node)
-{
-	if (node < 0) node = root_item;
-	return _model.query_false(node);
-}
-
-// builds an sexp of the tree and returns the index of it.  This allocates sexp nodes.
-int sexp_tree::save_tree(int node)
-{
-	if (node < 0) node = root_item;
-	return _model.save_tree(node);
-}
-
-// get variable name from sexp_tree node .text
-#define NO_PREVIOUS_NODE -9
-// called recursively to save a tree branch and everything under it
-// SEXPT_CONTAINER_NAME and SEXPT_MODIFIER require no special handling here
-int sexp_tree::save_branch(int cur, int at_root)
-{
-	return _model.save_branch(cur, at_root);
-}
-
-// find the next free tree node and return its index.
-int sexp_tree::find_free_node()
-{
-	return _model.find_free_node();
-}
-
-// allocate a node.  Remains used until freed.
-int sexp_tree::allocate_node()
-{
-	return _model.allocate_node();
-}
-
-// allocate a child node under 'parent'.  Appends to end of list.
-int sexp_tree::allocate_node(int parent, int after)
-{
-	return _model.allocate_node(parent, after);
-}
-
-// free a node and all its children.  Also clears pointers to it, if any.
-//   node = node chain to free
-//   cascade =  0: free just this node and children under it. (default)
-//             !0: free this node and all siblings after it.
-//
-void sexp_tree::free_node(int node, int cascade)
-{
-	_model.free_node(node, cascade);
-}
-
-// more simple node freer, which works recursively.  It frees the given node and all siblings
-// that come after it, as well as all children of these.  Doesn't clear any links to any of
-// these freed nodes, so make sure all links are broken first. (i.e. use free_node() if you can)
-//
-void sexp_tree::free_node2(int node)
-{
-	_model.free_node2(node);
-}
-
-// initialize the data for a node.  Should be called right after a new node is allocated.
-void sexp_tree::set_node(int node, int type, const char *text)
-{
-	_model.set_node(node, type, text);
-}
-
-void sexp_tree::post_load()
-{
-	_model.post_load();
-}
-
 // build or rebuild a CTreeCtrl object with the current tree data
 void sexp_tree::build_tree()
 {
@@ -333,12 +253,6 @@ void sexp_tree::add_sub_tree(int node, HTREEITEM root)
 	}
 }
 
-// construct tree nodes for an sexp, adding them to the list and returning first node
-int sexp_tree::load_sub_tree(int index, bool valid, const char *text)
-{
-	return _model.load_sub_tree(index, valid, text);
-}
-
 void sexp_tree::setup_selected(HTREEITEM h)
 {
 	if (!h)
@@ -379,7 +293,6 @@ void sexp_tree::right_clicked(int mode)
 	CMenu insert_op_subcategory_menu[MAX_SUBMENUS];
 
 	m_mode = mode;
-	add_instance = replace_instance = -1;
 	Assert((int)op_menu.size() < MAX_OP_MENUS);
 	Assert((int)op_submenu.size() < MAX_SUBMENUS);
 
@@ -594,9 +507,9 @@ void sexp_tree::right_clicked(int mode)
 		}
 
 		// Set add/replace state from pre-computed values
-		Add_count = state.add_count;
-		Replace_count = state.replace_count;
-		Modify_variable = state.modify_variable;
+		m_add_count = state.add_count;
+		m_replace_count = state.replace_count;
+		m_modify_variable = state.modify_variable;
 
 		if (state.can_add_number) menu.EnableMenuItem(ID_ADD_NUMBER, MF_ENABLED);
 		if (state.can_add_string) menu.EnableMenuItem(ID_ADD_STRING, MF_ENABLED);
@@ -652,21 +565,6 @@ void sexp_tree::right_clicked(int mode)
 		state.cleanup();
 		popup_menu->TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON, mouse.x, mouse.y, this);
 	}
-}
-
-// counts the number of arguments an operator has.  Call this with the node of the first
-// argument of the operator
-int sexp_tree::count_args(int node)
-{
-	return _model.count_args(node);
-}
-
-// identify what type of argument this is.  You call it with the node of the first argument
-// of an operator.  It will search through enough of the arguments to determine what type of
-// data they are.
-int sexp_tree::identify_arg_type(int node)
-{
-	return _model.identify_arg_type(node);
 }
 
 // determine if an item should be editable.  This doesn't actually edit the label.
@@ -738,13 +636,6 @@ void sexp_tree::edit_bg_color(HTREEITEM h)
 	// Not implemented in the base class
 }
 
-// given a tree node, returns the argument type it should be.
-// OPF_NULL means no value (or a "void" value) is returned.  OPF_NONE means there shouldn't be any argument at this position at all.
-int sexp_tree::query_node_argument_type(int node) const
-{
-	return _model.query_node_argument_type(node);
-}
-
 int sexp_tree::end_label_edit(TVITEMA &item)
 {
 	if (!item.pszText)
@@ -784,7 +675,7 @@ int sexp_tree::end_label_edit(TVITEMA &item)
 
 		item_index = node;
 		if (result.operator_index >= 0) {
-			add_or_replace_operator(result.operator_index, 1);
+			_actions.add_or_replace_operator(result.operator_index, 1);
 		}
 		r = 0;
 	} else if (result.negative_number_error) {
@@ -803,15 +694,6 @@ int sexp_tree::end_label_edit(TVITEMA &item)
 	return r;
 }
 
-// Look for the valid operator that is the closest match for 'str' and return the operator
-// number of it.  What operators are valid is determined by 'node', and an operator is valid
-// if it is allowed to fit at position 'node'
-//
-const SCP_string &sexp_tree::match_closest_operator(const SCP_string &str, int node)
-{
-	return _model.match_closest_operator(str, node);
-}
-
 void sexp_tree::start_operator_edit(HTREEITEM h)
 {
 	if (m_operator_popup_active)
@@ -826,7 +708,7 @@ void sexp_tree::start_operator_edit(HTREEITEM h)
 	Assertion(tree_nodes[item_index].handle == item_handle, "Mismatch between tree node and item handle!");
 
 	// we are editing an operator, so find out which type it should be
-	auto opf_type = (sexp_opf_t)query_node_argument_type(item_index);
+	auto opf_type = (sexp_opf_t)_model.query_node_argument_type(item_index);
 
 	// do first-time setup
 	if (!m_operator_popup_created)
@@ -982,7 +864,7 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 		CModifyVariableDlg dlg;
 
 		// get sexp_variable index for item index
-		dlg.m_start_index = get_item_index_to_var_index();
+		dlg.m_start_index = _model.get_item_index_to_var_index();
 
 		// get pointer to tree
 		dlg.m_p_sexp_tree = this;
@@ -1004,7 +886,7 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 
 			// delete from sexp_tree, replacing with "number" or "string" as needed
 			// further error checking from add_data()
-			delete_sexp_tree_variable(dlg.m_cur_variable_name);
+			_actions.delete_sexp_tree_variable(dlg.m_cur_variable_name);
 
 			return 1;
 		}
@@ -1045,7 +927,7 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 			sexp_fred_modify_variable(dlg.m_default_value, dlg.m_cur_variable_name, sexp_var_index, type);
 
 			// modify sexp_tree
-			modify_sexp_tree_variable(old_name, sexp_var_index);
+			_actions.modify_sexp_tree_variable(old_name, sexp_var_index);
 
 			// Don't sort until after modify, since modify uses index
 			if (dlg.m_modified_name) {
@@ -1069,7 +951,7 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 		for (const auto &renamed_container : dlg.get_renamed_containers()) {
 			const SCP_string &old_name = renamed_container.first;
 			const SCP_string &new_name = renamed_container.second;
-			if (rename_container_nodes(old_name, new_name)) {
+			if (_actions.rename_container_nodes(old_name, new_name)) {
 				renamed_anything = true;
 			}
 		}
@@ -1094,7 +976,7 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 		Assert( (type & SEXPT_NUMBER) || (type & SEXPT_STRING) );
 
 		// don't do type check for modify-variable or OPF_CONTAINER_VALUE (can be either type)
-		if (Modify_variable || query_node_argument_type(item_index) == OPF_CONTAINER_VALUE) {
+		if (m_modify_variable || _model.query_node_argument_type(item_index) == OPF_CONTAINER_VALUE) {
 			if (Sexp_variables[var_idx].type & SEXP_VARIABLE_NUMBER) {
 				type = SEXPT_NUMBER;
 			} else if (Sexp_variables[var_idx].type & SEXP_VARIABLE_STRING) {
@@ -1115,7 +997,7 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 		}
 
 		// Replace data
-		replace_variable_data(var_idx, (type | SEXPT_VARIABLE));
+		_actions.replace_variable_data(var_idx, (type | SEXPT_VARIABLE));
 
 		return 1;
 	}
@@ -1133,8 +1015,8 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 			op = get_operator_index(tree_nodes[item_index].text);
 			Assert(op >= 0);
 
-			type = query_operator_argument_type(op, Add_count);
-			list = _model.get_listing_opf(type, item_index, Add_count);
+			type = query_operator_argument_type(op, m_add_count);
+			list = _model.get_listing_opf(type, item_index, m_add_count);
 		}
 		Assert(list);
 
@@ -1147,8 +1029,8 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 		}
 
 		Assert((SEXPT_TYPE(ptr->type) != SEXPT_OPERATOR) && (ptr->op < 0));
-		expand_operator(item_index);
-		node = add_data(ptr->text.c_str(), ptr->type);
+		_actions.expand_operator(item_index);
+		node = _actions.add_data(ptr->text.c_str(), ptr->type);
 		list->destroy();
 
 		// bolted-on ugly hack
@@ -1167,7 +1049,7 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 			}
 
 			item_index = node;
-			replace_variable_data(var_idx, (type | SEXPT_VARIABLE));
+			_actions.replace_variable_data(var_idx, (type | SEXPT_VARIABLE));
 			item_index = saved_item_index;
 		}
 
@@ -1184,8 +1066,8 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 			op = get_operator_index(tree_nodes[tree_nodes[item_index].parent].text);
 			Assert(op >= 0);
 
-			auto type = query_operator_argument_type(op, Replace_count); // check argument type at this position
-			list = _model.get_listing_opf(type, tree_nodes[item_index].parent, Replace_count);
+			auto type = query_operator_argument_type(op, m_replace_count); // check argument type at this position
+			list = _model.get_listing_opf(type, tree_nodes[item_index].parent, m_replace_count);
 		}
 		Assert(list);
 
@@ -1198,8 +1080,8 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 		}
 
 		Assert((SEXPT_TYPE(ptr->type) != SEXPT_OPERATOR) && (ptr->op < 0));
-		expand_operator(item_index);
-		replace_data(ptr->text.c_str(), ptr->type);
+		_actions.expand_operator(item_index);
+		_actions.replace_data(ptr->text.c_str(), ptr->type);
 		list->destroy();
 		return 1;
 	}
@@ -1219,7 +1101,7 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 			tree_nodes[item_index].text,
 			type);
 
-		replace_container_name(containers[container_index]);
+		_actions.replace_container_name(containers[container_index]);
 	}
 
 	if ((id >= ID_CONTAINER_DATA_MENU) && (id < ID_CONTAINER_DATA_MENU + 511)) {
@@ -1238,7 +1120,7 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 		// variable/container name don't mix with container data
 		// DISCUSSME: what about variable name as SEXP arg type?
 		type &= ~(SEXPT_VARIABLE | SEXPT_CONTAINER_NAME);
-		replace_container_data(containers[container_index], (type | SEXPT_CONTAINER_DATA), true, true, true);
+		_actions.replace_container_data(containers[container_index], (type | SEXPT_CONTAINER_DATA), true, true, true);
 
 		HTREEITEM handle = tree_item_handle(tree_nodes[item_index]);
 		expand_branch(handle);
@@ -1246,13 +1128,13 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 
 	for (op=0; op<(int)Operators.size(); op++) {
 		if (id == Operators[op].value) {
-			add_or_replace_operator(op);
+			_actions.add_or_replace_operator(op);
 			return 1;
 		}
 
 		if (id == (Operators[op].value | OP_REPLACE_FLAG)) {
-			add_or_replace_operator(op, 1);
-			expand_branch(item_handle); 
+			_actions.add_or_replace_operator(op, 1);
+			expand_branch(item_handle);
 			return 1;
 		}
 
@@ -1261,8 +1143,8 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 
 			z = tree_nodes[item_index].parent;
 			flags = tree_nodes[item_index].flags;
-			node = allocate_node(z, item_index);
-			set_node(node, (SEXPT_OPERATOR | SEXPT_VALID), Operators[op].text.c_str());
+			node = _model.allocate_node(z, item_index);
+			_model.set_node(node, (SEXPT_OPERATOR | SEXPT_VALID), Operators[op].text.c_str());
 			tree_nodes[node].flags = flags;
 			if (z >= 0)
 				h = tree_item_handle(tree_nodes[z]);
@@ -1295,7 +1177,7 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 
 			item_index = node;
 			for (i=1; i<Operators[op].min; i++)
-				add_default_operator(op, i);
+				_actions.add_default_operator(op, i);
 
 			Expand(item_handle, TVE_EXPAND);
 			*modified = 1;
@@ -1344,21 +1226,21 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 			return 1;
 
 		case ID_REPLACE_NUMBER:
-			expand_operator(item_index);
+			_actions.expand_operator(item_index);
 			if (tree_nodes[item_index].type & SEXPT_MODIFIER) {
-				replace_data("number", (SEXPT_NUMBER | SEXPT_MODIFIER | SEXPT_VALID));
+				_actions.replace_data("number", (SEXPT_NUMBER | SEXPT_MODIFIER | SEXPT_VALID));
 			} else {
-				replace_data("number", (SEXPT_NUMBER | SEXPT_VALID));
+				_actions.replace_data("number", (SEXPT_NUMBER | SEXPT_VALID));
 			}
 			EditLabel(tree_item_handle(tree_nodes[item_index]));
 			return 1;
 
 		case ID_REPLACE_STRING:
-			expand_operator(item_index);
+			_actions.expand_operator(item_index);
 			if (tree_nodes[item_index].type & SEXPT_MODIFIER) {
-				replace_data("string", (SEXPT_STRING | SEXPT_MODIFIER | SEXPT_VALID));
+				_actions.replace_data("string", (SEXPT_STRING | SEXPT_MODIFIER | SEXPT_VALID));
 			} else {
-				replace_data("string", (SEXPT_STRING | SEXPT_VALID));
+				_actions.replace_data("string", (SEXPT_STRING | SEXPT_VALID));
 			}
 			EditLabel(tree_item_handle(tree_nodes[item_index]));
 			return 1;
@@ -1367,9 +1249,9 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 			int theNode;
 
 			if (tree_nodes[item_index].type & SEXPT_CONTAINER_DATA) {
-				theNode = add_data("string", (SEXPT_STRING | SEXPT_MODIFIER | SEXPT_VALID));
+				theNode = _actions.add_data("string", (SEXPT_STRING | SEXPT_MODIFIER | SEXPT_VALID));
 			} else {
-				theNode = add_data("string", (SEXPT_STRING | SEXPT_VALID));
+				theNode = _actions.add_data("string", (SEXPT_STRING | SEXPT_VALID));
 			}
 			EditLabel(tree_item_handle(tree_nodes[theNode]));
 			return 1;
@@ -1379,9 +1261,9 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 			int theNode;
 
 			if (tree_nodes[item_index].type & SEXPT_CONTAINER_DATA) {
-				theNode = add_data("number", (SEXPT_NUMBER | SEXPT_MODIFIER | SEXPT_VALID));
+				theNode = _actions.add_data("number", (SEXPT_NUMBER | SEXPT_MODIFIER | SEXPT_VALID));
 			} else {
-				theNode = add_data("number", (SEXPT_NUMBER | SEXPT_VALID));
+				theNode = _actions.add_data("number", (SEXPT_NUMBER | SEXPT_VALID));
 			}
 			EditLabel(tree_item_handle(tree_nodes[theNode]));
 			return 1;
@@ -1414,7 +1296,7 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 							end_operator_edit(true);
 
 							// do the operator replacement
-							add_or_replace_operator(op, 1);
+							_actions.add_or_replace_operator(op, 1);
 							expand_branch(item_handle);
 						}
 						// if the selected item wasn't enabled, do nothing
@@ -1436,7 +1318,7 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 						end_operator_edit(true);
 
 						// do the operator replacement
-						add_or_replace_operator(op, 1);
+						_actions.add_or_replace_operator(op, 1);
 						expand_branch(item_handle);
 					}
 					else
@@ -1492,7 +1374,7 @@ void sexp_tree::NodeDelete()
 		}
 
 		Assert(theNode >= 0);
-		free_node2(theNode);
+		_model.free_node2(theNode);
 		DeleteItem(item_handle);
 		*modified = 1;
 		return;
@@ -1507,7 +1389,7 @@ void sexp_tree::NodeDelete()
 		return;
 
 	Assert(parent != -1 && tree_nodes[parent].handle == h_parent);
-	free_node(item_index);
+	_model.free_node(item_index);
 	DeleteItem(item_handle);
 
 	theNode = tree_nodes[parent].child;
@@ -1537,41 +1419,6 @@ void sexp_tree::NodeAddPaste()
 	_actions.clipboard_paste_add();
 }
 
-// adds to or replaces (based on passed in flag) the current operator
-void sexp_tree::add_or_replace_operator(int op, int replace_flag)
-{
-	_actions.add_or_replace_operator(op, replace_flag);
-}
-
-// sexp_list_item methods are now in the shared sexp_tree_model.cpp
-
-int sexp_tree::add_default_operator(int op_index, int argnum)
-{
-	return _actions.add_default_operator(op_index, argnum);
-}
-
-int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, int i)
-{
-	return _model.get_default_value(item, text_buf, op, i);
-}
-
-int sexp_tree::query_default_argument_available(int op)
-{
-	return _model.query_default_argument_available(op);
-}
-
-int sexp_tree::query_default_argument_available(int op, int i)
-{
-	return _model.query_default_argument_available(op, i);
-}
-
-// expand a combined line (one with an operator and its one argument on the same line) into
-// 2 lines.
-void sexp_tree::expand_operator(int node)
-{
-	_actions.expand_operator(node);
-}
-
 // expand a CTreeCtrl branch and all of its children
 void sexp_tree::expand_branch(HTREEITEM h)
 {
@@ -1581,52 +1428,6 @@ void sexp_tree::expand_branch(HTREEITEM h)
 		expand_branch(h);
 		h = GetNextSiblingItem(h);
 	}
-}
-
-void sexp_tree::merge_operator(int node)
-{
-/*	char buf[256];
-	int child;
-
-	if (tree_nodes[node].flags == EDITABLE)  // data
-		node = tree_nodes[node].parent;
-
-	if (node != -1) {
-		child = tree_nodes[node].child;
-		if (child != -1 && tree_nodes[child].next == -1 && tree_nodes[child].child == -1) {
-			sprintf(buf, "%s %s", tree_nodes[node].text, tree_nodes[child].text);
-			SetItemText(tree_item_handle(tree_nodes[node]), buf);
-			tree_nodes[node].flags = OPERAND | EDITABLE;
-			tree_nodes[child].flags = COMBINED;
-			DeleteItem(tree_item_handle(tree_nodes[child]));
-			tree_nodes[child].handle = NULL;
-			return;
-		}
-	}*/
-}
-
-// add a data node under operator pointed to by item_index
-int sexp_tree::add_data(const char *data, int type)
-{
-	return _actions.add_data(data, type);
-}
-
-// add a (variable) data node under operator pointed to by item_index
-int sexp_tree::add_variable_data(const char *data, int type)
-{
-	return _actions.add_variable_data(data, type);
-}
-
-// add a container name node under operator pointed to by item_index
-int sexp_tree::add_container_name(const char *container_name)
-{
-	return _actions.add_container_name(container_name);
-}
-
-// add a (container) data node under operator pointed to by item_index
-void sexp_tree::add_container_data(const char *container_name)
-{
-	_actions.add_container_data(container_name);
 }
 
 // add an operator under operator pointed to by item_index.  Updates item_index to point
@@ -1864,60 +1665,6 @@ void sexp_tree::ensure_visible(int node)
 
 	if (tree_nodes[node].child != -1)  // expandable?
 		Expand(tree_item_handle(tree_nodes[node]), TVE_EXPAND);  // expand this item
-}
-
-void sexp_tree::link_modified(int *ptr)
-{
-	modified = ptr;
-}
-
-
-int sexp_tree::get_modify_variable_type(int parent)
-{
-	return _model.get_modify_variable_type(parent);
-}
-
-
-void sexp_tree::verify_and_fix_arguments(int node)
-{
-	_actions.verify_and_fix_arguments(node);
-}
-
-void sexp_tree::replace_data(const char *data, int type)
-{
-	_actions.replace_data(data, type);
-}
-
-
-// Replaces data with sexp_variable type data
-void sexp_tree::replace_variable_data(int var_idx, int type)
-{
-	_actions.replace_variable_data(var_idx, type);
-}
-
-void sexp_tree::replace_container_name(const sexp_container &container)
-{
-	_actions.replace_container_name(container);
-}
-
-void sexp_tree::replace_container_data(const sexp_container &container,
-	int type,
-	bool test_child_nodes,
-	bool delete_child_nodes,
-	bool set_default_modifier)
-{
-	_actions.replace_container_data(container, type, test_child_nodes, delete_child_nodes, set_default_modifier);
-}
-
-
-void sexp_tree::add_default_modifier(const sexp_container &container)
-{
-	_actions.add_default_modifier(container);
-}
-
-void sexp_tree::replace_operator(const char *op)
-{
-	_actions.replace_operator(op);
 }
 
 /*void sexp_tree::replace_one_arg_operator(char *op, char *data, int type)
@@ -2368,13 +2115,6 @@ void sexp_tree::update_help(HTREEITEM h)
 		mini_help_box->SetWindowText(result.mini_help_text.c_str());
 }
 
-// find list of sexp_tree nodes with text
-// stuff node indices into find[]
-int sexp_tree::find_text(const char *text, int *find)
-{
-	return _model.find_text(text, find, MAX_SEARCH_MESSAGE_DEPTH);
-}
-
 // This solution was found at https://community.notepad-plus-plus.org/topic/21158/way-to-disallow-copying-text/7
 //   Another interesting thing with the script's execution is that if you don't allow Notepad++ to process the Ctrl+c
 //   keycombo as a WM_KEYDOWN event, you'll get an "ETX" (hex code = 0x03) character in your document at the caret
@@ -2447,105 +2187,3 @@ void sexp_tree::OnKeyDown(NMHDR *pNMHDR, LRESULT *pResult)
 	*pResult = 0;
 }
 
-// Determine if a given opf code has a restricted argument range (i.e. has a specific, limited
-// set of argument values, or has virtually unlimited possibilities.  For example, boolean values
-// only have true or false, so it is restricted, but a number could be anything, so it's not.
-//
-int sexp_tree::query_restricted_opf_range(int opf)
-{
-	return _model.query_restricted_opf_range(opf);
-}
-
-// Goober5000
-int sexp_tree::find_argument_number(int parent_node, int child_node) const
-{
-	return _model.find_argument_number(parent_node, child_node);
-}
-
-// Goober5000
-// backtrack through parents until we find the operator matching
-// parent_op, then find the argument we went through
-int sexp_tree::find_ancestral_argument_number(int parent_op, int child_node) const
-{
-	return _model.find_ancestral_argument_number(parent_op, child_node);
-}
-
-/**
-* Gets the proper data image for the tree item's place
-* in its parent hierarchy.
-*/
-int sexp_tree::get_data_image(int node)
-{
-	return static_cast<int>(_model.get_data_image(node));
-}
-
-int sexp_tree::get_sibling_place(int node)
-{
-	return _model.get_sibling_place(node);
-}
-
-// Individual OPF listing forwarders, container modifier forwarders, and
-// is_node_eligible_for_special_argument have been removed.
-// All callers now use _model.get_listing_opf() etc. directly.
-
-// Deletes sexp_variable from sexp_tree.
-// resets tree to not include given variable, and resets text and type
-void sexp_tree::delete_sexp_tree_variable(const char *var_name)
-{
-	_actions.delete_sexp_tree_variable(var_name);
-}
-
-
-// Modify sexp_tree for a change in sexp_variable (name, type, or default value)
-void sexp_tree::modify_sexp_tree_variable(const char *old_name, int sexp_var_index)
-{
-	_actions.modify_sexp_tree_variable(old_name, sexp_var_index);
-}
-
-
-// convert from item_index to sexp_variable index, -1 if not
-int sexp_tree::get_item_index_to_var_index()
-{
-	return _model.get_item_index_to_var_index();
-}
-
-int sexp_tree::get_tree_name_to_sexp_variable_index(const char *tree_name)
-{
-	return SexpTreeModel::get_tree_name_to_sexp_variable_index(tree_name);
-}
-
-int sexp_tree::get_variable_count(const char *var_name)
-{
-	return _model.get_variable_count(var_name);
-}
-
-// Returns the number of times a variable with this name has been used by player loadout
-int sexp_tree::get_loadout_variable_count(int var_index)
-{
-	return _model.get_loadout_variable_count(var_index);
-}
-
-int sexp_tree::get_container_usage_count(const SCP_string &container_name) const
-{
-	return _model.get_container_usage_count(container_name);
-}
-
-bool sexp_tree::rename_container_nodes(const SCP_string &old_name, const SCP_string &new_name)
-{
-	return _actions.rename_container_nodes(old_name, new_name);
-}
-
-bool sexp_tree::is_matching_container_node(int node, const SCP_string &container_name) const
-{
-	return _model.is_matching_container_node(node, container_name);
-}
-
-bool sexp_tree::is_container_name_argument(int node) const
-{
-	return _model.is_container_name_argument(node);
-}
-
-bool sexp_tree::is_container_name_opf_type(const int op_type)
-{
-	return SexpTreeModel::is_container_name_opf_type(op_type);
-}

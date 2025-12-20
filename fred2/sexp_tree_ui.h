@@ -61,97 +61,33 @@ public:
 
 	sexp_tree();
 
-	int find_text(const char *text, int *find);
-	int query_restricted_opf_range(int opf);
-	void verify_and_fix_arguments(int node);
-	void post_load();
 	void update_help(HTREEITEM h);
 	static const char *help(int code);
 	HTREEITEM insert(LPCTSTR lpszItem, int image = BITMAP_ROOT, int sel_image = BITMAP_ROOT, HTREEITEM hParent = TVI_ROOT, HTREEITEM hInsertAfter = TVI_LAST);
 	HTREEITEM handle(int node);
 	int get_type(HTREEITEM h);
 	void setup(CEdit *ptr = NULL);
-	int query_false(int node = -1);
-	int add_default_operator(int op, int argnum);
-	int get_default_value(sexp_list_item *item, char *text_buf, int op, int i);
-	int query_default_argument_available(int op);
-	int query_default_argument_available(int op, int i);
 	void move_root(HTREEITEM source, HTREEITEM dest, bool insert_before);
 	void move_branch(int source, int parent = -1);
 	HTREEITEM move_branch(HTREEITEM source, HTREEITEM parent = TVI_ROOT, HTREEITEM after = TVI_LAST);
 	void copy_branch(HTREEITEM source, HTREEITEM parent = TVI_ROOT, HTREEITEM after = TVI_LAST);
 	void setup_selected(HTREEITEM h = NULL);
-	void add_or_replace_operator(int op, int replace_flag = 0);
-//	void replace_one_arg_operator(const char *op, const char *data, int type);
-	void replace_operator(const char *op);
-	void replace_data(const char *data, int type);
-	void replace_variable_data(int var_idx, int type);
-	void replace_container_name(const sexp_container &container);
-	void replace_container_data(const sexp_container &container,
-		int type,
-		bool test_child_nodes,
-		bool delete_child_nodes,
-		bool set_default_modifier);
-	void add_default_modifier(const sexp_container &container);
-	void link_modified(int *ptr);
 	void ensure_visible(int node);
 	int node_error(int node, const char *msg, int *bypass);
 	void expand_branch(HTREEITEM h);
-	void expand_operator(int node);
-	void merge_operator(int node);
 	int end_label_edit(TVITEMA &item);
 	int edit_label(HTREEITEM h, bool *is_operator = nullptr);
 	virtual void edit_comment(HTREEITEM h);
 	virtual void edit_bg_color(HTREEITEM h);
-	int identify_arg_type(int node);
-	int count_args(int node);
 	void right_clicked(int mode = 0);
 	int ctree_size;
 	virtual void build_tree();
-	void set_node(int index, int type, const char *text);
-	void free_node(int node, int cascade = 0);
-	int allocate_node(int parent, int after = -1);
-	int allocate_node();
-	int find_free_node();
 	void clear_tree(const char *op = NULL);
 	void reset_handles();
-	int save_tree(int node = -1);
 	void load_tree(int index, const char *deflt = "true");
 	void add_operator(const char *op, HTREEITEM h = TVI_ROOT);
-	int add_data(const char *data, int type);
-	int add_variable_data(const char *data, int type);
-	int add_container_name(const char *container_name);
-	void add_container_data(const char *container_name);
 	void add_sub_tree(int node, HTREEITEM root);
-	int load_sub_tree(int index, bool valid, const char *text);
 	void hilite_item(int node);
-	const SCP_string &match_closest_operator(const SCP_string &str, int node);
-	void delete_sexp_tree_variable(const char *var_name);
-	void modify_sexp_tree_variable(const char *old_name, int sexp_var_index);
-	int get_item_index_to_var_index();
-	int get_tree_name_to_sexp_variable_index(const char *tree_name);
-	int get_modify_variable_type(int parent);
-	int get_variable_count(const char *var_name);
-	int get_loadout_variable_count(int var_index);
-
-	// Karajorma/jg18
-	int get_container_usage_count(const SCP_string &container_name) const;
-	bool rename_container_nodes(const SCP_string &old_name, const SCP_string &new_name);
-	bool is_matching_container_node(int node, const SCP_string &container_name) const;
-	bool is_container_name_argument(int node) const;
-	static bool is_container_name_opf_type(int op_type);
-
-	// Goober5000
-	int find_argument_number(int parent_node, int child_node) const;
-	int find_ancestral_argument_number(int parent_op, int child_node) const;
-	int query_node_argument_type(int node) const;
-
-	//WMC
-	int get_sibling_place(int node);
-	int get_data_image(int node);
-
-
-	// OPF listing and container modifier queries are accessed directly via _model
 
 	int& m_mode = _model.m_mode;
 	int& item_index = _model.item_index;
@@ -209,10 +145,6 @@ protected:
 
 	void update_item(HTREEITEM handle);
 
-	int load_branch(int index, int parent);
-	int save_branch(int cur, int at_root = 0);
-	void free_node2(int node);
-
 	int& flag = _model.flag;
 	int*& modified = _model.modified;
 	bool m_operator_popup_active;
@@ -225,13 +157,10 @@ protected:
 
 	HTREEITEM item_handle;
 	int& root_item = _model.root_item;
-	// these 2 variables are used to help location data sources.  Sometimes looking up
-	// valid data can require complex code just to get to an index that is required to
-	// locate data.  These are set up in right_clicked() to try and short circuit having
-	// to do the lookup again in the code that actually does the adding or replacing of
-	// the data if it's selected.
-	int add_instance;  // a source reference index indicator for adding data
-	int replace_instance;  // a source reference index indicator for replacing data
+
+	int m_add_count = 0;
+	int m_replace_count = 0;
+	int m_modify_variable = 0;
 
 	DECLARE_MESSAGE_MAP()
 };

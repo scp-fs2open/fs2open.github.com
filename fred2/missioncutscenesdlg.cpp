@@ -52,7 +52,7 @@ CMissionCutscenesDlg::CMissionCutscenesDlg(CWnd* pParent /*=NULL*/)
 	m_desc = _T("");
 	//}}AFX_DATA_INIT
 	m_cutscenes_tree.m_mode = MODE_CUTSCENES; // We don't need to perform actions here, so use the same method as Goals
-	m_cutscenes_tree.link_modified(&modified);
+	m_cutscenes_tree._model.modified = &modified;
 	modified = 0;
 	select_sexp_node = -1;
 }
@@ -134,10 +134,10 @@ void CMissionCutscenesDlg::load_tree()
 		if (m_cutscenes[i].filename[0] == '\0')
 			strcpy_s(m_cutscenes[i].filename, "<Unnamed>");
 
-		m_cutscenes[i].formula = m_cutscenes_tree.load_sub_tree(The_mission.cutscenes[i].formula, true, "true");
+		m_cutscenes[i].formula = m_cutscenes_tree._model.load_sub_tree(The_mission.cutscenes[i].formula, true, "true");
 	}
 
-	m_cutscenes_tree.post_load();
+	m_cutscenes_tree._model.post_load();
 	cur_cutscene = -1;
 	update_cur_cutscene();
 }
@@ -297,7 +297,7 @@ void CMissionCutscenesDlg::OnButtonOk()
 	The_mission.cutscenes.clear();
 	for (const auto& dialog_cutscene : m_cutscenes) {
 		The_mission.cutscenes.push_back(dialog_cutscene);
-		The_mission.cutscenes.back().formula = m_cutscenes_tree.save_tree(dialog_cutscene.formula);
+		The_mission.cutscenes.back().formula = m_cutscenes_tree._model.save_tree(dialog_cutscene.formula);
 	}
 
 	theApp.record_window_data(&Mission_cutscenes_wnd_data, this);

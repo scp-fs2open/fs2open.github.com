@@ -90,9 +90,9 @@ void MissionCutscenesDialog::load_tree()
 	ui->cutsceneEventTree->clear_tree();
 	auto& cutscenes = _model->getCutscenes();
 	for (auto& scene : cutscenes) {
-		scene.formula = ui->cutsceneEventTree->load_sub_tree(scene.formula, true, "true");
+		scene.formula = ui->cutsceneEventTree->_model.load_sub_tree(scene.formula, true, "true");
 	}
-	ui->cutsceneEventTree->post_load();
+	ui->cutsceneEventTree->_model.post_load();
 }
 void MissionCutscenesDialog::recreate_tree()
 {

@@ -43,7 +43,7 @@ CMessageEditorDlg::CMessageEditorDlg(CWnd* pParent /*=NULL*/)
 	m_persona = -1;
 	//}}AFX_DATA_INIT
 
-	m_tree.link_modified(&modified);
+	m_tree._model.modified = &modified;
 	modified = 0;
 	m_event_num = -1;
 }
@@ -193,7 +193,7 @@ int CMessageEditorDlg::query_modified()
 	if ( (m_persona - 1 ) != Messages[m_cur_msg].persona_index )
 		return 1;
 
-	if (m_tree.query_false()) {
+	if (m_tree._model.query_false()) {
 		if (m_event_num >= 0)
 			return 1;
 
@@ -406,7 +406,7 @@ int CMessageEditorDlg::update(int num)
 		// box list.
 		Messages[num].persona_index = m_persona - 1;
 
-		if (m_tree.query_false()) {
+		if (m_tree._model.query_false()) {
 			if (m_event_num >= 0) {  // need to delete event
 				i = m_event_num;
 				free_sexp2(Mission_events[i].formula);
@@ -425,7 +425,7 @@ int CMessageEditorDlg::update(int num)
 				Mission_events[m_event_num].name = m_message_name;
 			}
 
-			fnode = m_tree.save_tree();
+			fnode = m_tree._model.save_tree();
 			ptr = (char *) (LPCTSTR) m_message_name;
 			node = alloc_sexp(ptr, SEXP_ATOM, SEXP_ATOM_STRING, -1, -1);
 			((CComboBox *) GetDlgItem(IDC_PRIORITY))->GetLBText(m_priority, buf);

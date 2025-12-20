@@ -53,7 +53,7 @@ campaign_editor::campaign_editor()
 
 	m_tree.m_mode = MODE_CAMPAIGN;
 	m_num_links = 0;
-	m_tree.link_modified(&Campaign_modified);
+	m_tree._model.modified = &Campaign_modified;
 	m_last_mission = -1;
 
 	m_current_campaign_path = _T("");
@@ -384,7 +384,7 @@ void campaign_editor::load_tree(int save_first)
 
 	for (i=0; i<Total_links; i++) {
 		if (Links[i].from == Cur_campaign_mission) {
-			Links[i].node = m_tree.load_sub_tree(Links[i].sexp, true, "do-nothing");
+			Links[i].node = m_tree._model.load_sub_tree(Links[i].sexp, true, "do-nothing");
 			m_num_links++;
 
 			if (Links[i].from == Links[i].to) {
@@ -473,7 +473,7 @@ void campaign_editor::save_tree(int clear)
 		if (Links[i].from == m_last_mission) {
 			sexp_unmark_persistent(Links[i].sexp);
 			free_sexp2(Links[i].sexp);
-			Links[i].sexp = m_tree.save_tree(Links[i].node);
+			Links[i].sexp = m_tree._model.save_tree(Links[i].node);
 			sexp_mark_persistent(Links[i].sexp);
 		}
 	}

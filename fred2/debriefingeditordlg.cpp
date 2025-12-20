@@ -150,7 +150,7 @@ BOOL debriefing_editor_dlg::OnInitDialog()
 	m_debriefAvg_music = Mission_music[SCORE_DEBRIEFING_AVERAGE] + 1;
 	m_debriefFail_music = Mission_music[SCORE_DEBRIEFING_FAILURE] + 1;
 
-	m_tree.link_modified(&modified);  // provide way to indicate trees are modified in dialog
+	m_tree._model.modified = &modified;  // provide way to indicate trees are modified in dialog
 	n = m_tree.select_sexp_node = select_sexp_node;
 	select_sexp_node = -1;
 	if (n != -1) {
@@ -200,7 +200,7 @@ void debriefing_editor_dlg::update_data(int update)
 		if (ptr->formula >= 0)
 			free_sexp2(ptr->formula);
 
-		ptr->formula = m_tree.save_tree();
+		ptr->formula = m_tree._model.save_tree();
 		deconvert_multiline_string(ptr->text, m_text);
 		lcl_fred_replace_stuff(ptr->text);
 		deconvert_multiline_string(ptr->recommendation_text, m_rec_text);

@@ -38,7 +38,7 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget* parent, EditorViewport* view
 		int loadSexp(int formula_index) override
 		{
 			// The sexp_tree's load_sub_tree is what creates the internal model for a branch
-			return tree.load_sub_tree(formula_index, true, "true");
+			return tree._model.load_sub_tree(formula_index, true, "true");
 		}
 
 		int saveSexp(int internal_node_id) override
@@ -47,13 +47,13 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget* parent, EditorViewport* view
 			int root_node = tree.get_root(internal_node_id);
 
 			// Now, save the entire branch starting from its root.
-			return tree.save_tree(root_node);
+			return tree._model.save_tree(root_node);
 		}
 
 		int createDefaultSexp() override
 		{
 			// A default branch is just a "true" condition. We load it from an invalid index.
-			return tree.load_sub_tree(-1, true, "true");
+			return tree._model.load_sub_tree(-1, true, "true");
 		}
 
 		void rebuildBranchTree(const SCP_vector<CampaignBranchData>& branches, const SCP_string& currentMissionName) override
@@ -103,7 +103,7 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget* parent, EditorViewport* view
 
 	ui->sxtBranches->initializeEditor(_viewport->editor, this);
 	ui->sxtBranches->clear_tree();
-	ui->sxtBranches->post_load();
+	ui->sxtBranches->_model.post_load();
 
 	// Now construct the model with reference to tree ops
 	_model = std::make_unique<CampaignEditorDialogModel>(this, _viewport, *_treeOps);

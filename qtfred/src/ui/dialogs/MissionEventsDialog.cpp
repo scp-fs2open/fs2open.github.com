@@ -45,12 +45,12 @@ MissionEventsDialog::MissionEventsDialog(QWidget* parent, EditorViewport* viewpo
 
 		int load_sub_tree(int formula, bool allow_empty = false, const char* default_body = "do-nothing") override
 		{
-			return tree.load_sub_tree(formula, allow_empty, default_body);
+			return tree._model.load_sub_tree(formula, allow_empty, default_body);
 		}
 
 		void post_load() override
 		{
-			tree.post_load();
+			tree._model.post_load();
 		}
 
 		void add_sub_tree(const SCP_string& name, NodeImage image, int formula) override
@@ -93,7 +93,7 @@ MissionEventsDialog::MissionEventsDialog(QWidget* parent, EditorViewport* viewpo
 
 		int save_tree(int root_formula) override
 		{
-			return tree.save_tree(root_formula);
+			return tree._model.save_tree(root_formula);
 		}
 
 		void ensure_top_level_index(int root_formula, int desired_index) override
@@ -204,7 +204,7 @@ MissionEventsDialog::MissionEventsDialog(QWidget* parent, EditorViewport* viewpo
 
 	ui->eventTree->initializeEditor(viewport->editor, this);
 	ui->eventTree->clear_tree();
-	ui->eventTree->post_load();
+	ui->eventTree->_model.post_load();
 
 	// Now construct the model with reference to tree ops
 	_model = std::make_unique<MissionEventsDialogModel>(this, _viewport, *_treeOps);
@@ -798,7 +798,7 @@ void MissionEventsDialog::on_messageList_itemDoubleClicked(QListWidgetItem* item
 	}
 
 	int nodes[MAX_SEARCH_MESSAGE_DEPTH];
-	const int num = ui->eventTree->find_text(name.toUtf8().constData(), nodes, MAX_SEARCH_MESSAGE_DEPTH);
+	const int num = ui->eventTree->_model.find_text(name.toUtf8().constData(), nodes, MAX_SEARCH_MESSAGE_DEPTH);
 	if (num <= 0) {
 		QMessageBox::information(this, tr("Error"), tr("No events using message '%1'").arg(name));
 		return;

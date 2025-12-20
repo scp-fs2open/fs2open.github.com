@@ -86,7 +86,7 @@ briefing_editor_dlg::briefing_editor_dlg(CWnd* pParent /*=NULL*/)
 	m_voice_id = -1;
 	m_cur_stage = 0;
 	m_last_stage = m_cur_icon = m_last_icon = -1;
-	m_tree.link_modified(&modified);  // provide way to indicate trees are modified in dialog
+	m_tree._model.modified = &modified;  // provide way to indicate trees are modified in dialog
 
 	// copy view initialization
 	m_copy_view_set = 0;
@@ -379,7 +379,7 @@ void briefing_editor_dlg::update_data(int update)
 			ptr->draw_grid = true;
 
 		MODIFY(ptr->flags, i);
-		ptr->formula = m_tree.save_tree();
+		ptr->formula = m_tree._model.save_tree();
 		switch (m_lines.GetCheck()) {
 			case 1:
 				// add lines between every pair of 2 marked icons if there isn't one already.

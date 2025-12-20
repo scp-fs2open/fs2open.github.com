@@ -214,9 +214,9 @@ BOOL wing_editor::Create()
 
 	m_hotkey = 0;
 	m_waves_spin.SetRange(1, 99);
-	m_arrival_tree.link_modified(&modified);  // provide way to indicate trees are modified in dialog
+	m_arrival_tree._model.modified = &modified;  // provide way to indicate trees are modified in dialog
 	m_arrival_tree.setup((CEdit *) GetDlgItem(IDC_HELP_BOX));
-	m_departure_tree.link_modified(&modified);
+	m_departure_tree._model.modified = &modified;
 	m_departure_tree.setup();
 	m_arrival_delay_spin.SetRange(0, 999);
 	m_departure_delay_spin.SetRange(0, 999);
@@ -957,11 +957,11 @@ void wing_editor::update_data_safe()
 
 	if (Wings[cur_wing].arrival_cue >= 0)
 		free_sexp2(Wings[cur_wing].arrival_cue);
-	Wings[cur_wing].arrival_cue = m_arrival_tree.save_tree();
+	Wings[cur_wing].arrival_cue = m_arrival_tree._model.save_tree();
 
 	if (Wings[cur_wing].departure_cue >= 0)
 		free_sexp2(Wings[cur_wing].departure_cue);
-	Wings[cur_wing].departure_cue = m_departure_tree.save_tree();
+	Wings[cur_wing].departure_cue = m_departure_tree._model.save_tree();
 
 	// copy squad stuff
 	if(stricmp(m_wing_squad_filename, Wings[cur_wing].wing_squad_filename))

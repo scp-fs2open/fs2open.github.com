@@ -581,6 +581,7 @@ static void var_name_from_sexp_tree_text(char* var_name, const char* text)
 // builds an sexp of the tree and returns the index of it.  This allocates sexp nodes.
 int SexpTreeModel::save_tree(int node) const
 {
+	if (node < 0) node = root_item;
 	Assert(node >= 0);
 	Assert(tree_nodes[node].type == (SEXPT_OPERATOR | SEXPT_VALID));
 	Assert(tree_nodes[node].next == -1);  // must make this assumption or else it will confuse code!
@@ -1605,6 +1606,7 @@ NodeImage SexpTreeModel::get_data_image(int node) const
 
 int SexpTreeModel::query_false(int node) const
 {
+	if (node < 0) node = root_item;
 	Assert(node >= 0);
 	Assert(tree_nodes[node].type == (SEXPT_OPERATOR | SEXPT_VALID));
 	Assert(tree_nodes[node].next == -1);  // must make this assumption or else it will confuse code!

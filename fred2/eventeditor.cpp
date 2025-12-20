@@ -87,7 +87,7 @@ event_editor::event_editor(CWnd* pParent /*=NULL*/)
 	m_last_message_node = -1;
 	//}}AFX_DATA_INIT
 	m_event_tree.m_mode = MODE_EVENTS;
-	m_event_tree.link_modified(&modified);
+	m_event_tree._model.modified = &modified;
 	modified = 0;
 	select_sexp_node = -1;
 	m_wave_id = -1;
@@ -360,7 +360,7 @@ void event_editor::load_tree()
 		if (m_events[i].name.empty())
 			m_events[i].name = "<Unnamed>";
 
-		m_events[i].formula = m_event_tree.load_sub_tree(Mission_events[i].formula, false, "do-nothing");
+		m_events[i].formula = m_event_tree._model.load_sub_tree(Mission_events[i].formula, false, "do-nothing");
 
 		// we must check for the case of the repeat count being 0.  This would happen if the repeat
 		// count is not specified in a mission
@@ -369,7 +369,7 @@ void event_editor::load_tree()
 		}
 	}
 
-	m_event_tree.post_load();
+	m_event_tree._model.post_load();
 	cur_event = -1;
 }
 
@@ -563,7 +563,7 @@ void event_editor::OnButtonOk()
 	Mission_events.clear();
 	for (const auto &dialog_event: m_events) {
 		Mission_events.push_back(dialog_event);
-		Mission_events.back().formula = m_event_tree.save_tree(dialog_event.formula);
+		Mission_events.back().formula = m_event_tree._model.save_tree(dialog_event.formula);
 	}
 
 	// now update all sexp references
@@ -1608,7 +1608,7 @@ void event_editor::OnDblclkMessageList()
 	list->GetText(cur_index, buffer);
 
 
-	num_messages = m_event_tree.find_text(buffer, message_nodes);
+	num_messages = m_event_tree._model.find_text(buffer, message_nodes, MAX_SEARCH_MESSAGE_DEPTH);
 
 	if (num_messages == 0) {
 		char message[256];
