@@ -2086,18 +2086,18 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 						}
 					}
 
-					// make a matrix if we have at least the fvec
-					if (has_fvec)
+					// make a matrix if we have at least the fvec or uvec
+					if (has_fvec || has_uvec)
 					{
-						vm_vector_2_matrix(&sm->frame_of_reference, &fvec, has_uvec ? &uvec : nullptr, has_rvec ? &rvec : nullptr);
+						vm_vector_2_matrix_uvec(&sm->frame_of_reference, has_fvec ? &fvec : nullptr, has_uvec ? &uvec : nullptr, has_rvec ? &rvec : nullptr);
 
 						// if the look_at_offset is still the default value (hasn't been set by submodel properties), assume that
 						// by specifying the submodel orientation matrix we are also specifying the "looking" direction
 						if (sm->look_at_offset == -1.0f)
 							sm->look_at_offset = 0.0f;
 					}
-					else if (has_uvec || has_rvec)
-						Warning(LOCATION, "Improper custom orientation matrix for subsystem %s; you must define an $fvec", sm->name);
+					else if (has_rvec)
+						Warning(LOCATION, "Improper custom orientation matrix for subsystem %s; you must define an $fvec or $uvec", sm->name);
 				}
 
 				{

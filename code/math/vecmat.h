@@ -308,6 +308,24 @@ matrix *vm_vector_2_matrix(matrix *m, const vec3d *fvec, const vec3d *uvec = nul
 
 
 /**
+ * @brief Generates a matrix from one or more vectors
+ *
+ * @param[out] matrix The generated matrix. Does not need to be an Identity matrix
+ * @param[in] fvec Vector referencing the forward direction (optional)
+ * @param[in] uvec Vector referencing the up direction (Optional)
+ * @param[in] rvec Vector referencing the right-hand direction (Optional)
+ *
+ * @returns Pointer to the generated matrix
+ *
+ * @note If all three vectors are given, rvec is ignored.
+ * @note All vectors are optional, but at least one of fvec and uvec must be provided
+ *
+ * @sa vm_vector_2_matrix_uvec_norm
+ */
+matrix* vm_vector_2_matrix_uvec(matrix* m, const vec3d* fvec, const vec3d* uvec = nullptr, const vec3d* rvec = nullptr);
+
+
+/**
  * @brief Generates a matrix from one or more normalized vectors
  *
  * @param[out] matrix The generated matrix. Does not need to be an Identity matrix

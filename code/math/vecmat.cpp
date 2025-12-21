@@ -799,6 +799,40 @@ matrix *vm_vec_ang_2_matrix(matrix *m, const vec3d *v, float a)
 }
 
 /**
+ * @brief Generates a matrix from a normalized uvec.
+ *
+ * @param[in,out] matrix The matrix to generate
+ *
+ * @details The matrix's uvec is used to generate the fvec and rvec
+ *
+ * @sa vm_vector_2_matrix_uvec(), vm_vector_2_matrix_uvec_norm()
+ */
+void vm_vector_2_matrix_gen_vectors_uvec(matrix* m)
+{
+	vec3d* xvec = &m->vec.rvec;
+	vec3d* yvec = &m->vec.uvec;
+	vec3d* zvec = &m->vec.fvec;
+
+	if ((yvec->xyz.x == 0.0f) && (yvec->xyz.z == 0.0f)) {		// vec is straight up or down
+		m->vec.rvec.xyz.x = 1.0f;
+		m->vec.fvec.xyz.z = (yvec->xyz.y > 0.0f) ? 1.0f : -1.0f;
+
+		m->vec.rvec.xyz.y = m->vec.rvec.xyz.z = m->vec.fvec.xyz.x = m->vec.fvec.xyz.y = 0.0f;
+	}
+	else { 		//not straight up or down
+
+		xvec->xyz.x = yvec->xyz.y;
+		xvec->xyz.y = 0.0f;
+		xvec->xyz.z = -yvec->xyz.x;
+
+		vm_vec_normalize(xvec);
+
+		vm_vec_cross(zvec, xvec, yvec);
+
+	}
+}
+
+/**
  * @brief Generates a matrix from a normalized fvec.
  *
  * @param[in,out] matrix The matrix to generate
@@ -832,11 +866,76 @@ void vm_vector_2_matrix_gen_vectors(matrix *m)
 	}
 }
 
+matrix* vm_vector_2_matrix_uvec_norm(matrix* m, const vec3d* fvec, const vec3d* uvec, const vec3d* rvec)
+{
+
+	// sanity
+	Assertion(fvec == nullptr || vm_vec_is_normalized(fvec), "if fvec is provided, it must be normalized!");
+	Assertion(uvec == nullptr || vm_vec_is_normalized(uvec), "if uvec is provided, it must be normalized!");
+	Assertion(rvec == nullptr || vm_vec_is_normalized(rvec), "if rvec is provided, it must be normalized!");
+
+	matrix temp = vmd_identity_matrix;
+
+	vec3d* xvec = &temp.vec.rvec;
+	vec3d* yvec = &temp.vec.uvec;
+	vec3d* zvec = &temp.vec.fvec;
+
+
+	if (uvec != nullptr) {
+		*yvec = *uvec;
+		if (rvec == nullptr && fvec == nullptr) {     //just up vec
+			vm_vector_2_matrix_gen_vectors_uvec(&temp);
+		}
+		else if (fvec != nullptr){                      //use right vec
+			*zvec = *fvec;
+
+			vm_vec_cross(xvec, yvec, zvec);
+
+			//normalize new perpendicular vector
+			vm_vec_normalize(xvec);
+
+			//now recompute fwd vector, in case it wasn't entirely perpendiclar
+			vm_vec_cross(zvec, xvec, yvec);
+		} else {
+			*xvec = *rvec;
+
+			vm_vec_cross(zvec, xvec, yvec);
+
+			//normalize new perpendicular vector
+			vm_vec_normalize(zvec);
+
+			//now recompute right vector, in case it wasn't entirely perpendiclar
+			vm_vec_cross(xvec, yvec, zvec);
+		}
+	}
+	else if (fvec != nullptr) {      //use fwd vec
+		*zvec = *fvec;
+
+		if (rvec != nullptr) {
+			vm_vec_cross(yvec, zvec, xvec);
+
+			//normalize new perpendicular vector
+			vm_vec_normalize(yvec);
+
+			//now recompute right vector, in case it wasn't entirely perpendiclar
+			vm_vec_cross(xvec, yvec, zvec);
+		} else {
+			vm_vector_2_matrix_gen_vectors(&temp);
+		}
+	}
+
+	// Copy the computed values into the output parameter
+	*m = temp;
+	return m;
+}
+
 matrix *vm_vector_2_matrix(matrix *m, const vec3d *fvec, const vec3d *uvec, const vec3d *rvec)
 {
 	vec3d fvec_norm;
-	vm_vec_copy_normalize(&fvec_norm, fvec);
-	fvec = &fvec_norm;
+	if (fvec != nullptr) {
+		vm_vec_copy_normalize(&fvec_norm, fvec);
+		fvec = &fvec_norm;
+	}
 
 	vec3d uvec_norm;
 	if (uvec != nullptr) {
@@ -852,6 +951,30 @@ matrix *vm_vector_2_matrix(matrix *m, const vec3d *fvec, const vec3d *uvec, cons
 
 	// Call the actuall function for normalized vectors
 	return vm_vector_2_matrix_norm(m, fvec, uvec, rvec);
+}
+
+matrix* vm_vector_2_matrix_uvec(matrix* m, const vec3d* fvec, const vec3d* uvec, const vec3d* rvec)
+{
+	vec3d fvec_norm;
+	if (fvec != nullptr) {
+		vm_vec_copy_normalize(&fvec_norm, fvec);
+		fvec = &fvec_norm;
+	}
+
+	vec3d uvec_norm;
+	if (uvec != nullptr) {
+		vm_vec_copy_normalize(&uvec_norm, uvec);
+		uvec = &uvec_norm;
+	}
+
+	vec3d rvec_norm;
+	if (rvec != nullptr) {
+		vm_vec_copy_normalize(&rvec_norm, rvec);
+		rvec = &rvec_norm;
+	}
+
+	// Call the actuall function for normalized vectors
+	return vm_vector_2_matrix_uvec_norm(m, fvec, uvec, rvec);
 }
 
 matrix *vm_vector_2_matrix_norm(matrix *m, const vec3d *fvec, const vec3d *uvec, const vec3d *rvec)
