@@ -317,12 +317,13 @@ matrix *vm_vector_2_matrix(matrix *m, const vec3d *fvec, const vec3d *uvec = nul
  *
  * @returns Pointer to the generated matrix
  *
- * @note If all three vectors are given, rvec is ignored.
+ * @note THIS FUCNTION SHOULD ONLY BE USED BY MODEL READING
+ *		 in all other situations, the 'forward dominant' version vm_vector_2_matrix should be used
  * @note All vectors are optional, but at least one of fvec and uvec must be provided
  *
  * @sa vm_vector_2_matrix_uvec_norm
  */
-matrix* vm_vector_2_matrix_uvec(matrix* m, const vec3d* fvec, const vec3d* uvec = nullptr, const vec3d* rvec = nullptr);
+matrix* vm_vector_2_matrix_uvec(matrix* m, const vec3d* fvec = nullptr, const vec3d* uvec = nullptr, const vec3d* rvec = nullptr);
 
 
 /**

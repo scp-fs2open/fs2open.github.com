@@ -873,6 +873,7 @@ matrix* vm_vector_2_matrix_uvec_norm(matrix* m, const vec3d* fvec, const vec3d* 
 	Assertion(fvec == nullptr || vm_vec_is_normalized(fvec), "if fvec is provided, it must be normalized!");
 	Assertion(uvec == nullptr || vm_vec_is_normalized(uvec), "if uvec is provided, it must be normalized!");
 	Assertion(rvec == nullptr || vm_vec_is_normalized(rvec), "if rvec is provided, it must be normalized!");
+	Assertion(fvec != nullptr || uvec != nullptr, "vm_vector_2_matrix_uvec_norm requires one of fvec or uvec!");
 
 	matrix temp = vmd_identity_matrix;
 
@@ -880,13 +881,12 @@ matrix* vm_vector_2_matrix_uvec_norm(matrix* m, const vec3d* fvec, const vec3d* 
 	vec3d* yvec = &temp.vec.uvec;
 	vec3d* zvec = &temp.vec.fvec;
 
-
-	if (uvec != nullptr) {
+	if (uvec != nullptr) { // use up vec as the 'primary'
 		*yvec = *uvec;
-		if (rvec == nullptr && fvec == nullptr) {     //just up vec
+		if (rvec == nullptr && fvec == nullptr) {     //only up vec
 			vm_vector_2_matrix_gen_vectors_uvec(&temp);
 		}
-		else if (fvec != nullptr){                      //use right vec
+		else if (fvec != nullptr){                      //use fwd vec
 			*zvec = *fvec;
 
 			vm_vec_cross(xvec, yvec, zvec);
@@ -896,7 +896,7 @@ matrix* vm_vector_2_matrix_uvec_norm(matrix* m, const vec3d* fvec, const vec3d* 
 
 			//now recompute fwd vector, in case it wasn't entirely perpendiclar
 			vm_vec_cross(zvec, xvec, yvec);
-		} else {
+		} else { // else use rvec
 			*xvec = *rvec;
 
 			vm_vec_cross(zvec, xvec, yvec);
@@ -908,10 +908,10 @@ matrix* vm_vector_2_matrix_uvec_norm(matrix* m, const vec3d* fvec, const vec3d* 
 			vm_vec_cross(xvec, yvec, zvec);
 		}
 	}
-	else if (fvec != nullptr) {      //use fwd vec
+	else if (fvec != nullptr) {      //use fwd vec as the 'primary'
 		*zvec = *fvec;
 
-		if (rvec != nullptr) {
+		if (rvec != nullptr) { // use rvec
 			vm_vec_cross(yvec, zvec, xvec);
 
 			//normalize new perpendicular vector
@@ -919,7 +919,7 @@ matrix* vm_vector_2_matrix_uvec_norm(matrix* m, const vec3d* fvec, const vec3d* 
 
 			//now recompute right vector, in case it wasn't entirely perpendiclar
 			vm_vec_cross(xvec, yvec, zvec);
-		} else {
+		} else { // only fwd vec
 			vm_vector_2_matrix_gen_vectors(&temp);
 		}
 	}
