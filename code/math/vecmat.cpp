@@ -799,6 +799,40 @@ matrix *vm_vec_ang_2_matrix(matrix *m, const vec3d *v, float a)
 }
 
 /**
+ * @brief Generates a matrix from a normalized fvec.
+ *
+ * @param[in,out] matrix The matrix to generate
+ *
+ * @details The matrix's fvec is used to generate the uvec and rvec
+ *
+ * @sa vm_vector_2_matrix(), vm_vector_2_matrix_norm()
+ */
+void vm_vector_2_matrix_gen_vectors(matrix *m)
+{
+	vec3d *xvec=&m->vec.rvec;
+	vec3d *yvec=&m->vec.uvec;
+	vec3d *zvec=&m->vec.fvec;
+	
+	if ((zvec->xyz.x==0.0f) && (zvec->xyz.z==0.0f)) {		//forward vec is straight up or down
+		m->vec.rvec.xyz.x = 1.0f;
+		m->vec.uvec.xyz.z = (zvec->xyz.y<0.0f)?1.0f:-1.0f;
+
+		m->vec.rvec.xyz.y = m->vec.rvec.xyz.z = m->vec.uvec.xyz.x = m->vec.uvec.xyz.y = 0.0f;
+	}
+	else { 		//not straight up or down
+
+		xvec->xyz.x = zvec->xyz.z;
+		xvec->xyz.y = 0.0f;
+		xvec->xyz.z = -zvec->xyz.x;
+
+		vm_vec_normalize(xvec);
+
+		vm_vec_cross(yvec,zvec,xvec);
+
+	}
+}
+
+/**
  * @brief Generates a matrix from a normalized uvec.
  *
  * @param[in,out] matrix The matrix to generate
@@ -832,38 +866,65 @@ void vm_vector_2_matrix_gen_vectors_uvec(matrix* m)
 	}
 }
 
-/**
- * @brief Generates a matrix from a normalized fvec.
- *
- * @param[in,out] matrix The matrix to generate
- *
- * @details The matrix's fvec is used to generate the uvec and rvec
- *
- * @sa vm_vector_2_matrix(), vm_vector_2_matrix_norm()
- */
-void vm_vector_2_matrix_gen_vectors(matrix *m)
+matrix *vm_vector_2_matrix_norm(matrix *m, const vec3d *fvec, const vec3d *uvec, const vec3d *rvec)
 {
-	vec3d *xvec=&m->vec.rvec;
-	vec3d *yvec=&m->vec.uvec;
-	vec3d *zvec=&m->vec.fvec;
-	
-	if ((zvec->xyz.x==0.0f) && (zvec->xyz.z==0.0f)) {		//forward vec is straight up or down
-		m->vec.rvec.xyz.x = 1.0f;
-		m->vec.uvec.xyz.z = (zvec->xyz.y<0.0f)?1.0f:-1.0f;
+	// sanity
+	Assertion(fvec == nullptr || vm_vec_is_normalized(fvec), "if fvec is provided, it must be normalized!");
+	Assertion(uvec == nullptr || vm_vec_is_normalized(uvec), "if uvec is provided, it must be normalized!");
+	Assertion(rvec == nullptr || vm_vec_is_normalized(rvec), "if rvec is provided, it must be normalized!");
 
-		m->vec.rvec.xyz.y = m->vec.rvec.xyz.z = m->vec.uvec.xyz.x = m->vec.uvec.xyz.y = 0.0f;
+	matrix temp = vmd_identity_matrix;
+
+	vec3d *xvec=&temp.vec.rvec;
+	vec3d *yvec=&temp.vec.uvec;
+	vec3d *zvec=&temp.vec.fvec;
+
+	Assert(fvec != NULL);
+
+	*zvec = *fvec;
+
+	if (uvec == NULL) {
+		if (rvec == NULL) {     //just forward vec
+			vm_vector_2_matrix_gen_vectors(&temp);
+		}
+		else {                      //use right vec
+			*xvec = *rvec;
+
+			vm_vec_cross(yvec,zvec,xvec);
+
+			//normalize new perpendicular vector
+			vm_vec_normalize(yvec);
+
+			//now recompute right vector, in case it wasn't entirely perpendiclar
+			vm_vec_cross(xvec,yvec,zvec);
+		}
 	}
-	else { 		//not straight up or down
+	else {      //use up vec
+		*yvec = *uvec;
 
-		xvec->xyz.x = zvec->xyz.z;
-		xvec->xyz.y = 0.0f;
-		xvec->xyz.z = -zvec->xyz.x;
+		vm_vec_cross(xvec,yvec,zvec);
 
-		vm_vec_normalize(xvec);
+		if (vm_vec_equal(*xvec, vmd_zero_vector)) {
+			// uvec was bogus (either same as fvec or -fvec)
+			// Reset temp to the original values and do the setup again
+			temp = *m;
 
-		vm_vec_cross(yvec,zvec,xvec);
+			temp.vec.fvec = *fvec;
 
+			vm_vector_2_matrix_gen_vectors(&temp);
+		}
+		else {
+			//normalize new perpendicular vector
+			vm_vec_normalize(xvec);
+
+			//now recompute up vector, in case it wasn't entirely perpendiclar
+			vm_vec_cross(yvec,zvec,xvec);
+		}
 	}
+
+	// Copy the computed values into the output parameter
+	*m = temp;
+	return m;
 }
 
 matrix* vm_vector_2_matrix_uvec_norm(matrix* m, const vec3d* fvec, const vec3d* uvec, const vec3d* rvec)
@@ -975,67 +1036,6 @@ matrix* vm_vector_2_matrix_uvec(matrix* m, const vec3d* fvec, const vec3d* uvec,
 
 	// Call the actuall function for normalized vectors
 	return vm_vector_2_matrix_uvec_norm(m, fvec, uvec, rvec);
-}
-
-matrix *vm_vector_2_matrix_norm(matrix *m, const vec3d *fvec, const vec3d *uvec, const vec3d *rvec)
-{
-	// sanity
-	Assertion(fvec == nullptr || vm_vec_is_normalized(fvec), "if fvec is provided, it must be normalized!");
-	Assertion(uvec == nullptr || vm_vec_is_normalized(uvec), "if uvec is provided, it must be normalized!");
-	Assertion(rvec == nullptr || vm_vec_is_normalized(rvec), "if rvec is provided, it must be normalized!");
-
-	matrix temp = vmd_identity_matrix;
-
-	vec3d *xvec=&temp.vec.rvec;
-	vec3d *yvec=&temp.vec.uvec;
-	vec3d *zvec=&temp.vec.fvec;
-
-	Assert(fvec != NULL);
-
-	*zvec = *fvec;
-
-	if (uvec == NULL) {
-		if (rvec == NULL) {     //just forward vec
-			vm_vector_2_matrix_gen_vectors(&temp);
-		}
-		else {                      //use right vec
-			*xvec = *rvec;
-
-			vm_vec_cross(yvec,zvec,xvec);
-
-			//normalize new perpendicular vector
-			vm_vec_normalize(yvec);
-
-			//now recompute right vector, in case it wasn't entirely perpendiclar
-			vm_vec_cross(xvec,yvec,zvec);
-		}
-	}
-	else {      //use up vec
-		*yvec = *uvec;
-
-		vm_vec_cross(xvec,yvec,zvec);
-
-		if (vm_vec_equal(*xvec, vmd_zero_vector)) {
-			// uvec was bogus (either same as fvec or -fvec)
-			// Reset temp to the original values and do the setup again
-			temp = *m;
-
-			temp.vec.fvec = *fvec;
-
-			vm_vector_2_matrix_gen_vectors(&temp);
-		}
-		else {
-			//normalize new perpendicular vector
-			vm_vec_normalize(xvec);
-
-			//now recompute up vector, in case it wasn't entirely perpendiclar
-			vm_vec_cross(yvec,zvec,xvec);
-		}
-	}
-
-	// Copy the computed values into the output parameter
-	*m = temp;
-	return m;
 }
 
 
