@@ -6092,7 +6092,7 @@ void HudGaugeWeaponEnergy::render(float /*frametime*/, bool config)
 			}
 			if(gr_screen.max_w_unscaled == 640) {
 				strcpy_s(shortened_name, weapon_name.c_str());
-				font::force_fit_string(shortened_name, NAME_LENGTH, fl2i(55 * scale), scale);
+				font::force_fit_string(shortened_name, NAME_LENGTH-1, fl2i(55 * scale), scale);
 				renderString(currentx, currenty, shortened_name, scale, config);
 			} else {
 				renderString(currentx, currenty, weapon_name.c_str(), scale, config);

@@ -1251,7 +1251,7 @@ void brief_render(float frametime)
 
 	if (Game_mode & GM_MULTIPLAYER) {
 		char buf[256];
-		strncpy(buf, The_mission.name, 256);
+		strncpy(buf, The_mission.name, 255);
 		font::force_fit_string(buf, 255, Title_coords_multi[gr_screen.res][2]);
 		gr_string(Title_coords_multi[gr_screen.res][0], Title_coords_multi[gr_screen.res][1], buf, GR_RESIZE_MENU);
 	} else {

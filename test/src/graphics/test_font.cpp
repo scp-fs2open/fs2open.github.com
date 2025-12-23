@@ -39,3 +39,45 @@ TEST_F(FontTest, additional_font_ttf) {
 
 	font::close();
 }
+
+TEST_F(FontTest, force_fit)
+{
+	font::init();
+
+	{
+		char str[] = "";
+		int w = font::force_fit_string(str, std::string::npos, 80);
+		ASSERT_EQ(w, 0);
+		ASSERT_EQ(strlen(str), 0);
+	}
+
+	{
+		char str[] = "abcdefghijklmnopqrstuvwxyz";
+		int w = font::force_fit_string(str, std::string::npos, 0);
+		ASSERT_EQ(w, 0);
+		ASSERT_EQ(strlen(str), 0);
+	}
+
+	{
+		char str[] = "abcdefghijklmnopqrstuvwxyz";
+		int w = font::force_fit_string(str, std::string::npos, 80);
+		ASSERT_LE(w, 80);
+		ASSERT_EQ(strlen(str), 12);
+	}
+
+	{
+		char str[] = "abcdefghijklmnopqrstuvwxyz";
+		int w = font::force_fit_string(str, 5, 300);
+		ASSERT_LE(w, 300);
+		ASSERT_EQ(strlen(str), 5);
+	}
+
+	{
+		char str[] = "abcdefghijklmnopqrstuvwxyz";
+		int w = font::force_fit_string(str, std::string::npos, 300);
+		ASSERT_LE(w, 300);
+		ASSERT_EQ(strlen(str), 26);
+	}
+
+	font::close();
+}

@@ -1342,7 +1342,7 @@ void multi_join_display_games()
 			} 
 
 			// make sure the string fits in the display area and draw it
-			font::force_fit_string(str,200,Mj_game_name_coords[gr_screen.res][MJ_W_COORD]);			
+			font::force_fit_string(str, 199, Mj_game_name_coords[gr_screen.res][MJ_W_COORD]);
 			gr_string(Mj_game_name_coords[gr_screen.res][MJ_X_COORD],y_start,str,GR_RESIZE_MENU);
 
 			// display the ping time
@@ -4635,7 +4635,7 @@ void multi_create_list_do()
 	int idx;
 	int start_index,stop_index;
 	int line_height = gr_get_font_height() + 1;
-	char selected_name[255];
+	char selected_name[256];
 
 	// bail early if there aren't any selectable items
 	if(Multi_create_list_count == 0){
@@ -8357,7 +8357,7 @@ void multi_sync_post_close(bool API_Access)
 
 void multi_sync_display_name(const char *name,int index,int np_index)
 {
-	char fit[CALLSIGN_LEN];	
+	char fit[CALLSIGN_LEN+1];
 	int line_height = gr_get_font_height() + 1;
 	
 	// make sure the string actually fits
@@ -8433,7 +8433,7 @@ void multi_sync_display_status(const char *status,int index)
 
 	// make sure the string actually fits
 	strcpy_s(fit, status);
-	font::force_fit_string(fit, 250, Ms_status2_coords[gr_screen.res][MS_W_COORD] - 20);
+	font::force_fit_string(fit, 249, Ms_status2_coords[gr_screen.res][MS_W_COORD] - 20);
 	gr_set_color_fast(&Color_bright);	
 	gr_string(Ms_status2_coords[gr_screen.res][MS_X_COORD], Ms_status2_coords[gr_screen.res][MS_Y_COORD] + (index * (gr_get_font_height() + 1)), fit, GR_RESIZE_MENU);		
 }
