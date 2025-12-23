@@ -1015,7 +1015,6 @@ void nebl_calc_facing_pts_smart( vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos
 void nebl_render_section(bolt_type *bi, l_section *a, l_section *b)
 {		
 	vertex v[4];
-	vertex *verts[4] = {&v[0], &v[1], &v[2], &v[3]};
 
 	material material_params;
 
@@ -1054,18 +1053,20 @@ void nebl_render_section(bolt_type *bi, l_section *a, l_section *b)
 
 	g3_render_primitives_textured(&material_params, v, 4, PRIM_TYPE_TRIFAN, false);
 
-	// draw the glow beam	
-	verts[0] = &a->glow_vex[0];
-	verts[0]->texture_position.v = 0.0f; verts[0]->texture_position.u = 0.0f;
+	// draw the glow beam
+	material_set_unlit_emissive(&material_params, bi->glow, Nebl_glow_alpha, 2.0f);
 
-	verts[1] = &a->glow_vex[1];
-	verts[1]->texture_position.v = 1.0f; verts[1]->texture_position.u = 0.0f;
+	v[0] = a->glow_vex[0];
+	v[0].texture_position.v = 0.0f; v[0].texture_position.u = 0.0f;
 
-	verts[2] = &b->glow_vex[1];
-	verts[2]->texture_position.v = 1.0f; verts[2]->texture_position.u = 1.0f;
+	v[1] = a->glow_vex[1];
+	v[1].texture_position.v = 1.0f; v[1].texture_position.u = 0.0f;
 
-	verts[3] = &b->glow_vex[0];
-	verts[3]->texture_position.v = 0.0f; verts[3]->texture_position.u = 1.0f;
+	v[2] = b->glow_vex[1];
+	v[2].texture_position.v = 1.0f; v[2].texture_position.u = 1.0f;
+
+	v[3] = b->glow_vex[0];
+	v[3].texture_position.v = 0.0f; v[3].texture_position.u = 1.0f;
 
 	g3_render_primitives_textured(&material_params, v, 4, PRIM_TYPE_TRIFAN, false);
 }
