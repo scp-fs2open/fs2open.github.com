@@ -794,7 +794,7 @@ void mission_log_scrollback(int line_offset, int list_x, int list_y, int list_w,
 
 		char buf[256];
 		strcpy_s(buf, Log_scrollback_vec[i].objective.text.get());
-		font::force_fit_string(buf, 256, ACTION_X - OBJECT_X - 8);
+		font::force_fit_string(buf, 255, ACTION_X - OBJECT_X - 8);
 		gr_string(list_x + Log_scrollback_vec[i].objective.x, list_y + y, buf, GR_RESIZE_MENU);
 
 		// print the segments
@@ -814,7 +814,7 @@ void mission_log_scrollback(int line_offset, int list_x, int list_y, int list_w,
 			gr_set_color_fast(this_color);
 
 			strcpy_s(buf, thisSeg.text.get());
-			font::force_fit_string(buf, 256, list_w - thisSeg.x);
+			font::force_fit_string(buf, 255, list_w - thisSeg.x);
 			gr_string(list_x + thisSeg.x, list_y + seg_y, buf, GR_RESIZE_MENU);
 		}
 

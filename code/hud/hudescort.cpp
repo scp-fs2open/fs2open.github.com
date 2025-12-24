@@ -382,7 +382,7 @@ void HudGaugeEscort::renderIcon(int x, int y, int index, float scale, bool confi
 	// print out ship name
 	// original behavior replaced with similar logic to hudtargetbox.cpp, except
 	// if the name is hidden, it's replaced with the class name.
-	char buf[255];
+	char buf[256];
 	if (!config) {
 		if (((Iff_info[sp->team].flags & IFFF_WING_NAME_HIDDEN) && (sp->wingnum != -1)) ||
 			(sp->flags[Ship::Ship_Flags::Hide_ship_name])) {
@@ -474,7 +474,7 @@ void HudGaugeEscort::renderIcon(int x, int y, int index, float scale, bool confi
 void HudGaugeEscort::renderIconDogfight(int x, int y, int index)
 {
 	int			hull_integrity = 100;
-	char			buf[255];	
+	char			buf[256];
 	int			np_index;
 	object		*objp;
 

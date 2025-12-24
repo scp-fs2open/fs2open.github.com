@@ -38,8 +38,8 @@
 
 // stats defines
 //#define NUM_STAT_LINES (21 + MAX_SHIP_CLASSES)	// Goober5000
-#define STAT_COLUMN1_W 40*2							// as we might use Unicode //ksotar
-#define STAT_COLUMN2_W 10
+#define STAT_COLUMN1_W 41*2							// as we might use Unicode //ksotar
+#define STAT_COLUMN2_W 11
 
 static int Stat_column1_w[GR_NUM_RESOLUTIONS] =
 {
