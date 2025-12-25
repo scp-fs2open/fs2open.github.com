@@ -118,10 +118,6 @@ static int Num_ship_subsystems_allocated = 0;
 static SCP_vector<ship_subsys*> Ship_subsystems;
 ship_subsys ship_subsys_free_list;
 
-extern bool splodeing;
-extern float splode_level;
-extern int splodeingtexture;
-
 // The minimum required fuel to engage afterburners
 static const float DEFAULT_MIN_AFTERBURNER_FUEL_TO_ENGAGE = 10.0f;
 
@@ -1279,9 +1275,6 @@ void ship_info::clone(const ship_info& other)
 
 	draw_distortion = other.draw_distortion;
 
-	splodeing_texture = other.splodeing_texture;
-	strcpy_s(splodeing_texture_name, other.splodeing_texture_name);
-
 	replacement_textures = other.replacement_textures;
 
 	armor_type_idx = other.armor_type_idx;
@@ -1633,9 +1626,6 @@ void ship_info::move(ship_info&& other)
 	thruster_glow_noise_mult = other.thruster_glow_noise_mult;
 
 	draw_distortion = other.draw_distortion;
-
-	splodeing_texture = other.splodeing_texture;
-	std::swap(splodeing_texture_name, other.splodeing_texture_name);
 
 	std::swap(replacement_textures, other.replacement_textures);
 
@@ -2036,9 +2026,6 @@ ship_info::ship_info()
 	thruster_glow_noise_mult = 1.0f;
 
 	draw_distortion = true;
-
-	splodeing_texture = -1;
-	strcpy_s(splodeing_texture_name, "boom");
 
 	replacement_textures.clear();
 
@@ -7120,8 +7107,6 @@ void ship::clear()
 	next_corkscrew_fire = timestamp(0);
 
 	final_death_time = timestamp(-1);
-	death_time = timestamp(-1);
-	end_death_time = timestamp(-1);
 	really_final_death_time = timestamp(-1);
 	deathroll_rotvel = vmd_zero_vector;
 
@@ -9719,7 +9704,6 @@ static void ship_dying_frame(object *objp, int ship_num)
 		}
 
 		if ( timestamp_elapsed(shipp->final_death_time))	{
-			shipp->death_time = shipp->final_death_time;
 			shipp->final_death_time = timestamp(-1);	// never time out again
 			
 			// play ship explosion sound effect, pick appropriate explosion sound
@@ -9782,8 +9766,6 @@ static void ship_dying_frame(object *objp, int ship_num)
 				shipfx_large_blowup_init(shipp);
 				// need to timeout immediately to keep physics in sync
 				shipp->really_final_death_time = timestamp(0);
-				polymodel *pm = model_get(sip->model_num);
-				shipp->end_death_time = timestamp((int) pm->core_radius);
 			} else {
 				// else, just a single big fireball
 				float big_rad;
@@ -9818,7 +9800,8 @@ static void ship_dying_frame(object *objp, int ship_num)
 				// ship, so instead of just taking this code out, since we might need
 				// it in the future, I disabled it.   You can reenable it by changing
 				// the commenting on the following two lines.
-				shipp->end_death_time = shipp->really_final_death_time = timestamp( fl2i(explosion_life*1000.0f)/5 );	// Wait till 30% of vclip time before breaking the ship up.
+				shipp->really_final_death_time = timestamp( fl2i(explosion_life*1000.0f)/5 );	// Wait till 30% of vclip time before breaking the ship up.
+				//sp->really_final_death_time = timestamp(0);	// Make ship break apart the instant the explosion starts
 			}
 
 			shipp->flags.set(Ship_Flags::Exploded);
@@ -19275,12 +19258,6 @@ void ship_page_in_textures(int ship_index)
 	if ( !generic_bitmap_load(&sip->thruster_tertiary_glow_info.afterburn) )
 		bm_page_in_texture(sip->thruster_tertiary_glow_info.afterburn.bitmap_id);
  
-	// splodeing bitmap
-	if ( VALID_FNAME(sip->splodeing_texture_name) ) {
-		sip->splodeing_texture = bm_load(sip->splodeing_texture_name);
-		bm_page_in_texture(sip->splodeing_texture);
-	}
-
 	// thruster/particle bitmaps
 	for (i = 0; i < (int)sip->normal_thruster_particles.size(); i++) {
 		generic_anim_load(&sip->normal_thruster_particles[i].thruster_bitmap);
@@ -19331,9 +19308,6 @@ void ship_page_out_textures(int ship_index, bool release)
 	PAGE_OUT_TEXTURE(sip->thruster_secondary_glow_info.afterburn.bitmap_id);
 	PAGE_OUT_TEXTURE(sip->thruster_tertiary_glow_info.normal.bitmap_id);
 	PAGE_OUT_TEXTURE(sip->thruster_tertiary_glow_info.afterburn.bitmap_id);
-
-	// slodeing bitmap
-	PAGE_OUT_TEXTURE(sip->splodeing_texture);
 
 	// thruster/particle bitmaps
 	for (i = 0; i < (int)sip->normal_thruster_particles.size(); i++)
