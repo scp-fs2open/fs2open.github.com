@@ -567,22 +567,6 @@ bool openal_init_device(SCP_string *playback, SCP_string *capture)
 }
 
 static void get_version_info(OpenALInformation* info) {
-	// initialize default setup first, for version check...
-	ALCdevice *device = alcOpenDevice(NULL);
-
-	if (device == NULL) {
-		return;
-	}
-
-	ALCcontext *context = alcCreateContext(device, NULL);
-
-	if (context == NULL) {
-		alcCloseDevice(device);
-		return;
-	}
-
-	alcMakeContextCurrent(context);
-
 	// version check (for 1.0 or 1.1)
 	ALCint AL_minor_version = 0;
 	ALCint AL_major_version = 0;
@@ -591,13 +575,6 @@ static void get_version_info(OpenALInformation* info) {
 
 	info->version_major = static_cast<uint32_t>(AL_major_version);
 	info->version_minor = static_cast<uint32_t>(AL_minor_version);
-
-	alcGetError(device);
-
-	// close default device
-	alcMakeContextCurrent(NULL);
-	alcDestroyContext(context);
-	alcCloseDevice(device);
 }
 
 static bool device_supports_efx(const char* device_name) {

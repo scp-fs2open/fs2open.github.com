@@ -51,7 +51,7 @@ typedef struct audio_context {
 	size_t render_buffer_size;
 
 	int frame_size;
-} oal_info;
+} audio_context;
 
 static audio_context Audio{};
 
@@ -525,37 +525,6 @@ static bool ds_init_loopback(std::string &Device)
 	return true;
 }
 
-static bool ds_init_physical(std::string &Device, const int sample_rate)
-{
-	ALCint attrList[] = { ALC_FREQUENCY, sample_rate, 0 };
-
-	if ( !openal_init_device(&Device, nullptr) ) {
-		mprintf(("\n  ERROR: Unable to find suitable playback device!\n\n"));
-		return false;
-	}
-
-	Audio.device = alcOpenDevice(reinterpret_cast<const ALCchar*>(Device.c_str()));
-
-	if (Audio.device == nullptr) {
-		mprintf(("  Failed to open playback_device (%s) returning error (%s)\n", Device.c_str(), openal_error_string(1)));
-		return false;
-	}
-
-	Audio.context = alcCreateContext(Audio.device, attrList);
-
-	if (Audio.context == nullptr) {
-		mprintf(("  Failed to create context for playback_device (%s) with attrList = { 0x%x, %d, %d } returning error (%s)\n",
-			Device.c_str(), attrList[0], attrList[1], attrList[2], openal_error_string(1)));
-		return false;
-	}
-
-	alcMakeContextCurrent(Audio.context);
-
-	alcGetError(Audio.device);
-
-	return true;
-}
-
 /**
  * Sound initialisation
  * @return -1 if init failed, 0 if init success
@@ -595,14 +564,9 @@ int ds_init()
 
 	if ( !ds_init_loopback(playback_device) ) {
 		ds_close();
+		mprintf(("... OpenAL failed to initialize!\n"));
 
-		if ( !ds_init_physical(playback_device, sample_rate) ) {
-			ds_close();
-
-			mprintf(("... OpenAL failed to initialize!\n"));
-
-			return -1;
-		}
+		return -1;
 	}
 
 	mprintf(("  OpenAL Vendor     : %s\n", alGetString(AL_VENDOR)));
