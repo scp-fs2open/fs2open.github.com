@@ -36,8 +36,6 @@
 #define XR_USE_GRAPHICS_API_OPENGL
 #include "graphics/openxr_internal.h"
 
-#include <SDL_syswm.h>
-
 #ifdef FS_OPENXR
 
 //SETUP FUNCTIONS OGL
@@ -69,14 +67,14 @@ bool gr_opengl_openxr_test_capabilities() {
 
 #ifdef WIN32
 bool gr_opengl_openxr_create_session() {
-	SDL_SysWMinfo wmInfo;
-	SDL_VERSION(&wmInfo.version);
-	SDL_GetWindowWMInfo(os::getSDLMainWindow(), &wmInfo);
+	auto hdc = static_cast<HDC>(SDL_GetPointerProperty(SDL_GetWindowProperties(os::getSDLMainWindow()),
+													   SDL_PROP_WINDOW_WIN32_HWND_POINTER,
+													   nullptr));
 
 	XrGraphicsBindingOpenGLWin32KHR graphicsBinding{
 		XR_TYPE_GRAPHICS_BINDING_OPENGL_WIN32_KHR,
 		nullptr,
-		wmInfo.info.win.hdc,
+		hdc,
 		(HGLRC) SDL_GL_GetCurrentContext() //uuuuuugly, and not technically allowed by the standard, but this "opaque" SDL_GLContext type is just the hGLRC on Win32
 	};
 	
@@ -97,21 +95,35 @@ bool gr_opengl_openxr_create_session() {
 }
 #elif defined SCP_UNIX
 bool gr_opengl_openxr_create_session() {
-	SDL_SysWMinfo wmInfo;
-	SDL_VERSION(&wmInfo.version);
-	SDL_GetWindowWMInfo(os::getSDLMainWindow(), &wmInfo);
+	// for X11 version
+	//  if !SDL_strcmp(SDL_GetCurrentVideoDriver(), "x11")
+	auto xdisplay = reinterpret_cast<Display *>(SDL_GetPointerProperty(SDL_GetWindowProperties(os::getSDLMainWindow()),
+																  SDL_PROP_WINDOW_X11_DISPLAY_POINTER,
+																  nullptr));
+	auto xwindow = static_cast<Window>(SDL_GetNumberProperty(SDL_GetWindowProperties(os::getSDLMainWindow()),
+															 SDL_PROP_WINDOW_X11_WINDOW_NUMBER,
+															 0));
+
+	// TODO: a wayland version
+	//  if !SDL_strcmp(SDL_GetCurrentVideoDriver(), "wayland")
+//	auto display = reinterpret_cast<struct wl_display *>(SDL_GetPointerProperty(SDL_GetWindowProperties(os::getSDLMainWindow()),
+//																				SDL_PROP_WINDOW_WAYLAND_DISPLAY_POINTER,
+//																				nullptr));
+//	auto surface = reinterpret_cast<struct wl_surface *>(SDL_GetPointerProperty(SDL_GetWindowProperties(os::getSDLMainWindow()),
+//																				SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER,
+//																				nullptr));
 
 	XWindowAttributes wa;
-	XGetWindowAttributes(wmInfo.info.x11.display, wmInfo.info.x11.window, &wa);
+	XGetWindowAttributes(xdisplay, xwindow, &wa);
 
 	GLXContext glxcontext = (GLXContext) SDL_GL_GetCurrentContext(); //uuuuuugly, and not technically allowed by the standard, but this "opaque" SDL_GLContext type is just the GLXContext on X11
 
 	int glxfbconfigid, glxscreenid, nfbconfigs;
-	glXQueryContext(wmInfo.info.x11.display, glxcontext, GLX_FBCONFIG_ID, &glxfbconfigid);
-	glXQueryContext(wmInfo.info.x11.display, glxcontext, GLX_SCREEN, &glxscreenid);
+	glXQueryContext(xdisplay, glxcontext, GLX_FBCONFIG_ID, &glxfbconfigid);
+	glXQueryContext(xdisplay, glxcontext, GLX_SCREEN, &glxscreenid);
 
 	const int fbconfigattrs[] = {GLX_FBCONFIG_ID, glxfbconfigid, None};
-	GLXFBConfig* fbconfigs = glXChooseFBConfig(wmInfo.info.x11.display, glxscreenid, fbconfigattrs, &nfbconfigs);
+	GLXFBConfig* fbconfigs = glXChooseFBConfig(xdisplay, glxscreenid, fbconfigattrs, &nfbconfigs);
 
 	if (nfbconfigs < 1) {
 		mprintf(("Unable to find Linux FBConfig for OpenXR!\n"));
@@ -121,7 +133,7 @@ bool gr_opengl_openxr_create_session() {
 	XrGraphicsBindingOpenGLXlibKHR graphicsBinding {
 		XR_TYPE_GRAPHICS_BINDING_OPENGL_XLIB_KHR,
 		nullptr,
-		wmInfo.info.x11.display,
+		xdisplay,
 		static_cast<uint32_t>(XVisualIDFromVisual(wa.visual)),
 		fbconfigs[0],
 		glXGetCurrentDrawable(),

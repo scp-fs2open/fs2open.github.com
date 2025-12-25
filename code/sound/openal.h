@@ -6,9 +6,11 @@
 #if defined(__APPLE__)
 #include "al.h"
 #include "alc.h"
+#include "alext.h"
 #else
 #include <AL/al.h>
 #include <AL/alc.h>
+#include <AL/alext.h>
 #endif // defined(__APPLE__)
 
 #include <string>
@@ -76,11 +78,6 @@ int openal_find_capture_device_by_name(const SCP_string& device);
 } while (0);
 
 
-#ifndef AL_BYTE_LOKI
-// in case it's not defined by older/other drivers
-#define AL_BYTE_LOKI	0x100C
-#endif
-
 // not define by older OpenAL versions
 #ifndef AL_BYTE_OFFSET
 #define AL_BYTE_OFFSET	0x1026
@@ -134,6 +131,28 @@ int openal_find_capture_device_by_name(const SCP_string& device);
 #define AL_EXT_float32 1
 #define AL_FORMAT_MONO_FLOAT32			0x10010
 #define AL_FORMAT_STEREO_FLOAT32			0x10011
+#endif
+
+#ifndef ALC_SOFT_loopback
+#define ALC_FORMAT_CHANNELS_SOFT				0x1990
+#define ALC_FORMAT_TYPE_SOFT					0x1991
+
+/* Sample types */
+#define ALC_BYTE_SOFT							0x1400
+#define ALC_UNSIGNED_BYTE_SOFT					0x1401
+#define ALC_SHORT_SOFT							0x1402
+#define ALC_UNSIGNED_SHORT_SOFT					0x1403
+#define ALC_INT_SOFT							0x1404
+#define ALC_UNSIGNED_INT_SOFT					0x1405
+#define ALC_FLOAT_SOFT							0x1406
+
+/* Channel configurations */
+#define ALC_MONO_SOFT							0x1500
+#define ALC_STEREO_SOFT							0x1501
+#define ALC_QUAD_SOFT							0x1503
+#define ALC_5POINT1_SOFT						0x1504
+#define ALC_6POINT1_SOFT						0x1505
+#define ALC_7POINT1_SOFT						0x1506
 #endif
 
 #endif	// _AL_H
