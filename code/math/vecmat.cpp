@@ -855,7 +855,7 @@ void vm_vector_2_matrix_gen_vectors_uvec(matrix* m)
 	}
 	else { 		//not straight up or down
 
-		xvec->xyz.x = yvec->xyz.y;
+		xvec->xyz.x = yvec->xyz.z;
 		xvec->xyz.y = 0.0f;
 		xvec->xyz.z = -yvec->xyz.x;
 
@@ -973,6 +973,8 @@ matrix* vm_vector_2_matrix_uvec_norm(matrix* m, const vec3d* fvec, const vec3d* 
 		*zvec = *fvec;
 
 		if (rvec != nullptr) { // use rvec
+			*xvec = *rvec;
+
 			vm_vec_cross(yvec, zvec, xvec);
 
 			//normalize new perpendicular vector
