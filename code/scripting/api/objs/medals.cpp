@@ -52,6 +52,23 @@ ADE_VIRTVAR(Name, l_Medal, nullptr, "The name of the medal", "string", "The name
 		LuaError(L, "This property is read only.");
 	}
 
+	return ade_set_args(L, "s", current.getMedal()->name);
+}
+
+ADE_VIRTVAR(DisplayName, l_Medal, nullptr, "The display name of the medal", "string", "The display name")
+{
+	medal_h current;
+	if (!ade_get_args(L, "o", l_Medal.Get(&current))) {
+		return ADE_RETURN_NIL;
+	}
+	if (!current.isValid()) {
+		return ade_set_error(L, "s", "");
+	}
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
 	return ade_set_args(L, "s", current.getMedal()->get_display_name());
 }
 
