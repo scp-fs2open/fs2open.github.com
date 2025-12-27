@@ -3832,43 +3832,6 @@ void model_set_bay_path_nums(polymodel *pm)
 	}
 }
 
-// Get "parent" submodel for live debris submodel
-int model_get_parent_submodel_for_live_debris( int model_num, int live_debris_model_num )
-{
-	polymodel *pm = model_get(model_num);
-
-	Assert(pm->submodel[live_debris_model_num].flags[Model::Submodel_flags::Is_live_debris]);
-
-	int mn;
-	bsp_info *child;
-
-	// Start with the high level of detail hull 
-	// Check all its children until we find the submodel to which the live debris belongs
-	child = &pm->submodel[pm->detail[0]];
-	mn = child->first_child;
-
-	while (mn > 0) {
-		child = &pm->submodel[mn];
-
-		if (child->num_live_debris > 0) {
-			// check all live debris submodels for the current child
-			for (int idx=0; idx<child->num_live_debris; idx++) {
-				if (child->live_debris[idx] == live_debris_model_num) {
-					return mn;
-				}
-			}
-			// DKA 5/26/99: can multiple live debris subsystems with each ship
-			// NO LONGER TRUE Can only be 1 submodel with live debris
-			// Error( LOCATION, "Could not find parent submodel for live debris.  Possible model error");
-		}
-
-		// get next child
-		mn = child->next_sibling;
-	}
-	Error( LOCATION, "Could not find parent submodel for live debris");
-	return -1;
-}
-
 
 float model_get_radius( int modelnum )
 {
