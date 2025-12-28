@@ -2870,7 +2870,7 @@ public:
 	int getInt(int *output);
 	//Returns handle, or < 0 on failure/wrong type
 	gamesnd_id getSound();
-	//Returns 1 if buffer was successfully written to
+	//Returns 1 if buffer was successfully written to (output_max includes the null terminator)
 	int getString(char *output, size_t output_max);
 
 	//Returns true if TYPE_NONE
@@ -3065,7 +3065,7 @@ void parse_combined_variable_list(CombinedVariable *dest, flag_def_list *src, si
 		sp = &src[i];
 		dp = &dest[i];
 
-		snprintf(buf, sizeof(buf)-1, "+%s:", sp->name);
+		snprintf(buf, sizeof(buf), "+%s:", sp->name);
 		if(optional_string(buf))
 		{
 			switch(sp->var)
