@@ -147,12 +147,15 @@
              </widget>
             </item>
             <item row="0" column="1">
-             <widget class="QSpinBox" name="bitmapPitchSpin">
+             <widget class="IntegerSnapDoubleSpinBox" name="bitmapPitchSpin">
               <property name="wrapping">
                <bool>true</bool>
               </property>
               <property name="maximum">
-               <number>16777215</number>
+               <double>16777215.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>1.000000000000000</double>
               </property>
              </widget>
             </item>
@@ -164,12 +167,15 @@
              </widget>
             </item>
             <item row="1" column="1">
-             <widget class="QSpinBox" name="bitmapBankSpin">
+             <widget class="IntegerSnapDoubleSpinBox" name="bitmapBankSpin">
               <property name="wrapping">
                <bool>true</bool>
               </property>
               <property name="maximum">
-               <number>16777215</number>
+               <double>16777215.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>1.000000000000000</double>
               </property>
              </widget>
             </item>
@@ -181,12 +187,15 @@
              </widget>
             </item>
             <item row="2" column="1">
-             <widget class="QSpinBox" name="bitmapHeadingSpin">
+             <widget class="IntegerSnapDoubleSpinBox" name="bitmapHeadingSpin">
               <property name="wrapping">
                <bool>true</bool>
               </property>
               <property name="maximum">
-               <number>16777215</number>
+               <double>16777215.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>1.000000000000000</double>
               </property>
              </widget>
             </item>
@@ -312,12 +321,15 @@
              </widget>
             </item>
             <item row="0" column="1">
-             <widget class="QSpinBox" name="sunPitchSpin">
+             <widget class="IntegerSnapDoubleSpinBox" name="sunPitchSpin">
               <property name="wrapping">
                <bool>true</bool>
               </property>
               <property name="maximum">
-               <number>16777215</number>
+               <double>16777215.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>1.000000000000000</double>
               </property>
              </widget>
             </item>
@@ -329,12 +341,15 @@
              </widget>
             </item>
             <item row="1" column="1">
-             <widget class="QSpinBox" name="sunHeadingSpin">
+             <widget class="IntegerSnapDoubleSpinBox" name="sunHeadingSpin">
               <property name="wrapping">
                <bool>true</bool>
               </property>
               <property name="maximum">
-               <number>16777215</number>
+               <double>16777215.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>1.000000000000000</double>
               </property>
              </widget>
             </item>
@@ -869,12 +884,15 @@
              </widget>
             </item>
             <item>
-             <widget class="QSpinBox" name="skyboxPitchSpin">
+             <widget class="IntegerSnapDoubleSpinBox" name="skyboxPitchSpin">
               <property name="wrapping">
                <bool>true</bool>
               </property>
               <property name="maximum">
-               <number>16777215</number>
+               <double>16777215.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>1.000000000000000</double>
               </property>
              </widget>
             </item>
@@ -886,12 +904,15 @@
              </widget>
             </item>
             <item>
-             <widget class="QSpinBox" name="skyboxBankSpin">
+             <widget class="IntegerSnapDoubleSpinBox" name="skyboxBankSpin">
               <property name="wrapping">
                <bool>true</bool>
               </property>
               <property name="maximum">
-               <number>16777215</number>
+               <double>16777215.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>1.000000000000000</double>
               </property>
              </widget>
             </item>
@@ -903,12 +924,15 @@
              </widget>
             </item>
             <item>
-             <widget class="QSpinBox" name="skyboxHeadingSpin">
+             <widget class="IntegerSnapDoubleSpinBox" name="skyboxHeadingSpin">
               <property name="wrapping">
                <bool>true</bool>
               </property>
               <property name="maximum">
-               <number>16777215</number>
+               <double>16777215.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>1.000000000000000</double>
               </property>
              </widget>
             </item>
@@ -1039,6 +1063,13 @@
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>fso::fred::IntegerSnapDoubleSpinBox</class>
+   <extends>QDoubleSpinBox</extends>
+   <header>ui/widgets/IntegerSnapDoubleSpinBox.h</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>
