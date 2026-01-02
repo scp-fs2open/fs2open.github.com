@@ -698,7 +698,6 @@ int beam_fire_targeting(fighter_beam_fire_info *fire_info)
 	if(objnum < 0){
 		beam_delete(new_item);
 		nprintf(("General", "obj_create() failed for beam weapon! bah!\n"));
-		Int3();
 		return -1;
 	}
 	new_item->objnum = objnum;	
