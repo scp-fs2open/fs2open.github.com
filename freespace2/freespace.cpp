@@ -3516,22 +3516,6 @@ void game_render_frame( camid cid, const vec3d* offset, const matrix* rot_offset
 
 	render_shields();
 
-	if (!Trail_render_override) trail_render_all();						// render missilie trails after everything else.
-	particle::render_all();					// render particles after everything else.
-	
-
-	beam_render_all();						// render all beam weapons
-
-	// render nebula lightning
-	nebl_render_all();
-
-	// render local player nebula
-	neb2_render_poofs();
-
-	batching_render_all(false);
-
-	gr_copy_effect_texture();
-
 	// render all ships with shader effects on them
 	SCP_vector<object*>::iterator obji = effect_ships.begin();
 	for(;obji != effect_ships.end();++obji)
@@ -3539,6 +3523,23 @@ void game_render_frame( camid cid, const vec3d* offset, const matrix* rot_offset
 		obj_render(*obji);
 	}
 	effect_ships.clear();
+
+	
+	if (!Trail_render_override) trail_render_all();						// render missilie trails after everything else.
+	particle::render_all();					// render particles after everything else.
+	
+	beam_render_all();						// render all beam weapons
+	
+	// render nebula lightning
+	nebl_render_all();
+	
+	// render local player nebula
+	neb2_render_poofs();
+	
+	batching_render_all(false);
+
+	gr_copy_effect_texture();
+
 
 	// render distortions after the effect framebuffer is copied.
 	batching_render_all(true);
