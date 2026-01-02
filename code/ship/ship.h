@@ -1221,6 +1221,7 @@ public:
 	int death_fx_count;
 	int	shockwave_count;					// the # of total shockwaves
 	SCP_vector<int> explosion_bitmap_anims;
+	bool disable_main_fireball;
 	float skip_deathroll_chance;					
 
 	particle::ParticleEffectHandle		impact_spew;
