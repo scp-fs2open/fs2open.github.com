@@ -754,10 +754,17 @@ SCP_string message_translate_tokens(const char *text)
 					if (!stricmp(ptr, NOX("none")) && (Training_bind_warning != Missiontime)) {
 						// check if a warning message should be displayed if the key is unbound
 						if ( (The_mission.game_type & MISSION_TYPE_TRAINING) || (Always_warn_player_about_unbound_keys && (The_mission.game_type & MISSION_TYPE_SINGLE)) ) {
+							int xstr_index;
+							if (Control_config[Failed_key_index].indexXSTR > 1) {
+								xstr_index = Control_config[Failed_key_index].indexXSTR;
+							} else if (Control_config[Failed_key_index].indexXSTR == 1) {
+								xstr_index = CONTROL_CONFIG_XSTR + Failed_key_index;
+							} else {
+								xstr_index = -1;
+							}
 							r = popup(PF_TITLE_BIG | PF_TITLE_RED, 2, XSTR( "&Bind Control", 424), XSTR( "&Abort mission", 425),
 								XSTR( "Warning\nYou have no control bound to the action \"%s\".  You must do so before you can continue with your training.", 426),
-								XSTR(Control_config[Failed_key_index].text.c_str(), CONTROL_CONFIG_XSTR + Failed_key_index));
-
+								XSTR(Control_config[Failed_key_index].text.c_str(), xstr_index));
 							if (r) {  // do they want to abort the mission?
 								gameseq_post_event(GS_EVENT_END_GAME);
 								return buf;
