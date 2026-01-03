@@ -3514,11 +3514,18 @@ void game_render_frame( camid cid, const vec3d* offset, const matrix* rot_offset
 	shadows_render_all(Proj_fov, &Eye_matrix, &Eye_position);
 	obj_render_queue_all();
 
+	// render all ships with shader effects on them
+	auto obji = effect_ships.begin();
+	for(;obji != effect_ships.end();++obji)
+	{
+		obj_render(*obji);
+	}
+	effect_ships.clear();
+
 	render_shields();
 
 	if (!Trail_render_override) trail_render_all();						// render missilie trails after everything else.
 	particle::render_all();					// render particles after everything else.
-	
 
 	beam_render_all();						// render all beam weapons
 
@@ -3532,13 +3539,6 @@ void game_render_frame( camid cid, const vec3d* offset, const matrix* rot_offset
 
 	gr_copy_effect_texture();
 
-	// render all ships with shader effects on them
-	SCP_vector<object*>::iterator obji = effect_ships.begin();
-	for(;obji != effect_ships.end();++obji)
-	{
-		obj_render(*obji);
-	}
-	effect_ships.clear();
 
 	// render distortions after the effect framebuffer is copied.
 	batching_render_all(true);
