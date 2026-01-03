@@ -590,7 +590,7 @@ namespace font
 				str[len] = ellipsis_char;
 			}
 
-			// measure with ellipsis before shrinking further
+			// measure with ellipsis before shrinking further (the ellipsis characters could be narrower than the characters they replaced)
 			gr_get_string_size(&w, nullptr, str, scale, len + ellipsis_len);
 
 			// move the ellipsis back until the whole string fits
