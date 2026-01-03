@@ -3515,7 +3515,7 @@ void game_render_frame( camid cid, const vec3d* offset, const matrix* rot_offset
 	obj_render_queue_all();
 	
 	// render all ships with shader effects on them
-	SCP_vector<object*>::iterator obji = effect_ships.begin();
+	auto obji = effect_ships.begin();
 	for(;obji != effect_ships.end();++obji)
 	{
 		obj_render(*obji);
