@@ -15591,7 +15591,7 @@ void object_get_eye(vec3d *eye_pos, matrix *eye_orient, const object *obj, bool 
 	int current_viewpoint = (obj->type == OBJ_SHIP) ? Ships[obj->instance].current_viewpoint : 0;
 
 	// if no viewpoints, or invalid viewpoint, return the origin
-	if (!pm || (pm->n_view_positions <= 0) || (current_viewpoint < 0) || (current_viewpoint >= pm->n_view_positions)) {
+	if (!pm || !pmi || (pm->n_view_positions <= 0) || (current_viewpoint < 0) || (current_viewpoint >= pm->n_view_positions)) {
 		*eye_pos = local_pos ? vmd_zero_vector : obj->pos;
 		*eye_orient = local_orient ? vmd_identity_matrix : obj->orient;
 		return;
