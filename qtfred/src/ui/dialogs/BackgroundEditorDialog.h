@@ -32,9 +32,9 @@ private slots:
 	// Bitmaps
 	void on_bitmapListWidget_currentRowChanged(int row);
 	void on_bitmapTypeCombo_currentIndexChanged(int index);
-	void on_bitmapPitchSpin_valueChanged(int arg1);
-	void on_bitmapBankSpin_valueChanged(int arg1);
-	void on_bitmapHeadingSpin_valueChanged(int arg1);
+	void on_bitmapPitchSpin_valueChanged(double arg1);
+	void on_bitmapBankSpin_valueChanged(double arg1);
+	void on_bitmapHeadingSpin_valueChanged(double arg1);
 	void on_bitmapScaleXDoubleSpinBox_valueChanged(double arg1);
 	void on_bitmapScaleYDoubleSpinBox_valueChanged(double arg1);
 	void on_bitmapDivXSpinBox_valueChanged(int arg1);
@@ -46,8 +46,8 @@ private slots:
 	// Suns
 	void on_sunListWidget_currentRowChanged(int row);
 	void on_sunSelectionCombo_currentIndexChanged(int index);
-	void on_sunPitchSpin_valueChanged(int arg1);
-	void on_sunHeadingSpin_valueChanged(int arg1);
+	void on_sunPitchSpin_valueChanged(double arg1);
+	void on_sunHeadingSpin_valueChanged(double arg1);
 	void on_sunScaleDoubleSpinBox_valueChanged(double arg1);
 	void on_addSunButton_clicked();
 	void on_changeSunButton_clicked();
@@ -83,9 +83,9 @@ private slots:
 	// Skybox
 	void on_skyboxModelButton_clicked();
 	void on_skyboxEdit_textChanged(const QString& arg1);
-	void on_skyboxPitchSpin_valueChanged(int arg1);
-	void on_skyboxBankSpin_valueChanged(int arg1);
-	void on_skyboxHeadingSpin_valueChanged(int arg1);
+	void on_skyboxPitchSpin_valueChanged(double arg1);
+	void on_skyboxBankSpin_valueChanged(double arg1);
+	void on_skyboxHeadingSpin_valueChanged(double arg1);
 	void on_skyboxNoLightingCheckBox_toggled(bool checked);
 	void on_noLightingCheckBox_toggled(bool checked);
 	void on_transparentCheckBox_toggled(bool checked);
