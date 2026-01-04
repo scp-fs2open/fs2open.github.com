@@ -1690,7 +1690,7 @@ bool player_inspect_cargo(float frametime, char *outstr)
 		// scannable cargo behaves differently.  Scannable cargo is either "scanned" or "not scanned".  This flag
 		// can be set on any ship.  Any ship with this set won't have "normal" cargo behavior
 		if (!(cargo_sp->flags[Ship::Ship_Flags::Scannable])) {
-			if (!(cargo_sip->flags[Ship::Info_Flags::Cargo] || cargo_sip->flags[Ship::Info_Flags::Transport])) {
+			if ((cargo_sip->class_type < 0) || !(Ship_types[cargo_sip->class_type].flags[Ship::Type_Info_Flags::Scannable_by_default])) {
 				return false;
 			}
 		}
@@ -1710,8 +1710,6 @@ bool player_inspect_cargo(float frametime, char *outstr)
 			auto cargo_name = (cargo_sp->cargo1 & CARGO_INDEX_MASK) == 0
 				? XSTR("Nothing", 1674)
 				: Cargo_names[cargo_sp->cargo1 & CARGO_INDEX_MASK];
-			//Why was this assert here? I'm not sure it makes much sense because any ship can be scanned and have cargo revealed...
-            //Assert(cargo_sip->flags[Ship::Info_Flags::Cargo] || cargo_sip->flags[Ship::Info_Flags::Transport]);
 
 			if (cargo_sp->cargo_title[0] != '\0') {
 				if (cargo_sp->cargo_title[0] == '#') {
