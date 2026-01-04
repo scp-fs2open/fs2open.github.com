@@ -3492,65 +3492,32 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				break;
 
 			case OPF_SHIP_FLAG:
-				{
-				bool found = false;
-				for ( i = 0; i < Num_object_flag_names; i++) {
-					if (!stricmp(Object_flag_names[i].flag_name, CTEXT(node))) {
-						found = true;
-						break;
-					}
-				}
+			{
+				Object::Object_Flags object_flag = Object::Object_Flags::NUM_VALUES;
+				Ship::Ship_Flags ship_flag = Ship::Ship_Flags::NUM_VALUES;
+				Mission::Parse_Object_Flags parse_obj_flag = Mission::Parse_Object_Flags::NUM_VALUES;
+				AI::AI_Flags ai_flag = AI::AI_Flags::NUM_VALUES;
+				sexp_check_flag_arrays(CTEXT(node), object_flag, ship_flag, parse_obj_flag, ai_flag);
 
-				if (!found) {
-					for ( i = 0; i < (int)Num_ship_flag_names; i++) {
-						if (!stricmp(Ship_flag_names[i].flag_name, CTEXT(node))) {
-							found = true;
-							break;
-						}
-					}
-				}
-
-				if (!found) {
-					for ( i = 0; i < (int)Num_parse_object_flags; i++) {
-						if (!stricmp(Parse_object_flags[i].name, CTEXT(node))) {
-							found = true;
-							break;
-						}
-					}
-				}
-
-				if (!found) {
-					for ( i = 0; i < Num_ai_flag_names; i++) {
-						if (!stricmp(Ai_flag_names[i].flag_name, CTEXT(node))) {
-							found = true;
-							break;
-						}
-					}
-				}
-
-				if (!found) {
+				if (object_flag == Object::Object_Flags::NUM_VALUES && ship_flag == Ship::Ship_Flags::NUM_VALUES
+					&& parse_obj_flag == Mission::Parse_Object_Flags::NUM_VALUES && ai_flag == AI::AI_Flags::NUM_VALUES) {
 					return SEXP_CHECK_INVALID_SHIP_FLAG;
 				}
 
 				break;
-				}
+			}
 
 			case OPF_WING_FLAG:
-				{
-				bool found = false;
-				for ( i = 0; i < (int)Num_wing_flag_names; i++) {
-					if (!stricmp(Wing_flag_names[i].flag_name, CTEXT(node))) {
-						found = true;
-						break;
-					}
-				}
+			{
+				Ship::Wing_Flags wing_flag = Ship::Wing_Flags::NUM_VALUES;
+				sexp_check_flag_array(CTEXT(node), wing_flag);
 
-				if (!found) {
+				if (wing_flag == Ship::Wing_Flags::NUM_VALUES) {
 					return SEXP_CHECK_INVALID_WING_FLAG;
 				}
 
 				break;
-				}
+			}
 
 			case OPF_TEAM_COLOR:
 				if (type2 != SEXP_ATOM_STRING) {
@@ -17841,6 +17808,13 @@ bool sexp_check_flag_arrays(const char *flag_name, Object::Object_Flags &object_
 			ai_flag = Ai_flag_names[i].flag;
 			break;
 		}
+	}
+
+	// check for deprecated flags
+	if (!stricmp("cannot-perform-scan", flag_name)) {
+		ship_flag = Ship::Ship_Flags::Cannot_perform_scan_hide_cargo;
+		parse_obj_flag = Mission::Parse_Object_Flags::SF_Cannot_perform_scan_hide_cargo;
+		send_multi = true;
 	}
 
 	return send_multi;
