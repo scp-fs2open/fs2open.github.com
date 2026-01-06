@@ -1146,7 +1146,7 @@ class ship_info
 {
 public:
 	char		name[NAME_LENGTH];				// name for the ship
-	char		display_name[NAME_LENGTH];		// display another name for the ship
+	SCP_string	display_name;					// display another name for the ship
 	char		short_name[NAME_LENGTH];		// short name, for use in the editor?
 	int			species;								// which species this craft belongs to
 	int			class_type;						//For type table

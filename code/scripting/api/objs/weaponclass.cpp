@@ -76,12 +76,16 @@ ADE_VIRTVAR(AltName, l_Weaponclass, "string", "The alternate weapon class name."
 		return ade_set_error(L, "s", "");
 
 	if(ADE_SETTING_VAR && s != nullptr) {
-		auto len = sizeof(Weapon_info[idx].display_name);
-		strncpy(Weapon_info[idx].display_name, s, len);
-		Weapon_info[idx].display_name[len - 1] = 0;
+		if (s == Weapon_info[idx].name) {
+			Weapon_info[idx].display_name = "";
+			Weapon_info[idx].wi_flags.remove(Weapon::Info_Flags::Has_display_name);
+		} else {
+			Weapon_info[idx].display_name = s;
+			Weapon_info[idx].wi_flags.set(Weapon::Info_Flags::Has_display_name);
+		}
 	}
 
-	return ade_set_args(L, "s", Weapon_info[idx].display_name);
+	return ade_set_args(L, "s", Weapon_info[idx].display_name.c_str());
 }
 
 ADE_VIRTVAR(TurretName, l_Weaponclass, "string", "The name displayed for a turret if the turret's first weapon is this weapon class.", "string", "Turret name (aka alternate subsystem name), or empty string if handle is invalid")
