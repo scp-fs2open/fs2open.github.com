@@ -1361,16 +1361,16 @@ void lcl_get_language_name(char *lang_name)
 // For displaying weapon names in german version
 // since we can't actually just change them outright.
 //
-void lcl_translate_wep_name_gr(char *name)
+void lcl_translate_wep_name_gr(SCP_string &name)
 {
-	if (!strcmp(name, "Morning Star")) {	
-		strcpy(name, "Morgenstern");
-	} else if (!strcmp(name, "MorningStar")) {
-		strcpy(name, "Morgenstern D");
-	} else if (!strcmp(name, "UD-8 Kayser")) {
-		strcpy(name, "Kayserstrahl");
-	} else if (!strcmp(name, "UD-D Kayser")) {
-		strcpy(name, "Kayserstrahl");
+	if (name == "Morning Star") {
+		name = "Morgenstern";
+	} else if (name == "MorningStar") {
+		name = "Morgenstern D";
+	} else if (name == "UD-8 Kayser") {
+		name = "Kayserstrahl";
+	} else if (name == "UD-D Kayser") {
+		name = "Kayserstrahl";
 	}
 }
 
@@ -1615,10 +1615,10 @@ char buf[128];
 // For displaying ship names in german version in the briefing
 // since we can't actually just change them outright.
 //
-void lcl_translate_ship_name_gr(char *name)
+void lcl_translate_ship_name_gr(SCP_string &name)
 {
-	if (!strcmp(name, "GTDR Amazon Advanced")) {	
-		strcpy(name, "GTDR Amazon VII");
+	if (name == "GTDR Amazon Advanced") {
+		name = "GTDR Amazon VII";
 	} 
 }
 

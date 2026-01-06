@@ -1296,14 +1296,14 @@ int CShipEditorDlg::update_ship(int ship)
 	// the display name was precalculated, so now just assign it
 	if (m_ship_display_name == m_ship_name || m_ship_display_name.CompareNoCase("<none>") == 0)
 	{
-		if (Ships[ship].flags[Ship::Ship_Flags::Has_display_name])
+		if (Ships[ship].has_display_name())
 			set_modified();
 		Ships[ship].display_name = "";
 		Ships[ship].flags.remove(Ship::Ship_Flags::Has_display_name);
 	}
 	else
 	{
-		if (!Ships[ship].flags[Ship::Ship_Flags::Has_display_name])
+		if (!Ships[ship].has_display_name())
 			set_modified();
 		Ships[ship].display_name = m_ship_display_name;
 		Ships[ship].flags.set(Ship::Ship_Flags::Has_display_name);

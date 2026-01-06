@@ -363,7 +363,7 @@ extern SCP_vector<weapon_info> Weapon_info;
 struct weapon_info
 {
 	char	name[NAME_LENGTH];				// name of this weapon
-	char	display_name[NAME_LENGTH];		// display name of this weapon
+	SCP_string display_name;				// display name of this weapon
 	char	title[WEAPON_TITLE_LEN];		// official title of weapon (used by tooltips)
 	std::unique_ptr<char[]> desc;				// weapon's description (used by tooltips)
 	char	altSubsysName[NAME_LENGTH];        // rename turret to this if this is the turrets first weapon
