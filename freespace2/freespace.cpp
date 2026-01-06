@@ -1762,13 +1762,19 @@ void game_init()
 		nprintf(("Network", "Standalone running\n"));
 	}
 
+	mprintf(("Platform: %s\n", SDL_GetPlatform()));
+	mprintf(("CPU cores: %d (logical)\n", SDL_GetNumLogicalCPUCores()));
+	mprintf(("Memory: %d MiB\n", SDL_GetSystemRAM()));
+	mprintf(("Build: " SIZE_T_ARG "-bit, %s-endian\n", sizeof(void*) << 3,
+			 (SDL_BYTEORDER == SDL_LIL_ENDIAN) ? "little" : "big"));
+
 	// init os stuff next
 	os_init( Osreg_class_name, Window_title.c_str(), Osreg_app_name );
 
 	threading::init_task_pool();
 
 #ifndef NDEBUG
-	mprintf(("FreeSpace 2 Open version: %s\n", FS_VERSION_FULL));
+	mprintf(("FreeSpace Open version: %s\n", FS_VERSION_FULL));
 
 	extern void cmdline_debug_print_cmdline();
 	cmdline_debug_print_cmdline();
