@@ -8112,7 +8112,7 @@ int main(int argc, char *argv[])
 
 	// Metadata must to be set as early as possible, before the first SDL_Init().
 	// This is global info and cannot be changed later (i.e., it can't be set per mod)
-	SDL_SetAppMetadata("FreeSpace Open", FS_VERSION_FULL, "us.indiegames.scp.FreeSpaceOpen");
+	SDL_SetAppMetadata("FreeSpace Open", FS_VERSION_FULL, FSO_APP_ID);
 
 	SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_TYPE_STRING, "game");
 	SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_COPYRIGHT_STRING,

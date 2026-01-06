@@ -1,4 +1,5 @@
 
+SET(FSO_APP_ID "us.indiegames.scp.FreeSpaceOpen")
 
 SET(FREESPACE_SRC freespace.cpp
 				levelpaging.cpp
@@ -38,6 +39,8 @@ endif()
 IF(FSO_USE_VOICEREC)
 	ADD_DEFINITIONS(-DFS2_VOICER)
 ENDIF(FSO_USE_VOICEREC)
+
+target_compile_definitions(Freespace2 PUBLIC FSO_APP_ID="${FSO_APP_ID}")
 
 INCLUDE_DIRECTORIES(${FREESPACE_HEADERS})
 INCLUDE_DIRECTORIES(${GENERATED_SOURCE_DIR})
@@ -102,3 +105,4 @@ set_target_properties(Freespace2 PROPERTIES XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGI
 set_target_properties(Freespace2 PROPERTIES XCODE_ATTRIBUTE_COPY_PHASE_STRIP[variant=Debug] "NO")
 set_target_properties(Freespace2 PROPERTIES XCODE_ATTRIBUTE_STRIP_INSTALLED_PRODUCT[variant=Debug] "NO")
 set_target_properties(Freespace2 PROPERTIES XCODE_ATTRIBUTE_GCC_SYMBOLS_PRIVATE_EXTERN[variant=Debug] "NO")
+set_target_properties(Freespace2 PROPERTIES XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "${FSO_APP_ID}")
