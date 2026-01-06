@@ -20,6 +20,7 @@
 #endif // !_MINGW
 #else
 #ifdef APPLE_APP
+ #include <sys/sysctl.h>
  #include <sys/types.h>
  #include <libproc.h>
 #endif
@@ -1721,6 +1722,85 @@ DCF(force_fullscreen, "Forces game to startup in fullscreen mode")
 
 int	Framerate_delay = 0;
 
+static const char *get_exe_name(const char *argv0)
+{
+	// Doing this the hard way, rather than using SCP_string, so that we're only
+	// using a single ptr's worth of memory to figure it out
+
+	static const char *exe_name = nullptr;
+
+	if (exe_name == nullptr) {
+		if ( !argv0 ) {
+			return "";
+		}
+
+		for (auto i = strlen(argv0) - 1; i > 0; --i) {
+			if (argv0[i] == DIR_SEPARATOR_CHAR) {
+				exe_name = argv0 + i + 1;
+				break;
+			}
+		}
+
+		if ( !exe_name ) {
+			exe_name = argv0;
+		}
+	}
+
+	return exe_name;
+}
+
+static const char *get_cpu_type()
+{
+	// In some cases the SDL_Has*() functions will just report the architecture
+	// that the SDL lib was built with or what emulation says. A M-series Mac
+	// running a x86_64 binary will report as x86 instead of ARM, for instance.
+	// A similar thing happens with WOW64 Windows processes. So use native
+	// functionality where possible to get true values and use SDL functions
+	// only as fallback.
+
+#ifdef _WIN32
+	typedef BOOL (WINAPI *ISWOW64PROCESS2PTR)(HANDLE, USHORT*, USHORT*);
+
+	USHORT processArch = 0, nativeArch = 0;
+	HMODULE hKernel32 = LoadLibraryA("kernel32.dll");
+
+	if (hKernel32) {
+		ISWOW64PROCESS2PTR pIsWow64Process2 = reinterpret_cast<ISWOW64PROCESS2PTR>(GetProcAddress(hKernel32, "IsWow64Process2"));
+
+		if (pIsWow64Process2) {
+			HANDLE hProcess = GetCurrentProcess();
+
+			if (hProcess) {
+				pIsWow64Process2(hProcess, &processArch, &nativeArch);
+				CloseHandle(hProcess);
+			}
+		}
+
+		FreeLibrary(hKernel32);
+	}
+
+	if (nativeArch == IMAGE_FILE_MACHINE_ARM64) {
+		return "ARM64";
+	}
+#elif defined(APPLE_APP)
+	int val = 0;
+	size_t valSize = sizeof(val);
+
+	if ( !sysctlbyname("hw.optional.arm64", &val, &valSize, nullptr, 0) ) {
+		if (val == 1) {
+			return "ARM64";
+		}
+	}
+#endif
+
+	if (SDL_HasARMSIMD() || SDL_HasNEON()) {
+		return "ARM";
+	} else if (SDL_HasSSE() || SDL_HasAVX()) {
+		return "x86";
+	}
+
+	return "<unknown>";
+}
 
 /**
  * Game initialisation
@@ -1759,13 +1839,19 @@ void game_init()
 		nprintf(("Network", "Standalone running\n"));
 	}
 
+	mprintf(("Platform: %s\n", SDL_GetPlatform()));
+	mprintf(("CPU: %s, %d logical cores\n", get_cpu_type(), SDL_GetNumLogicalCPUCores()));
+	mprintf(("Memory: %d MiB\n", SDL_GetSystemRAM()));
+	mprintf(("Build: %s, " SIZE_T_ARG "-bit, %s-endian\n", get_exe_name(nullptr),
+			 sizeof(void*) << 3, (SDL_BYTEORDER == SDL_LIL_ENDIAN) ? "little" : "big"));
+
 	// init os stuff next
 	os_init( Osreg_class_name, Window_title.c_str(), Osreg_app_name );
 
 	threading::init_task_pool();
 
 #ifndef NDEBUG
-	mprintf(("FreeSpace 2 Open version: %s\n", FS_VERSION_FULL));
+	mprintf(("FreeSpace Open version: %s\n", FS_VERSION_FULL));
 
 	extern void cmdline_debug_print_cmdline();
 	cmdline_debug_print_cmdline();
@@ -6837,9 +6923,13 @@ int game_main(int argc, char *argv[])
 	tmp_mem = nullptr;
 #endif // _WIN32
 
-
 	if ( !parse_cmdline(argc, argv) ) {
 		return 1;
+	}
+
+	if (LoggingEnabled) {
+		// passing an argument will set the name
+		get_exe_name(argv[0]);
 	}
 
 	game_init();
