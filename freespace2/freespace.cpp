@@ -1820,6 +1820,8 @@ void game_init()
 	Random::seed(static_cast<unsigned int>(time(nullptr)));
 
 	ImGui::CreateContext();
+	ImGui::GetIO().IniFilename = nullptr;
+	ImGui::LoadIniSettingsFromDisk(os_get_config_path("imgui.ini").c_str());
 
 	Framerate_delay = 0;
 
@@ -1966,6 +1968,35 @@ void game_init()
 		os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR, "Error initializing graphics!");
 		exit(1);
 		return;
+	}
+
+	// if not standalone then setup scalable font for imgui to use
+	if ( !Is_standalone ) {
+		ImGuiIO &io = ImGui::GetIO();
+		ImFontConfig fontConfig;
+
+		// improves font clarity on high density displays
+		fontConfig.RasterizerDensity = os::getMainViewport()->getCoordScale();;
+
+		auto file = cfopen("BankGothic-BT-Light.ttf", "rb", CF_TYPE_FONT);
+
+		if (file) {
+			// clear out default font
+			io.Fonts->Clear();
+
+			const auto size = cfilelength(file);
+
+			// NOTE: ImGui will free this memory on shutdown
+			auto font = reinterpret_cast<uint8_t*>(IM_ALLOC(size * (sizeof(uint8_t))));
+
+			cfread(font, 1, size, file);
+
+			cfclose(file);
+			file = nullptr;
+
+			io.Fonts->AddFontFromMemoryTTF(font, size, os::getMainViewport()->getScaled(12.f),
+										   &fontConfig);
+		}
 	}
 
 	if (LoggingEnabled && Cmdline_debug_window) {
@@ -7000,6 +7031,11 @@ int game_main(int argc, char *argv[])
 			break;
 		}
 
+		if (ImGui::GetIO().WantSaveIniSettings) {
+			ImGui::SaveIniSettingsToDisk(os_get_config_path("imgui.ini").c_str());
+			ImGui::GetIO().WantSaveIniSettings = false;
+		}
+
 		// Since tracing is always active this needs to happen in the main loop
 		tracing::process_events();
 	} 
@@ -7110,6 +7146,7 @@ void game_shutdown(void)
 		std_deinit_standalone();
 	}
 
+	ImGui::SaveIniSettingsToDisk(os_get_config_path("imgui.ini").c_str());
 	ImGui::DestroyContext();
 
 	os_cleanup();

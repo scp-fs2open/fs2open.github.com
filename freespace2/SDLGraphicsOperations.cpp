@@ -82,9 +82,40 @@ class SDLOpenGLContext: public os::OpenGLContext {
 class SDLWindowViewPort: public os::Viewport {
 	SDL_Window* _window;
 	os::ViewPortProperties _props;
+
+	float coord_scale;
+	float content_scale;
+	float scale_factor;
+	ImGuiStyle styleOrig;
+
+	void setDPIScaling() {
+		int window_w, window_h;
+		int framebuffer_w, framebuffer_h;
+
+		SDL_GetWindowSize(_window, &window_w, &window_h);
+		SDL_GetWindowSizeInPixels(_window, &framebuffer_w, &framebuffer_h);
+
+		float sx = framebuffer_w / static_cast<float>(window_w);
+		float sy = framebuffer_h / static_cast<float>(window_h);
+
+		coord_scale = std::max(sx, sy);
+		content_scale = SDL_GetWindowDisplayScale(_window);
+		scale_factor = content_scale / coord_scale;
+	}
+
+	void initDPIScaling() {
+		// save initial imgui style
+		styleOrig = ImGui::GetStyle();
+		// update dpi scaling values
+		setDPIScaling();
+		// scale imgui style
+		ImGui::GetStyle().ScaleAllSizes(scale_factor);
+	}
  public:
 	SDLWindowViewPort(SDL_Window* window, const os::ViewPortProperties& props) : _window(window), _props(props) {
 		Assertion(window != nullptr, "Invalid window specified");
+		// scaling for imgui high dpi stuff
+		initDPIScaling();
 	}
 	~SDLWindowViewPort() override {
 		SDL_DestroyWindow(_window);
@@ -135,6 +166,23 @@ class SDLWindowViewPort: public os::Viewport {
 
 	void restore() override {
 		SDL_RestoreWindow(_window);
+	}
+
+	float getCoordScale() override {
+		return coord_scale;
+	}
+
+	float getScaled(float val) override {
+		return val * scale_factor;
+	}
+
+	void updateScaling() override {
+		// restore original imgui style
+		ImGui::GetStyle() = styleOrig;
+		// update dpi scaling values
+		setDPIScaling();
+		// scale imgui style
+		ImGui::GetStyle().ScaleAllSizes(scale_factor);
 	}
 };
 
