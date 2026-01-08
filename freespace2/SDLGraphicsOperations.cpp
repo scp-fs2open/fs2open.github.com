@@ -76,7 +76,7 @@ class SDLOpenGLContext: public os::OpenGLContext {
 	}
 
 	bool setSwapInterval(int status) override {
-		return SDL_GL_SetSwapInterval(status) == 0;
+		return SDL_GL_SetSwapInterval(status);
 	}
 };
 class SDLWindowViewPort: public os::Viewport {
@@ -99,7 +99,7 @@ class SDLWindowViewPort: public os::Viewport {
 	}
 	std::pair<uint32_t, uint32_t> getSize() override {
 		int width, height;
-		SDL_GetWindowSize(_window, &width, &height);
+		SDL_GetWindowSizeInPixels(_window, &width, &height);
 
 		return std::make_pair(width, height);
 	}
@@ -109,15 +109,15 @@ class SDLWindowViewPort: public os::Viewport {
 	void setState(os::ViewportState state) override {
 		switch (state) {
 			case os::ViewportState::Windowed:
-				SDL_SetWindowFullscreen(_window, 0);
+				SDL_SetWindowFullscreen(_window, false);
 				SDL_SetWindowBordered(_window, true);
 				break;
 			case os::ViewportState::Borderless:
-				SDL_SetWindowFullscreen(_window, 0);
+				SDL_SetWindowFullscreen(_window, false);
 				SDL_SetWindowBordered(_window, false);
 				break;
 			case os::ViewportState::Fullscreen:
-				SDL_SetWindowFullscreen(_window, SDL_WINDOW_FULLSCREEN);
+				SDL_SetWindowFullscreen(_window, true);
 				break;
 			default:
 				UNREACHABLE("Invalid window state!");
