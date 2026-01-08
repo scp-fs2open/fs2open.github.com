@@ -280,6 +280,10 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/volumetric-f.sdr
 )
 
+add_file_folder("Default files\\\\data\\\\fonts"
+	def_files/data/fonts/BankGothic-BT-Light.ttf
+)
+
 add_file_folder("Default files\\\\data\\\\maps"
 	def_files/data/maps/app_icon.png
 	def_files/data/maps/app_icon_d.png
@@ -315,6 +319,7 @@ add_file_folder("Default files\\\\builtin"
 set(default_files_files
 	${files_Default_files_data}
 	${files_Default_files_data_effects}
+	${files_Default_files_data_fonts}
 	${files_Default_files_data_maps}
 	${files_Default_files_data_scripts}
 	${files_Default_files_data_tables}
