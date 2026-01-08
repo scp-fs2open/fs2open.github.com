@@ -1427,6 +1427,11 @@ void game_post_level_init()
 #endif
 
 	training_mission_init();
+
+	// the asteroids enabled variable can be set via sexp 
+	// so ensure it is resets to the default value before creating asteroids 
+	// --wookieejedi
+	Asteroids_enabled = 1;
 	asteroid_create_all();
 
 	// set ambient light for level
