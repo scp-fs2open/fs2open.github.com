@@ -2044,6 +2044,15 @@ HTREEITEM sexp_tree::handle(int node)
 	return tree_item_handle(tree_nodes[node]);
 }
 
+int sexp_tree::get_node(HTREEITEM h)
+{
+	for (int i = 0; i < static_cast<int>(tree_nodes.size()); i++) {
+		if (tree_nodes[i].handle == h)
+			return i;
+	}
+	return -1;
+}
+
 const char *sexp_tree::help(int code)
 {
 	return SexpTreeModel::help(code);
@@ -2100,7 +2109,7 @@ void sexp_tree::update_help(HTREEITEM h)
 
 	// Build annotation comment
 	SCP_string nodeComment;
-	int thisIndex = event_annotation_lookup(h);
+	int thisIndex = event_annotation_lookup(node_index);
 	if (thisIndex >= 0) {
 		if (!Event_annotations[thisIndex].comment.empty()) {
 			nodeComment = "Node Comments:\r\n   " + Event_annotations[thisIndex].comment;

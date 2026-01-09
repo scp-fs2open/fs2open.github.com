@@ -65,6 +65,7 @@ public:
 	static const char *help(int code);
 	HTREEITEM insert(LPCTSTR lpszItem, int image = BITMAP_ROOT, int sel_image = BITMAP_ROOT, HTREEITEM hParent = TVI_ROOT, HTREEITEM hInsertAfter = TVI_LAST);
 	HTREEITEM handle(int node);
+	int get_node(HTREEITEM h);
 	int get_type(HTREEITEM h);
 	void setup(CEdit *ptr = NULL);
 	void move_root(HTREEITEM source, HTREEITEM dest, bool insert_before);

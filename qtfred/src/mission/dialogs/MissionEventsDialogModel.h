@@ -2,7 +2,7 @@
 
 #include "AbstractDialogModel.h"
 
-#include "ui/widgets/sexp_tree_ui.h"
+#include "missioneditor/sexp_tree_model.h"
 
 #include <mission/missiongoals.h>
 #include <mission/missionmessage.h>
@@ -10,60 +10,11 @@
 
 namespace fso::fred::dialogs {
 
-	struct IEventTreeOps {
-		using Handle = void*;
-
-		virtual ~IEventTreeOps() = default;
-
-		// Called after the tree is loaded, to allow for any post-load operations.
-		virtual int load_sub_tree(int formula, bool allow_empty = false, const char* default_body = "do-nothing") = 0;
-
-		// deselects all nodes
-		virtual void post_load() = 0;
-
-		// adds the tree and sets the image
-		virtual void add_sub_tree(const SCP_string& name, NodeImage image, int formula) = 0;
-
-		// Insert a new top-level root with the given name and the default body:
-		//   when -> true -> do-nothing
-		// If after_root >= 0, place visually after that root; otherwise append.
-		// Returns the new root formula id (stored on the root item).
-		virtual int build_default_root(const SCP_string& name, int after_root) = 0;
-
-		// Serialize root back into compact SEXP form and return root id.
-		virtual int save_tree(int root_formula) = 0;
-
-		// Used for the "insert at index 0" special case.
-		virtual void ensure_top_level_index(int root_formula, int desired_index) = 0;
-
-		// Optional: select/highlight the root in the UI.
-		virtual void select_root(int root_formula) = 0;
-
-		// Clear the tree
-		virtual void clear() = 0;
-
-		// Delete the selected event
-		virtual void delete_event() = 0;
-
-		// Navigation
-		virtual Handle parent_of(Handle node) = 0;    // nullptr if root
-		virtual int index_in_parent(Handle node) = 0; // 0..N-1, or -1 if no parent
-		virtual int root_formula_of(Handle node) = 0;
-
-		// Discovery
-		virtual bool is_handle_valid(Handle node) = 0;
-		virtual Handle get_root_by_formula(int formula) = 0;
-		virtual int child_count(Handle node) = 0;
-		virtual Handle child_at(Handle node, int idx) = 0;
-
-		// Annotations
-		virtual void set_node_note(Handle node, const SCP_string& note) = 0;
-		virtual void set_node_bg_color(Handle node, int r, int g, int b, bool has_color) = 0;
-	};
-
 class MissionEventsDialogModel : public AbstractDialogModel {
+	Q_OBJECT
+
   public:
-	MissionEventsDialogModel(QObject* parent, EditorViewport* viewport, IEventTreeOps& tree_ops);
+	MissionEventsDialogModel(QObject* parent, EditorViewport* viewport, SexpTreeModel& tree_model);
 
 	bool apply() override;
 	void reject() override;
@@ -136,9 +87,9 @@ class MissionEventsDialogModel : public AbstractDialogModel {
 	bool getLogLastTrigger() const;
 	void setLogLastTrigger(bool log);
 
-	// Event Annotations
-	void setNodeAnnotation(IEventTreeOps::Handle h, const SCP_string& note);
-	void setNodeBgColor(IEventTreeOps::Handle h, int r, int g, int b, bool has_color);
+	// Event Annotations (node_index is an index into SexpTreeModel::tree_nodes[])
+	void setNodeAnnotation(int node_index, const SCP_string& note);
+	void setNodeBgColor(int node_index, int r, int g, int b, bool has_color);
 
 	// Message Management
 	void createMessage();
@@ -168,18 +119,30 @@ class MissionEventsDialogModel : public AbstractDialogModel {
 
 	void setModified();
 
+ signals:
+	// Widget operations — dialog connects these to update the tree widget
+	void treeCleared();
+	void subtreeAdded(const SCP_string& name, NodeImage image, int formula);
+	void defaultRootBuilt(const SCP_string& name, int after_root_formula, int new_formula);
+	void rootSelected(int formula);
+	void eventDeleteRequested();
+	void topLevelIndexRequested(int formula, int desired_index);
+	void annotationApplied(int node_index, const SCP_string& note, int r, int g, int b, bool has_color);
+
   private:
 	void initializeData();
 
 	void initializeEvents();
 	int findFormulaByOriginalEventIndex(int orig) const;
 	void initializeEventAnnotations();
-	SCP_list<int> buildPathForHandle(IEventTreeOps::Handle h) const;
+	SCP_list<int> buildPathForNode(int node_index) const;
 	static bool isDefaultAnnotation(const event_annotation& ea);
-	IEventTreeOps::Handle resolveHandleFromPath(const SCP_list<int>& path) const;
+	int resolveNodeFromPath(const SCP_list<int>& path) const;
 	event_annotation& ensureAnnotationByPath(const SCP_list<int>& path);
 	void initializeTeamList();
 	static mission_event makeDefaultEvent();
+
+	int buildDefaultTreeStructure(const SCP_string& name);
 
 	void applyAnnotations();
 
@@ -191,7 +154,7 @@ class MissionEventsDialogModel : public AbstractDialogModel {
 	bool checkMessageNameConflict(const SCP_string& name);
 	SCP_string makeUniqueMessageName(const SCP_string& name) const;
 
-	IEventTreeOps& m_event_tree_ops;
+	SexpTreeModel& m_tree_model;
 
 	SCP_vector<mission_event> m_events;
 	SCP_vector<event_annotation> m_event_annotations;

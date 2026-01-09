@@ -93,7 +93,6 @@ private slots:
 private: // NOLINT(readability-redundant-access-specifiers)
 	std::unique_ptr<Ui::MissionEventsDialog> ui;
 	EditorViewport* _viewport;
-	std::unique_ptr<IEventTreeOps> _treeOps;
 	std::unique_ptr<MissionEventsDialogModel> _model;
 
 	int m_last_message_node = -1;

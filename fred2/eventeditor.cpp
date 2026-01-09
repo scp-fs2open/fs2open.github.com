@@ -219,13 +219,13 @@ BOOL event_editor::OnInitDialog()
 		r = FALSE;
 	}
 
-	// determine all the handles for event annotations
+	// determine all the node indices for event annotations
 	for (auto &ea : Event_annotations)
 	{
 		auto h = traverse_path(ea);
 		if (h)
 		{
-			ea.handle = h;
+			ea.node_index = m_event_tree.get_node(h);
 			if (!ea.comment.empty())
 				event_annotation_swap_image(&m_event_tree, h, ea);
 		}
@@ -589,9 +589,9 @@ void event_editor::OnButtonOk()
 	for (auto &ea : Event_annotations)
 	{
 		ea.path.clear();
-		if (ea.handle)
-			populate_path(ea, (HTREEITEM)ea.handle);
-		ea.handle = nullptr;
+		if (ea.node_index >= 0)
+			populate_path(ea, m_event_tree.handle(ea.node_index));
+		ea.node_index = -1;
 	}
 
 	theApp.record_window_data(&Events_wnd_data, this);
@@ -1665,11 +1665,11 @@ void event_annotation_prune()
 	);
 }
 
-int event_annotation_lookup(HTREEITEM handle)
+int event_annotation_lookup(int node_idx)
 {
 	for (size_t i = 0; i < Event_annotations.size(); ++i)
 	{
-		if (Event_annotations[i].handle == handle)
+		if (Event_annotations[i].node_index == node_idx)
 			return (int)i;
 	}
 
@@ -1760,7 +1760,8 @@ BOOL event_sexp_tree::OnToolTipText(UINT id, NMHDR *pNMHDR, LRESULT *pResult)
 
 	if (h)
 	{
-		int ea_idx = event_annotation_lookup(h);
+		int node_idx = get_node(h);
+		int ea_idx = event_annotation_lookup(node_idx);
 		if (ea_idx >= 0)
 		{
 			auto ea = &Event_annotations[ea_idx];
@@ -1812,7 +1813,8 @@ void event_sexp_tree::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 			HTREEITEM hItem = (HTREEITEM)pcd->nmcd.dwItemSpec;
 			if (hItem)
 			{
-				int ea_idx = event_annotation_lookup(hItem);
+				int node_idx = get_node(hItem);
+				int ea_idx = event_annotation_lookup(node_idx);
 				if (ea_idx >= 0)
 				{
 					auto ea = &Event_annotations[ea_idx];
@@ -1861,7 +1863,8 @@ void event_sexp_tree::edit_comment(HTREEITEM h)
 	CString old_text = _T("");
 	CString new_text;
 
-	int i = event_annotation_lookup(h);
+	int node_idx = get_node(h);
+	int i = event_annotation_lookup(node_idx);
 	if (i >= 0)
 		old_text = (CString)Event_annotations[i].comment.c_str();
 
@@ -1881,7 +1884,7 @@ void event_sexp_tree::edit_comment(HTREEITEM h)
 	{
 		i = (int)Event_annotations.size();
 		Event_annotations.emplace_back();
-		Event_annotations[i].handle = h;
+		Event_annotations[i].node_index = node_idx;
 	}
 
 	Event_annotations[i].comment = new_text;
@@ -1897,7 +1900,8 @@ void event_sexp_tree::edit_bg_color(HTREEITEM h)
 	COLORREF old_color = RGB(255, 255, 255);
 	COLORREF new_color;
 
-	int i = event_annotation_lookup(h);
+	int node_idx = get_node(h);
+	int i = event_annotation_lookup(node_idx);
 	if (i >= 0)
 		old_color = RGB(Event_annotations[i].r, Event_annotations[i].g, Event_annotations[i].b);
 
@@ -1915,7 +1919,7 @@ void event_sexp_tree::edit_bg_color(HTREEITEM h)
 	{
 		i = (int)Event_annotations.size();
 		Event_annotations.emplace_back();
-		Event_annotations[i].handle = h;
+		Event_annotations[i].node_index = node_idx;
 	}
 
 	Event_annotations[i].r = GetRValue(new_color);

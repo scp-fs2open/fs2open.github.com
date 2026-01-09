@@ -28,8 +28,8 @@ const SCP_vector<SCP_string>& MissionEventsDialogModel::getExtraHeadAnis()
 	return s_extra_head_anis;
 }
 
-MissionEventsDialogModel::MissionEventsDialogModel(QObject* parent, fso::fred::EditorViewport* viewport, IEventTreeOps& tree_ops)
-	: AbstractDialogModel(parent, viewport), m_event_tree_ops(tree_ops)
+MissionEventsDialogModel::MissionEventsDialogModel(QObject* parent, fso::fred::EditorViewport* viewport, SexpTreeModel& tree_model)
+	: AbstractDialogModel(parent, viewport), m_tree_model(tree_model)
 {
 	initializeData();
 }
@@ -71,7 +71,7 @@ bool MissionEventsDialogModel::apply()
 	Mission_events.clear();
 	for (const auto& dialog_event : m_events) {
 		Mission_events.push_back(dialog_event);
-		Mission_events.back().formula = m_event_tree_ops.save_tree(dialog_event.formula);
+		Mission_events.back().formula = m_tree_model.save_tree(dialog_event.formula);
 	}
 
 	// now update all sexp references
@@ -130,7 +130,7 @@ void MissionEventsDialogModel::initializeEvents()
 			m_events[i].name = "<Unnamed>";
 		}
 
-		m_events[i].formula = m_event_tree_ops.load_sub_tree(Mission_events[i].formula, false, "do-nothing");
+		m_events[i].formula = m_tree_model.load_sub_tree(Mission_events[i].formula, false, "do-nothing");
 
 		// we must check for the case of the repeat count being 0.  This would happen if the repeat
 		// count is not specified in a mission
@@ -139,9 +139,9 @@ void MissionEventsDialogModel::initializeEvents()
 		}
 	}
 
-	m_event_tree_ops.post_load();
+	m_tree_model.post_load();
 
-	m_event_tree_ops.clear();
+	Q_EMIT treeCleared();
 	for (auto& event : m_events) {
 		// set the proper bitmap
 		NodeImage image;
@@ -157,7 +157,7 @@ void MissionEventsDialogModel::initializeEvents()
 			}
 		}
 
-		m_event_tree_ops.add_sub_tree(event.name, image, event.formula);
+		Q_EMIT subtreeAdded(event.name, image, event.formula);
 	}
 
 	initializeEventAnnotations();
@@ -176,7 +176,7 @@ void MissionEventsDialogModel::initializeEventAnnotations()
 	m_event_annotations = Event_annotations; // copy
 
 	for (auto& ea : m_event_annotations) {
-		ea.handle = nullptr;
+		ea.node_index = -1;
 		if (ea.path.empty())
 			continue;
 
@@ -185,46 +185,44 @@ void MissionEventsDialogModel::initializeEventAnnotations()
 		if (formula < 0)
 			continue;
 
-		IEventTreeOps::Handle h = m_event_tree_ops.get_root_by_formula(formula);
-		if (!h)
-			continue;
-
-		// walk children
+		// Walk children using tree_nodes parent/child/next links
+		int node = formula;
 		auto it = ea.path.begin();
 		++it; // skip event index
-		for (; it != ea.path.end() && h; ++it) {
-			const int child = *it;
-			if (child < 0 || child >= m_event_tree_ops.child_count(h)) {
-				h = nullptr;
-				break;
+		for (; it != ea.path.end() && node >= 0; ++it) {
+			const int target_child = *it;
+			// Navigate to the target_child-th child of node
+			int child = m_tree_model.tree_nodes[node].child;
+			for (int c = 0; c < target_child && child >= 0; ++c) {
+				child = m_tree_model.tree_nodes[child].next;
 			}
-			h = m_event_tree_ops.child_at(h, child);
+			node = child;
 		}
 
-		ea.handle = h;
-		if (h) {
+		ea.node_index = node;
+		if (node >= 0) {
 			const bool hasColor = (ea.r != 255) || (ea.g != 255) || (ea.b != 255);
-			m_event_tree_ops.set_node_note(h, ea.comment);
-			m_event_tree_ops.set_node_bg_color(h, ea.r, ea.g, ea.b, hasColor);
+			Q_EMIT annotationApplied(node, ea.comment, ea.r, ea.g, ea.b, hasColor);
 		}
 	}
 }
 
-// Build the path for a handle (root formula -> orig index; then child indices)
-SCP_list<int> MissionEventsDialogModel::buildPathForHandle(IEventTreeOps::Handle h) const
+// Build the path for a node index (event index; then child position indices)
+SCP_list<int> MissionEventsDialogModel::buildPathForNode(int node_index) const
 {
 	SCP_list<int> path;
-	if (!h)
+	if (node_index < 0)
 		return path;
 
-	const int rootFormula = m_event_tree_ops.root_formula_of(h);
-	if (rootFormula < 0)
-		return path;
+	// Walk up to find the root node
+	int root = node_index;
+	while (m_tree_model.tree_nodes[root].parent >= 0)
+		root = m_tree_model.tree_nodes[root].parent;
 
-	// Find the *current* index of this root in m_events
+	// Find the current index of this root in m_events
 	int curIdx = -1;
 	for (int i = 0; i < static_cast<int>(m_events.size()); ++i) {
-		if (m_events[i].formula == rootFormula) {
+		if (m_events[i].formula == root) {
 			curIdx = i;
 			break;
 		}
@@ -237,16 +235,23 @@ SCP_list<int> MissionEventsDialogModel::buildPathForHandle(IEventTreeOps::Handle
 
 	// Collect child indices from node up to root, then reverse
 	std::vector<int> rev;
-	IEventTreeOps::Handle cur = h;
+	int cur = node_index;
 	for (;;) {
-		IEventTreeOps::Handle parent = m_event_tree_ops.parent_of(cur);
-		if (!parent)
+		int parent = m_tree_model.tree_nodes[cur].parent;
+		if (parent < 0)
 			break;
-		rev.push_back(m_event_tree_ops.index_in_parent(cur));
+		// Find position of cur among parent's children
+		int pos = 0;
+		int sibling = m_tree_model.tree_nodes[parent].child;
+		while (sibling >= 0 && sibling != cur) {
+			++pos;
+			sibling = m_tree_model.tree_nodes[sibling].next;
+		}
+		rev.push_back(pos);
 		cur = parent;
 	}
-	for (auto it = rev.rbegin(); it != rev.rend(); ++it)
-		path.push_back(*it);
+	for (auto rit = rev.rbegin(); rit != rev.rend(); ++rit)
+		path.push_back(*rit);
 
 	return path;
 }
@@ -258,25 +263,27 @@ bool MissionEventsDialogModel::isDefaultAnnotation(const event_annotation& ea)
 	return noNote && noColor;
 }
 
-IEventTreeOps::Handle MissionEventsDialogModel::resolveHandleFromPath(const SCP_list<int>& path) const
+int MissionEventsDialogModel::resolveNodeFromPath(const SCP_list<int>& path) const
 {
 	if (path.empty())
-		return nullptr;
+		return -1;
 	const int origEvt = path.front();
 	const int formula = findFormulaByOriginalEventIndex(origEvt);
 	if (formula < 0)
-		return nullptr;
+		return -1;
 
-	auto h = m_event_tree_ops.get_root_by_formula(formula);
+	int node = formula;
 	auto it = path.begin();
 	++it; // skip event index
-	for (; it != path.end() && h; ++it) {
-		const int childIdx = *it;
-		if (childIdx < 0 || childIdx >= m_event_tree_ops.child_count(h))
-			return nullptr;
-		h = m_event_tree_ops.child_at(h, childIdx);
+	for (; it != path.end() && node >= 0; ++it) {
+		const int target_child = *it;
+		int child = m_tree_model.tree_nodes[node].child;
+		for (int c = 0; c < target_child && child >= 0; ++c) {
+			child = m_tree_model.tree_nodes[child].next;
+		}
+		node = child;
 	}
-	return h;
+	return node;
 }
 
 event_annotation& MissionEventsDialogModel::ensureAnnotationByPath(const SCP_list<int>& path)
@@ -304,34 +311,52 @@ mission_event MissionEventsDialogModel::makeDefaultEvent()
 	mission_event e{};
 	e.name = "Event name";
 	e.formula = -1;
-	// Seems like most initializers are handled by the sexp_tree widget... This is so messy
 
 	return e;
+}
+
+// Build the default sexp tree structure: when -> true -> do-nothing
+// Returns the root node index (the "when" operator)
+int MissionEventsDialogModel::buildDefaultTreeStructure(const SCP_string& /*name*/)
+{
+	// Build: when -> true, do-nothing
+	int when_node = m_tree_model.allocate_node(-1);
+	m_tree_model.set_node(when_node, SEXPT_OPERATOR | SEXPT_VALID, "when");
+
+	int true_node = m_tree_model.allocate_node(when_node);
+	m_tree_model.set_node(true_node, SEXPT_OPERATOR | SEXPT_VALID, "true");
+
+	int do_nothing_node = m_tree_model.allocate_node(when_node);
+	m_tree_model.set_node(do_nothing_node, SEXPT_OPERATOR | SEXPT_VALID, "do-nothing");
+
+	return when_node;
 }
 
 void MissionEventsDialogModel::applyAnnotations()
 {
 	// Recompute paths from whatever we currently have
 	for (auto& ea : m_event_annotations) {
-		// Prefer live handle if still valid
-		if (ea.handle && m_event_tree_ops.is_handle_valid(ea.handle)) {
-			ea.path = buildPathForHandle(ea.handle);
+		// Prefer live node_index if still valid
+		if (ea.node_index >= 0 &&
+			ea.node_index < static_cast<int>(m_tree_model.tree_nodes.size()) &&
+			m_tree_model.tree_nodes[ea.node_index].type != SEXPT_UNUSED) {
+			ea.path = buildPathForNode(ea.node_index);
 		} else {
-			// If we lost the handle, try to resolve from the old path
-			auto h = resolveHandleFromPath(ea.path);
-			if (h) {
-				ea.handle = h;                   // refresh cache for the rest of the session
-				ea.path = buildPathForHandle(h); // normalize
+			// If we lost the node, try to resolve from the old path
+			int resolved = resolveNodeFromPath(ea.path);
+			if (resolved >= 0) {
+				ea.node_index = resolved;
+				ea.path = buildPathForNode(resolved);
 			} else {
 				// Node is gone; mark default so we prune
 				ea.comment.clear();
 				ea.r = ea.g = ea.b = 255;
-				ea.handle = nullptr;
+				ea.node_index = -1;
 				ea.path.clear();
 			}
 		}
-		// Drop the handle
-		ea.handle = nullptr;
+		// Drop the transient node_index
+		ea.node_index = -1;
 	}
 
 	// Prune defaults
@@ -613,7 +638,7 @@ void MissionEventsDialogModel::reorderByRootFormulaOrder(const SCP_vector<int>& 
 	// Keep selection reasonable (select the first event after reorder)
 	setCurrentlySelectedEvent(m_events.empty() ? -1 : 0);
 
-	// Rebuild applied annotations against new handles/order if needed
+	// Rebuild applied annotations against new node indices/order if needed
 	initializeEventAnnotations();
 
 	set_modified();
@@ -660,8 +685,9 @@ void MissionEventsDialogModel::createEvent()
 	auto& event = m_events.back();
 
 	const int after = event.formula;
-	event.formula = m_event_tree_ops.build_default_root(event.name, after);
-	m_event_tree_ops.select_root(event.formula);
+	event.formula = buildDefaultTreeStructure(event.name);
+	Q_EMIT defaultRootBuilt(event.name, after, event.formula);
+	Q_EMIT rootSelected(event.formula);
 
 	setCurrentlySelectedEventByFormula(event.formula);
 	set_modified();
@@ -682,12 +708,13 @@ void MissionEventsDialogModel::insertEvent()
 	// Place after the previous root if it exists and is valid; otherwise we'll fix index explicitly
 	int after = (pos > 0 && m_events[pos - 1].formula >= 0) ? m_events[pos - 1].formula : -1;
 
-	event.formula = m_event_tree_ops.build_default_root(event.name, after);
+	event.formula = buildDefaultTreeStructure(event.name);
+	Q_EMIT defaultRootBuilt(event.name, after, event.formula);
 
 	if (pos == 0) {
-		m_event_tree_ops.ensure_top_level_index(event.formula, 0);
+		Q_EMIT topLevelIndexRequested(event.formula, 0);
 	}
-	m_event_tree_ops.select_root(event.formula);
+	Q_EMIT rootSelected(event.formula);
 
 	setCurrentlySelectedEventByFormula(event.formula);
 	set_modified();
@@ -699,7 +726,7 @@ void MissionEventsDialogModel::deleteEvent()
 		return;
 	}
 
-	m_event_tree_ops.delete_event();
+	Q_EMIT eventDeleteRequested();
 }
 
 void MissionEventsDialogModel::renameEvent(int id, const SCP_string& name)
@@ -875,7 +902,7 @@ void MissionEventsDialogModel::setEventTeam(int team)
 	}
 
 	auto& event = m_events[m_cur_event];
-	
+
 	if (team < -1 || team >= MAX_TVT_TEAMS) {
 		team = -1;
 	}
@@ -1094,21 +1121,21 @@ void MissionEventsDialogModel::setLogLastTrigger(bool log)
 	set_modified();
 }
 
-void MissionEventsDialogModel::setNodeAnnotation(IEventTreeOps::Handle h, const SCP_string& note)
+void MissionEventsDialogModel::setNodeAnnotation(int node_index, const SCP_string& note)
 {
-	auto path = buildPathForHandle(h);
+	auto path = buildPathForNode(node_index);
 	auto& ea = ensureAnnotationByPath(path);
-	ea.handle = h;
+	ea.node_index = node_index;
 	ea.comment = note;
-	m_event_tree_ops.set_node_note(h, note);
+	Q_EMIT annotationApplied(node_index, note, ea.r, ea.g, ea.b, (ea.r != 255 || ea.g != 255 || ea.b != 255));
 	set_modified();
 }
 
-void MissionEventsDialogModel::setNodeBgColor(IEventTreeOps::Handle h, int r, int g, int b, bool has_color)
+void MissionEventsDialogModel::setNodeBgColor(int node_index, int r, int g, int b, bool has_color)
 {
-	auto path = buildPathForHandle(h);
+	auto path = buildPathForNode(node_index);
 	auto& ea = ensureAnnotationByPath(path);
-	ea.handle = h;
+	ea.node_index = node_index;
 	if (has_color) {
 		ea.r = (ubyte)r;
 		ea.g = (ubyte)g;
@@ -1116,7 +1143,7 @@ void MissionEventsDialogModel::setNodeBgColor(IEventTreeOps::Handle h, int r, in
 	} else {
 		ea.r = ea.g = ea.b = 255;
 	}
-	m_event_tree_ops.set_node_bg_color(h, r, g, b, has_color);
+	Q_EMIT annotationApplied(node_index, ea.comment, ea.r, ea.g, ea.b, has_color);
 	set_modified();
 }
 

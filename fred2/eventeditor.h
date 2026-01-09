@@ -38,7 +38,7 @@ protected:
 };
 
 void event_annotation_prune();
-int event_annotation_lookup(HTREEITEM handle);
+int event_annotation_lookup(int node_idx);
 void event_annotation_swap_image(event_sexp_tree *tree, HTREEITEM handle, int annotation_index);
 void event_annotation_swap_image(event_sexp_tree *tree, HTREEITEM handle, event_annotation &ea);
 
