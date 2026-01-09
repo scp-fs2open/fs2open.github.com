@@ -23,6 +23,8 @@ class CampaignEditorDialog : public QMainWindow, public SexpTreeEditorInterface 
 	explicit CampaignEditorDialog(QWidget* parent, EditorViewport* viewport);
 	~CampaignEditorDialog() override;
 
+	bool requireCampaignOperators() const override { return true; }
+
   protected:
 	void closeEvent(QCloseEvent* e) override; // funnel all Window X presses through reject()
 
