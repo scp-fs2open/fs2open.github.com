@@ -190,6 +190,11 @@ void MissionEventsDialog::initEventWidgets() {
 	updateEventUi();
 }
 
+int MissionEventsDialog::getRootReturnType() const
+{
+	return OPR_NULL;
+}
+
 void MissionEventsDialog::accept()
 {
 	// If apply() returns true, close the dialog

@@ -61,8 +61,34 @@ int safe_stricmp(const char* one, const char* two)
 /////////////////////////////////////////////////////////////////////////////
 // event_editor dialog
 
+int event_editor::getRootReturnType() const
+{
+	return OPR_NULL;
+}
+
+int event_editor::onRootDeleted(int formula_node)
+{
+	return handler(ROOT_DELETED, formula_node);
+}
+
+void event_editor::onRootRenamed(int formula_node, const char* new_name)
+{
+	handler(ROOT_RENAMED, formula_node, new_name);
+}
+
+void event_editor::onRootInserted(int old_formula, int new_formula)
+{
+	insert_handler(old_formula, new_formula);
+}
+
+void event_editor::onRootMoved(int node1, int node2, bool insert_before)
+{
+	move_handler(node1, node2, insert_before);
+}
+
 event_editor::event_editor(CWnd* pParent /*=NULL*/)
-	: CDialog(event_editor::IDD, pParent)
+	: CDialog(event_editor::IDD, pParent),
+	  SexpTreeEditorInterface({ TreeFlags::LabeledRoot, TreeFlags::RootDeletable, TreeFlags::RootEditable, TreeFlags::AnnotationsAllowed })
 {
 	//{{AFX_DATA_INIT(event_editor)
 	m_repeat_count = 0;
@@ -86,7 +112,7 @@ event_editor::event_editor(CWnd* pParent /*=NULL*/)
 	m_message_team = -1;
 	m_last_message_node = -1;
 	//}}AFX_DATA_INIT
-	m_event_tree.m_mode = MODE_EVENTS;
+	m_event_tree._model._interface = this;
 	m_event_tree._model.modified = &modified;
 	modified = 0;
 	select_sexp_node = -1;
@@ -407,7 +433,7 @@ void event_editor::create_tree()
 void event_editor::OnRclickEventTree(NMHDR* pNMHDR, LRESULT* pResult) 
 {
 	save();
-	m_event_tree.right_clicked(MODE_EVENTS);
+	m_event_tree.right_clicked();
 	*pResult = 0;
 }
 

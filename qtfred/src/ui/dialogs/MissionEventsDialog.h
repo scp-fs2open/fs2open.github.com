@@ -32,6 +32,7 @@ class MissionEventsDialog: public QDialog, public SexpTreeEditorInterface {
 
 	SCP_vector<SCP_string> getMessages() override;
 	bool hasDefaultMessageParamter() override;
+	int getRootReturnType() const override;
 
   protected:
 	void closeEvent(QCloseEvent* event) override;

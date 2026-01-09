@@ -1124,7 +1124,7 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 		}
 	}
 
-	auto state = _model.compute_context_menu_state(_model.m_mode);
+	auto state = _model.compute_context_menu_state();
 
 	std::unique_ptr<QMenu> popup_menu(new QMenu(tr("Edit SEXP tree")));
 

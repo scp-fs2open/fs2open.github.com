@@ -80,7 +80,7 @@ public:
 	int edit_label(HTREEITEM h, bool *is_operator = nullptr);
 	virtual void edit_comment(HTREEITEM h);
 	virtual void edit_bg_color(HTREEITEM h);
-	void right_clicked(int mode = 0);
+	void right_clicked();
 	int ctree_size;
 	virtual void build_tree();
 	void clear_tree(const char *op = NULL);
@@ -90,7 +90,6 @@ public:
 	void add_sub_tree(int node, HTREEITEM root);
 	void hilite_item(int node);
 
-	int& m_mode = _model.m_mode;
 	int& item_index = _model.item_index;
 	int& select_sexp_node = _model.select_sexp_node;  // used to select an sexp item on dialog box open.
 	BOOL		m_dragging;

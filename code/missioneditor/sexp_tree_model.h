@@ -100,15 +100,6 @@ FLAG_LIST(TreeFlags) {
 	NUM_VALUES
 };
 
-// Legacy ST_* / MODE_* constants (FRED2 compatibility)
-#define ST_LABELED_ROOT   0x10000
-#define ST_ROOT_DELETABLE 0x20000
-#define ST_ROOT_EDITABLE  0x40000
-
-#define MODE_GOALS     (1 | ST_LABELED_ROOT | ST_ROOT_DELETABLE)
-#define MODE_EVENTS    (2 | ST_LABELED_ROOT | ST_ROOT_DELETABLE | ST_ROOT_EDITABLE)
-#define MODE_CAMPAIGN  (3 | ST_LABELED_ROOT | ST_ROOT_DELETABLE)
-#define MODE_CUTSCENES (4 | ST_LABELED_ROOT | ST_ROOT_DELETABLE)
 
 // -----------------------------------------------------------------------
 // sexp_tree_item — a single node in the sexp tree
@@ -186,6 +177,12 @@ public:
 	const flagset<TreeFlags>& getFlags() const;
 
 	virtual bool requireCampaignOperators() const;
+
+	// Callbacks for labeled-root tree operations (overridden by dialog classes)
+	virtual int onRootDeleted(int formula_node) { return formula_node; }
+	virtual void onRootRenamed(int formula_node, const char* new_name) { (void)formula_node; (void)new_name; }
+	virtual void onRootInserted(int old_formula, int new_formula) { (void)old_formula; (void)new_formula; }
+	virtual void onRootMoved(int node1, int node2, bool insert_before) { (void)node1; (void)node2; (void)insert_before; }
 };
 
 // -----------------------------------------------------------------------
@@ -326,7 +323,6 @@ public:
 	// Tree node storage
 	SCP_vector<sexp_tree_item> tree_nodes;
 	int total_nodes;
-	int m_mode;
 	int item_index;
 
 	// Tree loading state
@@ -534,7 +530,7 @@ public:
 	sexp_list_item* get_container_multidim_modifiers(int con_data_node) const;
 
 	// --- Context menu state computation ---
-	SexpContextMenuState compute_context_menu_state(int mode);
+	SexpContextMenuState compute_context_menu_state();
 	static bool is_operator_hidden(int op_value);
 
 	// Static utilities

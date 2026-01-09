@@ -91,7 +91,6 @@ sexp_tree::sexp_tree()
 {
 	select_sexp_node = -1;
 	root_item = -1;
-	m_mode = 0;
 	m_dragging = FALSE;
 	m_p_image_list = NULL;
 	help_box = NULL;
@@ -275,7 +274,7 @@ void sexp_tree::update_item(HTREEITEM h)
 }
 
 // handler for right mouse button clicks.
-void sexp_tree::right_clicked(int mode)
+void sexp_tree::right_clicked()
 {
 	int i, j, subcategory_id;
 	UINT _flags;
@@ -292,7 +291,6 @@ void sexp_tree::right_clicked(int mode)
 	CMenu replace_op_subcategory_menu[MAX_SUBMENUS];
 	CMenu insert_op_subcategory_menu[MAX_SUBMENUS];
 
-	m_mode = mode;
 	Assert((int)op_menu.size() < MAX_OP_MENUS);
 	Assert((int)op_submenu.size() < MAX_SUBMENUS);
 
@@ -367,7 +365,7 @@ void sexp_tree::right_clicked(int mode)
 		// get item_index
 		update_item(h);
 
-		auto state = _model.compute_context_menu_state(mode);
+		auto state = _model.compute_context_menu_state();
 
 		// annotations only work in the event editor
 		if (state.can_edit_comment) {
@@ -583,7 +581,7 @@ int sexp_tree::edit_label(HTREEITEM h, bool *is_operator)
 
 	// Check if tree root
 	if (i == tree_nodes.size()) {
-		if (m_mode & ST_ROOT_EDITABLE) {
+		if (_interface && _interface->getFlags()[TreeFlags::RootEditable]) {
 			return 1;
 		}
 
@@ -651,12 +649,10 @@ int sexp_tree::end_label_edit(TVITEMA &item)
 			break;
 
 	if (node == tree_nodes.size()) {
-		if (m_mode == MODE_EVENTS) {
+		if (_interface && _interface->getFlags()[TreeFlags::RootEditable]) {
 			item_index = (int)GetItemData(h);
-			Assert(Event_editor_dlg);
-			node = Event_editor_dlg->handler(ROOT_RENAMED, item_index, str.c_str());
+			_interface->onRootRenamed(item_index, str.c_str());
 			return 1;
-
 		} else
 			Int3();  // root labels shouldn't have been editable!
 	}
@@ -1151,20 +1147,9 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 
 			else {
 				h = GetParentItem(tree_item_handle(tree_nodes[item_index]));
-				if (m_mode == MODE_GOALS) {
-					Assert(Goal_editor_dlg);
-					Goal_editor_dlg->insert_handler(item_index, node);
+				if (_interface && _interface->getFlags()[TreeFlags::LabeledRoot]) {
+					_interface->onRootInserted(item_index, node);
 					SetItemData(h, node);
-
-				} else if (m_mode == MODE_EVENTS) {
-					Assert(Event_editor_dlg);
-					Event_editor_dlg->insert_handler(item_index, node);
-					SetItemData(h, node);
-
-				} else if (m_mode == MODE_CAMPAIGN) {
-					Campaign_tree_formp->insert_handler(item_index, node);
-					SetItemData(h, node);
-
 				} else {
 					h = TVI_ROOT;
 					root_item = node;
@@ -1354,24 +1339,9 @@ void sexp_tree::NodeDelete()
 	int parent, theNode;
 	HTREEITEM h_parent;
 
-	if ((m_mode & ST_ROOT_DELETABLE) && (item_index == -1)) {
+	if (_interface && _interface->getFlags()[TreeFlags::RootDeletable] && (item_index == -1)) {
 		item_index = (int)GetItemData(item_handle);
-		if (m_mode == MODE_GOALS) {
-			Assert(Goal_editor_dlg);
-			theNode = Goal_editor_dlg->handler(ROOT_DELETED, item_index);
-
-		}else if (m_mode == MODE_CUTSCENES) {
-			Assert(Cutscene_editor_dlg);
-			theNode = Cutscene_editor_dlg->handler(ROOT_DELETED, item_index);
-
-		} else if (m_mode == MODE_EVENTS) {
-			Assert(Event_editor_dlg);
-			theNode = Event_editor_dlg->handler(ROOT_DELETED, item_index);
-
-		} else {
-			Assert(m_mode == MODE_CAMPAIGN);
-			theNode = Campaign_tree_formp->handler(ROOT_DELETED, item_index);
-		}
+		theNode = _interface->onRootDeleted(item_index);
 
 		Assert(theNode >= 0);
 		_model.free_node2(theNode);
@@ -1808,7 +1778,7 @@ void sexp_tree::OnBegindrag(NMHDR* pNMHDR, LRESULT* pResult)
 	m_h_drag = HitTest(m_pt, &flags);
 	m_h_drop = NULL;
 
-	if (!m_mode || GetParentItem(m_h_drag))
+	if (!_interface || !_interface->getFlags()[TreeFlags::LabeledRoot] || GetParentItem(m_h_drag))
 		return;
 
 	ASSERT(m_p_image_list == NULL);
@@ -1881,20 +1851,11 @@ void sexp_tree::OnLButtonUp(UINT nFlags, CPoint point)
 
 			move_root(m_h_drag, m_h_drop, insert_before);
 
-			if (m_mode == MODE_GOALS) {
-				Assert(Goal_editor_dlg);
-				Goal_editor_dlg->move_handler(node1, node2, insert_before);
-
-			} else if (m_mode == MODE_EVENTS) {
-				Assert(Event_editor_dlg);
-				Event_editor_dlg->move_handler(node1, node2, insert_before);
-
-			} else if (m_mode == MODE_CAMPAIGN) {
-				Assert(Campaign_tree_formp);
-				Campaign_tree_formp->move_handler(node1, node2, insert_before);
-
-			} else
-				UNREACHABLE("Unhandled dialog mode!");
+			if (_interface) {
+				_interface->onRootMoved(node1, node2, insert_before);
+			} else {
+				UNREACHABLE("No interface set for labeled-root tree!");
+			}
 
 		} else
 			MessageBeep(0);

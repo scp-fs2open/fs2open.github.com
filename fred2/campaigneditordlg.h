@@ -25,7 +25,7 @@ class campaign_sexp_tree : public sexp_tree
 {
 };
 
-class campaign_editor : public CFormView
+class campaign_editor : public CFormView, public SexpTreeEditorInterface
 {
 private:
 	int m_num_links;
@@ -36,6 +36,13 @@ private:
 protected:
 	campaign_editor();           // protected constructor used by dynamic creation
 	DECLARE_DYNCREATE(campaign_editor)
+
+// SexpTreeEditorInterface overrides
+public:
+	bool requireCampaignOperators() const override { return true; }
+	int onRootDeleted(int formula_node) override;
+	void onRootInserted(int old_formula, int new_formula) override;
+	void onRootMoved(int node1, int node2, bool insert_before) override;
 
 // Form Data
 public:

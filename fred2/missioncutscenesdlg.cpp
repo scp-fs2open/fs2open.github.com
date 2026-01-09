@@ -43,7 +43,8 @@ CString cutscene_descriptions[Num_movie_types] = {
 // CMissionCutscenesDlg dialog class member functions
 
 CMissionCutscenesDlg::CMissionCutscenesDlg(CWnd* pParent /*=NULL*/)
-	: CDialog(CMissionCutscenesDlg::IDD, pParent)
+	: CDialog(CMissionCutscenesDlg::IDD, pParent),
+	  SexpTreeEditorInterface({ TreeFlags::LabeledRoot, TreeFlags::RootDeletable })
 {
 	//{{AFX_DATA_INIT(CMissionCutscenesDlg)
 	m_cutscene_type = -1;
@@ -51,11 +52,15 @@ CMissionCutscenesDlg::CMissionCutscenesDlg(CWnd* pParent /*=NULL*/)
 	m_name = _T("");
 	m_desc = _T("");
 	//}}AFX_DATA_INIT
-	m_cutscenes_tree.m_mode = MODE_CUTSCENES; // We don't need to perform actions here, so use the same method as Goals
+	m_cutscenes_tree._model._interface = this;
 	m_cutscenes_tree._model.modified = &modified;
 	modified = 0;
 	select_sexp_node = -1;
 }
+
+int CMissionCutscenesDlg::onRootDeleted(int formula_node) { return handler(ROOT_DELETED, formula_node); }
+void CMissionCutscenesDlg::onRootInserted(int old_formula, int new_formula) { insert_handler(old_formula, new_formula); }
+void CMissionCutscenesDlg::onRootMoved(int node1, int node2, bool insert_before) { move_handler(node1, node2, insert_before); }
 
 BOOL CMissionCutscenesDlg::OnInitDialog()
 {
@@ -226,7 +231,7 @@ void CMissionCutscenesDlg::update_cur_cutscene()
 // handler for context menu (i.e. a right mouse button click).
 void CMissionCutscenesDlg::OnRclickCutscenesTree(NMHDR* pNMHDR, LRESULT* pResult)
 {
-	m_cutscenes_tree.right_clicked(MODE_CUTSCENES); // We don't need to perform actions here, so use the same method as Goals
+	m_cutscenes_tree.right_clicked(); // We don't need to perform actions here, so use the same method as Goals
 	*pResult = 0;
 }
 

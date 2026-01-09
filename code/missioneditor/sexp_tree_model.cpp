@@ -218,7 +218,7 @@ bool SexpTreeEditorInterface::requireCampaignOperators() const
 // -----------------------------------------------------------------------
 
 SexpTreeModel::SexpTreeModel()
-	: total_nodes(0), m_mode(0), item_index(-1),
+	: total_nodes(0), item_index(-1),
 	  root_item(-1), select_sexp_node(-1), flag(0),
 	  _interface(nullptr), modified(nullptr)
 {
@@ -824,7 +824,7 @@ int SexpTreeModel::query_default_argument_available(int op, int i) const
 			return Waypoint_lists.empty() ? 0 : 1;
 
 		case OPF_MISSION_NAME:
-			if (m_mode != MODE_CAMPAIGN) {
+			if (!_interface || !_interface->requireCampaignOperators()) {
 				if (_interface && !_interface->hasDefaultMissionName())
 					return 0;
 
@@ -841,7 +841,7 @@ int SexpTreeModel::query_default_argument_available(int op, int i) const
 
 			value = Operators[op].value;
 
-			if (m_mode == MODE_CAMPAIGN)
+			if (_interface && _interface->requireCampaignOperators())
 				return 1;
 
 			else if (_interface && _interface->hasDefaultGoal(value))
@@ -855,7 +855,7 @@ int SexpTreeModel::query_default_argument_available(int op, int i) const
 
 			value = Operators[op].value;
 
-			if (m_mode == MODE_CAMPAIGN)
+			if (_interface && _interface->requireCampaignOperators())
 				return 1;
 
 			else if (_interface && _interface->hasDefaultEvent(value))
@@ -1919,15 +1919,14 @@ bool SexpTreeModel::is_operator_hidden(int op_value)
 	}
 }
 
-SexpContextMenuState SexpTreeModel::compute_context_menu_state(int mode)
+SexpContextMenuState SexpTreeModel::compute_context_menu_state()
 {
 	SexpContextMenuState state;
 
-	m_mode = mode;
-	state.campaign_mode = (mode == MODE_CAMPAIGN);
+	state.campaign_mode = _interface && _interface->requireCampaignOperators();
 
 	// --- Annotations ---
-	if (mode == MODE_EVENTS) {
+	if (_interface && _interface->getFlags()[TreeFlags::AnnotationsAllowed]) {
 		state.can_edit_comment = true;
 		state.can_edit_bg_color = true;
 	}
@@ -2366,11 +2365,7 @@ SexpContextMenuState SexpTreeModel::compute_context_menu_state(int mode)
 
 	} else {
 		// top node - should be Boolean or Null type
-		if (mode == MODE_EVENTS) {
-			state.replace_type = OPR_NULL;
-		} else {
-			state.replace_type = OPR_BOOL;
-		}
+		state.replace_type = _interface ? _interface->getRootReturnType() : OPR_BOOL;
 		// Operators matching the replace_type will be enabled by the UI
 		// (they iterate operators and check query_operator_return_type)
 	}
@@ -2403,10 +2398,7 @@ SexpContextMenuState SexpTreeModel::compute_context_menu_state(int mode)
 			state.insert_opf_type = p_container->opf_type;
 		}
 	} else {
-		if (mode == MODE_EVENTS)
-			state.insert_opf_type = OPF_NULL;
-		else
-			state.insert_opf_type = OPF_BOOL;
+		state.insert_opf_type = (state.replace_type == OPR_NULL) ? OPF_NULL : OPF_BOOL;
 	}
 
 	// --- Per-operator enabled state ---

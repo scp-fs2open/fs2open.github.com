@@ -46,10 +46,16 @@ void event_annotation_swap_image(event_sexp_tree *tree, HTREEITEM handle, event_
 /////////////////////////////////////////////////////////////////////////////
 // event_editor dialog
 
-class event_editor : public CDialog
+class event_editor : public CDialog, public SexpTreeEditorInterface
 {
 // Construction
 public:
+	int getRootReturnType() const override;
+	int onRootDeleted(int formula_node) override;
+	void onRootRenamed(int formula_node, const char* new_name) override;
+	void onRootInserted(int old_formula, int new_formula) override;
+	void onRootMoved(int node1, int node2, bool insert_before) override;
+
 	void update_persona();
 	void save();
 	char *current_message_name(int index);

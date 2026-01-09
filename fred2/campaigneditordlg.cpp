@@ -38,7 +38,8 @@ IMPLEMENT_DYNCREATE(campaign_editor, CFormView)
 campaign_editor *Campaign_tree_formp;
 
 campaign_editor::campaign_editor()
-	: CFormView(campaign_editor::IDD)
+	: CFormView(campaign_editor::IDD),
+	  SexpTreeEditorInterface({ TreeFlags::LabeledRoot, TreeFlags::RootDeletable })
 {
 	//{{AFX_DATA_INIT(campaign_editor)
 	m_name = _T("");
@@ -51,13 +52,17 @@ campaign_editor::campaign_editor()
 	m_custom_tech_db = FALSE;
 	//}}AFX_DATA_INIT
 
-	m_tree.m_mode = MODE_CAMPAIGN;
+	m_tree._model._interface = this;
 	m_num_links = 0;
 	m_tree._model.modified = &Campaign_modified;
 	m_last_mission = -1;
 
 	m_current_campaign_path = _T("");
 }
+
+int campaign_editor::onRootDeleted(int formula_node) { return handler(ROOT_DELETED, formula_node); }
+void campaign_editor::onRootInserted(int old_formula, int new_formula) { insert_handler(old_formula, new_formula); }
+void campaign_editor::onRootMoved(int node1, int node2, bool insert_before) { move_handler(node1, node2, insert_before); }
 
 campaign_editor::~campaign_editor()
 {
@@ -415,7 +420,7 @@ void campaign_editor::load_tree(int save_first)
 
 void campaign_editor::OnRclickTree(NMHDR* pNMHDR, LRESULT* pResult) 
 {
-	m_tree.right_clicked(MODE_CAMPAIGN);
+	m_tree.right_clicked();
 	*pResult = 0;
 }
 

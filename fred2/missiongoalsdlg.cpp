@@ -38,7 +38,8 @@ CMissionGoalsDlg *Goal_editor_dlg; // global reference needed by sexp_tree class
 // CMissionGoalsDlg dialog class member functions
 
 CMissionGoalsDlg::CMissionGoalsDlg(CWnd* pParent /*=NULL*/)
-	: CDialog(CMissionGoalsDlg::IDD, pParent)
+	: CDialog(CMissionGoalsDlg::IDD, pParent),
+	  SexpTreeEditorInterface({ TreeFlags::LabeledRoot, TreeFlags::RootDeletable })
 {
 	//{{AFX_DATA_INIT(CMissionGoalsDlg)
 	m_goal_desc = _T("");
@@ -50,11 +51,15 @@ CMissionGoalsDlg::CMissionGoalsDlg(CWnd* pParent /*=NULL*/)
 	m_no_music = FALSE;
 	m_team = -1;
 	//}}AFX_DATA_INIT
-	m_goals_tree.m_mode = MODE_GOALS;
+	m_goals_tree._model._interface = this;
 	m_goals_tree._model.modified = &modified;
 	modified = 0;
 	select_sexp_node = -1;
 }
+
+int CMissionGoalsDlg::onRootDeleted(int formula_node) { return handler(ROOT_DELETED, formula_node); }
+void CMissionGoalsDlg::onRootInserted(int old_formula, int new_formula) { insert_handler(old_formula, new_formula); }
+void CMissionGoalsDlg::onRootMoved(int node1, int node2, bool insert_before) { move_handler(node1, node2, insert_before); }
 
 BOOL CMissionGoalsDlg::OnInitDialog()
 {
@@ -266,7 +271,7 @@ void CMissionGoalsDlg::update_cur_goal()
 // handler for context menu (i.e. a right mouse button click).
 void CMissionGoalsDlg::OnRclickGoalsTree(NMHDR* pNMHDR, LRESULT* pResult) 
 {
-	m_goals_tree.right_clicked(MODE_GOALS);
+	m_goals_tree.right_clicked();
 	*pResult = 0;
 }
 

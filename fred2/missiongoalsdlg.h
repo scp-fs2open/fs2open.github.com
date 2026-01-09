@@ -22,10 +22,14 @@ class goal_sexp_tree : public sexp_tree
 {
 };
 
-class CMissionGoalsDlg : public CDialog
+class CMissionGoalsDlg : public CDialog, public SexpTreeEditorInterface
 {
 // Construction
 public:
+	int onRootDeleted(int formula_node) override;
+	void onRootInserted(int old_formula, int new_formula) override;
+	void onRootMoved(int node1, int node2, bool insert_before) override;
+
 	void move_handler(int node1, int node2, bool insert_before);
 	int query_modified();
 	void OnCancel();
