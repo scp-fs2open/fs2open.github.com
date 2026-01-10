@@ -1806,14 +1806,6 @@ void game_init()
 	const char *ptr;
 	char whee[MAX_PATH_LEN];
 
-	// Metadata must to be set as early as possible, before the first SDL_Init().
-	// This is global info and cannot be changed later (i.e., it can't be set per mod)
-	SDL_SetAppMetadata("FreeSpace Open", FS_VERSION_FULL, FSO_APP_ID);
-
-	SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_TYPE_STRING, "game");
-	SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_COPYRIGHT_STRING,
-							   "Copyright (C) Volition, Inc. 1999.  All rights reserved.");
-
 	Game_current_mission_filename[0] = 0;
 
 	// seed the random number generator
@@ -8149,6 +8141,14 @@ int main(int argc, char *argv[])
 {
 	int result = -1;
 	Assert(argc > 0);
+
+	// Metadata must to be set as early as possible, before the first SDL_Init().
+	// This is global info and cannot be changed later (i.e., it can't be set per mod)
+	SDL_SetAppMetadata("FreeSpace Open", FS_VERSION_FULL, FSO_APP_ID);
+
+	SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_TYPE_STRING, "game");
+	SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_COPYRIGHT_STRING,
+							   "Copyright 1999 Volition, Inc. & Copyright 2002-2026 The Source Code Project.");
 
 	crashdump::installCrashHandler();
 
