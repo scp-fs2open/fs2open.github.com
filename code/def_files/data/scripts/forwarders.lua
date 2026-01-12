@@ -88,11 +88,11 @@ Globals.FSOObjectsTableMetatable = {
         __newindex = function(tbl, key, value)
             for k, v in pairs(tbl) do
                 if k == key then
-                    tbl[k] = value
+                    rawset(tbl, k, value)
                     return
                 end
             end
-            tbl[key] = value
+            rawset(tbl, key, value)
         end,
         __index = function(tbl, key)
             for k, v in pairs(tbl) do
