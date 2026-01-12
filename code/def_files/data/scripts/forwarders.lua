@@ -84,3 +84,21 @@ setmetatable(Globals, mt)
 Globals.nullVec = ba.createVector(0, 0, 0)
 Globals.zeroVec = Globals.nullVec
 Globals.identityOrient = ba.createOrientationFromVectors(ba.createVector(0, 0, 1), ba.createVector(0, 1, 0), ba.createVector(1, 0, 0))
+Globals.FSOObjectsTableMetatable = {
+        __newindex = function(tbl, key, value)
+            for k, v in pairs(tbl) do
+                if k == key then
+                    rawset(tbl, k, value)
+                    return
+                end
+            end
+            rawset(tbl, key, value)
+        end,
+        __index = function(tbl, key)
+            for k, v in pairs(tbl) do
+                if k == key then
+                    return v
+                end
+            end
+        end
+    }
