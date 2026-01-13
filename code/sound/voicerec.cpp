@@ -65,7 +65,8 @@
 #include "popup/popupdead.h"
 #include "ship/ship.h"
 
-#include <SDL_syswm.h>
+#include <SDL3/SDL_events.h>
+
 
 CComPtr<ISpRecoGrammar>         p_grammarObject; // Pointer to our grammar object
 CComPtr<ISpRecoContext>         p_recogContext;  // Pointer to our recognition context
@@ -84,21 +85,18 @@ extern int Msg_instance;;
 extern int Msg_shortcut_command;
 extern int Squad_msg_mode;
 
+static uint32_t FSO_EVENT_VOICER = 0;
+
 namespace
 {
 	bool system_event_handler(const SDL_Event& e)
 	{
-		switch (e.syswm.msg->msg.win.msg)
-		{
-		case WM_RECOEVENT:
+		if (e.type == FSO_EVENT_VOICER) {
 			if (Game_mode & GM_IN_MISSION && Cmdline_voice_recognition && gameseq_get_state() != GS_STATE_GAME_PAUSED && !popup_active() && !popupdead_is_active())
 			{
-				VOICEREC_process_event(e.syswm.msg->msg.win.hwnd);
+				VOICEREC_process_event();
 				return true;
 			}
-			break;
-		default:
-			break;
 		}
 
 		return false;
@@ -164,6 +162,20 @@ void doVid_Action(int action)
 			case VID_Depart:		button_function(WARP_MESSAGE);					break;
 		}
 	}
+}
+
+bool VOICEREC_get_sdl_event(SDL_Event *event)
+{
+	if ( !FSO_EVENT_VOICER ) {
+		return false;
+	}
+
+	SDL_zerop(event);
+
+	// should be all we need
+	event->type = FSO_EVENT_VOICER;
+
+	return true;
 }
 
 bool VOICEREC_init(HWND hWnd, int event_id, int grammar_id, int command_resource)
@@ -262,7 +274,14 @@ bool VOICEREC_init(HWND hWnd, int event_id, int grammar_id, int command_resource
 		VOICEREC_deinit();
 	}
 
-	os::events::addEventListener(SDL_SYSWMEVENT, os::events::DEFAULT_LISTENER_WEIGHT, system_event_handler);
+	FSO_EVENT_VOICER = SDL_RegisterEvents(1);
+
+	if (FSO_EVENT_VOICER == 0) {
+		VOICEREC_deinit();
+		return false;
+	}
+
+	os::events::addEventListener(static_cast<SDL_EventType>(FSO_EVENT_VOICER), os::events::DEFAULT_LISTENER_WEIGHT, system_event_handler);
 
 	return ( hr == S_OK);
 }
@@ -291,8 +310,8 @@ void VOICEREC_deinit()
 	}
 }
 
-void VOICEREC_execute_command(ISpPhrase *pPhrase, HWND hWnd);
-void VOICEREC_process_event(HWND hWnd)
+void VOICEREC_execute_command(ISpPhrase *pPhrase);
+void VOICEREC_process_event()
 {
 	CSpEvent event;  // Event helper class
 
@@ -303,7 +322,7 @@ void VOICEREC_process_event(HWND hWnd)
 		switch (event.eEventId)
 		{
 			case SPEI_RECOGNITION:
-				VOICEREC_execute_command(event.RecoResult(), hWnd);
+				VOICEREC_execute_command(event.RecoResult());
 				break;
 
 		}
@@ -320,7 +339,7 @@ void VOICEREC_process_event(HWND hWnd)
 
 char VOICEREC_lastCommand[30];
 
-void VOICEREC_execute_command(ISpPhrase *pPhrase, HWND hWnd)
+void VOICEREC_execute_command(ISpPhrase *pPhrase)
 {
 	SPPHRASE *pElements;
 
