@@ -1426,7 +1426,7 @@ void LabUi::show_object_options() const
 			{
 				build_weapon_options(shipp);
 			}
-		} else if (getLabManager()->CurrentMode == LabMode::Weapon && getLabManager()->isSafeForWeapons()) {
+		} else if (getLabManager()->CurrentMode == LabMode::Weapon && getLabManager()->CurrentClass >= 0) {
 			auto wip = &Weapon_info[getLabManager()->CurrentClass];
 
 			with_CollapsingHeader("Weapon Info")
