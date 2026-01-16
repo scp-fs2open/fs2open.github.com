@@ -2640,7 +2640,7 @@ int button_function(int n)
 
 			// target the next hostile target
 			case TARGET_NEXT_CLOSEST_HOSTILE:
-				hud_target_next_list(1,0);
+				hud_target_next_list(1,1);
 				break;
 
 			// target the previous closest hostile
