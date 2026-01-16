@@ -170,7 +170,8 @@ SET(GENERATED_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/generated_source)
 include(generateHeaders)
 
 if(FSO_BUILD_APPIMAGE)
-	include(appimage)
+	SET(BINARY_DESTINATION "bin")
+	SET(LIBRAY_DESTINATION "lib")
 endif()
 
 include(clang-tidy)
