@@ -70,6 +70,7 @@ qt_add_executable(qtfred
     ${source_files}
     ${QTFRED_UI_GENERATED}
 )
+set(FRED_APP_ID "us.indiegames.scp.qtFRED")
 set_target_properties(qtfred PROPERTIES
         AUTORCC TRUE
         AUTOUIC FALSE)
@@ -86,6 +87,8 @@ target_compile_definitions(qtfred PRIVATE "$<$<CXX_COMPILER_ID:MSVC>:PDB_DEBUGGI
 target_compile_definitions(qtfred PRIVATE QT_NO_EMIT)
 
 target_compile_definitions(qtfred PUBLIC USING_THIRD_PARTY_LIBS FRED)
+
+target_compile_definitions(qtfred PUBLIC FRED_APP_ID="${FRED_APP_ID}")
 
 target_include_directories(qtfred PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
@@ -230,7 +233,7 @@ elseif(PLATFORM_MAC)
     set_target_properties(qtfred PROPERTIES MACOSX_BUNDLE_SHORT_VERSION_STRING "${FSO_PRODUCT_VERSION_STRING}")
     set_target_properties(qtfred PROPERTIES MACOSX_BUNDLE_BUNDLE_NAME "qtFRED")
     set_target_properties(qtfred PROPERTIES MACOSX_DEPLOYMENT_TARGET "${CMAKE_OSX_DEPLOYMENT_TARGET}")
-    set_target_properties(qtfred PROPERTIES MACOSX_BUNDLE_GUI_IDENTIFIER "us.indiegames.scp.qtFRED")
+    set_target_properties(qtfred PROPERTIES MACOSX_BUNDLE_GUI_IDENTIFIER "${FRED_APP_ID}")
     set_target_properties(qtfred PROPERTIES XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Manual")
     set_target_properties(qtfred PROPERTIES XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "")
 
@@ -353,3 +356,10 @@ if (FSO_INSTALL_DEBUG_FILES AND MSVC)
             DESTINATION ${BINARY_DESTINATION}
             OPTIONAL)
 endif()
+
+# Ensure that Xcode generates debug symbols on macOS for Debug builds
+set_target_properties(qtfred PROPERTIES XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGING_SYMBOLS[variant=Debug] "YES")
+set_target_properties(qtfred PROPERTIES XCODE_ATTRIBUTE_COPY_PHASE_STRIP[variant=Debug] "NO")
+set_target_properties(qtfred PROPERTIES XCODE_ATTRIBUTE_STRIP_INSTALLED_PRODUCT[variant=Debug] "NO")
+set_target_properties(qtfred PROPERTIES XCODE_ATTRIBUTE_GCC_SYMBOLS_PRIVATE_EXTERN[variant=Debug] "NO")
+set_target_properties(qtfred PROPERTIES XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "${FRED_APP_ID}")
