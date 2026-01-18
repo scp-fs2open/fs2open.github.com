@@ -77,9 +77,6 @@
 #include <direct.h>
 #include "cmdline/cmdline.h"
 
-#define SDL_MAIN_HANDLED
-#include <SDL3/SDL_main.h>
-
 #define MAX_DOCKS 1000
 
 #define UNKNOWN_USER		"Unknown"
@@ -263,7 +260,14 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 {
 	int i;
 
-	SDL_SetMainReady();
+	// Metadata must to be set as early as possible, before the first SDL_Init().
+	// This is global info and cannot be changed later (i.e., it can't be set per mod)
+	SDL_SetAppMetadata("FRED2 Open", FS_VERSION_FULL, "us.indiegames.scp.FRED2Open");
+
+	SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_TYPE_STRING, "application");
+	SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_COPYRIGHT_STRING,
+							   "Copyright 1999 Volition, Inc. & Copyright 2002-2026 The Source Code Project.");
+
 
 	Random::seed(static_cast<unsigned int>(time(nullptr)));
 	init_pending_messages();

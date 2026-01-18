@@ -23,9 +23,6 @@
 #include <csignal>
 #include <project.h>
 
-#define SDL_MAIN_HANDLED
-#include <SDL3/SDL_main.h>
-
 
 
 // Globals needed by the engine when built in 'FRED' mode.
@@ -79,6 +76,14 @@ void game_busy_callback(int  /*count*/) {
 int main(int argc, char* argv[]) {
 	signal( SIGSEGV, handler );
 
+	// Metadata must to be set as early as possible, before the first SDL_Init().
+	// This is global info and cannot be changed later (i.e., it can't be set per mod)
+	SDL_SetAppMetadata("qtFRED", FS_VERSION_FULL, "us.indiegames.scp.qtFRED");
+
+	SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_TYPE_STRING, "application");
+	SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_COPYRIGHT_STRING,
+							   "Copyright 1999 Volition, Inc. & Copyright 2002-2026 The Source Code Project.");
+
 	using namespace fso::fred;
 
 #ifdef WIN32
@@ -90,8 +95,6 @@ int main(int argc, char* argv[]) {
 	}
 
 	qInstallMessageHandler(fsoMessageOutput);
-
-	SDL_SetMainReady();
 
 	QCoreApplication::setOrganizationName("HardLightProductions");
 	QCoreApplication::setOrganizationDomain("hard-light.net");
