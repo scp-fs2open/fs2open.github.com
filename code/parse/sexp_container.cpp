@@ -812,18 +812,6 @@ bool sexp_container_CTEXT_helper(int &node, sexp_container &container, SCP_strin
 	}
 }
 
-// inspired by sexp_campaign_file_variable_count()
-bool sexp_container_has_persistent_non_eternal_containers()
-{
-	for (const auto &container : Sexp_containers) {
-		if (container.is_persistent() && !container.is_eternal()) {
-			return true;
-		}
-	}
-
-	return false;
-}
-
 const char *sexp_container_CTEXT(int node)
 {
 	auto *p_container = get_sexp_container(Sexp_nodes[node].text);

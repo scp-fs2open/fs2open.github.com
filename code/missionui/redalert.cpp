@@ -1232,7 +1232,7 @@ void red_alert_maybe_move_to_next_mission()
 			// this should handle close-out and moving to next mission
 			gameseq_post_event(GS_EVENT_DEBRIEF);
 		} else {
-			mission_campaign_store_goals_and_events_and_variables();
+			mission_campaign_store_goals_and_events_and_variables(true);
 			scoring_level_close();
 			mission_campaign_eval_next_mission();
 			mission_campaign_mission_over();

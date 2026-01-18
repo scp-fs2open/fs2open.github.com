@@ -36139,22 +36139,6 @@ int sexp_variable_count()
 }
 
 /**
- * Count number of persistent sexp_variables that are set
- */
-int sexp_campaign_file_variable_count()
-{
-	int count = 0;
-
-	for (int i=0; i<MAX_SEXP_VARIABLES; i++) {
-		if ( (Sexp_variables[i].type & SEXP_VARIABLE_SET) && (Sexp_variables[i].type & SEXP_VARIABLE_IS_PERSISTENT) && !(Sexp_variables[i].type & SEXP_VARIABLE_SAVE_TO_PLAYER_FILE) ) {
-			count++;
-		}
-	}
-
-	return count;
-}
-
-/**
  * Given an index in Sexp_variables, returns the number variables of a type in the array until this point
  */
 int sexp_variable_typed_count(int sexp_variables_index, int variable_type)
