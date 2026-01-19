@@ -242,6 +242,9 @@ Flag exe_params[] =
 #ifdef WIN32
 	{ "-fix_registry",	"Use a different registry path",				true,	0,									EASY_DEFAULT,					"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-fix_registry", },
 #endif
+#ifdef __ANDROID__
+	{ "-working_folder",	"Change working folder in Android",			true,	0,									EASY_DEFAULT,					"Android", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-working_folder", },
+#endif
 
 	//flag					launcher text								FSO		on_flags							off_flags						category		reference URL
 	{ "-voicer",			"Enable voice recognition",					true,	0,									EASY_DEFAULT,					"Experimental",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-voicer", },
@@ -582,6 +585,12 @@ cmdline_parm output_scripting_arg("-output_scripting", NULL, AT_NONE);	//WMC
 cmdline_parm output_script_json_arg("-output_script_json", nullptr, AT_NONE);	// m!m
 cmdline_parm output_script_luastub_arg("-output_script_lua", nullptr, AT_NONE); // mjnmixael
 cmdline_parm generate_controlconfig_arg("-controlconfig_tbl", nullptr, AT_NONE);	
+
+// Android
+#ifdef __ANDROID__
+cmdline_parm wfolder_arg("-working_folder", "Sets the working folder when launching as a library in Android", AT_STRING, true);
+char* Cmdline_working_folder = nullptr;
+#endif
 
 // Deprecated flags - CommanderDJ
 cmdline_parm deprecated_spec_arg("-spec", "Deprecated", AT_NONE);
@@ -2412,6 +2421,12 @@ bool SetCmdlineParams()
 	if (multithreading.found()) {
 		Cmdline_multithreading = abs(multithreading.get_int());
 	}
+
+	#ifdef __ANDROID__
+	if (wfolder_arg.found()) {
+		Cmdline_working_folder = wfolder_arg.str();
+	}
+	#endif
 
 	return true; 
 }
