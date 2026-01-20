@@ -4475,7 +4475,7 @@ void consolidate_double_characters(char *src, char ch)
 	while (*src)
 	{
 		if (*src == ch && *(src + 1) == ch)
-			dest--;
+			--dest;
 
 		++src;
 		++dest;
@@ -4483,6 +4483,28 @@ void consolidate_double_characters(char *src, char ch)
 		if (src != dest)
 			*dest = *src;
 	}
+}
+
+// Goober5000
+// Used for escape sequences: ## to #, !! to !, etc.
+void consolidate_double_characters(SCP_string &str, char ch)
+{
+	auto src = str.begin();
+	auto dest = src;
+	while (src != str.end())
+	{
+		if (*src == ch && *(src + 1) == ch)
+			--dest;
+
+		++src;
+		++dest;
+
+		if (src != dest && src != str.end())
+			*dest = *src;
+	}
+
+	if (src != dest)
+		str.resize(dest - str.begin());
 }
 
 char *three_dot_truncate(char *buffer, const char *source, size_t buffer_size)

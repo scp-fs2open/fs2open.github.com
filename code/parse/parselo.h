@@ -84,6 +84,7 @@ extern const char *get_pointer_to_first_hash_symbol(const char *src, bool ignore
 extern int get_index_of_first_hash_symbol(const SCP_string &src, bool ignore_doubled_hash = false);
 
 extern void consolidate_double_characters(char *str, char ch);
+extern void consolidate_double_characters(SCP_string &str, char ch);
 
 // for limiting strings that may be very long; useful for dialog boxes
 char *three_dot_truncate(char *buffer, const char *source, size_t buffer_size);

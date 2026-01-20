@@ -130,8 +130,8 @@ void lcl_ext_localize(const SCP_string &in, SCP_string &out, int *id = nullptr);
 // translate the specified string based upon the current language
 int lcl_get_xstr_offset(int index, int res);
 
-void lcl_translate_wep_name_gr(char *name);
-void lcl_translate_ship_name_gr(char *name);
+void lcl_translate_wep_name_gr(SCP_string &name);
+void lcl_translate_ship_name_gr(SCP_string &name);
 void lcl_translate_brief_icon_name_gr(char *name);
 void lcl_translate_brief_icon_name_pl(char *name);
 void lcl_translate_targetbox_name_gr(char *name);
