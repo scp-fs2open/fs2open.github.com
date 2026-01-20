@@ -221,7 +221,7 @@ static void shipfx_subsystem_maybe_create_live_debris(object *ship_objp, const s
 static void shipfx_maybe_create_live_debris_at_ship_death( object *ship_objp )
 {
 	// if ship has live debris, detonate that subsystem now
-	// search for any live debris
+	// search for any submodels which have live debris
 
 	ship *shipp = &Ships[ship_objp->instance];
 	polymodel *pm = model_get(Ship_info[shipp->ship_info_index].model_num);
@@ -232,41 +232,19 @@ static void shipfx_maybe_create_live_debris_at_ship_death( object *ship_objp )
 		return;
 	}
 
-	int live_debris_submodel = -1;
-	for (int idx=0; idx<pm->num_debris_objects; idx++) {
-		if (pm->submodel[pm->debris_objects[idx]].flags[Model::Submodel_flags::Is_live_debris]) {
-			live_debris_submodel = pm->debris_objects[idx];
+	for (auto pss: list_range(&shipp->subsys_list)) {
+		if (pss->system_info != nullptr) {
+			int submodel_num = pss->system_info->subobj_num;
+			// find the submodels which aren't already blown up and have live debris
+			if (!pmi->submodel[submodel_num].blown_off && pm->submodel[submodel_num].num_live_debris > 0) {
+				vec3d exp_center, tmp = ZERO_VECTOR;
+				model_instance_local_to_global_point(&exp_center, &tmp, pm, pmi, submodel_num, &ship_objp->orient, &ship_objp->pos);
+				
+				// create its debris
+				shipfx_subsystem_maybe_create_live_debris(ship_objp, shipp, pss, &exp_center, 3.0f);
 
-			// get submodel that produces live debris
-			int model_get_parent_submodel_for_live_debris( int model_num, int live_debris_model_num );
-			int parent = model_get_parent_submodel_for_live_debris(pm->id, live_debris_submodel);
-			Assert(parent != -1);
-
-			// check if already blown off  (ship model set)
-			if ( !pmi->submodel[parent].blown_off ) {
-		
-				// get ship_subsys for live_debris
-				// Go through all subsystems and look for submodel the subsystems with "parent" submodel.
-				ship_subsys	*pss = NULL;
-				for ( pss = GET_FIRST(&shipp->subsys_list); pss != END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) ) {
-					if (pss->system_info->subobj_num == parent) {
-						break;
-					}
-				}
-
-				Assert (pss != NULL);
-				if (pss != NULL) {
-					if (pss->system_info != NULL) {
-						vec3d exp_center, tmp = ZERO_VECTOR;
-						model_instance_local_to_global_point(&exp_center, &tmp, pm, pmi, parent, &ship_objp->orient, &ship_objp->pos );
-
-						// if not blown off, blow it off
-						shipfx_subsystem_maybe_create_live_debris(ship_objp, shipp, pss, &exp_center, 3.0f);
-
-						// now set subsystem as blown off, so we only get one copy
-						pmi->submodel[parent].blown_off = true;
-					}
-				}
+				// now set subsystem as blown off, so we only get one copy
+				pmi->submodel[submodel_num].blown_off = true;
 			}
 		}
 	}
