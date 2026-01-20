@@ -97,11 +97,11 @@ extern bool lcase_equal(const SCP_string& _Left, const SCP_string& _Right);
 extern bool lcase_lessthan(const SCP_string& _Left, const SCP_string& _Right);
 
 
-template <typename T, typename U>
-using SCP_map = std::map<T, U, std::less<T>, std::allocator<std::pair<const T, U>>>;
+template <typename T, typename U, typename Less = std::less<T>>
+using SCP_map = std::map<T, U, Less, std::allocator<std::pair<const T, U>>>;
 
-template <typename T, typename U>
-using SCP_multimap = std::multimap<T, U, std::less<T>, std::allocator<std::pair<const T, U>>>;
+template <typename T, typename U, typename Less = std::less<T>>
+using SCP_multimap = std::multimap<T, U, Less, std::allocator<std::pair<const T, U>>>;
 
 template <typename T>
 using SCP_queue = std::queue<T, std::deque<T, std::allocator<T>>>;
@@ -109,11 +109,11 @@ using SCP_queue = std::queue<T, std::deque<T, std::allocator<T>>>;
 template <typename T>
 using SCP_deque = std::deque<T, std::allocator<T>>;
 
-template <typename T>
-class SCP_set : public std::set<T, std::less<T>, std::allocator<T>>
+template <typename T, typename Less = std::less<T>>
+class SCP_set : public std::set<T, Less, std::allocator<T>>
 {
 public:
-	using std::set<T, std::less<T>, std::allocator<T>>::set;	// inherit all constructors
+	using std::set<T, Less, std::allocator<T>>::set;	// inherit all constructors
 
 	bool contains(const T& item) const
 	{
@@ -121,11 +121,11 @@ public:
 	}
 };
 
-template <typename T>
-class SCP_multiset : public std::multiset<T, std::less<T>, std::allocator<T>>
+template <typename T, typename Less = std::less<T>>
+class SCP_multiset : public std::multiset<T, Less, std::allocator<T>>
 {
 public:
-	using std::multiset<T, std::less<T>, std::allocator<T>>::multiset;	// inherit all constructors
+	using std::multiset<T, Less, std::allocator<T>>::multiset;	// inherit all constructors
 
 	bool contains(const T& item) const
 	{
