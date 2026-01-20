@@ -58,22 +58,22 @@ bg_bitmap_dlg::bg_bitmap_dlg(CWnd* pParent) : CDialog(bg_bitmap_dlg::IDD, pParen
 	m_toggle_trails = FALSE;
 	m_corrected_angles_in_mission_file = FALSE;
 
-	s_pitch = 0;
-	s_bank = 0;
-	s_heading = 0;
+	s_pitch = 0.f;
+	s_bank = 0.f;
+	s_heading = 0.f;
 	s_scale = 1.0f;	
 	s_index = -1;
-	b_pitch = 0;
-	b_bank = 0;
-	b_heading = 0;
+	b_pitch = 0.f;
+	b_bank = 0.f;
+	b_heading = 0.f;
 	b_scale_x = 1.0f; b_scale_y = 1.0f;
 	b_div_x = 1; b_div_y = 1;
 	b_index = -1;
 
 	m_skybox_model = _T("");
-	m_skybox_pitch = 0;
-	m_skybox_bank = 0;
-	m_skybox_heading = 0;
+	m_skybox_pitch = 0.f;
+	m_skybox_bank = 0.f;
+	m_skybox_heading = 0.f;
 	m_sky_flag_1 = The_mission.skybox_flags & MR_NO_LIGHTING ? 1 : 0;
 	m_sky_flag_2 = The_mission.skybox_flags & MR_ALL_XPARENT ? 1 : 0;
 	m_sky_flag_3 = The_mission.skybox_flags & MR_NO_ZBUFFER ? 1 : 0;
@@ -108,20 +108,20 @@ void bg_bitmap_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_NEB2_TOGGLE_TRAILS, m_toggle_trails);
 	DDX_Text(pDX, IDC_SUN1, s_name);
 	DDX_Text(pDX, IDC_SUN1_P, s_pitch);
-	DDV_MinMaxInt(pDX, s_pitch, 0, 359);
+	DDV_MinMaxFloat(pDX, s_pitch, 0.f, DEGREE_UB);
 	DDX_Text(pDX, IDC_SUN1_B, s_bank);
-	DDV_MinMaxInt(pDX, s_bank, 0, 359);
+	DDV_MinMaxFloat(pDX, s_bank, 0.f, DEGREE_UB);
 	DDX_Text(pDX, IDC_SUN1_H, s_heading);
-	DDV_MinMaxInt(pDX, s_heading, 0, 359);
+	DDV_MinMaxFloat(pDX, s_heading, 0.f, DEGREE_UB);
 	DDX_Text(pDX, IDC_SUN1_SCALE, s_scale);
 	DDV_MinMaxFloat(pDX, s_scale, 0.1f, 50.0f);
 	DDX_Text(pDX, IDC_SBITMAP, b_name);
 	DDX_Text(pDX, IDC_SBITMAP_P, b_pitch);
-	DDV_MinMaxInt(pDX, b_pitch, 0, 359);
+	DDV_MinMaxFloat(pDX, b_pitch, 0.f, DEGREE_UB);
 	DDX_Text(pDX, IDC_SBITMAP_B, b_bank);
-	DDV_MinMaxInt(pDX, b_bank, 0, 359);
+	DDV_MinMaxFloat(pDX, b_bank, 0.f, DEGREE_UB);
 	DDX_Text(pDX, IDC_SBITMAP_H, b_heading);
-	DDV_MinMaxInt(pDX, b_heading, 0, 359);
+	DDV_MinMaxFloat(pDX, b_heading, 0.f, DEGREE_UB);
 	DDX_Text(pDX, IDC_SBITMAP_SCALE_X, b_scale_x);
 	DDV_MinMaxFloat(pDX, b_scale_x, .001f, 18.0f);
 	DDX_Text(pDX, IDC_SBITMAP_SCALE_Y, b_scale_y);
@@ -132,11 +132,11 @@ void bg_bitmap_dlg::DoDataExchange(CDataExchange* pDX)
 	DDV_MinMaxInt(pDX, b_div_y, 1, 5);
 	DDX_Text(pDX, IDC_SKYBOX_FNAME, m_skybox_model);
 	DDX_Text(pDX, IDC_SKYBOX_P, m_skybox_pitch);
-	DDV_MinMaxInt(pDX, m_skybox_pitch, 0, 359);
+	DDV_MinMaxFloat(pDX, m_skybox_pitch, 0.f, DEGREE_UB);
 	DDX_Text(pDX, IDC_SKYBOX_B, m_skybox_bank);
-	DDV_MinMaxInt(pDX, m_skybox_bank, 0, 359);
+	DDV_MinMaxFloat(pDX, m_skybox_bank, 0.f, DEGREE_UB);
 	DDX_Text(pDX, IDC_SKYBOX_H, m_skybox_heading);
-	DDV_MinMaxInt(pDX, m_skybox_heading, 0, 359);
+	DDV_MinMaxFloat(pDX, m_skybox_heading, 0.f, DEGREE_UB);
 	DDX_Text(pDX, IDC_ENVMAP, m_envmap);
 	DDX_Check(pDX, IDC_SKY_FLAG_NO_LIGHTING, m_sky_flag_1);
 	DDX_Check(pDX, IDC_SKY_FLAG_XPARENT, m_sky_flag_2);
@@ -209,7 +209,6 @@ BEGIN_MESSAGE_MAP(bg_bitmap_dlg, CDialog)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
-const static float delta = .00001f;
 
 /////////////////////////////////////////////////////////////////////////////
 // bg_bitmap_dlg message handlers
@@ -271,9 +270,9 @@ void bg_bitmap_dlg::create()
 
 	angles skybox_angles;
 	vm_extract_angles_matrix(&skybox_angles, &The_mission.skybox_orientation);
-	m_skybox_pitch = fl2ir(fl_degrees(skybox_angles.p));
-	m_skybox_bank = fl2ir(fl_degrees(skybox_angles.b));
-	m_skybox_heading = fl2ir(fl_degrees(skybox_angles.h));
+	m_skybox_pitch = fl_degrees_100ths(skybox_angles.p);
+	m_skybox_bank = fl_degrees_100ths(skybox_angles.b);
+	m_skybox_heading = fl_degrees_100ths(skybox_angles.h);
 
 	//make sure angle values are in the 0-359 degree range
 	if (m_skybox_pitch < 0) m_skybox_pitch += 360;
@@ -760,9 +759,9 @@ void bg_bitmap_dlg::sun_data_save_current()
 
 		// store the data
 		strcpy_s(sle->filename, s_name);
-		sle->ang.p = (float) fl_radians(s_pitch);
-		sle->ang.b = (float) fl_radians(s_bank);
-		sle->ang.h = (float) fl_radians(s_heading);
+		sle->ang.p = fl_radians(s_pitch);
+		sle->ang.b = fl_radians(s_bank);
+		sle->ang.h = fl_radians(s_heading);
 		sle->scale_x = (float) s_scale;
 		sle->scale_y = 1.0f;
 		sle->div_x = 1;
@@ -786,14 +785,14 @@ void bg_bitmap_dlg::OnSunChange()
 		starfield_list_entry *sle = &background->suns[s_index];
 
 		s_name = CString(sle->filename);
-		s_pitch = fl2ir(fl_degrees(sle->ang.p) + delta);
-		s_bank = fl2ir(fl_degrees(sle->ang.b) + delta);
-		s_heading = fl2ir(fl_degrees(sle->ang.h) + delta);
+		s_pitch = fl_degrees_100ths(sle->ang.p);
+		s_bank = fl_degrees_100ths(sle->ang.b);
+		s_heading = fl_degrees_100ths(sle->ang.h);
 		s_scale = sle->scale_x;
 
 		// make sure angles are in the 0-359 degree range;
 		// an angle of 6.28318310, which is less than 6.28318548,
-		// is converted to 359.999847, which is rounded to 360
+		// is converted to 359.999847, which (if converted to int) is rounded to 360
 		if (s_pitch >= 360) s_pitch -= 360;
 		if (s_bank >= 360) s_bank -= 360;
 		if (s_heading >= 360) s_heading -= 360;
@@ -931,9 +930,9 @@ void bg_bitmap_dlg::bitmap_data_save_current()
 
 		// store the data
 		strcpy_s(sle->filename, b_name);
-		sle->ang.p = (float) fl_radians(b_pitch);
-		sle->ang.b = (float) fl_radians(b_bank);
-		sle->ang.h = (float) fl_radians(b_heading);
+		sle->ang.p = fl_radians(b_pitch);
+		sle->ang.b = fl_radians(b_bank);
+		sle->ang.h = fl_radians(b_heading);
 		sle->scale_x = (float) b_scale_x;
 		sle->scale_y = (float) b_scale_y;
 		sle->div_x = b_div_x;
@@ -957,9 +956,9 @@ void bg_bitmap_dlg::OnBitmapChange()
 		starfield_list_entry *sle = &background->bitmaps[b_index];
 
 		b_name = CString(sle->filename);
-		b_pitch = fl2ir(fl_degrees(sle->ang.p) + delta);
-		b_bank = fl2ir(fl_degrees(sle->ang.b) + delta);
-		b_heading = fl2ir(fl_degrees(sle->ang.h) + delta);
+		b_pitch = fl_degrees_100ths(sle->ang.p);
+		b_bank = fl_degrees_100ths(sle->ang.b);
+		b_heading = fl_degrees_100ths(sle->ang.h);
 		b_scale_x = sle->scale_x;
 		b_scale_y = sle->scale_y;
 		b_div_x = sle->div_x;
@@ -1053,37 +1052,44 @@ void bg_bitmap_dlg::OnBitmapDropdownChange()
 	}	
 }
 
-void bg_bitmap_dlg::get_data_spinner(NM_UPDOWN* pUD, int id, int *var, int min, int max)
+void bg_bitmap_dlg::get_data_spinner(NM_UPDOWN* pUD, int id, float *var, float min, float max)
 {
+	float old_val = *var;
+
 	if (pUD->iDelta > 0)
 	{
-		(*var)--;
+		*var = std::floor(*var);
+		if (fl_equal(*var, old_val))
+			(*var)--;
 
 		//go min->max
-		if (*var == (min-1))
+		if (*var < min)
 		{
-			*var = max;
+			*var = std::floor(max);
 		}
-
-		this->SetDlgItemInt(id, *var);
 	}
-	else 
+	else
 	{
-		(*var)++;
+		*var = std::ceil(*var);
+		if (fl_equal(*var, old_val))
+			(*var)++;
 
 		//go max->min
-		if (*var == (max+1))
+		if (*var > max)
 		{
-			*var=min;
+			*var = std::ceil(min);
 		}
-
-		this->SetDlgItemInt(id, *var);
 	}
+
+	// there is no SetDlgItemFloat, so let's treat it as int
+	// (note, there will be no fractional part here, unless we later decide to use a fractional increment)
+	this->SetDlgItemInt(id, static_cast<int>(*var));
 }
 
-
-void bg_bitmap_dlg::get_data_float(int id, float *var, float min, float max)
+void bg_bitmap_dlg::get_data_float(int id, float *var, float min, float max, int precision)
 {
+	Assertion(precision >= 1 && precision <= 3, "Precision must be between 1 and 3!");
+
 	char buf[16];
 	char max_ch[16];
 	char min_ch[16];
@@ -1091,8 +1097,8 @@ void bg_bitmap_dlg::get_data_float(int id, float *var, float min, float max)
 	this->GetDlgItemText(id, buf, 16);
 
 	*var = (float)atof(buf);
-	sprintf(max_ch,"%.3f",max);
-	sprintf(min_ch,"%.3f",min);
+	sprintf(max_ch, "%.*f", precision, max);
+	sprintf(min_ch, "%.*f", precision, min);
 	CString error_msg = "Please enter a number between ";
 	error_msg += min_ch;
 	error_msg += " and ";
@@ -1148,7 +1154,7 @@ void bg_bitmap_dlg::OnDeltaposSbitmapPSpin(NMHDR* pNMHDR, LRESULT* pResult)
 	NM_UPDOWN* pNMUpDown = (NM_UPDOWN*)pNMHDR;
 
 	if (b_index < 0) return;
-	get_data_spinner(pNMUpDown, IDC_SBITMAP_P, &b_pitch, 0, 359);
+	get_data_spinner(pNMUpDown, IDC_SBITMAP_P, &b_pitch, 0.f, DEGREE_UB);
 	OnBitmapChange();
 	*pResult = 0;
 }
@@ -1158,7 +1164,7 @@ void bg_bitmap_dlg::OnDeltaposSbitmapBSpin(NMHDR* pNMHDR, LRESULT* pResult)
 	NM_UPDOWN* pNMUpDown = (NM_UPDOWN*)pNMHDR;
 
 	if (b_index < 0) return;
-	get_data_spinner(pNMUpDown, IDC_SBITMAP_B, &b_bank, 0, 359);
+	get_data_spinner(pNMUpDown, IDC_SBITMAP_B, &b_bank, 0.f, DEGREE_UB);
 	OnBitmapChange();
 	*pResult = 0;
 }
@@ -1168,7 +1174,7 @@ void bg_bitmap_dlg::OnDeltaposSbitmapHSpin(NMHDR* pNMHDR, LRESULT* pResult)
 	NM_UPDOWN* pNMUpDown = (NM_UPDOWN*)pNMHDR;
 
 	if (b_index < 0) return;
-	get_data_spinner(pNMUpDown, IDC_SBITMAP_H, &b_heading, 0, 359);
+	get_data_spinner(pNMUpDown, IDC_SBITMAP_H, &b_heading, 0.f, DEGREE_UB);
 	OnBitmapChange();
 	*pResult = 0;
 }
@@ -1176,14 +1182,14 @@ void bg_bitmap_dlg::OnDeltaposSbitmapHSpin(NMHDR* pNMHDR, LRESULT* pResult)
 void bg_bitmap_dlg::OnKillfocusSbitmapScaleX() 
 {
 	if (b_index < 0) return;
-	get_data_float(IDC_SBITMAP_SCALE_X, &b_scale_x, 0.001f, 18.0f);
+	get_data_float(IDC_SBITMAP_SCALE_X, &b_scale_x, 0.001f, 18.0f, 3);
 	OnBitmapChange();
 }
 
 void bg_bitmap_dlg::OnKillfocusSbitmapScaleY() 
 {
 	if (b_index < 0) return;
-	get_data_float(IDC_SBITMAP_SCALE_Y, &b_scale_y, 0.001f, 18.0f);
+	get_data_float(IDC_SBITMAP_SCALE_Y, &b_scale_y, 0.001f, 18.0f, 3);
 	OnBitmapChange();
 }
 
@@ -1204,21 +1210,21 @@ void bg_bitmap_dlg::OnKillfocusSbitmapDivY()
 void bg_bitmap_dlg::OnKillfocusSbitmapP() 
 {
 	if (b_index < 0) return;
-	get_data_int(IDC_SBITMAP_P, &b_pitch, 0, 359);
+	get_data_float(IDC_SBITMAP_P, &b_pitch, 0.f, DEGREE_UB, 2);
 	OnBitmapChange();
 }
 
 void bg_bitmap_dlg::OnKillfocusSbitmapB() 
 {
 	if (b_index < 0) return;
-	get_data_int(IDC_SBITMAP_B, &b_bank, 0, 359);
+	get_data_float(IDC_SBITMAP_B, &b_bank, 0.f, DEGREE_UB, 2);
 	OnBitmapChange();
 }
 
 void bg_bitmap_dlg::OnKillfocusSbitmapH() 
 {
 	if (b_index < 0) return;
-	get_data_int(IDC_SBITMAP_H, &b_heading, 0, 359);
+	get_data_float(IDC_SBITMAP_H, &b_heading, 0.f, DEGREE_UB, 2);
 	OnBitmapChange();
 }
 
@@ -1227,8 +1233,7 @@ void bg_bitmap_dlg::OnDeltaposSun1PSpin(NMHDR* pNMHDR, LRESULT* pResult)
 	NM_UPDOWN* pNMUpDown = (NM_UPDOWN*)pNMHDR;
 
 	if (s_index < 0) return;
-	//G5K - why?	pNMUpDown->iDelta *= -1;
-	get_data_spinner(pNMUpDown, IDC_SUN1_P, &s_pitch, 0, 359);
+	get_data_spinner(pNMUpDown, IDC_SUN1_P, &s_pitch, 0.f, DEGREE_UB);
 	OnSunChange();
 	*pResult = 0;
 }
@@ -1238,8 +1243,7 @@ void bg_bitmap_dlg::OnDeltaposSun1BSpin(NMHDR* pNMHDR, LRESULT* pResult)
 	NM_UPDOWN* pNMUpDown = (NM_UPDOWN*)pNMHDR;
 
 	if (s_index < 0) return;
-	//G5K - why?	pNMUpDown->iDelta *= -1;
-	get_data_spinner(pNMUpDown, IDC_SUN1_B, &s_bank, 0, 359);
+	get_data_spinner(pNMUpDown, IDC_SUN1_B, &s_bank, 0.f, DEGREE_UB);
 	OnSunChange();
 	*pResult = 0;
 }
@@ -1249,8 +1253,7 @@ void bg_bitmap_dlg::OnDeltaposSun1HSpin(NMHDR* pNMHDR, LRESULT* pResult)
 	NM_UPDOWN* pNMUpDown = (NM_UPDOWN*)pNMHDR;
 
 	if (s_index < 0) return;
-	//G5K - why?	pNMUpDown->iDelta *= -1;
-	get_data_spinner(pNMUpDown, IDC_SUN1_H, &s_heading, 0, 359);
+	get_data_spinner(pNMUpDown, IDC_SUN1_H, &s_heading, 0.f, DEGREE_UB);
 	OnSunChange();
 	*pResult = 0;
 }
@@ -1258,28 +1261,28 @@ void bg_bitmap_dlg::OnDeltaposSun1HSpin(NMHDR* pNMHDR, LRESULT* pResult)
 void bg_bitmap_dlg::OnKillfocusSun1P() 
 {
 	if (s_index < 0) return;
-	get_data_int(IDC_SUN1_P, &s_pitch, 0, 359);
+	get_data_float(IDC_SUN1_P, &s_pitch, 0.f, DEGREE_UB, 2);
 	OnSunChange();
 }
 
 void bg_bitmap_dlg::OnKillfocusSun1H() 
 {
 	if (s_index < 0) return;
-	get_data_int(IDC_SUN1_H, &s_heading, 0, 359);
+	get_data_float(IDC_SUN1_H, &s_heading, 0.f, DEGREE_UB, 2);
 	OnSunChange();
 }
 
 void bg_bitmap_dlg::OnKillfocusSun1B() 
 {
 	if (s_index < 0) return;
-	get_data_int(IDC_SUN1_B, &s_bank, 0, 359);
+	get_data_float(IDC_SUN1_B, &s_bank, 0.f, DEGREE_UB, 2);
 	OnSunChange();
 }
 
 void bg_bitmap_dlg::OnKillfocusSun1Scale() 
 {
 	if (s_index < 0) return;
-	get_data_float(IDC_SUN1_SCALE, &s_scale, 0.1f, 50.0f);
+	get_data_float(IDC_SUN1_SCALE, &s_scale, 0.1f, 50.0f, 3);
 	OnSunChange();
 }
 
@@ -1287,7 +1290,7 @@ void bg_bitmap_dlg::OnDeltaposSkyboxPSpin(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	NM_UPDOWN* pNMUpDown = (NM_UPDOWN*)pNMHDR;
 
-	get_data_spinner(pNMUpDown, IDC_SKYBOX_P, &m_skybox_pitch, 0, 359);
+	get_data_spinner(pNMUpDown, IDC_SKYBOX_P, &m_skybox_pitch, 0.f, DEGREE_UB);
 	OnOrientationChange();
 	*pResult = 0;
 }
@@ -1296,7 +1299,7 @@ void bg_bitmap_dlg::OnDeltaposSkyboxBSpin(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	NM_UPDOWN* pNMUpDown = (NM_UPDOWN*)pNMHDR;
 
-	get_data_spinner(pNMUpDown, IDC_SKYBOX_B, &m_skybox_bank, 0, 359);
+	get_data_spinner(pNMUpDown, IDC_SKYBOX_B, &m_skybox_bank, 0.f, DEGREE_UB);
 	OnOrientationChange();
 	*pResult = 0;
 }
@@ -1305,26 +1308,26 @@ void bg_bitmap_dlg::OnDeltaposSkyboxHSpin(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	NM_UPDOWN* pNMUpDown = (NM_UPDOWN*)pNMHDR;
 
-	get_data_spinner(pNMUpDown, IDC_SKYBOX_H, &m_skybox_heading, 0, 359);
+	get_data_spinner(pNMUpDown, IDC_SKYBOX_H, &m_skybox_heading, 0.f, DEGREE_UB);
 	OnOrientationChange();
 	*pResult = 0;
 }
 
 void bg_bitmap_dlg::OnKillfocusSkyboxP() 
 {
-	get_data_int(IDC_SKYBOX_P, &m_skybox_pitch, 0, 359);
+	get_data_float(IDC_SKYBOX_P, &m_skybox_pitch, 0.f, DEGREE_UB, 2);
 	OnOrientationChange();
 }
 
 void bg_bitmap_dlg::OnKillfocusSkyboxB() 
 {
-	get_data_int(IDC_SKYBOX_B, &m_skybox_bank, 0, 359);
+	get_data_float(IDC_SKYBOX_B, &m_skybox_bank, 0.f, DEGREE_UB, 2);
 	OnOrientationChange();
 }
 
 void bg_bitmap_dlg::OnKillfocusSkyboxH() 
 {
-	get_data_int(IDC_SKYBOX_H, &m_skybox_heading, 0, 359);
+	get_data_float(IDC_SKYBOX_H, &m_skybox_heading, 0.f, DEGREE_UB, 2);
 	OnOrientationChange();
 }
 

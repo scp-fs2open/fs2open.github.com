@@ -33,16 +33,16 @@ void BackgroundEditorDialog::initializeUi()
 	updateBackgroundControls();
 
 	// Bitmaps
-	ui->bitmapPitchSpin->setRange(_model->getOrientLimit().first, _model->getOrientLimit().second);
-	ui->bitmapBankSpin->setRange(_model->getOrientLimit().first, _model->getOrientLimit().second);
-	ui->bitmapHeadingSpin->setRange(_model->getOrientLimit().first, _model->getOrientLimit().second);
+	ui->bitmapPitchSpin->setRange(_model->getFloatOrientLimit().first, _model->getFloatOrientLimit().second);
+	ui->bitmapBankSpin->setRange(_model->getFloatOrientLimit().first, _model->getFloatOrientLimit().second);
+	ui->bitmapHeadingSpin->setRange(_model->getFloatOrientLimit().first, _model->getFloatOrientLimit().second);
 	ui->bitmapScaleXDoubleSpinBox->setRange(_model->getBitmapScaleLimit().first, _model->getBitmapScaleLimit().second);
 	ui->bitmapScaleYDoubleSpinBox->setRange(_model->getBitmapScaleLimit().first, _model->getBitmapScaleLimit().second);
 	ui->bitmapDivXSpinBox->setRange(_model->getDivisionLimit().first, _model->getDivisionLimit().second);
 	ui->bitmapDivYSpinBox->setRange(_model->getDivisionLimit().first, _model->getDivisionLimit().second);
-	ui->skyboxPitchSpin->setRange(_model->getOrientLimit().first, _model->getOrientLimit().second);
-	ui->skyboxBankSpin->setRange(_model->getOrientLimit().first, _model->getOrientLimit().second);
-	ui->skyboxHeadingSpin->setRange(_model->getOrientLimit().first, _model->getOrientLimit().second);
+	ui->skyboxPitchSpin->setRange(_model->getFloatOrientLimit().first, _model->getFloatOrientLimit().second);
+	ui->skyboxBankSpin->setRange(_model->getFloatOrientLimit().first, _model->getFloatOrientLimit().second);
+	ui->skyboxHeadingSpin->setRange(_model->getFloatOrientLimit().first, _model->getFloatOrientLimit().second);
 
 	const auto& names = _model->getAvailableBitmapNames();
 
@@ -53,8 +53,8 @@ void BackgroundEditorDialog::initializeUi()
 	refreshBitmapList();
 
 	// Suns
-	ui->sunPitchSpin->setRange(_model->getOrientLimit().first, _model->getOrientLimit().second);
-	ui->sunHeadingSpin->setRange(_model->getOrientLimit().first, _model->getOrientLimit().second);
+	ui->sunPitchSpin->setRange(_model->getFloatOrientLimit().first, _model->getFloatOrientLimit().second);
+	ui->sunHeadingSpin->setRange(_model->getFloatOrientLimit().first, _model->getFloatOrientLimit().second);
 	ui->sunScaleDoubleSpinBox->setRange(_model->getSunScaleLimit().first, _model->getSunScaleLimit().second);
 
 	const auto& sun_names = _model->getAvailableSunNames();
@@ -493,19 +493,19 @@ void BackgroundEditorDialog::on_bitmapTypeCombo_currentIndexChanged(int index)
 	refreshBitmapList();
 }
 
-void BackgroundEditorDialog::on_bitmapPitchSpin_valueChanged(int arg1)
+void BackgroundEditorDialog::on_bitmapPitchSpin_valueChanged(double arg1)
 {
-	_model->setBitmapPitch(arg1);
+	_model->setBitmapPitch(static_cast<float>(arg1));
 }
 
-void BackgroundEditorDialog::on_bitmapBankSpin_valueChanged(int arg1)
+void BackgroundEditorDialog::on_bitmapBankSpin_valueChanged(double arg1)
 {
-	_model->setBitmapBank(arg1);
+	_model->setBitmapBank(static_cast<float>(arg1));
 }
 
-void BackgroundEditorDialog::on_bitmapHeadingSpin_valueChanged(int arg1)
+void BackgroundEditorDialog::on_bitmapHeadingSpin_valueChanged(double arg1)
 {
-	_model->setBitmapHeading(arg1);
+	_model->setBitmapHeading(static_cast<float>(arg1));
 }
 
 void BackgroundEditorDialog::on_bitmapScaleXDoubleSpinBox_valueChanged(double arg1)
@@ -605,14 +605,14 @@ void BackgroundEditorDialog::on_sunSelectionCombo_currentIndexChanged(int index)
 	refreshSunList();
 }
 
-void BackgroundEditorDialog::on_sunPitchSpin_valueChanged(int arg1)
+void BackgroundEditorDialog::on_sunPitchSpin_valueChanged(double arg1)
 {
-	_model->setSunPitch(arg1);
+	_model->setSunPitch(static_cast<float>(arg1));
 }
 
-void BackgroundEditorDialog::on_sunHeadingSpin_valueChanged(int arg1)
+void BackgroundEditorDialog::on_sunHeadingSpin_valueChanged(double arg1)
 {
-	_model->setSunHeading(arg1);
+	_model->setSunHeading(static_cast<float>(arg1));
 }
 
 void BackgroundEditorDialog::on_sunScaleDoubleSpinBox_valueChanged(double arg1)
@@ -864,19 +864,19 @@ void BackgroundEditorDialog::on_skyboxEdit_textChanged(const QString& arg1)
 	updateSkyboxControls();
 }
 
-void BackgroundEditorDialog::on_skyboxPitchSpin_valueChanged(int arg1)
+void BackgroundEditorDialog::on_skyboxPitchSpin_valueChanged(double arg1)
 {
-	_model->setSkyboxPitch(arg1);
+	_model->setSkyboxPitch(static_cast<float>(arg1));
 }
 
-void BackgroundEditorDialog::on_skyboxBankSpin_valueChanged(int arg1)
+void BackgroundEditorDialog::on_skyboxBankSpin_valueChanged(double arg1)
 {
-	_model->setSkyboxBank(arg1);
+	_model->setSkyboxBank(static_cast<float>(arg1));
 }
 
-void BackgroundEditorDialog::on_skyboxHeadingSpin_valueChanged(int arg1)
+void BackgroundEditorDialog::on_skyboxHeadingSpin_valueChanged(double arg1)
 {
-	_model->setSkyboxHeading(arg1);
+	_model->setSkyboxHeading(static_cast<float>(arg1));
 }
 
 void BackgroundEditorDialog::on_skyboxNoLightingCheckBox_toggled(bool checked)
