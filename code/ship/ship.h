@@ -587,8 +587,6 @@ public:
 	// END PACK
 
 	int	final_death_time;				// Time until big fireball starts
-	int	death_time;				// Time until big fireball starts
-	int	end_death_time;				// Time until big fireball starts
 	int	really_final_death_time;	// Time until ship breaks up and disappears
 	vec3d	deathroll_rotvel;			// Desired death rotational velocity
 
@@ -1428,9 +1426,6 @@ public:
 	float		thruster_glow_noise_mult;
 
 	bool		draw_distortion;
-
-	int splodeing_texture;
-	char splodeing_texture_name[MAX_FILENAME_LEN];
 
 	// Goober5000
 	SCP_vector<texture_replace> replacement_textures;
