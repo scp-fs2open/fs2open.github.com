@@ -929,6 +929,8 @@ void briefing_editor_dlg::OnInsertStage()
 
 void briefing_editor_dlg::copy_stage(int from, int to)
 {
+	Assertion(Locked_sexp_true >= 0 && Locked_sexp_false >= 0, "SEXPs are not yet initialized!");
+
 	if ((from < 0) || (from >= Briefing->num_stages)) {
 		Briefing->stages[to].text = "<Text here>";
 		strcpy_s(Briefing->stages[to].voice, "none.wav");
