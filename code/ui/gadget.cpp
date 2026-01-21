@@ -172,6 +172,10 @@ void UI_GADGET::destroy()
 		}
 	}
 
+	if (has_focus()) {
+		clear_focus();
+	}
+
 	if (children) {
 		cur = children;
 		do {
@@ -321,6 +325,10 @@ UI_GADGET *UI_GADGET::get_prev()
 void UI_GADGET::set_focus()
 {
 	my_wnd->selected_gadget = this;
+
+	if (kind == UI_KIND_INPUTBOX) {
+		SDL_StartTextInput();
+	}
 }
 
 // Make no gadget have focus in the UI window.
@@ -328,6 +336,10 @@ void UI_GADGET::set_focus()
 void UI_GADGET::clear_focus()
 {
 	my_wnd->selected_gadget = NULL;
+
+	if (kind == UI_KIND_INPUTBOX) {
+		SDL_StopTextInput();
+	}
 }
 
 // Return true or false if this gadget currently has the focus
