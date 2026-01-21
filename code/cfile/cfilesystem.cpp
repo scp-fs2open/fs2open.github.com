@@ -2480,7 +2480,7 @@ void cfile_spew_pack_file_crcs()
 	my_time = time(NULL);
 
 	memset( datetime, 0, sizeof(datetime) );
-	snprintf(datetime, sizeof(datetime)-1, "%s", ctime(&my_time));
+	snprintf(datetime, sizeof(datetime), "%s", ctime(&my_time));
 	// ctime() adds a newline char, so we have to strip it off
 	datetime[strlen(datetime)-1] = '\0';
 
