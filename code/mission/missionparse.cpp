@@ -309,7 +309,8 @@ flag_def_list_new<Ship::Ship_Flags> Parse_ship_flags[] = {
 	{"fail-sound-locked-primary", Ship::Ship_Flags::Fail_sound_locked_primary, true, false},
 	{"fail-sound-locked-secondary", Ship::Ship_Flags::Fail_sound_locked_secondary, true, false},
 	{"aspect-immune", Ship::Ship_Flags::Aspect_immune, true, false},
-	{"cannot-perform-scan", Ship::Ship_Flags::Cannot_perform_scan, true, false},
+	{"cannot-perform-scan-hide-cargo", Ship::Ship_Flags::Cannot_perform_scan_hide_cargo, true, false},
+	{"cannot-perform-scan-show-cargo", Ship::Ship_Flags::Cannot_perform_scan_show_cargo, true, false},
 	{"no-targeting-limits", Ship::Ship_Flags::No_targeting_limits, true, false},
 	{"force-shields-on", Ship::Ship_Flags::Force_shields_on, true, false},
 	{"Destroy before Mission", Ship::Ship_Flags::Kill_before_mission,true, false}, //Not Printed to misson so can use descriptive name
@@ -479,7 +480,8 @@ flag_def_list_new<Mission::Parse_Object_Flags> Parse_object_flags[] = {
     { "fail-sound-locked-primary",			Mission::Parse_Object_Flags::SF_Fail_sound_locked_primary, true, false },
     { "fail-sound-locked-secondary",		Mission::Parse_Object_Flags::SF_Fail_sound_locked_secondary, true, false },
     { "aspect-immune",						Mission::Parse_Object_Flags::SF_Aspect_immune, true, false },
-	{ "cannot-perform-scan",			Mission::Parse_Object_Flags::SF_Cannot_perform_scan,	true, false },
+	{ "cannot-perform-scan-hide-cargo",		Mission::Parse_Object_Flags::SF_Cannot_perform_scan_hide_cargo, true, false },
+	{ "cannot-perform-scan-show-cargo",		Mission::Parse_Object_Flags::SF_Cannot_perform_scan_show_cargo, true, false },
 	{ "no-targeting-limits",				Mission::Parse_Object_Flags::SF_No_targeting_limits, true, false},
 };
 
@@ -545,7 +547,8 @@ parse_object_flag_description<Mission::Parse_Object_Flags> Parse_object_flag_des
     { Mission::Parse_Object_Flags::SF_Fail_sound_locked_primary,	"Play the firing fail sound when the weapon is locked."},
     { Mission::Parse_Object_Flags::SF_Fail_sound_locked_secondary,	"Play the firing fail sound when the weapon is locked."},
     { Mission::Parse_Object_Flags::SF_Aspect_immune,				"Ship cannot be targeted by Aspect Seekers."},
-	{ Mission::Parse_Object_Flags::SF_Cannot_perform_scan,			"Ship cannot scan other ships."},
+	{ Mission::Parse_Object_Flags::SF_Cannot_perform_scan_hide_cargo, "Ship cannot scan other ships, and the cargo line will not be shown on the HUD."},
+	{ Mission::Parse_Object_Flags::SF_Cannot_perform_scan_show_cargo, "Ship cannot scan other ships, but the cargo line will be shown on the HUD."},
 	{ Mission::Parse_Object_Flags::SF_No_targeting_limits,			"Ship is always targetable regardless of AWACS or targeting range limits."},
 };
 
@@ -3111,8 +3114,10 @@ void resolve_parse_flags(object *objp, flagset<Mission::Parse_Object_Flags> &par
 	if (parse_flags[Mission::Parse_Object_Flags::SF_Aspect_immune])
 		shipp->flags.set(Ship::Ship_Flags::Aspect_immune);
 
-	if (parse_flags[Mission::Parse_Object_Flags::SF_Cannot_perform_scan])
-		shipp->flags.set(Ship::Ship_Flags::Cannot_perform_scan);
+	if (parse_flags[Mission::Parse_Object_Flags::SF_Cannot_perform_scan_hide_cargo])
+		shipp->flags.set(Ship::Ship_Flags::Cannot_perform_scan_hide_cargo);
+	if (parse_flags[Mission::Parse_Object_Flags::SF_Cannot_perform_scan_show_cargo])
+		shipp->flags.set(Ship::Ship_Flags::Cannot_perform_scan_show_cargo);
 
 	if (parse_flags[Mission::Parse_Object_Flags::SF_No_targeting_limits])
 		shipp->flags.set(Ship::Ship_Flags::No_targeting_limits);
@@ -3506,11 +3511,18 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
     // set flags
     if (optional_string("+Flags:"))
     {
-        SCP_vector<SCP_string> unparsed;
-        parse_string_flag_list(p_objp->flags, Parse_object_flags, Num_parse_object_flags, &unparsed);
-        if (!unparsed.empty()) {
-            for (size_t k = 0; k < unparsed.size(); ++k) {
-                WarningEx(LOCATION, "Unknown flag in parse object flags: %s", unparsed[k].c_str());
+        SCP_vector<SCP_string> unparsed_vec;
+        parse_string_flag_list(p_objp->flags, Parse_object_flags, Num_parse_object_flags, &unparsed_vec);
+        if (!unparsed_vec.empty()) {
+			for (const auto& unparsed: unparsed_vec) {
+				// catch typos or deprecations
+				if (!stricmp(unparsed.c_str(), "no-collide") || !stricmp(unparsed.c_str(), "no_collide")) {
+					p_objp->flags.set(Mission::Parse_Object_Flags::OF_No_collide);
+				} else if (!stricmp(unparsed.c_str(), "cannot-perform-scan")) {
+					p_objp->flags.set(Mission::Parse_Object_Flags::SF_Cannot_perform_scan_hide_cargo);
+				} else {
+					WarningEx(LOCATION, "Unknown flag in parse object flags: %s", unparsed.c_str());
+				}
             }
         }
     }
@@ -3518,16 +3530,17 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
     // second set - Goober5000
     if (optional_string("+Flags2:"))
     {
-        SCP_vector<SCP_string> unparsed;
-        parse_string_flag_list(p_objp->flags, Parse_object_flags, Num_parse_object_flags, &unparsed);
-        if (!unparsed.empty()) {
-            for (size_t k = 0; k < unparsed.size(); ++k) {
+        SCP_vector<SCP_string> unparsed_vec;
+        parse_string_flag_list(p_objp->flags, Parse_object_flags, Num_parse_object_flags, &unparsed_vec);
+        if (!unparsed_vec.empty()) {
+            for (const auto& unparsed: unparsed_vec) {
 				// catch typos or deprecations
-				if (!stricmp(unparsed[k].c_str(), "no-collide") || !stricmp(unparsed[k].c_str(), "no_collide")) {
+				if (!stricmp(unparsed.c_str(), "no-collide") || !stricmp(unparsed.c_str(), "no_collide")) {
 					p_objp->flags.set(Mission::Parse_Object_Flags::OF_No_collide);
-				}
-				else {
-					WarningEx(LOCATION, "Unknown flag in parse object flags: %s", unparsed[k].c_str());
+				} else if (!stricmp(unparsed.c_str(), "cannot-perform-scan")) {
+					p_objp->flags.set(Mission::Parse_Object_Flags::SF_Cannot_perform_scan_hide_cargo);
+				} else {
+					WarningEx(LOCATION, "Unknown flag in parse object flags: %s", unparsed.c_str());
 				}
             }
         }
