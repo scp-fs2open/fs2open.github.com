@@ -2490,6 +2490,8 @@ static ::util::UniformRange<T_range> parse_ship_particle_random_range(const char
 			min_value = uninitialized;
 		}
 	}
+	if (max_value == uninitialized && min_value != uninitialized)
+		max_value = min_value;
 	if (min_value >= max_value)
 		return ::util::UniformRange<T_range>(static_cast<T_range>(max_value));
 	else
