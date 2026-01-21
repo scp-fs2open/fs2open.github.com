@@ -50,8 +50,6 @@ bool query_valid_object(int index)
 
 const char* object_name(int obj) {
 	static char text[80];
-	waypoint_list *wp_list;
-	int waypoint_num;
 
 	if (!query_valid_object(obj))
 		return "*none*";
@@ -62,9 +60,7 @@ const char* object_name(int obj) {
 		return Ships[Objects[obj].instance].ship_name;
 
 	case OBJ_WAYPOINT:
-		wp_list = find_waypoint_list_with_instance(Objects[obj].instance, &waypoint_num);
-		Assert(wp_list != NULL);
-		sprintf(text, "%s:%d", wp_list->get_name(), waypoint_num + 1);
+		waypoint_stuff_name(text, Objects[obj].instance);
 		return text;
 
 	case OBJ_POINT:
