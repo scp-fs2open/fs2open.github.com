@@ -150,7 +150,7 @@ ContainerType sexp_container::get_data_type() const
 
 bool sexp_container::name_matches(const sexp_container &container) const
 {
-	return !stricmp(container.container_name.c_str(), container_name.c_str());
+	return lcase_equal(container.container_name, container_name);
 }
 
 bool sexp_container::empty() const

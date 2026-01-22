@@ -993,13 +993,8 @@ void mission_campaign_store_variables(int persistence_type, bool store_red_alert
 
 	int cur = Campaign.current_mission;
 	auto mission_obj = &Campaign.missions[cur];
-	mission_obj->variables.clear();
 
-	if (store_red_alert) {
-		for (auto& current_rav : Campaign.red_alert_variables) {
-			Campaign.persistent_variables.push_back(current_rav);
-		}
-	}
+	mission_obj->variables.clear();
 
 	int num_sexp_variables = sexp_variable_count();
 	for (int i = 0; i < num_sexp_variables; i++) {
@@ -1034,6 +1029,16 @@ void mission_campaign_store_variables(int persistence_type, bool store_red_alert
 			}
 		}
 	}
+
+	if (store_red_alert) {
+		for (const auto& current_rav : Campaign.red_alert_variables) {
+			if (find_item_with_string(Campaign.persistent_variables, &sexp_variable::variable_name, current_rav.variable_name) < 0) {
+				Campaign.persistent_variables.push_back(current_rav);
+			} else {
+				Warning(LOCATION, "A red alert variable has the same name as a persistent variable!");
+			}
+		}
+	}
 }
 
 // jg18 - adapted from mission_campaign_store_variables()
@@ -1042,14 +1047,8 @@ void mission_campaign_store_containers(ContainerType persistence_type, bool stor
 	if (!(Game_mode & GM_CAMPAIGN_MODE) || (Campaign.current_mission < 0))
 		return;
 
-	if (store_red_alert) {
-		for (const auto& current_con : Campaign.red_alert_containers) {
-			Campaign.persistent_containers.push_back(current_con);
-		}
-	}
-
 	for (const auto &container : get_all_sexp_containers()) {
-		if (!any(container.type & persistence_type)) {
+		if (none(container.type & persistence_type)) {
 			continue;
 		}
 
@@ -1058,7 +1057,7 @@ void mission_campaign_store_containers(ContainerType persistence_type, bool stor
 			// see if we already have a container with this name
 			auto ppc_it = std::find_if(Player->containers.begin(),
 				Player->containers.end(),
-				[container](const sexp_container& ppc) {
+				[&container](const sexp_container& ppc) {
 					return ppc.name_matches(container);
 				});
 
@@ -1074,7 +1073,7 @@ void mission_campaign_store_containers(ContainerType persistence_type, bool stor
 			// see if we already have a container with this name
 			auto cpc_it = std::find_if(Campaign.persistent_containers.begin(),
 				Campaign.persistent_containers.end(),
-				[container](const sexp_container& cpc) {
+				[&container](const sexp_container& cpc) {
 					return cpc.name_matches(container);
 				});
 
@@ -1083,6 +1082,23 @@ void mission_campaign_store_containers(ContainerType persistence_type, bool stor
 			} else {
 				// new container
 				Campaign.persistent_containers.push_back(container);
+			}
+		}
+	}
+
+	if (store_red_alert) {
+		for (const auto& container : Campaign.red_alert_containers) {
+			// see if we already have a container with this name
+			auto cpc_it = std::find_if(Campaign.persistent_containers.begin(),
+				Campaign.persistent_containers.end(),
+				[&container](const sexp_container& cpc) {
+					return cpc.name_matches(container);
+				});
+
+			if (cpc_it == Campaign.persistent_containers.end()) {
+				Campaign.persistent_containers.push_back(container);
+			} else {
+				Warning(LOCATION, "A red alert container has the same name as a persistent container!");
 			}
 		}
 	}
