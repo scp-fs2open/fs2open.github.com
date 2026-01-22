@@ -388,6 +388,7 @@ void obj_render_queue_all()
 
 	// render electricity effects and insignias
 	scene.render_outlines();
+	scene.render_insignias();
 	scene.render_arcs();
 
 	gr_zbuffer_set(ZBUFFER_TYPE_READ);

@@ -641,6 +641,51 @@ void model_draw_list::render_arcs()
 	gr_zbuffer_set(mode);
 }
 
+void model_draw_list::add_insignia(const model_render_params *params, const polymodel *pm, int detail_level, int bitmap_num)
+{
+	insignia_draw_data new_insignia;
+
+	new_insignia.transform = Transformations.get_transform();
+	new_insignia.pm = pm;
+	new_insignia.detail_level = detail_level;
+	new_insignia.bitmap_num = bitmap_num;
+
+	new_insignia.clip = params->is_clip_plane_set();
+	new_insignia.clip_normal = params->get_clip_plane_normal();
+	new_insignia.clip_position = params->get_clip_plane_pos();
+
+	Insignias.push_back(new_insignia);
+}
+
+void model_draw_list::render_insignia(const insignia_draw_data &insignia_info)
+{
+	if ( insignia_info.clip ) {
+		vec3d tmp;
+		vec3d pos;
+
+		vm_matrix4_get_offset(&pos, &insignia_info.transform);
+		vm_vec_sub(&tmp, &pos, &insignia_info.clip_position);
+		vm_vec_normalize(&tmp);
+
+		if ( vm_vec_dot(&tmp, &insignia_info.clip_normal) < 0.0f) {
+			return;
+		}
+	}
+
+	g3_start_instance_matrix(&insignia_info.transform);	
+
+	model_render_insignias(&insignia_info);
+
+	g3_done_instance(true);
+}
+
+void model_draw_list::render_insignias()
+{
+	for ( size_t i = 0; i < Insignias.size(); ++i ) {
+		render_insignia(Insignias[i]);
+	}
+}
+
 void model_draw_list::add_outline(const vertex* vert_array, int n_verts, const color *clr)
 {
 	outline_draw draw_info;
@@ -2382,6 +2427,74 @@ void model_queue_render_thrusters(const model_render_params *interp, const polym
 	}
 }
 
+void model_render_insignias(const insignia_draw_data *insignia_data)
+{
+	auto pm = insignia_data->pm;
+	int detail_level = insignia_data->detail_level;
+	int bitmap_num = insignia_data->bitmap_num;
+
+	// if the model has no insignias, or we don't have a texture, then bail
+	if ( (pm->num_ins <= 0) || (bitmap_num < 0) )
+		return;
+
+	int idx, s_idx;
+	vertex vecs[3];
+	vec3d t1, t2, t3;
+	int i1, i2, i3;
+
+	material insignia_material;
+	insignia_material.set_depth_bias(1);
+
+	// set the proper texture
+	material_set_unlit(&insignia_material, bitmap_num, 0.65f, true, true);
+
+	if ( insignia_data->clip ) {
+		insignia_material.set_clip_plane(insignia_data->clip_normal, insignia_data->clip_position);
+	}
+
+	// otherwise render them	
+	for(idx=0; idx<pm->num_ins; idx++){	
+		// skip insignias not on our detail level
+		if(pm->ins[idx].detail_level != detail_level){
+			continue;
+		}
+
+		for(s_idx=0; s_idx<pm->ins[idx].num_faces; s_idx++){
+			// get vertex indices
+			i1 = pm->ins[idx].faces[s_idx][0];
+			i2 = pm->ins[idx].faces[s_idx][1];
+			i3 = pm->ins[idx].faces[s_idx][2];
+
+			// transform vecs and setup vertices
+			vm_vec_add(&t1, &pm->ins[idx].vecs[i1], &pm->ins[idx].offset);
+			vm_vec_add(&t2, &pm->ins[idx].vecs[i2], &pm->ins[idx].offset);
+			vm_vec_add(&t3, &pm->ins[idx].vecs[i3], &pm->ins[idx].offset);
+
+			g3_transfer_vertex(&vecs[0], &t1);
+			g3_transfer_vertex(&vecs[1], &t2);
+			g3_transfer_vertex(&vecs[2], &t3);
+
+			// setup texture coords
+			vecs[0].texture_position.u = pm->ins[idx].u[s_idx][0];
+			vecs[0].texture_position.v = pm->ins[idx].v[s_idx][0];
+
+			vecs[1].texture_position.u = pm->ins[idx].u[s_idx][1];
+			vecs[1].texture_position.v = pm->ins[idx].v[s_idx][1];
+
+			vecs[2].texture_position.u = pm->ins[idx].u[s_idx][2];
+			vecs[2].texture_position.v = pm->ins[idx].v[s_idx][2];
+
+			light_apply_rgb( &vecs[0].r, &vecs[0].g, &vecs[0].b, &pm->ins[idx].vecs[i1], &pm->ins[idx].norm[i1], 1.5f );
+			light_apply_rgb( &vecs[1].r, &vecs[1].g, &vecs[1].b, &pm->ins[idx].vecs[i2], &pm->ins[idx].norm[i2], 1.5f );
+			light_apply_rgb( &vecs[2].r, &vecs[2].g, &vecs[2].b, &pm->ins[idx].vecs[i3], &pm->ins[idx].norm[i3], 1.5f );
+			vecs[0].a = vecs[1].a = vecs[2].a = 255;
+
+			// draw the polygon
+			g3_render_primitives_colored_textured(&insignia_material, vecs, 3, PRIM_TYPE_TRIFAN, false);
+		}
+	}
+}
+
 SCP_vector<vec3d> Arc_segment_points;
 
 void model_render_arc(const vec3d *v1, const vec3d *v2, const SCP_vector<vec3d> *persistent_arc_points, const color *primary, const color *secondary, float arc_width, ubyte depth_limit)
@@ -2541,6 +2654,7 @@ void model_render_immediate(const model_render_params* render_info, int model_nu
 	}
 
 	model_list.render_outlines();
+	model_list.render_insignias();
 	model_list.render_arcs();
 	
 	gr_zbias(0);
