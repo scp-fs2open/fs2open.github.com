@@ -679,10 +679,10 @@ void model_draw_list::render_insignia(const insignia_draw_data &insignia_info)
 	g3_done_instance(true);
 }
 
-void model_draw_list::render_insignias()
+void model_draw_list::render_insignias() const
 {
-	for ( size_t i = 0; i < Insignias.size(); ++i ) {
-		render_insignia(Insignias[i]);
+	for (const auto& ins : Insignias) {
+		render_insignia(ins);
 	}
 }
 

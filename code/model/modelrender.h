@@ -248,7 +248,7 @@ class model_draw_list
 	light_indexing_info Current_lights_set;
 
 	void render_arc(const arc_effect &arc);
-	void render_insignia(const insignia_draw_data &insignia_info);
+	static void render_insignia(const insignia_draw_data &insignia_info);
 	void render_outline(const outline_draw &outline_info);
 	void render_buffer(const queued_buffer_draw &render_elements);
 	
@@ -290,7 +290,7 @@ public:
 	void render_arcs();
 
 	void add_insignia(const model_render_params *params, const polymodel *pm, int detail_level, int bitmap_num);
-	void render_insignias();
+	void render_insignias() const;
 
 	void add_outline(const vertex* vert_array, int n_verts, const color *clr);
 	void render_outlines();
