@@ -2865,23 +2865,58 @@ void model_render_queue(const model_render_params* interp, model_draw_list* scen
 	// MARKED!
 	if ( !( model_flags & MR_NO_TEXTURING ) && !( model_flags & MR_NO_INSIGNIA) && objnum >= 0 ) {
 		int bitmap_num = interp->get_insignia_bitmap();
-		if ( (!pm->ins.empty()) && (bitmap_num >= 0) ) {
+		if ( (pm->num_ins > 0) && (bitmap_num >= 0) ) {
 
-			for (const auto& ins : pm->ins) {
+			for (int idx=0; idx<pm->num_ins; idx++) {
 				// skip insignias not on our detail level
-				if (ins.detail_level != detail_level) {
+				if (pm->ins[idx].detail_level != detail_level) {
 					continue;
 				}
 
+				vec3d min {{{FLT_MAX, FLT_MAX, FLT_MAX}}};
+				vec3d max {{{-FLT_MAX, -FLT_MAX, -FLT_MAX}}};
+				vec3d avg_total = ZERO_VECTOR;
+				vec3d avg_normal = ZERO_VECTOR;
+				for(int s_idx=0; s_idx<pm->ins[idx].num_faces; s_idx++) {
+					// get vertex indices
+					int i1 = pm->ins[idx].faces[s_idx][0];
+					int i2 = pm->ins[idx].faces[s_idx][1];
+					int i3 = pm->ins[idx].faces[s_idx][2];
+
+					const vec3d& v1 = pm->ins[idx].vecs[i1];
+					const vec3d& v2 = pm->ins[idx].vecs[i2];
+					const vec3d& v3 = pm->ins[idx].vecs[i3];
+
+					vm_vec_min(&min, &min, &v1);
+					vm_vec_min(&min, &min, &v2);
+					vm_vec_min(&min, &min, &v3);
+					vm_vec_max(&max, &max, &v1);
+					vm_vec_max(&max, &max, &v2);
+					vm_vec_max(&max, &max, &v3);
+
+					// transform vecs and setup vertices
+					vec3d avg = (v1 + v2 + v3) * (1.0f / 3.0f);
+					avg_total += avg;
+
+					const vec3d& u = v2 - v1;
+					const vec3d& v = v3 - v1;
+					avg_normal.xyz.x += u.xyz.y * v.xyz.z - u.xyz.z * v.xyz.y;
+					avg_normal.xyz.y += u.xyz.z * v.xyz.x - u.xyz.x * v.xyz.z;
+					avg_normal.xyz.z += u.xyz.x * v.xyz.y - u.xyz.y * v.xyz.x;
+				}
+				avg_total /= pm->ins[idx].num_faces;
+				vec3d bb = max - min;
+				float diameter = std::max({bb.xyz.x, bb.xyz.y, bb.xyz.z});
+
 				decals::Decal decal;
 				decal.object = &Objects[objnum];
-				decal.position = ins.position;
+				decal.position = avg_total + pm->ins[idx].offset;
 				decal.submodel = -1;
-				decal.scale = vec3d{{{ins.diameter, ins.diameter, ins.diameter}}};
+				decal.scale = vec3d{{{diameter, diameter, diameter}}};
 				decal.orig_obj_type = OBJ_SHIP;
 				decal.creation_time = f2fl(Missiontime);
 				decal.lifetime = 1.0f;
-				decal.orientation = ins.orientation;
+				vm_vector_2_matrix(&decal.orientation, &avg_normal, &vmd_z_vector);
 				decal.definition_handle = std::make_tuple(bitmap_num, -1, -1);
 				decals::addSingleFrameDecal(std::move(decal));
 			}
