@@ -729,9 +729,13 @@ typedef struct cross_section {
 #define MAX_INS_FACES				128
 typedef struct insignia {
 	int detail_level;
-	vec3d position;
-	matrix orientation;
-	float diameter;
+	int num_faces;					
+	int faces[MAX_INS_FACES][MAX_INS_FACE_VECS];		// indices into the vecs array	
+	float u[MAX_INS_FACES][MAX_INS_FACE_VECS];		// u tex coords on a per-face-per-vertex basis
+	float v[MAX_INS_FACES][MAX_INS_FACE_VECS];		// v tex coords on a per-face-per-vertex bases
+	vec3d vecs[MAX_INS_VECS];								// vertex list	
+	vec3d offset;	// global position offset for this insignia
+	vec3d norm[MAX_INS_VECS]	;					//normal of the insignia-Bobboau
 } insignia;
 
 #define PM_FLAG_ALLOW_TILING			(1<<0)					// Allow texture tiling
@@ -807,7 +811,7 @@ public:
 		n_view_positions(0), rad(0.0f), core_radius(0.0f), n_textures(0), submodel(NULL), n_guns(0), n_missiles(0), n_docks(0),
 		n_thrusters(0), gun_banks(NULL), missile_banks(NULL), docking_bays(NULL), thrusters(NULL), ship_bay(NULL), shield(),
 		shield_collision_tree(NULL), sldc_size(0), n_paths(0), paths(NULL), mass(0), num_xc(0), xc(NULL), num_split_plane(0),
-		used_this_mission(0), n_glow_point_banks(0), glow_point_banks(nullptr),
+		num_ins(0), used_this_mission(0), n_glow_point_banks(0), glow_point_banks(nullptr),
 		vert_source()
 	{
 		filename[0] = 0;
@@ -820,6 +824,7 @@ public:
 		memset(&bounding_box, 0, 8 * sizeof(vec3d));
 		memset(&view_positions, 0, MAX_EYES * sizeof(eye));
 		memset(&split_plane, 0, MAX_SPLIT_PLANE * sizeof(float));
+		memset(&ins, 0, MAX_MODEL_INSIGNIAS * sizeof(insignia));
 
 #ifndef NDEBUG
 		ram_used = 0;
@@ -894,7 +899,8 @@ public:
 	int num_split_plane;	// number of split planes
 	float split_plane[MAX_SPLIT_PLANE];	// actual split plane z coords (for big ship explosions)
 
-	SCP_vector<insignia>		ins;
+	insignia		ins[MAX_MODEL_INSIGNIAS];
+	int			num_ins;
 
 #ifndef NDEBUG
 	int			ram_used;		// How much RAM this model uses
