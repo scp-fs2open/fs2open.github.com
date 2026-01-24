@@ -15,7 +15,8 @@
 namespace fso::fred::dialogs {
 
 WingEditorDialog::WingEditorDialog(FredView* parent, EditorViewport* viewport)
-	: QDialog(parent), ui(new Ui::WingEditorDialog()), _model(new WingEditorDialogModel(this, viewport)),
+	: QDialog(parent), SexpTreeEditorInterface(flagset<TreeFlags>()),
+	  ui(new Ui::WingEditorDialog()), _model(new WingEditorDialogModel(this, viewport)),
 	  _viewport(viewport)
 {
 	ui->setupUi(this);

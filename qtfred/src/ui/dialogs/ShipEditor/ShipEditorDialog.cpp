@@ -17,7 +17,8 @@
 namespace fso::fred::dialogs {
 
 ShipEditorDialog::ShipEditorDialog(FredView* parent, EditorViewport* viewport)
-	: QDialog(parent), ui(new Ui::ShipEditorDialog()), _model(new ShipEditorDialogModel(this, viewport)),
+	: QDialog(parent), SexpTreeEditorInterface(flagset<TreeFlags>()),
+	  ui(new Ui::ShipEditorDialog()), _model(new ShipEditorDialogModel(this, viewport)),
 	  _viewport(viewport)
 {
 	this->setFocus();

@@ -121,7 +121,7 @@ void sexp_list_item::destroy()
 // -----------------------------------------------------------------------
 
 SexpTreeEditorInterface::SexpTreeEditorInterface()
-	: SexpTreeEditorInterface(flagset<TreeFlags>{TreeFlags::LabeledRoot, TreeFlags::RootDeletable})
+	: SexpTreeEditorInterface(flagset<TreeFlags>())
 {
 }
 
