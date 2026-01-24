@@ -581,7 +581,7 @@ int sexp_tree::edit_label(HTREEITEM h, bool *is_operator)
 
 	// Check if tree root
 	if (i == tree_nodes.size()) {
-		if (_interface && _interface->getFlags()[TreeFlags::RootEditable]) {
+		if (_model._interface && _model._interface->getFlags()[TreeFlags::RootEditable]) {
 			return 1;
 		}
 
@@ -649,9 +649,9 @@ int sexp_tree::end_label_edit(TVITEMA &item)
 			break;
 
 	if (node == tree_nodes.size()) {
-		if (_interface && _interface->getFlags()[TreeFlags::RootEditable]) {
+		if (_model._interface && _model._interface->getFlags()[TreeFlags::RootEditable]) {
 			item_index = (int)GetItemData(h);
-			_interface->onRootRenamed(item_index, str.c_str());
+			_model._interface->onRootRenamed(item_index, str.c_str());
 			return 1;
 		} else
 			Int3();  // root labels shouldn't have been editable!
@@ -1147,8 +1147,8 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 
 			else {
 				h = GetParentItem(tree_item_handle(tree_nodes[item_index]));
-				if (_interface && _interface->getFlags()[TreeFlags::LabeledRoot]) {
-					_interface->onRootInserted(item_index, node);
+				if (_model._interface && _model._interface->getFlags()[TreeFlags::LabeledRoot]) {
+					_model._interface->onRootInserted(item_index, node);
 					SetItemData(h, node);
 				} else {
 					h = TVI_ROOT;
@@ -1339,9 +1339,9 @@ void sexp_tree::NodeDelete()
 	int parent, theNode;
 	HTREEITEM h_parent;
 
-	if (_interface && _interface->getFlags()[TreeFlags::RootDeletable] && (item_index == -1)) {
+	if (_model._interface && _model._interface->getFlags()[TreeFlags::RootDeletable] && (item_index == -1)) {
 		item_index = (int)GetItemData(item_handle);
-		theNode = _interface->onRootDeleted(item_index);
+		theNode = _model._interface->onRootDeleted(item_index);
 
 		Assert(theNode >= 0);
 		_model.free_node2(theNode);
@@ -1778,7 +1778,7 @@ void sexp_tree::OnBegindrag(NMHDR* pNMHDR, LRESULT* pResult)
 	m_h_drag = HitTest(m_pt, &flags);
 	m_h_drop = NULL;
 
-	if (!_interface || !_interface->getFlags()[TreeFlags::LabeledRoot] || GetParentItem(m_h_drag))
+	if (!_model._interface || !_model._interface->getFlags()[TreeFlags::LabeledRoot] || GetParentItem(m_h_drag))
 		return;
 
 	ASSERT(m_p_image_list == NULL);
@@ -1851,8 +1851,8 @@ void sexp_tree::OnLButtonUp(UINT nFlags, CPoint point)
 
 			move_root(m_h_drag, m_h_drop, insert_before);
 
-			if (_interface) {
-				_interface->onRootMoved(node1, node2, insert_before);
+			if (_model._interface) {
+				_model._interface->onRootMoved(node1, node2, insert_before);
 			} else {
 				UNREACHABLE("No interface set for labeled-root tree!");
 			}
