@@ -235,6 +235,12 @@ static void shipfx_maybe_create_live_debris_at_ship_death( object *ship_objp )
 	for (auto pss: list_range(&shipp->subsys_list)) {
 		if (pss->system_info != nullptr) {
 			int submodel_num = pss->system_info->subobj_num;
+
+			// Subsystems without a valid submodel cannot produce live debris
+			if (submodel_num < 0 || submodel_num >= pm->n_models) {
+				continue;
+			}
+
 			// find the submodels which aren't already blown up and have live debris
 			if (!pmi->submodel[submodel_num].blown_off && pm->submodel[submodel_num].num_live_debris > 0) {
 				vec3d exp_center, tmp = ZERO_VECTOR;
