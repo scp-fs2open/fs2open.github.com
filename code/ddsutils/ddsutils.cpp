@@ -2,6 +2,9 @@
 #include "ddsutils/ddsutils.h"
 #include "cfile/cfile.h"
 #include "osapi/osregistry.h"
+#ifdef USE_OPENGL_ES
+#include "graphics/opengl/es_compatibility.h"
+#endif
 
 #ifdef WITH_OPENGL
 #include <glad/glad.h>
