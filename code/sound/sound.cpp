@@ -203,6 +203,12 @@ int snd_init()
 
 	snd_clear();
 
+	if ( !SDL_InitSubSystem(SDL_INIT_AUDIO) ) {
+		nprintf(( "Sound", "SOUND => Fatal error initializing SDL audio!\n" ));
+		Cmdline_freespace_no_sound = Cmdline_freespace_no_music = 1;
+		goto Failure;
+	}
+
 	rval = ds_init();
 
 	if ( rval != 0 ) {
@@ -221,6 +227,10 @@ int snd_init()
 	return 1;
 
 Failure:
+	if (SDL_WasInit(SDL_INIT_AUDIO)) {
+		SDL_QuitSubSystem(SDL_INIT_AUDIO);
+	}
+
 //	Warning(LOCATION, "Sound system was unable to be initialized.  If you continue, sound will be disabled.\n");
 	nprintf(( "Sound", "SOUND => Audio init unsuccessful, continuing without sound.\n" ));
 	return 0;
@@ -542,6 +552,8 @@ void snd_close(void)
 	snd_unload_all();		// free the sound data stored in DirectSound secondary buffers
 	dscap_close();	// Close DirectSoundCapture
 	ds_close();		// Close DirectSound off
+
+	SDL_QuitSubSystem(SDL_INIT_AUDIO);
 }
 
 // ---------------------------------------------------------------------------------------
