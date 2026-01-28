@@ -294,7 +294,7 @@ ADE_INDEXER(l_Mission_Debris, "number Index", "Array of debris in the current mi
 	if( idx >= 0 && idx < (int)Debris.size() ) {
 		if (Debris[idx].objnum == -1) //Somehow accessed an invalid debris piece
 			return ade_set_error(L, "o", l_Debris.Set(object_h()));
-		return ade_set_args(L, "o", l_Debris.Set(object_h(&Objects[Debris[idx].objnum])));
+		return ade_set_args(L, "o", l_Debris.Set(object_h(Debris[idx].objnum)));
 	}
 
 	return ade_set_error(L, "o", l_Debris.Set(object_h()));
@@ -329,7 +329,7 @@ ADE_INDEXER(l_Mission_EscortShips, "number Index", "Gets escort ship at specifie
 	if(idx < 0)
 		return ade_set_error(L, "o", l_Ship.Set(object_h()));
 
-	return ade_set_args(L, "o", l_Ship.Set(object_h(&Objects[idx])));
+	return ade_set_args(L, "o", l_Ship.Set(object_h(idx)));
 }
 
 ADE_FUNC(__len, l_Mission_EscortShips, NULL, "Current number of escort ships", "number", "Current number of escort ships")
@@ -1334,7 +1334,7 @@ ADE_FUNC(createShip,
 				));
 		}
 
-		return ade_set_args(L, "o", l_Ship.Set(object_h(&Objects[obj_idx])));
+		return ade_set_args(L, "o", l_Ship.Set(object_h(obj_idx)));
 	} else
 		return ade_set_error(L, "o", l_Ship.Set(object_h()));
 }
@@ -1571,7 +1571,7 @@ ADE_FUNC(createWeapon,
 	int obj_idx = weapon_create(&pos, real_orient, wclass, parent_idx, group);
 
 	if(obj_idx > -1)
-		return ade_set_args(L, "o", l_Weapon.Set(object_h(&Objects[obj_idx])));
+		return ade_set_args(L, "o", l_Weapon.Set(object_h(obj_idx)));
 	else
 		return ade_set_error(L, "o", l_Weapon.Set(object_h()));
 }
@@ -1647,7 +1647,7 @@ ADE_FUNC(createWarpeffect,
 	int obj_idx = fireball_create(&pos, fireballclass, FIREBALL_WARP_EFFECT, -1, radius, false, &velocity, duration, -1, &m_orient, 0, flags, opensound->idx, closesound->idx, opentime, closetime);
 
 	if (obj_idx > -1)
-		return ade_set_args(L, "o", l_Fireball.Set(object_h(&Objects[obj_idx])));
+		return ade_set_args(L, "o", l_Fireball.Set(object_h(obj_idx)));
 	else
 		return ade_set_error(L, "o", l_Fireball.Set(object_h()));
 }
@@ -1679,7 +1679,7 @@ ADE_FUNC(createExplosion,
 	int obj_idx = fireball_create(&pos, fireballclass, type, parent_idx, radius, false, &velocity);
 
 	if (obj_idx > -1)
-		return ade_set_args(L, "o", l_Fireball.Set(object_h(&Objects[obj_idx])));
+		return ade_set_args(L, "o", l_Fireball.Set(object_h(obj_idx)));
 	else
 		return ade_set_error(L, "o", l_Fireball.Set(object_h()));
 }
@@ -2908,7 +2908,7 @@ ADE_FUNC(getShipList,
 			return luacpp::LuaValueList{ luacpp::LuaValue::createNil(LInner) };
 		}
 
-		return luacpp::LuaValueList{ luacpp::LuaValue::createValue(LInner, l_Ship.Set(object_h(&Objects[so->objnum]))) };
+		return luacpp::LuaValueList{ luacpp::LuaValue::createValue(LInner, l_Ship.Set(object_h(so->objnum))) };
 	}));
 }
 
@@ -2940,7 +2940,7 @@ ADE_FUNC(getMissileList,
 			return luacpp::LuaValueList{ luacpp::LuaValue::createNil(LInner) };
 		}
 
-		return luacpp::LuaValueList{ luacpp::LuaValue::createValue(LInner, l_Weapon.Set(object_h(&Objects[mo->objnum]))) };
+		return luacpp::LuaValueList{ luacpp::LuaValue::createValue(LInner, l_Weapon.Set(object_h(mo->objnum))) };
 	}));
 }
 
@@ -2972,7 +2972,7 @@ ADE_FUNC(getAsteroidList,
 			return luacpp::LuaValueList{ luacpp::LuaValue::createNil(LInner) };
 		}
 
-		return luacpp::LuaValueList{ luacpp::LuaValue::createValue(LInner, l_Asteroid.Set(object_h(&Objects[ao->objnum]))) };
+		return luacpp::LuaValueList{ luacpp::LuaValue::createValue(LInner, l_Asteroid.Set(object_h(ao->objnum))) };
 	}));
 }
 
