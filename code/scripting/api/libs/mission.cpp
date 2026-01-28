@@ -2944,6 +2944,66 @@ ADE_FUNC(getMissileList,
 	}));
 }
 
+ADE_FUNC(getAsteroidList,
+	l_Mission,
+	nullptr,
+	"Get an iterator to the list of asteroids in this mission",
+	"iterator<asteroid>",
+	"An iterator across all asteroids in the mission. Can be used in a for .. in loop. Is not valid for more than one frame.")
+{
+	asteroid_obj* ao = &Asteroid_obj_list;
+
+	return ade_set_args(L, "u", luacpp::LuaFunction::createFromStdFunction(L, [ao](lua_State* LInner, const luacpp::LuaValueList& /*params*/) mutable -> luacpp::LuaValueList {
+		//Since the first element of a list is the next element from the head, and we start this function with the the captured "ao" object being the head, this GET_NEXT will return the first element on first call of this lambda.
+		//Similarly, an empty list is defined by the head's next element being itself, hence an empty list will immediately return nil just fine
+		ao = GET_NEXT(ao);
+
+		// skip should-be-dead asteroids
+		if (ao != nullptr) {
+			while (ao != END_OF_LIST(&Asteroid_obj_list)) {
+				if (!Objects[ao->objnum].flags[Object::Object_Flags::Should_be_dead]) {
+					break;
+				}
+				ao = GET_NEXT(ao);
+			}
+		}
+
+		if (ao == END_OF_LIST(&Asteroid_obj_list) || ao == nullptr) {
+			return luacpp::LuaValueList{ luacpp::LuaValue::createNil(LInner) };
+		}
+
+		return luacpp::LuaValueList{ luacpp::LuaValue::createValue(LInner, l_Asteroid.Set(object_h(&Objects[ao->objnum]))) };
+	}));
+}
+
+ADE_FUNC(getDebrisList,
+	l_Mission,
+	nullptr,
+	"Get an iterator to the list of debris in this mission",
+	"iterator<debris>",
+	"An iterator across all debris in the mission. Can be used in a for .. in loop. Is not valid for more than one frame.")
+{
+	size_t idx = 0;
+
+	return ade_set_args(L, "u", luacpp::LuaFunction::createFromStdFunction(L, [idx](lua_State* LInner, const luacpp::LuaValueList& /*params*/) mutable -> luacpp::LuaValueList {
+		// iterate through the Debris vector to find the next valid debris piece
+		while (idx < Debris.size()) {
+			const debris& db = Debris[idx];
+			idx++;
+
+			// debris must be Used, must have a valid objnum, and must not be should-be-dead
+			if (db.flags[Debris_Flags::Used] && db.objnum != -1) {
+				if (!Objects[db.objnum].flags[Object::Object_Flags::Should_be_dead]) {
+					return luacpp::LuaValueList{ luacpp::LuaValue::createValue(LInner, l_Debris.Set(object_h(db.objnum))) };
+				}
+			}
+		}
+
+		// end of list or no more valid debris found
+		return luacpp::LuaValueList{ luacpp::LuaValue::createNil(LInner) };
+	}));
+}
+
 ADE_FUNC(waitAsync,
 	l_Mission,
 	"number seconds",
