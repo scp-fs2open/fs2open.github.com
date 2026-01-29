@@ -294,7 +294,7 @@ ADE_INDEXER(l_Mission_Debris, "number Index", "Array of debris in the current mi
 	if( idx >= 0 && idx < (int)Debris.size() ) {
 		if (Debris[idx].objnum == -1) //Somehow accessed an invalid debris piece
 			return ade_set_error(L, "o", l_Debris.Set(object_h()));
-		return ade_set_args(L, "o", l_Debris.Set(object_h(&Objects[Debris[idx].objnum])));
+		return ade_set_args(L, "o", l_Debris.Set(object_h(Debris[idx].objnum)));
 	}
 
 	return ade_set_error(L, "o", l_Debris.Set(object_h()));
@@ -329,7 +329,7 @@ ADE_INDEXER(l_Mission_EscortShips, "number Index", "Gets escort ship at specifie
 	if(idx < 0)
 		return ade_set_error(L, "o", l_Ship.Set(object_h()));
 
-	return ade_set_args(L, "o", l_Ship.Set(object_h(&Objects[idx])));
+	return ade_set_args(L, "o", l_Ship.Set(object_h(idx)));
 }
 
 ADE_FUNC(__len, l_Mission_EscortShips, NULL, "Current number of escort ships", "number", "Current number of escort ships")
@@ -1334,7 +1334,7 @@ ADE_FUNC(createShip,
 				));
 		}
 
-		return ade_set_args(L, "o", l_Ship.Set(object_h(&Objects[obj_idx])));
+		return ade_set_args(L, "o", l_Ship.Set(object_h(obj_idx)));
 	} else
 		return ade_set_error(L, "o", l_Ship.Set(object_h()));
 }
@@ -1571,7 +1571,7 @@ ADE_FUNC(createWeapon,
 	int obj_idx = weapon_create(&pos, real_orient, wclass, parent_idx, group);
 
 	if(obj_idx > -1)
-		return ade_set_args(L, "o", l_Weapon.Set(object_h(&Objects[obj_idx])));
+		return ade_set_args(L, "o", l_Weapon.Set(object_h(obj_idx)));
 	else
 		return ade_set_error(L, "o", l_Weapon.Set(object_h()));
 }
@@ -1647,7 +1647,7 @@ ADE_FUNC(createWarpeffect,
 	int obj_idx = fireball_create(&pos, fireballclass, FIREBALL_WARP_EFFECT, -1, radius, false, &velocity, duration, -1, &m_orient, 0, flags, opensound->idx, closesound->idx, opentime, closetime);
 
 	if (obj_idx > -1)
-		return ade_set_args(L, "o", l_Fireball.Set(object_h(&Objects[obj_idx])));
+		return ade_set_args(L, "o", l_Fireball.Set(object_h(obj_idx)));
 	else
 		return ade_set_error(L, "o", l_Fireball.Set(object_h()));
 }
@@ -1679,7 +1679,7 @@ ADE_FUNC(createExplosion,
 	int obj_idx = fireball_create(&pos, fireballclass, type, parent_idx, radius, false, &velocity);
 
 	if (obj_idx > -1)
-		return ade_set_args(L, "o", l_Fireball.Set(object_h(&Objects[obj_idx])));
+		return ade_set_args(L, "o", l_Fireball.Set(object_h(obj_idx)));
 	else
 		return ade_set_error(L, "o", l_Fireball.Set(object_h()));
 }
@@ -2908,7 +2908,7 @@ ADE_FUNC(getShipList,
 			return luacpp::LuaValueList{ luacpp::LuaValue::createNil(LInner) };
 		}
 
-		return luacpp::LuaValueList{ luacpp::LuaValue::createValue(LInner, l_Ship.Set(object_h(&Objects[so->objnum]))) };
+		return luacpp::LuaValueList{ luacpp::LuaValue::createValue(LInner, l_Ship.Set(object_h(so->objnum))) };
 	}));
 }
 
@@ -2940,7 +2940,67 @@ ADE_FUNC(getMissileList,
 			return luacpp::LuaValueList{ luacpp::LuaValue::createNil(LInner) };
 		}
 
-		return luacpp::LuaValueList{ luacpp::LuaValue::createValue(LInner, l_Weapon.Set(object_h(&Objects[mo->objnum]))) };
+		return luacpp::LuaValueList{ luacpp::LuaValue::createValue(LInner, l_Weapon.Set(object_h(mo->objnum))) };
+	}));
+}
+
+ADE_FUNC(getAsteroidList,
+	l_Mission,
+	nullptr,
+	"Get an iterator to the list of asteroids in this mission",
+	"iterator<asteroid>",
+	"An iterator across all asteroids in the mission. Can be used in a for .. in loop. Is not valid for more than one frame.")
+{
+	asteroid_obj* ao = &Asteroid_obj_list;
+
+	return ade_set_args(L, "u", luacpp::LuaFunction::createFromStdFunction(L, [ao](lua_State* LInner, const luacpp::LuaValueList& /*params*/) mutable -> luacpp::LuaValueList {
+		//Since the first element of a list is the next element from the head, and we start this function with the the captured "ao" object being the head, this GET_NEXT will return the first element on first call of this lambda.
+		//Similarly, an empty list is defined by the head's next element being itself, hence an empty list will immediately return nil just fine
+		ao = GET_NEXT(ao);
+
+		// skip should-be-dead asteroids
+		if (ao != nullptr) {
+			while (ao != END_OF_LIST(&Asteroid_obj_list)) {
+				if (!Objects[ao->objnum].flags[Object::Object_Flags::Should_be_dead]) {
+					break;
+				}
+				ao = GET_NEXT(ao);
+			}
+		}
+
+		if (ao == END_OF_LIST(&Asteroid_obj_list) || ao == nullptr) {
+			return luacpp::LuaValueList{ luacpp::LuaValue::createNil(LInner) };
+		}
+
+		return luacpp::LuaValueList{ luacpp::LuaValue::createValue(LInner, l_Asteroid.Set(object_h(ao->objnum))) };
+	}));
+}
+
+ADE_FUNC(getDebrisList,
+	l_Mission,
+	nullptr,
+	"Get an iterator to the list of debris in this mission",
+	"iterator<debris>",
+	"An iterator across all debris in the mission. Can be used in a for .. in loop. Is not valid for more than one frame.")
+{
+	size_t idx = 0;
+
+	return ade_set_args(L, "u", luacpp::LuaFunction::createFromStdFunction(L, [idx](lua_State* LInner, const luacpp::LuaValueList& /*params*/) mutable -> luacpp::LuaValueList {
+		// iterate through the Debris vector to find the next valid debris piece
+		while (idx < Debris.size()) {
+			const debris& db = Debris[idx];
+			idx++;
+
+			// debris must be Used, must have a valid objnum, and must not be should-be-dead
+			if (db.flags[Debris_Flags::Used] && db.objnum != -1) {
+				if (!Objects[db.objnum].flags[Object::Object_Flags::Should_be_dead]) {
+					return luacpp::LuaValueList{ luacpp::LuaValue::createValue(LInner, l_Debris.Set(object_h(db.objnum))) };
+				}
+			}
+		}
+
+		// end of list or no more valid debris found
+		return luacpp::LuaValueList{ luacpp::LuaValue::createNil(LInner) };
 	}));
 }
 
