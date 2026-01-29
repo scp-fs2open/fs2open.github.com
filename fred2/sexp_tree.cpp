@@ -2965,11 +2965,10 @@ int sexp_tree::add_default_operator(int op_index, int argnum)
 		item_handle = h;
 
 	} else {
+		int sexp_var_index;
 		// special case for sexps that take variables
 		const int op_type = query_operator_argument_type(op_index, argnum);
-		if (op_type == OPF_VARIABLE_NAME) {
-			int sexp_var_index = get_index_sexp_variable_name(item.text);
-			Assert(sexp_var_index != -1);
+		if ((op_type == OPF_VARIABLE_NAME) && ((sexp_var_index = get_index_sexp_variable_name(item.text)) >= 0)) {
 			int type = SEXPT_VALID | SEXPT_VARIABLE;
 			if (Sexp_variables[sexp_var_index].type & SEXP_VARIABLE_STRING) {
 				type |= SEXPT_STRING;
@@ -2983,6 +2982,7 @@ int sexp_tree::add_default_operator(int op_index, int argnum)
 			sprintf(node_text, "%s(%s)", item.text.c_str(), Sexp_variables[sexp_var_index].text);
 			add_variable_data(node_text, type);
 		}
+		// special case for sexps that take containers (this covers multiple container OPF_ types)
 		else if (item.type & SEXPT_CONTAINER_NAME) {
 			Assertion(is_container_name_opf_type(op_type) || op_type == OPF_DATA_OR_STR_CONTAINER,
 				"Attempt to add default container name for a node of non-container type (%d). Please report!",
@@ -2997,7 +2997,7 @@ int sexp_tree::add_default_operator(int op_index, int argnum)
 			Assert(argnum == 1);
 			sexp_list_item temp_item;
 			get_default_value(&temp_item, buf2, op_index, 0);
-			int sexp_var_index = get_index_sexp_variable_name(temp_item.text);
+			sexp_var_index = get_index_sexp_variable_name(temp_item.text);
 			Assert(sexp_var_index != -1);
 
 			// from name get type
@@ -3435,7 +3435,7 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 
 		case OPF_ANIMATION_NAME:
 			str = "<Animation trigger name>";
-			break;			
+			break;
 
 		case OPF_CONTAINER_VALUE:
 			str = "<container value>";
@@ -3443,6 +3443,22 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 
 		case OPF_MESSAGE_TYPE:
 			str = Builtin_messages[0].name;
+			break;
+
+		case OPF_VARIABLE_NAME:
+			str = "<variable name>";
+			break;
+
+		case OPF_CONTAINER_NAME:
+			str = "<container name>";
+			break;
+
+		case OPF_LIST_CONTAINER_NAME:
+			str = "<list container name>";
+			break;
+
+		case OPF_MAP_CONTAINER_NAME:
+			str = "<map container name>";
 			break;
 
 		default:
@@ -7318,7 +7334,15 @@ sexp_list_item *sexp_tree::get_listing_opf_variable_names()
 
 	for (i=0; i<MAX_SEXP_VARIABLES; i++) {
 		if (Sexp_variables[i].type & SEXP_VARIABLE_SET) {
-			head.add_data( Sexp_variables[i].variable_name );
+			int t = 0;
+			if (Sexp_variables[i].type & SEXP_VARIABLE_NUMBER) {
+				t = SEXPT_NUMBER;
+			} else if (Sexp_variables[i].type & SEXP_VARIABLE_STRING) {
+				t = SEXPT_STRING;
+			} else {
+				Assertion(false, "SEXP variable must be a string or a number!");
+			}
+			head.add_data(Sexp_variables[i].variable_name, (t | SEXPT_VALID | SEXPT_VARIABLE));
 		}
 	}
 
