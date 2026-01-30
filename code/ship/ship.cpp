@@ -10791,13 +10791,11 @@ void update_firing_sounds(object* objp, ship* shipp)
 
 		if (swp->firing_loop_sounds[i] == -1 && trigger_down && !primaries_locked && selected && has_resources && burst_only_allowed && !dying) {
 			auto* pm = model_get(Ship_info[shipp->ship_info_index].model_num);
-			vec3d snd_pos, world_snd_pos;
+			vec3d snd_pos;
 			vm_vec_avg_n(&snd_pos, pm->gun_banks[i].num_slots, pm->gun_banks[i].pnt);
-			vm_vec_unrotate(&world_snd_pos, &snd_pos, &objp->orient);
-			world_snd_pos += objp->pos;
 
 			if (wip->start_firing_snd.isValid() && start_snd_played != wip->start_firing_snd) {
-				snd_play_3d(gamesnd_get_game_sound(wip->start_firing_snd), &objp->pos, &world_snd_pos);
+				obj_snd_assign(shipp->objnum, wip->start_firing_snd, &snd_pos, OS_PLAY_ON_PLAYER | OS_LOOPING_DISABLED);
 
 				start_snd_played = wip->start_firing_snd;
 			}
@@ -10812,13 +10810,11 @@ void update_firing_sounds(object* objp, ship* shipp)
 
 		if (swp->firing_loop_sounds[i] != -1 && (!trigger_down || primaries_locked || !selected || !has_resources || !burst_only_allowed || dying)) {
 			auto* pm = model_get(Ship_info[shipp->ship_info_index].model_num);
-			vec3d world_snd_pos;
-			vm_vec_avg_n(&world_snd_pos, pm->gun_banks[i].num_slots, pm->gun_banks[i].pnt);
-			vm_vec_unrotate(&world_snd_pos, &world_snd_pos, &objp->orient);
-			world_snd_pos += objp->pos;
+			vec3d snd_pos;
+			vm_vec_avg_n(&snd_pos, pm->gun_banks[i].num_slots, pm->gun_banks[i].pnt);
 
 			if (wip->end_firing_snd.isValid() && end_snd_played != wip->end_firing_snd) {
-				snd_play_3d(gamesnd_get_game_sound(wip->end_firing_snd), &objp->pos, &world_snd_pos);
+				obj_snd_assign(shipp->objnum, wip->start_firing_snd, &snd_pos, OS_PLAY_ON_PLAYER | OS_LOOPING_DISABLED);
 
 				end_snd_played = wip->end_firing_snd;
 			}
