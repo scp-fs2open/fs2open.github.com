@@ -10814,7 +10814,7 @@ void update_firing_sounds(object* objp, ship* shipp)
 			vm_vec_avg_n(&snd_pos, pm->gun_banks[i].num_slots, pm->gun_banks[i].pnt);
 
 			if (wip->end_firing_snd.isValid() && end_snd_played != wip->end_firing_snd) {
-				obj_snd_assign(shipp->objnum, wip->start_firing_snd, &snd_pos, OS_PLAY_ON_PLAYER | OS_LOOPING_DISABLED);
+				obj_snd_assign(shipp->objnum, wip->end_firing_snd, &snd_pos, OS_PLAY_ON_PLAYER | OS_LOOPING_DISABLED);
 
 				end_snd_played = wip->end_firing_snd;
 			}
