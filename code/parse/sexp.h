@@ -1486,7 +1486,7 @@ struct ship_registry_entry;
 struct wing;
 
 // Goober5000 - stuff with caching
-// (included in the header file because Lua uses the first three)
+// (included in the header file because Lua uses the first four)
 extern const ship_registry_entry *eval_ship(int node);
 extern const prop* eval_prop(int node);
 extern wing *eval_wing(int node);

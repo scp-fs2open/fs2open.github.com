@@ -206,20 +206,20 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum, int parent_node) const
 		return LuaValue::createValue(_action.getLuaState(), l_Ship.Set(object_h(objp)));
 	}
 	case OPF_PROP: {
-		auto ship_entry = eval_prop(node);
+		auto prop_entry = eval_prop(node);
 
-		// if this is a shipname type, we want the name of a valid ship but not the ship itself
-		// (if the ship is not valid, return an empty string)
+		// if this is a propname type, we want the name of a valid prop but not the prop itself
+		// (if the prop is not valid, return an empty string)
 		if (argtype.first == "propname") {
-			return LuaValue::createValue(_action.getLuaState(), ship_entry ? ship_entry->prop_name : "");
+			return LuaValue::createValue(_action.getLuaState(), prop_entry ? prop_entry->prop_name : "");
 		}
 
-		if (!ship_entry || (ship_entry->objnum >= 0)) {
+		if (!prop_entry || (prop_entry->objnum >= 0)) {
 			// Name is invalid
 			return LuaValue::createValue(_action.getLuaState(), l_Prop.Set(object_h()));
 		}
 
-		auto objp = &Objects[ship_entry->objnum];
+		auto objp = &Objects[prop_entry->objnum];
 
 		// The other SEXP code does not validate the object type so this should be safe
 		Assertion(objp->type == OBJ_PROP,
