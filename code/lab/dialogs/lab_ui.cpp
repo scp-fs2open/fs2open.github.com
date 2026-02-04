@@ -1064,6 +1064,9 @@ void LabUi::maybe_show_animation_category(const SCP_vector<animation::ModelAnima
 					case animation::ModelAnimationTriggerType::Docked:
 						button_label += "Trigger Docked Animation " + std::to_string(count++);
 						break;
+					case animation::ModelAnimationTriggerType::Scripted:
+						button_label += "Trigger Scripted Animation " + std::to_string(count++);
+						break;
 					default:
 						// We really shouldn't be here, but just in case
 						Assertion(false, "Unexpected animation trigger type %d", static_cast<int>(trigger_type));
