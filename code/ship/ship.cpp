@@ -11766,10 +11766,16 @@ static void ship_model_change(int n, int ship_type)
 	}
 
 	model_delete_instance(sp->model_instance_num);
+	if (sp->cockpit_model_instance >= 0) {
+		model_delete_instance(sp->cockpit_model_instance);
+	}
 
 	// create new model instance data
 	// note: this is needed for both subsystem stuff and submodel animation stuff
 	sp->model_instance_num = model_create_instance(OBJ_INDEX(objp), sip->model_num);
+	if (sip->cockpit_model_num >= 0) {
+		sp->cockpit_model_instance = model_create_instance(model_objnum_special::OBJNUM_COCKPIT, sip->cockpit_model_num);
+	}
 	pmi = model_get_instance(sp->model_instance_num);
 
 	// Goober5000 - deal with texture replacement by re-applying the same code we used during parsing
@@ -12068,6 +12074,8 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	Assertion(homing_matches.empty(), "Failed to find matches for every subsystem being homed in on ship %s in change_ship_type(); get a coder!\n", sp->ship_name);
 	Assertion(weapon_turret_matches.empty(), "Failed to find matches for every turret a projectile was fired from on ship %s in change_ship_type(); get a coder!\n", sp->ship_name);
 	Assertion(last_targeted_matches.empty(), "Somehow failed to find every subsystem a player was previously targeting on ship %s in change_ship_type(); get a coder!\n", sp->ship_name);
+
+	decals::invalidateForShip(sp);
 
 	// point to new ship data
 	ship_model_change(n, ship_type);
