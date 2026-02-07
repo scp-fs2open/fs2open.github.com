@@ -560,6 +560,8 @@ add_file_folder("Graphics\\\\SoftwareGr\\\\Font"
 add_file_folder("Graphics\\\\Util"
 	graphics/util/GPUMemoryHeap.cpp
 	graphics/util/GPUMemoryHeap.h
+	graphics/util/primitives.h
+	graphics/util/primitives.cpp
 	graphics/util/uniform_structs.h
 	graphics/util/UniformAligner.h
 	graphics/util/UniformAligner.cpp
