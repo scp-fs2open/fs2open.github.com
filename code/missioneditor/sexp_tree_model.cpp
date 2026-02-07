@@ -41,6 +41,8 @@
 // sexp_list_item implementation
 // -----------------------------------------------------------------------
 
+// Initialize this item as an operator.
+// If op_num is an op value (>= FIRST_OP), it is converted to an operator index first.
 void sexp_list_item::set_op(int op_num)
 {
 	int i;
@@ -56,6 +58,7 @@ void sexp_list_item::set_op(int op_num)
 	type = (SEXPT_OPERATOR | SEXPT_VALID);
 }
 
+// Initialize this item as a data element with the given display text and type flags.
 void sexp_list_item::set_data(const char* str, int t)
 {
 	op = -1;
@@ -63,6 +66,7 @@ void sexp_list_item::set_data(const char* str, int t)
 	type = t;
 }
 
+// Allocate a new item, append it to the end of this linked list, and set it as an operator.
 void sexp_list_item::add_op(int op_num)
 {
 	sexp_list_item* item;
@@ -77,6 +81,7 @@ void sexp_list_item::add_op(int op_num)
 	item->set_op(op_num);
 }
 
+// Allocate a new item, append it to the end of this linked list, and set it as data.
 void sexp_list_item::add_data(const char* str, int t)
 {
 	sexp_list_item* item;
@@ -91,6 +96,7 @@ void sexp_list_item::add_data(const char* str, int t)
 	item->set_data(str, t);
 }
 
+// Append another linked list to the tail of this one (transfers ownership).
 void sexp_list_item::add_list(sexp_list_item* list)
 {
 	sexp_list_item* ptr;
@@ -102,6 +108,8 @@ void sexp_list_item::add_list(sexp_list_item* list)
 	ptr->next = list;
 }
 
+// Delete this item and all subsequent items in the linked list.
+// WARNING: 'this' is deleted — do not use the pointer after calling.
 void sexp_list_item::destroy()
 {
 	sexp_list_item* ptr;
@@ -120,11 +128,14 @@ void sexp_list_item::destroy()
 // SexpTreeEditorInterface implementation
 // -----------------------------------------------------------------------
 
+// Default constructor — no special tree behaviors (no labeled roots, no root deletion).
+// Dialogs that need labeled roots (events, goals, cutscenes) pass flags explicitly.
 SexpTreeEditorInterface::SexpTreeEditorInterface()
 	: SexpTreeEditorInterface(flagset<TreeFlags>())
 {
 }
 
+// Construct with explicit tree behavior flags.
 SexpTreeEditorInterface::SexpTreeEditorInterface(const flagset<TreeFlags>& flags)
 	: _flags(flags)
 {
@@ -132,11 +143,13 @@ SexpTreeEditorInterface::SexpTreeEditorInterface(const flagset<TreeFlags>& flags
 
 SexpTreeEditorInterface::~SexpTreeEditorInterface() = default;
 
+// Returns true if mission-specific (non-builtin) messages exist.
 bool SexpTreeEditorInterface::hasDefaultMessageParamter()
 {
 	return Num_messages > Num_builtin_messages;
 }
 
+// Return the names of all mission-specific messages (skipping builtins).
 SCP_vector<SCP_string> SexpTreeEditorInterface::getMessages()
 {
 	SCP_vector<SCP_string> list;
@@ -148,6 +161,7 @@ SCP_vector<SCP_string> SexpTreeEditorInterface::getMessages()
 	return list;
 }
 
+// Return all mission goal names. Campaign editor overrides this to filter by reference mission.
 SCP_vector<SCP_string> SexpTreeEditorInterface::getMissionGoals(const SCP_string& /*reference_name*/)
 {
 	SCP_vector<SCP_string> list;
@@ -160,12 +174,15 @@ SCP_vector<SCP_string> SexpTreeEditorInterface::getMissionGoals(const SCP_string
 	return list;
 }
 
+// Returns true if a goal name can be provided as a default for the given operator.
+// Always true for previous-goal operators; otherwise requires goals to exist.
 bool SexpTreeEditorInterface::hasDefaultGoal(int operator_value)
 {
 	return (operator_value == OP_PREVIOUS_GOAL_TRUE) || (operator_value == OP_PREVIOUS_GOAL_FALSE)
 		|| (operator_value == OP_PREVIOUS_GOAL_INCOMPLETE) || !Mission_goals.empty();
 }
 
+// Return all mission event names. Campaign editor overrides this to filter by reference mission.
 SCP_vector<SCP_string> SexpTreeEditorInterface::getMissionEvents(const SCP_string& /*reference_name*/)
 {
 	SCP_vector<SCP_string> list;
@@ -178,12 +195,14 @@ SCP_vector<SCP_string> SexpTreeEditorInterface::getMissionEvents(const SCP_strin
 	return list;
 }
 
+// Returns true if an event name can be provided as a default for the given operator.
 bool SexpTreeEditorInterface::hasDefaultEvent(int operator_value)
 {
 	return (operator_value == OP_PREVIOUS_EVENT_TRUE) || (operator_value == OP_PREVIOUS_EVENT_FALSE)
 		|| (operator_value == OP_PREVIOUS_EVENT_INCOMPLETE) || !Mission_events.empty();
 }
 
+// Return the current mission filename (campaign editor overrides for multi-mission lists).
 SCP_vector<SCP_string> SexpTreeEditorInterface::getMissionNames()
 {
 	SCP_vector<SCP_string> list;
@@ -193,21 +212,27 @@ SCP_vector<SCP_string> SexpTreeEditorInterface::getMissionNames()
 	return list;
 }
 
+// Returns true if a mission filename is currently set (non-empty).
 bool SexpTreeEditorInterface::hasDefaultMissionName()
 {
 	return *Mission_filename != '\0';
 }
 
+// Returns the expected return type for root operators. Default is OPR_BOOL.
+// Debriefing overrides this to return OPR_NULL.
 int SexpTreeEditorInterface::getRootReturnType() const
 {
 	return OPR_BOOL;
 }
 
+// Return the tree behavior flags configured for this editor interface.
 const flagset<TreeFlags>& SexpTreeEditorInterface::getFlags() const
 {
 	return _flags;
 }
 
+// Returns false by default. Campaign editor overrides to return true,
+// which restricts the operator list to campaign-usable operators only.
 bool SexpTreeEditorInterface::requireCampaignOperators() const
 {
 	return false;
@@ -217,6 +242,8 @@ bool SexpTreeEditorInterface::requireCampaignOperators() const
 // SexpTreeModel implementation
 // -----------------------------------------------------------------------
 
+// Initialize model with all state cleared. The UI layer must set _interface and
+// modified before using the tree.
 SexpTreeModel::SexpTreeModel()
 	: total_nodes(0), item_index(-1),
 	  root_item(-1), select_sexp_node(-1), flag(0),
@@ -230,6 +257,7 @@ SexpTreeModel::~SexpTreeModel() = default;
 // Tree node management
 // -----------------------------------------------------------------------
 
+// Scan for the first unused slot in the tree_nodes array. Returns -1 if none available.
 int SexpTreeModel::find_free_node() const
 {
 	for (int i = 0; i < (int)tree_nodes.size(); i++) {
@@ -388,6 +416,8 @@ void get_combined_variable_name(char* combined_name, const char* sexp_var_name)
 		sprintf(combined_name, "%s(undefined)", sexp_var_name);
 }
 
+// Clear all tree nodes and reset counters. If 'op' is provided and non-empty,
+// create a single root operator node with that text (e.g. "true" or "false").
 void SexpTreeModel::clear_tree_data(const char* op)
 {
 	mprintf(("Resetting dynamic tree node limit from " SIZE_T_ARG " to %d...\n", tree_nodes.size(), 0));
@@ -400,12 +430,16 @@ void SexpTreeModel::clear_tree_data(const char* op)
 	}
 }
 
+// After loading, reset select_sexp_node to -1 if the target node was not found.
 void SexpTreeModel::post_load()
 {
 	if (!flag)
 		select_sexp_node = -1;
 }
 
+// Load a complete sexp formula from the global Sexp_nodes array into tree_nodes.
+// If index < 0, creates a single root with the default text. If the root is a
+// bare number, converts it to "true"/"false".
 void SexpTreeModel::load_tree_data(int index, const char* deflt)
 {
 	int cur;
@@ -432,6 +466,10 @@ void SexpTreeModel::load_tree_data(int index, const char* deflt)
 	load_branch(index, -1);
 }
 
+// Recursively load a chain of sexp nodes (following rest pointers) as children of 'parent'.
+// Handles operators, numbers, strings, variables, and container references.
+// Also tracks select_sexp_node for auto-selection after load.
+// Returns the index of the first tree node created in this chain.
 int SexpTreeModel::load_branch(int index, int parent)
 {
 	int cur = -1;
@@ -512,6 +550,9 @@ int SexpTreeModel::load_branch(int index, int parent)
 	return cur;
 }
 
+// Load a sub-tree for labeled-root trees (events, goals, cutscenes).
+// If index < 0, creates a single operator node with the given text.
+// Returns the root node index of the loaded sub-tree.
 int SexpTreeModel::load_sub_tree(int index, bool valid, const char* text)
 {
 	int cur;
@@ -527,6 +568,8 @@ int SexpTreeModel::load_sub_tree(int index, bool valid, const char* text)
 	return cur;
 }
 
+// Unlink a node from its current parent and re-parent it under 'parent'.
+// The node (and its entire subtree) is appended as the last child of the new parent.
 void SexpTreeModel::move_branch_data(int source, int parent)
 {
 	int node;
@@ -568,7 +611,7 @@ void SexpTreeModel::move_branch_data(int source, int parent)
 // Tree serialization
 // -----------------------------------------------------------------------
 
-// get variable name from sexp_tree node .text
+// Extract just the variable name from "varname(value)" display format into var_name.
 static void var_name_from_sexp_tree_text(char* var_name, const char* text)
 {
 	auto var_name_length = strcspn(text, "(");
@@ -655,6 +698,8 @@ int SexpTreeModel::save_branch(int cur, int at_root) const
 // Default argument availability
 // -----------------------------------------------------------------------
 
+// Returns non-zero if all minimum required arguments of operator 'op' have default values.
+// Checks each argument position from 0 to Operators[op].min-1.
 int SexpTreeModel::query_default_argument_available(int op) const
 {
 	int i;
@@ -667,6 +712,9 @@ int SexpTreeModel::query_default_argument_available(int op) const
 	return 1;
 }
 
+// Returns non-zero if argument position 'i' of operator 'op' has a default value available.
+// Checks based on the OPF_* type: some types always have defaults, others depend on
+// whether ships, wings, goals, events, or other game data currently exist.
 int SexpTreeModel::query_default_argument_available(int op, int i) const
 {
 	int j, type;
@@ -1405,7 +1453,8 @@ int SexpTreeModel::get_default_value(sexp_list_item* item, char* text_buf, int o
 // Tree navigation helpers
 // -----------------------------------------------------------------------
 
-// Goober5000
+// Return the 0-based argument position of child_node among parent_node's children.
+// Returns -1 if child_node is not a direct child of parent_node.
 int SexpTreeModel::find_argument_number(int parent_node, int child_node) const
 {
 	int arg_num, current_node;
@@ -1428,9 +1477,9 @@ int SexpTreeModel::find_argument_number(int parent_node, int child_node) const
 	return -1;
 }
 
-// Goober5000
-// backtrack through parents until we find the operator matching
-// parent_op, then find the argument we went through
+// Walk up the tree from child_node until we find an ancestor whose operator constant
+// matches parent_op, then return which argument of that ancestor we came through.
+// Returns -1 if no matching ancestor is found.
 int SexpTreeModel::find_ancestral_argument_number(int parent_op, int child_node) const
 {
 	if (child_node == -1)
@@ -1456,6 +1505,8 @@ int SexpTreeModel::find_ancestral_argument_number(int parent_op, int child_node)
 	return -1;
 }
 
+// Check if the given node is inside a when-argument or every-time-argument action list,
+// which makes the special <argument> string a valid value at this position.
 bool SexpTreeModel::is_node_eligible_for_special_argument(int parent_node) const
 {
 	Assertion(parent_node != -1,
@@ -1470,6 +1521,7 @@ bool SexpTreeModel::is_node_eligible_for_special_argument(int parent_node) const
 // Query / analysis functions
 // -----------------------------------------------------------------------
 
+// Count the number of nodes in the sibling chain starting from 'node'.
 int SexpTreeModel::count_args(int node) const
 {
 	int count = 0;
@@ -1555,6 +1607,8 @@ int SexpTreeModel::query_restricted_opf_range(int opf) const
 	return 1;
 }
 
+// Return the 0-based position of 'node' among its parent's children.
+// Returns -1 if the node has no valid parent.
 int SexpTreeModel::get_sibling_place(int node) const
 {
 	if (tree_nodes[node].parent < 0 || tree_nodes[node].parent > (int)tree_nodes.size())
@@ -1582,6 +1636,8 @@ int SexpTreeModel::get_sibling_place(int node) const
 	return count;
 }
 
+// Return a numbered data icon based on sibling position (every 5th argument gets a
+// numbered icon for visual grouping). Falls back to plain DATA icon for most positions.
 NodeImage SexpTreeModel::get_data_image(int node) const
 {
 	int count = get_sibling_place(node) + 1;
@@ -1604,6 +1660,7 @@ NodeImage SexpTreeModel::get_data_image(int node) const
 	return static_cast<NodeImage>(static_cast<int>(NodeImage::DATA_00) + idx);
 }
 
+// Return TRUE if the root-level operator is the "false" sexp operator.
 int SexpTreeModel::query_false(int node) const
 {
 	if (node < 0) node = root_item;
@@ -1646,6 +1703,8 @@ const SCP_string& SexpTreeModel::match_closest_operator(const SCP_string& str, i
 	return Operators[best].text;
 }
 
+// Look up the help text string for the given sexp operator code from the Sexp_help table.
+// Returns nullptr if no help text exists for this operator.
 const char* SexpTreeModel::help(int code)
 {
 	int i;
@@ -1662,6 +1721,9 @@ const char* SexpTreeModel::help(int code)
 	return nullptr;
 }
 
+// Search all editable, used tree nodes for exact case-insensitive text matches.
+// Populates 'find' array with matching node indices (up to max_depth entries).
+// Returns the number of matches found.
 int SexpTreeModel::find_text(const char* text, int* find, int max_depth) const
 {
 	int find_count;
@@ -1695,6 +1757,8 @@ int SexpTreeModel::find_text(const char* text, int* find, int max_depth) const
 // Free-function utilities for sexp tree variable text
 // -----------------------------------------------------------------------
 
+// Extract the variable name portion from "varname(value)" display format.
+// Copies everything before '(' into var_name.
 void get_variable_name_from_sexp_tree_node_text(const char* text, char* var_name)
 {
 	auto length = strcspn(text, "(");
@@ -1703,6 +1767,8 @@ void get_variable_name_from_sexp_tree_node_text(const char* text, char* var_name
 	var_name[length] = '\0';
 }
 
+// Extract the default value portion from "varname(value)" display format.
+// Copies the text between '(' and ')' into default_text.
 void get_variable_default_text_from_variable_text(char* text, char* default_text)
 {
 	char* start;
@@ -1724,6 +1790,8 @@ void get_variable_default_text_from_variable_text(char* text, char* default_text
 // Variable / container utilities
 // -----------------------------------------------------------------------
 
+// If the currently selected node (item_index) is a variable node, look up and
+// return its sexp variable index. Returns -1 if not a variable or invalid.
 int SexpTreeModel::get_item_index_to_var_index() const
 {
 	// check valid item index and node is a variable
@@ -1734,6 +1802,8 @@ int SexpTreeModel::get_item_index_to_var_index() const
 	}
 }
 
+// Parse a "varname(value)" formatted tree node text, extract the variable name,
+// and look up its index in the global Sexp_variables array.
 int SexpTreeModel::get_tree_name_to_sexp_variable_index(const char* tree_name)
 {
 	char var_name[TOKEN_LENGTH];
@@ -1749,6 +1819,9 @@ int SexpTreeModel::get_tree_name_to_sexp_variable_index(const char* tree_name)
 	return get_index_sexp_variable_name(var_name);
 }
 
+// For modify-variable and set-variable-by-index operators, determine the expected
+// type of the value argument. Returns OPF_NUMBER for numeric variables,
+// OPF_AMBIGUOUS for string variables or when the type can't be determined.
 int SexpTreeModel::get_modify_variable_type(int parent) const
 {
 	int sexp_var_index = -1;
@@ -1789,6 +1862,8 @@ int SexpTreeModel::get_modify_variable_type(int parent) const
 	}
 }
 
+// Count how many tree nodes reference the given variable name.
+// Matches by checking for "varname(" prefix in variable-type nodes.
 int SexpTreeModel::get_variable_count(const char* var_name) const
 {
 	int count = 0;
@@ -1843,6 +1918,8 @@ int SexpTreeModel::get_loadout_variable_count(int var_index) const
 	return count;
 }
 
+// Count how many tree nodes are container name or container data references
+// matching the given container_name.
 int SexpTreeModel::get_container_usage_count(const SCP_string& container_name) const
 {
 	int count = 0;
@@ -1856,6 +1933,7 @@ int SexpTreeModel::get_container_usage_count(const SCP_string& container_name) c
 	return count;
 }
 
+// Check if a node is a valid container reference (name or data) matching the given name.
 bool SexpTreeModel::is_matching_container_node(int node, const SCP_string& container_name) const
 {
 	return (tree_nodes[node].type & SEXPT_VALID) &&
@@ -1863,6 +1941,8 @@ bool SexpTreeModel::is_matching_container_node(int node, const SCP_string& conta
 		   !stricmp(tree_nodes[node].text, container_name.c_str());
 }
 
+// Check if the given node's position under its parent expects a container name argument
+// (OPF_CONTAINER_NAME, OPF_LIST_CONTAINER_NAME, or OPF_MAP_CONTAINER_NAME).
 bool SexpTreeModel::is_container_name_argument(int node) const
 {
 	Assertion(node >= 0 && node < (int)tree_nodes.size(),
@@ -1881,6 +1961,9 @@ bool SexpTreeModel::is_container_name_argument(int node) const
 // Context menu state computation
 // -----------------------------------------------------------------------
 
+// Returns true if the given operator should be hidden from context menus.
+// Includes operators hidden per GitHub issue #6400 and deprecated operators
+// that have been superseded by newer versions.
 bool SexpTreeModel::is_operator_hidden(int op_value)
 {
 	switch (op_value) {
@@ -1919,6 +2002,11 @@ bool SexpTreeModel::is_operator_hidden(int op_value)
 	}
 }
 
+// Analyze the currently selected tree node (item_index) and compute the full
+// context menu state: which actions are available (edit, copy, cut, paste, delete),
+// which operators are enabled for add/replace/insert, and which variables and
+// containers can be used as replacements. The UI layers use this state to build
+// their context menus without needing to duplicate any of the enabling logic.
 SexpContextMenuState SexpTreeModel::compute_context_menu_state()
 {
 	SexpContextMenuState state;
@@ -2546,6 +2634,12 @@ SexpContextMenuState SexpTreeModel::compute_context_menu_state()
 // -----------------------------------------------------------------------
 // compute_help_text — extract help/mini-help text for a node
 // -----------------------------------------------------------------------
+// Generate the help box and mini-help box text for the given node.
+// For operators: displays the operator's help text from the Sexp_help table.
+// For data nodes: shows the relevant argument description from the parent operator's
+// help text, and also handles special cases like message text preview, ship flag
+// descriptions, and wing flag descriptions.
+// Appends any user comment (annotation) to the end of the help text.
 SexpTreeModel::HelpTextResult SexpTreeModel::compute_help_text(int node_index, const SCP_string& node_comment) const
 {
 	HelpTextResult result;
@@ -2754,6 +2848,10 @@ SexpTreeModel::HelpTextResult SexpTreeModel::compute_help_text(int node_index, c
 // -----------------------------------------------------------------------
 // validate_label_edit — validate and resolve edited node text
 // -----------------------------------------------------------------------
+// Validate user-entered text for a tree node. For operator nodes, resolves the
+// closest matching valid operator name. For number nodes in OPF_POSITIVE positions,
+// rejects negative values. Truncates text to TOKEN_LENGTH.
+// Returns a result struct indicating whether the edit should be applied.
 SexpTreeModel::LabelEditResult SexpTreeModel::validate_label_edit(int node_index, const SCP_string& new_text) const
 {
 	LabelEditResult result;
@@ -2793,6 +2891,8 @@ SexpTreeModel::LabelEditResult SexpTreeModel::validate_label_edit(int node_index
 // -----------------------------------------------------------------------
 // apply_label_edit — apply validated edit to node text
 // -----------------------------------------------------------------------
+// Write the validated text into the tree node's text field, truncating to
+// TOKEN_LENGTH and sanitizing any invalid characters (Mantis #2893).
 void SexpTreeModel::apply_label_edit(int node_index, const SCP_string& resolved_text)
 {
 	auto len = resolved_text.size();
@@ -2809,6 +2909,10 @@ void SexpTreeModel::apply_label_edit(int node_index, const SCP_string& resolved_
 // -----------------------------------------------------------------------
 // compute_node_visual_info — determine flags and image for a tree node
 // -----------------------------------------------------------------------
+// Determine the editability flags (OPERAND/EDITABLE/NOT_EDITABLE) and the icon
+// (NodeImage) for a tree node based on its type. Operators get the OPERAND flag,
+// variables and containers are NOT_EDITABLE, and plain data nodes are EDITABLE
+// with a position-based numbered icon.
 SexpTreeModel::NodeVisualInfo SexpTreeModel::compute_node_visual_info(int node_index) const
 {
 	NodeVisualInfo info;
