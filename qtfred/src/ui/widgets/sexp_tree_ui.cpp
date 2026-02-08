@@ -78,6 +78,7 @@ namespace fso {
 namespace fred {
 
 namespace {
+// Maps a NodeImage enum value to the corresponding Qt resource path for the tree node icon.
 QString node_image_to_resource_name(NodeImage image) {
 	switch (image) {
 	case NodeImage::OPERATOR:
@@ -148,10 +149,11 @@ QString node_image_to_resource_name(NodeImage image) {
 	return ":/images/operator.png";
 }
 
-QPoint s_dragStartPos;
-QTreeWidgetItem* s_dragSourceRoot = nullptr;
-bool s_dragging = false;
+QPoint s_dragStartPos;                     // Mouse position when drag started
+QTreeWidgetItem* s_dragSourceRoot = nullptr; // The root-level item being dragged, or nullptr
+bool s_dragging = false;                   // True once the mouse has moved past the drag threshold
 
+// Returns true if the item is a top-level (root) item in the tree widget.
 bool isRoot(QTreeWidgetItem* it)
 {
 	return it && !it->parent();
@@ -160,10 +162,16 @@ bool isRoot(QTreeWidgetItem* it)
 
 // SexpTreeEditorInterface methods are now in the shared sexp_tree_model.cpp
 
+// Converts a NodeImage enum to a QIcon by looking up the resource path.
 QIcon sexp_tree::convertNodeImageToIcon(NodeImage image) {
 	return QIcon(node_image_to_resource_name(image));
 }
 
+/**
+ * Custom delegate that paints a small comment badge icon after the node text
+ * whenever a NoteRole annotation is present on the item. This provides a visual
+ * indicator that a node has a user comment without altering the tree structure.
+ */
 class NoteBadgeDelegate final : public QStyledItemDelegate {
   public:
 	explicit NoteBadgeDelegate(sexp_tree* tree) : QStyledItemDelegate(tree) {}
@@ -215,7 +223,11 @@ class NoteBadgeDelegate final : public QStyledItemDelegate {
 	}
 };
 
-// constructor
+// Constructor: initializes the QTreeWidget with single selection, hidden header, and custom context menu.
+// Creates the SexpTreeActions layer with references to _model and *this (as ISexpTreeUI).
+// Connects Qt signals: customContextMenuRequested -> customMenuHandler, itemChanged -> handleItemChange,
+// itemSelectionChanged -> handleNewItemSelected, itemDoubleClicked -> openNodeEditor.
+// Installs the NoteBadgeDelegate for column 0 to paint comment badges.
 sexp_tree::sexp_tree(QWidget* parent) : QTreeWidget(parent), _actions(_model, *this) {
 	setSelectionMode(QTreeWidget::SingleSelection);
 	setSelectionBehavior(QTreeWidget::SelectItems);
@@ -239,7 +251,10 @@ sexp_tree::sexp_tree(QWidget* parent) : QTreeWidget(parent), _actions(_model, *t
 sexp_tree::~sexp_tree() = default;
 
 // --- ISexpTreeUI implementation ---
+// These callbacks are invoked by SexpTreeActions to manipulate the Qt widget.
+// Each casts void* handles to QTreeWidgetItem* and delegates to Qt operations.
 
+// Creates a new QTreeWidgetItem with the given text and icon. Called by _actions when adding nodes.
 void* sexp_tree::ui_insert_item(const char* text, NodeImage image, void* parent_handle, void* insert_after)
 {
 	auto* hParent = static_cast<QTreeWidgetItem*>(parent_handle);
@@ -248,21 +263,25 @@ void* sexp_tree::ui_insert_item(const char* text, NodeImage image, void* parent_
 	return static_cast<void*>(item);
 }
 
+// Deletes a QTreeWidgetItem from the tree. Called by _actions when removing nodes.
 void sexp_tree::ui_delete_item(void* handle)
 {
 	delete static_cast<QTreeWidgetItem*>(handle);
 }
 
+// Sets the display text on a QTreeWidgetItem. Called by _actions after data changes.
 void sexp_tree::ui_set_item_text(void* handle, const char* text)
 {
 	static_cast<QTreeWidgetItem*>(handle)->setText(0, QString::fromUtf8(text));
 }
 
+// Sets the icon on a QTreeWidgetItem. Called by _actions after type/image changes.
 void sexp_tree::ui_set_item_image(void* handle, NodeImage image)
 {
 	static_cast<QTreeWidgetItem*>(handle)->setIcon(0, convertNodeImageToIcon(image));
 }
 
+// Returns the first child QTreeWidgetItem, or nullptr. Called by _actions to traverse the tree.
 void* sexp_tree::ui_get_child_item(void* handle)
 {
 	auto* item = static_cast<QTreeWidgetItem*>(handle);
@@ -271,36 +290,45 @@ void* sexp_tree::ui_get_child_item(void* handle)
 	return nullptr;
 }
 
+// Returns true if the item has children. Called by _actions to check tree structure.
 bool sexp_tree::ui_has_children(void* handle)
 {
 	return static_cast<QTreeWidgetItem*>(handle)->childCount() > 0;
 }
 
+// Expands a single item. Called by _actions after inserting children.
 void sexp_tree::ui_expand_item(void* handle)
 {
 	static_cast<QTreeWidgetItem*>(handle)->setExpanded(true);
 }
 
+// Makes an item the current selection. Called by _actions after add/replace operations.
 void sexp_tree::ui_select_item(void* handle)
 {
 	setCurrentItem(static_cast<QTreeWidgetItem*>(handle));
 }
 
+// Scrolls the tree view so the item is visible. Called by _actions.
 void sexp_tree::ui_ensure_visible(void* handle)
 {
 	scrollToItem(static_cast<QTreeWidgetItem*>(handle));
 }
 
+// Emits the modified() signal. Called by _actions after any tree mutation.
 void sexp_tree::ui_notify_modified()
 {
 	modified();
 }
 
+// Refreshes the help panel for the given item. Called by _actions after selection changes.
 void sexp_tree::ui_update_help(void* handle)
 {
 	update_help(static_cast<QTreeWidgetItem*>(handle));
 }
 
+// Creates Qt child items for all model children of a given parent node.
+// Walks tree_nodes[parent].child -> next chain, calling add_sub_tree() for each.
+// Called by _actions when expanding a previously-collapsed container data node.
 void sexp_tree::ui_add_children_visual(int parent_node_index)
 {
 	int i = tree_nodes[parent_node_index].child;
@@ -310,12 +338,15 @@ void sexp_tree::ui_add_children_visual(int parent_node_index)
 	}
 }
 
+// Recursively expands a branch. Called by _actions after container data replacement.
 void sexp_tree::ui_expand_branch(void* handle)
 {
 	expand_branch(static_cast<QTreeWidgetItem*>(handle));
 }
 
-// clears out the tree, so all the nodes are unused.
+// Clears all model node data via _model.clear_tree_data(). If op is non-null, also clears the
+// Qt widget. If op is non-empty, allocates a root operator node via _model.allocate_node()/set_node()
+// and rebuilds the visual tree.
 void sexp_tree::clear_tree(const char* op) {
 	_model.clear_tree_data(nullptr);
 	if (op) {
@@ -327,6 +358,8 @@ void sexp_tree::clear_tree(const char* op) {
 	}
 }
 
+// Nulls out all tree_nodes[].handle pointers. Called before a visual rebuild to ensure
+// stale Qt item pointers are not dereferenced.
 void sexp_tree::reset_handles() {
 	uint i;
 
@@ -335,7 +368,9 @@ void sexp_tree::reset_handles() {
 	}
 }
 
-// initializes and creates a tree from a given sexp startpoint.
+// Loads sexp data from the game's Sexp_nodes[] array into the model via _model.load_tree_data(),
+// then clears the Qt widget and rebuilds the visual tree. The index parameter is the starting
+// sexp node index; deflt is the default expression text if index is -1.
 void sexp_tree::load_tree(int index, const char* deflt) {
 	_model.load_tree_data(index, deflt);
 	clear();  // QTreeWidget::clear() - clear visual tree
@@ -343,7 +378,8 @@ void sexp_tree::load_tree(int index, const char* deflt) {
 }
 
 
-// build or rebuild a CTreeCtrl object with the current tree data
+// Clears the Qt widget and rebuilds the entire visual tree from tree_nodes[] starting at node 0.
+// Calls add_sub_tree() recursively. No model dependency beyond reading tree_nodes[].
 void sexp_tree::build_tree() {
 	if (!flag) {
 		select_sexp_node = -1;
@@ -353,8 +389,10 @@ void sexp_tree::build_tree() {
 	add_sub_tree(0, nullptr);
 }
 
-// Create the CTreeCtrl tree from the tree data.  The tree data should already be setup by
-// this point.
+// Recursively creates QTreeWidgetItems for a model node and all its children/siblings.
+// For each node: calls _model.compute_node_visual_info() to determine icon and flags,
+// creates the Qt item via insert(), sets the editable flag, then recurses into children.
+// Operator and container-data nodes recurse via add_sub_tree(); leaf data nodes are created directly.
 void sexp_tree::add_sub_tree(int node, QTreeWidgetItem* root) {
 //	char str[80];
 	int node2;
@@ -393,7 +431,7 @@ void sexp_tree::add_sub_tree(int node, QTreeWidgetItem* root) {
 
 // sexp_list_item methods are now in the shared sexp_tree_model.cpp
 
-// expand a CTreeCtrl branch and all of its children
+// Recursively expands a QTreeWidgetItem and all its children. Pure Qt operation.
 void sexp_tree::expand_branch(QTreeWidgetItem* h) {
 	h->setExpanded(true);
 	for (auto i = 0; i < h->childCount(); ++i) {
@@ -401,7 +439,9 @@ void sexp_tree::expand_branch(QTreeWidgetItem* h) {
 	}
 }
 
-// edit the comment for the operator pointed to by item_index
+// Opens a QInputDialog for editing the comment annotation (NoteRole) on a tree item.
+// Stores the result in the item's NoteRole data, refreshes visuals, and emits nodeAnnotationChanged().
+// Pure UI operation - no model dependency.
 void sexp_tree::editNoteForItem(QTreeWidgetItem* it)
 {
 	const QString old = it->data(0, NoteRole).toString();
@@ -415,6 +455,9 @@ void sexp_tree::editNoteForItem(QTreeWidgetItem* it)
 	Q_EMIT nodeAnnotationChanged(static_cast<void*>(it), text);
 }
 
+// Opens a QColorDialog for choosing a background highlight color (BgColorRole) on a tree item.
+// Stores the result in the item's BgColorRole data, refreshes visuals, and emits nodeBgColorChanged().
+// Pure UI operation - no model dependency.
 void sexp_tree::editBgColorForItem(QTreeWidgetItem* it)
 {
 	const auto start = it->data(0, BgColorRole).value<QColor>();
@@ -428,8 +471,9 @@ void sexp_tree::editBgColorForItem(QTreeWidgetItem* it)
 }
 
 
-// add an operator under operator pointed to by item_index.  Updates item_index to point
-// to this new operator.
+// Adds an operator node under the current position. Delegates entirely to _actions.add_operator()
+// which handles model allocation, node setup, Qt item creation (via ISexpTreeUI callbacks),
+// and adding default child arguments. Returns the new item_index.
 int sexp_tree::add_operator(const char* op, QTreeWidgetItem* h) {
 	_actions.add_operator(op, static_cast<void*>(h));
 	return item_index;
@@ -626,7 +670,9 @@ int sexp_tree::verify_tree(int node, int *bypass)
 }
 */
 
-// display an error message and position to point of error (a node)
+// Displays an error dialog for a given node. Selects and scrolls to the error node,
+// shows a QMessageBox::critical asking whether to continue checking for errors.
+// Returns -1 if user declines, 0 otherwise. Pure UI operation.
 int sexp_tree::node_error(int node, const char* msg, int* bypass) {
 	if (bypass) {
 		*bypass = 1;
@@ -650,6 +696,8 @@ int sexp_tree::node_error(int node, const char* msg, int* bypass) {
 	}
 }
 
+// Selects and scrolls to a node in the tree. Expands ancestors via ensure_visible(),
+// clears existing selection, and makes the node the current item. Pure UI operation.
 void sexp_tree::hilite_item(int node) {
 
 	ensure_visible(node);
@@ -658,7 +706,8 @@ void sexp_tree::hilite_item(int node) {
 	scrollToItem(tree_item_handle(tree_nodes[node]));
 }
 
-// because the MFC function EnsureVisible() doesn't do what it says it does, I wrote this.
+// Expands all ancestor items of the given node so it becomes visible in the tree.
+// Walks up the Qt parent chain calling setExpanded(). Pure UI operation.
 void sexp_tree::ensure_visible(int node) {
 	auto handle = tree_item_handle(tree_nodes[node])->parent();
 
@@ -696,8 +745,9 @@ void sexp_tree::ensure_visible(int node) {
 	update_help(GetSelectedItem());
 }*/
 
-// moves a whole sexp tree branch to a new position under 'parent' and after 'after'.
-// The expansion state is preserved, and node handles are updated.
+// Moves a branch in both model data and the Qt tree. First calls _model.move_branch_data()
+// to update the parent/child/next linkage, then calls the QTreeWidgetItem overload of
+// move_branch() to recreate the visual subtree under the new parent.
 void sexp_tree::move_branch(int source, int parent) {
 	if (source != -1) {
 		_model.move_branch_data(source, parent);
@@ -709,6 +759,10 @@ void sexp_tree::move_branch(int source, int parent) {
 	}
 }
 
+// Recursively re-creates a Qt subtree under a new parent/after position. For each item:
+// finds its tree_nodes[] slot to update the handle, creates a new QTreeWidgetItem via insertWithIcon(),
+// copies all custom data roles (FormulaDataRole, NoteRole, BgColorRole), applies visuals,
+// recursively moves all children, preserves expansion state, then deletes the old source item.
 QTreeWidgetItem* sexp_tree::move_branch(QTreeWidgetItem* source, QTreeWidgetItem* parent, QTreeWidgetItem* after)
 {
 	if (!source)
@@ -755,6 +809,9 @@ QTreeWidgetItem* sexp_tree::move_branch(QTreeWidgetItem* source, QTreeWidgetItem
 	return h;
 }
 
+// Recursively copies a Qt subtree under a new parent without removing the source.
+// Creates new items via insertWithIcon(), copies all custom data roles, applies visuals,
+// and preserves expansion state. Does not modify tree_nodes[] handles (copy is visual-only).
 void sexp_tree::copy_branch(QTreeWidgetItem* source, QTreeWidgetItem* parent, QTreeWidgetItem* after)
 {
 	if (!source)
@@ -791,6 +848,9 @@ void sexp_tree::copy_branch(QTreeWidgetItem* source, QTreeWidgetItem* parent, QT
 	modified();
 }*/
 
+// Reorders top-level (root) items by removing source from its position and reinserting
+// relative to dest. If insert_before is true, places before dest; otherwise after.
+// Emits rootOrderChanged() and modified(). Pure Qt widget operation.
 void sexp_tree::move_root(QTreeWidgetItem* source, QTreeWidgetItem* dest, bool insert_before)
 {
 	if (!source || !dest)
@@ -830,11 +890,17 @@ void sexp_tree::move_root(QTreeWidgetItem* source, QTreeWidgetItem* dest, bool i
 	Q_EMIT rootOrderChanged();
 }
 
+// Thin wrapper: converts a NodeImage enum to a QIcon and delegates to insertWithIcon().
 QTreeWidgetItem*
 sexp_tree::insert(const QString& lpszItem, NodeImage image, QTreeWidgetItem* hParent, QTreeWidgetItem* hInsertAfter) {
 	return insertWithIcon(lpszItem, convertNodeImageToIcon(image), hParent, hInsertAfter);
 }
 
+// Handles keyboard input. When the operator quick-search popup is active, routes keys:
+// Escape -> cancel popup, Enter -> confirm selection, Up/Down/Page/Home/End -> forwarded to list,
+// other keys -> forwarded to the filter text field.
+// When no popup: Space opens the node editor (popup or inline edit) for the current item.
+// All other keys delegate to QTreeWidget default handling.
 void sexp_tree::keyPressEvent(QKeyEvent* e)
 {
 	// Clear stale state if popup was closed externally
@@ -876,6 +942,8 @@ void sexp_tree::keyPressEvent(QKeyEvent* e)
 	QTreeWidget::keyPressEvent(e);
 }
 
+// Event filter installed on the operator popup frame. Clears popup state (active flag, node index)
+// and returns focus to the tree when the popup is hidden, closed, or loses focus.
 bool sexp_tree::eventFilter(QObject* obj, QEvent* ev)
 {
 	if (obj == _opPopup) {
@@ -895,6 +963,8 @@ bool sexp_tree::eventFilter(QObject* obj, QEvent* ev)
 	return QTreeWidget::eventFilter(obj, ev);
 }
 
+// Records drag start position and source item for root-level drag-and-drop. Only root items
+// (no parent) can be dragged. Resets drag state and delegates to QTreeWidget.
 void sexp_tree::mousePressEvent(QMouseEvent* e)
 {
 	s_dragStartPos = e->pos();
@@ -905,6 +975,9 @@ void sexp_tree::mousePressEvent(QMouseEvent* e)
 	QTreeWidget::mousePressEvent(e);
 }
 
+// Tracks mouse movement during a drag. Once past the drag threshold, highlights potential
+// drop targets (other root items) by selecting them as a visual cue. Only root-to-root
+// dragging is supported. No QDrag payload is used; the actual move happens on mouse release.
 void sexp_tree::mouseMoveEvent(QMouseEvent* e)
 {
 	if (!s_dragSourceRoot) {
@@ -932,6 +1005,9 @@ void sexp_tree::mouseMoveEvent(QMouseEvent* e)
 	QTreeWidget::mouseMoveEvent(e);
 }
 
+// Completes a root-level drag-and-drop. If the drag source and drop target are different root items,
+// determines insert_before based on relative position and calls move_root() to reorder.
+// Clears drag state and delegates to QTreeWidget.
 void sexp_tree::mouseReleaseEvent(QMouseEvent* e)
 {
 	if (s_dragging && s_dragSourceRoot) {
@@ -952,6 +1028,9 @@ void sexp_tree::mouseReleaseEvent(QMouseEvent* e)
 	QTreeWidget::mouseReleaseEvent(e);
 }
 
+// Core Qt item creation function. Creates a QTreeWidgetItem with text, icon, and editable flag
+// under the specified parent (or as top-level) after the specified sibling. Blocks all Qt signals
+// during creation to prevent spurious itemChanged callbacks.
 QTreeWidgetItem* sexp_tree::insertWithIcon(const QString& lpszItem,
 										   const QIcon& image,
 										   QTreeWidgetItem* hParent,
@@ -979,15 +1058,18 @@ QTreeWidgetItem* sexp_tree::insertWithIcon(const QString& lpszItem,
 	return item;
 }
 
+// Returns the QTreeWidgetItem* handle for a given tree_nodes[] index.
 QTreeWidgetItem* sexp_tree::handle(int node) {
 	return tree_item_handle(tree_nodes[node]);
 }
 
+// Returns the help string for a given operator code. Delegates to SexpTreeModel::help() (static).
 const char* sexp_tree::help(int code) {
 	return SexpTreeModel::help(code);
 }
 
-// get type of item clicked on
+// Returns the sexp type flags (SEXPT_OPERATOR, SEXPT_STRING, etc.) for the node matching
+// handle h. Performs a linear scan of tree_nodes[] to find the matching handle.
 int sexp_tree::get_type(QTreeWidgetItem* h) {
 	uint i;
 
@@ -1006,7 +1088,8 @@ int sexp_tree::get_type(QTreeWidgetItem* h) {
 	return tree_nodes[i].type;
 }
 
-// get node of item clicked on
+// Returns the tree_nodes[] index for the node matching handle h.
+// Performs a linear scan of tree_nodes[]. Returns -1 if not found.
 int sexp_tree::get_node(QTreeWidgetItem* h) {
 	uint i;
 
@@ -1025,6 +1108,7 @@ int sexp_tree::get_node(QTreeWidgetItem* h) {
 	return i;
 }
 
+// Walks parent links from the given node up to find and return the root node index.
 int sexp_tree::get_root(int node) {
 	while (tree_nodes[node].parent >= 0) {
 		node = tree_nodes[node].parent;
@@ -1032,6 +1116,9 @@ int sexp_tree::get_root(int node) {
 	return node;
 }
 
+// Updates the help text panel for the selected item. Finds the node index from the handle,
+// then delegates to _model.compute_help_text() which returns both the full help text and
+// the mini (one-line) help text. Emits helpChanged() and miniHelpChanged() signals.
 void sexp_tree::update_help(QTreeWidgetItem* h) {
 	if (h == nullptr) {
 		helpChanged("");
@@ -1084,6 +1171,9 @@ void sexp_tree::update_help(QTreeWidgetItem* h) {
 
 
 
+// Stores the Editor and SexpTreeEditorInterface pointers. If no custom interface is provided,
+// creates a default SexpTreeEditorInterface. The interface controls tree behavior flags
+// (e.g. RootDeletable, RootEditable, LabeledRoot).
 void sexp_tree::initializeEditor(::fso::fred::Editor* edit, SexpTreeEditorInterface* editorInterface) {
 	if (editorInterface == nullptr) {
 		// If there is no special interface then we supply the default implementation
@@ -1094,6 +1184,8 @@ void sexp_tree::initializeEditor(::fso::fred::Editor* edit, SexpTreeEditorInterf
 	_editor = edit;
 	_interface = editorInterface;
 }
+// Slot connected to customContextMenuRequested. Gets the QTreeWidgetItem at the click position,
+// builds the full context menu via buildContextMenu(), and executes it at the global position.
 void sexp_tree::customMenuHandler(const QPoint& pos) {
 	QTreeWidgetItem* h = this->itemAt(pos);
 
@@ -1107,6 +1199,26 @@ void sexp_tree::customMenuHandler(const QPoint& pos) {
 
 	menu->exec(mapToGlobal(pos));
 }
+// Builds the complete right-click context menu for the given tree item.
+//
+// First calls _model.compute_context_menu_state() to get all enabled/disabled states, then
+// constructs the full menu hierarchy:
+//   - Delete, Edit Data, Expand All
+//   - Annotations: Edit Comment, Edit Color
+//   - Copy operations: Cut, Copy, Paste
+//   - Add Operator (categorized submenus by op_menu[]/op_submenu[])
+//   - Add Data: Number, String, plus typed items from state.add_data_list
+//   - Add Paste
+//   - Insert Operator (categorized submenus)
+//   - Replace Operator (categorized submenus)
+//   - Replace Data: Number, String, plus typed items from state.replace_data_list
+//   - Variables: Add Variable, Modify Variable, Replace Variable (from state.replace_variables)
+//   - Containers: Add/Modify Container, Replace Container Name/Data
+//
+// Operator add/replace/insert actions connect to _actions.add_or_replace_operator() or insertOperatorAction().
+// Data actions connect to local handlers (addNumberDataHandler, addReplaceTypedDataHandler, etc.).
+// Per-operator enabled state comes from state.op_add_enabled[], state.op_replace_enabled[],
+// state.op_insert_enabled[] arrays computed by the model.
 std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 	int i, j, subcategory_id;
 
@@ -1365,12 +1477,19 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 	util::propagate_disabled_status(popup_menu.get());
 	return popup_menu;
 }
+// Cut handler: copies the selected subtree to clipboard via _actions.clipboard_copy(),
+// then falls through to deleteActionHandler() to remove it.
 void sexp_tree::cutActionHandler() {
 	_actions.clipboard_copy();
 
 	// fall through to ID_DELETE case.
 	deleteActionHandler();
 }
+// Delete handler: removes the currently selected item from both model and Qt tree.
+// Root items: checks _interface RootDeletable flag, emits rootNodeDeleted(), frees the model
+// subtree via _model.free_node2(), and deletes the QTreeWidgetItem.
+// Non-root items: calls _model.free_node() to unlink from the model, deletes the Qt item.
+// Emits modified() in all cases.
 void sexp_tree::deleteActionHandler()
 {
 	if (currentItem() == nullptr || !_interface) {
@@ -1423,12 +1542,19 @@ void sexp_tree::deleteActionHandler()
 
 	modified();
 }
+// Edit Data handler: starts inline text editing on the currently selected item via beginItemEdit().
 void sexp_tree::editDataActionHandler() {
 	beginItemEdit(currentItem());
 }
 
-// Compute the valid operators for replacing/adding at the given node, based on parent arg type.
-// This mirrors the original menu enable/disable logic. See original for how "type" is computed.
+// Computes the list of valid operator names for the given node position, based on the
+// expected argument type (OPF_*) at that position. Queries:
+//   - _model.find_argument_number() to determine which argument position this is
+//   - _model.query_node_argument_type() to get the expected OPF type
+//   - _model.get_listing_opf() to build the canonical list of valid items for that OPF
+//   - _model.query_default_argument_available() to filter operators that lack default args
+// Returns a sorted, deduplicated QStringList of operator names. Used by the operator
+// quick-search popup and openNodeEditor() to decide whether to show the popup.
 QStringList sexp_tree::validOperatorsForNode(int nodeIndex)
 {
 	QStringList out;
@@ -1468,6 +1594,9 @@ QStringList sexp_tree::validOperatorsForNode(int nodeIndex)
 	return out;
 }
 
+// Decides how to edit a node: roots get inline text edit, operator/data positions with valid
+// operator choices get the operator quick-search popup, and pure data nodes get inline edit.
+// Relies on validOperatorsForNode() -> _model.get_listing_opf() to determine if operators are available.
 void sexp_tree::openNodeEditor(QTreeWidgetItem* item)
 {
 	if (!item || !_interface)
@@ -1508,6 +1637,11 @@ void sexp_tree::openNodeEditor(QTreeWidgetItem* item)
 	beginItemEdit(item);
 }
 
+// Creates and shows the operator quick-search popup below the given tree item.
+// Populates _opAll from validOperatorsForNode(), creates the popup widgets (QFrame with
+// QLineEdit filter + QListWidget) if not already created, and installs event filters.
+// Connects: text changes -> filterOperatorPopup(), return/click -> endOperatorQuickSearch(true).
+// The popup is sized based on the widest operator name and positioned below the item's visual rect.
 void sexp_tree::startOperatorQuickSearch(QTreeWidgetItem* item, const QString& seed)
 {
 	if (!item)
@@ -1581,6 +1715,8 @@ void sexp_tree::startOperatorQuickSearch(QTreeWidgetItem* item, const QString& s
 	_opPopupActive = true;
 }
 
+// Filters the operator list widget as the user types. Clears and repopulates _opList with
+// operators from _opAll that contain the text (case-insensitive). Selects the first match.
 void sexp_tree::filterOperatorPopup(const QString& text)
 {
 	_opList->clear();
@@ -1596,6 +1732,14 @@ void sexp_tree::filterOperatorPopup(const QString& text)
 		_opList->setCurrentRow(0);
 }
 
+// Closes the operator quick-search popup and commits the result if confirm is true.
+// Commit logic:
+//   1. If user selected an item in the list, use that operator name
+//   2. If typed text is a valid number and the node expects a number (OPF_NUMBER/OPF_POSITIVE),
+//      commit as numeric data via _actions.replace_data()
+//   3. Otherwise, fall back to _model.match_closest_operator() for fuzzy matching
+// On successful operator resolution, calls _actions.add_or_replace_operator() to commit.
+// Hides the popup, clears state, and returns focus to the tree.
 void sexp_tree::endOperatorQuickSearch(bool confirm)
 {
 	if (!_opPopupActive)
@@ -1674,6 +1818,15 @@ void sexp_tree::endOperatorQuickSearch(bool confirm)
 	setFocus(Qt::OtherFocusReason);
 }
 
+// Slot connected to QTreeWidget::itemChanged. Handles inline edit completion.
+// Only processes changes when _currently_editing is true (set by beginItemEdit).
+//
+// If the item is not found in tree_nodes[] (i.e. it's a root label), emits rootNodeRenamed().
+// Otherwise validates the new text via _model.validate_label_edit():
+//   - If it resolves to an operator: calls _actions.add_or_replace_operator() to replace the node
+//   - If it's a negative number in a positive-only context: shows an error dialog
+//   - If the text is valid data: calls _model.apply_label_edit() and emits nodeChanged()
+//   - If invalid: reverts the item text to the original tree_nodes[].text
 void sexp_tree::handleItemChange(QTreeWidgetItem* item, int  /*column*/) {
 	if (!_currently_editing) {
 		return;
@@ -1731,12 +1884,21 @@ void sexp_tree::handleItemChange(QTreeWidgetItem* item, int  /*column*/) {
 		item->setText(0, QString::fromUtf8(tree_nodes[node].text, static_cast<int>(len)));
 	}
 }
+// Copy handler: copies the selected subtree to the internal clipboard via _actions.clipboard_copy().
 void sexp_tree::copyActionHandler() {
 	_actions.clipboard_copy();
 }
+
+// Paste handler: replaces the current node with clipboard contents via _actions.clipboard_paste_replace().
 void sexp_tree::pasteActionHandler() {
 	_actions.clipboard_paste_replace();
 }
+// Inserts an operator ABOVE the current node, wrapping it as a child.
+// Allocates a new model node via _model.allocate_node() linked to the current node's parent,
+// sets it as an operator via _model.set_node(), creates the Qt item via insert(), then calls
+// move_branch() to move the original node under the new operator. Adds minimum required
+// default children via _actions.add_default_operator(). Emits modified().
+// If the current node is a root in a labeled-root tree, emits rootNodeFormulaChanged().
 void sexp_tree::insertOperatorAction(int op) {
 	int flags;
 
@@ -1771,6 +1933,9 @@ void sexp_tree::insertOperatorAction(int op) {
 	item_handle->setExpanded(true);
 	modified();
 }
+// Add Number handler: adds a SEXPT_NUMBER data node via _actions.add_data("number", ...),
+// then starts inline editing on the new item so the user can type the actual value.
+// If the parent is a container data node, adds the SEXPT_MODIFIER flag.
 void sexp_tree::addNumberDataHandler() {
 	int theType = SEXPT_NUMBER | SEXPT_VALID;
 	if (tree_nodes[item_index].type & SEXPT_CONTAINER_DATA) {
@@ -1780,6 +1945,8 @@ void sexp_tree::addNumberDataHandler() {
 	int theNode = _actions.add_data("number", theType);
 	beginItemEdit(tree_item_handle(tree_nodes[theNode]));
 }
+// Add String handler: adds a SEXPT_STRING data node via _actions.add_data("string", ...),
+// then starts inline editing on the new item. Adds SEXPT_MODIFIER if parent is container data.
 void sexp_tree::addStringDataHandler() {
 	int theType = SEXPT_STRING | SEXPT_VALID;
 	if (tree_nodes[item_index].type & SEXPT_CONTAINER_DATA) {
@@ -1789,6 +1956,9 @@ void sexp_tree::addStringDataHandler() {
 	int theNode = _actions.add_data("string", theType);
 	beginItemEdit(tree_item_handle(tree_nodes[theNode]));
 }
+// Replace Number handler: expands the current operator via _actions.expand_operator(),
+// replaces the current data with a SEXPT_NUMBER placeholder via _actions.replace_data("number", ...),
+// then starts inline editing. Preserves SEXPT_MODIFIER flag if present.
 void sexp_tree::replaceNumberDataHandler() {
 	_actions.expand_operator(item_index);
 	int type = SEXPT_NUMBER | SEXPT_VALID;
@@ -1799,6 +1969,9 @@ void sexp_tree::replaceNumberDataHandler() {
 	_actions.replace_data("number", type);
 	beginItemEdit(tree_item_handle(tree_nodes[item_index]));
 }
+// Replace String handler: expands the current operator via _actions.expand_operator(),
+// replaces with a SEXPT_STRING placeholder via _actions.replace_data("string", ...),
+// then starts inline editing. Preserves SEXPT_MODIFIER flag if present.
 void sexp_tree::replaceStringDataHandler() {
 	_actions.expand_operator(item_index);
 	int type = SEXPT_STRING | SEXPT_VALID;
@@ -1809,10 +1982,18 @@ void sexp_tree::replaceStringDataHandler() {
 	_actions.replace_data("string", type);
 	beginItemEdit(tree_item_handle(tree_nodes[item_index]));
 }
+// Sets the _currently_editing flag and calls Qt's editItem() to start inline text editing.
+// The flag ensures that handleItemChange() only processes intentional edits, not programmatic changes.
 void sexp_tree::beginItemEdit(QTreeWidgetItem* item) {
 	_currently_editing = true;
 	editItem(item);
 }
+// Handles add/replace of a specific typed data item selected from the context menu.
+// Resolves the correct sexp_list_item by walking the linked list to data_idx:
+//   - For container data nodes: uses _model.get_container_modifiers() or _model.get_container_multidim_modifiers()
+//   - For operator arguments: uses _model.get_listing_opf() with the operator's argument type
+// Then expands the operator via _actions.expand_operator() and commits via
+// _actions.replace_data() (if replace) or _actions.add_data() (if add). Frees the list after use.
 void sexp_tree::addReplaceTypedDataHandler(int data_idx, bool replace) {
 	Assert(item_index >= 0);
 	const int op_node = replace ? tree_nodes[item_index].parent : item_index;
@@ -1850,9 +2031,12 @@ void sexp_tree::addReplaceTypedDataHandler(int data_idx, bool replace) {
 	}
 	list->destroy();
 }
+// Add Paste handler: adds clipboard contents as a new child via _actions.clipboard_paste_add().
 void sexp_tree::addPasteActionHandler() {
 	_actions.clipboard_paste_add();
 }
+// Sets item_index and syncs the Qt selection. If node < 0, clears the selection.
+// Otherwise selects the QTreeWidgetItem corresponding to tree_nodes[node].
 void sexp_tree::setCurrentItemIndex(int node) {
 	item_index = node;
 	if (node < 0) {
@@ -1861,6 +2045,10 @@ void sexp_tree::setCurrentItemIndex(int node) {
 		setCurrentItem(tree_item_handle(tree_nodes[node]));
 	}
 }
+// Replace Variable handler: replaces the current data node with a variable reference.
+// Validates type compatibility between the node's expected type and the variable's type.
+// For modify-variable or OPF_CONTAINER_VALUE contexts, allows type coercion.
+// Commits via _actions.replace_variable_data(). Uses _model.query_node_argument_type() for type checking.
 void sexp_tree::handleReplaceVariableAction(int id) {
 	Assert(item_index >= 0);
 
@@ -1895,6 +2083,8 @@ void sexp_tree::handleReplaceVariableAction(int id) {
 	_actions.replace_variable_data(id, (type | SEXPT_VARIABLE));
 
 }
+// Replace Container Name handler: replaces the current string node with a container name reference.
+// Validates that the current node is a string type. Commits via _actions.replace_container_name().
 void sexp_tree::handleReplaceContainerNameAction(int idx) {
 	Assertion(item_index >= 0, "Attempt to Replace Container Name with no node selected. Please report!");
 
@@ -1909,6 +2099,9 @@ void sexp_tree::handleReplaceContainerNameAction(int idx) {
 
 	_actions.replace_container_name(containers[idx]);
 }
+// Replace Container Data handler: replaces the current data node with container data access.
+// Strips SEXPT_VARIABLE and SEXPT_CONTAINER_NAME flags, adds SEXPT_CONTAINER_DATA.
+// Commits via _actions.replace_container_data() with full modifier support, then expands the branch.
 void sexp_tree::handleReplaceContainerDataAction(int idx) {
 	Assertion(item_index >= 0, "Attempt to Replace Container Data with no node selected. Please report!");
 
@@ -1928,6 +2121,9 @@ void sexp_tree::handleReplaceContainerDataAction(int idx) {
 	auto *handle = tree_item_handle(tree_nodes[item_index]);
 	expand_branch(handle);
 }
+// Slot connected to itemSelectionChanged. Updates the help text panel via update_help(),
+// sets item_index to the selected node's tree_nodes[] index, walks up to the root item,
+// and emits selectedRootChanged() with the root's FormulaDataRole value.
 void sexp_tree::handleNewItemSelected() {
 	auto selectedItem = currentItem();
 
@@ -1949,9 +2145,13 @@ void sexp_tree::handleNewItemSelected() {
 
 	selectedRootChanged(item->data(0, FormulaDataRole).toInt());
 }
+// Public entry point for deleting the currently selected item. Simply delegates to deleteActionHandler().
 void sexp_tree::deleteCurrentItem() {
 	deleteActionHandler();
 }
+// Reads NoteRole and BgColorRole from a QTreeWidgetItem and applies visual styling:
+// NoteRole text -> tooltip, BgColorRole -> background brush. Called after annotation edits
+// and during branch move/copy to preserve visual state. Pure UI operation.
 void sexp_tree::applyVisuals(QTreeWidgetItem* it)
 {
 	const auto note = it->data(0, NoteRole).toString();
@@ -1963,6 +2163,7 @@ void sexp_tree::applyVisuals(QTreeWidgetItem* it)
 		it->setBackground(0, QBrush(color));
 	}
 }
+// Returns the current item_index (tree_nodes[] index of the selected node).
 int sexp_tree::getCurrentItemIndex() const {
 	return item_index;
 }
