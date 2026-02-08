@@ -12,6 +12,7 @@
 // Shared sexp tree model — UI-independent data structures and logic.
 // Used by both FRED2 (MFC) and QtFRED (Qt) sexp tree implementations.
 
+#include "missioneditor/sexp_tree_opf.h"
 #include "globalincs/globals.h"
 #include "globalincs/flagset.h"
 #include "globalincs/vmallocator.h"  // SCP_string, SCP_vector
@@ -220,9 +221,6 @@ void get_variable_default_text_from_variable_text(char* text, char* default_text
 // Build "varname(value)" combined text for variable display in tree
 void get_combined_variable_name(char* combined_name, const char* sexp_var_name);
 
-// Forward declaration for OPF function parameter
-enum class ContainerType;
-
 // -----------------------------------------------------------------------
 // ISexpTreeUI — callback interface for UI operations
 // -----------------------------------------------------------------------
@@ -355,7 +353,7 @@ struct SexpContextMenuState {
 // -----------------------------------------------------------------------
 // Owns tree node data and provides all pure-logic operations.
 // Both FRED2 and QtFRED sexp_tree classes delegate to this model.
-// OPF listing functions are declared here and implemented in sexp_tree_opf.cpp.
+// OPF listing functions are in the owned SexpTreeOPF _opf member (see sexp_tree_opf.h).
 
 class SexpTreeModel {
 public:
@@ -510,127 +508,10 @@ public:
 	// Check if a node's parent operator expects a container name at this argument position
 	bool is_container_name_argument(int node) const;
 
-	// --- OPF listing functions (implemented in sexp_tree_opf.cpp) ---
-	// Each returns a linked list of valid values for the given OPF_* argument type.
-	// Caller must call destroy() on the returned list when done.
-
-	// Master dispatcher — routes to the appropriate get_listing_opf_* based on opf type
-	sexp_list_item* get_listing_opf(int opf, int parent_node, int arg_index);
-	sexp_list_item* get_listing_opf_null();
-	sexp_list_item* get_listing_opf_flexible_argument();
-	sexp_list_item* get_listing_opf_bool(int parent_node = -1);
-	sexp_list_item* get_listing_opf_positive();
-	sexp_list_item* get_listing_opf_number();
-	sexp_list_item* get_listing_opf_ship(int parent_node = -1);
-	sexp_list_item* get_listing_opf_prop();
-	sexp_list_item* get_listing_opf_wing();
-	sexp_list_item* get_listing_opf_subsystem(int parent_node, int arg_index);
-	sexp_list_item* get_listing_opf_subsystem_type(int parent_node);
-	sexp_list_item* get_listing_opf_point();
-	sexp_list_item* get_listing_opf_iff();
-	sexp_list_item* get_listing_opf_ai_class();
-	sexp_list_item* get_listing_opf_support_ship_class();
-	sexp_list_item* get_listing_opf_ssm_class();
-	sexp_list_item* get_listing_opf_ship_with_bay();
-	sexp_list_item* get_listing_opf_soundtrack_name();
-	sexp_list_item* get_listing_opf_arrival_location();
-	sexp_list_item* get_listing_opf_departure_location();
-	sexp_list_item* get_listing_opf_arrival_anchor_all();
-	sexp_list_item* get_listing_opf_ai_goal(int parent_node);
-	sexp_list_item* get_listing_opf_docker_point(int parent_node, int arg_index);
-	sexp_list_item* get_listing_opf_dockee_point(int parent_node);
-	sexp_list_item* get_listing_opf_message();
-	sexp_list_item* get_listing_opf_persona();
-	sexp_list_item* get_listing_opf_font();
-	sexp_list_item* get_listing_opf_who_from();
-	sexp_list_item* get_listing_opf_priority();
-	sexp_list_item* get_listing_opf_sound_environment();
-	sexp_list_item* get_listing_opf_sound_environment_option();
-	sexp_list_item* get_listing_opf_adjust_audio_volume();
-	sexp_list_item* get_listing_opf_builtin_hud_gauge();
-	sexp_list_item* get_listing_opf_custom_hud_gauge();
-	sexp_list_item* get_listing_opf_any_hud_gauge();
-	sexp_list_item* get_listing_opf_ship_effect();
-	sexp_list_item* get_listing_opf_explosion_option();
-	sexp_list_item* get_listing_opf_waypoint_path();
-	sexp_list_item* get_listing_opf_ship_point();
-	sexp_list_item* get_listing_opf_ship_wing_wholeteam();
-	sexp_list_item* get_listing_opf_ship_wing_shiponteam_point();
-	sexp_list_item* get_listing_opf_ship_wing_point();
-	sexp_list_item* get_listing_opf_ship_wing_point_or_none();
-	sexp_list_item* get_listing_opf_mission_name();
-	sexp_list_item* get_listing_opf_goal_name(int parent_node);
-	sexp_list_item* get_listing_opf_ship_wing();
-	sexp_list_item* get_listing_opf_ship_prop();
-	sexp_list_item* get_listing_opf_order_recipient();
-	sexp_list_item* get_listing_opf_ship_type();
-	sexp_list_item* get_listing_opf_keypress();
-	sexp_list_item* get_listing_opf_event_name(int parent_node);
-	sexp_list_item* get_listing_opf_ai_order();
-	sexp_list_item* get_listing_opf_skill_level();
-	sexp_list_item* get_listing_opf_cargo();
-	sexp_list_item* get_listing_opf_string();
-	sexp_list_item* get_listing_opf_medal_name();
-	sexp_list_item* get_listing_opf_weapon_name();
-	sexp_list_item* get_listing_opf_intel_name();
-	sexp_list_item* get_listing_opf_ship_class_name();
-	sexp_list_item* get_listing_opf_prop_class_name();
-	sexp_list_item* get_listing_opf_huge_weapon();
-	sexp_list_item* get_listing_opf_ship_not_player();
-	sexp_list_item* get_listing_opf_ship_or_none();
-	sexp_list_item* get_listing_opf_subsystem_or_none(int parent_node, int arg_index);
-	sexp_list_item* get_listing_opf_subsys_or_generic(int parent_node, int arg_index);
-	sexp_list_item* get_listing_opf_jump_nodes();
-	sexp_list_item* get_listing_opf_variable_names();
-	sexp_list_item* get_listing_opf_skybox_model();
-	sexp_list_item* get_listing_opf_skybox_flags();
-	sexp_list_item* get_listing_opf_background_bitmap();
-	sexp_list_item* get_listing_opf_sun_bitmap();
-	sexp_list_item* get_listing_opf_nebula_storm_type();
-	sexp_list_item* get_listing_opf_nebula_poof();
-	sexp_list_item* get_listing_opf_turret_target_order();
-	sexp_list_item* get_listing_opf_turret_types();
-	sexp_list_item* get_listing_opf_post_effect();
-	sexp_list_item* get_listing_opf_turret_target_priorities();
-	sexp_list_item* get_listing_opf_armor_type();
-	sexp_list_item* get_listing_opf_damage_type();
-	sexp_list_item* get_listing_opf_animation_type();
-	sexp_list_item* get_listing_opf_hud_elements();
-	sexp_list_item* get_listing_opf_weapon_banks();
-	sexp_list_item* get_listing_opf_mission_moods();
-	sexp_list_item* get_listing_opf_ship_flags();
-	sexp_list_item* get_listing_opf_wing_flags();
-	sexp_list_item* get_listing_opf_team_colors();
-	sexp_list_item* get_listing_opf_nebula_patterns();
-	sexp_list_item* get_listing_opf_asteroid_types();
-	sexp_list_item* get_listing_opf_debris_types();
-	sexp_list_item* get_listing_opf_motion_debris();
-	sexp_list_item* get_listing_opf_game_snds();
-	sexp_list_item* get_listing_opf_fireball();
-	sexp_list_item* get_listing_opf_species();
-	sexp_list_item* get_listing_opf_language();
-	sexp_list_item* get_listing_opf_functional_when_eval_type();
-	sexp_list_item* get_listing_opf_animation_name(int parent_node);
-	sexp_list_item* get_listing_opf_sexp_containers(ContainerType con_type);
-	sexp_list_item* get_listing_opf_wing_formation();
-	sexp_list_item* get_listing_opf_bolt_types();
-	sexp_list_item* get_listing_opf_traitor_overrides();
-	sexp_list_item* get_listing_opf_lua_general_orders();
-	sexp_list_item* get_listing_opf_message_types();
-	sexp_list_item* get_listing_opf_lua_enum(int parent_node, int arg_index);
-	sexp_list_item* get_listing_opf_mission_custom_strings();
-	sexp_list_item* check_for_dynamic_sexp_enum(int opf);
-
-	// Container modifier helpers
-
-	// Return the list of valid modifiers for a container data node (dispatches to list/map)
-	sexp_list_item* get_container_modifiers(int con_data_node) const;
-	// Return the list of valid modifiers for list containers (At, Get, etc.)
-	sexp_list_item* get_list_container_modifiers() const;
-	// Return the list of valid modifiers for map containers, based on key type
-	sexp_list_item* get_map_container_modifiers(int con_data_node) const;
-	// Return the list of valid modifiers for multidimensional container access
-	sexp_list_item* get_container_multidim_modifiers(int con_data_node) const;
+	// --- OPF listing and container modifier queries ---
+	// Owned by this model. Provides get_listing_opf(), get_container_modifiers(), etc.
+	// See sexp_tree_opf.h for the full API.
+	SexpTreeOPF _opf;
 
 	// --- Context menu state computation ---
 
@@ -641,6 +522,4 @@ public:
 	// Returns true if the given operator value should be hidden from menus (deprecated/hidden ops)
 	static bool is_operator_hidden(int op_value);
 
-	// Returns true if the given OPF type is one of the container-name types
-	static bool is_container_name_opf_type(int op_type);
 };

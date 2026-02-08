@@ -300,11 +300,11 @@ class sexp_tree: public QTreeWidget, public ISexpTreeUI {
 
 	//! Decides whether to open the operator quick-search popup or inline text edit for an item.
 	//! Operators and nodes with valid operator choices get the popup; root labels and pure data get inline edit.
-	//! Relies on validOperatorsForNode() -> _model.get_listing_opf().
+	//! Relies on validOperatorsForNode() -> _model._opf.get_listing_opf().
 	void openNodeEditor(QTreeWidgetItem* item);
 
 	//! Creates/shows the operator quick-search popup below the given item. Populates the list
-	//! from validOperatorsForNode(). Relies on _model.get_listing_opf() and _model.query_node_argument_type().
+	//! from validOperatorsForNode(). Relies on _model._opf.get_listing_opf() and _model.query_node_argument_type().
 	void startOperatorQuickSearch(QTreeWidgetItem* item, const QString& seed = QString());
 
 	//! Closes the operator popup. On confirm: commits the chosen operator via _actions.add_or_replace_operator(),
@@ -315,7 +315,7 @@ class sexp_tree: public QTreeWidget, public ISexpTreeUI {
 	void filterOperatorPopup(const QString& text);
 
 	//! Computes the list of valid operator names for a given node position. Queries
-	//! _model.find_argument_number(), _model.query_node_argument_type(), _model.get_listing_opf(),
+	//! _model.find_argument_number(), _model.query_node_argument_type(), _model._opf.get_listing_opf(),
 	//! and _model.query_default_argument_available().
 	QStringList validOperatorsForNode(int nodeIndex);
 
@@ -363,8 +363,8 @@ class sexp_tree: public QTreeWidget, public ISexpTreeUI {
 	void replaceStringDataHandler();
 
 	//! Handles add/replace of a specific typed data item from the context menu list.
-	//! Resolves the item from _model.get_listing_opf() or _model.get_container_modifiers()/
-	//! _model.get_container_multidim_modifiers(), then commits via _actions.add_data() or _actions.replace_data().
+	//! Resolves the item from _model._opf.get_listing_opf() or _model._opf.get_container_modifiers()/
+	//! _model._opf.get_container_multidim_modifiers(), then commits via _actions.add_data() or _actions.replace_data().
 	void addReplaceTypedDataHandler(int data_idx, bool replace);
 
 	//! Replaces current data node with a variable reference via _actions.replace_variable_data().

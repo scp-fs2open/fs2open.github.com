@@ -7,9 +7,9 @@
  *
  */
 
-// OPF listing functions for the sexp tree model.
-// All get_listing_opf_*() functions are implemented here as SexpTreeModel methods.
-// Moved from fred2/sexp_tree.cpp and qtfred/src/ui/widgets/sexp_tree.cpp.
+// OPF listing functions for the sexp tree.
+// All get_listing_opf_*() functions are implemented here as SexpTreeOPF methods.
+// Uses _model back-reference for read-only access to tree_nodes[] and _interface.
 
 #include "missioneditor/sexp_tree_opf.h"
 #include "missioneditor/sexp_tree_model.h"
@@ -56,12 +56,14 @@
 #include "stats/scoring.h"
 #include "parse/sexp_container.h"
 
+SexpTreeOPF::SexpTreeOPF(SexpTreeModel& model) : _model(model) {}
+
 // -----------------------------------------------------------------------
 // Batch 1: null, flexible_argument, bool, positive, number,
 //          ship, prop, wing, point, iff
 // -----------------------------------------------------------------------
 
-sexp_list_item *SexpTreeModel::get_listing_opf_null()
+sexp_list_item *SexpTreeOPF::get_listing_opf_null()
 {
 	int i;
 	sexp_list_item head;
@@ -73,7 +75,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_null()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_flexible_argument()
+sexp_list_item *SexpTreeOPF::get_listing_opf_flexible_argument()
 {
 	int i;
 	sexp_list_item head;
@@ -85,7 +87,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_flexible_argument()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_bool(int parent_node)
+sexp_list_item *SexpTreeOPF::get_listing_opf_bool(int parent_node)
 {
 	int i, only_basic;
 	sexp_list_item head;
@@ -96,7 +98,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_bool(int parent_node)
 	if ( parent_node != -1 ) {
 		int op;
 
-		op = get_operator_const(tree_nodes[parent_node].text);
+		op = get_operator_const(_model.tree_nodes[parent_node].text);
 		if ( (op == OP_PREVIOUS_GOAL_TRUE) || (op == OP_PREVIOUS_GOAL_FALSE) || (op == OP_PREVIOUS_EVENT_TRUE) || (op == OP_PREVIOUS_EVENT_FALSE) )
 			only_basic = 1;
 
@@ -113,7 +115,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_bool(int parent_node)
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_positive()
+sexp_list_item *SexpTreeOPF::get_listing_opf_positive()
 {
 	int i, z;
 	sexp_list_item head;
@@ -128,7 +130,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_positive()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_number()
+sexp_list_item *SexpTreeOPF::get_listing_opf_number()
 {
 	int i, z;
 	sexp_list_item head;
@@ -142,7 +144,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_number()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_ship(int parent_node)
+sexp_list_item *SexpTreeOPF::get_listing_opf_ship(int parent_node)
 {
 	object *ptr;
 	sexp_list_item head;
@@ -151,7 +153,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_ship(int parent_node)
 	// look at the parent node and get the operator.  Some ship lists should be filtered based
 	// on what the parent operator is
 	if ( parent_node >= 0 ) {
-		op = get_operator_const(tree_nodes[parent_node].text);
+		op = get_operator_const(_model.tree_nodes[parent_node].text);
 
 		// get the dock_ship number of if this goal is an ai dock goal.  used to prune out unwanted ships out
 		// of the generated ship list
@@ -159,14 +161,14 @@ sexp_list_item *SexpTreeModel::get_listing_opf_ship(int parent_node)
 		if ( op == OP_AI_DOCK ) {
 			int z;
 
-			z = tree_nodes[parent_node].parent;
+			z = _model.tree_nodes[parent_node].parent;
 			Assert(z >= 0);
-			Assert(!stricmp(tree_nodes[z].text, "add-ship-goal") || !stricmp(tree_nodes[z].text, "add-wing-goal") || !stricmp(tree_nodes[z].text, "add-goal"));
+			Assert(!stricmp(_model.tree_nodes[z].text, "add-ship-goal") || !stricmp(_model.tree_nodes[z].text, "add-wing-goal") || !stricmp(_model.tree_nodes[z].text, "add-goal"));
 
-			z = tree_nodes[z].child;
+			z = _model.tree_nodes[z].child;
 			Assert(z >= 0);
 
-			dock_ship = ship_name_lookup(tree_nodes[z].text, 1);
+			dock_ship = ship_name_lookup(_model.tree_nodes[z].text, 1);
 			Assert( dock_ship != -1 );
 		}
 	}
@@ -202,7 +204,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_ship(int parent_node)
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_prop()
+sexp_list_item *SexpTreeOPF::get_listing_opf_prop()
 {
 	object *ptr;
 	sexp_list_item head;
@@ -219,7 +221,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_prop()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_wing()
+sexp_list_item *SexpTreeOPF::get_listing_opf_wing()
 {
 	int i;
 	sexp_list_item head;
@@ -233,7 +235,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_wing()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_point()
+sexp_list_item *SexpTreeOPF::get_listing_opf_point()
 {
 	char buf[NAME_LENGTH];
 	sexp_list_item head;
@@ -250,7 +252,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_point()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_iff()
+sexp_list_item *SexpTreeOPF::get_listing_opf_iff()
 {
 	int i;
 	sexp_list_item head;
@@ -267,7 +269,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_iff()
 //          arrival_anchor_all, ai_goal, message
 // -----------------------------------------------------------------------
 
-sexp_list_item *SexpTreeModel::get_listing_opf_ai_class()
+sexp_list_item *SexpTreeOPF::get_listing_opf_ai_class()
 {
 	int i;
 	sexp_list_item head;
@@ -278,7 +280,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_ai_class()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_support_ship_class()
+sexp_list_item *SexpTreeOPF::get_listing_opf_support_ship_class()
 {
 	sexp_list_item head;
 
@@ -295,7 +297,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_support_ship_class()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_ssm_class()
+sexp_list_item *SexpTreeOPF::get_listing_opf_ssm_class()
 {
 	sexp_list_item head;
 
@@ -307,7 +309,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_ssm_class()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_ship_with_bay()
+sexp_list_item *SexpTreeOPF::get_listing_opf_ship_with_bay()
 {
 	object *objp;
 	sexp_list_item head;
@@ -329,7 +331,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_ship_with_bay()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_soundtrack_name()
+sexp_list_item *SexpTreeOPF::get_listing_opf_soundtrack_name()
 {
 	sexp_list_item head;
 
@@ -341,7 +343,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_soundtrack_name()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_arrival_location()
+sexp_list_item *SexpTreeOPF::get_listing_opf_arrival_location()
 {
 	int i;
 	sexp_list_item head;
@@ -352,7 +354,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_arrival_location()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_departure_location()
+sexp_list_item *SexpTreeOPF::get_listing_opf_departure_location()
 {
 	int i;
 	sexp_list_item head;
@@ -363,7 +365,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_departure_location()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_arrival_anchor_all()
+sexp_list_item *SexpTreeOPF::get_listing_opf_arrival_anchor_all()
 {
 	int i, restrict_to_players;
 	object *objp;
@@ -391,17 +393,17 @@ sexp_list_item *SexpTreeModel::get_listing_opf_arrival_anchor_all()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_ai_goal(int parent_node)
+sexp_list_item *SexpTreeOPF::get_listing_opf_ai_goal(int parent_node)
 {
 	int i, n, w, z, child;
 	sexp_list_item head;
 
 	Assert(parent_node >= 0);
-	child = tree_nodes[parent_node].child;
+	child = _model.tree_nodes[parent_node].child;
 	if (child < 0)
 		return nullptr;
 
-	n = ship_name_lookup(tree_nodes[child].text, 1);
+	n = ship_name_lookup(_model.tree_nodes[child].text, 1);
 	if (n >= 0) {
 		// add operators if it's an ai-goal and ai-goal is allowed for that ship
 		for (i=0; i<(int)Operators.size(); i++) {
@@ -410,7 +412,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_ai_goal(int parent_node)
 		}
 
 	} else {
-		z = wing_name_lookup(tree_nodes[child].text);
+		z = wing_name_lookup(_model.tree_nodes[child].text);
 		if (z >= 0) {
 			for (w=0; w<Wings[z].wave_count; w++) {
 				n = Wings[z].ship_index[w];
@@ -421,7 +423,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_ai_goal(int parent_node)
 				}
 			}
 		// when dealing with the special argument add them all. It's up to the FREDder to ensure invalid orders aren't given
-		} else if (!strcmp(tree_nodes[child].text, SEXP_ARGUMENT_STRING)) {
+		} else if (!strcmp(_model.tree_nodes[child].text, SEXP_ARGUMENT_STRING)) {
 			for (i=0; i<(int)Operators.size(); i++) {
 				if (query_operator_return_type(i) == OPR_AI_GOAL) {
 					head.add_op(i);
@@ -434,11 +436,11 @@ sexp_list_item *SexpTreeModel::get_listing_opf_ai_goal(int parent_node)
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_message()
+sexp_list_item *SexpTreeOPF::get_listing_opf_message()
 {
 	sexp_list_item head;
 
-	for (auto& msg : _interface->getMessages()) {
+	for (auto& msg : _model._interface->getMessages()) {
 		head.add_data(msg.c_str());
 	}
 
@@ -451,53 +453,53 @@ sexp_list_item *SexpTreeModel::get_listing_opf_message()
 //          adjust_audio_volume, builtin_hud_gauge
 // -----------------------------------------------------------------------
 
-sexp_list_item *SexpTreeModel::get_listing_opf_docker_point(int parent_node, int arg_num)
+sexp_list_item *SexpTreeOPF::get_listing_opf_docker_point(int parent_node, int arg_num)
 {
 	int z;
 	sexp_list_item head;
 	int sh = -1;
 
 	Assert(parent_node >= 0);
-	Assert(!stricmp(tree_nodes[parent_node].text, "ai-dock") || !stricmp(tree_nodes[parent_node].text, "set-docked") ||
-		   get_operator_const(tree_nodes[parent_node].text) >= (int)First_available_operator_id);
+	Assert(!stricmp(_model.tree_nodes[parent_node].text, "ai-dock") || !stricmp(_model.tree_nodes[parent_node].text, "set-docked") ||
+		   get_operator_const(_model.tree_nodes[parent_node].text) >= (int)First_available_operator_id);
 
-	if (!stricmp(tree_nodes[parent_node].text, "ai-dock"))
+	if (!stricmp(_model.tree_nodes[parent_node].text, "ai-dock"))
 	{
-		z = tree_nodes[parent_node].parent;
+		z = _model.tree_nodes[parent_node].parent;
 		if (z < 0)
 			return nullptr;
-		Assert(!stricmp(tree_nodes[z].text, "add-ship-goal") || !stricmp(tree_nodes[z].text, "add-wing-goal") || !stricmp(tree_nodes[z].text, "add-goal"));
+		Assert(!stricmp(_model.tree_nodes[z].text, "add-ship-goal") || !stricmp(_model.tree_nodes[z].text, "add-wing-goal") || !stricmp(_model.tree_nodes[z].text, "add-goal"));
 
-		z = tree_nodes[z].child;
+		z = _model.tree_nodes[z].child;
 		if (z < 0)
 			return nullptr;
-		sh = ship_name_lookup(tree_nodes[z].text, 1);
+		sh = ship_name_lookup(_model.tree_nodes[z].text, 1);
 	}
-	else if (!stricmp(tree_nodes[parent_node].text, "set-docked"))
+	else if (!stricmp(_model.tree_nodes[parent_node].text, "set-docked"))
 	{
 		//Docker ship should be the first child node
-		z = tree_nodes[parent_node].child;
+		z = _model.tree_nodes[parent_node].child;
 		if (z < 0)
 			return nullptr;
-		sh = ship_name_lookup(tree_nodes[z].text, 1);
+		sh = ship_name_lookup(_model.tree_nodes[z].text, 1);
 	}
 	// for Lua sexps
-	else if (get_operator_const(tree_nodes[parent_node].text) >= (int)First_available_operator_id)
+	else if (get_operator_const(_model.tree_nodes[parent_node].text) >= (int)First_available_operator_id)
 	{
-		int this_index = get_dynamic_parameter_index(tree_nodes[parent_node].text, arg_num);
+		int this_index = get_dynamic_parameter_index(_model.tree_nodes[parent_node].text, arg_num);
 
 		if (this_index >= 0) {
-			z = tree_nodes[parent_node].child;
+			z = _model.tree_nodes[parent_node].child;
 
 			for (int j = 0; j < this_index; j++) {
-				z = tree_nodes[z].next;
+				z = _model.tree_nodes[z].next;
 			}
 
-			sh = ship_name_lookup(tree_nodes[z].text, 1);
+			sh = ship_name_lookup(_model.tree_nodes[z].text, 1);
 		} else {
 			error_display(1, "Expected to find a dynamic lua parent parameter for node %i in operator %s but found nothing!",
 				arg_num,
-				tree_nodes[parent_node].text);
+				_model.tree_nodes[parent_node].text);
 		}
 	}
 
@@ -511,34 +513,34 @@ sexp_list_item *SexpTreeModel::get_listing_opf_docker_point(int parent_node, int
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_dockee_point(int parent_node)
+sexp_list_item *SexpTreeOPF::get_listing_opf_dockee_point(int parent_node)
 {
 	int z;
 	sexp_list_item head;
 	int sh = -1;
 
 	Assert(parent_node >= 0);
-	Assert(!stricmp(tree_nodes[parent_node].text, "ai-dock") || !stricmp(tree_nodes[parent_node].text, "set-docked"));
+	Assert(!stricmp(_model.tree_nodes[parent_node].text, "ai-dock") || !stricmp(_model.tree_nodes[parent_node].text, "set-docked"));
 
-	if (!stricmp(tree_nodes[parent_node].text, "ai-dock"))
+	if (!stricmp(_model.tree_nodes[parent_node].text, "ai-dock"))
 	{
-		z = tree_nodes[parent_node].child;
+		z = _model.tree_nodes[parent_node].child;
 		if (z < 0)
 			return nullptr;
 
-		sh = ship_name_lookup(tree_nodes[z].text, 1);
+		sh = ship_name_lookup(_model.tree_nodes[z].text, 1);
 	}
-	else if (!stricmp(tree_nodes[parent_node].text, "set-docked"))
+	else if (!stricmp(_model.tree_nodes[parent_node].text, "set-docked"))
 	{
 		//Dockee ship should be the third child node
-		z = tree_nodes[parent_node].child;	// 1
+		z = _model.tree_nodes[parent_node].child;	// 1
 		if (z < 0) return nullptr;
-		z = tree_nodes[z].next;				// 2
+		z = _model.tree_nodes[z].next;				// 2
 		if (z < 0) return nullptr;
-		z = tree_nodes[z].next;				// 3
+		z = _model.tree_nodes[z].next;				// 3
 		if (z < 0) return nullptr;
 
-		sh = ship_name_lookup(tree_nodes[z].text, 1);
+		sh = ship_name_lookup(_model.tree_nodes[z].text, 1);
 	}
 
 	if (sh >= 0)
@@ -551,7 +553,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_dockee_point(int parent_node)
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_persona()
+sexp_list_item *SexpTreeOPF::get_listing_opf_persona()
 {
 	sexp_list_item head;
 
@@ -564,7 +566,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_persona()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_font()
+sexp_list_item *SexpTreeOPF::get_listing_opf_font()
 {
 	int i;
 	sexp_list_item head;
@@ -576,7 +578,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_font()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_who_from()
+sexp_list_item *SexpTreeOPF::get_listing_opf_who_from()
 {
 	object *ptr;
 	sexp_list_item head;
@@ -598,7 +600,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_who_from()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_priority()
+sexp_list_item *SexpTreeOPF::get_listing_opf_priority()
 {
 	sexp_list_item head;
 
@@ -608,7 +610,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_priority()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_sound_environment()
+sexp_list_item *SexpTreeOPF::get_listing_opf_sound_environment()
 {
 	sexp_list_item head;
 
@@ -620,7 +622,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_sound_environment()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_sound_environment_option()
+sexp_list_item *SexpTreeOPF::get_listing_opf_sound_environment_option()
 {
 	sexp_list_item head;
 
@@ -630,7 +632,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_sound_environment_option()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_adjust_audio_volume()
+sexp_list_item *SexpTreeOPF::get_listing_opf_adjust_audio_volume()
 {
 	sexp_list_item head;
 
@@ -640,7 +642,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_adjust_audio_volume()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_builtin_hud_gauge()
+sexp_list_item *SexpTreeOPF::get_listing_opf_builtin_hud_gauge()
 {
 	sexp_list_item head;
 
@@ -656,7 +658,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_builtin_hud_gauge()
 //          ship_wing_shiponteam_point, ship_wing_point, ship_wing_point_or_none
 // -----------------------------------------------------------------------
 
-sexp_list_item *SexpTreeModel::get_listing_opf_custom_hud_gauge()
+sexp_list_item *SexpTreeOPF::get_listing_opf_custom_hud_gauge()
 {
 	sexp_list_item head;
 	// prevent duplicate names, comparing case-insensitively
@@ -688,7 +690,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_custom_hud_gauge()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_any_hud_gauge()
+sexp_list_item *SexpTreeOPF::get_listing_opf_any_hud_gauge()
 {
 	sexp_list_item head;
 
@@ -698,7 +700,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_any_hud_gauge()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_ship_effect()
+sexp_list_item *SexpTreeOPF::get_listing_opf_ship_effect()
 {
 	sexp_list_item head;
 
@@ -709,7 +711,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_ship_effect()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_explosion_option()
+sexp_list_item *SexpTreeOPF::get_listing_opf_explosion_option()
 {
 	sexp_list_item head;
 
@@ -719,7 +721,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_explosion_option()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_waypoint_path()
+sexp_list_item *SexpTreeOPF::get_listing_opf_waypoint_path()
 {
 	sexp_list_item head;
 
@@ -729,7 +731,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_waypoint_path()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_ship_point()
+sexp_list_item *SexpTreeOPF::get_listing_opf_ship_point()
 {
 	sexp_list_item head;
 
@@ -739,7 +741,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_ship_point()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_ship_wing_wholeteam()
+sexp_list_item *SexpTreeOPF::get_listing_opf_ship_wing_wholeteam()
 {
 	int i;
 	sexp_list_item head;
@@ -752,7 +754,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_ship_wing_wholeteam()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_ship_wing_shiponteam_point()
+sexp_list_item *SexpTreeOPF::get_listing_opf_ship_wing_shiponteam_point()
 {
 	int i;
 	sexp_list_item head;
@@ -770,7 +772,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_ship_wing_shiponteam_point()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_ship_wing_point()
+sexp_list_item *SexpTreeOPF::get_listing_opf_ship_wing_point()
 {
 	sexp_list_item head;
 
@@ -781,7 +783,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_ship_wing_point()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_ship_wing_point_or_none()
+sexp_list_item *SexpTreeOPF::get_listing_opf_ship_wing_point_or_none()
 {
 	sexp_list_item head;
 
@@ -796,35 +798,35 @@ sexp_list_item *SexpTreeModel::get_listing_opf_ship_wing_point_or_none()
 //          ship_type, keypress, event_name, ai_order, skill_level
 // -----------------------------------------------------------------------
 
-sexp_list_item *SexpTreeModel::get_listing_opf_mission_name()
+sexp_list_item *SexpTreeOPF::get_listing_opf_mission_name()
 {
 	sexp_list_item head;
 
-	for (auto& mission : _interface->getMissionNames()) {
+	for (auto& mission : _model._interface->getMissionNames()) {
 		head.add_data(mission.c_str());
 	}
 
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_goal_name(int parent_node)
+sexp_list_item *SexpTreeOPF::get_listing_opf_goal_name(int parent_node)
 {
 	sexp_list_item head;
 
 	Assert(parent_node >= 0);
-	int child = tree_nodes[parent_node].child;
+	int child = _model.tree_nodes[parent_node].child;
 
 	// reference_name is used by campaign editor to filter goals for a specific mission
-	SCP_string reference_name = (child >= 0) ? tree_nodes[child].text : "";
+	SCP_string reference_name = (child >= 0) ? _model.tree_nodes[child].text : "";
 
-	for (auto& entry : _interface->getMissionGoals(reference_name)) {
+	for (auto& entry : _model._interface->getMissionGoals(reference_name)) {
 		head.add_data(entry.c_str());
 	}
 
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_ship_wing()
+sexp_list_item *SexpTreeOPF::get_listing_opf_ship_wing()
 {
 	sexp_list_item head;
 
@@ -834,7 +836,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_ship_wing()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_ship_prop()
+sexp_list_item *SexpTreeOPF::get_listing_opf_ship_prop()
 {
 	sexp_list_item head;
 
@@ -844,7 +846,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_ship_prop()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_order_recipient()
+sexp_list_item *SexpTreeOPF::get_listing_opf_order_recipient()
 {
 	sexp_list_item head;
 
@@ -855,7 +857,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_order_recipient()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_ship_type()
+sexp_list_item *SexpTreeOPF::get_listing_opf_ship_type()
 {
 	unsigned int i;
 	sexp_list_item head;
@@ -870,7 +872,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_ship_type()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_keypress()
+sexp_list_item *SexpTreeOPF::get_listing_opf_keypress()
 {
 	sexp_list_item head;
 	const auto& Default_config = Control_config_presets[0].bindings;
@@ -886,24 +888,24 @@ sexp_list_item *SexpTreeModel::get_listing_opf_keypress()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_event_name(int parent_node)
+sexp_list_item *SexpTreeOPF::get_listing_opf_event_name(int parent_node)
 {
 	sexp_list_item head;
 
 	Assert(parent_node >= 0);
-	int child = tree_nodes[parent_node].child;
+	int child = _model.tree_nodes[parent_node].child;
 
 	// reference_name is used by campaign editor to filter events for a specific mission
-	SCP_string reference_name = (child >= 0) ? tree_nodes[child].text : "";
+	SCP_string reference_name = (child >= 0) ? _model.tree_nodes[child].text : "";
 
-	for (auto& entry : _interface->getMissionEvents(reference_name)) {
+	for (auto& entry : _model._interface->getMissionEvents(reference_name)) {
 		head.add_data(entry.c_str());
 	}
 
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_ai_order()
+sexp_list_item *SexpTreeOPF::get_listing_opf_ai_order()
 {
 	sexp_list_item head;
 
@@ -913,7 +915,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_ai_order()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_skill_level()
+sexp_list_item *SexpTreeOPF::get_listing_opf_skill_level()
 {
 	int i;
 	sexp_list_item head;
@@ -930,7 +932,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_skill_level()
 //          ship_or_none
 // -----------------------------------------------------------------------
 
-sexp_list_item *SexpTreeModel::get_listing_opf_cargo()
+sexp_list_item *SexpTreeOPF::get_listing_opf_cargo()
 {
 	sexp_list_item head;
 
@@ -944,7 +946,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_cargo()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_string()
+sexp_list_item *SexpTreeOPF::get_listing_opf_string()
 {
 	sexp_list_item head;
 
@@ -953,7 +955,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_string()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_medal_name()
+sexp_list_item *SexpTreeOPF::get_listing_opf_medal_name()
 {
 	int i;
 	sexp_list_item head;
@@ -969,7 +971,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_medal_name()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_weapon_name()
+sexp_list_item *SexpTreeOPF::get_listing_opf_weapon_name()
 {
 	sexp_list_item head;
 
@@ -979,7 +981,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_weapon_name()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_intel_name()
+sexp_list_item *SexpTreeOPF::get_listing_opf_intel_name()
 {
 	sexp_list_item head;
 
@@ -989,7 +991,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_intel_name()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_ship_class_name()
+sexp_list_item *SexpTreeOPF::get_listing_opf_ship_class_name()
 {
 	sexp_list_item head;
 
@@ -999,7 +1001,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_ship_class_name()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_prop_class_name()
+sexp_list_item *SexpTreeOPF::get_listing_opf_prop_class_name()
 {
 	sexp_list_item head;
 
@@ -1009,7 +1011,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_prop_class_name()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_huge_weapon()
+sexp_list_item *SexpTreeOPF::get_listing_opf_huge_weapon()
 {
 	sexp_list_item head;
 
@@ -1021,7 +1023,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_huge_weapon()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_ship_not_player()
+sexp_list_item *SexpTreeOPF::get_listing_opf_ship_not_player()
 {
 	object *ptr;
 	sexp_list_item head;
@@ -1037,7 +1039,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_ship_not_player()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_ship_or_none()
+sexp_list_item *SexpTreeOPF::get_listing_opf_ship_or_none()
 {
 	sexp_list_item head;
 
@@ -1053,7 +1055,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_ship_or_none()
 //          sun_bitmap, nebula_storm_type, nebula_poof
 // -----------------------------------------------------------------------
 
-sexp_list_item *SexpTreeModel::get_listing_opf_subsystem_or_none(int parent_node, int arg_index)
+sexp_list_item *SexpTreeOPF::get_listing_opf_subsystem_or_none(int parent_node, int arg_index)
 {
 	sexp_list_item head;
 
@@ -1063,7 +1065,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_subsystem_or_none(int parent_node
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_subsys_or_generic(int parent_node, int arg_index)
+sexp_list_item *SexpTreeOPF::get_listing_opf_subsys_or_generic(int parent_node, int arg_index)
 {
 	sexp_list_item head;
 	char buffer[NAME_LENGTH];
@@ -1084,7 +1086,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_subsys_or_generic(int parent_node
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_jump_nodes()
+sexp_list_item *SexpTreeOPF::get_listing_opf_jump_nodes()
 {
 	sexp_list_item head;
 
@@ -1097,7 +1099,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_jump_nodes()
 }
 
 // creates list of Sexp_variables
-sexp_list_item *SexpTreeModel::get_listing_opf_variable_names()
+sexp_list_item *SexpTreeOPF::get_listing_opf_variable_names()
 {
 	int i;
 	sexp_list_item head;
@@ -1120,14 +1122,14 @@ sexp_list_item *SexpTreeModel::get_listing_opf_variable_names()
 }
 
 // get default skybox model name
-sexp_list_item *SexpTreeModel::get_listing_opf_skybox_model()
+sexp_list_item *SexpTreeOPF::get_listing_opf_skybox_model()
 {
 	sexp_list_item head;
 	head.add_data("default");
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_skybox_flags()
+sexp_list_item *SexpTreeOPF::get_listing_opf_skybox_flags()
 {
 	sexp_list_item head;
 	int i;
@@ -1138,7 +1140,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_skybox_flags()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_background_bitmap()
+sexp_list_item *SexpTreeOPF::get_listing_opf_background_bitmap()
 {
 	sexp_list_item head;
 	int i;
@@ -1151,7 +1153,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_background_bitmap()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_sun_bitmap()
+sexp_list_item *SexpTreeOPF::get_listing_opf_sun_bitmap()
 {
 	sexp_list_item head;
 	int i;
@@ -1164,7 +1166,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_sun_bitmap()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_nebula_storm_type()
+sexp_list_item *SexpTreeOPF::get_listing_opf_nebula_storm_type()
 {
 	sexp_list_item head;
 
@@ -1178,7 +1180,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_nebula_storm_type()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_nebula_poof()
+sexp_list_item *SexpTreeOPF::get_listing_opf_nebula_poof()
 {
 	sexp_list_item head;
 
@@ -1196,7 +1198,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_nebula_poof()
 //          animation_type, hud_elements, weapon_banks, mission_moods
 // -----------------------------------------------------------------------
 
-sexp_list_item *SexpTreeModel::get_listing_opf_turret_target_order()
+sexp_list_item *SexpTreeOPF::get_listing_opf_turret_target_order()
 {
 	int i;
 	sexp_list_item head;
@@ -1207,7 +1209,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_turret_target_order()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_turret_types()
+sexp_list_item *SexpTreeOPF::get_listing_opf_turret_types()
 {
 	sexp_list_item head;
 
@@ -1217,7 +1219,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_turret_types()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_post_effect()
+sexp_list_item *SexpTreeOPF::get_listing_opf_post_effect()
 {
 	unsigned int i;
 	sexp_list_item head;
@@ -1232,7 +1234,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_post_effect()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_turret_target_priorities()
+sexp_list_item *SexpTreeOPF::get_listing_opf_turret_target_priorities()
 {
 	size_t t;
 	sexp_list_item head;
@@ -1244,7 +1246,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_turret_target_priorities()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_armor_type()
+sexp_list_item *SexpTreeOPF::get_listing_opf_armor_type()
 {
 	size_t t;
 	sexp_list_item head;
@@ -1254,7 +1256,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_armor_type()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_damage_type()
+sexp_list_item *SexpTreeOPF::get_listing_opf_damage_type()
 {
 	size_t t;
 	sexp_list_item head;
@@ -1265,7 +1267,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_damage_type()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_animation_type()
+sexp_list_item *SexpTreeOPF::get_listing_opf_animation_type()
 {
 	sexp_list_item head;
 
@@ -1276,7 +1278,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_animation_type()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_hud_elements()
+sexp_list_item *SexpTreeOPF::get_listing_opf_hud_elements()
 {
 	sexp_list_item head;
 	head.add_data("warpout");
@@ -1284,7 +1286,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_hud_elements()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_weapon_banks()
+sexp_list_item *SexpTreeOPF::get_listing_opf_weapon_banks()
 {
 	sexp_list_item head;
 	head.add_data(SEXP_ALL_BANKS_STRING);
@@ -1292,7 +1294,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_weapon_banks()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_mission_moods()
+sexp_list_item *SexpTreeOPF::get_listing_opf_mission_moods()
 {
 	sexp_list_item head;
 	for (SCP_vector<SCP_string>::iterator iter = Builtin_moods.begin(); iter != Builtin_moods.end(); ++iter) {
@@ -1323,7 +1325,7 @@ static void add_flag_name_helper(M& flag_name_map, sexp_list_item& head, T flag_
 	}
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_ship_flags()
+sexp_list_item *SexpTreeOPF::get_listing_opf_ship_flags()
 {
 	sexp_list_item head;
 	// prevent duplicate names, comparing case-insensitively
@@ -1337,7 +1339,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_ship_flags()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_wing_flags()
+sexp_list_item *SexpTreeOPF::get_listing_opf_wing_flags()
 {
 	size_t i;
 	sexp_list_item head;
@@ -1349,7 +1351,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_wing_flags()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_team_colors()
+sexp_list_item *SexpTreeOPF::get_listing_opf_team_colors()
 {
 	sexp_list_item head;
 	head.add_data("None");
@@ -1360,7 +1362,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_team_colors()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_nebula_patterns()
+sexp_list_item *SexpTreeOPF::get_listing_opf_nebula_patterns()
 {
 	sexp_list_item head;
 
@@ -1373,7 +1375,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_nebula_patterns()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_asteroid_types()
+sexp_list_item *SexpTreeOPF::get_listing_opf_asteroid_types()
 {
 	sexp_list_item head;
 
@@ -1388,7 +1390,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_asteroid_types()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_debris_types()
+sexp_list_item *SexpTreeOPF::get_listing_opf_debris_types()
 {
 	sexp_list_item head;
 
@@ -1403,7 +1405,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_debris_types()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_motion_debris()
+sexp_list_item *SexpTreeOPF::get_listing_opf_motion_debris()
 {
 	sexp_list_item head;
 
@@ -1418,7 +1420,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_motion_debris()
 
 extern SCP_vector<game_snd> Snds;
 
-sexp_list_item *SexpTreeModel::get_listing_opf_game_snds()
+sexp_list_item *SexpTreeOPF::get_listing_opf_game_snds()
 {
 	sexp_list_item head;
 
@@ -1433,7 +1435,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_game_snds()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_fireball()
+sexp_list_item *SexpTreeOPF::get_listing_opf_fireball()
 {
 	sexp_list_item head;
 
@@ -1448,7 +1450,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_fireball()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_species()	// NOLINT
+sexp_list_item *SexpTreeOPF::get_listing_opf_species()	// NOLINT
 {
 	sexp_list_item head;
 
@@ -1465,7 +1467,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_species()	// NOLINT
 //           mission_custom_strings, lua_enum
 // -----------------------------------------------------------------------
 
-sexp_list_item *SexpTreeModel::get_listing_opf_language()	// NOLINT
+sexp_list_item *SexpTreeOPF::get_listing_opf_language()	// NOLINT
 {
 	sexp_list_item head;
 
@@ -1475,7 +1477,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_language()	// NOLINT
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_functional_when_eval_type()	// NOLINT
+sexp_list_item *SexpTreeOPF::get_listing_opf_functional_when_eval_type()	// NOLINT
 {
 	sexp_list_item head;
 
@@ -1485,7 +1487,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_functional_when_eval_type()	// NO
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_animation_name(int parent_node)
+sexp_list_item *SexpTreeOPF::get_listing_opf_animation_name(int parent_node)
 {
 	int op, child, sh;
 	sexp_list_item head;
@@ -1493,19 +1495,19 @@ sexp_list_item *SexpTreeModel::get_listing_opf_animation_name(int parent_node)
 	Assert(parent_node >= 0);
 
 	// get the operator type of the node
-	op = get_operator_const(tree_nodes[parent_node].text);
+	op = get_operator_const(_model.tree_nodes[parent_node].text);
 
 	// first child node
-	child = tree_nodes[parent_node].child;
+	child = _model.tree_nodes[parent_node].child;
 	if (child < 0)
 		return nullptr;
-	sh = ship_name_lookup(tree_nodes[child].text, 1);
+	sh = ship_name_lookup(_model.tree_nodes[child].text, 1);
 
 	switch(op) {
 		case OP_TRIGGER_ANIMATION_NEW:
 		case OP_STOP_LOOPING_ANIMATION: {
-			child = tree_nodes[child].next;
-			auto triggerType = animation::anim_match_type(tree_nodes[child].text);
+			child = _model.tree_nodes[child].next;
+			auto triggerType = animation::anim_match_type(_model.tree_nodes[child].text);
 
 			for(const auto& anim : Ship_info[Ships[sh].ship_info_index].animations.getRegisteredTriggers()){
 				if(anim.type != triggerType)
@@ -1541,7 +1543,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_animation_name(int parent_node)
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_sexp_containers(ContainerType con_type)
+sexp_list_item *SexpTreeOPF::get_listing_opf_sexp_containers(ContainerType con_type)
 {
 	sexp_list_item head;
 
@@ -1554,7 +1556,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_sexp_containers(ContainerType con
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_wing_formation()	// NOLINT
+sexp_list_item *SexpTreeOPF::get_listing_opf_wing_formation()	// NOLINT
 {
 	sexp_list_item head;
 
@@ -1565,7 +1567,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_wing_formation()	// NOLINT
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_bolt_types()
+sexp_list_item *SexpTreeOPF::get_listing_opf_bolt_types()
 {
 	sexp_list_item head;
 
@@ -1578,7 +1580,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_bolt_types()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_traitor_overrides()
+sexp_list_item *SexpTreeOPF::get_listing_opf_traitor_overrides()
 {
 	sexp_list_item head;
 
@@ -1591,7 +1593,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_traitor_overrides()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_lua_general_orders()
+sexp_list_item *SexpTreeOPF::get_listing_opf_lua_general_orders()
 {
 	sexp_list_item head;
 
@@ -1604,7 +1606,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_lua_general_orders()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_message_types()
+sexp_list_item *SexpTreeOPF::get_listing_opf_message_types()
 {
 	sexp_list_item head;
 
@@ -1615,7 +1617,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_message_types()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_mission_custom_strings()
+sexp_list_item *SexpTreeOPF::get_listing_opf_mission_custom_strings()
 {
 	sexp_list_item head;
 
@@ -1626,29 +1628,29 @@ sexp_list_item *SexpTreeModel::get_listing_opf_mission_custom_strings()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_lua_enum(int parent_node, int arg_index)
+sexp_list_item *SexpTreeOPF::get_listing_opf_lua_enum(int parent_node, int arg_index)
 {
 	// first child node
-	int child = tree_nodes[parent_node].child;
+	int child = _model.tree_nodes[parent_node].child;
 	if (child < 0)
 		return nullptr;
 
-	int this_index = get_dynamic_parameter_index(tree_nodes[parent_node].text, arg_index);
+	int this_index = get_dynamic_parameter_index(_model.tree_nodes[parent_node].text, arg_index);
 
 	if (this_index >= 0) {
 		for (int count = 0; count < this_index; count++) {
-			child = tree_nodes[child].next;
+			child = _model.tree_nodes[child].next;
 		}
 	} else {
 		error_display(1,
 			"Expected to find an enum parent parameter for node %i in operator %s but found nothing!",
 			arg_index,
-			tree_nodes[parent_node].text);
+			_model.tree_nodes[parent_node].text);
 		return nullptr;
 	}
 
 	// Append the suffix if it exists
-	SCP_string enum_name = tree_nodes[child].text + get_child_enum_suffix(tree_nodes[parent_node].text, arg_index);
+	SCP_string enum_name = _model.tree_nodes[child].text + get_child_enum_suffix(_model.tree_nodes[parent_node].text, arg_index);
 
 	sexp_list_item head;
 
@@ -1681,7 +1683,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_lua_enum(int parent_node, int arg
 #define OPS_TRANSLATE		6
 #define OPS_ARMOR			7
 
-sexp_list_item *SexpTreeModel::get_listing_opf_subsystem(int parent_node, int arg_index)
+sexp_list_item *SexpTreeOPF::get_listing_opf_subsystem(int parent_node, int arg_index)
 {
 	int op, child, sh;
 	int special_subsys = 0;
@@ -1693,10 +1695,10 @@ sexp_list_item *SexpTreeModel::get_listing_opf_subsystem(int parent_node, int ar
 	Assert(parent_node >= 0);
 
 	// get the operator type of the node
-	op = get_operator_const(tree_nodes[parent_node].text);
+	op = get_operator_const(_model.tree_nodes[parent_node].text);
 
 	// first child node
-	child = tree_nodes[parent_node].child;
+	child = _model.tree_nodes[parent_node].child;
 	if (child < 0)
 		return nullptr;
 
@@ -1741,7 +1743,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_subsystem(int parent_node, int ar
 			special_subsys = OPS_CAP_CARGO;
 
 			// get the next sibling
-			child = tree_nodes[child].next;
+			child = _model.tree_nodes[child].next;
 			break;
 
 		// where we care about turrets carrying beam weapons
@@ -1754,9 +1756,9 @@ sexp_list_item *SexpTreeModel::get_listing_opf_subsystem(int parent_node, int ar
 				special_subsys = OPS_STRENGTH;
 
 				// iterate to the next field two times
-				child = tree_nodes[child].next;
+				child = _model.tree_nodes[child].next;
 				if (child < 0) return nullptr;
-				child = tree_nodes[child].next;
+				child = _model.tree_nodes[child].next;
 			}
 			else
 			{
@@ -1780,61 +1782,61 @@ sexp_list_item *SexpTreeModel::get_listing_opf_subsystem(int parent_node, int ar
 		case OP_IS_IN_TURRET_FOV:
 		case OP_TURRET_SET_FORCED_TARGET:
 			// iterate to the next field
-			child = tree_nodes[child].next;
+			child = _model.tree_nodes[child].next;
 			break;
 
 		// this sexp checks the subsystem of the *fourth entry* on the list
 		case OP_QUERY_ORDERS:
 			// iterate to the next field three times
-			child = tree_nodes[child].next;
+			child = _model.tree_nodes[child].next;
 			if (child < 0) return nullptr;
-			child = tree_nodes[child].next;
+			child = _model.tree_nodes[child].next;
 			if (child < 0) return nullptr;
-			child = tree_nodes[child].next;
+			child = _model.tree_nodes[child].next;
 			break;
 
 		// this sexp checks the subsystem of the *seventh entry* on the list
 		case OP_BEAM_FLOATING_FIRE:
 			// iterate to the next field six times
-			child = tree_nodes[child].next;
+			child = _model.tree_nodes[child].next;
 			if (child < 0) return nullptr;
-			child = tree_nodes[child].next;
+			child = _model.tree_nodes[child].next;
 			if (child < 0) return nullptr;
-			child = tree_nodes[child].next;
+			child = _model.tree_nodes[child].next;
 			if (child < 0) return nullptr;
-			child = tree_nodes[child].next;
+			child = _model.tree_nodes[child].next;
 			if (child < 0) return nullptr;
-			child = tree_nodes[child].next;
+			child = _model.tree_nodes[child].next;
 			if (child < 0) return nullptr;
-			child = tree_nodes[child].next;
+			child = _model.tree_nodes[child].next;
 			break;
 
 		// this sexp checks the subsystem of the *ninth entry* on the list
 		case OP_WEAPON_CREATE:
 			// iterate to the next field eight times
-			child = tree_nodes[child].next;
+			child = _model.tree_nodes[child].next;
 			if (child < 0) return nullptr;
-			child = tree_nodes[child].next;
+			child = _model.tree_nodes[child].next;
 			if (child < 0) return nullptr;
-			child = tree_nodes[child].next;
+			child = _model.tree_nodes[child].next;
 			if (child < 0) return nullptr;
-			child = tree_nodes[child].next;
+			child = _model.tree_nodes[child].next;
 			if (child < 0) return nullptr;
-			child = tree_nodes[child].next;
+			child = _model.tree_nodes[child].next;
 			if (child < 0) return nullptr;
-			child = tree_nodes[child].next;
+			child = _model.tree_nodes[child].next;
 			if (child < 0) return nullptr;
-			child = tree_nodes[child].next;
+			child = _model.tree_nodes[child].next;
 			if (child < 0) return nullptr;
-			child = tree_nodes[child].next;
+			child = _model.tree_nodes[child].next;
 			break;
 
 		// this sexp checks the third entry, but only for the 4th argument
 		case OP_TURRET_SET_FORCED_SUBSYS_TARGET:
 			if (arg_index >= 3) {
-				child = tree_nodes[child].next;
+				child = _model.tree_nodes[child].next;
 				if (child < 0) return nullptr;
-				child = tree_nodes[child].next;
+				child = _model.tree_nodes[child].next;
 			}
 			break;
 
@@ -1842,16 +1844,16 @@ sexp_list_item *SexpTreeModel::get_listing_opf_subsystem(int parent_node, int ar
 			if (op < First_available_operator_id) {
 				break;
 			} else {
-				int this_index = get_dynamic_parameter_index(tree_nodes[parent_node].text, arg_index);
+				int this_index = get_dynamic_parameter_index(_model.tree_nodes[parent_node].text, arg_index);
 
 				if (this_index >= 0) {
 					for (int count = 0; count < this_index; count++) {
-						child = tree_nodes[child].next;
+						child = _model.tree_nodes[child].next;
 					}
 				} else {
 					error_display(1, "Expected to find a dynamic lua parent parameter for node %i in operator %s but found nothing!",
 						arg_index,
-						tree_nodes[parent_node].text);
+						_model.tree_nodes[parent_node].text);
 				}
 			}
 	}
@@ -1874,7 +1876,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf_subsystem(int parent_node, int ar
 
 
 	// now find the ship and add all relevant subsystems
-	sh = ship_name_lookup(tree_nodes[child].text, 1);
+	sh = ship_name_lookup(_model.tree_nodes[child].text, 1);
 	if (sh >= 0) {
 		subsys = GET_FIRST(&Ships[sh].subsys_list);
 		while (subsys != END_OF_LIST(&Ships[sh].subsys_list)) {
@@ -1925,19 +1927,19 @@ sexp_list_item *SexpTreeModel::get_listing_opf_subsystem(int parent_node, int ar
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_listing_opf_subsystem_type(int parent_node)
+sexp_list_item *SexpTreeOPF::get_listing_opf_subsystem_type(int parent_node)
 {
 	int i, child, shipnum, num_added = 0;
 	sexp_list_item head;
 	ship_subsys *subsys;
 
 	// first child node
-	child = tree_nodes[parent_node].child;
+	child = _model.tree_nodes[parent_node].child;
 	if (child < 0)
 		return nullptr;
 
 	// now find the ship
-	shipnum = ship_name_lookup(tree_nodes[child].text, 1);
+	shipnum = ship_name_lookup(_model.tree_nodes[child].text, 1);
 	if (shipnum < 0) {
 		return head.next;
 	}
@@ -1972,17 +1974,17 @@ sexp_list_item *SexpTreeModel::get_listing_opf_subsystem_type(int parent_node)
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_container_modifiers(int con_data_node) const
+sexp_list_item *SexpTreeOPF::get_container_modifiers(int con_data_node) const
 {
 	Assertion(con_data_node != -1, "Attempt to get modifiers for invalid container node. Please report!");
-	Assertion(tree_nodes[con_data_node].type & SEXPT_CONTAINER_DATA,
+	Assertion(_model.tree_nodes[con_data_node].type & SEXPT_CONTAINER_DATA,
 		"Attempt to get modifiers for non-container data node %s. Please report!",
-		tree_nodes[con_data_node].text);
+		_model.tree_nodes[con_data_node].text);
 
-	const auto *p_container = get_sexp_container(tree_nodes[con_data_node].text);
+	const auto *p_container = get_sexp_container(_model.tree_nodes[con_data_node].text);
 	Assertion(p_container,
 		"Attempt to get modifiers for unknown container %s. Please report!",
-		tree_nodes[con_data_node].text);
+		_model.tree_nodes[con_data_node].text);
 	const auto &container = *p_container;
 
 	sexp_list_item head;
@@ -1992,7 +1994,7 @@ sexp_list_item *SexpTreeModel::get_container_modifiers(int con_data_node) const
 		list = get_list_container_modifiers();
 	} else if (container.is_map()) {
 		// start the list with "<argument>" if relevant
-		if (is_node_eligible_for_special_argument(con_data_node) &&
+		if (_model.is_node_eligible_for_special_argument(con_data_node) &&
 			any(container.type & ContainerType::STRING_KEYS)) {
 			head.add_data(SEXP_ARGUMENT_STRING, (SEXPT_VALID | SEXPT_STRING | SEXPT_MODIFIER));
 		}
@@ -2009,7 +2011,7 @@ sexp_list_item *SexpTreeModel::get_container_modifiers(int con_data_node) const
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::get_list_container_modifiers() const
+sexp_list_item *SexpTreeOPF::get_list_container_modifiers() const
 {
 	sexp_list_item head;
 
@@ -2021,23 +2023,23 @@ sexp_list_item *SexpTreeModel::get_list_container_modifiers() const
 }
 
 // FIXME TODO: if you use this function with remove-from-map SEXP, don't use SEXPT_MODIFIER
-sexp_list_item *SexpTreeModel::get_map_container_modifiers(int con_data_node) const
+sexp_list_item *SexpTreeOPF::get_map_container_modifiers(int con_data_node) const
 {
 	sexp_list_item head;
 
-	Assertion(tree_nodes[con_data_node].type & SEXPT_CONTAINER_DATA,
+	Assertion(_model.tree_nodes[con_data_node].type & SEXPT_CONTAINER_DATA,
 		"Found map modifier for non-container data node %s. Please report!",
-		tree_nodes[con_data_node].text);
+		_model.tree_nodes[con_data_node].text);
 
-	const auto *p_container = get_sexp_container(tree_nodes[con_data_node].text);
+	const auto *p_container = get_sexp_container(_model.tree_nodes[con_data_node].text);
 	Assertion(p_container != nullptr,
 		"Found map modifier for unknown container %s. Please report!",
-		tree_nodes[con_data_node].text);
+		_model.tree_nodes[con_data_node].text);
 
 	const auto &container = *p_container;
 	Assertion(container.is_map(),
 		"Found map modifier for non-map container %s with type %d. Please report!",
-		tree_nodes[con_data_node].text,
+		_model.tree_nodes[con_data_node].text,
 		(int)container.type);
 
 	int type = SEXPT_VALID | SEXPT_MODIFIER;
@@ -2058,17 +2060,17 @@ sexp_list_item *SexpTreeModel::get_map_container_modifiers(int con_data_node) co
 
 // get potential options for container multidimensional modifiers
 // the value could be either string or number, checked in-mission
-sexp_list_item *SexpTreeModel::get_container_multidim_modifiers(int con_data_node) const
+sexp_list_item *SexpTreeOPF::get_container_multidim_modifiers(int con_data_node) const
 {
 	Assertion(con_data_node != -1,
 		"Attempt to get multidimensional modifiers for invalid container node. Please report!");
-	Assertion(tree_nodes[con_data_node].type & SEXPT_CONTAINER_DATA,
+	Assertion(_model.tree_nodes[con_data_node].type & SEXPT_CONTAINER_DATA,
 		"Attempt to get multidimensional modifiers for non-container data node %s. Please report!",
-		tree_nodes[con_data_node].text);
+		_model.tree_nodes[con_data_node].text);
 
 	sexp_list_item head;
 
-	if (is_node_eligible_for_special_argument(con_data_node)) {
+	if (_model.is_node_eligible_for_special_argument(con_data_node)) {
 		head.add_data(SEXP_ARGUMENT_STRING, (SEXPT_VALID | SEXPT_STRING | SEXPT_MODIFIER));
 	}
 
@@ -2080,7 +2082,7 @@ sexp_list_item *SexpTreeModel::get_container_multidim_modifiers(int con_data_nod
 	return head.next;
 }
 
-sexp_list_item *SexpTreeModel::check_for_dynamic_sexp_enum(int opf)
+sexp_list_item *SexpTreeOPF::check_for_dynamic_sexp_enum(int opf)
 {
 	sexp_list_item head;
 
@@ -2099,7 +2101,7 @@ sexp_list_item *SexpTreeModel::check_for_dynamic_sexp_enum(int opf)
 	}
 }
 
-bool SexpTreeModel::is_container_name_opf_type(const int op_type)
+bool SexpTreeOPF::is_container_name_opf_type(const int op_type)
 {
 	return (op_type == OPF_CONTAINER_NAME) ||
 		   (op_type == OPF_LIST_CONTAINER_NAME) ||
@@ -2110,7 +2112,7 @@ bool SexpTreeModel::is_container_name_opf_type(const int op_type)
 // Main OPF dispatch function
 // -----------------------------------------------------------------------
 
-sexp_list_item *SexpTreeModel::get_listing_opf(int opf, int parent_node, int arg_index)
+sexp_list_item *SexpTreeOPF::get_listing_opf(int opf, int parent_node, int arg_index)
 {
 	sexp_list_item head;
 	sexp_list_item *list = NULL;
@@ -2577,7 +2579,7 @@ sexp_list_item *SexpTreeModel::get_listing_opf(int opf, int parent_node, int arg
 
 	// skip the special argument if we aren't at the right spot in when-argument or
 	// every-time-argument
-	if (!is_node_eligible_for_special_argument(parent_node)) {
+	if (!_model.is_node_eligible_for_special_argument(parent_node)) {
 		return list;
 	}
 

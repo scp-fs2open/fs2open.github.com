@@ -247,7 +247,8 @@ bool SexpTreeEditorInterface::requireCampaignOperators() const
 SexpTreeModel::SexpTreeModel()
 	: total_nodes(0), item_index(-1),
 	  root_item(-1), select_sexp_node(-1), flag(0),
-	  _interface(nullptr), modified(nullptr)
+	  _interface(nullptr), modified(nullptr),
+	  _opf(*this)
 {
 }
 
@@ -1254,7 +1255,7 @@ int SexpTreeModel::get_default_value(sexp_list_item* item, char* text_buf, int o
 			return 0;
 	}
 
-	list = get_listing_opf(type, index, i);
+	list = _opf.get_listing_opf(type, index, i);
 
 	// Goober5000 - the way this is done is really stupid, so stupid hacks are needed to deal with it
 	// this particular hack is necessary because the argument string should never be a default
@@ -1954,7 +1955,7 @@ bool SexpTreeModel::is_container_name_argument(int node) const
 	}
 
 	const int arg_opf_type = query_node_argument_type(node);
-	return is_container_name_opf_type(arg_opf_type);
+	return SexpTreeOPF::is_container_name_opf_type(arg_opf_type);
 }
 
 // -----------------------------------------------------------------------
@@ -2149,7 +2150,7 @@ SexpContextMenuState SexpTreeModel::compute_context_menu_state()
 				}
 
 				// Replace Container Name submenu
-				if (is_container_name_opf_type(op_type) || op_type == OPF_DATA_OR_STR_CONTAINER) {
+				if (SexpTreeOPF::is_container_name_opf_type(op_type) || op_type == OPF_DATA_OR_STR_CONTAINER) {
 					state.show_container_names = true;
 					for (const auto& container : get_all_sexp_containers()) {
 						bool enabled = false;
@@ -2208,7 +2209,7 @@ SexpContextMenuState SexpTreeModel::compute_context_menu_state()
 			state.can_add_number = true;
 		} else {
 			state.add_type = OPR_STRING;
-			state.add_data_list = get_container_multidim_modifiers(item_index);
+			state.add_data_list = _opf.get_container_multidim_modifiers(item_index);
 			if (state.add_data_list) {
 				sexp_list_item* ptr = state.add_data_list;
 				while (ptr) {
@@ -2230,7 +2231,7 @@ SexpContextMenuState SexpTreeModel::compute_context_menu_state()
 
 		int type = query_operator_argument_type(op, state.add_count);
 		state.add_data_opf_type = type;
-		state.add_data_list = get_listing_opf(type, item_index, state.add_count);
+		state.add_data_list = _opf.get_listing_opf(type, item_index, state.add_count);
 		if (state.add_data_list) {
 			sexp_list_item* ptr = state.add_data_list;
 			while (ptr) {
@@ -2261,7 +2262,7 @@ SexpContextMenuState SexpTreeModel::compute_context_menu_state()
 			state.can_add_number = true;
 		}
 
-		if (state.add_type == OPR_STRING && !is_container_name_opf_type(type)) {
+		if (state.add_type == OPR_STRING && !SexpTreeOPF::is_container_name_opf_type(type)) {
 			state.can_add_string = true;
 		}
 	}
@@ -2340,14 +2341,14 @@ SexpContextMenuState SexpTreeModel::compute_context_menu_state()
 				replace_list = nullptr;
 				state.replace_type = OPR_NUMBER;
 			} else {
-				replace_list = get_container_modifiers(parent);
+				replace_list = _opf.get_container_modifiers(parent);
 			}
 		} else {
-			replace_list = get_listing_opf(type, parent, state.replace_count);
+			replace_list = _opf.get_listing_opf(type, parent, state.replace_count);
 		}
 
 		// special case: don't allow replace data for variable or container names
-		if ((type != OPF_VARIABLE_NAME) && !is_container_name_opf_type(type) && replace_list) {
+		if ((type != OPF_VARIABLE_NAME) && !SexpTreeOPF::is_container_name_opf_type(type) && replace_list) {
 			state.replace_data_list = replace_list;
 			sexp_list_item* ptr = replace_list;
 			while (ptr) {
@@ -2383,7 +2384,7 @@ SexpContextMenuState SexpTreeModel::compute_context_menu_state()
 			state.can_replace_number = true;
 		}
 
-		if (state.replace_type == OPR_STRING && !is_container_name_opf_type(type)) {
+		if (state.replace_type == OPR_STRING && !SexpTreeOPF::is_container_name_opf_type(type)) {
 			state.can_replace_string = true;
 		}
 
@@ -2584,9 +2585,9 @@ SexpContextMenuState SexpTreeModel::compute_context_menu_state()
 					if (state.add_type == OPR_NUMBER)
 						state.can_paste_add = true;
 				} else if (any(container.type & ContainerType::STRING_DATA)) {
-					if (state.replace_type == OPR_STRING && !is_container_name_opf_type(replace_opf_type))
+					if (state.replace_type == OPR_STRING && !SexpTreeOPF::is_container_name_opf_type(replace_opf_type))
 						state.can_paste = true;
-					if (state.add_type == OPR_STRING && !is_container_name_opf_type(replace_opf_type))
+					if (state.add_type == OPR_STRING && !SexpTreeOPF::is_container_name_opf_type(replace_opf_type))
 						state.can_paste_add = true;
 				} else {
 					UNREACHABLE("Unknown container data type %d", (int)container.type);
@@ -2605,9 +2606,9 @@ SexpContextMenuState SexpTreeModel::compute_context_menu_state()
 				state.can_paste_add = true;
 
 		} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_STRING) {
-			if (state.replace_type == OPR_STRING && !is_container_name_opf_type(replace_opf_type))
+			if (state.replace_type == OPR_STRING && !SexpTreeOPF::is_container_name_opf_type(replace_opf_type))
 				state.can_paste = true;
-			if (state.add_type == OPR_STRING && !is_container_name_opf_type(replace_opf_type))
+			if (state.add_type == OPR_STRING && !SexpTreeOPF::is_container_name_opf_type(replace_opf_type))
 				state.can_paste_add = true;
 
 		} else {

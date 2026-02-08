@@ -1006,13 +1006,13 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 		int type = 0;
 
 		if (tree_nodes[item_index].type & SEXPT_CONTAINER_DATA) {
-			list = _model.get_container_multidim_modifiers(item_index);
+			list = _model._opf.get_container_multidim_modifiers(item_index);
 		} else {
 			op = get_operator_index(tree_nodes[item_index].text);
 			Assert(op >= 0);
 
 			type = query_operator_argument_type(op, m_add_count);
-			list = _model.get_listing_opf(type, item_index, m_add_count);
+			list = _model._opf.get_listing_opf(type, item_index, m_add_count);
 		}
 		Assert(list);
 
@@ -1057,13 +1057,13 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 		Assert(tree_nodes[item_index].parent >= 0);
 
 		if (tree_nodes[item_index].type & SEXPT_MODIFIER) {
-			list = _model.get_container_modifiers(tree_nodes[item_index].parent);
+			list = _model._opf.get_container_modifiers(tree_nodes[item_index].parent);
 		} else {
 			op = get_operator_index(tree_nodes[tree_nodes[item_index].parent].text);
 			Assert(op >= 0);
 
 			auto type = query_operator_argument_type(op, m_replace_count); // check argument type at this position
-			list = _model.get_listing_opf(type, tree_nodes[item_index].parent, m_replace_count);
+			list = _model._opf.get_listing_opf(type, tree_nodes[item_index].parent, m_replace_count);
 		}
 		Assert(list);
 

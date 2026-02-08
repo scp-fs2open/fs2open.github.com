@@ -446,7 +446,7 @@ int SexpTreeActions::add_default_operator(int op_index, int argnum)
 		}
 		// special case for sexps that take containers
 		else if (item.type & SEXPT_CONTAINER_NAME) {
-			Assertion(SexpTreeModel::is_container_name_opf_type(op_type) || op_type == OPF_DATA_OR_STR_CONTAINER,
+			Assertion(SexpTreeOPF::is_container_name_opf_type(op_type) || op_type == OPF_DATA_OR_STR_CONTAINER,
 				"Attempt to add default container name for a node of non-container type (%d). Please report!",
 				op_type);
 			add_container_name(item.text.c_str());
@@ -528,7 +528,7 @@ void SexpTreeActions::verify_and_fix_arguments(int node)
 			continue;
 		}
 		if (_model.query_restricted_opf_range(type)) {
-			list = _model.get_listing_opf(type, node, arg_num);
+			list = _model._opf.get_listing_opf(type, node, arg_num);
 			if (!list && (arg_num >= Operators[op_index].min)) {
 				_model.free_node(_model.item_index, 1);
 				_model.item_index = tmp;

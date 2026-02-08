@@ -1167,7 +1167,7 @@ void sexp_tree::update_help(QTreeWidgetItem* h) {
 
 // Individual OPF listing forwarders, container modifier forwarders, and
 // is_node_eligible_for_special_argument have been removed.
-// All callers now use _model.get_listing_opf() etc. directly.
+// All callers now use _model._opf.get_listing_opf() etc. directly.
 
 
 
@@ -1551,7 +1551,7 @@ void sexp_tree::editDataActionHandler() {
 // expected argument type (OPF_*) at that position. Queries:
 //   - _model.find_argument_number() to determine which argument position this is
 //   - _model.query_node_argument_type() to get the expected OPF type
-//   - _model.get_listing_opf() to build the canonical list of valid items for that OPF
+//   - _model._opf.get_listing_opf() to build the canonical list of valid items for that OPF
 //   - _model.query_default_argument_available() to filter operators that lack default args
 // Returns a sorted, deduplicated QStringList of operator names. Used by the operator
 // quick-search popup and openNodeEditor() to decide whether to show the popup.
@@ -1570,7 +1570,7 @@ QStringList sexp_tree::validOperatorsForNode(int nodeIndex)
 		return out;
 
 	// Build the canonical list for this OPF (this mirrors classic FRED)
-	sexp_list_item* list = _model.get_listing_opf(opf, parent, argIndex); // may be nullptr
+	sexp_list_item* list = _model._opf.get_listing_opf(opf, parent, argIndex); // may be nullptr
 	for (auto* p = list; p; p = p->next) {
 		if (p->op >= 0) {
 			const int opIndex = p->op;
@@ -1596,7 +1596,7 @@ QStringList sexp_tree::validOperatorsForNode(int nodeIndex)
 
 // Decides how to edit a node: roots get inline text edit, operator/data positions with valid
 // operator choices get the operator quick-search popup, and pure data nodes get inline edit.
-// Relies on validOperatorsForNode() -> _model.get_listing_opf() to determine if operators are available.
+// Relies on validOperatorsForNode() -> _model._opf.get_listing_opf() to determine if operators are available.
 void sexp_tree::openNodeEditor(QTreeWidgetItem* item)
 {
 	if (!item || !_interface)
@@ -1990,8 +1990,8 @@ void sexp_tree::beginItemEdit(QTreeWidgetItem* item) {
 }
 // Handles add/replace of a specific typed data item selected from the context menu.
 // Resolves the correct sexp_list_item by walking the linked list to data_idx:
-//   - For container data nodes: uses _model.get_container_modifiers() or _model.get_container_multidim_modifiers()
-//   - For operator arguments: uses _model.get_listing_opf() with the operator's argument type
+//   - For container data nodes: uses _model._opf.get_container_modifiers() or _model._opf.get_container_multidim_modifiers()
+//   - For operator arguments: uses _model._opf.get_listing_opf() with the operator's argument type
 // Then expands the operator via _actions.expand_operator() and commits via
 // _actions.replace_data() (if replace) or _actions.add_data() (if add). Frees the list after use.
 void sexp_tree::addReplaceTypedDataHandler(int data_idx, bool replace) {
@@ -2002,16 +2002,16 @@ void sexp_tree::addReplaceTypedDataHandler(int data_idx, bool replace) {
 	if (tree_nodes[op_node].type & SEXPT_CONTAINER_DATA) {
 		// container data modifier
 		if (replace && m_replace_count == 0) {
-			list = _model.get_container_modifiers(op_node);
+			list = _model._opf.get_container_modifiers(op_node);
 		} else {
-			list = _model.get_container_multidim_modifiers(op_node);
+			list = _model._opf.get_container_multidim_modifiers(op_node);
 		}
 	} else {
 		int op = get_operator_index(tree_nodes[op_node].text);
 		Assert(op >= 0);
 		auto argcount = replace ? m_replace_count : m_add_count;
 		auto type = query_operator_argument_type(op, argcount);
-		list = _model.get_listing_opf(type, item_index, argcount);
+		list = _model._opf.get_listing_opf(type, item_index, argcount);
 	}
 	Assert(list);
 
