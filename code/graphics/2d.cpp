@@ -1309,6 +1309,10 @@ void gr_close()
 
 	graphics::paths::PathRenderer::shutdown();
 
+	// Free bitmaps before destroying the graphics backend, since
+	// gf_bm_free_data needs the backend (texture manager, GL context, etc.)
+	bm_close();
+
 	switch (gr_screen.mode) {
 		case GR_OPENGL:
 #ifdef WITH_OPENGL
@@ -1324,12 +1328,10 @@ void gr_close()
 
 		case GR_STUB:
 			break;
-	
+
 		default:
 			Int3();		// Invalid graphics mode
 	}
-
-	bm_close();
 
 	Gr_inited = 0;
 }
