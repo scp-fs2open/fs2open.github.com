@@ -14,12 +14,15 @@
 #include "parse/sexp.h"
 #include "parse/sexp_container.h"
 
+// Construct with references to the shared model (tree node data) and the
+// UI callback interface (widget updates). Both must outlive this object.
 SexpTreeActions::SexpTreeActions(SexpTreeModel& model, ISexpTreeUI& ui)
 	: _model(model), _ui(ui)
 {
 }
 
-// Helper: delete all UI children of a node and clear model child link
+// Free all children of a node from both the model and the UI widget.
+// After this call, the node has no children in either layer.
 void SexpTreeActions::clear_node_children(int node_index)
 {
 	int child = _model.tree_nodes[node_index].child;
@@ -37,6 +40,9 @@ void SexpTreeActions::clear_node_children(int node_index)
 // Replace operations
 // -----------------------------------------------------------------------
 
+// Replace the currently selected node (item_index) with plain data.
+// Clears any existing children, sets the node type/text, updates the widget icon and text,
+// marks the node as EDITABLE, then walks subsequent siblings to verify argument validity.
 void SexpTreeActions::replace_data(const char* data, int type)
 {
 	int node_idx = _model.item_index;
@@ -58,6 +64,9 @@ void SexpTreeActions::replace_data(const char* data, int type)
 	_ui.ui_update_help(h);
 }
 
+// Replace the currently selected node with a variable reference.
+// Builds "varname(value)" display text from the global Sexp_variables table,
+// sets the VARIABLE icon, marks NOT_EDITABLE, then verifies subsequent arguments.
 void SexpTreeActions::replace_variable_data(int var_idx, int type)
 {
 	char buf[128];
@@ -85,6 +94,9 @@ void SexpTreeActions::replace_variable_data(int var_idx, int type)
 	_ui.ui_update_help(h);
 }
 
+// Replace the currently selected node with a container name reference.
+// Clears children, sets CONTAINER_NAME type flags, updates the icon and text,
+// and marks the node as NOT_EDITABLE (container names can only be changed via menus).
 void SexpTreeActions::replace_container_name(const sexp_container& container)
 {
 	int node_idx = _model.item_index;
@@ -102,6 +114,11 @@ void SexpTreeActions::replace_container_name(const sexp_container& container)
 	_ui.ui_update_help(h);
 }
 
+// Replace the currently selected node with a container data reference.
+// If test_child_nodes is true and the node is already a container data node of the
+// same list type, child nodes (modifiers) are preserved. Otherwise, if delete_child_nodes
+// is true, all children are cleared. If set_default_modifier is true, a default modifier
+// (map key or list accessor) is added as the first child.
 void SexpTreeActions::replace_container_data(const sexp_container& container,
 	int type,
 	bool test_child_nodes,
@@ -147,6 +164,9 @@ void SexpTreeActions::replace_container_data(const sexp_container& container,
 	_ui.ui_update_help(h);
 }
 
+// Replace the currently selected node with a new operator.
+// Clears all children (the caller is responsible for adding new arguments),
+// sets the OPERATOR type, and marks the node as OPERAND.
 void SexpTreeActions::replace_operator(const char* op)
 {
 	int node_idx = _model.item_index;
@@ -167,6 +187,11 @@ void SexpTreeActions::replace_operator(const char* op)
 // Expand/merge operations
 // -----------------------------------------------------------------------
 
+// Expand a COMBINED operator+data display into separate operator and child nodes.
+// When an operator has a single data argument, FRED can display it in condensed form
+// ("operator data" on one line with COMBINED flag). This function expands it back to
+// the normal tree structure so additional children can be added.
+// If the node itself has the COMBINED flag, walks up to the parent operator first.
 void SexpTreeActions::expand_operator(int node)
 {
 	int data;
@@ -195,6 +220,10 @@ void SexpTreeActions::expand_operator(int node)
 // Add operations
 // -----------------------------------------------------------------------
 
+// Add a plain data child (number or string) under the current node.
+// First expands the operator if it was in COMBINED form, then allocates a new
+// child node, creates the UI widget item, and marks it EDITABLE.
+// Returns the index of the newly created node.
 int SexpTreeActions::add_data(const char* data, int type)
 {
 	int node_idx = _model.item_index;
@@ -210,6 +239,10 @@ int SexpTreeActions::add_data(const char* data, int type)
 	return node;
 }
 
+// Add a variable reference child under the current node.
+// The data string should be in "varname(value)" format. Sets the VARIABLE icon
+// and marks NOT_EDITABLE (variables must be changed via the replace-variable menu).
+// Returns the index of the newly created node.
 int SexpTreeActions::add_variable_data(const char* data, int type)
 {
 	Assert(type & SEXPT_VARIABLE);
@@ -226,6 +259,9 @@ int SexpTreeActions::add_variable_data(const char* data, int type)
 	return node;
 }
 
+// Add a container name reference child under the current node.
+// Validates that the container exists, sets CONTAINER_NAME type flags,
+// and marks NOT_EDITABLE. Returns the index of the newly created node.
 int SexpTreeActions::add_container_name(const char* container_name)
 {
 	Assertion(container_name != nullptr, "Attempt to add null container name. Please report!");
@@ -246,6 +282,10 @@ int SexpTreeActions::add_container_name(const char* container_name)
 	return node;
 }
 
+// Add a container data reference child under the current node.
+// Unlike add_container_name, this creates a node that can have modifier children
+// (e.g. map key or list index). Updates item_index to the new node so that
+// subsequent calls (like add_default_modifier) operate on it.
 void SexpTreeActions::add_container_data(const char* container_name)
 {
 	Assertion(container_name != nullptr, "Attempt to add null container. Please report!");
@@ -263,6 +303,10 @@ void SexpTreeActions::add_container_data(const char* container_name)
 		*_model.modified = 1;
 }
 
+// Add an operator child under the current node, or as a new root if item_index == -1.
+// For root insertion (labeled-root trees), parent_handle specifies the UI parent.
+// Expands the current operator if needed, creates the node with the OPERATOR icon,
+// and sets item_index to the new node so default arguments can be added after.
 void SexpTreeActions::add_operator(const char* op, void* parent_handle)
 {
 	int node;
@@ -285,6 +329,10 @@ void SexpTreeActions::add_operator(const char* op, void* parent_handle)
 		*_model.modified = 1;
 }
 
+// Add the default first modifier child for a container data node.
+// For map containers: adds a string key placeholder ("<any string>") or number "0".
+// For list containers: adds the first list modifier name (e.g. "at").
+// Uses add_data internally, so item_index must point to the container data node.
 void SexpTreeActions::add_default_modifier(const sexp_container& container)
 {
 	sexp_list_item item;
@@ -316,6 +364,10 @@ void SexpTreeActions::add_default_modifier(const sexp_container& container)
 // Compound operations
 // -----------------------------------------------------------------------
 
+// Add or replace an operator, then fill in all minimum required default arguments.
+// If replacing an existing operator and the old arguments are type-compatible with
+// the new operator (same count and matching OPF types), the old arguments are preserved.
+// Otherwise, children are cleared and rebuilt with defaults via add_default_operator.
 void SexpTreeActions::add_or_replace_operator(int op, int replace_flag)
 {
 	int i, op2;
@@ -353,6 +405,12 @@ void SexpTreeActions::add_or_replace_operator(int op, int replace_flag)
 	_ui.ui_expand_item(_model.tree_nodes[saved_index].handle);
 }
 
+// Add a single default argument for position 'argnum' of the operator at 'op_index'.
+// Queries get_default_value for the appropriate default, then dispatches to the right
+// add method based on the value type: add_or_replace_operator for operator defaults,
+// add_variable_data for OPF_VARIABLE_NAME arguments, add_container_name for container
+// arguments, and add_data for everything else.
+// Returns 0 on success, -1 if no default value was available.
 int SexpTreeActions::add_default_operator(int op_index, int argnum)
 {
 	char buf[256];
@@ -426,6 +484,14 @@ int SexpTreeActions::add_default_operator(int op_index, int argnum)
 // Validation
 // -----------------------------------------------------------------------
 
+// Walk through all arguments of the operator at 'node' and verify each is valid
+// for its expected OPF type. For each argument:
+// - Gets the valid value listing for the argument's OPF type
+// - If the current value isn't in the listing, replaces it with the first valid option
+// - If no listing exists and the argument is beyond the operator minimum, removes it
+// - For variable arguments, checks that the variable type matches the expected data type
+// - Recurses into child operators to validate their arguments too
+// Uses a static reentry guard (here_count) to prevent infinite recursion.
 void SexpTreeActions::verify_and_fix_arguments(int node)
 {
 	int op_index, arg_num, type, tmp;
@@ -577,6 +643,10 @@ void SexpTreeActions::verify_and_fix_arguments(int node)
 // Variable/container bulk operations
 // -----------------------------------------------------------------------
 
+// Remove all references to the named variable throughout the tree.
+// Finds all SEXPT_VARIABLE nodes whose text starts with "varname(" and replaces
+// them with a plain "number" or "string" placeholder, stripping the SEXPT_VARIABLE flag.
+// Preserves item_index across the operation.
 void SexpTreeActions::delete_sexp_tree_variable(const char* var_name)
 {
 	char search_str[64];
@@ -608,6 +678,10 @@ void SexpTreeActions::delete_sexp_tree_variable(const char* var_name)
 	_model.item_index = old_item_index;
 }
 
+// Update all references to a renamed or type-changed variable.
+// Finds all SEXPT_VARIABLE nodes matching "old_name(" and replaces them with
+// fresh variable data from Sexp_variables[sexp_var_index], updating the display
+// text, type flags, and icon. Preserves item_index across the operation.
 void SexpTreeActions::modify_sexp_tree_variable(const char* old_name, int sexp_var_index)
 {
 	char search_str[64];
@@ -643,6 +717,9 @@ void SexpTreeActions::modify_sexp_tree_variable(const char* old_name, int sexp_v
 // Clipboard operations
 // -----------------------------------------------------------------------
 
+// Copy the currently selected node (and its subtree) to the global sexp clipboard.
+// If a previous clipboard exists, frees it first. The subtree is serialized into
+// Sexp_nodes via save_branch and marked persistent to prevent garbage collection.
 void SexpTreeActions::clipboard_copy()
 {
 	if (_model.item_index < 0)
@@ -659,6 +736,12 @@ void SexpTreeActions::clipboard_copy()
 	sexp_mark_persistent(Sexp_clipboard);
 }
 
+// Replace the currently selected node with the contents of the global sexp clipboard.
+// Dispatches based on clipboard content type:
+// - SEXP_ATOM_OPERATOR: replaces with operator, loads children from clipboard
+// - SEXP_ATOM_CONTAINER_DATA: replaces with container data, loads modifiers
+// - SEXP_ATOM_NUMBER/STRING: replaces with data, handles variable flags
+// After replacement, expands the subtree for visibility.
 void SexpTreeActions::clipboard_paste_replace()
 {
 	if (_model.item_index < 0 || Sexp_clipboard < 0)
@@ -725,6 +808,10 @@ void SexpTreeActions::clipboard_paste_replace()
 	_ui.ui_expand_branch(_model.tree_nodes[_model.item_index].handle);
 }
 
+// Add the contents of the global sexp clipboard as a new child of the current node.
+// Similar to clipboard_paste_replace, but inserts a new child instead of replacing.
+// Dispatches based on clipboard content type (operator, container data, number, string).
+// After insertion, expands the subtree for visibility.
 void SexpTreeActions::clipboard_paste_add()
 {
 	if (_model.item_index < 0 || Sexp_clipboard < 0)
@@ -777,6 +864,9 @@ void SexpTreeActions::clipboard_paste_add()
 	_ui.ui_expand_branch(_model.tree_nodes[_model.item_index].handle);
 }
 
+// Rename all container references (both CONTAINER_NAME and CONTAINER_DATA nodes)
+// that match old_name to new_name. Updates both the model text and the UI widget text.
+// Returns true if any nodes were renamed, false if no matches were found.
 bool SexpTreeActions::rename_container_nodes(const SCP_string& old_name, const SCP_string& new_name)
 {
 	Assertion(!old_name.empty(),
