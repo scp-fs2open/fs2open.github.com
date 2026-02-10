@@ -66,6 +66,8 @@ struct Decal {
 
 	Decal();
 
+	void markForDeletion();
+
 	bool isValid() const;
 };
 
@@ -159,5 +161,7 @@ void addDecal(creation_info& info,
 			  const matrix& local_orient);
 
 void addSingleFrameDecal(Decal&& info);
+
+void invalidateForShip(const ship* shipp);
 
 }

@@ -185,11 +185,20 @@ Decal::Decal() {
 	vm_vec_make(&scale, 1.f, 1.f, 1.f);
 }
 
+void Decal::markForDeletion() {
+	orig_obj_type = OBJ_NONE;
+}
+
 bool Decal::isValid() const  {
 	if (!object.isValid()) {
 		return false;
 	}
 	if (object.objp()->flags[Object::Object_Flags::Should_be_dead]) {
+		return false;
+	}
+
+	if (orig_obj_type == OBJ_NONE) {
+		//Decal should be cleared
 		return false;
 	}
 
@@ -534,6 +543,15 @@ void addDecal(creation_info& info, const object* host, int submodel, const vec3d
 
 void addSingleFrameDecal(Decal&& info) {
 	active_single_frame_decals.push_back(info);
+}
+
+void invalidateForShip(const ship* shipp) {
+	int objnum = shipp->objnum;
+	for (Decal& decal : active_decals) {
+		if (decal.object.objnum == objnum) {
+			decal.markForDeletion();
+		}
+	}
 }
 
 }
