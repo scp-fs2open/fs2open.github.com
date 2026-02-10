@@ -262,7 +262,6 @@ struct vertex_format_data
 		POSITION4,
 		POSITION3,
 		POSITION2,
-		SCREEN_POS,
 		COLOR3,
 		COLOR4,
 		COLOR4F,
