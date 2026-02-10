@@ -77,7 +77,8 @@ inline bool sorted_obj::operator < (const sorted_obj &other) const
 	} else if (obj->type == OBJ_RAW_POF) {
 		model_num_a = Pof_objects[obj->instance].model_num;
 	} else if (obj->type == OBJ_PROP) {
-		model_num_a = prop_id_lookup(obj->instance)->model_instance_num;
+		prop_info *pip = &Prop_info[Props[obj->instance]->prop_info_index];
+		model_num_a = pip->model_num;
 	}
 
 	if ( other.obj->type == OBJ_SHIP ) {
@@ -105,7 +106,8 @@ inline bool sorted_obj::operator < (const sorted_obj &other) const
 	} else if (other.obj->type == OBJ_RAW_POF) {
 		model_num_b = Pof_objects[other.obj->instance].model_num;
 	} else if (other.obj->type == OBJ_PROP) {
-		model_num_b = prop_id_lookup(other.obj->instance)->model_instance_num;
+		prop_info* pip = &Prop_info[Props[other.obj->instance]->prop_info_index];
+		model_num_b = pip->model_num;
 	}
 
 	if ( model_num_a == model_num_b ) {
