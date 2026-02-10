@@ -109,24 +109,16 @@ void OperatorComboBox::refresh_popup_operators(sexp_opf_t opf_type, const SCP_st
 
 void OperatorComboBox::filter_popup_operators(const SCP_string &filter_string)
 {
-	int nIndex = 0;
+	SCP_vector<int> filtered_operator_indexes;
 
 	// quick check to see if everything is already there
 	if (filter_string.empty() && GetCount() == (int)Operators.size())
 		return;
 
-	// Remove all items in the combo box.  Don't use ResetContent() which also clears the edit control.
-	for (int i = GetCount() - 1; i >= 0; i--)
-		DeleteString(i);
-
 	// if we're not filtering, just add everything
 	if (filter_string.empty())
 	{
-		for (int op_index : Sorted_operator_indexes)
-		{
-			AddString(_T(Operators[op_index].text.c_str()));
-			SetItemData(nIndex++, op_index);
-		}
+		set_popup_operators(Sorted_operator_indexes);
 		return;
 	}
 
@@ -135,15 +127,12 @@ void OperatorComboBox::filter_popup_operators(const SCP_string &filter_string)
 	{
 		auto first_ch = SCP_tolower(filter_string[0]);
 
-		for (int op_index : Sorted_operator_indexes)
-		{
-			const auto &op_text = Operators[op_index].text;
-			if (first_ch == SCP_tolower(op_text[0]))
+		std::copy_if(Sorted_operator_indexes.begin(), Sorted_operator_indexes.end(), std::back_inserter(filtered_operator_indexes), [first_ch](int op_index)
 			{
-				AddString(_T(op_text.c_str()));
-				SetItemData(nIndex++, op_index);
-			}
-		}
+				return first_ch == SCP_tolower(Operators[op_index].text[0]);
+			});
+
+		set_popup_operators(filtered_operator_indexes);
 		return;
 	}
 
@@ -165,14 +154,37 @@ void OperatorComboBox::filter_popup_operators(const SCP_string &filter_string)
 			// compare the size_t parts of both pairs
 			return std::get<1>(a) < std::get<1>(b);
 		});
+	std::transform(filtered_operators.begin(), filtered_operators.end(), std::back_inserter(filtered_operator_indexes), [](const std::pair<int, size_t>& a) {return a.first; });
 
 	// put them in the combo box
-	for (const auto &op_pair : filtered_operators)
+	set_popup_operators(filtered_operator_indexes);
+}
+
+void OperatorComboBox::set_popup_operators(const SCP_vector<int> &operator_indexes)
+{
+	// Turn off redraw while we modify the combo box.
+	SetRedraw(FALSE);
+
+	// Remove all items in the combo box.  Don't use ResetContent() which also clears the edit control.
+	for (int i = GetCount() - 1; i >= 0; i--)
+		DeleteString(i);
+
+	if (!operator_indexes.empty())
 	{
-		int op_index = std::get<0>(op_pair);
-		AddString(_T(Operators[op_index].text.c_str()));
-		SetItemData(nIndex++, op_index);
+		int nIndex = 0;
+		InitStorage(sz2i(operator_indexes.size()), static_cast<UINT>(operator_indexes.size() * TOKEN_LENGTH));
+
+		// Add all the specified operators to the combo box.
+		for (int op_index : operator_indexes)
+		{
+			AddString(_T(Operators[op_index].text.c_str()));
+			SetItemData(nIndex++, op_index);
+		}
 	}
+
+	// Now we can draw again.
+	SetRedraw(TRUE);
+	InvalidateRect(NULL, TRUE);
 }
 
 void OperatorComboBox::cleanup(bool confirm)
