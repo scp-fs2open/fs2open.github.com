@@ -56,6 +56,7 @@ enum sexp_opf_t : int {
 	OPF_SHIP_POINT,					// a waypoint or a ship
 	OPF_GOAL_NAME,					// name of goal (or maybe event?) from a mission
 	OPF_SHIP_WING,					// either a ship or wing name (they don't conflict)
+	OPF_SHIP_PROP,                  // either a ship or a prop
 	OPF_SHIP_WING_WHOLETEAM,		// Karajorma - Ship, wing or an entire team's worth of ships
 	OPF_SHIP_WING_SHIPONTEAM_POINT,	// name of a ship, wing, any ship on a team, or a point
 	OPF_SHIP_WING_POINT,
@@ -824,7 +825,6 @@ enum : int {
 	OP_ADD_TO_COLGROUP, // The E
 	OP_REMOVE_FROM_COLGROUP, // The E
 	OP_GET_COLGROUP_ID, // The E
-	OP_GET_COLGROUP_ID_PROP, // MjnMixael
 	OP_SHIP_EFFECT, // Valathil
 	OP_CLEAR_SUBTITLES, // The E
 	OP_BEAM_FIRE_COORDS,	// Goober5000
@@ -881,8 +881,6 @@ enum : int {
 	OP_SET_TRAITOR_OVERRIDE,	//MjnMixael
 	OP_ADD_TO_COLGROUP_NEW,	// Goober5000
 	OP_REMOVE_FROM_COLGROUP_NEW,	// Goober5000
-	OP_ADD_TO_COLGROUP_PROP,         // MjnMixael
-	OP_REMOVE_FROM_COLGROUP_PROP,    // MjnMixael
 	OP_GET_POWER_OUTPUT,	// The E
 	OP_TURRET_SET_FORCED_TARGET,	// Asteroth
 	OP_TURRET_SET_FORCED_SUBSYS_TARGET,	// Asteroth

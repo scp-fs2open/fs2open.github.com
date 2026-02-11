@@ -3318,6 +3318,7 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 		case OPF_SHIP_NOT_PLAYER:
 		case OPF_SHIP_POINT:
 		case OPF_SHIP_WING:
+		case OPF_SHIP_PROP:
 		case OPF_SHIP_WING_WHOLETEAM:
 		case OPF_SHIP_WING_SHIPONTEAM_POINT:
 		case OPF_SHIP_WING_POINT:
@@ -3590,6 +3591,17 @@ int sexp_tree::query_default_argument_available(int op, int i)
 			ptr = GET_FIRST(&obj_used_list);
 			while (ptr != END_OF_LIST(&obj_used_list)) {
 				if (ptr->type == OBJ_SHIP || ptr->type == OBJ_START)
+					return 1;
+
+				ptr = GET_NEXT(ptr);
+			}
+
+			return 0;
+
+		case OPF_SHIP_PROP:
+			ptr = GET_FIRST(&obj_used_list);
+			while (ptr != END_OF_LIST(&obj_used_list)) {
+				if (ptr->type == OBJ_SHIP || ptr->type == OBJ_START || ptr->type == OBJ_PROP)
 					return 1;
 
 				ptr = GET_NEXT(ptr);
@@ -5544,6 +5556,10 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			list = get_listing_opf_ship_wing();
 			break;
 
+		case OPF_SHIP_PROP:
+			list = get_listing_opf_ship_prop();
+			break;
+
 		case OPF_SHIP_WING_WHOLETEAM:
 			list = get_listing_opf_ship_wing_wholeteam();
 			break;
@@ -7113,6 +7129,16 @@ sexp_list_item *sexp_tree::get_listing_opf_ship_wing()
 
 	head.add_list(get_listing_opf_ship());
 	head.add_list(get_listing_opf_wing());
+
+	return head.next;
+}
+
+sexp_list_item* sexp_tree::get_listing_opf_ship_prop()
+{
+	sexp_list_item head;
+
+	head.add_list(get_listing_opf_ship());
+	head.add_list(get_listing_opf_prop());
 
 	return head.next;
 }

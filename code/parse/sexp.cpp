@@ -618,9 +618,6 @@ SCP_vector<sexp_oper> Operators = {
 	{ "add-to-collision-group-new",		OP_ADD_TO_COLGROUP_NEW,					2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "remove-from-collision-group-new",	OP_REMOVE_FROM_COLGROUP_NEW,		2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "get-collision-group",			OP_GET_COLGROUP_ID,						1,	1,			SEXP_ACTION_OPERATOR,	},
-	{ "add-to-collision-group-prop",	OP_ADD_TO_COLGROUP_PROP,				2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// MjnMixael
-	{ "remove-from-collision-group-prop",	OP_REMOVE_FROM_COLGROUP_PROP,		2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// MjnMixael
-	{ "get-collision-group-prop",		OP_GET_COLGROUP_ID_PROP,				1,	1,			SEXP_ACTION_OPERATOR,	},  // MjnMixael
 	{ "change-team-color",				OP_CHANGE_TEAM_COLOR,					3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// The E
 	{ "replace-texture",				OP_REPLACE_TEXTURE,						3,  INT_MAX,	SEXP_ACTION_OPERATOR,   },  // Lafiel
 	{ "replace-skybox-texture",				OP_REPLACE_TEXTURE_SKYBOX,						2, 2,	SEXP_ACTION_OPERATOR,   },  // Lafiel
@@ -2575,6 +2572,20 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 					return SEXP_CHECK_INVALID_SHIP_WING_WHOLETEAM;
 				else
 					return SEXP_CHECK_INVALID_SHIP_WING;
+
+			case OPF_SHIP_PROP:
+				if (type2 != SEXP_ATOM_STRING) {
+					return SEXP_CHECK_TYPE_MISMATCH;
+				}
+				if (ship_name_lookup(CTEXT(node), 1) < 0) {
+					if (Fred_running || !mission_check_ship_yet_to_arrive(CTEXT(node))) {
+						return SEXP_CHECK_INVALID_SHIP;
+					}
+				}
+				if (prop_name_lookup(CTEXT(node)) < 0) {
+					return SEXP_CHECK_INVALID_PROP;
+				}
+				break;
 
 			case OPF_AWACS_SUBSYSTEM:
 			case OPF_ROTATING_SUBSYSTEM:
@@ -27443,15 +27454,37 @@ int sexp_is_docked(int node)
 
 void sexp_manipulate_colgroup(int node, bool add_to_group)
 {
-	auto ship_entry = eval_ship(node);
-	if (!ship_entry || ship_entry->status == ShipStatus::EXITED)
-		return;
+	int colgroup_id = 0;
+	const ship_registry_entry* ship_entry = nullptr;
+	const prop* prop_entry = nullptr;
+	SCP_string name;
+
+	// Ship
+	ship_entry = eval_ship(node);
+	if (ship_entry) {
+		if (ship_entry->status == ShipStatus::EXITED)
+			return;
+
+		colgroup_id = (ship_entry->has_objp()) ? ship_entry->objp()->collision_group_id
+											   : ship_entry->p_objp()->collision_group_id;
+		name = ship_entry->name;
+
+	// Prop
+	} else {
+		prop_entry = eval_prop(node);
+
+		if (prop_entry) {
+			colgroup_id = Objects[prop_entry->objnum].collision_group_id;
+			name = prop_entry->prop_name;
+		} else { // Not a prop or a ship so warn and return
+			Warning(LOCATION, "Invalid object %s specified in manipulate-colgroup SEXP", CTEXT(node));
+			return;
+		}
+	}
+
 	node = CDR(node);
 
-	int colgroup_id = (ship_entry->has_objp())
-		? ship_entry->objp()->collision_group_id
-		: ship_entry->p_objp()->collision_group_id;
-
+	// Set the colgroup
 	for (; node != -1; node = CDR(node)) {
 		bool is_nan, is_nan_forever;
 		int group = eval_num(node, is_nan, is_nan_forever);
@@ -27460,20 +27493,34 @@ void sexp_manipulate_colgroup(int node, bool add_to_group)
 		}
 
 		if (group < 0 || group > 31) {
-			WarningEx(LOCATION, "Invalid collision group id %d specified for object %s. Valid IDs range from 0 to 31.\n", group, ship_entry->name);
+			WarningEx(LOCATION,
+				"Invalid collision group id %d specified for object %s. Valid IDs range from 0 to 31.\n",
+				group,
+				name.c_str());
 		} else {
 			if (add_to_group) {
-				colgroup_id |= (1<<group);
+				colgroup_id |= (1 << group);
 			} else {
-				colgroup_id &= ~(1<<group);
+				colgroup_id &= ~(1 << group);
 			}
 		}
 	}
 
-	if (ship_entry->has_objp())
-		ship_entry->objp()->collision_group_id = colgroup_id;
-	else
-		ship_entry->p_objp()->collision_group_id = colgroup_id;
+	// Apply it to ship
+	if (ship_entry) {
+		if (ship_entry->has_objp()) {
+			ship_entry->objp()->collision_group_id = colgroup_id;
+		} else {
+			ship_entry->p_objp()->collision_group_id = colgroup_id;
+		}
+
+		return;
+	}
+
+	// Apply it to prop
+	if (prop_entry) {
+		Objects[prop_entry->objnum].collision_group_id = colgroup_id;
+	}
 }
 
 void sexp_manipulate_colgroup_new(int node, bool add_to_group)
@@ -27484,87 +27531,71 @@ void sexp_manipulate_colgroup_new(int node, bool add_to_group)
 		return;
 	node = CDR(node);
 
-	if (group < 0 || group > 31)
-	{
+	if (group < 0 || group > 31) {
 		WarningEx(LOCATION, "Invalid collision group id %d specified. Valid IDs range from 0 to 31.\n", group);
 		return;
 	}
 
-	for (; node != -1; node = CDR(node))
-	{
-		auto ship_entry = eval_ship(node);
-		if (!ship_entry || ship_entry->status == ShipStatus::EXITED)
-			continue;
+	for (; node != -1; node = CDR(node)) {
 
-		if (ship_entry->has_objp())
-		{
-			if (add_to_group)
-				ship_entry->objp()->collision_group_id |= (1 << group);
-			else
-				ship_entry->objp()->collision_group_id &= ~(1 << group);
-		}
-		else
-		{
-			if (add_to_group)
-				ship_entry->p_objp()->collision_group_id |= (1 << group);
-			else
-				ship_entry->p_objp()->collision_group_id &= ~(1 << group);
+		// Ship
+		auto ship_entry = eval_ship(node);
+		if (ship_entry) {
+			if (ship_entry->status == ShipStatus::EXITED)
+				continue;
+
+			if (ship_entry->has_objp()) {
+				if (add_to_group)
+					ship_entry->objp()->collision_group_id |= (1 << group);
+				else
+					ship_entry->objp()->collision_group_id &= ~(1 << group);
+			} else {
+				if (add_to_group)
+					ship_entry->p_objp()->collision_group_id |= (1 << group);
+				else
+					ship_entry->p_objp()->collision_group_id &= ~(1 << group);
+			}
+
+		// Prop
+		} else {
+			auto prop_entry = eval_prop(node);
+
+			if (prop_entry) {
+				object& obj = Objects[prop_entry->objnum];
+
+				if (add_to_group)
+					obj.collision_group_id |= (1 << group);
+				else
+					obj.collision_group_id &= ~(1 << group);
+			}
 		}
 	}
 }
 
 int sexp_get_colgroup(int node)
 {
+	// Ship
 	auto ship_entry = eval_ship(node);
-	if (!ship_entry)
-		return SEXP_NAN;
-	if (ship_entry->status == ShipStatus::EXITED)
-		return SEXP_NAN_FOREVER;
+	if (ship_entry) {
+		if (ship_entry->status == ShipStatus::EXITED)
+			return SEXP_NAN_FOREVER;
 
-	if (ship_entry->has_objp())
-		return ship_entry->objp()->collision_group_id;
-	else
-		return ship_entry->p_objp()->collision_group_id;
-}
+		if (ship_entry->has_objp())
+			return ship_entry->objp()->collision_group_id;
+		else
+			return ship_entry->p_objp()->collision_group_id;
 
-void sexp_manipulate_colgroup_prop(int node, bool add_to_group)
-{
-	bool is_nan, is_nan_forever;
-	int group = eval_num(node, is_nan, is_nan_forever);
-	if (is_nan || is_nan_forever)
-		return;
-	node = CDR(node);
-
-	if (group < 0 || group > 31)
-	{
-		WarningEx(LOCATION, "Invalid collision group id %d specified. Valid IDs range from 0 to 31.\n", group);
-		return;
-	}
-
-	for (; node != -1; node = CDR(node))
-	{
+	// Prop
+	} else {
 		auto prop_entry = eval_prop(node);
+		if (prop_entry) {
+			const object& obj = Objects[prop_entry->objnum];
 
-		if (prop_entry != nullptr) {
-			object& obj = Objects[eval_prop(node)->objnum];
-
-			if (add_to_group)
-				obj.collision_group_id |= (1 << group);
-			else
-				obj.collision_group_id &= ~(1 << group);
+			return obj.collision_group_id;
 		}
 	}
-}
 
-int sexp_get_colgroup_prop(int node)
-{
-	auto prop_entry = eval_prop(node);
-	if (!prop_entry)
-		return SEXP_NAN;
-
-	const object& obj = Objects[eval_prop(node)->objnum];
-
-	return obj.collision_group_id;
+	return SEXP_NAN;
 }
 
 int get_effect_from_name(const char* name)
@@ -30486,16 +30517,6 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_get_colgroup(node);
 				break;
 
-			case OP_ADD_TO_COLGROUP_PROP:
-			case OP_REMOVE_FROM_COLGROUP_PROP:
-				sexp_manipulate_colgroup_prop(node, op_num == OP_ADD_TO_COLGROUP_PROP);
-				sexp_val = SEXP_TRUE;
-				break;
-
-			case OP_GET_COLGROUP_ID_PROP:
-				sexp_val = sexp_get_colgroup_prop(node);
-				break;
-
 			case OP_SHIP_EFFECT:
 				sexp_val = SEXP_TRUE;
 				sexp_ship_effect(node);
@@ -31425,7 +31446,6 @@ int query_operator_return_type(int op)
 		case OP_GET_THROTTLE_SPEED:
 		case OP_GET_VARIABLE_BY_INDEX:
 		case OP_GET_COLGROUP_ID:
-		case OP_GET_COLGROUP_ID_PROP:
 		case OP_FUNCTIONAL_IF_THEN_ELSE:
 		case OP_FUNCTIONAL_SWITCH:
 		case OP_GET_HOTKEY:
@@ -31866,8 +31886,6 @@ int query_operator_return_type(int op)
 		case OP_REMOVE_FROM_COLGROUP:
 		case OP_ADD_TO_COLGROUP_NEW:
 		case OP_REMOVE_FROM_COLGROUP_NEW:
-		case OP_ADD_TO_COLGROUP_PROP:
-		case OP_REMOVE_FROM_COLGROUP_PROP:
 		case OP_SHIP_EFFECT:
 		case OP_CLEAR_SUBTITLES:
 		case OP_SET_THRUSTERS:
@@ -34730,12 +34748,12 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_BUILTIN_HUD_GAUGE;
 
 		case OP_GET_COLGROUP_ID:
-			return OPF_SHIP;
+			return OPF_SHIP_PROP;
 
 		case OP_ADD_TO_COLGROUP:
 		case OP_REMOVE_FROM_COLGROUP:
 			if (argnum == 0)
-				return OPF_SHIP;
+				return OPF_SHIP_PROP;
 			else
 				return OPF_POSITIVE;
 
@@ -34744,17 +34762,7 @@ int query_operator_argument_type(int op, int argnum)
 			if (argnum == 0)
 				return OPF_POSITIVE;
 			else
-				return OPF_SHIP;
-
-		case OP_ADD_TO_COLGROUP_PROP:
-		case OP_REMOVE_FROM_COLGROUP_PROP:
-			if (argnum == 0)
-				return OPF_POSITIVE;
-			else
-				return OPF_PROP;
-
-		case OP_GET_COLGROUP_ID_PROP:
-			return OPF_PROP;
+				return OPF_SHIP_PROP;
 
 		case OP_SHIP_EFFECT:
 			if (argnum == 0)
@@ -37030,7 +37038,6 @@ int get_category(int op_id)
 		case OP_ADD_TO_COLGROUP:
 		case OP_REMOVE_FROM_COLGROUP:
 		case OP_GET_COLGROUP_ID:
-		case OP_GET_COLGROUP_ID_PROP:
 		case OP_SHIP_EFFECT:
 		case OP_CLEAR_SUBTITLES:
 		case OP_BEAM_FIRE_COORDS:
@@ -37083,8 +37090,6 @@ int get_category(int op_id)
 		case OP_SET_TRAITOR_OVERRIDE:
 		case OP_ADD_TO_COLGROUP_NEW:
 		case OP_REMOVE_FROM_COLGROUP_NEW:
-		case OP_ADD_TO_COLGROUP_PROP:
-		case OP_REMOVE_FROM_COLGROUP_PROP:
 		case OP_GET_POWER_OUTPUT:
 		case OP_TURRET_SET_FORCED_TARGET:
 		case OP_TURRET_SET_FORCED_SUBSYS_TARGET:
@@ -37425,9 +37430,6 @@ int get_subcategory(int op_id)
 		case OP_ADD_TO_COLGROUP_NEW:
 		case OP_REMOVE_FROM_COLGROUP_NEW:
 		case OP_GET_COLGROUP_ID:
-		case OP_ADD_TO_COLGROUP_PROP:
-		case OP_REMOVE_FROM_COLGROUP_PROP:
-		case OP_GET_COLGROUP_ID_PROP:
 		case OP_CHANGE_TEAM_COLOR:
 		case OP_REPLACE_TEXTURE:
 		case OP_REPLACE_TEXTURE_SKYBOX:
@@ -42552,65 +42554,43 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	},
 
 	{OP_ADD_TO_COLGROUP, "add-to-collision-group\r\n"
-		"\tAdds a ship to the specified collision group(s). Note that there are 32 collision groups, "
+		"\tAdds a ship/prop to the specified collision group(s). Note that there are 32 collision groups, "
 		"and that an object may be in several collision groups at the same time\r\n"
 		"Takes 2 or more arguments...\r\n"
-		"\t1:\tShip to add (ships do not need to be in-mission).\r\n"
+		"\t1:\tShip/prop to add (ships do not need to be in-mission).\r\n"
 		"\t2+:\tGroup IDs. Valid IDs are 0 through 31 inclusive.\r\n"
 	},
 
 	{OP_REMOVE_FROM_COLGROUP, "remove-from-collision-group\r\n"
-		"\tRemoves a ship from the specified collision group(s). Note that there are 32 collision groups, "
+		"\tRemoves a ship/prop from the specified collision group(s). Note that there are 32 collision groups, "
 		"and that an object may be in several collision groups at the same time\r\n"
 		"Takes 2 or more arguments...\r\n"
-		"\t1:\tShip to add (ships do not need to be in-mission).\r\n"
+		"\t1:\tShip/prop to add (ships do not need to be in-mission).\r\n"
 		"\t2+:\tGroup IDs. Valid IDs are 0 through 31 inclusive.\r\n"
 	},
 
 	{OP_ADD_TO_COLGROUP_NEW, "add-to-collision-group-new\r\n"
-		"\tAdds one or more ships to the specified collision group. There are 32 collision groups, "
+		"\tAdds one or more ships/props to the specified collision group. There are 32 collision groups, "
 		"and an object may be in several collision groups at the same time. This sexp functions identically to "
-		"add-to-collision-group, except that the arguments are one group and many ships, rather than one ship and many groups.\r\n"
+		"add-to-collision-group, except that the arguments are one group and many ships/props, rather than one ship/prop and many groups.\r\n"
 		"Takes 2 or more arguments...\r\n"
 		"\t1:\tGroup ID. Valid IDs are 0 through 31 inclusive.\r\n"
-		"\t2+:\tShip to add (ships do not need to be in-mission).\r\n"
+		"\t2+:\tShip/prop to add (ships do not need to be in-mission).\r\n"
 	},
 
 	{OP_REMOVE_FROM_COLGROUP_NEW, "remove-from-collision-group-new\r\n"
-		"\tRemoves one or more ships from the specified collision group. There are 32 collision groups, "
+		"\tRemoves one or more ships/props from the specified collision group. There are 32 collision groups, "
 		"and an object may be in several collision groups at the same time. This sexp functions identically to "
-		"remove-from-collision-group, except that the arguments are one group and many ships, rather than one ship and many groups.\r\n"
+		"remove-from-collision-group, except that the arguments are one group and many ships/props, rather than one ship/prop and many groups.\r\n"
 		"Takes 2 or more arguments...\r\n"
 		"\t1:\tGroup ID. Valid IDs are 0 through 31 inclusive.\r\n"
-		"\t2+:\tShip to remove (ships do not need to be in-mission).\r\n"
+		"\t2+:\tShip/prop to remove (ships do not need to be in-mission).\r\n"
 	},
 
 	{OP_GET_COLGROUP_ID, "get-collision-group\r\n"
 		"\tReturns an objects' collision group ID. Note that this ID is a bitfield.\r\n"
 		"Takes 1 Argument...\r\n"
 		"\t1:\tObject name\r\n"
-	},
-
-	{OP_ADD_TO_COLGROUP_PROP, "add-to-collision-group-prop\r\n"
-		"\tAdds one or more props to the specified collision group. There are 32 collision groups, "
-		"and an object may be in several collision groups at the same time.\r\n"
-		"Takes 2 or more arguments...\r\n"
-		"\t1:\tGroup ID. Valid IDs are 0 through 31 inclusive.\r\n"
-		"\t2+:\tProp to add (props do need to be in-mission).\r\n"
-	},
-
-	{OP_REMOVE_FROM_COLGROUP_PROP, "remove-from-collision-group-prop\r\n"
-		"\tRemoves one or more props from the specified collision group. There are 32 collision groups, "
-		"and an object may be in several collision groups at the same time.\r\n"
-		"Takes 2 or more arguments...\r\n"
-		"\t1:\tGroup ID. Valid IDs are 0 through 31 inclusive.\r\n"
-		"\t2+:\tProp to remove (props do need to be in-mission).\r\n"
-	},
-
-	{OP_GET_COLGROUP_ID_PROP, "get-collision-group-prop\r\n"
-		"\tReturns an prop's collision group ID. Note that this ID is a bitfield.\r\n"
-		"Takes 1 Argument...\r\n"
-		"\t1:\tProp name\r\n"
 	},
 
 	//Valathil
