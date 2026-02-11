@@ -14019,7 +14019,6 @@ void ship_process_targeting_lasers()
 
 			// hmm, why didn't it fire?
 			if(shipp->targeting_laser_objnum < 0){
-				Int3();
 				ship_stop_targeting_laser(shipp);
 			}
 		}
