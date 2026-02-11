@@ -41,6 +41,11 @@ public:
 
 	friend bool operator==(ID a, ID b) { return a.m_val == b.m_val; }
 	friend bool operator!=(ID a, ID b) { return a.m_val != b.m_val; }
+	friend bool operator< (ID a, ID b) { return a.m_val < b.m_val; }
+	friend bool operator<=(ID a, ID b) { return a.m_val <= b.m_val; }
+	friend bool operator> (ID a, ID b) { return a.m_val > b.m_val; }
+	friend bool operator>=(ID a, ID b) { return a.m_val >= b.m_val; }
+
 	friend std::ostream& operator<< (std::ostream& stream, const ID& id) {
 		stream << id.value();
 		return stream;
