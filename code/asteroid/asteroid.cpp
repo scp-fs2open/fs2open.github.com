@@ -1607,8 +1607,13 @@ static float asteroid_create_explosion(object *objp)
 	}
 
 	fireball_scale_multiplier = asteroid_get_fireball_scale_multiplier(objp->instance);
+	auto fireball_radius = objp->radius * fireball_scale_multiplier;
 
-	fireball_objnum = fireball_create( &objp->pos, fireball_type, FIREBALL_LARGE_EXPLOSION, OBJ_INDEX(objp), objp->radius*fireball_scale_multiplier, false, &objp->phys_info.vel );
+	if (Zero_radius_explosions_skip_fireballs && fl_near_zero(fireball_radius))
+		fireball_objnum = -1;
+	else
+		fireball_objnum = fireball_create( &objp->pos, fireball_type, FIREBALL_LARGE_EXPLOSION, OBJ_INDEX(objp), fireball_radius, false, &objp->phys_info.vel );
+
 	if ( fireball_objnum > -1 )	{
 		explosion_life = fireball_lifeleft(&Objects[fireball_objnum]);
 	} else {

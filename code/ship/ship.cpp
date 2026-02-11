@@ -9786,7 +9786,12 @@ static void ship_dying_frame(object *objp, int ship_num)
 				if(fireball_type < 0) {
 					fireball_type = default_fireball_type;
 				}
-				fireball_objnum = fireball_create( &objp->pos, fireball_type, FIREBALL_LARGE_EXPLOSION, OBJ_INDEX(objp), big_rad, false, &objp->phys_info.vel );
+
+				if (Zero_radius_explosions_skip_fireballs && fl_near_zero(big_rad))
+					fireball_objnum = -1;
+				else
+					fireball_objnum = fireball_create( &objp->pos, fireball_type, FIREBALL_LARGE_EXPLOSION, OBJ_INDEX(objp), big_rad, false, &objp->phys_info.vel );
+
 				if ( fireball_objnum >= 0 )	{
 					explosion_life = fireball_lifeleft(&Objects[fireball_objnum]);
 				} else {
