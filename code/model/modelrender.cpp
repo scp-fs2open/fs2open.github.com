@@ -3106,7 +3106,7 @@ void modelinstance_replace_active_texture(polymodel_instance* pmi, const char* o
 
 // renders a model as if in the tech room or briefing UI
 // model_type 1 for ship class, 2 for weapon class, 3 for pof
-bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int y2, float zoom, bool lighting, int class_idx, const matrix* orient, const SCP_string &pof_filename, float close_zoom, const vec3d *close_pos, const SCP_string& tcolor)
+bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int y2, float zoom, bool lighting, int class_idx, const matrix* orient, const SCP_string &pof_filename, float close_zoom, const vec3d *close_pos, const SCP_string& tcolor, const SCP_vector<SCP_string>& destroyed_subsystems)
 {
 
 	model_render_params render_info;
@@ -3204,8 +3204,34 @@ bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int 
 
 	// Create an instance for ships that can be used to clear out destroyed subobjects from rendering
 	if (model_type == TECH_SHIP) {
+		auto sip = &Ship_info[class_idx];
+		auto pm = model_get(model_num);
 		model_instance = model_create_instance(model_objnum_special::OBJNUM_NONE, model_num);
 		model_set_up_techroom_instance(&Ship_info[class_idx], model_instance);
+		model_set_up_techroom_instance(sip, model_instance);
+
+		if (!destroyed_subsystems.empty()) {
+			auto pmi = model_get_instance(model_instance);
+			flagset<Ship::Subsystem_Flags> empty;
+
+			for (int idx = 0; idx < sip->n_subsystems; ++idx) {
+				auto& subsystem = sip->subsystems[idx];
+
+				if (subsystem.subobj_num < 0 || subsystem.subobj_num >= pm->n_models ||
+					subsystem.model_num != model_num) {
+					continue;
+				}
+
+				for (auto& destroyed_name : destroyed_subsystems) {
+					if (!stricmp(subsystem.subobj_name, destroyed_name.c_str()) ||
+						!stricmp(subsystem.name, destroyed_name.c_str())) {
+						pmi->submodel[subsystem.subobj_num].blown_off = true;
+						model_replicate_submodel_instance(pm, pmi, subsystem.subobj_num, empty);
+						break;
+					}
+				}
+			}
+		}
 	}
 
 	render_info.set_detail_level_lock(0);
