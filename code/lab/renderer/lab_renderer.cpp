@@ -258,13 +258,13 @@ SCP_string get_rot_mode_string(LabRotationMode rotmode)
 {
 	switch (rotmode) {
 	case LabRotationMode::Both:
-		return "Manual rotation mode: Pitch and Yaw";
+		return "Pitch and Yaw";
 	case LabRotationMode::Pitch:
-		return "Manual rotation mode: Pitch";
+		return "Pitch";
 	case LabRotationMode::Yaw:
-		return "Manual rotation mode: Yaw";
+		return "Yaw";
 	case LabRotationMode::Roll:
-		return "Manual rotation mode: Roll";
+		return "Roll";
 	default:
 		return "HOW DID THIS HAPPEN? Ask a coder!";
 	}
@@ -341,27 +341,24 @@ void LabRenderer::renderHud(float) {
 		gr_printf_no_resize(gr_screen.center_offset_x + 2, gr_screen.center_offset_y + gr_screen.center_h - (gr_get_font_height() * 2) - 3, "AA Preset: %s", aa_mode);
 	}
 
-	//Print current Team Color setting, if any
-	if (currentTeamColor != LAB_TEAM_COLOR_NONE) {
-		gr_printf_no_resize(gr_screen.center_offset_x + 2,
-			gr_screen.center_offset_y + gr_screen.center_h - (gr_get_font_height() * 3) - 3,
-			"Use T and Y to cycle through available Team Color settings. Current: %s",
-			currentTeamColor.c_str());
-	}
-
-	// Camera usage info
+	// Controls info
 	gr_printf_no_resize(gr_screen.center_offset_x + 2,
-		gr_screen.center_offset_y + gr_screen.center_h - (gr_get_font_height() * 4) - 3,
-		"%s Use number keys to switch between AA presets. R to cycle model rotation "
-		"modes, S to cycle model rotation speeds, V to reset view, "
-		"M to export environment map.", labCamera->getUsageInfo().c_str());
+		gr_screen.center_offset_y + gr_screen.center_h - (gr_get_font_height() * 7) - 3,
+		"Open Options -> Controls reference for the full object and camera controls list.");
 
 	// Rotation mode
-	SCP_string text = get_rot_mode_string(getLabManager()->RotationMode);
 	gr_printf_no_resize(gr_screen.center_offset_x + 2,
 		gr_screen.center_offset_y + gr_screen.center_h - (gr_get_font_height() * 5) - 3,
-		"%s Rotation speed: %s", get_rot_mode_string(getLabManager()->RotationMode).c_str(),
+		"Model rotation axis limit: %s, Rotation speed: %s", get_rot_mode_string(getLabManager()->RotationMode).c_str(),
 		get_rot_speed_string(getLabManager()->RotationSpeedDivisor).c_str());
+
+	// Print current Team Color setting, if any
+	if (currentTeamColor != LAB_TEAM_COLOR_NONE) {
+		gr_printf_no_resize(gr_screen.center_offset_x + 2,
+			gr_screen.center_offset_y + gr_screen.center_h - (gr_get_font_height() * 4) - 3,
+			"Current Team Color: %s",
+			currentTeamColor.c_str());
+	}
 }
 
 void LabRenderer::useBackground(const SCP_string& mission_name) {

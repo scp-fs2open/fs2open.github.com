@@ -37,6 +37,7 @@ class LabUi {
 	static void build_background_list();
 	void show_render_options();
 	void show_object_options() const;
+	void show_controls_reference() const;
 	void show_object_selector() const;
 	void show_background_selector() const;
 	void build_toolbar_entries();
@@ -88,6 +89,7 @@ class LabUi {
 	bool show_object_selection_dialog = true;
 	bool show_object_options_dialog = false;
 	bool show_background_selection_dialog = true;
+	bool show_controls_reference_dialog = false;
 
 	// used to track the "Reset View" function
 	bool reset_view = false;

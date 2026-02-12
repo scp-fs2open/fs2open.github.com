@@ -12,8 +12,44 @@
 #include "weapon/weapon.h"
 #include "mission/missionload.h"
 #include "prop/prop.h"
+#include "controlconfig/controlsconfig.h"
 
 using namespace ImGui;
+
+namespace {
+SCP_string get_binding_text(int action_id)
+{
+	const auto& action = Control_config[action_id];
+
+	if (!action.first.empty() && !action.second.empty()) {
+		return action.first.textify() + " or " + action.second.textify();
+	}
+
+	if (!action.first.empty()) {
+		return action.first.textify();
+	}
+
+	if (!action.second.empty()) {
+		return action.second.textify();
+	}
+
+	return "Unbound";
+}
+
+void controls_reference_entry(const char* label, const SCP_string& description)
+{
+	Bullet();
+	SameLine();
+	TextWrapped("%s: %s", label, description.c_str());
+}
+
+void controls_reference_entry(const char* label, const char* description)
+{
+	Bullet();
+	SameLine();
+	TextWrapped("%s: %s", label, description);
+}
+} // namespace
 
 std::map<animation::ModelAnimationTriggerType, std::map<SCP_string, bool>> manual_animation_triggers = {};
 std::map<animation::ModelAnimationTriggerType, bool> manual_animations = {};
@@ -269,6 +305,7 @@ void LabUi::build_options_menu()
 		MenuItem("Object selector", nullptr, &show_object_selection_dialog);
 		MenuItem("Background selector", nullptr, &show_background_selection_dialog);
 		MenuItem("Object options", nullptr, &show_object_options_dialog);
+		MenuItem("Controls reference", nullptr, &show_controls_reference_dialog);
 		MenuItem("Reset View", nullptr, &reset_view);
 		MenuItem("Close lab", "ESC", &close_lab);
 	}
@@ -336,7 +373,43 @@ void LabUi::create_ui()
 	if (show_object_selection_dialog)
 		show_object_selector();
 
+	if (show_controls_reference_dialog)
+		show_controls_reference();
+
 	rebuild_after_object_change = false;
+}
+
+void LabUi::show_controls_reference() const
+{
+	with_Window("Lab controls reference")
+	{
+		TextWrapped("Mouse controls");
+		controls_reference_entry("LMB + drag", "Orient the displayed object.");
+		controls_reference_entry("RMB + drag", "Rotate the camera.");
+		controls_reference_entry("Shift + RMB + drag", "Pan the camera on the X/Y plane.");
+		controls_reference_entry("Mouse wheel", "Zoom the camera in or out.");
+		TextWrapped("Rotation axis limits and rotation speed apply only to object orientation (LMB), not "
+					"camera controls (RMB).");
+
+		Separator();
+		TextWrapped("Keyboard shortcuts");
+		controls_reference_entry("R", "Cycle object orientation (LMB) axis mode (Yaw, Pitch, Roll, or Both).");
+		controls_reference_entry("S", "Cycle object orientation (LMB) speed.");
+		controls_reference_entry("V", "Reset camera view.");
+		controls_reference_entry("T / Y", "Cycle team color presets.");
+		controls_reference_entry("1-9", "Switch anti-aliasing presets.");
+		controls_reference_entry("M", "Export an environment map.");
+		controls_reference_entry("ESC", "Close the lab.");
+
+		if (getLabManager()->CurrentMode == LabMode::Ship) {
+			Separator();
+			TextWrapped("Ship-only controls (from current control bindings)");
+			// These don't work in the new lab yet
+			//controls_reference_entry("Increase throttle by 5%", get_binding_text(PLUS_5_PERCENT_THROTTLE));
+			//controls_reference_entry("Decrease throttle by 5%", get_binding_text(MINUS_5_PERCENT_THROTTLE));
+			controls_reference_entry("Afterburner", get_binding_text(AFTERBURNER));
+		}
+	}
 }
 
 const char* antialiasing_settings[] = {
@@ -610,7 +683,7 @@ void LabUi::show_render_options()
 		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::NoLighting, no_lighting);
 		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowFullDetail, show_full_detail);
 		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowThrusters, show_thrusters);
-		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowAfterburners, show_afterburners);
+		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowAfterburners, show_afterburners || getLabManager()->Lab_thrust_afterburn);
 		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowWeapons, show_weapons);
 		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowEmissiveLighting, show_emissive_lighting);
 		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::MoveSubsystems, animate_subsystems);
