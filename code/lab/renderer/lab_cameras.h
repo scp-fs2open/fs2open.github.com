@@ -57,14 +57,15 @@ public:
 	OrbitCamera() : LabCamera(cam_create("Lab orbit camera")) {}
 
 	SCP_string getUsageInfo() override {
-		return "Hold RMB to rotate the Camera. Hold Shift + RMB to zoom in or out.";
+		return "Hold RMB to rotate the Camera. Hold Alt + RMB to zoom in or out. Hold Shift + RMB to pan on X/Y.";
 	}
 
 	SCP_string getOnFrameInfo() override {
 		SCP_stringstream ss;
 		ss.setf(std::ios::fixed);
 
-		ss << "Phi: " << phi << " Theta: " << theta << " Distance: " << distance;
+		ss << "Phi: " << phi << " Theta: " << theta << " Distance: " << distance << " Pan: (" << pan_offset.xyz.x << ", "
+		   << pan_offset.xyz.y << ", " << pan_offset.xyz.z << ")";
 
 		return ss.str();
 	}
@@ -81,4 +82,5 @@ public:
 	float distance = 100.0f;
 	float phi = 1.24f;
 	float theta = 2.25f;
+	vec3d pan_offset = vmd_zero_vector;
 };
