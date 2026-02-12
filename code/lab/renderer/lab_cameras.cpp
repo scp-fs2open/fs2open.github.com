@@ -18,8 +18,32 @@ void OrbitCamera::handleInput(int dx, int dy, bool, bool rmbDown, int modifierKe
 			CLAMP(distance, 1.0f, 10000000.0f);
 		} else if (modifierKeys & KEY_SHIFTED) {
 			const float pan_factor = distance / 500.0f;
-			pan_offset.xyz.x += dx * pan_factor;
-			pan_offset.xyz.y += dy * pan_factor;
+
+			vec3d camera_offset;
+			camera_offset.xyz.x = sinf(phi) * cosf(theta);
+			camera_offset.xyz.y = cosf(phi);
+			camera_offset.xyz.z = sinf(phi) * sinf(theta);
+
+			vec3d view_forward;
+			vm_vec_copy_scale(&view_forward, &camera_offset, -1.0f);
+
+			vec3d world_up = vmd_y_vector;
+			vec3d view_right;
+			vm_vec_cross(&view_right, &world_up, &view_forward);
+
+			if (vm_vec_mag_squared(&view_right) <= 1e-6f) {
+				world_up = vmd_x_vector;
+				vm_vec_cross(&view_right, &world_up, &view_forward);
+			}
+
+			vm_vec_normalize_safe(&view_right);
+
+			vec3d view_up;
+			vm_vec_cross(&view_up, &view_forward, &view_right);
+			vm_vec_normalize_safe(&view_up);
+
+			vm_vec_scale_add2(&pan_offset, &view_right, -dx * pan_factor);
+			vm_vec_scale_add2(&pan_offset, &view_up, dy * pan_factor);
 		} else {
 			theta -= dx / 100.0f;
 			phi -= dy / 100.0f;
