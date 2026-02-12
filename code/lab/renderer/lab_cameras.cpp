@@ -55,6 +55,16 @@ void OrbitCamera::handleInput(int dx, int dy, bool, bool rmbDown, int modifierKe
 	updateCamera();
 }
 
+void OrbitCamera::resetView()
+{
+	phi = DEFAULT_PHI;
+	theta = DEFAULT_THETA;
+	distance = DEFAULT_DISTANCE;
+	pan_offset = vmd_zero_vector;
+
+	displayedObjectChanged();
+}
+
 void OrbitCamera::displayedObjectChanged() {
 	float distance_multiplier = 1.6f;
 

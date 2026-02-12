@@ -269,6 +269,7 @@ void LabUi::build_options_menu()
 		MenuItem("Object selector", nullptr, &show_object_selection_dialog);
 		MenuItem("Background selector", nullptr, &show_background_selection_dialog);
 		MenuItem("Object options", nullptr, &show_object_options_dialog);
+		MenuItem("Reset View", nullptr, &reset_view);
 		MenuItem("Close lab", "ESC", &close_lab);
 	}
 }
@@ -278,6 +279,11 @@ void LabUi::build_toolbar_entries()
 	with_MainMenuBar
 	{
 		build_options_menu();
+	}
+
+	if (reset_view) {
+		getLabManager()->Renderer->resetView();
+		reset_view = false;
 	}
 
 	if (close_lab) {

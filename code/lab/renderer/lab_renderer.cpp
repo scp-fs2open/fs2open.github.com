@@ -61,6 +61,12 @@ void LabRenderer::resetGraphicsSettings(gfx_options settings) {
 	Gr_aa_mode = settings.aa_mode;
 }
 
+void LabRenderer::resetView()
+{
+	getLabManager()->CurrentOrientation = vmd_identity_matrix;
+	labCamera->resetView();
+}
+
 void LabRenderer::renderModel(float frametime) {
 	GR_DEBUG_SCOPE("Lab Render Model");
 
