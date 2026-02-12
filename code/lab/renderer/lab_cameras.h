@@ -50,6 +50,9 @@ public:
 	/// </summary>
 	/// <returns></returns>
 	virtual void updateCamera() = 0;
+
+	/// Resets the camera orientation, pan, and zoom to default values
+	virtual void resetView() {}
 };
 
 class OrbitCamera : public LabCamera {
@@ -72,6 +75,8 @@ public:
 
 	void handleInput(int dx, int dy, bool /*lmbDown*/, bool rmbDown, int modifierKeys) override;
 
+	void resetView() override;
+
 	void displayedObjectChanged() override;
 
 	bool handlesObjectPlacement() override { return false; }
@@ -79,8 +84,12 @@ public:
 	void updateCamera() override;
 
   private:
-	float distance = 100.0f;
-	float phi = 1.24f;
-	float theta = 2.25f;
+	static constexpr float DEFAULT_DISTANCE = 100.0f;
+	static constexpr float DEFAULT_PHI = 1.24f;
+	static constexpr float DEFAULT_THETA = 2.25f;
+
+	float distance = DEFAULT_DISTANCE;
+	float phi = DEFAULT_PHI;
+	float theta = DEFAULT_THETA;
 	vec3d pan_offset = vmd_zero_vector;
 };
