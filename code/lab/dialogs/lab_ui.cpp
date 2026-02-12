@@ -379,7 +379,7 @@ void LabUi::create_ui()
 	rebuild_after_object_change = false;
 }
 
-void LabUi::show_controls_reference() const
+void LabUi::show_controls_reference()
 {
 	with_Window("Lab controls reference")
 	{
