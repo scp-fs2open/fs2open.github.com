@@ -29,10 +29,11 @@ public:
 	/// </summary>
 	/// <param name="dx">Mouse delta on the x axis</param>
 	/// <param name="dy">Mouse delta on the y axis</param>
+	/// <param name="dz">Mouse wheel delta</param>
 	/// <param name="lmbDown">State of the left mouse button</param>
 	/// <param name="rmbDown">State of the right mouse button</param>
 	/// <param name="modifierKeys">State of the various modifier keys. See keys.h</param>
-	virtual void handleInput(int dx, int dy, bool lmbDown, bool rmbDown, int modifierKeys) = 0;
+	virtual void handleInput(int dx, int dy, int dz, bool lmbDown, bool rmbDown, int modifierKeys) = 0;
 
 	/// <summary>
 	/// Called by the lab manager when the displayed object changes
@@ -60,7 +61,7 @@ public:
 	OrbitCamera() : LabCamera(cam_create("Lab orbit camera")) {}
 
 	SCP_string getUsageInfo() override {
-		return "Hold RMB to rotate the Camera. Hold Alt + RMB to zoom in or out. Hold Shift + RMB to pan on X/Y.";
+		return "Hold RMB to rotate the camera. Use mouse wheel to zoom in/out. Hold Shift + RMB to pan on X/Y.";
 	}
 
 	SCP_string getOnFrameInfo() override {
@@ -73,7 +74,7 @@ public:
 		return ss.str();
 	}
 
-	void handleInput(int dx, int dy, bool /*lmbDown*/, bool rmbDown, int modifierKeys) override;
+	void handleInput(int dx, int dy, int dz, bool /*lmbDown*/, bool rmbDown, int modifierKeys) override;
 
 	void resetView() override;
 
