@@ -1,5 +1,6 @@
 #include "globalincs/pstypes.h"
 #include "io/key.h"
+#include "io/mouse.h"
 #include "lab/renderer/lab_cameras.h"
 #include "lab/labv2_internal.h"
 
@@ -8,15 +9,23 @@ LabCamera::~LabCamera() {
 	cam_delete(FS_camera);
 }
 
-void OrbitCamera::handleInput(int dx, int dy, bool, bool rmbDown, int modifierKeys) {
-	if (dx == 0 && dy == 0)
+void OrbitCamera::handleInput(int dx, int dy, int dz, bool, bool rmbDown, int modifierKeys) {
+	if (dx == 0 && dy == 0 && dz == 0)
 		return;
 
+	if (dz > 0) {
+		for (int i = 0; i < dz; ++i) {
+			distance *= 0.9f;
+		}
+	} else if (dz < 0) {
+		for (int i = 0; i < -dz; ++i) {
+			distance *= 1.1f;
+		}
+	}
+	CLAMP(distance, 1.0f, 10000000.0f);
+
 	if (rmbDown) {
-		if (modifierKeys & KEY_ALTED) {
-			distance *= 1.0f + (dy / 200.0f);
-			CLAMP(distance, 1.0f, 10000000.0f);
-		} else if (modifierKeys & KEY_SHIFTED) {
+		if (modifierKeys & KEY_SHIFTED) {
 			const float pan_factor = distance / 500.0f;
 
 			vec3d camera_offset;

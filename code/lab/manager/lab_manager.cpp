@@ -123,9 +123,10 @@ void LabManager::onFrame(float frametime) {
 
 	int key = game_check_key();
 
-	int dx, dy;
+	int dx, dy, dz;
 	mouse_get_delta(&dx, &dy);
-	Renderer->getCurrentCamera()->handleInput(dx, dy, mouse_down(MOUSE_LEFT_BUTTON) != 0, mouse_down(MOUSE_RIGHT_BUTTON) != 0, key_get_shift_status());
+	mouse_get_wheel_delta(nullptr, &dz);
+	Renderer->getCurrentCamera()->handleInput(dx, dy, dz, mouse_down(MOUSE_LEFT_BUTTON) != 0, mouse_down(MOUSE_RIGHT_BUTTON) != 0, key_get_shift_status());
 
 	if (!Renderer->getCurrentCamera()->handlesObjectPlacement()) {
 		if (mouse_down(MOUSE_LEFT_BUTTON)) {
