@@ -13,13 +13,16 @@ void OrbitCamera::handleInput(int dx, int dy, bool, bool rmbDown, int modifierKe
 		return;
 
 	if (rmbDown) {
-		if (modifierKeys & KEY_SHIFTED) {
+		if (modifierKeys & KEY_ALTED) {
 			distance *= 1.0f + (dy / 200.0f);
 			CLAMP(distance, 1.0f, 10000000.0f);
-		}
-		else {
-			theta += dx / 100.0f;
-			phi += dy / 100.0f;
+		} else if (modifierKeys & KEY_SHIFTED) {
+			const float pan_factor = distance / 500.0f;
+			pan_offset.xyz.x += dx * pan_factor;
+			pan_offset.xyz.y += dy * pan_factor;
+		} else {
+			theta -= dx / 100.0f;
+			phi -= dy / 100.0f;
 
 			CLAMP(phi, 0.01f, PI - 0.01f);
 		}
@@ -33,6 +36,9 @@ void OrbitCamera::displayedObjectChanged() {
 
 	if (getLabManager()->CurrentObject != -1) {
 		object* obj = &Objects[getLabManager()->CurrentObject];
+
+		// Reset camera panning
+		pan_offset = vmd_zero_vector;
 		
 		// Ships and Missiles use the object radius to get a camera distance
 		distance = obj->radius * distance_multiplier;
@@ -75,9 +81,10 @@ void OrbitCamera::updateCamera() {
 			vm_vec_copy_normalize(&forward, &obj->orient.vec.fvec);
 			vm_vec_scale_add2(&target, &forward, wip->laser_length * 0.5f);
 		}
-		
-		vm_vec_add2(&new_position, &target);
 	}
+
+	vm_vec_add2(&target, &pan_offset);
+	vm_vec_add2(&new_position, &target);
 
 	cam->set_position(&new_position);
 
