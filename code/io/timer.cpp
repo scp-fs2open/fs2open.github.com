@@ -489,6 +489,9 @@ bool timestamp_elapsed(int stamp) {
 	if (stamp == 0) {
 		return false;
 	}
+	if (stamp == 1) {
+		return true;
+	}
 
 	return timestamp_ms() >= stamp;
 }
@@ -539,6 +542,9 @@ bool ui_timestamp_elapsed_last_frame(UI_TIMESTAMP ui_stamp) {
 
 bool timestamp_elapsed_safe(int a, int b) {
 	if (a == 0) {
+		return false;
+	}
+	if (a == 1) {
 		return true;
 	}
 
