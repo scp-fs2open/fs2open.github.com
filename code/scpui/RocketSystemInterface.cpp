@@ -56,8 +56,8 @@ bool RocketSystemInterface::LogMessage(Rocket::Core::Log::Type type, const Rocke
 void RocketSystemInterface::ActivateKeyboard()
 {
 	// TODO: Maybe extend libRocket to expose where the input currently is
-	SDL_StartTextInput();
+	SDL_StartTextInput(os::getSDLMainWindow());
 }
-void RocketSystemInterface::DeactivateKeyboard() { SDL_StopTextInput(); }
+void RocketSystemInterface::DeactivateKeyboard() { SDL_StopTextInput(os::getSDLMainWindow()); }
 
 } // namespace scpui

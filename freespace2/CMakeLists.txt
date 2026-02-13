@@ -31,11 +31,6 @@ TARGET_LINK_LIBRARIES(Freespace2 code)
 TARGET_LINK_LIBRARIES(Freespace2 platform)
 TARGET_LINK_LIBRARIES(Freespace2 compiler)
 
-IF(WIN32)
-	# Link sdl main only here as it interferes with fred
-	TARGET_LINK_LIBRARIES(Freespace2 sdlmain)
-ENDIF(WIN32)
-
 if(FSO_BUILD_WITH_OPENGL_DEBUG)
 	add_definitions(-DFS_OPENGL_DEBUG)
 endif()
