@@ -5695,7 +5695,7 @@ void game_leave_state( int old_state, int new_state )
 			break;
 
 		case GS_STATE_LAB:
-			lab_close();
+			lab_close(new_state != GS_STATE_OPTIONS_MENU);
 			// restore default cursor and enable it --wookieejedi
 			if (!Is_standalone) {
 				io::mouse::Cursor* cursor = io::mouse::CursorManager::get()->loadCursor("cursor", true);
