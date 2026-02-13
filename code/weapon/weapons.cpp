@@ -2841,6 +2841,26 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		if (optional_string("+Missile Detonation Radius:"))
 			stuff_float(&wip->cm_detonation_rad);
 
+		if (optional_string("+Launch Vector:")) {
+			stuff_vec3d(&wip->cm_launch_vec);
+		}
+
+		if (optional_string("+Launch Speed:")) {
+			stuff_float(&wip->cm_launch_speed);
+			if (wip->cm_launch_speed < 0) {
+				Warning(LOCATION, "Countermeasure launch speed for weapon \'%s\' should be non-negative. Value will not be used.", wip->name);
+				wip->cm_launch_speed = 25.0f;
+			}
+		}
+
+		if (optional_string("+Launch Variance:")) {
+			stuff_float(&wip->cm_launch_variance);
+			if (wip->cm_launch_variance < 0) {
+				Warning(LOCATION, "Countermeasure launch variance for weapon \'%s\' should be non-negative. Value will not be used.", wip->name);
+				wip->cm_launch_variance = 2.0f;
+			}
+		}
+
 		if (optional_string("+Single Missile Kill:"))
 			stuff_boolean(&wip->cm_kill_single);
 
@@ -9682,6 +9702,9 @@ void weapon_info::reset()
 	this->cm_heat_effectiveness = 1.0f;
 	this->cm_effective_rad = MAX_CMEASURE_TRACK_DIST;
 	this->cm_detonation_rad = CMEASURE_DETONATE_DISTANCE;
+	this->cm_launch_vec = {{{0.0f, 0.0f, -1.0f}}};
+	this->cm_launch_speed = 25.0f;
+	this->cm_launch_variance = 2.0f;
 	this->cm_kill_single = false;
 	this->cmeasure_timer_interval = 0;
 	this->cmeasure_firewait = CMEASURE_WAIT;
