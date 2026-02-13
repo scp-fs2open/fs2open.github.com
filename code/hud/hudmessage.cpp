@@ -497,7 +497,7 @@ void HUD_fixed_printf(float duration, color col, const char *format, ...)
 	}
 
 	va_start(args, format);
-	vsnprintf(tmp, sizeof(tmp)-1, format, args);
+	vsnprintf(tmp, sizeof(tmp), format, args);
 	va_end(args);
 	tmp[sizeof(tmp)-1] = '\0';
 
@@ -553,7 +553,7 @@ void HUD_printf(const char *format, ...)
 	}
 
 	va_start(args, format);
-	vsnprintf(tmp, sizeof(tmp)-1, format, args);
+	vsnprintf(tmp, sizeof(tmp), format, args);
 	va_end(args);
 	tmp[sizeof(tmp)-1] = '\0';
 
@@ -579,7 +579,7 @@ void HUD_sourced_printf(int source, const char *format, ...)
 	}
 	
 	va_start(args, format);
-	vsnprintf(tmp, sizeof(tmp)-1, format, args);
+	vsnprintf(tmp, sizeof(tmp), format, args);
 	va_end(args);
 	tmp[sizeof(tmp)-1] = '\0';
 

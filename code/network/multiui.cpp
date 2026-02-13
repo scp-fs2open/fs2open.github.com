@@ -4457,7 +4457,7 @@ void multi_create_list_load_missions()
 	Multi_create_mission_list.clear();
 
 	memset( wild_card, 0, sizeof(wild_card) );
-	snprintf(wild_card, sizeof(wild_card) - 1, "*%s", FS_MISSION_FILE_EXT);
+	snprintf(wild_card, sizeof(wild_card), "*%s", FS_MISSION_FILE_EXT);
 
 	file_list = (char**) vm_malloc( sizeof(char*) * 1024 );
 
@@ -4550,7 +4550,7 @@ void multi_create_list_load_campaigns()
 	Multi_create_campaign_list.clear();
 
 	memset( wild_card, 0, sizeof(wild_card) );
-	snprintf(wild_card, sizeof(wild_card) - 1, "*%s", FS_CAMPAIGN_FILE_EXT);
+	snprintf(wild_card, sizeof(wild_card), "*%s", FS_CAMPAIGN_FILE_EXT);
 
 	file_list = (char**) vm_malloc( sizeof(char*) * 1024 );
 

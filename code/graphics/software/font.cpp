@@ -810,7 +810,7 @@ void gr_printf(int x, int y, const char * format, ...)
 	if (!FontManager::isReady()) return;
 
 	va_start(args, format);
-	vsnprintf(grx_printf_text, sizeof(grx_printf_text) - 1, format, args);
+	vsnprintf(grx_printf_text, sizeof(grx_printf_text), format, args);
 	va_end(args);
 	grx_printf_text[sizeof(grx_printf_text) - 1] = '\0';
 
@@ -824,7 +824,7 @@ void gr_printf_menu(int x, int y, const char * format, ...)
 	if (!FontManager::isReady()) return;
 
 	va_start(args, format);
-	vsnprintf(grx_printf_text, sizeof(grx_printf_text) - 1, format, args);
+	vsnprintf(grx_printf_text, sizeof(grx_printf_text), format, args);
 	va_end(args);
 	grx_printf_text[sizeof(grx_printf_text) - 1] = '\0';
 
@@ -838,7 +838,7 @@ void gr_printf_menu_zoomed(int x, int y, const char * format, ...)
 	if (!FontManager::isReady()) return;
 
 	va_start(args, format);
-	vsnprintf(grx_printf_text, sizeof(grx_printf_text) - 1, format, args);
+	vsnprintf(grx_printf_text, sizeof(grx_printf_text), format, args);
 	va_end(args);
 	grx_printf_text[sizeof(grx_printf_text) - 1] = '\0';
 
@@ -852,7 +852,7 @@ void gr_printf_no_resize(int x, int y, const char * format, ...)
 	if (!FontManager::isReady()) return;
 
 	va_start(args, format);
-	vsnprintf(grx_printf_text, sizeof(grx_printf_text) - 1, format, args);
+	vsnprintf(grx_printf_text, sizeof(grx_printf_text), format, args);
 	va_end(args);
 	grx_printf_text[sizeof(grx_printf_text) - 1] = '\0';
 
