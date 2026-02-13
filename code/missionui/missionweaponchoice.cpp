@@ -823,6 +823,10 @@ void draw_3d_overhead_view(int model_num,
 		Glowpoint_use_depth_buffer = false;
 
 		model_clear_instance(model_num);
+		int model_instance = model_create_instance(model_objnum_special::OBJNUM_NONE, model_num);
+		if (model_instance >= 0) {
+			model_set_up_techroom_instance(sip, model_instance);
+		}
 		polymodel* pm = model_get(model_num);
 
 		if (sip->replacement_textures.size() > 0) {
@@ -842,7 +846,7 @@ void draw_3d_overhead_view(int model_num,
 
 			render_info.set_flags(MR_NO_TEXTURING | MR_NO_LIGHTING | MR_AUTOCENTER);
 
-			model_render_immediate(&render_info, model_num, &object_orient, &vmd_zero_vector);
+			model_render_immediate(&render_info, model_num, model_instance, &object_orient, &vmd_zero_vector);
 			shadows_end_render();
 			gr_set_clip(x1, y1, x2, y2, resize_mode);
 		}
@@ -857,13 +861,16 @@ void draw_3d_overhead_view(int model_num,
 			render_info.set_team_color(tc, "none", 0, 0);
 		}
 
-		model_render_immediate(&render_info, model_num, &object_orient, &vmd_zero_vector);
+		model_render_immediate(&render_info, model_num, model_instance, &object_orient, &vmd_zero_vector);
 
 		Glowpoint_use_depth_buffer = true;
 
 		batching_render_all();
 
 		shadow_end_frame();
+		if (model_instance >= 0) {
+			model_delete_instance(model_instance);
+		}
 
 		// NOW render the lines for weapons
 		gr_reset_clip();
@@ -2832,6 +2839,7 @@ void weapon_select_do(float frametime)
 
 		model_render_params render_info;
 		draw_model_rotating(&render_info, 
+			-1,
 			modelIdx,
 			weapon_ani_coords[0],
 			weapon_ani_coords[1],

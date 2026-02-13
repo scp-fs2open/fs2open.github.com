@@ -1461,6 +1461,7 @@ void ship_select_do(float frametime)
 
 			draw_model_rotating(
 				&render_info, 
+				Selected_ss_class,
 				ShipSelectModelNum,
 				Ship_anim_coords[gr_screen.res][0],
 				Ship_anim_coords[gr_screen.res][1],

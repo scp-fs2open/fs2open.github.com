@@ -235,7 +235,7 @@ int restore_wss_data(ubyte *data);
 
 class ship_info;
 void draw_model_icon(int model_id, uint64_t flags, float closeup_zoom, int x1, int x2, int y1, int y2, ship_info* sip = NULL, int resize_mode = GR_RESIZE_FULL, const vec3d *closeup_pos = &vmd_zero_vector);
-void draw_model_rotating(model_render_params *render_info, int model_id, int x1, int y1, int x2, int y2, float *rotation_buffer, const vec3d *closeup_pos=nullptr, float closeup_zoom = .65f, float rev_rate = REVOLUTION_RATE, uint64_t flags = MR_AUTOCENTER | MR_NO_FOGGING, int resize_mode=GR_RESIZE_FULL, select_effect_params effect_params = select_effect_params{});
+void draw_model_rotating(model_render_params *render_info, int ship_class, int model_id, int x1, int y1, int x2, int y2, float *rotation_buffer, const vec3d *closeup_pos=nullptr, float closeup_zoom = .65f, float rev_rate = REVOLUTION_RATE, uint64_t flags = MR_AUTOCENTER | MR_NO_FOGGING, int resize_mode=GR_RESIZE_FULL, select_effect_params effect_params = select_effect_params{});
 
 void common_set_team_pointers(int team);
 void common_reset_team_pointers();
