@@ -33,6 +33,7 @@
 #include "mission/missioncampaign.h"
 #include "mission/missiongoals.h"
 #include "mission/missionmessage.h"
+#include "mission/missiontraining.h"
 #include "missionui/chatbox.h"
 #include "missionui/missionbrief.h"
 #include "missionui/missionscreencommon.h"
@@ -311,6 +312,7 @@ int Brief_max_line_width[GR_NUM_RESOLUTIONS] = {
 int brief_setup_closeup(brief_icon *bi, bool api_access = false);
 void brief_maybe_blit_scene_cut(float frametime);
 void brief_transition_reset();
+void brief_replace_stage_text(brief_stage &stage);
 
 const char *brief_tooltip_handler(const char *str)
 {
@@ -800,10 +802,7 @@ void brief_compact_stages()
 	num = 0;
 	while ( num < Briefing->num_stages ) {
 		if ( eval_sexp(Briefing->stages[num].formula) ) {
-			// Goober5000 - replace any variables (probably persistent variables) with their values
-			sexp_replace_variable_names_with_values(Briefing->stages[num].text);
-			// karajorma/jg18 - replace container references as well
-			sexp_container_replace_refs_with_values(Briefing->stages[num].text);
+			brief_replace_stage_text(Briefing->stages[num]);
 		} else {
 			// clean up unused briefing stage
 			Briefing->stages[num].text = "";
@@ -2231,4 +2230,14 @@ int brief_only_allow_briefing()
 	}
 
 	return 0;
+}
+
+// Goober5000 - replace any variables (probably persistent variables) with their values
+// karajorma/jg18 - replace container references as well
+// Goober5000 - replace keybinds also
+void brief_replace_stage_text(brief_stage &stage)
+{
+	sexp_replace_variable_names_with_values(stage.text);
+	sexp_container_replace_refs_with_values(stage.text);
+	message_translate_tokens(stage.text);
 }

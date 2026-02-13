@@ -13415,9 +13415,9 @@ void sexp_hud_set_xstr(int n)
 	lcl_ext_localize(xstr, translated_string);
 
 	// Now replace tokens and variables
-	string_replace_tokens_with_keys(translated_string);
 	sexp_replace_variable_names_with_values(translated_string);
 	sexp_container_replace_refs_with_values(translated_string);
+	message_translate_tokens(translated_string);
 
 	HudGauge* cg = hud_get_custom_gauge(gaugename);
 	if (cg) {
@@ -13437,9 +13437,9 @@ void sexp_hud_set_message(int n)
 		if ( !stricmp(text, Messages[i].name) ) {
 			message = Messages[i].message;
 
-			string_replace_tokens_with_keys(message);
 			sexp_replace_variable_names_with_values(message);
 			sexp_container_replace_refs_with_values(message);
+			message_translate_tokens(message);
 
 			HudGauge* cg = hud_get_custom_gauge(gaugename);
 			if (cg) {
@@ -35520,11 +35520,13 @@ void sexp_modify_variable(const char *text, int index, bool sexp_callback)
 	Assert( !MULTIPLAYER_CLIENT );
 	const size_t maxCopyLen = TOKEN_LENGTH - 1;
 
-	if (strchr(text, '$') != nullptr)
+	if (strchr(text, '$') != nullptr || strchr(text, sexp_container::DELIM) != nullptr)
 	{
-		// we want to use the same variable substitution that's in messages etc.
+		// we want to use the same text substitution that's in messages etc.
 		SCP_string temp_text = text;
 		sexp_replace_variable_names_with_values(temp_text);
+		sexp_container_replace_refs_with_values(temp_text);
+		message_translate_tokens(temp_text);
 
 		if (temp_text.length() > maxCopyLen)
 			Warning(LOCATION, "String too long.  Only " SIZE_T_ARG " characters will be assigned to %s.\n\nOriginal string:\n%s", maxCopyLen, Sexp_variables[index].variable_name, temp_text.c_str());

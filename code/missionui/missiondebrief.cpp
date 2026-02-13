@@ -2606,7 +2606,6 @@ void debrief_replace_stage_text(debrief_stage &stage)
 	sexp_replace_variable_names_with_values(stage.recommendation_text);
 	sexp_container_replace_refs_with_values(stage.text);
 	sexp_container_replace_refs_with_values(stage.recommendation_text);
-
-	stage.text = message_translate_tokens(stage.text.c_str());
-	stage.recommendation_text = message_translate_tokens(stage.recommendation_text.c_str());
+	message_translate_tokens(stage.text);
+	message_translate_tokens(stage.recommendation_text);
 }
