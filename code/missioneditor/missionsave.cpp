@@ -5122,9 +5122,9 @@ int Fred_mission_save::save_wings()
 	return err;
 }
 
-int CFred_mission_save::save_props()
+int Fred_mission_save::save_props()
 {
-	if (Mission_save_format != FSO_FORMAT_RETAIL) {
+	if (save_config.save_format != MissionFormat::RETAIL) {
 		fred_parse_flag = 0;
 		required_string_fred("#Props");
 		parse_comments(2);
@@ -5165,6 +5165,5 @@ int CFred_mission_save::save_props()
 	}
 
 	fso_comment_pop(true);
-	//Assert(count == Num_props);
 	return err;
 }
