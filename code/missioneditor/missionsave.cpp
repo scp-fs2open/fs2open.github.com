@@ -3066,53 +3066,53 @@ void Fred_mission_save::save_mission_internal(const char* pathname)
 	// Goober5000
 	convert_special_tags_to_retail();
 
-	if (save_mission_info())
+	if (save_mission_info()) {
 		err = -2;
-	else if (save_plot_info())
+	} else if (save_plot_info()) {
 		err = -3;
-	else if (save_variables())
+	} else if (save_variables()) {
 		err = -3;
-	else if (save_containers())
+	} else if (save_containers()) {
 		err = -3;
-	//	else if (save_briefing_info())
-	//		err = -4;
-	else if (save_cutscenes())
+		//	} else if (save_briefing_info()) {
+		//		err = -4;
+	} else if (save_cutscenes()) {
 		err = -4;
-	else if (save_fiction())
+	} else if (save_fiction()) {
 		err = -3;
-	else if (save_cmd_briefs())
+	} else if (save_cmd_briefs()) {
 		err = -4;
-	else if (save_briefing())
+	} else if (save_briefing()) {
 		err = -4;
-	else if (save_debriefing())
+	} else if (save_debriefing()) {
 		err = -5;
-	else if (save_players())
+	} else if (save_players()) {
 		err = -6;
-	else if (save_objects())
+	} else if (save_objects()) {
 		err = -7;
-	else if (save_wings())
+	} else if (save_wings()) {
 		err = -8;
-	else if (save_props())
+	} else if (save_props()) {
 		err = -18;
-	else if (save_events())
+	} else if (save_events()) {
 		err = -9;
-	else if (save_goals())
+	} else if (save_goals()) {
 		err = -10;
-	else if (save_waypoints())
+	} else if (save_waypoints()) {
 		err = -11;
-	else if (save_messages())
+	} else if (save_messages()) {
 		err = -12;
-	else if (save_reinforcements())
+	} else if (save_reinforcements()) {
 		err = -13;
-	else if (save_bitmaps())
+	} else if (save_bitmaps()) {
 		err = -14;
-	else if (save_asteroid_fields())
+	} else if (save_asteroid_fields()) {
 		err = -15;
-	else if (save_music())
+	} else if (save_music()) {
 		err = -16;
-	else if (save_custom_data())
+	} else if (save_custom_data()) {
 		err = -17;
-	else {
+	} else {
 		required_string_fred("#End");
 		parse_comments(2);
 		token_found = NULL;

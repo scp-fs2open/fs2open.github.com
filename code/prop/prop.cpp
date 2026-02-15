@@ -90,7 +90,7 @@ prop* prop_id_lookup(int id)
 	return &Props[id].value();
 }
 
-int prop_category_id_lookup(SCP_string category)
+int prop_category_id_lookup(const SCP_string& category)
 {
 	for (size_t i = 0; i < Prop_categories.size(); i++) {
 		if (!stricmp(category.c_str(), Prop_categories[i].name.c_str())) {
@@ -98,16 +98,6 @@ int prop_category_id_lookup(SCP_string category)
 		}
 	}
 	return -1;
-}
-
-prop_category* prop_get_category(const SCP_string& name)
-{
-	for (auto& category : Prop_categories) {
-		if (lcase_equal(name, category.name)) {
-			return &category;
-		}
-	}
-	return nullptr;
 }
 
 prop_category* prop_get_category(int index)

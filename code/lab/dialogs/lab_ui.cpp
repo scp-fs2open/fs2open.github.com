@@ -101,7 +101,7 @@ void LabUi::build_prop_subtype_list()
 			int prop_idx = 0;
 
 			for (auto const& class_def : Prop_info) {
-				if (lcase_equal(prop_get_category(class_def.category_index)->name.c_str(), propc.name)) {
+				if (lcase_equal(prop_get_category(class_def.category_index)->name, propc.name)) {
 					SCP_string node_label;
 					sprintf(node_label, "##PropClassIndex%i", prop_idx);
 					TreeNodeEx(node_label.c_str(),
