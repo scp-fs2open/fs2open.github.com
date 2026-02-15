@@ -2993,21 +2993,21 @@ int Fred_mission_save::save_mission_info()
 	// sound environment (EFX/EAX) - taylor
 	sound_env* m_env = &The_mission.sound_environment;
 	if ((m_env->id >= 0) && (m_env->id < static_cast<int>(EFX_presets.size()))) {
-		EFXREVERBPROPERTIES* prop = &EFX_presets[m_env->id];
+		EFXREVERBPROPERTIES* efx_prop = &EFX_presets[m_env->id];
 
 		fso_comment_push(";;FSO 3.6.12;;");
 
-		fout_version("\n\n$Sound Environment: %s", prop->name.c_str());
+		fout_version("\n\n$Sound Environment: %s", efx_prop->name.c_str());
 
-		if (m_env->volume != prop->flGain) {
+		if (m_env->volume != efx_prop->flGain) {
 			fout_version("\n+Volume: %f", m_env->volume);
 		}
 
-		if (m_env->damping != prop->flDecayHFRatio) {
+		if (m_env->damping != efx_prop->flDecayHFRatio) {
 			fout_version("\n+Damping: %f", m_env->damping);
 		}
 
-		if (m_env->decay != prop->flDecayTime) {
+		if (m_env->decay != efx_prop->flDecayTime) {
 			fout_version("\n+Decay Time: %f", m_env->decay);
 		}
 
