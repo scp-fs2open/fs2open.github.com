@@ -559,7 +559,6 @@ SCP_vector<std::pair<SCP_string, bool>> ShipEditorDialogModel::getArrivalPaths()
 		} else {
 			allowed = (m_path_mask & (1 << i)) != 0;
 		}
-		m_path_list.emplace_back(name, allowed);
 	}
 	return m_path_list;
 }

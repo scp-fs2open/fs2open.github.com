@@ -302,9 +302,11 @@ void ShipEditorDialog::updateArrival(bool overwrite)
 				// determine if this ship has a docking bay
 				pm = model_get(Ship_info[Ships[objp->instance].ship_info_index].model_num);
 				Assert(pm);
-				if (pm->ship_bay && (pm->ship_bay->num_paths > 0)) {
-					auto ship = get_ship_from_obj(objp);
-					ui->arrivalTargetCombo->addItem(Ships[ship].ship_name, QVariant(ship));
+				if (pm) {
+					if (pm->ship_bay && (pm->ship_bay->num_paths > 0)) {
+						auto ship = get_ship_from_obj(objp);
+						ui->arrivalTargetCombo->addItem(Ships[ship].ship_name, QVariant(ship));
+					}
 				}
 			}
 		}
@@ -363,10 +365,13 @@ void ShipEditorDialog::updateDeparture(bool overwrite)
 			// determine if this ship has a docking bay
 			pm = model_get(Ship_info[Ships[objp->instance].ship_info_index].model_num);
 			Assert(pm);
-			if (pm->ship_bay && (pm->ship_bay->num_paths > 0)) {
-				auto ship = get_ship_from_obj(objp);
-				ui->departureTargetCombo->addItem(Ships[ship].ship_name, QVariant(ship));
+			if (pm != nullptr) {
+				if (pm->ship_bay && (pm->ship_bay->num_paths > 0)) {
+					auto ship = get_ship_from_obj(objp);
+					ui->departureTargetCombo->addItem(Ships[ship].ship_name, QVariant(ship));
+				}
 			}
+
 		}
 	}
 	ui->departureTargetCombo->setCurrentIndex(ui->departureTargetCombo->findData(_model->getDepartureTarget()));
