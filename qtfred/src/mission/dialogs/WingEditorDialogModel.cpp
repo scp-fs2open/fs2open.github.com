@@ -4,6 +4,7 @@
 #include "iff_defs/iff_defs.h"
 #include "mission/missionhotkey.h"
 #include "mission/missionparse.h"
+#include "missioneditor/common.h"
 #include <QObject>
 #include <QMessageBox>
 
@@ -348,7 +349,7 @@ std::vector<std::pair<int, std::string>> WingEditorDialogModel::getArrivalTarget
 		char buf[NAME_LENGTH + 15];
 		for (int restrict_to_players = 0; restrict_to_players < 2; ++restrict_to_players) {
 			for (int iff = 0; iff < (int)::Iff_info.size(); ++iff) {
-				stuff_special_arrival_anchor_name(buf, iff, restrict_to_players, 0);
+				stuff_special_arrival_anchor_name(buf, iff, restrict_to_players, false);
 				items.emplace_back(get_special_anchor(buf), buf);
 			}
 		}

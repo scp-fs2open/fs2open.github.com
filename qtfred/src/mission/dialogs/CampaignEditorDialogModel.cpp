@@ -2,7 +2,7 @@
 
 #include "cfile/cfile.h"
 #include "mission/missionparse.h"
-#include "../src/mission/missionsave.h"
+#include "missioneditor/campaignsave.h"
 #include "parse/sexp.h"
 #include "ship/ship.h"
 #include "weapon/weapon.h"
@@ -51,7 +51,7 @@ void CampaignEditorDialogModel::initializeData(const char* filename)
 		// Copy simple properties from the global Campaign struct
 		m_campaign_filename = Campaign.filename;
 		m_campaign_name = Campaign.name;
-		m_campaign_descr = Campaign.desc ? Campaign.desc : "";
+		m_campaign_descr = Campaign.description;
 		m_campaign_type = Campaign.type;
 		m_num_players = Campaign.num_players;
 		m_flags = Campaign.flags;
@@ -256,7 +256,7 @@ void CampaignEditorDialogModel::commitWorkingCopyToGlobal()
 
 	// Copy simple properties
 	strcpy_s(Campaign.name, m_campaign_name.c_str());
-	Campaign.desc = m_campaign_descr.empty() ? nullptr : strdup(m_campaign_descr.c_str());
+	Campaign.description = m_campaign_descr;
 	Campaign.type = m_campaign_type;
 	Campaign.num_players = m_num_players;
 	Campaign.flags = m_flags;
@@ -461,19 +461,83 @@ void CampaignEditorDialogModel::saveCampaign(const SCP_string& filename)
 	// Copy our working data to the global Campaign struct.
 	commitWorkingCopyToGlobal();
 
-	// Call the global save function.
-	CFred_mission_save mission_saver;
-	if (mission_saver.save_campaign_file(target_filename.c_str())) {
-		// Save failed, clean up the global.
-		clearCampaignGlobal();
-		return;
+	Fred_campaign_save save;
+
+	// This if/else is not strictly necessary as the underlying enum values match
+	// the Mission_save_format values but it is clearer to read and more robust against
+	// future changes.
+	if (m_save_format == CampaignFormat::Retail) {
+		save.set_save_format(MissionFormat::RETAIL);
+	} else if (m_save_format == CampaignFormat::CompatibilityMode) {
+		save.set_save_format(MissionFormat::COMPATIBILITY_MODE);
+	} else {
+		save.set_save_format(MissionFormat::STANDARD);
 	}
 
-	// On success, update our internal state.
-	modify(m_campaign_filename, target_filename);
+	// Create a lookup map for mission indices by filename for efficient lookup.
+	std::map<SCP_string, int> mission_indices;
+	for (int i = 0; i < static_cast<int>(m_missions.size()); ++i) {
+		mission_indices[m_missions[i].filename] = i;
+	}
 
-	// Clean up the global struct now that the save is complete.
-	clearCampaignGlobal();
+	SCP_vector<campaign_link> links;
+	// Iterate through each mission to find its outgoing branches.
+	for (int i = 0; i < static_cast<int>(m_missions.size()); ++i) {
+		const auto& mission = m_missions[i];
+
+		// Iterate through each branch of the current mission.
+		for (const auto& branch : mission.branches) {
+
+			// Find the 'to' mission index using our lookup map.
+			int to_index = -1;
+			if (!branch.next_mission_name.empty()) {
+				auto it = mission_indices.find(branch.next_mission_name);
+				if (it != mission_indices.end()) {
+					to_index = it->second;
+				}
+			}
+
+			campaign_link link;
+			link.from = i;
+			link.to = to_index;
+			link.sexp = m_tree_ops.saveSexp(branch.sexp_formula);
+			link.node = branch.sexp_formula;
+			link.is_mission_loop = branch.is_loop;
+			link.is_mission_fork = branch.is_fork;
+
+			// The descriptive text fields only apply to special (loop/fork) branches.
+			if (branch.is_loop || branch.is_fork) {
+				link.mission_branch_txt =
+					branch.loop_description.empty() ? nullptr : const_cast<char*>(branch.loop_description.c_str());
+				link.mission_branch_brief_anim =
+					branch.loop_briefing_anim.empty() ? nullptr : const_cast<char*>(branch.loop_briefing_anim.c_str());
+				link.mission_branch_brief_sound = branch.loop_briefing_sound.empty()
+													  ? nullptr
+													  : const_cast<char*>(branch.loop_briefing_sound.c_str());
+			} else {
+				link.mission_branch_txt = nullptr;
+				link.mission_branch_brief_anim = nullptr;
+				link.mission_branch_brief_sound = nullptr;
+			}
+
+			links.emplace_back(link);
+		}
+	}
+
+	bool failure = save.save_campaign_file(target_filename.c_str(), links);
+
+	if (failure) {
+		_viewport->dialogProvider->showButtonDialog(DialogType::Error,
+			"Save Error",
+			"An error occurred while saving the campaign.",
+			{DialogButton::Ok});
+	}else{
+		// On success, update our internal state.
+		modify(m_campaign_filename, target_filename);
+
+		// Clean up the global struct now that the save is complete.
+		clearCampaignGlobal();
+	}
 }
 
 bool CampaignEditorDialogModel::checkValidity()

@@ -26,6 +26,7 @@
 #include "mission/missionmessage.h"
 #include "mission/missioncampaign.h"
 #include "mission/missionparse.h"
+#include "missioneditor/common.h"
 #include "CampaignEditorDlg.h"
 #include "hud/hudsquadmsg.h"
 #include "IgnoreOrdersDlg.h"
@@ -6597,7 +6598,7 @@ sexp_list_item *sexp_tree::get_listing_opf_arrival_anchor_all()
 		for (i = 0; i < (int)Iff_info.size(); i++)
 		{
 			char tmp[NAME_LENGTH + 15];
-			stuff_special_arrival_anchor_name(tmp, i, restrict_to_players, 0);
+			stuff_special_arrival_anchor_name(tmp, i, restrict_to_players, false);
 
 			head.add_data(tmp);
 		}

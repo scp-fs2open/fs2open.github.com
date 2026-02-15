@@ -27,6 +27,7 @@
 #include "playerman/player.h"				// used for the max_keyed_target stuff
 #include "IgnoreOrdersDlg.h"
 #include "mission/missionparse.h"
+#include "missioneditor/common.h"
 #include "model/model.h"
 #include "starfield/starfield.h"
 #include "jumpnode/jumpnode.h"
@@ -809,7 +810,7 @@ void CShipEditorDlg::initialize_data(int full_update)
 		{
 			// figure out what the box represents this as
 			char tmp[NAME_LENGTH + 15];
-			stuff_special_arrival_anchor_name(tmp, m_arrival_target, 0);
+			stuff_special_arrival_anchor_name(tmp, m_arrival_target, false);
 
 			// find it in the box
 			m_arrival_target = box->FindStringExact(-1, tmp);

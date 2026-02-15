@@ -17,7 +17,7 @@
 #include "Management.h"
 #include "MainFrm.h"
 #include "FREDView.h"
-#include "MissionSave.h"
+#include "missioneditor/campaignsave.h"
 #include "InitialShips.h"
 #include "mission/missionparse.h"
 #include "parse/parselo.h"
@@ -159,7 +159,19 @@ void campaign_tree_wnd::OnDestroy()
 
 void campaign_tree_wnd::OnCpgnFileSave() 
 {
-	CFred_mission_save save;
+	Fred_campaign_save save;
+
+	// This if/else is not strictly necessary as the underlying enum values match
+	// the Mission_save_format values but it is clearer to read and more robust against
+	// future changes.
+	if (Mission_save_format == FSO_FORMAT_RETAIL) {
+		save.set_save_format(MissionFormat::RETAIL);
+	} else if (Mission_save_format == FSO_FORMAT_COMPATIBILITY_MODE) {
+		save.set_save_format(MissionFormat::COMPATIBILITY_MODE);
+	} else {
+		save.set_save_format(MissionFormat::STANDARD);
+	}
+
 
 	Campaign_tree_formp->update();
 	if (!Campaign.filename[0]) {
@@ -190,7 +202,28 @@ void campaign_tree_wnd::OnCpgnFileSave()
 	*/	
 
 	auto full_path = (LPCSTR)Campaign_tree_formp->GetCurrentCampaignPath();
-	if (save.save_campaign_file(full_path))
+
+	Campaign_tree_formp->save_tree(); // flush all changes so they get saved.
+	Campaign_tree_viewp->sort_elements();
+
+	SCP_vector<campaign_link> links;
+	for (int i = 0; i < Total_links; i++) {
+		campaign_link link{
+			Links[i].from,
+			Links[i].to,
+			Links[i].sexp,
+			Links[i].node,
+			Links[i].is_mission_loop,
+			Links[i].is_mission_fork,
+			Links[i].mission_branch_txt,
+			Links[i].mission_branch_brief_anim,
+			Links[i].mission_branch_brief_sound
+		};
+
+		links.emplace_back(link);
+	}
+
+	if (save.save_campaign_file(full_path, links))
 	{
 		MessageBox("An error occured while saving!", "Error", MB_OK | MB_ICONEXCLAMATION);
 		return;
@@ -203,7 +236,18 @@ void campaign_tree_wnd::OnCpgnFileSave()
 void campaign_tree_wnd::OnCpgnFileSaveAs() 
 {
 	const char *old_name = nullptr;
-	CFred_mission_save save;
+	Fred_campaign_save save;
+
+	// This if/else is not strictly necessary as the underlying enum values match
+	// the Mission_save_format values but it is clearer to read and more robust against
+	// future changes.
+	if (Mission_save_format == FSO_FORMAT_RETAIL) {
+		save.set_save_format(MissionFormat::RETAIL);
+	} else if (Mission_save_format == FSO_FORMAT_COMPATIBILITY_MODE) {
+		save.set_save_format(MissionFormat::COMPATIBILITY_MODE);
+	} else {
+		save.set_save_format(MissionFormat::STANDARD);
+	}
 
 	Campaign_tree_formp->update();
 	if (Campaign.filename[0])
@@ -227,7 +271,26 @@ void campaign_tree_wnd::OnCpgnFileSaveAs()
 		}
 
 		string_copy(Campaign.filename, name, MAX_FILENAME_LEN - 1);
-		if (save.save_campaign_file((LPCSTR)dlg.GetPathName()))
+
+		Campaign_tree_formp->save_tree(); // flush all changes so they get saved.
+		Campaign_tree_viewp->sort_elements();
+
+		SCP_vector<campaign_link> links;
+		for (int i = 0; i < Total_links; i++) {
+			campaign_link link{Links[i].from,
+				Links[i].to,
+				Links[i].sexp,
+				Links[i].node,
+				Links[i].is_mission_loop,
+				Links[i].is_mission_fork,
+				Links[i].mission_branch_txt,
+				Links[i].mission_branch_brief_anim,
+				Links[i].mission_branch_brief_sound};
+
+			links.emplace_back(link);
+		}
+
+		if (save.save_campaign_file((LPCSTR)dlg.GetPathName(), links))
 		{
 			MessageBox("An error occured while saving!", "Error", MB_OK | MB_ICONEXCLAMATION);
 			return;
@@ -248,7 +311,6 @@ void campaign_tree_wnd::OnCpgnFileNew()
 	Campaign.num_missions = 0;
 	Campaign.num_players = 0;
 	strcpy_s(Campaign.name, "Unnamed");
-	Campaign.desc = NULL;
 	Campaign_tree_viewp->free_links();
 	Campaign_tree_formp->initialize(true, true);
 	Campaign_modified = 0;

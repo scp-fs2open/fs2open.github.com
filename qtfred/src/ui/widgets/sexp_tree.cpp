@@ -22,6 +22,7 @@
 #include "mission/missionmessage.h"
 #include "mission/missioncampaign.h"
 #include "mission/missionparse.h"
+#include "missioneditor/common.h"
 #include "hud/hudsquadmsg.h"
 #include "stats/medals.h"
 #include "controlconfig/controlsconfig.h"
@@ -4482,7 +4483,7 @@ sexp_list_item* sexp_tree::get_listing_opf_arrival_anchor_all() {
 	for (restrict_to_players = 0; restrict_to_players < 2; restrict_to_players++) {
 		for (i = 0; i < (int)Iff_info.size(); i++) {
 			char tmp[NAME_LENGTH + 15];
-			stuff_special_arrival_anchor_name(tmp, i, restrict_to_players, 0);
+			stuff_special_arrival_anchor_name(tmp, i, restrict_to_players, false);
 
 			head.add_data(tmp);
 		}

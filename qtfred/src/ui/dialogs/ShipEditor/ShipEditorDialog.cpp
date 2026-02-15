@@ -4,6 +4,7 @@
 
 #include "iff_defs/iff_defs.h"
 #include "mission/missionmessage.h"
+#include "missioneditor/common.h"
 #include "mission/object.h"
 
 #include <globalincs/linklist.h>
@@ -261,7 +262,7 @@ void ShipEditorDialog::updateArrival(bool overwrite)
 		for (restrict_to_players = 0; restrict_to_players < 2; restrict_to_players++) {
 			for (size_t j = 0; j < Iff_info.size(); j++) {
 				char tmp[NAME_LENGTH + 15];
-				stuff_special_arrival_anchor_name(tmp, static_cast<int>(j), restrict_to_players, 0);
+				stuff_special_arrival_anchor_name(tmp, static_cast<int>(j), restrict_to_players, false);
 
 				ui->arrivalTargetCombo->addItem(tmp, QVariant(get_special_anchor(tmp)));
 			}

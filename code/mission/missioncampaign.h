@@ -116,7 +116,7 @@ class campaign
 public:
 	char	name[NAME_LENGTH];						// name of the campaign
 	char	filename[CF_MAX_PATHNAME_LENGTH];			// filename the campaign info is in
-	char	*desc;									// description of campaign
+	SCP_string description;                         // unlimited length description of campaign
 	int		type;									// type of campaign
 	int		flags;									// flags - Goober5000
 	int		num_missions;							// number of missions in the campaign
@@ -139,7 +139,7 @@ public:
 	SCP_map<SCP_string, SCP_string> custom_data;        // Custom data for the campaign
 
 	campaign()
-		: desc(nullptr), num_missions(0)
+		: num_missions(0)
 	{
 		name[0] = 0;
 		filename[0] = 0;
