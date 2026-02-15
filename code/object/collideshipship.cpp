@@ -1662,7 +1662,8 @@ int collide_prop_ship(obj_pair* pair)
 						scripting::hook_param("Prop", 'o', prop_objp),
 						scripting::hook_param("Ship", 'o', ship_objp),
 						scripting::hook_param("Hitpos", 'o', world_hit_pos),
-						scripting::hook_param("PropSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel && (prop_ship_hit_info.heavy == prop_objp))));						
+						scripting::hook_param("PropSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel && (prop_ship_hit_info.heavy == prop_objp)),
+						scripting::hook_param("ShipSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel && (prop_ship_hit_info.heavy == ship_objp))));
 			}
 
 			if (scripting::hooks::OnPropCollision->isActive()) {
@@ -1674,7 +1675,8 @@ int collide_prop_ship(obj_pair* pair)
 						scripting::hook_param("Ship", 'o', ship_objp),
 						scripting::hook_param("Prop", 'o', prop_objp),
 						scripting::hook_param("Hitpos", 'o', world_hit_pos),
-						scripting::hook_param("PropSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel && (prop_ship_hit_info.heavy == ship_objp))));
+						scripting::hook_param("PropSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel && (prop_ship_hit_info.heavy == prop_objp)),
+						scripting::hook_param("ShipSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel && (prop_ship_hit_info.heavy == ship_objp))));
 			}
 
 			if (!a_override && !b_override)
