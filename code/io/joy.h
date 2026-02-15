@@ -14,7 +14,6 @@
 #include "globalincs/pstypes.h"
 
 #include "libs/jansson.h"
-#include "SDL_joystick.h"
 
 // z64: Moved up here for compatibility. Bye bye, organization!
 const int JOY_NUM_BUTTONS = 128;	// Max number of buttons FSO can handle.  OS max may differ.
@@ -60,12 +59,12 @@ namespace io
 			 * This object will take ownership of the passed SDL handle and it will be freed when this
 			 * object is deleted.
 			 *
-			 * @param device_id The SDL device index
-			 * 
+			 * @param id The SDL joystick id
+			 *
 			 * @throws a std::runtime_error if SDL_JoystickOpen() could not open the joystick. Clients creating a Joystick
 			 *   instance should call SDL_GetError() afterwards to get details from SDL.
 			 */
-			explicit Joystick(int device_id);
+			explicit Joystick(int id);
 
 			/**
 			 * @brief Moves the resources of the other object into @c this
@@ -226,16 +225,16 @@ namespace io
 			SDL_JoystickID getID() const;
 
 			/**
-			 * @brief Gets the device index of this joystick
-			 * @return The device index
-			 */
-			int getDeviceId() const;
-
-			/**
 			 * @brief The SDL joystick handle
 			 * @return The handle
 			 */
-			SDL_Joystick* getDevice();
+			SDL_Joystick* getJoystick();
+
+			/**
+			 * @brief The SDL gampad handle
+			 * @return The handle
+			 */
+			SDL_Gamepad* getGamepad();
 
 			/**
 			 * @brief Handles a SDL joystick event
@@ -269,12 +268,15 @@ namespace io
 			void handleButtonEvent(const SDL_JoyButtonEvent& evt);
 			void handleHatEvent(const SDL_JoyHatEvent& evt);
 
-			int _device_id; //!< The OS device index
+			void handleAxisEvent(const SDL_GamepadAxisEvent& evt);
+			void handleButtonEvent(const SDL_GamepadButtonEvent& evt);
+
+			SDL_JoystickID _id;     //!< The instance ID
 			SDL_Joystick *_joystick; //!< The SDL joystick handle
+			SDL_Gamepad *_gamepad;  //!< The SDL gamepad handle
 
 			SCP_string _guidStr;    //!< The GUID string
 			SCP_string _name;       //!< The joystick name
-			SDL_JoystickID _id;     //!< The instance ID
 			bool _isHaptic = false; //!< If this joystick supports haptic feedback
 			bool _isGamepad = false; //!< If this joystick is considered a gamepad
 
@@ -380,6 +382,8 @@ float joy_down_time(const CC_bind &bind);
 int joy_down_count(const CC_bind &bind, int reset_count);
 
 int joy_down(const CC_bind &bind);
+
+short joy_get_button_axis(const short cid, short btn);
 
 /**
  * Checks if the given joystick is present or not

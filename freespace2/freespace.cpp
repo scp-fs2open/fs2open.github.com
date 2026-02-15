@@ -20,6 +20,7 @@
 #endif // !_MINGW
 #else
 #ifdef APPLE_APP
+ #include <sys/sysctl.h>
  #include <sys/types.h>
  #include <libproc.h>
 #endif
@@ -202,8 +203,7 @@
 #include "weapon/weapon.h"
 
 
-#include <SDL.h>
-#include <SDL_main.h>
+#include <SDL3/SDL_main.h>
 
 #include <cinttypes>
 #include <stdexcept>
@@ -1722,10 +1722,85 @@ DCF(force_fullscreen, "Forces game to startup in fullscreen mode")
 
 int	Framerate_delay = 0;
 
-#ifdef FS2_VOICER
-// This is really awful but thank the guys of X11 for naming something "Window"
-#	include "SDL_syswm.h" // For SDL_SysWMinfo
+static const char *get_exe_name(const char *argv0)
+{
+	// Doing this the hard way, rather than using SCP_string, so that we're only
+	// using a single ptr's worth of memory to figure it out
+
+	static const char *exe_name = nullptr;
+
+	if (exe_name == nullptr) {
+		if ( !argv0 ) {
+			return "";
+		}
+
+		for (auto i = strlen(argv0) - 1; i > 0; --i) {
+			if (argv0[i] == DIR_SEPARATOR_CHAR) {
+				exe_name = argv0 + i + 1;
+				break;
+			}
+		}
+
+		if ( !exe_name ) {
+			exe_name = argv0;
+		}
+	}
+
+	return exe_name;
+}
+
+static const char *get_cpu_type()
+{
+	// In some cases the SDL_Has*() functions will just report the architecture
+	// that the SDL lib was built with or what emulation says. A M-series Mac
+	// running a x86_64 binary will report as x86 instead of ARM, for instance.
+	// A similar thing happens with WOW64 Windows processes. So use native
+	// functionality where possible to get true values and use SDL functions
+	// only as fallback.
+
+#ifdef _WIN32
+	typedef BOOL (WINAPI *ISWOW64PROCESS2PTR)(HANDLE, USHORT*, USHORT*);
+
+	USHORT processArch = 0, nativeArch = 0;
+	HMODULE hKernel32 = LoadLibraryA("kernel32.dll");
+
+	if (hKernel32) {
+		ISWOW64PROCESS2PTR pIsWow64Process2 = reinterpret_cast<ISWOW64PROCESS2PTR>(GetProcAddress(hKernel32, "IsWow64Process2"));
+
+		if (pIsWow64Process2) {
+			HANDLE hProcess = GetCurrentProcess();
+
+			if (hProcess) {
+				pIsWow64Process2(hProcess, &processArch, &nativeArch);
+				CloseHandle(hProcess);
+			}
+		}
+
+		FreeLibrary(hKernel32);
+	}
+
+	if (nativeArch == IMAGE_FILE_MACHINE_ARM64) {
+		return "ARM64";
+	}
+#elif defined(APPLE_APP)
+	int val = 0;
+	size_t valSize = sizeof(val);
+
+	if ( !sysctlbyname("hw.optional.arm64", &val, &valSize, nullptr, 0) ) {
+		if (val == 1) {
+			return "ARM64";
+		}
+	}
 #endif
+
+	if (SDL_HasARMSIMD() || SDL_HasNEON()) {
+		return "ARM";
+	} else if (SDL_HasSSE() || SDL_HasAVX()) {
+		return "x86";
+	}
+
+	return "<unknown>";
+}
 
 /**
  * Game initialisation
@@ -1742,6 +1817,8 @@ void game_init()
 	Random::seed(static_cast<unsigned int>(time(nullptr)));
 
 	ImGui::CreateContext();
+	ImGui::GetIO().IniFilename = nullptr;
+	ImGui::LoadIniSettingsFromDisk(os_get_config_path("imgui.ini").c_str());
 
 	Framerate_delay = 0;
 
@@ -1764,13 +1841,19 @@ void game_init()
 		nprintf(("Network", "Standalone running\n"));
 	}
 
+	mprintf(("Platform: %s\n", SDL_GetPlatform()));
+	mprintf(("CPU: %s, %d logical cores\n", get_cpu_type(), SDL_GetNumLogicalCPUCores()));
+	mprintf(("Memory: %d MiB\n", SDL_GetSystemRAM()));
+	mprintf(("Build: %s, " SIZE_T_ARG "-bit, %s-endian\n", get_exe_name(nullptr),
+			 sizeof(void*) << 3, (SDL_BYTEORDER == SDL_LIL_ENDIAN) ? "little" : "big"));
+
 	// init os stuff next
 	os_init( Osreg_class_name, Window_title.c_str(), Osreg_app_name );
 
 	threading::init_task_pool();
 
 #ifndef NDEBUG
-	mprintf(("FreeSpace 2 Open version: %s\n", FS_VERSION_FULL));
+	mprintf(("FreeSpace Open version: %s\n", FS_VERSION_FULL));
 
 	extern void cmdline_debug_print_cmdline();
 	cmdline_debug_print_cmdline();
@@ -1884,6 +1967,34 @@ void game_init()
 		return;
 	}
 
+	// if not standalone then setup scalable font for imgui to use
+	if ( !Is_standalone ) {
+		ImGuiIO &io = ImGui::GetIO();
+		ImFontConfig fontConfig;
+
+		// improves font clarity on high density displays
+		fontConfig.RasterizerDensity = os::getMainViewport()->getCoordScale();;
+
+		auto file = cfopen("BankGothic-BT-Light.ttf", "rb", CF_TYPE_FONT);
+
+		if (file) {
+			// clear out default font
+			io.Fonts->Clear();
+
+			const auto size = cfilelength(file);
+
+			// NOTE: ImGui will free this memory when the context is destroyed
+			auto font = reinterpret_cast<uint8_t*>(IM_ALLOC(size * (sizeof(uint8_t))));
+
+			cfread(font, 1, size, file);
+
+			cfclose(file);
+			file = nullptr;
+
+			io.Fonts->AddFontFromMemoryTTF(font, size, 12.f, &fontConfig);
+		}
+	}
+
 	if (LoggingEnabled && Cmdline_debug_window) {
 		outwnd_debug_window_init();
 	}
@@ -1895,13 +2006,13 @@ void game_init()
 #ifdef FS2_VOICER
 	if(Cmdline_voice_recognition)
 	{
-		SDL_SysWMinfo info;
-		SDL_VERSION(&info.version); // initialize info structure with SDL version info
-
+		auto hwnd = static_cast<HWND>(SDL_GetPointerProperty(SDL_GetWindowProperties(os::getSDLMainWindow()),
+															 SDL_PROP_WINDOW_WIN32_HWND_POINTER,
+															 nullptr));
 		bool voiceRectOn = false;
-		if(SDL_GetWindowWMInfo(os::getSDLMainWindow(), &info)) { // the call returns true on success
+		if(hwnd) { // the call returns true on success
 			// success
-			voiceRectOn = VOICEREC_init(info.info.win.window, WM_RECOEVENT, GRAMMARID1, IDR_CMD_CFG);
+			voiceRectOn = VOICEREC_init(hwnd, WM_RECOEVENT, GRAMMARID1, IDR_CMD_CFG);
 		} else {
 			// call failed
 			mprintf(( "Couldn't get window information: %s\n", SDL_GetError() ));
@@ -6047,8 +6158,7 @@ void game_enter_state( int old_state, int new_state )
 
 #ifndef NDEBUG
 			// required to truely make mouse deltas zeroed in debug mouse code
-void mouse_force_pos(int x, int y);
-			mouse_force_pos(gr_screen.max_w / 2, gr_screen.max_h / 2);
+			mouse_force_pos(gr_screen.max_w / 2.0f, gr_screen.max_h / 2.0f);
 #endif
 
 			game_flush();
@@ -6327,6 +6437,7 @@ void game_do_state_common(int state,int no_networking)
 	io::mouse::CursorManager::doFrame();		// determine if to draw the mouse this frame
 	snd_do_frame();								// update sound system
 	event_music_do_frame();						// music needs to play across many states
+	audiostream_do_frame();					// do any housekeeping for audio streams
 
 	multi_log_process();	
 
@@ -6842,9 +6953,13 @@ int game_main(int argc, char *argv[])
 	tmp_mem = nullptr;
 #endif // _WIN32
 
-
 	if ( !parse_cmdline(argc, argv) ) {
 		return 1;
+	}
+
+	if (LoggingEnabled) {
+		// passing an argument will set the name
+		get_exe_name(argv[0]);
 	}
 
 	game_init();
@@ -6910,6 +7025,11 @@ int game_main(int argc, char *argv[])
 		state = gameseq_process_events();
 		if ( state == GS_STATE_QUIT_GAME ) {
 			break;
+		}
+
+		if (ImGui::GetIO().WantSaveIniSettings) {
+			ImGui::SaveIniSettingsToDisk(os_get_config_path("imgui.ini").c_str());
+			ImGui::GetIO().WantSaveIniSettings = false;
 		}
 
 		// Since tracing is always active this needs to happen in the main loop
@@ -7022,6 +7142,7 @@ void game_shutdown(void)
 		std_deinit_standalone();
 	}
 
+	ImGui::SaveIniSettingsToDisk(os_get_config_path("imgui.ini").c_str());
 	ImGui::DestroyContext();
 
 	os_cleanup();
@@ -8025,6 +8146,14 @@ int main(int argc, char *argv[])
 	int result = -1;
 	Assert(argc > 0);
 
+	// Metadata must to be set as early as possible, before the first SDL_Init().
+	// This is global info and cannot be changed later (i.e., it can't be set per mod)
+	SDL_SetAppMetadata("FreeSpace Open", FS_VERSION_FULL, FSO_APP_ID);
+
+	SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_TYPE_STRING, "game");
+	SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_COPYRIGHT_STRING,
+							   "Copyright 1999 Volition, Inc. & Copyright 2002-2026 The Source Code Project.");
+
 	crashdump::installCrashHandler();
 
 #ifdef WIN32
@@ -8067,9 +8196,8 @@ int main(int argc, char *argv[])
     if (strcmp("/sbin/launchd", pathbuf) == 0) {
         // Finder sets the working directory to the root of the drive so we have to get a little creative
         // to find out where on the disk we should be running from for CFILE's sake.
-        char *path_name = SDL_GetBasePath();
+        auto path_name = SDL_GetBasePath();
         chdir(path_name);
-        SDL_free(path_name);
     }
 #endif
 #endif

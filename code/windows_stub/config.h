@@ -8,11 +8,7 @@
 #include <cstdio>
 
 
-#include <SDL.h>
-
-#ifndef BYTE_ORDER
-#include <SDL_endian.h>
-#endif
+#include <SDL3/SDL.h>
 
 #ifndef BYTE_ORDER
 #define LITTLE_ENDIAN 1234

@@ -19,6 +19,8 @@ qt5_wrap_ui(QTFRED_UI_GENERATED ${files_UI})
 
 source_group("UI\\Generated"            FILES ${QTFRED_UI_GENERATED})
 
+SET(FRED_APP_ID "us.indiegames.scp.qtFRED")
+
 add_executable(qtfred ${EXE_GUI_TYPE}
     ${source_files}
     ${QTFRED_UI_GENERATED}
@@ -40,6 +42,8 @@ target_compile_definitions(qtfred PRIVATE QT_NO_EMIT)
 target_compile_definitions(qtfred PRIVATE QT_DEPRECATED_WARNINGS)
 
 target_compile_definitions(qtfred PUBLIC USING_THIRD_PARTY_LIBS FRED)
+
+target_compile_definitions(qtfred PUBLIC FRED_APP_ID="${FRED_APP_ID}")
 
 target_include_directories(qtfred PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
@@ -137,6 +141,22 @@ elseif(FSO_BUILD_APPIMAGE)
 
     install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/resources/fred_icon.png" DESTINATION "."
             COMPONENT "qtFRED")
+elseif(PLATFORM_MAC)
+    # Handling of mac resources
+    set(subpath resources/mac)
+
+    set_target_properties(qtfred PROPERTIES MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/${subpath}/Info.plist.in")
+    set_target_properties(qtfred PROPERTIES MACOSX_BUNDLE_ICON_FILE "fred_icon")
+    set_target_properties(qtfred PROPERTIES MACOSX_BUNDLE_LONG_VERSION_STRING "${FSO_FULL_VERSION_STRING}")
+    set_target_properties(qtfred PROPERTIES MACOSX_BUNDLE_SHORT_VERSION_STRING "${FSO_PRODUCT_VERSION_STRING}")
+    set_target_properties(qtfred PROPERTIES MACOSX_BUNDLE_BUNDLE_NAME "qtFRED")
+    set_target_properties(qtfred PROPERTIES MACOSX_BUNDLE_GUI_IDENTIFIER "${FRED_APP_ID}")
+
+    # Copy everything from the Resources directory
+    add_custom_command(TARGET qtfred POST_BUILD
+        COMMAND cp -a "${CMAKE_CURRENT_SOURCE_DIR}/${subpath}/Resources" "$<TARGET_FILE_DIR:qtfred>/../Resources"
+        COMMENT "Copying resources into bundle..."
+    )
 endif()
 
 if (FSO_INSTALL_DEBUG_FILES)
@@ -146,3 +166,10 @@ if (FSO_INSTALL_DEBUG_FILES)
                 OPTIONAL)
     endif()
 endif()
+
+# Ensure that Xcode generates debug symbols on macOS for Debug builds
+set_target_properties(qtfred PROPERTIES XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGING_SYMBOLS[variant=Debug] "YES")
+set_target_properties(qtfred PROPERTIES XCODE_ATTRIBUTE_COPY_PHASE_STRIP[variant=Debug] "NO")
+set_target_properties(qtfred PROPERTIES XCODE_ATTRIBUTE_STRIP_INSTALLED_PRODUCT[variant=Debug] "NO")
+set_target_properties(qtfred PROPERTIES XCODE_ATTRIBUTE_GCC_SYMBOLS_PRIVATE_EXTERN[variant=Debug] "NO")
+set_target_properties(qtfred PROPERTIES XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "${FRED_APP_ID}")
