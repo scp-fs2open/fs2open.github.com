@@ -90,6 +90,16 @@ prop* prop_id_lookup(int id)
 	return &Props[id].value();
 }
 
+int prop_category_id_lookup(SCP_string category)
+{
+	for (size_t i = 0; i < Prop_categories.size(); i++) {
+		if (!stricmp(category.c_str(), Prop_categories[i].name.c_str())) {
+			return static_cast<int>(i);
+		}
+	}
+	return -1;
+}
+
 prop_category* prop_get_category(const SCP_string& name)
 {
 	for (auto& category : Prop_categories) {
@@ -98,6 +108,15 @@ prop_category* prop_get_category(const SCP_string& name)
 		}
 	}
 	return nullptr;
+}
+
+prop_category* prop_get_category(int index)
+{
+	if (!SCP_vector_inbounds(Prop_categories, index)) {
+		Assertion(false, "Invalid category index %d", index);
+		return nullptr;
+	}
+	return &Prop_categories[index];
 }
 
 void parse_prop_table(const char* filename)
@@ -114,8 +133,6 @@ void parse_prop_table(const char* filename)
 			int rgb[3];
 			stuff_int_list(rgb, 3, ParseLookupType::RAW_INTEGER_TYPE);
 			gr_init_color(&pc.list_color, rgb[0], rgb[1], rgb[2]);
-
-			Prop_categories.push_back(pc);
 
 			// Replace existing category if name matches (case-insensitive)
 			auto existing =
@@ -212,6 +229,7 @@ void parse_prop_table(const char* filename)
 			first_time = true;
 
 			pip->name = fname;
+			pip->category_index = -1;
 		}
 
 		if (optional_string("$POF file:")) {
@@ -275,7 +293,9 @@ void parse_prop_table(const char* filename)
 		}
 
 		if (optional_string("$Category:")) {
-			stuff_string(pip->category, F_NAME);
+			SCP_string cat;
+			stuff_string(cat, F_NAME);
+			pip->category_index = prop_category_id_lookup(cat);
 		}
 
 		if (optional_string("$Flags:")) {
@@ -356,30 +376,17 @@ void post_process_props()
 		if (!VALID_FNAME(pi.pof_file)) {
 			Warning(LOCATION, "Prop '%s' has no POF file specified!", pi.name.c_str());
 		}
-		if (!VALID_FNAME(pi.category)) {
-			Warning(LOCATION, "Prop '%s' has no category specified!", pi.name.c_str());
-			pi.category = UnknownCategory;
+		if (!SCP_vector_inbounds(Prop_categories, pi.category_index)) {
+			Warning(LOCATION, "Prop '%s' has no or invalid category specified!", pi.name.c_str());
+			pi.category_index = -1; // Just to be safe, though it should already be -1 by default
 			create_unknown_category = true;
 			continue;
-		} else {
-			bool found = false;
-			for (const auto& pc : Prop_categories) {
-				if (!stricmp(pi.category.c_str(), pc.name.c_str())) {
-					found = true;
-					break;
-				}
-			}
-			if (!found) {
-				Warning(LOCATION, "Prop '%s' has unknown category '%s'", pi.name.c_str(), pi.category.c_str());
-				pi.category = UnknownCategory;
-				create_unknown_category = true;
-			}
 		}
 	}
 
 	if (create_unknown_category) {
 		prop_category pc;
-		pc.name = "Unknown Category";
+		pc.name = UnknownCategory;
 		gr_init_color(&pc.list_color, 128, 128, 128);
 		Prop_categories.push_back(pc);
 	}
@@ -388,13 +395,13 @@ void post_process_props()
 	std::stable_sort(Prop_info.begin(), Prop_info.end(), [](const prop_info& a, const prop_info& b) {
 		// Get index of a's category in Prop_categories
 		auto a_it = std::find_if(Prop_categories.begin(), Prop_categories.end(), [&](const prop_category& cat) {
-			return !stricmp(a.category.c_str(), cat.name.c_str());
+			return !stricmp(prop_get_category(a.category_index)->name.c_str(), cat.name.c_str());
 		});
 		int a_index = (a_it != Prop_categories.end()) ? static_cast<int>(std::distance(Prop_categories.begin(), a_it)) : INT_MAX;
 
 		// Get index of b's category in Prop_categories
 		auto b_it = std::find_if(Prop_categories.begin(), Prop_categories.end(), [&](const prop_category& cat) {
-			return !stricmp(b.category.c_str(), cat.name.c_str());
+			return !stricmp(prop_get_category(b.category_index)->name.c_str(), cat.name.c_str());
 		});
 		int b_index = (b_it != Prop_categories.end()) ? static_cast<int>(std::distance(Prop_categories.begin(), b_it)) : INT_MAX;
 

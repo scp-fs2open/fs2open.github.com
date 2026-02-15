@@ -214,7 +214,7 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum, int parent_node) const
 			return LuaValue::createValue(_action.getLuaState(), prop_entry ? prop_entry->prop_name : "");
 		}
 
-		if (!prop_entry || (prop_entry->objnum >= 0)) {
+		if (!prop_entry || (prop_entry->objnum < 0)) {
 			// Name is invalid
 			return LuaValue::createValue(_action.getLuaState(), l_Prop.Set(object_h()));
 		}

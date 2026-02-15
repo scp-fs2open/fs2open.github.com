@@ -599,7 +599,7 @@ ADE_INDEXER(l_Mission_Props, "number/string IndexOrName", "Gets prop", "prop", "
 	if(!ade_get_args(L, "*s", &name))
 		return ade_set_error(L, "o", l_Prop.Set(object_h()));
 
-	int idx = ship_name_lookup(name);
+	int idx = prop_name_lookup(name);
 
 	if (idx >= 0)
 	{

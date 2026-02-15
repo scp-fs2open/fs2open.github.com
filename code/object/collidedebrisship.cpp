@@ -466,7 +466,7 @@ int collide_debris_prop(obj_pair* pair)
 			}
 
 			if (scripting::hooks::OnPropCollision->isActive()) {
-				debris_override = scripting::hooks::OnShipCollision->isOverride(scripting::hooks::CollisionConditions{ {prop_objp, debris_objp} },
+				debris_override = scripting::hooks::OnPropCollision->isOverride(scripting::hooks::CollisionConditions{ {prop_objp, debris_objp} },
 					scripting::hook_param_list(scripting::hook_param("Self", 'o', debris_objp),
 						scripting::hook_param("Object", 'o', prop_objp),
 						scripting::hook_param("Prop", 'o', prop_objp),
@@ -571,8 +571,8 @@ int collide_asteroid_prop(obj_pair* pair)
 						scripting::hook_param("Asteroid", 'o', asteroid_objp),
 						scripting::hook_param("Hitpos", 'o', hitpos)));
 			}
-			if (scripting::hooks::OnShipCollision->isActive()) {
-				asteroid_override = scripting::hooks::OnShipCollision->isOverride(scripting::hooks::CollisionConditions{ {prop_objp, asteroid_objp} },
+			if (scripting::hooks::OnPropCollision->isActive()) {
+				asteroid_override = scripting::hooks::OnPropCollision->isOverride(scripting::hooks::CollisionConditions{ {prop_objp, asteroid_objp} },
 					scripting::hook_param_list(scripting::hook_param("Self", 'o', asteroid_objp),
 						scripting::hook_param("Object", 'o', prop_objp),
 						scripting::hook_param("Prop", 'o', prop_objp),

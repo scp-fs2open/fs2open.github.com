@@ -3462,7 +3462,7 @@ int beam_collide_prop(obj_pair* pair)
 		}
 
 		if (scripting::hooks::OnPropCollision->isActive()) {
-			weapon_override = scripting::hooks::OnShipCollision->isOverride(scripting::hooks::CollisionConditions{ {prop_objp, weapon_objp} },
+			weapon_override = scripting::hooks::OnPropCollision->isOverride(scripting::hooks::CollisionConditions{ {prop_objp, weapon_objp} },
 				scripting::hook_param_list(scripting::hook_param("Self", 'o', weapon_objp),
 					scripting::hook_param("Object", 'o', prop_objp),
 					scripting::hook_param("Prop", 'o', prop_objp),
@@ -3486,9 +3486,8 @@ int beam_collide_prop(obj_pair* pair)
 					scripting::hook_param("Beam", 'o', weapon_objp),
 					scripting::hook_param("Hitpos", 'o', mc.hit_point_world)));
 		}
-		if (scripting::hooks::OnShipCollision->isActive() && ((weapon_override && !prop_override) || (!weapon_override && !prop_override)))
-		{
-			scripting::hooks::OnShipCollision->run(scripting::hooks::CollisionConditions{{prop_objp, weapon_objp}},
+		if (scripting::hooks::OnPropCollision->isActive() && ((weapon_override && !prop_override) || (!weapon_override && !prop_override))) {
+			scripting::hooks::OnPropCollision->run(scripting::hooks::CollisionConditions{{prop_objp, weapon_objp}},
 				scripting::hook_param_list(scripting::hook_param("Self", 'o', weapon_objp),
 					scripting::hook_param("Object", 'o', prop_objp),
 					scripting::hook_param("Prop", 'o', prop_objp),

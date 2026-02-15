@@ -769,7 +769,7 @@ int create_object(vec3d *pos, int waypoint_instance, bool prop)
 
 	if (prop) {
 		int prop_class = m_new_prop_type_combo_box.GetCurSel();
-		if (prop_class < 0 || prop_class >= ship_info_size())
+		if (prop_class < 0 || prop_class >= prop_info_size())
 			return -1;
 
 		obj = create_prop(nullptr, pos, prop_class);

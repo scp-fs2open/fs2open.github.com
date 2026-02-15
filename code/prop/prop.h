@@ -12,7 +12,7 @@
 
 typedef struct prop_info {
 	SCP_string name;                                            // Prop name
-	SCP_string category;                                        // Category name
+	int category_index;                                         // Index of the category this prop belongs to, -1 if it doesn't belong to any category
 	SCP_string pof_file;                                        // Pof filename
 	vec3d closeup_pos;                                          // position for camera when using prop in closeup view (eg briefing and techroom)
 	float closeup_zoom;                                         // zoom when using prop in closeup view (eg briefing and techroom)
@@ -88,5 +88,6 @@ prop* prop_id_lookup(int id);
 void change_prop_type(int n, int prop_type);
 
 prop_category* prop_get_category(const SCP_string& name);
+prop_category* prop_get_category(int index);
 
 int prop_check_collision(object* prop_obj, object* other_obj, vec3d* hitpos, collision_info_struct* prop_hit_info);

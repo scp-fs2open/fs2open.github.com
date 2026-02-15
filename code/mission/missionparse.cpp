@@ -5176,7 +5176,7 @@ void parse_prop(mission* /*pm*/)
 		return;
 	}
 
-	Parse_props.emplace_back(p);
+	Parse_props.emplace_back(std::move(p));
 }
 
 void parse_wings(mission* pm)
