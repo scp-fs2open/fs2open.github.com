@@ -415,29 +415,25 @@ static int opengl_texture_set_level(int bitmap_handle, int bitmap_type, int bmap
 	}
 
 	// check for compressed image types
-	auto block_size = 0;
+	auto block_size = dds_block_size(bm_is_compressed(bitmap_handle));
 	switch (bm_is_compressed(bitmap_handle)) {
 	case DDS_DXT1:
 	case DDS_CUBEMAP_DXT1:
 		intFormat  = GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
-		block_size = 8;
 		break;
 
 	case DDS_DXT3:
 	case DDS_CUBEMAP_DXT3:
 		intFormat  = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
-		block_size = 16;
 		break;
 
 	case DDS_DXT5:
 	case DDS_CUBEMAP_DXT5:
 		intFormat  = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
-		block_size = 16;
 		break;
 
 	case DDS_BC7:
 		intFormat = GL_COMPRESSED_RGBA_BPTC_UNORM_ARB;
-		block_size = 16;
 		break;
 	}
 
@@ -457,8 +453,7 @@ static int opengl_texture_set_level(int bitmap_handle, int bitmap_type, int bmap
 			auto mipmap_h = bmap_h;
 
 			for (auto i = 0; i < mipmap_levels + base_level; i++) {
-				// size of data block (4x4)
-				dsize = ((mipmap_h + 3) / 4) * ((mipmap_w + 3) / 4) * block_size;
+				dsize = dds_compressed_mip_size(mipmap_w, mipmap_h, block_size);
 
 				if (i >= base_level) {
 					glCompressedTexSubImage3D(tSlot->texture_target, i - base_level, 0, 0, tSlot->array_index, mipmap_w,
@@ -584,8 +579,7 @@ static int opengl_texture_set_level(int bitmap_handle, int bitmap_type, int bmap
 			// check if it's a compressed cubemap first
 			if (block_size > 0) {
 				for (auto level = 0; level < mipmap_levels + base_level; level++) {
-					// size of data block (4x4)
-					dsize = ((mipmap_h + 3) / 4) * ((mipmap_w + 3) / 4) * block_size;
+					dsize = dds_compressed_mip_size(mipmap_w, mipmap_h, block_size);
 
 					if (level >= base_level) {
 						// We skipped ahead to the base level so we can start uploading frames now

@@ -273,6 +273,27 @@ typedef struct {
 } DDS_HEADER_DXT10;
 #pragma pack()
 
+// Block size in bytes for a 4x4 texel block of a compressed DDS format.
+// comp_type is one of the DDS_DXT*/DDS_CUBEMAP_DXT* constants.
+inline int dds_block_size(int comp_type) {
+	switch (comp_type) {
+	case DDS_DXT1:
+	case DDS_CUBEMAP_DXT1:
+		return 8;
+	case DDS_DXT3: case DDS_CUBEMAP_DXT3:
+	case DDS_DXT5: case DDS_CUBEMAP_DXT5:
+	case DDS_BC7:
+		return 16;
+	default:
+		return 0;
+	}
+}
+
+// Size in bytes of one mip level of a block-compressed texture.
+inline size_t dds_compressed_mip_size(int w, int h, int block_size) {
+	return static_cast<size_t>(((w + 3) / 4) * ((h + 3) / 4) * block_size);
+}
+
 #define DDS_OFFSET						4+sizeof(DDS_HEADER)		//place where the data starts -- should be 128
 #define DX10_OFFSET						DDS_OFFSET+sizeof(DDS_HEADER_DXT10)		// Unless a DX10 header is present
 
