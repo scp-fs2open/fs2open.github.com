@@ -6141,8 +6141,12 @@ static void parse_ship_type(const char *filename, const bool replace)
 		stuff_boolean_flag(stp->flags, Ship::Type_Info_Flags::Show_attack_direction);
 	}
 
-	if(optional_string("$Scannable:")) {
-		stuff_boolean_flag(stp->flags, Ship::Type_Info_Flags::Scannable);
+	if(optional_string("$Scannable:") || optional_string("$Targetable as unscanned:")) {
+		stuff_boolean_flag(stp->flags, Ship::Type_Info_Flags::Targetable_as_unscanned);
+	}
+
+	if(optional_string("$Scannable by default:")) {
+		stuff_boolean_flag(stp->flags, Ship::Type_Info_Flags::Scannable_by_default);
 	}
 
 	if(optional_string("$Warp Pushes:")) {
