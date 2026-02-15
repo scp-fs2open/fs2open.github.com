@@ -497,9 +497,6 @@ void tech_common_render()
 		memset( buf, 0, sizeof(buf) );
 		strncpy(buf, Current_list->at(z).name, sizeof(buf) - 1);
 
-		if (Lcl_gr && !Disable_built_in_translations)
-			lcl_translate_ship_name_gr(buf);
-
 		font::force_fit_string(buf, 255, Tech_list_coords[gr_screen.res][SHIP_W_COORD]);
 		gr_string(Tech_list_coords[gr_screen.res][SHIP_X_COORD], Tech_list_coords[gr_screen.res][SHIP_Y_COORD] + y, buf, GR_RESIZE_MENU);
 

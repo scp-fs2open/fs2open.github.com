@@ -875,7 +875,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 		// if this name has a hash, create a default display name
 		if (get_pointer_to_first_hash_symbol(wip->name)) {
-			strcpy_s(wip->display_name, wip->name);
+			wip->display_name = wip->name;
 			end_string_at_first_hash_symbol(wip->display_name, true);
 			consolidate_double_characters(wip->display_name, '#');
 			wip->wi_flags.set(Weapon::Info_Flags::Has_display_name);
@@ -883,16 +883,17 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 		// do German translation
 		if (Lcl_gr && !Disable_built_in_translations) {
-			if (!wip->display_name[0]) {
-				strcpy_s(wip->display_name, wip->name);
+			if (!wip->has_display_name()) {
+				wip->display_name = wip->name;
+				lcl_translate_wep_name_gr(wip->display_name);
+				wip->wi_flags.set(Weapon::Info_Flags::Has_display_name);
 			}
-			lcl_translate_wep_name_gr(wip->display_name);
 		}
 	}
 
 	if (optional_string("$Alt name:") || optional_string("$Display Name:"))
 	{
-		stuff_string(wip->display_name, F_NAME, NAME_LENGTH);
+		stuff_string(wip->display_name, F_NAME);
 		wip->wi_flags.set(Weapon::Info_Flags::Has_display_name);
 	}
 
@@ -9350,7 +9351,7 @@ void weapon_info::reset()
 	int i, j;
 
 	memset(this->name, 0, sizeof(this->name));
-	memset(this->display_name, 0, sizeof(this->display_name));
+	this->display_name.clear();
 	memset(this->title, 0, sizeof(this->title));
 	this->desc = nullptr;
 	memset(this->altSubsysName, 0, sizeof(this->altSubsysName));
@@ -9738,7 +9739,7 @@ void weapon_info::reset()
 const char* weapon_info::get_display_name() const
 {
 	if (has_display_name())
-		return display_name;
+		return display_name.c_str();
 	else
 		return name;
 }

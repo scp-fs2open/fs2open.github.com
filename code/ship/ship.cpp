@@ -988,7 +988,7 @@ const float AWACS_HELP_HULL_LOW = 0.25f;    // percent hull at which ship will a
 void ship_info::clone(const ship_info& other)
 {
 	strcpy_s(name, other.name);
-	strcpy_s(display_name, other.display_name);
+	display_name = other.display_name;
 	strcpy_s(short_name, other.short_name);
 	species = other.species;
 	class_type = other.class_type;
@@ -1725,7 +1725,7 @@ ship_info::ship_info(ship_info&& other) noexcept
 ship_info::ship_info()
 {
 	name[0] = '\0';
-	display_name[0] = '\0';
+	display_name = "";
 	sprintf(short_name, "ShipClass%d", ship_info_size());
 	species = 0;
 	class_type = -1;
@@ -2112,7 +2112,7 @@ ship_info::~ship_info()
 const char* ship_info::get_display_name() const
 {
 	if (has_display_name())
-		return display_name;
+		return display_name.c_str();
 	else
 		return name;
 }
@@ -2332,11 +2332,20 @@ static void parse_ship(const char *filename, bool replace)
 	}
 
 	if (new_name) {
-		if (!sip->flags[Ship::Info_Flags::Has_display_name]) {
+		if (!sip->has_display_name()) {
 			// if this name has a hash, create a default display name
 			if (get_pointer_to_first_hash_symbol(sip->name)) {
-				strcpy_s(sip->display_name, sip->name);
+				sip->display_name = sip->name;
 				end_string_at_first_hash_symbol(sip->display_name);
+				sip->flags.set(Ship::Info_Flags::Has_display_name);
+			}
+		}
+
+		// do German translation
+		if (Lcl_gr && !Disable_built_in_translations) {
+			if (!sip->has_display_name()) {
+				sip->display_name = sip->name;
+				lcl_translate_ship_name_gr(sip->display_name);
 				sip->flags.set(Ship::Info_Flags::Has_display_name);
 			}
 		}
@@ -2974,7 +2983,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	
 	if (optional_string("$Alt name:") || optional_string("$Display Name:"))
 	{
-		stuff_string(sip->display_name, F_NAME, NAME_LENGTH);
+		stuff_string(sip->display_name, F_NAME);
 		end_string_at_first_hash_symbol(sip->display_name, true);
 		consolidate_double_characters(sip->display_name, '#');
 		sip->flags.set(Ship::Info_Flags::Has_display_name);
