@@ -34,8 +34,10 @@ void ParticleSource::finishCreation() {
 
 	m_host->setupProcessing();
 
-	for (const auto& effect : ParticleManager::get()->getEffect(m_effect)) {
-		const auto& [begin, end] = effect.getEffectDuration();
+	const auto& effectList = ParticleManager::get()->getEffect(m_effect);
+	for (size_t i = 0; i < effectList.size(); i++) {
+		const auto& effect = effectList[i];
+		const auto& [begin, end] = effect.getEffectDuration(0.0, *this, i);
 		m_timing.emplace_back(SourceTiming{timestamp_delta(begin, 0), begin, end});
 	}
 }

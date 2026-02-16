@@ -416,13 +416,17 @@ void ParticleEffect::pageIn() {
 	}
 }
 
-std::pair<TIMESTAMP, TIMESTAMP> ParticleEffect::getEffectDuration() const {
+std::pair<TIMESTAMP, TIMESTAMP> ParticleEffect::getEffectDuration(float interp, const ParticleSource& source, size_t effectNumber) const {
 	std::pair<TIMESTAMP, TIMESTAMP> timing;
 	timing.first = _timestamp(fl2i(m_delayRange.next() * 1000.0f));
 	if (m_duration == Duration::ALWAYS)
 		timing.second = TIMESTAMP::never();
-	else
-		timing.second = timestamp_delta(timing.first, fl2i(m_durationRange.next() * 1000.0f));
+	else {
+		const auto& [pos, hostOrientation] = source.m_host->getPositionAndOrientation(m_parent_local, interp, m_manual_offset);
+		auto modularCurvesInput = std::forward_as_tuple(source, effectNumber, pos);
+
+		timing.second = timestamp_delta(timing.first, fl2i(m_durationRange.next() * 1000.0f * m_modular_curves.get_output(ParticleCurvesOutput::SOURCE_DURATION_MULT, modularCurvesInput)));
+	}
 	return timing;
 }
 

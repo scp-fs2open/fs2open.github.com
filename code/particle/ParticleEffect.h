@@ -75,6 +75,7 @@ public:
 		RADIUS_MULT,
 		LENGTH_MULT,
 		LIFETIME_MULT,
+		SOURCE_DURATION_MULT,
 		VOLUME_VELOCITY_MULT,
 		INHERIT_VELOCITY_MULT,
 		POSITION_INHERIT_VELOCITY_MULT,
@@ -236,7 +237,7 @@ public:
 
 	const SCP_string& getName() const { return m_name; }
 
-	std::pair<TIMESTAMP, TIMESTAMP> getEffectDuration() const;
+	std::pair<TIMESTAMP, TIMESTAMP> getEffectDuration(float interp, const ParticleSource& source, size_t effectNumber) const;
 
 	float getNextSpawnDelay() const;
 
