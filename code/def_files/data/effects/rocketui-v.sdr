@@ -1,4 +1,13 @@
 
+#ifdef VULKAN
+layout(location = 0) in vec2 vertPosition;
+layout(location = 1) in vec4 vertColor;
+layout(location = 2) in vec2 vertTexCoord;
+
+layout(location = 0) out vec2 fragTexCoord;
+layout(location = 1) out vec4 fragColor;
+layout(location = 2) out vec2 fragScreenPosition;
+#else
 in vec2 vertPosition;
 in vec4 vertColor;
 in vec2 vertTexCoord;
@@ -6,12 +15,18 @@ in vec2 vertTexCoord;
 out vec2 fragTexCoord;
 out vec4 fragColor;
 out vec2 fragScreenPosition;
+#endif
 
-layout (std140) uniform genericData {
+#ifdef VULKAN
+layout(std140, set = 2, binding = 0)
+#else
+layout(std140)
+#endif
+uniform genericData {
 	mat4 projMatrix;
 
 	vec2 offset;
-	bool textured;
+	int textured;
 	int baseMapIndex;
 
 	float horizontalSwipeOffset;
