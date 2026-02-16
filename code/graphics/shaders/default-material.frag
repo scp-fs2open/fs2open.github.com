@@ -22,7 +22,7 @@ layout (binding = 1, std140) uniform genericData {
 
 	float intensity;
 	float alphaThreshold;
-	bool clipEnabled;
+	uint clipEnabled;
 };
 
 layout(binding = 2) uniform sampler2DArray baseMap;

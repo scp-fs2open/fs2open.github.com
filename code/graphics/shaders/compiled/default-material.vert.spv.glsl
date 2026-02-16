@@ -37,5 +37,9 @@ void main()
     {
         gl_ClipDistance[0] = dot(_22.clipEquation, _22.modelMatrix * vertPosition);
     }
+    else
+    {
+        gl_ClipDistance[0] = 1.0;
+    }
 }
 
