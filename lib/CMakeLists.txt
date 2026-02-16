@@ -45,6 +45,12 @@ include(antlr4.cmake)
 
 include(vulkan.cmake)
 
+if (FSO_BUILD_WITH_VULKAN)
+	add_subdirectory(vulkan-headers)
+	add_subdirectory(shaderc-headers)
+	add_subdirectory(VulkanMemoryAllocator)
+endif()
+
 add_subdirectory(mdns)
 
 add_subdirectory(accidental-noise)

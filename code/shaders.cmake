@@ -1,37 +1,46 @@
 
-set(SHADER_DIR "${CMAKE_CURRENT_SOURCE_DIR}/graphics/shaders")
-# This is the legacy location of shader code. To avoid duplicating included files, this is added as an include directory
-set(LEGACY_SHADER_DIR "${CMAKE_CURRENT_SOURCE_DIR}/def_files/data/effects")
+set(SHADER_DIR "${CMAKE_CURRENT_SOURCE_DIR}/def_files/data/effects")
 
-set(SHADERS
-	${SHADER_DIR}/default-material.frag
-	${SHADER_DIR}/default-material.vert
-	${SHADER_DIR}/vulkan.frag
-	${SHADER_DIR}/vulkan.vert
+# All Vulkan GLSL shaders live alongside OpenGL shaders in def_files/data/effects/*.sdr,
+# unified with #ifdef VULKAN / #ifdef OPENGL guards. They are embedded into the executable
+# via source_groups.cmake (target_embed_files) and compiled to SPIR-V at runtime via shaderc.
+
+# Shaders that need C++ struct header generation from SPIR-V reflection.
+# Generated structs are included via shader_structs.h for compile-time layout validation.
+set(SHADERS_NEED_STRUCT_GEN
+	${SHADER_DIR}/default-material-f.sdr
+	${SHADER_DIR}/default-material-v.sdr
 )
 
-target_sources(code PRIVATE ${SHADERS})
-source_group("Graphics\\Shaders" FILES ${SHADERS})
-
+# Struct header generation via shadertool (SPIR-V reflection).
+# When SHADERS_ENABLE_COMPILATION is ON, shaders in SHADERS_NEED_STRUCT_GEN are
+# compiled to temporary SPIR-V with glslc, then shadertool generates C++ struct
+# headers from the reflection data. The generated headers are checked into VCS
+# so that builds without glslc/shadertool still work.
 set(_structHeaderList)
+set(_shaderCompiledDir "${CMAKE_CURRENT_SOURCE_DIR}/graphics/shaders/compiled")
 
-foreach (_shader ${SHADERS})
-	if ("${_shader}" MATCHES "\\.glsl$")
-		# Ignore include files since they will only be used but not compiled
-		continue()
-	endif ()
-
+foreach (_shader ${SHADERS_NEED_STRUCT_GEN})
 	get_filename_component(_fileName "${_shader}" NAME)
-
-	# We write the compiled/generated shader files to the source directory so that they can be included in the VCS
-	# This way, it is not necessary to have the tools for compiling shaders when doing non-shader related work
-	set(_shaderOutputDir "${CMAKE_CURRENT_SOURCE_DIR}/graphics/shaders/compiled")
-	set(_spirvFile "${_shaderOutputDir}/${_fileName}.spv")
-
 	get_filename_component(_baseShaderName "${_shader}" NAME_WE)
-	get_filename_component(_shaderExt "${_shader}" EXT)
+
+	# Determine shader stage from filename convention: *-v.sdr = vertex, *-f.sdr = fragment
+	string(REGEX MATCH "-([vf])\\.sdr$" _match "${_fileName}")
+	if (CMAKE_MATCH_1 STREQUAL "v")
+		set(_stage "vertex")
+		set(_structSuffix ".vert.h")
+	else()
+		set(_stage "fragment")
+		set(_structSuffix ".frag.h")
+	endif()
+
+	# Map e.g. "default-material-f" to "default-material_structs.frag.h"
+	string(REGEX REPLACE "-[vf]$" "" _baseName "${_baseShaderName}")
+	set(_structOutput "${_shaderCompiledDir}/${_baseName}_structs${_structSuffix}")
+	list(APPEND _structHeaderList "${_structOutput}")
 
 	if (TARGET glslc)
+		set(_spirvFile "${CMAKE_CURRENT_BINARY_DIR}/shaders/${_fileName}.spv")
 		set(_depFileDir "${CMAKE_CURRENT_BINARY_DIR}/shaders")
 		set(_depFile "${_depFileDir}/${_fileName}.spv.d")
 		file(RELATIVE_PATH _relativeSpirvPath "${CMAKE_BINARY_DIR}" "${_spirvFile}")
@@ -43,36 +52,20 @@ foreach (_shader ${SHADERS})
 
 		add_custom_command(OUTPUT "${_spirvFile}"
 			COMMAND ${CMAKE_COMMAND} -E make_directory "${_depFileDir}"
-			COMMAND glslc "${_shader}" -o "${_spirvFile}" --target-env=vulkan1.0 -O -g "-I${SHADER_DIR}"
-				"-I${LEGACY_SHADER_DIR}" -MD -MF "${_depFile}" -MT "${_relativeSpirvPath}" -Werror -x glsl
-			MAIN_DEPENDENCY "${shader}"
-			COMMENT "Compiling shader ${_fileName}"
+			COMMAND glslc -x glsl -fshader-stage=${_stage}
+				"${_shader}" -o "${_spirvFile}" --target-env=vulkan1.0 -std=450 -O -g
+				"-I${SHADER_DIR}"
+				-MD -MF "${_depFile}" -MT "${_relativeSpirvPath}" -Werror
+			MAIN_DEPENDENCY "${_shader}"
+			COMMENT "Compiling shader ${_fileName} (for struct generation)"
 			${DEPFILE_PARAM}
 			)
 
-		target_embed_files(code FILES "${_spirvFile}" RELATIVE_TO "${_shaderOutputDir}" PATH_TYPE_PREFIX "data/effects")
-
-		set(_glslOutput "${_spirvFile}.glsl")
-		set(_structOutput "${_shaderOutputDir}/${_baseShaderName}_structs${_shaderExt}.h")
-
-		list(APPEND _structHeaderList "${_structOutput}")
-
-		add_custom_command(OUTPUT "${_glslOutput}" "${_structOutput}"
-			COMMAND shadertool --glsl "--glsl-output=${_glslOutput}" --structs "--structs-output=${_structOutput}" ${_spirvFile}
+		add_custom_command(OUTPUT "${_structOutput}"
+			COMMAND shadertool --structs "--structs-output=${_structOutput}" "${_spirvFile}"
 			MAIN_DEPENDENCY "${_spirvFile}"
-			COMMENT "Processing shader ${_spirvFile}"
+			COMMENT "Generating struct header from ${_fileName}"
 			)
-
-		target_embed_files(code FILES "${_glslOutput}" RELATIVE_TO "${_shaderOutputDir}" PATH_TYPE_PREFIX "data/effects")
-	else()
-		target_embed_files(code FILES "${_spirvFile}" RELATIVE_TO "${_shaderOutputDir}" PATH_TYPE_PREFIX "data/effects")
-
-		set(_glslOutput "${_spirvFile}.glsl")
-		set(_structOutput "${_shaderOutputDir}/${_baseShaderName}_structs${_shaderExt}.h")
-
-		list(APPEND _structHeaderList "${_structOutput}")
-
-		target_embed_files(code FILES "${_glslOutput}" RELATIVE_TO "${_shaderOutputDir}" PATH_TYPE_PREFIX "data/effects")
 	endif()
 endforeach ()
 

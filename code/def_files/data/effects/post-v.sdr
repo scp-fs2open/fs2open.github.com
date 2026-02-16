@@ -1,8 +1,19 @@
+#ifdef VULKAN
+layout(location = 0) out vec2 fragTexCoord;
+#else
 in vec4 vertPosition;
 in vec4 vertTexCoord;
 out vec4 fragTexCoord;
+#endif
+
 void main()
 {
+#ifdef VULKAN
+	vec2 pos = vec2((gl_VertexIndex << 1) & 2, gl_VertexIndex & 2);
+	fragTexCoord = pos;
+	gl_Position = vec4(pos * 2.0 - 1.0, 0.0, 1.0);
+#else
 	fragTexCoord = vertTexCoord;
 	gl_Position = vertPosition;
+#endif
 }

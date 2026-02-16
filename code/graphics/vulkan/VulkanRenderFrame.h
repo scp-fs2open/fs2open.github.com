@@ -7,17 +7,25 @@
 namespace graphics {
 namespace vulkan {
 
-class RenderFrame {
+enum class SwapChainStatus {
+	eSuccess,
+	eSuboptimal,   // Swap chain works but should be recreated
+	eOutOfDate,    // Must recreate before next use
+};
+
+class VulkanRenderFrame {
   public:
-	RenderFrame(vk::Device device, vk::SwapchainKHR swapChain, vk::Queue graphicsQueue, vk::Queue presentQueue);
+	VulkanRenderFrame(vk::Device device, vk::SwapchainKHR swapChain, vk::Queue graphicsQueue, vk::Queue presentQueue);
 
 	void waitForFinish();
 
-	uint32_t acquireSwapchainImage();
+	SwapChainStatus acquireSwapchainImage(uint32_t& outImageIndex);
 
 	void onFrameFinished(std::function<void()> finishFunc);
 
-	void submitAndPresent(const std::vector<vk::CommandBuffer>& cmdBuffers);
+	SwapChainStatus submitAndPresent(const SCP_vector<vk::CommandBuffer>& cmdBuffers);
+
+	void updateSwapChain(vk::SwapchainKHR swapChain);
 
   private:
 	vk::Device m_device;
