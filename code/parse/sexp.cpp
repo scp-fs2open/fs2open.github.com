@@ -2577,15 +2577,19 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				if (type2 != SEXP_ATOM_STRING) {
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
-				if (ship_name_lookup(CTEXT(node), 1) < 0) {
-					if (Fred_running || !mission_check_ship_yet_to_arrive(CTEXT(node))) {
-						return SEXP_CHECK_INVALID_SHIP;
-					}
+				if (ship_name_lookup(CTEXT(node), 1) >= 0) {
+					break;
 				}
-				if (prop_name_lookup(CTEXT(node)) < 0) {
-					return SEXP_CHECK_INVALID_PROP;
+				if (prop_name_lookup(CTEXT(node)) >= 0) {
+					break;
 				}
-				break;
+
+				// also check arrival list if we're running the game
+				if (!Fred_running && mission_check_ship_yet_to_arrive(CTEXT(node))) {
+					break;
+				}
+				
+				return SEXP_CHECK_INVALID_SHIP_PROP;
 
 			case OPF_AWACS_SUBSYSTEM:
 			case OPF_ROTATING_SUBSYSTEM:
@@ -35289,6 +35293,9 @@ const char *sexp_error_message(int num)
 
 		case SEXP_CHECK_INVALID_SHIP_WING:
 			return "Invalid ship or wing name";
+
+		case SEXP_CHECK_INVALID_SHIP_PROP:
+			return "Invalid ship or prop name";
 
 		case SEXP_CHECK_INVALID_SHIP_TYPE:
 			return "Invalid ship type";

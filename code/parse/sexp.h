@@ -1199,6 +1199,7 @@ enum sexp_error_check
 	SEXP_CHECK_INVALID_POINT,           // invalid point
 	SEXP_CHECK_NEGATIVE_NUM,            // negative number wasn't allowed
 	SEXP_CHECK_INVALID_SHIP_WING,       // invalid ship/wing
+	SEXP_CHECK_INVALID_SHIP_PROP,       // invalid ship/prop
 	SEXP_CHECK_INVALID_SHIP_TYPE,       // invalid ship type
 	SEXP_CHECK_UNKNOWN_MESSAGE,         // invalid message
 	SEXP_CHECK_INVALID_PRIORITY,        // invalid priority for a message

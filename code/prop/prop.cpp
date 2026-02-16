@@ -322,7 +322,7 @@ void parse_prop_table(const char* filename)
 				}
 
 				if (!flag_found) {
-					Warning(LOCATION, "Bogus string in ship flags: %s\n", cur_flag);
+					Warning(LOCATION, "Bogus string in prop flags: %s\n", cur_flag);
 				}
 			}
 		}
