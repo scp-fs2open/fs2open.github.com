@@ -26,8 +26,12 @@ fi
 
 CMAKE_OPTIONS="$JOB_CMAKE_OPTIONS"
 if [[ "$COMPILER" =~ ^clang.*$ ]]; then
+    # Force clang to silently allow -static-libstdc++ flag
     CMAKE_OPTIONS="$CMAKE_OPTIONS -DCLANG_USE_LIBCXX=ON"
-    # force clang to silently allow -static-libstdc++ flag
+    # Enable Vulkan for clang builds so the compilation database includes the
+    # bundled Vulkan headers.  Without this, clang-tidy falls back to
+    # system-installed Vulkan headers which may be an incompatible version.
+    CMAKE_OPTIONS="$CMAKE_OPTIONS -DFSO_BUILD_WITH_VULKAN=ON"
 fi
 
 if [ ! "$CCACHE_PATH" = "" ]; then

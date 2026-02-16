@@ -1,37 +1,44 @@
 
+#ifdef VULKAN
+layout (location = 0) in vec2 ftcoord;
+layout (location = 1) in vec2 fpos;
+
+layout (location = 0) out vec4 outColor;
+
+layout (set = 1, binding = 1) uniform sampler2DArray nvg_tex;
+#else
 // Enabled at all times but the define is kept here in case this should be configurable in the future
 #define EDGE_AA
-
-layout(std140) uniform NanoVGUniformData {
-    mat3 scissorMat;
-
-    mat3 paintMat;
-
-    vec4 innerCol;
-
-    vec4 outerCol;
-
-    vec2 scissorExt;
-    vec2 scissorScale;
-
-    vec2 extent;
-    float radius;
-    float feather;
-
-    float strokeMult;
-    float strokeThr;
-    int texType;
-    int type;
-
-    vec2 viewSize;
-    int texArrayIndex;
-};
 
 uniform sampler2DArray nvg_tex;
 
 in vec2 ftcoord;
 in vec2 fpos;
 out vec4 outColor;
+#endif
+
+#ifdef VULKAN
+layout (set = 2, binding = 2, std140)
+#else
+layout(std140)
+#endif
+uniform NanoVGUniformData {
+	mat3 scissorMat;
+	mat3 paintMat;
+	vec4 innerCol;
+	vec4 outerCol;
+	vec2 scissorExt;
+	vec2 scissorScale;
+	vec2 extent;
+	float radius;
+	float feather;
+	float strokeMult;
+	float strokeThr;
+	int texType;
+	int type;
+	vec2 viewSize;
+	int texArrayIndex;
+};
 
 float sdroundrect(vec2 pt, vec2 ext, float rad) {
 	vec2 ext2 = ext - vec2(rad,rad);

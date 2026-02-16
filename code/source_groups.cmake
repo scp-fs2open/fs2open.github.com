@@ -229,6 +229,8 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/brightpass-f.sdr
 	def_files/data/effects/copy-f.sdr
 	def_files/data/effects/decal-f.sdr
+	def_files/data/effects/default-material-f.sdr
+	def_files/data/effects/default-material-v.sdr
 	def_files/data/effects/decal-v.sdr
 	def_files/data/effects/deferred-clear-f.sdr
 	def_files/data/effects/deferred-clear-v.sdr
@@ -243,6 +245,7 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/fog-f.sdr
 	def_files/data/effects/fxaa-f.sdr
 	def_files/data/effects/fxaa-v.sdr
+	def_files/data/effects/fxaa-vulkan-f.sdr
 	def_files/data/effects/fxaapre-f.sdr
 	def_files/data/effects/gamma.sdr
 	def_files/data/effects/irrmap-f.sdr
@@ -255,6 +258,8 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/main_small.sdr
 	def_files/data/effects/model_shader_flags.h
 	def_files/data/effects/msaa-f.sdr
+	def_files/data/effects/msaa-resolve-vulkan-f.sdr
+	def_files/data/effects/msaa-resolve-vulkan-v.sdr
 	def_files/data/effects/nanovg-f.sdr
 	def_files/data/effects/nanovg-v.sdr
 	def_files/data/effects/normals.sdr
@@ -264,6 +269,8 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/post-v.sdr
 	def_files/data/effects/rocketui-f.sdr
 	def_files/data/effects/rocketui-v.sdr
+	def_files/data/effects/shadow-vulkan-f.sdr
+	def_files/data/effects/shadow-vulkan-v.sdr
 	def_files/data/effects/shadows.sdr
 	def_files/data/effects/shield-impact-v.sdr
 	def_files/data/effects/shield-impact-f.sdr
@@ -578,12 +585,40 @@ if (FSO_BUILD_WITH_VULKAN)
 	add_file_folder("Graphics\\\\Vulkan"
 		graphics/vulkan/gr_vulkan.cpp
 		graphics/vulkan/gr_vulkan.h
-		graphics/vulkan/RenderFrame.cpp
-		graphics/vulkan/RenderFrame.h
-		graphics/vulkan/vulkan_stubs.cpp
-		graphics/vulkan/vulkan_stubs.h
+		graphics/vulkan/VulkanBuffer.cpp
+		graphics/vulkan/VulkanBuffer.h
+		graphics/vulkan/VulkanDeferred.cpp
+		graphics/vulkan/VulkanDeferred.h
+		graphics/vulkan/VulkanDeletionQueue.cpp
+		graphics/vulkan/VulkanDeletionQueue.h
+		graphics/vulkan/VulkanDescriptorManager.cpp
+		graphics/vulkan/VulkanDescriptorManager.h
+		graphics/vulkan/VulkanDraw.cpp
+		graphics/vulkan/VulkanDraw.h
+		graphics/vulkan/VulkanMemory.cpp
+		graphics/vulkan/VulkanMemory.h
+		graphics/vulkan/VulkanPipeline.cpp
+		graphics/vulkan/VulkanPipeline.h
+		graphics/vulkan/VulkanPostProcessing.cpp
+		graphics/vulkan/VulkanPostProcessing.h
+		graphics/vulkan/VulkanQuery.cpp
+		graphics/vulkan/VulkanQuery.h
 		graphics/vulkan/VulkanRenderer.cpp
 		graphics/vulkan/VulkanRenderer.h
+		graphics/vulkan/VulkanRenderFrame.cpp
+		graphics/vulkan/VulkanRenderFrame.h
+		graphics/vulkan/VulkanRenderState.cpp
+		graphics/vulkan/VulkanRenderState.h
+		graphics/vulkan/VulkanShader.cpp
+		graphics/vulkan/VulkanShader.h
+		graphics/vulkan/VulkanShaderCompiler.cpp
+		graphics/vulkan/VulkanShaderCompiler.h
+		graphics/vulkan/VulkanState.cpp
+		graphics/vulkan/VulkanState.h
+		graphics/vulkan/VulkanTexture.cpp
+		graphics/vulkan/VulkanTexture.h
+		graphics/vulkan/VulkanVertexFormat.cpp
+		graphics/vulkan/VulkanVertexFormat.h
 	)
 endif()
 

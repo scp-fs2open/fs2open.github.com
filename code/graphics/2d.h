@@ -214,6 +214,8 @@ enum shader_type {
 
 	SDR_TYPE_IRRADIANCE_MAP_GEN,
 
+	SDR_TYPE_SHADOW_MAP,
+
 	NUM_SHADER_TYPES
 };
 
