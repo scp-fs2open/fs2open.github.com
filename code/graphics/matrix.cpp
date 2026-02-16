@@ -272,7 +272,11 @@ void gr_end_2d_matrix()
 	Assert( htl_2d_matrix_depth == 1 );
 
 	// reset viewport to what it was originally set to by the proj matrix
-	gr_set_viewport(gr_screen.offset_x, (gr_screen.max_h - gr_screen.offset_y - gr_screen.clip_height), gr_screen.clip_width, gr_screen.clip_height);
+	if (gr_screen.rendering_to_texture != -1) {
+		gr_set_viewport(gr_screen.offset_x, gr_screen.offset_y, gr_screen.clip_width, gr_screen.clip_height);
+	} else {
+		gr_set_viewport(gr_screen.offset_x, (gr_screen.max_h - gr_screen.offset_y - gr_screen.clip_height), gr_screen.clip_width, gr_screen.clip_height);
+	}
 
 	gr_projection_matrix = gr_last_projection_matrix;
 
