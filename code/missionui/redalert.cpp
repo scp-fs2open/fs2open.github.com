@@ -968,7 +968,7 @@ void red_alert_bash_ship_status()
 
 					// give the ship its name from the latest wave
 					// (this will make the ship match to the correct red-alert data)
-					wing_bash_ship_name(shipp->ship_name, wingp->name, ((rws->latest_wave - 1) * wingp->wave_count) + 1 + pos_in_wing);
+					wing_bash_ship_name(shipp, wingp, ((rws->latest_wave - 1) * wingp->wave_count) + 1 + pos_in_wing);
 					// need to update the ship registry too
 					strcpy_s(Ship_registry[ship_entry_index].name, shipp->ship_name);
 					Ship_registry_map[shipp->ship_name] = ship_entry_index;

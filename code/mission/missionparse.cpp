@@ -4685,18 +4685,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, 
 		wingp->total_arrived_count++;
 		if (wingp->num_waves > 1)
 		{
-			bool needs_display_name;
-			wing_bash_ship_name(p_objp->name, wingp->name, wingp->total_arrived_count + wingp->red_alert_skipped_ships, &needs_display_name);
-
-			// set up display name if we need to
-			// (In the unlikely edge case where the ship already has a display name for some reason, it will be overwritten.
-			// This is unavoidable, because if we didn't overwrite display names, all waves would have the display name from the first wave.)
-			if (needs_display_name)
-			{
-				p_objp->display_name = p_objp->name;
-				end_string_at_first_hash_symbol(p_objp->display_name);
-				p_objp->flags.set(Mission::Parse_Object_Flags::SF_Has_display_name);
-			}
+			wing_bash_ship_name(p_objp, wingp, wingp->total_arrived_count + wingp->red_alert_skipped_ships);
 
 			// subsequent waves of ships will not be in the ship registry, so add them
 			if (!ship_registry_exists(p_objp->name))
@@ -4879,6 +4868,20 @@ void parse_wing(mission *pm)
 	if (wingnum != -1)
 		error_display(0, NOX("Redundant wing name: %s\n"), wingp->name);
 	wingnum = Num_wings;
+
+	// if this name has a hash, create a default display name
+	if (get_pointer_to_first_hash_symbol(wingp->name))
+	{
+		wingp->display_name = wingp->name;
+		end_string_at_first_hash_symbol(wingp->display_name);
+		wingp->flags.set(Ship::Wing_Flags::Has_display_name);
+	}
+
+	if (optional_string("$Display Name:"))
+	{
+		stuff_string(wingp->display_name, F_NAME);
+		wingp->flags.set(Ship::Wing_Flags::Has_display_name);
+	}
 
 	// squad logo - Goober5000
 	if (optional_string("+Squad Logo:"))
@@ -9637,8 +9640,17 @@ bool check_for_25_1_data()
 			return true;
 	}
 
-	return std::any_of(Jump_nodes.begin(), Jump_nodes.end(), [defaultLayer](const auto& jn) {
+	if (std::any_of(Jump_nodes.begin(), Jump_nodes.end(), [defaultLayer](const auto& jn) {
 		const auto& layer = jn.GetFredLayer();
 		return !layer.empty() && !lcase_equal(layer, defaultLayer);
-	});
+	}))
+		return true;
+
+	for (int wingnum = 0; wingnum < Num_wings; wingnum++)
+	{
+		if (Wings[wingnum].has_display_name())
+			return true;
+	}
+
+	return false;
 }

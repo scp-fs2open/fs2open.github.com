@@ -3458,7 +3458,8 @@ int Fred_mission_save::save_objects()
 		count++;
 
 		// Display name
-		// The display name is only written if there was one at the start to avoid introducing inconsistencies
+		// (If we are always saving display names, the "only/not written" comments do not apply)
+		// The display name is only written if it currently exists and the ship is not part of a wing, to avoid introducing inconsistencies
 		if (save_config.save_format != MissionFormat::RETAIL && ((save_config.always_save_display_names && shipp->wingnum < 0) || shipp->has_display_name())) {
 			char truncated_name[NAME_LENGTH];
 			strcpy_s(truncated_name, shipp->ship_name);
@@ -3466,10 +3467,10 @@ int Fred_mission_save::save_objects()
 
 			// Also, the display name is not written if it's just the truncation of the name at the hash
 			if ((save_config.always_save_display_names && shipp->wingnum < 0) || strcmp(shipp->get_display_name(), truncated_name) != 0) {
-				if (optional_string_fred("$Display name:", "$Class:")) {
+				if (optional_string_fred("$Display Name:", "$Class:")) {
 					parse_comments();
 				} else {
-					fout("\n$Display name:");
+					fout("\n$Display Name:");
 				}
 				fout_ext(" ", "%s", shipp->get_display_name());
 			}
@@ -4807,7 +4808,8 @@ int Fred_mission_save::save_waypoints()
 
 		if (save_config.save_format != MissionFormat::RETAIL) {
 
-			// The display name is only written if there was one at the start to avoid introducing inconsistencies
+			// (If we are always saving display names, the "only/not written" comments do not apply)
+			// The display name is only written if it currently exists, to avoid introducing inconsistencies
 			if (save_config.always_save_display_names || jnp->HasDisplayName()) {
 				char truncated_name[NAME_LENGTH];
 				strcpy_s(truncated_name, jnp->GetName());
@@ -4960,6 +4962,25 @@ int Fred_mission_save::save_wings()
 		fout(" %s", w.name);
 
 		count++;
+
+		// Display name
+		// (If we are always saving display names, the "only/not written" comments do not apply)
+		// The display name is only written if it currently exists, to avoid introducing inconsistencies
+		if (save_config.save_format != MissionFormat::RETAIL && (save_config.always_save_display_names || w.has_display_name())) {
+			char truncated_name[NAME_LENGTH];
+			strcpy_s(truncated_name, w.name);
+			end_string_at_first_hash_symbol(truncated_name);
+
+			// Also, the display name is not written if it's just the truncation of the name at the hash
+			if (save_config.always_save_display_names || strcmp(w.get_display_name(), truncated_name) != 0) {
+				if (optional_string_fred("$Display Name:", "$Waves:")) {
+					parse_comments();
+				} else {
+					fout("\n$Display Name:");
+				}
+				fout_ext(" ", "%s", w.get_display_name());
+			}
+		}
 
 		// squad logo - Goober5000
 		if (save_config.save_format != MissionFormat::RETAIL) {

@@ -177,6 +177,20 @@ int create_wing() {
 		dlg.m_name.TrimLeft();
 		dlg.m_name.TrimRight();
 		string_copy(Wings[wing].name, dlg.m_name, NAME_LENGTH - 1);
+
+		// if this name has a hash, create a default display name
+		if (get_pointer_to_first_hash_symbol(Wings[wing].name))
+		{
+			Wings[wing].display_name = Wings[wing].name;
+			end_string_at_first_hash_symbol(Wings[wing].display_name);
+			Wings[wing].flags.set(Ship::Wing_Flags::Has_display_name);
+		}
+		// otherwise reset the display name
+		else
+		{
+			Wings[wing].display_name = "";
+			Wings[wing].flags.remove(Ship::Wing_Flags::Has_display_name);
+		}
 	}
 
 	set_cur_indices(-1);
@@ -235,6 +249,8 @@ int create_wing() {
 
 			wing_bash_ship_name(msg, Wings[wing].name, i + 1);
 			rename_ship(ship, msg);
+			// bash it again for the display name
+			wing_bash_ship_name(&Ships[ship], &Wings[wing], i + 1, true);
 
 			Wings[wing].ship_index[i] = ship;
 			Ships[ship].wingnum = wing;
@@ -407,6 +423,8 @@ void remove_ship_from_wing(int ship, int min) {
 				if (Objects[obj].type == OBJ_SHIP) {
 					wing_bash_ship_name(buf, Wings[wing].name, i + 1);
 					rename_ship(Wings[wing].ship_index[i], buf);
+					// bash it again for the display name
+					wing_bash_ship_name(&Ships[Wings[wing].ship_index[i]], &Wings[wing], i + 1, true);
 				}
 			}
 

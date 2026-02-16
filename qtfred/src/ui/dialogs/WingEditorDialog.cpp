@@ -24,6 +24,7 @@ WingEditorDialog::WingEditorDialog(FredView* parent, EditorViewport* viewport)
 	ui->helpText->setVisible(viewport->Show_sexp_help_wing_editor);
 
 	ui->wingNameEdit->setMaxLength(NAME_LENGTH - 1);
+	ui->wingDisplayNameEdit->setMaxLength(NAME_LENGTH - 1);
 
 	setWindowTitle(tr("Wing Editor"));
 	
@@ -58,6 +59,7 @@ void WingEditorDialog::updateUi()
 	
 	// Top section, first column
 	ui->wingNameEdit->setText(_model->getWingName().c_str());
+	ui->wingDisplayNameEdit->setText(_model->getWingDisplayName().c_str());
 	ui->wingLeaderCombo->setCurrentIndex(_model->getWingLeaderIndex());
 	ui->numWavesSpinBox->setValue(_model->getNumberOfWaves());
 	ui->waveThresholdSpinBox->setValue(_model->getWaveThreshold());
@@ -122,6 +124,7 @@ void WingEditorDialog::enableOrDisableControls()
 	auto enableAll = [&](bool on) {
 		// Top section, first column
 		ui->wingNameEdit->setEnabled(on);
+		ui->wingDisplayNameEdit->setEnabled(on);
 		ui->wingLeaderCombo->setEnabled(on);
 		ui->numWavesSpinBox->setEnabled(on);
 		ui->waveThresholdSpinBox->setEnabled(on);
@@ -228,6 +231,7 @@ void WingEditorDialog::clearGeneralFields()
 	util::SignalBlockers blockers(this);
 
 	ui->wingNameEdit->clear();
+	ui->wingDisplayNameEdit->clear();
 	ui->wingLeaderCombo->setCurrentIndex(-1);
 
 	ui->hotkeyCombo->setCurrentIndex(-1);
@@ -357,6 +361,17 @@ void WingEditorDialog::on_wingNameEdit_editingFinished()
 {
 	const auto newName = ui->wingNameEdit->text().toStdString();
 	_model->setWingName(newName);
+
+	// rename_wing already auto-sets the display name from the hash; just sync the edit box
+	ui->wingDisplayNameEdit->setText(Editor::get_display_name_for_text_box(_model->getWingName()).c_str());
+}
+
+void WingEditorDialog::on_wingDisplayNameEdit_editingFinished()
+{
+	const auto newDisplayName = ui->wingDisplayNameEdit->text().toStdString();
+	if (newDisplayName != _model->getWingDisplayName()) {
+		_model->setWingDisplayName(newDisplayName);
+	}
 }
 
 void WingEditorDialog::on_wingLeaderCombo_currentIndexChanged(int index)

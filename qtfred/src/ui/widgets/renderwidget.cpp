@@ -372,9 +372,7 @@ void RenderWidget::mouseReleaseEvent(QMouseEvent* event) {
 						Assert(objp->type == OBJ_SHIP);
 						ship = objp->instance;
 						Assert(Ships[ship].wingnum == -1);
-						wing_bash_ship_name(Ships[ship].ship_name,
-											Wings[_viewport->Duped_wing].name,
-											Wings[_viewport->Duped_wing].wave_count + 1);
+						wing_bash_ship_name(&Ships[ship], &Wings[_viewport->Duped_wing], Wings[_viewport->Duped_wing].wave_count + 1, true);
 
 						Wings[_viewport->Duped_wing].ship_index[Wings[_viewport->Duped_wing].wave_count] = ship;
 						Ships[ship].wingnum = _viewport->Duped_wing;

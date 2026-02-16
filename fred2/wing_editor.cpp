@@ -45,6 +45,7 @@ wing_editor::wing_editor(CWnd* pParent /*=NULL*/)
 {
 	//{{AFX_DATA_INIT(wing_editor)
 	m_wing_name = _T("");
+	m_wing_display_name = _T("");
 	m_wing_squad_filename = _T("");
 	m_special_ship = -1;
 	m_waves = 0;
@@ -90,6 +91,7 @@ void wing_editor::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_SPIN_WAVE_THRESHOLD, m_threshold_spin);
 	DDX_Control(pDX, IDC_SPIN_WAVES, m_waves_spin);
 	DDX_Text(pDX, IDC_WING_NAME, m_wing_name);
+	DDX_Text(pDX, IDC_WING_DISPLAY_NAME, m_wing_display_name);
 	DDX_Text(pDX, IDC_WING_SQUAD_LOGO, m_wing_squad_filename);
 	DDX_CBIndex(pDX, IDC_WING_SPECIAL_SHIP, m_special_ship);
 	DDX_CBIndex(pDX, IDC_WING_FORMATION, m_formation);
@@ -182,6 +184,7 @@ BEGIN_MESSAGE_MAP(wing_editor, CDialog)
 	ON_BN_CLICKED(IDC_CUSTOM_WARPIN_PARAMS, OnBnClickedCustomWarpinParams)
 	ON_BN_CLICKED(IDC_CUSTOM_WARPOUT_PARAMS, OnBnClickedCustomWarpoutParams)
 	ON_BN_CLICKED(IDC_WING_FORMATION_ALIGN, OnWingFormationAlign)
+	ON_EN_CHANGE(IDC_WING_NAME, OnChangeWingName)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -287,6 +290,7 @@ void wing_editor::initialize_data_safe(int full_update)
 	m_ignore_count = 0;
 	if (cur_wing < 0) {
 		m_wing_squad_filename = _T("");
+		m_wing_display_name = _T("");
 		m_special_ship = -1;
 		m_formation = 0;
 		m_formation_scale = _T("1.0");
@@ -349,6 +353,7 @@ void wing_editor::initialize_data_safe(int full_update)
 				player_wing = 1;
 
 		m_wing_squad_filename = _T(Wings[cur_wing].wing_squad_filename);
+		m_wing_display_name = Wings[cur_wing].has_display_name() ? Wings[cur_wing].get_display_name() : "<none>";
 		m_special_ship = Wings[cur_wing].special_ship;
 		m_waves = Wings[cur_wing].num_waves;
 		m_threshold = Wings[cur_wing].threshold;
@@ -697,6 +702,25 @@ int wing_editor::update_data(int redraw)
 
 		strcpy_s(old_name, Wings[cur_wing].name);
 		string_copy(Wings[cur_wing].name, m_wing_name, NAME_LENGTH, 1);
+
+		lcl_fred_replace_stuff(m_wing_display_name);
+
+		// the display name was precalculated, so now just assign it
+		if (m_wing_display_name == m_wing_name || m_wing_display_name.CompareNoCase("<none>") == 0)
+		{
+			if (Wings[cur_wing].has_display_name())
+				set_modified();
+			Wings[cur_wing].display_name = "";
+			Wings[cur_wing].flags.remove(Ship::Wing_Flags::Has_display_name);
+		}
+		else
+		{
+			if (!Wings[cur_wing].has_display_name() || Wings[cur_wing].display_name != (LPCSTR)m_wing_display_name)
+				set_modified();
+			Wings[cur_wing].display_name = m_wing_display_name;
+			Wings[cur_wing].flags.set(Ship::Wing_Flags::Has_display_name);
+		}
+
 		update_data_safe();
 
 		update_custom_wing_indexes();
@@ -718,8 +742,8 @@ int wing_editor::update_data(int redraw)
 				if ((Objects[wing_objects[cur_wing][i]].type == OBJ_SHIP) || (Objects[wing_objects[cur_wing][i]].type == OBJ_START)) {
 					wing_bash_ship_name(buf, str, i + 1);
 					rename_ship(Wings[cur_wing].ship_index[i], buf);
-					// clear display name if we have one hanging around
-					Ships[Wings[cur_wing].ship_index[i]].flags.remove(Ship::Ship_Flags::Has_display_name);
+					// bash it again for the display name
+					wing_bash_ship_name(&Ships[Wings[cur_wing].ship_index[i]], &Wings[cur_wing], i + 1, true);
 				}
 			}
 
@@ -1479,4 +1503,16 @@ void wing_editor::OnWingFormationAlign()
 	// roll back temporary formation
 	wingp->formation = old_formation;
 	wingp->formation_scale = old_formation_scale;
+}
+
+void wing_editor::OnChangeWingName()
+{
+	// sync the edit box to the variable
+	UpdateData(TRUE);
+
+	// automatically determine or reset the display name
+	m_wing_display_name = get_display_name_for_text_box(m_wing_name);
+
+	// sync the variable to the edit box
+	UpdateData(FALSE);
 }

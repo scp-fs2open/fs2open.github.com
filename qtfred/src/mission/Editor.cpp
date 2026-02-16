@@ -382,8 +382,7 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 
 		// fix old ship names for ships in wings if needed
 		while (j--) {
-			if ((Objects[wing_objects[i][j]].type == OBJ_SHIP)
-				|| (Objects[wing_objects[i][j]].type == OBJ_START)) {  // don't change player ship names
+			if ((Objects[wing_objects[i][j]].type == OBJ_SHIP) || (Objects[wing_objects[i][j]].type == OBJ_START)) {  // don't change player ship names
 				wing_bash_ship_name(name, Wings[i].name, j + 1);
 				old_name = Ships[Wings[i].ship_index[j]].ship_name;
 				if (stricmp(name, old_name) != 0) {  // need to fix name
@@ -397,7 +396,8 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 						}
 					}
 
-					strcpy_s(Ships[Wings[i].ship_index[j]].ship_name, name);
+					// bash it again so that we handle display names if needed
+					wing_bash_ship_name(&Ships[Wings[i].ship_index[j]], &Wings[i], j + 1, true);
 				}
 			}
 		}
@@ -1599,6 +1599,8 @@ int Editor::delete_ship_from_wing(int ship) {
 				if (Objects[wing_objects[wing][i]].type == OBJ_SHIP) {
 					wing_bash_ship_name(name, Wings[wing].name, i + 1);
 					rename_ship(Wings[wing].ship_index[i], name);
+					// bash it again for the display name
+					wing_bash_ship_name(&Ships[Wings[wing].ship_index[i]], &Wings[wing], i + 1, true);
 				}
 			}
 
@@ -1678,6 +1680,20 @@ int Editor::rename_ship(int ship, const char* name) {
 	}
 
 	strcpy_s(Ships[ship].ship_name, name);
+
+	// if this name has a hash, create a default display name
+	if (get_pointer_to_first_hash_symbol(Ships[ship].ship_name))
+	{
+		Ships[ship].display_name = Ships[ship].ship_name;
+		end_string_at_first_hash_symbol(Ships[ship].display_name);
+		Ships[ship].flags.set(Ship::Ship_Flags::Has_display_name);
+	}
+	// otherwise reset the display name
+	else
+	{
+		Ships[ship].display_name = "";
+		Ships[ship].flags.remove(Ship::Ship_Flags::Has_display_name);
+	}
 
 	missionChanged();
 

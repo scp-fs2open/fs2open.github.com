@@ -2173,14 +2173,12 @@ void draw_wing_block(int wb_num, int hot_slot, int selected_slot, int class_sele
 	
 	// print the wing name under the wing
 	wp = &Wings[wb->wingnum];
-	char name[NAME_LENGTH];
-	strcpy_s(name, wp->name);
-	end_string_at_first_hash_symbol(name);
-	gr_get_string_size(&w, &h, name);
+	auto wing_name = wp->get_display_name();
+	gr_get_string_size(&w, &h, wing_name);
 	sx = Wing_icon_coords[gr_screen.res][wb_num*MAX_WING_SLOTS][0] + 16 - w/2;
 	sy = Wing_icon_coords[gr_screen.res][wb_num*MAX_WING_SLOTS + 3][1] + 32 + h;
 	gr_set_color_fast(&Color_normal);
-	gr_string(sx, sy, name, GR_RESIZE_MENU);
+	gr_string(sx, sy, wing_name, GR_RESIZE_MENU);
 
 	for ( i = 0; i < MAX_WING_SLOTS; i++ ) {
 		GR_DEBUG_SCOPE("Single ship");

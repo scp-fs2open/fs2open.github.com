@@ -47,7 +47,7 @@ ADE_FUNC(__len, l_Wing, NULL, "Gets the number of ships in the wing", "number", 
 	return ade_set_args(L, "i", Wings[wdx].current_count);
 }
 
-ADE_VIRTVAR(Name, l_Wing, "string", "Name of Wing", "string", "Wing name, or empty string if handle is invalid")
+ADE_VIRTVAR(Name, l_Wing, "string", "Wing name. This is the actual name of the wing. Use <i>getDisplayString</i> to get the string which should be displayed to the player.", "string", "Wing name, or empty string if handle is invalid")
 {
 	int wdx;
 	const char* s = nullptr;
@@ -61,6 +61,29 @@ ADE_VIRTVAR(Name, l_Wing, "string", "Name of Wing", "string", "Wing name, or emp
 	}
 
 	return ade_set_args(L, "s", Wings[wdx].name);
+}
+
+ADE_VIRTVAR(DisplayName, l_Wing, "string", "Wing display name", "string", "The display name of the wing or empty if there is no display string")
+{
+	int wingnum = -1;
+	const char* s = nullptr;
+	if (!ade_get_args(L, "o|s", l_Wing.Get(&wingnum), &s))
+		return ade_set_error(L, "s", "");
+
+	if (wingnum < 0 || wingnum >= Num_wings)
+		return ade_set_error(L, "s", "");
+
+	auto wingp = &Wings[wingnum];
+
+	if (ADE_SETTING_VAR && s != nullptr)
+	{
+		wingp->display_name = s;
+
+		// for compatibility reasons, if we are setting this to the empty string, clear the flag
+		wingp->flags.set(Ship::Wing_Flags::Has_display_name, s[0] != 0);
+	}
+
+	return ade_set_args(L, "s", wingp->display_name.c_str());
 }
 
 ADE_FUNC(isValid, l_Wing, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
@@ -372,6 +395,18 @@ ADE_VIRTVAR(WaveDelayMinimum, l_Wing, "number", "The wing's minimum wave delay",
 ADE_VIRTVAR(WaveDelayMaximum, l_Wing, "number", "The wing's maximum wave delay", "number", "Max wave delay, or nil if handle is invalid")
 {
 	return wing_getset_helper(L, &wing::wave_delay_max, true);
+}
+
+ADE_FUNC(getDisplayString, l_Wing, nullptr, "Returns the string which should be used when displaying the name of the wing to the player", "string", "The display string or empty if handle is invalid")
+{
+	int wingnum = -1;
+	if (!ade_get_args(L, "o", l_Wing.Get(&wingnum)))
+		return ade_set_error(L, "s", "");
+
+	if (wingnum < 0 || wingnum >= Num_wings)
+		return ade_set_error(L, "s", "");
+
+	return ade_set_args(L, "s", Wings[wingnum].get_display_name());
 }
 
 
