@@ -6,7 +6,7 @@
 #include <direct.h>
 #endif
 
-#if !defined __APPLE_CC__ && defined SCP_UNIX
+#if !defined __APPLE_CC__ && !defined __ANDROID__ && defined SCP_UNIX
 #include<glad/glad_glx.h>
 //Required because X defines none and always, which is used later
 #undef None
@@ -42,14 +42,22 @@
 #include "osapi/osapi.h"
 #include "osapi/osregistry.h"
 #include "pngutils/pngutils.h"
+#ifdef USE_OPENGL_ES
+#include "es_compatibility.h"
+#endif
 
 #include <glad/glad.h>
 
-// minimum GL version we can reliably support is 3.2
+// minimum GL / GLES version we can reliably support is 3.2
 static const int MIN_REQUIRED_GL_VERSION = 32;
 
+#ifndef USE_OPENGL_ES
 // minimum GLSL version we can reliably support is 110
 static const int MIN_REQUIRED_GLSL_VERSION = 150;
+#else
+// minimum GLSL ES version
+static const int MIN_REQUIRED_GLSL_VERSION = 320;
+#endif
 
 int GL_version = 0;
 int GLSL_version = 0;
@@ -875,8 +883,11 @@ std::unique_ptr<os::Viewport> gr_opengl_create_viewport(const os::ViewPortProper
 	attrs.pixel_format.multi_samples = os_config_read_uint(NULL, "OGL_AntiAliasSamples", 0);
 
 	attrs.enable_opengl = true;
-	attrs.gl_attributes.profile = os::OpenGLProfile::Core;
-
+	#ifndef USE_OPENGL_ES
+		attrs.gl_attributes.profile = os::OpenGLProfile::Core;
+	#else
+		attrs.gl_attributes.profile = os::OpenGLProfile::ES;
+	#endif
 	return graphic_operations->createViewport(attrs);
 }
 
@@ -900,7 +911,11 @@ int opengl_init_display_device()
 	attrs.gl_attributes.flags.set(os::OpenGLContextFlags::Debug);
 #endif
 
-	attrs.gl_attributes.profile = os::OpenGLProfile::Core;
+	#ifndef USE_OPENGL_ES
+		attrs.gl_attributes.profile = os::OpenGLProfile::Core;
+	#else
+		attrs.gl_attributes.profile = os::OpenGLProfile::ES;
+	#endif
 
 	attrs.display = os_config_read_uint("Video", "Display", 0);
 	attrs.width = (uint32_t) gr_screen.max_w;
@@ -1249,8 +1264,12 @@ static void init_extensions() {
 
 	int ver = 0, major = 0, minor = 0;
 	const char *glsl_ver = (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION);
-
-	sscanf(glsl_ver, "%d.%d", &major, &minor);
+	
+	#ifndef USE_OPENGL_ES
+		sscanf(glsl_ver, "%d.%d", &major, &minor);
+	#else
+		sscanf(glsl_ver, "OpenGL ES GLSL ES %d.%d", &major, &minor);
+	#endif
 	ver = (major * 100) + minor;
 
 	GLSL_version = ver;
@@ -1306,7 +1325,7 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 		Error(LOCATION, "Failed to load OpenGL!");
 	}
 
-#if !defined __APPLE_CC__ && defined SCP_UNIX
+#if !defined __APPLE_CC__ && !defined __ANDROID__ && defined SCP_UNIX
 	if (!gladLoadGLXLoader(GL_context->getLoaderFunction(), nullptr, 0)) {
 		Error(LOCATION, "Failed to load GLX!");
 	}
@@ -1344,10 +1363,25 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	}
 #endif
 
-	mprintf(( "  OpenGL Vendor    : %s\n", glGetString(GL_VENDOR) ));
-	mprintf(( "  OpenGL Renderer  : %s\n", glGetString(GL_RENDERER) ));
-	mprintf(( "  OpenGL Version   : %s\n", glGetString(GL_VERSION) ));
+	mprintf(("  OpenGL Vendor    : %s\n", glGetString(GL_VENDOR)));
+	mprintf(("  OpenGL Renderer  : %s\n", glGetString(GL_RENDERER)));
+	mprintf(("  OpenGL Version   : %s\n", glGetString(GL_VERSION)));
+	mprintf(( "  GLSL Version	  : %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION)));
 	mprintf(( "\n" ));
+	mprintf(("Extensions: \n"));
+	mprintf(("  Geo shader support : %s\n", GLAD_GL_ARB_gpu_shader5 ? NOX("YES") : NOX("NO")));
+	mprintf(("  S3TC texture support : %s\n", GLAD_GL_EXT_texture_compression_s3tc ? NOX("YES") : NOX("NO")));
+	mprintf(("  BPTC texture support : %s\n", GLAD_GL_ARB_texture_compression_bptc ? NOX("YES") : NOX("NO")));
+	#ifdef USE_OPENGL_ES
+	mprintf(("  ASTC texture support : %s\n", GLAD_GL_KHR_texture_compression_astc_ldr ? NOX("YES") : NOX("NO")));
+	mprintf(("  Cull distance support : %s\n", GLAD_GL_EXT_clip_cull_distance ? NOX("YES") : NOX("NO")));
+	mprintf(("  Precompiled shaders support : %s\n", GLAD_GL_OES_get_program_binary ? NOX("YES") : NOX("NO")));
+	mprintf(("  Immutable buffer storage support : %s\n", GLAD_GL_EXT_buffer_storage ? NOX("YES") : NOX("NO")));
+	mprintf(("  BGRA8888 format support: %s\n", GLAD_GL_EXT_texture_format_BGRA8888 ? NOX("YES") : NOX("NO")));
+	mprintf(("  Anisotropic filter support: %s\n", GLAD_GL_EXT_texture_filter_anisotropic ? NOX("YES") : NOX("NO")));
+	mprintf(("  Multisampled render to texture support: %s\n", GLAD_GL_EXT_multisampled_render_to_texture ? NOX("YES") : NOX("NO")));
+	#endif
+	mprintf(("\n"));
 
 	// Build a string identifier for this OpenGL implementation
 	GL_implementation_id.clear();
@@ -1409,7 +1443,9 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	glClear(GL_DEPTH_BUFFER_BIT);
 	glClear(GL_STENCIL_BUFFER_BIT);
 
+	#ifndef USE_OPENGL_ES
 	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+	#endif
 
 	glDepthRange(0.0, 1.0);
 
@@ -1447,12 +1483,8 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 		  GL_max_renderbuffer_size,
 		  GL_max_renderbuffer_size ));
 
-	mprintf(( "  S3TC texture support: %s\n", GLAD_GL_EXT_texture_compression_s3tc ? NOX("YES") : NOX("NO") ));
-	mprintf(( "  BPTC texture support: %s\n", GLAD_GL_ARB_texture_compression_bptc ? NOX("YES") : NOX("NO") ));
-	mprintf(( "  Post-processing enabled: %s\n", (Gr_post_processing_enabled) ? "YES" : "NO"));
-	mprintf(( "  Using %s texture filter.\n", (GL_mipmap_filter) ? NOX("trilinear") : NOX("bilinear") ));
-
-	mprintf(( "  OpenGL Shader Version: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION) ));
+	mprintf(("  Post-processing enabled: %s\n", (Gr_post_processing_enabled) ? "YES" : "NO"));
+	mprintf(("  Using %s texture filter.\n", (GL_mipmap_filter) ? NOX("trilinear") : NOX("bilinear")));
 
 	mprintf(("  Max uniform block size: %d\n", GL_state.Constants.GetMaxUniformBlockSize()));
 	mprintf(("  Max uniform buffer bindings: %d\n", GL_state.Constants.GetMaxUniformBlockBindings()));

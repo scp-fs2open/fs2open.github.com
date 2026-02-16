@@ -169,4 +169,8 @@ extern void removeWindowModeOption();
 extern void removeResolutionOption();
 extern void removeResolutionVROption();
 
+//Android Exclusive
+#ifdef __ANDROID__
+extern char* Cmdline_working_folder;
+#endif
 #endif

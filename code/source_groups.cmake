@@ -512,6 +512,7 @@ if (FSO_BUILD_WITH_OPENGL)
 		graphics/opengl/ShaderProgram.h
 		graphics/opengl/SmaaAreaTex.h
 		graphics/opengl/SmaaSearchTex.h
+		graphics/opengl/es_compatibility.h
 	)
 endif()
 
@@ -1768,4 +1769,10 @@ add_file_folder("Weapon"
 add_file_folder("Windows Stubs"
 	windows_stub/config.h
 	windows_stub/stubs.cpp
+)
+
+# ktx utils files
+add_file_folder("ktxutils"
+	ktxutils/ktxutils.cpp
+	ktxutils/ktxutils.h
 )

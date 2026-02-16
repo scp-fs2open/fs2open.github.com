@@ -23,6 +23,9 @@
 #include "parse/parselo.h"
 #include "ship/ship.h"
 #include "tracing/tracing.h"
+#ifdef USE_OPENGL_ES
+#include "es_compatibility.h"
+#endif
 
 extern bool PostProcessing_override;
 extern int opengl_check_framebuffer();
