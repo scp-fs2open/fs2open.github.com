@@ -300,6 +300,7 @@ public:
 		std::pair {"Host Ship Time Until Explosion", modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getParentObjAndSig, 0, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::final_death_time, static_cast<int (*)(int)>(&timestamp_until)>{}})
 	.derive_modular_curves_input_only_subset<size_t>( //Effect Number
 		std::pair {"Spawntime Left", modular_curves_functional_full_input<&ParticleSource::getEffectRemainingTime>{}},
+		std::pair {"Life Left", modular_curves_functional_full_input<&ParticleSource::getEffectRemainingLife>{}},
 		std::pair {"Time Running", modular_curves_functional_full_input<&ParticleSource::getEffectRunningTime>{}})
 	.derive_modular_curves_input_only_subset<vec3d>( //Sampled spawn position
 		std::pair {"Pixel Size At Emitter", modular_curves_functional_full_input<&ParticleSource::getEffectPixelSize>{}},

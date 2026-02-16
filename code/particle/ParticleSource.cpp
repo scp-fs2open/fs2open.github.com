@@ -113,6 +113,11 @@ float ParticleSource::getEffectRunningTime(const std::tuple<const ParticleSource
 	return i2fl(timestamp_get_delta(timing.m_startTimestamp, timing.m_nextCreation)) / i2fl(MILLISECONDS_PER_SECOND);
 }
 
+float ParticleSource::getEffectRemainingLife(const std::tuple<const ParticleSource&, const size_t&>& source) {
+	const auto& timing = std::get<0>(source).m_timing[std::get<1>(source)];
+	return i2fl(timestamp_get_delta(timing.m_nextCreation, timing.m_endTimestamp)) / i2fl(timestamp_get_delta(timing.m_startTimestamp, timing.m_endTimestamp)) ;
+}
+
 float ParticleSource::getEffectPixelSize(const std::tuple<const ParticleSource&, const size_t&, const vec3d&>& source) {
 	return std::get<0>(source).getEffect()[std::get<1>(source)].getApproximatePixelSize(std::get<2>(source));
 }
