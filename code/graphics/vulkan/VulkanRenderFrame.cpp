@@ -1,10 +1,10 @@
 
-#include "RenderFrame.h"
+#include "VulkanRenderFrame.h"
 
 namespace graphics {
 namespace vulkan {
 
-RenderFrame::RenderFrame(vk::Device device, vk::SwapchainKHR swapChain, vk::Queue graphicsQueue, vk::Queue presentQueue)
+VulkanRenderFrame::VulkanRenderFrame(vk::Device device, vk::SwapchainKHR swapChain, vk::Queue graphicsQueue, vk::Queue presentQueue)
 	: m_device(device), m_swapChain(swapChain), m_graphicsQueue(graphicsQueue), m_presentQueue(presentQueue)
 {
 	constexpr vk::SemaphoreCreateInfo semaphoreCreateInfo;
@@ -14,7 +14,7 @@ RenderFrame::RenderFrame(vk::Device device, vk::SwapchainKHR swapChain, vk::Queu
 	m_renderingFinishedSemaphore = device.createSemaphoreUnique(semaphoreCreateInfo);
 	m_frameInFlightFence = device.createFenceUnique(fenceCreateInfo);
 }
-void RenderFrame::waitForFinish()
+void VulkanRenderFrame::waitForFinish()
 {
 	if (!m_inFlight) {
 		return;
@@ -34,32 +34,40 @@ void RenderFrame::waitForFinish()
 	// Our fence has been signaled so we are no longer in flight and ready to be reused
 	m_inFlight = false;
 }
-void RenderFrame::onFrameFinished(std::function<void()> finishFunc)
+void VulkanRenderFrame::onFrameFinished(std::function<void()> finishFunc)
 {
 	m_frameFinishedCallbacks.push_back(std::move(finishFunc));
 }
-uint32_t RenderFrame::acquireSwapchainImage()
+SwapChainStatus VulkanRenderFrame::acquireSwapchainImage(uint32_t& outImageIndex)
 {
 	Assertion(!m_inFlight, "Cannot acquire swapchain image when frame is still in flight.");
 
 	uint32_t imageIndex;
-	vk::Result res = m_device.acquireNextImageKHR(m_swapChain,
-		std::numeric_limits<uint64_t>::max(),
-		m_imageAvailableSemaphore.get(),
-		nullptr,
-		&imageIndex);
-	// TODO: This should handle at least VK_SUBOPTIMAL_KHR, which means that the swap chain is no longer
-	// optimal and should be recreated.
-	(void)res;
+	vk::Result res;
+	try {
+		res = m_device.acquireNextImageKHR(m_swapChain,
+			std::numeric_limits<uint64_t>::max(),
+			m_imageAvailableSemaphore.get(),
+			nullptr,
+			&imageIndex);
+	} catch (vk::OutOfDateKHRError&) {
+		return SwapChainStatus::eOutOfDate;
+	}
 
 	m_swapChainIdx = imageIndex;
+	outImageIndex = imageIndex;
 
-	return imageIndex;
+	if (res == vk::Result::eSuboptimalKHR) {
+		return SwapChainStatus::eSuboptimal;
+	}
+	return SwapChainStatus::eSuccess;
 }
-void RenderFrame::submitAndPresent(const std::vector<vk::CommandBuffer>& cmdBuffers)
+SwapChainStatus VulkanRenderFrame::submitAndPresent(const SCP_vector<vk::CommandBuffer>& cmdBuffers)
 {
 	Assertion(!m_inFlight, "Cannot submit a frame for presentation when it is still in flight.");
 
+	// Wait at color attachment output stage — the first use of the swap chain image
+	// is loadOp=eClear at the start of the render pass, which is a color attachment write.
 	const std::array<vk::PipelineStageFlags, 1> waitStages = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
 	const std::array<vk::Semaphore, 1> waitSemaphores = {m_imageAvailableSemaphore.get()};
 
@@ -77,7 +85,7 @@ void RenderFrame::submitAndPresent(const std::vector<vk::CommandBuffer>& cmdBuff
 
 	m_graphicsQueue.submit(submitInfo, m_frameInFlightFence.get());
 
-	// This frame is now officially in flight
+	// This frame is now officially in flight (fence pending even if present fails)
 	m_inFlight = true;
 
 	vk::PresentInfoKHR presentInfo;
@@ -90,10 +98,21 @@ void RenderFrame::submitAndPresent(const std::vector<vk::CommandBuffer>& cmdBuff
 	presentInfo.pImageIndices = &m_swapChainIdx;
 	presentInfo.pResults = nullptr;
 
-	vk::Result res = m_presentQueue.presentKHR(presentInfo);
-	// TODO: This should handle at least VK_SUBOPTIMAL_KHR, which means that the swap chain is no longer
-	// optimal and should be recreated.
-	(void)res;
+	vk::Result res;
+	try {
+		res = m_presentQueue.presentKHR(presentInfo);
+	} catch (vk::OutOfDateKHRError&) {
+		return SwapChainStatus::eOutOfDate;
+	}
+
+	if (res == vk::Result::eSuboptimalKHR) {
+		return SwapChainStatus::eSuboptimal;
+	}
+	return SwapChainStatus::eSuccess;
+}
+void VulkanRenderFrame::updateSwapChain(vk::SwapchainKHR swapChain)
+{
+	m_swapChain = swapChain;
 }
 
 } // namespace vulkan

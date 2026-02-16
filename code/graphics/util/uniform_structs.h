@@ -32,7 +32,7 @@ struct deferred_global_data {
 	float invScreenHeight;
 	float nearPlane;
 
-	float pad;
+	int use_env_map;
 };
 
 /**
@@ -227,7 +227,7 @@ struct tonemapping_data {
 	float sh_lnA;
 	float sh_offsetX;
 	float sh_offsetY;
-	float pad[1];
+	int linearOut; // 1 = skip sRGB conversion (Vulkan runtime flag, replaces compile-time LINEAR_OUT)
 };
 
 struct smaa_data {
@@ -329,7 +329,8 @@ struct volumetric_fog_data {
 	
 	float aspect;
 	float fov;
-	float pad[2];
+	int doEdgeSmoothing;
+	int useNoise;
 };
 
 struct msaa_data {

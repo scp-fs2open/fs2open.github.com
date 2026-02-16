@@ -6,8 +6,49 @@ set(LEGACY_SHADER_DIR "${CMAKE_CURRENT_SOURCE_DIR}/def_files/data/effects")
 set(SHADERS
 	${SHADER_DIR}/default-material.frag
 	${SHADER_DIR}/default-material.vert
-	${SHADER_DIR}/vulkan.frag
-	${SHADER_DIR}/vulkan.vert
+	${SHADER_DIR}/passthrough.frag
+	${SHADER_DIR}/passthrough.vert
+	${SHADER_DIR}/batched.frag
+	${SHADER_DIR}/batched.vert
+	${SHADER_DIR}/video.frag
+	${SHADER_DIR}/video.vert
+	${SHADER_DIR}/rocketui.frag
+	${SHADER_DIR}/rocketui.vert
+	${SHADER_DIR}/main.frag
+	${SHADER_DIR}/main.vert
+	${SHADER_DIR}/nanovg.frag
+	${SHADER_DIR}/nanovg.vert
+	${SHADER_DIR}/decal.frag
+	${SHADER_DIR}/decal.vert
+	${SHADER_DIR}/postprocess.vert
+	${SHADER_DIR}/tonemapping.frag
+	${SHADER_DIR}/brightpass.frag
+	${SHADER_DIR}/blur.frag
+	${SHADER_DIR}/bloom-comp.frag
+	${SHADER_DIR}/fxaapre.frag
+	${SHADER_DIR}/fxaa.frag
+	${SHADER_DIR}/post.frag
+	${SHADER_DIR}/lightshafts.frag
+	${SHADER_DIR}/effect.vert
+	${SHADER_DIR}/effect.frag
+	${SHADER_DIR}/effect-distort.vert
+	${SHADER_DIR}/effect-distort.frag
+	${SHADER_DIR}/deferred.vert
+	${SHADER_DIR}/deferred.frag
+	${SHADER_DIR}/shadow.vert
+	${SHADER_DIR}/shadow.frag
+	${SHADER_DIR}/irradiance.vert
+	${SHADER_DIR}/irradiance.frag
+	${SHADER_DIR}/fog.vert
+	${SHADER_DIR}/fog.frag
+	${SHADER_DIR}/volumetric-fog.vert
+	${SHADER_DIR}/volumetric-fog.frag
+	${SHADER_DIR}/copy.frag
+	${SHADER_DIR}/copy.vert
+	${SHADER_DIR}/shield-impact.frag
+	${SHADER_DIR}/shield-impact.vert
+	${SHADER_DIR}/msaa-resolve.vert
+	${SHADER_DIR}/msaa-resolve.frag
 )
 
 # Shaders shared with the OpenGL backend. These get GLSL decompilation (.spv.glsl)
