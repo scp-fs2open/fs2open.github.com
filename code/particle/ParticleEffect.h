@@ -252,6 +252,7 @@ public:
 			std::pair {"Radius Mult", ParticleCurvesOutput::RADIUS_MULT},
 			std::pair {"Length Mult", ParticleCurvesOutput::LENGTH_MULT},
 			std::pair {"Lifetime Mult", ParticleCurvesOutput::LIFETIME_MULT},
+			std::pair {"Source Duration Mult", ParticleCurvesOutput::SOURCE_DURATION_MULT},
 			std::pair {"Velocity Volume Mult", ParticleCurvesOutput::VOLUME_VELOCITY_MULT},
 			std::pair {"Velocity Inherit Mult", ParticleCurvesOutput::INHERIT_VELOCITY_MULT},
 			std::pair {"Velocity Position Inherit Mult", ParticleCurvesOutput::POSITION_INHERIT_VELOCITY_MULT},
