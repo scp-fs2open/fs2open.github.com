@@ -4596,7 +4596,34 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, 
 		// bash the ship name to be the name of the wing + some number if there is > 1 wave in this wing
 		wingp->total_arrived_count++;
 		auto wing_ship_index = wingp->total_arrived_count + wingp->red_alert_skipped_ships;
+		if (wingp->num_waves > 1)
+		{
+			bool needs_display_name;
+			wing_bash_ship_name(p_objp->name, wingp->name, wing_ship_index, &needs_display_name);
 
+			// set up display name if we need to
+			// (In the unlikely edge case where the ship already has a display name for some reason, it will be overwritten.
+			// This is unavoidable, because if we didn't overwrite display names, all waves would have the display name from the first wave.)
+			if (needs_display_name)
+			{
+				p_objp->display_name = p_objp->name;
+				end_string_at_first_hash_symbol(p_objp->display_name);
+				p_objp->flags.set(Mission::Parse_Object_Flags::SF_Has_display_name);
+			}
+
+			// subsequent waves of ships will not be in the ship registry, so add them
+			if (!ship_registry_exists(p_objp->name))
+			{
+				ship_registry_entry entry(p_objp->name);
+				entry.status = ShipStatus::NOT_YET_PRESENT;
+				entry.pobj_num = POBJ_INDEX(p_objp);
+
+				Ship_registry.push_back(entry);
+				Ship_registry_map[p_objp->name] = static_cast<int>(Ship_registry.size() - 1);
+			}
+		}
+
+		// Wing display names take priority over all display names because they are newer and cooler
 		if (!wingp->display_name.empty())
 		{
 			char ship_display_name[NAME_LENGTH];
@@ -4607,29 +4634,6 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, 
 			if (wing_display_name_has_hash)
 				end_string_at_first_hash_symbol(p_objp->display_name);
 			p_objp->flags.set(Mission::Parse_Object_Flags::SF_Has_display_name);
-		} else if (wingp->num_waves > 1) {
-			bool needs_display_name;
-			wing_bash_ship_name(p_objp->name, wingp->name, wing_ship_index, &needs_display_name);
-
-			// set up display name if we need to
-			// (In the unlikely edge case where the ship already has a display name for some reason, it will be
-			// overwritten. This is unavoidable, because if we didn't overwrite display names, all waves would have the
-			// display name from the first wave.)
-			if (needs_display_name) {
-				p_objp->display_name = p_objp->name;
-				end_string_at_first_hash_symbol(p_objp->display_name);
-				p_objp->flags.set(Mission::Parse_Object_Flags::SF_Has_display_name);
-			}
-
-			// subsequent waves of ships will not be in the ship registry, so add them
-			if (!ship_registry_exists(p_objp->name)) {
-				ship_registry_entry entry(p_objp->name);
-				entry.status = ShipStatus::NOT_YET_PRESENT;
-				entry.pobj_num = POBJ_INDEX(p_objp);
-
-				Ship_registry.push_back(entry);
-				Ship_registry_map[p_objp->name] = static_cast<int>(Ship_registry.size() - 1);
-			}
 		}
 
 		// also, if multiplayer, set the parse object's net signature to be wing's net signature
