@@ -41,6 +41,7 @@
 #include "osapi/osapi.h"
 #include "parse/sexp.h"
 #include "parse/sexp_container.h"
+#include "prop/prop.h"
 #include "sound/ds.h"
 #include "sound/sound.h"
 #include "starfield/nebula.h"
@@ -2992,21 +2993,21 @@ int Fred_mission_save::save_mission_info()
 	// sound environment (EFX/EAX) - taylor
 	sound_env* m_env = &The_mission.sound_environment;
 	if ((m_env->id >= 0) && (m_env->id < static_cast<int>(EFX_presets.size()))) {
-		EFXREVERBPROPERTIES* prop = &EFX_presets[m_env->id];
+		EFXREVERBPROPERTIES* efx_prop = &EFX_presets[m_env->id];
 
 		fso_comment_push(";;FSO 3.6.12;;");
 
-		fout_version("\n\n$Sound Environment: %s", prop->name.c_str());
+		fout_version("\n\n$Sound Environment: %s", efx_prop->name.c_str());
 
-		if (m_env->volume != prop->flGain) {
+		if (m_env->volume != efx_prop->flGain) {
 			fout_version("\n+Volume: %f", m_env->volume);
 		}
 
-		if (m_env->damping != prop->flDecayHFRatio) {
+		if (m_env->damping != efx_prop->flDecayHFRatio) {
 			fout_version("\n+Damping: %f", m_env->damping);
 		}
 
-		if (m_env->decay != prop->flDecayTime) {
+		if (m_env->decay != efx_prop->flDecayTime) {
 			fout_version("\n+Decay Time: %f", m_env->decay);
 		}
 
@@ -3065,51 +3066,53 @@ void Fred_mission_save::save_mission_internal(const char* pathname)
 	// Goober5000
 	convert_special_tags_to_retail();
 
-	if (save_mission_info())
+	if (save_mission_info()) {
 		err = -2;
-	else if (save_plot_info())
+	} else if (save_plot_info()) {
 		err = -3;
-	else if (save_variables())
+	} else if (save_variables()) {
 		err = -3;
-	else if (save_containers())
+	} else if (save_containers()) {
 		err = -3;
-	//	else if (save_briefing_info())
-	//		err = -4;
-	else if (save_cutscenes())
+		//	} else if (save_briefing_info()) {
+		//		err = -4;
+	} else if (save_cutscenes()) {
 		err = -4;
-	else if (save_fiction())
+	} else if (save_fiction()) {
 		err = -3;
-	else if (save_cmd_briefs())
+	} else if (save_cmd_briefs()) {
 		err = -4;
-	else if (save_briefing())
+	} else if (save_briefing()) {
 		err = -4;
-	else if (save_debriefing())
+	} else if (save_debriefing()) {
 		err = -5;
-	else if (save_players())
+	} else if (save_players()) {
 		err = -6;
-	else if (save_objects())
+	} else if (save_objects()) {
 		err = -7;
-	else if (save_wings())
+	} else if (save_wings()) {
 		err = -8;
-	else if (save_events())
+	} else if (save_props()) {
+		err = -18;
+	} else if (save_events()) {
 		err = -9;
-	else if (save_goals())
+	} else if (save_goals()) {
 		err = -10;
-	else if (save_waypoints())
+	} else if (save_waypoints()) {
 		err = -11;
-	else if (save_messages())
+	} else if (save_messages()) {
 		err = -12;
-	else if (save_reinforcements())
+	} else if (save_reinforcements()) {
 		err = -13;
-	else if (save_bitmaps())
+	} else if (save_bitmaps()) {
 		err = -14;
-	else if (save_asteroid_fields())
+	} else if (save_asteroid_fields()) {
 		err = -15;
-	else if (save_music())
+	} else if (save_music()) {
 		err = -16;
-	else if (save_custom_data())
+	} else if (save_custom_data()) {
 		err = -17;
-	else {
+	} else {
 		required_string_fred("#End");
 		parse_comments(2);
 		token_found = NULL;
@@ -4859,7 +4862,7 @@ int Fred_mission_save::save_wings()
 			continue;
 
 		count++;
-		required_string_either_fred("$Name:", "#Events");
+		required_string_one_of_fred(3, "$Name:", "#Events", "#Props");
 		required_string_fred("$Name:");
 		parse_comments(2);
 		fout(" %s", w.name);
@@ -5116,5 +5119,51 @@ int Fred_mission_save::save_wings()
 	fso_comment_pop(true);
 
 	Assert(count == Num_wings);
+	return err;
+}
+
+int Fred_mission_save::save_props()
+{
+	if (save_config.save_format != MissionFormat::RETAIL) {
+		fred_parse_flag = 0;
+		required_string_fred("#Props");
+		parse_comments(2);
+		fout("\t\t;! %d total", static_cast<int>(Props.size()));
+
+		for (const auto& p : Props) {
+			if (p.has_value()) {
+				required_string_either_fred("$Name:", "#Events");
+				required_string_fred("$Name:");
+				parse_comments(2);
+				fout(" %s", p->prop_name);
+
+				required_string_fred("$Class:");
+				parse_comments(2);
+				fout(" %s", Prop_info[p->prop_info_index].name.c_str());
+
+				required_string_fred("$Location:");
+				parse_comments();
+				save_vector(Objects[p->objnum].pos);
+
+				required_string_fred("$Orientation:");
+				parse_comments();
+				save_matrix(Objects[p->objnum].orient);
+
+				if (optional_string_fred("+Flags:", "$Name:")) {
+					parse_comments();
+					fout(" (");
+				} else
+					fout("\n+Flags: (");
+
+				if (!(Objects[p->objnum].flags[Object::Object_Flags::Collides]))
+					fout(" \"no_collide\"");
+				fout(" )");
+
+				fso_comment_pop();
+			}
+		}
+	}
+
+	fso_comment_pop(true);
 	return err;
 }

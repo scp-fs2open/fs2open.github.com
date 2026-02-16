@@ -45,6 +45,7 @@
 #include "mod_table/mod_table.h"
 #include "object/object.h"
 #include "physics/physics.h"
+#include "prop/prop.h"
 #include "render/3d.h"
 #include "render/3dinternal.h"
 #include "ship/ship.h"
@@ -541,6 +542,14 @@ void display_ship_info() {
 					} else if (objp->type == OBJ_JUMP_NODE) {
 						CJumpNode* jnp = jumpnode_get_by_objnum(OBJ_INDEX(objp));
 						sprintf(buf, "%s\n%s", jnp->GetName(), jnp->GetDisplayName());
+					} else if (objp->type == OBJ_PROP) {
+							prop* propp;
+							int prop_type;
+
+							propp = prop_id_lookup(objp->instance);
+							prop_type = propp->prop_info_index;
+							ASSERT(prop_type >= 0);
+							sprintf(buf, "%s\n", propp->prop_name);
 					} else
 						Assert(0);
 				}
@@ -1322,6 +1331,8 @@ int object_check_collision(object *objp, vec3d *p0, vec3d *p1, vec3d *hitpos) {
 			return 0;
 	}
 
+	// PROP HERE?
+
 	if (objp->flags[Object::Object_Flags::Hidden, Object::Object_Flags::Locked_from_editing])
 		return 0;
 
@@ -1849,9 +1860,37 @@ void render_one_model_htl(object *objp) {
 
 	} else if ((objp->type == OBJ_START) && Show_outlines) {
 		Fred_outline = 0x007f00;
-
 	} else
 		Fred_outline = 0;
+
+	if (objp->type == OBJ_PROP) {
+		uint64_t flags = MR_NORMAL;
+
+		if (!Lighting_on) {
+			flags |= MR_NO_LIGHTING;
+		}
+
+		if (FullDetail) {
+			flags |= MR_FULL_DETAIL;
+		}
+
+		z = objp->instance;
+
+		model_render_params render_info;
+
+		render_info.set_debug_flags(debug_flags);
+
+		prop* propp = prop_id_lookup(z);
+
+		if (Fred_outline) {
+			render_info.set_color(Fred_outline >> 16, (Fred_outline >> 8) & 0xff, Fred_outline & 0xff);
+			render_info.set_flags(flags | MR_SHOW_OUTLINE_HTL | MR_NO_LIGHTING | MR_NO_POLYS | MR_NO_TEXTURING);
+			model_render_immediate(&render_info, Prop_info[propp->prop_info_index].model_num, propp->model_instance_num, &objp->orient, &objp->pos);
+		}
+		//
+		render_info.set_flags(flags);
+		model_render_immediate(&render_info, Prop_info[propp->prop_info_index].model_num, propp->model_instance_num, &objp->orient, &objp->pos);
+	}
 
 	// build flags
 	if ((Show_ship_models || Show_outlines) && ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START))) {
@@ -1883,7 +1922,7 @@ void render_one_model_htl(object *objp) {
 
 		render_info.set_debug_flags(debug_flags);
 		render_info.set_replacement_textures(model_get_instance(Ships[z].model_instance_num)->texture_replace);
-
+		
 		if (Fred_outline) {
 			render_info.set_color(Fred_outline >> 16, (Fred_outline >> 8) & 0xff, Fred_outline & 0xff);
 			render_info.set_flags(flags | MR_SHOW_OUTLINE_HTL | MR_NO_LIGHTING | MR_NO_POLYS | MR_NO_TEXTURING);
@@ -1942,6 +1981,10 @@ void render_one_model_htl(object *objp) {
 			}
 
 			r = 196;	g = 32;	b = 196;
+		} else if (objp->type == OBJ_PROP) {
+			r = 255;
+			g = 255;
+			b = 255;
 
 		} else
 			Assert(0);

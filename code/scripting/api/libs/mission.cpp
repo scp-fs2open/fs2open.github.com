@@ -36,6 +36,7 @@
 #include "parse/sexp/LuaAISEXP.h"
 #include "parse/sexp/sexp_lookup.h"
 #include "playerman/player.h"
+#include "prop/prop.h"
 #include "scripting/api/LuaPromise.h"
 #include "scripting/api/objs/LuaEnum.h"
 #include "scripting/api/objs/LuaSEXP.h"
@@ -57,6 +58,8 @@
 #include "scripting/api/objs/object.h"
 #include "scripting/api/objs/parse_object.h"
 #include "scripting/api/objs/promise.h"
+#include "scripting/api/objs/prop.h"
+#include "scripting/api/objs/propclass.h"
 #include "scripting/api/objs/sexpvar.h"
 #include "scripting/api/objs/ship_registry_entry.h"
 #include "scripting/api/objs/ship.h"
@@ -126,6 +129,45 @@ int object_subclass_count(A& object_subclass_array, size_t array_size)
 	return object_subclass_at_index(object_subclass_array, array_size, COUNT_OBJECTS);
 }
 
+// Overload for a vector of std::optional objects
+template <typename T>
+int object_subclass_at_index(const SCP_vector<std::optional<T>>& vec, int index)
+{
+	int count = 0;
+
+	for (const auto& opt_obj : vec) {
+
+		if (!opt_obj.has_value()) {
+			continue;
+		}
+
+
+		const T& obj = *opt_obj;
+
+		int objnum = obj.objnum;
+		if (objnum < 0 || objnum >= MAX_OBJECTS)
+			continue;
+		if (Objects[objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
+		++count;
+
+		if (count == index) {
+			return obj.objnum;
+		}
+	}
+
+	if (index == COUNT_OBJECTS)
+		return count;
+	else
+		return -1;
+}
+
+template <typename A>
+int object_subclass_count(A& object_subclass_array)
+{
+	return object_subclass_at_index(object_subclass_array, COUNT_OBJECTS);
+}
 
 namespace scripting {
 namespace api {
@@ -546,6 +588,43 @@ ADE_FUNC(__len, l_Mission_ParsedShips, NULL,
 		 "Number of parsed ships in the most recently loaded mission, or 0 if no mission has been parsed yet")
 {
 	return ade_set_args(L, "i", static_cast<int>(Parse_objects.size()));
+}
+
+//****SUBLIBRARY: Mission/Props
+ADE_LIB_DERIV(l_Mission_Props, "Props", nullptr, "Props in the mission", l_Mission);
+
+ADE_INDEXER(l_Mission_Props, "number/string IndexOrName", "Gets prop", "prop", "Prop handle, or invalid prop handle if index was invalid")
+{
+	const char* name;
+	if(!ade_get_args(L, "*s", &name))
+		return ade_set_error(L, "o", l_Prop.Set(object_h()));
+
+	int idx = prop_name_lookup(name);
+
+	if (idx >= 0)
+	{
+		return ade_set_args(L, "o", l_Prop.Set(object_h(&Objects[prop_id_lookup(idx)->objnum])));
+	}
+	else
+	{
+		idx = atoi(name);
+
+		int objnum = -1;
+		if (idx > 0)
+			objnum = object_subclass_at_index(Props, idx);
+
+		return ade_set_args(L, "o", l_Prop.Set(object_h(objnum)));
+	}
+}
+
+ADE_FUNC(__len, l_Mission_Props, nullptr,
+		 "Number of props in the mission. "
+			 "This function is somewhat slow, and should be set to a variable for use in looping situations. "
+			 "Note that props can be vanished, and so this value cannot be relied on for more than one frame.",
+		 "number",
+		 "Number of props in the mission, or 0 if props haven't been initialized yet")
+{
+	return ade_set_args(L, "i", object_subclass_count(Props));
 }
 
 //****SUBLIBRARY: Mission/Waypoints
@@ -1337,6 +1416,41 @@ ADE_FUNC(createShip,
 		return ade_set_args(L, "o", l_Ship.Set(object_h(obj_idx)));
 	} else
 		return ade_set_error(L, "o", l_Ship.Set(object_h()));
+}
+
+ADE_FUNC(createProp,
+	l_Mission,
+	"[string Name, propclass Class /* First prop class by default */, orientation Orientation=null, vector Position /* null vector by default */]",
+	"Creates a prop and returns a handle to it using the specified name, class, world orientation, and world position.",
+	"prop",
+	"Prop handle, or invalid prop handle if prop couldn't be created")
+{
+	const char* name = nullptr;
+	int pclass       = 0;
+	matrix_h* orient = nullptr;
+	vec3d pos        = vmd_zero_vector;
+	ade_get_args(L, "|sooo", &name, l_Propclass.Get(&pclass), l_Matrix.GetPtr(&orient), l_Vector.Get(&pos));
+
+	if (!SCP_vector_inbounds(Prop_info, pclass)) {
+		return ade_set_error(L, "o", l_Prop.Set(object_h()));
+	}
+
+	matrix *real_orient = &vmd_identity_matrix;
+	if(orient != nullptr)
+	{
+		real_orient = orient->GetMatrix();
+	}
+
+	int obj_idx = prop_create(real_orient, &pos, pclass, name);
+
+	if(obj_idx >= 0) {
+		prop_info* pip = &Prop_info[pclass];
+
+		model_page_in_textures(pip->model_num, pclass);
+
+		return ade_set_args(L, "o", l_Prop.Set(object_h(&Objects[obj_idx])));
+	} else
+		return ade_set_error(L, "o", l_Prop.Set(object_h()));
 }
 
 ADE_FUNC(createDebris,

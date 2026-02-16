@@ -11,6 +11,7 @@
 #include "ship/shiphit.h"
 #include "weapon/weapon.h"
 #include "mission/missionload.h"
+#include "prop/prop.h"
 
 using namespace ImGui;
 
@@ -87,6 +88,32 @@ void LabUi::build_weapon_subtype_list() const
 					}
 				}
 				weapon_idx++;
+			}
+		}
+	}
+}
+
+void LabUi::build_prop_subtype_list()
+{
+	for (auto& propc : Prop_categories) {
+		with_TreeNode(propc.name.c_str())
+		{
+			int prop_idx = 0;
+
+			for (auto const& class_def : Prop_info) {
+				if (lcase_equal(prop_get_category(class_def.category_index)->name, propc.name)) {
+					SCP_string node_label;
+					sprintf(node_label, "##PropClassIndex%i", prop_idx);
+					TreeNodeEx(node_label.c_str(),
+						ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen,
+						"%s",
+						class_def.name.c_str());
+
+					if (IsItemClicked() && !IsItemToggledOpen()) {
+						getLabManager()->changeDisplayedObject(LabMode::Prop, prop_idx);
+					}
+				}
+				prop_idx++;
 			}
 		}
 	}
@@ -171,7 +198,15 @@ void LabUi::build_object_list()
 	}
 }
 
-void LabUi::build_background_list() const
+void LabUi::build_prop_list()
+{
+	with_TreeNode("Prop Classes")
+	{
+		build_prop_subtype_list();
+	}
+}
+
+void LabUi::build_background_list()
 {
 	SCP_vector<SCP_string> t_missions;
 
@@ -271,6 +306,8 @@ void LabUi::show_object_selector() const
 			build_ship_list();
 
 			build_weapon_list();
+
+			build_prop_list();
 
 			build_object_list();
 		}
@@ -418,7 +455,8 @@ void LabUi::show_render_options()
 				Checkbox("Rotate/Translate Subsystems", &animate_subsystems);
 			}
 			Checkbox("Show full detail", &show_full_detail);
-			if (getLabManager()->CurrentMode != LabMode::Asteroid) {
+			if (getLabManager()->CurrentMode == LabMode::Ship ||
+				getLabManager()->CurrentMode == LabMode::Weapon) {
 				Checkbox("Show thrusters", &show_thrusters);
 				if (getLabManager()->CurrentMode == LabMode::Ship) {
 					Checkbox("Show afterburners", &show_afterburners);
@@ -1483,6 +1521,32 @@ void LabUi::show_object_options() const
 							}
 						}
 					}
+				}
+			}
+		} else if (getLabManager()->CurrentMode == LabMode::Prop && getLabManager()->CurrentClass >= 0) {
+			const auto& info = Prop_info[getLabManager()->CurrentClass];
+
+			with_CollapsingHeader("Object Info")
+			{
+				static SCP_string table_text;
+				static int old_class = -1;
+
+				if (table_text.empty() || old_class != getLabManager()->CurrentClass) {
+					table_text = get_prop_table_text(&info);
+					old_class = getLabManager()->CurrentClass;
+				}
+
+				InputTextMultiline("##prop_table_text",
+					const_cast<char*>(table_text.c_str()),
+					table_text.length(),
+					ImVec2(-FLT_MIN, GetTextLineHeight() * 16),
+					ImGuiInputTextFlags_ReadOnly);
+			}
+
+			with_CollapsingHeader("Object actions")
+			{
+				if (getLabManager()->isSafeForProps()) {
+					// No actions yet
 				}
 			}
 		}

@@ -19,6 +19,7 @@
 
 class ship_subsys;
 class ship;
+struct prop;
 class waypoint_list;
 class object;
 class waypoint;
@@ -38,6 +39,7 @@ enum sexp_opf_t : int {
 	OPF_BOOL,
 	OPF_NUMBER,
 	OPF_SHIP,
+	OPF_PROP,
 	OPF_WING,
 	OPF_SUBSYSTEM,
 	OPF_POINT,						// either a 3d point in space, or a waypoint name
@@ -54,6 +56,7 @@ enum sexp_opf_t : int {
 	OPF_SHIP_POINT,					// a waypoint or a ship
 	OPF_GOAL_NAME,					// name of goal (or maybe event?) from a mission
 	OPF_SHIP_WING,					// either a ship or wing name (they don't conflict)
+	OPF_SHIP_PROP,                  // either a ship or a prop
 	OPF_SHIP_WING_WHOLETEAM,		// Karajorma - Ship, wing or an entire team's worth of ships
 	OPF_SHIP_WING_SHIPONTEAM_POINT,	// name of a ship, wing, any ship on a team, or a point
 	OPF_SHIP_WING_POINT,
@@ -66,6 +69,7 @@ enum sexp_opf_t : int {
 	OPF_MEDAL_NAME,					// name of medals
 	OPF_WEAPON_NAME,				// name of a weapon
 	OPF_SHIP_CLASS_NAME,			// name of a ship class
+	OPF_PROP_CLASS_NAME,            // name of a prop class
 	OPF_CUSTOM_HUD_GAUGE,			// name of custom HUD gauge
 	OPF_HUGE_WEAPON,				// name of a secondary bomb type weapon
 	OPF_SHIP_NOT_PLAYER,			// a ship, but not a player ship
@@ -594,6 +598,7 @@ enum : int {
 	OP_CARGO_NO_DEPLETE,
 	OP_SET_SPECIAL_WARPOUT_NAME,
 	OP_SHIP_VANISH,
+	OP_PROP_VANISH, // MjnMixael
 	OP_SHIELDS_ON,	//-Sesquipedalian
 	OP_SHIELDS_OFF,	//-Sesquipedalian
 	
@@ -692,6 +697,7 @@ enum : int {
 	OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD,	// Goober5000
 	OP_SET_SKYBOX_MODEL, // taylor
 	OP_SHIP_CREATE,
+	OP_PROP_CREATE,     // MjnMixael
 	OP_WEAPON_CREATE,	// Goober5000
 	OP_SET_OBJECT_SPEED_X, // Deprecated by wookieejedi
 	OP_SET_OBJECT_SPEED_Y, // Deprecated by wookieejedi
@@ -1186,6 +1192,7 @@ enum sexp_error_check
 
 	SEXP_CHECK_INVALID_NUM = 101,       // number is not valid
 	SEXP_CHECK_INVALID_SHIP,            // invalid ship name
+	SEXP_CHECK_INVALID_PROP,            // invalid prop name
 	SEXP_CHECK_INVALID_WING,            // invalid wing name
 	SEXP_CHECK_INVALID_SUBSYS,          // invalid subsystem
 	SEXP_CHECK_INVALID_IFF,             // invalid iff string
@@ -1477,8 +1484,9 @@ struct ship_registry_entry;
 struct wing;
 
 // Goober5000 - stuff with caching
-// (included in the header file because Lua uses the first three)
+// (included in the header file because Lua uses the first four)
 extern const ship_registry_entry *eval_ship(int node);
+extern const prop* eval_prop(int node);
 extern wing *eval_wing(int node);
 extern int sexp_get_variable_index(int node);
 extern int sexp_atoi(int node);

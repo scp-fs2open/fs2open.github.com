@@ -20,7 +20,7 @@ class object;
 struct CFILE;
 struct mc_info;
 
-// used for ship:ship and ship:debris
+// used for ship:ship and ship:debris and ship:prop
 struct collision_info_struct {
 	object	*heavy;
 	object	*light;
@@ -120,6 +120,12 @@ int collide_debris_weapon( obj_pair * pair );
 // CODE is locatated in CollideDebrisShip.cpp
 int collide_debris_ship( obj_pair * pair );
 
+// Checks debris-prop collisions.  pair->a is debris and pair->b is prop.
+// Returns 1 if all future collisions between these can be ignored
+// CODE is locatated in CollideDebrisShip.cpp
+int collide_debris_prop(obj_pair* pair);
+
+int collide_asteroid_prop(obj_pair* pair);
 int collide_asteroid_ship(obj_pair *pair);
 int collide_asteroid_weapon(obj_pair *pair);
 
@@ -131,6 +137,12 @@ int collide_ship_ship( obj_pair * pair );
 collision_result collide_ship_ship_check( obj_pair * pair );
 
 void collide_mp_worker_thread(size_t threadIdx);
+
+// Checks prop-ship collisions.
+int collide_prop_ship(obj_pair* pair);
+
+// Checks prop-ship collisions.
+int collide_prop_weapon(obj_pair* pair);
 
 //	Predictive functions.
 //	Returns true if vector from curpos to goalpos with radius radius will collide with object goalobjp

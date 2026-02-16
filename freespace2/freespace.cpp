@@ -165,6 +165,7 @@
 #include "playerman/player.h"
 #include "popup/popup.h"
 #include "popup/popupdead.h"
+#include "prop/prop.h"
 #include "radar/radar.h"
 #include "radar/radarsetup.h"
 #include "render/3d.h"
@@ -934,6 +935,7 @@ void game_level_close()
 		shockwave_level_close();
 		fireball_close();	
 		shield_hit_close();
+		props_level_close();
 		asteroid_level_close();
 		jumpnode_level_close();
 		waypoint_level_close();
@@ -1067,6 +1069,7 @@ void game_level_init()
 	NavSystem_Init();				// zero out the nav system
 
 	ai_level_init();				//	Call this before ship_init() because it reads ai.tbl.
+	props_level_init();
 	multi_init_oo_and_ship_tracker();	// Inits/resets multiplayer ship tracking system.  Has to be done before creating any ships.
 	ship_level_init();
 	player_level_init();
@@ -2027,6 +2030,7 @@ void game_init()
 	weapon_init();
 	glowpoint_init();
 	ship_init();						// read in ships.tbl	
+	prop_init();
 
 	player_init();	
 	mission_campaign_init();		// load in the default campaign	

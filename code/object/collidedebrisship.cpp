@@ -20,6 +20,7 @@
 #include "scripting/api/objs/model.h"
 #include "scripting/api/objs/vecmath.h"
 #include "playerman/player.h"
+#include "prop/prop.h"
 #include "ship/ship.h"
 #include "ship/shiphit.h"
 
@@ -406,6 +407,219 @@ int collide_asteroid_ship( obj_pair * pair )
 		if (time > 100) {
 			pair->next_check_time = timestamp( fl2i(time) );
 		} else {
+			pair->next_check_time = timestamp(0);	// check next time
+		}
+		return 0;
+	}
+}
+
+/**
+ * Checks debris-prop collisions.
+ * @param pair obj_pair pointer to the two objects. pair->a is debris and pair->b is prop.
+ * @return 1 if all future collisions between these can be ignored
+ */
+int collide_debris_prop(obj_pair* pair)
+{
+	float dist;
+	object* debris_objp = pair->a;
+	object* prop_objp = pair->b;
+
+	Assert(debris_objp->type == OBJ_DEBRIS);
+	Assert(prop_objp->type == OBJ_PROP);
+
+	if (reject_due_collision_groups(debris_objp, prop_objp))
+		return 0;
+
+	dist = vm_vec_dist(&debris_objp->pos, &prop_objp->pos);
+	if (dist < debris_objp->radius + prop_objp->radius) {
+		int hit;
+		vec3d	hitpos;
+		// create and initialize ship_ship_hit_info struct
+		collision_info_struct debris_hit_info;
+		init_collision_info_struct(&debris_hit_info);
+
+		if (debris_objp->radius > prop_objp->radius) {
+			debris_hit_info.heavy = debris_objp;
+			debris_hit_info.light = prop_objp;
+		}
+		else {
+			debris_hit_info.heavy = prop_objp;
+			debris_hit_info.light = debris_objp;
+		}
+
+		hit = prop_check_collision(prop_objp, debris_objp, &hitpos, &debris_hit_info);
+		if (hit)
+		{
+			bool ship_override = false, debris_override = false;
+
+			// get submodel handle if scripting needs it
+			bool has_submodel = (debris_hit_info.heavy_submodel_num >= 0);
+			scripting::api::submodel_h smh(debris_hit_info.heavy_model_num, debris_hit_info.heavy_submodel_num);
+
+			if (scripting::hooks::OnDebrisCollision->isActive()) {
+				ship_override = scripting::hooks::OnDebrisCollision->isOverride(scripting::hooks::CollisionConditions{ {prop_objp, debris_objp} },
+					scripting::hook_param_list(scripting::hook_param("Self", 'o', prop_objp),
+						scripting::hook_param("Object", 'o', debris_objp),
+						scripting::hook_param("Prop", 'o', prop_objp),
+						scripting::hook_param("Debris", 'o', debris_objp),
+						scripting::hook_param("Hitpos", 'o', hitpos)));
+			}
+
+			if (scripting::hooks::OnPropCollision->isActive()) {
+				debris_override = scripting::hooks::OnPropCollision->isOverride(scripting::hooks::CollisionConditions{ {prop_objp, debris_objp} },
+					scripting::hook_param_list(scripting::hook_param("Self", 'o', debris_objp),
+						scripting::hook_param("Object", 'o', prop_objp),
+						scripting::hook_param("Prop", 'o', prop_objp),
+						scripting::hook_param("Debris", 'o', debris_objp),
+						scripting::hook_param("Hitpos", 'o', hitpos),
+						scripting::hook_param("PropSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel && (debris_hit_info.heavy == prop_objp))));
+			}
+
+			if (!ship_override && !debris_override)
+			{
+				// do collision physics
+				calculate_ship_ship_collision_physics(&debris_hit_info);
+
+				if (debris_hit_info.impulse < 0.5f)
+					return 0;
+
+				float debris_damage = debris_hit_info.impulse / debris_objp->phys_info.mass;	// ie, delta velocity of debris
+
+				// apply damage to debris
+				// no need for force, already handled in calculate_ship_ship_collision_physics
+				debris_hit(debris_objp, prop_objp, &hitpos, debris_damage, nullptr);		// speed => damage
+
+				collide_ship_ship_do_sound(&hitpos, prop_objp, debris_objp,false );
+			}
+
+			return 0;
+		}
+	}
+	else {	//	Bounding spheres don't intersect, set timestamp for next collision check.
+		float	debris_speed;
+		float	time;
+
+		debris_speed = debris_objp->phys_info.speed;
+
+		time = 1000.0f * (dist - prop_objp->radius - debris_objp->radius - 10.0f) / (debris_speed);		// 10.0f is a safety factor
+		time -= 200.0f;		// allow one frame slow frame at ~5 fps
+
+		if (time > 100) {
+			pair->next_check_time = timestamp(fl2i(time));
+		}
+		else {
+			pair->next_check_time = timestamp(0);	// check next time
+		}
+	}
+
+	return 0;
+}
+
+/**
+ * Checks asteroid-prop collisions.
+ * @param pair obj_pair pointer to the two objects. pair->a is asteroid and pair->b is prop.
+ * @return 1 if all future collisions between these can be ignored
+ */
+int collide_asteroid_prop(obj_pair* pair)
+{
+	if (!Asteroids_enabled)
+		return 0;
+
+	float		dist;
+	object* asteroid_objp = pair->a;
+	object* prop_objp = pair->b;
+
+	if (asteroid_objp->hull_strength < 0.0f)
+		return 0;
+
+	Assert(asteroid_objp->type == OBJ_ASTEROID);
+	Assert(prop_objp->type == OBJ_PROP);
+
+	dist = vm_vec_dist(&asteroid_objp->pos, &prop_objp->pos);
+
+	if (dist < asteroid_objp->radius + prop_objp->radius) {
+		int hit;
+		vec3d	hitpos;
+		// create and initialize ship_ship_hit_info struct
+		collision_info_struct asteroid_hit_info;
+		init_collision_info_struct(&asteroid_hit_info);
+
+		if (asteroid_objp->radius > prop_objp->radius) {
+			asteroid_hit_info.heavy = asteroid_objp;
+			asteroid_hit_info.light = prop_objp;
+		}
+		else {
+			asteroid_hit_info.heavy = prop_objp;
+			asteroid_hit_info.light = asteroid_objp;
+		}
+
+		hit = prop_check_collision(prop_objp, prop_objp, &hitpos, &asteroid_hit_info);
+		if (hit)
+		{
+			bool ship_override = false, asteroid_override = false;
+
+			// get submodel handle if scripting needs it
+			bool has_submodel = (asteroid_hit_info.heavy_submodel_num >= 0);
+			scripting::api::submodel_h smh(asteroid_hit_info.heavy_model_num, asteroid_hit_info.heavy_submodel_num);
+
+			//Scripting support
+			if (scripting::hooks::OnAsteroidCollision->isActive()) {
+				ship_override = scripting::hooks::OnAsteroidCollision->isOverride(scripting::hooks::CollisionConditions{ {prop_objp, asteroid_objp} },
+					scripting::hook_param_list(scripting::hook_param("Self", 'o', prop_objp),
+						scripting::hook_param("Object", 'o', asteroid_objp),
+						scripting::hook_param("Prop", 'o', prop_objp),
+						scripting::hook_param("Asteroid", 'o', asteroid_objp),
+						scripting::hook_param("Hitpos", 'o', hitpos)));
+			}
+			if (scripting::hooks::OnPropCollision->isActive()) {
+				asteroid_override = scripting::hooks::OnPropCollision->isOverride(scripting::hooks::CollisionConditions{ {prop_objp, asteroid_objp} },
+					scripting::hook_param_list(scripting::hook_param("Self", 'o', asteroid_objp),
+						scripting::hook_param("Object", 'o', prop_objp),
+						scripting::hook_param("Prop", 'o', prop_objp),
+						scripting::hook_param("Asteroid", 'o', asteroid_objp),
+						scripting::hook_param("Hitpos", 'o', hitpos),
+						scripting::hook_param("PropSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel && (asteroid_hit_info.heavy == prop_objp))));
+			}
+
+			if (!ship_override && !asteroid_override)
+			{
+				float		asteroid_damage;
+
+				//vec3d asteroid_vel = asteroid_objp->phys_info.vel;
+
+				// do collision physics
+				calculate_ship_ship_collision_physics(&asteroid_hit_info);
+
+				if (asteroid_hit_info.impulse < 0.5f)
+					return 0;
+
+				asteroid_damage = asteroid_hit_info.impulse / asteroid_objp->phys_info.mass;	// ie, delta velocity of asteroid
+
+				// apply damage to asteroid
+				asteroid_hit(asteroid_objp, prop_objp, &hitpos, asteroid_damage, nullptr);		// speed => damage
+
+				collide_ship_ship_do_sound(&hitpos, prop_objp, asteroid_objp, false);
+			}
+
+			return 0;
+		}
+
+		return 0;
+	}
+	else {
+		// estimate earliest time at which pair can hit
+		float asteroid_max_speed, time;
+
+		asteroid_max_speed = vm_vec_mag(&asteroid_objp->phys_info.vel);		// Asteroid... vel gets reset, not max vel.z
+		asteroid_max_speed = MAX(asteroid_max_speed, 10.0f);
+
+		time = 1000.0f * (dist - prop_objp->radius - asteroid_objp->radius - 10.0f) / (asteroid_max_speed);		// 10.0f is a safety factor
+		time -= 200.0f;		// allow one frame slow frame at ~5 fps
+
+		if (time > 100) {
+			pair->next_check_time = timestamp(fl2i(time));
+		}
+		else {
 			pair->next_check_time = timestamp(0);	// check next time
 		}
 		return 0;

@@ -11,6 +11,7 @@
 #include "ship/ship.h"
 #include "ship/shipfx.h"
 #include "particle/particle.h"
+#include "prop/prop.h"
 #include "weapon/muzzleflash.h"
 #include "weapon/beam.h"
 #include "ai/aigoals.h"
@@ -45,6 +46,7 @@ LabManager::LabManager() {
 	debris_init();
 	extern void debris_page_in();
 	debris_page_in();
+	props_level_init();
 	asteroid_level_init();
 	shockwave_level_init();
 	ship_level_init();
@@ -746,6 +748,12 @@ void LabManager::changeDisplayedObject(LabMode mode, int info_index, int subtype
 			// 1: Allow subsystem rotations/translations
 			// 2: Allow subystems to be processed
 			ai_add_ship_goal_scripting(AI_GOAL_PLAY_DEAD_PERSISTENT, -1, 100, nullptr, &Ai_info[Player_ship->ai_index], 0, 0);
+		}
+		break;
+	case LabMode::Prop:
+		CurrentObject = prop_create(&CurrentOrientation, &CurrentPosition, CurrentClass);
+		if (isSafeForProps()) {
+			ModelFilename = Prop_info[CurrentClass].pof_file;
 		}
 		break;
 	case LabMode::Weapon:

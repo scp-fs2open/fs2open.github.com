@@ -4,6 +4,7 @@ enum class LabMode {
 	Asteroid,
 	Ship,
 	Weapon,
+	Prop,
 	None
 };
 

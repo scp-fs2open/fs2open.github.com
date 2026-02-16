@@ -38,6 +38,7 @@
 #include "object/object.h"
 #include "object/objectshield.h"
 #include "parse/parselo.h"
+#include "prop/prop.h"
 #include "scripting/global_hooks.h"
 #include "scripting/scripting.h"
 #include "scripting/api/objs/model.h"
@@ -2195,6 +2196,9 @@ int beam_get_model(object *objp)
 		}
 		return Asteroid_info[Asteroids[objp->instance].asteroid_type].subtypes[pof].model_number;
 
+	case OBJ_PROP:
+		return Prop_info[prop_id_lookup(objp->instance)->prop_info_index].model_num;
+
 	default:
 		// this shouldn't happen too often
 		mprintf(("Beam couldn't find a good object model/type!! (%d)\n", objp->type));
@@ -3348,6 +3352,158 @@ int beam_collide_ship(obj_pair *pair)
 }
 
 
+// collide a beam with a prop, returns 1 if we can ignore all future collisions between the 2 objects
+int beam_collide_prop(obj_pair* pair)
+{
+	beam* a_beam;
+	object* weapon_objp;
+	object* prop_objp;
+	mc_info mc;
+	int model_num;
+	float width;
+
+	// bogus
+	if (pair == nullptr) {
+		return 0;
+	}
+
+	if (reject_due_collision_groups(pair->a, pair->b))
+		return 0;
+
+	// get the beam
+	Assert(pair->a->instance >= 0);
+	Assert(pair->a->type == OBJ_BEAM);
+	Assert(Beams[pair->a->instance].objnum == OBJ_INDEX(pair->a));
+	weapon_objp = pair->a;
+	a_beam = &Beams[pair->a->instance];
+
+	// if the "warming up" timestamp has not expired
+	if ((a_beam->warmup_stamp != -1) || (a_beam->warmdown_stamp != -1)) {
+		return 0;
+	}
+
+	// if the beam is on "safety", don't collide with anything
+	if (a_beam->flags & BF_SAFETY) {
+		return 0;
+	}
+
+	// try and get a model
+	model_num = beam_get_model(pair->b);
+	if (model_num < 0) {
+		return 1;
+	}
+
+#ifndef NDEBUG
+	Beam_test_ints++;
+#endif
+
+	// get the ship
+	Assert(pair->b->instance >= 0);
+	Assert(pair->b->type == OBJ_PROP);
+	Assert(prop_id_lookup(pair->b->instance)->objnum == OBJ_INDEX(pair->b));
+	if ((pair->b->type != OBJ_PROP) || (pair->b->instance < 0))
+		return 1;
+	prop_objp = pair->b;
+	prop* propp = prop_id_lookup(prop_objp->instance);
+
+	// get the width of the beam
+	width = a_beam->beam_collide_width * a_beam->current_width_factor;
+
+	// set up collision struct
+	mc.model_instance_num = propp->model_instance_num;
+	mc.model_num = model_num;
+	mc.submodel_num = -1;
+	mc.orient = &prop_objp->orient;
+	mc.pos = &prop_objp->pos;
+	mc.p0 = &a_beam->last_start;
+	mc.p1 = &a_beam->last_shot;
+
+	// maybe do a sphereline
+	if (width > prop_objp->radius * BEAM_AREA_PERCENT) {
+		mc.radius = width * 0.5f;
+		mc.flags = MC_CHECK_SPHERELINE;
+	}
+	else {
+		mc.flags = MC_CHECK_RAY;
+	}
+
+	mc.flags |= MC_CHECK_MODEL;
+	bool hit = model_collide(&mc);
+
+	// If we have a range less than the "far" range, check if the ray actually hit within the range
+	if (a_beam->range < BEAM_FAR_LENGTH && hit)
+	{
+		// We can't use hit_dist as "1" is the distance between p0 and p1
+		float rangeSq = a_beam->range * a_beam->range;
+
+		if (hit && vm_vec_dist_squared(&a_beam->last_start, &mc.hit_point_world) > rangeSq)
+		{
+			hit = false;
+		}
+	}
+
+	// if we got a hit
+	if (hit)
+	{
+
+		bool prop_override = false, weapon_override = false;
+
+		// get submodel handle if scripting needs it
+		bool has_submodel = (mc.hit_submodel >= 0);
+		scripting::api::submodel_h smh(mc.model_num, mc.hit_submodel);
+
+		if (scripting::hooks::OnBeamCollision->isActive()) {
+			prop_override = scripting::hooks::OnBeamCollision->isOverride(scripting::hooks::CollisionConditions{ {prop_objp, weapon_objp} },
+				scripting::hook_param_list(scripting::hook_param("Self", 'o', prop_objp),
+					scripting::hook_param("Object", 'o', weapon_objp),
+					scripting::hook_param("Prop", 'o', prop_objp),
+					scripting::hook_param("Beam", 'o', weapon_objp),
+					scripting::hook_param("Hitpos", 'o', mc.hit_point_world)));
+		}
+
+		if (scripting::hooks::OnPropCollision->isActive()) {
+			weapon_override = scripting::hooks::OnPropCollision->isOverride(scripting::hooks::CollisionConditions{ {prop_objp, weapon_objp} },
+				scripting::hook_param_list(scripting::hook_param("Self", 'o', weapon_objp),
+					scripting::hook_param("Object", 'o', prop_objp),
+					scripting::hook_param("Prop", 'o', prop_objp),
+					scripting::hook_param("Beam", 'o', weapon_objp),
+					scripting::hook_param("Hitpos", 'o', mc.hit_point_world),
+					scripting::hook_param("PropSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel)));
+		}
+
+		if (!prop_override && !weapon_override)
+		{
+			// add to the collision_list
+			// if we got "tooled", add an exit hole too
+			beam_add_collision(a_beam, prop_objp, &mc, MISS_SHIELDS, false);
+		}
+
+		if (scripting::hooks::OnBeamCollision->isActive() && (!weapon_override || prop_override)) {
+			scripting::hooks::OnBeamCollision->run(scripting::hooks::CollisionConditions{{prop_objp, weapon_objp}},
+				scripting::hook_param_list(scripting::hook_param("Self", 'o', prop_objp),
+					scripting::hook_param("Object", 'o', weapon_objp),
+					scripting::hook_param("Prop", 'o', prop_objp),
+					scripting::hook_param("Beam", 'o', weapon_objp),
+					scripting::hook_param("Hitpos", 'o', mc.hit_point_world)));
+		}
+		if (scripting::hooks::OnPropCollision->isActive() && ((weapon_override && !prop_override) || (!weapon_override && !prop_override))) {
+			scripting::hooks::OnPropCollision->run(scripting::hooks::CollisionConditions{{prop_objp, weapon_objp}},
+				scripting::hook_param_list(scripting::hook_param("Self", 'o', weapon_objp),
+					scripting::hook_param("Object", 'o', prop_objp),
+					scripting::hook_param("Prop", 'o', prop_objp),
+					scripting::hook_param("Beam", 'o', weapon_objp),
+					scripting::hook_param("Hitpos", 'o', mc.hit_point_world),
+					scripting::hook_param("PropSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel)));
+		}
+	}
+
+	// reset timestamp to timeout immediately
+	pair->next_check_time = timestamp(0);
+
+	return 0;
+}
+
+
 // collide a beam with an asteroid, returns 1 if we can ignore all future collisions between the 2 objects
 int beam_collide_asteroid(obj_pair *pair)
 {
@@ -3711,6 +3867,12 @@ int beam_collide_early_out(object *a, object *b)
 	// baseline bails
 	switch(b->type){
 	case OBJ_SHIP:
+		break;
+	case OBJ_PROP:
+		// targeting lasers only hit ships
+/*		if(bwi->b_info.beam_type == BEAM_TYPE_C){
+			return 1;
+		}*/
 		break;
 	case OBJ_ASTEROID:
 		// targeting lasers only hit ships
@@ -4124,6 +4286,10 @@ void beam_handle_collisions(beam *b)
 				{
 					beam_apply_whack(b, &Objects[target], &b->f_collisions[idx].cinfo.hit_point_world);
 				}
+				break;
+			case OBJ_PROP:
+				// nothing!
+				// this case is normal and expected, but props do not move and cannot take damage
 				break;
 			}		
 		}				

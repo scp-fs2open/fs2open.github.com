@@ -25,6 +25,7 @@
 #include <nebula/neb.h>
 #include <nebula/neblightning.h>
 #include <parse/sexp/sexp_lookup.h>
+#include <prop/prop.h>
 #include <scripting/scripting.h>
 #include <scripting/global_hooks.h>
 #include <sound/audiostr.h>
@@ -217,6 +218,9 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 
 	listener(SubSystem::Ships);
 	ship_init();
+
+	//listener(Subsystem::Props);
+	prop_init();
 
 	listener(SubSystem::TechroomIntel);
 	techroom_intel_init();

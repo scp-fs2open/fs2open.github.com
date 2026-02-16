@@ -1194,6 +1194,12 @@ static void shiphit_record_player_killer(const object *killer_objp, player *p)
 			strcpy_s(p->killer_parent_name, "");
 		}
 		break;
+
+	case OBJ_PROP:
+		strcpy_s(p->killer_parent_name, "");
+		p->killer_species = -1;
+		p->killer_parent_name[0] = '\0';
+		break;
 	
 	case OBJ_NONE:
 		if ( Game_mode & GM_MULTIPLAYER ) {
@@ -1599,6 +1605,7 @@ static void player_died_start(const object *killer_objp)
 		case OBJ_SHIP:
 		case OBJ_DEBRIS:
 		case OBJ_ASTEROID:
+		case OBJ_PROP:
 		case OBJ_NONE:	//	Something that just got deleted due to also dying -- it happened to me! --MK.		
 			other_objp = killer_objp;
 			break;

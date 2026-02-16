@@ -22,6 +22,7 @@
 
 #include "species_defs/species_defs.h"
 #include "iff_defs/iff_defs.h"
+#include "prop/prop.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -76,8 +77,13 @@ static UINT indicators[] =
 CMainFrame *Fred_main_wnd;
 color_combo_box m_new_ship_type_combo_box;
 size_t ship_type_combo_box_size = 0;
+color_combo_box_prop m_new_prop_type_combo_box;
+size_t prop_type_combo_box_size = 0;
 int Toggle1_var = 0;
 CPoint Global_point2;
+
+CStatic m_ship_label;
+CStatic m_prop_label;
 
 /**
  * @brief Launches the default browser to open the given URL
@@ -123,6 +129,22 @@ void CMainFrame::init_tools()
         }
     }
 
+	for (auto it = Prop_info.begin(); it != Prop_info.end(); ++it) {
+		if (it->flags[Prop::Info_Flags::No_fred]) {
+			continue;
+		} else {
+			m_new_prop_type_combo_box.AddString(it->name.c_str());
+			m_new_prop_type_combo_box.SetItemData((int)prop_type_combo_box_size, std::distance(Prop_info.begin(), it));
+			prop_type_combo_box_size++;
+		}
+	}
+
+	// No valid props, so disable the dropdown
+	if (prop_type_combo_box_size == 0) {
+		m_new_prop_type_combo_box.EnableWindow(FALSE);
+		m_prop_label.EnableWindow(FALSE);
+	}
+
 	Id_select_type_waypoint = ship_type_combo_box_size;
 	Id_select_type_jump_node = ship_type_combo_box_size + 1;
 
@@ -144,6 +166,7 @@ void CMainFrame::init_tools()
 	}
 	*/
 	m_new_ship_type_combo_box.SetCurSel(0);
+	m_new_prop_type_combo_box.SetCurSel(0);
 }
 
 void CMainFrame::OnClose()
@@ -164,7 +187,7 @@ void CMainFrame::OnClose()
 }
 
 int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {
-	int z;
+	int z, zz;
 	CRect rect;
 
 	if (CFrameWnd::OnCreate(lpCreateStruct) == -1)
@@ -176,7 +199,18 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {
 		return -1;      // fail to create
 	}
 
-	// Create the combo box
+	// Add static label for "Objects"
+	int ship_label_index = m_wndToolBar.CommandToIndex(ID_NEW_SHIP_TYPE) - 1;
+	m_wndToolBar.SetButtonInfo(ship_label_index, ID_STATIC_SHIP_LABEL, TBBS_SEPARATOR, 70);
+	m_wndToolBar.GetItemRect(ship_label_index, &rect);
+	rect.top = 3;
+	rect.bottom = rect.top + 20;
+	if (!m_ship_label.Create(_T("Objects"), WS_VISIBLE | WS_CHILD, rect, &m_wndToolBar)) {
+		TRACE0("Failed to create 'Objects' label\n");
+		return -1;
+	}
+
+	// Create the objects combo box
 	z = m_wndToolBar.CommandToIndex(ID_NEW_SHIP_TYPE);
 	Assert(z != -1);
 	m_wndToolBar.SetButtonInfo(z, ID_NEW_SHIP_TYPE, TBBS_SEPARATOR, 230);
@@ -189,6 +223,33 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {
 	if (!m_new_ship_type_combo_box.Create(CBS_DROPDOWNLIST | WS_VISIBLE | WS_VSCROLL | CBS_HASSTRINGS | LBS_OWNERDRAWFIXED,
 		rect, &m_wndToolBar, ID_NEW_SHIP_TYPE)) {
 		TRACE0("Failed to create new ship type combo-box\n");
+		return FALSE;
+	}
+
+	// Add static label for "Props"
+	int prop_label_index = m_wndToolBar.CommandToIndex(ID_NEW_PROP_TYPE) - 1;
+	m_wndToolBar.SetButtonInfo(prop_label_index, ID_STATIC_PROP_LABEL, TBBS_SEPARATOR, 60);
+	m_wndToolBar.GetItemRect(prop_label_index, &rect);
+	rect.top = 3;
+	rect.bottom = rect.top + 20;
+	if (!m_prop_label.Create(_T("Props"), WS_VISIBLE | WS_CHILD, rect, &m_wndToolBar)) {
+		TRACE0("Failed to create 'Props' label\n");
+		return -1;
+	}
+
+	// Create the props combo box
+	zz = m_wndToolBar.CommandToIndex(ID_NEW_PROP_TYPE);
+	Assert(zz != -1);
+	m_wndToolBar.SetButtonInfo(zz, ID_NEW_PROP_TYPE, TBBS_SEPARATOR, 230);
+
+	// Design guide advises 12 pixel gap between combos and buttons
+	//	m_wndToolBar.SetButtonInfo(1, ID_SEPARATOR, TBBS_SEPARATOR, 12);
+	m_wndToolBar.GetItemRect(zz, &rect);
+	rect.top = 3;
+	rect.bottom = rect.top + 550;
+	if (!m_new_prop_type_combo_box.Create(CBS_DROPDOWNLIST | WS_VISIBLE | WS_VSCROLL | CBS_HASSTRINGS | LBS_OWNERDRAWFIXED,
+		rect, &m_wndToolBar, ID_NEW_PROP_TYPE)) {
+		TRACE0("Failed to create new prop type combo-box\n");
 		return FALSE;
 	}
 
@@ -230,6 +291,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {
 
 	Fred_main_wnd = this;
 	Ship_editor_dialog.Create();
+	Prop_editor_dialog.Create();
 	Wing_editor_dialog.Create();
 	Waypoint_editor_dialog.Create();
 	Jumpnode_editor_dialog.Create();
@@ -365,6 +427,123 @@ BOOL CMainFrame::PreCreateWindow(CREATESTRUCT& cs) {
 	//  the CREATESTRUCT cs
 
 	return CFrameWnd::PreCreateWindow(cs);
+}
+
+
+int color_combo_box_prop::CalcMinimumItemHeight()
+{
+	int nResult = 1;
+
+	if ((GetStyle() & (LBS_HASSTRINGS | LBS_OWNERDRAWFIXED)) == (LBS_HASSTRINGS | LBS_OWNERDRAWFIXED)) {
+		CClientDC dc(this);
+		CFont* pOldFont = dc.SelectObject(GetFont());
+		TEXTMETRIC tm;
+		VERIFY(dc.GetTextMetrics(&tm));
+		dc.SelectObject(pOldFont);
+
+		nResult = tm.tmHeight;
+	}
+
+	return nResult;
+}
+
+void color_combo_box_prop::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
+{
+	int m_cyText = 24;
+	CString strText;
+
+	// You must override DrawItem and MeasureItem for LBS_OWNERDRAWVARIABLE
+	ASSERT((GetStyle() & (LBS_OWNERDRAWFIXED | CBS_HASSTRINGS)) == (LBS_OWNERDRAWFIXED | CBS_HASSTRINGS));
+
+	CDC* pDC = CDC::FromHandle(lpDrawItemStruct->hDC);
+
+	if ((lpDrawItemStruct->itemID >= 0) && (lpDrawItemStruct->itemAction & (ODA_DRAWENTIRE | ODA_SELECT))) {
+		prop_info* pip = nullptr;
+
+		// get the ship class corresponding to this item, if any
+		auto itemData = lpDrawItemStruct->itemData;
+		if (itemData >= 0 && itemData < Prop_info.size()) {
+			pip = &Prop_info[itemData];
+		}
+
+		int cyItem = GetItemHeight(lpDrawItemStruct->itemID);
+		BOOL fDisabled = !IsWindowEnabled();
+
+		COLORREF newTextColor = RGB(0x80, 0x80, 0x80); // light gray
+		if (!fDisabled) {
+			if (pip == nullptr)
+				newTextColor = RGB(0, 0, 0);
+			else {
+				auto cinfo = prop_get_category(pip->category_index);
+				if (cinfo != nullptr) {
+					newTextColor = RGB(cinfo->list_color.red, cinfo->list_color.green, cinfo->list_color.blue);
+				}
+			}
+		}
+
+		COLORREF oldTextColor = pDC->SetTextColor(newTextColor);
+		COLORREF newBkColor = GetSysColor(COLOR_WINDOW);
+		COLORREF oldBkColor = pDC->SetBkColor(newBkColor);
+
+		if (newTextColor == newBkColor) {
+			newTextColor = RGB(0xC0, 0xC0, 0xC0); // dark gray
+		}
+
+		if (!fDisabled && ((lpDrawItemStruct->itemState & ODS_SELECTED) != 0)) {
+			pDC->SetTextColor(GetSysColor(COLOR_HIGHLIGHTTEXT));
+			pDC->SetBkColor(GetSysColor(COLOR_HIGHLIGHT));
+		}
+
+		if (m_cyText == 0) {
+			VERIFY(cyItem >= CalcMinimumItemHeight());
+		}
+
+		if (pip != nullptr) {
+			strText = _T(pip->name.c_str());
+		} else {
+			if (prop_type_combo_box_size == 0) {
+				strText = _T("No props available");
+			} else {
+				strText = _T("Invalid index!");
+			}
+		}
+
+		pDC->ExtTextOut(lpDrawItemStruct->rcItem.left,
+			lpDrawItemStruct->rcItem.top + std::max(0, (cyItem - m_cyText) / 2),
+			ETO_OPAQUE,
+			&(lpDrawItemStruct->rcItem),
+			strText,
+			strText.GetLength(),
+			NULL);
+
+		pDC->SetTextColor(oldTextColor);
+		pDC->SetBkColor(oldBkColor);
+	}
+
+	if ((lpDrawItemStruct->itemAction & ODA_FOCUS) != 0) {
+		pDC->DrawFocusRect(&(lpDrawItemStruct->rcItem));
+	}
+}
+
+void color_combo_box_prop::MeasureItem(LPMEASUREITEMSTRUCT)
+{
+	// You must override DrawItem and MeasureItem for LBS_OWNERDRAWVARIABLE
+	ASSERT((GetStyle() & (LBS_OWNERDRAWFIXED | CBS_HASSTRINGS)) == (LBS_OWNERDRAWFIXED | CBS_HASSTRINGS));
+}
+
+int color_combo_box_prop::GetPropClass(int item_index)
+{
+	if (item_index < 0 || item_index >= GetCount())
+		return -1;
+	return (int)GetItemData(item_index);
+}
+
+int color_combo_box_prop::GetItemIndex(int prop_class)
+{
+	for (int i = 0; i < m_new_prop_type_combo_box.GetCount(); i++)
+		if ((int)m_new_prop_type_combo_box.GetItemData(i) == prop_class)
+			return i;
+	return -1;
 }
 
 

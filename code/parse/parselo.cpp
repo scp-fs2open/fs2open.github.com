@@ -828,6 +828,58 @@ int required_string_one_of(int arg_count, ...)
 	return -1;
 }
 
+int required_string_one_of_fred(int arg_count, ...)
+{
+	Assertion(arg_count > 0, "required_string_one_of_fred() called with arg_count of %d; get a coder!\n", arg_count);
+
+	va_list vl;
+	int idx;
+	char* expected;
+
+	ignore_white_space();
+
+	while (*Mp != '\0') {
+		va_start(vl, arg_count);
+		for (idx = 0; idx < arg_count; idx++) {
+			expected = va_arg(vl, char*);
+			if (strnicmp(expected, Mp, strlen(expected)) == 0) {
+				diag_printf("Found required string [%s]\n", token_found = expected);
+				va_end(vl);
+				return idx;
+			}
+		}
+		va_end(vl);
+
+		advance_to_eoln(nullptr);
+		ignore_white_space();
+	}
+
+	// EOF reached without finding any token
+	if (*Mp == '\0') {
+		SCP_string message = "Unable to find any required token: ";
+
+		va_start(vl, arg_count);
+		for (idx = 0; idx < arg_count; idx++) {
+			expected = va_arg(vl, char*);
+			message += "[";
+			message += expected;
+			message += "]";
+			if (arg_count == 2 && idx == 0) {
+				message += " or ";
+			} else if (idx == arg_count - 2) {
+				message += ", or ";
+			} else if (idx < arg_count - 2) {
+				message += ", ";
+			}
+		}
+		va_end(vl);
+
+		diag_printf("%s\n", message.c_str());
+	}
+
+	return -1;
+}
+
 int required_string_either_fred(const char *str1, const char *str2)
 {
 	ignore_white_space();

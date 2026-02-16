@@ -33,7 +33,8 @@ typedef enum {
 	TECH_SHIP,
 	TECH_WEAPON,
 	TECH_POF,
-	TECH_JUMP_NODE
+	TECH_JUMP_NODE,
+	TECH_PROP,
 } tech_render_type;
 
 inline int in_box(const vec3d *min, const vec3d *max, const vec3d *pos, const vec3d *view_position)

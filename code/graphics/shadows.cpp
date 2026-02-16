@@ -509,6 +509,7 @@ void shadows_render_all(fov_t fov, matrix *eye_orient, vec3d *eye_pos)
 		switch(objp->type)
 		{
 		case OBJ_RAW_POF:
+		case OBJ_PROP:
 		case OBJ_SHIP:
 			{
 				obj_queue_render(objp, &scene);

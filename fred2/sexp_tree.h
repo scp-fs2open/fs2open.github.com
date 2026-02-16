@@ -220,6 +220,7 @@ public:
 	sexp_list_item *get_listing_opf_positive();
 	sexp_list_item *get_listing_opf_number();
 	sexp_list_item *get_listing_opf_ship(int parent_node = -1);
+	sexp_list_item *get_listing_opf_prop();
 	sexp_list_item *get_listing_opf_wing();
 	sexp_list_item *get_listing_opf_subsystem(int parent_node, int arg_index);
 	sexp_list_item *get_listing_opf_subsystem_type(int parent_node);
@@ -234,6 +235,7 @@ public:
 	sexp_list_item *get_listing_opf_waypoint_path();
 	sexp_list_item *get_listing_opf_ship_point();
 	sexp_list_item *get_listing_opf_ship_wing();
+	sexp_list_item *get_listing_opf_ship_prop();
 	sexp_list_item *get_listing_opf_ship_wing_wholeteam();
 	sexp_list_item *get_listing_opf_ship_wing_shiponteam_point();
 	sexp_list_item *get_listing_opf_ship_wing_point();
@@ -249,6 +251,7 @@ public:
 	sexp_list_item *get_listing_opf_medal_name();
 	sexp_list_item *get_listing_opf_weapon_name();
 	sexp_list_item *get_listing_opf_ship_class_name();
+	sexp_list_item *get_listing_opf_prop_class_name();
 	sexp_list_item *get_listing_opf_huge_weapon();
 	sexp_list_item *get_listing_opf_ship_not_player();
 	sexp_list_item *get_listing_opf_jump_nodes();

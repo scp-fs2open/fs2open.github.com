@@ -13,6 +13,7 @@
 #include <mission/missiongoals.h>
 #include <asteroid/asteroid.h>
 #include <jumpnode/jumpnode.h>
+#include <prop/prop.h>
 #include <util.h>
 #include <mission/missionmessage.h>
 #include <missioneditor/common.h>
@@ -239,22 +240,22 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 	}
 
 	// message 2: unknown classes
-	if ((Num_unknown_ship_classes > 0) || (Num_unknown_weapon_classes > 0) || (Num_unknown_loadout_classes > 0)) {
+	if ((Num_unknown_ship_classes > 0) || (Num_unknown_prop_classes > 0) || (Num_unknown_weapon_classes > 0) || (Num_unknown_loadout_classes > 0)) {
 		if (flags & MPF_IMPORT_FSM) {
 			SCP_string msg;
 			sprintf(msg,
-					"Fred encountered unknown ship/weapon classes when importing \"%s\" (path \"%s\"). You will have to manually edit the converted mission to correct this.",
+					"Fred encountered unknown ship/prop/weapon classes when importing \"%s\" (path \"%s\"). You will have to manually edit the converted mission to correct this.",
 					The_mission.name,
 					filepath.c_str());
 
 			_lastActiveViewport->dialogProvider->showButtonDialog(DialogType::Warning,
-																  "Unknown Ship classes",
+																  "Unknown object classes",
 																  msg,
 																  { DialogButton::Ok });
 		} else {
 			_lastActiveViewport->dialogProvider->showButtonDialog(DialogType::Warning,
-																  "Unknown Ship classes",
-																  "Fred encountered unknown ship/weapon classes when parsing the mission file. This may be due to mission disk data you do not have.",
+																  "Unknown object classes",
+																  "Fred encountered unknown ship/prop/weapon classes when parsing the mission file. This may be due to mission disk data you do not have.",
 																  { DialogButton::Ok });
 		}
 	}
@@ -485,6 +486,7 @@ void Editor::clearMission(bool fast_reload) {
 		model_free_all();                // Free all existing models
 
 	ai_init();
+	props_level_init();
 	asteroid_level_init();
 	ship_level_init();
 	nebula_init(Nebula_index, Nebula_pitch, Nebula_bank, Nebula_heading);
