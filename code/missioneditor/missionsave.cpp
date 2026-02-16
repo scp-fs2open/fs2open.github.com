@@ -4874,6 +4874,15 @@ int Fred_mission_save::save_wings()
 		parse_comments(count ? 2 : 1);
 		fout(" %s", w.name);
 
+		if (!w.display_name.empty()) {
+			if (optional_string_fred("+Display Name:", "$Name:"))
+				parse_comments();
+			else
+				fout("\n+Display Name:");
+
+			fout_ext(" ", "%s", w.display_name.c_str());
+		}
+
 		count++;
 
 		// squad logo - Goober5000
