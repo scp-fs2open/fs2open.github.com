@@ -27,7 +27,7 @@ layout (binding = 1, std140) uniform genericData {
 
 	float intensity;
 	float alphaThreshold;
-	bool clipEnabled;
+	uint clipEnabled;
 };
 
 void main()
@@ -36,7 +36,9 @@ void main()
 	fragColor = vertColor * color;
 	gl_Position = projMatrix * modelViewMatrix * vertPosition;
 
-	if (clipEnabled) {
+	if (clipEnabled != 0u) {
 		gl_ClipDistance[0] = dot(clipEquation, modelMatrix * vertPosition);
+	} else {
+		gl_ClipDistance[0] = 1.0;
 	}
 }
