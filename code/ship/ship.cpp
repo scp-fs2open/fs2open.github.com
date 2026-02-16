@@ -7495,6 +7495,7 @@ ship_weapon::ship_weapon() {
 void wing::clear()
 {
 	name[0] = '\0';
+	display_name.clear();
 	wing_squad_filename[0] = '\0';
 	reinforcement_index = -1;
 	hotkey = -1;

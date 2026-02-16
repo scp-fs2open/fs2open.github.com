@@ -4867,6 +4867,15 @@ int Fred_mission_save::save_wings()
 		parse_comments(2);
 		fout(" %s", w.name);
 
+		if (!w.display_name.empty()) {
+			if (optional_string_fred("+Display Name:", "$Name:"))
+				parse_comments();
+			else
+				fout("\n+Display Name:");
+
+			fout_ext(" ", "%s", w.display_name.c_str());
+		}
+
 		// squad logo - Goober5000
 		if (save_config.save_format != MissionFormat::RETAIL) {
 			if (strlen(w.wing_squad_filename) > 0) //-V805
