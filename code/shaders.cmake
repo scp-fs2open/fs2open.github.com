@@ -10,6 +10,21 @@ set(SHADERS
 	${SHADER_DIR}/vulkan.vert
 )
 
+# Shaders shared with the OpenGL backend. These get GLSL decompilation (.spv.glsl)
+# and the decompiled GLSL is embedded for runtime use.
+# All other shaders are Vulkan-only: SPIR-V compilation and embedding only.
+set(SHADERS_GL_SHARED
+	${SHADER_DIR}/default-material.frag
+	${SHADER_DIR}/default-material.vert
+)
+
+# Shaders that need C++ struct header generation from SPIR-V reflection.
+# Generated structs are included via shader_structs.h for compile-time layout validation.
+set(SHADERS_NEED_STRUCT_GEN
+	${SHADER_DIR}/default-material.frag
+	${SHADER_DIR}/default-material.vert
+)
+
 target_sources(code PRIVATE ${SHADERS})
 source_group("Graphics\\Shaders" FILES ${SHADERS})
 
@@ -31,6 +46,9 @@ foreach (_shader ${SHADERS})
 	get_filename_component(_baseShaderName "${_shader}" NAME_WE)
 	get_filename_component(_shaderExt "${_shader}" EXT)
 
+	list(FIND SHADERS_GL_SHARED "${_shader}" _isGlShared)
+	list(FIND SHADERS_NEED_STRUCT_GEN "${_shader}" _needStructs)
+
 	if (TARGET glslc)
 		set(_depFileDir "${CMAKE_CURRENT_BINARY_DIR}/shaders")
 		set(_depFile "${_depFileDir}/${_fileName}.spv.d")
@@ -45,34 +63,54 @@ foreach (_shader ${SHADERS})
 			COMMAND ${CMAKE_COMMAND} -E make_directory "${_depFileDir}"
 			COMMAND glslc "${_shader}" -o "${_spirvFile}" --target-env=vulkan1.0 -O -g "-I${SHADER_DIR}"
 				"-I${LEGACY_SHADER_DIR}" -MD -MF "${_depFile}" -MT "${_relativeSpirvPath}" -Werror -x glsl
-			MAIN_DEPENDENCY "${shader}"
+			MAIN_DEPENDENCY "${_shader}"
 			COMMENT "Compiling shader ${_fileName}"
 			${DEPFILE_PARAM}
 			)
 
 		target_embed_files(code FILES "${_spirvFile}" RELATIVE_TO "${_shaderOutputDir}" PATH_TYPE_PREFIX "data/effects")
 
-		set(_glslOutput "${_spirvFile}.glsl")
-		set(_structOutput "${_shaderOutputDir}/${_baseShaderName}_structs${_shaderExt}.h")
+		# Build shadertool arguments based on what this shader needs
+		set(_glslOutput)
+		set(_shadertoolArgs)
+		set(_shadertoolOutputs)
 
-		list(APPEND _structHeaderList "${_structOutput}")
+		if (_isGlShared GREATER -1)
+			set(_glslOutput "${_spirvFile}.glsl")
+			list(APPEND _shadertoolArgs --glsl "--glsl-output=${_glslOutput}")
+			list(APPEND _shadertoolOutputs "${_glslOutput}")
+		endif()
+		if (_needStructs GREATER -1)
+			set(_structOutput "${_shaderOutputDir}/${_baseShaderName}_structs${_shaderExt}.h")
+			list(APPEND _shadertoolArgs --structs "--structs-output=${_structOutput}")
+			list(APPEND _shadertoolOutputs "${_structOutput}")
+			list(APPEND _structHeaderList "${_structOutput}")
+		endif()
 
-		add_custom_command(OUTPUT "${_glslOutput}" "${_structOutput}"
-			COMMAND shadertool --glsl "--glsl-output=${_glslOutput}" --structs "--structs-output=${_structOutput}" ${_spirvFile}
-			MAIN_DEPENDENCY "${_spirvFile}"
-			COMMENT "Processing shader ${_spirvFile}"
-			)
+		if (_shadertoolArgs)
+			add_custom_command(OUTPUT ${_shadertoolOutputs}
+				COMMAND shadertool ${_shadertoolArgs} ${_spirvFile}
+				MAIN_DEPENDENCY "${_spirvFile}"
+				COMMENT "Processing shader ${_spirvFile}"
+				)
+		endif()
 
-		target_embed_files(code FILES "${_glslOutput}" RELATIVE_TO "${_shaderOutputDir}" PATH_TYPE_PREFIX "data/effects")
+		if (_glslOutput)
+			target_embed_files(code FILES "${_glslOutput}" RELATIVE_TO "${_shaderOutputDir}" PATH_TYPE_PREFIX "data/effects")
+		endif()
 	else()
+		# No shader compiler available — use pre-compiled files from VCS
 		target_embed_files(code FILES "${_spirvFile}" RELATIVE_TO "${_shaderOutputDir}" PATH_TYPE_PREFIX "data/effects")
 
-		set(_glslOutput "${_spirvFile}.glsl")
-		set(_structOutput "${_shaderOutputDir}/${_baseShaderName}_structs${_shaderExt}.h")
+		if (_needStructs GREATER -1)
+			set(_structOutput "${_shaderOutputDir}/${_baseShaderName}_structs${_shaderExt}.h")
+			list(APPEND _structHeaderList "${_structOutput}")
+		endif()
 
-		list(APPEND _structHeaderList "${_structOutput}")
-
-		target_embed_files(code FILES "${_glslOutput}" RELATIVE_TO "${_shaderOutputDir}" PATH_TYPE_PREFIX "data/effects")
+		if (_isGlShared GREATER -1)
+			set(_glslOutput "${_spirvFile}.glsl")
+			target_embed_files(code FILES "${_glslOutput}" RELATIVE_TO "${_shaderOutputDir}" PATH_TYPE_PREFIX "data/effects")
+		endif()
 	endif()
 endforeach ()
 
