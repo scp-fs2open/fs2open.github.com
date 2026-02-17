@@ -20,6 +20,7 @@
 #include "io/timer.h"
 #include "jumpnode/jumpnode.h"
 #include "lighting/lighting.h"
+#include "lighting/lighting_profiles.h"
 #include "math/staticrand.h"
 #include "missionui/missionscreencommon.h"
 #include "mod_table/mod_table.h"
@@ -3111,6 +3112,8 @@ void modelinstance_replace_active_texture(polymodel_instance* pmi, const char* o
 bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int y2, float zoom, bool lighting, int class_idx, const matrix* orient, const SCP_string &pof_filename, float close_zoom, const vec3d *close_pos, const SCP_string& tcolor)
 {
 
+	lighting_profiles::set_non_mission_profile non_mission_lighting_profile;
+	
 	model_render_params render_info;
 	const vec3d *closeup_pos;
 	float closeup_zoom;

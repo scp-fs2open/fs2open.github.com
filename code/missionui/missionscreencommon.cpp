@@ -32,6 +32,7 @@
 #include "io/mouse.h"
 #include "io/timer.h"
 #include "lighting/lighting.h"
+#include "lighting/lighting_profiles.h"
 #include "missionui/chatbox.h"
 #include "missionui/missionbrief.h"
 #include "missionui/missionscreencommon.h"
@@ -1553,6 +1554,8 @@ int restore_wss_data(ubyte *data)
 
 void draw_model_icon(int model_id, uint64_t flags, float closeup_zoom, int x, int y, int w, int h, ship_info *sip, int resize_mode, const vec3d *closeup_pos)
 {
+	lighting_profiles::set_non_mission_profile non_mission_lighting_profile;
+	
 	matrix	object_orient	= IDENTITY_MATRIX;
 	angles rot_angles = vmd_zero_angles;
 	float zoom = closeup_zoom * 2.5f;
@@ -1668,6 +1671,8 @@ void draw_model_rotating(model_render_params *render_info, int model_id, int x1,
 	//WMC - Can't draw a non-model
 	if (model_id < 0)
 		return;
+
+	lighting_profiles::set_non_mission_profile non_mission_lighting_profile;
 
 	float time = (timer_get_milliseconds()-anim_timer_start)/1000.0f;
 	angles rot_angles, view_angles;
