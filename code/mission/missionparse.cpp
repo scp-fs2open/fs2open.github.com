@@ -9422,3 +9422,8 @@ bool check_for_24_3_data()
 	}
 	return false;
 }
+
+bool check_for_25_1_data()
+{
+	return (count_items_with_value(Props) > 0);
+}
