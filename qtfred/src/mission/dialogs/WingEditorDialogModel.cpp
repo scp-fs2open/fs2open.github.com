@@ -420,6 +420,24 @@ void WingEditorDialogModel::setWingName(const SCP_string& name)
 	}
 }
 
+SCP_string WingEditorDialogModel::getWingDisplayName() const
+{
+	if (!wingIsValid())
+		return "";
+
+	const auto w = getCurrentWing();
+	return w->display_name;
+}
+
+void WingEditorDialogModel::setWingDisplayName(const SCP_string& name)
+{
+	if (!wingIsValid())
+		return;
+
+	auto* w = getCurrentWing();
+	modify(w->display_name, name);
+}
+
 int WingEditorDialogModel::getWingLeaderIndex() const
 {
 	if (!wingIsValid())
