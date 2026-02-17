@@ -1271,6 +1271,7 @@
 #define IDC_PROP_PREV                   1710
 #define IDC_PROP_NEXT                   1711
 #define IDC_PROP_FLAGS                  1712
+#define IDC_WING_DISPLAY_NAME           1713
 #define IDC_SEXP_POPUP_LIST             32770
 #define ID_FILE_MISSIONNOTES            32771
 #define ID_DUPLICATE                    32774
@@ -1581,7 +1582,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        335
 #define _APS_NEXT_COMMAND_VALUE         33104
-#define _APS_NEXT_CONTROL_VALUE         1705
+#define _APS_NEXT_CONTROL_VALUE         1714
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif

@@ -45,6 +45,7 @@ wing_editor::wing_editor(CWnd* pParent /*=NULL*/)
 {
 	//{{AFX_DATA_INIT(wing_editor)
 	m_wing_name = _T("");
+	m_wing_display_name = _T("");
 	m_wing_squad_filename = _T("");
 	m_special_ship = -1;
 	m_waves = 0;
@@ -90,6 +91,7 @@ void wing_editor::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_SPIN_WAVE_THRESHOLD, m_threshold_spin);
 	DDX_Control(pDX, IDC_SPIN_WAVES, m_waves_spin);
 	DDX_Text(pDX, IDC_WING_NAME, m_wing_name);
+	DDX_Text(pDX, IDC_WING_DISPLAY_NAME, m_wing_display_name);
 	DDX_Text(pDX, IDC_WING_SQUAD_LOGO, m_wing_squad_filename);
 	DDX_CBIndex(pDX, IDC_WING_SPECIAL_SHIP, m_special_ship);
 	DDX_CBIndex(pDX, IDC_WING_FORMATION, m_formation);
@@ -286,6 +288,7 @@ void wing_editor::initialize_data_safe(int full_update)
 
 	m_ignore_count = 0;
 	if (cur_wing < 0) {
+		m_wing_display_name = _T("");
 		m_wing_squad_filename = _T("");
 		m_special_ship = -1;
 		m_formation = 0;
@@ -348,6 +351,7 @@ void wing_editor::initialize_data_safe(int full_update)
 			if (Ships[Player_start_shipnum].wingnum == cur_wing)
 				player_wing = 1;
 
+		m_wing_display_name = _T(Wings[cur_wing].display_name.c_str());
 		m_wing_squad_filename = _T(Wings[cur_wing].wing_squad_filename);
 		m_special_ship = Wings[cur_wing].special_ship;
 		m_waves = Wings[cur_wing].num_waves;
@@ -451,6 +455,7 @@ void wing_editor::initialize_data_safe(int full_update)
 		UpdateData(FALSE);
 
 	GetDlgItem(IDC_WING_NAME)->EnableWindow(enable);
+	GetDlgItem(IDC_WING_DISPLAY_NAME)->EnableWindow(enable);
 	GetDlgItem(IDC_WING_SQUAD_LOGO_BUTTON)->EnableWindow(enable);
 	GetDlgItem(IDC_WING_SPECIAL_SHIP)->EnableWindow(enable);
 	GetDlgItem(IDC_WING_WAVES)->EnableWindow(player_enabled);
@@ -544,10 +549,13 @@ void wing_editor::initialize_data(int full_update)
 
 	m_arrival_tree.select_sexp_node = m_departure_tree.select_sexp_node = select_sexp_node;
 	select_sexp_node = -1;
-	if (cur_wing == -1)
+	if (cur_wing == -1) {
 		m_wing_name = _T("");
-	else
+		m_wing_display_name = _T("");
+	} else {
 		m_wing_name = _T(Wings[cur_wing].name);
+		m_wing_display_name = _T(Wings[cur_wing].display_name.c_str());
+	}
 
 	initialize_data_safe(full_update);
 	modified = 0;
@@ -800,6 +808,7 @@ void wing_editor::update_data_safe()
 	MODIFY(Wings[cur_wing].threshold, m_threshold);
 	MODIFY(Wings[cur_wing].formation, m_formation - 1);
 	MODIFY(Wings[cur_wing].formation_scale, (float)atof(m_formation_scale));
+	MODIFY(Wings[cur_wing].display_name, (LPCSTR)m_wing_display_name);
 
 	MODIFY(Wings[cur_wing].arrival_location, static_cast<ArrivalLocation>(m_arrival_location));
 	MODIFY(Wings[cur_wing].departure_location, static_cast<DepartureLocation>(m_departure_location));
