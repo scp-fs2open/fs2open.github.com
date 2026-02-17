@@ -1727,6 +1727,8 @@ add_file_folder("Utils"
 	utils/RandomRange.h
 	utils/string_utils.cpp
 	utils/string_utils.h
+	utils/table_viewer.cpp
+	utils/table_viewer.h
 	utils/strings.h
 	utils/threading.cpp
 	utils/threading.h
