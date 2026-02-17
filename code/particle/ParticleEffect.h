@@ -75,6 +75,7 @@ public:
 		RADIUS_MULT,
 		LENGTH_MULT,
 		LIFETIME_MULT,
+		SOURCE_DURATION_MULT,
 		VOLUME_VELOCITY_MULT,
 		INHERIT_VELOCITY_MULT,
 		POSITION_INHERIT_VELOCITY_MULT,
@@ -236,7 +237,7 @@ public:
 
 	const SCP_string& getName() const { return m_name; }
 
-	std::pair<TIMESTAMP, TIMESTAMP> getEffectDuration() const;
+	std::pair<TIMESTAMP, TIMESTAMP> getEffectDuration(float interp, const ParticleSource& source, size_t effectNumber) const;
 
 	float getNextSpawnDelay() const;
 
@@ -251,6 +252,7 @@ public:
 			std::pair {"Radius Mult", ParticleCurvesOutput::RADIUS_MULT},
 			std::pair {"Length Mult", ParticleCurvesOutput::LENGTH_MULT},
 			std::pair {"Lifetime Mult", ParticleCurvesOutput::LIFETIME_MULT},
+			std::pair {"Source Duration Mult", ParticleCurvesOutput::SOURCE_DURATION_MULT},
 			std::pair {"Velocity Volume Mult", ParticleCurvesOutput::VOLUME_VELOCITY_MULT},
 			std::pair {"Velocity Inherit Mult", ParticleCurvesOutput::INHERIT_VELOCITY_MULT},
 			std::pair {"Velocity Position Inherit Mult", ParticleCurvesOutput::POSITION_INHERIT_VELOCITY_MULT},
@@ -299,6 +301,7 @@ public:
 		std::pair {"Host Ship Time Until Explosion", modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getParentObjAndSig, 0, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::final_death_time, static_cast<int (*)(int)>(&timestamp_until)>{}})
 	.derive_modular_curves_input_only_subset<size_t>( //Effect Number
 		std::pair {"Spawntime Left", modular_curves_functional_full_input<&ParticleSource::getEffectRemainingTime>{}},
+		std::pair {"Life Left", modular_curves_functional_full_input<&ParticleSource::getEffectRemainingLife>{}},
 		std::pair {"Time Running", modular_curves_functional_full_input<&ParticleSource::getEffectRunningTime>{}})
 	.derive_modular_curves_input_only_subset<vec3d>( //Sampled spawn position
 		std::pair {"Pixel Size At Emitter", modular_curves_functional_full_input<&ParticleSource::getEffectPixelSize>{}},
