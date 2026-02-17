@@ -58,6 +58,8 @@ class WingEditorDialogModel : public AbstractDialogModel {
 		// Top section, first column
 		SCP_string getWingName() const;
 		void setWingName(const SCP_string& name);
+		SCP_string getWingDisplayName() const;
+		void setWingDisplayName(const SCP_string& name);
 		int getWingLeaderIndex() const;
 		void setWingLeaderIndex(int newLeaderIndex);
 		int getNumberOfWaves() const;
