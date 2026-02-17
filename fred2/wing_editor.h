@@ -47,6 +47,7 @@ public:
 	CSpinButtonCtrl	m_threshold_spin;
 	CSpinButtonCtrl	m_waves_spin;
 	CString	m_wing_name;
+	CString m_wing_display_name;
 	int		m_special_ship;
 	int		m_waves;
 	int		m_threshold;
