@@ -427,6 +427,10 @@ void LabRenderer::useBackground(const SCP_string& mission_name) {
 				ltp::switch_to(ltp_name);
 		}
 
+		// Mission headers include additional fields between lighting profile and the
+		// background section. If we stopped at the lighting profile, we need to seek again.
+		skip_to_start_of_string("#Background bitmaps");
+
 		if (optional_string("#Background bitmaps")) {
 			required_string("$Num stars:");
 			stuff_int(&Num_stars);
