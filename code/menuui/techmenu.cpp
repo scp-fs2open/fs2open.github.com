@@ -23,6 +23,7 @@
 #include "io/key.h"
 #include "io/mouse.h"
 #include "lighting/lighting.h"
+#include "lighting/lighting_profiles.h"
 #include "localization/localize.h"
 #include "menuui/techmenu.h"
 #include "missionui/missionscreencommon.h"
@@ -516,6 +517,8 @@ void tech_common_render()
 
 void techroom_ships_render(float frametime)
 {
+	lighting_profiles::set_non_mission_profile non_mission_lighting_profile;
+	
 	// render all the common stuff
 	tech_common_render();
 	

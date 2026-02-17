@@ -82,6 +82,7 @@ class profile {
 };
 
 const SCP_string &default_name();
+const SCP_string& non_mission_name();
 const profile* current();
 enum TonemapperAlgorithm name_to_tonemapper(SCP_string name);
 SCP_string tonemapper_to_name(TonemapperAlgorithm tnm);
@@ -103,4 +104,23 @@ float lab_get_emissive();
 void lab_set_emissive(float in);
 SCP_vector<SCP_string> list_profiles();
 void switch_to(const SCP_string& name);
+void switch_to_non_mission();
+
+// Use the tech room profile profile and then automatically
+// remove it on destruction.
+class set_non_mission_profile {
+  public:
+	set_non_mission_profile() : _old_profile_name(current()->name)
+	{
+		switch_to_non_mission();
+	}
+
+	~set_non_mission_profile()
+	{
+		switch_to(_old_profile_name);
+	}
+
+  private:
+	SCP_string _old_profile_name;
+};
 } // namespace lighting_profiles
