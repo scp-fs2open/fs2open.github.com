@@ -181,6 +181,16 @@ void PropEditorDialogModel::selectPropFromObjectList(object* start, bool forward
 	}
 }
 
+void PropEditorDialogModel::selectFirstPropInMission() {
+	for (auto* ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
+		if (ptr->type == OBJ_PROP) {
+			_editor->unmark_all();
+			_editor->markObject(OBJ_INDEX(ptr));
+			return;
+		}
+	}
+}
+
 SCP_vector<int> PropEditorDialogModel::getSelectedPropObjects() const {
 	SCP_vector<int> selected;
 	for (auto* ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
@@ -235,6 +245,16 @@ bool PropEditorDialogModel::hasMultipleSelection() const {
 	return _selectedPropObjects.size() > 1;
 }
 
+bool PropEditorDialogModel::hasAnyPropsInMission() const {
+	for (auto* ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
+		if (ptr->type == OBJ_PROP) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
 const SCP_string& PropEditorDialogModel::getPropName() const {
 	return _propName;
 }
@@ -268,6 +288,9 @@ void PropEditorDialogModel::setFlagState(size_t index, int state) {
 
 void PropEditorDialogModel::selectNextProp() {
 	if (!hasValidSelection()) {
+		if (hasAnyPropsInMission()) {
+			selectFirstPropInMission();
+		}
 		return;
 	}
 
@@ -278,6 +301,9 @@ void PropEditorDialogModel::selectNextProp() {
 
 void PropEditorDialogModel::selectPreviousProp() {
 	if (!hasValidSelection()) {
+		if (hasAnyPropsInMission()) {
+			selectFirstPropInMission();
+		}
 		return;
 	}
 
