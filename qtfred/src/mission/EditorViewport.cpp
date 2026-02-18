@@ -13,6 +13,7 @@
 #include "EditorViewport.h"
 #include <math/fvi.h>
 #include <jumpnode/jumpnode.h>
+#include <prop/prop.h>
 #include <FredApplication.h>
 
 namespace {
@@ -880,6 +881,10 @@ void EditorViewport::drag_rotate_save_backup() {
 }
 
 int EditorViewport::create_object_on_grid(int x, int y, int waypoint_instance) {
+	return create_object_on_grid(x, y, waypoint_instance, false);
+}
+
+int EditorViewport::create_object_on_grid(int x, int y, int waypoint_instance, bool create_prop) {
 	int obj = -1;
 	float rval;
 	vec3d dir, pos;
@@ -890,7 +895,7 @@ int EditorViewport::create_object_on_grid(int x, int y, int waypoint_instance) {
 
 	if (rval >= 0.0f) {
 		editor->unmark_all();
-		obj = create_object(&pos, waypoint_instance);
+		obj = create_object(&pos, waypoint_instance, create_prop);
 		if (obj >= 0) {
 			editor->markObject(obj);
 
@@ -904,27 +909,38 @@ int EditorViewport::create_object_on_grid(int x, int y, int waypoint_instance) {
 
 	return obj;
 }
-int EditorViewport::create_object(vec3d* pos, int waypoint_instance) {
+int EditorViewport::create_object(vec3d* pos, int waypoint_instance, bool create_prop) {
 
 	int obj, n;
-
-	if (cur_model_index == editor->Id_select_type_waypoint) {
-		obj = editor->create_waypoint(pos, waypoint_instance);
-	} else if (cur_model_index == editor->Id_select_type_jump_node) {
-		CJumpNode jnp(pos);
-		obj = jnp.GetSCPObjectNumber();
-		Jump_nodes.push_back(std::move(jnp));
-	} else if(Ship_info[cur_model_index].flags[Ship::Info_Flags::No_fred]){
-		obj = -1;
-	} else {  // creating a ship
-		obj = editor->create_ship(NULL, pos, cur_model_index);
-		if (obj == -1)
+	if (create_prop) {
+		if (cur_prop_index < 0 || cur_prop_index >= prop_info_size()) {
 			return -1;
+		}
 
-		n = Objects[obj].instance;
-		Ships[n].arrival_cue = alloc_sexp("true", SEXP_ATOM, SEXP_ATOM_OPERATOR, -1, -1);
-		Ships[n].departure_cue = alloc_sexp("false", SEXP_ATOM, SEXP_ATOM_OPERATOR, -1, -1);
-		Ships[n].cargo1 = 0;
+		obj = prop_create(nullptr, pos, cur_prop_index);
+		if (obj == -1) {
+			return -1;
+		}
+	} else {
+
+		if (cur_model_index == editor->Id_select_type_waypoint) {
+			obj = editor->create_waypoint(pos, waypoint_instance);
+		} else if (cur_model_index == editor->Id_select_type_jump_node) {
+			CJumpNode jnp(pos);
+			obj = jnp.GetSCPObjectNumber();
+			Jump_nodes.push_back(std::move(jnp));
+		} else if(Ship_info[cur_model_index].flags[Ship::Info_Flags::No_fred]){
+			obj = -1;
+		} else {  // creating a ship
+			obj = editor->create_ship(NULL, pos, cur_model_index);
+			if (obj == -1)
+				return -1;
+
+			n = Objects[obj].instance;
+			Ships[n].arrival_cue = alloc_sexp("true", SEXP_ATOM, SEXP_ATOM_OPERATOR, -1, -1);
+			Ships[n].departure_cue = alloc_sexp("false", SEXP_ATOM, SEXP_ATOM_OPERATOR, -1, -1);
+			Ships[n].cargo1 = 0;
+		}
 	}
 
 	if (obj < 0)
@@ -937,6 +953,12 @@ int EditorViewport::create_object(vec3d* pos, int waypoint_instance) {
 }
 void EditorViewport::initialSetup() {
 	cur_model_index = get_default_player_ship_index();
+	for (int i = 0; i < prop_info_size(); ++i) {
+		if (!Prop_info[i].flags[Prop::Info_Flags::No_fred]) {
+			cur_prop_index = i;
+			break;
+		}
+	}
 }
 
 int EditorViewport::duplicate_marked_objects()

@@ -235,7 +235,8 @@ void RenderWidget::mousePressEvent(QMouseEvent* event) {
 		if (!_viewport->Bg_bitmap_dialog) {
 			if (_viewport->on_object == -1) {
 				_viewport->Selection_lock = 0;  // force off selection lock
-				_viewport->on_object = _viewport->create_object_on_grid(event->x(), event->y(), waypoint_instance);
+				auto spawn_prop = event->modifiers().testFlag(Qt::ShiftModifier);
+				_viewport->on_object = _viewport->create_object_on_grid(event->x(), event->y(), waypoint_instance, spawn_prop);
 
 			} else {
 				_viewport->Dup_drag = 1;
