@@ -56,10 +56,11 @@ void PropEditorDialog::initializeUi() {
 	ui->propFlagsListWidget->setToolbarVisible(true);
 
 	const auto enable = _model->hasValidSelection();
+	const auto has_props = _model->hasAnyPropsInMission();
 	ui->propNameLineEdit->setEnabled(enable && !_model->hasMultipleSelection());
 	ui->propFlagsListWidget->setEnabled(enable);
-	ui->nextButton->setEnabled(enable);
-	ui->prevButton->setEnabled(enable);
+	ui->nextButton->setEnabled(has_props);
+	ui->prevButton->setEnabled(has_props);
 }
 
 void PropEditorDialog::updateUi() {
