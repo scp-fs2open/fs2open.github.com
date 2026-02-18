@@ -153,6 +153,9 @@ void FredView::loadMissionFile(const QString& pathName) {
 	try {
 		QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 
+		// probably good to clear selections in qtFRED too
+		fred->clean_up_selections();
+
 		auto pathToLoad = pathName.toStdString();
 		fred->maybeUseAutosave(pathToLoad);
 

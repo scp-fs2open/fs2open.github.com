@@ -562,5 +562,6 @@ void jumpnode_render_all()
  */
 void jumpnode_level_close()
 {
+	// Clear all jump nodes.  Note that this can happen either before or after objects are cleaned up.
 	Jump_nodes.clear();
 }

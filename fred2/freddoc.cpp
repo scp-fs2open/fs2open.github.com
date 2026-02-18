@@ -108,10 +108,7 @@ bool CFREDDoc::autoload() {
 		return 0;
 	fclose(fp);
 
-	if (Briefing_dialog) {
-		// clean things up first
-		Briefing_dialog->icon_select(-1);
-	}
+	clean_up_selections();
 
 	// Load Backup.002
 	r = load_mission(name, MPF_FAST_RELOAD);
@@ -482,10 +479,6 @@ void CFREDDoc::OnFileImportFSM() {
 	if (*dest_directory == '\0')
 		return;
 
-	// clean things up first
-	if (Briefing_dialog)
-		Briefing_dialog->icon_select(-1);
-
 	clear_mission(true);
 
 	int num_files = 0;
@@ -611,8 +604,8 @@ BOOL CFREDDoc::OnNewDocument() {
 
 BOOL CFREDDoc::OnOpenDocument(LPCTSTR pathname)
 {
-	if (Briefing_dialog)
-		Briefing_dialog->icon_select(-1);  // clean things up first
+	// don't process any objects if the window focus is lost and reacquired
+	clean_up_selections();
 
 	auto sep_ch = strrchr(pathname, '\\');
 	auto filename = (sep_ch != nullptr) ? (sep_ch + 1) : pathname;

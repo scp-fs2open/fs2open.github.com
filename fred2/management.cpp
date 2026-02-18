@@ -865,6 +865,7 @@ void clear_mission(bool fast_reload)
 	CTime t;
 
 	// clean up everything we need to before we reset back to defaults.
+	clean_up_selections();
 	if (Briefing_dialog){
 		Briefing_dialog->reset_editor();
 	}
@@ -1543,6 +1544,14 @@ void unmark_all()
 		Update_window = 1;
 		set_cur_object_index(-1);
 	}
+}
+
+void clean_up_selections()
+{
+	if (Briefing_dialog)
+		Briefing_dialog->icon_select(-1);
+
+	unmark_all();
 }
 
 void clear_menu(CMenu *ptr)

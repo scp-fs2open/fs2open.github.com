@@ -412,6 +412,14 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 
 	return true;
 }
+void Editor::clean_up_selections() {
+#if 0
+	if (Briefing_dialog)
+		Briefing_dialog->icon_select(-1);
+#endif
+
+	unmark_all();
+}
 void Editor::unmark_all() {
 	if (numMarked > 0) {
 		for (auto i = 0; i < MAX_OBJECTS; i++) {
@@ -470,6 +478,7 @@ void Editor::unmarkObject(int obj) {
 
 void Editor::clearMission(bool fast_reload) {
 	// clean up everything we need to before we reset back to defaults.
+	clean_up_selections();
 #if 0
     if (Briefing_dialog){
         Briefing_dialog->reset_editor();

@@ -1250,11 +1250,10 @@ void CFREDView::OnSetFocus(CWnd* pOldWnd)
 		Update_wing = 0;
 	}
 
-/*	if (Wing_editor_dialog.verify() == -1)
-		return;  // abort
-
-	if (Ship_editor_dialog.verify() == -1)
-		return;  // abort*/
+	if (Update_prop) {
+		Prop_editor_dialog.initialize_data(1);
+		Update_prop = 0;
+	}
 
 	if (update_dialog_boxes()) {
 		nprintf(("Fred routing", "OnSetFocus() returned (error occured)\n"));
@@ -1398,7 +1397,7 @@ void select_objects()
 		}
 	}
 
-	Update_ship = Update_wing = 1;
+	Update_ship = Update_wing = Update_prop = 1;
 }
 
 LRESULT CFREDView::OnMenuPopupShips(WPARAM wParam, LPARAM lParam)

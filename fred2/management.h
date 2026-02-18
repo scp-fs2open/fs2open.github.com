@@ -90,6 +90,7 @@ void clear_menu(CMenu* ptr);
 void generate_wing_popup_menu(CMenu* mptr, int first_id, int state);
 void generate_ship_popup_menu(CMenu* mptr, int first_id, int state, int filter = 0);
 int string_lookup(const CString& str1, char* strlist[], int max);
+void clean_up_selections();
 int update_dialog_boxes();
 void set_cur_wing(int wing);
 int gray_menu_tree(CMenu* base);

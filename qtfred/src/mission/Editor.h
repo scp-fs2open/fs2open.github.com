@@ -55,6 +55,8 @@ class Editor : public QObject {
   public:
 	Editor();
 
+	void clean_up_selections();
+
 	void unmark_all();
 
 	void createNewMission();
