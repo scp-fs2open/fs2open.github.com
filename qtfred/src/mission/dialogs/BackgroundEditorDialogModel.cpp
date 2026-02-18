@@ -10,7 +10,6 @@
 #include "lighting/lighting_profiles.h" 
 
 // TODO move this to common for both FREDs.
-const static float delta = .00001f;
 const static float default_nebula_range = 3000.0f;
 
 extern void parse_one_background(background_t* background);
@@ -404,64 +403,64 @@ void BackgroundEditorDialogModel::setBitmapName(const SCP_string& name)
 	}
 }
 
-int BackgroundEditorDialogModel::getBitmapPitch() const
+float BackgroundEditorDialogModel::getBitmapPitch() const
 {
 	auto* bm = getActiveBitmap();
 	if (!bm)
 		return 0;
 
-	return fl2ir(fl_degrees(bm->ang.p) + delta);
+	return fl_degrees_100ths(bm->ang.p);
 }
 
-void BackgroundEditorDialogModel::setBitmapPitch(int deg)
+void BackgroundEditorDialogModel::setBitmapPitch(float deg)
 {
 	auto* bm = getActiveBitmap();
 	if (!bm)
 		return;
 
-	CLAMP(deg, getOrientLimit().first, getOrientLimit().second);
+	CLAMP(deg, getFloatOrientLimit().first, getFloatOrientLimit().second);
 	modify(bm->ang.p, fl_radians(deg));
 
 	refreshBackgroundPreview();
 }
 
-int BackgroundEditorDialogModel::getBitmapBank() const
+float BackgroundEditorDialogModel::getBitmapBank() const
 {
 	auto* bm = getActiveBitmap();
 	if (!bm)
 		return 0;
 
-	return fl2ir(fl_degrees(bm->ang.b) + delta);
+	return fl_degrees_100ths(bm->ang.b);
 }
 
-void BackgroundEditorDialogModel::setBitmapBank(int deg)
+void BackgroundEditorDialogModel::setBitmapBank(float deg)
 {
 	auto* bm = getActiveBitmap();
 	if (!bm)
 		return;
 
-	CLAMP(deg, getOrientLimit().first, getOrientLimit().second);
+	CLAMP(deg, getFloatOrientLimit().first, getFloatOrientLimit().second);
 	modify(bm->ang.b, fl_radians(deg));
 
 	refreshBackgroundPreview();
 }
 
-int BackgroundEditorDialogModel::getBitmapHeading() const
+float BackgroundEditorDialogModel::getBitmapHeading() const
 {
 	auto* bm = getActiveBitmap();
 	if (!bm)
 		return 0;
 
-	return fl2ir(fl_degrees(bm->ang.h) + delta);
+	return fl_degrees_100ths(bm->ang.h);
 }
 
-void BackgroundEditorDialogModel::setBitmapHeading(int deg)
+void BackgroundEditorDialogModel::setBitmapHeading(float deg)
 {
 	auto* bm = getActiveBitmap();
 	if (!bm)
 		return;
 
-	CLAMP(deg, getOrientLimit().first, getOrientLimit().second);
+	CLAMP(deg, getFloatOrientLimit().first, getFloatOrientLimit().second);
 	modify(bm->ang.h, fl_radians(deg));
 
 	refreshBackgroundPreview();
@@ -655,42 +654,42 @@ void BackgroundEditorDialogModel::setSunName(const SCP_string& name)
 	refreshBackgroundPreview();
 }
 
-int BackgroundEditorDialogModel::getSunPitch() const
+float BackgroundEditorDialogModel::getSunPitch() const
 {
 	auto* s = getActiveSun();
 	if (!s)
 		return 0;
 
-	return fl2ir(fl_degrees(s->ang.p) + delta);
+	return fl_degrees_100ths(s->ang.p);
 }
 
-void BackgroundEditorDialogModel::setSunPitch(int deg)
+void BackgroundEditorDialogModel::setSunPitch(float deg)
 {
 	auto* s = getActiveSun();
 	if (!s)
 		return;
 
-	CLAMP(deg, getOrientLimit().first, getOrientLimit().second);
+	CLAMP(deg, getFloatOrientLimit().first, getFloatOrientLimit().second);
 	modify(s->ang.p, fl_radians(deg));
 	refreshBackgroundPreview();
 }
 
-int BackgroundEditorDialogModel::getSunHeading() const
+float BackgroundEditorDialogModel::getSunHeading() const
 {
 	auto* s = getActiveSun();
 	if (!s)
 		return 0;
 
-	return fl2ir(fl_degrees(s->ang.h) + delta);
+	return fl_degrees_100ths(s->ang.h);
 }
 
-void BackgroundEditorDialogModel::setSunHeading(int deg)
+void BackgroundEditorDialogModel::setSunHeading(float deg)
 {
 	auto* s = getActiveSun();
 	if (!s)
 		return;
 
-	CLAMP(deg, getOrientLimit().first, getOrientLimit().second);
+	CLAMP(deg, getFloatOrientLimit().first, getFloatOrientLimit().second);
 	modify(s->ang.h, fl_radians(deg));
 	refreshBackgroundPreview();
 }
@@ -1012,7 +1011,7 @@ int BackgroundEditorDialogModel::getOldNebulaPitch()
 
 void BackgroundEditorDialogModel::setOldNebulaPitch(int deg)
 {
-	CLAMP(deg, getOrientLimit().first, getOrientLimit().second);
+	CLAMP(deg, getIntOrientLimit().first, getIntOrientLimit().second);
 	if (Nebula_pitch != deg) {
 		Nebula_pitch = deg;
 		modify(Nebula_pitch, deg);
@@ -1026,7 +1025,7 @@ int BackgroundEditorDialogModel::getOldNebulaBank()
 
 void BackgroundEditorDialogModel::setOldNebulaBank(int deg)
 {
-	CLAMP(deg, getOrientLimit().first, getOrientLimit().second);
+	CLAMP(deg, getIntOrientLimit().first, getIntOrientLimit().second);
 	if (Nebula_bank != deg) {
 		Nebula_bank = deg;
 		modify(Nebula_bank, deg);
@@ -1040,7 +1039,7 @@ int BackgroundEditorDialogModel::getOldNebulaHeading()
 
 void BackgroundEditorDialogModel::setOldNebulaHeading(int deg)
 {
-	CLAMP(deg, getOrientLimit().first, getOrientLimit().second);
+	CLAMP(deg, getIntOrientLimit().first, getIntOrientLimit().second);
 	if (Nebula_heading != deg) {
 		Nebula_heading = deg;
 		modify(Nebula_heading, deg);
@@ -1213,22 +1212,21 @@ void BackgroundEditorDialogModel::setSkyboxForceClamp(bool on)
 	set_modified();
 }
 
-int BackgroundEditorDialogModel::getSkyboxPitch()
+float BackgroundEditorDialogModel::getSkyboxPitch()
 {
 	angles a;
 	vm_extract_angles_matrix(&a, &The_mission.skybox_orientation);
-	int d = static_cast<int>(fl2ir(fl_degrees(a.p)));
-	d = (d % 360 + 360) % 360; // wrap to [0, 359]
-	return d;
+	return fl_degrees_100ths(a.p);
 }
 
-void BackgroundEditorDialogModel::setSkyboxPitch(int deg)
+void BackgroundEditorDialogModel::setSkyboxPitch(float deg)
 {
-	CLAMP(deg, 0, 359);
+	CLAMP(deg, getFloatOrientLimit().first, getFloatOrientLimit().second);
+	const float deg_100ths = fl2ir(deg * 100.0f) / 100.0f;
 	angles a;
 	vm_extract_angles_matrix(&a, &The_mission.skybox_orientation);
-	const int cur = static_cast<int>(fl2ir(fl_degrees(a.p)));
-	if (cur != deg) {
+	const float cur = fl_degrees_100ths(a.p);
+	if (!fl_equal(cur, deg_100ths)) {
 		a.p = fl_radians(static_cast<float>(deg));
 		vm_angles_2_matrix(&The_mission.skybox_orientation, &a);
 		set_modified();
@@ -1236,22 +1234,21 @@ void BackgroundEditorDialogModel::setSkyboxPitch(int deg)
 	}
 }
 
-int BackgroundEditorDialogModel::getSkyboxBank()
+float BackgroundEditorDialogModel::getSkyboxBank()
 {
 	angles a;
 	vm_extract_angles_matrix(&a, &The_mission.skybox_orientation);
-	int d = static_cast<int>(fl2ir(fl_degrees(a.b)));
-	d = (d % 360 + 360) % 360; // wrap to [0, 359]
-	return d;
+	return fl_degrees_100ths(a.b);
 }
 
-void BackgroundEditorDialogModel::setSkyboxBank(int deg)
+void BackgroundEditorDialogModel::setSkyboxBank(float deg)
 {
-	CLAMP(deg, 0, 359);
+	CLAMP(deg, getFloatOrientLimit().first, getFloatOrientLimit().second);
+	const float deg_100ths = fl2ir(deg * 100.0f) / 100.0f;
 	angles a;
 	vm_extract_angles_matrix(&a, &The_mission.skybox_orientation);
-	const int cur = static_cast<int>(fl2ir(fl_degrees(a.b)));
-	if (cur != deg) {
+	const float cur = fl_degrees_100ths(a.b);
+	if (!fl_equal(cur, deg_100ths)) {
 		a.b = fl_radians(static_cast<float>(deg));
 		vm_angles_2_matrix(&The_mission.skybox_orientation, &a);
 		set_modified();
@@ -1259,22 +1256,21 @@ void BackgroundEditorDialogModel::setSkyboxBank(int deg)
 	}
 }
 
-int BackgroundEditorDialogModel::getSkyboxHeading()
+float BackgroundEditorDialogModel::getSkyboxHeading()
 {
 	angles a;
 	vm_extract_angles_matrix(&a, &The_mission.skybox_orientation);
-	int d = static_cast<int>(fl2ir(fl_degrees(a.h)));
-	d = (d % 360 + 360) % 360; // wrap to [0, 359]
-	return d;
+	return fl_degrees_100ths(a.h);
 }
 
-void BackgroundEditorDialogModel::setSkyboxHeading(int deg)
+void BackgroundEditorDialogModel::setSkyboxHeading(float deg)
 {
-	CLAMP(deg, 0, 359);
+	CLAMP(deg, getFloatOrientLimit().first, getFloatOrientLimit().second);
+	const float deg_100ths = fl2ir(deg * 100.0f) / 100.0f;
 	angles a;
 	vm_extract_angles_matrix(&a, &The_mission.skybox_orientation);
-	const int cur = static_cast<int>(fl2ir(fl_degrees(a.h)));
-	if (cur != deg) {
+	const float cur = fl_degrees_100ths(a.h);
+	if (!fl_equal(cur, deg_100ths)) {
 		a.h = fl_radians(static_cast<float>(deg));
 		vm_angles_2_matrix(&The_mission.skybox_orientation, &a);
 		set_modified();

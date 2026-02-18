@@ -246,20 +246,26 @@ add_file_folder("Source/UI/Util"
 )
 
 add_file_folder("Source/UI/Widgets"
-    src/ui/widgets/CampaignMissionGraph.cpp
+	src/ui/widgets/bankTree.cpp
+	src/ui/widgets/bankTree.h
+	src/ui/widgets/CampaignMissionGraph.cpp
 	src/ui/widgets/CampaignMissionGraph.h
-    src/ui/widgets/ColorComboBox.cpp
-    src/ui/widgets/ColorComboBox.h
-	src/ui/widgets/LineEditDelegate.cpp
-	src/ui/widgets/LineEditDelegate.h
+	src/ui/widgets/ColorComboBox.cpp
+	src/ui/widgets/ColorComboBox.h
 	src/ui/widgets/FlagList.cpp
 	src/ui/widgets/FlagList.h
+	src/ui/widgets/IntegerSnapDoubleSpinBox.cpp
+	src/ui/widgets/IntegerSnapDoubleSpinBox.h
+	src/ui/widgets/LineEditDelegate.cpp
+	src/ui/widgets/LineEditDelegate.h
 	src/ui/widgets/NoWheelComboBox.cpp
 	src/ui/widgets/NoWheelComboBox.h
 	src/ui/widgets/NoWheelSpinBox.cpp
 	src/ui/widgets/NoWheelSpinBox.h
-    src/ui/widgets/renderwidget.cpp
-    src/ui/widgets/renderwidget.h
+	src/ui/widgets/PersonaColorComboBox.cpp
+	src/ui/widgets/PersonaColorComboBox.h
+	src/ui/widgets/renderwidget.cpp
+	src/ui/widgets/renderwidget.h
 	src/ui/widgets/sexp_tree.cpp
 	src/ui/widgets/sexp_tree.h
 	src/ui/widgets/ShipFlagCheckbox.h
@@ -268,10 +274,6 @@ add_file_folder("Source/UI/Widgets"
 	src/ui/widgets/SimpleListSelectDialog.h
 	src/ui/widgets/weaponList.cpp
 	src/ui/widgets/weaponList.h
-	src/ui/widgets/bankTree.cpp
-	src/ui/widgets/bankTree.h
-	src/ui/widgets/PersonaColorComboBox.cpp
-	src/ui/widgets/PersonaColorComboBox.h
 )
 
 add_file_folder("UI"
