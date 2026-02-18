@@ -35,7 +35,7 @@ class PropEditorDialogModel : public AbstractDialogModel {
 	void onSelectedObjectMarkingChanged(int, bool);
 	void onMissionChanged();
 
- private:
+ private: // NOLINT(readability-redundant-access-specifiers)
 	void initializeData();
 	bool validateData();
 	void showErrorDialogNoCancel(const SCP_string& message);
