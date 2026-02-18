@@ -21,6 +21,7 @@
 #include <ship/shipfx.h>
 #include <jumpnode/jumpnode.h>
 #include <asteroid/asteroid.h>
+#include <prop/prop.h>
 #include <iff_defs/iff_defs.h>
 #include <math/fvi.h>
 #include <graphics/light.h>
@@ -508,6 +509,11 @@ void FredRenderer::display_ship_info(int cur_object_index) {
 					} else if (objp->type == OBJ_JUMP_NODE) {
 						CJumpNode* jnp = jumpnode_get_by_objnum(OBJ_INDEX(objp));
 						sprintf(buf, "%s\n%s", jnp->GetName(), jnp->GetDisplayName());
+					} else if (objp->type == OBJ_PROP) {
+						auto propp = prop_id_lookup(objp->instance);
+						if (propp != nullptr) {
+							sprintf(buf, "%s\n", propp->prop_name);
+						}
 					} else
 						Assert(0);
 				}
@@ -839,7 +845,42 @@ void FredRenderer::render_one_model_htl(object* objp,
 	}
 
 	// build flags
-	if ((view().Show_ship_models || view().Show_outlines) && ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START))) {
+	if ((objp->type == OBJ_PROP) && (view().Show_ship_models || view().Show_outlines)) {
+		uint64_t flags = MR_NORMAL;
+
+		if (!view().Lighting_on) {
+			flags |= MR_NO_LIGHTING;
+		}
+
+		if (view().FullDetail) {
+			flags |= MR_FULL_DETAIL;
+		}
+
+		auto propp = prop_id_lookup(objp->instance);
+		if (propp == nullptr || !SCP_vector_inbounds(Prop_info, propp->prop_info_index)) {
+			return;
+		}
+
+		model_render_params render_info;
+		render_info.set_debug_flags(0);
+
+		if (Fred_outline) {
+			render_info.set_color(Fred_outline >> 16, (Fred_outline >> 8) & 0xff, Fred_outline & 0xff);
+			render_info.set_flags(flags | MR_SHOW_OUTLINE_HTL | MR_NO_LIGHTING | MR_NO_POLYS | MR_NO_TEXTURING);
+			model_render_immediate(&render_info,
+								   Prop_info[propp->prop_info_index].model_num,
+								   propp->model_instance_num,
+								   &objp->orient,
+								   &objp->pos);
+		}
+
+		render_info.set_flags(flags);
+		model_render_immediate(&render_info,
+							   Prop_info[propp->prop_info_index].model_num,
+							   propp->model_instance_num,
+							   &objp->orient,
+							   &objp->pos);
+	} else if ((view().Show_ship_models || view().Show_outlines) && ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START))) {
 		uint64_t flags = 0;
 
 		g3_start_instance_matrix(&Eye_position, &Eye_matrix, 0);
@@ -933,6 +974,10 @@ void FredRenderer::render_one_model_htl(object* objp,
 			r = 196;
 			g = 32;
 			b = 196;
+		} else if (objp->type == OBJ_PROP) {
+			r = 255;
+			g = 255;
+			b = 255;
 		} else
 			Assert(0);
 
