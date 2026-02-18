@@ -16,7 +16,7 @@ class PropEditorDialogModel : public AbstractDialogModel {
 
 	bool hasValidSelection() const;
 	bool hasMultipleSelection() const;
-	bool hasAnyPropsInMission() const;
+	static bool hasAnyPropsInMission();
 	const SCP_string& getPropName() const;
 	void setPropName(const SCP_string& name);
 
@@ -42,8 +42,8 @@ class PropEditorDialogModel : public AbstractDialogModel {
 	void selectPropFromObjectList(object* start, bool forward);
 	void selectFirstPropInMission();
 	SCP_vector<int> getSelectedPropObjects() const;
-	bool getFlagValueForObject(const object& obj, size_t flag_index) const;
-	int tristate_set(bool value, int current_state) const;
+	static bool getFlagValueForObject(const object& obj, size_t flag_index);
+	static int tristate_set(bool value, int current_state);
 
 	SCP_string _propName;
 	SCP_vector<std::pair<SCP_string, size_t>> _flagLabels;
