@@ -932,7 +932,7 @@ int EditorViewport::create_object(vec3d* pos, int waypoint_instance, bool create
 		} else if(Ship_info[cur_model_index].flags[Ship::Info_Flags::No_fred]){
 			obj = -1;
 		} else {  // creating a ship
-			obj = editor->create_ship(NULL, pos, cur_model_index);
+			obj = editor->create_ship(nullptr, pos, cur_model_index);
 			if (obj == -1)
 				return -1;
 

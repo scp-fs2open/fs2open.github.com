@@ -206,7 +206,7 @@ SCP_vector<int> PropEditorDialogModel::getSelectedPropObjects() const {
 	return selected;
 }
 
-bool PropEditorDialogModel::getFlagValueForObject(const object& obj, size_t flag_index) const {
+bool PropEditorDialogModel::getFlagValueForObject(const object& obj, size_t flag_index) {
 	if (flag_index >= Num_parse_prop_flags) {
 		return false;
 	}
@@ -219,7 +219,7 @@ bool PropEditorDialogModel::getFlagValueForObject(const object& obj, size_t flag
 	return false;
 }
 
-int PropEditorDialogModel::tristate_set(bool value, int current_state) const {
+int PropEditorDialogModel::tristate_set(bool value, int current_state) {
 	if (value) {
 		if (current_state == Qt::Unchecked) {
 			return Qt::PartiallyChecked;
@@ -245,7 +245,7 @@ bool PropEditorDialogModel::hasMultipleSelection() const {
 	return _selectedPropObjects.size() > 1;
 }
 
-bool PropEditorDialogModel::hasAnyPropsInMission() const {
+static bool PropEditorDialogModel::hasAnyPropsInMission() {
 	for (auto* ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
 		if (ptr->type == OBJ_PROP) {
 			return true;
