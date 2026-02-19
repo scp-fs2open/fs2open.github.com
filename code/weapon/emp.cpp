@@ -489,25 +489,27 @@ int emp_should_blit_gauge()
 // emp hud string
 void emp_hud_string(int x, int y, int gauge_id, const char *str, int resize_mode, float scale)
 {
-	char tmp[256] = "";
-
 	// maybe bail
 	if (!*str)
 		return;
 
-	// copy the string
-	strcpy_s(tmp, str);
-
 	// if the emp effect is not active, don't even bother messing with the text
 	if(emp_active_local()){
+		// use a copied string rather than the original
+		char tmp[256] = "";
+		strcpy_s(tmp, str);
+
 		emp_maybe_reformat_text(tmp, 256, gauge_id);
 
 		// jitter the coords
 		emp_hud_jitter(&x, &y);
-	}
 
-	// print the string out
-	gr_string(x, y, tmp, resize_mode, scale);
+		// print the string out
+		gr_string(x, y, tmp, resize_mode, scale);
+	} else {
+		// print the original string out
+		gr_string(x, y, str, resize_mode, scale);
+	}
 }
 
 // maybe reformat a string 
