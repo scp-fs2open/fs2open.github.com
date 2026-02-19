@@ -516,6 +516,10 @@ void LabUi::show_render_options()
 					for (const auto &s : profile_list) {
 						if (Button(s.c_str(), ImVec2(-FLT_MIN, GetTextLineHeight() * 2))) {
 							ltp::switch_to(s);
+
+							// Avoid immediately overwriting the selected profile's values with
+							// stale slider state captured before the profile switch.
+							skip_setting_light_options_this_frame = true;
 						}
 					}
 				}
