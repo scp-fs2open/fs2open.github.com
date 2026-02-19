@@ -2854,7 +2854,7 @@ int CFREDView::global_error_check()
 				return internal_error("Number of waves for \"%s\" is negative", Wings[i].name);
 			}
 
-			if ((Wings[i].threshold < 0) || (Wings[i].threshold >= Wings[i].wave_count)){
+			if (Wings[i].threshold < 0){
 				return internal_error("Threshold for \"%s\" is invalid", Wings[i].name);
 			}
 
