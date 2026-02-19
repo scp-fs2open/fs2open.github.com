@@ -654,8 +654,10 @@ static void build_ship_table_info_txtbox(ship_info* sip)
 		static SCP_string table_text;
 		static int old_class = getLabManager()->CurrentClass;
 
-		if (table_text.length() == 0 || old_class != getLabManager()->CurrentClass)
+		if (table_text.length() == 0 || old_class != getLabManager()->CurrentClass) {
 			table_text = get_ship_table_text(sip);
+			old_class = getLabManager()->CurrentClass;
+		}
 
 		InputTextMultiline("##table_text",
 			const_cast<char*>(table_text.c_str()),
@@ -675,6 +677,7 @@ static void build_weapon_table_info_txtbox(weapon_info* wip)
 
 		if (table_text.length() == 0 || old_class != getLabManager()->CurrentClass) {
 			table_text = get_weapon_table_text(wip);
+			old_class = getLabManager()->CurrentClass;
 		}
 
 		InputTextMultiline("##weapon_table_text",
