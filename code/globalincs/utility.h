@@ -307,6 +307,13 @@ int count_items_with_field(const ITEM_T* item_array, int num_items, FIELD_T ITEM
 	return count;
 }
 
+template <typename VECTOR_T>
+size_t count_items_with_value(const VECTOR_T& item_vector)
+{
+	return std::count_if(item_vector.begin(), item_vector.end(),
+		[](const typename VECTOR_T::value_type& element) { return element.has_value(); });
+}
+
 template <typename VECTOR_T, typename ITEM_T, typename FIELD_T>
 int find_item_with_string(const VECTOR_T& item_vector, FIELD_T* ITEM_T::* field, const char* str)
 {

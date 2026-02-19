@@ -3032,10 +3032,16 @@ void Fred_mission_save::save_mission_internal(const char* pathname)
 	auto version_23_3 = gameversion::version(23, 3);
 	auto version_24_1 = gameversion::version(24, 1);
 	auto version_24_3 = gameversion::version(24, 3);
-	if (MISSION_VERSION >= version_24_3) {
+	auto version_25_1 = gameversion::version(25, 1);
+	if (MISSION_VERSION >= version_25_1) {
 		Warning(LOCATION,
-			"Notify an SCP coder: now that the required mission version is at least 24.3, the check_for_24_3_data(), "
-			"the check_for_24_1_data() and check_for_23_3_data() code can be removed");
+			"Notify an SCP coder: now that the required mission version is at least 25.1, the check_for_25_1_data(), "
+			"check_for_24_3_data(), check_for_24_1_data(), and check_for_23_3_data() code can be removed");
+	} else if (check_for_25_1_data()) {
+		The_mission.required_fso_version = version_25_1;
+	} else if (MISSION_VERSION >= version_24_3) {
+		Warning(LOCATION, "Notify an SCP coder: now that the required mission version is at least 24.3, the "
+			"check_for_24_3_data(), check_for_24_1_data(), and check_for_23_3_data() code can be removed");
 	} else if (check_for_24_3_data()) {
 		The_mission.required_fso_version = version_24_3;
 	} else if (MISSION_VERSION >= version_24_1) {
@@ -3382,7 +3388,7 @@ int Fred_mission_save::save_warp_params(WarpDirection direction, ship* shipp)
 int Fred_mission_save::save_objects()
 {
 	SCP_string sexp_out;
-	int i, z;
+	int i, z, count;
 	object* objp;
 	ship* shipp;
 	ship_info* sip;
@@ -3391,7 +3397,7 @@ int Fred_mission_save::save_objects()
 	parse_comments(2);
 	fout("\t\t;! %d total\n", ship_get_num_ships());
 
-	for (i = z = 0; i < MAX_SHIPS; i++) {
+	for (i = count = 0; i < MAX_SHIPS; i++) {
 		if (Ships[i].objnum < 0) {
 			continue;
 		}
@@ -3406,8 +3412,10 @@ int Fred_mission_save::save_objects()
 		sip = &Ship_info[shipp->ship_info_index];
 		required_string_either_fred("$Name:", "#Wings");
 		required_string_fred("$Name:");
-		parse_comments(z ? 2 : 1);
+		parse_comments(count ? 2 : 1);
 		fout(" %s\t\t;! Object #%d", shipp->ship_name, i);
+
+		count++;
 
 		// Display name
 		// The display name is only written if there was one at the start to avoid introducing inconsistencies
@@ -4153,8 +4161,6 @@ int Fred_mission_save::save_objects()
 
 		// end of texture replacement -------------------------------
 
-		z++;
-
 		fso_comment_pop();
 	}
 
@@ -4855,17 +4861,18 @@ int Fred_mission_save::save_wings()
 	fred_parse_flag = 0;
 	required_string_fred("#Wings");
 	parse_comments(2);
-	fout("\t\t;! %d total", Num_wings);
+	fout("\t\t;! %d total\n", Num_wings);
 
 	for (auto& w : Wings) {
 		if (!w.wave_count)
 			continue;
 
-		count++;
 		required_string_one_of_fred(3, "$Name:", "#Events", "#Props");
 		required_string_fred("$Name:");
-		parse_comments(2);
+		parse_comments(count ? 2 : 1);
 		fout(" %s", w.name);
+
+		count++;
 
 		// squad logo - Goober5000
 		if (save_config.save_format != MissionFormat::RETAIL) {
@@ -5124,21 +5131,30 @@ int Fred_mission_save::save_wings()
 
 int Fred_mission_save::save_props()
 {
-	if (save_config.save_format != MissionFormat::RETAIL) {
+	auto num_props = count_items_with_value(Props);
+
+	if ((save_config.save_format != MissionFormat::RETAIL) && (num_props > 0)) {
 		fred_parse_flag = 0;
-		required_string_fred("#Props");
-		parse_comments(2);
-		fout("\t\t;! %d total", static_cast<int>(Props.size()));
+		size_t count = 0;
+
+		if (optional_string_fred("#Props", "#End")) {
+			parse_comments(2);
+		} else {
+			fout("\n\n#Props");
+		}
+		fout("\t\t;! " SIZE_T_ARG " total\n", num_props);
 
 		for (const auto& p : Props) {
 			if (p.has_value()) {
 				required_string_either_fred("$Name:", "#Events");
 				required_string_fred("$Name:");
-				parse_comments(2);
+				parse_comments(count ? 2 : 1);
 				fout(" %s", p->prop_name);
 
-				required_string_fred("$Class:");
-				parse_comments(2);
+				count++;
+
+				required_string_fred("\n$Class:");
+				parse_comments(0);
 				fout(" %s", Prop_info[p->prop_info_index].name.c_str());
 
 				required_string_fred("$Location:");
