@@ -1438,9 +1438,8 @@ void wing_editor::OnRestrictDeparture()
 
 int wing_editor::calc_max_wave_treshold()
 {
-	const int treshold1 = Wings[cur_wing].wave_count - 1; // At least 1 ship must have died before allowing respawn
-	const int treshold2 = MAX_SHIPS_PER_WING - Wings[cur_wing].wave_count; // Maximum MAX_SHIPS_PER_WING ships can be alive at any given time
-	return std::min(treshold1, treshold2);
+	// Maximum MAX_SHIPS_PER_WING ships can be alive at any given time
+	return std::max(0, MAX_SHIPS_PER_WING - Wings[cur_wing].wave_count);
 }
 
 void wing_editor::OnBnClickedCustomWarpinParams()

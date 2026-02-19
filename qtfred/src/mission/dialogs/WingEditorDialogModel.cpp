@@ -211,9 +211,8 @@ int WingEditorDialogModel::getMaxWaveThreshold() const
 	if (!w)
 		return 0;
 
-	const int perWaveMax = w->wave_count - 1;
 	const int poolLimit = MAX_SHIPS_PER_WING - w->wave_count;
-	return std::max(0, std::min(perWaveMax, poolLimit));
+	return std::max(0, poolLimit);
 }
 
 int WingEditorDialogModel::getMinArrivalDistance() const

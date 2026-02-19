@@ -1457,13 +1457,17 @@ int delete_ship_from_wing(int ship)
 				}
 			}
 
-			if (Wings[wing].threshold >= Wings[wing].wave_count){
-				Wings[wing].threshold = Wings[wing].wave_count - 1;
+			const auto max_threshold_before = MAX_SHIPS_PER_WING - Wings[wing].wave_count;
+			if (Wings[wing].threshold > max_threshold_before){
+				Wings[wing].threshold = max_threshold_before;
 			}
 
 			Wings[wing].wave_count--;
-			if (Wings[wing].wave_count && (Wings[wing].threshold >= Wings[wing].wave_count)){
-				Wings[wing].threshold = Wings[wing].wave_count - 1;
+			if (Wings[wing].wave_count){
+				const auto max_threshold_after = MAX_SHIPS_PER_WING - Wings[wing].wave_count;
+				if (Wings[wing].threshold > max_threshold_after) {
+					Wings[wing].threshold = max_threshold_after;
+				}
 			}
 		}
 	}
