@@ -1,4 +1,12 @@
 #!/bin/bash
 HERE=$(dirname $(readlink -f "${0}"))
-export LD_LIBRARY_PATH=${HERE}/usr/lib:$LD_LIBRARY_PATH
-exec "${HERE}/usr/bin/$<TARGET_FILE_NAME:qtfred>" "$@"
+export LD_LIBRARY_PATH=${HERE}/lib:$LD_LIBRARY_PATH
+
+# Qt5 doesn't work so well with Wayland for us so prefer the use of X11 unless
+# another backend is already specified
+# (NOTE: the -platform option will override this so we don't need to test for it)
+if [ -z "$QT_QPA_PLATFORM" ]; then
+	export QT_QPA_PLATFORM="xcb;wayland"
+fi
+
+exec "${HERE}/bin/$<TARGET_FILE_NAME:qtfred>" "$@"
