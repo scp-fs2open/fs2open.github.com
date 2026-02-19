@@ -227,6 +227,7 @@ extern bool Player_use_ai;
 extern angles chase_slew_angles;					// The viewing angles in which viewer_slew_angles will chase to.
 
 extern angles Player_flight_cursor;
+extern float Player_flight_cursor_sensitivity;
 
 enum class FlightMode {
 	ShipLocked = 0,

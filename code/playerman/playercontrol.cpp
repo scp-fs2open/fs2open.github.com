@@ -62,6 +62,7 @@ physics_info Descent_physics;			// used when we want to control the player like 
 angles chase_slew_angles;
 
 angles Player_flight_cursor;
+float Player_flight_cursor_sensitivity;
 
 FlightMode Player_flight_mode = FlightMode::ShipLocked;
 bool Perspective_locked = false;
@@ -1079,8 +1080,8 @@ void read_player_controls(object *objp, float frametime)
 						if (sip->aims_at_flight_cursor)
 							max_aim_angle = sip->flight_cursor_aim_extent;
 
-						Player_flight_cursor.p += Player->ci.pitch * 0.015f;
-						Player_flight_cursor.h += Player->ci.heading * 0.015f;
+						Player_flight_cursor.p += Player->ci.pitch * 0.015f * Player_flight_cursor_sensitivity;
+						Player_flight_cursor.h += Player->ci.heading * 0.015f * Player_flight_cursor_sensitivity;
 
 						float mag = powf(powf(Player_flight_cursor.p, 2.0f) + powf(Player_flight_cursor.h, 2.0f), 0.5f);
 						if (mag > max_aim_angle) {
@@ -1446,6 +1447,7 @@ void player_level_init()
 	Viewer_external_info.current_distance = 0.0f;
 
 	Player_flight_cursor = vmd_zero_angles;
+	Player_flight_cursor_sensitivity = 1.0f;
 
 	
 	if (Default_start_chase_view != The_mission.flags[Mission::Mission_Flags::Toggle_start_chase_view])
