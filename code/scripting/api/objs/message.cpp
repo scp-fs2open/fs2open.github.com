@@ -191,7 +191,7 @@ ADE_VIRTVAR(Persona, l_Message, "persona", "The persona of the message", "person
 	return ade_set_args(L, "o", l_Persona.Set(Messages[idx].persona_index));
 }
 
-ADE_FUNC(getMessage, l_Message, "[boolean replaceVars = true]", "Gets the text of the message and optionally replaces SEXP variables with their respective values.", "string", "The message or an empty string if handle is invalid")
+ADE_FUNC(getMessage, l_Message, "[boolean replaceStuff = true]", "Gets the text of the message and optionally replaces SEXP variable and container references with their respective values.", "string", "The message or an empty string if handle is invalid")
 {
 	int idx = -1;
 	bool replace = true;
@@ -210,6 +210,7 @@ ADE_FUNC(getMessage, l_Message, "[boolean replaceVars = true]", "Gets the text o
 
 		sexp_replace_variable_names_with_values(temp_buf, MESSAGE_LENGTH - 1);
 		sexp_container_replace_refs_with_values(temp_buf, MESSAGE_LENGTH - 1);
+		// (message_translate_tokens is called in message_queue_process)
 
 		return ade_set_args(L, "s", temp_buf);
 	}
