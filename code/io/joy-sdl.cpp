@@ -558,7 +558,7 @@ bool device_event_handler(const SDL_Event &evt)
 		// Else, Find if any of our joysticks were lost
 		for (short i = CID_JOY0; i < CID_JOY_MAX; ++i)
 		{
-			if (joyDeviceEvent.which == pJoystick[i]->getID())
+			if (pJoystick[i] != nullptr && joyDeviceEvent.which == pJoystick[i]->getID())
 			{
 				// We just lost our joystick, reset the data
 				mprintf(("Joystick %i disconnected\n", i));
