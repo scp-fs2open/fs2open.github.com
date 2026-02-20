@@ -1663,11 +1663,16 @@ void draw_model_icon(int model_id, uint64_t flags, float closeup_zoom, int x, in
 	gr_reset_clip();
 }
 
-void draw_model_rotating(model_render_params *render_info, int model_id, int x1, int y1, int x2, int y2, float *rotation_buffer, const vec3d *closeup_pos, float closeup_zoom, float rev_rate, uint64_t flags, int resize_mode, select_effect_params effect_params)
+void draw_model_rotating(model_render_params *render_info, int ship_class, int model_id, int x1, int y1, int x2, int y2, float *rotation_buffer, const vec3d *closeup_pos, float closeup_zoom, float rev_rate, uint64_t flags, int resize_mode, select_effect_params effect_params)
 {
 	//WMC - Can't draw a non-model
 	if (model_id < 0)
 		return;
+
+	int model_instance = model_create_instance(model_objnum_special::OBJNUM_NONE, model_id);
+	if (!(flags & MR_IS_MISSILE) && SCP_vector_inbounds(Ship_info, ship_class)) {
+		model_set_up_techroom_instance(&Ship_info[ship_class], model_instance);
+	}
 
 	float time = (timer_get_milliseconds()-anim_timer_start)/1000.0f;
 	angles rot_angles, view_angles;
@@ -1822,7 +1827,7 @@ void draw_model_rotating(model_render_params *render_info, int model_id, int x1,
 					shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, gr_screen.clip_aspect, -closeup_pos->xyz.z + pm->rad, -closeup_pos->xyz.z + pm->rad + 200.0f, -closeup_pos->xyz.z + pm->rad + 2000.0f, -closeup_pos->xyz.z + pm->rad + 10000.0f);
 				}
 
-				model_render_immediate(&shadow_render_info, model_id, &model_orient, &vmd_zero_vector);
+				model_render_immediate(&shadow_render_info, model_id, model_instance, &model_orient, &vmd_zero_vector);
 				shadows_end_render();
 
 				gr_set_clip(x1, y1, x2, y2, resize_mode);
@@ -1842,14 +1847,14 @@ void draw_model_rotating(model_render_params *render_info, int model_id, int x1,
 				
 				render_info->set_flags(flags | MR_SHOW_OUTLINE_HTL | MR_NO_POLYS | MR_NO_TEXTURING | MR_NO_LIGHTING);
 
-				model_render_immediate(render_info, model_id, &model_orient, &vmd_zero_vector);
+				model_render_immediate(render_info, model_id, model_instance, &model_orient, &vmd_zero_vector);
 			}
 
 			if (time >= 1.5f) { // Render the ship in Phase 2 onwards
 				render_info->set_clip_plane(plane_point,ship_normal);
 				render_info->set_flags(flags);
 
-				model_render_immediate(render_info, model_id, &model_orient, &vmd_zero_vector);
+				model_render_immediate(render_info, model_id, model_instance, &model_orient, &vmd_zero_vector);
 			}
 
 			if (time < 2.5f) { // Render the scanline in Phase 1 and 2
@@ -1919,7 +1924,7 @@ void draw_model_rotating(model_render_params *render_info, int model_id, int x1,
 			shadow_render_info.set_flags(flags | MR_NO_TEXTURING | MR_NO_LIGHTING);
 			shadow_render_info.set_detail_level_lock(0);
 
-			model_render_immediate(&shadow_render_info, model_id, &model_orient, &vmd_zero_vector);
+			model_render_immediate(&shadow_render_info, model_id, model_instance, &model_orient, &vmd_zero_vector);
 			shadows_end_render();
 		}
 
@@ -1937,7 +1942,7 @@ void draw_model_rotating(model_render_params *render_info, int model_id, int x1,
 			render_info->set_flags(flags);
 		}
 
-		model_render_immediate(render_info, model_id, &model_orient, &vmd_zero_vector);
+		model_render_immediate(render_info, model_id, model_instance, &model_orient, &vmd_zero_vector);
 
 		batching_render_all();
 
@@ -1948,6 +1953,9 @@ void draw_model_rotating(model_render_params *render_info, int model_id, int x1,
 	}
 
 	shadow_end_frame();
+	if (model_instance >= 0) {
+		model_delete_instance(model_instance);
+	}
 }
 
 /**

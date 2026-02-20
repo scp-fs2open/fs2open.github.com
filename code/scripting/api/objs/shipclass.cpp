@@ -1270,6 +1270,7 @@ ADE_FUNC(renderSelectModel,
 	params.fs2_wireframe_color = sip->fs2_effect_wireframe_color;
 
 	draw_model_rotating(&render_info,
+		idx,
 		modelNum,
 		x1,
 		y1,
