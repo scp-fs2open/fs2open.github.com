@@ -236,6 +236,9 @@ void LabManager::onFrame(float frametime) {
 	float rev_rate;
 	ship_info* sip = nullptr;
 
+	// First delete any dead objects so we don't end up processing them
+	obj_delete_all_that_should_be_dead();
+
 	if (CurrentObject != -1 && (Objects[CurrentObject].type == OBJ_SHIP)) {
 		sip = &Ship_info[Ships[Objects[CurrentObject].instance].ship_info_index];
 
@@ -415,6 +418,10 @@ void LabManager::cleanup() {
 
 		// Remove all objects
 		obj_delete_all();
+
+		// Reset large-ship split explosion state. In the lab we can delete exploding ships while
+		// cycling classes, so clear any lingering Split_ships entries tied to the previous view.
+		shipfx_large_blowup_level_init();
 
 		// Clean up the particles
 		particle::kill_all();
