@@ -148,13 +148,13 @@ public:
 	float RotationSpeedDivisor = 100.0f;
 	bool AllowWeaponDestruction = false;
 	bool ShowingTechModel = false;
+	bool Lab_thrust_afterburn = false;
 
 	flagset<ManagerFlags> Flags;
 
 	gfx_options graphicsSettings;
   private:
-	float Lab_thrust_len = 0.0f;
-	bool Lab_thrust_afterburn = false;
+	//float Lab_thrust_len = 0.0f; // Unused
 	bool Weapons_loaded = false;
 	bool CloseThis = false;
 	LabUi labUi;
