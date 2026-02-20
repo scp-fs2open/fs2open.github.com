@@ -12,6 +12,7 @@
 
 #include <memory>
 #include <ui/widgets/ColorComboBox.h>
+#include <ui/widgets/PropComboBox.h>
 
 namespace fso {
 namespace fred {
@@ -22,6 +23,7 @@ class RenderWidget;
 namespace dialogs {
 class ShipEditorDialog;
 class WingEditorDialog;
+class PropEditorDialog;
 }
 
 namespace Ui {
@@ -102,6 +104,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void on_actionObjects_triggered(bool);
 	void on_actionShips_triggered(bool);
 	void on_actionWings_triggered(bool);
+	void on_actionProps_triggered(bool);
 	void on_actionCampaign_triggered(bool);
 	void on_actionCommand_Briefing_triggered(bool);
 	void on_actionDebriefing_triggered(bool);
@@ -218,12 +221,14 @@ class FredView: public QMainWindow, public IDialogProvider {
 	std::unique_ptr<Ui::FredView> ui;
 
 	std::unique_ptr<ColorComboBox> _shipClassBox;
+	std::unique_ptr<PropComboBox> _propClassBox;
 
 	Editor* fred = nullptr;
 	EditorViewport* _viewport = nullptr;
 
 	fso::fred::dialogs::ShipEditorDialog* _shipEditorDialog = nullptr;
 	fso::fred::dialogs::WingEditorDialog* _wingEditorDialog = nullptr;
+	fso::fred::dialogs::PropEditorDialog* _propEditorDialog = nullptr;
 
 	bool _inKeyPressHandler = false;
 	bool _inKeyReleaseHandler = false;
@@ -234,10 +239,12 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void onUpdateCameraControlActions();
 	void onUpdateSelectionLock();
 	void onUpdateShipClassBox();
+	void onUpdatePropClassBox();
 	void onUpdateEditorActions();
 	void onUpdateWingActionStatus();
 
 	void onShipClassSelected(int ship_class);
+	void onPropClassSelected(int prop_class);
 
 	void windowActivated();
 	void windowDeactivated();
