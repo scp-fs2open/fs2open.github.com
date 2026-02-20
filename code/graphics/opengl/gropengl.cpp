@@ -281,10 +281,14 @@ void gr_opengl_print_screen(const char *filename)
     _mkdir(os_get_config_path("screenshots").c_str());
 
 	GL_state.PushFramebufferState();
-	GL_state.BindFrameBuffer(Cmdline_window_res ? Back_framebuffer : 0, GL_FRAMEBUFFER);
 
-	//Reading from the front buffer here seems to no longer work correctly; that just reads back all zeros
-	glReadBuffer(Cmdline_window_res ? GL_COLOR_ATTACHMENT0 : GL_FRONT);
+	// Screenshots are requested during input processing which can happen before all overlays are rendered for the
+	// current frame (such as with ImGui). In window res mode the in progress frame is rendered to Back_framebuffer,
+	// so reading from that can miss late overlays. Read the currently displayed image from the default framebuffer
+	// instead.
+	GL_state.BindFrameBuffer(0, GL_FRAMEBUFFER);
+	// Read the displayed frame to include any overlays rendered after the scene pass.
+	glReadBuffer(GL_FRONT);
 
 	// now for the data
 	if (Use_PBOs) {
