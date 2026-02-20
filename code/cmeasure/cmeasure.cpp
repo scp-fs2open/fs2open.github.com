@@ -25,18 +25,33 @@ const float CMEASURE_DETONATE_DISTANCE = 40.0f;
 
 //Used to set a countermeasure velocity after being launched from a ship as a countermeasure
 //ie not as a primary or secondary.
-void cmeasure_set_ship_launch_vel(object *objp, object *parent_objp, int arand)
+void cmeasure_set_ship_launch_vel(object* objp, object* parent_objp, int arand)
 {
-	vec3d vel, rand_vec;
+	vec3d vel;
+	vec3d rand_vec;
+	vec3d world_dir;
 
-	//Get cmeasure rear velocity in world
-	vm_vec_scale_add(&vel, &parent_objp->phys_info.vel, &parent_objp->orient.vec.fvec, -25.0f);
+	weapon* wp = &Weapons[objp->instance];
+	auto* wip = &Weapon_info[wp->weapon_info_index];
 
-	//Get random velocity vector
-	static_randvec(arand+1, &rand_vec);
+	// Start with parent velocity
+	vel = parent_objp->phys_info.vel;
 
-	//Add it to the rear velocity
-	vm_vec_scale_add2(&vel, &rand_vec, 2.0f);
+	// Normalize direction
+	vec3d local_dir = wip->cm_launch_vec;
+	if (vm_vec_mag_squared(&local_dir) > 0.0f) {
+		vm_vec_normalize(&local_dir);
+	}
+
+	// Convert from ship to world space
+	vm_vec_unrotate(&world_dir, &local_dir, &parent_objp->orient);
+
+	// Apply launch impulse
+	vm_vec_scale_add2(&vel, &world_dir, wip->cm_launch_speed);
+
+	// Add random variance
+	static_randvec(arand + 1, &rand_vec);
+	vm_vec_scale_add2(&vel, &rand_vec, wip->cm_launch_variance);
 
 	objp->phys_info.vel = vel;
 
@@ -44,17 +59,16 @@ void cmeasure_set_ship_launch_vel(object *objp, object *parent_objp, int arand)
 	vm_vec_zero(&objp->phys_info.rotvel);
 	vm_vec_zero(&objp->phys_info.max_vel);
 	vm_vec_zero(&objp->phys_info.max_rotvel);
-	
+
 	// blow out his reverse thrusters. Or drag, same thing.
 	objp->phys_info.rotdamp = 10000.0f;
 	objp->phys_info.side_slip_time_const = 10000.0f;
 
-	objp->phys_info.max_vel.xyz.z = -25.0f;
-	vm_vec_copy_scale(&objp->phys_info.desired_vel, &objp->orient.vec.fvec, objp->phys_info.max_vel.xyz.z );
+	// Desired velocity should align with launch direction, not hardcoded backward
+	vm_vec_copy_scale(&objp->phys_info.desired_vel, &world_dir, wip->cm_launch_speed);
 
 	// if this cmeasure has a single segment trail, let the trail know since we just changed the velocity
 	// yeah this is hacky but that's what this function gets for CHANGING the velocity on objects with a ""CONSTANT VELOCITY""
-	weapon* wp = &Weapons[objp->instance];
 	if (wp->trail_ptr && wp->trail_ptr->single_segment) {
 		wp->trail_ptr->vel[0] = objp->phys_info.vel;
 		wp->trail_ptr->vel[1] = objp->phys_info.vel;
