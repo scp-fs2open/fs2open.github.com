@@ -345,7 +345,7 @@ void brief_skip_training_pressed()
 	// tricky part.  Need to move to the next mission in the campaign.
 	mission_goal_mark_objectives_complete();
 	mission_goal_fail_incomplete();
-	mission_campaign_store_goals_and_events_and_variables();
+	mission_campaign_store_goals_and_events_and_variables(false);
 
 	mission_campaign_eval_next_mission();
 	mission_campaign_mission_over();	

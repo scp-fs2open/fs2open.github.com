@@ -928,15 +928,11 @@ void mission_campaign_eval_next_mission()
  */
 void mission_campaign_store_goals_and_events()
 {
-	int cur;
-	cmission *mission_obj;
-
 	if (!(Game_mode & GM_CAMPAIGN_MODE) || (Campaign.current_mission < 0))
 		return;
 
-	cur = Campaign.current_mission;
-
-	mission_obj = &Campaign.missions[cur];
+	int cur = Campaign.current_mission;
+	auto mission_obj = &Campaign.missions[cur];
 
 	// first we must save the status of the current missions goals in the campaign mission structure.
 	// After that, we can determine which mission is tagged as the next mission.  Finally, we
@@ -992,66 +988,54 @@ void mission_campaign_store_goals_and_events()
 
 void mission_campaign_store_variables(int persistence_type, bool store_red_alert)
 {
-	int cur, i, j;
-	cmission *mission_obj;
-
 	if (!(Game_mode & GM_CAMPAIGN_MODE) || (Campaign.current_mission < 0))
 		return;
 
-	cur = Campaign.current_mission;
-	mission_obj = &Campaign.missions[cur];
+	int cur = Campaign.current_mission;
+	auto mission_obj = &Campaign.missions[cur];
 
-	// handle variables that are saved on mission victory -------------------------------------
 	mission_obj->variables.clear();
 
-	int num_mission_variables = sexp_campaign_file_variable_count();
-
-	if (num_mission_variables > 0) {
-		
-		if (store_red_alert) {
-			for (auto& current_rav : Campaign.red_alert_variables) {
-				Campaign.persistent_variables.push_back(current_rav);
-			}
+	int num_sexp_variables = sexp_variable_count();
+	for (int i = 0; i < num_sexp_variables; i++) {
+		if (!(Sexp_variables[i].type & persistence_type)) {
+			continue;
 		}
 
-		for (i = 0; i < sexp_variable_count(); i++) {
-			if (!(Sexp_variables[i].type & SEXP_VARIABLE_SAVE_TO_PLAYER_FILE)) {
-				if (Sexp_variables[i].type & persistence_type) {
-					bool add_it = true;
-
-					// see if we already have a variable with this name
-					for (j = 0; j < (int)Campaign.persistent_variables.size(); j++) {
-						if (!(stricmp(Sexp_variables[i].variable_name, Campaign.persistent_variables[j].variable_name))) {
-							add_it = false;
-							Campaign.persistent_variables[j].type = Sexp_variables[i].type;
-							strcpy_s(Campaign.persistent_variables[j].text, Sexp_variables[i].text);
-							break;
-						}
-					}
-
-					// new variable
-					if (add_it) {
-						Campaign.persistent_variables.push_back(Sexp_variables[i]);
-					}
-				}
+		// player-persistent (aka "eternal")
+		if (Sexp_variables[i].type & SEXP_VARIABLE_SAVE_TO_PLAYER_FILE) {
+			// see if we already have a variable with this name
+			int j = find_item_with_string(Player->variables, &sexp_variable::variable_name, Sexp_variables[i].variable_name);
+			if (j >= 0) {
+				Player->variables[j].type = Sexp_variables[i].type;
+				strcpy_s(Player->variables[j].text, Sexp_variables[i].text);
 			}
-			// we might need to save some eternal variables
-			else if ((persistence_type & SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS) && (Sexp_variables[i].type & persistence_type) && (Sexp_variables[i].type & SEXP_VARIABLE_SAVE_TO_PLAYER_FILE)) {
-				bool add_it = true;
+			// new variable
+			else {
+				Player->variables.push_back(Sexp_variables[i]);
+			}
+		}
+		// campaign-persistent
+		else {
+			// see if we already have a variable with this name
+			int j = find_item_with_string(Campaign.persistent_variables, &sexp_variable::variable_name, Sexp_variables[i].variable_name);
+			if (j >= 0) {
+				Campaign.persistent_variables[j].type = Sexp_variables[i].type;
+				strcpy_s(Campaign.persistent_variables[j].text, Sexp_variables[i].text);
+			}
+			// new variable
+			else {
+				Campaign.persistent_variables.push_back(Sexp_variables[i]);
+			}
+		}
+	}
 
-				for (j = 0; j < (int)Player->variables.size(); j++) {
-					if (!(stricmp(Sexp_variables[i].variable_name, Player->variables[j].variable_name))) {
-						Player->variables[j] = Sexp_variables[i];
-
-						add_it = false;
-						break;
-					}
-				}
-
-				// if not found then add new entry
-				if (add_it) {
-					Player->variables.push_back(Sexp_variables[i]);
-				}
+	if (store_red_alert) {
+		for (const auto& current_rav : Campaign.red_alert_variables) {
+			if (find_item_with_string(Campaign.persistent_variables, &sexp_variable::variable_name, current_rav.variable_name) < 0) {
+				Campaign.persistent_variables.push_back(current_rav);
+			} else {
+				Warning(LOCATION, "A red alert variable has the same name as a persistent variable!");
 			}
 		}
 	}
@@ -1063,40 +1047,17 @@ void mission_campaign_store_containers(ContainerType persistence_type, bool stor
 	if (!(Game_mode & GM_CAMPAIGN_MODE) || (Campaign.current_mission < 0))
 		return;
 
-	if (!sexp_container_has_persistent_non_eternal_containers()) {
-		// nothing to do
-		return;
-	}
-
-	if (store_red_alert) {
-		for (const auto& current_con : Campaign.red_alert_containers) {
-			Campaign.persistent_containers.emplace_back(current_con);
-		}
-	}
-
 	for (const auto &container : get_all_sexp_containers()) {
-		if (!container.is_eternal()) {
-			if (any(container.type & persistence_type)) {
-				// see if we already have a container with this name
-				auto cpc_it = std::find_if(Campaign.persistent_containers.begin(),
-					Campaign.persistent_containers.end(),
-					[container](const sexp_container &cpc) {
-						return cpc.name_matches(container);
-					});
+		if (none(container.type & persistence_type)) {
+			continue;
+		}
 
-				if (cpc_it != Campaign.persistent_containers.end()) {
-					*cpc_it = container;
-				} else {
-					// new container
-					Campaign.persistent_containers.emplace_back(container);
-				}
-			}
-		} else if (any(persistence_type & ContainerType::SAVE_ON_MISSION_PROGRESS) &&
-				   any(container.type & persistence_type) && container.is_eternal()) {
-			// we might need to save some eternal player-persistent containers
+		// player-persistent (aka "eternal")
+		if (container.is_eternal()) {
+			// see if we already have a container with this name
 			auto ppc_it = std::find_if(Player->containers.begin(),
 				Player->containers.end(),
-				[container](const sexp_container &ppc) {
+				[&container](const sexp_container& ppc) {
 					return ppc.name_matches(container);
 				});
 
@@ -1104,17 +1065,50 @@ void mission_campaign_store_containers(ContainerType persistence_type, bool stor
 				*ppc_it = container;
 			} else {
 				// new player-persistent container
-				Player->containers.emplace_back(container);
+				Player->containers.push_back(container);
+			}
+		}
+		// campaign-persistent
+		else {
+			// see if we already have a container with this name
+			auto cpc_it = std::find_if(Campaign.persistent_containers.begin(),
+				Campaign.persistent_containers.end(),
+				[&container](const sexp_container& cpc) {
+					return cpc.name_matches(container);
+				});
+
+			if (cpc_it != Campaign.persistent_containers.end()) {
+				*cpc_it = container;
+			} else {
+				// new container
+				Campaign.persistent_containers.push_back(container);
+			}
+		}
+	}
+
+	if (store_red_alert) {
+		for (const auto& container : Campaign.red_alert_containers) {
+			// see if we already have a container with this name
+			auto cpc_it = std::find_if(Campaign.persistent_containers.begin(),
+				Campaign.persistent_containers.end(),
+				[&container](const sexp_container& cpc) {
+					return cpc.name_matches(container);
+				});
+
+			if (cpc_it == Campaign.persistent_containers.end()) {
+				Campaign.persistent_containers.push_back(container);
+			} else {
+				Warning(LOCATION, "A red alert container has the same name as a persistent container!");
 			}
 		}
 	}
 }
 
-void mission_campaign_store_goals_and_events_and_variables()
+void mission_campaign_store_goals_and_events_and_variables(bool store_red_alert_data)
 {
 	mission_campaign_store_goals_and_events();
-	mission_campaign_store_variables(SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS);
-	mission_campaign_store_containers(ContainerType::SAVE_ON_MISSION_PROGRESS);
+	mission_campaign_store_variables(SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS, store_red_alert_data);
+	mission_campaign_store_containers(ContainerType::SAVE_ON_MISSION_PROGRESS, store_red_alert_data);
 }
 
 /**
@@ -1145,9 +1139,6 @@ void mission_campaign_mission_over(bool do_next_mission)
 	for ( i=0; i<Num_granted_weapons; i++ ){
 		Campaign.weapons_allowed[Granted_weapons[i]] = 1;	
 	}
-
-	// Goober5000 - player-persistent variables are handled when the mission is
-	// over, not necessarily when the mission is accepted
 
 	// update campaign.mission stats (used to allow backout inRedAlert)
 	// .. but we don't do this if we are inside of the prev/current loop hack
@@ -1679,6 +1670,9 @@ void mission_campaign_end_init()
 
 void mission_campaign_end_do()
 {
+	mission_campaign_store_variables(SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS, false);
+	mission_campaign_store_containers(ContainerType::SAVE_ON_MISSION_PROGRESS, false);
+
 	// close out the mission
 	event_music_level_close();
 	mission_goal_fail_incomplete();
@@ -1725,7 +1719,7 @@ void mission_campaign_skip_to_next()
 	mission_goal_mark_events_complete();
 
 	// store
-	mission_campaign_store_goals_and_events_and_variables();
+	mission_campaign_store_goals_and_events_and_variables(false);
 
 	// now set the next mission
 	mission_campaign_eval_next_mission();
@@ -1840,84 +1834,6 @@ bool mission_campaign_jump_to_mission(const char* filename, bool no_skip)
 		gameseq_post_event(GS_EVENT_START_GAME);
 		return true;
 	}
-}
-
-// Goober5000
-void mission_campaign_save_on_close_variables()
-{
-	int i;
-
-	// make sure we are actually playing a single-player campaign
-	if (!(Game_mode & GM_CAMPAIGN_MODE) || (Campaign.type != CAMPAIGN_TYPE_SINGLE) || (Campaign.current_mission < 0))
-		return;
-
-	// now save variables
-	for (i = 0; i < sexp_variable_count(); i++) {
-		// we only want the on mission close type. On campaign progress type are dealt with elsewhere
-		if ( !(Sexp_variables[i].type & SEXP_VARIABLE_SAVE_ON_MISSION_CLOSE) ) {
-			continue;
-		}
-
-		bool found = false;
-
-		// deal with eternals 
-		if ((Sexp_variables[i].type & SEXP_VARIABLE_SAVE_TO_PLAYER_FILE)) {
-			// check if variable already exists and updated it
-			for (auto& current_variable : Player->variables) {
-				if (!(stricmp(Sexp_variables[i].variable_name, current_variable.variable_name))) {
-					current_variable = Sexp_variables[i];
-
-					found = true;
-					break;
-				}
-			}
-
-			// if not found then add new entry
-			if (!found) {
-				Player->variables.push_back(Sexp_variables[i]);
-			}
-		}
-
-	}
-
-	// store any non-eternal on mission close variables
-	mission_campaign_store_variables(SEXP_VARIABLE_SAVE_ON_MISSION_CLOSE, false);
-}
-
-// jg18 - adapted from mission_campaign_save_on_close_variables()
-void mission_campaign_save_on_close_containers()
-{
-	// make sure we are actually playing a single-player campaign
-	if (!(Game_mode & GM_CAMPAIGN_MODE) || (Campaign.type != CAMPAIGN_TYPE_SINGLE) || (Campaign.current_mission < 0))
-		return;
-
-	// now save containers
-	for (const auto &container : get_all_sexp_containers()) {
-		// we only want the on mission close type. On campaign progress type are dealt with elsewhere
-		if (none(container.type & ContainerType::SAVE_ON_MISSION_CLOSE)) {
-			continue;
-		}
-
-		// deal with eternals
-		if (container.is_eternal()) {
-			// check if container already exists and update it
-			auto ppc_it = std::find_if(Player->containers.begin(),
-				Player->containers.end(),
-				[container](const sexp_container &ppc) {
-					return ppc.name_matches(container);
-				});
-
-			if (ppc_it != Player->containers.end()) {
-				*ppc_it = container;
-			} else {
-				// if not found then add new entry
-				Player->containers.emplace_back(container);
-			}
-		}
-	}
-
-	// store any non-eternal on mission close containers
-	mission_campaign_store_containers(ContainerType::SAVE_ON_MISSION_CLOSE, false);
 }
 
 void mission_campaign_load_failure_popup()

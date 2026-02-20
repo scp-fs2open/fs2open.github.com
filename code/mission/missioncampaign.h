@@ -226,13 +226,13 @@ int mission_load_up_campaign(bool fall_back_from_current = false);
 void mission_campaign_store_goals_and_events();
 
 // stores variables which will be saved only on mission progression
-void mission_campaign_store_variables(int persistence_type, bool store_red_alert = true);
+void mission_campaign_store_variables(int persistence_type, bool store_red_alert);
 
 // stores containers which will be saved only on mission progression
-void mission_campaign_store_containers(ContainerType persistence_type, bool store_red_alert = true);
+void mission_campaign_store_containers(ContainerType persistence_type, bool store_red_alert);
 
 // does all three of the above
-void mission_campaign_store_goals_and_events_and_variables();
+void mission_campaign_store_goals_and_events_and_variables(bool store_red_alert_data);
 
 // evaluates next mission and possible loop mission
 void mission_campaign_eval_next_mission();
@@ -253,12 +253,6 @@ bool mission_campaign_jump_to_mission(const char* filename, bool no_skip = false
 void mission_campaign_end_init();
 void mission_campaign_end_close();
 void mission_campaign_end_do();
-
-// save eternal variables
-extern void mission_campaign_save_on_close_variables();
-
-// save eternal containers
-extern void mission_campaign_save_on_close_containers();
 
 extern void mission_campaign_load_failure_popup();
 

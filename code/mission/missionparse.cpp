@@ -6323,7 +6323,7 @@ void parse_asteroid_fields(mission *pm)
 
 void parse_variables()
 {
-	int i, j, num_variables = 0;
+	int j, num_variables = 0;
 
 	if (! optional_string("#Sexp_variables") ) {
 		return;
@@ -6337,56 +6337,41 @@ void parse_variables()
 		return;
 	}
 
-	// Goober5000 - now set the default value, if it's a variable saved on mission progress
+	// Goober5000 - now set the default value, if it's a persistent variable
+
 	// loop through the current mission's variables
 	for (j = 0; j < num_variables; j++) {
-		// check against existing variables
-		for (auto& current_pv : Campaign.persistent_variables) {
-			// if the active mission has a variable with the same name as a variable saved to the campaign file override its initial value with the previous mission's value
-			if ( !stricmp(Sexp_variables[j].variable_name, current_pv.variable_name) ) {
-				// if this is an eternal that shares the same name as a non-eternal warn but do nothing
+		// check against existing campaign variables first
+		for (const auto &campaign_var : Campaign.persistent_variables) {
+			// if the active mission has a variable with the same name as a variable saved to the campaign file, override its initial value with the persistent value
+			if ( !stricmp(Sexp_variables[j].variable_name, campaign_var.variable_name) ) {
+				// if the mission variable is eternal and shares the same name as a non-eternal persistent variable, warn but do nothing
 				if (Sexp_variables[j].type & SEXP_VARIABLE_SAVE_TO_PLAYER_FILE) {
-					error_display(0, "Variable %s is marked eternal but has the same name as another persistent variable. One of these should be renamed to avoid confusion", Sexp_variables[j].text);
+					error_display(0, "Variable %s is marked eternal in the mission file but has the same name as another non-eternal persistent variable in the campaign.  One of these should be renamed to avoid confusion.", Sexp_variables[j].text);
 				}
-				else if (Sexp_variables[j].type  & SEXP_VARIABLE_IS_PERSISTENT) {
-					Sexp_variables[j].type = current_pv.type;
-					strcpy_s(Sexp_variables[j].text, current_pv.text);
-					break;
+				else if (Sexp_variables[j].type & SEXP_VARIABLE_IS_PERSISTENT) {
+					Sexp_variables[j].type = campaign_var.type;
+					strcpy_s(Sexp_variables[j].text, campaign_var.text);
 				} else {
-					error_display(0, "Variable %s has the same name as another persistent variable. One of these should be renamed to avoid confusion", Sexp_variables[j].text);
+					error_display(0, "Variable %s is not marked persistent in the mission file but has the same name as another persistent variable in the campaign.  One of these should be renamed to avoid confusion, or the mission variable should be marked persistent.", Sexp_variables[j].text);
 				}
+				break;
 			}
 		}
-	}
 
-	// next, see if any eternal variables are set loop through the current mission's variables
-	for (j = 0; j < num_variables; j++) {
-		// check against existing variables
-		for (i = 0; i < (int)Player->variables.size(); i++) {
-			// if the active mission has a variable with the same name as a variable saved to the player file override its initial value with the previous mission's value
-			if ( !stricmp(Sexp_variables[j].variable_name, Player->variables[i].variable_name) ) {
-				if (Sexp_variables[j].type & SEXP_VARIABLE_IS_PERSISTENT) {
-					// if the variable in the player file is marked as eternal but the version in the mission file is not, we assume that the player file one is rogue
-					// and use the one in the mission file instead.
-					if ((Player->variables[i].type & SEXP_VARIABLE_SAVE_TO_PLAYER_FILE) && !(Sexp_variables[j].type & SEXP_VARIABLE_SAVE_TO_PLAYER_FILE)) {
-						break;
-					}
-					// replace the default values with the ones saved to the player file
-					Sexp_variables[j].type = Player->variables[i].type;
-					strcpy_s(Sexp_variables[j].text, Player->variables[i].text);
-
-					/*
-					// check that the eternal flag has been set. Players using a player file from before the eternal flag was added may have old player-persistent variables
-					// these should be converted to non-eternals
-					if (!(Player->variables[i].type & SEXP_VARIABLE_SAVE_TO_PLAYER_FILE)) {
-						Sexp_variables[j].type &= ~SEXP_VARIABLE_SAVE_TO_PLAYER_FILE;
-					}
-					*/
-
-					break;
+		// now check against existing player (aka "eternal") variables
+		for (const auto &player_var : Player->variables) {
+			// if the active mission has a variable with the same name as a variable saved to the player file, override its initial value with the persistent value
+			if ( !stricmp(Sexp_variables[j].variable_name, player_var.variable_name) ) {
+				// the variable in the mission file must be persistent and marked eternal,
+				// otherwise we assume that the player file variable is rogue and we do not use the persistent value
+				if ((Sexp_variables[j].type & SEXP_VARIABLE_SAVE_TO_PLAYER_FILE) && (Sexp_variables[j].type & SEXP_VARIABLE_IS_PERSISTENT)) {
+					Sexp_variables[j].type = player_var.type;
+					strcpy_s(Sexp_variables[j].text, player_var.text);
 				} else {
-					error_display(0, "Variable %s has the same name as an eternal variable. One of these should be renamed to avoid confusion", Sexp_variables[j].variable_name);
+					error_display(0, "Variable %s is not marked persistent and/or not marked eternal in the mission file but has the same name as another eternally persistent variable.  This may be an unintentional name collision, or the mission variable may need to be marked eternally persistent.", Sexp_variables[j].text);
 				}
+				break;
 			}
 		}
 	}
@@ -6422,11 +6407,11 @@ void parse_sexp_containers()
 		if (p_container != nullptr) {
 			auto &container = *p_container;
 
-			// if this is an eternal container that shares the same name as a non-eternal, warn but do nothing
+			// if the mission container is eternal and shares the same name as a non-eternal persistent container, warn but do nothing
 			if (container.is_eternal()) {
 				error_display(0,
-					"SEXP container %s is marked eternal but has the same name as another persistent container. One of "
-					"these should be renamed to avoid confusion",
+					"SEXP container %s is marked eternal in the mission file but has the same name as another non-eternal persistent container in the campaign.  One of "
+					"these should be renamed to avoid confusion.",
 					container.container_name.c_str());
 			} else if (container.is_persistent()) {
 				if (container.type_matches(current_pc)) {
@@ -6437,53 +6422,48 @@ void parse_sexp_containers()
 					container = current_pc;
 				} else {
 					error_display(0,
-						"SEXP container %s is marked persistent but its type (%x) doesn't match a similarly named "
-						"persistent container's type (%x). One of "
-						"these should be renamed to avoid confusion",
+						"SEXP container %s is marked persistent in the mission file but its type (%x) doesn't match a similarly named "
+						"persistent container's type (%x) in the campaign.  One of these should be renamed to avoid confusion.",
 						container.container_name.c_str(),
 						(int)container.get_non_persistent_type(),
 						(int)current_pc.get_non_persistent_type());
 				}
 			} else {
 				error_display(0,
-					"SEXP container %s has the same name as another persistent container. One of these should be "
-					"renamed to avoid confusion",
+					"SEXP container %s is not marked persistent in the mission file but has the same name as another persistent container in the campaign.  One of these should be "
+					"renamed to avoid confusion, or the mission container should be marked persistent.",
 					container.container_name.c_str());
 			}
 		}
 	}
 
 	// then update this mission's containers from player-persistent containers
-	for (const auto& player_container : Player->containers) {
+	for (const auto &player_container : Player->containers) {
 		auto *p_container = get_sexp_container(player_container.container_name.c_str());
 		if (p_container != nullptr) {
 			auto &container = *p_container;
 
-			if (container.is_persistent()) {
-				if (player_container.is_eternal() && !container.is_eternal()) {
-					// use the mission's non-eternal container over the player-persistent eternal container
-					continue;
-				} else {
-					if (container.type_matches(player_container)) {
-						// TODO: when network containers are supported, review whether replacement should occur
-						// if one container is marked for network use and the other isn't
+			// the container in the mission file must be persistent and marked eternal,
+			// otherwise we assume that the player file container is rogue and we do not use the persistent values
+			if (container.is_eternal() && container.is_persistent()) {
+				if (container.type_matches(player_container)) {
+					// TODO: when network containers are supported, review whether replacement should occur
+					// if one container is marked for network use and the other isn't
 
-						// replace!
-						container = player_container;
-					} else {
-						error_display(0,
-							"SEXP container %s is marked persistent but its type (%x) doesn't match a similarly named "
-							"eternal container's type (%x). One of "
-							"these should be renamed to avoid confusion",
-							container.container_name.c_str(),
-							(int)container.get_non_persistent_type(),
-							(int)player_container.get_non_persistent_type());
-					}
+					// replace!
+					container = player_container;
+				} else {
+					error_display(0,
+						"SEXP container %s is marked persistent in the mission file but its type (%x) doesn't match a similarly named "
+						"persistent container's type (%x) in the player file.  One of these should be renamed to avoid confusion.",
+						container.container_name.c_str(),
+						(int)container.get_non_persistent_type(),
+						(int)player_container.get_non_persistent_type());
 				}
 			} else {
 				error_display(0,
-					"SEXP container %s has the same name as an eternal container. One of these should be renamed "
-					"to avoid confusion",
+					"SEXP container %s is not marked persistent and/or not marked eternal in the mission file but has the same name as another eternally persistent container.  This "
+					"may be an unintentional name collision, or the mission container may need to be marked eternally persistent.",
 					container.container_name.c_str());
 			}
 		}

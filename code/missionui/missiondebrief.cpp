@@ -1325,8 +1325,8 @@ void debrief_accept(int ok_to_post_start_game_event, bool API_Access)
 		// mission that isn't in a campaign.
 		if ( Game_mode & GM_CAMPAIGN_MODE ) {
 
-			mission_campaign_store_variables(SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS);
-			mission_campaign_store_containers(ContainerType::SAVE_ON_MISSION_PROGRESS);
+			mission_campaign_store_variables(SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS, false);
+			mission_campaign_store_containers(ContainerType::SAVE_ON_MISSION_PROGRESS, false);
 
 			// check for possible mission loop
 			// check for (1) mission loop available, (2) don't have to repeat last mission

@@ -1183,7 +1183,13 @@ void pilotfile::csg_read_variables()
 			temp_var.type = cfread_int(cfp);
 			cfread_string_len(temp_var.text, TOKEN_LENGTH, cfp);
 			cfread_string_len(temp_var.variable_name, TOKEN_LENGTH, cfp);
-			Campaign.persistent_variables.push_back(temp_var);
+			Campaign.persistent_variables.push_back(std::move(temp_var));
+
+			// eternal variables belong in the player file
+			Assert(!(temp_var.type & SEXP_VARIABLE_SAVE_TO_PLAYER_FILE));
+			if (temp_var.type & SEXP_VARIABLE_SAVE_TO_PLAYER_FILE) {
+				Campaign.persistent_variables.pop_back();
+			}
 		}
 	}
 
@@ -1202,7 +1208,7 @@ void pilotfile::csg_read_variables()
 				temp_var.type = cfread_int(cfp);
 				cfread_string_len(temp_var.text, TOKEN_LENGTH, cfp);
 				cfread_string_len(temp_var.variable_name, TOKEN_LENGTH, cfp);
-				Campaign.red_alert_variables.push_back(temp_var);
+				Campaign.red_alert_variables.push_back(std::move(temp_var));
 			}
 		}
 	}
@@ -1217,11 +1223,9 @@ void pilotfile::csg_write_variables()
 	cfwrite_int((int)Campaign.persistent_variables.size(), cfp);
 
 	for (idx = 0; idx < (int)Campaign.persistent_variables.size(); idx++) {
-		if (!(Campaign.persistent_variables[idx].type & SEXP_VARIABLE_SAVE_TO_PLAYER_FILE)) {
-			cfwrite_int(Campaign.persistent_variables[idx].type, cfp);
-			cfwrite_string_len(Campaign.persistent_variables[idx].text, cfp);
-			cfwrite_string_len(Campaign.persistent_variables[idx].variable_name, cfp);
-		}
+		cfwrite_int(Campaign.persistent_variables[idx].type, cfp);
+		cfwrite_string_len(Campaign.persistent_variables[idx].text, cfp);
+		cfwrite_string_len(Campaign.persistent_variables[idx].variable_name, cfp);
 	}
 
 	cfwrite_int((int)Campaign.red_alert_variables.size(), cfp);
@@ -1499,6 +1503,12 @@ void pilotfile::csg_read_containers()
 		Campaign.persistent_containers.emplace_back();
 		auto& container = Campaign.persistent_containers.back();
 		csg_read_container(container);
+
+		// eternal containers belong in the player file
+		Assert(!container.is_eternal());
+		if (container.is_eternal()) {
+			Campaign.persistent_containers.pop_back();
+		}
 	}
 
 	Campaign.red_alert_containers.clear();
@@ -1551,7 +1561,6 @@ void pilotfile::csg_write_containers()
 	cfwrite_int((int)Campaign.persistent_containers.size(), cfp);
 
 	for (const auto& container : Campaign.persistent_containers) {
-		Assert(!container.is_eternal()); // eternal containers should be written to player file
 		csg_write_container(container);
 	}
 
