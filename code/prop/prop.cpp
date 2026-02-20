@@ -823,19 +823,14 @@ void prop_render(object* obj, model_draw_list* scene)
 	}
 }*/
 
-void props_level_init() {
+void props_level_init()
+{
 	Props.clear();
 }
 
 void props_level_close()
 {
-	for (auto& opt_prop : Props) {
-		if (opt_prop.has_value()) {
-			prop_delete(&Objects[opt_prop->objnum]);
-		}
-	}
-
-	// Clear all props and empty prop slots
+	// Clear all props and empty prop slots.  Note that this can happen either before or after objects are cleaned up.
 	Props.clear();
 }
 

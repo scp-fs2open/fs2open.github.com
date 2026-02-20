@@ -575,7 +575,7 @@ extern p_object *Arriving_support_ship;
 extern char Neb2_texture_name[MAX_FILENAME_LEN];
 
 
-void mission_init(mission *pm);
+void mission_init(mission *pm, bool quick_init = false);
 bool parse_main(const char *mission_name, int flags = 0);
 p_object *mission_parse_get_arrival_ship(ushort net_signature);
 p_object *mission_parse_get_arrival_ship(const char *name);

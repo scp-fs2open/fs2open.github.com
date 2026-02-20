@@ -140,6 +140,7 @@ void waypoint_list::set_name(const char *name)
 //********************FUNCTIONS********************
 void waypoint_level_close()
 {
+	// Clear all waypoint lists and all their waypoints.  Note that this can happen either before or after objects are cleaned up.
 	Waypoint_lists.clear();
 }
 
