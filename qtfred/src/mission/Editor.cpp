@@ -1010,8 +1010,7 @@ int Editor::common_object_delete(int obj) {
 		waypoint* wpt = find_waypoint_with_instance(Objects[obj].instance);
 		Assert(wpt != NULL);
 		waypoint_list* wp_list = wpt->get_parent_list();
-		int index = calc_waypoint_list_index(Objects[obj].instance);
-		int count = (int) wp_list->get_waypoints().size();
+		auto count = wp_list->get_waypoints().size();
 
 		// we'll end up deleting the path, so check for path references
 		if (count == 1) {
@@ -1023,7 +1022,7 @@ int Editor::common_object_delete(int obj) {
 		}
 
 		// check for waypoint references
-		sprintf(msg, "%s:%d", wp_list->get_name(), index + 1);
+		waypoint_stuff_name(msg, *wpt);
 		name = msg;
 		r = reference_handler(name, sexp_ref_type::WAYPOINT, obj);
 		if (r) {
@@ -2098,7 +2097,7 @@ int Editor::global_error_check_impl() {
 				return internal_error("Object references an illegal waypoint number in path");
 			}
 
-			sprintf(buf, "%s:%d", wp_list->get_name(), waypoint_num + 1);
+			waypoint_stuff_name(buf, i);
 			names[obj_count] = new char[strlen(buf) + 1];
 			strcpy(names[obj_count], buf);
 			err_flags[obj_count] = 1;
@@ -2440,8 +2439,8 @@ int Editor::global_error_check_impl() {
 			}
 		}
 
-		for (j = 0; (uint) j < ii.get_waypoints().size(); j++) {
-			sprintf(buf, "%s:%d", ii.get_name(), j + 1);
+		for (const auto &jj: ii.get_waypoints()) {
+			waypoint_stuff_name(buf, jj);
 			for (z = 0; z < obj_count; z++) {
 				if (names[z]) {
 					if (!stricmp(names[z], buf)) {
