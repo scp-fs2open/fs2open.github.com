@@ -416,7 +416,6 @@ int SexpTreeActions::add_default_operator(int op_index, int argnum)
 	char buf[256];
 	sexp_list_item item;
 
-	void* saved_handle = _model.tree_nodes[_model.item_index].handle;
 	int saved_index = _model.item_index;
 	if (_model._opf.get_default_value(&item, buf, op_index, argnum))
 		return -1;

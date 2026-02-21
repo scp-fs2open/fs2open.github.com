@@ -109,8 +109,7 @@ FLAG_LIST(TreeFlags) {
 //   FRED2:  static_cast<HTREEITEM>(handle)
 //   QtFRED: static_cast<QTreeWidgetItem*>(handle)
 
-class sexp_tree_item {
-public:
+struct sexp_tree_item {
 	sexp_tree_item() : type(SEXPT_UNUSED), parent(-1), child(-1), next(-1), flags(0), handle(nullptr) {
 		text[0] = '\0';
 	}
@@ -128,8 +127,7 @@ public:
 // sexp_list_item — linked list node for building option listings
 // -----------------------------------------------------------------------
 
-class sexp_list_item {
-public:
+struct sexp_list_item {
 	int type;
 	int op;
 	SCP_string text;
