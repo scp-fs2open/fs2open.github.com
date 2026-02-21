@@ -427,16 +427,6 @@ public:
 	// Recursively serialize a branch, returning the starting sexp node index
 	int save_branch(int cur, int at_root = 0) const;
 
-	// --- Default argument values ---
-
-	// Determine and populate the default value for argument position i of operator op.
-	// Returns 0 on success, -1 if no default available.
-	int get_default_value(sexp_list_item* item, char* text_buf, int op, int i);
-	// Returns non-zero if all minimum required arguments of operator op have defaults
-	int query_default_argument_available(int op) const;
-	// Returns non-zero if argument position i of operator op has a default value available
-	int query_default_argument_available(int op, int i) const;
-
 	// --- Query / analysis functions ---
 
 	// Count the number of sibling nodes starting from 'node' (following next pointers)

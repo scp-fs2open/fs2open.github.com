@@ -1552,7 +1552,7 @@ void sexp_tree::editDataActionHandler() {
 //   - _model.find_argument_number() to determine which argument position this is
 //   - _model.query_node_argument_type() to get the expected OPF type
 //   - _model._opf.get_listing_opf() to build the canonical list of valid items for that OPF
-//   - _model.query_default_argument_available() to filter operators that lack default args
+//   - _model._opf.query_default_argument_available() to filter operators that lack default args
 // Returns a sorted, deduplicated QStringList of operator names. Used by the operator
 // quick-search popup and openNodeEditor() to decide whether to show the popup.
 QStringList sexp_tree::validOperatorsForNode(int nodeIndex)
@@ -1576,7 +1576,7 @@ QStringList sexp_tree::validOperatorsForNode(int nodeIndex)
 			const int opIndex = p->op;
 
 			// Optional: keep parity with the menu, which disables ops lacking default args
-			if (!_model.query_default_argument_available(opIndex))
+			if (!_model._opf.query_default_argument_available(opIndex))
 				continue;
 
 			out.push_back(QString::fromStdString(Operators[opIndex].text));

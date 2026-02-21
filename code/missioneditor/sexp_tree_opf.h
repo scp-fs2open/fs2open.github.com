@@ -157,6 +157,16 @@ public:
 	//! Returns true if the given OPF type is one of the container-name types
 	static bool is_container_name_opf_type(int op_type);
 
+	// --- Default argument availability and values ---
+
+	//! Returns non-zero if all minimum required arguments of operator op have defaults
+	int query_default_argument_available(int op) const;
+	//! Returns non-zero if argument position i of operator op has a default value available
+	int query_default_argument_available(int op, int i) const;
+	//! Determine and populate the default value for argument position i of operator op.
+	//! Returns 0 on success, -1 if no default available.
+	int get_default_value(sexp_list_item* item, char* text_buf, int op, int i);
+
 private:
 	SexpTreeModel& _model;
 };

@@ -316,7 +316,7 @@ class sexp_tree: public QTreeWidget, public ISexpTreeUI {
 
 	//! Computes the list of valid operator names for a given node position. Queries
 	//! _model.find_argument_number(), _model.query_node_argument_type(), _model._opf.get_listing_opf(),
-	//! and _model.query_default_argument_available().
+	//! and _model._opf.query_default_argument_available().
 	QStringList validOperatorsForNode(int nodeIndex);
 
 	//! Slot for itemChanged. Handles inline edit completion. For root labels: emits rootNodeRenamed().
