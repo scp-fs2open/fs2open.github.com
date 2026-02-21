@@ -112,8 +112,7 @@ void LabManager::resetGraphicsSettings() {
 }
 
 void LabManager::onFrame(float frametime) {
-	if (gr_screen.mode == GR_OPENGL)
-		ImGui_ImplOpenGL3_NewFrame();
+	gr_imgui_new_frame();
 	ImGui_ImplSDL2_NewFrame(gr_screen.max_w, gr_screen.max_h);
 	ImGui::NewFrame();
 
@@ -389,8 +388,7 @@ void LabManager::onFrame(float frametime) {
 	if (Cmdline_show_imgui_debug)
 		ImGui::ShowDemoWindow();
 	ImGui::Render();
-	if (gr_screen.mode == GR_OPENGL)
-		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+	gr_imgui_render_draw_data();
 
 	if (CloseThis)
 		close();

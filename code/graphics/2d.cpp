@@ -1309,6 +1309,10 @@ void gr_close()
 
 	graphics::paths::PathRenderer::shutdown();
 
+	// Free bitmaps before destroying the graphics backend, since
+	// gf_bm_free_data needs the backend (texture manager, GL context, etc.)
+	bm_close();
+
 	switch (gr_screen.mode) {
 		case GR_OPENGL:
 #ifdef WITH_OPENGL
@@ -1324,12 +1328,10 @@ void gr_close()
 
 		case GR_STUB:
 			break;
-	
+
 		default:
 			Int3();		// Invalid graphics mode
 	}
-
-	bm_close();
 
 	Gr_inited = 0;
 }
@@ -2924,6 +2926,16 @@ void gr_flip(bool execute_scripting)
 		}
 	}
 
+	if (Cmdline_graphics_debug_output) {
+		output_uniform_debug_data();
+	}
+
+	// IMPORTANT: No rendering may happen after this point until gf_flip()/gr_setup_frame().
+	// gr_reset_immediate_buffer() resets the write offset to 0, so any subsequent immediate
+	// buffer write would overwrite vertex data that already-recorded draw commands reference.
+	// In Vulkan (deferred submission), the GPU reads the final buffer state at submit time,
+	// so overwrites here silently corrupt earlier draws. OpenGL's immediate execution hides
+	// this, but it is still logically wrong for any deferred-submission backend.
 	gr_reset_immediate_buffer();
 
 	// Do per frame operations on the matrix state
@@ -2932,10 +2944,6 @@ void gr_flip(bool execute_scripting)
 	gr_reset_clip();
 
 	mouse_reset_deltas();
-
-	if (Cmdline_graphics_debug_output) {
-		output_uniform_debug_data();
-	}
 
 	// Use this opportunity for retiring the uniform buffers
 	uniform_buffer_managers_retire_buffers();

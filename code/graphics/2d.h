@@ -214,6 +214,8 @@ enum shader_type {
 
 	SDR_TYPE_IRRADIANCE_MAP_GEN,
 
+	SDR_TYPE_SHADOW_MAP,
+
 	NUM_SHADER_TYPES
 };
 
@@ -262,7 +264,6 @@ struct vertex_format_data
 		POSITION4,
 		POSITION3,
 		POSITION2,
-		SCREEN_POS,
 		COLOR3,
 		COLOR4,
 		COLOR4F,
@@ -339,7 +340,8 @@ enum class gr_capability {
 	CAPABILITY_PERSISTENT_BUFFER_MAPPING,
 	CAPABILITY_BPTC,
 	CAPABILITY_LARGE_SHADER,
-	CAPABILITY_INSTANCED_RENDERING
+	CAPABILITY_INSTANCED_RENDERING,
+	CAPABILITY_QUERIES_REUSABLE
 };
 
 struct gr_capability_def {
@@ -934,6 +936,10 @@ typedef struct screen {
 
 	std::function<void(bool set_override)> gf_override_fog;
 
+	// ImGui backend integration
+	std::function<void()> gf_imgui_new_frame;
+	std::function<void()> gf_imgui_render_draw_data;
+
 	//OpenXR functions
 	std::function<SCP_vector<const char*>()> gf_openxr_get_extensions;
 	std::function<bool()> gf_openxr_test_capabilities;
@@ -1188,6 +1194,9 @@ inline void gr_post_process_restore_zbuffer()
 #define gr_render_shield_impact			GR_CALL(gr_screen.gf_render_shield_impact)
 
 #define gr_override_fog					GR_CALL(gr_screen.gf_override_fog)
+
+#define gr_imgui_new_frame				GR_CALL(gr_screen.gf_imgui_new_frame)
+#define gr_imgui_render_draw_data		GR_CALL(gr_screen.gf_imgui_render_draw_data)
 
 inline void gr_render_primitives(material* material_info,
 	primitive_type prim_type,

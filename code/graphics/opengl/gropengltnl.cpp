@@ -74,7 +74,6 @@ static opengl_vertex_bind GL_array_binding_data[] =
 		{ vertex_format_data::POSITION4,	4, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::POSITION	},
 		{ vertex_format_data::POSITION3,	3, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::POSITION	},
 		{ vertex_format_data::POSITION2,	2, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::POSITION	},
-		{ vertex_format_data::SCREEN_POS,	2, GL_INT,				GL_FALSE, opengl_vert_attrib::POSITION	},
 		{ vertex_format_data::COLOR3,		3, GL_UNSIGNED_BYTE,	GL_TRUE, opengl_vert_attrib::COLOR		},
 		{ vertex_format_data::COLOR4,		4, GL_UNSIGNED_BYTE,	GL_TRUE, opengl_vert_attrib::COLOR		},
 		{ vertex_format_data::COLOR4F,		4, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::COLOR		},
