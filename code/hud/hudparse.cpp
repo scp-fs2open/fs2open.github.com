@@ -1761,6 +1761,10 @@ void load_gauge_custom(gauge_settings* settings)
 			stuff_boolean(&settings->slew);
 		}
 
+		if (optional_string("Message Gauge:")) {
+			stuff_boolean(&settings->message_gauge);
+		}
+
 		if (optional_string("Config:")) {
 			stuff_boolean(&visible_in_config);
 		}
@@ -1780,7 +1784,7 @@ void load_gauge_custom(gauge_settings* settings)
 		}
 	}
 
-	std::unique_ptr<HudGauge> hud_gauge(new HudGauge(gauge_type, settings->slew, r, g, b, name, text, filename, txtoffset_x, txtoffset_y));
+	std::unique_ptr<HudGauge> hud_gauge(new HudGauge(gauge_type, settings->slew, settings->message_gauge, r, g, b, name, text, filename, txtoffset_x, txtoffset_y));
 
 	hud_gauge->initBaseResolution(settings->base_res[0], settings->base_res[1], settings->aspect_quotient);
 	hud_gauge->initPosition(settings->coords[0], settings->coords[1]);

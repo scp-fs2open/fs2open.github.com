@@ -364,9 +364,9 @@ canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 }
 
 // constructor for custom gauges
-HudGauge::HudGauge(int _gauge_config, bool _slew, int r, int g, int b, char* _custom_name, char* _custom_text, char* frame_fname, int txtoffset_x, int txtoffset_y):
+HudGauge::HudGauge(int _gauge_config, bool _slew, bool _message, int r, int g, int b, char* _custom_name, char* _custom_text, char* frame_fname, int txtoffset_x, int txtoffset_y):
 base_w(0), base_h(0), gauge_type(_gauge_config), gauge_object(HUD_OBJECT_CUSTOM), font_num(font::FONT1), lock_color(false), sexp_lock_color(false),
-reticle_follow(_slew), active(false), off_by_default(false), sexp_override(false), pop_up(false), message_gauge(false),
+reticle_follow(_slew), active(false), off_by_default(false), sexp_override(false), pop_up(false), message_gauge(_message),
 disabled_views(VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY), scripting_render_override(false), can_popup(false), use_iff_color(false), use_tag_color(false), only_render_in_chase_view(false), 
 render_for_cockpit_toggle(0), custom_gauge(true), textoffset_x(txtoffset_x), textoffset_y(txtoffset_y), texture_target(-1), canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 {

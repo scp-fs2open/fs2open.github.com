@@ -278,7 +278,7 @@ public:
 	HudGauge();
 	HudGauge(int _gauge_object, int _gauge_config, bool _slew, bool _message, int _disabled_views, int r, int g, int b);
 	// constructor for custom gauges
-	HudGauge(int _gauge_config, bool _slew, int r, int g, int b, char* _custom_name, char* _custom_text, char* frame_fname, int txtoffset_x, int txtoffset_y);
+	HudGauge(int _gauge_config, bool _slew, bool _message, int r, int g, int b, char* _custom_name, char* _custom_text, char* frame_fname, int txtoffset_x, int txtoffset_y);
 	virtual ~HudGauge();
 
 	void initPosition(int x, int y);
@@ -393,8 +393,8 @@ public:
 	HudGauge3DAnchor(int _gauge_object, int _gauge_config, bool /*_slew*/, bool _message, int _disabled_views, int r, int g, int b)
 		: HudGauge(_gauge_object, _gauge_config, false, _message, _disabled_views, r, g, b) { }
 	// constructor for custom gauges
-	HudGauge3DAnchor(int _gauge_config, bool /*_slew*/, int r, int g, int b, char* _custom_name, char* _custom_text, char* frame_fname, int txtoffset_x, int txtoffset_y)
-		: HudGauge(_gauge_config, false, r, g, b, _custom_name, _custom_text, frame_fname, txtoffset_x, txtoffset_y) { }
+	HudGauge3DAnchor(int _gauge_config, bool /*_slew*/, bool _message, int r, int g, int b, char* _custom_name, char* _custom_text, char* frame_fname, int txtoffset_x, int txtoffset_y)
+		: HudGauge(_gauge_config, false, _message, r, g, b, _custom_name, _custom_text, frame_fname, txtoffset_x, txtoffset_y) { }
 
 	void initSlew(bool /*slew*/) override {};
 };
