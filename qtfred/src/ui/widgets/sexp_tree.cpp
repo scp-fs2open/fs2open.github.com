@@ -4488,8 +4488,8 @@ sexp_list_item* sexp_tree::get_listing_opf_ship_with_bay() {
 
 	for (objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
 		if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) {
-			// determine if this ship has a docking bay
-			if (ship_has_dock_bay(objp->instance)) {
+			// determine if this ship has a hangar bay
+			if (ship_has_hangar_bay(objp->instance)) {
 				head.add_data(Ships[objp->instance].ship_name);
 			}
 		}

@@ -3047,8 +3047,8 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 
 				// ship exists at this point
 
-				// now determine if this ship has a docking bay
-				if (!ship_has_dock_bay(shipnum))
+				// now determine if this ship has a hangar bay
+				if (!ship_has_hangar_bay(shipnum))
 					return SEXP_CHECK_INVALID_SHIP_WITH_BAY;
 
 				break;

@@ -69,7 +69,7 @@ std::vector<std::pair<SCP_string, bool>> WingEditorDialogModel::getDockBayPathsF
 {
 	std::vector<std::pair<SCP_string, bool>> out;
 
-	if (anchorShipnum < 0 || !ship_has_dock_bay(anchorShipnum))
+	if (anchorShipnum < 0 || !ship_has_hangar_bay(anchorShipnum))
 		return out;
 
 	const int sii = Ships[anchorShipnum].ship_info_index;
@@ -974,7 +974,7 @@ void WingEditorDialogModel::setArrivalPaths(const std::vector<std::pair<SCP_stri
 		return;
 
 	const int anchor = w->arrival_anchor;
-	if (anchor < 0 || !ship_has_dock_bay(anchor))
+	if (anchor < 0 || !ship_has_hangar_bay(anchor))
 		return;
 
 	// Rebuild mask in the same order we produced the list
@@ -1213,7 +1213,7 @@ void WingEditorDialogModel::setDeparturePaths(const std::vector<std::pair<SCP_st
 		return;
 
 	const int anchor = w->departure_anchor;
-	if (anchor < 0 || !ship_has_dock_bay(anchor))
+	if (anchor < 0 || !ship_has_hangar_bay(anchor))
 		return;
 
 	// Rebuild mask in the same order we produced the list
