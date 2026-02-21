@@ -522,4 +522,25 @@ public:
 	// Returns true if the given operator value should be hidden from menus (deprecated/hidden ops)
 	static bool is_operator_hidden(int op_value);
 
+private:
+	// --- Private helpers for compute_context_menu_state() ---
+
+	// Set campaign mode, annotation availability, and variable support
+	void ctx_init(SexpContextMenuState& state) const;
+	// Handle the labeled-root special case; returns true if state is complete (early return)
+	bool ctx_handle_labeled_root(SexpContextMenuState& state) const;
+	// Build the variable and container replacement menu entries for the selected node
+	void ctx_compute_variable_menus(SexpContextMenuState& state) const;
+	// Determine what can be added as a new child of the selected node
+	void ctx_compute_add_type(SexpContextMenuState& state);
+	// Determine what can replace the selected node; returns the OPF type for clipboard validation
+	int ctx_compute_replace_type(SexpContextMenuState& state);
+	// Determine the OPF type for inserting an operator before the selected node
+	void ctx_compute_insert_type(SexpContextMenuState& state) const;
+	// Pre-compute which operators are enabled for add/replace/insert
+	void ctx_compute_operator_enablement(SexpContextMenuState& state) const;
+	// Check if the clipboard contents can be pasted in the current context
+	void ctx_validate_clipboard(SexpContextMenuState& state, int replace_opf_type) const;
+	// Apply final cut/copy/paste restrictions based on node type
+	void ctx_apply_restrictions(SexpContextMenuState& state) const;
 };

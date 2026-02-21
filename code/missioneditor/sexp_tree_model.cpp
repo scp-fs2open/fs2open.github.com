@@ -2012,183 +2012,216 @@ SexpContextMenuState SexpTreeModel::compute_context_menu_state()
 {
 	SexpContextMenuState state;
 
+	ctx_init(state);
+	if (ctx_handle_labeled_root(state)) {
+		return state;
+	}
+
+	Assert(item_index != -1);
+
+	state.can_edit_text = (tree_nodes[item_index].flags & EDITABLE) != 0;
+	if (tree_nodes[item_index].parent == -1) {
+		state.can_delete = false;  // can't delete root
+	}
+
+	ctx_compute_variable_menus(state);
+	ctx_compute_add_type(state);
+	int replace_opf_type = ctx_compute_replace_type(state);
+	ctx_compute_insert_type(state);
+	ctx_compute_operator_enablement(state);
+	ctx_validate_clipboard(state, replace_opf_type);
+	ctx_apply_restrictions(state);
+
+	return state;
+}
+
+// -----------------------------------------------------------------------
+// Private helpers for compute_context_menu_state()
+// -----------------------------------------------------------------------
+
+void SexpTreeModel::ctx_init(SexpContextMenuState& state) const
+{
 	state.campaign_mode = _interface && _interface->requireCampaignOperators();
 
-	// --- Annotations ---
 	if (_interface && _interface->getFlags()[TreeFlags::AnnotationsAllowed]) {
 		state.can_edit_comment = true;
 		state.can_edit_bg_color = true;
 	}
 
-	// --- Variables always allowed ---
 	state.can_add_variable = true;
 	state.can_modify_variable = (sexp_variable_count() > 0);
+}
 
-	// --- Handle labeled root special case ---
-	if (item_index == -1) {
-		if (_interface && _interface->getFlags()[TreeFlags::LabeledRoot]) {
-			state.is_labeled_root = true;
-			state.is_root_editable = _interface && _interface->getFlags()[TreeFlags::RootEditable];
-			state.can_edit_text = state.is_root_editable;
-			state.can_copy = false;
-			// Initialize per-operator vectors to all-false
-			int num_ops = (int)Operators.size();
-			state.op_add_enabled.assign(num_ops, false);
-			state.op_replace_enabled.assign(num_ops, false);
-			state.op_insert_enabled.assign(num_ops, false);
-			return state;
+bool SexpTreeModel::ctx_handle_labeled_root(SexpContextMenuState& state) const
+{
+	if (item_index != -1) {
+		return false;
+	}
+
+	if (!(_interface && _interface->getFlags()[TreeFlags::LabeledRoot])) {
+		return false;
+	}
+
+	state.is_labeled_root = true;
+	state.is_root_editable = _interface && _interface->getFlags()[TreeFlags::RootEditable];
+	state.can_edit_text = state.is_root_editable;
+	state.can_copy = false;
+
+	int num_ops = (int)Operators.size();
+	state.op_add_enabled.assign(num_ops, false);
+	state.op_replace_enabled.assign(num_ops, false);
+	state.op_insert_enabled.assign(num_ops, false);
+
+	return true;
+}
+
+void SexpTreeModel::ctx_compute_variable_menus(SexpContextMenuState& state) const
+{
+	if (item_index < 0) {
+		return;
+	}
+
+	int type = tree_nodes[item_index].type;
+	int parent = tree_nodes[item_index].parent;
+	if (parent < 0) {
+		return;
+	}
+
+	int op = get_operator_index(tree_nodes[parent].text);
+	Assertion(op >= 0 || tree_nodes[parent].type & SEXPT_CONTAINER_DATA,
+		"Encountered unknown SEXP operator %s. Please report!",
+		tree_nodes[parent].text);
+	int first_arg = tree_nodes[parent].child;
+
+	// get arg count of item to replace (for variable context)
+	int var_replace_count = 0;
+	int temp = first_arg;
+	while (temp != item_index) {
+		var_replace_count++;
+		temp = tree_nodes[temp].next;
+		if (temp == -1) break;
+	}
+
+	int op_type = 0;
+	if (op >= 0) {
+		op_type = query_operator_argument_type(op, var_replace_count);
+	} else {
+		Assertion(tree_nodes[parent].type & SEXPT_CONTAINER_DATA,
+			"Unknown SEXP operator %s. Please report!",
+			tree_nodes[parent].text);
+		const auto* p_container = get_sexp_container(tree_nodes[parent].text);
+		Assertion(p_container != nullptr,
+			"Found modifier for unknown container %s. Please report!",
+			tree_nodes[parent].text);
+		op_type = p_container->opf_type;
+	}
+	Assertion(op_type > 0,
+		"Found invalid operator type %d for node with text %s. Please report!",
+		op_type, tree_nodes[parent].text);
+
+	// Goober5000 - handle ambiguous type
+	if (op_type == OPF_AMBIGUOUS) {
+		int modify_type = get_modify_variable_type(parent);
+		if (modify_type == OPF_NUMBER) {
+			type = SEXPT_NUMBER;
+		} else if (modify_type == OPF_AMBIGUOUS) {
+			type = SEXPT_STRING;
+		} else {
+			Int3();
+			type = tree_nodes[first_arg].type;
 		}
 	}
 
-	Assert(item_index != -1);
-
-	// --- Text edit ---
-	state.can_edit_text = (tree_nodes[item_index].flags & EDITABLE) != 0;
-
-	// --- Delete ---
-	if (tree_nodes[item_index].parent == -1) {
-		state.can_delete = false;  // can't delete root
+	// Goober5000 - certain types accept both integers and a list of strings
+	if (op_type == OPF_GAME_SND || op_type == OPF_FIREBALL || op_type == OPF_WEAPON_BANK_NUMBER) {
+		type = SEXPT_NUMBER | SEXPT_STRING;
 	}
 
-	// --- Variable/container menu building (from node context) ---
-	if (item_index >= 0) {
-		int type = tree_nodes[item_index].type;
+	// jg18 - container values can be anything
+	if (op_type == OPF_CONTAINER_VALUE) {
+		type = SEXPT_NUMBER | SEXPT_STRING;
+	}
 
-		int parent = tree_nodes[item_index].parent;
-		if (parent >= 0) {
-			int op = get_operator_index(tree_nodes[parent].text);
-			Assertion(op >= 0 || tree_nodes[parent].type & SEXPT_CONTAINER_DATA,
-				"Encountered unknown SEXP operator %s. Please report!",
-				tree_nodes[parent].text);
-			int first_arg = tree_nodes[parent].child;
+	if (!((type & SEXPT_STRING) || (type & SEXPT_NUMBER))) {
+		return;
+	}
 
-			// get arg count of item to replace (for variable context)
-			int var_replace_count = 0;
-			int temp = first_arg;
-			while (temp != item_index) {
-				var_replace_count++;
-				temp = tree_nodes[temp].next;
-				if (temp == -1) break;
+	// Build variable replacement entries
+	int max_sexp_vars = MAX_SEXP_VARIABLES;
+	Assert(max_sexp_vars < 512);
+
+	for (int idx = 0; idx < max_sexp_vars; idx++) {
+		if (Sexp_variables[idx].type & SEXP_VARIABLE_SET) {
+			if (Sexp_variables[idx].type & SEXP_VARIABLE_BLOCK) {
+				continue;
 			}
 
-			int op_type = 0;
-			if (op >= 0) {
-				op_type = query_operator_argument_type(op, var_replace_count);
+			bool enabled = false;
+			if ((type & SEXPT_STRING) && (Sexp_variables[idx].type & SEXP_VARIABLE_STRING)) {
+				enabled = true;
+			}
+			if ((type & SEXPT_NUMBER) && (Sexp_variables[idx].type & SEXP_VARIABLE_NUMBER)) {
+				enabled = true;
+			}
+			if (op_type == OPF_VARIABLE_NAME) {
+				state.modify_variable = 1;
+				enabled = true;
 			} else {
-				Assertion(tree_nodes[parent].type & SEXPT_CONTAINER_DATA,
-					"Unknown SEXP operator %s. Please report!",
-					tree_nodes[parent].text);
-				const auto* p_container = get_sexp_container(tree_nodes[parent].text);
-				Assertion(p_container != nullptr,
-					"Found modifier for unknown container %s. Please report!",
-					tree_nodes[parent].text);
-				op_type = p_container->opf_type;
+				state.modify_variable = 0;
 			}
-			Assertion(op_type > 0,
-				"Found invalid operator type %d for node with text %s. Please report!",
-				op_type, tree_nodes[parent].text);
-
-			// Goober5000 - handle ambiguous type
-			if (op_type == OPF_AMBIGUOUS) {
-				int modify_type = get_modify_variable_type(parent);
-				if (modify_type == OPF_NUMBER) {
-					type = SEXPT_NUMBER;
-				} else if (modify_type == OPF_AMBIGUOUS) {
-					type = SEXPT_STRING;
-				} else {
-					Int3();
-					type = tree_nodes[first_arg].type;
-				}
+			if (op_type == OPF_NAV_POINT) {
+				enabled = true;
+			}
+			if ((type & SEXPT_MODIFIER) && var_replace_count > 0) {
+				enabled = true;
 			}
 
-			// Goober5000 - certain types accept both integers and a list of strings
-			if (op_type == OPF_GAME_SND || op_type == OPF_FIREBALL || op_type == OPF_WEAPON_BANK_NUMBER) {
-				type = SEXPT_NUMBER | SEXPT_STRING;
-			}
-
-			// jg18 - container values can be anything
-			if (op_type == OPF_CONTAINER_VALUE) {
-				type = SEXPT_NUMBER | SEXPT_STRING;
-			}
-
-			if ((type & SEXPT_STRING) || (type & SEXPT_NUMBER)) {
-				// Build variable replacement entries
-				int max_sexp_vars = MAX_SEXP_VARIABLES;
-				Assert(max_sexp_vars < 512);
-
-				for (int idx = 0; idx < max_sexp_vars; idx++) {
-					if (Sexp_variables[idx].type & SEXP_VARIABLE_SET) {
-						if (Sexp_variables[idx].type & SEXP_VARIABLE_BLOCK) {
-							continue;
-						}
-
-						bool enabled = false;
-						if ((type & SEXPT_STRING) && (Sexp_variables[idx].type & SEXP_VARIABLE_STRING)) {
-							enabled = true;
-						}
-						if ((type & SEXPT_NUMBER) && (Sexp_variables[idx].type & SEXP_VARIABLE_NUMBER)) {
-							enabled = true;
-						}
-						if (op_type == OPF_VARIABLE_NAME) {
-							state.modify_variable = 1;
-							enabled = true;
-						} else {
-							state.modify_variable = 0;
-						}
-						if (op_type == OPF_NAV_POINT) {
-							enabled = true;
-						}
-						if ((type & SEXPT_MODIFIER) && var_replace_count > 0) {
-							enabled = true;
-						}
-
-						SexpContextMenuState::VariableEntry entry;
-						entry.var_index = idx;
-						entry.enabled = enabled;
-						state.replace_variables.push_back(entry);
-					}
-				}
-
-				// Replace Container Name submenu
-				if (SexpTreeOPF::is_container_name_opf_type(op_type) || op_type == OPF_DATA_OR_STR_CONTAINER) {
-					state.show_container_names = true;
-					for (const auto& container : get_all_sexp_containers()) {
-						bool enabled = false;
-						if (op_type == OPF_CONTAINER_NAME) {
-							enabled = true;
-						} else if ((op_type == OPF_LIST_CONTAINER_NAME) && container.is_list()) {
-							enabled = true;
-						} else if ((op_type == OPF_MAP_CONTAINER_NAME) && container.is_map()) {
-							enabled = true;
-						} else if ((op_type == OPF_DATA_OR_STR_CONTAINER) && container.is_of_string_type()) {
-							enabled = true;
-						}
-						state.replace_container_names.push_back({enabled});
-					}
-				}
-
-				// Replace Container Data submenu
-				if (op_type != OPF_VARIABLE_NAME && (op < 0 || !is_argument_provider_op(Operators[op].value))) {
-					state.show_container_data = true;
-					for (const auto& container : get_all_sexp_containers()) {
-						bool enabled = false;
-						if ((type & SEXPT_STRING) && any(container.type & ContainerType::STRING_DATA)) {
-							enabled = true;
-						}
-						if ((type & SEXPT_NUMBER) && any(container.type & ContainerType::NUMBER_DATA)) {
-							enabled = true;
-						}
-						if ((tree_nodes[item_index].type & SEXPT_MODIFIER) && var_replace_count > 0) {
-							enabled = true;
-						}
-						state.replace_container_data.push_back({enabled});
-					}
-				}
-			}
+			SexpContextMenuState::VariableEntry entry;
+			entry.var_index = idx;
+			entry.enabled = enabled;
+			state.replace_variables.push_back(entry);
 		}
 	}
 
-	// --- Add type computation ---
+	// Replace Container Name submenu
+	if (SexpTreeOPF::is_container_name_opf_type(op_type) || op_type == OPF_DATA_OR_STR_CONTAINER) {
+		state.show_container_names = true;
+		for (const auto& container : get_all_sexp_containers()) {
+			bool enabled = false;
+			if (op_type == OPF_CONTAINER_NAME) {
+				enabled = true;
+			} else if ((op_type == OPF_LIST_CONTAINER_NAME) && container.is_list()) {
+				enabled = true;
+			} else if ((op_type == OPF_MAP_CONTAINER_NAME) && container.is_map()) {
+				enabled = true;
+			} else if ((op_type == OPF_DATA_OR_STR_CONTAINER) && container.is_of_string_type()) {
+				enabled = true;
+			}
+			state.replace_container_names.push_back({enabled});
+		}
+	}
+
+	// Replace Container Data submenu
+	if (op_type != OPF_VARIABLE_NAME && (op < 0 || !is_argument_provider_op(Operators[op].value))) {
+		state.show_container_data = true;
+		for (const auto& container : get_all_sexp_containers()) {
+			bool enabled = false;
+			if ((type & SEXPT_STRING) && any(container.type & ContainerType::STRING_DATA)) {
+				enabled = true;
+			}
+			if ((type & SEXPT_NUMBER) && any(container.type & ContainerType::NUMBER_DATA)) {
+				enabled = true;
+			}
+			if ((tree_nodes[item_index].type & SEXPT_MODIFIER) && var_replace_count > 0) {
+				enabled = true;
+			}
+			state.replace_container_data.push_back({enabled});
+		}
+	}
+}
+
+void SexpTreeModel::ctx_compute_add_type(SexpContextMenuState& state)
+{
 	state.add_type = 0;
 
 	if (tree_nodes[item_index].type & SEXPT_CONTAINER_DATA) {
@@ -2266,200 +2299,205 @@ SexpContextMenuState SexpTreeModel::compute_context_menu_state()
 			state.can_add_string = true;
 		}
 	}
+}
 
-	// --- Replace type computation ---
+int SexpTreeModel::ctx_compute_replace_type(SexpContextMenuState& state)
+{
 	state.replace_type = 0;
 	int parent = tree_nodes[item_index].parent;
-	int replace_opf_type = 0;  // will be set below for clipboard validation
-	if (parent >= 0) {
-		state.replace_type = OPR_STRING;
-		int op = get_operator_index(tree_nodes[parent].text);
-		Assertion(op >= 0 || tree_nodes[parent].type & SEXPT_CONTAINER_DATA,
-			"Encountered unknown SEXP operator %s. Please report!",
-			tree_nodes[parent].text);
-		int first_arg = tree_nodes[parent].child;
-		int count = count_args(tree_nodes[parent].child);
+	int replace_opf_type = 0;
 
-		if (op >= 0) {
-			if (count <= Operators[op].min) {
-				state.can_delete = false;
-			}
-		} else if ((tree_nodes[parent].type & SEXPT_CONTAINER_DATA) && (item_index == first_arg)) {
-			Assertion(tree_nodes[item_index].type & SEXPT_MODIFIER,
-				"Container data %s node's first modifier %s is not a modifier. Please report!",
-				tree_nodes[parent].text, tree_nodes[item_index].text);
+	if (parent < 0) {
+		// top node - should be Boolean or Null type
+		state.replace_type = _interface ? _interface->getRootReturnType() : OPR_BOOL;
+		return replace_opf_type;
+	}
+
+	state.replace_type = OPR_STRING;
+	int op = get_operator_index(tree_nodes[parent].text);
+	Assertion(op >= 0 || tree_nodes[parent].type & SEXPT_CONTAINER_DATA,
+		"Encountered unknown SEXP operator %s. Please report!",
+		tree_nodes[parent].text);
+	int first_arg = tree_nodes[parent].child;
+	int count = count_args(tree_nodes[parent].child);
+
+	if (op >= 0) {
+		if (count <= Operators[op].min) {
 			state.can_delete = false;
 		}
+	} else if ((tree_nodes[parent].type & SEXPT_CONTAINER_DATA) && (item_index == first_arg)) {
+		Assertion(tree_nodes[item_index].type & SEXPT_MODIFIER,
+			"Container data %s node's first modifier %s is not a modifier. Please report!",
+			tree_nodes[parent].text, tree_nodes[item_index].text);
+		state.can_delete = false;
+	}
 
-		// get arg count of item to replace
-		state.replace_count = 0;
-		int temp = first_arg;
-		while (temp != item_index) {
-			state.replace_count++;
-			temp = tree_nodes[temp].next;
-			if (temp == -1) break;
-		}
+	// get arg count of item to replace
+	state.replace_count = 0;
+	int temp = first_arg;
+	while (temp != item_index) {
+		state.replace_count++;
+		temp = tree_nodes[temp].next;
+		if (temp == -1) break;
+	}
 
-		int type;
-		if (op >= 0) {
-			// maybe gray delete
-			for (int i = state.replace_count + 1; i < count; i++) {
-				if (query_operator_argument_type(op, i - 1) != query_operator_argument_type(op, i)) {
-					state.can_delete = false;
-					break;
-				}
+	int type;
+	if (op >= 0) {
+		// maybe gray delete
+		for (int i = state.replace_count + 1; i < count; i++) {
+			if (query_operator_argument_type(op, i - 1) != query_operator_argument_type(op, i)) {
+				state.can_delete = false;
+				break;
 			}
-			type = query_operator_argument_type(op, state.replace_count);
-		} else {
-			Assertion(tree_nodes[parent].type & SEXPT_CONTAINER_DATA,
-				"Unknown SEXP operator %s. Please report!",
-				tree_nodes[parent].text);
-			const auto* p_container = get_sexp_container(tree_nodes[parent].text);
-			Assertion(p_container != nullptr,
-				"Found modifier for unknown container %s. Please report!",
-				tree_nodes[parent].text);
-			type = p_container->opf_type;
 		}
+		type = query_operator_argument_type(op, state.replace_count);
+	} else {
+		Assertion(tree_nodes[parent].type & SEXPT_CONTAINER_DATA,
+			"Unknown SEXP operator %s. Please report!",
+			tree_nodes[parent].text);
+		const auto* p_container = get_sexp_container(tree_nodes[parent].text);
+		Assertion(p_container != nullptr,
+			"Found modifier for unknown container %s. Please report!",
+			tree_nodes[parent].text);
+		type = p_container->opf_type;
+	}
 
-		replace_opf_type = type;
+	replace_opf_type = type;
 
-		// special case reset type for ambiguous
-		if (type == OPF_AMBIGUOUS) {
-			type = get_modify_variable_type(parent);
-		}
+	// special case reset type for ambiguous
+	if (type == OPF_AMBIGUOUS) {
+		type = get_modify_variable_type(parent);
+	}
 
-		// Container modifiers use their own list of possible arguments
-		sexp_list_item* replace_list;
-		if (tree_nodes[item_index].type & SEXPT_MODIFIER) {
-			const auto* p_container = get_sexp_container(tree_nodes[parent].text);
-			Assertion(p_container != nullptr,
-				"Found modifier for unknown container %s. Please report!",
-				tree_nodes[parent].text);
-			const int first_modifier = tree_nodes[parent].child;
-			if (state.replace_count == 1 && p_container->is_list() &&
-				get_list_modifier(tree_nodes[first_modifier].text) == ListModifier::AT_INDEX) {
-				replace_list = nullptr;
-				state.replace_type = OPR_NUMBER;
-			} else {
-				replace_list = _opf.get_container_modifiers(parent);
-			}
-		} else {
-			replace_list = _opf.get_listing_opf(type, parent, state.replace_count);
-		}
-
-		// special case: don't allow replace data for variable or container names
-		if ((type != OPF_VARIABLE_NAME) && !SexpTreeOPF::is_container_name_opf_type(type) && replace_list) {
-			state.replace_data_list = replace_list;
-			sexp_list_item* ptr = replace_list;
-			while (ptr) {
-				if (ptr->op >= 0) {
-					state.replace_enabled_op_indices.push_back(ptr->op);
-				}
-				ptr = ptr->next;
-			}
-		} else if (replace_list) {
-			replace_list->destroy();
-		}
-
-		if (type == OPF_NONE) {
-			state.replace_type = 0;
-		} else if (type == OPF_NUMBER) {
+	// Container modifiers use their own list of possible arguments
+	sexp_list_item* replace_list;
+	if (tree_nodes[item_index].type & SEXPT_MODIFIER) {
+		const auto* p_container = get_sexp_container(tree_nodes[parent].text);
+		Assertion(p_container != nullptr,
+			"Found modifier for unknown container %s. Please report!",
+			tree_nodes[parent].text);
+		const int first_modifier = tree_nodes[parent].child;
+		if (state.replace_count == 1 && p_container->is_list() &&
+			get_list_modifier(tree_nodes[first_modifier].text) == ListModifier::AT_INDEX) {
+			replace_list = nullptr;
 			state.replace_type = OPR_NUMBER;
-			state.can_replace_number = true;
-		} else if (type == OPF_POSITIVE) {
-			state.replace_type = OPR_POSITIVE;
-			state.can_replace_number = true;
-		} else if (type == OPF_BOOL) {
-			state.replace_type = OPR_BOOL;
-		} else if (type == OPF_NULL) {
-			state.replace_type = OPR_NULL;
-		} else if (type == OPF_AI_GOAL) {
-			state.replace_type = OPR_AI_GOAL;
-		} else if (type == OPF_FLEXIBLE_ARGUMENT) {
-			state.replace_type = OPR_FLEXIBLE_ARGUMENT;
-		} else if (type == OPF_GAME_SND || type == OPF_FIREBALL || type == OPF_WEAPON_BANK_NUMBER) {
-			state.replace_type = OPR_POSITIVE;
-			state.can_replace_number = true;
-		} else if (type == OPF_CONTAINER_VALUE) {
-			state.can_replace_number = true;
+		} else {
+			replace_list = _opf.get_container_modifiers(parent);
 		}
+	} else {
+		replace_list = _opf.get_listing_opf(type, parent, state.replace_count);
+	}
 
-		if (state.replace_type == OPR_STRING && !SexpTreeOPF::is_container_name_opf_type(type)) {
-			state.can_replace_string = true;
+	// special case: don't allow replace data for variable or container names
+	if ((type != OPF_VARIABLE_NAME) && !SexpTreeOPF::is_container_name_opf_type(type) && replace_list) {
+		state.replace_data_list = replace_list;
+		sexp_list_item* ptr = replace_list;
+		while (ptr) {
+			if (ptr->op >= 0) {
+				state.replace_enabled_op_indices.push_back(ptr->op);
+			}
+			ptr = ptr->next;
 		}
+	} else if (replace_list) {
+		replace_list->destroy();
+	}
 
-		if (op >= 0) {
-			if (Operators[op].value == OP_MODIFY_VARIABLE) {
+	if (type == OPF_NONE) {
+		state.replace_type = 0;
+	} else if (type == OPF_NUMBER) {
+		state.replace_type = OPR_NUMBER;
+		state.can_replace_number = true;
+	} else if (type == OPF_POSITIVE) {
+		state.replace_type = OPR_POSITIVE;
+		state.can_replace_number = true;
+	} else if (type == OPF_BOOL) {
+		state.replace_type = OPR_BOOL;
+	} else if (type == OPF_NULL) {
+		state.replace_type = OPR_NULL;
+	} else if (type == OPF_AI_GOAL) {
+		state.replace_type = OPR_AI_GOAL;
+	} else if (type == OPF_FLEXIBLE_ARGUMENT) {
+		state.replace_type = OPR_FLEXIBLE_ARGUMENT;
+	} else if (type == OPF_GAME_SND || type == OPF_FIREBALL || type == OPF_WEAPON_BANK_NUMBER) {
+		state.replace_type = OPR_POSITIVE;
+		state.can_replace_number = true;
+	} else if (type == OPF_CONTAINER_VALUE) {
+		state.can_replace_number = true;
+	}
+
+	if (state.replace_type == OPR_STRING && !SexpTreeOPF::is_container_name_opf_type(type)) {
+		state.can_replace_string = true;
+	}
+
+	if (op >= 0) {
+		if (Operators[op].value == OP_MODIFY_VARIABLE) {
+			int modify_type = get_modify_variable_type(parent);
+			if (modify_type == OPF_NUMBER) {
+				state.can_replace_number = true;
+				state.can_replace_string = false;
+			}
+		} else if (Operators[op].value == OP_SET_VARIABLE_BY_INDEX) {
+			if (state.replace_count == 0) {
+				state.can_replace_number = true;
+				state.can_replace_string = false;
+			} else {
 				int modify_type = get_modify_variable_type(parent);
 				if (modify_type == OPF_NUMBER) {
 					state.can_replace_number = true;
 					state.can_replace_string = false;
 				}
-			} else if (Operators[op].value == OP_SET_VARIABLE_BY_INDEX) {
-				if (state.replace_count == 0) {
+			}
+		}
+	}
+
+	// Container modifier special cases for replace number/string
+	if (tree_nodes[item_index].type & SEXPT_MODIFIER) {
+		Assertion(tree_nodes[parent].type & SEXPT_CONTAINER_DATA,
+			"Container modifier found whose parent %s is not a container. Please report!",
+			tree_nodes[parent].text);
+		const int first_modifier_node = tree_nodes[parent].child;
+		Assertion(first_modifier_node != -1,
+			"Container data node named %s has no modifier. Please report!",
+			tree_nodes[parent].text);
+		const auto* p_container = get_sexp_container(tree_nodes[parent].text);
+		Assertion(p_container,
+			"Attempt to get first modifier for unknown container %s. Please report!",
+			tree_nodes[parent].text);
+		const auto& container = *p_container;
+
+		if (state.replace_count == 0) {
+			if (container.is_list()) {
+				state.can_replace_number = false;
+				state.can_replace_string = false;
+				state.can_edit_text = false;
+			} else if (container.is_map()) {
+				if (any(container.type & ContainerType::STRING_KEYS)) {
+					state.can_replace_number = false;
+					state.can_replace_string = true;
+				} else if (any(container.type & ContainerType::NUMBER_KEYS)) {
 					state.can_replace_number = true;
 					state.can_replace_string = false;
 				} else {
-					int modify_type = get_modify_variable_type(parent);
-					if (modify_type == OPF_NUMBER) {
-						state.can_replace_number = true;
-						state.can_replace_string = false;
-					}
+					UNREACHABLE("Map container with type %d has unknown key type", (int)container.type);
 				}
-			}
-		}
-
-		// Container modifier special cases for replace number/string
-		if (tree_nodes[item_index].type & SEXPT_MODIFIER) {
-			Assertion(tree_nodes[parent].type & SEXPT_CONTAINER_DATA,
-				"Container modifier found whose parent %s is not a container. Please report!",
-				tree_nodes[parent].text);
-			const int first_modifier_node = tree_nodes[parent].child;
-			Assertion(first_modifier_node != -1,
-				"Container data node named %s has no modifier. Please report!",
-				tree_nodes[parent].text);
-			const auto* p_container = get_sexp_container(tree_nodes[parent].text);
-			Assertion(p_container,
-				"Attempt to get first modifier for unknown container %s. Please report!",
-				tree_nodes[parent].text);
-			const auto& container = *p_container;
-
-			if (state.replace_count == 0) {
-				if (container.is_list()) {
-					state.can_replace_number = false;
-					state.can_replace_string = false;
-					state.can_edit_text = false;
-				} else if (container.is_map()) {
-					if (any(container.type & ContainerType::STRING_KEYS)) {
-						state.can_replace_number = false;
-						state.can_replace_string = true;
-					} else if (any(container.type & ContainerType::NUMBER_KEYS)) {
-						state.can_replace_number = true;
-						state.can_replace_string = false;
-					} else {
-						UNREACHABLE("Map container with type %d has unknown key type", (int)container.type);
-					}
-				} else {
-					UNREACHABLE("Unknown container type %d", (int)container.type);
-				}
-			} else if (state.replace_count == 1 && container.is_list() &&
-					   get_list_modifier(tree_nodes[first_modifier_node].text) == ListModifier::AT_INDEX) {
-				state.can_replace_number = true;
-				state.can_replace_string = false;
 			} else {
-				state.can_replace_number = true;
-				state.can_replace_string = true;
+				UNREACHABLE("Unknown container type %d", (int)container.type);
 			}
+		} else if (state.replace_count == 1 && container.is_list() &&
+				   get_list_modifier(tree_nodes[first_modifier_node].text) == ListModifier::AT_INDEX) {
+			state.can_replace_number = true;
+			state.can_replace_string = false;
+		} else {
+			state.can_replace_number = true;
+			state.can_replace_string = true;
 		}
-
-	} else {
-		// top node - should be Boolean or Null type
-		state.replace_type = _interface ? _interface->getRootReturnType() : OPR_BOOL;
-		// Operators matching the replace_type will be enabled by the UI
-		// (they iterate operators and check query_operator_return_type)
 	}
 
-	// --- Insert operator context type ---
+	return replace_opf_type;
+}
+
+void SexpTreeModel::ctx_compute_insert_type(SexpContextMenuState& state) const
+{
 	int z = tree_nodes[item_index].parent;
 	Assert(z >= -1);
 	if (z != -1) {
@@ -2489,137 +2527,141 @@ SexpContextMenuState SexpTreeModel::compute_context_menu_state()
 	} else {
 		state.insert_opf_type = (state.replace_type == OPR_NULL) ? OPF_NULL : OPF_BOOL;
 	}
+}
 
-	// --- Per-operator enabled state ---
-	// Pre-compute which operators are enabled for add/replace/insert so the UI
-	// layers don't need to duplicate this logic.
-	{
-		int num_ops = (int)Operators.size();
-		state.op_add_enabled.assign(num_ops, false);
-		state.op_replace_enabled.assign(num_ops, false);
-		state.op_insert_enabled.assign(num_ops, false);
+void SexpTreeModel::ctx_compute_operator_enablement(SexpContextMenuState& state) const
+{
+	int parent = tree_nodes[item_index].parent;
+	int num_ops = (int)Operators.size();
+	state.op_add_enabled.assign(num_ops, false);
+	state.op_replace_enabled.assign(num_ops, false);
+	state.op_insert_enabled.assign(num_ops, false);
 
-		// Seed from data list matches
-		for (int op_idx : state.add_enabled_op_indices) {
-			state.op_add_enabled[op_idx] = true;
-		}
-		for (int op_idx : state.replace_enabled_op_indices) {
-			state.op_replace_enabled[op_idx] = true;
-		}
+	// Seed from data list matches
+	for (int op_idx : state.add_enabled_op_indices) {
+		state.op_add_enabled[op_idx] = true;
+	}
+	for (int op_idx : state.replace_enabled_op_indices) {
+		state.op_replace_enabled[op_idx] = true;
+	}
 
-		// Enable replace operators for top-level nodes based on return type
-		if (parent < 0) {
-			for (int j = 0; j < num_ops; j++) {
-				if (query_operator_return_type(j) == state.replace_type)
-					state.op_replace_enabled[j] = true;
-			}
-		}
-
-		// Insert: enable based on return type matching and first-arg type matching
+	// Enable replace operators for top-level nodes based on return type
+	if (parent < 0) {
 		for (int j = 0; j < num_ops; j++) {
-			int ret = query_operator_return_type(j);
-			int arg0 = query_operator_argument_type(j, 0);
-
-			// Number/positive equivalence hacks
-			if ((state.insert_opf_type == OPF_NUMBER) && (arg0 == OPF_POSITIVE)) arg0 = OPF_NUMBER;
-			if ((state.insert_opf_type == OPF_POSITIVE) && (arg0 == OPF_NUMBER)) arg0 = OPF_POSITIVE;
-
-			if (sexp_query_type_match(state.insert_opf_type, ret) && (Operators[j].min >= 1) && (arg0 == state.insert_opf_type)) {
-				state.op_insert_enabled[j] = true;
-			}
+			if (query_operator_return_type(j) == state.replace_type)
+				state.op_replace_enabled[j] = true;
 		}
+	}
 
-		// Disable operators that don't have default arguments available
+	// Insert: enable based on return type matching and first-arg type matching
+	for (int j = 0; j < num_ops; j++) {
+		int ret = query_operator_return_type(j);
+		int arg0 = query_operator_argument_type(j, 0);
+
+		// Number/positive equivalence hacks
+		if ((state.insert_opf_type == OPF_NUMBER) && (arg0 == OPF_POSITIVE)) arg0 = OPF_NUMBER;
+		if ((state.insert_opf_type == OPF_POSITIVE) && (arg0 == OPF_NUMBER)) arg0 = OPF_POSITIVE;
+
+		if (sexp_query_type_match(state.insert_opf_type, ret) && (Operators[j].min >= 1) && (arg0 == state.insert_opf_type)) {
+			state.op_insert_enabled[j] = true;
+		}
+	}
+
+	// Disable operators that don't have default arguments available
+	for (int j = 0; j < num_ops; j++) {
+		if (!query_default_argument_available(j)) {
+			state.op_add_enabled[j] = false;
+			state.op_replace_enabled[j] = false;
+			state.op_insert_enabled[j] = false;
+		}
+	}
+
+	// Disable non-campaign operators in campaign mode
+	if (state.campaign_mode) {
 		for (int j = 0; j < num_ops; j++) {
-			if (!query_default_argument_available(j)) {
+			if (!usable_in_campaign(Operators[j].value)) {
 				state.op_add_enabled[j] = false;
 				state.op_replace_enabled[j] = false;
 				state.op_insert_enabled[j] = false;
 			}
 		}
+	}
+}
 
-		// Disable non-campaign operators in campaign mode
-		if (state.campaign_mode) {
-			for (int j = 0; j < num_ops; j++) {
-				if (!usable_in_campaign(Operators[j].value)) {
-					state.op_add_enabled[j] = false;
-					state.op_replace_enabled[j] = false;
-					state.op_insert_enabled[j] = false;
-				}
-			}
-		}
+void SexpTreeModel::ctx_validate_clipboard(SexpContextMenuState& state, int replace_opf_type) const
+{
+	if (!((Sexp_clipboard > -1) && (Sexp_nodes[Sexp_clipboard].type != SEXP_NOT_USED))) {
+		return;
 	}
 
-	// --- Clipboard paste validation ---
-	if ((Sexp_clipboard > -1) && (Sexp_nodes[Sexp_clipboard].type != SEXP_NOT_USED)) {
-		Assert(Sexp_nodes[Sexp_clipboard].subtype != SEXP_ATOM_LIST);
-		Assertion(Sexp_nodes[Sexp_clipboard].subtype != SEXP_ATOM_CONTAINER_NAME,
-			"Attempt to use container name %s from SEXP clipboard. Please report!",
-			Sexp_nodes[Sexp_clipboard].text);
+	Assert(Sexp_nodes[Sexp_clipboard].subtype != SEXP_ATOM_LIST);
+	Assertion(Sexp_nodes[Sexp_clipboard].subtype != SEXP_ATOM_CONTAINER_NAME,
+		"Attempt to use container name %s from SEXP clipboard. Please report!",
+		Sexp_nodes[Sexp_clipboard].text);
 
-		if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_OPERATOR) {
-			int j = get_operator_const(CTEXT(Sexp_clipboard));
-			Assert(j);
-			int ret = query_operator_return_type(j);
+	if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_OPERATOR) {
+		int j = get_operator_const(CTEXT(Sexp_clipboard));
+		Assert(j);
+		int ret = query_operator_return_type(j);
 
-			if ((ret == OPR_POSITIVE) && (state.replace_type == OPR_NUMBER))
-				ret = OPR_NUMBER;
-			if ((ret == OPR_NUMBER) && (state.replace_type == OPR_POSITIVE))
-				ret = OPR_POSITIVE;
-			if (state.replace_type == ret)
-				state.can_paste = true;
+		if ((ret == OPR_POSITIVE) && (state.replace_type == OPR_NUMBER))
+			ret = OPR_NUMBER;
+		if ((ret == OPR_NUMBER) && (state.replace_type == OPR_POSITIVE))
+			ret = OPR_POSITIVE;
+		if (state.replace_type == ret)
+			state.can_paste = true;
 
-			ret = query_operator_return_type(j);
-			if ((ret == OPR_POSITIVE) && (state.add_type == OPR_NUMBER))
-				ret = OPR_NUMBER;
-			if (state.add_type == ret)
-				state.can_paste_add = true;
+		ret = query_operator_return_type(j);
+		if ((ret == OPR_POSITIVE) && (state.add_type == OPR_NUMBER))
+			ret = OPR_NUMBER;
+		if (state.add_type == ret)
+			state.can_paste_add = true;
 
-		} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_CONTAINER_DATA) {
-			const auto* p_container = get_sexp_container(Sexp_nodes[Sexp_clipboard].text);
-			if (p_container != nullptr) {
-				const auto& container = *p_container;
-				if (any(container.type & ContainerType::NUMBER_DATA)) {
-					if (state.replace_type == OPR_NUMBER)
-						state.can_paste = true;
-					if (state.add_type == OPR_NUMBER)
-						state.can_paste_add = true;
-				} else if (any(container.type & ContainerType::STRING_DATA)) {
-					if (state.replace_type == OPR_STRING && !SexpTreeOPF::is_container_name_opf_type(replace_opf_type))
-						state.can_paste = true;
-					if (state.add_type == OPR_STRING && !SexpTreeOPF::is_container_name_opf_type(replace_opf_type))
-						state.can_paste_add = true;
-				} else {
-					UNREACHABLE("Unknown container data type %d", (int)container.type);
-				}
+	} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_CONTAINER_DATA) {
+		const auto* p_container = get_sexp_container(Sexp_nodes[Sexp_clipboard].text);
+		if (p_container != nullptr) {
+			const auto& container = *p_container;
+			if (any(container.type & ContainerType::NUMBER_DATA)) {
+				if (state.replace_type == OPR_NUMBER)
+					state.can_paste = true;
+				if (state.add_type == OPR_NUMBER)
+					state.can_paste_add = true;
+			} else if (any(container.type & ContainerType::STRING_DATA)) {
+				if (state.replace_type == OPR_STRING && !SexpTreeOPF::is_container_name_opf_type(replace_opf_type))
+					state.can_paste = true;
+				if (state.add_type == OPR_STRING && !SexpTreeOPF::is_container_name_opf_type(replace_opf_type))
+					state.can_paste_add = true;
+			} else {
+				UNREACHABLE("Unknown container data type %d", (int)container.type);
 			}
-
-		} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_NUMBER) {
-			if ((state.replace_type == OPR_POSITIVE) && (atoi(CTEXT(Sexp_clipboard)) > -1))
-				state.can_paste = true;
-			else if (state.replace_type == OPR_NUMBER)
-				state.can_paste = true;
-
-			if ((state.add_type == OPR_POSITIVE) && (atoi(CTEXT(Sexp_clipboard)) > -1))
-				state.can_paste_add = true;
-			else if (state.add_type == OPR_NUMBER)
-				state.can_paste_add = true;
-
-		} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_STRING) {
-			if (state.replace_type == OPR_STRING && !SexpTreeOPF::is_container_name_opf_type(replace_opf_type))
-				state.can_paste = true;
-			if (state.add_type == OPR_STRING && !SexpTreeOPF::is_container_name_opf_type(replace_opf_type))
-				state.can_paste_add = true;
-
-		} else {
-			Int3();  // unknown sexp type
 		}
-	}
 
-	// --- Cut requires delete to be enabled ---
+	} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_NUMBER) {
+		if ((state.replace_type == OPR_POSITIVE) && (atoi(CTEXT(Sexp_clipboard)) > -1))
+			state.can_paste = true;
+		else if (state.replace_type == OPR_NUMBER)
+			state.can_paste = true;
+
+		if ((state.add_type == OPR_POSITIVE) && (atoi(CTEXT(Sexp_clipboard)) > -1))
+			state.can_paste_add = true;
+		else if (state.add_type == OPR_NUMBER)
+			state.can_paste_add = true;
+
+	} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_STRING) {
+		if (state.replace_type == OPR_STRING && !SexpTreeOPF::is_container_name_opf_type(replace_opf_type))
+			state.can_paste = true;
+		if (state.add_type == OPR_STRING && !SexpTreeOPF::is_container_name_opf_type(replace_opf_type))
+			state.can_paste_add = true;
+
+	} else {
+		Int3();  // unknown sexp type
+	}
+}
+
+void SexpTreeModel::ctx_apply_restrictions(SexpContextMenuState& state) const
+{
 	state.can_cut = state.can_delete;
 
-	// --- Modifier/container restrictions ---
 	if (tree_nodes[item_index].type & (SEXPT_MODIFIER | SEXPT_CONTAINER_NAME)) {
 		state.can_cut = false;
 		state.can_copy = false;
@@ -2628,8 +2670,6 @@ SexpContextMenuState SexpTreeModel::compute_context_menu_state()
 	if (tree_nodes[item_index].type & SEXPT_CONTAINER_DATA) {
 		state.can_paste_add = false;
 	}
-
-	return state;
 }
 
 // -----------------------------------------------------------------------
