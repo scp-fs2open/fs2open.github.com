@@ -4595,10 +4595,11 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, 
 
 		// bash the ship name to be the name of the wing + some number if there is > 1 wave in this wing
 		wingp->total_arrived_count++;
+		auto wing_ship_index = wingp->total_arrived_count + wingp->red_alert_skipped_ships;
 		if (wingp->num_waves > 1)
 		{
 			bool needs_display_name;
-			wing_bash_ship_name(p_objp->name, wingp->name, wingp->total_arrived_count + wingp->red_alert_skipped_ships, &needs_display_name);
+			wing_bash_ship_name(p_objp->name, wingp->name, wing_ship_index, &needs_display_name);
 
 			// set up display name if we need to
 			// (In the unlikely edge case where the ship already has a display name for some reason, it will be overwritten.
@@ -4620,6 +4621,19 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, 
 				Ship_registry.push_back(entry);
 				Ship_registry_map[p_objp->name] = static_cast<int>(Ship_registry.size() - 1);
 			}
+		}
+
+		// Wing display names take priority over all display names because they are newer and cooler
+		if (!wingp->display_name.empty())
+		{
+			char ship_display_name[NAME_LENGTH];
+			bool wing_display_name_has_hash;
+			wing_bash_ship_name(ship_display_name, wingp->display_name.c_str(), wing_ship_index, &wing_display_name_has_hash);
+
+			p_objp->display_name = ship_display_name;
+			if (wing_display_name_has_hash)
+				end_string_at_first_hash_symbol(p_objp->display_name);
+			p_objp->flags.set(Mission::Parse_Object_Flags::SF_Has_display_name);
 		}
 
 		// also, if multiplayer, set the parse object's net signature to be wing's net signature
@@ -4791,6 +4805,10 @@ void parse_wing(mission *pm)
 	if (wingnum != -1)
 		error_display(0, NOX("Redundant wing name: %s\n"), wingp->name);
 	wingnum = Num_wings;
+
+	if (optional_string("+Display Name:")) {
+		stuff_string(wingp->display_name, F_NAME);
+	}
 
 	// squad logo - Goober5000
 	if (optional_string("+Squad Logo:"))

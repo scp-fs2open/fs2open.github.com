@@ -1570,6 +1570,7 @@ extern SCP_vector<engine_wash_info> Engine_wash_info;
 //	Defines a wing of ships.
 typedef struct wing {
 	char	name[NAME_LENGTH];
+	SCP_string display_name;
 	char	wing_squad_filename[MAX_FILENAME_LEN];	// Goober5000
 	int	reinforcement_index;					// index in reinforcement struct or -1
 	int	hotkey;

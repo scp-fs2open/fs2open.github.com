@@ -45,6 +45,7 @@ void WingEditorDialog::updateUi()
 	
 	// Top section, first column
 	ui->wingNameEdit->setText(_model->getWingName().c_str());
+	ui->wingDisplayNameEdit->setText(_model->getWingDisplayName().c_str());
 	ui->wingLeaderCombo->setCurrentIndex(_model->getWingLeaderIndex());
 	ui->numWavesSpinBox->setValue(_model->getNumberOfWaves());
 	ui->waveThresholdSpinBox->setValue(_model->getWaveThreshold());
