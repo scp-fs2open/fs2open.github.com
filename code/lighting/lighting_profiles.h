@@ -106,7 +106,7 @@ SCP_vector<SCP_string> list_profiles();
 void switch_to(const SCP_string& name);
 void switch_to_non_mission();
 
-// Use the tech room profile profile and then automatically
+// Use the tech room profile and then automatically
 // remove it on destruction.
 class set_non_mission_profile {
   public:
