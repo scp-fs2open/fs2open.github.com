@@ -25,6 +25,7 @@
 #include "lighting/lighting.h"
 #include "localization/localize.h"
 #include "menuui/techmenu.h"
+#include "model/modelrender.h"
 #include "missionui/missionscreencommon.h"
 #include "parse/parselo.h"
 #include "playerman/player.h"
@@ -213,7 +214,6 @@ static const char *Text_lines[MAX_TEXT_LINES];
 static int Cur_entry = -1;				// this is the current entry selected, using entry indexing
 static int Cur_entry_index = -1;		// this is the current entry selected, using master list indexing
 static int Techroom_modelnum = -1;
-static int Techroom_model_instance = -1;
 static float Techroom_ship_rot;
 static UI_BUTTON List_buttons[LIST_BUTTONS_MAX];  // buttons for each line of text in list
 
@@ -332,12 +332,6 @@ void techroom_select_new_entry()
 
 		Techroom_modelnum = model_load(sip, true);
 
-		if (Techroom_model_instance >= 0) {
-			model_delete_instance(Techroom_model_instance);
-		}
-		Techroom_model_instance = model_create_instance(model_objnum_special::OBJNUM_NONE, Techroom_modelnum);
-
-		model_set_up_techroom_instance(sip, Techroom_model_instance);
 
 		Current_list->at(Cur_entry).model_num = Techroom_modelnum;
 
@@ -348,10 +342,6 @@ void techroom_select_new_entry()
 	} else {
 		Techroom_modelnum = -1;
 
-		if (Techroom_model_instance >= 0) {
-			model_delete_instance(Techroom_model_instance);
-			Techroom_model_instance = -1;
-		}
 
 		Trackball_mode = 0;
 
@@ -392,11 +382,6 @@ void techroom_select_new_entry()
 
 				if (Techroom_modelnum >= 0) {
 					weaponLoaded = true;
-
-					if (Techroom_model_instance >= 0) {
-						model_delete_instance(Techroom_model_instance);
-					}
-					Techroom_model_instance = model_create_instance(model_objnum_special::OBJNUM_NONE, Techroom_modelnum);
 
 					// If this ends up being needed for weapon models, a weapon version
 					// of this method will need to be created. Should only be necessary
@@ -611,6 +596,12 @@ void techroom_ships_render(float frametime)
 	model_clear_instance(Techroom_modelnum);
 	render_info.set_detail_level_lock(0);
 
+	int model_instance = -1;
+	model_get_cached_ui_render_instance(Techroom_modelnum, &model_instance, cached_ui_render_instance_type::tech_room);
+	if (Tab == SHIPS_DATA_TAB) {
+		model_set_up_techroom_instance(&Ship_info[Cur_entry_index], model_instance);
+	}
+
     if(shadow_maybe_start_frame(Shadow_disable_overrides.disable_techroom))
     {
         gr_reset_clip();
@@ -620,7 +611,7 @@ void techroom_ships_render(float frametime)
 		shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, gr_screen.clip_aspect, -closeup_pos.xyz.z + pm->rad, -closeup_pos.xyz.z + pm->rad + 200.0f, -closeup_pos.xyz.z + pm->rad + 2000.0f, -closeup_pos.xyz.z + pm->rad + 10000.0f);
         render_info.set_flags(MR_NO_TEXTURING | MR_NO_LIGHTING | MR_AUTOCENTER);
 		
-		model_render_immediate(&render_info, Techroom_modelnum, Techroom_model_instance, &Techroom_ship_orient, &vmd_zero_vector);
+		model_render_immediate(&render_info, Techroom_modelnum, model_instance, &Techroom_ship_orient, &vmd_zero_vector);
         shadows_end_render();
 
 		gr_set_clip(Tech_ship_display_coords[gr_screen.res][SHIP_X_COORD], Tech_ship_display_coords[gr_screen.res][SHIP_Y_COORD], Tech_ship_display_coords[gr_screen.res][SHIP_W_COORD], Tech_ship_display_coords[gr_screen.res][SHIP_H_COORD], GR_RESIZE_MENU);
@@ -636,7 +627,7 @@ void techroom_ships_render(float frametime)
 
 	render_info.set_flags(render_flags);
 
-	model_render_immediate(&render_info, Techroom_modelnum, Techroom_model_instance, &Techroom_ship_orient, &vmd_zero_vector);
+	model_render_immediate(&render_info, Techroom_modelnum, model_instance, &Techroom_ship_orient, &vmd_zero_vector);
 
 	Glowpoint_use_depth_buffer = true;
 
@@ -1314,7 +1305,6 @@ void techroom_lists_reset()
 
 	model_free_all();
 	Techroom_modelnum = -1;
-	Techroom_model_instance = -1;
 
 	// This can be cleared immediately because there are no anims or bitmaps associated.
 	Ship_list.clear();

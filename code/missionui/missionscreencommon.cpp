@@ -1671,7 +1671,8 @@ void draw_model_rotating(model_render_params *render_info, int ship_class, int m
 		return;
 
 	const auto instance_type = (flags & MR_IS_MISSILE) ? cached_ui_render_instance_type::overhead : cached_ui_render_instance_type::rotating;
-	int model_instance = model_get_cached_ui_render_instance(model_id, instance_type);
+	int model_instance = -1;
+	model_get_cached_ui_render_instance(model_id, &model_instance, instance_type);
 	if (!(flags & MR_IS_MISSILE) && SCP_vector_inbounds(Ship_info, ship_class)) {
 		model_set_up_techroom_instance(&Ship_info[ship_class], model_instance);
 	}

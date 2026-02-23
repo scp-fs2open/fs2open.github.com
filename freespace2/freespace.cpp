@@ -121,6 +121,7 @@
 #include "missionui/missionweaponchoice.h"
 #include "missionui/redalert.h"
 #include "mod_table/mod_table.h"
+#include "model/modelrender.h"
 #include "model/modelreplace.h"
 #include "nebula/neb.h"
 #include "nebula/neblightning.h"
@@ -5249,6 +5250,10 @@ static bool going_to_menu_state(int new_state)
 void game_leave_state( int old_state, int new_state )
 {
 	events::GameLeaveState(old_state, new_state);
+
+	// Clear cached UI model instances when changing game states.
+	// New state UI screens can lazily recreate any instances they need.
+	model_clear_cached_ui_render_instances();
 
 	int end_mission = 1;
 

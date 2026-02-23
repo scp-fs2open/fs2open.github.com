@@ -26,6 +26,7 @@
 #include "nebula/neb.h"
 #include "particle/particle.h"
 #include "prop/prop.h"
+#include "parse/encrypt.h"
 #include "render/3dinternal.h"
 #include "render/batching.h"
 #include "ship/ship.h"
@@ -50,6 +51,109 @@ int Lab_object_detail_level = -1; // Used to display the detail level in the lab
 extern void interp_generate_arc_segment(SCP_vector<vec3d> &arc_segment_points, const vec3d *v1, const vec3d *v2, ubyte depth_limit, ubyte depth);
 
 int model_render_determine_elapsed_time(int objnum, uint64_t flags);
+
+SCP_unordered_map<cached_ui_render_instance_key, cached_ui_render_instance_entry, cached_ui_render_instance_key_hash>
+	Cached_ui_render_instance_cache;
+UI_TIMESTAMP Ui_render_instance_cache_last_processed_timestamp = UI_TIMESTAMP::invalid();
+constexpr int UI_RENDER_INSTANCE_CACHE_UNUSED_MS_GRACE = 100;
+
+uint32_t model_hash_subsystem_name_list_for_cache(const SCP_vector<SCP_string>& subsystem_names)
+{
+	if (subsystem_names.empty()) {
+		return 0;
+	}
+
+	SCP_vector<SCP_string> normalized_names;
+	normalized_names.reserve(subsystem_names.size());
+
+	for (const auto& name : subsystem_names) {
+		auto normalized = name;
+		SCP_tolower(normalized);
+		normalized_names.push_back(std::move(normalized));
+	}
+
+	std::sort(normalized_names.begin(), normalized_names.end());
+
+	size_t seed = 0;
+	
+	boost::hash_combine(seed, static_cast<uint32_t>(normalized_names.size()));
+	for (const auto& name : normalized_names) {
+		boost::hash_combine(seed, hash_fnv1a(name));
+	}
+
+	return seed;
+}
+
+// Returns TriStateBool::TRUE_ if a new instance was created, TriStateBool::FALSE_ if an existing instance was returned,
+// or TriStateBool::UNKNOWN_ if there was an error (and model_instance_out will be set to -1 in this case)
+TriStateBool model_get_cached_ui_render_instance(int model_num, int* model_instance_out, cached_ui_render_instance_type type, uint32_t instance_data_hash)
+{
+	Assertion(model_instance_out != nullptr, "model_instance_out must not be null!");
+	if (model_instance_out == nullptr) {
+		return TriStateBool::UNKNOWN_;
+	}
+
+	cached_ui_render_instance_key key;
+	key.model_num = model_num;
+	key.type = type;
+	key.state_instance_id = gameseq_get_state_instance_id();
+	key.instance_data_hash = instance_data_hash;
+
+	auto& entry = Cached_ui_render_instance_cache[key];
+
+	auto created_new = false;
+
+	if (entry.model_instance < 0) {
+		entry.model_instance = model_create_instance(model_objnum_special::OBJNUM_NONE, model_num);
+		if (entry.model_instance < 0) {
+			Warning(LOCATION, "Failed to create cached UI render model instance for model id %d.", model_num);
+			Cached_ui_render_instance_cache.erase(key);
+			*model_instance_out = -1;
+			return TriStateBool::UNKNOWN_;
+		}
+		created_new = true;
+	}
+
+	entry.last_used_timestamp = ui_timestamp();
+	*model_instance_out = entry.model_instance;
+	return created_new ? TriStateBool::TRUE_ : TriStateBool::FALSE_;
+}
+
+void model_process_cached_ui_render_instances()
+{
+	const auto now = ui_timestamp();
+	
+	if (Ui_render_instance_cache_last_processed_timestamp.isValid() &&
+		ui_timestamp_get_delta(Ui_render_instance_cache_last_processed_timestamp, now) == 0) {
+		return;
+	}
+
+	Ui_render_instance_cache_last_processed_timestamp = now;
+
+	for (auto it = Cached_ui_render_instance_cache.begin(); it != Cached_ui_render_instance_cache.end();) {
+		if (it->second.model_instance < 0 || !it->second.last_used_timestamp.isValid() ||
+			ui_timestamp_get_delta(it->second.last_used_timestamp, now) > UI_RENDER_INSTANCE_CACHE_UNUSED_MS_GRACE) {
+			if (it->second.model_instance >= 0) {
+				model_delete_instance(it->second.model_instance);
+			}
+			it = Cached_ui_render_instance_cache.erase(it);
+		} else {
+			++it;
+		}
+	}
+}
+
+void model_clear_cached_ui_render_instances()
+{
+	for (auto& instance : Cached_ui_render_instance_cache) {
+		if (instance.second.model_instance >= 0) {
+			model_delete_instance(instance.second.model_instance);
+		}
+	}
+
+	Cached_ui_render_instance_cache.clear();
+	Ui_render_instance_cache_last_processed_timestamp = UI_TIMESTAMP::invalid();
+}
 
 model_batch_buffer TransformBufferHandler;
 
@@ -3072,64 +3176,6 @@ void model_render_set_wireframe_color(const color* clr)
 	Wireframe_color = *clr;
 }
 
-
-namespace {
-
-struct cached_ui_render_instance_key {
-	int model_num;
-	cached_ui_render_instance_type type;
-	int state_instance_id;
-
-	bool operator==(const cached_ui_render_instance_key& other) const {
-		return model_num == other.model_num && type == other.type && state_instance_id == other.state_instance_id;
-	}
-};
-
-struct cached_ui_render_instance_key_hash {
-	size_t operator()(const cached_ui_render_instance_key& key) const {
-		size_t seed = 0;
-		auto hash_combine = [&seed](size_t value) {
-			seed ^= value + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-		};
-
-		hash_combine(std::hash<int>{}(key.model_num));
-		hash_combine(std::hash<int>{}(static_cast<int>(key.type)));
-		hash_combine(std::hash<int>{}(key.state_instance_id));
-		return seed;
-	}
-};
-
-struct cached_ui_render_instance_entry {
-	int model_instance = -1;
-	int last_used_frame = -1;
-};
-
-SCP_unordered_map<cached_ui_render_instance_key, cached_ui_render_instance_entry, cached_ui_render_instance_key_hash> Cached_ui_render_instance_cache;
-int Cached_ui_render_instance_cache_last_gc_frame = -1;
-constexpr int UI_RENDER_INSTANCE_CACHE_UNUSED_FRAME_GRACE = 2;
-
-void model_gc_cached_ui_render_instances()
-{
-	if (Cached_ui_render_instance_cache_last_gc_frame == Framecount) {
-		return;
-	}
-
-	Cached_ui_render_instance_cache_last_gc_frame = Framecount;
-
-	for (auto it = Cached_ui_render_instance_cache.begin(); it != Cached_ui_render_instance_cache.end(); ) {
-		if (it->second.model_instance < 0 || (Framecount - it->second.last_used_frame) > UI_RENDER_INSTANCE_CACHE_UNUSED_FRAME_GRACE) {
-			if (it->second.model_instance >= 0) {
-				model_delete_instance(it->second.model_instance);
-			}
-			it = Cached_ui_render_instance_cache.erase(it);
-		} else {
-			++it;
-		}
-	}
-}
-
-}
-
 void modelinstance_replace_active_texture(polymodel_instance* pmi, const char* old_name, const char* new_name)
 {
 	Assert(pmi != nullptr);
@@ -3163,42 +3209,6 @@ void modelinstance_replace_active_texture(polymodel_instance* pmi, const char* o
 		(*pmi->texture_replace)[final_index] = texture;
 	} else
 		Warning(LOCATION, "Invalid texture '%s' used for replacement texture", old_name);
-}
-
-int model_get_cached_ui_render_instance(
-	int model_num,
-	cached_ui_render_instance_type type)
-{
-	cached_ui_render_instance_key key;
-	key.model_num = model_num;
-	key.type = type;
-	key.state_instance_id = gameseq_get_state_instance_id();
-
-	auto& entry = Cached_ui_render_instance_cache[key];
-
-	if (entry.model_instance < 0) {
-		entry.model_instance = model_create_instance(model_objnum_special::OBJNUM_NONE, model_num);
-	}
-
-	entry.last_used_frame = Framecount;
-	return entry.model_instance;
-}
-
-void model_process_cached_ui_render_instances()
-{
-	model_gc_cached_ui_render_instances();
-}
-
-void model_clear_cached_ui_render_instances()
-{
-	for (auto& instance : Cached_ui_render_instance_cache) {
-		if (instance.second.model_instance >= 0) {
-			model_delete_instance(instance.second.model_instance);
-		}
-	}
-
-	Cached_ui_render_instance_cache.clear();
-	Cached_ui_render_instance_cache_last_gc_frame = -1;
 }
 
 // renders a model as if in the tech room or briefing UI
@@ -3317,7 +3327,7 @@ bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int 
 
 	// Get a cached UI render instance for ships so repeated UI/Lua renders avoid per-call allocation churn
 	if (model_type == TECH_SHIP) {
-		model_instance = model_get_cached_ui_render_instance(model_num, cached_ui_render_instance_type::tech_room);
+		model_get_cached_ui_render_instance(model_num, &model_instance, cached_ui_render_instance_type::tech_room);
 		model_set_up_techroom_instance(&Ship_info[class_idx], model_instance);
 	}
 
