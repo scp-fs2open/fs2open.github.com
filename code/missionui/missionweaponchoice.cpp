@@ -30,6 +30,7 @@
 #include "missionui/missionshipchoice.h"
 #include "missionui/missionweaponchoice.h"
 #include "model/model.h"
+#include "model/modelrender.h"
 #include "mod_table/mod_table.h"
 #include "network/multi.h"
 #include "network/multi_pmsg.h"
@@ -823,10 +824,8 @@ void draw_3d_overhead_view(int model_num,
 		Glowpoint_use_depth_buffer = false;
 
 		model_clear_instance(model_num);
-		int model_instance = model_create_instance(model_objnum_special::OBJNUM_NONE, model_num);
-		if (model_instance >= 0) {
-			model_set_up_techroom_instance(sip, model_instance);
-		}
+		int model_instance = model_get_cached_ui_render_instance(model_num, cached_ui_render_instance_type::overhead);
+		model_set_up_techroom_instance(sip, model_instance);
 		polymodel* pm = model_get(model_num);
 
 		if (sip->replacement_textures.size() > 0) {
@@ -868,9 +867,6 @@ void draw_3d_overhead_view(int model_num,
 		batching_render_all();
 
 		shadow_end_frame();
-		if (model_instance >= 0) {
-			model_delete_instance(model_instance);
-		}
 
 		// NOW render the lines for weapons
 		gr_reset_clip();

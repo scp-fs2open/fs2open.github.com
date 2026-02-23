@@ -38,6 +38,7 @@
 #include "missionui/missionshipchoice.h"
 #include "missionui/missionweaponchoice.h"
 #include "mod_table/mod_table.h"
+#include "model/modelrender.h"
 #include "network/multi.h"
 #include "network/multi_endgame.h"
 #include "network/multimsgs.h"
@@ -1669,7 +1670,8 @@ void draw_model_rotating(model_render_params *render_info, int ship_class, int m
 	if (model_id < 0)
 		return;
 
-	int model_instance = model_create_instance(model_objnum_special::OBJNUM_NONE, model_id);
+	const auto instance_type = (flags & MR_IS_MISSILE) ? cached_ui_render_instance_type::overhead : cached_ui_render_instance_type::rotating;
+	int model_instance = model_get_cached_ui_render_instance(model_id, instance_type);
 	if (!(flags & MR_IS_MISSILE) && SCP_vector_inbounds(Ship_info, ship_class)) {
 		model_set_up_techroom_instance(&Ship_info[ship_class], model_instance);
 	}
@@ -1953,9 +1955,6 @@ void draw_model_rotating(model_render_params *render_info, int ship_class, int m
 	}
 
 	shadow_end_frame();
-	if (model_instance >= 0) {
-		model_delete_instance(model_instance);
-	}
 }
 
 /**

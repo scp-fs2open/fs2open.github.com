@@ -35,6 +35,7 @@
 #include "weapon/weapon.h"
 
 #include <algorithm>
+#include <unordered_map>
 
 extern int Model_texturing;
 extern int Model_polys;
@@ -3071,6 +3072,64 @@ void model_render_set_wireframe_color(const color* clr)
 	Wireframe_color = *clr;
 }
 
+
+namespace {
+
+struct cached_ui_render_instance_key {
+	int model_num;
+	cached_ui_render_instance_type type;
+	int state_instance_id;
+
+	bool operator==(const cached_ui_render_instance_key& other) const {
+		return model_num == other.model_num && type == other.type && state_instance_id == other.state_instance_id;
+	}
+};
+
+struct cached_ui_render_instance_key_hash {
+	size_t operator()(const cached_ui_render_instance_key& key) const {
+		size_t seed = 0;
+		auto hash_combine = [&seed](size_t value) {
+			seed ^= value + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+		};
+
+		hash_combine(std::hash<int>{}(key.model_num));
+		hash_combine(std::hash<int>{}(static_cast<int>(key.type)));
+		hash_combine(std::hash<int>{}(key.state_instance_id));
+		return seed;
+	}
+};
+
+struct cached_ui_render_instance_entry {
+	int model_instance = -1;
+	int last_used_frame = -1;
+};
+
+SCP_unordered_map<cached_ui_render_instance_key, cached_ui_render_instance_entry, cached_ui_render_instance_key_hash> Cached_ui_render_instance_cache;
+int Cached_ui_render_instance_cache_last_gc_frame = -1;
+constexpr int UI_RENDER_INSTANCE_CACHE_UNUSED_FRAME_GRACE = 2;
+
+void model_gc_cached_ui_render_instances()
+{
+	if (Cached_ui_render_instance_cache_last_gc_frame == Framecount) {
+		return;
+	}
+
+	Cached_ui_render_instance_cache_last_gc_frame = Framecount;
+
+	for (auto it = Cached_ui_render_instance_cache.begin(); it != Cached_ui_render_instance_cache.end(); ) {
+		if (it->second.model_instance < 0 || (Framecount - it->second.last_used_frame) > UI_RENDER_INSTANCE_CACHE_UNUSED_FRAME_GRACE) {
+			if (it->second.model_instance >= 0) {
+				model_delete_instance(it->second.model_instance);
+			}
+			it = Cached_ui_render_instance_cache.erase(it);
+		} else {
+			++it;
+		}
+	}
+}
+
+}
+
 void modelinstance_replace_active_texture(polymodel_instance* pmi, const char* old_name, const char* new_name)
 {
 	Assert(pmi != nullptr);
@@ -3104,6 +3163,42 @@ void modelinstance_replace_active_texture(polymodel_instance* pmi, const char* o
 		(*pmi->texture_replace)[final_index] = texture;
 	} else
 		Warning(LOCATION, "Invalid texture '%s' used for replacement texture", old_name);
+}
+
+int model_get_cached_ui_render_instance(
+	int model_num,
+	cached_ui_render_instance_type type)
+{
+	cached_ui_render_instance_key key;
+	key.model_num = model_num;
+	key.type = type;
+	key.state_instance_id = gameseq_get_state_instance_id();
+
+	auto& entry = Cached_ui_render_instance_cache[key];
+
+	if (entry.model_instance < 0) {
+		entry.model_instance = model_create_instance(model_objnum_special::OBJNUM_NONE, model_num);
+	}
+
+	entry.last_used_frame = Framecount;
+	return entry.model_instance;
+}
+
+void model_process_cached_ui_render_instances()
+{
+	model_gc_cached_ui_render_instances();
+}
+
+void model_clear_cached_ui_render_instances()
+{
+	for (auto& instance : Cached_ui_render_instance_cache) {
+		if (instance.second.model_instance >= 0) {
+			model_delete_instance(instance.second.model_instance);
+		}
+	}
+
+	Cached_ui_render_instance_cache.clear();
+	Cached_ui_render_instance_cache_last_gc_frame = -1;
 }
 
 // renders a model as if in the tech room or briefing UI
@@ -3220,9 +3315,9 @@ bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int 
 
 	int model_instance = -1;
 
-	// Create an instance for ships that can be used to clear out destroyed subobjects from rendering
+	// Get a cached UI render instance for ships so repeated UI/Lua renders avoid per-call allocation churn
 	if (model_type == TECH_SHIP) {
-		model_instance = model_create_instance(model_objnum_special::OBJNUM_NONE, model_num);
+		model_instance = model_get_cached_ui_render_instance(model_num, cached_ui_render_instance_type::tech_room);
 		model_set_up_techroom_instance(&Ship_info[class_idx], model_instance);
 	}
 
@@ -3251,10 +3346,6 @@ bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int 
 	// Bye!!
 	g3_end_frame();
 	gr_reset_clip();
-
-	// Now that we've rendered the frame we can remove the instance if one was created for ships
-	if (model_type == TECH_SHIP)
-		model_delete_instance(model_instance);
 
 	return true;
 }
