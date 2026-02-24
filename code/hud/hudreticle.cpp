@@ -1037,7 +1037,7 @@ void HudGaugeThreatIndicator::renderLaserThreat(bool config)
 	}
 
 	int frame_offset;
-	if ( Player->threat_flags & THREAT_DUMBFIRE ) {
+	if (!config && Player->threat_flags & THREAT_DUMBFIRE) {
 		if ( timestamp_elapsed(laser_warn_timer) ) {
 			laser_warn_timer = timestamp(THREAT_DUMBFIRE_FLASH);
 			laser_warn_frame++;
@@ -1072,7 +1072,7 @@ void HudGaugeThreatIndicator::renderLockThreat(bool config)
 	}
 
 	int frame_offset;
-	if ( Player->threat_flags & (THREAT_LOCK | THREAT_ATTEMPT_LOCK) ) {
+	if (!config && Player->threat_flags & (THREAT_LOCK | THREAT_ATTEMPT_LOCK)) {
 		if ( timestamp_elapsed(lock_warn_timer) ) {
 			if ( Player->threat_flags & THREAT_LOCK )  {
 				lock_warn_timer = timestamp(fl2i(THREAT_LOCK_FLASH/2.0f));
