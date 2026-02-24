@@ -57,7 +57,7 @@ SCP_unordered_map<cached_ui_render_instance_key, cached_ui_render_instance_entry
 UI_TIMESTAMP Ui_render_instance_cache_last_processed_timestamp = UI_TIMESTAMP::invalid();
 constexpr int UI_RENDER_INSTANCE_CACHE_UNUSED_MS_GRACE = 100;
 
-uint32_t model_hash_subsystem_name_list_for_cache(const SCP_vector<SCP_string>& subsystem_names)
+size_t model_hash_subsystem_name_list_for_cache(const SCP_vector<SCP_string>& subsystem_names)
 {
 	if (subsystem_names.empty()) {
 		return 0;
@@ -86,7 +86,7 @@ uint32_t model_hash_subsystem_name_list_for_cache(const SCP_vector<SCP_string>& 
 
 // Returns TriStateBool::TRUE_ if a new instance was created, TriStateBool::FALSE_ if an existing instance was returned,
 // or TriStateBool::UNKNOWN_ if there was an error (and model_instance_out will be set to -1 in this case)
-TriStateBool model_get_cached_ui_render_instance(int model_num, int* model_instance_out, cached_ui_render_instance_type type, uint32_t instance_data_hash)
+TriStateBool model_get_cached_ui_render_instance(int model_num, int* model_instance_out, cached_ui_render_instance_type type, size_t instance_data_hash)
 {
 	Assertion(model_instance_out != nullptr, "model_instance_out must not be null!");
 	if (model_instance_out == nullptr) {
