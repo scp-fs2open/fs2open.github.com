@@ -358,7 +358,7 @@ void model_render_set_wireframe_color(const color* clr);
 bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int y2, float zoom, bool lighting, int class_idx, const matrix* orient, const SCP_string& pof_filename = "", float closeup_zoom = 0, const vec3d* closeup_pos = &vmd_zero_vector, const SCP_string& tcolor = "");
 
 size_t model_hash_subsystem_name_list_for_cache(const SCP_vector<SCP_string>& subsystem_names);
-TriStateBool model_get_cached_ui_render_instance(int model_num, int* model_instance_out, cached_ui_render_instance_type type, uint32_t instance_data_hash = 0);
+TriStateBool model_get_cached_ui_render_instance(int model_num, int* model_instance_out, cached_ui_render_instance_type type, size_t instance_data_hash = 0);
 void model_clear_cached_ui_render_instances();
 void model_process_cached_ui_render_instances();
 
