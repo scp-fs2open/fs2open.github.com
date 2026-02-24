@@ -503,6 +503,9 @@ static SCP_string handle_predefines(const char* filename, const SCP_string& orig
 	SCP_stringstream output;
 	SCP_unordered_map<SCP_string, SCP_string> defines;
 
+	//In any shader, define GLOBAL_FAR_Z
+	output << "#define GLOBAL_FAR_Z " << std::fixed << std::setprecision(2) << Max_draw_distance << std::defaultfloat << '\n';
+
 	const char* PREDEFINE_STRING = "#predefine";
 	const char* PREREPLACE_STRING = "#prereplace";
 

@@ -2,6 +2,7 @@
 #include "shadows.sdr" //! #include "shadows.sdr"
 #include "lighting.sdr" //! #include "lighting.sdr"
 #include "gamma.sdr" //! #include "gamma.sdr"
+#include "z-compress.sdr" //! #include "z-compress.sdr"
 
 #conditional_include +"LARGE_SHADER" "main_large.sdr"
 #conditional_include -"LARGE_SHADER" "main_small.sdr"
@@ -428,7 +429,7 @@ void main()
 	fragOut0 = baseColor;
 
 	#prereplace IF_FLAG MODEL_SDR_FLAG_DEFERRED
-		fragOut1 = vec4(vertIn.position.xyz, aoFactors.x);
+		fragOut1 = vec4(vertIn.position.xy, compress_depth_value(vertIn.position.z), aoFactors.x);
 		fragOut2 = vec4(normal, glossData);
 		fragOut3 = vec4(specColor.rgb, fresnelFactor);
 		fragOut4 = emissiveColor;

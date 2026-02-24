@@ -1,5 +1,6 @@
 
 #include "gamma.sdr"
+#include "z-compress.sdr"
 
 in float fragRadius;
 in vec4 fragPosition;
@@ -38,7 +39,7 @@ void main()
 	float sceneDepthLinear;
 	float fragDepthLinear;
 	if ( linear_depth == 1 ) {
-		sceneDepthLinear = -sceneDepth.z;
+		sceneDepthLinear = -uncompress_depth_value(sceneDepth.z);
 		fragDepthLinear = -fragPosition.z;
 	} else {
 		sceneDepthLinear = ( 2.0 * farZ * nearZ ) / ( farZ + nearZ - sceneDepth.x * (farZ-nearZ) );

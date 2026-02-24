@@ -1,3 +1,5 @@
+#include "z-compress.sdr"
+
 in vec4 fragTexCoord;
 out vec4 fragOut0;
 out vec4 fragOut1;
@@ -32,7 +34,7 @@ float getMedianDist(ivec2 texel) {
 	float dists[4];
 
 	for(int i = 0; i < 4; i++) {
-		dists[i] = texelFetch(texPos, texel, i).z;
+		dists[i] = uncompress_depth_value(texelFetch(texPos, texel, i).z);
 	}
 
 	SORT(0, 2)
@@ -51,7 +53,7 @@ float getMedianDist(ivec2 texel) {
 	float dists[8];
 
 	for(int i = 0; i < 8; i++) {
-		dists[i] = texelFetch(texPos, texel, i).z;
+		dists[i] = uncompress_depth_value(texelFetch(texPos, texel, i).z);
 	}
 
 	SORT(0, 4)
@@ -82,7 +84,7 @@ float getMedianDist(ivec2 texel) {
 	float dists[16];
 
 	for(int i = 0; i < 16; i++) {
-		dists[i] = texelFetch(texPos, texel, i).z;
+		dists[i] = uncompress_depth_value(texelFetch(texPos, texel, i).z);
 	}
 
 	SORT(0, 1)
@@ -145,7 +147,7 @@ float getMedianDist(ivec2 texel) {
 float getMedianDist(ivec2 texel) {
 	float minDist = -1000000;
 	for(int i = 0; i < samples; i++) {
-		minDist = max(minDist, texelFetch(texPos, texel, i).z);
+		minDist = max(minDist, uncompress_depth_value(texelFetch(texPos, texel, i).z));
 	}
 	return minDist;
 }
@@ -173,6 +175,7 @@ void main()
 
 	for(int i = 0; i < samples; i++) {
 		vec4 localPos = texelFetch(texPos, texel, i);
+		localPos.z = uncompress_depth_value(localPos.z);
 		//Calculate local weight from distance Voxel, but if the distance is 0 (i.e. no model at all), set weight to 1 to allow stuff like background emissive
 		//However, if the median distance is 0, only deal with current texel if it's local distance is 0 as well
 		float localWeight = max(step(-0.001, dist) * step(-0.001, localPos.z),
@@ -189,8 +192,11 @@ void main()
 		weight += localWeight;
 	}
 
+    pos /= weight;
+    pos.z = compress_depth_value(pos.z);
+
 	fragOut0 = color / weight;
-	fragOut1 = pos / weight;
+	fragOut1 = pos;
 	fragOut2 = vec4(normalize(normal.xyz), normal.a / weight);
 	fragOut3 = specular / weight;
 	fragOut4 = emissive / weight;

@@ -1,0 +1,89 @@
+float compress_depth_value(float linear) {
+	float linear_mult;
+	float exponent_mult;	
+	float offset;
+
+	linear = max(-linear, 0.0);
+
+	if(linear < 10.0) {
+		linear_mult = 0.00000999908;
+		exponent_mult = 1.32878452580;
+		offset = 0.0;
+	}
+	else if (linear < 100.0) {
+		linear_mult = 0.05550473078;
+		exponent_mult = 0.08493173544;
+		offset = 0.0;
+	}
+	else if (linear < 1570.0) {
+		linear_mult = 11.53589613947;
+		exponent_mult = 0.00793869919;
+		offset = 0.0;
+	}
+	else if (linear < 3000.0) {
+		linear_mult = -0.10000000000;
+		exponent_mult = 0.00928910863;
+		offset = 3000.0;
+	}
+	else if (linear < 10000.0) {
+		linear_mult = -0.10000000000;
+		exponent_mult = 0.00094912231;
+		offset = 3000.0;
+	}
+	else if (linear < 100000.0) {
+		linear_mult = -6.98947320727;
+		exponent_mult = 0.00007382062;
+		offset = 3000.0;
+	}
+	else {
+		linear_mult = -1000.0;
+		exponent_mult = log2(1000.0 / 65000.0) / (100000.0 - GLOBAL_FAR_Z);
+		offset = 100000.0;
+	}
+
+	return linear_mult * pow(2.0, (linear - offset) * exponent_mult);
+}
+
+float uncompress_depth_value(float compressed) {
+	float linear_mult;
+	float exponent_mult;	
+	float offset;
+
+	if(compressed < -1000.0) {
+		linear_mult = -1000.0;
+		exponent_mult = log2(1000.0 / 65000.0) / (100000.0 - GLOBAL_FAR_Z);
+		offset = 100000.0;
+	}
+	else if (compressed < -10.0) {
+		linear_mult = -6.98947320727;
+		exponent_mult = 0.00007382062;
+		offset = 3000.0;
+	}
+	else if (compressed < -0.1) {
+		linear_mult = -0.10000000000;
+		exponent_mult = 0.00094912231;
+		offset = 3000.0;
+	}
+	else if (compressed < 0.0) {
+		linear_mult = -0.10000000000;
+		exponent_mult = 0.00928910863;
+		offset = 3000.0;
+	}
+	else if (compressed < 0.1) {
+		linear_mult = 0.00000999908;
+		exponent_mult = 1.32878452580;
+		offset = 0.0;
+	}
+	else if (compressed < 20.0) {
+		linear_mult = 0.05550473078;
+		exponent_mult = 0.08493173544;
+		offset = 0.0;
+	}
+	else {
+		linear_mult = 11.53589613947;
+		exponent_mult = 0.00793869919;
+		offset = 0.0;
+	}
+
+	return -(log2(compressed / linear_mult) / exponent_mult + offset);
+}

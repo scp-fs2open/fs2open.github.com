@@ -2,6 +2,7 @@
 #include "lighting.sdr" //! #include "lighting.sdr"
 #include "gamma.sdr" //! #include "gamma.sdr"
 #include "shadows.sdr" //! #include "shadows.sdr"
+#include "z-compress.sdr" //! #include "z-compress.sdr"
 
 out vec4 fragOut0;
 
@@ -219,7 +220,7 @@ void main()
 {
 	vec2 screenPos = gl_FragCoord.xy * vec2(invScreenWidth, invScreenHeight);
 	vec4 position_buffer = texture(PositionBuffer, screenPos);
-	vec3 position = position_buffer.xyz;
+	vec3 position = vec3(position_buffer.xy, uncompress_depth_value(position_buffer.z));
 
 	if(abs(dot(position, position)) < nearPlane * nearPlane)
 		discard;

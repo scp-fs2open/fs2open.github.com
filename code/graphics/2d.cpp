@@ -283,7 +283,8 @@ int gr_stencil_mode = 0;
 
 // Default clipping distances
 const float Default_min_draw_distance = 1.0f;
-const float Default_max_draw_distance = 1e10;
+// Reduced from 1e10 to 1e6, as beyond that FSO's physics precision is horrendous anyways, and it allows reasonable lighting and particle clipping all the way out until that point, unlike 1e7 or above where the depth precision just is not enough
+const float Default_max_draw_distance = 1e6f;
 float Min_draw_distance_cockpit = 0.02f;
 float Min_draw_distance = Default_min_draw_distance;
 float Max_draw_distance = Default_max_draw_distance;
