@@ -11123,6 +11123,12 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 		aip->ai_flags.remove(AI::AI_Flags::Awaiting_repair);
 		stamp = timestamp(-1);
 
+		if (repair_objp != nullptr && scripting::hooks::OnSupportRearmStarted->isActive()) {
+			scripting::hooks::OnSupportRearmStarted->run(
+				scripting::hook_param_list(scripting::hook_param("Support Ship", 'o', repair_objp),
+					scripting::hook_param("Target Ship", 'o', repaired_objp)));
+		}
+
 		// if this is a player ship, then subtract the repair penalty from this player's score
 		if ( repaired_objp->flags[Object::Object_Flags::Player_ship] ) {
 			if ( !(Game_mode & GM_MULTIPLAYER) ) {
@@ -11193,6 +11199,12 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 		// add log entry if this is a player
 		if ( repaired_objp->flags[Object::Object_Flags::Player_ship] ){
 			mission_log_add_entry(LOG_PLAYER_ABORTED_REARM, Ships[repaired_objp->instance].ship_name, NULL);
+		}
+
+		if (repair_objp != nullptr && scripting::hooks::OnSupportRearmFinished->isActive()) {
+			scripting::hooks::OnSupportRearmFinished->run(
+				scripting::hook_param_list(scripting::hook_param("Support Ship", 'o', repair_objp),
+					scripting::hook_param("Target Ship", 'o', repaired_objp)));
 		}
 
 		stamp = timestamp((int) ((30 + 10*frand()) * 1000));

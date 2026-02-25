@@ -261,6 +261,69 @@ ADE_FUNC(runSEXP, l_Mission, "string", "Runs the defined SEXP script within a `w
 		return ADE_RETURN_FALSE;
 }
 
+//****SUBLIBRARY: Mission/SupportRearmPool
+ADE_LIB_DERIV(l_Mission_SupportRearmPool, "SupportRearmPool", nullptr,
+	"Array of mission support rearm pool values. Index is weapon class index.", l_Mission);
+
+ADE_INDEXER(l_Mission_SupportRearmPool,
+	"number/weaponclass IndexOrClass, number amount",
+	"Gets/sets support rearm pool value for a weapon class.\n"
+	"Values: -1 = unlimited, 0 = unavailable, >0 = limited amount.\n"
+	"If a weapon has $Disallow Support Rearm, this always returns 0 and ignores writes.",
+	"number",
+	"Current pool value for the weapon class.")
+{
+	int idx = -1;
+	int amount;
+	if (lua_isnumber(L, 2)) {
+		if (!ade_get_args(L, "*i|i", &idx, &amount)) {
+			return ADE_RETURN_NIL;
+		}
+
+		if (idx < 1 || idx > weapon_info_size()) {
+			return ADE_RETURN_NIL;
+		}
+
+		idx--; // Lua to C++ index
+	} else {
+		if (!ade_get_args(L, "*o|i", l_Weaponclass.Get(&idx), &amount)) {
+			return ADE_RETURN_NIL;
+		}
+
+		if (idx < 0 || idx >= weapon_info_size()) {
+			return ADE_RETURN_NIL;
+		}
+	}
+
+	if (ADE_SETTING_VAR) {
+		if (!Weapon_info[idx].disallow_rearm) {
+			if (amount < 0) {
+				The_mission.support_ships.rearm_weapon_pool[idx] = -1;
+			} else {
+				The_mission.support_ships.rearm_weapon_pool[idx] = amount;
+			}
+		} else {
+			The_mission.support_ships.rearm_weapon_pool[idx] = 0;
+		}
+	}
+
+	if (Weapon_info[idx].disallow_rearm) {
+		return ade_set_args(L, "i", 0);
+	}
+
+	return ade_set_args(L, "i", The_mission.support_ships.rearm_weapon_pool[idx]);
+}
+
+ADE_FUNC(__len,
+	l_Mission_SupportRearmPool,
+	nullptr,
+	"The number of weapon classes in the support rearm pool array",
+	"number",
+	"The number of weapon classes.")
+{
+	return ade_set_args(L, "i", weapon_info_size());
+}
+
 //****SUBLIBRARY: Mission/Asteroids
 ADE_LIB_DERIV(l_Mission_Asteroids, "Asteroids", NULL, "Asteroids in the mission", l_Mission);
 

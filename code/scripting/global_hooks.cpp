@@ -132,6 +132,16 @@ const std::shared_ptr<Hook<ShipSourceConditions>> OnAfterburnerEnd = Hook<ShipSo
 	"Invoked whenever a ship stops using its afterburners",
 	{ { "Ship", "ship", "The ship which had been using its afterburners" } });
 
+const std::shared_ptr<Hook<>> OnSupportRearmStarted = Hook<>::Factory("On Support Rearm Started",
+	"Invoked when a support ship begins actively rearming/repairing a target ship.",
+	{ { "Support Ship", "ship", "The support ship performing the service." },
+	  { "Target Ship", "ship", "The ship being serviced by the support ship." } });
+
+const std::shared_ptr<Hook<>> OnSupportRearmFinished = Hook<>::Factory("On Support Rearm Finished",
+	"Invoked when a support ship finishes rearming/repairing a target ship.",
+	{ { "Support Ship", "ship", "The support ship that performed the service." },
+	  { "Target Ship", "ship", "The ship that was serviced." } });
+
 const std::shared_ptr<Hook<ShipSourceConditions>> OnWaypointsDone = Hook<ShipSourceConditions>::Factory("On Waypoints Done",
 	"Invoked whenever a ship stops using its afterburners",
 	{
