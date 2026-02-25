@@ -67,6 +67,18 @@ void MissionSpecDialogModel::initializeData() {
 	_m_max_hull_repair_val = The_mission.support_ships.max_hull_repair_val;
 	_m_max_subsys_repair_val = The_mission.support_ships.max_subsys_repair_val;
 
+	_m_support_rearm_settings.disallowSupportShips = (The_mission.support_ships.max_support_ships == 0);
+	_m_support_rearm_settings.supportRepairsHull = The_mission.flags[Mission::Mission_Flags::Support_repairs_hull];
+	_m_support_rearm_settings.maxHullRepair = The_mission.support_ships.max_hull_repair_val;
+	_m_support_rearm_settings.maxSubsysRepair = The_mission.support_ships.max_subsys_repair_val;
+	_m_support_rearm_settings.disallowSupportRearm = The_mission.support_ships.disallow_rearm;
+	_m_support_rearm_settings.limitRearmToPool = The_mission.flags[Mission::Mission_Flags::Limited_support_rearm_pool];
+	_m_support_rearm_settings.rearmPoolFromLoadout = The_mission.support_ships.rearm_pool_from_loadout;
+	_m_support_rearm_settings.allowWeaponPrecedence = The_mission.support_ships.allow_rearm_weapon_precedence;
+	for (int i = 0; i < MAX_WEAPON_TYPES; ++i) {
+		_m_support_rearm_settings.rearmWeaponPool[i] = The_mission.support_ships.rearm_weapon_pool[i];
+	}
+
 	_m_contrail_threshold = The_mission.contrail_threshold;
 	_m_contrail_threshold_flag = (_m_contrail_threshold != CONTRAIL_THRESHOLD_DEFAULT);
 
@@ -120,9 +132,15 @@ bool MissionSpecDialogModel::apply() {
 	The_mission.num_respawns = _m_num_respawns;
 	The_mission.max_respawn_delay = _m_max_respawn_delay;
 	Entry_delay_time = fl2f(_m_player_entry_delay);
-	The_mission.support_ships.max_support_ships = (_m_disallow_support) ? 0 : -1;
-	The_mission.support_ships.max_hull_repair_val = _m_max_hull_repair_val;
-	The_mission.support_ships.max_subsys_repair_val = _m_max_subsys_repair_val;
+	The_mission.support_ships.max_support_ships = (_m_support_rearm_settings.disallowSupportShips) ? 0 : -1;
+	The_mission.support_ships.max_hull_repair_val = _m_support_rearm_settings.maxHullRepair;
+	The_mission.support_ships.max_subsys_repair_val = _m_support_rearm_settings.maxSubsysRepair;
+	The_mission.support_ships.disallow_rearm = _m_support_rearm_settings.disallowSupportRearm;
+	The_mission.support_ships.allow_rearm_weapon_precedence = _m_support_rearm_settings.allowWeaponPrecedence;
+	The_mission.support_ships.rearm_pool_from_loadout = _m_support_rearm_settings.rearmPoolFromLoadout;
+	for (int i = 0; i < MAX_WEAPON_TYPES; ++i) {
+		The_mission.support_ships.rearm_weapon_pool[i] = _m_support_rearm_settings.rearmWeaponPool[i];
+	}
 	
 	// Copy mission flags
 	The_mission.flags = _m_flags;
@@ -317,6 +335,7 @@ SCP_string MissionSpecDialogModel::getHighResLoadingScren() {
 
 void MissionSpecDialogModel::setDisallowSupport(bool m_disallow_support) {
 	modify(_m_disallow_support, m_disallow_support);
+	_m_support_rearm_settings.disallowSupportShips = m_disallow_support;
 }
 
 bool MissionSpecDialogModel::getDisallowSupport() {
@@ -325,6 +344,7 @@ bool MissionSpecDialogModel::getDisallowSupport() {
 
 void MissionSpecDialogModel::setHullRepairMax(float m_max_hull_repair_val) {
 	modify(_m_max_hull_repair_val, m_max_hull_repair_val);
+	_m_support_rearm_settings.maxHullRepair = m_max_hull_repair_val;
 }
 
 int MissionSpecDialogModel::getHullRepairMax() {
@@ -337,6 +357,21 @@ void MissionSpecDialogModel::setSubsysRepairMax(float m_max_subsys_repair_val){
 
 int MissionSpecDialogModel::getSubsysRepairMax() {
 	return _m_max_subsys_repair_val;
+}
+
+SupportRearmSettings MissionSpecDialogModel::getSupportRearmSettings() const
+{
+	return _m_support_rearm_settings;
+}
+
+void MissionSpecDialogModel::setSupportRearmSettings(const SupportRearmSettings& settings)
+{
+	modify(_m_support_rearm_settings, settings);
+	_m_disallow_support = settings.disallowSupportShips;
+	_m_max_hull_repair_val = settings.maxHullRepair;
+	_m_max_subsys_repair_val = settings.maxSubsysRepair;
+	setMissionFlagDirect(Mission::Mission_Flags::Support_repairs_hull, settings.supportRepairsHull);
+	setMissionFlagDirect(Mission::Mission_Flags::Limited_support_rearm_pool, settings.limitRearmToPool);
 }
 
 void MissionSpecDialogModel::setTrailThresholdFlag(bool m_contrail_threshold_flag) {
