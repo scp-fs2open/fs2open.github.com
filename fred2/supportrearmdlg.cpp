@@ -357,7 +357,7 @@ void CSupportRearmDlg::OnOK()
 	memcpy(The_mission.support_ships.rearm_weapon_pool, m_rearm_weapon_pool, sizeof(m_rearm_weapon_pool));
 
 	for (int i = 0; i < weapon_info_size(); ++i) {
-		if (Weapon_info[i].disallow_rearm) {
+		if (Weapon_info[i].disallow_rearm || !Weapon_info[i].wi_flags[Weapon::Info_Flags::Player_allowed]) {
 			The_mission.support_ships.rearm_weapon_pool[i] = 0;
 		}
 	}
