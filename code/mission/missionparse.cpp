@@ -385,7 +385,8 @@ flag_def_list_new<Mission::Mission_Flags> Parse_mission_flags[] = {
 	{"Toggle Starting in Chase View",             Mission::Mission_Flags::Toggle_start_chase_view,    true, false},
 	{"Nebula Fog Color Override",                 Mission::Mission_Flags::Neb2_fog_color_override,    true, true},
 	{"Full Nebula Background Bitmaps",            Mission::Mission_Flags::Fullneb_background_bitmaps, true, true},
-	{"Preload Subspace Tunnel",                   Mission::Mission_Flags::Preload_subspace,           true, false}
+	{"Preload Subspace Tunnel",                   Mission::Mission_Flags::Preload_subspace,           true, false},
+	{"Limit Support Rearm to Mission Pool",       Mission::Mission_Flags::Limited_support_rearm_pool, true, true}
 };
 
 parse_object_flag_description<Mission::Mission_Flags> Parse_mission_flag_descriptions[] = {
@@ -418,7 +419,8 @@ parse_object_flag_description<Mission::Mission_Flags> Parse_mission_flag_descrip
 	{Mission::Mission_Flags::Toggle_start_chase_view,    "Toggles whether the player starts the mission in chase view"},
 	{Mission::Mission_Flags::Neb2_fog_color_override,    "Whether to use explicit fog colors instead of checking the palette"},
 	{Mission::Mission_Flags::Fullneb_background_bitmaps, "Show background bitmaps despite full nebula"},
-	{Mission::Mission_Flags::Preload_subspace,         "Preload the subspace tunnel for both the sexp and specs checkbox"},
+	{Mission::Mission_Flags::Preload_subspace,           "Preload the subspace tunnel for both the sexp and specs checkbox"},
+	{Mission::Mission_Flags::Limited_support_rearm_pool, "Support ships can only rearm from the mission weapon pool"},
 };
 
 const size_t Num_parse_mission_flags = sizeof(Parse_mission_flags) / sizeof(flag_def_list_new<Mission::Mission_Flags>);
@@ -882,6 +884,18 @@ void parse_mission_info(mission *pm, bool basic = false)
 		pm->support_ships.max_support_ships = (temp > 0) ? 0 : -1;
 	}
 
+	if (optional_string("+Disallow Support Rearm:")) {
+		int temp;
+		stuff_int(&temp);
+		pm->support_ships.disallow_rearm = (temp != 0);
+	}
+
+	if (optional_string("+Allow Support Rearm Weapon Precedence:")) {
+		int temp;
+		stuff_int(&temp);
+		pm->support_ships.allow_rearm_weapon_precedence = (temp != 0);
+	}
+
 	if ( optional_string("+Hull Repair Ceiling:"))
 	{
 		float temp;
@@ -902,6 +916,12 @@ void parse_mission_info(mission *pm, bool basic = false)
 		if (temp <= 100.0f && temp >= 0.0f) {
 			pm->support_ships.max_subsys_repair_val = temp;
 		}
+	}
+
+	if (optional_string("+Support Rearm Pool From Loadout:")) {
+		int temp;
+		stuff_int(&temp);
+		pm->support_ships.rearm_pool_from_loadout = (temp != 0);
 	}
 
 	if (optional_string("+All Teams Attack")){
@@ -1106,12 +1126,15 @@ void parse_player_info(mission *pm)
 void parse_player_info2(mission *pm)
 {
 	int nt, i;
-	SCP_vector<loadout_row> list, list2;
+	SCP_vector<loadout_row> list, list2, support_rearm_list;
 	team_data *ptr;
 
 	if (OnLoadoutAboutToParseHook->isActive()) {
 		OnLoadoutAboutToParseHook->run();
 	}
+
+	// initialize support rearm pool from mission loadout data (weapon index -> count)
+	memset(pm->support_ships.rearm_weapon_pool, 0, sizeof(pm->support_ships.rearm_weapon_pool));
 
 	// read in a ship/weapon pool for each team.
 	for ( nt = 0; nt < Num_teams; nt++ ) {
@@ -1223,6 +1246,13 @@ void parse_player_info2(mission *pm)
 
 			ptr->weaponry_pool[num_choices] = wc.index; 
 			ptr->weaponry_count[num_choices] = wc.count;
+			if (pm->support_ships.rearm_pool_from_loadout) {
+				if (Weapon_info[wc.index].disallow_rearm) {
+					pm->support_ships.rearm_weapon_pool[wc.index] = 0;
+				} else if (wc.count > 0 && pm->support_ships.rearm_weapon_pool[wc.index] >= 0) {
+					pm->support_ships.rearm_weapon_pool[wc.index] += wc.count;
+				}
+			}
 
 			// if the list isn't set by a variable leave the variable name empty
 			if (wc.index_sexp_var == NOT_SET_BY_SEXP_VARIABLE) {
@@ -1243,6 +1273,34 @@ void parse_player_info2(mission *pm)
 			num_choices++; 
 		}
 		ptr->num_weapon_choices = num_choices;
+
+		if (optional_string("+Support Rearm Pool:")) {
+			support_rearm_list.clear();
+			stuff_loadout_list(support_rearm_list, ParseLookupType::MISSION_LOADOUT_WEAPON_LIST);
+
+			if (!pm->support_ships.rearm_pool_from_loadout) {
+				for (auto& wc : support_rearm_list) {
+					if (wc.index < 0 || wc.index >= weapon_info_size()) {
+						continue;
+					}
+
+					if (!(Weapon_info[wc.index].wi_flags[Weapon::Info_Flags::Player_allowed]) && !Fred_running) {
+						WarningEx(LOCATION,
+							"Weapon '%s' in support rearm pool isn't allowed on player loadout! Ignoring it ...\n",
+							Weapon_info[wc.index].name);
+						continue;
+					}
+
+					if (Weapon_info[wc.index].disallow_rearm) {
+						pm->support_ships.rearm_weapon_pool[wc.index] = 0;
+					} else if (wc.count < 0) {
+						pm->support_ships.rearm_weapon_pool[wc.index] = -1;
+					} else if (wc.count > 0 && pm->support_ships.rearm_weapon_pool[wc.index] >= 0) {
+						pm->support_ships.rearm_weapon_pool[wc.index] += wc.count;
+					}
+				}
+			}
+		}
 
 		memset(ptr->weapon_required, 0, MAX_WEAPON_TYPES * sizeof(bool));
 		if (optional_string("+Required for mission:"))
@@ -7072,6 +7130,10 @@ void mission::Reset()
 	support_ships.max_support_ships = -1;	// infinite
 	support_ships.max_concurrent_ships = 1;
 	support_ships.ship_class = -1;
+	memset(&support_ships.rearm_weapon_pool, -1, sizeof(int) * MAX_WEAPON_TYPES);
+	support_ships.disallow_rearm = false;
+	support_ships.allow_rearm_weapon_precedence = false;
+	support_ships.rearm_pool_from_loadout = false;
 
 	// for each species, store whether support is available
 	for (int species = 0; species < (int)Species_info.size(); species++) {

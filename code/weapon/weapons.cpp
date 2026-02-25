@@ -1958,6 +1958,10 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			wip->reloaded_per_batch = REARM_NUM_BALLISTIC_PRIMARIES_PER_BATCH;
 		}
 	}
+
+	if (optional_string("$Disallow Support Rearm:")) {
+		stuff_boolean(&wip->disallow_rearm);
+	}
 	   
 	if (optional_string("+Weapon Range:")) {
 		stuff_float(&wip->weapon_range);
@@ -9457,6 +9461,7 @@ void weapon_info::reset()
 	this->cargo_size = 1.0f;
 	this->autoaim_fov = 0.0f;
 	this->rearm_rate = 1.0f;
+	this->disallow_rearm = false;
 	this->reloaded_per_batch = -1;
 	this->weapon_range = WEAPON_DEFAULT_TABLED_MAX_RANGE;
 	// *Minimum weapon range, default is 0 -Et1
