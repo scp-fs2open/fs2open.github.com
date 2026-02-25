@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ui version="4.0">
+ <class>fso::fred::dialogs::SupportRearmDialog</class>
+ <widget class="QDialog" name="fso::fred::dialogs::SupportRearmDialog">
+  <property name="geometry"><rect><x>0</x><y>0</y><width>650</width><height>420</height></rect></property>
+  <property name="windowTitle"><string>Support Options</string></property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <layout class="QHBoxLayout" name="topLayout">
+     <item>
+      <layout class="QVBoxLayout" name="leftOpts">
+       <item><widget class="QCheckBox" name="supportEnabledCheck"><property name="text"><string>Allow Support Ships</string></property></widget></item>
+       <item><widget class="QCheckBox" name="repairHullCheck"><property name="text"><string>Support Ships Repair Hull</string></property></widget></item>
+       <item><layout class="QFormLayout" name="repairForm">
+         <item row="0" column="0"><widget class="QLabel" name="hullLabel"><property name="text"><string>Hull Repair Ceiling</string></property></widget></item>
+         <item row="0" column="1"><widget class="QDoubleSpinBox" name="hullRepairSpin"><property name="minimum"><double>0.0</double></property><property name="maximum"><double>100.0</double></property><property name="decimals"><number>0</number></property></widget></item>
+         <item row="1" column="0"><widget class="QLabel" name="subsysLabel"><property name="text"><string>Subsystem Repair Ceiling</string></property></widget></item>
+         <item row="1" column="1"><widget class="QDoubleSpinBox" name="subsysRepairSpin"><property name="minimum"><double>0.0</double></property><property name="maximum"><double>100.0</double></property><property name="decimals"><number>0</number></property></widget></item>
+       </layout></item>
+      </layout>
+     </item>
+     <item>
+      <layout class="QVBoxLayout" name="rightOpts">
+       <item><widget class="QCheckBox" name="disallowRearmCheck"><property name="text"><string>Disallow Support Rearm</string></property></widget></item>
+       <item><widget class="QCheckBox" name="limitPoolCheck"><property name="text"><string>Limit Rearm to Mission Pool</string></property></widget></item>
+       <item><widget class="QCheckBox" name="fromLoadoutCheck"><property name="text"><string>Set Rearm Pool from Loadout Pool surplus</string></property></widget></item>
+       <item><widget class="QCheckBox" name="precedenceCheck"><property name="text"><string>Use Weapon Precedence when pool is empty</string></property></widget></item>
+      </layout>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="poolGroup"><property name="title"><string>Support Rearm Pool</string></property>
+     <layout class="QHBoxLayout" name="poolLayout">
+      <item><widget class="QListWidget" name="weaponList"/></item>
+      <item><layout class="QVBoxLayout" name="rightButtons">
+        <item><widget class="QLabel" name="poolAmountLabel"><property name="text"><string>Pool Amount</string></property></widget></item>
+        <item><widget class="QSpinBox" name="poolAmountSpin"><property name="minimum"><number>-1</number></property><property name="maximum"><number>100000</number></property></widget></item>
+        <item><widget class="QPushButton" name="setAmountButton"><property name="text"><string>Set Amount</string></property></widget></item>
+        <item><widget class="QPushButton" name="setUnlimitedButton"><property name="text"><string>Set Unlimited (-1)</string></property></widget></item>
+        <item><widget class="QPushButton" name="setZeroButton"><property name="text"><string>Set Zero</string></property></widget></item>
+        <item><widget class="QPushButton" name="setAllAmountButton"><property name="text"><string>Set ALL to Amount</string></property></widget></item>
+        <item><widget class="QPushButton" name="setAllUnlimitedButton"><property name="text"><string>Set ALL to Unlimited</string></property></widget></item>
+        <item><widget class="QPushButton" name="setAllZeroButton"><property name="text"><string>Set ALL to Zero</string></property></widget></item>
+       </layout></item>
+     </layout>
+    </widget>
+   </item>
+   <item><widget class="QDialogButtonBox" name="okAndCancelButtons"><property name="standardButtons"><set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set></property></widget></item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
