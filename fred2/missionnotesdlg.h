@@ -48,13 +48,11 @@ public:
 	BOOL		m_scramble;
 	UINT		m_num_respawns;
 	int			m_max_respawn_delay;
-	int			m_disallow_support;
 	BOOL		m_no_promotion;
 	BOOL		m_no_builtin_msgs;
 	BOOL		m_no_builtin_command_msgs;
 	BOOL		m_no_traitor;
 	BOOL		m_toggle_trails;
-	BOOL		m_support_repairs_hull;
 	BOOL		m_beam_free_all_by_default;
 	BOOL		m_player_start_using_ai;
 	BOOL		m_toggle_start_chase_view;
@@ -67,8 +65,6 @@ public:
 	BOOL		m_end_to_mainhall;
 	BOOL		m_override_hashcommand;
 	BOOL        m_preload_subspace;
-	float		m_max_hull_repair_val;
-	float		m_max_subsys_repair_val;
 	BOOL		m_contrail_threshold_flag;
 	int			m_contrail_threshold;
 	//}}AFX_DATA
@@ -105,6 +101,7 @@ protected:
 	afx_msg void OnSoundEnvironment();
 	afx_msg void OnCustomData();
 	afx_msg void OnCustomStrings();
+	afx_msg void OnSupportRearmOptions();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 public:
