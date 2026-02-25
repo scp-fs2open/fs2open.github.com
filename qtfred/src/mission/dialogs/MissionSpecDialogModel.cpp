@@ -140,6 +140,9 @@ bool MissionSpecDialogModel::apply() {
 	The_mission.support_ships.rearm_pool_from_loadout = _m_support_rearm_settings.rearmPoolFromLoadout;
 	for (int i = 0; i < MAX_WEAPON_TYPES; ++i) {
 		The_mission.support_ships.rearm_weapon_pool[i] = _m_support_rearm_settings.rearmWeaponPool[i];
+		if (Weapon_info[i].disallow_rearm || !Weapon_info[i].wi_flags[Weapon::Info_Flags::Player_allowed]) {
+			The_mission.support_ships.rearm_weapon_pool[i] = 0;
+		}
 	}
 	
 	// Copy mission flags
