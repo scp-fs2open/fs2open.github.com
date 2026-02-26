@@ -75,8 +75,10 @@ void MissionSpecDialogModel::initializeData() {
 	_m_support_rearm_settings.limitRearmToPool = The_mission.flags[Mission::Mission_Flags::Limited_support_rearm_pool];
 	_m_support_rearm_settings.rearmPoolFromLoadout = The_mission.support_ships.rearm_pool_from_loadout;
 	_m_support_rearm_settings.allowWeaponPrecedence = The_mission.support_ships.allow_rearm_weapon_precedence;
-	for (int i = 0; i < MAX_WEAPON_TYPES; ++i) {
-		_m_support_rearm_settings.rearmWeaponPool[i] = The_mission.support_ships.rearm_weapon_pool[i];
+	for (int team = 0; team < MAX_TVT_TEAMS; ++team) {
+		for (int i = 0; i < MAX_WEAPON_TYPES; ++i) {
+			_m_support_rearm_settings.rearmWeaponPool[team][i] = The_mission.support_ships.rearm_weapon_pool[team][i];
+		}
 	}
 
 	_m_contrail_threshold = The_mission.contrail_threshold;
@@ -138,10 +140,12 @@ bool MissionSpecDialogModel::apply() {
 	The_mission.support_ships.disallow_rearm = _m_support_rearm_settings.disallowSupportRearm;
 	The_mission.support_ships.allow_rearm_weapon_precedence = _m_support_rearm_settings.allowWeaponPrecedence;
 	The_mission.support_ships.rearm_pool_from_loadout = _m_support_rearm_settings.rearmPoolFromLoadout;
-	for (int i = 0; i < MAX_WEAPON_TYPES; ++i) {
-		The_mission.support_ships.rearm_weapon_pool[i] = _m_support_rearm_settings.rearmWeaponPool[i];
-		if (Weapon_info[i].disallow_rearm || !Weapon_info[i].wi_flags[Weapon::Info_Flags::Player_allowed]) {
-			The_mission.support_ships.rearm_weapon_pool[i] = 0;
+	for (int team = 0; team < MAX_TVT_TEAMS; ++team) {
+		for (int i = 0; i < weapon_info_size(); ++i) {
+			The_mission.support_ships.rearm_weapon_pool[team][i] = _m_support_rearm_settings.rearmWeaponPool[team][i];
+			if (Weapon_info[i].disallow_rearm || !Weapon_info[i].wi_flags[Weapon::Info_Flags::Player_allowed]) {
+				The_mission.support_ships.rearm_weapon_pool[team][i] = 0;
+			}
 		}
 	}
 	

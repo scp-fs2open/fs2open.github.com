@@ -19,12 +19,14 @@ class CSupportRearmDlg : public CDialog {
 	afx_msg void OnSetAllPoolAmount();
 	afx_msg void OnSetAllPoolUnlimited();
 	afx_msg void OnSetAllPoolZero();
+	afx_msg void OnSelchangePoolTeam();
 	afx_msg void OnOptionChanged();
 	afx_msg void OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct);
 	DECLARE_MESSAGE_MAP()
 
   private:
 	void update_control_states();
+	void populate_team_list();
 	void populate_weapon_list();
 	void update_weapon_amount_display();
 	int get_selected_weapon_class() const;
@@ -41,5 +43,6 @@ class CSupportRearmDlg : public CDialog {
 	float m_max_hull_repair_val;
 	float m_max_subsys_repair_val;
 	int m_weapon_pool_amount;
-	int m_rearm_weapon_pool[MAX_WEAPON_TYPES];
+	int m_rearm_pool_team;
+	int m_rearm_weapon_pool[MAX_TVT_TEAMS][MAX_WEAPON_TYPES];
 };

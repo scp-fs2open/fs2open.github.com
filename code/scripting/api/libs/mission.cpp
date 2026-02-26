@@ -65,6 +65,7 @@
 #include "scripting/api/objs/ship.h"
 #include "scripting/api/objs/shipclass.h"
 #include "scripting/api/objs/sound.h"
+#include "scripting/api/objs/support_rearm_pool.h"
 #include "scripting/api/objs/team.h"
 #include "scripting/api/objs/vecmath.h"
 #include "scripting/api/objs/waypoint.h"
@@ -261,67 +262,40 @@ ADE_FUNC(runSEXP, l_Mission, "string", "Runs the defined SEXP script within a `w
 		return ADE_RETURN_FALSE;
 }
 
-//****SUBLIBRARY: Mission/SupportRearmPool
-ADE_LIB_DERIV(l_Mission_SupportRearmPool, "SupportRearmPool", nullptr,
-	"Array of mission support rearm pool values. Index is weapon class index.", l_Mission);
+//****SUBLIBRARY: Mission/SupportRearmPools
+ADE_LIB_DERIV(l_Mission_SupportRearmPools,
+	"SupportRearmPools",
+	nullptr,
+	"Per-team mission support rearm pools (team indexed).",
+	l_Mission);
 
-ADE_INDEXER(l_Mission_SupportRearmPool,
-	"number/weaponclass IndexOrClass, number amount",
-	"Gets/sets support rearm pool value for a weapon class.\n"
-	"Values: -1 = unlimited, 0 = unavailable, >0 = limited amount.\n"
-	"If a weapon has $Disallow Support Rearm, this always returns 0 and ignores writes.",
-	"number",
-	"Current pool value for the weapon class.")
+ADE_INDEXER(l_Mission_SupportRearmPools,
+	"number TeamIndex",
+	"Gets support rearm pool handle for a specific team.",
+	"support_rearm_pool_team",
+	"Support rearm pool team handle, or invalid handle if index is out of range.")
 {
 	int idx = -1;
-	int amount;
-	if (lua_isnumber(L, 2)) {
-		if (!ade_get_args(L, "*i|i", &idx, &amount)) {
-			return ADE_RETURN_NIL;
-		}
-
-		if (idx < 1 || idx > weapon_info_size()) {
-			return ADE_RETURN_NIL;
-		}
-
-		idx--; // Lua to C++ index
-	} else {
-		if (!ade_get_args(L, "*o|i", l_Weaponclass.Get(&idx), &amount)) {
-			return ADE_RETURN_NIL;
-		}
-
-		if (idx < 0 || idx >= weapon_info_size()) {
-			return ADE_RETURN_NIL;
-		}
+	if (!ade_get_args(L, "*i", &idx)) {
+		return ade_set_error(L, "o", l_SupportRearmPoolTeam.Set(-1));
 	}
 
-	if (ADE_SETTING_VAR) {
-		if (!Weapon_info[idx].disallow_rearm) {
-			if (amount < 0) {
-				The_mission.support_ships.rearm_weapon_pool[idx] = -1;
-			} else {
-				The_mission.support_ships.rearm_weapon_pool[idx] = amount;
-			}
-		} else {
-			The_mission.support_ships.rearm_weapon_pool[idx] = 0;
-		}
+	idx--; // Lua to C++ index
+	if (idx < 0 || idx >= Num_teams || idx >= MAX_TVT_TEAMS) {
+		return ade_set_error(L, "o", l_SupportRearmPoolTeam.Set(-1));
 	}
 
-	if (Weapon_info[idx].disallow_rearm) {
-		return ade_set_args(L, "i", 0);
-	}
-
-	return ade_set_args(L, "i", The_mission.support_ships.rearm_weapon_pool[idx]);
+	return ade_set_args(L, "o", l_SupportRearmPoolTeam.Set(idx));
 }
 
 ADE_FUNC(__len,
-	l_Mission_SupportRearmPool,
+	l_Mission_SupportRearmPools,
 	nullptr,
-	"The number of weapon classes in the support rearm pool array",
+	"The number of support rearm pool teams.",
 	"number",
-	"The number of weapon classes.")
+	"The number of TVT/loadout teams with support rearm pools.")
 {
-	return ade_set_args(L, "i", weapon_info_size());
+	return ade_set_args(L, "i", MIN(Num_teams, MAX_TVT_TEAMS));
 }
 
 //****SUBLIBRARY: Mission/Asteroids

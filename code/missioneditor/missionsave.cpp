@@ -4402,14 +4402,12 @@ int Fred_mission_save::save_players()
 			}
 
 			fout(" (\n");
-			if (i == 0) {
-				for (j = 0; j < weapon_info_size(); j++) {
-					if (!Weapon_info[j].wi_flags[Weapon::Info_Flags::Player_allowed]) {
-						continue;
-					}
-					if (The_mission.support_ships.rearm_weapon_pool[j] != 0) {
-						fout("\t\"%s\"\t%d\n", Weapon_info[j].name, The_mission.support_ships.rearm_weapon_pool[j]);
-					}
+			for (j = 0; j < weapon_info_size(); j++) {
+				if (!Weapon_info[j].wi_flags[Weapon::Info_Flags::Player_allowed]) {
+					continue;
+				}
+				if (The_mission.support_ships.rearm_weapon_pool[i][j] != 0) {
+					fout("\t\"%s\"\t%d\n", Weapon_info[j].name, The_mission.support_ships.rearm_weapon_pool[i][j]);
 				}
 			}
 			fout(")");

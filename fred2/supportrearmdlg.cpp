@@ -21,6 +21,7 @@ CSupportRearmDlg::CSupportRearmDlg(CWnd* pParent) : CDialog(CSupportRearmDlg::ID
 	m_max_hull_repair_val = 0.0f;
 	m_max_subsys_repair_val = 100.0f;
 	m_weapon_pool_amount = 0;
+	m_rearm_pool_team = 0;
 	memset(m_rearm_weapon_pool, 0, sizeof(m_rearm_weapon_pool));
 }
 
@@ -38,6 +39,7 @@ void CSupportRearmDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_MAX_SUBSYS_REPAIR_VAL, m_max_subsys_repair_val);
 	DDV_MinMaxFloat(pDX, m_max_subsys_repair_val, 0.0f, 100.0f);
 	DDX_Text(pDX, IDC_SUPPORT_REARM_POOL_AMOUNT, m_weapon_pool_amount);
+	DDX_CBIndex(pDX, IDC_SUPPORT_REARM_POOL_TEAM, m_rearm_pool_team);
 }
 
 BEGIN_MESSAGE_MAP(CSupportRearmDlg, CDialog)
@@ -48,6 +50,7 @@ ON_BN_CLICKED(IDC_SUPPORT_REARM_SET_ZERO, OnSetPoolZero)
 ON_BN_CLICKED(IDC_SUPPORT_REARM_SET_ALL_AMOUNT, OnSetAllPoolAmount)
 ON_BN_CLICKED(IDC_SUPPORT_REARM_SET_ALL_UNLIMITED, OnSetAllPoolUnlimited)
 ON_BN_CLICKED(IDC_SUPPORT_REARM_SET_ALL_ZERO, OnSetAllPoolZero)
+ON_CBN_SELCHANGE(IDC_SUPPORT_REARM_POOL_TEAM, OnSelchangePoolTeam)
 ON_BN_CLICKED(IDC_DISALLOW_SUPPORT_SHIPS, OnOptionChanged)
 ON_BN_CLICKED(IDC_SUPPORT_REPAIRS_HULL, OnOptionChanged)
 ON_BN_CLICKED(IDC_DISALLOW_SUPPORT_REARM, OnOptionChanged)
@@ -68,9 +71,11 @@ BOOL CSupportRearmDlg::OnInitDialog()
 	m_max_hull_repair_val = The_mission.support_ships.max_hull_repair_val;
 	m_max_subsys_repair_val = The_mission.support_ships.max_subsys_repair_val;
 	memcpy(m_rearm_weapon_pool, The_mission.support_ships.rearm_weapon_pool, sizeof(m_rearm_weapon_pool));
+	m_rearm_pool_team = 0;
 
 	CDialog::OnInitDialog();
 
+	populate_team_list();
 	populate_weapon_list();
 	auto* weapon_list = (CListBox*)GetDlgItem(IDC_SUPPORT_REARM_WEAPON_LIST);
 	if (weapon_list != nullptr && weapon_list->GetCount() > 0) {
@@ -83,11 +88,30 @@ BOOL CSupportRearmDlg::OnInitDialog()
 	return TRUE;
 }
 
+void CSupportRearmDlg::populate_team_list()
+{
+	auto* team_combo = (CComboBox*)GetDlgItem(IDC_SUPPORT_REARM_POOL_TEAM);
+	if (team_combo == nullptr) {
+		return;
+	}
+
+	team_combo->ResetContent();
+	for (int i = 0; i < Num_teams && i < MAX_TVT_TEAMS; ++i) {
+		CString text;
+		text.Format("Team %d", i + 1);
+		team_combo->AddString(text);
+	}
+
+	if (team_combo->GetCount() > 0) {
+		team_combo->SetCurSel(m_rearm_pool_team);
+	}
+}
+
 CString CSupportRearmDlg::format_weapon_pool_entry(int weapon_class) const
 {
 	CString text;
 	const auto& wi = Weapon_info[weapon_class];
-	int amount = m_rearm_weapon_pool[weapon_class];
+	int amount = m_rearm_weapon_pool[m_rearm_pool_team][weapon_class];
 	if (wi.disallow_rearm) {
 		text.Format("%s - 0 (disabled by weapon settings)", wi.name);
 		return text;
@@ -139,7 +163,7 @@ void CSupportRearmDlg::update_weapon_amount_display()
 	if (weapon_class < 0 || weapon_class >= weapon_info_size()) {
 		m_weapon_pool_amount = 0;
 	} else {
-		m_weapon_pool_amount = m_rearm_weapon_pool[weapon_class];
+		m_weapon_pool_amount = m_rearm_weapon_pool[m_rearm_pool_team][weapon_class];
 	}
 
 	UpdateData(FALSE);
@@ -164,7 +188,7 @@ void CSupportRearmDlg::set_selected_weapon_amount(int amount)
 		amount = -1;
 	}
 
-	m_rearm_weapon_pool[weapon_class] = amount;
+	m_rearm_weapon_pool[m_rearm_pool_team][weapon_class] = amount;
 	weapon_list->DeleteString(sel);
 	weapon_list->InsertString(sel, format_weapon_pool_entry(weapon_class));
 	weapon_list->SetItemData(sel, weapon_class);
@@ -184,9 +208,9 @@ void CSupportRearmDlg::set_all_weapon_amount(int amount)
 			}
 
 			if (Weapon_info[weapon_class].disallow_rearm) {
-				m_rearm_weapon_pool[weapon_class] = 0;
+				m_rearm_weapon_pool[m_rearm_pool_team][weapon_class] = 0;
 			} else {
-				m_rearm_weapon_pool[weapon_class] = normalized_amount;
+				m_rearm_weapon_pool[m_rearm_pool_team][weapon_class] = normalized_amount;
 			}
 		}
 
@@ -232,6 +256,7 @@ void CSupportRearmDlg::update_control_states()
 	enable(IDC_ALLOW_SUPPORT_REARM_PRECEDENCE, limited_pool_enabled);
 
 	enable(IDC_SUPPORT_REARM_WEAPON_LIST, pool_controls_enabled);
+	enable(IDC_SUPPORT_REARM_POOL_TEAM, pool_controls_enabled);
 	enable(IDC_SUPPORT_REARM_POOL_AMOUNT, right_controls_enabled);
 	enable(IDC_SUPPORT_REARM_SET_AMOUNT, right_controls_enabled);
 	enable(IDC_SUPPORT_REARM_SET_UNLIMITED, right_controls_enabled);
@@ -302,6 +327,21 @@ void CSupportRearmDlg::OnSelchangeWeaponList()
 	update_control_states();
 }
 
+void CSupportRearmDlg::OnSelchangePoolTeam()
+{
+	if (!UpdateData(TRUE)) {
+		return;
+	}
+
+	populate_weapon_list();
+	auto* weapon_list = (CListBox*)GetDlgItem(IDC_SUPPORT_REARM_WEAPON_LIST);
+	if (weapon_list != nullptr && weapon_list->GetCount() > 0) {
+		weapon_list->SetCurSel(0);
+	}
+	update_weapon_amount_display();
+	update_control_states();
+}
+
 void CSupportRearmDlg::OnSetPoolAmount()
 {
 	if (!UpdateData(TRUE)) {
@@ -358,7 +398,9 @@ void CSupportRearmDlg::OnOK()
 
 	for (int i = 0; i < weapon_info_size(); ++i) {
 		if (Weapon_info[i].disallow_rearm || !Weapon_info[i].wi_flags[Weapon::Info_Flags::Player_allowed]) {
-			The_mission.support_ships.rearm_weapon_pool[i] = 0;
+			for (int team = 0; team < MAX_TVT_TEAMS; ++team) {
+				The_mission.support_ships.rearm_weapon_pool[team][i] = 0;
+			}
 		}
 	}
 
