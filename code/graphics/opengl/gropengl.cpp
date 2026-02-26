@@ -283,7 +283,7 @@ void gr_opengl_print_screen(const char *filename)
 	GL_state.PushFramebufferState();
 	GL_state.BindFrameBuffer(Cmdline_window_res ? Back_framebuffer : 0, GL_FRAMEBUFFER);
 
-	// Reading from the front buffer here seems to no longer work correctly; that just reads back all zeros
+	//Reading from the front buffer here seems to no longer work correctly; that just reads back all zeros
 	glReadBuffer(Cmdline_window_res ? GL_COLOR_ATTACHMENT0 : GL_FRONT);
 
 	// now for the data
