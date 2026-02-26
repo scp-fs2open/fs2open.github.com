@@ -4777,7 +4777,7 @@ int game_poll()
 				}
 
 				mprintf(( "Dumping screen to '%s'\n", tmp_name ));
-				gr_print_screen(tmp_name);
+				gr_request_screenshot(tmp_name);
 
 				os_config_write_uint(nullptr, "ScreenshotNum", counter);
 			}
