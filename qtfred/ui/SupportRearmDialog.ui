@@ -32,7 +32,23 @@
    <item>
     <widget class="QGroupBox" name="poolGroup"><property name="title"><string>Support Rearm Pool</string></property>
      <layout class="QHBoxLayout" name="poolLayout">
-      <item><widget class="QListWidget" name="weaponList"/></item>
+	 <item>
+		<layout class="QVBoxLayout" name="poolEditorLeftLayout">
+			<item>
+				<widget class="QLabel" name="poolTeamLabel">
+					<property name="text">
+						<string>Pool Team</string>
+					</property>
+				</widget>
+			</item>
+			<item>
+				<widget class="QComboBox" name="poolTeamCombo"/>
+			</item>
+			<item>
+				<widget class="QListWidget" name="weaponList"/>
+			</item>
+		</layout>
+	  </item>
       <item><layout class="QVBoxLayout" name="rightButtons">
         <item><widget class="QLabel" name="poolAmountLabel"><property name="text"><string>Pool Amount</string></property></widget></item>
         <item><widget class="QSpinBox" name="poolAmountSpin"><property name="minimum"><number>-1</number></property><property name="maximum"><number>100000</number></property></widget></item>

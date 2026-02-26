@@ -14,6 +14,14 @@ SupportRearmDialog::SupportRearmDialog(QWidget* parent, EditorViewport* viewport
 	  _viewport(viewport)
 {
 	ui->setupUi(this);
+	ui->poolTeamCombo->clear();
+	for (int i = 0; i < Num_teams && i < MAX_TVT_TEAMS; ++i) {
+		ui->poolTeamCombo->addItem(QString("Team %1").arg(i + 1), i);
+	}
+	_activePoolTeam = 0;
+	if (ui->poolTeamCombo->count() > 0) {
+		ui->poolTeamCombo->setCurrentIndex(_activePoolTeam);
+	}
 	populateWeaponList();
 	if (ui->weaponList->count() > 0) {
 		ui->weaponList->setCurrentRow(0);
@@ -37,6 +45,10 @@ void SupportRearmDialog::setInitial(const SupportRearmSettings& settings)
 		ui->limitPoolCheck->setChecked(settings.limitRearmToPool);
 		ui->fromLoadoutCheck->setChecked(settings.rearmPoolFromLoadout);
 		ui->precedenceCheck->setChecked(settings.allowWeaponPrecedence);
+		_activePoolTeam = 0;
+		if (ui->poolTeamCombo->count() > 0) {
+			ui->poolTeamCombo->setCurrentIndex(_activePoolTeam);
+		}
 	}
 	populateWeaponList();
 	if (ui->weaponList->count() > 0) {
@@ -57,9 +69,11 @@ SupportRearmSettings SupportRearmDialog::settings() const
 	out.limitRearmToPool = ui->limitPoolCheck->isChecked();
 	out.rearmPoolFromLoadout = ui->fromLoadoutCheck->isChecked();
 	out.allowWeaponPrecedence = ui->precedenceCheck->isChecked();
-	for (int i = 0; i < weapon_info_size(); ++i) {
-		if (Weapon_info[i].disallow_rearm) {
-			out.rearmWeaponPool[i] = 0;
+	for (int team = 0; team < MAX_TVT_TEAMS; ++team) {
+		for (int i = 0; i < weapon_info_size(); ++i) {
+			if (Weapon_info[i].disallow_rearm) {
+				out.rearmWeaponPool[team][i] = 0;
+			}
 		}
 	}
 	return out;
@@ -89,7 +103,7 @@ QString SupportRearmDialog::weaponEntryText(int weaponClass) const
 	if (wi.disallow_rearm) {
 		return QString::fromStdString(SCP_string(wi.name) + " - 0 (disabled by weapon settings)");
 	}
-	const int amount = _model->settings().rearmWeaponPool[weaponClass];
+	const int amount = _model->settings().rearmWeaponPool[_activePoolTeam][weaponClass];
 	if (amount < 0) {
 		return QString::fromStdString(SCP_string(wi.name) + " - Unlimited");
 	}
@@ -132,7 +146,7 @@ void SupportRearmDialog::updateFromSelection()
 	} else if (Weapon_info[cls].disallow_rearm) {
 		ui->poolAmountSpin->setValue(0);
 	} else {
-		ui->poolAmountSpin->setValue(_model->settings().rearmWeaponPool[cls]);
+		ui->poolAmountSpin->setValue(_model->settings().rearmWeaponPool[_activePoolTeam][cls]);
 	}
 }
 
@@ -157,6 +171,7 @@ void SupportRearmDialog::updateControlStates()
 	ui->precedenceCheck->setEnabled(limitedPoolEnabled);
 
 	ui->weaponList->setEnabled(poolEnabled);
+	ui->poolTeamCombo->setEnabled(poolEnabled);
 	ui->poolAmountSpin->setEnabled(rightEnabled);
 	ui->setAmountButton->setEnabled(rightEnabled);
 	ui->setUnlimitedButton->setEnabled(rightEnabled);
@@ -172,9 +187,9 @@ void SupportRearmDialog::setCurrentWeaponAmount(int amount)
 	if (cls < 0 || cls >= weapon_info_size())
 		return;
 	if (Weapon_info[cls].disallow_rearm) {
-		_model->settings().rearmWeaponPool[cls] = 0;
+		_model->settings().rearmWeaponPool[_activePoolTeam][cls] = 0;
 	} else {
-		_model->settings().rearmWeaponPool[cls] = (amount < 0) ? -1 : amount;
+		_model->settings().rearmWeaponPool[_activePoolTeam][cls] = (amount < 0) ? -1 : amount;
 	}
 	populateWeaponList();
 	updateFromSelection();
@@ -185,9 +200,9 @@ void SupportRearmDialog::setAllVisibleWeaponAmounts(int amount)
 {
 	for (auto cls : _model->visibleWeaponClasses()) {
 		if (Weapon_info[cls].disallow_rearm) {
-			_model->settings().rearmWeaponPool[cls] = 0;
+			_model->settings().rearmWeaponPool[_activePoolTeam][cls] = 0;
 		} else {
-			_model->settings().rearmWeaponPool[cls] = (amount < 0) ? -1 : amount;
+			_model->settings().rearmWeaponPool[_activePoolTeam][cls] = (amount < 0) ? -1 : amount;
 		}
 	}
 	populateWeaponList();
@@ -255,5 +270,20 @@ void SupportRearmDialog::on_precedenceCheck_toggled(bool)
 }
 void SupportRearmDialog::on_hullRepairSpin_valueChanged(double) {}
 void SupportRearmDialog::on_subsysRepairSpin_valueChanged(double) {}
+
+void SupportRearmDialog::on_poolTeamCombo_currentIndexChanged(int index)
+{
+	if (index < 0 || index >= ui->poolTeamCombo->count()) {
+		return;
+	}
+
+	_activePoolTeam = ui->poolTeamCombo->itemData(index).toInt();
+	populateWeaponList();
+	if (ui->weaponList->count() > 0) {
+		ui->weaponList->setCurrentRow(0);
+	}
+	updateFromSelection();
+	updateControlStates();
+}
 
 } // namespace fso::fred::dialogs

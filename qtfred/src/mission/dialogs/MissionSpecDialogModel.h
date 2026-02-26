@@ -20,7 +20,7 @@ struct SupportRearmSettings {
 	bool limitRearmToPool = false;
 	bool rearmPoolFromLoadout = false;
 	bool allowWeaponPrecedence = false;
-	std::array<int, MAX_WEAPON_TYPES> rearmWeaponPool{};
+	std::array<std::array<int, MAX_WEAPON_TYPES>, MAX_TVT_TEAMS> rearmWeaponPool{};
 
 	bool operator==(const SupportRearmSettings& rhs) const
 	{

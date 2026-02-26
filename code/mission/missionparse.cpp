@@ -1338,9 +1338,9 @@ void parse_player_info2(mission *pm)
 			ptr->weaponry_count[num_choices] = wc.count;
 			if (pm->support_ships.rearm_pool_from_loadout) {
 				if (Weapon_info[wc.index].disallow_rearm) {
-					pm->support_ships.rearm_weapon_pool[wc.index] = 0;
-				} else if (wc.count > 0 && pm->support_ships.rearm_weapon_pool[wc.index] >= 0) {
-					pm->support_ships.rearm_weapon_pool[wc.index] += wc.count;
+					pm->support_ships.rearm_weapon_pool[nt][wc.index] = 0;
+				} else if (wc.count > 0 && pm->support_ships.rearm_weapon_pool[nt][wc.index] >= 0) {
+					pm->support_ships.rearm_weapon_pool[nt][wc.index] += wc.count;
 				}
 			}
 
@@ -1382,11 +1382,11 @@ void parse_player_info2(mission *pm)
 					}
 
 					if (Weapon_info[wc.index].disallow_rearm) {
-						pm->support_ships.rearm_weapon_pool[wc.index] = 0;
+						pm->support_ships.rearm_weapon_pool[nt][wc.index] = 0;
 					} else if (wc.count < 0) {
-						pm->support_ships.rearm_weapon_pool[wc.index] = -1;
-					} else if (wc.count > 0 && pm->support_ships.rearm_weapon_pool[wc.index] >= 0) {
-						pm->support_ships.rearm_weapon_pool[wc.index] += wc.count;
+						pm->support_ships.rearm_weapon_pool[nt][wc.index] = -1;
+					} else if (wc.count > 0 && pm->support_ships.rearm_weapon_pool[nt][wc.index] >= 0) {
+						pm->support_ships.rearm_weapon_pool[nt][wc.index] += wc.count;
 					}
 				}
 			}
@@ -7369,7 +7369,7 @@ void support_ship_info::reset()
 	ship_class = -1;                   // ship class will be determined by the summoning ship's species
 	tally = 0;
 	support_available_for_species = 0; // will be filled in by the next loop
-	memset(&rearm_weapon_pool, -1, sizeof(int) * MAX_WEAPON_TYPES);
+	memset(&rearm_weapon_pool, -1, sizeof(rearm_weapon_pool));
 	disallow_rearm = false;
 	allow_rearm_weapon_precedence = false;
 	rearm_pool_from_loadout = false;
@@ -9712,6 +9712,23 @@ bool check_for_25_1_data()
 
 	if (The_mission.flags[Mission::Mission_Flags::Fullneb] && !Neb2_fog_save_legacy_values)
 		return true;
+
+	if (The_mission.flags[Mission::Mission_Flags::Limited_support_rearm_pool]) {
+		return true;
+	}
+
+	if (The_mission.support_ships.disallow_rearm || The_mission.support_ships.allow_rearm_weapon_precedence ||
+		The_mission.support_ships.rearm_pool_from_loadout) {
+		return true;
+	}
+
+	for (int team = 0; team < Num_teams; ++team) {
+		for (int weapon = 0; weapon < MAX_WEAPON_TYPES; ++weapon) {
+			if (The_mission.support_ships.rearm_weapon_pool[team][weapon] != -1) {
+				return true;
+			}
+		}
+	}
 
 	constexpr auto defaultLayer = "Default";
 

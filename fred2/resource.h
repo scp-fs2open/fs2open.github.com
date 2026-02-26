@@ -1289,6 +1289,7 @@
 #define IDC_SUPPORT_REARM_SET_ALL_AMOUNT 1728
 #define IDC_SUPPORT_REARM_SET_ALL_UNLIMITED 1729
 #define IDC_SUPPORT_REARM_SET_ALL_ZERO   1730
+#define IDC_SUPPORT_REARM_POOL_TEAM      1731
 #define IDC_SEXP_POPUP_LIST             32770
 #define ID_FILE_MISSIONNOTES            32771
 #define ID_DUPLICATE                    32774
@@ -1605,7 +1606,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        335
 #define _APS_NEXT_COMMAND_VALUE         33112
-#define _APS_NEXT_CONTROL_VALUE         1731
+#define _APS_NEXT_CONTROL_VALUE         1732
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif

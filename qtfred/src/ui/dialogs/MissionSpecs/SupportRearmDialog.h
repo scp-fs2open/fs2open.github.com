@@ -43,8 +43,9 @@ class SupportRearmDialog : public QDialog {
 	void on_precedenceCheck_toggled(bool);
 	void on_hullRepairSpin_valueChanged(double);
 	void on_subsysRepairSpin_valueChanged(double);
+	void on_poolTeamCombo_currentIndexChanged(int);
 
-  private:
+  private: // NOLINT(readability-redundant-access-specifiers)
 	void populateWeaponList();
 	void updateFromSelection();
 	void updateControlStates();
@@ -56,6 +57,8 @@ class SupportRearmDialog : public QDialog {
 	std::unique_ptr<Ui::SupportRearmDialog> ui;
 	std::unique_ptr<SupportRearmDialogModel> _model;
 	EditorViewport* _viewport;
+
+	int _activePoolTeam = 0;
 };
 
 } // namespace fso::fred::dialogs
