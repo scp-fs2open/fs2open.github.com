@@ -756,6 +756,7 @@ static int get_first_flow_iter(pcp_flow_t *f, void *data) {
     case pfs_idle:
     case pfs_wait_for_server_init:
     case pfs_send:
+    case pfs_failed:
         d->msg = f;
         return 1;
     default:
