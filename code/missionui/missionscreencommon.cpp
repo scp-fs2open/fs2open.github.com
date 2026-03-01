@@ -1653,7 +1653,7 @@ void draw_model_icon(int model_id, uint64_t flags, float closeup_zoom, int x, in
 	Glowpoint_override = true;
 	model_clear_instance(model_id);
 	int model_instance = -1;
-	model_get_cached_ui_render_instance(model_id, &model_instance, cached_ui_render_instance_type::icon);
+	model_get_cached_ui_render_instance(model_id, &model_instance);
 	if (sip != nullptr) {
 		model_set_up_techroom_instance(sip, model_instance);
 	}
@@ -1676,7 +1676,7 @@ void draw_model_rotating(model_render_params *render_info, int ship_class, int m
 		return;
 
 	int model_instance = -1;
-	model_get_cached_ui_render_instance(model_id, &model_instance, cached_ui_render_instance_type::rotating);
+	model_get_cached_ui_render_instance(model_id, &model_instance);
 	if (!(flags & MR_IS_MISSILE) && SCP_vector_inbounds(Ship_info, ship_class)) {
 		model_set_up_techroom_instance(&Ship_info[ship_class], model_instance);
 	}

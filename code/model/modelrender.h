@@ -160,22 +160,14 @@ public:
 	float get_alpha_mult() const;
 };
 
-enum class cached_ui_render_instance_type : uint8_t {
-	tech_room,
-	rotating,
-	overhead,
-	icon
-};
-
 struct cached_ui_render_instance_key {
 	int model_num;
-	cached_ui_render_instance_type type;
 	int state_instance_id;
 	size_t instance_data_hash;
 
 	bool operator==(const cached_ui_render_instance_key& other) const
 	{
-		return model_num == other.model_num && type == other.type && state_instance_id == other.state_instance_id &&
+		return model_num == other.model_num && state_instance_id == other.state_instance_id &&
 			   instance_data_hash == other.instance_data_hash;
 	}
 };
@@ -186,7 +178,6 @@ struct cached_ui_render_instance_key_hash {
 		size_t seed = 0;
 		
 		boost::hash_combine(seed, key.model_num);
-		boost::hash_combine(seed, static_cast<int>(key.type));
 		boost::hash_combine(seed, key.state_instance_id);
 		boost::hash_combine(seed, key.instance_data_hash);
 		return seed;
@@ -359,7 +350,7 @@ void model_render_set_wireframe_color(const color* clr);
 bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int y2, float zoom, bool lighting, int class_idx, const matrix* orient, const SCP_string& pof_filename = "", float closeup_zoom = 0, const vec3d* closeup_pos = &vmd_zero_vector, const SCP_string& tcolor = "");
 
 size_t model_hash_subsystem_name_list_for_cache(const SCP_vector<SCP_string>& subsystem_names);
-TriStateBool model_get_cached_ui_render_instance(int model_num, int* model_instance_out, cached_ui_render_instance_type type, size_t instance_data_hash = 0);
+TriStateBool model_get_cached_ui_render_instance(int model_num, int* model_instance_out, size_t instance_data_hash = 0);
 void model_clear_cached_ui_render_instances();
 void model_process_cached_ui_render_instances();
 

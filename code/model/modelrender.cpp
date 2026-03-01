@@ -86,7 +86,7 @@ size_t model_hash_subsystem_name_list_for_cache(const SCP_vector<SCP_string>& su
 
 // Returns TriStateBool::TRUE_ if a new instance was created, TriStateBool::FALSE_ if an existing instance was returned,
 // or TriStateBool::UNKNOWN_ if there was an error (and model_instance_out will be set to -1 in this case)
-TriStateBool model_get_cached_ui_render_instance(int model_num, int* model_instance_out, cached_ui_render_instance_type type, size_t instance_data_hash)
+TriStateBool model_get_cached_ui_render_instance(int model_num, int* model_instance_out, size_t instance_data_hash)
 {
 	Assertion(model_instance_out != nullptr, "model_instance_out must not be null!");
 	if (model_instance_out == nullptr) {
@@ -95,7 +95,6 @@ TriStateBool model_get_cached_ui_render_instance(int model_num, int* model_insta
 
 	cached_ui_render_instance_key key;
 	key.model_num = model_num;
-	key.type = type;
 	key.state_instance_id = gameseq_get_state_instance_id();
 	key.instance_data_hash = instance_data_hash;
 
@@ -3327,7 +3326,7 @@ bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int 
 
 	// Get a cached UI render instance for ships so repeated UI/Lua renders avoid per-call allocation churn
 	if (model_type == TECH_SHIP) {
-		model_get_cached_ui_render_instance(model_num, &model_instance, cached_ui_render_instance_type::tech_room);
+		model_get_cached_ui_render_instance(model_num, &model_instance);
 		model_set_up_techroom_instance(&Ship_info[class_idx], model_instance);
 	}
 

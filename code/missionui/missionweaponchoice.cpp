@@ -825,7 +825,7 @@ void draw_3d_overhead_view(int model_num,
 
 		model_clear_instance(model_num);
 		int model_instance = -1;
-		model_get_cached_ui_render_instance(model_num, &model_instance, cached_ui_render_instance_type::overhead);
+		model_get_cached_ui_render_instance(model_num, &model_instance);
 		model_set_up_techroom_instance(sip, model_instance);
 		polymodel* pm = model_get(model_num);
 

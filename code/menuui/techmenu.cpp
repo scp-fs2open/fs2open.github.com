@@ -597,7 +597,7 @@ void techroom_ships_render(float frametime)
 	render_info.set_detail_level_lock(0);
 
 	int model_instance = -1;
-	model_get_cached_ui_render_instance(Techroom_modelnum, &model_instance, cached_ui_render_instance_type::tech_room);
+	model_get_cached_ui_render_instance(Techroom_modelnum, &model_instance);
 	if (Tab == SHIPS_DATA_TAB) {
 		model_set_up_techroom_instance(&Ship_info[Cur_entry_index], model_instance);
 	}
