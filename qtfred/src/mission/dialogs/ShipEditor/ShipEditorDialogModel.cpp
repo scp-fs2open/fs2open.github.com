@@ -30,6 +30,12 @@ ShipEditorDialogModel::ShipEditorDialogModel(QObject* parent, EditorViewport* vi
 	initializeData();
 }
 
+void ShipEditorDialogModel::setTreeControls(sexp_tree* arrival, sexp_tree* departure)
+{
+	_arrival_tree_widget = arrival;
+	_departure_tree_widget = departure;
+}
+
 int ShipEditorDialogModel::tristate_set(int val, int cur_state)
 {
 	if (val) {
@@ -205,6 +211,8 @@ void ShipEditorDialogModel::initializeData()
 	multi_edit = (total_count > 1);
 
 	_m_arrival_tree_formula = _m_departure_tree_formula = -1;
+	_arrival_tree_dirty = false;
+	_departure_tree_dirty = false;
 	_m_arrival_location = -1;
 	_m_arrival_dist = -1;
 	_m_arrival_target = -1;
@@ -806,14 +814,20 @@ bool ShipEditorDialogModel::update_ship(int ship)
 			if (Ships[ship].arrival_cue >= 0)
 				free_sexp2(Ships[ship].arrival_cue);
 
-			Ships[ship].arrival_cue = _m_arrival_tree_formula;
+			if (_arrival_tree_dirty && _arrival_tree_widget)
+				Ships[ship].arrival_cue = _arrival_tree_widget->_model.save_tree();
+			else
+				Ships[ship].arrival_cue = _m_arrival_tree_formula;
 		}
 
 		if (!multi_edit || _m_update_departure) {
 			if (Ships[ship].departure_cue >= 0)
 				free_sexp2(Ships[ship].departure_cue);
 
-			Ships[ship].departure_cue = _m_departure_tree_formula;
+			if (_departure_tree_dirty && _departure_tree_widget)
+				Ships[ship].departure_cue = _departure_tree_widget->_model.save_tree();
+			else
+				Ships[ship].departure_cue = _m_departure_tree_formula;
 		}
 		Ships[ship].arrival_distance = _m_arrival_dist;
 		Ships[ship].arrival_delay = _m_arrival_delay;
@@ -1246,10 +1260,11 @@ bool ShipEditorDialogModel::getArrivalCue() const
 	return _m_update_arrival;
 }
 
-void ShipEditorDialogModel::setArrivalFormula(const int old_form, const int new_form)
+void ShipEditorDialogModel::setArrivalTreeDirty()
 {
-	if (old_form != _m_arrival_tree_formula)
-		modify(_m_arrival_tree_formula, new_form);
+	_arrival_tree_dirty = true;
+	_m_update_arrival = true;
+	set_modified();
 }
 
 int ShipEditorDialogModel::getArrivalFormula() const
@@ -1317,10 +1332,11 @@ bool ShipEditorDialogModel::getDepartureCue() const
 	return _m_update_departure;
 }
 
-void ShipEditorDialogModel::setDepartureFormula(const int old_form, const int new_form)
+void ShipEditorDialogModel::setDepartureTreeDirty()
 {
-	if (old_form != _m_departure_tree_formula)
-		modify(_m_departure_tree_formula, new_form);
+	_departure_tree_dirty = true;
+	_m_update_departure = true;
+	set_modified();
 }
 
 int ShipEditorDialogModel::getDepartureFormula() const

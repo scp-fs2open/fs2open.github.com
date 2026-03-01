@@ -586,9 +586,10 @@ void WingEditorDialog::on_customWarpinButton_clicked()
 	dlg.exec();
 }
 
-void WingEditorDialog::on_arrivalTree_nodeChanged(int newTree)
+void WingEditorDialog::on_arrivalTree_modified()
 {
-	_model->setArrivalTree(newTree); //TODO This seems broken in a weird way. Will need followup
+	int new_sexp = ui->arrivalTree->_model.save_tree();
+	_model->setArrivalTree(new_sexp);
 }
 
 void WingEditorDialog::on_noArrivalWarpCheckBox_toggled(bool checked)
@@ -664,9 +665,10 @@ void WingEditorDialog::on_customWarpoutButton_clicked()
 	dlg.exec();
 }
 
-void WingEditorDialog::on_departureTree_nodeChanged(int newTree)
+void WingEditorDialog::on_departureTree_modified()
 {
-	_model->setDepartureTree(newTree); //TODO This seems broken in a weird way. Will need followup
+	int new_sexp = ui->departureTree->_model.save_tree();
+	_model->setDepartureTree(new_sexp);
 }
 
 void WingEditorDialog::on_noDepartureWarpCheckBox_toggled(bool checked)

@@ -16,6 +16,10 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	bool _m_player_ship;
 	int _m_departure_tree_formula;
 	int _m_arrival_tree_formula;
+	bool _arrival_tree_dirty = false;
+	bool _departure_tree_dirty = false;
+	sexp_tree* _arrival_tree_widget = nullptr;
+	sexp_tree* _departure_tree_widget = nullptr;
 	SCP_string _m_ship_name;
 	SCP_string _m_ship_display_name;
 	SCP_string _m_cargo1;
@@ -75,6 +79,7 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 
   public:
 	ShipEditorDialogModel(QObject* parent, EditorViewport* viewport);
+	void setTreeControls(sexp_tree* arrival, sexp_tree* departure);
 	void initializeData();
 	bool apply() override;
 	void reject() override;
@@ -144,7 +149,7 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	void setArrivalCue(const bool);
 	bool getArrivalCue() const;
 
-	void setArrivalFormula(const int, const int);
+	void setArrivalTreeDirty();
 	int getArrivalFormula() const;
 
 	void setNoArrivalWarp(const int);
@@ -164,7 +169,7 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	void setDepartureCue(const bool);
 	bool getDepartureCue() const;
 
-	void setDepartureFormula(const int, const int);
+	void setDepartureTreeDirty();
 	int getDepartureFormula() const;
 	void setNoDepartureWarp(const int);
 	int getNoDepartureWarp() const;

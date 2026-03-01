@@ -29,6 +29,8 @@ static char THIS_FILE[] = __FILE__;
 #endif
 
 
+static int annotation_key_for_item(event_sexp_tree *tree, HTREEITEM h);
+
 BEGIN_MESSAGE_MAP(event_sexp_tree, sexp_tree)
 	//{{AFX_MSG_MAP(event_sexp_tree)
 	ON_NOTIFY_EX_RANGE(TTN_NEEDTEXTW, 0, 0xFFFF, OnToolTipText)
@@ -251,7 +253,7 @@ BOOL event_editor::OnInitDialog()
 		auto h = traverse_path(ea);
 		if (h)
 		{
-			ea.node_index = m_event_tree.get_node(h);
+			ea.node_index = annotation_key_for_item(&m_event_tree, h);
 			if (!ea.comment.empty())
 				event_annotation_swap_image(&m_event_tree, h, ea);
 		}
@@ -615,8 +617,18 @@ void event_editor::OnButtonOk()
 	for (auto &ea : Event_annotations)
 	{
 		ea.path.clear();
-		if (ea.node_index >= 0)
+		if (ea.node_index >= 0) {
 			populate_path(ea, m_event_tree.handle(ea.node_index));
+		} else if (ea.node_index <= -2) {
+			// Root label annotation: decode the formula and find the event label handle
+			int formula = -(ea.node_index + 2);
+			HTREEITEM formula_handle = m_event_tree.handle(formula);
+			if (formula_handle) {
+				HTREEITEM label_handle = m_event_tree.GetParentItem(formula_handle);
+				if (label_handle)
+					populate_path(ea, label_handle);
+			}
+		}
 		ea.node_index = -1;
 	}
 
@@ -1691,6 +1703,26 @@ void event_annotation_prune()
 	);
 }
 
+// Returns a unique annotation key for the given tree item.
+// For regular nodes: their tree_nodes[] index (>= 0).
+// For root label nodes (event names): -(formula + 2), which is always <= -2,
+// avoiding collision with -1 (the default/unresolved sentinel).
+static int annotation_key_for_item(event_sexp_tree *tree, HTREEITEM h)
+{
+	int node = tree->get_node(h);
+	if (node >= 0)
+		return node;
+
+	// Root label: encode the formula stored in item data
+	if (!tree->GetParentItem(h)) {
+		int formula = (int)tree->GetItemData(h);
+		if (formula >= 0)
+			return -(formula + 2);
+	}
+
+	return -1;
+}
+
 int event_annotation_lookup(int node_idx)
 {
 	for (size_t i = 0; i < Event_annotations.size(); ++i)
@@ -1786,7 +1818,7 @@ BOOL event_sexp_tree::OnToolTipText(UINT id, NMHDR *pNMHDR, LRESULT *pResult)
 
 	if (h)
 	{
-		int node_idx = get_node(h);
+		int node_idx = annotation_key_for_item(this, h);
 		int ea_idx = event_annotation_lookup(node_idx);
 		if (ea_idx >= 0)
 		{
@@ -1839,7 +1871,7 @@ void event_sexp_tree::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 			HTREEITEM hItem = (HTREEITEM)pcd->nmcd.dwItemSpec;
 			if (hItem)
 			{
-				int node_idx = get_node(hItem);
+				int node_idx = annotation_key_for_item(this, hItem);
 				int ea_idx = event_annotation_lookup(node_idx);
 				if (ea_idx >= 0)
 				{
@@ -1889,7 +1921,7 @@ void event_sexp_tree::edit_comment(HTREEITEM h)
 	CString old_text = _T("");
 	CString new_text;
 
-	int node_idx = get_node(h);
+	int node_idx = annotation_key_for_item(this, h);
 	int i = event_annotation_lookup(node_idx);
 	if (i >= 0)
 		old_text = (CString)Event_annotations[i].comment.c_str();
@@ -1926,7 +1958,7 @@ void event_sexp_tree::edit_bg_color(HTREEITEM h)
 	COLORREF old_color = RGB(255, 255, 255);
 	COLORREF new_color;
 
-	int node_idx = get_node(h);
+	int node_idx = annotation_key_for_item(this, h);
 	int i = event_annotation_lookup(node_idx);
 	if (i >= 0)
 		old_color = RGB(Event_annotations[i].r, Event_annotations[i].g, Event_annotations[i].b);

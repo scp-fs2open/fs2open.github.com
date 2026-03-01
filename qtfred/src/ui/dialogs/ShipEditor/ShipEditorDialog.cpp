@@ -23,6 +23,7 @@ ShipEditorDialog::ShipEditorDialog(FredView* parent, EditorViewport* viewport)
 {
 	this->setFocus();
 	ui->setupUi(this);
+	_model->setTreeControls(ui->arrivalTree, ui->departureTree);
 
 	ui->HelpTitle->setVisible(viewport->Show_sexp_help_ship_editor);
 	ui->helpText->setVisible(viewport->Show_sexp_help_ship_editor);
@@ -847,9 +848,9 @@ void ShipEditorDialog::on_noArrivalWarpCheckBox_toggled(bool value)
 {
 	_model->setNoArrivalWarp(value);
 }
-void ShipEditorDialog::on_arrivalTree_rootNodeFormulaChanged(int old, int node)
+void ShipEditorDialog::on_arrivalTree_modified()
 {
-	_model->setArrivalFormula(old, node);
+	_model->setArrivalTreeDirty();
 }
 void ShipEditorDialog::on_arrivalTree_helpChanged(const QString& help)
 {
@@ -877,9 +878,9 @@ void fred::dialogs::ShipEditorDialog::on_updateDepartureCueCheckBox_toggled(bool
 {
 	_model->setDepartureCue(value);
 }
-void fred::dialogs::ShipEditorDialog::on_departureTree_rootNodeFormulaChanged(int old, int node)
+void fred::dialogs::ShipEditorDialog::on_departureTree_modified()
 {
-	_model->setDepartureFormula(old, node);
+	_model->setDepartureTreeDirty();
 }
 void fred::dialogs::ShipEditorDialog::on_departureTree_helpChanged(const QString& help)
 {
