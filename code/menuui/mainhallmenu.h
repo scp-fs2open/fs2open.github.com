@@ -77,6 +77,8 @@ public:
 
 	bool render_title = true;
 	bool render_version = true;
+	int mod_title_coords[2] = {-1, -1};
+	int fso_version_coords[2] = {-1, -1};
 
 	interface_snd_id ambient_sound = InterfaceSounds::MAIN_HALL_AMBIENT;
 
