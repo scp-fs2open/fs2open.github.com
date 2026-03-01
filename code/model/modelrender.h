@@ -163,7 +163,8 @@ public:
 enum class cached_ui_render_instance_type : uint8_t {
 	tech_room,
 	rotating,
-	overhead
+	overhead,
+	icon
 };
 
 struct cached_ui_render_instance_key {

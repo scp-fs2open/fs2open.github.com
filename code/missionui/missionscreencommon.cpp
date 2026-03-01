@@ -1652,9 +1652,14 @@ void draw_model_icon(int model_id, uint64_t flags, float closeup_zoom, int x, in
 
 	Glowpoint_override = true;
 	model_clear_instance(model_id);
+	int model_instance = -1;
+	model_get_cached_ui_render_instance(model_id, &model_instance, cached_ui_render_instance_type::icon);
+	if (sip != nullptr) {
+		model_set_up_techroom_instance(sip, model_instance);
+	}
 
 	render_info.set_flags(flags);
-	model_render_immediate(&render_info, model_id, &object_orient, &vmd_zero_vector);
+	model_render_immediate(&render_info, model_id, model_instance, &object_orient, &vmd_zero_vector);
 	Glowpoint_override = false;
 
 	gr_end_view_matrix();
@@ -1670,9 +1675,8 @@ void draw_model_rotating(model_render_params *render_info, int ship_class, int m
 	if (model_id < 0)
 		return;
 
-	const auto instance_type = (flags & MR_IS_MISSILE) ? cached_ui_render_instance_type::overhead : cached_ui_render_instance_type::rotating;
 	int model_instance = -1;
-	model_get_cached_ui_render_instance(model_id, &model_instance, instance_type);
+	model_get_cached_ui_render_instance(model_id, &model_instance, cached_ui_render_instance_type::rotating);
 	if (!(flags & MR_IS_MISSILE) && SCP_vector_inbounds(Ship_info, ship_class)) {
 		model_set_up_techroom_instance(&Ship_info[ship_class], model_instance);
 	}
