@@ -22,6 +22,7 @@
 #include "io/mouse.h"
 #include "io/timer.h"
 #include "lighting/lighting.h"
+#include "lighting/lighting_profiles.h"
 #include "localization/localize.h"
 #include "menuui/snazzyui.h"
 #include "missionui/chatbox.h"
@@ -768,6 +769,8 @@ void draw_3d_overhead_view(int model_num,
 	overhead_style style,
 	const SCP_string& tcolor)
 {
+	lighting_profiles::set_non_mission_profile non_mission_lighting_profile;
+	
 	ship_info* sip = &Ship_info[ship_class];
 
 	if (model_num < 0) {

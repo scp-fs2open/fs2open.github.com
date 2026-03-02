@@ -28,6 +28,7 @@
 #include "io/timer.h"
 #include "jumpnode/jumpnode.h"
 #include "lighting/lighting.h"
+#include "lighting/lighting_profiles.h"
 #include "menuui/snazzyui.h"
 #include "mission/missionbriefcommon.h"
 #include "mission/missioncampaign.h"
@@ -1080,6 +1081,8 @@ void brief_render_closeup_text()
 //
 void brief_render_closeup(int ship_class, float frametime)
 {
+	lighting_profiles::set_non_mission_profile non_mission_lighting_profile;
+	
 	matrix	view_orient = IDENTITY_MATRIX;
 	matrix	temp_matrix;
 	float		ang;
