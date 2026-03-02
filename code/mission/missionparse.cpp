@@ -9525,4 +9525,6 @@ bool check_for_25_1_data()
 			}
 		}
 	}
+
+	return false;
 }
