@@ -9519,8 +9519,8 @@ bool check_for_25_1_data()
 	}
 
 	for (int team = 0; team < Num_teams; ++team) {
-		for (int weapon = 0; weapon < MAX_WEAPON_TYPES; ++weapon) {
-			if (The_mission.support_ships.rearm_weapon_pool[team][weapon] != -1) {
+		for (int pool_wep = 0; pool_wep < MAX_WEAPON_TYPES; ++pool_wep) {
+			if (The_mission.support_ships.rearm_weapon_pool[team][pool_wep] != -1) {
 				return true;
 			}
 		}
