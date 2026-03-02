@@ -700,12 +700,10 @@ void HudGaugeShield::showShields(const object *objp, ShieldGaugeType mode, bool 
 			int mi = -1;
 			if (!config) {
 				mi = sp->model_instance_num;
-			}else{
-				mi = model_load(sip, false);
+				render_info.set_replacement_textures(model_get_instance(mi)->texture_replace);
 			}
 
 			render_info.set_flags(MR_NO_LIGHTING | MR_AUTOCENTER | MR_NO_FOGGING);
-			render_info.set_replacement_textures(model_get_instance(mi)->texture_replace);
 			render_info.set_detail_level_lock(1);
 			render_info.set_object_number(OBJ_INDEX(objp));
 
