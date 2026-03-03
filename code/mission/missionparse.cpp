@@ -9461,5 +9461,15 @@ bool check_for_24_3_data()
 
 bool check_for_25_1_data()
 {
-	return (count_items_with_value(Props) > 0);
+	if ((count_items_with_value(Props) > 0)) {
+		return true;
+	}
+
+	for (int i = 0; i < Num_wings; i++) {
+		if (!Wings[i].display_name.empty()) {
+			return true;
+		}
+	}
+	
+	return false;
 }
