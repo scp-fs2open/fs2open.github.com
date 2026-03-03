@@ -7,7 +7,7 @@
 
 namespace scripting::api {
 
-ADE_OBJ(l_Volumetric, volumetric_h, "volumetric", "Mission volumetric nebula handle");
+ADE_OBJ(l_Volumetric, volumetric_h, "volumetric_nebula", "Mission volumetric nebula handle");
 
 volumetric_h::volumetric_h(int idx) : index(idx) {}
 
