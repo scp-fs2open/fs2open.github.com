@@ -9578,6 +9578,12 @@ bool check_for_25_1_data()
 	if (count_items_with_value(Props) > 0)
 		return true;
 
+	for (int i = 0; i < Num_wings; i++) {
+		if (!Wings[i].display_name.empty()) {
+			return true;
+		}
+	}
+
 	constexpr auto defaultLayer = "Default";
 
 	for (const auto& so : list_range(&Ship_obj_list))
