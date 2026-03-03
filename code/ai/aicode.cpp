@@ -4293,7 +4293,7 @@ float ai_path_0()
 //	--------------------------------------------------------------------------
 //	Alternate version of ai_path
 //  1. 
-float ai_path_1()
+float ai_path_1_or_2(bool allow_path_shortcut)
 {
 	int		num_points;
 	float		dot, dist_to_goal, dist_to_next, dot_to_next;
@@ -4348,6 +4348,25 @@ float ai_path_1()
 		vm_vec_scale_add(&next_vec, cvp, &delvec, 10.0f);
 		nvp = &next_vec;
 	}
+
+	if (allow_path_shortcut) {
+		//	See if can reach next point (as opposed to current point)
+		//	However, don't do this if docking and next point is last point.
+		if ((aip->mode != AIM_DOCK) || ((aip->path_cur - aip->path_start) < num_points - 2)) {
+			if ((aip->path_cur + aip->path_dir > aip->path_start) &&
+				(aip->path_cur + aip->path_dir < aip->path_start + num_points - 2)) {
+				if (timestamp_elapsed(aip->path_next_check_time)) {
+					aip->path_next_check_time = timestamp(3000);
+					if (!pp_collide(&Pl_objp->pos, nvp, gobjp, 1.1f * Pl_objp->radius)) {
+						cvp = nvp;
+						aip->path_cur += aip->path_dir;
+						nvp = &Path_points[aip->path_cur].pos;
+					}
+				}
+			}
+		}
+	}
+
 	// Set pvp to the previous vertex of interest on the path (if there is one)
 	int prev_point = aip->path_cur - aip->path_dir;
 	if (prev_point >= aip->path_start && prev_point <= aip->path_start + num_points)
@@ -4464,7 +4483,10 @@ float ai_path()
 		return ai_path_0();
 		break;
 	case AI_PATH_MODE_ALT1:
-		return ai_path_1();
+		return ai_path_1_or_2(false);
+		break;
+	case AI_PATH_MODE_ALT2:
+		return ai_path_1_or_2(true);
 		break;
 	default:
 		Error(LOCATION, "Invalid path mode found: %d\n", The_mission.ai_profile->ai_path_mode);
