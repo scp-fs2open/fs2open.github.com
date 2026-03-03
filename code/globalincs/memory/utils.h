@@ -1,4 +1,5 @@
-#pragma once
+#ifndef MEMORY_UTILS_H
+#define MEMORY_UTILS_H
 
 #include <cstring>
 
@@ -22,3 +23,5 @@ inline char *vm_strdup(const char *ptr)
 
 	return vm_strndup(ptr, len);
 }
+
+#endif // MEMORY_UTILS_H
