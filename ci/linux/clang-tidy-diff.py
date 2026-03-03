@@ -89,6 +89,86 @@ def start_workers(max_tasks, tidy_caller, task_queue, lock, timeout):
         t.daemon = True
         t.start()
 
+_HEADER_EXTS = frozenset(('.h', '.hh', '.hpp', '.hxx', '.h++', '.inc'))
+
+# Matches -include/-include-pch and its path argument in a command string,
+# including the -Xclang wrapped form used for precompiled header binaries.
+_PCH_INCLUDE_RE = re.compile(
+    r'-Xclang\s+-include-pch\s+-Xclang\s+(?:"[^"]*"|\S+)'
+    r'|-include(?:-pch)?(?:\s+(?:"[^"]*"|\S+)|\S+)'
+)
+
+
+def _is_header(filename):
+    _, ext = os.path.splitext(filename)
+    return ext.lower() in _HEADER_EXTS
+
+
+def _strip_pch_from_command(command_str):
+    result = _PCH_INCLUDE_RE.sub('', command_str)
+    return re.sub(r'  +', ' ', result).strip()
+
+
+def _strip_pch_from_arguments(arguments):
+    result = []
+    i = 0
+    while i < len(arguments):
+        # -Xclang -include-pch -Xclang <path>  (4 args)
+        if (arguments[i] == '-Xclang' and
+                i + 3 < len(arguments) and
+                arguments[i + 1] == '-include-pch' and
+                arguments[i + 2] == '-Xclang'):
+            i += 4
+            continue
+        # -include <path>  or  -include-pch <path>  (2 args)
+        if arguments[i] in ('-include', '-include-pch') and i + 1 < len(arguments):
+            i += 2
+            continue
+        # -include<path>  or  -include-pch<path>  (concatenated, 1 arg)
+        if arguments[i].startswith('-include'):
+            i += 1
+            continue
+        result.append(arguments[i])
+        i += 1
+    return result
+
+
+def _create_sanitized_compile_commands(build_path):
+    """Create a copy of compile_commands.json with forced-include flags removed.
+
+    When clang-tidy analyses a header file as the main source file, any
+    -include (PCH) flag causes the header to be parsed twice in the same
+    translation unit: once via the forced include and once as the main file.
+    #pragma once cannot prevent this because the main file is not an #include.
+    Stripping these flags for header-file analysis avoids the resulting
+    redefinition errors.
+    """
+    src = os.path.join(build_path, 'compile_commands.json')
+    if not os.path.isfile(src):
+        return None
+    try:
+        with open(src, 'r') as f:
+            db = json.load(f)
+    except (ValueError, OSError):
+        return None
+
+    for entry in db:
+        if 'command' in entry:
+            entry['command'] = _strip_pch_from_command(entry['command'])
+        if 'arguments' in entry:
+            entry['arguments'] = _strip_pch_from_arguments(entry['arguments'])
+
+    sanitized_dir = tempfile.mkdtemp(prefix='clang-tidy-no-pch-')
+    dst = os.path.join(sanitized_dir, 'compile_commands.json')
+    try:
+        with open(dst, 'w') as f:
+            json.dump(db, f)
+    except OSError:
+        shutil.rmtree(sanitized_dir, ignore_errors=True)
+        return None
+    return sanitized_dir
+
+
 def merge_replacement_files(tmpdir, mergefile):
     """Merge all replacement files in a directory into a single file"""
     # The fixes suggested by clang-tidy >= 4.0.0 are given under
@@ -222,12 +302,17 @@ def main():
         common_clang_tidy_args.append('-checks=' + args.checks)
     if args.quiet:
         common_clang_tidy_args.append('-quiet')
-    if args.build_path is not None:
-        common_clang_tidy_args.append('-p=%s' % args.build_path)
     for arg in args.extra_arg:
         common_clang_tidy_args.append('-extra-arg=%s' % arg)
     for arg in args.extra_arg_before:
         common_clang_tidy_args.append('-extra-arg-before=%s' % arg)
+
+    # When headers are in the changed-file list, create a sanitized compile DB
+    # with forced-include flags stripped so they don't cause redefinitions.
+    sanitized_build_path = None
+    if args.build_path is not None:
+        if any(_is_header(name) for name in lines_by_file):
+            sanitized_build_path = _create_sanitized_compile_commands(args.build_path)
 
     for name in lines_by_file:
         line_filter_json = json.dumps(
@@ -244,6 +329,11 @@ def main():
             os.close(handle)
             command.append('-export-fixes=' + tmp_name)
         command.extend(common_clang_tidy_args)
+        if args.build_path is not None:
+            if _is_header(name) and sanitized_build_path is not None:
+                command.append('-p=%s' % sanitized_build_path)
+            else:
+                command.append('-p=%s' % args.build_path)
         command.append(name)
         command.extend(clang_tidy_args)
 
@@ -251,6 +341,9 @@ def main():
 
     # Wait for all threads to be done.
     task_queue.join()
+
+    if sanitized_build_path is not None:
+        shutil.rmtree(sanitized_build_path, ignore_errors=True)
 
     if yaml and args.export_fixes:
         print('Writing fixes to ' + args.export_fixes + ' ...')
