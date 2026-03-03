@@ -22,7 +22,8 @@ class BackgroundEditorDialogModel : public AbstractDialogModel {
 	void reject() override;
 
 	// limits
-	static std::pair<int, int> getOrientLimit() { return {0, 359}; }
+	static std::pair<int, int> getIntOrientLimit() { return {0, 359}; }
+	static std::pair<float, float> getFloatOrientLimit() { return {0.f, DEGREE_UB}; }
 	static std::pair<float,float> getBitmapScaleLimit() { return {0.001f, 18.0f}; }
 	static std::pair<float,float> getSunScaleLimit() { return {0.1f,   50.0f}; }
 	static std::pair<int, int> getDivisionLimit() { return {1, 5}; }
@@ -51,12 +52,12 @@ class BackgroundEditorDialogModel : public AbstractDialogModel {
 	void removeMissionBitmap();
 	SCP_string getBitmapName() const;
 	void setBitmapName(const SCP_string& name);
-	int getBitmapPitch() const;
-	void setBitmapPitch(int deg);
-	int getBitmapBank() const;
-	void setBitmapBank(int deg);
-	int getBitmapHeading() const;
-	void setBitmapHeading(int deg);
+	float getBitmapPitch() const;
+	void setBitmapPitch(float deg);
+	float getBitmapBank() const;
+	void setBitmapBank(float deg);
+	float getBitmapHeading() const;
+	void setBitmapHeading(float deg);
 	float getBitmapScaleX() const;
 	void setBitmapScaleX(float v);
 	float getBitmapScaleY() const;
@@ -75,10 +76,10 @@ class BackgroundEditorDialogModel : public AbstractDialogModel {
 	void removeMissionSun();
 	SCP_string getSunName() const;
 	void setSunName(const SCP_string& name);
-	int getSunPitch() const;
-	void setSunPitch(int deg);
-	int getSunHeading() const;
-	void setSunHeading(int deg);
+	float getSunPitch() const;
+	void setSunPitch(float deg);
+	float getSunHeading() const;
+	void setSunHeading(float deg);
 	float getSunScale() const; // uses scale_x for both x and y
 	void setSunScale(float v);
 
@@ -150,12 +151,12 @@ class BackgroundEditorDialogModel : public AbstractDialogModel {
 	void setSkyboxNoGlowmaps(bool on);
 	static bool getSkyboxForceClamp();
 	void setSkyboxForceClamp(bool on);
-	static int getSkyboxPitch();
-	void setSkyboxPitch(int deg);
-	static int getSkyboxBank();
-	void setSkyboxBank(int deg);
-	static int getSkyboxHeading();
-	void setSkyboxHeading(int deg);
+	static float getSkyboxPitch();
+	void setSkyboxPitch(float deg);
+	static float getSkyboxBank();
+	void setSkyboxBank(float deg);
+	static float getSkyboxHeading();
+	void setSkyboxHeading(float deg);
 
 	// misc group
 	static SCP_vector<SCP_string> getLightingProfileOptions();
