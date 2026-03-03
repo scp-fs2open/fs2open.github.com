@@ -43,7 +43,7 @@
          </property>
          <item>
           <layout class="QGridLayout" name="firstColumnOptions">
-           <item row="4" column="0">
+           <item row="5" column="0">
             <widget class="QLabel" name="hotkeyLabel">
              <property name="text">
               <string>Hotkey</string>
@@ -53,7 +53,7 @@
              </property>
             </widget>
            </item>
-           <item row="2" column="0">
+           <item row="3" column="0">
             <widget class="QLabel" name="numWavesLabel">
              <property name="text">
               <string># of Waves</string>
@@ -70,7 +70,7 @@
              </property>
             </widget>
            </item>
-           <item row="3" column="0">
+           <item row="4" column="0">
             <widget class="QLabel" name="waveThresholdLabel">
              <property name="text">
               <string>Wave Threshold</string>
@@ -80,7 +80,7 @@
              </property>
             </widget>
            </item>
-           <item row="2" column="1">
+           <item row="3" column="1">
             <widget class="QSpinBox" name="numWavesSpinBox">
              <property name="minimum">
               <number>1</number>
@@ -90,10 +90,10 @@
              </property>
             </widget>
            </item>
-           <item row="3" column="1">
+           <item row="4" column="1">
             <widget class="QSpinBox" name="waveThresholdSpinBox"/>
            </item>
-           <item row="1" column="1">
+           <item row="2" column="1">
             <widget class="QComboBox" name="wingLeaderCombo"/>
            </item>
            <item row="0" column="0">
@@ -107,6 +107,23 @@
             </widget>
            </item>
            <item row="1" column="0">
+            <widget class="QLabel" name="wingDisplayNameLabel">
+             <property name="text">
+              <string>Display Name</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QLineEdit" name="wingDisplayNameEdit">
+             <property name="toolTip">
+              <string>Optional display name for ships in this wing.</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
             <widget class="QLabel" name="wingLeaderLabel">
              <property name="text">
               <string>Wing Leader</string>
@@ -116,7 +133,7 @@
              </property>
             </widget>
            </item>
-           <item row="4" column="1">
+           <item row="5" column="1">
             <widget class="QComboBox" name="hotkeyCombo">
              <property name="autoFillBackground">
               <bool>true</bool>
