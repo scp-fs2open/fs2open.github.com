@@ -109,8 +109,8 @@ void waypoint_stuff_name(STR &dest, int waypoint_instance)
 {
 	int wl_index, wp_index;
 	calc_waypoint_indexes(waypoint_instance, wl_index, wp_index);
-	Assertion(wl_index >= 0, "Waypoint list must exist!");
-	Assertion(Waypoint_lists.in_bounds(wp_index), "Waypoint index must be in bounds!");
+	Assertion(Waypoint_lists.in_bounds(wl_index), "Waypoint list index must be in bounds!");
+	Assertion(Waypoint_lists[wl_index].get_waypoints().in_bounds(wp_index), "Waypoint index must be in bounds!");
 	waypoint_stuff_name(dest, Waypoint_lists[wl_index].get_name(), wp_index + 1);
 }
 
