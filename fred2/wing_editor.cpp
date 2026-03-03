@@ -274,6 +274,8 @@ void wing_editor::OnClose()
 // initialize everything that update_data_safe() saves.
 void wing_editor::initialize_data_safe(int full_update)
 {
+	Assertion(Locked_sexp_true >= 0 && Locked_sexp_false >= 0, "SEXPs are not yet initialized!");
+
 	int i, enable = TRUE, player_wing = 0, player_enabled = 1;
 	CComboBox *arrival_box, *departure_box;
 
@@ -575,6 +577,8 @@ void wing_editor::initialize_data(int full_update)
 // Once the error no longer occurs, bypass mode is cleared and data is updated.
 int wing_editor::update_data(int redraw)
 {
+	Assertion(Locked_sexp_true >= 0 && Locked_sexp_false >= 0, "SEXPs are not yet initialized!");
+
 	char *str, old_name[255], buf[512];
 	int i, z;
 	object *ptr;

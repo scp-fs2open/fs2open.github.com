@@ -957,6 +957,8 @@ void initial_status::dock(object *objp, int dockpoint, object *other_objp, int o
 
 void initial_status::undock(object *objp1, object *objp2)
 {
+	Assertion(Locked_sexp_true >= 0 && Locked_sexp_false >= 0, "SEXPs are not yet initialized!");
+
 	vec3d v;
 	int ship_num, other_ship_num;
 
@@ -1005,6 +1007,8 @@ void initial_status::undock(object *objp1, object *objp2)
 
 bool set_cue_to_false(int *cue)
 {
+	Assertion(Locked_sexp_true >= 0 && Locked_sexp_false >= 0, "SEXPs are not yet initialized!");
+
 	// if the cue is not false, make it false.  Be sure to set all ship editor dialog functions
 	// to update data before and after we modify the cue.
 	if (*cue != Locked_sexp_false)
@@ -1058,6 +1062,8 @@ void reset_arrival_to_false(int shipnum, bool reset_wing)
 // group with a non-false arrival cue
 void initial_status_mark_dock_leader_helper(object *objp, dock_function_info *infop)
 {
+	Assertion(Locked_sexp_true >= 0 && Locked_sexp_false >= 0, "SEXPs are not yet initialized!");
+
 	ship *shipp = &Ships[objp->instance];
 	int cue_to_check;
 

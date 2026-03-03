@@ -7595,6 +7595,8 @@ static void ship_set(int ship_index, int objnum, int ship_type)
 	ship_weapon	*swp = &shipp->weapons;
 	polymodel *pm = model_get(sip->model_num);
 
+	Assertion(Locked_sexp_true >= 0 && Locked_sexp_false >= 0, "SEXPs are not yet initialized!");
+
 	Assert(strlen(shipp->ship_name) <= NAME_LENGTH - 1);
 	shipp->ship_info_index = ship_type;
 	shipp->objnum = objnum;
