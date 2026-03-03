@@ -15,6 +15,7 @@
 #include "freespace.h"
 #include "gamesnd/eventmusic.h"
 #include "gamesnd/gamesnd.h"
+#include "gamesequence/gamesequence.h"
 #include "graphics/openxr.h"
 #include "globalincs/alphacolors.h"
 #include "globalincs/linklist.h"
@@ -3730,7 +3731,22 @@ HudAlignment hud_alignment_lookup(const char *name)
  */
 void hud_objective_message_init()
 {
-	Objective_display.display_timer=timestamp(0);
+	Objective_display.display_time_remaining = 0;
+	Objective_display.display_time_last_update = timer_get_milliseconds();
+}
+
+static void hud_update_objective_display_timer()
+{
+	auto now = timer_get_milliseconds();
+
+	if (Objective_display.display_time_remaining > 0 && gameseq_get_state() == GS_STATE_GAME_PLAY) {
+		Objective_display.display_time_remaining -= now - Objective_display.display_time_last_update;
+		if (Objective_display.display_time_remaining < 0) {
+			Objective_display.display_time_remaining = 0;
+		}
+	}
+
+	Objective_display.display_time_last_update = now;
 }
 
 void hud_update_objective_message()
@@ -3753,13 +3769,25 @@ void hud_update_objective_message()
 			Sexp_hud_display_warpout = 0;
 		}
 	}
+
+	hud_update_objective_display_timer();
 	
 	// Find out if we should display the objective status notification
-	if ( timestamp_elapsed(Objective_display.display_timer) ) {
+	if (Objective_display.display_time_remaining <= 0) {
 		hud_stop_objective_notify();
 	} else if (!hud_objective_notify_active() && !hud_subspace_notify_active()) {
 		hud_start_objective_notify();
 	}
+}
+
+static int hud_get_objective_notify_display_time()
+{
+	auto objective_gauge = dynamic_cast<HudGaugeObjectiveNotify*>(hud_get_gauge("Builtin::ObjectiveNotify", true));
+	if (objective_gauge != nullptr) {
+		return objective_gauge->getNotificationDisplayTime();
+	}
+
+	return 0; // gauge not present so return a time of 0
 }
 
 /**
@@ -3771,7 +3799,8 @@ void hud_update_objective_message()
  */
 void hud_add_objective_messsage(int type, int status)
 {
-	Objective_display.display_timer=timestamp(7000);
+	Objective_display.display_time_remaining = hud_get_objective_notify_display_time();
+	Objective_display.display_time_last_update = timer_get_milliseconds();
 	Objective_display.goal_type=type;
 	Objective_display.goal_status=status;
 
@@ -3819,6 +3848,16 @@ void HudGaugeObjectiveNotify::initRedAlertTextOffsetY(int y)
 void HudGaugeObjectiveNotify::initRedAlertValueOffsetY(int y)
 {
 	Red_text_val_offset_y = y;
+}
+
+void HudGaugeObjectiveNotify::initNotificationDisplayTime(int time_ms)
+{
+	Notification_display_time = time_ms;
+}
+
+int HudGaugeObjectiveNotify::getNotificationDisplayTime() const
+{
+	return Notification_display_time;
 }
 
 void HudGaugeObjectiveNotify::initBitmaps(const char *fname)
@@ -4002,7 +4041,7 @@ void HudGaugeObjectiveNotify::renderObjective(bool config)
 		hud_config_set_mouse_coords(gauge_config_id, x, x + fl2i(bmw * scale), y, y + fl2i(bmh * scale));
 	}
 
-	if (!config && timestamp_elapsed(Objective_display.display_timer) ) {
+	if (!config && Objective_display.display_time_remaining <= 0) {
 		return;
 	}
 

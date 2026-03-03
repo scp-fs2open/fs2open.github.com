@@ -3692,6 +3692,7 @@ void load_gauge_objective_notify(gauge_settings* settings)
 	int Subspace_text_val_offset_y;
 	int Red_text_offset_y;
 	int Red_text_val_offset_y;
+	int Notification_display_time = 7000; // default to 7 seconds, same as the old code
 	char fname[MAX_FILENAME_LEN] = "objective1";
 	
 	settings->origin[0] = 0.5f;
@@ -3743,6 +3744,10 @@ void load_gauge_objective_notify(gauge_settings* settings)
 		stuff_int(&Red_text_val_offset_y);
 	}
 
+	if (optional_string("Notification Display Time:")) {
+		stuff_int(&Notification_display_time);
+	}
+
 	hud_gauge->initBitmaps(fname);
 	hud_gauge->initHiRes(fname);
 	hud_gauge->initObjTextOffsetY(Objective_text_offset_y);
@@ -3751,6 +3756,7 @@ void load_gauge_objective_notify(gauge_settings* settings)
 	hud_gauge->initSubspaceValueOffsetY(Subspace_text_val_offset_y);
 	hud_gauge->initRedAlertTextOffsetY(Red_text_offset_y);
 	hud_gauge->initRedAlertValueOffsetY(Red_text_val_offset_y);
+	hud_gauge->initNotificationDisplayTime(Notification_display_time);
 
 	gauge_assign_common(settings, std::move(hud_gauge));
 }

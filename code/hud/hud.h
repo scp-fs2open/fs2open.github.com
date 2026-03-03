@@ -37,7 +37,8 @@ typedef struct hud_frames {
 // Objective display
 typedef struct objective_display_info
 {
-	int display_timer;
+	int display_time_remaining;
+	int display_time_last_update;
 	int goal_type;
 	int goal_status;
 	int goal_ntotal;
@@ -467,6 +468,7 @@ protected:
 	int Subspace_text_val_offset_y;
 	int Red_text_offset_y;
 	int Red_text_val_offset_y;
+	int Notification_display_time;
 
 	int flash_timer[2];
 	bool flash_flag;
@@ -479,6 +481,8 @@ public:
 	void initSubspaceValueOffsetY(int y);
 	void initRedAlertTextOffsetY(int y);
 	void initRedAlertValueOffsetY(int y);
+	void initNotificationDisplayTime(int time);
+	int getNotificationDisplayTime() const;
 
 	void render(float frametime, bool config = false) override;
 	void startFlashNotify(int duration = 1400);
