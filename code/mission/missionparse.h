@@ -62,6 +62,7 @@ extern const gameversion::version LEGACY_MISSION_VERSION;
 extern bool check_for_23_3_data();
 extern bool check_for_24_1_data();
 extern bool check_for_24_3_data();
+extern bool check_for_25_1_data();
 
 #define WING_PLAYER_BASE	0x80000  // used by Fred to tell ship_index in a wing points to a player
 
