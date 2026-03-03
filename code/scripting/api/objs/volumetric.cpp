@@ -2,6 +2,8 @@
 
 #include "graphics/2d.h"
 #include "mission/missionparse.h"
+#include "network/multimsgs.h"
+#include "network/psnet2.h"
 #include "scripting/api/objs/color.h"
 #include "scripting/api/objs/vecmath.h"
 
@@ -34,6 +36,17 @@ const volumetric_nebula* volumetric_h::get() const
 	return &(*The_mission.volumetrics);
 }
 
+void volumetric_h::serialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, const luacpp::LuaValue& value, ubyte* data, int& packet_size) {
+	volumetric_h event;
+	value.getValue(l_Volumetric.Get(&event));
+	ADD_INT(event.index);
+}
+void volumetric_h::deserialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, char* data_ptr, ubyte* data, int& offset) {
+	int index;
+	GET_INT(index);
+	new(data_ptr) volumetric_h(index);
+}
+
 ADE_FUNC(isValid,
 	l_Volumetric,
 	nullptr,
@@ -62,7 +75,7 @@ ADE_VIRTVAR(POF,
 	}
 
 	if (ADE_SETTING_VAR) {
-		return ADE_RETURN_NIL;
+		LuaError(L, "Setting the volumetric POF is not allowed!");
 	}
 
 	return ade_set_args(L, "s", vh->get()->getHullPof().c_str());
@@ -88,7 +101,8 @@ ADE_VIRTVAR(Position,
 	return ade_set_args(L, "o", l_Vector.Set(vh->get()->getPos()));
 }
 
-ADE_VIRTVAR(EdgeSmoothing,
+// Deliberately not exposed but left here for posterity
+/*ADE_VIRTVAR(EdgeSmoothing,
 	l_Volumetric,
 	"boolean",
 	"Whether edge smoothing is enabled.",
@@ -130,7 +144,7 @@ ADE_VIRTVAR(EdgeSmoothing,
 	}
 
 	return ade_set_args(L, "b", vh->get()->getSmoothing() > 0.0f);
-}
+}*/
 
 ADE_VIRTVAR(Steps,
 	l_Volumetric,
@@ -172,7 +186,8 @@ ADE_VIRTVAR(SunSteps,
 	return ade_set_args(L, "i", vh->get()->getConfiguredGlobalLightSteps());
 }
 
-ADE_VIRTVAR(Resolution,
+// Not currently configurable during runtime but left here for posterity.
+/*ADE_VIRTVAR(Resolution,
 	l_Volumetric,
 	"number",
 	"Configured volumetric render resolution.",
@@ -211,9 +226,10 @@ ADE_VIRTVAR(Resolution,
 	}
 
 	return ade_set_args(L, "i", vh->get()->getResolution());
-}
+}*/
 
-ADE_VIRTVAR(ResolutionOversampling,
+// Not currently configurable during runtime but left here for posterity.
+/*ADE_VIRTVAR(ResolutionOversampling,
 	l_Volumetric,
 	"number",
 	"Configured volumetric resolution oversampling.",
@@ -253,9 +269,10 @@ ADE_VIRTVAR(ResolutionOversampling,
 	}
 
 	return ade_set_args(L, "i", vh->get()->getOversampling());
-}
+}*/
 
-ADE_VIRTVAR(Smoothing,
+// Not currently configurable during runtime but left here for posterity.
+/*ADE_VIRTVAR(Smoothing,
 	l_Volumetric,
 	"number",
 	"Configured edge smoothing amount.",
@@ -296,7 +313,7 @@ ADE_VIRTVAR(Smoothing,
 	}
 
 	return ade_set_args(L, "f", vh->get()->getSmoothing());
-}
+}*/
 
 ADE_VIRTVAR(VisibilityDistance,
 	l_Volumetric,
@@ -472,7 +489,8 @@ ADE_VIRTVAR(SunFalloffFactor,
 	return ade_set_args(L, "f", vh->get()->getGlobalLightDistanceFactor());
 }
 
-ADE_VIRTVAR(NoiseActive,
+// Not currently configurable during runtime but left here for posterity.
+/*ADE_VIRTVAR(NoiseActive,
 	l_Volumetric,
 	"boolean",
 	"Whether edge noise is active.",
@@ -501,7 +519,7 @@ ADE_VIRTVAR(NoiseActive,
 	}
 
 	return ade_set_args(L, "b", vh->get()->getNoiseActive());
-}
+}*/
 
 ADE_VIRTVAR(NoiseScaleBase, l_Volumetric, "number", "Base noise scale.", "number", "Current value, or nil if invalid")
 {
@@ -592,7 +610,8 @@ ADE_VIRTVAR(NoiseIntensity,
 	return ade_set_args(L, "f", vh->get()->getNoiseColorIntensity());
 }
 
-ADE_VIRTVAR(NoiseResolution,
+// Not currently configurable during runtime but left here for posterity.
+/*ADE_VIRTVAR(NoiseResolution,
 	l_Volumetric,
 	"number",
 	"Configured noise texture resolution (2^n).",
@@ -634,7 +653,7 @@ ADE_VIRTVAR(NoiseResolution,
 	}
 
 	return ade_set_args(L, "i", vh->get()->getNoiseResolution());
-}
+}*/
 
 ADE_VIRTVAR(MainColor, l_Volumetric, "color", "Main color.", "color", "Current value, or nil if invalid")
 {

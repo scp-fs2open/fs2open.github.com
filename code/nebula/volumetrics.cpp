@@ -193,7 +193,8 @@ volumetric_nebula& volumetric_nebula::parse_volumetric_nebula() {
 		return color_to_unit(*value);
 	};
 
-	set_runtime_params(parsedPos,
+	set_runtime_params(
+		parsedPos,
 		parsedSteps,
 		parsedSunSteps,
 		visibilityDistance,
@@ -775,9 +776,6 @@ void volumetric_nebula::set_runtime_params(
 		return;
 	}
 
-	if (noiseIsActive) {
-		noiseActive = *noiseIsActive;
-	}
 	if (noiseScaleBase) {
 		std::get<0>(noiseScale) = clamp_float(*noiseScaleBase, 0.01f, 1000.0f);
 	}

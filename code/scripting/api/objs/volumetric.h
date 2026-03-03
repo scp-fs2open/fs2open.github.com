@@ -14,6 +14,9 @@ struct volumetric_h {
 	bool isValid() const;
 	volumetric_nebula* get();
 	const volumetric_nebula* get() const;
+
+	static void serialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, const luacpp::LuaValue& value, ubyte* data, int& packet_size);
+	static void deserialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, char* data_ptr, ubyte* data, int& offset);
 };
 
 DECLARE_ADE_OBJ(l_Volumetric, volumetric_h);
