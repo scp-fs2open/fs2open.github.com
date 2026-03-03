@@ -18,16 +18,7 @@ bool volumetric_h::isValid() const
 	return index == 1 && The_mission.volumetrics.has_value();
 }
 
-volumetric_nebula* volumetric_h::get()
-{
-	if (!isValid()) {
-		return nullptr;
-	}
-
-	return &(*The_mission.volumetrics);
-}
-
-const volumetric_nebula* volumetric_h::get() const
+volumetric_nebula* volumetric_h::get() const
 {
 	if (!isValid()) {
 		return nullptr;
@@ -41,7 +32,7 @@ void volumetric_h::serialize(lua_State* /*L*/, const scripting::ade_table_entry&
 	value.getValue(l_Volumetric.Get(&event));
 	ADD_INT(event.index);
 }
-void volumetric_h::deserialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, char* data_ptr, ubyte* data, int& offset) {
+void volumetric_h::deserialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, char* data_ptr, ubyte* data, int& offset) { // NOLINT(readability-non-const-parameter)
 	int index;
 	GET_INT(index);
 	new(data_ptr) volumetric_h(index);
