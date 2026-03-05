@@ -1536,6 +1536,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/tracing_category.h
 	scripting/api/objs/vecmath.cpp
 	scripting/api/objs/vecmath.h
+	scripting/api/objs/volumetric.cpp
+	scripting/api/objs/volumetric.h
 	scripting/api/objs/waypoint.cpp
 	scripting/api/objs/waypoint.h
 	scripting/api/objs/weaponclass.cpp

@@ -22,7 +22,8 @@ volumetric_nebula& volumetric_nebula::parse_volumetric_nebula() {
 
 	//General Settings
 	required_string("+Position:");
-	stuff_vec3d(&pos);
+	vec3d parsedPos;
+	stuff_vec3d(&parsedPos);
 	
 	required_string("+Color:");
 	int rgb[3];
@@ -31,61 +32,102 @@ volumetric_nebula& volumetric_nebula::parse_volumetric_nebula() {
 		error_display(1, "Volumetric nebula color must be fully specified.");
 		return *this;
 	}
-	nebulaColor = std::make_tuple(static_cast<float>(rgb[0]) / 255.0f, static_cast<float>(rgb[1]) / 255.0f , static_cast<float>(rgb[2]) / 255.0f);
+	const int parsedMainColorR = rgb[0];
+	const int parsedMainColorG = rgb[1];
+	const int parsedMainColorB = rgb[2];
 
 	required_string("+Visibility Opacity:");
-	stuff_float(&alphaLim);
+	float visibilityOpacity;
+	stuff_float(&visibilityOpacity);
 
 	required_string("+Visibility Distance:");
-	stuff_float(&opacityDistance);
+	float visibilityDistance;
+	stuff_float(&visibilityDistance);
 
-	if(optional_string("+Steps:")) {
-		stuff_int(&steps);
+	std::optional<int> parsedSteps = std::nullopt;
+	if (optional_string("+Steps:")) {
+		int parsedValue;
+		stuff_int(&parsedValue);
+		parsedSteps = parsedValue;
 	}
 
+	std::optional<int> parsedResolution = std::nullopt;
 	if (optional_string("+Resolution:")) {
-		stuff_int(&resolution);
-		if (resolution > 8) {
-			error_display(0, "Volumetric nebula resolution was set to %d. Maximum is 8.", resolution);
-			resolution = 8;
+		int parsedValue;
+		stuff_int(&parsedValue);
+		if (parsedValue > 8) {
+			error_display(0, "Volumetric nebula resolution was set to %d. Maximum is 8.", parsedValue);
+			parsedValue = 8;
 		}
+		parsedResolution = parsedValue;
 	}
 
+	std::optional<int> parsedOversampling = std::nullopt;
 	if (optional_string("+Oversampling:")) {
-		stuff_int(&oversampling);
+		int parsedValue;
+		stuff_int(&parsedValue);
+		parsedOversampling = parsedValue;
 	}
 
+	std::optional<float> parsedSmoothing = std::nullopt;
 	if (optional_string("+Smoothing:")) {
-		stuff_float(&smoothing);
+		float parsedValue;
+		stuff_float(&parsedValue);
+		parsedSmoothing = parsedValue;
 	}
 
 	//Lighting settings
+	std::optional<float> parsedHenyey = std::nullopt;
 	if (optional_string("+Heyney Greenstein Coefficient:")) {
-		stuff_float(&henyeyGreensteinCoeff);
+		float parsedValue;
+		stuff_float(&parsedValue);
+		parsedHenyey = parsedValue;
 	}
 
+	std::optional<float> parsedSunFalloff = std::nullopt;
 	if (optional_string("+Sun Falloff Factor:")) {
-		stuff_float(&globalLightDistanceFactor);
+		float parsedValue;
+		stuff_float(&parsedValue);
+		parsedSunFalloff = parsedValue;
 	}
 
+	std::optional<int> parsedSunSteps = std::nullopt;
 	if (optional_string("+Sun Steps:")) {
-		stuff_int(&globalLightSteps);
+		int parsedValue;
+		stuff_int(&parsedValue);
+		parsedSunSteps = parsedValue;
 	}
 
 	//Emissive settings
+	std::optional<float> parsedEmissiveSpread = std::nullopt;
 	if (optional_string("+Emissive Light Spread:")) {
-		stuff_float(&emissiveSpread);
+		float parsedValue;
+		stuff_float(&parsedValue);
+		parsedEmissiveSpread = parsedValue;
 	}
 
+	std::optional<float> parsedEmissiveIntensity = std::nullopt;
 	if (optional_string("+Emissive Light Intensity:")) {
-		stuff_float(&emissiveIntensity);
+		float parsedValue;
+		stuff_float(&parsedValue);
+		parsedEmissiveIntensity = parsedValue;
 	}
 
+	std::optional<float> parsedEmissiveFalloff = std::nullopt;
 	if (optional_string("+Emissive Light Falloff:")) {
-		stuff_float(&emissiveFalloff);
+		float parsedValue;
+		stuff_float(&parsedValue);
+		parsedEmissiveFalloff = parsedValue;
 	}
 
 	//Noise settings
+	std::optional<float> parsedNoiseScaleBase = std::nullopt;
+	std::optional<float> parsedNoiseScaleSub = std::nullopt;
+	std::optional<int> parsedNoiseColorR = std::nullopt;
+	std::optional<int> parsedNoiseColorG = std::nullopt;
+	std::optional<int> parsedNoiseColorB = std::nullopt;
+	std::optional<float> parsedNoiseIntensity = std::nullopt;
+	std::optional<int> parsedNoiseResolution = std::nullopt;
 	if (optional_string("+Noise:")) {
 		noiseActive = true;
 
@@ -100,7 +142,8 @@ volumetric_nebula& volumetric_nebula::parse_volumetric_nebula() {
 			//Set smaller scale to about half, but with low-ish periodicity
 			scale[1] = scale[0] * (14.0f / 25.0f);
 		}
-		noiseScale = std::make_tuple(scale[0], scale[1]);
+		parsedNoiseScaleBase = scale[0];
+		parsedNoiseScaleSub = scale[1];
 
 		required_string("+Color:");
 		number = stuff_int_list(rgb, 3);
@@ -108,10 +151,14 @@ volumetric_nebula& volumetric_nebula::parse_volumetric_nebula() {
 			error_display(1, "Volumetric nebula noise color must be fully specified.");
 			return *this;
 		}
-		noiseColor = std::make_tuple(static_cast<float>(rgb[0]) / 255.0f, static_cast<float>(rgb[1]) / 255.0f , static_cast<float>(rgb[2]) / 255.0f);
+		parsedNoiseColorR = rgb[0];
+		parsedNoiseColorG = rgb[1];
+		parsedNoiseColorB = rgb[2];
 
 		if (optional_string("+Intensity:")) {
-			stuff_float(&noiseColorIntensity);
+			float parsedValue;
+			stuff_float(&parsedValue);
+			parsedNoiseIntensity = parsedValue;
 		}
 
 		if (optional_string("+Function Base:")) {
@@ -127,13 +174,50 @@ volumetric_nebula& volumetric_nebula::parse_volumetric_nebula() {
 		}
 
 		if (optional_string("+Resolution:")) {
-			stuff_int(&noiseResolution);
-			if (noiseResolution > 8) {
-				error_display(0, "Volumetric nebula noise resolution was set to %d. Maximum is 8.", noiseResolution);
-				noiseResolution = 8;
+			int parsedValue;
+			stuff_int(&parsedValue);
+			if (parsedValue > 8) {
+				error_display(0, "Volumetric nebula noise resolution was set to %d. Maximum is 8.", parsedValue);
+				parsedValue = 8;
 			}
+			parsedNoiseResolution = parsedValue;
 		}
+
 	}
+
+	auto color_to_unit = [](int value) { return static_cast<float>(std::clamp(value, 0, 255)) / 255.0f; };
+	auto optional_color_to_unit = [&](const std::optional<int>& value) -> std::optional<float> {
+		if (!value) {
+			return std::nullopt;
+		}
+		return color_to_unit(*value);
+	};
+
+	set_runtime_params(
+		parsedPos,
+		parsedSteps,
+		parsedSunSteps,
+		visibilityDistance,
+		visibilityOpacity,
+		parsedEmissiveSpread,
+		parsedEmissiveIntensity,
+		parsedEmissiveFalloff,
+		parsedHenyey,
+		parsedSunFalloff,
+		std::nullopt,
+		parsedNoiseScaleBase,
+		parsedNoiseScaleSub,
+		parsedNoiseIntensity,
+		color_to_unit(parsedMainColorR),
+		color_to_unit(parsedMainColorG),
+		color_to_unit(parsedMainColorB),
+		optional_color_to_unit(parsedNoiseColorR),
+		optional_color_to_unit(parsedNoiseColorG),
+		optional_color_to_unit(parsedNoiseColorB),
+		parsedResolution,
+		parsedOversampling,
+		parsedSmoothing,
+		parsedNoiseResolution);
 
 	return *this;
 }
@@ -155,6 +239,10 @@ const vec3d& volumetric_nebula::getSize() const {
 	return size;
 }
 
+const SCP_string& volumetric_nebula::getHullPof() const {
+	return hullPof;
+}
+
 const std::tuple<float, float, float>& volumetric_nebula::getNebulaColor() const {
 	return nebulaColor;
 }
@@ -167,6 +255,10 @@ bool volumetric_nebula::getEdgeSmoothing() const {
 	return Detail.nebula_detail == MAX_DETAIL_VALUE || doEdgeSmoothing; //Only for highest setting, or when the lab has an override.
 }
 
+bool volumetric_nebula::getConfiguredEdgeSmoothing() const {
+	return doEdgeSmoothing;
+}
+
 int volumetric_nebula::getSteps() const {
 	if (Detail.nebula_detail == 0)
 		return 8;
@@ -175,12 +267,40 @@ int volumetric_nebula::getSteps() const {
 	return std::max(steps * (MAX_DETAIL_VALUE + 1) / (2 * (MAX_DETAIL_VALUE + 1) - Detail.nebula_detail), 8 + 2 * Detail.nebula_detail);
 }
 
+int volumetric_nebula::getConfiguredSteps() const {
+	return steps;
+}
+
 int volumetric_nebula::getGlobalLightSteps() const {
 	if (Detail.nebula_detail == 0)
 		return 4;
 
 	//Minimal setting (if not hard-set to 4) is globalLightSteps / 2, max settings is globalLightSteps. Ensure it doesn't drop below 4, 5, 6, 7, 8.
 	return std::max(globalLightSteps * (MAX_DETAIL_VALUE + 1) / (2 * (MAX_DETAIL_VALUE + 1) - Detail.nebula_detail), 4 + Detail.nebula_detail);
+}
+
+int volumetric_nebula::getConfiguredGlobalLightSteps() const {
+	return globalLightSteps;
+}
+
+int volumetric_nebula::getResolution() const
+{
+	return resolution;
+}
+
+int volumetric_nebula::getOversampling() const
+{
+	return oversampling;
+}
+
+int volumetric_nebula::getNoiseResolution() const
+{
+	return noiseResolution;
+}
+
+float volumetric_nebula::getSmoothing() const
+{
+	return smoothing;
 }
 
 float volumetric_nebula::getOpacityDistance() const {
@@ -558,6 +678,126 @@ void volumetric_nebula::set_enabled(bool set_enabled){
 bool volumetric_nebula::get_enabled() const {
 	return enabled;
 };
+
+void volumetric_nebula::set_runtime_params(
+	std::optional<vec3d> position,
+	std::optional<int> renderSteps,
+	std::optional<int> sunSteps,
+	std::optional<float> visibilityDistance,
+	std::optional<float> visibilityOpacity,
+	std::optional<float> emissiveLightSpread,
+	std::optional<float> emissiveLightIntensity,
+	std::optional<float> emissiveLightFalloff,
+	std::optional<float> henyeyGreenstein,
+	std::optional<float> sunFalloffFactor,
+	std::optional<bool> noiseIsActive,
+	std::optional<float> noiseScaleBase,
+	std::optional<float> noiseScaleSub,
+	std::optional<float> noiseIntensity,
+	std::optional<float> mainColorR,
+	std::optional<float> mainColorG,
+	std::optional<float> mainColorB,
+	std::optional<float> noiseColorR,
+	std::optional<float> noiseColorG,
+	std::optional<float> noiseColorB,
+	std::optional<int> renderResolution,
+	std::optional<int> resolutionOversampling,
+	std::optional<float> edgeSmoothingAmount,
+	std::optional<int> noiseRes)
+{
+	auto clamp_int = [](int value, int minValue, int maxValue) { return std::clamp(value, minValue, maxValue); };
+	auto clamp_float = [](float value, float minValue, float maxValue) {
+		return std::clamp(value, minValue, maxValue);
+	};
+	auto clamp_unit = [&](float value) { return clamp_float(value, 0.0f, 1.0f); };
+
+	if (position) {
+		pos = *position;
+	}
+	if (renderSteps) {
+		steps = clamp_int(*renderSteps, 1, 100);
+	}
+	if (sunSteps) {
+		globalLightSteps = clamp_int(*sunSteps, 2, 16);
+	}
+	if (visibilityDistance) {
+		opacityDistance = clamp_float(*visibilityDistance, 0.1f, 999999.0f);
+	}
+	if (visibilityOpacity) {
+		alphaLim = clamp_float(*visibilityOpacity, 0.0001f, 1.0f);
+	}
+	if (renderResolution) {
+		resolution = clamp_int(*renderResolution, 6, 8);
+	}
+	if (resolutionOversampling) {
+		oversampling = clamp_int(*resolutionOversampling, 1, 3);
+	}
+	if (edgeSmoothingAmount) {
+		smoothing = clamp_float(*edgeSmoothingAmount, 0.0f, 0.5f);
+	}
+	doEdgeSmoothing = smoothing > 0.0f;
+	if (emissiveLightSpread) {
+		emissiveSpread = clamp_float(*emissiveLightSpread, 0.0f, 5.0f);
+	}
+	if (emissiveLightIntensity) {
+		emissiveIntensity = clamp_float(*emissiveLightIntensity, 0.0f, 100.0f);
+	}
+	if (emissiveLightFalloff) {
+		emissiveFalloff = clamp_float(*emissiveLightFalloff, 0.01f, 10.0f);
+	}
+	if (henyeyGreenstein) {
+		henyeyGreensteinCoeff = clamp_float(*henyeyGreenstein, -1.0f, 1.0f);
+	}
+	if (sunFalloffFactor) {
+		globalLightDistanceFactor = clamp_float(*sunFalloffFactor, 0.001f, 100.0f);
+	}
+
+	if (mainColorR) {
+		std::get<0>(nebulaColor) = clamp_unit(*mainColorR);
+	}
+	if (mainColorG) {
+		std::get<1>(nebulaColor) = clamp_unit(*mainColorG);
+	}
+	if (mainColorB) {
+		std::get<2>(nebulaColor) = clamp_unit(*mainColorB);
+	}
+
+	if (noiseIsActive) {
+		if (*noiseIsActive) {
+			if (noiseVolumeBitmapHandle >= 0) {
+				noiseActive = true;
+			}
+		} else {
+			noiseActive = false;
+		}
+	}
+
+	if (!noiseActive) {
+		return;
+	}
+
+	if (noiseScaleBase) {
+		std::get<0>(noiseScale) = clamp_float(*noiseScaleBase, 0.01f, 1000.0f);
+	}
+	if (noiseScaleSub) {
+		std::get<1>(noiseScale) = clamp_float(*noiseScaleSub, 0.01f, 1000.0f);
+	}
+	if (noiseIntensity) {
+		noiseColorIntensity = clamp_float(*noiseIntensity, 0.1f, 100.0f);
+	}
+	if (noiseRes) {
+		noiseResolution = clamp_int(*noiseRes, 4, 8);
+	}
+	if (noiseColorR) {
+		std::get<0>(noiseColor) = clamp_unit(*noiseColorR);
+	}
+	if (noiseColorG) {
+		std::get<1>(noiseColor) = clamp_unit(*noiseColorG);
+	}
+	if (noiseColorB) {
+		std::get<2>(noiseColor) = clamp_unit(*noiseColorB);
+	}
+}
 
 void volumetrics_level_close() {
 	if (The_mission.volumetrics)

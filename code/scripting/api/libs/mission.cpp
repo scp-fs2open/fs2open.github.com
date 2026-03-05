@@ -67,6 +67,7 @@
 #include "scripting/api/objs/sound.h"
 #include "scripting/api/objs/team.h"
 #include "scripting/api/objs/vecmath.h"
+#include "scripting/api/objs/volumetric.h"
 #include "scripting/api/objs/waypoint.h"
 #include "scripting/api/objs/weapon.h"
 #include "scripting/api/objs/weaponclass.h"
@@ -2273,6 +2274,15 @@ ADE_FUNC(isNebula, l_Mission, nullptr, "Get whether or not the current mission b
 ADE_FUNC(hasVolumetricNebula, l_Mission, nullptr, "Get whether or not the current mission being played contains a volumetric nebula", "boolean", "true if has a volumetric nebula, false if not")
 {
 	return ade_set_args(L, "b", static_cast<bool>(The_mission.volumetrics));
+}
+
+ADE_VIRTVAR(VolumetricNebula, l_Mission, nullptr, "Gets the mission volumetric nebula handle if present.", "volumetric_nebula", "Volumetric nebula handle, or invalid handle if no volumetric nebula is present")
+{
+	if (!The_mission.volumetrics) {
+		return ade_set_error(L, "o", l_Volumetric.Set(volumetric_h()));
+	}
+
+	return ade_set_args(L, "o", l_Volumetric.Set(volumetric_h(1)));
 }
 
 ADE_VIRTVAR(NebulaSensorRange, l_Mission, "number", "Gets or sets the Neb2_awacs variable.  This is multiplied by a species-specific factor to get the \"scan range\".  Within the scan range, a ship is at least partially targetable (fuzzy blip); within half the scan range, a ship is fully targetable.  Beyond the scan range, a ship is not targetable.", "number", "the Neb2_awacs variable")
