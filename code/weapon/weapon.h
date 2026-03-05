@@ -627,6 +627,9 @@ struct weapon_info
 	float cm_heat_effectiveness;
 	float cm_effective_rad;
 	float cm_detonation_rad;
+	vec3d cm_launch_vec;
+	float cm_launch_speed;
+	float cm_launch_variance;
 	bool  cm_kill_single;       // should the countermeasure kill just the single decoyed missile within CMEASURE_DETONATE_DISTANCE?
 	int   cmeasure_timer_interval;	// how many milliseconds between pulses
 	int cmeasure_firewait;						// delay in milliseconds between countermeasure firing --wookieejedi
