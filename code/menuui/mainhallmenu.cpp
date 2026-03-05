@@ -1804,9 +1804,20 @@ void main_hall_blit_version()
 	// get the length of the string
 	gr_get_string_size(&w, &h, version_string.c_str());
 
-	// print the string near the lower left corner
+	int version_x = Main_hall->fso_version_coords[0];
+	int version_y = Main_hall->fso_version_coords[1];
+
+	if (version_x < 0) {
+		version_x = 5;
+	}
+
+	if (version_y < 0) {
+		version_y = gr_screen.max_h_unscaled_zoomed - (h * 2 + 6);
+	}
+
+	// print the string near the lower left corner by default
 	gr_set_color_fast(&Color_bright_white);
-	gr_string(5, gr_screen.max_h_unscaled_zoomed - (h * 2 + 6), version_string.c_str(), GR_RESIZE_MENU_ZOOMED);
+	gr_string(version_x, version_y, version_string.c_str(), GR_RESIZE_MENU_ZOOMED);
 
 	font::set_font(old_font);
 }
@@ -1837,9 +1848,20 @@ void main_hall_blit_mod()
 		// get the length of the string
 		gr_get_string_size(&w, &h, mod_string.c_str());
 
-		// print the string near the lower left corner
+		int mod_title_x = Main_hall->mod_title_coords[0];
+		int mod_title_y = Main_hall->mod_title_coords[1];
+
+		if (mod_title_x < 0) {
+			mod_title_x = 5;
+		}
+
+		if (mod_title_y < 0) {
+			mod_title_y = gr_screen.max_h_unscaled_zoomed - (h * 3 + 6);
+		}
+
+		// print the string near the lower left corner by default
 		gr_set_color_fast(&Color_bright_white);
-		gr_string(5, gr_screen.max_h_unscaled_zoomed - (h * 3 + 6), mod_string.c_str(), GR_RESIZE_MENU_ZOOMED);
+		gr_string(mod_title_x, mod_title_y, mod_string.c_str(), GR_RESIZE_MENU_ZOOMED);
 
 		font::set_font(old_font);
 	}
@@ -2480,6 +2502,16 @@ void parse_one_main_hall(bool replace, int num_resolutions, int &hall_idx, int &
 
 	if (optional_string("+Render FSO Version:")) {
 		stuff_boolean(&m->render_version);
+	}
+
+	if (optional_string("+Mod Title Position:")) {
+		stuff_int(&m->mod_title_coords[0]);
+		stuff_int(&m->mod_title_coords[1]);
+	}
+
+	if (optional_string("+FSO Version Position:")) {
+		stuff_int(&m->fso_version_coords[0]);
+		stuff_int(&m->fso_version_coords[1]);
 	}
 
 	// ambient sound
