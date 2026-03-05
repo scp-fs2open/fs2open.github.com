@@ -97,8 +97,9 @@ class EditorViewport {
 	void drag_rotate_save_backup();
 
 	int create_object_on_grid(int x, int y, int waypoint_instance);
+	int create_object_on_grid(int x, int y, int waypoint_instance, bool create_prop);
 
-	int	create_object(vec3d *pos, int waypoint_instance = -1);
+	int	create_object(vec3d *pos, int waypoint_instance = -1, bool create_prop = false);
 
 	int duplicate_marked_objects();
 	int drag_objects(int x, int y);
@@ -146,6 +147,7 @@ class EditorViewport {
 	int Dup_drag = 0;
 
 	int cur_model_index = 0;
+	int cur_prop_index = -1;
 
 	bool Bg_bitmap_dialog = false;
 
@@ -174,6 +176,5 @@ class EditorViewport {
 
 }
 }
-
 
 
