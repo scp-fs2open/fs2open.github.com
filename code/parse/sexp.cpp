@@ -524,6 +524,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "ship-no-guardian",				OP_SHIP_NO_GUARDIAN,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "ship-guardian-threshold",		OP_SHIP_GUARDIAN_THRESHOLD,				2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "ship-subsys-guardian-threshold",	OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD,		3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
+	{ "set-guard-range",                OP_SET_GUARD_RANGE,                     2,  INT_MAX,    SEXP_ACTION_OPERATOR,   },  // MjnMixael
 	{ "self-destruct",					OP_SELF_DESTRUCT,						1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "destroy-instantly",				OP_DESTROY_INSTANTLY,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Admiral MS
 	{ "destroy-instantly-with-debris",	OP_DESTROY_INSTANTLY_WITH_DEBRIS,		1,	INT_MAX,	SEXP_ACTION_OPERATOR,   },	// Asteroth
@@ -19467,6 +19468,29 @@ void sexp_ship_guardian_threshold(int node)
 	}
 }
 
+// MjnMixael
+void sexp_set_guard_range(int node)
+{
+	int range, n = node;
+	bool is_nan, is_nan_forever;
+
+	range = eval_num(n, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
+	n = CDR(n);
+
+	for (; n != -1; n = CDR(n)) {
+		auto ship_entry = eval_ship(n);
+		if (!ship_entry || !ship_entry->has_shipp()) {
+			continue;
+		}
+
+		// Intentionally no lower bound validation beyond disabling at <= 0.
+		// Mission authors may choose very small positive values for highly restrictive escort behavior.
+		ship_entry->shipp()->max_guard_radius = (range > 0) ? static_cast<float>(range) : -1.0f;
+	}
+}
+
 // Goober5000
 void sexp_ship_subsys_guardian_threshold(int node)
 {
@@ -28860,6 +28884,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_SET_GUARD_RANGE:
+				sexp_set_guard_range(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_SHIP_SUBSYS_TARGETABLE:
 				sexp_ship_deal_with_subsystem_flag(cur_node, node, Ship::Subsystem_Flags::Untargetable, true, false);
 				sexp_val = SEXP_TRUE;
@@ -31597,6 +31626,7 @@ int query_operator_return_type(int op)
 		case OP_SHIP_NO_GUARDIAN:
 		case OP_SHIP_GUARDIAN_THRESHOLD:
 		case OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD:
+		case OP_SET_GUARD_RANGE:
 		case OP_SHIP_VANISH:
 		case OP_PROP_VANISH:
 		case OP_DESTROY_INSTANTLY:
@@ -32307,6 +32337,12 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_SHIP;
 			else
 				return OPF_SUBSYS_OR_GENERIC;
+
+		case OP_SET_GUARD_RANGE:
+			if (argnum == 0)
+				return OPF_NUMBER;
+			else
+				return OPF_SHIP;
 
 		case OP_SHIP_SUBSYS_TARGETABLE:
 		case OP_SHIP_SUBSYS_UNTARGETABLE:
@@ -36895,6 +36931,7 @@ int get_category(int op_id)
 		case OP_JUMP_NODE_HIDE_JUMPNODE:
 		case OP_SHIP_GUARDIAN_THRESHOLD:
 		case OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD:
+		case OP_SET_GUARD_RANGE:
 		case OP_SET_SKYBOX_MODEL:
 		case OP_SHIP_CREATE:
 		case OP_PROP_CREATE:
@@ -37252,6 +37289,7 @@ int get_subcategory(int op_id)
 
 		case OP_ALTER_SHIP_FLAG:
 		case OP_ALTER_WING_FLAG:
+		case OP_SET_GUARD_RANGE:
 		case OP_PROTECT_SHIP:
 		case OP_UNPROTECT_SHIP:
 		case OP_BEAM_PROTECT_SHIP:
@@ -40446,6 +40484,15 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tThreshold value.\r\n"
 		"\t2:\tShip housing the subsystem(s) (ships must be in-mission).\r\n"
 		"\t3+:\tSubsystems to make unkillable." },
+
+	// MjnMixael
+	{ OP_SET_GUARD_RANGE, "set-guard-range\r\n"
+		"\tSets the max range in meters at which any ships guarding this ship will engage with threats.\r\n"
+		"This range will override the default dynamic range behavior for ships obeying a guard order.\r\n"
+		"If the value is <= 0, regular dynamic guard range behavior will resume. Positive values are used as is with no size validation based on ship class.\r\n\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tGuard range cap in meters (<= 0 disables cap).\r\n"
+		"\t2+:\tShip(s) to apply the cap to (ships must be in-mission)." },
 
 	// Goober5000
 	{ OP_SHIP_STEALTHY, "ship-stealthy\r\n"
