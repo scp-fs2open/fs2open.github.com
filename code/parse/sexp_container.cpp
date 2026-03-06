@@ -150,7 +150,7 @@ ContainerType sexp_container::get_data_type() const
 
 bool sexp_container::name_matches(const sexp_container &container) const
 {
-	return !stricmp(container.container_name.c_str(), container_name.c_str());
+	return lcase_equal(container.container_name, container_name);
 }
 
 bool sexp_container::empty() const
@@ -810,18 +810,6 @@ bool sexp_container_CTEXT_helper(int &node, sexp_container &container, SCP_strin
 			(int)container.type);
 		return false;
 	}
-}
-
-// inspired by sexp_campaign_file_variable_count()
-bool sexp_container_has_persistent_non_eternal_containers()
-{
-	for (const auto &container : Sexp_containers) {
-		if (container.is_persistent() && !container.is_eternal()) {
-			return true;
-		}
-	}
-
-	return false;
 }
 
 const char *sexp_container_CTEXT(int node)
