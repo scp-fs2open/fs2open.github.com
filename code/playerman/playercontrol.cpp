@@ -1893,7 +1893,7 @@ bool player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 	}
 
 	// if we can't do any scanning, then skip over it
-	if (Player_ship->flags[Ship::Ship_Flags::Cannot_perform_scan_show_cargo]) {
+	if (!Player_ship->flags[Ship::Ship_Flags::Cannot_perform_scan_show_cargo]) {
 		// see if player is within inspection range [ok for subsys]
 		vec3d	subsys_pos;
 		float		subsys_rad;
