@@ -1074,6 +1074,8 @@ extern void gr_activate(int active);
 #define gr_blob_screen		GR_CALL(gr_screen.gf_blob_screen)
 #define gr_dump_envmap		GR_CALL(gr_screen.gf_dump_envmap)
 
+void gr_request_screenshot(const char* filename);
+
 //#define gr_flip				GR_CALL(gr_screen.gf_flip)
 void gr_flip(bool execute_scripting = true);
 

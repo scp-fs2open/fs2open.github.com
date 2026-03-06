@@ -98,6 +98,7 @@ color_gun Gr_t_red, Gr_t_green, Gr_t_blue, Gr_t_alpha;
 color_gun Gr_ta_red, Gr_ta_green, Gr_ta_blue, Gr_ta_alpha;
 color_gun *Gr_current_red, *Gr_current_green, *Gr_current_blue, *Gr_current_alpha;
 
+static SCP_string Pending_screenshot_filename;
 
 ubyte Gr_original_palette[768];		// The palette 
 ubyte Gr_current_palette[768];
@@ -2943,10 +2944,22 @@ void gr_flip(bool execute_scripting)
 
 	TRACE_SCOPE(tracing::PageFlip);
 
+	if (!Pending_screenshot_filename.empty()) {
+		gr_print_screen(Pending_screenshot_filename.c_str());
+		Pending_screenshot_filename.clear();
+	}
+
 	//Prevent a real page flip if OpenXR is on and claims that that wasn't the full image yet
 	if (!gr_openxr_flip()) {
 		gr_screen.gf_flip();
 		gr_setup_frame();
+	}
+}
+
+void gr_request_screenshot(const char* filename)
+{
+	if (Pending_screenshot_filename.empty()) {
+		Pending_screenshot_filename = filename;
 	}
 }
 
