@@ -822,7 +822,10 @@ void opengl_tnl_set_model_material(model_material *material_info)
 	opengl_tnl_set_material(material_info, false, false);
 
 	if ( GL_state.CullFace() ) {
-		GL_state.FrontFaceValue(GL_CW);
+		// Model rendering uses CW front faces in the default backbuffer path.
+		// Render-to-texture flips the projection vertically, which flips winding,
+		// so we must invert the front-face definition there.
+		GL_state.FrontFaceValue(gr_screen.rendering_to_texture != -1 ? GL_CCW : GL_CW);
 	}
 
 	gr_set_center_alpha(material_info->get_center_alpha());
