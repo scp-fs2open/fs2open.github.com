@@ -732,6 +732,7 @@ subtitle::subtitle(int in_x_pos, int in_y_pos, const char* in_text, const char* 
 		text_buf = in_text;
 		sexp_replace_variable_names_with_values(text_buf);
 		sexp_container_replace_refs_with_values(text_buf);
+		// (message_translate_tokens is called when the subtitle is queued, so does not need to be called here)
 		in_text = text_buf.c_str();
 	}
 
