@@ -33,6 +33,7 @@
 #include "graphics/util/UniformBufferManager.h"
 #include "graphics/shadows.h"
 #include "io/mouse.h"
+#include "model/modelrender.h"
 #include "libs/jansson.h"
 #include "options/Option.h"
 #include "osapi/osapi.h"
@@ -2925,6 +2926,8 @@ void gr_flip(bool execute_scripting)
 			OnFrameHook->run();
 		}
 	}
+
+	model_process_cached_ui_render_instances();
 
 	gr_reset_immediate_buffer();
 
