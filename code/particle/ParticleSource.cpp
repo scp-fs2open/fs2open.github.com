@@ -32,6 +32,10 @@ void ParticleSource::finishCreation() {
 	if (Is_standalone)
 		return;
 
+	Assertion(isValid(), "Cannot create a ParticleSource that is not valid!");
+	if (!isValid())
+		return;
+
 	m_host->setupProcessing();
 
 	const auto& effectList = ParticleManager::get()->getEffect(m_effect);

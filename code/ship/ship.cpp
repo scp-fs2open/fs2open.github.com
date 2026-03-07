@@ -21941,20 +21941,18 @@ void toggle_ignore_list_flag(Ship::Ship_Flags flag) {
 
 ship_subsys* ship_get_subsys_for_submodel(ship* shipp, int submodel)
 {
-	ship_subsys* subsys;
-
-	if (submodel == -1) {
+	// no submodel
+	if (submodel == -1)
 		return nullptr;
-	}
 
-	for (subsys = GET_FIRST(&shipp->subsys_list); subsys != END_OF_LIST(&shipp->subsys_list);
-	     subsys = GET_NEXT(subsys)) {
-		if (subsys->system_info->subobj_num == submodel) {
-			return subsys;
-		}
-	}
+	auto pm = model_get(Ship_info[shipp->ship_info_index].model_num);
+	Assertion(submodel >= 0 && submodel < pm->n_models, "Ship %s submodel index %d is out of range!", shipp->ship_name, submodel);
 
-	return nullptr;
+	// no associated subsystem
+	if (pm->submodel[submodel].subsys_num == -1)
+		return nullptr;
+
+	return ship_get_indexed_subsys(shipp, pm->submodel[submodel].subsys_num);
 }
 
 /**

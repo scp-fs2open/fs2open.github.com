@@ -7,6 +7,7 @@
 #include "model.h"
 #include "particle/ParticleManager.h"
 #include "particle/ParticleEffect.h"
+#include "ship/ship.h"
 
 namespace scripting {
 namespace api {
@@ -397,11 +398,20 @@ ADE_FUNC(createOnTurret, l_ParticleSource, "object object, submodel submodel, nu
 	if (!(subobjh.isValid() && objh.isValid()))
 		return ade_set_args(L, "b", false);
 
+	if (objh.objp()->type != OBJ_SHIP)
+		return ade_set_args(L, "b", false);
+
+	// this submodel must be a turret
+	auto shipp = &Ships[objh.objp()->instance];
+	auto subsys = ship_get_subsys_for_submodel(shipp, subobjh.GetSubmodelIndex());
+	if (subsys == nullptr || subsys->system_info->type != SUBSYSTEM_TURRET)
+		return ade_set_args(L, "b", false);
+
 	particle::ParticleSource* psp = ps.Get();
 	if (psp == nullptr)
 		return ade_set_args(L, "b", false);
 
-	psp->setHost(std::make_unique<EffectHostTurret>(objh.objp(), subobjh.GetSubmodelIndex(), firepoint, *orientationOverride.GetMatrix(), orientationOverrideRelative));
+	psp->setHost(std::make_unique<EffectHostTurret>(objh.objp(), subobjh.GetSubmodelIndex(), firepoint, false, *orientationOverride.GetMatrix(), orientationOverrideRelative));
 	psp->finishCreation();
 
 	return ade_set_args(L, "b", true);
