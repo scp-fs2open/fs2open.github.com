@@ -23,6 +23,7 @@
 #include "wing.h"
 
 #include "ai/aigoals.h"
+#include "ai/ai.h"
 #include "globalincs/utility.h"
 #include "hud/hudets.h"
 #include "hud/hudshield.h"
@@ -1608,6 +1609,48 @@ ADE_FUNC(fireSecondary, l_Ship, NULL, "Fires ship secondary bank(s)", "number", 
 		return ade_set_error(L, "i", 0);
 
 	return ade_set_args(L, "i", ship_fire_secondary(objh->objp(), 0));
+}
+
+ADE_FUNC(callSupport,
+	l_Ship,
+	nullptr,
+	"Forces this ship to request support rearm/repair if it's a valid ship type, not docked, and support is allowed.",
+	"boolean",
+	"True if a support request was issued, false otherwise")
+{
+	object_h* objh;
+	if (!ade_get_args(L, "o", l_Ship.GetPtr(&objh))) {
+		return ade_set_error(L, "b", false);
+	}
+
+	if (!objh->isValid()) {
+		return ade_set_error(L, "b", false);
+	}
+
+	auto objp = objh->objp();
+	auto shipp = &Ships[objp->instance];
+	auto aip = &Ai_info[shipp->ai_index];
+	auto sip = &Ship_info[shipp->ship_info_index];
+
+	if (!sip->is_fighter_bomber()) {
+		return ADE_RETURN_FALSE;
+	}
+
+	if (aip->ai_flags[AI::AI_Flags::Being_repaired, AI::AI_Flags::Awaiting_repair]) {
+		return ADE_RETURN_FALSE;
+	}
+
+	if (object_is_docked(objp)) {
+		return ADE_RETURN_FALSE;
+	}
+
+	if (!is_support_allowed(objp)) {
+		return ADE_RETURN_FALSE;
+	}
+
+	ai_issue_rearm_request(objp);
+
+	return ADE_RETURN_TRUE;
 }
 
 ADE_FUNC_DEPRECATED(getAnimationDoneTime, l_Ship, "number Type, number Subtype", "Gets time that animation will be done", "number", "Time (seconds), or 0 if ship handle is invalid",
