@@ -2757,6 +2757,24 @@ int Fred_mission_save::save_mission_info()
 	// this is compatible with non-SCP variants - Goober5000
 	fout(" %d", (The_mission.support_ships.max_support_ships == 0) ? 1 : 0);
 
+	if (save_config.save_format != MissionFormat::RETAIL) {
+		if (optional_string_fred("+Disallow Support Rearm:")) {
+			parse_comments(2);
+		} else {
+			fout("\n+Disallow Support Rearm:");
+		}
+
+		fout(" %d", The_mission.support_ships.disallow_rearm ? 1 : 0);
+
+		if (optional_string_fred("+Allow Support Rearm Weapon Precedence:")) {
+			parse_comments(2);
+		} else {
+			fout("\n+Allow Support Rearm Weapon Precedence:");
+		}
+
+		fout(" %d", The_mission.support_ships.allow_rearm_weapon_precedence ? 1 : 0);
+	}
+
 	// here be WMCoolmon's hull and subsys repair stuff
 	if (save_config.save_format != MissionFormat::RETAIL) {
 		if (optional_string_fred("+Hull Repair Ceiling:")) {
@@ -2772,6 +2790,13 @@ int Fred_mission_save::save_mission_info()
 			fout("\n+Subsystem Repair Ceiling:");
 		}
 		fout(" %f", The_mission.support_ships.max_subsys_repair_val);
+
+		if (optional_string_fred("+Support Rearm Pool From Loadout:")) {
+			parse_comments(1);
+		} else {
+			fout("\n+Support Rearm Pool From Loadout:");
+		}
+		fout(" %d", The_mission.support_ships.rearm_pool_from_loadout ? 1 : 0);
 	}
 
 	if (Mission_all_attack) {
@@ -4368,6 +4393,25 @@ int Fred_mission_save::save_players()
 		}
 
 		fout(")");
+
+		if (save_config.save_format != MissionFormat::RETAIL && !The_mission.support_ships.rearm_pool_from_loadout) {
+			if (optional_string_fred("+Support Rearm Pool:", "$Starting Shipname:")) {
+				parse_comments(2);
+			} else {
+				fout("\n\n+Support Rearm Pool:");
+			}
+
+			fout(" (\n");
+			for (j = 0; j < weapon_info_size(); j++) {
+				if (!Weapon_info[j].wi_flags[Weapon::Info_Flags::Player_allowed]) {
+					continue;
+				}
+				if (The_mission.support_ships.rearm_weapon_pool[i][j] != 0) {
+					fout("\t\"%s\"\t%d\n", Weapon_info[j].name, The_mission.support_ships.rearm_weapon_pool[i][j]);
+				}
+			}
+			fout(")");
+		}
 
 		// sanity check
 		if (save_config.save_format == MissionFormat::RETAIL && wrote_fso_data) {

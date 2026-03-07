@@ -7,6 +7,7 @@
 #include <ui/dialogs/MissionSpecs/CustomStringsDialog.h>
 #include <ui/dialogs/MissionSpecs/CustomWingNamesDialog.h>
 #include <ui/dialogs/MissionSpecs/SoundEnvironmentDialog.h>
+#include <ui/dialogs/MissionSpecs/SupportRearmDialog.h>
 #include <ui/util/SignalBlockers.h>
 #include "mission/util.h"
 #include <QCloseEvent>
@@ -87,11 +88,6 @@ void MissionSpecDialog::updateUi() {
 
 	ui->lowResScreen->setText(_model->getLowResLoadingScren().c_str());
 	ui->highResScreen->setText(_model->getHighResLoadingScren().c_str());
-
-	ui->toggleSupportShip->setChecked(_model->getDisallowSupport());
-	ui->toggleHullRepair->setChecked(_model->getMissionFlag(Mission::Mission_Flags::Support_repairs_hull));
-	ui->hullRepairMax->setValue(_model->getHullRepairMax());
-	ui->subsysRepairMax->setValue(_model->getSubsysRepairMax());
 
 	ui->toggleTrail->setChecked(_model->getMissionFlag(Mission::Mission_Flags::Toggle_ship_trails));
 	ui->toggleSpeedDisplay->setChecked(_model->getTrailThresholdFlag());
@@ -352,6 +348,15 @@ void MissionSpecDialog::on_highResScreenButton_clicked() {
 	QString filename = QFileDialog::getOpenFileName(this, tr("Open Image"), "", tr("Image Files (*.dds *.pcx *.jpg *.jpeg *.tga *.png);;DDS (*.dds);;PCX (*.pcx);;JPG (*.jpg *.jpeg);;TGA (*.tga);;PNG (*.png) ;;All Files (*.*)"));
 	if (!(filename.isNull() || filename.isEmpty())) {
 		_model->setHighResLoadingScreen(QFileInfo(filename).fileName().toUtf8().constData());
+	}
+}
+
+void MissionSpecDialog::on_supportRearmOptionsButton_clicked()
+{
+	SupportRearmDialog dlg(this, _viewport);
+	dlg.setInitial(_model->getSupportRearmSettings());
+	if (dlg.exec() == QDialog::Accepted) {
+		_model->setSupportRearmSettings(dlg.settings());
 	}
 }
 

@@ -11,6 +11,32 @@
 
 namespace fso::fred::dialogs {
 
+struct SupportRearmSettings {
+	bool disallowSupportShips = false;
+	bool supportRepairsHull = true;
+	float maxHullRepair = 100.0f;
+	float maxSubsysRepair = 100.0f;
+	bool disallowSupportRearm = false;
+	bool limitRearmToPool = false;
+	bool rearmPoolFromLoadout = false;
+	bool allowWeaponPrecedence = false;
+	std::array<std::array<int, MAX_WEAPON_TYPES>, MAX_TVT_TEAMS> rearmWeaponPool{};
+
+	bool operator==(const SupportRearmSettings& rhs) const
+	{
+		return disallowSupportShips == rhs.disallowSupportShips && supportRepairsHull == rhs.supportRepairsHull &&
+			   maxHullRepair == rhs.maxHullRepair && maxSubsysRepair == rhs.maxSubsysRepair &&
+			   disallowSupportRearm == rhs.disallowSupportRearm && limitRearmToPool == rhs.limitRearmToPool &&
+			   rearmPoolFromLoadout == rhs.rearmPoolFromLoadout && allowWeaponPrecedence == rhs.allowWeaponPrecedence &&
+			   rearmWeaponPool == rhs.rearmWeaponPool;
+	}
+
+	bool operator!=(const SupportRearmSettings& rhs) const
+	{
+		return !(*this == rhs);
+	}
+};
+
 
 class MissionSpecDialogModel : public AbstractDialogModel {
 private:
@@ -55,6 +81,7 @@ private:
 	SCP_vector<SCP_string> _m_squadLogoList;
 
 	int _m_type;
+	SupportRearmSettings _m_support_rearm_settings;
 
 public:
 	MissionSpecDialogModel(QObject* parent, EditorViewport* viewport);
@@ -101,6 +128,9 @@ public:
 	int getHullRepairMax();
 	void setSubsysRepairMax(float);
 	int getSubsysRepairMax();
+
+	SupportRearmSettings getSupportRearmSettings() const;
+	void setSupportRearmSettings(const SupportRearmSettings& settings);
 
 	void setTrailThresholdFlag(bool);
 	bool getTrailThresholdFlag();

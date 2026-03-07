@@ -65,6 +65,7 @@
 #include "scripting/api/objs/ship.h"
 #include "scripting/api/objs/shipclass.h"
 #include "scripting/api/objs/sound.h"
+#include "scripting/api/objs/support_rearm_pool.h"
 #include "scripting/api/objs/team.h"
 #include "scripting/api/objs/vecmath.h"
 #include "scripting/api/objs/volumetric.h"
@@ -260,6 +261,42 @@ ADE_FUNC(runSEXP, l_Mission, "string", "Runs the defined SEXP script within a `w
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;
+}
+
+//****SUBLIBRARY: Mission/SupportRearmPools
+ADE_LIB_DERIV(l_Mission_SupportRearmPools,
+	"SupportRearmPools",
+	nullptr,
+	"Per-team mission support rearm pools (team indexed).",
+	l_Mission);
+
+ADE_INDEXER(l_Mission_SupportRearmPools,
+	"number TeamIndex",
+	"Gets support rearm pool handle for a specific team.",
+	"support_rearm_pool_team",
+	"Support rearm pool team handle, or invalid handle if index is out of range.")
+{
+	int idx = -1;
+	if (!ade_get_args(L, "*i", &idx)) {
+		return ade_set_error(L, "o", l_SupportRearmPoolTeam.Set(-1));
+	}
+
+	idx--; // Lua to C++ index
+	if (idx < 0 || idx >= Num_teams || idx >= MAX_TVT_TEAMS) {
+		return ade_set_error(L, "o", l_SupportRearmPoolTeam.Set(-1));
+	}
+
+	return ade_set_args(L, "o", l_SupportRearmPoolTeam.Set(idx));
+}
+
+ADE_FUNC(__len,
+	l_Mission_SupportRearmPools,
+	nullptr,
+	"The number of support rearm pool teams.",
+	"number",
+	"The number of TVT/loadout teams with support rearm pools.")
+{
+	return ade_set_args(L, "i", MIN(Num_teams, MAX_TVT_TEAMS));
 }
 
 //****SUBLIBRARY: Mission/Asteroids
