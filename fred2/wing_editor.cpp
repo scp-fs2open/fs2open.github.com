@@ -366,8 +366,8 @@ void wing_editor::initialize_data_safe(int full_update)
 		m_arrival_delay_min = Wings[cur_wing].wave_delay_min;
 		m_arrival_delay_max = Wings[cur_wing].wave_delay_max;
 		m_arrival_dist = Wings[cur_wing].arrival_distance;
-		m_arrival_target = Wings[cur_wing].arrival_anchor;
-		m_departure_target = Wings[cur_wing].departure_anchor;
+		m_arrival_target = anchor_to_target(Wings[cur_wing].arrival_anchor);
+		m_departure_target = anchor_to_target(Wings[cur_wing].departure_anchor);
 		m_no_dynamic = (Wings[cur_wing].flags[Ship::Wing_Flags::No_dynamic])?1:0;
 
 		// Add the ships/special items to the combo box here before data is updated
@@ -382,7 +382,7 @@ void wing_editor::initialize_data_safe(int full_update)
 		// of the drop-down list.
 		if (m_arrival_target >= 0)
 		{
-			if (m_arrival_target & SPECIAL_ARRIVAL_ANCHOR_FLAG)
+			if (m_arrival_target & ANCHOR_SPECIAL_ARRIVAL)
 			{
 				// figure out what the box represents this as
 				char tmp[NAME_LENGTH + 15];
@@ -818,10 +818,10 @@ void wing_editor::update_data_safe()
 	MODIFY(Wings[cur_wing].arrival_distance, m_arrival_dist);
 	if (m_arrival_target >= 0) {
 		i = (int)((CComboBox *) GetDlgItem(IDC_ARRIVAL_TARGET))->GetItemData(m_arrival_target);
-		MODIFY(Wings[cur_wing].arrival_anchor, i);
+		MODIFY(Wings[cur_wing].arrival_anchor, target_to_anchor(i));
 
 		// when arriving near or in front of a ship, be sure that we are far enough away from it!!!
-		if (((m_arrival_location != static_cast<int>(ArrivalLocation::AT_LOCATION)) && (m_arrival_location != static_cast<int>(ArrivalLocation::FROM_DOCK_BAY))) && (i >= 0) && !(i & SPECIAL_ARRIVAL_ANCHOR_FLAG)) {
+		if (((m_arrival_location != static_cast<int>(ArrivalLocation::AT_LOCATION)) && (m_arrival_location != static_cast<int>(ArrivalLocation::FROM_DOCK_BAY))) && (i >= 0) && !(i & ANCHOR_SPECIAL_ARRIVAL)) {
 			d = int(std::min(MIN_TARGET_ARRIVAL_DISTANCE, MIN_TARGET_ARRIVAL_MULTIPLIER * Objects[Ships[i].objnum].radius));
 			if ((Wings[cur_wing].arrival_distance < d) && (Wings[cur_wing].arrival_distance > -d)) {
 				if (!bypass_errors) {
@@ -843,7 +843,7 @@ void wing_editor::update_data_safe()
 	}
 	if (m_departure_target >= 0) {
 		i = (int)((CComboBox *) GetDlgItem(IDC_DEPARTURE_TARGET))->GetItemData(m_departure_target);
-		MODIFY(Wings[cur_wing].departure_anchor,  i);
+		MODIFY(Wings[cur_wing].departure_anchor,  target_to_anchor(i));
 	}
 
 	MODIFY(Wings[cur_wing].departure_delay, m_departure_delay);

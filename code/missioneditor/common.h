@@ -1,6 +1,7 @@
 #pragma once
 #include "globalincs/globals.h"
 #include "mission/missionmessage.h"
+#include "ship/anchor_t.h"
 
 // Voice acting manager
 #define INVALID_MESSAGE ((MMessage*)SIZE_MAX) // was originally SIZE_T_MAX but that wasn't available outside fred. May need more research.
@@ -30,6 +31,10 @@ void time_to_mission_info_string(const std::tm* src, char* dest, size_t dest_max
 void stuff_special_arrival_anchor_name(char* buf, int iff_index, int restrict_to_players, bool retail_format);
 
 void stuff_special_arrival_anchor_name(char* buf, int anchor_num, bool retail_format);
+
+int anchor_to_target(anchor_t anchor);
+
+anchor_t target_to_anchor(int target);
 
 void generate_weaponry_usage_list_team(int team, int* arr);
 

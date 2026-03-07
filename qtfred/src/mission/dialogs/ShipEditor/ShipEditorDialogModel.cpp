@@ -12,6 +12,7 @@
 #include "iff_defs/iff_defs.h"
 #include "jumpnode/jumpnode.h"
 #include "mission/missionmessage.h"
+#include "missioneditor/common.h"
 
 #include <globalincs/linklist.h>
 #include <hud/hudsquadmsg.h>
@@ -273,11 +274,11 @@ void ShipEditorDialogModel::initializeData()
 								_m_departure_tree_formula = Ships[i].departure_cue;
 								_m_arrival_location = static_cast<int>(Ships[i].arrival_location);
 								_m_arrival_dist = Ships[i].arrival_distance;
-								_m_arrival_target = Ships[i].arrival_anchor;
+								_m_arrival_target = anchor_to_target(Ships[i].arrival_anchor);
 								_m_arrival_delay = Ships[i].arrival_delay;
 								_m_departure_location = static_cast<int>(Ships[i].departure_location);
 								_m_departure_delay = Ships[i].departure_delay;
-								_m_departure_target = Ships[i].departure_anchor;
+								_m_departure_target = anchor_to_target(Ships[i].departure_anchor);
 
 							} else {
 								cue_init++;
@@ -293,7 +294,7 @@ void ShipEditorDialogModel::initializeData()
 								_m_arrival_delay = Ships[i].arrival_delay;
 								_m_departure_delay = Ships[i].departure_delay;
 
-								if (Ships[i].arrival_anchor != _m_arrival_target) {
+								if (Ships[i].arrival_anchor != target_to_anchor(_m_arrival_target)) {
 									_m_arrival_target = -1;
 								}
 
@@ -307,7 +308,7 @@ void ShipEditorDialogModel::initializeData()
 									_m_update_departure = false;
 								}
 
-								if (Ships[i].departure_anchor != _m_departure_target) {
+								if (Ships[i].departure_anchor != target_to_anchor(_m_departure_target)) {
 									_m_departure_target = -1;
 								}
 							}
@@ -818,13 +819,13 @@ bool ShipEditorDialogModel::update_ship(int ship)
 		Ships[ship].arrival_delay = _m_arrival_delay;
 		Ships[ship].departure_delay = _m_departure_delay;
 		if (_m_arrival_target >= 0) {
-			Ships[ship].arrival_anchor = _m_arrival_target;
+			Ships[ship].arrival_anchor = target_to_anchor(_m_arrival_target);
 
 			// if the arrival is not hyperspace or docking bay -- force arrival distance to be
 			// greater than 2*radius of target.
 			if (((_m_arrival_location != static_cast<int>(ArrivalLocation::FROM_DOCK_BAY)) &&
 					(_m_arrival_location != static_cast<int>(ArrivalLocation::AT_LOCATION))) &&
-				(_m_arrival_target >= 0) && !(_m_arrival_target & SPECIAL_ARRIVAL_ANCHOR_FLAG)) {
+				(_m_arrival_target >= 0) && !(_m_arrival_target & ANCHOR_SPECIAL_ARRIVAL)) {
 				d = int(std::min(500.0f, 2.0f * Objects[Ships[ship].objnum].radius));
 				if ((Ships[ship].arrival_distance < d) && (Ships[ship].arrival_distance > -d)) {
 					sprintf(str,
@@ -847,7 +848,7 @@ bool ShipEditorDialogModel::update_ship(int ship)
 		}
 		if (_m_departure_target >= 0) {
 
-			Ships[ship].departure_anchor = _m_departure_target;
+			Ships[ship].departure_anchor = target_to_anchor(_m_departure_target);
 		}
 	}
 
