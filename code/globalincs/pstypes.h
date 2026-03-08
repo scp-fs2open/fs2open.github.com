@@ -592,6 +592,11 @@ inline void* memset_if_trivial_else_error(ImDrawListSplitter* memset_data, int c
 		return ptr_memcpy(memcpy_dest, memcpy_src, count);
 	}
 
+	inline void *memcpy_if_trivial_else_error(void *memcpy_dest, const void *memcpy_src, size_t count)
+	{
+		return ptr_memcpy(memcpy_dest, memcpy_src, count);
+	}
+
 	// MEMMOVE!
 	const auto ptr_memmove = std::memmove;
 	#define memmove memmove_if_trivial_else_error

@@ -99,11 +99,19 @@ void shadows_construct_light_proj(light_frustum_info *shadow_data)
 
 	shadow_data->proj_matrix.a1d[0] = 2.0f / ( shadow_data->max.xyz.x - shadow_data->min.xyz.x );
 	shadow_data->proj_matrix.a1d[5] = 2.0f / ( shadow_data->max.xyz.y - shadow_data->min.xyz.y );
-	shadow_data->proj_matrix.a1d[10] = -2.0f / ( shadow_data->max.xyz.z - shadow_data->min.xyz.z );
 	shadow_data->proj_matrix.a1d[12] = -(shadow_data->max.xyz.x + shadow_data->min.xyz.x) / ( shadow_data->max.xyz.x - shadow_data->min.xyz.x );
 	shadow_data->proj_matrix.a1d[13] = -(shadow_data->max.xyz.y + shadow_data->min.xyz.y) / ( shadow_data->max.xyz.y - shadow_data->min.xyz.y );
-	shadow_data->proj_matrix.a1d[14] = -(shadow_data->max.xyz.z + shadow_data->min.xyz.z) / ( shadow_data->max.xyz.z - shadow_data->min.xyz.z );
 	shadow_data->proj_matrix.a1d[15] = 1.0f;
+
+	if (gr_screen.mode == GR_VULKAN) {
+		// Vulkan uses [0, 1] depth range
+		shadow_data->proj_matrix.a1d[10] = -1.0f / ( shadow_data->max.xyz.z - shadow_data->min.xyz.z );
+		shadow_data->proj_matrix.a1d[14] = -shadow_data->min.xyz.z / ( shadow_data->max.xyz.z - shadow_data->min.xyz.z );
+	} else {
+		// OpenGL uses [-1, 1] depth range
+		shadow_data->proj_matrix.a1d[10] = -2.0f / ( shadow_data->max.xyz.z - shadow_data->min.xyz.z );
+		shadow_data->proj_matrix.a1d[14] = -(shadow_data->max.xyz.z + shadow_data->min.xyz.z) / ( shadow_data->max.xyz.z - shadow_data->min.xyz.z );
+	}
 }
 
 void shadows_debug_show_frustum(matrix* orient, vec3d *pos, float fov, float aspect, float z_near, float z_far)

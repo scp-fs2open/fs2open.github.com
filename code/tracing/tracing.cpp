@@ -1,6 +1,7 @@
 
 #include "tracing/tracing.h"
 #include "graphics/2d.h"
+#include "globalincs/systemvars.h"
 #include "parse/parselo.h"
 #include "io/timer.h"
 
@@ -57,9 +58,12 @@ std::unique_ptr<ThreadedMainFrameTimer> mainFrameTimer;
 std::unique_ptr<FrameProfiler> frameProfiler;
 
 SCP_vector<int> query_objects;
-// The GPU timestamp queries use an internal free list to reduce the number of graphics API calls
+// Free list for backends where queries are immediately reusable (OpenGL).
+// When queries are NOT reusable (Vulkan), the free list is bypassed and
+// handles are returned to the backend.
 SCP_queue<int> free_query_objects;
 bool do_gpu_queries = true;
+bool queries_reusable = true;
 
 int get_query_object() {
 	if (!free_query_objects.empty()) {
@@ -69,7 +73,12 @@ int get_query_object() {
 	}
 
 	auto id = gr_create_query_object();
-	query_objects.push_back(id);
+	if (queries_reusable) {
+		// Track for bulk cleanup at shutdown. When not reusable, the backend
+		// owns the lifecycle — handles are returned via gr_delete_query_object
+		// and the backend's own shutdown destroys the pool.
+		query_objects.push_back(id);
+	}
 	return id;
 }
 
@@ -83,7 +92,12 @@ int get_gpu_timestamp_query() {
 }
 
 void free_query_object(int obj) {
-	free_query_objects.push(obj);
+	if (queries_reusable) {
+		free_query_objects.push(obj);
+	} else {
+		// Backend manages reset lifecycle internally — hand it back.
+		gr_delete_query_object(obj);
+	}
 }
 
 struct gpu_trace_event {
@@ -231,6 +245,7 @@ void init() {
 	}
 
 	do_gpu_queries = gr_is_capable(gr_capability::CAPABILITY_TIMESTAMP_QUERY);
+	queries_reusable = gr_is_capable(gr_capability::CAPABILITY_QUERIES_REUSABLE);
 
 	if (do_gpu_queries) {
 		gpu_start_query = get_gpu_timestamp_query();
@@ -261,17 +276,33 @@ SCP_string get_frame_profile_output() {
 }
 
 void shutdown() {
-	while (!gpu_events.empty()) {
-		process_events();
+	if (queries_reusable) {
+		while (!gpu_events.empty()) {
+			process_events();
 
-		// Don't do busy waiting...
-		os_sleep(5);
+			// Don't do busy waiting...
+			os_sleep(5);
+		}
+	} else {
+		// Discard remaining GPU events — no more frames will
+		// be submitted, so unsubmitted queries can never become
+		// available.
+		while (!gpu_events.empty()) {
+			auto& first = gpu_events.front();
+			gr_delete_query_object(first.gpu_begin_query);
+			gr_delete_query_object(first.gpu_end_query);
+			gpu_events.pop();
+		}
 	}
 
 	for (auto query : query_objects) {
 		gr_delete_query_object(query);
 	}
 	query_objects.clear();
+
+	while (!free_query_objects.empty()) {
+		free_query_objects.pop();
+	}
 
 	mainFrameTimer = nullptr;
 	traceEventWriter = nullptr;

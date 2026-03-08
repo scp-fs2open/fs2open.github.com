@@ -118,8 +118,14 @@ vec4 transformToShadowMap(mat4 shadow_proj_matrix, int i, vec4 pos)
 {
 	vec4 shadow_proj;
 	shadow_proj = shadow_proj_matrix * pos;
+#ifdef VULKAN
+	// Vulkan shadow projection: XY is [-1,1] → [0,1], Z is already [0,1]
+	shadow_proj.xy = shadow_proj.xy * 0.5 + 0.5;
+#else
+	// OpenGL: all components [-1,1] → [0,1]
 	shadow_proj += 1.0;
 	shadow_proj *= 0.5;
+#endif
 	shadow_proj.w = shadow_proj.z;
 	shadow_proj.z = float(i);
 	return shadow_proj;

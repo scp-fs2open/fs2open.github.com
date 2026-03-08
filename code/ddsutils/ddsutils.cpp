@@ -223,7 +223,7 @@ static size_t compute_dds_size(const DDS_HEADER &dds_header, bool converting = f
 
 		if (dds_header.ddspf.dwFlags & DDPF_FOURCC) {
 			// size of data block (4x4)
-			d_size += ((d_width + 3) / 4) * ((d_height + 3) / 4) * d_depth * ((dds_header.ddspf.dwFourCC == FOURCC_DXT1) ? 8 : 16);
+			d_size += dds_compressed_mip_size(d_width, d_height, (dds_header.ddspf.dwFourCC == FOURCC_DXT1) ? 8 : 16) * d_depth;
 		} else {
 			d_size += d_width * d_height * d_depth * (dds_header.ddspf.dwRGBBitCount / 8);
 		}

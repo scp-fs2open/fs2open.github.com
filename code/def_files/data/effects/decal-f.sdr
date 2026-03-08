@@ -6,6 +6,29 @@
 #include "normals.sdr"
 #include "gamma.sdr"
 
+#ifdef VULKAN
+// G-buffer: 6 attachments, 1/3/5 are write-masked by pipeline blend state
+layout (location = 0) out vec4 fragOut0; // Color/Diffuse
+layout (location = 1) out vec4 fragOut1; // Position (masked)
+layout (location = 2) out vec4 fragOut2; // Normal
+layout (location = 3) out vec4 fragOut3; // Specular (masked)
+layout (location = 4) out vec4 fragOut4; // Emissive
+layout (location = 5) out vec4 fragOut5; // Composite (masked)
+
+layout (location = 0) flat in mat4 invModelMatrix;  // locations 0-3
+layout (location = 4) flat in vec3 decalDirection;
+layout (location = 5) flat in float normal_angle_cutoff;
+layout (location = 6) flat in float angle_fade_start;
+layout (location = 7) flat in float alpha_scale;
+
+layout (set = 1, binding = 1) uniform sampler2DArray decalTextures;
+#define diffuseMap decalTextures
+#define glowMap decalTextures
+#define normalMap decalTextures
+
+layout (set = 1, binding = 4) uniform sampler2D gDepthBuffer;
+layout (set = 1, binding = 6) uniform sampler2D gNormalBuffer;
+#else
 out vec4 fragOut0; // Diffuse buffer
 out vec4 fragOut1; // Normal buffer
 out vec4 fragOut2; // Emissive buffer
@@ -22,8 +45,14 @@ uniform sampler2D gNormalBuffer;
 uniform sampler2DArray diffuseMap;
 uniform sampler2DArray glowMap;
 uniform sampler2DArray normalMap;
+#endif
 
-layout (std140) uniform decalGlobalData {
+#ifdef VULKAN
+layout (set = 1, binding = 2, std140)
+#else
+layout (std140)
+#endif
+uniform decalGlobalData {
 	mat4 viewMatrix;
 	mat4 projMatrix;
 	mat4 invViewMatrix;
@@ -32,7 +61,12 @@ layout (std140) uniform decalGlobalData {
 	vec2 viewportSize;
 };
 
-layout (std140) uniform decalInfoData {
+#ifdef VULKAN
+layout (set = 2, binding = 3, std140)
+#else
+layout (std140)
+#endif
+uniform decalInfoData {
 	int diffuse_index;
 	int glow_index;
 	int normal_index;
@@ -45,8 +79,16 @@ vec3 computeViewPosition(vec2 textureCoord) {
 	vec4 clipSpaceLocation;
 	vec2 normalizedCoord = textureCoord / viewportSize;
 
+#ifdef VULKAN
+	clipSpaceLocation.x = normalizedCoord.x * 2.0 - 1.0;
+	// Vulkan negative viewport inverts Y mapping
+	clipSpaceLocation.y = 1.0 - normalizedCoord.y * 2.0;
+	// Vulkan depth is [0,1] — use directly
+	clipSpaceLocation.z = texelFetch(gDepthBuffer, ivec2(textureCoord), 0).r;
+#else
 	clipSpaceLocation.xy = normalizedCoord * 2.0f - 1.0f;
 	clipSpaceLocation.z = texelFetch(gDepthBuffer, ivec2(textureCoord), 0).r * 2.0f - 1.0f;
+#endif
 	clipSpaceLocation.w = 1.0f;
 
 	vec4 homogenousLocation = invProjMatrix * clipSpaceLocation;
@@ -57,24 +99,24 @@ vec3 computeViewPosition(vec2 textureCoord) {
 vec3 getPixelNormal(vec3 frag_position, vec2 tex_coord, inout float alpha, out vec3 binormal, out vec3 tangent) {
 #ifdef USE_NORMAL_MAP
 	// If we can then we just use the existing normal buffer
-    vec3 normal = texelFetch(gNormalBuffer, ivec2(tex_coord), 0).xyz;
+	vec3 normal = texelFetch(gNormalBuffer, ivec2(tex_coord), 0).xyz;
 
 	// If we use the normal map then we don't really need these values so we don't need to compute them here
-    binormal = vec3(0.0);
-    tangent = vec3(0.0);
+	binormal = vec3(0.0);
+	tangent = vec3(0.0);
 #else
 	// Use some fancy screen-space derivates to determine the normal of the current pixel by looking at the surrounding pixels
 	vec3 pos_dx = dFdx(frag_position);
 	vec3 pos_dy = dFdy(frag_position);
 
-    vec3 normal = normalize(cross(pos_dx, pos_dy));
+	vec3 normal = normalize(cross(pos_dx, pos_dy));
 
-    binormal = normalize(pos_dx);
-    tangent = normalize(pos_dy);
+	binormal = normalize(pos_dx);
+	tangent = normalize(pos_dy);
 #endif
 
 	//Calculate angle between surface normal and decal direction
-	float angle = acos(dot(normal, decalDirection));
+	float angle = acos(clamp(dot(normal, decalDirection), -1.0, 1.0));
 
 	if (angle > normal_angle_cutoff) {
 		// The angle between surface normal and decal direction is too big
@@ -162,7 +204,18 @@ void main() {
 		normal_out = tangentToView * decalNormal * alpha;
 	}
 
+#ifdef VULKAN
+	// 6-attachment G-buffer; attachments 1/3/5 are write-masked
+	fragOut0 = diffuse_out;
+	fragOut1 = vec4(0.0);
+	fragOut2 = vec4(normal_out, 0.0);
+	fragOut3 = vec4(0.0);
+	fragOut4 = emissive_out;
+	fragOut5 = vec4(0.0);
+#else
+	// OpenGL: 3 draw buffers mapped to attachments 0/2/4
 	fragOut0 = diffuse_out;
 	fragOut1 = vec4(normal_out, 0.0);
 	fragOut2 = emissive_out;
+#endif
 }

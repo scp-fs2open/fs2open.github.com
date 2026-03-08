@@ -1,3 +1,28 @@
+#ifdef VULKAN
+layout(location = 0) in vec4 vertPosition;
+layout(location = 1) in vec4 vertColor;
+layout(location = 2) in vec4 vertTexCoord;
+layout(location = 0) out vec4 fragTexCoord;
+layout(location = 1) out vec4 fragColor;
+
+layout(std140, set = 2, binding = 0) uniform genericData {
+	mat4 modelMatrix;
+	vec4 color;
+	vec4 clipEquation;
+	int baseMapIndex;
+	int alphaTexture;
+	int noTexturing;
+	int srgb;
+	float intensity;
+	float alphaThreshold;
+	uint clipEnabled;
+};
+
+layout(std140, set = 2, binding = 1) uniform matrixData {
+	mat4 modelViewMatrix;
+	mat4 projMatrix;
+};
+#else
 in vec4 vertPosition;
 in vec4 vertTexCoord;
 in vec4 vertColor;
@@ -8,10 +33,14 @@ layout (std140) uniform matrixData {
 	mat4 modelViewMatrix;
 	mat4 projMatrix;
 };
+#endif
 
 void main()
 {
 	fragTexCoord = vertTexCoord;
 	fragColor = vertColor;
 	gl_Position = projMatrix * modelViewMatrix * vertPosition;
+#ifdef VULKAN
+	gl_ClipDistance[0] = clipEnabled != 0u ? dot(modelMatrix * vertPosition, clipEquation) : 1.0;
+#endif
 }
