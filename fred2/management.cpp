@@ -1162,7 +1162,7 @@ int update_dialog_boxes()
 		return z;
 	}
 
-	z = Prop_editor_dialog.update_data();
+	z = Prop_editor_dialog.update_data(0);
 	if (z) {
 		nprintf(("Fred routing", "prop dialog save failed\n"));
 		Prop_editor_dialog.SetWindowPos(&Fred_main_wnd->wndTop, 0, 0, 0, 0,
