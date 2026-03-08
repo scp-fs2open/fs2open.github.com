@@ -2976,6 +2976,11 @@ void gr_request_screenshot(const char* filename)
 	}
 }
 
+bool gr_is_screenshot_requested()
+{
+	return !Pending_screenshot_filename.empty();
+}
+
 void gr_print_timestamp(int x, int y, fix timestamp, int resize_mode)
 {
 	int seconds = f2i(timestamp);

@@ -86,6 +86,14 @@ const std::shared_ptr<Hook<>> OnGameplayStart = Hook<>::Factory("On Gameplay Sta
 	"Invoked when the gameplay portion of a mission starts.",
 	{ {"Player", "object", "The player object."} });
 
+const std::shared_ptr<Hook<>> OnPhotoModeStarted = Hook<>::Factory("On Photo Mode Started",
+	"Invoked when Photo Mode is enabled.",
+	{});
+
+const std::shared_ptr<Hook<>> OnPhotoModeEnded = Hook<>::Factory("On Photo Mode Ended",
+	"Invoked when Photo Mode is disabled.",
+	{});
+
 const std::shared_ptr<Hook<ControlActionConditions>> OnAction = Hook<ControlActionConditions>::Factory("On Action",
 	"Invoked whenever a user action was invoked through control input.",
 	{ {"Action", "string", "The name of the action that was executed."} });

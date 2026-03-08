@@ -41,6 +41,7 @@
 #include "asteroid/asteroid.h"
 #include "autopilot/autopilot.h"
 #include "bmpman/bmpman.h"
+#include "camera/photomode.h"
 #include "cfile/cfile.h"
 #include "cheats_table/cheats_table.h"
 #include "cmdline/cmdline.h"
@@ -948,6 +949,7 @@ void game_level_close()
 		ct_level_close();
 		beam_level_close();
 		mission_brief_common_reset();		// close out parsed briefing/mission stuff
+		photo_mode_set_active(false);
 		cam_close();
 		subtitles_close();
 		animation::ModelAnimationSet::stopAnimations();
@@ -1047,6 +1049,7 @@ void game_level_init()
 
 	Perspective_locked = false;
 	Slew_locked = false;
+	game_set_photo_mode_allowed(true);
 
 	// reset the geometry map and distortion map batcher, this should to be done pretty soon in this mission load process (though it's not required)
 	batch_reset();
@@ -3642,6 +3645,8 @@ void game_simulation_frame()
 		cam_do_frame(flRealframetime);
 	}
 
+	photo_mode_do_frame(flRealframetime);
+
 	// blow ships up in multiplayer dogfight
 	if( MULTIPLAYER_MASTER && (Net_player != nullptr) && (Netgame.type_flags & NG_TYPE_DOGFIGHT) && (f2fl(Missiontime) >= 2.0f) && !dogfight_blown){
 		// blow up all non-player ships
@@ -4155,6 +4160,7 @@ void game_do_full_frame(DEBUG_TIMER_SIG const vec3d* offset = nullptr, const mat
 
 	gr_reset_clip();
 	game_render_post_frame();
+	photo_mode_maybe_render_hud();
 
 	game_tst_frame();
 
@@ -4552,6 +4558,7 @@ void game_do_frame(bool set_frametime)
 	}
 
 	game_update_missiontime();
+	photo_mode_clear_screenshot_queued_flag();
 
 	if (Game_mode & GM_STANDALONE_SERVER) {
 		std_multi_set_standalone_missiontime(f2fl(Missiontime));
@@ -4762,6 +4769,8 @@ int game_poll()
 
 		case KEY_PRINT_SCRN: 
 			{
+				photo_mode_set_screenshot_queued_flag();
+
 				static int counter = os_config_read_uint(nullptr, "ScreenshotNum", 0);
 				char tmp_name[MAX_FILENAME_LEN];
 
@@ -5273,6 +5282,10 @@ void game_leave_state( int old_state, int new_state )
 		case GS_STATE_INGAME_OPTIONS:
 			end_mission = 0;  // these events shouldn't end a mission
 			break;
+	}
+
+	if (old_state == GS_STATE_GAME_PLAY && new_state != GS_STATE_GAME_PLAY) {
+		photo_mode_set_active(false);
 	}
 
 	// This is kind of a hack but it ensures options are logged even if scripting calls for a state change with an override active
