@@ -794,6 +794,10 @@ void FredRenderer::render_one_model_htl(object* objp,
 
 	Assert(objp->type != OBJ_NONE);
 
+	// if this object isn't fully created yet, don't render it
+	if (objp->type == OBJ_SHIP && Ships[objp->instance].create_time == 0)
+		return;
+
 	if (objp->type == OBJ_JUMP_NODE) {
 		return;
 	}
