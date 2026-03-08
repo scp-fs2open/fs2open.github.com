@@ -115,6 +115,8 @@ add_file_folder("Bmpman"
 add_file_folder("Camera"
 	camera/camera.cpp
 	camera/camera.h
+	camera/photomode.cpp
+	camera/photomode.h
 )
 
 add_file_folder("Cheats Table"

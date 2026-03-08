@@ -22,6 +22,8 @@ extern const std::shared_ptr<Hook<>>									OnCampaignMissionAccept;
 extern const std::shared_ptr<Hook<>>									OnBriefStage;
 extern const std::shared_ptr<Hook<>>									OnMissionStart; 
 extern const std::shared_ptr<Hook<>>									OnGameplayStart;
+extern const std::shared_ptr<Hook<>>							OnPhotoModeStarted;
+extern const std::shared_ptr<Hook<>>							OnPhotoModeEnded;
 
 extern const std::shared_ptr<Hook<ControlActionConditions>>				OnAction;
 extern const std::shared_ptr<Hook<ControlActionConditions>>				OnActionStopped;

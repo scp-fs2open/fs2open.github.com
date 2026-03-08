@@ -26,6 +26,7 @@
 #include "asteroid/asteroid.h"
 #include "autopilot/autopilot.h"
 #include "camera/camera.h"
+#include "camera/photomode.h"
 #include "cmdline/cmdline.h"
 #include "debris/debris.h"
 #include "debugconsole/console.h"
@@ -747,6 +748,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "show-subtitle-image",			OP_CUTSCENES_SHOW_SUBTITLE_IMAGE,		8,	11,			SEXP_ACTION_OPERATOR,	},
 	{ "clear-subtitles",				OP_CLEAR_SUBTITLES,						0,	0,			SEXP_ACTION_OPERATOR,	},
 	{ "lock-perspective",				OP_CUTSCENES_FORCE_PERSPECTIVE,			1,	3,			SEXP_ACTION_OPERATOR,	},
+	{ "allow-photo-mode",				OP_ALLOW_PHOTO_MODE,					1,	1,			SEXP_ACTION_OPERATOR,	},
 	{ "set-camera-shudder",				OP_SET_CAMERA_SHUDDER,					2,	4,			SEXP_ACTION_OPERATOR,	},
 	{ "supernova-start",				OP_SUPERNOVA_START,						1,	1,			SEXP_ACTION_OPERATOR,	},
 	{ "supernova-stop",					OP_SUPERNOVA_STOP,						0,	0,			SEXP_ACTION_OPERATOR,	},	//CommanderDJ
@@ -25700,6 +25702,8 @@ camera* sexp_get_set_camera(bool reset = false)
 
 void sexp_set_camera(int node)
 {
+	game_set_photo_mode_allowed(false);
+	
 	if (node < 0)
 	{
 		sexp_get_set_camera(true);
@@ -26191,6 +26195,8 @@ void multi_sexp_reset_fov()
 
 void sexp_reset_camera(int node)
 {
+	game_set_photo_mode_allowed(true);
+	
 	bool cam_reset = false;
 	camera *cam = cam_get_current().getCamera();
 	if (cam != nullptr)
@@ -26209,6 +26215,8 @@ void sexp_reset_camera(int node)
 
 void multi_sexp_reset_camera()
 {
+	game_set_photo_mode_allowed(true);
+	
 	camera *cam = cam_get_current().getCamera();
 	bool cam_reset = false;
 
@@ -26785,6 +26793,11 @@ void sexp_force_perspective(int n)
 				Viewer_mode |= VM_CENTERING;	// start centering so that we don't get stuck in a slewed position
 		}
 	}
+}
+
+void sexp_allow_photo_mode(int n)
+{
+	game_set_photo_mode_allowed(is_sexp_true(n));
 }
 
 void sexp_set_camera_shudder(int n)
@@ -30378,6 +30391,10 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				sexp_force_perspective(node);
 				break;
+			case OP_ALLOW_PHOTO_MODE:
+				sexp_val = SEXP_TRUE;
+				sexp_allow_photo_mode(node);
+				break;
 
 			case OP_SET_CAMERA_SHUDDER:
 				sexp_val = SEXP_TRUE;
@@ -31778,6 +31795,7 @@ int query_operator_return_type(int op)
 		case OP_CUTSCENES_SET_TIME_COMPRESSION:
 		case OP_CUTSCENES_RESET_TIME_COMPRESSION:
 		case OP_CUTSCENES_FORCE_PERSPECTIVE:
+		case OP_ALLOW_PHOTO_MODE:
 		case OP_SET_CAMERA_SHUDDER:
 		case OP_JUMP_NODE_SET_JUMPNODE_NAME:
 		case OP_JUMP_NODE_SET_JUMPNODE_DISPLAY_NAME:
@@ -34426,6 +34444,9 @@ int query_operator_argument_type(int op, int argnum)
 			else
 				return OPF_BOOL;
 
+		case OP_ALLOW_PHOTO_MODE:
+			return OPF_BOOL;
+
 		case OP_SET_CAMERA_SHUDDER:
 			if (argnum == 0 || argnum == 1)
 				return OPF_POSITIVE;
@@ -36871,6 +36892,7 @@ int get_category(int op_id)
 		case OP_CUTSCENES_SET_TIME_COMPRESSION:
 		case OP_CUTSCENES_RESET_TIME_COMPRESSION:
 		case OP_CUTSCENES_FORCE_PERSPECTIVE:
+		case OP_ALLOW_PHOTO_MODE:
 		case OP_JUMP_NODE_SET_JUMPNODE_NAME:
 		case OP_JUMP_NODE_SET_JUMPNODE_DISPLAY_NAME:
 		case OP_JUMP_NODE_SET_JUMPNODE_COLOR:
@@ -37519,6 +37541,7 @@ int get_subcategory(int op_id)
 		case OP_CUTSCENES_SHOW_SUBTITLE_IMAGE:
 		case OP_CLEAR_SUBTITLES:
 		case OP_CUTSCENES_FORCE_PERSPECTIVE:
+		case OP_ALLOW_PHOTO_MODE:
 		case OP_SET_CAMERA_SHUDDER:
 		case OP_SUPERNOVA_START:
 		case OP_SUPERNOVA_STOP:
@@ -41997,7 +42020,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	},
 
 	{ OP_CUTSCENES_SET_CAMERA, "set-camera\r\n"
-		"\tSets SEXP camera, or another specified cutscene camera.  "
+		"\tSets SEXP camera, or another specified cutscene camera. Automatically disables photo mode while cutscene camera control is active."
 		"Takes 0 to 1 arguments...\r\n"
 		"\t(optional)\r\n"
 		"\t1:\tCamera name (created if nonexistent)\r\n"
@@ -42095,7 +42118,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	},
 
 	{ OP_CUTSCENES_RESET_CAMERA, "reset-camera\r\n"
-		"\tReleases cutscene camera control.  "
+		"\tReleases cutscene camera control. Automatically re-enables photo mode."
 		"Takes 1 optional argument...\r\n"
 		"\t(optional)\r\n"
 		"\t1:\tReset camera data (Position, facing, FOV...) (default: false)"
@@ -42180,6 +42203,12 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tTrue to lock the view mode, false to unlock it\r\n"
 		"\t2:\tWhat view mode to lock; 0 for first-person, 1 for chase, 2 for external, 3 for top-down, or -1 to not change the current view mode\r\n"
 		"\t3:\tIf in first-person, true to lock the hat/slew/free-look/target-track mode, false to unlock it (optional)\r\n"
+	},
+
+	{ OP_ALLOW_PHOTO_MODE, "allow-photo-mode\r\n"
+		"\tAllows or disallows Photo Mode for this mission.  "
+		"Takes 1 argument...\r\n"
+		"\t1:\tTrue to allow Photo Mode, false to disallow it\r\n"
 	},
 
 	{ OP_SET_CAMERA_SHUDDER, "set-camera-shudder\r\n"
