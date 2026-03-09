@@ -5,9 +5,10 @@
 
 class EffectHostTurret : public EffectHost {
 	int m_objnum, m_objsig, m_submodel, m_fire_pnt;
+	bool m_is_fighterbeam;
 
 public:
-	EffectHostTurret(object* objp, int submodel, int fire_pnt, matrix orientationOverride = vmd_identity_matrix, bool orientationOverrideRelative = true);
+	EffectHostTurret(const object* objp, int submodel, int fire_pnt, bool is_fighterbeam, matrix orientationOverride = vmd_identity_matrix, bool orientationOverrideRelative = true);
 
 	std::pair<vec3d, matrix> getPositionAndOrientation(bool relativeToParent, float interp, const std::optional<vec3d>& tabled_offset) const override;
 

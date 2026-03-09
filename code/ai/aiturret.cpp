@@ -2042,7 +2042,7 @@ bool turret_fire_weapon(int weapon_num,
 						}
 						//spawn particle effect
 						auto particleSource = particle::ParticleManager::get()->createSource(wip->muzzle_effect);
-						particleSource->setHost(make_unique<EffectHostTurret>(&Objects[parent_ship->objnum], turret->system_info->turret_gun_sobj, turret->turret_next_fire_pos));
+						particleSource->setHost(make_unique<EffectHostTurret>(&Objects[parent_ship->objnum], turret->system_info->turret_gun_sobj, turret->turret_next_fire_pos, false));
 						particleSource->setTriggerRadius(objp->radius * radius_mult);
 						particleSource->setTriggerVelocity(vm_vec_mag_quick(&objp->phys_info.vel));
 						particleSource->finishCreation();
@@ -2163,7 +2163,7 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 		if (Weapon_info[tsi->weapon_class].muzzle_effect.isValid()) {
 			//spawn particle effect
 			auto particleSource = particle::ParticleManager::get()->createSource(Weapon_info[tsi->weapon_class].muzzle_effect);
-			particleSource->setHost(make_unique<EffectHostTurret>(&Objects[tsi->parent_objnum], tsi->turret->system_info->turret_gun_sobj, tsi->turret->turret_next_fire_pos - 1));
+			particleSource->setHost(make_unique<EffectHostTurret>(&Objects[tsi->parent_objnum], tsi->turret->system_info->turret_gun_sobj, tsi->turret->turret_next_fire_pos - 1, false));
 			particleSource->setTriggerRadius(Objects[weapon_objnum].radius);
 			particleSource->finishCreation();
 		}

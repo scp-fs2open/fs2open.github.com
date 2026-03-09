@@ -4,8 +4,8 @@
 #include "model/model.h"
 #include "ship/ship.h"
 
-EffectHostTurret::EffectHostTurret(object* objp, int submodel, int fire_pnt, matrix orientationOverride, bool orientationOverrideRelative) :
-	EffectHost(orientationOverride, orientationOverrideRelative), m_objnum(OBJ_INDEX(objp)), m_objsig(objp->signature), m_submodel(submodel), m_fire_pnt(fire_pnt) {}
+EffectHostTurret::EffectHostTurret(const object* objp, int submodel, int fire_pnt, bool is_fighterbeam, matrix orientationOverride, bool orientationOverrideRelative) :
+	EffectHost(orientationOverride, orientationOverrideRelative), m_objnum(OBJ_INDEX(objp)), m_objsig(objp ? objp->signature : -1), m_submodel(submodel), m_fire_pnt(fire_pnt), m_is_fighterbeam(is_fighterbeam) {}
 
 std::pair<vec3d, matrix> EffectHostTurret::getPositionAndOrientation(bool relativeToParent, float interp, const std::optional<vec3d>& tabled_offset) const {
 	ship& shipp = Ships[Objects[m_objnum].instance];
@@ -13,7 +13,14 @@ std::pair<vec3d, matrix> EffectHostTurret::getPositionAndOrientation(bool relati
 	const polymodel_instance* pmi = model_get_instance(shipp.model_instance_num);
 
 	vec3d gvec, pos;
-	model_subsystem *tp = ship_get_indexed_subsys(&shipp, pm->submodel[m_submodel].subsys_num)->system_info;
+	model_subsystem* tp;
+	if (m_is_fighterbeam) {
+		tp = &shipp.beam_sys_info;
+	} else {
+		auto subsys = ship_get_subsys_for_submodel(&shipp, m_submodel);
+		Assertion(subsys != nullptr, "EffectHostTurret constructed with missing subsystem!");
+		tp = subsys->system_info;
+	}
 	vec3d* gun_pos = &tp->turret_firing_point[m_fire_pnt % tp->turret_num_firing_points];
 	const matrix& gun_frame_of_reference = pm->submodel[m_submodel].frame_of_reference;
 
@@ -72,6 +79,5 @@ float EffectHostTurret::getHostRadius() const {
 }
 
 bool EffectHostTurret::isValid() const {
-	return m_objnum >= 0 && m_submodel >= 0 && Objects[m_objnum].signature == m_objsig && Objects[m_objnum].type == OBJ_SHIP &&
-			model_get(Ship_info[Ships[Objects[m_objnum].instance].ship_info_index].model_num)->submodel[m_submodel].subsys_num >= 0;
+	return m_objnum >= 0 && m_submodel >= 0 && Objects[m_objnum].signature == m_objsig && Objects[m_objnum].type == OBJ_SHIP;
 }
