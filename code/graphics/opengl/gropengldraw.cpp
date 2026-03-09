@@ -52,6 +52,7 @@ GLuint Scene_stencil_buffer;
 GLuint Back_framebuffer;
 GLuint Back_texture;
 GLuint Back_depth_texture;
+GLuint Back_stencil_buffer;
 
 GLuint Distortion_framebuffer = 0;
 GLuint Distortion_texture[2];
@@ -551,6 +552,11 @@ void opengl_setup_scene_textures()
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, Back_depth_texture, 0);
 		gr_zbuffer_set(GR_ZBUFF_FULL);
 		glClear(GL_DEPTH_BUFFER_BIT);
+
+		glGenRenderbuffers(1, &Back_stencil_buffer);
+		glBindRenderbuffer(GL_RENDERBUFFER, Back_stencil_buffer);
+		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, gr_screen.max_w, gr_screen.max_h);
+		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, Back_stencil_buffer);
 	}
 
 	//Setup thruster distortion framebuffer
