@@ -469,6 +469,8 @@ add_file_folder("Graphics"
 	graphics/render.h
 	graphics/shader_preprocess.cpp
 	graphics/shader_preprocess.h
+	graphics/shader_types.cpp
+	graphics/shader_types.h
 	graphics/shadows.cpp
 	graphics/shadows.h
 	graphics/tmapper.h
