@@ -367,6 +367,8 @@ void campaign_tree_wnd::OnErrorChecker()
 
 int campaign_tree_wnd::error_checker()
 {
+	Assertion(Locked_sexp_true >= 0 && Locked_sexp_false >= 0, "SEXPs are not yet initialized!");
+
 	int i, j, z;
 	int mcount[MAX_CAMPAIGN_MISSIONS], true_at[MAX_CAMPAIGN_MISSIONS];
 
