@@ -950,7 +950,7 @@ void VulkanRenderer::createDepthResources()
 	viewInfo.image = m_depthImage.get();
 	viewInfo.viewType = vk::ImageViewType::e2D;
 	viewInfo.format = m_depthFormat;
-	viewInfo.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eDepth;
+	viewInfo.subresourceRange.aspectMask = imageAspectFromFormat(m_depthFormat);
 	viewInfo.subresourceRange.baseMipLevel = 0;
 	viewInfo.subresourceRange.levelCount = 1;
 	viewInfo.subresourceRange.baseArrayLayer = 0;

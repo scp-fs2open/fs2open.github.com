@@ -93,11 +93,6 @@ bool VulkanPostProcessor::init(vk::Device device, vk::PhysicalDevice physDevice,
 	m_sceneColor.height = extent.height;
 
 	// Create scene depth target
-	vk::ImageAspectFlags depthAspect = vk::ImageAspectFlagBits::eDepth;
-	if (depthFormat == vk::Format::eD24UnormS8Uint || depthFormat == vk::Format::eD32SfloatS8Uint) {
-		depthAspect |= vk::ImageAspectFlagBits::eStencil;
-	}
-
 	if (!createImage(extent.width, extent.height, depthFormat,
 	                 vk::ImageUsageFlagBits::eDepthStencilAttachment
 	                 | vk::ImageUsageFlagBits::eSampled
@@ -1029,7 +1024,7 @@ bool VulkanPostProcessor::initMSAA()
 		viewInfo.image = m_msaaDepthImage;
 		viewInfo.viewType = vk::ImageViewType::e2D;
 		viewInfo.format = m_depthFormat;
-		viewInfo.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eDepth;
+		viewInfo.subresourceRange.aspectMask = imageAspectFromFormat(m_depthFormat);
 		viewInfo.subresourceRange.baseMipLevel = 0;
 		viewInfo.subresourceRange.levelCount = 1;
 		viewInfo.subresourceRange.baseArrayLayer = 0;
@@ -3496,10 +3491,7 @@ void VulkanPostProcessor::executeLightshafts(vk::CommandBuffer cmd)
 		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		barrier.image = m_sceneDepth.image;
-		barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eDepth;
-		if (m_depthFormat == vk::Format::eD24UnormS8Uint || m_depthFormat == vk::Format::eD32SfloatS8Uint) {
-			barrier.subresourceRange.aspectMask |= vk::ImageAspectFlagBits::eStencil;
-		}
+		barrier.subresourceRange.aspectMask = imageAspectFromFormat(m_depthFormat);
 		barrier.subresourceRange.baseMipLevel = 0;
 		barrier.subresourceRange.levelCount = 1;
 		barrier.subresourceRange.baseArrayLayer = 0;
@@ -3583,7 +3575,7 @@ void VulkanPostProcessor::copySceneDepth(vk::CommandBuffer cmd)
 		m_sceneDepth.image, vk::ImageLayout::eDepthStencilAttachmentOptimal, vk::ImageLayout::eDepthStencilAttachmentOptimal,
 		m_sceneDepthCopy.image, vk::ImageLayout::eUndefined, vk::ImageLayout::eShaderReadOnlyOptimal,
 		m_extent,
-		vk::ImageAspectFlagBits::eDepth);
+		imageAspectFromFormat(m_depthFormat));
 }
 
 void VulkanPostProcessor::copyGbufNormal(vk::CommandBuffer cmd)

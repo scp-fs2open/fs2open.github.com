@@ -359,7 +359,7 @@ void vulkan_deferred_lighting_msaa()
 		barriers[5].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		barriers[5].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		barriers[5].image = pp->getMsaaDepthImage();
-		barriers[5].subresourceRange = {vk::ImageAspectFlagBits::eDepth, 0, 1, 0, 1};
+		barriers[5].subresourceRange = {imageAspectFromFormat(pp->getDepthFormat()), 0, 1, 0, 1};
 
 		cmd.pipelineBarrier(
 			vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eLateFragmentTests,
@@ -539,7 +539,7 @@ void vulkan_deferred_lighting_msaa()
 		restoreBarriers[5].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		restoreBarriers[5].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		restoreBarriers[5].image = pp->getMsaaDepthImage();
-		restoreBarriers[5].subresourceRange = {vk::ImageAspectFlagBits::eDepth, 0, 1, 0, 1};
+		restoreBarriers[5].subresourceRange = {imageAspectFromFormat(pp->getDepthFormat()), 0, 1, 0, 1};
 
 		cmd.pipelineBarrier(
 			vk::PipelineStageFlagBits::eFragmentShader,
