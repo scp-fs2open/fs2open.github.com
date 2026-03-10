@@ -232,6 +232,8 @@ public:
 	 */
 	vk::ImageView getSceneDepthCopyView() const { return m_sceneDepthCopy.view; }
 
+	vk::Format getDepthFormat() const { return m_depthFormat; }
+
 	/**
 	 * @brief Get the effect texture sampler (linear, clamp-to-edge)
 	 */

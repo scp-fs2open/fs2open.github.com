@@ -1788,15 +1788,7 @@ void VulkanTextureManager::transitionImageLayout(vk::Image image, vk::Format for
 	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 	barrier.image = image;
-	// Detect depth/stencil formats and use the correct aspect mask
-	if (format == vk::Format::eD32Sfloat || format == vk::Format::eD16Unorm) {
-		barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eDepth;
-	} else if (format == vk::Format::eD24UnormS8Uint || format == vk::Format::eD32SfloatS8Uint ||
-	           format == vk::Format::eD16UnormS8Uint) {
-		barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil;
-	} else {
-		barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
-	}
+	barrier.subresourceRange.aspectMask = imageAspectFromFormat(format);
 	barrier.subresourceRange.baseMipLevel = 0;
 	barrier.subresourceRange.levelCount = mipLevels;
 	barrier.subresourceRange.baseArrayLayer = 0;
