@@ -3,7 +3,9 @@
 layout(location = 0) in vec2 fragTexCoord;
 layout(location = 0) out vec4 fragOut0;
 
-layout(set = 1, binding = 1) uniform sampler2D scene;
+layout(set = 1, binding = 1) uniform sampler2D textures[16];
+#define scene textures[0]
+#define cockpit textures[1]
 #else
 in vec4 fragTexCoord;
 
@@ -34,13 +36,11 @@ void main()
 	step *= 1.0 / float(SAMPLE_NUM) * density;
 	float decay = 1.0;
 	vec4 sum = vec4(0.0);
-#ifndef VULKAN
 	vec4 mask = texture(cockpit, fragTexCoord.st);
 	if (mask.r < 1.0) {
 		fragOut0 = vec4(cp_intensity);
 		return;
 	}
-#endif
 	for(int i=0; i < SAMPLE_NUM ; i++) {
 		pos.st -= step;
 		vec4 tex_sample = texture(scene, pos);
