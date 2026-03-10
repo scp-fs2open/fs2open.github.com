@@ -131,6 +131,10 @@ static int io_open_limited (lua_State *L) {
 		auto file_type = GetFileType(handle);
 		CloseHandle(handle);
 		file_allowed = (file_type == FILE_TYPE_PIPE) || (file_type == FILE_TYPE_CHAR);
+		if (file_type == FILE_TYPE_PIPE) {
+			//For pipes only, we should make sure that the handler has actually closed before continuing.
+			WaitNamedPipeA(filename, 30000);
+		}
 	}
 #else
 	struct stat file_stat_buffer;
