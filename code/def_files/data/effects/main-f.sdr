@@ -111,6 +111,7 @@ layout(set = 1, binding = 1) uniform sampler2DArray materialTextures[16];
 #define sMiscmap materialTextures[6]
 
 layout(set = 0, binding = 2) uniform sampler2DArray shadow_map;
+layout(set = 1, binding = 5) uniform sampler2D sFramebuffer;
 
 layout(location = 0) in VertexOutput {
 	vec4 position;
@@ -442,13 +443,11 @@ void main()
 		vec2 screenPos = gl_FragCoord.xy * vec2(vpwidth,vpheight);
 		baseColor.a = baseColor.a;
 		float cloak_interp = (sin(vertIn.position.x*vertIn.position.w*0.005+anim_timer*20.0)*sin(vertIn.position.y*vertIn.position.w*0.005)*0.5)-0.5;
-#ifndef VULKAN
 		#prereplace IF_FLAG MODEL_SDR_FLAG_LIGHT
 			baseColor.rgb = mix(texture(sFramebuffer, screenPos + distort*anim_timer + anim_timer*0.1*normal.xy).rgb,baseColor.rgb,clamp(cloak_interp+anim_timer*2.0,0.0,1.0));
 		#prereplace ELSE_FLAG //MODEL_SDR_FLAG_LIGHT
 			baseColor.rgb = mix(texture(sFramebuffer, screenPos + distort*anim_timer + anim_timer*0.1*vertIn.normal.xy).rgb,baseColor.rgb,clamp(cloak_interp+anim_timer*2.0,0.0,1.0));
 		#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_LIGHT
-#endif
 	}
 
 	#prereplace IF_NOT_FLAG MODEL_SDR_FLAG_DEFERRED
