@@ -33,9 +33,9 @@ public:
 	void bitmap_data_close();
 	void bitmap_data_save_current();
 
-	void get_data_spinner(NM_UPDOWN* pUD, int id, int *var, int min, int max);
+	void get_data_spinner(NM_UPDOWN* pUD, int id, float *var, float min, float max);
 	void get_data_int(int id, int *var, int min, int max);
-	void get_data_float(int id, float *var, float max, float min);
+	void get_data_float(int id, float *var, float min, float max, int precision);
 	
 	afx_msg void OnClose();
 	
@@ -66,15 +66,15 @@ public:
 	int		m_fog_b;
 	CString	m_storm_name;
 	CString s_name;
-	int s_pitch;
-	int s_bank;
-	int s_heading;
+	float s_pitch;
+	float s_bank;
+	float s_heading;
 	float s_scale;
 	int s_index;
 	CString b_name;
-	int b_pitch;
-	int b_bank;
-	int b_heading;
+	float b_pitch;
+	float b_bank;
+	float b_heading;
 	float b_scale_x;
 	float b_scale_y;
 	int b_div_x;
@@ -88,9 +88,9 @@ public:
 	int m_sky_flag_6;
 	CString m_skybox_model;
 	CString m_envmap;
-	int m_skybox_pitch;
-	int m_skybox_bank;
-	int m_skybox_heading;
+	float m_skybox_pitch;
+	float m_skybox_bank;
+	float m_skybox_heading;
 	float m_neb_near_multi;
 	float m_neb_far_multi;
 	int m_light_profile_index;
