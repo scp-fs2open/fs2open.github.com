@@ -1,7 +1,5 @@
 //? #version 150
-#ifdef OPENGL
 #include "shadows.sdr" //! #include "shadows.sdr"
-#endif
 #include "lighting.sdr" //! #include "lighting.sdr"
 #include "gamma.sdr" //! #include "gamma.sdr"
 #include "z-compress.sdr" //! #include "z-compress.sdr"
@@ -112,12 +110,16 @@ layout(set = 1, binding = 1) uniform sampler2DArray materialTextures[16];
 #define sAmbientmap materialTextures[5]
 #define sMiscmap materialTextures[6]
 
+layout(set = 0, binding = 2) uniform sampler2DArray shadow_map;
+
 layout(location = 0) in VertexOutput {
 	vec4 position;
 	vec3 normal;
 	vec4 texCoord;
 	mat3 tangentMatrix;
 	float fogDist;
+	vec4 shadowUV[4];
+	vec4 shadowPos;
 } vertIn;
 
 layout(location = 0) out vec4 fragOut0;
@@ -237,12 +239,7 @@ void main()
 {
 	#ifdef MODEL_SDR_FLAG_SHADOW_MAP
 		// need depth and depth squared for variance shadow maps
-		#ifdef VULKAN
-			float shadowDepth = vertIn.position.z;
-			fragOut0 = vec4(shadowDepth, shadowDepth * shadowDepth * (1.0 / 1000000.0), 0.0, 1.0);
-		#else
-			fragOut0 = vec4(vertIn.position.z, vertIn.position.z * vertIn.position.z * VARIANCE_SHADOW_SCALE_INV, 0.0, 1.0);
-		#endif
+		fragOut0 = vec4(vertIn.position.z, vertIn.position.z * vertIn.position.z * VARIANCE_SHADOW_SCALE_INV, 0.0, 1.0);
 		return;
 	#else
 
@@ -376,11 +373,9 @@ void main()
 	#prereplace IF_NOT_FLAG MODEL_SDR_FLAG_DEFERRED
 		#prereplace IF_FLAG MODEL_SDR_FLAG_LIGHT
 			float shadow = 1.0;
-#ifndef VULKAN
 			#prereplace IF_FLAG MODEL_SDR_FLAG_SHADOWS
 				shadow = getShadowValue(shadow_map, -vertIn.position.z, vertIn.shadowPos.z, vertIn.shadowUV, fardist, middist, neardist, veryneardist);
 			#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_SHADOWS
-#endif
 			baseColor.rgb = CalculateLighting(normal, baseColor.rgb, specColor.rgb, glossData, fresnelFactor, shadow, aoFactors.x);
 		#prereplace ELSE_FLAG //MODEL_SDR_FLAG_LIGHT
 			#prereplace IF_FLAG MODEL_SDR_FLAG_SPEC
