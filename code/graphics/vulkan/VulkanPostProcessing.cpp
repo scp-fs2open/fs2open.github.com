@@ -2100,21 +2100,6 @@ void VulkanPostProcessor::renderDeferredLights(vk::CommandBuffer cmd)
 
 	vk::PipelineLayout pipelineLayout = pipelineMgr->getPipelineLayout();
 
-	// Prepare G-buffer texture infos for material descriptor set
-	vk::DescriptorImageInfo gbufTexInfos[4];
-	gbufTexInfos[0].sampler = m_linearSampler;
-	gbufTexInfos[0].imageView = m_sceneColor.view;  // ColorBuffer
-	gbufTexInfos[0].imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-	gbufTexInfos[1].sampler = m_linearSampler;
-	gbufTexInfos[1].imageView = m_gbufNormal.view;  // NormalBuffer
-	gbufTexInfos[1].imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-	gbufTexInfos[2].sampler = m_linearSampler;
-	gbufTexInfos[2].imageView = m_gbufPosition.view;  // PositionBuffer
-	gbufTexInfos[2].imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-	gbufTexInfos[3].sampler = m_linearSampler;
-	gbufTexInfos[3].imageView = m_gbufSpecular.view;  // SpecBuffer
-	gbufTexInfos[3].imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-
 	// Fallback buffer and textures for unused descriptor bindings
 	auto fallbackBuf = bufferMgr->getFallbackUniformBuffer();
 	vk::DescriptorBufferInfo fallbackBufInfo;
@@ -2255,30 +2240,21 @@ void VulkanPostProcessor::renderDeferredLights(vk::CommandBuffer cmd)
 		modelWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
 		modelWrite.pBufferInfo = &fallbackBufInfo;
 
-		// G-buffer textures at binding 1 elements 0-3
-		vk::WriteDescriptorSet gbufTexWrite;
-		gbufTexWrite.dstSet = materialSet;
-		gbufTexWrite.dstBinding = 1;
-		gbufTexWrite.dstArrayElement = 0;
-		gbufTexWrite.descriptorCount = 4;
-		gbufTexWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		gbufTexWrite.pImageInfo = gbufTexInfos;
+		// Build full texture array: G-buffer textures at [0-3], fallback at [4-15]
+		std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texArrayInfos;
+		texArrayInfos.fill({defaultSampler, fallbackView, vk::ImageLayout::eShaderReadOnlyOptimal});
+		texArrayInfos[0] = {m_linearSampler, m_sceneColor.view, vk::ImageLayout::eShaderReadOnlyOptimal};
+		texArrayInfos[1] = {m_linearSampler, m_gbufNormal.view, vk::ImageLayout::eShaderReadOnlyOptimal};
+		texArrayInfos[2] = {m_linearSampler, m_gbufPosition.view, vk::ImageLayout::eShaderReadOnlyOptimal};
+		texArrayInfos[3] = {m_linearSampler, m_gbufSpecular.view, vk::ImageLayout::eShaderReadOnlyOptimal};
 
-		// Fill remaining texture array elements with fallback
-		std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS - 4> fallbackImages;
-		for (auto& fi : fallbackImages) {
-			fi.sampler = defaultSampler;
-			fi.imageView = fallbackView;
-			fi.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		}
-
-		vk::WriteDescriptorSet fallbackTexWrite;
-		fallbackTexWrite.dstSet = materialSet;
-		fallbackTexWrite.dstBinding = 1;
-		fallbackTexWrite.dstArrayElement = 4;
-		fallbackTexWrite.descriptorCount = static_cast<uint32_t>(fallbackImages.size());
-		fallbackTexWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		fallbackTexWrite.pImageInfo = fallbackImages.data();
+		vk::WriteDescriptorSet texArrayWrite;
+		texArrayWrite.dstSet = materialSet;
+		texArrayWrite.dstBinding = 1;
+		texArrayWrite.dstArrayElement = 0;
+		texArrayWrite.descriptorCount = static_cast<uint32_t>(texArrayInfos.size());
+		texArrayWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		texArrayWrite.pImageInfo = texArrayInfos.data();
 
 		// DecalGlobals at binding 2 (fallback)
 		vk::WriteDescriptorSet decalWrite;
@@ -2316,7 +2292,7 @@ void VulkanPostProcessor::renderDeferredLights(vk::CommandBuffer cmd)
 		}
 
 		SCP_vector<vk::WriteDescriptorSet> matWrites = {
-			modelWrite, gbufTexWrite, fallbackTexWrite, decalWrite, ssboWrite,
+			modelWrite, texArrayWrite, decalWrite, ssboWrite,
 			texFallbackWrites[0], texFallbackWrites[1], texFallbackWrites[2]
 		};
 		m_device.updateDescriptorSets(matWrites, {});
@@ -2810,19 +2786,22 @@ void VulkanPostProcessor::drawFullscreenTriangle(vk::CommandBuffer cmd, vk::Rend
 	Verify(materialSet);
 
 	{
-		// Source texture at binding 1 element 0
-		vk::DescriptorImageInfo imageInfo;
-		imageInfo.sampler = sampler;
-		imageInfo.imageView = textureView;
-		imageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		// Build full texture array: source texture at [0], fallback at [1-15]
+		vk::ImageView fallbackView = texMgr->getFallbackTextureView2D();
+		vk::Sampler defaultSampler = texMgr->getDefaultSampler();
 
-		vk::WriteDescriptorSet texWrite;
-		texWrite.dstSet = materialSet;
-		texWrite.dstBinding = 1;
-		texWrite.dstArrayElement = 0;
-		texWrite.descriptorCount = 1;
-		texWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		texWrite.pImageInfo = &imageInfo;
+		std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texArrayInfos;
+		texArrayInfos.fill({defaultSampler, fallbackView, vk::ImageLayout::eShaderReadOnlyOptimal});
+		texArrayInfos[0].sampler = sampler;
+		texArrayInfos[0].imageView = textureView;
+
+		vk::WriteDescriptorSet texArrayWrite;
+		texArrayWrite.dstSet = materialSet;
+		texArrayWrite.dstBinding = 1;
+		texArrayWrite.dstArrayElement = 0;
+		texArrayWrite.descriptorCount = static_cast<uint32_t>(texArrayInfos.size());
+		texArrayWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		texArrayWrite.pImageInfo = texArrayInfos.data();
 
 		// Fallback UBO for binding 0 (ModelData) and binding 2 (DecalGlobals)
 		auto fallbackBuf = bufferMgr->getFallbackUniformBuffer();
@@ -2846,26 +2825,6 @@ void VulkanPostProcessor::drawFullscreenTriangle(vk::CommandBuffer cmd, vk::Rend
 		decalWrite.descriptorCount = 1;
 		decalWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
 		decalWrite.pBufferInfo = &fallbackBufInfo;
-
-		// Fill remaining texture array elements with fallback (use 2D view since
-		// post-processing shaders declare sampler2D, not sampler2DArray)
-		vk::ImageView fallbackView = texMgr->getFallbackTextureView2D();
-		vk::Sampler defaultSampler = texMgr->getDefaultSampler();
-
-		std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS - 1> fallbackImages;
-		for (auto& fi : fallbackImages) {
-			fi.sampler = defaultSampler;
-			fi.imageView = fallbackView;
-			fi.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		}
-
-		vk::WriteDescriptorSet fallbackTexWrite;
-		fallbackTexWrite.dstSet = materialSet;
-		fallbackTexWrite.dstBinding = 1;
-		fallbackTexWrite.dstArrayElement = 1;
-		fallbackTexWrite.descriptorCount = static_cast<uint32_t>(fallbackImages.size());
-		fallbackTexWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		fallbackTexWrite.pImageInfo = fallbackImages.data();
 
 		// Binding 3: Transform SSBO (fallback to zero UBO)
 		vk::WriteDescriptorSet ssboWrite;
@@ -2918,7 +2877,7 @@ void VulkanPostProcessor::drawFullscreenTriangle(vk::CommandBuffer cmd, vk::Rend
 		distMapWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		distMapWrite.pImageInfo = &distMapFallback;
 
-		std::array<vk::WriteDescriptorSet, 8> writes = {texWrite, modelWrite, decalWrite, fallbackTexWrite, ssboWrite, depthMapWrite, sceneColorWrite, distMapWrite};
+		std::array<vk::WriteDescriptorSet, 7> writes = {texArrayWrite, modelWrite, decalWrite, ssboWrite, depthMapWrite, sceneColorWrite, distMapWrite};
 		m_device.updateDescriptorSets(writes, {});
 	}
 
@@ -3882,26 +3841,31 @@ void VulkanPostProcessor::blitToSwapChain(vk::CommandBuffer cmd)
 	Verify(materialSet);
 
 	{
+		// Build full texture array: source texture at [0], fallback at [1-15]
+		auto* texMgr = getTextureManager();
+		vk::ImageView fallbackView = texMgr->getFallbackTextureView2D();
+		vk::Sampler defaultSampler = texMgr->getDefaultSampler();
+
+		std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texArrayInfos;
+		texArrayInfos.fill({defaultSampler, fallbackView, vk::ImageLayout::eShaderReadOnlyOptimal});
 		// Bind source texture based on post-processing chain state:
 		// - Post-effects ran: read Scene_luminance (post-effects output)
 		// - LDR only (tonemap/FXAA): read Scene_ldr
 		// - No LDR: read Scene_color (raw HDR, tonemapping applied by this shader)
-		vk::DescriptorImageInfo imageInfo;
-		imageInfo.sampler = m_linearSampler;
-		imageInfo.imageView = m_postEffectsApplied ? m_sceneLuminance.view
-		                    : useLdr ? m_sceneLdr.view
-		                    : m_sceneColor.view;
-		imageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		texArrayInfos[0].sampler = m_linearSampler;
+		texArrayInfos[0].imageView = m_postEffectsApplied ? m_sceneLuminance.view
+		                            : useLdr ? m_sceneLdr.view
+		                            : m_sceneColor.view;
 
-		vk::WriteDescriptorSet write;
-		write.dstSet = materialSet;
-		write.dstBinding = 1;
-		write.dstArrayElement = 0;
-		write.descriptorCount = 1;
-		write.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		write.pImageInfo = &imageInfo;
+		vk::WriteDescriptorSet texArrayWrite;
+		texArrayWrite.dstSet = materialSet;
+		texArrayWrite.dstBinding = 1;
+		texArrayWrite.dstArrayElement = 0;
+		texArrayWrite.descriptorCount = static_cast<uint32_t>(texArrayInfos.size());
+		texArrayWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		texArrayWrite.pImageInfo = texArrayInfos.data();
 
-		// Pre-initialize binding 0 (ModelData UBO) with fallback zero buffer
+		// Fallback UBO for binding 0 (ModelData) and binding 2 (DecalGlobals)
 		auto fallbackBuffer = bufferMgr->getFallbackUniformBuffer();
 		vk::DescriptorBufferInfo bufferInfo;
 		bufferInfo.buffer = fallbackBuffer;
@@ -3916,7 +3880,6 @@ void VulkanPostProcessor::blitToSwapChain(vk::CommandBuffer cmd)
 		uboWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
 		uboWrite.pBufferInfo = &bufferInfo;
 
-		// Pre-initialize binding 2 (DecalGlobals UBO) with fallback
 		vk::WriteDescriptorSet decalWrite;
 		decalWrite.dstSet = materialSet;
 		decalWrite.dstBinding = 2;
@@ -3924,27 +3887,6 @@ void VulkanPostProcessor::blitToSwapChain(vk::CommandBuffer cmd)
 		decalWrite.descriptorCount = 1;
 		decalWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
 		decalWrite.pBufferInfo = &bufferInfo;
-
-		// Fill remaining texture array elements with fallback (use 2D view since
-		// post-processing shaders declare sampler2D, not sampler2DArray)
-		auto* texMgr = getTextureManager();
-		vk::ImageView fallbackView = texMgr->getFallbackTextureView2D();
-		vk::Sampler defaultSampler = texMgr->getDefaultSampler();
-
-		std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS - 1> fallbackImages;
-		for (auto& fi : fallbackImages) {
-			fi.sampler = defaultSampler;
-			fi.imageView = fallbackView;
-			fi.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		}
-
-		vk::WriteDescriptorSet fallbackTexWrite;
-		fallbackTexWrite.dstSet = materialSet;
-		fallbackTexWrite.dstBinding = 1;
-		fallbackTexWrite.dstArrayElement = 1;
-		fallbackTexWrite.descriptorCount = static_cast<uint32_t>(fallbackImages.size());
-		fallbackTexWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		fallbackTexWrite.pImageInfo = fallbackImages.data();
 
 		// Binding 3: Transform SSBO (fallback to zero UBO)
 		vk::WriteDescriptorSet ssboWrite;
@@ -3997,7 +3939,7 @@ void VulkanPostProcessor::blitToSwapChain(vk::CommandBuffer cmd)
 		distMapWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		distMapWrite.pImageInfo = &distMapFallback;
 
-		std::array<vk::WriteDescriptorSet, 8> writes = {write, uboWrite, decalWrite, fallbackTexWrite, ssboWrite, depthMapWrite, sceneColorWrite, distMapWrite};
+		std::array<vk::WriteDescriptorSet, 7> writes = {texArrayWrite, uboWrite, decalWrite, ssboWrite, depthMapWrite, sceneColorWrite, distMapWrite};
 		m_device.updateDescriptorSets(writes, {});
 	}
 
@@ -4623,35 +4565,19 @@ void VulkanPostProcessor::renderSceneFog(vk::CommandBuffer cmd)
 		modelWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
 		modelWrite.pBufferInfo = &fallbackBufInfo;
 
-		// Binding 1: composite (lit result) at element [0]
-		vk::DescriptorImageInfo compositeInfo;
-		compositeInfo.sampler = m_linearSampler;
-		compositeInfo.imageView = m_gbufComposite.view;
-		compositeInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		// Build full texture array: composite at [0], fallback at [1-15]
+		std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texArrayInfos;
+		texArrayInfos.fill({defaultSampler, fallbackView, vk::ImageLayout::eShaderReadOnlyOptimal});
+		texArrayInfos[0].sampler = m_linearSampler;
+		texArrayInfos[0].imageView = m_gbufComposite.view;
 
-		vk::WriteDescriptorSet texWrite;
-		texWrite.dstSet = materialSet;
-		texWrite.dstBinding = 1;
-		texWrite.dstArrayElement = 0;
-		texWrite.descriptorCount = 1;
-		texWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		texWrite.pImageInfo = &compositeInfo;
-
-		// Fill remaining texture array elements with fallback
-		std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS - 1> fallbackImages;
-		for (auto& fi : fallbackImages) {
-			fi.sampler = defaultSampler;
-			fi.imageView = fallbackView;
-			fi.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		}
-
-		vk::WriteDescriptorSet fallbackTexWrite;
-		fallbackTexWrite.dstSet = materialSet;
-		fallbackTexWrite.dstBinding = 1;
-		fallbackTexWrite.dstArrayElement = 1;
-		fallbackTexWrite.descriptorCount = static_cast<uint32_t>(fallbackImages.size());
-		fallbackTexWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		fallbackTexWrite.pImageInfo = fallbackImages.data();
+		vk::WriteDescriptorSet texArrayWrite;
+		texArrayWrite.dstSet = materialSet;
+		texArrayWrite.dstBinding = 1;
+		texArrayWrite.dstArrayElement = 0;
+		texArrayWrite.descriptorCount = static_cast<uint32_t>(texArrayInfos.size());
+		texArrayWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		texArrayWrite.pImageInfo = texArrayInfos.data();
 
 		// Binding 2: DecalGlobals UBO (fallback)
 		vk::WriteDescriptorSet decalWrite;
@@ -4707,8 +4633,8 @@ void VulkanPostProcessor::renderSceneFog(vk::CommandBuffer cmd)
 		bind6Write.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		bind6Write.pImageInfo = &sceneColorFallback;
 
-		std::array<vk::WriteDescriptorSet, 8> writes = {
-			texWrite, modelWrite, decalWrite, fallbackTexWrite,
+		std::array<vk::WriteDescriptorSet, 7> writes = {
+			texArrayWrite, modelWrite, decalWrite,
 			ssboWrite, depthWrite, bind5Write, bind6Write
 		};
 		m_device.updateDescriptorSets(writes, {});
@@ -5051,17 +4977,9 @@ void VulkanPostProcessor::renderVolumetricFog(vk::CommandBuffer cmd)
 
 		// Binding 1: Texture array — [0]=composite, [1]=emissive, rest=fallback
 		std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texArrayInfos;
-		texArrayInfos[0].sampler = m_linearSampler;
-		texArrayInfos[0].imageView = m_gbufComposite.view;
-		texArrayInfos[0].imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		texArrayInfos[1].sampler = m_mipmapSampler;
-		texArrayInfos[1].imageView = m_emissiveMipmappedFullView;
-		texArrayInfos[1].imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		for (size_t i = 2; i < texArrayInfos.size(); i++) {
-			texArrayInfos[i].sampler = defaultSampler;
-			texArrayInfos[i].imageView = fallbackView;
-			texArrayInfos[i].imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		}
+		texArrayInfos.fill({defaultSampler, fallbackView, vk::ImageLayout::eShaderReadOnlyOptimal});
+		texArrayInfos[0] = {m_linearSampler, m_gbufComposite.view, vk::ImageLayout::eShaderReadOnlyOptimal};
+		texArrayInfos[1] = {m_mipmapSampler, m_emissiveMipmappedFullView, vk::ImageLayout::eShaderReadOnlyOptimal};
 
 		vk::WriteDescriptorSet texWrite;
 		texWrite.dstSet = materialSet;
