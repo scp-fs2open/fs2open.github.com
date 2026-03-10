@@ -1249,7 +1249,15 @@ bool VulkanDrawManager::applyMaterial(material* mat, primitive_type prim_type, v
 			}
 		}
 		// Texture bindings
-		writer.writeTexture(globalSet, 2, fallbackView, fallbackSampler);
+		// Binding 2: Shadow map — use real shadow texture if available, else fallback
+		{
+			auto* pp = getPostProcessor();
+			if (pp && pp->isShadowInitialized() && pp->getShadowColorView()) {
+				writer.writeTexture(globalSet, 2, pp->getShadowColorView(), pp->getShadowSampler());
+			} else {
+				writer.writeTexture(globalSet, 2, fallbackView, fallbackSampler);
+			}
+		}
 		vk::ImageView fallbackCubeView = texManager->getFallbackCubeView();
 		writer.writeTexture(globalSet, 3, fallbackCubeView, fallbackSampler);
 		writer.writeTexture(globalSet, 4, fallbackCubeView, fallbackSampler);
