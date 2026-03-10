@@ -960,11 +960,7 @@ bool VulkanDrawManager::bindMaterialTextures(material* mat, vk::DescriptorSet ma
 		std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> textureInfos;
 
 		// Initialize all slots with fallback
-		for (auto& info : textureInfos) {
-			info.sampler = sampler;
-			info.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-			info.imageView = fallbackView;
-		}
+		textureInfos.fill({sampler, fallbackView, vk::ImageLayout::eShaderReadOnlyOptimal});
 
 		auto loadYuvTexture = [&](int handle, uint32_t slot) {
 			if (handle < 0 || slot >= textureInfos.size()) return;
@@ -995,11 +991,7 @@ bool VulkanDrawManager::bindMaterialTextures(material* mat, vk::DescriptorSet ma
 	std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> textureInfos;
 
 	// Initialize all slots with fallback texture (1x1 white)
-	for (auto& info : textureInfos) {
-		info.sampler = sampler;
-		info.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		info.imageView = fallbackView;  // Fallback texture for unbound slots
-	}
+	textureInfos.fill({sampler, fallbackView, vk::ImageLayout::eShaderReadOnlyOptimal});
 
 	// Helper to set texture at a specific slot - loads on-demand if not present
 	static int texLogCount = 0;
@@ -2211,14 +2203,8 @@ void vulkan_calculate_irrmap()
 		// Binding 1: envmap cubemap (element 0) + fallback for rest of array
 		{
 			std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texImages;
-			texImages[0].sampler = defaultSampler;
-			texImages[0].imageView = envmapView;
-			texImages[0].imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-			for (uint32_t slot = 1; slot < VulkanDescriptorManager::MAX_TEXTURE_BINDINGS; ++slot) {
-				texImages[slot].sampler = defaultSampler;
-				texImages[slot].imageView = fallbackView2D;
-				texImages[slot].imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-			}
+			texImages.fill({defaultSampler, fallbackView2D, vk::ImageLayout::eShaderReadOnlyOptimal});
+			texImages[0] = {defaultSampler, envmapView, vk::ImageLayout::eShaderReadOnlyOptimal};
 			writer.writeTextureArray(materialSet, 1, texImages.data(), static_cast<uint32_t>(texImages.size()));
 		}
 		writer.writeTexture(materialSet, 4, fallbackView2D, defaultSampler);

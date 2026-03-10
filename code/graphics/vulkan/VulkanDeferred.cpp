@@ -206,14 +206,8 @@ void vulkan_deferred_lighting_begin(bool clearNonColorBufs)
 
 				// Build texture array with scene color at slot 0, fallback at slots 1-15
 				std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texImages;
-				texImages[0].sampler = pp->getSceneColorSampler();
-				texImages[0].imageView = pp->getSceneColorView();
-				texImages[0].imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-				for (uint32_t slot = 1; slot < VulkanDescriptorManager::MAX_TEXTURE_BINDINGS; ++slot) {
-					texImages[slot].sampler = fallbackSampler;
-					texImages[slot].imageView = fallbackView;
-					texImages[slot].imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-				}
+				texImages.fill({fallbackSampler, fallbackView, vk::ImageLayout::eShaderReadOnlyOptimal});
+				texImages[0] = {pp->getSceneColorSampler(), pp->getSceneColorView(), vk::ImageLayout::eShaderReadOnlyOptimal};
 				writer.writeTextureArray(materialSet, 1, texImages.data(), static_cast<uint32_t>(texImages.size()));
 				writer.writeTexture(materialSet, 4, fallbackView, fallbackSampler);
 				writer.writeTexture(materialSet, 5, fallbackView, fallbackSampler);
@@ -458,19 +452,15 @@ void vulkan_deferred_lighting_msaa()
 				vk::SamplerAddressMode::eClampToEdge, false, 0.0f, false);
 
 			std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texImages;
+			// Fill all slots with MSAA color view (validation checks ALL elements
+			// even though the shader only accesses 0-5 — sample count must match).
+			texImages.fill({nearestSampler, pp->getMsaaColorView(), vk::ImageLayout::eShaderReadOnlyOptimal});
 			// MSAA textures at slots 0-5
-			texImages[0] = {nearestSampler, pp->getMsaaColorView(), vk::ImageLayout::eShaderReadOnlyOptimal};
 			texImages[1] = {nearestSampler, pp->getMsaaPositionView(), vk::ImageLayout::eShaderReadOnlyOptimal};
 			texImages[2] = {nearestSampler, pp->getMsaaNormalView(), vk::ImageLayout::eShaderReadOnlyOptimal};
 			texImages[3] = {nearestSampler, pp->getMsaaSpecularView(), vk::ImageLayout::eShaderReadOnlyOptimal};
 			texImages[4] = {nearestSampler, pp->getMsaaEmissiveView(), vk::ImageLayout::eShaderReadOnlyOptimal};
 			texImages[5] = {nearestSampler, pp->getMsaaDepthView(), vk::ImageLayout::eShaderReadOnlyOptimal};
-			// Remaining slots must also be multisampled (validation checks ALL
-			// elements even though the shader only accesses 0-5). Reuse the
-			// MSAA color view — content doesn't matter, only sample count.
-			for (uint32_t slot = 6; slot < VulkanDescriptorManager::MAX_TEXTURE_BINDINGS; ++slot) {
-				texImages[slot] = {nearestSampler, pp->getMsaaColorView(), vk::ImageLayout::eShaderReadOnlyOptimal};
-			}
 			writer.writeTextureArray(materialSet, 1, texImages.data(), static_cast<uint32_t>(texImages.size()));
 
 			// Fallback for single-sampler bindings 4-6
