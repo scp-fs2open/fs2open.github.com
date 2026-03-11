@@ -1336,7 +1336,7 @@ int VulkanTextureManager::bm_make_render_target(int handle, int* width, int* hei
 
 	bool isCubemapRT = (flags & BMP_FLAG_CUBEMAP) != 0;
 	uint32_t arrayLayers = isCubemapRT ? 6 : 1;
-	vk::Format format = vk::Format::eR8G8B8A8Unorm;
+	vk::Format format = LDR_COLOR_FORMAT;
 
 	// Create image for render target
 	vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eColorAttachment |

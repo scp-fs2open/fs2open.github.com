@@ -8,6 +8,11 @@ namespace graphics::vulkan {
 
 static constexpr uint32_t MAX_FRAMES_IN_FLIGHT = 2;
 
+// Standard pixel formats for rendering targets
+static constexpr vk::Format HDR_COLOR_FORMAT    = vk::Format::eR16G16B16A16Sfloat;
+static constexpr vk::Format LDR_COLOR_FORMAT    = vk::Format::eR8G8B8A8Unorm;
+static constexpr vk::Format SHADOW_DEPTH_FORMAT = vk::Format::eD32Sfloat;
+
 // Return the correct image aspect flags for a given format:
 //   depth-only  → eDepth
 //   depth+stencil → eDepth | eStencil
