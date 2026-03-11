@@ -23,6 +23,7 @@
 #include "graphics/matrix.h"
 #include "graphics/util/primitives.h"
 #include "graphics/util/uniform_structs.h"
+#include "graphics/shadows.h"
 #include "lighting/lighting.h"
 #include "graphics/util/UniformBuffer.h"
 
@@ -699,8 +700,8 @@ void VulkanDrawManager::renderModel(model_material* material_info, indexed_verte
 	// Flush any dirty dynamic state before draw
 	stateTracker->applyDynamicState();
 
-	// Shadow map rendering uses 4 instances (one per cascade), routed via gl_InstanceIndex → gl_Layer
-	uint32_t instanceCount = Rendering_to_shadow_map ? 4 : 1;
+	// Shadow map rendering uses MAX_SHADOW_CASCADES instances (one per cascade), routed via gl_InstanceIndex → gl_Layer
+	uint32_t instanceCount = Rendering_to_shadow_map ? MAX_SHADOW_CASCADES : 1;
 
 	auto cmdBuffer = stateTracker->getCommandBuffer();
 	cmdBuffer.drawIndexed(
