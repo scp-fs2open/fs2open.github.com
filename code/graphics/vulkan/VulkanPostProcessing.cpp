@@ -3455,17 +3455,18 @@ skip_noise:
 	m_distortionFirstUpdate = false;
 }
 
-vk::ImageView VulkanPostProcessor::getDistortionTextureView() const
+vk::DescriptorImageInfo VulkanPostProcessor::getDistortionTextureInfo() const
 {
 	if (!m_distortionInitialized) {
-		return nullptr;
+		return {};
 	}
 	// Return the most recently written texture (matching OpenGL's
 	// Distortion_texture[!Distortion_switch] binding for thrusters).
 	// After updateDistortion toggles the switch, m_distortionSwitch points
 	// to the old read source. The write target was !old_switch = new switch.
 	// So the most recently written texture is m_distortionTex[m_distortionSwitch].
-	return m_distortionTex[m_distortionSwitch].view;
+	return {m_linearSampler, m_distortionTex[m_distortionSwitch].view,
+	        vk::ImageLayout::eShaderReadOnlyOptimal};
 }
 
 void VulkanPostProcessor::blitToSwapChain(vk::CommandBuffer cmd)

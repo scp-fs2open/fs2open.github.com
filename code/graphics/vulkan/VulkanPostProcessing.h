@@ -153,17 +153,12 @@ public:
 	void updateDistortion(vk::CommandBuffer cmd, float frametime);
 
 	/**
-	 * @brief Get the current distortion texture view for thruster sampling
+	 * @brief Get a ready-to-use DescriptorImageInfo for the current distortion texture
 	 *
 	 * Returns the most recently written distortion texture (the one thrusters
-	 * should read from). Returns nullptr if distortion textures aren't initialized.
+	 * should read from). Returns a default-constructed info if not initialized.
 	 */
-	vk::ImageView getDistortionTextureView() const;
-
-	/**
-	 * @brief Get the distortion texture sampler (LINEAR, REPEAT)
-	 */
-	vk::Sampler getDistortionSampler() const { return m_distortionSampler; }
+	vk::DescriptorImageInfo getDistortionTextureInfo() const;
 
 	/**
 	 * @brief Copy scene color to effect texture for distortion/soft particle sampling
@@ -219,12 +214,16 @@ public:
 	vk::Sampler getSceneColorSampler() const { return m_linearSampler; }
 
 	/**
-	 * @brief Get the effect/composite texture view (snapshot of scene color)
+	 * @brief Get a ready-to-use DescriptorImageInfo for the scene effect texture
 	 *
 	 * Available for sampling after copyEffectTexture() has been called.
 	 * Used by distortion and soft particle shaders.
+	 * Returns default-constructed info if the effect texture doesn't exist.
 	 */
-	vk::ImageView getSceneEffectView() const { return m_sceneEffect.view; }
+	vk::DescriptorImageInfo getSceneEffectTextureInfo() const {
+		if (!m_sceneEffect.view) return {};
+		return {m_linearSampler, m_sceneEffect.view, vk::ImageLayout::eShaderReadOnlyOptimal};
+	}
 
 	/**
 	 * @brief Get the scene depth copy view (for soft particle depth sampling)
@@ -234,11 +233,6 @@ public:
 	vk::ImageView getSceneDepthCopyView() const { return m_sceneDepthCopy.view; }
 
 	vk::Format getDepthFormat() const { return m_depthFormat; }
-
-	/**
-	 * @brief Get the effect texture sampler (linear, clamp-to-edge)
-	 */
-	vk::Sampler getSceneEffectSampler() const { return m_linearSampler; }
 
 	/**
 	 * @brief Check if post-processing is initialized
