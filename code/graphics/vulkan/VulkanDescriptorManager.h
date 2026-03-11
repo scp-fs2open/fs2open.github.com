@@ -31,13 +31,10 @@ public:
 	}
 
 	void writeUniformBuffer(vk::DescriptorSet set, uint32_t binding,
-	                        vk::Buffer buffer, vk::DeviceSize offset, vk::DeviceSize range) {
-		Verify(buffer);
+	                        const vk::DescriptorBufferInfo& info) {
+		Verify(info.buffer);
 		Verify(m_writeCount < MAX_WRITES && m_bufferInfoCount < MAX_BUFFER_INFOS);
-		auto& buf = m_bufferInfos[m_bufferInfoCount++];
-		buf.buffer = buffer;
-		buf.offset = offset;
-		buf.range = range;
+		m_bufferInfos[m_bufferInfoCount] = info;
 
 		auto& w = m_writes[m_writeCount++];
 		w = vk::WriteDescriptorSet();
@@ -45,22 +42,14 @@ public:
 		w.dstBinding = binding;
 		w.descriptorCount = 1;
 		w.descriptorType = vk::DescriptorType::eUniformBuffer;
-		w.pBufferInfo = &buf;
-	}
-
-	void writeUniformBuffer(vk::DescriptorSet set, uint32_t binding,
-	                        const vk::DescriptorBufferInfo& info) {
-		writeUniformBuffer(set, binding, info.buffer, info.offset, info.range);
+		w.pBufferInfo = &m_bufferInfos[m_bufferInfoCount++];
 	}
 
 	void writeStorageBuffer(vk::DescriptorSet set, uint32_t binding,
-	                        vk::Buffer buffer, vk::DeviceSize offset, vk::DeviceSize range) {
-		Verify(buffer);
+	                        const vk::DescriptorBufferInfo& info) {
+		Verify(info.buffer);
 		Verify(m_writeCount < MAX_WRITES && m_bufferInfoCount < MAX_BUFFER_INFOS);
-		auto& buf = m_bufferInfos[m_bufferInfoCount++];
-		buf.buffer = buffer;
-		buf.offset = offset;
-		buf.range = range;
+		m_bufferInfos[m_bufferInfoCount] = info;
 
 		auto& w = m_writes[m_writeCount++];
 		w = vk::WriteDescriptorSet();
@@ -68,22 +57,13 @@ public:
 		w.dstBinding = binding;
 		w.descriptorCount = 1;
 		w.descriptorType = vk::DescriptorType::eStorageBuffer;
-		w.pBufferInfo = &buf;
-	}
-
-	void writeStorageBuffer(vk::DescriptorSet set, uint32_t binding,
-	                        const vk::DescriptorBufferInfo& info) {
-		writeStorageBuffer(set, binding, info.buffer, info.offset, info.range);
+		w.pBufferInfo = &m_bufferInfos[m_bufferInfoCount++];
 	}
 
 	void writeTexture(vk::DescriptorSet set, uint32_t binding,
-	                  vk::ImageView imageView, vk::Sampler sampler,
-	                  vk::ImageLayout layout = vk::ImageLayout::eShaderReadOnlyOptimal) {
+	                  const vk::DescriptorImageInfo& info) {
 		Verify(m_writeCount < MAX_WRITES && m_imageInfoCount < MAX_IMAGE_INFOS);
-		auto& img = m_imageInfos[m_imageInfoCount++];
-		img.imageView = imageView;
-		img.sampler = sampler;
-		img.imageLayout = layout;
+		m_imageInfos[m_imageInfoCount] = info;
 
 		auto& w = m_writes[m_writeCount++];
 		w = vk::WriteDescriptorSet();
@@ -91,12 +71,7 @@ public:
 		w.dstBinding = binding;
 		w.descriptorCount = 1;
 		w.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		w.pImageInfo = &img;
-	}
-
-	void writeTexture(vk::DescriptorSet set, uint32_t binding,
-	                  const vk::DescriptorImageInfo& info) {
-		writeTexture(set, binding, info.imageView, info.sampler, info.imageLayout);
+		w.pImageInfo = &m_imageInfos[m_imageInfoCount++];
 	}
 
 	void writeTextureArray(vk::DescriptorSet set, uint32_t binding,

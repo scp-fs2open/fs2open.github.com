@@ -184,8 +184,8 @@ void vulkan_deferred_lighting_begin(bool clearNonColorBufs)
 
 				vk::DescriptorSet globalSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Global);
 				Verify(globalSet);
-				writer.writeUniformBuffer(globalSet, GlobalBinding::Lights, fallbackBufInfo.buffer, 0, fallbackBufInfo.range);
-				writer.writeUniformBuffer(globalSet, GlobalBinding::DeferredData, fallbackBufInfo.buffer, 0, fallbackBufInfo.range);
+				writer.writeUniformBuffer(globalSet, GlobalBinding::Lights, fallbackBufInfo);
+				writer.writeUniformBuffer(globalSet, GlobalBinding::DeferredData, fallbackBufInfo);
 				writer.writeTexture(globalSet, GlobalBinding::ShadowMap, texMgr->getFallbackTextureInfo2D());
 				writer.writeTexture(globalSet, GlobalBinding::EnvMap, texMgr->getFallbackTextureInfoCube());
 				writer.writeTexture(globalSet, GlobalBinding::IrradianceMap, texMgr->getFallbackTextureInfoCube());
@@ -422,8 +422,8 @@ void vulkan_deferred_lighting_msaa()
 			// Global set (fallback — resolve shader doesn't use global bindings)
 			vk::DescriptorSet globalSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Global);
 			Verify(globalSet);
-			writer.writeUniformBuffer(globalSet, GlobalBinding::Lights, fallbackBufInfo.buffer, 0, fallbackBufInfo.range);
-			writer.writeUniformBuffer(globalSet, GlobalBinding::DeferredData, fallbackBufInfo.buffer, 0, fallbackBufInfo.range);
+			writer.writeUniformBuffer(globalSet, GlobalBinding::Lights, fallbackBufInfo);
+			writer.writeUniformBuffer(globalSet, GlobalBinding::DeferredData, fallbackBufInfo);
 			writer.writeTexture(globalSet, GlobalBinding::ShadowMap, texMgr->getFallbackTextureInfo2D());
 			writer.writeTexture(globalSet, GlobalBinding::EnvMap, texMgr->getFallbackTextureInfoCube());
 			writer.writeTexture(globalSet, GlobalBinding::IrradianceMap, texMgr->getFallbackTextureInfoCube());
@@ -485,7 +485,7 @@ void vulkan_deferred_lighting_msaa()
 				&resolveData, sizeof(resolveData));
 
 			writer.writeUniformBuffer(perDrawSet, PerDrawBinding::GenericData,
-				pp->getMsaaResolveUBO(), slotOffset, 256);
+				{pp->getMsaaResolveUBO(), slotOffset, 256});
 
 			// Fallback for remaining PerDraw UBO bindings (1-4)
 			for (uint32_t b = 1; b <= 4; ++b) {
@@ -1063,8 +1063,6 @@ void vulkan_render_decals(decal_material* material_info,
 
 	// Get fallback resources
 	auto fallbackBufInfo = bufferManager->getFallbackUniformBufferInfo();
-	vk::Buffer fallbackUBO = fallbackBufInfo.buffer;
-	auto fallbackUBOSize = fallbackBufInfo.range;
 
 	// Helper: write real pending UBO or fallback
 	auto writeUBOOrFallback = [&](DescriptorWriter& w, vk::DescriptorSet set,
@@ -1073,11 +1071,11 @@ void vulkan_render_decals(decal_material* material_info,
 		if (pending.valid) {
 			vk::Buffer buf = bufferManager->getVkBuffer(pending.bufferHandle);
 			if (buf) {
-				w.writeUniformBuffer(set, binding, buf, pending.offset, pending.size);
+				w.writeUniformBuffer(set, binding, {buf, pending.offset, pending.size});
 				return;
 			}
 		}
-		w.writeUniformBuffer(set, binding, fallbackUBO, 0, fallbackUBOSize);
+		w.writeUniformBuffer(set, binding, fallbackBufInfo);
 	};
 
 	DescriptorWriter writer;
@@ -1114,7 +1112,7 @@ void vulkan_render_decals(decal_material* material_info,
 			vk::SamplerAddressMode::eClampToEdge, false, 0.0f, false);
 		vk::ImageView depthView = pp->getSceneDepthCopyView();
 		if (depthView && nearestSampler) {
-			writer.writeTexture(materialSet, MaterialBinding::DepthMap, depthView, nearestSampler);
+			writer.writeTexture(materialSet, MaterialBinding::DepthMap, {nearestSampler, depthView, vk::ImageLayout::eShaderReadOnlyOptimal});
 		} else {
 			writer.writeTexture(materialSet, MaterialBinding::DepthMap, texManager->getFallbackTextureInfo2D());
 		}
@@ -1130,7 +1128,7 @@ void vulkan_render_decals(decal_material* material_info,
 			vk::SamplerAddressMode::eClampToEdge, false, 0.0f, false);
 		vk::ImageView normalView = pp->getGbufNormalCopyView();
 		if (normalView && nearestSampler) {
-			writer.writeTexture(materialSet, MaterialBinding::DistortionMap, normalView, nearestSampler);
+			writer.writeTexture(materialSet, MaterialBinding::DistortionMap, {nearestSampler, normalView, vk::ImageLayout::eShaderReadOnlyOptimal});
 		} else {
 			writer.writeTexture(materialSet, MaterialBinding::DistortionMap, texManager->getFallbackTextureInfo2D());
 		}
@@ -1144,7 +1142,7 @@ void vulkan_render_decals(decal_material* material_info,
 	Verify(perDrawSet);
 	// Pre-initialize all bindings with fallback, then overwrite real ones
 	for (uint32_t b = 0; b < 5; ++b) {
-		writer.writeUniformBuffer(perDrawSet, b, fallbackUBO, 0, fallbackUBOSize);
+		writer.writeUniformBuffer(perDrawSet, b, fallbackBufInfo);
 	}
 
 	// Binding 1: Matrices UBO (overwrite fallback if valid)
@@ -1154,7 +1152,7 @@ void vulkan_render_decals(decal_material* material_info,
 		if (binding.valid) {
 			vk::Buffer buf = bufferManager->getVkBuffer(binding.bufferHandle);
 			if (buf) {
-				writer.writeUniformBuffer(perDrawSet, PerDrawBinding::Matrices, buf, binding.offset, binding.size);
+				writer.writeUniformBuffer(perDrawSet, PerDrawBinding::Matrices, {buf, binding.offset, binding.size});
 			}
 		}
 	}
@@ -1166,7 +1164,7 @@ void vulkan_render_decals(decal_material* material_info,
 		if (binding.valid) {
 			vk::Buffer buf = bufferManager->getVkBuffer(binding.bufferHandle);
 			if (buf) {
-				writer.writeUniformBuffer(perDrawSet, PerDrawBinding::DecalInfo, buf, binding.offset, binding.size);
+				writer.writeUniformBuffer(perDrawSet, PerDrawBinding::DecalInfo, {buf, binding.offset, binding.size});
 			}
 		}
 	}

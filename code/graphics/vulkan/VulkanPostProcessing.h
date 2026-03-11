@@ -340,9 +340,11 @@ public:
 	int getShadowTextureSize() const { return m_shadowTextureSize; }
 
 	/**
-	 * @brief Get shadow color image view (2D array, 4 layers) for descriptor binding
+	 * @brief Get a ready-to-use DescriptorImageInfo for the shadow map texture
 	 */
-	vk::ImageView getShadowColorView() const { return m_shadowColor.view; }
+	vk::DescriptorImageInfo getShadowTextureInfo() const {
+		return {m_linearSampler, m_shadowColor.view, vk::ImageLayout::eShaderReadOnlyOptimal};
+	}
 
 	/**
 	 * @brief Get shadow color image (for layout transitions)
@@ -363,11 +365,6 @@ public:
 	 * @brief Get shadow framebuffer
 	 */
 	vk::Framebuffer getShadowFramebuffer() const { return m_shadowFramebuffer; }
-
-	/**
-	 * @brief Get shadow map sampler (linear, clamp-to-edge)
-	 */
-	vk::Sampler getShadowSampler() const { return m_linearSampler; }
 
 	// ========== MSAA (deferred lighting) ==========
 
