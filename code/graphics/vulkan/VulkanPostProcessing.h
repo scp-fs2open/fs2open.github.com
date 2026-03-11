@@ -492,6 +492,18 @@ private:
 	bool initGBuffer();
 	void shutdownGBuffer();
 
+	struct GbufRenderPassConfig {
+		bool includeComposite;
+		vk::SampleCountFlagBits samples;
+		vk::AttachmentLoadOp colorLoadOp;
+		vk::AttachmentLoadOp depthLoadOp;
+		vk::ImageLayout colorInitialLayout;
+		vk::ImageLayout colorFinalLayout;
+		vk::ImageLayout depthInitialLayout;
+		bool useResolveDependency = false;
+	};
+	vk::RenderPass createGbufRenderPass(const GbufRenderPassConfig& config);
+
 	// Light volume methods (deferred lighting)
 	bool initLightVolumes();
 	void shutdownLightVolumes();
