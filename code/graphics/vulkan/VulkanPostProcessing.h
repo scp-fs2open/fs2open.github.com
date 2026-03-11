@@ -503,6 +503,8 @@ private:
 		bool useResolveDependency = false;
 	};
 	vk::RenderPass createGbufRenderPass(const GbufRenderPassConfig& config);
+	vk::Framebuffer createGbufFramebuffer(vk::RenderPass renderPass, bool includeComposite,
+	                                      bool useMsaaImages);
 
 	// Light volume methods (deferred lighting)
 	bool initLightVolumes();
