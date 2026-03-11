@@ -4,6 +4,8 @@
 #include "graphics/2d.h"
 #include "graphics/material.h"
 
+#include <array>
+
 #include "VulkanShader.h"
 #include "VulkanVertexFormat.h"
 #include "VulkanDescriptorManager.h"
@@ -68,7 +70,7 @@ struct PipelineConfig {
 		bvec4 writeMask = {true, true, true, true};
 	};
 	static constexpr uint32_t MAX_COLOR_ATTACHMENTS = 8;
-	AttachmentBlend attachmentBlends[MAX_COLOR_ATTACHMENTS];
+	std::array<AttachmentBlend, MAX_COLOR_ATTACHMENTS> attachmentBlends;
 
 	bool operator==(const PipelineConfig& other) const;
 	size_t hash() const;

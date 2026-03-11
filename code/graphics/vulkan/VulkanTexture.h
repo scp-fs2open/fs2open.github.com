@@ -6,6 +6,7 @@
 #define BMPMAN_INTERNAL
 #include "bmpman/bm_internal.h"
 
+#include <array>
 #include <vulkan/vulkan.hpp>
 
 
@@ -47,8 +48,8 @@ public:
 
 	// Cubemap support
 	bool isCubemap = false;
-	vk::ImageView cubeFaceViews[6] = {};  // Per-face 2D views for render-to-cubemap
-	vk::Framebuffer cubeFaceFramebuffers[6] = {};  // Per-face framebuffers for render-to-cubemap
+	std::array<vk::ImageView, 6> cubeFaceViews = {};  // Per-face 2D views for render-to-cubemap
+	std::array<vk::Framebuffer, 6> cubeFaceFramebuffers = {};  // Per-face framebuffers for render-to-cubemap
 	vk::ImageView cubeImageView;  // Cube view for sampling (viewType=eCube, layerCount=6)
 
 	// Texture scaling (for non-power-of-two handling)

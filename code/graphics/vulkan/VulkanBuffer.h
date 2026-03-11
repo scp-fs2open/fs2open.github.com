@@ -4,6 +4,7 @@
 #include "VulkanConstants.h"
 #include "VulkanMemory.h"
 
+#include <array>
 #include <vulkan/vulkan.hpp>
 
 
@@ -255,7 +256,7 @@ private:
 	size_t bumpAllocate(size_t size);
 	void growFrameAllocator();
 
-	FrameBumpAllocator m_frameAllocs[MAX_FRAMES_IN_FLIGHT];
+	std::array<FrameBumpAllocator, MAX_FRAMES_IN_FLIGHT> m_frameAllocs;
 	uint32_t m_uboAlignment = 256;
 
 	vk::Device m_device;

@@ -211,14 +211,14 @@ bool VulkanBufferManager::init(vk::Device device,
 	m_uboAlignment = minUboAlignment > 0 ? minUboAlignment : 256;
 
 	// Create fallback color buffer with white (1,1,1,1) for shaders expecting vertColor
-	float whiteColor[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
-	if (!createOneShotBuffer(vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst, whiteColor, sizeof(whiteColor), m_fallbackColorBuffer, m_fallbackColorAllocation)) {
+	std::array<float, 4> whiteColor = { 1.0f, 1.0f, 1.0f, 1.0f };
+	if (!createOneShotBuffer(vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst, whiteColor.data(), sizeof(whiteColor), m_fallbackColorBuffer, m_fallbackColorAllocation)) {
 		mprintf(("VulkanBufferManager::init could not create fallback color buffer\n"));
 		return false;
 	}
 
-	float zeroTexCoord[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-	if (!createOneShotBuffer(vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst, zeroTexCoord, sizeof(zeroTexCoord), m_fallbackTexCoordBuffer, m_fallbackTexCoordAllocation)) {
+	std::array<float, 4> zeroTexCoord = { 0.0f, 0.0f, 0.0f, 0.0f };
+	if (!createOneShotBuffer(vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst, zeroTexCoord.data(), sizeof(zeroTexCoord), m_fallbackTexCoordBuffer, m_fallbackTexCoordAllocation)) {
 		mprintf(("VulkanBufferManager::init could not create fallback texcoord buffer\n"));
 		return false;
 	}
@@ -226,8 +226,8 @@ bool VulkanBufferManager::init(vk::Device device,
 	// Create fallback uniform buffer (zeros) for uninitialized descriptor set bindings
 	// Without this, descriptor set UBO bindings left unwritten after pool reset
 	// contain undefined data, causing intermittent rendering failures
-	float dummy_ubo[FALLBACK_UNIFORM_BUFFER_SIZE] = {};
-	if (!createOneShotBuffer(vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eStorageBuffer, dummy_ubo, sizeof(dummy_ubo), m_fallbackUniformBuffer, m_fallbackUniformAllocation)) {
+	std::array<float, FALLBACK_UNIFORM_BUFFER_SIZE> dummy_ubo = {};
+	if (!createOneShotBuffer(vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eStorageBuffer, dummy_ubo.data(), sizeof(dummy_ubo), m_fallbackUniformBuffer, m_fallbackUniformAllocation)) {
 		mprintf(("VulkanBufferManager::init could not create fallback uniform buffer\n"));
 		return false;
 	}

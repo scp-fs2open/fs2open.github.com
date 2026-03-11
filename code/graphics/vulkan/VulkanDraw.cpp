@@ -74,7 +74,7 @@ struct TransformBufferState {
 	size_t lastUploadOffset = 0; // byte offset of most recent upload
 	size_t lastUploadSize = 0;   // byte size of most recent upload
 };
-static TransformBufferState g_transformBuffers[MAX_FRAMES_IN_FLIGHT];
+static std::array<TransformBufferState, MAX_FRAMES_IN_FLIGHT> g_transformBuffers;
 static uint32_t g_lastTransformWriteFrame = UINT32_MAX;
 
 void vulkan_update_transform_buffer(void* data, size_t size)
@@ -1700,7 +1700,7 @@ void vulkan_scene_texture_begin()
 		auto* stateTracker = getStateTracker();
 		auto cmdBuffer = stateTracker->getCommandBuffer();
 
-		vk::ClearAttachment clearAttachments[2];
+		std::array<vk::ClearAttachment, 2> clearAttachments;
 		clearAttachments[0].aspectMask = vk::ImageAspectFlagBits::eColor;
 		clearAttachments[0].colorAttachment = 0;
 		clearAttachments[0].clearValue.color.setFloat32({0.0f, 0.0f, 0.0f, 1.0f});
@@ -1715,7 +1715,7 @@ void vulkan_scene_texture_begin()
 		clearRect.baseArrayLayer = 0;
 		clearRect.layerCount = 1;
 
-		cmdBuffer.clearAttachments(2, clearAttachments, 1, &clearRect);
+		cmdBuffer.clearAttachments(clearAttachments, clearRect);
 	}
 }
 
@@ -2144,7 +2144,7 @@ void vulkan_calculate_irrmap()
 
 	vk::Extent2D irrExtent(irrTs->width, irrTs->height);
 
-	for (int face = 0; face < 6; face++) {
+	for (size_t face = 0; face < irrTs->cubeFaceFramebuffers.size(); face++) {
 		vk::Framebuffer fb = irrTs->cubeFaceFramebuffers[face];
 		if (!fb) {
 			continue;
