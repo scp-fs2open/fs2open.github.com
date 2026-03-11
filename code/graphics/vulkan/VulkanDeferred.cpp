@@ -34,6 +34,50 @@ bool s_vulkanOverrideFog = false;
 
 } // anonymous namespace
 
+/**
+ * @brief Transition all 6 MSAA images between two layout states.
+ *
+ * Builds a 6-barrier batch (5 color + 1 depth) and submits via pipelineBarrier.
+ */
+static void transitionMsaaImages(vk::CommandBuffer cmd, VulkanPostProcessor* pp,
+                                  vk::ImageLayout colorOldLayout, vk::ImageLayout colorNewLayout,
+                                  vk::AccessFlags colorSrcAccess, vk::AccessFlags colorDstAccess,
+                                  vk::ImageLayout depthOldLayout, vk::ImageLayout depthNewLayout,
+                                  vk::AccessFlags depthSrcAccess, vk::AccessFlags depthDstAccess,
+                                  vk::PipelineStageFlags srcStage, vk::PipelineStageFlags dstStage)
+{
+	std::array<vk::ImageMemoryBarrier, 6> barriers;
+
+	std::array<vk::Image, 5> msaaImages = {
+		pp->getMsaaColorImage(),
+		pp->getMsaaPositionImage(),
+		pp->getMsaaNormalImage(),
+		pp->getMsaaSpecularImage(),
+		pp->getMsaaEmissiveImage(),
+	};
+	for (size_t i = 0; i < msaaImages.size(); ++i) {
+		barriers[i].srcAccessMask = colorSrcAccess;
+		barriers[i].dstAccessMask = colorDstAccess;
+		barriers[i].oldLayout = colorOldLayout;
+		barriers[i].newLayout = colorNewLayout;
+		barriers[i].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barriers[i].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barriers[i].image = msaaImages[i];
+		barriers[i].subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
+	}
+
+	barriers[5].srcAccessMask = depthSrcAccess;
+	barriers[5].dstAccessMask = depthDstAccess;
+	barriers[5].oldLayout = depthOldLayout;
+	barriers[5].newLayout = depthNewLayout;
+	barriers[5].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barriers[5].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barriers[5].image = pp->getMsaaDepthImage();
+	barriers[5].subresourceRange = {imageAspectFromFormat(pp->getDepthFormat()), 0, 1, 0, 1};
+
+	cmd.pipelineBarrier(srcStage, dstStage, {}, nullptr, nullptr, barriers);
+}
+
 // ========== Deferred Lighting ==========
 
 void vulkan_deferred_lighting_begin(bool clearNonColorBufs)
@@ -324,47 +368,16 @@ void vulkan_deferred_lighting_msaa()
 	// Reset sample count to 1x (resolve and subsequent passes are non-MSAA)
 	stateTracker->setCurrentSampleCount(vk::SampleCountFlagBits::e1);
 
-	// Explicit barriers: transition all 6 MSAA images to eShaderReadOnlyOptimal
-	// for sampling by the resolve shader. We use explicit barriers instead of
-	// render pass finalLayout transitions to ensure the validation layer tracks
-	// the layout changes correctly.
-	{
-		std::array<vk::ImageMemoryBarrier, 6> barriers;
-
-		// 5 color images: eColorAttachmentOptimal → eShaderReadOnlyOptimal
-		std::array<vk::Image, 5> msaaImages = {
-			pp->getMsaaColorImage(),
-			pp->getMsaaPositionImage(),
-			pp->getMsaaNormalImage(),
-			pp->getMsaaSpecularImage(),
-			pp->getMsaaEmissiveImage(),
-		};
-		for (size_t i = 0; i < msaaImages.size(); ++i) {
-			barriers[i].srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
-			barriers[i].dstAccessMask = vk::AccessFlagBits::eShaderRead;
-			barriers[i].oldLayout = vk::ImageLayout::eColorAttachmentOptimal;
-			barriers[i].newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-			barriers[i].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barriers[i].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barriers[i].image = msaaImages[i];
-			barriers[i].subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
-		}
-
-		// Depth: eDepthStencilAttachmentOptimal → eShaderReadOnlyOptimal
-		barriers[5].srcAccessMask = vk::AccessFlagBits::eDepthStencilAttachmentWrite;
-		barriers[5].dstAccessMask = vk::AccessFlagBits::eShaderRead;
-		barriers[5].oldLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
-		barriers[5].newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		barriers[5].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barriers[5].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barriers[5].image = pp->getMsaaDepthImage();
-		barriers[5].subresourceRange = {imageAspectFromFormat(pp->getDepthFormat()), 0, 1, 0, 1};
-
-		cmd.pipelineBarrier(
-			vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eLateFragmentTests,
-			vk::PipelineStageFlagBits::eFragmentShader,
-			{}, nullptr, nullptr, barriers);
-	}
+	// Transition all 6 MSAA images to eShaderReadOnlyOptimal for the resolve shader.
+	// We use explicit barriers instead of render pass finalLayout transitions to
+	// ensure the validation layer tracks the layout changes correctly.
+	transitionMsaaImages(cmd, pp,
+		vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
+		vk::AccessFlagBits::eColorAttachmentWrite, vk::AccessFlagBits::eShaderRead,
+		vk::ImageLayout::eDepthStencilAttachmentOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
+		vk::AccessFlagBits::eDepthStencilAttachmentWrite, vk::AccessFlagBits::eShaderRead,
+		vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eLateFragmentTests,
+		vk::PipelineStageFlagBits::eFragmentShader);
 
 	// Begin resolve render pass (non-MSAA, writes to standard G-buffer images)
 	{
@@ -502,45 +515,15 @@ void vulkan_deferred_lighting_msaa()
 		cmd.endRenderPass();
 	}
 
-	// Transition MSAA images back to their resting layout (eColorAttachmentOptimal /
-	// eDepthStencilAttachmentOptimal) so they match the validation layer's global
-	// tracking state for the next frame. The post-G-buffer barriers moved them to
-	// eShaderReadOnlyOptimal for the resolve pass; now we restore them.
-	{
-		std::array<vk::ImageMemoryBarrier, 6> restoreBarriers;
-
-		std::array<vk::Image, 5> msaaImages = {
-			pp->getMsaaColorImage(),
-			pp->getMsaaPositionImage(),
-			pp->getMsaaNormalImage(),
-			pp->getMsaaSpecularImage(),
-			pp->getMsaaEmissiveImage(),
-		};
-		for (size_t i = 0; i < msaaImages.size(); ++i) {
-			restoreBarriers[i].srcAccessMask = vk::AccessFlagBits::eShaderRead;
-			restoreBarriers[i].dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
-			restoreBarriers[i].oldLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-			restoreBarriers[i].newLayout = vk::ImageLayout::eColorAttachmentOptimal;
-			restoreBarriers[i].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			restoreBarriers[i].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			restoreBarriers[i].image = msaaImages[i];
-			restoreBarriers[i].subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
-		}
-
-		restoreBarriers[5].srcAccessMask = vk::AccessFlagBits::eShaderRead;
-		restoreBarriers[5].dstAccessMask = vk::AccessFlagBits::eDepthStencilAttachmentWrite;
-		restoreBarriers[5].oldLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		restoreBarriers[5].newLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
-		restoreBarriers[5].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		restoreBarriers[5].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		restoreBarriers[5].image = pp->getMsaaDepthImage();
-		restoreBarriers[5].subresourceRange = {imageAspectFromFormat(pp->getDepthFormat()), 0, 1, 0, 1};
-
-		cmd.pipelineBarrier(
-			vk::PipelineStageFlagBits::eFragmentShader,
-			vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eEarlyFragmentTests,
-			{}, nullptr, nullptr, restoreBarriers);
-	}
+	// Restore MSAA images to their resting layout (attachment-optimal) so they
+	// match the validation layer's tracking state for the next frame.
+	transitionMsaaImages(cmd, pp,
+		vk::ImageLayout::eShaderReadOnlyOptimal, vk::ImageLayout::eColorAttachmentOptimal,
+		vk::AccessFlagBits::eShaderRead, vk::AccessFlagBits::eColorAttachmentWrite,
+		vk::ImageLayout::eShaderReadOnlyOptimal, vk::ImageLayout::eDepthStencilAttachmentOptimal,
+		vk::AccessFlagBits::eShaderRead, vk::AccessFlagBits::eDepthStencilAttachmentWrite,
+		vk::PipelineStageFlagBits::eFragmentShader,
+		vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eEarlyFragmentTests);
 
 	// After resolve, the non-MSAA G-buffer has properly resolved data.
 	// Color attachments 0-4 are in eShaderReadOnlyOptimal (from resolve pass finalLayout).
