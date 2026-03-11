@@ -2158,8 +2158,7 @@ int Fred_mission_save::save_fiction()
 					else
 						fout("\n$Font:");
 					fout(" %s", stage.font_filename);
-				} else
-					optional_string_fred("$Font:");
+				}
 
 				// save voice
 				if (strlen(stage.voice_filename) > 0) //-V805
@@ -2169,8 +2168,7 @@ int Fred_mission_save::save_fiction()
 					else
 						fout("\n$Voice:");
 					fout(" %s", stage.voice_filename);
-				} else
-					optional_string_fred("$Voice:");
+				}
 
 				// save UI
 				if (strlen(stage.ui_name) > 0) {
@@ -2179,8 +2177,7 @@ int Fred_mission_save::save_fiction()
 					else
 						fout("\n$UI:");
 					fout(" %s", stage.ui_name);
-				} else
-					optional_string_fred("$UI:");
+				}
 
 				// save background
 				save_custom_bitmap("$Background 640:",
@@ -2198,8 +2195,7 @@ int Fred_mission_save::save_fiction()
 					else
 						fout("\n$Formula:");
 					fout(" %s", sexp_out.c_str());
-				} else
-					optional_string_fred("$Formula:");
+				}
 			}
 		} else {
 			SCP_string msg = "Warning: This mission contains fiction viewer data, but you are saving in the retail "
