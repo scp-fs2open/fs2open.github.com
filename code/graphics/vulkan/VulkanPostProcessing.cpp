@@ -1839,11 +1839,7 @@ void VulkanPostProcessor::renderDeferredLights(vk::CommandBuffer cmd)
 	vk::PipelineLayout pipelineLayout = pipelineMgr->getPipelineLayout();
 
 	// Fallback buffer and textures for unused descriptor bindings
-	auto fallbackBuf = bufferMgr->getFallbackUniformBuffer();
-	vk::DescriptorBufferInfo fallbackBufInfo;
-	fallbackBufInfo.buffer = fallbackBuf;
-	fallbackBufInfo.offset = 0;
-	fallbackBufInfo.range = 4096;
+	auto fallbackBufInfo = bufferMgr->getFallbackUniformBufferInfo();
 
 	vk::ImageView fallbackView = texMgr->getFallbackTextureView2D();
 	vk::Sampler defaultSampler = texMgr->getDefaultSampler();
@@ -2542,11 +2538,7 @@ void VulkanPostProcessor::drawFullscreenTriangle(vk::CommandBuffer cmd, vk::Rend
 		texArrayWrite.pImageInfo = texArrayInfos.data();
 
 		// Fallback UBO for binding 0 (ModelData) and binding 2 (DecalGlobals)
-		auto fallbackBuf = bufferMgr->getFallbackUniformBuffer();
-		vk::DescriptorBufferInfo fallbackBufInfo;
-		fallbackBufInfo.buffer = fallbackBuf;
-		fallbackBufInfo.offset = 0;
-		fallbackBufInfo.range = 4096;
+		auto fallbackBufInfo = bufferMgr->getFallbackUniformBufferInfo();
 
 		vk::WriteDescriptorSet modelWrite;
 		modelWrite.dstSet = materialSet;
@@ -2638,9 +2630,7 @@ void VulkanPostProcessor::drawFullscreenTriangle(vk::CommandBuffer cmd, vk::Rend
 			uboInfo.range = BLOOM_UBO_SLOT_SIZE;
 		} else {
 			// No UBO data — use fallback zero buffer
-			uboInfo.buffer = bufferMgr->getFallbackUniformBuffer();
-			uboInfo.offset = 0;
-			uboInfo.range = 4096;
+			uboInfo = bufferMgr->getFallbackUniformBufferInfo();
 		}
 
 		vk::WriteDescriptorSet write;
@@ -2652,11 +2642,7 @@ void VulkanPostProcessor::drawFullscreenTriangle(vk::CommandBuffer cmd, vk::Rend
 		write.pBufferInfo = &uboInfo;
 
 		// Fallback for remaining per-draw bindings (1-4: Matrices, NanoVGData, DecalInfo, MovieData)
-		auto fallbackBuf = bufferMgr->getFallbackUniformBuffer();
-		vk::DescriptorBufferInfo fallbackInfo;
-		fallbackInfo.buffer = fallbackBuf;
-		fallbackInfo.offset = 0;
-		fallbackInfo.range = 4096;
+		auto fallbackInfo = bufferMgr->getFallbackUniformBufferInfo();
 
 		SCP_vector<vk::WriteDescriptorSet> writes;
 		writes.push_back(write);
@@ -3601,11 +3587,7 @@ void VulkanPostProcessor::blitToSwapChain(vk::CommandBuffer cmd)
 		texArrayWrite.pImageInfo = texArrayInfos.data();
 
 		// Fallback UBO for binding 0 (ModelData) and binding 2 (DecalGlobals)
-		auto fallbackBuffer = bufferMgr->getFallbackUniformBuffer();
-		vk::DescriptorBufferInfo bufferInfo;
-		bufferInfo.buffer = fallbackBuffer;
-		bufferInfo.offset = 0;
-		bufferInfo.range = 4096;
+		auto bufferInfo = bufferMgr->getFallbackUniformBufferInfo();
 
 		vk::WriteDescriptorSet uboWrite;
 		uboWrite.dstSet = materialSet;
@@ -3713,11 +3695,7 @@ void VulkanPostProcessor::blitToSwapChain(vk::CommandBuffer cmd)
 		write.pBufferInfo = &uboInfo;
 
 		// Pre-initialize other bindings with fallback
-		auto fallbackBuffer = bufferMgr->getFallbackUniformBuffer();
-		vk::DescriptorBufferInfo fallbackInfo;
-		fallbackInfo.buffer = fallbackBuffer;
-		fallbackInfo.offset = 0;
-		fallbackInfo.range = 4096;
+		auto fallbackInfo = bufferMgr->getFallbackUniformBufferInfo();
 
 		SCP_vector<vk::WriteDescriptorSet> writes;
 		writes.push_back(write);
@@ -3764,11 +3742,11 @@ bool VulkanPostProcessor::initShadowPass()
 	default:                    size = 512; break;
 	}
 
-	mprintf(("VulkanPostProcessor: Creating %dx%d shadow map (4 cascades)\n", size, size));
+	mprintf(("VulkanPostProcessor: Creating %dx%d shadow map (%d cascades)\n", size, size, MAX_SHADOW_CASCADES));
 
-	const uint32_t layers = 4;
+	const uint32_t layers = MAX_SHADOW_CASCADES;
 
-	// Create shadow color image (RGBA16F, 2D array, 4 layers)
+	// Create shadow color image (RGBA16F, 2D array, MAX_SHADOW_CASCADES layers)
 	{
 		vk::ImageCreateInfo imageInfo;
 		imageInfo.imageType = vk::ImageType::e2D;
@@ -3817,7 +3795,7 @@ bool VulkanPostProcessor::initShadowPass()
 		m_shadowColor.height = static_cast<uint32_t>(size);
 	}
 
-	// Create shadow depth image (D32F, 2D array, 4 layers)
+	// Create shadow depth image (D32F, 2D array, MAX_SHADOW_CASCADES layers)
 	{
 		vk::ImageCreateInfo imageInfo;
 		imageInfo.imageType = vk::ImageType::e2D;
@@ -3928,7 +3906,7 @@ bool VulkanPostProcessor::initShadowPass()
 		}
 	}
 
-	// Create layered framebuffer (all 4 layers at once)
+	// Create layered framebuffer (all MAX_SHADOW_CASCADES layers at once)
 	{
 		std::array<vk::ImageView, 2> fbAttachments = {
 			m_shadowColor.view,
@@ -3953,7 +3931,7 @@ bool VulkanPostProcessor::initShadowPass()
 
 	m_shadowTextureSize = size;
 	m_shadowInitialized = true;
-	mprintf(("VulkanPostProcessor: Shadow map initialized (%dx%d, 4 cascades)\n", size, size));
+	mprintf(("VulkanPostProcessor: Shadow map initialized (%dx%d, %d cascades)\n", size, size, MAX_SHADOW_CASCADES));
 	return true;
 }
 
@@ -4282,11 +4260,7 @@ void VulkanPostProcessor::renderSceneFog(vk::CommandBuffer cmd)
 	Verify(materialSet);
 
 	{
-		auto fallbackBuf = bufferMgr->getFallbackUniformBuffer();
-		vk::DescriptorBufferInfo fallbackBufInfo;
-		fallbackBufInfo.buffer = fallbackBuf;
-		fallbackBufInfo.offset = 0;
-		fallbackBufInfo.range = 4096;
+		auto fallbackBufInfo = bufferMgr->getFallbackUniformBufferInfo();
 
 		vk::Sampler defaultSampler = texMgr->getDefaultSampler();
 		vk::ImageView fallbackView = texMgr->getFallbackTextureView2D();
@@ -4398,11 +4372,7 @@ void VulkanPostProcessor::renderSceneFog(vk::CommandBuffer cmd)
 		write.descriptorType = vk::DescriptorType::eUniformBuffer;
 		write.pBufferInfo = &uboInfo;
 
-		auto fallbackBuf = bufferMgr->getFallbackUniformBuffer();
-		vk::DescriptorBufferInfo fallbackInfo;
-		fallbackInfo.buffer = fallbackBuf;
-		fallbackInfo.offset = 0;
-		fallbackInfo.range = 4096;
+		auto fallbackInfo = bufferMgr->getFallbackUniformBufferInfo();
 
 		SCP_vector<vk::WriteDescriptorSet> writes;
 		writes.push_back(write);
@@ -4691,11 +4661,7 @@ void VulkanPostProcessor::renderVolumetricFog(vk::CommandBuffer cmd)
 	Verify(materialSet);
 
 	{
-		auto fallbackBuf = bufferMgr->getFallbackUniformBuffer();
-		vk::DescriptorBufferInfo fallbackBufInfo;
-		fallbackBufInfo.buffer = fallbackBuf;
-		fallbackBufInfo.offset = 0;
-		fallbackBufInfo.range = 4096;
+		auto fallbackBufInfo = bufferMgr->getFallbackUniformBufferInfo();
 
 		vk::Sampler defaultSampler = texMgr->getDefaultSampler();
 		vk::ImageView fallbackView = texMgr->getFallbackTextureView2D();
@@ -4818,11 +4784,7 @@ void VulkanPostProcessor::renderVolumetricFog(vk::CommandBuffer cmd)
 		write.descriptorType = vk::DescriptorType::eUniformBuffer;
 		write.pBufferInfo = &uboInfo;
 
-		auto fallbackBuf = bufferMgr->getFallbackUniformBuffer();
-		vk::DescriptorBufferInfo fallbackInfo;
-		fallbackInfo.buffer = fallbackBuf;
-		fallbackInfo.offset = 0;
-		fallbackInfo.range = 4096;
+		auto fallbackInfo = bufferMgr->getFallbackUniformBufferInfo();
 
 		SCP_vector<vk::WriteDescriptorSet> writes;
 		writes.push_back(write);

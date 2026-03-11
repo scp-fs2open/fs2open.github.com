@@ -215,6 +215,13 @@ public:
 	vk::Buffer getFallbackUniformBuffer() const { return m_fallbackUniformBuffer; }
 
 	/**
+	 * @brief Get a ready-to-use DescriptorBufferInfo for the fallback uniform buffer
+	 */
+	vk::DescriptorBufferInfo getFallbackUniformBufferInfo() const {
+		return vk::DescriptorBufferInfo(m_fallbackUniformBuffer, 0, FALLBACK_UNIFORM_BUFFER_SIZE);
+	}
+
+	/**
 	 * @brief Get the size of the fallback uniform buffer
 	 */
 	static size_t getFallbackUniformBufferSize() { return FALLBACK_UNIFORM_BUFFER_SIZE; }
