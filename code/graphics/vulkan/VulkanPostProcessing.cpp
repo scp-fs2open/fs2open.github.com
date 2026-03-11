@@ -706,6 +706,44 @@ vk::RenderPass VulkanPostProcessor::createGbufRenderPass(const GbufRenderPassCon
 	return m_device.createRenderPass(rpInfo);
 }
 
+vk::Framebuffer VulkanPostProcessor::createGbufFramebuffer(
+	vk::RenderPass renderPass, bool includeComposite, bool useMsaaImages)
+{
+	// Attachment order: color, position, normal, specular, emissive, [composite], depth
+	std::array<vk::ImageView, 7> views;
+	uint32_t count = 0;
+
+	if (useMsaaImages) {
+		views[count++] = m_msaaColor.view;
+		views[count++] = m_msaaPosition.view;
+		views[count++] = m_msaaNormal.view;
+		views[count++] = m_msaaSpecular.view;
+		views[count++] = m_msaaEmissive.view;
+	} else {
+		views[count++] = m_sceneColor.view;
+		views[count++] = m_gbufPosition.view;
+		views[count++] = m_gbufNormal.view;
+		views[count++] = m_gbufSpecular.view;
+		views[count++] = m_gbufEmissive.view;
+	}
+
+	if (includeComposite) {
+		views[count++] = m_gbufComposite.view;
+	}
+
+	views[count++] = useMsaaImages ? m_msaaDepthView : m_sceneDepth.view;
+
+	vk::FramebufferCreateInfo fbInfo;
+	fbInfo.renderPass = renderPass;
+	fbInfo.attachmentCount = count;
+	fbInfo.pAttachments = views.data();
+	fbInfo.width = m_extent.width;
+	fbInfo.height = m_extent.height;
+	fbInfo.layers = 1;
+
+	return m_device.createFramebuffer(fbInfo);
+}
+
 bool VulkanPostProcessor::initGBuffer()
 {
 	if (m_gbufInitialized) {
@@ -789,32 +827,12 @@ bool VulkanPostProcessor::initGBuffer()
 	}
 
 	// Create G-buffer framebuffer (6 color + depth)
-	{
-		std::array<vk::ImageView, 7> fbAttachments = {
-			m_sceneColor.view,      // 0: color (shared with scene framebuffer)
-			m_gbufPosition.view,    // 1: position
-			m_gbufNormal.view,      // 2: normal
-			m_gbufSpecular.view,    // 3: specular
-			m_gbufEmissive.view,    // 4: emissive
-			m_gbufComposite.view,   // 5: composite
-			m_sceneDepth.view,      // 6: depth (shared with scene framebuffer)
-		};
-
-		vk::FramebufferCreateInfo fbInfo;
-		fbInfo.renderPass = m_gbufRenderPass;
-		fbInfo.attachmentCount = static_cast<uint32_t>(fbAttachments.size());
-		fbInfo.pAttachments = fbAttachments.data();
-		fbInfo.width = w;
-		fbInfo.height = h;
-		fbInfo.layers = 1;
-
-		try {
-			m_gbufFramebuffer = m_device.createFramebuffer(fbInfo);
-		} catch (const vk::SystemError& e) {
-			mprintf(("VulkanPostProcessor: Failed to create G-buffer framebuffer: %s\n", e.what()));
-			shutdownGBuffer();
-			return false;
-		}
+	try {
+		m_gbufFramebuffer = createGbufFramebuffer(m_gbufRenderPass, true, false);
+	} catch (const vk::SystemError& e) {
+		mprintf(("VulkanPostProcessor: Failed to create G-buffer framebuffer: %s\n", e.what()));
+		shutdownGBuffer();
+		return false;
 	}
 
 	m_gbufInitialized = true;
@@ -1025,31 +1043,12 @@ bool VulkanPostProcessor::initMSAA()
 	}
 
 	// MSAA G-buffer framebuffer (5 color + depth)
-	{
-		std::array<vk::ImageView, 6> fbAttachments = {
-			m_msaaColor.view,
-			m_msaaPosition.view,
-			m_msaaNormal.view,
-			m_msaaSpecular.view,
-			m_msaaEmissive.view,
-			m_msaaDepthView,
-		};
-
-		vk::FramebufferCreateInfo fbInfo;
-		fbInfo.renderPass = m_msaaGbufRenderPass;
-		fbInfo.attachmentCount = static_cast<uint32_t>(fbAttachments.size());
-		fbInfo.pAttachments = fbAttachments.data();
-		fbInfo.width = w;
-		fbInfo.height = h;
-		fbInfo.layers = 1;
-
-		try {
-			m_msaaGbufFramebuffer = m_device.createFramebuffer(fbInfo);
-		} catch (const vk::SystemError& e) {
-			mprintf(("VulkanPostProcessor: Failed to create MSAA G-buffer framebuffer: %s\n", e.what()));
-			shutdownMSAA();
-			return false;
-		}
+	try {
+		m_msaaGbufFramebuffer = createGbufFramebuffer(m_msaaGbufRenderPass, false, true);
+	} catch (const vk::SystemError& e) {
+		mprintf(("VulkanPostProcessor: Failed to create MSAA G-buffer framebuffer: %s\n", e.what()));
+		shutdownMSAA();
+		return false;
 	}
 
 	// Emissive copy render pass — 1 MS color attachment for upsampling non-MSAA → MSAA
@@ -1135,32 +1134,12 @@ bool VulkanPostProcessor::initMSAA()
 	}
 
 	// MSAA Resolve framebuffer — references non-MSAA G-buffer images
-	// Attachment order: [0]=scene color, [1]=position, [2]=normal, [3]=specular, [4]=emissive, [5]=depth
-	{
-		std::array<vk::ImageView, 6> fbAttachments = {
-			m_sceneColor.view,
-			m_gbufPosition.view,
-			m_gbufNormal.view,
-			m_gbufSpecular.view,
-			m_gbufEmissive.view,
-			m_sceneDepth.view,
-		};
-
-		vk::FramebufferCreateInfo fbInfo;
-		fbInfo.renderPass = m_msaaResolveRenderPass;
-		fbInfo.attachmentCount = static_cast<uint32_t>(fbAttachments.size());
-		fbInfo.pAttachments = fbAttachments.data();
-		fbInfo.width = w;
-		fbInfo.height = h;
-		fbInfo.layers = 1;
-
-		try {
-			m_msaaResolveFramebuffer = m_device.createFramebuffer(fbInfo);
-		} catch (const vk::SystemError& e) {
-			mprintf(("VulkanPostProcessor: Failed to create MSAA resolve framebuffer: %s\n", e.what()));
-			shutdownMSAA();
-			return false;
-		}
+	try {
+		m_msaaResolveFramebuffer = createGbufFramebuffer(m_msaaResolveRenderPass, false, false);
+	} catch (const vk::SystemError& e) {
+		mprintf(("VulkanPostProcessor: Failed to create MSAA resolve framebuffer: %s\n", e.what()));
+		shutdownMSAA();
+		return false;
 	}
 
 	// Create per-frame MSAA resolve UBO (persistently mapped)
