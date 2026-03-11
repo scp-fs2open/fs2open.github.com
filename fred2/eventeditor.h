@@ -13,6 +13,7 @@
 #define _EVENTEDITOR_H
 
 #include "sexp_tree_ui.h"
+#include "missioneditor/sexp_annotation_model.h"
 #include "mission/missiongoals.h"
 #include "mission/missionmessage.h"
 
@@ -26,6 +27,10 @@ public:
 
 	void edit_comment(HTREEITEM h);
 	void edit_bg_color(HTREEITEM h);
+	SCP_string get_node_comment(int node_index) const override;
+
+	// Set by event_editor during initialization
+	SexpAnnotationModel* m_annotations = nullptr;
 
 protected:
 	virtual void PreSubclassWindow();
@@ -37,9 +42,6 @@ protected:
 	DECLARE_MESSAGE_MAP()
 };
 
-void event_annotation_prune();
-int event_annotation_lookup(int node_idx);
-void event_annotation_swap_image(event_sexp_tree *tree, HTREEITEM handle, int annotation_index);
 void event_annotation_swap_image(event_sexp_tree *tree, HTREEITEM handle, event_annotation &ea);
 
 
@@ -77,9 +79,6 @@ public:
 	int modified;
 	int select_sexp_node;
 	event_editor(CWnd* pParent = NULL);   // standard constructor
-
-	void populate_path(event_annotation &ea, HTREEITEM h);
-	HTREEITEM traverse_path(const event_annotation &ea);
 
 // Dialog Data
 	//{{AFX_DATA(event_editor)
@@ -165,6 +164,7 @@ private:
 	SCP_vector<int> m_sig;
 	SCP_vector<mission_event> m_events;
 	SCP_vector<MMessage> m_messages;
+	SexpAnnotationModel m_annotation_model;
 	int m_wave_id;
 };
 

@@ -2,6 +2,7 @@
 
 #include "AbstractDialogModel.h"
 
+#include "missioneditor/sexp_annotation_model.h"
 #include "missioneditor/sexp_tree_model.h"
 
 #include <mission/missiongoals.h>
@@ -133,12 +134,7 @@ class MissionEventsDialogModel : public AbstractDialogModel {
 	void initializeData();
 
 	void initializeEvents();
-	int findFormulaByOriginalEventIndex(int orig) const;
 	void initializeEventAnnotations();
-	SCP_list<int> buildPathForNode(int node_index) const;
-	static bool isDefaultAnnotation(const event_annotation& ea);
-	int resolveNodeFromPath(const SCP_list<int>& path) const;
-	event_annotation& ensureAnnotationByPath(const SCP_list<int>& path);
 	void initializeTeamList();
 	static mission_event makeDefaultEvent();
 
@@ -157,7 +153,7 @@ class MissionEventsDialogModel : public AbstractDialogModel {
 	SexpTreeModel& m_tree_model;
 
 	SCP_vector<mission_event> m_events;
-	SCP_vector<event_annotation> m_event_annotations;
+	SexpAnnotationModel m_annotation_model;
 	SCP_vector<int> m_sig;
 	int m_cur_event = -1;
 

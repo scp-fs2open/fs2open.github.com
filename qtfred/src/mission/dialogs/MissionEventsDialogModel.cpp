@@ -163,138 +163,16 @@ void MissionEventsDialogModel::initializeEvents()
 	initializeEventAnnotations();
 }
 
-int MissionEventsDialogModel::findFormulaByOriginalEventIndex(int orig) const
-{
-	for (int cur = 0; cur < static_cast<int>(m_sig.size()); ++cur)
-		if (m_sig[cur] == orig)
-			return m_events[cur].formula;
-	return -1;
-}
-
 void MissionEventsDialogModel::initializeEventAnnotations()
 {
-	m_event_annotations = Event_annotations; // copy
+	m_annotation_model.loadFromGlobal(m_tree_model.tree_nodes, m_events, m_sig);
 
-	for (auto& ea : m_event_annotations) {
-		ea.node_index = -1;
-		if (ea.path.empty())
-			continue;
-
-		const int origIdx = ea.path.front();
-		const int formula = findFormulaByOriginalEventIndex(origIdx);
-		if (formula < 0)
-			continue;
-
-		// Walk children using tree_nodes parent/child/next links
-		int node = formula;
-		auto it = ea.path.begin();
-		++it; // skip event index
-		for (; it != ea.path.end() && node >= 0; ++it) {
-			const int target_child = *it;
-			// Navigate to the target_child-th child of node
-			int child = m_tree_model.tree_nodes[node].child;
-			for (int c = 0; c < target_child && child >= 0; ++c) {
-				child = m_tree_model.tree_nodes[child].next;
-			}
-			node = child;
-		}
-
-		ea.node_index = node;
-		if (node >= 0) {
+	for (const auto& ea : m_annotation_model.annotations()) {
+		if (ea.node_index >= 0) {
 			const bool hasColor = (ea.r != 255) || (ea.g != 255) || (ea.b != 255);
-			Q_EMIT annotationApplied(node, ea.comment, ea.r, ea.g, ea.b, hasColor);
+			Q_EMIT annotationApplied(ea.node_index, ea.comment, ea.r, ea.g, ea.b, hasColor);
 		}
 	}
-}
-
-// Build the path for a node index (event index; then child position indices)
-SCP_list<int> MissionEventsDialogModel::buildPathForNode(int node_index) const
-{
-	SCP_list<int> path;
-	if (node_index < 0)
-		return path;
-
-	// Walk up to find the root node
-	int root = node_index;
-	while (m_tree_model.tree_nodes[root].parent >= 0)
-		root = m_tree_model.tree_nodes[root].parent;
-
-	// Find the current index of this root in m_events
-	int curIdx = -1;
-	for (int i = 0; i < static_cast<int>(m_events.size()); ++i) {
-		if (m_events[i].formula == root) {
-			curIdx = i;
-			break;
-		}
-	}
-	if (curIdx < 0)
-		return path;
-
-	// persist the current index
-	path.push_back(curIdx);
-
-	// Collect child indices from node up to root, then reverse
-	std::vector<int> rev;
-	int cur = node_index;
-	for (;;) {
-		int parent = m_tree_model.tree_nodes[cur].parent;
-		if (parent < 0)
-			break;
-		// Find position of cur among parent's children
-		int pos = 0;
-		int sibling = m_tree_model.tree_nodes[parent].child;
-		while (sibling >= 0 && sibling != cur) {
-			++pos;
-			sibling = m_tree_model.tree_nodes[sibling].next;
-		}
-		rev.push_back(pos);
-		cur = parent;
-	}
-	for (auto rit = rev.rbegin(); rit != rev.rend(); ++rit)
-		path.push_back(*rit);
-
-	return path;
-}
-
-bool MissionEventsDialogModel::isDefaultAnnotation(const event_annotation& ea)
-{
-	const bool noNote = ea.comment.empty();
-	const bool noColor = (ea.r == 255 && ea.g == 255 && ea.b == 255);
-	return noNote && noColor;
-}
-
-int MissionEventsDialogModel::resolveNodeFromPath(const SCP_list<int>& path) const
-{
-	if (path.empty())
-		return -1;
-	const int origEvt = path.front();
-	const int formula = findFormulaByOriginalEventIndex(origEvt);
-	if (formula < 0)
-		return -1;
-
-	int node = formula;
-	auto it = path.begin();
-	++it; // skip event index
-	for (; it != path.end() && node >= 0; ++it) {
-		const int target_child = *it;
-		int child = m_tree_model.tree_nodes[node].child;
-		for (int c = 0; c < target_child && child >= 0; ++c) {
-			child = m_tree_model.tree_nodes[child].next;
-		}
-		node = child;
-	}
-	return node;
-}
-
-event_annotation& MissionEventsDialogModel::ensureAnnotationByPath(const SCP_list<int>& path)
-{
-	for (auto& ea : m_event_annotations)
-		if (ea.path == path)
-			return ea;
-	event_annotation ea{};
-	ea.path = path;
-	m_event_annotations.push_back(ea);
-	return m_event_annotations.back();
 }
 
 void MissionEventsDialogModel::initializeTeamList()
@@ -334,36 +212,7 @@ int MissionEventsDialogModel::buildDefaultTreeStructure(const SCP_string& /*name
 
 void MissionEventsDialogModel::applyAnnotations()
 {
-	// Recompute paths from whatever we currently have
-	for (auto& ea : m_event_annotations) {
-		// Prefer live node_index if still valid
-		if (ea.node_index >= 0 &&
-			ea.node_index < static_cast<int>(m_tree_model.tree_nodes.size()) &&
-			m_tree_model.tree_nodes[ea.node_index].type != SEXPT_UNUSED) {
-			ea.path = buildPathForNode(ea.node_index);
-		} else {
-			// If we lost the node, try to resolve from the old path
-			int resolved = resolveNodeFromPath(ea.path);
-			if (resolved >= 0) {
-				ea.node_index = resolved;
-				ea.path = buildPathForNode(resolved);
-			} else {
-				// Node is gone; mark default so we prune
-				ea.comment.clear();
-				ea.r = ea.g = ea.b = 255;
-				ea.node_index = -1;
-				ea.path.clear();
-			}
-		}
-		// Drop the transient node_index
-		ea.node_index = -1;
-	}
-
-	// Prune defaults
-	m_event_annotations.erase(std::remove_if(m_event_annotations.begin(), m_event_annotations.end(), [](const event_annotation& ea) { return isDefaultAnnotation(ea); }), m_event_annotations.end());
-
-	// Apply
-	Event_annotations = m_event_annotations;
+	m_annotation_model.saveToGlobal(m_tree_model.tree_nodes, m_events, m_sig);
 }
 
 
@@ -1123,9 +972,7 @@ void MissionEventsDialogModel::setLogLastTrigger(bool log)
 
 void MissionEventsDialogModel::setNodeAnnotation(int node_index, const SCP_string& note)
 {
-	auto path = buildPathForNode(node_index);
-	auto& ea = ensureAnnotationByPath(path);
-	ea.node_index = node_index;
+	auto& ea = m_annotation_model.ensureByKey(node_index);
 	ea.comment = note;
 	Q_EMIT annotationApplied(node_index, note, ea.r, ea.g, ea.b, (ea.r != 255 || ea.g != 255 || ea.b != 255));
 	set_modified();
@@ -1133,9 +980,7 @@ void MissionEventsDialogModel::setNodeAnnotation(int node_index, const SCP_strin
 
 void MissionEventsDialogModel::setNodeBgColor(int node_index, int r, int g, int b, bool has_color)
 {
-	auto path = buildPathForNode(node_index);
-	auto& ea = ensureAnnotationByPath(path);
-	ea.node_index = node_index;
+	auto& ea = m_annotation_model.ensureByKey(node_index);
 	if (has_color) {
 		ea.r = (ubyte)r;
 		ea.g = (ubyte)g;

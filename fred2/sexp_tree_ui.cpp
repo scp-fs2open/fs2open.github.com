@@ -634,6 +634,11 @@ void sexp_tree::edit_bg_color(HTREEITEM h)
 	// Not implemented in the base class
 }
 
+SCP_string sexp_tree::get_node_comment(int /*node_index*/) const
+{
+	return "";
+}
+
 int sexp_tree::end_label_edit(TVITEMA &item)
 {
 	if (!item.pszText)
@@ -2070,11 +2075,9 @@ void sexp_tree::update_help(HTREEITEM h)
 
 	// Build annotation comment
 	SCP_string nodeComment;
-	int thisIndex = event_annotation_lookup(node_index);
-	if (thisIndex >= 0) {
-		if (!Event_annotations[thisIndex].comment.empty()) {
-			nodeComment = "Node Comments:\r\n   " + Event_annotations[thisIndex].comment;
-		}
+	SCP_string raw_comment = get_node_comment(node_index);
+	if (!raw_comment.empty()) {
+		nodeComment = "Node Comments:\r\n   " + raw_comment;
 	}
 
 	// Delegate to model for help text computation

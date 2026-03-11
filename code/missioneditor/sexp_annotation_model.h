@@ -1,0 +1,102 @@
+/*
+ * SexpAnnotationModel — shared annotation data model for event editors.
+ *
+ * Both FRED2 (MFC) and QtFRED (Qt) use this to manage event_annotation data.
+ * The model owns a working copy of annotations and handles:
+ *   - loading from / saving to the global Event_annotations
+ *   - path ↔ key resolution (using tree_nodes parent/child/next links)
+ *   - lookup, creation, and pruning of annotations
+ *
+ * UI-specific concerns (icon swapping, tooltips, custom draw) remain in each
+ * editor's UI layer.
+ */
+
+#pragma once
+
+#include "mission/missiongoals.h"
+
+struct sexp_tree_item;
+
+class SexpAnnotationModel {
+public:
+	// ---------------------------------------------------------------
+	// Lifecycle
+	// ---------------------------------------------------------------
+
+	// Copy Event_annotations into the local working set, resolving each
+	// stored path to an annotation key (node index or root key).
+	// `sig` maps current dialog event index → original Mission_events index.
+	void loadFromGlobal(const SCP_vector<sexp_tree_item>& tree_nodes,
+	                    const SCP_vector<mission_event>& events,
+	                    const SCP_vector<int>& sig);
+
+	// Rebuild paths from annotation keys, prune defaults, and write the
+	// result back to the global Event_annotations.
+	void saveToGlobal(const SCP_vector<sexp_tree_item>& tree_nodes,
+	                  const SCP_vector<mission_event>& events,
+	                  const SCP_vector<int>& sig);
+
+	// ---------------------------------------------------------------
+	// Lookup
+	// ---------------------------------------------------------------
+
+	// Find the vector index of the annotation with the given key, or -1.
+	int findByKey(int key) const;
+
+	// Get a pointer to the annotation with the given key, or nullptr.
+	const event_annotation* getByKey(int key) const;
+	event_annotation* getByKey(int key);
+
+	// Get or create an annotation for the given key.
+	event_annotation& ensureByKey(int key);
+
+	// ---------------------------------------------------------------
+	// Predicates
+	// ---------------------------------------------------------------
+
+	// True if the annotation has default values (empty comment, white color).
+	static bool isDefault(const event_annotation& ea);
+
+	// ---------------------------------------------------------------
+	// Mutation
+	// ---------------------------------------------------------------
+
+	// Remove all annotations that are at default values.
+	void prune();
+
+	// Discard all annotations.
+	void clear();
+
+	// ---------------------------------------------------------------
+	// Direct access
+	// ---------------------------------------------------------------
+
+	SCP_vector<event_annotation>& annotations() { return m_annotations; }
+	const SCP_vector<event_annotation>& annotations() const { return m_annotations; }
+
+	// ---------------------------------------------------------------
+	// Root key encoding helpers
+	// ---------------------------------------------------------------
+	// Root labels (event names) don't have a tree_nodes[] entry.
+	// We encode them as -(formula + 2), which is always <= -2,
+	// avoiding collision with -1 (the default/unresolved sentinel).
+
+	static int rootKey(int formula) { return -(formula + 2); }
+	static bool isRootKey(int key) { return key <= -2; }
+	static int formulaFromRootKey(int key) { return -(key + 2); }
+
+private:
+	SCP_vector<event_annotation> m_annotations;
+
+	// Build a persistable path from an annotation key.
+	SCP_list<int> buildPath(int key,
+	                        const SCP_vector<sexp_tree_item>& tree_nodes,
+	                        const SCP_vector<mission_event>& events) const;
+
+	// Resolve a stored path back to an annotation key.
+	// Returns the key (>= 0 for regular nodes, <= -2 for root keys) or -1 on failure.
+	int resolveFromPath(const SCP_list<int>& path,
+	                    const SCP_vector<sexp_tree_item>& tree_nodes,
+	                    const SCP_vector<mission_event>& events,
+	                    const SCP_vector<int>& sig) const;
+};

@@ -80,6 +80,7 @@ public:
 	int edit_label(HTREEITEM h, bool *is_operator = nullptr);
 	virtual void edit_comment(HTREEITEM h);
 	virtual void edit_bg_color(HTREEITEM h);
+	virtual SCP_string get_node_comment(int node_index) const;
 	void right_clicked();
 	int ctree_size;
 	virtual void build_tree();
