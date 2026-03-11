@@ -69,7 +69,7 @@ bool VulkanPostProcessor::init(vk::Device device, vk::PhysicalDevice physDevice,
 
 	// Verify RGBA16F support for color attachment + sampling
 	{
-		vk::FormatProperties props = physDevice.getFormatProperties(vk::Format::eR16G16B16A16Sfloat);
+		vk::FormatProperties props = physDevice.getFormatProperties(HDR_COLOR_FORMAT);
 		if (!(props.optimalTilingFeatures & vk::FormatFeatureFlagBits::eColorAttachment) ||
 		    !(props.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImage)) {
 			mprintf(("VulkanPostProcessor: RGBA16F not supported for color attachment + sampling!\n"));
@@ -80,7 +80,7 @@ bool VulkanPostProcessor::init(vk::Device device, vk::PhysicalDevice physDevice,
 	// Create HDR scene color target (RGBA16F)
 	// eTransferSrc needed for copy_effect_texture (mid-scene snapshot)
 	// eTransferDst needed for deferred_lighting_finish (emissive→color copy)
-	if (!createImage(extent.width, extent.height, vk::Format::eR16G16B16A16Sfloat,
+	if (!createImage(extent.width, extent.height, HDR_COLOR_FORMAT,
 	                 vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled
 	                 | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst,
 	                 vk::ImageAspectFlagBits::eColor,
@@ -88,7 +88,7 @@ bool VulkanPostProcessor::init(vk::Device device, vk::PhysicalDevice physDevice,
 		mprintf(("VulkanPostProcessor: Failed to create scene color image!\n"));
 		return false;
 	}
-	m_sceneColor.format = vk::Format::eR16G16B16A16Sfloat;
+	m_sceneColor.format = HDR_COLOR_FORMAT;
 	m_sceneColor.width = extent.width;
 	m_sceneColor.height = extent.height;
 
@@ -108,7 +108,7 @@ bool VulkanPostProcessor::init(vk::Device device, vk::PhysicalDevice physDevice,
 	m_sceneDepth.height = extent.height;
 
 	// Create effect/composite texture (RGBA16F, snapshot of scene color for distortion/soft particles)
-	if (!createImage(extent.width, extent.height, vk::Format::eR16G16B16A16Sfloat,
+	if (!createImage(extent.width, extent.height, HDR_COLOR_FORMAT,
 	                 vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
 	                 vk::ImageAspectFlagBits::eColor,
 	                 m_sceneEffect.image, m_sceneEffect.view, m_sceneEffect.allocation)) {
@@ -116,7 +116,7 @@ bool VulkanPostProcessor::init(vk::Device device, vk::PhysicalDevice physDevice,
 		shutdown();
 		return false;
 	}
-	m_sceneEffect.format = vk::Format::eR16G16B16A16Sfloat;
+	m_sceneEffect.format = HDR_COLOR_FORMAT;
 	m_sceneEffect.width = extent.width;
 	m_sceneEffect.height = extent.height;
 
@@ -145,7 +145,7 @@ bool VulkanPostProcessor::init(vk::Device device, vk::PhysicalDevice physDevice,
 		std::array<vk::AttachmentDescription, 2> attachments;
 
 		// Color
-		attachments[0].format = vk::Format::eR16G16B16A16Sfloat;
+		attachments[0].format = HDR_COLOR_FORMAT;
 		attachments[0].samples = vk::SampleCountFlagBits::e1;
 		attachments[0].loadOp = vk::AttachmentLoadOp::eClear;
 		attachments[0].storeOp = vk::AttachmentStoreOp::eStore;
@@ -220,7 +220,7 @@ bool VulkanPostProcessor::init(vk::Device device, vk::PhysicalDevice physDevice,
 		std::array<vk::AttachmentDescription, 2> attachments;
 
 		// Color — load existing content, keep final layout for post-processing
-		attachments[0].format = vk::Format::eR16G16B16A16Sfloat;
+		attachments[0].format = HDR_COLOR_FORMAT;
 		attachments[0].samples = vk::SampleCountFlagBits::e1;
 		attachments[0].loadOp = vk::AttachmentLoadOp::eLoad;
 		attachments[0].storeOp = vk::AttachmentStoreOp::eStore;
@@ -402,7 +402,7 @@ bool VulkanPostProcessor::init(vk::Device device, vk::PhysicalDevice physDevice,
 	{
 		bool distOk = true;
 		for (size_t i = 0; i < m_distortionTex.size(); i++) {
-			if (!createImage(32, 32, vk::Format::eR8G8B8A8Unorm,
+			if (!createImage(32, 32, LDR_COLOR_FORMAT,
 			                 vk::ImageUsageFlagBits::eTransferSrc
 			                 | vk::ImageUsageFlagBits::eTransferDst
 			                 | vk::ImageUsageFlagBits::eSampled,
@@ -413,7 +413,7 @@ bool VulkanPostProcessor::init(vk::Device device, vk::PhysicalDevice physDevice,
 				distOk = false;
 				break;
 			}
-			m_distortionTex[i].format = vk::Format::eR8G8B8A8Unorm;
+			m_distortionTex[i].format = LDR_COLOR_FORMAT;
 			m_distortionTex[i].width = 32;
 			m_distortionTex[i].height = 32;
 		}
@@ -1055,7 +1055,7 @@ bool VulkanPostProcessor::initMSAA()
 	// Emissive copy render pass — 1 MS color attachment for upsampling non-MSAA → MSAA
 	{
 		vk::AttachmentDescription att;
-		att.format = vk::Format::eR16G16B16A16Sfloat;
+		att.format = HDR_COLOR_FORMAT;
 		att.samples = msaaSamples;
 		att.loadOp = vk::AttachmentLoadOp::eDontCare;
 		att.storeOp = vk::AttachmentStoreOp::eStore;
@@ -1491,7 +1491,7 @@ bool VulkanPostProcessor::initLightAccumPass()
 	// initialLayout=eColorAttachmentOptimal, finalLayout=eShaderReadOnlyOptimal
 	{
 		vk::AttachmentDescription att;
-		att.format = vk::Format::eR16G16B16A16Sfloat;
+		att.format = HDR_COLOR_FORMAT;
 		att.samples = vk::SampleCountFlagBits::e1;
 		att.loadOp = vk::AttachmentLoadOp::eLoad;
 		att.storeOp = vk::AttachmentStoreOp::eStore;
@@ -2121,7 +2121,7 @@ bool VulkanPostProcessor::initBloom()
 	for (size_t i = 0; i < m_bloomTex.size(); i++) {
 		vk::ImageCreateInfo imageInfo;
 		imageInfo.imageType = vk::ImageType::e2D;
-		imageInfo.format = vk::Format::eR16G16B16A16Sfloat;
+		imageInfo.format = HDR_COLOR_FORMAT;
 		imageInfo.extent.width = m_bloomWidth;
 		imageInfo.extent.height = m_bloomHeight;
 		imageInfo.extent.depth = 1;
@@ -2152,7 +2152,7 @@ bool VulkanPostProcessor::initBloom()
 		vk::ImageViewCreateInfo fullViewInfo;
 		fullViewInfo.image = m_bloomTex[i].image;
 		fullViewInfo.viewType = vk::ImageViewType::e2D;
-		fullViewInfo.format = vk::Format::eR16G16B16A16Sfloat;
+		fullViewInfo.format = HDR_COLOR_FORMAT;
 		fullViewInfo.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
 		fullViewInfo.subresourceRange.baseMipLevel = 0;
 		fullViewInfo.subresourceRange.levelCount = mipLevels;
@@ -2184,7 +2184,7 @@ bool VulkanPostProcessor::initBloom()
 	// Create bloom render pass (color-only RGBA16F, loadOp=eDontCare for overwriting)
 	{
 		vk::AttachmentDescription att;
-		att.format = vk::Format::eR16G16B16A16Sfloat;
+		att.format = HDR_COLOR_FORMAT;
 		att.samples = vk::SampleCountFlagBits::e1;
 		att.loadOp = vk::AttachmentLoadOp::eDontCare;
 		att.storeOp = vk::AttachmentStoreOp::eStore;
@@ -2233,7 +2233,7 @@ bool VulkanPostProcessor::initBloom()
 	// Create bloom composite render pass (loadOp=eLoad for additive compositing onto scene color)
 	{
 		vk::AttachmentDescription att;
-		att.format = vk::Format::eR16G16B16A16Sfloat;
+		att.format = HDR_COLOR_FORMAT;
 		att.samples = vk::SampleCountFlagBits::e1;
 		att.loadOp = vk::AttachmentLoadOp::eLoad;
 		att.storeOp = vk::AttachmentStoreOp::eStore;
@@ -2739,33 +2739,33 @@ void VulkanPostProcessor::executeBloom(vk::CommandBuffer cmd)
 bool VulkanPostProcessor::initLDRTargets()
 {
 	// Create Scene_ldr (RGBA8, full resolution) — tonemapped LDR output
-	if (!createImage(m_extent.width, m_extent.height, vk::Format::eR8G8B8A8Unorm,
+	if (!createImage(m_extent.width, m_extent.height, LDR_COLOR_FORMAT,
 	                 vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled,
 	                 vk::ImageAspectFlagBits::eColor,
 	                 m_sceneLdr.image, m_sceneLdr.view, m_sceneLdr.allocation)) {
 		mprintf(("VulkanPostProcessor: Failed to create Scene_ldr image!\n"));
 		return false;
 	}
-	m_sceneLdr.format = vk::Format::eR8G8B8A8Unorm;
+	m_sceneLdr.format = LDR_COLOR_FORMAT;
 	m_sceneLdr.width = m_extent.width;
 	m_sceneLdr.height = m_extent.height;
 
 	// Create Scene_luminance (RGBA8, full resolution) — LDR with luma in alpha for FXAA
-	if (!createImage(m_extent.width, m_extent.height, vk::Format::eR8G8B8A8Unorm,
+	if (!createImage(m_extent.width, m_extent.height, LDR_COLOR_FORMAT,
 	                 vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled,
 	                 vk::ImageAspectFlagBits::eColor,
 	                 m_sceneLuminance.image, m_sceneLuminance.view, m_sceneLuminance.allocation)) {
 		mprintf(("VulkanPostProcessor: Failed to create Scene_luminance image!\n"));
 		return false;
 	}
-	m_sceneLuminance.format = vk::Format::eR8G8B8A8Unorm;
+	m_sceneLuminance.format = LDR_COLOR_FORMAT;
 	m_sceneLuminance.width = m_extent.width;
 	m_sceneLuminance.height = m_extent.height;
 
 	// Create LDR render pass (color-only RGBA8, loadOp=eDontCare, finalLayout=eShaderReadOnlyOptimal)
 	{
 		vk::AttachmentDescription att;
-		att.format = vk::Format::eR8G8B8A8Unorm;
+		att.format = LDR_COLOR_FORMAT;
 		att.samples = vk::SampleCountFlagBits::e1;
 		att.loadOp = vk::AttachmentLoadOp::eDontCare;
 		att.storeOp = vk::AttachmentStoreOp::eStore;
@@ -2840,7 +2840,7 @@ bool VulkanPostProcessor::initLDRTargets()
 	// Create LDR load render pass (loadOp=eLoad for additive blending onto existing content)
 	{
 		vk::AttachmentDescription att;
-		att.format = vk::Format::eR8G8B8A8Unorm;
+		att.format = LDR_COLOR_FORMAT;
 		att.samples = vk::SampleCountFlagBits::e1;
 		att.loadOp = vk::AttachmentLoadOp::eLoad;
 		att.storeOp = vk::AttachmentStoreOp::eStore;
@@ -3698,7 +3698,7 @@ bool VulkanPostProcessor::initShadowPass()
 	{
 		vk::ImageCreateInfo imageInfo;
 		imageInfo.imageType = vk::ImageType::e2D;
-		imageInfo.format = vk::Format::eR16G16B16A16Sfloat;
+		imageInfo.format = HDR_COLOR_FORMAT;
 		imageInfo.extent = vk::Extent3D(static_cast<uint32_t>(size), static_cast<uint32_t>(size), 1);
 		imageInfo.mipLevels = 1;
 		imageInfo.arrayLayers = layers;
@@ -3724,7 +3724,7 @@ bool VulkanPostProcessor::initShadowPass()
 		vk::ImageViewCreateInfo viewInfo;
 		viewInfo.image = m_shadowColor.image;
 		viewInfo.viewType = vk::ImageViewType::e2DArray;
-		viewInfo.format = vk::Format::eR16G16B16A16Sfloat;
+		viewInfo.format = HDR_COLOR_FORMAT;
 		viewInfo.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
 		viewInfo.subresourceRange.baseMipLevel = 0;
 		viewInfo.subresourceRange.levelCount = 1;
@@ -3738,7 +3738,7 @@ bool VulkanPostProcessor::initShadowPass()
 			return false;
 		}
 
-		m_shadowColor.format = vk::Format::eR16G16B16A16Sfloat;
+		m_shadowColor.format = HDR_COLOR_FORMAT;
 		m_shadowColor.width = static_cast<uint32_t>(size);
 		m_shadowColor.height = static_cast<uint32_t>(size);
 	}
@@ -3747,7 +3747,7 @@ bool VulkanPostProcessor::initShadowPass()
 	{
 		vk::ImageCreateInfo imageInfo;
 		imageInfo.imageType = vk::ImageType::e2D;
-		imageInfo.format = vk::Format::eD32Sfloat;
+		imageInfo.format = SHADOW_DEPTH_FORMAT;
 		imageInfo.extent = vk::Extent3D(static_cast<uint32_t>(size), static_cast<uint32_t>(size), 1);
 		imageInfo.mipLevels = 1;
 		imageInfo.arrayLayers = layers;
@@ -3773,7 +3773,7 @@ bool VulkanPostProcessor::initShadowPass()
 		vk::ImageViewCreateInfo viewInfo;
 		viewInfo.image = m_shadowDepth.image;
 		viewInfo.viewType = vk::ImageViewType::e2DArray;
-		viewInfo.format = vk::Format::eD32Sfloat;
+		viewInfo.format = SHADOW_DEPTH_FORMAT;
 		viewInfo.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eDepth;
 		viewInfo.subresourceRange.baseMipLevel = 0;
 		viewInfo.subresourceRange.levelCount = 1;
@@ -3787,7 +3787,7 @@ bool VulkanPostProcessor::initShadowPass()
 			return false;
 		}
 
-		m_shadowDepth.format = vk::Format::eD32Sfloat;
+		m_shadowDepth.format = SHADOW_DEPTH_FORMAT;
 		m_shadowDepth.width = static_cast<uint32_t>(size);
 		m_shadowDepth.height = static_cast<uint32_t>(size);
 	}
@@ -3797,7 +3797,7 @@ bool VulkanPostProcessor::initShadowPass()
 		std::array<vk::AttachmentDescription, 2> attachments;
 
 		// Color attachment (RGBA16F) — stores VSM depth variance
-		attachments[0].format = vk::Format::eR16G16B16A16Sfloat;
+		attachments[0].format = HDR_COLOR_FORMAT;
 		attachments[0].samples = vk::SampleCountFlagBits::e1;
 		attachments[0].loadOp = vk::AttachmentLoadOp::eClear;
 		attachments[0].storeOp = vk::AttachmentStoreOp::eStore;
@@ -3807,7 +3807,7 @@ bool VulkanPostProcessor::initShadowPass()
 		attachments[0].finalLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 
 		// Depth attachment (D32F)
-		attachments[1].format = vk::Format::eD32Sfloat;
+		attachments[1].format = SHADOW_DEPTH_FORMAT;
 		attachments[1].samples = vk::SampleCountFlagBits::e1;
 		attachments[1].loadOp = vk::AttachmentLoadOp::eClear;
 		attachments[1].storeOp = vk::AttachmentStoreOp::eDontCare;
@@ -3998,7 +3998,7 @@ bool VulkanPostProcessor::initFogPass()
 	// initialLayout/finalLayout = eColorAttachmentOptimal (scene color stays as render target)
 	{
 		vk::AttachmentDescription att;
-		att.format = vk::Format::eR16G16B16A16Sfloat;
+		att.format = HDR_COLOR_FORMAT;
 		att.samples = vk::SampleCountFlagBits::e1;
 		att.loadOp = vk::AttachmentLoadOp::eDontCare;
 		att.storeOp = vk::AttachmentStoreOp::eStore;
@@ -4395,7 +4395,7 @@ void VulkanPostProcessor::renderVolumetricFog(vk::CommandBuffer cmd)
 
 		vk::ImageCreateInfo imgInfo;
 		imgInfo.imageType = vk::ImageType::e2D;
-		imgInfo.format = vk::Format::eR16G16B16A16Sfloat;
+		imgInfo.format = HDR_COLOR_FORMAT;
 		imgInfo.extent = vk::Extent3D(m_extent.width, m_extent.height, 1);
 		imgInfo.mipLevels = m_emissiveMipLevels;
 		imgInfo.arrayLayers = 1;
@@ -4419,7 +4419,7 @@ void VulkanPostProcessor::renderVolumetricFog(vk::CommandBuffer cmd)
 		vk::ImageViewCreateInfo viewInfo;
 		viewInfo.image = m_emissiveMipmapped.image;
 		viewInfo.viewType = vk::ImageViewType::e2D;
-		viewInfo.format = vk::Format::eR16G16B16A16Sfloat;
+		viewInfo.format = HDR_COLOR_FORMAT;
 		viewInfo.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
 		viewInfo.subresourceRange.baseMipLevel = 0;
 		viewInfo.subresourceRange.levelCount = m_emissiveMipLevels;
@@ -4433,7 +4433,7 @@ void VulkanPostProcessor::renderVolumetricFog(vk::CommandBuffer cmd)
 			return;
 		}
 
-		m_emissiveMipmapped.format = vk::Format::eR16G16B16A16Sfloat;
+		m_emissiveMipmapped.format = HDR_COLOR_FORMAT;
 		m_emissiveMipmapped.width = m_extent.width;
 		m_emissiveMipmapped.height = m_extent.height;
 		m_emissiveMipmappedInitialized = true;
