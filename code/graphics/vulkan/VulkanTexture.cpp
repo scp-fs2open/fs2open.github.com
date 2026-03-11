@@ -217,6 +217,83 @@ void VulkanTextureManager::shutdown()
 	mprintf(("Vulkan Texture Manager shutdown\n"));
 }
 
+void VulkanTextureManager::flushTextures()
+{
+	if (!m_initialized) {
+		return;
+	}
+
+	int flushed = 0;
+	auto* deletionQueue = getDeletionQueue();
+
+	for (auto& block : bm_blocks) {
+		for (auto& slot : block) {
+			if (!slot.gr_info) {
+				continue;
+			}
+
+			auto* ts = static_cast<tcache_slot_vulkan*>(slot.gr_info);
+
+			if (!ts->image) {
+				continue;
+			}
+
+			// Skip render targets — they are managed by the post-processor
+			// and scene texture system, not by the bitmap paging system
+			if (ts->isRenderTarget) {
+				continue;
+			}
+
+			// For shared animation texture arrays: mark this frame as unused.
+			// Only destroy the actual image when no frame references it.
+			if (ts->arrayLayers > 1 && ts->bitmapHandle >= 0) {
+				ts->used = false;
+
+				int baseFrame = ts->bitmapHandle - static_cast<int>(ts->arrayIndex);
+				int numFrames = static_cast<int>(ts->arrayLayers);
+				vk::Image sharedImage = ts->image;
+
+				bool anyInUse = false;
+				for (int f = baseFrame; f < baseFrame + numFrames; f++) {
+					if (f == ts->bitmapHandle) {
+						continue;
+					}
+					auto* fSlot = bm_get_slot(f, true);
+					if (fSlot && fSlot->gr_info) {
+						auto* fTs = static_cast<tcache_slot_vulkan*>(fSlot->gr_info);
+						if (fTs->used && fTs->image == sharedImage) {
+							anyInUse = true;
+							break;
+						}
+					}
+				}
+				if (anyInUse) {
+					// Other frames still reference — just detach this slot
+					ts->image = nullptr;
+					ts->imageView = nullptr;
+					ts->allocation = VulkanAllocation{};
+					ts->reset();
+					continue;
+				}
+				// Last reference — fall through to destroy
+			}
+
+			// Queue deferred destruction of GPU resources
+			if (ts->imageView) {
+				deletionQueue->queueImageView(ts->imageView);
+			}
+			if (ts->image) {
+				deletionQueue->queueImage(ts->image, ts->allocation);
+			}
+
+			ts->reset();
+			flushed++;
+		}
+	}
+
+	mprintf(("VulkanTextureManager: Flushed %d textures for level transition\n", flushed));
+}
+
 void VulkanTextureManager::bm_init(bitmap_slot* slot) const
 {
 	if (!m_initialized || !slot) {
@@ -2389,9 +2466,14 @@ bool vulkan_bm_data(int handle, bitmap* bm)
 
 void vulkan_bm_page_in_start()
 {
-	// Intentional no-op. The OpenGL implementation (opengl_preload_init) is also
-	// effectively empty — its only code is commented out. Vulkan textures are
-	// loaded on demand and don't need a page-in session setup.
+	// Flush all GPU texture resources so that textures not needed in the next
+	// mission are freed. Matches the OpenGL pattern (opengl_tcache_flush in
+	// opengl_preload_init, currently commented out there). Textures that ARE
+	// needed will be re-uploaded on demand during level load / first use.
+	// Without this, Vulkan VkImage/VMA allocations accumulate across missions
+	// because bm_unload_fast() only frees CPU-side pixel data.
+	auto* texManager = getTextureManager();
+	texManager->flushTextures();
 }
 
 int vulkan_bm_make_render_target(int handle, int* width, int* height, int* bpp, int* mm_lvl, int flags)
