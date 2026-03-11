@@ -1584,15 +1584,15 @@ void VulkanRenderer::beginSceneRendering()
 		rpBegin.renderPass = m_postProcessor->getGbufRenderPass();
 		rpBegin.framebuffer = m_postProcessor->getGbufFramebuffer();
 
-		// 7 clear values: 6 color + depth
-		std::array<vk::ClearValue, 7> clearValues;
-		clearValues[0].color.setFloat32({0.0f, 0.0f, 0.0f, 1.0f}); // color
-		clearValues[1].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f}); // position
-		clearValues[2].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f}); // normal
-		clearValues[3].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f}); // specular
-		clearValues[4].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f}); // emissive
-		clearValues[5].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f}); // composite
-		clearValues[6].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+		// Clear values: 6 color + depth
+		std::array<vk::ClearValue, VulkanPostProcessor::GBUF_COLOR_ATTACHMENT_COUNT + 1> clearValues{};
+		clearValues[VulkanPostProcessor::GBUF_ATT_COLOR].color.setFloat32({0.0f, 0.0f, 0.0f, 1.0f});
+		clearValues[VulkanPostProcessor::GBUF_ATT_POSITION].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
+		clearValues[VulkanPostProcessor::GBUF_ATT_NORMAL].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
+		clearValues[VulkanPostProcessor::GBUF_ATT_SPECULAR].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
+		clearValues[VulkanPostProcessor::GBUF_ATT_EMISSIVE].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
+		clearValues[VulkanPostProcessor::GBUF_ATT_COMPOSITE].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
+		clearValues[VulkanPostProcessor::GBUF_COLOR_ATTACHMENT_COUNT].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
 		rpBegin.clearValueCount = static_cast<uint32_t>(clearValues.size());
 		rpBegin.pClearValues = clearValues.data();
 
@@ -1714,8 +1714,8 @@ void VulkanRenderer::copyEffectTexture()
 		rpBegin.renderPass = m_postProcessor->getGbufRenderPassLoad();
 		rpBegin.framebuffer = m_postProcessor->getGbufFramebuffer();
 		// Clear values ignored for eLoad but array must cover all attachments
-		std::array<vk::ClearValue, 7> clearValues{};
-		clearValues[6].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+		std::array<vk::ClearValue, VulkanPostProcessor::GBUF_COLOR_ATTACHMENT_COUNT + 1> clearValues{};
+		clearValues[VulkanPostProcessor::GBUF_COLOR_ATTACHMENT_COUNT].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
 		rpBegin.clearValueCount = static_cast<uint32_t>(clearValues.size());
 		rpBegin.pClearValues = clearValues.data();
 		m_currentCommandBuffer.beginRenderPass(rpBegin, vk::SubpassContents::eInline);
@@ -1791,8 +1791,8 @@ void VulkanRenderer::copySceneDepthForParticles()
 	if (m_useGbufRenderPass) {
 		rpBegin.renderPass = m_postProcessor->getGbufRenderPassLoad();
 		rpBegin.framebuffer = m_postProcessor->getGbufFramebuffer();
-		std::array<vk::ClearValue, 7> clearValues{};
-		clearValues[6].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+		std::array<vk::ClearValue, VulkanPostProcessor::GBUF_COLOR_ATTACHMENT_COUNT + 1> clearValues{};
+		clearValues[VulkanPostProcessor::GBUF_COLOR_ATTACHMENT_COUNT].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
 		rpBegin.clearValueCount = static_cast<uint32_t>(clearValues.size());
 		rpBegin.pClearValues = clearValues.data();
 		m_currentCommandBuffer.beginRenderPass(rpBegin, vk::SubpassContents::eInline);

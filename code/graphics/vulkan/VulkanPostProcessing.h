@@ -446,11 +446,6 @@ public:
 	void transitionMsaaGbufForBegin(vk::CommandBuffer cmd);
 
 	/**
-	 * @brief Get MSAA color attachment count (5 — no composite in MSAA pass)
-	 */
-	static constexpr uint32_t MSAA_COLOR_ATTACHMENT_COUNT = 5;
-
-	/**
 	 * @brief Transition MSAA G-buffer color attachments for render pass resume
 	 */
 	void transitionMsaaGbufForResume(vk::CommandBuffer cmd);
@@ -595,8 +590,29 @@ private:
 	bool m_postEffectsApplied = false; // Set per-frame by executePostEffects
 
 public:
-	// Attachment layout: [0]=color, [1]=position, [2]=normal, [3]=specular, [4]=emissive, [5]=composite, [6]=depth
-	static constexpr uint32_t GBUF_COLOR_ATTACHMENT_COUNT = 6;
+	// ========== G-Buffer Layout Constants ==========
+	// Full layout:  [0]=color, [1]=position, [2]=normal, [3]=specular, [4]=emissive, [5]=composite, [6]=depth
+	// MSAA layout:  [0]=color, [1]=position, [2]=normal, [3]=specular, [4]=emissive, [5]=depth (no composite)
+
+	// Attachment indices (color indices 0-4 shared between full and MSAA layouts)
+	static constexpr uint32_t GBUF_ATT_COLOR     = 0;
+	static constexpr uint32_t GBUF_ATT_POSITION  = 1;
+	static constexpr uint32_t GBUF_ATT_NORMAL    = 2;
+	static constexpr uint32_t GBUF_ATT_SPECULAR  = 3;
+	static constexpr uint32_t GBUF_ATT_EMISSIVE  = 4;
+	static constexpr uint32_t GBUF_ATT_COMPOSITE = 5; // Full layout only
+
+	// Attachment counts
+	static constexpr uint32_t GBUF_COLOR_ATTACHMENT_COUNT = 6; // Full layout (with composite)
+	static constexpr uint32_t MSAA_COLOR_ATTACHMENT_COUNT = 5; // MSAA layout (without composite)
+
+	// Per-attachment pixel formats
+	static constexpr vk::Format GBUF_FORMAT_COLOR     = vk::Format::eR16G16B16A16Sfloat;
+	static constexpr vk::Format GBUF_FORMAT_POSITION  = vk::Format::eR16G16B16A16Sfloat;
+	static constexpr vk::Format GBUF_FORMAT_NORMAL    = vk::Format::eR16G16B16A16Sfloat;
+	static constexpr vk::Format GBUF_FORMAT_SPECULAR  = vk::Format::eR8G8B8A8Unorm;
+	static constexpr vk::Format GBUF_FORMAT_EMISSIVE  = vk::Format::eR16G16B16A16Sfloat;
+	static constexpr vk::Format GBUF_FORMAT_COMPOSITE = vk::Format::eR16G16B16A16Sfloat;
 
 private:
 	// ---- G-Buffer (deferred lighting) ----
