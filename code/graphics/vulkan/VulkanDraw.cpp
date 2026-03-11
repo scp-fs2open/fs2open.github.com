@@ -735,36 +735,30 @@ void VulkanDrawManager::setDepthBiasEnabled(bool enabled)
 	m_depthBiasEnabled = enabled;
 }
 
-void VulkanDrawManager::setDepthTextureOverride(vk::ImageView view, vk::Sampler sampler)
+void VulkanDrawManager::setDepthTextureOverride(vk::DescriptorImageInfo info)
 {
-	m_depthTextureOverride = view;
-	m_depthSamplerOverride = sampler;
+	m_depthTextureInfo = info;
 }
 
 void VulkanDrawManager::clearDepthTextureOverride()
 {
-	m_depthTextureOverride = nullptr;
-	m_depthSamplerOverride = nullptr;
+	m_depthTextureInfo = vk::DescriptorImageInfo();
 }
 
-void VulkanDrawManager::setSceneColorOverride(vk::ImageView view, vk::Sampler sampler)
+void VulkanDrawManager::setSceneColorOverride(vk::DescriptorImageInfo info)
 {
-	m_sceneColorOverride = view;
-	m_sceneColorSamplerOverride = sampler;
+	m_sceneColorInfo = info;
 }
 
-void VulkanDrawManager::setDistMapOverride(vk::ImageView view, vk::Sampler sampler)
+void VulkanDrawManager::setDistMapOverride(vk::DescriptorImageInfo info)
 {
-	m_distMapOverride = view;
-	m_distMapSamplerOverride = sampler;
+	m_distMapInfo = info;
 }
 
 void VulkanDrawManager::clearDistortionOverrides()
 {
-	m_sceneColorOverride = nullptr;
-	m_sceneColorSamplerOverride = nullptr;
-	m_distMapOverride = nullptr;
-	m_distMapSamplerOverride = nullptr;
+	m_sceneColorInfo = vk::DescriptorImageInfo();
+	m_distMapInfo    = vk::DescriptorImageInfo();
 }
 
 void VulkanDrawManager::clearStates()
@@ -1262,27 +1256,14 @@ bool VulkanDrawManager::applyMaterial(material* mat, primitive_type prim_type, v
 				writer.writeStorageBuffer(materialSet, MaterialBinding::TransformSSBO, fallbackBufInfo);
 			}
 		}
-		// Binding 4: depth map for soft particles
-		{
-			auto depthInfo = texManager->getFallbackTextureInfo2D();
-			if (m_depthTextureOverride) depthInfo.imageView = m_depthTextureOverride;
-			if (m_depthSamplerOverride) depthInfo.sampler = m_depthSamplerOverride;
-			writer.writeTexture(materialSet, MaterialBinding::DepthMap, depthInfo);
-		}
-		// Binding 5: scene color / frameBuffer for distortion
-		{
-			auto sceneInfo = texManager->getFallbackTextureInfo2D();
-			if (m_sceneColorOverride) sceneInfo.imageView = m_sceneColorOverride;
-			if (m_sceneColorSamplerOverride) sceneInfo.sampler = m_sceneColorSamplerOverride;
-			writer.writeTexture(materialSet, MaterialBinding::SceneColor, sceneInfo);
-		}
-		// Binding 6: distortion map
-		{
-			auto distInfo = texManager->getFallbackTextureInfo2D();
-			if (m_distMapOverride) distInfo.imageView = m_distMapOverride;
-			if (m_distMapSamplerOverride) distInfo.sampler = m_distMapSamplerOverride;
-			writer.writeTexture(materialSet, MaterialBinding::DistortionMap, distInfo);
-		}
+		// Bindings 4-6: depth map, scene color, distortion map
+		auto fallbackTex = texManager->getFallbackTextureInfo2D();
+		writer.writeTexture(materialSet, MaterialBinding::DepthMap,
+			m_depthTextureInfo.imageView ? m_depthTextureInfo : fallbackTex);
+		writer.writeTexture(materialSet, MaterialBinding::SceneColor,
+			m_sceneColorInfo.imageView ? m_sceneColorInfo : fallbackTex);
+		writer.writeTexture(materialSet, MaterialBinding::DistortionMap,
+			m_distMapInfo.imageView ? m_distMapInfo : fallbackTex);
 		// Binding 1: Texture array
 		bindMaterialTextures(mat, materialSet, &writer);
 		writer.flush();
@@ -1851,17 +1832,17 @@ void vulkan_render_primitives_particle(particle_material* material_info,
 	if (usePosTexture) {
 		// Deferred path: bind G-buffer position texture directly
 		auto* texMgr = getTextureManager();
+		auto nearestSampler = texMgr->getSampler(vk::Filter::eNearest, vk::Filter::eNearest,
+		                                          vk::SamplerAddressMode::eClampToEdge, false, 0.0f, false);
 		drawManager->setDepthTextureOverride(
-			pp->getGbufPositionView(),
-			texMgr->getSampler(vk::Filter::eNearest, vk::Filter::eNearest,
-			                   vk::SamplerAddressMode::eClampToEdge, false, 0.0f, false));
+			{nearestSampler, pp->getGbufPositionView(), vk::ImageLayout::eShaderReadOnlyOptimal});
 	} else if (renderer->isSceneDepthCopied() && pp) {
 		// Non-deferred path: bind the hardware depth copy
 		auto* texMgr = getTextureManager();
+		auto nearestSampler = texMgr->getSampler(vk::Filter::eNearest, vk::Filter::eNearest,
+		                                          vk::SamplerAddressMode::eClampToEdge, false, 0.0f, false);
 		drawManager->setDepthTextureOverride(
-			pp->getSceneDepthCopyView(),
-			texMgr->getSampler(vk::Filter::eNearest, vk::Filter::eNearest,
-			                   vk::SamplerAddressMode::eClampToEdge, false, 0.0f, false));
+			{nearestSampler, pp->getSceneDepthCopyView(), vk::ImageLayout::eShaderReadOnlyOptimal});
 	}
 
 	drawManager->renderPrimitivesParticle(material_info, prim_type, layout, offset, n_verts, buffer_handle);
@@ -1899,16 +1880,11 @@ void vulkan_render_primitives_distortion(distortion_material* material_info,
 	}
 
 	// Set scene color override (binding 5) — snapshot of scene color for distortion sampling
-	if (pp && pp->getSceneEffectView()) {
-		drawManager->setSceneColorOverride(
-			pp->getSceneEffectView(), pp->getSceneEffectSampler());
-	}
+	if (pp) drawManager->setSceneColorOverride(pp->getSceneEffectTextureInfo());
 
 	// Set distortion map override (binding 6) — ping-pong noise texture for thrusters
-	if (material_info->get_thruster_rendering() && pp && pp->getDistortionTextureView()) {
-		drawManager->setDistMapOverride(
-			pp->getDistortionTextureView(), pp->getDistortionSampler());
-	}
+	if (material_info->get_thruster_rendering() && pp)
+		drawManager->setDistMapOverride(pp->getDistortionTextureInfo());
 
 	drawManager->renderPrimitivesDistortion(material_info, prim_type, layout, offset, n_verts, buffer_handle);
 

@@ -212,7 +212,7 @@ public:
 	 * instead of the fallback white texture. Must be set before the render call
 	 * and cleared afterwards.
 	 */
-	void setDepthTextureOverride(vk::ImageView view, vk::Sampler sampler);
+	void setDepthTextureOverride(vk::DescriptorImageInfo info);
 
 	/**
 	 * @brief Clear depth texture override (reverts to fallback)
@@ -222,12 +222,12 @@ public:
 	/**
 	 * @brief Set scene color texture override for binding 5 (distortion effects)
 	 */
-	void setSceneColorOverride(vk::ImageView view, vk::Sampler sampler);
+	void setSceneColorOverride(vk::DescriptorImageInfo info);
 
 	/**
 	 * @brief Set distortion map texture override for binding 6 (distortion effects)
 	 */
-	void setDistMapOverride(vk::ImageView view, vk::Sampler sampler);
+	void setDistMapOverride(vk::DescriptorImageInfo info);
 
 	/**
 	 * @brief Clear distortion texture overrides (bindings 5 and 6, reverts to fallback)
@@ -366,18 +366,10 @@ private:
 	FrameStats m_frameStats;
 	int m_frameStatsFrameNum = 0;
 
-	// Depth texture override for soft particle rendering
-	// Set before applyMaterial() so binding 4 gets the real depth texture instead of fallback
-	vk::ImageView m_depthTextureOverride;
-	vk::Sampler m_depthSamplerOverride;
-
-	// Scene color override for distortion rendering (binding 5)
-	vk::ImageView m_sceneColorOverride;
-	vk::Sampler m_sceneColorSamplerOverride;
-
-	// Distortion map override for distortion rendering (binding 6)
-	vk::ImageView m_distMapOverride;
-	vk::Sampler m_distMapSamplerOverride;
+	// Texture overrides for material bindings 4-6.
+	vk::DescriptorImageInfo m_depthTextureInfo;    // binding 4: depth/position for soft particles
+	vk::DescriptorImageInfo m_sceneColorInfo;      // binding 5: scene color for distortion
+	vk::DescriptorImageInfo m_distMapInfo;         // binding 6: distortion map
 
 	// Pre-built sphere mesh for draw_sphere / deferred light volumes
 	gr_buffer_handle m_sphereVBO;
