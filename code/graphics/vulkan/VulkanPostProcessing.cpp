@@ -611,6 +611,101 @@ void VulkanPostProcessor::updateTonemappingUBO()
 
 // ===== G-Buffer (Deferred Lighting) Implementation =====
 
+vk::RenderPass VulkanPostProcessor::createGbufRenderPass(const GbufRenderPassConfig& config)
+{
+	// All G-buffer variants use these 6 formats; without composite only the first 5 are used
+	static constexpr std::array<vk::Format, 6> COLOR_FORMATS = {{
+		vk::Format::eR16G16B16A16Sfloat, // 0: color
+		vk::Format::eR16G16B16A16Sfloat, // 1: position
+		vk::Format::eR16G16B16A16Sfloat, // 2: normal
+		vk::Format::eR8G8B8A8Unorm,      // 3: specular
+		vk::Format::eR16G16B16A16Sfloat, // 4: emissive
+		vk::Format::eR16G16B16A16Sfloat, // 5: composite
+	}};
+
+	const uint32_t colorCount = config.includeComposite ? 6 : 5;
+	const uint32_t depthIndex = colorCount;
+	const uint32_t totalAttachments = colorCount + 1;
+
+	// Max 6 color + 1 depth = 7 attachments
+	std::array<vk::AttachmentDescription, 7> attachments;
+	for (uint32_t i = 0; i < colorCount; ++i) {
+		attachments[i].format = COLOR_FORMATS[i];
+		attachments[i].samples = config.samples;
+		attachments[i].loadOp = config.colorLoadOp;
+		attachments[i].storeOp = vk::AttachmentStoreOp::eStore;
+		attachments[i].stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
+		attachments[i].stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
+		attachments[i].initialLayout = config.colorInitialLayout;
+		attachments[i].finalLayout = config.colorFinalLayout;
+	}
+
+	// Depth — stencil ops mirror the depth loadOp
+	attachments[depthIndex].format = m_depthFormat;
+	attachments[depthIndex].samples = config.samples;
+	attachments[depthIndex].loadOp = config.depthLoadOp;
+	attachments[depthIndex].storeOp = vk::AttachmentStoreOp::eStore;
+	attachments[depthIndex].stencilLoadOp = config.depthLoadOp;
+	attachments[depthIndex].stencilStoreOp =
+		(config.depthLoadOp == vk::AttachmentLoadOp::eDontCare)
+			? vk::AttachmentStoreOp::eDontCare
+			: vk::AttachmentStoreOp::eStore;
+	attachments[depthIndex].initialLayout = config.depthInitialLayout;
+	attachments[depthIndex].finalLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+
+	std::array<vk::AttachmentReference, 6> colorRefs;
+	for (uint32_t i = 0; i < colorCount; ++i) {
+		colorRefs[i].attachment = i;
+		colorRefs[i].layout = vk::ImageLayout::eColorAttachmentOptimal;
+	}
+
+	vk::AttachmentReference depthRef;
+	depthRef.attachment = depthIndex;
+	depthRef.layout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+
+	vk::SubpassDescription subpass;
+	subpass.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
+	subpass.colorAttachmentCount = colorCount;
+	subpass.pColorAttachments = colorRefs.data();
+	subpass.pDepthStencilAttachment = &depthRef;
+
+	vk::SubpassDependency dependency;
+	dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+	dependency.dstSubpass = 0;
+
+	if (config.useResolveDependency) {
+		// MSAA resolve: previous pass read these textures as shader inputs
+		dependency.srcStageMask = vk::PipelineStageFlagBits::eFragmentShader;
+		dependency.dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput
+		                        | vk::PipelineStageFlagBits::eEarlyFragmentTests;
+		dependency.srcAccessMask = vk::AccessFlagBits::eShaderRead;
+		dependency.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite
+		                         | vk::AccessFlagBits::eDepthStencilAttachmentWrite;
+	} else {
+		// Standard G-buffer: previous pass may have done transfers (copies)
+		dependency.srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput
+		                        | vk::PipelineStageFlagBits::eEarlyFragmentTests
+		                        | vk::PipelineStageFlagBits::eTransfer;
+		dependency.dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput
+		                        | vk::PipelineStageFlagBits::eEarlyFragmentTests;
+		dependency.srcAccessMask = vk::AccessFlagBits::eTransferRead
+		                         | vk::AccessFlagBits::eTransferWrite;
+		dependency.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite
+		                         | vk::AccessFlagBits::eDepthStencilAttachmentWrite
+		                         | vk::AccessFlagBits::eDepthStencilAttachmentRead;
+	}
+
+	vk::RenderPassCreateInfo rpInfo;
+	rpInfo.attachmentCount = totalAttachments;
+	rpInfo.pAttachments = attachments.data();
+	rpInfo.subpassCount = 1;
+	rpInfo.pSubpasses = &subpass;
+	rpInfo.dependencyCount = 1;
+	rpInfo.pDependencies = &dependency;
+
+	return m_device.createRenderPass(rpInfo);
+}
+
 bool VulkanPostProcessor::initGBuffer()
 {
 	if (m_gbufInitialized) {
@@ -666,169 +761,31 @@ bool VulkanPostProcessor::initGBuffer()
 	}
 
 	// Create G-buffer render pass (eClear) — 6 color + depth
-	// Attachment order: [0]=color, [1]=position, [2]=normal, [3]=specular, [4]=emissive, [5]=composite, [6]=depth
-	{
-		std::array<vk::AttachmentDescription, 7> attachments;
-
-		// Formats for the 6 color attachments
-		std::array<vk::Format, 6> colorFormats = {
-			vk::Format::eR16G16B16A16Sfloat, // 0: color (scene color)
-			vk::Format::eR16G16B16A16Sfloat, // 1: position
-			vk::Format::eR16G16B16A16Sfloat, // 2: normal
-			vk::Format::eR8G8B8A8Unorm,      // 3: specular
-			vk::Format::eR16G16B16A16Sfloat, // 4: emissive
-			vk::Format::eR16G16B16A16Sfloat, // 5: composite
-		};
-
-		for (size_t i = 0; i < colorFormats.size(); ++i) {
-			attachments[i].format = colorFormats[i];
-			attachments[i].samples = vk::SampleCountFlagBits::e1;
-			attachments[i].loadOp = vk::AttachmentLoadOp::eClear;
-			attachments[i].storeOp = vk::AttachmentStoreOp::eStore;
-			attachments[i].stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
-			attachments[i].stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
-			attachments[i].initialLayout = vk::ImageLayout::eUndefined;
-			attachments[i].finalLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		}
-
-		// Depth
-		attachments[6].format = m_depthFormat;
-		attachments[6].samples = vk::SampleCountFlagBits::e1;
-		attachments[6].loadOp = vk::AttachmentLoadOp::eClear;
-		attachments[6].storeOp = vk::AttachmentStoreOp::eStore;
-		attachments[6].stencilLoadOp = vk::AttachmentLoadOp::eClear;
-		attachments[6].stencilStoreOp = vk::AttachmentStoreOp::eStore;
-		attachments[6].initialLayout = vk::ImageLayout::eUndefined;
-		attachments[6].finalLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
-
-		std::array<vk::AttachmentReference, 6> colorRefs;
-		for (uint32_t i = 0; i < 6; ++i) {
-			colorRefs[i].attachment = i;
-			colorRefs[i].layout = vk::ImageLayout::eColorAttachmentOptimal;
-		}
-
-		vk::AttachmentReference depthRef;
-		depthRef.attachment = 6;
-		depthRef.layout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
-
-		vk::SubpassDescription subpass;
-		subpass.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
-		subpass.colorAttachmentCount = 6;
-		subpass.pColorAttachments = colorRefs.data();
-		subpass.pDepthStencilAttachment = &depthRef;
-
-		// Dependency matching the scene render pass (for render pass compatibility)
-		vk::SubpassDependency dependency;
-		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-		dependency.dstSubpass = 0;
-		dependency.srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput
-		                        | vk::PipelineStageFlagBits::eEarlyFragmentTests
-		                        | vk::PipelineStageFlagBits::eTransfer;
-		dependency.dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput
-		                        | vk::PipelineStageFlagBits::eEarlyFragmentTests;
-		dependency.srcAccessMask = vk::AccessFlagBits::eTransferRead
-		                         | vk::AccessFlagBits::eTransferWrite;
-		dependency.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite
-		                         | vk::AccessFlagBits::eDepthStencilAttachmentWrite
-		                         | vk::AccessFlagBits::eDepthStencilAttachmentRead;
-
-		vk::RenderPassCreateInfo rpInfo;
-		rpInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-		rpInfo.pAttachments = attachments.data();
-		rpInfo.subpassCount = 1;
-		rpInfo.pSubpasses = &subpass;
-		rpInfo.dependencyCount = 1;
-		rpInfo.pDependencies = &dependency;
-
-		try {
-			m_gbufRenderPass = m_device.createRenderPass(rpInfo);
-		} catch (const vk::SystemError& e) {
-			mprintf(("VulkanPostProcessor: Failed to create G-buffer render pass: %s\n", e.what()));
-			shutdownGBuffer();
-			return false;
-		}
+	try {
+		m_gbufRenderPass = createGbufRenderPass({
+			true, vk::SampleCountFlagBits::e1,
+			vk::AttachmentLoadOp::eClear, vk::AttachmentLoadOp::eClear,
+			vk::ImageLayout::eUndefined, vk::ImageLayout::eShaderReadOnlyOptimal,
+			vk::ImageLayout::eUndefined,
+		});
+	} catch (const vk::SystemError& e) {
+		mprintf(("VulkanPostProcessor: Failed to create G-buffer render pass: %s\n", e.what()));
+		shutdownGBuffer();
+		return false;
 	}
 
 	// Create G-buffer render pass (eLoad) — for resuming after mid-pass copies
-	{
-		std::array<vk::AttachmentDescription, 7> attachments;
-
-		std::array<vk::Format, 6> colorFormats = {
-			vk::Format::eR16G16B16A16Sfloat,
-			vk::Format::eR16G16B16A16Sfloat,
-			vk::Format::eR16G16B16A16Sfloat,
-			vk::Format::eR8G8B8A8Unorm,
-			vk::Format::eR16G16B16A16Sfloat,
-			vk::Format::eR16G16B16A16Sfloat,
-		};
-
-		for (size_t i = 0; i < colorFormats.size(); ++i) {
-			attachments[i].format = colorFormats[i];
-			attachments[i].samples = vk::SampleCountFlagBits::e1;
-			attachments[i].loadOp = vk::AttachmentLoadOp::eLoad;
-			attachments[i].storeOp = vk::AttachmentStoreOp::eStore;
-			attachments[i].stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
-			attachments[i].stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
-			attachments[i].initialLayout = vk::ImageLayout::eColorAttachmentOptimal;
-			attachments[i].finalLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		}
-
-		// Depth
-		attachments[6].format = m_depthFormat;
-		attachments[6].samples = vk::SampleCountFlagBits::e1;
-		attachments[6].loadOp = vk::AttachmentLoadOp::eLoad;
-		attachments[6].storeOp = vk::AttachmentStoreOp::eStore;
-		attachments[6].stencilLoadOp = vk::AttachmentLoadOp::eLoad;
-		attachments[6].stencilStoreOp = vk::AttachmentStoreOp::eStore;
-		attachments[6].initialLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
-		attachments[6].finalLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
-
-		std::array<vk::AttachmentReference, 6> colorRefs;
-		for (uint32_t i = 0; i < 6; ++i) {
-			colorRefs[i].attachment = i;
-			colorRefs[i].layout = vk::ImageLayout::eColorAttachmentOptimal;
-		}
-
-		vk::AttachmentReference depthRef;
-		depthRef.attachment = 6;
-		depthRef.layout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
-
-		vk::SubpassDescription subpass;
-		subpass.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
-		subpass.colorAttachmentCount = 6;
-		subpass.pColorAttachments = colorRefs.data();
-		subpass.pDepthStencilAttachment = &depthRef;
-
-		// Must match eClear pass dependency for compatibility
-		vk::SubpassDependency dependency;
-		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-		dependency.dstSubpass = 0;
-		dependency.srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput
-		                        | vk::PipelineStageFlagBits::eEarlyFragmentTests
-		                        | vk::PipelineStageFlagBits::eTransfer;
-		dependency.dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput
-		                        | vk::PipelineStageFlagBits::eEarlyFragmentTests;
-		dependency.srcAccessMask = vk::AccessFlagBits::eTransferRead
-		                         | vk::AccessFlagBits::eTransferWrite;
-		dependency.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite
-		                         | vk::AccessFlagBits::eDepthStencilAttachmentWrite
-		                         | vk::AccessFlagBits::eDepthStencilAttachmentRead;
-
-		vk::RenderPassCreateInfo rpInfo;
-		rpInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-		rpInfo.pAttachments = attachments.data();
-		rpInfo.subpassCount = 1;
-		rpInfo.pSubpasses = &subpass;
-		rpInfo.dependencyCount = 1;
-		rpInfo.pDependencies = &dependency;
-
-		try {
-			m_gbufRenderPassLoad = m_device.createRenderPass(rpInfo);
-		} catch (const vk::SystemError& e) {
-			mprintf(("VulkanPostProcessor: Failed to create G-buffer load render pass: %s\n", e.what()));
-			shutdownGBuffer();
-			return false;
-		}
+	try {
+		m_gbufRenderPassLoad = createGbufRenderPass({
+			true, vk::SampleCountFlagBits::e1,
+			vk::AttachmentLoadOp::eLoad, vk::AttachmentLoadOp::eLoad,
+			vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
+			vk::ImageLayout::eDepthStencilAttachmentOptimal,
+		});
+	} catch (const vk::SystemError& e) {
+		mprintf(("VulkanPostProcessor: Failed to create G-buffer load render pass: %s\n", e.what()));
+		shutdownGBuffer();
+		return false;
 	}
 
 	// Create G-buffer framebuffer (6 color + depth)
@@ -1040,164 +997,31 @@ bool VulkanPostProcessor::initMSAA()
 	}
 
 	// MSAA G-buffer render pass (eClear) — 5 color + depth
-	// Attachment order: [0]=color(MS), [1]=pos(MS), [2]=norm(MS), [3]=spec(MS), [4]=emissive(MS), [5]=depth(MS)
-	{
-		std::array<vk::AttachmentDescription, 6> attachments;
-
-		std::array<vk::Format, 5> colorFormats = {
-			vk::Format::eR16G16B16A16Sfloat, // 0: color
-			vk::Format::eR16G16B16A16Sfloat, // 1: position
-			vk::Format::eR16G16B16A16Sfloat, // 2: normal
-			vk::Format::eR8G8B8A8Unorm,      // 3: specular
-			vk::Format::eR16G16B16A16Sfloat, // 4: emissive
-		};
-
-		for (size_t i = 0; i < colorFormats.size(); ++i) {
-			attachments[i].format = colorFormats[i];
-			attachments[i].samples = msaaSamples;
-			attachments[i].loadOp = vk::AttachmentLoadOp::eClear;
-			attachments[i].storeOp = vk::AttachmentStoreOp::eStore;
-			attachments[i].stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
-			attachments[i].stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
-			attachments[i].initialLayout = vk::ImageLayout::eColorAttachmentOptimal;
-			attachments[i].finalLayout = vk::ImageLayout::eColorAttachmentOptimal;
-		}
-
-		// Depth (MS)
-		attachments[5].format = m_depthFormat;
-		attachments[5].samples = msaaSamples;
-		attachments[5].loadOp = vk::AttachmentLoadOp::eClear;
-		attachments[5].storeOp = vk::AttachmentStoreOp::eStore;
-		attachments[5].stencilLoadOp = vk::AttachmentLoadOp::eClear;
-		attachments[5].stencilStoreOp = vk::AttachmentStoreOp::eStore;
-		attachments[5].initialLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
-		attachments[5].finalLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
-
-		std::array<vk::AttachmentReference, 5> colorRefs;
-		for (uint32_t i = 0; i < 5; ++i) {
-			colorRefs[i].attachment = i;
-			colorRefs[i].layout = vk::ImageLayout::eColorAttachmentOptimal;
-		}
-
-		vk::AttachmentReference depthRef;
-		depthRef.attachment = 5;
-		depthRef.layout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
-
-		vk::SubpassDescription subpass;
-		subpass.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
-		subpass.colorAttachmentCount = 5;
-		subpass.pColorAttachments = colorRefs.data();
-		subpass.pDepthStencilAttachment = &depthRef;
-
-		vk::SubpassDependency dependency;
-		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-		dependency.dstSubpass = 0;
-		dependency.srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput
-		                        | vk::PipelineStageFlagBits::eEarlyFragmentTests
-		                        | vk::PipelineStageFlagBits::eTransfer;
-		dependency.dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput
-		                        | vk::PipelineStageFlagBits::eEarlyFragmentTests;
-		dependency.srcAccessMask = vk::AccessFlagBits::eTransferRead
-		                         | vk::AccessFlagBits::eTransferWrite;
-		dependency.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite
-		                         | vk::AccessFlagBits::eDepthStencilAttachmentWrite
-		                         | vk::AccessFlagBits::eDepthStencilAttachmentRead;
-
-		vk::RenderPassCreateInfo rpInfo;
-		rpInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-		rpInfo.pAttachments = attachments.data();
-		rpInfo.subpassCount = 1;
-		rpInfo.pSubpasses = &subpass;
-		rpInfo.dependencyCount = 1;
-		rpInfo.pDependencies = &dependency;
-
-		try {
-			m_msaaGbufRenderPass = m_device.createRenderPass(rpInfo);
-		} catch (const vk::SystemError& e) {
-			mprintf(("VulkanPostProcessor: Failed to create MSAA G-buffer render pass: %s\n", e.what()));
-			shutdownMSAA();
-			return false;
-		}
+	try {
+		m_msaaGbufRenderPass = createGbufRenderPass({
+			false, msaaSamples,
+			vk::AttachmentLoadOp::eClear, vk::AttachmentLoadOp::eClear,
+			vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::eColorAttachmentOptimal,
+			vk::ImageLayout::eDepthStencilAttachmentOptimal,
+		});
+	} catch (const vk::SystemError& e) {
+		mprintf(("VulkanPostProcessor: Failed to create MSAA G-buffer render pass: %s\n", e.what()));
+		shutdownMSAA();
+		return false;
 	}
 
 	// MSAA G-buffer render pass (eLoad) — emissive preserving variant
-	// All attachments eLoad except we accept eColorAttachmentOptimal as initial layout
-	{
-		std::array<vk::AttachmentDescription, 6> attachments;
-
-		std::array<vk::Format, 5> colorFormats = {
-			vk::Format::eR16G16B16A16Sfloat,
-			vk::Format::eR16G16B16A16Sfloat,
-			vk::Format::eR16G16B16A16Sfloat,
-			vk::Format::eR8G8B8A8Unorm,
-			vk::Format::eR16G16B16A16Sfloat,
-		};
-
-		for (size_t i = 0; i < colorFormats.size(); ++i) {
-			attachments[i].format = colorFormats[i];
-			attachments[i].samples = msaaSamples;
-			attachments[i].loadOp = vk::AttachmentLoadOp::eLoad;
-			attachments[i].storeOp = vk::AttachmentStoreOp::eStore;
-			attachments[i].stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
-			attachments[i].stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
-			attachments[i].initialLayout = vk::ImageLayout::eColorAttachmentOptimal;
-			attachments[i].finalLayout = vk::ImageLayout::eColorAttachmentOptimal;
-		}
-
-		attachments[5].format = m_depthFormat;
-		attachments[5].samples = msaaSamples;
-		attachments[5].loadOp = vk::AttachmentLoadOp::eLoad;
-		attachments[5].storeOp = vk::AttachmentStoreOp::eStore;
-		attachments[5].stencilLoadOp = vk::AttachmentLoadOp::eLoad;
-		attachments[5].stencilStoreOp = vk::AttachmentStoreOp::eStore;
-		attachments[5].initialLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
-		attachments[5].finalLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
-
-		std::array<vk::AttachmentReference, 5> colorRefs;
-		for (uint32_t i = 0; i < 5; ++i) {
-			colorRefs[i].attachment = i;
-			colorRefs[i].layout = vk::ImageLayout::eColorAttachmentOptimal;
-		}
-
-		vk::AttachmentReference depthRef;
-		depthRef.attachment = 5;
-		depthRef.layout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
-
-		vk::SubpassDescription subpass;
-		subpass.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
-		subpass.colorAttachmentCount = 5;
-		subpass.pColorAttachments = colorRefs.data();
-		subpass.pDepthStencilAttachment = &depthRef;
-
-		vk::SubpassDependency dependency;
-		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-		dependency.dstSubpass = 0;
-		dependency.srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput
-		                        | vk::PipelineStageFlagBits::eEarlyFragmentTests
-		                        | vk::PipelineStageFlagBits::eTransfer;
-		dependency.dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput
-		                        | vk::PipelineStageFlagBits::eEarlyFragmentTests;
-		dependency.srcAccessMask = vk::AccessFlagBits::eTransferRead
-		                         | vk::AccessFlagBits::eTransferWrite;
-		dependency.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite
-		                         | vk::AccessFlagBits::eDepthStencilAttachmentWrite
-		                         | vk::AccessFlagBits::eDepthStencilAttachmentRead;
-
-		vk::RenderPassCreateInfo rpInfo;
-		rpInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-		rpInfo.pAttachments = attachments.data();
-		rpInfo.subpassCount = 1;
-		rpInfo.pSubpasses = &subpass;
-		rpInfo.dependencyCount = 1;
-		rpInfo.pDependencies = &dependency;
-
-		try {
-			m_msaaGbufRenderPassLoad = m_device.createRenderPass(rpInfo);
-		} catch (const vk::SystemError& e) {
-			mprintf(("VulkanPostProcessor: Failed to create MSAA G-buffer load render pass: %s\n", e.what()));
-			shutdownMSAA();
-			return false;
-		}
+	try {
+		m_msaaGbufRenderPassLoad = createGbufRenderPass({
+			false, msaaSamples,
+			vk::AttachmentLoadOp::eLoad, vk::AttachmentLoadOp::eLoad,
+			vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::eColorAttachmentOptimal,
+			vk::ImageLayout::eDepthStencilAttachmentOptimal,
+		});
+	} catch (const vk::SystemError& e) {
+		mprintf(("VulkanPostProcessor: Failed to create MSAA G-buffer load render pass: %s\n", e.what()));
+		shutdownMSAA();
+		return false;
 	}
 
 	// MSAA G-buffer framebuffer (5 color + depth)
@@ -1296,79 +1120,18 @@ bool VulkanPostProcessor::initMSAA()
 
 	// MSAA Resolve render pass — 5 non-MSAA color + depth (via gl_FragDepth)
 	// Writes to the non-MSAA G-buffer images. loadOp=eDontCare (fully overwritten).
-	{
-		std::array<vk::AttachmentDescription, 6> attachments;
-
-		std::array<vk::Format, 5> colorFormats = {
-			vk::Format::eR16G16B16A16Sfloat, // 0: color
-			vk::Format::eR16G16B16A16Sfloat, // 1: position
-			vk::Format::eR16G16B16A16Sfloat, // 2: normal
-			vk::Format::eR8G8B8A8Unorm,      // 3: specular
-			vk::Format::eR16G16B16A16Sfloat, // 4: emissive
-		};
-
-		for (size_t i = 0; i < colorFormats.size(); ++i) {
-			attachments[i].format = colorFormats[i];
-			attachments[i].samples = vk::SampleCountFlagBits::e1;
-			attachments[i].loadOp = vk::AttachmentLoadOp::eDontCare;
-			attachments[i].storeOp = vk::AttachmentStoreOp::eStore;
-			attachments[i].stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
-			attachments[i].stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
-			attachments[i].initialLayout = vk::ImageLayout::eUndefined;
-			attachments[i].finalLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		}
-
-		// Depth (non-MSAA, written via gl_FragDepth)
-		attachments[5].format = m_depthFormat;
-		attachments[5].samples = vk::SampleCountFlagBits::e1;
-		attachments[5].loadOp = vk::AttachmentLoadOp::eDontCare;
-		attachments[5].storeOp = vk::AttachmentStoreOp::eStore;
-		attachments[5].stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
-		attachments[5].stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
-		attachments[5].initialLayout = vk::ImageLayout::eUndefined;
-		attachments[5].finalLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
-
-		std::array<vk::AttachmentReference, 5> colorRefs;
-		for (uint32_t i = 0; i < 5; ++i) {
-			colorRefs[i].attachment = i;
-			colorRefs[i].layout = vk::ImageLayout::eColorAttachmentOptimal;
-		}
-
-		vk::AttachmentReference depthRef;
-		depthRef.attachment = 5;
-		depthRef.layout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
-
-		vk::SubpassDescription subpass;
-		subpass.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
-		subpass.colorAttachmentCount = 5;
-		subpass.pColorAttachments = colorRefs.data();
-		subpass.pDepthStencilAttachment = &depthRef;
-
-		vk::SubpassDependency dependency;
-		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-		dependency.dstSubpass = 0;
-		dependency.srcStageMask = vk::PipelineStageFlagBits::eFragmentShader;
-		dependency.dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput
-		                        | vk::PipelineStageFlagBits::eEarlyFragmentTests;
-		dependency.srcAccessMask = vk::AccessFlagBits::eShaderRead;
-		dependency.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite
-		                         | vk::AccessFlagBits::eDepthStencilAttachmentWrite;
-
-		vk::RenderPassCreateInfo rpInfo;
-		rpInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-		rpInfo.pAttachments = attachments.data();
-		rpInfo.subpassCount = 1;
-		rpInfo.pSubpasses = &subpass;
-		rpInfo.dependencyCount = 1;
-		rpInfo.pDependencies = &dependency;
-
-		try {
-			m_msaaResolveRenderPass = m_device.createRenderPass(rpInfo);
-		} catch (const vk::SystemError& e) {
-			mprintf(("VulkanPostProcessor: Failed to create MSAA resolve render pass: %s\n", e.what()));
-			shutdownMSAA();
-			return false;
-		}
+	try {
+		m_msaaResolveRenderPass = createGbufRenderPass({
+			false, vk::SampleCountFlagBits::e1,
+			vk::AttachmentLoadOp::eDontCare, vk::AttachmentLoadOp::eDontCare,
+			vk::ImageLayout::eUndefined, vk::ImageLayout::eShaderReadOnlyOptimal,
+			vk::ImageLayout::eUndefined,
+			true, // useResolveDependency
+		});
+	} catch (const vk::SystemError& e) {
+		mprintf(("VulkanPostProcessor: Failed to create MSAA resolve render pass: %s\n", e.what()));
+		shutdownMSAA();
+		return false;
 	}
 
 	// MSAA Resolve framebuffer — references non-MSAA G-buffer images
