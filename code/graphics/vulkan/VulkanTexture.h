@@ -140,29 +140,24 @@ public:
 	                       bool enableMipmaps);
 
 	/**
-	 * @brief Get default sampler for standard textures
+	 * @brief Get a ready-to-use DescriptorImageInfo for the 2D fallback texture
 	 */
-	vk::Sampler getDefaultSampler();
+	vk::DescriptorImageInfo getFallbackTextureInfo2D();
 
 	/**
-	 * @brief Get fallback white texture image view (2D_ARRAY) for unbound material texture slots
+	 * @brief Get a ready-to-use DescriptorImageInfo for the cubemap fallback texture
 	 */
-	vk::ImageView getFallback2DArrayView();
+	vk::DescriptorImageInfo getFallbackTextureInfoCube();
 
 	/**
-	 * @brief Get fallback white texture image view (2D) for post-processing sampler2D slots
+	 * @brief Get a ready-to-use DescriptorImageInfo for the 2D array fallback texture
 	 */
-	vk::ImageView getFallbackTextureView2D();
+	vk::DescriptorImageInfo getFallbackTextureInfo2DArray();
 
 	/**
-	 * @brief Get fallback white cubemap image view (Cube) for unbound samplerCube slots
+	 * @brief Get a ready-to-use DescriptorImageInfo for the 3D fallback texture
 	 */
-	vk::ImageView getFallbackCubeView();
-
-	/**
-	 * @brief Get fallback white 3D texture image view for unbound sampler3D slots
-	 */
-	vk::ImageView getFallback3DView();
+	vk::DescriptorImageInfo getFallbackTextureInfo3D();
 
 	// Texture access
 
