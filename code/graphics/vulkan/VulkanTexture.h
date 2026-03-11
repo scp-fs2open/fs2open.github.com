@@ -86,6 +86,15 @@ public:
 	 */
 	void shutdown();
 
+	/**
+	 * @brief Flush all GPU texture resources from bitmap slots
+	 *
+	 * Called between missions (from vulkan_bm_page_in_start) to release
+	 * VkImage/VMA allocations for textures that won't be needed.
+	 * Textures are re-uploaded on demand when accessed again.
+	 */
+	void flushTextures();
+
 	// Bitmap management functions (implement gr_screen function pointers)
 
 	/**
