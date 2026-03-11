@@ -111,13 +111,13 @@ void vulkan_deferred_lighting_begin(bool clearNonColorBufs)
 			rpBegin.framebuffer = pp->getMsaaGbufFramebuffer();
 			rpBegin.renderArea.offset = vk::Offset2D(0, 0);
 			rpBegin.renderArea.extent = extent;
-			std::array<vk::ClearValue, 6> clearValues{};
-			clearValues[0].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
-			clearValues[1].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
-			clearValues[2].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
-			clearValues[3].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
-			clearValues[4].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
-			clearValues[5].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+			std::array<vk::ClearValue, VulkanPostProcessor::MSAA_COLOR_ATTACHMENT_COUNT + 1> clearValues{};
+			clearValues[VulkanPostProcessor::GBUF_ATT_COLOR].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
+			clearValues[VulkanPostProcessor::GBUF_ATT_POSITION].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
+			clearValues[VulkanPostProcessor::GBUF_ATT_NORMAL].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
+			clearValues[VulkanPostProcessor::GBUF_ATT_SPECULAR].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
+			clearValues[VulkanPostProcessor::GBUF_ATT_EMISSIVE].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
+			clearValues[VulkanPostProcessor::MSAA_COLOR_ATTACHMENT_COUNT].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
 			rpBegin.clearValueCount = static_cast<uint32_t>(clearValues.size());
 			rpBegin.pClearValues = clearValues.data();
 			cmd.beginRenderPass(rpBegin, vk::SubpassContents::eInline);
@@ -144,13 +144,13 @@ void vulkan_deferred_lighting_begin(bool clearNonColorBufs)
 			config.sampleCount = renderer->getMsaaSampleCount();
 			config.colorAttachmentCount = VulkanPostProcessor::MSAA_COLOR_ATTACHMENT_COUNT;
 
-			// Per-attachment blend: only write to attachment 4 (emissive)
+			// Per-attachment blend: only write to emissive
 			config.perAttachmentBlendEnabled = true;
 			for (uint32_t i = 0; i < config.colorAttachmentCount; ++i) {
 				config.attachmentBlends[i].blendMode = ALPHA_BLEND_NONE;
 				config.attachmentBlends[i].writeMask = {false, false, false, false};
 			}
-			config.attachmentBlends[4].writeMask = {true, true, true, true};
+			config.attachmentBlends[VulkanPostProcessor::GBUF_ATT_EMISSIVE].writeMask = {true, true, true, true};
 
 			vertex_layout emptyLayout;
 			vk::Pipeline pipeline = pipelineMgr->getPipeline(config, emptyLayout);
@@ -272,8 +272,8 @@ void vulkan_deferred_lighting_begin(bool clearNonColorBufs)
 			rpBegin.framebuffer = pp->getGbufFramebuffer();
 			rpBegin.renderArea.offset = vk::Offset2D(0, 0);
 			rpBegin.renderArea.extent = extent;
-			std::array<vk::ClearValue, 7> clearValues{};
-			clearValues[6].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+			std::array<vk::ClearValue, VulkanPostProcessor::GBUF_COLOR_ATTACHMENT_COUNT + 1> clearValues{};
+			clearValues[VulkanPostProcessor::GBUF_COLOR_ATTACHMENT_COUNT].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
 			rpBegin.clearValueCount = static_cast<uint32_t>(clearValues.size());
 			rpBegin.pClearValues = clearValues.data();
 			cmd.beginRenderPass(rpBegin, vk::SubpassContents::eInline);
@@ -293,7 +293,10 @@ void vulkan_deferred_lighting_begin(bool clearNonColorBufs)
 			clearRect.baseArrayLayer = 0;
 			clearRect.layerCount = 1;
 
-			for (uint32_t att : {1u, 2u, 3u, 5u}) {
+			for (uint32_t att : {VulkanPostProcessor::GBUF_ATT_POSITION,
+		                     VulkanPostProcessor::GBUF_ATT_NORMAL,
+		                     VulkanPostProcessor::GBUF_ATT_SPECULAR,
+		                     VulkanPostProcessor::GBUF_ATT_COMPOSITE}) {
 				clearAtt.colorAttachment = att;
 				cmd.clearAttachments(clearAtt, clearRect);
 			}
@@ -376,8 +379,8 @@ void vulkan_deferred_lighting_msaa()
 		rpBegin.renderArea.offset = vk::Offset2D(0, 0);
 		rpBegin.renderArea.extent = extent;
 		// 6 attachments: 5 color + depth. loadOp=eDontCare for all (fully overwritten).
-		std::array<vk::ClearValue, 6> clearValues{};
-		clearValues[5].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+		std::array<vk::ClearValue, VulkanPostProcessor::MSAA_COLOR_ATTACHMENT_COUNT + 1> clearValues{};
+		clearValues[VulkanPostProcessor::MSAA_COLOR_ATTACHMENT_COUNT].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
 		rpBegin.clearValueCount = static_cast<uint32_t>(clearValues.size());
 		rpBegin.pClearValues = clearValues.data();
 		cmd.beginRenderPass(rpBegin, vk::SubpassContents::eInline);
@@ -861,8 +864,8 @@ void vulkan_shadow_map_end()
 		rpBegin.framebuffer = pp->getMsaaGbufFramebuffer();
 		rpBegin.renderArea.offset = vk::Offset2D(0, 0);
 		rpBegin.renderArea.extent = extent;
-		std::array<vk::ClearValue, 6> clearValues{};
-		clearValues[5].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+		std::array<vk::ClearValue, VulkanPostProcessor::MSAA_COLOR_ATTACHMENT_COUNT + 1> clearValues{};
+		clearValues[VulkanPostProcessor::MSAA_COLOR_ATTACHMENT_COUNT].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
 		rpBegin.clearValueCount = static_cast<uint32_t>(clearValues.size());
 		rpBegin.pClearValues = clearValues.data();
 		cmd.beginRenderPass(rpBegin, vk::SubpassContents::eInline);
@@ -1039,7 +1042,7 @@ void vulkan_render_decals(decal_material* material_info,
 	config.renderPass = stateTracker->getCurrentRenderPass();
 	config.colorAttachmentCount = stateTracker->getColorAttachmentCount();
 
-	// Per-attachment blend: active attachments (0=color, 2=normal, 4=emissive) get
+	// Per-attachment blend: active attachments (color, normal, emissive) get
 	// the material's blend mode with RGB-only write mask. Inactive attachments get
 	// write mask = 0 to avoid corrupting G-buffer data.
 	config.perAttachmentBlendEnabled = true;
@@ -1047,15 +1050,15 @@ void vulkan_render_decals(decal_material* material_info,
 		config.attachmentBlends[i].blendMode = ALPHA_BLEND_NONE;
 		config.attachmentBlends[i].writeMask = {false, false, false, false};
 	}
-	// Attachment 0: color/diffuse — use material blend mode 0
-	config.attachmentBlends[0].blendMode = material_info->get_blend_mode(0);
-	config.attachmentBlends[0].writeMask = {true, true, true, false};
-	// Attachment 2: normal — always additive
-	config.attachmentBlends[2].blendMode = ALPHA_BLEND_ADDITIVE;
-	config.attachmentBlends[2].writeMask = {true, true, true, false};
-	// Attachment 4: emissive — use material blend mode 2
-	config.attachmentBlends[4].blendMode = material_info->get_blend_mode(2);
-	config.attachmentBlends[4].writeMask = {true, true, true, false};
+	// Color/diffuse — use material blend mode 0
+	config.attachmentBlends[VulkanPostProcessor::GBUF_ATT_COLOR].blendMode = material_info->get_blend_mode(0);
+	config.attachmentBlends[VulkanPostProcessor::GBUF_ATT_COLOR].writeMask = {true, true, true, false};
+	// Normal — always additive
+	config.attachmentBlends[VulkanPostProcessor::GBUF_ATT_NORMAL].blendMode = ALPHA_BLEND_ADDITIVE;
+	config.attachmentBlends[VulkanPostProcessor::GBUF_ATT_NORMAL].writeMask = {true, true, true, false};
+	// Emissive — use material blend mode 2
+	config.attachmentBlends[VulkanPostProcessor::GBUF_ATT_EMISSIVE].blendMode = material_info->get_blend_mode(2);
+	config.attachmentBlends[VulkanPostProcessor::GBUF_ATT_EMISSIVE].writeMask = {true, true, true, false};
 
 	// Get or create pipeline
 	vk::Pipeline pipeline = pipelineManager->getPipeline(config, *layout);

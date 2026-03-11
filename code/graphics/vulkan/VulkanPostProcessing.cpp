@@ -613,17 +613,18 @@ void VulkanPostProcessor::updateTonemappingUBO()
 
 vk::RenderPass VulkanPostProcessor::createGbufRenderPass(const GbufRenderPassConfig& config)
 {
-	// All G-buffer variants use these 6 formats; without composite only the first 5 are used
-	static constexpr std::array<vk::Format, 6> COLOR_FORMATS = {{
-		vk::Format::eR16G16B16A16Sfloat, // 0: color
-		vk::Format::eR16G16B16A16Sfloat, // 1: position
-		vk::Format::eR16G16B16A16Sfloat, // 2: normal
-		vk::Format::eR8G8B8A8Unorm,      // 3: specular
-		vk::Format::eR16G16B16A16Sfloat, // 4: emissive
-		vk::Format::eR16G16B16A16Sfloat, // 5: composite
+	// All G-buffer variants share formats; without composite only the first 5 are used
+	static constexpr std::array<vk::Format, GBUF_COLOR_ATTACHMENT_COUNT> COLOR_FORMATS = {{
+		GBUF_FORMAT_COLOR,
+		GBUF_FORMAT_POSITION,
+		GBUF_FORMAT_NORMAL,
+		GBUF_FORMAT_SPECULAR,
+		GBUF_FORMAT_EMISSIVE,
+		GBUF_FORMAT_COMPOSITE,
 	}};
 
-	const uint32_t colorCount = config.includeComposite ? 6 : 5;
+	const uint32_t colorCount = config.includeComposite
+		? GBUF_COLOR_ATTACHMENT_COUNT : MSAA_COLOR_ATTACHMENT_COUNT;
 	const uint32_t depthIndex = colorCount;
 	const uint32_t totalAttachments = colorCount + 1;
 
@@ -764,11 +765,11 @@ bool VulkanPostProcessor::initGBuffer()
 	};
 
 	std::array<GbufTarget, 5> targets = {{
-		{&m_gbufPosition,  vk::Format::eR16G16B16A16Sfloat, "position"},
-		{&m_gbufNormal,    vk::Format::eR16G16B16A16Sfloat, "normal"},
-		{&m_gbufSpecular,  vk::Format::eR8G8B8A8Unorm,      "specular"},
-		{&m_gbufEmissive,  vk::Format::eR16G16B16A16Sfloat, "emissive"},
-		{&m_gbufComposite, vk::Format::eR16G16B16A16Sfloat, "composite"},
+		{&m_gbufPosition,  GBUF_FORMAT_POSITION,  "position"},
+		{&m_gbufNormal,    GBUF_FORMAT_NORMAL,    "normal"},
+		{&m_gbufSpecular,  GBUF_FORMAT_SPECULAR,  "specular"},
+		{&m_gbufEmissive,  GBUF_FORMAT_EMISSIVE,  "emissive"},
+		{&m_gbufComposite, GBUF_FORMAT_COMPOSITE, "composite"},
 	}};
 
 	for (auto& t : targets) {
@@ -786,14 +787,14 @@ bool VulkanPostProcessor::initGBuffer()
 	// Create samplable copy of G-buffer normal (for decal angle rejection)
 	{
 		vk::ImageUsageFlags copyUsage = vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst;
-		if (!createImage(w, h, vk::Format::eR16G16B16A16Sfloat, copyUsage,
+		if (!createImage(w, h, GBUF_FORMAT_NORMAL, copyUsage,
 		                 vk::ImageAspectFlagBits::eColor,
 		                 m_gbufNormalCopy.image, m_gbufNormalCopy.view, m_gbufNormalCopy.allocation)) {
 			mprintf(("VulkanPostProcessor: Failed to create G-buffer normal copy!\n"));
 			shutdownGBuffer();
 			return false;
 		}
-		m_gbufNormalCopy.format = vk::Format::eR16G16B16A16Sfloat;
+		m_gbufNormalCopy.format = GBUF_FORMAT_NORMAL;
 		m_gbufNormalCopy.width = w;
 		m_gbufNormalCopy.height = h;
 	}
@@ -946,11 +947,11 @@ bool VulkanPostProcessor::initMSAA()
 	};
 
 	std::array<MsaaTarget, 5> targets = {{
-		{&m_msaaColor,    vk::Format::eR16G16B16A16Sfloat, "msaa-color"},
-		{&m_msaaPosition, vk::Format::eR16G16B16A16Sfloat, "msaa-position"},
-		{&m_msaaNormal,   vk::Format::eR16G16B16A16Sfloat, "msaa-normal"},
-		{&m_msaaSpecular, vk::Format::eR8G8B8A8Unorm,      "msaa-specular"},
-		{&m_msaaEmissive, vk::Format::eR16G16B16A16Sfloat, "msaa-emissive"},
+		{&m_msaaColor,    GBUF_FORMAT_COLOR,    "msaa-color"},
+		{&m_msaaPosition, GBUF_FORMAT_POSITION, "msaa-position"},
+		{&m_msaaNormal,   GBUF_FORMAT_NORMAL,   "msaa-normal"},
+		{&m_msaaSpecular, GBUF_FORMAT_SPECULAR, "msaa-specular"},
+		{&m_msaaEmissive, GBUF_FORMAT_EMISSIVE, "msaa-emissive"},
 	}};
 
 	for (auto& t : targets) {
