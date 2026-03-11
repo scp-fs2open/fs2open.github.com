@@ -29,7 +29,7 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
-CMissionGoalsDlg *Goal_editor_dlg; // global reference needed by sexp_tree class
+CMissionGoalsDlg *Goal_editor_dlg; // global reference needed by sexp_tree_view class
 
 /////////////////////////////////////////////////////////////////////////////
 // sexp_goal_tree class member functions

@@ -103,7 +103,7 @@ bool MissionCutscenesDialogModel::query_modified()
 
 	return false;
 }
-void MissionCutscenesDialogModel::setTreeControl(sexp_tree* tree)
+void MissionCutscenesDialogModel::setTreeControl(sexp_tree_view* tree)
 {
 	_sexp_tree = tree;
 }

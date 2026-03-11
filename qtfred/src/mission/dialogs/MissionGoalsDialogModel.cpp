@@ -123,7 +123,7 @@ bool MissionGoalsDialogModel::query_modified()
 
 	return false;
 }
-void MissionGoalsDialogModel::setTreeControl(sexp_tree* tree) {
+void MissionGoalsDialogModel::setTreeControl(sexp_tree_view* tree) {
 	_sexp_tree = tree;
 }
 void MissionGoalsDialogModel::deleteGoal(int node) {

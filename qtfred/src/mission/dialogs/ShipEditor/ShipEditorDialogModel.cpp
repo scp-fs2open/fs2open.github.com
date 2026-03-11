@@ -30,7 +30,7 @@ ShipEditorDialogModel::ShipEditorDialogModel(QObject* parent, EditorViewport* vi
 	initializeData();
 }
 
-void ShipEditorDialogModel::setTreeControls(sexp_tree* arrival, sexp_tree* departure)
+void ShipEditorDialogModel::setTreeControls(sexp_tree_view* arrival, sexp_tree_view* departure)
 {
 	_arrival_tree_widget = arrival;
 	_departure_tree_widget = departure;

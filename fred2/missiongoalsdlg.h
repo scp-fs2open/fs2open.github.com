@@ -9,7 +9,7 @@
 
 
 
-#include "sexp_tree_ui.h"
+#include "sexp_tree_view.h"
 #include "mission/missiongoals.h"
 
 /////////////////////////////////////////////////////////////////////////////
@@ -18,7 +18,7 @@
 #define OPERAND	0x01
 #define EDITABLE	0x02
 
-class goal_sexp_tree : public sexp_tree
+class goal_sexp_tree : public sexp_tree_view
 {
 };
 
@@ -95,4 +95,4 @@ protected:
 	int modified;
 };
 
-extern CMissionGoalsDlg *Goal_editor_dlg; // global reference needed by sexp_tree class
+extern CMissionGoalsDlg *Goal_editor_dlg; // global reference needed by sexp_tree_view class

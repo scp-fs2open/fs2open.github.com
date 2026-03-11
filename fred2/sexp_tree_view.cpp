@@ -10,7 +10,7 @@
 
 
 #include "stdafx.h"
-#include "sexp_tree_ui.h"
+#include "sexp_tree_view.h"
 #include "FRED.h"
 #include "FREDDoc.h"
 #include "Management.h"
@@ -71,10 +71,10 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
-//********************sexp_tree********************
+//********************sexp_tree_view********************
 
-BEGIN_MESSAGE_MAP(sexp_tree, CTreeCtrl)
-	//{{AFX_MSG_MAP(sexp_tree)
+BEGIN_MESSAGE_MAP(sexp_tree_view, CTreeCtrl)
+	//{{AFX_MSG_MAP(sexp_tree_view)
 	ON_NOTIFY_REFLECT(TVN_BEGINDRAG, OnBegindrag)
 	ON_WM_MOUSEMOVE()
 	ON_WM_LBUTTONUP()
@@ -86,7 +86,7 @@ BEGIN_MESSAGE_MAP(sexp_tree, CTreeCtrl)
 END_MESSAGE_MAP()
 
 // constructor
-sexp_tree::sexp_tree()
+sexp_tree_view::sexp_tree_view()
 	: m_operator_box(help), _actions(_model, *this)
 {
 	select_sexp_node = -1;
@@ -104,7 +104,7 @@ sexp_tree::sexp_tree()
 
 // --- ISexpTreeUI implementation ---
 
-void* sexp_tree::ui_insert_item(const char* text, NodeImage image, void* parent_handle, void* insert_after)
+void* sexp_tree_view::ui_insert_item(const char* text, NodeImage image, void* parent_handle, void* insert_after)
 {
 	int img = static_cast<int>(image);
 	HTREEITEM hParent = parent_handle ? static_cast<HTREEITEM>(parent_handle) : TVI_ROOT;
@@ -112,59 +112,59 @@ void* sexp_tree::ui_insert_item(const char* text, NodeImage image, void* parent_
 	return static_cast<void*>(InsertItem(text, img, img, hParent, hAfter));
 }
 
-void sexp_tree::ui_delete_item(void* handle)
+void sexp_tree_view::ui_delete_item(void* handle)
 {
 	DeleteItem(static_cast<HTREEITEM>(handle));
 }
 
-void sexp_tree::ui_set_item_text(void* handle, const char* text)
+void sexp_tree_view::ui_set_item_text(void* handle, const char* text)
 {
 	SetItemText(static_cast<HTREEITEM>(handle), text);
 }
 
-void sexp_tree::ui_set_item_image(void* handle, NodeImage image)
+void sexp_tree_view::ui_set_item_image(void* handle, NodeImage image)
 {
 	int img = static_cast<int>(image);
 	SetItemImage(static_cast<HTREEITEM>(handle), img, img);
 }
 
-void* sexp_tree::ui_get_child_item(void* handle)
+void* sexp_tree_view::ui_get_child_item(void* handle)
 {
 	return static_cast<void*>(GetChildItem(static_cast<HTREEITEM>(handle)));
 }
 
-bool sexp_tree::ui_has_children(void* handle)
+bool sexp_tree_view::ui_has_children(void* handle)
 {
 	return ItemHasChildren(static_cast<HTREEITEM>(handle)) != 0;
 }
 
-void sexp_tree::ui_expand_item(void* handle)
+void sexp_tree_view::ui_expand_item(void* handle)
 {
 	Expand(static_cast<HTREEITEM>(handle), TVE_EXPAND);
 }
 
-void sexp_tree::ui_select_item(void* handle)
+void sexp_tree_view::ui_select_item(void* handle)
 {
 	SelectItem(static_cast<HTREEITEM>(handle));
 }
 
-void sexp_tree::ui_ensure_visible(void* handle)
+void sexp_tree_view::ui_ensure_visible(void* handle)
 {
 	EnsureVisible(static_cast<HTREEITEM>(handle));
 }
 
-void sexp_tree::ui_notify_modified()
+void sexp_tree_view::ui_notify_modified()
 {
 	if (modified)
 		*modified = 1;
 }
 
-void sexp_tree::ui_update_help(void* handle)
+void sexp_tree_view::ui_update_help(void* handle)
 {
 	update_help(static_cast<HTREEITEM>(handle));
 }
 
-void sexp_tree::ui_add_children_visual(int parent_node_index)
+void sexp_tree_view::ui_add_children_visual(int parent_node_index)
 {
 	int i = tree_nodes[parent_node_index].child;
 	while (i != -1) {
@@ -173,13 +173,13 @@ void sexp_tree::ui_add_children_visual(int parent_node_index)
 	}
 }
 
-void sexp_tree::ui_expand_branch(void* handle)
+void sexp_tree_view::ui_expand_branch(void* handle)
 {
 	expand_branch((HTREEITEM)handle);
 }
 
 // clears out the tree, so all the nodes are unused.
-void sexp_tree::clear_tree(const char *op)
+void sexp_tree_view::clear_tree(const char *op)
 {
 	_model.clear_tree_data(nullptr);  // clear data only (don't set default op yet)
 
@@ -192,7 +192,7 @@ void sexp_tree::clear_tree(const char *op)
 	}
 }
 
-void sexp_tree::reset_handles()
+void sexp_tree_view::reset_handles()
 {
 	uint i;
 
@@ -201,7 +201,7 @@ void sexp_tree::reset_handles()
 }
 
 // initializes and creates a tree from a given sexp startpoint.
-void sexp_tree::load_tree(int index, const char *deflt)
+void sexp_tree_view::load_tree(int index, const char *deflt)
 {
 	_model.load_tree_data(index, deflt);
 	DeleteAllItems();
@@ -209,7 +209,7 @@ void sexp_tree::load_tree(int index, const char *deflt)
 }
 
 // build or rebuild a CTreeCtrl object with the current tree data
-void sexp_tree::build_tree()
+void sexp_tree_view::build_tree()
 {
 	if (!flag)
 		select_sexp_node = -1;
@@ -220,7 +220,7 @@ void sexp_tree::build_tree()
 
 // Create the CTreeCtrl tree from the tree data.  The tree data should already be setup by
 // this point.
-void sexp_tree::add_sub_tree(int node, HTREEITEM root)
+void sexp_tree_view::add_sub_tree(int node, HTREEITEM root)
 {
 //	char str[80];
 	int node2;
@@ -252,7 +252,7 @@ void sexp_tree::add_sub_tree(int node, HTREEITEM root)
 	}
 }
 
-void sexp_tree::setup_selected(HTREEITEM h)
+void sexp_tree_view::setup_selected(HTREEITEM h)
 {
 	if (!h)
 		h = GetSelectedItem();
@@ -260,7 +260,7 @@ void sexp_tree::setup_selected(HTREEITEM h)
 	update_item(h);
 }
 
-void sexp_tree::update_item(HTREEITEM h)
+void sexp_tree_view::update_item(HTREEITEM h)
 {
 	item_handle = h;
 	item_index = -1;
@@ -274,7 +274,7 @@ void sexp_tree::update_item(HTREEITEM h)
 }
 
 // handler for right mouse button clicks.
-void sexp_tree::right_clicked()
+void sexp_tree_view::right_clicked()
 {
 	int i, j, subcategory_id;
 	UINT _flags;
@@ -566,7 +566,7 @@ void sexp_tree::right_clicked()
 }
 
 // determine if an item should be editable.  This doesn't actually edit the label.
-int sexp_tree::edit_label(HTREEITEM h, bool *is_operator)
+int sexp_tree_view::edit_label(HTREEITEM h, bool *is_operator)
 {
 	uint i;
 
@@ -624,22 +624,22 @@ int sexp_tree::edit_label(HTREEITEM h, bool *is_operator)
 */
 }
 
-void sexp_tree::edit_comment(HTREEITEM h)
+void sexp_tree_view::edit_comment(HTREEITEM h)
 {
 	// Not implemented in the base class
 }
 
-void sexp_tree::edit_bg_color(HTREEITEM h)
+void sexp_tree_view::edit_bg_color(HTREEITEM h)
 {
 	// Not implemented in the base class
 }
 
-SCP_string sexp_tree::get_node_comment(int /*node_index*/) const
+SCP_string sexp_tree_view::get_node_comment(int /*node_index*/) const
 {
 	return "";
 }
 
-int sexp_tree::end_label_edit(TVITEMA &item)
+int sexp_tree_view::end_label_edit(TVITEMA &item)
 {
 	if (!item.pszText)
 		return 0;
@@ -695,7 +695,7 @@ int sexp_tree::end_label_edit(TVITEMA &item)
 	return r;
 }
 
-void sexp_tree::start_operator_edit(HTREEITEM h)
+void sexp_tree_view::start_operator_edit(HTREEITEM h)
 {
 	if (m_operator_popup_active)
 		return;
@@ -759,7 +759,7 @@ void sexp_tree::start_operator_edit(HTREEITEM h)
 	m_operator_popup_active = true;
 }
 
-void sexp_tree::end_operator_edit(bool confirm)
+void sexp_tree_view::end_operator_edit(bool confirm)
 {
 	if (!m_operator_popup_active)
 		return;
@@ -771,7 +771,7 @@ void sexp_tree::end_operator_edit(bool confirm)
 
 // this really only handles messages generated by the right click popup menu
 // now it also handles messages from the operator combo box
-BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
+BOOL sexp_tree_view::OnCommand(WPARAM wParam, LPARAM lParam)
 {
 	int i, z, id, data, node, op;
 	sexp_list_item *list, *ptr;
@@ -885,7 +885,7 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 			// sort list
 			sexp_variable_sort();
 
-			// delete from sexp_tree, replacing with "number" or "string" as needed
+			// delete from sexp_tree_view, replacing with "number" or "string" as needed
 			// further error checking from add_data()
 			_actions.delete_sexp_tree_variable(dlg.m_cur_variable_name);
 
@@ -893,7 +893,7 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 		}
 
 		if (dlg.m_do_modify) {
-			// check sexp_tree -- warn on type
+			// check sexp_tree_view -- warn on type
 			// find index and change either (1) name, (2) type, (3) value
 			int sexp_var_index = get_index_sexp_variable_name(dlg.m_old_var_name);
 			Assert(sexp_var_index != -1);
@@ -927,7 +927,7 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 			// update sexp_variable
 			sexp_fred_modify_variable(dlg.m_default_value, dlg.m_cur_variable_name, sexp_var_index, type);
 
-			// modify sexp_tree
+			// modify sexp_tree_view
 			_actions.modify_sexp_tree_variable(old_name, sexp_var_index);
 
 			// Don't sort until after modify, since modify uses index
@@ -1330,7 +1330,7 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 	return CTreeCtrl::OnCommand(wParam, lParam);
 }
 
-void sexp_tree::NodeCut()
+void sexp_tree_view::NodeCut()
 {
 	if (item_index < 0)
 		return;
@@ -1339,7 +1339,7 @@ void sexp_tree::NodeCut()
 	NodeDelete();
 }
 
-void sexp_tree::NodeDelete()
+void sexp_tree_view::NodeDelete()
 {
 	int parent, theNode;
 	HTREEITEM h_parent;
@@ -1379,23 +1379,23 @@ void sexp_tree::NodeDelete()
 	*modified = 1;
 }
 
-void sexp_tree::NodeCopy()
+void sexp_tree_view::NodeCopy()
 {
 	_actions.clipboard_copy();
 }
 
-void sexp_tree::NodeReplacePaste()
+void sexp_tree_view::NodeReplacePaste()
 {
 	_actions.clipboard_paste_replace();
 }
 
-void sexp_tree::NodeAddPaste()
+void sexp_tree_view::NodeAddPaste()
 {
 	_actions.clipboard_paste_add();
 }
 
 // expand a CTreeCtrl branch and all of its children
-void sexp_tree::expand_branch(HTREEITEM h)
+void sexp_tree_view::expand_branch(HTREEITEM h)
 {
 	Expand(h, TVE_EXPAND);
 	h = GetChildItem(h);
@@ -1407,7 +1407,7 @@ void sexp_tree::expand_branch(HTREEITEM h)
 
 // add an operator under operator pointed to by item_index.  Updates item_index to point
 // to this new operator.
-void sexp_tree::add_operator(const char *op, HTREEITEM h)
+void sexp_tree_view::add_operator(const char *op, HTREEITEM h)
 {
 	_actions.add_operator(op, (h == TVI_ROOT) ? nullptr : static_cast<void*>(h));
 }
@@ -1415,7 +1415,7 @@ void sexp_tree::add_operator(const char *op, HTREEITEM h)
 // add an operator with one argument under operator pointed to by item_index.  This function
 // exists because the one arg case is a special case.  The operator and argument is
 // displayed on the same line.
-/*void sexp_tree::add_one_arg_operator(char *op, char *data, int type)
+/*void sexp_tree_view::add_one_arg_operator(char *op, char *data, int type)
 {
 	char str[80];
 	int node1, node2;
@@ -1433,14 +1433,14 @@ void sexp_tree::add_operator(const char *op, HTREEITEM h)
 }*/
 
 /*
-int sexp_tree::verify_tree(int *bypass)
+int sexp_tree_view::verify_tree(int *bypass)
 {
 	return verify_tree(0, bypass);
 }
 
 // check the sexp tree for errors.  Return -1 if error, or 0 if no errors.  If an error
 // is found, item_index = node of error.
-int sexp_tree::verify_tree(int node, int *bypass)
+int sexp_tree_view::verify_tree(int node, int *bypass)
 {
 	int i, type, count, op, type2, op2, argnum = 0;
 
@@ -1604,7 +1604,7 @@ int sexp_tree::verify_tree(int node, int *bypass)
 */
 
 // display an error message and position to point of error (a node)
-int sexp_tree::node_error(int node, const char *msg, int *bypass)
+int sexp_tree_view::node_error(int node, const char *msg, int *bypass)
 {
 	char text[512];
 
@@ -1625,14 +1625,14 @@ int sexp_tree::node_error(int node, const char *msg, int *bypass)
 		return 0;
 }
 
-void sexp_tree::hilite_item(int node)
+void sexp_tree_view::hilite_item(int node)
 {
 	ensure_visible(node);
 	SelectItem(tree_item_handle(tree_nodes[node]));
 }
 
 // because the MFC function EnsureVisible() doesn't do what it says it does, I wrote this.
-void sexp_tree::ensure_visible(int node)
+void sexp_tree_view::ensure_visible(int node)
 {
 	Assert(node != -1);
 	if (tree_nodes[node].parent != -1)
@@ -1642,7 +1642,7 @@ void sexp_tree::ensure_visible(int node)
 		Expand(tree_item_handle(tree_nodes[node]), TVE_EXPAND);  // expand this item
 }
 
-/*void sexp_tree::replace_one_arg_operator(char *op, char *data, int type)
+/*void sexp_tree_view::replace_one_arg_operator(char *op, char *data, int type)
 {
 	char str[80];
 	int node;
@@ -1670,7 +1670,7 @@ void sexp_tree::ensure_visible(int node)
 
 // moves a whole sexp tree branch to a new position under 'parent' and after 'after'.
 // The expansion state is preserved, and node handles are updated.
-void sexp_tree::move_branch(int source, int parent)
+void sexp_tree_view::move_branch(int source, int parent)
 {
 	if (source != -1) {
 		_model.move_branch_data(source, parent);
@@ -1682,7 +1682,7 @@ void sexp_tree::move_branch(int source, int parent)
 	}
 }
 
-HTREEITEM sexp_tree::move_branch(HTREEITEM source, HTREEITEM parent, HTREEITEM after)
+HTREEITEM sexp_tree_view::move_branch(HTREEITEM source, HTREEITEM parent, HTREEITEM after)
 {
 	uint i;
 	int image1, image2;
@@ -1720,7 +1720,7 @@ HTREEITEM sexp_tree::move_branch(HTREEITEM source, HTREEITEM parent, HTREEITEM a
 	return h;
 }
 
-void sexp_tree::copy_branch(HTREEITEM source, HTREEITEM parent, HTREEITEM after)
+void sexp_tree_view::copy_branch(HTREEITEM source, HTREEITEM parent, HTREEITEM after)
 {
 	uint i;
 	int image1, image2;
@@ -1753,7 +1753,7 @@ void sexp_tree::copy_branch(HTREEITEM source, HTREEITEM parent, HTREEITEM after)
 	}
 }
 
-void sexp_tree::move_root(HTREEITEM source, HTREEITEM dest, bool insert_before)
+void sexp_tree_view::move_root(HTREEITEM source, HTREEITEM dest, bool insert_before)
 {
 	HTREEITEM h, after = dest;
 
@@ -1774,7 +1774,7 @@ void sexp_tree::move_root(HTREEITEM source, HTREEITEM dest, bool insert_before)
 	*modified = 1;
 }
 
-void sexp_tree::OnBegindrag(NMHDR* pNMHDR, LRESULT* pResult) 
+void sexp_tree_view::OnBegindrag(NMHDR* pNMHDR, LRESULT* pResult) 
 {
 	UINT flags = 0;
 
@@ -1800,13 +1800,13 @@ void sexp_tree::OnBegindrag(NMHDR* pNMHDR, LRESULT* pResult)
 	m_dragging = TRUE;
 }
 
-void sexp_tree::OnLButtonDown(UINT nFlags, CPoint point) 
+void sexp_tree_view::OnLButtonDown(UINT nFlags, CPoint point) 
 {
 	m_pt = point;
 	CTreeCtrl::OnLButtonDown(nFlags, point);
 }
 
-void sexp_tree::OnMouseMove(UINT nFlags, CPoint point) 
+void sexp_tree_view::OnMouseMove(UINT nFlags, CPoint point) 
 {
 	HTREEITEM hitem = NULL;
 	UINT flags = 0;
@@ -1826,7 +1826,7 @@ void sexp_tree::OnMouseMove(UINT nFlags, CPoint point)
 	CTreeCtrl::OnMouseMove(nFlags, point);
 }
 
-void sexp_tree::OnLButtonUp(UINT nFlags, CPoint point) 
+void sexp_tree_view::OnLButtonUp(UINT nFlags, CPoint point) 
 {
 	int node1, node2;
 
@@ -1896,7 +1896,7 @@ const static UINT Numbered_data_bitmaps[] = {
 	IDB_DATA_95
 };
 
-void sexp_tree::setup(CEdit *ptr)
+void sexp_tree_view::setup(CEdit *ptr)
 {
 	CImageList *pimagelist;
 	CBitmap bitmap;
@@ -1986,13 +1986,13 @@ void sexp_tree::setup(CEdit *ptr)
 //#define BITMAP_BLACK_DOT 8
 
 
-HTREEITEM sexp_tree::insert(LPCTSTR lpszItem, int image, int sel_image, HTREEITEM hParent, HTREEITEM hInsertAfter)
+HTREEITEM sexp_tree_view::insert(LPCTSTR lpszItem, int image, int sel_image, HTREEITEM hParent, HTREEITEM hInsertAfter)
 {
 	return InsertItem(lpszItem, image, sel_image, hParent, hInsertAfter);
 
 }
 
-void sexp_tree::OnDestroy() 
+void sexp_tree_view::OnDestroy() 
 {
 	CImageList *pimagelist;
 
@@ -2005,12 +2005,12 @@ void sexp_tree::OnDestroy()
 	CTreeCtrl::OnDestroy();
 }
 
-HTREEITEM sexp_tree::handle(int node)
+HTREEITEM sexp_tree_view::handle(int node)
 {
 	return tree_item_handle(tree_nodes[node]);
 }
 
-int sexp_tree::get_node(HTREEITEM h)
+int sexp_tree_view::get_node(HTREEITEM h)
 {
 	for (int i = 0; i < static_cast<int>(tree_nodes.size()); i++) {
 		if (tree_nodes[i].handle == h)
@@ -2019,17 +2019,17 @@ int sexp_tree::get_node(HTREEITEM h)
 	return -1;
 }
 
-const char *sexp_tree::help(int code)
+const char *sexp_tree_view::help(int code)
 {
 	return SexpTreeModel::help(code);
 }
 
 // get type of item clicked on
-int sexp_tree::get_type(HTREEITEM h)
+int sexp_tree_view::get_type(HTREEITEM h)
 {
 	uint i;
 
-	// get index into sexp_tree 
+	// get index into sexp_tree_view 
 	for (i=0; i<tree_nodes.size(); i++)
 		if (tree_nodes[i].handle == h)
 			break;
@@ -2043,7 +2043,7 @@ int sexp_tree::get_type(HTREEITEM h)
 }
 
 
-void sexp_tree::update_help(HTREEITEM h)
+void sexp_tree_view::update_help(HTREEITEM h)
 {
 	// Validate operator help strings
 	for (int i = 0; i < (int)Operators.size(); i++) {
@@ -2095,18 +2095,18 @@ void sexp_tree::update_help(HTREEITEM h)
 //   a control character with value "3" into the doc (it gets a WM_CHAR message to that effect, which it would normally
 //   filter out on its own). So... in the case of preventing copying data, we have to remove any Ctrl+c or Ctrl+x
 //   characters that might get inserted; we do this by processing the WM_CHAR message and filtering those as well.
-void sexp_tree::OnChar(UINT nChar, UINT nRepCnt, UINT nFlags)
+void sexp_tree_view::OnChar(UINT nChar, UINT nRepCnt, UINT nFlags)
 {
 }
 
-void sexp_tree::OnKeyDown(NMHDR *pNMHDR, LRESULT *pResult) 
+void sexp_tree_view::OnKeyDown(NMHDR *pNMHDR, LRESULT *pResult) 
 {
 	int key;
 	TV_KEYDOWN *pTVKeyDown = (TV_KEYDOWN *) pNMHDR;
 
 	key = pTVKeyDown->wVKey;
 
-	// Handle clipboard operations for the sexp_tree and its subclasses.  The *proper* way to do this
+	// Handle clipboard operations for the sexp_tree_view and its subclasses.  The *proper* way to do this
 	// would be to catch the WM_CUT, WM_COPY, and WM_PASTE messages, but I wasn't able to get it to work
 	// despite considerable research and effort.  So this achieves the same result by just catching
 	// the shortcut keys instead of the messages they produce.  The shortcut keys are still sent to

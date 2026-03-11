@@ -11,7 +11,7 @@
 //
 
 #include "resource.h"
-#include "sexp_tree_ui.h"
+#include "sexp_tree_view.h"
 #include "CampaignFilelistBox.h"
 
 /////////////////////////////////////////////////////////////////////////////
@@ -21,7 +21,7 @@
 #include <afxext.h>
 #endif
 
-class campaign_sexp_tree : public sexp_tree
+class campaign_sexp_tree : public sexp_tree_view
 {
 };
 

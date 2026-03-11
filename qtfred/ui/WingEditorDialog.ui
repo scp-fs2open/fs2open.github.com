@@ -619,7 +619,7 @@
            </layout>
           </item>
           <item>
-           <widget class="fso::fred::sexp_tree" name="arrivalTree"/>
+           <widget class="fso::fred::sexp_tree_view" name="arrivalTree"/>
           </item>
           <item>
            <widget class="fso::fred::ShipFlagCheckbox" name="noArrivalWarpCheckBox">
@@ -820,7 +820,7 @@
            </layout>
           </item>
           <item>
-           <widget class="fso::fred::sexp_tree" name="departureTree"/>
+           <widget class="fso::fred::sexp_tree_view" name="departureTree"/>
           </item>
           <item>
            <widget class="fso::fred::ShipFlagCheckbox" name="noDepartureWarpCheckBox">
@@ -873,9 +873,9 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>fso::fred::sexp_tree</class>
+   <class>fso::fred::sexp_tree_view</class>
    <extends>QTreeView</extends>
-   <header>ui/widgets/sexp_tree_ui.h</header>
+   <header>ui/widgets/sexp_tree_view.h</header>
   </customwidget>
   <customwidget>
    <class>fso::fred::ShipFlagCheckbox</class>

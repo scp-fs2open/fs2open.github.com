@@ -5,7 +5,7 @@
 #include <QDialog>
 #include <QListWidget>
 
-#include "ui/widgets/sexp_tree_ui.h"
+#include "ui/widgets/sexp_tree_view.h"
 
 #include <mission/missiongoals.h>
 #include <mission/missionmessage.h>
@@ -122,7 +122,7 @@ private: // NOLINT(readability-redundant-access-specifiers)
 	void initEventWidgets();
 	void updateEventBitmap();
 
-	static SCP_vector<int> read_root_formula_order(sexp_tree* tree);
+	static SCP_vector<int> read_root_formula_order(sexp_tree_view* tree);
 };
 
 } // namespace fso::fred::dialogs

@@ -148,7 +148,7 @@
           </widget>
          </item>
          <item>
-          <widget class="fso::fred::sexp_tree" name="formulaTreeView"/>
+          <widget class="fso::fred::sexp_tree_view" name="formulaTreeView"/>
          </item>
         </layout>
        </item>
@@ -265,9 +265,9 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>fso::fred::sexp_tree</class>
+   <class>fso::fred::sexp_tree_view</class>
    <extends>QTreeView</extends>
-   <header>ui/widgets/sexp_tree_ui.h</header>
+   <header>ui/widgets/sexp_tree_view.h</header>
   </customwidget>
  </customwidgets>
  <tabstops>

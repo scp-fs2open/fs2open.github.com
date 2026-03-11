@@ -5,7 +5,7 @@
 #include "mission/EditorViewport.h"
 #include "mission/dialogs/MissionGoalsDialogModel.h"
 
-#include "ui/widgets/sexp_tree_ui.h"
+#include "ui/widgets/sexp_tree_view.h"
 
 namespace fso::fred::dialogs {
 

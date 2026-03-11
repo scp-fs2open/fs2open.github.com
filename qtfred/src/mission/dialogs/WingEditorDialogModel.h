@@ -7,7 +7,7 @@
 #include <ship/ship.h>
 #include <playerman/player.h> // for max hotkeys
 #include <playerman/managepilot.h> // for squad logos
-#include "ui/widgets/sexp_tree_ui.h"
+#include "ui/widgets/sexp_tree_view.h"
 
 #include "globalincs/pstypes.h"
 #include <utility>

@@ -4,7 +4,7 @@
 
 #include <mission/missiongoals.h>
 
-#include "ui/widgets/sexp_tree_ui.h"
+#include "ui/widgets/sexp_tree_view.h"
 
 namespace fso::fred::dialogs {
 
@@ -47,7 +47,7 @@ class MissionGoalsDialogModel: public AbstractDialogModel {
 
 	// TODO HACK: This does not belong here since it is a UI specific control. Once the model based SEXP tree is implemented
 	// this should be replaced
-	void setTreeControl(sexp_tree* tree);
+	void setTreeControl(sexp_tree_view* tree);
  public:
 	int cur_goal = -1;
 	SCP_vector<int> m_sig;
@@ -56,7 +56,7 @@ class MissionGoalsDialogModel: public AbstractDialogModel {
 
 	int m_display_goal_types = 0;
 
-	sexp_tree* _sexp_tree = nullptr;
+	sexp_tree_view* _sexp_tree = nullptr;
 };
 
 } // namespace fso::fred::dialogs

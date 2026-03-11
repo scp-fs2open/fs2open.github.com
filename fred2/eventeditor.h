@@ -12,13 +12,13 @@
 #ifndef _EVENTEDITOR_H
 #define _EVENTEDITOR_H
 
-#include "sexp_tree_ui.h"
+#include "sexp_tree_view.h"
 #include "missioneditor/sexp_annotation_model.h"
 #include "mission/missiongoals.h"
 #include "mission/missionmessage.h"
 
 
-class event_sexp_tree : public sexp_tree
+class event_sexp_tree : public sexp_tree_view
 {
 public:
 	// for tooltips

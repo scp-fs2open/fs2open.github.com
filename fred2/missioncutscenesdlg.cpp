@@ -24,7 +24,7 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
-CMissionCutscenesDlg* Cutscene_editor_dlg; // global reference needed by sexp_tree class
+CMissionCutscenesDlg* Cutscene_editor_dlg; // global reference needed by sexp_tree_view class
 
 CString cutscene_descriptions[Num_movie_types] = {
 	"Plays just before the fiction viewer game state",

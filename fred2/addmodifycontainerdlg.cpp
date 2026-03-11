@@ -28,7 +28,7 @@ namespace {
 const SCP_string NEW_CONTAINER_NAME = "<New Container Name>";
 } // namespace
 
-CAddModifyContainerDlg::CAddModifyContainerDlg(const sexp_tree &s_tree, CWnd *pParent /*=nullptr*/)
+CAddModifyContainerDlg::CAddModifyContainerDlg(const sexp_tree_view &s_tree, CWnd *pParent /*=nullptr*/)
 	: CDialog(CAddModifyContainerDlg::IDD, pParent), m_sexp_tree(s_tree)
 {
 }

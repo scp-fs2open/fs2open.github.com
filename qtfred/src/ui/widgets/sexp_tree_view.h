@@ -57,7 +57,7 @@ inline QTreeWidgetItem* tree_item_handle(const sexp_tree_item& item) {
  * only Qt-specific concerns: widget creation, event handling, context menus, dialogs,
  * drag-and-drop, the operator quick-search popup, and signal emission.
  */
-class sexp_tree: public QTreeWidget, public ISexpTreeUI {
+class sexp_tree_view: public QTreeWidget, public ISexpTreeUI {
 
  Q_OBJECT
  public:
@@ -81,8 +81,8 @@ class sexp_tree: public QTreeWidget, public ISexpTreeUI {
 	//! Converts a NodeImage enum value to a QIcon via resource path lookup.
  	static QIcon convertNodeImageToIcon(NodeImage image);
 
-	explicit sexp_tree(QWidget* parent = nullptr);
-	~sexp_tree() override;
+	explicit sexp_tree_view(QWidget* parent = nullptr);
+	~sexp_tree_view() override;
 
 	//! Finds the node index for handle h, delegates to _model.compute_help_text(),
 	//! then emits helpChanged() and miniHelpChanged() signals.

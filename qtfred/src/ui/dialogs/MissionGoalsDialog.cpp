@@ -118,7 +118,7 @@ void MissionGoalsDialog::recreate_tree()
 		}
 
 		auto h = ui->goalEventTree->insert(goal.name.c_str());
-		h->setData(0, sexp_tree::FormulaDataRole, goal.formula);
+		h->setData(0, sexp_tree_view::FormulaDataRole, goal.formula);
 		ui->goalEventTree->add_sub_tree(goal.formula, h);
 	}
 
@@ -133,7 +133,7 @@ void MissionGoalsDialog::createNewObjective()
 	ui->goalEventTree->setCurrentItemIndex(-1);
 	ui->goalEventTree->add_operator("true", h);
 	auto index = goal.formula = ui->goalEventTree->getCurrentItemIndex();
-	h->setData(0, sexp_tree::FormulaDataRole, index);
+	h->setData(0, sexp_tree_view::FormulaDataRole, index);
 
 	ui->goalEventTree->setCurrentItem(h);
 }

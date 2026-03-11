@@ -15,7 +15,7 @@
 #include "EventEditor.h"
 #include "FREDView.h"
 #include "Management.h"
-#include "sexp_tree_ui.h"
+#include "sexp_tree_view.h"
 #include "textviewdlg.h"
 #include "mission/missionmessage.h"
 #include "cfile/cfile.h"
@@ -31,7 +31,7 @@ static char THIS_FILE[] = __FILE__;
 
 static int annotation_key_for_item(event_sexp_tree *tree, HTREEITEM h);
 
-BEGIN_MESSAGE_MAP(event_sexp_tree, sexp_tree)
+BEGIN_MESSAGE_MAP(event_sexp_tree, sexp_tree_view)
 	//{{AFX_MSG_MAP(event_sexp_tree)
 	ON_NOTIFY_EX_RANGE(TTN_NEEDTEXTW, 0, 0xFFFF, OnToolTipText)
 	ON_NOTIFY_EX_RANGE(TTN_NEEDTEXTA, 0, 0xFFFF, OnToolTipText)

@@ -9,7 +9,7 @@
 
 
 
-#include "sexp_tree_ui.h"
+#include "sexp_tree_view.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // wing_editor dialog
@@ -42,8 +42,8 @@ public:
 	enum { IDD = IDD_WING_EDITOR };
 	CSpinButtonCtrl	m_departure_delay_spin;
 	CSpinButtonCtrl	m_arrival_delay_spin;
-	sexp_tree	m_departure_tree;
-	sexp_tree	m_arrival_tree;
+	sexp_tree_view	m_departure_tree;
+	sexp_tree_view	m_arrival_tree;
 	CSpinButtonCtrl	m_threshold_spin;
 	CSpinButtonCtrl	m_waves_spin;
 	CString	m_wing_name;

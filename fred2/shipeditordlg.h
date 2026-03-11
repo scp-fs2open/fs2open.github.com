@@ -12,7 +12,7 @@
 #ifndef _SHIPEDITORDLG_H
 #define _SHIPEDITORDLG_H
 
-#include "sexp_tree_ui.h"
+#include "sexp_tree_view.h"
 #include "ShipGoalsDlg.h"
 #include "Management.h"
 
@@ -101,8 +101,8 @@ public:
 	CSpinButtonCtrl	m_destroy_spin;
 	CSpinButtonCtrl	m_arrival_delay_spin;
 	CSpinButtonCtrl	m_departure_delay_spin;
-	sexp_tree	m_arrival_tree;
-	sexp_tree	m_departure_tree;
+	sexp_tree_view	m_arrival_tree;
+	sexp_tree_view	m_departure_tree;
 	CString	m_ship_name;
 	CString m_ship_display_name;
 	CString	m_cargo1;

@@ -9,7 +9,7 @@
 
 
 
-#include "sexp_tree_ui.h"
+#include "sexp_tree_view.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // CMissionCutscenesDlg dialog
@@ -17,7 +17,7 @@
 #define OPERAND	0x01
 #define EDITABLE	0x02
 
-class cutscene_sexp_tree : public sexp_tree
+class cutscene_sexp_tree : public sexp_tree_view
 {
 };
 
@@ -83,4 +83,4 @@ protected:
 	int modified;
 };
 
-extern CMissionCutscenesDlg* Cutscene_editor_dlg; // global reference needed by sexp_tree class
+extern CMissionCutscenesDlg* Cutscene_editor_dlg; // global reference needed by sexp_tree_view class

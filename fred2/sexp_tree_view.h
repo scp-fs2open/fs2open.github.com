@@ -7,8 +7,8 @@
  *
 */
 
-#ifndef _SEXP_TREE_H
-#define _SEXP_TREE_H
+#ifndef _SEXP_TREE_VIEW_H
+#define _SEXP_TREE_VIEW_H
 
 // 4786 is identifier truncated to 255 characters (happens all the time in Microsoft #includes) -- Goober5000
 #pragma warning(disable: 4786)
@@ -52,14 +52,14 @@ inline HTREEITEM tree_item_handle(const sexp_tree_item& item) {
 	return static_cast<HTREEITEM>(item.handle);
 }
 
-class sexp_tree : public CTreeCtrl, public ISexpTreeUI
+class sexp_tree_view : public CTreeCtrl, public ISexpTreeUI
 {
 public:
 	// Shared model and action layer (must be declared before reference aliases below)
 	SexpTreeModel _model;
 	SexpTreeActions _actions;
 
-	sexp_tree();
+	sexp_tree_view();
 
 	void update_help(HTREEITEM h);
 	static const char *help(int code);
@@ -121,14 +121,14 @@ public:
 	void ui_expand_branch(void* handle) override;
 
 	// ClassWizard generated virtual function overrides
-	//{{AFX_VIRTUAL(sexp_tree)
+	//{{AFX_VIRTUAL(sexp_tree_view)
 	public:
 	virtual BOOL OnCommand(WPARAM wParam, LPARAM lParam);
 	//}}AFX_VIRTUAL
 
 	// Generated message map functions
 protected:
-	//{{AFX_MSG(sexp_tree)
+	//{{AFX_MSG(sexp_tree_view)
 	afx_msg void OnBegindrag(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnMouseMove(UINT nFlags, CPoint point);
 	afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
