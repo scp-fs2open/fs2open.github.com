@@ -93,7 +93,7 @@ public:
 	 * VkImage/VMA allocations for textures that won't be needed.
 	 * Textures are re-uploaded on demand when accessed again.
 	 */
-	void flushTextures();
+	void flushTextures() const;
 
 	// Bitmap management functions (implement gr_screen function pointers)
 

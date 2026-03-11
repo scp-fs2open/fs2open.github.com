@@ -217,7 +217,7 @@ void VulkanTextureManager::shutdown()
 	mprintf(("Vulkan Texture Manager shutdown\n"));
 }
 
-void VulkanTextureManager::flushTextures()
+void VulkanTextureManager::flushTextures() const
 {
 	if (!m_initialized) {
 		return;
@@ -1782,26 +1782,26 @@ vk::Sampler VulkanTextureManager::getSampler(vk::Filter magFilter, vk::Filter mi
 
 vk::DescriptorImageInfo VulkanTextureManager::getFallbackTextureInfo2D()
 {
-	return vk::DescriptorImageInfo(m_defaultSampler, m_fallbackTextureView2D,
-	                               vk::ImageLayout::eShaderReadOnlyOptimal);
+	return {m_defaultSampler, m_fallbackTextureView2D,
+	                               vk::ImageLayout::eShaderReadOnlyOptimal};
 }
 
 vk::DescriptorImageInfo VulkanTextureManager::getFallbackTextureInfoCube()
 {
-	return vk::DescriptorImageInfo(m_defaultSampler, m_fallbackCubeView,
-	                               vk::ImageLayout::eShaderReadOnlyOptimal);
+	return {m_defaultSampler, m_fallbackCubeView,
+	                               vk::ImageLayout::eShaderReadOnlyOptimal};
 }
 
 vk::DescriptorImageInfo VulkanTextureManager::getFallbackTextureInfo2DArray()
 {
-	return vk::DescriptorImageInfo(m_defaultSampler, m_fallback2DArrayView,
-	                               vk::ImageLayout::eShaderReadOnlyOptimal);
+	return {m_defaultSampler, m_fallback2DArrayView,
+	                               vk::ImageLayout::eShaderReadOnlyOptimal};
 }
 
 vk::DescriptorImageInfo VulkanTextureManager::getFallbackTextureInfo3D()
 {
-	return vk::DescriptorImageInfo(m_defaultSampler, m_fallback3DView,
-	                               vk::ImageLayout::eShaderReadOnlyOptimal);
+	return {m_defaultSampler, m_fallback3DView,
+	                               vk::ImageLayout::eShaderReadOnlyOptimal};
 }
 
 tcache_slot_vulkan* VulkanTextureManager::getTextureSlot(int handle)
