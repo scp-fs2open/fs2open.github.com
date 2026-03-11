@@ -1841,9 +1841,6 @@ void VulkanPostProcessor::renderDeferredLights(vk::CommandBuffer cmd)
 	// Fallback buffer and textures for unused descriptor bindings
 	auto fallbackBufInfo = bufferMgr->getFallbackUniformBufferInfo();
 
-	vk::ImageView fallbackView = texMgr->getFallbackTextureView2D();
-	vk::Sampler defaultSampler = texMgr->getDefaultSampler();
-
 	// Begin light accumulation render pass
 	{
 		vk::RenderPassBeginInfo rpBegin;
@@ -1893,34 +1890,19 @@ void VulkanPostProcessor::renderDeferredLights(vk::CommandBuffer cmd)
 			shadowTexInfo.imageView = m_shadowColor.view;
 			shadowTexInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 		} else {
-			shadowTexInfo.sampler = defaultSampler;
-			shadowTexInfo.imageView = texMgr->getFallback2DArrayView();
-			shadowTexInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+			shadowTexInfo = texMgr->getFallbackTextureInfo2DArray();
 		}
 
 		// Env map at binding 3
-		vk::ImageView fallbackCubeView = texMgr->getFallbackCubeView();
-		vk::DescriptorImageInfo envTexInfo;
+		auto envTexInfo = texMgr->getFallbackTextureInfoCube();
 		if (envMapAvailable && envMapSlot) {
-			envTexInfo.sampler = defaultSampler;
 			envTexInfo.imageView = envMapSlot->imageView;
-			envTexInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		} else {
-			envTexInfo.sampler = defaultSampler;
-			envTexInfo.imageView = fallbackCubeView;
-			envTexInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 		}
 
 		// Irradiance map at binding 4
-		vk::DescriptorImageInfo irrTexInfo;
+		auto irrTexInfo = texMgr->getFallbackTextureInfoCube();
 		if (envMapAvailable && irrMapSlot) {
-			irrTexInfo.sampler = defaultSampler;
 			irrTexInfo.imageView = irrMapSlot->imageView;
-			irrTexInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		} else {
-			irrTexInfo.sampler = defaultSampler;
-			irrTexInfo.imageView = fallbackCubeView;
-			irrTexInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 		}
 
 		std::array<vk::WriteDescriptorSet, 5> globalWrites;
@@ -1976,7 +1958,7 @@ void VulkanPostProcessor::renderDeferredLights(vk::CommandBuffer cmd)
 
 		// Build full texture array: G-buffer textures at [0-3], fallback at [4-15]
 		std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texArrayInfos;
-		texArrayInfos.fill({defaultSampler, fallbackView, vk::ImageLayout::eShaderReadOnlyOptimal});
+		texArrayInfos.fill(texMgr->getFallbackTextureInfo2D());
 		texArrayInfos[0] = {m_linearSampler, m_sceneColor.view, vk::ImageLayout::eShaderReadOnlyOptimal};
 		texArrayInfos[1] = {m_linearSampler, m_gbufNormal.view, vk::ImageLayout::eShaderReadOnlyOptimal};
 		texArrayInfos[2] = {m_linearSampler, m_gbufPosition.view, vk::ImageLayout::eShaderReadOnlyOptimal};
@@ -2009,10 +1991,7 @@ void VulkanPostProcessor::renderDeferredLights(vk::CommandBuffer cmd)
 		ssboWrite.pBufferInfo = &fallbackBufInfo;
 
 		// Bindings 4-6: depth, scene color, distortion fallbacks
-		vk::DescriptorImageInfo fallbackImg;
-		fallbackImg.sampler = defaultSampler;
-		fallbackImg.imageView = fallbackView;
-		fallbackImg.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		auto fallbackImg = texMgr->getFallbackTextureInfo2D();
 
 		std::array<vk::WriteDescriptorSet, 3> texFallbackWrites;
 		for (uint32_t b = 4; b <= 6; ++b) {
@@ -2521,11 +2500,8 @@ void VulkanPostProcessor::drawFullscreenTriangle(vk::CommandBuffer cmd, vk::Rend
 
 	{
 		// Build full texture array: source texture at [0], fallback at [1-15]
-		vk::ImageView fallbackView = texMgr->getFallbackTextureView2D();
-		vk::Sampler defaultSampler = texMgr->getDefaultSampler();
-
 		std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texArrayInfos;
-		texArrayInfos.fill({defaultSampler, fallbackView, vk::ImageLayout::eShaderReadOnlyOptimal});
+		texArrayInfos.fill(texMgr->getFallbackTextureInfo2D());
 		texArrayInfos[0].sampler = sampler;
 		texArrayInfos[0].imageView = textureView;
 
@@ -2565,11 +2541,10 @@ void VulkanPostProcessor::drawFullscreenTriangle(vk::CommandBuffer cmd, vk::Rend
 		ssboWrite.descriptorType = vk::DescriptorType::eStorageBuffer;
 		ssboWrite.pBufferInfo = &fallbackBufInfo;
 
-		// Binding 4: Depth map (fallback to 2D white texture)
-		vk::DescriptorImageInfo depthMapFallback;
-		depthMapFallback.sampler = defaultSampler;
-		depthMapFallback.imageView = fallbackView;
-		depthMapFallback.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		// Bindings 4-6: depth, scene color, distortion (fallback to 2D white texture)
+		auto depthMapFallback = texMgr->getFallbackTextureInfo2D();
+		auto sceneColorFallback = depthMapFallback;
+		auto distMapFallback = depthMapFallback;
 
 		vk::WriteDescriptorSet depthMapWrite;
 		depthMapWrite.dstSet = materialSet;
@@ -2579,12 +2554,6 @@ void VulkanPostProcessor::drawFullscreenTriangle(vk::CommandBuffer cmd, vk::Rend
 		depthMapWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		depthMapWrite.pImageInfo = &depthMapFallback;
 
-		// Binding 5: Scene color / frameBuffer (fallback to 2D white texture)
-		vk::DescriptorImageInfo sceneColorFallback;
-		sceneColorFallback.sampler = defaultSampler;
-		sceneColorFallback.imageView = fallbackView;
-		sceneColorFallback.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-
 		vk::WriteDescriptorSet sceneColorWrite;
 		sceneColorWrite.dstSet = materialSet;
 		sceneColorWrite.dstBinding = MaterialBinding::SceneColor;
@@ -2592,12 +2561,6 @@ void VulkanPostProcessor::drawFullscreenTriangle(vk::CommandBuffer cmd, vk::Rend
 		sceneColorWrite.descriptorCount = 1;
 		sceneColorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		sceneColorWrite.pImageInfo = &sceneColorFallback;
-
-		// Binding 6: Distortion map (fallback to 2D white texture)
-		vk::DescriptorImageInfo distMapFallback;
-		distMapFallback.sampler = defaultSampler;
-		distMapFallback.imageView = fallbackView;
-		distMapFallback.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 
 		vk::WriteDescriptorSet distMapWrite;
 		distMapWrite.dstSet = materialSet;
@@ -3564,11 +3527,9 @@ void VulkanPostProcessor::blitToSwapChain(vk::CommandBuffer cmd)
 	{
 		// Build full texture array: source texture at [0], fallback at [1-15]
 		auto* texMgr = getTextureManager();
-		vk::ImageView fallbackView = texMgr->getFallbackTextureView2D();
-		vk::Sampler defaultSampler = texMgr->getDefaultSampler();
 
 		std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texArrayInfos;
-		texArrayInfos.fill({defaultSampler, fallbackView, vk::ImageLayout::eShaderReadOnlyOptimal});
+		texArrayInfos.fill(texMgr->getFallbackTextureInfo2D());
 		// Bind source texture based on post-processing chain state:
 		// - Post-effects ran: read Scene_luminance (post-effects output)
 		// - LDR only (tonemap/FXAA): read Scene_ldr
@@ -3614,11 +3575,10 @@ void VulkanPostProcessor::blitToSwapChain(vk::CommandBuffer cmd)
 		ssboWrite.descriptorType = vk::DescriptorType::eStorageBuffer;
 		ssboWrite.pBufferInfo = &bufferInfo;
 
-		// Binding 4: Depth map (fallback to 2D white texture)
-		vk::DescriptorImageInfo depthMapFallback;
-		depthMapFallback.sampler = defaultSampler;
-		depthMapFallback.imageView = fallbackView;
-		depthMapFallback.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		// Bindings 4-6: depth, scene color, distortion (fallback to 2D white texture)
+		auto depthMapFallback = texMgr->getFallbackTextureInfo2D();
+		auto sceneColorFallback = depthMapFallback;
+		auto distMapFallback = depthMapFallback;
 
 		vk::WriteDescriptorSet depthMapWrite;
 		depthMapWrite.dstSet = materialSet;
@@ -3628,12 +3588,6 @@ void VulkanPostProcessor::blitToSwapChain(vk::CommandBuffer cmd)
 		depthMapWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		depthMapWrite.pImageInfo = &depthMapFallback;
 
-		// Binding 5: Scene color / frameBuffer (fallback to 2D white texture)
-		vk::DescriptorImageInfo sceneColorFallback;
-		sceneColorFallback.sampler = defaultSampler;
-		sceneColorFallback.imageView = fallbackView;
-		sceneColorFallback.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-
 		vk::WriteDescriptorSet sceneColorWrite;
 		sceneColorWrite.dstSet = materialSet;
 		sceneColorWrite.dstBinding = MaterialBinding::SceneColor;
@@ -3641,12 +3595,6 @@ void VulkanPostProcessor::blitToSwapChain(vk::CommandBuffer cmd)
 		sceneColorWrite.descriptorCount = 1;
 		sceneColorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		sceneColorWrite.pImageInfo = &sceneColorFallback;
-
-		// Binding 6: Distortion map (fallback to 2D white texture)
-		vk::DescriptorImageInfo distMapFallback;
-		distMapFallback.sampler = defaultSampler;
-		distMapFallback.imageView = fallbackView;
-		distMapFallback.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 
 		vk::WriteDescriptorSet distMapWrite;
 		distMapWrite.dstSet = materialSet;
@@ -4262,9 +4210,6 @@ void VulkanPostProcessor::renderSceneFog(vk::CommandBuffer cmd)
 	{
 		auto fallbackBufInfo = bufferMgr->getFallbackUniformBufferInfo();
 
-		vk::Sampler defaultSampler = texMgr->getDefaultSampler();
-		vk::ImageView fallbackView = texMgr->getFallbackTextureView2D();
-
 		// Binding 0: ModelData UBO (fallback)
 		vk::WriteDescriptorSet modelWrite;
 		modelWrite.dstSet = materialSet;
@@ -4276,7 +4221,7 @@ void VulkanPostProcessor::renderSceneFog(vk::CommandBuffer cmd)
 
 		// Build full texture array: composite at [0], fallback at [1-15]
 		std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texArrayInfos;
-		texArrayInfos.fill({defaultSampler, fallbackView, vk::ImageLayout::eShaderReadOnlyOptimal});
+		texArrayInfos.fill(texMgr->getFallbackTextureInfo2D());
 		texArrayInfos[0].sampler = m_linearSampler;
 		texArrayInfos[0].imageView = m_gbufComposite.view;
 
@@ -4321,10 +4266,7 @@ void VulkanPostProcessor::renderSceneFog(vk::CommandBuffer cmd)
 		depthWrite.pImageInfo = &depthInfo;
 
 		// Bindings 5, 6: Fallback texture
-		vk::DescriptorImageInfo sceneColorFallback;
-		sceneColorFallback.sampler = defaultSampler;
-		sceneColorFallback.imageView = fallbackView;
-		sceneColorFallback.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		auto sceneColorFallback = texMgr->getFallbackTextureInfo2D();
 
 		vk::WriteDescriptorSet bind5Write;
 		bind5Write.dstSet = materialSet;
@@ -4663,10 +4605,6 @@ void VulkanPostProcessor::renderVolumetricFog(vk::CommandBuffer cmd)
 	{
 		auto fallbackBufInfo = bufferMgr->getFallbackUniformBufferInfo();
 
-		vk::Sampler defaultSampler = texMgr->getDefaultSampler();
-		vk::ImageView fallbackView = texMgr->getFallbackTextureView2D();
-		vk::ImageView fallback3DView = texMgr->getFallback3DView();
-
 		// Binding 0: ModelData UBO (fallback)
 		vk::WriteDescriptorSet modelWrite;
 		modelWrite.dstSet = materialSet;
@@ -4678,7 +4616,7 @@ void VulkanPostProcessor::renderVolumetricFog(vk::CommandBuffer cmd)
 
 		// Binding 1: Texture array — [0]=composite, [1]=emissive, rest=fallback
 		std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texArrayInfos;
-		texArrayInfos.fill({defaultSampler, fallbackView, vk::ImageLayout::eShaderReadOnlyOptimal});
+		texArrayInfos.fill(texMgr->getFallbackTextureInfo2D());
 		texArrayInfos[0] = {m_linearSampler, m_gbufComposite.view, vk::ImageLayout::eShaderReadOnlyOptimal};
 		texArrayInfos[1] = {m_mipmapSampler, m_emissiveMipmappedFullView, vk::ImageLayout::eShaderReadOnlyOptimal};
 
@@ -4737,14 +4675,11 @@ void VulkanPostProcessor::renderVolumetricFog(vk::CommandBuffer cmd)
 		volumeWrite.pImageInfo = &volumeInfo;
 
 		// Binding 6: 3D noise texture (or fallback 3D if noise inactive)
-		vk::DescriptorImageInfo noiseInfo;
+		auto noiseInfo = texMgr->getFallbackTextureInfo3D();
 		noiseInfo.sampler = m_linearSampler;
 		if (noiseSlot && noiseSlot->imageView) {
 			noiseInfo.imageView = noiseSlot->imageView;
-		} else {
-			noiseInfo.imageView = fallback3DView;
 		}
-		noiseInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 
 		vk::WriteDescriptorSet noiseWrite;
 		noiseWrite.dstSet = materialSet;

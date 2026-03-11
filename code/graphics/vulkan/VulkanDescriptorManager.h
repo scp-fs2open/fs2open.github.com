@@ -48,6 +48,11 @@ public:
 		w.pBufferInfo = &buf;
 	}
 
+	void writeUniformBuffer(vk::DescriptorSet set, uint32_t binding,
+	                        const vk::DescriptorBufferInfo& info) {
+		writeUniformBuffer(set, binding, info.buffer, info.offset, info.range);
+	}
+
 	void writeStorageBuffer(vk::DescriptorSet set, uint32_t binding,
 	                        vk::Buffer buffer, vk::DeviceSize offset, vk::DeviceSize range) {
 		Verify(buffer);
@@ -66,6 +71,11 @@ public:
 		w.pBufferInfo = &buf;
 	}
 
+	void writeStorageBuffer(vk::DescriptorSet set, uint32_t binding,
+	                        const vk::DescriptorBufferInfo& info) {
+		writeStorageBuffer(set, binding, info.buffer, info.offset, info.range);
+	}
+
 	void writeTexture(vk::DescriptorSet set, uint32_t binding,
 	                  vk::ImageView imageView, vk::Sampler sampler,
 	                  vk::ImageLayout layout = vk::ImageLayout::eShaderReadOnlyOptimal) {
@@ -82,6 +92,11 @@ public:
 		w.descriptorCount = 1;
 		w.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		w.pImageInfo = &img;
+	}
+
+	void writeTexture(vk::DescriptorSet set, uint32_t binding,
+	                  const vk::DescriptorImageInfo& info) {
+		writeTexture(set, binding, info.imageView, info.sampler, info.imageLayout);
 	}
 
 	void writeTextureArray(vk::DescriptorSet set, uint32_t binding,

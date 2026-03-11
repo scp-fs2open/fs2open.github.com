@@ -943,17 +943,15 @@ bool VulkanDrawManager::bindMaterialTextures(material* mat, vk::DescriptorSet ma
 	// types - they always stay clamped. We need a clamp sampler for those cases.
 	vk::Sampler clampSampler = texManager->getSampler(
 		vk::Filter::eLinear, vk::Filter::eLinear, vk::SamplerAddressMode::eClampToEdge, true, 0.0f, true);
-	vk::ImageView fallbackView = texManager->getFallback2DArrayView();
+	auto fallbackTexInfo = texManager->getFallbackTextureInfo2DArray();
+	fallbackTexInfo.sampler = sampler;
+
+	std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> textureInfos;
+	textureInfos.fill(fallbackTexInfo);
 
 	// Check for movie material - needs special YUV texture handling
 	auto* movieMat = dynamic_cast<movie_material*>(mat);
 	if (movieMat) {
-		// Movie materials use 3 YUV textures in the texture array at indices 0, 1, 2
-		std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> textureInfos;
-
-		// Initialize all slots with fallback
-		textureInfos.fill({sampler, fallbackView, vk::ImageLayout::eShaderReadOnlyOptimal});
-
 		auto loadYuvTexture = [&](int handle, uint32_t slot) {
 			if (handle < 0 || slot >= textureInfos.size()) return;
 			auto* texSlot = texManager->getTextureSlot(handle);
@@ -978,12 +976,6 @@ bool VulkanDrawManager::bindMaterialTextures(material* mat, vk::DescriptorSet ma
 		writer->writeTextureArray(materialSet, MaterialBinding::TextureArray, textureInfos.data(), static_cast<uint32_t>(textureInfos.size()));
 		return true;
 	}
-
-	// Build texture info array for all material texture slots
-	std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> textureInfos;
-
-	// Initialize all slots with fallback texture (1x1 white)
-	textureInfos.fill({sampler, fallbackView, vk::ImageLayout::eShaderReadOnlyOptimal});
 
 	// Helper to set texture at a specific slot - loads on-demand if not present
 	static int texLogCount = 0;
@@ -1198,11 +1190,8 @@ bool VulkanDrawManager::applyMaterial(material* mat, primitive_type prim_type, v
 		writer.reset(descManager->getDevice());
 
 		// Get fallback resources for uninitialized bindings
-		vk::Buffer fallbackUBO = bufferManager->getFallbackUniformBuffer();
-		auto fallbackUBOSize = static_cast<vk::DeviceSize>(graphics::vulkan::VulkanBufferManager::getFallbackUniformBufferSize());
+		auto fallbackBufInfo = bufferManager->getFallbackUniformBufferInfo();
 		auto* texManager = getTextureManager();
-		vk::Sampler fallbackSampler = texManager->getDefaultSampler();
-		vk::ImageView fallbackView = texManager->getFallback2DArrayView();
 
 		// Helper: write a pending UBO or fallback if the buffer is null/invalid
 		auto writeUBOOrFallback = [&](DescriptorWriter& w, vk::DescriptorSet set,
@@ -1216,7 +1205,7 @@ bool VulkanDrawManager::applyMaterial(material* mat, primitive_type prim_type, v
 					return;
 				}
 			}
-			w.writeUniformBuffer(set, binding, fallbackUBO, 0, fallbackUBOSize);
+			w.writeUniformBuffer(set, binding, fallbackBufInfo);
 		};
 
 		// Set 0: Global - bindings: 0=Lights UBO, 1=DeferredGlobals UBO, 2=Shadow tex, 3=Env cube, 4=Irr cube
@@ -1239,12 +1228,11 @@ bool VulkanDrawManager::applyMaterial(material* mat, primitive_type prim_type, v
 			if (pp && pp->isShadowInitialized() && pp->getShadowColorView()) {
 				writer.writeTexture(globalSet, GlobalBinding::ShadowMap, pp->getShadowColorView(), pp->getShadowSampler());
 			} else {
-				writer.writeTexture(globalSet, GlobalBinding::ShadowMap, fallbackView, fallbackSampler);
+				writer.writeTexture(globalSet, GlobalBinding::ShadowMap, texManager->getFallbackTextureInfo2DArray());
 			}
 		}
-		vk::ImageView fallbackCubeView = texManager->getFallbackCubeView();
-		writer.writeTexture(globalSet, GlobalBinding::EnvMap, fallbackCubeView, fallbackSampler);
-		writer.writeTexture(globalSet, GlobalBinding::IrradianceMap, fallbackCubeView, fallbackSampler);
+		writer.writeTexture(globalSet, GlobalBinding::EnvMap, texManager->getFallbackTextureInfoCube());
+		writer.writeTexture(globalSet, GlobalBinding::IrradianceMap, texManager->getFallbackTextureInfoCube());
 		writer.flush();
 		stateTracker->bindDescriptorSet(DescriptorSetIndex::Global, globalSet);
 
@@ -1271,32 +1259,29 @@ bool VulkanDrawManager::applyMaterial(material* mat, primitive_type prim_type, v
 				                          static_cast<vk::DeviceSize>(tf.lastUploadOffset),
 				                          static_cast<vk::DeviceSize>(tf.lastUploadSize));
 			} else {
-				writer.writeStorageBuffer(materialSet, MaterialBinding::TransformSSBO, fallbackUBO, 0, fallbackUBOSize);
+				writer.writeStorageBuffer(materialSet, MaterialBinding::TransformSSBO, fallbackBufInfo);
 			}
 		}
 		// Binding 4: depth map for soft particles
 		{
-			vk::ImageView depthView = m_depthTextureOverride ? m_depthTextureOverride
-			                                                  : texManager->getFallbackTextureView2D();
-			vk::Sampler depthSampler = m_depthSamplerOverride ? m_depthSamplerOverride
-			                                                   : texManager->getDefaultSampler();
-			writer.writeTexture(materialSet, MaterialBinding::DepthMap, depthView, depthSampler);
+			auto depthInfo = texManager->getFallbackTextureInfo2D();
+			if (m_depthTextureOverride) depthInfo.imageView = m_depthTextureOverride;
+			if (m_depthSamplerOverride) depthInfo.sampler = m_depthSamplerOverride;
+			writer.writeTexture(materialSet, MaterialBinding::DepthMap, depthInfo);
 		}
 		// Binding 5: scene color / frameBuffer for distortion
 		{
-			vk::ImageView sceneView = m_sceneColorOverride ? m_sceneColorOverride
-			                                                : texManager->getFallbackTextureView2D();
-			vk::Sampler sceneSampler = m_sceneColorSamplerOverride ? m_sceneColorSamplerOverride
-			                                                       : texManager->getDefaultSampler();
-			writer.writeTexture(materialSet, MaterialBinding::SceneColor, sceneView, sceneSampler);
+			auto sceneInfo = texManager->getFallbackTextureInfo2D();
+			if (m_sceneColorOverride) sceneInfo.imageView = m_sceneColorOverride;
+			if (m_sceneColorSamplerOverride) sceneInfo.sampler = m_sceneColorSamplerOverride;
+			writer.writeTexture(materialSet, MaterialBinding::SceneColor, sceneInfo);
 		}
 		// Binding 6: distortion map
 		{
-			vk::ImageView distView = m_distMapOverride ? m_distMapOverride
-			                                            : texManager->getFallbackTextureView2D();
-			vk::Sampler distSampler = m_distMapSamplerOverride ? m_distMapSamplerOverride
-			                                                    : texManager->getDefaultSampler();
-			writer.writeTexture(materialSet, MaterialBinding::DistortionMap, distView, distSampler);
+			auto distInfo = texManager->getFallbackTextureInfo2D();
+			if (m_distMapOverride) distInfo.imageView = m_distMapOverride;
+			if (m_distMapSamplerOverride) distInfo.sampler = m_distMapSamplerOverride;
+			writer.writeTexture(materialSet, MaterialBinding::DistortionMap, distInfo);
 		}
 		// Binding 1: Texture array
 		bindMaterialTextures(mat, materialSet, &writer);
@@ -2127,12 +2112,7 @@ void vulkan_calculate_irrmap()
 	memManager->unmapMemory(faceUBOAlloc);
 
 	// Get fallback resources
-	vk::Buffer fallbackUBO = bufferManager->getFallbackUniformBuffer();
-	auto fallbackUBOSize = static_cast<vk::DeviceSize>(graphics::vulkan::VulkanBufferManager::getFallbackUniformBufferSize());
-	vk::Sampler defaultSampler = texManager->getDefaultSampler();
-	vk::ImageView fallbackView = texManager->getFallback2DArrayView();
-	vk::ImageView fallbackView2D = texManager->getFallbackTextureView2D();
-	vk::ImageView fallbackCubeView = texManager->getFallbackCubeView();
+	auto fallbackBufInfo = bufferManager->getFallbackUniformBufferInfo();
 
 	vk::Extent2D irrExtent(irrTs->width, irrTs->height);
 
@@ -2178,30 +2158,30 @@ void vulkan_calculate_irrmap()
 		// Set 0: Global (all fallback)
 		vk::DescriptorSet globalSet = descManager->allocateFrameSet(DescriptorSetIndex::Global);
 		Verify(globalSet);
-		writer.writeUniformBuffer(globalSet, GlobalBinding::Lights, fallbackUBO, 0, fallbackUBOSize);
-		writer.writeUniformBuffer(globalSet, GlobalBinding::DeferredData, fallbackUBO, 0, fallbackUBOSize);
-		writer.writeTexture(globalSet, GlobalBinding::ShadowMap, fallbackView, defaultSampler);
-		writer.writeTexture(globalSet, GlobalBinding::EnvMap, fallbackCubeView, defaultSampler);
-		writer.writeTexture(globalSet, GlobalBinding::IrradianceMap, fallbackCubeView, defaultSampler);
+		writer.writeUniformBuffer(globalSet, GlobalBinding::Lights, fallbackBufInfo);
+		writer.writeUniformBuffer(globalSet, GlobalBinding::DeferredData, fallbackBufInfo);
+		writer.writeTexture(globalSet, GlobalBinding::ShadowMap, texManager->getFallbackTextureInfo2DArray());
+		writer.writeTexture(globalSet, GlobalBinding::EnvMap, texManager->getFallbackTextureInfoCube());
+		writer.writeTexture(globalSet, GlobalBinding::IrradianceMap, texManager->getFallbackTextureInfoCube());
 		writer.flush();
 
 		// Set 1: Material (envmap cubemap at binding 1)
 		vk::DescriptorSet materialSet = descManager->allocateFrameSet(DescriptorSetIndex::Material);
 		Verify(materialSet);
-		writer.writeUniformBuffer(materialSet, MaterialBinding::ModelData, fallbackUBO, 0, fallbackUBOSize);
-		writer.writeUniformBuffer(materialSet, MaterialBinding::DecalGlobals, fallbackUBO, 0, fallbackUBOSize);
-		writer.writeStorageBuffer(materialSet, MaterialBinding::TransformSSBO, fallbackUBO, 0, fallbackUBOSize);
+		writer.writeUniformBuffer(materialSet, MaterialBinding::ModelData, fallbackBufInfo);
+		writer.writeUniformBuffer(materialSet, MaterialBinding::DecalGlobals, fallbackBufInfo);
+		writer.writeStorageBuffer(materialSet, MaterialBinding::TransformSSBO, fallbackBufInfo);
 
 		// Binding 1: envmap cubemap (element 0) + fallback for rest of array
 		{
 			std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texImages;
-			texImages.fill({defaultSampler, fallbackView2D, vk::ImageLayout::eShaderReadOnlyOptimal});
-			texImages[0] = {defaultSampler, envmapView, vk::ImageLayout::eShaderReadOnlyOptimal};
+			texImages.fill(texManager->getFallbackTextureInfo2D());
+			texImages[0].imageView = envmapView;
 			writer.writeTextureArray(materialSet, MaterialBinding::TextureArray, texImages.data(), static_cast<uint32_t>(texImages.size()));
 		}
-		writer.writeTexture(materialSet, MaterialBinding::DepthMap, fallbackView2D, defaultSampler);
-		writer.writeTexture(materialSet, MaterialBinding::SceneColor, fallbackView2D, defaultSampler);
-		writer.writeTexture(materialSet, MaterialBinding::DistortionMap, fallbackView2D, defaultSampler);
+		writer.writeTexture(materialSet, MaterialBinding::DepthMap, texManager->getFallbackTextureInfo2D());
+		writer.writeTexture(materialSet, MaterialBinding::SceneColor, texManager->getFallbackTextureInfo2D());
+		writer.writeTexture(materialSet, MaterialBinding::DistortionMap, texManager->getFallbackTextureInfo2D());
 		writer.flush();
 
 		// Set 2: PerDraw (face UBO at binding 0)
@@ -2210,7 +2190,7 @@ void vulkan_calculate_irrmap()
 		writer.writeUniformBuffer(perDrawSet, PerDrawBinding::GenericData, faceUBO,
 			static_cast<vk::DeviceSize>(face) * UBO_SLOT_SIZE, UBO_SLOT_SIZE);
 		for (uint32_t b = 1; b <= 4; ++b) {
-			writer.writeUniformBuffer(perDrawSet, b, fallbackUBO, 0, fallbackUBOSize);
+			writer.writeUniformBuffer(perDrawSet, b, fallbackBufInfo);
 		}
 		writer.flush();
 

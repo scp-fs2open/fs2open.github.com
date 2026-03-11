@@ -1703,29 +1703,28 @@ vk::Sampler VulkanTextureManager::getSampler(vk::Filter magFilter, vk::Filter mi
 	}
 }
 
-vk::Sampler VulkanTextureManager::getDefaultSampler()
+vk::DescriptorImageInfo VulkanTextureManager::getFallbackTextureInfo2D()
 {
-	return m_defaultSampler;
+	return vk::DescriptorImageInfo(m_defaultSampler, m_fallbackTextureView2D,
+	                               vk::ImageLayout::eShaderReadOnlyOptimal);
 }
 
-vk::ImageView VulkanTextureManager::getFallback2DArrayView()
+vk::DescriptorImageInfo VulkanTextureManager::getFallbackTextureInfoCube()
 {
-	return m_fallback2DArrayView;
+	return vk::DescriptorImageInfo(m_defaultSampler, m_fallbackCubeView,
+	                               vk::ImageLayout::eShaderReadOnlyOptimal);
 }
 
-vk::ImageView VulkanTextureManager::getFallbackTextureView2D()
+vk::DescriptorImageInfo VulkanTextureManager::getFallbackTextureInfo2DArray()
 {
-	return m_fallbackTextureView2D;
+	return vk::DescriptorImageInfo(m_defaultSampler, m_fallback2DArrayView,
+	                               vk::ImageLayout::eShaderReadOnlyOptimal);
 }
 
-vk::ImageView VulkanTextureManager::getFallbackCubeView()
+vk::DescriptorImageInfo VulkanTextureManager::getFallbackTextureInfo3D()
 {
-	return m_fallbackCubeView;
-}
-
-vk::ImageView VulkanTextureManager::getFallback3DView()
-{
-	return m_fallback3DView;
+	return vk::DescriptorImageInfo(m_defaultSampler, m_fallback3DView,
+	                               vk::ImageLayout::eShaderReadOnlyOptimal);
 }
 
 tcache_slot_vulkan* VulkanTextureManager::getTextureSlot(int handle)
