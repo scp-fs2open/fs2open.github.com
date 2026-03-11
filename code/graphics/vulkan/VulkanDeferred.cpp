@@ -333,14 +333,14 @@ void vulkan_deferred_lighting_msaa()
 		std::array<vk::ImageMemoryBarrier, 6> barriers;
 
 		// 5 color images: eColorAttachmentOptimal → eShaderReadOnlyOptimal
-		vk::Image msaaImages[5] = {
+		std::array<vk::Image, 5> msaaImages = {
 			pp->getMsaaColorImage(),
 			pp->getMsaaPositionImage(),
 			pp->getMsaaNormalImage(),
 			pp->getMsaaSpecularImage(),
 			pp->getMsaaEmissiveImage(),
 		};
-		for (int i = 0; i < 5; ++i) {
+		for (size_t i = 0; i < msaaImages.size(); ++i) {
 			barriers[i].srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
 			barriers[i].dstAccessMask = vk::AccessFlagBits::eShaderRead;
 			barriers[i].oldLayout = vk::ImageLayout::eColorAttachmentOptimal;
@@ -514,14 +514,14 @@ void vulkan_deferred_lighting_msaa()
 	{
 		std::array<vk::ImageMemoryBarrier, 6> restoreBarriers;
 
-		vk::Image msaaImages[5] = {
+		std::array<vk::Image, 5> msaaImages = {
 			pp->getMsaaColorImage(),
 			pp->getMsaaPositionImage(),
 			pp->getMsaaNormalImage(),
 			pp->getMsaaSpecularImage(),
 			pp->getMsaaEmissiveImage(),
 		};
-		for (int i = 0; i < 5; ++i) {
+		for (size_t i = 0; i < msaaImages.size(); ++i) {
 			restoreBarriers[i].srcAccessMask = vk::AccessFlagBits::eShaderRead;
 			restoreBarriers[i].dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
 			restoreBarriers[i].oldLayout = vk::ImageLayout::eShaderReadOnlyOptimal;

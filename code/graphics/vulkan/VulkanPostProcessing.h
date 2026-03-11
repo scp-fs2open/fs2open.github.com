@@ -3,6 +3,7 @@
 #include "globalincs/pstypes.h"
 #include "VulkanMemory.h"
 
+#include <array>
 #include <vulkan/vulkan.hpp>
 
 
@@ -549,11 +550,11 @@ private:
 		vk::Image image;
 		VulkanAllocation allocation;
 		vk::ImageView fullView;                      // All mip levels (for textureLod sampling)
-		vk::ImageView mipViews[MAX_MIP_BLUR_LEVELS]; // Per-mip views (for framebuffer attachment)
-		vk::Framebuffer mipFramebuffers[MAX_MIP_BLUR_LEVELS];
+		std::array<vk::ImageView, MAX_MIP_BLUR_LEVELS> mipViews = {};       // Per-mip views (for framebuffer attachment)
+		std::array<vk::Framebuffer, MAX_MIP_BLUR_LEVELS> mipFramebuffers = {};
 	};
 
-	BloomTarget m_bloomTex[2];                 // Half-res RGBA16F, 4 mip levels
+	std::array<BloomTarget, 2> m_bloomTex;     // Half-res RGBA16F, 4 mip levels
 	uint32_t m_bloomWidth = 0;                 // Half of scene width
 	uint32_t m_bloomHeight = 0;                // Half of scene height
 	vk::RenderPass m_bloomRenderPass;          // Color-only RGBA16F, loadOp=eDontCare
@@ -665,7 +666,7 @@ private:
 	bool m_emissiveMipmappedInitialized = false;
 
 	// ---- Distortion ping-pong textures (32x32 RGBA8) ----
-	RenderTarget m_distortionTex[2];
+	std::array<RenderTarget, 2> m_distortionTex;
 	int m_distortionSwitch = 0;        // Which texture is the current read source
 	float m_distortionTimer = 0.0f;    // Accumulator for ~30ms update interval
 	vk::Sampler m_distortionSampler;   // LINEAR filter, REPEAT wrapping

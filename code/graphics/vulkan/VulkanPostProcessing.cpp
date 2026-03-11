@@ -401,7 +401,7 @@ bool VulkanPostProcessor::init(vk::Device device, vk::PhysicalDevice physDevice,
 	// Initialize distortion ping-pong textures (non-fatal if it fails)
 	{
 		bool distOk = true;
-		for (int i = 0; i < 2; i++) {
+		for (size_t i = 0; i < m_distortionTex.size(); i++) {
 			if (!createImage(32, 32, vk::Format::eR8G8B8A8Unorm,
 			                 vk::ImageUsageFlagBits::eTransferSrc
 			                 | vk::ImageUsageFlagBits::eTransferDst
@@ -409,7 +409,7 @@ bool VulkanPostProcessor::init(vk::Device device, vk::PhysicalDevice physDevice,
 			                 vk::ImageAspectFlagBits::eColor,
 			                 m_distortionTex[i].image, m_distortionTex[i].view,
 			                 m_distortionTex[i].allocation)) {
-				mprintf(("VulkanPostProcessor: Failed to create distortion texture %d\n", i));
+				mprintf(("VulkanPostProcessor: Failed to create distortion texture %zu\n", i));
 				distOk = false;
 				break;
 			}
@@ -630,13 +630,13 @@ bool VulkanPostProcessor::initGBuffer()
 		const char* name;
 	};
 
-	GbufTarget targets[] = {
+	std::array<GbufTarget, 5> targets = {{
 		{&m_gbufPosition,  vk::Format::eR16G16B16A16Sfloat, "position"},
 		{&m_gbufNormal,    vk::Format::eR16G16B16A16Sfloat, "normal"},
 		{&m_gbufSpecular,  vk::Format::eR8G8B8A8Unorm,      "specular"},
 		{&m_gbufEmissive,  vk::Format::eR16G16B16A16Sfloat, "emissive"},
 		{&m_gbufComposite, vk::Format::eR16G16B16A16Sfloat, "composite"},
-	};
+	}};
 
 	for (auto& t : targets) {
 		if (!createImage(w, h, t.format, gbufUsage, vk::ImageAspectFlagBits::eColor,
@@ -671,7 +671,7 @@ bool VulkanPostProcessor::initGBuffer()
 		std::array<vk::AttachmentDescription, 7> attachments;
 
 		// Formats for the 6 color attachments
-		vk::Format colorFormats[6] = {
+		std::array<vk::Format, 6> colorFormats = {
 			vk::Format::eR16G16B16A16Sfloat, // 0: color (scene color)
 			vk::Format::eR16G16B16A16Sfloat, // 1: position
 			vk::Format::eR16G16B16A16Sfloat, // 2: normal
@@ -680,7 +680,7 @@ bool VulkanPostProcessor::initGBuffer()
 			vk::Format::eR16G16B16A16Sfloat, // 5: composite
 		};
 
-		for (uint32_t i = 0; i < 6; ++i) {
+		for (size_t i = 0; i < colorFormats.size(); ++i) {
 			attachments[i].format = colorFormats[i];
 			attachments[i].samples = vk::SampleCountFlagBits::e1;
 			attachments[i].loadOp = vk::AttachmentLoadOp::eClear;
@@ -753,7 +753,7 @@ bool VulkanPostProcessor::initGBuffer()
 	{
 		std::array<vk::AttachmentDescription, 7> attachments;
 
-		vk::Format colorFormats[6] = {
+		std::array<vk::Format, 6> colorFormats = {
 			vk::Format::eR16G16B16A16Sfloat,
 			vk::Format::eR16G16B16A16Sfloat,
 			vk::Format::eR16G16B16A16Sfloat,
@@ -762,7 +762,7 @@ bool VulkanPostProcessor::initGBuffer()
 			vk::Format::eR16G16B16A16Sfloat,
 		};
 
-		for (uint32_t i = 0; i < 6; ++i) {
+		for (size_t i = 0; i < colorFormats.size(); ++i) {
 			attachments[i].format = colorFormats[i];
 			attachments[i].samples = vk::SampleCountFlagBits::e1;
 			attachments[i].loadOp = vk::AttachmentLoadOp::eLoad;
@@ -884,7 +884,7 @@ void VulkanPostProcessor::shutdownGBuffer()
 		m_gbufRenderPass = nullptr;
 	}
 
-	RenderTarget* gbufTargets[] = {
+	std::array<RenderTarget*, 6> gbufTargets = {
 		&m_gbufPosition, &m_gbufNormal, &m_gbufSpecular,
 		&m_gbufEmissive, &m_gbufComposite, &m_gbufNormalCopy,
 	};
@@ -914,7 +914,7 @@ void VulkanPostProcessor::transitionGbufForResume(vk::CommandBuffer cmd)
 	// After ending the G-buffer render pass, color attachments 1-5 are in
 	// eShaderReadOnlyOptimal (from finalLayout). The eLoad pass expects
 	// eColorAttachmentOptimal. Transition them in a single barrier batch.
-	vk::Image gbufImages[5] = {
+	std::array<vk::Image, 5> gbufImages = {
 		m_gbufPosition.image,
 		m_gbufNormal.image,
 		m_gbufSpecular.image,
@@ -923,7 +923,7 @@ void VulkanPostProcessor::transitionGbufForResume(vk::CommandBuffer cmd)
 	};
 
 	std::array<vk::ImageMemoryBarrier, 5> barriers;
-	for (int i = 0; i < 5; ++i) {
+	for (size_t i = 0; i < gbufImages.size(); ++i) {
 		barriers[i].srcAccessMask = {};
 		barriers[i].dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
 		barriers[i].oldLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
@@ -970,13 +970,13 @@ bool VulkanPostProcessor::initMSAA()
 		const char* name;
 	};
 
-	MsaaTarget targets[] = {
+	std::array<MsaaTarget, 5> targets = {{
 		{&m_msaaColor,    vk::Format::eR16G16B16A16Sfloat, "msaa-color"},
 		{&m_msaaPosition, vk::Format::eR16G16B16A16Sfloat, "msaa-position"},
 		{&m_msaaNormal,   vk::Format::eR16G16B16A16Sfloat, "msaa-normal"},
 		{&m_msaaSpecular, vk::Format::eR8G8B8A8Unorm,      "msaa-specular"},
 		{&m_msaaEmissive, vk::Format::eR16G16B16A16Sfloat, "msaa-emissive"},
-	};
+	}};
 
 	for (auto& t : targets) {
 		if (!createImage(w, h, t.format, msaaUsage, vk::ImageAspectFlagBits::eColor,
@@ -1044,7 +1044,7 @@ bool VulkanPostProcessor::initMSAA()
 	{
 		std::array<vk::AttachmentDescription, 6> attachments;
 
-		vk::Format colorFormats[5] = {
+		std::array<vk::Format, 5> colorFormats = {
 			vk::Format::eR16G16B16A16Sfloat, // 0: color
 			vk::Format::eR16G16B16A16Sfloat, // 1: position
 			vk::Format::eR16G16B16A16Sfloat, // 2: normal
@@ -1052,7 +1052,7 @@ bool VulkanPostProcessor::initMSAA()
 			vk::Format::eR16G16B16A16Sfloat, // 4: emissive
 		};
 
-		for (uint32_t i = 0; i < 5; ++i) {
+		for (size_t i = 0; i < colorFormats.size(); ++i) {
 			attachments[i].format = colorFormats[i];
 			attachments[i].samples = msaaSamples;
 			attachments[i].loadOp = vk::AttachmentLoadOp::eClear;
@@ -1125,7 +1125,7 @@ bool VulkanPostProcessor::initMSAA()
 	{
 		std::array<vk::AttachmentDescription, 6> attachments;
 
-		vk::Format colorFormats[5] = {
+		std::array<vk::Format, 5> colorFormats = {
 			vk::Format::eR16G16B16A16Sfloat,
 			vk::Format::eR16G16B16A16Sfloat,
 			vk::Format::eR16G16B16A16Sfloat,
@@ -1133,7 +1133,7 @@ bool VulkanPostProcessor::initMSAA()
 			vk::Format::eR16G16B16A16Sfloat,
 		};
 
-		for (uint32_t i = 0; i < 5; ++i) {
+		for (size_t i = 0; i < colorFormats.size(); ++i) {
 			attachments[i].format = colorFormats[i];
 			attachments[i].samples = msaaSamples;
 			attachments[i].loadOp = vk::AttachmentLoadOp::eLoad;
@@ -1299,7 +1299,7 @@ bool VulkanPostProcessor::initMSAA()
 	{
 		std::array<vk::AttachmentDescription, 6> attachments;
 
-		vk::Format colorFormats[5] = {
+		std::array<vk::Format, 5> colorFormats = {
 			vk::Format::eR16G16B16A16Sfloat, // 0: color
 			vk::Format::eR16G16B16A16Sfloat, // 1: position
 			vk::Format::eR16G16B16A16Sfloat, // 2: normal
@@ -1307,7 +1307,7 @@ bool VulkanPostProcessor::initMSAA()
 			vk::Format::eR16G16B16A16Sfloat, // 4: emissive
 		};
 
-		for (uint32_t i = 0; i < 5; ++i) {
+		for (size_t i = 0; i < colorFormats.size(); ++i) {
 			attachments[i].format = colorFormats[i];
 			attachments[i].samples = vk::SampleCountFlagBits::e1;
 			attachments[i].loadOp = vk::AttachmentLoadOp::eDontCare;
@@ -1438,7 +1438,7 @@ bool VulkanPostProcessor::initMSAA()
 	{
 		auto* texMgr = getTextureManager();
 
-		RenderTarget* colorTargets[] = {
+		std::array<RenderTarget*, 5> colorTargets = {
 			&m_msaaColor, &m_msaaPosition, &m_msaaNormal,
 			&m_msaaSpecular, &m_msaaEmissive,
 		};
@@ -1519,7 +1519,7 @@ void VulkanPostProcessor::shutdownMSAA()
 	}
 
 	// Destroy MSAA color targets
-	RenderTarget* msaaTargets[] = {
+	std::array<RenderTarget*, 5> msaaTargets = {
 		&m_msaaColor, &m_msaaPosition, &m_msaaNormal,
 		&m_msaaSpecular, &m_msaaEmissive,
 	};
@@ -1797,12 +1797,12 @@ bool VulkanPostProcessor::initLightAccumPass()
 
 	// Framebuffer using composite image as sole color attachment
 	{
-		vk::ImageView attachments[] = { m_gbufComposite.view };
+		std::array<vk::ImageView, 1> attachments = { m_gbufComposite.view };
 
 		vk::FramebufferCreateInfo fbInfo;
 		fbInfo.renderPass = m_lightAccumRenderPass;
-		fbInfo.attachmentCount = 1;
-		fbInfo.pAttachments = attachments;
+		fbInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+		fbInfo.pAttachments = attachments.data();
 		fbInfo.width = m_extent.width;
 		fbInfo.height = m_extent.height;
 		fbInfo.layers = 1;
@@ -2400,7 +2400,7 @@ bool VulkanPostProcessor::initBloom()
 	const uint32_t mipLevels = MAX_MIP_BLUR_LEVELS;
 
 	// Create 2 bloom textures (RGBA16F, half-res, 4 mip levels each)
-	for (int i = 0; i < 2; i++) {
+	for (size_t i = 0; i < m_bloomTex.size(); i++) {
 		vk::ImageCreateInfo imageInfo;
 		imageInfo.imageType = vk::ImageType::e2D;
 		imageInfo.format = vk::Format::eR16G16B16A16Sfloat;
@@ -2421,12 +2421,12 @@ bool VulkanPostProcessor::initBloom()
 		try {
 			m_bloomTex[i].image = m_device.createImage(imageInfo);
 		} catch (const vk::SystemError& e) {
-			mprintf(("VulkanPostProcessor: Failed to create bloom image %d: %s\n", i, e.what()));
+			mprintf(("VulkanPostProcessor: Failed to create bloom image %zu: %s\n", i, e.what()));
 			return false;
 		}
 
 		if (!m_memoryManager->allocateImageMemory(m_bloomTex[i].image, MemoryUsage::GpuOnly, m_bloomTex[i].allocation)) {
-			mprintf(("VulkanPostProcessor: Failed to allocate bloom image %d memory!\n", i));
+			mprintf(("VulkanPostProcessor: Failed to allocate bloom image %zu memory!\n", i));
 			return false;
 		}
 
@@ -2444,7 +2444,7 @@ bool VulkanPostProcessor::initBloom()
 		try {
 			m_bloomTex[i].fullView = m_device.createImageView(fullViewInfo);
 		} catch (const vk::SystemError& e) {
-			mprintf(("VulkanPostProcessor: Failed to create bloom %d full view: %s\n", i, e.what()));
+			mprintf(("VulkanPostProcessor: Failed to create bloom %zu full view: %s\n", i, e.what()));
 			return false;
 		}
 
@@ -2457,7 +2457,7 @@ bool VulkanPostProcessor::initBloom()
 			try {
 				m_bloomTex[i].mipViews[mip] = m_device.createImageView(mipViewInfo);
 			} catch (const vk::SystemError& e) {
-				mprintf(("VulkanPostProcessor: Failed to create bloom %d mip %u view: %s\n", i, mip, e.what()));
+				mprintf(("VulkanPostProcessor: Failed to create bloom %zu mip %u view: %s\n", i, mip, e.what()));
 				return false;
 			}
 		}
@@ -2562,7 +2562,7 @@ bool VulkanPostProcessor::initBloom()
 	}
 
 	// Create per-mip framebuffers for bloom textures
-	for (int i = 0; i < 2; i++) {
+	for (size_t i = 0; i < m_bloomTex.size(); i++) {
 		for (uint32_t mip = 0; mip < mipLevels; mip++) {
 			uint32_t mipW = std::max(1u, m_bloomWidth >> mip);
 			uint32_t mipH = std::max(1u, m_bloomHeight >> mip);
@@ -2578,7 +2578,7 @@ bool VulkanPostProcessor::initBloom()
 			try {
 				m_bloomTex[i].mipFramebuffers[mip] = m_device.createFramebuffer(fbInfo);
 			} catch (const vk::SystemError& e) {
-				mprintf(("VulkanPostProcessor: Failed to create bloom %d mip %u framebuffer: %s\n", i, mip, e.what()));
+				mprintf(("VulkanPostProcessor: Failed to create bloom %zu mip %u framebuffer: %s\n", i, mip, e.what()));
 				return false;
 			}
 		}
@@ -2650,27 +2650,27 @@ void VulkanPostProcessor::shutdownBloom()
 		m_sceneColorBloomFB = nullptr;
 	}
 
-	for (auto & i : m_bloomTex) {
-		for (uint32_t mip = 0; mip < MAX_MIP_BLUR_LEVELS; mip++) {
-			if (i.mipFramebuffers[mip]) {
-				m_device.destroyFramebuffer(i.mipFramebuffers[mip]);
-				i.mipFramebuffers[mip] = nullptr;
+	for (auto& bt : m_bloomTex) {
+		for (size_t mip = 0; mip < bt.mipFramebuffers.size(); mip++) {
+			if (bt.mipFramebuffers[mip]) {
+				m_device.destroyFramebuffer(bt.mipFramebuffers[mip]);
+				bt.mipFramebuffers[mip] = nullptr;
 			}
-			if (i.mipViews[mip]) {
-				m_device.destroyImageView(i.mipViews[mip]);
-				i.mipViews[mip] = nullptr;
+			if (bt.mipViews[mip]) {
+				m_device.destroyImageView(bt.mipViews[mip]);
+				bt.mipViews[mip] = nullptr;
 			}
 		}
-		if (i.fullView) {
-			m_device.destroyImageView(i.fullView);
-			i.fullView = nullptr;
+		if (bt.fullView) {
+			m_device.destroyImageView(bt.fullView);
+			bt.fullView = nullptr;
 		}
-		if (i.image) {
-			m_device.destroyImage(i.image);
-			i.image = nullptr;
+		if (bt.image) {
+			m_device.destroyImage(bt.image);
+			bt.image = nullptr;
 		}
-		if (i.allocation.isValid()) {
-			m_memoryManager->freeAllocation(i.allocation);
+		if (bt.allocation.isValid()) {
+			m_memoryManager->freeAllocation(bt.allocation);
 		}
 	}
 

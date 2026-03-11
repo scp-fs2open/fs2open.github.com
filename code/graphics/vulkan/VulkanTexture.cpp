@@ -1365,13 +1365,13 @@ int VulkanTextureManager::bm_make_render_target(int handle, int* width, int* hei
 		}
 
 		// Create per-face 2D views for framebuffer attachments
-		for (uint32_t face = 0; face < 6; face++) {
+		for (size_t face = 0; face < ts->cubeFaceViews.size(); face++) {
 			ts->cubeFaceViews[face] = createImageView(ts->image, format, vk::ImageAspectFlagBits::eColor,
-			                                           1, ImageViewType::Plain2D, 1, face);
+			                                           1, ImageViewType::Plain2D, 1, static_cast<uint32_t>(face));
 			if (!ts->cubeFaceViews[face]) {
-				mprintf(("Failed to create cubemap face %u view!\n", face));
+				mprintf(("Failed to create cubemap face %zu view!\n", face));
 				// Clean up previously created views
-				for (uint32_t j = 0; j < face; j++) {
+				for (size_t j = 0; j < face; j++) {
 					m_device.destroyImageView(ts->cubeFaceViews[j]);
 					ts->cubeFaceViews[j] = nullptr;
 				}
@@ -1448,7 +1448,7 @@ int VulkanTextureManager::bm_make_render_target(int handle, int* width, int* hei
 
 	if (isCubemapRT) {
 		// Create per-face framebuffers
-		for (uint32_t face = 0; face < 6; face++) {
+		for (size_t face = 0; face < ts->cubeFaceFramebuffers.size(); face++) {
 			vk::FramebufferCreateInfo framebufferInfo;
 			framebufferInfo.renderPass = ts->renderPass;
 			framebufferInfo.attachmentCount = 1;
@@ -1460,7 +1460,7 @@ int VulkanTextureManager::bm_make_render_target(int handle, int* width, int* hei
 			try {
 				ts->cubeFaceFramebuffers[face] = m_device.createFramebuffer(framebufferInfo);
 			} catch (const vk::SystemError& e) {
-				mprintf(("Failed to create cubemap face %u framebuffer: %s\n", face, e.what()));
+				mprintf(("Failed to create cubemap face %zu framebuffer: %s\n", face, e.what()));
 				return 0;
 			}
 		}
