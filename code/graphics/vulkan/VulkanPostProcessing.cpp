@@ -1929,35 +1929,35 @@ void VulkanPostProcessor::renderDeferredLights(vk::CommandBuffer cmd)
 
 		std::array<vk::WriteDescriptorSet, 5> globalWrites;
 		globalWrites[0].dstSet = globalSet;
-		globalWrites[0].dstBinding = 0;
+		globalWrites[0].dstBinding = GlobalBinding::Lights;
 		globalWrites[0].dstArrayElement = 0;
 		globalWrites[0].descriptorCount = 1;
 		globalWrites[0].descriptorType = vk::DescriptorType::eUniformBuffer;
 		globalWrites[0].pBufferInfo = &lightBufInfo;
 
 		globalWrites[1].dstSet = globalSet;
-		globalWrites[1].dstBinding = 1;
+		globalWrites[1].dstBinding = GlobalBinding::DeferredData;
 		globalWrites[1].dstArrayElement = 0;
 		globalWrites[1].descriptorCount = 1;
 		globalWrites[1].descriptorType = vk::DescriptorType::eUniformBuffer;
 		globalWrites[1].pBufferInfo = &globalBufInfo;
 
 		globalWrites[2].dstSet = globalSet;
-		globalWrites[2].dstBinding = 2;
+		globalWrites[2].dstBinding = GlobalBinding::ShadowMap;
 		globalWrites[2].dstArrayElement = 0;
 		globalWrites[2].descriptorCount = 1;
 		globalWrites[2].descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		globalWrites[2].pImageInfo = &shadowTexInfo;
 
 		globalWrites[3].dstSet = globalSet;
-		globalWrites[3].dstBinding = 3;
+		globalWrites[3].dstBinding = GlobalBinding::EnvMap;
 		globalWrites[3].dstArrayElement = 0;
 		globalWrites[3].descriptorCount = 1;
 		globalWrites[3].descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		globalWrites[3].pImageInfo = &envTexInfo;
 
 		globalWrites[4].dstSet = globalSet;
-		globalWrites[4].dstBinding = 4;
+		globalWrites[4].dstBinding = GlobalBinding::IrradianceMap;
 		globalWrites[4].dstArrayElement = 0;
 		globalWrites[4].descriptorCount = 1;
 		globalWrites[4].descriptorType = vk::DescriptorType::eCombinedImageSampler;
@@ -1972,7 +1972,7 @@ void VulkanPostProcessor::renderDeferredLights(vk::CommandBuffer cmd)
 		// ModelData UBO at binding 0 (fallback)
 		vk::WriteDescriptorSet modelWrite;
 		modelWrite.dstSet = materialSet;
-		modelWrite.dstBinding = 0;
+		modelWrite.dstBinding = MaterialBinding::ModelData;
 		modelWrite.dstArrayElement = 0;
 		modelWrite.descriptorCount = 1;
 		modelWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
@@ -1988,7 +1988,7 @@ void VulkanPostProcessor::renderDeferredLights(vk::CommandBuffer cmd)
 
 		vk::WriteDescriptorSet texArrayWrite;
 		texArrayWrite.dstSet = materialSet;
-		texArrayWrite.dstBinding = 1;
+		texArrayWrite.dstBinding = MaterialBinding::TextureArray;
 		texArrayWrite.dstArrayElement = 0;
 		texArrayWrite.descriptorCount = static_cast<uint32_t>(texArrayInfos.size());
 		texArrayWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
@@ -1997,7 +1997,7 @@ void VulkanPostProcessor::renderDeferredLights(vk::CommandBuffer cmd)
 		// DecalGlobals at binding 2 (fallback)
 		vk::WriteDescriptorSet decalWrite;
 		decalWrite.dstSet = materialSet;
-		decalWrite.dstBinding = 2;
+		decalWrite.dstBinding = MaterialBinding::DecalGlobals;
 		decalWrite.dstArrayElement = 0;
 		decalWrite.descriptorCount = 1;
 		decalWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
@@ -2006,7 +2006,7 @@ void VulkanPostProcessor::renderDeferredLights(vk::CommandBuffer cmd)
 		// Transform SSBO at binding 3 (fallback)
 		vk::WriteDescriptorSet ssboWrite;
 		ssboWrite.dstSet = materialSet;
-		ssboWrite.dstBinding = 3;
+		ssboWrite.dstBinding = MaterialBinding::TransformSSBO;
 		ssboWrite.dstArrayElement = 0;
 		ssboWrite.descriptorCount = 1;
 		ssboWrite.descriptorType = vk::DescriptorType::eStorageBuffer;
@@ -2047,7 +2047,7 @@ void VulkanPostProcessor::renderDeferredLights(vk::CommandBuffer cmd)
 		// GenericData at binding 0 (fallback)
 		vk::WriteDescriptorSet genWrite;
 		genWrite.dstSet = perDrawSet;
-		genWrite.dstBinding = 0;
+		genWrite.dstBinding = PerDrawBinding::GenericData;
 		genWrite.dstArrayElement = 0;
 		genWrite.descriptorCount = 1;
 		genWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
@@ -2055,7 +2055,7 @@ void VulkanPostProcessor::renderDeferredLights(vk::CommandBuffer cmd)
 
 		vk::WriteDescriptorSet matWrite;
 		matWrite.dstSet = perDrawSet;
-		matWrite.dstBinding = 1;
+		matWrite.dstBinding = PerDrawBinding::Matrices;
 		matWrite.dstArrayElement = 0;
 		matWrite.descriptorCount = 1;
 		matWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
@@ -2535,7 +2535,7 @@ void VulkanPostProcessor::drawFullscreenTriangle(vk::CommandBuffer cmd, vk::Rend
 
 		vk::WriteDescriptorSet texArrayWrite;
 		texArrayWrite.dstSet = materialSet;
-		texArrayWrite.dstBinding = 1;
+		texArrayWrite.dstBinding = MaterialBinding::TextureArray;
 		texArrayWrite.dstArrayElement = 0;
 		texArrayWrite.descriptorCount = static_cast<uint32_t>(texArrayInfos.size());
 		texArrayWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
@@ -2550,7 +2550,7 @@ void VulkanPostProcessor::drawFullscreenTriangle(vk::CommandBuffer cmd, vk::Rend
 
 		vk::WriteDescriptorSet modelWrite;
 		modelWrite.dstSet = materialSet;
-		modelWrite.dstBinding = 0;
+		modelWrite.dstBinding = MaterialBinding::ModelData;
 		modelWrite.dstArrayElement = 0;
 		modelWrite.descriptorCount = 1;
 		modelWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
@@ -2558,7 +2558,7 @@ void VulkanPostProcessor::drawFullscreenTriangle(vk::CommandBuffer cmd, vk::Rend
 
 		vk::WriteDescriptorSet decalWrite;
 		decalWrite.dstSet = materialSet;
-		decalWrite.dstBinding = 2;
+		decalWrite.dstBinding = MaterialBinding::DecalGlobals;
 		decalWrite.dstArrayElement = 0;
 		decalWrite.descriptorCount = 1;
 		decalWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
@@ -2567,7 +2567,7 @@ void VulkanPostProcessor::drawFullscreenTriangle(vk::CommandBuffer cmd, vk::Rend
 		// Binding 3: Transform SSBO (fallback to zero UBO)
 		vk::WriteDescriptorSet ssboWrite;
 		ssboWrite.dstSet = materialSet;
-		ssboWrite.dstBinding = 3;
+		ssboWrite.dstBinding = MaterialBinding::TransformSSBO;
 		ssboWrite.dstArrayElement = 0;
 		ssboWrite.descriptorCount = 1;
 		ssboWrite.descriptorType = vk::DescriptorType::eStorageBuffer;
@@ -2581,7 +2581,7 @@ void VulkanPostProcessor::drawFullscreenTriangle(vk::CommandBuffer cmd, vk::Rend
 
 		vk::WriteDescriptorSet depthMapWrite;
 		depthMapWrite.dstSet = materialSet;
-		depthMapWrite.dstBinding = 4;
+		depthMapWrite.dstBinding = MaterialBinding::DepthMap;
 		depthMapWrite.dstArrayElement = 0;
 		depthMapWrite.descriptorCount = 1;
 		depthMapWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
@@ -2595,7 +2595,7 @@ void VulkanPostProcessor::drawFullscreenTriangle(vk::CommandBuffer cmd, vk::Rend
 
 		vk::WriteDescriptorSet sceneColorWrite;
 		sceneColorWrite.dstSet = materialSet;
-		sceneColorWrite.dstBinding = 5;
+		sceneColorWrite.dstBinding = MaterialBinding::SceneColor;
 		sceneColorWrite.dstArrayElement = 0;
 		sceneColorWrite.descriptorCount = 1;
 		sceneColorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
@@ -2609,7 +2609,7 @@ void VulkanPostProcessor::drawFullscreenTriangle(vk::CommandBuffer cmd, vk::Rend
 
 		vk::WriteDescriptorSet distMapWrite;
 		distMapWrite.dstSet = materialSet;
-		distMapWrite.dstBinding = 6;
+		distMapWrite.dstBinding = MaterialBinding::DistortionMap;
 		distMapWrite.dstArrayElement = 0;
 		distMapWrite.descriptorCount = 1;
 		distMapWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
@@ -2645,7 +2645,7 @@ void VulkanPostProcessor::drawFullscreenTriangle(vk::CommandBuffer cmd, vk::Rend
 
 		vk::WriteDescriptorSet write;
 		write.dstSet = perDrawSet;
-		write.dstBinding = 0;
+		write.dstBinding = PerDrawBinding::GenericData;
 		write.dstArrayElement = 0;
 		write.descriptorCount = 1;
 		write.descriptorType = vk::DescriptorType::eUniformBuffer;
@@ -3594,7 +3594,7 @@ void VulkanPostProcessor::blitToSwapChain(vk::CommandBuffer cmd)
 
 		vk::WriteDescriptorSet texArrayWrite;
 		texArrayWrite.dstSet = materialSet;
-		texArrayWrite.dstBinding = 1;
+		texArrayWrite.dstBinding = MaterialBinding::TextureArray;
 		texArrayWrite.dstArrayElement = 0;
 		texArrayWrite.descriptorCount = static_cast<uint32_t>(texArrayInfos.size());
 		texArrayWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
@@ -3609,7 +3609,7 @@ void VulkanPostProcessor::blitToSwapChain(vk::CommandBuffer cmd)
 
 		vk::WriteDescriptorSet uboWrite;
 		uboWrite.dstSet = materialSet;
-		uboWrite.dstBinding = 0;
+		uboWrite.dstBinding = MaterialBinding::ModelData;
 		uboWrite.dstArrayElement = 0;
 		uboWrite.descriptorCount = 1;
 		uboWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
@@ -3617,7 +3617,7 @@ void VulkanPostProcessor::blitToSwapChain(vk::CommandBuffer cmd)
 
 		vk::WriteDescriptorSet decalWrite;
 		decalWrite.dstSet = materialSet;
-		decalWrite.dstBinding = 2;
+		decalWrite.dstBinding = MaterialBinding::DecalGlobals;
 		decalWrite.dstArrayElement = 0;
 		decalWrite.descriptorCount = 1;
 		decalWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
@@ -3626,7 +3626,7 @@ void VulkanPostProcessor::blitToSwapChain(vk::CommandBuffer cmd)
 		// Binding 3: Transform SSBO (fallback to zero UBO)
 		vk::WriteDescriptorSet ssboWrite;
 		ssboWrite.dstSet = materialSet;
-		ssboWrite.dstBinding = 3;
+		ssboWrite.dstBinding = MaterialBinding::TransformSSBO;
 		ssboWrite.dstArrayElement = 0;
 		ssboWrite.descriptorCount = 1;
 		ssboWrite.descriptorType = vk::DescriptorType::eStorageBuffer;
@@ -3640,7 +3640,7 @@ void VulkanPostProcessor::blitToSwapChain(vk::CommandBuffer cmd)
 
 		vk::WriteDescriptorSet depthMapWrite;
 		depthMapWrite.dstSet = materialSet;
-		depthMapWrite.dstBinding = 4;
+		depthMapWrite.dstBinding = MaterialBinding::DepthMap;
 		depthMapWrite.dstArrayElement = 0;
 		depthMapWrite.descriptorCount = 1;
 		depthMapWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
@@ -3654,7 +3654,7 @@ void VulkanPostProcessor::blitToSwapChain(vk::CommandBuffer cmd)
 
 		vk::WriteDescriptorSet sceneColorWrite;
 		sceneColorWrite.dstSet = materialSet;
-		sceneColorWrite.dstBinding = 5;
+		sceneColorWrite.dstBinding = MaterialBinding::SceneColor;
 		sceneColorWrite.dstArrayElement = 0;
 		sceneColorWrite.descriptorCount = 1;
 		sceneColorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
@@ -3668,7 +3668,7 @@ void VulkanPostProcessor::blitToSwapChain(vk::CommandBuffer cmd)
 
 		vk::WriteDescriptorSet distMapWrite;
 		distMapWrite.dstSet = materialSet;
-		distMapWrite.dstBinding = 6;
+		distMapWrite.dstBinding = MaterialBinding::DistortionMap;
 		distMapWrite.dstArrayElement = 0;
 		distMapWrite.descriptorCount = 1;
 		distMapWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
@@ -3706,7 +3706,7 @@ void VulkanPostProcessor::blitToSwapChain(vk::CommandBuffer cmd)
 
 		vk::WriteDescriptorSet write;
 		write.dstSet = perDrawSet;
-		write.dstBinding = 0;
+		write.dstBinding = PerDrawBinding::GenericData;
 		write.dstArrayElement = 0;
 		write.descriptorCount = 1;
 		write.descriptorType = vk::DescriptorType::eUniformBuffer;
@@ -4294,7 +4294,7 @@ void VulkanPostProcessor::renderSceneFog(vk::CommandBuffer cmd)
 		// Binding 0: ModelData UBO (fallback)
 		vk::WriteDescriptorSet modelWrite;
 		modelWrite.dstSet = materialSet;
-		modelWrite.dstBinding = 0;
+		modelWrite.dstBinding = MaterialBinding::ModelData;
 		modelWrite.dstArrayElement = 0;
 		modelWrite.descriptorCount = 1;
 		modelWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
@@ -4308,7 +4308,7 @@ void VulkanPostProcessor::renderSceneFog(vk::CommandBuffer cmd)
 
 		vk::WriteDescriptorSet texArrayWrite;
 		texArrayWrite.dstSet = materialSet;
-		texArrayWrite.dstBinding = 1;
+		texArrayWrite.dstBinding = MaterialBinding::TextureArray;
 		texArrayWrite.dstArrayElement = 0;
 		texArrayWrite.descriptorCount = static_cast<uint32_t>(texArrayInfos.size());
 		texArrayWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
@@ -4317,7 +4317,7 @@ void VulkanPostProcessor::renderSceneFog(vk::CommandBuffer cmd)
 		// Binding 2: DecalGlobals UBO (fallback)
 		vk::WriteDescriptorSet decalWrite;
 		decalWrite.dstSet = materialSet;
-		decalWrite.dstBinding = 2;
+		decalWrite.dstBinding = MaterialBinding::DecalGlobals;
 		decalWrite.dstArrayElement = 0;
 		decalWrite.descriptorCount = 1;
 		decalWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
@@ -4326,7 +4326,7 @@ void VulkanPostProcessor::renderSceneFog(vk::CommandBuffer cmd)
 		// Binding 3: Transform SSBO (fallback)
 		vk::WriteDescriptorSet ssboWrite;
 		ssboWrite.dstSet = materialSet;
-		ssboWrite.dstBinding = 3;
+		ssboWrite.dstBinding = MaterialBinding::TransformSSBO;
 		ssboWrite.dstArrayElement = 0;
 		ssboWrite.descriptorCount = 1;
 		ssboWrite.descriptorType = vk::DescriptorType::eStorageBuffer;
@@ -4340,7 +4340,7 @@ void VulkanPostProcessor::renderSceneFog(vk::CommandBuffer cmd)
 
 		vk::WriteDescriptorSet depthWrite;
 		depthWrite.dstSet = materialSet;
-		depthWrite.dstBinding = 4;
+		depthWrite.dstBinding = MaterialBinding::DepthMap;
 		depthWrite.dstArrayElement = 0;
 		depthWrite.descriptorCount = 1;
 		depthWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
@@ -4354,7 +4354,7 @@ void VulkanPostProcessor::renderSceneFog(vk::CommandBuffer cmd)
 
 		vk::WriteDescriptorSet bind5Write;
 		bind5Write.dstSet = materialSet;
-		bind5Write.dstBinding = 5;
+		bind5Write.dstBinding = MaterialBinding::SceneColor;
 		bind5Write.dstArrayElement = 0;
 		bind5Write.descriptorCount = 1;
 		bind5Write.descriptorType = vk::DescriptorType::eCombinedImageSampler;
@@ -4362,7 +4362,7 @@ void VulkanPostProcessor::renderSceneFog(vk::CommandBuffer cmd)
 
 		vk::WriteDescriptorSet bind6Write;
 		bind6Write.dstSet = materialSet;
-		bind6Write.dstBinding = 6;
+		bind6Write.dstBinding = MaterialBinding::DistortionMap;
 		bind6Write.dstArrayElement = 0;
 		bind6Write.descriptorCount = 1;
 		bind6Write.descriptorType = vk::DescriptorType::eCombinedImageSampler;
@@ -4392,7 +4392,7 @@ void VulkanPostProcessor::renderSceneFog(vk::CommandBuffer cmd)
 
 		vk::WriteDescriptorSet write;
 		write.dstSet = perDrawSet;
-		write.dstBinding = 0;
+		write.dstBinding = PerDrawBinding::GenericData;
 		write.dstArrayElement = 0;
 		write.descriptorCount = 1;
 		write.descriptorType = vk::DescriptorType::eUniformBuffer;
@@ -4704,7 +4704,7 @@ void VulkanPostProcessor::renderVolumetricFog(vk::CommandBuffer cmd)
 		// Binding 0: ModelData UBO (fallback)
 		vk::WriteDescriptorSet modelWrite;
 		modelWrite.dstSet = materialSet;
-		modelWrite.dstBinding = 0;
+		modelWrite.dstBinding = MaterialBinding::ModelData;
 		modelWrite.dstArrayElement = 0;
 		modelWrite.descriptorCount = 1;
 		modelWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
@@ -4718,7 +4718,7 @@ void VulkanPostProcessor::renderVolumetricFog(vk::CommandBuffer cmd)
 
 		vk::WriteDescriptorSet texWrite;
 		texWrite.dstSet = materialSet;
-		texWrite.dstBinding = 1;
+		texWrite.dstBinding = MaterialBinding::TextureArray;
 		texWrite.dstArrayElement = 0;
 		texWrite.descriptorCount = static_cast<uint32_t>(texArrayInfos.size());
 		texWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
@@ -4727,7 +4727,7 @@ void VulkanPostProcessor::renderVolumetricFog(vk::CommandBuffer cmd)
 		// Binding 2: DecalGlobals UBO (fallback)
 		vk::WriteDescriptorSet decalWrite;
 		decalWrite.dstSet = materialSet;
-		decalWrite.dstBinding = 2;
+		decalWrite.dstBinding = MaterialBinding::DecalGlobals;
 		decalWrite.dstArrayElement = 0;
 		decalWrite.descriptorCount = 1;
 		decalWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
@@ -4736,7 +4736,7 @@ void VulkanPostProcessor::renderVolumetricFog(vk::CommandBuffer cmd)
 		// Binding 3: Transform SSBO (fallback)
 		vk::WriteDescriptorSet ssboWrite;
 		ssboWrite.dstSet = materialSet;
-		ssboWrite.dstBinding = 3;
+		ssboWrite.dstBinding = MaterialBinding::TransformSSBO;
 		ssboWrite.dstArrayElement = 0;
 		ssboWrite.descriptorCount = 1;
 		ssboWrite.descriptorType = vk::DescriptorType::eStorageBuffer;
@@ -4750,7 +4750,7 @@ void VulkanPostProcessor::renderVolumetricFog(vk::CommandBuffer cmd)
 
 		vk::WriteDescriptorSet depthWrite;
 		depthWrite.dstSet = materialSet;
-		depthWrite.dstBinding = 4;
+		depthWrite.dstBinding = MaterialBinding::DepthMap;
 		depthWrite.dstArrayElement = 0;
 		depthWrite.descriptorCount = 1;
 		depthWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
@@ -4764,7 +4764,7 @@ void VulkanPostProcessor::renderVolumetricFog(vk::CommandBuffer cmd)
 
 		vk::WriteDescriptorSet volumeWrite;
 		volumeWrite.dstSet = materialSet;
-		volumeWrite.dstBinding = 5;
+		volumeWrite.dstBinding = MaterialBinding::SceneColor;
 		volumeWrite.dstArrayElement = 0;
 		volumeWrite.descriptorCount = 1;
 		volumeWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
@@ -4782,7 +4782,7 @@ void VulkanPostProcessor::renderVolumetricFog(vk::CommandBuffer cmd)
 
 		vk::WriteDescriptorSet noiseWrite;
 		noiseWrite.dstSet = materialSet;
-		noiseWrite.dstBinding = 6;
+		noiseWrite.dstBinding = MaterialBinding::DistortionMap;
 		noiseWrite.dstArrayElement = 0;
 		noiseWrite.descriptorCount = 1;
 		noiseWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
@@ -4812,7 +4812,7 @@ void VulkanPostProcessor::renderVolumetricFog(vk::CommandBuffer cmd)
 
 		vk::WriteDescriptorSet write;
 		write.dstSet = perDrawSet;
-		write.dstBinding = 0;
+		write.dstBinding = PerDrawBinding::GenericData;
 		write.dstArrayElement = 0;
 		write.descriptorCount = 1;
 		write.descriptorType = vk::DescriptorType::eUniformBuffer;
