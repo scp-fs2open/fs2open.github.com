@@ -218,7 +218,7 @@ public:
 	 * @brief Get a ready-to-use DescriptorBufferInfo for the fallback uniform buffer
 	 */
 	vk::DescriptorBufferInfo getFallbackUniformBufferInfo() const {
-		return vk::DescriptorBufferInfo(m_fallbackUniformBuffer, 0, FALLBACK_UNIFORM_BUFFER_SIZE);
+		return {m_fallbackUniformBuffer, 0, FALLBACK_UNIFORM_BUFFER_SIZE};
 	}
 
 	/**
