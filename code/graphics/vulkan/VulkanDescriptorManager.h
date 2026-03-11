@@ -137,6 +137,48 @@ enum class DescriptorSetIndex : uint32_t {
 	Count = 3
 };
 
+// ========== Descriptor Binding Constants ==========
+
+// Global Set (Set 0) bindings — per-frame data
+namespace GlobalBinding {
+	static constexpr uint32_t Lights       = 0; // UBO: light data
+	static constexpr uint32_t DeferredData = 1; // UBO: deferred globals
+	static constexpr uint32_t ShadowMap    = 2; // sampler2D: shadow map
+	static constexpr uint32_t EnvMap       = 3; // samplerCube: environment map
+	static constexpr uint32_t IrradianceMap = 4; // samplerCube: irradiance map
+}
+
+// Material Set (Set 1) bindings — per-material data
+namespace MaterialBinding {
+	static constexpr uint32_t ModelData    = 0; // UBO: model/material data
+	static constexpr uint32_t TextureArray = 1; // sampler2D[16]: material textures
+	static constexpr uint32_t DecalGlobals = 2; // UBO: decal globals
+	static constexpr uint32_t TransformSSBO = 3; // SSBO: batched transforms
+	static constexpr uint32_t DepthMap     = 4; // sampler2D: depth (soft particles)
+	static constexpr uint32_t SceneColor   = 5; // sampler2D: scene color (distortion)
+	static constexpr uint32_t DistortionMap = 6; // sampler2D: distortion texture
+}
+
+// Texture array slot indices (elements within MaterialBinding::TextureArray)
+namespace TextureSlot {
+	static constexpr uint32_t BaseMap    = 0;
+	static constexpr uint32_t GlowMap   = 1;
+	static constexpr uint32_t SpecMap   = 2;
+	static constexpr uint32_t NormalMap = 3;
+	static constexpr uint32_t HeightMap = 4;
+	static constexpr uint32_t AmbientMap = 5;
+	static constexpr uint32_t MiscMap   = 6;
+}
+
+// PerDraw Set (Set 2) bindings — per-draw-call data
+namespace PerDrawBinding {
+	static constexpr uint32_t GenericData  = 0; // UBO: generic shader data
+	static constexpr uint32_t Matrices     = 1; // UBO: transform matrices
+	static constexpr uint32_t NanoVGData   = 2; // UBO: NanoVG data
+	static constexpr uint32_t DecalInfo    = 3; // UBO: per-decal info
+	static constexpr uint32_t MovieData    = 4; // UBO: movie playback data
+}
+
 /**
  * @brief Descriptor binding info for a single binding point
  */

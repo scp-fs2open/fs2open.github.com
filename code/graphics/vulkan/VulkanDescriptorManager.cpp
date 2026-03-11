@@ -208,24 +208,15 @@ void VulkanDescriptorManager::createSetLayouts()
 	// NOTE: Using regular UBOs for now; dynamic UBOs need offset tracking
 	{
 		SCP_vector<DescriptorBindingInfo> bindings = {
-			// Binding 0: Lights UBO
-			{ 0, vk::DescriptorType::eUniformBuffer, 1,
+			{ GlobalBinding::Lights,       vk::DescriptorType::eUniformBuffer, 1,
 			  vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment },
-
-			// Binding 1: DeferredGlobals UBO
-			{ 1, vk::DescriptorType::eUniformBuffer, 1,
+			{ GlobalBinding::DeferredData, vk::DescriptorType::eUniformBuffer, 1,
 			  vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment },
-
-			// Binding 2: Shadow map texture
-			{ 2, vk::DescriptorType::eCombinedImageSampler, 1,
+			{ GlobalBinding::ShadowMap,    vk::DescriptorType::eCombinedImageSampler, 1,
 			  vk::ShaderStageFlagBits::eFragment },
-
-			// Binding 3: Environment map (samplerCube)
-			{ 3, vk::DescriptorType::eCombinedImageSampler, 1,
+			{ GlobalBinding::EnvMap,       vk::DescriptorType::eCombinedImageSampler, 1,
 			  vk::ShaderStageFlagBits::eFragment },
-
-			// Binding 4: Irradiance map (samplerCube)
-			{ 4, vk::DescriptorType::eCombinedImageSampler, 1,
+			{ GlobalBinding::IrradianceMap, vk::DescriptorType::eCombinedImageSampler, 1,
 			  vk::ShaderStageFlagBits::eFragment },
 		};
 		m_setLayouts[static_cast<size_t>(DescriptorSetIndex::Global)] = createSetLayout(bindings);
@@ -234,32 +225,19 @@ void VulkanDescriptorManager::createSetLayouts()
 	// Set 1: Material (per-batch data)
 	{
 		SCP_vector<DescriptorBindingInfo> bindings = {
-			// Binding 0: ModelData UBO
-			{ 0, vk::DescriptorType::eUniformBuffer, 1,
+			{ MaterialBinding::ModelData,     vk::DescriptorType::eUniformBuffer, 1,
 			  vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment },
-
-			// Binding 1: Texture array (diffuse, glow, spec, normal, ambient, misc, etc.)
-			{ 1, vk::DescriptorType::eCombinedImageSampler, MAX_TEXTURE_BINDINGS,
+			{ MaterialBinding::TextureArray,  vk::DescriptorType::eCombinedImageSampler, MAX_TEXTURE_BINDINGS,
 			  vk::ShaderStageFlagBits::eFragment },
-
-			// Binding 2: DecalGlobals UBO
-			{ 2, vk::DescriptorType::eUniformBuffer, 1,
+			{ MaterialBinding::DecalGlobals,  vk::DescriptorType::eUniformBuffer, 1,
 			  vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment },
-
-			// Binding 3: Transform buffer SSBO (for batched submodel transforms)
-			{ 3, vk::DescriptorType::eStorageBuffer, 1,
+			{ MaterialBinding::TransformSSBO, vk::DescriptorType::eStorageBuffer, 1,
 			  vk::ShaderStageFlagBits::eVertex },
-
-			// Binding 4: Depth map (sampler2D for soft particles)
-			{ 4, vk::DescriptorType::eCombinedImageSampler, 1,
+			{ MaterialBinding::DepthMap,      vk::DescriptorType::eCombinedImageSampler, 1,
 			  vk::ShaderStageFlagBits::eFragment },
-
-			// Binding 5: Scene color / frameBuffer (distortion effects)
-			{ 5, vk::DescriptorType::eCombinedImageSampler, 1,
+			{ MaterialBinding::SceneColor,    vk::DescriptorType::eCombinedImageSampler, 1,
 			  vk::ShaderStageFlagBits::eFragment },
-
-			// Binding 6: Distortion map (distortion effects)
-			{ 6, vk::DescriptorType::eCombinedImageSampler, 1,
+			{ MaterialBinding::DistortionMap, vk::DescriptorType::eCombinedImageSampler, 1,
 			  vk::ShaderStageFlagBits::eFragment },
 		};
 		m_setLayouts[static_cast<size_t>(DescriptorSetIndex::Material)] = createSetLayout(bindings);
@@ -268,24 +246,15 @@ void VulkanDescriptorManager::createSetLayouts()
 	// Set 2: Per-Draw (per-draw-call data)
 	{
 		SCP_vector<DescriptorBindingInfo> bindings = {
-			// Binding 0: GenericData UBO
-			{ 0, vk::DescriptorType::eUniformBuffer, 1,
+			{ PerDrawBinding::GenericData, vk::DescriptorType::eUniformBuffer, 1,
 			  vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment },
-
-			// Binding 1: Matrices UBO
-			{ 1, vk::DescriptorType::eUniformBuffer, 1,
+			{ PerDrawBinding::Matrices,    vk::DescriptorType::eUniformBuffer, 1,
 			  vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment },
-
-			// Binding 2: NanoVGData UBO
-			{ 2, vk::DescriptorType::eUniformBuffer, 1,
+			{ PerDrawBinding::NanoVGData,  vk::DescriptorType::eUniformBuffer, 1,
 			  vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment },
-
-			// Binding 3: DecalInfo UBO
-			{ 3, vk::DescriptorType::eUniformBuffer, 1,
+			{ PerDrawBinding::DecalInfo,   vk::DescriptorType::eUniformBuffer, 1,
 			  vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment },
-
-			// Binding 4: MovieData UBO
-			{ 4, vk::DescriptorType::eUniformBuffer, 1,
+			{ PerDrawBinding::MovieData,   vk::DescriptorType::eUniformBuffer, 1,
 			  vk::ShaderStageFlagBits::eFragment },
 		};
 		m_setLayouts[static_cast<size_t>(DescriptorSetIndex::PerDraw)] = createSetLayout(bindings);
