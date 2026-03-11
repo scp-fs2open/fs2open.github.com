@@ -1199,9 +1199,9 @@ bool VulkanDrawManager::applyMaterial(material* mat, primitive_type prim_type, v
 			if (m_pendingUniformBindings[blockIdx].valid) {
 				vk::Buffer buf = getBuffer(m_pendingUniformBindings[blockIdx]);
 				if (buf) {
-					w.writeUniformBuffer(set, binding, buf,
+					w.writeUniformBuffer(set, binding, {buf,
 					                     getResolvedOffset(m_pendingUniformBindings[blockIdx]),
-					                     m_pendingUniformBindings[blockIdx].size);
+					                     m_pendingUniformBindings[blockIdx].size});
 					return;
 				}
 			}
@@ -1225,8 +1225,8 @@ bool VulkanDrawManager::applyMaterial(material* mat, primitive_type prim_type, v
 		// Binding 2: Shadow map — use real shadow texture if available, else fallback
 		{
 			auto* pp = getPostProcessor();
-			if (pp && pp->isShadowInitialized() && pp->getShadowColorView()) {
-				writer.writeTexture(globalSet, GlobalBinding::ShadowMap, pp->getShadowColorView(), pp->getShadowSampler());
+			if (pp && pp->isShadowInitialized()) {
+				writer.writeTexture(globalSet, GlobalBinding::ShadowMap, pp->getShadowTextureInfo());
 			} else {
 				writer.writeTexture(globalSet, GlobalBinding::ShadowMap, texManager->getFallbackTextureInfo2DArray());
 			}
@@ -1255,9 +1255,9 @@ bool VulkanDrawManager::applyMaterial(material* mat, primitive_type prim_type, v
 			uint32_t tfIdx = descManager->getCurrentFrame();
 			auto& tf = g_transformBuffers[tfIdx];
 			if (tf.buffer && tf.lastUploadSize > 0) {
-				writer.writeStorageBuffer(materialSet, MaterialBinding::TransformSSBO, tf.buffer,
+				writer.writeStorageBuffer(materialSet, MaterialBinding::TransformSSBO, {tf.buffer,
 				                          static_cast<vk::DeviceSize>(tf.lastUploadOffset),
-				                          static_cast<vk::DeviceSize>(tf.lastUploadSize));
+				                          static_cast<vk::DeviceSize>(tf.lastUploadSize)});
 			} else {
 				writer.writeStorageBuffer(materialSet, MaterialBinding::TransformSSBO, fallbackBufInfo);
 			}
@@ -2187,8 +2187,8 @@ void vulkan_calculate_irrmap()
 		// Set 2: PerDraw (face UBO at binding 0)
 		vk::DescriptorSet perDrawSet = descManager->allocateFrameSet(DescriptorSetIndex::PerDraw);
 		Verify(perDrawSet);
-		writer.writeUniformBuffer(perDrawSet, PerDrawBinding::GenericData, faceUBO,
-			static_cast<vk::DeviceSize>(face) * UBO_SLOT_SIZE, UBO_SLOT_SIZE);
+		writer.writeUniformBuffer(perDrawSet, PerDrawBinding::GenericData, {faceUBO,
+			static_cast<vk::DeviceSize>(face) * UBO_SLOT_SIZE, UBO_SLOT_SIZE});
 		for (uint32_t b = 1; b <= 4; ++b) {
 			writer.writeUniformBuffer(perDrawSet, b, fallbackBufInfo);
 		}
