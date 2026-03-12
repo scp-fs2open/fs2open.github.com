@@ -32,6 +32,30 @@ campaign_tree_link Links[MAX_CAMPAIGN_TREE_LINKS];
 LOCAL CRect Dragging_rect;
 LOCAL CSize Rect_offset, Last_draw_size;
 
+void init_link(campaign_tree_link &link, int from, int to)
+{
+	link.from = from;
+	link.to = to;
+	link.sexp = Locked_sexp_true;
+	link.node = -1;
+	link.from_pos = -1;
+	link.to_pos = -1;
+	link.is_mission_loop = false;
+	link.is_mission_fork = false;
+	link.mission_branch_txt = nullptr;
+	link.mission_branch_brief_anim = nullptr;
+	link.mission_branch_brief_sound = nullptr;
+	link.p1 = CPoint();
+	link.p2 = CPoint();
+}
+
+void init_element(campaign_tree_element &element)
+{
+	element.from_links = 0;
+	element.to_links = 0;
+	element.box = CRect();
+}
+
 /////////////////////////////////////////////////////////////////////////////
 // campaign_tree_view
 
@@ -247,12 +271,9 @@ void stuff_link_with_formula(int *link_idx, int formula, int mission_num)
 			node = CDR(formula);
 			free_one_sexp(formula);
 			while (node != -1) {
+				init_link(Links[*link_idx], mission_num);
 				node2 = CAR(node);
-				Links[*link_idx].from = mission_num;
 				Links[*link_idx].sexp = CAR(node2);
-				Links[*link_idx].mission_branch_txt = NULL;
-				Links[*link_idx].mission_branch_brief_anim = NULL;
-				Links[*link_idx].mission_branch_brief_sound = NULL;
 				sexp_mark_persistent(CAR(node2));
 				free_one_sexp(node2);
 				node3 = CADR(node2);
@@ -269,7 +290,7 @@ void stuff_link_with_formula(int *link_idx, int formula, int mission_num)
 					}
 
 				} else if ( !stricmp( CTEXT(node3), "end-of-campaign") ) {
-					Links[(*link_idx)++].to = -1;
+					(*link_idx)++;
 					Elements[mission_num].from_links++;
 
 				} else
@@ -292,7 +313,7 @@ void campaign_tree_view::construct_tree()
 
 	// initialize mission link counts
 	for (i=0; i<Campaign.num_missions; i++) {
-		Elements[i].from_links = Elements[i].to_links = 0;
+		init_element(Elements[i]);
 	}
 
 	// analyze branching sexps and build links from them.
@@ -753,14 +774,7 @@ int campaign_tree_view::add_link(int from, int to)
 		return -1;
 
 	Campaign_tree_formp->load_tree(1);
-	Links[Total_links].from = from;
-	Links[Total_links].to = to;
-	Links[Total_links].sexp = Locked_sexp_true;
-	Links[Total_links].is_mission_loop = false;
-	Links[Total_links].is_mission_fork = false;
-	Links[Total_links].mission_branch_txt = NULL;
-	Links[Total_links].mission_branch_brief_anim = NULL;
-	Links[Total_links].mission_branch_brief_sound = NULL;
+	init_link(Links[Total_links], from, to);
 	Total_links++;
 	if (from != to) {
 		if (from >= 0)
@@ -964,7 +978,7 @@ BOOL campaign_tree_view::OnDrop(COleDataObject* pDataObject, DROPEFFECT dropEffe
 		}
 	}
 
-	Elements[Campaign.num_missions].from_links = Elements[Campaign.num_missions].to_links = 0;
+	init_element(Elements[Campaign.num_missions]);
 	cm = &(Campaign.missions[Campaign.num_missions++]);
 	cm->name = strdup(pData);
 	cm->formula = Locked_sexp_true;
@@ -1062,7 +1076,7 @@ void campaign_tree_view::drop_mission(int m, CPoint point)
 		}
 	}
 
-	Elements[Campaign.num_missions].from_links = Elements[Campaign.num_missions].to_links = 0;
+	init_element(Elements[Campaign.num_missions]);
 	cm = &(Campaign.missions[Campaign.num_missions++]);
 	cm->name = strdup(name);
 	cm->formula = Locked_sexp_true;
