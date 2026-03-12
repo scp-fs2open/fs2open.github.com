@@ -166,7 +166,7 @@ void jumpnode_dlg::initialize_data(int full_update)
 	GetDlgItem(IDC_NAME)->EnableWindow(enable);
 }
 
-int jumpnode_dlg::update_data()
+int jumpnode_dlg::update_data(int redraw)
 {
 	const char *str;
 	char old_name[255];
@@ -345,7 +345,8 @@ int jumpnode_dlg::update_data()
 		
 	}
 
-	update_map_window();
+	if (redraw)
+		update_map_window();
 
 	return 0;
 }

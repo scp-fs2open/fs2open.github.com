@@ -1180,7 +1180,7 @@ int update_dialog_boxes()
 		return z;
 	}
 
-	z = Jumpnode_editor_dialog.update_data();
+	z = Jumpnode_editor_dialog.update_data(0);
 	if (z) {
 		nprintf(("Fred routing", "jumpnode dialog save failed\n"));
 		Jumpnode_editor_dialog
