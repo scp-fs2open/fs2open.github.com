@@ -10284,3 +10284,22 @@ float weapon_get_apparent_size(const weapon& wp) {
 		g3_get_hfov(Eye_fov),
 		gr_screen.max_w) / i2fl(gr_screen.max_w);
 }
+
+float weapon_get_target_dot(weapon* wp) {
+	object* wep_objp = &Objects[wp->objnum];
+
+	vec3d target_pos;
+
+	if((weapon_has_homing_object(wp)) && (wp->homing_object->type != 0))
+	{
+		if (!IS_VEC_NULL(&wp->homing_pos)) {
+			target_pos = wp->homing_pos;
+		}
+	} else if(wp->target_num > -1)
+	{
+		target_pos = Objects[wp->target_num].pos;
+	} else {
+		return 0.f;
+	}
+	return vm_vec_dot(&wep_objp->pos, &target_pos);
+}
