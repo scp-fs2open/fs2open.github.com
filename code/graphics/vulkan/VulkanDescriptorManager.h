@@ -19,12 +19,13 @@ struct DescriptorBindingTemplate {
 	uint32_t binding;
 	vk::DescriptorType type;
 	uint32_t count;                      // 1 for most, 16 for texture array
+	vk::ShaderStageFlags stages;
 	vk::ImageViewType viewType;          // only meaningful for eCombinedImageSampler
 
 	constexpr DescriptorBindingTemplate(uint32_t binding_, vk::DescriptorType type_,
-	                                     uint32_t count_,
+	                                     uint32_t count_, vk::ShaderStageFlags stages_,
 	                                     vk::ImageViewType viewType_ = vk::ImageViewType::e2D)
-		: binding(binding_), type(type_), count(count_), viewType(viewType_) {}
+		: binding(binding_), type(type_), count(count_), stages(stages_), viewType(viewType_) {}
 };
 
 struct DescriptorSetTemplate : ArrayView<DescriptorBindingTemplate> {
@@ -156,15 +157,6 @@ namespace PerDrawBinding {
 	static constexpr uint32_t MovieData    = 4; // UBO: movie playback data
 }
 
-/**
- * @brief Descriptor binding info for a single binding point
- */
-struct DescriptorBindingInfo {
-	uint32_t binding;
-	vk::DescriptorType type;
-	uint32_t count;
-	vk::ShaderStageFlags stages;
-};
 
 /**
  * @brief Manages Vulkan descriptor sets, pools, and layouts
@@ -276,7 +268,7 @@ private:
 	/**
 	 * @brief Create a single descriptor set layout
 	 */
-	vk::UniqueDescriptorSetLayout createSetLayout(const SCP_vector<DescriptorBindingInfo>& bindings);
+	vk::UniqueDescriptorSetLayout createSetLayout(const DescriptorSetTemplate& tmpl);
 
 	/**
 	 * @brief Create a new descriptor pool with standard sizes
