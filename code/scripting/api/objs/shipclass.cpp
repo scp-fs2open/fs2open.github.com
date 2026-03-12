@@ -18,6 +18,7 @@
 #include "graphics/matrix.h"
 #include "missionui/missionscreencommon.h"
 #include "scripting/api/objs/weaponclass.h"
+#include "scripting/lua/LuaTable.h"
 #include "model/modelrender.h"
 #include "utils/string_utils.h"
 
@@ -1114,7 +1115,7 @@ ADE_FUNC(isInTechroom, l_Shipclass, NULL, "Gets whether or not the ship class is
 ADE_FUNC(renderTechModel,
 	l_Shipclass,
 	"number X1, number Y1, number X2, number Y2, [number RotationPercent =0, number PitchPercent =0, number "
-	"BankPercent=40, number Zoom=1.3, boolean Lighting=true, teamcolor TeamColor=nil]",
+	"BankPercent=40, number Zoom=1.3, boolean Lighting=true, teamcolor TeamColor=nil, string[] DestroyedSubsystems=nil]",
 	"Draws ship model as if in techroom. True for regular lighting, false for flat lighting.",
 	"boolean",
 	"Whether ship was rendered")
@@ -1125,7 +1126,8 @@ ADE_FUNC(renderTechModel,
 	float zoom = 1.3f;
 	bool lighting = true;
 	int tc_idx = -1;
-	if(!ade_get_args(L, "oiiii|ffffbo", l_Shipclass.Get(&idx), &x1, &y1, &x2, &y2, &rot_angles.h, &rot_angles.p, &rot_angles.b, &zoom, &lighting, l_TeamColor.Get(&tc_idx)))
+	auto destroyed_subsystems_table = luacpp::LuaTable::create(L);
+	if(!ade_get_args(L, "oiiii|ffffbot", l_Shipclass.Get(&idx), &x1, &y1, &x2, &y2, &rot_angles.h, &rot_angles.p, &rot_angles.b, &zoom, &lighting, l_TeamColor.Get(&tc_idx), &destroyed_subsystems_table))
 		return ade_set_error(L, "b", false);
 
 	if(idx < 0 || idx >= ship_info_size())
@@ -1158,18 +1160,35 @@ ADE_FUNC(renderTechModel,
 		}
 	}
 
-	return ade_set_args(L, "b", render_tech_model(TECH_SHIP, x1, y1, x2, y2, zoom, lighting, idx, &orient, tcolor));
+	SCP_vector<SCP_string> destroyed_subsystems;
+	if (destroyed_subsystems_table.isValid()) {
+		for (const auto& item : destroyed_subsystems_table) {
+			if (!item.second.is(luacpp::ValueType::STRING)) {
+				LuaError(L, "DestroyedSubsystems must be a table of strings.");
+				return ade_set_args(L, "b", false);
+			}
+
+			try {
+				destroyed_subsystems.emplace_back(item.second.getValue<SCP_string>());
+			} catch (const luacpp::LuaException& /*e*/) {
+				return ade_set_args(L, "b", false);
+			}
+		}
+	}
+
+	return ade_set_args(L, "b", render_tech_model(TECH_SHIP, x1, y1, x2, y2, zoom, lighting, idx, &orient, "", 0, &vmd_zero_vector, tcolor, destroyed_subsystems));
 }
 
 // Nuke's alternate tech model rendering function
-ADE_FUNC(renderTechModel2, l_Shipclass, "number X1, number Y1, number X2, number Y2, [orientation Orientation=nil, number Zoom=1.3, teamcolor TeamColor=nil]", "Draws ship model as if in techroom", "boolean", "Whether ship was rendered")
+ADE_FUNC(renderTechModel2, l_Shipclass, "number X1, number Y1, number X2, number Y2, [orientation Orientation=nil, number Zoom=1.3, teamcolor TeamColor=nil, string[] DestroyedSubsystems=nil]", "Draws ship model as if in techroom", "boolean", "Whether ship was rendered")
 {
 	int x1,y1,x2,y2;
 	int idx;
 	float zoom = 1.3f;
 	matrix_h *mh = nullptr;
 	int tc_idx = -1;
-	if(!ade_get_args(L, "oiiiio|fo", l_Shipclass.Get(&idx), &x1, &y1, &x2, &y2,  l_Matrix.GetPtr(&mh), &zoom, l_TeamColor.Get(&tc_idx)))
+	auto destroyed_subsystems_table = luacpp::LuaTable::create(L);
+	if(!ade_get_args(L, "oiiiio|fot", l_Shipclass.Get(&idx), &x1, &y1, &x2, &y2,  l_Matrix.GetPtr(&mh), &zoom, l_TeamColor.Get(&tc_idx), &destroyed_subsystems_table))
 		return ade_set_error(L, "b", false);
 
 	if(idx < 0 || idx >= ship_info_size())
@@ -1191,7 +1210,23 @@ ADE_FUNC(renderTechModel2, l_Shipclass, "number X1, number Y1, number X2, number
 		}
 	}
 
-	return ade_set_args(L, "b", render_tech_model(TECH_SHIP, x1, y1, x2, y2, zoom, true, idx, orient, tcolor));
+	SCP_vector<SCP_string> destroyed_subsystems;
+	if (destroyed_subsystems_table.isValid()) {
+		for (const auto& item : destroyed_subsystems_table) {
+			if (!item.second.is(luacpp::ValueType::STRING)) {
+				LuaError(L, "DestroyedSubsystems must be a table of strings.");
+				return ade_set_args(L, "b", false);
+			}
+
+			try {
+				destroyed_subsystems.emplace_back(item.second.getValue<SCP_string>());
+			} catch (const luacpp::LuaException& /*e*/) {
+				return ade_set_args(L, "b", false);
+			}
+		}
+	}
+
+	return ade_set_args(L, "b", render_tech_model(TECH_SHIP, x1, y1, x2, y2, zoom, true, idx, orient, "", 0, &vmd_zero_vector, tcolor, destroyed_subsystems));
 }
 
 ADE_FUNC(renderSelectModel,
