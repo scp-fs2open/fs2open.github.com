@@ -1,9 +1,136 @@
 #include "VulkanDescriptorManager.h"
+#include "VulkanBuffer.h"
+#include "VulkanTexture.h"
 
 
 namespace graphics::vulkan {
 
-// Global descriptor manager pointer
+// ========== Static set templates ==========
+
+static constexpr DescriptorBindingTemplate s_globalBindings[] = {
+	{GlobalBinding::Lights,        vk::DescriptorType::eUniformBuffer,        1},
+	{GlobalBinding::DeferredData,  vk::DescriptorType::eUniformBuffer,        1},
+	{GlobalBinding::ShadowMap,     vk::DescriptorType::eCombinedImageSampler, 1, vk::ImageViewType::e2DArray},
+	{GlobalBinding::EnvMap,        vk::DescriptorType::eCombinedImageSampler, 1, vk::ImageViewType::eCube},
+	{GlobalBinding::IrradianceMap, vk::DescriptorType::eCombinedImageSampler, 1, vk::ImageViewType::eCube},
+};
+static constexpr DescriptorSetTemplate s_globalTemplate(s_globalBindings);
+
+static constexpr DescriptorBindingTemplate s_materialBindings[] = {
+	{MaterialBinding::ModelData,     vk::DescriptorType::eUniformBuffer,        1},
+	{MaterialBinding::TextureArray,  vk::DescriptorType::eCombinedImageSampler, 16, vk::ImageViewType::e2DArray},
+	{MaterialBinding::DecalGlobals,  vk::DescriptorType::eUniformBuffer,        1},
+	{MaterialBinding::TransformSSBO, vk::DescriptorType::eStorageBuffer,        1},
+	{MaterialBinding::DepthMap,      vk::DescriptorType::eCombinedImageSampler, 1, vk::ImageViewType::e2D},
+	{MaterialBinding::SceneColor,    vk::DescriptorType::eCombinedImageSampler, 1, vk::ImageViewType::e2D},
+	{MaterialBinding::DistortionMap, vk::DescriptorType::eCombinedImageSampler, 1, vk::ImageViewType::e2D},
+};
+static constexpr DescriptorSetTemplate s_materialTemplate(s_materialBindings);
+
+static constexpr DescriptorBindingTemplate s_perDrawBindings[] = {
+	{PerDrawBinding::GenericData, vk::DescriptorType::eUniformBuffer, 1},
+	{PerDrawBinding::Matrices,    vk::DescriptorType::eUniformBuffer, 1},
+	{PerDrawBinding::NanoVGData,  vk::DescriptorType::eUniformBuffer, 1},
+	{PerDrawBinding::DecalInfo,   vk::DescriptorType::eUniformBuffer, 1},
+	{PerDrawBinding::MovieData,   vk::DescriptorType::eUniformBuffer, 1},
+};
+static constexpr DescriptorSetTemplate s_perDrawTemplate(s_perDrawBindings);
+
+// ========== DescriptorFallbacks ==========
+
+const vk::DescriptorImageInfo& DescriptorFallbacks::getImage(vk::ImageViewType t) const
+{
+	switch (t) {
+	case vk::ImageViewType::e2D:      return texture2D;
+	case vk::ImageViewType::e2DArray: return texture2DArray;
+	case vk::ImageViewType::eCube:    return textureCube;
+	case vk::ImageViewType::e3D:      return texture3D;
+	default:
+		Assertion(false, "DescriptorFallbacks::getImage: unhandled ImageViewType %d", static_cast<int>(t));
+		return texture2D;
+	}
+}
+
+// ========== DescriptorWriter template-based methods ==========
+
+void DescriptorWriter::writeSet(vk::DescriptorSet set, const DescriptorSetTemplate& tmpl)
+{
+	Verify(m_fallbacks);
+
+	// Clear binding slots for this set
+	m_bindingSlots = {};
+
+	for (size_t i = 0; i < tmpl.bindingCount; ++i) {
+		const auto& b = tmpl.bindings[i];
+		Verify(m_writeCount < MAX_WRITES);
+		Verify(b.binding < MAX_BINDINGS_PER_SET);
+
+		auto& w = m_writes[m_writeCount++];
+		w = vk::WriteDescriptorSet();
+		w.dstSet = set;
+		w.dstBinding = b.binding;
+		w.descriptorCount = b.count;
+		w.descriptorType = b.type;
+
+		auto& slot = m_bindingSlots[b.binding];
+		slot.count = b.count;
+		slot.viewType = b.viewType;
+
+		bool isImage = (b.type == vk::DescriptorType::eCombinedImageSampler);
+		if (isImage) {
+			Verify(m_imageInfoCount + b.count <= MAX_IMAGE_INFOS);
+			auto* dst = &m_imageInfos[m_imageInfoCount];
+			const auto& fallbackImg = m_fallbacks->getImage(b.viewType);
+			for (uint32_t j = 0; j < b.count; ++j) {
+				dst[j] = fallbackImg;
+			}
+			w.pImageInfo = dst;
+			slot.imageInfo = dst;
+			m_imageInfoCount += b.count;
+		} else {
+			Verify(m_bufferInfoCount < MAX_BUFFER_INFOS);
+			m_bufferInfos[m_bufferInfoCount] = m_fallbacks->buffer;
+			w.pBufferInfo = &m_bufferInfos[m_bufferInfoCount];
+			slot.bufferInfo = &m_bufferInfos[m_bufferInfoCount++];
+		}
+	}
+}
+
+void DescriptorWriter::setBuffer(uint32_t binding, const vk::DescriptorBufferInfo& info)
+{
+	Verify(binding < MAX_BINDINGS_PER_SET);
+	auto& slot = m_bindingSlots[binding];
+	Verify(slot.bufferInfo);
+	if (info.buffer) {
+		*slot.bufferInfo = info;
+	} else {
+		*slot.bufferInfo = m_fallbacks->buffer;
+	}
+}
+
+void DescriptorWriter::setImage(uint32_t binding, const vk::DescriptorImageInfo& info)
+{
+	Verify(binding < MAX_BINDINGS_PER_SET);
+	auto& slot = m_bindingSlots[binding];
+	Verify(slot.imageInfo);
+	if (info.imageView) {
+		*slot.imageInfo = info;
+	} else {
+		*slot.imageInfo = m_fallbacks->getImage(slot.viewType);
+	}
+}
+
+void DescriptorWriter::setImageArray(uint32_t binding, const vk::DescriptorImageInfo* infos, uint32_t count)
+{
+	Verify(binding < MAX_BINDINGS_PER_SET);
+	auto& slot = m_bindingSlots[binding];
+	Verify(slot.imageInfo);
+	Verify(count <= slot.count);
+	memcpy(slot.imageInfo, infos, count * sizeof(vk::DescriptorImageInfo));
+}
+
+// ========== Global descriptor manager ==========
+
 static VulkanDescriptorManager* g_descriptorManager = nullptr;
 
 VulkanDescriptorManager* getDescriptorManager()
@@ -54,6 +181,28 @@ void VulkanDescriptorManager::shutdown()
 
 	m_initialized = false;
 	mprintf(("VulkanDescriptorManager: Shutdown complete\n"));
+}
+
+void VulkanDescriptorManager::buildFallbacks(VulkanBufferManager* bufMgr, VulkanTextureManager* texMgr)
+{
+	m_fallbacks.buffer = bufMgr->getFallbackUniformBufferInfo();
+	m_fallbacks.texture2D = texMgr->getFallbackTextureInfo2D();
+	m_fallbacks.texture2DArray = texMgr->getFallbackTextureInfo2DArray();
+	m_fallbacks.textureCube = texMgr->getFallbackTextureInfoCube();
+	m_fallbacks.texture3D = texMgr->getFallbackTextureInfo3D();
+	mprintf(("VulkanDescriptorManager: Fallbacks built\n"));
+}
+
+const DescriptorSetTemplate& VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex setIndex)
+{
+	switch (setIndex) {
+	case DescriptorSetIndex::Global:   return s_globalTemplate;
+	case DescriptorSetIndex::Material: return s_materialTemplate;
+	case DescriptorSetIndex::PerDraw:  return s_perDrawTemplate;
+	default:
+		Assertion(false, "Invalid DescriptorSetIndex!");
+		return s_globalTemplate;
+	}
 }
 
 vk::DescriptorSetLayout VulkanDescriptorManager::getSetLayout(DescriptorSetIndex setIndex) const
@@ -321,4 +470,3 @@ vk::UniqueDescriptorSetLayout VulkanDescriptorManager::createSetLayout(
 }
 
 } // namespace graphics::vulkan
-

@@ -1838,9 +1838,6 @@ void VulkanPostProcessor::renderDeferredLights(vk::CommandBuffer cmd)
 
 	vk::PipelineLayout pipelineLayout = pipelineMgr->getPipelineLayout();
 
-	// Fallback buffer and textures for unused descriptor bindings
-	auto fallbackBufInfo = bufferMgr->getFallbackUniformBufferInfo();
-
 	// Begin light accumulation render pass
 	{
 		vk::RenderPassBeginInfo rpBegin;
@@ -1867,191 +1864,63 @@ void VulkanPostProcessor::renderDeferredLights(vk::CommandBuffer cmd)
 	scissor.extent = m_extent;
 	cmd.setScissor(0, scissor);
 
+	// Pre-build G-buffer texture array (shared across all light draws)
+	const auto& fallbacks = descriptorMgr->getFallbacks();
+	std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> gbufTexArray;
+	gbufTexArray.fill(fallbacks.texture2D);
+	gbufTexArray[0] = {m_linearSampler, m_sceneColor.view, vk::ImageLayout::eShaderReadOnlyOptimal};
+	gbufTexArray[1] = {m_linearSampler, m_gbufNormal.view, vk::ImageLayout::eShaderReadOnlyOptimal};
+	gbufTexArray[2] = {m_linearSampler, m_gbufPosition.view, vk::ImageLayout::eShaderReadOnlyOptimal};
+	gbufTexArray[3] = {m_linearSampler, m_gbufSpecular.view, vk::ImageLayout::eShaderReadOnlyOptimal};
+
+	// Pre-build shadow/env/irr image infos (shared across all light draws)
+	vk::DescriptorImageInfo shadowTexInfo;
+	if (m_shadowInitialized && m_shadowColor.view) {
+		shadowTexInfo = {m_linearSampler, m_shadowColor.view, vk::ImageLayout::eShaderReadOnlyOptimal};
+	}
+	vk::DescriptorImageInfo envTexInfo;
+	if (envMapAvailable && envMapSlot) {
+		envTexInfo = fallbacks.textureCube;
+		envTexInfo.imageView = envMapSlot->imageView;
+	}
+	vk::DescriptorImageInfo irrTexInfo;
+	if (envMapAvailable && irrMapSlot) {
+		irrTexInfo = fallbacks.textureCube;
+		irrTexInfo.imageView = irrMapSlot->imageView;
+	}
+
 	// Helper lambda to allocate + write descriptor sets for a single light draw
 	auto bindLightDescriptors = [&](size_t li) {
-		// Global set (Set 0): light UBO at binding 0, globals UBO at binding 1
+		DescriptorWriter writer;
+		writer.reset(m_device, fallbacks);
+
+		// Set 0: Global
 		vk::DescriptorSet globalSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Global);
 		if (!globalSet) return false;
+		writer.writeSet(globalSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Global));
+		writer.setBuffer(GlobalBinding::Lights, {m_deferredUBO,
+			lightDataOffset + (li * lightDataSize), sizeof(graphics::deferred_light_data)});
+		writer.setBuffer(GlobalBinding::DeferredData, {m_deferredUBO,
+			0, sizeof(graphics::deferred_global_data)});
+		writer.setImage(GlobalBinding::ShadowMap, shadowTexInfo);
+		writer.setImage(GlobalBinding::EnvMap, envTexInfo);
+		writer.setImage(GlobalBinding::IrradianceMap, irrTexInfo);
 
-		vk::DescriptorBufferInfo lightBufInfo;
-		lightBufInfo.buffer = m_deferredUBO;
-		lightBufInfo.offset = lightDataOffset + li * lightDataSize;
-		lightBufInfo.range = sizeof(graphics::deferred_light_data);
-
-		vk::DescriptorBufferInfo globalBufInfo;
-		globalBufInfo.buffer = m_deferredUBO;
-		globalBufInfo.offset = 0;
-		globalBufInfo.range = sizeof(graphics::deferred_global_data);
-
-		// Shadow map at binding 2
-		vk::DescriptorImageInfo shadowTexInfo;
-		if (m_shadowInitialized && m_shadowColor.view) {
-			shadowTexInfo.sampler = m_linearSampler;
-			shadowTexInfo.imageView = m_shadowColor.view;
-			shadowTexInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		} else {
-			shadowTexInfo = texMgr->getFallbackTextureInfo2DArray();
-		}
-
-		// Env map at binding 3
-		auto envTexInfo = texMgr->getFallbackTextureInfoCube();
-		if (envMapAvailable && envMapSlot) {
-			envTexInfo.imageView = envMapSlot->imageView;
-		}
-
-		// Irradiance map at binding 4
-		auto irrTexInfo = texMgr->getFallbackTextureInfoCube();
-		if (envMapAvailable && irrMapSlot) {
-			irrTexInfo.imageView = irrMapSlot->imageView;
-		}
-
-		std::array<vk::WriteDescriptorSet, 5> globalWrites;
-		globalWrites[0].dstSet = globalSet;
-		globalWrites[0].dstBinding = GlobalBinding::Lights;
-		globalWrites[0].dstArrayElement = 0;
-		globalWrites[0].descriptorCount = 1;
-		globalWrites[0].descriptorType = vk::DescriptorType::eUniformBuffer;
-		globalWrites[0].pBufferInfo = &lightBufInfo;
-
-		globalWrites[1].dstSet = globalSet;
-		globalWrites[1].dstBinding = GlobalBinding::DeferredData;
-		globalWrites[1].dstArrayElement = 0;
-		globalWrites[1].descriptorCount = 1;
-		globalWrites[1].descriptorType = vk::DescriptorType::eUniformBuffer;
-		globalWrites[1].pBufferInfo = &globalBufInfo;
-
-		globalWrites[2].dstSet = globalSet;
-		globalWrites[2].dstBinding = GlobalBinding::ShadowMap;
-		globalWrites[2].dstArrayElement = 0;
-		globalWrites[2].descriptorCount = 1;
-		globalWrites[2].descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		globalWrites[2].pImageInfo = &shadowTexInfo;
-
-		globalWrites[3].dstSet = globalSet;
-		globalWrites[3].dstBinding = GlobalBinding::EnvMap;
-		globalWrites[3].dstArrayElement = 0;
-		globalWrites[3].descriptorCount = 1;
-		globalWrites[3].descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		globalWrites[3].pImageInfo = &envTexInfo;
-
-		globalWrites[4].dstSet = globalSet;
-		globalWrites[4].dstBinding = GlobalBinding::IrradianceMap;
-		globalWrites[4].dstArrayElement = 0;
-		globalWrites[4].descriptorCount = 1;
-		globalWrites[4].descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		globalWrites[4].pImageInfo = &irrTexInfo;
-
-		m_device.updateDescriptorSets(globalWrites, {});
-
-		// Material set (Set 1): G-buffer textures at binding 1[0..3]
+		// Set 1: Material
 		vk::DescriptorSet materialSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Material);
 		if (!materialSet) return false;
+		writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
+		writer.setImageArray(MaterialBinding::TextureArray, gbufTexArray.data(),
+			static_cast<uint32_t>(gbufTexArray.size()));
 
-		// ModelData UBO at binding 0 (fallback)
-		vk::WriteDescriptorSet modelWrite;
-		modelWrite.dstSet = materialSet;
-		modelWrite.dstBinding = MaterialBinding::ModelData;
-		modelWrite.dstArrayElement = 0;
-		modelWrite.descriptorCount = 1;
-		modelWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
-		modelWrite.pBufferInfo = &fallbackBufInfo;
-
-		// Build full texture array: G-buffer textures at [0-3], fallback at [4-15]
-		std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texArrayInfos;
-		texArrayInfos.fill(texMgr->getFallbackTextureInfo2D());
-		texArrayInfos[0] = {m_linearSampler, m_sceneColor.view, vk::ImageLayout::eShaderReadOnlyOptimal};
-		texArrayInfos[1] = {m_linearSampler, m_gbufNormal.view, vk::ImageLayout::eShaderReadOnlyOptimal};
-		texArrayInfos[2] = {m_linearSampler, m_gbufPosition.view, vk::ImageLayout::eShaderReadOnlyOptimal};
-		texArrayInfos[3] = {m_linearSampler, m_gbufSpecular.view, vk::ImageLayout::eShaderReadOnlyOptimal};
-
-		vk::WriteDescriptorSet texArrayWrite;
-		texArrayWrite.dstSet = materialSet;
-		texArrayWrite.dstBinding = MaterialBinding::TextureArray;
-		texArrayWrite.dstArrayElement = 0;
-		texArrayWrite.descriptorCount = static_cast<uint32_t>(texArrayInfos.size());
-		texArrayWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		texArrayWrite.pImageInfo = texArrayInfos.data();
-
-		// DecalGlobals at binding 2 (fallback)
-		vk::WriteDescriptorSet decalWrite;
-		decalWrite.dstSet = materialSet;
-		decalWrite.dstBinding = MaterialBinding::DecalGlobals;
-		decalWrite.dstArrayElement = 0;
-		decalWrite.descriptorCount = 1;
-		decalWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
-		decalWrite.pBufferInfo = &fallbackBufInfo;
-
-		// Transform SSBO at binding 3 (fallback)
-		vk::WriteDescriptorSet ssboWrite;
-		ssboWrite.dstSet = materialSet;
-		ssboWrite.dstBinding = MaterialBinding::TransformSSBO;
-		ssboWrite.dstArrayElement = 0;
-		ssboWrite.descriptorCount = 1;
-		ssboWrite.descriptorType = vk::DescriptorType::eStorageBuffer;
-		ssboWrite.pBufferInfo = &fallbackBufInfo;
-
-		// Bindings 4-6: depth, scene color, distortion fallbacks
-		auto fallbackImg = texMgr->getFallbackTextureInfo2D();
-
-		std::array<vk::WriteDescriptorSet, 3> texFallbackWrites;
-		for (uint32_t b = 4; b <= 6; ++b) {
-			auto& w = texFallbackWrites[b - 4];
-			w.dstSet = materialSet;
-			w.dstBinding = b;
-			w.dstArrayElement = 0;
-			w.descriptorCount = 1;
-			w.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-			w.pImageInfo = &fallbackImg;
-		}
-
-		SCP_vector<vk::WriteDescriptorSet> matWrites = {
-			modelWrite, texArrayWrite, decalWrite, ssboWrite,
-			texFallbackWrites[0], texFallbackWrites[1], texFallbackWrites[2]
-		};
-		m_device.updateDescriptorSets(matWrites, {});
-
-		// PerDraw set (Set 2): matrices UBO at binding 1
+		// Set 2: PerDraw
 		vk::DescriptorSet perDrawSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::PerDraw);
 		if (!perDrawSet) return false;
+		writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
+		writer.setBuffer(PerDrawBinding::Matrices, {m_deferredUBO,
+			matrixDataOffset + (li * matrixDataSize), sizeof(graphics::matrix_uniforms)});
+		writer.flush();
 
-		vk::DescriptorBufferInfo matrixBufInfo;
-		matrixBufInfo.buffer = m_deferredUBO;
-		matrixBufInfo.offset = matrixDataOffset + li * matrixDataSize;
-		matrixBufInfo.range = sizeof(graphics::matrix_uniforms);
-
-		// GenericData at binding 0 (fallback)
-		vk::WriteDescriptorSet genWrite;
-		genWrite.dstSet = perDrawSet;
-		genWrite.dstBinding = PerDrawBinding::GenericData;
-		genWrite.dstArrayElement = 0;
-		genWrite.descriptorCount = 1;
-		genWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
-		genWrite.pBufferInfo = &fallbackBufInfo;
-
-		vk::WriteDescriptorSet matWrite;
-		matWrite.dstSet = perDrawSet;
-		matWrite.dstBinding = PerDrawBinding::Matrices;
-		matWrite.dstArrayElement = 0;
-		matWrite.descriptorCount = 1;
-		matWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
-		matWrite.pBufferInfo = &matrixBufInfo;
-
-		// Bindings 2-4: NanoVG, Decal, Movie (fallback)
-		std::array<vk::WriteDescriptorSet, 3> pdFallbacks;
-		for (uint32_t b = 2; b <= 4; ++b) {
-			auto& w = pdFallbacks[b - 2];
-			w.dstSet = perDrawSet;
-			w.dstBinding = b;
-			w.dstArrayElement = 0;
-			w.descriptorCount = 1;
-			w.descriptorType = vk::DescriptorType::eUniformBuffer;
-			w.pBufferInfo = &fallbackBufInfo;
-		}
-
-		SCP_vector<vk::WriteDescriptorSet> pdWrites = {genWrite, matWrite, pdFallbacks[0], pdFallbacks[1], pdFallbacks[2]};
-		m_device.updateDescriptorSets(pdWrites, {});
-
-		// Bind all 3 descriptor sets
 		std::array<vk::DescriptorSet, 3> sets = { globalSet, materialSet, perDrawSet };
 		cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, sets, {});
 
@@ -2494,134 +2363,33 @@ void VulkanPostProcessor::drawFullscreenTriangle(vk::CommandBuffer cmd, vk::Rend
 	scissor.extent = extent;
 	cmd.setScissor(0, scissor);
 
-	// Allocate Material descriptor set (Set 1)
+	DescriptorWriter writer;
+	writer.reset(m_device, descriptorMgr->getFallbacks());
+
+	// Set 1: Material
 	vk::DescriptorSet materialSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Material);
 	Verify(materialSet);
-
+	writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
 	{
-		// Build full texture array: source texture at [0], fallback at [1-15]
 		std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texArrayInfos;
-		texArrayInfos.fill(texMgr->getFallbackTextureInfo2D());
+		texArrayInfos.fill(descriptorMgr->getFallbacks().texture2D);
 		texArrayInfos[0].sampler = sampler;
 		texArrayInfos[0].imageView = textureView;
-
-		vk::WriteDescriptorSet texArrayWrite;
-		texArrayWrite.dstSet = materialSet;
-		texArrayWrite.dstBinding = MaterialBinding::TextureArray;
-		texArrayWrite.dstArrayElement = 0;
-		texArrayWrite.descriptorCount = static_cast<uint32_t>(texArrayInfos.size());
-		texArrayWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		texArrayWrite.pImageInfo = texArrayInfos.data();
-
-		// Fallback UBO for binding 0 (ModelData) and binding 2 (DecalGlobals)
-		auto fallbackBufInfo = bufferMgr->getFallbackUniformBufferInfo();
-
-		vk::WriteDescriptorSet modelWrite;
-		modelWrite.dstSet = materialSet;
-		modelWrite.dstBinding = MaterialBinding::ModelData;
-		modelWrite.dstArrayElement = 0;
-		modelWrite.descriptorCount = 1;
-		modelWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
-		modelWrite.pBufferInfo = &fallbackBufInfo;
-
-		vk::WriteDescriptorSet decalWrite;
-		decalWrite.dstSet = materialSet;
-		decalWrite.dstBinding = MaterialBinding::DecalGlobals;
-		decalWrite.dstArrayElement = 0;
-		decalWrite.descriptorCount = 1;
-		decalWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
-		decalWrite.pBufferInfo = &fallbackBufInfo;
-
-		// Binding 3: Transform SSBO (fallback to zero UBO)
-		vk::WriteDescriptorSet ssboWrite;
-		ssboWrite.dstSet = materialSet;
-		ssboWrite.dstBinding = MaterialBinding::TransformSSBO;
-		ssboWrite.dstArrayElement = 0;
-		ssboWrite.descriptorCount = 1;
-		ssboWrite.descriptorType = vk::DescriptorType::eStorageBuffer;
-		ssboWrite.pBufferInfo = &fallbackBufInfo;
-
-		// Bindings 4-6: depth, scene color, distortion (fallback to 2D white texture)
-		auto depthMapFallback = texMgr->getFallbackTextureInfo2D();
-		auto sceneColorFallback = depthMapFallback;
-		auto distMapFallback = depthMapFallback;
-
-		vk::WriteDescriptorSet depthMapWrite;
-		depthMapWrite.dstSet = materialSet;
-		depthMapWrite.dstBinding = MaterialBinding::DepthMap;
-		depthMapWrite.dstArrayElement = 0;
-		depthMapWrite.descriptorCount = 1;
-		depthMapWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		depthMapWrite.pImageInfo = &depthMapFallback;
-
-		vk::WriteDescriptorSet sceneColorWrite;
-		sceneColorWrite.dstSet = materialSet;
-		sceneColorWrite.dstBinding = MaterialBinding::SceneColor;
-		sceneColorWrite.dstArrayElement = 0;
-		sceneColorWrite.descriptorCount = 1;
-		sceneColorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		sceneColorWrite.pImageInfo = &sceneColorFallback;
-
-		vk::WriteDescriptorSet distMapWrite;
-		distMapWrite.dstSet = materialSet;
-		distMapWrite.dstBinding = MaterialBinding::DistortionMap;
-		distMapWrite.dstArrayElement = 0;
-		distMapWrite.descriptorCount = 1;
-		distMapWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		distMapWrite.pImageInfo = &distMapFallback;
-
-		std::array<vk::WriteDescriptorSet, 7> writes = {texArrayWrite, modelWrite, decalWrite, ssboWrite, depthMapWrite, sceneColorWrite, distMapWrite};
-		m_device.updateDescriptorSets(writes, {});
+		writer.setImageArray(MaterialBinding::TextureArray, texArrayInfos.data(), static_cast<uint32_t>(texArrayInfos.size()));
 	}
 
-	// Allocate PerDraw descriptor set (Set 2)
+	// Set 2: PerDraw
 	vk::DescriptorSet perDrawSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::PerDraw);
 	Verify(perDrawSet);
-
-	{
-		vk::DescriptorBufferInfo uboInfo;
-
-		if (uboData && uboSize > 0 && m_bloomUBOMapped) {
-			// Write UBO data to current bloom UBO slot
-			Assertion(m_bloomUBOCursor < BLOOM_UBO_MAX_SLOTS, "Bloom UBO slot overflow!");
-			uint32_t slotOffset = m_bloomUBOCursor * static_cast<uint32_t>(BLOOM_UBO_SLOT_SIZE);
-			memcpy(static_cast<uint8_t*>(m_bloomUBOMapped) + slotOffset, uboData, uboSize);
-			m_bloomUBOCursor++;
-
-			uboInfo.buffer = m_bloomUBO;
-			uboInfo.offset = slotOffset;
-			uboInfo.range = BLOOM_UBO_SLOT_SIZE;
-		} else {
-			// No UBO data — use fallback zero buffer
-			uboInfo = bufferMgr->getFallbackUniformBufferInfo();
-		}
-
-		vk::WriteDescriptorSet write;
-		write.dstSet = perDrawSet;
-		write.dstBinding = PerDrawBinding::GenericData;
-		write.dstArrayElement = 0;
-		write.descriptorCount = 1;
-		write.descriptorType = vk::DescriptorType::eUniformBuffer;
-		write.pBufferInfo = &uboInfo;
-
-		// Fallback for remaining per-draw bindings (1-4: Matrices, NanoVGData, DecalInfo, MovieData)
-		auto fallbackInfo = bufferMgr->getFallbackUniformBufferInfo();
-
-		SCP_vector<vk::WriteDescriptorSet> writes;
-		writes.push_back(write);
-		for (uint32_t b = 1; b <= 4; ++b) {
-			vk::WriteDescriptorSet fw;
-			fw.dstSet = perDrawSet;
-			fw.dstBinding = b;
-			fw.dstArrayElement = 0;
-			fw.descriptorCount = 1;
-			fw.descriptorType = vk::DescriptorType::eUniformBuffer;
-			fw.pBufferInfo = &fallbackInfo;
-			writes.push_back(fw);
-		}
-
-		m_device.updateDescriptorSets(writes, {});
+	writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
+	if (uboData && uboSize > 0 && m_bloomUBOMapped) {
+		Assertion(m_bloomUBOCursor < BLOOM_UBO_MAX_SLOTS, "Bloom UBO slot overflow!");
+		uint32_t slotOffset = m_bloomUBOCursor * static_cast<uint32_t>(BLOOM_UBO_SLOT_SIZE);
+		memcpy(static_cast<uint8_t*>(m_bloomUBOMapped) + slotOffset, uboData, uboSize);
+		m_bloomUBOCursor++;
+		writer.setBuffer(PerDrawBinding::GenericData, {m_bloomUBO, slotOffset, BLOOM_UBO_SLOT_SIZE});
 	}
+	writer.flush();
 
 	// Bind descriptor sets (Set 0 already bound from frame setup)
 	cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout,
@@ -3521,149 +3289,42 @@ void VulkanPostProcessor::blitToSwapChain(vk::CommandBuffer cmd)
 
 	stateTracker->applyDynamicState();
 
-	// Allocate and write Material descriptor set (Set 1) with source texture
+	DescriptorWriter writer;
+	writer.reset(m_device, descriptorMgr->getFallbacks());
+
+	// Set 1: Material — source texture at array slot 0
 	vk::DescriptorSet materialSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Material);
 	Verify(materialSet);
-
+	writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
 	{
-		// Build full texture array: source texture at [0], fallback at [1-15]
-		auto* texMgr = getTextureManager();
-
 		std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texArrayInfos;
-		texArrayInfos.fill(texMgr->getFallbackTextureInfo2D());
-		// Bind source texture based on post-processing chain state:
-		// - Post-effects ran: read Scene_luminance (post-effects output)
-		// - LDR only (tonemap/FXAA): read Scene_ldr
-		// - No LDR: read Scene_color (raw HDR, tonemapping applied by this shader)
+		texArrayInfos.fill(descriptorMgr->getFallbacks().texture2D);
 		texArrayInfos[0].sampler = m_linearSampler;
 		texArrayInfos[0].imageView = m_postEffectsApplied ? m_sceneLuminance.view
 		                            : useLdr ? m_sceneLdr.view
 		                            : m_sceneColor.view;
-
-		vk::WriteDescriptorSet texArrayWrite;
-		texArrayWrite.dstSet = materialSet;
-		texArrayWrite.dstBinding = MaterialBinding::TextureArray;
-		texArrayWrite.dstArrayElement = 0;
-		texArrayWrite.descriptorCount = static_cast<uint32_t>(texArrayInfos.size());
-		texArrayWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		texArrayWrite.pImageInfo = texArrayInfos.data();
-
-		// Fallback UBO for binding 0 (ModelData) and binding 2 (DecalGlobals)
-		auto bufferInfo = bufferMgr->getFallbackUniformBufferInfo();
-
-		vk::WriteDescriptorSet uboWrite;
-		uboWrite.dstSet = materialSet;
-		uboWrite.dstBinding = MaterialBinding::ModelData;
-		uboWrite.dstArrayElement = 0;
-		uboWrite.descriptorCount = 1;
-		uboWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
-		uboWrite.pBufferInfo = &bufferInfo;
-
-		vk::WriteDescriptorSet decalWrite;
-		decalWrite.dstSet = materialSet;
-		decalWrite.dstBinding = MaterialBinding::DecalGlobals;
-		decalWrite.dstArrayElement = 0;
-		decalWrite.descriptorCount = 1;
-		decalWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
-		decalWrite.pBufferInfo = &bufferInfo;
-
-		// Binding 3: Transform SSBO (fallback to zero UBO)
-		vk::WriteDescriptorSet ssboWrite;
-		ssboWrite.dstSet = materialSet;
-		ssboWrite.dstBinding = MaterialBinding::TransformSSBO;
-		ssboWrite.dstArrayElement = 0;
-		ssboWrite.descriptorCount = 1;
-		ssboWrite.descriptorType = vk::DescriptorType::eStorageBuffer;
-		ssboWrite.pBufferInfo = &bufferInfo;
-
-		// Bindings 4-6: depth, scene color, distortion (fallback to 2D white texture)
-		auto depthMapFallback = texMgr->getFallbackTextureInfo2D();
-		auto sceneColorFallback = depthMapFallback;
-		auto distMapFallback = depthMapFallback;
-
-		vk::WriteDescriptorSet depthMapWrite;
-		depthMapWrite.dstSet = materialSet;
-		depthMapWrite.dstBinding = MaterialBinding::DepthMap;
-		depthMapWrite.dstArrayElement = 0;
-		depthMapWrite.descriptorCount = 1;
-		depthMapWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		depthMapWrite.pImageInfo = &depthMapFallback;
-
-		vk::WriteDescriptorSet sceneColorWrite;
-		sceneColorWrite.dstSet = materialSet;
-		sceneColorWrite.dstBinding = MaterialBinding::SceneColor;
-		sceneColorWrite.dstArrayElement = 0;
-		sceneColorWrite.descriptorCount = 1;
-		sceneColorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		sceneColorWrite.pImageInfo = &sceneColorFallback;
-
-		vk::WriteDescriptorSet distMapWrite;
-		distMapWrite.dstSet = materialSet;
-		distMapWrite.dstBinding = MaterialBinding::DistortionMap;
-		distMapWrite.dstArrayElement = 0;
-		distMapWrite.descriptorCount = 1;
-		distMapWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		distMapWrite.pImageInfo = &distMapFallback;
-
-		std::array<vk::WriteDescriptorSet, 7> writes = {texArrayWrite, uboWrite, decalWrite, ssboWrite, depthMapWrite, sceneColorWrite, distMapWrite};
-		m_device.updateDescriptorSets(writes, {});
+		writer.setImageArray(MaterialBinding::TextureArray, texArrayInfos.data(), static_cast<uint32_t>(texArrayInfos.size()));
 	}
 
-	stateTracker->bindDescriptorSet(DescriptorSetIndex::Material, materialSet);
-
-	// Allocate and write PerDraw descriptor set (Set 2) with tonemapping UBO
-	// For now, use fallback (zero) UBO — exposure=0 would give black,
-	// so we need a valid graphics::generic_data::tonemapping_data with exposure=1.0 and tonemapper=0 (linear).
+	// Set 2: PerDraw — tonemapping UBO
 	vk::DescriptorSet perDrawSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::PerDraw);
 	Verify(perDrawSet);
+	writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
 
-	{
-		// When blitting LDR, use passthrough tonemapping (exposure=1, linear)
-		// Otherwise, use the real tonemapping UBO (already updated above)
-		if (useLdr) {
-			auto* mapped = static_cast<graphics::generic_data::tonemapping_data*>(
-				m_memoryManager->mapMemory(m_tonemapUBOAlloc));
-			Verify(mapped);
-			memset(mapped, 0, sizeof(graphics::generic_data::tonemapping_data));
-			mapped->exposure = 1.0f;
-			mapped->tonemapper = 0;  // Linear passthrough
-			m_memoryManager->unmapMemory(m_tonemapUBOAlloc);
-		}
-
-		vk::DescriptorBufferInfo uboInfo;
-		uboInfo.buffer = m_tonemapUBO;
-		uboInfo.offset = 0;
-		uboInfo.range = sizeof(graphics::generic_data::tonemapping_data);
-
-		vk::WriteDescriptorSet write;
-		write.dstSet = perDrawSet;
-		write.dstBinding = PerDrawBinding::GenericData;
-		write.dstArrayElement = 0;
-		write.descriptorCount = 1;
-		write.descriptorType = vk::DescriptorType::eUniformBuffer;
-		write.pBufferInfo = &uboInfo;
-
-		// Pre-initialize other bindings with fallback
-		auto fallbackInfo = bufferMgr->getFallbackUniformBufferInfo();
-
-		SCP_vector<vk::WriteDescriptorSet> writes;
-		writes.push_back(write);
-
-		// Bindings 1-4: Matrices, NanoVGData, DecalInfo, MovieData
-		for (uint32_t b = 1; b <= 4; ++b) {
-			vk::WriteDescriptorSet fw;
-			fw.dstSet = perDrawSet;
-			fw.dstBinding = b;
-			fw.dstArrayElement = 0;
-			fw.descriptorCount = 1;
-			fw.descriptorType = vk::DescriptorType::eUniformBuffer;
-			fw.pBufferInfo = &fallbackInfo;
-			writes.push_back(fw);
-		}
-
-		m_device.updateDescriptorSets(writes, {});
+	// When blitting LDR, use passthrough tonemapping (exposure=1, linear)
+	if (useLdr) {
+		auto* mapped = static_cast<graphics::generic_data::tonemapping_data*>(
+			m_memoryManager->mapMemory(m_tonemapUBOAlloc));
+		Verify(mapped);
+		memset(mapped, 0, sizeof(graphics::generic_data::tonemapping_data));
+		mapped->exposure = 1.0f;
+		mapped->tonemapper = 0;  // Linear passthrough
+		m_memoryManager->unmapMemory(m_tonemapUBOAlloc);
 	}
-
+	writer.setBuffer(PerDrawBinding::GenericData, {m_tonemapUBO, 0,
+		sizeof(graphics::generic_data::tonemapping_data)});
+	writer.flush();
+	stateTracker->bindDescriptorSet(DescriptorSetIndex::Material, materialSet);
 	stateTracker->bindDescriptorSet(DescriptorSetIndex::PerDraw, perDrawSet);
 
 	// Draw fullscreen triangle (3 vertices from gl_VertexIndex, no vertex buffer)
@@ -4204,134 +3865,33 @@ void VulkanPostProcessor::renderSceneFog(vk::CommandBuffer cmd)
 	scissor.extent = m_extent;
 	cmd.setScissor(0, scissor);
 
-	// Allocate Material descriptor set (Set 1)
+	DescriptorWriter writer;
+	writer.reset(m_device, descriptorMgr->getFallbacks());
+
+	// Set 1: Material
 	vk::DescriptorSet materialSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Material);
 	Verify(materialSet);
-
+	writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
 	{
-		auto fallbackBufInfo = bufferMgr->getFallbackUniformBufferInfo();
-
-		// Binding 0: ModelData UBO (fallback)
-		vk::WriteDescriptorSet modelWrite;
-		modelWrite.dstSet = materialSet;
-		modelWrite.dstBinding = MaterialBinding::ModelData;
-		modelWrite.dstArrayElement = 0;
-		modelWrite.descriptorCount = 1;
-		modelWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
-		modelWrite.pBufferInfo = &fallbackBufInfo;
-
-		// Build full texture array: composite at [0], fallback at [1-15]
 		std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texArrayInfos;
-		texArrayInfos.fill(texMgr->getFallbackTextureInfo2D());
-		texArrayInfos[0].sampler = m_linearSampler;
-		texArrayInfos[0].imageView = m_gbufComposite.view;
-
-		vk::WriteDescriptorSet texArrayWrite;
-		texArrayWrite.dstSet = materialSet;
-		texArrayWrite.dstBinding = MaterialBinding::TextureArray;
-		texArrayWrite.dstArrayElement = 0;
-		texArrayWrite.descriptorCount = static_cast<uint32_t>(texArrayInfos.size());
-		texArrayWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		texArrayWrite.pImageInfo = texArrayInfos.data();
-
-		// Binding 2: DecalGlobals UBO (fallback)
-		vk::WriteDescriptorSet decalWrite;
-		decalWrite.dstSet = materialSet;
-		decalWrite.dstBinding = MaterialBinding::DecalGlobals;
-		decalWrite.dstArrayElement = 0;
-		decalWrite.descriptorCount = 1;
-		decalWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
-		decalWrite.pBufferInfo = &fallbackBufInfo;
-
-		// Binding 3: Transform SSBO (fallback)
-		vk::WriteDescriptorSet ssboWrite;
-		ssboWrite.dstSet = materialSet;
-		ssboWrite.dstBinding = MaterialBinding::TransformSSBO;
-		ssboWrite.dstArrayElement = 0;
-		ssboWrite.descriptorCount = 1;
-		ssboWrite.descriptorType = vk::DescriptorType::eStorageBuffer;
-		ssboWrite.pBufferInfo = &fallbackBufInfo;
-
-		// Binding 4: Depth copy (actual depth, not fallback)
-		vk::DescriptorImageInfo depthInfo;
-		depthInfo.sampler = m_linearSampler;
-		depthInfo.imageView = m_sceneDepthCopy.view;
-		depthInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-
-		vk::WriteDescriptorSet depthWrite;
-		depthWrite.dstSet = materialSet;
-		depthWrite.dstBinding = MaterialBinding::DepthMap;
-		depthWrite.dstArrayElement = 0;
-		depthWrite.descriptorCount = 1;
-		depthWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		depthWrite.pImageInfo = &depthInfo;
-
-		// Bindings 5, 6: Fallback texture
-		auto sceneColorFallback = texMgr->getFallbackTextureInfo2D();
-
-		vk::WriteDescriptorSet bind5Write;
-		bind5Write.dstSet = materialSet;
-		bind5Write.dstBinding = MaterialBinding::SceneColor;
-		bind5Write.dstArrayElement = 0;
-		bind5Write.descriptorCount = 1;
-		bind5Write.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		bind5Write.pImageInfo = &sceneColorFallback;
-
-		vk::WriteDescriptorSet bind6Write;
-		bind6Write.dstSet = materialSet;
-		bind6Write.dstBinding = MaterialBinding::DistortionMap;
-		bind6Write.dstArrayElement = 0;
-		bind6Write.descriptorCount = 1;
-		bind6Write.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		bind6Write.pImageInfo = &sceneColorFallback;
-
-		std::array<vk::WriteDescriptorSet, 7> writes = {
-			texArrayWrite, modelWrite, decalWrite,
-			ssboWrite, depthWrite, bind5Write, bind6Write
-		};
-		m_device.updateDescriptorSets(writes, {});
+		texArrayInfos.fill(descriptorMgr->getFallbacks().texture2D);
+		texArrayInfos[0] = {m_linearSampler, m_gbufComposite.view, vk::ImageLayout::eShaderReadOnlyOptimal};
+		writer.setImageArray(MaterialBinding::TextureArray, texArrayInfos.data(), static_cast<uint32_t>(texArrayInfos.size()));
 	}
+	writer.setImage(MaterialBinding::DepthMap, {m_linearSampler, m_sceneDepthCopy.view, vk::ImageLayout::eShaderReadOnlyOptimal});
 
-	// Allocate PerDraw descriptor set (Set 2) with fog UBO
+	// Set 2: PerDraw — fog UBO
 	vk::DescriptorSet perDrawSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::PerDraw);
 	Verify(perDrawSet);
-
+	writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
 	{
 		Assertion(m_bloomUBOCursor < BLOOM_UBO_MAX_SLOTS, "Fog UBO slot overflow!");
 		uint32_t slotOffset = m_bloomUBOCursor * static_cast<uint32_t>(BLOOM_UBO_SLOT_SIZE);
 		memcpy(static_cast<uint8_t*>(m_bloomUBOMapped) + slotOffset, &fogData, sizeof(fogData));
 		m_bloomUBOCursor++;
-
-		vk::DescriptorBufferInfo uboInfo;
-		uboInfo.buffer = m_bloomUBO;
-		uboInfo.offset = slotOffset;
-		uboInfo.range = BLOOM_UBO_SLOT_SIZE;
-
-		vk::WriteDescriptorSet write;
-		write.dstSet = perDrawSet;
-		write.dstBinding = PerDrawBinding::GenericData;
-		write.dstArrayElement = 0;
-		write.descriptorCount = 1;
-		write.descriptorType = vk::DescriptorType::eUniformBuffer;
-		write.pBufferInfo = &uboInfo;
-
-		auto fallbackInfo = bufferMgr->getFallbackUniformBufferInfo();
-
-		SCP_vector<vk::WriteDescriptorSet> writes;
-		writes.push_back(write);
-		for (uint32_t b = 1; b <= 4; ++b) {
-			vk::WriteDescriptorSet fw;
-			fw.dstSet = perDrawSet;
-			fw.dstBinding = b;
-			fw.dstArrayElement = 0;
-			fw.descriptorCount = 1;
-			fw.descriptorType = vk::DescriptorType::eUniformBuffer;
-			fw.pBufferInfo = &fallbackInfo;
-			writes.push_back(fw);
-		}
-
-		m_device.updateDescriptorSets(writes, {});
+		writer.setBuffer(PerDrawBinding::GenericData, {m_bloomUBO, slotOffset, BLOOM_UBO_SLOT_SIZE});
 	}
+	writer.flush();
 
 	// Bind descriptor sets and draw
 	cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout,
@@ -4599,144 +4159,45 @@ void VulkanPostProcessor::renderVolumetricFog(vk::CommandBuffer cmd)
 	scissor.extent = m_extent;
 	cmd.setScissor(0, scissor);
 
-	// Allocate Material descriptor set (Set 1)
+	DescriptorWriter writer;
+	writer.reset(m_device, descriptorMgr->getFallbacks());
+
+	// Set 1: Material
 	vk::DescriptorSet materialSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Material);
 	Verify(materialSet);
-
+	writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
 	{
-		auto fallbackBufInfo = bufferMgr->getFallbackUniformBufferInfo();
-
-		// Binding 0: ModelData UBO (fallback)
-		vk::WriteDescriptorSet modelWrite;
-		modelWrite.dstSet = materialSet;
-		modelWrite.dstBinding = MaterialBinding::ModelData;
-		modelWrite.dstArrayElement = 0;
-		modelWrite.descriptorCount = 1;
-		modelWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
-		modelWrite.pBufferInfo = &fallbackBufInfo;
-
-		// Binding 1: Texture array — [0]=composite, [1]=emissive, rest=fallback
 		std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texArrayInfos;
-		texArrayInfos.fill(texMgr->getFallbackTextureInfo2D());
+		texArrayInfos.fill(descriptorMgr->getFallbacks().texture2D);
 		texArrayInfos[0] = {m_linearSampler, m_gbufComposite.view, vk::ImageLayout::eShaderReadOnlyOptimal};
 		texArrayInfos[1] = {m_mipmapSampler, m_emissiveMipmappedFullView, vk::ImageLayout::eShaderReadOnlyOptimal};
-
-		vk::WriteDescriptorSet texWrite;
-		texWrite.dstSet = materialSet;
-		texWrite.dstBinding = MaterialBinding::TextureArray;
-		texWrite.dstArrayElement = 0;
-		texWrite.descriptorCount = static_cast<uint32_t>(texArrayInfos.size());
-		texWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		texWrite.pImageInfo = texArrayInfos.data();
-
-		// Binding 2: DecalGlobals UBO (fallback)
-		vk::WriteDescriptorSet decalWrite;
-		decalWrite.dstSet = materialSet;
-		decalWrite.dstBinding = MaterialBinding::DecalGlobals;
-		decalWrite.dstArrayElement = 0;
-		decalWrite.descriptorCount = 1;
-		decalWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
-		decalWrite.pBufferInfo = &fallbackBufInfo;
-
-		// Binding 3: Transform SSBO (fallback)
-		vk::WriteDescriptorSet ssboWrite;
-		ssboWrite.dstSet = materialSet;
-		ssboWrite.dstBinding = MaterialBinding::TransformSSBO;
-		ssboWrite.dstArrayElement = 0;
-		ssboWrite.descriptorCount = 1;
-		ssboWrite.descriptorType = vk::DescriptorType::eStorageBuffer;
-		ssboWrite.pBufferInfo = &fallbackBufInfo;
-
-		// Binding 4: Depth copy
-		vk::DescriptorImageInfo depthInfo;
-		depthInfo.sampler = m_linearSampler;
-		depthInfo.imageView = m_sceneDepthCopy.view;
-		depthInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-
-		vk::WriteDescriptorSet depthWrite;
-		depthWrite.dstSet = materialSet;
-		depthWrite.dstBinding = MaterialBinding::DepthMap;
-		depthWrite.dstArrayElement = 0;
-		depthWrite.descriptorCount = 1;
-		depthWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		depthWrite.pImageInfo = &depthInfo;
-
-		// Binding 5: 3D volume texture
-		vk::DescriptorImageInfo volumeInfo;
-		volumeInfo.sampler = m_linearSampler;
-		volumeInfo.imageView = volSlot->imageView;
-		volumeInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-
-		vk::WriteDescriptorSet volumeWrite;
-		volumeWrite.dstSet = materialSet;
-		volumeWrite.dstBinding = MaterialBinding::SceneColor;
-		volumeWrite.dstArrayElement = 0;
-		volumeWrite.descriptorCount = 1;
-		volumeWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		volumeWrite.pImageInfo = &volumeInfo;
-
-		// Binding 6: 3D noise texture (or fallback 3D if noise inactive)
-		auto noiseInfo = texMgr->getFallbackTextureInfo3D();
+		writer.setImageArray(MaterialBinding::TextureArray, texArrayInfos.data(), static_cast<uint32_t>(texArrayInfos.size()));
+	}
+	writer.setImage(MaterialBinding::DepthMap, {m_linearSampler, m_sceneDepthCopy.view, vk::ImageLayout::eShaderReadOnlyOptimal});
+	// Binding 5: 3D volume texture (reuses SceneColor slot)
+	writer.setImage(MaterialBinding::SceneColor, {m_linearSampler, volSlot->imageView, vk::ImageLayout::eShaderReadOnlyOptimal});
+	// Binding 6: 3D noise texture (or fallback 3D)
+	{
+		auto noiseInfo = descriptorMgr->getFallbacks().texture3D;
 		noiseInfo.sampler = m_linearSampler;
 		if (noiseSlot && noiseSlot->imageView) {
 			noiseInfo.imageView = noiseSlot->imageView;
 		}
-
-		vk::WriteDescriptorSet noiseWrite;
-		noiseWrite.dstSet = materialSet;
-		noiseWrite.dstBinding = MaterialBinding::DistortionMap;
-		noiseWrite.dstArrayElement = 0;
-		noiseWrite.descriptorCount = 1;
-		noiseWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		noiseWrite.pImageInfo = &noiseInfo;
-
-		std::array<vk::WriteDescriptorSet, 7> writes = {
-			modelWrite, texWrite, decalWrite, ssboWrite,
-			depthWrite, volumeWrite, noiseWrite
-		};
-		m_device.updateDescriptorSets(writes, {});
+		writer.setImage(MaterialBinding::DistortionMap, noiseInfo);
 	}
 
-	// Allocate PerDraw descriptor set (Set 2) with volumetric fog UBO
+	// Set 2: PerDraw — volumetric fog UBO
 	vk::DescriptorSet perDrawSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::PerDraw);
 	Verify(perDrawSet);
-
+	writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
 	{
 		Assertion(m_bloomUBOCursor < BLOOM_UBO_MAX_SLOTS, "Fog UBO slot overflow!");
 		uint32_t slotOffset = m_bloomUBOCursor * static_cast<uint32_t>(BLOOM_UBO_SLOT_SIZE);
 		memcpy(static_cast<uint8_t*>(m_bloomUBOMapped) + slotOffset, &volData, sizeof(volData));
 		m_bloomUBOCursor++;
-
-		vk::DescriptorBufferInfo uboInfo;
-		uboInfo.buffer = m_bloomUBO;
-		uboInfo.offset = slotOffset;
-		uboInfo.range = BLOOM_UBO_SLOT_SIZE;
-
-		vk::WriteDescriptorSet write;
-		write.dstSet = perDrawSet;
-		write.dstBinding = PerDrawBinding::GenericData;
-		write.dstArrayElement = 0;
-		write.descriptorCount = 1;
-		write.descriptorType = vk::DescriptorType::eUniformBuffer;
-		write.pBufferInfo = &uboInfo;
-
-		auto fallbackInfo = bufferMgr->getFallbackUniformBufferInfo();
-
-		SCP_vector<vk::WriteDescriptorSet> writes;
-		writes.push_back(write);
-		for (uint32_t b = 1; b <= 4; ++b) {
-			vk::WriteDescriptorSet fw;
-			fw.dstSet = perDrawSet;
-			fw.dstBinding = b;
-			fw.dstArrayElement = 0;
-			fw.descriptorCount = 1;
-			fw.descriptorType = vk::DescriptorType::eUniformBuffer;
-			fw.pBufferInfo = &fallbackInfo;
-			writes.push_back(fw);
-		}
-
-		m_device.updateDescriptorSets(writes, {});
+		writer.setBuffer(PerDrawBinding::GenericData, {m_bloomUBO, slotOffset, BLOOM_UBO_SLOT_SIZE});
 	}
+	writer.flush();
 
 	// Bind descriptor sets and draw
 	cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout,

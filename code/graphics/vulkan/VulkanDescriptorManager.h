@@ -10,88 +10,68 @@
 
 namespace graphics::vulkan {
 
+class VulkanBufferManager;
+class VulkanTextureManager;
+
+// ========== Descriptor Set Templates ==========
+
+struct DescriptorBindingTemplate {
+	uint32_t binding;
+	vk::DescriptorType type;
+	uint32_t count;                      // 1 for most, 16 for texture array
+	vk::ImageViewType viewType;          // only meaningful for eCombinedImageSampler
+
+	constexpr DescriptorBindingTemplate(uint32_t binding_, vk::DescriptorType type_,
+	                                     uint32_t count_,
+	                                     vk::ImageViewType viewType_ = vk::ImageViewType::e2D)
+		: binding(binding_), type(type_), count(count_), viewType(viewType_) {}
+};
+
+struct DescriptorSetTemplate {
+	const DescriptorBindingTemplate* bindings;
+	size_t bindingCount;
+
+	template<size_t N>
+	constexpr DescriptorSetTemplate(const DescriptorBindingTemplate (&arr)[N])
+		: bindings(arr), bindingCount(N) {}
+};
+
+struct DescriptorFallbacks {
+	vk::DescriptorBufferInfo buffer;
+	vk::DescriptorImageInfo texture2D;
+	vk::DescriptorImageInfo texture2DArray;
+	vk::DescriptorImageInfo textureCube;
+	vk::DescriptorImageInfo texture3D;
+
+	const vk::DescriptorImageInfo& getImage(vk::ImageViewType t) const;
+};
+
 /**
  * @brief Stack-allocated batch writer for descriptor set updates.
  *
- * Accumulates WriteDescriptorSet entries with stable backing storage,
- * then submits them all in a single vkUpdateDescriptorSets call.
- * All storage is on the stack — no heap allocations.
+ * Usage: reset() + writeSet() (pre-fills all bindings with fallbacks)
+ * + setBuffer/setImage overrides for real data + flush().
  */
 class DescriptorWriter {
 public:
 	static constexpr uint32_t MAX_WRITES = 32;
 	static constexpr uint32_t MAX_BUFFER_INFOS = 20;
 	static constexpr uint32_t MAX_IMAGE_INFOS = 24;
+	static constexpr uint32_t MAX_BINDINGS_PER_SET = 16;
 
-	void reset(vk::Device device) {
+	void reset(vk::Device device, const DescriptorFallbacks& fallbacks) {
 		m_device = device;
+		m_fallbacks = &fallbacks;
 		m_writeCount = 0;
 		m_bufferInfoCount = 0;
 		m_imageInfoCount = 0;
 	}
 
-	void writeUniformBuffer(vk::DescriptorSet set, uint32_t binding,
-	                        const vk::DescriptorBufferInfo& info) {
-		Verify(info.buffer);
-		Verify(m_writeCount < MAX_WRITES && m_bufferInfoCount < MAX_BUFFER_INFOS);
-		m_bufferInfos[m_bufferInfoCount] = info;
+	void writeSet(vk::DescriptorSet set, const DescriptorSetTemplate& tmpl);
 
-		auto& w = m_writes[m_writeCount++];
-		w = vk::WriteDescriptorSet();
-		w.dstSet = set;
-		w.dstBinding = binding;
-		w.descriptorCount = 1;
-		w.descriptorType = vk::DescriptorType::eUniformBuffer;
-		w.pBufferInfo = &m_bufferInfos[m_bufferInfoCount++];
-	}
-
-	void writeStorageBuffer(vk::DescriptorSet set, uint32_t binding,
-	                        const vk::DescriptorBufferInfo& info) {
-		Verify(info.buffer);
-		Verify(m_writeCount < MAX_WRITES && m_bufferInfoCount < MAX_BUFFER_INFOS);
-		m_bufferInfos[m_bufferInfoCount] = info;
-
-		auto& w = m_writes[m_writeCount++];
-		w = vk::WriteDescriptorSet();
-		w.dstSet = set;
-		w.dstBinding = binding;
-		w.descriptorCount = 1;
-		w.descriptorType = vk::DescriptorType::eStorageBuffer;
-		w.pBufferInfo = &m_bufferInfos[m_bufferInfoCount++];
-	}
-
-	void writeTexture(vk::DescriptorSet set, uint32_t binding,
-	                  const vk::DescriptorImageInfo& info) {
-		Verify(m_writeCount < MAX_WRITES && m_imageInfoCount < MAX_IMAGE_INFOS);
-		m_imageInfos[m_imageInfoCount] = info;
-
-		auto& w = m_writes[m_writeCount++];
-		w = vk::WriteDescriptorSet();
-		w.dstSet = set;
-		w.dstBinding = binding;
-		w.descriptorCount = 1;
-		w.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		w.pImageInfo = &m_imageInfos[m_imageInfoCount++];
-	}
-
-	void writeTextureArray(vk::DescriptorSet set, uint32_t binding,
-	                       const vk::DescriptorImageInfo* images, uint32_t count) {
-		if (count == 0) {
-			return;
-		}
-		Verify(m_writeCount < MAX_WRITES && m_imageInfoCount + count <= MAX_IMAGE_INFOS);
-		auto* dst = &m_imageInfos[m_imageInfoCount];
-		memcpy(dst, images, count * sizeof(vk::DescriptorImageInfo));
-		m_imageInfoCount += count;
-
-		auto& w = m_writes[m_writeCount++];
-		w = vk::WriteDescriptorSet();
-		w.dstSet = set;
-		w.dstBinding = binding;
-		w.descriptorCount = count;
-		w.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		w.pImageInfo = dst;
-	}
+	void setBuffer(uint32_t binding, const vk::DescriptorBufferInfo& info);
+	void setImage(uint32_t binding, const vk::DescriptorImageInfo& info);
+	void setImageArray(uint32_t binding, const vk::DescriptorImageInfo* infos, uint32_t count);
 
 	void flush() {
 		if (m_writeCount > 0) {
@@ -103,10 +83,22 @@ public:
 	}
 
 private:
+	// Per-binding lookup for the current writeSet, indexed by binding number.
+	// Populated by writeSet, used by setBuffer/setImage/setImageArray for O(1) access.
+	struct BindingSlot {
+		vk::DescriptorBufferInfo* bufferInfo = nullptr;  // non-null for buffer bindings
+		vk::DescriptorImageInfo* imageInfo = nullptr;    // non-null for image bindings
+		uint32_t count = 0;                              // descriptor count (1 or 16 for arrays)
+		vk::ImageViewType viewType = vk::ImageViewType::e2D;  // for fallback lookup
+	};
+
 	vk::Device m_device;
+	const DescriptorFallbacks* m_fallbacks = nullptr;
+
 	std::array<vk::WriteDescriptorSet, MAX_WRITES> m_writes;
 	std::array<vk::DescriptorBufferInfo, MAX_BUFFER_INFOS> m_bufferInfos;
 	std::array<vk::DescriptorImageInfo, MAX_IMAGE_INFOS> m_imageInfos;
+	std::array<BindingSlot, MAX_BINDINGS_PER_SET> m_bindingSlots;
 	uint32_t m_writeCount = 0;
 	uint32_t m_bufferInfoCount = 0;
 	uint32_t m_imageInfoCount = 0;
@@ -209,6 +201,22 @@ public:
 	void shutdown();
 
 	/**
+	 * @brief Build fallback descriptor values from buffer/texture managers.
+	 * Must be called after buffer and texture managers are initialized.
+	 */
+	void buildFallbacks(VulkanBufferManager* bufMgr, VulkanTextureManager* texMgr);
+
+	/**
+	 * @brief Get the fallback descriptor values
+	 */
+	const DescriptorFallbacks& getFallbacks() const { return m_fallbacks; }
+
+	/**
+	 * @brief Get the set template for a given set index
+	 */
+	static const DescriptorSetTemplate& getSetTemplate(DescriptorSetIndex setIndex);
+
+	/**
 	 * @brief Get descriptor set layout for a given set index
 	 */
 	vk::DescriptorSetLayout getSetLayout(DescriptorSetIndex setIndex) const;
@@ -284,6 +292,9 @@ private:
 
 	// Per-frame descriptor pools (growable - new pools added on demand)
 	std::array<SCP_vector<vk::UniqueDescriptorPool>, MAX_FRAMES_IN_FLIGHT> m_framePools;
+
+	// Pre-built fallback descriptor values
+	DescriptorFallbacks m_fallbacks{};
 
 	uint32_t m_currentFrame = 0;
 	bool m_initialized = false;
