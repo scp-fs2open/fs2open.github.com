@@ -7184,6 +7184,7 @@ void ship::clear()
 	ship_max_hull_strength = 0.0f;
 
 	ship_guardian_threshold = 0;
+	max_guard_radius = -1.0f;
 
 	ship_name[0] = 0;
 	display_name.clear();
