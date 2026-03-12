@@ -60,8 +60,7 @@ void DescriptorWriter::writeSet(vk::DescriptorSet set, const DescriptorSetTempla
 	// Clear binding slots for this set
 	m_bindingSlots = {};
 
-	for (size_t i = 0; i < tmpl.bindingCount; ++i) {
-		const auto& b = tmpl.bindings[i];
+	for (const auto& b : tmpl) {
 		Verify(m_writeCount < MAX_WRITES);
 		Verify(b.binding < MAX_BINDINGS_PER_SET);
 
@@ -120,13 +119,13 @@ void DescriptorWriter::setImage(uint32_t binding, const vk::DescriptorImageInfo&
 	}
 }
 
-void DescriptorWriter::setImageArray(uint32_t binding, const vk::DescriptorImageInfo* infos, uint32_t count)
+void DescriptorWriter::setImageArray(uint32_t binding, ArrayView<vk::DescriptorImageInfo> infos)
 {
 	Verify(binding < MAX_BINDINGS_PER_SET);
 	auto& slot = m_bindingSlots[binding];
 	Verify(slot.imageInfo);
-	Verify(count <= slot.count);
-	memcpy(slot.imageInfo, infos, count * sizeof(vk::DescriptorImageInfo));
+	Verify(infos.size <= slot.count);
+	memcpy(slot.imageInfo, infos.data, infos.size * sizeof(vk::DescriptorImageInfo));
 }
 
 // ========== Global descriptor manager ==========
@@ -295,59 +294,32 @@ void VulkanDescriptorManager::endFrame()
 	m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
-bool VulkanDescriptorManager::getUniformBlockBinding(uniform_block_type blockType,
-                                                      DescriptorSetIndex& setIndex, uint32_t& binding)
+static constexpr VulkanDescriptorManager::UniformBindingEntry s_globalUBOs[] = {
+	{GlobalBinding::Lights,       uniform_block_type::Lights},
+	{GlobalBinding::DeferredData, uniform_block_type::DeferredGlobals},
+};
+
+static constexpr VulkanDescriptorManager::UniformBindingEntry s_materialUBOs[] = {
+	{MaterialBinding::ModelData,    uniform_block_type::ModelData},
+	{MaterialBinding::DecalGlobals, uniform_block_type::DecalGlobals},
+};
+
+static constexpr VulkanDescriptorManager::UniformBindingEntry s_perDrawUBOs[] = {
+	{PerDrawBinding::GenericData, uniform_block_type::GenericData},
+	{PerDrawBinding::Matrices,    uniform_block_type::Matrices},
+	{PerDrawBinding::NanoVGData,  uniform_block_type::NanoVGData},
+	{PerDrawBinding::DecalInfo,   uniform_block_type::DecalInfo},
+	{PerDrawBinding::MovieData,   uniform_block_type::MovieData},
+};
+
+ArrayView<VulkanDescriptorManager::UniformBindingEntry>
+VulkanDescriptorManager::getUniformBindings(DescriptorSetIndex setIndex)
 {
-	// Map uniform_block_type to descriptor set and binding
-	// Based on the descriptor layout design in the plan
-	switch (blockType) {
-	case uniform_block_type::Lights:
-		setIndex = DescriptorSetIndex::Global;
-		binding = 0;
-		return true;
-
-	case uniform_block_type::DeferredGlobals:
-		setIndex = DescriptorSetIndex::Global;
-		binding = 1;
-		return true;
-
-	case uniform_block_type::ModelData:
-		setIndex = DescriptorSetIndex::Material;
-		binding = 0;
-		return true;
-
-	case uniform_block_type::DecalGlobals:
-		setIndex = DescriptorSetIndex::Material;
-		binding = 2;
-		return true;
-
-	case uniform_block_type::GenericData:
-		setIndex = DescriptorSetIndex::PerDraw;
-		binding = 0;
-		return true;
-
-	case uniform_block_type::Matrices:
-		setIndex = DescriptorSetIndex::PerDraw;
-		binding = 1;
-		return true;
-
-	case uniform_block_type::NanoVGData:
-		setIndex = DescriptorSetIndex::PerDraw;
-		binding = 2;
-		return true;
-
-	case uniform_block_type::DecalInfo:
-		setIndex = DescriptorSetIndex::PerDraw;
-		binding = 3;
-		return true;
-
-	case uniform_block_type::MovieData:
-		setIndex = DescriptorSetIndex::PerDraw;
-		binding = 4;
-		return true;
-
-	default:
-		return false;
+	switch (setIndex) {
+	case DescriptorSetIndex::Global:   return {s_globalUBOs, std::size(s_globalUBOs)};
+	case DescriptorSetIndex::Material: return {s_materialUBOs, std::size(s_materialUBOs)};
+	case DescriptorSetIndex::PerDraw:  return {s_perDrawUBOs, std::size(s_perDrawUBOs)};
+	default:                           return {nullptr, 0};
 	}
 }
 

@@ -962,7 +962,7 @@ bool VulkanDrawManager::bindMaterialTextures(material* mat, DescriptorWriter* wr
 		loadYuvTexture(movieMat->getUtex(), 1);  // U at index 1
 		loadYuvTexture(movieMat->getVtex(), 2);  // V at index 2
 
-		writer->setImageArray(MaterialBinding::TextureArray, textureInfos.data(), static_cast<uint32_t>(textureInfos.size()));
+		writer->setImageArray(MaterialBinding::TextureArray, textureInfos);
 		return true;
 	}
 
@@ -1098,7 +1098,7 @@ bool VulkanDrawManager::bindMaterialTextures(material* mat, DescriptorWriter* wr
 
 	// Update the texture array in the descriptor set
 	// All slots now have valid views (either actual texture or fallback)
-	writer->setImageArray(MaterialBinding::TextureArray, textureInfos.data(), static_cast<uint32_t>(textureInfos.size()));
+	writer->setImageArray(MaterialBinding::TextureArray, textureInfos);
 
 	return true;
 }
@@ -1167,21 +1167,16 @@ bool VulkanDrawManager::applyMaterial(material* mat, primitive_type prim_type, v
 
 		// Bind pending UBOs for a given descriptor set
 		auto bindPendingUBOs = [&](DescriptorSetIndex targetSet) {
-			for (size_t i = 0; i < NUM_UNIFORM_BLOCK_TYPES; ++i) {
-				DescriptorSetIndex setIndex;
-				uint32_t binding;
-				if (VulkanDescriptorManager::getUniformBlockBinding(static_cast<uniform_block_type>(i), setIndex, binding) &&
-				    setIndex == targetSet) {
-					vk::DescriptorBufferInfo bufInfo;
-					const auto& pending = m_pendingUniformBindings[i];
-					if (pending.valid) {
-						vk::Buffer buf = bufferManager->getVkBuffer(pending.bufferHandle);
-						if (buf) {
-							bufInfo = vk::DescriptorBufferInfo(buf, pending.offset, pending.size);
-						}
+			for (const auto& entry : VulkanDescriptorManager::getUniformBindings(targetSet)) {
+				vk::DescriptorBufferInfo bufInfo;
+				const auto& pending = m_pendingUniformBindings[static_cast<size_t>(entry.blockType)];
+				if (pending.valid) {
+					vk::Buffer buf = bufferManager->getVkBuffer(pending.bufferHandle);
+					if (buf) {
+						bufInfo = vk::DescriptorBufferInfo(buf, pending.offset, pending.size);
 					}
-					writer.setBuffer(binding, bufInfo);
 				}
+				writer.setBuffer(entry.binding, bufInfo);
 			}
 		};
 
@@ -2082,7 +2077,7 @@ void vulkan_calculate_irrmap()
 			std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texImages;
 			texImages.fill(descManager->getFallbacks().texture2D);
 			texImages[0].imageView = envmapView;
-			writer.setImageArray(MaterialBinding::TextureArray, texImages.data(), static_cast<uint32_t>(texImages.size()));
+			writer.setImageArray(MaterialBinding::TextureArray, texImages);
 		}
 
 		// Set 2: PerDraw (face UBO at binding 0)

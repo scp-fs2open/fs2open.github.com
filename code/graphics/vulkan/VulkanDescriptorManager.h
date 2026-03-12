@@ -27,13 +27,8 @@ struct DescriptorBindingTemplate {
 		: binding(binding_), type(type_), count(count_), viewType(viewType_) {}
 };
 
-struct DescriptorSetTemplate {
-	const DescriptorBindingTemplate* bindings;
-	size_t bindingCount;
-
-	template<size_t N>
-	constexpr DescriptorSetTemplate(const DescriptorBindingTemplate (&arr)[N])
-		: bindings(arr), bindingCount(N) {}
+struct DescriptorSetTemplate : ArrayView<DescriptorBindingTemplate> {
+	using ArrayView::ArrayView;
 };
 
 struct DescriptorFallbacks {
@@ -71,7 +66,7 @@ public:
 
 	void setBuffer(uint32_t binding, const vk::DescriptorBufferInfo& info);
 	void setImage(uint32_t binding, const vk::DescriptorImageInfo& info);
-	void setImageArray(uint32_t binding, const vk::DescriptorImageInfo* infos, uint32_t count);
+	void setImageArray(uint32_t binding, ArrayView<vk::DescriptorImageInfo> infos);
 
 	void flush() {
 		if (m_writeCount > 0) {
@@ -255,14 +250,17 @@ public:
 	vk::Device getDevice() const { return m_device; }
 
 	/**
-	 * @brief Map uniform_block_type to descriptor set and binding
-	 * @param blockType The uniform block type
-	 * @param setIndex Output: which descriptor set
-	 * @param binding Output: which binding within the set
-	 * @return true if mapping exists
+	 * @brief Entry mapping a UBO binding to its uniform_block_type
 	 */
-	static bool getUniformBlockBinding(uniform_block_type blockType,
-	                                   DescriptorSetIndex& setIndex, uint32_t& binding);
+	struct UniformBindingEntry {
+		uint32_t binding;
+		uniform_block_type blockType;
+	};
+
+	/**
+	 * @brief Get the UBO bindings for a given descriptor set
+	 */
+	static ArrayView<UniformBindingEntry> getUniformBindings(DescriptorSetIndex setIndex);
 
 private:
 	/**
