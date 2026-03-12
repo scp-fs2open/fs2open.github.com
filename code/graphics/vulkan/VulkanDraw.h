@@ -271,10 +271,9 @@ public:
 
 	/**
 	 * @brief Bind material textures to descriptor set (public for decal rendering)
-	 * @param writer If non-null, texture array write is batched into writer instead of flushed immediately
+	 * @param writer Texture array is written into the writer's current set via setImageArray
 	 */
-	bool bindMaterialTextures(material* mat, vk::DescriptorSet materialSet,
-	                          DescriptorWriter* writer) const;
+	bool bindMaterialTextures(material* mat, DescriptorWriter* writer) const;
 
 	/**
 	 * @brief Reset per-frame diagnostic counters (called at start of frame)

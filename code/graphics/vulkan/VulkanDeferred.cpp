@@ -201,8 +201,6 @@ void vulkan_deferred_lighting_begin(bool clearNonColorBufs)
 			if (pipeline) {
 				// Use drawFullscreenTriangle pattern but inline since we're already in a render pass
 				auto* descriptorMgr = getDescriptorManager();
-				auto* bufferMgr = getBufferManager();
-				auto* texMgr = getTextureManager();
 
 				cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
 
@@ -221,48 +219,34 @@ void vulkan_deferred_lighting_begin(bool clearNonColorBufs)
 				cmd.setScissor(0, scissor);
 
 				// Bind descriptors with scene color as source
-				auto fallbackBufInfo = bufferMgr->getFallbackUniformBufferInfo();
-
 				DescriptorWriter writer;
-				writer.reset(descriptorMgr->getDevice());
+				writer.reset(descriptorMgr->getDevice(), descriptorMgr->getFallbacks());
 
 				vk::DescriptorSet globalSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Global);
 				Verify(globalSet);
-				writer.writeUniformBuffer(globalSet, GlobalBinding::Lights, fallbackBufInfo);
-				writer.writeUniformBuffer(globalSet, GlobalBinding::DeferredData, fallbackBufInfo);
-				writer.writeTexture(globalSet, GlobalBinding::ShadowMap, texMgr->getFallbackTextureInfo2D());
-				writer.writeTexture(globalSet, GlobalBinding::EnvMap, texMgr->getFallbackTextureInfoCube());
-				writer.writeTexture(globalSet, GlobalBinding::IrradianceMap, texMgr->getFallbackTextureInfoCube());
+				writer.writeSet(globalSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Global));
+
+				vk::DescriptorSet materialSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Material);
+				Verify(materialSet);
+				writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
+				// Scene color at texture array slot 0
+				{
+					std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texImages;
+					texImages.fill(descriptorMgr->getFallbacks().texture2D);
+					texImages[0] = {pp->getSceneColorSampler(), pp->getSceneColorView(), vk::ImageLayout::eShaderReadOnlyOptimal};
+					writer.setImageArray(MaterialBinding::TextureArray, texImages.data(), static_cast<uint32_t>(texImages.size()));
+				}
+
+				vk::DescriptorSet perDrawSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::PerDraw);
+				Verify(perDrawSet);
+				writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
 				writer.flush();
 				cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
 					pipelineMgr->getPipelineLayout(),
 					static_cast<uint32_t>(DescriptorSetIndex::Global), globalSet, {});
-
-				vk::DescriptorSet materialSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Material);
-				Verify(materialSet);
-				writer.writeUniformBuffer(materialSet, MaterialBinding::ModelData, fallbackBufInfo);
-				writer.writeUniformBuffer(materialSet, MaterialBinding::DecalGlobals, fallbackBufInfo);
-				writer.writeStorageBuffer(materialSet, MaterialBinding::TransformSSBO, fallbackBufInfo);
-
-				// Build texture array with scene color at slot 0, fallback at slots 1-15
-				std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texImages;
-				texImages.fill(texMgr->getFallbackTextureInfo2D());
-				texImages[0] = {pp->getSceneColorSampler(), pp->getSceneColorView(), vk::ImageLayout::eShaderReadOnlyOptimal};
-				writer.writeTextureArray(materialSet, MaterialBinding::TextureArray, texImages.data(), static_cast<uint32_t>(texImages.size()));
-				writer.writeTexture(materialSet, MaterialBinding::DepthMap, texMgr->getFallbackTextureInfo2D());
-				writer.writeTexture(materialSet, MaterialBinding::SceneColor, texMgr->getFallbackTextureInfo2D());
-				writer.writeTexture(materialSet, MaterialBinding::DistortionMap, texMgr->getFallbackTextureInfo2D());
-				writer.flush();
 				cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
 					pipelineMgr->getPipelineLayout(),
 					static_cast<uint32_t>(DescriptorSetIndex::Material), materialSet, {});
-
-				vk::DescriptorSet perDrawSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::PerDraw);
-				Verify(perDrawSet);
-				for (uint32_t b = 0; b < 5; ++b) {
-					writer.writeUniformBuffer(perDrawSet, b, fallbackBufInfo);
-				}
-				writer.flush();
 				cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
 					pipelineMgr->getPipelineLayout(),
 					static_cast<uint32_t>(DescriptorSetIndex::PerDraw), perDrawSet, {});
@@ -427,32 +411,19 @@ void vulkan_deferred_lighting_msaa()
 			scissor.extent = extent;
 			cmd.setScissor(0, scissor);
 
-			auto fallbackBufInfo = bufferMgr->getFallbackUniformBufferInfo();
-
 			DescriptorWriter writer;
-			writer.reset(descriptorMgr->getDevice());
+			writer.reset(descriptorMgr->getDevice(), descriptorMgr->getFallbacks());
 
 			// Global set (fallback — resolve shader doesn't use global bindings)
 			vk::DescriptorSet globalSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Global);
 			Verify(globalSet);
-			writer.writeUniformBuffer(globalSet, GlobalBinding::Lights, fallbackBufInfo);
-			writer.writeUniformBuffer(globalSet, GlobalBinding::DeferredData, fallbackBufInfo);
-			writer.writeTexture(globalSet, GlobalBinding::ShadowMap, texMgr->getFallbackTextureInfo2D());
-			writer.writeTexture(globalSet, GlobalBinding::EnvMap, texMgr->getFallbackTextureInfoCube());
-			writer.writeTexture(globalSet, GlobalBinding::IrradianceMap, texMgr->getFallbackTextureInfoCube());
-			writer.flush();
-			writer.reset(descriptorMgr->getDevice());
-			cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
-				pipelineMgr->getPipelineLayout(),
-				static_cast<uint32_t>(DescriptorSetIndex::Global), globalSet, {});
+			writer.writeSet(globalSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Global));
 
 			// Material set: All 6 MSAA textures in binding 1 array (elements 0-5)
 			// [0]=color, [1]=position, [2]=normal, [3]=specular, [4]=emissive, [5]=depth
 			vk::DescriptorSet materialSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Material);
 			Verify(materialSet);
-			writer.writeUniformBuffer(materialSet, MaterialBinding::ModelData, fallbackBufInfo);
-			writer.writeUniformBuffer(materialSet, MaterialBinding::DecalGlobals, fallbackBufInfo);
-			writer.writeStorageBuffer(materialSet, MaterialBinding::TransformSSBO, fallbackBufInfo);
+			writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
 
 			// Build texture array: elements 0-5 are MSAA textures, 6-15 are fallback
 			vk::Sampler nearestSampler = texMgr->getSampler(
@@ -460,31 +431,22 @@ void vulkan_deferred_lighting_msaa()
 				vk::SamplerAddressMode::eClampToEdge, false, 0.0f, false);
 
 			std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texImages;
+			// MSAA textures at slots 0-5
 			// Fill all slots with MSAA color view (validation checks ALL elements
 			// even though the shader only accesses 0-5 — sample count must match).
 			texImages.fill({nearestSampler, pp->getMsaaColorView(), vk::ImageLayout::eShaderReadOnlyOptimal});
-			// MSAA textures at slots 0-5
 			texImages[1] = {nearestSampler, pp->getMsaaPositionView(), vk::ImageLayout::eShaderReadOnlyOptimal};
 			texImages[2] = {nearestSampler, pp->getMsaaNormalView(), vk::ImageLayout::eShaderReadOnlyOptimal};
 			texImages[3] = {nearestSampler, pp->getMsaaSpecularView(), vk::ImageLayout::eShaderReadOnlyOptimal};
 			texImages[4] = {nearestSampler, pp->getMsaaEmissiveView(), vk::ImageLayout::eShaderReadOnlyOptimal};
 			texImages[5] = {nearestSampler, pp->getMsaaDepthView(), vk::ImageLayout::eShaderReadOnlyOptimal};
-			writer.writeTextureArray(materialSet, MaterialBinding::TextureArray, texImages.data(), static_cast<uint32_t>(texImages.size()));
-
-			// Fallback for single-sampler bindings 4-6
-			writer.writeTexture(materialSet, MaterialBinding::DepthMap, texMgr->getFallbackTextureInfo2D());
-			writer.writeTexture(materialSet, MaterialBinding::SceneColor, texMgr->getFallbackTextureInfo2D());
-			writer.writeTexture(materialSet, MaterialBinding::DistortionMap, texMgr->getFallbackTextureInfo2D());
-			writer.flush();
-			writer.reset(descriptorMgr->getDevice());
-			cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
-				pipelineMgr->getPipelineLayout(),
-				static_cast<uint32_t>(DescriptorSetIndex::Material), materialSet, {});
+			writer.setImageArray(MaterialBinding::TextureArray, texImages.data(), static_cast<uint32_t>(texImages.size()));
 
 			// PerDraw set: GenericData UBO with {samples, fov} at binding 0
 			vk::DescriptorSet perDrawSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::PerDraw);
 			Verify(perDrawSet);
-			// Write resolve data to per-frame UBO slot
+			writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
+
 			struct MsaaResolveData {
 				int samples;
 				float fov;
@@ -497,14 +459,15 @@ void vulkan_deferred_lighting_msaa()
 			memcpy(static_cast<uint8_t*>(pp->getMsaaResolveUBOMapped()) + slotOffset,
 				&resolveData, sizeof(resolveData));
 
-			writer.writeUniformBuffer(perDrawSet, PerDrawBinding::GenericData,
+			writer.setBuffer(PerDrawBinding::GenericData,
 				{pp->getMsaaResolveUBO(), slotOffset, 256});
-
-			// Fallback for remaining PerDraw UBO bindings (1-4)
-			for (uint32_t b = 1; b <= 4; ++b) {
-				writer.writeUniformBuffer(perDrawSet, b, fallbackBufInfo);
-			}
 			writer.flush();
+			cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
+				pipelineMgr->getPipelineLayout(),
+				static_cast<uint32_t>(DescriptorSetIndex::Global), globalSet, {});
+			cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
+				pipelineMgr->getPipelineLayout(),
+				static_cast<uint32_t>(DescriptorSetIndex::Material), materialSet, {});
 			cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
 				pipelineMgr->getPipelineLayout(),
 				static_cast<uint32_t>(DescriptorSetIndex::PerDraw), perDrawSet, {});
@@ -1044,49 +1007,37 @@ void vulkan_render_decals(decal_material* material_info,
 
 	stateTracker->bindPipeline(pipeline, pipelineManager->getPipelineLayout());
 
-	// Get fallback resources
-	auto fallbackBufInfo = bufferManager->getFallbackUniformBufferInfo();
-
-	// Helper: write real pending UBO or fallback
-	auto writeUBOOrFallback = [&](DescriptorWriter& w, vk::DescriptorSet set,
-	                              uint32_t binding, size_t blockIdx) {
+	// Helper: get DescriptorBufferInfo from pending binding (null buffer = fallback)
+	auto getPendingBufInfo = [&](size_t blockIdx) -> vk::DescriptorBufferInfo {
 		const auto& pending = drawManager->getPendingUniformBinding(blockIdx);
 		if (pending.valid) {
 			vk::Buffer buf = bufferManager->getVkBuffer(pending.bufferHandle);
 			if (buf) {
-				w.writeUniformBuffer(set, binding, {buf, pending.offset, pending.size});
-				return;
+				return {buf, pending.offset, pending.size};
 			}
 		}
-		w.writeUniformBuffer(set, binding, fallbackBufInfo);
+		return {};
 	};
 
 	DescriptorWriter writer;
-	writer.reset(descManager->getDevice());
+	writer.reset(descManager->getDevice(), descManager->getFallbacks());
 
-	// Set 0: Global
+	// Set 0: Global (all fallback)
 	vk::DescriptorSet globalSet = descManager->allocateFrameSet(DescriptorSetIndex::Global);
 	Verify(globalSet);
-	writer.writeUniformBuffer(globalSet, GlobalBinding::Lights, fallbackBufInfo);
-	writer.writeUniformBuffer(globalSet, GlobalBinding::DeferredData, fallbackBufInfo);
-	writer.writeTexture(globalSet, GlobalBinding::ShadowMap, texManager->getFallbackTextureInfo2DArray());
-	writer.writeTexture(globalSet, GlobalBinding::EnvMap, texManager->getFallbackTextureInfoCube());
-	writer.writeTexture(globalSet, GlobalBinding::IrradianceMap, texManager->getFallbackTextureInfoCube());
-	writer.flush();
-	stateTracker->bindDescriptorSet(DescriptorSetIndex::Global, globalSet);
+	writer.writeSet(globalSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Global));
 
 	// Set 1: Material
 	vk::DescriptorSet materialSet = descManager->allocateFrameSet(DescriptorSetIndex::Material);
 	Verify(materialSet);
-	writer.writeUniformBuffer(materialSet, MaterialBinding::ModelData, fallbackBufInfo);
-	writer.writeStorageBuffer(materialSet, MaterialBinding::TransformSSBO, fallbackBufInfo);
-
-	// Binding 1: decal textures (diffuse, glow, normal as texture array)
-	drawManager->bindMaterialTextures(material_info, materialSet, &writer);
+	writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
 
 	// Binding 2: DecalGlobals UBO
-	writeUBOOrFallback(writer, materialSet, MaterialBinding::DecalGlobals,
-		static_cast<size_t>(uniform_block_type::DecalGlobals));
+	writer.setBuffer(MaterialBinding::DecalGlobals,
+		getPendingBufInfo(static_cast<size_t>(uniform_block_type::DecalGlobals)));
+
+	// Binding 1: decal textures (diffuse, glow, normal as texture array)
+	drawManager->bindMaterialTextures(material_info, &writer);
 
 	// Binding 4: scene depth copy (for fragment depth reconstruction)
 	{
@@ -1095,14 +1046,9 @@ void vulkan_render_decals(decal_material* material_info,
 			vk::SamplerAddressMode::eClampToEdge, false, 0.0f, false);
 		vk::ImageView depthView = pp->getSceneDepthCopyView();
 		if (depthView && nearestSampler) {
-			writer.writeTexture(materialSet, MaterialBinding::DepthMap, {nearestSampler, depthView, vk::ImageLayout::eShaderReadOnlyOptimal});
-		} else {
-			writer.writeTexture(materialSet, MaterialBinding::DepthMap, texManager->getFallbackTextureInfo2D());
+			writer.setImage(MaterialBinding::DepthMap, {nearestSampler, depthView, vk::ImageLayout::eShaderReadOnlyOptimal});
 		}
 	}
-
-	// Binding 5: scene color (fallback — not used by decals)
-	writer.writeTexture(materialSet, MaterialBinding::SceneColor, texManager->getFallbackTextureInfo2D());
 
 	// Binding 6: G-buffer normal copy (for angle rejection)
 	{
@@ -1111,48 +1057,21 @@ void vulkan_render_decals(decal_material* material_info,
 			vk::SamplerAddressMode::eClampToEdge, false, 0.0f, false);
 		vk::ImageView normalView = pp->getGbufNormalCopyView();
 		if (normalView && nearestSampler) {
-			writer.writeTexture(materialSet, MaterialBinding::DistortionMap, {nearestSampler, normalView, vk::ImageLayout::eShaderReadOnlyOptimal});
-		} else {
-			writer.writeTexture(materialSet, MaterialBinding::DistortionMap, texManager->getFallbackTextureInfo2D());
+			writer.setImage(MaterialBinding::DistortionMap, {nearestSampler, normalView, vk::ImageLayout::eShaderReadOnlyOptimal});
 		}
 	}
-
-	writer.flush();
-	stateTracker->bindDescriptorSet(DescriptorSetIndex::Material, materialSet);
 
 	// Set 2: PerDraw
 	vk::DescriptorSet perDrawSet = descManager->allocateFrameSet(DescriptorSetIndex::PerDraw);
 	Verify(perDrawSet);
-	// Pre-initialize all bindings with fallback, then overwrite real ones
-	for (uint32_t b = 0; b < 5; ++b) {
-		writer.writeUniformBuffer(perDrawSet, b, fallbackBufInfo);
-	}
-
-	// Binding 1: Matrices UBO (overwrite fallback if valid)
-	{
-		auto idx = static_cast<size_t>(uniform_block_type::Matrices);
-		const auto& binding = drawManager->getPendingUniformBinding(idx);
-		if (binding.valid) {
-			vk::Buffer buf = bufferManager->getVkBuffer(binding.bufferHandle);
-			if (buf) {
-				writer.writeUniformBuffer(perDrawSet, PerDrawBinding::Matrices, {buf, binding.offset, binding.size});
-			}
-		}
-	}
-
-	// Binding 3: DecalInfo UBO (overwrite fallback if valid)
-	{
-		auto idx = static_cast<size_t>(uniform_block_type::DecalInfo);
-		const auto& binding = drawManager->getPendingUniformBinding(idx);
-		if (binding.valid) {
-			vk::Buffer buf = bufferManager->getVkBuffer(binding.bufferHandle);
-			if (buf) {
-				writer.writeUniformBuffer(perDrawSet, PerDrawBinding::DecalInfo, {buf, binding.offset, binding.size});
-			}
-		}
-	}
-
+	writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
+	writer.setBuffer(PerDrawBinding::Matrices,
+		getPendingBufInfo(static_cast<size_t>(uniform_block_type::Matrices)));
+	writer.setBuffer(PerDrawBinding::DecalInfo,
+		getPendingBufInfo(static_cast<size_t>(uniform_block_type::DecalInfo)));
 	writer.flush();
+	stateTracker->bindDescriptorSet(DescriptorSetIndex::Global, globalSet);
+	stateTracker->bindDescriptorSet(DescriptorSetIndex::Material, materialSet);
 	stateTracker->bindDescriptorSet(DescriptorSetIndex::PerDraw, perDrawSet);
 
 	// Bind vertex buffers: binding 0 = box VBO, binding 1 = instance buffer

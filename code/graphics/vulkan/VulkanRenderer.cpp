@@ -385,6 +385,7 @@ bool VulkanRenderer::initialize()
 		return false;
 	}
 	setDescriptorManager(m_descriptorManager.get());
+	m_descriptorManager->buildFallbacks(m_bufferManager.get(), m_textureManager.get());
 
 	// Initialize pipeline manager
 	m_pipelineManager = std::unique_ptr<VulkanPipelineManager>(new VulkanPipelineManager());
