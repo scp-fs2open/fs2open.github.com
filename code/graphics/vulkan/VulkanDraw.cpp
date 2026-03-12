@@ -1114,17 +1114,6 @@ bool VulkanDrawManager::applyMaterial(material* mat, primitive_type prim_type, v
 		return false;
 	}
 
-	// Helper to get vk::Buffer from handle at draw time (survives buffer recreation)
-	auto getBuffer = [bufferManager](const PendingUniformBinding& binding) -> vk::Buffer {
-		return bufferManager->getVkBuffer(binding.bufferHandle);
-	};
-
-	// Offset is already fully resolved at bind time (includes frame base offset)
-	// to prevent stale lastWriteStreamOffset if the buffer is updated between bind and draw.
-	auto getResolvedOffset = [](const PendingUniformBinding& binding) -> vk::DeviceSize {
-		return binding.offset;
-	};
-
 	m_frameStats.applyMaterialCalls++;
 
 	// Build pipeline configuration from material
@@ -1176,49 +1165,43 @@ bool VulkanDrawManager::applyMaterial(material* mat, primitive_type prim_type, v
 		DescriptorWriter writer;
 		writer.reset(descManager->getDevice(), descManager->getFallbacks());
 
-		// Helper: get DescriptorBufferInfo from pending binding (null buffer = fallback)
-		auto getPendingBufInfo = [&](size_t blockIdx) -> vk::DescriptorBufferInfo {
-			if (m_pendingUniformBindings[blockIdx].valid) {
-				vk::Buffer buf = getBuffer(m_pendingUniformBindings[blockIdx]);
-				if (buf) {
-					return {buf, getResolvedOffset(m_pendingUniformBindings[blockIdx]),
-					        m_pendingUniformBindings[blockIdx].size};
+		// Bind pending UBOs for a given descriptor set
+		auto bindPendingUBOs = [&](DescriptorSetIndex targetSet) {
+			for (size_t i = 0; i < NUM_UNIFORM_BLOCK_TYPES; ++i) {
+				DescriptorSetIndex setIndex;
+				uint32_t binding;
+				if (VulkanDescriptorManager::getUniformBlockBinding(static_cast<uniform_block_type>(i), setIndex, binding) &&
+				    setIndex == targetSet) {
+					vk::DescriptorBufferInfo bufInfo;
+					const auto& pending = m_pendingUniformBindings[i];
+					if (pending.valid) {
+						vk::Buffer buf = bufferManager->getVkBuffer(pending.bufferHandle);
+						if (buf) {
+							bufInfo = vk::DescriptorBufferInfo(buf, pending.offset, pending.size);
+						}
+					}
+					writer.setBuffer(binding, bufInfo);
 				}
 			}
-			return {};
 		};
 
 		// Set 0: Global
 		vk::DescriptorSet globalSet = descManager->allocateFrameSet(DescriptorSetIndex::Global);
 		Verify(globalSet);
 		writer.writeSet(globalSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Global));
-		for (size_t i = 0; i < NUM_UNIFORM_BLOCK_TYPES; ++i) {
-			DescriptorSetIndex setIndex;
-			uint32_t binding;
-			if (VulkanDescriptorManager::getUniformBlockBinding(static_cast<uniform_block_type>(i), setIndex, binding) &&
-			    setIndex == DescriptorSetIndex::Global) {
-				writer.setBuffer(binding, getPendingBufInfo(i));
-			}
-		}
+		bindPendingUBOs(DescriptorSetIndex::Global);
 		{
 			auto* pp = getPostProcessor();
 			if (pp && pp->isShadowInitialized()) {
 				writer.setImage(GlobalBinding::ShadowMap, pp->getShadowTextureInfo());
 			}
 		}
+
 		// Set 1: Material
 		vk::DescriptorSet materialSet = descManager->allocateFrameSet(DescriptorSetIndex::Material);
 		Verify(materialSet);
 		writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
-		for (size_t i = 0; i < NUM_UNIFORM_BLOCK_TYPES; ++i) {
-			DescriptorSetIndex setIndex;
-			uint32_t binding;
-			if (VulkanDescriptorManager::getUniformBlockBinding(static_cast<uniform_block_type>(i), setIndex, binding) &&
-			    setIndex == DescriptorSetIndex::Material) {
-				writer.setBuffer(binding, getPendingBufInfo(i));
-			}
-		}
-		// Binding 3: Transform buffer SSBO
+		bindPendingUBOs(DescriptorSetIndex::Material);
 		{
 			uint32_t tfIdx = descManager->getCurrentFrame();
 			auto& tf = g_transformBuffers[tfIdx];
@@ -1231,21 +1214,13 @@ bool VulkanDrawManager::applyMaterial(material* mat, primitive_type prim_type, v
 		writer.setImage(MaterialBinding::DepthMap, m_depthTextureInfo);
 		writer.setImage(MaterialBinding::SceneColor, m_sceneColorInfo);
 		writer.setImage(MaterialBinding::DistortionMap, m_distMapInfo);
-		// Binding 1: Texture array
 		bindMaterialTextures(mat, &writer);
 
 		// Set 2: PerDraw
 		vk::DescriptorSet perDrawSet = descManager->allocateFrameSet(DescriptorSetIndex::PerDraw);
 		Verify(perDrawSet);
 		writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
-		for (size_t i = 0; i < NUM_UNIFORM_BLOCK_TYPES; ++i) {
-			DescriptorSetIndex setIndex;
-			uint32_t binding;
-			if (VulkanDescriptorManager::getUniformBlockBinding(static_cast<uniform_block_type>(i), setIndex, binding) &&
-			    setIndex == DescriptorSetIndex::PerDraw) {
-				writer.setBuffer(binding, getPendingBufInfo(i));
-			}
-		}
+		bindPendingUBOs(DescriptorSetIndex::PerDraw);
 		writer.flush();
 		stateTracker->bindDescriptorSet(DescriptorSetIndex::Global, globalSet);
 		stateTracker->bindDescriptorSet(DescriptorSetIndex::Material, materialSet);
