@@ -411,8 +411,11 @@ void remove_ship_from_wing(int ship, int min) {
 			}
 
 			Wings[wing].wave_count--;
-			if (Wings[wing].wave_count && (Wings[wing].threshold >= Wings[wing].wave_count))
-				Wings[wing].threshold = Wings[wing].wave_count - 1;
+			if (Wings[wing].wave_count) {
+				const auto max_threshold = MAX_SHIPS_PER_WING - Wings[wing].wave_count;
+				if (Wings[wing].threshold > max_threshold)
+					Wings[wing].threshold = max_threshold;
+			}
 		}
 
 		Ships[ship].wingnum = -1;
