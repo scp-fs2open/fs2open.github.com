@@ -210,9 +210,9 @@ public:
 
 	/**
 	 * @brief Get all descriptor set layouts (for pipeline layout creation)
-	 * @return Vector of layouts in order (Global, Material, PerDraw)
+	 * @return Reference to the UniqueDescriptorSetLayout array (Global, Material, PerDraw)
 	 */
-	SCP_vector<vk::DescriptorSetLayout> getAllSetLayouts() const;
+	const auto& getAllSetLayouts() const { return m_setLayouts; }
 
 	/**
 	 * @brief Allocate a descriptor set from the per-frame pool
