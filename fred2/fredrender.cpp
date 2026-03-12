@@ -1823,6 +1823,8 @@ void render_one_model_htl(object *objp) {
 	// if this object isn't fully created yet, don't render it
 	if (objp->type == OBJ_SHIP && Ships[objp->instance].create_time == 0)
 		return;
+	if (objp->type == OBJ_PROP && (!Props[objp->instance].has_value() || Props[objp->instance].value().create_time == 0))
+		return;
 
 	if (objp->type == OBJ_JUMP_NODE) {
 		return;
