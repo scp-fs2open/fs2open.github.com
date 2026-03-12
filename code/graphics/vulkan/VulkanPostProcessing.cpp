@@ -1910,8 +1910,7 @@ void VulkanPostProcessor::renderDeferredLights(vk::CommandBuffer cmd)
 		vk::DescriptorSet materialSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Material);
 		if (!materialSet) return false;
 		writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
-		writer.setImageArray(MaterialBinding::TextureArray, gbufTexArray.data(),
-			static_cast<uint32_t>(gbufTexArray.size()));
+		writer.setImageArray(MaterialBinding::TextureArray, gbufTexArray);
 
 		// Set 2: PerDraw
 		vk::DescriptorSet perDrawSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::PerDraw);
@@ -2375,7 +2374,7 @@ void VulkanPostProcessor::drawFullscreenTriangle(vk::CommandBuffer cmd, vk::Rend
 		texArrayInfos.fill(descriptorMgr->getFallbacks().texture2D);
 		texArrayInfos[0].sampler = sampler;
 		texArrayInfos[0].imageView = textureView;
-		writer.setImageArray(MaterialBinding::TextureArray, texArrayInfos.data(), static_cast<uint32_t>(texArrayInfos.size()));
+		writer.setImageArray(MaterialBinding::TextureArray, texArrayInfos);
 	}
 
 	// Set 2: PerDraw
@@ -3303,7 +3302,7 @@ void VulkanPostProcessor::blitToSwapChain(vk::CommandBuffer cmd)
 		texArrayInfos[0].imageView = m_postEffectsApplied ? m_sceneLuminance.view
 		                            : useLdr ? m_sceneLdr.view
 		                            : m_sceneColor.view;
-		writer.setImageArray(MaterialBinding::TextureArray, texArrayInfos.data(), static_cast<uint32_t>(texArrayInfos.size()));
+		writer.setImageArray(MaterialBinding::TextureArray, texArrayInfos);
 	}
 
 	// Set 2: PerDraw — tonemapping UBO
@@ -3876,7 +3875,7 @@ void VulkanPostProcessor::renderSceneFog(vk::CommandBuffer cmd)
 		std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texArrayInfos;
 		texArrayInfos.fill(descriptorMgr->getFallbacks().texture2D);
 		texArrayInfos[0] = {m_linearSampler, m_gbufComposite.view, vk::ImageLayout::eShaderReadOnlyOptimal};
-		writer.setImageArray(MaterialBinding::TextureArray, texArrayInfos.data(), static_cast<uint32_t>(texArrayInfos.size()));
+		writer.setImageArray(MaterialBinding::TextureArray, texArrayInfos);
 	}
 	writer.setImage(MaterialBinding::DepthMap, {m_linearSampler, m_sceneDepthCopy.view, vk::ImageLayout::eShaderReadOnlyOptimal});
 
@@ -4171,7 +4170,7 @@ void VulkanPostProcessor::renderVolumetricFog(vk::CommandBuffer cmd)
 		texArrayInfos.fill(descriptorMgr->getFallbacks().texture2D);
 		texArrayInfos[0] = {m_linearSampler, m_gbufComposite.view, vk::ImageLayout::eShaderReadOnlyOptimal};
 		texArrayInfos[1] = {m_mipmapSampler, m_emissiveMipmappedFullView, vk::ImageLayout::eShaderReadOnlyOptimal};
-		writer.setImageArray(MaterialBinding::TextureArray, texArrayInfos.data(), static_cast<uint32_t>(texArrayInfos.size()));
+		writer.setImageArray(MaterialBinding::TextureArray, texArrayInfos);
 	}
 	writer.setImage(MaterialBinding::DepthMap, {m_linearSampler, m_sceneDepthCopy.view, vk::ImageLayout::eShaderReadOnlyOptimal});
 	// Binding 5: 3D volume texture (reuses SceneColor slot)

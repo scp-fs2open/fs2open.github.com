@@ -234,7 +234,7 @@ void vulkan_deferred_lighting_begin(bool clearNonColorBufs)
 					std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texImages;
 					texImages.fill(descriptorMgr->getFallbacks().texture2D);
 					texImages[0] = {pp->getSceneColorSampler(), pp->getSceneColorView(), vk::ImageLayout::eShaderReadOnlyOptimal};
-					writer.setImageArray(MaterialBinding::TextureArray, texImages.data(), static_cast<uint32_t>(texImages.size()));
+					writer.setImageArray(MaterialBinding::TextureArray, texImages);
 				}
 
 				vk::DescriptorSet perDrawSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::PerDraw);
@@ -440,7 +440,7 @@ void vulkan_deferred_lighting_msaa()
 			texImages[3] = {nearestSampler, pp->getMsaaSpecularView(), vk::ImageLayout::eShaderReadOnlyOptimal};
 			texImages[4] = {nearestSampler, pp->getMsaaEmissiveView(), vk::ImageLayout::eShaderReadOnlyOptimal};
 			texImages[5] = {nearestSampler, pp->getMsaaDepthView(), vk::ImageLayout::eShaderReadOnlyOptimal};
-			writer.setImageArray(MaterialBinding::TextureArray, texImages.data(), static_cast<uint32_t>(texImages.size()));
+			writer.setImageArray(MaterialBinding::TextureArray, texImages);
 
 			// PerDraw set: GenericData UBO with {samples, fov} at binding 0
 			vk::DescriptorSet perDrawSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::PerDraw);
