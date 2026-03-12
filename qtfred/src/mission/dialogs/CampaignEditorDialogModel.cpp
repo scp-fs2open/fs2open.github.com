@@ -507,13 +507,9 @@ void CampaignEditorDialogModel::saveCampaign(const SCP_string& filename)
 
 			// The descriptive text fields only apply to special (loop/fork) branches.
 			if (branch.is_loop || branch.is_fork) {
-				link.mission_branch_txt =
-					branch.loop_description.empty() ? nullptr : const_cast<char*>(branch.loop_description.c_str());
-				link.mission_branch_brief_anim =
-					branch.loop_briefing_anim.empty() ? nullptr : const_cast<char*>(branch.loop_briefing_anim.c_str());
-				link.mission_branch_brief_sound = branch.loop_briefing_sound.empty()
-													  ? nullptr
-													  : const_cast<char*>(branch.loop_briefing_sound.c_str());
+				link.mission_branch_txt = branch.loop_description.empty() ? nullptr : branch.loop_description.c_str();
+				link.mission_branch_brief_anim = branch.loop_briefing_anim.empty() ? nullptr : branch.loop_briefing_anim.c_str();
+				link.mission_branch_brief_sound = branch.loop_briefing_sound.empty() ? nullptr : branch.loop_briefing_sound.c_str();
 			} else {
 				link.mission_branch_txt = nullptr;
 				link.mission_branch_brief_anim = nullptr;

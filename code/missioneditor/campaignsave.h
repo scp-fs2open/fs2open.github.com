@@ -8,9 +8,9 @@ typedef struct campaign_link {
 	int node;                         // node tracker when link is in sexp tree window
 	bool is_mission_loop;             // whether link leads to mission loop
 	bool is_mission_fork;             // whether link leads to mission fork
-	char* mission_branch_txt;         // text describing mission loop
-	char* mission_branch_brief_anim;  // filename of anim to play in the brief
-	char* mission_branch_brief_sound; // filename of anim to play in the brief
+	const char* mission_branch_txt;         // text describing mission loop
+	const char* mission_branch_brief_anim;  // filename of anim to play in the brief
+	const char* mission_branch_brief_sound; // filename of anim to play in the brief
 } campaign_link;
 
 class Fred_campaign_save : public Fred_mission_save {

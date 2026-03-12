@@ -450,7 +450,7 @@ int multi_xfer_get_flags(int handle)
 }
 
 // if the passed filename is being xferred, return the xfer handle, otherwise return -1
-int multi_xfer_lookup(char *filename)
+int multi_xfer_lookup(const char *filename)
 {
 	int idx;
 

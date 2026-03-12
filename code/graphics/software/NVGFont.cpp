@@ -32,8 +32,8 @@ namespace font
 				return 1;
 		}
 
-		const char *nullPtr = strchr(const_cast<char*>(string), '\0');
-		const char *nextToken = strpbrk(const_cast<char*>(string), TOKEN_SEPARATORS);
+		const char *nullPtr = strchr(string, '\0');
+		const char *nextToken = strpbrk(string, TOKEN_SEPARATORS);
 
 		// WOHOO! Pointer arithmetic!!!
 		if (nullPtr != NULL && (nextToken == NULL || nullPtr < nextToken))

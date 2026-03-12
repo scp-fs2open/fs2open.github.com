@@ -7553,7 +7553,7 @@ int detect_lang()
 
 	// try and open the file to verify
 	font::stuff_first(first_font);
-	CFILE *detect = cfopen(const_cast<char*>(first_font.c_str()), "rb");
+	CFILE *detect = cfopen(first_font.c_str(), "rb");
 
 	// will use default setting if something went wrong
 	if (!detect)

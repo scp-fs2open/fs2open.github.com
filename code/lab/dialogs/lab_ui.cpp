@@ -660,7 +660,7 @@ static void build_ship_table_info_txtbox(ship_info* sip)
 		}
 
 		InputTextMultiline("##table_text",
-			const_cast<char*>(table_text.c_str()),
+			table_text.data(),
 			table_text.length(),
 			ImVec2(-FLT_MIN, GetTextLineHeight() * 16),
 			ImGuiInputTextFlags_ReadOnly);
@@ -681,7 +681,7 @@ static void build_weapon_table_info_txtbox(weapon_info* wip)
 		}
 
 		InputTextMultiline("##weapon_table_text",
-			const_cast<char*>(table_text.c_str()),
+			table_text.data(),
 			table_text.length(),
 			ImVec2(-FLT_MIN, GetTextLineHeight() * 16),
 			ImGuiInputTextFlags_ReadOnly);
@@ -1506,7 +1506,7 @@ void LabUi::show_object_options() const
 				}
 
 				InputTextMultiline("##asteroid_table_text",
-					const_cast<char*>(table_text.c_str()),
+					table_text.data(),
 					table_text.length(),
 					ImVec2(-FLT_MIN, GetTextLineHeight() * 16),
 					ImGuiInputTextFlags_ReadOnly);
@@ -1544,7 +1544,7 @@ void LabUi::show_object_options() const
 				}
 
 				InputTextMultiline("##prop_table_text",
-					const_cast<char*>(table_text.c_str()),
+					table_text.data(),
 					table_text.length(),
 					ImVec2(-FLT_MIN, GetTextLineHeight() * 16),
 					ImGuiInputTextFlags_ReadOnly);
