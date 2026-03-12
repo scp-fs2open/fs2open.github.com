@@ -276,14 +276,11 @@ bool VulkanPipelineManager::needsFallbackAttribute(const vertex_layout& vertexLa
 void VulkanPipelineManager::createPipelineLayout()
 {
 	// Get descriptor set layouts from descriptor manager
-	auto setLayouts = m_descriptorManager->getAllSetLayouts();
-
-	// Optional: Define push constant range for frequently-changing data
-	// For now, we rely entirely on uniform buffers
-	// vk::PushConstantRange pushConstantRange;
-	// pushConstantRange.stageFlags = vk::ShaderStageFlagBits::eVertex;
-	// pushConstantRange.offset = 0;
-	// pushConstantRange.size = sizeof(mat4); // Example: MVP matrix
+	const auto& uniqueLayouts = m_descriptorManager->getAllSetLayouts();
+	std::array<vk::DescriptorSetLayout, static_cast<size_t>(DescriptorSetIndex::Count)> setLayouts;
+	for (size_t i = 0; i < uniqueLayouts.size(); ++i) {
+		setLayouts[i] = uniqueLayouts[i].get();
+	}
 
 	vk::PipelineLayoutCreateInfo layoutInfo;
 	layoutInfo.setLayoutCount = static_cast<uint32_t>(setLayouts.size());

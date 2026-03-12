@@ -230,18 +230,6 @@ vk::DescriptorSetLayout VulkanDescriptorManager::getSetLayout(DescriptorSetIndex
 	return m_setLayouts[static_cast<size_t>(setIndex)].get();
 }
 
-SCP_vector<vk::DescriptorSetLayout> VulkanDescriptorManager::getAllSetLayouts() const
-{
-	SCP_vector<vk::DescriptorSetLayout> layouts;
-	layouts.reserve(static_cast<size_t>(DescriptorSetIndex::Count));
-
-	for (const auto& layout : m_setLayouts) {
-		layouts.push_back(layout.get());
-	}
-
-	return layouts;
-}
-
 vk::DescriptorSet VulkanDescriptorManager::allocateFrameSet(DescriptorSetIndex setIndex)
 {
 	if (!m_initialized) {
