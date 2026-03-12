@@ -6022,9 +6022,7 @@ void weapon_process_pre( object *obj, float  frame_time)
 	//WMC - Originally flak_maybe_detonate, moved here.
 	if(wp->det_range > 0.0f)
 	{
-		vec3d temp;
-		vm_vec_sub(&temp, &obj->pos, &wp->start_pos);
-		if(vm_vec_mag(&temp) >= wp->det_range){
+		if (vm_vec_dist_squared(&obj->pos, &wp->start_pos) >= pow(wp->det_range, 2.f)) {
 			weapon_detonate(obj);		
 		}
 	}
@@ -6040,13 +6038,13 @@ void weapon_process_pre( object *obj, float  frame_time)
 
 		if((weapon_has_homing_object(wp)) && (wp->homing_object->type != 0))
 		{
-			if(!IS_VEC_NULL(&wp->homing_pos) && vm_vec_dist(&wp->homing_pos, &obj->pos) <= det_radius_adjusted)
+			if(!IS_VEC_NULL(&wp->homing_pos) && vm_vec_dist_squared(&wp->homing_pos, &obj->pos) <= pow(det_radius_adjusted, 2.f))
 			{
 				weapon_detonate(obj);
 			}
 		} else if(wp->target_num > -1)
 		{
-			if(vm_vec_dist(&obj->pos, &Objects[wp->target_num].pos) <= det_radius_adjusted)
+			if(vm_vec_dist_squared(&obj->pos, &Objects[wp->target_num].pos) <= pow(det_radius_adjusted, 2.f))
 			{
 				weapon_detonate(obj);
 			}
