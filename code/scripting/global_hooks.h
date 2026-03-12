@@ -33,6 +33,8 @@ extern const std::shared_ptr<Hook<>>									OnMouseReleased;
 
 extern const std::shared_ptr<Hook<ShipSourceConditions>>				OnAfterburnerStart;
 extern const std::shared_ptr<Hook<ShipSourceConditions>>				OnAfterburnerEnd;
+extern const std::shared_ptr<Hook<>>                                    OnSupportRearmStarted;
+extern const std::shared_ptr<Hook<>>                                    OnSupportRearmFinished;
 extern const std::shared_ptr<Hook<ShipSourceConditions>>				OnWaypointsDone;
 extern const std::shared_ptr<Hook<ShipSourceConditions>>				OnGoalsCleared;
 

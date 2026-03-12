@@ -1516,6 +1516,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/sound.h
 	scripting/api/objs/species.cpp
 	scripting/api/objs/species.h
+	scripting/api/objs/support_rearm_pool.cpp
+	scripting/api/objs/support_rearm_pool.h
 	scripting/api/objs/streaminganim.cpp
 	scripting/api/objs/streaminganim.h
 	scripting/api/objs/subsystem.cpp

@@ -459,6 +459,7 @@ struct weapon_info
 	float	cargo_size;							// cargo space taken up by individual weapon (missiles only)
 	float autoaim_fov;							// the weapon specific auto-aim field of view
 	float rearm_rate;							// rate per second at which secondary weapons are loaded during rearming
+	bool disallow_rearm;                        // if true, support ships cannot rearm this weapon
 	int		reloaded_per_batch;				    // number of munitions rearmed per batch
 	float	weapon_range;						// max range weapon can be effectively fired.  (May be less than life * speed)
 	float	optimum_range;						// causes ai fighters to prefer this distance when attacking with the weapon
