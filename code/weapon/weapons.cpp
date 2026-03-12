@@ -10301,5 +10301,7 @@ float weapon_get_target_dot(const weapon& wp) {
 	} else {
 		return 0.f;
 	}
-	return vm_vec_dot(&wep_objp->pos, &target_pos);
+	vec3d dir;
+	vm_vec_sub(&dir, &wep_objp->pos, &target_pos);
+	return vm_vec_dot(&dir, &wep_objp->orient.vec.fvec);
 }
