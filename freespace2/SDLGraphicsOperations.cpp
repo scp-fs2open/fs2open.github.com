@@ -154,13 +154,18 @@ SDLGraphicsOperations::SDLGraphicsOperations() {
 	}
 }
 SDLGraphicsOperations::~SDLGraphicsOperations() {
-	SDL_QuitSubSystem(SDL_INIT_VIDEO);
-	
-	ImGui_ImplSDL2_Shutdown();
+	// make sure imgui stuff is initialized before trying to shut it down
+	if (ImGui::GetCurrentContext()) {
+		if (ImGui::GetIO().BackendPlatformUserData) {
+			ImGui_ImplSDL2_Shutdown();
+		}
 
-	if (!Cmdline_vulkan) {
-		ImGui_ImplOpenGL3_Shutdown();
+		if ( !Cmdline_vulkan && ImGui::GetIO().BackendRendererUserData ) {
+			ImGui_ImplOpenGL3_Shutdown();
+		}
 	}
+
+	SDL_QuitSubSystem(SDL_INIT_VIDEO);
 }
 std::unique_ptr<os::Viewport> SDLGraphicsOperations::createViewport(const os::ViewPortProperties& props)
 {
@@ -267,7 +272,8 @@ std::unique_ptr<os::OpenGLContext> SDLGraphicsOperations::createOpenGLContext(os
 	mprintf(("  Actual SDL Video values    = R: %d, G: %d, B: %d, depth: %d, stencil: %d, double-buffer: %d, FSAA: %d\n",
 		r, g, b, depth, stencil, db, fsaa_samples));
 
-	
+	Assertion(ImGui::GetCurrentContext() != nullptr, "Can't use ImGui without a valid context!");
+
 	ImGui_ImplSDL2_InitForOpenGL(viewport->toSDLWindow(), ctx);
 	ImGui_ImplOpenGL3_Init();
 
