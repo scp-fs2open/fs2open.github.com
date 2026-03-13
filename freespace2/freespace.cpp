@@ -916,9 +916,9 @@ void game_level_close()
 	//to accidentally use an override here without realizing it.
 	if (!scripting::hooks::OnMissionEndHook->isActive() || !scripting::hooks::OnMissionEndHook->isOverride())
 	{
-		// save player-persistent variables and containers
-		mission_campaign_save_on_close_variables();	// Goober5000
-		mission_campaign_save_on_close_containers(); // jg18
+		// save on-close variables and containers
+		mission_campaign_store_variables(SEXP_VARIABLE_SAVE_ON_MISSION_CLOSE, false);	// Goober5000
+		mission_campaign_store_containers(ContainerType::SAVE_ON_MISSION_CLOSE, false);	// jg18
 
 		// De-Initialize the game subsystems
 		obj_delete_all();
