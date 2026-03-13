@@ -1158,7 +1158,7 @@ ADE_FUNC(renderTechModel,
 		}
 	}
 
-	return ade_set_args(L, "b", render_tech_model(TECH_SHIP, x1, y1, x2, y2, zoom, lighting, idx, &orient, tcolor));
+	return ade_set_args(L, "b", render_tech_model(TECH_SHIP, x1, y1, x2, y2, zoom, lighting, idx, &orient, "" , 0.0f, &vmd_zero_vector, tcolor));
 }
 
 // Nuke's alternate tech model rendering function
@@ -1191,7 +1191,7 @@ ADE_FUNC(renderTechModel2, l_Shipclass, "number X1, number Y1, number X2, number
 		}
 	}
 
-	return ade_set_args(L, "b", render_tech_model(TECH_SHIP, x1, y1, x2, y2, zoom, true, idx, orient, tcolor));
+	return ade_set_args(L, "b", render_tech_model(TECH_SHIP, x1, y1, x2, y2, zoom, true, idx, orient, "" , 0.0f, &vmd_zero_vector, tcolor));
 }
 
 ADE_FUNC(renderSelectModel,
