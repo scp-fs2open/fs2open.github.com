@@ -134,7 +134,7 @@ int Fred_campaign_save::save_campaign_file(const char* pathname, const SCP_vecto
 			fout(" %s", cm.main_hall.c_str());
 		} else {
 			// save Bastion flag properly
-			fout(" %d", flags_to_save | ((!cm.main_hall.empty()) ? CMISSION_FLAG_BASTION : 0));
+			fout(" %d", flags_to_save | ((!cm.main_hall.empty() && cm.main_hall != "0") ? CMISSION_FLAG_BASTION : 0));
 		}
 
 		if (!cm.substitute_main_hall.empty()) {
@@ -218,23 +218,35 @@ int Fred_campaign_save::save_campaign_file(const char* pathname, const SCP_vecto
 					}
 
 					if ((num_mission_special == 1) && link.mission_branch_brief_anim) {
-						if (mission_loop)
-							required_string_fred("+Mission Loop Brief Anim:");
+						auto str = mission_loop ? "+Mission Loop Brief Anim:" : "+Mission Fork Brief Anim:";
+						if (optional_string_fred(str))
+							parse_comments();
 						else
-							required_string_fred("+Mission Fork Brief Anim:");
-						parse_comments();
-						fout_ext("\n", "%s", link.mission_branch_brief_anim);
-						fout("\n$end_multi_text");
+							fout("\n%s", str);
+
+						if (save_config.save_format != MissionFormat::RETAIL) {
+							fout(" %s", link.mission_branch_brief_anim);
+						} else {
+							// previous formats used multitext, which causes problems
+							fout_ext("\n", "%s", link.mission_branch_brief_anim);
+							fout("\n$end_multi_text");
+						}
 					}
 
 					if ((num_mission_special == 1) && link.mission_branch_brief_sound) {
-						if (mission_loop)
-							required_string_fred("+Mission Loop Brief Sound:");
+						auto str = mission_loop ? "+Mission Loop Brief Sound:" : "+Mission Fork Brief Sound:";
+						if (optional_string_fred(str))
+							parse_comments();
 						else
-							required_string_fred("+Mission Fork Brief Sound:");
-						parse_comments();
-						fout_ext("\n", "%s", link.mission_branch_brief_sound);
-						fout("\n$end_multi_text");
+							fout("\n%s", str);
+
+						if (save_config.save_format != MissionFormat::RETAIL) {
+							fout(" %s", link.mission_branch_brief_sound);
+						} else {
+							// previous formats used multitext, which causes problems
+							fout_ext("\n", "%s", link.mission_branch_brief_sound);
+							fout("\n$end_multi_text");
+						}
 					}
 
 					if (num_mission_special == 1) {

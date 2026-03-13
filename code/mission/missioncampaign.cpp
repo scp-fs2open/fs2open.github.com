@@ -550,6 +550,9 @@ int mission_campaign_load(const char* filename, const char* full_path, player* p
 				cm->main_hall = "1";
 			}
 
+			// clear any other flag bits to prevent bogus values causing surprises
+			cm->flags &= CMISSION_EXTERNAL_FLAG_MASK;
+
 			// Goober5000 - new main hall stuff!
 			// Updated by CommanderDJ
 			if (optional_string("+Main Hall:")) {
@@ -610,12 +613,16 @@ int mission_campaign_load(const char* filename, const char* full_path, player* p
 
 			cm->mission_branch_brief_anim = NULL;
 			if ( optional_string("+Mission Loop Brief Anim:") || optional_string("+Mission Fork Brief Anim:") ) {
-				cm->mission_branch_brief_anim = stuff_and_malloc_string(F_MULTITEXT, NULL);
+				ignore_white_space();						// it might be on the next line
+				cm->mission_branch_brief_anim = stuff_and_malloc_string(F_FILESPEC, nullptr);
+				(void)optional_string("$end_multi_text");	// consume the unneeded ending token
 			}
 
 			cm->mission_branch_brief_sound = NULL;
 			if ( optional_string("+Mission Loop Brief Sound:") || optional_string("+Mission Fork Brief Sound:") ) {
-				cm->mission_branch_brief_sound = stuff_and_malloc_string(F_MULTITEXT, NULL);
+				ignore_white_space();						// it might be on the next line
+				cm->mission_branch_brief_sound = stuff_and_malloc_string(F_FILESPEC, nullptr);
+				(void)optional_string("$end_multi_text");	// consume the unneeded ending token
 			}
 
 			cm->mission_loop_formula = -1;

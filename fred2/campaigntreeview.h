@@ -43,6 +43,9 @@ extern int Sorted[MAX_CAMPAIGN_MISSIONS];
 extern campaign_tree_element Elements[MAX_CAMPAIGN_MISSIONS];
 extern campaign_tree_link Links[MAX_CAMPAIGN_TREE_LINKS];
 
+extern void init_link(campaign_tree_link &link, int from = -1, int to = -1);
+extern void init_element(campaign_tree_element &element);
+
 /////////////////////////////////////////////////////////////////////////////
 // campaign_tree_view view
 
