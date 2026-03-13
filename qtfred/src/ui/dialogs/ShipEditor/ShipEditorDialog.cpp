@@ -264,7 +264,7 @@ void ShipEditorDialog::updateArrival(bool overwrite)
 				char tmp[NAME_LENGTH + 15];
 				stuff_special_arrival_anchor_name(tmp, static_cast<int>(j), restrict_to_players, false);
 
-				ui->arrivalTargetCombo->addItem(tmp, QVariant(get_special_anchor(tmp)));
+				ui->arrivalTargetCombo->addItem(tmp, QVariant(get_special_anchor(tmp).value()));
 			}
 		}
 		// Add All Ships

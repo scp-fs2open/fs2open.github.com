@@ -2481,7 +2481,7 @@ void management_add_ships_to_combo( CComboBox *box, int flags )
 				stuff_special_arrival_anchor_name(tmp, i, restrict_to_players, false);
 
 				id = box->AddString(tmp);
-				box->SetItemData(id, get_special_anchor(tmp));
+				box->SetItemData(id, get_special_anchor(tmp).value());
 			}
 		}
 	}

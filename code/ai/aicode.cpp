@@ -14060,7 +14060,7 @@ void ai_bay_depart()
 
 	// check if parent ship valid; if not, abort depart
 	if (gameseq_get_state() != GS_STATE_LAB) {
-		auto anchor_ship_entry = ship_registry_get(Parse_names[Ships[Pl_objp->instance].departure_anchor]);
+		auto anchor_ship_entry = ship_registry_get(Ships[Pl_objp->instance].departure_anchor);
 		if (!anchor_ship_entry ||
 			!ship_useful_for_departure(anchor_ship_entry->shipnum, Ships[Pl_objp->instance].departure_path_mask)) {
 			mprintf(("Aborting bay departure!\n"));
