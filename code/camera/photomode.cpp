@@ -165,7 +165,7 @@ SCP_string format_photo_mode_keybind(int action)
 	auto secondary = Control_config[action].second.textify();
 
 	if (primary.empty() && secondary.empty()) {
-		return SCP_string(XSTR("Unbound", 1909));
+		return XSTR("Unbound", 1909);
 	}
 	if (primary.empty()) {
 		return secondary;
