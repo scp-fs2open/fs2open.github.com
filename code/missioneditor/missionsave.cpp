@@ -2977,7 +2977,7 @@ int Fred_mission_save::save_mission_info()
 	fso_comment_pop();
 
 	// EatThePath's lighting profiles
-	if (The_mission.lighting_profile_name != lighting_profiles::default_name()) {
+	if (!The_mission.lighting_profile_name.empty() && The_mission.lighting_profile_name != lighting_profiles::default_name()) {
 		fso_comment_push(";;FSO 23.1.0;;");
 		if (optional_string_fred("$Lighting Profile:")) {
 			parse_comments(2);

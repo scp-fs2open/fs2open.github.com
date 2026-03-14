@@ -208,8 +208,6 @@ typedef struct mission {
 	int		skybox_flags;
 	int		contrail_threshold;
 	int		ambient_light_level;
-	float	neb_far_multi;
-	float	neb_near_multi;
 	std::optional<volumetric_nebula> volumetrics;
 	sound_env	sound_environment;
 	vec3d   gravity;

@@ -1002,6 +1002,8 @@ void parse_mission_info(mission *pm, bool basic = false)
 	if (optional_string("$Lighting Profile:"))
 	{
 		stuff_string(The_mission.lighting_profile_name, F_NAME);
+		if (The_mission.lighting_profile_name.empty())
+			The_mission.lighting_profile_name = lighting_profiles::default_name();
 	}
 	else
 		The_mission.lighting_profile_name = lighting_profiles::default_name();
