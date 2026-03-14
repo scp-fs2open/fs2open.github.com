@@ -265,6 +265,13 @@ void control_config_common_init_bindings() {
 	(TOGGLE_HUD_CONTRAST,                                         KEY_L, -1, COMPUTER_TAB, 1, "Toggle High HUD Contrast",         CC_TYPE_TRIGGER)
 	(TOGGLE_HUD_SHADOWS,                              KEY_ALTED | KEY_L, -1, COMPUTER_TAB, 1781, "Toggle HUD Drop Shadows",          CC_TYPE_TRIGGER)
 	(HUD_TARGETBOX_TOGGLE_WIREFRAME,    KEY_ALTED | KEY_SHIFTED | KEY_Q, -1, COMPUTER_TAB, 1, "Toggle HUD Wireframe Target View", CC_TYPE_TRIGGER)
+	(TOGGLE_PHOTO_MODE,                                KEY_ALTED | KEY_1, -1, COMPUTER_TAB, 1910, "Toggle Photo Mode",                  CC_TYPE_TRIGGER)
+	(PHOTO_MODE_FILTER_PREV,                           KEY_ALTED | KEY_2, -1, COMPUTER_TAB, 1911, "Photo Mode Previous Parameter",         CC_TYPE_TRIGGER)
+	(PHOTO_MODE_FILTER_NEXT,                           KEY_ALTED | KEY_3, -1, COMPUTER_TAB, 1912, "Photo Mode Next Parameter",             CC_TYPE_TRIGGER)
+	(PHOTO_MODE_FILTER_RESET,                          KEY_ALTED | KEY_4, -1, COMPUTER_TAB, 1913, "Photo Mode Reset Parameters",           CC_TYPE_TRIGGER)
+	(PHOTO_MODE_PARAM_DECREASE,                         KEY_ALTED | KEY_SHIFTED | KEY_MINUS, -1, COMPUTER_TAB, 1914, "Photo Mode Decrease Selected Parameter", CC_TYPE_TRIGGER)
+	(PHOTO_MODE_PARAM_INCREASE,                         KEY_ALTED | KEY_SHIFTED | KEY_EQUAL, -1, COMPUTER_TAB, 1915, "Photo Mode Increase Selected Parameter", CC_TYPE_TRIGGER)
+	(PHOTO_MODE_TOGGLE_GRID,                            KEY_ALTED | KEY_5, -1, COMPUTER_TAB, 1916, "Photo Mode Toggle Grid",               CC_TYPE_TRIGGER)
 
 	// Custom Controls
 	(CUSTOM_CONTROL_1,                  KEY_ALTED | KEY_SHIFTED | KEY_1, -1, COMPUTER_TAB, 1784, "Custom Control 1", CC_TYPE_TRIGGER, true)
@@ -432,6 +439,13 @@ SCP_unordered_map<SCP_string, IoActionId> old_text = {
 	{"Up Thrust",                               UP_SLIDE_THRUST},
 	{"Down Thrust",                             DOWN_SLIDE_THRUST},
 	{"Toggle HUD Wireframe Target View",        HUD_TARGETBOX_TOGGLE_WIREFRAME},
+	{"Toggle Photo Mode",                      TOGGLE_PHOTO_MODE},
+	{"Photo Mode Previous Parameter",             PHOTO_MODE_FILTER_PREV},
+	{"Photo Mode Next Parameter",                 PHOTO_MODE_FILTER_NEXT},
+	{"Photo Mode Reset Parameters",               PHOTO_MODE_FILTER_RESET},
+	{"Photo Mode Decrease Selected Parameter",    PHOTO_MODE_PARAM_DECREASE},
+	{"Photo Mode Increase Selected Parameter",    PHOTO_MODE_PARAM_INCREASE},
+	{"Photo Mode Toggle Grid",                  PHOTO_MODE_TOGGLE_GRID},
 	{"Top-Down View",                           VIEW_TOPDOWN},
 	{"Target Padlock View",                     VIEW_TRACK_TARGET},
 
@@ -1151,6 +1165,13 @@ void LoadEnumsIntoActionMap() {
 	ADD_ENUM_TO_ACTION_MAP(UP_SLIDE_THRUST)
 	ADD_ENUM_TO_ACTION_MAP(DOWN_SLIDE_THRUST)
 	ADD_ENUM_TO_ACTION_MAP(HUD_TARGETBOX_TOGGLE_WIREFRAME)
+	ADD_ENUM_TO_ACTION_MAP(TOGGLE_PHOTO_MODE)
+	ADD_ENUM_TO_ACTION_MAP(PHOTO_MODE_FILTER_PREV)
+	ADD_ENUM_TO_ACTION_MAP(PHOTO_MODE_FILTER_NEXT)
+	ADD_ENUM_TO_ACTION_MAP(PHOTO_MODE_FILTER_RESET)
+	ADD_ENUM_TO_ACTION_MAP(PHOTO_MODE_PARAM_DECREASE)
+	ADD_ENUM_TO_ACTION_MAP(PHOTO_MODE_PARAM_INCREASE)
+	ADD_ENUM_TO_ACTION_MAP(PHOTO_MODE_TOGGLE_GRID)
 	ADD_ENUM_TO_ACTION_MAP(VIEW_TOPDOWN)
 	ADD_ENUM_TO_ACTION_MAP(VIEW_TRACK_TARGET)
 
