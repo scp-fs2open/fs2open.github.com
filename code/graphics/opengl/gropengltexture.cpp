@@ -1866,10 +1866,10 @@ int opengl_make_render_target( int handle, int *w, int *h, int *bpp, int *mm_lvl
 
 	GL_state.Texture.Enable(0);
 
-	// render buffer
-//	glGenRenderbuffers(1, &new_fbo.renderbuffer_id);
-//	glBindRenderbuffer(GL_RENDERBUFFER, new_fbo.renderbuffer_id);
-//	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, *w, *h);
+	// render buffer (depth)
+	glGenRenderbuffers(1, &new_fbo->renderbuffer_id);
+	glBindRenderbuffer(GL_RENDERBUFFER, new_fbo->renderbuffer_id);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, *w, *h);
 	glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
 	// frame buffer
@@ -1883,7 +1883,7 @@ int opengl_make_render_target( int handle, int *w, int *h, int *bpp, int *mm_lvl
 		glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, ts->texture_id, 0, 0);
 	}
 
-//	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, new_fbo.renderbuffer_id);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, new_fbo->renderbuffer_id);
 
 	if ( opengl_check_framebuffer() ) {
 		// Oops!!  reset everything and then bail
@@ -1898,7 +1898,10 @@ int opengl_make_render_target( int handle, int *w, int *h, int *bpp, int *mm_lvl
 
 		glDeleteFramebuffers(1, &new_fbo->framebuffer_id);
 
-	//	glDeleteRenderbuffersEXT(1, &new_fbo.renderbuffer_id);
+		if (new_fbo->renderbuffer_id) {
+			glDeleteRenderbuffers(1, &new_fbo->renderbuffer_id);
+			new_fbo->renderbuffer_id = 0;
+		}
 
 		opengl_set_texture_target();
 		opengl_free_fbo_slot(fbo_id);
