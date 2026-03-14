@@ -158,6 +158,11 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_WM_SIZE()
 	ON_WM_MOUSEMOVE()
 	ON_WM_LBUTTONUP()
+	ON_WM_MBUTTONDOWN()
+	ON_WM_MBUTTONUP()
+	ON_WM_RBUTTONDOWN()
+	ON_WM_RBUTTONUP()
+	ON_WM_MOUSEWHEEL()
 	ON_COMMAND(ID_MISCSTUFF_SHOWSHIPSASICONS, OnMiscstuffShowshipsasicons)
 	ON_WM_CONTEXTMENU()
 	ON_COMMAND(ID_EDIT_POPUP_SHOW_SHIP_ICONS, OnEditPopupShowShipIcons)
@@ -1048,7 +1053,7 @@ void CFREDView::OnLButtonDown(UINT nFlags, CPoint point)
 	CView::OnLButtonDown(nFlags, point);
 }
 
-void CFREDView::OnMouseMove(UINT nFlags, CPoint point) 
+void CFREDView::OnMouseMove(UINT nFlags, CPoint point)
 {
 	// RT point
 
@@ -1058,6 +1063,26 @@ void CFREDView::OnMouseMove(UINT nFlags, CPoint point)
 	last_mouse_y = marking_box.y2 = point.y;
 	Cursor_over = select_object(point.x, point.y);
 
+	// Orbit camera: middle button drag
+	if (m_orbit_dragging && (nFlags & MK_MBUTTON)) {
+		handle_orbit_drag(point, nFlags);
+		CView::OnMouseMove(nFlags, point);
+		return;
+	}
+
+	// Orbit camera: right button drag
+	if (m_rbutton_down && (nFlags & MK_RBUTTON) && viewpoint == 0 && Control_mode == 0) {
+		if (!m_rbutton_moved) {
+			if (abs(point.x - m_rbutton_down_point.x) > 2 || abs(point.y - m_rbutton_down_point.y) > 2)
+				m_rbutton_moved = true;
+		}
+		if (m_rbutton_moved) {
+			handle_orbit_drag(point, nFlags);
+			CView::OnMouseMove(nFlags, point);
+			return;
+		}
+	}
+
 	if (!(nFlags & MK_LBUTTON))
 		button_down = 0;
 
@@ -1066,7 +1091,7 @@ void CFREDView::OnMouseMove(UINT nFlags, CPoint point)
 	if (button_down && GetCapture() != this)
 		cancel_drag();
 
-	if (!button_down && GetCapture() == this)
+	if (!button_down && !m_orbit_dragging && !m_rbutton_down && GetCapture() == this)
 		ReleaseCapture();
 
 	if (button_down) {
@@ -1099,7 +1124,7 @@ void CFREDView::OnLButtonUp(UINT nFlags, CPoint point)
 	if (button_down && GetCapture() != this)
 		cancel_drag();
 
-	if (GetCapture() == this)
+	if (!m_orbit_dragging && !m_rbutton_down && GetCapture() == this)
 		ReleaseCapture();
 
 	if (button_down) {
@@ -1181,6 +1206,94 @@ void CFREDView::OnLButtonUp(UINT nFlags, CPoint point)
 
 	CView::OnLButtonUp(nFlags, point);
 }
+
+// ---------- Orbit camera mouse handlers ----------
+
+void CFREDView::handle_orbit_drag(CPoint point, UINT nFlags)
+{
+	int dx = point.x - m_orbit_last_mouse.x;
+	int dy = point.y - m_orbit_last_mouse.y;
+	m_orbit_last_mouse = point;
+
+	if (nFlags & MK_SHIFT)
+		orbit_camera_pan(dx, dy);
+	else
+		orbit_camera_rotate(dx, dy);
+	Update_window = 1;
+}
+
+void CFREDView::OnMButtonDown(UINT nFlags, CPoint point)
+{
+	if (viewpoint != 0 || Control_mode != 0)
+		return;
+
+	vec3d pivot = orbit_camera_get_pivot();
+	auto grid_orient = The_grid ? &The_grid->gmatrix : nullptr;
+	orbit_camera_init_from_current_view(&pivot, grid_orient);
+
+	m_orbit_dragging = true;
+	m_orbit_last_mouse = point;
+	SetCapture();
+}
+
+void CFREDView::OnMButtonUp(UINT nFlags, CPoint point)
+{
+	if (m_orbit_dragging) {
+		m_orbit_dragging = false;
+		if (GetCapture() == this && !m_rbutton_down)
+			ReleaseCapture();
+	}
+}
+
+void CFREDView::OnRButtonDown(UINT nFlags, CPoint point)
+{
+	m_rbutton_down = true;
+	m_rbutton_moved = false;
+	m_rbutton_down_point = point;
+	m_orbit_last_mouse = point;
+
+	if (viewpoint == 0 && Control_mode == 0) {
+		vec3d pivot = orbit_camera_get_pivot();
+		auto grid_orient = The_grid ? &The_grid->gmatrix : nullptr;
+		orbit_camera_init_from_current_view(&pivot, grid_orient);
+		SetCapture();
+	}
+}
+
+void CFREDView::OnRButtonUp(UINT nFlags, CPoint point)
+{
+	bool was_dragging = m_rbutton_moved;
+	m_rbutton_down = false;
+	m_rbutton_moved = false;
+
+	if (GetCapture() == this && !m_orbit_dragging)
+		ReleaseCapture();
+
+	if (!was_dragging) {
+		// No drag occurred — show context menu as normal
+		CPoint screen_point = point;
+		ClientToScreen(&screen_point);
+		OnContextMenu(this, screen_point);
+	}
+}
+
+BOOL CFREDView::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
+{
+	if (viewpoint != 0 || Control_mode != 0)
+		return CView::OnMouseWheel(nFlags, zDelta, pt);
+
+	if (!Orbit_active) {
+		vec3d pivot = orbit_camera_get_pivot();
+		auto grid_orient = The_grid ? &The_grid->gmatrix : nullptr;
+		orbit_camera_init_from_current_view(&pivot, grid_orient);
+	}
+
+	orbit_camera_zoom(zDelta / -200.0f);
+	Update_window = 1;
+	return TRUE;
+}
+
+// ---------- End orbit camera mouse handlers ----------
 
 //	This function never gets called because nothing causes
 //	the WM_GOODBYE event to occur.
