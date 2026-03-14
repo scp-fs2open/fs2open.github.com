@@ -380,10 +380,10 @@ void photo_mode_maybe_render_hud()
 
 	int line = panel_y + panel_padding;
 	const int text_x = panel_x + panel_padding;
-	gr_printf_no_resize(text_x, line, XSTR("Photo Mode", 1892));
+	gr_printf_no_resize(text_x, line, "%s", XSTR("Photo Mode", 1892));
 	line += line_height;
 	line += line_height;
-	gr_printf_no_resize(text_x, line, XSTR("Controls", 1893));
+	gr_printf_no_resize(text_x, line, "%s", XSTR("Controls", 1893));
 	line += line_height;
 	gr_printf_no_resize(text_x, line, XSTR("Toggle: %s", 1894), toggle_keybind.c_str());
 	line += line_height;
@@ -400,7 +400,7 @@ void photo_mode_maybe_render_hud()
 	gr_printf_no_resize(text_x, line, XSTR("Toggle Thirds Grid: %s", 1901), grid_keybind.c_str());
 	line += line_height;
 	line += line_height;
-	gr_printf_no_resize(text_x, line, XSTR("Status", 1902));
+	gr_printf_no_resize(text_x, line, "%s", XSTR("Status", 1902));
 	line += line_height;
 	gr_printf_no_resize(text_x, line, XSTR("Time Compression: %.2fx", 1903), f2fl(Game_time_compression));
 	line += line_height;
