@@ -27,6 +27,7 @@
 #include "nebula/neb.h"
 #include "particle/particle.h"
 #include "prop/prop.h"
+#include "parse/encrypt.h"
 #include "render/3dinternal.h"
 #include "render/batching.h"
 #include "ship/ship.h"
@@ -36,6 +37,7 @@
 #include "weapon/weapon.h"
 
 #include <algorithm>
+#include <unordered_map>
 
 extern int Model_texturing;
 extern int Model_polys;
@@ -50,6 +52,108 @@ int Lab_object_detail_level = -1; // Used to display the detail level in the lab
 extern void interp_generate_arc_segment(SCP_vector<vec3d> &arc_segment_points, const vec3d *v1, const vec3d *v2, ubyte depth_limit, ubyte depth);
 
 int model_render_determine_elapsed_time(int objnum, uint64_t flags);
+
+SCP_unordered_map<cached_ui_render_instance_key, cached_ui_render_instance_entry, cached_ui_render_instance_key_hash>
+	Cached_ui_render_instance_cache;
+UI_TIMESTAMP Ui_render_instance_cache_last_processed_timestamp = UI_TIMESTAMP::invalid();
+constexpr int UI_RENDER_INSTANCE_CACHE_UNUSED_MS_GRACE = 100;
+
+size_t model_hash_subsystem_name_list_for_cache(const SCP_vector<SCP_string>& subsystem_names)
+{
+	if (subsystem_names.empty()) {
+		return 0;
+	}
+
+	SCP_vector<SCP_string> normalized_names;
+	normalized_names.reserve(subsystem_names.size());
+
+	for (const auto& name : subsystem_names) {
+		auto normalized = name;
+		SCP_tolower(normalized);
+		normalized_names.push_back(std::move(normalized));
+	}
+
+	std::sort(normalized_names.begin(), normalized_names.end());
+
+	size_t seed = 0;
+	
+	boost::hash_combine(seed, static_cast<uint32_t>(normalized_names.size()));
+	for (const auto& name : normalized_names) {
+		boost::hash_combine(seed, hash_fnv1a(name));
+	}
+
+	return seed;
+}
+
+// Returns TriStateBool::TRUE_ if a new instance was created, TriStateBool::FALSE_ if an existing instance was returned,
+// or TriStateBool::UNKNOWN_ if there was an error (and model_instance_out will be set to -1 in this case)
+TriStateBool model_get_cached_ui_render_instance(int model_num, int* model_instance_out, size_t instance_data_hash)
+{
+	Assertion(model_instance_out != nullptr, "model_instance_out must not be null!");
+	if (model_instance_out == nullptr) {
+		return TriStateBool::UNKNOWN_;
+	}
+
+	cached_ui_render_instance_key key;
+	key.model_num = model_num;
+	key.state_instance_id = gameseq_get_state_instance_id();
+	key.instance_data_hash = instance_data_hash;
+
+	auto& entry = Cached_ui_render_instance_cache[key];
+
+	auto created_new = false;
+
+	if (entry.model_instance < 0) {
+		entry.model_instance = model_create_instance(model_objnum_special::OBJNUM_NONE, model_num);
+		if (entry.model_instance < 0) {
+			Warning(LOCATION, "Failed to create cached UI render model instance for model id %d.", model_num);
+			Cached_ui_render_instance_cache.erase(key);
+			*model_instance_out = -1;
+			return TriStateBool::UNKNOWN_;
+		}
+		created_new = true;
+	}
+
+	entry.last_used_timestamp = ui_timestamp();
+	*model_instance_out = entry.model_instance;
+	return created_new ? TriStateBool::TRUE_ : TriStateBool::FALSE_;
+}
+
+void model_process_cached_ui_render_instances()
+{
+	const auto now = ui_timestamp();
+	
+	if (Ui_render_instance_cache_last_processed_timestamp.isValid() &&
+		ui_timestamp_get_delta(Ui_render_instance_cache_last_processed_timestamp, now) == 0) {
+		return;
+	}
+
+	Ui_render_instance_cache_last_processed_timestamp = now;
+
+	for (auto it = Cached_ui_render_instance_cache.begin(); it != Cached_ui_render_instance_cache.end();) {
+		if (it->second.model_instance < 0 || !it->second.last_used_timestamp.isValid() ||
+			ui_timestamp_get_delta(it->second.last_used_timestamp, now) > UI_RENDER_INSTANCE_CACHE_UNUSED_MS_GRACE) {
+			if (it->second.model_instance >= 0) {
+				model_delete_instance(it->second.model_instance);
+			}
+			it = Cached_ui_render_instance_cache.erase(it);
+		} else {
+			++it;
+		}
+	}
+}
+
+void model_clear_cached_ui_render_instances()
+{
+	for (auto& instance : Cached_ui_render_instance_cache) {
+		if (instance.second.model_instance >= 0) {
+			model_delete_instance(instance.second.model_instance);
+		}
+	}
+
+	Cached_ui_render_instance_cache.clear();
+	Ui_render_instance_cache_last_processed_timestamp = UI_TIMESTAMP::invalid();
+}
 
 model_batch_buffer TransformBufferHandler;
 
@@ -3223,9 +3327,9 @@ bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int 
 
 	int model_instance = -1;
 
-	// Create an instance for ships that can be used to clear out destroyed subobjects from rendering
+	// Get a cached UI render instance for ships so repeated UI/Lua renders avoid per-call allocation churn
 	if (model_type == TECH_SHIP) {
-		model_instance = model_create_instance(model_objnum_special::OBJNUM_NONE, model_num);
+		model_get_cached_ui_render_instance(model_num, &model_instance);
 		model_set_up_techroom_instance(&Ship_info[class_idx], model_instance);
 	}
 
@@ -3254,10 +3358,6 @@ bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int 
 	// Bye!!
 	g3_end_frame();
 	gr_reset_clip();
-
-	// Now that we've rendered the frame we can remove the instance if one was created for ships
-	if (model_type == TECH_SHIP)
-		model_delete_instance(model_instance);
 
 	return true;
 }

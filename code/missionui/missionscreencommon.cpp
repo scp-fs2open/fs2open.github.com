@@ -39,6 +39,7 @@
 #include "missionui/missionshipchoice.h"
 #include "missionui/missionweaponchoice.h"
 #include "mod_table/mod_table.h"
+#include "model/modelrender.h"
 #include "network/multi.h"
 #include "network/multi_endgame.h"
 #include "network/multimsgs.h"
@@ -1654,9 +1655,14 @@ void draw_model_icon(int model_id, uint64_t flags, float closeup_zoom, int x, in
 
 	Glowpoint_override = true;
 	model_clear_instance(model_id);
+	int model_instance = -1;
+	model_get_cached_ui_render_instance(model_id, &model_instance);
+	if (sip != nullptr) {
+		model_set_up_techroom_instance(sip, model_instance);
+	}
 
 	render_info.set_flags(flags);
-	model_render_immediate(&render_info, model_id, &object_orient, &vmd_zero_vector);
+	model_render_immediate(&render_info, model_id, model_instance, &object_orient, &vmd_zero_vector);
 	Glowpoint_override = false;
 
 	gr_end_view_matrix();
@@ -1672,7 +1678,8 @@ void draw_model_rotating(model_render_params *render_info, int ship_class, int m
 	if (model_id < 0)
 		return;
 
-	int model_instance = model_create_instance(model_objnum_special::OBJNUM_NONE, model_id);
+	int model_instance = -1;
+	model_get_cached_ui_render_instance(model_id, &model_instance);
 	if (!(flags & MR_IS_MISSILE) && SCP_vector_inbounds(Ship_info, ship_class)) {
 		model_set_up_techroom_instance(&Ship_info[ship_class], model_instance);
 	}
@@ -1958,9 +1965,6 @@ void draw_model_rotating(model_render_params *render_info, int ship_class, int m
 	}
 
 	shadow_end_frame();
-	if (model_instance >= 0) {
-		model_delete_instance(model_instance);
-	}
 }
 
 /**
