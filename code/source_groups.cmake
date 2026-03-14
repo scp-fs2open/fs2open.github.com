@@ -513,6 +513,7 @@ if (FSO_BUILD_WITH_OPENGL)
 		graphics/opengl/ShaderProgram.h
 		graphics/opengl/SmaaAreaTex.h
 		graphics/opengl/SmaaSearchTex.h
+		graphics/opengl/es_compatibility.h
 	)
 endif()
 

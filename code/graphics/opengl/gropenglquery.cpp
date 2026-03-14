@@ -1,4 +1,6 @@
-
+#ifdef USE_OPENGL_ES
+#include "es_compatibility.h"
+#endif
 #include "graphics/opengl/gropenglquery.h"
 #include "graphics/opengl/gropengl.h"
 
