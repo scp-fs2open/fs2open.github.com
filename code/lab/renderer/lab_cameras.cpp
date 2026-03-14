@@ -1,5 +1,6 @@
 #include "globalincs/pstypes.h"
 #include "io/key.h"
+#include "io/mouse.h"
 #include "lab/renderer/lab_cameras.h"
 #include "lab/labv2_internal.h"
 
@@ -8,18 +9,53 @@ LabCamera::~LabCamera() {
 	cam_delete(FS_camera);
 }
 
-void OrbitCamera::handleInput(int dx, int dy, bool, bool rmbDown, int modifierKeys) {
-	if (dx == 0 && dy == 0)
+void OrbitCamera::handleInput(int dx, int dy, int dz, bool, bool rmbDown, int modifierKeys) {
+	if (dx == 0 && dy == 0 && dz == 0)
 		return;
+
+	if (dz > 0) {
+		for (int i = 0; i < dz; ++i) {
+			distance *= 0.9f;
+		}
+	} else if (dz < 0) {
+		for (int i = 0; i < -dz; ++i) {
+			distance *= 1.1f;
+		}
+	}
+	CLAMP(distance, 1.0f, 10000000.0f);
 
 	if (rmbDown) {
 		if (modifierKeys & KEY_SHIFTED) {
-			distance *= 1.0f + (dy / 200.0f);
-			CLAMP(distance, 1.0f, 10000000.0f);
-		}
-		else {
-			theta += dx / 100.0f;
-			phi += dy / 100.0f;
+			const float pan_factor = distance / 500.0f;
+
+			vec3d camera_offset;
+			camera_offset.xyz.x = sinf(phi) * cosf(theta);
+			camera_offset.xyz.y = cosf(phi);
+			camera_offset.xyz.z = sinf(phi) * sinf(theta);
+
+			vec3d view_forward;
+			vm_vec_copy_scale(&view_forward, &camera_offset, -1.0f);
+
+			vec3d world_up = vmd_y_vector;
+			vec3d view_right;
+			vm_vec_cross(&view_right, &world_up, &view_forward);
+
+			if (vm_vec_mag_squared(&view_right) <= 1e-6f) {
+				world_up = vmd_x_vector;
+				vm_vec_cross(&view_right, &world_up, &view_forward);
+			}
+
+			vm_vec_normalize_safe(&view_right);
+
+			vec3d view_up;
+			vm_vec_cross(&view_up, &view_forward, &view_right);
+			vm_vec_normalize_safe(&view_up);
+
+			vm_vec_scale_add2(&pan_offset, &view_right, -dx * pan_factor);
+			vm_vec_scale_add2(&pan_offset, &view_up, dy * pan_factor);
+		} else {
+			theta -= dx / 100.0f;
+			phi -= dy / 100.0f;
 
 			CLAMP(phi, 0.01f, PI - 0.01f);
 		}
@@ -28,11 +64,24 @@ void OrbitCamera::handleInput(int dx, int dy, bool, bool rmbDown, int modifierKe
 	updateCamera();
 }
 
+void OrbitCamera::resetView()
+{
+	phi = DEFAULT_PHI;
+	theta = DEFAULT_THETA;
+	distance = DEFAULT_DISTANCE;
+	pan_offset = vmd_zero_vector;
+
+	displayedObjectChanged();
+}
+
 void OrbitCamera::displayedObjectChanged() {
 	float distance_multiplier = 1.6f;
 
 	if (getLabManager()->CurrentObject != -1) {
 		object* obj = &Objects[getLabManager()->CurrentObject];
+
+		// Reset camera panning
+		pan_offset = vmd_zero_vector;
 		
 		// Ships and Missiles use the object radius to get a camera distance
 		distance = obj->radius * distance_multiplier;
@@ -75,9 +124,10 @@ void OrbitCamera::updateCamera() {
 			vm_vec_copy_normalize(&forward, &obj->orient.vec.fvec);
 			vm_vec_scale_add2(&target, &forward, wip->laser_length * 0.5f);
 		}
-		
-		vm_vec_add2(&new_position, &target);
 	}
+
+	vm_vec_add2(&target, &pan_offset);
+	vm_vec_add2(&new_position, &target);
 
 	cam->set_position(&new_position);
 

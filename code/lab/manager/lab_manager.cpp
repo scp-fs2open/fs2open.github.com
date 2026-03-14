@@ -123,9 +123,13 @@ void LabManager::onFrame(float frametime) {
 
 	int key = game_check_key();
 
-	int dx, dy;
+	int dx, dy, dz;
 	mouse_get_delta(&dx, &dy);
-	Renderer->getCurrentCamera()->handleInput(dx, dy, mouse_down(MOUSE_LEFT_BUTTON) != 0, mouse_down(MOUSE_RIGHT_BUTTON) != 0, key_get_shift_status());
+	mouse_get_wheel_delta(nullptr, &dz);
+	if (dz != 0 && ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow)) {
+		dz = 0;
+	}
+	Renderer->getCurrentCamera()->handleInput(dx, dy, dz, mouse_down(MOUSE_LEFT_BUTTON) != 0, mouse_down(MOUSE_RIGHT_BUTTON) != 0, key_get_shift_status());
 
 	if (!Renderer->getCurrentCamera()->handlesObjectPlacement()) {
 		if (mouse_down(MOUSE_LEFT_BUTTON)) {
@@ -160,6 +164,12 @@ void LabManager::onFrame(float frametime) {
 
 			vm_angles_2_matrix(&CurrentOrientation, &rot_angle);
 		}
+	}
+
+	if (CurrentMode == LabMode::Ship) {
+		Lab_thrust_afterburn = check_control(AFTERBURNER) != 0;
+	} else {
+		Lab_thrust_afterburn = false;
 	}
 
 	if (key != 0) {
@@ -219,15 +229,15 @@ void LabManager::onFrame(float frametime) {
 		default:
 			// check for game-specific controls
 			if (CurrentMode == LabMode::Ship) {
-				if (check_control(PLUS_5_PERCENT_THROTTLE, key))
+				// These don't work because the lab is a lie and ships don't actually move
+				// Also the ships are AI and don't really respond to player input anyway so
+				// getting these working will be tricky
+				/*if (check_control(PLUS_5_PERCENT_THROTTLE, key))
 					Lab_thrust_len += 0.05f;
 				else if (check_control(MINUS_5_PERCENT_THROTTLE, key))
 					Lab_thrust_len -= 0.05f;
 
-				CLAMP(Lab_thrust_len, 0.0f, 1.0f);
-
-				if (check_control(AFTERBURNER, key))
-					Lab_thrust_afterburn = !Lab_thrust_afterburn;
+				CLAMP(Lab_thrust_len, 0.0f, 1.0f);*/
 			}
 			break;
 		}

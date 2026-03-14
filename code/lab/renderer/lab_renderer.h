@@ -168,7 +168,7 @@ public:
 		return currentTeamColor;
 	}
 
-	void resetView() {}
+	void resetView();
 
 	void setRenderFlag(LabRenderFlag flag, bool value) { renderFlags.set(flag, value); }
 

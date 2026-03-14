@@ -54,6 +54,10 @@ int Mouse_dx = 0;
 int Mouse_dy = 0;
 int Mouse_dz = 0;
 
+// Mouse wheel delta tracking movement not position. Resets every frame.
+int Mouse_wheel_dx = 0;
+int Mouse_wheel_dy = 0;
+
 int Mouse_sensitivity = 4;
 
 static auto MouseSensitivityOption __UNUSED = options::OptionBuilder<int>("Input.MouseSensitivity",
@@ -523,6 +527,14 @@ void mouse_get_delta(int *dx, int *dy, int *dz)
 		*dz = Mouse_dz;
 }
 
+void mouse_get_wheel_delta(int* dx, int* dy)
+{
+	if (dx)
+		*dx = Mouse_wheel_dx;
+	if (dy)
+		*dy = Mouse_wheel_dy;
+}
+
 // Forces the actual windows cursor to be at (x,y).  This may be independent of our tracked (x,y) mouse pos.
 void mouse_force_pos(int x, int y)
 {
@@ -535,6 +547,7 @@ void mouse_force_pos(int x, int y)
 void mouse_reset_deltas()
 {
 	Mouse_dx = Mouse_dy = Mouse_dz = 0;
+	Mouse_wheel_dx = Mouse_wheel_dy = 0;
 }
 
 void mouse_event(int x, int y, int dx, int dy)
@@ -635,6 +648,9 @@ void mousewheel_motion(int x, int y, bool reversed) {
 
 	Mouse_wheel_x += x;
 	Mouse_wheel_y += y;
+	// Used for tracking the actual movement of the wheel, not just the current position
+	Mouse_wheel_dx += x;
+	Mouse_wheel_dy += y;
 
 	// These nested if's should take care of all edge cases.
 	// Since x and y's magnitudes can be larger than 1, it is possible to ignore the idle state
