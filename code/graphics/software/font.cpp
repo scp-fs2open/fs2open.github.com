@@ -390,7 +390,7 @@ namespace
 			}
 		}
 
-		if (optional_string("+Auto Size")) {
+		if (optional_string("+Auto Size:")) {
 			bool temp;
 
 			stuff_boolean(&temp);
