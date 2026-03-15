@@ -12,6 +12,7 @@
 
 #include "cmdline/cmdline.h"
 #include "def_files/def_files.h"
+#include "graphics/shader_types.h"
 #include "graphics/grinternal.h"
 #include "graphics/openxr.h"
 #include "graphics/util/uniform_structs.h"
@@ -783,46 +784,6 @@ void gr_opengl_post_process_restore_zbuffer()
 	}
 }
 
-static void set_fxaa_defines(SCP_stringstream& sflags)
-{
-	// Since we require OpenGL 3.2 we always have support for GLSL 130
-	sflags << "#define FXAA_GLSL_120 0\n";
-	sflags << "#define FXAA_GLSL_130 1\n";
-
-	if (GLSL_version >= 400) {
-		// The gather function became part of the standard with GLSL 4.00
-		sflags << "#define FXAA_GATHER4_ALPHA 1\n";
-	}
-
-	switch (Gr_aa_mode) {
-	case AntiAliasMode::None:
-		sflags << "#define FXAA_QUALITY_PRESET 10\n";
-		sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD (1.0/6.0)\n";
-		sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD_MIN (1.0/12.0)\n";
-		sflags << "#define FXAA_QUALITY_SUBPIX 0.33\n";
-		break;
-	case AntiAliasMode::FXAA_Low:
-		sflags << "#define FXAA_QUALITY_PRESET 12\n";
-		sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD (1.0/8.0)\n";
-		sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD_MIN (1.0/16.0)\n";
-		sflags << "#define FXAA_QUALITY_SUBPIX 0.33\n";
-		break;
-	case AntiAliasMode::FXAA_Medium:
-		sflags << "#define FXAA_QUALITY_PRESET 26\n";
-		sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD (1.0/12.0)\n";
-		sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD_MIN (1.0/24.0)\n";
-		sflags << "#define FXAA_QUALITY_SUBPIX 0.33\n";
-		break;
-	case AntiAliasMode::FXAA_High:
-		sflags << "#define FXAA_QUALITY_PRESET 39\n";
-		sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD (1.0/15.0)\n";
-		sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD_MIN (1.0/32.0)\n";
-		sflags << "#define FXAA_QUALITY_SUBPIX 0.33\n";
-		break;
-	default:
-		UNREACHABLE("Unhandled FXAA mode!");
-	}
-}
 void set_smaa_defines(SCP_stringstream& sflags)
 {
 	// Define what GLSL version we use
@@ -866,7 +827,7 @@ void opengl_post_shader_header(SCP_stringstream& sflags, shader_type shader_t, i
 		snprintf(temp, 64, "#define SAMPLE_NUM %d\n", ls_params.samplenum);
 		sflags << temp;
 	} else if (shader_t == SDR_TYPE_POST_PROCESS_FXAA) {
-		set_fxaa_defines(sflags);
+		sflags << shader_get_fxaa_defines(Gr_aa_mode, GLSL_version >= 400);
 	} else if (shader_t == SDR_TYPE_POST_PROCESS_SMAA_EDGE || shader_t == SDR_TYPE_POST_PROCESS_SMAA_BLENDING_WEIGHT ||
 	           shader_t == SDR_TYPE_POST_PROCESS_SMAA_NEIGHBORHOOD_BLENDING) {
 		set_smaa_defines(sflags);

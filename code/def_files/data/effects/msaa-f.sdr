@@ -1,5 +1,27 @@
 #include "z-compress.sdr"
 
+#ifdef VULKAN
+layout(location = 0) in vec2 fragTexCoord;
+
+layout(location = 0) out vec4 fragOut0;
+layout(location = 1) out vec4 fragOut1;
+layout(location = 2) out vec4 fragOut2;
+layout(location = 3) out vec4 fragOut3;
+layout(location = 4) out vec4 fragOut4;
+
+layout(set = 1, binding = 1) uniform sampler2DMS msaaTex[6];
+#define texColor    msaaTex[0]
+#define texPos      msaaTex[1]
+#define texNormal   msaaTex[2]
+#define texSpecular msaaTex[3]
+#define texEmissive msaaTex[4]
+#define texDepth    msaaTex[5]
+
+layout(std140, set = 2, binding = 0) uniform genericData {
+	int samples;
+	float fov;
+};
+#else
 in vec4 fragTexCoord;
 out vec4 fragOut0;
 out vec4 fragOut1;
@@ -19,6 +41,7 @@ layout (std140) uniform genericData {
 	int samples;
 	float fov;
 };
+#endif
 
 const float voxelDepth = 2.5f;
 const float voxelDepthFalloff = 2.5f;
@@ -160,7 +183,11 @@ float getMedianDist(ivec2 texel) {
 void main()
 {
 	vec2 texSize = textureSize(texColor);
+#ifdef VULKAN
+	ivec2 texel = ivec2(texSize * fragTexCoord);
+#else
 	ivec2 texel = ivec2(texSize * fragTexCoord.xy);
+#endif
 
 	float texelWidthFactor = tan(fov / texSize.y);
 	float dist = getMedianDist(texel);

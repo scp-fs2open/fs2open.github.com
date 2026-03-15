@@ -4,8 +4,26 @@
 #include "shadows.sdr" //! #include "shadows.sdr"
 #include "z-compress.sdr" //! #include "z-compress.sdr"
 
+#ifdef VULKAN
+layout(location = 0) out vec4 fragOut0;
+#else
 out vec4 fragOut0;
+#endif
 
+#ifdef VULKAN
+layout(set = 1, binding = 1) uniform sampler2D sTextures[16];
+#define ColorBuffer sTextures[0]
+#define NormalBuffer sTextures[1]
+#define PositionBuffer sTextures[2]
+#define SpecBuffer sTextures[3]
+
+layout(set = 0, binding = 2) uniform sampler2DArray shadow_map;
+
+#ifdef ENV_MAP
+layout(set = 0, binding = 3) uniform samplerCube sEnvmap;
+layout(set = 0, binding = 4) uniform samplerCube sIrrmap;
+#endif
+#else
 uniform sampler2D ColorBuffer;
 uniform sampler2D NormalBuffer;
 uniform sampler2D PositionBuffer;
@@ -16,8 +34,14 @@ uniform sampler2DArray shadow_map;
 uniform samplerCube sEnvmap;
 uniform samplerCube sIrrmap;
 #endif
+#endif
 
-layout (std140) uniform globalDeferredData {
+#ifdef VULKAN
+layout(set = 0, binding = 1, std140)
+#else
+layout(std140)
+#endif
+uniform globalDeferredData {
 	mat4 shadow_mv_matrix;
 	mat4 shadow_proj_matrix[4];
 
@@ -34,12 +58,22 @@ layout (std140) uniform globalDeferredData {
 	float nearPlane;
 };
 
-layout (std140) uniform matrixData {
+#ifdef VULKAN
+layout(set = 2, binding = 1, std140)
+#else
+layout(std140)
+#endif
+uniform matrixData {
 	mat4 modelViewMatrix;
 	mat4 projMatrix;
 };
 
-layout (std140) uniform lightData {
+#ifdef VULKAN
+layout(set = 0, binding = 0, std140)
+#else
+layout(std140)
+#endif
+uniform lightData {
 	vec3 diffuseLightColor;
 	float coneAngle;
 
@@ -47,18 +81,18 @@ layout (std140) uniform lightData {
 	float coneInnerAngle;
 
 	vec3 coneDir;
-	bool dualCone;
+	int dualCone;
 
 	vec3 scale;
 	float lightRadius;
 
 	int lightType;
-	bool enable_shadows;
+	int enable_shadows;
 
 	float sourceRadius;
 };
 
-// Nearest point sphere and tube light calculations taken from 
+// Nearest point sphere and tube light calculations taken from
 // "Real Shading in Unreal Engine 4" by Brian Karis, Epic Games
 // Part of SIGGRAPH 2013 Course: Physically Based Shading in Theory and Practice
 
@@ -66,7 +100,7 @@ vec3 ExpandLightSize(in vec3 lightDir, in vec3 reflectDir) {
 	// There's an extra max(...,sourceRadius) call here vs the version in the paper.
 	// This prevents the centerToRay calculation from choosing a point behind
 	// the reflection ray's origin (i.e. underneath the surface).
-	// this is necessary for situations where the fragment being shaded lies inside 
+	// this is necessary for situations where the fragment being shaded lies inside
 	// the sourceRadius of the light.
 	// Instead, we choose a point suffciently far away from the reflection origin (hence max(...,sourceRadius))
 	// so that we have a gradual transition as the shaded fragments along the surface
@@ -152,7 +186,7 @@ void GetLightInfo(vec3 position, in float alpha, in vec3 reflectDir, out vec3 li
 			attenuation = 1.0 - clamp(sqrt(dist / lightRadius), 0.0, 1.0);
 			area_normalisation = 1.0;
 
-			if(dualCone) {
+			if(dualCone != 0) {
 				if(abs(coneDot) < coneAngle) {
 					discard;
 				} else {
@@ -257,7 +291,7 @@ void main()
 		float area_normalisation;
 		GetLightInfo(position, alpha, reflectDir, lightDir, attenuation, area_normalisation);
 
-		if (enable_shadows) {
+		if (enable_shadows != 0) {
 			vec4 fragShadowPos = shadow_mv_matrix * inv_view_matrix * vec4(position, 1.0);
 			vec4 fragShadowUV[4];
 			fragShadowUV[0] = transformToShadowMap(shadow_proj_matrix[0], 0, fragShadowPos);

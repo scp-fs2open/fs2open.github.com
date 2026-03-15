@@ -25,7 +25,12 @@ struct model_light {
 
 };
 
-layout (std140) uniform modelData {
+#ifdef VULKAN
+layout(set = 1, binding = 0, std140)
+#else
+layout(std140)
+#endif
+uniform modelData {
 	mat4 modelViewMatrix;
 	mat4 modelMatrix;
 	mat4 viewMatrix;
@@ -46,7 +51,7 @@ layout (std140) uniform modelData {
 	vec4 clip_equation;
 
 	float thruster_scale;
-	bool use_clip_plane;
+	int use_clip_plane;
 	int n_lights;
 	float defaultGloss;
 
@@ -59,10 +64,10 @@ layout (std140) uniform modelData {
 
 	vec3 emissionFactor;
 
-	bool alphaGloss;
+	int alphaGloss;
 
-	bool gammaSpec;
-	bool envGloss;
+	int gammaSpec;
+	int envGloss;
 	int effect_num;
 	int sBasemapIndex;
 
@@ -76,7 +81,7 @@ layout (std140) uniform modelData {
 	float vpwidth;
 
 	float vpheight;
-	bool team_glow_enabled;
+	int team_glow_enabled;
 	float znear;
 	float zfar;
 
@@ -86,6 +91,7 @@ layout (std140) uniform modelData {
 	float fardist;
 
 	int sGlowmapIndex;
+
 	int sSpecmapIndex;
 	int sNormalmapIndex;
 	int sAmbientmapIndex;
@@ -95,23 +101,34 @@ layout (std140) uniform modelData {
 	int flags;
 };
 
-in VertexOutput {
-	mat3 tangentMatrix;
+#ifdef VULKAN
+layout(set = 1, binding = 1) uniform sampler2DArray materialTextures[16];
+#define sBasemap materialTextures[0]
+#define sGlowmap materialTextures[1]
+#define sSpecmap materialTextures[2]
+#define sNormalmap materialTextures[3]
+#define sAmbientmap materialTextures[5]
+#define sMiscmap materialTextures[6]
 
-#prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_FOG
-	float fogDist;
-#prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_FOG
+layout(set = 0, binding = 2) uniform sampler2DArray shadow_map;
+layout(set = 1, binding = 5) uniform sampler2D sFramebuffer;
 
+layout(location = 0) in VertexOutput {
 	vec4 position;
 	vec3 normal;
 	vec4 texCoord;
-
-#prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
+	mat3 tangentMatrix;
+	float fogDist;
 	vec4 shadowUV[4];
 	vec4 shadowPos;
-#prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
 } vertIn;
 
+layout(location = 0) out vec4 fragOut0;
+layout(location = 1) out vec4 fragOut1;
+layout(location = 2) out vec4 fragOut2;
+layout(location = 3) out vec4 fragOut3;
+layout(location = 4) out vec4 fragOut4;
+#else
 #prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_DIFFUSE
 uniform sampler2DArray sBasemap;
 #prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_DIFFUSE
@@ -135,8 +152,24 @@ uniform sampler2DArray sMiscmap;
 uniform sampler2DArray shadow_map;
 #prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
 
-out vec4 fragOut0;
+in VertexOutput {
+	mat3 tangentMatrix;
 
+#prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_FOG
+	float fogDist;
+#prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_FOG
+
+	vec4 position;
+	vec3 normal;
+	vec4 texCoord;
+
+#prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
+	vec4 shadowUV[4];
+	vec4 shadowPos;
+#prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
+} vertIn;
+
+out vec4 fragOut0;
 #ifndef MODEL_SDR_FLAG_SHADOW_MAP
 out vec4 fragOut1;
 out vec4 fragOut2;
@@ -144,9 +177,11 @@ out vec4 fragOut3;
 out vec4 fragOut4;
 #endif
 
+#endif
+
 vec3 FresnelLazarovEnv(vec3 specColor, vec3 view, vec3 normal, float gloss)
 {
-	// Fresnel for environment lighting 
+	// Fresnel for environment lighting
 	// Equation referenced from Dimitar Lazarov's presentation titled Physically Based Rendering in Call of Duty: Black Ops
 	return specColor + (vec3(1.0) - specColor) * pow(1.0 - clamp(dot(view, normal), 0.0, 1.0), 5.0) / (4.0 - 3.0 * gloss);
 }
@@ -206,15 +241,14 @@ void main()
 	#ifdef MODEL_SDR_FLAG_SHADOW_MAP
 		// need depth and depth squared for variance shadow maps
 		fragOut0 = vec4(vertIn.position.z, vertIn.position.z * vertIn.position.z * VARIANCE_SHADOW_SCALE_INV, 0.0, 1.0);
-
 		return;
 	#else
+
 	vec3 eyeDir = vec3(normalize(-vertIn.position).xyz);
 	vec2 texCoord = vertIn.texCoord.xy;
 
 	// setup our baseline values for base, emissive, fresnel, gloss, AO and normal
 	// default specular value is set below, as it depends on the diffuse color
-
 	vec4 baseColor = color;
 	vec4 emissiveColor = vec4(0.0, 0.0, 0.0, 1.0);
 	float fresnelFactor = 0.0;
@@ -223,6 +257,7 @@ void main()
 	vec3 unitNormal = normalize(vertIn.normal);
 	vec3 normal = unitNormal;
 
+	// Ambient occlusion map
 	#prereplace IF_FLAG MODEL_SDR_FLAG_AMBIENT
 		// red channel is ambient occlusion factor which only affects ambient lighting.
 		// green is cavity occlusion factor which only affects diffuse and specular lighting.
@@ -249,6 +284,7 @@ void main()
 		distort = vec2(cos(vertIn.position.x*vertIn.position.w*0.005+anim_timer*20.0)*sin(vertIn.position.y*vertIn.position.w*0.005),sin(vertIn.position.x*vertIn.position.w*0.005+anim_timer*20.0)*cos(vertIn.position.y*vertIn.position.w*0.005))*0.03;
 	}
 
+	// Diffuse map
 	#prereplace IF_FLAG MODEL_SDR_FLAG_DIFFUSE
 		vec2 diffuseTexCoord = texCoord;
 		if (effect_num == 2) {
@@ -256,7 +292,7 @@ void main()
 		}
 		baseColor = texture(sBasemap, vec3(diffuseTexCoord, float(sBasemapIndex)));
 
-        #prereplace IF_FLAG MODEL_SDR_FLAG_HDR
+		#prereplace IF_FLAG MODEL_SDR_FLAG_HDR
 			baseColor.rgb = srgb_to_linear(baseColor.rgb);
 		#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_HDR
 
@@ -272,7 +308,7 @@ void main()
 
 	// Anti-glint "trick" based on Valve's "Advanced VR Rendering" talk at GDC2015:
 	// http://media.steampowered.com/apps/valve/2015/Alex_Vlachos_Advanced_VR_Rendering_GDC2015.pdf Page 43
-	// basically make surfaces rougher if local normals change too fast in screenspace 
+	// basically make surfaces rougher if local normals change too fast in screenspace
 	vec2 normDx = dFdx(unitNormal.xy);
 	vec2 normDy = dFdy(unitNormal.xy);
 	float glossGeo = 1.0f - pow(clamp(max(dot(normDx,normDx), dot(normDy,normDy)),0.0,1.0),0.33);
@@ -280,19 +316,20 @@ void main()
 
 	// Now that we have a base color and min gloss value, compute the spec color
 	vec4 specColor = vec4(baseColor.rgb * SPEC_FACTOR_NO_SPEC_MAP, glossData);
-	
+
+	// Specular map
 	#prereplace IF_FLAG MODEL_SDR_FLAG_SPEC
 		specColor = texture(sSpecmap, vec3(texCoord, float(sSpecmapIndex)));
 		#prereplace IF_FLAG MODEL_SDR_FLAG_ALPHA_MULT
 			specColor *= alphaMult;
 		#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_ALPHA_MULT
 
-		if(alphaGloss) glossData = specColor.a;
-		if(gammaSpec) {
-			specColor.rgb = max(specColor.rgb, vec3(0.03f)); // hardcoded minimum specular value. read John Hable's blog post titled 'Everything Is Shiny'. 
+		if(alphaGloss != 0) glossData = specColor.a;
+		if(gammaSpec != 0) {
+			specColor.rgb = max(specColor.rgb, vec3(0.03f)); // hardcoded minimum specular value. read John Hable's blog post titled 'Everything Is Shiny'.
 			fresnelFactor = 1.0;
 		}
-		
+
 		#prereplace IF_FLAG MODEL_SDR_FLAG_HDR
 			specColor.rgb = srgb_to_linear(specColor.rgb);
 		#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_HDR
@@ -304,11 +341,12 @@ void main()
 	vec4 teamMask = vec4(0.0);
 	vec3 team_color_glow = vec3(0.0);
 
+	// Misc map / team colors
 	#prereplace IF_FLAG MODEL_SDR_FLAG_MISC
 		#prereplace IF_FLAG MODEL_SDR_FLAG_TEAMCOLOR
 			teamMask = texture(sMiscmap, vec3(texCoord, float(sMiscmapIndex)));
 
-			//For team colors applied to a diffuse or spec map, we assume that the base color of the diffuse 
+			//For team colors applied to a diffuse or spec map, we assume that the base color of the diffuse
 			//at this point is vec3(0.5). To get accurate results, we subtract 0.5 from the team colors
 			vec3 color_offset = vec3(-0.5) * (teamMask.x + teamMask.y);
 
@@ -320,11 +358,11 @@ void main()
 				specColor.rgb = linear_to_srgb(specColor.rgb);
 			#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_HDR
 
-			baseColor.rgb += team_color;					
+			baseColor.rgb += team_color;
 			baseColor.rgb = max(baseColor.rgb, vec3(0.0));	// We need to make sure that nothing here ever goes negative
 			specColor.rgb += team_color;
 			specColor.rgb = max(specColor.rgb, vec3(0.03));
-			
+
 			#prereplace IF_FLAG MODEL_SDR_FLAG_HDR
 				baseColor.rgb = srgb_to_linear(baseColor.rgb);
 				specColor.rgb = srgb_to_linear(specColor.rgb);
@@ -347,12 +385,13 @@ void main()
 		#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_LIGHT
 	#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_DEFERRED
 
+	// Glow map
 	#prereplace IF_FLAG MODEL_SDR_FLAG_GLOW
 		vec3 glowColor = texture(sGlowmap, vec3(texCoord, float(sGlowmapIndex))).rgb;
 		#prereplace IF_FLAG MODEL_SDR_FLAG_MISC
 			#prereplace IF_FLAG MODEL_SDR_FLAG_TEAMCOLOR
 				float glowColorLuminance = dot(glowColor, vec3(0.299, 0.587, 0.114));
-				glowColor = team_glow_enabled ? mix(max(team_color_glow, vec3(0.0)), glowColor, clamp(glowColorLuminance - teamMask.b - teamMask.a, 0.0, 1.0)) : glowColor;
+				glowColor = (team_glow_enabled != 0) ? mix(max(team_color_glow, vec3(0.0)), glowColor, clamp(glowColorLuminance - teamMask.b - teamMask.a, 0.0, 1.0)) : glowColor;
 			#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_TEAMCOLOR
 		#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_MISC
 		#prereplace IF_FLAG MODEL_SDR_FLAG_HDR
@@ -381,12 +420,14 @@ void main()
 		specColor.rgb *= vertIn.fogDist;
 	#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_FOG
 
+	// Desaturation
 	#prereplace IF_FLAG MODEL_SDR_FLAG_DIFFUSE
 		if(desaturate == 1) {
 			baseColor.rgb = color.rgb * dot(vec3(1.0), baseColor.rgb) * 0.3333333;
 		}
 	#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_DIFFUSE
-	
+
+	// Ship effects
 	if (effect_num == 0) {
 		float shinefactor = 1.0/(1.0 + pow(abs((fract(abs(texCoord.x))-anim_timer) * 1000.0), 2.0)) * 1000.0;
 		emissiveColor.rgb += vec3(shinefactor);
@@ -428,12 +469,18 @@ void main()
 
 	fragOut0 = baseColor;
 
+#ifdef VULKAN
+	// Vulkan has undefined values for unwritten outputs; zero-init G-buffer outputs
+	fragOut1 = vec4(0.0);
+	fragOut2 = vec4(0.0);
+	fragOut3 = vec4(0.0);
+	fragOut4 = vec4(0.0);
+#endif
 	#prereplace IF_FLAG MODEL_SDR_FLAG_DEFERRED
 		fragOut1 = vec4(vertIn.position.xy, compress_depth_value(vertIn.position.z), aoFactors.x);
 		fragOut2 = vec4(normal, glossData);
 		fragOut3 = vec4(specColor.rgb, fresnelFactor);
 		fragOut4 = emissiveColor;
 	#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_DEFERRED
-
 	#endif
 }

@@ -12,6 +12,7 @@
 #include "ShaderProgram.h"
 
 #include "cfile/cfile.h"
+#include "graphics/shader_preprocess.h"
 #include "cmdline/cmdline.h"
 #include "def_files/def_files.h"
 #include "graphics/2d.h"
@@ -81,141 +82,6 @@ opengl_uniform_block_binding GL_uniform_blocks[] = {
  * Static lookup reference for shader uniforms
  * When adding a new shader, list all associated uniforms and attributes here
  */
-// clang-format off
-static opengl_shader_type_t GL_shader_types[] = {
-	{ SDR_TYPE_MODEL, "main-v.sdr", "main-f.sdr", "main-g.sdr",
-		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD, opengl_vert_attrib::NORMAL, opengl_vert_attrib::TANGENT, opengl_vert_attrib::MODEL_ID }, "Model Rendering", false },
-
-	{ SDR_TYPE_EFFECT_PARTICLE, "effect-v.sdr", "effect-f.sdr", "effect-g.sdr",
-		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD, opengl_vert_attrib::RADIUS, opengl_vert_attrib::COLOR }, "Particle Effects", false },
-
-	{ SDR_TYPE_EFFECT_DISTORTION, "effect-distort-v.sdr", "effect-distort-f.sdr", 0,
-		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD, opengl_vert_attrib::RADIUS, opengl_vert_attrib::COLOR }, "Distortion Effects", false },
-
-	{ SDR_TYPE_POST_PROCESS_MAIN, "post-v.sdr", "post-f.sdr", 0,
-		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Post Processing", false },
-
-	{ SDR_TYPE_POST_PROCESS_BLUR, "post-v.sdr", "blur-f.sdr", 0,
-		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Gaussian Blur", false },
-
-	{ SDR_TYPE_POST_PROCESS_BLOOM_COMP, "post-v.sdr", "bloom-comp-f.sdr", 0,
-		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Bloom Compositing", false },
-
-	{ SDR_TYPE_POST_PROCESS_BRIGHTPASS, "post-v.sdr", "brightpass-f.sdr", 0,
-		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Bloom Brightpass", false },
-
-	{ SDR_TYPE_POST_PROCESS_FXAA, "fxaa-v.sdr", "fxaa-f.sdr", 0,
-		{ opengl_vert_attrib::POSITION }, "FXAA", false },
-
-	{ SDR_TYPE_POST_PROCESS_FXAA_PREPASS, "post-v.sdr", "fxaapre-f.sdr", 0,
-		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "FXAA Prepass", false },
-
-	{ SDR_TYPE_POST_PROCESS_LIGHTSHAFTS, "post-v.sdr", "ls-f.sdr", 0,
-		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Lightshafts", false },
-
-	{ SDR_TYPE_POST_PROCESS_TONEMAPPING, "post-v.sdr", "tonemapping-f.sdr", 0,
-		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Tonemapping", false },
-
-	{ SDR_TYPE_DEFERRED_LIGHTING, "deferred-v.sdr", "deferred-f.sdr", 0,
-		{ opengl_vert_attrib::POSITION }, "Deferred Lighting", false },
-
-	{ SDR_TYPE_DEFERRED_CLEAR, "deferred-clear-v.sdr", "deferred-clear-f.sdr", 0,
-		{ opengl_vert_attrib::POSITION }, "Clear Deferred Lighting Buffer", false },
-
-	{ SDR_TYPE_VIDEO_PROCESS, "video-v.sdr", "video-f.sdr", 0,
-		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Video Playback", false },
-
-	{ SDR_TYPE_PASSTHROUGH_RENDER, "passthrough-v.sdr", "passthrough-f.sdr", 0,
-		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD, opengl_vert_attrib::COLOR }, "Passthrough", false },
-
-	{ SDR_TYPE_SHIELD_DECAL, "shield-impact-v.sdr",	"shield-impact-f.sdr", 0,
-		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::NORMAL }, "Shield Decals", false },
-
-	{ SDR_TYPE_BATCHED_BITMAP, "batched-v.sdr", "batched-f.sdr", nullptr,
-		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD, opengl_vert_attrib::COLOR }, "Batched bitmaps", false },
-
-	{ SDR_TYPE_DEFAULT_MATERIAL, "default-material.vert.spv.glsl", "default-material.frag.spv.glsl", nullptr,
-		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD, opengl_vert_attrib::COLOR }, "Default material", true },
-
-	{ SDR_TYPE_NANOVG, "nanovg-v.sdr", "nanovg-f.sdr", nullptr,
-		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "NanoVG shader", false },
-
-	{ SDR_TYPE_DECAL, "decal-v.sdr", "decal-f.sdr", nullptr,
-		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::MODEL_MATRIX }, "Decal rendering", false },
-
-	{ SDR_TYPE_SCENE_FOG, "post-v.sdr", "fog-f.sdr", nullptr,
-		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Scene fogging", false },
-
-	{ SDR_TYPE_VOLUMETRIC_FOG, "post-v.sdr", "volumetric-f.sdr", nullptr,
-		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Volumetric fogging", false },
-
-	{ SDR_TYPE_ROCKET_UI, "rocketui-v.sdr",	"rocketui-f.sdr", nullptr,
-		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::COLOR, opengl_vert_attrib::TEXCOORD }, "libRocket UI", false },
-
-	{ SDR_TYPE_COPY, "post-v.sdr",	"copy-f.sdr", nullptr,
-		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Texture copy", false },
-
-	{ SDR_TYPE_COPY_WORLD, "passthrough-v.sdr",	"copy-f.sdr", nullptr,
-		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Texture copy world space", false },
-
-	{ SDR_TYPE_MSAA_RESOLVE, "post-v.sdr",	"msaa-f.sdr", nullptr,
-		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "MSAA resolve shader", false },
-
-	{ SDR_TYPE_POST_PROCESS_SMAA_EDGE, "smaa-edge-v.sdr", "smaa-edge-f.sdr", nullptr,
-		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "SMAA Edge detection", false },
-
-	{ SDR_TYPE_POST_PROCESS_SMAA_BLENDING_WEIGHT, "smaa-blend-v.sdr", "smaa-blend-f.sdr", nullptr,
-		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "SMAA Blending weight calculation", false },
-
-	{ SDR_TYPE_POST_PROCESS_SMAA_NEIGHBORHOOD_BLENDING, "smaa-neighbour-v.sdr", "smaa-neighbour-f.sdr", nullptr,
-		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "SMAA Neighborhood Blending", false },
-
-	{ SDR_TYPE_ENVMAP_SPHERE_WARP, "post-v.sdr", "envmap-sphere-warp-f.sdr", nullptr,
-		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Environment Map Export", false },
-
-	{ SDR_TYPE_IRRADIANCE_MAP_GEN, "post-v.sdr", "irrmap-f.sdr", nullptr,
-		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Irradiance Map Generation", false },
-};
-// clang-format on
-
-/**
- * Static lookup reference for shader variant uniforms
- * When adding a new shader variant for a shader, list all associated uniforms and attributes here
- */
-static opengl_shader_variant_t GL_shader_variants[] = {
-//Model shader flags, both those set always as a compile flag as well as those that are usually runtime checks, need to be defined in this file
-#define MODEL_SDR_FLAG_MODE_CPP_ARRAY
-#include "def_files/data/effects/model_shader_flags.h"
-#undef MODEL_SDR_FLAG_MODE_CPP_ARRAY
-
-	{SDR_TYPE_EFFECT_PARTICLE, true, SDR_FLAG_PARTICLE_POINT_GEN, "FLAG_EFFECT_GEOMETRY", {opengl_vert_attrib::UVEC}, "Geometry shader point-based particles"},
-
-	{SDR_TYPE_DEFERRED_LIGHTING, false, SDR_FLAG_ENV_MAP, "ENV_MAP", {}, "Render ambient light with env and irrmaps"},
-
-	{SDR_TYPE_POST_PROCESS_BLUR, false, SDR_FLAG_BLUR_HORIZONTAL, "PASS_0", {}, "Horizontal blur pass"},
-
-	{SDR_TYPE_POST_PROCESS_BLUR, false, SDR_FLAG_BLUR_VERTICAL, "PASS_1", {}, "Vertical blur pass"},
-
-	{SDR_TYPE_NANOVG, false, SDR_FLAG_NANOVG_EDGE_AA, "EDGE_AA", {}, "NanoVG edge anti-alias"},
-
-	{SDR_TYPE_DECAL, false, SDR_FLAG_DECAL_USE_NORMAL_MAP, "USE_NORMAL_MAP", {}, "Decal use scene normal map"},
-
-	{SDR_TYPE_MSAA_RESOLVE, false, SDR_FLAG_MSAA_SAMPLES_4, "SAMPLES_4", {}, "Sets the MSAA resolve shader to 4 samples"},
-
-	{SDR_TYPE_MSAA_RESOLVE, false, SDR_FLAG_MSAA_SAMPLES_8, "SAMPLES_8", {}, "Sets the MSAA resolve shader to 8 samples"},
-
-	{SDR_TYPE_MSAA_RESOLVE, false, SDR_FLAG_MSAA_SAMPLES_16, "SAMPLES_16", {}, "Sets the MSAA resolve shader to 16 samples"},
-
-	{SDR_TYPE_VOLUMETRIC_FOG, false, SDR_FLAG_VOLUMETRICS_DO_EDGE_SMOOTHING, "DO_EDGE_SMOOTHING", {}, "Perform costly edge smoothing lookups"},
-
-	{SDR_TYPE_VOLUMETRIC_FOG, false, SDR_FLAG_VOLUMETRICS_NOISE, "NOISE", {}, "Add noise to volumetrics"},
-
-	{SDR_TYPE_COPY_WORLD, false, SDR_FLAG_COPY_FROM_ARRAY, "COPY_ARRAY", {}, "Expects to copy from an array texture"},
-
-	{SDR_TYPE_POST_PROCESS_TONEMAPPING, false, SDR_FLAG_TONEMAPPING_LINEAR_OUT, "LINEAR_OUT", {}, "Will make the tonemapper output in linear color space and not in sRGB"}
-};
-
-static const int GL_num_shader_variants = sizeof(GL_shader_variants) / sizeof(opengl_shader_variant_t);
 
 opengl_shader_t *Current_shader = NULL;
 
@@ -305,6 +171,7 @@ static SCP_string opengl_shader_get_header(shader_type type_id, int flags, bool 
 	SCP_stringstream sflags;
 
 	sflags << "#version " << GLSL_version << " core\n";
+	sflags << "#define OPENGL\n";
 
 	if (Detail.lighting < 3) {
 		sflags << "#define FLAG_LIGHT_MODEL_BLINN_PHONG\n";
@@ -322,13 +189,7 @@ static SCP_string opengl_shader_get_header(shader_type type_id, int flags, bool 
 		// ignore looking for variants. main post process, lightshafts, and FXAA shaders need special headers to be hacked in
 		opengl_post_shader_header(sflags, type_id, flags);
 	} else {
-		for (int i = 0; i < GL_num_shader_variants; ++i) {
-			opengl_shader_variant_t &variant = GL_shader_variants[i];
-
-			if (type_id == variant.type_id && flags & variant.flag) {
-				sflags << "#define " << variant.flag_text << "\n";
-			}
-		}
+		sflags << shader_build_variant_defines(type_id, flags);
 	}
 
 	return sflags.str();
@@ -344,258 +205,17 @@ static SCP_string opengl_shader_get_header(shader_type type_id, int flags, bool 
  * @param flags		integer variable holding a combination of SDR_* flags
  * @return			C-string holding the complete shader source code
  */
-static SCP_string opengl_load_shader(const char* filename) {
-	SCP_string content;
-	if (Enable_external_shaders) {
-		CFILE* cf_shader = cfopen(filename, "rt", CF_TYPE_EFFECTS);
-
-		if (cf_shader != NULL) {
-			int len = cfilelength(cf_shader);
-			content.resize(len);
-
-			cfread(&content[0], len + 1, 1, cf_shader);
-			cfclose(cf_shader);
-
-			return content;
-		}
-	}
-
-	//If we're still here, proceed with internals
-	nprintf(("shaders","   Loading built-in default shader for: %s\n", filename));
-	auto def_shader = defaults_get_file(filename);
-	content.assign(reinterpret_cast<const char*>(def_shader.data), def_shader.size);
-
-	return content;
-}
-
-static void handle_includes_impl(SCP_vector<SCP_string>& include_stack,
-								 SCP_stringstream& output,
-								 int& include_counter,
-								 const SCP_string& filename,
-								 const SCP_string& original) {
-	include_stack.emplace_back(filename);
-	auto current_source_number = include_counter + 1;
-
-	const char* INCLUDE_STRING = "#include";
-	const char* CONDITIONAL_INCLUDE_STRING = "#conditional_include";
-	SCP_stringstream input(original);
-
-	int line_num = 1;
-	for (SCP_string line; std::getline(input, line);) {
-		auto include_start = line.find(CONDITIONAL_INCLUDE_STRING);
-
-		if (include_start != SCP_string::npos) {
-			//This is a conditional include. Figure out whether to include, or whether not to.
-			// Conditional include syntax: #conditional_include (+|-)"capability" "filename"
-			// On +, include if capability is available, on -, include if not available
-			include_start += strlen(CONDITIONAL_INCLUDE_STRING) + 1;
-			bool require_capability = true;
-
-			switch(line.at(include_start)) {
-			case '+':
-				require_capability = true;
-				break;
-			case '-':
-				require_capability = false;
-				break;
-			default:
-				Error(LOCATION,
-					"Shader %s:%d: Malformed conditional_include line. Expected + or -, got %c.",
-					filename.c_str(),
-					line_num,
-					line.at(include_start));
-				break;
-			}
-
-			auto first_quote = line.find('"', include_start);
-			auto second_quote = line.find('"', first_quote + 1);
-
-			if (first_quote == SCP_string::npos || second_quote == SCP_string::npos) {
-				Error(LOCATION,
-					"Shader %s:%d: Malformed conditional_include line. Could not find both quote characters for capability.",
-					filename.c_str(),
-					line_num);
-			}
-			auto condition = line.substr(first_quote + 1, second_quote - first_quote - 1);
-			auto capability = std::find_if(&gr_capabilities[0], &gr_capabilities[gr_capabilities_num],
-				[condition](const gr_capability_def &ext_pair) { return !stricmp(ext_pair.parse_name, condition.c_str()); });
-			if (capability == &gr_capabilities[gr_capabilities_num]) {
-				Error(LOCATION,
-					"Shader %s:%d: Malformed conditional_include line. Capability %s does not exist.",
-					filename.c_str(),
-					line_num,
-					condition.c_str());
-			}
-
-			//Prepare for including if capability is correct, skip otherwise.
-			if(gr_is_capable(capability->capability) == require_capability)
-				include_start = second_quote + 1 - strlen(INCLUDE_STRING);
-			else
-				include_start = SCP_string::npos - 1;
-		}
-		else {
-			//Only search for normal includes if it's not a conditional include.
-			include_start = line.find(INCLUDE_STRING);
-		}
-
-		if (include_start != SCP_string::npos && include_start != SCP_string::npos - 1) {
-			auto first_quote = line.find('"', include_start + strlen(INCLUDE_STRING));
-			auto second_quote = line.find('"', first_quote + 1);
-
-			if (first_quote == SCP_string::npos || second_quote == SCP_string::npos) {
-				Error(LOCATION,
-					  "Shader %s:%d: Malformed include line. Could not find both quote characters.",
-					  filename.c_str(),
-					  line_num);
-			}
-
-			auto file_name = line.substr(first_quote + 1, second_quote - first_quote - 1);
-			auto existing_name = std::find_if(include_stack.begin(), include_stack.end(), [&file_name](const SCP_string& str) {
-				return str == file_name;
-			});
-			if (existing_name != include_stack.end()) {
-				SCP_stringstream stack_string;
-				for (auto& name : include_stack) {
-					stack_string << "\t" << name << "\n";
-				}
-
-				Error(LOCATION,
-					  "Shader %s:%d: Detected cyclic include! Previous includes (top level file first):\n%s",
-					  filename.c_str(),
-					  line_num,
-					  stack_string.str().c_str());
-			}
-
-			++include_counter;
-			// The second parameter defines which source string we are currently working with. We keep track of how many
-			// excludes have been in the file so far to specify this
-			output << "#line 1 " << include_counter + 1 << "\n";
-
-			handle_includes_impl(include_stack,
-								 output,
-								 include_counter,
-								 file_name,
-								 opengl_load_shader(file_name.c_str()));
-
-			// We are done with the include file so now we can return to the original file
-			output << "#line " << line_num + 1 << " " << current_source_number << "\n";
-		} else if (include_start != SCP_string::npos - 1) {
-			output << line << "\n";
-		}
-
-		++line_num;
-	}
-
-	include_stack.pop_back();
-}
-
-static SCP_string handle_includes(const char* filename, const SCP_string& original) {
-	SCP_stringstream output;
-	SCP_vector<SCP_string> include_stack;
-	auto include_counter = 0;
-
-	handle_includes_impl(include_stack, output, include_counter, filename, original);
-
-	return output.str();
-}
-
-static SCP_string handle_predefines(const char* filename, const SCP_string& original){
-	SCP_stringstream output;
-	SCP_unordered_map<SCP_string, SCP_string> defines;
-
-	//In any shader, define GLOBAL_FAR_Z
-	output << "#define GLOBAL_FAR_Z " << std::fixed << std::setprecision(2) << Max_draw_distance << std::defaultfloat << '\n';
-
-	const char* PREDEFINE_STRING = "#predefine";
-	const char* PREREPLACE_STRING = "#prereplace";
-
-	SCP_stringstream input(original);
-	for (SCP_string line; std::getline(input, line);) {
-		auto predefine_start = line.find(PREDEFINE_STRING);
-		auto prereplace_start = line.find(PREREPLACE_STRING);
-
-		if (predefine_start != SCP_string::npos){
-			predefine_start += strlen(PREDEFINE_STRING);
-
-			auto token_start = line.find(' ', predefine_start);
-			auto token_end =  line.find(' ', token_start + 1);
-
-			if (token_start == SCP_string::npos || token_end == SCP_string::npos) {
-				Error(LOCATION,
-					"Shader %s: Malformed predefine line. Could not find define token.",
-					filename);
-			}
-
-			auto token = line.substr(token_start + 1, token_end - token_start - 1);
-			auto replaceWith = line.substr(token_end + 1);
-
-			auto replaceStrToken = replaceWith.find("%s");
-			if (replaceStrToken == SCP_string::npos || replaceWith.find("%s", replaceStrToken + 1) != SCP_string::npos){
-				Error(LOCATION,
-					"Shader %s: Malformed predefine line. Replacing string must have exactly one %%s.",
-					filename);
-			}
-			if (defines.find(token) != defines.end()) {
-				Error(LOCATION,
-					"Shader %s: Malformed predefine line. Token %s is already defined.",
-					filename,
-					token.c_str());
-			}
-
-			defines.emplace(std::move(token), std::move(replaceWith));
-
-			output << "\n"; //At this point, don't mess with the linecount
-		}
-		else if (prereplace_start != SCP_string::npos){
-			prereplace_start += strlen(PREREPLACE_STRING);
-
-			auto token_start = line.find(' ', prereplace_start);
-			auto token_end =  line.find(' ', token_start + 1);
-
-			if (token_start == SCP_string::npos || token_end == SCP_string::npos) {
-				Error(LOCATION,
-					"Shader %s: Malformed prereplace line. Could not find define token.",
-					filename);
-			}
-
-			auto token = line.substr(token_start + 1, token_end - token_start - 1);
-			auto replaceArg = line.substr(token_end + 1);
-
-			auto replaceWithIt = defines.find(token);
-			if (replaceWithIt == defines.end()) {
-				Error(LOCATION,
-					"Shader %s: Malformed prereplace line. Could not find token %s.",
-					filename,
-					token.c_str());
-			}
-
-			size_t size = replaceWithIt->second.length() - 1 + replaceArg.size();
-			std::unique_ptr<char[]> buffer = make_unique<char[]>(size);
-
-			snprintf(buffer.get(), size, replaceWithIt->second.c_str(), replaceArg.c_str());
-			buffer[size - 1] = '\0';
-
-			output << buffer.get() << "\n";
-		}
-		else {
-			output << line << "\n";
-		}
-	}
-
-	return output.str();
-}
-
 static SCP_vector<SCP_string>
 opengl_get_shader_content(shader_type type_id, const char* filename, int flags, bool has_geo_shader, bool spirv_shader)
 {
 	SCP_vector<SCP_string> parts;
 	if (spirv_shader) {
 		// No need to add a header here or handle includes since the original compiler did that
-		parts.push_back(opengl_load_shader(filename));
+		parts.push_back(shader_load_source(filename));
 	} else {
 		parts.push_back(opengl_shader_get_header(type_id, flags, has_geo_shader));
 
-		parts.push_back(handle_predefines(filename, handle_includes(filename, opengl_load_shader(filename))));
+		parts.push_back(shader_preprocess_defines(filename, shader_preprocess_includes(filename, shader_load_source(filename))));
 	}
 
 	return parts;
@@ -806,9 +426,9 @@ static void opengl_set_default_uniforms(const opengl_shader_t& sdr) {
 
 void opengl_compile_shader_actual(shader_type sdr, const uint &flags, opengl_shader_t &new_shader)
 {
-	opengl_shader_type_t *sdr_info = &GL_shader_types[sdr];
+	const ShaderTypeInfo *sdr_info = shader_get_type_info(sdr);
 
-	Assert(sdr_info->type_id == sdr);
+	Assert(sdr_info != nullptr);
 	nprintf(("shaders","Compiling new shader:\n"));
 	nprintf(("shaders","	%s\n", sdr_info->description));
 
@@ -816,27 +436,24 @@ void opengl_compile_shader_actual(shader_type sdr, const uint &flags, opengl_sha
 	bool use_geo_sdr = false;
 
 	// do we even have a geometry shader?
-	if (sdr_info->geo != NULL) {
-		for (int i = 0; i < GL_num_shader_variants; ++i) {
-			opengl_shader_variant_t *variant = &GL_shader_variants[i];
-
-			if (variant->type_id == sdr && flags & variant->flag && variant->use_geometry_sdr) {
+	if (sdr_info->geo != nullptr) {
+		shader_for_each_active_variant(sdr, flags, [&](const ShaderVariantInfo& variant) {
+			if (variant.use_geometry_sdr) {
 				use_geo_sdr = true;
-				break;
 			}
-		}
+		});
 	}
 
 	auto vert_content =
-		opengl_get_shader_content(sdr_info->type_id, sdr_info->vert, flags, use_geo_sdr, sdr_info->spirv_shader);
+		opengl_get_shader_content(sdr, sdr_info->vert, flags, use_geo_sdr, sdr_info->spirv_shader);
 	auto frag_content =
-		opengl_get_shader_content(sdr_info->type_id, sdr_info->frag, flags, use_geo_sdr, sdr_info->spirv_shader);
+		opengl_get_shader_content(sdr, sdr_info->frag, flags, use_geo_sdr, sdr_info->spirv_shader);
 	SCP_vector<SCP_string> geom_content;
 
 	if (use_geo_sdr) {
 		// read geometry shader
 		geom_content =
-			opengl_get_shader_content(sdr_info->type_id, sdr_info->geo, flags, use_geo_sdr, sdr_info->spirv_shader);
+			opengl_get_shader_content(sdr, sdr_info->geo, flags, use_geo_sdr, sdr_info->spirv_shader);
 	}
 
 	auto shader_hash = get_shader_hash(vert_content, geom_content, frag_content);
@@ -853,7 +470,7 @@ void opengl_compile_shader_actual(shader_type sdr, const uint &flags, opengl_sha
 
 			for (size_t i = 0; i < GL_vertex_attrib_info.size(); ++i) {
 				// Check that the enum values match the position in the vector to make accessing that information more efficient
-				Assertion(GL_vertex_attrib_info[i].attribute_id == (int)i, "Mistmatch between enum values and attribute vector detected!");
+				Assertion(GL_vertex_attrib_info[i].attribute_id == i, "Mistmatch between enum values and attribute vector detected!");
 
 				// assign vert attribute binding locations before we link the shader
 				glBindAttribLocation(program->getShaderHandle(), (GLint)i, GL_vertex_attrib_info[i].name.c_str());
@@ -881,7 +498,7 @@ void opengl_compile_shader_actual(shader_type sdr, const uint &flags, opengl_sha
 		cache_program_binary(program->getShaderHandle(), shader_hash);
 	}
 
-	new_shader.shader = sdr_info->type_id;
+	new_shader.shader = sdr;
 	new_shader.flags = flags;
 	new_shader.program = std::move(program);
 
@@ -902,19 +519,13 @@ void opengl_compile_shader_actual(shader_type sdr, const uint &flags, opengl_sha
 
 	nprintf(("shaders","Shader Variant Features:\n"));
 
-	// initialize all uniforms and attributes that are specific to this variant
-	for (int i = 0; i < GL_num_shader_variants; ++i) {
-		opengl_shader_variant_t &variant = GL_shader_variants[i];
-
-		if (sdr_info->type_id == variant.type_id && variant.flag & flags) {
-			for (auto& attr : variant.attributes) {
-				auto& attr_info = GL_vertex_attrib_info[attr];
-				new_shader.program->initAttribute(attr_info.name, attr_info.default_value);
-			}
-
-			nprintf(("shaders","	%s\n", variant.description));
+	// initialize extra attributes from active variants
+	shader_for_each_active_variant(sdr, flags, [&](const ShaderVariantInfo& v) {
+		for (auto& attr : v.attributes) {
+			new_shader.program->initAttribute(GL_vertex_attrib_info[attr].name, GL_vertex_attrib_info[attr].default_value);
 		}
-	}
+		nprintf(("shaders","	%s\n", v.description));
+	});
 
 	opengl_set_default_uniforms(new_shader);
 }
@@ -1099,8 +710,8 @@ void opengl_shader_set_default_material(bool textured, bool alpha, vec4* clr, fl
 {
 	Current_shader->program->Uniforms.setTextureUniform("baseMap", 0);
 
-	opengl_set_generic_uniform_data<genericData_default_material_vert>(
-		[=](genericData_default_material_vert* data) {
+	opengl_set_generic_uniform_data<genericData_default_material_v_sdr>(
+		[=](genericData_default_material_v_sdr* data) {
 			if (textured) {
 				data->noTexturing  = 0;
 				data->baseMapIndex = array_index;

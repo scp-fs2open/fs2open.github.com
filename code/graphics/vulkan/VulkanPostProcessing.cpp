@@ -1,0 +1,4405 @@
+#include "VulkanPostProcessing.h"
+
+#include <array>
+
+#include "cmdline/cmdline.h"
+#include "gr_vulkan.h"
+#include "VulkanRenderer.h"
+#include "VulkanBuffer.h"
+#include "VulkanDeletionQueue.h"
+#include "VulkanTexture.h"
+#include "VulkanPipeline.h"
+#include "VulkanState.h"
+#include "VulkanDraw.h"
+#include "VulkanDescriptorManager.h"
+#include "graphics/util/uniform_structs.h"
+#include "graphics/util/primitives.h"
+#include "graphics/post_processing.h"
+#include "graphics/grinternal.h"
+#include "graphics/light.h"
+#include "graphics/matrix.h"
+#include "graphics/shadows.h"
+#include "graphics/2d.h"
+#include "bmpman/bmpman.h"
+#include "io/timer.h"
+#include "lighting/lighting_profiles.h"
+#include "lighting/lighting.h"
+#include "math/floating.h"
+#include "math/vecmat.h"
+#include "render/3d.h"
+#include "tracing/tracing.h"
+#include "utils/Random.h"
+#include "nebula/neb.h"
+#include "nebula/volumetrics.h"
+#include "mission/missionparse.h"
+
+extern float Sun_spot;
+extern int Game_subspace_effect;
+extern SCP_vector<light> Lights;
+extern int Num_lights;
+
+
+namespace graphics::vulkan {
+
+// Global post-processor pointer
+static VulkanPostProcessor* g_postProcessor = nullptr;
+
+VulkanPostProcessor* getPostProcessor()
+{
+	return g_postProcessor;
+}
+
+void setPostProcessor(VulkanPostProcessor* pp)
+{
+	g_postProcessor = pp;
+}
+
+bool VulkanPostProcessor::init(vk::Device device, vk::PhysicalDevice physDevice,
+                               VulkanMemoryManager* memMgr, vk::Extent2D extent,
+                               vk::Format depthFormat)
+{
+	if (m_initialized) {
+		return true;
+	}
+
+	m_device = device;
+	m_memoryManager = memMgr;
+	m_extent = extent;
+	m_depthFormat = depthFormat;
+
+	// Verify RGBA16F support for color attachment + sampling
+	{
+		vk::FormatProperties props = physDevice.getFormatProperties(HDR_COLOR_FORMAT);
+		if (!(props.optimalTilingFeatures & vk::FormatFeatureFlagBits::eColorAttachment) ||
+		    !(props.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImage)) {
+			mprintf(("VulkanPostProcessor: RGBA16F not supported for color attachment + sampling!\n"));
+			return false;
+		}
+	}
+
+	// Create HDR scene color target (RGBA16F)
+	// eTransferSrc needed for copy_effect_texture (mid-scene snapshot)
+	// eTransferDst needed for deferred_lighting_finish (emissive→color copy)
+	if (!createImage(extent.width, extent.height, HDR_COLOR_FORMAT,
+	                 vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled
+	                 | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst,
+	                 vk::ImageAspectFlagBits::eColor,
+	                 m_sceneColor.image, m_sceneColor.view, m_sceneColor.allocation)) {
+		mprintf(("VulkanPostProcessor: Failed to create scene color image!\n"));
+		return false;
+	}
+	m_sceneColor.format = HDR_COLOR_FORMAT;
+	m_sceneColor.width = extent.width;
+	m_sceneColor.height = extent.height;
+
+	// Create scene depth target
+	if (!createImage(extent.width, extent.height, depthFormat,
+	                 vk::ImageUsageFlagBits::eDepthStencilAttachment
+	                 | vk::ImageUsageFlagBits::eSampled
+	                 | vk::ImageUsageFlagBits::eTransferSrc,
+	                 vk::ImageAspectFlagBits::eDepth,  // View uses depth-only aspect
+	                 m_sceneDepth.image, m_sceneDepth.view, m_sceneDepth.allocation)) {
+		mprintf(("VulkanPostProcessor: Failed to create scene depth image!\n"));
+		shutdown();
+		return false;
+	}
+	m_sceneDepth.format = depthFormat;
+	m_sceneDepth.width = extent.width;
+	m_sceneDepth.height = extent.height;
+
+	// Create effect/composite texture (RGBA16F, snapshot of scene color for distortion/soft particles)
+	if (!createImage(extent.width, extent.height, HDR_COLOR_FORMAT,
+	                 vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
+	                 vk::ImageAspectFlagBits::eColor,
+	                 m_sceneEffect.image, m_sceneEffect.view, m_sceneEffect.allocation)) {
+		mprintf(("VulkanPostProcessor: Failed to create scene effect image!\n"));
+		shutdown();
+		return false;
+	}
+	m_sceneEffect.format = HDR_COLOR_FORMAT;
+	m_sceneEffect.width = extent.width;
+	m_sceneEffect.height = extent.height;
+
+	// Create scene depth copy (samplable copy for soft particles)
+	// Same depth format, usage: eTransferDst (copy target) + eSampled (fragment shader reads)
+	if (!createImage(extent.width, extent.height, depthFormat,
+	                 vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
+	                 vk::ImageAspectFlagBits::eDepth,
+	                 m_sceneDepthCopy.image, m_sceneDepthCopy.view, m_sceneDepthCopy.allocation)) {
+		mprintf(("VulkanPostProcessor: Failed to create scene depth copy image!\n"));
+		shutdown();
+		return false;
+	}
+	m_sceneDepthCopy.format = depthFormat;
+	m_sceneDepthCopy.width = extent.width;
+	m_sceneDepthCopy.height = extent.height;
+
+	// Create HDR scene render pass
+	// Attachment 0: Color (RGBA16F)
+	//   loadOp=eClear: clear to black each frame
+	//   finalLayout=eShaderReadOnlyOptimal: ready for post-processing sampling
+	// Attachment 1: Depth
+	//   loadOp=eClear: clear to far plane
+	//   finalLayout=eDepthStencilAttachmentOptimal
+	{
+		std::array<vk::AttachmentDescription, 2> attachments;
+
+		// Color
+		attachments[0].format = HDR_COLOR_FORMAT;
+		attachments[0].samples = vk::SampleCountFlagBits::e1;
+		attachments[0].loadOp = vk::AttachmentLoadOp::eClear;
+		attachments[0].storeOp = vk::AttachmentStoreOp::eStore;
+		attachments[0].stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
+		attachments[0].stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
+		attachments[0].initialLayout = vk::ImageLayout::eUndefined;
+		attachments[0].finalLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+
+		// Depth — storeOp=eStore required for:
+		// 1. copy_effect_texture mid-scene interruption (depth must survive render pass end/resume)
+		// 2. lightshafts pass (samples scene depth after render pass ends)
+		attachments[1].format = depthFormat;
+		attachments[1].samples = vk::SampleCountFlagBits::e1;
+		attachments[1].loadOp = vk::AttachmentLoadOp::eClear;
+		attachments[1].storeOp = vk::AttachmentStoreOp::eStore;
+		attachments[1].stencilLoadOp = vk::AttachmentLoadOp::eClear;
+		attachments[1].stencilStoreOp = vk::AttachmentStoreOp::eStore;
+		attachments[1].initialLayout = vk::ImageLayout::eUndefined;
+		attachments[1].finalLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+
+		vk::AttachmentReference colorRef;
+		colorRef.attachment = 0;
+		colorRef.layout = vk::ImageLayout::eColorAttachmentOptimal;
+
+		vk::AttachmentReference depthRef;
+		depthRef.attachment = 1;
+		depthRef.layout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+
+		vk::SubpassDescription subpass;
+		subpass.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
+		subpass.colorAttachmentCount = 1;
+		subpass.pColorAttachments = &colorRef;
+		subpass.pDepthStencilAttachment = &depthRef;
+
+		// Dependency: external → subpass 0
+		// Includes eTransfer in srcStageMask so this render pass is compatible with
+		// m_sceneRenderPassLoad (which follows copy_effect_texture transfer ops).
+		// Vulkan requires render passes sharing a framebuffer to have identical dependencies.
+		vk::SubpassDependency dependency;
+		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+		dependency.dstSubpass = 0;
+		dependency.srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput
+		                        | vk::PipelineStageFlagBits::eEarlyFragmentTests
+		                        | vk::PipelineStageFlagBits::eTransfer;
+		dependency.dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput
+		                        | vk::PipelineStageFlagBits::eEarlyFragmentTests;
+		dependency.srcAccessMask = vk::AccessFlagBits::eTransferRead;
+		dependency.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite
+		                         | vk::AccessFlagBits::eDepthStencilAttachmentWrite
+		                         | vk::AccessFlagBits::eDepthStencilAttachmentRead;
+
+		vk::RenderPassCreateInfo rpInfo;
+		rpInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+		rpInfo.pAttachments = attachments.data();
+		rpInfo.subpassCount = 1;
+		rpInfo.pSubpasses = &subpass;
+		rpInfo.dependencyCount = 1;
+		rpInfo.pDependencies = &dependency;
+
+		try {
+			m_sceneRenderPass = m_device.createRenderPass(rpInfo);
+		} catch (const vk::SystemError& e) {
+			mprintf(("VulkanPostProcessor: Failed to create scene render pass: %s\n", e.what()));
+			shutdown();
+			return false;
+		}
+	}
+
+	// Create scene render pass with loadOp=eLoad (for resuming after copy_effect_texture)
+	// Compatible with m_sceneRenderPass (same formats/samples) so shares the same framebuffer
+	{
+		std::array<vk::AttachmentDescription, 2> attachments;
+
+		// Color — load existing content, keep final layout for post-processing
+		attachments[0].format = HDR_COLOR_FORMAT;
+		attachments[0].samples = vk::SampleCountFlagBits::e1;
+		attachments[0].loadOp = vk::AttachmentLoadOp::eLoad;
+		attachments[0].storeOp = vk::AttachmentStoreOp::eStore;
+		attachments[0].stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
+		attachments[0].stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
+		attachments[0].initialLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		attachments[0].finalLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+
+		// Depth — load existing content
+		attachments[1].format = depthFormat;
+		attachments[1].samples = vk::SampleCountFlagBits::e1;
+		attachments[1].loadOp = vk::AttachmentLoadOp::eLoad;
+		attachments[1].storeOp = vk::AttachmentStoreOp::eStore;
+		attachments[1].stencilLoadOp = vk::AttachmentLoadOp::eLoad;
+		attachments[1].stencilStoreOp = vk::AttachmentStoreOp::eStore;
+		attachments[1].initialLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+		attachments[1].finalLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+
+		vk::AttachmentReference colorRef;
+		colorRef.attachment = 0;
+		colorRef.layout = vk::ImageLayout::eColorAttachmentOptimal;
+
+		vk::AttachmentReference depthRef;
+		depthRef.attachment = 1;
+		depthRef.layout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+
+		vk::SubpassDescription subpass;
+		subpass.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
+		subpass.colorAttachmentCount = 1;
+		subpass.pColorAttachments = &colorRef;
+		subpass.pDepthStencilAttachment = &depthRef;
+
+		// Must match m_sceneRenderPass dependency exactly for render pass compatibility
+		vk::SubpassDependency dependency;
+		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+		dependency.dstSubpass = 0;
+		dependency.srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput
+		                        | vk::PipelineStageFlagBits::eEarlyFragmentTests
+		                        | vk::PipelineStageFlagBits::eTransfer;
+		dependency.dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput
+		                        | vk::PipelineStageFlagBits::eEarlyFragmentTests;
+		dependency.srcAccessMask = vk::AccessFlagBits::eTransferRead;
+		dependency.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite
+		                         | vk::AccessFlagBits::eDepthStencilAttachmentWrite
+		                         | vk::AccessFlagBits::eDepthStencilAttachmentRead;
+
+		vk::RenderPassCreateInfo rpInfo;
+		rpInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+		rpInfo.pAttachments = attachments.data();
+		rpInfo.subpassCount = 1;
+		rpInfo.pSubpasses = &subpass;
+		rpInfo.dependencyCount = 1;
+		rpInfo.pDependencies = &dependency;
+
+		try {
+			m_sceneRenderPassLoad = m_device.createRenderPass(rpInfo);
+		} catch (const vk::SystemError& e) {
+			mprintf(("VulkanPostProcessor: Failed to create scene load render pass: %s\n", e.what()));
+			shutdown();
+			return false;
+		}
+	}
+
+	// Create scene framebuffer
+	{
+		std::array<vk::ImageView, 2> fbAttachments = {m_sceneColor.view, m_sceneDepth.view};
+
+		vk::FramebufferCreateInfo fbInfo;
+		fbInfo.renderPass = m_sceneRenderPass;
+		fbInfo.attachmentCount = static_cast<uint32_t>(fbAttachments.size());
+		fbInfo.pAttachments = fbAttachments.data();
+		fbInfo.width = extent.width;
+		fbInfo.height = extent.height;
+		fbInfo.layers = 1;
+
+		try {
+			m_sceneFramebuffer = m_device.createFramebuffer(fbInfo);
+		} catch (const vk::SystemError& e) {
+			mprintf(("VulkanPostProcessor: Failed to create scene framebuffer: %s\n", e.what()));
+			shutdown();
+			return false;
+		}
+	}
+
+	// Create linear sampler for post-processing texture reads
+	{
+		vk::SamplerCreateInfo samplerInfo;
+		samplerInfo.magFilter = vk::Filter::eLinear;
+		samplerInfo.minFilter = vk::Filter::eLinear;
+		samplerInfo.mipmapMode = vk::SamplerMipmapMode::eLinear;
+		samplerInfo.addressModeU = vk::SamplerAddressMode::eClampToEdge;
+		samplerInfo.addressModeV = vk::SamplerAddressMode::eClampToEdge;
+		samplerInfo.addressModeW = vk::SamplerAddressMode::eClampToEdge;
+		samplerInfo.mipLodBias = 0.0f;
+		samplerInfo.anisotropyEnable = VK_FALSE;
+		samplerInfo.compareEnable = VK_FALSE;
+		samplerInfo.minLod = 0.0f;
+		samplerInfo.maxLod = 0.0f;
+		samplerInfo.borderColor = vk::BorderColor::eFloatOpaqueBlack;
+
+		try {
+			m_linearSampler = m_device.createSampler(samplerInfo);
+		} catch (const vk::SystemError& e) {
+			mprintf(("VulkanPostProcessor: Failed to create sampler: %s\n", e.what()));
+			shutdown();
+			return false;
+		}
+	}
+
+	// Create mipmap sampler for bloom textures (supports textureLod)
+	{
+		vk::SamplerCreateInfo samplerInfo;
+		samplerInfo.magFilter = vk::Filter::eLinear;
+		samplerInfo.minFilter = vk::Filter::eLinear;
+		samplerInfo.mipmapMode = vk::SamplerMipmapMode::eLinear;
+		samplerInfo.addressModeU = vk::SamplerAddressMode::eClampToEdge;
+		samplerInfo.addressModeV = vk::SamplerAddressMode::eClampToEdge;
+		samplerInfo.addressModeW = vk::SamplerAddressMode::eClampToEdge;
+		samplerInfo.mipLodBias = 0.0f;
+		samplerInfo.anisotropyEnable = VK_FALSE;
+		samplerInfo.compareEnable = VK_FALSE;
+		samplerInfo.minLod = 0.0f;
+		samplerInfo.maxLod = static_cast<float>(MAX_MIP_BLUR_LEVELS);
+		samplerInfo.borderColor = vk::BorderColor::eFloatOpaqueBlack;
+
+		try {
+			m_mipmapSampler = m_device.createSampler(samplerInfo);
+		} catch (const vk::SystemError& e) {
+			mprintf(("VulkanPostProcessor: Failed to create mipmap sampler: %s\n", e.what()));
+			shutdown();
+			return false;
+		}
+	}
+
+	// Create persistent UBO for tonemapping parameters
+	{
+		vk::BufferCreateInfo bufInfo;
+		bufInfo.size = sizeof(graphics::generic_data::tonemapping_data);
+		bufInfo.usage = vk::BufferUsageFlagBits::eUniformBuffer;
+		bufInfo.sharingMode = vk::SharingMode::eExclusive;
+
+		try {
+			m_tonemapUBO = m_device.createBuffer(bufInfo);
+		} catch (const vk::SystemError& e) {
+			mprintf(("VulkanPostProcessor: Failed to create tonemap UBO: %s\n", e.what()));
+			shutdown();
+			return false;
+		}
+
+		if (!m_memoryManager->allocateBufferMemory(m_tonemapUBO, MemoryUsage::CpuToGpu, m_tonemapUBOAlloc)) {
+			mprintf(("VulkanPostProcessor: Failed to allocate tonemap UBO memory!\n"));
+			m_device.destroyBuffer(m_tonemapUBO);
+			m_tonemapUBO = nullptr;
+			shutdown();
+			return false;
+		}
+
+		// Write default passthrough tonemapping data (linear, exposure=1.0)
+		auto* mapped = static_cast<graphics::generic_data::tonemapping_data*>(m_memoryManager->mapMemory(m_tonemapUBOAlloc));
+		if (mapped) {
+			memset(mapped, 0, sizeof(graphics::generic_data::tonemapping_data));
+			mapped->exposure = 1.0f;
+			mapped->tonemapper = 0;  // Linear
+			m_memoryManager->unmapMemory(m_tonemapUBOAlloc);
+		}
+	}
+
+	// Initialize bloom resources (non-fatal if it fails)
+	if (!initBloom()) {
+		mprintf(("VulkanPostProcessor: Bloom initialization failed (non-fatal)\n"));
+	}
+
+	// Initialize LDR targets for tonemapping + FXAA (non-fatal if it fails)
+	if (!initLDRTargets()) {
+		mprintf(("VulkanPostProcessor: LDR target initialization failed (non-fatal)\n"));
+	}
+
+	// Initialize distortion ping-pong textures (non-fatal if it fails)
+	{
+		bool distOk = true;
+		for (size_t i = 0; i < m_distortionTex.size(); i++) {
+			if (!createImage(32, 32, LDR_COLOR_FORMAT,
+			                 vk::ImageUsageFlagBits::eTransferSrc
+			                 | vk::ImageUsageFlagBits::eTransferDst
+			                 | vk::ImageUsageFlagBits::eSampled,
+			                 vk::ImageAspectFlagBits::eColor,
+			                 m_distortionTex[i].image, m_distortionTex[i].view,
+			                 m_distortionTex[i].allocation)) {
+				mprintf(("VulkanPostProcessor: Failed to create distortion texture %zu\n", i));
+				distOk = false;
+				break;
+			}
+			m_distortionTex[i].format = LDR_COLOR_FORMAT;
+			m_distortionTex[i].width = 32;
+			m_distortionTex[i].height = 32;
+		}
+
+		if (distOk) {
+			// Create LINEAR/REPEAT sampler for distortion textures
+			vk::SamplerCreateInfo samplerInfo;
+			samplerInfo.magFilter = vk::Filter::eLinear;
+			samplerInfo.minFilter = vk::Filter::eLinear;
+			samplerInfo.mipmapMode = vk::SamplerMipmapMode::eNearest;
+			samplerInfo.addressModeU = vk::SamplerAddressMode::eRepeat;
+			samplerInfo.addressModeV = vk::SamplerAddressMode::eRepeat;
+			samplerInfo.addressModeW = vk::SamplerAddressMode::eRepeat;
+			samplerInfo.mipLodBias = 0.0f;
+			samplerInfo.anisotropyEnable = VK_FALSE;
+			samplerInfo.compareEnable = VK_FALSE;
+			samplerInfo.minLod = 0.0f;
+			samplerInfo.maxLod = 0.0f;
+			samplerInfo.borderColor = vk::BorderColor::eFloatOpaqueBlack;
+
+			try {
+				m_distortionSampler = m_device.createSampler(samplerInfo);
+				m_distortionInitialized = true;
+				mprintf(("VulkanPostProcessor: Distortion textures initialized\n"));
+			} catch (const vk::SystemError& e) {
+				mprintf(("VulkanPostProcessor: Failed to create distortion sampler: %s\n", e.what()));
+			}
+		}
+	}
+
+	// Initialize G-buffer for deferred lighting (non-fatal)
+	if (!initGBuffer()) {
+		mprintf(("VulkanPostProcessor: G-buffer initialization failed (non-fatal)\n"));
+	}
+
+	// Initialize MSAA resources if MSAA is enabled and G-buffer is ready
+	if (m_gbufInitialized && Cmdline_msaa_enabled > 0) {
+		if (!initMSAA()) {
+			mprintf(("VulkanPostProcessor: MSAA initialization failed (non-fatal, disabling MSAA)\n"));
+			Cmdline_msaa_enabled = 0;
+		}
+	}
+
+	m_initialized = true;
+	mprintf(("VulkanPostProcessor: Initialized (%ux%u, RGBA16F scene color)\n",
+		extent.width, extent.height));
+	return true;
+}
+
+void VulkanPostProcessor::shutdown()
+{
+	if (m_device) {
+		m_device.waitIdle();
+
+		shutdownFogPass();
+		shutdownShadowPass();
+		shutdownMSAA();
+		shutdownLightVolumes();
+		shutdownGBuffer();
+		shutdownLDRTargets();
+		shutdownBloom();
+
+		if (m_mipmapSampler) {
+			m_device.destroySampler(m_mipmapSampler);
+			m_mipmapSampler = nullptr;
+		}
+
+		if (m_tonemapUBO) {
+			m_device.destroyBuffer(m_tonemapUBO);
+			m_tonemapUBO = nullptr;
+		}
+		if (m_tonemapUBOAlloc.isValid()) {
+			m_memoryManager->freeAllocation(m_tonemapUBOAlloc);
+		}
+
+		if (m_linearSampler) {
+			m_device.destroySampler(m_linearSampler);
+			m_linearSampler = nullptr;
+		}
+		if (m_sceneFramebuffer) {
+			m_device.destroyFramebuffer(m_sceneFramebuffer);
+			m_sceneFramebuffer = nullptr;
+		}
+		if (m_sceneRenderPassLoad) {
+			m_device.destroyRenderPass(m_sceneRenderPassLoad);
+			m_sceneRenderPassLoad = nullptr;
+		}
+		if (m_sceneRenderPass) {
+			m_device.destroyRenderPass(m_sceneRenderPass);
+			m_sceneRenderPass = nullptr;
+		}
+
+		// Destroy scene effect/composite target
+		if (m_sceneEffect.view) {
+			m_device.destroyImageView(m_sceneEffect.view);
+			m_sceneEffect.view = nullptr;
+		}
+		if (m_sceneEffect.image) {
+			m_device.destroyImage(m_sceneEffect.image);
+			m_sceneEffect.image = nullptr;
+		}
+		if (m_sceneEffect.allocation.isValid()) {
+			m_memoryManager->freeAllocation(m_sceneEffect.allocation);
+		}
+
+		// Destroy scene color target
+		if (m_sceneColor.view) {
+			m_device.destroyImageView(m_sceneColor.view);
+			m_sceneColor.view = nullptr;
+		}
+		if (m_sceneColor.image) {
+			m_device.destroyImage(m_sceneColor.image);
+			m_sceneColor.image = nullptr;
+		}
+		if (m_sceneColor.allocation.isValid()) {
+			m_memoryManager->freeAllocation(m_sceneColor.allocation);
+		}
+
+		// Destroy scene depth target
+		if (m_sceneDepth.view) {
+			m_device.destroyImageView(m_sceneDepth.view);
+			m_sceneDepth.view = nullptr;
+		}
+		if (m_sceneDepth.image) {
+			m_device.destroyImage(m_sceneDepth.image);
+			m_sceneDepth.image = nullptr;
+		}
+		if (m_sceneDepth.allocation.isValid()) {
+			m_memoryManager->freeAllocation(m_sceneDepth.allocation);
+		}
+
+		// Destroy scene depth copy target
+		if (m_sceneDepthCopy.view) {
+			m_device.destroyImageView(m_sceneDepthCopy.view);
+			m_sceneDepthCopy.view = nullptr;
+		}
+		if (m_sceneDepthCopy.image) {
+			m_device.destroyImage(m_sceneDepthCopy.image);
+			m_sceneDepthCopy.image = nullptr;
+		}
+		if (m_sceneDepthCopy.allocation.isValid()) {
+			m_memoryManager->freeAllocation(m_sceneDepthCopy.allocation);
+		}
+
+		// Destroy distortion textures
+		if (m_distortionSampler) {
+			m_device.destroySampler(m_distortionSampler);
+			m_distortionSampler = nullptr;
+		}
+		for (auto & i : m_distortionTex) {
+			if (i.view) {
+				m_device.destroyImageView(i.view);
+				i.view = nullptr;
+			}
+			if (i.image) {
+				m_device.destroyImage(i.image);
+				i.image = nullptr;
+			}
+			if (i.allocation.isValid()) {
+				m_memoryManager->freeAllocation(i.allocation);
+			}
+		}
+		m_distortionInitialized = false;
+	}
+
+	m_initialized = false;
+}
+
+void VulkanPostProcessor::updateTonemappingUBO()
+{
+	if (!m_tonemapUBO || !m_memoryManager) {
+		return;
+	}
+
+	namespace ltp = lighting_profiles;
+
+	auto* mapped = static_cast<graphics::generic_data::tonemapping_data*>(
+		m_memoryManager->mapMemory(m_tonemapUBOAlloc));
+	if (mapped) {
+		auto ppc = ltp::current_piecewise_intermediates();
+		mapped->exposure = ltp::current_exposure();
+		mapped->tonemapper = static_cast<int>(ltp::current_tonemapper());
+		mapped->x0 = ppc.x0;
+		mapped->y0 = ppc.y0;
+		mapped->x1 = ppc.x1;
+		mapped->toe_B = ppc.toe_B;
+		mapped->toe_lnA = ppc.toe_lnA;
+		mapped->sh_B = ppc.sh_B;
+		mapped->sh_lnA = ppc.sh_lnA;
+		mapped->sh_offsetX = ppc.sh_offsetX;
+		mapped->sh_offsetY = ppc.sh_offsetY;
+		m_memoryManager->unmapMemory(m_tonemapUBOAlloc);
+	}
+}
+
+// ===== G-Buffer (Deferred Lighting) Implementation =====
+
+vk::RenderPass VulkanPostProcessor::createGbufRenderPass(const GbufRenderPassConfig& config)
+{
+	// All G-buffer variants share formats; without composite only the first 5 are used
+	static constexpr std::array<vk::Format, GBUF_COLOR_ATTACHMENT_COUNT> COLOR_FORMATS = {{
+		GBUF_FORMAT_COLOR,
+		GBUF_FORMAT_POSITION,
+		GBUF_FORMAT_NORMAL,
+		GBUF_FORMAT_SPECULAR,
+		GBUF_FORMAT_EMISSIVE,
+		GBUF_FORMAT_COMPOSITE,
+	}};
+
+	const uint32_t colorCount = config.includeComposite
+		? GBUF_COLOR_ATTACHMENT_COUNT : MSAA_COLOR_ATTACHMENT_COUNT;
+	const uint32_t depthIndex = colorCount;
+	const uint32_t totalAttachments = colorCount + 1;
+
+	// Max 6 color + 1 depth = 7 attachments
+	std::array<vk::AttachmentDescription, 7> attachments;
+	for (uint32_t i = 0; i < colorCount; ++i) {
+		attachments[i].format = COLOR_FORMATS[i];
+		attachments[i].samples = config.samples;
+		attachments[i].loadOp = config.colorLoadOp;
+		attachments[i].storeOp = vk::AttachmentStoreOp::eStore;
+		attachments[i].stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
+		attachments[i].stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
+		attachments[i].initialLayout = config.colorInitialLayout;
+		attachments[i].finalLayout = config.colorFinalLayout;
+	}
+
+	// Depth — stencil ops mirror the depth loadOp
+	attachments[depthIndex].format = m_depthFormat;
+	attachments[depthIndex].samples = config.samples;
+	attachments[depthIndex].loadOp = config.depthLoadOp;
+	attachments[depthIndex].storeOp = vk::AttachmentStoreOp::eStore;
+	attachments[depthIndex].stencilLoadOp = config.depthLoadOp;
+	attachments[depthIndex].stencilStoreOp =
+		(config.depthLoadOp == vk::AttachmentLoadOp::eDontCare)
+			? vk::AttachmentStoreOp::eDontCare
+			: vk::AttachmentStoreOp::eStore;
+	attachments[depthIndex].initialLayout = config.depthInitialLayout;
+	attachments[depthIndex].finalLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+
+	std::array<vk::AttachmentReference, 6> colorRefs;
+	for (uint32_t i = 0; i < colorCount; ++i) {
+		colorRefs[i].attachment = i;
+		colorRefs[i].layout = vk::ImageLayout::eColorAttachmentOptimal;
+	}
+
+	vk::AttachmentReference depthRef;
+	depthRef.attachment = depthIndex;
+	depthRef.layout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+
+	vk::SubpassDescription subpass;
+	subpass.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
+	subpass.colorAttachmentCount = colorCount;
+	subpass.pColorAttachments = colorRefs.data();
+	subpass.pDepthStencilAttachment = &depthRef;
+
+	vk::SubpassDependency dependency;
+	dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+	dependency.dstSubpass = 0;
+
+	if (config.useResolveDependency) {
+		// MSAA resolve: previous pass read these textures as shader inputs
+		dependency.srcStageMask = vk::PipelineStageFlagBits::eFragmentShader;
+		dependency.dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput
+		                        | vk::PipelineStageFlagBits::eEarlyFragmentTests;
+		dependency.srcAccessMask = vk::AccessFlagBits::eShaderRead;
+		dependency.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite
+		                         | vk::AccessFlagBits::eDepthStencilAttachmentWrite;
+	} else {
+		// Standard G-buffer: previous pass may have done transfers (copies)
+		dependency.srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput
+		                        | vk::PipelineStageFlagBits::eEarlyFragmentTests
+		                        | vk::PipelineStageFlagBits::eTransfer;
+		dependency.dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput
+		                        | vk::PipelineStageFlagBits::eEarlyFragmentTests;
+		dependency.srcAccessMask = vk::AccessFlagBits::eTransferRead
+		                         | vk::AccessFlagBits::eTransferWrite;
+		dependency.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite
+		                         | vk::AccessFlagBits::eDepthStencilAttachmentWrite
+		                         | vk::AccessFlagBits::eDepthStencilAttachmentRead;
+	}
+
+	vk::RenderPassCreateInfo rpInfo;
+	rpInfo.attachmentCount = totalAttachments;
+	rpInfo.pAttachments = attachments.data();
+	rpInfo.subpassCount = 1;
+	rpInfo.pSubpasses = &subpass;
+	rpInfo.dependencyCount = 1;
+	rpInfo.pDependencies = &dependency;
+
+	return m_device.createRenderPass(rpInfo);
+}
+
+vk::Framebuffer VulkanPostProcessor::createGbufFramebuffer(
+	vk::RenderPass renderPass, bool includeComposite, bool useMsaaImages)
+{
+	// Attachment order: color, position, normal, specular, emissive, [composite], depth
+	std::array<vk::ImageView, 7> views;
+	uint32_t count = 0;
+
+	if (useMsaaImages) {
+		views[count++] = m_msaaColor.view;
+		views[count++] = m_msaaPosition.view;
+		views[count++] = m_msaaNormal.view;
+		views[count++] = m_msaaSpecular.view;
+		views[count++] = m_msaaEmissive.view;
+	} else {
+		views[count++] = m_sceneColor.view;
+		views[count++] = m_gbufPosition.view;
+		views[count++] = m_gbufNormal.view;
+		views[count++] = m_gbufSpecular.view;
+		views[count++] = m_gbufEmissive.view;
+	}
+
+	if (includeComposite) {
+		views[count++] = m_gbufComposite.view;
+	}
+
+	views[count++] = useMsaaImages ? m_msaaDepthView : m_sceneDepth.view;
+
+	vk::FramebufferCreateInfo fbInfo;
+	fbInfo.renderPass = renderPass;
+	fbInfo.attachmentCount = count;
+	fbInfo.pAttachments = views.data();
+	fbInfo.width = m_extent.width;
+	fbInfo.height = m_extent.height;
+	fbInfo.layers = 1;
+
+	return m_device.createFramebuffer(fbInfo);
+}
+
+bool VulkanPostProcessor::initGBuffer()
+{
+	if (m_gbufInitialized) {
+		return true;
+	}
+
+	const uint32_t w = m_extent.width;
+	const uint32_t h = m_extent.height;
+	const vk::ImageUsageFlags gbufUsage =
+		vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled
+		| vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst;
+
+	// Create G-buffer images (position, normal, specular, emissive, composite)
+	struct GbufTarget {
+		RenderTarget* target;
+		vk::Format format;
+		const char* name;
+	};
+
+	std::array<GbufTarget, 5> targets = {{
+		{&m_gbufPosition,  GBUF_FORMAT_POSITION,  "position"},
+		{&m_gbufNormal,    GBUF_FORMAT_NORMAL,    "normal"},
+		{&m_gbufSpecular,  GBUF_FORMAT_SPECULAR,  "specular"},
+		{&m_gbufEmissive,  GBUF_FORMAT_EMISSIVE,  "emissive"},
+		{&m_gbufComposite, GBUF_FORMAT_COMPOSITE, "composite"},
+	}};
+
+	for (auto& t : targets) {
+		if (!createImage(w, h, t.format, gbufUsage, vk::ImageAspectFlagBits::eColor,
+		                 t.target->image, t.target->view, t.target->allocation)) {
+			mprintf(("VulkanPostProcessor: Failed to create G-buffer %s image!\n", t.name));
+			shutdownGBuffer();
+			return false;
+		}
+		t.target->format = t.format;
+		t.target->width = w;
+		t.target->height = h;
+	}
+
+	// Create samplable copy of G-buffer normal (for decal angle rejection)
+	{
+		vk::ImageUsageFlags copyUsage = vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst;
+		if (!createImage(w, h, GBUF_FORMAT_NORMAL, copyUsage,
+		                 vk::ImageAspectFlagBits::eColor,
+		                 m_gbufNormalCopy.image, m_gbufNormalCopy.view, m_gbufNormalCopy.allocation)) {
+			mprintf(("VulkanPostProcessor: Failed to create G-buffer normal copy!\n"));
+			shutdownGBuffer();
+			return false;
+		}
+		m_gbufNormalCopy.format = GBUF_FORMAT_NORMAL;
+		m_gbufNormalCopy.width = w;
+		m_gbufNormalCopy.height = h;
+	}
+
+	// Create G-buffer render pass (eClear) — 6 color + depth
+	try {
+		m_gbufRenderPass = createGbufRenderPass({
+			true, vk::SampleCountFlagBits::e1,
+			vk::AttachmentLoadOp::eClear, vk::AttachmentLoadOp::eClear,
+			vk::ImageLayout::eUndefined, vk::ImageLayout::eShaderReadOnlyOptimal,
+			vk::ImageLayout::eUndefined,
+		});
+	} catch (const vk::SystemError& e) {
+		mprintf(("VulkanPostProcessor: Failed to create G-buffer render pass: %s\n", e.what()));
+		shutdownGBuffer();
+		return false;
+	}
+
+	// Create G-buffer render pass (eLoad) — for resuming after mid-pass copies
+	try {
+		m_gbufRenderPassLoad = createGbufRenderPass({
+			true, vk::SampleCountFlagBits::e1,
+			vk::AttachmentLoadOp::eLoad, vk::AttachmentLoadOp::eLoad,
+			vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
+			vk::ImageLayout::eDepthStencilAttachmentOptimal,
+		});
+	} catch (const vk::SystemError& e) {
+		mprintf(("VulkanPostProcessor: Failed to create G-buffer load render pass: %s\n", e.what()));
+		shutdownGBuffer();
+		return false;
+	}
+
+	// Create G-buffer framebuffer (6 color + depth)
+	try {
+		m_gbufFramebuffer = createGbufFramebuffer(m_gbufRenderPass, true, false);
+	} catch (const vk::SystemError& e) {
+		mprintf(("VulkanPostProcessor: Failed to create G-buffer framebuffer: %s\n", e.what()));
+		shutdownGBuffer();
+		return false;
+	}
+
+	m_gbufInitialized = true;
+	mprintf(("VulkanPostProcessor: G-buffer initialized (%ux%u, 6 color + depth)\n", w, h));
+	return true;
+}
+
+void VulkanPostProcessor::shutdownGBuffer()
+{
+	if (!m_device) {
+		return;
+	}
+
+	if (m_gbufFramebuffer) {
+		m_device.destroyFramebuffer(m_gbufFramebuffer);
+		m_gbufFramebuffer = nullptr;
+	}
+	if (m_gbufRenderPassLoad) {
+		m_device.destroyRenderPass(m_gbufRenderPassLoad);
+		m_gbufRenderPassLoad = nullptr;
+	}
+	if (m_gbufRenderPass) {
+		m_device.destroyRenderPass(m_gbufRenderPass);
+		m_gbufRenderPass = nullptr;
+	}
+
+	std::array<RenderTarget*, 6> gbufTargets = {
+		&m_gbufPosition, &m_gbufNormal, &m_gbufSpecular,
+		&m_gbufEmissive, &m_gbufComposite, &m_gbufNormalCopy,
+	};
+	for (auto* rt : gbufTargets) {
+		if (rt->view) {
+			m_device.destroyImageView(rt->view);
+			rt->view = nullptr;
+		}
+		if (rt->image) {
+			m_device.destroyImage(rt->image);
+			rt->image = nullptr;
+		}
+		if (rt->allocation.isValid()) {
+			m_memoryManager->freeAllocation(rt->allocation);
+		}
+	}
+
+	m_gbufInitialized = false;
+}
+
+void VulkanPostProcessor::transitionGbufForResume(vk::CommandBuffer cmd)
+{
+	if (!m_gbufInitialized) {
+		return;
+	}
+
+	// After ending the G-buffer render pass, color attachments 1-5 are in
+	// eShaderReadOnlyOptimal (from finalLayout). The eLoad pass expects
+	// eColorAttachmentOptimal. Transition them in a single barrier batch.
+	std::array<vk::Image, 5> gbufImages = {
+		m_gbufPosition.image,
+		m_gbufNormal.image,
+		m_gbufSpecular.image,
+		m_gbufEmissive.image,
+		m_gbufComposite.image,
+	};
+
+	std::array<vk::ImageMemoryBarrier, 5> barriers;
+	for (size_t i = 0; i < gbufImages.size(); ++i) {
+		barriers[i].srcAccessMask = {};
+		barriers[i].dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
+		barriers[i].oldLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		barriers[i].newLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		barriers[i].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barriers[i].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barriers[i].image = gbufImages[i];
+		barriers[i].subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+		barriers[i].subresourceRange.baseMipLevel = 0;
+		barriers[i].subresourceRange.levelCount = 1;
+		barriers[i].subresourceRange.baseArrayLayer = 0;
+		barriers[i].subresourceRange.layerCount = 1;
+	}
+
+	cmd.pipelineBarrier(
+		vk::PipelineStageFlagBits::eColorAttachmentOutput,
+		vk::PipelineStageFlagBits::eColorAttachmentOutput,
+		{}, nullptr, nullptr, barriers);
+}
+
+// ===== MSAA G-Buffer =====
+
+bool VulkanPostProcessor::initMSAA()
+{
+	if (m_msaaInitialized) {
+		return true;
+	}
+
+	auto* renderer = getRendererInstance();
+	vk::SampleCountFlagBits msaaSamples = renderer->getMsaaSampleCount();
+	if (msaaSamples == vk::SampleCountFlagBits::e1) {
+		return false;
+	}
+
+	const uint32_t w = m_extent.width;
+	const uint32_t h = m_extent.height;
+	const vk::ImageUsageFlags msaaUsage =
+		vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled;
+
+	// Create MSAA color images (5 total: color, position, normal, specular, emissive)
+	struct MsaaTarget {
+		RenderTarget* target;
+		vk::Format format;
+		const char* name;
+	};
+
+	std::array<MsaaTarget, 5> targets = {{
+		{&m_msaaColor,    GBUF_FORMAT_COLOR,    "msaa-color"},
+		{&m_msaaPosition, GBUF_FORMAT_POSITION, "msaa-position"},
+		{&m_msaaNormal,   GBUF_FORMAT_NORMAL,   "msaa-normal"},
+		{&m_msaaSpecular, GBUF_FORMAT_SPECULAR, "msaa-specular"},
+		{&m_msaaEmissive, GBUF_FORMAT_EMISSIVE, "msaa-emissive"},
+	}};
+
+	for (auto& t : targets) {
+		if (!createImage(w, h, t.format, msaaUsage, vk::ImageAspectFlagBits::eColor,
+		                 t.target->image, t.target->view, t.target->allocation, msaaSamples)) {
+			mprintf(("VulkanPostProcessor: Failed to create %s image!\n", t.name));
+			shutdownMSAA();
+			return false;
+		}
+		t.target->format = t.format;
+		t.target->width = w;
+		t.target->height = h;
+	}
+
+	// Create MSAA depth image
+	{
+		vk::ImageCreateInfo imageInfo;
+		imageInfo.imageType = vk::ImageType::e2D;
+		imageInfo.format = m_depthFormat;
+		imageInfo.extent = vk::Extent3D(w, h, 1);
+		imageInfo.mipLevels = 1;
+		imageInfo.arrayLayers = 1;
+		imageInfo.samples = msaaSamples;
+		imageInfo.tiling = vk::ImageTiling::eOptimal;
+		imageInfo.usage = vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled;
+		imageInfo.sharingMode = vk::SharingMode::eExclusive;
+		imageInfo.initialLayout = vk::ImageLayout::eUndefined;
+
+		try {
+			m_msaaDepthImage = m_device.createImage(imageInfo);
+		} catch (const vk::SystemError& e) {
+			mprintf(("VulkanPostProcessor: Failed to create MSAA depth image: %s\n", e.what()));
+			shutdownMSAA();
+			return false;
+		}
+
+		if (!m_memoryManager->allocateImageMemory(m_msaaDepthImage, MemoryUsage::GpuOnly, m_msaaDepthAlloc)) {
+			mprintf(("VulkanPostProcessor: Failed to allocate MSAA depth memory!\n"));
+			m_device.destroyImage(m_msaaDepthImage);
+			m_msaaDepthImage = nullptr;
+			shutdownMSAA();
+			return false;
+		}
+
+		vk::ImageViewCreateInfo viewInfo;
+		viewInfo.image = m_msaaDepthImage;
+		viewInfo.viewType = vk::ImageViewType::e2D;
+		viewInfo.format = m_depthFormat;
+		viewInfo.subresourceRange.aspectMask = imageAspectFromFormat(m_depthFormat);
+		viewInfo.subresourceRange.baseMipLevel = 0;
+		viewInfo.subresourceRange.levelCount = 1;
+		viewInfo.subresourceRange.baseArrayLayer = 0;
+		viewInfo.subresourceRange.layerCount = 1;
+
+		try {
+			m_msaaDepthView = m_device.createImageView(viewInfo);
+		} catch (const vk::SystemError& e) {
+			mprintf(("VulkanPostProcessor: Failed to create MSAA depth view: %s\n", e.what()));
+			shutdownMSAA();
+			return false;
+		}
+	}
+
+	// MSAA G-buffer render pass (eClear) — 5 color + depth
+	try {
+		m_msaaGbufRenderPass = createGbufRenderPass({
+			false, msaaSamples,
+			vk::AttachmentLoadOp::eClear, vk::AttachmentLoadOp::eClear,
+			vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::eColorAttachmentOptimal,
+			vk::ImageLayout::eDepthStencilAttachmentOptimal,
+		});
+	} catch (const vk::SystemError& e) {
+		mprintf(("VulkanPostProcessor: Failed to create MSAA G-buffer render pass: %s\n", e.what()));
+		shutdownMSAA();
+		return false;
+	}
+
+	// MSAA G-buffer render pass (eLoad) — emissive preserving variant
+	try {
+		m_msaaGbufRenderPassLoad = createGbufRenderPass({
+			false, msaaSamples,
+			vk::AttachmentLoadOp::eLoad, vk::AttachmentLoadOp::eLoad,
+			vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::eColorAttachmentOptimal,
+			vk::ImageLayout::eDepthStencilAttachmentOptimal,
+		});
+	} catch (const vk::SystemError& e) {
+		mprintf(("VulkanPostProcessor: Failed to create MSAA G-buffer load render pass: %s\n", e.what()));
+		shutdownMSAA();
+		return false;
+	}
+
+	// MSAA G-buffer framebuffer (5 color + depth)
+	try {
+		m_msaaGbufFramebuffer = createGbufFramebuffer(m_msaaGbufRenderPass, false, true);
+	} catch (const vk::SystemError& e) {
+		mprintf(("VulkanPostProcessor: Failed to create MSAA G-buffer framebuffer: %s\n", e.what()));
+		shutdownMSAA();
+		return false;
+	}
+
+	// Emissive copy render pass — 1 MS color attachment for upsampling non-MSAA → MSAA
+	{
+		vk::AttachmentDescription att;
+		att.format = HDR_COLOR_FORMAT;
+		att.samples = msaaSamples;
+		att.loadOp = vk::AttachmentLoadOp::eDontCare;
+		att.storeOp = vk::AttachmentStoreOp::eStore;
+		att.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
+		att.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
+		att.initialLayout = vk::ImageLayout::eUndefined;
+		att.finalLayout = vk::ImageLayout::eColorAttachmentOptimal;
+
+		vk::AttachmentReference colorRef;
+		colorRef.attachment = 0;
+		colorRef.layout = vk::ImageLayout::eColorAttachmentOptimal;
+
+		vk::SubpassDescription subpass;
+		subpass.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
+		subpass.colorAttachmentCount = 1;
+		subpass.pColorAttachments = &colorRef;
+
+		vk::SubpassDependency dependency;
+		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+		dependency.dstSubpass = 0;
+		dependency.srcStageMask = vk::PipelineStageFlagBits::eFragmentShader;
+		dependency.dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+		dependency.srcAccessMask = vk::AccessFlagBits::eShaderRead;
+		dependency.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
+
+		vk::RenderPassCreateInfo rpInfo;
+		rpInfo.attachmentCount = 1;
+		rpInfo.pAttachments = &att;
+		rpInfo.subpassCount = 1;
+		rpInfo.pSubpasses = &subpass;
+		rpInfo.dependencyCount = 1;
+		rpInfo.pDependencies = &dependency;
+
+		try {
+			m_msaaEmissiveCopyRenderPass = m_device.createRenderPass(rpInfo);
+		} catch (const vk::SystemError& e) {
+			mprintf(("VulkanPostProcessor: Failed to create MSAA emissive copy render pass: %s\n", e.what()));
+			shutdownMSAA();
+			return false;
+		}
+	}
+
+	// Emissive copy framebuffer (MSAA emissive as sole attachment)
+	{
+		vk::ImageView att = m_msaaEmissive.view;
+		vk::FramebufferCreateInfo fbInfo;
+		fbInfo.renderPass = m_msaaEmissiveCopyRenderPass;
+		fbInfo.attachmentCount = 1;
+		fbInfo.pAttachments = &att;
+		fbInfo.width = w;
+		fbInfo.height = h;
+		fbInfo.layers = 1;
+
+		try {
+			m_msaaEmissiveCopyFramebuffer = m_device.createFramebuffer(fbInfo);
+		} catch (const vk::SystemError& e) {
+			mprintf(("VulkanPostProcessor: Failed to create MSAA emissive copy framebuffer: %s\n", e.what()));
+			shutdownMSAA();
+			return false;
+		}
+	}
+
+	// MSAA Resolve render pass — 5 non-MSAA color + depth (via gl_FragDepth)
+	// Writes to the non-MSAA G-buffer images. loadOp=eDontCare (fully overwritten).
+	try {
+		m_msaaResolveRenderPass = createGbufRenderPass({
+			false, vk::SampleCountFlagBits::e1,
+			vk::AttachmentLoadOp::eDontCare, vk::AttachmentLoadOp::eDontCare,
+			vk::ImageLayout::eUndefined, vk::ImageLayout::eShaderReadOnlyOptimal,
+			vk::ImageLayout::eUndefined,
+			true, // useResolveDependency
+		});
+	} catch (const vk::SystemError& e) {
+		mprintf(("VulkanPostProcessor: Failed to create MSAA resolve render pass: %s\n", e.what()));
+		shutdownMSAA();
+		return false;
+	}
+
+	// MSAA Resolve framebuffer — references non-MSAA G-buffer images
+	try {
+		m_msaaResolveFramebuffer = createGbufFramebuffer(m_msaaResolveRenderPass, false, false);
+	} catch (const vk::SystemError& e) {
+		mprintf(("VulkanPostProcessor: Failed to create MSAA resolve framebuffer: %s\n", e.what()));
+		shutdownMSAA();
+		return false;
+	}
+
+	// Create per-frame MSAA resolve UBO (persistently mapped)
+	// Two 256-byte slots (one per frame in flight) hold {int samples; float fov;} data.
+	{
+		vk::BufferCreateInfo bufInfo;
+		bufInfo.size = MAX_FRAMES_IN_FLIGHT * 256;
+		bufInfo.usage = vk::BufferUsageFlagBits::eUniformBuffer;
+		bufInfo.sharingMode = vk::SharingMode::eExclusive;
+
+		try {
+			m_msaaResolveUBO = m_device.createBuffer(bufInfo);
+		} catch (const vk::SystemError& e) {
+			mprintf(("VulkanPostProcessor: Failed to create MSAA resolve UBO: %s\n", e.what()));
+			shutdownMSAA();
+			return false;
+		}
+
+		if (!m_memoryManager->allocateBufferMemory(m_msaaResolveUBO, MemoryUsage::CpuToGpu, m_msaaResolveUBOAlloc)) {
+			mprintf(("VulkanPostProcessor: Failed to allocate MSAA resolve UBO memory!\n"));
+			m_device.destroyBuffer(m_msaaResolveUBO);
+			m_msaaResolveUBO = nullptr;
+			shutdownMSAA();
+			return false;
+		}
+
+		m_msaaResolveUBOMapped = m_memoryManager->mapMemory(m_msaaResolveUBOAlloc);
+		if (!m_msaaResolveUBOMapped) {
+			mprintf(("VulkanPostProcessor: Failed to map MSAA resolve UBO!\n"));
+			shutdownMSAA();
+			return false;
+		}
+	}
+
+	// Transition MSAA images to the render pass's initial layout at creation time.
+	// The validation layer tracks framebuffer attachment layouts from creation,
+	// so we must match the eClear render pass's initialLayout exactly.
+	{
+		auto* texMgr = getTextureManager();
+
+		std::array<RenderTarget*, 5> colorTargets = {
+			&m_msaaColor, &m_msaaPosition, &m_msaaNormal,
+			&m_msaaSpecular, &m_msaaEmissive,
+		};
+		for (auto* t : colorTargets) {
+			texMgr->transitionImageLayout(t->image, t->format,
+				vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal);
+		}
+
+		texMgr->transitionImageLayout(m_msaaDepthImage, m_depthFormat,
+			vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthStencilAttachmentOptimal);
+	}
+
+	m_msaaInitialized = true;
+	mprintf(("VulkanPostProcessor: MSAA initialized (%ux%u, %dx samples, 5 color + depth)\n",
+		w, h, Cmdline_msaa_enabled));
+	return true;
+}
+
+void VulkanPostProcessor::shutdownMSAA()
+{
+	if (!m_device) {
+		return;
+	}
+
+	// Destroy MSAA resolve UBO
+	if (m_msaaResolveUBOMapped) {
+		m_memoryManager->unmapMemory(m_msaaResolveUBOAlloc);
+		m_msaaResolveUBOMapped = nullptr;
+	}
+	if (m_msaaResolveUBO) {
+		m_device.destroyBuffer(m_msaaResolveUBO);
+		m_msaaResolveUBO = nullptr;
+	}
+	if (m_msaaResolveUBOAlloc.isValid()) {
+		m_memoryManager->freeAllocation(m_msaaResolveUBOAlloc);
+	}
+
+	if (m_msaaResolveFramebuffer) {
+		m_device.destroyFramebuffer(m_msaaResolveFramebuffer);
+		m_msaaResolveFramebuffer = nullptr;
+	}
+	if (m_msaaResolveRenderPass) {
+		m_device.destroyRenderPass(m_msaaResolveRenderPass);
+		m_msaaResolveRenderPass = nullptr;
+	}
+	if (m_msaaEmissiveCopyFramebuffer) {
+		m_device.destroyFramebuffer(m_msaaEmissiveCopyFramebuffer);
+		m_msaaEmissiveCopyFramebuffer = nullptr;
+	}
+	if (m_msaaEmissiveCopyRenderPass) {
+		m_device.destroyRenderPass(m_msaaEmissiveCopyRenderPass);
+		m_msaaEmissiveCopyRenderPass = nullptr;
+	}
+	if (m_msaaGbufFramebuffer) {
+		m_device.destroyFramebuffer(m_msaaGbufFramebuffer);
+		m_msaaGbufFramebuffer = nullptr;
+	}
+	if (m_msaaGbufRenderPassLoad) {
+		m_device.destroyRenderPass(m_msaaGbufRenderPassLoad);
+		m_msaaGbufRenderPassLoad = nullptr;
+	}
+	if (m_msaaGbufRenderPass) {
+		m_device.destroyRenderPass(m_msaaGbufRenderPass);
+		m_msaaGbufRenderPass = nullptr;
+	}
+
+	// Destroy MSAA depth
+	if (m_msaaDepthView) {
+		m_device.destroyImageView(m_msaaDepthView);
+		m_msaaDepthView = nullptr;
+	}
+	if (m_msaaDepthImage) {
+		m_device.destroyImage(m_msaaDepthImage);
+		m_msaaDepthImage = nullptr;
+	}
+	if (m_msaaDepthAlloc.isValid()) {
+		m_memoryManager->freeAllocation(m_msaaDepthAlloc);
+	}
+
+	// Destroy MSAA color targets
+	std::array<RenderTarget*, 5> msaaTargets = {
+		&m_msaaColor, &m_msaaPosition, &m_msaaNormal,
+		&m_msaaSpecular, &m_msaaEmissive,
+	};
+	for (auto* rt : msaaTargets) {
+		if (rt->view) {
+			m_device.destroyImageView(rt->view);
+			rt->view = nullptr;
+		}
+		if (rt->image) {
+			m_device.destroyImage(rt->image);
+			rt->image = nullptr;
+		}
+		if (rt->allocation.isValid()) {
+			m_memoryManager->freeAllocation(rt->allocation);
+		}
+	}
+
+	m_msaaInitialized = false;
+}
+
+void VulkanPostProcessor::transitionMsaaGbufForResume(vk::CommandBuffer /*cmd*/)
+{
+	// No-op: MSAA render passes use finalLayout == subpass layout (no implicit
+	// transition at endRenderPass), so color attachments remain in
+	// eColorAttachmentOptimal — exactly what the eLoad pass expects.
+}
+
+void VulkanPostProcessor::transitionMsaaGbufForBegin(vk::CommandBuffer /*cmd*/)
+{
+	// No-op: MSAA images are always in eColorAttachmentOptimal /
+	// eDepthStencilAttachmentOptimal between frames. Init-time transitions
+	// set this layout, and the post-resolve barriers in
+	// vulkan_deferred_lighting_msaa restore it after each frame's resolve pass.
+}
+
+// ===== Light Accumulation (Deferred Lighting) =====
+
+bool VulkanPostProcessor::initLightVolumes()
+{
+	if (m_lightVolumesInitialized) {
+		return true;
+	}
+
+	// Generate sphere mesh (16 rings x 16 segments)
+	{
+		auto mesh = graphics::util::generate_sphere_mesh(16, 16);
+		m_sphereMesh.vertexCount = mesh.vertex_count;
+		m_sphereMesh.indexCount = mesh.index_count;
+
+		// Create VBO
+		vk::BufferCreateInfo vboInfo;
+		vboInfo.size = mesh.vertices.size() * sizeof(float);
+		vboInfo.usage = vk::BufferUsageFlagBits::eVertexBuffer;
+		vboInfo.sharingMode = vk::SharingMode::eExclusive;
+
+		try {
+			m_sphereMesh.vbo = m_device.createBuffer(vboInfo);
+		} catch (const vk::SystemError& e) {
+			mprintf(("VulkanPostProcessor: Failed to create sphere VBO: %s\n", e.what()));
+			return false;
+		}
+
+		if (!m_memoryManager->allocateBufferMemory(m_sphereMesh.vbo, MemoryUsage::CpuToGpu, m_sphereMesh.vboAlloc)) {
+			m_device.destroyBuffer(m_sphereMesh.vbo);
+			m_sphereMesh.vbo = nullptr;
+			return false;
+		}
+
+		auto* mapped = m_memoryManager->mapMemory(m_sphereMesh.vboAlloc);
+		if (mapped) {
+			memcpy(mapped, mesh.vertices.data(), mesh.vertices.size() * sizeof(float));
+			m_memoryManager->unmapMemory(m_sphereMesh.vboAlloc);
+		}
+
+		// Create IBO
+		vk::BufferCreateInfo iboInfo;
+		iboInfo.size = mesh.indices.size() * sizeof(ushort);
+		iboInfo.usage = vk::BufferUsageFlagBits::eIndexBuffer;
+		iboInfo.sharingMode = vk::SharingMode::eExclusive;
+
+		try {
+			m_sphereMesh.ibo = m_device.createBuffer(iboInfo);
+		} catch (const vk::SystemError& e) {
+			mprintf(("VulkanPostProcessor: Failed to create sphere IBO: %s\n", e.what()));
+			return false;
+		}
+
+		if (!m_memoryManager->allocateBufferMemory(m_sphereMesh.ibo, MemoryUsage::CpuToGpu, m_sphereMesh.iboAlloc)) {
+			m_device.destroyBuffer(m_sphereMesh.ibo);
+			m_sphereMesh.ibo = nullptr;
+			return false;
+		}
+
+		mapped = m_memoryManager->mapMemory(m_sphereMesh.iboAlloc);
+		if (mapped) {
+			memcpy(mapped, mesh.indices.data(), mesh.indices.size() * sizeof(ushort));
+			m_memoryManager->unmapMemory(m_sphereMesh.iboAlloc);
+		}
+	}
+
+	// Generate cylinder mesh (16 segments)
+	{
+		auto mesh = graphics::util::generate_cylinder_mesh(16);
+		m_cylinderMesh.vertexCount = mesh.vertex_count;
+		m_cylinderMesh.indexCount = mesh.index_count;
+
+		vk::BufferCreateInfo vboInfo;
+		vboInfo.size = mesh.vertices.size() * sizeof(float);
+		vboInfo.usage = vk::BufferUsageFlagBits::eVertexBuffer;
+		vboInfo.sharingMode = vk::SharingMode::eExclusive;
+
+		try {
+			m_cylinderMesh.vbo = m_device.createBuffer(vboInfo);
+		} catch (const vk::SystemError& e) {
+			mprintf(("VulkanPostProcessor: Failed to create cylinder VBO: %s\n", e.what()));
+			return false;
+		}
+
+		if (!m_memoryManager->allocateBufferMemory(m_cylinderMesh.vbo, MemoryUsage::CpuToGpu, m_cylinderMesh.vboAlloc)) {
+			m_device.destroyBuffer(m_cylinderMesh.vbo);
+			m_cylinderMesh.vbo = nullptr;
+			return false;
+		}
+
+		auto* mapped = m_memoryManager->mapMemory(m_cylinderMesh.vboAlloc);
+		if (mapped) {
+			memcpy(mapped, mesh.vertices.data(), mesh.vertices.size() * sizeof(float));
+			m_memoryManager->unmapMemory(m_cylinderMesh.vboAlloc);
+		}
+
+		vk::BufferCreateInfo iboInfo;
+		iboInfo.size = mesh.indices.size() * sizeof(ushort);
+		iboInfo.usage = vk::BufferUsageFlagBits::eIndexBuffer;
+		iboInfo.sharingMode = vk::SharingMode::eExclusive;
+
+		try {
+			m_cylinderMesh.ibo = m_device.createBuffer(iboInfo);
+		} catch (const vk::SystemError& e) {
+			mprintf(("VulkanPostProcessor: Failed to create cylinder IBO: %s\n", e.what()));
+			return false;
+		}
+
+		if (!m_memoryManager->allocateBufferMemory(m_cylinderMesh.ibo, MemoryUsage::CpuToGpu, m_cylinderMesh.iboAlloc)) {
+			m_device.destroyBuffer(m_cylinderMesh.ibo);
+			m_cylinderMesh.ibo = nullptr;
+			return false;
+		}
+
+		mapped = m_memoryManager->mapMemory(m_cylinderMesh.iboAlloc);
+		if (mapped) {
+			memcpy(mapped, mesh.indices.data(), mesh.indices.size() * sizeof(ushort));
+			m_memoryManager->unmapMemory(m_cylinderMesh.iboAlloc);
+		}
+	}
+
+	// Create deferred UBO for light data (per-frame, host-visible)
+	{
+		vk::BufferCreateInfo bufInfo;
+		bufInfo.size = DEFERRED_UBO_SIZE;
+		bufInfo.usage = vk::BufferUsageFlagBits::eUniformBuffer;
+		bufInfo.sharingMode = vk::SharingMode::eExclusive;
+
+		try {
+			m_deferredUBO = m_device.createBuffer(bufInfo);
+		} catch (const vk::SystemError& e) {
+			mprintf(("VulkanPostProcessor: Failed to create deferred UBO: %s\n", e.what()));
+			return false;
+		}
+
+		if (!m_memoryManager->allocateBufferMemory(m_deferredUBO, MemoryUsage::CpuToGpu, m_deferredUBOAlloc)) {
+			m_device.destroyBuffer(m_deferredUBO);
+			m_deferredUBO = nullptr;
+			return false;
+		}
+	}
+
+	m_lightVolumesInitialized = true;
+	mprintf(("VulkanPostProcessor: Light volumes initialized (sphere: %u verts/%u idx, cylinder: %u verts/%u idx)\n",
+		m_sphereMesh.vertexCount, m_sphereMesh.indexCount,
+		m_cylinderMesh.vertexCount, m_cylinderMesh.indexCount));
+	return true;
+}
+
+void VulkanPostProcessor::shutdownLightVolumes()
+{
+	if (!m_device) {
+		return;
+	}
+
+	auto destroyMesh = [&](LightVolumeMesh& mesh) {
+		if (mesh.vbo) { m_device.destroyBuffer(mesh.vbo); mesh.vbo = nullptr; }
+		if (mesh.vboAlloc.isValid()) { m_memoryManager->freeAllocation(mesh.vboAlloc); }
+		if (mesh.ibo) { m_device.destroyBuffer(mesh.ibo); mesh.ibo = nullptr; }
+		if (mesh.iboAlloc.isValid()) { m_memoryManager->freeAllocation(mesh.iboAlloc); }
+		mesh.vertexCount = 0;
+		mesh.indexCount = 0;
+	};
+
+	destroyMesh(m_sphereMesh);
+	destroyMesh(m_cylinderMesh);
+
+	if (m_deferredUBO) {
+		m_device.destroyBuffer(m_deferredUBO);
+		m_deferredUBO = nullptr;
+	}
+	if (m_deferredUBOAlloc.isValid()) {
+		m_memoryManager->freeAllocation(m_deferredUBOAlloc);
+	}
+
+	if (m_lightAccumFramebuffer) {
+		m_device.destroyFramebuffer(m_lightAccumFramebuffer);
+		m_lightAccumFramebuffer = nullptr;
+	}
+	if (m_lightAccumRenderPass) {
+		m_device.destroyRenderPass(m_lightAccumRenderPass);
+		m_lightAccumRenderPass = nullptr;
+	}
+
+	m_lightVolumesInitialized = false;
+}
+
+bool VulkanPostProcessor::initLightAccumPass()
+{
+	// Light accumulation render pass: single RGBA16F color attachment
+	// loadOp=eLoad (preserves emissive copy), storeOp=eStore
+	// initialLayout=eColorAttachmentOptimal, finalLayout=eShaderReadOnlyOptimal
+	{
+		vk::AttachmentDescription att;
+		att.format = HDR_COLOR_FORMAT;
+		att.samples = vk::SampleCountFlagBits::e1;
+		att.loadOp = vk::AttachmentLoadOp::eLoad;
+		att.storeOp = vk::AttachmentStoreOp::eStore;
+		att.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
+		att.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
+		att.initialLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		att.finalLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+
+		vk::AttachmentReference colorRef;
+		colorRef.attachment = 0;
+		colorRef.layout = vk::ImageLayout::eColorAttachmentOptimal;
+
+		vk::SubpassDescription subpass;
+		subpass.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
+		subpass.colorAttachmentCount = 1;
+		subpass.pColorAttachments = &colorRef;
+
+		vk::SubpassDependency dep;
+		dep.srcSubpass = VK_SUBPASS_EXTERNAL;
+		dep.dstSubpass = 0;
+		dep.srcStageMask = vk::PipelineStageFlagBits::eTransfer
+		                  | vk::PipelineStageFlagBits::eColorAttachmentOutput;
+		dep.dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput
+		                  | vk::PipelineStageFlagBits::eFragmentShader;
+		dep.srcAccessMask = vk::AccessFlagBits::eTransferWrite
+		                  | vk::AccessFlagBits::eColorAttachmentWrite;
+		dep.dstAccessMask = vk::AccessFlagBits::eColorAttachmentRead
+		                  | vk::AccessFlagBits::eColorAttachmentWrite
+		                  | vk::AccessFlagBits::eShaderRead;
+
+		vk::RenderPassCreateInfo rpInfo;
+		rpInfo.attachmentCount = 1;
+		rpInfo.pAttachments = &att;
+		rpInfo.subpassCount = 1;
+		rpInfo.pSubpasses = &subpass;
+		rpInfo.dependencyCount = 1;
+		rpInfo.pDependencies = &dep;
+
+		try {
+			m_lightAccumRenderPass = m_device.createRenderPass(rpInfo);
+		} catch (const vk::SystemError& e) {
+			mprintf(("VulkanPostProcessor: Failed to create light accum render pass: %s\n", e.what()));
+			return false;
+		}
+	}
+
+	// Framebuffer using composite image as sole color attachment
+	{
+		std::array<vk::ImageView, 1> attachments = { m_gbufComposite.view };
+
+		vk::FramebufferCreateInfo fbInfo;
+		fbInfo.renderPass = m_lightAccumRenderPass;
+		fbInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+		fbInfo.pAttachments = attachments.data();
+		fbInfo.width = m_extent.width;
+		fbInfo.height = m_extent.height;
+		fbInfo.layers = 1;
+
+		try {
+			m_lightAccumFramebuffer = m_device.createFramebuffer(fbInfo);
+		} catch (const vk::SystemError& e) {
+			mprintf(("VulkanPostProcessor: Failed to create light accum framebuffer: %s\n", e.what()));
+			return false;
+		}
+	}
+
+	return true;
+}
+
+namespace ltp = lighting_profiles;
+
+static graphics::deferred_light_data* prepare_light_uniforms(light& l, uint8_t* dest, const ltp::profile* lp)
+{
+	auto* light_data = reinterpret_cast<graphics::deferred_light_data*>(dest);
+	memset(light_data, 0, sizeof(graphics::deferred_light_data));
+
+	light_data->lightType = static_cast<int>(l.type);
+
+	float intensity =
+		(Lighting_mode == lighting_mode::COCKPIT) ? lp->cockpit_light_intensity_modifier.handle(l.intensity) : l.intensity;
+
+	vec3d diffuse;
+	diffuse.xyz.x = l.r * intensity;
+	diffuse.xyz.y = l.g * intensity;
+	diffuse.xyz.z = l.b * intensity;
+
+	light_data->diffuseLightColor = diffuse;
+	light_data->enable_shadows = 0;
+	light_data->sourceRadius = l.source_radius;
+	return light_data;
+}
+
+void VulkanPostProcessor::renderDeferredLights(vk::CommandBuffer cmd)
+{
+	TRACE_SCOPE(tracing::ApplyLights);
+
+	if (!m_gbufInitialized) {
+		return;
+	}
+
+	// Lazy-init light volumes and accumulation pass on first use
+	if (!m_lightVolumesInitialized) {
+		if (!initLightVolumes() || !initLightAccumPass()) {
+			return;
+		}
+	}
+
+	auto* pipelineMgr = getPipelineManager();
+	auto* descriptorMgr = getDescriptorManager();
+	auto* bufferMgr = getBufferManager();
+	auto* texMgr = getTextureManager();
+
+	if (!pipelineMgr || !descriptorMgr || !bufferMgr || !texMgr) {
+		return;
+	}
+
+	// Sort lights by type (same stable sort as OpenGL)
+	std::stable_sort(Lights.begin(), Lights.end(), light_compare_by_type);
+
+	// Categorize lights
+	SCP_vector<light> full_frame_lights;
+	SCP_vector<light> sphere_lights;
+	SCP_vector<light> cylinder_lights;
+	for (auto& l : Lights) {
+		switch (l.type) {
+		case Light_Type::Directional:
+			full_frame_lights.push_back(l);
+			break;
+		case Light_Type::Cone:
+		case Light_Type::Point:
+			sphere_lights.push_back(l);
+			break;
+		case Light_Type::Tube:
+			cylinder_lights.push_back(l);
+			break;
+		case Light_Type::Ambient:
+			break;
+		}
+	}
+
+	// Add ambient light
+	{
+		light& l = full_frame_lights.emplace_back();
+		memset(&l, 0, sizeof(light));
+		vec3d ambient;
+		gr_get_ambient_light(&ambient);
+		l.r = ambient.xyz.x;
+		l.g = ambient.xyz.y;
+		l.b = ambient.xyz.z;
+		l.type = Light_Type::Ambient;
+		l.intensity = 1.f;
+		l.source_radius = 0.f;
+	}
+
+	size_t total_lights = full_frame_lights.size() + sphere_lights.size() + cylinder_lights.size();
+	if (total_lights == 0) {
+		return;
+	}
+
+	// Map UBO and pack data
+	auto* uboMapped = static_cast<uint8_t*>(m_memoryManager->mapMemory(m_deferredUBOAlloc));
+	if (!uboMapped) {
+		return;
+	}
+
+	// Determine alignment requirement
+	uint32_t uboAlign = getRendererInstance()->getMinUniformBufferOffsetAlignment();
+	auto alignUp = [uboAlign](uint32_t v) -> uint32_t {
+		return (v + uboAlign - 1) & ~(uboAlign - 1);
+	};
+
+	// Layout in UBO:
+	// [0]: deferred_global_data (header)
+	// [aligned offset 1..N]: deferred_light_data per light
+	// [aligned offset N+1..2N]: matrix_uniforms per light
+	uint32_t globalDataSize = alignUp(static_cast<uint32_t>(sizeof(graphics::deferred_global_data)));
+	uint32_t lightDataSize = alignUp(static_cast<uint32_t>(sizeof(graphics::deferred_light_data)));
+	uint32_t matrixDataSize = alignUp(static_cast<uint32_t>(sizeof(graphics::matrix_uniforms)));
+
+	uint32_t lightDataOffset = globalDataSize;
+	uint32_t matrixDataOffset = lightDataOffset + (static_cast<uint32_t>(total_lights) * lightDataSize);
+	uint32_t totalUBOSize = matrixDataOffset + (static_cast<uint32_t>(total_lights) * matrixDataSize);
+
+	if (totalUBOSize > DEFERRED_UBO_SIZE) {
+		mprintf(("VulkanPostProcessor: Deferred UBO overflow (%u > %u), skipping lights\n", totalUBOSize, DEFERRED_UBO_SIZE));
+		m_memoryManager->unmapMemory(m_deferredUBOAlloc);
+		return;
+	}
+
+	// Pack global header
+	auto lp = ltp::current();
+	// Determine if environment maps are available
+	bool envMapAvailable = (ENVMAP > 0);
+	tcache_slot_vulkan* envMapSlot = nullptr;
+	tcache_slot_vulkan* irrMapSlot = nullptr;
+	if (envMapAvailable) {
+		envMapSlot = texMgr->getTextureSlot(ENVMAP);
+		if (!envMapSlot || !envMapSlot->imageView || !envMapSlot->isCubemap) {
+			envMapAvailable = false;
+		}
+	}
+	if (envMapAvailable && IRRMAP > 0) {
+		irrMapSlot = texMgr->getTextureSlot(IRRMAP);
+		if (!irrMapSlot || !irrMapSlot->imageView || !irrMapSlot->isCubemap) {
+			irrMapSlot = nullptr;  // Fall back to fallback cube for irrmap
+		}
+	}
+
+	{
+		auto* header = reinterpret_cast<graphics::deferred_global_data*>(uboMapped);
+		memset(header, 0, sizeof(graphics::deferred_global_data));
+		header->invScreenWidth = 1.0f / gr_screen.max_w;
+		header->invScreenHeight = 1.0f / gr_screen.max_h;
+		header->nearPlane = gr_near_plane;
+
+		if (m_shadowInitialized && Shadow_quality != ShadowQuality::Disabled) {
+			header->shadow_mv_matrix = Shadow_view_matrix_light;
+			for (size_t i = 0; i < MAX_SHADOW_CASCADES; ++i) {
+				header->shadow_proj_matrix[i] = Shadow_proj_matrix[i];
+			}
+			header->veryneardist = Shadow_cascade_distances[0];
+			header->neardist = Shadow_cascade_distances[1];
+			header->middist = Shadow_cascade_distances[2];
+			header->fardist = Shadow_cascade_distances[3];
+			vm_inverse_matrix4(&header->inv_view_matrix, &Shadow_view_matrix_render);
+		}
+	}
+
+	// Pack per-light data
+	size_t lightIdx = 0;
+	bool first_directional = true;
+
+	for (auto& l : full_frame_lights) {
+		auto* ld = prepare_light_uniforms(l, uboMapped + lightDataOffset + (lightIdx * lightDataSize), lp);
+
+		if (l.type == Light_Type::Directional) {
+			if (m_shadowInitialized && Shadow_quality != ShadowQuality::Disabled) {
+				ld->enable_shadows = first_directional ? 1 : 0;
+			}
+
+			if (first_directional) {
+				first_directional = false;
+			}
+
+			vec4 light_dir;
+			light_dir.xyzw.x = -l.vec.xyz.x;
+			light_dir.xyzw.y = -l.vec.xyz.y;
+			light_dir.xyzw.z = -l.vec.xyz.z;
+			light_dir.xyzw.w = 0.0f;
+			vec4 view_dir;
+			vm_vec_transform(&view_dir, &light_dir, &gr_view_matrix);
+			ld->lightDir.xyz.x = view_dir.xyzw.x;
+			ld->lightDir.xyz.y = view_dir.xyzw.y;
+			ld->lightDir.xyz.z = view_dir.xyzw.z;
+		}
+
+		// Matrix: env texture matrix for full-frame lights
+		auto* md = reinterpret_cast<graphics::matrix_uniforms*>(uboMapped + matrixDataOffset + (lightIdx * matrixDataSize));
+		memset(md, 0, sizeof(graphics::matrix_uniforms));
+		md->modelViewMatrix = gr_env_texture_matrix;
+		++lightIdx;
+	}
+
+	for (auto& l : sphere_lights) {
+		auto* ld = prepare_light_uniforms(l, uboMapped + lightDataOffset + (lightIdx * lightDataSize), lp);
+
+		if (l.type == Light_Type::Cone) {
+			ld->dualCone = (l.flags & LF_DUAL_CONE) ? 1.0f : 0.0f;
+			ld->coneAngle = l.cone_angle;
+			ld->coneInnerAngle = l.cone_inner_angle;
+			ld->coneDir = l.vec2;
+		}
+		float rad = (Lighting_mode == lighting_mode::COCKPIT)
+						? lp->cockpit_light_radius_modifier.handle(MAX(l.rada, l.radb))
+						: MAX(l.rada, l.radb);
+		ld->lightRadius = rad;
+		ld->scale.xyz.x = rad * 1.05f;
+		ld->scale.xyz.y = rad * 1.05f;
+		ld->scale.xyz.z = rad * 1.05f;
+
+		// Matrix: model-view + projection for light volume
+		auto* md = reinterpret_cast<graphics::matrix_uniforms*>(uboMapped + matrixDataOffset + (lightIdx * matrixDataSize));
+		g3_start_instance_matrix(&l.vec, &vmd_identity_matrix, true);
+		md->modelViewMatrix = gr_model_view_matrix;
+		md->projMatrix = gr_projection_matrix;
+		g3_done_instance(true);
+		++lightIdx;
+	}
+
+	for (auto& l : cylinder_lights) {
+		auto* ld = prepare_light_uniforms(l, uboMapped + lightDataOffset + (lightIdx * lightDataSize), lp);
+		float rad =
+			(Lighting_mode == lighting_mode::COCKPIT) ? lp->cockpit_light_radius_modifier.handle(l.radb) : l.radb;
+		ld->lightRadius = rad;
+		ld->lightType = LT_TUBE;
+
+		vec3d a;
+		vm_vec_sub(&a, &l.vec, &l.vec2);
+		auto length = vm_vec_mag(&a);
+		length += ld->lightRadius * 2.0f;
+
+		ld->scale.xyz.x = rad * 1.05f;
+		ld->scale.xyz.y = rad * 1.05f;
+		ld->scale.xyz.z = length;
+
+		// Matrix: oriented instance matrix for cylinder
+		auto* md = reinterpret_cast<graphics::matrix_uniforms*>(uboMapped + matrixDataOffset + (lightIdx * matrixDataSize));
+		vec3d dir, newPos;
+		matrix orient;
+		vm_vec_normalized_dir(&dir, &l.vec, &l.vec2);
+		vm_vector_2_matrix_norm(&orient, &dir, nullptr, nullptr);
+		vm_vec_scale_sub(&newPos, &l.vec2, &dir, l.radb);
+
+		g3_start_instance_matrix(&newPos, &orient, true);
+		md->modelViewMatrix = gr_model_view_matrix;
+		md->projMatrix = gr_projection_matrix;
+		g3_done_instance(true);
+		++lightIdx;
+	}
+
+	m_memoryManager->unmapMemory(m_deferredUBOAlloc);
+
+	// Both fullscreen and volume lights use the same vertex layout (POSITION3).
+	// For fullscreen lights the shader ignores vertex data and generates positions
+	// from gl_VertexIndex, but Vulkan requires all declared vertex inputs to have
+	// matching pipeline attributes and bound buffers.
+	vertex_layout volLayout;
+	volLayout.add_vertex_component(vertex_format_data::POSITION3, sizeof(float) * 3, 0);
+
+	PipelineConfig lightConfig;
+	lightConfig.shaderType = SDR_TYPE_DEFERRED_LIGHTING;
+	lightConfig.vertexLayoutHash = volLayout.hash();
+	lightConfig.primitiveType = PRIM_TYPE_TRIS;
+	lightConfig.depthMode = ZBUFFER_TYPE_NONE;
+	lightConfig.blendMode = ALPHA_BLEND_ADDITIVE;
+	lightConfig.cullEnabled = false;
+	lightConfig.depthWriteEnabled = false;
+	lightConfig.renderPass = m_lightAccumRenderPass;
+
+	vk::Pipeline lightPipeline = pipelineMgr->getPipeline(lightConfig, volLayout);
+	if (!lightPipeline) {
+		return;
+	}
+
+	vk::PipelineLayout pipelineLayout = pipelineMgr->getPipelineLayout();
+
+	// Begin light accumulation render pass
+	{
+		vk::RenderPassBeginInfo rpBegin;
+		rpBegin.renderPass = m_lightAccumRenderPass;
+		rpBegin.framebuffer = m_lightAccumFramebuffer;
+		rpBegin.renderArea.offset = vk::Offset2D(0, 0);
+		rpBegin.renderArea.extent = m_extent;
+
+		cmd.beginRenderPass(rpBegin, vk::SubpassContents::eInline);
+	}
+
+	// Set viewport and scissor
+	vk::Viewport viewport;
+	viewport.x = 0.0f;
+	viewport.y = 0.0f;
+	viewport.width = static_cast<float>(m_extent.width);
+	viewport.height = static_cast<float>(m_extent.height);
+	viewport.minDepth = 0.0f;
+	viewport.maxDepth = 1.0f;
+	cmd.setViewport(0, viewport);
+
+	vk::Rect2D scissor;
+	scissor.offset = vk::Offset2D(0, 0);
+	scissor.extent = m_extent;
+	cmd.setScissor(0, scissor);
+
+	// Pre-build G-buffer texture array (shared across all light draws)
+	const auto& fallbacks = descriptorMgr->getFallbacks();
+	std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> gbufTexArray;
+	gbufTexArray.fill(fallbacks.texture2D);
+	gbufTexArray[0] = {m_linearSampler, m_sceneColor.view, vk::ImageLayout::eShaderReadOnlyOptimal};
+	gbufTexArray[1] = {m_linearSampler, m_gbufNormal.view, vk::ImageLayout::eShaderReadOnlyOptimal};
+	gbufTexArray[2] = {m_linearSampler, m_gbufPosition.view, vk::ImageLayout::eShaderReadOnlyOptimal};
+	gbufTexArray[3] = {m_linearSampler, m_gbufSpecular.view, vk::ImageLayout::eShaderReadOnlyOptimal};
+
+	// Pre-build shadow/env/irr image infos (shared across all light draws)
+	vk::DescriptorImageInfo shadowTexInfo;
+	if (m_shadowInitialized && m_shadowColor.view) {
+		shadowTexInfo = {m_linearSampler, m_shadowColor.view, vk::ImageLayout::eShaderReadOnlyOptimal};
+	}
+	vk::DescriptorImageInfo envTexInfo;
+	if (envMapAvailable && envMapSlot) {
+		envTexInfo = fallbacks.textureCube;
+		envTexInfo.imageView = envMapSlot->imageView;
+	}
+	vk::DescriptorImageInfo irrTexInfo;
+	if (envMapAvailable && irrMapSlot) {
+		irrTexInfo = fallbacks.textureCube;
+		irrTexInfo.imageView = irrMapSlot->imageView;
+	}
+
+	// Helper lambda to allocate + write descriptor sets for a single light draw
+	auto bindLightDescriptors = [&](size_t li) {
+		DescriptorWriter writer;
+		writer.reset(m_device, fallbacks);
+
+		// Set 0: Global
+		vk::DescriptorSet globalSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Global);
+		if (!globalSet) return false;
+		writer.writeSet(globalSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Global));
+		writer.setBuffer(GlobalBinding::Lights, {m_deferredUBO,
+			lightDataOffset + (li * lightDataSize), sizeof(graphics::deferred_light_data)});
+		writer.setBuffer(GlobalBinding::DeferredData, {m_deferredUBO,
+			0, sizeof(graphics::deferred_global_data)});
+		writer.setImage(GlobalBinding::ShadowMap, shadowTexInfo);
+		writer.setImage(GlobalBinding::EnvMap, envTexInfo);
+		writer.setImage(GlobalBinding::IrradianceMap, irrTexInfo);
+
+		// Set 1: Material
+		vk::DescriptorSet materialSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Material);
+		if (!materialSet) return false;
+		writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
+		writer.setImageArray(MaterialBinding::TextureArray, gbufTexArray);
+
+		// Set 2: PerDraw
+		vk::DescriptorSet perDrawSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::PerDraw);
+		if (!perDrawSet) return false;
+		writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
+		writer.setBuffer(PerDrawBinding::Matrices, {m_deferredUBO,
+			matrixDataOffset + (li * matrixDataSize), sizeof(graphics::matrix_uniforms)});
+		writer.flush();
+
+		std::array<vk::DescriptorSet, 3> sets = { globalSet, materialSet, perDrawSet };
+		cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, sets, {});
+
+		return true;
+	};
+
+	cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, lightPipeline);
+
+	// Draw full-frame lights (directional + ambient)
+	// Bind sphere VBO as dummy — shader ignores vertex data for these light types.
+	lightIdx = 0;
+	if (!full_frame_lights.empty()) {
+		cmd.bindVertexBuffers(0, m_sphereMesh.vbo, vk::DeviceSize(0));
+		for (size_t i = 0; i < full_frame_lights.size(); ++i) {
+			if (bindLightDescriptors(lightIdx)) {
+				cmd.draw(3, 1, 0, 0);
+			}
+			++lightIdx;
+		}
+	}
+
+	// Draw sphere lights (point + cone)
+	if (!sphere_lights.empty()) {
+		cmd.bindVertexBuffers(0, m_sphereMesh.vbo, vk::DeviceSize(0));
+		cmd.bindIndexBuffer(m_sphereMesh.ibo, 0, vk::IndexType::eUint16);
+		for (size_t i = 0; i < sphere_lights.size(); ++i) {
+			if (bindLightDescriptors(lightIdx)) {
+				cmd.drawIndexed(m_sphereMesh.indexCount, 1, 0, 0, 0);
+			}
+			++lightIdx;
+		}
+	}
+
+	// Draw cylinder lights (tube)
+	if (!cylinder_lights.empty()) {
+		cmd.bindVertexBuffers(0, m_cylinderMesh.vbo, vk::DeviceSize(0));
+		cmd.bindIndexBuffer(m_cylinderMesh.ibo, 0, vk::IndexType::eUint16);
+		for (size_t i = 0; i < cylinder_lights.size(); ++i) {
+			if (bindLightDescriptors(lightIdx)) {
+				cmd.drawIndexed(m_cylinderMesh.indexCount, 1, 0, 0, 0);
+			}
+			++lightIdx;
+		}
+	}
+
+	// End render pass (composite → eShaderReadOnlyOptimal)
+	cmd.endRenderPass();
+}
+
+// ===== Bloom Pipeline Implementation =====
+
+// Local UBO struct for blur shader (matches OpenGL's blur_data layout).
+struct BlurUBOData {
+	float texSize;
+	int level;
+	int pad[2];
+};
+
+bool VulkanPostProcessor::initBloom()
+{
+	m_bloomWidth = m_extent.width / 2;
+	m_bloomHeight = m_extent.height / 2;
+
+	const uint32_t mipLevels = MAX_MIP_BLUR_LEVELS;
+
+	// Create 2 bloom textures (RGBA16F, half-res, 4 mip levels each)
+	for (size_t i = 0; i < m_bloomTex.size(); i++) {
+		vk::ImageCreateInfo imageInfo;
+		imageInfo.imageType = vk::ImageType::e2D;
+		imageInfo.format = HDR_COLOR_FORMAT;
+		imageInfo.extent.width = m_bloomWidth;
+		imageInfo.extent.height = m_bloomHeight;
+		imageInfo.extent.depth = 1;
+		imageInfo.mipLevels = mipLevels;
+		imageInfo.arrayLayers = 1;
+		imageInfo.samples = vk::SampleCountFlagBits::e1;
+		imageInfo.tiling = vk::ImageTiling::eOptimal;
+		imageInfo.usage = vk::ImageUsageFlagBits::eColorAttachment
+		                | vk::ImageUsageFlagBits::eSampled
+		                | vk::ImageUsageFlagBits::eTransferSrc
+		                | vk::ImageUsageFlagBits::eTransferDst;
+		imageInfo.sharingMode = vk::SharingMode::eExclusive;
+		imageInfo.initialLayout = vk::ImageLayout::eUndefined;
+
+		try {
+			m_bloomTex[i].image = m_device.createImage(imageInfo);
+		} catch (const vk::SystemError& e) {
+			mprintf(("VulkanPostProcessor: Failed to create bloom image %zu: %s\n", i, e.what()));
+			return false;
+		}
+
+		if (!m_memoryManager->allocateImageMemory(m_bloomTex[i].image, MemoryUsage::GpuOnly, m_bloomTex[i].allocation)) {
+			mprintf(("VulkanPostProcessor: Failed to allocate bloom image %zu memory!\n", i));
+			return false;
+		}
+
+		// Full image view (all mip levels, for textureLod sampling)
+		vk::ImageViewCreateInfo fullViewInfo;
+		fullViewInfo.image = m_bloomTex[i].image;
+		fullViewInfo.viewType = vk::ImageViewType::e2D;
+		fullViewInfo.format = HDR_COLOR_FORMAT;
+		fullViewInfo.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+		fullViewInfo.subresourceRange.baseMipLevel = 0;
+		fullViewInfo.subresourceRange.levelCount = mipLevels;
+		fullViewInfo.subresourceRange.baseArrayLayer = 0;
+		fullViewInfo.subresourceRange.layerCount = 1;
+
+		try {
+			m_bloomTex[i].fullView = m_device.createImageView(fullViewInfo);
+		} catch (const vk::SystemError& e) {
+			mprintf(("VulkanPostProcessor: Failed to create bloom %zu full view: %s\n", i, e.what()));
+			return false;
+		}
+
+		// Per-mip image views (for framebuffer attachment)
+		for (uint32_t mip = 0; mip < mipLevels; mip++) {
+			vk::ImageViewCreateInfo mipViewInfo = fullViewInfo;
+			mipViewInfo.subresourceRange.baseMipLevel = mip;
+			mipViewInfo.subresourceRange.levelCount = 1;
+
+			try {
+				m_bloomTex[i].mipViews[mip] = m_device.createImageView(mipViewInfo);
+			} catch (const vk::SystemError& e) {
+				mprintf(("VulkanPostProcessor: Failed to create bloom %zu mip %u view: %s\n", i, mip, e.what()));
+				return false;
+			}
+		}
+	}
+
+	// Create bloom render pass (color-only RGBA16F, loadOp=eDontCare for overwriting)
+	{
+		vk::AttachmentDescription att;
+		att.format = HDR_COLOR_FORMAT;
+		att.samples = vk::SampleCountFlagBits::e1;
+		att.loadOp = vk::AttachmentLoadOp::eDontCare;
+		att.storeOp = vk::AttachmentStoreOp::eStore;
+		att.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
+		att.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
+		att.initialLayout = vk::ImageLayout::eUndefined;
+		att.finalLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+
+		vk::AttachmentReference colorRef;
+		colorRef.attachment = 0;
+		colorRef.layout = vk::ImageLayout::eColorAttachmentOptimal;
+
+		vk::SubpassDescription subpass;
+		subpass.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
+		subpass.colorAttachmentCount = 1;
+		subpass.pColorAttachments = &colorRef;
+
+		vk::SubpassDependency dep;
+		dep.srcSubpass = VK_SUBPASS_EXTERNAL;
+		dep.dstSubpass = 0;
+		dep.srcStageMask = vk::PipelineStageFlagBits::eFragmentShader
+		                  | vk::PipelineStageFlagBits::eColorAttachmentOutput;
+		dep.dstStageMask = vk::PipelineStageFlagBits::eFragmentShader
+		                  | vk::PipelineStageFlagBits::eColorAttachmentOutput;
+		dep.srcAccessMask = vk::AccessFlagBits::eShaderRead
+		                  | vk::AccessFlagBits::eColorAttachmentWrite;
+		dep.dstAccessMask = vk::AccessFlagBits::eShaderRead
+		                  | vk::AccessFlagBits::eColorAttachmentWrite;
+
+		vk::RenderPassCreateInfo rpInfo;
+		rpInfo.attachmentCount = 1;
+		rpInfo.pAttachments = &att;
+		rpInfo.subpassCount = 1;
+		rpInfo.pSubpasses = &subpass;
+		rpInfo.dependencyCount = 1;
+		rpInfo.pDependencies = &dep;
+
+		try {
+			m_bloomRenderPass = m_device.createRenderPass(rpInfo);
+		} catch (const vk::SystemError& e) {
+			mprintf(("VulkanPostProcessor: Failed to create bloom render pass: %s\n", e.what()));
+			return false;
+		}
+	}
+
+	// Create bloom composite render pass (loadOp=eLoad for additive compositing onto scene color)
+	{
+		vk::AttachmentDescription att;
+		att.format = HDR_COLOR_FORMAT;
+		att.samples = vk::SampleCountFlagBits::e1;
+		att.loadOp = vk::AttachmentLoadOp::eLoad;
+		att.storeOp = vk::AttachmentStoreOp::eStore;
+		att.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
+		att.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
+		att.initialLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		att.finalLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+
+		vk::AttachmentReference colorRef;
+		colorRef.attachment = 0;
+		colorRef.layout = vk::ImageLayout::eColorAttachmentOptimal;
+
+		vk::SubpassDescription subpass;
+		subpass.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
+		subpass.colorAttachmentCount = 1;
+		subpass.pColorAttachments = &colorRef;
+
+		vk::SubpassDependency dep;
+		dep.srcSubpass = VK_SUBPASS_EXTERNAL;
+		dep.dstSubpass = 0;
+		dep.srcStageMask = vk::PipelineStageFlagBits::eFragmentShader
+		                  | vk::PipelineStageFlagBits::eColorAttachmentOutput;
+		dep.dstStageMask = vk::PipelineStageFlagBits::eFragmentShader
+		                  | vk::PipelineStageFlagBits::eColorAttachmentOutput;
+		dep.srcAccessMask = vk::AccessFlagBits::eShaderRead
+		                  | vk::AccessFlagBits::eColorAttachmentWrite;
+		dep.dstAccessMask = vk::AccessFlagBits::eColorAttachmentRead
+		                  | vk::AccessFlagBits::eColorAttachmentWrite;
+
+		vk::RenderPassCreateInfo rpInfo;
+		rpInfo.attachmentCount = 1;
+		rpInfo.pAttachments = &att;
+		rpInfo.subpassCount = 1;
+		rpInfo.pSubpasses = &subpass;
+		rpInfo.dependencyCount = 1;
+		rpInfo.pDependencies = &dep;
+
+		try {
+			m_bloomCompositeRenderPass = m_device.createRenderPass(rpInfo);
+		} catch (const vk::SystemError& e) {
+			mprintf(("VulkanPostProcessor: Failed to create bloom composite render pass: %s\n", e.what()));
+			return false;
+		}
+	}
+
+	// Create per-mip framebuffers for bloom textures
+	for (size_t i = 0; i < m_bloomTex.size(); i++) {
+		for (uint32_t mip = 0; mip < mipLevels; mip++) {
+			uint32_t mipW = std::max(1u, m_bloomWidth >> mip);
+			uint32_t mipH = std::max(1u, m_bloomHeight >> mip);
+
+			vk::FramebufferCreateInfo fbInfo;
+			fbInfo.renderPass = m_bloomRenderPass;
+			fbInfo.attachmentCount = 1;
+			fbInfo.pAttachments = &m_bloomTex[i].mipViews[mip];
+			fbInfo.width = mipW;
+			fbInfo.height = mipH;
+			fbInfo.layers = 1;
+
+			try {
+				m_bloomTex[i].mipFramebuffers[mip] = m_device.createFramebuffer(fbInfo);
+			} catch (const vk::SystemError& e) {
+				mprintf(("VulkanPostProcessor: Failed to create bloom %zu mip %u framebuffer: %s\n", i, mip, e.what()));
+				return false;
+			}
+		}
+	}
+
+	// Create scene color framebuffer for bloom composite (wraps m_sceneColor as attachment)
+	{
+		vk::FramebufferCreateInfo fbInfo;
+		fbInfo.renderPass = m_bloomCompositeRenderPass;
+		fbInfo.attachmentCount = 1;
+		fbInfo.pAttachments = &m_sceneColor.view;
+		fbInfo.width = m_extent.width;
+		fbInfo.height = m_extent.height;
+		fbInfo.layers = 1;
+
+		try {
+			m_sceneColorBloomFB = m_device.createFramebuffer(fbInfo);
+		} catch (const vk::SystemError& e) {
+			mprintf(("VulkanPostProcessor: Failed to create scene color bloom framebuffer: %s\n", e.what()));
+			return false;
+		}
+	}
+
+	// Create bloom UBO buffer (slot-based allocation for per-draw data)
+	{
+		vk::BufferCreateInfo bufInfo;
+		bufInfo.size = BLOOM_UBO_MAX_SLOTS * BLOOM_UBO_SLOT_SIZE;
+		bufInfo.usage = vk::BufferUsageFlagBits::eUniformBuffer;
+		bufInfo.sharingMode = vk::SharingMode::eExclusive;
+
+		try {
+			m_bloomUBO = m_device.createBuffer(bufInfo);
+		} catch (const vk::SystemError& e) {
+			mprintf(("VulkanPostProcessor: Failed to create bloom UBO: %s\n", e.what()));
+			return false;
+		}
+
+		if (!m_memoryManager->allocateBufferMemory(m_bloomUBO, MemoryUsage::CpuToGpu, m_bloomUBOAlloc)) {
+			mprintf(("VulkanPostProcessor: Failed to allocate bloom UBO memory!\n"));
+			m_device.destroyBuffer(m_bloomUBO);
+			m_bloomUBO = nullptr;
+			return false;
+		}
+
+	}
+
+	m_bloomInitialized = true;
+	mprintf(("VulkanPostProcessor: Bloom initialized (%ux%u, %d mip levels)\n",
+		m_bloomWidth, m_bloomHeight, MAX_MIP_BLUR_LEVELS));
+	return true;
+}
+
+void VulkanPostProcessor::shutdownBloom()
+{
+	if (!m_bloomInitialized) {
+		return;
+	}
+
+	if (m_bloomUBO) {
+		m_device.destroyBuffer(m_bloomUBO);
+		m_bloomUBO = nullptr;
+	}
+	if (m_bloomUBOAlloc.isValid()) {
+		m_memoryManager->freeAllocation(m_bloomUBOAlloc);
+	}
+
+	if (m_sceneColorBloomFB) {
+		m_device.destroyFramebuffer(m_sceneColorBloomFB);
+		m_sceneColorBloomFB = nullptr;
+	}
+
+	for (auto& bt : m_bloomTex) {
+		for (size_t mip = 0; mip < bt.mipFramebuffers.size(); mip++) {
+			if (bt.mipFramebuffers[mip]) {
+				m_device.destroyFramebuffer(bt.mipFramebuffers[mip]);
+				bt.mipFramebuffers[mip] = nullptr;
+			}
+			if (bt.mipViews[mip]) {
+				m_device.destroyImageView(bt.mipViews[mip]);
+				bt.mipViews[mip] = nullptr;
+			}
+		}
+		if (bt.fullView) {
+			m_device.destroyImageView(bt.fullView);
+			bt.fullView = nullptr;
+		}
+		if (bt.image) {
+			m_device.destroyImage(bt.image);
+			bt.image = nullptr;
+		}
+		if (bt.allocation.isValid()) {
+			m_memoryManager->freeAllocation(bt.allocation);
+		}
+	}
+
+	if (m_bloomCompositeRenderPass) {
+		m_device.destroyRenderPass(m_bloomCompositeRenderPass);
+		m_bloomCompositeRenderPass = nullptr;
+	}
+	if (m_bloomRenderPass) {
+		m_device.destroyRenderPass(m_bloomRenderPass);
+		m_bloomRenderPass = nullptr;
+	}
+
+	m_bloomInitialized = false;
+}
+
+void VulkanPostProcessor::generateMipmaps(vk::CommandBuffer cmd, vk::Image image,
+                                           uint32_t width, uint32_t height, uint32_t mipLevels)
+{
+	// Transition mip 0 from eShaderReadOnlyOptimal (after brightpass) to eTransferSrcOptimal
+	{
+		vk::ImageMemoryBarrier barrier;
+		barrier.srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
+		barrier.dstAccessMask = vk::AccessFlagBits::eTransferRead;
+		barrier.oldLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		barrier.newLayout = vk::ImageLayout::eTransferSrcOptimal;
+		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.image = image;
+		barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+		barrier.subresourceRange.baseMipLevel = 0;
+		barrier.subresourceRange.levelCount = 1;
+		barrier.subresourceRange.baseArrayLayer = 0;
+		barrier.subresourceRange.layerCount = 1;
+
+		cmd.pipelineBarrier(
+			vk::PipelineStageFlagBits::eColorAttachmentOutput,
+			vk::PipelineStageFlagBits::eTransfer,
+			{}, {}, {}, barrier);
+	}
+
+	vulkan_generate_mipmap_chain(cmd, image, width, height, mipLevels);
+}
+
+void VulkanPostProcessor::drawFullscreenTriangle(vk::CommandBuffer cmd, vk::RenderPass renderPass,
+                                                  vk::Framebuffer framebuffer, vk::Extent2D extent,
+                                                  int shaderType,
+                                                  vk::ImageView textureView, vk::Sampler sampler,
+                                                  const void* uboData, size_t uboSize,
+                                                  int blendMode,
+                                                  unsigned int shaderFlags)
+{
+	auto* pipelineMgr = getPipelineManager();
+	auto* descriptorMgr = getDescriptorManager();
+	auto* bufferMgr = getBufferManager();
+	auto* texMgr = getTextureManager();
+
+	if (!pipelineMgr || !descriptorMgr || !bufferMgr || !texMgr) {
+		return;
+	}
+
+	// Get/create pipeline for this shader + render pass combination
+	PipelineConfig config;
+	config.shaderType = static_cast<shader_type>(shaderType);
+	config.shaderFlags = shaderFlags;
+	config.vertexLayoutHash = 0;
+	config.primitiveType = PRIM_TYPE_TRIS;
+	config.depthMode = ZBUFFER_TYPE_NONE;
+	config.blendMode = static_cast<gr_alpha_blend>(blendMode);
+	config.cullEnabled = false;
+	config.depthWriteEnabled = false;
+	config.renderPass = renderPass;
+
+	vertex_layout emptyLayout;
+	vk::Pipeline pipeline = pipelineMgr->getPipeline(config, emptyLayout);
+	if (!pipeline) {
+		return;
+	}
+
+	vk::PipelineLayout pipelineLayout = pipelineMgr->getPipelineLayout();
+
+	// Begin render pass
+	vk::RenderPassBeginInfo rpBegin;
+	rpBegin.renderPass = renderPass;
+	rpBegin.framebuffer = framebuffer;
+	rpBegin.renderArea.offset = vk::Offset2D(0, 0);
+	rpBegin.renderArea.extent = extent;
+
+	cmd.beginRenderPass(rpBegin, vk::SubpassContents::eInline);
+	cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
+
+	// Set viewport and scissor
+	vk::Viewport viewport;
+	viewport.x = 0.0f;
+	viewport.y = 0.0f;
+	viewport.width = static_cast<float>(extent.width);
+	viewport.height = static_cast<float>(extent.height);
+	viewport.minDepth = 0.0f;
+	viewport.maxDepth = 1.0f;
+	cmd.setViewport(0, viewport);
+
+	vk::Rect2D scissor;
+	scissor.offset = vk::Offset2D(0, 0);
+	scissor.extent = extent;
+	cmd.setScissor(0, scissor);
+
+	DescriptorWriter writer;
+	writer.reset(m_device, descriptorMgr->getFallbacks());
+
+	// Set 1: Material
+	vk::DescriptorSet materialSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Material);
+	Verify(materialSet);
+	writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
+	{
+		std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texArrayInfos;
+		texArrayInfos.fill(descriptorMgr->getFallbacks().texture2D);
+		texArrayInfos[0].sampler = sampler;
+		texArrayInfos[0].imageView = textureView;
+		writer.setImageArray(MaterialBinding::TextureArray, texArrayInfos);
+	}
+
+	// Set 2: PerDraw
+	vk::DescriptorSet perDrawSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::PerDraw);
+	Verify(perDrawSet);
+	writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
+	if (uboData && uboSize > 0 && m_bloomUBOMapped) {
+		Assertion(m_bloomUBOCursor < BLOOM_UBO_MAX_SLOTS, "Bloom UBO slot overflow!");
+		uint32_t slotOffset = m_bloomUBOCursor * static_cast<uint32_t>(BLOOM_UBO_SLOT_SIZE);
+		memcpy(static_cast<uint8_t*>(m_bloomUBOMapped) + slotOffset, uboData, uboSize);
+		m_bloomUBOCursor++;
+		writer.setBuffer(PerDrawBinding::GenericData, {m_bloomUBO, slotOffset, BLOOM_UBO_SLOT_SIZE});
+	}
+	writer.flush();
+
+	// Bind descriptor sets (Set 0 already bound from frame setup)
+	cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout,
+		static_cast<uint32_t>(DescriptorSetIndex::Material),
+		{materialSet, perDrawSet}, {});
+
+	cmd.draw(3, 1, 0, 0);
+	cmd.endRenderPass();
+}
+
+void VulkanPostProcessor::executeBloom(vk::CommandBuffer cmd)
+{
+	if (!m_bloomInitialized || gr_bloom_intensity() <= 0) {
+		return;
+	}
+
+	// Map bloom UBO for writing per-draw data
+	m_bloomUBOMapped = m_memoryManager->mapMemory(m_bloomUBOAlloc);
+	if (!m_bloomUBOMapped) {
+		return;
+	}
+	m_bloomUBOCursor = 0;
+
+	// 1. Bright pass: extract pixels brighter than 1.0 from scene color → bloom_tex[0] mip 0
+	drawFullscreenTriangle(cmd, m_bloomRenderPass,
+		m_bloomTex[0].mipFramebuffers[0],
+		vk::Extent2D(m_bloomWidth, m_bloomHeight),
+		SDR_TYPE_POST_PROCESS_BRIGHTPASS,
+		m_sceneColor.view, m_linearSampler,
+		nullptr, 0,  // Brightpass has no UBO
+		ALPHA_BLEND_NONE);
+
+	// 2. Generate mipmaps for bloom_tex[0] (fill mips 1-3 from mip 0)
+	generateMipmaps(cmd, m_bloomTex[0].image, m_bloomWidth, m_bloomHeight, MAX_MIP_BLUR_LEVELS);
+
+	// 3. Blur iterations (2 iterations of vertical + horizontal ping-pong)
+	for (int iteration = 0; iteration < 2; iteration++) {
+		for (int pass = 0; pass < 2; pass++) {
+			// pass 0 = vertical (tex[0] → tex[1]), pass 1 = horizontal (tex[1] → tex[0])
+			int srcIdx = pass;
+			int dstIdx = 1 - pass;
+			bool isVertical = (pass == 0);
+			unsigned int blurFlags = isVertical ? SDR_FLAG_BLUR_VERTICAL : SDR_FLAG_BLUR_HORIZONTAL;
+
+			for (int mip = 0; mip < MAX_MIP_BLUR_LEVELS; mip++) {
+				uint32_t mipW = std::max(1u, m_bloomWidth >> mip);
+				uint32_t mipH = std::max(1u, m_bloomHeight >> mip);
+
+				BlurUBOData blurData;
+				blurData.texSize = isVertical ? 1.0f / static_cast<float>(mipH)
+				                              : 1.0f / static_cast<float>(mipW);
+				blurData.level = mip;
+				blurData.pad[0] = 0;
+				blurData.pad[1] = 0;
+
+				drawFullscreenTriangle(cmd, m_bloomRenderPass,
+					m_bloomTex[dstIdx].mipFramebuffers[mip],
+					vk::Extent2D(mipW, mipH),
+					SDR_TYPE_POST_PROCESS_BLUR,
+					m_bloomTex[srcIdx].fullView, m_mipmapSampler,
+					&blurData, sizeof(blurData),
+					ALPHA_BLEND_NONE,
+					blurFlags);
+			}
+		}
+	}
+
+	// 4. Transition scene color for bloom composite (eShaderReadOnlyOptimal → eColorAttachmentOptimal)
+	{
+		vk::ImageMemoryBarrier barrier;
+		barrier.srcAccessMask = vk::AccessFlagBits::eShaderRead;
+		barrier.dstAccessMask = vk::AccessFlagBits::eColorAttachmentRead
+		                      | vk::AccessFlagBits::eColorAttachmentWrite;
+		barrier.oldLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		barrier.newLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.image = m_sceneColor.image;
+		barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+		barrier.subresourceRange.baseMipLevel = 0;
+		barrier.subresourceRange.levelCount = 1;
+		barrier.subresourceRange.baseArrayLayer = 0;
+		barrier.subresourceRange.layerCount = 1;
+
+		cmd.pipelineBarrier(
+			vk::PipelineStageFlagBits::eFragmentShader,
+			vk::PipelineStageFlagBits::eColorAttachmentOutput,
+			{}, {}, {}, barrier);
+	}
+
+	// 5. Bloom composite: additively blend blurred bloom onto scene color
+	graphics::generic_data::bloom_composition_data compData;
+	compData.bloom_intensity = gr_bloom_intensity() / 100.0f;
+	compData.levels = MAX_MIP_BLUR_LEVELS;
+	compData.pad[0] = 0.0f;
+	compData.pad[1] = 0.0f;
+
+	drawFullscreenTriangle(cmd, m_bloomCompositeRenderPass,
+		m_sceneColorBloomFB,
+		m_extent,
+		SDR_TYPE_POST_PROCESS_BLOOM_COMP,
+		m_bloomTex[0].fullView, m_mipmapSampler,
+		&compData, sizeof(compData),
+		ALPHA_BLEND_ADDITIVE);
+
+	// Scene_color is now in eShaderReadOnlyOptimal (from bloom composite render pass finalLayout)
+
+	// Unmap bloom UBO
+	m_memoryManager->unmapMemory(m_bloomUBOAlloc);
+	m_bloomUBOMapped = nullptr;
+}
+
+// ===== LDR Targets + FXAA Pipeline Implementation =====
+
+bool VulkanPostProcessor::initLDRTargets()
+{
+	// Create Scene_ldr (RGBA8, full resolution) — tonemapped LDR output
+	if (!createImage(m_extent.width, m_extent.height, LDR_COLOR_FORMAT,
+	                 vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled,
+	                 vk::ImageAspectFlagBits::eColor,
+	                 m_sceneLdr.image, m_sceneLdr.view, m_sceneLdr.allocation)) {
+		mprintf(("VulkanPostProcessor: Failed to create Scene_ldr image!\n"));
+		return false;
+	}
+	m_sceneLdr.format = LDR_COLOR_FORMAT;
+	m_sceneLdr.width = m_extent.width;
+	m_sceneLdr.height = m_extent.height;
+
+	// Create Scene_luminance (RGBA8, full resolution) — LDR with luma in alpha for FXAA
+	if (!createImage(m_extent.width, m_extent.height, LDR_COLOR_FORMAT,
+	                 vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled,
+	                 vk::ImageAspectFlagBits::eColor,
+	                 m_sceneLuminance.image, m_sceneLuminance.view, m_sceneLuminance.allocation)) {
+		mprintf(("VulkanPostProcessor: Failed to create Scene_luminance image!\n"));
+		return false;
+	}
+	m_sceneLuminance.format = LDR_COLOR_FORMAT;
+	m_sceneLuminance.width = m_extent.width;
+	m_sceneLuminance.height = m_extent.height;
+
+	// Create LDR render pass (color-only RGBA8, loadOp=eDontCare, finalLayout=eShaderReadOnlyOptimal)
+	{
+		vk::AttachmentDescription att;
+		att.format = LDR_COLOR_FORMAT;
+		att.samples = vk::SampleCountFlagBits::e1;
+		att.loadOp = vk::AttachmentLoadOp::eDontCare;
+		att.storeOp = vk::AttachmentStoreOp::eStore;
+		att.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
+		att.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
+		att.initialLayout = vk::ImageLayout::eUndefined;
+		att.finalLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+
+		vk::AttachmentReference colorRef;
+		colorRef.attachment = 0;
+		colorRef.layout = vk::ImageLayout::eColorAttachmentOptimal;
+
+		vk::SubpassDescription subpass;
+		subpass.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
+		subpass.colorAttachmentCount = 1;
+		subpass.pColorAttachments = &colorRef;
+
+		vk::SubpassDependency dep;
+		dep.srcSubpass = VK_SUBPASS_EXTERNAL;
+		dep.dstSubpass = 0;
+		dep.srcStageMask = vk::PipelineStageFlagBits::eFragmentShader
+		                  | vk::PipelineStageFlagBits::eColorAttachmentOutput;
+		dep.dstStageMask = vk::PipelineStageFlagBits::eFragmentShader
+		                  | vk::PipelineStageFlagBits::eColorAttachmentOutput;
+		dep.srcAccessMask = vk::AccessFlagBits::eShaderRead
+		                  | vk::AccessFlagBits::eColorAttachmentWrite;
+		dep.dstAccessMask = vk::AccessFlagBits::eColorAttachmentRead
+		                  | vk::AccessFlagBits::eColorAttachmentWrite;
+
+		vk::RenderPassCreateInfo rpInfo;
+		rpInfo.attachmentCount = 1;
+		rpInfo.pAttachments = &att;
+		rpInfo.subpassCount = 1;
+		rpInfo.pSubpasses = &subpass;
+		rpInfo.dependencyCount = 1;
+		rpInfo.pDependencies = &dep;
+
+		try {
+			m_ldrRenderPass = m_device.createRenderPass(rpInfo);
+		} catch (const vk::SystemError& e) {
+			mprintf(("VulkanPostProcessor: Failed to create LDR render pass: %s\n", e.what()));
+			return false;
+		}
+	}
+
+	// Create framebuffers
+	{
+		vk::FramebufferCreateInfo fbInfo;
+		fbInfo.renderPass = m_ldrRenderPass;
+		fbInfo.attachmentCount = 1;
+		fbInfo.pAttachments = &m_sceneLdr.view;
+		fbInfo.width = m_extent.width;
+		fbInfo.height = m_extent.height;
+		fbInfo.layers = 1;
+
+		try {
+			m_sceneLdrFB = m_device.createFramebuffer(fbInfo);
+		} catch (const vk::SystemError& e) {
+			mprintf(("VulkanPostProcessor: Failed to create Scene_ldr framebuffer: %s\n", e.what()));
+			return false;
+		}
+
+		fbInfo.pAttachments = &m_sceneLuminance.view;
+		try {
+			m_sceneLuminanceFB = m_device.createFramebuffer(fbInfo);
+		} catch (const vk::SystemError& e) {
+			mprintf(("VulkanPostProcessor: Failed to create Scene_luminance framebuffer: %s\n", e.what()));
+			return false;
+		}
+	}
+
+	// Create LDR load render pass (loadOp=eLoad for additive blending onto existing content)
+	{
+		vk::AttachmentDescription att;
+		att.format = LDR_COLOR_FORMAT;
+		att.samples = vk::SampleCountFlagBits::e1;
+		att.loadOp = vk::AttachmentLoadOp::eLoad;
+		att.storeOp = vk::AttachmentStoreOp::eStore;
+		att.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
+		att.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
+		att.initialLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		att.finalLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+
+		vk::AttachmentReference colorRef;
+		colorRef.attachment = 0;
+		colorRef.layout = vk::ImageLayout::eColorAttachmentOptimal;
+
+		vk::SubpassDescription subpass;
+		subpass.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
+		subpass.colorAttachmentCount = 1;
+		subpass.pColorAttachments = &colorRef;
+
+		vk::SubpassDependency dep;
+		dep.srcSubpass = VK_SUBPASS_EXTERNAL;
+		dep.dstSubpass = 0;
+		dep.srcStageMask = vk::PipelineStageFlagBits::eFragmentShader
+		                  | vk::PipelineStageFlagBits::eColorAttachmentOutput;
+		dep.dstStageMask = vk::PipelineStageFlagBits::eFragmentShader
+		                  | vk::PipelineStageFlagBits::eColorAttachmentOutput;
+		dep.srcAccessMask = vk::AccessFlagBits::eShaderRead
+		                  | vk::AccessFlagBits::eColorAttachmentWrite;
+		dep.dstAccessMask = vk::AccessFlagBits::eColorAttachmentRead
+		                  | vk::AccessFlagBits::eColorAttachmentWrite;
+
+		vk::RenderPassCreateInfo rpInfo;
+		rpInfo.attachmentCount = 1;
+		rpInfo.pAttachments = &att;
+		rpInfo.subpassCount = 1;
+		rpInfo.pSubpasses = &subpass;
+		rpInfo.dependencyCount = 1;
+		rpInfo.pDependencies = &dep;
+
+		try {
+			m_ldrLoadRenderPass = m_device.createRenderPass(rpInfo);
+		} catch (const vk::SystemError& e) {
+			mprintf(("VulkanPostProcessor: Failed to create LDR load render pass: %s\n", e.what()));
+			return false;
+		}
+	}
+
+	m_ldrInitialized = true;
+	mprintf(("VulkanPostProcessor: LDR targets initialized (%ux%u, RGBA8)\n",
+		m_extent.width, m_extent.height));
+	return true;
+}
+
+void VulkanPostProcessor::shutdownLDRTargets()
+{
+	if (!m_ldrInitialized) {
+		return;
+	}
+
+	if (m_sceneLuminanceFB) {
+		m_device.destroyFramebuffer(m_sceneLuminanceFB);
+		m_sceneLuminanceFB = nullptr;
+	}
+	if (m_sceneLdrFB) {
+		m_device.destroyFramebuffer(m_sceneLdrFB);
+		m_sceneLdrFB = nullptr;
+	}
+	if (m_ldrLoadRenderPass) {
+		m_device.destroyRenderPass(m_ldrLoadRenderPass);
+		m_ldrLoadRenderPass = nullptr;
+	}
+	if (m_ldrRenderPass) {
+		m_device.destroyRenderPass(m_ldrRenderPass);
+		m_ldrRenderPass = nullptr;
+	}
+
+	// Scene_luminance
+	if (m_sceneLuminance.view) {
+		m_device.destroyImageView(m_sceneLuminance.view);
+		m_sceneLuminance.view = nullptr;
+	}
+	if (m_sceneLuminance.image) {
+		m_device.destroyImage(m_sceneLuminance.image);
+		m_sceneLuminance.image = nullptr;
+	}
+	if (m_sceneLuminance.allocation.isValid()) {
+		m_memoryManager->freeAllocation(m_sceneLuminance.allocation);
+	}
+
+	// Scene_ldr
+	if (m_sceneLdr.view) {
+		m_device.destroyImageView(m_sceneLdr.view);
+		m_sceneLdr.view = nullptr;
+	}
+	if (m_sceneLdr.image) {
+		m_device.destroyImage(m_sceneLdr.image);
+		m_sceneLdr.image = nullptr;
+	}
+	if (m_sceneLdr.allocation.isValid()) {
+		m_memoryManager->freeAllocation(m_sceneLdr.allocation);
+	}
+
+	m_ldrInitialized = false;
+}
+
+void VulkanPostProcessor::executeTonemap(vk::CommandBuffer cmd)
+{
+	if (!m_ldrInitialized) {
+		return;
+	}
+
+	namespace ltp = lighting_profiles;
+
+	// Map bloom UBO for the tonemapping draw's UBO slot
+	m_bloomUBOMapped = m_memoryManager->mapMemory(m_bloomUBOAlloc);
+	if (!m_bloomUBOMapped) {
+		return;
+	}
+
+	// Reset cursor if bloom didn't run this frame (bloom resets to 0 when it runs)
+	if (gr_bloom_intensity() <= 0 || !m_bloomInitialized) {
+		m_bloomUBOCursor = 0;
+	}
+
+	// Build tonemapping data directly from lighting profiles
+	graphics::generic_data::tonemapping_data tmData;
+	memset(&tmData, 0, sizeof(tmData));
+	auto ppc = ltp::current_piecewise_intermediates();
+	tmData.exposure = ltp::current_exposure();
+	tmData.tonemapper = static_cast<int>(ltp::current_tonemapper());
+	tmData.x0 = ppc.x0;
+	tmData.y0 = ppc.y0;
+	tmData.x1 = ppc.x1;
+	tmData.toe_B = ppc.toe_B;
+	tmData.toe_lnA = ppc.toe_lnA;
+	tmData.sh_B = ppc.sh_B;
+	tmData.sh_lnA = ppc.sh_lnA;
+	tmData.sh_offsetX = ppc.sh_offsetX;
+	tmData.sh_offsetY = ppc.sh_offsetY;
+
+	// HDR scene → Scene_ldr via tonemapping shader
+	drawFullscreenTriangle(cmd, m_ldrRenderPass,
+		m_sceneLdrFB, m_extent,
+		SDR_TYPE_POST_PROCESS_TONEMAPPING,
+		m_sceneColor.view, m_linearSampler,
+		&tmData, sizeof(tmData),
+		ALPHA_BLEND_NONE);
+
+	m_memoryManager->unmapMemory(m_bloomUBOAlloc);
+	m_bloomUBOMapped = nullptr;
+}
+
+void VulkanPostProcessor::executeFXAA(vk::CommandBuffer cmd)
+{
+	if (!m_ldrInitialized || !gr_is_fxaa_mode(Gr_aa_mode)) {
+		return;
+	}
+
+	m_bloomUBOMapped = m_memoryManager->mapMemory(m_bloomUBOAlloc);
+	if (!m_bloomUBOMapped) {
+		return;
+	}
+
+	// FXAA prepass: Scene_ldr → Scene_luminance (compute luma in alpha)
+	drawFullscreenTriangle(cmd, m_ldrRenderPass,
+		m_sceneLuminanceFB, m_extent,
+		SDR_TYPE_POST_PROCESS_FXAA_PREPASS,
+		m_sceneLdr.view, m_linearSampler,
+		nullptr, 0,
+		ALPHA_BLEND_NONE);
+
+	// FXAA main pass: Scene_luminance → Scene_ldr
+	graphics::generic_data::fxaa_data fxaaData;
+	fxaaData.rt_w = static_cast<float>(m_extent.width);
+	fxaaData.rt_h = static_cast<float>(m_extent.height);
+	fxaaData.pad[0] = 0.0f;
+	fxaaData.pad[1] = 0.0f;
+
+	drawFullscreenTriangle(cmd, m_ldrRenderPass,
+		m_sceneLdrFB, m_extent,
+		SDR_TYPE_POST_PROCESS_FXAA,
+		m_sceneLuminance.view, m_linearSampler,
+		&fxaaData, sizeof(fxaaData),
+		ALPHA_BLEND_NONE);
+
+	m_memoryManager->unmapMemory(m_bloomUBOAlloc);
+	m_bloomUBOMapped = nullptr;
+}
+
+bool VulkanPostProcessor::executePostEffects(vk::CommandBuffer cmd)
+{
+	m_postEffectsApplied = false;
+
+	if (!m_ldrInitialized || !graphics::Post_processing_manager) {
+		return false;
+	}
+
+	const auto& postEffects = graphics::Post_processing_manager->getPostEffects();
+	if (postEffects.empty()) {
+		return false;
+	}
+
+	// Compute effect flags from current state
+	int effectFlags = 0;
+	for (size_t idx = 0; idx < postEffects.size(); idx++) {
+		if (postEffects[idx].always_on || (postEffects[idx].intensity != postEffects[idx].default_intensity)) {
+			effectFlags |= (1 << idx);
+		}
+	}
+
+	if (effectFlags == 0) {
+		return false;
+	}
+
+	m_bloomUBOMapped = m_memoryManager->mapMemory(m_bloomUBOAlloc);
+	if (!m_bloomUBOMapped) {
+		return false;
+	}
+
+	// Build the extended post_data UBO with effectFlags appended
+	struct PostEffectsUBOData {
+		graphics::generic_data::post_data base;
+		int effectFlags;
+		int pad[3];
+	};
+
+	PostEffectsUBOData uboData;
+	memset(&uboData, 0, sizeof(uboData));
+	uboData.base.timer = static_cast<float>((timer_get_milliseconds() % 100) + 1);
+	uboData.effectFlags = effectFlags;
+
+	// Fill effect parameters
+	for (size_t idx = 0; idx < postEffects.size(); idx++) {
+		if (!(effectFlags & (1 << idx))) {
+			continue;
+		}
+		float value = postEffects[idx].intensity;
+		switch (postEffects[idx].uniform_type) {
+		case graphics::PostEffectUniformType::NoiseAmount:
+			uboData.base.noise_amount = value;
+			break;
+		case graphics::PostEffectUniformType::Saturation:
+			uboData.base.saturation = value;
+			break;
+		case graphics::PostEffectUniformType::Brightness:
+			uboData.base.brightness = value;
+			break;
+		case graphics::PostEffectUniformType::Contrast:
+			uboData.base.contrast = value;
+			break;
+		case graphics::PostEffectUniformType::FilmGrain:
+			uboData.base.film_grain = value;
+			break;
+		case graphics::PostEffectUniformType::TvStripes:
+			uboData.base.tv_stripes = value;
+			break;
+		case graphics::PostEffectUniformType::Cutoff:
+			uboData.base.cutoff = value;
+			break;
+		case graphics::PostEffectUniformType::Dither:
+			uboData.base.dither = value;
+			break;
+		case graphics::PostEffectUniformType::Tint:
+			uboData.base.tint = postEffects[idx].rgb;
+			break;
+		case graphics::PostEffectUniformType::CustomEffectVEC3A:
+			uboData.base.custom_effect_vec3_a = postEffects[idx].rgb;
+			break;
+		case graphics::PostEffectUniformType::CustomEffectFloatA:
+			uboData.base.custom_effect_float_a = value;
+			break;
+		case graphics::PostEffectUniformType::CustomEffectVEC3B:
+			uboData.base.custom_effect_vec3_b = postEffects[idx].rgb;
+			break;
+		case graphics::PostEffectUniformType::CustomEffectFloatB:
+			uboData.base.custom_effect_float_b = value;
+			break;
+		default:
+			break;
+		}
+	}
+
+	// Post-effects: Scene_ldr → Scene_luminance (reusing luminance target as temp)
+	drawFullscreenTriangle(cmd, m_ldrRenderPass,
+		m_sceneLuminanceFB, m_extent,
+		SDR_TYPE_POST_PROCESS_MAIN,
+		m_sceneLdr.view, m_linearSampler,
+		&uboData, sizeof(uboData),
+		ALPHA_BLEND_NONE,
+		static_cast<unsigned int>(effectFlags));
+
+	m_memoryManager->unmapMemory(m_bloomUBOAlloc);
+	m_bloomUBOMapped = nullptr;
+
+	m_postEffectsApplied = true;
+	return true;
+}
+
+void VulkanPostProcessor::executeLightshafts(vk::CommandBuffer cmd)
+{
+	if (!m_ldrInitialized || !graphics::Post_processing_manager) {
+		return;
+	}
+
+	if (Game_subspace_effect || !gr_sunglare_enabled() || !gr_lightshafts_enabled()) {
+		return;
+	}
+
+	// Find a global light with glare facing the camera
+	int n_lights = light_get_global_count();
+	float sun_x = 0.0f, sun_y = 0.0f;
+	bool found = false;
+
+	for (int idx = 0; idx < n_lights; idx++) {
+		vec3d light_dir;
+		light_get_global_dir(&light_dir, idx);
+
+		if (!light_has_glare(idx)) {
+			continue;
+		}
+
+		float dot = vm_vec_dot(&light_dir, &Eye_matrix.vec.fvec);
+		if (dot > 0.7f) {
+			sun_x = asinf_safe(vm_vec_dot(&light_dir, &Eye_matrix.vec.rvec)) / PI * 1.5f + 0.5f;
+			sun_y = asinf_safe(vm_vec_dot(&light_dir, &Eye_matrix.vec.uvec)) / PI * 1.5f * gr_screen.clip_aspect + 0.5f;
+			found = true;
+			break;
+		}
+	}
+
+	if (!found) {
+		return;
+	}
+
+	// Transition scene depth from eDepthStencilAttachmentOptimal to eShaderReadOnlyOptimal for sampling
+	{
+		vk::ImageMemoryBarrier barrier;
+		barrier.srcAccessMask = vk::AccessFlagBits::eDepthStencilAttachmentWrite;
+		barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+		barrier.oldLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+		barrier.newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.image = m_sceneDepth.image;
+		barrier.subresourceRange.aspectMask = imageAspectFromFormat(m_depthFormat);
+		barrier.subresourceRange.baseMipLevel = 0;
+		barrier.subresourceRange.levelCount = 1;
+		barrier.subresourceRange.baseArrayLayer = 0;
+		barrier.subresourceRange.layerCount = 1;
+
+		cmd.pipelineBarrier(
+			vk::PipelineStageFlagBits::eLateFragmentTests,
+			vk::PipelineStageFlagBits::eFragmentShader,
+			{}, {}, {}, barrier);
+	}
+
+	// Transition Scene_ldr to eColorAttachmentOptimal for loadOp=eLoad render pass
+	{
+		vk::ImageMemoryBarrier barrier;
+		barrier.srcAccessMask = vk::AccessFlagBits::eShaderRead;
+		barrier.dstAccessMask = vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite;
+		barrier.oldLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		barrier.newLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.image = m_sceneLdr.image;
+		barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+		barrier.subresourceRange.baseMipLevel = 0;
+		barrier.subresourceRange.levelCount = 1;
+		barrier.subresourceRange.baseArrayLayer = 0;
+		barrier.subresourceRange.layerCount = 1;
+
+		cmd.pipelineBarrier(
+			vk::PipelineStageFlagBits::eFragmentShader,
+			vk::PipelineStageFlagBits::eColorAttachmentOutput,
+			{}, {}, {}, barrier);
+	}
+
+	// Build lightshaft UBO data
+	auto& ls_params = graphics::Post_processing_manager->getLightshaftParams();
+
+	graphics::generic_data::lightshaft_data lsData;
+	lsData.sun_pos.x = sun_x;
+	lsData.sun_pos.y = sun_y;
+	lsData.density = ls_params.density;
+	lsData.weight = ls_params.weight;
+	lsData.falloff = ls_params.falloff;
+	lsData.intensity = Sun_spot * ls_params.intensity;
+	lsData.cp_intensity = Sun_spot * ls_params.cpintensity;
+	lsData.pad[0] = 0.0f;
+
+	m_bloomUBOMapped = m_memoryManager->mapMemory(m_bloomUBOAlloc);
+	if (!m_bloomUBOMapped) {
+		return;
+	}
+
+	// Additive blend lightshafts onto Scene_ldr
+	drawFullscreenTriangle(cmd, m_ldrLoadRenderPass,
+		m_sceneLdrFB, m_extent,
+		SDR_TYPE_POST_PROCESS_LIGHTSHAFTS,
+		m_sceneDepth.view, m_linearSampler,
+		&lsData, sizeof(lsData),
+		ALPHA_BLEND_ADDITIVE);
+
+	m_memoryManager->unmapMemory(m_bloomUBOAlloc);
+	m_bloomUBOMapped = nullptr;
+}
+
+void VulkanPostProcessor::copyEffectTexture(vk::CommandBuffer cmd)
+{
+	// Called mid-scene, outside a render pass.
+	// Scene color is in eShaderReadOnlyOptimal (from the ended scene render pass).
+	// Copies scene color → effect texture so distortion/soft particle shaders can sample it.
+	copyImageToImage(cmd,
+		m_sceneColor.image, vk::ImageLayout::eShaderReadOnlyOptimal, vk::ImageLayout::eColorAttachmentOptimal,
+		m_sceneEffect.image, vk::ImageLayout::eUndefined, vk::ImageLayout::eShaderReadOnlyOptimal,
+		m_extent);
+}
+
+void VulkanPostProcessor::copySceneDepth(vk::CommandBuffer cmd)
+{
+	// Called mid-scene, outside a render pass.
+	// Copies scene depth → depth copy texture so soft particle shaders can sample it.
+	// Scene depth is in eDepthStencilAttachmentOptimal (from the ended scene render pass).
+	copyImageToImage(cmd,
+		m_sceneDepth.image, vk::ImageLayout::eDepthStencilAttachmentOptimal, vk::ImageLayout::eDepthStencilAttachmentOptimal,
+		m_sceneDepthCopy.image, vk::ImageLayout::eUndefined, vk::ImageLayout::eShaderReadOnlyOptimal,
+		m_extent,
+		imageAspectFromFormat(m_depthFormat));
+}
+
+void VulkanPostProcessor::copyGbufNormal(vk::CommandBuffer cmd)
+{
+	// Called mid-scene, outside a render pass.
+	// Copies G-buffer normal → normal copy so decal shader can sample it for angle rejection.
+	// G-buffer normal is in eShaderReadOnlyOptimal (from the ended G-buffer render pass).
+	// Normal goes back to eShaderReadOnlyOptimal (transitionGbufForResume handles the rest).
+	copyImageToImage(cmd,
+		m_gbufNormal.image, vk::ImageLayout::eShaderReadOnlyOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
+		m_gbufNormalCopy.image, vk::ImageLayout::eUndefined, vk::ImageLayout::eShaderReadOnlyOptimal,
+		m_extent);
+}
+
+void VulkanPostProcessor::updateDistortion(vk::CommandBuffer cmd, float frametime)
+{
+	if (!m_distortionInitialized) {
+		return;
+	}
+
+	m_distortionTimer += frametime;
+	if (m_distortionTimer < 0.03f) {
+		return;
+	}
+	m_distortionTimer = 0.0f;
+
+	int dst = !m_distortionSwitch;  // Write target
+	int src = m_distortionSwitch;   // Read source
+
+	// On first update, images are still in eUndefined layout
+	vk::ImageLayout srcOldLayout = m_distortionFirstUpdate
+		? vk::ImageLayout::eUndefined : vk::ImageLayout::eShaderReadOnlyOptimal;
+	vk::AccessFlags srcOldAccess = m_distortionFirstUpdate
+		? vk::AccessFlags{} : vk::AccessFlagBits::eShaderRead;
+
+	// Transition both distortion textures for transfer operations
+	{
+		std::array<vk::ImageMemoryBarrier, 2> barriers;
+
+		// dst: eShaderReadOnlyOptimal (or eUndefined on first use) → eTransferDstOptimal
+		barriers[0].srcAccessMask = srcOldAccess;
+		barriers[0].dstAccessMask = vk::AccessFlagBits::eTransferWrite;
+		barriers[0].oldLayout = srcOldLayout;
+		barriers[0].newLayout = vk::ImageLayout::eTransferDstOptimal;
+		barriers[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barriers[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barriers[0].image = m_distortionTex[dst].image;
+		barriers[0].subresourceRange = vk::ImageSubresourceRange(
+			vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
+
+		// src: eShaderReadOnlyOptimal (or eUndefined on first use) → eTransferSrcOptimal
+		barriers[1].srcAccessMask = srcOldAccess;
+		barriers[1].dstAccessMask = vk::AccessFlagBits::eTransferRead;
+		barriers[1].oldLayout = srcOldLayout;
+		barriers[1].newLayout = vk::ImageLayout::eTransferSrcOptimal;
+		barriers[1].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barriers[1].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barriers[1].image = m_distortionTex[src].image;
+		barriers[1].subresourceRange = vk::ImageSubresourceRange(
+			vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
+
+		cmd.pipelineBarrier(
+			vk::PipelineStageFlagBits::eFragmentShader,
+			vk::PipelineStageFlagBits::eTransfer,
+			{}, {}, {}, barriers);
+	}
+
+	// Clear dest to mid-gray (0.5, 0.5, 0.0, 1.0) = no distortion
+	{
+		vk::ClearColorValue clearColor;
+		clearColor.setFloat32({0.5f, 0.5f, 0.0f, 1.0f});
+		vk::ImageSubresourceRange range(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
+		cmd.clearColorImage(m_distortionTex[dst].image,
+			vk::ImageLayout::eTransferDstOptimal, clearColor, range);
+	}
+
+	// Blit: scroll old data right by 1 pixel
+	// src columns 0-30 → dst columns 1-31 (with LINEAR filtering)
+	{
+		vk::ImageBlit blit;
+		blit.srcSubresource = vk::ImageSubresourceLayers(
+			vk::ImageAspectFlagBits::eColor, 0, 0, 1);
+		blit.srcOffsets[0] = vk::Offset3D(0, 0, 0);
+		blit.srcOffsets[1] = vk::Offset3D(31, 32, 1);
+		blit.dstSubresource = vk::ImageSubresourceLayers(
+			vk::ImageAspectFlagBits::eColor, 0, 0, 1);
+		blit.dstOffsets[0] = vk::Offset3D(1, 0, 0);
+		blit.dstOffsets[1] = vk::Offset3D(32, 32, 1);
+
+		cmd.blitImage(
+			m_distortionTex[src].image, vk::ImageLayout::eTransferSrcOptimal,
+			m_distortionTex[dst].image, vk::ImageLayout::eTransferDstOptimal,
+			blit, vk::Filter::eLinear);
+	}
+
+	// Generate random noise and copy to column 0 of dst
+	// OpenGL draws 33 GL_POINTS at x=0 with random R,G values — we write 32 pixels
+	{
+		// Create a small host-visible staging buffer for 32 RGBA8 pixels (128 bytes)
+		vk::BufferCreateInfo bufInfo;
+		bufInfo.size = 32 * 4;
+		bufInfo.usage = vk::BufferUsageFlagBits::eTransferSrc;
+		bufInfo.sharingMode = vk::SharingMode::eExclusive;
+
+		vk::Buffer stagingBuf;
+		VulkanAllocation stagingAlloc;
+		try {
+			stagingBuf = m_device.createBuffer(bufInfo);
+		} catch (const vk::SystemError&) {
+			// Non-fatal: skip noise injection this frame
+			goto skip_noise;
+		}
+
+		Verify(m_memoryManager->allocateBufferMemory(stagingBuf, MemoryUsage::CpuOnly, stagingAlloc));
+
+		{
+			auto* pixels = static_cast<uint8_t*>(m_memoryManager->mapMemory(stagingAlloc));
+			Verify(pixels);
+			for (int i = 0; i < 32; i++) {
+				pixels[(i * 4) + 0] = static_cast<uint8_t>(::util::Random::next(256));  // R
+				pixels[(i * 4) + 1] = static_cast<uint8_t>(::util::Random::next(256));  // G
+				pixels[(i * 4) + 2] = 255;  // B
+				pixels[(i * 4) + 3] = 255;  // A
+			}
+			m_memoryManager->unmapMemory(stagingAlloc);
+
+			// Copy staging buffer → column 0 of dst (1 pixel wide, 32 pixels tall)
+			vk::BufferImageCopy region;
+			region.bufferOffset = 0;
+			region.bufferRowLength = 0;    // Tightly packed
+			region.bufferImageHeight = 0;
+			region.imageSubresource = vk::ImageSubresourceLayers(
+				vk::ImageAspectFlagBits::eColor, 0, 0, 1);
+			region.imageOffset = vk::Offset3D(0, 0, 0);
+			region.imageExtent = vk::Extent3D(1, 32, 1);
+
+			cmd.copyBufferToImage(stagingBuf, m_distortionTex[dst].image,
+				vk::ImageLayout::eTransferDstOptimal, region);
+		}
+
+		// Schedule staging buffer for deferred destruction (GPU may still be reading)
+		auto* delQueue = getDeletionQueue();
+		if (delQueue) {
+			delQueue->queueBuffer(stagingBuf, stagingAlloc);
+		} else {
+			m_device.destroyBuffer(stagingBuf);
+			m_memoryManager->freeAllocation(stagingAlloc);
+		}
+	}
+
+skip_noise:
+	// Transition both textures back to eShaderReadOnlyOptimal
+	{
+		std::array<vk::ImageMemoryBarrier, 2> barriers;
+
+		// dst: eTransferDstOptimal → eShaderReadOnlyOptimal
+		barriers[0].srcAccessMask = vk::AccessFlagBits::eTransferWrite;
+		barriers[0].dstAccessMask = vk::AccessFlagBits::eShaderRead;
+		barriers[0].oldLayout = vk::ImageLayout::eTransferDstOptimal;
+		barriers[0].newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		barriers[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barriers[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barriers[0].image = m_distortionTex[dst].image;
+		barriers[0].subresourceRange = vk::ImageSubresourceRange(
+			vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
+
+		// src: eTransferSrcOptimal → eShaderReadOnlyOptimal
+		barriers[1].srcAccessMask = vk::AccessFlagBits::eTransferRead;
+		barriers[1].dstAccessMask = vk::AccessFlagBits::eShaderRead;
+		barriers[1].oldLayout = vk::ImageLayout::eTransferSrcOptimal;
+		barriers[1].newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		barriers[1].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barriers[1].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barriers[1].image = m_distortionTex[src].image;
+		barriers[1].subresourceRange = vk::ImageSubresourceRange(
+			vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
+
+		cmd.pipelineBarrier(
+			vk::PipelineStageFlagBits::eTransfer,
+			vk::PipelineStageFlagBits::eFragmentShader,
+			{}, {}, {}, barriers);
+	}
+
+	m_distortionSwitch = !m_distortionSwitch;
+	m_distortionFirstUpdate = false;
+}
+
+vk::DescriptorImageInfo VulkanPostProcessor::getDistortionTextureInfo() const
+{
+	if (!m_distortionInitialized) {
+		return {};
+	}
+	// Return the most recently written texture (matching OpenGL's
+	// Distortion_texture[!Distortion_switch] binding for thrusters).
+	// After updateDistortion toggles the switch, m_distortionSwitch points
+	// to the old read source. The write target was !old_switch = new switch.
+	// So the most recently written texture is m_distortionTex[m_distortionSwitch].
+	return {m_linearSampler, m_distortionTex[m_distortionSwitch].view,
+	        vk::ImageLayout::eShaderReadOnlyOptimal};
+}
+
+void VulkanPostProcessor::blitToSwapChain(vk::CommandBuffer cmd)
+{
+	// If LDR targets exist, executeTonemap()+executeFXAA() already ran.
+	// Blit from the latest post-processing result with passthrough settings.
+	// Otherwise, fall back to direct HDR→swap chain tonemapping.
+	bool useLdr = m_ldrInitialized;
+
+	if (!useLdr) {
+		// Update tonemapping parameters from engine lighting profile
+		updateTonemappingUBO();
+	}
+
+	auto* pipelineMgr = getPipelineManager();
+	auto* descriptorMgr = getDescriptorManager();
+	auto* stateTracker = getStateTracker();
+	auto* bufferMgr = getBufferManager();
+
+	if (!pipelineMgr || !descriptorMgr || !stateTracker || !bufferMgr) {
+		return;
+	}
+
+	// Build pipeline config for tonemapping (fullscreen, no depth, no blending)
+	PipelineConfig config;
+	config.shaderType = SDR_TYPE_POST_PROCESS_TONEMAPPING;
+	config.shaderFlags = useLdr ? SDR_FLAG_TONEMAPPING_LINEAR_OUT : 0;
+	config.vertexLayoutHash = 0;  // Empty vertex layout
+	config.primitiveType = PRIM_TYPE_TRIS;
+	config.depthMode = ZBUFFER_TYPE_NONE;
+	config.blendMode = ALPHA_BLEND_NONE;
+	config.cullEnabled = false;
+	config.depthWriteEnabled = false;
+	config.renderPass = stateTracker->getCurrentRenderPass();
+
+	// Get or create the pipeline
+	vertex_layout emptyLayout;  // No vertex components
+	vk::Pipeline pipeline = pipelineMgr->getPipeline(config, emptyLayout);
+	if (!pipeline) {
+		mprintf(("VulkanPostProcessor: Failed to get tonemapping pipeline!\n"));
+		return;
+	}
+
+	vk::PipelineLayout pipelineLayout = pipelineMgr->getPipelineLayout();
+	stateTracker->bindPipeline(pipeline, pipelineLayout);
+
+	// Set viewport (non-flipped for post-processing — textures are already
+	// in the correct Vulkan orientation, no Y-flip needed)
+	stateTracker->setViewport(0.0f, 0.0f,
+		static_cast<float>(m_extent.width),
+		static_cast<float>(m_extent.height));
+
+	stateTracker->applyDynamicState();
+
+	DescriptorWriter writer;
+	writer.reset(m_device, descriptorMgr->getFallbacks());
+
+	// Set 1: Material — source texture at array slot 0
+	vk::DescriptorSet materialSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Material);
+	Verify(materialSet);
+	writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
+	{
+		std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texArrayInfos;
+		texArrayInfos.fill(descriptorMgr->getFallbacks().texture2D);
+		texArrayInfos[0].sampler = m_linearSampler;
+		texArrayInfos[0].imageView = m_postEffectsApplied ? m_sceneLuminance.view
+		                            : useLdr ? m_sceneLdr.view
+		                            : m_sceneColor.view;
+		writer.setImageArray(MaterialBinding::TextureArray, texArrayInfos);
+	}
+
+	// Set 2: PerDraw — tonemapping UBO
+	vk::DescriptorSet perDrawSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::PerDraw);
+	Verify(perDrawSet);
+	writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
+
+	// When blitting LDR, use passthrough tonemapping (exposure=1, linear)
+	if (useLdr) {
+		auto* mapped = static_cast<graphics::generic_data::tonemapping_data*>(
+			m_memoryManager->mapMemory(m_tonemapUBOAlloc));
+		Verify(mapped);
+		memset(mapped, 0, sizeof(graphics::generic_data::tonemapping_data));
+		mapped->exposure = 1.0f;
+		mapped->tonemapper = 0;  // Linear passthrough
+		m_memoryManager->unmapMemory(m_tonemapUBOAlloc);
+	}
+	writer.setBuffer(PerDrawBinding::GenericData, {m_tonemapUBO, 0,
+		sizeof(graphics::generic_data::tonemapping_data)});
+	writer.flush();
+	stateTracker->bindDescriptorSet(DescriptorSetIndex::Material, materialSet);
+	stateTracker->bindDescriptorSet(DescriptorSetIndex::PerDraw, perDrawSet);
+
+	// Draw fullscreen triangle (3 vertices from gl_VertexIndex, no vertex buffer)
+	cmd.draw(3, 1, 0, 0);
+}
+
+// ===== Shadow Map Implementation =====
+
+bool VulkanPostProcessor::initShadowPass()
+{
+	if (m_shadowInitialized) {
+		return true;
+	}
+
+	if (Shadow_quality == ShadowQuality::Disabled) {
+		return false;
+	}
+
+	int size;
+	switch (Shadow_quality) {
+	case ShadowQuality::Low:    size = 512; break;
+	case ShadowQuality::Medium: size = 1024; break;
+	case ShadowQuality::High:   size = 2048; break;
+	case ShadowQuality::Ultra:  size = 4096; break;
+	default:                    size = 512; break;
+	}
+
+	mprintf(("VulkanPostProcessor: Creating %dx%d shadow map (%d cascades)\n", size, size, MAX_SHADOW_CASCADES));
+
+	const uint32_t layers = MAX_SHADOW_CASCADES;
+
+	// Create shadow color image (RGBA16F, 2D array, MAX_SHADOW_CASCADES layers)
+	{
+		vk::ImageCreateInfo imageInfo;
+		imageInfo.imageType = vk::ImageType::e2D;
+		imageInfo.format = HDR_COLOR_FORMAT;
+		imageInfo.extent = vk::Extent3D(static_cast<uint32_t>(size), static_cast<uint32_t>(size), 1);
+		imageInfo.mipLevels = 1;
+		imageInfo.arrayLayers = layers;
+		imageInfo.samples = vk::SampleCountFlagBits::e1;
+		imageInfo.tiling = vk::ImageTiling::eOptimal;
+		imageInfo.usage = vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled;
+		imageInfo.sharingMode = vk::SharingMode::eExclusive;
+		imageInfo.initialLayout = vk::ImageLayout::eUndefined;
+
+		try {
+			m_shadowColor.image = m_device.createImage(imageInfo);
+		} catch (const vk::SystemError& e) {
+			mprintf(("VulkanPostProcessor: Failed to create shadow color image: %s\n", e.what()));
+			return false;
+		}
+
+		if (!m_memoryManager->allocateImageMemory(m_shadowColor.image, MemoryUsage::GpuOnly, m_shadowColor.allocation)) {
+			m_device.destroyImage(m_shadowColor.image);
+			m_shadowColor.image = nullptr;
+			return false;
+		}
+
+		vk::ImageViewCreateInfo viewInfo;
+		viewInfo.image = m_shadowColor.image;
+		viewInfo.viewType = vk::ImageViewType::e2DArray;
+		viewInfo.format = HDR_COLOR_FORMAT;
+		viewInfo.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+		viewInfo.subresourceRange.baseMipLevel = 0;
+		viewInfo.subresourceRange.levelCount = 1;
+		viewInfo.subresourceRange.baseArrayLayer = 0;
+		viewInfo.subresourceRange.layerCount = layers;
+
+		try {
+			m_shadowColor.view = m_device.createImageView(viewInfo);
+		} catch (const vk::SystemError& e) {
+			mprintf(("VulkanPostProcessor: Failed to create shadow color view: %s\n", e.what()));
+			return false;
+		}
+
+		m_shadowColor.format = HDR_COLOR_FORMAT;
+		m_shadowColor.width = static_cast<uint32_t>(size);
+		m_shadowColor.height = static_cast<uint32_t>(size);
+	}
+
+	// Create shadow depth image (D32F, 2D array, MAX_SHADOW_CASCADES layers)
+	{
+		vk::ImageCreateInfo imageInfo;
+		imageInfo.imageType = vk::ImageType::e2D;
+		imageInfo.format = SHADOW_DEPTH_FORMAT;
+		imageInfo.extent = vk::Extent3D(static_cast<uint32_t>(size), static_cast<uint32_t>(size), 1);
+		imageInfo.mipLevels = 1;
+		imageInfo.arrayLayers = layers;
+		imageInfo.samples = vk::SampleCountFlagBits::e1;
+		imageInfo.tiling = vk::ImageTiling::eOptimal;
+		imageInfo.usage = vk::ImageUsageFlagBits::eDepthStencilAttachment;
+		imageInfo.sharingMode = vk::SharingMode::eExclusive;
+		imageInfo.initialLayout = vk::ImageLayout::eUndefined;
+
+		try {
+			m_shadowDepth.image = m_device.createImage(imageInfo);
+		} catch (const vk::SystemError& e) {
+			mprintf(("VulkanPostProcessor: Failed to create shadow depth image: %s\n", e.what()));
+			return false;
+		}
+
+		if (!m_memoryManager->allocateImageMemory(m_shadowDepth.image, MemoryUsage::GpuOnly, m_shadowDepth.allocation)) {
+			m_device.destroyImage(m_shadowDepth.image);
+			m_shadowDepth.image = nullptr;
+			return false;
+		}
+
+		vk::ImageViewCreateInfo viewInfo;
+		viewInfo.image = m_shadowDepth.image;
+		viewInfo.viewType = vk::ImageViewType::e2DArray;
+		viewInfo.format = SHADOW_DEPTH_FORMAT;
+		viewInfo.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eDepth;
+		viewInfo.subresourceRange.baseMipLevel = 0;
+		viewInfo.subresourceRange.levelCount = 1;
+		viewInfo.subresourceRange.baseArrayLayer = 0;
+		viewInfo.subresourceRange.layerCount = layers;
+
+		try {
+			m_shadowDepth.view = m_device.createImageView(viewInfo);
+		} catch (const vk::SystemError& e) {
+			mprintf(("VulkanPostProcessor: Failed to create shadow depth view: %s\n", e.what()));
+			return false;
+		}
+
+		m_shadowDepth.format = SHADOW_DEPTH_FORMAT;
+		m_shadowDepth.width = static_cast<uint32_t>(size);
+		m_shadowDepth.height = static_cast<uint32_t>(size);
+	}
+
+	// Create shadow render pass: 1 color (RGBA16F) + 1 depth (D32F), both eClear
+	{
+		std::array<vk::AttachmentDescription, 2> attachments;
+
+		// Color attachment (RGBA16F) — stores VSM depth variance
+		attachments[0].format = HDR_COLOR_FORMAT;
+		attachments[0].samples = vk::SampleCountFlagBits::e1;
+		attachments[0].loadOp = vk::AttachmentLoadOp::eClear;
+		attachments[0].storeOp = vk::AttachmentStoreOp::eStore;
+		attachments[0].stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
+		attachments[0].stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
+		attachments[0].initialLayout = vk::ImageLayout::eUndefined;
+		attachments[0].finalLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+
+		// Depth attachment (D32F)
+		attachments[1].format = SHADOW_DEPTH_FORMAT;
+		attachments[1].samples = vk::SampleCountFlagBits::e1;
+		attachments[1].loadOp = vk::AttachmentLoadOp::eClear;
+		attachments[1].storeOp = vk::AttachmentStoreOp::eDontCare;
+		attachments[1].stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
+		attachments[1].stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
+		attachments[1].initialLayout = vk::ImageLayout::eUndefined;
+		attachments[1].finalLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+
+		vk::AttachmentReference colorRef;
+		colorRef.attachment = 0;
+		colorRef.layout = vk::ImageLayout::eColorAttachmentOptimal;
+
+		vk::AttachmentReference depthRef;
+		depthRef.attachment = 1;
+		depthRef.layout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+
+		vk::SubpassDescription subpass;
+		subpass.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
+		subpass.colorAttachmentCount = 1;
+		subpass.pColorAttachments = &colorRef;
+		subpass.pDepthStencilAttachment = &depthRef;
+
+		vk::SubpassDependency dep;
+		dep.srcSubpass = VK_SUBPASS_EXTERNAL;
+		dep.dstSubpass = 0;
+		dep.srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eEarlyFragmentTests;
+		dep.dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eEarlyFragmentTests;
+		dep.srcAccessMask = {};
+		dep.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eDepthStencilAttachmentWrite;
+
+		vk::RenderPassCreateInfo rpInfo;
+		rpInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+		rpInfo.pAttachments = attachments.data();
+		rpInfo.subpassCount = 1;
+		rpInfo.pSubpasses = &subpass;
+		rpInfo.dependencyCount = 1;
+		rpInfo.pDependencies = &dep;
+
+		try {
+			m_shadowRenderPass = m_device.createRenderPass(rpInfo);
+		} catch (const vk::SystemError& e) {
+			mprintf(("VulkanPostProcessor: Failed to create shadow render pass: %s\n", e.what()));
+			return false;
+		}
+	}
+
+	// Create layered framebuffer (all MAX_SHADOW_CASCADES layers at once)
+	{
+		std::array<vk::ImageView, 2> fbAttachments = {
+			m_shadowColor.view,
+			m_shadowDepth.view,
+		};
+
+		vk::FramebufferCreateInfo fbInfo;
+		fbInfo.renderPass = m_shadowRenderPass;
+		fbInfo.attachmentCount = static_cast<uint32_t>(fbAttachments.size());
+		fbInfo.pAttachments = fbAttachments.data();
+		fbInfo.width = static_cast<uint32_t>(size);
+		fbInfo.height = static_cast<uint32_t>(size);
+		fbInfo.layers = layers;
+
+		try {
+			m_shadowFramebuffer = m_device.createFramebuffer(fbInfo);
+		} catch (const vk::SystemError& e) {
+			mprintf(("VulkanPostProcessor: Failed to create shadow framebuffer: %s\n", e.what()));
+			return false;
+		}
+	}
+
+	m_shadowTextureSize = size;
+	m_shadowInitialized = true;
+	mprintf(("VulkanPostProcessor: Shadow map initialized (%dx%d, %d cascades)\n", size, size, MAX_SHADOW_CASCADES));
+	return true;
+}
+
+void VulkanPostProcessor::shutdownShadowPass()
+{
+	if (!m_shadowInitialized) {
+		return;
+	}
+
+	if (m_shadowFramebuffer) {
+		m_device.destroyFramebuffer(m_shadowFramebuffer);
+		m_shadowFramebuffer = nullptr;
+	}
+	if (m_shadowRenderPass) {
+		m_device.destroyRenderPass(m_shadowRenderPass);
+		m_shadowRenderPass = nullptr;
+	}
+
+	if (m_shadowColor.view) {
+		m_device.destroyImageView(m_shadowColor.view);
+		m_shadowColor.view = nullptr;
+	}
+	if (m_shadowColor.image) {
+		m_device.destroyImage(m_shadowColor.image);
+		m_shadowColor.image = nullptr;
+	}
+	if (m_shadowColor.allocation.isValid()) {
+		m_memoryManager->freeAllocation(m_shadowColor.allocation);
+	}
+
+	if (m_shadowDepth.view) {
+		m_device.destroyImageView(m_shadowDepth.view);
+		m_shadowDepth.view = nullptr;
+	}
+	if (m_shadowDepth.image) {
+		m_device.destroyImage(m_shadowDepth.image);
+		m_shadowDepth.image = nullptr;
+	}
+	if (m_shadowDepth.allocation.isValid()) {
+		m_memoryManager->freeAllocation(m_shadowDepth.allocation);
+	}
+
+	m_shadowTextureSize = 0;
+	m_shadowInitialized = false;
+}
+
+bool VulkanPostProcessor::createImage(uint32_t width, uint32_t height, vk::Format format,
+                                      vk::ImageUsageFlags usage, vk::ImageAspectFlags aspect,
+                                      vk::Image& outImage, vk::ImageView& outView,
+                                      VulkanAllocation& outAllocation,
+                                      vk::SampleCountFlagBits sampleCount)
+{
+	// Create image
+	vk::ImageCreateInfo imageInfo;
+	imageInfo.imageType = vk::ImageType::e2D;
+	imageInfo.format = format;
+	imageInfo.extent.width = width;
+	imageInfo.extent.height = height;
+	imageInfo.extent.depth = 1;
+	imageInfo.mipLevels = 1;
+	imageInfo.arrayLayers = 1;
+	imageInfo.samples = sampleCount;
+	imageInfo.tiling = vk::ImageTiling::eOptimal;
+	imageInfo.usage = usage;
+	imageInfo.sharingMode = vk::SharingMode::eExclusive;
+	imageInfo.initialLayout = vk::ImageLayout::eUndefined;
+
+	try {
+		outImage = m_device.createImage(imageInfo);
+	} catch (const vk::SystemError& e) {
+		mprintf(("VulkanPostProcessor: Failed to create image: %s\n", e.what()));
+		return false;
+	}
+
+	// Allocate memory
+	if (!m_memoryManager->allocateImageMemory(outImage, MemoryUsage::GpuOnly, outAllocation)) {
+		mprintf(("VulkanPostProcessor: Failed to allocate image memory!\n"));
+		m_device.destroyImage(outImage);
+		outImage = nullptr;
+		return false;
+	}
+
+	// Create image view (plain 2D, not array)
+	vk::ImageViewCreateInfo viewInfo;
+	viewInfo.image = outImage;
+	viewInfo.viewType = vk::ImageViewType::e2D;
+	viewInfo.format = format;
+	viewInfo.subresourceRange.aspectMask = aspect;
+	viewInfo.subresourceRange.baseMipLevel = 0;
+	viewInfo.subresourceRange.levelCount = 1;
+	viewInfo.subresourceRange.baseArrayLayer = 0;
+	viewInfo.subresourceRange.layerCount = 1;
+
+	try {
+		outView = m_device.createImageView(viewInfo);
+	} catch (const vk::SystemError& e) {
+		mprintf(("VulkanPostProcessor: Failed to create image view: %s\n", e.what()));
+		m_device.destroyImage(outImage);
+		m_memoryManager->freeAllocation(outAllocation);
+		outImage = nullptr;
+		return false;
+	}
+
+	return true;
+}
+
+// ========== Fog / Volumetric Nebula ==========
+
+bool VulkanPostProcessor::initFogPass()
+{
+	if (m_fogInitialized) {
+		return true;
+	}
+
+	// Create fog render pass: 1 RGBA16F color attachment, loadOp=eDontCare (writing every pixel),
+	// initialLayout/finalLayout = eColorAttachmentOptimal (scene color stays as render target)
+	{
+		vk::AttachmentDescription att;
+		att.format = HDR_COLOR_FORMAT;
+		att.samples = vk::SampleCountFlagBits::e1;
+		att.loadOp = vk::AttachmentLoadOp::eDontCare;
+		att.storeOp = vk::AttachmentStoreOp::eStore;
+		att.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
+		att.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
+		att.initialLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		att.finalLayout = vk::ImageLayout::eColorAttachmentOptimal;
+
+		vk::AttachmentReference colorRef;
+		colorRef.attachment = 0;
+		colorRef.layout = vk::ImageLayout::eColorAttachmentOptimal;
+
+		vk::SubpassDescription subpass;
+		subpass.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
+		subpass.colorAttachmentCount = 1;
+		subpass.pColorAttachments = &colorRef;
+
+		vk::SubpassDependency dep;
+		dep.srcSubpass = VK_SUBPASS_EXTERNAL;
+		dep.dstSubpass = 0;
+		dep.srcStageMask = vk::PipelineStageFlagBits::eFragmentShader
+		                  | vk::PipelineStageFlagBits::eColorAttachmentOutput;
+		dep.dstStageMask = vk::PipelineStageFlagBits::eFragmentShader
+		                  | vk::PipelineStageFlagBits::eColorAttachmentOutput;
+		dep.srcAccessMask = vk::AccessFlagBits::eShaderRead
+		                  | vk::AccessFlagBits::eColorAttachmentWrite;
+		dep.dstAccessMask = vk::AccessFlagBits::eShaderRead
+		                  | vk::AccessFlagBits::eColorAttachmentWrite;
+
+		vk::RenderPassCreateInfo rpInfo;
+		rpInfo.attachmentCount = 1;
+		rpInfo.pAttachments = &att;
+		rpInfo.subpassCount = 1;
+		rpInfo.pSubpasses = &subpass;
+		rpInfo.dependencyCount = 1;
+		rpInfo.pDependencies = &dep;
+
+		try {
+			m_fogRenderPass = m_device.createRenderPass(rpInfo);
+		} catch (const vk::SystemError& e) {
+			mprintf(("VulkanPostProcessor: Failed to create fog render pass: %s\n", e.what()));
+			return false;
+		}
+	}
+
+	// Create fog framebuffer (scene color as attachment)
+	{
+		vk::FramebufferCreateInfo fbInfo;
+		fbInfo.renderPass = m_fogRenderPass;
+		fbInfo.attachmentCount = 1;
+		fbInfo.pAttachments = &m_sceneColor.view;
+		fbInfo.width = m_extent.width;
+		fbInfo.height = m_extent.height;
+		fbInfo.layers = 1;
+
+		try {
+			m_fogFramebuffer = m_device.createFramebuffer(fbInfo);
+		} catch (const vk::SystemError& e) {
+			mprintf(("VulkanPostProcessor: Failed to create fog framebuffer: %s\n", e.what()));
+			return false;
+		}
+	}
+
+	m_fogInitialized = true;
+	mprintf(("VulkanPostProcessor: Fog pass initialized\n"));
+	return true;
+}
+
+void VulkanPostProcessor::shutdownFogPass()
+{
+	if (m_emissiveMipmappedFullView) {
+		m_device.destroyImageView(m_emissiveMipmappedFullView);
+		m_emissiveMipmappedFullView = nullptr;
+	}
+	if (m_emissiveMipmapped.view) {
+		m_device.destroyImageView(m_emissiveMipmapped.view);
+		m_emissiveMipmapped.view = nullptr;
+	}
+	if (m_emissiveMipmapped.image) {
+		m_device.destroyImage(m_emissiveMipmapped.image);
+		m_emissiveMipmapped.image = nullptr;
+	}
+	if (m_emissiveMipmapped.allocation.isValid()) {
+		m_memoryManager->freeAllocation(m_emissiveMipmapped.allocation);
+	}
+	m_emissiveMipmappedInitialized = false;
+
+	if (m_fogFramebuffer) {
+		m_device.destroyFramebuffer(m_fogFramebuffer);
+		m_fogFramebuffer = nullptr;
+	}
+	if (m_fogRenderPass) {
+		m_device.destroyRenderPass(m_fogRenderPass);
+		m_fogRenderPass = nullptr;
+	}
+	m_fogInitialized = false;
+}
+
+void VulkanPostProcessor::renderSceneFog(vk::CommandBuffer cmd)
+{
+	GR_DEBUG_SCOPE("Scene Fog");
+
+	if (!m_fogInitialized) {
+		if (!initFogPass()) {
+			return;
+		}
+	}
+
+	auto* pipelineMgr = getPipelineManager();
+	auto* descriptorMgr = getDescriptorManager();
+	auto* bufferMgr = getBufferManager();
+	auto* texMgr = getTextureManager();
+
+	if (!pipelineMgr || !descriptorMgr || !bufferMgr || !texMgr) {
+		return;
+	}
+
+	// Copy scene depth for fog sampling
+	copySceneDepth(cmd);
+
+	// Transition scene color: eShaderReadOnlyOptimal -> eColorAttachmentOptimal
+	{
+		vk::ImageMemoryBarrier barrier;
+		barrier.srcAccessMask = {};
+		barrier.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
+		barrier.oldLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		barrier.newLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.image = m_sceneColor.image;
+		barrier.subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
+
+		cmd.pipelineBarrier(
+			vk::PipelineStageFlagBits::eTopOfPipe,
+			vk::PipelineStageFlagBits::eColorAttachmentOutput,
+			{}, nullptr, nullptr, barrier);
+	}
+
+	// Map bloom UBO for fog UBO data
+	m_bloomUBOMapped = m_memoryManager->mapMemory(m_bloomUBOAlloc);
+	Verify(m_bloomUBOMapped);
+
+	// Fill fog UBO
+	graphics::generic_data::fog_data fogData;
+	{
+		float fog_near, fog_far, fog_density;
+		neb2_get_adjusted_fog_values(&fog_near, &fog_far, &fog_density);
+		unsigned char r, g, b;
+		neb2_get_fog_color(&r, &g, &b);
+
+		fogData.fog_start = fog_near;
+		fogData.fog_density = fog_density;
+		fogData.fog_color.xyz.x = r / 255.f;
+		fogData.fog_color.xyz.y = g / 255.f;
+		fogData.fog_color.xyz.z = b / 255.f;
+		fogData.zNear = Min_draw_distance;
+		fogData.zFar = Max_draw_distance;
+	}
+
+	// Custom descriptor writes to bind depth copy at binding 4
+	PipelineConfig config;
+	config.shaderType = SDR_TYPE_SCENE_FOG;
+	config.vertexLayoutHash = 0;
+	config.primitiveType = PRIM_TYPE_TRIS;
+	config.depthMode = ZBUFFER_TYPE_NONE;
+	config.blendMode = ALPHA_BLEND_NONE;
+	config.cullEnabled = false;
+	config.depthWriteEnabled = false;
+	config.renderPass = m_fogRenderPass;
+
+	vertex_layout emptyLayout;
+	vk::Pipeline pipeline = pipelineMgr->getPipeline(config, emptyLayout);
+	if (!pipeline) {
+		m_memoryManager->unmapMemory(m_bloomUBOAlloc);
+		m_bloomUBOMapped = nullptr;
+		return;
+	}
+
+	vk::PipelineLayout pipelineLayout = pipelineMgr->getPipelineLayout();
+
+	// Begin render pass
+	vk::RenderPassBeginInfo rpBegin;
+	rpBegin.renderPass = m_fogRenderPass;
+	rpBegin.framebuffer = m_fogFramebuffer;
+	rpBegin.renderArea.offset = vk::Offset2D(0, 0);
+	rpBegin.renderArea.extent = m_extent;
+
+	cmd.beginRenderPass(rpBegin, vk::SubpassContents::eInline);
+	cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
+
+	vk::Viewport viewport;
+	viewport.x = 0.0f;
+	viewport.y = 0.0f;
+	viewport.width = static_cast<float>(m_extent.width);
+	viewport.height = static_cast<float>(m_extent.height);
+	viewport.minDepth = 0.0f;
+	viewport.maxDepth = 1.0f;
+	cmd.setViewport(0, viewport);
+
+	vk::Rect2D scissor;
+	scissor.offset = vk::Offset2D(0, 0);
+	scissor.extent = m_extent;
+	cmd.setScissor(0, scissor);
+
+	DescriptorWriter writer;
+	writer.reset(m_device, descriptorMgr->getFallbacks());
+
+	// Set 1: Material
+	vk::DescriptorSet materialSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Material);
+	Verify(materialSet);
+	writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
+	{
+		std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texArrayInfos;
+		texArrayInfos.fill(descriptorMgr->getFallbacks().texture2D);
+		texArrayInfos[0] = {m_linearSampler, m_gbufComposite.view, vk::ImageLayout::eShaderReadOnlyOptimal};
+		writer.setImageArray(MaterialBinding::TextureArray, texArrayInfos);
+	}
+	writer.setImage(MaterialBinding::DepthMap, {m_linearSampler, m_sceneDepthCopy.view, vk::ImageLayout::eShaderReadOnlyOptimal});
+
+	// Set 2: PerDraw — fog UBO
+	vk::DescriptorSet perDrawSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::PerDraw);
+	Verify(perDrawSet);
+	writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
+	{
+		Assertion(m_bloomUBOCursor < BLOOM_UBO_MAX_SLOTS, "Fog UBO slot overflow!");
+		uint32_t slotOffset = m_bloomUBOCursor * static_cast<uint32_t>(BLOOM_UBO_SLOT_SIZE);
+		memcpy(static_cast<uint8_t*>(m_bloomUBOMapped) + slotOffset, &fogData, sizeof(fogData));
+		m_bloomUBOCursor++;
+		writer.setBuffer(PerDrawBinding::GenericData, {m_bloomUBO, slotOffset, BLOOM_UBO_SLOT_SIZE});
+	}
+	writer.flush();
+
+	// Bind descriptor sets and draw
+	cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout,
+		static_cast<uint32_t>(DescriptorSetIndex::Material),
+		{materialSet, perDrawSet}, {});
+
+	cmd.draw(3, 1, 0, 0);
+	cmd.endRenderPass();
+
+	// Scene color is now in eColorAttachmentOptimal (fog render pass finalLayout)
+
+	m_memoryManager->unmapMemory(m_bloomUBOAlloc);
+	m_bloomUBOMapped = nullptr;
+}
+
+void VulkanPostProcessor::renderVolumetricFog(vk::CommandBuffer cmd)
+{
+	GR_DEBUG_SCOPE("Volumetric Nebulae");
+	TRACE_SCOPE(tracing::Volumetrics);
+
+	if (!m_fogInitialized) {
+		if (!initFogPass()) {
+			return;
+		}
+	}
+
+	auto* pipelineMgr = getPipelineManager();
+	auto* descriptorMgr = getDescriptorManager();
+	auto* bufferMgr = getBufferManager();
+	auto* texMgr = getTextureManager();
+
+	if (!pipelineMgr || !descriptorMgr || !bufferMgr || !texMgr) {
+		return;
+	}
+
+	const volumetric_nebula& neb = *The_mission.volumetrics;
+	Assertion(neb.isVolumeBitmapValid(), "Volumetric nebula was not properly initialized!");
+
+	// Get 3D texture handles
+	int volHandle = neb.getVolumeBitmapHandle();
+	auto* volSlot = texMgr->getTextureSlot(volHandle);
+	if (!volSlot || !volSlot->imageView) {
+		mprintf(("VulkanPostProcessor::renderVolumetricFog: Volume texture not available\n"));
+		return;
+	}
+
+	bool noiseActive = neb.getNoiseActive();
+	tcache_slot_vulkan* noiseSlot = nullptr;
+	if (noiseActive) {
+		int noiseHandle = neb.getNoiseVolumeBitmapHandle();
+		noiseSlot = texMgr->getTextureSlot(noiseHandle);
+	}
+
+	// Prepare mipmapped emissive copy for LOD sampling
+	if (!m_emissiveMipmappedInitialized) {
+		m_emissiveMipLevels = 1;
+		uint32_t dim = std::max(m_extent.width, m_extent.height);
+		while (dim > 1) {
+			dim >>= 1;
+			m_emissiveMipLevels++;
+		}
+
+		vk::ImageCreateInfo imgInfo;
+		imgInfo.imageType = vk::ImageType::e2D;
+		imgInfo.format = HDR_COLOR_FORMAT;
+		imgInfo.extent = vk::Extent3D(m_extent.width, m_extent.height, 1);
+		imgInfo.mipLevels = m_emissiveMipLevels;
+		imgInfo.arrayLayers = 1;
+		imgInfo.samples = vk::SampleCountFlagBits::e1;
+		imgInfo.tiling = vk::ImageTiling::eOptimal;
+		imgInfo.usage = vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst
+		              | vk::ImageUsageFlagBits::eSampled;
+		imgInfo.sharingMode = vk::SharingMode::eExclusive;
+		imgInfo.initialLayout = vk::ImageLayout::eUndefined;
+
+		try {
+			m_emissiveMipmapped.image = m_device.createImage(imgInfo);
+		} catch (const vk::SystemError& e) {
+			mprintf(("VulkanPostProcessor: Failed to create mipmapped emissive: %s\n", e.what()));
+			return;
+		}
+
+		Verify(m_memoryManager->allocateImageMemory(m_emissiveMipmapped.image, MemoryUsage::GpuOnly, m_emissiveMipmapped.allocation));
+
+		// Create full-mip-chain view for LOD sampling
+		vk::ImageViewCreateInfo viewInfo;
+		viewInfo.image = m_emissiveMipmapped.image;
+		viewInfo.viewType = vk::ImageViewType::e2D;
+		viewInfo.format = HDR_COLOR_FORMAT;
+		viewInfo.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+		viewInfo.subresourceRange.baseMipLevel = 0;
+		viewInfo.subresourceRange.levelCount = m_emissiveMipLevels;
+		viewInfo.subresourceRange.baseArrayLayer = 0;
+		viewInfo.subresourceRange.layerCount = 1;
+
+		try {
+			m_emissiveMipmappedFullView = m_device.createImageView(viewInfo);
+		} catch (const vk::SystemError& e) {
+			mprintf(("VulkanPostProcessor: Failed to create mipmapped emissive view: %s\n", e.what()));
+			return;
+		}
+
+		m_emissiveMipmapped.format = HDR_COLOR_FORMAT;
+		m_emissiveMipmapped.width = m_extent.width;
+		m_emissiveMipmapped.height = m_extent.height;
+		m_emissiveMipmappedInitialized = true;
+	}
+
+	// Copy G-buffer emissive (mip 0) to mipmapped emissive, then generate mips.
+	// dstMipLevels transitions ALL mip levels to eTransferDstOptimal in the pre-barrier.
+	// Skip dst post-barrier (stays in eTransferDstOptimal for generateMipmaps).
+	copyImageToImage(cmd,
+		m_gbufEmissive.image, vk::ImageLayout::eShaderReadOnlyOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
+		m_emissiveMipmapped.image, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal,
+		m_extent,
+		vk::ImageAspectFlagBits::eColor,
+		m_emissiveMipLevels);
+
+	// Generate mipmaps via blit chain (expects dst in eTransferDstOptimal).
+	// After return, all mips are in eShaderReadOnlyOptimal.
+	generateMipmaps(cmd, m_emissiveMipmapped.image, m_extent.width, m_extent.height, m_emissiveMipLevels);
+
+	// Copy scene depth (if not already done by renderSceneFog)
+	// copySceneDepth is safe to call multiple times — but it re-transitions the depth buffer.
+	// The fog pass already called it if scene fog ran. For standalone volumetric, we need it.
+	copySceneDepth(cmd);
+
+	// Transition scene color → eColorAttachmentOptimal for the fog render pass.
+	// oldLayout=eUndefined is safe: render pass has loadOp=eDontCare (overwrites every pixel).
+	// Scene color may be in eShaderReadOnlyOptimal (volumetric-only) or
+	// eColorAttachmentOptimal (after scene fog + copySceneColorToComposite).
+	{
+		vk::ImageMemoryBarrier barrier;
+		barrier.srcAccessMask = {};
+		barrier.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
+		barrier.oldLayout = vk::ImageLayout::eUndefined;
+		barrier.newLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.image = m_sceneColor.image;
+		barrier.subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
+
+		cmd.pipelineBarrier(
+			vk::PipelineStageFlagBits::eTopOfPipe,
+			vk::PipelineStageFlagBits::eColorAttachmentOutput,
+			{}, nullptr, nullptr, barrier);
+	}
+
+	// Map bloom UBO for volumetric fog UBO data
+	m_bloomUBOMapped = m_memoryManager->mapMemory(m_bloomUBOAlloc);
+	Verify(m_bloomUBOMapped);
+
+	// Fill volumetric fog UBO
+	graphics::generic_data::volumetric_fog_data volData;
+	{
+		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+		gr_set_view_matrix(&Eye_position, &Eye_matrix);
+		vm_inverse_matrix4(&volData.p_inv, &gr_projection_matrix);
+		vm_inverse_matrix4(&volData.v_inv, &gr_view_matrix);
+		gr_end_view_matrix();
+		gr_end_proj_matrix();
+
+		volData.zNear = Min_draw_distance;
+		volData.zFar = Max_draw_distance;
+		volData.cameraPos = Eye_position;
+
+		// Find first directional light for global light direction/color
+		vec3d global_light_dir = ZERO_VECTOR;
+		vec3d global_light_diffuse = ZERO_VECTOR;
+		for (const auto& l : Lights) {
+			if (l.type == Light_Type::Directional) {
+				global_light_dir = l.vec;
+				global_light_diffuse.xyz.x = l.r * l.intensity;
+				global_light_diffuse.xyz.y = l.g * l.intensity;
+				global_light_diffuse.xyz.z = l.b * l.intensity;
+				break;
+			}
+		}
+
+		volData.globalLightDirection = global_light_dir;
+		volData.globalLightDiffuse = global_light_diffuse;
+		volData.nebPos = neb.getPos();
+		volData.nebSize = neb.getSize();
+		volData.stepsize = neb.getStepsize();
+		volData.opacitydistance = neb.getOpacityDistance();
+		volData.alphalimit = neb.getAlphaLim();
+		auto nebColor = neb.getNebulaColor();
+		volData.nebColor[0] = std::get<0>(nebColor);
+		volData.nebColor[1] = std::get<1>(nebColor);
+		volData.nebColor[2] = std::get<2>(nebColor);
+		volData.udfScale = neb.getUDFScale();
+		volData.emissiveSpreadFactor = neb.getEmissiveSpread();
+		volData.emissiveIntensity = neb.getEmissiveIntensity();
+		volData.emissiveFalloff = neb.getEmissiveFalloff();
+		volData.henyeyGreensteinCoeff = neb.getHenyeyGreensteinCoeff();
+		volData.directionalLightSampleSteps = neb.getGlobalLightSteps();
+		volData.directionalLightStepSize = neb.getGlobalLightStepsize();
+		auto noiseColor = neb.getNoiseColor();
+		volData.noiseColor[0] = std::get<0>(noiseColor);
+		volData.noiseColor[1] = std::get<1>(noiseColor);
+		volData.noiseColor[2] = std::get<2>(noiseColor);
+		auto noiseScale = neb.getNoiseColorScale();
+		volData.noiseColorScale1 = std::get<0>(noiseScale);
+		volData.noiseColorScale2 = std::get<1>(noiseScale);
+		volData.noiseColorIntensity = neb.getNoiseColorIntensity();
+		volData.aspect = gr_screen.clip_aspect;
+		volData.fov = g3_get_hfov(Proj_fov);
+	}
+
+	// Compute shader flags for volumetric fog variants
+	unsigned int volFogFlags = 0;
+	if (neb.getEdgeSmoothing()) {
+		volFogFlags |= SDR_FLAG_VOLUMETRICS_DO_EDGE_SMOOTHING;
+	}
+	if (noiseActive) {
+		volFogFlags |= SDR_FLAG_VOLUMETRICS_NOISE;
+	}
+
+	// We need to use a custom descriptor write because the volumetric shader uses sampler3D
+	// at bindings 5 and 6, which differs from the default drawFullscreenTriangle fallbacks (sampler2D).
+	// So we replicate the drawFullscreenTriangle pattern but customize the material set.
+
+	PipelineConfig config;
+	config.shaderType = SDR_TYPE_VOLUMETRIC_FOG;
+	config.shaderFlags = volFogFlags;
+	config.vertexLayoutHash = 0;
+	config.primitiveType = PRIM_TYPE_TRIS;
+	config.depthMode = ZBUFFER_TYPE_NONE;
+	config.blendMode = ALPHA_BLEND_NONE;
+	config.cullEnabled = false;
+	config.depthWriteEnabled = false;
+	config.renderPass = m_fogRenderPass;
+
+	vertex_layout emptyLayout;
+	vk::Pipeline pipeline = pipelineMgr->getPipeline(config, emptyLayout);
+	if (!pipeline) {
+		m_memoryManager->unmapMemory(m_bloomUBOAlloc);
+		m_bloomUBOMapped = nullptr;
+		return;
+	}
+
+	vk::PipelineLayout pipelineLayout = pipelineMgr->getPipelineLayout();
+
+	// Begin render pass
+	vk::RenderPassBeginInfo rpBegin;
+	rpBegin.renderPass = m_fogRenderPass;
+	rpBegin.framebuffer = m_fogFramebuffer;
+	rpBegin.renderArea.offset = vk::Offset2D(0, 0);
+	rpBegin.renderArea.extent = m_extent;
+
+	cmd.beginRenderPass(rpBegin, vk::SubpassContents::eInline);
+	cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
+
+	vk::Viewport viewport;
+	viewport.x = 0.0f;
+	viewport.y = 0.0f;
+	viewport.width = static_cast<float>(m_extent.width);
+	viewport.height = static_cast<float>(m_extent.height);
+	viewport.minDepth = 0.0f;
+	viewport.maxDepth = 1.0f;
+	cmd.setViewport(0, viewport);
+
+	vk::Rect2D scissor;
+	scissor.offset = vk::Offset2D(0, 0);
+	scissor.extent = m_extent;
+	cmd.setScissor(0, scissor);
+
+	DescriptorWriter writer;
+	writer.reset(m_device, descriptorMgr->getFallbacks());
+
+	// Set 1: Material
+	vk::DescriptorSet materialSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Material);
+	Verify(materialSet);
+	writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
+	{
+		std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texArrayInfos;
+		texArrayInfos.fill(descriptorMgr->getFallbacks().texture2D);
+		texArrayInfos[0] = {m_linearSampler, m_gbufComposite.view, vk::ImageLayout::eShaderReadOnlyOptimal};
+		texArrayInfos[1] = {m_mipmapSampler, m_emissiveMipmappedFullView, vk::ImageLayout::eShaderReadOnlyOptimal};
+		writer.setImageArray(MaterialBinding::TextureArray, texArrayInfos);
+	}
+	writer.setImage(MaterialBinding::DepthMap, {m_linearSampler, m_sceneDepthCopy.view, vk::ImageLayout::eShaderReadOnlyOptimal});
+	// Binding 5: 3D volume texture (reuses SceneColor slot)
+	writer.setImage(MaterialBinding::SceneColor, {m_linearSampler, volSlot->imageView, vk::ImageLayout::eShaderReadOnlyOptimal});
+	// Binding 6: 3D noise texture (or fallback 3D)
+	{
+		auto noiseInfo = descriptorMgr->getFallbacks().texture3D;
+		noiseInfo.sampler = m_linearSampler;
+		if (noiseSlot && noiseSlot->imageView) {
+			noiseInfo.imageView = noiseSlot->imageView;
+		}
+		writer.setImage(MaterialBinding::DistortionMap, noiseInfo);
+	}
+
+	// Set 2: PerDraw — volumetric fog UBO
+	vk::DescriptorSet perDrawSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::PerDraw);
+	Verify(perDrawSet);
+	writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
+	{
+		Assertion(m_bloomUBOCursor < BLOOM_UBO_MAX_SLOTS, "Fog UBO slot overflow!");
+		uint32_t slotOffset = m_bloomUBOCursor * static_cast<uint32_t>(BLOOM_UBO_SLOT_SIZE);
+		memcpy(static_cast<uint8_t*>(m_bloomUBOMapped) + slotOffset, &volData, sizeof(volData));
+		m_bloomUBOCursor++;
+		writer.setBuffer(PerDrawBinding::GenericData, {m_bloomUBO, slotOffset, BLOOM_UBO_SLOT_SIZE});
+	}
+	writer.flush();
+
+	// Bind descriptor sets and draw
+	cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout,
+		static_cast<uint32_t>(DescriptorSetIndex::Material),
+		{materialSet, perDrawSet}, {});
+
+	cmd.draw(3, 1, 0, 0);
+	cmd.endRenderPass();
+
+	// Scene color is now in eColorAttachmentOptimal (fog render pass finalLayout)
+
+	m_memoryManager->unmapMemory(m_bloomUBOAlloc);
+	m_bloomUBOMapped = nullptr;
+}
+
+void copyImageToImage(
+    vk::CommandBuffer cmd,
+    vk::Image src, vk::ImageLayout srcOldLayout, vk::ImageLayout srcNewLayout,
+    vk::Image dst, vk::ImageLayout dstOldLayout, vk::ImageLayout dstNewLayout,
+    vk::Extent2D extent,
+    vk::ImageAspectFlags aspect,
+    uint32_t dstMipLevels)
+{
+	// Derive access mask and pipeline stage from a layout.
+	// 'leaving' = true for srcAccessMask (flushing writes before transition),
+	// false for dstAccessMask (making data available after transition).
+	auto layoutInfo = [](vk::ImageLayout layout, bool leaving)
+	    -> std::pair<vk::AccessFlags, vk::PipelineStageFlags> {
+		switch (layout) {
+		case vk::ImageLayout::eUndefined:
+			return {{}, vk::PipelineStageFlagBits::eTopOfPipe};
+		case vk::ImageLayout::eShaderReadOnlyOptimal:
+			return {leaving ? vk::AccessFlags{} : vk::AccessFlagBits::eShaderRead,
+			        vk::PipelineStageFlagBits::eFragmentShader};
+		case vk::ImageLayout::eColorAttachmentOptimal:
+			return {leaving ? vk::AccessFlagBits::eColorAttachmentWrite
+			               : (vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite),
+			        vk::PipelineStageFlagBits::eColorAttachmentOutput};
+		case vk::ImageLayout::eDepthStencilAttachmentOptimal:
+			return {leaving ? vk::AccessFlagBits::eDepthStencilAttachmentWrite
+			               : (vk::AccessFlagBits::eDepthStencilAttachmentRead | vk::AccessFlagBits::eDepthStencilAttachmentWrite),
+			        leaving ? vk::PipelineStageFlagBits::eLateFragmentTests
+			                : vk::PipelineStageFlagBits::eEarlyFragmentTests};
+		case vk::ImageLayout::eTransferSrcOptimal:
+			return {vk::AccessFlagBits::eTransferRead, vk::PipelineStageFlagBits::eTransfer};
+		case vk::ImageLayout::eTransferDstOptimal:
+			return {vk::AccessFlagBits::eTransferWrite, vk::PipelineStageFlagBits::eTransfer};
+		default:
+			Assertion(false, "copyImageToImage: unsupported layout %d", static_cast<int>(layout));
+			return {{}, vk::PipelineStageFlagBits::eAllCommands};
+		}
+	};
+
+	// 1. Pre-barriers: transition src → eTransferSrcOptimal, dst → eTransferDstOptimal
+	{
+		auto [srcAccess, srcStage] = layoutInfo(srcOldLayout, true);
+		auto [dstAccess, dstStage] = layoutInfo(dstOldLayout, true);
+
+		std::array<vk::ImageMemoryBarrier, 2> barriers;
+
+		barriers[0].srcAccessMask = srcAccess;
+		barriers[0].dstAccessMask = vk::AccessFlagBits::eTransferRead;
+		barriers[0].oldLayout = srcOldLayout;
+		barriers[0].newLayout = vk::ImageLayout::eTransferSrcOptimal;
+		barriers[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barriers[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barriers[0].image = src;
+		barriers[0].subresourceRange = {aspect, 0, 1, 0, 1};
+
+		barriers[1].srcAccessMask = dstAccess;
+		barriers[1].dstAccessMask = vk::AccessFlagBits::eTransferWrite;
+		barriers[1].oldLayout = dstOldLayout;
+		barriers[1].newLayout = vk::ImageLayout::eTransferDstOptimal;
+		barriers[1].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barriers[1].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barriers[1].image = dst;
+		barriers[1].subresourceRange = {aspect, 0, dstMipLevels, 0, 1};
+
+		cmd.pipelineBarrier(
+			srcStage | dstStage,
+			vk::PipelineStageFlagBits::eTransfer,
+			{}, nullptr, nullptr, barriers);
+	}
+
+	// 2. Copy (always mip 0, layer 0)
+	{
+		vk::ImageCopy region;
+		region.srcSubresource = {aspect, 0, 0, 1};
+		region.dstSubresource = {aspect, 0, 0, 1};
+		region.extent = vk::Extent3D(extent.width, extent.height, 1);
+
+		cmd.copyImage(
+			src, vk::ImageLayout::eTransferSrcOptimal,
+			dst, vk::ImageLayout::eTransferDstOptimal,
+			region);
+	}
+
+	// 3. Post-barriers: transition src → srcNewLayout, dst → dstNewLayout
+	// Skip rule: if newLayout matches the transfer layout, skip that barrier
+	{
+		bool skipSrc = (srcNewLayout == vk::ImageLayout::eTransferSrcOptimal);
+		bool skipDst = (dstNewLayout == vk::ImageLayout::eTransferDstOptimal);
+
+		if (skipSrc && skipDst) {
+			return;
+		}
+
+		std::array<vk::ImageMemoryBarrier, 2> barriers;
+		uint32_t count = 0;
+		vk::PipelineStageFlags postDstStage = {};
+
+		if (!skipSrc) {
+			auto [access, stage] = layoutInfo(srcNewLayout, false);
+			barriers[count].srcAccessMask = vk::AccessFlagBits::eTransferRead;
+			barriers[count].dstAccessMask = access;
+			barriers[count].oldLayout = vk::ImageLayout::eTransferSrcOptimal;
+			barriers[count].newLayout = srcNewLayout;
+			barriers[count].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			barriers[count].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			barriers[count].image = src;
+			barriers[count].subresourceRange = {aspect, 0, 1, 0, 1};
+			count++;
+			postDstStage |= stage;
+		}
+
+		if (!skipDst) {
+			auto [access, stage] = layoutInfo(dstNewLayout, false);
+			barriers[count].srcAccessMask = vk::AccessFlagBits::eTransferWrite;
+			barriers[count].dstAccessMask = access;
+			barriers[count].oldLayout = vk::ImageLayout::eTransferDstOptimal;
+			barriers[count].newLayout = dstNewLayout;
+			barriers[count].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			barriers[count].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			barriers[count].image = dst;
+			barriers[count].subresourceRange = {aspect, 0, dstMipLevels, 0, 1};
+			count++;
+			postDstStage |= stage;
+		}
+
+		cmd.pipelineBarrier(
+			vk::PipelineStageFlagBits::eTransfer,
+			postDstStage,
+			{}, nullptr, nullptr,
+			vk::ArrayProxy<const vk::ImageMemoryBarrier>(count, barriers.data()));
+	}
+}
+
+// No-op: In OpenGL, begin/end push/pop an FBO and run the post-processing
+// pipeline. In Vulkan, this is handled by vulkan_scene_texture_begin/end
+// which manage the HDR render pass and post-processing passes. These
+// functions are not actively called by the engine.
+void vulkan_post_process_begin() {}
+void vulkan_post_process_end() {}
+
+// No-op: In OpenGL, save/restore swap the depth attachment between
+// Scene_depth_texture and Cockpit_depth_texture to isolate cockpit
+// depth from the main scene. In Vulkan, the render pass loadOp=eClear
+// clears depth at the start of each scene pass, and separate cockpit
+// depth isolation is not yet implemented. Called from ship.cpp during
+// cockpit rendering but degrades gracefully as a no-op (cockpit just
+// shares the scene depth buffer).
+void vulkan_post_process_save_zbuffer() {}
+void vulkan_post_process_restore_zbuffer() {}
+
+void vulkan_post_process_set_effect(const char* name, int value, const vec3d* rgb)
+{
+	if (!Gr_post_processing_enabled || !graphics::Post_processing_manager) {
+		return;
+	}
+	if (name == nullptr) {
+		return;
+	}
+
+	auto& ls_params = graphics::Post_processing_manager->getLightshaftParams();
+	if (!stricmp("lightshafts", name)) {
+		ls_params.intensity = value / 100.0f;
+		ls_params.on = !!value;
+		return;
+	}
+
+	auto& postEffects = graphics::Post_processing_manager->getPostEffects();
+	for (auto & postEffect : postEffects) {
+		if (!stricmp(postEffect.name.c_str(), name)) {
+			postEffect.intensity = (value / postEffect.div) + postEffect.add;
+			if ((rgb != nullptr) && !(vmd_zero_vector == *rgb)) {
+				postEffect.rgb = *rgb;
+			}
+			break;
+		}
+	}
+}
+
+void vulkan_post_process_set_defaults()
+{
+	if (!graphics::Post_processing_manager) {
+		return;
+	}
+
+	auto& postEffects = graphics::Post_processing_manager->getPostEffects();
+	for (auto& effect : postEffects) {
+		effect.intensity = effect.default_intensity;
+	}
+}
+
+} // namespace graphics::vulkan
+

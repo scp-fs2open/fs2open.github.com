@@ -36,13 +36,14 @@ static void gr_flash_internal(int r, int g, int b, int a, bool alpha_flash)
 		render_material.set_blend_mode(ALPHA_BLEND_ALPHA_ADDITIVE);
 	}
 
-	int glVertices[8] = { x1, y1, x1, y2, x2, y1, x2, y2 };
+	float glVertices[8] = { (float)x1, (float)y1, (float)x1, (float)y2,
+	                        (float)x2, (float)y1, (float)x2, (float)y2 };
 
 	vertex_layout vert_def;
 
-	vert_def.add_vertex_component(vertex_format_data::SCREEN_POS, sizeof(int) * 2, 0);
+	vert_def.add_vertex_component(vertex_format_data::POSITION2, sizeof(float) * 2, 0);
 
-	gr_render_primitives_2d_immediate(&render_material, PRIM_TYPE_TRISTRIP, &vert_def, 4, glVertices, sizeof(int) * 8);
+	gr_render_primitives_2d_immediate(&render_material, PRIM_TYPE_TRISTRIP, &vert_def, 4, glVertices, sizeof(float) * 8);
 }
 
 void gr_flash(int r, int g, int b) {

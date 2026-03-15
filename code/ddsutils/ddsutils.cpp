@@ -1,14 +1,8 @@
 
 #include "ddsutils/ddsutils.h"
 #include "cfile/cfile.h"
+#include "graphics/2d.h"
 #include "osapi/osregistry.h"
-
-#ifdef WITH_OPENGL
-#include <glad/glad.h>
-#else
-static constexpr int GLAD_GL_EXT_texture_compression_s3tc = 0;
-static constexpr int GLAD_GL_ARB_texture_compression_bptc = 0;
-#endif
 
 #define BCDEC_IMPLEMENTATION 1
 PUSH_SUPPRESS_WARNINGS
@@ -57,11 +51,11 @@ static bool conversion_needed(const DDS_HEADER &dds_header)
 		case FOURCC_DXT1:
 		case FOURCC_DXT3:
 		case FOURCC_DXT5:
-			return !GLAD_GL_EXT_texture_compression_s3tc;
+			return !gr_is_capable(gr_capability::CAPABILITY_S3TC);
 
 		case FOURCC_DX10:
 			// anything other than BC7 will end up invalid
-			return !GLAD_GL_ARB_texture_compression_bptc;
+			return !gr_is_capable(gr_capability::CAPABILITY_BPTC);
 
 		default:
 			break;
@@ -223,7 +217,7 @@ static size_t compute_dds_size(const DDS_HEADER &dds_header, bool converting = f
 
 		if (dds_header.ddspf.dwFlags & DDPF_FOURCC) {
 			// size of data block (4x4)
-			d_size += ((d_width + 3) / 4) * ((d_height + 3) / 4) * d_depth * ((dds_header.ddspf.dwFourCC == FOURCC_DXT1) ? 8 : 16);
+			d_size += dds_compressed_mip_size(d_width, d_height, (dds_header.ddspf.dwFourCC == FOURCC_DXT1) ? 8 : 16) * d_depth;
 		} else {
 			d_size += d_width * d_height * d_depth * (dds_header.ddspf.dwRGBBitCount / 8);
 		}

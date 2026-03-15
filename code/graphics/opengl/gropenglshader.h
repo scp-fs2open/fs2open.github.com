@@ -12,6 +12,7 @@
 
 #include "globalincs/pstypes.h"
 #include "graphics/2d.h"
+#include "graphics/shader_types.h"
 #include "graphics/material.h"
 #include "graphics/opengl/gropengl.h"
 #include "graphics/util/UniformBuffer.h"
@@ -26,18 +27,19 @@ class ShaderProgram;
 enum shader_stage { SDR_STAGE_VERTEX, SDR_STAGE_FRAGMENT, SDR_STAGE_GEOMETRY };
 
 struct opengl_vert_attrib {
-	enum attrib_id {
-		POSITION,
-		COLOR,
-		TEXCOORD,
-		NORMAL,
-		TANGENT,
-		MODEL_ID,
-		RADIUS,
-		UVEC,
-		MODEL_MATRIX,
-		NUM_ATTRIBS,
-	};
+	// Attribute location enum — aliases the shared VertexAttributeLocation enum
+	// from shader_types.h.
+	using attrib_id = VertexAttributeLocation;
+	static constexpr attrib_id POSITION     = VATTRIB_POSITION;
+	static constexpr attrib_id COLOR        = VATTRIB_COLOR;
+	static constexpr attrib_id TEXCOORD     = VATTRIB_TEXCOORD;
+	static constexpr attrib_id NORMAL       = VATTRIB_NORMAL;
+	static constexpr attrib_id TANGENT      = VATTRIB_TANGENT;
+	static constexpr attrib_id MODEL_ID     = VATTRIB_MODELID;
+	static constexpr attrib_id RADIUS       = VATTRIB_RADIUS;
+	static constexpr attrib_id UVEC         = VATTRIB_UVEC;
+	static constexpr attrib_id MODEL_MATRIX = VATTRIB_MODEL_MATRIX;
+	static constexpr attrib_id NUM_ATTRIBS  = NUM_VERTEX_ATTRIBS;
 
 	attrib_id attribute_id;
 	SCP_string name;
@@ -58,33 +60,6 @@ struct geometry_sdr_params
 	int input_type;
 	int output_type;
 	int vertices_out;
-};
-
-struct opengl_shader_type_t {
-	shader_type type_id;
-
-	const char *vert;
-	const char *frag;
-	const char *geo;
-
-	SCP_vector<opengl_vert_attrib::attrib_id> attributes;
-
-	const char* description;
-
-	bool spirv_shader; // Specified if this shader was generated from SPIR-V
-};
-
-struct opengl_shader_variant_t {
-	shader_type type_id;
-
-	bool use_geometry_sdr;
-
-	int flag;
-	SCP_string flag_text;
-
-	SCP_vector<opengl_vert_attrib::attrib_id> attributes;
-
-	const char* description;
 };
 
 struct opengl_shader_file_t {

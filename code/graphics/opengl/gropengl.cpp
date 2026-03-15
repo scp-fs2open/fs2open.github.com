@@ -43,6 +43,8 @@
 #include "osapi/osregistry.h"
 #include "pngutils/pngutils.h"
 
+#include "backends/imgui_impl_opengl3.h"
+
 #include <glad/glad.h>
 
 // minimum GL version we can reliably support is 3.2
@@ -972,6 +974,16 @@ int opengl_init_display_device()
 	return 0;
 }
 
+static void gr_opengl_imgui_new_frame()
+{
+	ImGui_ImplOpenGL3_NewFrame();
+}
+
+static void gr_opengl_imgui_render_draw_data()
+{
+	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+}
+
 void gr_opengl_init_function_pointers()
 {
 	gr_screen.gf_flip				= gr_opengl_flip;
@@ -1103,6 +1115,9 @@ void gr_opengl_init_function_pointers()
 	gr_screen.gf_set_viewport = gr_opengl_set_viewport;
 
 	gr_screen.gf_override_fog = gr_opengl_override_fog;
+
+	gr_screen.gf_imgui_new_frame = gr_opengl_imgui_new_frame;
+	gr_screen.gf_imgui_render_draw_data = gr_opengl_imgui_render_draw_data;
 
 	gr_screen.gf_openxr_get_extensions = gr_opengl_openxr_get_extensions;
 	gr_screen.gf_openxr_test_capabilities = gr_opengl_openxr_test_capabilities;
@@ -1498,10 +1513,14 @@ bool gr_opengl_is_capable(gr_capability capability)
 		return GLAD_GL_ARB_buffer_storage != 0;
 	case gr_capability::CAPABILITY_BPTC:
 		return GLAD_GL_ARB_texture_compression_bptc != 0;
+	case gr_capability::CAPABILITY_S3TC:
+		return GLAD_GL_EXT_texture_compression_s3tc != 0;
 	case gr_capability::CAPABILITY_LARGE_SHADER:
 		return !Cmdline_no_large_shaders;
 	case gr_capability::CAPABILITY_INSTANCED_RENDERING:
 		return GLAD_GL_ARB_vertex_attrib_binding;
+	case gr_capability::CAPABILITY_QUERIES_REUSABLE:
+		return true;
 	}
 
 
