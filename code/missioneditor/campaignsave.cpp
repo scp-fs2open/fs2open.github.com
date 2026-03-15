@@ -55,16 +55,19 @@ int Fred_campaign_save::save_campaign_file(const char* pathname, const SCP_vecto
 
 	// campaign flags - Goober5000
 	if (save_config.save_format != MissionFormat::RETAIL) {
-		optional_string_fred("$Flags:");
-		parse_comments();
-		fout(" %d\n", Campaign.flags);
+		if (optional_string_fred("$Flags:")) {
+			parse_comments();
+		} else {
+			fout("\n$Flags:");
+		}
+		fout(" %d", Campaign.flags);
 	}
 
 	if (save_config.save_format != MissionFormat::RETAIL && !Campaign.custom_data.empty()) {
 		if (optional_string_fred("$begin_custom_data_map")) {
 			parse_comments(2);
 		} else {
-			fout("\n$begin_custom_data_map");
+			fout("\n\n$begin_custom_data_map");
 		}
 
 		for (const auto& pair : Campaign.custom_data) {
@@ -79,21 +82,29 @@ int Fred_campaign_save::save_campaign_file(const char* pathname, const SCP_vecto
 	}
 
 	// write out the ships and weapons which the player can start the campaign with
-	optional_string_fred("+Starting Ships: (");
-	parse_comments(2);
+	if (optional_string_fred("+Starting Ships:")) {
+		parse_comments(2);
+	} else {
+		fout("\n\n+Starting Ships:");
+	}
+	fout(" (");
 	for (int i = 0; i < ship_info_size(); i++) {
 		if (Campaign.ships_allowed[i])
-			fout(" \"%s\" ", Ship_info[i].name);
+			fout(" \"%s\"", Ship_info[i].name);
 	}
-	fout(")\n");
+	fout(" )");
 
-	optional_string_fred("+Starting Weapons: (");
-	parse_comments();
+	if (optional_string_fred("+Starting Weapons:")) {
+		parse_comments(2);
+	} else {
+		fout("\n\n+Starting Weapons:");
+	}
+	fout(" (");
 	for (int i = 0; i < weapon_info_size(); i++) {
 		if (Campaign.weapons_allowed[i])
-			fout(" \"%s\" ", Weapon_info[i].name);
+			fout(" \"%s\"", Weapon_info[i].name);
 	}
-	fout(")\n");
+	fout(" )");
 
 	fred_parse_flag = 0;
 	for (int i = 0; i < Campaign.num_missions; i++) {
@@ -105,7 +116,7 @@ int Fred_campaign_save::save_campaign_file(const char* pathname, const SCP_vecto
 		parse_comments(2);
 		fout(" %s", cm.name);
 
-		if (strlen(cm.briefing_cutscene)) {
+		if (strlen(cm.briefing_cutscene) > 0) {
 			if (optional_string_fred("+Briefing Cutscene:", "$Mission"))
 				parse_comments();
 			else
@@ -196,9 +207,9 @@ int Fred_campaign_save::save_campaign_file(const char* pathname, const SCP_vecto
 		// now save campaign loop sexp
 		if (mission_loop || mission_fork) {
 			if (mission_loop)
-				required_string_fred("\n+Mission Loop:");
+				required_string_fred("+Mission Loop:");
 			else
-				required_string_fred("\n+Mission Fork:");
+				required_string_fred("+Mission Fork:");
 			parse_comments();
 
 			int num_mission_special = 0;
@@ -274,7 +285,7 @@ int Fred_campaign_save::save_campaign_file(const char* pathname, const SCP_vecto
 		if (optional_string_fred("+Level:", "$Mission:")) {
 			parse_comments();
 		} else {
-			fout("\n\n+Level:");
+			fout("\n+Level:");
 		}
 
 		fout(" %d", cm.level);
