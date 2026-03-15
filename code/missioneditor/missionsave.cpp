@@ -4390,8 +4390,7 @@ int Fred_mission_save::save_players()
 	for (i = 0; i < Num_teams; i++) {
 		required_string_fred("$Starting Shipname:");
 		parse_comments();
-		Assert(Player_start_shipnum >= 0);
-		fout(" %s", Ships[Player_start_shipnum].ship_name);
+		fout(" %s", (Player_start_shipnum >= 0) ? Ships[Player_start_shipnum].ship_name : "<none>");
 
 		if (save_config.save_format != MissionFormat::RETAIL) {
 			if (Team_data[i].do_not_validate) {

@@ -973,7 +973,6 @@ int Editor::common_object_delete(int obj) {
 	char msg[255];
 	const char *name;
 	int i, z, r, type;
-	object* objp;
 	SCP_list<CJumpNode>::iterator jnp;
 
 	type = Objects[obj].type;
@@ -1012,17 +1011,7 @@ int Editor::common_object_delete(int obj) {
 			ai_do_objects_undocked_stuff(&Objects[obj], dock_get_first_docked_object(&Objects[obj]));
 		}
 
-		if (Player_start_shipnum == i) {  // need a new single player start.
-			objp = GET_FIRST(&obj_used_list);
-			while (objp != END_OF_LIST(&obj_used_list)) {
-				if (objp->type == OBJ_START) {
-					Player_start_shipnum = objp->instance;
-					break;
-				}
-
-				objp = GET_NEXT(objp);
-			}
-		}
+		ensure_valid_player_start_shipnum();  // may need a new single player start
 
 		Player_starts--;
 

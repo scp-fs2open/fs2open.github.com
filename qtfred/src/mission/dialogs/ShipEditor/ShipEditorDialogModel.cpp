@@ -1138,15 +1138,8 @@ void ShipEditorDialogModel::setPlayer(const bool m_player)
 			}
 		}
 	}
-	// Fix up Player_start_shipnum if it became invalid
-	if (Player_start_shipnum < 0 || Objects[Ships[Player_start_shipnum].objnum].type != OBJ_START) {
-		for (auto* p = GET_FIRST(&obj_used_list); p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p)) {
-			if (p->type == OBJ_START) {
-				Player_start_shipnum = p->instance;
-				break;
-			}
-		}
-	}
+	// fix up Player_start_shipnum if it became invalid
+	ensure_valid_player_start_shipnum();
 	setModified();
 	_editor->missionChanged();
 	modelChanged();
