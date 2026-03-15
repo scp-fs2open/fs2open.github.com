@@ -27,8 +27,25 @@ protected:
 	{
 		if ( !externlib )
 			return FALSE;
-		
+
 		m_library = SDL_LoadObject(externlib);
+		
+#ifdef __ANDROID__
+		if (m_library == NULL) {
+			auto android_path = SDL_AndroidGetInternalStoragePath();
+			if (android_path != nullptr) {
+				SCP_string android_full_path = android_path;
+				if (android_full_path.back() != DIR_SEPARATOR_CHAR) {
+					android_full_path += DIR_SEPARATOR_CHAR;
+				}
+				android_full_path += SCP_string("natives") + DIR_SEPARATOR_CHAR + externlib;
+				#ifndef NDEBUG
+					mprintf(("Calling SDL_LoadObject with the following path: '%s'\n", android_full_path.c_str()));
+				#endif
+				m_library = SDL_LoadObject(android_full_path.c_str());
+			}
+		}
+#endif
 
 #ifndef NDEBUG
 		if (m_library == NULL)
