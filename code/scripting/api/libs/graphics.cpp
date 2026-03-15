@@ -185,7 +185,7 @@ ADE_INDEXER(l_Graphics_Posteffects, "number index", "Gets the name of the specif
 	if (index >= (int) names.size())
 		return ade_set_error(L, "s", "");
 
-	return ade_set_args(L, "s", const_cast<char*>(names[index].c_str()));
+	return ade_set_args(L, "s", names[index].c_str());
 }
 
 ADE_FUNC(__len, l_Graphics_Posteffects, nullptr, "Gets the number of available post-processing effects", "number", "number of post-processing effects or 0 on error")

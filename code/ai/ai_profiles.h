@@ -164,6 +164,6 @@ extern ai_profile_t Ai_profiles[MAX_AI_PROFILES];
 
 void ai_profiles_init();
 
-int ai_profile_lookup(char *name);
+int ai_profile_lookup(const char *name);
 
 #endif

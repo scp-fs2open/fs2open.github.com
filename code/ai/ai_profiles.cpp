@@ -812,7 +812,7 @@ void ai_profiles_init()
 	Ai_profiles_initted = 1;
 }
 
-int ai_profile_lookup(char *name)
+int ai_profile_lookup(const char *name)
 {
 	for (int i = 0; i < Num_ai_profiles; i++)
 		if (!stricmp(name, Ai_profiles[i].profile_name))
