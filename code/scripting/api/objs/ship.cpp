@@ -2884,6 +2884,23 @@ ADE_FUNC(jettison, l_Ship, "number jettison_speed, [ship... dockee_ships /* All 
 	return jettison_helper(L, docker_objh, jettison_speed, 2);
 }
 
+ADE_FUNC(isDockLeader, l_Ship, nullptr, "Returns whether this ship is currently docked and is the dock leader for its docked group", "boolean", "True if this ship is docked and is the dock leader, false otherwise")
+{
+	object_h* objh = nullptr;
+
+	if (!ade_get_args(L, "o", l_Ship.GetPtr(&objh)))
+		return ADE_RETURN_NIL;
+
+	if (objh == nullptr || !objh->isValid())
+		return ADE_RETURN_NIL;
+
+	if (!object_is_docked(objh->objp()))
+		return ADE_RETURN_FALSE;
+
+	auto shipp = &Ships[objh->objp()->instance];
+	return shipp->flags[Ship::Ship_Flags::Dock_leader] ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
+}
+
 ADE_FUNC(AddElectricArc, l_Ship, "vector firstPoint, vector secondPoint, number duration, number width, [number segment_depth, boolean persistent_points]",
 	"Creates an electric arc on the ship between two points in the ship's reference frame, for the specified duration in seconds, and the specified width in meters.  Optionally, "
 		"specify the segment depth (the number of times the spark is divided) and whether to generate a set of arc points that will persist from frame to frame.",
