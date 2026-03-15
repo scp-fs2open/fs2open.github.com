@@ -240,7 +240,8 @@ int Editor::create_wing()
 	}
 
 	count = 0;
-	if (Objects[Ships[Player_start_shipnum].objnum].flags[Object::Object_Flags::Marked]) {
+	if ((Player_start_shipnum >= 0) && (Player_start_shipnum < MAX_SHIPS) && (Ships[Player_start_shipnum].objnum >= 0)
+		&& Objects[Ships[Player_start_shipnum].objnum].flags[Object::Object_Flags::Marked]) {
 		count = 1;
 	}
 
