@@ -2884,7 +2884,7 @@ ADE_FUNC(jettison, l_Ship, "number jettison_speed, [ship... dockee_ships /* All 
 	return jettison_helper(L, docker_objh, jettison_speed, 2);
 }
 
-ADE_FUNC(isDockLeader, l_Ship, nullptr, "Returns whether this ship is currently docked and is the dock leader for its docked group", "boolean", "True if this ship is docked and is the dock leader, false otherwise")
+ADE_FUNC(isDockLeader, l_Ship, nullptr, "Returns whether this ship is currently docked and is the dock leader for its docked group", "boolean", "True if this ship is docked and is the dock leader, false otherwise, nil if ship handle is invalid")
 {
 	object_h* objh = nullptr;
 
