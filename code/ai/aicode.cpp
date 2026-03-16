@@ -330,7 +330,11 @@ static inline float ai_guard_threshold(const object* guarded_objp, float thresho
 		}
 	}
 
-	return threshold;
+	if (guarded_objp != nullptr) {
+		return (MAX_GUARD_DIST + guarded_objp->radius) * threshold;
+	}
+
+	return threshold * MAX_GUARD_DIST;
 }
 
 /**
