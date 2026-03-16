@@ -286,12 +286,19 @@ void gr_opengl_print_screen(const char *filename)
 	//Reading from the front buffer here seems to no longer work correctly; that just reads back all zeros
 	glReadBuffer(Cmdline_window_res ? GL_COLOR_ATTACHMENT0 : GL_FRONT);
 
+	// Clamp float values to [0,1] when reading from the GL_RGBA16F back framebuffer.
+	// The default GL_FIXED_ONLY only clamps fixed-point FBOs, leaving float FBO reads
+	// with out-of-range values (HDR > 1.0) producing undefined behavior when converted
+	// to integer types, which manifests as rainbow artifacts on bright areas.
+	glClampColor(GL_CLAMP_READ_COLOR, GL_TRUE);
+
 	// now for the data
 	if (Use_PBOs) {
 		Assert( !pbo );
 		glGenBuffers(1, &pbo);
 
 		if ( !pbo ) {
+			glClampColor(GL_CLAMP_READ_COLOR, GL_FIXED_ONLY);
 			return;
 		}
 
@@ -306,6 +313,7 @@ void gr_opengl_print_screen(const char *filename)
 		pixels = (GLubyte*) vm_malloc(gr_screen.max_w * gr_screen.max_h * 4, memory::quiet_alloc);
 
 		if (pixels == NULL) {
+			glClampColor(GL_CLAMP_READ_COLOR, GL_FIXED_ONLY);
 			return;
 		}
 
@@ -313,10 +321,20 @@ void gr_opengl_print_screen(const char *filename)
 		glFlush();
 	}
 
+	glClampColor(GL_CLAMP_READ_COLOR, GL_FIXED_ONLY);
+
+	// Force alpha to fully opaque so screenshots are not saved with transparency.
+	// The framebuffer alpha can be < 255 due to blending operations affecting the alpha
+	// channel as a side effect, even though the rendered image itself is opaque.
+	int num_pixels = gr_screen.max_w * gr_screen.max_h;
+	for (int i = 0; i < num_pixels; i++) {
+		pixels[i * 4 + 3] = 255;
+	}
+
 	if (!png_write_bitmap(os_get_config_path(tmp).c_str(), gr_screen.max_w, gr_screen.max_h, true, pixels)) {
 		ReleaseWarning(LOCATION, "Failed to write screenshot to \"%s\".", os_get_config_path(tmp).c_str());
 	}
-	
+
 	if (pbo) {
 		glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
 		pixels = NULL;
