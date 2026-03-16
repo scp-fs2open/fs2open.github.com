@@ -1319,6 +1319,7 @@ ADE_FUNC(drawOffscreenIndicator, l_Graphics, "object Object, [boolean draw=true,
 			int dir;
 			float tri_separation;
 
+			offscreengauge->resetClip();
 			offscreengauge->calculatePosition(&target_point, &targetp->pos, &outpoint, &dir, &tri_separation);
 
 			if (draw) {
