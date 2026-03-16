@@ -2647,8 +2647,13 @@ bool add_message(const char* name, const char* message, int persona_index, int m
 	strcpy_s(msg.message, message);
 	msg.persona_index = persona_index;
 	msg.multi_team = multi_team;
-	msg.avi_info.index = -1;
-	msg.wave_info.index = -1;
+	if (Fred_running) {
+		msg.avi_info.name = nullptr;
+		msg.wave_info.name = nullptr;
+	} else {
+		msg.avi_info.index = -1;
+		msg.wave_info.index = -1;
+	}
 	Messages.push_back(msg);
 	Num_messages++;
 

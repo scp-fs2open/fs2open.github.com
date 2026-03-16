@@ -422,6 +422,8 @@ void LabRenderer::useBackground(const SCP_string& mission_name) {
 		ltp_name = ltp::default_name();
 		if(optional_string("$Lighting Profile:")){
 			stuff_string(ltp_name,F_NAME);
+			if (ltp_name.empty())
+				ltp_name = ltp::default_name();
 		}
 		if (ltp_name != ltp::current()->name) {
 				ltp::switch_to(ltp_name);
