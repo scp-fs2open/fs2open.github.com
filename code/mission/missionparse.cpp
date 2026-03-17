@@ -6954,8 +6954,15 @@ bool post_process_mission(mission *pm)
 		for (i = 0; i < Briefings[team].num_stages; i++) {
 			const auto &stage = br[i];
 			for (int j = 0; j < stage.num_icons; j++) {
-				ship_info *sip = &Ship_info[stage.icons[j].ship_class];
-				stage.icons[j].modelnum = model_load(sip->pof_file, sip);
+				const auto& icon = stage.icons[j];
+
+				bool valid = SCP_vector_inbounds(Ship_info, icon.ship_class);
+				Assertion(valid, "Invalid ship class %d for briefing icon in stage %d", icon.ship_class, i);
+
+				if (valid) {
+					ship_info* sip = &Ship_info[icon.ship_class];
+					stage.icons[j].modelnum = model_load(sip->pof_file, sip);
+				}
 			}
 		}
 	}
