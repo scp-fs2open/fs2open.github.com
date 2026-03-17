@@ -2437,7 +2437,9 @@ int cf_create_default_path_string(SCP_string& path, int pathtype, const char* fi
 		}
 
 		if (!root) {
-			Assert( filename != NULL );
+			if (filename == nullptr) {
+				return 0;
+			}
 			path.assign(filename);
 			return 1;
 		}

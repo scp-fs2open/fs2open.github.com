@@ -9802,12 +9802,12 @@ SCP_map<SCP_string, weapon_stat_value> weapon_get_stats(const weapon_info &wi)
 	stats["is_beam"] = is_beam;
 	stats["allowed_for_player"] = (bool)wi.wi_flags[Weapon::Info_Flags::Player_allowed];
 
-	// Velocity and range
+	// max_speed and range
 	if (is_beam) {
-		stats["velocity"] = 0.0f;
+		stats["max_speed"] = 0.0f;
 		stats["standard_range"] = wi.b_info.range;
 	} else {
-		stats["velocity"] = wi.max_speed;
+		stats["max_speed"] = wi.max_speed;
 		stats["standard_range"] = wi.max_speed * wi.lifetime;
 	}
 
@@ -9914,7 +9914,7 @@ SCP_string weapon_get_stats_text(const weapon_info &wi)
 	if (is_beam) {
 		sprintf(buf, "\tVelocity: N/A        Range: %.0f\n", std::get<float>(stats["standard_range"]));
 	} else {
-		sprintf(buf, "\tVelocity: %-11.0fRange: %.0f\n", std::get<float>(stats["velocity"]), std::get<float>(stats["standard_range"]));
+		sprintf(buf, "\tVelocity: %-11.0fRange: %.0f\n", std::get<float>(stats["max_speed"]), std::get<float>(stats["standard_range"]));
 	}
 	result += buf;
 
@@ -9981,7 +9981,7 @@ void weapon_spew_stats(WeaponSpewType type)
 	static const csv_column columns[] = {
 		{"Name",              nullptr},
 		{"Type",              "type"},
-		{"Velocity",          "velocity"},
+		{"Velocity",          "max_speed"},
 		{"Range",             "standard_range"},
 		{"Damage Hull",       "damage_hull"},
 		{"DPS Hull",          "dps_hull"},
@@ -10018,7 +10018,7 @@ void weapon_spew_stats(WeaponSpewType type)
 	auto is_blank = [](const char *key, bool primary, bool is_beam) -> bool {
 		if (!key)
 			return false;
-		if (is_beam && !strcmp(key, "velocity"))
+		if (is_beam && !strcmp(key, "max_speed"))
 			return true;
 		if (primary && (!strcmp(key, "reload_rate") || !strcmp(key, "reload_rate_reciprocal")))
 			return true;

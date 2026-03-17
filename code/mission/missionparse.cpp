@@ -5702,18 +5702,22 @@ void parse_event(mission *pm)
 
 	if ( optional_string("+Trigger Count:")){
 		stuff_int( &(event->trigger_count) );
-		event->flags |= MEF_USING_TRIGGER_COUNT; 
 
-		// if we have a trigger count but no repeat count, we want the event to loop until it has triggered enough times
-		if (event->repeat_count == 1) {
-			event->repeat_count = -1;
-		}
-
-		// sanity check on the trigger count variable
+		// sanity check on the trigger count variable; do this first so the != 1 check below is correct
 		// negative trigger count is also legal
 		if ( event->trigger_count == 0 ){
 			parse_warning_or_record("Trigger count for mission event %s is 0 — must be >= 1 or negative; corrected to 1.", event->name.c_str());
 			event->trigger_count = 1;
+		}
+
+		// a trigger count of 1 is the default, so the field only has runtime effect when it's something else
+		if (event->trigger_count != 1) {
+			event->flags |= MEF_USING_TRIGGER_COUNT;
+
+			// if we have a trigger count but no repeat count, we want the event to loop until it has triggered enough times
+			if (event->repeat_count == 1) {
+				event->repeat_count = -1;
+			}
 		}
 	}
 
