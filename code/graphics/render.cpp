@@ -961,6 +961,20 @@ void gr_string(float sx, float sy, const char* s, int resize_mode, float scaleMu
 	}
 }
 
+void gr_string_outlined(int x, int y, const char* text, const color* foreground, const color* outline, int offset, int resize_mode, float scaleMultiplier, size_t length)
+{
+	// draw outline by rendering text at all surrounding offsets
+	gr_set_color_fast(outline);
+	for (int dx = -offset; dx <= offset; dx++)
+		for (int dy = -offset; dy <= offset; dy++)
+			if (dx || dy)
+				gr_string(x + dx, y + dy, text, resize_mode, scaleMultiplier, length);
+
+	// draw foreground text on top
+	gr_set_color_fast(foreground);
+	gr_string(x, y, text, resize_mode, scaleMultiplier, length);
+}
+
 static void gr_line(float x1, float y1, float x2, float y2, int resize_mode) {
 	auto path = beginDrawing(resize_mode);
 
