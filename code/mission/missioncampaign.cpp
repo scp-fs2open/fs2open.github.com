@@ -1826,7 +1826,7 @@ bool mission_campaign_jump_to_mission(const char* filename, bool no_skip, bool p
 		return false;
 	} else {
 		if (!preserve_loadout) {
-			for (SCP_vector<ship_info>::iterator it = Ship_info.begin(); it != Ship_info.end(); it++) {
+			for (auto it = Ship_info.begin(); it != Ship_info.end(); it++) {
 				i = static_cast<int>(std::distance(Ship_info.begin(), it));
 				Campaign.ships_allowed[i] = 1;
 			}
