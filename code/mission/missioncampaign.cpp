@@ -1792,7 +1792,7 @@ void mission_campaign_exit_loop()
  * all previous missions marked skipped
  * this relies on correct mission ordering in the campaign file
  */
-bool mission_campaign_jump_to_mission(const char* filename, bool no_skip)
+bool mission_campaign_jump_to_mission(const char* filename, bool no_skip, bool preserve_loadout)
 {
 	int i = 0, mission_num = -1;
 	constexpr size_t dest_filename_size = 64;
@@ -1825,12 +1825,14 @@ bool mission_campaign_jump_to_mission(const char* filename, bool no_skip)
 		// based on player feedback, let's NOT restart the campaign but rather fail gracefully
 		return false;
 	} else {
-		for (SCP_vector<ship_info>::iterator it = Ship_info.begin(); it != Ship_info.end(); it++) {
-			i = static_cast<int>(std::distance(Ship_info.begin(), it));
-			Campaign.ships_allowed[i] = 1;
-		}
-		for (i = 0; i < weapon_info_size(); i++) {
-			Campaign.weapons_allowed[i] = 1;
+		if (!preserve_loadout) {
+			for (SCP_vector<ship_info>::iterator it = Ship_info.begin(); it != Ship_info.end(); it++) {
+				i = static_cast<int>(std::distance(Ship_info.begin(), it));
+				Campaign.ships_allowed[i] = 1;
+			}
+			for (i = 0; i < weapon_info_size(); i++) {
+				Campaign.weapons_allowed[i] = 1;
+			}
 		}
 
 		Campaign.next_mission = mission_num;
@@ -1841,6 +1843,87 @@ bool mission_campaign_jump_to_mission(const char* filename, bool no_skip)
 		gameseq_post_event(GS_EVENT_START_GAME);
 		return true;
 	}
+}
+
+SCP_vector<SCP_string> mission_campaign_get_valid_next_missions()
+{
+	SCP_vector<SCP_string> valid_missions;
+
+	// This can be queried from UI states outside active mission gameplay
+	// where GM_CAMPAIGN_MODE may not be set even though a campaign is loaded.
+	if (Campaign.name[0] == '\0' || Campaign.num_missions <= 0) {
+		return valid_missions;
+	}
+
+	// During normal campaign flow, current_mission is set to -1 after accepting a mission
+	// and before the next mission actually starts. In that window, prev_mission is the
+	// mission whose branching formula produced the current next_mission.
+	// Prefer prev_mission when available since branch selection outside missions is
+	// generally based on the mission just completed.
+	int branch_source_mission = Campaign.prev_mission;
+	if (branch_source_mission < 0) {
+		branch_source_mission = Campaign.current_mission;
+	}
+
+	if (branch_source_mission < 0 || branch_source_mission >= Campaign.num_missions) {
+		// Campaigns that haven't started yet can have both current_mission and prev_mission
+		// unset. In that case, next_mission is the only available entry point.
+		if (Campaign.next_mission >= 0 && Campaign.next_mission < Campaign.num_missions) {
+			valid_missions.emplace_back(Campaign.missions[Campaign.next_mission].name);
+		}
+		return valid_missions;
+	}
+
+	auto& current = Campaign.missions[branch_source_mission];
+	if (current.formula < 0) {
+		return valid_missions;
+	}
+
+	// This helper is intended to enumerate all valid branches from a cond formula.
+	// If the formula is not cond, return an empty list.
+	if (get_operator_const(CTEXT(current.formula)) != OP_COND) {
+		return valid_missions;
+	}
+
+	const int saved_next = Campaign.next_mission;
+	int clauses = CDR(current.formula);
+
+	while (clauses >= 0) {
+		const int clause = CAR(clauses);
+		if (clause < 0) {
+			clauses = CDR(clauses);
+			continue;
+		}
+
+		flush_sexp_tree(current.formula);
+
+		const int condition = CAR(clause);
+		const int condition_result = eval_sexp(condition);
+		if (condition_result == SEXP_TRUE) {
+			Campaign.next_mission = -1;
+			int actions = CDR(clause);
+
+			while (actions >= 0) {
+				const int exp = CAR(actions);
+				if (exp >= -1) {
+					eval_sexp(exp);
+				}
+				actions = CDR(actions);
+			}
+
+			if (Campaign.next_mission >= 0 && Campaign.next_mission < Campaign.num_missions && Campaign.next_mission != branch_source_mission) {
+				const auto& mission_name = Campaign.missions[Campaign.next_mission].name;
+				if (std::find(valid_missions.begin(), valid_missions.end(), mission_name) == valid_missions.end()) {
+					valid_missions.emplace_back(mission_name);
+				}
+			}
+		}
+
+		clauses = CDR(clauses);
+	}
+
+	Campaign.next_mission = saved_next;
+	return valid_missions;
 }
 
 void mission_campaign_load_failure_popup()

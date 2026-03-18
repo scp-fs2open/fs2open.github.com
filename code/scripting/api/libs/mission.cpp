@@ -3207,15 +3207,27 @@ ADE_FUNC(getPrevMissionFilename, l_Campaign, NULL, "Gets previous mission filena
 }
 
 // DahBlount - This jumps to a mission, the reason it accepts a boolean value is so that players can return to campaign maps
-ADE_FUNC(jumpToMission, l_Campaign, "string filename, [boolean hub]", "Jumps to a mission based on the filename. Optionally, the player can be sent to a hub mission without setting missions to skipped.", "boolean", "Jumps to a mission, returning true if successful, false if unsuccessful (e.g. the mission could not be found in the campaign), or nil if no mission was specified.")
+ADE_FUNC(jumpToMission, l_Campaign, "string filename, [boolean hub, boolean preserve]", "Jumps to a mission based on the filename. Optionally, the player can be sent to a hub mission without setting missions to skipped or preserve loadout.", "boolean", "Jumps to a mission, returning true if successful, false if unsuccessful (e.g. the mission could not be found in the campaign), or nil if no mission was specified.")
 {
 	const char* filename = nullptr;
 	bool hub = false;
-	if (!ade_get_args(L, "s|b", &filename, &hub))
+	bool preserve = false;
+	if (!ade_get_args(L, "s|b", &filename, &hub, &preserve))
 		return ADE_RETURN_NIL;
 
-	bool success = mission_campaign_jump_to_mission(filename, hub);
+	bool success = mission_campaign_jump_to_mission(filename, hub, preserve);
 	return ade_set_args(L, "b", success);
+}
+
+ADE_FUNC(getValidNextMissions, l_Campaign, nullptr, "Gets all valid next mission filenames for the current campaign.", "table", "A list of mission filenames, or an empty table if none are valid.")
+{
+	auto table = luacpp::LuaTable::create(L);
+	auto valid_missions = mission_campaign_get_valid_next_missions();
+	for (size_t i = 0; i < valid_missions.size(); ++i) {
+		table.addValue(static_cast<int>(i + 1), valid_missions[i]);
+	}
+
+	return ade_set_args(L, "t", &table);
 }
 
 ADE_VIRTVAR(CustomData, l_Campaign, nullptr, "Gets the custom data table for this campaign", "table", "The campaign's custom data table") 
