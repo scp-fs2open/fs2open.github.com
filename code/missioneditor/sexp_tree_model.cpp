@@ -1287,6 +1287,8 @@ SexpContextMenuState SexpTreeModel::compute_context_menu_state()
 // Private helpers for compute_context_menu_state()
 // -----------------------------------------------------------------------
 
+// Set initial context menu state: campaign mode flag, annotation availability,
+// and whether the modify-variable option should be enabled.
 void SexpTreeModel::ctx_init(SexpContextMenuState& state) const
 {
 	state.campaign_mode = _interface && _interface->requireCampaignOperators();
@@ -1300,6 +1302,9 @@ void SexpTreeModel::ctx_init(SexpContextMenuState& state) const
 	state.can_modify_variable = (sexp_variable_count() > 0);
 }
 
+// Handle the labeled-root special case (item_index == -1 in labeled-root mode).
+// Sets up a minimal state with only text editing allowed, disables all operator
+// menus, and returns true if this special case applies (caller should return early).
 bool SexpTreeModel::ctx_handle_labeled_root(SexpContextMenuState& state) const
 {
 	if (item_index != -1) {
@@ -1323,6 +1328,10 @@ bool SexpTreeModel::ctx_handle_labeled_root(SexpContextMenuState& state) const
 	return true;
 }
 
+// Build the variable and container replacement menu entries for the selected node.
+// Determines the expected argument type at this position, then populates
+// replace_variables, replace_container_names, and replace_container_data
+// with per-entry enabled/disabled state based on type compatibility.
 void SexpTreeModel::ctx_compute_variable_menus(SexpContextMenuState& state) const
 {
 	if (item_index < 0) {
@@ -1468,6 +1477,10 @@ void SexpTreeModel::ctx_compute_variable_menus(SexpContextMenuState& state) cons
 	}
 }
 
+// Determine what can be added as a new child of the selected node.
+// Sets add_type (OPR_* return type for operator filtering), populates
+// add_data_list with valid data items, and enables can_add_number/can_add_string.
+// Handles both container data nodes and regular operator nodes.
 void SexpTreeModel::ctx_compute_add_type(SexpContextMenuState& state)
 {
 	state.add_type = 0;
@@ -1549,6 +1562,10 @@ void SexpTreeModel::ctx_compute_add_type(SexpContextMenuState& state)
 	}
 }
 
+// Determine what can replace the selected node. Sets replace_type, populates
+// replace_data_list, enables can_replace_number/can_replace_string, and may
+// disable can_delete if this argument can't be removed. Returns the OPF_* type
+// for the replace position (needed by ctx_validate_clipboard).
 int SexpTreeModel::ctx_compute_replace_type(SexpContextMenuState& state)
 {
 	state.replace_type = 0;
@@ -1744,6 +1761,9 @@ int SexpTreeModel::ctx_compute_replace_type(SexpContextMenuState& state)
 	return replace_opf_type;
 }
 
+// Determine the OPF_* argument type for inserting an operator before the selected node.
+// The inserted operator must accept the current node's type as its first argument and
+// return a type compatible with the parent's expectation at this position.
 void SexpTreeModel::ctx_compute_insert_type(SexpContextMenuState& state) const
 {
 	int z = tree_nodes[item_index].parent;
@@ -1777,6 +1797,10 @@ void SexpTreeModel::ctx_compute_insert_type(SexpContextMenuState& state) const
 	}
 }
 
+// Pre-compute per-operator enabled state for add/replace/insert menus.
+// Seeds from data list operator matches, then enables based on return type
+// compatibility. Disables operators without default arguments available
+// and filters out non-campaign operators in campaign mode.
 void SexpTreeModel::ctx_compute_operator_enablement(SexpContextMenuState& state) const
 {
 	int parent = tree_nodes[item_index].parent;
@@ -1836,6 +1860,9 @@ void SexpTreeModel::ctx_compute_operator_enablement(SexpContextMenuState& state)
 	}
 }
 
+// Check if the sexp clipboard contents can be pasted in the current context.
+// Validates return type compatibility for operators, data type for numbers/strings,
+// and container type for container data. Sets can_paste and can_paste_add accordingly.
 void SexpTreeModel::ctx_validate_clipboard(SexpContextMenuState& state, int replace_opf_type) const
 {
 	if (!((Sexp_clipboard > -1) && (Sexp_nodes[Sexp_clipboard].type != SEXP_NOT_USED))) {
@@ -1906,6 +1933,9 @@ void SexpTreeModel::ctx_validate_clipboard(SexpContextMenuState& state, int repl
 	}
 }
 
+// Apply final cut/copy/paste restrictions based on node type.
+// Container name and modifier nodes cannot be cut or copied; container data
+// nodes cannot receive paste-add operations.
 void SexpTreeModel::ctx_apply_restrictions(SexpContextMenuState& state) const
 {
 	state.can_cut = state.can_delete;

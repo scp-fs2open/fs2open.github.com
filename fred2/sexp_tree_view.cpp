@@ -192,6 +192,7 @@ void sexp_tree_view::clear_tree(const char *op)
 	}
 }
 
+// Nulls out all tree_nodes[].handle pointers. Called before a visual rebuild.
 void sexp_tree_view::reset_handles()
 {
 	uint i;
@@ -252,6 +253,7 @@ void sexp_tree_view::add_sub_tree(int node, HTREEITEM root)
 	}
 }
 
+// Sets item_handle and item_index for the given (or currently selected) tree item.
 void sexp_tree_view::setup_selected(HTREEITEM h)
 {
 	if (!h)
@@ -260,6 +262,7 @@ void sexp_tree_view::setup_selected(HTREEITEM h)
 	update_item(h);
 }
 
+// Looks up the tree_nodes[] index for the given HTREEITEM and sets item_handle/item_index.
 void sexp_tree_view::update_item(HTREEITEM h)
 {
 	item_handle = h;
@@ -624,21 +627,27 @@ int sexp_tree_view::edit_label(HTREEITEM h, bool *is_operator)
 */
 }
 
+// Opens a dialog for editing the comment annotation on a tree item.
+// Not implemented in the base class; overridden by event_sexp_tree.
 void sexp_tree_view::edit_comment(HTREEITEM h)
 {
-	// Not implemented in the base class
 }
 
+// Opens a color picker for the background highlight color on a tree item.
+// Not implemented in the base class; overridden by event_sexp_tree.
 void sexp_tree_view::edit_bg_color(HTREEITEM h)
 {
-	// Not implemented in the base class
 }
 
+// Returns the user comment for a node (empty in base class; overridden by event_sexp_tree).
 SCP_string sexp_tree_view::get_node_comment(int /*node_index*/) const
 {
 	return "";
 }
 
+// Handles completion of inline label editing. Validates the new text via
+// _model.validate_label_edit(), commits operator replacements or data changes,
+// and returns 0 if the edit was consumed, 1 if MFC should update the label.
 int sexp_tree_view::end_label_edit(TVITEMA &item)
 {
 	if (!item.pszText)
@@ -695,6 +704,8 @@ int sexp_tree_view::end_label_edit(TVITEMA &item)
 	return r;
 }
 
+// Opens the operator combo box popup below the given tree item, populated with
+// valid operators for the node's argument position. Creates the combo box on first use.
 void sexp_tree_view::start_operator_edit(HTREEITEM h)
 {
 	if (m_operator_popup_active)
@@ -759,6 +770,8 @@ void sexp_tree_view::start_operator_edit(HTREEITEM h)
 	m_operator_popup_active = true;
 }
 
+// Closes the operator combo box popup. If confirm is true, the selected operator
+// is committed via the combo box's cleanup handler.
 void sexp_tree_view::end_operator_edit(bool confirm)
 {
 	if (!m_operator_popup_active)
@@ -1330,6 +1343,7 @@ BOOL sexp_tree_view::OnCommand(WPARAM wParam, LPARAM lParam)
 	return CTreeCtrl::OnCommand(wParam, lParam);
 }
 
+// Cut handler: copies the selected subtree to clipboard, then deletes it.
 void sexp_tree_view::NodeCut()
 {
 	if (item_index < 0)
@@ -1339,6 +1353,9 @@ void sexp_tree_view::NodeCut()
 	NodeDelete();
 }
 
+// Delete handler: removes the currently selected item. For labeled root items,
+// notifies the interface and frees the formula subtree. For non-root items,
+// frees the node from the model and removes the CTreeCtrl item.
 void sexp_tree_view::NodeDelete()
 {
 	int parent, theNode;
@@ -1379,16 +1396,19 @@ void sexp_tree_view::NodeDelete()
 	*modified = 1;
 }
 
+// Copy handler: copies the selected subtree to the sexp clipboard.
 void sexp_tree_view::NodeCopy()
 {
 	_actions.clipboard_copy();
 }
 
+// Paste handler: replaces the current node with the sexp clipboard contents.
 void sexp_tree_view::NodeReplacePaste()
 {
 	_actions.clipboard_paste_replace();
 }
 
+// Add-paste handler: adds the sexp clipboard contents as a new child of the current node.
 void sexp_tree_view::NodeAddPaste()
 {
 	_actions.clipboard_paste_add();
@@ -1625,6 +1645,7 @@ int sexp_tree_view::node_error(int node, const char *msg, int *bypass)
 		return 0;
 }
 
+// Selects and scrolls to a node in the tree.
 void sexp_tree_view::hilite_item(int node)
 {
 	ensure_visible(node);
@@ -1682,6 +1703,9 @@ void sexp_tree_view::move_branch(int source, int parent)
 	}
 }
 
+// Recursively re-creates a CTreeCtrl subtree under a new parent/after position.
+// Updates tree_nodes[].handle for each moved item, preserves expansion state,
+// and deletes the old source item.
 HTREEITEM sexp_tree_view::move_branch(HTREEITEM source, HTREEITEM parent, HTREEITEM after)
 {
 	uint i;
@@ -1720,6 +1744,8 @@ HTREEITEM sexp_tree_view::move_branch(HTREEITEM source, HTREEITEM parent, HTREEI
 	return h;
 }
 
+// Recursively copies a CTreeCtrl subtree under a new parent without removing the source.
+// Updates tree_nodes[].handle to point to the copies and preserves expansion state.
 void sexp_tree_view::copy_branch(HTREEITEM source, HTREEITEM parent, HTREEITEM after)
 {
 	uint i;
@@ -1753,6 +1779,7 @@ void sexp_tree_view::copy_branch(HTREEITEM source, HTREEITEM parent, HTREEITEM a
 	}
 }
 
+// Reorders top-level (root) items by removing source and reinserting relative to dest.
 void sexp_tree_view::move_root(HTREEITEM source, HTREEITEM dest, bool insert_before)
 {
 	HTREEITEM h, after = dest;
@@ -1774,7 +1801,9 @@ void sexp_tree_view::move_root(HTREEITEM source, HTREEITEM dest, bool insert_bef
 	*modified = 1;
 }
 
-void sexp_tree_view::OnBegindrag(NMHDR* pNMHDR, LRESULT* pResult) 
+// MFC handler for tree drag start. Only allows dragging of root-level items
+// in labeled-root mode. Creates a drag image and begins tracking.
+void sexp_tree_view::OnBegindrag(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	UINT flags = 0;
 
@@ -1800,13 +1829,15 @@ void sexp_tree_view::OnBegindrag(NMHDR* pNMHDR, LRESULT* pResult)
 	m_dragging = TRUE;
 }
 
-void sexp_tree_view::OnLButtonDown(UINT nFlags, CPoint point) 
+// Records mouse position for drag detection.
+void sexp_tree_view::OnLButtonDown(UINT nFlags, CPoint point)
 {
 	m_pt = point;
 	CTreeCtrl::OnLButtonDown(nFlags, point);
 }
 
-void sexp_tree_view::OnMouseMove(UINT nFlags, CPoint point) 
+// Highlights potential drop-target root items during a drag operation.
+void sexp_tree_view::OnMouseMove(UINT nFlags, CPoint point)
 {
 	HTREEITEM hitem = NULL;
 	UINT flags = 0;
@@ -1826,7 +1857,8 @@ void sexp_tree_view::OnMouseMove(UINT nFlags, CPoint point)
 	CTreeCtrl::OnMouseMove(nFlags, point);
 }
 
-void sexp_tree_view::OnLButtonUp(UINT nFlags, CPoint point) 
+// Completes root-level drag by calling move_root() and notifying the interface.
+void sexp_tree_view::OnLButtonUp(UINT nFlags, CPoint point)
 {
 	int node1, node2;
 
@@ -1896,6 +1928,8 @@ const static UINT Numbered_data_bitmaps[] = {
 	IDB_DATA_95
 };
 
+// One-time initialization: sets the help box pointer and creates the CImageList
+// with all node type bitmaps (operator, data, variable, root, numbered data, etc.).
 void sexp_tree_view::setup(CEdit *ptr)
 {
 	CImageList *pimagelist;
@@ -1986,13 +2020,15 @@ void sexp_tree_view::setup(CEdit *ptr)
 //#define BITMAP_BLACK_DOT 8
 
 
+// Thin wrapper around CTreeCtrl::InsertItem for inserting a tree item with icon images.
 HTREEITEM sexp_tree_view::insert(LPCTSTR lpszItem, int image, int sel_image, HTREEITEM hParent, HTREEITEM hInsertAfter)
 {
 	return InsertItem(lpszItem, image, sel_image, hParent, hInsertAfter);
 
 }
 
-void sexp_tree_view::OnDestroy() 
+// MFC destroy handler: cleans up the image list to prevent resource leaks.
+void sexp_tree_view::OnDestroy()
 {
 	CImageList *pimagelist;
 
@@ -2005,11 +2041,13 @@ void sexp_tree_view::OnDestroy()
 	CTreeCtrl::OnDestroy();
 }
 
+// Returns the HTREEITEM handle for a given tree_nodes[] index.
 HTREEITEM sexp_tree_view::handle(int node)
 {
 	return tree_item_handle(tree_nodes[node]);
 }
 
+// Returns the tree_nodes[] index for the node matching handle h, or -1 if not found.
 int sexp_tree_view::get_node(HTREEITEM h)
 {
 	for (int i = 0; i < static_cast<int>(tree_nodes.size()); i++) {
@@ -2019,6 +2057,7 @@ int sexp_tree_view::get_node(HTREEITEM h)
 	return -1;
 }
 
+// Returns the help string for a given sexp operator code. Delegates to SexpTreeModel::help().
 const char *sexp_tree_view::help(int code)
 {
 	return SexpTreeModel::help(code);
@@ -2043,6 +2082,8 @@ int sexp_tree_view::get_type(HTREEITEM h)
 }
 
 
+// Finds the node index for handle h, delegates to _model.compute_help_text(),
+// and updates the help_box and mini_help_box MFC edit controls.
 void sexp_tree_view::update_help(HTREEITEM h)
 {
 	// Validate operator help strings
