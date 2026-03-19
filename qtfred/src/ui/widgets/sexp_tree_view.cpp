@@ -14,38 +14,6 @@
 #include "mission/Editor.h"
 #include "mission/object.h"
 
-#include "parse/sexp.h"
-#include "globalincs/linklist.h"
-#include "ai/aigoals.h"
-#include "ai/ailua.h"
-#include "asteroid/asteroid.h"
-#include "mission/missionmessage.h"
-#include "mission/missioncampaign.h"
-#include "mission/missionparse.h"
-#include "missioneditor/common.h"
-#include "hud/hudsquadmsg.h"
-#include "stats/medals.h"
-#include "controlconfig/controlsconfig.h"
-#include "hud/hudgauges.h"
-#include "starfield/starfield.h"
-#include "nebula/neb.h"
-#include "nebula/neblightning.h"
-#include "jumpnode/jumpnode.h"
-#include "gamesnd/eventmusic.h"    // for change-soundtrack
-#include "menuui/techmenu.h"    // for intel stuff
-#include "weapon/emp.h"
-#include "gamesnd/gamesnd.h"
-#include "weapon/weapon.h"
-#include "hud/hudartillery.h"
-#include "iff_defs/iff_defs.h"
-#include "mission/missionmessage.h"
-#include "sound/ds.h"
-#include "globalincs/alphacolors.h"
-#include "localization/localize.h"
-#include "mission/missiongoals.h"
-#include "ship/ship.h"
-#include "prop/prop.h"
-
 #include <ui/util/menu.h>
 #include <ui/util/SignalBlockers.h>
 
