@@ -192,7 +192,7 @@ void sexp_tree_view::add_sub_tree(int node, HTREEITEM root)
 //	char str[80];
 	int node2;
 
-	Assert(node >= 0 && node < (int)tree_nodes.size());
+	Assertion(SCP_vector_inbounds(tree_nodes, node), "Invalid node index");
 	node2 = tree_nodes[node].child;
 
 	auto info = _model.compute_node_visual_info(node);
@@ -203,12 +203,12 @@ void sexp_tree_view::add_sub_tree(int node, HTREEITEM root)
 
 	node = node2;
 	while (node != -1) {
-		Assert(node >= 0 && node < (int)tree_nodes.size());
-		Assert(tree_nodes[node].type & SEXPT_VALID);
+		Assertion(SCP_vector_inbounds(tree_nodes, node), "Invalid node index");
+		Assertion(tree_nodes[node].type & SEXPT_VALID, "Invalid node type");
 		if (tree_nodes[node].type & (SEXPT_OPERATOR | SEXPT_CONTAINER_DATA)) {
 			add_sub_tree(node, root);
 		} else {
-			Assert(tree_nodes[node].child == -1);
+			Assertion(tree_nodes[node].child == -1, "Invalid child node");
 			auto child_info = _model.compute_node_visual_info(node);
 			tree_nodes[node].flags = child_info.flags;
 			int bmap = static_cast<int>(child_info.image);
@@ -260,8 +260,8 @@ void sexp_tree_view::right_clicked()
 	CMenu replace_op_subcategory_menu[SEXP_TREE_MAX_SUBMENUS];
 	CMenu insert_op_subcategory_menu[SEXP_TREE_MAX_SUBMENUS];
 
-	Assert((int)op_menu.size() < SEXP_TREE_MAX_OP_MENUS);
-	Assert((int)op_submenu.size() < SEXP_TREE_MAX_SUBMENUS);
+	Assertion(static_cast<int>(op_menu.size()) < SEXP_TREE_MAX_OP_MENUS, "Invalid operator menu size");
+	Assertion(static_cast<int>(op_submenu.size()) < SEXP_TREE_MAX_SUBMENUS, "Invalid operator submenu size");
 
 	GetCursorPos(&mouse);
 	click_point = mouse;
@@ -271,7 +271,7 @@ void sexp_tree_view::right_clicked()
 	if (h && menu.LoadMenu(IDR_MENU_EDIT_SEXP_TREE)) {
 		update_help(h);
 		popup_menu = menu.GetSubMenu(0);
-		ASSERT(popup_menu != NULL);
+		Assertion(popup_menu != NULL, "Invalid popup menu");
 		//SelectDropTarget(h);  // WTF: Why was this here???
 
 		add_op_menu = replace_op_menu = insert_op_menu = NULL;
@@ -464,7 +464,7 @@ void sexp_tree_view::right_clicked()
 			return;
 		}
 
-		Assert(item_index != -1);  // handle not found, which should be impossible.
+		Assertion(item_index != -1, "Invalid item index");  // handle not found, which should be impossible.
 		if (!state.can_edit_text) {
 			menu.EnableMenuItem(ID_EDIT_TEXT, MF_GRAYED);
 		}
@@ -637,7 +637,7 @@ int sexp_tree_view::end_label_edit(TVITEMA &item)
 			Int3();  // root labels shouldn't have been editable!
 	}
 
-	Assert(node < tree_nodes.size());
+	Assertion(node < tree_nodes.size(), "Invalid node index");
 	auto result = _model.validate_label_edit(node, str);
 
 	if (result.is_operator) {
@@ -851,12 +851,12 @@ BOOL sexp_tree_view::OnCommand(WPARAM wParam, LPARAM lParam)
 
 		dlg.DoModal();
 
-		Assert( !(dlg.m_deleted && dlg.m_do_modify) );
+		Assertion(!(dlg.m_deleted && dlg.m_do_modify), "Invalid dialog state");
 
 		if (dlg.m_deleted) {
 			// find index in sexp_variable list
 			int sexp_var_index = get_index_sexp_variable_name(dlg.m_cur_variable_name);
-			Assert(sexp_var_index != -1);
+			Assertion(sexp_var_index != -1, "Invalid variable index");
 
 			// delete from list
 			sexp_variable_delete(sexp_var_index);
@@ -875,7 +875,7 @@ BOOL sexp_tree_view::OnCommand(WPARAM wParam, LPARAM lParam)
 			// check sexp_tree_view -- warn on type
 			// find index and change either (1) name, (2) type, (3) value
 			int sexp_var_index = get_index_sexp_variable_name(dlg.m_old_var_name);
-			Assert(sexp_var_index != -1);
+			Assertion(sexp_var_index != -1, "Invalid variable index");
 
 			// save old name, since name may be modified
 			char old_name[TOKEN_LENGTH];
@@ -946,14 +946,14 @@ BOOL sexp_tree_view::OnCommand(WPARAM wParam, LPARAM lParam)
 	// check if REPLACE_VARIABLE_MENU
 	if ( (id >= ID_VARIABLE_MENU) && (id < ID_VARIABLE_MENU + 511)) {
 
-		Assert(item_index >= 0);
+		Assertion(item_index >= 0, "Invalid item index");
 
 		// get index into list of type valid variables
 		int var_idx = id - ID_VARIABLE_MENU;
-		Assert( (var_idx >= 0) && (var_idx < MAX_SEXP_VARIABLES) );
+		Assertion( (var_idx >= 0) && (var_idx < MAX_SEXP_VARIABLES), "Invalid variable index");
 
 		int type = get_type(item_handle);
-		Assert( (type & SEXPT_NUMBER) || (type & SEXPT_STRING) );
+		Assertion( (type & SEXPT_NUMBER) || (type & SEXPT_STRING), "Invalid variable type");
 
 		// don't do type check for modify-variable or OPF_CONTAINER_VALUE (can be either type)
 		if (m_modify_variable || _model.query_node_argument_type(item_index) == OPF_CONTAINER_VALUE) {
@@ -968,11 +968,11 @@ BOOL sexp_tree_view::OnCommand(WPARAM wParam, LPARAM lParam)
 		} else {	
 			// verify type in tree is same as type in Sexp_variables array
 			if (type & SEXPT_NUMBER) {
-				Assert(Sexp_variables[var_idx].type & SEXP_VARIABLE_NUMBER);
+				Assertion(Sexp_variables[var_idx].type & SEXP_VARIABLE_NUMBER, "Invalid variable type");
 			}
 
 			if (type & SEXPT_STRING) {
-				Assert( (Sexp_variables[var_idx].type & SEXP_VARIABLE_STRING) );
+				Assertion((Sexp_variables[var_idx].type & SEXP_VARIABLE_STRING), "Invalid variable type");
 			}
 		}
 
@@ -985,7 +985,7 @@ BOOL sexp_tree_view::OnCommand(WPARAM wParam, LPARAM lParam)
 
 	if ((id >= ID_ADD_MENU) && (id < ID_ADD_MENU + 511)) {
 		auto saved_id = id;
-		Assert(item_index >= 0);
+		Assertion(item_index >= 0, "Invalid item index");
 
 		int type = 0;
 
@@ -993,22 +993,22 @@ BOOL sexp_tree_view::OnCommand(WPARAM wParam, LPARAM lParam)
 			list = _model._opf.get_container_multidim_modifiers(item_index);
 		} else {
 			op = get_operator_index(tree_nodes[item_index].text);
-			Assert(op >= 0);
+			Assertion(op >= 0, "Invalid operator index");
 
 			type = query_operator_argument_type(op, m_add_count);
 			list = _model._opf.get_listing_opf(type, item_index, m_add_count);
 		}
-		Assert(list);
+		Assertion(list, "Invalid listing");
 
 		id -= ID_ADD_MENU;
 		ptr = list;
 		while (id) {
 			id--;
 			ptr = ptr->next;
-			Assert(ptr);
+			Assertion(ptr, "Invalid list pointer");
 		}
 
-		Assert((SEXPT_TYPE(ptr->type) != SEXPT_OPERATOR) && (ptr->op < 0));
+		Assertion((SEXPT_TYPE(ptr->type) != SEXPT_OPERATOR) && (ptr->op < 0), "Invalid list type");
 		_actions.expand_operator(item_index);
 		node = _actions.add_data(ptr->text.c_str(), ptr->type);
 		list->destroy();
@@ -1037,29 +1037,29 @@ BOOL sexp_tree_view::OnCommand(WPARAM wParam, LPARAM lParam)
 	}
 
 	if ((id >= ID_REPLACE_MENU) && (id < ID_REPLACE_MENU + 511)) {
-		Assert(item_index >= 0);
-		Assert(tree_nodes[item_index].parent >= 0);
+		Assertion(item_index >= 0, "Invalid item index");
+		Assertion(tree_nodes[item_index].parent >= 0, "Invalid parent index");
 
 		if (tree_nodes[item_index].type & SEXPT_MODIFIER) {
 			list = _model._opf.get_container_modifiers(tree_nodes[item_index].parent);
 		} else {
 			op = get_operator_index(tree_nodes[tree_nodes[item_index].parent].text);
-			Assert(op >= 0);
+			Assertion(op >= 0, "Invalid operator index");
 
 			auto type = query_operator_argument_type(op, m_replace_count); // check argument type at this position
 			list = _model._opf.get_listing_opf(type, tree_nodes[item_index].parent, m_replace_count);
 		}
-		Assert(list);
+		Assertion(list, "Invalid listing");
 
 		id -= ID_REPLACE_MENU;
 		ptr = list;
 		while (id) {
 			id--;
 			ptr = ptr->next;
-			Assert(ptr);
+			Assertion(ptr, "Invalid list pointer");
 		}
 
-		Assert((SEXPT_TYPE(ptr->type) != SEXPT_OPERATOR) && (ptr->op < 0));
+		Assertion((SEXPT_TYPE(ptr->type) != SEXPT_OPERATOR) && (ptr->op < 0), "Invalid list type");
 		_actions.expand_operator(item_index);
 		_actions.replace_data(ptr->text.c_str(), ptr->type);
 		list->destroy();
@@ -1331,14 +1331,14 @@ void sexp_tree_view::NodeDelete()
 		item_index = (int)GetItemData(item_handle);
 		theNode = _model._interface->onRootDeleted(item_index);
 
-		Assert(theNode >= 0);
+		Assertion(theNode >= 0, "Invalid root deletion");
 		_model.free_node2(theNode);
 		DeleteItem(item_handle);
 		*modified = 1;
 		return;
 	}
 
-	Assert(item_index >= 0);
+	Assertion(item_index >= 0, "Invalid item index");
 	h_parent = GetParentItem(item_handle);
 	parent = tree_nodes[item_index].parent;
 
@@ -1346,7 +1346,7 @@ void sexp_tree_view::NodeDelete()
 	if (parent < 0)
 		return;
 
-	Assert(parent != -1 && tree_nodes[parent].handle == h_parent);
+	Assertion(parent != -1 && tree_nodes[parent].handle == h_parent, "Invalid parent node");
 	_model.free_node(item_index);
 	DeleteItem(item_handle);
 
@@ -1430,7 +1430,7 @@ void sexp_tree_view::hilite_item(int node)
 // because the MFC function EnsureVisible() doesn't do what it says it does, I wrote this.
 void sexp_tree_view::ensure_visible(int node)
 {
-	Assert(node != -1);
+	Assertion(node != -1, "Invalid node index");
 	if (tree_nodes[node].parent != -1)
 		ensure_visible(tree_nodes[node].parent);  // expand all parents first
 
@@ -1533,8 +1533,8 @@ void sexp_tree_view::move_root(HTREEITEM source, HTREEITEM dest, bool insert_bef
 {
 	HTREEITEM h, after = dest;
 
-	Assert(!GetParentItem(source));
-	Assert(!GetParentItem(dest));
+	Assertion(!GetParentItem(source), "Invalid source item");
+	Assertion(!GetParentItem(dest), "Invalid destination item");
 
 	if (insert_before)
 	{
@@ -1557,14 +1557,14 @@ void sexp_tree_view::OnBegindrag(NMHDR* pNMHDR, LRESULT* pResult)
 	UINT flags = 0;
 
 //	ScreenToClient(&m_pt);
-	ASSERT(!m_dragging);
+	Assertion(!m_dragging, "Invalid drag state");
 	m_h_drag = HitTest(m_pt, &flags);
 	m_h_drop = NULL;
 
 	if (!_model._interface || !_model._interface->getFlags()[TreeFlags::LabeledRoot] || GetParentItem(m_h_drag))
 		return;
 
-	ASSERT(m_p_image_list == NULL);
+	Assertion(m_p_image_list == NULL, "Invalid image list");
 	m_p_image_list = CreateDragImage(m_h_drag);  // get the image list for dragging
 	if (!m_p_image_list)
 		return;
@@ -1592,7 +1592,7 @@ void sexp_tree_view::OnMouseMove(UINT nFlags, CPoint point)
 	UINT flags = 0;
 
 	if (m_dragging) {
-		ASSERT(m_p_image_list != NULL);
+		Assertion(m_p_image_list != NULL, "Invalid image list");
 		m_p_image_list->DragMove(point);
 		if ((hitem = HitTest(point, &flags)) != NULL)
 			if (!GetParentItem(hitem)) {
@@ -1612,14 +1612,14 @@ void sexp_tree_view::OnLButtonUp(UINT nFlags, CPoint point)
 	int node1, node2;
 
 	if (m_dragging) {
-		ASSERT(m_p_image_list != NULL);
+		Assertion(m_p_image_list != NULL, "Invalid image list");
 		m_p_image_list->DragLeave(this);
 		m_p_image_list->EndDrag();
 		delete m_p_image_list;
 		m_p_image_list = NULL;
 
 		if (m_h_drop && m_h_drag != m_h_drop) {
-			Assert(m_h_drag);
+			Assertion(m_h_drag, "Invalid drag handle");
 			node1 = (int)GetItemData(m_h_drag);
 			node2 = (int)GetItemData(m_h_drop);
 

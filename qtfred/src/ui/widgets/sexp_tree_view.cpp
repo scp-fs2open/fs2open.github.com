@@ -345,7 +345,7 @@ void sexp_tree_view::build_tree() {
 void sexp_tree_view::add_sub_tree(int node, QTreeWidgetItem* root) {
 	int node2;
 
-	Assert(!(node < 0 || node >= static_cast<int>(tree_nodes.size())));
+	Assertion(SCP_vector_inbounds(tree_nodes, node), "Invalid node index");
 	node2 = tree_nodes[node].child;
 
 	auto info = _model.compute_node_visual_info(node);
@@ -358,12 +358,12 @@ void sexp_tree_view::add_sub_tree(int node, QTreeWidgetItem* root) {
 
 	node = node2;
 	while (node != -1) {
-		Assert(!(node < 0 || node >= static_cast<int>(tree_nodes.size())));
-		Assert(tree_nodes[node].type & SEXPT_VALID);
+		Assertion(SCP_vector_inbounds(tree_nodes, node), "Invalid node index");
+		Assertion(tree_nodes[node].type & SEXPT_VALID, "Invalid node type");
 		if (tree_nodes[node].type & (SEXPT_OPERATOR | SEXPT_CONTAINER_DATA)) {
 			add_sub_tree(node, root);
 		} else {
-			Assert(tree_nodes[node].child == -1);
+			Assertion(tree_nodes[node].child == -1, "Invalid child node");
 			auto child_info = _model.compute_node_visual_info(node);
 			tree_nodes[node].flags = child_info.flags;
 			tree_nodes[node].handle = insert(tree_nodes[node].text, child_info.image, root);
@@ -918,8 +918,8 @@ void sexp_tree_view::customMenuHandler(const QPoint& pos) {
 std::unique_ptr<QMenu> sexp_tree_view::buildContextMenu(QTreeWidgetItem* h) {
 	int i, j, subcategory_id;
 
-	Assert((int) op_menu.size() < SEXP_TREE_MAX_OP_MENUS);
-	Assert((int) op_submenu.size() < SEXP_TREE_MAX_SUBMENUS);
+	Assertion(static_cast<int>(op_menu.size()) < SEXP_TREE_MAX_OP_MENUS, "Operator menu too large!");
+	Assertion(static_cast<int>(op_submenu.size()) < SEXP_TREE_MAX_SUBMENUS, "Operator submenu too large!");
 
 	update_help(h);
 
@@ -1118,7 +1118,7 @@ std::unique_ptr<QMenu> sexp_tree_view::buildContextMenu(QTreeWidgetItem* h) {
 		return popup_menu;
 	}
 
-	Assert(item_index != -1);  // handle not found, which should be impossible.
+	Assertion(item_index != -1, "Menu handle not found!"); // handle not found, which should be impossible.
 	edit_data_act->setEnabled(state.can_edit_text);
 	delete_act->setEnabled(state.can_delete);
 
@@ -1549,7 +1549,7 @@ void sexp_tree_view::handleItemChange(QTreeWidgetItem* item, int  /*column*/) {
 		return;
 	}
 
-	Assert(node < tree_nodes.size());
+	Assertion(node < tree_nodes.size(), "Invalid node index");
 	SCP_string text = str.toUtf8().constData();
 	auto result = _model.validate_label_edit(node, text);
 
@@ -1697,7 +1697,7 @@ void sexp_tree_view::beginItemEdit(QTreeWidgetItem* item) {
 // Then expands the operator via _actions.expand_operator() and commits via
 // _actions.replace_data() (if replace) or _actions.add_data() (if add). Frees the list after use.
 void sexp_tree_view::addReplaceTypedDataHandler(int data_idx, bool replace) {
-	Assert(item_index >= 0);
+	Assertion(item_index >= 0, "Invalid item index");
 	const int op_node = replace ? tree_nodes[item_index].parent : item_index;
 
 	sexp_list_item *list = nullptr;
@@ -1710,21 +1710,21 @@ void sexp_tree_view::addReplaceTypedDataHandler(int data_idx, bool replace) {
 		}
 	} else {
 		int op = get_operator_index(tree_nodes[op_node].text);
-		Assert(op >= 0);
+		Assertion(op >= 0, "Invalid operator index");
 		auto argcount = replace ? m_replace_count : m_add_count;
 		auto type = query_operator_argument_type(op, argcount);
 		list = _model._opf.get_listing_opf(type, item_index, argcount);
 	}
-	Assert(list);
+	Assertion(list, "Failed to get listing OPF");
 
 	auto ptr = list;
 	while (data_idx) {
 		data_idx--;
 		ptr = ptr->next;
-		Assert(ptr);
+		Assertion(ptr, "Invalid SEXP list");
 	}
 
-	Assert(!(SEXPT_TYPE(ptr->type) == SEXPT_OPERATOR || ptr->op >= 0));
+	Assertion(SEXPT_TYPE(ptr->type) != SEXPT_OPERATOR && ptr->op < 0, "Invalid SEXP type or operator");
 	_actions.expand_operator(item_index);
 	if (replace) {
 		_actions.replace_data(ptr->text.c_str(), ptr->type);
@@ -1755,13 +1755,13 @@ void sexp_tree_view::setCurrentItemIndex(int node) {
 // For modify-variable or OPF_CONTAINER_VALUE contexts, allows type coercion.
 // Commits via _actions.replace_variable_data(). Uses _model.query_node_argument_type() for type checking.
 void sexp_tree_view::handleReplaceVariableAction(int id) {
-	Assert(item_index >= 0);
+	Assertion(item_index >= 0, "Invalid item index");
 
 	// get index into list of type valid variables
-	Assert(!(id < 0 || id >= MAX_SEXP_VARIABLES));
+	Assertion(id >= 0 && id < MAX_SEXP_VARIABLES, "Invalid variable index");
 
 	int type = get_type(currentItem());
-	Assert( (type & SEXPT_NUMBER) || (type & SEXPT_STRING) );
+	Assertion((type & SEXPT_NUMBER) || (type & SEXPT_STRING), "Invalid node type");
 
 	// don't do type check for modify-variable or OPF_CONTAINER_VALUE (can be either type)
 	if (m_modify_variable || _model.query_node_argument_type(item_index) == OPF_CONTAINER_VALUE) {
@@ -1776,11 +1776,11 @@ void sexp_tree_view::handleReplaceVariableAction(int id) {
 	} else {
 		// verify type in tree is same as type in Sexp_variables array
 		if (type & SEXPT_NUMBER) {
-			Assert(Sexp_variables[id].type & SEXP_VARIABLE_NUMBER);
+			Assertion(Sexp_variables[id].type & SEXP_VARIABLE_NUMBER, "Invalid variable type");
 		}
 
 		if (type & SEXPT_STRING) {
-			Assert( (Sexp_variables[id].type & SEXP_VARIABLE_STRING) );
+			Assertion((Sexp_variables[id].type & SEXP_VARIABLE_STRING), "Invalid variable type");
 		}
 	}
 

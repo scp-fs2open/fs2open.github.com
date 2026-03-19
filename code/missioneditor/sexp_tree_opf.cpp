@@ -149,14 +149,14 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_ship(int parent_node)
 			int z;
 
 			z = _model.tree_nodes[parent_node].parent;
-			Assert(z >= 0);
-			Assert(!stricmp(_model.tree_nodes[z].text, "add-ship-goal") || !stricmp(_model.tree_nodes[z].text, "add-wing-goal") || !stricmp(_model.tree_nodes[z].text, "add-goal"));
+			Assertion(z >= 0, "Invalid parent node");
+			Assertion(!stricmp(_model.tree_nodes[z].text, "add-ship-goal") || !stricmp(_model.tree_nodes[z].text, "add-wing-goal") || !stricmp(_model.tree_nodes[z].text, "add-goal"), "Invalid parent node type");
 
 			z = _model.tree_nodes[z].child;
-			Assert(z >= 0);
+			Assertion(z >= 0, "Invalid child node");
 
 			dock_ship = ship_name_lookup(_model.tree_nodes[z].text, 1);
-			Assert( dock_ship != -1 );
+			Assertion(dock_ship != -1, "Invalid dock ship");
 		}
 	}
 
@@ -376,7 +376,7 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_ai_goal(int parent_node)
 	int i, n, w, z, child;
 	sexp_list_item head;
 
-	Assert(parent_node >= 0);
+	Assertion(parent_node >= 0, "Invalid parent node");
 	child = _model.tree_nodes[parent_node].child;
 	if (child < 0)
 		return nullptr;
@@ -414,7 +414,7 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_ai_goal(int parent_node)
 	return head.next;
 }
 
-sexp_list_item *SexpTreeOPF::get_listing_opf_message()
+sexp_list_item *SexpTreeOPF::get_listing_opf_message() const
 {
 	sexp_list_item head;
 
@@ -431,16 +431,16 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_docker_point(int parent_node, int a
 	sexp_list_item head;
 	int sh = -1;
 
-	Assert(parent_node >= 0);
-	Assert(!stricmp(_model.tree_nodes[parent_node].text, "ai-dock") || !stricmp(_model.tree_nodes[parent_node].text, "set-docked") ||
-		   get_operator_const(_model.tree_nodes[parent_node].text) >= (int)First_available_operator_id);
+	Assertion(parent_node >= 0, "Invalid parent node");
+	Assertion(!stricmp(_model.tree_nodes[parent_node].text, "ai-dock") || !stricmp(_model.tree_nodes[parent_node].text, "set-docked") ||
+		   get_operator_const(_model.tree_nodes[parent_node].text) >= (int)First_available_operator_id, "Invalid node type");
 
 	if (!stricmp(_model.tree_nodes[parent_node].text, "ai-dock"))
 	{
 		z = _model.tree_nodes[parent_node].parent;
 		if (z < 0)
 			return nullptr;
-		Assert(!stricmp(_model.tree_nodes[z].text, "add-ship-goal") || !stricmp(_model.tree_nodes[z].text, "add-wing-goal") || !stricmp(_model.tree_nodes[z].text, "add-goal"));
+		Assertion(!stricmp(_model.tree_nodes[z].text, "add-ship-goal") || !stricmp(_model.tree_nodes[z].text, "add-wing-goal") || !stricmp(_model.tree_nodes[z].text, "add-goal"), "Invalid parent node type");
 
 		z = _model.tree_nodes[z].child;
 		if (z < 0)
@@ -491,8 +491,8 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_dockee_point(int parent_node)
 	sexp_list_item head;
 	int sh = -1;
 
-	Assert(parent_node >= 0);
-	Assert(!stricmp(_model.tree_nodes[parent_node].text, "ai-dock") || !stricmp(_model.tree_nodes[parent_node].text, "set-docked"));
+	Assertion(parent_node >= 0, "Invalid parent node");
+	Assertion(!stricmp(_model.tree_nodes[parent_node].text, "ai-dock") || !stricmp(_model.tree_nodes[parent_node].text, "set-docked"), "Invalid node type");
 
 	if (!stricmp(_model.tree_nodes[parent_node].text, "ai-dock"))
 	{
@@ -759,7 +759,7 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_ship_wing_point_or_none()
 	return head.next;
 }
 
-sexp_list_item *SexpTreeOPF::get_listing_opf_mission_name()
+sexp_list_item *SexpTreeOPF::get_listing_opf_mission_name() const
 {
 	sexp_list_item head;
 
@@ -774,7 +774,7 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_goal_name(int parent_node)
 {
 	sexp_list_item head;
 
-	Assert(parent_node >= 0);
+	Assertion(parent_node >= 0, "Invalid parent node");
 	int child = _model.tree_nodes[parent_node].child;
 
 	// reference_name is used by campaign editor to filter goals for a specific mission
@@ -853,7 +853,7 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_event_name(int parent_node)
 {
 	sexp_list_item head;
 
-	Assert(parent_node >= 0);
+	Assertion(parent_node >= 0, "Invalid parent node");
 	int child = _model.tree_nodes[parent_node].child;
 
 	// reference_name is used by campaign editor to filter events for a specific mission
@@ -1419,7 +1419,7 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_animation_name(int parent_node)
 	int op, child, sh;
 	sexp_list_item head;
 
-	Assert(parent_node >= 0);
+	Assertion(parent_node >= 0, "Invalid parent node");
 
 	// get the operator type of the node
 	op = get_operator_const(_model.tree_nodes[parent_node].text);
@@ -1616,7 +1616,7 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_subsystem(int parent_node, int arg_
 
 	// determine if the parent is one of the set subsystem strength items.  If so,
 	// we want to append the "Hull" name onto the end of the menu
-	Assert(parent_node >= 0);
+	Assertion(parent_node >= 0, "Invalid parent node");
 
 	// get the operator type of the node
 	op = get_operator_const(_model.tree_nodes[parent_node].text);
@@ -1686,7 +1686,7 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_subsystem(int parent_node, int arg_
 			}
 			else
 			{
-				Assert(arg_index == 1);
+				Assertion(arg_index == 1, "Invalid argument index");
 			}
 			break;
 
@@ -1935,7 +1935,7 @@ sexp_list_item *SexpTreeOPF::get_container_modifiers(int con_data_node) const
 	return head.next;
 }
 
-sexp_list_item *SexpTreeOPF::get_list_container_modifiers() const
+sexp_list_item *SexpTreeOPF::get_list_container_modifiers()
 {
 	sexp_list_item head;
 
@@ -2532,7 +2532,7 @@ int SexpTreeOPF::query_default_argument_available(int op) const
 {
 	int i;
 
-	Assert(op >= 0);
+	Assertion(op >= 0, "Invalid operator index");
 	for (i = 0; i < Operators[op].min; i++)
 		if (!query_default_argument_available(op, i))
 			return 0;

@@ -66,7 +66,7 @@ void SexpTreeActions::replace_variable_data(int var_idx, int type)
 {
 	char buf[128];
 
-	Assert(type & SEXPT_VARIABLE);
+	Assertion(type & SEXPT_VARIABLE, "Invalid variable type");
 
 	int node_idx = _model.item_index;
 
@@ -193,14 +193,14 @@ void SexpTreeActions::expand_operator(int node)
 
 	if (_model.tree_nodes[node].flags & COMBINED) {
 		node = _model.tree_nodes[node].parent;
-		Assert((_model.tree_nodes[node].flags & OPERAND) && (_model.tree_nodes[node].flags & EDITABLE));
+		Assertion((_model.tree_nodes[node].flags & OPERAND) && (_model.tree_nodes[node].flags & EDITABLE), "Invalid parent node");
 	}
 
 	if ((_model.tree_nodes[node].flags & OPERAND) && (_model.tree_nodes[node].flags & EDITABLE)) {
-		Assert(_model.tree_nodes[node].type & SEXPT_OPERATOR);
+		Assertion(_model.tree_nodes[node].type & SEXPT_OPERATOR, "Invalid operator");
 		void* h = _model.tree_nodes[node].handle;
 		data = _model.tree_nodes[node].child;
-		Assert(data != -1 && _model.tree_nodes[data].next == -1 && _model.tree_nodes[data].child == -1);
+		Assertion(data != -1 && _model.tree_nodes[data].next == -1 && _model.tree_nodes[data].child == -1, "Invalid child node");
 
 		_ui.ui_set_item_text(h, _model.tree_nodes[node].text);
 		_model.tree_nodes[node].flags = OPERAND;
@@ -240,7 +240,7 @@ int SexpTreeActions::add_data(const char* data, int type)
 // Returns the index of the newly created node.
 int SexpTreeActions::add_variable_data(const char* data, int type)
 {
-	Assert(type & SEXPT_VARIABLE);
+	Assertion(type & SEXPT_VARIABLE, "Invalid variable type");
 
 	int node_idx = _model.item_index;
 
@@ -371,7 +371,7 @@ void SexpTreeActions::add_or_replace_operator(int op, int replace_flag)
 	if (replace_flag) {
 		if (_model.tree_nodes[_model.item_index].type & SEXPT_OPERATOR) {  // are both operators?
 			op2 = get_operator_index(_model.tree_nodes[_model.item_index].text);
-			Assert(op2 >= 0);
+			Assertion(op2 >= 0, "Invalid operator index");
 			i = _model.count_args(_model.tree_nodes[_model.item_index].child);
 			if ((i >= Operators[op].min) && (i <= Operators[op].max)) {  // are old num args valid?
 				while (i--)
@@ -416,7 +416,7 @@ int SexpTreeActions::add_default_operator(int op_index, int argnum)
 		return -1;
 
 	if (item.type & SEXPT_OPERATOR) {
-		Assert((item.op >= 0) && (item.op < (int)Operators.size()));
+		Assertion(SCP_vector_inbounds(Operators, item.op), "Invalid operator index");
 		add_or_replace_operator(item.op);
 		_model.item_index = saved_index;
 
@@ -448,11 +448,11 @@ int SexpTreeActions::add_default_operator(int op_index, int argnum)
 		// modify-variable data type depends on type of variable being modified
 		else if (Operators[op_index].value == OP_MODIFY_VARIABLE) {
 			char buf2[256];
-			Assert(argnum == 1);
+			Assertion(argnum == 1, "Invalid argument number");
 			sexp_list_item temp_item;
 			_model._opf.get_default_value(&temp_item, buf2, op_index, 0);
 			sexp_var_index = get_index_sexp_variable_name(temp_item.text);
-			Assert(sexp_var_index != -1);
+			Assertion(sexp_var_index != -1, "Invalid variable index");
 
 			int temp_type = Sexp_variables[sexp_var_index].type;
 			int type = 0;
@@ -521,7 +521,7 @@ void SexpTreeActions::verify_and_fix_arguments(int node)
 			arg_num++;
 			continue;
 		}
-		if (_model.query_restricted_opf_range(type)) {
+		if (SexpTreeModel::query_restricted_opf_range(type)) {
 			list = _model._opf.get_listing_opf(type, node, arg_num);
 			if (!list && (arg_num >= Operators[op_index].min)) {
 				_model.free_node(_model.item_index, 1);
@@ -541,7 +541,7 @@ void SexpTreeActions::verify_and_fix_arguments(int node)
 						get_variable_name_from_sexp_tree_node_text(_model.tree_nodes[_model.item_index].text, default_variable_text);
 						int sexp_var_index = get_index_sexp_variable_name(default_variable_text);
 						bool types_match = false;
-						Assert(sexp_var_index != -1);
+						Assertion(sexp_var_index != -1, "Invalid variable index");
 
 						switch (type) {
 							case OPF_NUMBER:
@@ -653,7 +653,7 @@ void SexpTreeActions::delete_sexp_tree_variable(const char* var_name)
 	for (int idx = 0; idx < (int)_model.tree_nodes.size(); idx++) {
 		if (_model.tree_nodes[idx].type & SEXPT_VARIABLE) {
 			if (strstr(_model.tree_nodes[idx].text, search_str) != nullptr) {
-				Assert((_model.tree_nodes[idx].type & SEXPT_NUMBER) || (_model.tree_nodes[idx].type & SEXPT_STRING));
+				Assertion((_model.tree_nodes[idx].type & SEXPT_NUMBER) || (_model.tree_nodes[idx].type & SEXPT_STRING), "Invalid variable type");
 
 				int type = _model.tree_nodes[idx].type &= ~SEXPT_VARIABLE;
 
@@ -681,9 +681,9 @@ void SexpTreeActions::modify_sexp_tree_variable(const char* old_name, int sexp_v
 	char search_str[64];
 	int type;
 
-	Assert(Sexp_variables[sexp_var_index].type & SEXP_VARIABLE_SET);
-	Assert((Sexp_variables[sexp_var_index].type & SEXP_VARIABLE_NUMBER) ||
-	       (Sexp_variables[sexp_var_index].type & SEXP_VARIABLE_STRING));
+	Assertion(Sexp_variables[sexp_var_index].type & SEXP_VARIABLE_SET, "Invalid variable type");
+	Assertion((Sexp_variables[sexp_var_index].type & SEXP_VARIABLE_NUMBER) ||
+	       (Sexp_variables[sexp_var_index].type & SEXP_VARIABLE_STRING), "Invalid variable type");
 
 	if (Sexp_variables[sexp_var_index].type & SEXP_VARIABLE_NUMBER) {
 		type = (SEXPT_NUMBER | SEXPT_VALID);
@@ -742,8 +742,8 @@ void SexpTreeActions::clipboard_paste_replace()
 		return;
 
 	// the following assumptions are made..
-	Assert(Sexp_nodes[Sexp_clipboard].type != SEXP_NOT_USED);
-	Assert(Sexp_nodes[Sexp_clipboard].subtype != SEXP_ATOM_LIST);
+	Assertion(Sexp_nodes[Sexp_clipboard].type != SEXP_NOT_USED, "Invalid SEXP node type");
+	Assertion(Sexp_nodes[Sexp_clipboard].subtype != SEXP_ATOM_LIST, "Invalid SEXP node subtype");
 	Assertion(Sexp_nodes[Sexp_clipboard].subtype != SEXP_ATOM_CONTAINER_NAME,
 		"Attempt to use container name %s from SEXP clipboard. Please report!",
 		Sexp_nodes[Sexp_clipboard].text);
@@ -775,10 +775,10 @@ void SexpTreeActions::clipboard_paste_replace()
 		}
 
 	} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_NUMBER) {
-		Assert(Sexp_nodes[Sexp_clipboard].rest == -1);
+		Assertion(Sexp_nodes[Sexp_clipboard].rest == -1, "Invalid SEXP node rest");
 		if (Sexp_nodes[Sexp_clipboard].type & SEXP_FLAG_VARIABLE) {
 			int var_idx = get_index_sexp_variable_name(Sexp_nodes[Sexp_clipboard].text);
-			Assert(var_idx > -1);
+			Assertion(var_idx > -1, "Invalid variable index");
 			replace_variable_data(var_idx, (SEXPT_VARIABLE | SEXPT_NUMBER | SEXPT_VALID));
 		} else {
 			expand_operator(_model.item_index);
@@ -786,10 +786,10 @@ void SexpTreeActions::clipboard_paste_replace()
 		}
 
 	} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_STRING) {
-		Assert(Sexp_nodes[Sexp_clipboard].rest == -1);
+		Assertion(Sexp_nodes[Sexp_clipboard].rest == -1, "Invalid SEXP node rest");
 		if (Sexp_nodes[Sexp_clipboard].type & SEXP_FLAG_VARIABLE) {
 			int var_idx = get_index_sexp_variable_name(Sexp_nodes[Sexp_clipboard].text);
-			Assert(var_idx > -1);
+			Assertion(var_idx > -1, "Invalid variable index");
 			replace_variable_data(var_idx, (SEXPT_VARIABLE | SEXPT_STRING | SEXPT_VALID));
 		} else {
 			expand_operator(_model.item_index);
@@ -797,7 +797,7 @@ void SexpTreeActions::clipboard_paste_replace()
 		}
 
 	} else
-		Assert(0);  // unknown and/or invalid sexp type
+		Assertion(0, "Unknown and/or invalid SEXP type");
 
 	_ui.ui_expand_branch(_model.tree_nodes[_model.item_index].handle);
 }
@@ -812,8 +812,8 @@ void SexpTreeActions::clipboard_paste_add()
 		return;
 
 	// the following assumptions are made..
-	Assert(Sexp_nodes[Sexp_clipboard].type != SEXP_NOT_USED);
-	Assert(Sexp_nodes[Sexp_clipboard].subtype != SEXP_ATOM_LIST);
+	Assertion(Sexp_nodes[Sexp_clipboard].type != SEXP_NOT_USED, "Invalid SEXP node type");
+	Assertion(Sexp_nodes[Sexp_clipboard].subtype != SEXP_ATOM_LIST, "Invalid SEXP node subtype");
 	Assertion(Sexp_nodes[Sexp_clipboard].subtype != SEXP_ATOM_CONTAINER_NAME,
 		"Attempt to use container name %s from SEXP clipboard. Please report!",
 		Sexp_nodes[Sexp_clipboard].text);
@@ -843,17 +843,17 @@ void SexpTreeActions::clipboard_paste_add()
 		}
 
 	} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_NUMBER) {
-		Assert(Sexp_nodes[Sexp_clipboard].rest == -1);
+		Assertion(Sexp_nodes[Sexp_clipboard].rest == -1, "Invalid SEXP node rest");
 		expand_operator(_model.item_index);
 		add_data(CTEXT(Sexp_clipboard), (SEXPT_NUMBER | SEXPT_VALID));
 
 	} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_STRING) {
-		Assert(Sexp_nodes[Sexp_clipboard].rest == -1);
+		Assertion(Sexp_nodes[Sexp_clipboard].rest == -1, "Invalid SEXP node rest");
 		expand_operator(_model.item_index);
 		add_data(CTEXT(Sexp_clipboard), (SEXPT_STRING | SEXPT_VALID));
 
 	} else
-		Assert(0);  // unknown and/or invalid sexp type
+		Assertion(0, "Unknown and/or invalid SEXP type");
 
 	_ui.ui_expand_branch(_model.tree_nodes[_model.item_index].handle);
 }

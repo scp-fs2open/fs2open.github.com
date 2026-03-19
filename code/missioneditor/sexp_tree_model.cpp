@@ -269,7 +269,7 @@ int SexpTreeModel::allocate_node()
 	if (node < 0) {
 		int old_size = (int)tree_nodes.size();
 
-		Assert(TREE_NODE_INCREMENT > 0);
+		Assertion(TREE_NODE_INCREMENT > 0, "Invalid tree node increment");
 
 		// allocate in blocks of TREE_NODE_INCREMENT
 		tree_nodes.resize(tree_nodes.size() + TREE_NODE_INCREMENT);
@@ -279,7 +279,7 @@ int SexpTreeModel::allocate_node()
 #ifndef NDEBUG
 		for (int i = old_size; i < (int)tree_nodes.size(); i++) {
 			sexp_tree_item* item = &tree_nodes[i];
-			Assert(item->type == SEXPT_UNUSED);
+			Assertion(item->type == SEXPT_UNUSED, "Invalid tree node type");
 		}
 #endif
 
@@ -326,8 +326,8 @@ int SexpTreeModel::allocate_node(int parent, int after)
 // initialize the data for a node.  Should be called right after a new node is allocated.
 void SexpTreeModel::set_node(int node, int type, const char* text)
 {
-	Assert(type != SEXPT_UNUSED);
-	Assert(tree_nodes[node].type != SEXPT_UNUSED);
+	Assertion(type != SEXPT_UNUSED, "Invalid node type");
+	Assertion(tree_nodes[node].type != SEXPT_UNUSED, "Uninitialized tree node");
 	tree_nodes[node].type = type;
 	size_t max_length;
 	if (type & SEXPT_VARIABLE) {
@@ -337,7 +337,7 @@ void SexpTreeModel::set_node(int node, int type, const char* text)
 	} else {
 		max_length = TOKEN_LENGTH;
 	}
-	Assert(strlen(text) < max_length);
+	Assertion(strlen(text) < max_length, "Text exceeds maximum length");
 	strcpy_s(tree_nodes[node].text, text);
 }
 
@@ -351,7 +351,7 @@ void SexpTreeModel::free_node(int node, int cascade)
 
 	// clear the pointer to node
 	i = tree_nodes[node].parent;
-	Assert(i != -1);
+	Assertion(i != -1, "Invalid parent node");
 	if (tree_nodes[i].child == node)
 		tree_nodes[i].child = tree_nodes[node].next;
 
@@ -379,9 +379,9 @@ void SexpTreeModel::free_node(int node, int cascade)
 // these freed nodes, so make sure all links are broken first. (i.e. use free_node() if you can)
 void SexpTreeModel::free_node2(int node)
 {
-	Assert(node != -1);
-	Assert(tree_nodes[node].type != SEXPT_UNUSED);
-	Assert(total_nodes > 0);
+	Assertion(node != -1, "Invalid node index");
+	Assertion(tree_nodes[node].type != SEXPT_UNUSED, "Uninitialized tree node");
+	Assertion(total_nodes > 0, "Invalid total nodes count");
 	if (modified)
 		*modified = 1;
 	tree_nodes[node].type = SEXPT_UNUSED;
@@ -454,7 +454,7 @@ void SexpTreeModel::load_tree_data(int index, const char* deflt)
 		return;
 	}
 
-	Assert(Sexp_nodes[index].subtype == SEXP_ATOM_OPERATOR);
+	Assertion(Sexp_nodes[index].subtype == SEXP_ATOM_OPERATOR, "Invalid SEXP node subtype");
 	load_branch(index, -1);
 }
 
@@ -475,7 +475,7 @@ int SexpTreeModel::load_branch(int index, int parent)
 			additional_flags |= SEXPT_MODIFIER;
 		}
 
-		Assert(Sexp_nodes[index].type != SEXP_NOT_USED);
+		Assertion(Sexp_nodes[index].type != SEXP_NOT_USED, "Invalid SEXP node type");
 		if (Sexp_nodes[index].subtype == SEXP_ATOM_LIST) {
 			load_branch(Sexp_nodes[index].first, parent);
 
@@ -527,7 +527,7 @@ int SexpTreeModel::load_branch(int index, int parent)
 			load_branch(Sexp_nodes[index].first, cur);
 
 		} else
-			Assert(0);
+			Assertion(0, "Unknown SEXP node subtype");
 
 		if ((index == select_sexp_node) && !flag) {
 			select_sexp_node = cur;
@@ -555,7 +555,7 @@ int SexpTreeModel::load_sub_tree(int index, bool valid, const char* text)
 		return cur;
 	}
 
-	Assert(Sexp_nodes[index].subtype == SEXP_ATOM_OPERATOR);
+	Assertion(Sexp_nodes[index].subtype == SEXP_ATOM_OPERATOR, "Invalid SEXP node subtype");
 	cur = load_branch(index, -1);
 	return cur;
 }
@@ -578,7 +578,7 @@ void SexpTreeModel::move_branch_data(int source, int parent)
 			node = tree_nodes[node].child;
 			while (tree_nodes[node].next != source) {
 				node = tree_nodes[node].next;
-				Assert(node != -1);
+				Assertion(node != -1, "Invalid node");
 			}
 			tree_nodes[node].next = tree_nodes[source].next;
 		}
@@ -607,7 +607,7 @@ void SexpTreeModel::move_branch_data(int source, int parent)
 static void var_name_from_sexp_tree_text(char* var_name, const char* text)
 {
 	auto var_name_length = strcspn(text, "(");
-	Assert(var_name_length < TOKEN_LENGTH - 1);
+	Assertion(var_name_length < TOKEN_LENGTH - 1, "Variable name too long");
 
 	strncpy(var_name, text, var_name_length);
 	var_name[var_name_length] = '\0';
@@ -617,9 +617,9 @@ static void var_name_from_sexp_tree_text(char* var_name, const char* text)
 int SexpTreeModel::save_tree(int node) const
 {
 	if (node < 0) node = root_item;
-	Assert(node >= 0);
-	Assert(tree_nodes[node].type == (SEXPT_OPERATOR | SEXPT_VALID));
-	Assert(tree_nodes[node].next == -1);  // must make this assumption or else it will confuse code!
+	Assertion(node >= 0, "Invalid root item");
+	Assertion(tree_nodes[node].type == (SEXPT_OPERATOR | SEXPT_VALID), "Invalid root item type");
+	Assertion(tree_nodes[node].next == -1, "Invalid root item next");
 	return save_branch(node);
 }
 
@@ -666,7 +666,7 @@ int SexpTreeModel::save_branch(int cur, int at_root) const
 				node = alloc_sexp(tree_nodes[cur].text, SEXP_ATOM, SEXP_ATOM_STRING, -1, -1);
 			}
 		} else {
-			Assert(0); // unknown and/or invalid type
+			Assertion(0, "Unknown and/or invalid type");
 		}
 
 		if (last == NO_PREVIOUS_NODE) {
@@ -676,7 +676,7 @@ int SexpTreeModel::save_branch(int cur, int at_root) const
 		}
 
 		last = node;
-		Assert(last != NO_PREVIOUS_NODE);  // should be impossible
+		Assertion(last != NO_PREVIOUS_NODE, "Invalid last node");
 		cur = tree_nodes[cur].next;
 		if (at_root) {
 			return start;
@@ -779,11 +779,11 @@ int SexpTreeModel::identify_arg_type(int node) const
 	int type = -1;
 
 	while (node != -1) {
-		Assert(tree_nodes[node].type & SEXPT_VALID);
+		Assertion(tree_nodes[node].type & SEXPT_VALID, "Invalid tree node");
 		switch (SEXPT_TYPE(tree_nodes[node].type)) {
 			case SEXPT_OPERATOR:
 				type = get_operator_const(tree_nodes[node].text);
-				Assert(type);
+				Assertion(type, "Invalid operator");
 				return query_operator_return_type(type);
 
 			case SEXPT_NUMBER:
@@ -901,9 +901,9 @@ NodeImage SexpTreeModel::get_data_image(int node) const
 int SexpTreeModel::query_false(int node) const
 {
 	if (node < 0) node = root_item;
-	Assert(node >= 0);
-	Assert(tree_nodes[node].type == (SEXPT_OPERATOR | SEXPT_VALID));
-	Assert(tree_nodes[node].next == -1);  // must make this assumption or else it will confuse code!
+	Assertion(node >= 0, "Invalid node");
+	Assertion(tree_nodes[node].type == (SEXPT_OPERATOR | SEXPT_VALID), "Invalid node type");
+	Assertion(tree_nodes[node].next == -1, "Invalid node next");
 	if (get_operator_const(tree_nodes[node].text) == OP_FALSE) {
 		return TRUE;
 	}
@@ -1012,7 +1012,7 @@ void get_variable_default_text_from_variable_text(char* text, char* default_text
 
 	// find '('
 	start = strstr(text, "(");
-	Assert(start);
+	Assertion(start, "Invalid variable text format");
 	start++;
 
 	// get length and copy all but last char ")"
@@ -1046,7 +1046,7 @@ int SexpTreeModel::get_tree_name_to_sexp_variable_index(const char* tree_name)
 	char var_name[TOKEN_LENGTH];
 
 	auto chars_to_copy = strcspn(tree_name, "(");
-	Assert(chars_to_copy < TOKEN_LENGTH - 1);
+	Assertion(chars_to_copy < TOKEN_LENGTH - 1, "Variable name too long");
 
 	// Copy up to '(' and add null termination
 	strncpy(var_name, tree_name, chars_to_copy);
@@ -1063,10 +1063,10 @@ int SexpTreeModel::get_modify_variable_type(int parent) const
 {
 	int sexp_var_index = -1;
 
-	Assert(parent >= 0);
+	Assertion(parent >= 0, "Invalid parent node");
 	int op_const = get_operator_const(tree_nodes[parent].text);
 
-	Assert(tree_nodes[parent].child >= 0);
+	Assertion(tree_nodes[parent].child >= 0, "Invalid child node");
 	const char* node_text = tree_nodes[tree_nodes[parent].child].text;
 
 	if (op_const == OP_MODIFY_VARIABLE) {
@@ -1126,7 +1126,7 @@ int SexpTreeModel::get_variable_count(const char* var_name) const
 int SexpTreeModel::get_loadout_variable_count(int var_index)
 {
 	// we shouldn't be being passed the index of variables that do not exist
-	Assert(var_index >= 0 && var_index < MAX_SEXP_VARIABLES);
+	Assertion(var_index >= 0 && var_index < MAX_SEXP_VARIABLES, "Invalid variable index");
 
 	int idx;
 	int count = 0;
@@ -1253,7 +1253,7 @@ SexpContextMenuState SexpTreeModel::compute_context_menu_state()
 		return state;
 	}
 
-	Assert(item_index != -1);
+	Assertion(item_index != -1, "Invalid item index");
 
 	state.can_edit_text = (tree_nodes[item_index].flags & EDITABLE) != 0;
 	if (tree_nodes[item_index].parent == -1) {
@@ -1393,7 +1393,7 @@ void SexpTreeModel::ctx_compute_variable_menus(SexpContextMenuState& state) cons
 
 	// Build variable replacement entries
 	int max_sexp_vars = MAX_SEXP_VARIABLES;
-	Assert(max_sexp_vars < 512);
+	Assertion(max_sexp_vars < 512, "Invalid max SEXP variables");
 
 	for (int idx = 0; idx < max_sexp_vars; idx++) {
 		if (Sexp_variables[idx].type & SEXP_VARIABLE_SET) {
@@ -1509,7 +1509,7 @@ void SexpTreeModel::ctx_compute_add_type(SexpContextMenuState& state)
 		int child = tree_nodes[item_index].child;
 		state.add_count = count_args(child);
 		int op = get_operator_index(tree_nodes[item_index].text);
-		Assert(op >= 0);
+		Assertion(op >= 0, "Invalid operator index");
 
 		int type = query_operator_argument_type(op, state.add_count);
 		state.add_data_opf_type = type;
@@ -1755,7 +1755,7 @@ int SexpTreeModel::ctx_compute_replace_type(SexpContextMenuState& state)
 void SexpTreeModel::ctx_compute_insert_type(SexpContextMenuState& state) const
 {
 	int z = tree_nodes[item_index].parent;
-	Assert(z >= -1);
+	Assertion(z >= -1, "Invalid parent node");
 	if (z != -1) {
 		int op = get_operator_index(tree_nodes[z].text);
 		Assertion(op != -1 || tree_nodes[z].type & SEXPT_CONTAINER_DATA,
@@ -1857,14 +1857,14 @@ void SexpTreeModel::ctx_validate_clipboard(SexpContextMenuState& state, int repl
 		return;
 	}
 
-	Assert(Sexp_nodes[Sexp_clipboard].subtype != SEXP_ATOM_LIST);
+	Assertion(Sexp_nodes[Sexp_clipboard].subtype != SEXP_ATOM_LIST, "Invalid SEXP node subtype");
 	Assertion(Sexp_nodes[Sexp_clipboard].subtype != SEXP_ATOM_CONTAINER_NAME,
 		"Attempt to use container name %s from SEXP clipboard. Please report!",
 		Sexp_nodes[Sexp_clipboard].text);
 
 	if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_OPERATOR) {
 		int j = get_operator_const(CTEXT(Sexp_clipboard));
-		Assert(j);
+		Assertion(j, "Invalid operator");
 		int ret = query_operator_return_type(j);
 
 		if ((ret == OPR_POSITIVE) && (state.replace_type == OPR_NUMBER))
@@ -2045,7 +2045,7 @@ SexpTreeModel::HelpTextResult SexpTreeModel::compute_help_text(int node_index, c
 				c++;
 			}
 
-			Assert(j >= 0);
+			Assertion(j >= 0, "Invalid child node");
 
 			// Message text display
 			if (query_operator_argument_type(index, c) == OPF_MESSAGE) {
