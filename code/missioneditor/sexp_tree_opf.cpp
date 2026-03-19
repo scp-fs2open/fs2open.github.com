@@ -1,12 +1,3 @@
-/*
- * Copyright (C) Volition, Inc. 1999.  All rights reserved.
- *
- * All source code herein is the property of Volition, Inc. You may not sell
- * or otherwise commercially exploit the source or things you created based on the
- * source.
- *
- */
-
 // OPF listing functions for the sexp tree.
 // All get_listing_opf_*() functions are implemented here as SexpTreeOPF methods.
 // Uses _model back-reference for read-only access to tree_nodes[] and _interface.

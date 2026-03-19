@@ -1,16 +1,3 @@
-/*
- * SexpAnnotationModel — shared annotation data model for event editors.
- *
- * Both FRED2 (MFC) and QtFRED (Qt) use this to manage event_annotation data.
- * The model owns a working copy of annotations and handles:
- *   - loading from / saving to the global Event_annotations
- *   - path ↔ key resolution (using tree_nodes parent/child/next links)
- *   - lookup, creation, and pruning of annotations
- *
- * UI-specific concerns (icon swapping, tooltips, custom draw) remain in each
- * editor's UI layer.
- */
-
 #pragma once
 
 #include "mission/missiongoals.h"

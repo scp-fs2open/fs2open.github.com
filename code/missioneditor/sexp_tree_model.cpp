@@ -1,12 +1,3 @@
-/*
- * Copyright (C) Volition, Inc. 1999.  All rights reserved.
- *
- * All source code herein is the property of Volition, Inc. You may not sell
- * or otherwise commercially exploit the source or things you created based on the
- * source.
- *
- */
-
 // Shared sexp tree model — UI-independent data structures and logic.
 // Used by both FRED2 (MFC) and QtFRED (Qt) sexp tree implementations.
 

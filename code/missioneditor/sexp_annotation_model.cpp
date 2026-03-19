@@ -6,9 +6,6 @@
 #include "missioneditor/sexp_annotation_model.h"
 #include "missioneditor/sexp_tree_model.h"
 
-#include <algorithm>
-#include <vector>
-
 SCP_vector<event_annotation> Event_annotations;
 
 // -----------------------------------------------------------------------
