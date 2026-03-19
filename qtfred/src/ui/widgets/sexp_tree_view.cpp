@@ -1724,7 +1724,8 @@ void sexp_tree_view::addReplaceTypedDataHandler(int data_idx, bool replace) {
 		Assertion(ptr, "Invalid SEXP list");
 	}
 
-	Assertion(SEXPT_TYPE(ptr->type) != SEXPT_OPERATOR && ptr->op < 0, "Invalid SEXP type or operator");
+	// NOLINTNEXTLINE(readability-simplify-boolean-expr) -- Assertion macro negates expr; keep readability here
+	Assertion((SEXPT_TYPE(ptr->type) != SEXPT_OPERATOR) && (ptr->op < 0), "Invalid SEXP type or operator");
 	_actions.expand_operator(item_index);
 	if (replace) {
 		_actions.replace_data(ptr->text.c_str(), ptr->type);
@@ -1758,7 +1759,8 @@ void sexp_tree_view::handleReplaceVariableAction(int id) {
 	Assertion(item_index >= 0, "Invalid item index");
 
 	// get index into list of type valid variables
-	Assertion(id >= 0 && id < MAX_SEXP_VARIABLES, "Invalid variable index");
+	// NOLINTNEXTLINE(readability-simplify-boolean-expr) -- Assertion macro negates expr; keep readability here
+	Assertion((id >= 0) && (id < MAX_SEXP_VARIABLES), "Invalid variable index");
 
 	int type = get_type(currentItem());
 	Assertion((type & SEXPT_NUMBER) || (type & SEXPT_STRING), "Invalid node type");

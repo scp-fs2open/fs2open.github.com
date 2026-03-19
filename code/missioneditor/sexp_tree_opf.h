@@ -62,7 +62,7 @@ public:
 	static sexp_list_item* get_listing_opf_adjust_audio_volume();
 	static sexp_list_item* get_listing_opf_builtin_hud_gauge();
 	static sexp_list_item* get_listing_opf_custom_hud_gauge();
-	sexp_list_item* get_listing_opf_any_hud_gauge();
+	static sexp_list_item* get_listing_opf_any_hud_gauge();
 	static sexp_list_item* get_listing_opf_ship_effect();
 	static sexp_list_item* get_listing_opf_explosion_option();
 	static sexp_list_item* get_listing_opf_waypoint_path();
