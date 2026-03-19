@@ -39,7 +39,7 @@ void sexp_list_item::set_op(int op_num)
 	int i;
 
 	if (op_num >= FIRST_OP) {  // do we have an op value instead of an op number (index)?
-		for (i = 0; i < (int)Operators.size(); i++)
+		for (i = 0; i < static_cast<int>(Operators.size()); i++)
 			if (op_num == Operators[i].value)
 				op_num = i;  // convert op value to op number
 	}
@@ -252,7 +252,7 @@ SexpTreeModel::~SexpTreeModel() = default;
 // Scan for the first unused slot in the tree_nodes array. Returns -1 if none available.
 int SexpTreeModel::find_free_node() const
 {
-	for (int i = 0; i < (int)tree_nodes.size(); i++) {
+	for (int i = 0; i < static_cast<int>(tree_nodes.size()); i++) {
 		if (tree_nodes[i].type == SEXPT_UNUSED)
 			return i;
 	}
@@ -267,17 +267,17 @@ int SexpTreeModel::allocate_node()
 
 	// need more tree nodes?
 	if (node < 0) {
-		int old_size = (int)tree_nodes.size();
+		int old_size = static_cast<int>(tree_nodes.size());
 
 		Assertion(TREE_NODE_INCREMENT > 0, "Invalid tree node increment");
 
 		// allocate in blocks of TREE_NODE_INCREMENT
 		tree_nodes.resize(tree_nodes.size() + TREE_NODE_INCREMENT);
 
-		mprintf(("Bumping dynamic tree node limit from %d to %d...\n", old_size, (int)tree_nodes.size()));
+		mprintf(("Bumping dynamic tree node limit from %d to %d...\n", old_size, static_cast<int>(tree_nodes.size())));
 
 #ifndef NDEBUG
-		for (int i = old_size; i < (int)tree_nodes.size(); i++) {
+		for (int i = old_size; i < static_cast<int>(tree_nodes.size()); i++) {
 			sexp_tree_item* item = &tree_nodes[i];
 			Assertion(item->type == SEXPT_UNUSED, "Invalid tree node type");
 		}
@@ -848,7 +848,7 @@ int SexpTreeModel::query_restricted_opf_range(int opf)
 // Returns -1 if the node has no valid parent.
 int SexpTreeModel::get_sibling_place(int node) const
 {
-	if (tree_nodes[node].parent < 0 || tree_nodes[node].parent > (int)tree_nodes.size())
+	if (!SCP_vector_inbounds(tree_nodes, tree_nodes[node].parent))
 		return -1;
 
 	const sexp_tree_item* myparent = &tree_nodes[tree_nodes[node].parent];
@@ -946,7 +946,7 @@ const char* SexpTreeModel::help(int code)
 {
 	int i;
 
-	i = (int)Sexp_help.size();
+	i = static_cast<int>(Sexp_help.size());
 	while (i--) {
 		if (Sexp_help[i].id == code)
 			break;
@@ -1161,7 +1161,7 @@ int SexpTreeModel::get_container_usage_count(const SCP_string& container_name) c
 {
 	int count = 0;
 
-	for (int node_idx = 0; node_idx < (int)tree_nodes.size(); node_idx++) {
+	for (int node_idx = 0; node_idx < static_cast<int>(tree_nodes.size()); node_idx++) {
 		if (is_matching_container_node(node_idx, container_name)) {
 			count++;
 		}
@@ -1182,7 +1182,7 @@ bool SexpTreeModel::is_matching_container_node(int node, const SCP_string& conta
 // (OPF_CONTAINER_NAME, OPF_LIST_CONTAINER_NAME, or OPF_MAP_CONTAINER_NAME).
 bool SexpTreeModel::is_container_name_argument(int node) const
 {
-	Assertion(node >= 0 && node < (int)tree_nodes.size(),
+	Assertion(SCP_vector_inbounds(tree_nodes, node),
 		"Attempt to check if out-of-range node %d is a container name argument. Please report!",
 		node);
 
@@ -1308,7 +1308,7 @@ bool SexpTreeModel::ctx_handle_labeled_root(SexpContextMenuState& state) const
 	state.can_edit_text = state.is_root_editable;
 	state.can_copy = false;
 
-	int num_ops = (int)Operators.size();
+	int num_ops = static_cast<int>(Operators.size());
 	state.op_add_enabled.assign(num_ops, false);
 	state.op_replace_enabled.assign(num_ops, false);
 	state.op_insert_enabled.assign(num_ops, false);
@@ -1731,10 +1731,10 @@ int SexpTreeModel::ctx_compute_replace_type(SexpContextMenuState& state)
 					state.can_replace_number = true;
 					state.can_replace_string = false;
 				} else {
-					UNREACHABLE("Map container with type %d has unknown key type", (int)container.type);
+					UNREACHABLE("Map container with type %d has unknown key type", static_cast<int>(container.type));
 				}
 			} else {
-				UNREACHABLE("Unknown container type %d", (int)container.type);
+				UNREACHABLE("Unknown container type %d", static_cast<int>(container.type));
 			}
 		} else if (state.replace_count == 1 && container.is_list() &&
 				   get_list_modifier(tree_nodes[first_modifier_node].text) == ListModifier::AT_INDEX) {
@@ -1792,7 +1792,7 @@ void SexpTreeModel::ctx_compute_insert_type(SexpContextMenuState& state) const
 void SexpTreeModel::ctx_compute_operator_enablement(SexpContextMenuState& state) const
 {
 	int parent = tree_nodes[item_index].parent;
-	int num_ops = (int)Operators.size();
+	int num_ops = static_cast<int>(Operators.size());
 	state.op_add_enabled.assign(num_ops, false);
 	state.op_replace_enabled.assign(num_ops, false);
 	state.op_insert_enabled.assign(num_ops, false);
@@ -1895,7 +1895,7 @@ void SexpTreeModel::ctx_validate_clipboard(SexpContextMenuState& state, int repl
 				if (state.add_type == OPR_STRING && !SexpTreeOPF::is_container_name_opf_type(replace_opf_type))
 					state.can_paste_add = true;
 			} else {
-				UNREACHABLE("Unknown container data type %d", (int)container.type);
+				UNREACHABLE("Unknown container data type %d", static_cast<int>(container.type));
 			}
 		}
 
@@ -1951,7 +1951,7 @@ SexpTreeModel::HelpTextResult SexpTreeModel::compute_help_text(int node_index, c
 {
 	HelpTextResult result;
 
-	if (node_index < 0 || node_index >= (int)tree_nodes.size() || !tree_nodes[node_index].type) {
+	if (!SCP_vector_inbounds(tree_nodes, node_index) || !tree_nodes[node_index].type) {
 		result.help_text = node_comment;
 		return result;
 	}

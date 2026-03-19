@@ -234,7 +234,7 @@ void sexp_tree_view::update_item(HTREEITEM h)
 	item_handle = h;
 	item_index = -1;
 
-	for (int i = 0; i < (int)tree_nodes.size(); ++i) {
+	for (int i = 0; i < static_cast<int>(tree_nodes.size()); ++i) {
 		if (tree_nodes[i].handle == h) {
 			item_index = i;
 			break;
@@ -311,7 +311,7 @@ void sexp_tree_view::right_clicked()
 		}
 
 		// add popup menus for all the operator categories
-		for (i=0; i<(int)op_menu.size(); i++)
+		for (i=0; i<static_cast<int>(op_menu.size()); i++)
 		{
 			add_op_submenu[i].CreatePopupMenu();
 			replace_op_submenu[i].CreatePopupMenu();
@@ -368,7 +368,7 @@ void sexp_tree_view::right_clicked()
 		// Build container name menu from state
 		if (state.show_container_names) {
 			const auto& containers = get_all_sexp_containers();
-			for (int idx = 0; idx < (int)state.replace_container_names.size(); idx++) {
+			for (int idx = 0; idx < static_cast<int>(state.replace_container_names.size()); idx++) {
 				UINT flags = MF_STRING;
 				if (!state.replace_container_names[idx].enabled) flags |= MF_GRAYED;
 				replace_container_name_menu->AppendMenu(flags, (ID_CONTAINER_NAME_MENU + idx), containers[idx].container_name.c_str());
@@ -378,7 +378,7 @@ void sexp_tree_view::right_clicked()
 		// Build container data menu from state
 		if (state.show_container_data) {
 			const auto& containers = get_all_sexp_containers();
-			for (int idx = 0; idx < (int)state.replace_container_data.size(); idx++) {
+			for (int idx = 0; idx < static_cast<int>(state.replace_container_data.size()); idx++) {
 				UINT flags = MF_STRING;
 				if (!state.replace_container_data[idx].enabled) flags |= MF_GRAYED;
 				replace_container_data_menu->AppendMenu(flags, (ID_CONTAINER_DATA_MENU + idx), containers[idx].container_name.c_str());
@@ -386,13 +386,13 @@ void sexp_tree_view::right_clicked()
 		}
 
 		// add all the submenu items first
-		for (i=0; i<(int)op_submenu.size(); i++)
+		for (i=0; i<static_cast<int>(op_submenu.size()); i++)
 		{
 			add_op_subcategory_menu[i].CreatePopupMenu();
 			replace_op_subcategory_menu[i].CreatePopupMenu();
 			insert_op_subcategory_menu[i].CreatePopupMenu();
-			
-			for (j=0; j<(int)op_menu.size(); j++)
+
+			for (j=0; j<static_cast<int>(op_menu.size()); j++)
 			{
 				if (op_menu[j].id == category_of_subcategory(op_submenu[i].id))
 				{
@@ -405,7 +405,7 @@ void sexp_tree_view::right_clicked()
 		}
 
 		// add operator menu items to the various CATEGORY submenus they belong in
-		for (i=0; i<(int)Operators.size(); i++)
+		for (i=0; i<static_cast<int>(Operators.size()); i++)
 		{
 			if (SexpTreeModel::is_operator_hidden(Operators[i].value))
 				continue;
@@ -418,7 +418,7 @@ void sexp_tree_view::right_clicked()
 			subcategory_id = get_subcategory(Operators[i].value);
 			if (subcategory_id == OP_SUBCATEGORY_NONE)
 			{
-				for (j=0; j<(int)op_menu.size(); j++)
+				for (j=0; j<static_cast<int>(op_menu.size()); j++)
 				{
 					if (op_menu[j].id == get_category(Operators[i].value))
 					{
@@ -431,7 +431,7 @@ void sexp_tree_view::right_clicked()
 			}
 			else
 			{
-				for (j=0; j<(int)op_submenu.size(); j++)
+				for (j=0; j<static_cast<int>(op_submenu.size()); j++)
 				{
 					if (op_submenu[j].id == subcategory_id)
 					{
@@ -630,7 +630,7 @@ int sexp_tree_view::end_label_edit(TVITEMA &item)
 
 	if (node == tree_nodes.size()) {
 		if (_model._interface && _model._interface->getFlags()[TreeFlags::RootEditable]) {
-			item_index = (int)GetItemData(h);
+			item_index = static_cast<int>(GetItemData(h));
 			_model._interface->onRootRenamed(item_index, str.c_str());
 			return 1;
 		} else
@@ -682,7 +682,7 @@ void sexp_tree_view::start_operator_edit(HTREEITEM h)
 
 	// sanity checks
 	Assertion(item_handle == h, "Mismatch between item handle and the handle being edited!");
-	Assertion(item_index >= 0 && item_index < (int)tree_nodes.size() && !tree_nodes.empty(), "Unknown node being edited!");
+	Assertion(SCP_vector_inbounds(tree_nodes, item_index) && !tree_nodes.empty(), "Unknown node being edited!");
 	Assertion(tree_nodes[item_index].handle == item_handle, "Mismatch between tree node and item handle!");
 
 	// we are editing an operator, so find out which type it should be
@@ -1071,7 +1071,7 @@ BOOL sexp_tree_view::OnCommand(WPARAM wParam, LPARAM lParam)
 
 		const auto &containers = get_all_sexp_containers();
 		const int container_index = id - ID_CONTAINER_NAME_MENU;
-		Assertion((container_index >= 0) && (container_index < (int)containers.size()),
+		Assertion(SCP_vector_inbounds(containers, container_index),
 			"Unknown Container Index %d. Please report!",
 			container_index);
 
@@ -1089,7 +1089,7 @@ BOOL sexp_tree_view::OnCommand(WPARAM wParam, LPARAM lParam)
 
 		const auto &containers = get_all_sexp_containers();
 		const int container_index = id - ID_CONTAINER_DATA_MENU;
-		Assertion((container_index >= 0) && (container_index < (int)containers.size()),
+		Assertion(SCP_vector_inbounds(containers, container_index),
 			"Unknown Container Index %d. Please report!",
 			container_index);
 
@@ -1106,7 +1106,7 @@ BOOL sexp_tree_view::OnCommand(WPARAM wParam, LPARAM lParam)
 		expand_branch(handle);
 	}
 
-	for (op=0; op<(int)Operators.size(); op++) {
+	for (op=0; op<static_cast<int>(Operators.size()); op++) {
 		if (id == Operators[op].value) {
 			_actions.add_or_replace_operator(op);
 			return 1;
@@ -1328,7 +1328,7 @@ void sexp_tree_view::NodeDelete()
 	HTREEITEM h_parent;
 
 	if (_model._interface && _model._interface->getFlags()[TreeFlags::RootDeletable] && (item_index == -1)) {
-		item_index = (int)GetItemData(item_handle);
+		item_index = static_cast<int>(GetItemData(item_handle));
 		theNode = _model._interface->onRootDeleted(item_index);
 
 		Assertion(theNode >= 0, "Invalid root deletion");
@@ -1620,8 +1620,8 @@ void sexp_tree_view::OnLButtonUp(UINT nFlags, CPoint point)
 
 		if (m_h_drop && m_h_drag != m_h_drop) {
 			Assertion(m_h_drag, "Invalid drag handle");
-			node1 = (int)GetItemData(m_h_drag);
-			node2 = (int)GetItemData(m_h_drop);
+			node1 = static_cast<int>(GetItemData(m_h_drag));
+			node2 = static_cast<int>(GetItemData(m_h_drop));
 
 			// If we're moving up, insert before the dropped item.  If we're moving down,
 			// insert after the dropped item.  The idea is to always end up where we dropped.
@@ -1826,8 +1826,8 @@ int sexp_tree_view::get_type(HTREEITEM h)
 void sexp_tree_view::update_help(HTREEITEM h)
 {
 	// Validate operator help strings
-	for (int i = 0; i < (int)Operators.size(); i++) {
-		for (int j = 0; j < (int)op_menu.size(); j++) {
+	for (int i = 0; i < static_cast<int>(Operators.size()); i++) {
+		for (int j = 0; j < static_cast<int>(op_menu.size()); j++) {
 			if (get_category(Operators[i].value) == op_menu[j].id) {
 				if (!help(Operators[i].value)) {
 					mprintf(("Allender!  If you add new sexp operators, add help for them too! :) Sexp %s has no help.\n", Operators[i].text.c_str()));
@@ -1846,7 +1846,7 @@ void sexp_tree_view::update_help(HTREEITEM h)
 
 	// Find node index from handle
 	int node_index = -1;
-	for (int i = 0; i < (int)tree_nodes.size(); i++) {
+	for (int i = 0; i < static_cast<int>(tree_nodes.size()); i++) {
 		if (tree_nodes[i].handle == h) {
 			node_index = i;
 			break;

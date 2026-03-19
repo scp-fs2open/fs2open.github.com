@@ -342,13 +342,13 @@ void SexpTreeActions::add_default_modifier(const sexp_container& container)
 			item.set_data("0");
 			type_to_use |= SEXPT_NUMBER;
 		} else {
-			UNREACHABLE("Unknown map container key type %d", (int)container.type);
+			UNREACHABLE("Unknown map container key type %d", static_cast<int>(container.type));
 		}
 	} else if (container.is_list()) {
 		item.set_data(get_all_list_modifiers()[0].name);
 		type_to_use |= SEXPT_STRING;
 	} else {
-		UNREACHABLE("Unknown container type %d", (int)container.type);
+		UNREACHABLE("Unknown container type %d", static_cast<int>(container.type));
 	}
 
 	item.type = type_to_use;
@@ -650,7 +650,7 @@ void SexpTreeActions::delete_sexp_tree_variable(const char* var_name)
 
 	int old_item_index = _model.item_index;
 
-	for (int idx = 0; idx < (int)_model.tree_nodes.size(); idx++) {
+	for (int idx = 0; idx < static_cast<int>(_model.tree_nodes.size()); idx++) {
 		if (_model.tree_nodes[idx].type & SEXPT_VARIABLE) {
 			if (strstr(_model.tree_nodes[idx].text, search_str) != nullptr) {
 				Assertion((_model.tree_nodes[idx].type & SEXPT_NUMBER) || (_model.tree_nodes[idx].type & SEXPT_STRING), "Invalid variable type");
@@ -695,7 +695,7 @@ void SexpTreeActions::modify_sexp_tree_variable(const char* old_name, int sexp_v
 
 	sprintf(search_str, "%s(", old_name);
 
-	for (int idx = 0; idx < (int)_model.tree_nodes.size(); idx++) {
+	for (int idx = 0; idx < static_cast<int>(_model.tree_nodes.size()); idx++) {
 		if (_model.tree_nodes[idx].type & SEXPT_VARIABLE) {
 			if (strstr(_model.tree_nodes[idx].text, search_str) != nullptr) {
 				_model.item_index = idx;
@@ -869,11 +869,11 @@ bool SexpTreeActions::rename_container_nodes(const SCP_string& old_name, const S
 		"Attempt to rename container nodes with empty name. Please report!");
 	Assertion(new_name.length() <= sexp_container::NAME_MAX_LENGTH,
 		"Attempt to rename container nodes with name %s that is too long (%d > %d). Please report!",
-		new_name.c_str(), (int)new_name.length(), sexp_container::NAME_MAX_LENGTH);
+		new_name.c_str(), static_cast<int>(new_name.length()), sexp_container::NAME_MAX_LENGTH);
 
 	bool renamed_anything = false;
 
-	for (int node_idx = 0; node_idx < (int)_model.tree_nodes.size(); node_idx++) {
+	for (int node_idx = 0; node_idx < static_cast<int>(_model.tree_nodes.size()); node_idx++) {
 		if (_model.is_matching_container_node(node_idx, old_name)) {
 			strcpy_s(_model.tree_nodes[node_idx].text, new_name.c_str());
 			_ui.ui_set_item_text(_model.tree_nodes[node_idx].handle, new_name.c_str());

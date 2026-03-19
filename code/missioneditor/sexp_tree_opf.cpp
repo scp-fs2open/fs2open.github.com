@@ -55,7 +55,7 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_null()
 	int i;
 	sexp_list_item head;
 
-	for (i=0; i<(int)Operators.size(); i++)
+	for (i=0; i<static_cast<int>(Operators.size()); i++)
 		if (query_operator_return_type(i) == OPR_NULL)
 			head.add_op(i);
 
@@ -67,7 +67,7 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_flexible_argument()
 	int i;
 	sexp_list_item head;
 
-	for (i=0; i<(int)Operators.size(); i++)
+	for (i=0; i<static_cast<int>(Operators.size()); i++)
 		if (query_operator_return_type(i) == OPR_FLEXIBLE_ARGUMENT)
 			head.add_op(i);
 
@@ -91,7 +91,7 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_bool(int parent_node)
 
 	}
 
-	for (i=0; i<(int)Operators.size(); i++) {
+	for (i=0; i<static_cast<int>(Operators.size()); i++) {
 		if (query_operator_return_type(i) == OPR_BOOL) {
 			if ( !only_basic || (only_basic && ((Operators[i].value == OP_TRUE) || (Operators[i].value == OP_FALSE))) ) {
 				head.add_op(i);
@@ -107,7 +107,7 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_positive()
 	int i, z;
 	sexp_list_item head;
 
-	for (i=0; i<(int)Operators.size(); i++) {
+	for (i=0; i<static_cast<int>(Operators.size()); i++) {
 		z = query_operator_return_type(i);
 		// Goober5000's number hack
 		if ((z == OPR_NUMBER) || (z == OPR_POSITIVE))
@@ -122,7 +122,7 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_number()
 	int i, z;
 	sexp_list_item head;
 
-	for (i=0; i<(int)Operators.size(); i++) {
+	for (i=0; i<static_cast<int>(Operators.size()); i++) {
 		z = query_operator_return_type(i);
 		if ((z == OPR_NUMBER) || (z == OPR_POSITIVE))
 			head.add_op(i);
@@ -244,7 +244,7 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_iff()
 	int i;
 	sexp_list_item head;
 
-	for (i=0; i< (int)Iff_info.size(); i++)
+	for (i=0; i< static_cast<int>(Iff_info.size()); i++)
 		head.add_data(Iff_info[i].iff_name);
 
 	return head.next;
@@ -351,7 +351,7 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_arrival_anchor_all()
 
 	for (restrict_to_players = 0; restrict_to_players < 2; restrict_to_players++)
 	{
-		for (i = 0; i < (int)Iff_info.size(); i++)
+		for (i = 0; i < static_cast<int>(Iff_info.size()); i++)
 		{
 			char tmp[NAME_LENGTH + 15];
 			stuff_special_arrival_anchor_name(tmp, i, restrict_to_players, false);
@@ -384,7 +384,7 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_ai_goal(int parent_node)
 	n = ship_name_lookup(_model.tree_nodes[child].text, 1);
 	if (n >= 0) {
 		// add operators if it's an ai-goal and ai-goal is allowed for that ship
-		for (i=0; i<(int)Operators.size(); i++) {
+		for (i=0; i<static_cast<int>(Operators.size()); i++) {
 			if ( (query_operator_return_type(i) == OPR_AI_GOAL) && query_sexp_ai_goal_valid(Operators[i].value, n) )
 				head.add_op(i);
 		}
@@ -395,14 +395,14 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_ai_goal(int parent_node)
 			for (w=0; w<Wings[z].wave_count; w++) {
 				n = Wings[z].ship_index[w];
 				// add operators if it's an ai-goal and ai-goal is allowed for that ship
-				for (i=0; i<(int)Operators.size(); i++) {
+				for (i=0; i<static_cast<int>(Operators.size()); i++) {
 					if ( (query_operator_return_type(i) == OPR_AI_GOAL) && query_sexp_ai_goal_valid(Operators[i].value, n) )
 						head.add_op(i);
 				}
 			}
 		// when dealing with the special argument add them all. It's up to the FREDder to ensure invalid orders aren't given
 		} else if (!strcmp(_model.tree_nodes[child].text, SEXP_ARGUMENT_STRING)) {
-			for (i=0; i<(int)Operators.size(); i++) {
+			for (i=0; i<static_cast<int>(Operators.size()); i++) {
 				if (query_operator_return_type(i) == OPR_AI_GOAL) {
 					head.add_op(i);
 				}
@@ -433,7 +433,7 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_docker_point(int parent_node, int a
 
 	Assertion(parent_node >= 0, "Invalid parent node");
 	Assertion(!stricmp(_model.tree_nodes[parent_node].text, "ai-dock") || !stricmp(_model.tree_nodes[parent_node].text, "set-docked") ||
-		   get_operator_const(_model.tree_nodes[parent_node].text) >= (int)First_available_operator_id, "Invalid node type");
+		   get_operator_const(_model.tree_nodes[parent_node].text) >= static_cast<int>(First_available_operator_id), "Invalid node type");
 
 	if (!stricmp(_model.tree_nodes[parent_node].text, "ai-dock"))
 	{
@@ -456,7 +456,7 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_docker_point(int parent_node, int a
 		sh = ship_name_lookup(_model.tree_nodes[z].text, 1);
 	}
 	// for Lua sexps
-	else if (get_operator_const(_model.tree_nodes[parent_node].text) >= (int)First_available_operator_id)
+	else if (get_operator_const(_model.tree_nodes[parent_node].text) >= static_cast<int>(First_available_operator_id))
 	{
 		int this_index = get_dynamic_parameter_index(_model.tree_nodes[parent_node].text, arg_num);
 
@@ -712,7 +712,7 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_ship_wing_wholeteam()
 	int i;
 	sexp_list_item head;
 
-	for (i = 0; i < (int)Iff_info.size(); i++)
+	for (i = 0; i < static_cast<int>(Iff_info.size()); i++)
 		head.add_data(Iff_info[i].iff_name);
 
 	head.add_list(get_listing_opf_ship_wing());
@@ -725,7 +725,7 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_ship_wing_shiponteam_point()
 	int i;
 	sexp_list_item head;
 
-	for (i = 0; i < (int)Iff_info.size(); i++)
+	for (i = 0; i < static_cast<int>(Iff_info.size()); i++)
 	{
 		char tmp[NAME_LENGTH + 7];
 		sprintf(tmp, "<any %s>", Iff_info[i].iff_name);
@@ -915,7 +915,7 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_medal_name()
 	int i;
 	sexp_list_item head;
 
-	for (i = 0; i < (int)Medals.size(); i++)
+	for (i = 0; i < static_cast<int>(Medals.size()); i++)
 	{
 		// don't add Rank or the Ace badges
 		if ((i == Rank_medal_index) || (Medals[i].kills_needed > 0))
@@ -1925,7 +1925,7 @@ sexp_list_item *SexpTreeOPF::get_container_modifiers(int con_data_node) const
 
 		list = get_map_container_modifiers(con_data_node);
 	} else {
-		UNREACHABLE("Unknown container type %d", (int)p_container->type);
+		UNREACHABLE("Unknown container type %d", static_cast<int>(p_container->type));
 	}
 
 	if (list) {
@@ -1964,7 +1964,7 @@ sexp_list_item *SexpTreeOPF::get_map_container_modifiers(int con_data_node) cons
 	Assertion(container.is_map(),
 		"Found map modifier for non-map container %s with type %d. Please report!",
 		_model.tree_nodes[con_data_node].text,
-		(int)container.type);
+		static_cast<int>(container.type));
 
 	int type = SEXPT_VALID | SEXPT_MODIFIER;
 	if (any(container.type & ContainerType::STRING_KEYS)) {
@@ -1972,7 +1972,7 @@ sexp_list_item *SexpTreeOPF::get_map_container_modifiers(int con_data_node) cons
 	} else if (any(container.type & ContainerType::NUMBER_KEYS)) {
 		type |= SEXPT_NUMBER;
 	} else {
-		UNREACHABLE("Unknown map container key type %d", (int)container.type);
+		UNREACHABLE("Unknown map container key type %d", static_cast<int>(container.type));
 	}
 
 	for (const auto &kv_pair : container.map_data) {
@@ -2012,7 +2012,7 @@ sexp_list_item *SexpTreeOPF::check_for_dynamic_sexp_enum(int opf)
 
 	int item = opf - First_available_opf_id;
 
-	if (item < (int)Dynamic_enums.size()) {
+	if (item < static_cast<int>(Dynamic_enums.size())) {
 
 		for (const SCP_string& enum_item : Dynamic_enums[item].list) {
 			head.add_data(enum_item.c_str());
@@ -2811,7 +2811,7 @@ int SexpTreeOPF::query_default_argument_available(int op, int i) const
 
 		default:
 			if (!Dynamic_enums.empty()) {
-				if ((type - First_available_opf_id) < (int)Dynamic_enums.size()) {
+				if ((type - First_available_opf_id) < static_cast<int>(Dynamic_enums.size())) {
 					return 1;
 				} else {
 					UNREACHABLE("Unhandled SEXP argument type!");
@@ -2903,10 +2903,10 @@ int SexpTreeOPF::get_default_value(sexp_list_item* item, char* text_buf, int op,
 						temp = 100;
 						break;
 					case 11:
-						temp = (int)EMP_DEFAULT_INTENSITY;
+						temp = static_cast<int>(EMP_DEFAULT_INTENSITY);
 						break;
 					case 12:
-						temp = (int)EMP_DEFAULT_TIME;
+						temp = static_cast<int>(EMP_DEFAULT_TIME);
 						break;
 					default:
 						temp = 0;

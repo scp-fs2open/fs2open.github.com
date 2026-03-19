@@ -847,7 +847,7 @@ void sexp_tree_view::update_help(QTreeWidgetItem* h) {
 
 	// Find node index from handle
 	int node_index = -1;
-	for (int i = 0; i < (int) tree_nodes.size(); i++) {
+	for (int i = 0; i < static_cast<int>(tree_nodes.size()); i++) {
 		if (tree_nodes[i].handle == h) {
 			node_index = i;
 			break;
@@ -925,7 +925,7 @@ std::unique_ptr<QMenu> sexp_tree_view::buildContextMenu(QTreeWidgetItem* h) {
 
 	// get item_index
 	item_index = -1;
-	for (i = 0; i < (int) tree_nodes.size(); i++) {
+	for (i = 0; i < static_cast<int>(tree_nodes.size()); i++) {
 		if (tree_nodes[i].handle == h) {
 			setCurrentItemIndex(i);
 			break;
@@ -1010,7 +1010,7 @@ std::unique_ptr<QMenu> sexp_tree_view::buildContextMenu(QTreeWidgetItem* h) {
 	// Build container name menu from state
 	if (state.show_container_names) {
 		const auto& containers = get_all_sexp_containers();
-		for (int idx = 0; idx < (int)state.replace_container_names.size(); idx++) {
+		for (int idx = 0; idx < static_cast<int>(state.replace_container_names.size()); idx++) {
 			auto action = replace_container_name_menu->addAction(
 				QString::fromStdString(containers[idx].container_name),
 				this, [this, idx]() { handleReplaceContainerNameAction(idx); });
@@ -1021,7 +1021,7 @@ std::unique_ptr<QMenu> sexp_tree_view::buildContextMenu(QTreeWidgetItem* h) {
 	// Build container data menu from state
 	if (state.show_container_data) {
 		const auto& containers = get_all_sexp_containers();
-		for (int idx = 0; idx < (int)state.replace_container_data.size(); idx++) {
+		for (int idx = 0; idx < static_cast<int>(state.replace_container_data.size()); idx++) {
 			auto action = replace_container_data_menu->addAction(
 				QString::fromStdString(containers[idx].container_name),
 				this, [this, idx]() { handleReplaceContainerDataAction(idx); });
@@ -1036,7 +1036,7 @@ std::unique_ptr<QMenu> sexp_tree_view::buildContextMenu(QTreeWidgetItem* h) {
 	QMenu* add_op_submenu[SEXP_TREE_MAX_OP_MENUS];
 	QMenu* replace_op_submenu[SEXP_TREE_MAX_OP_MENUS];
 	QMenu* insert_op_submenu[SEXP_TREE_MAX_OP_MENUS];
-	for (i = 0; i < (int) op_menu.size(); i++) {
+	for (i = 0; i < static_cast<int>(op_menu.size()); i++) {
 		add_op_submenu[i] = add_op_menu->addMenu(QString::fromStdString(op_menu[i].name));
 		replace_op_submenu[i] = replace_op_menu->addMenu(QString::fromStdString(op_menu[i].name));
 		insert_op_submenu[i] = insert_op_menu->addMenu(QString::fromStdString(op_menu[i].name));
@@ -1046,8 +1046,8 @@ std::unique_ptr<QMenu> sexp_tree_view::buildContextMenu(QTreeWidgetItem* h) {
 	QMenu* add_op_subcategory_menu[SEXP_TREE_MAX_SUBMENUS];
 	QMenu* replace_op_subcategory_menu[SEXP_TREE_MAX_SUBMENUS];
 	QMenu* insert_op_subcategory_menu[SEXP_TREE_MAX_SUBMENUS];
-	for (i = 0; i < (int) op_submenu.size(); i++) {
-		for (j = 0; j < (int) op_menu.size(); j++) {
+	for (i = 0; i < static_cast<int>(op_submenu.size()); i++) {
+		for (j = 0; j < static_cast<int>(op_menu.size()); j++) {
 			if (op_menu[j].id == category_of_subcategory(op_submenu[i].id)) {
 				add_op_subcategory_menu[i] = add_op_submenu[j]->addMenu(QString::fromStdString(op_submenu[i].name));
 				replace_op_subcategory_menu[i] =
@@ -1061,7 +1061,7 @@ std::unique_ptr<QMenu> sexp_tree_view::buildContextMenu(QTreeWidgetItem* h) {
 
 	// add operator menu items to the various CATEGORY submenus they belong in,
 	// with enabled state from the pre-computed vectors
-	for (i = 0; i < (int) Operators.size(); i++) {
+	for (i = 0; i < static_cast<int>(Operators.size()); i++) {
 		if (SexpTreeModel::is_operator_hidden(Operators[i].value))
 			continue;
 
@@ -1071,7 +1071,7 @@ std::unique_ptr<QMenu> sexp_tree_view::buildContextMenu(QTreeWidgetItem* h) {
 
 		subcategory_id = get_subcategory(Operators[i].value);
 		if (subcategory_id == OP_SUBCATEGORY_NONE) {
-			for (j = 0; j < (int) op_menu.size(); j++) {
+			for (j = 0; j < static_cast<int>(op_menu.size()); j++) {
 				if (op_menu[j].id == get_category(Operators[i].value)) {
 					auto add_act = add_op_submenu[j]->addAction(QString::fromStdString(Operators[i].text),
 						this, [this, i]() { _actions.add_or_replace_operator(i, 0); });
@@ -1088,7 +1088,7 @@ std::unique_ptr<QMenu> sexp_tree_view::buildContextMenu(QTreeWidgetItem* h) {
 				}
 			}
 		} else {
-			for (j = 0; j < (int) op_submenu.size(); j++) {
+			for (j = 0; j < static_cast<int>(op_submenu.size()); j++) {
 				if (op_submenu[j].id == subcategory_id) {
 					auto add_act = add_op_subcategory_menu[j]->addAction(QString::fromStdString(Operators[i].text),
 						this, [this, i]() { _actions.add_or_replace_operator(i, 0); });
