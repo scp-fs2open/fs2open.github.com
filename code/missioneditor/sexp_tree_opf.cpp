@@ -766,8 +766,8 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_mission_name()
 {
 	sexp_list_item head;
 
-	for (auto& mission : _model._interface->getMissionNames()) {
-		head.add_data(mission.c_str());
+	for (auto& mission_name : _model._interface->getMissionNames()) {
+		head.add_data(mission_name.c_str());
 	}
 
 	return head.next;
@@ -1440,16 +1440,16 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_animation_name(int parent_node)
 			child = _model.tree_nodes[child].next;
 			auto triggerType = animation::anim_match_type(_model.tree_nodes[child].text);
 
-			for(const auto& anim : Ship_info[Ships[sh].ship_info_index].animations.getRegisteredTriggers()){
-				if(anim.type != triggerType)
+			for (const auto& anim_ref : Ship_info[Ships[sh].ship_info_index].animations.getRegisteredTriggers()) {
+				if (anim_ref.type != triggerType)
 					continue;
 
-				if(anim.subtype != animation::ModelAnimationSet::SUBTYPE_DEFAULT) {
-					int animationSubtype = anim.subtype;
+				if (anim_ref.subtype != animation::ModelAnimationSet::SUBTYPE_DEFAULT) {
+					int animationSubtype = anim_ref.subtype;
 
-					if(anim.type == animation::ModelAnimationTriggerType::DockBayDoor){
+					if (anim_ref.type == animation::ModelAnimationTriggerType::DockBayDoor) {
 						//Because of the old system, this is this weird exception. Don't explicitly suggest the NOT doors, as they cannot be explicitly targeted anyways
-						if(anim.subtype < 0)
+						if (anim_ref.subtype < 0)
 							continue;
 
 						animationSubtype--;
@@ -1458,7 +1458,7 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_animation_name(int parent_node)
 					head.add_data(std::to_string(animationSubtype).c_str());
 				}
 				else
-					head.add_data(anim.name.c_str());
+					head.add_data(anim_ref.name.c_str());
 			}
 
 			break;
