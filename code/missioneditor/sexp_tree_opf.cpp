@@ -3023,11 +3023,11 @@ int SexpTreeOPF::get_default_value(sexp_list_item* item, char* text_buf, int op,
 		{
 			gamesnd_id sound_index;
 
-			if ((Operators[op].value == OP_EXPLOSION_EFFECT))
+			if (Operators[op].value == OP_EXPLOSION_EFFECT)
 			{
 				sound_index = GameSounds::SHIP_EXPLODE_1;
 			}
-			else if ((Operators[op].value == OP_WARP_EFFECT))
+			else if (Operators[op].value == OP_WARP_EFFECT)
 			{
 				sound_index = (i == 8) ? GameSounds::CAPITAL_WARP_IN : GameSounds::CAPITAL_WARP_OUT;
 			}
