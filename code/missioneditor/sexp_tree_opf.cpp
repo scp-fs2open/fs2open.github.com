@@ -2878,7 +2878,7 @@ int SexpTreeOPF::get_default_value(sexp_list_item* item, char* text_buf, int op,
 			{
 				item->set_data("-1", (SEXPT_NUMBER | SEXPT_VALID));
 			}
-			else if ((Operators[op].value == OP_SHIP_TAG) && (i == 1) || (Operators[op].value == OP_TRIGGER_SUBMODEL_ANIMATION) && (i == 3))
+			else if (((Operators[op].value == OP_SHIP_TAG) && (i == 1)) || ((Operators[op].value == OP_TRIGGER_SUBMODEL_ANIMATION) && (i == 3)))
 			{
 				item->set_data("1", (SEXPT_NUMBER | SEXPT_VALID));
 			}
