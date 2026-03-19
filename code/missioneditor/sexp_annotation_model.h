@@ -25,15 +25,11 @@ public:
 	// Copy Event_annotations into the local working set, resolving each
 	// stored path to an annotation key (node index or root key).
 	// `sig` maps current dialog event index → original Mission_events index.
-	void loadFromGlobal(const SCP_vector<sexp_tree_item>& tree_nodes,
-	                    const SCP_vector<mission_event>& events,
-	                    const SCP_vector<int>& sig);
+	void loadFromGlobal(const SCP_vector<sexp_tree_item>& tree_nodes, const SCP_vector<mission_event>& events, const SCP_vector<int>& sig);
 
 	// Rebuild paths from annotation keys, prune defaults, and write the
 	// result back to the global Event_annotations.
-	void saveToGlobal(const SCP_vector<sexp_tree_item>& tree_nodes,
-	                  const SCP_vector<mission_event>& events,
-	                  const SCP_vector<int>& sig);
+	void saveToGlobal(const SCP_vector<sexp_tree_item>& tree_nodes, const SCP_vector<mission_event>& events, const SCP_vector<int>& sig);
 
 	// ---------------------------------------------------------------
 	// Lookup
@@ -88,14 +84,9 @@ private:
 	SCP_vector<event_annotation> m_annotations;
 
 	// Build a persistable path from an annotation key.
-	SCP_list<int> buildPath(int key,
-	                        const SCP_vector<sexp_tree_item>& tree_nodes,
-	                        const SCP_vector<mission_event>& events) const;
+	SCP_list<int> buildPath(int key, const SCP_vector<sexp_tree_item>& tree_nodes, const SCP_vector<mission_event>& events) const;
 
 	// Resolve a stored path back to an annotation key.
 	// Returns the key (>= 0 for regular nodes, <= -2 for root keys) or -1 on failure.
-	int resolveFromPath(const SCP_list<int>& path,
-	                    const SCP_vector<sexp_tree_item>& tree_nodes,
-	                    const SCP_vector<mission_event>& events,
-	                    const SCP_vector<int>& sig) const;
+	int resolveFromPath(const SCP_list<int>& path, const SCP_vector<sexp_tree_item>& tree_nodes, const SCP_vector<mission_event>& events, const SCP_vector<int>& sig) const;
 };

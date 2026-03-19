@@ -20,11 +20,6 @@
 #include "parse/sexp_container.h"
 #include "parse/parselo.h"
 
-// Goober5000 - it's dynamic now
-//#define MAX_SEXP_TREE_SIZE 500
-//#define MAX_SEXP_TREE_SIZE 1050
-//#define MAX_SEXP_TREE_SIZE ((MAX_SEXP_NODES)*2/3)
-
 // FRED2 BITMAP_* compatibility aliases (map to shared NodeImage enum values)
 #define BITMAP_OPERATOR         static_cast<int>(NodeImage::OPERATOR)
 #define BITMAP_DATA             static_cast<int>(NodeImage::DATA)

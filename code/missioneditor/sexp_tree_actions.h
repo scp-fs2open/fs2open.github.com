@@ -30,11 +30,7 @@ public:
 	// Replace the current node with a container data reference.
 	// Optionally tests if child nodes can be preserved (same container type),
 	// optionally deletes children, and optionally adds a default modifier.
-	void replace_container_data(const sexp_container& container,
-		int type,
-		bool test_child_nodes,
-		bool delete_child_nodes,
-		bool set_default_modifier);
+	void replace_container_data(const sexp_container& container, int type, bool test_child_nodes, bool delete_child_nodes, bool set_default_modifier);
 	// Replace the current node with a new operator.
 	// Clears all children (arguments will be re-added by the caller).
 	void replace_operator(const char* op);

@@ -1,12 +1,3 @@
-/*
- * Copyright (C) Volition, Inc. 1999.  All rights reserved.
- *
- * All source code herein is the property of Volition, Inc. You may not sell 
- * or otherwise commercially exploit the source or things you created based on the 
- * source.
- *
-*/
-
 #pragma once
 
 #include "missioneditor/sexp_tree_model.h"
@@ -39,7 +30,7 @@ inline QTreeWidgetItem* tree_item_handle(const sexp_tree_item& item) {
 }
 
 /**
- * Qt widget for displaying and editing SEXP expression trees.
+ * Qt widget for displaying and editing SEXP trees.
  *
  * This is the main UI class for the SEXP tree editor in QtFRED. It extends QTreeWidget
  * to display sexp nodes as a visual tree, and implements ISexpTreeUI so that the shared
@@ -56,8 +47,8 @@ class sexp_tree_view: public QTreeWidget, public ISexpTreeUI {
 
  Q_OBJECT
  public:
-	SexpTreeModel _model;      //!< Shared model: tree_nodes[], node allocation, OPF queries, help text, validation
-	SexpTreeActions _actions;  //!< Shared actions: clipboard, add/replace ops & data, container ops. Calls back via ISexpTreeUI
+	SexpTreeModel _model;
+	SexpTreeActions _actions;
 
 	 /**
 	  * Custom Qt item data roles stored on each QTreeWidgetItem.
@@ -88,10 +79,7 @@ class sexp_tree_view: public QTreeWidget, public ISexpTreeUI {
 
 	//! Creates a new QTreeWidgetItem with text and icon under hParent, after hInsertAfter.
 	//! Thin wrapper that converts NodeImage to QIcon and calls insertWithIcon().
-	QTreeWidgetItem* insert(const QString& lpszItem,
-							NodeImage image = NodeImage::ROOT,
-							QTreeWidgetItem* hParent = nullptr,
-							QTreeWidgetItem* hInsertAfter = nullptr);
+	QTreeWidgetItem* insert(const QString& lpszItem, NodeImage image = NodeImage::ROOT, QTreeWidgetItem* hParent = nullptr, QTreeWidgetItem* hInsertAfter = nullptr);
 
 	//! Returns the QTreeWidgetItem* handle for a given tree_nodes[] index.
 	QTreeWidgetItem* handle(int node);
@@ -119,8 +107,7 @@ class sexp_tree_view: public QTreeWidget, public ISexpTreeUI {
 	//! Recursively re-creates a Qt subtree under a new parent. Copies all custom data roles
 	//! (FormulaDataRole, NoteRole, BgColorRole), updates tree_nodes[].handle, preserves
 	//! expansion state, and deletes the old source item.
-	QTreeWidgetItem*
-	move_branch(QTreeWidgetItem* source, QTreeWidgetItem* parent = nullptr, QTreeWidgetItem* after = nullptr);
+	QTreeWidgetItem* move_branch(QTreeWidgetItem* source, QTreeWidgetItem* parent = nullptr, QTreeWidgetItem* after = nullptr);
 
 	//! Recursively copies a Qt subtree under a new parent without removing the source.
 	//! Copies all custom data roles and preserves expansion state.
@@ -171,8 +158,6 @@ class sexp_tree_view: public QTreeWidget, public ISexpTreeUI {
 
 	//! Selects and scrolls to a node in the tree. Uses ensure_visible() and Qt selection.
 	void hilite_item(int node);
-
-	// OPF listing and container modifier queries are accessed directly via _model
 
 	//! Returns the current item_index (tree_nodes[] index of the selected node).
 	int getCurrentItemIndex() const;
@@ -246,16 +231,7 @@ class sexp_tree_view: public QTreeWidget, public ISexpTreeUI {
 	//! Core Qt item creation. Creates a QTreeWidgetItem with text and pre-built QIcon under
 	//! the specified parent/after position. Blocks signals during creation to prevent spurious
 	//! itemChanged events.
-	QTreeWidgetItem* insertWithIcon(const QString& lpszItem,
-									const QIcon& image,
-									QTreeWidgetItem* hParent = nullptr,
-									QTreeWidgetItem* hInsertAfter = nullptr);
-
-	//bool edit(const QModelIndex& index, QAbstractItemView::EditTrigger trigger, QEvent* event) override
-	//{
-		//_currently_editing = true; // mark explicit edit
-		//return QTreeWidget::edit(index, trigger, event);
-	//}
+	QTreeWidgetItem* insertWithIcon(const QString& lpszItem, const QIcon& image, QTreeWidgetItem* hParent = nullptr, QTreeWidgetItem* hInsertAfter = nullptr);
 
 	//! Slot for customContextMenuRequested. Gets the item at pos, builds and executes the context menu.
 	void customMenuHandler(const QPoint& pos);

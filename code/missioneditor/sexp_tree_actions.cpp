@@ -1,9 +1,9 @@
-// Sexp tree action logic — action execution that bridges model and UI.
-
 #include "missioneditor/sexp_tree_actions.h"
 
 #include "parse/sexp.h"
 #include "parse/sexp_container.h"
+
+// Sexp tree action logic — action execution that bridges model and UI.
 
 // Construct with references to the shared model (tree node data) and the
 // UI callback interface (widget updates). Both must outlive this object.
@@ -23,6 +23,10 @@ void SexpTreeActions::clear_node_children(int node_index)
 	_model.tree_nodes[node_index].child = -1;
 
 	void* h = _model.tree_nodes[node_index].handle;
+	if (h == nullptr) {
+		return;
+	}
+
 	while (_ui.ui_has_children(h))
 		_ui.ui_delete_item(_ui.ui_get_child_item(h));
 }

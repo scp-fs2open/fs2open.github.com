@@ -1,7 +1,3 @@
-// OPF listing functions for the sexp tree.
-// All get_listing_opf_*() functions are implemented here as SexpTreeOPF methods.
-// Uses _model back-reference for read-only access to tree_nodes[] and _interface.
-
 #include "missioneditor/sexp_tree_opf.h"
 #include "missioneditor/sexp_tree_model.h"
 
@@ -48,12 +44,11 @@
 #include "parse/sexp_container.h"
 #include "weapon/emp.h"
 
-SexpTreeOPF::SexpTreeOPF(SexpTreeModel& model) : _model(model) {}
+// OPF listing functions for the sexp tree.
+// All get_listing_opf_*() functions are implemented here as SexpTreeOPF methods.
+// Uses _model back-reference for read-only access to tree_nodes[] and _interface.
 
-// -----------------------------------------------------------------------
-// Batch 1: null, flexible_argument, bool, positive, number,
-//          ship, prop, wing, point, iff
-// -----------------------------------------------------------------------
+SexpTreeOPF::SexpTreeOPF(SexpTreeModel& model) : _model(model) {}
 
 sexp_list_item *SexpTreeOPF::get_listing_opf_null()
 {
@@ -255,12 +250,6 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_iff()
 	return head.next;
 }
 
-// -----------------------------------------------------------------------
-// Batch 2: ai_class, support_ship_class, ssm_class, ship_with_bay,
-//          soundtrack_name, arrival_location, departure_location,
-//          arrival_anchor_all, ai_goal, message
-// -----------------------------------------------------------------------
-
 sexp_list_item *SexpTreeOPF::get_listing_opf_ai_class()
 {
 	int i;
@@ -438,12 +427,6 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_message()
 
 	return head.next;
 }
-
-// -----------------------------------------------------------------------
-// Batch 3: docker_point, dockee_point, persona, font, who_from,
-//          priority, sound_environment, sound_environment_option,
-//          adjust_audio_volume, builtin_hud_gauge
-// -----------------------------------------------------------------------
 
 sexp_list_item *SexpTreeOPF::get_listing_opf_docker_point(int parent_node, int arg_num)
 {
@@ -644,12 +627,6 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_builtin_hud_gauge()
 	return head.next;
 }
 
-// -----------------------------------------------------------------------
-// Batch 4: custom_hud_gauge, any_hud_gauge, ship_effect, explosion_option,
-//          waypoint_path, ship_point, ship_wing_wholeteam,
-//          ship_wing_shiponteam_point, ship_wing_point, ship_wing_point_or_none
-// -----------------------------------------------------------------------
-
 sexp_list_item *SexpTreeOPF::get_listing_opf_custom_hud_gauge()
 {
 	sexp_list_item head;
@@ -785,11 +762,6 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_ship_wing_point_or_none()
 	return head.next;
 }
 
-// -----------------------------------------------------------------------
-// Batch 5: mission_name, goal_name, ship_wing, ship_prop, order_recipient,
-//          ship_type, keypress, event_name, ai_order, skill_level
-// -----------------------------------------------------------------------
-
 sexp_list_item *SexpTreeOPF::get_listing_opf_mission_name()
 {
 	sexp_list_item head;
@@ -918,12 +890,6 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_skill_level()
 	return head.next;
 }
 
-// -----------------------------------------------------------------------
-// Batch 6: cargo, string, medal_name, weapon_name, intel_name,
-//          ship_class_name, prop_class_name, huge_weapon, ship_not_player,
-//          ship_or_none
-// -----------------------------------------------------------------------
-
 sexp_list_item *SexpTreeOPF::get_listing_opf_cargo()
 {
 	sexp_list_item head;
@@ -1041,12 +1007,6 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_ship_or_none()
 	return head.next;
 }
 
-// -----------------------------------------------------------------------
-// Batch 7: subsystem_or_none, subsys_or_generic, jump_nodes,
-//          variable_names, skybox_model, skybox_flags, background_bitmap,
-//          sun_bitmap, nebula_storm_type, nebula_poof
-// -----------------------------------------------------------------------
-
 sexp_list_item *SexpTreeOPF::get_listing_opf_subsystem_or_none(int parent_node, int arg_index)
 {
 	sexp_list_item head;
@@ -1090,7 +1050,6 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_jump_nodes()
 	return head.next;
 }
 
-// creates list of Sexp_variables
 sexp_list_item *SexpTreeOPF::get_listing_opf_variable_names()
 {
 	int i;
@@ -1113,7 +1072,6 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_variable_names()
 	return head.next;
 }
 
-// get default skybox model name
 sexp_list_item *SexpTreeOPF::get_listing_opf_skybox_model()
 {
 	sexp_list_item head;
@@ -1183,12 +1141,6 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_nebula_poof()
 
 	return head.next;
 }
-
-// -----------------------------------------------------------------------
-// Batch 8: turret_target_order, turret_types, post_effect,
-//          turret_target_priorities, armor_type, damage_type,
-//          animation_type, hud_elements, weapon_banks, mission_moods
-// -----------------------------------------------------------------------
 
 sexp_list_item *SexpTreeOPF::get_listing_opf_turret_target_order()
 {
@@ -1295,12 +1247,6 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_mission_moods()
 
 	return head.next;
 }
-
-// -----------------------------------------------------------------------
-// Batch 9: ship_flags, wing_flags, team_colors, nebula_patterns,
-//          asteroid_types, debris_types, motion_debris, game_snds,
-//          fireball, species
-// -----------------------------------------------------------------------
 
 // Helper template for flag name lists with deduplication
 template <typename M, typename T, typename PTM>
@@ -1451,13 +1397,6 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_species()	// NOLINT
 
 	return head.next;
 }
-
-// -----------------------------------------------------------------------
-// Batch 10: language, functional_when_eval_type, animation_name,
-//           sexp_containers, wing_formation, bolt_types,
-//           traitor_overrides, lua_general_orders, message_types,
-//           mission_custom_strings, lua_enum
-// -----------------------------------------------------------------------
 
 sexp_list_item *SexpTreeOPF::get_listing_opf_language()	// NOLINT
 {
@@ -1660,11 +1599,6 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_lua_enum(int parent_node, int arg_i
 	}
 	return head.next;
 }
-
-// -----------------------------------------------------------------------
-// Batch 11: subsystem, subsystem_type, container modifiers,
-//           check_for_dynamic_sexp_enum, is_container_name_opf_type
-// -----------------------------------------------------------------------
 
 // specific types of subsystems we're looking for
 #define OPS_CAP_CARGO		1

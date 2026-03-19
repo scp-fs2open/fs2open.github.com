@@ -7,8 +7,6 @@
  *
 */
 
-
-
 #include "stdafx.h"
 #include "sexp_tree_view.h"
 #include "FRED.h"
@@ -1400,197 +1398,6 @@ void sexp_tree_view::add_operator(const char *op, HTREEITEM h)
 	_actions.add_operator(op, (h == TVI_ROOT) ? nullptr : static_cast<void*>(h));
 }
 
-// add an operator with one argument under operator pointed to by item_index.  This function
-// exists because the one arg case is a special case.  The operator and argument is
-// displayed on the same line.
-/*void sexp_tree_view::add_one_arg_operator(char *op, char *data, int type)
-{
-	char str[80];
-	int node1, node2;
-	
-	expand_operator(item_index);
-	node1 = allocate_node(item_index);
-	node2 = allocate_node(node1);
-	set_node(node1, SEXPT_OPERATOR, op);
-	set_node(node2, type, data);
-	sprintf(str, "%s %s", op, data);
-	tree_nodes[node1].handle = insert(str, tree_item_handle(tree_nodes[item_index]));
-	tree_nodes[node1].flags = OPERAND | EDITABLE;
-	tree_nodes[node2].flags = COMBINED;
-	*modified = 1;
-}*/
-
-/*
-int sexp_tree_view::verify_tree(int *bypass)
-{
-	return verify_tree(0, bypass);
-}
-
-// check the sexp tree for errors.  Return -1 if error, or 0 if no errors.  If an error
-// is found, item_index = node of error.
-int sexp_tree_view::verify_tree(int node, int *bypass)
-{
-	int i, type, count, op, type2, op2, argnum = 0;
-
-	if (!total_nodes)
-		return 0;  // nothing to check
-
-	Assert(node >= 0 && node < tree_nodes.size());
-	Assert(tree_nodes[node].type == SEXPT_OPERATOR);
-
-	op = get_operator_index(tree_nodes[node].text);
-	if (op == -1)
-		return node_error(node, "Unknown operator", bypass);
-
-	count = count_args(tree_nodes[node].child);
-	if (count < Operators[op].min)
-		return node_error(node, "Too few arguments for operator", bypass);
-	if (count > Operators[op].max)
-		return node_error(node, "Too many arguments for operator", bypass);
-
-	node = tree_nodes[node].child;  // get first argument
-	while (node != -1) {
-		type = query_operator_argument_type(op, argnum);
-		Assert(tree_nodes[node].type & SEXPT_VALID);
-		if (tree_nodes[node].type == SEXPT_OPERATOR) {
-			if (verify_tree(node) == -1)
-				return -1;
-
-			op2 = get_operator_index(tree_nodes[node].text);  // no error checking, because it was done in the call above.
-			type2 = query_operator_return_type(op2);
-
-		} else if (tree_nodes[node].type == SEXPT_NUMBER) {
-			char *ptr;
-
-			type2 = OPR_NUMBER;
-			ptr = tree_nodes[node].text;
-			while (*ptr)
-				if (!isdigit(*ptr++))
-					return node_error(node, "Number is invalid", bypass);
-
-		} else if (tree_nodes[node].type == SEXPT_STRING) {
-			type2 = SEXP_ATOM_STRING;
-
-		} else
-			Assert(0);  // unknown and invalid sexp node type.
-
-		switch (type) {
-			case OPF_NUMBER:
-				if (type2 != OPR_NUMBER)
-					return node_error(node, "Number or number return type expected here", bypass);
-
-				break;
-
-			case OPF_SHIP:
-				if (type2 == SEXP_ATOM_STRING)
-					if (ship_name_lookup(tree_nodes[node].text, 1) == -1)
-						type2 = 0;
-
-				if (type2 != SEXP_ATOM_STRING)
-					return node_error(node, "Ship name expected here", bypass);
-
-				break;
-
-			case OPF_WING:
-				if (type2 == SEXP_ATOM_STRING)
-					if (wing_name_lookup(tree_nodes[node].text) == -1)
-						type2 = 0;
-
-				if (type2 != SEXP_ATOM_STRING)
-					return node_error(node, "Wing name expected here", bypass);
-
-				break;
-
-			case OPF_SHIP_WING:
-				if (type2 == SEXP_ATOM_STRING)
-					if (ship_name_lookup(tree_nodes[node].text, 1) == -1)
-						if (wing_name_lookup(tree_nodes[node].text) == -1)
-							type2 = 0;
-
-				if (type2 != SEXP_ATOM_STRING)
-					return node_error(node, "Ship or wing name expected here", bypass);
-
-				break;
-
-			case OPF_BOOL:
-				if (type2 != OPR_BOOL)
-					return node_error(node, "Boolean return type expected here", bypass);
-
-				break;
-
-			case OPF_NULL:
-				if (type2 != OPR_NULL)
-					return node_error(node, "No return type operator expected here", bypass);
-
-				break;
-
-			case OPF_POINT:
-				if (type2 != SEXP_ATOM_STRING || verify_vector(tree_nodes[node].text))
-					return node_error(node, "3d coordinate expected here", bypass);
-
-				break;
-
-			case OPF_SUBSYSTEM:
-			case OPF_AWACS_SUBSYSTEM:
-			case OPF_ROTATING_SUBSYSTEM:
-			case OPF_TRANSLATING_SUBSYSTEM:
-				if (type2 == SEXP_ATOM_STRING)
-					if (ai_get_subsystem_type(tree_nodes[node].text) == SUBSYSTEM_UNKNOWN)
-						type2 = 0;
-
-				if (type2 != SEXP_ATOM_STRING)
-					return node_error(node, "Subsystem name expected here", bypass);
-
-				break;
-
-			case OPF_IFF:
-				if (type2 == SEXP_ATOM_STRING) {
-					for (i=0; i<Num_iffs; i++)
-						if (!stricmp(Team_names[i], tree_nodes[node].text))
-							break;
-				}
-
-				if (i == Num_iffs)
-					return node_error(node, "Iff team type expected here", bypass);
-
-				break;
-
-			case OPF_AI_GOAL:
-				if (type2 != OPR_AI_GOAL)
-					return node_error(node, "Ai goal return type expected here", bypass);
-
-				break;
-
-			case OPF_FLEXIBLE_ARGUMENT:
-				if (type2 != OPR_FLEXIBLE_ARGUMENT)
-					return node_error(node, "Flexible argument return type expected here", bypass);
-				
-				break;
-
-			case OPF_ANYTHING:
-				break;
-
-			case OPF_DOCKER_POINT:
-				if (type2 != SEXP_ATOM_STRING)
-					return node_error(node, "Docker docking point name expected here", bypass);
-
-				break;
-
-			case OPF_DOCKEE_POINT:
-				if (type2 != SEXP_ATOM_STRING)
-					return node_error(node, "Dockee docking point name expected here", bypass);
-
-				break;
-		}
-
-		node = tree_nodes[node].next;
-		argnum++;
-	}
-
-	return 0;
-}
-*/
-
 // display an error message and position to point of error (a node)
 int sexp_tree_view::node_error(int node, const char *msg, int *bypass)
 {
@@ -1630,32 +1437,6 @@ void sexp_tree_view::ensure_visible(int node)
 	if (tree_nodes[node].child != -1)  // expandable?
 		Expand(tree_item_handle(tree_nodes[node]), TVE_EXPAND);  // expand this item
 }
-
-/*void sexp_tree_view::replace_one_arg_operator(char *op, char *data, int type)
-{
-	char str[80];
-	int node;
-	HTREEITEM h;
-
-	node = tree_nodes[item_index].child;
-	if (node != -1)
-		free_node2(node);
-
-	tree_nodes[item_index].child = -1;
-	h = tree_item_handle(tree_nodes[item_index]);
-	while (ItemHasChildren(h))
-		DeleteItem(GetChildItem(h));
-	
-	node = allocate_node(item_index);
-	set_node(item_index, SEXPT_OPERATOR, op);
-	set_node(node, type, data);
-	sprintf(str, "%s %s", op, data);
-	SetItemText(h, str);
-	tree_nodes[item_index].flags = OPERAND | EDITABLE;
-	tree_nodes[node].flags = COMBINED;
-	*modified = 1;
-	update_help(GetSelectedItem());
-}*/
 
 // moves a whole sexp tree branch to a new position under 'parent' and after 'after'.
 // The expansion state is preserved, and node handles are updated.
@@ -1977,16 +1758,6 @@ void sexp_tree_view::setup(CEdit *ptr)
 		SetImageList(pimagelist, TVSIL_NORMAL);
 	}
 }
-//#define BITMAP_OPERATOR 0
-//#define BITMAP_DATA 1
-//#define BITMAP_VARIABLE 2
-//#define BITMAP_ROOT 3
-//#define BITMAP_ROOT_DIRECTIVE 4
-//#define BITMAP_CHAIN 5
-//#define BITMAP_CHAIN_DIRECTIVE 6
-//#define BITMAP_GREEN_DOT 7
-//#define BITMAP_BLACK_DOT 8
-
 
 // Thin wrapper around CTreeCtrl::InsertItem for inserting a tree item with icon images.
 HTREEITEM sexp_tree_view::insert(LPCTSTR lpszItem, int image, int sel_image, HTREEITEM hParent, HTREEITEM hInsertAfter)

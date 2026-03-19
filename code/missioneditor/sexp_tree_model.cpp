@@ -1,6 +1,3 @@
-// Shared sexp tree model — UI-independent data structures and logic.
-// Used by both FRED2 (MFC) and QtFRED (Qt) sexp tree implementations.
-
 #include "missioneditor/sexp_tree_model.h"
 
 #include "parse/sexp.h"
@@ -25,6 +22,9 @@
 #include "starfield/starfield.h"
 #include "stats/scoring.h"
 #include "weapon/emp.h"
+
+// Shared sexp tree model — UI-independent data structures and logic.
+// Used by both FRED2 (MFC) and QtFRED (Qt) sexp tree implementations.
 
 #define TREE_NODE_INCREMENT  100
 
@@ -685,9 +685,6 @@ int SexpTreeModel::save_branch(int cur, int at_root) const
 
 	return start;
 }
-
-
-// Default argument functions moved to sexp_tree_opf.cpp (SexpTreeOPF class).
 
 // -----------------------------------------------------------------------
 // Tree navigation helpers
