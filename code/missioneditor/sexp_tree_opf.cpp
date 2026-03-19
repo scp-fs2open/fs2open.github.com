@@ -280,8 +280,8 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_ssm_class()
 {
 	sexp_list_item head;
 
-	for (const auto& ssm_info : Ssm_info) {
-		head.add_data(ssm_info.name);
+	for (const auto& ssmp : Ssm_info) {
+		head.add_data(ssmp.name);
 	}
 
 	return head.next;
@@ -670,8 +670,8 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_ship_effect()
 {
 	sexp_list_item head;
 
-	for (const auto& ship_effect : Ship_effects) {
-		head.add_data(ship_effect.name);
+	for (const auto& sp_effect : Ship_effects) {
+		head.add_data(sp_effect.name);
 	}
 
 	return head.next;
@@ -1119,8 +1119,8 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_nebula_storm_type()
 
 	head.add_data(SEXP_NONE_STRING);
 
-	for (const auto& storm_type : Storm_types) {
-		head.add_data(storm_type.name);
+	for (const auto& storm_t : Storm_types) {
+		head.add_data(storm_t.name);
 	}
 
 	return head.next;
@@ -1289,8 +1289,8 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_team_colors()
 {
 	sexp_list_item head;
 	head.add_data("None"); // Deliberately not SEXP_NONE_STRING
-	for (const auto& team_color : Team_Colors) {
-		head.add_data(team_color.first.c_str());
+	for (const auto& tc: Team_Colors) {
+		head.add_data(tc.first.c_str());
 	}
 
 	return head.next;
@@ -1500,8 +1500,8 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_bolt_types()
 
 	head.add_data(SEXP_NONE_STRING);
 
-	for (const auto& bolt_type : Bolt_types) {
-		head.add_data(bolt_type.name);
+	for (const auto& b_type : Bolt_types) {
+		head.add_data(b_type.name);
 	}
 
 	return head.next;
