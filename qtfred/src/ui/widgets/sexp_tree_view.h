@@ -75,7 +75,7 @@ class sexp_tree_view: public QTreeWidget, public ISexpTreeUI {
 	void update_help(QTreeWidgetItem* h);
 
 	//! Returns the help string for a given operator code. Delegates to SexpTreeModel::help().
-	const char* help(int code);
+	static const char* help(int code);
 
 	//! Creates a new QTreeWidgetItem with text and icon under hParent, after hInsertAfter.
 	//! Thin wrapper that converts NodeImage to QIcon and calls insertWithIcon().
@@ -139,7 +139,7 @@ class sexp_tree_view: public QTreeWidget, public ISexpTreeUI {
 
 	//! Resets all model node data via _model.clear_tree_data(). If op is provided and non-empty,
 	//! clears the Qt tree, allocates a root operator node via _model, and rebuilds.
-	void clear_tree(const char* op = NULL);
+	void clear_tree(const char* op = nullptr);
 
 	//! Nulls out all tree_nodes[].handle pointers. Used before a visual rebuild.
 	void reset_handles();

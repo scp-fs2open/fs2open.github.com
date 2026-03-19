@@ -12,30 +12,36 @@
 // SEXPT_* node type/status constants
 // -----------------------------------------------------------------------
 
-#define SEXPT_UNUSED          0x0000
-#define SEXPT_UNINIT          0x0001
-#define SEXPT_UNKNOWN         0x0002
+enum : int {
+	SEXPT_UNUSED = 0x0000,
+	SEXPT_UNINIT = 0x0001,
+	SEXPT_UNKNOWN = 0x0002,
+};
 
 #define SEXPT_VALID           0x1000
 #define SEXPT_TYPE_MASK       0x07ff
 #define SEXPT_TYPE(X)         (SEXPT_TYPE_MASK & (X))
 
-#define SEXPT_OPERATOR        0x0010
-#define SEXPT_NUMBER          0x0020
-#define SEXPT_STRING          0x0040
-#define SEXPT_VARIABLE        0x0080
-#define SEXPT_CONTAINER_NAME  0x0100
-#define SEXPT_CONTAINER_DATA  0x0200
-#define SEXPT_MODIFIER        0x0400
+enum : int {
+	SEXPT_OPERATOR = 0x0010,
+	SEXPT_NUMBER = 0x0020,
+	SEXPT_STRING = 0x0040,
+	SEXPT_VARIABLE = 0x0080,
+	SEXPT_CONTAINER_NAME = 0x0100,
+	SEXPT_CONTAINER_DATA = 0x0200,
+	SEXPT_MODIFIER = 0x0400,
+};
 
 // -----------------------------------------------------------------------
 // Node flags (editability)
 // -----------------------------------------------------------------------
 
-#define NOT_EDITABLE  0x00
-#define OPERAND       0x01
-#define EDITABLE      0x02
-#define COMBINED      0x04
+enum : int {
+	NOT_EDITABLE = 0x00,
+	OPERAND = 0x01,
+	EDITABLE = 0x02,
+	COMBINED = 0x04,
+};
 
 // -----------------------------------------------------------------------
 // NodeImage — unified icon enum for tree nodes
@@ -429,7 +435,7 @@ public:
 	// Return the OPF_* argument type expected at this node's position under its parent
 	int query_node_argument_type(int node) const;
 	// Returns non-zero if the given OPF type has a restricted (enumerated) set of values
-	int query_restricted_opf_range(int opf) const;
+	static int query_restricted_opf_range(int opf);
 	// Return the 0-based sibling position of this node among its parent's children
 	int get_sibling_place(int node) const;
 	// Return the appropriate numbered data icon for a node based on its sibling position
@@ -483,7 +489,7 @@ public:
 	// Count how many tree nodes reference the given variable name
 	int get_variable_count(const char* var_name) const;
 	// Count how many times a variable is used in player loadout data (Team_data)
-	int get_loadout_variable_count(int var_index) const;
+	static int get_loadout_variable_count(int var_index);
 	// Count how many tree nodes reference the given container name
 	int get_container_usage_count(const SCP_string& container_name) const;
 	// Check if a specific node is a valid, matching container reference for the given name
@@ -523,7 +529,7 @@ private:
 	// Pre-compute which operators are enabled for add/replace/insert
 	void ctx_compute_operator_enablement(SexpContextMenuState& state) const;
 	// Check if the clipboard contents can be pasted in the current context
-	void ctx_validate_clipboard(SexpContextMenuState& state, int replace_opf_type) const;
+	static void ctx_validate_clipboard(SexpContextMenuState& state, int replace_opf_type);
 	// Apply final cut/copy/paste restrictions based on node type
 	void ctx_apply_restrictions(SexpContextMenuState& state) const;
 };

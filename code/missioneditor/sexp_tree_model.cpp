@@ -26,7 +26,7 @@
 // Shared sexp tree model — UI-independent data structures and logic.
 // Used by both FRED2 (MFC) and QtFRED (Qt) sexp tree implementations.
 
-#define TREE_NODE_INCREMENT  100
+constexpr int TREE_NODE_INCREMENT = 100;
 
 // -----------------------------------------------------------------------
 // sexp_list_item implementation
@@ -623,7 +623,7 @@ int SexpTreeModel::save_tree(int node) const
 	return save_branch(node);
 }
 
-#define NO_PREVIOUS_NODE -9
+constexpr int NO_PREVIOUS_NODE = -9;
 // called recursively to save a tree branch and everything under it
 // SEXPT_CONTAINER_NAME and SEXPT_MODIFIER require no special handling here
 int SexpTreeModel::save_branch(int cur, int at_root) const
@@ -826,7 +826,7 @@ int SexpTreeModel::query_node_argument_type(int node) const
 // Determine if a given opf code has a restricted argument range (i.e. has a specific, limited
 // set of argument values, or has virtually unlimited possibilities.  For example, boolean values
 // only have true or false, so it is restricted, but a number could be anything, so it's not.
-int SexpTreeModel::query_restricted_opf_range(int opf) const
+int SexpTreeModel::query_restricted_opf_range(int opf)
 {
 	switch (opf) {
 		case OPF_NUMBER:
@@ -1111,9 +1111,9 @@ int SexpTreeModel::get_variable_count(const char* var_name) const
 	strcat_s(compare_name, "(");
 
 	// look for compare name
-	for (size_t idx = 0; idx < tree_nodes.size(); idx++) {
-		if (tree_nodes[idx].type & SEXPT_VARIABLE) {
-			if (strstr(tree_nodes[idx].text, compare_name)) {
+	for (const auto& tree_node : tree_nodes) {
+		if (tree_node.type & SEXPT_VARIABLE) {
+			if (strstr(tree_node.text, compare_name)) {
 				count++;
 			}
 		}
@@ -1123,7 +1123,7 @@ int SexpTreeModel::get_variable_count(const char* var_name) const
 }
 
 // Returns the number of times a variable with this name has been used by player loadout
-int SexpTreeModel::get_loadout_variable_count(int var_index) const
+int SexpTreeModel::get_loadout_variable_count(int var_index)
 {
 	// we shouldn't be being passed the index of variables that do not exist
 	Assert(var_index >= 0 && var_index < MAX_SEXP_VARIABLES);
@@ -1131,22 +1131,22 @@ int SexpTreeModel::get_loadout_variable_count(int var_index) const
 	int idx;
 	int count = 0;
 
-	for (int i = 0; i < MAX_TVT_TEAMS; i++) {
-		for (idx = 0; idx < Team_data[i].num_ship_choices; idx++) {
-			if (!strcmp(Team_data[i].ship_list_variables[idx], Sexp_variables[var_index].variable_name)) {
+	for (auto& team_datum : Team_data) {
+		for (idx = 0; idx < team_datum.num_ship_choices; idx++) {
+			if (!strcmp(team_datum.ship_list_variables[idx], Sexp_variables[var_index].variable_name)) {
 				count++;
 			}
 
-			if (!strcmp(Team_data[i].ship_count_variables[idx], Sexp_variables[var_index].variable_name)) {
+			if (!strcmp(team_datum.ship_count_variables[idx], Sexp_variables[var_index].variable_name)) {
 				count++;
 			}
 		}
 
-		for (idx = 0; idx < Team_data[i].num_weapon_choices; idx++) {
-			if (!strcmp(Team_data[i].weaponry_pool_variable[idx], Sexp_variables[var_index].variable_name)) {
+		for (idx = 0; idx < team_datum.num_weapon_choices; idx++) {
+			if (!strcmp(team_datum.weaponry_pool_variable[idx], Sexp_variables[var_index].variable_name)) {
 				count++;
 			}
-			if (!strcmp(Team_data[i].weaponry_amount_variable[idx], Sexp_variables[var_index].variable_name)) {
+			if (!strcmp(team_datum.weaponry_amount_variable[idx], Sexp_variables[var_index].variable_name)) {
 				count++;
 			}
 		}
@@ -1851,9 +1851,9 @@ void SexpTreeModel::ctx_compute_operator_enablement(SexpContextMenuState& state)
 // Check if the sexp clipboard contents can be pasted in the current context.
 // Validates return type compatibility for operators, data type for numbers/strings,
 // and container type for container data. Sets can_paste and can_paste_add accordingly.
-void SexpTreeModel::ctx_validate_clipboard(SexpContextMenuState& state, int replace_opf_type) const
+void SexpTreeModel::ctx_validate_clipboard(SexpContextMenuState& state, int replace_opf_type)
 {
-	if (!((Sexp_clipboard > -1) && (Sexp_nodes[Sexp_clipboard].type != SEXP_NOT_USED))) {
+	if (Sexp_clipboard <= -1 || Sexp_nodes[Sexp_clipboard].type == SEXP_NOT_USED) {
 		return;
 	}
 

@@ -313,7 +313,7 @@ void sexp_tree_view::reset_handles() {
 	uint i;
 
 	for (i = 0; i < tree_nodes.size(); i++) {
-		tree_nodes[i].handle = NULL;
+		tree_nodes[i].handle = nullptr;
 	}
 }
 
@@ -345,7 +345,7 @@ void sexp_tree_view::build_tree() {
 void sexp_tree_view::add_sub_tree(int node, QTreeWidgetItem* root) {
 	int node2;
 
-	Assert(node >= 0 && node < (int) tree_nodes.size());
+	Assert(!(node < 0 || node >= static_cast<int>(tree_nodes.size())));
 	node2 = tree_nodes[node].child;
 
 	auto info = _model.compute_node_visual_info(node);
@@ -358,7 +358,7 @@ void sexp_tree_view::add_sub_tree(int node, QTreeWidgetItem* root) {
 
 	node = node2;
 	while (node != -1) {
-		Assert(node >= 0 && node < (int) tree_nodes.size());
+		Assert(!(node < 0 || node >= static_cast<int>(tree_nodes.size())));
 		Assert(tree_nodes[node].type & SEXPT_VALID);
 		if (tree_nodes[node].type & (SEXPT_OPERATOR | SEXPT_CONTAINER_DATA)) {
 			add_sub_tree(node, root);
@@ -835,11 +835,11 @@ void sexp_tree_view::update_help(QTreeWidgetItem* h) {
 	}
 
 	// Validate operator help strings
-	for (int i = 0; i < (int) Operators.size(); i++) {
-		for (int j = 0; j < (int) op_menu.size(); j++) {
-			if (get_category(Operators[i].value) == op_menu[j].id) {
-				if (!help(Operators[i].value)) {
-					mprintf(("Allender!  If you add new sexp operators, add help for them too! :) Sexp %s has no help.\n", Operators[i].text.c_str()));
+	for (const auto& oper : Operators) {
+		for (const auto& menu : op_menu) {
+			if (get_category(oper.value) == menu.id) {
+				if (!help(oper.value)) {
+					mprintf(("Allender!  If you add new sexp operators, add help for them too! :) Sexp %s has no help.\n", oper.text.c_str()));
 				}
 			}
 		}
@@ -1037,8 +1037,8 @@ std::unique_ptr<QMenu> sexp_tree_view::buildContextMenu(QTreeWidgetItem* h) {
 	QMenu* replace_op_submenu[SEXP_TREE_MAX_OP_MENUS];
 	QMenu* insert_op_submenu[SEXP_TREE_MAX_OP_MENUS];
 	for (i = 0; i < (int) op_menu.size(); i++) {
-		add_op_submenu[i] = add_op_menu->addMenu(QString::fromStdString(op_menu[i].name.c_str()));
-		replace_op_submenu[i] = replace_op_menu->addMenu(QString::fromStdString(op_menu[i].name.c_str()));
+		add_op_submenu[i] = add_op_menu->addMenu(QString::fromStdString(op_menu[i].name));
+		replace_op_submenu[i] = replace_op_menu->addMenu(QString::fromStdString(op_menu[i].name));
 		insert_op_submenu[i] = insert_op_menu->addMenu(QString::fromStdString(op_menu[i].name));
 	}
 
@@ -1724,7 +1724,7 @@ void sexp_tree_view::addReplaceTypedDataHandler(int data_idx, bool replace) {
 		Assert(ptr);
 	}
 
-	Assert((SEXPT_TYPE(ptr->type) != SEXPT_OPERATOR) && (ptr->op < 0));
+	Assert(!(SEXPT_TYPE(ptr->type) == SEXPT_OPERATOR || ptr->op >= 0));
 	_actions.expand_operator(item_index);
 	if (replace) {
 		_actions.replace_data(ptr->text.c_str(), ptr->type);
@@ -1758,7 +1758,7 @@ void sexp_tree_view::handleReplaceVariableAction(int id) {
 	Assert(item_index >= 0);
 
 	// get index into list of type valid variables
-	Assert( (id >= 0) && (id < MAX_SEXP_VARIABLES) );
+	Assert(!(id < 0 || id >= MAX_SEXP_VARIABLES));
 
 	int type = get_type(currentItem());
 	Assert( (type & SEXPT_NUMBER) || (type & SEXPT_STRING) );
@@ -1795,7 +1795,7 @@ void sexp_tree_view::handleReplaceContainerNameAction(int idx) {
 	Assertion(item_index >= 0, "Attempt to Replace Container Name with no node selected. Please report!");
 
 	const auto &containers = get_all_sexp_containers();
-	Assertion((idx >= 0) && (idx < (int)containers.size()), "Unknown Container Index %d. Please report!", idx);
+	Assertion(SCP_vector_inbounds(containers, idx), "Unknown Container Index %d. Please report!", idx);
 
 	const int type = get_type(currentItem());
 	Assertion(type & SEXPT_STRING,
@@ -1813,12 +1813,10 @@ void sexp_tree_view::handleReplaceContainerDataAction(int idx) {
 	Assertion(item_index >= 0, "Attempt to Replace Container Data with no node selected. Please report!");
 
 	const auto &containers = get_all_sexp_containers();
-	Assertion((idx >= 0) && (idx < (int)containers.size()),
-		"Unknown Container index %d. Please report!", idx);
+	Assertion(SCP_vector_inbounds(containers, idx), "Unknown Container index %d. Please report!", idx);
 
 	int type = get_type(currentItem());
-	Assertion((type & SEXPT_NUMBER) || (type & SEXPT_STRING),
-		"Attempt to use Replace Container Data on a non-data node. Please report!");
+	Assertion((type & SEXPT_NUMBER) || (type & SEXPT_STRING), "Attempt to use Replace Container Data on a non-data node. Please report!");
 
 	// variable/container name don't mix with container data
 	// DISCUSSME: what about variable name as SEXP arg type?

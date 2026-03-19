@@ -149,7 +149,7 @@ void SexpAnnotationModel::clear()
 // save/load cycles. The path is a list of integers: [event_index, child_pos, ...].
 // For root keys the path is just [event_index]. For regular nodes the path walks
 // from the root down, recording the child position at each level.
-SCP_list<int> SexpAnnotationModel::buildPath(int key, const SCP_vector<sexp_tree_item>& tree_nodes, const SCP_vector<mission_event>& events) const
+SCP_list<int> SexpAnnotationModel::buildPath(int key, const SCP_vector<sexp_tree_item>& tree_nodes, const SCP_vector<mission_event>& events)
 {
 	SCP_list<int> path;
 
@@ -219,7 +219,7 @@ SCP_list<int> SexpAnnotationModel::buildPath(int key, const SCP_vector<sexp_tree
 // Resolve a stored path back to an annotation key by mapping the original event
 // index through the sig table, then walking child positions down the tree.
 // Returns a tree_nodes[] index (>= 0), a root key (<= -2), or -1 on failure.
-int SexpAnnotationModel::resolveFromPath(const SCP_list<int>& path, const SCP_vector<sexp_tree_item>& tree_nodes, const SCP_vector<mission_event>& events, const SCP_vector<int>& sig) const
+int SexpAnnotationModel::resolveFromPath(const SCP_list<int>& path, const SCP_vector<sexp_tree_item>& tree_nodes, const SCP_vector<mission_event>& events, const SCP_vector<int>& sig)
 {
 	if (path.empty())
 		return -1;

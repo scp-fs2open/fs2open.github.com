@@ -267,11 +267,9 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_support_ship_class()
 
 	head.add_data("<species support ship class>");
 
-    for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it)
-	{
-		if (it->flags[Ship::Info_Flags::Support])
-		{
-			head.add_data(it->name);
+    for (const auto& ship_info : Ship_info) {
+		if (ship_info.flags[Ship::Info_Flags::Support]) {
+			head.add_data(ship_info.name);
 		}
 	}
 
@@ -282,9 +280,8 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_ssm_class()
 {
 	sexp_list_item head;
 
-	for (auto it = Ssm_info.cbegin(); it != Ssm_info.cend(); ++it)
-	{
-		head.add_data(it->name);
+	for (const auto& ssm_info : Ssm_info) {
+		head.add_data(ssm_info.name);
 	}
 
 	return head.next;
@@ -411,7 +408,7 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_ai_goal(int parent_node)
 				}
 			}
 		} else
-			return NULL;  // no valid ship or wing to check against, make nothing available
+			return nullptr;  // no valid ship or wing to check against, make nothing available
 	}
 
 	return head.next;
@@ -590,8 +587,8 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_sound_environment()
 	sexp_list_item head;
 
 	head.add_data(SEXP_NONE_STRING);
-	for (int i = 0; i  < (int)EFX_presets.size(); i++) {
-		head.add_data(EFX_presets[i].name.c_str());
+	for (const auto& efx_preset : EFX_presets) {
+		head.add_data(efx_preset.name.c_str());
 	}
 
 	return head.next;
@@ -673,8 +670,8 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_ship_effect()
 {
 	sexp_list_item head;
 
-	for (SCP_vector<ship_effect>::iterator sei = Ship_effects.begin(); sei != Ship_effects.end(); ++sei) {
-		head.add_data(sei->name);
+	for (const auto& ship_effect : Ship_effects) {
+		head.add_data(ship_effect.name);
 	}
 
 	return head.next;
@@ -1122,9 +1119,8 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_nebula_storm_type()
 
 	head.add_data(SEXP_NONE_STRING);
 
-	for (size_t i=0; i < Storm_types.size(); i++)
-	{
-		head.add_data(Storm_types[i].name);
+	for (const auto& storm_type : Storm_types) {
+		head.add_data(storm_type.name);
 	}
 
 	return head.next;
@@ -1157,8 +1153,8 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_turret_types()
 {
 	sexp_list_item head;
 
-	for (int i = 0; i < NUM_TURRET_TYPES; i++)
-		head.add_data(Turret_valid_types[i]);
+	for (const auto& turret_valid_type : Turret_valid_types)
+		head.add_data(turret_valid_type);
 
 	return head.next;
 }
@@ -1241,8 +1237,8 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_weapon_banks()
 sexp_list_item *SexpTreeOPF::get_listing_opf_mission_moods()
 {
 	sexp_list_item head;
-	for (SCP_vector<SCP_string>::iterator iter = Builtin_moods.begin(); iter != Builtin_moods.end(); ++iter) {
-		head.add_data(iter->c_str());
+	for (const auto& builtin_mood : Builtin_moods) {
+		head.add_data(builtin_mood.c_str());
 	}
 
 	return head.next;
@@ -1292,9 +1288,9 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_wing_flags()
 sexp_list_item *SexpTreeOPF::get_listing_opf_team_colors()
 {
 	sexp_list_item head;
-	head.add_data("None");
-	for (SCP_map<SCP_string, team_color>::iterator tcolor = Team_Colors.begin(); tcolor != Team_Colors.end(); ++tcolor) {
-		head.add_data(tcolor->first.c_str());
+	head.add_data("None"); // Deliberately not SEXP_NONE_STRING
+	for (const auto& team_color : Team_Colors) {
+		head.add_data(team_color.first.c_str());
 	}
 
 	return head.next;
@@ -1306,8 +1302,8 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_nebula_patterns()
 
 	head.add_data(SEXP_NONE_STRING);
 
-	for (int i = 0; i < (int)Neb2_bitmap_filenames.size(); i++) {
-		head.add_data(Neb2_bitmap_filenames[i].c_str());
+	for (const auto& neb2_bitmap_filename : Neb2_bitmap_filenames) {
+		head.add_data(neb2_bitmap_filename.c_str());
 	}
 
 	return head.next;
@@ -1349,8 +1345,8 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_motion_debris()
 
 	head.add_data(SEXP_NONE_STRING);
 
-	for (int i = 0; i < (int)Motion_debris_info.size(); i++) {
-		head.add_data(Motion_debris_info[i].name.c_str());
+	for (const auto& motion_debris_info : Motion_debris_info) {
+		head.add_data(motion_debris_info.name.c_str());
 	}
 
 	return head.next;
@@ -1364,9 +1360,9 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_game_snds()
 
 	head.add_data(SEXP_NONE_STRING);
 
-	for (SCP_vector<game_snd>::iterator iter = Snds.begin(); iter != Snds.end(); ++iter) {
-		if (!can_construe_as_integer(iter->name.c_str())) {
-			head.add_data(iter->name.c_str());
+	for (const auto& snd : Snds) {
+		if (!can_construe_as_integer(snd.name.c_str())) {
+			head.add_data(snd.name.c_str());
 		}
 	}
 
@@ -1504,8 +1500,8 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_bolt_types()
 
 	head.add_data(SEXP_NONE_STRING);
 
-	for (int i = 0; i < (int)Bolt_types.size(); i++) {
-		head.add_data(Bolt_types[i].name);
+	for (const auto& bolt_type : Bolt_types) {
+		head.add_data(bolt_type.name);
 	}
 
 	return head.next;
@@ -1517,8 +1513,8 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_traitor_overrides()
 
 	head.add_data(SEXP_NONE_STRING);
 
-	for (int i = 0; i < (int)Traitor_overrides.size(); i++) {
-		head.add_data(Traitor_overrides[i].name.c_str());
+	for (const auto& traitor_override : Traitor_overrides) {
+		head.add_data(traitor_override.name.c_str());
 	}
 
 	return head.next;
@@ -1601,13 +1597,15 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_lua_enum(int parent_node, int arg_i
 }
 
 // specific types of subsystems we're looking for
-#define OPS_CAP_CARGO		1
-#define OPS_STRENGTH		2
-#define OPS_BEAM_TURRET		3
-#define OPS_AWACS			4
-#define OPS_ROTATE			5
-#define OPS_TRANSLATE		6
-#define OPS_ARMOR			7
+enum : int {
+	OPS_CAP_CARGO = 1,
+	OPS_STRENGTH = 2,
+	OPS_BEAM_TURRET = 3,
+	OPS_AWACS = 4,
+	OPS_ROTATE = 5,
+	OPS_TRANSLATE = 6,
+	OPS_ARMOR = 7,
+};
 
 sexp_list_item *SexpTreeOPF::get_listing_opf_subsystem(int parent_node, int arg_index)
 {
@@ -2041,11 +2039,11 @@ bool SexpTreeOPF::is_container_name_opf_type(const int op_type)
 sexp_list_item *SexpTreeOPF::get_listing_opf(int opf, int parent_node, int arg_index)
 {
 	sexp_list_item head;
-	sexp_list_item *list = NULL;
+	sexp_list_item *list = nullptr;
 
 	switch (opf) {
 		case OPF_NONE:
-			list = NULL;
+			list = nullptr;
 			break;
 
 		case OPF_NULL:
@@ -2276,11 +2274,11 @@ sexp_list_item *SexpTreeOPF::get_listing_opf(int opf, int parent_node, int arg_i
 			break;
 
 		case OPF_AMBIGUOUS:
-			list = NULL;
+			list = nullptr;
 			break;
 
 		case OPF_ANYTHING:
-			list = NULL;
+			list = nullptr;
 			break;
 
 		case OPF_SKYBOX_MODEL_NAME:
@@ -2514,7 +2512,7 @@ sexp_list_item *SexpTreeOPF::get_listing_opf(int opf, int parent_node, int arg_i
 		head.add_data(SEXP_ARGUMENT_STRING);
 	}
 
-	if (list != NULL) {
+	if (list != nullptr) {
 		// append other list
 		head.add_list(list);
 	}
@@ -2791,13 +2789,13 @@ int SexpTreeOPF::query_default_argument_available(int op, int i) const
 			return 0;
 
 		case OPF_MOTION_DEBRIS:
-			if (Motion_debris_info.size() > 0) {
+			if (!Motion_debris_info.empty()) {
 				return 1;
 			}
 			return 0;
 
 		case OPF_BOLT_TYPE:
-			if (Bolt_types.size() > 0) {
+			if (!Bolt_types.empty()) {
 				return 1;
 			}
 			return 0;

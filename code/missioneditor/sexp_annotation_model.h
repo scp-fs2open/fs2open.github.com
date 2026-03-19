@@ -84,9 +84,9 @@ private:
 	SCP_vector<event_annotation> m_annotations;
 
 	// Build a persistable path from an annotation key.
-	SCP_list<int> buildPath(int key, const SCP_vector<sexp_tree_item>& tree_nodes, const SCP_vector<mission_event>& events) const;
+	static SCP_list<int> buildPath(int key, const SCP_vector<sexp_tree_item>& tree_nodes, const SCP_vector<mission_event>& events);
 
 	// Resolve a stored path back to an annotation key.
 	// Returns the key (>= 0 for regular nodes, <= -2 for root keys) or -1 on failure.
-	int resolveFromPath(const SCP_list<int>& path, const SCP_vector<sexp_tree_item>& tree_nodes, const SCP_vector<mission_event>& events, const SCP_vector<int>& sig) const;
+	static int resolveFromPath(const SCP_list<int>& path, const SCP_vector<sexp_tree_item>& tree_nodes, const SCP_vector<mission_event>& events, const SCP_vector<int>& sig);
 };
