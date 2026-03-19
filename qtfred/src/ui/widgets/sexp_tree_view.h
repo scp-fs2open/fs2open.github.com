@@ -21,12 +21,7 @@
 #include <QTreeWidgetItem>
 #include <QListWidget>
 
-// various tree operations notification codes (to be handled by derived class)
-#define ROOT_DELETED    1
-#define ROOT_RENAMED    2
-
-namespace fso {
-namespace fred {
+namespace fso::fred {
 
 // Bring shared types into the fso::fred namespace so existing code compiles unchanged
 using ::sexp_tree_item;
@@ -384,5 +379,4 @@ class sexp_tree_view: public QTreeWidget, public ISexpTreeUI {
 	void insertOperatorAction(int op);
 };
 
-}
-}
+} // namespace fso::fred

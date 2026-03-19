@@ -69,12 +69,41 @@ int event_editor::getRootReturnType() const
 
 int event_editor::onRootDeleted(int formula_node)
 {
-	return handler(ROOT_DELETED, formula_node);
+	int i;
+
+	for (i = 0; i < (int)m_events.size(); i++) {
+		if (m_events[i].formula == formula_node) {
+			break;
+		}
+	}
+
+	Assert(i < (int)m_events.size());
+	m_events.erase(m_events.begin() + i);
+	m_sig.erase(m_sig.begin() + i);
+
+	if (i >= (int)m_events.size()) {
+		// if we have deleted the last event, i will be set to -1 which is what we want
+		i--;
+	}
+
+	cur_event = i;
+	update_cur_event();
+
+	return formula_node;
 }
 
 void event_editor::onRootRenamed(int formula_node, const char* new_name)
 {
-	handler(ROOT_RENAMED, formula_node, new_name);
+	int i;
+
+	for (i = 0; i < (int)m_events.size(); i++) {
+		if (m_events[i].formula == formula_node) {
+			break;
+		}
+	}
+
+	Assert(i < (int)m_events.size());
+	m_events[i].name = new_name;
 }
 
 void event_editor::onRootInserted(int old_formula, int new_formula)
@@ -681,44 +710,6 @@ void event_editor::update_cur_message()
 	GetDlgItem(IDC_PERSONA_NAME)->EnableWindow(enable);
 	GetDlgItem(IDC_MESSAGE_TEAM)->EnableWindow(enable);
 	UpdateData(FALSE);
-}
-
-int event_editor::handler(int code, int node, const char *str)
-{
-	int i;
-
-	switch (code) {
-		case ROOT_DELETED:
-			for (i=0; i<(int)m_events.size(); i++)
-				if (m_events[i].formula == node)
-					break;
-
-			Assert(i < (int)m_events.size());
-			m_events.erase(m_events.begin() + i);
-			m_sig.erase(m_sig.begin() + i);
-
-			if (i >= (int)m_events.size())	// if we have deleted the last event,
-				i--;						// i will be set to -1 which is what we want
-
-			cur_event = i;
-			update_cur_event();
-
-			return node;
-
-		case ROOT_RENAMED:
-			for (i=0; i<(int)m_events.size(); i++)
-				if (m_events[i].formula == node)
-					break;
-
-			Assert(i < (int)m_events.size());
-			m_events[i].name = str;
-			return node;
-
-		default:
-			Int3();
-	}
-
-	return -1;
 }
 
 void event_editor::OnButtonNewEvent() 

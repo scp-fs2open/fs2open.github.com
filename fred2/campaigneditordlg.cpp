@@ -60,7 +60,20 @@ campaign_editor::campaign_editor()
 	m_current_campaign_path = _T("");
 }
 
-int campaign_editor::onRootDeleted(int formula_node) { return handler(ROOT_DELETED, formula_node); }
+int campaign_editor::onRootDeleted(int formula_node)
+{
+	int i;
+	for (i = 0; i < Total_links; i++) {
+		if ((Links[i].from == Cur_campaign_mission) && (Links[i].node == formula_node)) {
+			break;
+		}
+	}
+
+	Campaign_tree_viewp->delete_link(i);
+	m_num_links--;
+	return formula_node;
+}
+
 void campaign_editor::onRootInserted(int old_formula, int new_formula) { insert_handler(old_formula, new_formula); }
 void campaign_editor::onRootMoved(int node1, int node2, bool insert_before) { move_handler(node1, node2, insert_before); }
 
@@ -441,29 +454,6 @@ void campaign_editor::OnEndlabeleditSexpTree(NMHDR* pNMHDR, LRESULT* pResult)
 	TV_DISPINFO* pTVDispInfo = (TV_DISPINFO*)pNMHDR;
 
 	*pResult = m_tree.end_label_edit(pTVDispInfo->item);
-}
-
-int campaign_editor::handler(int code, int node, char *str)
-{
-	int i;
-
-	switch (code) {
-	case ROOT_DELETED:
-		for (i=0; i<Total_links; i++){
-			if ((Links[i].from == Cur_campaign_mission) && (Links[i].node == node)){
-				break;
-			}
-		}
-
-		Campaign_tree_viewp->delete_link(i);
-		m_num_links--;
-		return node;
-
-	default:
-		Int3();
-	}
-
-	return -1;
 }
 
 void campaign_editor::save_tree(int clear)

@@ -65,17 +65,11 @@
 #include <QPainter>
 #include <QDebug>
 
-#define TREE_NODE_INCREMENT    100
-
-#define MAX_OP_MENUS    30
-#define MAX_SUBMENUS    (MAX_OP_MENUS * MAX_OP_MENUS)
-
 extern SCP_vector<game_snd> Snds;
 
 //********************sexp_tree_view********************
 
-namespace fso {
-namespace fred {
+namespace fso::fred {
 
 namespace {
 // Maps a NodeImage enum value to the corresponding Qt resource path for the tree node icon.
@@ -1222,8 +1216,8 @@ void sexp_tree_view::customMenuHandler(const QPoint& pos) {
 std::unique_ptr<QMenu> sexp_tree_view::buildContextMenu(QTreeWidgetItem* h) {
 	int i, j, subcategory_id;
 
-	Assert((int) op_menu.size() < MAX_OP_MENUS);
-	Assert((int) op_submenu.size() < MAX_SUBMENUS);
+	Assert((int) op_menu.size() < SEXP_TREE_MAX_OP_MENUS);
+	Assert((int) op_submenu.size() < SEXP_TREE_MAX_SUBMENUS);
 
 	update_help(h);
 
@@ -1340,9 +1334,9 @@ std::unique_ptr<QMenu> sexp_tree_view::buildContextMenu(QTreeWidgetItem* h) {
 	modify_variable_act->setEnabled(state.can_modify_variable);
 
 	// add popup menus for all the operator categories
-	QMenu* add_op_submenu[MAX_OP_MENUS];
-	QMenu* replace_op_submenu[MAX_OP_MENUS];
-	QMenu* insert_op_submenu[MAX_OP_MENUS];
+	QMenu* add_op_submenu[SEXP_TREE_MAX_OP_MENUS];
+	QMenu* replace_op_submenu[SEXP_TREE_MAX_OP_MENUS];
+	QMenu* insert_op_submenu[SEXP_TREE_MAX_OP_MENUS];
 	for (i = 0; i < (int) op_menu.size(); i++) {
 		add_op_submenu[i] = add_op_menu->addMenu(QString::fromStdString(op_menu[i].name.c_str()));
 		replace_op_submenu[i] = replace_op_menu->addMenu(QString::fromStdString(op_menu[i].name.c_str()));
@@ -1350,9 +1344,9 @@ std::unique_ptr<QMenu> sexp_tree_view::buildContextMenu(QTreeWidgetItem* h) {
 	}
 
 	// add all the submenu items first
-	QMenu* add_op_subcategory_menu[MAX_SUBMENUS];
-	QMenu* replace_op_subcategory_menu[MAX_SUBMENUS];
-	QMenu* insert_op_subcategory_menu[MAX_SUBMENUS];
+	QMenu* add_op_subcategory_menu[SEXP_TREE_MAX_SUBMENUS];
+	QMenu* replace_op_subcategory_menu[SEXP_TREE_MAX_SUBMENUS];
+	QMenu* insert_op_subcategory_menu[SEXP_TREE_MAX_SUBMENUS];
 	for (i = 0; i < (int) op_submenu.size(); i++) {
 		for (j = 0; j < (int) op_menu.size(); j++) {
 			if (op_menu[j].id == category_of_subcategory(op_submenu[i].id)) {
@@ -2168,5 +2162,4 @@ int sexp_tree_view::getCurrentItemIndex() const {
 	return item_index;
 }
 
-}
-}
+} // namespace fso::fred

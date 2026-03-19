@@ -73,7 +73,6 @@ public:
 	int query_modified();
 	void OnOK();		// default MFC OK behavior
 	void OnCancel();	// default MFC Cancel behavior
-	int handler(int code, int node, const char *str = nullptr);
 	void create_tree();
 	void load_tree();
 	int modified;

@@ -92,6 +92,10 @@ FLAG_LIST(TreeFlags) {
 	NUM_VALUES
 };
 
+// Shared operator-menu sizing limits for sexp tree UI implementations (FRED2 + QtFRED)
+constexpr int SEXP_TREE_MAX_OP_MENUS = 30;
+constexpr int SEXP_TREE_MAX_SUBMENUS = SEXP_TREE_MAX_OP_MENUS * SEXP_TREE_MAX_OP_MENUS;
+
 
 // -----------------------------------------------------------------------
 // sexp_tree_item — a single node in the sexp tree

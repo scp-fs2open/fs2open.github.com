@@ -54,11 +54,6 @@
 #include "AddModifyContainerDlg.h"
 #include "asteroid/asteroid.h"
 
-#define TREE_NODE_INCREMENT	100
-
-#define MAX_OP_MENUS	30
-#define MAX_SUBMENUS	(MAX_OP_MENUS * MAX_OP_MENUS)
-
 #define ID_CONTAINER_NAME_MENU	0xd600
 #define ID_CONTAINER_DATA_MENU	0xd800
 #define ID_VARIABLE_MENU	0xda00
@@ -284,18 +279,18 @@ void sexp_tree_view::right_clicked()
 	HTREEITEM h;
 	POINT click_point, mouse;
 	CMenu menu, *mptr, *popup_menu, *add_data_menu = NULL, *replace_data_menu = NULL;
-	CMenu *add_op_menu, add_op_submenu[MAX_OP_MENUS];
-	CMenu *replace_op_menu, replace_op_submenu[MAX_OP_MENUS];
-	CMenu *insert_op_menu, insert_op_submenu[MAX_OP_MENUS];
+	CMenu *add_op_menu, add_op_submenu[SEXP_TREE_MAX_OP_MENUS];
+	CMenu *replace_op_menu, replace_op_submenu[SEXP_TREE_MAX_OP_MENUS];
+	CMenu *insert_op_menu, insert_op_submenu[SEXP_TREE_MAX_OP_MENUS];
 	CMenu *replace_variable_menu = NULL;
 	CMenu *replace_container_name_menu = nullptr;
 	CMenu *replace_container_data_menu = nullptr;
-	CMenu add_op_subcategory_menu[MAX_SUBMENUS];
-	CMenu replace_op_subcategory_menu[MAX_SUBMENUS];
-	CMenu insert_op_subcategory_menu[MAX_SUBMENUS];
+	CMenu add_op_subcategory_menu[SEXP_TREE_MAX_SUBMENUS];
+	CMenu replace_op_subcategory_menu[SEXP_TREE_MAX_SUBMENUS];
+	CMenu insert_op_subcategory_menu[SEXP_TREE_MAX_SUBMENUS];
 
-	Assert((int)op_menu.size() < MAX_OP_MENUS);
-	Assert((int)op_submenu.size() < MAX_SUBMENUS);
+	Assert((int)op_menu.size() < SEXP_TREE_MAX_OP_MENUS);
+	Assert((int)op_submenu.size() < SEXP_TREE_MAX_SUBMENUS);
 
 	GetCursorPos(&mouse);
 	click_point = mouse;

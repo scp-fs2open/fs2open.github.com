@@ -43,10 +43,6 @@
 #define BITMAP_CONTAINER_NAME   static_cast<int>(NodeImage::CONTAINER_NAME)
 #define BITMAP_CONTAINER_DATA   static_cast<int>(NodeImage::CONTAINER_DATA)
 
-// various tree operations notification codes (to be handled by derived class)
-#define ROOT_DELETED	1
-#define ROOT_RENAMED	2
-
 // Typed handle accessors for FRED2 (MFC HTREEITEM)
 inline HTREEITEM tree_item_handle(const sexp_tree_item& item) {
 	return static_cast<HTREEITEM>(item.handle);

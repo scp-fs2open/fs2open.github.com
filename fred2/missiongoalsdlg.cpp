@@ -57,7 +57,22 @@ CMissionGoalsDlg::CMissionGoalsDlg(CWnd* pParent /*=NULL*/)
 	select_sexp_node = -1;
 }
 
-int CMissionGoalsDlg::onRootDeleted(int formula_node) { return handler(ROOT_DELETED, formula_node); }
+int CMissionGoalsDlg::onRootDeleted(int formula_node)
+{
+	int i;
+
+	for (i = 0; i < (int)m_goals.size(); i++) {
+		if (m_goals[i].formula == formula_node) {
+			break;
+		}
+	}
+
+	Assert(i < (int)m_goals.size());
+	m_goals.erase(m_goals.begin() + i);
+	m_sig.erase(m_sig.begin() + i);
+
+	return formula_node;
+}
 void CMissionGoalsDlg::onRootInserted(int old_formula, int new_formula) { insert_handler(old_formula, new_formula); }
 void CMissionGoalsDlg::onRootMoved(int node1, int node2, bool insert_before) { move_handler(node1, node2, insert_before); }
 
@@ -409,29 +424,6 @@ void CMissionGoalsDlg::OnButtonNewGoal()
 	m_goals_tree.SetItemData(h, index);
 
 	m_goals_tree.SelectItem(h);
-}
-
-int CMissionGoalsDlg::handler(int code, int node)
-{
-	int i;
-
-	switch (code) {
-	case ROOT_DELETED:
-		for (i=0; i<(int)m_goals.size(); i++)
-			if (m_goals[i].formula == node)
-				break;
-
-		Assert(i < (int)m_goals.size());
-		m_goals.erase(m_goals.begin() + i);
-		m_sig.erase(m_sig.begin() + i);
-
-		return node;
-
-	default:
-		Int3();
-	}
-
-	return -1;
 }
 
 void CMissionGoalsDlg::OnChangeGoalDesc() 
