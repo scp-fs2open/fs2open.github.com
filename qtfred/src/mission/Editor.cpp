@@ -17,6 +17,7 @@
 #include <util.h>
 #include <mission/missionmessage.h>
 #include <missioneditor/common.h>
+#include <missioneditor/sexp_annotation_model.h>
 #include <missioneditor/missionsave.h>
 #include <gamesnd/eventmusic.h>
 #include <starfield/nebula.h>

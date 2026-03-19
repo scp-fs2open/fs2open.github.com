@@ -9,6 +9,8 @@
 #include <algorithm>
 #include <vector>
 
+SCP_vector<event_annotation> Event_annotations;
+
 // -----------------------------------------------------------------------
 // Lifecycle
 // -----------------------------------------------------------------------
