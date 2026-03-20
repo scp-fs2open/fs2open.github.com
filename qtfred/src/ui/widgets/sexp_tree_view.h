@@ -193,6 +193,7 @@ class sexp_tree_view: public QTreeWidget, public ISexpTreeUI {
 	void ui_notify_modified() override;                          //!< Emits the modified() signal
 	void ui_update_help(void* handle) override;                  //!< Calls update_help() to refresh help panel
 	void ui_add_children_visual(int parent_node_index) override; //!< Adds Qt child items for all model children of a node
+	void ui_move_branch(int source_node, int parent_node) override; //!< Moves existing subtree under a new parent node
 	void ui_expand_branch(void* handle) override;                //!< Recursively expands via expand_branch()
 
  signals:

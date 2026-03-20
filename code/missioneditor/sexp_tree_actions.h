@@ -74,6 +74,16 @@ public:
 	// Handles special cases: variable names, container names, modify-variable types.
 	// Returns 0 on success, -1 if no default value available.
 	int add_default_operator(int op_index, int argnum);
+	// Insert an operator above the current node and move the current node under it.
+	// root_parent_handle is only used for labeled-root trees, where roots are inserted
+	// under a label item instead of as true tree roots.
+	int insert_operator(int op, void* root_parent_handle = nullptr);
+	// Resolve and apply a typed add/replace-data menu entry by index.
+	// add_count and replace_count are the cached argument positions computed by menu state.
+	int add_or_replace_typed_data(int data_idx, bool replace, int add_count, int replace_count);
+	// Resolve variable type validation/coercion and replace current node with the variable.
+	// current_node_type should be the selected node's SEXPT_NUMBER/SEXPT_STRING flags.
+	void replace_variable_with_type_validation(int var_idx, int current_node_type, bool allow_type_coercion);
 
 	// --- Validation ---
 

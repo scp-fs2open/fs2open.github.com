@@ -139,6 +139,11 @@ void sexp_tree_view::ui_add_children_visual(int parent_node_index)
 	}
 }
 
+void sexp_tree_view::ui_move_branch(int source_node, int parent_node)
+{
+	move_branch(source_node, parent_node);
+}
+
 void sexp_tree_view::ui_expand_branch(void* handle)
 {
 	expand_branch((HTREEITEM)handle);
@@ -752,9 +757,7 @@ void sexp_tree_view::end_operator_edit(bool confirm)
 // now it also handles messages from the operator combo box
 BOOL sexp_tree_view::OnCommand(WPARAM wParam, LPARAM lParam)
 {
-	int i, z, id, data, node, op;
-	sexp_list_item *list, *ptr;
-	HTREEITEM h;
+	int i, id, data, node, op;
 
 	if ((item_index >= 0) && (item_index < total_nodes) && !tree_nodes.empty())
 		item_handle = tree_item_handle(tree_nodes[item_index]);
@@ -946,38 +949,11 @@ BOOL sexp_tree_view::OnCommand(WPARAM wParam, LPARAM lParam)
 	// check if REPLACE_VARIABLE_MENU
 	if ( (id >= ID_VARIABLE_MENU) && (id < ID_VARIABLE_MENU + 511)) {
 
-		Assertion(item_index >= 0, "Invalid item index");
-
-		// get index into list of type valid variables
 		int var_idx = id - ID_VARIABLE_MENU;
-		Assertion( (var_idx >= 0) && (var_idx < MAX_SEXP_VARIABLES), "Invalid variable index");
-
-		int type = get_type(item_handle);
-		Assertion( (type & SEXPT_NUMBER) || (type & SEXPT_STRING), "Invalid variable type");
-
-		// don't do type check for modify-variable or OPF_CONTAINER_VALUE (can be either type)
-		if (m_modify_variable || _model.query_node_argument_type(item_index) == OPF_CONTAINER_VALUE) {
-			if (Sexp_variables[var_idx].type & SEXP_VARIABLE_NUMBER) {
-				type = SEXPT_NUMBER;
-			} else if (Sexp_variables[var_idx].type & SEXP_VARIABLE_STRING) {
-				type = SEXPT_STRING;
-			} else {
-				Int3();	// unknown type
-			}
-
-		} else {	
-			// verify type in tree is same as type in Sexp_variables array
-			if (type & SEXPT_NUMBER) {
-				Assertion(Sexp_variables[var_idx].type & SEXP_VARIABLE_NUMBER, "Invalid variable type");
-			}
-
-			if (type & SEXPT_STRING) {
-				Assertion((Sexp_variables[var_idx].type & SEXP_VARIABLE_STRING), "Invalid variable type");
-			}
-		}
-
-		// Replace data
-		_actions.replace_variable_data(var_idx, (type | SEXPT_VARIABLE));
+		const int type = get_type(item_handle);
+		const bool allow_type_coercion =
+			(m_modify_variable != 0) || (_model.query_node_argument_type(item_index) == OPF_CONTAINER_VALUE);
+		_actions.replace_variable_with_type_validation(var_idx, type, allow_type_coercion);
 
 		return 1;
 	}
@@ -988,30 +964,12 @@ BOOL sexp_tree_view::OnCommand(WPARAM wParam, LPARAM lParam)
 		Assertion(item_index >= 0, "Invalid item index");
 
 		int type = 0;
-
-		if (tree_nodes[item_index].type & SEXPT_CONTAINER_DATA) {
-			list = _model._opf.get_container_multidim_modifiers(item_index);
-		} else {
+		if (!(tree_nodes[item_index].type & SEXPT_CONTAINER_DATA)) {
 			op = get_operator_index(tree_nodes[item_index].text);
 			Assertion(op >= 0, "Invalid operator index");
-
 			type = query_operator_argument_type(op, m_add_count);
-			list = _model._opf.get_listing_opf(type, item_index, m_add_count);
 		}
-		Assertion(list, "Invalid listing");
-
-		id -= ID_ADD_MENU;
-		ptr = list;
-		while (id) {
-			id--;
-			ptr = ptr->next;
-			Assertion(ptr, "Invalid list pointer");
-		}
-
-		Assertion((SEXPT_TYPE(ptr->type) != SEXPT_OPERATOR) && (ptr->op < 0), "Invalid list type");
-		_actions.expand_operator(item_index);
-		node = _actions.add_data(ptr->text.c_str(), ptr->type);
-		list->destroy();
+		node = _actions.add_or_replace_typed_data(id - ID_ADD_MENU, false, m_add_count, m_replace_count);
 
 		// bolted-on ugly hack
 		if (type == OPF_VARIABLE_NAME) {
@@ -1037,32 +995,7 @@ BOOL sexp_tree_view::OnCommand(WPARAM wParam, LPARAM lParam)
 	}
 
 	if ((id >= ID_REPLACE_MENU) && (id < ID_REPLACE_MENU + 511)) {
-		Assertion(item_index >= 0, "Invalid item index");
-		Assertion(tree_nodes[item_index].parent >= 0, "Invalid parent index");
-
-		if (tree_nodes[item_index].type & SEXPT_MODIFIER) {
-			list = _model._opf.get_container_modifiers(tree_nodes[item_index].parent);
-		} else {
-			op = get_operator_index(tree_nodes[tree_nodes[item_index].parent].text);
-			Assertion(op >= 0, "Invalid operator index");
-
-			auto type = query_operator_argument_type(op, m_replace_count); // check argument type at this position
-			list = _model._opf.get_listing_opf(type, tree_nodes[item_index].parent, m_replace_count);
-		}
-		Assertion(list, "Invalid listing");
-
-		id -= ID_REPLACE_MENU;
-		ptr = list;
-		while (id) {
-			id--;
-			ptr = ptr->next;
-			Assertion(ptr, "Invalid list pointer");
-		}
-
-		Assertion((SEXPT_TYPE(ptr->type) != SEXPT_OPERATOR) && (ptr->op < 0), "Invalid list type");
-		_actions.expand_operator(item_index);
-		_actions.replace_data(ptr->text.c_str(), ptr->type);
-		list->destroy();
+		_actions.add_or_replace_typed_data(id - ID_REPLACE_MENU, true, m_add_count, m_replace_count);
 		return 1;
 	}
 
@@ -1119,37 +1052,12 @@ BOOL sexp_tree_view::OnCommand(WPARAM wParam, LPARAM lParam)
 		}
 
 		if (id == (Operators[op].value | OP_INSERT_FLAG)) {
-			int flags;
-
-			z = tree_nodes[item_index].parent;
-			flags = tree_nodes[item_index].flags;
-			node = _model.allocate_node(z, item_index);
-			_model.set_node(node, (SEXPT_OPERATOR | SEXPT_VALID), Operators[op].text.c_str());
-			tree_nodes[node].flags = flags;
-			if (z >= 0)
-				h = tree_item_handle(tree_nodes[z]);
-
-			else {
-				h = GetParentItem(tree_item_handle(tree_nodes[item_index]));
-				if (_model._interface && _model._interface->getFlags()[TreeFlags::LabeledRoot]) {
-					_model._interface->onRootInserted(item_index, node);
-					SetItemData(h, node);
-				} else {
-					h = TVI_ROOT;
-					root_item = node;
-				}
+			HTREEITEM root_parent = GetParentItem(tree_item_handle(tree_nodes[item_index]));
+			node = _actions.insert_operator(op, root_parent);
+			if (_model._interface && _model._interface->getFlags()[TreeFlags::LabeledRoot] && root_parent) {
+				SetItemData(root_parent, node);
 			}
-
-			tree_nodes[node].handle = insert(Operators[op].text.c_str(), BITMAP_OPERATOR, BITMAP_OPERATOR, h, tree_item_handle(tree_nodes[item_index]));
-			item_handle = tree_item_handle(tree_nodes[node]);
-			move_branch(item_index, node);
-
 			item_index = node;
-			for (i=1; i<Operators[op].min; i++)
-				_actions.add_default_operator(op, i);
-
-			Expand(item_handle, TVE_EXPAND);
-			*modified = 1;
 			return 1;
 		}
 	}
@@ -1939,4 +1847,3 @@ void sexp_tree_view::OnKeyDown(NMHDR *pNMHDR, LRESULT *pResult)
 
 	*pResult = 0;
 }
-

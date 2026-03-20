@@ -474,6 +474,117 @@ int SexpTreeActions::add_default_operator(int op_index, int argnum)
 	return 0;
 }
 
+int SexpTreeActions::insert_operator(int op, void* root_parent_handle)
+{
+	Assertion(SCP_vector_inbounds(Operators, op), "Invalid operator index");
+	Assertion(_model.item_index >= 0, "Invalid selected node index");
+
+	const int wrapped_node = _model.item_index;
+	const int parent_node = _model.tree_nodes[wrapped_node].parent;
+	const int node_flags = _model.tree_nodes[wrapped_node].flags;
+	const void* wrapped_handle = _model.tree_nodes[wrapped_node].handle;
+
+	const int node = _model.allocate_node(parent_node, wrapped_node);
+	_model.set_node(node, (SEXPT_OPERATOR | SEXPT_VALID), Operators[op].text.c_str());
+	_model.tree_nodes[node].flags = node_flags;
+
+	void* insert_parent = nullptr;
+	if (parent_node >= 0) {
+		insert_parent = _model.tree_nodes[parent_node].handle;
+	} else {
+		if (_model._interface && _model._interface->getFlags()[TreeFlags::LabeledRoot]) {
+			insert_parent = root_parent_handle;
+			_model._interface->onRootInserted(wrapped_node, node);
+		} else {
+			_model.root_item = node;
+		}
+	}
+
+	_model.tree_nodes[node].handle =
+		_ui.ui_insert_item(Operators[op].text.c_str(), NodeImage::OPERATOR, insert_parent, const_cast<void*>(wrapped_handle));
+
+	_ui.ui_move_branch(wrapped_node, node);
+	_model.item_index = node;
+	for (int i = 1; i < Operators[op].min; i++) {
+		add_default_operator(op, i);
+	}
+
+	_ui.ui_expand_item(_model.tree_nodes[node].handle);
+	if (_model.modified) {
+		*_model.modified = 1;
+	}
+
+	return node;
+}
+
+int SexpTreeActions::add_or_replace_typed_data(int data_idx, bool replace, int add_count, int replace_count)
+{
+	Assertion(_model.item_index >= 0, "Invalid item index");
+	const int op_node = replace ? _model.tree_nodes[_model.item_index].parent : _model.item_index;
+	Assertion(op_node >= 0, "Invalid operator node");
+
+	sexp_list_item* list = nullptr;
+	if (_model.tree_nodes[op_node].type & SEXPT_CONTAINER_DATA) {
+		if (replace && replace_count == 0) {
+			list = _model._opf.get_container_modifiers(op_node);
+		} else {
+			list = _model._opf.get_container_multidim_modifiers(op_node);
+		}
+	} else {
+		const int op = get_operator_index(_model.tree_nodes[op_node].text);
+		Assertion(op >= 0, "Invalid operator index");
+		const auto argcount = replace ? replace_count : add_count;
+		const auto type = query_operator_argument_type(op, argcount);
+		list = _model._opf.get_listing_opf(type, _model.item_index, argcount);
+	}
+	Assertion(list, "Failed to get listing OPF");
+
+	auto* ptr = list;
+	while (data_idx) {
+		data_idx--;
+		ptr = ptr->next;
+		Assertion(ptr, "Invalid SEXP list");
+	}
+
+	Assertion((SEXPT_TYPE(ptr->type) != SEXPT_OPERATOR) && (ptr->op < 0), "Invalid SEXP type or operator");
+	expand_operator(_model.item_index);
+	int added_node = -1;
+	if (replace) {
+		replace_data(ptr->text.c_str(), ptr->type);
+	} else {
+		added_node = add_data(ptr->text.c_str(), ptr->type);
+	}
+	list->destroy();
+	return added_node;
+}
+
+void SexpTreeActions::replace_variable_with_type_validation(int var_idx, int current_node_type, bool allow_type_coercion)
+{
+	Assertion(_model.item_index >= 0, "Invalid item index");
+	Assertion((var_idx >= 0) && (var_idx < MAX_SEXP_VARIABLES), "Invalid variable index");
+	Assertion((current_node_type & SEXPT_NUMBER) || (current_node_type & SEXPT_STRING), "Invalid node type");
+
+	int resolved_type = current_node_type;
+	if (allow_type_coercion) {
+		if (Sexp_variables[var_idx].type & SEXP_VARIABLE_NUMBER) {
+			resolved_type = SEXPT_NUMBER;
+		} else if (Sexp_variables[var_idx].type & SEXP_VARIABLE_STRING) {
+			resolved_type = SEXPT_STRING;
+		} else {
+			Int3();
+		}
+	} else {
+		if (resolved_type & SEXPT_NUMBER) {
+			Assertion(Sexp_variables[var_idx].type & SEXP_VARIABLE_NUMBER, "Invalid variable type");
+		}
+		if (resolved_type & SEXPT_STRING) {
+			Assertion(Sexp_variables[var_idx].type & SEXP_VARIABLE_STRING, "Invalid variable type");
+		}
+	}
+
+	replace_variable_data(var_idx, (resolved_type | SEXPT_VARIABLE));
+}
+
 // -----------------------------------------------------------------------
 // Validation
 // -----------------------------------------------------------------------

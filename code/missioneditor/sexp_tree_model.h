@@ -256,6 +256,8 @@ public:
 
 	// Recursively add child tree items for all children of the given model node
 	virtual void ui_add_children_visual(int parent_node_index) = 0;
+	// Move an existing subtree so source_node becomes a child of parent_node
+	virtual void ui_move_branch(int source_node, int parent_node) = 0;
 	// Recursively expand the subtree rooted at the given handle
 	virtual void ui_expand_branch(void* handle) = 0;
 
