@@ -396,6 +396,24 @@ void FredView::updateUI() {
 	}
 
 	viewIdle();
+	ensureViewportFocus();
+}
+void FredView::ensureViewportFocus() {
+	if (QApplication::activeWindow() != this || QApplication::activeModalWidget() != nullptr) {
+		return;
+	}
+
+	auto* focusedWidget = QApplication::focusWidget();
+	if (focusedWidget != nullptr) {
+		auto* focusedWindow = focusedWidget->window();
+		if (focusedWindow != nullptr && focusedWindow != this) {
+			return;
+		}
+	}
+
+	if (focusedWidget != ui->centralWidget) {
+		ui->centralWidget->setFocus(Qt::OtherFocusReason);
+	}
 }
 void FredView::connectActionToViewSetting(QAction* option, bool* destination) {
 	Q_ASSERT(option->isCheckable());

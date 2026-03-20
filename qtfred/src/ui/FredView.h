@@ -198,6 +198,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 
 	void initializeStatusBar();
 	void initializePopupMenus();
+	void ensureViewportFocus();
 
 	void onGroupSelected(int group);
 	void onSetGroup(int group);

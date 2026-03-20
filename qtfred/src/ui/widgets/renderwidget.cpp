@@ -124,7 +124,7 @@ void RenderWindow::setEditor(Editor* editor, FredRenderer* renderer) {
 	connect(_renderer, &FredRenderer::scheduleUpdate, this, &QWindow::requestUpdate);
 }
 RenderWidget::RenderWidget(QWidget* parent) : QWidget(parent) {
-	setFocusPolicy(Qt::NoFocus);
+	setFocusPolicy(Qt::StrongFocus);
 	setMouseTracking(true);
 
 	_window = new RenderWindow(this);
