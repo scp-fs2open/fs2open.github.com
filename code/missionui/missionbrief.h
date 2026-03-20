@@ -55,7 +55,6 @@ extern float Closeup_zoom;
 extern vec3d Closeup_cam_pos;
 
 void brief_api_init();
-void brief_api_do_frame(float frametime);
 void brief_do_next_pressed(int play_sound);
 void brief_do_prev_pressed();
 void brief_do_start_pressed();
@@ -65,7 +64,7 @@ void brief_check_for_anim(bool api_access = false, int api_x = -1, int api_y = -
 
 void brief_init();
 void brief_close();
-void brief_do_frame(float frametime);
+void brief_do_frame(float frametime, bool api_access = false);
 //void brief_unhide_buttons(); This doesn't seem to exist in the code -Mjn
 brief_icon *brief_get_closeup_icon();
 void brief_turn_off_closeup_icon(bool api_access = false);

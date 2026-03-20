@@ -964,7 +964,7 @@ ADE_FUNC(drawBriefingMap,
 	bscreen.map_y2 = y1 + y2;
 	bscreen.resize = GR_RESIZE_NONE;
 
-	brief_api_do_frame(flRealframetime);
+	brief_do_frame(flRealframetime, true);
 
 	return ADE_RETURN_NIL;
 }
