@@ -233,8 +233,7 @@ public:
 
 	// Insert a new tree item with the given text/icon under parent_handle, after insert_after.
 	// Returns the newly created opaque handle.
-	virtual void* ui_insert_item(const char* text, NodeImage image,
-								  void* parent_handle, void* insert_after) = 0;
+	virtual void* ui_insert_item(const char* text, NodeImage image, void* parent_handle, void* insert_after) = 0;
 	// Remove a tree item from the widget
 	virtual void ui_delete_item(void* handle) = 0;
 	// Update the displayed text of a tree item

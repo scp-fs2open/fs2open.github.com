@@ -489,20 +489,19 @@ int SexpTreeActions::insert_operator(int op, void* root_parent_handle)
 	_model.set_node(node, (SEXPT_OPERATOR | SEXPT_VALID), Operators[op].text.c_str());
 	_model.tree_nodes[node].flags = node_flags;
 
-	void* insert_parent = nullptr;
+	void* parent_handle = nullptr;
 	if (parent_node >= 0) {
-		insert_parent = _model.tree_nodes[parent_node].handle;
+		parent_handle = _model.tree_nodes[parent_node].handle;
 	} else {
 		if (_model._interface && _model._interface->getFlags()[TreeFlags::LabeledRoot]) {
-			insert_parent = root_parent_handle;
+			parent_handle = root_parent_handle;
 			_model._interface->onRootInserted(wrapped_node, node);
 		} else {
 			_model.root_item = node;
 		}
 	}
 
-	_model.tree_nodes[node].handle =
-		_ui.ui_insert_item(Operators[op].text.c_str(), NodeImage::OPERATOR, insert_parent, wrapped_handle);
+	_model.tree_nodes[node].handle = _ui.ui_insert_item(Operators[op].text.c_str(), NodeImage::OPERATOR, parent_handle, wrapped_handle);
 
 	_ui.ui_move_branch(wrapped_node, node);
 	_model.item_index = node;
