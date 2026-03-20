@@ -38,10 +38,10 @@ void process_movement_keys(const fso::fred::ControlBindings& bindings, vec3d* mv
 		mvec->xyz.x += 1.0f;
 	}
 	if (bindings.isPressed(fso::fred::ControlAction::MoveForward)) {
-		mvec->xyz.y += -1.0f;
+		mvec->xyz.y += 1.0f;
 	}
 	if (bindings.isPressed(fso::fred::ControlAction::MoveBackward)) {
-		mvec->xyz.y += 1.0f;
+		mvec->xyz.y += -1.0f;
 	}
 	if (bindings.isPressed(fso::fred::ControlAction::MoveUp)) {
 		mvec->xyz.z += 1.0f;
