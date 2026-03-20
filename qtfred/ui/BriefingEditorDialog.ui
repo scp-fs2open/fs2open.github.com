@@ -105,6 +105,16 @@
              </property>
             </widget>
            </item>
+           <item row="4" column="2">
+            <widget class="QPushButton" name="cameraCoordinatesButton">
+             <property name="text">
+              <string>Camera Coords...</string>
+             </property>
+             <property name="autoDefault">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
            <item row="0" column="2">
             <widget class="QPushButton" name="saveViewButton">
              <property name="maximumSize">
@@ -441,6 +451,16 @@
                <widget class="QPushButton" name="makeIconButton">
                 <property name="text">
                  <string>Make Icon</string>
+                </property>
+                <property name="autoDefault">
+                 <bool>false</bool>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="makeIconFromShipButton">
+                <property name="text">
+                 <string>From Ship...</string>
                 </property>
                 <property name="autoDefault">
                  <bool>false</bool>

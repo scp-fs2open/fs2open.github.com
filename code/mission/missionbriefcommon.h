@@ -316,6 +316,9 @@ void brief_blit_stage_num(int stage_num, int stage_max);
 
 void brief_common_get_icon_dimensions(int *w, int *h, brief_icon *bi);
 
+vec3d brief_get_current_cam_pos();
+matrix brief_get_current_cam_orient();
+
 // voice streaming interface
 void brief_voice_init();
 void brief_voice_load_all();

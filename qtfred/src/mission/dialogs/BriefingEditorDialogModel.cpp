@@ -4,6 +4,8 @@
 #include "mission/missionparse.h"
 #include "sound/audiostr.h"
 #include "iff_defs/iff_defs.h"
+#include "ship/ship.h"
+#include "object/object.h"
 
 #include <QMessageBox>
 
@@ -1227,6 +1229,111 @@ SCP_vector<std::pair<int, SCP_string>> BriefingEditorDialogModel::getIffList()
 		out.emplace_back(i, Iff_info[i].iff_name);
 	}
 	return out;
+}
+
+briefing* BriefingEditorDialogModel::getWipBriefingPtr(int team)
+{
+	Assertion(team >= 0 && team < MAX_TVT_TEAMS, "Invalid team index %d", team);
+	return &_wipBriefings[team];
+}
+
+void BriefingEditorDialogModel::makeIconFromShip(int shipIndex)
+{
+	if (shipIndex < 0 || shipIndex >= MAX_SHIPS)
+		return;
+
+	const auto& shipp = Ships[shipIndex];
+	if (shipp.objnum < 0)
+		return;
+
+	// Determine icon type from ship class
+	int iconType = ICON_FIGHTER; // default
+	if (shipp.ship_info_index >= 0 && shipp.ship_info_index < static_cast<int>(Ship_info.size())) {
+		const auto& sip = Ship_info[shipp.ship_info_index];
+		// Map ship type flags to briefing icon types
+		if (sip.is_big_or_huge()) {
+			if (sip.flags[Ship::Info_Flags::Corvette])
+				iconType = ICON_CORVETTE;
+			else if (sip.flags[Ship::Info_Flags::Supercap])
+				iconType = ICON_SUPERCAP;
+			else
+				iconType = ICON_CAPITAL;
+		} else if (sip.flags[Ship::Info_Flags::Transport]) {
+			iconType = ICON_TRANSPORT;
+		} else if (sip.flags[Ship::Info_Flags::Freighter]) {
+			iconType = ICON_FREIGHTER_NO_CARGO;
+		} else if (sip.flags[Ship::Info_Flags::Cruiser]) {
+			iconType = ICON_CRUISER;
+		} else if (sip.flags[Ship::Info_Flags::Fighter]) {
+			iconType = ICON_FIGHTER;
+		} else if (sip.flags[Ship::Info_Flags::Bomber]) {
+			iconType = ICON_BOMBER;
+		} else if (sip.flags[Ship::Info_Flags::Awacs]) {
+			iconType = ICON_AWACS;
+		} else if (sip.flags[Ship::Info_Flags::Gas_miner]) {
+			iconType = ICON_GAS_MINER;
+		} else if (sip.flags[Ship::Info_Flags::Sentrygun]) {
+			iconType = ICON_SENTRYGUN;
+		} else if (sip.flags[Ship::Info_Flags::Support]) {
+			iconType = ICON_SUPPORT_SHIP;
+		}
+	}
+
+	// Find the IFF team index
+	int teamIndex = shipp.team;
+
+	makeIcon(SCP_string(shipp.ship_name), iconType, teamIndex, shipp.ship_info_index);
+
+	// Set the icon's position to the ship's world position
+	auto& briefing_ref = _wipBriefings[_currentTeam];
+	if (briefing_ref.num_stages > 0 && _currentStage >= 0 && _currentStage < briefing_ref.num_stages) {
+		auto& s = briefing_ref.stages[_currentStage];
+		if (_currentIcon >= 0 && _currentIcon < s.num_icons) {
+			s.icons[_currentIcon].pos = Objects[shipp.objnum].pos;
+		}
+	}
+}
+
+SCP_vector<BriefingEditorDialogModel::WingTreeEntry> BriefingEditorDialogModel::getWingShipTree()
+{
+	SCP_vector<WingTreeEntry> result;
+
+	// Track which ships are in wings so we can list ungrouped ships separately
+	SCP_vector<bool> in_wing(MAX_SHIPS, false);
+
+	for (int w = 0; w < Num_wings; ++w) {
+		const auto& wingp = Wings[w];
+		if (wingp.wave_count <= 0)
+			continue;
+
+		WingTreeEntry entry;
+		entry.wingName = wingp.name;
+
+		for (int i = 0; i < wingp.wave_count; ++i) {
+			int si = wingp.ship_index[i];
+			if (si >= 0 && si < MAX_SHIPS && Ships[si].objnum >= 0) {
+				entry.ships.push_back({Ships[si].ship_name, si});
+				in_wing[si] = true;
+			}
+		}
+
+		if (!entry.ships.empty()) {
+			result.push_back(std::move(entry));
+		}
+	}
+
+	// Add ungrouped ships under a pseudo-wing entry with empty name
+	WingTreeEntry ungrouped;
+	for (int i = 0; i < MAX_SHIPS; ++i) {
+		if (Ships[i].objnum >= 0 && !in_wing[i]) {
+			ungrouped.ships.push_back({Ships[i].ship_name, i});
+		}
+	}
+	if (!ungrouped.ships.empty()) {
+		result.push_back(std::move(ungrouped));
+	}
+
+	return result;
 }
 
 } // namespace fso::fred::dialogs

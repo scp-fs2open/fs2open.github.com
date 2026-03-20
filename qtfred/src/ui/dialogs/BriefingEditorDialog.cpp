@@ -2,6 +2,10 @@
 #include "ui_BriefingEditorDialog.h"
 
 #include "mission/util.h"
+#include "ui/widgets/BriefingMapWidget.h"
+#include "CameraCoordinatesDialog.h"
+#include "IconFromShipDialog.h"
+#include "mission/missionbriefcommon.h"
 
 #include <globalincs/globals.h>
 #include <globalincs/linklist.h>
@@ -10,6 +14,7 @@
 
 #include <QCloseEvent>
 #include <QFileDialog>
+#include <QVBoxLayout>
 
 namespace fso::fred::dialogs {
 
@@ -24,6 +29,7 @@ BriefingEditorDialog::BriefingEditorDialog(FredView* parent, EditorViewport* vie
 	ui->iconCloseupLabelLineEdit->setMaxLength(MAX_LABEL_LEN - 1);
 	ui->voiceFileLineEdit->setMaxLength(MAX_FILENAME_LEN - 1);
 
+	setupMapWidget();
 	initializeUi();
 	updateUi();
 
@@ -57,6 +63,31 @@ void BriefingEditorDialog::closeEvent(QCloseEvent* e)
 {
 	reject();
 	e->ignore(); // Don't let the base class close the window
+}
+
+void BriefingEditorDialog::setupMapWidget()
+{
+	// Replace the mapView placeholder with our BriefingMapWidget
+	_mapWidget = new fso::fred::BriefingMapWidget(this, _model.get(), _viewport);
+	_mapWidget->setMinimumSize(ui->mapView->minimumSize());
+	_mapWidget->setSizePolicy(ui->mapView->sizePolicy());
+
+	// Insert the map widget in place of the placeholder in the left pane layout
+	int idx = ui->leftPaneLayout->indexOf(ui->mapView);
+	ui->leftPaneLayout->removeWidget(ui->mapView);
+	ui->mapView->hide();
+	ui->leftPaneLayout->insertWidget(idx, _mapWidget);
+
+	// Wire icon selection from the map widget to our UI update
+	connect(_mapWidget, &fso::fred::BriefingMapWidget::iconSelected, this, [this](int index) {
+		_model->setCurrentIconIndex(index);
+		updateUi();
+	});
+
+	// Set the initial stage
+	if (_model->getTotalStages() > 0) {
+		_mapWidget->setStage(_model->getCurrentStage());
+	}
 }
 
 void BriefingEditorDialog::initializeUi()
@@ -174,42 +205,54 @@ void BriefingEditorDialog::on_okAndCancelButtons_rejected()
 void BriefingEditorDialog::on_prevStageButton_clicked()
 {
 	_model->gotoPreviousStage();
+	_mapWidget->setStage(_model->getCurrentStage());
 	updateUi();
 }
 
 void BriefingEditorDialog::on_nextStageButton_clicked()
 {
 	_model->gotoNextStage();
+	_mapWidget->setStage(_model->getCurrentStage());
 	updateUi();
 }
 
 void BriefingEditorDialog::on_addStageButton_clicked()
 {
 	_model->addStage();
+	_mapWidget->setStage(_model->getCurrentStage());
 	updateUi();
 }
 
 void BriefingEditorDialog::on_insertStageButton_clicked()
 {
 	_model->insertStage();
+	_mapWidget->setStage(_model->getCurrentStage());
 	updateUi();
 }
 
 void BriefingEditorDialog::on_deleteStageButton_clicked()
 {
 	_model->deleteStage();
+	_mapWidget->setStage(_model->getCurrentStage());
 	updateUi();
+}
+
+void BriefingEditorDialog::on_cameraCoordinatesButton_clicked()
+{
+	auto* dlg = new CameraCoordinatesDialog(this, _model.get(), _mapWidget);
+	dlg->show(); // modeless
 }
 
 void BriefingEditorDialog::on_saveViewButton_clicked()
 {
-	//_model->saveStageView(pos, orient); // Get them from the renderer when the renderer exists
+	vec3d pos = brief_get_current_cam_pos();
+	matrix orient = brief_get_current_cam_orient();
+	_model->saveStageView(pos, orient);
 }
 
 void BriefingEditorDialog::on_gotoViewButton_clicked()
 {
-	//const auto& view = _model->getStageView();
-	// Tell the renderer to go to this view
+	_mapWidget->setStage(_model->getCurrentStage());
 }
 
 void BriefingEditorDialog::on_copyViewButton_clicked()
@@ -230,6 +273,7 @@ void BriefingEditorDialog::on_copyToOtherTeamsButton_clicked()
 void BriefingEditorDialog::on_teamComboBox_currentIndexChanged(int index)
 {
 	_model->setCurrentTeam(ui->teamComboBox->itemData(index).toInt());
+	_mapWidget->setStage(_model->getCurrentStage());
 	updateUi();
 }
 
@@ -320,7 +364,28 @@ void BriefingEditorDialog::on_useCargoCheckBox_toggled(bool checked)
 
 void BriefingEditorDialog::on_makeIconButton_clicked()
 {
-	//_model->makeIcon("New Icon", 0, 0, 0); // Get data from the ui when the ui exists
+	// Create a new icon at the camera's look-at point
+	vec3d camPos = brief_get_current_cam_pos();
+	matrix camOrient = brief_get_current_cam_orient();
+
+	// Compute look-at point: position + forward * some distance
+	vec3d lookAt;
+	vm_vec_scale_add(&lookAt, &camPos, &camOrient.vec.fvec, 500.0f);
+
+	_model->makeIcon("New Icon", 0, 0, -1);
+
+	// Set the new icon's position to the look-at point
+	_model->setIconPosition(lookAt);
+	updateUi();
+}
+
+void BriefingEditorDialog::on_makeIconFromShipButton_clicked()
+{
+	IconFromShipDialog dlg(this, _model.get());
+	if (dlg.exec() == QDialog::Accepted && dlg.selectedShipIndex() >= 0) {
+		_model->makeIconFromShip(dlg.selectedShipIndex());
+		updateUi();
+	}
 }
 
 void BriefingEditorDialog::on_deleteIconButton_clicked()

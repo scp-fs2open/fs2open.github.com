@@ -115,6 +115,19 @@ class BriefingEditorDialogModel : public AbstractDialogModel {
 	static SCP_vector<std::pair<int, SCP_string>> getShipList();
 	static SCP_vector<std::pair<int, SCP_string>> getIffList();
 
+	briefing* getWipBriefingPtr(int team);
+	void makeIconFromShip(int shipIndex);
+
+	struct WingShipEntry {
+		SCP_string name;
+		int shipIndex;
+	};
+	struct WingTreeEntry {
+		SCP_string wingName;
+		SCP_vector<WingShipEntry> ships;
+	};
+	static SCP_vector<WingTreeEntry> getWingShipTree();
+
   private:
 	void initializeData();
 	void stopSpeech();

@@ -8,6 +8,10 @@
 #include <QAbstractButton>
 #include <QtWidgets/QDialog>
 
+namespace fso::fred {
+class BriefingMapWidget;
+}
+
 namespace fso::fred::dialogs {
 
 namespace Ui {
@@ -34,6 +38,7 @@ class BriefingEditorDialog : public QDialog, public SexpTreeEditorInterface {
 
 	void on_prevStageButton_clicked();
 	void on_nextStageButton_clicked();
+	void on_cameraCoordinatesButton_clicked();
 	void on_addStageButton_clicked();
 	void on_insertStageButton_clicked();
 	void on_deleteStageButton_clicked();
@@ -67,6 +72,7 @@ class BriefingEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	void on_useCargoCheckBox_toggled(bool checked);
 
 	void on_makeIconButton_clicked();
+	void on_makeIconFromShipButton_clicked();
 	void on_deleteIconButton_clicked();
 	void on_propagateIconButton_clicked();
 
@@ -83,8 +89,10 @@ class BriefingEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	std::unique_ptr<Ui::BriefingEditorDialog> ui;
 	std::unique_ptr<BriefingEditorDialogModel> _model;
 	EditorViewport* _viewport;
+	fso::fred::BriefingMapWidget* _mapWidget = nullptr;
 
 	void initializeUi();
+	void setupMapWidget();
 	void updateUi();
 	void enableDisableControls();
 };
