@@ -7,9 +7,7 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 
-namespace fso {
-namespace fred {
-namespace dialogs {
+namespace fso::fred::dialogs {
 namespace {
 
 class ControlKeySequenceEdit : public QKeySequenceEdit {
@@ -90,6 +88,4 @@ void ControlsDialog::resetDefaults() {
 	}
 }
 
-} // namespace dialogs
-} // namespace fred
-} // namespace fso
+} // namespace fso::fred::dialogs

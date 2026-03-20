@@ -2,8 +2,7 @@
 
 #include <QSettings>
 
-namespace fso {
-namespace fred {
+namespace fso::fred {
 namespace {
 constexpr auto SETTINGS_GROUP = "ControlBindings";
 }
@@ -153,5 +152,4 @@ void ControlBindings::rebuildReverseMap() {
 	}
 }
 
-} // namespace fred
-} // namespace fso
+} // namespace fso::fred

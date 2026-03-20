@@ -9,8 +9,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace fso {
-namespace fred {
+namespace fso::fred {
 
 enum class ControlAction {
 	MoveLeft,
@@ -65,5 +64,4 @@ class ControlBindings {
 	std::set<ControlAction> _triggeredActions;
 };
 
-} // namespace fred
-} // namespace fso
+} // namespace fso::fred

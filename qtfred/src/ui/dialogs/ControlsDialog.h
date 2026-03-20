@@ -10,9 +10,7 @@ class QDialogButtonBox;
 class QFormLayout;
 class QKeySequenceEdit;
 
-namespace fso {
-namespace fred {
-namespace dialogs {
+namespace fso::fred::dialogs {
 
 class ControlsDialog : public QDialog {
  Q_OBJECT
@@ -26,6 +24,4 @@ class ControlsDialog : public QDialog {
 	std::map<ControlAction, QKeySequenceEdit*> _editors;
 };
 
-} // namespace dialogs
-} // namespace fred
-} // namespace fso
+} // namespace fso::fred::dialogs
