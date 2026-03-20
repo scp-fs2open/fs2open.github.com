@@ -843,49 +843,53 @@ void brief_compact_stages()
 //
 	int red_alert_mission(void);
 //
-void brief_init()
+void brief_init(bool api_access)
 {
-	// for multiplayer, change the state in my netplayer structure
-	// and initialize the briefing chat area thingy
-	if ( Game_mode & GM_MULTIPLAYER ){
-		Net_player->state = NETPLAYER_STATE_BRIEFING;
-	}
+	if (!api_access) {
+		// for multiplayer, change the state in my netplayer structure
+		// and initialize the briefing chat area thingy
+		if ( Game_mode & GM_MULTIPLAYER ){
+			Net_player->state = NETPLAYER_STATE_BRIEFING;
+		}
 
-	// Non standard briefing in red alert mission
-	if ( red_alert_mission() ) {
-		Int3();	// since we shouldn't be here
-		gameseq_post_event(GS_EVENT_RED_ALERT);
-		return;
+		// Non standard briefing in red alert mission
+		if ( red_alert_mission() ) {
+			Int3();	// since we shouldn't be here
+			gameseq_post_event(GS_EVENT_RED_ALERT);
+			return;
+		}
 	}
 
 	// get a pointer to the appropriate briefing structure
 	if(MULTI_TEAM){
 		Briefing = &Briefings[Net_player->p_info.team];
 	} else {
-		Briefing = &Briefings[0];			
+		Briefing = &Briefings[0];
 	}
 
 	Brief_last_auto_advance = 0;
 
 	brief_compact_stages();			// compact the briefing array to eliminate unused stages
 
-	common_set_interface_palette("BriefingPalette");
+	if (!api_access) {
+		common_set_interface_palette("BriefingPalette");
 
-	set_active_ui(&Brief_ui_window);
-	Current_screen = ON_BRIEFING_SELECT;
-	brief_restart_text_wipe();
-	common_flash_button_init();
-	common_music_init(SCORE_BRIEFING);
+		set_active_ui(&Brief_ui_window);
+		Current_screen = ON_BRIEFING_SELECT;
+		brief_restart_text_wipe();
+		common_flash_button_init();
+		common_music_init(SCORE_BRIEFING);
 
-	Briefing_overlay_id = help_overlay_get_index(BR_OVERLAY);
-	help_overlay_set_state(Briefing_overlay_id,gr_screen.res,0);
+		Briefing_overlay_id = help_overlay_get_index(BR_OVERLAY);
+		help_overlay_set_state(Briefing_overlay_id,gr_screen.res,0);
 
-	if ( Brief_inited == TRUE ) {
-		common_buttons_maybe_reload(&Brief_ui_window);	// AL 11-21-97: this is necessary since we may returning from the hotkey
-																		// screen, which can release common button bitmaps.
-		common_reset_buttons();
-		nprintf(("Alan","brief_init() returning without doing anything\n"));
-		return;
+		if ( Brief_inited == TRUE ) {
+			common_buttons_maybe_reload(&Brief_ui_window);	// AL 11-21-97: this is necessary since we may returning from the hotkey
+																			// screen, which can release common button bitmaps.
+			common_reset_buttons();
+			nprintf(("Alan","brief_init() returning without doing anything\n"));
+			return;
+		}
 	}
 
 	// Show the goals slide iff we're in a training mission with the "toggle goals" flag, or a normal mission without it.
@@ -901,70 +905,76 @@ void brief_init()
 	// init the scene-cut data
 	brief_transition_reset();
 
-	hud_anim_init(&Fade_anim, Brief_static_coords[gr_screen.res][0], Brief_static_coords[gr_screen.res][1], Brief_static_name[gr_screen.res]);
-	hud_anim_load(&Fade_anim);
+	if (!api_access) {
+		hud_anim_init(&Fade_anim, Brief_static_coords[gr_screen.res][0], Brief_static_coords[gr_screen.res][1], Brief_static_name[gr_screen.res]);
+		hud_anim_load(&Fade_anim);
 
-	nprintf(("Alan","Entering brief_init()\n"));
-	common_select_init();
+		nprintf(("Alan","Entering brief_init()\n"));
+		common_select_init();
 
-	// Set up the mask regions
-   // initialize the different regions of the menu that will react when the mouse moves over it
-	Num_briefing_regions = 0;
+		// Set up the mask regions
+		// initialize the different regions of the menu that will react when the mouse moves over it
+		Num_briefing_regions = 0;
 
-	snazzy_menu_add_region(&Briefing_select_region[Num_briefing_regions++], "",	COMMON_BRIEFING_REGION,				0);
-	snazzy_menu_add_region(&Briefing_select_region[Num_briefing_regions++], "",	COMMON_SS_REGION,						0);
-	snazzy_menu_add_region(&Briefing_select_region[Num_briefing_regions++], "",	COMMON_WEAPON_REGION,				0);
-	snazzy_menu_add_region(&Briefing_select_region[Num_briefing_regions++], "",	COMMON_COMMIT_REGION,				0);
-	snazzy_menu_add_region(&Briefing_select_region[Num_briefing_regions++], "",	COMMON_HELP_REGION,					0);
-	snazzy_menu_add_region(&Briefing_select_region[Num_briefing_regions++], "",	COMMON_OPTIONS_REGION,				0);
+		snazzy_menu_add_region(&Briefing_select_region[Num_briefing_regions++], "",	COMMON_BRIEFING_REGION,				0);
+		snazzy_menu_add_region(&Briefing_select_region[Num_briefing_regions++], "",	COMMON_SS_REGION,						0);
+		snazzy_menu_add_region(&Briefing_select_region[Num_briefing_regions++], "",	COMMON_WEAPON_REGION,				0);
+		snazzy_menu_add_region(&Briefing_select_region[Num_briefing_regions++], "",	COMMON_COMMIT_REGION,				0);
+		snazzy_menu_add_region(&Briefing_select_region[Num_briefing_regions++], "",	COMMON_HELP_REGION,					0);
+		snazzy_menu_add_region(&Briefing_select_region[Num_briefing_regions++], "",	COMMON_OPTIONS_REGION,				0);
 
-	snazzy_menu_add_region(&Briefing_select_region[Num_briefing_regions++], "",	BRIEF_LAST_STAGE_MASK,			0);
-	snazzy_menu_add_region(&Briefing_select_region[Num_briefing_regions++], "",	BRIEF_NEXT_STAGE_MASK,			0);
-	snazzy_menu_add_region(&Briefing_select_region[Num_briefing_regions++], "",	BRIEF_PREV_STAGE_MASK,			0);
-	snazzy_menu_add_region(&Briefing_select_region[Num_briefing_regions++], "",	BRIEF_FIRST_STAGE_MASK,			0);
-	snazzy_menu_add_region(&Briefing_select_region[Num_briefing_regions++], "",	BRIEF_TEXT_SCROLL_UP_MASK,		0);
-	snazzy_menu_add_region(&Briefing_select_region[Num_briefing_regions++], "",	BRIEF_TEXT_SCROLL_DOWN_MASK,	0);
+		snazzy_menu_add_region(&Briefing_select_region[Num_briefing_regions++], "",	BRIEF_LAST_STAGE_MASK,			0);
+		snazzy_menu_add_region(&Briefing_select_region[Num_briefing_regions++], "",	BRIEF_NEXT_STAGE_MASK,			0);
+		snazzy_menu_add_region(&Briefing_select_region[Num_briefing_regions++], "",	BRIEF_PREV_STAGE_MASK,			0);
+		snazzy_menu_add_region(&Briefing_select_region[Num_briefing_regions++], "",	BRIEF_FIRST_STAGE_MASK,			0);
+		snazzy_menu_add_region(&Briefing_select_region[Num_briefing_regions++], "",	BRIEF_TEXT_SCROLL_UP_MASK,		0);
+		snazzy_menu_add_region(&Briefing_select_region[Num_briefing_regions++], "",	BRIEF_TEXT_SCROLL_DOWN_MASK,	0);
 
-	// init common UI
-	Brief_ui_window.create( 0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0 );
+		// init common UI
+		Brief_ui_window.create( 0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0 );
 
-	if(Game_mode & GM_MULTIPLAYER){
-		Brief_ui_window.set_mask_bmap(Brief_multi_mask_filename[gr_screen.res]);
+		if(Game_mode & GM_MULTIPLAYER){
+			Brief_ui_window.set_mask_bmap(Brief_multi_mask_filename[gr_screen.res]);
+		} else {
+			Brief_ui_window.set_mask_bmap(Brief_mask_filename[gr_screen.res]);
+		}
+
+		// get a pointer to the mask data
+		Brief_ui_mask_data = Brief_ui_window.get_mask_data( &Brief_ui_mask_w, &Brief_ui_mask_h );
+
+		Brief_ui_window.tooltip_handler = brief_tooltip_handler;
+		common_buttons_init(&Brief_ui_window);
+		brief_buttons_init();
+
+		// if multiplayer, initialize a few other systems
+		if(Game_mode & GM_MULTIPLAYER){
+			// again, should not be necessary, but we'll leave it for now
+			chatbox_create();
+
+			// force the chatbox to be small
+			chatbox_force_small();
+		}
+
+		// set up the screen regions
+		brief_init_screen(Brief_multiplayer);
+
+		// init briefing specific UI
+		brief_ui_init();
 	} else {
-		Brief_ui_window.set_mask_bmap(Brief_mask_filename[gr_screen.res]);
+		common_select_init(true);
 	}
-
-	// get a pointer to the mask data
-	Brief_ui_mask_data = Brief_ui_window.get_mask_data( &Brief_ui_mask_w, &Brief_ui_mask_h );
-
-	Brief_ui_window.tooltip_handler = brief_tooltip_handler;
-	common_buttons_init(&Brief_ui_window);
-	brief_buttons_init();
-
-	// if multiplayer, initialize a few other systems
-	if(Game_mode & GM_MULTIPLAYER){		
-		// again, should not be necessary, but we'll leave it for now
-		chatbox_create();
-
-		// force the chatbox to be small
-		chatbox_force_small();
-	}
-
-	// set up the screen regions
-	brief_init_screen(Brief_multiplayer);
-
-	// init briefing specific UI
-	brief_ui_init();
 
 	// init the briefing map
 	brief_init_map();
 
-	// init the briefing voice playback
-	brief_voice_init();
-	brief_voice_load_all();
+	if (!api_access) {
+		// init the briefing voice playback
+		brief_voice_init();
+		brief_voice_load_all();
 
-	// init objectives display stuff
-	ML_objectives_init(Brief_goals_coords[gr_screen.res][BRIEF_X_COORD], Brief_goals_coords[gr_screen.res][BRIEF_Y_COORD], Brief_goals_coords[gr_screen.res][BRIEF_W_COORD], Brief_goals_coords[gr_screen.res][BRIEF_H_COORD]);
+		// init objectives display stuff
+		ML_objectives_init(Brief_goals_coords[gr_screen.res][BRIEF_X_COORD], Brief_goals_coords[gr_screen.res][BRIEF_Y_COORD], Brief_goals_coords[gr_screen.res][BRIEF_W_COORD], Brief_goals_coords[gr_screen.res][BRIEF_H_COORD]);
+	}
 
 	// set the camera target
 	if ( Briefing->num_stages > 0 ) {
@@ -972,67 +982,16 @@ void brief_init()
 		brief_reset_icons(Current_brief_stage);
 	}
 
-	// fire the script hook, since when we first start the briefing there isn't a "new stage" function like there is for cbriefs
-	common_fire_stage_script_hook(Last_brief_stage, Current_brief_stage);
+	if (!api_access) {
+		// fire the script hook, since when we first start the briefing there isn't a "new stage" function like there is for cbriefs
+		common_fire_stage_script_hook(Last_brief_stage, Current_brief_stage);
 
-	Brief_playing_fade_sound = 0;
+		Brief_playing_fade_sound = 0;
+	}
+
 	Brief_mouse_up_flag	= 0;
 	Closeup_font_height = gr_get_font_height();
 	Closeup_icon = NULL;
-   Brief_inited = TRUE;
-}
-
-// --------------------------------------------------------------------------------------
-// brief_api_init()
-//
-// A pared down version of brief_init() for use with the Scpui API. Removes initialization of
-// elements not used by the API but still allows drawing of the briefing map - Mjn
-//
-void brief_api_init()
-{
-	// get a pointer to the appropriate briefing structure
-	if (MULTI_TEAM) {
-		Briefing = &Briefings[Net_player->p_info.team];
-	} else {
-		Briefing = &Briefings[0];
-	}
-
-	Brief_last_auto_advance = 0;
-
-	brief_compact_stages(); // compact the briefing array to eliminate unused stages
-
-	// The API handles mission goals on it's own, but we still need to count the stages and add one
-	// if appropriate -Mjn
-	if (The_mission.flags[Mission::Mission_Flags::Toggle_showing_goals] ==
-		!!(The_mission.game_type & MISSION_TYPE_TRAINING)) {
-		Num_brief_stages = Briefing->num_stages + 1;
-	} else {
-		Num_brief_stages = Briefing->num_stages;
-	}
-
-	Current_brief_stage = 0;
-	Last_brief_stage = 0;
-
-	// init the scene-cut data
-	brief_transition_reset();
-
-	common_select_init(true);
-
-	// init the briefing map
-	brief_init_map();
-
-	// set the camera target
-	if (Briefing->num_stages > 0) {
-		brief_set_new_stage(&Briefing->stages[0].camera_pos,
-			&Briefing->stages[0].camera_orient,
-			0,
-			Current_brief_stage);
-		brief_reset_icons(Current_brief_stage);
-	}
-
-	Brief_mouse_up_flag = 0;
-	Closeup_font_height = gr_get_font_height();
-	Closeup_icon = nullptr;
 	Brief_inited = TRUE;
 }
 
@@ -1955,48 +1914,32 @@ void brief_unload_bitmaps()
 // brief_close()
 //
 //
-void brief_close()
+void brief_close(bool api_access)
 {
 	if ( Brief_inited == FALSE ) {
 		nprintf(("Warning","brief_close() returning without doing anything\n"));
 		return;
 	}
 
-	nprintf(("Alan", "Entering brief_close()\n"));
+	if (!api_access) {
+		nprintf(("Alan", "Entering brief_close()\n"));
 
-	ML_objectives_close();
-	fsspeech_stop();
+		ML_objectives_close();
+		fsspeech_stop();
 
-	// unload the audio streams used for voice playback
-	brief_voice_unload_all();
+		// unload the audio streams used for voice playback
+		brief_voice_unload_all();
 
-	if (Fade_anim.first_frame != -1) {
-		bm_unload(Fade_anim.first_frame);
-	}
+		if (Fade_anim.first_frame != -1) {
+			bm_unload(Fade_anim.first_frame);
+		}
 
-	Brief_ui_window.destroy();
+		Brief_ui_window.destroy();
 
-	// unload the bitmaps
-	brief_unload_bitmaps();
+		// unload the bitmaps
+		brief_unload_bitmaps();
 
-	brief_common_close();
-
-	Briefing_paused = 0;
-
-	Brief_inited = FALSE;
-}
-
-// ------------------------------------------------------------------------------------
-// brief_api_close()
-//
-// A pared down version of brief_close() for use with the Scpui API. Closes only
-// elements used by the API but still allows drawing of the briefing map - Mjn
-//
-void brief_api_close()
-{
-	if (Brief_inited == FALSE) {
-		nprintf(("Warning", "brief_api_close() returning without doing anything\n"));
-		return;
+		brief_common_close();
 	}
 
 	Briefing_paused = 0;
