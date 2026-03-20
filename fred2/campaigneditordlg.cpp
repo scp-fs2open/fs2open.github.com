@@ -69,8 +69,10 @@ int campaign_editor::onRootDeleted(int formula_node)
 		}
 	}
 
-	Campaign_tree_viewp->delete_link(i);
-	m_num_links--;
+	if (i < Total_links) {
+		Campaign_tree_viewp->delete_link(i);
+		m_num_links--;
+	}
 	return formula_node;
 }
 

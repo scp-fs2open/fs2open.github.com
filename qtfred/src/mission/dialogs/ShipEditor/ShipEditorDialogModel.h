@@ -3,7 +3,6 @@
 #include "../AbstractDialogModel.h"
 #include "mission/util.h"
 #include "ship/ship.h"
-#include "ui/widgets/sexp_tree_view.h"
 
 namespace fso::fred::dialogs {
 /**
@@ -18,8 +17,6 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	int _m_arrival_tree_formula;
 	bool _arrival_tree_dirty = false;
 	bool _departure_tree_dirty = false;
-	sexp_tree_view* _arrival_tree_widget = nullptr;
-	sexp_tree_view* _departure_tree_widget = nullptr;
 	SCP_string _m_ship_name;
 	SCP_string _m_ship_display_name;
 	SCP_string _m_cargo1;
@@ -79,7 +76,6 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 
   public:
 	ShipEditorDialogModel(QObject* parent, EditorViewport* viewport);
-	void setTreeControls(sexp_tree_view* arrival, sexp_tree_view* departure);
 	void initializeData();
 	bool apply() override;
 	void reject() override;
@@ -149,7 +145,7 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	void setArrivalCue(const bool);
 	bool getArrivalCue() const;
 
-	void setArrivalTreeDirty();
+	void setArrivalTreeDirty(int formula);
 	int getArrivalFormula() const;
 
 	void setNoArrivalWarp(const int);
@@ -169,7 +165,7 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	void setDepartureCue(const bool);
 	bool getDepartureCue() const;
 
-	void setDepartureTreeDirty();
+	void setDepartureTreeDirty(int formula);
 	int getDepartureFormula() const;
 	void setNoDepartureWarp(const int);
 	int getNoDepartureWarp() const;

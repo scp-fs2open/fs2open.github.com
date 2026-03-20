@@ -349,54 +349,57 @@ struct SexpContextMenuState {
 	SexpContextMenuState& operator=(const SexpContextMenuState&) = delete;
 	SexpContextMenuState(SexpContextMenuState&& other) noexcept
 	{
-		*this = std::move(other);
+		swap(other);
 	}
 	SexpContextMenuState& operator=(SexpContextMenuState&& other) noexcept
 	{
 		if (this != &other) {
-			cleanup();
-
-			is_labeled_root = other.is_labeled_root;
-			is_root_editable = other.is_root_editable;
-			can_edit_text = other.can_edit_text;
-			can_edit_comment = other.can_edit_comment;
-			can_edit_bg_color = other.can_edit_bg_color;
-			can_add_variable = other.can_add_variable;
-			can_modify_variable = other.can_modify_variable;
-			can_copy = other.can_copy;
-			can_cut = other.can_cut;
-			can_paste = other.can_paste;
-			can_paste_add = other.can_paste_add;
-			can_delete = other.can_delete;
-			can_replace_number = other.can_replace_number;
-			can_replace_string = other.can_replace_string;
-			can_add_number = other.can_add_number;
-			can_add_string = other.can_add_string;
-			add_type = other.add_type;
-			replace_type = other.replace_type;
-			insert_opf_type = other.insert_opf_type;
-			add_count = other.add_count;
-			replace_count = other.replace_count;
-			modify_variable = other.modify_variable;
-			campaign_mode = other.campaign_mode;
-			add_data_list = other.add_data_list;
-			add_data_opf_type = other.add_data_opf_type;
-			replace_data_list = other.replace_data_list;
-			add_enabled_op_indices = std::move(other.add_enabled_op_indices);
-			replace_enabled_op_indices = std::move(other.replace_enabled_op_indices);
-			op_add_enabled = std::move(other.op_add_enabled);
-			op_replace_enabled = std::move(other.op_replace_enabled);
-			op_insert_enabled = std::move(other.op_insert_enabled);
-			replace_variables = std::move(other.replace_variables);
-			show_container_names = other.show_container_names;
-			replace_container_names = std::move(other.replace_container_names);
-			show_container_data = other.show_container_data;
-			replace_container_data = std::move(other.replace_container_data);
-
-			other.add_data_list = nullptr;
-			other.replace_data_list = nullptr;
+			SexpContextMenuState tmp;
+			swap(other);   // take other's resources
+			other.swap(tmp); // give other a clean state (tmp gets our old resources and destroys them)
 		}
 		return *this;
+	}
+
+	void swap(SexpContextMenuState& other) noexcept
+	{
+		using std::swap;
+		swap(is_labeled_root, other.is_labeled_root);
+		swap(is_root_editable, other.is_root_editable);
+		swap(can_edit_text, other.can_edit_text);
+		swap(can_edit_comment, other.can_edit_comment);
+		swap(can_edit_bg_color, other.can_edit_bg_color);
+		swap(can_add_variable, other.can_add_variable);
+		swap(can_modify_variable, other.can_modify_variable);
+		swap(can_copy, other.can_copy);
+		swap(can_cut, other.can_cut);
+		swap(can_paste, other.can_paste);
+		swap(can_paste_add, other.can_paste_add);
+		swap(can_delete, other.can_delete);
+		swap(can_replace_number, other.can_replace_number);
+		swap(can_replace_string, other.can_replace_string);
+		swap(can_add_number, other.can_add_number);
+		swap(can_add_string, other.can_add_string);
+		swap(add_type, other.add_type);
+		swap(replace_type, other.replace_type);
+		swap(insert_opf_type, other.insert_opf_type);
+		swap(add_count, other.add_count);
+		swap(replace_count, other.replace_count);
+		swap(modify_variable, other.modify_variable);
+		swap(campaign_mode, other.campaign_mode);
+		swap(add_data_list, other.add_data_list);
+		swap(add_data_opf_type, other.add_data_opf_type);
+		swap(replace_data_list, other.replace_data_list);
+		swap(add_enabled_op_indices, other.add_enabled_op_indices);
+		swap(replace_enabled_op_indices, other.replace_enabled_op_indices);
+		swap(op_add_enabled, other.op_add_enabled);
+		swap(op_replace_enabled, other.op_replace_enabled);
+		swap(op_insert_enabled, other.op_insert_enabled);
+		swap(replace_variables, other.replace_variables);
+		swap(show_container_names, other.show_container_names);
+		swap(replace_container_names, other.replace_container_names);
+		swap(show_container_data, other.show_container_data);
+		swap(replace_container_data, other.replace_container_data);
 	}
 
 	// Free the dynamically allocated data lists (safe to call multiple times)

@@ -12,6 +12,7 @@
 #include "ShipAltShipClass.h"
 
 #include <mission/dialogs/ShipEditor/ShipEditorDialogModel.h>
+#include <missioneditor/sexp_tree_model.h>
 #include <ui/FredView.h>
 #include <QtWidgets/QDialog>
 

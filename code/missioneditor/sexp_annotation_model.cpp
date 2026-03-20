@@ -170,9 +170,16 @@ SCP_list<int> SexpAnnotationModel::buildPath(int key, const SCP_vector<sexp_tree
 		return path;
 
 	// Walk up to find the root (a node with no parent).
+	// Guard against cycles with a depth limit based on the tree size.
 	int root = key;
-	while (tree_nodes[root].parent >= 0)
+	int depth = 0;
+	const int max_depth = static_cast<int>(tree_nodes.size());
+	while (tree_nodes[root].parent >= 0 && depth < max_depth) {
 		root = tree_nodes[root].parent;
+		++depth;
+	}
+	if (depth >= max_depth)
+		return path; // cycle detected
 
 	// Find the event index whose formula matches this root.
 	int event_idx = -1;

@@ -431,7 +431,8 @@ int SexpTreeActions::add_default_operator(int op_index, int argnum)
 			} else if (Sexp_variables[sexp_var_index].type & SEXP_VARIABLE_NUMBER) {
 				type |= SEXPT_NUMBER;
 			} else {
-				Int3();
+				Assertion(false, "Unexpected sexp variable type %d for variable '%s'",
+					Sexp_variables[sexp_var_index].type, item.text.c_str());
 			}
 
 			char node_text[2 * TOKEN_LENGTH + 2];
@@ -461,7 +462,7 @@ int SexpTreeActions::add_default_operator(int op_index, int argnum)
 			} else if (temp_type & SEXP_VARIABLE_STRING) {
 				type = SEXPT_VALID | SEXPT_STRING;
 			} else {
-				Int3();
+				Assertion(false, "Unexpected sexp variable type %d for modify-variable default", temp_type);
 			}
 			add_data(item.text.c_str(), type);
 		}
@@ -482,7 +483,7 @@ int SexpTreeActions::insert_operator(int op, void* root_parent_handle)
 	const int wrapped_node = _model.item_index;
 	const int parent_node = _model.tree_nodes[wrapped_node].parent;
 	const int node_flags = _model.tree_nodes[wrapped_node].flags;
-	const void* wrapped_handle = _model.tree_nodes[wrapped_node].handle;
+	void* wrapped_handle = _model.tree_nodes[wrapped_node].handle;
 
 	const int node = _model.allocate_node(parent_node, wrapped_node);
 	_model.set_node(node, (SEXPT_OPERATOR | SEXPT_VALID), Operators[op].text.c_str());
@@ -501,7 +502,7 @@ int SexpTreeActions::insert_operator(int op, void* root_parent_handle)
 	}
 
 	_model.tree_nodes[node].handle =
-		_ui.ui_insert_item(Operators[op].text.c_str(), NodeImage::OPERATOR, insert_parent, const_cast<void*>(wrapped_handle));
+		_ui.ui_insert_item(Operators[op].text.c_str(), NodeImage::OPERATOR, insert_parent, wrapped_handle);
 
 	_ui.ui_move_branch(wrapped_node, node);
 	_model.item_index = node;
@@ -571,7 +572,7 @@ void SexpTreeActions::replace_variable_with_type_validation(int var_idx, int cur
 		} else if (Sexp_variables[var_idx].type & SEXP_VARIABLE_STRING) {
 			resolved_type = SEXPT_STRING;
 		} else {
-			Int3();
+			Assertion(false, "Unexpected sexp variable type %d for variable index %d", Sexp_variables[var_idx].type, var_idx);
 		}
 	} else {
 		if (resolved_type & SEXPT_NUMBER) {
@@ -739,7 +740,7 @@ void SexpTreeActions::verify_and_fix_arguments(int node)
 					break;
 
 				default:
-					Int3();
+					Assertion(false, "Unexpected OPF type %d for modify-variable argument", type);
 			}
 		}
 

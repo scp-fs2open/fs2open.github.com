@@ -478,7 +478,7 @@ void sexp_tree_view::ensure_visible(int node) {
 void sexp_tree_view::move_branch(int source, int parent) {
 	if (source != -1) {
 		_model.move_branch_data(source, parent);
-		if (parent) {
+		if (parent != -1) {
 			move_branch(tree_item_handle(tree_nodes[source]), tree_item_handle(tree_nodes[parent]));
 		} else {
 			move_branch(tree_item_handle(tree_nodes[source]));
@@ -845,12 +845,16 @@ void sexp_tree_view::update_help(QTreeWidgetItem* h) {
 		return;
 	}
 
-	// Validate operator help strings
-	for (const auto& oper : Operators) {
-		for (const auto& menu : op_menu) {
-			if (get_category(oper.value) == menu.id) {
-				if (!help(oper.value)) {
-					mprintf(("Allender!  If you add new sexp operators, add help for them too! :) Sexp %s has no help.\n", oper.text.c_str()));
+	// Validate operator help strings (once per session)
+	static bool help_validated = false;
+	if (!help_validated) {
+		help_validated = true;
+		for (const auto& oper : Operators) {
+			for (const auto& menu : op_menu) {
+				if (get_category(oper.value) == menu.id) {
+					if (!help(oper.value)) {
+						mprintf(("Allender!  If you add new sexp operators, add help for them too! :) Sexp %s has no help.\n", oper.text.c_str()));
+					}
 				}
 			}
 		}
@@ -1582,9 +1586,9 @@ void sexp_tree_view::handleItemChange(QTreeWidgetItem* item, int  /*column*/) {
 	}
 
 	if (result.update_node) {
+		_model.apply_label_edit(node, result.resolved_text);
 		modified();
 		nodeChanged(node);
-		_model.apply_label_edit(node, result.resolved_text);
 	} else {
 		auto len = strlen(tree_nodes[node].text);
 		item->setText(0, QString::fromUtf8(tree_nodes[node].text, static_cast<int>(len)));
