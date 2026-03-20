@@ -73,7 +73,7 @@ void SexpTreeActions::replace_variable_data(int var_idx, int type)
 	clear_node_children(node_idx);
 
 	// Assemble name
-	sprintf(buf, "%s(%s)", Sexp_variables[var_idx].variable_name, Sexp_variables[var_idx].text);
+	snprintf(buf, sizeof(buf), "%s(%s)", Sexp_variables[var_idx].variable_name, Sexp_variables[var_idx].text);
 
 	_model.set_node(node_idx, type, buf);
 	void* h = _model.tree_nodes[node_idx].handle;
@@ -435,7 +435,7 @@ int SexpTreeActions::add_default_operator(int op_index, int argnum)
 			}
 
 			char node_text[2 * TOKEN_LENGTH + 2];
-			sprintf(node_text, "%s(%s)", item.text.c_str(), Sexp_variables[sexp_var_index].text);
+			snprintf(node_text, sizeof(node_text), "%s(%s)", item.text.c_str(), Sexp_variables[sexp_var_index].text);
 			add_variable_data(node_text, type);
 		}
 		// special case for sexps that take containers
@@ -489,18 +489,17 @@ int SexpTreeActions::add_default_operator(int op_index, int argnum)
 void SexpTreeActions::verify_and_fix_arguments(int node)
 {
 	int op_index, arg_num, type, tmp;
-	static int here_count = 0;
 	sexp_list_item* list;
 	sexp_list_item* ptr;
 	bool is_variable_arg = false;
 
-	if (here_count)
+	if (_verify_arguments_reentry_guard)
 		return;
 
-	here_count++;
+	_verify_arguments_reentry_guard++;
 	op_index = get_operator_index(_model.tree_nodes[node].text);
 	if (op_index < 0) {
-		here_count--;
+		_verify_arguments_reentry_guard--;
 		return;
 	}
 
@@ -509,6 +508,7 @@ void SexpTreeActions::verify_and_fix_arguments(int node)
 	arg_num = 0;
 	_model.item_index = _model.tree_nodes[node].child;
 	while (_model.item_index >= 0) {
+		is_variable_arg = false;
 		// get listing of valid argument values for node item_index
 		type = query_operator_argument_type(op_index, arg_num);
 		// special case for modify-variable
@@ -526,7 +526,7 @@ void SexpTreeActions::verify_and_fix_arguments(int node)
 			if (!list && (arg_num >= Operators[op_index].min)) {
 				_model.free_node(_model.item_index, 1);
 				_model.item_index = tmp;
-				here_count--;
+				_verify_arguments_reentry_guard--;
 				return;
 			}
 
@@ -558,6 +558,8 @@ void SexpTreeActions::verify_and_fix_arguments(int node)
 						}
 
 						if (types_match) {
+							list->destroy();
+							list = nullptr;
 							_model.item_index = _model.tree_nodes[_model.item_index].next;
 							arg_num++;
 							continue;
@@ -605,6 +607,11 @@ void SexpTreeActions::verify_and_fix_arguments(int node)
 
 			if (_model.tree_nodes[_model.item_index].type & SEXPT_OPERATOR)
 				verify_and_fix_arguments(_model.item_index);
+
+			if (list) {
+				list->destroy();
+				list = nullptr;
+			}
 		}
 
 		// fix the node if it is the argument for modify-variable
@@ -630,7 +637,7 @@ void SexpTreeActions::verify_and_fix_arguments(int node)
 	}
 
 	_model.item_index = tmp;
-	here_count--;
+	_verify_arguments_reentry_guard--;
 }
 
 // -----------------------------------------------------------------------
@@ -646,7 +653,7 @@ void SexpTreeActions::delete_sexp_tree_variable(const char* var_name)
 	char search_str[64];
 	char replace_text[TOKEN_LENGTH];
 
-	sprintf(search_str, "%s(", var_name);
+	snprintf(search_str, sizeof(search_str), "%s(", var_name);
 
 	int old_item_index = _model.item_index;
 
@@ -693,7 +700,7 @@ void SexpTreeActions::modify_sexp_tree_variable(const char* old_name, int sexp_v
 
 	int old_item_index = _model.item_index;
 
-	sprintf(search_str, "%s(", old_name);
+	snprintf(search_str, sizeof(search_str), "%s(", old_name);
 
 	for (int idx = 0; idx < static_cast<int>(_model.tree_nodes.size()); idx++) {
 		if (_model.tree_nodes[idx].type & SEXPT_VARIABLE) {

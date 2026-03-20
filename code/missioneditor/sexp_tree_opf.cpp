@@ -199,7 +199,10 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_prop()
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
 		if (ptr->type == OBJ_PROP) {
-			head.add_data(prop_id_lookup(ptr->instance)->prop_name);
+			auto prop = prop_id_lookup(ptr->instance);
+			if (prop != nullptr) {
+				head.add_data(prop->prop_name);
+			}
 		}
 
 		ptr = GET_NEXT(ptr);
@@ -477,9 +480,15 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_docker_point(int parent_node, int a
 
 	if (sh >= 0)
 	{
-		polymodel *pm = model_get(Ship_info[Ships[sh].ship_info_index].model_num);
-		for (int i = 0; i < pm->n_docks; i++)
-			head.add_data(pm->docking_bays[i].name);
+		auto model_num = Ship_info[Ships[sh].ship_info_index].model_num;
+		if (model_num >= 0) {
+			polymodel* pm = model_get(model_num);
+			if (pm != nullptr) {
+				for (int i = 0; i < pm->n_docks; i++) {
+					head.add_data(pm->docking_bays[i].name);
+				}
+			}
+		}
 	}
 
 	return head.next;
@@ -517,9 +526,15 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_dockee_point(int parent_node)
 
 	if (sh >= 0)
 	{
-		polymodel *pm = model_get(Ship_info[Ships[sh].ship_info_index].model_num);
-		for (int i = 0; i < pm->n_docks; i++)
-			head.add_data(pm->docking_bays[i].name);
+		auto model_num = Ship_info[Ships[sh].ship_info_index].model_num;
+		if (model_num >= 0) {
+			polymodel* pm = model_get(model_num);
+			if (pm != nullptr) {
+				for (int i = 0; i < pm->n_docks; i++) {
+					head.add_data(pm->docking_bays[i].name);
+				}
+			}
+		}
 	}
 
 	return head.next;
@@ -1429,11 +1444,17 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_animation_name(int parent_node)
 	if (child < 0)
 		return nullptr;
 	sh = ship_name_lookup(_model.tree_nodes[child].text, 1);
+	if (sh < 0) {
+		return nullptr;
+	}
 
 	switch(op) {
 		case OP_TRIGGER_ANIMATION_NEW:
 		case OP_STOP_LOOPING_ANIMATION: {
 			child = _model.tree_nodes[child].next;
+			if (child < 0) {
+				return head.next;
+			}
 			auto triggerType = animation::anim_match_type(_model.tree_nodes[child].text);
 
 			for (const auto& anim_ref : Ship_info[Ships[sh].ship_info_index].animations.getRegisteredTriggers()) {

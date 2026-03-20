@@ -268,6 +268,9 @@ class sexp_tree_view: public QTreeWidget, public ISexpTreeUI {
 	QStringList _opAll;             //!< All valid operators for the current node context
 	int _opNodeIndex = -1;          //!< tree_nodes[] index of the node being edited via popup
 	bool _opPopupActive = false;    //!< True while the popup is shown and accepting input
+	QPoint _dragStartPos;           //!< Mouse position where the current root drag started
+	QTreeWidgetItem* _dragSourceRoot = nullptr; //!< Root item being dragged (root-level reordering only)
+	bool _dragging = false;                     //!< True once drag distance threshold has been exceeded
 
 	//! Decides whether to open the operator quick-search popup or inline text edit for an item.
 	//! Operators and nodes with valid operator choices get the popup; root labels and pure data get inline edit.

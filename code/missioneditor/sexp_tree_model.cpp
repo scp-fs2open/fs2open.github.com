@@ -36,15 +36,26 @@ constexpr int TREE_NODE_INCREMENT = 100;
 // If op_num is an op value (>= FIRST_OP), it is converted to an operator index first.
 void sexp_list_item::set_op(int op_num)
 {
-	int i;
+	int op_index = op_num;
 
 	if (op_num >= FIRST_OP) {  // do we have an op value instead of an op number (index)?
-		for (i = 0; i < static_cast<int>(Operators.size()); i++)
-			if (op_num == Operators[i].value)
-				op_num = i;  // convert op value to op number
+		op_index = -1;
+		for (int i = 0; i < static_cast<int>(Operators.size()); i++) {
+			if (op_num == Operators[i].value) {
+				op_index = i; // convert op value to op number
+				break;
+			}
+		}
 	}
 
-	op = op_num;
+	if (!SCP_vector_inbounds(Operators, op_index)) {
+		op = -1;
+		text = "<invalid operator>";
+		type = SEXPT_UNINIT;
+		return;
+	}
+
+	op = op_index;
 	text = Operators[op].text;
 	type = (SEXPT_OPERATOR | SEXPT_VALID);
 }
@@ -403,9 +414,9 @@ void get_combined_variable_name(char* combined_name, const char* sexp_var_name)
 	int sexp_var_index = get_index_sexp_variable_name(sexp_var_name);
 
 	if (sexp_var_index >= 0)
-		sprintf(combined_name, "%s(%s)", Sexp_variables[sexp_var_index].variable_name, Sexp_variables[sexp_var_index].text);
+		snprintf(combined_name, 2 * TOKEN_LENGTH + 2, "%s(%s)", Sexp_variables[sexp_var_index].variable_name, Sexp_variables[sexp_var_index].text);
 	else
-		sprintf(combined_name, "%s(undefined)", sexp_var_name);
+		snprintf(combined_name, 2 * TOKEN_LENGTH + 2, "%s(undefined)", sexp_var_name);
 }
 
 // Clear all tree nodes and reset counters. If 'op' is provided and non-empty,
@@ -848,6 +859,9 @@ int SexpTreeModel::query_restricted_opf_range(int opf)
 // Returns -1 if the node has no valid parent.
 int SexpTreeModel::get_sibling_place(int node) const
 {
+	if (!SCP_vector_inbounds(tree_nodes, node))
+		return -1;
+	
 	if (!SCP_vector_inbounds(tree_nodes, tree_nodes[node].parent))
 		return -1;
 
@@ -890,7 +904,7 @@ NodeImage SexpTreeModel::get_data_image(int node) const
 	int idx = (count % 100) / 5;
 
 	// There are 20 numbered data icons (DATA_00 through DATA_95)
-	if (idx > 20) {
+	if (idx >= 20) {
 		return NodeImage::DATA;
 	}
 
@@ -1032,7 +1046,7 @@ void get_variable_default_text_from_variable_text(char* text, char* default_text
 int SexpTreeModel::get_item_index_to_var_index() const
 {
 	// check valid item index and node is a variable
-	if ((item_index > 0) && (tree_nodes[item_index].type & SEXPT_VARIABLE)) {
+	if ((item_index >= 0) && SCP_vector_inbounds(tree_nodes, item_index) && (tree_nodes[item_index].type & SEXPT_VARIABLE)) {
 		return get_tree_name_to_sexp_variable_index(tree_nodes[item_index].text);
 	} else {
 		return -1;

@@ -146,8 +146,6 @@ struct sexp_list_item {
 	void add_data(const char* str, int t = (SEXPT_STRING | SEXPT_VALID));
 	// Append another linked list to the end of this one
 	void add_list(sexp_list_item* list);
-	// Copy fields from src without transferring ownership of the next pointer
-	void shallow_copy(const sexp_list_item* src);
 	// Delete this item and all subsequent items in the linked list
 	void destroy();
 };
@@ -307,7 +305,7 @@ struct SexpContextMenuState {
 	// Campaign mode filtering
 	bool campaign_mode = false;
 
-	// Data lists for add/replace data submenus (caller must call destroy())
+	// Data lists for add/replace data submenus
 	// Entries with op >= 0 are operators to enable; op < 0 are data items for the submenu
 	sexp_list_item* add_data_list = nullptr;
 	int add_data_opf_type = 0;  // OPF_* type, needed for OPF_VARIABLE_NAME display
@@ -340,7 +338,66 @@ struct SexpContextMenuState {
 	bool show_container_data = false;
 	SCP_vector<ContainerEntry> replace_container_data;
 
-	// Free the dynamically allocated data lists (must be called when done with this state)
+	SexpContextMenuState() = default;
+	~SexpContextMenuState()
+	{
+		cleanup();
+	}
+	SexpContextMenuState(const SexpContextMenuState&) = delete;
+	SexpContextMenuState& operator=(const SexpContextMenuState&) = delete;
+	SexpContextMenuState(SexpContextMenuState&& other) noexcept
+	{
+		*this = std::move(other);
+	}
+	SexpContextMenuState& operator=(SexpContextMenuState&& other) noexcept
+	{
+		if (this != &other) {
+			cleanup();
+
+			is_labeled_root = other.is_labeled_root;
+			is_root_editable = other.is_root_editable;
+			can_edit_text = other.can_edit_text;
+			can_edit_comment = other.can_edit_comment;
+			can_edit_bg_color = other.can_edit_bg_color;
+			can_add_variable = other.can_add_variable;
+			can_modify_variable = other.can_modify_variable;
+			can_copy = other.can_copy;
+			can_cut = other.can_cut;
+			can_paste = other.can_paste;
+			can_paste_add = other.can_paste_add;
+			can_delete = other.can_delete;
+			can_replace_number = other.can_replace_number;
+			can_replace_string = other.can_replace_string;
+			can_add_number = other.can_add_number;
+			can_add_string = other.can_add_string;
+			add_type = other.add_type;
+			replace_type = other.replace_type;
+			insert_opf_type = other.insert_opf_type;
+			add_count = other.add_count;
+			replace_count = other.replace_count;
+			modify_variable = other.modify_variable;
+			campaign_mode = other.campaign_mode;
+			add_data_list = other.add_data_list;
+			add_data_opf_type = other.add_data_opf_type;
+			replace_data_list = other.replace_data_list;
+			add_enabled_op_indices = std::move(other.add_enabled_op_indices);
+			replace_enabled_op_indices = std::move(other.replace_enabled_op_indices);
+			op_add_enabled = std::move(other.op_add_enabled);
+			op_replace_enabled = std::move(other.op_replace_enabled);
+			op_insert_enabled = std::move(other.op_insert_enabled);
+			replace_variables = std::move(other.replace_variables);
+			show_container_names = other.show_container_names;
+			replace_container_names = std::move(other.replace_container_names);
+			show_container_data = other.show_container_data;
+			replace_container_data = std::move(other.replace_container_data);
+
+			other.add_data_list = nullptr;
+			other.replace_data_list = nullptr;
+		}
+		return *this;
+	}
+
+	// Free the dynamically allocated data lists (safe to call multiple times)
 	void cleanup() {
 		if (add_data_list) { add_data_list->destroy(); add_data_list = nullptr; }
 		if (replace_data_list) { replace_data_list->destroy(); replace_data_list = nullptr; }
@@ -506,7 +563,7 @@ public:
 
 	// Analyze the current selection and compute which context menu actions are available.
 	// The returned state includes operator enablement, variable/container menus, and
-	// clipboard paste validation. Caller must call cleanup() on the result.
+	// clipboard paste validation. Returned state owns temporary lists and cleans them up automatically.
 	SexpContextMenuState compute_context_menu_state();
 	// Returns true if the given operator value should be hidden from menus (deprecated/hidden ops)
 	static bool is_operator_hidden(int op_value);

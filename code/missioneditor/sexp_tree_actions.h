@@ -115,4 +115,5 @@ private:
 
 	SexpTreeModel& _model;  // shared tree node data and logic
 	ISexpTreeUI& _ui;       // UI callback interface for widget updates
+	int _verify_arguments_reentry_guard = 0;
 };

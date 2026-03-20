@@ -100,10 +100,6 @@ QString node_image_to_resource_name(NodeImage image) {
 	return ":/images/operator.png";
 }
 
-QPoint s_dragStartPos;                     // Mouse position when drag started
-QTreeWidgetItem* s_dragSourceRoot = nullptr; // The root-level item being dragged, or nullptr
-bool s_dragging = false;                   // True once the mouse has moved past the drag threshold
-
 // Returns true if the item is a top-level (root) item in the tree widget.
 bool isRoot(QTreeWidgetItem* it)
 {
@@ -537,7 +533,8 @@ QTreeWidgetItem* sexp_tree_view::move_branch(QTreeWidgetItem* source, QTreeWidge
 
 // Recursively copies a Qt subtree under a new parent without removing the source.
 // Creates new items via insertWithIcon(), copies all custom data roles, applies visuals,
-// and preserves expansion state. Does not modify tree_nodes[] handles (copy is visual-only).
+// and preserves expansion state. If the source maps to a model node, updates that node's
+// handle to point at the newly created copy for parity with legacy FRED2 behavior.
 void sexp_tree_view::copy_branch(QTreeWidgetItem* source, QTreeWidgetItem* parent, QTreeWidgetItem* after)
 {
 	if (!source)
@@ -545,6 +542,15 @@ void sexp_tree_view::copy_branch(QTreeWidgetItem* source, QTreeWidgetItem* paren
 
 	const auto icon = source->icon(0);
 	QTreeWidgetItem* h = insertWithIcon(source->text(0), icon, parent, after);
+	size_t idx = 0;
+	for (; idx < tree_nodes.size(); ++idx) {
+		if (tree_nodes[idx].handle == source) {
+			break;
+		}
+	}
+	if (idx < tree_nodes.size()) {
+		tree_nodes[idx].handle = h;
+	}
 
 	// Copy per-item data/annotations
 	h->setData(0, FormulaDataRole, source->data(0, FormulaDataRole));
@@ -678,11 +684,11 @@ bool sexp_tree_view::eventFilter(QObject* obj, QEvent* ev)
 // (no parent) can be dragged. Resets drag state and delegates to QTreeWidget.
 void sexp_tree_view::mousePressEvent(QMouseEvent* e)
 {
-	s_dragStartPos = e->pos();
-	s_dragSourceRoot = itemAt(e->pos());
-	if (!isRoot(s_dragSourceRoot))
-		s_dragSourceRoot = nullptr; // roots only
-	s_dragging = false;
+	_dragStartPos = e->pos();
+	_dragSourceRoot = itemAt(e->pos());
+	if (!isRoot(_dragSourceRoot))
+		_dragSourceRoot = nullptr; // roots only
+	_dragging = false;
 	QTreeWidget::mousePressEvent(e);
 }
 
@@ -691,7 +697,7 @@ void sexp_tree_view::mousePressEvent(QMouseEvent* e)
 // dragging is supported. No QDrag payload is used; the actual move happens on mouse release.
 void sexp_tree_view::mouseMoveEvent(QMouseEvent* e)
 {
-	if (!s_dragSourceRoot) {
+	if (!_dragSourceRoot) {
 		QTreeWidget::mouseMoveEvent(e);
 		return;
 	}
@@ -699,14 +705,14 @@ void sexp_tree_view::mouseMoveEvent(QMouseEvent* e)
 		QTreeWidget::mouseMoveEvent(e);
 		return;
 	}
-	const int dist = (e->pos() - s_dragStartPos).manhattanLength();
-	if (!s_dragging && dist < QApplication::startDragDistance()) {
+	const int dist = (e->pos() - _dragStartPos).manhattanLength();
+	if (!_dragging && dist < QApplication::startDragDistance()) {
 		QTreeWidget::mouseMoveEvent(e);
 		return;
 	}
 
-	// �Dragging� � we just highlight potential drop target (a root under the cursor)
-	s_dragging = true;
+	// Dragging - we just highlight potential drop target (a root under the cursor)
+	_dragging = true;
 	if (auto* over = itemAt(e->pos())) {
 		if (isRoot(over))
 			setCurrentItem(over); // simple visual cue like OG�s SelectDropTarget
@@ -721,21 +727,21 @@ void sexp_tree_view::mouseMoveEvent(QMouseEvent* e)
 // Clears drag state and delegates to QTreeWidget.
 void sexp_tree_view::mouseReleaseEvent(QMouseEvent* e)
 {
-	if (s_dragging && s_dragSourceRoot) {
+	if (_dragging && _dragSourceRoot) {
 		auto* dropTarget = itemAt(e->pos());
-		if (dropTarget && isRoot(dropTarget) && dropTarget != s_dragSourceRoot) {
+		if (dropTarget && isRoot(dropTarget) && dropTarget != _dragSourceRoot) {
 			// OG rule: if moving up, insert_before=true; if moving down, insert_after
-			// (so we �end up where we dropped�). :contentReference[oaicite:1]{index=1}
-			const int srcIdx = indexOfTopLevelItem(s_dragSourceRoot);
+			// (so we end up where we dropped). :contentReference[oaicite:1]{index=1}
+			const int srcIdx = indexOfTopLevelItem(_dragSourceRoot);
 			const int dstIdx = indexOfTopLevelItem(dropTarget);
 			const bool insert_before = (srcIdx > dstIdx);
 
 			// Perform the visual move
-			move_root(s_dragSourceRoot, dropTarget, insert_before);
+			move_root(_dragSourceRoot, dropTarget, insert_before);
 		}
 	}
-	s_dragSourceRoot = nullptr;
-	s_dragging = false;
+	_dragSourceRoot = nullptr;
+	_dragging = false;
 	QTreeWidget::mouseReleaseEvent(e);
 }
 
