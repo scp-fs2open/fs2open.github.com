@@ -306,8 +306,8 @@ void EditorViewport::process_controls(vec3d* pos, matrix* orient, float frametim
 		view_controls.heading += bindings.isPressed(ControlAction::YawRight) ? 1.0f : 0.0f;
 		view_controls.sideways += bindings.isPressed(ControlAction::MoveLeft) ? -1.0f : 0.0f;
 		view_controls.sideways += bindings.isPressed(ControlAction::MoveRight) ? 1.0f : 0.0f;
-		view_controls.forward += bindings.isPressed(ControlAction::MoveForward) ? -1.0f : 0.0f;
-		view_controls.forward += bindings.isPressed(ControlAction::MoveBackward) ? 1.0f : 0.0f;
+		view_controls.forward += bindings.isPressed(ControlAction::MoveForward) ? 1.0f : 0.0f;
+		view_controls.forward += bindings.isPressed(ControlAction::MoveBackward) ? -1.0f : 0.0f;
 		view_controls.vertical += bindings.isPressed(ControlAction::MoveUp) ? 1.0f : 0.0f;
 		view_controls.vertical += bindings.isPressed(ControlAction::MoveDown) ? -1.0f : 0.0f;
 
@@ -1280,8 +1280,11 @@ void EditorViewport::cancel_drag() {
 		Assert(objp->type != OBJ_NONE);
 		if (objp->flags[Object::Object_Flags::Marked]) {
 			const auto obj_index = OBJ_INDEX(objp);
-			objp->pos = rotation_backup[obj_index].pos;
-			objp->orient = rotation_backup[obj_index].orient;
+			if (!IS_VEC_NULL(&rotation_backup[obj_index].orient.vec.rvec) && !IS_VEC_NULL(&rotation_backup[obj_index].orient.vec.uvec)
+				&& !IS_VEC_NULL(&rotation_backup[obj_index].orient.vec.fvec)) {
+				objp->pos = rotation_backup[obj_index].pos;
+				objp->orient = rotation_backup[obj_index].orient;
+			}
 		}
 
 		objp = GET_NEXT(objp);

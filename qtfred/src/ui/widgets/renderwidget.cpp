@@ -232,8 +232,6 @@ void RenderWidget::mousePressEvent(QMouseEvent* event) {
 	_viewport->on_object = _viewport->select_object(event->x(), event->y());
 	_viewport->button_down = 1;
 
-	_viewport->drag_rotate_save_backup();
-
 	if (event->modifiers().testFlag(Qt::ControlModifier)) {  // add a new object
 		if (!_viewport->Bg_bitmap_dialog) {
 			if (_viewport->on_object == -1) {
@@ -277,6 +275,9 @@ void RenderWidget::mousePressEvent(QMouseEvent* event) {
 			}
 		}
 	}
+
+	// Save drag/rotate backup after selection state is finalized for this click.
+	_viewport->drag_rotate_save_backup();
 
 	if (query_valid_object(fred->currentObject)) {
 		_viewport->original_pos = Objects[fred->currentObject].pos;
