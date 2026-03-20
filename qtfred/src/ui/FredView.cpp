@@ -129,6 +129,7 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 	connect(_propClassBox.get(), &PropComboBox::propClassSelected, this, &FredView::onPropClassSelected);
 
 	connect(fred, &Editor::missionLoaded, this, &FredView::on_mission_loaded);
+	connect(fred, &Editor::missionChanged, this, [this]() { _missionModified = true; });
 
 	// Sets the initial window title
 	on_mission_loaded("");
@@ -161,6 +162,10 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 }
 
 void FredView::loadMissionFile(const QString& pathName) {
+	if (!maybePromptToSaveMissionChanges(tr("loading another mission"))) {
+		return;
+	}
+
 	statusBar()->showMessage(tr("Loading mission %1").arg(pathName));
 	try {
 		QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
@@ -198,6 +203,14 @@ void FredView::on_actionExit_triggered(bool) {
 }
 
 void FredView::on_actionSave_triggered(bool state) {
+	Q_UNUSED(state);
+	saveMissionToCurrentPath();
+}
+void FredView::on_actionSave_As_triggered(bool) {
+	saveMissionAs();
+}
+
+bool FredView::saveMissionToCurrentPath() {
 	Fred_mission_save save;
 	// TODO FredView save format actions currently don't do anything
 	// will need to wire this up when those are finalized
@@ -215,13 +228,14 @@ void FredView::on_actionSave_triggered(bool state) {
 	save.set_fred_callsigns(Fred_callsigns);
 
 	if (saveName.isEmpty()) {
-		on_actionSave_As_triggered(state);
-		return;
+		return saveMissionAs();
 	}
 
 	save.save_mission_file(saveName.replace('/', DIR_SEPARATOR_CHAR).toUtf8().constData());
+	_missionModified = false;
+	return true;
 }
-void FredView::on_actionSave_As_triggered(bool) {
+bool FredView::saveMissionAs() {
 	Fred_mission_save save;
 	// TODO FredView save format actions currently don't do anything
 	// will need to wire this up when those are finalized
@@ -241,10 +255,12 @@ void FredView::on_actionSave_As_triggered(bool) {
 	saveName = QFileDialog::getSaveFileName(this, tr("Save mission"), QString(), tr("FS2 missions (*.fs2)"));
 
 	if (saveName.isEmpty()) {
-		return;
+		return false;
 	}
 
 	save.save_mission_file(saveName.replace('/',DIR_SEPARATOR_CHAR).toUtf8().constData());
+	_missionModified = false;
+	return true;
 }
 
 void FredView::on_mission_loaded(const std::string& filepath) {
@@ -263,12 +279,18 @@ void FredView::on_mission_loaded(const std::string& filepath) {
 	if (!filepath.empty()) {
 		addToRecentFiles(QString::fromStdString(filepath));
 	}
+
+	_missionModified = false;
 }
 
 QSurface* FredView::getRenderSurface() {
 	return ui->centralWidget->getRenderSurface();
 }
 void FredView::newMission() {
+	if (!maybePromptToSaveMissionChanges(tr("creating a new mission"))) {
+		return;
+	}
+
 	fred->createNewMission();
 }
 void FredView::addToRecentFiles(const QString& path) {
@@ -379,6 +401,7 @@ void FredView::updateUI() {
 	}
 
 	_statusBarUnitsLabel->setText(tr("Units = %1 Meters").arg(_viewport->The_grid->square_size));
+	setWindowModified(isMissionModified());
 
 	if (_viewport->viewpoint == 1) {
 		_statusBarViewmode->setText(tr("Viewpoint: %1").arg(object_name(_viewport->view_obj)));
@@ -387,6 +410,34 @@ void FredView::updateUI() {
 	}
 
 	viewIdle();
+}
+bool FredView::isMissionModified() const {
+	return _missionModified;
+}
+
+bool FredView::maybePromptToSaveMissionChanges(const QString& actionDescription) {
+	if (!isMissionModified()) {
+		return true;
+	}
+
+	QMessageBox confirmationDialog(this);
+	confirmationDialog.setIcon(QMessageBox::Warning);
+	confirmationDialog.setWindowTitle(tr("Unsaved Changes"));
+	confirmationDialog.setText(tr("The current mission has unsaved changes."));
+	confirmationDialog.setInformativeText(tr("Do you want to save your changes before %1?").arg(actionDescription));
+	confirmationDialog.setStandardButtons(QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel);
+	confirmationDialog.setDefaultButton(QMessageBox::Save);
+	confirmationDialog.setEscapeButton(QMessageBox::Cancel);
+
+	switch (confirmationDialog.exec()) {
+	case QMessageBox::Save:
+		return saveMissionToCurrentPath();
+	case QMessageBox::Discard:
+		return true;
+	case QMessageBox::Cancel:
+	default:
+		return false;
+	}
 }
 void FredView::connectActionToViewSetting(QAction* option, bool* destination) {
 	Q_ASSERT(option->isCheckable());
@@ -581,6 +632,14 @@ bool FredView::event(QEvent* event) {
 	default:
 		return QMainWindow::event(event);
 	}
+}
+void FredView::closeEvent(QCloseEvent* event) {
+	if (!maybePromptToSaveMissionChanges(tr("closing QtFRED"))) {
+		event->ignore();
+		return;
+	}
+
+	QMainWindow::closeEvent(event);
 }
 void FredView::windowActivated() {
 	key_got_focus();

@@ -6,6 +6,7 @@
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QComboBox>
 #include <QtGui/QSurface>
+#include <QCloseEvent>
 
 #include <mission/FredRenderer.h>
 #include <mission/IDialogProvider.h>
@@ -169,7 +170,8 @@ class FredView: public QMainWindow, public IDialogProvider {
 	 */
 	void viewWindowActivated();
  protected:
-	bool event(QEvent* event) override;
+ bool event(QEvent* event) override;
+ 	void closeEvent(QCloseEvent* event) override;
 
 	void keyPressEvent(QKeyEvent* event) override;
 	void keyReleaseEvent(QKeyEvent* event) override;
@@ -177,6 +179,11 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void mouseDoubleClickEvent(QMouseEvent* event) override;
 
  private:
+	bool saveMissionToCurrentPath();
+	bool saveMissionAs();
+	bool maybePromptToSaveMissionChanges(const QString& actionDescription);
+	bool isMissionModified() const;
+
 	void on_mission_loaded(const std::string& filepath);
 
 	void connectActionToViewSetting(QAction* option, bool* destination);
@@ -232,6 +239,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 
 	bool _inKeyPressHandler = false;
 	bool _inKeyReleaseHandler = false;
+	bool _missionModified = false;
 
 	void onUpdateConstrains();
 	void onUpdateEditingMode();
