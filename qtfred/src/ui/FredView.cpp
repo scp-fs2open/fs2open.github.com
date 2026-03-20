@@ -4,10 +4,10 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QDebug>
+#include <QKeyEvent>
 #include <QSettings>
 
 #include <project.h>
-#include <io/key.h>
 
 #include <qevent.h>
 #include <FredApplication.h>
@@ -41,6 +41,8 @@
 #include <ui/dialogs/VariableDialog.h>
 #include <ui/dialogs/MusicPlayerDialog.h>
 #include <ui/dialogs/RelativeCoordinatesDialog.h>
+#include <ui/dialogs/ControlsDialog.h>
+#include <ui/ControlBindings.h>
 #include <iff_defs/iff_defs.h>
 
 #include "mission/Editor.h"
@@ -99,6 +101,13 @@ FredView::FredView(QWidget* parent) : QMainWindow(parent), ui(new Ui::FredView()
 	auto propsAction = new QAction(tr("Props"), this);
 	connect(propsAction, &QAction::triggered, this, &FredView::on_actionProps_triggered);
 	ui->menuObjects->insertAction(ui->actionWaypoint_Paths, propsAction);
+
+	auto controlsAction = new QAction(tr("Controls"), ui->menuSeetings);
+	connect(controlsAction, &QAction::triggered, this, [this]() {
+		dialogs::ControlsDialog controlsDialog(this);
+		controlsDialog.exec();
+	});
+	ui->menuSeetings->insertAction(ui->actionAdjust_Grid, controlsAction);
 }
 
 FredView::~FredView() {
@@ -572,6 +581,14 @@ void FredView::onUpdateEditingMode() {
 }
 bool FredView::event(QEvent* event) {
 	switch (event->type()) {
+	case QEvent::ShortcutOverride: {
+		auto* keyEvent = static_cast<QKeyEvent*>(event);
+		if (ControlBindings::instance().matches(keyEvent)) {
+			event->accept();
+			return true;
+		}
+		return QMainWindow::event(event);
+	}
 	case QEvent::WindowActivate:
 		windowActivated();
 		return true;
@@ -583,8 +600,6 @@ bool FredView::event(QEvent* event) {
 	}
 }
 void FredView::windowActivated() {
-	key_got_focus();
-
 	_viewport->Cursor_over = -1;
 
 	// Track the last active viewport
@@ -593,8 +608,6 @@ void FredView::windowActivated() {
 	viewWindowActivated();
 }
 void FredView::windowDeactivated() {
-	key_lost_focus();
-
 	_viewport->Cursor_over = -1;
 }
 void FredView::on_actionHide_Marked_Objects_triggered(bool  /*enabled*/) {

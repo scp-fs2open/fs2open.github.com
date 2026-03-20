@@ -131,6 +131,8 @@ add_file_folder("Source/Mission/Dialogs/ShipEditor"
 )
 
 add_file_folder("Source/UI"
+    src/ui/ControlBindings.cpp
+    src/ui/ControlBindings.h
     src/ui/FredView.cpp
     src/ui/FredView.h
     src/ui/QtGraphicsOperations.cpp
@@ -150,6 +152,8 @@ add_file_folder("Source/UI/Dialogs"
 	src/ui/dialogs/CampaignEditorDialog.cpp
 	src/ui/dialogs/CommandBriefingDialog.cpp
 	src/ui/dialogs/CommandBriefingDialog.h
+	src/ui/dialogs/ControlsDialog.cpp
+	src/ui/dialogs/ControlsDialog.h
 	src/ui/dialogs/DebriefingDialog.cpp
 	src/ui/dialogs/DebriefingDialog.h
 	src/ui/dialogs/FictionViewerDialog.cpp

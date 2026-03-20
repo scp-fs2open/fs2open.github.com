@@ -5,7 +5,7 @@
 #include <object/object.h>
 #include <render/3d.h>
 #include <ship/ship.h>
-#include <io/key.h>
+#include "ui/ControlBindings.h"
 #include <io/spacemouse.h>
 
 #include "object.h"
@@ -23,9 +23,7 @@ const fix MIN_FRAMETIME = (F1_0 / 120);
 
 const float REDUCER = 100.0f;
 
-void process_movement_keys(int key, vec3d* mvec, angles* angs) {
-	int raw_key;
-
+void process_movement_keys(const fso::fred::ControlBindings& bindings, vec3d* mvec, angles* angs) {
 	mvec->xyz.x = 0.0f;
 	mvec->xyz.y = 0.0f;
 	mvec->xyz.z = 0.0f;
@@ -33,52 +31,35 @@ void process_movement_keys(int key, vec3d* mvec, angles* angs) {
 	angs->b = 0.0f;
 	angs->h = 0.0f;
 
-	raw_key = key & 0xff;
-
-	switch (raw_key) {
-	case KEY_PAD1:
+	if (bindings.isPressed(fso::fred::ControlAction::MoveLeft)) {
 		mvec->xyz.x += -1.0f;
-		break;
-	case KEY_PAD3:
-		mvec->xyz.x += +1.0f;
-		break;
-	case KEY_PADPLUS:
-		mvec->xyz.y += -1.0f;
-		break;
-	case KEY_PADMINUS:
-		mvec->xyz.y += +1.0f;
-		break;
-	case KEY_A:
-		mvec->xyz.z += +1.0f;
-		break;
-	case KEY_Z:
-		mvec->xyz.z += -1.0f;
-		break;
-	case KEY_PAD4:
-		angs->h += -0.1f;
-		break;
-	case KEY_PAD6:
-		angs->h += +0.1f;
-		break;
-	case KEY_PAD8:
-		angs->p += -0.1f;
-		break;
-	case KEY_PAD2:
-		angs->p += +0.1f;
-		break;
-	case KEY_PAD7:
-		angs->b += -0.1f;
-		break;
-	case KEY_PAD9:
-		angs->b += +0.1f;
-		break;
 	}
-
-	if (key & KEY_SHIFTED) {
-		vm_vec_scale(mvec, 5.0f);
-		angs->p *= 5.0f;
-		angs->b *= 5.0f;
-		angs->h *= 5.0f;
+	if (bindings.isPressed(fso::fred::ControlAction::MoveRight)) {
+		mvec->xyz.x += 1.0f;
+	}
+	if (bindings.isPressed(fso::fred::ControlAction::MoveForward)) {
+		mvec->xyz.y += -1.0f;
+	}
+	if (bindings.isPressed(fso::fred::ControlAction::MoveBackward)) {
+		mvec->xyz.y += 1.0f;
+	}
+	if (bindings.isPressed(fso::fred::ControlAction::MoveUp)) {
+		mvec->xyz.z += 1.0f;
+	}
+	if (bindings.isPressed(fso::fred::ControlAction::MoveDown)) {
+		mvec->xyz.z += -1.0f;
+	}
+	if (bindings.isPressed(fso::fred::ControlAction::YawLeft)) {
+		angs->h += -0.1f;
+	}
+	if (bindings.isPressed(fso::fred::ControlAction::YawRight)) {
+		angs->h += 0.1f;
+	}
+	if (bindings.isPressed(fso::fred::ControlAction::PitchUp)) {
+		angs->p += -0.1f;
+	}
+	if (bindings.isPressed(fso::fred::ControlAction::PitchDown)) {
+		angs->p += 0.1f;
 	}
 }
 void align_vector_to_axis(vec3d* v) {
@@ -293,37 +274,19 @@ void EditorViewport::move_mouse(int btn, int mdx, int mdy) {
 }
 
 ///////////////////////////////////////////////////
-void EditorViewport::process_system_keys(int key) {
-	//	mprintf(("Key = %d\n", key));
-	switch (key) {
-	case KEY_LAPOSTRO:
-		///! \todo cycle through axis-constraints for rotations.
-		//CFREDView::GetView()->cycle_constraint();
-		break;
-
-	case KEY_R: // for some stupid reason, an accelerator for 'R' doesn't work.
-		///! \todo Change editing mode to 'move and rotate'.
-		//Editing_mode = 2;
-		break;
-
-	case KEY_SPACEBAR:
+void EditorViewport::process_system_keys() {
+	auto& bindings = ControlBindings::instance();
+	if (bindings.takeTriggered(ControlAction::ToggleSelectionLock)) {
 		Selection_lock = !Selection_lock;
-		break;
-
-	case KEY_ESC:
-		///! \todo Cancel drag.
-		//if (button_down)
-		//	cancel_drag();
-
-		break;
 	}
+
 }
 
-void EditorViewport::process_controls(vec3d* pos, matrix* orient, float frametime, int key, int mode) {
+void EditorViewport::process_controls(vec3d* pos, matrix* orient, float frametime, int mode) {
 	static std::unique_ptr<io::spacemouse::SpaceMouse> spacemouse = io::spacemouse::SpaceMouse::searchSpaceMice(0);
 
 	if (Flying_controls_mode) {
-		grid_read_camera_controls(&view_controls, frametime);
+		memset(&view_controls, 0, sizeof(control_info));
 
 		if (spacemouse != nullptr) {
 			auto spacemouse_movement = spacemouse->getMovement();
@@ -336,9 +299,17 @@ void EditorViewport::process_controls(vec3d* pos, matrix* orient, float frametim
 			view_controls.forward += spacemouse_movement.translation.xyz.y;
 		}
 
-		if (key_get_shift_status()) {
-			memset(&view_controls, 0, sizeof(control_info));
-		}
+		auto& bindings = ControlBindings::instance();
+		view_controls.pitch += bindings.isPressed(ControlAction::PitchUp) ? -1.0f : 0.0f;
+		view_controls.pitch += bindings.isPressed(ControlAction::PitchDown) ? 1.0f : 0.0f;
+		view_controls.heading += bindings.isPressed(ControlAction::YawLeft) ? -1.0f : 0.0f;
+		view_controls.heading += bindings.isPressed(ControlAction::YawRight) ? 1.0f : 0.0f;
+		view_controls.sideways += bindings.isPressed(ControlAction::MoveLeft) ? -1.0f : 0.0f;
+		view_controls.sideways += bindings.isPressed(ControlAction::MoveRight) ? 1.0f : 0.0f;
+		view_controls.forward += bindings.isPressed(ControlAction::MoveForward) ? -1.0f : 0.0f;
+		view_controls.forward += bindings.isPressed(ControlAction::MoveBackward) ? 1.0f : 0.0f;
+		view_controls.vertical += bindings.isPressed(ControlAction::MoveUp) ? 1.0f : 0.0f;
+		view_controls.vertical += bindings.isPressed(ControlAction::MoveDown) ? -1.0f : 0.0f;
 
 		if ((fabs(view_controls.pitch) > (frametime / 100)) || (fabs(view_controls.vertical) > (frametime / 100))
 			|| (fabs(view_controls.heading) > (frametime / 100)) || (fabs(view_controls.sideways) > (frametime / 100))
@@ -358,7 +329,7 @@ void EditorViewport::process_controls(vec3d* pos, matrix* orient, float frametim
 		angles rotangs;
 		matrix newmat, rotmat;
 
-		process_movement_keys(key, &movement_vec, &rotangs);
+		process_movement_keys(ControlBindings::instance(), &movement_vec, &rotangs);
 		if (spacemouse != nullptr) {
 			auto spacemouse_movement = spacemouse->getMovement();
 			spacemouse_movement.handleNonlinearities(Fred_spacemouse_nonlinearity);
@@ -412,7 +383,7 @@ bool EditorViewport::inc_mission_time() {
 }
 
 void EditorViewport::game_do_frame(const int cur_object_index) {
-	int key, cmode;
+	int cmode;
 	vec3d viewer_position, control_pos;
 	object* objp;
 	matrix control_orient;
@@ -432,8 +403,7 @@ void EditorViewport::game_do_frame(const int cur_object_index) {
 		viewpoint = 0;
 	}
 
-	key = key_inkey();
-	process_system_keys(key);
+	process_system_keys();
 	cmode = Control_mode;
 	if ((viewpoint == 1) && !cmode) {
 		cmode = 2;
@@ -445,14 +415,14 @@ void EditorViewport::game_do_frame(const int cur_object_index) {
 	//	if ((key & KEY_MASK) == key)  // unmodified
 	switch (cmode) {
 	case 0: //	Control the viewer's location and orientation
-		process_controls(&view_pos, &view_orient, f2fl(Frametime), key, 1);
+		process_controls(&view_pos, &view_orient, f2fl(Frametime), 1);
 		control_pos = view_pos;
 		control_orient = view_orient;
 		break;
 
 	case 2: // Control viewpoint object
 		if (!Objects[view_obj].flags[Object::Object_Flags::Locked_from_editing]) {
-			process_controls(&Objects[view_obj].pos, &Objects[view_obj].orient, f2fl(Frametime), key);
+			process_controls(&Objects[view_obj].pos, &Objects[view_obj].orient, f2fl(Frametime));
 			object_moved(&Objects[view_obj]);
 			control_pos = Objects[view_obj].pos;
 			control_orient = Objects[view_obj].orient;
@@ -470,7 +440,7 @@ void EditorViewport::game_do_frame(const int cur_object_index) {
 			leader_orient = leader->orient; // save original orientation
 			vm_copy_transpose(&leader_transpose, &leader_orient);
 
-			process_controls(&leader->pos, &leader->orient, f2fl(Frametime), key);
+			process_controls(&leader->pos, &leader->orient, f2fl(Frametime));
 			vm_vec_sub(&delta_pos, &leader->pos, &leader_old_pos); // get position change
 			control_pos = leader->pos;
 			control_orient = leader->orient;

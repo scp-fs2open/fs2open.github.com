@@ -23,7 +23,7 @@
 #include <QtWidgets/QMessageBox>
 
 #include "osapi/osapi.h"
-#include "io/key.h"
+#include "ui/ControlBindings.h"
 #include "io/timer.h"
 #include "starfield/starfield.h"
 
@@ -74,6 +74,7 @@ bool RenderWindow::event(QEvent* evt) {
 	}
 	case QEvent::KeyPress:
 	case QEvent::KeyRelease:
+	case QEvent::ShortcutOverride:
 	case QEvent::MouseButtonDblClick:
 	case QEvent::MouseMove: {
 		// Redirect all the events to the render widget since we want to handle them in in the QtWidget related code
@@ -131,23 +132,6 @@ RenderWidget::RenderWidget(QWidget* parent) : QWidget(parent) {
 
 	setLayout(layout);
 
-	qt2fsKeys[Qt::Key_Shift] = KEY_LSHIFT;
-	qt2fsKeys[Qt::Key_A] = KEY_A;
-	qt2fsKeys[Qt::Key_Z] = KEY_Z;
-	qt2fsKeys[Qt::Key_0 + Qt::KeypadModifier] = KEY_PAD0;
-	qt2fsKeys[Qt::Key_1 + Qt::KeypadModifier] = KEY_PAD1;
-	qt2fsKeys[Qt::Key_2 + Qt::KeypadModifier] = KEY_PAD2;
-	qt2fsKeys[Qt::Key_3 + Qt::KeypadModifier] = KEY_PAD3;
-	qt2fsKeys[Qt::Key_4 + Qt::KeypadModifier] = KEY_PAD4;
-	qt2fsKeys[Qt::Key_5 + Qt::KeypadModifier] = KEY_PAD5;
-	qt2fsKeys[Qt::Key_6 + Qt::KeypadModifier] = KEY_PAD6;
-	qt2fsKeys[Qt::Key_7 + Qt::KeypadModifier] = KEY_PAD7;
-	qt2fsKeys[Qt::Key_8 + Qt::KeypadModifier] = KEY_PAD8;
-	qt2fsKeys[Qt::Key_9 + Qt::KeypadModifier] = KEY_PAD9;
-	qt2fsKeys[Qt::Key_Plus + Qt::KeypadModifier] = KEY_PADPLUS;
-	qt2fsKeys[Qt::Key_Minus + Qt::KeypadModifier] = KEY_PADMINUS;
-	qt2fsKeys[Qt::Key_Space] = KEY_SPACEBAR;
-	qt2fsKeys[Qt::Key_Escape] = KEY_ESC;
 
 	_standardCursor.reset(new QCursor(Qt::ArrowCursor));
 	_moveCursor.reset(new QCursor(Qt::SizeAllCursor));
@@ -178,33 +162,30 @@ void RenderWidget::contextMenuEvent(QContextMenuEvent* event) {
 }
 
 void RenderWidget::keyPressEvent(QKeyEvent* key) {
-	if (key->isAutoRepeat()) {
+	if (!ControlBindings::instance().handleKeyPress(key)) {
 		QWidget::keyPressEvent(key);
 		return;
 	}
-
-	auto code = key->key() + (int) key->modifiers();
-	if (!qt2fsKeys.count(code)) {
-		QWidget::keyPressEvent(key);
-		return;
-	}
-
-	key_mark(qt2fsKeys.at(code), 1, 0);
+	key->accept();
 }
 
 void RenderWidget::keyReleaseEvent(QKeyEvent* key) {
-	if (key->isAutoRepeat()) {
+	if (!ControlBindings::instance().handleKeyRelease(key)) {
 		QWidget::keyReleaseEvent(key);
 		return;
 	}
-
-	auto code = key->key() + (int) key->modifiers();
-	if (!qt2fsKeys.count(code)) {
-		QWidget::keyReleaseEvent(key);
-		return;
+	key->accept();
+}
+bool RenderWidget::event(QEvent* evt) {
+	if (evt->type() == QEvent::ShortcutOverride) {
+		auto* keyEvent = static_cast<QKeyEvent*>(evt);
+		if (ControlBindings::instance().matches(keyEvent)) {
+			evt->accept();
+			return true;
+		}
 	}
 
-	key_mark(qt2fsKeys.at(code), 0, 0);
+	return QWidget::event(evt);
 }
 void RenderWidget::mouseDoubleClickEvent(QMouseEvent* event) {
 	event->ignore();
