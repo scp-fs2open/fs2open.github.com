@@ -64,8 +64,12 @@ bool RenderWindow::event(QEvent* evt) {
 		auto mouseEvent = static_cast<QMouseEvent*>(evt);
 
 		if (mouseEvent->button() == Qt::RightButton) {
-			// Right button events may cause a context menu so we send that to our parent which will handle that
-			qGuiApp->sendEvent(parent(), evt);
+			// Let the render widget consume right clicks for drag-cancel behavior first.
+			qGuiApp->sendEvent(_renderWidget, evt);
+			if (!evt->isAccepted()) {
+				// Not consumed by the render widget, forward for context menu handling.
+				qGuiApp->sendEvent(parent(), evt);
+			}
 		} else {
 			// The rest will be handled by the render widget
 			qGuiApp->sendEvent(_renderWidget, evt);
@@ -162,6 +166,13 @@ void RenderWidget::contextMenuEvent(QContextMenuEvent* event) {
 }
 
 void RenderWidget::keyPressEvent(QKeyEvent* key) {
+	if (_viewport != nullptr && key->key() == Qt::Key_Escape && _viewport->button_down) {
+		_viewport->cancel_drag();
+		_usingMarkingBox = false;
+		key->accept();
+		return;
+	}
+
 	if (!ControlBindings::instance().handleKeyPress(key)) {
 		QWidget::keyPressEvent(key);
 		return;
@@ -191,6 +202,17 @@ void RenderWidget::mouseDoubleClickEvent(QMouseEvent* event) {
 	event->ignore();
 }
 void RenderWidget::mousePressEvent(QMouseEvent* event) {
+	if (event->button() == Qt::RightButton) {
+		if (_viewport != nullptr && _viewport->button_down) {
+			_viewport->cancel_drag();
+			_usingMarkingBox = false;
+			event->accept();
+		} else {
+			event->ignore();
+		}
+		return;
+	}
+
 	if (event->button() != Qt::LeftButton) {
 		// Ignore everything that has nothing to to with the left button
 		return QWidget::mousePressEvent(event);
@@ -334,8 +356,8 @@ void RenderWidget::mouseMoveEvent(QMouseEvent* event) {
 }
 void RenderWidget::mouseReleaseEvent(QMouseEvent* event) {
 	if (event->button() != Qt::LeftButton) {
-		// Ignore everything that has nothing to to with the left button
-		return QWidget::mousePressEvent(event);
+		// Ignore everything that has nothing to do with the left button
+		return QWidget::mouseReleaseEvent(event);
 	}
 
 	_markingBox.x2 = event->x();

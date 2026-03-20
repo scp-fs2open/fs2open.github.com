@@ -105,6 +105,7 @@ class EditorViewport {
 	int drag_objects(int x, int y);
 
 	int drag_rotate_objects(int mouse_dx, int mouse_dy);
+	void cancel_drag();
 
 	void view_universe(bool just_marked);
 
@@ -176,5 +177,4 @@ class EditorViewport {
 
 }
 }
-
 

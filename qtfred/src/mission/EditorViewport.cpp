@@ -1270,6 +1270,28 @@ int EditorViewport::drag_rotate_objects(int mouse_dx, int mouse_dy) {
 	editor->missionChanged();
 	return rval;
 }
+void EditorViewport::cancel_drag() {
+	if (!button_down) {
+		return;
+	}
+
+	auto objp = GET_FIRST(&obj_used_list);
+	while (objp != END_OF_LIST(&obj_used_list)) {
+		Assert(objp->type != OBJ_NONE);
+		if (objp->flags[Object::Object_Flags::Marked]) {
+			const auto obj_index = OBJ_INDEX(objp);
+			objp->pos = rotation_backup[obj_index].pos;
+			objp->orient = rotation_backup[obj_index].orient;
+		}
+
+		objp = GET_NEXT(objp);
+	}
+
+	button_down = false;
+	moved = false;
+	Dup_drag = 0;
+	needsUpdate();
+}
 void EditorViewport::view_universe(bool just_marked) {
 	int max = 0;
 	float dist, largest = 20.0f;
