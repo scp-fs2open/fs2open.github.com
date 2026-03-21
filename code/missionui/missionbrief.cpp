@@ -1153,9 +1153,9 @@ void brief_render(float frametime, bool api_access)
 
 		if ( Num_brief_stages <= 0 ) {
 			gr_set_color_fast(&Color_white);
-			Assert( Game_current_mission_filename != NULL );
+			Assert( Game_current_mission_filename != nullptr );
 
-			gr_get_string_size(&w, NULL, XSTR("No Briefing exists for mission: %s", 430));
+			gr_get_string_size(&w, nullptr, XSTR("No Briefing exists for mission: %s", 430));
 			gr_printf_menu((gr_screen.clip_width_unscaled - w) / 2,200,XSTR( "No Briefing exists for mission: %s", 430), Game_current_mission_filename);
 
 			#ifndef NDEBUG
@@ -1221,7 +1221,7 @@ void brief_render(float frametime, bool api_access)
 			font::force_fit_string(buf, 255, Title_coords_multi[gr_screen.res][2]);
 			gr_string(Title_coords_multi[gr_screen.res][0], Title_coords_multi[gr_screen.res][1], buf, GR_RESIZE_MENU);
 		} else {
-			gr_get_string_size(&w, NULL, The_mission.name);
+			gr_get_string_size(&w, nullptr, The_mission.name);
 			gr_string(Title_coords[gr_screen.res][0] - w, Title_coords[gr_screen.res][1], The_mission.name, GR_RESIZE_MENU);
 		}
 
