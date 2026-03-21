@@ -363,7 +363,7 @@ void HudGaugeMessages::scrollMessages()
 			new_active_msg.target_y = new_active_msg.y;
 		}
 
-		active_messages.push_back(new_active_msg);
+		active_messages.push_back(std::move(new_active_msg));
 	}
 
 	Scroll_in_progress = false;
@@ -864,7 +864,7 @@ void hud_initialize_scrollback_lines()
 				}
 			} else {
 				node_msg.y = height / 3;
-				Msg_scrollback_lines.push_back(node_msg);
+				Msg_scrollback_lines.push_back(std::move(node_msg));
 			}
 		}
 	}

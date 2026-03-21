@@ -6939,7 +6939,7 @@ void ship_add_exited_ship( ship *sp, Ship::Exit_Flags reason )
 	if (ship_it != Ship_registry_map.end())
 		Ship_registry[ship_it->second].exited_index = static_cast<int>(Ships_exited.size());
 
-	Ships_exited.push_back(entry);
+	Ships_exited.push_back(std::move(entry));
 }
 
 /**
@@ -21118,7 +21118,7 @@ void parse_armor_type()
 		parse_string_flag_list(tat.flags, Armor_flags, Num_armor_flags);
 	
 	//Add it to global armor types
-	Armor_types.push_back(tat);
+	Armor_types.push_back(std::move(tat));
 }
 
 void armor_parse_table(const char *filename)

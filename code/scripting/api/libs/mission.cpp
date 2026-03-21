@@ -2893,7 +2893,7 @@ ADE_FUNC(addLuaEnum,
 		dynamic_sexp_enum_list this_list;
 		this_list.name = enum_name;
 
-		Dynamic_enums.push_back(this_list);
+		Dynamic_enums.push_back(std::move(this_list));
 
 		idx = get_dynamic_enum_position(enum_name);
 
@@ -3156,7 +3156,7 @@ ADE_FUNC(waitAsync,
 		{
 			// Keep checking the time until the timestamp is elapsed
 			auto self = shared_from_this();
-			auto cb = [this, self, resolver](
+			auto cb = [this, self, resolver = std::move(resolver)](
 						  executor::IExecutionContext::State contextState) {
 				if (contextState == executor::IExecutionContext::State::Invalid) {
 					mprintf(("waitAsync: Context is invalid, possibly due to a game state change (current state is %s).  Aborting asynchronous context %d.\n", GS_state_text[gameseq_get_state()], m_unique_id));

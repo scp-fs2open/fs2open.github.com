@@ -2726,8 +2726,8 @@ void multi_init_oo_and_ship_tracker()
 	temp_sent_to_player.subsystem_z.reserve(MAX_MODEL_SUBSYSTEMS);
 	temp_sent_to_player.subsystem_z.push_back(0.0f);
 
-	temp_netplayer_records.last_sent.push_back(temp_sent_to_player);
-	Oo_info.frame_info.push_back(temp_position_records);
+	temp_netplayer_records.last_sent.push_back(std::move(temp_sent_to_player));
+	Oo_info.frame_info.push_back(std::move(temp_position_records));
 	
 	for (int i = 0; i < MAX_PLAYERS; i++) {
 		Oo_info.player_frame_info.push_back(temp_netplayer_records);

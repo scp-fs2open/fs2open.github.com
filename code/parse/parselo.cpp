@@ -3649,7 +3649,7 @@ void pause_parse()
 	Mark.Warning_count = Warning_count;
 	Mark.Error_count = Error_count;
 
-	Bookmarks.push_back(Mark);
+	Bookmarks.push_back(std::move(Mark));
 }
 
 // unpause parsing to continue with previously parsing file

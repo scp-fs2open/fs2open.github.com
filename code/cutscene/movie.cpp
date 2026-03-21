@@ -279,7 +279,7 @@ bool play(const char* filename, bool via_tech_room = false)
 	{
 		auto paramList = scripting::hook_param_list(scripting::hook_param("Filename", 's', filename), scripting::hook_param("ViaTechRoom", 'b', via_tech_room));
 		bool skip = scripting::hooks::OnMovieAboutToPlay->isOverride(paramList);
-		scripting::hooks::OnMovieAboutToPlay->run(paramList);
+		scripting::hooks::OnMovieAboutToPlay->run(std::move(paramList));
 		if (skip)
 			return false;
 	}

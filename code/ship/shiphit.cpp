@@ -1917,7 +1917,7 @@ void ship_hit_kill(object *ship_objp, object *other_obj, const vec3d *hitpos, fl
 				hitpos != nullptr));
 
 		if (scripting::hooks::OnShipDeath->isOverride(scripting::hooks::ShipDeathConditions{ sp }, onDeathParamList)) {
-			scripting::hooks::OnShipDeath->run(scripting::hooks::ShipDeathConditions{ sp }, onDeathParamList);
+			scripting::hooks::OnShipDeath->run(scripting::hooks::ShipDeathConditions{ sp }, std::move(onDeathParamList));
 			return;
 		}
 	}

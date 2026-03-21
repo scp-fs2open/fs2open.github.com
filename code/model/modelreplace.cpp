@@ -250,7 +250,7 @@ int reallocate_and_copy_array(std::shared_ptr<T[]>& array, int& size, size_t to_
 //Generates one function for replacing data in a type, which is a map entry of which the key may be replaced. Takes an rvalue reference, used for making a copy and modifying the temporary to then assign it somewhere
 #define CHANGE_HELPER_MAP_KEY(name, intype, argtype) template<typename map_t> static typename std::enable_if<std::is_same<typename map_t::value_type, std::pair<const argtype, argtype>>::value, intype>::type name(intype&& pass, map_t replace){ \
 	const auto it = replace.find(pass.first); \
-	intype input = { (it == replace.end() ? pass.first : it->second), pass.second };
+	intype input = { (it == replace.end() ? pass.first : it->second), std::move(pass.second) };
 #define CHANGE_HELPER_MAP_KEY_END  return input; }
 
 //Generates two functions for replacing data in a type. One that takes an rvalue reference, used for making a copy and modifying the temporary to then assign it somewhere, and one which takes an lvalue reference for modifying in-place

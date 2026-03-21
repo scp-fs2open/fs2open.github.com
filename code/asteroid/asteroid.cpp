@@ -2232,7 +2232,7 @@ static void asteroid_parse_section()
 			}
 			return;
 		}
-		asteroid_list.push_back(asteroid_t);
+		asteroid_list.push_back(std::move(asteroid_t));
 		asteroid_p = &asteroid_list[asteroid_list.size() - 1];
 
 	}
@@ -2330,7 +2330,7 @@ static void asteroid_parse_section()
 					thisType.type_name.c_str(),
 					asteroid_p->name);
 			} else {
-				asteroid_p->subtypes.push_back(thisType);
+				asteroid_p->subtypes.push_back(std::move(thisType));
 			}
 		}
 	}
@@ -2619,7 +2619,7 @@ static void verify_asteroid_splits()
 		}
 
 		// Replace splits with only valid splits
-		Asteroid_info[i].split_info = splits_t;
+		Asteroid_info[i].split_info = std::move(splits_t);
 	}
 }
 

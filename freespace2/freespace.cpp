@@ -4123,7 +4123,7 @@ void game_do_full_frame(DEBUG_TIMER_SIG const vec3d* offset = nullptr, const mat
 			if (fov_override)
 				g3_set_fov(*fov_override);
 
-			scripting::hooks::OnHudDraw->run(scripting::hooks::ObjectDrawConditions{ Viewer_obj }, scripting_param_list);
+			scripting::hooks::OnHudDraw->run(scripting::hooks::ObjectDrawConditions{ Viewer_obj }, std::move(scripting_param_list));
 		}
 	}
 
@@ -5783,7 +5783,7 @@ void game_enter_state( int old_state, int new_state )
 
 	if(scripting::hooks::OnStateStart->isActive()) {
 		if (scripting::hooks::OnStateStart->isOverride(script_param_list)) {
-			scripting::hooks::OnStateStart->run(script_param_list);
+			scripting::hooks::OnStateStart->run(std::move(script_param_list));
 			return;
 		}
 	}

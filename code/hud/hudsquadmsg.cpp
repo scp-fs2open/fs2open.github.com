@@ -1014,7 +1014,7 @@ bool hud_squadmsg_run_order_issued_hook(int command, ship* sendingShip, ship* re
 		}
 		scripting::hooks::OnHudCommOrderIssued->run(
 			scripting::hooks::CommOrderConditions{sendingShip, targetObject, &recipient},
-			paramList);
+			std::move(paramList));
 	}
 
 	return isOverride;

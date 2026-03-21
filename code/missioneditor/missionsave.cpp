@@ -1401,7 +1401,7 @@ void Fred_mission_save::fso_comment_push(const char* ver)
 	int in_major, in_minor, in_build, in_revis;
 	int elem1, elem2;
 
-	elem1 = scan_fso_version_string(fso_ver_comment.back().c_str(), &major, &minor, &build, &revis);
+	elem1 = scan_fso_version_string(before.c_str(), &major, &minor, &build, &revis);
 	elem2 = scan_fso_version_string(ver, &in_major, &in_minor, &in_build, &in_revis);
 
 	// check consistency
@@ -1415,14 +1415,14 @@ void Fred_mission_save::fso_comment_push(const char* ver)
 		((major > in_major) ||
 			((major == in_major) && ((minor > in_minor) || ((minor == in_minor) && (build > in_build)))))) {
 		// the push'd version is older than our current version, so just push a copy of the previous version
-		fso_ver_comment.push_back(before);
+		fso_ver_comment.push_back(std::move(before));
 	} else if ((elem1 == 4) && ((major > in_major) ||
 								   ((major == in_major) &&
 									   ((minor > in_minor) || ((minor == in_minor) &&
 																  ((build > in_build) || ((build == in_build) ||
 																							 (revis > in_revis)))))))) {
 		// the push'd version is older than our current version, so just push a copy of the previous version
-		fso_ver_comment.push_back(before);
+		fso_ver_comment.push_back(std::move(before));
 	} else {
 		fso_ver_comment.push_back(SCP_string(ver));
 	}

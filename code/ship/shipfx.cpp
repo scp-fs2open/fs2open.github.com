@@ -542,7 +542,7 @@ void shipfx_warpin_start( object *objp )
 		auto params = scripting::hook_param_list(scripting::hook_param("Self", 'o', objp));
 		auto conditions = scripting::hooks::ShipSourceConditions{ shipp };
 		if (OnWarpInHook->isOverride(conditions, params)) {
-			OnWarpInHook->run(conditions, params);
+			OnWarpInHook->run(conditions, std::move(params));
 			return;
 		}
 	}
@@ -562,7 +562,7 @@ void shipfx_warpin_start( object *objp )
 	{
 		auto params = scripting::hook_param_list(scripting::hook_param("Self", 'o', objp));
 		auto conditions = scripting::hooks::ShipSourceConditions{ shipp };
-		OnWarpInHook->run(conditions, params);
+		OnWarpInHook->run(conditions, std::move(params));
 	}
 }
 
@@ -705,7 +705,7 @@ void shipfx_warpout_start( object *objp )
 		auto params = scripting::hook_param_list(scripting::hook_param("Self", 'o', objp));
 		auto conditions = scripting::hooks::ShipSourceConditions{ shipp };
 		if (OnWarpOutHook->isOverride(conditions, params)) {
-			OnWarpOutHook->run(conditions, params);
+			OnWarpOutHook->run(conditions, std::move(params));
 			return;
 		}
 	}
@@ -747,7 +747,7 @@ void shipfx_warpout_start( object *objp )
 	if (OnWarpOutHook->isActive()) {
 		auto params = scripting::hook_param_list(scripting::hook_param("Self", 'o', objp));
 		auto conditions = scripting::hooks::ShipSourceConditions{ shipp };
-		OnWarpOutHook->run(conditions, params);
+		OnWarpOutHook->run(conditions, std::move(params));
 	}
 }
 

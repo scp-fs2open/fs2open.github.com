@@ -265,10 +265,10 @@ void LuaAISEXP::parseTable() {
 		}
 
 		if (variable_arg_part) {
-			_varargs_type_pattern.push_back(type);
+			_varargs_type_pattern.push_back(std::move(type));
 		}
 		else {
-			_argument_types.push_back(type);
+			_argument_types.push_back(std::move(type));
 		}
 
 		if (optional_string("$Repeat")) {

@@ -97,7 +97,7 @@ SCP_string create_function_alias(const ade_type_info& type_info, SCP_string alia
 		aliasName += "_" + std::to_string(dupCount++);
 	}
 
-	Aliases.emplace_back(aliasName, alias);
+	Aliases.emplace_back(aliasName, std::move(alias));
 
 	return aliasName;
 }

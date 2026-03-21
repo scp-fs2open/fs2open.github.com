@@ -767,8 +767,8 @@ void red_alert_store_ship_status()
 		red_alert_store_weapons(&ras, &shipp->weapons);
 		red_alert_store_subsys_status(&ras, shipp);
 
-		Red_alert_ship_status.push_back( ras );
-		// niffiwan: trying to track down red alert bug creating HUGE pilot files 
+		Red_alert_ship_status.push_back( std::move(ras) );
+		// niffiwan: trying to track down red alert bug creating HUGE pilot files
 		Assert( (Red_alert_ship_status.size() <= MAX_SHIPS) );
 
 		if (shipp->wingnum >= 0) {
@@ -803,8 +803,8 @@ void red_alert_store_ship_status()
 		red_alert_store_weapons(&ras, NULL);
 		red_alert_store_subsys_status(&ras, NULL);
 
-		Red_alert_ship_status.push_back( ras );
-		// niffiwan: trying to track down red alert bug creating HUGE pilot files 
+		Red_alert_ship_status.push_back( std::move(ras) );
+		// niffiwan: trying to track down red alert bug creating HUGE pilot files
 		Assert( (Red_alert_ship_status.size() <= MAX_SHIPS) );
 
 		if (exited.wingnum >= 0) {
@@ -829,7 +829,7 @@ void red_alert_store_ship_status()
 		rws.total_destroyed = wingp->total_destroyed;
 		rws.total_vanished = wingp->total_vanished;
 
-		Red_alert_wing_status.push_back( rws );
+		Red_alert_wing_status.push_back( std::move(rws) );
 		// see comments from niffiwan above
 		Assert( (Red_alert_wing_status.size() <= MAX_WINGS) );
 	}

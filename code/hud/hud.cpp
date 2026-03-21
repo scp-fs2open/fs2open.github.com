@@ -2538,7 +2538,7 @@ void HudGaugeDamage::render(float  /*frametime*/, bool config)
 		by += fl2i(line_h * scale);
 		sy += fl2i(line_h * scale);
 
-		info_lines.push_back(info);
+		info_lines.push_back(std::move(info));
 
 		// Remove it from hud_subsys_list
 		if ( best_index < (num-i-1) ) {
@@ -2584,7 +2584,7 @@ void HudGaugeDamage::render(float  /*frametime*/, bool config)
 		info.value_y = y + fl2i(hull_integ_offsets[1] * scale);
 
 		// Insert at the top since hull is always first
-		info_lines.insert(info_lines.begin(), info);
+		info_lines.insert(info_lines.begin(), std::move(info));
 	}
 
 	if (info_lines.empty()) {

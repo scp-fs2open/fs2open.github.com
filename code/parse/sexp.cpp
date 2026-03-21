@@ -28106,7 +28106,7 @@ void add_to_event_log_buffer(int node, int op_num, int result)
 		}
 	}
 
-	Current_event_log_buffer->push_back(tmp);
+	Current_event_log_buffer->push_back(std::move(tmp));
 }
 
 /**

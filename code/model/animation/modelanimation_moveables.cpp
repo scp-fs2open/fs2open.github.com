@@ -48,7 +48,7 @@ namespace animation {
 		if(submodel == nullptr)
 			error_display(1, "Could not create moveable! Moveable Orientation has no target submodel!");
 
-		return std::shared_ptr<ModelAnimationMoveableOrientation>(new ModelAnimationMoveableOrientation(submodel, angle));
+		return std::shared_ptr<ModelAnimationMoveableOrientation>(new ModelAnimationMoveableOrientation(std::move(submodel), angle));
 	}
 
 
@@ -101,7 +101,7 @@ namespace animation {
 		
 		auto sequence = std::shared_ptr<ModelAnimationSegmentSerial>(new ModelAnimationSegmentSerial());
 		sequence->addSegment(std::shared_ptr<ModelAnimationSegment>(new ModelAnimationSegmentSetOrientation(submodel, orient, ModelAnimationCoordinateRelation::RELATIVE_COORDS)));
-		sequence->addSegment(std::shared_ptr<ModelAnimationSegment>(new ModelAnimationSegmentRotation(submodel, m_defaultPosOrient, m_velocity, std::nullopt, m_acceleration, ModelAnimationCoordinateRelation::ABSOLUTE_COORDS)));
+		sequence->addSegment(std::shared_ptr<ModelAnimationSegment>(new ModelAnimationSegmentRotation(std::move(submodel), m_defaultPosOrient, m_velocity, std::nullopt, m_acceleration, ModelAnimationCoordinateRelation::ABSOLUTE_COORDS)));
 		
 		anim->setAnimation(sequence);
 
@@ -128,7 +128,7 @@ namespace animation {
 		if(submodel == nullptr)
 			error_display(1, "Could not create moveable! Moveable Rotation has no target submodel!");
 
-		return std::shared_ptr<ModelAnimationMoveableRotation>(new ModelAnimationMoveableRotation(submodel, angle, velocity, acceleration));
+		return std::shared_ptr<ModelAnimationMoveableRotation>(new ModelAnimationMoveableRotation(std::move(submodel), angle, velocity, acceleration));
 	}
 
 
@@ -205,7 +205,7 @@ namespace animation {
 		if(submodel == nullptr)
 			error_display(1, "Could not create moveable! Moveable Translation has no target submodel!");
 
-		return std::shared_ptr<ModelAnimationMoveableTranslation>(new ModelAnimationMoveableTranslation(submodel, angle, velocity, acceleration));
+		return std::shared_ptr<ModelAnimationMoveableTranslation>(new ModelAnimationMoveableTranslation(std::move(submodel), angle, velocity, acceleration));
 	}
 
 
@@ -264,7 +264,7 @@ namespace animation {
 
 		auto sequence = std::shared_ptr<ModelAnimationSegmentSerial>(new ModelAnimationSegmentSerial());
 		sequence->addSegment(std::shared_ptr<ModelAnimationSegment>(new ModelAnimationSegmentSetOrientation(submodel, vmd_identity_matrix, ModelAnimationCoordinateRelation::RELATIVE_COORDS)));
-		sequence->addSegment(std::shared_ptr<ModelAnimationSegment>(new ModelAnimationSegmentAxisRotation(submodel, 0.0f, m_velocity, std::nullopt, m_acceleration, m_axis)));
+		sequence->addSegment(std::shared_ptr<ModelAnimationSegment>(new ModelAnimationSegmentAxisRotation(std::move(submodel), 0.0f, m_velocity, std::nullopt, m_acceleration, m_axis)));
 
 		anim->setAnimation(sequence);
 
@@ -292,7 +292,7 @@ namespace animation {
 		if(submodel == nullptr)
 			error_display(1, "Could not create moveable! Moveable Axis Rotation has no target submodel!");
 
-		return std::shared_ptr<ModelAnimationMoveableAxisRotation>(new ModelAnimationMoveableAxisRotation(submodel, velocity, acceleration, axis));
+		return std::shared_ptr<ModelAnimationMoveableAxisRotation>(new ModelAnimationMoveableAxisRotation(std::move(submodel), velocity, acceleration, axis));
 	}
 
 
@@ -432,9 +432,9 @@ namespace animation {
 			} else
 				constraint = std::shared_ptr<ik_constraint>(new ik_constraint());
 
-			chain.push_back({std::move(submodel), constraint, acceleration});
+			chain.push_back({std::move(submodel), std::move(constraint), acceleration});
 		}
 		
-		return std::shared_ptr<ModelAnimationMoveable>(new ModelAnimationMoveableIK(chain, time));
+		return std::shared_ptr<ModelAnimationMoveable>(new ModelAnimationMoveableIK(std::move(chain), time));
 	}
 }

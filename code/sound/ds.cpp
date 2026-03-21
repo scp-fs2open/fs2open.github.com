@@ -1751,7 +1751,7 @@ int ds_eax_get_prop(EFXREVERBPROPERTIES **props, const char *name, const char *t
 			n_prop.iDecayHFLimit = AL_TRUE;
 		}
 
-		EFX_presets.push_back( n_prop );
+		EFX_presets.push_back( std::move(n_prop) );
 
 		*props = &EFX_presets[id];
 	}

@@ -1322,7 +1322,7 @@ static void handle_unix_modlist(char **modlist, size_t *len)
 
 	for (char *cur_mod = strtok(*modlist, ","); cur_mod != NULL; cur_mod = strtok(NULL, ",")) {
 		SCP_string path = get_real_mod_path(cur_mod);
-		mod_paths.push_back(path);
+		mod_paths.push_back(std::move(path));
 	}
 
 	// create new char[] to replace modlist

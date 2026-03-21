@@ -300,7 +300,7 @@ void parse_mod_table(const char *filename)
 						splash.is_default = true;
 					}
 
-					Splash_screens.push_back(splash);
+					Splash_screens.push_back(std::move(splash));
 				}
 			}
 

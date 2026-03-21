@@ -202,7 +202,7 @@ namespace animation {
 
 				auto thisPtr = shared_from_this();
 
-				animEntry.animationList.push_back(thisPtr);
+				animEntry.animationList.push_back(std::move(thisPtr));
 			}
 
 			/* fall-thru */
@@ -686,7 +686,7 @@ namespace animation {
 		for (const auto& submodel : other.m_submodels) {
 			auto newSubmodel = std::shared_ptr<ModelAnimationSubmodel>(submodel->copy());
 			newSubmodel->m_submodel = {};
-			m_submodels.push_back(newSubmodel);
+			m_submodels.push_back(std::move(newSubmodel));
 		}
 
 		for (const auto& animationTypes : other.m_animationSet) {
@@ -699,7 +699,7 @@ namespace animation {
 					newAnimation->m_animation->exchangeSubmodelPointers(*this);
 					newAnimation->m_set = this;
 
-					newAnimations[oldAnimations.first].push_back(newAnimation);
+					newAnimations[oldAnimations.first].push_back(std::move(newAnimation));
 				}
 			}
 		}
@@ -1490,7 +1490,7 @@ namespace animation {
 						curve = Curves[curve_id];
 				}
 
-				driver = [remap_driver_source, curve](ModelAnimation &, ModelAnimation::instance_data &instance, polymodel_instance *pmi, float) {
+				driver = [remap_driver_source = std::move(remap_driver_source), curve](ModelAnimation &, ModelAnimation::instance_data &instance, polymodel_instance *pmi, float) {
 					float oldFrametime = instance.time;
 					instance.time = curve ? curve->GetValue(remap_driver_source(pmi)) : remap_driver_source(pmi);
 					CLAMP(instance.time, 0.0f, instance.duration);
@@ -1515,7 +1515,7 @@ namespace animation {
 						curve = Curves[curve_id];
 				}
 
-				propertyDrivers.emplace_back([driver_source, curve, target](ModelAnimation &, ModelAnimation::instance_data &instance, polymodel_instance *pmi) {
+				propertyDrivers.emplace_back([driver_source = std::move(driver_source), curve, target](ModelAnimation &, ModelAnimation::instance_data &instance, polymodel_instance *pmi) {
 					float& property = instance.*(target.target);
 					property = curve ? curve->GetValue(driver_source(pmi)) : driver_source(pmi);
 					if(target.clamp) {
@@ -1541,7 +1541,7 @@ namespace animation {
 						curve = Curves[curve_id];
 				}
 
-				startupDrivers.emplace_back([driver_source, curve, target](ModelAnimation &, ModelAnimation::instance_data &instance, polymodel_instance *pmi) {
+				startupDrivers.emplace_back([driver_source = std::move(driver_source), curve, target](ModelAnimation &, ModelAnimation::instance_data &instance, polymodel_instance *pmi) {
 					float& property = instance.*(target.target);
 					property = curve ? curve->GetValue(driver_source(pmi)) : driver_source(pmi);
 					if(target.clamp) {

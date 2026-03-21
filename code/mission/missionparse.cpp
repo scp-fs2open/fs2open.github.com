@@ -6427,7 +6427,7 @@ void parse_asteroid_fields(mission *pm)
 				}
 
 				if (valid){
-					Asteroid_field.field_asteroid_type.push_back(ast_name);
+					Asteroid_field.field_asteroid_type.push_back(std::move(ast_name));
 				} else {
 					WarningEx(LOCATION, "Mission %s\n Invalid asteroid %s!", pm->name, ast_name.c_str());
 				}
@@ -6671,7 +6671,7 @@ void parse_custom_data(mission* pm)
 			required_string("+String:");
 			stuff_string(cs.text, F_MULTITEXT);
 
-			pm->custom_strings.push_back(cs);
+			pm->custom_strings.push_back(std::move(cs));
 		}
 
 		required_string("$end_custom_strings");
