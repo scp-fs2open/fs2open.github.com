@@ -79,7 +79,7 @@ namespace animation {
 		auto submodelOverride = ModelAnimationParseHelper::parseSubmodel();
 
 		ignore_white_space();
-		auto segment = std::shared_ptr<ModelAnimationSegmentSerial>(new ModelAnimationSegmentSerial());
+		auto segment = std::make_shared<ModelAnimationSegmentSerial>();
 
 		while (!optional_string("+End Segment")) {
 			if (submodelOverride)
@@ -153,7 +153,7 @@ namespace animation {
 		auto submodelOverride = ModelAnimationParseHelper::parseSubmodel();
 
 		ignore_white_space();
-		auto segment = std::shared_ptr<ModelAnimationSegmentParallel>(new ModelAnimationSegmentParallel());
+		auto segment = std::make_shared<ModelAnimationSegmentParallel>();
 
 		while (!optional_string("+End Segment")) {
 			if (submodelOverride)
@@ -181,7 +181,7 @@ namespace animation {
 		required_string("+Time:");
 		float time = 0.0f;
 		stuff_float(&time);
-		auto segment = std::shared_ptr<ModelAnimationSegmentWait>(new ModelAnimationSegmentWait(time));
+		auto segment = std::make_shared<ModelAnimationSegmentWait>(time);
 
 		return segment;
 	}
@@ -253,7 +253,7 @@ namespace animation {
 				error_display(1, "Set Orientation has no target submodel!");
 		}
 
-		auto segment = std::shared_ptr<ModelAnimationSegmentSetOrientation>(new ModelAnimationSegmentSetOrientation(std::move(submodel), angle, relationType));
+		auto segment = std::make_shared<ModelAnimationSegmentSetOrientation>(std::move(submodel), angle, relationType);
 
 		return segment;
 	}
@@ -308,7 +308,7 @@ namespace animation {
 				error_display(1, "Set Offset has no target submodel!");
 		}
 
-		auto segment = std::shared_ptr<ModelAnimationSegmentSetOffset>(new ModelAnimationSegmentSetOffset(std::move(submodel), target, relationType));
+		auto segment = std::make_shared<ModelAnimationSegmentSetOffset>(std::move(submodel), target, relationType);
 
 		return segment;
 	}
@@ -382,7 +382,7 @@ namespace animation {
 				error_display(1, "Set Angle has no target submodel!");
 		}
 
-		auto segment = std::shared_ptr<ModelAnimationSegmentSetAngle>(new ModelAnimationSegmentSetAngle(std::move(submodel), fl_radians(angle)));
+		auto segment = std::make_shared<ModelAnimationSegmentSetAngle>(std::move(submodel), fl_radians(angle));
 
 		return segment;
 	}
@@ -667,7 +667,7 @@ namespace animation {
 				error_display(1, "Rotation has no target submodel!");
 		}
 
-		auto segment = std::shared_ptr<ModelAnimationSegmentRotation>(new ModelAnimationSegmentRotation(std::move(submodel), angle, velocity, time, acceleration, relationType));
+		auto segment = std::make_shared<ModelAnimationSegmentRotation>(std::move(submodel), angle, velocity, time, acceleration, relationType);
 
 		return segment;
 	}
@@ -916,7 +916,7 @@ namespace animation {
 				error_display(1, "Rotation has no target submodel!");
 		}
 
-		auto segment = std::shared_ptr<ModelAnimationSegmentAxisRotation>(new ModelAnimationSegmentAxisRotation(std::move(submodel), angle, velocity, time, acceleration, axis));
+		auto segment = std::make_shared<ModelAnimationSegmentAxisRotation>(std::move(submodel), angle, velocity, time, acceleration, axis);
 
 		return segment;
 	}
@@ -1231,7 +1231,7 @@ namespace animation {
 				error_display(1, "Translation has no target submodel!");
 		}
 
-		auto segment = std::shared_ptr<ModelAnimationSegmentTranslation>(new ModelAnimationSegmentTranslation(std::move(submodel), offset, velocity, time, acceleration, coordSystem, relationType));
+		auto segment = std::make_shared<ModelAnimationSegmentTranslation>(std::move(submodel), offset, velocity, time, acceleration, coordSystem, relationType);
 
 		return segment;
 	}
@@ -1381,7 +1381,7 @@ namespace animation {
 		bool flipIfReversed = optional_string("+Flip When Reversed");
 		bool abortSoundIfRunning = !optional_string("+Don't Interrupt Playing Sounds");
 
-		auto segment = std::shared_ptr<ModelAnimationSegmentSoundDuring>(new ModelAnimationSegmentSoundDuring(data->parseSegment(), start_sound, end_sound, loop_sound, flipIfReversed, abortSoundIfRunning, snd_rad, std::move(submodel), std::move(position)));
+		auto segment = std::make_shared<ModelAnimationSegmentSoundDuring>(data->parseSegment(), start_sound, end_sound, loop_sound, flipIfReversed, abortSoundIfRunning, snd_rad, std::move(submodel), std::move(position));
 
 		return segment;
 	}
@@ -1568,8 +1568,8 @@ namespace animation {
 		float time;
 		stuff_float(&time);
 		
-		auto segment = std::shared_ptr<ModelAnimationSegmentIK>(new ModelAnimationSegmentIK(targetPosition, targetRotation));
-		auto parallel = std::shared_ptr<ModelAnimationSegmentParallel>(new ModelAnimationSegmentParallel());
+		auto segment = std::make_shared<ModelAnimationSegmentIK>(targetPosition, targetRotation);
+		auto parallel = std::make_shared<ModelAnimationSegmentParallel>();
 		segment->m_segment = parallel;
 		
 		while(optional_string("$Chain Link:")){
@@ -1597,7 +1597,7 @@ namespace animation {
 						required_string("Window");
 						required_string("+Window Size:");
 						stuff_angles_deg_phb(&window);
-						constraint = std::shared_ptr<ik_constraint>(new ik_constraint_window(window));
+						constraint = std::make_shared<ik_constraint_window>(window);
 						break;
 					}
 					case 1: { //Hinge
@@ -1606,7 +1606,7 @@ namespace animation {
 						required_string("+Axis:");
 						stuff_vec3d(&axis);
 						vm_vec_normalize(&axis);
-						constraint = std::shared_ptr<ik_constraint>(new ik_constraint_hinge(axis));
+						constraint = std::make_shared<ik_constraint_hinge>(axis);
 						break;
 					}
 					default:
