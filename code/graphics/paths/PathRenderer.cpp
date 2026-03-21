@@ -15,7 +15,7 @@ namespace paths {
 std::unique_ptr<PathRenderer> PathRenderer::s_instance;
 
 bool PathRenderer::init() {
-	s_instance = std::unique_ptr<PathRenderer>(new PathRenderer());
+	s_instance = std::make_unique<PathRenderer>();
 
 	return true;
 }

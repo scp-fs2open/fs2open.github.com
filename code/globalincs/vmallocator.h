@@ -197,7 +197,7 @@ public:
 
 template <typename T, typename... Args>
 typename std::enable_if<!std::is_array<T>::value, std::unique_ptr<T>>::type make_unique(Args&&... args) {
-	return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+	return std::make_unique<T>(std::forward<Args>(args)...);
 }
 template <typename T, typename... Args>
 typename std::enable_if<std::is_array<T>::value, std::unique_ptr<T>>::type make_unique(std::size_t n) {
