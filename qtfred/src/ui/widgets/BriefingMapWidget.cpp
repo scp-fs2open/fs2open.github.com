@@ -191,12 +191,9 @@ void BriefingMapWidget::setStage(int stageNum) {
 	const auto previousStage = _currentStage;
 	int transitionTime = briefPtr->stages[stageNum].camera_time;
 
-	// Mirror in-game transition timing logic so icon movement/fades and camera
-	// transitions behave as expected when stepping stages in the editor preview.
 	if (previousStage >= 0 && previousStage < briefPtr->num_stages && stageNum != previousStage) {
 		const auto& prev = briefPtr->stages[previousStage];
 
-		// Cut transitions (or large jumps) are immediate stage changes.
 		if (std::abs(stageNum - previousStage) > 1) {
 			transitionTime = 0;
 		} else if (stageNum > previousStage) {
@@ -212,13 +209,80 @@ void BriefingMapWidget::setStage(int stageNum) {
 		}
 	}
 
+	if (shouldUseCutTransition(previousStage, stageNum, briefPtr)) {
+		_pendingCutStage = stageNum;
+		_cutFadeIn = true;
+		_cutFadeFrame = 0;
+	} else {
+		applyStageTransition(stageNum, transitionTime);
+	}
+
+	Briefing = savedBriefing;
+}
+
+bool BriefingMapWidget::shouldUseCutTransition(int fromStage, int toStage, const briefing* briefPtr) const {
+	if (briefPtr == nullptr || fromStage < 0 || toStage < 0 || fromStage == toStage) {
+		return false;
+	}
+
+	if (fromStage >= briefPtr->num_stages || toStage >= briefPtr->num_stages) {
+		return false;
+	}
+
+	if (std::abs(toStage - fromStage) > 1) {
+		return true;
+	}
+
+	const auto& prev = briefPtr->stages[fromStage];
+	if (toStage > fromStage) {
+		return (prev.flags & BS_FORWARD_CUT) != 0;
+	}
+
+	return (prev.flags & BS_BACKWARD_CUT) != 0;
+}
+
+void BriefingMapWidget::applyStageTransition(int stageNum, int transitionTime) {
+	auto* briefPtr = _model->getWipBriefingPtr(_model->getCurrentTeam());
+	if (!briefPtr || stageNum < 0 || stageNum >= briefPtr->num_stages) {
+		return;
+	}
+
+	briefing* savedBriefing = Briefing;
+	Briefing = briefPtr;
+
 	auto& stage = briefPtr->stages[stageNum];
 	brief_set_new_stage(&stage.camera_pos, &stage.camera_orient, transitionTime, stageNum);
 	brief_reset_icons(stageNum);
-
 	_currentStage = stageNum;
 
 	Briefing = savedBriefing;
+}
+
+void BriefingMapWidget::maybeRenderCutTransition(float frametime, int width, int height) {
+	(void)frametime;
+
+	if (!_cutFadeIn) {
+		return;
+	}
+
+	constexpr int CutFadeFrameCount = 8;
+	const auto fadeProgress = static_cast<float>(_cutFadeFrame + 1) / static_cast<float>(CutFadeFrameCount);
+	color fadeColor;
+	gr_init_alphacolor(&fadeColor, 255, 255, 255, fl2i(fadeProgress * 255.0f));
+	gr_set_color_fast(&fadeColor);
+	gr_rect(0, 0, width, height, GR_RESIZE_NONE);
+
+	_cutFadeFrame++;
+	if (_cutFadeFrame >= CutFadeFrameCount) {
+		_cutFadeIn = false;
+		_cutFadeFrame = 0;
+
+		if (_pendingCutStage >= 0) {
+			applyStageTransition(_pendingCutStage, 0);
+			_pendingCutStage = -1;
+		}
+		return;
+	}
 }
 
 int BriefingMapWidget::getCurrentStage() const {
@@ -334,11 +398,12 @@ void BriefingMapWidget::renderFrame() {
 		}
 
 		const float frametime = 0.033f;
-		Brief_text_wipe_time_elapsed += frametime;
-		brief_camera_move(frametime, _currentStage);
-		brief_render_map(_currentStage, frametime);
-		cameraChanged(brief_get_current_cam_pos(), brief_get_current_cam_orient());
-	}
+			Brief_text_wipe_time_elapsed += frametime;
+			brief_camera_move(frametime, _currentStage);
+			brief_render_map(_currentStage, frametime);
+			maybeRenderCutTransition(frametime, w, h);
+			cameraChanged(brief_get_current_cam_pos(), brief_get_current_cam_orient());
+		}
 
 	Briefing = savedBriefing;
 	bscreen = savedBscreen;
