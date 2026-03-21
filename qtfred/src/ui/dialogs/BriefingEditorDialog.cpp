@@ -6,6 +6,8 @@
 #include "CameraCoordinatesDialog.h"
 #include "IconFromShipDialog.h"
 #include "mission/missionbriefcommon.h"
+#include "mission/missiongrid.h"
+#include "math/fvi.h"
 
 #include <globalincs/globals.h>
 #include <globalincs/linklist.h>
@@ -17,6 +19,27 @@
 #include <QVBoxLayout>
 
 namespace fso::fred::dialogs {
+
+namespace {
+vec3d getNewIconPlacement()
+{
+	const vec3d camPos = brief_get_current_cam_pos();
+	const matrix camOrient = brief_get_current_cam_orient();
+
+	float distance = 500.0f;
+	if (The_grid != nullptr) {
+		vec3d gridHitPos;
+		const auto rayDist = fvi_ray_plane(&gridHitPos, &The_grid->center, &The_grid->gmatrix.vec.uvec, &camPos, &camOrient.vec.fvec, 0.0f);
+		if (rayDist >= 0.0f) {
+			distance = rayDist;
+		}
+	}
+
+	vec3d placement;
+	vm_vec_scale_add(&placement, &camPos, &camOrient.vec.fvec, distance);
+	return placement;
+}
+} // namespace
 
 BriefingEditorDialog::BriefingEditorDialog(FredView* parent, EditorViewport* viewport)
 	: QDialog(parent), SexpTreeEditorInterface(flagset<TreeFlags>()), ui(new Ui::BriefingEditorDialog()),
@@ -44,6 +67,7 @@ void BriefingEditorDialog::accept()
 	if (_model->apply()) {
 		_viewport->editor->autosave("briefing editor");
 		QDialog::accept();
+		create_default_grid(); // restore the grid back to the normal version
 	}
 	// else: validation failed, don't close
 }
@@ -55,6 +79,7 @@ void BriefingEditorDialog::reject()
 	// If they don't, it runs _model->reject() and returns true
 	if (rejectOrCloseHandler(this, _model.get(), _viewport)) {
 		QDialog::reject(); // actually close
+		create_default_grid(); // restore the grid back to the normal version
 	}
 	// else: do nothing, don't close
 }
@@ -138,6 +163,7 @@ void BriefingEditorDialog::updateUi()
 	ui->cutToNextStageCheckBox->setChecked(_model->getCutToNext());
 	ui->cutToPrevStageCheckBox->setChecked(_model->getCutFromPrev());
 	ui->disableGridCheckBox->setChecked(_model->getDisableGrid());
+	ui->changeLocallyCheckBox->setChecked(_model->getChangeLocally());
 
 	ui->stageTextPlainTextEdit->setPlainText(QString::fromStdString(_model->getStageText()));
 	ui->voiceFileLineEdit->setText(QString::fromStdString(_model->getSpeechFilename()));
@@ -161,6 +187,22 @@ void BriefingEditorDialog::updateUi()
 		ui->formulaTreeView->hilite_item(ui->formulaTreeView->select_sexp_node);
 	}
 
+	const bool stage_exists = _model->getTotalStages() > 0 && _model->getCurrentStage() >= 0;
+	const bool icon_selected = stage_exists && _model->getCurrentIconIndex() >= 0;
+	if (icon_selected) {
+		ui->iconIdSpinBox->setValue(_model->getIconId());
+		ui->iconLabelLineEdit->setText(QString::fromStdString(_model->getIconLabel()));
+		ui->iconCloseupLabelLineEdit->setText(QString::fromStdString(_model->getIconCloseupLabel()));
+		ui->iconImageComboBox->setCurrentIndex(_model->getIconTypeIndex());
+		ui->iconShipTypeComboBox->setCurrentIndex(_model->getIconShipTypeIndex());
+		ui->iconTeamComboBox->setCurrentIndex(_model->getIconTeamIndex());
+		ui->scaleDoubleSpinBox->setValue(_model->getIconScaleFactor());
+		ui->highlightCheckBox->setChecked(_model->getIconHighlighted());
+		ui->flipIconCheckBox->setChecked(_model->getIconFlipped());
+		ui->useWingIconCheckBox->setChecked(_model->getIconUseWing());
+		ui->useCargoIconCheckBox->setChecked(_model->getIconUseCargo());
+	}
+
 	enableDisableControls();
 }
 
@@ -177,6 +219,8 @@ void BriefingEditorDialog::enableDisableControls()
 	ui->deleteStageButton->setEnabled(stage_exists);
 	ui->saveViewButton->setEnabled(stage_exists);
 	ui->gotoViewButton->setEnabled(stage_exists);
+	ui->makeIconButton->setEnabled(stage_exists);
+	ui->makeIconFromShipButton->setEnabled(stage_exists);
 
 	ui->teamComboBox->setEnabled(_model->getMissionIsMultiTeam());
 	ui->copyToOtherTeamsButton->setEnabled(_model->getMissionIsMultiTeam());
@@ -188,7 +232,22 @@ void BriefingEditorDialog::enableDisableControls()
 	ui->formulaTreeView->setEnabled(stage_exists);
 	
 	const bool icon_selected = stage_exists && _model->getCurrentIconIndex() >= 0;
-	ui->currentIconInfoGroupBox->setEnabled(icon_selected);
+	ui->currentIconInfoGroupBox->setEnabled(stage_exists);
+	ui->makeIconButton->setEnabled(stage_exists);
+	ui->makeIconFromShipButton->setEnabled(stage_exists);
+	ui->iconIdSpinBox->setEnabled(icon_selected);
+	ui->iconLabelLineEdit->setEnabled(icon_selected);
+	ui->iconCloseupLabelLineEdit->setEnabled(icon_selected);
+	ui->iconImageComboBox->setEnabled(icon_selected);
+	ui->iconShipTypeComboBox->setEnabled(icon_selected);
+	ui->iconTeamComboBox->setEnabled(icon_selected);
+	ui->scaleDoubleSpinBox->setEnabled(icon_selected);
+	ui->highlightCheckBox->setEnabled(icon_selected);
+	ui->flipIconCheckBox->setEnabled(icon_selected);
+	ui->useWingIconCheckBox->setEnabled(icon_selected);
+	ui->useCargoIconCheckBox->setEnabled(icon_selected);
+	ui->deleteIconButton->setEnabled(icon_selected);
+	ui->propagateIconButton->setEnabled(icon_selected);
 
 }
 
@@ -327,7 +386,7 @@ void BriefingEditorDialog::on_iconTeamComboBox_currentIndexChanged(int index)
 	_model->setIconTeamIndex(index);
 }
 
-void BriefingEditorDialog::on_iconScaleDoubleSpinBox_valueChanged(double arg1)
+void BriefingEditorDialog::on_scaleDoubleSpinBox_valueChanged(double arg1)
 {
 	_model->setIconScaleFactor(static_cast<float>(arg1));
 }
@@ -340,42 +399,37 @@ void BriefingEditorDialog::on_drawLinesCheckBox_toggled(bool checked)
 void BriefingEditorDialog::on_changeLocallyCheckBox_toggled(bool checked)
 {
 	_model->setChangeLocally(checked);
+	_mapWidget->notifyIconVisualsChanged();
 }
 
 void BriefingEditorDialog::on_flipIconCheckBox_toggled(bool checked)
 {
 	_model->setIconFlipped(checked);
+	_mapWidget->notifyIconVisualsChanged();
 }
 
 void BriefingEditorDialog::on_highlightCheckBox_toggled(bool checked)
 {
 	_model->setIconHighlighted(checked);
+	_mapWidget->notifyIconVisualsChanged();
 }
 
-void BriefingEditorDialog::on_useWingCheckBox_toggled(bool checked)
+void BriefingEditorDialog::on_useWingIconCheckBox_toggled(bool checked)
 {
 	_model->setIconUseWing(checked);
+	_mapWidget->notifyIconVisualsChanged();
 }
 
-void BriefingEditorDialog::on_useCargoCheckBox_toggled(bool checked)
+void BriefingEditorDialog::on_useCargoIconCheckBox_toggled(bool checked)
 {
 	_model->setIconUseCargo(checked);
+	_mapWidget->notifyIconVisualsChanged();
 }
 
 void BriefingEditorDialog::on_makeIconButton_clicked()
 {
-	// Create a new icon at the camera's look-at point
-	vec3d camPos = brief_get_current_cam_pos();
-	matrix camOrient = brief_get_current_cam_orient();
-
-	// Compute look-at point: position + forward * some distance
-	vec3d lookAt;
-	vm_vec_scale_add(&lookAt, &camPos, &camOrient.vec.fvec, 500.0f);
-
-	_model->makeIcon("New Icon", 0, 0, -1);
-
-	// Set the new icon's position to the look-at point
-	_model->setIconPosition(lookAt);
+	_model->makeIcon("New Icon", 0, 0, 0);
+	_model->setIconPosition(getNewIconPlacement());
 	updateUi();
 }
 
@@ -384,6 +438,7 @@ void BriefingEditorDialog::on_makeIconFromShipButton_clicked()
 	IconFromShipDialog dlg(this, _model.get());
 	if (dlg.exec() == QDialog::Accepted && dlg.selectedShipIndex() >= 0) {
 		_model->makeIconFromShip(dlg.selectedShipIndex());
+		_model->setIconPosition(getNewIconPlacement());
 		updateUi();
 	}
 }

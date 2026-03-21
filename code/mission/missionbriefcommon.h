@@ -308,6 +308,7 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 void brief_render_icon_line(int stage_num, int line_num);
 void brief_init_map();
 void brief_icons_init();
+void brief_move_icon_reset();
 void brief_common_close();
 void brief_reset_icons(int stage_num);
 void brief_restart_text_wipe();

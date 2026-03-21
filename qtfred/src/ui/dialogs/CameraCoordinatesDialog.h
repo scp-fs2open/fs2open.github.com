@@ -25,7 +25,6 @@ public slots:
 	void onCameraChanged(vec3d pos, matrix orient);
 
 private slots:
-	void onSpinBoxChanged();
 	void onApplyClicked();
 
 private:

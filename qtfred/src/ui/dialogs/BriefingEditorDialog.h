@@ -62,14 +62,14 @@ class BriefingEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	void on_iconImageComboBox_currentIndexChanged(int index);
 	void on_iconShipTypeComboBox_currentIndexChanged(int index);
 	void on_iconTeamComboBox_currentIndexChanged(int index);
-	void on_iconScaleDoubleSpinBox_valueChanged(double arg1);
+	void on_scaleDoubleSpinBox_valueChanged(double arg1);
 
 	void on_drawLinesCheckBox_toggled(bool checked);
 	void on_changeLocallyCheckBox_toggled(bool checked);
 	void on_flipIconCheckBox_toggled(bool checked);
 	void on_highlightCheckBox_toggled(bool checked);
-	void on_useWingCheckBox_toggled(bool checked);
-	void on_useCargoCheckBox_toggled(bool checked);
+	void on_useWingIconCheckBox_toggled(bool checked);
+	void on_useCargoIconCheckBox_toggled(bool checked);
 
 	void on_makeIconButton_clicked();
 	void on_makeIconFromShipButton_clicked();

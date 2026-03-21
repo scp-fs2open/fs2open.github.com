@@ -8,7 +8,7 @@
 #include "osapi/osapi.h"
 #include "ui/QtGraphicsOperations.h"
 
-struct briefing;
+class briefing;
 
 namespace fso::fred::dialogs {
 class BriefingEditorDialogModel;
@@ -62,6 +62,8 @@ public:
 
 	void setStage(int stageNum);
 	int getCurrentStage() const;
+	void notifyIconVisualsChanged();
+	void applyCameraToCurrentStage(const vec3d& pos, const matrix& orient);
 
 	QWindow* getRenderWindow() const;
 
@@ -81,6 +83,11 @@ private:
 	void applyStageTransition(int stageNum, int transitionTime);
 	void maybeRenderCutTransition(float frametime, int width, int height);
 	bool shouldUseCutTransition(int fromStage, int toStage, const briefing* briefPtr) const;
+	void stopStageHighlights();
+	void updateEditorHighlightPlayback();
+	void abortHighlightPlayback();
+	void drawSelectedIconOutline();
+	void applyCameraPoseLikeKeyboardControls(const vec3d& camPos, const matrix& camOrient, bool updateModel);
 
 	BriefingMapWindow* _window = nullptr;
 	QTimer* _renderTimer = nullptr;
@@ -106,11 +113,16 @@ private:
 	bool _draggingIcon = false;
 	int _dragIconIndex = -1;
 	QPoint _lastMousePos;
+	QPointF _dragStartMousePos;
+	vec3d _dragStartIconPos = ZERO_VECTOR;
+	int _lastRenderWidth = 0;
+	int _lastRenderHeight = 0;
 
 	// Briefing cut transition state (forward/backward cut + jump cuts)
 	bool _cutFadeIn = false;
 	int _cutFadeFrame = 0;
 	int _pendingCutStage = -1;
+	bool _suppressHighlights = false;
 };
 
 } // namespace fso::fred

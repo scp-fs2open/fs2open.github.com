@@ -990,7 +990,7 @@ void brief_init(bool api_access)
 
 	Brief_mouse_up_flag	= 0;
 	Closeup_font_height = gr_get_font_height();
-	Closeup_icon = NULL;
+	Closeup_icon = nullptr;
 	Brief_inited = TRUE;
 }
 

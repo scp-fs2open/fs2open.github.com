@@ -12,6 +12,7 @@
 #include <QPushButton>
 #include <QGroupBox>
 #include <QLabel>
+#include <QApplication>
 
 namespace fso::fred::dialogs {
 
@@ -86,6 +87,15 @@ void CameraCoordinatesDialog::setupUi()
 
 void CameraCoordinatesDialog::onCameraChanged(vec3d pos, matrix orient)
 {
+	auto* focused = QApplication::focusWidget();
+	const bool editingCameraInputs = focused != nullptr &&
+		((_posX == focused) || _posX->isAncestorOf(focused) || (_posY == focused) || _posY->isAncestorOf(focused) ||
+			(_posZ == focused) || _posZ->isAncestorOf(focused) || (_heading == focused) || _heading->isAncestorOf(focused) ||
+			(_pitch == focused) || _pitch->isAncestorOf(focused) || (_bank == focused) || _bank->isAncestorOf(focused));
+	if (editingCameraInputs) {
+		return;
+	}
+
 	_updatingFromCamera = true;
 
 	_posX->setValue(pos.xyz.x);
@@ -101,13 +111,6 @@ void CameraCoordinatesDialog::onCameraChanged(vec3d pos, matrix orient)
 	_bank->setValue(fl_degrees(a.b));
 
 	_updatingFromCamera = false;
-}
-
-void CameraCoordinatesDialog::onSpinBoxChanged()
-{
-	if (_updatingFromCamera)
-		return;
-	onApplyClicked();
 }
 
 void CameraCoordinatesDialog::onApplyClicked()
@@ -129,8 +132,8 @@ void CameraCoordinatesDialog::onApplyClicked()
 	_model->setCameraPosition(pos);
 	_model->setCameraOrientation(orient);
 
-	// Apply to the map widget with instant transition
-	_mapWidget->setStage(_model->getCurrentStage());
+	// Apply to the map widget immediately for the current stage.
+	_mapWidget->applyCameraToCurrentStage(pos, orient);
 }
 
 } // namespace fso::fred::dialogs

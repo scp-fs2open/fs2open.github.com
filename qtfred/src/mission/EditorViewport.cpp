@@ -810,6 +810,14 @@ int EditorViewport::select_object(int cx, int cy) {
 	g3_start_frame(0); ////////////////
 	g3_set_view_matrix(&eye_pos, &eye_orient, 0.5f);*/
 
+	// g3_point_to_vec requires G3_count == 1 (i.e. exactly one active 3D frame).
+	// Mouse events can arrive when no frame is active (G3_count == 0) or when
+	// another renderer (e.g. the briefing-map widget) has altered the frame state.
+	// In those cases we cannot do a valid screen-to-world conversion.
+	if (g3_in_frame() != 1) {
+		return -1;
+	}
+
 	//	Get 3d vector specified by mouse cursor location.
 	g3_point_to_vec(&v, cx, cy);
 
