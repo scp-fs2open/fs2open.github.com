@@ -73,6 +73,7 @@ class BriefingEditorDialog : public QDialog, public SexpTreeEditorInterface {
 
 	void on_makeIconButton_clicked();
 	void on_makeIconFromShipButton_clicked();
+	void on_iconCoordinatesButton_clicked();
 	void on_deleteIconButton_clicked();
 	void on_propagateIconButton_clicked();
 

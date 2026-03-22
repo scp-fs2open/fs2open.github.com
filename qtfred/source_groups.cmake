@@ -156,6 +156,8 @@ add_file_folder("Source/UI/Dialogs"
     src/ui/dialogs/BriefingEditorDialog.h
 	src/ui/dialogs/CameraCoordinatesDialog.cpp
 	src/ui/dialogs/CameraCoordinatesDialog.h
+	src/ui/dialogs/IconCoordinatesDialog.cpp
+	src/ui/dialogs/IconCoordinatesDialog.h
 	src/ui/dialogs/IconFromShipDialog.cpp
 	src/ui/dialogs/IconFromShipDialog.h
 	src/ui/dialogs/CampaignEditorDialog.h

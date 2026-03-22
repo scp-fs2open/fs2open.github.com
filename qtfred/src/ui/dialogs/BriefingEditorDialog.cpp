@@ -5,6 +5,7 @@
 #include "ui/widgets/BriefingMapWidget.h"
 #include "CameraCoordinatesDialog.h"
 #include "IconFromShipDialog.h"
+#include "IconCoordinatesDialog.h"
 #include "mission/missionbriefcommon.h"
 #include "mission/missiongrid.h"
 #include "math/fvi.h"
@@ -494,6 +495,12 @@ void BriefingEditorDialog::on_makeIconFromShipButton_clicked()
 		_model->setIconPosition(getNewIconPlacement());
 		updateUi();
 	}
+}
+
+void BriefingEditorDialog::on_iconCoordinatesButton_clicked()
+{
+	IconCoordinatesDialog dlg(this, _model.get());
+	dlg.exec(); // modal
 }
 
 void BriefingEditorDialog::on_deleteIconButton_clicked()
