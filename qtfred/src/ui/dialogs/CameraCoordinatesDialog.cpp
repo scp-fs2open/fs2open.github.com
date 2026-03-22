@@ -12,7 +12,6 @@
 #include <QPushButton>
 #include <QGroupBox>
 #include <QLabel>
-#include <QApplication>
 
 namespace fso::fred::dialogs {
 
@@ -22,15 +21,12 @@ CameraCoordinatesDialog::CameraCoordinatesDialog(QWidget* parent,
 	: QDialog(parent), _model(model), _mapWidget(mapWidget)
 {
 	setWindowTitle("Camera Coordinates");
-	setAttribute(Qt::WA_DeleteOnClose);
 	setupUi();
 
-	// Connect to the map widget's camera changed signal for live updates
-	connect(_mapWidget, &fso::fred::BriefingMapWidget::cameraChanged,
-		this, &CameraCoordinatesDialog::onCameraChanged);
-
-	// Initialize with current values
-	onCameraChanged(brief_get_current_cam_pos(), brief_get_current_cam_orient());
+	// Initialize with current camera values once.
+	_initialCameraPos = brief_get_current_cam_pos();
+	_initialCameraOrient = brief_get_current_cam_orient();
+	populateFromCurrentCamera();
 }
 
 void CameraCoordinatesDialog::setupUi()
@@ -46,6 +42,7 @@ void CameraCoordinatesDialog::setupUi()
 		sb->setRange(min, max);
 		sb->setDecimals(decimals);
 		sb->setSingleStep(10.0);
+		sb->setKeyboardTracking(false);
 		return sb;
 	};
 
@@ -71,32 +68,31 @@ void CameraCoordinatesDialog::setupUi()
 
 	// Apply button
 	auto* buttonLayout = new QHBoxLayout();
-	auto* applyBtn = new QPushButton("Apply", this);
-	auto* closeBtn = new QPushButton("Close", this);
+	auto* okBtn = new QPushButton("OK", this);
+	auto* cancelBtn = new QPushButton("Cancel", this);
 	buttonLayout->addStretch();
-	buttonLayout->addWidget(applyBtn);
-	buttonLayout->addWidget(closeBtn);
+	buttonLayout->addWidget(okBtn);
+	buttonLayout->addWidget(cancelBtn);
 	mainLayout->addLayout(buttonLayout);
 
-	connect(applyBtn, &QPushButton::clicked, this, &CameraCoordinatesDialog::onApplyClicked);
-	connect(closeBtn, &QPushButton::clicked, this, &QDialog::close);
+	connect(okBtn, &QPushButton::clicked, this, &QDialog::accept);
+	connect(cancelBtn, &QPushButton::clicked, this, &CameraCoordinatesDialog::onCancelClicked);
+	connect(_posX, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &CameraCoordinatesDialog::onSpinBoxEditingFinished);
+	connect(_posY, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &CameraCoordinatesDialog::onSpinBoxEditingFinished);
+	connect(_posZ, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &CameraCoordinatesDialog::onSpinBoxEditingFinished);
+	connect(_heading, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &CameraCoordinatesDialog::onSpinBoxEditingFinished);
+	connect(_pitch, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &CameraCoordinatesDialog::onSpinBoxEditingFinished);
+	connect(_bank, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &CameraCoordinatesDialog::onSpinBoxEditingFinished);
 
 	setLayout(mainLayout);
 	setMinimumWidth(280);
 }
 
-void CameraCoordinatesDialog::onCameraChanged(vec3d pos, matrix orient)
+void CameraCoordinatesDialog::populateFromCurrentCamera()
 {
-	auto* focused = QApplication::focusWidget();
-	const bool editingCameraInputs = focused != nullptr &&
-		((_posX == focused) || _posX->isAncestorOf(focused) || (_posY == focused) || _posY->isAncestorOf(focused) ||
-			(_posZ == focused) || _posZ->isAncestorOf(focused) || (_heading == focused) || _heading->isAncestorOf(focused) ||
-			(_pitch == focused) || _pitch->isAncestorOf(focused) || (_bank == focused) || _bank->isAncestorOf(focused));
-	if (editingCameraInputs) {
-		return;
-	}
-
-	_updatingFromCamera = true;
+	_populatingUi = true;
+	const auto pos = _initialCameraPos;
+	const auto orient = _initialCameraOrient;
 
 	_posX->setValue(pos.xyz.x);
 	_posY->setValue(pos.xyz.y);
@@ -109,11 +105,10 @@ void CameraCoordinatesDialog::onCameraChanged(vec3d pos, matrix orient)
 	_heading->setValue(fl_degrees(a.h));
 	_pitch->setValue(fl_degrees(a.p));
 	_bank->setValue(fl_degrees(a.b));
-
-	_updatingFromCamera = false;
+	_populatingUi = false;
 }
 
-void CameraCoordinatesDialog::onApplyClicked()
+void CameraCoordinatesDialog::applyCurrentInputsToCamera()
 {
 	vec3d pos;
 	pos.xyz.x = static_cast<float>(_posX->value());
@@ -128,12 +123,23 @@ void CameraCoordinatesDialog::onApplyClicked()
 	matrix orient;
 	vm_angles_2_matrix(&orient, &a);
 
-	// Update the model's stage camera
-	_model->setCameraPosition(pos);
-	_model->setCameraOrientation(orient);
-
-	// Apply to the map widget immediately for the current stage.
+	// Apply through the same path used by keyboard camera controls.
 	_mapWidget->applyCameraToCurrentStage(pos, orient);
+}
+
+void CameraCoordinatesDialog::onSpinBoxEditingFinished()
+{
+	if (_populatingUi) {
+		return;
+	}
+
+	applyCurrentInputsToCamera();
+}
+
+void CameraCoordinatesDialog::onCancelClicked()
+{
+	_mapWidget->applyCameraToCurrentStage(_initialCameraPos, _initialCameraOrient);
+	reject();
 }
 
 } // namespace fso::fred::dialogs

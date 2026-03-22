@@ -298,8 +298,8 @@ void BriefingEditorDialog::on_deleteStageButton_clicked()
 
 void BriefingEditorDialog::on_cameraCoordinatesButton_clicked()
 {
-	auto* dlg = new CameraCoordinatesDialog(this, _model.get(), _mapWidget);
-	dlg->show(); // modeless
+	CameraCoordinatesDialog dlg(this, _model.get(), _mapWidget);
+	dlg.exec(); // modal
 }
 
 void BriefingEditorDialog::on_saveViewButton_clicked()

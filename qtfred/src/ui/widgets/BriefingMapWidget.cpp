@@ -404,7 +404,7 @@ void BriefingMapWidget::notifyIconVisualsChanged() {
 }
 
 void BriefingMapWidget::applyCameraToCurrentStage(const vec3d& pos, const matrix& orient) {
-	applyCameraPoseLikeKeyboardControls(pos, orient, false);
+	applyCameraPoseLikeKeyboardControls(pos, orient, true);
 }
 
 void BriefingMapWidget::applyCameraPoseLikeKeyboardControls(const vec3d& camPos, const matrix& camOrient, bool updateModel) {
