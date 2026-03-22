@@ -446,6 +446,7 @@ void BriefingEditorDialog::on_makeIconFromShipButton_clicked()
 void BriefingEditorDialog::on_deleteIconButton_clicked()
 {
 	_model->deleteCurrentIcon();
+	updateUi();
 }
 
 void BriefingEditorDialog::on_propagateIconButton_clicked()
