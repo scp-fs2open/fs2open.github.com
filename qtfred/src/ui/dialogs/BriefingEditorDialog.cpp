@@ -277,8 +277,16 @@ void BriefingEditorDialog::on_nextStageButton_clicked()
 
 void BriefingEditorDialog::on_addStageButton_clicked()
 {
+	const bool creatingFirstStage = (_model->getTotalStages() == 0);
 	_model->addStage();
-	_mapWidget->setStage(_model->getCurrentStage());
+
+	if (creatingFirstStage) {
+		const auto stageView = _model->getStageView();
+		_mapWidget->applyCameraToCurrentStage(stageView.first, stageView.second);
+	} else {
+		_mapWidget->setStage(_model->getCurrentStage());
+	}
+
 	updateUi();
 }
 

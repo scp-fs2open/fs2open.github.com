@@ -174,12 +174,14 @@ void BriefingEditorDialogModel::addStage()
 		// First stage in an empty briefing
 		dst.text = "<Text here>";
 		dst.voice[0] = '\0';
-		dst.camera_pos = (The_grid != nullptr) ? The_grid->center : vmd_zero_vector;
-		dst.camera_pos.xyz.y += 1000.0f;
+		dst.camera_pos = vmd_zero_vector;
+		dst.camera_pos.xyz.y = 1000.0f;
 
-		vec3d down = {{0.0f, -1.0f, 0.0f}};
-		vec3d up_hint = {{0.0f, 0.0f, 1.0f}};
-		vm_vector_2_matrix_norm(&dst.camera_orient, &down, &up_hint, nullptr);
+		angles a;
+		a.h = fl_radians(90.0f);
+		a.p = fl_radians(90.0f);
+		a.b = fl_radians(90.0f);
+		vm_angles_2_matrix(&dst.camera_orient, &a);
 		dst.camera_time = 500;
 		dst.flags = 0;
 		dst.draw_grid = true;
