@@ -16,8 +16,6 @@
 #include <mission/missionbriefcommon.h>
 #include <ui/util/SignalBlockers.h>
 
-#include <algorithm>
-#include <cmath>
 #include <QCloseEvent>
 #include <QCheckBox>
 #include <QFileDialog>
@@ -136,7 +134,7 @@ void BriefingEditorDialog::closeEvent(QCloseEvent* e)
 
 void BriefingEditorDialog::setupMapWidget()
 {
-	// Replace the mapView placeholder with our BriefingMapWidget
+	// Replace the mapView placeholder with the BriefingMapWidget
 	_mapWidget = new fso::fred::BriefingMapWidget(this, _model.get(), _viewport);
 	_mapWidget->setMinimumSize(ui->mapView->minimumSize());
 	_mapWidget->setSizePolicy(ui->mapView->sizePolicy());
@@ -306,13 +304,13 @@ void BriefingEditorDialog::updateUi()
 		ui->iconShipTypeComboBox->setCurrentIndex(_model->getIconShipTypeIndex());
 		ui->iconTeamComboBox->setCurrentIndex(_model->getIconTeamIndex());
 		ui->scaleDoubleSpinBox->setValue(_model->getIconScaleFactor());
-		const auto toQtCheckState = [](BriefingEditorDialogModel::TriState state) {
+		const auto toQtCheckState = [](TriStateBool state) {
 			switch (state) {
-			case BriefingEditorDialogModel::TriState::Checked:
+			case TriStateBool::TRUE_:
 				return Qt::Checked;
-			case BriefingEditorDialogModel::TriState::Partial:
+			case TriStateBool::UNKNOWN_:
 				return Qt::PartiallyChecked;
-			case BriefingEditorDialogModel::TriState::Unchecked:
+			case TriStateBool::FALSE_:
 			default:
 				return Qt::Unchecked;
 			}
@@ -387,20 +385,6 @@ void BriefingEditorDialog::enableDisableControls()
 	ui->iconCoordinatesButton->setEnabled(single_icon_selected);
 	ui->deleteIconButton->setEnabled(single_icon_selected);
 	ui->propagateIconButton->setEnabled(single_icon_selected);
-	/*ui->iconIdSpinBox->setEnabled(icon_selected);
-	ui->iconLabelLineEdit->setEnabled(icon_selected);
-	ui->iconCloseupLabelLineEdit->setEnabled(icon_selected);
-	ui->iconImageComboBox->setEnabled(icon_selected);
-	ui->iconShipTypeComboBox->setEnabled(icon_selected);
-	ui->iconTeamComboBox->setEnabled(icon_selected);
-	ui->scaleDoubleSpinBox->setEnabled(icon_selected);
-	ui->highlightCheckBox->setEnabled(icon_selected);
-	ui->flipIconCheckBox->setEnabled(icon_selected);
-	ui->useWingIconCheckBox->setEnabled(icon_selected);
-	ui->useCargoIconCheckBox->setEnabled(icon_selected);
-	ui->iconCoordinatesButton->setEnabled(icon_selected);
-	ui->deleteIconButton->setEnabled(icon_selected);
-	ui->propagateIconButton->setEnabled(icon_selected);*/
 
 }
 
@@ -473,12 +457,7 @@ void BriefingEditorDialog::on_cameraCoordinatesButton_clicked()
 	dlg.exec(); // modal
 }
 
-void BriefingEditorDialog::on_saveViewButton_clicked()
-{
-	// Save View is intentionally removed in QtFRED.
-}
-
-void BriefingEditorDialog::on_gotoViewButton_clicked()
+void BriefingEditorDialog::on_resetCameraButton_clicked()
 {
 	const int currentTeam = _model->getCurrentTeam();
 	const int currentStage = _model->getCurrentStage();
@@ -491,12 +470,12 @@ void BriefingEditorDialog::on_gotoViewButton_clicked()
 	}
 }
 
-void BriefingEditorDialog::on_copyViewButton_clicked()
+void BriefingEditorDialog::on_copyCameraButton_clicked()
 {
 	_model->copyStageViewToClipboard();
 }
 
-void BriefingEditorDialog::on_pasteViewButton_clicked()
+void BriefingEditorDialog::on_pasteCameraButton_clicked()
 {
 	_model->pasteClipboardViewToStage();
 	const auto stageView = _model->getStageView();

@@ -134,7 +134,7 @@
             </widget>
            </item>
            <item row="0" column="2">
-            <widget class="QPushButton" name="gotoViewButton">
+            <widget class="QPushButton" name="resetCameraButton">
              <property name="text">
               <string>Reset Camera</string>
              </property>
@@ -144,7 +144,7 @@
             </widget>
            </item>
            <item row="1" column="2">
-            <widget class="QPushButton" name="copyViewButton">
+            <widget class="QPushButton" name="copyCameraButton">
              <property name="text">
               <string>Copy Camera</string>
              </property>
@@ -154,7 +154,7 @@
             </widget>
            </item>
            <item row="2" column="2">
-            <widget class="QPushButton" name="pasteViewButton">
+            <widget class="QPushButton" name="pasteCameraButton">
              <property name="text">
               <string>Paste Camera</string>
              </property>
@@ -223,7 +223,7 @@
           </layout>
          </item>
          <item>
-         <spacer name="stageControlsSpacer">
+          <spacer name="stageControlsSpacer">
            <property name="orientation">
             <enum>Qt::Vertical</enum>
            </property>
@@ -239,6 +239,9 @@
           <layout class="QHBoxLayout" name="cameraSpeedLayout">
            <item>
             <widget class="QComboBox" name="movementSpeedComboBox">
+             <property name="currentIndex">
+              <number>2</number>
+             </property>
              <item>
               <property name="text">
                <string>Move Speed: 0.25x</string>
@@ -254,13 +257,13 @@
                <string>Move Speed: 1.0x</string>
               </property>
              </item>
-             <property name="currentIndex">
-              <number>2</number>
-             </property>
             </widget>
            </item>
            <item>
             <widget class="QComboBox" name="rotationSpeedComboBox">
+             <property name="currentIndex">
+              <number>2</number>
+             </property>
              <item>
               <property name="text">
                <string>Rotate Speed: 0.25x</string>
@@ -276,9 +279,6 @@
                <string>Rotate Speed: 1.0x</string>
               </property>
              </item>
-             <property name="currentIndex">
-              <number>2</number>
-             </property>
             </widget>
            </item>
           </layout>

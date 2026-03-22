@@ -229,7 +229,6 @@ static int		Play_brief_voice;
 static int		Play_highlight_flag;
 static int		Cam_target_reached;
 static int		Cam_movement_done;
-static int      Brief_render_debug_counter;
 
 // moving icons
 typedef struct icon_move_info
@@ -1268,15 +1267,6 @@ void brief_render_icons(int stage_num, float frametime)
 			projected_icons++;
 		}
 	}
-
-	if ((Brief_render_debug_counter % 120) == 0) {
-		mprintf(("brief_render_icons: stage=%d cam_target_reached=%d num_icons=%d projected_icons=%d num_lines=%d\n",
-			stage_num,
-			Cam_target_reached ? 1 : 0,
-			num_icons,
-			projected_icons,
-			num_lines));
-	}
 }
 
 /**
@@ -1323,8 +1313,6 @@ void brief_start_highlight_anims(int stage_num)
 //
 void brief_render_map(int stage_num, float frametime)
 {
-	Brief_render_debug_counter++;
-
 	gr_set_clip(bscreen.map_x1 + 1, bscreen.map_y1 + 1, bscreen.map_x2 - bscreen.map_x1 - 1, bscreen.map_y2 - bscreen.map_y1 - 2, bscreen.resize);
 
     if (stage_num >= Briefing->num_stages) {
@@ -1338,16 +1326,6 @@ void brief_render_map(int stage_num, float frametime)
 	g3_set_view_matrix(&Current_cam_pos, &Current_cam_orient, Briefing_window_FOV);
 
 	brief_maybe_create_new_grid(The_grid, &Current_cam_pos, &Current_cam_orient);
-
-	if ((Brief_render_debug_counter % 120) == 0) {
-		const auto& stage = Briefing->stages[stage_num];
-		mprintf(("brief_render_map: stage=%d draw_grid=%d num_icons=%d num_lines=%d cam_target_reached=%d\n",
-			stage_num,
-			stage.draw_grid ? 1 : 0,
-			stage.num_icons,
-			stage.num_lines,
-			Cam_target_reached ? 1 : 0));
-	}
 
 	if (Briefing->stages[stage_num].draw_grid)
 		brief_render_grid(The_grid, Briefing->stages[stage_num].grid_color);

@@ -261,8 +261,7 @@ void BriefingEditorDialogModel::addStage()
 	if (_currentStage > 0) {
 		const brief_stage& prev = _wipBriefings[_currentTeam].stages[_currentStage - 1];
 
-		copyStageData(dst, prev); // start by copying stage data without aliasing storage
-		// then clear fields that should not carry over by default
+		copyStageData(dst, prev); // start by copying stage data without aliasing storage, then clear fields that should not carry over by default
 		dst.text = "<Text here>";
 		dst.voice[0] = '\0';
 	} else {
@@ -591,7 +590,7 @@ void BriefingEditorDialogModel::setCutFromPrev(bool enabled)
 		flags |= BS_BACKWARD_CUT;
 	else
 		flags &= ~BS_BACKWARD_CUT;
-	
+
 	modify(s.flags, flags);
 }
 
@@ -739,7 +738,7 @@ int BriefingEditorDialogModel::getIconShipTypeIndex() const
 	const auto& s = b.stages[_currentStage];
 	if (_currentIcon < 0 || _currentIcon >= s.num_icons)
 		return -1;
-	return s.icons[_currentIcon].ship_class; // may be -1 for "unset" depending on icon type
+	return s.icons[_currentIcon].ship_class; // may be -1 for unset depending on icon type
 }
 
 void BriefingEditorDialogModel::setIconShipTypeIndex(int idx)
@@ -803,7 +802,7 @@ void BriefingEditorDialogModel::setLineSelection(const SCP_vector<int>& indices)
 		if (std::find(cleaned.begin(), cleaned.end(), idx) == cleaned.end())
 			cleaned.push_back(idx);
 	}
-	
+
 	_lineSelection = std::move(cleaned);
 }
 
@@ -953,16 +952,16 @@ void BriefingEditorDialogModel::setChangeLocally(bool enabled)
 	modify(_changeLocally, enabled);
 }
 
-BriefingEditorDialogModel::TriState BriefingEditorDialogModel::getSelectedIconFlagState(int flag) const
+TriStateBool BriefingEditorDialogModel::getSelectedIconFlagState(int flag) const
 {
 	const auto& b = _wipBriefings[_currentTeam];
 	if (b.num_stages <= 0 || _currentStage < 0 || _currentStage >= b.num_stages)
-		return TriState::Unchecked;
+		return TriStateBool::FALSE_;
 	const auto& s = b.stages[_currentStage];
 
 	const auto selection = getEffectiveSelection(s);
 	if (selection.empty())
-		return TriState::Unchecked;
+		return TriStateBool::FALSE_;
 
 	bool anyChecked = false;
 	bool anyUnchecked = false;
@@ -978,11 +977,11 @@ BriefingEditorDialogModel::TriState BriefingEditorDialogModel::getSelectedIconFl
 	}
 
 	if (anyChecked && anyUnchecked)
-		return TriState::Partial;
-	return anyChecked ? TriState::Checked : TriState::Unchecked;
+		return TriStateBool::UNKNOWN_;
+	return anyChecked ? TriStateBool::TRUE_ : TriStateBool::FALSE_;
 }
 
-BriefingEditorDialogModel::TriState BriefingEditorDialogModel::getIconHighlightedState() const
+TriStateBool BriefingEditorDialogModel::getIconHighlightedState() const
 {
 	return getSelectedIconFlagState(BI_HIGHLIGHT);
 }
@@ -1000,7 +999,7 @@ void BriefingEditorDialogModel::setIconHighlighted(bool enabled)
 	});
 }
 
-BriefingEditorDialogModel::TriState BriefingEditorDialogModel::getIconFlippedState() const
+TriStateBool BriefingEditorDialogModel::getIconFlippedState() const
 {
 	return getSelectedIconFlagState(BI_MIRROR_ICON);
 }
@@ -1018,7 +1017,7 @@ void BriefingEditorDialogModel::setIconFlipped(bool enabled)
 	});
 }
 
-BriefingEditorDialogModel::TriState BriefingEditorDialogModel::getIconUseWingState() const
+TriStateBool BriefingEditorDialogModel::getIconUseWingState() const
 {
 	return getSelectedIconFlagState(BI_USE_WING_ICON);
 }
@@ -1036,7 +1035,7 @@ void BriefingEditorDialogModel::setIconUseWing(bool enabled)
 	});
 }
 
-BriefingEditorDialogModel::TriState BriefingEditorDialogModel::getIconUseCargoState() const
+TriStateBool BriefingEditorDialogModel::getIconUseCargoState() const
 {
 	return getSelectedIconFlagState(BI_USE_CARGO_ICON);
 }
@@ -1105,7 +1104,7 @@ void BriefingEditorDialogModel::makeIcon(const SCP_string& label, int typeIndex,
 
 	// Defaults
 	ic.pos = vmd_zero_vector; // renderer can move it after creation
-	ic.scale_factor = 1.0f;   // 100%
+	ic.scale_factor = 1.0f;
 	ic.flags = 0;             // not flipped/highlighted/wing/cargo
 	ic.modelnum = -1;
 	ic.model_instance_num = -1;

@@ -44,10 +44,9 @@ class BriefingEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	void on_insertStageButton_clicked();
 	void on_deleteStageButton_clicked();
 
-	void on_saveViewButton_clicked();
-	void on_gotoViewButton_clicked();
-	void on_copyViewButton_clicked();
-	void on_pasteViewButton_clicked();
+	void on_resetCameraButton_clicked();
+	void on_copyCameraButton_clicked();
+	void on_pasteCameraButton_clicked();
 
 	void on_copyToOtherTeamsButton_clicked();
 	void on_teamComboBox_currentIndexChanged(int index);
