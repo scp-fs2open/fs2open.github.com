@@ -1665,6 +1665,11 @@ void brief_set_camera_target(vec3d *pos, matrix *orient, int time)
 	get_camera_limits(&Start_cam_orient, &Target_cam_orient, Total_move_time, &Acc_limit, &Vel_limit);
 }
 
+void brief_cancel_pending_highlight_anims()
+{
+	Play_highlight_flag = 0;
+}
+
 
 bool brief_verify_color_tag(unicode::codepoint_t color_tag)
 {

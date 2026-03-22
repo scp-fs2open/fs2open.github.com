@@ -83,9 +83,7 @@ private:
 	void applyStageTransition(int stageNum, int transitionTime);
 	void maybeRenderCutTransition(float frametime, int width, int height);
 	bool shouldUseCutTransition(int fromStage, int toStage, const briefing* briefPtr) const;
-	void stopStageHighlights();
 	void updateEditorHighlightPlayback();
-	void abortHighlightPlayback();
 	void drawSelectedIconOutline();
 	void applyCameraPoseLikeKeyboardControls(const vec3d& camPos, const matrix& camOrient, bool updateModel);
 
@@ -122,7 +120,6 @@ private:
 	bool _cutFadeIn = false;
 	int _cutFadeFrame = 0;
 	int _pendingCutStage = -1;
-	bool _suppressHighlights = false;
 };
 
 } // namespace fso::fred

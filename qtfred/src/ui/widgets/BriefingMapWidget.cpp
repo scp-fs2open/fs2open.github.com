@@ -16,6 +16,7 @@
 
 #include "FredApplication.h"
 #include "anim/animplay.h"
+#include "bmpman/bmpman.h"
 #include "mission/dialogs/BriefingEditorDialogModel.h"
 #include "mission/EditorViewport.h"
 
@@ -24,6 +25,32 @@
 #include "mission/missionbriefcommon.h"
 
 namespace fso::fred {
+
+namespace {
+void ensure_highlight_anim_loaded(brief_icon& icon) {
+	if ((icon.flags & BI_HIGHLIGHT) == 0) {
+		return;
+	}
+
+	auto* iconInfo = brief_get_icon_info(&icon);
+	if (iconInfo == nullptr) {
+		return;
+	}
+
+	auto& sourceAnim = iconInfo->highlight;
+	if (sourceAnim.filename[0] == '\0' || !stricmp(NOX("none"), sourceAnim.filename)) {
+		return;
+	}
+
+	if (sourceAnim.first_frame < 0) {
+		hud_anim_load(&sourceAnim);
+	}
+
+	if (sourceAnim.first_frame >= 0) {
+		icon.highlight_anim = sourceAnim;
+	}
+}
+}
 
 // ---- BriefingMapWindow ----
 
@@ -258,33 +285,11 @@ void BriefingMapWidget::applyStageTransition(int stageNum, int transitionTime) {
 	Brief_text_wipe_time_elapsed = BRIEF_TEXT_WIPE_TIME + 1.0f;
 	brief_reset_icons(stageNum);
 	_currentStage = stageNum;
-	_suppressHighlights = false;
 
 	Briefing = savedBriefing;
 }
 
-void BriefingMapWidget::stopStageHighlights() {
-	auto* briefPtr = Briefing;
-	if (briefPtr == nullptr) {
-		briefPtr = _model->getWipBriefingPtr(_model->getCurrentTeam());
-	}
-
-	if (briefPtr == nullptr || _currentStage < 0 || _currentStage >= briefPtr->num_stages) {
-		return;
-	}
-
-	auto& stage = briefPtr->stages[_currentStage];
-	for (int i = 0; i < stage.num_icons; ++i) {
-		stage.icons[i].flags &= ~BI_SHOWHIGHLIGHT;
-	}
-}
-
 void BriefingMapWidget::updateEditorHighlightPlayback() {
-	if (_suppressHighlights) {
-		stopStageHighlights();
-		return;
-	}
-
 	if (Briefing == nullptr || _currentStage < 0 || _currentStage >= Briefing->num_stages) {
 		return;
 	}
@@ -297,15 +302,30 @@ void BriefingMapWidget::updateEditorHighlightPlayback() {
 		}
 
 		auto& anim = icon.highlight_anim;
-		if (anim.first_frame < 0 || anim.total_time <= 0.0f || anim.time_elapsed >= anim.total_time) {
-			icon.flags &= ~BI_SHOWHIGHLIGHT;
+		if (anim.first_frame < 0) {
+			ensure_highlight_anim_loaded(icon);
+			if (icon.highlight_anim.first_frame < 0) {
+				continue;
+			}
 		}
-	}
-}
 
-void BriefingMapWidget::abortHighlightPlayback() {
-	_suppressHighlights = true;
-	stopStageHighlights();
+		if (anim.filename[0] == '\0') {
+			continue;
+		}
+
+		int animW = 0;
+		int animH = 0;
+		bm_get_info(anim.first_frame, &animW, &animH, nullptr);
+		if (icon.scale_factor != 1.0f) {
+			animW = fl2i(static_cast<float>(animW) * icon.scale_factor);
+			animH = fl2i(static_cast<float>(animH) * icon.scale_factor);
+		}
+
+		const int x = fl2i(i2fl(icon.x) + icon.w / 2.0f - animW / 2.0f);
+		const int y = fl2i(i2fl(icon.y) + icon.h / 2.0f - animH / 2.0f);
+		icon.hold_x = x;
+		icon.hold_y = y;
+	}
 }
 
 void BriefingMapWidget::drawSelectedIconOutline() {
@@ -393,13 +413,15 @@ void BriefingMapWidget::notifyIconVisualsChanged() {
 	if (selected >= 0 && selected < stage.num_icons) {
 		auto& icon = stage.icons[selected];
 		if (icon.flags & BI_HIGHLIGHT) {
+			ensure_highlight_anim_loaded(icon);
+			icon.highlight_anim.time_elapsed = 0.0f;
 			icon.flags |= BI_SHOWHIGHLIGHT;
+			brief_cancel_pending_highlight_anims();
 		} else {
 			icon.flags &= ~BI_SHOWHIGHLIGHT;
 		}
 	}
 
-	_suppressHighlights = false;
 	Briefing = savedBriefing;
 }
 
@@ -412,8 +434,6 @@ void BriefingMapWidget::applyCameraPoseLikeKeyboardControls(const vec3d& camPos,
 	if (!briefPtr || _currentStage < 0 || _currentStage >= briefPtr->num_stages) {
 		return;
 	}
-
-	abortHighlightPlayback();
 
 	auto& stage = briefPtr->stages[_currentStage];
 	stage.camera_pos = camPos;
@@ -647,8 +667,6 @@ void BriefingMapWidget::keyPressEvent(QKeyEvent* event) {
 void BriefingMapWidget::mousePressEvent(QMouseEvent* event) {
 	if (!_initialized || event->button() != Qt::LeftButton)
 		return;
-
-	abortHighlightPlayback();
 
 	_lastMousePos = event->pos();
 	_dragStartMousePos = event->localPos();

@@ -313,6 +313,7 @@ void brief_common_close();
 void brief_reset_icons(int stage_num);
 void brief_restart_text_wipe();
 void brief_reset_last_new_stage();
+void brief_cancel_pending_highlight_anims();
 void brief_blit_stage_num(int stage_num, int stage_max);
 
 void brief_common_get_icon_dimensions(int *w, int *h, brief_icon *bi);
