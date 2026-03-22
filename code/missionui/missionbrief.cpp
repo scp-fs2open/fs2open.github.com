@@ -991,7 +991,7 @@ void brief_init(bool api_access)
 
 	Brief_mouse_up_flag	= 0;
 	Closeup_font_height = gr_get_font_height();
-	Closeup_icon = NULL;
+	Closeup_icon = nullptr;
 	Brief_inited = TRUE;
 }
 
@@ -1153,7 +1153,7 @@ void brief_render(float frametime, bool api_access)
 
 		if ( Num_brief_stages <= 0 ) {
 			gr_set_color_fast(&Color_white);
-			Assert( Game_current_mission_filename != nullptr );
+			Assertion(Game_current_mission_filename[0] != '\0', "Current mission filename is empty");
 
 			gr_get_string_size(&w, nullptr, XSTR("No Briefing exists for mission: %s", 430));
 			gr_printf_menu((gr_screen.clip_width_unscaled - w) / 2,200,XSTR( "No Briefing exists for mission: %s", 430), Game_current_mission_filename);
@@ -1164,7 +1164,7 @@ void brief_render(float frametime, bool api_access)
 			SCP_string debugText;
 			sprintf(debugText, NOX("[filename: %s, last mod: %s]"), Mission_filename, The_mission.modified);
 
-			gr_get_string_size(&w, NULL, debugText.c_str());
+			gr_get_string_size(&w, nullptr, debugText.c_str());
 			gr_printf_menu((gr_screen.clip_width_unscaled - w) / 2, 230, "%s", debugText.c_str());
 			#endif
 
@@ -1247,7 +1247,7 @@ void brief_render(float frametime, bool api_access)
 				Current_brief_stage = Last_brief_stage;
 			}
 
-			Assert(Current_brief_stage >= 0);
+			Assertion(Current_brief_stage >= 0, "Current briefing stage is invalid");
 		}
 	}
 }
@@ -1749,7 +1749,7 @@ void brief_do_frame(float frametime, bool api_access)
 				if ( abs(Current_brief_stage - Last_brief_stage) > 1 ) {
 					Quick_transition_stage = Current_brief_stage;
 					Current_brief_stage = Last_brief_stage;
-					Assert(Current_brief_stage >= 0);
+					Assertion(Current_brief_stage >= 0, "Current briefing stage is invalid");
 					Start_fade_up_anim = 1;
 					goto Transition_done;
 				}
@@ -1760,7 +1760,7 @@ void brief_do_frame(float frametime, bool api_access)
 					if ( Briefing->stages[Last_brief_stage].flags & BS_FORWARD_CUT ) {
 						Quick_transition_stage = Current_brief_stage;
 						Current_brief_stage = Last_brief_stage;
-						Assert(Current_brief_stage >= 0);
+						Assertion(Current_brief_stage >= 0, "Current briefing stage is invalid");
 						Start_fade_up_anim = 1;
 						goto Transition_done;
 					} else {
@@ -1771,7 +1771,7 @@ void brief_do_frame(float frametime, bool api_access)
 					if ( Briefing->stages[Last_brief_stage].flags & BS_BACKWARD_CUT ) {
 						Quick_transition_stage = Current_brief_stage;
 						Current_brief_stage = Last_brief_stage;
-						Assert(Current_brief_stage >= 0);
+						Assertion(Current_brief_stage >= 0, "Current briefing stage is invalid");
 						Start_fade_up_anim = 1;
 						goto Transition_done;
 					} else {
