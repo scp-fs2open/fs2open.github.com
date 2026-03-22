@@ -149,7 +149,20 @@ void BriefingEditorDialog::setupMapWidget()
 	_mapWidget->setFocus(Qt::OtherFocusReason);
 
 	// Wire icon selection from the map widget to our UI update
-	connect(_mapWidget, &fso::fred::BriefingMapWidget::iconSelected, this, [this](int index) {
+	connect(_mapWidget, &fso::fred::BriefingMapWidget::iconSelected, this, [this](int index, bool toggleSelection) {
+		auto selection = _model->getLineSelection();
+		if (!toggleSelection) {
+			selection.clear();
+			selection.push_back(index);
+		} else {
+			const auto it = std::find(selection.begin(), selection.end(), index);
+			if (it == selection.end()) {
+				selection.push_back(index);
+			} else if (selection.size() > 1) {
+				selection.erase(it);
+			}
+		}
+		_model->setLineSelection(selection);
 		_model->setCurrentIconIndex(index);
 		updateUi();
 	});
@@ -204,6 +217,11 @@ void BriefingEditorDialog::applyMapWidgetAspectRatio()
 void BriefingEditorDialog::initializeUi()
 {
 	util::SignalBlockers blockers(this);
+	ui->drawLinesCheckBox->setTristate(true);
+	ui->highlightCheckBox->setTristate(true);
+	ui->flipIconCheckBox->setTristate(true);
+	ui->useWingIconCheckBox->setTristate(true);
+	ui->useCargoIconCheckBox->setTristate(true);
 
 	auto list = _model->getTeamList();
 
@@ -277,7 +295,9 @@ void BriefingEditorDialog::updateUi()
 	}
 
 	const bool stage_exists = _model->getTotalStages() > 0 && _model->getCurrentStage() >= 0;
-	const bool icon_selected = stage_exists && _model->getCurrentIconIndex() >= 0;
+	const auto& lineSelection = _model->getLineSelection();
+	const bool icon_selected = stage_exists && !lineSelection.empty();
+	const bool enoughForLines = stage_exists && lineSelection.size() >= 2;
 	if (icon_selected) {
 		ui->iconIdSpinBox->setValue(_model->getIconId());
 		ui->iconLabelLineEdit->setText(QString::fromStdString(_model->getIconLabel()));
@@ -286,11 +306,42 @@ void BriefingEditorDialog::updateUi()
 		ui->iconShipTypeComboBox->setCurrentIndex(_model->getIconShipTypeIndex());
 		ui->iconTeamComboBox->setCurrentIndex(_model->getIconTeamIndex());
 		ui->scaleDoubleSpinBox->setValue(_model->getIconScaleFactor());
-		ui->highlightCheckBox->setChecked(_model->getIconHighlighted());
-		ui->flipIconCheckBox->setChecked(_model->getIconFlipped());
-		ui->useWingIconCheckBox->setChecked(_model->getIconUseWing());
-		ui->useCargoIconCheckBox->setChecked(_model->getIconUseCargo());
+		const auto toQtCheckState = [](BriefingEditorDialogModel::TriState state) {
+			switch (state) {
+			case BriefingEditorDialogModel::TriState::Checked:
+				return Qt::Checked;
+			case BriefingEditorDialogModel::TriState::Partial:
+				return Qt::PartiallyChecked;
+			case BriefingEditorDialogModel::TriState::Unchecked:
+			default:
+				return Qt::Unchecked;
+			}
+		};
+		ui->highlightCheckBox->setCheckState(toQtCheckState(_model->getIconHighlightedState()));
+		ui->flipIconCheckBox->setCheckState(toQtCheckState(_model->getIconFlippedState()));
+		ui->useWingIconCheckBox->setCheckState(toQtCheckState(_model->getIconUseWingState()));
+		ui->useCargoIconCheckBox->setCheckState(toQtCheckState(_model->getIconUseCargoState()));
 	}
+	if (!icon_selected) {
+		ui->highlightCheckBox->setCheckState(Qt::Unchecked);
+		ui->flipIconCheckBox->setCheckState(Qt::Unchecked);
+		ui->useWingIconCheckBox->setCheckState(Qt::Unchecked);
+		ui->useCargoIconCheckBox->setCheckState(Qt::Unchecked);
+	}
+
+	switch (_model->getDrawLinesState()) {
+	case BriefingEditorDialogModel::DrawLinesState::All:
+		ui->drawLinesCheckBox->setCheckState(Qt::Checked);
+		break;
+	case BriefingEditorDialogModel::DrawLinesState::Partial:
+		ui->drawLinesCheckBox->setCheckState(Qt::PartiallyChecked);
+		break;
+	case BriefingEditorDialogModel::DrawLinesState::None:
+	default:
+		ui->drawLinesCheckBox->setCheckState(Qt::Unchecked);
+		break;
+	}
+	ui->drawLinesCheckBox->setEnabled(enoughForLines);
 
 	enableDisableControls();
 }
@@ -330,8 +381,12 @@ void BriefingEditorDialog::enableDisableControls()
 	ui->voiceFilePlayButton->setEnabled(stage_exists && !_model->getSpeechFilename().empty());
 	ui->formulaTreeView->setEnabled(stage_exists);
 	
-	const bool icon_selected = stage_exists && _model->getCurrentIconIndex() >= 0;
+	const bool icon_selected = stage_exists && !_model->getLineSelection().empty();
+	const bool single_icon_selected = stage_exists && _model->getLineSelection().size() == 1;
 	ui->currentIconInfoGroupBox->setEnabled(icon_selected);
+	ui->iconCoordinatesButton->setEnabled(single_icon_selected);
+	ui->deleteIconButton->setEnabled(single_icon_selected);
+	ui->propagateIconButton->setEnabled(single_icon_selected);
 	/*ui->iconIdSpinBox->setEnabled(icon_selected);
 	ui->iconLabelLineEdit->setEnabled(icon_selected);
 	ui->iconCloseupLabelLineEdit->setEnabled(icon_selected);
@@ -362,6 +417,7 @@ void BriefingEditorDialog::on_okAndCancelButtons_rejected()
 void BriefingEditorDialog::on_prevStageButton_clicked()
 {
 	_model->gotoPreviousStage();
+	_model->setLineSelection({_model->getCurrentIconIndex()});
 	_mapWidget->setStage(_model->getCurrentStage());
 	captureResetCameraForCurrentStage();
 	updateUi();
@@ -370,6 +426,7 @@ void BriefingEditorDialog::on_prevStageButton_clicked()
 void BriefingEditorDialog::on_nextStageButton_clicked()
 {
 	_model->gotoNextStage();
+	_model->setLineSelection({_model->getCurrentIconIndex()});
 	_mapWidget->setStage(_model->getCurrentStage());
 	captureResetCameraForCurrentStage();
 	updateUi();
@@ -379,6 +436,7 @@ void BriefingEditorDialog::on_addStageButton_clicked()
 {
 	const bool creatingFirstStage = (_model->getTotalStages() == 0);
 	_model->addStage();
+	_model->setLineSelection({_model->getCurrentIconIndex()});
 
 	if (creatingFirstStage) {
 		const auto stageView = _model->getStageView();
@@ -394,6 +452,7 @@ void BriefingEditorDialog::on_addStageButton_clicked()
 void BriefingEditorDialog::on_insertStageButton_clicked()
 {
 	_model->insertStage();
+	_model->setLineSelection({_model->getCurrentIconIndex()});
 	_mapWidget->setStage(_model->getCurrentStage());
 	captureResetCameraForCurrentStage();
 	updateUi();
@@ -402,6 +461,7 @@ void BriefingEditorDialog::on_insertStageButton_clicked()
 void BriefingEditorDialog::on_deleteStageButton_clicked()
 {
 	_model->deleteStage();
+	_model->setLineSelection({_model->getCurrentIconIndex()});
 	_mapWidget->setStage(_model->getCurrentStage());
 	captureResetCameraForCurrentStage();
 	updateUi();
@@ -451,6 +511,7 @@ void BriefingEditorDialog::on_copyToOtherTeamsButton_clicked()
 void BriefingEditorDialog::on_teamComboBox_currentIndexChanged(int index)
 {
 	_model->setCurrentTeam(ui->teamComboBox->itemData(index).toInt());
+	_model->setLineSelection({_model->getCurrentIconIndex()});
 	_mapWidget->setStage(_model->getCurrentStage());
 	captureResetCameraForCurrentStage();
 	updateUi();
@@ -544,6 +605,11 @@ void BriefingEditorDialog::on_scaleDoubleSpinBox_valueChanged(double arg1)
 
 void BriefingEditorDialog::on_drawLinesCheckBox_toggled(bool checked)
 {
+	if (ui->drawLinesCheckBox->checkState() == Qt::PartiallyChecked) {
+		_model->applyDrawLines(true);
+		ui->drawLinesCheckBox->setCheckState(Qt::Checked);
+		return;
+	}
 	_model->applyDrawLines(checked); // Assumes multi selection has already been set by the renderer
 }
 
@@ -580,6 +646,7 @@ void BriefingEditorDialog::on_useCargoIconCheckBox_toggled(bool checked)
 void BriefingEditorDialog::on_makeIconButton_clicked()
 {
 	_model->makeIcon("New Icon", 0, 0, 0);
+	_model->setLineSelection({_model->getCurrentIconIndex()});
 	_model->setIconPosition(getNewIconPlacement());
 	updateUi();
 }
@@ -589,6 +656,7 @@ void BriefingEditorDialog::on_makeIconFromShipButton_clicked()
 	IconFromShipDialog dlg(this, _model.get());
 	if (dlg.exec() == QDialog::Accepted && dlg.selectedShipIndex() >= 0) {
 		_model->makeIconFromShip(dlg.selectedShipIndex());
+		_model->setLineSelection({_model->getCurrentIconIndex()});
 		_model->setIconPosition(getNewIconPlacement());
 		updateUi();
 	}
@@ -603,6 +671,7 @@ void BriefingEditorDialog::on_iconCoordinatesButton_clicked()
 void BriefingEditorDialog::on_deleteIconButton_clicked()
 {
 	_model->deleteCurrentIcon();
+	_model->setLineSelection({_model->getCurrentIconIndex()});
 	updateUi();
 }
 

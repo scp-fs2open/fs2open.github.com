@@ -160,6 +160,60 @@ void BriefingEditorDialogModel::applyToIconCurrentAndForward(const std::function
 	set_modified();
 }
 
+SCP_vector<int> BriefingEditorDialogModel::getEffectiveSelection(const brief_stage& s) const
+{
+	SCP_vector<int> selection;
+	selection.reserve(_lineSelection.size() + 1);
+
+	for (auto idx : _lineSelection) {
+		if (valid_icon_index(s, idx) && std::find(selection.begin(), selection.end(), idx) == selection.end()) {
+			selection.push_back(idx);
+		}
+	}
+
+	if (selection.empty() && valid_icon_index(s, _currentIcon)) {
+		selection.push_back(_currentIcon);
+	}
+
+	return selection;
+}
+
+void BriefingEditorDialogModel::applyToSelectedIconsCurrentAndForward(const std::function<void(brief_icon&)>& mutator)
+{
+	auto& briefing = _wipBriefings[_currentTeam];
+	if (briefing.num_stages <= 0 || _currentStage < 0 || _currentStage >= briefing.num_stages)
+		return;
+
+	auto& stage = briefing.stages[_currentStage];
+	const auto selection = getEffectiveSelection(stage);
+	if (selection.empty())
+		return;
+
+	SCP_unordered_set<int> selectedIds;
+	for (auto idx : selection) {
+		if (valid_icon_index(stage, idx)) {
+			selectedIds.insert(stage.icons[idx].id);
+			mutator(stage.icons[idx]);
+		}
+	}
+
+	if (_changeLocally) {
+		set_modified();
+		return;
+	}
+
+	for (int st = _currentStage + 1; st < briefing.num_stages; ++st) {
+		auto& stg = briefing.stages[st];
+		for (int i = 0; i < stg.num_icons; ++i) {
+			if (selectedIds.find(stg.icons[i].id) != selectedIds.end()) {
+				mutator(stg.icons[i]);
+			}
+		}
+	}
+
+	set_modified();
+}
+
 void BriefingEditorDialogModel::gotoPreviousStage()
 {
 	if (_currentStage <= 0) {
@@ -596,7 +650,7 @@ vec3d BriefingEditorDialogModel::getIconPosition() const
 void BriefingEditorDialogModel::setIconPosition(const vec3d& pos)
 {
 	// Honors Change Locally: current stage only if enabled, else propagate forward by icon id
-	applyToIconCurrentAndForward([&](brief_icon& ic) { modify(ic.pos, pos); });
+	applyToSelectedIconsCurrentAndForward([&](brief_icon& ic) { modify(ic.pos, pos); });
 }
 
 int BriefingEditorDialogModel::getIconId() const
@@ -614,7 +668,7 @@ int BriefingEditorDialogModel::getIconId() const
 
 void BriefingEditorDialogModel::setIconId(int id)
 {
-	applyToIconCurrentAndForward([&](brief_icon& ic) { modify(ic.id, id); });
+	applyToSelectedIconsCurrentAndForward([&](brief_icon& ic) { modify(ic.id, id); });
 }
 
 SCP_string BriefingEditorDialogModel::getIconLabel() const
@@ -632,7 +686,7 @@ SCP_string BriefingEditorDialogModel::getIconLabel() const
 
 void BriefingEditorDialogModel::setIconLabel(const SCP_string& text)
 {
-	applyToIconCurrentAndForward([&](brief_icon& ic) {
+	applyToSelectedIconsCurrentAndForward([&](brief_icon& ic) {
 		SCP_string oldLabel = ic.label;
 		modify(oldLabel, text);
 		strcpy_s(ic.label, oldLabel.c_str());
@@ -654,7 +708,7 @@ SCP_string BriefingEditorDialogModel::getIconCloseupLabel() const
 
 void BriefingEditorDialogModel::setIconCloseupLabel(const SCP_string& text)
 {
-	applyToIconCurrentAndForward([&](brief_icon& ic) {
+	applyToSelectedIconsCurrentAndForward([&](brief_icon& ic) {
 		SCP_string oldLabel = ic.closeup_label;
 		modify(oldLabel, text);
 		strcpy_s(ic.closeup_label, oldLabel.c_str());
@@ -674,7 +728,7 @@ int BriefingEditorDialogModel::getIconTypeIndex() const
 
 void BriefingEditorDialogModel::setIconTypeIndex(int idx)
 {
-	applyToIconCurrentAndForward([&](brief_icon& ic) { modify(ic.type, idx); });
+	applyToSelectedIconsCurrentAndForward([&](brief_icon& ic) { modify(ic.type, idx); });
 }
 
 int BriefingEditorDialogModel::getIconShipTypeIndex() const
@@ -690,7 +744,7 @@ int BriefingEditorDialogModel::getIconShipTypeIndex() const
 
 void BriefingEditorDialogModel::setIconShipTypeIndex(int idx)
 {
-	applyToIconCurrentAndForward([&](brief_icon& ic) { modify(ic.ship_class, idx); });
+	applyToSelectedIconsCurrentAndForward([&](brief_icon& ic) { modify(ic.ship_class, idx); });
 }
 
 int BriefingEditorDialogModel::getIconTeamIndex() const
@@ -706,7 +760,7 @@ int BriefingEditorDialogModel::getIconTeamIndex() const
 
 void BriefingEditorDialogModel::setIconTeamIndex(int idx)
 {
-	applyToIconCurrentAndForward([&](brief_icon& ic) { modify(ic.team, idx); });
+	applyToSelectedIconsCurrentAndForward([&](brief_icon& ic) { modify(ic.team, idx); });
 }
 
 float BriefingEditorDialogModel::getIconScaleFactor() const
@@ -729,7 +783,7 @@ void BriefingEditorDialogModel::setIconScaleFactor(float factor)
 	if (factor > 10.0f)
 		factor = 10.0f;
 
-	applyToIconCurrentAndForward([&](brief_icon& ic) { modify(ic.scale_factor, factor); });
+	applyToSelectedIconsCurrentAndForward([&](brief_icon& ic) { modify(ic.scale_factor, factor); });
 }
 
 void BriefingEditorDialogModel::setLineSelection(const SCP_vector<int>& indices)
@@ -756,6 +810,11 @@ void BriefingEditorDialogModel::setLineSelection(const SCP_vector<int>& indices)
 void BriefingEditorDialogModel::clearLineSelection()
 {
 	_lineSelection.clear();
+}
+
+const SCP_vector<int>& BriefingEditorDialogModel::getLineSelection() const
+{
+	return _lineSelection;
 }
 
 BriefingEditorDialogModel::DrawLinesState BriefingEditorDialogModel::getDrawLinesState() const
@@ -894,20 +953,43 @@ void BriefingEditorDialogModel::setChangeLocally(bool enabled)
 	modify(_changeLocally, enabled);
 }
 
-bool BriefingEditorDialogModel::getIconHighlighted() const
+BriefingEditorDialogModel::TriState BriefingEditorDialogModel::getSelectedIconFlagState(int flag) const
 {
 	const auto& b = _wipBriefings[_currentTeam];
 	if (b.num_stages <= 0 || _currentStage < 0 || _currentStage >= b.num_stages)
-		return false;
+		return TriState::Unchecked;
 	const auto& s = b.stages[_currentStage];
-	if (_currentIcon < 0 || _currentIcon >= s.num_icons)
-		return false;
-	return (s.icons[_currentIcon].flags & BI_HIGHLIGHT) != 0;
+
+	const auto selection = getEffectiveSelection(s);
+	if (selection.empty())
+		return TriState::Unchecked;
+
+	bool anyChecked = false;
+	bool anyUnchecked = false;
+	for (auto idx : selection) {
+		if (!valid_icon_index(s, idx)) {
+			continue;
+		}
+		if ((s.icons[idx].flags & flag) != 0) {
+			anyChecked = true;
+		} else {
+			anyUnchecked = true;
+		}
+	}
+
+	if (anyChecked && anyUnchecked)
+		return TriState::Partial;
+	return anyChecked ? TriState::Checked : TriState::Unchecked;
+}
+
+BriefingEditorDialogModel::TriState BriefingEditorDialogModel::getIconHighlightedState() const
+{
+	return getSelectedIconFlagState(BI_HIGHLIGHT);
 }
 
 void BriefingEditorDialogModel::setIconHighlighted(bool enabled)
 {
-	applyToIconCurrentAndForward([&](brief_icon& ic) {
+	applyToSelectedIconsCurrentAndForward([&](brief_icon& ic) {
 		int newFlags = ic.flags;
 		if (enabled) {
 			newFlags |= BI_HIGHLIGHT;
@@ -918,20 +1000,14 @@ void BriefingEditorDialogModel::setIconHighlighted(bool enabled)
 	});
 }
 
-bool BriefingEditorDialogModel::getIconFlipped() const
+BriefingEditorDialogModel::TriState BriefingEditorDialogModel::getIconFlippedState() const
 {
-	const auto& b = _wipBriefings[_currentTeam];
-	if (b.num_stages <= 0 || _currentStage < 0 || _currentStage >= b.num_stages)
-		return false;
-	const auto& s = b.stages[_currentStage];
-	if (_currentIcon < 0 || _currentIcon >= s.num_icons)
-		return false;
-	return (s.icons[_currentIcon].flags & BI_MIRROR_ICON) != 0;
+	return getSelectedIconFlagState(BI_MIRROR_ICON);
 }
 
 void BriefingEditorDialogModel::setIconFlipped(bool enabled)
 {
-	applyToIconCurrentAndForward([&](brief_icon& ic) {
+	applyToSelectedIconsCurrentAndForward([&](brief_icon& ic) {
 		int newFlags = ic.flags;
 		if (enabled) {
 			newFlags |= BI_MIRROR_ICON;
@@ -942,20 +1018,14 @@ void BriefingEditorDialogModel::setIconFlipped(bool enabled)
 	});
 }
 
-bool BriefingEditorDialogModel::getIconUseWing() const
+BriefingEditorDialogModel::TriState BriefingEditorDialogModel::getIconUseWingState() const
 {
-	const auto& b = _wipBriefings[_currentTeam];
-	if (b.num_stages <= 0 || _currentStage < 0 || _currentStage >= b.num_stages)
-		return false;
-	const auto& s = b.stages[_currentStage];
-	if (_currentIcon < 0 || _currentIcon >= s.num_icons)
-		return false;
-	return (s.icons[_currentIcon].flags & BI_USE_WING_ICON) != 0;
+	return getSelectedIconFlagState(BI_USE_WING_ICON);
 }
 
 void BriefingEditorDialogModel::setIconUseWing(bool enabled)
 {
-	applyToIconCurrentAndForward([&](brief_icon& ic) {
+	applyToSelectedIconsCurrentAndForward([&](brief_icon& ic) {
 		int newFlags = ic.flags;
 		if (enabled) {
 			newFlags |= BI_USE_WING_ICON;
@@ -966,20 +1036,14 @@ void BriefingEditorDialogModel::setIconUseWing(bool enabled)
 	});
 }
 
-bool BriefingEditorDialogModel::getIconUseCargo() const
+BriefingEditorDialogModel::TriState BriefingEditorDialogModel::getIconUseCargoState() const
 {
-	const auto& b = _wipBriefings[_currentTeam];
-	if (b.num_stages <= 0 || _currentStage < 0 || _currentStage >= b.num_stages)
-		return false;
-	const auto& s = b.stages[_currentStage];
-	if (_currentIcon < 0 || _currentIcon >= s.num_icons)
-		return false;
-	return (s.icons[_currentIcon].flags & BI_USE_CARGO_ICON) != 0;
+	return getSelectedIconFlagState(BI_USE_CARGO_ICON);
 }
 
 void BriefingEditorDialogModel::setIconUseCargo(bool enabled)
 {
-	applyToIconCurrentAndForward([&](brief_icon& ic) {
+	applyToSelectedIconsCurrentAndForward([&](brief_icon& ic) {
 		int newFlags = ic.flags;
 		if (enabled) {
 			newFlags |= BI_USE_CARGO_ICON;

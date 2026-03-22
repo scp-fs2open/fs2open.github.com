@@ -17,6 +17,11 @@ class BriefingEditorDialogModel : public AbstractDialogModel {
 		Partial, // some pairs connected, some not
 		All      // every pair connected
 	};
+	enum class TriState {
+		Unchecked,
+		Partial,
+		Checked
+	};
 
 	bool apply() override;
 	void reject() override;
@@ -86,19 +91,20 @@ class BriefingEditorDialogModel : public AbstractDialogModel {
 
 	void setLineSelection(const SCP_vector<int>& indices);
 	void clearLineSelection();
+	const SCP_vector<int>& getLineSelection() const;
 	DrawLinesState getDrawLinesState() const;
 	void applyDrawLines(bool checked);
 
 	bool getChangeLocally() const;
 	void setChangeLocally(bool enabled);
 
-	bool getIconHighlighted() const;
+	TriState getIconHighlightedState() const;
 	void setIconHighlighted(bool enabled);
-	bool getIconFlipped() const;
+	TriState getIconFlippedState() const;
 	void setIconFlipped(bool enabled);
-	bool getIconUseWing() const;
+	TriState getIconUseWingState() const;
 	void setIconUseWing(bool enabled);
-	bool getIconUseCargo() const;
+	TriState getIconUseCargoState() const;
 	void setIconUseCargo(bool enabled);
 
 	void makeIcon(const SCP_string& label, int typeIndex, int teamIndex, int shipClassIndex);
@@ -135,6 +141,9 @@ class BriefingEditorDialogModel : public AbstractDialogModel {
 	static bool valid_icon_index(const brief_stage& s, int idx);
 	static bool same_line_unordered(int a0, int a1, int b0, int b1);
 	void applyToIconCurrentAndForward(const std::function<void(brief_icon&)>& mutator);
+	void applyToSelectedIconsCurrentAndForward(const std::function<void(brief_icon&)>& mutator);
+	SCP_vector<int> getEffectiveSelection(const brief_stage& s) const;
+	TriState getSelectedIconFlagState(int flag) const;
 
 	briefing _wipBriefings[MAX_TVT_TEAMS];
 	int _briefingMusicIndex;

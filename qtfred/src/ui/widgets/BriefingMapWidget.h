@@ -70,7 +70,7 @@ public:
 	QWindow* getRenderWindow() const;
 
 signals:
-	void iconSelected(int index);
+	void iconSelected(int index, bool toggleSelection);
 	void cameraChanged(vec3d pos, matrix orient);
 
 protected:
