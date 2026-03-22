@@ -9,12 +9,15 @@
 #include "mission/missionbriefcommon.h"
 #include "mission/missiongrid.h"
 #include "math/fvi.h"
+#include "mod_table/mod_table.h"
 
 #include <globalincs/globals.h>
 #include <globalincs/linklist.h>
 #include <mission/missionbriefcommon.h>
 #include <ui/util/SignalBlockers.h>
 
+#include <algorithm>
+#include <cmath>
 #include <QCloseEvent>
 #include <QCheckBox>
 #include <QFileDialog>
@@ -120,6 +123,46 @@ void BriefingEditorDialog::setupMapWidget()
 	if (_model->getTotalStages() > 0) {
 		_mapWidget->setStage(_model->getCurrentStage());
 		captureResetCameraForCurrentStage();
+	}
+
+	applyMapWidgetAspectRatio();
+}
+
+void BriefingEditorDialog::applyMapWidgetAspectRatio()
+{
+	if (_mapWidget == nullptr) {
+		return;
+	}
+
+	if (Briefing_window_resolution[0] <= 0 || Briefing_window_resolution[1] <= 0) {
+		return;
+	}
+
+	auto mapWidth = _mapWidget->width();
+	if (mapWidth <= 0) {
+		mapWidth = _mapWidget->minimumWidth();
+	}
+	if (mapWidth <= 0) {
+		return;
+	}
+
+	const auto targetHeight = std::max(1,
+		static_cast<int>(std::lround(static_cast<double>(mapWidth) *
+									 static_cast<double>(Briefing_window_resolution[1]) /
+									 static_cast<double>(Briefing_window_resolution[0]))));
+
+	_mapWidget->setMinimumHeight(targetHeight);
+	_mapWidget->setMaximumHeight(targetHeight);
+	_mapWidget->resize(mapWidth, targetHeight);
+
+	const auto oldDialogHeight = height();
+	if (auto* dialogLayout = layout(); dialogLayout != nullptr) {
+		dialogLayout->activate();
+	}
+
+	const auto requiredSize = sizeHint();
+	if (requiredSize.height() > oldDialogHeight) {
+		resize(width(), requiredSize.height());
 	}
 }
 
