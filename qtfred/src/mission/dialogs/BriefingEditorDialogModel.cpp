@@ -573,15 +573,7 @@ int BriefingEditorDialogModel::getIconId() const
 
 void BriefingEditorDialogModel::setIconId(int id)
 {
-	auto& b = _wipBriefings[_currentTeam];
-	if (b.num_stages <= 0 || _currentStage < 0 || _currentStage >= b.num_stages)
-		return;
-
-	auto& s = b.stages[_currentStage];
-	if (_currentIcon < 0 || _currentIcon >= s.num_icons)
-		return;
-
-	modify(s.icons[_currentIcon].id, id);
+	applyToIconCurrentAndForward([&](brief_icon& ic) { modify(ic.id, id); });
 }
 
 SCP_string BriefingEditorDialogModel::getIconLabel() const
@@ -599,18 +591,11 @@ SCP_string BriefingEditorDialogModel::getIconLabel() const
 
 void BriefingEditorDialogModel::setIconLabel(const SCP_string& text)
 {
-	auto& b = _wipBriefings[_currentTeam];
-	if (b.num_stages <= 0 || _currentStage < 0 || _currentStage >= b.num_stages)
-		return;
-
-	auto& s = b.stages[_currentStage];
-	if (_currentIcon < 0 || _currentIcon >= s.num_icons)
-		return;
-
-	SCP_string oldLabel = s.icons[_currentIcon].label;
-	modify(oldLabel, text);
-
-	strcpy_s(s.icons[_currentIcon].label, oldLabel.c_str());
+	applyToIconCurrentAndForward([&](brief_icon& ic) {
+		SCP_string oldLabel = ic.label;
+		modify(oldLabel, text);
+		strcpy_s(ic.label, oldLabel.c_str());
+	});
 }
 
 SCP_string BriefingEditorDialogModel::getIconCloseupLabel() const
@@ -628,18 +613,11 @@ SCP_string BriefingEditorDialogModel::getIconCloseupLabel() const
 
 void BriefingEditorDialogModel::setIconCloseupLabel(const SCP_string& text)
 {
-	auto& b = _wipBriefings[_currentTeam];
-	if (b.num_stages <= 0 || _currentStage < 0 || _currentStage >= b.num_stages)
-		return;
-
-	auto& s = b.stages[_currentStage];
-	if (_currentIcon < 0 || _currentIcon >= s.num_icons)
-		return;
-
-	SCP_string oldLabel = s.icons[_currentIcon].closeup_label;
-	modify(oldLabel, text);
-
-	strcpy_s(s.icons[_currentIcon].closeup_label, oldLabel.c_str());
+	applyToIconCurrentAndForward([&](brief_icon& ic) {
+		SCP_string oldLabel = ic.closeup_label;
+		modify(oldLabel, text);
+		strcpy_s(ic.closeup_label, oldLabel.c_str());
+	});
 }
 
 int BriefingEditorDialogModel::getIconTypeIndex() const
@@ -655,14 +633,7 @@ int BriefingEditorDialogModel::getIconTypeIndex() const
 
 void BriefingEditorDialogModel::setIconTypeIndex(int idx)
 {
-	auto& b = _wipBriefings[_currentTeam];
-	if (b.num_stages <= 0 || _currentStage < 0 || _currentStage >= b.num_stages)
-		return;
-	auto& s = b.stages[_currentStage];
-	if (_currentIcon < 0 || _currentIcon >= s.num_icons)
-		return;
-
-	modify(s.icons[_currentIcon].type, idx);
+	applyToIconCurrentAndForward([&](brief_icon& ic) { modify(ic.type, idx); });
 }
 
 int BriefingEditorDialogModel::getIconShipTypeIndex() const
@@ -678,14 +649,7 @@ int BriefingEditorDialogModel::getIconShipTypeIndex() const
 
 void BriefingEditorDialogModel::setIconShipTypeIndex(int idx)
 {
-	auto& b = _wipBriefings[_currentTeam];
-	if (b.num_stages <= 0 || _currentStage < 0 || _currentStage >= b.num_stages)
-		return;
-	auto& s = b.stages[_currentStage];
-	if (_currentIcon < 0 || _currentIcon >= s.num_icons)
-		return;
-
-	modify(s.icons[_currentIcon].ship_class, idx);
+	applyToIconCurrentAndForward([&](brief_icon& ic) { modify(ic.ship_class, idx); });
 }
 
 int BriefingEditorDialogModel::getIconTeamIndex() const
@@ -701,14 +665,7 @@ int BriefingEditorDialogModel::getIconTeamIndex() const
 
 void BriefingEditorDialogModel::setIconTeamIndex(int idx)
 {
-	auto& b = _wipBriefings[_currentTeam];
-	if (b.num_stages <= 0 || _currentStage < 0 || _currentStage >= b.num_stages)
-		return;
-	auto& s = b.stages[_currentStage];
-	if (_currentIcon < 0 || _currentIcon >= s.num_icons)
-		return;
-
-	modify(s.icons[_currentIcon].team, idx);
+	applyToIconCurrentAndForward([&](brief_icon& ic) { modify(ic.team, idx); });
 }
 
 float BriefingEditorDialogModel::getIconScaleFactor() const
@@ -725,20 +682,13 @@ float BriefingEditorDialogModel::getIconScaleFactor() const
 
 void BriefingEditorDialogModel::setIconScaleFactor(float factor)
 {
-	auto& b = _wipBriefings[_currentTeam];
-	if (b.num_stages <= 0 || _currentStage < 0 || _currentStage >= b.num_stages)
-		return;
-	auto& s = b.stages[_currentStage];
-	if (_currentIcon < 0 || _currentIcon >= s.num_icons)
-		return;
-
 	// basic clamp for sanity
 	if (factor < 0.01f)
 		factor = 0.01f;
 	if (factor > 10.0f)
 		factor = 10.0f;
 
-	modify(s.icons[_currentIcon].scale_factor, factor);
+	applyToIconCurrentAndForward([&](brief_icon& ic) { modify(ic.scale_factor, factor); });
 }
 
 void BriefingEditorDialogModel::setLineSelection(const SCP_vector<int>& indices)
@@ -1122,24 +1072,22 @@ void BriefingEditorDialogModel::propagateCurrentIconForward()
 	for (int st = _currentStage + 1; st < briefing.num_stages; ++st) {
 		auto& s = briefing.stages[st];
 
-		// Find all icons with the same id in this later stage
-		int foundCount = 0;
+		// Match original FRED behavior: only add missing icons to later stages.
+		// If an icon with the same id already exists in a stage, leave it unchanged.
+		bool found = false;
 		for (int i = 0; i < s.num_icons; ++i) {
 			if (s.icons[i].id == src.id) {
-				// Overwrite the existing icon with current state
-				s.icons[i] = src;
-				++foundCount;
-				changed = true;
+				found = true;
+				break;
 			}
 		}
 
-		// If none found, append a copy (if capacity allows)
-		if (foundCount == 0 && s.num_icons < MAX_STAGE_ICONS) {
+		if (!found && s.num_icons < MAX_STAGE_ICONS) {
 			s.icons[s.num_icons] = src;
 			s.num_icons++;
 			changed = true;
 		}
-		// If at capacity and missing, we silently skip that stage.
+		// If at capacity and missing, skip this stage.
 	}
 
 	if (changed)
