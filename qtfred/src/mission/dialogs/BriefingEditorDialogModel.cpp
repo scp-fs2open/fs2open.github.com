@@ -1320,6 +1320,32 @@ void BriefingEditorDialogModel::makeIconFromShip(int shipIndex)
 	makeIcon(SCP_string(shipp.ship_name), iconType, teamIndex, shipp.ship_info_index);
 }
 
+void BriefingEditorDialogModel::makeIconFromWing(int wingIndex)
+{
+	if (wingIndex < 0 || wingIndex >= Num_wings)
+		return;
+
+	const auto& wingp = Wings[wingIndex];
+	if (wingp.wave_count <= 0)
+		return;
+
+	const int firstShipIndex = wingp.ship_index[0];
+	if (firstShipIndex < 0 || firstShipIndex >= MAX_SHIPS || Ships[firstShipIndex].objnum < 0)
+		return;
+
+	const auto& shipp = Ships[firstShipIndex];
+	int iconType = ICON_FIGHTER_WING;
+	if (shipp.ship_info_index >= 0 && shipp.ship_info_index < static_cast<int>(Ship_info.size())) {
+		const auto& sip = Ship_info[shipp.ship_info_index];
+		if (sip.flags[Ship::Info_Flags::Bomber]) {
+			iconType = ICON_BOMBER_WING;
+		}
+	}
+
+	makeIcon(SCP_string(wingp.name), iconType, shipp.team, shipp.ship_info_index);
+	setIconUseWing(true);
+}
+
 SCP_vector<BriefingEditorDialogModel::WingTreeEntry> BriefingEditorDialogModel::getWingShipTree()
 {
 	SCP_vector<WingTreeEntry> result;
@@ -1334,6 +1360,7 @@ SCP_vector<BriefingEditorDialogModel::WingTreeEntry> BriefingEditorDialogModel::
 
 		WingTreeEntry entry;
 		entry.wingName = wingp.name;
+		entry.wingIndex = w;
 
 		for (int i = 0; i < wingp.wave_count; ++i) {
 			int si = wingp.ship_index[i];

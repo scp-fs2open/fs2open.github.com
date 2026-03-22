@@ -633,8 +633,14 @@ void BriefingEditorDialog::on_makeIconButton_clicked()
 void BriefingEditorDialog::on_makeIconFromShipButton_clicked()
 {
 	IconFromShipDialog dlg(this, _model.get());
-	if (dlg.exec() == QDialog::Accepted && dlg.selectedShipIndex() >= 0) {
-		_model->makeIconFromShip(dlg.selectedShipIndex());
+	if (dlg.exec() == QDialog::Accepted) {
+		if (dlg.selectedKind() == IconFromShipDialog::SelectionKind::Ship && dlg.selectedShipIndex() >= 0) {
+			_model->makeIconFromShip(dlg.selectedShipIndex());
+		} else if (dlg.selectedKind() == IconFromShipDialog::SelectionKind::Wing && dlg.selectedWingIndex() >= 0) {
+			_model->makeIconFromWing(dlg.selectedWingIndex());
+		} else {
+			return;
+		}
 		_model->setLineSelection({_model->getCurrentIconIndex()});
 		_model->setIconPosition(getNewIconPlacement());
 		updateUi();

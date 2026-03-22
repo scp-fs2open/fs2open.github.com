@@ -118,6 +118,7 @@ class BriefingEditorDialogModel : public AbstractDialogModel {
 
 	briefing* getWipBriefingPtr(int team);
 	void makeIconFromShip(int shipIndex);
+	void makeIconFromWing(int wingIndex);
 
 	struct WingShipEntry {
 		SCP_string name;
@@ -125,6 +126,7 @@ class BriefingEditorDialogModel : public AbstractDialogModel {
 	};
 	struct WingTreeEntry {
 		SCP_string wingName;
+		int wingIndex = -1;
 		SCP_vector<WingShipEntry> ships;
 	};
 	static SCP_vector<WingTreeEntry> getWingShipTree();

@@ -9,6 +9,12 @@
 #include <QDialogButtonBox>
 
 namespace fso::fred::dialogs {
+namespace {
+constexpr int RoleKind = Qt::UserRole;
+constexpr int RoleIndex = Qt::UserRole + 1;
+constexpr int KindShip = 0;
+constexpr int KindWing = 1;
+} // namespace
 
 IconFromShipDialog::IconFromShipDialog(QWidget* parent, BriefingEditorDialogModel* model)
 	: QDialog(parent), _model(model)
@@ -43,8 +49,21 @@ IconFromShipDialog::IconFromShipDialog(QWidget* parent, BriefingEditorDialogMode
 	connect(_tree, &QTreeWidget::itemDoubleClicked, this, &IconFromShipDialog::onItemDoubleClicked);
 	connect(buttons, &QDialogButtonBox::accepted, this, [this]() {
 		auto* item = _tree->currentItem();
-		if (item && item->data(0, Qt::UserRole).toInt() >= 0) {
-			_selectedShipIndex = item->data(0, Qt::UserRole).toInt();
+		if (!item)
+			return;
+		const auto kindData = item->data(0, RoleKind);
+		const auto indexData = item->data(0, RoleIndex);
+		const int kind = kindData.isValid() ? kindData.toInt() : -1;
+		const int index = indexData.isValid() ? indexData.toInt() : -1;
+		if (kind == KindShip && index >= 0) {
+			_selectedKind = SelectionKind::Ship;
+			_selectedShipIndex = index;
+			_selectedWingIndex = -1;
+			accept();
+		} else if (kind == KindWing && index >= 0) {
+			_selectedKind = SelectionKind::Wing;
+			_selectedShipIndex = -1;
+			_selectedWingIndex = index;
 			accept();
 		}
 	});
@@ -56,6 +75,16 @@ IconFromShipDialog::IconFromShipDialog(QWidget* parent, BriefingEditorDialogMode
 int IconFromShipDialog::selectedShipIndex() const
 {
 	return _selectedShipIndex;
+}
+
+int IconFromShipDialog::selectedWingIndex() const
+{
+	return _selectedWingIndex;
+}
+
+IconFromShipDialog::SelectionKind IconFromShipDialog::selectedKind() const
+{
+	return _selectedKind;
 }
 
 void IconFromShipDialog::populateTree()
@@ -70,19 +99,21 @@ void IconFromShipDialog::populateTree()
 			for (const auto& ship : entry.ships) {
 				auto* item = new QTreeWidgetItem(_tree);
 				item->setText(0, QString::fromStdString(ship.name));
-				item->setData(0, Qt::UserRole, ship.shipIndex);
+				item->setData(0, RoleKind, KindShip);
+				item->setData(0, RoleIndex, ship.shipIndex);
 			}
 		} else {
 			// Wing group
 			auto* wingItem = new QTreeWidgetItem(_tree);
 			wingItem->setText(0, QString::fromStdString(entry.wingName) + " (Wing)");
-			wingItem->setData(0, Qt::UserRole, -1); // Not a selectable ship
-			wingItem->setFlags(wingItem->flags() & ~Qt::ItemIsSelectable);
+			wingItem->setData(0, RoleKind, KindWing);
+			wingItem->setData(0, RoleIndex, entry.wingIndex);
 
 			for (const auto& ship : entry.ships) {
 				auto* shipItem = new QTreeWidgetItem(wingItem);
 				shipItem->setText(0, QString::fromStdString(ship.name));
-				shipItem->setData(0, Qt::UserRole, ship.shipIndex);
+				shipItem->setData(0, RoleKind, KindShip);
+				shipItem->setData(0, RoleIndex, ship.shipIndex);
 			}
 
 			wingItem->setExpanded(true);
@@ -134,8 +165,21 @@ void IconFromShipDialog::onFilterTextChanged(const QString& text)
 
 void IconFromShipDialog::onItemDoubleClicked(QTreeWidgetItem* item, int /*column*/)
 {
-	if (item && item->data(0, Qt::UserRole).toInt() >= 0) {
-		_selectedShipIndex = item->data(0, Qt::UserRole).toInt();
+	if (!item)
+		return;
+	const auto kindData = item->data(0, RoleKind);
+	const auto indexData = item->data(0, RoleIndex);
+	const int kind = kindData.isValid() ? kindData.toInt() : -1;
+	const int index = indexData.isValid() ? indexData.toInt() : -1;
+	if (kind == KindShip && index >= 0) {
+		_selectedKind = SelectionKind::Ship;
+		_selectedShipIndex = index;
+		_selectedWingIndex = -1;
+		accept();
+	} else if (kind == KindWing && index >= 0) {
+		_selectedKind = SelectionKind::Wing;
+		_selectedShipIndex = -1;
+		_selectedWingIndex = index;
 		accept();
 	}
 }
