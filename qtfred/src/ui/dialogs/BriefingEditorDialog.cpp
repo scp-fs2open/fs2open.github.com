@@ -112,6 +112,7 @@ void BriefingEditorDialog::setupMapWidget()
 	// Set the initial stage
 	if (_model->getTotalStages() > 0) {
 		_mapWidget->setStage(_model->getCurrentStage());
+		captureResetCameraForCurrentStage();
 	}
 }
 
@@ -150,6 +151,12 @@ void BriefingEditorDialog::initializeUi()
 
 	// Initialize the formula tree editor
 	ui->formulaTreeView->initializeEditor(_viewport->editor, this);
+
+	// Camera/view action labels and visibility
+	ui->saveViewButton->hide();
+	ui->gotoViewButton->setText("Reset Camera");
+	ui->copyViewButton->setText("Copy Camera");
+	ui->pasteViewButton->setText("Paste Camera");
 }
 
 void BriefingEditorDialog::updateUi()
@@ -217,7 +224,6 @@ void BriefingEditorDialog::enableDisableControls()
 	ui->addStageButton->setEnabled(total_stages < MAX_BRIEF_STAGES);
 	ui->insertStageButton->setEnabled(stage_exists && total_stages < MAX_BRIEF_STAGES);
 	ui->deleteStageButton->setEnabled(stage_exists);
-	ui->saveViewButton->setEnabled(stage_exists);
 	ui->gotoViewButton->setEnabled(stage_exists);
 	ui->makeIconButton->setEnabled(stage_exists);
 	ui->makeIconFromShipButton->setEnabled(stage_exists);
@@ -265,6 +271,7 @@ void BriefingEditorDialog::on_prevStageButton_clicked()
 {
 	_model->gotoPreviousStage();
 	_mapWidget->setStage(_model->getCurrentStage());
+	captureResetCameraForCurrentStage();
 	updateUi();
 }
 
@@ -272,6 +279,7 @@ void BriefingEditorDialog::on_nextStageButton_clicked()
 {
 	_model->gotoNextStage();
 	_mapWidget->setStage(_model->getCurrentStage());
+	captureResetCameraForCurrentStage();
 	updateUi();
 }
 
@@ -286,6 +294,7 @@ void BriefingEditorDialog::on_addStageButton_clicked()
 	} else {
 		_mapWidget->setStage(_model->getCurrentStage());
 	}
+	captureResetCameraForCurrentStage();
 
 	updateUi();
 }
@@ -294,6 +303,7 @@ void BriefingEditorDialog::on_insertStageButton_clicked()
 {
 	_model->insertStage();
 	_mapWidget->setStage(_model->getCurrentStage());
+	captureResetCameraForCurrentStage();
 	updateUi();
 }
 
@@ -301,6 +311,7 @@ void BriefingEditorDialog::on_deleteStageButton_clicked()
 {
 	_model->deleteStage();
 	_mapWidget->setStage(_model->getCurrentStage());
+	captureResetCameraForCurrentStage();
 	updateUi();
 }
 
@@ -312,14 +323,20 @@ void BriefingEditorDialog::on_cameraCoordinatesButton_clicked()
 
 void BriefingEditorDialog::on_saveViewButton_clicked()
 {
-	vec3d pos = brief_get_current_cam_pos();
-	matrix orient = brief_get_current_cam_orient();
-	_model->saveStageView(pos, orient);
+	// Save View is intentionally removed in QtFRED.
 }
 
 void BriefingEditorDialog::on_gotoViewButton_clicked()
 {
-	_mapWidget->setStage(_model->getCurrentStage());
+	const int currentTeam = _model->getCurrentTeam();
+	const int currentStage = _model->getCurrentStage();
+	if (!_resetCameraValid || _resetCameraTeam != currentTeam || _resetCameraStage != currentStage) {
+		captureResetCameraForCurrentStage();
+	}
+
+	if (_resetCameraValid) {
+		_mapWidget->applyCameraToCurrentStage(_resetCameraPos, _resetCameraOrient);
+	}
 }
 
 void BriefingEditorDialog::on_copyViewButton_clicked()
@@ -330,6 +347,8 @@ void BriefingEditorDialog::on_copyViewButton_clicked()
 void BriefingEditorDialog::on_pasteViewButton_clicked()
 {
 	_model->pasteClipboardViewToStage();
+	const auto stageView = _model->getStageView();
+	_mapWidget->applyCameraToCurrentStage(stageView.first, stageView.second);
 }
 
 void BriefingEditorDialog::on_copyToOtherTeamsButton_clicked()
@@ -341,7 +360,25 @@ void BriefingEditorDialog::on_teamComboBox_currentIndexChanged(int index)
 {
 	_model->setCurrentTeam(ui->teamComboBox->itemData(index).toInt());
 	_mapWidget->setStage(_model->getCurrentStage());
+	captureResetCameraForCurrentStage();
 	updateUi();
+}
+
+void BriefingEditorDialog::captureResetCameraForCurrentStage()
+{
+	const auto stageView = _model->getStageView();
+	if (_model->getTotalStages() <= 0 || _model->getCurrentStage() < 0) {
+		_resetCameraValid = false;
+		_resetCameraTeam = -1;
+		_resetCameraStage = -1;
+		return;
+	}
+
+	_resetCameraPos = stageView.first;
+	_resetCameraOrient = stageView.second;
+	_resetCameraTeam = _model->getCurrentTeam();
+	_resetCameraStage = _model->getCurrentStage();
+	_resetCameraValid = true;
 }
 
 void BriefingEditorDialog::on_cameraTransitionTimeSpinBox_valueChanged(int arg1)

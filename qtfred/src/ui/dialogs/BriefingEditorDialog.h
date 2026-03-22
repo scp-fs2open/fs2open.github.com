@@ -95,5 +95,12 @@ class BriefingEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	void setupMapWidget();
 	void updateUi();
 	void enableDisableControls();
+	void captureResetCameraForCurrentStage();
+
+	vec3d _resetCameraPos {};
+	matrix _resetCameraOrient {};
+	int _resetCameraTeam = -1;
+	int _resetCameraStage = -1;
+	bool _resetCameraValid = false;
 };
 } // namespace fso::fred::dialogs
