@@ -12,6 +12,46 @@
 
 namespace fso::fred::dialogs {
 
+namespace {
+void copyStageData(brief_stage& dst, const brief_stage& src)
+{
+	if (&dst == &src) {
+		return;
+	}
+
+	dst.text = src.text;
+	strcpy_s(dst.voice, src.voice);
+	dst.camera_pos = src.camera_pos;
+	dst.camera_orient = src.camera_orient;
+	dst.camera_time = src.camera_time;
+	dst.flags = src.flags;
+	dst.formula = src.formula;
+	dst.draw_grid = src.draw_grid;
+	dst.grid_color = src.grid_color;
+	dst.num_icons = src.num_icons;
+	dst.num_lines = src.num_lines;
+
+	if (dst.icons != nullptr && src.icons != nullptr) {
+		std::memcpy(dst.icons, src.icons, sizeof(brief_icon) * MAX_STAGE_ICONS);
+	}
+	if (dst.lines != nullptr && src.lines != nullptr) {
+		std::memcpy(dst.lines, src.lines, sizeof(brief_line) * MAX_BRIEF_STAGE_LINES);
+	}
+}
+
+void copyBriefingData(briefing& dst, const briefing& src)
+{
+	dst.num_stages = src.num_stages;
+	std::memcpy(dst.background, src.background, sizeof(dst.background));
+	std::memcpy(dst.ship_select_background, src.ship_select_background, sizeof(dst.ship_select_background));
+	std::memcpy(dst.weapon_select_background, src.weapon_select_background, sizeof(dst.weapon_select_background));
+
+	for (int i = 0; i < MAX_BRIEF_STAGES; ++i) {
+		copyStageData(dst.stages[i], src.stages[i]);
+	}
+}
+} // namespace
+
 BriefingEditorDialogModel::BriefingEditorDialogModel(QObject* parent, EditorViewport* viewport)
 	: AbstractDialogModel(parent, viewport)
 {
@@ -23,7 +63,7 @@ bool BriefingEditorDialogModel::apply()
 	stopSpeech();
 
 	for (int i = 0; i < MAX_TVT_TEAMS; i++) {
-		Briefings[i] = _wipBriefings[i];
+		copyBriefingData(Briefings[i], _wipBriefings[i]);
 	}
 
 	Mission_music[SCORE_BRIEFING] = _briefingMusicIndex - 1;
@@ -44,6 +84,7 @@ void BriefingEditorDialogModel::initializeData()
 	// Make a working copy
 	for (int i = 0; i < MAX_TVT_TEAMS; i++) {
 		_wipBriefings[i] = Briefings[i];
+		copyBriefingData(_wipBriefings[i], Briefings[i]);
 	}
 
 	_briefingMusicIndex = Mission_music[SCORE_BRIEFING] + 1;
@@ -166,7 +207,7 @@ void BriefingEditorDialogModel::addStage()
 	if (_currentStage > 0) {
 		const brief_stage& prev = _wipBriefings[_currentTeam].stages[_currentStage - 1];
 
-		dst = prev; // start by copying everything
+		copyStageData(dst, prev); // start by copying stage data without aliasing storage
 		// then clear fields that should not carry over by default
 		dst.text = "<Text here>";
 		dst.voice[0] = '\0';
@@ -208,7 +249,7 @@ void BriefingEditorDialogModel::insertStage()
 	_wipBriefings[_currentTeam].num_stages++;
 
 	for (int i = _wipBriefings[_currentTeam].num_stages - 1; i > _currentStage; i--) {
-		_wipBriefings[_currentTeam].stages[i] = _wipBriefings[_currentTeam].stages[i - 1];
+		copyStageData(_wipBriefings[_currentTeam].stages[i], _wipBriefings[_currentTeam].stages[i - 1]);
 	}
 
 	_currentIcon = -1;
@@ -234,7 +275,7 @@ void BriefingEditorDialogModel::deleteStage()
 
 	// copy the stages backwards until we get to the stage we're on
 	for (int i = _currentStage; i + 1 < _wipBriefings[_currentTeam].num_stages; i++) {
-		_wipBriefings[_currentTeam].stages[i] = _wipBriefings[_currentTeam].stages[i + 1];
+		copyStageData(_wipBriefings[_currentTeam].stages[i], _wipBriefings[_currentTeam].stages[i + 1]);
 	}
 
 	_wipBriefings[_currentTeam].num_stages--;
@@ -329,7 +370,7 @@ void BriefingEditorDialogModel::copyToOtherTeams()
 
 	for (int i = 0; i < MAX_TVT_TEAMS; i++) {
 		if (i != _currentTeam) {
-			_wipBriefings[i] = _wipBriefings[_currentTeam];
+			copyBriefingData(_wipBriefings[i], _wipBriefings[_currentTeam]);
 		}
 	}
 	set_modified();
