@@ -53,6 +53,8 @@ class BriefingEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	void on_teamComboBox_currentIndexChanged(int index);
 
 	void on_cameraTransitionTimeSpinBox_valueChanged(int arg1);
+	void on_movementSpeedComboBox_currentIndexChanged(int index);
+	void on_rotationSpeedComboBox_currentIndexChanged(int index);
 	void on_cutToNextStageCheckBox_toggled(bool checked);
 	void on_cutToPrevStageCheckBox_toggled(bool checked);
 	void on_disableGridCheckBox_toggled(bool checked);

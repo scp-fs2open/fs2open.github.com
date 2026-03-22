@@ -28,6 +28,30 @@ namespace fso::fred::dialogs {
 int BriefingEditorDialog::_openDialogCount = 0;
 
 namespace {
+float movementSpeedScaleForIndex(int index) {
+	switch (index) {
+	case 0:
+		return 4.0f;
+	case 1:
+		return 8.0f;
+	case 2:
+	default:
+		return 16.0f;
+	}
+}
+
+float rotationSpeedScaleForIndex(int index) {
+	switch (index) {
+	case 0:
+		return 0.0625f;
+	case 1:
+		return 0.125f;
+	case 2:
+	default:
+		return 0.25f;
+	}
+}
+
 vec3d getNewIconPlacement()
 {
 	const vec3d camPos = brief_get_current_cam_pos();
@@ -212,6 +236,9 @@ void BriefingEditorDialog::initializeUi()
 
 	// Initialize the formula tree editor
 	ui->formulaTreeView->initializeEditor(_viewport->editor, this);
+
+	on_movementSpeedComboBox_currentIndexChanged(ui->movementSpeedComboBox->currentIndex());
+	on_rotationSpeedComboBox_currentIndexChanged(ui->rotationSpeedComboBox->currentIndex());
 }
 
 void BriefingEditorDialog::updateUi()
@@ -285,6 +312,8 @@ void BriefingEditorDialog::enableDisableControls()
 	ui->pasteViewButton->setEnabled(stage_exists);
 	ui->cameraCoordinatesButton->setEnabled(stage_exists);
 	ui->cameraTransitionTimeSpinBox->setEnabled(stage_exists);
+	ui->movementSpeedComboBox->setEnabled(stage_exists);
+	ui->rotationSpeedComboBox->setEnabled(stage_exists);
 	ui->cutToNextStageCheckBox->setEnabled(stage_exists);
 	ui->cutToPrevStageCheckBox->setEnabled(stage_exists);
 	ui->disableGridCheckBox->setEnabled(stage_exists);
@@ -447,6 +476,20 @@ void BriefingEditorDialog::captureResetCameraForCurrentStage()
 void BriefingEditorDialog::on_cameraTransitionTimeSpinBox_valueChanged(int arg1)
 {
 	_model->setCameraTransitionTime(arg1);
+}
+
+void BriefingEditorDialog::on_movementSpeedComboBox_currentIndexChanged(int index)
+{
+	if (_mapWidget != nullptr) {
+		_mapWidget->setMovementSpeedScale(movementSpeedScaleForIndex(index));
+	}
+}
+
+void BriefingEditorDialog::on_rotationSpeedComboBox_currentIndexChanged(int index)
+{
+	if (_mapWidget != nullptr) {
+		_mapWidget->setRotationSpeedScale(rotationSpeedScaleForIndex(index));
+	}
 }
 
 void BriefingEditorDialog::on_cutToNextStageCheckBox_toggled(bool checked)

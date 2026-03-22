@@ -64,6 +64,8 @@ public:
 	int getCurrentStage() const;
 	void notifyIconVisualsChanged();
 	void applyCameraToCurrentStage(const vec3d& pos, const matrix& orient);
+	void setMovementSpeedScale(float scale);
+	void setRotationSpeedScale(float scale);
 
 	QWindow* getRenderWindow() const;
 
@@ -123,6 +125,9 @@ private:
 	bool _cutFadeIn = false;
 	int _cutFadeFrame = 0;
 	int _pendingCutStage = -1;
+
+	float _movementSpeedScale = 1.0f;
+	float _rotationSpeedScale = 1.0f;
 };
 
 } // namespace fso::fred

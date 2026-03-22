@@ -431,6 +431,14 @@ void BriefingMapWidget::applyCameraToCurrentStage(const vec3d& pos, const matrix
 	applyCameraPoseLikeKeyboardControls(pos, orient, true);
 }
 
+void BriefingMapWidget::setMovementSpeedScale(float scale) {
+	_movementSpeedScale = std::max(0.01f, scale);
+}
+
+void BriefingMapWidget::setRotationSpeedScale(float scale) {
+	_rotationSpeedScale = std::max(0.01f, scale);
+}
+
 void BriefingMapWidget::applyCameraPoseLikeKeyboardControls(const vec3d& camPos, const matrix& camOrient, bool updateModel) {
 	auto* briefPtr = _model->getWipBriefingPtr(_model->getCurrentTeam());
 	if (!briefPtr || _currentStage < 0 || _currentStage >= briefPtr->num_stages) {
@@ -666,12 +674,12 @@ void BriefingMapWidget::applyBoundCameraControls(float frametime) {
 	movementVec.xyz.y += bindings.isPressed(ControlAction::MoveBackward) ? -1.0f : 0.0f;
 	movementVec.xyz.z += bindings.isPressed(ControlAction::MoveUp) ? 1.0f : 0.0f;
 	movementVec.xyz.z += bindings.isPressed(ControlAction::MoveDown) ? -1.0f : 0.0f;
-	rotangs.h += bindings.isPressed(ControlAction::YawLeft) ? -0.1f : 0.0f;
-	rotangs.h += bindings.isPressed(ControlAction::YawRight) ? 0.1f : 0.0f;
-	rotangs.p += bindings.isPressed(ControlAction::PitchUp) ? -0.1f : 0.0f;
-	rotangs.p += bindings.isPressed(ControlAction::PitchDown) ? 0.1f : 0.0f;
+	rotangs.h += bindings.isPressed(ControlAction::YawLeft) ? -0.1f * _rotationSpeedScale : 0.0f;
+	rotangs.h += bindings.isPressed(ControlAction::YawRight) ? 0.1f * _rotationSpeedScale : 0.0f;
+	rotangs.p += bindings.isPressed(ControlAction::PitchUp) ? -0.1f * _rotationSpeedScale : 0.0f;
+	rotangs.p += bindings.isPressed(ControlAction::PitchDown) ? 0.1f * _rotationSpeedScale : 0.0f;
 
-	const auto frameScale = std::max(frametime * 30.0f, 0.0f);
+	const auto frameScale = std::max(frametime * 30.0f * _movementSpeedScale, 0.0f);
 	if (movementVec.xyz.x != 0.0f) {
 		vm_vec_scale_add2(&camPos, &camOrient.vec.rvec, movementVec.xyz.x * frameScale);
 	}
