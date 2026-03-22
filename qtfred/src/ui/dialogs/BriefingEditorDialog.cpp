@@ -356,9 +356,9 @@ void BriefingEditorDialog::enableDisableControls()
 	ui->insertStageButton->setEnabled(stage_exists && total_stages < MAX_BRIEF_STAGES);
 	ui->deleteStageButton->setEnabled(stage_exists);
 
-	ui->gotoViewButton->setEnabled(stage_exists);
-	ui->copyViewButton->setEnabled(stage_exists);
-	ui->pasteViewButton->setEnabled(stage_exists);
+	ui->resetCameraButton->setEnabled(stage_exists);
+	ui->copyCameraButton->setEnabled(stage_exists);
+	ui->pasteCameraButton->setEnabled(stage_exists);
 	ui->cameraCoordinatesButton->setEnabled(stage_exists);
 	ui->cameraTransitionTimeSpinBox->setEnabled(stage_exists);
 	ui->movementSpeedComboBox->setEnabled(stage_exists);
