@@ -157,12 +157,6 @@ void BriefingEditorDialog::initializeUi()
 
 	// Initialize the formula tree editor
 	ui->formulaTreeView->initializeEditor(_viewport->editor, this);
-
-	// Camera/view action labels and visibility
-	ui->saveViewButton->hide();
-	ui->gotoViewButton->setText("Reset Camera");
-	ui->copyViewButton->setText("Copy Camera");
-	ui->pasteViewButton->setText("Paste Camera");
 }
 
 void BriefingEditorDialog::updateUi()
@@ -230,7 +224,16 @@ void BriefingEditorDialog::enableDisableControls()
 	ui->addStageButton->setEnabled(total_stages < MAX_BRIEF_STAGES);
 	ui->insertStageButton->setEnabled(stage_exists && total_stages < MAX_BRIEF_STAGES);
 	ui->deleteStageButton->setEnabled(stage_exists);
+
 	ui->gotoViewButton->setEnabled(stage_exists);
+	ui->copyViewButton->setEnabled(stage_exists);
+	ui->pasteViewButton->setEnabled(stage_exists);
+	ui->cameraCoordinatesButton->setEnabled(stage_exists);
+	ui->cameraTransitionTimeSpinBox->setEnabled(stage_exists);
+	ui->cutToNextStageCheckBox->setEnabled(stage_exists);
+	ui->cutToPrevStageCheckBox->setEnabled(stage_exists);
+	ui->disableGridCheckBox->setEnabled(stage_exists);
+
 	ui->makeIconButton->setEnabled(stage_exists);
 	ui->makeIconFromShipButton->setEnabled(stage_exists);
 
@@ -244,10 +247,8 @@ void BriefingEditorDialog::enableDisableControls()
 	ui->formulaTreeView->setEnabled(stage_exists);
 	
 	const bool icon_selected = stage_exists && _model->getCurrentIconIndex() >= 0;
-	ui->currentIconInfoGroupBox->setEnabled(stage_exists);
-	ui->makeIconButton->setEnabled(stage_exists);
-	ui->makeIconFromShipButton->setEnabled(stage_exists);
-	ui->iconIdSpinBox->setEnabled(icon_selected);
+	ui->currentIconInfoGroupBox->setEnabled(icon_selected);
+	/*ui->iconIdSpinBox->setEnabled(icon_selected);
 	ui->iconLabelLineEdit->setEnabled(icon_selected);
 	ui->iconCloseupLabelLineEdit->setEnabled(icon_selected);
 	ui->iconImageComboBox->setEnabled(icon_selected);
@@ -258,8 +259,9 @@ void BriefingEditorDialog::enableDisableControls()
 	ui->flipIconCheckBox->setEnabled(icon_selected);
 	ui->useWingIconCheckBox->setEnabled(icon_selected);
 	ui->useCargoIconCheckBox->setEnabled(icon_selected);
+	ui->iconCoordinatesButton->setEnabled(icon_selected);
 	ui->deleteIconButton->setEnabled(icon_selected);
-	ui->propagateIconButton->setEnabled(icon_selected);
+	ui->propagateIconButton->setEnabled(icon_selected);*/
 
 }
 

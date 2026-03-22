@@ -85,52 +85,6 @@
              </property>
             </widget>
            </item>
-           <item row="1" column="2">
-            <widget class="QPushButton" name="gotoViewButton">
-             <property name="text">
-              <string>Goto View</string>
-             </property>
-             <property name="autoDefault">
-              <bool>false</bool>
-             </property>
-            </widget>
-           </item>
-           <item row="3" column="2">
-            <widget class="QPushButton" name="pasteViewButton">
-             <property name="text">
-              <string>Paste View</string>
-             </property>
-             <property name="autoDefault">
-              <bool>false</bool>
-             </property>
-            </widget>
-           </item>
-           <item row="4" column="2">
-            <widget class="QPushButton" name="cameraCoordinatesButton">
-             <property name="text">
-              <string>Camera Coords...</string>
-             </property>
-             <property name="autoDefault">
-              <bool>false</bool>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="2">
-            <widget class="QPushButton" name="saveViewButton">
-             <property name="maximumSize">
-              <size>
-               <width>16777215</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>Save View</string>
-             </property>
-             <property name="autoDefault">
-              <bool>false</bool>
-             </property>
-            </widget>
-           </item>
            <item row="1" column="0" colspan="2">
             <widget class="QPushButton" name="addStageButton">
              <property name="text">
@@ -179,10 +133,40 @@
              </property>
             </widget>
            </item>
-           <item row="2" column="2">
+           <item row="0" column="2">
+            <widget class="QPushButton" name="gotoViewButton">
+             <property name="text">
+              <string>Reset Camera</string>
+             </property>
+             <property name="autoDefault">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="2">
             <widget class="QPushButton" name="copyViewButton">
              <property name="text">
-              <string>Copy View</string>
+              <string>Copy Camera</string>
+             </property>
+             <property name="autoDefault">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="2">
+            <widget class="QPushButton" name="pasteViewButton">
+             <property name="text">
+              <string>Paste Camera</string>
+             </property>
+             <property name="autoDefault">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="2">
+            <widget class="QPushButton" name="cameraCoordinatesButton">
+             <property name="text">
+              <string>Camera Coords...</string>
              </property>
              <property name="autoDefault">
               <bool>false</bool>
@@ -294,7 +278,7 @@
            <property name="minimumSize">
             <size>
              <width>0</width>
-             <height>300</height>
+             <height>0</height>
             </size>
            </property>
            <property name="title">
@@ -448,22 +432,9 @@
             <item>
              <layout class="QHBoxLayout" name="iconSetupButtonsLayout">
               <item>
-               <widget class="QPushButton" name="makeIconButton">
+               <widget class="QPushButton" name="iconCoordinatesButton">
                 <property name="text">
-                 <string>Make Icon</string>
-                </property>
-                <property name="autoDefault">
-                 <bool>false</bool>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QPushButton" name="makeIconFromShipButton">
-                <property name="text">
-                 <string>From Ship...</string>
-                </property>
-                <property name="autoDefault">
-                 <bool>false</bool>
+                 <string>Icon Coords...</string>
                 </property>
                </widget>
               </item>
@@ -489,21 +460,45 @@
               </item>
              </layout>
             </item>
-            <item>
-             <spacer name="iconInfoSpacer">
-              <property name="orientation">
-               <enum>Qt::Vertical</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>20</width>
-                <height>40</height>
-               </size>
-              </property>
-             </spacer>
-            </item>
            </layout>
           </widget>
+         </item>
+         <item>
+          <spacer name="verticalSpacer">
+           <property name="orientation">
+            <enum>Qt::Vertical</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>20</width>
+             <height>40</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="makeIconButtons">
+           <item>
+            <widget class="QPushButton" name="makeIconButton">
+             <property name="text">
+              <string>Make Icon</string>
+             </property>
+             <property name="autoDefault">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="makeIconFromShipButton">
+             <property name="text">
+              <string>From Ship...</string>
+             </property>
+             <property name="autoDefault">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </item>
         </layout>
        </item>
