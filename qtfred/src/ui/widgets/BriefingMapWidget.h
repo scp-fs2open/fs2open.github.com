@@ -72,7 +72,9 @@ signals:
 	void cameraChanged(vec3d pos, matrix orient);
 
 protected:
+	bool event(QEvent* evt) override;
 	void keyPressEvent(QKeyEvent* event) override;
+	void keyReleaseEvent(QKeyEvent* event) override;
 	void mousePressEvent(QMouseEvent* event) override;
 	void mouseMoveEvent(QMouseEvent* event) override;
 	void mouseReleaseEvent(QMouseEvent* event) override;
@@ -86,6 +88,7 @@ private:
 	void updateEditorHighlightPlayback();
 	void drawSelectedIconOutline();
 	void applyCameraPoseLikeKeyboardControls(const vec3d& camPos, const matrix& camOrient, bool updateModel);
+	void applyBoundCameraControls(float frametime);
 
 	BriefingMapWindow* _window = nullptr;
 	QTimer* _renderTimer = nullptr;

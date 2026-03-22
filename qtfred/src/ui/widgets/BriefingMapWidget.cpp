@@ -8,6 +8,7 @@
 
 #include <cmath>
 #include <cstdlib>
+#include <algorithm>
 
 #include <QKeyEvent>
 #include <QMouseEvent>
@@ -19,6 +20,7 @@
 #include "bmpman/bmpman.h"
 #include "mission/dialogs/BriefingEditorDialogModel.h"
 #include "mission/EditorViewport.h"
+#include "ui/ControlBindings.h"
 
 #include "graphics/2d.h"
 #include "render/3d.h"
@@ -570,6 +572,7 @@ void BriefingMapWidget::renderFrame() {
 		}
 
 			const float frametime = 0.033f;
+			applyBoundCameraControls(frametime);
 			Brief_text_wipe_time_elapsed += frametime;
 			brief_camera_move(frametime, _currentStage);
 				updateEditorHighlightPlayback();
@@ -609,57 +612,85 @@ void BriefingMapWidget::renderFrame() {
 	_rendering = false;
 }
 
+bool BriefingMapWidget::event(QEvent* evt) {
+	if (evt->type() == QEvent::ShortcutOverride) {
+		auto* keyEvent = static_cast<QKeyEvent*>(evt);
+		if (ControlBindings::instance().matches(keyEvent)) {
+			evt->accept();
+			return true;
+		}
+	}
+
+	return QWidget::event(evt);
+}
+
 void BriefingMapWidget::keyPressEvent(QKeyEvent* event) {
-	if (!_initialized)
-		return;
-
-	// Temporary keyboard camera controls
-	vec3d camPos = brief_get_current_cam_pos();
-	matrix camOrient = brief_get_current_cam_orient();
-	bool moved = false;
-	const float PAN_SPEED = 50.0f;
-	const float ZOOM_SPEED = 100.0f;
-
-	switch (event->key()) {
-	case Qt::Key_Left:
-		vm_vec_scale_add2(&camPos, &camOrient.vec.rvec, -PAN_SPEED);
-		moved = true;
-		break;
-	case Qt::Key_Right:
-		vm_vec_scale_add2(&camPos, &camOrient.vec.rvec, PAN_SPEED);
-		moved = true;
-		break;
-	case Qt::Key_Up:
-		vm_vec_scale_add2(&camPos, &camOrient.vec.uvec, PAN_SPEED);
-		moved = true;
-		break;
-	case Qt::Key_Down:
-		vm_vec_scale_add2(&camPos, &camOrient.vec.uvec, -PAN_SPEED);
-		moved = true;
-		break;
-	case Qt::Key_Plus:
-	case Qt::Key_Equal:
-		vm_vec_scale_add2(&camPos, &camOrient.vec.fvec, ZOOM_SPEED);
-		moved = true;
-		break;
-	case Qt::Key_Minus:
-		vm_vec_scale_add2(&camPos, &camOrient.vec.fvec, -ZOOM_SPEED);
-		moved = true;
-		break;
-	case Qt::Key_PageUp:
-		camPos.xyz.y += PAN_SPEED;
-		moved = true;
-		break;
-	case Qt::Key_PageDown:
-		camPos.xyz.y -= PAN_SPEED;
-		moved = true;
-		break;
-	default:
+	if (!_initialized) {
 		QWidget::keyPressEvent(event);
 		return;
 	}
 
-	if (moved) {
+	if (!ControlBindings::instance().handleKeyPress(event)) {
+		QWidget::keyPressEvent(event);
+		return;
+	}
+	event->accept();
+}
+
+void BriefingMapWidget::keyReleaseEvent(QKeyEvent* event) {
+	if (!_initialized) {
+		QWidget::keyReleaseEvent(event);
+		return;
+	}
+
+	if (!ControlBindings::instance().handleKeyRelease(event)) {
+		QWidget::keyReleaseEvent(event);
+		return;
+	}
+	event->accept();
+}
+
+void BriefingMapWidget::applyBoundCameraControls(float frametime) {
+	auto& bindings = ControlBindings::instance();
+	vec3d camPos = brief_get_current_cam_pos();
+	matrix camOrient = brief_get_current_cam_orient();
+	const auto oldPos = camPos;
+	const auto oldOrient = camOrient;
+
+	vec3d movementVec = ZERO_VECTOR;
+	angles rotangs{};
+
+	movementVec.xyz.x += bindings.isPressed(ControlAction::MoveLeft) ? -1.0f : 0.0f;
+	movementVec.xyz.x += bindings.isPressed(ControlAction::MoveRight) ? 1.0f : 0.0f;
+	movementVec.xyz.y += bindings.isPressed(ControlAction::MoveForward) ? 1.0f : 0.0f;
+	movementVec.xyz.y += bindings.isPressed(ControlAction::MoveBackward) ? -1.0f : 0.0f;
+	movementVec.xyz.z += bindings.isPressed(ControlAction::MoveUp) ? 1.0f : 0.0f;
+	movementVec.xyz.z += bindings.isPressed(ControlAction::MoveDown) ? -1.0f : 0.0f;
+	rotangs.h += bindings.isPressed(ControlAction::YawLeft) ? -0.1f : 0.0f;
+	rotangs.h += bindings.isPressed(ControlAction::YawRight) ? 0.1f : 0.0f;
+	rotangs.p += bindings.isPressed(ControlAction::PitchUp) ? -0.1f : 0.0f;
+	rotangs.p += bindings.isPressed(ControlAction::PitchDown) ? 0.1f : 0.0f;
+
+	const auto frameScale = std::max(frametime * 30.0f, 0.0f);
+	if (movementVec.xyz.x != 0.0f) {
+		vm_vec_scale_add2(&camPos, &camOrient.vec.rvec, movementVec.xyz.x * frameScale);
+	}
+	if (movementVec.xyz.y != 0.0f) {
+		vm_vec_scale_add2(&camPos, &camOrient.vec.fvec, movementVec.xyz.y * frameScale);
+	}
+	if (movementVec.xyz.z != 0.0f) {
+		vm_vec_scale_add2(&camPos, &camOrient.vec.uvec, movementVec.xyz.z * frameScale);
+	}
+
+	if (rotangs.p != 0.0f || rotangs.h != 0.0f || rotangs.b != 0.0f) {
+		matrix rotmat;
+		matrix newmat;
+		vm_angles_2_matrix(&rotmat, &rotangs);
+		vm_matrix_x_matrix(&newmat, &camOrient, &rotmat);
+		camOrient = newmat;
+	}
+
+	if (vm_vec_cmp(&oldPos, &camPos) || vm_matrix_cmp(&oldOrient, &camOrient)) {
 		applyCameraPoseLikeKeyboardControls(camPos, camOrient, true);
 	}
 }

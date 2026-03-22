@@ -24,6 +24,7 @@ class BriefingEditorDialog : public QDialog, public SexpTreeEditorInterface {
   public:
 	explicit BriefingEditorDialog(FredView* parent, EditorViewport* viewport);
 	~BriefingEditorDialog() override;
+	static bool isAnyDialogOpen();
 
 	void accept() override;
 	void reject() override;
@@ -91,6 +92,7 @@ class BriefingEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	std::unique_ptr<BriefingEditorDialogModel> _model;
 	EditorViewport* _viewport;
 	fso::fred::BriefingMapWidget* _mapWidget = nullptr;
+	static int _openDialogCount;
 
 	void initializeUi();
 	void setupMapWidget();
