@@ -240,6 +240,8 @@ add_file_folder("Source/UI/Dialogs/ShipEditor"
 add_file_folder("Source/UI/General"
 	src/ui/dialogs/General/CheckBoxListDialog.cpp
 	src/ui/dialogs/General/CheckBoxListDialog.h
+	src/ui/dialogs/General/HeadAnimationPickerDialog.cpp
+	src/ui/dialogs/General/HeadAnimationPickerDialog.h
 	src/ui/dialogs/General/ImagePickerDialog.cpp
 	src/ui/dialogs/General/ImagePickerDialog.h
 )

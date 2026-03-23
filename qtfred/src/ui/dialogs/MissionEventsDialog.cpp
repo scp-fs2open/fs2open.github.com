@@ -1,7 +1,7 @@
 #include "MissionEventsDialog.h"
 #include "ui_MissionEventsDialog.h"
 #include "ui/util/SignalBlockers.h"
-#include "ui/dialogs/General/ImagePickerDialog.h"
+#include "ui/dialogs/General/HeadAnimationPickerDialog.h"
 
 #include "mission/util.h"
 
@@ -252,7 +252,7 @@ void MissionEventsDialog::accept()
 	if (_model->apply()) {
 		QDialog::accept();
 	}
-	// else: validation failed, don’t close
+	// else: validation failed, donâ€™t close
 }
 
 void MissionEventsDialog::reject()
@@ -930,13 +930,23 @@ void MissionEventsDialog::on_aniCombo_selectedIndexChanged(int index)
 
 void MissionEventsDialog::on_btnAniBrowse_clicked()
 {
-	// TODO Build gallery from the model's known head ANIs
-	const QString filters =
-		"FSO Images (*.ani *.eff *.png);;All files (*.*)";
-	const QString file = QFileDialog::getOpenFileName(this, tr("Select Head Animation"), QString(), filters);
-	if (file.isEmpty())
+	HeadAnimationPickerDialog dlg(this);
+
+	QStringList headNames;
+	for (const auto& head : _model->getHeadAniList()) {
+		headNames << QString::fromStdString(head);
+	}
+	dlg.setHeadAnimationNames(headNames);
+	dlg.setInitialSelection(QString::fromStdString(_model->getMessageAni()));
+
+	if (dlg.exec() != QDialog::Accepted) {
 		return;
-	_model->setMessageAni(file.toUtf8().constData());
+	}
+
+	const auto selected = dlg.selectedFile();
+	_model->setMessageAni(selected.toUtf8().constData());
+	initHeadCombo();
+	ui->aniCombo->setCurrentText(selected);
 }
 
 void MissionEventsDialog::on_waveCombo_editingFinished()
