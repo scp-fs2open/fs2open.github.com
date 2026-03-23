@@ -1,7 +1,7 @@
 #include "MissionEventsDialog.h"
 #include "ui_MissionEventsDialog.h"
 #include "ui/util/SignalBlockers.h"
-#include "ui/dialogs/General/HeadAnimationPickerDialog.h"
+#include "ui/dialogs/EventEditor/HeadAnimationPickerDialog.h"
 
 #include "mission/util.h"
 
