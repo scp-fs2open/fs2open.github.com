@@ -33,6 +33,7 @@ typedef struct prop {
 	uint create_time;                     // time prop was created, set by gettime()
 	fix time_created;
 	float alpha_mult;
+	SCP_string fred_layer = "Default";
 	// glow points
 	SCP_deque<bool> glow_point_bank_active;
 	flagset<Prop::Prop_Flags> flags;
@@ -49,6 +50,7 @@ typedef struct parsed_prop {
 	matrix orientation;
 	vec3d position;
 	flagset<Mission::Parse_Object_Flags> flags;
+	SCP_string fred_layer = "Default";
 } parsed_prop;
 
 extern bool Props_inited;

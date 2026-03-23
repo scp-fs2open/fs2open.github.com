@@ -14,9 +14,9 @@
 #include <QSettings>
 #include <math/fvi.h>
 #include <jumpnode/jumpnode.h>
+#include <mission/missionparse.h>
 #include <prop/prop.h>
 #include <FredApplication.h>
-#include <algorithm>
 
 namespace {
 
@@ -128,6 +128,7 @@ EditorViewport::EditorViewport(Editor* in_editor, std::unique_ptr<FredRenderer>&
 	memset(&saved_cam_orient, 0, sizeof(saved_cam_orient));
 	_layerNames.emplace_back(DefaultLayerName);
 	_layerVisibility.push_back(true);
+	syncMissionLayerNames();
 
 	loadSettings();
 
@@ -879,7 +880,7 @@ int EditorViewport::select_object(int cx, int cy) {
 
 size_t EditorViewport::getLayerIndex(const SCP_string& name) const {
 	for (size_t i = 0; i < _layerNames.size(); ++i) {
-		if (_layerNames[i] == name) {
+		if (stricmp(_layerNames[i].c_str(), name.c_str()) == 0) {
 			return i;
 		}
 	}
@@ -899,6 +900,24 @@ bool EditorViewport::isLayerVisible(size_t layerIndex) const {
 		return true;
 	}
 	return _layerVisibility[layerIndex];
+}
+
+void EditorViewport::syncMissionLayerNames() const {
+	The_mission.fred_layers = _layerNames;
+}
+
+void EditorViewport::setObjectLayerByIndex(int objectIndex, size_t layerIndex) {
+	_objectLayers[objectIndex] = layerIndex;
+
+	const auto& layerName = _layerNames[layerIndex];
+	if (Objects[objectIndex].type == OBJ_SHIP || Objects[objectIndex].type == OBJ_START) {
+		Ships[Objects[objectIndex].instance].fred_layer = layerName;
+	} else if (Objects[objectIndex].type == OBJ_PROP) {
+		auto* prop = prop_id_lookup(Objects[objectIndex].instance);
+		if (prop != nullptr) {
+			prop->fred_layer = layerName;
+		}
+	}
 }
 
 SCP_vector<SCP_string> EditorViewport::getLayerNames() const {
@@ -921,6 +940,7 @@ bool EditorViewport::addLayer(const SCP_string& name, SCP_string* errorMessage) 
 
 	_layerNames.push_back(name);
 	_layerVisibility.push_back(true);
+	syncMissionLayerNames();
 	return true;
 }
 
@@ -944,11 +964,12 @@ bool EditorViewport::deleteLayer(const SCP_string& name, SCP_string* errorMessag
 
 	for (auto& objectLayer : _objectLayers) {
 		if (objectLayer.second == layerIndex) {
-			objectLayer.second = 0;
+			setObjectLayerByIndex(objectLayer.first, 0);
 		} else if (objectLayer.second > layerIndex) {
 			--objectLayer.second;
 		}
 	}
+	syncMissionLayerNames();
 	return true;
 }
 
@@ -1000,6 +1021,48 @@ int EditorViewport::getHiddenLayerCount() const {
 	return static_cast<int>(std::count(_layerVisibility.begin(), _layerVisibility.end(), false));
 }
 
+void EditorViewport::reloadLayersFromMission() {
+	_layerNames.clear();
+	_layerVisibility.clear();
+	_objectLayers.clear();
+
+	if (The_mission.fred_layers.empty()) {
+		_layerNames.emplace_back(DefaultLayerName);
+	} else {
+		_layerNames = The_mission.fred_layers;
+	}
+
+	if (_layerNames.empty() || _layerNames.front() != DefaultLayerName) {
+		_layerNames.insert(_layerNames.begin(), DefaultLayerName);
+	}
+
+	_layerVisibility.resize(_layerNames.size(), true);
+	syncMissionLayerNames();
+
+	for (int objectIndex = 0; objectIndex < MAX_OBJECTS; ++objectIndex) {
+		auto* objp = &Objects[objectIndex];
+		if (objp->type == OBJ_NONE) {
+			continue;
+		}
+
+		size_t layerIndex = 0;
+		if (objp->type == OBJ_SHIP || objp->type == OBJ_START) {
+			const auto found = getLayerIndex(Ships[objp->instance].fred_layer);
+			layerIndex = found == static_cast<size_t>(-1) ? 0 : found;
+		} else if (objp->type == OBJ_PROP) {
+			auto* prop = prop_id_lookup(objp->instance);
+			if (prop != nullptr) {
+				const auto found = getLayerIndex(prop->fred_layer);
+				layerIndex = found == static_cast<size_t>(-1) ? 0 : found;
+			}
+		}
+
+		setObjectLayerByIndex(objectIndex, layerIndex);
+	}
+
+	needsUpdate();
+}
+
 SCP_string EditorViewport::getObjectLayerName(int objectIndex) const {
 	const auto layerIndex = getObjectLayerIndex(objectIndex);
 	if (layerIndex >= _layerNames.size()) {
@@ -1017,7 +1080,7 @@ bool EditorViewport::moveObjectToLayer(int objectIndex, const SCP_string& layerN
 		return false;
 	}
 
-	_objectLayers[objectIndex] = layerIndex;
+	setObjectLayerByIndex(objectIndex, layerIndex);
 	if (!isLayerVisible(layerIndex)) {
 		editor->unmarkObject(objectIndex);
 	}
@@ -1036,7 +1099,7 @@ void EditorViewport::moveMarkedObjectsToLayer(const SCP_string& layerName, SCP_s
 
 	for (auto objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
 		if (objp->flags[Object::Object_Flags::Marked]) {
-			_objectLayers[OBJ_INDEX(objp)] = layerIndex;
+			setObjectLayerByIndex(OBJ_INDEX(objp), layerIndex);
 			if (!isLayerVisible(layerIndex)) {
 				editor->unmarkObject(OBJ_INDEX(objp));
 			}

@@ -6,7 +6,6 @@
 #include "IDialogProvider.h"
 
 #include <object/object.h>
-#include <unordered_map>
 
 namespace fso {
 namespace fred {
@@ -74,6 +73,8 @@ class EditorViewport {
 	size_t getLayerIndex(const SCP_string& name) const;
 	size_t getObjectLayerIndex(int objectIndex) const;
 	bool isLayerVisible(size_t layerIndex) const;
+	void syncMissionLayerNames() const;
+	void setObjectLayerByIndex(int objectIndex, size_t layerIndex);
  public:
 	static const char* DefaultLayerName;
 
@@ -106,6 +107,7 @@ class EditorViewport {
 	bool getLayerVisibility(const SCP_string& name, bool* visible, SCP_string* errorMessage = nullptr) const;
 	void showAllLayers();
 	int getHiddenLayerCount() const;
+	void reloadLayersFromMission();
 
 	SCP_string getObjectLayerName(int objectIndex) const;
 	bool moveObjectToLayer(int objectIndex, const SCP_string& layerName, SCP_string* errorMessage = nullptr);

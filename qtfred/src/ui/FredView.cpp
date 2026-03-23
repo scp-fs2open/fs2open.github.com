@@ -349,6 +349,10 @@ void FredView::on_mission_loaded(const std::string& filepath) {
 	// Clear browsed head ANIs so the new mission's message scan starts fresh.
 	fso::fred::dialogs::MissionEventsDialogModel::clearBrowsedHeadAnis();
 
+	if (_viewport != nullptr) {
+		_viewport->reloadLayersFromMission();
+	}
+
 	QString filename = "Untitled";
 	if (!filepath.empty()) {
 		filename = QFileInfo(QString::fromStdString(filepath)).fileName();

@@ -184,6 +184,12 @@ path_restriction_t Path_restrictions[MAX_PATH_RESTRICTIONS];
 
 extern int debrief_find_persona_index();
 
+static bool mission_has_layer_name(const mission* pm, const SCP_string& layerName) {
+	return std::any_of(pm->fred_layers.begin(), pm->fred_layers.end(), [&layerName](const SCP_string& existingLayer) {
+		return stricmp(existingLayer.c_str(), layerName.c_str()) == 0;
+	});
+}
+
 //XSTR:OFF
 
 const char *Nebula_filenames[NUM_NEBULAS] = {
@@ -2252,6 +2258,7 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 	}
 
 	shipp->group = p_objp->group;
+	shipp->fred_layer = p_objp->fred_layer;
 	shipp->escort_priority = p_objp->escort_priority;
 	shipp->ship_guardian_threshold = p_objp->ship_guardian_threshold;
 	shipp->use_special_explosion = p_objp->use_special_explosion;
@@ -3782,6 +3789,17 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 	if (optional_string("+Group:"))
 		stuff_int(&p_objp->group);
 
+	if (optional_string("+Layer:")) {
+		stuff_string(p_objp->fred_layer, F_NAME);
+		if (!mission_has_layer_name(&The_mission, p_objp->fred_layer)) {
+			if (p_objp->fred_layer.empty()) {
+				p_objp->fred_layer = "Default";
+			} else {
+				The_mission.fred_layers.push_back(p_objp->fred_layer);
+			}
+		}
+	}
+
 	bool table_score = false; 
 	if (optional_string("+Use Table Score:")) {
 		table_score = true; 
@@ -5190,6 +5208,17 @@ void parse_prop(mission* /*pm*/)
 		}
 	}
 
+	if (optional_string("+Layer:")) {
+		stuff_string(p.fred_layer, F_NAME);
+		if (!mission_has_layer_name(&The_mission, p.fred_layer)) {
+			if (p.fred_layer.empty()) {
+				p.fred_layer = "Default";
+			} else {
+				The_mission.fred_layers.push_back(p.fred_layer);
+			}
+		}
+	}
+
 	// if idx is still -1 then we have an empty props.tbl so we parse
 	// everything here and just discard it. A warning has already been generated above.
 	if (idx < 0) {
@@ -5370,6 +5399,11 @@ void post_process_mission_props()
 
 			if (propp.flags[Mission::Parse_Object_Flags::OF_No_collide]) {
 				obj.flags.remove(Object::Object_Flags::Collides);
+			}
+
+			auto createdProp = prop_id_lookup(obj.instance);
+			if (createdProp != nullptr) {
+				createdProp->fred_layer = propp.fred_layer;
 			}
 		}
 	}
@@ -7130,6 +7164,8 @@ void mission::Reset()
 
 	custom_data.clear();
 	custom_strings.clear();
+	fred_layers.clear();
+	fred_layers.emplace_back("Default");
 }
 
 void support_ship_info::reset()

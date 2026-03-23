@@ -7273,6 +7273,7 @@ void ship::clear()
 	swarm_missile_bank = -1;
 
 	group = -1;
+	fred_layer = "Default";
 	death_roll_snd  = sound_handle::invalid();
 	ship_list_index = -1;
 

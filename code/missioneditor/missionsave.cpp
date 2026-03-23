@@ -4097,6 +4097,17 @@ int Fred_mission_save::save_objects()
 			fout(" %d", shipp->group);
 		}
 
+		if (save_config.save_format != MissionFormat::RETAIL &&
+			!shipp->fred_layer.empty() &&
+			stricmp(shipp->fred_layer.c_str(), "Default") != 0) {
+			if (optional_string_fred("+Layer:", "$Name:"))
+				parse_comments();
+			else
+				fout("\n+Layer:");
+
+			fout(" %s", shipp->fred_layer.c_str());
+		}
+
 		// always write out the score to ensure backwards compatibility. If the score is the same as the value
 		// in the table write out a flag to tell the game to simply use whatever is in the table instead
 		if (Ship_info[shipp->ship_info_index].score == shipp->score) {
@@ -5219,6 +5230,17 @@ int Fred_mission_save::save_props()
 				if (!(Objects[p->objnum].flags[Object::Object_Flags::Collides]))
 					fout(" \"no_collide\"");
 				fout(" )");
+
+				if (save_config.save_format != MissionFormat::RETAIL &&
+					!p->fred_layer.empty() &&
+					stricmp(p->fred_layer.c_str(), "Default") != 0) {
+					if (optional_string_fred("+Layer:", "$Name:"))
+						parse_comments();
+					else
+						fout("\n+Layer:");
+
+					fout(" %s", p->fred_layer.c_str());
+				}
 
 				fso_comment_pop();
 			}
