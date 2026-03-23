@@ -2,11 +2,13 @@
 
 #include <QDialog>
 #include <QHash>
+#include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
 #include <QListWidget>
 #include <QPushButton>
 #include <QTimer>
+#include <QVector>
 
 class HeadAnimationPickerDialog : public QDialog {
 	Q_OBJECT
@@ -36,17 +38,25 @@ class HeadAnimationPickerDialog : public QDialog {
 		int numFrames{1};
 		int fps{15};
 		QPixmap firstPixmap;
+		QVector<QPixmap> frames; // all animation frames, loaded lazily on first preview
 	};
 
 	void rebuildList();
 	PreviewData* ensurePreview(const QString& displayName);
+	void loadPreviewFrames(PreviewData* preview);
 	void updatePreview();
 	void setSelectedByName(const QString& name);
 	QString findPreviewSource(const QString& displayName) const;
+	QString normalizeHeadAniName(const QString& baseName) const;
+	QStringList detectVariants(const QString& baseName) const;
+	void rebuildVariantButtons(const QString& baseName);
 
 	QLineEdit* _filterEdit{nullptr};
 	QListWidget* _list{nullptr};
 	QLabel* _previewLabel{nullptr};
+	QWidget* _variantButtonWidget{nullptr};
+	QHBoxLayout* _variantButtonLayout{nullptr};
+	QVector<QPushButton*> _variantButtons;
 	QPushButton* _browseBtn{nullptr};
 	QPushButton* _okBtn{nullptr};
 	QPushButton* _cancelBtn{nullptr};

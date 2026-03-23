@@ -15,6 +15,7 @@
 #include <ui/dialogs/WingEditorDialog.h>
 #include <ui/dialogs/PropEditorDialog.h>
 #include <ui/dialogs/MissionEventsDialog.h>
+#include <mission/dialogs/MissionEventsDialogModel.h>
 #include <ui/dialogs/AsteroidEditorDialog.h>
 #include <ui/dialogs/VolumetricNebulaDialog.h>
 #include <ui/dialogs/BriefingEditorDialog.h>
@@ -273,6 +274,9 @@ bool FredView::saveMissionAs() {
 }
 
 void FredView::on_mission_loaded(const std::string& filepath) {
+	// Clear browsed head ANIs so the new mission's message scan starts fresh.
+	fso::fred::dialogs::MissionEventsDialogModel::clearBrowsedHeadAnis();
+
 	QString filename = "Untitled";
 	if (!filepath.empty()) {
 		filename = QFileInfo(QString::fromStdString(filepath)).fileName();

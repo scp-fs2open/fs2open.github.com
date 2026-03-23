@@ -944,7 +944,13 @@ void MissionEventsDialog::on_btnAniBrowse_clicked()
 	}
 
 	const auto selected = dlg.selectedFile();
-	_model->setMessageAni(selected.toUtf8().constData());
+	const SCP_string selectedStd = selected.toUtf8().constData();
+
+	// Permanently add the picked name to the session gallery so it appears in
+	// the picker whenever this mission editor is open
+	MissionEventsDialogModel::addExtraHeadAni(selectedStd);
+
+	_model->setMessageAni(selectedStd);
 	initHeadCombo();
 	ui->aniCombo->setCurrentText(selected);
 }
