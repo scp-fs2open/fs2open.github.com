@@ -359,7 +359,7 @@ QString HeadAnimationPickerDialog::normalizeHeadAniName(const QString& baseName)
 	return baseName;
 }
 
-QString HeadAnimationPickerDialog::findPreviewSource(const QString& displayName) const
+QString HeadAnimationPickerDialog::findPreviewSource(const QString& displayName)
 {
 	const auto trimmed = displayName.trimmed();
 	if (trimmed.isEmpty()) {
@@ -391,7 +391,7 @@ QString HeadAnimationPickerDialog::findPreviewSource(const QString& displayName)
 	return {};
 }
 
-QStringList HeadAnimationPickerDialog::detectVariants(const QString& baseName) const
+QStringList HeadAnimationPickerDialog::detectVariants(const QString& baseName)
 {
 	if (baseName.isEmpty() || !baseName.compare("<None>", Qt::CaseInsensitive)) {
 		return {};
