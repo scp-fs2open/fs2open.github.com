@@ -321,6 +321,9 @@
    <addaction name="actionShowDistances"/>
    <addaction name="actionOrbitSelected"/>
    <addaction name="separator"/>
+   <addaction name="actionManage_Layers"/>
+   <addaction name="actionUnhide_Layers"/>
+   <addaction name="separator"/>
   </widget>
   <action name="actionSelect">
    <property name="checkable">
@@ -1535,6 +1538,22 @@
   <action name="actionMusic_Player">
    <property name="text">
     <string>Music Player</string>
+   </property>
+  </action>
+  <action name="actionManage_Layers">
+   <property name="text">
+    <string>Manage Layers</string>
+   </property>
+   <property name="toolTip">
+    <string>Manage View Layers</string>
+   </property>
+  </action>
+  <action name="actionUnhide_Layers">
+   <property name="text">
+    <string>Unhide Layers</string>
+   </property>
+   <property name="toolTip">
+    <string>Show all view layers</string>
    </property>
   </action>
   <action name="actionVolumetric_Nebula">

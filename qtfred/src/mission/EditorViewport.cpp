@@ -16,6 +16,7 @@
 #include <jumpnode/jumpnode.h>
 #include <prop/prop.h>
 #include <FredApplication.h>
+#include <algorithm>
 
 namespace {
 
@@ -112,6 +113,8 @@ void verticalize_object(matrix* orient) {
 namespace fso {
 namespace fred {
 
+const char* EditorViewport::DefaultLayerName = "Default";
+
 EditorViewport::EditorViewport(Editor* in_editor, std::unique_ptr<FredRenderer>&& in_renderer) :
 	_renderer(std::move(in_renderer)), editor(in_editor) {
 	renderer = _renderer.get();
@@ -123,6 +126,8 @@ EditorViewport::EditorViewport(Editor* in_editor, std::unique_ptr<FredRenderer>&
 	resetView();
 
 	memset(&saved_cam_orient, 0, sizeof(saved_cam_orient));
+	_layerNames.emplace_back(DefaultLayerName);
+	_layerVisibility.push_back(true);
 
 	loadSettings();
 
@@ -194,6 +199,9 @@ void EditorViewport::select_objects(const Marking_box& box) {
 	while (ptr != END_OF_LIST(&obj_used_list)) {
 		valid = 1;
 		if (ptr->flags[Object::Object_Flags::Hidden, Object::Object_Flags::Locked_from_editing]) {
+			valid = 0;
+		}
+		if (!isObjectVisibleInLayer(ptr)) {
 			valid = 0;
 		}
 
@@ -754,6 +762,9 @@ int EditorViewport::object_check_collision(object* objp, vec3d* p0, vec3d* p1, v
 	if (objp->flags[Object::Object_Flags::Hidden, Object::Object_Flags::Locked_from_editing]) {
 		return 0;
 	}
+	if (!isObjectVisibleInLayer(objp)) {
+		return 0;
+	}
 
 	if ((view.Show_ship_models || view.Show_outlines) && (objp->type == OBJ_SHIP)) {
 		mc.model_num = Ship_info[Ships[objp->instance].ship_info_index].model_num; // Fill in the model to check
@@ -842,6 +853,9 @@ int EditorViewport::select_object(int cx, int cy) {
 	}
 
 	for (auto objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
+		if (!isObjectVisibleInLayer(objp)) {
+			continue;
+		}
 		g3_rotate_vertex(&vt, &objp->pos);
 		if (!(vt.codes & CC_BEHIND)) {
 			if (!(g3_project_vertex(&vt) & PF_OVERFLOW)) {
@@ -861,6 +875,181 @@ int EditorViewport::select_object(int cx, int cy) {
 	}
 
 	return best;
+}
+
+size_t EditorViewport::getLayerIndex(const SCP_string& name) const {
+	for (size_t i = 0; i < _layerNames.size(); ++i) {
+		if (_layerNames[i] == name) {
+			return i;
+		}
+	}
+	return static_cast<size_t>(-1);
+}
+
+size_t EditorViewport::getObjectLayerIndex(int objectIndex) const {
+	const auto found = _objectLayers.find(objectIndex);
+	if (found == _objectLayers.end() || found->second >= _layerNames.size()) {
+		return 0;
+	}
+	return found->second;
+}
+
+bool EditorViewport::isLayerVisible(size_t layerIndex) const {
+	if (layerIndex >= _layerVisibility.size()) {
+		return true;
+	}
+	return _layerVisibility[layerIndex];
+}
+
+SCP_vector<SCP_string> EditorViewport::getLayerNames() const {
+	return _layerNames;
+}
+
+bool EditorViewport::addLayer(const SCP_string& name, SCP_string* errorMessage) {
+	if (name.empty()) {
+		if (errorMessage != nullptr) {
+			*errorMessage = "Layer name cannot be empty.";
+		}
+		return false;
+	}
+	if (getLayerIndex(name) != static_cast<size_t>(-1)) {
+		if (errorMessage != nullptr) {
+			*errorMessage = "Layer names must be unique.";
+		}
+		return false;
+	}
+
+	_layerNames.push_back(name);
+	_layerVisibility.push_back(true);
+	return true;
+}
+
+bool EditorViewport::deleteLayer(const SCP_string& name, SCP_string* errorMessage) {
+	const auto layerIndex = getLayerIndex(name);
+	if (layerIndex == static_cast<size_t>(-1)) {
+		if (errorMessage != nullptr) {
+			*errorMessage = "Layer does not exist.";
+		}
+		return false;
+	}
+	if (layerIndex == 0) {
+		if (errorMessage != nullptr) {
+			*errorMessage = "The default layer cannot be deleted.";
+		}
+		return false;
+	}
+
+	_layerNames.erase(_layerNames.begin() + static_cast<SCP_vector<SCP_string>::difference_type>(layerIndex));
+	_layerVisibility.erase(_layerVisibility.begin() + static_cast<SCP_vector<bool>::difference_type>(layerIndex));
+
+	for (auto& objectLayer : _objectLayers) {
+		if (objectLayer.second == layerIndex) {
+			objectLayer.second = 0;
+		} else if (objectLayer.second > layerIndex) {
+			--objectLayer.second;
+		}
+	}
+	return true;
+}
+
+bool EditorViewport::setLayerVisibility(const SCP_string& name, bool visible, SCP_string* errorMessage) {
+	const auto layerIndex = getLayerIndex(name);
+	if (layerIndex == static_cast<size_t>(-1)) {
+		if (errorMessage != nullptr) {
+			*errorMessage = "Layer does not exist.";
+		}
+		return false;
+	}
+
+	_layerVisibility[layerIndex] = visible;
+	if (!visible) {
+		for (auto objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
+			if (getObjectLayerIndex(OBJ_INDEX(objp)) == layerIndex && objp->flags[Object::Object_Flags::Marked]) {
+				editor->unmarkObject(OBJ_INDEX(objp));
+			}
+		}
+	}
+
+	needsUpdate();
+	return true;
+}
+
+bool EditorViewport::getLayerVisibility(const SCP_string& name, bool* visible, SCP_string* errorMessage) const {
+	const auto layerIndex = getLayerIndex(name);
+	if (layerIndex == static_cast<size_t>(-1)) {
+		if (errorMessage != nullptr) {
+			*errorMessage = "Layer does not exist.";
+		}
+		return false;
+	}
+
+	if (visible != nullptr) {
+		*visible = isLayerVisible(layerIndex);
+	}
+	return true;
+}
+
+void EditorViewport::showAllLayers() {
+	for (auto& visible : _layerVisibility) {
+		visible = true;
+	}
+	needsUpdate();
+}
+
+int EditorViewport::getHiddenLayerCount() const {
+	return static_cast<int>(std::count(_layerVisibility.begin(), _layerVisibility.end(), false));
+}
+
+SCP_string EditorViewport::getObjectLayerName(int objectIndex) const {
+	const auto layerIndex = getObjectLayerIndex(objectIndex);
+	if (layerIndex >= _layerNames.size()) {
+		return DefaultLayerName;
+	}
+	return _layerNames[layerIndex];
+}
+
+bool EditorViewport::moveObjectToLayer(int objectIndex, const SCP_string& layerName, SCP_string* errorMessage) {
+	const auto layerIndex = getLayerIndex(layerName);
+	if (layerIndex == static_cast<size_t>(-1)) {
+		if (errorMessage != nullptr) {
+			*errorMessage = "Layer does not exist.";
+		}
+		return false;
+	}
+
+	_objectLayers[objectIndex] = layerIndex;
+	if (!isLayerVisible(layerIndex)) {
+		editor->unmarkObject(objectIndex);
+	}
+	needsUpdate();
+	return true;
+}
+
+void EditorViewport::moveMarkedObjectsToLayer(const SCP_string& layerName, SCP_string* errorMessage) {
+	const auto layerIndex = getLayerIndex(layerName);
+	if (layerIndex == static_cast<size_t>(-1)) {
+		if (errorMessage != nullptr) {
+			*errorMessage = "Layer does not exist.";
+		}
+		return;
+	}
+
+	for (auto objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
+		if (objp->flags[Object::Object_Flags::Marked]) {
+			_objectLayers[OBJ_INDEX(objp)] = layerIndex;
+			if (!isLayerVisible(layerIndex)) {
+				editor->unmarkObject(OBJ_INDEX(objp));
+			}
+		}
+	}
+	needsUpdate();
+}
+
+bool EditorViewport::isObjectVisibleInLayer(const object* objp) const {
+	if (objp == nullptr) {
+		return true;
+	}
+	return isLayerVisible(getObjectLayerIndex(OBJ_INDEX(objp)));
 }
 
 void EditorViewport::drag_rotate_save_backup() {

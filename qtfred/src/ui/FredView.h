@@ -206,6 +206,8 @@ class FredView: public QMainWindow, public IDialogProvider {
 
 	void initializeStatusBar();
 	void initializePopupMenus();
+	void populateMoveToLayerMenu(int targetObject);
+	void openLayerManagerDialog();
 	void ensureViewportFocus();
 
 	void onGroupSelected(int group);
@@ -220,6 +222,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 	QAction* _editObjectAction = nullptr;
 	QAction* _editOrientPositionAction = nullptr;
 	QAction* _editWingAction = nullptr;
+	QMenu* _moveToLayerMenu = nullptr;
 
 	QMenu* _controlModeMenu = nullptr;
 	QAction* _controlModeCamera = nullptr;

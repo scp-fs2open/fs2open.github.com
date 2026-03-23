@@ -6,6 +6,7 @@
 #include "IDialogProvider.h"
 
 #include <object/object.h>
+#include <unordered_map>
 
 namespace fso {
 namespace fred {
@@ -65,7 +66,17 @@ class EditorViewport {
 	void level_object(matrix* orient);
 
 	void initialSetup();
+
+	SCP_vector<SCP_string> _layerNames;
+	SCP_vector<bool> _layerVisibility;
+	std::unordered_map<int, size_t> _objectLayers;
+
+	size_t getLayerIndex(const SCP_string& name) const;
+	size_t getObjectLayerIndex(int objectIndex) const;
+	bool isLayerVisible(size_t layerIndex) const;
  public:
+	static const char* DefaultLayerName;
+
 	enum {
 		DUP_DRAG_OF_WING = 2
 	};
@@ -87,6 +98,20 @@ class EditorViewport {
 	int object_check_collision(object* objp, vec3d* p0, vec3d* p1, vec3d* hitpos);
 
 	int select_object(int cx, int cy);
+
+	SCP_vector<SCP_string> getLayerNames() const;
+	bool addLayer(const SCP_string& name, SCP_string* errorMessage = nullptr);
+	bool deleteLayer(const SCP_string& name, SCP_string* errorMessage = nullptr);
+	bool setLayerVisibility(const SCP_string& name, bool visible, SCP_string* errorMessage = nullptr);
+	bool getLayerVisibility(const SCP_string& name, bool* visible, SCP_string* errorMessage = nullptr) const;
+	void showAllLayers();
+	int getHiddenLayerCount() const;
+
+	SCP_string getObjectLayerName(int objectIndex) const;
+	bool moveObjectToLayer(int objectIndex, const SCP_string& layerName, SCP_string* errorMessage = nullptr);
+	void moveMarkedObjectsToLayer(const SCP_string& layerName, SCP_string* errorMessage = nullptr);
+
+	bool isObjectVisibleInLayer(const object* objp) const;
 
 
 	// viewpoint -> attach camera to current ship.
@@ -188,4 +213,3 @@ private:
 
 }
 }
-

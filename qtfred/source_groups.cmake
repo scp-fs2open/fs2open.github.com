@@ -164,6 +164,8 @@ add_file_folder("Source/UI/Dialogs"
 	src/ui/dialogs/GlobalShipFlagsDialog.h
 	src/ui/dialogs/JumpNodeEditorDialog.cpp
 	src/ui/dialogs/JumpNodeEditorDialog.h
+	src/ui/dialogs/LayerManagerDialog.cpp
+	src/ui/dialogs/LayerManagerDialog.h
 	src/ui/dialogs/MissionCutscenesDialog.cpp
 	src/ui/dialogs/MissionCutscenesDialog.h
 	src/ui/dialogs/MissionEventsDialog.cpp

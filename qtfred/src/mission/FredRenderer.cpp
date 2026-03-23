@@ -483,6 +483,9 @@ void FredRenderer::display_ship_info(int cur_object_index) {
 		if (objp->flags[Object::Object_Flags::Hidden]) {
 			render = 0;
 		}
+		if (!_viewport->isObjectVisibleInLayer(objp)) {
+			render = 0;
+		}
 
 		g3_rotate_vertex(&v, &objp->pos);
 		if (!(v.codes & CC_BEHIND) && render) {
@@ -555,6 +558,9 @@ void FredRenderer::display_active_ship_subsystem(subsys_to_render& Render_subsys
 	if (cur_object_index != -1) {
 		if (Objects[cur_object_index].type == OBJ_SHIP) {
 			object* objp = &Objects[cur_object_index];
+			if (!_viewport->isObjectVisibleInLayer(objp)) {
+				return;
+			}
 
 			// if this option is checked, we want to render info for all subsystems, not just the ones we select with K and Shift-K
 			if (view().Highlight_selectable_subsys) {
@@ -1042,6 +1048,9 @@ void FredRenderer::render_models(int cur_object_index,
 	enable_htl();
 
 	auto render_function = [&](object* objp) {
+		if (!_viewport->isObjectVisibleInLayer(objp)) {
+			return;
+		}
 		this->render_one_model_htl(objp,
 								   cur_object_index,
 								   Bg_bitmap_dialog);
@@ -1161,7 +1170,7 @@ void FredRenderer::render_frame(int cur_object_index,
 	display_active_ship_subsystem(Render_subsys, cur_object_index);
 	render_active_rect(box_marking, marking_box);
 
-	if (query_valid_object(_viewport->Cursor_over)) { // display a tool-tip like infobox
+	if (query_valid_object(_viewport->Cursor_over) && _viewport->isObjectVisibleInLayer(&Objects[_viewport->Cursor_over])) { // display a tool-tip like infobox
 		pos = Objects[_viewport->Cursor_over].pos;
 		inst = Objects[_viewport->Cursor_over].instance;
 		if ((Objects[_viewport->Cursor_over].type == OBJ_SHIP) || (Objects[_viewport->Cursor_over].type == OBJ_START)) {
@@ -1228,6 +1237,15 @@ void FredRenderer::render_frame(int cur_object_index,
 	gr_get_string_size(&w, &h, buf);
 	gr_set_color_fast(&colour_white);
 	gr_string(gr_screen.max_w - w - 2, 2, buf);
+
+	const auto hiddenLayerCount = _viewport->getHiddenLayerCount();
+	if (hiddenLayerCount > 0) {
+		gr_set_color(255, 0, 0);
+		sprintf(buf, "%d %s Hidden",
+				hiddenLayerCount,
+				hiddenLayerCount == 1 ? "Layer" : "Layers");
+		gr_string(8, 8, buf);
+	}
 
 	g3_end_frame(); // ** Accounted for
 	render_compass();
