@@ -47,6 +47,7 @@
 #include <ui/dialogs/ControlsDialog.h>
 #include <ui/dialogs/SaveAsTemplateDialog.h>
 #include <ui/dialogs/TemplateBrowserDialog.h>
+#include <ui/dialogs/PreferencesDialog.h>
 #include <ui/ControlBindings.h>
 #include <iff_defs/iff_defs.h>
 
@@ -108,12 +109,10 @@ FredView::FredView(QWidget* parent) : QMainWindow(parent), ui(new Ui::FredView()
 	connect(propsAction, &QAction::triggered, this, &FredView::on_actionProps_triggered);
 	ui->menuObjects->insertAction(ui->actionWaypoint_Paths, propsAction);
 
-	auto controlsAction = new QAction(tr("Controls"), ui->menuSeetings);
-	connect(controlsAction, &QAction::triggered, this, [this]() {
-		dialogs::ControlsDialog controlsDialog(this);
-		controlsDialog.exec();
+	connect(ui->actionPreferences, &QAction::triggered, this, [this]() {
+		dialogs::PreferencesDialog preferencesDialog(this, _viewport);
+		preferencesDialog.exec();
 	});
-	ui->menuSeetings->insertAction(ui->actionAdjust_Grid, controlsAction);
 }
 
 FredView::~FredView() {
@@ -171,9 +170,6 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 			this,
 			[this]() { ui->actionRestore_Camera_Pos->setEnabled(!IS_VEC_NULL(&_viewport->saved_cam_orient.vec.fvec)); });
 
-	connect(this, &FredView::viewIdle, this, [this]() { ui->actionMove_Ships_When_Undocking->setChecked(_viewport->Move_ships_when_undocking); });
-	connect(this, &FredView::viewIdle, this, [this]() { ui->actionAlways_Save_Display_Names->setChecked(_viewport->Always_save_display_names); });
-	connect(this, &FredView::viewIdle, this, [this]() { ui->actionError_Checker_Checks_Potential_Issues->setChecked(_viewport->Error_checker_checks_potential_issues); });
 }
 
 void FredView::loadMissionFile(const QString& pathName, int flags) {
@@ -1426,15 +1422,6 @@ void FredView::on_actionPrev_Subsystem_triggered(bool) {
 }
 void FredView::on_actionCancel_Subsystem_triggered(bool) {
 	fred->cancel_select_subsystem();
-}
-void FredView::on_actionMove_Ships_When_Undocking_triggered(bool) {
-	_viewport->Move_ships_when_undocking = !_viewport->Move_ships_when_undocking;
-}
-void FredView::on_actionAlways_Save_Display_Names_triggered(bool) {
-	_viewport->Always_save_display_names = !_viewport->Always_save_display_names;
-}
-void FredView::on_actionError_Checker_Checks_Potential_Issues_triggered(bool) {
-	_viewport->Error_checker_checks_potential_issues = !_viewport->Error_checker_checks_potential_issues;
 }
 void FredView::on_actionError_Checker_triggered(bool) {
 	fred->global_error_check();

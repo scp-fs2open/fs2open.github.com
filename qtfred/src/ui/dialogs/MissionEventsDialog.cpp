@@ -212,6 +212,9 @@ void MissionEventsDialog::initEventWidgets() {
 	ui->miniHelpBox->setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
 	ui->helpBox->setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
 
+	ui->miniHelpBox->setVisible(_viewport->Show_sexp_help_mission_events);
+	ui->helpBox->setVisible(_viewport->Show_sexp_help_mission_events);
+
 	// connect the sexp tree stuff
 	connect(ui->eventTree, &sexp_tree::modified, this, [this]() { _model->setModified(); });
 	connect(ui->eventTree, &sexp_tree::rootNodeDeleted, this, &MissionEventsDialog::rootNodeDeleted);
@@ -252,7 +255,7 @@ void MissionEventsDialog::accept()
 	if (_model->apply()) {
 		QDialog::accept();
 	}
-	// else: validation failed, don’t close
+	// else: validation failed, don�t close
 }
 
 void MissionEventsDialog::reject()

@@ -6,6 +6,7 @@
 #include <render/3d.h>
 #include <ship/ship.h>
 #include "ui/ControlBindings.h"
+#include <QSettings>
 #include <io/spacemouse.h>
 
 #include "object.h"
@@ -121,7 +122,37 @@ EditorViewport::EditorViewport(Editor* in_editor, std::unique_ptr<FredRenderer>&
 
 	memset(&saved_cam_orient, 0, sizeof(saved_cam_orient));
 
+	loadSettings();
+
 	fredApp->runAfterInit([this]() { initialSetup(); });
+}
+
+void EditorViewport::loadSettings() {
+	QSettings settings;
+	settings.beginGroup("Preferences");
+	Move_ships_when_undocking          = settings.value("move_ships_when_undocking",          Move_ships_when_undocking).toBool();
+	Always_save_display_names          = settings.value("always_save_display_names",          Always_save_display_names).toBool();
+	Error_checker_checks_potential_issues = settings.value("error_checker_checks_potential_issues", Error_checker_checks_potential_issues).toBool();
+	Show_sexp_help_mission_events      = settings.value("show_sexp_help_mission_events",      Show_sexp_help_mission_events).toBool();
+	Show_sexp_help_mission_goals       = settings.value("show_sexp_help_mission_goals",       Show_sexp_help_mission_goals).toBool();
+	Show_sexp_help_mission_cutscenes   = settings.value("show_sexp_help_mission_cutscenes",   Show_sexp_help_mission_cutscenes).toBool();
+	Show_sexp_help_ship_editor         = settings.value("show_sexp_help_ship_editor",         Show_sexp_help_ship_editor).toBool();
+	Show_sexp_help_wing_editor         = settings.value("show_sexp_help_wing_editor",         Show_sexp_help_wing_editor).toBool();
+	settings.endGroup();
+}
+
+void EditorViewport::saveSettings() const {
+	QSettings settings;
+	settings.beginGroup("Preferences");
+	settings.setValue("move_ships_when_undocking",           Move_ships_when_undocking);
+	settings.setValue("always_save_display_names",           Always_save_display_names);
+	settings.setValue("error_checker_checks_potential_issues", Error_checker_checks_potential_issues);
+	settings.setValue("show_sexp_help_mission_events",       Show_sexp_help_mission_events);
+	settings.setValue("show_sexp_help_mission_goals",        Show_sexp_help_mission_goals);
+	settings.setValue("show_sexp_help_mission_cutscenes",    Show_sexp_help_mission_cutscenes);
+	settings.setValue("show_sexp_help_ship_editor",          Show_sexp_help_ship_editor);
+	settings.setValue("show_sexp_help_wing_editor",          Show_sexp_help_wing_editor);
+	settings.endGroup();
 }
 void EditorViewport::needsUpdate() {
 	_renderer->scheduleUpdate();

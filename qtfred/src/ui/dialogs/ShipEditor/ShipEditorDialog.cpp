@@ -22,6 +22,9 @@ ShipEditorDialog::ShipEditorDialog(FredView* parent, EditorViewport* viewport)
 	this->setFocus();
 	ui->setupUi(this);
 
+	ui->HelpTitle->setVisible(viewport->Show_sexp_help_ship_editor);
+	ui->helpText->setVisible(viewport->Show_sexp_help_ship_editor);
+
 	connect(_model.get(), &AbstractDialogModel::modelChanged, this, [this] { updateUI(false); });
 	connect(this, &QDialog::accepted, _model.get(), &ShipEditorDialogModel::apply);
 	connect(viewport->editor, &Editor::currentObjectChanged, this, &ShipEditorDialog::update);

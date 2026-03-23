@@ -19,6 +19,7 @@ MissionGoalsDialog::MissionGoalsDialog(QWidget* parent, EditorViewport* viewport
 	ui->goalName->setMaxLength(NAME_LENGTH - 1);
 
 	ui->helpTextBox->setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
+	ui->helpTextBox->setVisible(viewport->Show_sexp_help_mission_goals);
 
 	connect(_model.get(), &MissionGoalsDialogModel::modelChanged, this, &MissionGoalsDialog::updateUi);
 
@@ -37,7 +38,7 @@ void MissionGoalsDialog::accept()
 	if (_model->apply()) {
 		QDialog::accept();
 	}
-	// else: validation failed, don’t close
+	// else: validation failed, donï¿½t close
 }
 
 void MissionGoalsDialog::reject()

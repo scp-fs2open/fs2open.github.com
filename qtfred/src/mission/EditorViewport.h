@@ -170,6 +170,15 @@ class EditorViewport {
 	bool Error_checker_checks_potential_issues = true;
 	bool Error_checker_checks_potential_issues_once = false;
 
+	bool Show_sexp_help_mission_events = true;
+	bool Show_sexp_help_mission_goals = true;
+	bool Show_sexp_help_mission_cutscenes = true;
+	bool Show_sexp_help_ship_editor = false;
+	bool Show_sexp_help_wing_editor = false;
+
+	void loadSettings();
+	void saveSettings() const;
+
 	Editor* editor = nullptr;
 	FredRenderer* renderer = nullptr;
 	IDialogProvider* dialogProvider = nullptr;

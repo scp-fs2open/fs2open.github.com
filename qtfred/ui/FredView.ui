@@ -79,6 +79,8 @@
     <addaction name="actionSelectionLock"/>
     <addaction name="separator"/>
     <addaction name="actionDisable_Undo"/>
+    <addaction name="separator"/>
+    <addaction name="actionPreferences"/>
    </widget>
    <widget class="QMenu" name="menuView">
     <property name="title">
@@ -198,7 +200,6 @@
      <string>He&amp;lp</string>
     </property>
     <addaction name="actionHelp_Topics"/>
-    <addaction name="actionShow_SEXP_Help"/>
     <addaction name="separator"/>
     <addaction name="actionAbout"/>
    </widget>
@@ -269,17 +270,6 @@
     <addaction name="actionMusic_Player"/>
     <addaction name="actionError_Checker"/>
    </widget>
-   <widget class="QMenu" name="menuSeetings">
-    <property name="title">
-     <string>Settings</string>
-    </property>
-    <addaction name="actionPreferences"/>
-    <addaction name="actionAdjust_Grid"/>
-    <addaction name="actionMove_Ships_When_Undocking"/>
-    <addaction name="separator"/>
-    <addaction name="actionAlways_Save_Display_Names"/>
-    <addaction name="actionError_Checker_Checks_Potential_Issues"/>
-   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
    <addaction name="menuView"/>
@@ -290,7 +280,6 @@
    <addaction name="menuMission"/>
    <addaction name="menuNarrative"/>
    <addaction name="menuTools"/>
-   <addaction name="menuSeetings"/>
    <addaction name="menuHelp"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
@@ -1466,41 +1455,12 @@
     <string>W</string>
    </property>
   </action>
-  <action name="actionAdjust_Grid">
-   <property name="text">
-    <string>Adjust &amp;Grid</string>
-   </property>
-  </action>
-  <action name="actionMove_Ships_When_Undocking">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Move Ships When Undocking</string>
-   </property>
-  </action>
   <action name="actionMission_Statistics">
    <property name="text">
     <string>M&amp;ission Statistics</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+Shift+D</string>
-   </property>
-  </action>
-  <action name="actionAlways_Save_Display_Names">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Always save Display Names</string>
-   </property>
-  </action>
-  <action name="actionError_Checker_Checks_Potential_Issues">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Error checker checks for potential issues</string>
    </property>
   </action>
   <action name="actionError_Checker">
@@ -1514,14 +1474,6 @@
   <action name="actionHelp_Topics">
    <property name="text">
     <string>&amp;Help Topics</string>
-   </property>
-  </action>
-  <action name="actionShow_SEXP_Help">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>&amp;Show SEXP Help</string>
    </property>
   </action>
   <action name="actionAbout">

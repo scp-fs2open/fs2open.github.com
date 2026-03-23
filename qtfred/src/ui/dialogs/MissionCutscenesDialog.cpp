@@ -21,6 +21,7 @@ MissionCutscenesDialog::MissionCutscenesDialog(QWidget* parent, EditorViewport* 
 	ui->cutsceneFilename->setMaxLength(NAME_LENGTH - 1);
 
 	ui->helpTextBox->setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
+	ui->helpTextBox->setVisible(viewport->Show_sexp_help_mission_cutscenes);
 
 	connect(_model.get(), &MissionCutscenesDialogModel::modelChanged, this, &MissionCutscenesDialog::updateUi);
 
@@ -39,7 +40,7 @@ void MissionCutscenesDialog::accept()
 	if (_model->apply()) {
 		QDialog::accept();
 	}
-	// else: validation failed, don’t close
+	// else: validation failed, donï¿½t close
 }
 
 void MissionCutscenesDialog::reject()

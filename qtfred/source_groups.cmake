@@ -68,6 +68,8 @@ add_file_folder("Source/Mission/Dialogs"
 	src/mission/dialogs/MissionStatsDialogModel.h
 	src/mission/dialogs/MissionSpecDialogModel.cpp
 	src/mission/dialogs/MissionSpecDialogModel.h
+	src/mission/dialogs/PreferencesDialogModel.cpp
+	src/mission/dialogs/PreferencesDialogModel.h
 	src/mission/dialogs/MusicPlayerDialogModel.cpp
 	src/mission/dialogs/MusicPlayerDialogModel.h
 	src/mission/dialogs/MusicTBLViewerModel.cpp
@@ -156,8 +158,6 @@ add_file_folder("Source/UI/Dialogs"
 	src/ui/dialogs/CampaignEditorDialog.cpp
 	src/ui/dialogs/CommandBriefingDialog.cpp
 	src/ui/dialogs/CommandBriefingDialog.h
-	src/ui/dialogs/ControlsDialog.cpp
-	src/ui/dialogs/ControlsDialog.h
 	src/ui/dialogs/DebriefingDialog.cpp
 	src/ui/dialogs/DebriefingDialog.h
 	src/ui/dialogs/FictionViewerDialog.cpp
@@ -182,6 +182,8 @@ add_file_folder("Source/UI/Dialogs"
 	src/ui/dialogs/MusicTBLViewer.h
 	src/ui/dialogs/ObjectOrientEditorDialog.cpp
 	src/ui/dialogs/ObjectOrientEditorDialog.h
+	src/ui/dialogs/PreferencesDialog.cpp
+	src/ui/dialogs/PreferencesDialog.h
 	src/ui/dialogs/PropEditorDialog.cpp
 	src/ui/dialogs/PropEditorDialog.h
 	src/ui/dialogs/ReinforcementsEditorDialog.cpp
@@ -325,6 +327,7 @@ add_file_folder("UI"
 	ui/MissionSpecDialog.ui
 	ui/MusicPlayerDialog.ui
 	ui/ObjectOrientationDialog.ui
+	ui/PreferencesDialog.ui
 	ui/PropEditorDialog.ui
 	ui/ReinforcementsDialog.ui
 	ui/RelativeCoordinatesDialog.ui
