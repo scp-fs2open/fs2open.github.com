@@ -48,7 +48,7 @@ private slots:
 	// Controls
 	void on_resetDefaultsButton_clicked();
 
-private:
+private: // NOLINT(readability-redundant-access-specifiers)
 	void initializeUi();
 	void updateUi();
 
