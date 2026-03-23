@@ -614,6 +614,14 @@ ADE_FUNC(inDebug, l_Base, nullptr, "Determines if FSO is running in Release or D
 	#endif
 }
 
+ADE_FUNC(inStandalone, l_Base, nullptr, "Determines if FSO is running in Standalone mode or not", "boolean", "true if standalone, false otherwise") {
+	if (Is_standalone) {
+		return ADE_RETURN_TRUE;
+	} else {
+		return ADE_RETURN_FALSE;
+	}
+}
+
 ADE_FUNC(isEngineVersionAtLeast,
 		 l_Base,
 		 "number major, number minor, number build, [number revision = 0]",

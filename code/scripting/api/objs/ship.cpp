@@ -35,7 +35,6 @@
 #include "object/objectdock.h"
 #include "parse/parselo.h"
 #include "playerman/player.h"
-#include "scripting/api/objs/message.h"
 #include "ship/ship.h"
 #include "ship/shipfx.h"
 #include "ship/shiphit.h"
