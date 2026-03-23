@@ -333,7 +333,7 @@ void HeadAnimationPickerDialog::setSelectedByName(const QString& name)
 	}
 }
 
-QString HeadAnimationPickerDialog::normalizeHeadAniName(const QString& baseName) const
+QString HeadAnimationPickerDialog::normalizeHeadAniName(const QString& baseName)
 {
 	// Strip trailing set-designators (-reg, -death, or a single letter a-z)
 	// and check whether the resulting base resolves to a valid animation

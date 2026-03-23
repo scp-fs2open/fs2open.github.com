@@ -47,7 +47,7 @@ class HeadAnimationPickerDialog : public QDialog {
 	void updatePreview();
 	void setSelectedByName(const QString& name);
 	static QString findPreviewSource(const QString& displayName);
-	QString normalizeHeadAniName(const QString& baseName) const;
+	static QString normalizeHeadAniName(const QString& baseName);
 	static QStringList detectVariants(const QString& baseName);
 	void rebuildVariantButtons(const QString& baseName);
 
