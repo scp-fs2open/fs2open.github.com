@@ -2049,7 +2049,6 @@ int ship_class_compare(int ship_class_1, int ship_class_2);
 int armor_type_get_idx(const char* name);
 
 void armor_init();
-void parse_armor_type();
 
 // Sushi - Path metadata
 void init_path_metadata(path_metadata& metadata);
