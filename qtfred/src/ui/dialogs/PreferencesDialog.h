@@ -2,9 +2,6 @@
 
 #include <QDialog>
 
-#include <map>
-#include <memory>
-
 #include "mission/dialogs/PreferencesDialogModel.h"
 #include "ui/FredView.h"
 

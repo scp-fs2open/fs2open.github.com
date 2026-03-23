@@ -3,8 +3,6 @@
 #include "mission/dialogs/AbstractDialogModel.h"
 #include "ui/ControlBindings.h"
 
-#include <map>
-
 namespace fso::fred::dialogs {
 
 enum class GridPlane { XY, XZ, YZ };

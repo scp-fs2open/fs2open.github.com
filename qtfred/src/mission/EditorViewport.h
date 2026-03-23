@@ -176,12 +176,14 @@ class EditorViewport {
 	bool Show_sexp_help_ship_editor = false;
 	bool Show_sexp_help_wing_editor = false;
 
-	void loadSettings();
 	void saveSettings() const;
 
 	Editor* editor = nullptr;
 	FredRenderer* renderer = nullptr;
 	IDialogProvider* dialogProvider = nullptr;
+
+private:
+	void loadSettings();
 };
 
 }
