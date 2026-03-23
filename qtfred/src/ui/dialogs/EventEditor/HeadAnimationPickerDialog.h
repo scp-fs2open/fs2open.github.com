@@ -43,12 +43,12 @@ class HeadAnimationPickerDialog : public QDialog {
 
 	void rebuildList();
 	PreviewData* ensurePreview(const QString& displayName);
-	void loadPreviewFrames(PreviewData* preview);
+	static void loadPreviewFrames(PreviewData* preview);
 	void updatePreview();
 	void setSelectedByName(const QString& name);
-	QString findPreviewSource(const QString& displayName) const;
+	static QString findPreviewSource(const QString& displayName) const;
 	QString normalizeHeadAniName(const QString& baseName) const;
-	QStringList detectVariants(const QString& baseName) const;
+	static QStringList detectVariants(const QString& baseName) const;
 	void rebuildVariantButtons(const QString& baseName);
 
 	QLineEdit* _filterEdit{nullptr};
