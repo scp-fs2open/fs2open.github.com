@@ -1011,9 +1011,7 @@ bool EditorViewport::getLayerVisibility(const SCP_string& name, bool* visible, S
 }
 
 void EditorViewport::showAllLayers() {
-	for (auto& visible : _layerVisibility) {
-		visible = true;
-	}
+	std::fill(_layerVisibility.begin(), _layerVisibility.end(), true);
 	needsUpdate();
 }
 
