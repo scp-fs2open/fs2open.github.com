@@ -907,10 +907,10 @@ void multi_ship_record_signal_update(int objnum, TIMESTAMP lower_time_limit, TIM
 		}
 	}
 
-	if (prev_index < 0 || post_index < 0) { 
-		mprintf(("Getting prev_index %d and post_index %d, which is not valid, while trying to update the ship record.\n", prev_index, post_index));
+	if ((prev_index < 0) || (prev_index == post_index)) {
 		return;
-	} else if (prev_index == post_index) {
+	} else if (post_index < 0) {
+		mprintf(("Getting prev_index %d and post_index %d, which is not valid, while trying to update the ship record.\n", prev_index, post_index));
 		return;
 	}
 
