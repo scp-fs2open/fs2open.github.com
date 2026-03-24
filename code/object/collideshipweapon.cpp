@@ -16,7 +16,6 @@
 #include "network/multi.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
-#include "network/multi_obj.h"
 #include "object/objcollide.h"
 #include "object/object.h"
 #include "scripting/global_hooks.h"
@@ -226,15 +225,10 @@ static std::tuple<bool, bool, ship_weapon_collision_data> ship_weapon_check_coll
 
 
 	vec3d weapon_start_pos = weapon_objp->last_pos;
-	// During multiplayer rollback the ship is placed at its exact historical snapshot position,
-	// so kinematic adjustments based on the live game frametime are incorrect.
-	const bool in_rollback = (Game_mode & GM_MULTIPLAYER) && multi_ship_record_get_rollback_wep_mode();
-	if (!in_rollback) {
-		// Maybe take into account the ship's velocity, so it won't later overstep the weapon's
-		// current position (what will be its last_pos next frame)
-		if (The_mission.ai_profile->flags[AI::Profile_Flags::Fixed_ship_weapon_collision])
-			weapon_start_pos += ship_objp->phys_info.vel * flFrametime;
-	}
+	// Maybe take into account the ship's velocity, so it won't later overstep the weapon's
+	// current position (what will be its last_pos next frame)
+	if (The_mission.ai_profile->flags[AI::Profile_Flags::Fixed_ship_weapon_collision])
+		weapon_start_pos += ship_objp->phys_info.vel * flFrametime;
 
 	if (!IS_VEC_NULL(&The_mission.gravity) && wip->gravity_const != 0.0f) {
 		// subtle point about simulating collisions against a parabola
@@ -243,10 +237,8 @@ static std::tuple<bool, bool, ship_weapon_collision_data> ship_weapon_check_coll
 		// the grater the frametime, the greater the discrepancy, and can cause erroneous misses
 		// So just for collision purposes, we offset these points slightly in the opposite direction of gravity
 		// at least to ensure the *average* position at all interpolated points is on the parabola
-		// During rollback use the actual simulated frametime rather than the live flFrametime.
-		const float frametime_for_gravity = in_rollback ? vm_vec_dist(&weapon_objp->last_pos, &weapon_objp->pos) / MAX(vm_vec_mag(&weapon_objp->phys_info.vel), 0.001f) : flFrametime;
-		weapon_start_pos -= The_mission.gravity * frametime_for_gravity * frametime_for_gravity * (1.f / 12);
-		weapon_end_pos -= The_mission.gravity * frametime_for_gravity * frametime_for_gravity * (1.f / 12);
+		weapon_start_pos -= The_mission.gravity * flFrametime * flFrametime * (1.f / 12);
+		weapon_end_pos -= The_mission.gravity * flFrametime * flFrametime * (1.f / 12);
 	}
 
 
