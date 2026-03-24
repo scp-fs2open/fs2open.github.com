@@ -719,15 +719,6 @@ void multi_ship_record_do_rollback()
 		// then fire all shots for the frame, primary and secondary, if there are any
 		multi_oo_fire_rollback_shots(frame_idx);
 
-		// Mark all rollback weapons as collision cache stale before each frame's detection.
-		// The collision pair cache uses real-time timestamps for next_check_time deferral, but
-		// rollback simulates many frames at the same real time. Without this, weapon_will_never_hit
-		// and check_inside_radius_for_big_ships can set future next_check_time values that cause
-		// subsequent rollback frames to skip those weapon-ship pairs entirely, causing missed hits.
-		for (auto& weap_objnum : Oo_info.rollback_weapon_object_number) {
-			obj_collide_obj_cache_stale(&Objects[weap_objnum]);
-		}
-
 		// perform collision detection for that frame.
 		obj_sort_and_collide(&Oo_info.rollback_collide_list);
 
@@ -835,8 +826,6 @@ bool multi_oo_simulate_rollback_shots(int frame_idx)
 		if (!objp->flags[Object::Object_Flags::Should_be_dead]) {
 			// this means at least one weapon is still waiting to collide.
 			result = true;
-			// update last_pos before advancing so collision sweep covers exactly one frame
-			objp->last_pos = objp->pos;
 			vm_vec_scale_add2(&objp->pos, &objp->phys_info.vel, frametime);
 			Weapons[objp->instance].lifeleft -= frametime;
 		}
