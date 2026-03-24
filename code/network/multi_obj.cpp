@@ -1495,9 +1495,9 @@ int multi_oo_pack_data(net_player *pl, object *objp, ushort oo_flags, ubyte *dat
 	}
 
 	// Cyborg17 - only server should send this
-	if (oo_flags & OO_AI_NEW){
+	if (oo_flags & OO_AI_NEW) {
 		int pre_section_size = packet_size;
-		ai_info *aip = &Ai_info[shipp->ai_index];
+		ai_info* aip = &Ai_info[shipp->ai_index];
 
 		// ai mode info
 		auto umode = (ubyte)(aip->mode);
@@ -1511,8 +1511,13 @@ int multi_oo_pack_data(net_player *pl, object *objp, ushort oo_flags, ubyte *dat
 			if ((wp = find_waypoint_at_indexes(aip->wp_list_index, aip->wp_index)) != nullptr) {
 				target_signature = Objects[wp->get_objnum()].net_signature;
 			}
-		} // send the target signature. 2021 Version!
-		else if ((aip->goals[0].target_name != nullptr) && strlen(aip->goals[0].target_name) != 0) {
+		// Prefer the live target_objnum so clients know who is actually being attacked
+		// (goals[0].target_name only covers explicitly ordered goal targets and is empty for
+		// spontaneous IFF-based engagements, which would leave target_signature 0 and break
+		// TARGET_CLOSEST_SHIP_ATTACKING_SELF on clients).
+		} else if (aip->target_objnum >= 0) {
+			target_signature = Objects[aip->target_objnum].net_signature;
+		} else if ((aip->goals[0].target_name != nullptr) && strlen(aip->goals[0].target_name) != 0) {
 			
 			int instance = ship_name_lookup(aip->goals[0].target_name);
 			if (instance > -1) {
