@@ -733,6 +733,26 @@ void multi_ship_record_do_rollback()
 
 		multi_oo_remove_colliders();
 
+		// Second collision pass with ships at their start-of-frame (last_pos) positions.
+		// The first pass checks the ship at its END-of-frame recorded position.  For a fast
+		// ship crossing the weapon path at an angle it may already be out of the sweep region
+		// by frame end, causing a miss.  Swapping pos/last_pos on each ship and re-running
+		// covers the START-of-frame boundary too, so both temporal edges of every rollback
+		// frame are checked.  Weapons that already collided have Collides stripped by
+		// multi_oo_remove_colliders, so there is no risk of double-hitting.
+		for (auto& objnum : Oo_info.rollback_ships) {
+			std::swap(Objects[objnum].pos, Objects[objnum].last_pos);
+		}
+		for (auto& weap_objnum : Oo_info.rollback_weapon_object_number) {
+			obj_collide_obj_cache_stale(&Objects[weap_objnum]);
+		}
+		obj_sort_and_collide(&Oo_info.rollback_collide_list);
+		multi_oo_remove_colliders();
+		// restore ships to their end-of-frame positions
+		for (auto& objnum : Oo_info.rollback_ships) {
+			std::swap(Objects[objnum].pos, Objects[objnum].last_pos);
+		}
+
 		//
 		if (!continue_rollback){
 			break;
