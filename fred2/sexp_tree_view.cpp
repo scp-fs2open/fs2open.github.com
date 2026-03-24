@@ -757,7 +757,7 @@ void sexp_tree_view::end_operator_edit(bool confirm)
 // now it also handles messages from the operator combo box
 BOOL sexp_tree_view::OnCommand(WPARAM wParam, LPARAM lParam)
 {
-	int i, id, data, node, op;
+	int id, data, node, op;
 
 	if ((item_index >= 0) && (item_index < total_nodes) && !tree_nodes.empty())
 		item_handle = tree_item_handle(tree_nodes[item_index]);

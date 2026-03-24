@@ -199,9 +199,9 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_prop()
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
 		if (ptr->type == OBJ_PROP) {
-			auto prop = prop_id_lookup(ptr->instance);
-			if (prop != nullptr) {
-				head.add_data(prop->prop_name);
+			auto p = prop_id_lookup(ptr->instance);
+			if (p != nullptr) {
+				head.add_data(p->prop_name);
 			}
 		}
 
