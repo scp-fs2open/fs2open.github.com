@@ -223,7 +223,7 @@ void interpolation_manager::add_packet(int objnum, int frame, int packet_timesta
 
 			if ((_upcoming_packet_index >= 0) && (_prev_packet_index >= 0)) {
 				// update packet indexes (ignoring simulation mode)
-				// NOTE: indexes*must be valid before being reassesed!
+				// NOTE: indexes must be valid before being reassesed!
 				reassess_packet_index();
 
 				// whenenver the server gets a player packet, we need to update the ship record, since the old info is now stale
