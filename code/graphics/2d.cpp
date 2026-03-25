@@ -540,12 +540,16 @@ static ResolutionInfo resolution_vr_default()
 {
 	return {(uint32_t)2500, (uint32_t)2500};
 }
-static bool resolution_change(const ResolutionInfo& info, bool initial)
+static bool resolution_change(const ResolutionInfo& info __UNUSED, bool initial)
 {
 	if (initial) {
 		return false;
 	}
 
+	return false;
+
+	// The following code should change the size of the window properly but FSO currently can't handle that
+	/*
 	auto window = os::getSDLMainWindow();
 	if (window == nullptr) {
 		return false;
@@ -567,6 +571,7 @@ static bool resolution_change(const ResolutionInfo& info, bool initial)
 	}
 
 	return true;
+	*/
 }
 
 static bool resolution_vr_change(const ResolutionInfo& /*info*/, bool initial)
