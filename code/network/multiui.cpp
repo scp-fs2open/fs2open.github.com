@@ -8771,11 +8771,6 @@ void multi_debrief_accept_hit()
 					}
 				}
 
-				// The host must set the stats accept code locally because
-				// multi_io_send_to_all_reliable() skips the local player,
-				// so send_store_stats_packet() never reaches the host itself.
-				multi_debrief_stats_accept();
-
 				multi_maybe_set_mission_loop();
 			} else {
 				int res = popup(PF_TITLE | PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON | PF_USE_NEGATIVE_ICON | PF_IGNORE_ESC,3,XSTR("&Cancel",779),XSTR("&Accept",844),XSTR("&Toss",845),XSTR("(Continue Netgame)\nDo you wish to accept these stats?",846));
@@ -8842,10 +8837,6 @@ void multi_debrief_esc_hit()
 					}
 				}
 
-				// The host must set the stats accept code locally because
-				// multi_io_send_to_all_reliable() skips the local player,
-				// so send_store_stats_packet() never reaches the host itself.
-				multi_debrief_stats_accept();
 			}
 
 			multi_quit_game(PROMPT_HOST);
