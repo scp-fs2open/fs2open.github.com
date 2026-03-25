@@ -213,7 +213,7 @@ bool processAudioData(PlayerState* state) {
 							   static_cast<int>(audioData->audioData.size() * sizeof(short)));
 	}
 
-	return true;
+	return state->decoder->isDecoding();
 }
 
 void audioPlaybackClose(PlayerState* state) {
