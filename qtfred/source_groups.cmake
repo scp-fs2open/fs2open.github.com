@@ -184,12 +184,16 @@ add_file_folder("Source/UI/Dialogs"
 	src/ui/dialogs/ReinforcementsEditorDialog.h
 	src/ui/dialogs/RelativeCoordinatesDialog.cpp
 	src/ui/dialogs/RelativeCoordinatesDialog.h
+	src/ui/dialogs/SaveAsTemplateDialog.cpp
+	src/ui/dialogs/SaveAsTemplateDialog.h
 	src/ui/dialogs/SelectionDialog.cpp
 	src/ui/dialogs/SelectionDialog.h
 	src/ui/dialogs/ShieldSystemDialog.h
 	src/ui/dialogs/ShieldSystemDialog.cpp
 	src/ui/dialogs/TeamLoadoutDialog.cpp	
 	src/ui/dialogs/TeamLoadoutDialog.h
+	src/ui/dialogs/TemplateBrowserDialog.cpp
+	src/ui/dialogs/TemplateBrowserDialog.h
 	src/ui/dialogs/VariableDialog.cpp
 	src/ui/dialogs/VariableDialog.h
 	src/ui/dialogs/VoiceActingManager.h
@@ -333,6 +337,8 @@ add_file_folder("UI"
 	ui/ShipWeaponsDialog.ui
 	ui/VariableDialog.ui
 	ui/WingEditorDialog.ui
+	ui/SaveAsTemplateDialog.ui
+	ui/TemplateBrowserDialog.ui
 )
 
 add_file_folder("Resources"

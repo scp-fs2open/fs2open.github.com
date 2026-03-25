@@ -39,7 +39,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 	~FredView() override;
 	void setEditor(Editor* editor, EditorViewport* viewport);
 
-	void loadMissionFile(const QString& pathName);
+	void loadMissionFile(const QString& pathName, int flags = 0);
 
 	QSurface* getRenderSurface();
 	RenderWidget* getRenderWidget();
@@ -58,6 +58,8 @@ class FredView: public QMainWindow, public IDialogProvider {
 	 void on_actionSave_As_triggered(bool);
 	 void on_actionSave_triggered(bool);
 	void on_actionExit_triggered(bool);
+	void on_actionLoad_Template_triggered(bool);
+	void on_actionSave_As_Template_triggered(bool);
 
 	void on_actionConstrainX_triggered(bool enabled);
 	void on_actionConstrainXY_triggered(bool enabled);
@@ -181,6 +183,8 @@ class FredView: public QMainWindow, public IDialogProvider {
  private:
 	bool saveMissionToCurrentPath();
 	bool saveMissionAs();
+	void saveAsTemplate();
+	void loadTemplate();
 	bool maybePromptToSaveMissionChanges(const QString& actionDescription);
 	bool isMissionModified() const;
 

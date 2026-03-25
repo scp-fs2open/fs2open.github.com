@@ -400,6 +400,27 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 		viewport->view_orient = Parse_viewer_orient;
 		viewport->view_pos = Parse_viewer_pos;
 	}
+
+	if (flags & MPF_IS_TEMPLATE) {
+		// reset fields that should not carry over from the template source
+		strcpy_s(The_mission.name, "Untitled");
+		The_mission.author = getUsername();
+
+		time_t currentTime;
+		time(&currentTime);
+		auto timeinfo = localtime(&currentTime);
+		time_to_mission_info_string(timeinfo, The_mission.created, DATE_TIME_LENGTH - 1);
+		strcpy_s(The_mission.modified, The_mission.created);
+
+		strcpy_s(The_mission.notes, "This is a FRED2_OPEN created mission.");
+		strcpy_s(The_mission.mission_desc, "Put mission description here");
+
+		for (auto& viewport : _viewports) {
+			viewport->resetView();
+			viewport->resetViewPhysics();
+		}
+	}
+
 	stars_post_level_init();
 
 	missionLoaded(filepath);

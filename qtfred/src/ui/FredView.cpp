@@ -1,6 +1,7 @@
 #include "FredView.h"
 #include "ui_FredView.h"
 
+#include <QDir>
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QDebug>
@@ -42,11 +43,14 @@
 #include <ui/dialogs/MusicPlayerDialog.h>
 #include <ui/dialogs/RelativeCoordinatesDialog.h>
 #include <ui/dialogs/ControlsDialog.h>
+#include <ui/dialogs/SaveAsTemplateDialog.h>
+#include <ui/dialogs/TemplateBrowserDialog.h>
 #include <ui/ControlBindings.h>
 #include <iff_defs/iff_defs.h>
 
 #include "mission/Editor.h"
 #include "mission/management.h"
+#include "mission/missionparse.h"
 #include "missioneditor/missionsave.h"
 
 #include "widgets/ColorComboBox.h"
@@ -170,7 +174,7 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 	connect(this, &FredView::viewIdle, this, [this]() { ui->actionError_Checker_Checks_Potential_Issues->setChecked(_viewport->Error_checker_checks_potential_issues); });
 }
 
-void FredView::loadMissionFile(const QString& pathName) {
+void FredView::loadMissionFile(const QString& pathName, int flags) {
 	if (!maybePromptToSaveMissionChanges(tr("loading another mission"))) {
 		return;
 	}
@@ -183,9 +187,10 @@ void FredView::loadMissionFile(const QString& pathName) {
 		fred->clean_up_selections();
 
 		auto pathToLoad = pathName.toStdString();
-		fred->maybeUseAutosave(pathToLoad);
+		if (!(flags & MPF_IS_TEMPLATE))
+			fred->maybeUseAutosave(pathToLoad);
 
-		fred->loadMission(pathToLoad);
+		fred->loadMission(pathToLoad, flags);
 
 		QApplication::restoreOverrideCursor();
 	} catch (const fso::fred::mission_load_error&) {
@@ -272,6 +277,68 @@ bool FredView::saveMissionAs() {
 	return true;
 }
 
+void FredView::saveAsTemplate() {
+	// Collect template metadata first
+	dialogs::SaveAsTemplateDialog metaDialog(this, getUsername());
+	if (metaDialog.exec() != QDialog::Accepted)
+		return;
+
+	// Default to data/missions/templates/ and create it if needed
+	QString templatesDir = QDir::currentPath() + "/data/missions/templates";
+	QDir().mkpath(templatesDir);
+
+	QString templateName = QFileDialog::getSaveFileName(this,
+		tr("Save As Template"),
+		templatesDir,
+		tr("FS2 mission templates (*.fst)"));
+
+	if (templateName.isEmpty())
+		return;
+
+	if (!templateName.endsWith(".fst", Qt::CaseInsensitive))
+		templateName += ".fst";
+
+	Fred_mission_save save;
+	save.set_always_save_display_names(_viewport->Always_save_display_names);
+	save.set_fred_alt_names(Fred_alt_names);
+	save.set_fred_callsigns(Fred_callsigns);
+	save.set_template_info(metaDialog.templateInfo());
+
+	save.save_template_file(templateName.replace('/', DIR_SEPARATOR_CHAR).toUtf8().constData());
+}
+
+void FredView::loadTemplate() {
+	QString templatesDir = QDir::currentPath() + "/data/missions/templates";
+	QDir().mkpath(templatesDir);
+
+	dialogs::TemplateBrowserDialog browser(this, templatesDir);
+	if (browser.exec() != QDialog::Accepted)
+		return;
+
+	QString templateName = browser.selectedTemplatePath();
+	if (templateName.isEmpty())
+		return;
+
+	auto result = QMessageBox::question(this,
+		tr("Load Template"),
+		tr("This will replace all mission data. Continue?"),
+		QMessageBox::Yes | QMessageBox::No,
+		QMessageBox::No);
+
+	if (result != QMessageBox::Yes)
+		return;
+
+	loadMissionFile(templateName.replace('/', DIR_SEPARATOR_CHAR), MPF_IS_TEMPLATE);
+}
+
+void FredView::on_actionLoad_Template_triggered(bool) {
+	loadTemplate();
+}
+
+void FredView::on_actionSave_As_Template_triggered(bool) {
+	saveAsTemplate();
+}
+
 void FredView::on_mission_loaded(const std::string& filepath) {
 	QString filename = "Untitled";
 	if (!filepath.empty()) {
@@ -303,6 +370,10 @@ void FredView::newMission() {
 	fred->createNewMission();
 }
 void FredView::addToRecentFiles(const QString& path) {
+	// Templates are not mission files; don't pollute the recent list with them
+	if (path.endsWith(".fst", Qt::CaseInsensitive))
+		return;
+
 	// First get the list of existing files
 	QSettings settings;
 	auto recentFiles = settings.value("FredView/recentFiles").toStringList();

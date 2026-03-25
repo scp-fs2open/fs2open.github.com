@@ -2441,6 +2441,43 @@ int Fred_mission_save::save_mission_file(const char* pathname)
 	return err;
 }
 
+int Fred_mission_save::save_template_file(const char* pathname)
+{
+	char savepath[MAX_PATH_LEN];
+
+	strcpy_s(savepath, "");
+	auto p = strrchr(pathname, DIR_SEPARATOR_CHAR);
+	if (p) {
+		auto len = p - pathname;
+		strncpy(savepath, pathname, len);
+		savepath[len] = '\0';
+		strcat_s(savepath, DIR_SEPARATOR_STR);
+	}
+	strcat_s(savepath, "saving.xxx");
+
+	save_mission_internal(savepath);
+
+	if (!err) {
+		// Templates don't get .bak backups; just overwrite directly
+		cf_delete(pathname, CF_TYPE_MISSIONS);
+		cf_rename(savepath, pathname, CF_TYPE_MISSIONS);
+	}
+
+	return err;
+}
+
+void Fred_mission_save::save_template_info()
+{
+	const auto& ti = save_config.template_info;
+
+	fout("#Template Info\n");
+	fout("\n$Template Title: %s", ti.title.c_str());
+	fout("\n$Template Author: %s", ti.author.c_str());
+	fout("\n$Template Tags: %s", ti.tags.c_str());
+	fout("\n$Template Description:\n%s\n$end_template_desc", ti.description.c_str());
+	fout("\n\n#End Template Info\n\n");
+}
+
 int Fred_mission_save::save_mission_info()
 {
 	required_string_fred("#Mission Info");
@@ -3064,6 +3101,9 @@ void Fred_mission_save::save_mission_internal(const char* pathname)
 		err = -1;
 		return;
 	}
+
+	if (!save_config.template_info.title.empty())
+		save_template_info();
 
 	// Goober5000
 	convert_special_tags_to_retail();

@@ -19,6 +19,13 @@ enum class MissionFormat {
 	COMPATIBILITY_MODE = 2
 };
 
+struct MissionTemplateInfo {
+	SCP_string title;
+	SCP_string author;
+	SCP_string tags;
+	SCP_string description;
+};
+
 struct FredSaveConfig {
 
 	vec3d view_pos{};
@@ -36,6 +43,8 @@ struct FredSaveConfig {
 
 	int mission_backup_depth = MISSION_BACKUP_DEPTH; // TODO make user configurable
 	SCP_string mission_backup_name = MISSION_BACKUP_NAME; // TODO make user configurable
+
+	MissionTemplateInfo template_info;
 };
 
 /**
@@ -51,6 +60,7 @@ class Fred_mission_save {
 	Fred_mission_save() = default;
 
 	void set_save_format(MissionFormat fmt) { save_config.save_format = fmt; }
+	void set_template_info(const MissionTemplateInfo& info) { save_config.template_info = info; }
 	void set_view_pos(const vec3d& pos) { save_config.view_pos = pos; }
 	void set_view_orient(const matrix& orient) { save_config.view_orient = orient; }
 	void set_fred_alt_names(const char (*names)[NAME_LENGTH + 1]) { save_config.fred_alt_names = names; }
@@ -87,6 +97,21 @@ class Fred_mission_save {
 	 * @see save_mission_internal()
 	 */
 	int save_mission_file(const char* pathname);
+
+	/**
+	 * @brief Saves a mission template (.fst) to the given full pathname
+	 *
+	 * @param[in] pathname The full pathname to save to
+	 *
+	 * @details Saves a complete mission file and prepends a #Template Info section
+	 *   containing display metadata (title, author, tags, description) from
+	 *   save_config.template_info.  The metadata is used by the template browser
+	 *   and is ignored by the normal mission parser.
+	 *
+	 * @returns 0 for no error, or
+	 * @returns A negative value if an error occurred
+	 */
+	int save_template_file(const char* pathname);
 
   protected:
 
@@ -167,6 +192,11 @@ class Fred_mission_save {
 	 * @param[in] ship
 	 */
 	void save_ai_goals(ai_goal* goalp, int ship);
+
+	/**
+	 * @brief Writes the #Template Info section to the top of the file
+	 */
+	void save_template_info();
 
 	/**
 	 * @brief Saves the skybox bitmaps
