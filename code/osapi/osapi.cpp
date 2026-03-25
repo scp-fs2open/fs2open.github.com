@@ -638,7 +638,7 @@ void debug_int3(const char *file, int line)
 {
 	mprintf(("Int3(): From %s at line %d\n", file, line));
 
-	gr_activate(0);
+	gr_activate(false);
 
 	mprintf(("%s\n", dump_stacktrace().c_str()));
 
@@ -646,7 +646,7 @@ void debug_int3(const char *file, int line)
 	SDL_TriggerBreakpoint();
 #endif
 
-	gr_activate(1);
+	gr_activate(true);
 }
 
 namespace os

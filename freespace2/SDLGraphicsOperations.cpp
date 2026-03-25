@@ -157,9 +157,26 @@ class SDLWindowViewPort: public os::Viewport {
 				SDL_SetWindowFullscreen(_window, false);
 				SDL_SetWindowBordered(_window, false);
 				break;
-			case os::ViewportState::Fullscreen:
+			case os::ViewportState::Fullscreen: {
+				SDL_DisplayMode target;
+				int width, height;
+
+				if (SDL_GetWindowSizeInPixels(_window, &width, &height)) {
+					if (SDL_GetClosestFullscreenDisplayMode(SDL_GetDisplayForWindow(_window),
+															width, height, 0.0f, true, &target))
+					{
+						SDL_SetWindowFullscreenMode(_window, &target);
+					}
+				}
+
+				// NOTE: This can be buggy if the mode failed to set since FSO
+				// doesn't account for a difference between assumed window size
+				// and actual window size. This can present as screen anomalies
+				// such as distortion, mirroring, or flickering.
 				SDL_SetWindowFullscreen(_window, true);
+
 				break;
+			}
 			default:
 				UNREACHABLE("Invalid window state %d!", static_cast<int>(state));
 				break;
@@ -238,7 +255,10 @@ std::unique_ptr<os::Viewport> SDLGraphicsOperations::createViewport(const os::Vi
 		windowflags |= SDL_WINDOW_BORDERLESS;
 	}
 	if (props.flags[os::ViewPortFlags::Fullscreen]) {
-		windowflags |= SDL_WINDOW_FULLSCREEN;
+		// don't set window flag here since we need to alter the display mode
+		// first and that can only be done after the window is created
+		//
+		// windowflags |= SDL_WINDOW_FULLSCREEN;
 	}
 	if (props.flags[os::ViewPortFlags::Resizeable]) {
 		windowflags |= SDL_WINDOW_RESIZABLE;
@@ -280,6 +300,21 @@ std::unique_ptr<os::Viewport> SDLGraphicsOperations::createViewport(const os::Vi
 	if (window == nullptr) {
 		mprintf(("Failed to create SDL Window: %s\n", SDL_GetError()));
 		return nullptr;
+	}
+
+	// switch to fullscreen if we should
+	if (props.flags[os::ViewPortFlags::Fullscreen]) {
+		SDL_DisplayMode target;
+
+		if (SDL_GetClosestFullscreenDisplayMode(props.display, width, height, 0.0f, true, &target)) {
+			SDL_SetWindowFullscreenMode(window, &target);
+		}
+
+		// NOTE: This can be buggy if the mode failed to set since FSO doesn't
+		// account for a difference between assumed window size and actual window
+		// size. This can present as screen anomalies such as distortion, mirroring,
+		// or flickering.
+		SDL_SetWindowFullscreen(window, true);
 	}
 
 	SDL_SetWindowPosition(window, x, y);

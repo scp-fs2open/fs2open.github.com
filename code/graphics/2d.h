@@ -1078,7 +1078,7 @@ extern int gr_get_dynamic_font_lines(int number_default_lines);
 extern io::mouse::Cursor* Web_cursor;
 
 // Called by OS when application gets/looses focus
-extern void gr_activate(int active);
+extern void gr_activate(bool active);
 
 #define GR_CALL(x) (x)
 
