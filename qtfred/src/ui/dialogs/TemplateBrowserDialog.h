@@ -4,6 +4,8 @@
 #include <QString>
 #include <QList>
 
+#include <memory>
+
 namespace fso::fred::dialogs {
 
 namespace Ui {
