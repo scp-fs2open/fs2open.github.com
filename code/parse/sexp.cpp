@@ -17216,17 +17216,18 @@ void sexp_end_mission(int n)
 
 void multi_sexp_end_mission()
 {
-	// Do NOT call send_debrief_event() here. On standalone servers, the client
-	// has not yet received mission stats (m_okKills etc.) from the server at this
-	// point — scoring_eval_kill only runs on the master. Entering the debrief
-	// prematurely causes scoring_level_close() to run with zeroed-out stats,
-	// so Pilot.update_stats() never creates kill entries. When stats arrive later
-	// and debrief_close() tries to back them out, it hits an UNREACHABLE.
+	// Signal process_endgame_packet() to skip the warp-out sequence by entering
+	// debrief immediately when the MISSION_END packet arrives.  We cannot call
+	// send_debrief_event() here directly: on standalone servers the client has not
+	// yet received mission stats (m_okKills etc.) at this point, so
+	// scoring_level_close() would run with zeroed kill counts and
+	// Pilot.update_stats() would create no kill entries.  debrief_close() would
+	// then try to back out entries that were never created and hit an UNREACHABLE.
 	//
-	// Instead, let multi_handle_end_mission_request() trigger the normal flow:
-	// the server broadcasts stats first, then sends MISSION_END, which causes
-	// the client to enter debrief with correct data.
-	// (The master already enters debrief via send_debrief_event() in sexp_end_mission().)
+	// send_endgame_packet() broadcasts stats to clients *before* sending MISSION_END,
+	// so by the time process_endgame_packet() fires, the stats are already present
+	// and it is safe to enter debrief there.
+	Multi_sexp_end_mission_pending = true;
 	multi_handle_end_mission_request();
 }
 

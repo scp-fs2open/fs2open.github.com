@@ -4046,9 +4046,17 @@ void process_endgame_packet(ubyte * /*data*/, header *hinfo)
 		// do any special processing for being in a state other than the gameplay state
 		multi_handle_state_special();
 
+		// If end-mission fired via SEXP, enter debrief immediately (skipping warp-out).
+		// Stats have already been received via multi_broadcast_stats() which send_endgame_packet()
+		// calls before sending this packet, so scoring_level_close() will see correct kill data.
+		if (Multi_sexp_end_mission_pending) {
+			Multi_sexp_end_mission_pending = false;
+			send_debrief_event();
+		}
+
 		// make sure we're not already in the debrief state
 		if((gameseq_get_state() != GS_STATE_DEBRIEF) && (gameseq_get_state() != GS_STATE_MULTI_DOGFIGHT_DEBRIEF)){
-			multi_warpout_all_players();			
+			multi_warpout_all_players();
 		}
 	}	
 }

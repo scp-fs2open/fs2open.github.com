@@ -232,6 +232,10 @@ short multi_get_new_id();
 // Karajorma - sends the player to the correct debrief for this game type
 void send_debrief_event();
 
+// Set by multi_sexp_end_mission() to signal that process_endgame_packet() should
+// enter debrief immediately (skipping warp-out) once stats have been received.
+extern bool Multi_sexp_end_mission_pending;
+
 // Karajorma - Performs any cleanup needed by missions which don't end with a warpout.
 void multi_handle_sudden_mission_end();
 

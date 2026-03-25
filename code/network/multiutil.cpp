@@ -1231,6 +1231,12 @@ void multi_apply_ship_status(net_player *p,button_info *bi,int locally)
 // send 10x a second MAX
 #define MULTI_SHIP_STATUS_TIME			350
 int Multi_ship_status_stamp = -1;
+
+// Set by multi_sexp_end_mission() so that process_endgame_packet() knows to call
+// send_debrief_event() immediately upon receiving MISSION_END, skipping warp-out.
+// Must be checked after stats have been broadcast by the server (which happens
+// in send_endgame_packet() before the MISSION_END packet is sent).
+bool Multi_sexp_end_mission_pending = false;
 button_info Multi_ship_status_bi;
 
 void multi_maybe_send_ship_status()
