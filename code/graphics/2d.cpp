@@ -2130,10 +2130,9 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 	return true;
 }
 
-int gr_activated = 0;
-void gr_activate(int active)
+static bool gr_activated = true;	// start activated
+void gr_activate(bool active)
 {
-
 	if (gr_activated == active) {
 		return;
 	}
