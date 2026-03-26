@@ -664,7 +664,7 @@ ADE_VIRTVAR(Puncture, l_Weaponclass, "boolean", "Is weapon class flagged as punc
 
 	if(ADE_SETTING_VAR)
 	{
-		info->wi_flags.set(Weapon::Info_Flags::Puncture, newVal);
+		LuaError(L, "Setting Puncture flag is not supported");
 	}
 
 	if (info->wi_flags[Weapon::Info_Flags::Puncture])
