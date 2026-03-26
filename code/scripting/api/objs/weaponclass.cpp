@@ -650,6 +650,29 @@ ADE_VIRTVAR(Bomb, l_Weaponclass, "boolean", "Is weapon class flagged as bomb", "
 		return ADE_RETURN_FALSE;
 }
 
+ADE_VIRTVAR(Puncture, l_Weaponclass, "boolean", "Is weapon class flagged as puncture", "boolean", "New flag")
+{
+	int idx;
+	bool newVal = false;
+	if(!ade_get_args(L, "o|b", l_Weaponclass.Get(&idx), &newVal))
+		return ADE_RETURN_FALSE;
+
+	if(idx < 0 || idx >= weapon_info_size())
+		return ADE_RETURN_FALSE;
+
+	weapon_info *info = &Weapon_info[idx];
+
+	if(ADE_SETTING_VAR)
+	{
+		info->wi_flags.set(Weapon::Info_Flags::Puncture, newVal);
+	}
+
+	if (info->wi_flags[Weapon::Info_Flags::Puncture])
+		return ADE_RETURN_TRUE;
+	else
+		return ADE_RETURN_FALSE;
+}
+
 ADE_VIRTVAR(CustomData, l_Weaponclass, nullptr, "Gets the custom data table for this weapon class", "table", "The weapon class's custom data table") 
 {
 	int idx;
