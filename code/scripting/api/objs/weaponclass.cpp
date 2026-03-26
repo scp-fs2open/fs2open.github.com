@@ -653,8 +653,7 @@ ADE_VIRTVAR(Bomb, l_Weaponclass, "boolean", "Is weapon class flagged as bomb", "
 ADE_VIRTVAR(Puncture, l_Weaponclass, "boolean", "Is weapon class flagged as puncture", "boolean", "New flag")
 {
 	int idx;
-	bool newVal = false;
-	if(!ade_get_args(L, "o|b", l_Weaponclass.Get(&idx), &newVal))
+	if(!ade_get_args(L, "o|b", l_Weaponclass.Get(&idx)))
 		return ADE_RETURN_FALSE;
 
 	if(idx < 0 || idx >= weapon_info_size())
