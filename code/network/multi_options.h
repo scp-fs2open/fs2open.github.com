@@ -78,7 +78,7 @@ typedef struct multi_global_options {
 		std_voice = 1;
 		memset(std_passwd, 0, STD_PASSWD_LEN+1);
 		memset(std_pname, 0, STD_NAME_LEN+1);
-		std_framecap = 60;
+		std_framecap = 30;
 
 		webapiPort = 8080;
 		webapiUsername = "admin";
