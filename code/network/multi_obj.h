@@ -85,7 +85,7 @@ matrix multi_ship_record_lookup_orientation(object* objp, int frame);
 int multi_ship_record_find_time_after_frame(int client_frame, int frame, int time_elapsed);
 
 // This stores the information we got from the client to create later.
-void multi_ship_record_add_rollback_shot(object* pobjp, vec3d* pos, matrix* orient, int frame, bool secondary);
+void multi_ship_record_add_rollback_shot(object* pobjp, vec3d* pos, matrix* orient, vec3d* velocity, int frame, bool secondary);
 
 // Lookup whether rollback mode is on
 bool multi_ship_record_get_rollback_wep_mode();

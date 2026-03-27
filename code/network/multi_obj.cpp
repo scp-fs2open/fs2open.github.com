@@ -101,7 +101,12 @@ struct rollback_unsimulated_shots {
 	object* shooterp;		// pointer to the shooting object (ship)
 	vec3d pos;				// the relative position calculated from the non-homing packet.
 	matrix orient;			// the relative orientation from the non-homing packet.
+	vec3d velocity;			// the shooter's velocity at the time the shot was fired, from the packet itself.
+							// Used so that additive weapon velocity and converging autoaim lead are computed
+							// with the exact velocity the client had, not the server's stale OO-recorded value.
 	bool secondary_shot;	// is this a dumbfire missile shot?
+	int target_objnum;		// the shooter's aip->target_objnum at the time the shot packet was received,
+							// so autoaim can be reactivated correctly during rollback playback.
 };
 
 // our main struct for keeping track of all interpolation and oo packet info.
@@ -610,7 +615,7 @@ void multi_oo_remove_colliders()
 }
 
 // This stores the information we got from the client to create later.
-void multi_ship_record_add_rollback_shot(object* pobjp, vec3d* pos, matrix* orient, int frame, bool secondary) 
+void multi_ship_record_add_rollback_shot(object* pobjp, vec3d* pos, matrix* orient, vec3d* velocity, int frame, bool secondary)
 {
 	Oo_info.rollback_mode = true;
 
@@ -618,9 +623,21 @@ void multi_ship_record_add_rollback_shot(object* pobjp, vec3d* pos, matrix* orie
 	new_shot.shooterp = pobjp;
 	new_shot.pos = *pos;
 	new_shot.orient = *orient;
+	new_shot.velocity = *velocity;
 	new_shot.secondary_shot = secondary;
 
-	Oo_info.rollback_shots_to_be_fired[frame].push_back(new_shot);	
+	// Capture the shooter's current target so autoaim can be correctly restored during rollback
+	// playback. All ship positions are rewound before firing, so the target's position/velocity
+	// will already be at the historical values; we only need to preserve which object was targeted.
+	new_shot.target_objnum = -1;
+	if (pobjp->type == OBJ_SHIP) {
+		ship* shipp = &Ships[pobjp->instance];
+		if (shipp->ai_index >= 0) {
+			new_shot.target_objnum = Ai_info[shipp->ai_index].target_objnum;
+		}
+	}
+
+	Oo_info.rollback_shots_to_be_fired[frame].push_back(new_shot);
 }
 
 // Manage rollback for a frame
@@ -757,12 +774,41 @@ void multi_oo_fire_rollback_shots(int frame_idx)
 		rollback_shot.shooterp->pos = rollback_shot.pos;
 		rollback_shot.shooterp->orient = rollback_shot.orient;
 
+		// Override the shooter's velocity with the value from the fire packet. The server's
+		// frame_info records are updated from OO packets and may be stale by several frames,
+		// while the packet value is the client's exact velocity at the moment of firing.
+		// This ensures additive weapon velocity and converging autoaim lead are computed
+		// identically to what the client did, preventing trajectory divergence.
+		vec3d saved_velocity = rollback_shot.shooterp->phys_info.vel;
+		rollback_shot.shooterp->phys_info.vel = rollback_shot.velocity;
+
+		// Temporarily restore the target_objnum the shooter had when it fired so that
+		// autoaim (including converging autoaim) can activate correctly. Ship positions
+		// have already been rewound by multi_oo_restore_frame, so the target object's
+		// position and velocity are already at their historical values.
+		int saved_target_objnum = -1;
+		ai_info* rollback_aip = nullptr;
+		if (rollback_shot.target_objnum >= 0 && rollback_shot.shooterp->type == OBJ_SHIP) {
+			ship* shipp = &Ships[rollback_shot.shooterp->instance];
+			if (shipp->ai_index >= 0) {
+				rollback_aip = &Ai_info[shipp->ai_index];
+				saved_target_objnum = rollback_aip->target_objnum;
+				rollback_aip->target_objnum = rollback_shot.target_objnum;
+			}
+		}
+
 		if (rollback_shot.secondary_shot) {
 			ship_fire_secondary(rollback_shot.shooterp, 1, true);
 		}
 		else {
 			ship_fire_primary(rollback_shot.shooterp, 1, true);
 		}
+
+		if (rollback_aip != nullptr) {
+			rollback_aip->target_objnum = saved_target_objnum;
+		}
+
+		rollback_shot.shooterp->phys_info.vel = saved_velocity;
 	}
 
 	// add the newly created shots to the collision list.
@@ -1484,9 +1530,9 @@ int multi_oo_pack_data(net_player *pl, object *objp, ushort oo_flags, ubyte *dat
 	}
 
 	// Cyborg17 - only server should send this
-	if (oo_flags & OO_AI_NEW) {
+	if (oo_flags & OO_AI_NEW){
 		int pre_section_size = packet_size;
-		ai_info* aip = &Ai_info[shipp->ai_index];
+		ai_info *aip = &Ai_info[shipp->ai_index];
 
 		// ai mode info
 		auto umode = (ubyte)(aip->mode);
@@ -1500,13 +1546,8 @@ int multi_oo_pack_data(net_player *pl, object *objp, ushort oo_flags, ubyte *dat
 			if ((wp = find_waypoint_at_indexes(aip->wp_list_index, aip->wp_index)) != nullptr) {
 				target_signature = Objects[wp->get_objnum()].net_signature;
 			}
-		// Prefer the live target_objnum so clients know who is actually being attacked
-		// (goals[0].target_name only covers explicitly ordered goal targets and is empty for
-		// spontaneous IFF-based engagements, which would leave target_signature 0 and break
-		// TARGET_CLOSEST_SHIP_ATTACKING_SELF on clients).
-		} else if (aip->target_objnum >= 0) {
-			target_signature = Objects[aip->target_objnum].net_signature;
-		} else if ((aip->goals[0].target_name != nullptr) && strlen(aip->goals[0].target_name) != 0) {
+		} // send the target signature. 2021 Version!
+		else if ((aip->goals[0].target_name != nullptr) && strlen(aip->goals[0].target_name) != 0) {
 			
 			int instance = ship_name_lookup(aip->goals[0].target_name);
 			if (instance > -1) {

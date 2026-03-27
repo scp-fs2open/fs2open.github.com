@@ -7871,6 +7871,10 @@ void send_non_homing_fired_packet(ship* shipp, int banks_or_number_of_missiles_f
 	ADD_FLOAT(player_ship_angles.h);
 	ADD_FLOAT(player_ship_angles.p);
 
+	// Send the shooter's current velocity so the server can reproduce the exact additive weapon
+	// velocity and converging autoaim lead calculation that the client used when firing.
+	ADD_VECTOR(objp->phys_info.vel);
+
 	multi_io_send(Net_player, data, packet_size);
 }
 
@@ -7913,6 +7917,9 @@ void process_non_homing_fired_packet(ubyte* data, header* hinfo)
 	GET_FLOAT(player_ship_angles.b);
 	GET_FLOAT(player_ship_angles.h);
 	GET_FLOAT(player_ship_angles.p);
+
+	vec3d shooter_velocity;
+	GET_VECTOR(shooter_velocity);
 
 	PACKET_SET_SIZE();
 
@@ -7988,7 +7995,7 @@ void process_non_homing_fired_packet(ubyte* data, header* hinfo)
 		// Now multiply the two matrices to find the orientation of the firing ship.
 		matrix new_player_ori;
 		vm_matrix_x_matrix(&new_player_ori, &old_player_ori, &temp_ori);
-		multi_ship_record_add_rollback_shot(objp, &new_player_pos, &new_player_ori, frame, secondary);
+		multi_ship_record_add_rollback_shot(objp, &new_player_pos, &new_player_ori, &shooter_velocity, frame, secondary);
 
 	}	// if the new way fails for some reason, use the old way.
 	else {
