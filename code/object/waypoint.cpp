@@ -148,7 +148,7 @@ void waypoint_list::set_no_draw_lines(bool val)
 	m_no_draw_lines = val;
 }
 
-void waypoint_list::set_color(ubyte r, ubyte g, ubyte b)
+void waypoint_list::set_color(int r, int g, int b)
 {
 	m_color_r = r;
 	m_color_g = g;
@@ -171,17 +171,17 @@ bool waypoint_list::get_has_custom_color() const
 	return m_has_custom_color;
 }
 
-ubyte waypoint_list::get_color_r() const
+int waypoint_list::get_color_r() const
 {
 	return m_color_r;
 }
 
-ubyte waypoint_list::get_color_g() const
+int waypoint_list::get_color_g() const
 {
 	return m_color_g;
 }
 
-ubyte waypoint_list::get_color_b() const
+int waypoint_list::get_color_b() const
 {
 	return m_color_b;
 }
