@@ -41,6 +41,15 @@ bool WaypointEditorDialogModel::apply()
 		}
 	}
 
+	// apply display properties
+	_editor->cur_waypoint_list->set_no_draw_lines(_noDrawLines);
+	if (_hasCustomColor)
+		_editor->cur_waypoint_list->set_color((ubyte)_colorR, (ubyte)_colorG, (ubyte)_colorB);
+	else
+		_editor->cur_waypoint_list->clear_color();
+
+	_editor->missionChanged();
+
 	return true;
 }
 
@@ -61,8 +70,16 @@ void WaypointEditorDialogModel::initializeData()
 
 	if (_editor->cur_waypoint_list != nullptr) {
 		_currentName = _editor->cur_waypoint_list->get_name();
+		_noDrawLines = _editor->cur_waypoint_list->get_no_draw_lines();
+		_hasCustomColor = _editor->cur_waypoint_list->get_has_custom_color();
+		_colorR = _editor->cur_waypoint_list->get_color_r();
+		_colorG = _editor->cur_waypoint_list->get_color_g();
+		_colorB = _editor->cur_waypoint_list->get_color_b();
 	} else {
 		_currentName = "";
+		_noDrawLines = false;
+		_hasCustomColor = false;
+		_colorR = _colorG = _colorB = 255;
 		_enabled = false;
 	}
 
@@ -222,5 +239,18 @@ const SCP_vector<std::pair<SCP_string, int>>& WaypointEditorDialogModel::getWayp
 {
 	return _waypointPathList;
 }
+
+bool WaypointEditorDialogModel::getNoDrawLines() const { return _noDrawLines; }
+void WaypointEditorDialogModel::setNoDrawLines(bool val) { modify(_noDrawLines, val); }
+
+bool WaypointEditorDialogModel::getHasCustomColor() const { return _hasCustomColor; }
+void WaypointEditorDialogModel::setHasCustomColor(bool val) { modify(_hasCustomColor, val); }
+
+int WaypointEditorDialogModel::getColorR() const { return _colorR; }
+int WaypointEditorDialogModel::getColorG() const { return _colorG; }
+int WaypointEditorDialogModel::getColorB() const { return _colorB; }
+void WaypointEditorDialogModel::setColorR(int r) { modify(_colorR, r); }
+void WaypointEditorDialogModel::setColorG(int g) { modify(_colorG, g); }
+void WaypointEditorDialogModel::setColorB(int b) { modify(_colorB, b); }
 
 } // namespace fso::fred::dialogs

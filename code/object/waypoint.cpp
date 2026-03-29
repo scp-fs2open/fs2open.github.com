@@ -96,6 +96,9 @@ void waypoint::set_pos(const vec3d *pos)
 waypoint_list::waypoint_list()
 {
 	this->m_name[0] = '\0';
+	this->m_no_draw_lines = false;
+	this->m_has_custom_color = false;
+	this->m_color_r = this->m_color_g = this->m_color_b = 255;
 }
 
 waypoint_list::waypoint_list(const char *name)
@@ -103,6 +106,9 @@ waypoint_list::waypoint_list(const char *name)
 	Assert(name != NULL);
 	Assert(find_matching_waypoint_list(name) == NULL);
 	strcpy_s(this->m_name, name);
+	this->m_no_draw_lines = false;
+	this->m_has_custom_color = false;
+	this->m_color_r = this->m_color_g = this->m_color_b = 255;
 }
 
 waypoint_list::~waypoint_list()
@@ -135,6 +141,49 @@ void waypoint_list::set_name(const char *name)
 
 	strncpy(this->m_name, name, len);
 	this->m_name[len] = '\0';
+}
+
+void waypoint_list::set_no_draw_lines(bool val)
+{
+	m_no_draw_lines = val;
+}
+
+void waypoint_list::set_color(ubyte r, ubyte g, ubyte b)
+{
+	m_color_r = r;
+	m_color_g = g;
+	m_color_b = b;
+	m_has_custom_color = true;
+}
+
+void waypoint_list::clear_color()
+{
+	m_has_custom_color = false;
+}
+
+bool waypoint_list::get_no_draw_lines() const
+{
+	return m_no_draw_lines;
+}
+
+bool waypoint_list::get_has_custom_color() const
+{
+	return m_has_custom_color;
+}
+
+ubyte waypoint_list::get_color_r() const
+{
+	return m_color_r;
+}
+
+ubyte waypoint_list::get_color_g() const
+{
+	return m_color_g;
+}
+
+ubyte waypoint_list::get_color_b() const
+{
+	return m_color_b;
 }
 
 //********************FUNCTIONS********************

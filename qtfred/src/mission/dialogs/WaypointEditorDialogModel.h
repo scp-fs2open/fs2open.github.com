@@ -16,7 +16,18 @@ class WaypointEditorDialogModel: public AbstractDialogModel {
 	void setCurrentName(const SCP_string& name);
 	int getCurrentlySelectedPath() const;
 	void setCurrentlySelectedPath(int elementId);
-	
+
+	bool getNoDrawLines() const;
+	void setNoDrawLines(bool val);
+	bool getHasCustomColor() const;
+	void setHasCustomColor(bool val);
+	int getColorR() const;
+	int getColorG() const;
+	int getColorB() const;
+	void setColorR(int r);
+	void setColorG(int g);
+	void setColorB(int b);
+
 	bool isEnabled() const;
 	const SCP_vector<std::pair<SCP_string, int>>& getWaypointPathList() const;
 
@@ -40,6 +51,9 @@ private slots:
 	bool _enabled = false;
 	SCP_vector<std::pair<SCP_string, int>> _waypointPathList;
 	bool _bypass_errors = false;
+	bool _noDrawLines = false;
+	bool _hasCustomColor = false;
+	int _colorR = 255, _colorG = 255, _colorB = 255;
 };
 
 } // namespace fso::fred::dialogs

@@ -4816,6 +4816,27 @@ int Fred_mission_save::save_waypoints()
 		parse_comments(first_wpt_list ? 1 : 2);
 		fout(" %s", ii.get_name());
 
+		if (save_config.save_format != MissionFormat::RETAIL) {
+
+			int nol_in_file = optional_string_fred("+No Draw Lines:", "$List:");
+			if (nol_in_file)
+				parse_comments();
+			if (nol_in_file || ii.get_no_draw_lines()) {
+				if (!nol_in_file)
+					fout("\n+No Draw Lines:");
+				fout(" %s", ii.get_no_draw_lines() ? "true" : "false");
+			}
+
+			if (ii.get_has_custom_color()) {
+				if (optional_string_fred("+Color:", "$List:")) {
+					parse_comments();
+				} else {
+					fout("\n+Color:");
+				}
+				fout(" %u %u %u", ii.get_color_r(), ii.get_color_g(), ii.get_color_b());
+			}
+		}
+
 		required_string_fred("$List:");
 		parse_comments();
 		fout(" (\t\t;! %d points in list\n", ii.get_waypoints().size());

@@ -968,9 +968,16 @@ void FredRenderer::render_one_model_htl(object* objp,
 			g = 127;
 			b = 0;
 		} else if (objp->type == OBJ_WAYPOINT) {
-			r = 96;
-			g = 0;
-			b = 112;
+			waypoint_list* wpt_list = find_waypoint_list_with_instance(objp->instance);
+			if (wpt_list && wpt_list->get_has_custom_color()) {
+				r = wpt_list->get_color_r();
+				g = wpt_list->get_color_g();
+				b = wpt_list->get_color_b();
+			} else {
+				r = 96;
+				g = 0;
+				b = 112;
+			}
 		} else if (objp->type == OBJ_POINT) {
 			if (objp->instance != BRIEFING_LOOKAT_POINT_ID) {
 				///! \fixme Briefing stuff!
@@ -1004,11 +1011,14 @@ void FredRenderer::render_one_model_htl(object* objp,
 	}
 
 	if (objp->type == OBJ_WAYPOINT) {
-		for (auto objIdx : rendering_order) {
-			o2 = &Objects[objIdx];
-			if (o2->type == OBJ_WAYPOINT) {
-				if ((o2->instance == objp->instance - 1) || (o2->instance == objp->instance + 1)) {
-					g3_draw_htl_line(&o2->pos, &objp->pos);
+		waypoint_list* wpt_list = find_waypoint_list_with_instance(objp->instance);
+		if (!wpt_list || !wpt_list->get_no_draw_lines()) {
+			for (auto objIdx : rendering_order) {
+				o2 = &Objects[objIdx];
+				if (o2->type == OBJ_WAYPOINT) {
+					if ((o2->instance == objp->instance - 1) || (o2->instance == objp->instance + 1)) {
+						g3_draw_htl_line(&o2->pos, &objp->pos);
+					}
 				}
 			}
 		}

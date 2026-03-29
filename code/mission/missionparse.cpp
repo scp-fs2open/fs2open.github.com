@@ -5803,11 +5803,34 @@ void parse_waypoint_list(mission *pm)
 	required_string("$Name:");
 	stuff_string(name_buf, F_NAME, NAME_LENGTH);
 
+	bool no_draw_lines = false;
+	if (optional_string("+No Draw Lines:"))
+		stuff_boolean(&no_draw_lines);
+
+	bool has_custom_color = false;
+	ubyte cr = 255, cg = 255, cb = 255;
+	if (optional_string("+Color:")) {
+		has_custom_color = true;
+		stuff_ubyte(&cr);
+		stuff_ubyte(&cg);
+		stuff_ubyte(&cb);
+	}
+
 	SCP_vector<vec3d> vec_list;
 	required_string("$List:");
 	stuff_vec3d_list(vec_list);
 
 	waypoint_add_list(name_buf, vec_list);
+
+	// Apply display properties to the list just added
+	if (no_draw_lines || has_custom_color) {
+		waypoint_list* wl = find_matching_waypoint_list(name_buf);
+		if (wl) {
+			wl->set_no_draw_lines(no_draw_lines);
+			if (has_custom_color)
+				wl->set_color(cr, cg, cb);
+		}
+	}
 }
 
 void parse_waypoints_and_jumpnodes(mission *pm)

@@ -46,10 +46,23 @@ class waypoint_list
 
 		// mutators
 		void set_name(const char *name);
+		void set_no_draw_lines(bool val);
+		void set_color(ubyte r, ubyte g, ubyte b);
+		void clear_color();
+
+		// display property accessors
+		bool get_no_draw_lines() const;
+		bool get_has_custom_color() const;
+		ubyte get_color_r() const;
+		ubyte get_color_g() const;
+		ubyte get_color_b() const;
 
 	private:
 		char m_name[NAME_LENGTH];
 		SCP_vector<waypoint> m_waypoints;
+		bool m_no_draw_lines;
+		bool m_has_custom_color;
+		ubyte m_color_r, m_color_g, m_color_b;
 };
 
 //********************GLOBALS********************

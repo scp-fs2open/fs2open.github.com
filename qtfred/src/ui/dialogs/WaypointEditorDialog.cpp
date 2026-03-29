@@ -36,7 +36,10 @@ void WaypointEditorDialog::initializeUi()
 	util::SignalBlockers blockers(this);
 
 	updateWaypointListComboBox();
-	ui->nameEdit->setEnabled(_model->isEnabled());
+	bool enabled = _model->isEnabled();
+	ui->nameEdit->setEnabled(enabled);
+	ui->noDrawLinesCheck->setEnabled(enabled);
+	ui->customColorCheck->setEnabled(enabled);
 }
 
 void WaypointEditorDialog::updateWaypointListComboBox()
@@ -55,6 +58,28 @@ void WaypointEditorDialog::updateUi()
 	util::SignalBlockers blockers(this);
 	ui->nameEdit->setText(QString::fromStdString(_model->getCurrentName()));
 	ui->pathSelection->setCurrentIndex(ui->pathSelection->findData(_model->getCurrentlySelectedPath()));
+
+	ui->noDrawLinesCheck->setChecked(_model->getNoDrawLines());
+	ui->customColorCheck->setChecked(_model->getHasCustomColor());
+	ui->colorRSpinBox->setValue(_model->getColorR());
+	ui->colorGSpinBox->setValue(_model->getColorG());
+	ui->colorBSpinBox->setValue(_model->getColorB());
+
+	bool colorEnabled = _model->isEnabled() && _model->getHasCustomColor();
+	ui->colorRSpinBox->setEnabled(colorEnabled);
+	ui->colorGSpinBox->setEnabled(colorEnabled);
+	ui->colorBSpinBox->setEnabled(colorEnabled);
+
+	updateColorSwatch();
+}
+
+void WaypointEditorDialog::updateColorSwatch()
+{
+	ui->colorSwatch->setStyleSheet(QString("background: rgb(%1,%2,%3);"
+	                                       "border: 1px solid #444; border-radius: 3px;")
+	        .arg(_model->getColorR())
+	        .arg(_model->getColorG())
+	        .arg(_model->getColorB()));
 }
 
 void WaypointEditorDialog::on_pathSelection_currentIndexChanged(int index)
@@ -84,6 +109,43 @@ void WaypointEditorDialog::on_nameEdit_editingFinished()
 		ui->nameEdit->setText(QString::fromStdString(current));
 		_model->setCurrentName(current); // Restore the model's current name
 	}
+}
+
+void WaypointEditorDialog::on_noDrawLinesCheck_toggled(bool checked)
+{
+	_model->setNoDrawLines(checked);
+	_model->apply();
+}
+
+void WaypointEditorDialog::on_customColorCheck_toggled(bool checked)
+{
+	_model->setHasCustomColor(checked);
+	ui->colorRSpinBox->setEnabled(checked);
+	ui->colorGSpinBox->setEnabled(checked);
+	ui->colorBSpinBox->setEnabled(checked);
+	updateColorSwatch();
+	_model->apply();
+}
+
+void WaypointEditorDialog::on_colorRSpinBox_valueChanged(int value)
+{
+	_model->setColorR(value);
+	updateColorSwatch();
+	_model->apply();
+}
+
+void WaypointEditorDialog::on_colorGSpinBox_valueChanged(int value)
+{
+	_model->setColorG(value);
+	updateColorSwatch();
+	_model->apply();
+}
+
+void WaypointEditorDialog::on_colorBSpinBox_valueChanged(int value)
+{
+	_model->setColorB(value);
+	updateColorSwatch();
+	_model->apply();
 }
 
 } // namespace fso::fred::dialogs
