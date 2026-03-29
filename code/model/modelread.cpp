@@ -186,23 +186,9 @@ public:
 
 SCP_unordered_map<int, intrinsic_motion> Intrinsic_motions;
 
-template<bool modern, typename T>
-static inline void vm_free_no_duplicates(T* data, SCP_unordered_set<const void *>& already_freed) {
-	if (data == nullptr || already_freed.contains(data))
-		return;
-	already_freed.insert(data);
-	if constexpr (modern)
-		delete[] data;
-	else
-		vm_free(data);
-};
-
 void model_free(polymodel* pm)
 {
 	int i;
-	SCP_unordered_set<const void *> already_freed;
-
-	const auto free_no_duplicates = [&already_freed](auto data) { vm_free_no_duplicates<false>(data, already_freed); };
 
 	if (pm->submodel) {
 		for (i = 0; i < pm->n_models; i++) {
@@ -1572,8 +1558,6 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 	}
 
 	pm->version = version;
-	Assert(strlen(filename) < FILESPEC_LENGTH );
-	strcpy_s(pm->filename, filename);
 
 	memset( &pm->view_positions, 0, sizeof(pm->view_positions) );
 
@@ -2961,6 +2945,9 @@ modelread_status read_model_file(polymodel* pm, const char* filename, ErrorType 
 //reads a binary file containing a 3d model
 modelread_status read_and_process_model_file(polymodel* pm, const char* filename, int n_subsystems, model_subsystem* subsystems, ErrorType error_type, model_read_deferred_tasks& deferredTasks)
 {
+	Assert(strlen(filename) < FILESPEC_LENGTH );
+	strcpy_s(pm->filename, filename);
+	
 	modelread_status status = read_model_file(pm, filename, error_type, deferredTasks);
 
 	//By now, we have finished reading this model. If it was virtual, we might have accumulated cache.
