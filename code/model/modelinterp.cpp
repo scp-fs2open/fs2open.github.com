@@ -1275,7 +1275,7 @@ int submodel_get_num_polys(int model_num, int submodel_num )
 
 	pm = model_get(model_num);
 
-	return submodel_get_num_polys_sub( pm->submodel[submodel_num].bsp_data );
+	return submodel_get_num_polys_sub( pm->submodel[submodel_num].bsp_data.get() );
 }
 
 /**
@@ -1876,9 +1876,9 @@ void model_interp_submit_buffers(indexed_vertex_source *vert_src, size_t vertex_
 		return;
 	}
 
-	if ( vert_src->Vertex_list != NULL ) {
+	if ( vert_src->Vertex_list != nullptr ) {
 		size_t offset;
-		gr_heap_allocate(GpuHeap::ModelVertex, vert_src->Vertex_list_size, vert_src->Vertex_list, offset, vert_src->Vbuffer_handle);
+		gr_heap_allocate(GpuHeap::ModelVertex, vert_src->Vertex_list_size, vert_src->Vertex_list.get(), offset, vert_src->Vbuffer_handle);
 
 		// If this happens then someone must have allocated something from the heap with a different stride than what we
 		// are using.
@@ -1886,15 +1886,13 @@ void model_interp_submit_buffers(indexed_vertex_source *vert_src, size_t vertex_
 		vert_src->Base_vertex_offset = offset / vertex_stride;
 		vert_src->Vertex_offset = offset;
 
-		vm_free(vert_src->Vertex_list);
-		vert_src->Vertex_list = NULL;
+		vert_src->Vertex_list.reset();
 	}
 
-	if ( vert_src->Index_list != NULL ) {
-		gr_heap_allocate(GpuHeap::ModelIndex, vert_src->Index_list_size, vert_src->Index_list, vert_src->Index_offset, vert_src->Ibuffer_handle);
+	if ( vert_src->Index_list != nullptr ) {
+		gr_heap_allocate(GpuHeap::ModelIndex, vert_src->Index_list_size, vert_src->Index_list.get(), vert_src->Index_offset, vert_src->Ibuffer_handle);
 
-		vm_free(vert_src->Index_list);
-		vert_src->Index_list = NULL;
+		vert_src->Index_list.reset();
 	}
 }
 
@@ -1908,30 +1906,30 @@ bool model_interp_pack_buffer(indexed_vertex_source *vert_src, vertex_buffer *vb
 
 	int i, n_verts = 0;
 	size_t j;
-	if ( vert_src->Vertex_list == NULL ) {
-		vert_src->Vertex_list = vm_malloc(vert_src->Vertex_list_size);
+	if ( vert_src->Vertex_list == nullptr ) {
+		vert_src->Vertex_list = make_shared<uint8_t[]>(vert_src->Vertex_list_size);
 
 		// return invalid if we don't have the memory
-		if ( vert_src->Vertex_list == NULL ) {
+		if ( vert_src->Vertex_list == nullptr ) {
 			return false;
 		}
 
-		memset(vert_src->Vertex_list, 0, vert_src->Vertex_list_size);
+		memset(vert_src->Vertex_list.get(), 0, vert_src->Vertex_list_size);
 	}
 
-	if ( vert_src->Index_list == NULL ) {
-		vert_src->Index_list = vm_malloc(vert_src->Index_list_size);
+	if ( vert_src->Index_list == nullptr ) {
+		vert_src->Index_list = make_shared<uint8_t[]>(vert_src->Index_list_size);
 
 		// return invalid if we don't have the memory
-		if ( vert_src->Index_list == NULL ) {
+		if ( vert_src->Index_list == nullptr ) {
 			return false;
 		}
 
-		memset(vert_src->Index_list, 0, vert_src->Index_list_size);
+		memset(vert_src->Index_list.get(), 0, vert_src->Index_list_size);
 	}
 
 	// bump to our index in the array
-	auto array = reinterpret_cast<interp_vertex*>(static_cast<uint8_t*>(vert_src->Vertex_list) + (vb->vertex_offset));
+	auto array = reinterpret_cast<interp_vertex*>(vert_src->Vertex_list.get() + vb->vertex_offset);
 
 	// generate the vertex array
 	n_verts = vb->model_list->n_verts;
@@ -1997,7 +1995,7 @@ bool model_interp_pack_buffer(indexed_vertex_source *vert_src, vertex_buffer *vb
 		const uint *index = tex_buf->get_index();
 
 		// bump to our spot in the buffer
-		auto ibuf = static_cast<uint8_t*>(vert_src->Index_list) + offset;
+		auto ibuf = vert_src->Index_list.get() + offset;
 
 		if ( vb->tex_buf[j].flags & VB_FLAG_LARGE_INDEX ) {
 			memcpy(ibuf, index, n_verts * sizeof(uint));
@@ -2109,7 +2107,7 @@ void interp_configure_vertex_buffers(polymodel *pm, int mn, const model_read_def
 
 	int milliseconds = timer_get_milliseconds();
 
-	auto bsp_polies = new bsp_polygon_data(model->bsp_data, model->bsp_data_size);
+	auto bsp_polies = new bsp_polygon_data(model->bsp_data.get(), model->bsp_data_size);
 
 	auto textureReplace = deferredTasks.texture_replacements.find(mn);
 	if (textureReplace != deferredTasks.texture_replacements.end())
@@ -2141,9 +2139,9 @@ void interp_configure_vertex_buffers(polymodel *pm, int mn, const model_read_def
 
 	if ( outline_n_lines > 0 ) {
 		model->n_verts_outline = outline_n_lines * 2;
-		model->outline_buffer = (vertex*)vm_malloc(sizeof(vertex) * model->n_verts_outline);
+		model->outline_buffer = make_shared<vertex[]>(model->n_verts_outline);
 
-		bsp_polies->generate_lines(-1, model->outline_buffer);
+		bsp_polies->generate_lines(-1, model->outline_buffer.get());
 	}
 
 	// done with the bsp now that we have the vertex data
@@ -2516,14 +2514,16 @@ void model_interp_process_shield_mesh(polymodel * pm)
 	}
 	
 	if ( !buffer.empty() ) {
-		pm->shield.buffer_id = gr_create_buffer(BufferType::Vertex, BufferUsageHint::Static);
-		pm->shield.buffer_n_verts = n_verts;
-		gr_update_buffer_data(pm->shield.buffer_id, buffer.size() * sizeof(vec3d), &buffer[0]);
+		if (*pm->shield.buffer_id == gr_buffer_handle::invalid()) {
+			*pm->shield.buffer_id = gr_create_buffer(BufferType::Vertex, BufferUsageHint::Static);
+			pm->shield.buffer_n_verts = n_verts;
+			gr_update_buffer_data(*pm->shield.buffer_id, buffer.size() * sizeof(vec3d), &buffer[0]);
 
-		pm->shield.layout.add_vertex_component(vertex_format_data::POSITION3, sizeof(vec3d) * 2, 0);
-		pm->shield.layout.add_vertex_component(vertex_format_data::NORMAL, sizeof(vec3d) * 2, sizeof(vec3d));
+			pm->shield.layout.add_vertex_component(vertex_format_data::POSITION3, sizeof(vec3d) * 2, 0);
+			pm->shield.layout.add_vertex_component(vertex_format_data::NORMAL, sizeof(vec3d) * 2, sizeof(vec3d));
+		}
 	} else {
-		pm->shield.buffer_id = gr_buffer_handle::invalid();
+		*pm->shield.buffer_id = gr_buffer_handle::invalid();
 	}
 }
 
@@ -3233,5 +3233,5 @@ void bsp_polygon_data::replace_textures_used(const SCP_map<int, int>& replacemen
 }
 
 SCP_set<int> model_get_textures_used(const polymodel* pm, int submodel) {
-	return bsp_polygon_data{ pm->submodel[submodel].bsp_data, pm->submodel[submodel].bsp_data_size }.get_textures_used();
+	return bsp_polygon_data{ pm->submodel[submodel].bsp_data.get(), pm->submodel[submodel].bsp_data_size }.get_textures_used();
 }

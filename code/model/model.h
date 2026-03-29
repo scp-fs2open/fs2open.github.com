@@ -453,7 +453,7 @@ public:
 	matrix	frame_of_reference;		// used to be called 'orientation' - this is just used for setting the rotation axis and the animation angles
 
 	int		bsp_data_size;
-	ubyte		*bsp_data;
+	std::shared_ptr<ubyte[]> bsp_data;
 
 	int collision_tree_index;
 
@@ -485,7 +485,7 @@ public:
 	vertex_buffer buffer;
 	vertex_buffer trans_buffer;
 
-	vertex *outline_buffer;
+	std::shared_ptr<vertex[]> outline_buffer;
 	uint n_verts_outline;
 
 	vec3d	render_box_min;
@@ -508,7 +508,7 @@ public:
 typedef struct mp_vert {
 	vec3d		pos;				// xyz coordinates of vertex in object's frame of reference
 	int			nturrets;		// number of turrets guarding this vertex
-	int			*turret_ids;	// array of indices into ship_subsys linked list (can't index using [] though)
+	std::shared_ptr<int[]>			turret_ids;	// array of indices into ship_subsys linked list (can't index using [] though)
 	float			radius;			// How far the closest obstruction is from this vertex
 } mp_vert;
 
@@ -517,7 +517,7 @@ typedef struct model_path {
 	char			parent_name[MAX_NAME_LEN];			// parent name of submodel that path is linked to in POF
 	int			parent_submodel;
 	int			nverts;
-	mp_vert		*verts;
+	std::shared_ptr<mp_vert[]> verts;
 	int			goal;			// Which of the verts is the one closest to the goal of this path
 	int			type;			// What this path takes you to... See MP_TYPE_??? defines above for details
 	int			value;		// This depends on the type.
@@ -567,7 +567,7 @@ struct glow_point{
 
 typedef struct thruster_bank {
 	int		num_points;
-	glow_point *points;
+	std::shared_ptr<glow_point[]> points;
 
 	// Engine wash info
 	struct engine_wash_info	*wash_info_pointer;		// index into Engine_wash_info
@@ -590,7 +590,7 @@ typedef struct glow_point_bank {  // glow bank structure -Bobboau
 	int			submodel_parent; 
 	int			LOD; 
 	int			num_points; 
-	glow_point	*points;
+	std::shared_ptr<glow_point[]> points;
 	int			glow_bitmap; 
 	int			glow_neb_bitmap; 
 } glow_point_bank;
@@ -650,7 +650,7 @@ typedef struct dock_bay {
 	int		num_slots;
 	int		type_flags;					// indicates what this docking bay can be used for (i.e. cargo/rearm, etc)
 	int		num_spline_paths;			// number of spline paths which lead to this docking bay
-	int		*splines;					// array of indices into the Spline_path array
+	std::shared_ptr<int[]> splines;					// array of indices into the Spline_path array
 	int		parent_submodel;			// if this dockpoint should be relative to a submodel instead of the main model
 	char		name[MAX_NAME_LEN];		// name of this docking location
 	vec3d	pnt[MAX_DOCK_SLOTS];
@@ -692,14 +692,14 @@ typedef struct shield_vertex {
 struct shield_info {
 	int				nverts;
 	int				ntris;
-	shield_vertex	*verts;
-	shield_tri		*tris;
+	std::shared_ptr<shield_vertex[]> verts;
+	std::shared_ptr<shield_tri[]> tris;
 
-	gr_buffer_handle buffer_id;
+	std::shared_ptr<gr_buffer_handle> buffer_id;
 	int buffer_n_verts;
 	vertex_layout layout;
 
-	shield_info() : nverts(0), ntris(0), verts(NULL), tris(NULL), buffer_id(-1), buffer_n_verts(0), layout() {	}
+	shield_info() : nverts(0), ntris(0), verts(NULL), tris(NULL), buffer_id(std::make_shared<gr_buffer_handle>(gr_buffer_handle::invalid())), buffer_n_verts(0), layout() {	}
 };
 
 #define BSP_LIGHT_TYPE_WEAPON 1
@@ -852,7 +852,7 @@ public:
 	vec3d		bounding_box[8];
 
 	int			num_lights;							// how many lights there are
-	bsp_light *	lights;								// array of light info
+	std::shared_ptr<bsp_light[]> lights;								// array of light info
 
 	int			n_view_positions;					// number of viewing positions available on this ship
 	eye			view_positions[MAX_EYES];		//viewing positions.  Default to {0,0,0}. in location 0
@@ -866,7 +866,7 @@ public:
 	int n_textures;
 	texture_map	maps[MAX_MODEL_TEXTURES];
 	
-	bsp_info		*submodel;							// an array of size n_models of submodel info.
+	std::shared_ptr<bsp_info[]> submodel;							// an array of size n_models of submodel info.
 
 	// linked lists for special polygon types on this model.  Most ships I think will have most
 	// of these.  (most ships however, probably won't have approach points).
@@ -874,19 +874,19 @@ public:
 	int			n_missiles;							// number of secondary weapon banks (not counting turrets)
 	int			n_docks;								// number of docking points
 	int			n_thrusters;						// number of thrusters on this ship.
-	w_bank		*gun_banks;							// array of gun banks
-	w_bank		*missile_banks;					// array of missile banks
-	dock_bay		*docking_bays;						// array of docking point pairs
-	thruster_bank		*thrusters;							// array of thruster objects -- likely to change in the future
-	ship_bay_t		*ship_bay;							// contains path indexes for ship bay approach/depart paths
+	std::shared_ptr<w_bank[]> gun_banks;							// array of gun banks
+	std::shared_ptr<w_bank[]> missile_banks;					// array of missile banks
+	std::shared_ptr<dock_bay[]> docking_bays;						// array of docking point pairs
+	std::shared_ptr<thruster_bank[]> thrusters;							// array of thruster objects -- likely to change in the future
+	std::shared_ptr<ship_bay_t> ship_bay;							// contains path indexes for ship bay approach/depart paths
 
 	shield_info	shield;								// new shield information
-	ubyte	*shield_collision_tree;
+	std::shared_ptr<ubyte[]> shield_collision_tree;
 	int		sldc_size;
 	SCP_vector<vec3d>		shield_points;
 
 	int			n_paths;
-	model_path	*paths;
+	std::shared_ptr<model_path[]>	paths;
 
 	// physics info
 	float			mass;
@@ -894,7 +894,7 @@ public:
 	matrix		moment_of_inertia;	
 
 	int num_xc;				// number of cross sections
-	cross_section* xc;	// pointer to array of cross sections (used in big ship explosions)
+	std::shared_ptr<cross_section[]> xc;	// pointer to array of cross sections (used in big ship explosions)
 
 	int num_split_plane;	// number of split planes
 	float split_plane[MAX_SPLIT_PLANE];	// actual split plane z coords (for big ship explosions)
@@ -905,13 +905,13 @@ public:
 #ifndef NDEBUG
 	int			ram_used;		// How much RAM this model uses
 	int			debug_info_size;
-	char			*debug_info;
+	std::shared_ptr<char[]>	debug_info;
 #endif
 
 	int used_this_mission;		// used for page-in system, how many times this model has been loaded per mission - taylor
 
 	int n_glow_point_banks;						// number of glow points on this ship. -Bobboau
-	glow_point_bank *glow_point_banks;			// array of glow objects -Bobboau
+	std::shared_ptr<glow_point_bank[]> glow_point_banks;			// array of glow objects -Bobboau
 
 	indexed_vertex_source vert_source;
 	

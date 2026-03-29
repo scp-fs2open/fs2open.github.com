@@ -202,10 +202,12 @@ void virtual_pof_init() {
 
 template<typename T, bool vmalloc, typename member_t>
 inline void object_copy_including_array_member_inner(const T& item, T& result, int size, member_t T::* ptm) {
-	if (vmalloc)
-		result.*ptm = (member_t)vm_malloc(sizeof(typename std::remove_pointer<member_t>::type) * (size));
+	if constexpr (is_smart_pointer_v<std::decay_t<decltype(result.*ptm)>>)
+		result.*ptm = make_shared<typename std::decay_t<decltype(result.*ptm)>::element_type[]>(size);
+	else if constexpr (vmalloc)
+		result.*ptm = static_cast<member_t>(vm_malloc(sizeof(std::remove_pointer_t<member_t>) * size));
 	else
-		result.*ptm = new typename std::remove_pointer<member_t>::type[size];
+		result.*ptm = new std::remove_pointer_t<member_t>[size];
 
 	for (int i = 0; i < size; i++)
 		(result.*ptm)[i] = (item.*ptm)[i];
@@ -225,40 +227,19 @@ T object_copy_including_array_member(const T& item, int T::* size, member_t T::*
 }
 
 template<typename T>
-int reallocate_and_copy_array(T*& array, int& size, size_t to_add) {
+int reallocate_and_copy_array(std::shared_ptr<T[]>& array, int& size, size_t to_add) {
 	//Make sure to keep old data
-	T* oldArray = array;
-
-	Assertion(size >= 0, "Tried to realloc an array of negative size %d!", size);
-	int size_before = size;
-
-	//Realloc new submodel array of proper size
-	size += static_cast<int>(to_add);
-	array = new T[MAX(0,size)];
-
-	//Copy over old data. Pointers in the struct can still point to old members, we will just delete the outer bsp_info array
-	for (int i = 0; i < size_before; i++)
-		array[i] = std::move(oldArray[i]);
-	delete[] oldArray;
-
-	return size_before;
-}
-
-template<typename T>
-int reallocate_and_copy_array_vmalloc(T*& array, int& size, size_t to_add) {
-	//Make sure to keep old data
-	T* oldArray = array;
+	std::shared_ptr<T[]> oldArray = array;
 
 	int size_before = size;
 
 	//Realloc new submodel array of proper size
 	size += static_cast<int>(to_add);
-	array = (T*)vm_malloc(sizeof(T) * size);
+	array = make_shared<T[]>(size);
 
 	//Copy over old data. Pointers in the struct can still point to old members, we will just delete the outer bsp_info array
 	for (int i = 0; i < size_before; i++)
 		array[i] = std::move(oldArray[i]);
-	vm_free(oldArray);
 
 	return size_before;
 }
@@ -753,10 +734,10 @@ VirtualPOFOperationAddWeapons::VirtualPOFOperationAddWeapons() {
 void VirtualPOFOperationAddWeapons::process(polymodel* pm, model_read_deferred_tasks& /*deferredTasks*/, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const {
 	auto appendingPM = virtual_pof_build_cache(appendingPOF, depth);
 
-	w_bank*& banks = primary ? pm->gun_banks : pm->missile_banks;
+	auto& banks = primary ? pm->gun_banks : pm->missile_banks;
 	int& n_banks = primary ? pm->n_guns : pm->n_missiles;
 
-	const w_bank* const& banks_src = primary ? appendingPM->pm()->gun_banks : appendingPM->pm()->missile_banks;
+	const auto& banks_src = primary ? appendingPM->pm()->gun_banks : appendingPM->pm()->missile_banks;
 	const int& n_banks_src = primary ? appendingPM->pm()->n_guns : appendingPM->pm()->n_missiles;
 
 	const int& n_banks_max = primary ? MAX_SHIP_PRIMARY_BANKS : MAX_SHIP_SECONDARY_BANKS;
@@ -860,9 +841,9 @@ void VirtualPOFOperationAddDockPoint::process(polymodel* pm, model_read_deferred
 		}
 	}
 
-	int destdock = reallocate_and_copy_array_vmalloc(pm->docking_bays, pm->n_docks, 1);
+	int destdock = reallocate_and_copy_array(pm->docking_bays, pm->n_docks, 1);
 	pm->docking_bays[destdock] = object_copy_including_array_member(appendingPM->docking_bays[dockpoint], &dock_bay::num_spline_paths, &dock_bay::splines);
-	int splinefrom = reallocate_and_copy_array_vmalloc(pm->paths, pm->n_paths, pm->docking_bays[destdock].num_spline_paths);
+	int splinefrom = reallocate_and_copy_array(pm->paths, pm->n_paths, pm->docking_bays[destdock].num_spline_paths);
 	
 	for (int i = 0; i < pm->docking_bays[destdock].num_spline_paths; i++) {
 		pm->paths[i + splinefrom] = object_copy_including_array_member(appendingPM->paths[appendingPM->docking_bays[dockpoint].splines[i]], &model_path::nverts, &model_path::verts);
@@ -957,7 +938,7 @@ void VirtualPOFOperationAddPath::process(polymodel* pm, model_read_deferred_task
 		return;
 	}
 
-	int destpath = reallocate_and_copy_array_vmalloc(pm->paths, pm->n_paths, 1);
+	int destpath = reallocate_and_copy_array(pm->paths, pm->n_paths, 1);
 	pm->paths[destpath] = object_copy_including_array_member(appendingPM->paths[sourcePathNr], &model_path::nverts, &model_path::verts);
 
 	if (targetParentSubsystem) {

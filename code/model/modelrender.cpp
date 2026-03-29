@@ -1293,7 +1293,7 @@ void model_render_children_buffers(model_draw_list* scene, model_material *rende
 	if ( (model_flags & MR_SHOW_OUTLINE || model_flags & MR_SHOW_OUTLINE_HTL || model_flags & MR_SHOW_OUTLINE_PRESET) && 
 		sm->outline_buffer != nullptr ) {
 		color outline_color = interp->get_color();
-		scene->add_outline(sm->outline_buffer, sm->n_verts_outline, &outline_color);
+		scene->add_outline(sm->outline_buffer.get(), sm->n_verts_outline, &outline_color);
 	} else {
 		if ( trans_buffer && sm->trans_buffer.flags & VB_FLAG_TRANS ) {
 			model_render_buffers(scene, rendering_material, interp, &sm->trans_buffer, pm, mn, detail_level, tmap_flags);
@@ -2932,7 +2932,7 @@ void model_render_queue(const model_render_params* interp, model_draw_list* scen
 
 		if ( (is_outlines_only || is_outlines_only_htl) && pm->submodel[detail_model_num].outline_buffer != NULL ) {
 			color outline_color = interp->get_color();
-			scene->add_outline(pm->submodel[detail_model_num].outline_buffer, pm->submodel[detail_model_num].n_verts_outline, &outline_color);
+			scene->add_outline(pm->submodel[detail_model_num].outline_buffer.get(), pm->submodel[detail_model_num].n_verts_outline, &outline_color);
 		} else {
 			model_render_buffers(scene, &rendering_material, interp, &pm->submodel[detail_model_num].buffer, pm, detail_model_num, detail_level, tmap_flags);
 

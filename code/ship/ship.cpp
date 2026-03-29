@@ -12351,7 +12351,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 		}
 
 		// see if this dockpoint is found on the new model under a different name
-		int new_dockpoint_index = find_item_with_string(pm->docking_bays, pm->n_docks, &dock_bay::name, dockpoint_name);
+		int new_dockpoint_index = find_item_with_string(pm->docking_bays.get(), pm->n_docks, &dock_bay::name, dockpoint_name);
 		if (new_dockpoint_index >= 0)
 		{
 			dock_ptr->dockpoint_used = new_dockpoint_index;

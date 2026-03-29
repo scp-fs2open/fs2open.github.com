@@ -46,6 +46,30 @@ struct is_dereferenceable_pointer<T, typename std::enable_if_t<std::is_pointer_v
 template<typename T>
 inline constexpr bool is_dereferenceable_pointer_v = is_dereferenceable_pointer<T>::value;
 
+template<typename T, typename Enable = void>
+struct is_smart_pointer : std::false_type {};
+
+template<typename T>
+struct is_smart_pointer<T, std::enable_if_t<std::is_same_v<std::remove_cv_t<T>, std::shared_ptr<typename T::element_type>>>> : std::true_type {};
+
+template<typename T>
+struct is_smart_pointer<T, std::enable_if_t<std::is_same_v<std::remove_cv_t<T>, std::shared_ptr<typename T::element_type[]>>>> : std::true_type {};
+
+template<typename T>
+struct is_smart_pointer<T, std::enable_if_t<std::is_same_v<std::remove_cv_t<T>, std::unique_ptr<typename T::element_type>>>> : std::true_type {};
+
+template<typename T>
+struct is_smart_pointer<T, std::enable_if_t<std::is_same_v<std::remove_cv_t<T>, std::unique_ptr<typename T::element_type[]>>>> : std::true_type {};
+
+template<typename T>
+struct is_smart_pointer<T, std::enable_if_t<std::is_same_v<std::remove_cv_t<T>, std::weak_ptr<typename T::element_type>>>> : std::true_type {};
+
+template<typename T>
+struct is_smart_pointer<T, std::enable_if_t<std::is_same_v<std::remove_cv_t<T>, std::weak_ptr<typename T::element_type[]>>>> : std::true_type {};
+
+template<typename T>
+inline constexpr bool is_smart_pointer_v = is_smart_pointer<T>::value;
+
 template<class T, template<class...> class U>
 inline constexpr bool is_instance_of_v = std::false_type{};
 

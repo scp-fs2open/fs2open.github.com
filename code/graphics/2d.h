@@ -615,9 +615,8 @@ public:
 };
 
 struct indexed_vertex_source {
-	void* Vertex_list = nullptr;
-	void* Index_list = nullptr;
-
+	std::shared_ptr<uint8_t[]> Vertex_list = nullptr;
+	std::shared_ptr<uint8_t[]> Index_list = nullptr;
 	gr_buffer_handle Vbuffer_handle;
 	size_t Vertex_offset = 0;
 	size_t Base_vertex_offset = 0;

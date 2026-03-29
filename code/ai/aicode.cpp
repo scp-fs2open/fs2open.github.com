@@ -13705,7 +13705,7 @@ int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, int allowed_path_
 	ship_info* parent_sip = &Ship_info[parent_shipp->ship_info_index];
 
 	polymodel *pm = model_get( parent_sip->model_num );
-	ship_bay *bay = pm->ship_bay;
+	const auto& bay = pm->ship_bay;
 
 	if ( bay == nullptr ) {
 		Warning(LOCATION, "Ship %s was set to arrive from fighter bay on object %s, but no fighter bay exists on that ships' model (%s).\n", shipp->ship_name, parent_shipp->ship_name, pm->filename);
@@ -13920,9 +13920,8 @@ int ai_find_closest_depart_path(ai_info *aip, polymodel *pm, int allowed_path_ma
 	float		dist, min_dist, min_free_dist;
 	vec3d		*source;
 	model_path	*mp;
-	ship_bay	*bay;
 
-	bay = pm->ship_bay;
+	const auto& bay = pm->ship_bay;
 
 	best_free_path = best_path = -1;
 	min_free_dist = min_dist = 1e20f;
@@ -13999,9 +13998,9 @@ int ai_acquire_depart_path(object *pl_objp, int parent_objnum, int allowed_path_
 
 	object *parent_objp = &Objects[parent_objnum];
 	polymodel *pm = model_get(Ship_info[Ships[parent_objp->instance].ship_info_index].model_num );
-	ship_bay *bay = pm->ship_bay;
+	const auto& bay = pm->ship_bay;
 
-	if ( bay == NULL ) 
+	if ( bay == nullptr )
 		return -1;
 	if ( bay->num_paths <= 0 ) 
 		return -1;
@@ -14092,11 +14091,10 @@ void ai_bay_depart()
 
 		// Volition bay code
 		polymodel	*pm;
-		ship_bay	*bay;
 
 		pm = model_get(Ship_info[Ships[Objects[aip->goal_objnum].instance].ship_info_index].model_num);
-		bay = pm->ship_bay;
-		if ( bay != NULL ) {
+		const auto& bay = pm->ship_bay;
+		if ( bay != nullptr ) {
 			bay->depart_flags &= ~(1<<aip->submode_parm0);
 		}
 
