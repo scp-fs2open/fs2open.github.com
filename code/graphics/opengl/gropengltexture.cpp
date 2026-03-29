@@ -1867,10 +1867,12 @@ int opengl_make_render_target( int handle, int *w, int *h, int *bpp, int *mm_lvl
 	GL_state.Texture.Enable(0);
 
 	// render buffer (depth)
-	glGenRenderbuffers(1, &new_fbo->renderbuffer_id);
-	glBindRenderbuffer(GL_RENDERBUFFER, new_fbo->renderbuffer_id);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, *w, *h);
-	glBindRenderbuffer(GL_RENDERBUFFER, 0);
+	if (flags & BMP_FLAG_RENDER_TARGET_DEPTH_ATTACHMENT) {
+		glGenRenderbuffers(1, &new_fbo->renderbuffer_id);
+		glBindRenderbuffer(GL_RENDERBUFFER, new_fbo->renderbuffer_id);
+		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, *w, *h);
+		glBindRenderbuffer(GL_RENDERBUFFER, 0);
+	}
 
 	// frame buffer
 	glGenFramebuffers(1, &new_fbo->framebuffer_id);

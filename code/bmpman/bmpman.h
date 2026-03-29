@@ -135,6 +135,7 @@ void bm_close();
 #define BMP_FLAG_RENDER_TARGET_DYNAMIC		(1<<1)
 #define BMP_FLAG_CUBEMAP					(1<<2)
 #define BMP_FLAG_RENDER_TARGET_MIPMAP		(1<<3)
+#define BMP_FLAG_RENDER_TARGET_DEPTH_ATTACHMENT	(1<<4)
 
 /**
  * @brief Allocates memory for the given handle.
