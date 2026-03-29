@@ -1491,19 +1491,20 @@ int multi_oo_pack_data(net_player *pl, object *objp, ushort oo_flags, ubyte *dat
 		ushort target_signature = 0;
 
 		// Either send out the waypoint they are trying to get to *or* their current target.
-		// Note, pefer the live target_objnum so clients know who is actually being attacked b/c
-		// goals[0].target_name only covers explicitly ordered goal targets and is empty for
-		// spontaneous IFF-based engagements, which would leave target_signature 0 and break
-		// TARGET_CLOSEST_SHIP_ATTACKING_SELF on clients.
 		if (umode == AIM_WAYPOINTS) {
-			// if it's already started pointing to a waypoint, grab its net_signature and send that instead
+			// If it's already started pointing to a waypoint, grab its net_signature and send that instead
 			waypoint* wp;
 			if ((wp = find_waypoint_at_indexes(aip->wp_list_index, aip->wp_index)) != nullptr) {
 				target_signature = Objects[wp->get_objnum()].net_signature;
 			}
-		} else if (aip->target_objnum >= 0) {
+		} // Pefer the live target_objnum so clients know who is actually being attacked b/c
+		  // goals[0].target_name only covers explicitly ordered goal targets and is empty for
+		  // spontaneous IFF-based engagements, which would leave target_signature 0 and break
+		  // TARGET_CLOSEST_SHIP_ATTACKING_SELF on clients.
+		else if (aip->target_objnum >= 0) {
 			target_signature = Objects[aip->target_objnum].net_signature;
-		} else if ((aip->goals[0].target_name != nullptr) && strlen(aip->goals[0].target_name) != 0) {
+		}  // As last check, send the target signature. 2021 Version!
+		else if ((aip->goals[0].target_name != nullptr) && strlen(aip->goals[0].target_name) != 0) {
 			
 			int instance = ship_name_lookup(aip->goals[0].target_name);
 			if (instance > -1) {
