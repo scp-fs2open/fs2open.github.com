@@ -3212,7 +3212,7 @@ ADE_FUNC(jumpToMission, l_Campaign, "string filename, [boolean hub, boolean pres
 	const char* filename = nullptr;
 	bool hub = false;
 	bool preserve = false;
-	if (!ade_get_args(L, "s|b", &filename, &hub, &preserve))
+	if (!ade_get_args(L, "s|bb", &filename, &hub, &preserve))
 		return ADE_RETURN_NIL;
 
 	bool success = mission_campaign_jump_to_mission(filename, hub, preserve);

@@ -1905,7 +1905,7 @@ SCP_vector<SCP_string> mission_campaign_get_valid_next_missions()
 
 			while (actions >= 0) {
 				const int exp = CAR(actions);
-				if (exp >= -1) {
+				if (exp >= 0) {
 					eval_sexp(exp);
 				}
 				actions = CDR(actions);
