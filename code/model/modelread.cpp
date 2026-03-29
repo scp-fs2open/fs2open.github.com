@@ -186,73 +186,84 @@ public:
 
 SCP_unordered_map<int, intrinsic_motion> Intrinsic_motions;
 
+template<bool modern, typename T>
+static inline void vm_free_no_duplicates(T* data, SCP_unordered_set<const void *>& already_freed) {
+	if (data == nullptr || already_freed.contains(data))
+		return;
+	already_freed.insert(data);
+	if constexpr (modern)
+		delete[] data;
+	else
+		vm_free(data);
+};
 
 void model_free(polymodel* pm)
 {
 	int i, j;
 	safe_kill(pm->ship_bay);
+	SCP_unordered_set<const void *> already_freed;
+
+	const auto free_no_duplicates = [&already_freed](auto data) { vm_free_no_duplicates<false>(data, already_freed); };
+	const auto delete_no_duplicates = [&already_freed](auto data) { vm_free_no_duplicates<true>(data, already_freed); };
 
 	if (pm->paths) {
 		for (i = 0; i < pm->n_paths; i++) {
 			for (j = 0; j < pm->paths[i].nverts; j++) {
-				if (pm->paths[i].verts[j].turret_ids) {
-					vm_free(pm->paths[i].verts[j].turret_ids);
-				}
+				safe_kill(pm->paths[i].verts[j].turret_ids);
+				pm->paths[i].verts[j].turret_ids = nullptr;
 			}
-			if (pm->paths[i].verts) {
-				vm_free(pm->paths[i].verts);
-			}
+			safe_kill(pm->paths[i].verts);
+			pm->paths[i].verts = nullptr;
 		}
-		vm_free(pm->paths);
+		free_no_duplicates(pm->paths);
 	}
 
 	if (pm->shield.verts) {
-		vm_free(pm->shield.verts);
+		free_no_duplicates(pm->shield.verts);
 	}
 
 	if (pm->shield.tris) {
-		vm_free(pm->shield.tris);
+		free_no_duplicates(pm->shield.tris);
 	}
 
 	if (pm->gun_banks) {	// NOLINT
-		delete[] pm->gun_banks;
+		delete_no_duplicates(pm->gun_banks);
 	}
 
 	if (pm->missile_banks) {	// NOLINT
-		delete[] pm->missile_banks;
+		delete_no_duplicates(pm->missile_banks);
 	}
 
 	if (pm->docking_bays) {
 		for (i = 0; i < pm->n_docks; i++) {
-			if (pm->docking_bays[i].splines) {
-				vm_free(pm->docking_bays[i].splines);
-			}
+			safe_kill(pm->docking_bays[i].splines);
+			pm->docking_bays[i].splines = nullptr;
 		}
-		vm_free(pm->docking_bays);
+		free_no_duplicates(pm->docking_bays);
 	}
 
 
 	if (pm->thrusters) {
 		for (i = 0; i < pm->n_thrusters; i++) {
-			if (pm->thrusters[i].points)
-				vm_free(pm->thrusters[i].points);
+			safe_kill(pm->thrusters[i].points);
+			pm->thrusters[i].points = nullptr;
 		}
 
-		vm_free(pm->thrusters);
+		free_no_duplicates(pm->thrusters);
 	}
 
 	if (pm->glow_point_banks) { // free the glows!!! -Bobboau
 		for (i = 0; i < pm->n_glow_point_banks; i++) {
-			if (pm->glow_point_banks[i].points)
-				vm_free(pm->glow_point_banks[i].points);
+			safe_kill(pm->glow_point_banks[i].points);
+			pm->glow_point_banks[i].points = nullptr;
 		}
 
-		vm_free(pm->glow_point_banks);
+		free_no_duplicates(pm->glow_point_banks);
 	}
 
 #ifndef NDEBUG
 	if (pm->debug_info) {
-		vm_free(pm->debug_info);
+		free_no_duplicates(pm->debug_info);
 	}
 #endif
 
@@ -260,33 +271,31 @@ void model_free(polymodel* pm)
 		for (i = 0; i < pm->n_models; i++) {
 			pm->submodel[i].buffer.clear();
 
-			if (pm->submodel[i].bsp_data) {
-				vm_free(pm->submodel[i].bsp_data);
-			}
+			safe_kill(pm->submodel[i].bsp_data);
+			pm->submodel[i].bsp_data = nullptr;
 
 			if (pm->submodel[i].collision_tree_index >= 0) {
 				model_remove_bsp_collision_tree(pm->submodel[i].collision_tree_index);
+				pm->submodel[i].collision_tree_index = 0;
 			}
 
-			if (pm->submodel[i].outline_buffer != nullptr) {
-				vm_free(pm->submodel[i].outline_buffer);
-				pm->submodel[i].outline_buffer = nullptr;
-			}
+			safe_kill(pm->submodel[i].outline_buffer);
+			pm->submodel[i].outline_buffer = nullptr;
 		}
 
-		delete[] pm->submodel;
+		delete_no_duplicates(pm->submodel);
 	}
 
 	if (pm->xc) {
-		vm_free(pm->xc);
+		free_no_duplicates(pm->xc);
 	}
 
 	if (pm->lights) {
-		vm_free(pm->lights);
+		free_no_duplicates(pm->lights);
 	}
 
 	if (pm->shield_collision_tree) {
-		vm_free(pm->shield_collision_tree);
+		free_no_duplicates(pm->shield_collision_tree);
 	}
 
 	if (pm->shield.buffer_id.isValid()) {
@@ -303,10 +312,8 @@ void model_free(polymodel* pm)
 		pm->vert_source.Base_vertex_offset = 0;
 	}
 
-	if (pm->vert_source.Vertex_list != NULL) {
-		vm_free(pm->vert_source.Vertex_list);
-		pm->vert_source.Vertex_list = NULL;
-	}
+	free_no_duplicates(pm->vert_source.Vertex_list);
+	pm->vert_source.Vertex_list = nullptr;
 
 	if (pm->vert_source.Ibuffer_handle.isValid()) {
 		gr_heap_deallocate(GpuHeap::ModelIndex, pm->vert_source.Index_offset);
@@ -315,10 +322,8 @@ void model_free(polymodel* pm)
 		pm->vert_source.Index_offset = 0;
 	}
 
-	if (pm->vert_source.Index_list != NULL) {
-		vm_free(pm->vert_source.Index_list);
-		pm->vert_source.Index_list = NULL;
-	}
+	free_no_duplicates(pm->vert_source.Index_list);
+	pm->vert_source.Index_list = nullptr;
 
 	pm->vert_source.Vertex_list_size = 0;
 	pm->vert_source.Index_list_size = 0;
