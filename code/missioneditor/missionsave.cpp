@@ -4833,7 +4833,7 @@ int Fred_mission_save::save_waypoints()
 				} else {
 					fout("\n+Color:");
 				}
-				fout(" %u %u %u", ii.get_color_r(), ii.get_color_g(), ii.get_color_b());
+				fout(" %d %d %d", ii.get_color_r(), ii.get_color_g(), ii.get_color_b());
 			}
 		}
 

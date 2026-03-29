@@ -5808,12 +5808,12 @@ void parse_waypoint_list(mission *pm)
 		stuff_boolean(&no_draw_lines);
 
 	bool has_custom_color = false;
-	ubyte cr = 255, cg = 255, cb = 255;
+	int cr = 255, cg = 255, cb = 255;
 	if (optional_string("+Color:")) {
 		has_custom_color = true;
-		stuff_ubyte(&cr);
-		stuff_ubyte(&cg);
-		stuff_ubyte(&cb);
+		stuff_int(&cr);
+		stuff_int(&cg);
+		stuff_int(&cb);
 	}
 
 	SCP_vector<vec3d> vec_list;
