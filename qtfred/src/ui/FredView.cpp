@@ -27,6 +27,7 @@
 #include <ui/dialogs/MissionCutscenesDialog.h>
 #include <ui/dialogs/FormWingDialog.h>
 #include <ui/dialogs/AboutDialog.h>
+#include <ui/dialogs/MissionStatsDialog.h>
 #include <ui/dialogs/BackgroundEditorDialog.h>
 #include <ui/dialogs/ShieldSystemDialog.h>
 #include <ui/dialogs/GlobalShipFlagsDialog.h>
@@ -1365,6 +1366,11 @@ void FredView::on_actionError_Checker_triggered(bool) {
 }
 void FredView::on_actionAbout_triggered(bool) {
 	auto dialog = new dialogs::AboutDialog(this);
+	dialog->setAttribute(Qt::WA_DeleteOnClose);
+	dialog->show();
+}
+void FredView::on_actionMission_Statistics_triggered(bool) {
+	auto dialog = new dialogs::MissionStatsDialog(this, _viewport);
 	dialog->setAttribute(Qt::WA_DeleteOnClose);
 	dialog->show();
 }

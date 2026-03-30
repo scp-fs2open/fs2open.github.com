@@ -64,6 +64,8 @@ add_file_folder("Source/Mission/Dialogs"
 	src/mission/dialogs/MissionEventsDialogModel.h
 	src/mission/dialogs/MissionGoalsDialogModel.cpp
 	src/mission/dialogs/MissionGoalsDialogModel.h
+	src/mission/dialogs/MissionStatsDialogModel.cpp
+	src/mission/dialogs/MissionStatsDialogModel.h
 	src/mission/dialogs/MissionSpecDialogModel.cpp
 	src/mission/dialogs/MissionSpecDialogModel.h
 	src/mission/dialogs/MusicPlayerDialogModel.cpp
@@ -142,6 +144,8 @@ add_file_folder("Source/UI"
 add_file_folder("Source/UI/Dialogs"
 	src/ui/dialogs/AboutDialog.cpp
 	src/ui/dialogs/AboutDialog.h
+	src/ui/dialogs/MissionStatsDialog.cpp
+	src/ui/dialogs/MissionStatsDialog.h
 	src/ui/dialogs/AsteroidEditorDialog.cpp
 	src/ui/dialogs/AsteroidEditorDialog.h
 	src/ui/dialogs/BackgroundEditorDialog.h
@@ -309,6 +313,7 @@ add_file_folder("UI"
 	ui/MissionCutscenesDialog.ui
 	ui/MissionEventsDialog.ui
 	ui/MissionGoalsDialog.ui
+	ui/MissionStatsDialog.ui
 	ui/MissionSpecDialog.ui
 	ui/MusicPlayerDialog.ui
 	ui/ObjectOrientationDialog.ui

@@ -242,6 +242,8 @@
     <addaction name="actionLoadout"/>
     <addaction name="actionReinforcements"/>
     <addaction name="actionShield_System"/>
+    <addaction name="separator"/>
+    <addaction name="actionMission_Statistics"/>
    </widget>
    <widget class="QMenu" name="menuNarrative">
     <property name="title">
