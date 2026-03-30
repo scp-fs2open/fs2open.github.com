@@ -158,10 +158,9 @@ SCP_map<int, SCP_vector<SCP_string>> MissionStatsDialogModel::getHotkeyMap()
 {
 	SCP_map<int, SCP_vector<SCP_string>> result;
 
-	for (int i = 0; i < MAX_WINGS; i++) {
-		if (Wings[i].wave_count > 0 && Wings[i].hotkey >= 0) {
-			result[Wings[i].hotkey].insert(result[Wings[i].hotkey].begin(),
-				SCP_string(Wings[i].name) + " (wing)");
+	for (auto& wing : Wings) {
+		if (wing.wave_count > 0 && wing.hotkey >= 0) {
+			result[wing.hotkey].emplace_back(SCP_string(wing.name) + " (wing)");
 		}
 	}
 
@@ -170,7 +169,7 @@ SCP_map<int, SCP_vector<SCP_string>> MissionStatsDialogModel::getHotkeyMap()
 			continue;
 		const ship* shipp = &Ships[objp->instance];
 		if (shipp->hotkey >= 0) {
-			result[shipp->hotkey].push_back(shipp->ship_name);
+			result[shipp->hotkey].emplace_back(shipp->ship_name);
 		}
 	}
 
