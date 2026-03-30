@@ -1663,7 +1663,7 @@ ADE_FUNC(createTexture, l_Graphics, "[number Width=512, number Height=512, enume
 			t = BMP_FLAG_RENDER_TARGET_DYNAMIC;
 	}
 
-	int idx = bm_make_render_target(w, h, t);
+	int idx = bm_make_render_target(w, h, t | BMP_FLAG_RENDER_TARGET_DEPTH_ATTACHMENT);
 
 	if(idx < 0)
 		return ade_set_error(L, "o", l_Texture.Set(texture_h()));
