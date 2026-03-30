@@ -1026,9 +1026,8 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_jump_nodes()
 {
 	sexp_list_item head;
 
-	SCP_list<CJumpNode>::iterator jnp;
-	for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
-		head.add_data( jnp->GetName());
+	for (auto &jn : Jump_nodes) {
+		head.add_data(jn.GetName());
 	}
 
 	return head.next;
