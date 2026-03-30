@@ -51,7 +51,7 @@ void SelectionDialogModel::initializeData() {
 		entry.id = i;
 		entry.selected = false;
 
-		_wing_list.push_back(entry);
+		_waypoint_list.push_back(entry);
 	}
 }
 void SelectionDialogModel::updateObjectList() {

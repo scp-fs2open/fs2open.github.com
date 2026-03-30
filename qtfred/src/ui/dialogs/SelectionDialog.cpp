@@ -107,16 +107,13 @@ void SelectionDialog::objectSelectionChanged() {
 	auto current = _model->getObjectList(); // Copy the vector so we can change the selection
 
 	for (auto& entry : current) {
-		auto items =
-			ui->shipSelectionList->model()->match(ui->shipSelectionList->model()->index(0, 0), Qt::UserRole, entry.id);
-
-		Assertion(items.size() > 0, "No items for object index found!");
-		Assertion(items.size() <= 1, "Found multiple items for one object index!");
-
-		auto item = ui->shipSelectionList->item(items[0].row());
-
-		Assertion(item != nullptr, "Couldn't find item for index!");
-		entry.selected = item->isSelected();
+		for (int row = 0; row < ui->shipSelectionList->count(); ++row) {
+			auto* item = ui->shipSelectionList->item(row);
+			if (item->data(Qt::UserRole).value<int>() == entry.id) {
+				entry.selected = item->isSelected();
+				break;
+			}
+		}
 	}
 
 	_model->updateObjectSelection(current);

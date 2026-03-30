@@ -433,7 +433,7 @@ void waypoint_stuff_name(SCP_string &dest, const char *waypoint_list_name, int w
 		return;
 	}
 
-	dest.assign(waypoint_list_name, name_max_len);
+	dest.assign(waypoint_list_name, std::min(strlen(waypoint_list_name), name_max_len));
 	dest += ":";
 	dest.append(std::to_string(waypoint_num));
 }
