@@ -92,6 +92,8 @@ add_file_folder("Source/Mission/Dialogs"
 	src/mission/dialogs/VolumetricNebulaDialogModel.h
 	src/mission/dialogs/WaypointEditorDialogModel.cpp
 	src/mission/dialogs/WaypointEditorDialogModel.h
+	src/mission/dialogs/WaypointPathGeneratorDialogModel.cpp
+	src/mission/dialogs/WaypointPathGeneratorDialogModel.h
 	src/mission/dialogs/WingEditorDialogModel.cpp
 	src/mission/dialogs/WingEditorDialogModel.h
 )
@@ -198,6 +200,8 @@ add_file_folder("Source/UI/Dialogs"
 	src/ui/dialogs/VolumetricNebulaDialog.cpp
 	src/ui/dialogs/WaypointEditorDialog.cpp
 	src/ui/dialogs/WaypointEditorDialog.h
+	src/ui/dialogs/WaypointPathGeneratorDialog.cpp
+	src/ui/dialogs/WaypointPathGeneratorDialog.h
 	src/ui/dialogs/WingEditorDialog.cpp
 	src/ui/dialogs/WingEditorDialog.h
 )
@@ -321,6 +325,7 @@ add_file_folder("UI"
 	ui/VoiceActingManager.ui
 	ui/VolumetricNebulaDialog.ui
     ui/WaypointEditorDialog.ui
+	ui/WaypointPathGeneratorDialog.ui
 	ui/ShipEditorDialog.ui
 	ui/ShipInitialStatus.ui
 	ui/ShipGoalsDialog.ui

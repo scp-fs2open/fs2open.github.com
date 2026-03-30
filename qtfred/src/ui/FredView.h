@@ -159,6 +159,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void on_actionMission_Goals_triggered(bool);
 	void on_actionMusic_Player_triggered(bool);
 	void on_actionCalculate_Relative_Coordinates_triggered(bool);
+	void on_actionWaypointPathGenerator_triggered(bool);
  signals:
 	/**
 	 * @brief Special version of FredApplication::onIdle which is limited to the lifetime of this object

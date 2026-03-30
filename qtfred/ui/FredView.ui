@@ -258,6 +258,7 @@
     <property name="title">
      <string>Tools</string>
     </property>
+    <addaction name="actionWaypointPathGenerator"/>
     <addaction name="actionVoice_Acting_Manager"/>
     <addaction name="actionSet_Global_Ship_Flags"/>
     <addaction name="actionCalculate_Relative_Coordinates"/>
@@ -1578,6 +1579,11 @@
   <action name="actionCalculate_Relative_Coordinates">
    <property name="text">
     <string>Calculate Relative Coordinates</string>
+   </property>
+  </action>
+  <action name="actionWaypointPathGenerator">
+   <property name="text">
+    <string>Waypoint Path &amp;Generator</string>
    </property>
   </action>
   <action name="actionPreferences">

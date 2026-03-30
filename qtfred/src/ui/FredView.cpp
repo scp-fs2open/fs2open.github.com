@@ -19,6 +19,7 @@
 #include <ui/dialogs/VolumetricNebulaDialog.h>
 #include <ui/dialogs/BriefingEditorDialog.h>
 #include <ui/dialogs/WaypointEditorDialog.h>
+#include <ui/dialogs/WaypointPathGeneratorDialog.h>
 #include <ui/dialogs/JumpNodeEditorDialog.h>
 #include <ui/dialogs/CampaignEditorDialog.h>
 #include <ui/dialogs/MissionGoalsDialog.h>
@@ -1413,6 +1414,12 @@ void FredView::on_actionCalculate_Relative_Coordinates_triggered(bool) {
 
 void FredView::on_actionFiction_Viewer_triggered(bool) {
 	auto dialog = new dialogs::FictionViewerDialog(this, _viewport);
+	dialog->setAttribute(Qt::WA_DeleteOnClose);
+	dialog->show();
+}
+
+void FredView::on_actionWaypointPathGenerator_triggered(bool) {
+	auto dialog = new dialogs::WaypointPathGeneratorDialog(this, _viewport);
 	dialog->setAttribute(Qt::WA_DeleteOnClose);
 	dialog->show();
 }
