@@ -1913,8 +1913,6 @@ bool model_interp_pack_buffer(indexed_vertex_source *vert_src, vertex_buffer *vb
 		if ( vert_src->Vertex_list == nullptr ) {
 			return false;
 		}
-
-		memset(vert_src->Vertex_list.get(), 0, vert_src->Vertex_list_size);
 	}
 
 	if ( vert_src->Index_list == nullptr ) {
@@ -1924,8 +1922,6 @@ bool model_interp_pack_buffer(indexed_vertex_source *vert_src, vertex_buffer *vb
 		if ( vert_src->Index_list == nullptr ) {
 			return false;
 		}
-
-		memset(vert_src->Index_list.get(), 0, vert_src->Index_list_size);
 	}
 
 	// bump to our index in the array

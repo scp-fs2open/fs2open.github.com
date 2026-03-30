@@ -2602,7 +2602,6 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				#ifndef NDEBUG
 					pm->debug_info_size = len;
 					pm->debug_info = make_shared<char[]>(pm->debug_info_size+1);
-					memset(pm->debug_info.get(),0,len+1);
 					cfread( pm->debug_info.get(), 1, len, fp );
 				#endif
 				break;
@@ -2618,7 +2617,6 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				}
 
 				pm->paths = make_shared<model_path[]>(pm->n_paths);
-				memset( pm->paths.get(), 0, sizeof(model_path) * pm->n_paths );
 					
 				for (i=0; i<pm->n_paths; i++ )	{
 					cfread_string_len(pm->paths[i].name, MAX_NAME_LEN, fp);
@@ -2656,7 +2654,6 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 					pm->paths[i].goal = pm->paths[i].nverts - 1;
 					pm->paths[i].type = MP_TYPE_UNUSED;
 					pm->paths[i].value = 0;
-					memset(pm->paths[i].verts.get(), 0, sizeof(mp_vert) * pm->paths[i].nverts );
 
 					for (j=0; j<pm->paths[i].nverts; j++ )	{
 						cfread_vector(&pm->paths[i].verts[j].pos,fp );
