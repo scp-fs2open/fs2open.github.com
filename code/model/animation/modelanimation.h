@@ -127,7 +127,8 @@ namespace animation {
 	class ModelAnimationSubmodel {
 	protected:
 		SCP_string m_name;
-		std::optional<int> m_submodel;
+		//This maps from model id to submodel ID, as if an animation is reused on different models (such as with techroom models), IDs might differ per model
+		SCP_unordered_map<int, int> m_submodel;
 		bool is_turret = false;
 
 	private:
