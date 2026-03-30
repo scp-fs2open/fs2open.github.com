@@ -94,10 +94,11 @@ public:
 };
 
 //-----Globals------
-extern SCP_list<CJumpNode> Jump_nodes;
+extern SCP_vector<CJumpNode> Jump_nodes;
 
 //-----Functions-----
 CJumpNode *jumpnode_get_by_name(const char *name);
+      int  jumpnode_lookup(const char *name);
 CJumpNode *jumpnode_get_by_objnum(int objnum);
 CJumpNode *jumpnode_get_by_objp(const object *objp);
 CJumpNode *jumpnode_get_which_in(const object *objp);

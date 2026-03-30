@@ -1941,12 +1941,12 @@ void obj_queue_render(object* obj, model_draw_list* scene)
 		asteroid_render(obj, scene);
 		break;
 	case OBJ_JUMP_NODE:
-		for ( SCP_list<CJumpNode>::iterator jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp ) {
-			if ( jnp->GetSCPObject() != obj ) {
+		for ( auto &jnp : Jump_nodes ) {
+			if ( jnp.GetSCPObject() != obj ) {
 				continue;
 			}
 
-			jnp->Render(scene, &obj->pos, &Eye_position);
+			jnp.Render(scene, &obj->pos, &Eye_position);
 		}
 		break;
 	case OBJ_WAYPOINT:

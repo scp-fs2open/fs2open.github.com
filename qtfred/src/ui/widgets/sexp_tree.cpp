@@ -5267,9 +5267,8 @@ sexp_list_item* sexp_tree::get_listing_opf_subsys_or_generic(int parent_node, in
 sexp_list_item* sexp_tree::get_listing_opf_jump_nodes() {
 	sexp_list_item head;
 
-	SCP_list<CJumpNode>::iterator jnp;
-	for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
-		head.add_data(jnp->GetName());
+	for (auto &jnp : Jump_nodes) {
+		head.add_data(jnp.GetName());
 	}
 
 	return head.next;

@@ -13,7 +13,7 @@
 #include "model/model.h"
 #include "model/modelrender.h"
 
-SCP_list<CJumpNode> Jump_nodes;
+SCP_vector<CJumpNode> Jump_nodes;
 
 /**
  * Constructor for CJumpNode class, default
@@ -475,14 +475,30 @@ void CJumpNode::Render(model_draw_list *scene, const vec3d *pos, const vec3d *vi
 CJumpNode *jumpnode_get_by_name(const char* name)
 {
 	Assert(name != NULL);
-	SCP_list<CJumpNode>::iterator jnp;
 
-	for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {	
-		if(!stricmp(jnp->GetName(), name)) 
-			return &(*jnp);
+	for (auto &jnp : Jump_nodes) {
+		if(!stricmp(jnp.GetName(), name))
+			return &jnp;
 	}
 
 	return NULL;
+}
+
+/**
+ * Get jump node index by given name
+ *
+ * @param name Name of jump node
+ * @return Jump node index
+ */
+int jumpnode_lookup(const char *name)
+{
+	Assert(name != nullptr);
+
+	for (size_t i = 0; i < Jump_nodes.size(); i++)
+		if (!stricmp(Jump_nodes[i].GetName(), name))
+			return sz2i(i);
+
+	return -1;
 }
 
 /**
@@ -530,17 +546,15 @@ CJumpNode *jumpnode_get_by_objp(const object *objp)
 CJumpNode *jumpnode_get_which_in(const object *objp)
 {
 	Assert(objp != NULL);
-	SCP_list<CJumpNode>::iterator jnp;
-	float radius, dist;
 
-	for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
-		if(jnp->GetModelNumber() < 0)
+	for (auto &jnp : Jump_nodes) {
+		if(jnp.GetModelNumber() < 0)
 			continue;
 
-		radius = jnp->GetRadius();
-		dist = vm_vec_dist( &objp->pos, &jnp->GetSCPObject()->pos );
+		float radius = jnp.GetRadius();
+		float dist = vm_vec_dist( &objp->pos, &jnp.GetSCPObject()->pos );
 		if ( dist <= radius ) {
-			return &(*jnp);
+			return &jnp;
 		}
 	}
 
@@ -554,10 +568,8 @@ CJumpNode *jumpnode_get_which_in(const object *objp)
  */
 void jumpnode_render_all()
 {
-	SCP_list<CJumpNode>::iterator jnp;
-	
-	for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {	
-		jnp->Render(&jnp->GetSCPObject()->pos);
+	for (auto &jnp : Jump_nodes) {
+		jnp.Render(&jnp.GetSCPObject()->pos);
 	}
 }
 
