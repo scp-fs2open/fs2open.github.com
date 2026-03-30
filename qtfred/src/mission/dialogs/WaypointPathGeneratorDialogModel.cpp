@@ -96,7 +96,7 @@ bool WaypointPathGeneratorDialogModel::apply()
 	}
 
 	// Create the first waypoint, this creates a new list with an auto-generated name
-	waypoint_add(&positions[0], -1);
+	waypoint_add(positions.data(), -1);
 	int listIndex = static_cast<int>(Waypoint_lists.size()) - 1;
 
 	// Rename the list to the user specified name
@@ -104,7 +104,7 @@ bool WaypointPathGeneratorDialogModel::apply()
 
 	// Add remaining waypoints to the same list
 	for (int i = 1; i < static_cast<int>(positions.size()); ++i) {
-		waypoint_add(&positions[i], calc_waypoint_instance(listIndex, i - 1));
+		waypoint_add(positions.data() + i, calc_waypoint_instance(listIndex, i - 1));
 	}
 
 	// Select all waypoints in the new path

@@ -40,7 +40,7 @@ class WaypointPathGeneratorDialog : public QDialog {
 	void on_buttonBox_accepted();
 	void on_buttonBox_rejected();
 
-  private:
+  private: // NOLINT(readability-redundant-access-specifiers)
 	EditorViewport* _viewport;
 	std::unique_ptr<Ui::WaypointPathGeneratorDialog> ui;
 	std::unique_ptr<WaypointPathGeneratorDialogModel> _model;
