@@ -3,6 +3,7 @@
 #include "globalincs/vmallocator.h"
 #include "graphics/2d.h"
 #include "graphics/light.h"
+#include "graphics/matrix.h"
 #include "lab/labv2_internal.h"
 #include "lab/renderer/lab_renderer.h"
 #include "lighting/lighting_profiles.h"
@@ -237,9 +238,17 @@ void LabRenderer::renderModel(float frametime) {
 	}
 	shockwave_move_all(frametime);
 
+	if (renderFlags[LabRenderFlag::UseOrthographicProjection]) {
+		float dist = labCamera->getCameraDistance();
+		if (dist > 0.0f)
+			gr_activate_ortho_proj_override(dist);
+	}
+
 	Trail_render_override = true;
 	game_render_frame(labCamera->FS_camera);
 	Trail_render_override = false;
+
+	gr_deactivate_ortho_proj_override();
 
 	Motion_debris_enabled = lab_debris_override_save;
 	Envmap_override = lab_envmap_override_save;

@@ -569,6 +569,7 @@ void LabUi::show_render_options()
 			Checkbox("Hide Post Processing", &hide_post_processing);
 			Checkbox("Hide particles", &no_particles);
 			Checkbox("Render as wireframe", &use_wireframe_rendering);
+			Checkbox("Orthographic projection", &use_orthographic_projection);
 			Checkbox("Render without light", &no_lighting);
 			Checkbox("Render with emissive lighting", &show_emissive_lighting);
 			SliderFloat("Light brightness", &light_factor, 0.0f, 10.0f);
@@ -688,6 +689,7 @@ void LabUi::show_render_options()
 		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowEmissiveLighting, show_emissive_lighting);
 		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::MoveSubsystems, animate_subsystems);
 		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::NoParticles, no_particles);
+		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::UseOrthographicProjection, use_orthographic_projection);
 		getLabManager()->Renderer->setEmissiveFactor(emissive_factor);
 		getLabManager()->Renderer->setAmbientFactor(ambient_factor);
 		getLabManager()->Renderer->setLightFactor(light_factor);

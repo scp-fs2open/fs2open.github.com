@@ -121,6 +121,7 @@ class LabUi {
 	bool show_weapons = false;
 	bool show_emissive_lighting = false;
 	bool show_particles = true;
+	bool use_orthographic_projection = false;
 	
 	std::optional<vec3d> volumetrics_pos_backup = std::nullopt;
 };

@@ -54,6 +54,9 @@ public:
 
 	/// Resets the camera orientation, pan, and zoom to default values
 	virtual void resetView() {}
+
+	/// Returns the distance from the camera to the point of interest, used to size the orthographic frustum.
+	virtual float getCameraDistance() const { return 0.0f; }
 };
 
 class OrbitCamera : public LabCamera {
@@ -83,6 +86,8 @@ public:
 	bool handlesObjectPlacement() override { return false; }
 
 	void updateCamera() override;
+
+	float getCameraDistance() const override { return distance; }
 
   private:
 	static constexpr float DEFAULT_DISTANCE = 100.0f;

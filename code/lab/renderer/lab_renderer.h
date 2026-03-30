@@ -37,6 +37,7 @@ FLAG_LIST(LabRenderFlag) {
 	ShowAfterburners,
 	TimeStopped,
 	NoParticles,
+	UseOrthographicProjection,
 
 	NUM_VALUES
 };
