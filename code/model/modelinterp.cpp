@@ -2513,7 +2513,7 @@ void model_interp_process_shield_mesh(polymodel * pm)
 		if (*pm->shield.buffer_id == gr_buffer_handle::invalid()) {
 			*pm->shield.buffer_id = gr_create_buffer(BufferType::Vertex, BufferUsageHint::Static);
 			pm->shield.buffer_n_verts = n_verts;
-			gr_update_buffer_data(*pm->shield.buffer_id, buffer.size() * sizeof(vec3d), &buffer[0]);
+			gr_update_buffer_data(*pm->shield.buffer_id, buffer.size() * sizeof(vec3d), buffer.data());
 
 			pm->shield.layout.add_vertex_component(vertex_format_data::POSITION3, sizeof(vec3d) * 2, 0);
 			pm->shield.layout.add_vertex_component(vertex_format_data::NORMAL, sizeof(vec3d) * 2, sizeof(vec3d));

@@ -699,7 +699,7 @@ struct shield_info {
 	int buffer_n_verts;
 	vertex_layout layout;
 
-	shield_info() : nverts(0), ntris(0), verts(NULL), tris(NULL), buffer_id(std::make_shared<gr_buffer_handle>(gr_buffer_handle::invalid())), buffer_n_verts(0), layout() {	}
+	shield_info() : nverts(0), ntris(0), verts(nullptr), tris(nullptr), buffer_id(std::make_shared<gr_buffer_handle>(gr_buffer_handle::invalid())), buffer_n_verts(0) {	}
 };
 
 #define BSP_LIGHT_TYPE_WEAPON 1
