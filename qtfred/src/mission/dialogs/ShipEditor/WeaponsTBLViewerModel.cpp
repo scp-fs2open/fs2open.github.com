@@ -22,7 +22,7 @@ void WeaponsTBLViewerModel::initializeData(const int wc)
 		return;
 	}
 
-	text = table_viewer::get_table_entry_text("weapons.tbl", "*-wep.tbm", sip->name);
+	text = table_viewer::get_table_entry_text("weapons.tbl", "*-wep.tbm", sip->name, "No weapons.tbl found.\r\n");
 	modelChanged();
 }
 SCP_string WeaponsTBLViewerModel::getText() const

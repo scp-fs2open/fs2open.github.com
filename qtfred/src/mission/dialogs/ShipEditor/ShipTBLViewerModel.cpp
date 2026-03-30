@@ -28,7 +28,7 @@ void ShipTBLViewerModel::initializeData(const int ship_class)
 		return;
 	}
 
-	text = table_viewer::get_table_entry_text("ships.tbl", "*-shp.tbm", sip->name);
+	text = table_viewer::get_table_entry_text("ships.tbl", "*-shp.tbm", sip->name, "No ships.tbl found.\r\n");
 	modelChanged();
 }
 SCP_string ShipTBLViewerModel::getText() const

@@ -38,12 +38,12 @@ SCP_map<int, SCP_string> get_bay_paths_map(int model_index)
 
 SCP_string get_ship_table_text(ship_info* sip)
 {
-	return table_viewer::get_table_entry_text("ships.tbl", "*-shp.tbm", sip->name);
+	return table_viewer::get_table_entry_text("ships.tbl", "*-shp.tbm", sip->name, "No ships.tbl found.\r\n");
 }
 
 SCP_string get_weapon_table_text(weapon_info* wip)
 {
-	return table_viewer::get_table_entry_text("weapons.tbl", "*-wep.tbm", wip->name);
+	return table_viewer::get_table_entry_text("weapons.tbl", "*-wep.tbm", wip->name, "No weapons.tbl found.\r\n");
 }
 
 SCP_string get_asteroid_table_text(const asteroid_info* aip)
