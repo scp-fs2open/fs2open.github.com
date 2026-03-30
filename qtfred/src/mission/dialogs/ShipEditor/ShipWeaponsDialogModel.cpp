@@ -1,9 +1,13 @@
 #include "ShipWeaponsDialogModel.h"
 namespace fso::fred {
-Banks::Banks(SCP_string _name, int aiIndex, int _ship, int multiedit, ship_subsys* _subsys)
-	: m_isMultiEdit(multiedit), name(std::move(_name)), subsys(_subsys), initalAI(aiIndex), ship(_ship)
+Banks::Banks(SCP_string _name, int aiIndex, int _ship, int multiedit, int _id, ship_subsys* _subsys)
+	: m_isMultiEdit(multiedit), name(std::move(_name)), subsys(_subsys), initalAI(aiIndex), ship(_ship), id(_id)
 {
 	aiClass = aiIndex;
+}
+int Banks::getId() const
+{
+	return id;
 }
 void Banks::add(Bank* bank)
 {
@@ -159,7 +163,9 @@ void ShipWeaponsDialogModel::initializeData(bool isMultiEdit)
 
 void ShipWeaponsDialogModel::initPrimary(int inst, bool first)
 {
-	auto pilotBank = new Banks("Pilot", Ships[inst].weapons.ai_class, inst, m_isMultiEdit);
+	int id = 0;
+	auto pilotBank = new Banks("Pilot", Ships[inst].weapons.ai_class, inst, m_isMultiEdit, id);
+	id++;
 	if (first) {
 		auto pilot = Ships[inst].weapons;
 		for (int i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++) {
@@ -176,7 +182,7 @@ void ShipWeaponsDialogModel::initPrimary(int inst, bool first)
 		for (pss = GET_FIRST(ssl); pss != END_OF_LIST(ssl); pss = GET_NEXT(pss)) {
 			model_subsystem* psub = pss->system_info;
 			if (psub->type == SUBSYSTEM_TURRET) {
-				auto turretBank = new Banks(psub->subobj_name, pss->weapons.ai_class, inst, m_isMultiEdit, pss);
+				auto turretBank = new Banks(psub->subobj_name, pss->weapons.ai_class, inst, m_isMultiEdit,id, pss);
 				for (int i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++) {
 					if (pss->weapons.primary_bank_weapons[i] >= 0) {
 						const int maxAmmo = get_max_ammo_count_for_primary_turret_bank(&pss->weapons,
@@ -188,6 +194,7 @@ void ShipWeaponsDialogModel::initPrimary(int inst, bool first)
 				}
 				if (!turretBank->empty()) {
 					PrimaryBanks.push_back(turretBank);
+					id++;
 				} else {
 					delete turretBank;
 				}
@@ -226,7 +233,9 @@ void ShipWeaponsDialogModel::initPrimary(int inst, bool first)
 
 void ShipWeaponsDialogModel::initSecondary(int inst, bool first)
 {
-	auto pilotBank = new Banks("Pilot", Ships[inst].weapons.ai_class, inst, m_isMultiEdit);
+	int id = 0;
+	auto pilotBank = new Banks("Pilot", Ships[inst].weapons.ai_class, inst, m_isMultiEdit, id);
+	id++;
 	if (first) {
 		auto pilot = Ships[inst].weapons;
 		for (int i = 0; i < MAX_SHIP_SECONDARY_BANKS; i++) {
@@ -243,7 +252,7 @@ void ShipWeaponsDialogModel::initSecondary(int inst, bool first)
 		for (pss = GET_FIRST(ssl); pss != END_OF_LIST(ssl); pss = GET_NEXT(pss)) {
 			model_subsystem* psub = pss->system_info;
 			if (psub->type == SUBSYSTEM_TURRET) {
-				auto turretBank = new Banks(psub->subobj_name, pss->weapons.ai_class, inst, m_isMultiEdit, pss);
+				auto turretBank = new Banks(psub->subobj_name, pss->weapons.ai_class, inst, m_isMultiEdit,id, pss);
 				for (int i = 0; i < MAX_SHIP_SECONDARY_BANKS; i++) {
 					if (pss->weapons.secondary_bank_weapons[i] >= 0) {
 						const int maxAmmo = get_max_ammo_count_for_turret_bank(&pss->weapons,
@@ -255,6 +264,7 @@ void ShipWeaponsDialogModel::initSecondary(int inst, bool first)
 				}
 				if (!turretBank->empty()) {
 					SecondaryBanks.push_back(turretBank);
+					id++;
 				} else {
 					delete turretBank;
 				}

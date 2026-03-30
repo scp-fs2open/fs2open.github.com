@@ -3,8 +3,8 @@
 #include <qmimedata.h>
 #include <weapon/weapon.h>
 namespace fso::fred {
-BankTreeItem::BankTreeItem(BankTreeItem* parentItem, QString inName) : name(std::move(inName)), m_parentItem(parentItem) {}
-BankTreeItem::~BankTreeItem()
+//BankTreeItem::BankTreeItem(BankTreeItem* parentItem, QString inName) : name(std::move(inName)), m_parentItem(parentItem) {}
+/* BankTreeItem::~BankTreeItem()
 {
 	qDeleteAll(m_childItems);
 }
@@ -401,4 +401,7 @@ int BankTreeModel::checktype(const QModelIndex index) const
 	}
 	return type;
 }
+*/
+//BankTreeModel::BankTreeModel(QObject* parent) : QStandardItemModel(parent) {}
+//BankTreeModel::~BankTreeModel() = default;
 } // namespace fso::fred

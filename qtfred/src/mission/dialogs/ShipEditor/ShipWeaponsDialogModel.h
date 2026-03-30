@@ -7,9 +7,10 @@
 namespace fso::fred {
 struct Bank;
 struct Banks {
-	Banks(SCP_string name, int aiIndex, int ship, int multiedit, ship_subsys* subsys = nullptr);
+	Banks(SCP_string name, int aiIndex, int ship, int multiedit, int _id, ship_subsys* subsys = nullptr);
 
   public:
+	int getId() const;
 	void add(Bank*);
 	Bank* getByBankId(const int id);
 	SCP_string getName() const;
@@ -29,6 +30,7 @@ struct Banks {
 	int initalAI;
 	SCP_vector<Bank*> banks;
 	int ship;
+	int id;
 };
 struct Bank {
   public:

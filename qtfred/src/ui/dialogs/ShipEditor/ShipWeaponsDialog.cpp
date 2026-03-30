@@ -21,13 +21,15 @@ ShipWeaponsDialog::ShipWeaponsDialog(QDialog* parent, EditorViewport* viewport, 
 	// Build the model of ship weapons and set inital mode.
 	if (!_model->getPrimaryBanks().empty()) {
 		const util::SignalBlockers blockers(this);
-		bankModel = new BankTreeModel(_model->getPrimaryBanks(), this);
+		loadBankModel(_model->getPrimaryBanks());
+		//bankModel = new BankTreeModel(_model->getPrimaryBanks(), this);
 		ui->radioPrimary->setChecked(true);
 		dialogMode = 0;
 		weapons = new WeaponModel(0);
 	} else if (!_model->getSecondaryBanks().empty()) {
 		const util::SignalBlockers blockers(this);
-		bankModel = new BankTreeModel(_model->getSecondaryBanks(), this);
+		loadBankModel(_model->getSecondaryBanks());
+		//bankModel = new BankTreeModel(_model->getSecondaryBanks(), this);
 		ui->radioSecondary->setChecked(true);
 		dialogMode = 1;
 		weapons = new WeaponModel(1);
@@ -97,7 +99,8 @@ void ShipWeaponsDialog::closeEvent(QCloseEvent* event)
 void ShipWeaponsDialog::on_setAllButton_clicked()
 {
 	for (auto& index : ui->treeBanks->selectionModel()->selectedIndexes()) {
-		bankModel->setWeapon(index, ui->listWeapons->currentIndex().data(Qt::UserRole).toInt());
+		bankModel->setData(index, ui->listWeapons->currentIndex().data(Qt::UserRole).toInt(), Qt::UserRole);
+		//bankModel->setWeapon(index, ui->listWeapons->currentIndex().data(Qt::UserRole).toInt());
 	}
 }
 void ShipWeaponsDialog::on_tblButton_clicked()
@@ -129,13 +132,15 @@ void ShipWeaponsDialog::modeChanged(const bool enabled, const int mode)
 {
 	if (enabled) {
 		if (mode == 0) {
-			bankModel = new BankTreeModel(_model->getPrimaryBanks(), this);
+			loadBankModel(_model->getPrimaryBanks());
+			//bankModel = new BankTreeModel(_model->getPrimaryBanks(), this);
 			dialogMode = 0;
 			delete weapons;
 			weapons = new WeaponModel(0);
 			ui->listWeapons->setModel(weapons);
 		} else if (mode == 1) {
-			bankModel = new BankTreeModel(_model->getSecondaryBanks(), this);
+			loadBankModel(_model->getSecondaryBanks());
+			//bankModel = new BankTreeModel(_model->getSecondaryBanks(), this);
 			dialogMode = 1;
 			delete weapons;
 			weapons = new WeaponModel(1);
@@ -149,7 +154,8 @@ void ShipWeaponsDialog::modeChanged(const bool enabled, const int mode)
 				"Somehow an Illegal mode has been set. Get a coder.\n Illegal mode is " + std::to_string(mode),
 				{DialogButton::Ok});
 			ui->radioPrimary->toggled(true);
-			bankModel = new BankTreeModel(_model->getPrimaryBanks(), this);
+			loadBankModel(_model->getPrimaryBanks());
+			//bankModel = new BankTreeModel(_model->getPrimaryBanks(), this);
 			dialogMode = 0;
 		}
 		// Reconnect beacuse the model has changed
@@ -208,6 +214,43 @@ void ShipWeaponsDialog::updateUI()
 void ShipWeaponsDialog::aiClassChanged(const int index)
 {
 	m_currentAI = ui->aiCombo->itemData(index).toInt();
+}
+
+void ShipWeaponsDialog::loadBankModel(SCP_vector<Banks*> modelBanks) {
+	const util::SignalBlockers blockers(this);
+	bankModel = new QStandardItemModel(this);	
+	bankModel->removeRows(0, bankModel->rowCount());
+	for (auto banks : modelBanks) {
+		auto item = new QStandardItem();
+		item->setData(banks->getName().c_str(), Qt::DisplayRole);
+		item->setData(true, Qt::UserRole + 2);
+		item->setData(banks->getId(), Qt::UserRole + 3);
+		bankModel->appendRow(item);
+		//parent->insertLabel(parent->childCount(), banks->getName().c_str(), banks);
+		//auto currentParent = parent->child(parent->childCount() - 1);
+		for (auto bank : banks->getBanks()) {
+			auto subitem = new QStandardItem();
+			QString string;
+			switch (bank->getWeaponId()) {
+			case -2:
+				string = "CONFLICT";
+				break;
+			case -1:
+				string = "None";
+				break;
+			default:
+				string = Weapon_info[bank->getWeaponId()].name;
+			}
+			subitem->setData(string, Qt::DisplayRole);
+			subitem->setData(bank->getWeaponId(), Qt::UserRole);
+			subitem->setData(false, Qt::UserRole + 2);
+			subitem->setData(bank->getBankId(), Qt::UserRole + 3);
+			subitem->setData(bank->getAmmo(), Qt::UserRole + 4);
+			subitem->setData(bank->getMaxAmmo(), Qt::UserRole + 5);
+			subitem->appendRow(subitem);
+			//currentParent->insertBank(currentParent->childCount(), bank);
+		}
+	}
 }
 
 void ShipWeaponsDialog::on_aiButton_clicked()

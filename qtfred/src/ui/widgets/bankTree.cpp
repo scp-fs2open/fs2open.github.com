@@ -28,7 +28,7 @@ void bankTree::dragMoveEvent(QDragMoveEvent* event)
 	if (!index.isValid()) {
 		return;
 	}
-	if (dynamic_cast<BankTreeModel*>(model())->checktype(index) == 0) {
+	if (model()->data(index, Qt::UserRole + 2) == false) {
 		event->accept();
 	} else {
 		event->ignore();
@@ -36,65 +36,34 @@ void bankTree::dragMoveEvent(QDragMoveEvent* event)
 }
 void bankTree::selectionChanged(const QItemSelection& selected, const QItemSelection& deselected)
 {
-	QItemSelection newlySelected;
-	QItemSelection select;
-	QItemSelection deselect(deselected);
-	if (selected.empty()) {
-		QTreeView::selectionChanged(selected, deselected);
-		if (selectionModel()->selectedIndexes().empty()) {
-			typeSelected = -1;
-		}
-		return;
-	}
-	for (auto& sidx : selected.indexes()) {
-		bool match = false;
-		for (auto& didx : deselected.indexes()) {
-			if (sidx == didx) {
-				match = true;
-				break;
-			}
-		}
-		if (!match) {
-			QItemSelectionRange selection(sidx);
-			newlySelected.append(selection);
-		}
-	}
-	if (!newlySelected.empty()) {
-		if (typeSelected == -1) {
-			typeSelected = dynamic_cast<BankTreeModel*>(model())->checktype(newlySelected.indexes().first());
-			for (auto& sidx : newlySelected.indexes()) {
-				if (dynamic_cast<BankTreeModel*>(model())->checktype(sidx) == typeSelected) {
-					QItemSelectionRange selection(sidx);
-					select.append(selection);
-				}
-			}
-		} else {
-			int type = dynamic_cast<BankTreeModel*>(model())->checktype(newlySelected.indexes().first());
-			if (type != typeSelected) {
-				typeSelected = type;
-				for (auto& sidx : selected.indexes()) {
-					QItemSelectionRange selection(sidx);
-					deselect.append(selection);
-				}
-				for (auto& sidx : newlySelected.indexes()) {
-					if (dynamic_cast<BankTreeModel*>(model())->checktype(sidx) == typeSelected) {
-						QItemSelectionRange selection(sidx);
-						select.append(selection);
+	auto indexes = selected.indexes();
+	if (!indexes.isEmpty()) {
+		auto& first = indexes.first();
+		if (first.isValid()) {
+			if (model()->data(first, Qt::UserRole + 2) == true) {
+				for (auto& index :
+					model()->match(model()->index(0, 0), Qt::UserRole + 2, false, -1, Qt::MatchRecursive)) {
+					if (index.isValid()) {
+						auto item = dynamic_cast<QStandardItemModel*>(model())->itemFromIndex(index);
+						Qt::ItemFlags flags = item->flags();
+						flags &= ~Qt::ItemIsSelectable;
+						item->setFlags(flags);
 					}
 				}
-				selectionModel()->clear();
-				typeSelected = -1;
 			} else {
-				for (auto& sidx : newlySelected.indexes()) {
-					if (dynamic_cast<BankTreeModel*>(model())->checktype(sidx) == typeSelected) {
-						QItemSelectionRange selection(sidx);
-						select.append(selection);
+				for (auto& index :
+					model()->match(model()->index(0, 0), Qt::UserRole + 2, true, -1, Qt::MatchRecursive)) {
+					if (index.isValid()) {
+						auto item = dynamic_cast<QStandardItemModel*>(model())->itemFromIndex(index);
+						Qt::ItemFlags flags = item->flags();
+						flags &= ~Qt::ItemIsSelectable;
+						item->setFlags(flags);
 					}
 				}
 			}
 		}
 	}
-	QTreeView::selectionChanged(select, deselect);
+	QTreeView::selectionChanged(selected, deselected);
 }
 int bankTree::getTypeSelected() const
 {

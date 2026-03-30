@@ -5,13 +5,17 @@
 #include "ui/widgets/weaponList.h"
 
 #include <mission/dialogs/ShipEditor/ShipWeaponsDialogModel.h>
-#include <ui/FredView.h>
 
 #include <QtCore/QItemSelection>
 #include <QtWidgets/QDialog>
 
 namespace fso::fred::dialogs {
-
+//Weapon ID = UserRole
+//Wapon name = DisplayRole
+//Bank or subsys = UserRole + 2 (true = subsys) false = bank
+// id = UserRole + 3
+// ammo = UserRole + 4
+// maxammo = UserRole + 5
 namespace Ui {
 class ShipWeaponsDialog;
 }
@@ -58,11 +62,14 @@ class ShipWeaponsDialog : public QDialog {
 	void modeChanged(const bool enabled, const int mode);
 	EditorViewport* _viewport;
 	void updateUI();
-	BankTreeModel* bankModel;
+	QStandardItemModel* bankModel;
 	int dialogMode;
 	WeaponModel* weapons;
 	int m_currentAI = 0;
 	void aiClassChanged(const int index);
+
+	void loadBankModel(SCP_vector<Banks*>);
+
 };
 } // namespace fso::fred::dialogs
 #endif
