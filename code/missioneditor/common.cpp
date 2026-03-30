@@ -5,6 +5,7 @@
 #include "iff_defs/iff_defs.h"
 #include "object/object.h"
 #include "ship/ship.h"
+#include "jumpnode/jumpnode.h"
 
 // to keep track of data
 char Voice_abbrev_briefing[NAME_LENGTH];
@@ -213,4 +214,87 @@ bool set_single_player_start(int objnum)
 	ensure_valid_player_start_shipnum();
 
 	return changed;
+}
+
+SCP_string check_name_conflict(const char *entity_type, const char *name, int exclude_ship, int exclude_wing, int exclude_waypoint_list, int exclude_jump_node)
+{
+	SCP_string msg;
+
+	// Name must not be empty
+	if (name[0] == '\0') {
+		msg += "This ";
+		msg += entity_type;
+		msg += " name cannot be empty";
+		return msg;
+	}
+
+	// Check wings
+	for (int i = 0; i < MAX_WINGS; i++) {
+		if (Wings[i].wave_count && i != exclude_wing && !stricmp(Wings[i].name, name)) {
+			msg += "This ";
+			msg += entity_type;
+			msg += " name is already being used by ";
+			msg += (exclude_wing >= 0) ? "another wing" : "a wing";
+			return msg;
+		}
+	}
+
+	// Check ships
+	for (auto ptr: list_range(&obj_used_list)) {
+		if ((ptr->type == OBJ_SHIP || ptr->type == OBJ_START) && ptr->instance != exclude_ship) {
+			if (!stricmp(Ships[ptr->instance].ship_name, name)) {
+				msg += "This ";
+				msg += entity_type;
+				msg += " name is already being used by ";
+				msg += (exclude_ship >= 0) ? "another ship" : "a ship";
+				return msg;
+			}
+		}
+	}
+
+	// We don't need to check teams.  "Unknown" is a valid name and also an IFF.
+
+	// Check target priority groups
+	for (const auto &ai_tp: Ai_tp_list) {
+		if (!stricmp(ai_tp.name, name)) {
+			msg += "This ";
+			msg += entity_type;
+			msg += " name is already being used by a target priority group";
+			return msg;
+		}
+	}
+
+	// Check waypoint lists
+	int wl_size = sz2i(Waypoint_lists.size());
+	for (int i = 0; i < wl_size; i++) {
+		if (i != exclude_waypoint_list && !stricmp(Waypoint_lists[i].get_name(), name)) {
+			msg += "This ";
+			msg += entity_type;
+			msg += " name is already being used by ";
+			msg += (exclude_waypoint_list >= 0) ? "another waypoint path" : "a waypoint path";
+			return msg;
+		}
+	}
+
+	// Check jump nodes
+	int jn_size = sz2i(Jump_nodes.size());
+	for (int i = 0; i < jn_size; i++) {
+		if (i != exclude_jump_node && !stricmp(Jump_nodes[i].GetName(), name)) {
+			msg += "This ";
+			msg += entity_type;
+			msg += " name is already being used by ";
+			msg += (exclude_jump_node >= 0) ? "another jump node" : "a jump node";
+			return msg;
+		}
+	}
+
+	// Name must not start with '<' (used for invalidated SEXP references)
+	if (name[0] == '<') {
+		msg += "This ";
+		msg += entity_type;
+		msg += " name is not allowed to begin with <";
+		return msg;
+	}
+
+	return "";	// no error
 }
