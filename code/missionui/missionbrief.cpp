@@ -1142,8 +1142,8 @@ void brief_render_closeup(int ship_class, float frametime)
 // -------------------------------------------------------------------------------------
 // brief_render()
 //
-// Renders the briefing map and UI elements. When api_mode is true, only the map is rendered
-// and stage transitions are handled without fade animations (for use with the ScpUI API).
+// Renders the briefing map and UI elements. When api_access is true, only the map is rendered
+// and stage transitions are handled without fade animations (for use with the SCPUI API).
 //
 //	frametime is in seconds
 void brief_render(float frametime, bool api_access)
