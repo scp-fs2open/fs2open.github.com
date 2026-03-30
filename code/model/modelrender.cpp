@@ -3228,7 +3228,6 @@ bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int 
 		auto sip = &Ship_info[class_idx];
 		auto pm = model_get(model_num);
 		model_instance = model_create_instance(model_objnum_special::OBJNUM_NONE, model_num);
-		model_set_up_techroom_instance(&Ship_info[class_idx], model_instance);
 		model_set_up_techroom_instance(sip, model_instance);
 
 		if (!destroyed_subsystems.empty()) {
