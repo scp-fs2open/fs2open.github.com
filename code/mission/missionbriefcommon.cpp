@@ -1245,7 +1245,6 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 void brief_render_icons(int stage_num, float frametime)
 {
 	int i, num_icons, num_lines;
-	int projected_icons = 0;
 
 	Assert( Briefing != NULL );
 	
@@ -1262,10 +1261,6 @@ void brief_render_icons(int stage_num, float frametime)
 		Briefing->stages[stage_num].icons[i].w = 0;
 		Briefing->stages[stage_num].icons[i].h = 0;
 		brief_render_icon(stage_num, i, frametime, 0);
-
-		if (Briefing->stages[stage_num].icons[i].w > 0 && Briefing->stages[stage_num].icons[i].h > 0) {
-			projected_icons++;
-		}
 	}
 }
 
