@@ -154,12 +154,6 @@ add_file_folder("Source/UI/Dialogs"
 	src/ui/dialogs/BackgroundEditorDialog.cpp
     src/ui/dialogs/BriefingEditorDialog.cpp
     src/ui/dialogs/BriefingEditorDialog.h
-	src/ui/dialogs/CameraCoordinatesDialog.cpp
-	src/ui/dialogs/CameraCoordinatesDialog.h
-	src/ui/dialogs/IconCoordinatesDialog.cpp
-	src/ui/dialogs/IconCoordinatesDialog.h
-	src/ui/dialogs/IconFromShipDialog.cpp
-	src/ui/dialogs/IconFromShipDialog.h
 	src/ui/dialogs/CampaignEditorDialog.h
 	src/ui/dialogs/CampaignEditorDialog.cpp
 	src/ui/dialogs/CommandBriefingDialog.cpp
@@ -218,6 +212,14 @@ add_file_folder("Source/UI/Dialogs"
 	src/ui/dialogs/WaypointEditorDialog.h
 	src/ui/dialogs/WingEditorDialog.cpp
 	src/ui/dialogs/WingEditorDialog.h
+)
+add_file_folder("Source/UI/Dialogs/BriefingEditor"
+	src/ui/dialogs/BriefingEditor/CameraCoordinatesDialog.cpp
+	src/ui/dialogs/BriefingEditor/CameraCoordinatesDialog.h
+	src/ui/dialogs/BriefingEditor/IconCoordinatesDialog.cpp
+	src/ui/dialogs/BriefingEditor/IconCoordinatesDialog.h
+	src/ui/dialogs/BriefingEditor/IconFromShipDialog.cpp
+	src/ui/dialogs/BriefingEditor/IconFromShipDialog.h
 )
 add_file_folder("Source/UI/Dialogs/MissionSpecs"
 	src/ui/dialogs/MissionSpecs/CustomDataDialog.cpp

@@ -3,9 +3,9 @@
 
 #include "mission/util.h"
 #include "ui/widgets/BriefingMapWidget.h"
-#include "CameraCoordinatesDialog.h"
-#include "IconFromShipDialog.h"
-#include "IconCoordinatesDialog.h"
+#include "BriefingEditor/CameraCoordinatesDialog.h"
+#include "BriefingEditor/IconFromShipDialog.h"
+#include "BriefingEditor/IconCoordinatesDialog.h"
 #include "mission/missionbriefcommon.h"
 #include "mission/missiongrid.h"
 #include "math/fvi.h"
