@@ -19,7 +19,7 @@ private slots:
 	void onSpinBoxEditingFinished();
 	void onCancelClicked();
 
-private:
+private: // NOLINT(readability-redundant-access-specifiers)
 	void setupUi();
 	void populateFromCurrentIcon();
 	void applyCurrentInputsToIcon();

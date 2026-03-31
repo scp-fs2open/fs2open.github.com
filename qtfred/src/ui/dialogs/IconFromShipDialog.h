@@ -28,7 +28,7 @@ private slots:
 	void onFilterTextChanged(const QString& text);
 	void onItemDoubleClicked(QTreeWidgetItem* item, int column);
 
-private:
+private: // NOLINT(readability-redundant-access-specifiers)
 	void populateTree();
 	void applyFilter(const QString& text);
 

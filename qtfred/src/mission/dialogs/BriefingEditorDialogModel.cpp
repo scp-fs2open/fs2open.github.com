@@ -1268,6 +1268,7 @@ SCP_vector<std::pair<int, SCP_string>> BriefingEditorDialogModel::getIffList()
 
 briefing* BriefingEditorDialogModel::getWipBriefingPtr(int team)
 {
+	// NOLINTNEXTLINE(readability-simplify-boolean-expr)
 	Assertion(team >= 0 && team < MAX_TVT_TEAMS, "Invalid team index %d", team);
 	return &_wipBriefings[team];
 }

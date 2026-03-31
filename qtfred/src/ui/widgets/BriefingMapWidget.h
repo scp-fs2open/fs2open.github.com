@@ -86,8 +86,8 @@ private:
 	void initBriefingMap();
 	void applyStageTransition(int stageNum, int transitionTime);
 	void maybeRenderCutTransition(float frametime, int width, int height);
-	bool shouldUseCutTransition(int fromStage, int toStage, const briefing* briefPtr) const;
-	void updateEditorHighlightPlayback();
+	static bool shouldUseCutTransition(int fromStage, int toStage, const briefing* briefPtr) const;
+	static void updateEditorHighlightPlayback();
 	void drawSelectedIconOutline();
 	void applyCameraPoseLikeKeyboardControls(const vec3d& camPos, const matrix& camOrient, bool updateModel);
 	void applyBoundCameraControls(float frametime);

@@ -240,7 +240,7 @@ void BriefingMapWidget::setStage(int stageNum) {
 	Briefing = savedBriefing;
 }
 
-bool BriefingMapWidget::shouldUseCutTransition(int fromStage, int toStage, const briefing* briefPtr) const {
+bool BriefingMapWidget::shouldUseCutTransition(int fromStage, int toStage, const briefing* briefPtr) {
 	if (briefPtr == nullptr || fromStage < 0 || toStage < 0 || fromStage == toStage) {
 		return false;
 	}
