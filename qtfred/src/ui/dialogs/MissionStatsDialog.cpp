@@ -30,7 +30,7 @@ static void setBarValue(QProgressBar* bar, int value, int maximum)
 	bar->setValue(value);
 	bar->setFormat(QStringLiteral("%v / %m"));
 
-	float ratio = (maximum > 0) ? static_cast<float>(value / maximum) : 0.0f;
+	float ratio = (maximum > 0) ? static_cast<float>(value) / maximum : 0.0f;
 	const char* color;
 	if (ratio >= 0.9f) {
 		color = "#cc2222";
