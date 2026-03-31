@@ -281,7 +281,7 @@ void BriefingMapWidget::applyStageTransition(int stageNum, int transitionTime) {
 	Briefing = savedBriefing;
 }
 
-void BriefingMapWidget::updateEditorHighlightPlayback() {
+void BriefingMapWidget::updateEditorHighlightPlayback() const {
 	if (Briefing == nullptr || _currentStage < 0 || _currentStage >= Briefing->num_stages) {
 		return;
 	}
