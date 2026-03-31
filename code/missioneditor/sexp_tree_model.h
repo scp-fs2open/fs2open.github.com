@@ -8,6 +8,8 @@
 #include "globalincs/flagset.h"
 #include "globalincs/vmallocator.h"
 
+class SexpAnnotationModel;
+
 // -----------------------------------------------------------------------
 // SEXPT_* node type/status constants
 // -----------------------------------------------------------------------
@@ -439,6 +441,10 @@ public:
 	// Modification tracking — UI layer sets this to point at its dirty flag.
 	// Model code sets *modified = 1 when tree data changes.
 	int* modified;
+
+	// Optional annotation model — when set, free_node2() automatically removes
+	// annotations referencing freed nodes to prevent stale annotation reuse.
+	SexpAnnotationModel* annotation_model = nullptr;
 
 	// --- Tree navigation helpers ---
 

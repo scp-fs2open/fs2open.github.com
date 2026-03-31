@@ -166,6 +166,7 @@ void MissionEventsDialogModel::initializeEvents()
 void MissionEventsDialogModel::initializeEventAnnotations()
 {
 	m_annotation_model.loadFromGlobal(m_tree_model.tree_nodes, m_events, m_sig);
+	m_tree_model.annotation_model = &m_annotation_model;
 
 	for (const auto& ea : m_annotation_model.annotations()) {
 		if (ea.node_index >= 0) {

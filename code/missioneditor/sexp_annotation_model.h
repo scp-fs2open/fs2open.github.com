@@ -56,6 +56,9 @@ public:
 	// Mutation
 	// ---------------------------------------------------------------
 
+	// Remove the annotation with the given key, if one exists.
+	void removeByKey(int key);
+
 	// Remove all annotations that are at default values.
 	void prune();
 

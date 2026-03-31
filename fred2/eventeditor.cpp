@@ -278,6 +278,7 @@ BOOL event_editor::OnInitDialog()
 	// load event annotations into local model and apply comment icons
 	m_annotation_model.loadFromGlobal(m_event_tree._model.tree_nodes, m_events, m_sig);
 	m_event_tree.m_annotations = &m_annotation_model;
+	m_event_tree._model.annotation_model = &m_annotation_model;
 	for (auto &ea : m_annotation_model.annotations())
 	{
 		if (ea.node_index >= 0 && !ea.comment.empty())

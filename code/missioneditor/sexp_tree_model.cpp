@@ -1,4 +1,5 @@
 #include "missioneditor/sexp_tree_model.h"
+#include "missioneditor/sexp_annotation_model.h"
 
 #include "parse/sexp.h"
 #include "parse/sexp_container.h"
@@ -397,6 +398,11 @@ void SexpTreeModel::free_node2(int node)
 		*modified = 1;
 	tree_nodes[node].type = SEXPT_UNUSED;
 	total_nodes--;
+
+	// Remove any annotation referencing this node so that if allocate_node()
+	// reuses this slot, the new node won't inherit a stale annotation.
+	if (annotation_model)
+		annotation_model->removeByKey(node);
 	if (tree_nodes[node].child != -1)
 		free_node2(tree_nodes[node].child);
 

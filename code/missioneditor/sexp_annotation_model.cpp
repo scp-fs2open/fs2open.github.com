@@ -126,6 +126,15 @@ bool SexpAnnotationModel::isDefault(const event_annotation& ea)
 // Mutation
 // -----------------------------------------------------------------------
 
+// Remove the annotation with the given key, if one exists.
+void SexpAnnotationModel::removeByKey(int key)
+{
+	int idx = findByKey(key);
+	if (idx >= 0) {
+		m_annotations.erase(m_annotations.begin() + idx);
+	}
+}
+
 // Remove all annotations that have default values (no useful data).
 void SexpAnnotationModel::prune()
 {
