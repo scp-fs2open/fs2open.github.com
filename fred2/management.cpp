@@ -1306,8 +1306,23 @@ int common_object_delete(int obj)
 			invalidate_references(wp_list->get_name(), sexp_ref_type::WAYPOINT_PATH);
 		}
 
+		// save info needed to update shifted waypoint references after removal
+		int deleted_index = wpt->get_index();
+		char list_name[NAME_LENGTH];
+		strcpy_s(list_name, wp_list->get_name());
+
 		// the actual removal code has been moved to this function in waypoints.cpp
 		waypoint_remove(wpt);
+
+		// update SEXP and AI goal references for waypoints that shifted down
+		for (int wi = deleted_index; wi < (int)count - 1; wi++) {
+			char old_wpt_name[NAME_LENGTH];
+			char new_wpt_name[NAME_LENGTH];
+			waypoint_stuff_name(old_wpt_name, list_name, wi + 2);	// old 1-based number
+			waypoint_stuff_name(new_wpt_name, list_name, wi + 1);	// new 1-based number
+			update_sexp_references(old_wpt_name, new_wpt_name);
+			ai_update_goal_references(sexp_ref_type::WAYPOINT, old_wpt_name, new_wpt_name);
+		}
 
 	} else if (type == OBJ_SHIP) {
 		name = Ships[Objects[obj].instance].ship_name;
