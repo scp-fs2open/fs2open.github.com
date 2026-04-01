@@ -36,6 +36,7 @@ struct photo_mode_post_effect_state {
 	SCP_string name;
 	float intensity = 0.0f;
 	vec3d rgb = vmd_zero_vector;
+	int effect_idx = -1; // index into Post_processing_manager->getPostEffects()
 };
 
 enum class photo_mode_param_type {
@@ -43,13 +44,21 @@ enum class photo_mode_param_type {
 	BOOL_TOGGLE // on/off toggle
 };
 
-struct photo_mode_param {
-	const char* label;          // display name
-	int         xstr_id;       // XSTR localization ID
-	photo_mode_param_type type;
+enum class photo_mode_param_role {
+	NONE,
+	GRID_OVERLAY, // bool toggle that enables the rule of thirds grid
+	POST_EFFECT   // drives a post processing effect by name
+};
 
-	// For INT_RANGE: post-processing effect name, range, and values
-	const char* effect_name;   // post-processing effect to control (nullptr for non-effect params)
+struct photo_mode_param {
+	const char*           label;    // display name
+	int                   xstr_id;  // XSTR localization ID
+	photo_mode_param_type type;
+	photo_mode_param_role role;
+
+	// For POST_EFFECT role: post processing effect name, range, and values
+	const char* effect_name;   // post processing effect to control (nullptr if role != POST_EFFECT)
+	int         effect_idx;    // index into Post_processing_manager->getPostEffects() (-1 if unresolved)
 	int         min_val;
 	int         max_val;
 	int         value;
@@ -59,12 +68,12 @@ struct photo_mode_param {
 	bool        bool_value;
 };
 
-// Parameter definitions — add new parameters here
+// Parameter definitions
 SCP_vector<photo_mode_param> Photo_mode_params = {
-	{"Grid",       1908, photo_mode_param_type::BOOL_TOGGLE, nullptr,    0, 0,   0,   0,   false},
-	{"Saturation", 1905, photo_mode_param_type::INT_RANGE, "saturation", 0, 200, 100, 100, false},
-	{"Brightness", 1906, photo_mode_param_type::INT_RANGE, "brightness", 0, 200, 100, 100, false},
-	{"Contrast",   1907, photo_mode_param_type::INT_RANGE, "contrast",   0, 200, 100, 100, false},
+	{"Grid",       1908, photo_mode_param_type::BOOL_TOGGLE, photo_mode_param_role::GRID_OVERLAY, nullptr,      -1, 0, 0,   0,   0,   false},
+	{"Saturation", 1905, photo_mode_param_type::INT_RANGE,   photo_mode_param_role::POST_EFFECT,  "saturation", -1, 0, 200, 100, 100, false},
+	{"Brightness", 1906, photo_mode_param_type::INT_RANGE,   photo_mode_param_role::POST_EFFECT,  "brightness", -1, 0, 200, 100, 100, false},
+	{"Contrast",   1907, photo_mode_param_type::INT_RANGE,   photo_mode_param_role::POST_EFFECT,  "contrast",   -1, 0, 200, 100, 100, false},
 };
 
 SCP_vector<photo_mode_post_effect_state> Photo_mode_saved_post_effects;
@@ -81,12 +90,31 @@ void photo_mode_capture_post_effect_state()
 	const auto& post_effects = graphics::Post_processing_manager->getPostEffects();
 	Photo_mode_saved_post_effects.reserve(post_effects.size());
 
-	for (const auto& effect : post_effects) {
+	for (int i = 0; i < static_cast<int>(post_effects.size()); ++i) {
+		const auto& effect = post_effects[i];
 		photo_mode_post_effect_state state;
 		state.name = effect.name;
 		state.intensity = effect.intensity;
 		state.rgb = effect.rgb;
+		state.effect_idx = i;
 		Photo_mode_saved_post_effects.push_back(state);
+	}
+
+	// Resolve effect indices for each param.
+	// Done once here rather than on every frame or every key press.
+	for (int i = 0; i < static_cast<int>(Photo_mode_params.size()); ++i) {
+		auto& param = Photo_mode_params[i];
+		if (param.role != photo_mode_param_role::POST_EFFECT) {
+			param.effect_idx = -1;
+			continue;
+		}
+		param.effect_idx = -1;
+		for (int j = 0; j < static_cast<int>(post_effects.size()); ++j) {
+			if (!stricmp(post_effects[j].name.c_str(), param.effect_name)) {
+				param.effect_idx = j;
+				break;
+			}
+		}
 	}
 }
 
@@ -101,13 +129,12 @@ void photo_mode_apply_saved_post_effect_state(bool clear_saved_state)
 
 	const auto& post_effects = graphics::Post_processing_manager->getPostEffects();
 	for (const auto& saved_state : Photo_mode_saved_post_effects) {
-		for (const auto& effect : post_effects) {
-			if (!stricmp(effect.name.c_str(), saved_state.name.c_str())) {
-				const int value = static_cast<int>(std::lround((saved_state.intensity - effect.add) * effect.div));
-				gr_post_process_set_effect(saved_state.name.c_str(), value, &saved_state.rgb);
-				break;
-			}
+		if (saved_state.effect_idx < 0 || saved_state.effect_idx >= static_cast<int>(post_effects.size())) {
+			continue;
 		}
+		const auto& effect = post_effects[saved_state.effect_idx];
+		const int value = static_cast<int>(std::lround((saved_state.intensity - effect.add) * effect.div));
+		gr_post_process_set_effect(saved_state.name.c_str(), value, &saved_state.rgb);
 	}
 
 	if (clear_saved_state) {
@@ -115,26 +142,25 @@ void photo_mode_apply_saved_post_effect_state(bool clear_saved_state)
 	}
 }
 
-int photo_mode_get_saved_post_effect_value(const char* effect_name)
+int photo_mode_get_saved_post_effect_value(int effect_idx)
 {
 	int value = 100;
 
-	if (effect_name == nullptr || graphics::Post_processing_manager == nullptr) {
+	if (effect_idx < 0 || graphics::Post_processing_manager == nullptr) {
+		return value;
+	}
+
+	const auto& post_effects = graphics::Post_processing_manager->getPostEffects();
+	if (effect_idx >= static_cast<int>(post_effects.size())) {
 		return value;
 	}
 
 	for (const auto& saved_state : Photo_mode_saved_post_effects) {
-		if (stricmp(saved_state.name.c_str(), effect_name) != 0) {
+		if (saved_state.effect_idx != effect_idx) {
 			continue;
 		}
-
-		for (const auto& effect : graphics::Post_processing_manager->getPostEffects()) {
-			if (stricmp(effect.name.c_str(), effect_name) == 0) {
-				value = static_cast<int>(std::lround((saved_state.intensity - effect.add) * effect.div));
-				break;
-			}
-		}
-
+		const auto& effect = post_effects[effect_idx];
+		value = static_cast<int>(std::lround((saved_state.intensity - effect.add) * effect.div));
 		break;
 	}
 
@@ -144,8 +170,8 @@ int photo_mode_get_saved_post_effect_value(const char* effect_name)
 void photo_mode_sync_parameter_values_from_saved_state()
 {
 	for (auto& param : Photo_mode_params) {
-		if (param.type == photo_mode_param_type::INT_RANGE && param.effect_name != nullptr) {
-			param.saved_value = photo_mode_get_saved_post_effect_value(param.effect_name);
+		if (param.role == photo_mode_param_role::POST_EFFECT) {
+			param.saved_value = photo_mode_get_saved_post_effect_value(param.effect_idx);
 			param.value = param.saved_value;
 		} else if (param.type == photo_mode_param_type::BOOL_TOGGLE) {
 			param.bool_value = false;
@@ -158,7 +184,7 @@ void photo_mode_sync_parameter_values_from_saved_state()
 void photo_mode_apply_parameter_values()
 {
 	for (const auto& param : Photo_mode_params) {
-		if (param.type == photo_mode_param_type::INT_RANGE && param.effect_name != nullptr) {
+		if (param.role == photo_mode_param_role::POST_EFFECT) {
 			gr_post_process_set_effect(param.effect_name, param.value, nullptr);
 		}
 	}
@@ -380,10 +406,9 @@ void photo_mode_maybe_render_hud()
 		panel_y + line_height + panel_padding + 1,
 		GR_RESIZE_NONE);
 
-	// Check if any bool param enables the grid overlay
 	bool grid_enabled = false;
 	for (const auto& param : Photo_mode_params) {
-		if (param.type == photo_mode_param_type::BOOL_TOGGLE && strcmp(param.label, "Grid") == 0) {
+		if (param.role == photo_mode_param_role::GRID_OVERLAY) {
 			grid_enabled = param.bool_value;
 			break;
 		}
