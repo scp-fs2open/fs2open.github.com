@@ -104,8 +104,7 @@ void photo_mode_capture_post_effect_state()
 
 	// Resolve effect indices for each param.
 	// Done once here rather than on every frame or every key press.
-	for (int i = 0; i < static_cast<int>(Photo_mode_params.size()); ++i) {
-		auto& param = Photo_mode_params[i];
+	for (auto& param : Photo_mode_params) {
 		if (param.role != photo_mode_param_role::POST_EFFECT) {
 			param.effect_idx = -1;
 			continue;
