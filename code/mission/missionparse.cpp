@@ -875,7 +875,7 @@ void parse_mission_info(mission *pm, bool basic = false)
 			//This stems from the weird unchangeable constants of legacy fog
 			Neb2_fog_1000m_visibility = powf(10.f, -100.f / (75.f * far_mult - near_mult));
 			Neb2_fog_near_distance = 10.f * near_mult;
-			Neb2_fog_skybox_clip_distance = 200.f; // guesstimated constant from on-GPU float clipping at 10^10 zFar
+			Neb2_fog_skybox_clip_distance = 0.f; // Apparently, skybox fog was just outright broken...
 			Neb2_fog_clip_distance = Default_max_draw_distance;
 		}
 		else {

@@ -1079,7 +1079,7 @@ void neb2_get_adjusted_fog_values(float *fnear, float *fdensity)
 	*fnear = Neb2_fog_near_distance;
 
 	if (fdensity != nullptr)
-		*fdensity = powf(Neb2_fog_1000m_visibility, 1 / 1000);
+		*fdensity = powf(Neb2_fog_1000m_visibility, 1.f / 1000.f);
 }
 
 // given a position, returns 0 - 1 the fog visibility of that position, 0 = completely obscured
