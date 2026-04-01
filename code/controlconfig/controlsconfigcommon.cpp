@@ -267,12 +267,12 @@ void control_config_common_init_bindings() {
 	(TOGGLE_HUD_CONTRAST,                                         KEY_L, -1, COMPUTER_TAB, 1, "Toggle High HUD Contrast",         CC_TYPE_TRIGGER)
 	(TOGGLE_HUD_SHADOWS,                              KEY_ALTED | KEY_L, -1, COMPUTER_TAB, 1781, "Toggle HUD Drop Shadows",          CC_TYPE_TRIGGER)
 	(HUD_TARGETBOX_TOGGLE_WIREFRAME,    KEY_ALTED | KEY_SHIFTED | KEY_Q, -1, COMPUTER_TAB, 1, "Toggle HUD Wireframe Target View", CC_TYPE_TRIGGER)
-	(TOGGLE_PHOTO_MODE,                                KEY_ALTED | KEY_1, -1, COMPUTER_TAB, 1910, "Toggle Photo Mode",                  CC_TYPE_TRIGGER, false, CONFLICT_GROUP_DEFAULT | CONFLICT_GROUP_PHOTO_MODE)
-	(PHOTO_MODE_FILTER_PREV,                                      KEY_UP, -1, COMPUTER_TAB, 1911, "Photo Mode Previous Parameter",         CC_TYPE_TRIGGER, false, CONFLICT_GROUP_PHOTO_MODE)
-	(PHOTO_MODE_FILTER_NEXT,                                    KEY_DOWN, -1, COMPUTER_TAB, 1912, "Photo Mode Next Parameter",             CC_TYPE_TRIGGER, false, CONFLICT_GROUP_PHOTO_MODE)
-	(PHOTO_MODE_FILTER_RESET,                          KEY_ALTED | KEY_2, -1, COMPUTER_TAB, 1913, "Photo Mode Reset Parameters",           CC_TYPE_TRIGGER, false, CONFLICT_GROUP_PHOTO_MODE)
-	(PHOTO_MODE_PARAM_DECREASE,                                 KEY_LEFT, -1, COMPUTER_TAB, 1914, "Photo Mode Decrease Selected Parameter", CC_TYPE_TRIGGER, false, CONFLICT_GROUP_PHOTO_MODE)
-	(PHOTO_MODE_PARAM_INCREASE,                                KEY_RIGHT, -1, COMPUTER_TAB, 1915, "Photo Mode Increase Selected Parameter", CC_TYPE_TRIGGER, false, CONFLICT_GROUP_PHOTO_MODE)
+	(TOGGLE_PHOTO_MODE,                                KEY_ALTED | KEY_1, -1, COMPUTER_TAB, 1908, "Toggle Photo Mode",                  CC_TYPE_TRIGGER, false, CONFLICT_GROUP_DEFAULT | CONFLICT_GROUP_PHOTO_MODE)
+	(PHOTO_MODE_FILTER_PREV,                                      KEY_UP, -1, COMPUTER_TAB, 1909, "Photo Mode Previous Parameter",         CC_TYPE_TRIGGER, false, CONFLICT_GROUP_PHOTO_MODE)
+	(PHOTO_MODE_FILTER_NEXT,                                    KEY_DOWN, -1, COMPUTER_TAB, 1910, "Photo Mode Next Parameter",             CC_TYPE_TRIGGER, false, CONFLICT_GROUP_PHOTO_MODE)
+	(PHOTO_MODE_FILTER_RESET,                          KEY_ALTED | KEY_2, -1, COMPUTER_TAB, 1911, "Photo Mode Reset Parameters",           CC_TYPE_TRIGGER, false, CONFLICT_GROUP_PHOTO_MODE)
+	(PHOTO_MODE_PARAM_DECREASE,                                 KEY_LEFT, -1, COMPUTER_TAB, 1912, "Photo Mode Decrease Selected Parameter", CC_TYPE_TRIGGER, false, CONFLICT_GROUP_PHOTO_MODE)
+	(PHOTO_MODE_PARAM_INCREASE,                                KEY_RIGHT, -1, COMPUTER_TAB, 1913, "Photo Mode Increase Selected Parameter", CC_TYPE_TRIGGER, false, CONFLICT_GROUP_PHOTO_MODE)
 
 	// Custom Controls
 	(CUSTOM_CONTROL_1,                  KEY_ALTED | KEY_SHIFTED | KEY_1, -1, COMPUTER_TAB, 1784, "Custom Control 1", CC_TYPE_TRIGGER, true)

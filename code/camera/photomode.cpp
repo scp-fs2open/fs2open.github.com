@@ -70,10 +70,10 @@ struct photo_mode_param {
 
 // Parameter definitions
 SCP_vector<photo_mode_param> Photo_mode_params = {
-	{"Grid",       1908, photo_mode_param_type::BOOL_TOGGLE, photo_mode_param_role::GRID_OVERLAY, nullptr,      -1, 0, 0,   0,   0,   false},
-	{"Saturation", 1905, photo_mode_param_type::INT_RANGE,   photo_mode_param_role::POST_EFFECT,  "saturation", -1, 0, 200, 100, 100, false},
-	{"Brightness", 1906, photo_mode_param_type::INT_RANGE,   photo_mode_param_role::POST_EFFECT,  "brightness", -1, 0, 200, 100, 100, false},
-	{"Contrast",   1907, photo_mode_param_type::INT_RANGE,   photo_mode_param_role::POST_EFFECT,  "contrast",   -1, 0, 200, 100, 100, false},
+	{"Grid",       1906, photo_mode_param_type::BOOL_TOGGLE, photo_mode_param_role::GRID_OVERLAY, nullptr,      -1, 0, 0,   0,   0,   false},
+	{"Saturation", 1903, photo_mode_param_type::INT_RANGE,   photo_mode_param_role::POST_EFFECT,  "saturation", -1, 0, 200, 100, 100, false},
+	{"Brightness", 1904, photo_mode_param_type::INT_RANGE,   photo_mode_param_role::POST_EFFECT,  "brightness", -1, 0, 200, 100, 100, false},
+	{"Contrast",   1905, photo_mode_param_type::INT_RANGE,   photo_mode_param_role::POST_EFFECT,  "contrast",   -1, 0, 200, 100, 100, false},
 };
 
 SCP_vector<photo_mode_post_effect_state> Photo_mode_saved_post_effects;
@@ -198,7 +198,7 @@ SCP_string format_photo_mode_keybind(int action)
 	auto secondary = Control_config[action].second.textify();
 
 	if (primary.empty() && secondary.empty()) {
-		return XSTR("Unbound", 1909);
+		return XSTR("Unbound", 1907);
 	}
 	if (primary.empty()) {
 		return secondary;
@@ -227,7 +227,7 @@ void photo_mode_compute_hud_layout()
 	measure(XSTR("Photo Mode", 1892));
 	measure(XSTR("Controls", 1893));
 	measure(XSTR("Status", 1902));
-	measure(XSTR("Effects", 1917));
+	measure(XSTR("Effects", 1914));
 	snprintf(buf, sizeof(buf), XSTR("Toggle: %s", 1894),             format_photo_mode_keybind(TOGGLE_PHOTO_MODE).c_str());
 	measure(buf);
 	snprintf(buf, sizeof(buf), XSTR("Previous Filter: %s", 1895),    format_photo_mode_keybind(PHOTO_MODE_FILTER_PREV).c_str());
@@ -495,18 +495,18 @@ void photo_mode_maybe_render_hud()
 	line += line_height;
 	gr_printf_no_resize(text_x, line, XSTR("Reset Filters: %s", 1897), reset_filter_keybind.c_str());
 	line += line_height;
-	gr_printf_no_resize(text_x, line, XSTR("Decrease Parameter: %s", 1899), decrease_param_keybind.c_str());
+	gr_printf_no_resize(text_x, line, XSTR("Decrease Parameter: %s", 1898), decrease_param_keybind.c_str());
 	line += line_height;
-	gr_printf_no_resize(text_x, line, XSTR("Increase Parameter: %s", 1900), increase_param_keybind.c_str());
+	gr_printf_no_resize(text_x, line, XSTR("Increase Parameter: %s", 1899), increase_param_keybind.c_str());
 	line += line_height;
 	line += line_height;
-	gr_printf_no_resize(text_x, line, "%s", XSTR("Status", 1902));
+	gr_printf_no_resize(text_x, line, "%s", XSTR("Status", 1900));
 	line += line_height;
-	gr_printf_no_resize(text_x, line, XSTR("Time Compression: %.2fx", 1903), f2fl(Game_time_compression));
+	gr_printf_no_resize(text_x, line, XSTR("Time Compression: %.2fx", 1901), f2fl(Game_time_compression));
 	line += line_height;
 	gr_printf_no_resize(text_x,
 		line,
-		XSTR("Cam Pos: X %.1f  Y %.1f  Z %.1f", 1904),
+		XSTR("Cam Pos: X %.1f  Y %.1f  Z %.1f", 1902),
 		cam_pos.xyz.x,
 		cam_pos.xyz.y,
 		cam_pos.xyz.z);
