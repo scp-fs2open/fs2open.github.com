@@ -78,6 +78,8 @@ SCP_vector<photo_mode_param> Photo_mode_params = {
 
 SCP_vector<photo_mode_post_effect_state> Photo_mode_saved_post_effects;
 int Photo_mode_selected_parameter = 0;
+int Photo_mode_panel_width = 0;
+int Photo_mode_panel_padding_w = 0;
 
 void photo_mode_capture_post_effect_state()
 {
@@ -208,6 +210,57 @@ SCP_string format_photo_mode_keybind(int action)
 	return primary + " / " + secondary;
 }
 
+void photo_mode_compute_hud_layout()
+{
+	const auto old_font = font::get_current_fontnum();
+	font::set_font(font::FONT1);
+
+	int max_text_width = 0;
+	char buf[512];
+	auto measure = [&](const char* text) {
+		int w = 0;
+		gr_get_string_size(&w, nullptr, text);
+		if (w > max_text_width) max_text_width = w;
+	};
+
+	// Find the longest string
+	measure(XSTR("Photo Mode", 1892));
+	measure(XSTR("Controls", 1893));
+	measure(XSTR("Status", 1902));
+	measure(XSTR("Effects", 1917));
+	snprintf(buf, sizeof(buf), XSTR("Toggle: %s", 1894),             format_photo_mode_keybind(TOGGLE_PHOTO_MODE).c_str());
+	measure(buf);
+	snprintf(buf, sizeof(buf), XSTR("Previous Filter: %s", 1895),    format_photo_mode_keybind(PHOTO_MODE_FILTER_PREV).c_str());
+	measure(buf);
+	snprintf(buf, sizeof(buf), XSTR("Next Filter: %s", 1896),        format_photo_mode_keybind(PHOTO_MODE_FILTER_NEXT).c_str());
+	measure(buf);
+	snprintf(buf, sizeof(buf), XSTR("Reset Filters: %s", 1897),      format_photo_mode_keybind(PHOTO_MODE_FILTER_RESET).c_str());
+	measure(buf);
+	snprintf(buf, sizeof(buf), XSTR("Decrease Parameter: %s", 1899), format_photo_mode_keybind(PHOTO_MODE_PARAM_DECREASE).c_str());
+	measure(buf);
+	snprintf(buf, sizeof(buf), XSTR("Increase Parameter: %s", 1900), format_photo_mode_keybind(PHOTO_MODE_PARAM_INCREASE).c_str());
+	measure(buf);
+
+	// Use worst case placeholder values for the dynamic status strings so the
+	// panel width stays stable as these change during a session.
+	snprintf(buf, sizeof(buf), XSTR("Time Compression: %.2fx", 1903), 64.0f);                          measure(buf);
+	snprintf(buf, sizeof(buf), XSTR("Cam Pos: X %.1f  Y %.1f  Z %.1f", 1904), -99999.9f, -99999.9f, -99999.9f); measure(buf);
+
+	for (const auto& param : Photo_mode_params) {
+		if (param.type == photo_mode_param_type::INT_RANGE) {
+			snprintf(buf, sizeof(buf), "%s: %d", XSTR(param.label, param.xstr_id), param.max_val);
+		} else {
+			snprintf(buf, sizeof(buf), "%s: %s", XSTR(param.label, param.xstr_id), XSTR("Off", 1285));
+		}
+		measure(buf);
+	}
+
+	font::set_font(old_font);
+
+	Photo_mode_panel_padding_w = max_text_width / 10;
+	Photo_mode_panel_width     = max_text_width + Photo_mode_panel_padding_w * 2;
+}
+
 void photo_mode_set_active(bool active)
 {
 	if (active == Photo_mode_active) {
@@ -247,6 +300,7 @@ void photo_mode_set_active(bool active)
 		photo_mode_capture_post_effect_state();
 		photo_mode_sync_parameter_values_from_saved_state();
 		photo_mode_apply_parameter_values();
+		photo_mode_compute_hud_layout();
 
 		audiostream_pause_all();
 		message_pause_all();
@@ -388,11 +442,12 @@ void photo_mode_maybe_render_hud()
 	gr_set_color_fast(&Color_silver);
 	const auto old_font = font::get_current_fontnum();
 	font::set_font(font::FONT1);
-	const int line_height = gr_get_font_height();
-	const int panel_padding = 8;
-	const int panel_width = 530;
+	const int line_height     = gr_get_font_height();
 	const int num_param_lines = static_cast<int>(Photo_mode_params.size());
-	const int panel_height = panel_padding * 2 + line_height * (15 + num_param_lines);
+	const int panel_padding_h = line_height / 2;
+	const int panel_padding_w = Photo_mode_panel_padding_w;
+	const int panel_width     = Photo_mode_panel_width;
+	const int panel_height    = panel_padding_h * 2 + line_height * (15 + num_param_lines);
 	const int panel_x = gr_screen.center_offset_x + (gr_screen.center_w / 4);
 	const int panel_y = gr_screen.center_offset_y + gr_screen.center_h - panel_height - (gr_screen.center_h / 6);
 
@@ -401,9 +456,9 @@ void photo_mode_maybe_render_hud()
 	gr_line(panel_x, panel_y, panel_x, panel_y + panel_height, GR_RESIZE_NONE);
 	gr_line(panel_x + panel_width, panel_y, panel_x + panel_width, panel_y + panel_height, GR_RESIZE_NONE);
 	gr_line(panel_x,
-		panel_y + line_height + panel_padding + 1,
+		panel_y + line_height + panel_padding_h + 1,
 		panel_x + panel_width,
-		panel_y + line_height + panel_padding + 1,
+		panel_y + line_height + panel_padding_h + 1,
 		GR_RESIZE_NONE);
 
 	bool grid_enabled = false;
@@ -425,8 +480,8 @@ void photo_mode_maybe_render_hud()
 		gr_line(gr_screen.center_offset_x, y2, gr_screen.center_offset_x + gr_screen.center_w, y2, GR_RESIZE_NONE);
 	}
 
-	int line = panel_y + panel_padding;
-	const int text_x = panel_x + panel_padding;
+	int line = panel_y + panel_padding_h;
+	const int text_x = panel_x + panel_padding_w;
 	gr_printf_no_resize(text_x, line, "%s", XSTR("Photo Mode", 1892));
 	line += line_height;
 	line += line_height;
