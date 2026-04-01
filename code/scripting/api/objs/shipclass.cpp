@@ -582,6 +582,38 @@ ADE_VIRTVAR(Model, l_Shipclass, "model", "Model", "model", "Ship class model, or
 	return ade_set_args(L, "o", l_Model.Set(model_h(sip->model_num)));
 }
 
+ADE_VIRTVAR(CloseupPosition, l_Shipclass, nullptr, "Ship class closeup position", "vector", "closeup position, or nil if handle is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
+		return ADE_RETURN_NIL;
+
+	if (!SCP_vector_inbounds(Ship_info, idx))
+		return ADE_RETURN_NIL;
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "Setting Closeup Position is not supported");
+	}
+
+	return ade_set_args(L, "o", l_Vector.Set(Ship_info[idx].closeup_pos));
+}
+
+ADE_VIRTVAR(CloseupZoom, l_Shipclass, nullptr, "Ship class closeup zoom", "number", "closeup zoom, or nil if handle is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
+		return ADE_RETURN_NIL;
+
+	if (!SCP_vector_inbounds(Ship_info, idx))
+		return ADE_RETURN_NIL;
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "Setting Closeup Zoom is not supported");
+	}
+
+	return ade_set_args(L, "f", Ship_info[idx].closeup_zoom);
+}
+
 ADE_VIRTVAR(CockpitModel, l_Shipclass, "model", "Model used for first-person cockpit", "model", "Cockpit model")
 {
 	int ship_info_idx=-1;

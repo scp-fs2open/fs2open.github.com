@@ -263,6 +263,38 @@ ADE_VIRTVAR(Model, l_Weaponclass, "model", "Model", "model", "Weapon class model
 	return ade_set_args(L, "o", l_Model.Set(model_h(wip->model_num)));
 }
 
+ADE_VIRTVAR(CloseupPosition, l_Weaponclass, nullptr, "Weapon class closeup position", "vector", "closeup position, or nil if handle is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
+		return ADE_RETURN_NIL;
+
+	if (!SCP_vector_inbounds(Weapon_info, idx))
+		return ADE_RETURN_NIL;
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "Setting Closeup Position is not supported");
+	}
+
+	return ade_set_args(L, "o", l_Vector.Set(Weapon_info[idx].closeup_pos));
+}
+
+ADE_VIRTVAR(CloseupZoom, l_Weaponclass, nullptr, "Weapon class closeup zoom", "number", "closeup zoom, or nil if handle is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
+		return ADE_RETURN_NIL;
+
+	if (!SCP_vector_inbounds(Weapon_info, idx))
+		return ADE_RETURN_NIL;
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "Setting Closeup Zoom is not supported");
+	}
+
+	return ade_set_args(L, "f", Weapon_info[idx].closeup_zoom);
+}
+
 ADE_VIRTVAR(ArmorFactor, l_Weaponclass, "number", "Amount of weapon damage applied to ship hull (0-1.0)", "number", "Armor factor, or empty string if handle is invalid")
 {
 	int idx;
