@@ -226,7 +226,7 @@ void photo_mode_compute_hud_layout()
 	// Find the longest string
 	measure(XSTR("Photo Mode", 1892));
 	measure(XSTR("Controls", 1893));
-	measure(XSTR("Status", 1902));
+	measure(XSTR("Status", 1900));
 	measure(XSTR("Effects", 1914));
 	snprintf(buf, sizeof(buf), XSTR("Toggle: %s", 1894),             format_photo_mode_keybind(TOGGLE_PHOTO_MODE).c_str());
 	measure(buf);
@@ -236,15 +236,15 @@ void photo_mode_compute_hud_layout()
 	measure(buf);
 	snprintf(buf, sizeof(buf), XSTR("Reset Filters: %s", 1897),      format_photo_mode_keybind(PHOTO_MODE_FILTER_RESET).c_str());
 	measure(buf);
-	snprintf(buf, sizeof(buf), XSTR("Decrease Parameter: %s", 1899), format_photo_mode_keybind(PHOTO_MODE_PARAM_DECREASE).c_str());
+	snprintf(buf, sizeof(buf), XSTR("Decrease Parameter: %s", 1898), format_photo_mode_keybind(PHOTO_MODE_PARAM_DECREASE).c_str());
 	measure(buf);
-	snprintf(buf, sizeof(buf), XSTR("Increase Parameter: %s", 1900), format_photo_mode_keybind(PHOTO_MODE_PARAM_INCREASE).c_str());
+	snprintf(buf, sizeof(buf), XSTR("Increase Parameter: %s", 1899), format_photo_mode_keybind(PHOTO_MODE_PARAM_INCREASE).c_str());
 	measure(buf);
 
 	// Use worst case placeholder values for the dynamic status strings so the
 	// panel width stays stable as these change during a session.
-	snprintf(buf, sizeof(buf), XSTR("Time Compression: %.2fx", 1903), 64.0f);                          measure(buf);
-	snprintf(buf, sizeof(buf), XSTR("Cam Pos: X %.1f  Y %.1f  Z %.1f", 1904), -99999.9f, -99999.9f, -99999.9f); measure(buf);
+	snprintf(buf, sizeof(buf), XSTR("Time Compression: %.2fx", 1901), 64.0f);                          measure(buf);
+	snprintf(buf, sizeof(buf), XSTR("Cam Pos: X %.1f  Y %.1f  Z %.1f", 1902), -99999.9f, -99999.9f, -99999.9f); measure(buf);
 
 	for (const auto& param : Photo_mode_params) {
 		if (param.type == photo_mode_param_type::INT_RANGE) {
@@ -513,7 +513,7 @@ void photo_mode_maybe_render_hud()
 	line += line_height;
 	line += line_height;
 	gr_set_color_fast(&Color_silver);
-	gr_printf_no_resize(text_x, line, "%s", XSTR("Effects", 1917));
+	gr_printf_no_resize(text_x, line, "%s", XSTR("Effects", 1914));
 	line += line_height;
 	for (int i = 0; i < static_cast<int>(Photo_mode_params.size()); ++i) {
 		const auto& param = Photo_mode_params[i];
