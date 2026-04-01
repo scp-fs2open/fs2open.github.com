@@ -857,11 +857,30 @@ void parse_mission_info(mission *pm, bool basic = false)
 		if (!basic)
 			nebl_set_storm(Mission_parse_storm_name);
 	}
-	if(optional_string("+Fog Near Mult:")){
-		stuff_float(&Neb2_fog_near_mult);
-	}
-	if(optional_string("+Fog Far Mult:")){
-		stuff_float(&Neb2_fog_far_mult);
+
+	{
+		float near_mult = 1.f, far_mult = 1.f;
+		//Pre-26.0 missions always need legacy conversion
+		bool legacy_fog = gameversion::version(26, 0, 0) > pm->required_fso_version;
+		if(optional_string("+Fog Near Mult:")){
+			stuff_float(&near_mult);
+			legacy_fog = true;
+		}
+		if(optional_string("+Fog Far Mult:")){
+			stuff_float(&far_mult);
+			legacy_fog = true;
+		}
+
+		if (legacy_fog) {
+			//This stems from the weird unchangeable constants of legacy fog
+			Neb2_fog_1000m_visibility = powf(10.f, -100.f / (75.f * far_mult - near_mult));
+			Neb2_fog_near_distance = 10.f * near_mult;
+			Neb2_fog_skybox_clip_distance = 200.f; // guesstimated constant from on-GPU float clipping at 10^10 zFar
+			Neb2_fog_clip_distance = Default_max_draw_distance;
+		}
+		else {
+
+		}
 	}
 
 	// Goober5000 - ship contrail speed threshold

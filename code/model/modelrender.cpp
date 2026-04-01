@@ -1594,17 +1594,10 @@ void submodel_render_queue(const model_render_params *render_info, model_draw_li
 
 	// RT - Put this here to fog debris
 	if( tmap_flags & TMAP_FLAG_PIXEL_FOG ) {
-		float fog_near, fog_far;
-		object *obj = NULL;
-
-		if (objnum >= 0)
-			obj = &Objects[objnum];
-
-		neb2_get_adjusted_fog_values(&fog_near, &fog_far, nullptr, obj);
 		unsigned char r, g, b;
 		neb2_get_fog_color(&r, &g, &b);
 
-		rendering_material.set_fog(r, g, b, fog_near, fog_far);
+		rendering_material.set_fog(r, g, b);
 	} else {
 		rendering_material.set_fog();
 	}
@@ -2824,13 +2817,10 @@ void model_render_queue(const model_render_params* interp, model_draw_list* scen
 
 	// if we're in nebula mode, fog everything except for the warp holes and other non-fogged models
 	if ( (The_mission.flags[Mission::Mission_Flags::Fullneb]) && (Neb2_render_mode != NEB2_RENDER_NONE) && !(model_flags & MR_NO_FOGGING) ) {
-		float fog_near = 10.0f, fog_far = 1000.0f;
-		neb2_get_adjusted_fog_values(&fog_near, &fog_far, nullptr, objp);
-
 		unsigned char r, g, b;
 		neb2_get_fog_color(&r, &g, &b);
 
-		rendering_material.set_fog(r, g, b, fog_near, fog_far);
+		rendering_material.set_fog(r, g, b);
 	} else {
 		rendering_material.set_fog();
 	}

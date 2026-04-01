@@ -2562,8 +2562,9 @@ int Fred_mission_save::save_mission_info()
 	// Goober5000
 	if (save_config.save_format != MissionFormat::RETAIL) {
 		// write out the nebula clipping multipliers
-		fout("\n+Fog Near Mult: %f\n", Neb2_fog_near_mult);
-		fout("\n+Fog Far Mult: %f\n", Neb2_fog_far_mult);
+		//TODO
+		//fout("\n+Fog Near Mult: %f\n", Neb2_fog_near_mult);
+		//fout("\n+Fog Far Mult: %f\n", Neb2_fog_far_mult);
 
 		if (The_mission.contrail_threshold != CONTRAIL_THRESHOLD_DEFAULT) {
 			fout("\n$Contrail Speed Threshold: %d\n", The_mission.contrail_threshold);

@@ -218,8 +218,6 @@ void convert_model_material(model_uniform_data* data_out,
 		auto& fog_params = material.get_fog();
 
 		if (fog_params.enabled) {
-			data_out->fogStart = fog_params.dist_near;
-			data_out->fogScale = 1.0f / (fog_params.dist_far - fog_params.dist_near);
 			data_out->fogColor.xyzw.x = i2fl(fog_params.r) / 255.0f;
 			data_out->fogColor.xyzw.y = i2fl(fog_params.g) / 255.0f;
 			data_out->fogColor.xyzw.z = i2fl(fog_params.b) / 255.0f;

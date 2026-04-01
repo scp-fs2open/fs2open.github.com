@@ -105,11 +105,10 @@ int neb_tossed_count = 0;		// nebs tossed because of max render count
 float Neb2_awacs = -1.0f;
 
 // The visual render distance multipliers for the nebula
-float Neb2_fog_near_mult = 1.0f;
-float Neb2_fog_far_mult = 1.0f;
-
-// this is the percent of visibility at the fog far distance
-const float NEB_FOG_FAR_PCT = 0.1f;
+float Neb2_fog_near_distance = 10.0f;
+float Neb2_fog_1000m_visibility = 0.00464158883f;
+float Neb2_fog_skybox_clip_distance = Default_max_draw_distance;
+float Neb2_fog_clip_distance = Default_max_draw_distance;
 
 float Neb2_fog_visibility_trail = 1.0f;
 float Neb2_fog_visibility_thruster = 1.5f;
@@ -397,8 +396,10 @@ void neb2_get_fog_color(ubyte *r, ubyte *g, ubyte *b)
 void neb2_pre_level_init()
 {
 	Neb2_awacs = -1.0f;
-	Neb2_fog_near_mult = 1.0f;
-	Neb2_fog_far_mult = 1.0f;
+	Neb2_fog_near_distance = 10.0f;
+	Neb2_fog_1000m_visibility = 0.00464158883f;
+	Neb2_fog_skybox_clip_distance = Max_draw_distance;
+	Neb2_fog_clip_distance = Max_draw_distance;
 
 	strcpy_s(Neb2_texture_name, "");
 	clear_all_bits(Neb2_poof_flags.get(), Poof_info.size());
@@ -542,8 +543,7 @@ void neb2_post_level_init(bool fog_color_override)
 	}
 
 	// set the mission fog near dist and density
-	float fog_far;
-	neb2_get_adjusted_fog_values(&nNf_near, &fog_far, &nNf_density, nullptr);
+	neb2_get_adjusted_fog_values(&nNf_near, &nNf_density);
 
 	for (float& accum : Poof_accum)
 		accum = 0.0f;
@@ -649,7 +649,7 @@ DCF(neb_skip, "Toggles culling of objects obscured by nebula")
 }
 int neb2_skip_render(object *objp, float z_depth)
 {
-	float fog_near, fog_far, fog_density;
+	float fog_near, fog_density;
 
 	// if we're never skipping
 	if (!neb_skip_opt) {
@@ -657,7 +657,7 @@ int neb2_skip_render(object *objp, float z_depth)
 	}
 	
 	// get near and far fog values based upon object type and rendering mode
-	neb2_get_adjusted_fog_values(&fog_near, &fog_far, &fog_density);
+	neb2_get_adjusted_fog_values(&fog_near, &fog_density);
 	float fog = pow(fog_density, z_depth - fog_near + objp->radius);
 
 	// by object type
@@ -1071,71 +1071,15 @@ void neb2_render_poofs()
 #endif
 }
 
-/*
-//Object types
-#define OBJ_NONE		0	//unused object
-#define OBJ_SHIP		1	//a ship
-#define OBJ_WEAPON		2	//a laser, missile, etc
-#define OBJ_FIREBALL	3	//an explosion
-#define OBJ_START		4	//a starting point marker (player start, etc)
-#define OBJ_WAYPOINT	5	//a waypoint object, maybe only ever used by Fred
-#define OBJ_DEBRIS		6	//a flying piece of ship debris
-#define OBJ_CMEASURE	7	//a countermeasure, such as chaff
-#define OBJ_GHOST		8	//so far, just a placeholder for when a player dies.
-#define OBJ_POINT		9	//generic object type to display a point in Fred.
-#define OBJ_SHOCKWAVE	10	// a shockwave
-#define OBJ_WING		11	// not really a type used anywhere, but I need it for Fred.
-#define OBJ_OBSERVER	12	// used for multiplayer observers (possibly single player later)
-#define OBJ_ASTEROID	13	// An asteroid, you know, a big rock, like debris, sort of.
-#define OBJ_JUMP_NODE	14	// A jump node object, used only in Fred.
-#define OBJ_BEAM		15	// beam weapons. we have to roll them into the object system to get the benefits of the collision pairs
-*/
-// get near and far fog values based upon object type and rendering mode
-void neb2_get_fog_values(float *fnear, float *ffar, object *objp)
-{
-	int type_index = -1;
-
-	//use defaults
-	*fnear = Default_fog_near;
-	*ffar = Default_fog_far;
-
-	if (objp == NULL) {
-		return;
-	}
-
-	// Future TODO: Add fog_start_dist and fog_complete_dist to Props
-	// determine what fog index to use
-	if(objp->type == OBJ_SHIP) {
-		Assert((objp->instance >= 0) && (objp->instance < MAX_SHIPS));
-		if((objp->instance >= 0) && (objp->instance < MAX_SHIPS)) {
-			type_index = ship_query_general_type(objp->instance);
-			if(type_index > 0) {
-				*fnear = Ship_types[type_index].fog_start_dist;
-				*ffar = Ship_types[type_index].fog_complete_dist;
-			}
-		}
-	} else if (objp->type == OBJ_FIREBALL) { //mostly here for the warp effect
-		*fnear = objp->radius*2;
-		*ffar = (objp->radius*objp->radius*200)+objp->radius*200;
-		return;
-	}
-}
-
 // This version of the function allows for global adjustment to fog values
-void neb2_get_adjusted_fog_values(float *fnear, float *ffar, float *fdensity, object *objp)
+void neb2_get_adjusted_fog_values(float *fnear, float *fdensity)
 {
-	neb2_get_fog_values(fnear, ffar, objp);
+	// There was code here that adjusted distanced based on object type, but at the time of reworking this, the code was effectively dead and never used.
 
-	// Multiply fog distances by mission multipliers
-	*fnear *= Neb2_fog_near_mult;
-	*ffar *= Neb2_fog_far_mult;
-
-	// Avoide divide-by-zero
-	if ((*fnear - *ffar) == 0)
-		*ffar = *fnear + 1.0f;
+	*fnear = Neb2_fog_near_distance;
 
 	if (fdensity != nullptr)
-		*fdensity = powf(NEB_FOG_FAR_PCT, 1 / (*ffar - *fnear));
+		*fdensity = powf(Neb2_fog_1000m_visibility, 1 / 1000);
 }
 
 // given a position, returns 0 - 1 the fog visibility of that position, 0 = completely obscured

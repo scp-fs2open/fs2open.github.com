@@ -2295,25 +2295,26 @@ ADE_VIRTVAR(NebulaSensorRange, l_Mission, "number", "Gets or sets the Neb2_awacs
 	return ade_set_args(L, "f", Neb2_awacs);
 }
 
-ADE_VIRTVAR(NebulaNearMult, l_Mission, "number", "Gets or sets the multiplier of the near plane of the current nebula.", "number", "The multiplier of the near plane.")
+ADE_VIRTVAR_DEPRECATED(NebulaNearMult, l_Mission, "number", "Gets or sets the multiplier of the near plane of the current nebula.", "number", "The multiplier of the near plane.", gameversion::version(26, 0), "Deprecated in favor of NebulaNearDistance.")
 {
 	float fog_near = 0.0f;
 
 	if (ADE_SETTING_VAR && ade_get_args(L, "*f", &fog_near))
-		Neb2_fog_near_mult = fog_near;
+		Neb2_fog_near_distance = fog_near * 10.f;
 
-	return ade_set_args(L, "f", Neb2_fog_near_mult);
+	return ade_set_args(L, "f", Neb2_fog_near_distance / 10.f);
 }
 
-ADE_VIRTVAR(NebulaFarMult, l_Mission, "number", "Gets or sets the multiplier of the far plane of the current nebula.", "number", "The multiplier of the far plane.")
+ADE_VIRTVAR_DEPRECATED(NebulaFarMult, l_Mission, "number", "Gets or sets the multiplier of the far plane of the current nebula.", "number", "The multiplier of the far plane.", gameversion::version(26, 0), "Deprecated. Had no effect.")
 {
 	float fog_far = 0.0f;
 
-	if (ADE_SETTING_VAR && ade_get_args(L, "*f", &fog_far))
-		Neb2_fog_far_mult = fog_far;
+	if (ADE_SETTING_VAR && ade_get_args(L, "*f", &fog_far)) {}
 
-	return ade_set_args(L, "f", Neb2_fog_far_mult);
+	return ade_set_args(L, "f", 1.f);
 }
+
+	//TODO
 
 ADE_FUNC(isSubspace, l_Mission, nullptr, "Get whether or not the current mission being played is set in subspace", "boolean", "true if in subspace, false if not")
 {
