@@ -5046,9 +5046,9 @@ void mg_stop(struct mg_context *ctx) {
   }
   free_context(ctx);
 
-#if defined(_WIN32) && !defined(__SYMBIAN32__)
-  (void) WSACleanup();
-#endif // _WIN32
+  // Note: WSACleanup and DeleteCriticalSection are intentionally omitted here.
+  // The one-shot initialization in mg_start ensures these resources remain
+  // valid across multiple mg_start/mg_stop cycles within the same process.
 }
 
 struct mg_context *mg_start(mg_callback_t user_callback, void *user_data,
@@ -5058,9 +5058,15 @@ struct mg_context *mg_start(mg_callback_t user_callback, void *user_data,
   int i;
 
 #if defined(_WIN32) && !defined(__SYMBIAN32__)
-  WSADATA data;
-  WSAStartup(MAKEWORD(2,2), &data);
-  InitializeCriticalSection(&global_log_file_lock);
+  {
+    static int win32_initialized;
+    if (!win32_initialized) {
+      WSADATA data;
+      WSAStartup(MAKEWORD(2,2), &data);
+      InitializeCriticalSection(&global_log_file_lock);
+      win32_initialized = 1;
+    }
+  }
 #endif // _WIN32
 
   // Allocate context and initialize reasonable general case defaults.
