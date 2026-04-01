@@ -10,6 +10,7 @@
 
 
 
+#include "camera/photomode.h"
 #include "cfile/cfile.h"
 #include "cmdline/cmdline.h"
 #include "controlconfig/controlsconfig.h"
@@ -617,6 +618,11 @@ void control_config_conflict_check()
 			auto &item_j = Control_config[j];
 			if (item_j.empty()) {
 				// skip
+				continue;
+			}
+
+			// Skip conflict check between items in different conflict groups
+			if ((item_i.conflict_groups & item_j.conflict_groups) == 0) {
 				continue;
 			}
 
@@ -2836,6 +2842,13 @@ int check_control_used(int id, int key)
 
 	if (item.disabled || item.locked)
 		return 0;
+
+	// Filter actions based on conflict groups and current mode
+	{
+		int active_group = game_is_photo_mode_active() ? CONFLICT_GROUP_PHOTO_MODE : CONFLICT_GROUP_DEFAULT;
+		if (!(item.conflict_groups & active_group))
+			return 0;
+	}
 
 	short z = item.get_btn(CID_KEYBOARD);	// Get the key that's bound to this control
 

@@ -14,4 +14,3 @@ bool game_is_photo_mode_active();
 void game_cycle_photo_mode_filter(int direction);
 void game_reset_photo_mode_filters();
 void game_adjust_photo_mode_filter_parameter(int delta);
-void game_toggle_photo_mode_grid();

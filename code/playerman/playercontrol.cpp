@@ -10,6 +10,7 @@
 
 #include "autopilot/autopilot.h"
 #include "camera/camera.h"
+#include "camera/photomode.h"
 #include "controlconfig/controlsconfig.h"
 #include "debugconsole/console.h"
 #include "freespace.h"
@@ -1059,6 +1060,11 @@ void copy_control_info(control_info *dest_ci, control_info *src_ci, int control_
 
 void read_player_controls(object *objp, float frametime)
 {
+	// Photo mode controls the camera, not the player ship
+	if (game_is_photo_mode_active()) {
+		return;
+	}
+
 	float diff;
 	float target_warpout_speed;
 

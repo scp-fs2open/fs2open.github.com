@@ -38,32 +38,37 @@ struct photo_mode_post_effect_state {
 	vec3d rgb = vmd_zero_vector;
 };
 
-enum photo_mode_parameter {
-	PHOTO_MODE_PARAM_SATURATION = 0,
-	PHOTO_MODE_PARAM_BRIGHTNESS,
-	PHOTO_MODE_PARAM_CONTRAST,
-	PHOTO_MODE_PARAM_COUNT
+enum class photo_mode_param_type {
+	INT_RANGE,  // adjustable integer value with min/max
+	BOOL_TOGGLE // on/off toggle
+};
+
+struct photo_mode_param {
+	const char* label;          // display name
+	int         xstr_id;       // XSTR localization ID
+	photo_mode_param_type type;
+
+	// For INT_RANGE: post-processing effect name, range, and values
+	const char* effect_name;   // post-processing effect to control (nullptr for non-effect params)
+	int         min_val;
+	int         max_val;
+	int         value;
+	int         saved_value;
+
+	// For BOOL_TOGGLE
+	bool        bool_value;
+};
+
+// Parameter definitions — add new parameters here
+SCP_vector<photo_mode_param> Photo_mode_params = {
+	{"Grid",       1908, photo_mode_param_type::BOOL_TOGGLE, nullptr,    0, 0,   0,   0,   false},
+	{"Saturation", 1905, photo_mode_param_type::INT_RANGE, "saturation", 0, 200, 100, 100, false},
+	{"Brightness", 1906, photo_mode_param_type::INT_RANGE, "brightness", 0, 200, 100, 100, false},
+	{"Contrast",   1907, photo_mode_param_type::INT_RANGE, "contrast",   0, 200, 100, 100, false},
 };
 
 SCP_vector<photo_mode_post_effect_state> Photo_mode_saved_post_effects;
-std::array<int, PHOTO_MODE_PARAM_COUNT> Photo_mode_saved_parameter_values = {100, 100, 100};
-std::array<int, PHOTO_MODE_PARAM_COUNT> Photo_mode_parameter_values = {100, 100, 100};
-int Photo_mode_selected_parameter = PHOTO_MODE_PARAM_SATURATION;
-bool Photo_mode_grid_enabled = false;
-
-const char* photo_mode_get_parameter_effect_name(int index)
-{
-	switch (index) {
-	case PHOTO_MODE_PARAM_SATURATION:
-		return "saturation";
-	case PHOTO_MODE_PARAM_BRIGHTNESS:
-		return "brightness";
-	case PHOTO_MODE_PARAM_CONTRAST:
-		return "contrast";
-	default:
-		return nullptr;
-	}
-}
+int Photo_mode_selected_parameter = 0;
 
 void photo_mode_capture_post_effect_state()
 {
@@ -138,24 +143,24 @@ int photo_mode_get_saved_post_effect_value(const char* effect_name)
 
 void photo_mode_sync_parameter_values_from_saved_state()
 {
-	for (int i = 0; i < PHOTO_MODE_PARAM_COUNT; ++i) {
-		const auto effect_name = photo_mode_get_parameter_effect_name(i);
-		Photo_mode_saved_parameter_values[i] = photo_mode_get_saved_post_effect_value(effect_name);
-		Photo_mode_parameter_values[i] = Photo_mode_saved_parameter_values[i];
+	for (auto& param : Photo_mode_params) {
+		if (param.type == photo_mode_param_type::INT_RANGE && param.effect_name != nullptr) {
+			param.saved_value = photo_mode_get_saved_post_effect_value(param.effect_name);
+			param.value = param.saved_value;
+		} else if (param.type == photo_mode_param_type::BOOL_TOGGLE) {
+			param.bool_value = false;
+		}
 	}
 
-	Photo_mode_selected_parameter = PHOTO_MODE_PARAM_SATURATION;
+	Photo_mode_selected_parameter = 0;
 }
 
 void photo_mode_apply_parameter_values()
 {
-	for (int i = 0; i < PHOTO_MODE_PARAM_COUNT; ++i) {
-		const auto effect_name = photo_mode_get_parameter_effect_name(i);
-		if (effect_name == nullptr) {
-			continue;
+	for (const auto& param : Photo_mode_params) {
+		if (param.type == photo_mode_param_type::INT_RANGE && param.effect_name != nullptr) {
+			gr_post_process_set_effect(param.effect_name, param.value, nullptr);
 		}
-
-		gr_post_process_set_effect(effect_name, Photo_mode_parameter_values[i], nullptr);
 	}
 }
 
@@ -244,10 +249,15 @@ void photo_mode_set_active(bool active)
 	}
 
 	photo_mode_apply_saved_post_effect_state(true);
-	Photo_mode_saved_parameter_values = {100, 100, 100};
-	Photo_mode_parameter_values = {100, 100, 100};
-	Photo_mode_selected_parameter = PHOTO_MODE_PARAM_SATURATION;
-	Photo_mode_grid_enabled = false;
+	for (auto& param : Photo_mode_params) {
+		if (param.type == photo_mode_param_type::INT_RANGE) {
+			param.value = 100;
+			param.saved_value = 100;
+		} else if (param.type == photo_mode_param_type::BOOL_TOGGLE) {
+			param.bool_value = false;
+		}
+	}
+	Photo_mode_selected_parameter = 0;
 
 	Photo_mode_active = false;
 	mprintf(("Photo Mode disabled.\n"));
@@ -307,9 +317,13 @@ void photo_mode_do_frame(float frame_time)
 		speed *= Photo_mode_boost_multiplier;
 	}
 
-	const float forward = check_control_timef(FORWARD_THRUST) - check_control_timef(REVERSE_THRUST);
-	const float right = check_control_timef(RIGHT_SLIDE_THRUST) - check_control_timef(LEFT_SLIDE_THRUST);
-	const float up = check_control_timef(UP_SLIDE_THRUST) - check_control_timef(DOWN_SLIDE_THRUST);
+	float forward = check_control_timef(FORWARD_THRUST) - check_control_timef(REVERSE_THRUST);
+	float right = check_control_timef(RIGHT_SLIDE_THRUST) - check_control_timef(LEFT_SLIDE_THRUST);
+	float up = check_control_timef(UP_SLIDE_THRUST) - check_control_timef(DOWN_SLIDE_THRUST);
+
+	CLAMP(forward, -1.0f, 1.0f);
+	CLAMP(right, -1.0f, 1.0f);
+	CLAMP(up, -1.0f, 1.0f);
 
 	vm_vec_scale_add2(&cam_pos, &cam_orient.vec.fvec, forward * speed * frame_time);
 	vm_vec_scale_add2(&cam_pos, &cam_orient.vec.rvec, right * speed * frame_time);
@@ -345,15 +359,14 @@ void photo_mode_maybe_render_hud()
 	const auto reset_filter_keybind = format_photo_mode_keybind(PHOTO_MODE_FILTER_RESET);
 	const auto decrease_param_keybind = format_photo_mode_keybind(PHOTO_MODE_PARAM_DECREASE);
 	const auto increase_param_keybind = format_photo_mode_keybind(PHOTO_MODE_PARAM_INCREASE);
-	const auto grid_keybind = format_photo_mode_keybind(PHOTO_MODE_TOGGLE_GRID);
-
 	gr_set_color_fast(&Color_silver);
 	const auto old_font = font::get_current_fontnum();
 	font::set_font(font::FONT1);
 	const int line_height = gr_get_font_height();
 	const int panel_padding = 8;
 	const int panel_width = 530;
-	const int panel_height = panel_padding * 2 + line_height * 18;
+	const int num_param_lines = static_cast<int>(Photo_mode_params.size());
+	const int panel_height = panel_padding * 2 + line_height * (15 + num_param_lines);
 	const int panel_x = gr_screen.center_offset_x + (gr_screen.center_w / 4);
 	const int panel_y = gr_screen.center_offset_y + gr_screen.center_h - panel_height - (gr_screen.center_h / 6);
 
@@ -367,7 +380,16 @@ void photo_mode_maybe_render_hud()
 		panel_y + line_height + panel_padding + 1,
 		GR_RESIZE_NONE);
 
-	if (Photo_mode_grid_enabled) {
+	// Check if any bool param enables the grid overlay
+	bool grid_enabled = false;
+	for (const auto& param : Photo_mode_params) {
+		if (param.type == photo_mode_param_type::BOOL_TOGGLE && strcmp(param.label, "Grid") == 0) {
+			grid_enabled = param.bool_value;
+			break;
+		}
+	}
+
+	if (grid_enabled) {
 		const int x1 = gr_screen.center_offset_x + gr_screen.center_w / 3;
 		const int x2 = gr_screen.center_offset_x + (gr_screen.center_w * 2) / 3;
 		const int y1 = gr_screen.center_offset_y + gr_screen.center_h / 3;
@@ -397,8 +419,6 @@ void photo_mode_maybe_render_hud()
 	line += line_height;
 	gr_printf_no_resize(text_x, line, XSTR("Increase Parameter: %s", 1900), increase_param_keybind.c_str());
 	line += line_height;
-	gr_printf_no_resize(text_x, line, XSTR("Toggle Thirds Grid: %s", 1901), grid_keybind.c_str());
-	line += line_height;
 	line += line_height;
 	gr_printf_no_resize(text_x, line, "%s", XSTR("Status", 1902));
 	line += line_height;
@@ -411,25 +431,23 @@ void photo_mode_maybe_render_hud()
 		cam_pos.xyz.y,
 		cam_pos.xyz.z);
 	line += line_height;
-	gr_set_color_fast(
-		Photo_mode_selected_parameter == PHOTO_MODE_PARAM_SATURATION ? &Color_bright_white : &Color_silver);
-	gr_printf_no_resize(text_x,
-		line,
-		XSTR("Saturation: %d", 1905),
-		Photo_mode_parameter_values[PHOTO_MODE_PARAM_SATURATION]);
-	line += line_height;
-	gr_set_color_fast(
-		Photo_mode_selected_parameter == PHOTO_MODE_PARAM_BRIGHTNESS ? &Color_bright_white : &Color_silver);
-	gr_printf_no_resize(text_x,
-		line,
-		XSTR("Brightness: %d", 1906),
-		Photo_mode_parameter_values[PHOTO_MODE_PARAM_BRIGHTNESS]);
-	line += line_height;
-	gr_set_color_fast(Photo_mode_selected_parameter == PHOTO_MODE_PARAM_CONTRAST ? &Color_bright_white : &Color_silver);
-	gr_printf_no_resize(text_x, line, XSTR("Contrast: %d", 1907), Photo_mode_parameter_values[PHOTO_MODE_PARAM_CONTRAST]);
 	line += line_height;
 	gr_set_color_fast(&Color_silver);
-	gr_printf_no_resize(text_x, line, XSTR("Grid: %s", 1908), Photo_mode_grid_enabled ? XSTR("On", 1285) : XSTR("Off", 1286));
+	gr_printf_no_resize(text_x, line, "%s", XSTR("Effects", 1917));
+	line += line_height;
+	for (int i = 0; i < static_cast<int>(Photo_mode_params.size()); ++i) {
+		const auto& param = Photo_mode_params[i];
+		gr_set_color_fast(Photo_mode_selected_parameter == i ? &Color_bright_white : &Color_silver);
+
+		if (param.type == photo_mode_param_type::INT_RANGE) {
+			gr_printf_no_resize(text_x, line, "%s: %d", XSTR(param.label, param.xstr_id), param.value);
+		} else if (param.type == photo_mode_param_type::BOOL_TOGGLE) {
+			gr_printf_no_resize(text_x, line, "%s: %s", XSTR(param.label, param.xstr_id),
+				param.bool_value ? XSTR("On", 1285) : XSTR("Off", 1286));
+		}
+
+		line += line_height;
+	}
 
 	font::set_font(old_font);
 }
@@ -474,13 +492,7 @@ void game_cycle_photo_mode_filter(int direction)
 		return;
 	}
 
-	Photo_mode_selected_parameter += direction;
-	while (Photo_mode_selected_parameter < 0) {
-		Photo_mode_selected_parameter += PHOTO_MODE_PARAM_COUNT;
-	}
-	while (Photo_mode_selected_parameter >= PHOTO_MODE_PARAM_COUNT) {
-		Photo_mode_selected_parameter -= PHOTO_MODE_PARAM_COUNT;
-	}
+	Photo_mode_selected_parameter = std::clamp(Photo_mode_selected_parameter + direction, 0, static_cast<int>(Photo_mode_params.size()) - 1);
 }
 
 void game_reset_photo_mode_filters()
@@ -489,7 +501,13 @@ void game_reset_photo_mode_filters()
 		return;
 	}
 
-	Photo_mode_parameter_values = Photo_mode_saved_parameter_values;
+	for (auto& param : Photo_mode_params) {
+		if (param.type == photo_mode_param_type::INT_RANGE) {
+			param.value = param.saved_value;
+		} else if (param.type == photo_mode_param_type::BOOL_TOGGLE) {
+			param.bool_value = false;
+		}
+	}
 	photo_mode_apply_parameter_values();
 }
 
@@ -499,16 +517,14 @@ void game_adjust_photo_mode_filter_parameter(int delta)
 		return;
 	}
 
-	Photo_mode_parameter_values[Photo_mode_selected_parameter] =
-		std::clamp(Photo_mode_parameter_values[Photo_mode_selected_parameter] + delta, 0, 200);
-	photo_mode_apply_parameter_values();
-}
+	auto& param = Photo_mode_params[Photo_mode_selected_parameter];
 
-void game_toggle_photo_mode_grid()
-{
-	if (!Photo_mode_active) {
+	if (param.type == photo_mode_param_type::BOOL_TOGGLE) {
+		param.bool_value = (delta > 0);
 		return;
 	}
 
-	Photo_mode_grid_enabled = !Photo_mode_grid_enabled;
+	param.value = std::clamp(param.value + delta, param.min_val, param.max_val);
+	photo_mode_apply_parameter_values();
 }
+
