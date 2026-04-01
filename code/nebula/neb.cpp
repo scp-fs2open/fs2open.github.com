@@ -79,18 +79,6 @@ char Neb2_texture_name[MAX_FILENAME_LEN] = "";
 float max_rotation = 3.75f;
 float neb2_flash_fade = 0.3f;
 
-//WMC - these were originally indexed to SHIP_TYPE_FIGHTER_BOMBER
-const static float Default_fog_near = 10.0f;
-const static float Default_fog_far = 750.0f;
-
-// fog near and far values for rendering the background nebula
-#define NEB_BACKG_FOG_NEAR_GLIDE		2.5f
-#define NEB_BACKG_FOG_NEAR_D3D			4.5f
-#define NEB_BACKG_FOG_FAR_GLIDE			10.0f
-#define NEB_BACKG_FOG_FAR_D3D			10.0f
-float Neb_backg_fog_near = NEB_BACKG_FOG_NEAR_GLIDE;
-float Neb_backg_fog_far = NEB_BACKG_FOG_FAR_GLIDE;
-
 // stats
 int pneb_tried = 0;				// total pnebs tried to render
 int pneb_tossed_alpha = 0;		// pnebs tossed because of alpha optimization
@@ -531,10 +519,6 @@ void neb2_post_level_init(bool fog_color_override)
 	neb_tossed_alpha = 0;
 	neb_tossed_dot = 0;
 	neb_tossed_count = 0;
-
-	// setup proper fogging values
-	Neb_backg_fog_near = NEB_BACKG_FOG_NEAR_D3D;
-	Neb_backg_fog_far = NEB_BACKG_FOG_FAR_D3D;
 
 	// if we are going to use fullneb, but aren't fullneb yet, then be sure to reset our mode
 	if ( !(The_mission.flags[Mission::Mission_Flags::Fullneb]) ) {

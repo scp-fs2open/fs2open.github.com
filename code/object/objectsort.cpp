@@ -208,7 +208,6 @@ void obj_render_all(const std::function<void(object*)>& render_function, bool *d
 {
 	object *objp;
 	int i;
-	float fog_near, fog_density;
 
 	objp = Objects;
 

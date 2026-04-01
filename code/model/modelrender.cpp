@@ -1530,7 +1530,6 @@ void submodel_render_queue(const model_render_params *render_info, model_draw_li
 	}
 		
 	uint64_t flags = render_info->get_model_flags();
-	int objnum = render_info->get_object_number();
 
 	// Set the flags we will pass to the tmapper
 	uint tmap_flags = TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB;
