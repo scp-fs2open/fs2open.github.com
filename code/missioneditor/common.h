@@ -3,6 +3,15 @@
 #include "mission/missionmessage.h"
 #include "ship/anchor_t.h"
 
+// Default AWACS range applied when the nebula intensity is unset or invalid
+constexpr float DEFAULT_NEBULA_RANGE = 3000.0f;
+
+// Smallest meaningful change in an orientation input field (degrees)
+constexpr float ORIENT_INPUT_THRESHOLD = 0.01f;
+
+// Normalize a degree value into the range [-180, 180]
+float normalize_degrees(float deg);
+
 // Voice acting manager
 #define INVALID_MESSAGE ((MMessage*)SIZE_MAX) // was originally SIZE_T_MAX but that wasn't available outside fred. May need more research.
 

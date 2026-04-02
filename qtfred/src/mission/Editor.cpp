@@ -1122,7 +1122,7 @@ int Editor::common_object_delete(int obj) {
 
 	} else if (type == OBJ_POINT) {
 		/*
-		 TODO: Implement vriefing dialog
+		 TODO: Implement briefing dialog
 
 		Assert(Briefing_dialog);
 		Briefing_dialog->delete_icon(Objects[obj].instance);
@@ -2151,12 +2151,6 @@ int Editor::global_error_check_impl() {
 			strcpy(names[obj_count], buf);
 			err_flags[obj_count] = 1;
 		} else if (ptr->type == OBJ_POINT) {
-			// TODO: Fix this once the briefing dialog exists
-			/*
-			if (!Briefing_dialog) {
-				return internal_error("Briefing icon detected when not in briefing edit mode");
-			}
-			 */
 			//Shouldn't be needed anymore.
 			//If we really do need it, call me and I'll write a is_valid function for jumpnodes -WMC
 		} else if (ptr->type == OBJ_JUMP_NODE) {

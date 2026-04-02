@@ -1085,9 +1085,7 @@ int EditorViewport::drag_objects(int x, int y)
 	if (!query_valid_object(editor->currentObject) || Lookat_mode)
 		return -1;
 
-	if (Dup_drag == 1
-		//&& (Briefing_dialog) TODO
-		) {
+	if (Dup_drag == 1) {
 		Dup_drag = 0;
 	}
 
@@ -1181,12 +1179,6 @@ int EditorViewport::drag_objects(int x, int y)
 			objp = GET_NEXT(objp);
 		}
 	}
-
-	/*
-	TODO: Implement brieding dialog
-	if (Briefing_dialog)
-		Briefing_dialog->update_positions();
-	 */
 
 	editor->missionChanged();
 	return rval;

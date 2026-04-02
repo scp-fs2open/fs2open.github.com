@@ -93,19 +93,6 @@ void ObjectOrientEditorDialogModel::updateObject(object* ptr)
 	}
 }
 
-// Also in objectorient.cpp in FRED. TODO Would be nice if this were somewhere common
-float ObjectOrientEditorDialogModel::normalize_degrees(float deg)
-{
-	while (deg < -180.0f)
-		deg += 360.0f;
-	while (deg > 180.0f)
-		deg -= 360.0f;
-	// collapse negative zero
-	if (deg == -0.0f)
-		deg = 0.0f;
-	return deg;
-}
-
 float ObjectOrientEditorDialogModel::round1(float v)
 {
 	return std::round(v * 10.0f) / 10.0f;
@@ -175,7 +162,7 @@ bool ObjectOrientEditorDialogModel::apply()
 
 	// ----- Transform mode -----
 	// If multiple marked and using Relative to Origin, move/rotate the origin first, then
-	// bring everyone else along by the origin’s delta rotation and position.
+	// bring everyone else along by the origin's delta rotation and position.
 	matrix origin_rotation = vmd_identity_matrix;
 	vec3d origin_prev_pos = vmd_zero_vector;
 

@@ -580,7 +580,7 @@ void WingEditorDialog::on_customWarpinButton_clicked()
 
 void WingEditorDialog::on_arrivalTree_nodeChanged(int newTree)
 {
-	_model->setArrivalTree(newTree); //TODO This seems broken in a wierd way. Will need followup
+	_model->setArrivalTree(newTree); //TODO This seems broken in a weird way. Will need followup
 }
 
 void WingEditorDialog::on_noArrivalWarpCheckBox_toggled(bool checked)
@@ -658,7 +658,7 @@ void WingEditorDialog::on_customWarpoutButton_clicked()
 
 void WingEditorDialog::on_departureTree_nodeChanged(int newTree)
 {
-	_model->setDepartureTree(newTree); //TODO This seems broken in a wierd way. Will need followup
+	_model->setDepartureTree(newTree); //TODO This seems broken in a weird way. Will need followup
 }
 
 void WingEditorDialog::on_noDepartureWarpCheckBox_toggled(bool checked)

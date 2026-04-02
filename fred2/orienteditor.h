@@ -10,6 +10,7 @@
 
 
 #include "object/object.h"
+#include "missioneditor/common.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // orient_editor dialog
@@ -24,7 +25,6 @@ public:
 	orient_editor(CWnd* pParent = NULL);   // standard constructor
 
 	static float to_degrees(float radians);
-	static float normalize_degrees(float degrees);
 
 // Dialog Data
 	//{{AFX_DATA(orient_editor)

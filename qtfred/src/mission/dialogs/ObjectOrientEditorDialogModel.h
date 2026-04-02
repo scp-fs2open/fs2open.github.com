@@ -1,5 +1,6 @@
 #pragma once
 #include "AbstractDialogModel.h"
+#include "missioneditor/common.h"
 
 namespace fso::fred::dialogs {
 
@@ -98,11 +99,9 @@ class ObjectOrientEditorDialogModel : public AbstractDialogModel {
 	TransformMode _transformMode = TransformMode::Independent;
 
 	// Helpers
-	static constexpr float INPUT_THRESHOLD = 0.01f; // Same as FRED in orienteditor.cpp TODO would be nice if this was stored somewhere common
-	static float normalize_degrees(float deg);
 	static bool is_close(float a, float b)
 	{
-		return fabsf(a - b) < INPUT_THRESHOLD;
+		return fabsf(a - b) < ORIENT_INPUT_THRESHOLD;
 	}
 
 	static float round1(float v);

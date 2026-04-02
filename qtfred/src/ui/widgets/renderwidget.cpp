@@ -327,7 +327,7 @@ void RenderWidget::mouseMoveEvent(QMouseEvent* event) {
 	// The following will cancel a drag operation if another program running in memory
 	// happens to jump in and take over (such as new email has arrived popup boxes).
 	/*
-	TODO: Investiage if this is still required
+	TODO: Investigate if this is still required
 	if (_viewport->button_down && GetCapture() != this)
 		_viewport->cancel_drag();
 	 */
@@ -365,7 +365,7 @@ void RenderWidget::mouseReleaseEvent(QMouseEvent* event) {
 	_markingBox.y2 = event->y();
 
 	/*
-	TODO: Investiage if this is still required
+	TODO: Investigate if this is still required
 	if (_viewport->button_down && GetCapture() != this)
 		_viewport->cancel_drag();
 	*/

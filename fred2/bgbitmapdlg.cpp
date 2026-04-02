@@ -27,6 +27,7 @@
 #include "parse/parselo.h"
 #include "starfield/starfield.h"
 #include "starfield/nebula.h"
+#include "missioneditor/common.h"
 #include <vcruntime.h>
 
 #ifdef _DEBUG
@@ -428,7 +429,7 @@ void bg_bitmap_dlg::OnClose()
 
 		// override dumb values with reasonable ones
 		if(Neb2_awacs <= 0.00000001f){
-			Neb2_awacs = 3000.0f;
+			Neb2_awacs = DEFAULT_NEBULA_RANGE;
 		}
 
 		// store poof flags

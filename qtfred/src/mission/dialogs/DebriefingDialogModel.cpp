@@ -1,6 +1,5 @@
 #include "DebriefingDialogModel.h"
-#include "missionui/missioncmdbrief.h" //TODO remove?
-#include "mission/missionparse.h" //TODO remove?
+#include "mission/missionparse.h"
 #include "gamesnd/eventmusic.h"
 #include "sound/audiostr.h"
 #include <QMessageBox>

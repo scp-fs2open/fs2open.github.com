@@ -1,8 +1,7 @@
 #include "BriefingEditorDialogModel.h"
 
 #include "gamesnd/eventmusic.h"
-#include "mission/missionparse.h"      //TODO remove?
-#include "missionui/missioncmdbrief.h" //TODO remove?
+#include "mission/missionparse.h"
 #include "sound/audiostr.h"
 #include "iff_defs/iff_defs.h"
 
@@ -164,8 +163,8 @@ void BriefingEditorDialogModel::addStage()
 	if (_currentStage > 0) {
 		const brief_stage& prev = _wipBriefings[_currentTeam].stages[_currentStage - 1];
 
-		dst = prev; // start by copying everything…
-		// …then clear fields that should not carry over by default
+		dst = prev; // start by copying everything
+		// then clear fields that should not carry over by default
 		dst.text = "<Text here>";
 		dst.voice[0] = '\0';
 	} else {
@@ -665,7 +664,7 @@ int BriefingEditorDialogModel::getIconShipTypeIndex() const
 	const auto& s = b.stages[_currentStage];
 	if (_currentIcon < 0 || _currentIcon >= s.num_icons)
 		return -1;
-	return s.icons[_currentIcon].ship_class; // may be -1 for “unset” depending on icon type
+	return s.icons[_currentIcon].ship_class; // may be -1 for "unset" depending on icon type
 }
 
 void BriefingEditorDialogModel::setIconShipTypeIndex(int idx)
@@ -1042,7 +1041,7 @@ void BriefingEditorDialogModel::makeIcon(const SCP_string& label, int typeIndex,
 			for (int i = 0; i < bs.num_icons; ++i)
 				maxId = std::max(maxId, bs.icons[i].id);
 		}
-		return maxId + 1; // unique within this team’s briefing
+		return maxId + 1; // unique within this team's briefing
 	};
 
 	// Clamp incoming indices to safe ranges

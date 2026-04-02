@@ -7,10 +7,8 @@
 #include "nebula/neb.h"
 #include "nebula/neblightning.h"
 #include "starfield/nebula.h"
-#include "lighting/lighting_profiles.h" 
-
-// TODO move this to common for both FREDs.
-const static float default_nebula_range = 3000.0f;
+#include "lighting/lighting_profiles.h"
+#include "missioneditor/common.h"
 
 extern void parse_one_background(background_t* background);
 
@@ -37,7 +35,7 @@ bool BackgroundEditorDialogModel::apply()
 	// ours is a limited spinbox so this probably isn't necessary anymore??
 	// Does this mean range can never be 0?????????
 	if (Neb2_awacs <= 0.00000001f) {
-		Neb2_awacs = 3000.0f;
+		Neb2_awacs = DEFAULT_NEBULA_RANGE;
 	}
 	return true;
 }
@@ -59,7 +57,7 @@ void BackgroundEditorDialogModel::refreshBackgroundPreview()
 background_t& BackgroundEditorDialogModel::getActiveBackground()
 {
 	if (!SCP_vector_inbounds(Backgrounds, Cur_background)) {
-		// Fall back to first background if Cur_background isn’t set
+		// Fall back to first background if Cur_background isn't set
 		Cur_background = 0;
 	}
 	return Backgrounds[Cur_background];
@@ -761,7 +759,7 @@ void BackgroundEditorDialogModel::setFullNebulaEnabled(bool enabled)
 
 		// Set defaults if needed
 		if (Neb2_awacs <= 0.0f) {
-			modify(Neb2_awacs, default_nebula_range);
+			modify(Neb2_awacs, DEFAULT_NEBULA_RANGE);
 		}
 	} else {
 		// Disable full nebula

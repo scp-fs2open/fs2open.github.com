@@ -2,7 +2,6 @@
 
 #include "AbstractDialogModel.h"
 #include "globalincs/pstypes.h"
-#include "missionui/missioncmdbrief.h" //TODO remove this?
 #include "mission/missionbriefcommon.h"
 
 
