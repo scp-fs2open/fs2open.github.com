@@ -29,9 +29,11 @@ void TableViewerModel::initializeData(const char* table_filename, const char* mo
                                        const char* entry_name)
 {
 	if (entry_name) {
-		_text = table_viewer::get_table_entry_text(table_filename, modular_pattern, entry_name);
+		const SCP_string msg = "Could not find table entry: " + SCP_string(entry_name) + " in table: " + SCP_string(table_filename);
+		_text = table_viewer::get_table_entry_text(table_filename, modular_pattern, entry_name, msg.c_str());
 	} else {
-		_text = table_viewer::get_complete_table_text(table_filename, modular_pattern);
+		const SCP_string msg = "Could not find table: " + SCP_string(table_filename);
+		_text = table_viewer::get_complete_table_text(table_filename, modular_pattern, msg.c_str());
 	}
 	modelChanged();
 }
