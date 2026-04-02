@@ -1388,6 +1388,33 @@ struct sexp_cached_data
 	}
 };
 
+// SEXP nodes use a Lisp-like structure where `first` is CAR (first child) and
+// `rest` is CDR (next sibling).  A sub-expression like ( op arg1 arg2 ) is
+// represented as a SEXP_LIST node whose `first` points to the operator atom,
+// with arguments chained via `rest`:
+//
+//   ListNode (SEXP_LIST, text="")
+//     first -> OpAtom (SEXP_ATOM_OPERATOR, text="op")
+//                rest -> Arg1 (SEXP_ATOM, text="arg1")
+//                          rest -> Arg2 (SEXP_ATOM, text="arg2")
+//                                    rest -> -1
+//
+// Nested sub-expressions become SEXP_LIST nodes in the rest chain:
+//
+//   ListNode (first -> OpAtom)
+//     OpAtom (rest -> InnerList)
+//       InnerList (SEXP_LIST, first -> InnerOp)
+//         InnerOp (rest -> InnerArg1 -> ...)
+//
+// The `parent` field points to the SEXP_LIST node that contains the chain.
+// All siblings in a rest chain share the same parent.  For example, OpAtom,
+// Arg1, and Arg2 above all have parent == ListNode.
+//
+// Top-level sexps (from get_sexp_main) are a special case: the outermost
+// operator and its arguments form a bare rest chain with no wrapping list
+// node, so all nodes in that chain have parent == -1.  This means parent == -1
+// is ambiguous: it could be a true root or a sibling in a top-level chain.
+// See is_sexp_top_level() for how this is handled.
 typedef struct sexp_node {
 	char	text[TOKEN_LENGTH];
 	int op_index;				// the index in the Operators array for the operator at this node (or -1 if not an operator)
@@ -1395,6 +1422,7 @@ typedef struct sexp_node {
 	int	subtype;					// type of atom or list?
 	int	first;					// if first parameter is sexp, index into Sexp_nodes
 	int	rest;						// index into Sexp_nodes of rest of parameters
+	int	parent;					// index into Sexp_nodes of parent node, or -1 if root/unlinked
 	int	value;					// known to be true, known to be false, or not known
 	int flags;					// Goober5000
 
@@ -1463,11 +1491,13 @@ extern int find_free_sexp();
 extern int free_one_sexp(int num);
 extern int free_sexp(int num, int calling_node = -1);
 extern int free_sexp2(int num, int calling_node = -1);
-extern int dup_sexp_chain(int node);
+extern int dup_sexp_chain(int node, int parent_for_root = -1);
 extern int cmp_sexp_chains(int node1, int node2);
 extern int find_sexp_list(int num);
+extern int find_sexp_antecedent(int num);
+extern int find_sexp_root(int node);
 extern int find_parent_operator(int num);
-extern int is_sexp_top_level( int node );
+extern bool is_sexp_top_level( int node );
 
 // Goober5000 - renamed these to be more clear, to prevent bugs :p
 extern int get_operator_index(const char *token);

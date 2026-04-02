@@ -1475,12 +1475,25 @@ int alloc_sexp(const char *text, int type, int subtype, int first, int rest)
 	Sexp_nodes[node].subtype = subtype;
 	Sexp_nodes[node].first = first;
 	Sexp_nodes[node].rest = rest;
+	Sexp_nodes[node].parent = -1;
 	Sexp_nodes[node].value = SEXP_UNKNOWN;
 	Sexp_nodes[node].flags = SNF_DEFAULT_VALUE;
 	Sexp_nodes[node].op_index = NO_OPERATOR_INDEX_DEFINED;
 	Sexp_nodes[node].cache = nullptr;
 	Sexp_nodes[node].cached_variable_index = -1;
 	Sexp_nodes[node].duration_index = -1;
+
+	// if this node was created with a first child, set the parent of the
+	// entire rest chain (the child and all its siblings)
+	if (first != -1 && first != Locked_sexp_true && first != Locked_sexp_false)
+	{
+		int child = first;
+		while (child != -1)
+		{
+			Sexp_nodes[child].parent = node;
+			child = Sexp_nodes[child].rest;
+		}
+	}
 
 	// special-arg?
 	if (type == SEXP_ATOM && !strcmp(text, SEXP_ARGUMENT_STRING))
@@ -1629,7 +1642,11 @@ int free_sexp(int num, int calling_node)
 	if (calling_node >= 0) 
 	{
 		if (Sexp_nodes[calling_node].first == num)
+		{
 			Sexp_nodes[calling_node].first = rest;
+			if (rest != -1)
+				Sexp_nodes[rest].parent = calling_node;
+		}
 
 		if (Sexp_nodes[calling_node].rest == num)
 			Sexp_nodes[calling_node].rest = rest;
@@ -1710,9 +1727,16 @@ int verify_sexp_tree(int node)
 }
 
 /**
+ * Duplicate a sexp chain rooted at @p node, returning the new root index.
+ *
+ * @p parent_for_root is the parent index that should be stamped onto the
+ * returned head and every sibling reachable via the head's `.rest` chain.
+ * Pass the index of the node whose `.first` or `.rest` slot will receive the
+ * duplicate, or -1 for a free-standing top-level duplicate.
+ *
  * @todo CASE OF SEXP VARIABLES - ONLY 1 COPY OF VARIABLE
  */
-int dup_sexp_chain(int node)
+int dup_sexp_chain(int node, int parent_for_root)
 {
 	int cur, first, rest;
 
@@ -1721,8 +1745,8 @@ int dup_sexp_chain(int node)
 	}
 
 	// TODO - CASE OF SEXP VARIABLES - ONLY 1 COPY OF VARIABLE
-	first = dup_sexp_chain(Sexp_nodes[node].first);
-	rest = dup_sexp_chain(Sexp_nodes[node].rest);
+	first = dup_sexp_chain(Sexp_nodes[node].first, -1);
+	rest = dup_sexp_chain(Sexp_nodes[node].rest, parent_for_root);
 	cur = alloc_sexp(Sexp_nodes[node].text, Sexp_nodes[node].type, Sexp_nodes[node].subtype, first, rest);
 
 	if (cur == -1) {
@@ -1732,8 +1756,10 @@ int dup_sexp_chain(int node)
 		if (rest != -1){
 			free_sexp(rest);
 		}
+		return -1;
 	}
 
+	Sexp_nodes[cur].parent = parent_for_root;
 	return cur;
 }
 
@@ -1790,20 +1816,101 @@ int query_node_in_sexp(int node, int sexp)
 }
 
 /**
- * Find the index of the list associated with an operator
+ * Find the node that contains the given node as its first element.
  */
 int find_sexp_list(int num)
 {
-	int i;
+	if (num < 0 || num >= Num_sexp_nodes)
+		return -1;
 
-	for (i = 0; i < Num_sexp_nodes; i++)
+	// quick check via the parent, to narrow the search
+	int p = Sexp_nodes[num].parent;
+	if (p >= 0)
+		return (Sexp_nodes[p].first == num) ? p : -1;
+
+	// longer check, since parent == -1 is ambiguous
+	// (see is_sexp_top_level)
+	for (int i = 0; i < Num_sexp_nodes; i++)
 	{
+		if (Sexp_nodes[i].type == SEXP_NOT_USED || i == num)
+			continue;
 		if (Sexp_nodes[i].first == num)
 			return i;
 	}
 
-	// not found
 	return -1;
+}
+
+/**
+ * Find the node that contains the given node as its rest element.
+ */
+int find_sexp_antecedent(int num)
+{
+	if (num < 0 || num >= Num_sexp_nodes)
+		return -1;
+
+	// quick check via the parent, to narrow the search
+	int p = Sexp_nodes[num].parent;
+	if (p >= 0)
+	{
+		// a chain head is referenced via its parent's first, not via any rest;
+		// it legitimately has no antecedent
+		if (Sexp_nodes[p].first == num)
+			return -1;
+
+		// look through the "rest" chain starting from the first child
+		for (int n = Sexp_nodes[p].first; n >= 0; n = Sexp_nodes[n].rest)
+		{
+			if (Sexp_nodes[n].rest == num)
+				return n;
+		}
+
+		// If we get here, the parent field is stale or wrong: a node with parent == p
+		// must be reachable via p's first-child chain.  Nodes in top-level rest chains
+		// (which have no wrapping list node) must have parent == -1 per the parser's
+		// convention; an antecedent that points to this node via rest while our parent
+		// is some other node means the invariant was broken at an assignment site.
+		Assertion(false, "find_sexp_antecedent: node %d has parent %d, but is not in that node's first-child chain!", num, p);
+		return -1;
+	}
+
+	// longer check, since parent == -1 is ambiguous
+	// (see is_sexp_top_level)
+	for (int i = 0; i < Num_sexp_nodes; i++)
+	{
+		if (Sexp_nodes[i].type == SEXP_NOT_USED || i == num)
+			continue;
+		if (Sexp_nodes[i].rest == num)
+			return i;
+	}
+
+	return -1;
+}
+
+/**
+ * Find the root node of the SEXP tree that contains the given node.
+ */
+int find_sexp_root(int node)
+{
+	if (node < 0)
+		return -1;
+
+	// visit each parent
+	while (Sexp_nodes[node].parent >= 0)
+		node = Sexp_nodes[node].parent;
+
+	// this node's parent is -1, so we need to do one more loop (see also is_sexp_top_level)
+	for (int i = 0; i < Num_sexp_nodes; i++)
+	{
+		if ((Sexp_nodes[i].type == SEXP_NOT_USED) || (i == node))
+			continue;
+
+		if ((Sexp_nodes[i].first == node) || (Sexp_nodes[i].rest == node))
+			return find_sexp_root(i);
+	}
+
+	// no references: we've reached the true root
+	return node;
 }
 
 /**
@@ -1811,62 +1918,89 @@ int find_sexp_list(int num)
  */
 int find_parent_operator(int node)
 {
-	int i;
-	Assert((node >= 0) && (node < Num_sexp_nodes));
+	if (node < 0 || node >= Num_sexp_nodes)
+		return -1;
 
+	// operators are enclosed within a list, and the list will be the argument
 	if (Sexp_nodes[node].subtype == SEXP_ATOM_OPERATOR)
 	{
 		node = find_sexp_list(node);
 
 		// are we already at the top of the list?  this will happen for non-standard sexps
 		// (sexps that fire instantly instead of using a conditional) such as:
-		// $Formula: ( do-nothing ) 
+		// $Formula: ( do-nothing )
 		if (node < 0)
 			return -1;
 	}
 
-	// iterate backwards through the sexps nodes (i.e. do the inverse of CDR)
-	while (Sexp_nodes[node].subtype != SEXP_ATOM_OPERATOR)
+	// quick check
+	int p = Sexp_nodes[node].parent;
+	if (p >= 0)
 	{
-		for (i = 0; i < Num_sexp_nodes; i++)
+		int op = Sexp_nodes[p].first;
+		if (op < 0 || Sexp_nodes[op].subtype != SEXP_ATOM_OPERATOR)
+			return -1;
+
+		// look through the "rest" chain of this operator
+		for (int n = Sexp_nodes[op].rest; n >= 0; n = Sexp_nodes[n].rest)
 		{
-			if (Sexp_nodes[i].rest == node)
-				break;
+			if (n == node)
+				return op;
 		}
 
-		if (i == Num_sexp_nodes)
-			return -1;  // not found, probably at top node already.
-
-		node = i;
+		return -1;
 	}
 
-	return node;
+	// no parent, so we need to reverse-iterate until we find the operator
+	int n = node, a;
+	while (true)
+	{
+		a = find_sexp_antecedent(n);
+		if (a < 0)
+			break;
+		n = a;
+	}
+
+	if (Sexp_nodes[n].subtype == SEXP_ATOM_OPERATOR)
+		return n;
+	else
+		return -1;
 }
 
 /**
  * Determine if an sexpression node is the top level node of an sexpression tree.
  *
- * Top level nodes do not have their node id in anyone elses first or rest index.
+ * Top level nodes do not have their node id in anyone else's first or rest index.
+ * Note: we can't simply check parent == -1, because top-level chains from get_sexp_main()
+ * link operator and argument nodes via rest without a wrapping list node.
  */
-int is_sexp_top_level( int node )
+bool is_sexp_top_level(int node)
 {
-	int i;
-
 	Assert((node >= 0) && (node < Num_sexp_nodes));
 
 	if (Sexp_nodes[node].type == SEXP_NOT_USED)
-		return 0;
+		return false;
 
-	for (i = 0; i < Num_sexp_nodes; i++)
+	// fast path: if the node has a parent, it's definitely not top-level
+	if (Sexp_nodes[node].parent != -1)
+		return false;
+
+	// parent == -1 is ambiguous: it could be a true root, or a sibling in a
+	// top-level rest chain (from get_sexp_main) that has no wrapping list node.
+	// Fall back to a full scan to distinguish the two cases.
+	// (This isn't too catastrophic, because the vast majority of nodes use the
+	// fast path, and also because the is_sexp_top_level() function is only used
+	// for mission post-processing and in update_sexp_references() in FRED.)
+	for (int i = 0; i < Num_sexp_nodes; i++)
 	{
-		if ((Sexp_nodes[i].type == SEXP_NOT_USED) || (i == node ))				// don't check myself or unused nodes
+		if ((Sexp_nodes[i].type == SEXP_NOT_USED) || (i == node))
 			continue;
 
 		if ((Sexp_nodes[i].first == node) || (Sexp_nodes[i].rest == node))
-			return 0;
+			return false;
 	}
 
-	return 1;
+	return true;
 }
 
 /**
@@ -4844,6 +4978,7 @@ int get_sexp()
 				node = alloc_sexp("", SEXP_LIST, SEXP_ATOM_LIST, node, -1);
 			}
 			Sexp_nodes[last].rest = node;
+			Sexp_nodes[node].parent = Sexp_nodes[last].parent;
 
 			if (message != nullptr) {
 				SCP_string context;

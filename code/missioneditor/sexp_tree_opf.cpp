@@ -361,7 +361,9 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_ai_goal(int parent_node) const
 {
 	sexp_list_item head;
 
-	Assertion(parent_node >= 0, "Invalid parent node");
+	// no parent context, nothing to list
+	if (parent_node < 0)
+		return nullptr;
 	int child = _model.tree_nodes[parent_node].child;
 	if (child < 0)
 		return nullptr;
@@ -414,7 +416,9 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_docker_point(int parent_node, int a
 {
 	sexp_list_item head;
 
-	Assertion(parent_node >= 0, "Invalid parent node");
+	// no parent context, nothing to list
+	if (parent_node < 0)
+		return nullptr;
 	Assertion(!stricmp(_model.tree_nodes[parent_node].text, "ai-dock") || !stricmp(_model.tree_nodes[parent_node].text, "set-docked") ||
 		   get_operator_const(_model.tree_nodes[parent_node].text) >= static_cast<int>(First_available_operator_id), "Invalid node type");
 
@@ -479,7 +483,9 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_dockee_point(int parent_node) const
 {
 	sexp_list_item head;
 
-	Assertion(parent_node >= 0, "Invalid parent node");
+	// no parent context, nothing to list
+	if (parent_node < 0)
+		return nullptr;
 	Assertion(!stricmp(_model.tree_nodes[parent_node].text, "ai-dock") || !stricmp(_model.tree_nodes[parent_node].text, "set-docked"), "Invalid node type");
 
 	int sh = -1;
@@ -765,7 +771,9 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_goal_name(int parent_node) const
 {
 	sexp_list_item head;
 
-	Assertion(parent_node >= 0, "Invalid parent node");
+	// no parent context, nothing to list
+	if (parent_node < 0)
+		return nullptr;
 	int child = _model.tree_nodes[parent_node].child;
 
 	// reference_name is used by campaign editor to filter goals for a specific mission
@@ -843,7 +851,9 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_event_name(int parent_node) const
 {
 	sexp_list_item head;
 
-	Assertion(parent_node >= 0, "Invalid parent node");
+	// no parent context, nothing to list
+	if (parent_node < 0)
+		return nullptr;
 	int child = _model.tree_nodes[parent_node].child;
 
 	// reference_name is used by campaign editor to filter events for a specific mission
@@ -1396,7 +1406,9 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_animation_name(int parent_node) con
 {
 	sexp_list_item head;
 
-	Assertion(parent_node >= 0, "Invalid parent node");
+	// no parent context, nothing to list
+	if (parent_node < 0)
+		return nullptr;
 
 	// get the operator type of the node
 	const int op = get_operator_const(_model.tree_nodes[parent_node].text);
@@ -1593,11 +1605,13 @@ enum : int {
 sexp_list_item *SexpTreeOPF::get_listing_opf_subsystem(int parent_node, int arg_index) const
 {
 	sexp_list_item head;
-	
+
+	// no parent context, nothing to list
+	if (parent_node < 0)
+		return nullptr;
 
 	// determine if the parent is one of the set subsystem strength items.  If so,
 	// we want to append the "Hull" name onto the end of the menu
-	Assertion(parent_node >= 0, "Invalid parent node");
 
 	// get the operator type of the node
 	int op = get_operator_const(_model.tree_nodes[parent_node].text);
