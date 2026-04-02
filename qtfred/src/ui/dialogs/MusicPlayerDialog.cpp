@@ -1,6 +1,6 @@
 #include <QMessageBox>
 #include <QCloseEvent>
-#include "MusicTBLViewer.h"
+#include <ui/dialogs/TableViewerDialog.h>
 #include "MusicPlayerDialog.h"
 #include "ui/util/SignalBlockers.h"
 #include "ui_MusicPlayerDialog.h"
@@ -128,7 +128,7 @@ void MusicPlayerDialog::on_autoplayCheck_toggled(bool on)
 
 void MusicPlayerDialog::on_musicTblButton_clicked()
 {
-	auto dialog = new MusicTBLViewer(this, _viewport);
+	auto dialog = new TableViewerDialog(this, _viewport, "Music TBL Data", "music.tbl", "*-mus.tbm");
 	dialog->show();
 }
 

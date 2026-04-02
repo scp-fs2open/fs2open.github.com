@@ -1,17 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>fso::fred::dialogs::ShipTBLViewer</class>
- <widget class="QDialog" name="fso::fred::dialogs::ShipTBLViewer">
+ <class>fso::fred::dialogs::TableViewerDialog</class>
+ <widget class="QDialog" name="fso::fred::dialogs::TableViewerDialog">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>640</width>
-    <height>480</height>
+    <width>1280</width>
+    <height>960</height>
    </rect>
-  </property>
-  <property name="windowTitle">
-   <string>Ship Table Data</string>
   </property>
   <property name="modal">
    <bool>true</bool>

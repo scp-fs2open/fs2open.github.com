@@ -6,7 +6,7 @@
 #include "ShipGoalsDialog.h"
 #include "ShipInitialStatusDialog.h"
 #include "ShipSpecialStatsDialog.h"
-#include "ShipTBLViewer.h"
+#include <ui/dialogs/TableViewerDialog.h>
 #include "ShipTextureReplacementDialog.h"
 #include "ShipWeaponsDialog.h"
 #include "ShipAltShipClass.h"

@@ -1,6 +1,6 @@
 #include "ShipWeaponsDialog.h"
 
-#include "WeaponsTBLViewer.h"
+#include <ui/dialogs/TableViewerDialog.h>
 #include "ui_ShipWeaponsDialog.h"
 
 #include <mission/util.h>
@@ -75,7 +75,7 @@ void ShipWeaponsDialog::accept()
 	if (_model->apply()) {
 		QDialog::accept();
 	}
-	// else: validation failed, don’t close
+	// else: validation failed, donï¿½t close
 }
 
 void ShipWeaponsDialog::reject()
@@ -102,11 +102,11 @@ void ShipWeaponsDialog::on_setAllButton_clicked()
 }
 void ShipWeaponsDialog::on_tblButton_clicked()
 {
-	if (ui->listWeapons->currentIndex().data(Qt::UserRole).toInt() >= 0) {
-		auto dialog = new WeaponsTBLViewer(this, _viewport, ui->listWeapons->currentIndex().data(Qt::UserRole).toInt());
+	int wc = ui->listWeapons->currentIndex().data(Qt::UserRole).toInt();
+	if (wc >= 0) {
+		auto dialog = new TableViewerDialog(this, _viewport, "Weapon TBL Data",
+		                                    "weapons.tbl", "*-wep.tbm", Weapon_info[wc].name);
 		dialog->show();
-	} else {
-		return;
 	}
 }
 void ShipWeaponsDialog::on_radioPrimary_toggled(bool checked)

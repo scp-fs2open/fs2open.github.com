@@ -8,6 +8,7 @@
 #include "mission/object.h"
 
 #include <globalincs/linklist.h>
+#include <ship/ship.h>
 #include <ui/util/SignalBlockers.h>
 
 #include <QCloseEvent>
@@ -99,7 +100,8 @@ void ShipEditorDialog::on_initialOrdersButton_clicked()
 
 void ShipEditorDialog::on_tblInfoButton_clicked()
 {
-	auto dialog = new dialogs::ShipTBLViewer(this, _viewport, getShipClass());
+	auto dialog = new TableViewerDialog(this, _viewport, "Ship TBL Data",
+	                                     "ships.tbl", "*-shp.tbm", Ship_info[getShipClass()].name);
 	dialog->setAttribute(Qt::WA_DeleteOnClose);
 	dialog->show();
 }
