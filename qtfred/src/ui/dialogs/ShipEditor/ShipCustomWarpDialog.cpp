@@ -3,6 +3,7 @@
 #include "ui_ShipCustomWarpDialog.h"
 
 #include "mission/util.h"
+#include <globalincs/globals.h>
 
 #include <ship/shipfx.h>
 #include <ui/util/SignalBlockers.h>
@@ -16,6 +17,10 @@ ShipCustomWarpDialog::ShipCustomWarpDialog(QDialog* parent, EditorViewport* view
 {
 	ui->setupUi(this);
 	connect(_model.get(), &AbstractDialogModel::modelChanged, this, [this]() { updateUI(false); });
+
+	ui->lineEditStartSound->setMaxLength(MAX_FILENAME_LEN - 1);
+	ui->lineEditEndSound->setMaxLength(MAX_FILENAME_LEN - 1);
+	ui->lineEditAnim->setMaxLength(MAX_FILENAME_LEN - 1);
 
 	if (departure) {
 		this->setWindowTitle("Edit Warp-Out Parameters");
@@ -48,6 +53,10 @@ ShipCustomWarpDialog::ShipCustomWarpDialog(QDialog* parent,
 	}
 
 	connect(_model.get(), &AbstractDialogModel::modelChanged, this, [this]() { updateUI(false); });
+
+	ui->lineEditStartSound->setMaxLength(MAX_FILENAME_LEN - 1);
+	ui->lineEditEndSound->setMaxLength(MAX_FILENAME_LEN - 1);
+	ui->lineEditAnim->setMaxLength(MAX_FILENAME_LEN - 1);
 
 	if (departure) {
 		this->setWindowTitle("Edit Warp-Out Parameters");
@@ -136,7 +145,7 @@ void ShipCustomWarpDialog::accept()
 	if (_model->apply()) {
 		QDialog::accept();
 	}
-	// else: validation failed, don’t close
+	// else: validation failed, don't close
 }
 void ShipCustomWarpDialog::reject()
 { // Asks the user if they want to save changes, if any

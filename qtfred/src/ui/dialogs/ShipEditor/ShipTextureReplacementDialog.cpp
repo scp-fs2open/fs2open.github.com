@@ -2,6 +2,7 @@
 
 #include "ui_ShipTextureReplacementDialog.h"
 
+#include <globalincs/globals.h>
 #include <mission/util.h>
 #include <ui/util/SignalBlockers.h>
 
@@ -39,6 +40,15 @@ ShipTextureReplacementDialog::ShipTextureReplacementDialog(QDialog* parent, Edit
 {
 	ui->setupUi(this);
 
+	ui->newTextureLineEdit->setMaxLength(MAX_FILENAME_LEN - 1);
+	ui->AmbiantTextureLineEdit->setMaxLength(MAX_FILENAME_LEN - 1);
+	ui->MiscTextureLineEdit->setMaxLength(MAX_FILENAME_LEN - 1);
+	ui->ShineTextureLineEdit->setMaxLength(MAX_FILENAME_LEN - 1);
+	ui->HeightTextureLineEdit->setMaxLength(MAX_FILENAME_LEN - 1);
+	ui->GlowTextureLineEdit->setMaxLength(MAX_FILENAME_LEN - 1);
+	ui->NormalTextureLineEdit->setMaxLength(MAX_FILENAME_LEN - 1);
+	ui->ReflectTextureLineEdit->setMaxLength(MAX_FILENAME_LEN - 1);
+
 	listmodel = new MapModel(_model.get(), this);
 	ui->TexturesList->setModel(listmodel);
 	QItemSelectionModel* selectionModel = ui->TexturesList->selectionModel();
@@ -58,7 +68,7 @@ void ShipTextureReplacementDialog::accept()
 	if (_model->apply()) {
 		QDialog::accept();
 	}
-	// else: validation failed, don’t close
+	// else: validation failed, don't close
 }
 
 void ShipTextureReplacementDialog::reject()

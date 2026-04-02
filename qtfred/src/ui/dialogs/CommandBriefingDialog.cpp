@@ -1,6 +1,7 @@
 #include "CommandBriefingDialog.h"
 #include "ui_CommandBriefingDialog.h"
 #include "mission/util.h"
+#include <globalincs/globals.h>
 #include <globalincs/linklist.h>
 #include <ui/util/SignalBlockers.h>
 #include <QCloseEvent>
@@ -14,6 +15,11 @@ _viewport(viewport)
 {
 	this->setFocus();
 	ui->setupUi(this);
+
+	ui->speechFileName->setMaxLength(NAME_LENGTH - 1);
+	ui->animationFileName->setMaxLength(NAME_LENGTH - 1);
+	ui->actionHighResolutionFilenameEdit->setMaxLength(NAME_LENGTH - 1);
+	ui->actionLowResolutionFilenameEdit->setMaxLength(NAME_LENGTH - 1);
 
 	initializeUi();
 	updateUi();
@@ -30,7 +36,7 @@ void CommandBriefingDialog::accept()
 	if (_model->apply()) {
 		QDialog::accept();
 	}
-	// else: validation failed, don’t close
+	// else: validation failed, don't close
 }
 
 void CommandBriefingDialog::reject()

@@ -2,6 +2,7 @@
 
 #include "ui_MissionSpecDialog.h"
 
+#include <globalincs/globals.h>
 #include <ui/dialogs/General/ImagePickerDialog.h>
 #include <ui/dialogs/MissionSpecs/CustomDataDialog.h>
 #include <ui/dialogs/MissionSpecs/CustomStringsDialog.h>
@@ -20,6 +21,13 @@ MissionSpecDialog::MissionSpecDialog(FredView* parent, EditorViewport* viewport)
 	_viewport(viewport) {
     ui->setupUi(this);
 
+	ui->missionTitle->setMaxLength(NAME_LENGTH - 1);
+	ui->missionDesigner->setMaxLength(NAME_LENGTH - 1);
+	ui->squadronName->setMaxLength(NAME_LENGTH - 1);
+	ui->squadronLogo->setMaxLength(MAX_FILENAME_LEN - 1);
+	ui->lowResScreen->setMaxLength(MAX_FILENAME_LEN - 1);
+	ui->highResScreen->setMaxLength(MAX_FILENAME_LEN - 1);
+
 	connect(_model.get(), &AbstractDialogModel::modelChanged, this, &MissionSpecDialog::updateUi);
 
 	initializeUi();
@@ -37,7 +45,7 @@ void MissionSpecDialog::accept()
 	if (_model->apply()) {
 		QDialog::accept();
 	}
-	// else: validation failed, don’t close
+	// else: validation failed, don't close
 }
 
 void MissionSpecDialog::reject()

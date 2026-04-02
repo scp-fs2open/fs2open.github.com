@@ -24,6 +24,9 @@ MissionEventsDialog::MissionEventsDialog(QWidget* parent, EditorViewport* viewpo
 {
 	ui->setupUi(this);
 
+	ui->editDirectiveText->setMaxLength(NAME_LENGTH - 1);
+	ui->editDirectiveKeypressText->setMaxLength(NAME_LENGTH - 1);
+
 	// Build the Qt adapter for our data model
 	// This is kinda messy but the sexp_tree widget owns both the ui and the data for the tree
 	// Simultaneously our tree model needs to be able to tell the tree when things change and also
@@ -302,10 +305,12 @@ void MissionEventsDialog::initMessageWidgets() {
 	ui->messageName->setMaxLength(NAME_LENGTH - 1);
 
 	if (auto* le = ui->aniCombo->lineEdit()) {
+		le->setMaxLength(MAX_FILENAME_LEN - 1);
 		connect(le, &QLineEdit::editingFinished, this, &MissionEventsDialog::on_aniCombo_editingFinished);
 	}
 
 	if (auto* le = ui->waveCombo->lineEdit()) {
+		le->setMaxLength(MAX_FILENAME_LEN - 1);
 		connect(le, &QLineEdit::editingFinished, this, &MissionEventsDialog::on_waveCombo_editingFinished);
 	}
 

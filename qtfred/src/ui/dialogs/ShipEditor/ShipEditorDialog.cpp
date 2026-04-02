@@ -26,6 +26,11 @@ ShipEditorDialog::ShipEditorDialog(FredView* parent, EditorViewport* viewport)
 	ui->HelpTitle->setVisible(viewport->Show_sexp_help_ship_editor);
 	ui->helpText->setVisible(viewport->Show_sexp_help_ship_editor);
 
+	ui->shipNameEdit->setMaxLength(NAME_LENGTH - 1);
+	ui->shipDisplayNameEdit->setMaxLength(NAME_LENGTH - 1);
+	ui->altNameCombo->lineEdit()->setMaxLength(NAME_LENGTH - 1);
+	ui->callsignCombo->lineEdit()->setMaxLength(CALLSIGN_LEN);
+
 	connect(_model.get(), &AbstractDialogModel::modelChanged, this, [this] { updateUI(false); });
 	connect(this, &QDialog::accepted, _model.get(), &ShipEditorDialogModel::apply);
 	connect(viewport->editor, &Editor::currentObjectChanged, this, &ShipEditorDialog::update);

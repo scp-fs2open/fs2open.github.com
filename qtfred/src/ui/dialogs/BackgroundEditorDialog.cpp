@@ -3,6 +3,7 @@
 #include "ui/dialogs/General/ImagePickerDialog.h"
 #include "ui_BackgroundEditor.h"
 
+#include <globalincs/globals.h>
 #include <QMessageBox>
 #include <QSettings>
 #include <QFileDialog>
@@ -17,8 +18,11 @@ BackgroundEditorDialog::BackgroundEditorDialog(FredView* parent, EditorViewport*
     
 	ui->setupUi(this);
 
+	ui->skyboxEdit->setMaxLength(MAX_FILENAME_LEN - 1);
+	ui->envMapEdit->setMaxLength(MAX_FILENAME_LEN - 1);
+
 	initializeUi();
-	
+
 	// Resize the dialog to the minimum size
 	resize(QDialog::sizeHint());
 }

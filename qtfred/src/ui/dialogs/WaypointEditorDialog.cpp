@@ -3,6 +3,7 @@
 #include "ui/util/SignalBlockers.h"
 #include "ui_WaypointEditorDialog.h"
 
+#include <globalincs/globals.h>
 #include <mission/util.h>
 
 namespace fso::fred::dialogs {
@@ -16,6 +17,8 @@ WaypointEditorDialog::WaypointEditorDialog(FredView* parent, EditorViewport* vie
 {
 	this->setFocus();
 	ui->setupUi(this);
+
+	ui->nameEdit->setMaxLength(NAME_LENGTH - 1);
 
 	initializeUi();
 	updateUi();

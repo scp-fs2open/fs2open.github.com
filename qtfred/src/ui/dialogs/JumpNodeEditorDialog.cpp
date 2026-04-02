@@ -2,6 +2,7 @@
 #include "ui/util/SignalBlockers.h"
 #include "ui_JumpNodeEditorDialog.h"
 
+#include <globalincs/globals.h>
 #include <mission/util.h>
 
 namespace fso::fred::dialogs {
@@ -12,6 +13,10 @@ JumpNodeEditorDialog::JumpNodeEditorDialog(FredView* parent, EditorViewport* vie
 {
 	this->setFocus();
 	ui->setupUi(this);
+
+	ui->nameLineEdit->setMaxLength(NAME_LENGTH - 1);
+	ui->displayNameLineEdit->setMaxLength(NAME_LENGTH - 1);
+	ui->modelFileLineEdit->setMaxLength(MAX_FILENAME_LEN - 1);
 
 	initializeUi();
 	updateUi();

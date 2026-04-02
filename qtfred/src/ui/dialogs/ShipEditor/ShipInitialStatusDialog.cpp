@@ -1,6 +1,7 @@
 #include "ShipInitialStatusDialog.h"
 
 #include "globalincs/alphacolors.h"
+#include "globalincs/globals.h"
 
 #include "ui_ShipInitialStatus.h"
 
@@ -20,6 +21,8 @@ ShipInitialStatusDialog::ShipInitialStatusDialog(QDialog* parent, EditorViewport
 {
 	ui->setupUi(this);
 
+	ui->cargoEdit->setMaxLength(NAME_LENGTH - 1);
+
 	connect(_model.get(), &AbstractDialogModel::modelChanged, this, &ShipInitialStatusDialog::updateUI);
 
 	updateUI();
@@ -36,7 +39,7 @@ void ShipInitialStatusDialog::accept()
 	if (_model->apply()) {
 		QDialog::accept();
 	}
-	// else: validation failed, don’t close}
+	// else: validation failed, don't close
 }
 void ShipInitialStatusDialog::reject()
 {

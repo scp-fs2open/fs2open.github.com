@@ -1,6 +1,7 @@
 #include "DebriefingDialog.h"
 #include "ui_DebriefingDialog.h"
 #include "mission/util.h"
+#include <globalincs/globals.h>
 #include <globalincs/linklist.h>
 #include <ui/util/SignalBlockers.h>
 #include <QCloseEvent>
@@ -14,6 +15,8 @@ DebriefingDialog::DebriefingDialog(FredView* parent, EditorViewport* viewport)
 {
 	this->setFocus();
 	ui->setupUi(this);
+
+	ui->voiceFileLineEdit->setMaxLength(MAX_FILENAME_LEN - 1);
 
 	initializeUi();
 	updateUi();
@@ -30,7 +33,7 @@ void DebriefingDialog::accept()
 	if (_model->apply()) {
 		QDialog::accept();
 	}
-	// else: validation failed, don’t close
+	// else: validation failed, don't close
 }
 
 void DebriefingDialog::reject()

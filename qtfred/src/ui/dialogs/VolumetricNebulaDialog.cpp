@@ -2,6 +2,7 @@
 #include "ui/util/SignalBlockers.h"
 
 #include "ui_VolumetricNebulaDialog.h"
+#include <globalincs/globals.h>
 #include <mission/util.h>
 
 #include <QFileDialog>
@@ -16,6 +17,8 @@ VolumetricNebulaDialog::VolumetricNebulaDialog(FredView* parent, EditorViewport*
 	this->setFocus();
 	ui->setupUi(this);
 
+	ui->setModelLineEdit->setMaxLength(MAX_FILENAME_LEN - 1);
+
 	// set our internal values, update the UI
 	initializeUi();
 	updateUi();
@@ -29,7 +32,7 @@ void VolumetricNebulaDialog::accept()
 	if (_model->apply()) {
 		QDialog::accept();
 	}
-	// else: validation failed, don’t close
+	// else: validation failed, don't close
 }
 
 void VolumetricNebulaDialog::reject()

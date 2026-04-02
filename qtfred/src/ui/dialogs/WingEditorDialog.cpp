@@ -6,6 +6,7 @@
 
 #include "ui_WingEditorDialog.h"
 
+#include <globalincs/globals.h>
 #include <ui/util/SignalBlockers.h>
 #include <ui/util/ImageRenderer.h>
 #include <QMessageBox>
@@ -20,6 +21,8 @@ WingEditorDialog::WingEditorDialog(FredView* parent, EditorViewport* viewport)
 
 	ui->HelpTitle->setVisible(viewport->Show_sexp_help_wing_editor);
 	ui->helpText->setVisible(viewport->Show_sexp_help_wing_editor);
+
+	ui->wingNameEdit->setMaxLength(NAME_LENGTH - 1);
 
 	setWindowTitle(tr("Wing Editor"));
 	
@@ -450,7 +453,7 @@ void WingEditorDialog::on_initialOrdersButton_clicked()
 		return;
 	}
 
-	// block for empty wings (matches old FRED behavior where goals apply to the wing�s ships)
+	// block for empty wings (matches old FRED behavior where goals apply to the wing's ships)
 	if (Wings[wingIndex].wave_count <= 0) {
 		QMessageBox::information(this, "Initial Orders", "This wing has no ships (wave_count == 0).");
 		return;

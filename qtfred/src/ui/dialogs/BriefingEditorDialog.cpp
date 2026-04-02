@@ -3,7 +3,9 @@
 
 #include "mission/util.h"
 
+#include <globalincs/globals.h>
 #include <globalincs/linklist.h>
+#include <mission/missionbriefcommon.h>
 #include <ui/util/SignalBlockers.h>
 
 #include <QCloseEvent>
@@ -17,6 +19,10 @@ BriefingEditorDialog::BriefingEditorDialog(FredView* parent, EditorViewport* vie
 {
 	this->setFocus();
 	ui->setupUi(this);
+
+	ui->iconLabelLineEdit->setMaxLength(MAX_LABEL_LEN - 1);
+	ui->iconCloseupLabelLineEdit->setMaxLength(MAX_LABEL_LEN - 1);
+	ui->voiceFileLineEdit->setMaxLength(MAX_FILENAME_LEN - 1);
 
 	initializeUi();
 	updateUi();
@@ -32,7 +38,7 @@ void BriefingEditorDialog::accept()
 	if (_model->apply()) {
 		QDialog::accept();
 	}
-	// else: validation failed, don’t close
+	// else: validation failed, don't close
 }
 
 void BriefingEditorDialog::reject()

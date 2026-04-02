@@ -50,11 +50,8 @@
       </widget>
      </item>
      <item row="2" column="1">
-      <widget class="QLineEdit" name="lineEditStartSound">
-       <property name="maxLength">
-        <number>32</number>
-       </property>
-      </widget>
+      <widget class="QLineEdit" name="lineEditStartSound"/>
+
      </item>
      <item row="3" column="0">
       <widget class="QLabel" name="labelEndSound">
@@ -64,11 +61,8 @@
       </widget>
      </item>
      <item row="3" column="1">
-      <widget class="QLineEdit" name="lineEditEndSound">
-       <property name="maxLength">
-        <number>32</number>
-       </property>
-      </widget>
+      <widget class="QLineEdit" name="lineEditEndSound"/>
+
      </item>
      <item row="4" column="0">
       <widget class="QLabel" name="labelEngageTime">
@@ -128,11 +122,8 @@
       </widget>
      </item>
      <item row="9" column="1">
-      <widget class="QLineEdit" name="lineEditAnim">
-       <property name="maxLength">
-        <number>32</number>
-       </property>
-      </widget>
+      <widget class="QLineEdit" name="lineEditAnim"/>
+
      </item>
      <item row="10" column="0">
       <widget class="QLabel" name="labelSupercap">

@@ -1,6 +1,7 @@
 #include "CampaignEditorDialog.h"
 #include "ui_CampaignEditorDialog.h"
 
+#include <globalincs/globals.h>
 #include "ui/widgets/sexp_tree.h"
 #include "ui/widgets/SimpleListSelectDialog.h"
 #include "ui/util/SignalBlockers.h"
@@ -19,6 +20,10 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget* parent, EditorViewport* view
 	  ui(new Ui::CampaignEditorDialog), _viewport(viewport)
 {
 	ui->setupUi(this);
+
+	ui->nameLineEdit->setMaxLength(NAME_LENGTH - 1);
+	ui->loopAnimLineEdit->setMaxLength(MAX_FILENAME_LEN - 1);
+	ui->loopVoiceLineEdit->setMaxLength(MAX_FILENAME_LEN - 1);
 
 	// Build the Qt adapter for our data model
 	// This is kinda messy but the sexp_tree widget owns both the ui and the data for the tree

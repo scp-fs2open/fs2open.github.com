@@ -174,18 +174,12 @@
            <property name="text">
             <string/>
            </property>
-           <property name="maxLength">
-            <number>31</number>
-           </property>
           </widget>
          </item>
          <item row="6" column="2">
           <widget class="QLineEdit" name="actionHighResolutionFilenameEdit">
            <property name="text">
             <string/>
-           </property>
-           <property name="maxLength">
-            <number>31</number>
            </property>
           </widget>
          </item>
@@ -207,9 +201,6 @@
           <widget class="QLineEdit" name="actionLowResolutionFilenameEdit">
            <property name="text">
             <string/>
-           </property>
-           <property name="maxLength">
-            <number>31</number>
            </property>
           </widget>
          </item>
@@ -260,9 +251,6 @@
           <widget class="QLineEdit" name="animationFileName">
            <property name="text">
             <string/>
-           </property>
-           <property name="maxLength">
-            <number>31</number>
            </property>
           </widget>
          </item>

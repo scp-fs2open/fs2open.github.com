@@ -2,6 +2,7 @@
 
 #include "ui_PropEditorDialog.h"
 
+#include <globalincs/globals.h>
 #include <ui/util/SignalBlockers.h>
 #include <ui/widgets/FlagList.h>
 
@@ -12,6 +13,8 @@ namespace fso::fred::dialogs {
 PropEditorDialog::PropEditorDialog(FredView* parent, EditorViewport* viewport)
 	: QDialog(parent), ui(new ::Ui::PropEditorDialog()), _model(new PropEditorDialogModel(this, viewport)) {
 	ui->setupUi(this);
+
+	ui->propNameLineEdit->setMaxLength(NAME_LENGTH - 1);
 
 	initializeUi();
 	updateUi();

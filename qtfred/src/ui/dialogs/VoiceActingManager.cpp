@@ -16,6 +16,13 @@ VoiceActingManager::VoiceActingManager(FredView* parent, EditorViewport* viewpor
 {
     ui->setupUi(this);
 
+	ui->abbrevBriefingLineEdit->setMaxLength(NAME_LENGTH - 1);
+	ui->abbrevCampaignLineEdit->setMaxLength(NAME_LENGTH - 1);
+	ui->abbrevCommandBriefingLineEdit->setMaxLength(NAME_LENGTH - 1);
+	ui->abbrevDebriefingLineEdit->setMaxLength(NAME_LENGTH - 1);
+	ui->abbrevMessageLineEdit->setMaxLength(NAME_LENGTH - 1);
+	ui->abbrevMissionLineEdit->setMaxLength(NAME_LENGTH - 1);
+
 	// Install this dialog as the event filter on the abbrev fields
 	ui->abbrevBriefingLineEdit->installEventFilter(this);
 	ui->abbrevCampaignLineEdit->installEventFilter(this);

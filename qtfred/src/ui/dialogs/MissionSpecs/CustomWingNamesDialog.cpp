@@ -1,6 +1,7 @@
 #include "CustomWingNamesDialog.h"
 
 #include "ui_CustomWingNamesDialog.h"
+#include <globalincs/globals.h>
 #include <mission/util.h>
 
 #include <ui/util/SignalBlockers.h>
@@ -11,6 +12,17 @@ CustomWingNamesDialog::CustomWingNamesDialog(QWidget* parent, EditorViewport* vi
 	QDialog(parent), ui(new Ui::CustomWingNamesDialog()), _model(new CustomWingNamesDialogModel(this, viewport)),
 	_viewport(viewport) {
     ui->setupUi(this);
+
+	ui->startingWing_1->setMaxLength(NAME_LENGTH - 4);
+	ui->startingWing_2->setMaxLength(NAME_LENGTH - 4);
+	ui->startingWing_3->setMaxLength(NAME_LENGTH - 4);
+	ui->squadronWing_1->setMaxLength(NAME_LENGTH - 4);
+	ui->squadronWing_2->setMaxLength(NAME_LENGTH - 4);
+	ui->squadronWing_3->setMaxLength(NAME_LENGTH - 4);
+	ui->squadronWing_4->setMaxLength(NAME_LENGTH - 4);
+	ui->squadronWing_5->setMaxLength(NAME_LENGTH - 4);
+	ui->dogfightWing_1->setMaxLength(NAME_LENGTH - 4);
+	ui->dogfightWing_2->setMaxLength(NAME_LENGTH - 4);
 
 	connect(_model.get(), &AbstractDialogModel::modelChanged, this, &CustomWingNamesDialog::updateUi);
 
@@ -28,7 +40,7 @@ void CustomWingNamesDialog::accept()
 	if (_model->apply()) {
 		QDialog::accept();
 	}
-	// else: validation failed, don’t close
+	// else: validation failed, don't close
 }
 
 void CustomWingNamesDialog::reject()
