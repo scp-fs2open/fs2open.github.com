@@ -161,6 +161,8 @@ char Multi_tracker_id_string[255];
 ushort Multi_current_file_checksum = 0;
 int Multi_current_file_length = -1;
 
+bool Multi_sexp_end_mission_pending = false;
+
 
 // -------------------------------------------------------------------------------------------------
 //	multi_init() is called only once, at game start-up.  Get player address + port, initialize the
@@ -247,6 +249,9 @@ void multi_vars_init()
 	// current file checksum
 	Multi_current_file_checksum = 0;
 	Multi_current_file_length = -1;
+
+	// sexp end-mission deferred debrief flag
+	Multi_sexp_end_mission_pending = false;
 
 	Active_games.clear();
 	Game_server_head = NULL;

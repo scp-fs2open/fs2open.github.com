@@ -920,6 +920,12 @@ extern char Multi_tracker_id_string[255];
 extern ushort Multi_current_file_checksum;
 extern int Multi_current_file_length;
 
+// Set by multi_sexp_end_mission() so that process_endgame_packet() knows to call
+// send_debrief_event() immediately upon receiving MISSION_END, skipping warp-out.
+// Must be checked after stats have been broadcast by the server (which happens
+// in send_endgame_packet() before the MISSION_END packet is sent).
+extern bool Multi_sexp_end_mission_pending;
+
 // ip address list vars
 #define IP_STRING_LEN 60
 #define MAX_IP_ADDRS 100
