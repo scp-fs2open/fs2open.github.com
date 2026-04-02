@@ -127,7 +127,7 @@ void HeadAnimationPickerDialog::onBrowse()
 
 	const QString filters = "FSO Animations (*.ani *.eff *.png);;All Files (*.*)";
 	const QString filename = QFileDialog::getOpenFileName(this, tr("Select Head Animation"), interfacePath, filters);
-	if (file.isEmpty()) {
+	if (filename.isEmpty()) {
 		return;
 	}
 
