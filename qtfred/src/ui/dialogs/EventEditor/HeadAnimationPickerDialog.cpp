@@ -126,13 +126,13 @@ void HeadAnimationPickerDialog::onBrowse()
 	}
 
 	const QString filters = "FSO Animations (*.ani *.eff *.png);;All Files (*.*)";
-	const QString file = QFileDialog::getOpenFileName(this, tr("Select Head Animation"), interfacePath, filters);
+	const QString filename = QFileDialog::getOpenFileName(this, tr("Select Head Animation"), interfacePath, filters);
 	if (file.isEmpty()) {
 		return;
 	}
 
 	// Store just the base name
-	const QString rawName = QFileInfo(file).completeBaseName();
+	const QString rawName = QFileInfo(filename).completeBaseName();
 
 	// If the selected file has a trailing set-designator (single letter, -reg,
 	// or -death) and the stripped base also resolves, use the shorter base name.
