@@ -98,7 +98,7 @@ int main(int argc, char* argv[]) {
 	QCoreApplication::setApplicationName("qtFRED");
 
 	QApplication app(argc, argv);
-	app.setAttribute(Qt::AA_DisableWindowContextHelpButton);
+	QApplication::setAttribute(Qt::AA_DisableWindowContextHelpButton);
 
 	// Expect that the platform library is in the same directory
 	QCoreApplication::addLibraryPath(QCoreApplication::applicationDirPath());	
