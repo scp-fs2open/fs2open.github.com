@@ -44,7 +44,6 @@
 #include <ui/dialogs/VariableDialog.h>
 #include <ui/dialogs/MusicPlayerDialog.h>
 #include <ui/dialogs/RelativeCoordinatesDialog.h>
-#include <ui/dialogs/ControlsDialog.h>
 #include <ui/dialogs/SaveAsTemplateDialog.h>
 #include <ui/dialogs/TemplateBrowserDialog.h>
 #include <ui/dialogs/PreferencesDialog.h>
