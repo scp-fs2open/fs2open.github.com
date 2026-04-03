@@ -113,7 +113,6 @@ FredView::FredView(QWidget* parent) : QMainWindow(parent), ui(new Ui::FredView()
 		dialogs::PreferencesDialog preferencesDialog(this, _viewport);
 		preferencesDialog.exec();
 	});
-	ui->menuSeetings->insertAction(ui->actionAdjust_Grid, controlsAction);
 
 	connect(ui->actionManage_Layers, &QAction::triggered, this, [this]() { openLayerManagerDialog(); });
 	connect(ui->actionUnhide_Layers, &QAction::triggered, this, [this]() {
