@@ -1978,6 +1978,74 @@ void Editor::cancel_select_subsystem() {
 	Render_subsys.cur_subsys = NULL;
 	updateAllViewports();
 }
+void Editor::select_next_object()
+{
+	object* ptr;
+
+	if (EMPTY(&obj_used_list))
+		return;
+
+	if (query_valid_object(currentObject)) {
+		ptr = Objects[currentObject].next;
+		if (ptr == END_OF_LIST(&obj_used_list))
+			ptr = GET_NEXT(ptr);
+	} else {
+		ptr = GET_FIRST(&obj_used_list);
+	}
+
+	if (getNumMarked() > 1) {
+		// Cycle current object through marked objects only
+		while (!Objects[OBJ_INDEX(ptr)].flags[Object::Object_Flags::Marked]) {
+			ptr = GET_NEXT(ptr);
+			if (ptr == END_OF_LIST(&obj_used_list))
+				ptr = GET_NEXT(ptr);
+		}
+		setupCurrentObjectIndices(OBJ_INDEX(ptr));
+	} else {
+		if (getNumMarked())
+			unmarkObject(currentObject);
+		markObject(OBJ_INDEX(ptr));
+	}
+}
+void Editor::select_previous_object()
+{
+	int arr[MAX_OBJECTS], i = 0, n = 0;
+	object* ptr;
+
+	if (EMPTY(&obj_used_list))
+		return;
+
+	ptr = GET_FIRST(&obj_used_list);
+	while (ptr != END_OF_LIST(&obj_used_list)) {
+		if (currentObject == OBJ_INDEX(ptr))
+			i = n;
+		arr[n++] = OBJ_INDEX(ptr);
+		ptr = GET_NEXT(ptr);
+	}
+
+	Assert(n);
+	if (query_valid_object(currentObject)) {
+		i--;
+		if (i < 0)
+			i = n - 1;
+	} else {
+		i = n - 1;
+	}
+
+	if (getNumMarked() > 1) {
+		// Cycle current object through marked objects only
+		while (!Objects[arr[i]].flags[Object::Object_Flags::Marked]) {
+			i--;
+			if (i < 0)
+				i = n - 1;
+		}
+		setupCurrentObjectIndices(arr[i]);
+	} else {
+		if (getNumMarked())
+			unmarkObject(currentObject);
+		markObject(arr[i]);
+	}
+}
 int Editor::get_visible_sub_system_count(ship * shipp) {
 	int count = 0;
 	ship_subsys* cur_subsys;

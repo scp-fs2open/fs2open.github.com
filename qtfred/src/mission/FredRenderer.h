@@ -15,9 +15,9 @@ class ship_subsys;
 
 ///! \fixme This does NOT belong here. Used for porting and testing purposes ONLY!
 struct subsys_to_render {
-	bool do_render;
-	object* ship_obj;
-	ship_subsys* cur_subsys;
+	bool do_render = false;
+	object* ship_obj = nullptr;
+	ship_subsys* cur_subsys = nullptr;
 };
 
 ///! \fixme does NOT belong here.

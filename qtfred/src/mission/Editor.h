@@ -230,6 +230,9 @@ class Editor : public QObject {
 	void select_previous_subsystem();
 	void cancel_select_subsystem();
 
+	void select_next_object();
+	void select_previous_object();
+
 	bool global_error_check();
 
 	SCP_vector<SCP_string> get_docking_list(int model_index);

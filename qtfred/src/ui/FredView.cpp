@@ -661,6 +661,7 @@ void FredView::syncViewOptions() {
 	connectActionToViewSetting(ui->actionShow_Background, &_viewport->view.Show_stars);
 
 	connectActionToViewSetting(ui->actionLighting_from_Suns, &_viewport->view.Lighting_on);
+	connectActionToViewSetting(ui->actionRender_Full_Detail, &_viewport->view.FullDetail);
 
 
 	connectActionToViewSetting(ui->actionShowDistances, &_viewport->view.Show_distances);
@@ -1436,12 +1437,33 @@ void FredView::orientEditorTriggered() {
 void FredView::onUpdateEditorActions() {
 	ui->actionObjects->setEnabled(query_valid_object(fred->currentObject));
 
-	bool hasMarked = fred->getNumMarked() > 0;
+	const bool validObject = query_valid_object(fred->currentObject);
+	const bool hasMarked = fred->getNumMarked() > 0;
+	const bool isShip = validObject && Objects[fred->currentObject].type == OBJ_SHIP;
+	const bool subsysActive = fred->Render_subsys.do_render;
+
 	ui->actionClone_Marked_Objects->setEnabled(hasMarked);
 	ui->actionDelete->setEnabled(hasMarked);
 	ui->actionLock_Marked_Objects->setEnabled(hasMarked);
-
 	ui->actionDelete_Wing->setEnabled(fred->cur_wing >= 0);
+
+	// Objects editor — requires a selected object
+	ui->actionObjects->setEnabled(validObject);
+
+	// Level/Align — require something to be selected
+	ui->actionLevel_Object->setEnabled(validObject);
+	ui->actionAlign_Object->setEnabled(validObject);
+
+	// Mark Wing — only valid when the current object belongs to a wing
+	ui->actionMark_Wing->setEnabled(fred->cur_wing != -1);
+
+	// Subsystem navigation — Next requires a ship selected, Prev/Cancel require an active subsystem
+	ui->actionNext_Subsystem->setEnabled(isShip);
+	ui->actionPrev_Subsystem->setEnabled(subsysActive);
+	ui->actionCancel_Subsystem->setEnabled(subsysActive);
+
+	// Set Group submenu — requires at least one marked object to assign
+	ui->menuSet_Group->setEnabled(hasMarked);
 }
 void FredView::on_actionWingForm_triggered(bool  /*enabled*/) {
 	object* ptr = GET_FIRST(&obj_used_list);
@@ -1691,6 +1713,17 @@ void FredView::on_actionPrev_Subsystem_triggered(bool) {
 }
 void FredView::on_actionCancel_Subsystem_triggered(bool) {
 	fred->cancel_select_subsystem();
+}
+void FredView::on_actionNext_Object_triggered(bool) {
+	fred->select_next_object();
+}
+void FredView::on_actionPrev_Object_triggered(bool) {
+	fred->select_previous_object();
+}
+void FredView::on_actionMark_Wing_triggered(bool) {
+	if (fred->cur_wing != -1) {
+		fred->mark_wing(fred->cur_wing);
+	}
 }
 void FredView::on_actionError_Checker_triggered(bool) {
 	fred->global_error_check();

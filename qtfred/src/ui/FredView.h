@@ -157,6 +157,10 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void on_actionPrev_Subsystem_triggered(bool);
 	void on_actionCancel_Subsystem_triggered(bool);
 
+	void on_actionNext_Object_triggered(bool);
+	void on_actionPrev_Object_triggered(bool);
+	void on_actionMark_Wing_triggered(bool);
+
 	void on_actionError_Checker_triggered(bool);
 
 	void on_actionAbout_triggered(bool);

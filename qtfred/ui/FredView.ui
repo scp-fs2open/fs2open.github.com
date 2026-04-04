@@ -134,6 +134,7 @@
     <addaction name="actionRestore_Camera_Pos"/>
     <addaction name="separator"/>
     <addaction name="actionLighting_from_Suns"/>
+    <addaction name="actionRender_Full_Detail"/>
    </widget>
    <widget class="QMenu" name="menuSpeed">
     <property name="title">
@@ -986,6 +987,14 @@
    </property>
    <property name="text">
     <string>&amp;Lighting from Suns</string>
+   </property>
+  </action>
+  <action name="actionRender_Full_Detail">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Render Full Detail</string>
    </property>
   </action>
   <action name="actionCamera">
