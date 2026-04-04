@@ -63,6 +63,9 @@
 #include "util.h"
 #include "mission/object.h"
 
+// Forward-declare global-scope function before entering any namespace
+SCP_string cmdline_build_string();
+
 namespace {
 
 template<typename T>
@@ -508,7 +511,6 @@ void FredView::on_actionRun_FreeSpace_2_Open_triggered(bool) {
 		return;
 	}
 
-	extern SCP_string cmdline_build_string();
 	QString args = QString::fromStdString(cmdline_build_string());
 
 	if (!QProcess::startDetached(exePath, args.split(' ', QString::SkipEmptyParts))) {
