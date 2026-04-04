@@ -911,21 +911,27 @@ void FredRenderer::render_one_model_htl(object* objp,
 			flags |= MR_FULL_DETAIL;
 		}
 
-		if (Fred_outline) {
-			flags |= MR_SHOW_OUTLINE_HTL;
-		}
-
-		model_render_params render_info;
-		render_info.set_debug_flags(debug_flags);
-		render_info.set_color(Fred_outline >> 16, (Fred_outline >> 8) & 0xff, Fred_outline & 0xff);
-		render_info.set_replacement_textures(model_get_instance(Ships[z].model_instance_num)->texture_replace);
-		render_info.set_flags(flags);
-
 		g3_done_instance(0);
 
-		model_render_immediate(&render_info, Ship_info[Ships[z].ship_info_index].model_num, Ships[z].model_instance_num, &objp->orient, &objp->pos);
+		// Outline pass: use a dedicated pass with MR_NO_POLYS so is_outlines_only_htl fires
+		// in the renderer. Modern HTL models don't have outline_buffer, so relying on
+		// MR_SHOW_OUTLINE_HTL alone (without MR_NO_POLYS) silently does nothing.
+		if (Fred_outline) {
+			model_render_params outline_info;
+			outline_info.set_color(Fred_outline >> 16, (Fred_outline >> 8) & 0xff, Fred_outline & 0xff);
+			outline_info.set_flags(flags | MR_SHOW_OUTLINE_HTL | MR_NO_POLYS | MR_NO_LIGHTING | MR_NO_TEXTURING);
+			model_render_immediate(&outline_info, Ship_info[Ships[z].ship_info_index].model_num, Ships[z].model_instance_num, &objp->orient, &objp->pos);
+		}
 
-		if (view().Draw_outline_at_warpin_position 
+		if (view().Show_ship_models) {
+			model_render_params render_info;
+			render_info.set_debug_flags(debug_flags);
+			render_info.set_replacement_textures(model_get_instance(Ships[z].model_instance_num)->texture_replace);
+			render_info.set_flags(flags);
+			model_render_immediate(&render_info, Ship_info[Ships[z].ship_info_index].model_num, Ships[z].model_instance_num, &objp->orient, &objp->pos);
+		}
+
+		if (view().Draw_outline_at_warpin_position
 			&& (Ships[z].arrival_cue != Locked_sexp_true || Ships[z].arrival_delay > 0)
 			&& Ships[z].arrival_cue != Locked_sexp_false
 			&& !Ships[z].flags[Ship::Ship_Flags::No_arrival_warp])
@@ -938,9 +944,10 @@ void FredRenderer::render_one_model_htl(object* objp,
 				vec3d warpin_pos;
 				vm_vec_scale_add(&warpin_pos, &objp->pos, &objp->orient.vec.fvec, warpin_dist);
 
-				render_info.set_color(65, 65, 65);	// grey; see rgba_defaults
-				render_info.set_flags(flags | MR_SHOW_OUTLINE_HTL | MR_NO_LIGHTING | MR_NO_POLYS | MR_NO_TEXTURING);
-				model_render_immediate(&render_info, Ship_info[Ships[z].ship_info_index].model_num, Ships[z].model_instance_num, &objp->orient, &warpin_pos);
+				model_render_params warpin_info;
+				warpin_info.set_color(65, 65, 65);	// grey; see rgba_defaults
+				warpin_info.set_flags(flags | MR_SHOW_OUTLINE_HTL | MR_NO_LIGHTING | MR_NO_POLYS | MR_NO_TEXTURING);
+				model_render_immediate(&warpin_info, Ship_info[Ships[z].ship_info_index].model_num, Ships[z].model_instance_num, &objp->orient, &warpin_pos);
 			}
 		}
 	} else {
