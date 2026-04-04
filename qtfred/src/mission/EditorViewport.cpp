@@ -614,8 +614,8 @@ void EditorViewport::level_controlled() {
 			level_object(&Objects[view_obj].orient);
 			object_moved(&Objects[view_obj]);
 			///! \todo Notify.
+			editor->autosave("level object");
 			editor->missionChanged();
-			//FREDDoc_ptr->autosave("level object");
 		}
 		break;
 
@@ -641,13 +641,7 @@ void EditorViewport::level_controlled() {
 
 		///! \todo Notify.
 		if (count) {
-			/*
-			if (count > 1)
-			FREDDoc_ptr->autosave("level objects");
-			else
-			FREDDoc_ptr->autosave("level object");
-			*/
-
+			editor->autosave(count > 1 ? "level objects" : "level object");
 			editor->missionChanged();
 		}
 
@@ -676,7 +670,7 @@ void EditorViewport::verticalize_controlled() {
 			verticalize_object(&Objects[view_obj].orient);
 			object_moved(&Objects[view_obj]);
 			///! \todo notify.
-			//FREDDoc_ptr->autosave("align object");
+			editor->autosave("align object");
 			editor->missionChanged();
 		}
 		break;
@@ -703,13 +697,7 @@ void EditorViewport::verticalize_controlled() {
 
 		///! \todo Notify.
 		if (count) {
-			/*
-			if (count > 1)
-			FREDDoc_ptr->autosave("align objects");
-			else
-			FREDDoc_ptr->autosave("align object");
-			*/
-
+			editor->autosave(count > 1 ? "align objects" : "align object");
 			editor->missionChanged();
 		}
 
@@ -1152,8 +1140,7 @@ int EditorViewport::create_object_on_grid(int x, int y, int waypoint_instance, b
 		if (obj >= 0) {
 			editor->markObject(obj);
 
-			// TODO: Add autosave here
-			// FREDDoc_ptr->autosave("object create");
+			editor->autosave("object create");
 
 		} else if (obj == -1) {
 			dialogProvider->showButtonDialog(DialogType::Error, "Error", "Maximum ship limit reached.  Can't add any more ships.", { DialogButton::Ok });

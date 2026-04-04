@@ -71,6 +71,7 @@ void ShipEditorDialog::closeEvent(QCloseEvent* e)
 {
 	util::SignalBlockers blockers(this);
 	_model->apply();
+	_viewport->editor->autosave("ship editor");
 	QDialog::closeEvent(e);
 }
 

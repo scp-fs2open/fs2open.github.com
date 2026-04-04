@@ -1,4 +1,5 @@
 #include "BackgroundEditorDialog.h"
+#include <QCloseEvent>
 #include "ui/util/SignalBlockers.h"
 #include "ui/dialogs/General/ImagePickerDialog.h"
 #include "ui_BackgroundEditor.h"
@@ -28,6 +29,12 @@ BackgroundEditorDialog::BackgroundEditorDialog(FredView* parent, EditorViewport*
 }
 
 BackgroundEditorDialog::~BackgroundEditorDialog() = default;
+
+void BackgroundEditorDialog::closeEvent(QCloseEvent* e)
+{
+	_viewport->editor->autosave("background editor");
+	QDialog::closeEvent(e);
+}
 
 void BackgroundEditorDialog::initializeUi()
 {

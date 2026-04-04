@@ -36,6 +36,7 @@ void BriefingEditorDialog::accept()
 {
 	// If apply() returns true, close the dialog
 	if (_model->apply()) {
+		_viewport->editor->autosave("briefing editor");
 		QDialog::accept();
 	}
 	// else: validation failed, don't close

@@ -133,6 +133,68 @@ void Editor::update() {
 	}
 }
 
+int Editor::autosave(const char* /*desc*/) {
+	if (autosaveDisabled || !_lastActiveViewport)
+		return 0;
+
+	Fred_mission_save save;
+	save.set_always_save_display_names(_lastActiveViewport->Always_save_display_names);
+	save.set_view_pos(_lastActiveViewport->view_pos);
+	save.set_view_orient(_lastActiveViewport->view_orient);
+	save.set_fred_alt_names(Fred_alt_names);
+	save.set_fred_callsigns(Fred_callsigns);
+
+	// autosave_mission_file() needs a mutable buffer because it reads but doesn't write through it
+	char backup_name_buf[] = MISSION_BACKUP_NAME;
+	if (save.autosave_mission_file(backup_name_buf)) {
+		undoCount = undoAvailable = 0;
+		return -1;
+	}
+
+	undoCount++;
+	checkUndo();
+	return 0;
+}
+
+int Editor::checkUndo() {
+	undoAvailable = 0;
+	if (undoCount == 0)
+		return 0;
+
+	// Undo is available when Backup.002 exists (Backup.001 is the current, .002 is what we load)
+	CFileLocation loc = cf_find_file_location("Backup.002", CF_TYPE_MISSIONS);
+	if (loc.found) {
+		undoAvailable = 1;
+		return 1;
+	}
+	return 0;
+}
+
+bool Editor::autoload() {
+	if (!undoAvailable || !_lastActiveViewport)
+		return false;
+
+	// Load the previous state from Backup.002
+	if (!loadMission("Backup.002", MPF_FAST_RELOAD))
+		return false;
+
+	// Delete Backup.001 (the state we just replaced)
+	cf_delete("Backup.001", CF_TYPE_MISSIONS);
+
+	// Rotate backups back one slot: .003->.002, .004->.003, etc, .009->.008
+	char old_name[256], new_name[256];
+	for (int i = 1; i < MISSION_BACKUP_DEPTH; i++) {
+		sprintf(old_name, "Backup.%.3d", i + 1);
+		sprintf(new_name, "Backup.%.3d", i);
+		cf_rename(old_name, new_name, CF_TYPE_MISSIONS);
+	}
+
+	if (undoCount > 0)
+		undoCount--;
+	checkUndo();
+	return true;
+}
+
 void Editor::maybeUseAutosave(std::string& filepath)
 {
 	// first, just grab the info of this mission
@@ -429,6 +491,11 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 	// which will then allow them to update any LuaEnums that may be related to sexps
 	if (scripting::hooks::FredOnMissionLoad->isActive()) {
 		scripting::hooks::FredOnMissionLoad->run();
+	}
+
+	if (!(flags & MPF_FAST_RELOAD)) {
+		undoCount = undoAvailable = 0;
+		autosave("nothing");
 	}
 
 	return true;
@@ -824,6 +891,8 @@ void Editor::createNewMission() {
 	clearMission();
 	create_player(&vmd_zero_vector, &vmd_identity_matrix);
 	stars_post_level_init();
+	undoCount = undoAvailable = 0;
+	autosave("nothing");
 }
 void Editor::hideMarkedObjects() {
 	object* ptr;

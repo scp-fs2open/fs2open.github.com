@@ -33,13 +33,13 @@
      </property>
      <addaction name="actionFS2_Open"/>
      <addaction name="actionFS2_Retail"/>
+     <addaction name="actionFS2_Compatibility"/>
     </widget>
     <widget class="QMenu" name="menuImport">
      <property name="title">
       <string>&amp;Import</string>
      </property>
      <addaction name="actionFS1_Mission"/>
-     <addaction name="actionFS1_Weapon_Loadouts"/>
     </widget>
     <widget class="QMenu" name="menuRe_cent_Files">
      <property name="title">
@@ -644,7 +644,7 @@
   </action>
   <action name="actionRevert">
    <property name="text">
-    <string>&amp;Revert</string>
+    <string>Revert to &amp;Last Save</string>
    </property>
   </action>
   <action name="actionLoad_Template">
@@ -661,10 +661,27 @@
    <property name="text">
     <string>&amp;FS2 Open</string>
    </property>
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
   </action>
   <action name="actionFS2_Retail">
    <property name="text">
     <string>FS2 &amp;Retail</string>
+   </property>
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+  </action>
+  <action name="actionFS2_Compatibility">
+   <property name="text">
+    <string>FSO &amp;Compatibility Mode</string>
+   </property>
+   <property name="checkable">
+    <bool>true</bool>
    </property>
   </action>
   <action name="actionFS1_Mission">
@@ -672,12 +689,7 @@
     <string>&amp;FS1 Mission</string>
    </property>
   </action>
-  <action name="actionFS1_Weapon_Loadouts">
-   <property name="text">
-    <string>FS1 &amp;Weapon Loadouts</string>
-   </property>
-  </action>
-  <action name="actionRun_FreeSpace_2_Open">
+<action name="actionRun_FreeSpace_2_Open">
    <property name="text">
     <string>Run &amp;FreeSpace</string>
    </property>
@@ -726,6 +738,9 @@
   <action name="actionDisable_Undo">
    <property name="text">
     <string>D&amp;isable Undo</string>
+   </property>
+   <property name="checkable">
+    <bool>true</bool>
    </property>
   </action>
   <action name="actionTool_Bar">

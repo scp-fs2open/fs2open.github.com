@@ -71,6 +71,9 @@ class WingEditorDialog : public QDialog, public SexpTreeEditorInterface {
 		void on_departureTree_helpChanged(const QString& help);
 		void on_departureTree_miniHelpChanged(const QString& help);
 
+	protected:
+		void closeEvent(QCloseEvent* e) override;
+
 	private: // NOLINT(readability-redundant-access-specifiers)
 		std::unique_ptr<Ui::WingEditorDialog> ui;
 		std::unique_ptr<WingEditorDialogModel> _model;

@@ -1,4 +1,5 @@
 #include "WingEditorDialog.h"
+#include <QCloseEvent>
 #include "General/CheckBoxListDialog.h"
 #include "General/ImagePickerDialog.h"
 #include "ShipEditor/ShipGoalsDialog.h"
@@ -41,6 +42,12 @@ WingEditorDialog::WingEditorDialog(FredView* parent, EditorViewport* viewport)
 }
 
 WingEditorDialog::~WingEditorDialog() = default;
+
+void WingEditorDialog::closeEvent(QCloseEvent* e)
+{
+	_viewport->editor->autosave("wing editor");
+	QDialog::closeEvent(e);
+}
 
 void WingEditorDialog::updateUi()
 {

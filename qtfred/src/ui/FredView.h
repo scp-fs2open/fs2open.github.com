@@ -2,11 +2,14 @@
 
 #include <QMainWindow>
 #include <QAction>
+#include <QActionGroup>
 #include <QtGui/QSurfaceFormat>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QComboBox>
 #include <QtGui/QSurface>
 #include <QCloseEvent>
+
+#include "missioneditor/missionsave.h"
 
 #include <mission/FredRenderer.h>
 #include <mission/IDialogProvider.h>
@@ -58,8 +61,16 @@ class FredView: public QMainWindow, public IDialogProvider {
 	 void on_actionSave_As_triggered(bool);
 	 void on_actionSave_triggered(bool);
 	void on_actionExit_triggered(bool);
+	void on_actionRevert_triggered(bool);
+	void on_actionUndo_triggered(bool);
+	void on_actionDisable_Undo_triggered(bool checked);
 	void on_actionLoad_Template_triggered(bool);
 	void on_actionSave_As_Template_triggered(bool);
+	void on_actionFS2_Open_triggered(bool);
+	void on_actionFS2_Retail_triggered(bool);
+	void on_actionFS2_Compatibility_triggered(bool);
+	void on_actionFS1_Mission_triggered(bool);
+	void on_actionRun_FreeSpace_2_Open_triggered(bool);
 
 	void on_actionConstrainX_triggered(bool enabled);
 	void on_actionConstrainXY_triggered(bool enabled);
@@ -229,6 +240,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 	QAction* _controlModeCurrentShip = nullptr;
 
 	QString saveName = nullptr;
+	MissionFormat _missionSaveFormat = MissionFormat::STANDARD;
 
 	std::unique_ptr<Ui::FredView> ui;
 

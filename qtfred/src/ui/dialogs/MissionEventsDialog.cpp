@@ -256,6 +256,7 @@ void MissionEventsDialog::accept()
 {
 	// If apply() returns true, close the dialog
 	if (_model->apply()) {
+		_viewport->editor->autosave("event editor");
 		QDialog::accept();
 	}
 	// else: validation failed, don't close
