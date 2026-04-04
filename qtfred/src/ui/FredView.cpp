@@ -511,7 +511,7 @@ void FredView::on_actionRun_FreeSpace_2_Open_triggered(bool) {
 	extern SCP_string cmdline_build_string();
 	QString args = QString::fromStdString(cmdline_build_string());
 
-	if (!QProcess::startDetached(exePath, args.split(' ', Qt::SkipEmptyParts))) {
+	if (!QProcess::startDetached(exePath, args.split(' ', QString::SkipEmptyParts))) {
 		QMessageBox::warning(this, tr("Run FreeSpace"),
 			tr("Failed to launch: %1").arg(exePath));
 	}
