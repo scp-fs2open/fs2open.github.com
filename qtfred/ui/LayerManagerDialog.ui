@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>fso::fred::dialogs::LayerManagerDialog</class>
+ <widget class="QDialog" name="fso::fred::dialogs::LayerManagerDialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>380</width>
+    <height>520</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Visibility Layers</string>
+  </property>
+  <layout class="QVBoxLayout" name="mainLayout">
+   <item>
+    <widget class="QTabWidget" name="tabWidget">
+     <property name="currentIndex">
+      <number>0</number>
+     </property>
+     <widget class="QWidget" name="layersTab">
+      <attribute name="title">
+       <string>Layers</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="layersLayout">
+       <item>
+        <widget class="QListWidget" name="layerList"/>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="layerButtonsLayout">
+         <item>
+          <widget class="QPushButton" name="addLayerButton">
+           <property name="text">
+            <string>Add Layer</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="deleteLayerButton">
+           <property name="text">
+            <string>Delete Layer</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer name="layerButtonsSpacer">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="filtersTab">
+      <attribute name="title">
+       <string>Filters</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="filtersLayout">
+       <item>
+        <widget class="QGroupBox" name="objectTypesGroup">
+         <property name="title">
+          <string>Object Types</string>
+         </property>
+         <layout class="QVBoxLayout" name="objectTypesLayout">
+          <item>
+           <widget class="QCheckBox" name="showShipsCheck">
+            <property name="text">
+             <string>Ships</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="showStartsCheck">
+            <property name="text">
+             <string>Player Starts</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="showWaypointsCheck">
+            <property name="text">
+             <string>Waypoints</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="iffGroup">
+         <property name="title">
+          <string>IFF Teams</string>
+         </property>
+         <layout class="QVBoxLayout" name="iffGroupLayout">
+          <item>
+           <widget class="QScrollArea" name="iffScrollArea">
+            <property name="frameShape">
+             <enum>QFrame::NoFrame</enum>
+            </property>
+            <property name="widgetResizable">
+             <bool>true</bool>
+            </property>
+            <widget class="QWidget" name="iffScrollContents">
+             <layout class="QVBoxLayout" name="iffLayout">
+              <item>
+               <spacer name="iffSpacer">
+                <property name="orientation">
+                 <enum>Qt::Vertical</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>20</width>
+                  <height>40</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+             </layout>
+            </widget>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </widget>
+   </item>
+   <item>
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Close</set>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <connections>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>rejected()</signal>
+   <receiver>fso::fred::dialogs::LayerManagerDialog</receiver>
+   <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>190</x>
+     <y>380</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>190</x>
+     <y>200</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>

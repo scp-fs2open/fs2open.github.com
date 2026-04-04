@@ -624,20 +624,10 @@ void FredView::recentFileOpened() {
 	loadMissionFile(path);
 }
 void FredView::syncViewOptions() {
-	connectActionToViewSetting(ui->actionShow_Ships, &_viewport->view.Show_ships);
-	connectActionToViewSetting(ui->actionShow_Player_Starts, &_viewport->view.Show_starts);
-	connectActionToViewSetting(ui->actionShow_Waypoints, &_viewport->view.Show_waypoints);
-
-	// The Show teams actions need to be initialized after everything has been set up since the IFFs may not have been
-	// initialized yet
+	// Initialize the Show_iff visibility vector after IFF data is loaded
 	fredApp->runAfterInit([this]() {
 		for (auto i = 0; i < (int)Iff_info.size(); ++i) {
 			_viewport->view.Show_iff.push_back(true);
-			auto action = new QAction(QString::fromUtf8(Iff_info[i].iff_name), ui->menuDisplay_Filter);
-			action->setCheckable(true);
-			connectActionToViewSetting(action, &_viewport->view.Show_iff, i);
-
-			ui->menuDisplay_Filter->addAction(action);
 		}
 	});
 
@@ -651,20 +641,20 @@ void FredView::syncViewOptions() {
 	connectActionToViewSetting(ui->actionShow_Distances, &_viewport->view.Show_distances);
 	connectActionToViewSetting(ui->actionShow_Model_Paths, &_viewport->view.Show_paths_fred);
 	connectActionToViewSetting(ui->actionShow_Model_Dock_Points, &_viewport->view.Show_dock_points);
+	connectActionToViewSetting(ui->actionShow_Bay_Paths, &_viewport->view.Show_bay_paths);
 	connectActionToViewSetting(ui->actionHighlight_Selectable_Subsystems, &_viewport->view.Highlight_selectable_subsys);
 
 	connectActionToViewSetting(ui->actionShow_Grid, &_viewport->view.Show_grid);
 	connectActionToViewSetting(ui->actionShow_Horizon, &_viewport->view.Show_horizon);
-	connectActionToViewSetting(ui->actionDouble_Fine_Gridlines, &double_fine_gridlines);
-	connectActionToViewSetting(ui->actionAnti_Aliased_Gridlines, &_viewport->view.Aa_gridlines);
 	connectActionToViewSetting(ui->actionShow_3D_Compass, &_viewport->view.Show_compass);
 	connectActionToViewSetting(ui->actionShow_Background, &_viewport->view.Show_stars);
 
 	connectActionToViewSetting(ui->actionLighting_from_Suns, &_viewport->view.Lighting_on);
 	connectActionToViewSetting(ui->actionRender_Full_Detail, &_viewport->view.FullDetail);
 
-
 	connectActionToViewSetting(ui->actionShowDistances, &_viewport->view.Show_distances);
+
+	connect(ui->actionVisibility_Layers, &QAction::triggered, this, [this]() { openLayerManagerDialog(); });
 }
 void FredView::initializeStatusBar() {
 	_statusBarViewmode = new QLabel();
@@ -1017,12 +1007,6 @@ void FredView::windowActivated() {
 }
 void FredView::windowDeactivated() {
 	_viewport->Cursor_over = -1;
-}
-void FredView::on_actionHide_Marked_Objects_triggered(bool  /*enabled*/) {
-	fred->hideMarkedObjects();
-}
-void FredView::on_actionShow_All_Hidden_Objects_triggered(bool  /*enabled*/) {
-	fred->showHiddenObjects();
 }
 void FredView::on_actionLock_Marked_Objects_triggered(bool  /*enabled*/) {
 	fred->lockMarkedObjects();
@@ -1607,12 +1591,6 @@ void FredView::on_actionRestore_Camera_Pos_triggered(bool) {
 	_viewport->view_orient = _viewport->saved_cam_orient;
 
 	_viewport->needsUpdate();
-}
-void FredView::on_actionTool_Bar_triggered(bool enabled) {
-	ui->toolBar->setVisible(enabled);
-}
-void FredView::on_actionStatus_Bar_triggered(bool enabled) {
-	statusBar()->setVisible(enabled);
 }
 void FredView::on_actionClone_Marked_Objects_triggered(bool) {
 	if (fred->getNumMarked() > 0) {

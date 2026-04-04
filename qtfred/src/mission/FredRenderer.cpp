@@ -79,8 +79,6 @@ void init_fred_colors() {
 int grid_colors_inited = 0;
 color Fred_grid_bright;
 color Fred_grid_dark;
-color Fred_grid_bright_aa;
-color Fred_grid_dark_aa;
 
 void draw_asteroid_field() {
 	int i, j;
@@ -327,24 +325,13 @@ void FredRenderer::render_grid(grid* gridp) {
 	if (!grid_colors_inited) {
 		grid_colors_inited = 1;
 
-		gr_init_alphacolor(&Fred_grid_dark_aa, 64, 64, 64, 255);
-		gr_init_alphacolor(&Fred_grid_bright_aa, 128, 128, 128, 255);
 		gr_init_color(&Fred_grid_dark, 64, 64, 64);
 		gr_init_color(&Fred_grid_bright, 128, 128, 128);
 	}
 
 	ncols = gridp->ncols;
 	nrows = gridp->nrows;
-	if (double_fine_gridlines) {
-		ncols *= 2;
-		nrows *= 2;
-	}
-
-	if (view().Aa_gridlines) {
-		gr_set_color_fast(&Fred_grid_dark_aa);
-	} else {
-		gr_set_color_fast(&Fred_grid_dark);
-	}
+	gr_set_color_fast(&Fred_grid_dark);
 
 	//	Draw the column lines.
 	for (i = 0; i <= ncols; i++) {
@@ -359,11 +346,7 @@ void FredRenderer::render_grid(grid* gridp) {
 	nrows = gridp->nrows / 2;
 
 	// now draw the larger, brighter gridlines that is x10 the scale of smaller one.
-	if (view().Aa_gridlines) {
-		gr_set_color_fast(&Fred_grid_bright_aa);
-	} else {
-		gr_set_color_fast(&Fred_grid_bright);
-	}
+	gr_set_color_fast(&Fred_grid_bright);
 
 	for (i = 0; i <= ncols; i++) {
 		g3_draw_htl_line(&gridp->gpoints5[i], &gridp->gpoints6[i]);
@@ -905,6 +888,10 @@ void FredRenderer::render_one_model_htl(object* objp,
 
 		uint debug_flags = 0;
 		if (view().Show_dock_points) {
+			debug_flags |= MR_DEBUG_DOCK_POINTS;
+		}
+
+		if (view().Show_bay_paths) {
 			debug_flags |= MR_DEBUG_BAY_PATHS;
 		}
 
@@ -1146,10 +1133,8 @@ void FredRenderer::render_frame(int cur_object_index,
 		g3_draw_horizon_line();
 	}
 
-	if (view().Show_asteroid_field) {
-		gr_set_color(192, 96, 16);
-		draw_asteroid_field();
-	}
+	gr_set_color(192, 96, 16);
+	draw_asteroid_field();
 
 	if (view().Show_grid) {
 		render_grid(_viewport->The_grid);

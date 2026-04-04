@@ -86,15 +86,6 @@
     <property name="title">
      <string>&amp;View</string>
     </property>
-    <widget class="QMenu" name="menuDisplay_Filter">
-     <property name="title">
-      <string>&amp;Display Filter</string>
-     </property>
-     <addaction name="actionShow_Ships"/>
-     <addaction name="actionShow_Player_Starts"/>
-     <addaction name="actionShow_Waypoints"/>
-     <addaction name="separator"/>
-    </widget>
     <widget class="QMenu" name="menuViewpoint">
      <property name="title">
       <string>&amp;Viewpoint</string>
@@ -102,14 +93,9 @@
      <addaction name="actionCamera"/>
      <addaction name="actionCurrent_Ship"/>
     </widget>
-    <addaction name="actionTool_Bar"/>
-    <addaction name="actionStatus_Bar"/>
+    <addaction name="actionVisibility_Layers"/>
     <addaction name="separator"/>
-    <addaction name="menuDisplay_Filter"/>
-    <addaction name="separator"/>
-    <addaction name="actionHide_Marked_Objects"/>
-    <addaction name="actionShow_All_Hidden_Objects"/>
-    <addaction name="separator"/>
+    <addaction name="actionShow_Background"/>
     <addaction name="actionShow_Ship_Models"/>
     <addaction name="actionShow_Outlines"/>
     <addaction name="actionDraw_Outlines_On_Selected_Ships"/>
@@ -120,14 +106,12 @@
     <addaction name="actionShow_Distances"/>
     <addaction name="actionShow_Model_Paths"/>
     <addaction name="actionShow_Model_Dock_Points"/>
+    <addaction name="actionShow_Bay_Paths"/>
     <addaction name="actionHighlight_Selectable_Subsystems"/>
     <addaction name="separator"/>
     <addaction name="actionShow_Grid"/>
     <addaction name="actionShow_Horizon"/>
-    <addaction name="actionDouble_Fine_Gridlines"/>
-    <addaction name="actionAnti_Aliased_Gridlines"/>
     <addaction name="actionShow_3D_Compass"/>
-    <addaction name="actionShow_Background"/>
     <addaction name="separator"/>
     <addaction name="menuViewpoint"/>
     <addaction name="actionSave_Camera_Pos"/>
@@ -744,70 +728,9 @@
     <bool>true</bool>
    </property>
   </action>
-  <action name="actionTool_Bar">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="checked">
-    <bool>true</bool>
-   </property>
+  <action name="actionVisibility_Layers">
    <property name="text">
-    <string>&amp;Tool Bar</string>
-   </property>
-  </action>
-  <action name="actionStatus_Bar">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="checked">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>&amp;Status Bar</string>
-   </property>
-  </action>
-  <action name="actionShow_Ships">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>&amp;Show Ships</string>
-   </property>
-  </action>
-  <action name="actionShow_Player_Starts">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Show &amp;Player Starts</string>
-   </property>
-  </action>
-  <action name="actionShow_Waypoints">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Show &amp;Waypoints</string>
-   </property>
-  </action>
-  <action name="actionShow_Friendly">
-   <property name="text">
-    <string>Show &amp;Friendly</string>
-   </property>
-  </action>
-  <action name="actionShow_Hostile">
-   <property name="text">
-    <string>Show &amp;Hostile</string>
-   </property>
-  </action>
-  <action name="actionHide_Marked_Objects">
-   <property name="text">
-    <string>&amp;Hide Marked Objects</string>
-   </property>
-  </action>
-  <action name="actionShow_All_Hidden_Objects">
-   <property name="text">
-    <string>Sho&amp;w Hidden Objects</string>
+    <string>Visibility Layers...</string>
    </property>
   </action>
   <action name="actionShow_Ship_Models">
@@ -886,7 +809,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Show &amp;Model Paths</string>
+    <string>Show Model Nav Paths</string>
    </property>
   </action>
   <action name="actionShow_Model_Dock_Points">
@@ -895,6 +818,14 @@
    </property>
    <property name="text">
     <string>Show Model Doc&amp;k Points</string>
+   </property>
+  </action>
+  <action name="actionShow_Bay_Paths">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show Model Bay Paths</string>
    </property>
   </action>
   <action name="actionHighlight_Selectable_Subsystems">
@@ -925,22 +856,6 @@
    </property>
    <property name="shortcut">
     <string>Alt+Shift+H</string>
-   </property>
-  </action>
-  <action name="actionDouble_Fine_Gridlines">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Double &amp;Fine Gridlines</string>
-   </property>
-  </action>
-  <action name="actionAnti_Aliased_Gridlines">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>&amp;Anti-Aliased Gridlines</string>
    </property>
   </action>
   <action name="actionShow_3D_Compass">

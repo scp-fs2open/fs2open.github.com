@@ -60,6 +60,8 @@ add_file_folder("Source/Mission/Dialogs"
 	src/mission/dialogs/GlobalShipFlagsDialogModel.h
 	src/mission/dialogs/JumpNodeEditorDialogModel.cpp
 	src/mission/dialogs/JumpNodeEditorDialogModel.h
+	src/mission/dialogs/LayerManagerDialogModel.cpp
+	src/mission/dialogs/LayerManagerDialogModel.h
 	src/mission/dialogs/MissionCutscenesDialogModel.cpp
 	src/mission/dialogs/MissionCutscenesDialogModel.h
 	src/mission/dialogs/MissionEventsDialogModel.cpp
@@ -315,6 +317,7 @@ add_file_folder("UI"
     ui/FredView.ui
 	ui/GlobalShipFlagsDialog.ui
 	ui/JumpNodeEditorDialog.ui
+	ui/LayerManagerDialog.ui
 	ui/TeamLoadoutDialog.ui
 	ui/MissionCutscenesDialog.ui
 	ui/MissionEventsDialog.ui

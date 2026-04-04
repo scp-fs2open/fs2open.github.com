@@ -2618,6 +2618,10 @@ void model_render_debug(int model_num, const matrix *orient, const vec3d *pos, u
 		model_draw_bay_paths_htl(model_num);
 	}
 
+	if ( debug_flags & MR_DEBUG_DOCK_POINTS ) {
+		model_draw_dock_points_htl(model_num);
+	}
+
 	if ( (flags & MR_AUTOCENTER) && (set_autocen) ) {
 		g3_done_instance(true);
 	}

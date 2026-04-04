@@ -16,14 +16,13 @@ struct ViewSettings {
 	bool Show_horizon = false;
 	bool Show_grid = true;
 	bool Show_distances = true;
-	bool Show_asteroid_field = true;
-	bool Aa_gridlines = false;
 	bool Show_coordinates = false;
 	bool Show_outlines = false;
 	bool Draw_outlines_on_selected_ships = true;
 	bool Draw_outline_at_warpin_position = false;
 	bool Show_grid_positions = true;
 	bool Show_dock_points = false;
+	bool Show_bay_paths = false;
 	bool Show_starts = true;
 	bool Show_ships = true;
 	SCP_vector<bool> Show_iff;
