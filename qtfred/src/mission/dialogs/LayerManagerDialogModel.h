@@ -20,7 +20,7 @@ public:
 	bool setLayerVisibility(const SCP_string& name, bool visible, SCP_string* error);
 	bool addLayer(const SCP_string& name, SCP_string* error);
 	bool deleteLayer(const SCP_string& name, SCP_string* error);
-	bool isDefaultLayer(const SCP_string& name) const;
+	static bool isDefaultLayer(const SCP_string& name);
 
 	// Object type filters
 	bool getShowShips() const;
@@ -31,8 +31,8 @@ public:
 	void setShowWaypoints(bool value);
 
 	// IFF team filters
-	int getIffCount() const;
-	SCP_string getIffName(int index) const;
+	static int getIffCount();
+	static SCP_string getIffName(int index);
 	bool getShowIff(int index) const;
 	void setShowIff(int index, bool value);
 };

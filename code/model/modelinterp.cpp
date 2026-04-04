@@ -712,7 +712,7 @@ void model_draw_dock_points_htl(int model_num)
 	vec3d v1, v2;
 
 	polymodel *pm = model_get(model_num);
-	if(pm == NULL){
+	if(pm == nullptr){
 		return;
 	}
 

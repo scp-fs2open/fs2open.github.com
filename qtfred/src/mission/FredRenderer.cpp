@@ -911,7 +911,7 @@ void FredRenderer::render_one_model_htl(object* objp,
 			flags |= MR_FULL_DETAIL;
 		}
 
-		g3_done_instance(0);
+		g3_done_instance(false);
 
 		// Outline pass: use a dedicated pass with MR_NO_POLYS so is_outlines_only_htl fires
 		// in the renderer. Modern HTL models don't have outline_buffer, so relying on

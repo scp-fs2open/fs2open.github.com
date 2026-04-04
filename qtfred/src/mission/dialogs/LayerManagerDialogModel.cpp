@@ -59,7 +59,7 @@ bool LayerManagerDialogModel::deleteLayer(const SCP_string& name, SCP_string* er
 	return true;
 }
 
-bool LayerManagerDialogModel::isDefaultLayer(const SCP_string& name) const {
+bool LayerManagerDialogModel::isDefaultLayer(const SCP_string& name) {
 	return name == EditorViewport::DefaultLayerName;
 }
 
@@ -92,11 +92,11 @@ void LayerManagerDialogModel::setShowWaypoints(bool value) {
 
 // --- IFF team filters ---
 
-int LayerManagerDialogModel::getIffCount() const {
+int LayerManagerDialogModel::getIffCount() {
 	return static_cast<int>(Iff_info.size());
 }
 
-SCP_string LayerManagerDialogModel::getIffName(int index) const {
+SCP_string LayerManagerDialogModel::getIffName(int index) {
 	return Iff_info[index].iff_name;
 }
 

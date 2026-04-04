@@ -30,7 +30,7 @@ private slots:
 	void on_showStartsCheck_toggled(bool checked);
 	void on_showWaypointsCheck_toggled(bool checked);
 
-private:
+private: // NOLINT(readability-redundant-access-specifiers)
 	void initializeUi();
 	void updateUi();
 
