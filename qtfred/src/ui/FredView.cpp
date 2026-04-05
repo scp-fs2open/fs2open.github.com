@@ -568,6 +568,10 @@ void FredView::addToRecentFiles(const QString& path) {
 	if (path.endsWith(".fst", Qt::CaseInsensitive))
 		return;
 
+	// Backup files are internal; don't pollute the recent list with them
+	if (QFileInfo(path).baseName().compare("Backup", Qt::CaseInsensitive) == 0)
+		return;
+
 	// First get the list of existing files
 	QSettings settings;
 	auto recentFiles = settings.value("FredView/recentFiles").toStringList();
