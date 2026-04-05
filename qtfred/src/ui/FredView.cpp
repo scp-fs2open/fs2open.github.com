@@ -803,6 +803,14 @@ bool FredView::event(QEvent* event) {
 		return QMainWindow::event(event);
 	}
 }
+void FredView::changeEvent(QEvent* event) {
+	QMainWindow::changeEvent(event);
+	// Force menubar repaint when reenabled after a modal dialog closes.
+	// Without this, menu items stay grey until the user mouses over them.
+	if (event->type() == QEvent::EnabledChange && isEnabled()) {
+		menuBar()->update();
+	}
+}
 void FredView::closeEvent(QCloseEvent* event) {
 	if (!maybePromptToSaveMissionChanges(tr("closing QtFRED"))) {
 		event->ignore();
@@ -817,6 +825,7 @@ void FredView::windowActivated() {
 	// Track the last active viewport
 	fred->setActiveViewport(_viewport);
 
+	menuBar()->update();
 	viewWindowActivated();
 }
 void FredView::windowDeactivated() {
