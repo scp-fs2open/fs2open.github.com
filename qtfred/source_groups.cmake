@@ -270,10 +270,8 @@ add_file_folder("Source/UI/Widgets"
 	src/ui/widgets/bankTree.h
 	src/ui/widgets/CampaignMissionGraph.cpp
 	src/ui/widgets/CampaignMissionGraph.h
-	src/ui/widgets/ColorComboBox.cpp
-	src/ui/widgets/ColorComboBox.h
-	src/ui/widgets/PropComboBox.cpp
-	src/ui/widgets/PropComboBox.h
+	src/ui/widgets/ObjectComboBox.cpp
+	src/ui/widgets/ObjectComboBox.h
 	src/ui/widgets/LineEditDelegate.cpp
 	src/ui/widgets/LineEditDelegate.h
 	src/ui/widgets/FlagList.cpp

@@ -275,12 +275,18 @@
    <property name="windowTitle">
     <string>toolBar</string>
    </property>
+   <property name="styleSheet">
+    <string notr="true">QToolButton { qproperty-autoRaise: false; }</string>
+   </property>
    <attribute name="toolBarArea">
     <enum>TopToolBarArea</enum>
    </attribute>
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
+   <property name="movable">
+    <bool>false</bool>
+   </property>
    <addaction name="actionSelect"/>
    <addaction name="actionSelectMove"/>
    <addaction name="actionSelectRotate"/>

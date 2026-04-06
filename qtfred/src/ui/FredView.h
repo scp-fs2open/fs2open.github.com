@@ -15,8 +15,7 @@
 #include <mission/IDialogProvider.h>
 
 #include <memory>
-#include <ui/widgets/ColorComboBox.h>
-#include <ui/widgets/PropComboBox.h>
+#include <ui/widgets/ObjectComboBox.h>
 
 namespace fso {
 namespace fred {
@@ -243,8 +242,8 @@ class FredView: public QMainWindow, public IDialogProvider {
 
 	std::unique_ptr<Ui::FredView> ui;
 
-	std::unique_ptr<ColorComboBox> _shipClassBox;
-	std::unique_ptr<PropComboBox> _propClassBox;
+	ObjectComboBox* _shipClassBox = nullptr;
+	ObjectComboBox* _propClassBox = nullptr;
 
 	Editor* fred = nullptr;
 	EditorViewport* _viewport = nullptr;

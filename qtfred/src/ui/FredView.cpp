@@ -58,7 +58,7 @@
 #include "mission/missionparse.h"
 #include "missioneditor/missionsave.h"
 
-#include "widgets/ColorComboBox.h"
+#include "widgets/ObjectComboBox.h"
 
 #include "util.h"
 #include "mission/object.h"
@@ -148,17 +148,24 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 
 	ui->centralWidget->setEditor(editor, _viewport);
 
-	// A combo box cannot be added by the designer so we do that manually here
-	// This needs to be done since the viewport pointer is not valid earlier
-	_shipClassBox.reset(new ColorComboBox(nullptr, _viewport));
-	ui->toolBar->addWidget(_shipClassBox.get());
-	connect(_shipClassBox.get(), &ColorComboBox::shipClassSelected, this, &FredView::onShipClassSelected);
+	// Combo boxes and their labels cannot be added in Qt Designer for toolbar widgets
+	auto shipsLabel = new QLabel(tr("Ships: "), ui->toolBar);
+	shipsLabel->setContentsMargins(4, 0, 0, 0);
+	ui->toolBar->addWidget(shipsLabel);
+	_shipClassBox = new ObjectComboBox(ui->toolBar);
+	_shipClassBox->setFixedWidth(150);
+	_shipClassBox->initForShips(_viewport);
+	ui->toolBar->addWidget(_shipClassBox);
+	connect(_shipClassBox, &ObjectComboBox::classSelected, this, &FredView::onShipClassSelected);
 
-	auto propLabel = new QLabel(tr("Props"), ui->toolBar);
-	ui->toolBar->addWidget(propLabel);
-	_propClassBox.reset(new PropComboBox(nullptr));
-	ui->toolBar->addWidget(_propClassBox.get());
-	connect(_propClassBox.get(), &PropComboBox::propClassSelected, this, &FredView::onPropClassSelected);
+	auto propsLabel = new QLabel(tr("Props: "), ui->toolBar);
+	propsLabel->setContentsMargins(4, 0, 0, 0);
+	ui->toolBar->addWidget(propsLabel);
+	_propClassBox = new ObjectComboBox(ui->toolBar);
+	_propClassBox->setFixedWidth(150);
+	_propClassBox->initForProps();
+	ui->toolBar->addWidget(_propClassBox);
+	connect(_propClassBox, &ObjectComboBox::classSelected, this, &FredView::onPropClassSelected);
 
 	connect(fred, &Editor::missionLoaded, this, &FredView::on_mission_loaded);
 	connect(fred, &Editor::missionChanged, this, [this]() { _missionModified = true; });
@@ -1179,15 +1186,13 @@ void FredView::onUpdateSelectionLock() {
 	ui->actionSelectionLock->setChecked(_viewport->Selection_lock);
 }
 void FredView::onUpdateShipClassBox() {
-	_shipClassBox->selectShipClass(_viewport->cur_model_index);
+	_shipClassBox->selectClass(_viewport->cur_model_index);
 }
 void FredView::onUpdatePropClassBox() {
-	if (_propClassBox) {
-		if (_viewport->cur_prop_index < 0 && _propClassBox->count() > 0) {
-			onPropClassSelected(_propClassBox->itemData(0).value<int>());
-		}
-		_propClassBox->selectPropClass(_viewport->cur_prop_index);
+	if (_viewport->cur_prop_index < 0 && _propClassBox->count() > 0) {
+		onPropClassSelected(_propClassBox->itemData(0).value<int>());
 	}
+	_propClassBox->selectClass(_viewport->cur_prop_index);
 }
 void FredView::onShipClassSelected(int ship_class) {
 	_viewport->cur_model_index = ship_class;
