@@ -15,8 +15,13 @@
 #include <memory>
 #include <stdexcept>
 
-namespace fso {
-namespace fred {
+namespace fso::fred {
+
+struct subsys_to_render {
+	bool do_render = false;
+	object* ship_obj = nullptr;
+	ship_subsys* cur_subsys = nullptr;
+};
 
 enum class WingNameError {
 	None,
@@ -363,8 +368,7 @@ class Editor : public QObject {
 	void updateStartingWingLoadoutUseCounts();
 };
 
-} // namespace fred
-} // namespace fso
+} // namespace fso::fred
 
 extern char Fred_callsigns[MAX_SHIPS][NAME_LENGTH + 1];
 extern char Fred_alt_names[MAX_SHIPS][NAME_LENGTH + 1];

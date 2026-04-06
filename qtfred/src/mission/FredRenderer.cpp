@@ -144,7 +144,7 @@ void draw_asteroid_field() {
 	}
 }
 
-void fredhtl_render_subsystem_bounding_box(subsys_to_render *s2r)
+void fredhtl_render_subsystem_bounding_box(fso::fred::subsys_to_render *s2r)
 {
 	vertex text_center;
 	SCP_string buf;
@@ -274,7 +274,7 @@ void fredhtl_render_subsystem_bounding_box(subsys_to_render *s2r)
 	}
 }
 
-void render_active_rect(bool box_marking, const Marking_box& marking_box) {
+void render_active_rect(bool box_marking, const fso::fred::Marking_box& marking_box) {
 	if (box_marking) {
 		gr_set_color(255, 255, 255);
 		gr_line(marking_box.x1, marking_box.y1, marking_box.x1, marking_box.y2);
@@ -299,8 +299,7 @@ void draw_compass_arrow(vec3d* v0) {
 
 }
 
-namespace fso {
-namespace fred {
+namespace fso::fred {
 ViewSettings::ViewSettings() {
 }
 
@@ -360,32 +359,6 @@ void FredRenderer::render_grid(grid* gridp) {
 	gr_zbuffer_set(1);
 }
 
-void FredRenderer::hilight_bitmap() {
-	/*
-int i;
-vertex p[4];
-
-if (Starfield_bitmaps[Cur_bitmap].bitmap_index == -1)  // can't draw if no bitmap
-return;
-
-for (i=0; i<4; i++)
-{
-g3_rotate_faraway_vertex(&p[i], &Starfield_bitmaps[Cur_bitmap].points[i]);
-if (p[i].codes & CC_BEHIND)
-return;
-
-g3_project_vertex(&p[i]);
-if (p[i].flags & PF_OVERFLOW)
-return;
-}
-
-gr_set_color(255, 255, 255);
-g3_draw_line(&p[0], &p[1]);
-g3_draw_line(&p[1], &p[2]);
-g3_draw_line(&p[2], &p[3]);
-g3_draw_line(&p[3], &p[0]);
-*/
-}
 
 void FredRenderer::display_distances() {
 	char buf[20];
@@ -486,7 +459,7 @@ void FredRenderer::display_ship_info(int cur_object_index) {
 					} else if (objp->type == OBJ_WAYPOINT) {
 						int idx;
 						waypoint_list* wp_list = find_waypoint_list_with_instance(objp->instance, &idx);
-						Assert(wp_list != NULL);
+						Assertion(wp_list != nullptr, "Could not find waypoint list for object instance %d", objp->instance);
 						sprintf(buf, "%s\nWaypoint %d", wp_list->get_name(), idx + 1);
 					} else if (objp->type == OBJ_POINT) {
 						if (objp->instance == BRIEFING_LOOKAT_POINT_ID)
@@ -617,126 +590,7 @@ void FredRenderer::render_compass() {
 	g3_end_frame(); // ** Accounted for
 }
 
-void FredRenderer::draw_orient_sphere2(int col, object* obj, int r, int g, int b) {
-	int flag = 0;
-	vertex v;
-	vec3d v1, v2;
-	float size;
 
-	size = fl_sqrt(vm_vec_dist(&_viewport->eye_pos, &obj->pos) / 20.0f);
-	if (size < LOLLIPOP_SIZE) {
-		size = LOLLIPOP_SIZE;
-	}
-
-	if ((obj->type != OBJ_WAYPOINT) && (obj->type != OBJ_POINT)) {
-		flag = (vm_vec_dot(&_viewport->eye_orient.vec.fvec, &obj->orient.vec.fvec) < 0.0f);
-
-		v1 = v2 = obj->pos;
-		vm_vec_scale_add2(&v1, &obj->orient.vec.fvec, size);
-		vm_vec_scale_add2(&v2, &obj->orient.vec.fvec, size * 1.5f);
-
-		if (!flag) {
-			gr_set_color(192, 192, 192);
-			rpd_line(&v1, &v2);
-		}
-	}
-
-	g3_rotate_vertex(&v, &obj->pos);
-	if (!(v.codes & CC_BEHIND)) {
-		if (!(g3_project_vertex(&v) & PF_OVERFLOW)) {
-			gr_set_color((col >> 16) & 0xff, (col >> 8) & 0xff, col & 0xff);
-			g3_draw_sphere(&v, size);
-			gr_set_color(r, g, b);
-			g3_draw_sphere(&v, size * 0.75f);
-		}
-	}
-
-	if (flag) {
-		gr_set_color(192, 192, 192);
-		rpd_line(&v1, &v2);
-	}
-}
-
-void FredRenderer::draw_orient_sphere(object* obj, int r, int g, int b) {
-	int flag = 0;
-	vertex v;
-	vec3d v1, v2;
-	float size;
-
-	size = fl_sqrt(vm_vec_dist(&_viewport->eye_pos, &obj->pos) / 20.0f);
-	if (size < LOLLIPOP_SIZE) {
-		size = LOLLIPOP_SIZE;
-	}
-
-	if ((obj->type != OBJ_WAYPOINT) && (obj->type != OBJ_POINT)) {
-		flag = (vm_vec_dot(&_viewport->eye_orient.vec.fvec, &obj->orient.vec.fvec) < 0.0f);
-		v1 = v2 = obj->pos;
-		vm_vec_scale_add2(&v1, &obj->orient.vec.fvec, size);
-		vm_vec_scale_add2(&v2, &obj->orient.vec.fvec, size * 1.5f);
-
-		if (!flag) {
-			gr_set_color(192, 192, 192);
-			rpd_line(&v1, &v2);
-		}
-	}
-
-	gr_set_color(r, g, b);
-	g3_rotate_vertex(&v, &obj->pos);
-	if (!(v.codes & CC_BEHIND)) {
-		if (!(g3_project_vertex(&v) & PF_OVERFLOW)) {
-			g3_draw_sphere(&v, size);
-		}
-	}
-
-	if (flag) {
-		gr_set_color(192, 192, 192);
-		rpd_line(&v1, &v2);
-	}
-}
-
-void FredRenderer::render_model_x(vec3d* pos, grid* gridp, int  /*col_scheme*/) {
-	vec3d gpos; //	Location of point on grid.
-	vec3d tpos;
-	float dxz;
-	plane tplane;
-	vec3d* gv;
-
-	if (!view().Show_grid_positions) {
-		return;
-	}
-
-	tplane.A = gridp->gmatrix.vec.uvec.xyz.x;
-	tplane.B = gridp->gmatrix.vec.uvec.xyz.y;
-	tplane.C = gridp->gmatrix.vec.uvec.xyz.z;
-	tplane.D = gridp->planeD;
-
-	compute_point_on_plane(&gpos, &tplane, pos);
-	dxz = vm_vec_dist(pos, &gpos) / 8.0f;
-	gv = &gridp->gmatrix.vec.uvec;
-	if (gv->xyz.x * pos->xyz.x + gv->xyz.y * pos->xyz.y + gv->xyz.z * pos->xyz.z < -gridp->planeD) {
-		gr_set_color(0, 127, 0);
-	} else {
-		gr_set_color(192, 192, 192);
-	}
-
-
-	rpd_line(&gpos, pos); //	Line from grid to object center.
-
-	tpos = gpos;
-
-	vm_vec_scale_add2(&gpos, &gridp->gmatrix.vec.rvec, -dxz / 2);
-	vm_vec_scale_add2(&gpos, &gridp->gmatrix.vec.fvec, -dxz / 2);
-
-	vm_vec_scale_add2(&tpos, &gridp->gmatrix.vec.rvec, dxz / 2);
-	vm_vec_scale_add2(&tpos, &gridp->gmatrix.vec.fvec, dxz / 2);
-
-	rpd_line(&gpos, &tpos);
-
-	vm_vec_scale_add2(&gpos, &gridp->gmatrix.vec.rvec, dxz);
-	vm_vec_scale_add2(&tpos, &gridp->gmatrix.vec.rvec, -dxz);
-
-	rpd_line(&gpos, &tpos);
-}
 
 void FredRenderer::render_model_x_htl(vec3d* pos, grid* gridp, int  /*col_scheme*/) {
 	vec3d gpos; //	Location of point on grid.
@@ -1053,15 +907,6 @@ void FredRenderer::render_models(int cur_object_index,
 	obj_render_all(render_function, &f);
 
 	disable_htl();
-
-	///! \fixme Handle briefing stuff properly.
-#if 0
-    if (Briefing_dialog)
-    {
-        obj_render_all(render_one_model_briefing_screen, &f);
-        Briefing_dialog->batch_render();
-    }
-#endif
 }
 
 void FredRenderer::render_frame(int cur_object_index,
@@ -1087,37 +932,6 @@ void FredRenderer::render_frame(int cur_object_index,
 
 	gr_reset_clip();
 	gr_clear();
-	///! \fixme Briefing related!
-#if 0
-    if (Briefing_dialog) {
-        CRect rect;
-
-        Fred_main_wnd->GetClientRect(rect);
-        True_rw = rect.Width();
-        True_rh = rect.Height();
-        if (Fixed_briefing_size) {
-            True_rw = Briefing_window_resolution[0];
-            True_rh = Briefing_window_resolution[1];
-
-        }
-        else {
-            if ((float)True_rh / (float)True_rw > (float)Briefing_window_resolution[1] / (float)Briefing_window_resolution[0]) {
-                True_rh = (int)((float)Briefing_window_resolution[1] * (float)True_rw / (float)Briefing_window_resolution[0]);
-
-            }
-            else {  // Fred is wider than briefing window
-                True_rw = (int)((float)Briefing_window_resolution[0] * (float)True_rh / (float)Briefing_window_resolution[1]);
-            }
-        }
-
-        g3_start_frame(0); // ** Accounted for
-        gr_set_color(255, 255, 255);
-        gr_line(0, True_rh, True_rw, True_rh);
-        gr_line(True_rw, 0, True_rw, True_rh);
-        g3_end_frame();	 // ** Accounted for
-        gr_set_clip(0, 0, True_rw, True_rh);
-    }
-#endif
 
 	g3_start_frame(1); // ** Accounted for
 	// 1 means use zbuffering
@@ -1145,9 +959,6 @@ void FredRenderer::render_frame(int cur_object_index,
 
 	if (view().Show_grid) {
 		render_grid(_viewport->The_grid);
-	}
-	if (Bg_bitmap_dialog) {
-		hilight_bitmap();
 	}
 
 	gr_set_color(0, 0, 64);
@@ -1185,7 +996,7 @@ void FredRenderer::render_frame(int cur_object_index,
 		} else if (Objects[_viewport->Cursor_over].type == OBJ_WAYPOINT) {
 			int idx;
 			waypoint_list* wp_list = find_waypoint_list_with_instance(inst, &idx);
-			Assert(wp_list != NULL);
+			Assertion(wp_list != nullptr, "Could not find waypoint list for object instance %d", inst);
 			sprintf(buf,
 					"%s\nWaypoint %d\n( %.1f , %.1f , %.1f ) ",
 					wp_list->get_name(),
@@ -1245,11 +1056,6 @@ void FredRenderer::render_frame(int cur_object_index,
 	gr_flip();
 
 	gr_reset_clip();
-	///! \fixme Briefing related!
-#if 0
-    if (Briefing_dialog)
-        gr_set_clip(0, 0, True_rw, True_rh);
-#endif
 
 	g3_start_frame(0); // ** Accounted for
 	g3_set_view_matrix(&_viewport->eye_pos, &_viewport->eye_orient, 0.5f);
@@ -1267,5 +1073,4 @@ ViewSettings& FredRenderer::view() {
 	return _viewport->view;
 }
 
-}
-}
+} // namespace fso::fred

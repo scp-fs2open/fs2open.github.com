@@ -7,8 +7,14 @@
 
 #include <object/object.h>
 
-namespace fso {
-namespace fred {
+namespace fso::fred {
+
+struct Marking_box {
+	int x1 = 0;
+	int y1 = 0;
+	int x2 = 0;
+	int y2 = 0;
+};
 
 struct ViewSettings {
 	bool Universal_heading = false;
@@ -218,5 +224,4 @@ private:
 	void loadSettings();
 };
 
-}
-}
+} // namespace fso::fred

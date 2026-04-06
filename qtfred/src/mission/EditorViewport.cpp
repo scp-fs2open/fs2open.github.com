@@ -1,6 +1,3 @@
-//
-//
-
 #include <globalincs/linklist.h>
 #include <object/object.h>
 #include <render/3d.h>
@@ -111,8 +108,7 @@ void verticalize_object(matrix* orient) {
 
 }
 
-namespace fso {
-namespace fred {
+namespace fso::fred {
 
 const char* EditorViewport::DefaultLayerName = "Default";
 
@@ -797,21 +793,6 @@ int EditorViewport::select_object(int cx, int cy) {
 	double dist, best_dist = 9e99;
 	vec3d p0, p1, v, hitpos;
 	vertex vt;
-
-	///! \fixme Briefing!
-#if 0
-    if (Briefing_dialog) {
-        best = Briefing_dialog->check_mouse_hit(cx, cy);
-        if (best >= 0)
-        {
-            if ((Selection_lock && !Objects[best].flags[Object::Object_Flags::Marked])) || Objects[best].flags[Object::Object_Flags::Locked_from_editing])
-            {
-                return -1;
-            }
-            return best;
-        }
-    }
-#endif
 
 	/*	gr_reset_clip();
 	g3_start_frame(0); ////////////////
@@ -1722,5 +1703,4 @@ void EditorViewport::view_object(int obj_num) {
 	needsUpdate();
 }
 
-}
-}
+} // namespace fso::fred

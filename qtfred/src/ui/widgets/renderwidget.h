@@ -4,12 +4,11 @@
 
 #include <QWindow>
 #include <QWidget>
-#include <mission/FredRenderer.h>
+#include <mission/EditorViewport.h>
 
 #include "osapi/osapi.h"
 
-namespace fso {
-namespace fred {
+namespace fso::fred {
 
 class Editor;
 class RenderWidget;
@@ -87,5 +86,4 @@ class RenderWidget: public QWidget {
 	void updateCursor() const;
 };
 
-} // namespace fred
-} // namespace fso
+} // namespace fso::fred
