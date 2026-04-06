@@ -767,6 +767,7 @@ void FredView::connectActionToViewSetting(QAction* option, std::vector<bool>* ve
 
 void FredView::showContextMenu(const QPoint& globalPos) {
 	auto localPos = ui->centralWidget->mapFromGlobal(globalPos);
+	_lastContextMenuLocalPos = localPos;
 
 	auto obj = _viewport->select_object(localPos.x(), localPos.y());
 	if (obj >= 0) {
@@ -826,6 +827,50 @@ void FredView::initializePopupMenus() {
 	_viewPopup->addMenu(_controlModeMenu);
 	_viewPopup->addMenu(ui->menuViewpoint);
 	_viewPopup->addSeparator();
+
+	_createSubmenu = new QMenu(tr("Create"), _viewPopup);
+
+	auto* createShipAction = new QAction(tr("Ship"), _createSubmenu);
+	connect(createShipAction, &QAction::triggered, this, [this]() {
+		int obj = _viewport->createShipAtScreenPos(_lastContextMenuLocalPos.x(), _lastContextMenuLocalPos.y());
+		if (obj >= 0) {
+			handleObjectEditor(obj);
+		} else if (obj == -1) {
+			showButtonDialog(DialogType::Error, "Error", "Maximum ship limit reached.  Can't add any more ships.", { DialogButton::Ok });
+		}
+	});
+	_createSubmenu->addAction(createShipAction);
+
+	auto* createPropAction = new QAction(tr("Prop"), _createSubmenu);
+	connect(createPropAction, &QAction::triggered, this, [this]() {
+		int obj = _viewport->createPropAtScreenPos(_lastContextMenuLocalPos.x(), _lastContextMenuLocalPos.y());
+		if (obj >= 0) {
+			handleObjectEditor(obj);
+		}
+	});
+	_createSubmenu->addAction(createPropAction);
+
+	auto* createWaypointAction = new QAction(tr("Waypoint Path"), _createSubmenu);
+	connect(createWaypointAction, &QAction::triggered, this, [this]() {
+		int obj = _viewport->createWaypointAtScreenPos(_lastContextMenuLocalPos.x(), _lastContextMenuLocalPos.y());
+		if (obj >= 0) {
+			handleObjectEditor(obj);
+		}
+	});
+	_createSubmenu->addAction(createWaypointAction);
+
+	auto* createJumpNodeAction = new QAction(tr("Jump Node"), _createSubmenu);
+	connect(createJumpNodeAction, &QAction::triggered, this, [this]() {
+		int obj = _viewport->createJumpNodeAtScreenPos(_lastContextMenuLocalPos.x(), _lastContextMenuLocalPos.y());
+		if (obj >= 0) {
+			handleObjectEditor(obj);
+		}
+	});
+	_createSubmenu->addAction(createJumpNodeAction);
+
+	_viewPopup->addMenu(_createSubmenu);
+	_viewPopup->addSeparator();
+
 	auto* manageLayersViewAction = new QAction(tr("Manage Layers..."), _viewPopup);
 	connect(manageLayersViewAction, &QAction::triggered, this, [this]() { openLayerManagerDialog(); });
 	_viewPopup->addAction(manageLayersViewAction);

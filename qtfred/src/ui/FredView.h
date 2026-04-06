@@ -227,6 +227,8 @@ class FredView: public QMainWindow, public IDialogProvider {
 	QLabel* _statusBarUnitsLabel = nullptr;
 
 	QMenu* _viewPopup = nullptr;
+	QMenu* _createSubmenu = nullptr;
+	QPoint _lastContextMenuLocalPos;
 
 	QMenu* _editPopup = nullptr;
 	QAction* _editObjectAction = nullptr;
