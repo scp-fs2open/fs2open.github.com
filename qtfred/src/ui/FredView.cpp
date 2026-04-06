@@ -55,6 +55,7 @@
 
 #include "mission/Editor.h"
 #include "mission/management.h"
+#include <prop/prop.h>
 #include "mission/missionparse.h"
 #include "missioneditor/missionsave.h"
 
@@ -800,7 +801,7 @@ void FredView::showContextMenu(const QPoint& globalPos) {
 		_editPopup->exec(globalPos);
 	} else {
 		// Nothing is here...
-		_createPropAction->setEnabled(_viewport->cur_prop_index >= 0);
+		_createPropSubmenu->setEnabled(_viewport->cur_prop_index >= 0);
 		_viewZoomSelectedAction->setEnabled(query_valid_object(fred->currentObject));
 		_viewPopup->exec(globalPos);
 	}
@@ -833,17 +834,23 @@ void FredView::initializePopupMenus() {
 
 	_createSubmenu = new QMenu(tr("Create"), _viewPopup);
 
-	auto* createShipAction = new QAction(tr("Ship"), _createSubmenu);
-	connect(createShipAction, &QAction::triggered, this, [this]() {
-		_viewport->createShipAtScreenPos(_lastContextMenuLocalPos.x(), _lastContextMenuLocalPos.y());
+	_createShipSubmenu = new QMenu(tr("Ship"), _createSubmenu);
+	_createShipSubmenu->setStyleSheet("QMenu { menu-scrollable: 1; }");
+	connect(_createShipSubmenu, &QMenu::aboutToShow, this, [this]() {
+		if (_createShipSubmenu->actions().isEmpty()) {
+			populateCreateShipSubmenu();
+		}
 	});
-	_createSubmenu->addAction(createShipAction);
+	_createSubmenu->addMenu(_createShipSubmenu);
 
-	_createPropAction = new QAction(tr("Prop"), _createSubmenu);
-	connect(_createPropAction, &QAction::triggered, this, [this]() {
-		_viewport->createPropAtScreenPos(_lastContextMenuLocalPos.x(), _lastContextMenuLocalPos.y());
+	_createPropSubmenu = new QMenu(tr("Prop"), _createSubmenu);
+	_createPropSubmenu->setStyleSheet("QMenu { menu-scrollable: 1; }");
+	connect(_createPropSubmenu, &QMenu::aboutToShow, this, [this]() {
+		if (_createPropSubmenu->actions().isEmpty()) {
+			populateCreatePropSubmenu();
+		}
 	});
-	_createSubmenu->addAction(_createPropAction);
+	_createSubmenu->addMenu(_createPropSubmenu);
 
 	auto* createWaypointAction = new QAction(tr("Waypoint"), _createSubmenu);
 	connect(createWaypointAction, &QAction::triggered, this, [this]() {
@@ -926,6 +933,32 @@ void FredView::initializePopupMenus() {
 	auto* editZoomExtentsAction = new QAction(tr("Zoom Extents"), _editPopup);
 	connect(editZoomExtentsAction, &QAction::triggered, this, &FredView::on_actionZoomExtents_triggered);
 	_editPopup->addAction(editZoomExtentsAction);
+}
+
+void FredView::populateCreateShipSubmenu() {
+	for (int i = 0; i < (int)Ship_info.size(); ++i) {
+		if (Ship_info[i].flags[Ship::Info_Flags::No_fred]) {
+			continue;
+		}
+		auto* action = new QAction(QString::fromUtf8(Ship_info[i].name), _createShipSubmenu);
+		connect(action, &QAction::triggered, this, [this, i]() {
+			_viewport->createShipAtScreenPos(_lastContextMenuLocalPos.x(), _lastContextMenuLocalPos.y(), i);
+		});
+		_createShipSubmenu->addAction(action);
+	}
+}
+
+void FredView::populateCreatePropSubmenu() {
+	for (int i = 0; i < prop_info_size(); ++i) {
+		if (Prop_info[i].flags[Prop::Info_Flags::No_fred]) {
+			continue;
+		}
+		auto* action = new QAction(QString::fromStdString(Prop_info[i].name), _createPropSubmenu);
+		connect(action, &QAction::triggered, this, [this, i]() {
+			_viewport->createPropAtScreenPos(_lastContextMenuLocalPos.x(), _lastContextMenuLocalPos.y(), i);
+		});
+		_createPropSubmenu->addAction(action);
+	}
 }
 
 void FredView::populateMoveToLayerMenu(int targetObject) {

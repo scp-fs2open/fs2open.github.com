@@ -1210,23 +1210,28 @@ vec3d EditorViewport::getCreatePosition(int x, int y, float fallbackDist) {
 	return pos;
 }
 
-int EditorViewport::createShipAtScreenPos(int x, int y) {
-	int savedModelIndex = cur_model_index;
-	if (cur_model_index < 0 || cur_model_index >= (int)Ship_info.size() ||
-		cur_model_index == editor->Id_select_type_waypoint ||
-		cur_model_index == editor->Id_select_type_jump_node) {
-		cur_model_index = get_default_player_ship_index();
+int EditorViewport::createShipAtScreenPos(int x, int y, int modelIndex) {
+	if (modelIndex < 0 || modelIndex >= (int)Ship_info.size() ||
+		Ship_info[modelIndex].flags[Ship::Info_Flags::No_fred]) {
+		return -1;
 	}
+	int savedModelIndex = cur_model_index;
+	cur_model_index = modelIndex;
 	int obj = create_object_on_grid(x, y, -1, false);
 	cur_model_index = savedModelIndex;
 	return obj;
 }
 
-int EditorViewport::createPropAtScreenPos(int x, int y) {
-	if (cur_prop_index < 0 || cur_prop_index >= prop_info_size()) {
+int EditorViewport::createPropAtScreenPos(int x, int y, int propIndex) {
+	if (propIndex < 0 || propIndex >= prop_info_size() ||
+		Prop_info[propIndex].flags[Prop::Info_Flags::No_fred]) {
 		return -1;
 	}
-	return create_object_on_grid(x, y, -1, true);
+	int savedPropIndex = cur_prop_index;
+	cur_prop_index = propIndex;
+	int obj = create_object_on_grid(x, y, -1, true);
+	cur_prop_index = savedPropIndex;
+	return obj;
 }
 
 int EditorViewport::createWaypointAtScreenPos(int x, int y, int waypoint_instance) {

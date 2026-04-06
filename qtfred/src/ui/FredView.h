@@ -217,6 +217,8 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void initializeStatusBar();
 	void initializePopupMenus();
 	void populateMoveToLayerMenu(int targetObject);
+	void populateCreateShipSubmenu();
+	void populateCreatePropSubmenu();
 	void openLayerManagerDialog();
 	void ensureViewportFocus();
 
@@ -228,7 +230,8 @@ class FredView: public QMainWindow, public IDialogProvider {
 
 	QMenu* _viewPopup = nullptr;
 	QMenu* _createSubmenu = nullptr;
-	QAction* _createPropAction = nullptr;
+	QMenu* _createShipSubmenu = nullptr;
+	QMenu* _createPropSubmenu = nullptr;
 	QPoint _lastContextMenuLocalPos;
 
 	QMenu* _editPopup = nullptr;

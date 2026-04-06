@@ -128,8 +128,8 @@ class EditorViewport {
 	int	create_object(vec3d *pos, int waypoint_instance = -1, bool create_prop = false);
 
 	vec3d getCreatePosition(int x, int y, float fallbackDist);
-	int createShipAtScreenPos(int x, int y);
-	int createPropAtScreenPos(int x, int y);
+	int createShipAtScreenPos(int x, int y, int modelIndex);
+	int createPropAtScreenPos(int x, int y, int propIndex);
 	int createWaypointAtScreenPos(int x, int y, int waypoint_instance = -1);
 	int createJumpNodeAtScreenPos(int x, int y);
 
