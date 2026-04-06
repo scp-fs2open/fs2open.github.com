@@ -778,6 +778,13 @@ void FredView::showContextMenu(const QPoint& globalPos) {
 			populateMoveToLayerMenu(obj);
 		}
 
+		// Control Edit Wing visibility and enabled state
+		const bool isShip = (objType == OBJ_SHIP) || (objType == OBJ_START);
+		_editWingAction->setVisible(isShip);
+		if (isShip) {
+			_editWingAction->setEnabled(Ships[Objects[obj].instance].wingnum >= 0);
+		}
+
 		// There is an object under the cursor
 		SCP_string objName;
 		if (fred->getNumMarked() > 1) {
@@ -835,9 +842,11 @@ void FredView::initializePopupMenus() {
 	_editPopup->addAction(_editOrientPositionAction);
 
 	_editWingAction = new QAction(tr("Edit Wing"), _editPopup);
+	connect(_editWingAction, &QAction::triggered, this, &FredView::on_actionWings_triggered);
 	_editPopup->addAction(_editWingAction);
 	_editPopup->addSeparator();
 	_moveToLayerMenu = new QMenu(tr("Move to Layer"), _editPopup);
+	_moveToLayerMenu->setStyleSheet("QMenu { menu-scrollable: 1; }");
 	_editPopup->addMenu(_moveToLayerMenu);
 }
 
