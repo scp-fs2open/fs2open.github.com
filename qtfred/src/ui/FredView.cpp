@@ -799,6 +799,7 @@ void FredView::showContextMenu(const QPoint& globalPos) {
 		_editPopup->exec(globalPos);
 	} else {
 		// Nothing is here...
+		_createPropAction->setEnabled(_viewport->cur_prop_index >= 0);
 		_viewPopup->exec(globalPos);
 	}
 }
@@ -832,39 +833,29 @@ void FredView::initializePopupMenus() {
 
 	auto* createShipAction = new QAction(tr("Ship"), _createSubmenu);
 	connect(createShipAction, &QAction::triggered, this, [this]() {
-		int obj = _viewport->createShipAtScreenPos(_lastContextMenuLocalPos.x(), _lastContextMenuLocalPos.y());
-		if (obj >= 0) {
-			handleObjectEditor(obj);
-		} else if (obj == -1) {
-			showButtonDialog(DialogType::Error, "Error", "Maximum ship limit reached.  Can't add any more ships.", { DialogButton::Ok });
-		}
+		_viewport->createShipAtScreenPos(_lastContextMenuLocalPos.x(), _lastContextMenuLocalPos.y());
 	});
 	_createSubmenu->addAction(createShipAction);
 
-	auto* createPropAction = new QAction(tr("Prop"), _createSubmenu);
-	connect(createPropAction, &QAction::triggered, this, [this]() {
-		int obj = _viewport->createPropAtScreenPos(_lastContextMenuLocalPos.x(), _lastContextMenuLocalPos.y());
-		if (obj >= 0) {
-			handleObjectEditor(obj);
-		}
+	_createPropAction = new QAction(tr("Prop"), _createSubmenu);
+	connect(_createPropAction, &QAction::triggered, this, [this]() {
+		_viewport->createPropAtScreenPos(_lastContextMenuLocalPos.x(), _lastContextMenuLocalPos.y());
 	});
-	_createSubmenu->addAction(createPropAction);
+	_createSubmenu->addAction(_createPropAction);
 
-	auto* createWaypointAction = new QAction(tr("Waypoint Path"), _createSubmenu);
+	auto* createWaypointAction = new QAction(tr("Waypoint"), _createSubmenu);
 	connect(createWaypointAction, &QAction::triggered, this, [this]() {
-		int obj = _viewport->createWaypointAtScreenPos(_lastContextMenuLocalPos.x(), _lastContextMenuLocalPos.y());
-		if (obj >= 0) {
-			handleObjectEditor(obj);
+		int waypoint_instance = -1;
+		if (fred->cur_waypoint != nullptr) {
+			waypoint_instance = Objects[fred->cur_waypoint->get_objnum()].instance;
 		}
+		_viewport->createWaypointAtScreenPos(_lastContextMenuLocalPos.x(), _lastContextMenuLocalPos.y(), waypoint_instance);
 	});
 	_createSubmenu->addAction(createWaypointAction);
 
 	auto* createJumpNodeAction = new QAction(tr("Jump Node"), _createSubmenu);
 	connect(createJumpNodeAction, &QAction::triggered, this, [this]() {
-		int obj = _viewport->createJumpNodeAtScreenPos(_lastContextMenuLocalPos.x(), _lastContextMenuLocalPos.y());
-		if (obj >= 0) {
-			handleObjectEditor(obj);
-		}
+		_viewport->createJumpNodeAtScreenPos(_lastContextMenuLocalPos.x(), _lastContextMenuLocalPos.y());
 	});
 	_createSubmenu->addAction(createJumpNodeAction);
 

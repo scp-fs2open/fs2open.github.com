@@ -130,7 +130,7 @@ class EditorViewport {
 	vec3d getCreatePosition(int x, int y, float fallbackDist);
 	int createShipAtScreenPos(int x, int y);
 	int createPropAtScreenPos(int x, int y);
-	int createWaypointAtScreenPos(int x, int y);
+	int createWaypointAtScreenPos(int x, int y, int waypoint_instance = -1);
 	int createJumpNodeAtScreenPos(int x, int y);
 
 	int duplicate_marked_objects();

@@ -228,6 +228,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 
 	QMenu* _viewPopup = nullptr;
 	QMenu* _createSubmenu = nullptr;
+	QAction* _createPropAction = nullptr;
 	QPoint _lastContextMenuLocalPos;
 
 	QMenu* _editPopup = nullptr;
