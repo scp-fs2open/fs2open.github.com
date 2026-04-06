@@ -2314,7 +2314,45 @@ ADE_VIRTVAR_DEPRECATED(NebulaFarMult, l_Mission, "number", "Gets or sets the mul
 	return ade_set_args(L, "f", 1.f);
 }
 
-	//TODO
+ADE_VIRTVAR(NebulaNearDistance, l_Mission, "number", "Gets or sets the distance of the near plane of the current nebula.", "number", "The distance of the near plane.")
+{
+	float fog_near = 0.0f;
+
+	if (ADE_SETTING_VAR && ade_get_args(L, "*f", &fog_near))
+		Neb2_fog_near_distance = fog_near;
+
+	return ade_set_args(L, "f", Neb2_fog_near_distance);
+}
+
+ADE_VIRTVAR(NebulaClipDistance, l_Mission, "number", "Gets or sets the distance after which the nebula does not get thicker.", "number", "The clip distance of the nebula.")
+{
+	float fog_clip = 0.0f;
+
+	if (ADE_SETTING_VAR && ade_get_args(L, "*f", &fog_clip))
+		Neb2_fog_clip_distance = fog_clip;
+
+	return ade_set_args(L, "f", Neb2_fog_clip_distance);
+}
+
+ADE_VIRTVAR(NebulaSkyboxClipDistance, l_Mission, "number", "Gets or sets the distance of the skybox to the camera for the purposes of fogging.", "number", "The clip distance of the nebula for skyboxes.")
+{
+	float fog_clip = 0.0f;
+
+	if (ADE_SETTING_VAR && ade_get_args(L, "*f", &fog_clip))
+		Neb2_fog_skybox_clip_distance = fog_clip;
+
+	return ade_set_args(L, "f", Neb2_fog_skybox_clip_distance);
+}
+
+ADE_VIRTVAR(NebulaTransparency, l_Mission, "number", "Gets or sets the transparency of the nebula at 1000m nebula depth. 0 is fully opaque, 1 is fully transparent.", "number", "The nebula transparency.")
+{
+	float fog_transparency = 0.0f;
+
+	if (ADE_SETTING_VAR && ade_get_args(L, "*f", &fog_transparency))
+		Neb2_fog_1000m_visibility = fog_transparency;
+
+	return ade_set_args(L, "f", Neb2_fog_1000m_visibility);
+}
 
 ADE_FUNC(isSubspace, l_Mission, nullptr, "Get whether or not the current mission being played is set in subspace", "boolean", "true if in subspace, false if not")
 {
