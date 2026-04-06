@@ -92,6 +92,10 @@ int neb_tossed_count = 0;		// nebs tossed because of max render count
 // the AWACS suppression level for the nebula
 float Neb2_awacs = -1.0f;
 
+//Deprecated! Only here very temporary until the new values are stored correctly
+float Neb2_fog_near_mult = 1.0f;
+float Neb2_fog_far_mult = 1.0f;
+
 // The visual render distance multipliers for the nebula
 float Neb2_fog_near_distance = 10.0f;
 float Neb2_fog_1000m_visibility = 0.00464158883f;

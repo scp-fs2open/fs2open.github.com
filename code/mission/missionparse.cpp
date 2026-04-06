@@ -860,14 +860,18 @@ void parse_mission_info(mission *pm, bool basic = false)
 
 	{
 		float near_mult = 1.f, far_mult = 1.f;
-		//Pre-26.0 missions always need legacy conversion
+		//Pre-26.0 missions always need legacy conversion unless the modern values are found (once they are actually stored)
 		bool legacy_fog = gameversion::version(26, 0, 0) > pm->required_fso_version;
 		if(optional_string("+Fog Near Mult:")){
 			stuff_float(&near_mult);
+			extern float Neb2_fog_near_mult;
+			Neb2_fog_near_mult = near_mult;
 			legacy_fog = true;
 		}
 		if(optional_string("+Fog Far Mult:")){
 			stuff_float(&far_mult);
+			extern float Neb2_fog_far_mult;
+			Neb2_fog_far_mult = far_mult;
 			legacy_fog = true;
 		}
 
@@ -879,7 +883,7 @@ void parse_mission_info(mission *pm, bool basic = false)
 			Neb2_fog_clip_distance = Default_max_draw_distance;
 		}
 		else {
-
+			//To be added once the corresponding FRED dialogue is updated
 		}
 	}
 
