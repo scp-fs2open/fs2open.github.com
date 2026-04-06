@@ -156,7 +156,7 @@
             </property>
             <property name="icon">
              <iconset resource="../resources/resources.qrc">
-              <normaloff>:/images/play.bmp</normaloff>:/images/play.bmp</iconset>
+              <normaloff>:/images/play.png</normaloff>:/images/play.png</iconset>
             </property>
            </widget>
           </item>

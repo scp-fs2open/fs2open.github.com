@@ -370,7 +370,6 @@ add_file_folder("Resources/Images"
 	resources/images/arrow_up.png
     resources/images/bitmap1.png
     resources/images/black_do.png
-    resources/images/bmp00001.png
     resources/images/chained_directive.png
     resources/images/chained.png
     resources/images/constx.png
@@ -401,13 +400,7 @@ add_file_folder("Resources/Images"
     resources/images/data90.png
     resources/images/data95.png
     resources/images/data.png
-    resources/images/fred_app.png
-    resources/images/fred_debug.png
-    resources/images/freddoc.ico
-    resources/images/fred.ico
-    resources/images/fredknows.png
 	resources/images/fred_about.png
-    resources/images/fred_splash.png
     resources/images/green_do.png
 	resources/images/next.png
     resources/images/orbitsel.png
@@ -424,8 +417,6 @@ add_file_folder("Resources/Images"
     resources/images/showdist.png
     resources/images/splash.png
 	resources/images/stop.png
-    resources/images/toolbar1.png
-    resources/images/toolbar.png
     resources/images/V_fred.ico
     resources/images/variable.png
     resources/images/wingdisband.png

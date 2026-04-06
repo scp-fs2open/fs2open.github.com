@@ -648,7 +648,7 @@
                 </property>
                 <property name="icon">
                  <iconset resource="../resources/resources.qrc">
-                  <normaloff>:/images/bmp00001.png</normaloff>:/images/bmp00001.png</iconset>
+                  <normaloff>:/images/play.png</normaloff>:/images/play.png</iconset>
                 </property>
                 <property name="autoDefault">
                  <bool>false</bool>
