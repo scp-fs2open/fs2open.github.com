@@ -201,6 +201,11 @@ ADE_FUNC(evaluateSEXP, l_Mission, "string", "Runs the defined SEXP script, and r
 	if(!ade_get_args(L, "s", &s))
 		return ADE_RETURN_FALSE;
 
+	if (Sexp_nodes == nullptr) {
+		Warning(LOCATION, "evaluateSEXP called before SEXP system initialized; returning false");
+		return ADE_RETURN_FALSE;
+	}
+
 	r_val = run_sexp(s);
 
 	if (r_val == SEXP_TRUE)
@@ -218,6 +223,11 @@ ADE_FUNC(evaluateNumericSEXP, l_Mission, "string", "Runs the defined SEXP script
 	if (!ade_get_args(L, "s", &s))
 		return ade_set_args(L, "i", 0);
 
+	if (Sexp_nodes == nullptr) {
+		Warning(LOCATION, "evaluateNumericSEXP called before SEXP system initialized; returning NaN");
+		return ade_set_args(L, "f", std::numeric_limits<float>::quiet_NaN());
+	}
+
 	r_val = run_sexp(s, true, &got_nan);
 
 	if (got_nan)
@@ -234,6 +244,11 @@ ADE_FUNC(runSEXP, l_Mission, "string", "Runs the defined SEXP script within a `w
 
 	if(!ade_get_args(L, "s", &s))
 		return ADE_RETURN_FALSE;
+
+	if (Sexp_nodes == nullptr) {
+		Warning(LOCATION, "runSEXP called before SEXP system initialized; returning false");
+		return ADE_RETURN_FALSE;
+	}
 
 	while (is_white_space(*s))
 		s++;
