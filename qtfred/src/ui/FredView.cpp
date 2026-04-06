@@ -148,7 +148,8 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 
 	ui->centralWidget->setEditor(editor, _viewport);
 
-	// Combo boxes and their labels cannot be added in Qt Designer for toolbar widgets
+	// A combo box cannot be added by the designer so we do that manually here
+	// This needs to be done since the viewport pointer is not valid earlier
 	auto shipsLabel = new QLabel(tr("Ships: "), ui->toolBar);
 	shipsLabel->setContentsMargins(4, 0, 0, 0);
 	ui->toolBar->addWidget(shipsLabel);
