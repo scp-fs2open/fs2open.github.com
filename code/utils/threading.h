@@ -11,6 +11,9 @@ namespace threading {
 	//This _must_ be called on the main thread BEFORE a task completes on a thread of the task pool.
 	void spin_down_threaded_task();
 
+	//This should be called AFTER the command to finish a given task is given. This will block until all threads have returned into a state where they are able to listen to new commands.
+	void spin_down_wait_complete();
+
 	void init_task_pool();
 	void shut_down_task_pool();
 

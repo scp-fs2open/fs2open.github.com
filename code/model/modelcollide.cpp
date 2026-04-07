@@ -1098,7 +1098,7 @@ NoHit:
 			vm_vec_add2(&instance_offset, &csmi->canonical_offset);
 
 			blown_off = csmi->blown_off;
-			collision_checked = csmi->collision_checked;
+			collision_checked = !Mc->collision_checked.empty() && Mc->collision_checked[i];
 		}
 
 		// Don't check it or its children if it is destroyed
@@ -1148,6 +1148,10 @@ int model_collide(mc_info *mc_info_obj)
 		Mc_pmi = model_get_instance(Mc->model_instance_num);
 	} else {
 		Mc_pmi = NULL;
+	}
+
+	if (Mc_pmi && Mc->collision_checked.empty()) {
+		Mc->collision_checked.resize(Mc_pm->n_models, 0);
 	}
 
 	// DA 11/19/98 - disable this check for rotating submodels

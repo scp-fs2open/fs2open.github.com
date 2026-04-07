@@ -1315,9 +1315,9 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 				model_get_moving_submodel_list(submodel_vector, heavy_obj);
 
 				// turn off all moving submodels, collide against only 1 at a time.
-				// turn off collision detection for all moving submodels
+				mc.collision_checked.assign(pm->n_models, 0);
 				for (auto submodel: submodel_vector) {
-					pmi->submodel[submodel].collision_checked = true;
+					mc.collision_checked[submodel] = true;
 				}
 
 				// Only check single submodel now, since children of moving submodels are handled as moving as well
@@ -1325,10 +1325,8 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 
 				// check each submodel in turn
 				for (auto submodel: submodel_vector) {
-					auto smi = &pmi->submodel[submodel];
-
 					// turn on just one submodel for collision test
-					smi->collision_checked = false;
+					mc.collision_checked[submodel] = false;
 
 					// find the start and end positions of the sphere in submodel RF
 					model_instance_global_to_local_point(&p0, &light_obj->last_pos, pm, pmi, submodel, &heavy_obj->last_orient, &heavy_obj->last_pos, true);
@@ -1360,8 +1358,11 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 						}
 					}
 					// Don't look at this submodel again
-					smi->collision_checked = true;
+					mc.collision_checked[submodel] = true;
 				}
+
+				// Clear collision_checked before base model pass so it auto-inits fresh
+				mc.collision_checked.clear();
 
 			}
 

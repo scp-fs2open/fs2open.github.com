@@ -137,7 +137,6 @@ struct submodel_instance
 	TIMESTAMP stepped_translation_started;
 
 	bool	blown_off = false;						// If set, this subobject is blown off
-	bool	collision_checked = false;
 
 	// These fields are the true standard reference for submodel rotation.  They should seldom be read directly
 	// and should almost never be written directly.  In most cases, coders should prefer cur_angle and prev_angle.
@@ -1280,6 +1279,12 @@ typedef struct mc_info {
 	int     flags = 0;                  // Flags that the model_collide code looks at.  See MC_??? defines
 	float   radius = 0;                 // If MC_CHECK_THICK is set, checks a sphere moving with the radius.
 	int     lod = 0;                    // Which detail level of the submodel to check instead
+
+	// Per-submodel collision_checked flags (indexed by submodel number).
+	// When non-empty, model_collide uses this to determine which submodels to skip.
+	// Auto-initialized from pmi in model_collide when empty; callers may pre-populate
+	// to control which submodels are checked (e.g., rotating submodel collision).
+	SCP_vector<char> collision_checked;
 
 	// Return values
 	int     num_hits = 0;               // How many collisions were found

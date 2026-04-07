@@ -28,8 +28,16 @@
 #include "ship/shiphit.h"
 #include "weapon/weapon.h"
 
-//mc, notify_ai_shield_down, shield_collision, quadrant_num, shield_tri_hit, shield_hitpoint
-using ship_weapon_collision_data = std::tuple<std::optional<mc_info>, int, bool, int, int, vec3d>;
+struct ship_weapon_collision_data {
+	std::optional<mc_info> mc;
+	int notify_ai_shield_down;
+	bool shield_collision;
+	int quadrant_num;
+	int shield_tri_hit;
+	vec3d shield_hitpos;
+	bool should_update_danger_weapon;	// deferred to main thread for thread safety
+	bool should_detonate;				// deferred to main thread for thread safety
+};
 
 extern int Game_skill_level;
 extern float ai_endangered_time(const object *ship_objp, const object *weapon_objp);
@@ -205,14 +213,14 @@ static std::tuple<bool, bool, ship_weapon_collision_data> ship_weapon_check_coll
 	Assert( shipp->objnum == OBJ_INDEX(ship_objp));
 
 	// Make ships that are warping in not get collision detection done
-	if ( shipp->is_arriving() ) return {false, true, {std::nullopt, -1, false, -1, -1, ZERO_VECTOR}};
+	if ( shipp->is_arriving() ) return {false, true, {std::nullopt, -1, false, -1, -1, ZERO_VECTOR, false, false}};
 	
 	//	Return information for AI to detect incoming fire.
 	//	Could perhaps be done elsewhere at lower cost --MK, 11/7/97
 	float	dist = vm_vec_dist_quick(&ship_objp->pos, &weapon_objp->pos);
-	if (dist < weapon_objp->phys_info.speed) {
-		update_danger_weapon(ship_objp, weapon_objp);
-	}
+	bool should_update_danger_weapon = (dist < weapon_objp->phys_info.speed);
+	bool should_detonate = false;
+	bool postproc = should_update_danger_weapon;
 
 	int	valid_hit_occurred = 0;				// If this is set, then hitpos is set
 	int	quadrant_num = -1;
@@ -502,12 +510,13 @@ static std::tuple<bool, bool, ship_weapon_collision_data> ship_weapon_check_coll
 		*next_hit = (int) (1000.0f * (mc->hit_dist*(flFrametime + time_limit) - flFrametime) );
 		if (*next_hit > 0)
 			// if hit occurs outside of this frame, do not do damage
-			return { false, false, {std::nullopt, -1, false, -1, -1, ZERO_VECTOR} }; //No hit, but continue checking
+			return { postproc, false, {std::nullopt, -1, false, -1, -1, ZERO_VECTOR, should_update_danger_weapon, false} }; //No hit, but continue checking
 	}
 
-	bool postproc = valid_hit_occurred || notify_ai_shield_down >= 0;
+	postproc = postproc || valid_hit_occurred || notify_ai_shield_down >= 0;
 	ship_weapon_collision_data collision_data {
-		valid_hit_occurred ? std::optional(*mc) : std::nullopt, notify_ai_shield_down, postproc, quadrant_num, shield_tri_hit, shield_hitpos
+		valid_hit_occurred ? std::optional(*mc) : std::nullopt, notify_ai_shield_down, postproc, quadrant_num, shield_tri_hit, shield_hitpos,
+		should_update_danger_weapon, false
 	};
 
 	// when the $Fixed Missile Detonation: flag is active, skip this whole block, as it's redundant to a similar check in weapon_home()
@@ -520,17 +529,16 @@ static std::tuple<bool, bool, ship_weapon_collision_data> ship_weapon_check_coll
 			if (vm_vec_dot(&vec_to_ship, &weapon_objp->orient.vec.fvec) < 0.0f) {
 				// check if we're colliding against "invisible" ship
 				if (!(shipp->flags[Ship::Ship_Flags::Dont_collide_invis])) {
-					wp->lifeleft = 0.001f;
-					wp->weapon_flags.set(Weapon::Weapon_Flags::Begun_detonation);
-
-					if (ship_objp == Player_obj)
-						nprintf(("Jim", "Frame %i: Weapon %d set to detonate, dist = %7.3f.\n", Framecount, OBJ_INDEX(weapon_objp), dist));
+					// Detonation writes are deferred to the main thread for thread safety
+					should_detonate = true;
+					postproc = true;
 					valid_hit_occurred = 1; //No hit, continue checking
 				}
 			}
 		}
 	}
 
+	collision_data.should_detonate = should_detonate;
 	return { postproc, !static_cast<bool>(valid_hit_occurred), collision_data} ;
 }
 
@@ -542,15 +550,26 @@ static void ship_weapon_process_collision(obj_pair* pair, const ship_weapon_coll
 	const weapon_info* wip = &Weapon_info[wp->weapon_info_index];
 	const ship_info* sip = &Ship_info[shipp->ship_info_index];
 
-	const auto& [mc_opt, notify_ai_shield_down, shield_collision, quadrant_num, shield_tri_hit, shield_hitpos] = collision_data;
-	bool valid_hit_occurred = mc_opt.has_value();
-	auto mc = valid_hit_occurred ? &(*mc_opt) : nullptr;
+	bool valid_hit_occurred = collision_data.mc.has_value();
+	auto mc = valid_hit_occurred ? &(*collision_data.mc) : nullptr;
 
-	if (notify_ai_shield_down >= 0)
-		Ai_info[Ships[ship_objp->instance].ai_index].danger_shield_quadrant = notify_ai_shield_down;
+	// Perform deferred writes that are unsafe to do from worker threads
+	if (collision_data.should_update_danger_weapon)
+		update_danger_weapon(ship_objp, weapon_objp);
 
-	if (shield_tri_hit >= 0)
-		add_shield_point(OBJ_INDEX(ship_objp), shield_tri_hit, &shield_hitpos, wip->shield_impact_effect_radius);
+	if (collision_data.should_detonate) {
+		wp->lifeleft = 0.001f;
+		wp->weapon_flags.set(Weapon::Weapon_Flags::Begun_detonation);
+
+		if (ship_objp == Player_obj)
+			nprintf(("Jim", "Frame %i: Weapon %d set to detonate, dist = %7.3f.\n", Framecount, OBJ_INDEX(weapon_objp), vm_vec_dist_quick(&ship_objp->pos, &weapon_objp->pos)));
+	}
+
+	if (collision_data.notify_ai_shield_down >= 0)
+		Ai_info[Ships[ship_objp->instance].ai_index].danger_shield_quadrant = collision_data.notify_ai_shield_down;
+
+	if (collision_data.shield_tri_hit >= 0)
+		add_shield_point(OBJ_INDEX(ship_objp), collision_data.shield_tri_hit, &collision_data.shield_hitpos, wip->shield_impact_effect_radius);
 
 	if ( valid_hit_occurred )
 	{
@@ -582,12 +601,12 @@ static void ship_weapon_process_collision(obj_pair* pair, const ship_weapon_coll
 		}
 
 		if(!ship_override && !weapon_override) {
-			if (shield_collision && quadrant_num >= 0) {
+			if (collision_data.shield_collision && collision_data.quadrant_num >= 0) {
 				if ((sip->shield_impact_explosion_anim.isValid()) && (wip->shield_impact_explosion_radius > 0)) {
 					shield_impact_explosion(mc->hit_point, mc->hit_normal, ship_objp, weapon_objp, wip->shield_impact_explosion_radius, sip->shield_impact_explosion_anim);
 				}
 			}
-			ship_weapon_do_hit_stuff(ship_objp, weapon_objp, &mc->hit_point_world, &mc->hit_point, quadrant_num, mc->hit_submodel, &mc->hit_normal);
+			ship_weapon_do_hit_stuff(ship_objp, weapon_objp, &mc->hit_point_world, &mc->hit_point, collision_data.quadrant_num, mc->hit_submodel, &mc->hit_normal);
 		}
 
 		if (scripting::hooks::OnWeaponCollision->isActive() && !(weapon_override && !ship_override)) {

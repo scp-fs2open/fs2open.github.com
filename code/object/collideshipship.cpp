@@ -259,9 +259,9 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info)
 			model_get_moving_submodel_list(submodel_vector, heavy_obj);
 
 			// turn off all moving submodels, collide against only 1 at a time.
-			// turn off collision detection for all moving submodels
+			mc.collision_checked.assign(pm->n_models, 0);
 			for (auto submodel : submodel_vector) {
-				pmi->submodel[submodel].collision_checked = true;
+				mc.collision_checked[submodel] = true;
 			}
 
 			// Only check single submodel now, since children of moving submodels are handled as moving as well
@@ -273,14 +273,12 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info)
 
 			// check each submodel in turn
 			for (auto submodel : submodel_vector) {
-				auto smi = &pmi->submodel[submodel];
-
 				// turn on just one submodel for collision test
-				smi->collision_checked = false;
+				mc.collision_checked[submodel] = false;
 
-				if (smi->blown_off)
+				if (pmi->submodel[submodel].blown_off)
 				{
-					smi->collision_checked = true;
+					mc.collision_checked[submodel] = true;
 					continue;
 				}
 
@@ -314,8 +312,13 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info)
 						model_instance_local_to_global_point(&ship_ship_hit_info->light_collision_cm_pos, &int_light_pos, pm, pmi, mc.hit_submodel, &heavy_obj->orient, &zero);
 					}
 				}
+
+				// re-disable this submodel before enabling the next one
+				mc.collision_checked[submodel] = true;
 			}
 
+			// Clear collision_checked before subsequent model_collide calls so it auto-inits fresh
+			mc.collision_checked.clear();
 		}
 
 		// Now complete base model collision checks that do not take into account rotating submodels.
