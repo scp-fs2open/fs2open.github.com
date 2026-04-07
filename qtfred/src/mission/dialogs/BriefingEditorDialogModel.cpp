@@ -61,15 +61,15 @@ BriefingEditorDialogModel::BriefingEditorDialogModel(QObject* parent, EditorView
 BriefingEditorDialogModel::~BriefingEditorDialogModel()
 {
 	stopSpeech();
-	for (int i = 0; i < MAX_TVT_TEAMS; i++) {
-		for (int j = 0; j < MAX_BRIEF_STAGES; j++) {
-			if (_wipBriefings[i].stages[j].icons != nullptr) {
-				vm_free(_wipBriefings[i].stages[j].icons);
-				_wipBriefings[i].stages[j].icons = nullptr;
+	for (auto& wip : _wipBriefings) {
+		for (auto& stage : wip.stages) {
+			if (stage.icons != nullptr) {
+				vm_free(stage.icons);
+				stage.icons = nullptr;
 			}
-			if (_wipBriefings[i].stages[j].lines != nullptr) {
-				vm_free(_wipBriefings[i].stages[j].lines);
-				_wipBriefings[i].stages[j].lines = nullptr;
+			if (stage.lines != nullptr) {
+				vm_free(stage.lines);
+				stage.lines = nullptr;
 			}
 		}
 	}
