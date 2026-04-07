@@ -444,6 +444,14 @@ struct weapon_info
 	float arm_radius;
 	float det_range;
 	float det_radius;					//How far from target or target subsystem it blows up
+	float proximity_radius;				// Scan radius for proximity detonation; 0 = disabled
+	float mine_arm_time;				// seconds after creation before proximity detonation is active; 0 = instantly armed (default)
+	SCP_vector<int> proximity_iff;     // IFF indices that trigger detonation; empty = any IFF
+	SCP_vector<int> proximity_species; // species indices that trigger detonation; empty = any species
+	SCP_vector<int> proximity_type;    // ship type indices that trigger detonation; empty = any type
+	SCP_vector<int> proximity_class;   // ship class (ship_info) indices that trigger detonation; empty = any class
+	float mine_sensors_range;			// range at which mine shows as a distorted blip; -1.0f = always, 0.0f = never
+	float mine_targetable_range;		// range at which mine is fully targetable; -1.0f = always, 0.0f = never
 	float flak_detonation_accuracy;		//How far away from a target a flak shell will blow up. Standard is 65.0f
 	float flak_targeting_accuracy;		//Determines the amount of jitter applied to flak targeting. USE WITH CAUTION!
 	float untargeted_flak_range_penalty; //Untargeted flak shells detonate after travelling max range - this parameter. Default 20.0f
@@ -923,6 +931,7 @@ struct weapon_info
     inline bool is_locked_homing()      const { return wi_flags[Weapon::Info_Flags::Homing_aspect, Weapon::Info_Flags::Homing_javelin]; }
     inline bool hurts_big_ships()       const { return wi_flags[Weapon::Info_Flags::Bomb, Weapon::Info_Flags::Beam, Weapon::Info_Flags::Huge, Weapon::Info_Flags::Big_only]; }
     inline bool is_interceptable()      const { return wi_flags[Weapon::Info_Flags::Fighter_Interceptable, Weapon::Info_Flags::Turret_Interceptable]; }
+    inline bool is_mine()               const { return wi_flags[Weapon::Info_Flags::Mine]; }
 
 	const char* get_display_name() const;
 	bool has_display_name() const;
@@ -966,6 +975,7 @@ inline int weapon_info_size()
 }
 
 void weapon_init();					// called at game startup
+void weapon_post_ship_init();		// called after ship_init() to resolve mine proximity ship type/class names
 void weapon_close();				// called at game shutdown
 void weapon_level_init();			// called before the start of each level
 void weapon_render(object* obj, model_draw_list *scene);

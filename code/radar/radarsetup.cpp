@@ -236,17 +236,24 @@ void radar_plot_object( object *objp )
 
 		case OBJ_WEAPON:
 		{
+			weapon_info *wip = &Weapon_info[Weapons[objp->instance].weapon_info_index];
+
+			if (wip->wi_flags[Weapon::Info_Flags::Mine]) {
+				// Mine range-based detection... visibility determined after distance is calculated below
+				break;
+			}
+
 			// if not a bomb, return
-			if ( !(Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Shown_on_radar]) )
-				if ( !(Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Bomb]) )
+			if ( !(wip->wi_flags[Weapon::Info_Flags::Shown_on_radar]) )
+				if ( !(wip->wi_flags[Weapon::Info_Flags::Bomb]) )
 					return;
 
 			// if explicitly hidden, return
-			if (Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Dont_show_on_radar])
+			if (wip->wi_flags[Weapon::Info_Flags::Dont_show_on_radar])
 				return;
 
 			// if we don't attack the bomb, return
-			if ( (!(Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Show_friendly])) && (!iff_x_attacks_y(Player_ship->team, obj_team(objp))))
+			if ( !wip->wi_flags[Weapon::Info_Flags::Show_friendly] && !iff_x_attacks_y(Player_ship->team, obj_team(objp)) )
 				return;
 
 			// if a local ssm is in subspace, return
@@ -254,7 +261,7 @@ void radar_plot_object( object *objp )
 				return;
 
 			// if corkscrew missile use last frame pos for pos
-			if ( (Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Corkscrew]) )
+			if (wip->wi_flags[Weapon::Info_Flags::Corkscrew])
 				world_pos = objp->last_pos;
 
 			break;
@@ -279,6 +286,17 @@ void radar_plot_object( object *objp )
 	max_radar_dist = Radar_ranges[HUD_config.rp_dist];
 	if (dist > max_radar_dist) {
 		return;
+	}
+
+	// Mine range-based visibility: determine state from mine-specific ranges
+	if (objp->type == OBJ_WEAPON) {
+		weapon_info *wip = &Weapon_info[Weapons[objp->instance].weapon_info_index];
+		if (wip->wi_flags[Weapon::Info_Flags::Mine]) {
+			bool in_targetable = (wip->mine_targetable_range < 0.0f || dist <= wip->mine_targetable_range);
+			bool in_sensors    = (wip->mine_sensors_range < 0.0f    || dist <= wip->mine_sensors_range);
+			if (!in_targetable && !in_sensors)
+				return; // beyond all detection ranges
+		}
 	}
 
 	// determine the range within which the radar blip is bright
@@ -337,6 +355,16 @@ void radar_plot_object( object *objp )
 
 	// see if blip should be drawn distorted
 	// also determine if alternate image was defined for this ship
+	if (objp->type == OBJ_WEAPON) {
+		weapon_info *wip = &Weapon_info[Weapons[objp->instance].weapon_info_index];
+		if (wip->wi_flags[Weapon::Info_Flags::Mine]) {
+			// Distorted if beyond targetable range but within sensors range
+			bool in_targetable = (wip->mine_targetable_range < 0.0f || dist <= wip->mine_targetable_range);
+			if (!in_targetable)
+				b->flags |= BLIP_DRAW_DISTORTED;
+		}
+	}
+
 	if (objp->type == OBJ_SHIP)
 	{
 		// ships specifically hidden from sensors

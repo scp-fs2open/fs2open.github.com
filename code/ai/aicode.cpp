@@ -6506,6 +6506,11 @@ bool ai_select_secondary_weapon(object *objp, ship_weapon *swp, flagset<Weapon::
         ignore_mask.set(Weapon::Info_Flags::Bomber_plus);
 	}
 
+	// Ignore mines in normal combat... they must be explicitly prioritized via SEXP
+	if (!(prio1[Weapon::Info_Flags::Mine] || prio2[Weapon::Info_Flags::Mine])) {
+		ignore_mask.set(Weapon::Info_Flags::Mine);
+	}
+
 #ifndef NDEBUG
 	for (i=0; i<MAX_WEAPON_TYPES; i++) {
 		weapon_id_list[i] = -1;
@@ -10521,6 +10526,51 @@ void maybe_update_guard_object(object *hit_objp, object *hitter_objp)
 
 // Scan missile list looking for bombs homing on guarded_objp
 // return 1 if bomb is found (and targeted by guarding_objp), otherwise return 0
+/**
+ * Find the closest hostile mine within its own mine_targetable_range of ai_objp.
+ * Used for strikecraft self-protection when the Strikecraft_intercept_mines AI profile flag is set.
+ * Returns the mine object pointer, or nullptr if none found.
+ */
+static object *ai_find_nearby_mine_threat(object *ai_objp)
+{
+	missile_obj *mo;
+	object *closest_mine = nullptr;
+	float closest_dist = 999999.0f;
+
+	for ( mo = GET_NEXT(&Missile_obj_list); mo != END_OF_LIST(&Missile_obj_list); mo = GET_NEXT(mo) ) {
+		Assert(mo->objnum >= 0 && mo->objnum < MAX_OBJECTS);
+		object *mine_objp = &Objects[mo->objnum];
+		if (mine_objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
+		weapon *wp = &Weapons[mine_objp->instance];
+		weapon_info *wip = &Weapon_info[wp->weapon_info_index];
+
+		if (!wip->is_mine())
+			continue;
+
+		// Only engage destructible mines
+		if (!wip->wi_flags[Weapon::Info_Flags::Fighter_Interceptable])
+			continue;
+
+		// Only engage mines hostile to this ship
+		if (!iff_x_attacks_y(wp->team, obj_team(ai_objp)))
+			continue;
+
+		// Mine must be within its own targetable range of this ship
+		float dist = vm_vec_dist_quick(&mine_objp->pos, &ai_objp->pos);
+		if (wip->mine_targetable_range >= 0.0f && dist > wip->mine_targetable_range)
+			continue;
+
+		if (dist < closest_dist) {
+			closest_dist = dist;
+			closest_mine = mine_objp;
+		}
+	}
+
+	return closest_mine;
+}
+
 int ai_guard_find_nearby_bomb(object *guarding_objp, object *guarded_objp)
 {	
 	missile_obj	*mo;
@@ -10563,6 +10613,48 @@ int ai_guard_find_nearby_bomb(object *guarding_objp, object *guarded_objp)
 
 	if ( closest_bomb_objp ) {
 		guard_object_was_hit(guarding_objp, closest_bomb_objp);
+		return 1;
+	}
+
+	// No homing threat found... check for mines within targeting range of the guarded ship.
+	// Mines are stationary so they won't home; handle them as a lower priority threat.
+	object *closest_mine_objp = nullptr;
+	float closest_mine_dist_to_guarding = 999999.0f;
+
+	for ( mo = GET_NEXT(&Missile_obj_list); mo != END_OF_LIST(&Missile_obj_list); mo = GET_NEXT(mo) ) {
+		Assert(mo->objnum >= 0 && mo->objnum < MAX_OBJECTS);
+		bomb_objp = &Objects[mo->objnum];
+		if (bomb_objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
+		wp = &Weapons[bomb_objp->instance];
+		wip = &Weapon_info[wp->weapon_info_index];
+
+		if (!wip->is_mine())
+			continue;
+
+		// Only engage destructible mines
+		if (!wip->wi_flags[Weapon::Info_Flags::Fighter_Interceptable])
+			continue;
+
+		// Only engage mines that threaten the guarded ship's team
+		if (!iff_x_attacks_y(wp->team, obj_team(guarded_objp)))
+			continue;
+
+		// Mine must be within its targetable range of the guarded ship
+		float dist_to_guarded = vm_vec_dist_quick(&bomb_objp->pos, &guarded_objp->pos);
+		if (wip->mine_targetable_range >= 0.0f && dist_to_guarded > wip->mine_targetable_range)
+			continue;
+
+		float dist_to_guarding = vm_vec_dist_quick(&bomb_objp->pos, &guarding_objp->pos);
+		if (dist_to_guarding < closest_mine_dist_to_guarding) {
+			closest_mine_dist_to_guarding = dist_to_guarding;
+			closest_mine_objp = bomb_objp;
+		}
+	}
+
+	if (closest_mine_objp) {
+		guard_object_was_hit(guarding_objp, closest_mine_objp);
 		return 1;
 	}
 
@@ -10675,6 +10767,13 @@ void ai_guard_find_nearby_object()
 		// if not attacking anything, go for asteroid close to guarded ship
 		if ( (aip->target_objnum == -1) && asteroid_count() ) {
 			ai_guard_find_nearby_asteroid(Pl_objp, guardobjp);
+		}
+
+		// if still not attacking anything and flag is set, engage mines near the guarding ship itself
+		if (aip->target_objnum == -1 && The_mission.ai_profile->flags[AI::Profile_Flags::Strikecraft_intercept_mines]) {
+			object *mine_objp = ai_find_nearby_mine_threat(Pl_objp);
+			if (mine_objp)
+				guard_object_was_hit(Pl_objp, mine_objp);
 		}
 	}
 }
@@ -15323,6 +15422,14 @@ void ai_frame(int objnum)
 					if (target_objnum >= 0)
 					{
 						En_objp = &Objects[target_objnum];
+					}
+				} else if (aip->mode != AIM_GUARD && The_mission.ai_profile->flags[AI::Profile_Flags::Strikecraft_intercept_mines]) {
+					// No enemy found so check for nearby hostile mines within their targetable range
+					object *mine_objp = ai_find_nearby_mine_threat(Pl_objp);
+					if (mine_objp) {
+						target_objnum = set_target_objnum(aip, OBJ_INDEX(mine_objp));
+						if (target_objnum >= 0)
+							En_objp = &Objects[target_objnum];
 					}
 				}
 			}

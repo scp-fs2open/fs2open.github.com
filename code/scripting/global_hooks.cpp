@@ -297,6 +297,14 @@ const std::shared_ptr<Hook<WeaponDeathConditions>> OnMissileDeath = Hook<WeaponD
 		{"Object", "object", "The object that the weapon hit - a ship, asteroid, or piece of debris.  Always set but could be invalid if there is no other object.  If this missile was destroyed by another weapon, the 'other object' will be invalid but the DestroyedByWeapon flag will be set."},
 	});
 
+const std::shared_ptr<Hook<MineDetonatedConditions>> OnMineDetonated = Hook<MineDetonatedConditions>::Factory(
+	"On Mine Detonated", "Called when a mine detonates via proximity trigger.",
+	{
+		{"Mine", "weapon", "The mine weapon that detonated."},
+		{"Ship", "object", "The ship whose proximity triggered the detonation."},
+		{"Position", "vector", "The world coordinates of the mine at the time of detonation."},
+	});
+
 const std::shared_ptr<Hook<>> OnBeamDeath = Hook<>::Factory(
 	"On Beam Death", "Called when a beam has been removed from the mission (whether by finishing firing, destruction of turret, etc.).",
 	{

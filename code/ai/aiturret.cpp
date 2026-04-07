@@ -479,6 +479,12 @@ int valid_turret_enemy(object *objp, object *turret_parent)
 			return 0;
 		}
 
+		// Mines are only targetable within their configured detection range
+		if (wip->is_mine() && wip->mine_targetable_range >= 0.0f) {
+			if (vm_vec_dist_quick(&objp->pos, &turret_parent->pos) > wip->mine_targetable_range)
+				return 0;
+		}
+
 		return 1;
 	}
 

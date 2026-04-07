@@ -55,6 +55,7 @@ extern const std::shared_ptr<Hook<ShipDeathConditions>>					OnShipDeathStarted;
 extern const std::shared_ptr<OverridableHook<ShipDeathConditions>>		OnShipDeath;
 extern const std::shared_ptr<Hook<WeaponDeathConditions>>				OnMissileDeathStarted;
 extern const std::shared_ptr<Hook<WeaponDeathConditions>>				OnMissileDeath;
+extern const std::shared_ptr<Hook<MineDetonatedConditions>>				OnMineDetonated;
 extern const std::shared_ptr<Hook<>>									OnBeamDeath;
 extern const std::shared_ptr<Hook<>>									OnAsteroidDeath;
 extern const std::shared_ptr<Hook<>>									OnDebrisDeath;
