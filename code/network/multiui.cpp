@@ -7821,7 +7821,7 @@ void multi_sync_blit_screen_all()
 			// display his name and status
 			multi_sync_display_name(Net_players[idx].m_player->callsign,count,idx);
 
-			multi_sync_display_status(multi_sync_get_state_string(&Net_player[idx]).c_str(), count);
+			multi_sync_display_status(multi_sync_get_state_string(&Net_players[idx]).c_str(), count);
 			count++;
 		}
 	}	
