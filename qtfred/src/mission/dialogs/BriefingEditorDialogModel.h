@@ -11,6 +11,7 @@ namespace fso::fred::dialogs {
 class BriefingEditorDialogModel : public AbstractDialogModel {
   public:
 	BriefingEditorDialogModel(QObject* parent, EditorViewport* viewport);
+	~BriefingEditorDialogModel() override;
 
 	enum class DrawLinesState {
 		None,    // no lines between any selected pairs

@@ -58,6 +58,23 @@ BriefingEditorDialogModel::BriefingEditorDialogModel(QObject* parent, EditorView
 	initializeData();
 }
 
+BriefingEditorDialogModel::~BriefingEditorDialogModel()
+{
+	stopSpeech();
+	for (int i = 0; i < MAX_TVT_TEAMS; i++) {
+		for (int j = 0; j < MAX_BRIEF_STAGES; j++) {
+			if (_wipBriefings[i].stages[j].icons != nullptr) {
+				vm_free(_wipBriefings[i].stages[j].icons);
+				_wipBriefings[i].stages[j].icons = nullptr;
+			}
+			if (_wipBriefings[i].stages[j].lines != nullptr) {
+				vm_free(_wipBriefings[i].stages[j].lines);
+				_wipBriefings[i].stages[j].lines = nullptr;
+			}
+		}
+	}
+}
+
 bool BriefingEditorDialogModel::apply()
 {
 	stopSpeech();
@@ -81,9 +98,19 @@ void BriefingEditorDialogModel::initializeData()
 {
 	initializeTeamList();
 
-	// Make a working copy
+	// Make a working copy with independent icon/line storage so edits don't
+	// mutate live Briefings[] data and cancel can be a true no-op.
 	for (int i = 0; i < MAX_TVT_TEAMS; i++) {
-		_wipBriefings[i] = Briefings[i];
+		for (int j = 0; j < MAX_BRIEF_STAGES; j++) {
+			if (Briefings[i].stages[j].icons != nullptr) {
+				_wipBriefings[i].stages[j].icons =
+					(brief_icon*)vm_malloc(sizeof(brief_icon) * MAX_STAGE_ICONS);
+			}
+			if (Briefings[i].stages[j].lines != nullptr) {
+				_wipBriefings[i].stages[j].lines =
+					(brief_line*)vm_malloc(sizeof(brief_line) * MAX_BRIEF_STAGE_LINES);
+			}
+		}
 		copyBriefingData(_wipBriefings[i], Briefings[i]);
 	}
 
