@@ -574,17 +574,19 @@ void BriefingMapWidget::renderFrame() {
 				stage.camera_time));
 		}
 
+		if (stage_valid) {
 			const float frametime = 0.033f;
 			applyBoundCameraControls(frametime);
 			Brief_text_wipe_time_elapsed += frametime;
 			brief_camera_move(frametime, _currentStage);
-				updateEditorHighlightPlayback();
-				brief_render_map(_currentStage, frametime);
-				updateEditorHighlightPlayback();
-				drawSelectedIconOutline();
-				maybeRenderCutTransition(frametime, w, h);
-				cameraChanged(brief_get_current_cam_pos(), brief_get_current_cam_orient());
-			}
+			updateEditorHighlightPlayback();
+			brief_render_map(_currentStage, frametime);
+			updateEditorHighlightPlayback();
+			drawSelectedIconOutline();
+			maybeRenderCutTransition(frametime, w, h);
+			cameraChanged(brief_get_current_cam_pos(), brief_get_current_cam_orient());
+		}
+	}
 
 	Briefing = savedBriefing;
 	bscreen = savedBscreen;

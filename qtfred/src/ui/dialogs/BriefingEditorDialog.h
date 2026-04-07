@@ -66,7 +66,7 @@ class BriefingEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	void on_iconTeamComboBox_currentIndexChanged(int index);
 	void on_scaleDoubleSpinBox_valueChanged(double arg1);
 
-	void on_drawLinesCheckBox_toggled(bool checked);
+	void on_drawLinesCheckBox_stateChanged(int state);
 	void on_changeLocallyCheckBox_toggled(bool checked);
 	void on_flipIconCheckBox_toggled(bool checked);
 	void on_highlightCheckBox_toggled(bool checked);

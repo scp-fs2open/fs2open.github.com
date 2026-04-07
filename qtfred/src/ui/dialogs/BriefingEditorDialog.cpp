@@ -582,14 +582,14 @@ void BriefingEditorDialog::on_scaleDoubleSpinBox_valueChanged(double arg1)
 	_model->setIconScaleFactor(static_cast<float>(arg1));
 }
 
-void BriefingEditorDialog::on_drawLinesCheckBox_toggled(bool checked)
+void BriefingEditorDialog::on_drawLinesCheckBox_stateChanged(int state)
 {
-	if (ui->drawLinesCheckBox->checkState() == Qt::PartiallyChecked) {
+	if (static_cast<Qt::CheckState>(state) == Qt::PartiallyChecked) {
 		_model->applyDrawLines(true);
 		ui->drawLinesCheckBox->setCheckState(Qt::Checked);
 		return;
 	}
-	_model->applyDrawLines(checked); // Assumes multi selection has already been set by the renderer
+	_model->applyDrawLines(state == Qt::Checked);
 }
 
 void BriefingEditorDialog::on_changeLocallyCheckBox_toggled(bool checked)

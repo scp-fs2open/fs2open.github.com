@@ -414,7 +414,9 @@ void BriefingEditorDialogModel::testSpeech()
 	stopSpeech();
 
 	_waveId = audiostream_open(_wipBriefings[_currentTeam].stages[_currentStage].voice, ASF_EVENTMUSIC);
-	audiostream_play(_waveId, 1.0f, 0);
+	if (_waveId >= 0) {
+		audiostream_play(_waveId, 1.0f, 0);
+	}
 }
 
 void BriefingEditorDialogModel::copyToOtherTeams()
