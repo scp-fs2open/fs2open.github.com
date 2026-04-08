@@ -25,6 +25,8 @@ WingEditorDialog::WingEditorDialog(FredView* parent, EditorViewport* viewport)
 
 	ui->wingNameEdit->setMaxLength(NAME_LENGTH - 1);
 
+	ui->wingDisplayNameEdit->setMaxLength(NAME_LENGTH - 1);
+
 	setWindowTitle(tr("Wing Editor"));
 	
 	// Whenever the model reports changes, refresh the UI

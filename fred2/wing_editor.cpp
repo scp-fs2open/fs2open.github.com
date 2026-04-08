@@ -223,6 +223,8 @@ BOOL wing_editor::Create()
 	m_arrival_delay_spin.SetRange(0, 999);
 	m_departure_delay_spin.SetRange(0, 999);
 
+	((CEdit *)GetDlgItem(IDC_WING_DISPLAY_NAME))->SetLimitText(NAME_LENGTH - 1);
+
 	initialize_data(1);
 	return r;
 }
