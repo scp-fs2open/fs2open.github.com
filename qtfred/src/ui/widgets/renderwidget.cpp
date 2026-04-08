@@ -228,7 +228,7 @@ void RenderWidget::mousePressEvent(QMouseEvent* event) {
 
 	if (event->modifiers().testFlag(Qt::ControlModifier)) {  // add a new object
 		if (_viewport->on_object == -1) {
-			_viewport->Selection_lock = 0;  // force off selection lock
+			_viewport->Selection_lock = false;  // force off selection lock
 			auto spawn_prop = event->modifiers().testFlag(Qt::ShiftModifier);
 			_viewport->on_object = _viewport->create_object_on_grid(event->x(), event->y(), waypoint_instance, spawn_prop);
 
