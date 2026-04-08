@@ -239,6 +239,14 @@ void radar_plot_object( object *objp )
 			weapon_info *wip = &Weapon_info[Weapons[objp->instance].weapon_info_index];
 
 			if (wip->wi_flags[Weapon::Info_Flags::Mine]) {
+				// if explicitly hidden, return
+				if (wip->wi_flags[Weapon::Info_Flags::Dont_show_on_radar])
+					return;
+
+				// if we don't attack the mine, return
+				if ( !wip->wi_flags[Weapon::Info_Flags::Show_friendly] && !iff_x_attacks_y(Player_ship->team, obj_team(objp)) )
+					return;
+
 				// Mine range-based detection... visibility determined after distance is calculated below
 				break;
 			}

@@ -10528,7 +10528,7 @@ void maybe_update_guard_object(object *hit_objp, object *hitter_objp)
 // return 1 if bomb is found (and targeted by guarding_objp), otherwise return 0
 /**
  * Find the closest hostile mine within its own mine_targetable_range of ai_objp.
- * Used for strikecraft self-protection when the Strikecraft_intercept_mines AI profile flag is set.
+ * Used for ship self-protection when the Ships_intercept_mines AI profile flag is set.
  * Returns the mine object pointer, or nullptr if none found.
  */
 static object *ai_find_nearby_mine_threat(object *ai_objp)
@@ -10770,7 +10770,7 @@ void ai_guard_find_nearby_object()
 		}
 
 		// if still not attacking anything and flag is set, engage mines near the guarding ship itself
-		if (aip->target_objnum == -1 && The_mission.ai_profile->flags[AI::Profile_Flags::Strikecraft_intercept_mines]) {
+		if (aip->target_objnum == -1 && The_mission.ai_profile->flags[AI::Profile_Flags::Ships_intercept_mines]) {
 			object *mine_objp = ai_find_nearby_mine_threat(Pl_objp);
 			if (mine_objp)
 				guard_object_was_hit(Pl_objp, mine_objp);
@@ -15423,7 +15423,7 @@ void ai_frame(int objnum)
 					{
 						En_objp = &Objects[target_objnum];
 					}
-				} else if (aip->mode != AIM_GUARD && The_mission.ai_profile->flags[AI::Profile_Flags::Strikecraft_intercept_mines]) {
+				} else if (aip->mode != AIM_GUARD && The_mission.ai_profile->flags[AI::Profile_Flags::Ships_intercept_mines]) {
 					// No enemy found so check for nearby hostile mines within their targetable range
 					object *mine_objp = ai_find_nearby_mine_threat(Pl_objp);
 					if (mine_objp) {

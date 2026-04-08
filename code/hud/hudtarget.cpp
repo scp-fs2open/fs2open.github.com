@@ -485,7 +485,7 @@ static bool weapon_is_player_targetable(object *objp)
 	weapon_info *wip = &Weapon_info[Weapons[objp->instance].weapon_info_index];
 	if (wip->is_mine()) {
 		if (wip->mine_targetable_range < 0.0f) return true; // infinite range
-		return vm_vec_dist(&Player_obj->pos, &objp->pos) <= wip->mine_targetable_range;
+		return vm_vec_dist_quick(&Player_obj->pos, &objp->pos) <= wip->mine_targetable_range;
 	}
 	return wip->wi_flags[Weapon::Info_Flags::Can_be_targeted] || wip->wi_flags[Weapon::Info_Flags::Bomb];
 }

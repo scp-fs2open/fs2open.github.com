@@ -6200,81 +6200,84 @@ void weapon_process_pre( object *obj, float  frame_time)
 		bool armed = f2fl(Missiontime - wp->creation_time) >= wip->mine_arm_time;
 
 		if (armed) {
-		float prox_sq = wip->proximity_radius * wip->proximity_radius;
+			float prox_sq = wip->proximity_radius * wip->proximity_radius;
 
-		for (object *check_obj = GET_FIRST(&obj_used_list);
-		     check_obj != END_OF_LIST(&obj_used_list);
-		     check_obj = GET_NEXT(check_obj))
-		{
-			if (check_obj->flags[Object::Object_Flags::Should_be_dead])
-				continue;
+			for (object *check_obj = GET_FIRST(&obj_used_list);
+			     check_obj != END_OF_LIST(&obj_used_list);
+			     check_obj = GET_NEXT(check_obj))
+			{
+				if (check_obj->flags[Object::Object_Flags::Should_be_dead])
+					continue;
 
-			// Mines only trigger on ships
-			if (check_obj->type != OBJ_SHIP)
-				continue;
+				// Mines only trigger on ships
+				if (check_obj->type != OBJ_SHIP)
+					continue;
 
-			// Skip the weapon itself
-			if (check_obj == obj)
-				continue;
+				// Skip the weapon itself
+				if (check_obj == obj)
+					continue;
 
-			// Distance check first (cheap rejection)
-			if (vm_vec_dist_squared(&obj->pos, &check_obj->pos) > prox_sq)
-				continue;
+				// Distance check first (cheap rejection)
+				if (vm_vec_dist_squared(&obj->pos, &check_obj->pos) > prox_sq)
+					continue;
 
-			// Apply filters: AND across categories, OR within each category
-			// Empty category = pass all
-			const ship* sp = &Ships[check_obj->instance];
-			const ship_info* sip = &Ship_info[sp->ship_info_index];
+				// Apply filters: AND across categories, OR within each category
+				// Empty category = pass all
+				const ship* sp = &Ships[check_obj->instance];
+				const ship_info* sip = &Ship_info[sp->ship_info_index];
 
-			if (!wip->proximity_iff.empty()) {
-				int target_team = sp->team;
-				bool matched = false;
-				for (int iff_idx : wip->proximity_iff) {
-					if (target_team == iff_idx) { matched = true; break; }
+				if (!wip->proximity_iff.empty()) {
+					int target_team = sp->team;
+					bool matched = false;
+					for (int iff_idx : wip->proximity_iff) {
+						if (target_team == iff_idx) { matched = true; break; }
+					}
+					if (!matched) continue;
 				}
-				if (!matched) continue;
-			}
 
-			if (!wip->proximity_species.empty()) {
-				bool matched = false;
-				for (int spec_idx : wip->proximity_species) {
-					if (sip->species == spec_idx) { matched = true; break; }
+				if (!wip->proximity_species.empty()) {
+					bool matched = false;
+					for (int spec_idx : wip->proximity_species) {
+						if (sip->species == spec_idx) { matched = true; break; }
+					}
+					if (!matched) continue;
 				}
-				if (!matched) continue;
-			}
 
-			if (!wip->proximity_type.empty()) {
-				bool matched = false;
-				for (int type_idx : wip->proximity_type) {
-					if (sip->class_type == type_idx) { matched = true; break; }
+				if (!wip->proximity_type.empty()) {
+					bool matched = false;
+					for (int type_idx : wip->proximity_type) {
+						if (sip->class_type == type_idx) { matched = true; break; }
+					}
+					if (!matched) continue;
 				}
-				if (!matched) continue;
-			}
 
-			if (!wip->proximity_class.empty()) {
-				bool matched = false;
-				for (int class_idx : wip->proximity_class) {
-					if (sp->ship_info_index == class_idx) { matched = true; break; }
+				if (!wip->proximity_class.empty()) {
+					bool matched = false;
+					for (int class_idx : wip->proximity_class) {
+						if (sp->ship_info_index == class_idx) { matched = true; break; }
+					}
+					if (!matched) continue;
 				}
-				if (!matched) continue;
-			}
 
-			// Set the triggering ship as the homing object so child spawns with
-			// 'inherit parent target' will home on it
-			wp->homing_object = check_obj;
+				// Set the triggering ship as the homing object so child spawns with
+				// 'inherit parent target' will home on it
+				wp->homing_object = check_obj;
 
-			if (scripting::hooks::OnMineDetonated->isActive()) {
-				scripting::hooks::OnMineDetonated->run(
-					scripting::hooks::MineDetonatedConditions{ wp, &Ships[check_obj->instance] },
-					scripting::hook_param_list(
-						scripting::hook_param("Mine",     'o', obj),
-						scripting::hook_param("Ship",     'o', check_obj),
-						scripting::hook_param("Position", 'o', scripting::api::l_Vector.Set(obj->pos))
-					));
+				auto mineParamList = scripting::hook_param_list(
+					scripting::hook_param("Mine",     'o', obj),
+					scripting::hook_param("Ship",     'o', check_obj),
+					scripting::hook_param("Position", 'o', scripting::api::l_Vector.Set(obj->pos))
+				);
+				scripting::hooks::MineDetonatedConditions mineConds{ wp, &Ships[check_obj->instance] };
+				if (scripting::hooks::OnMineDetonated->isActive()) {
+					bool overridden = scripting::hooks::OnMineDetonated->isOverride(mineConds, mineParamList);
+					scripting::hooks::OnMineDetonated->run(mineConds, mineParamList);
+					if (overridden)
+						return;
+				}
+				weapon_detonate(obj);
+				return;
 			}
-			weapon_detonate(obj);
-			return;
-		}
 		} // if (armed)
 	}
 
