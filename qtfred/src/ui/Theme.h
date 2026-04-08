@@ -213,9 +213,15 @@ inline QIcon makeThemedIcon(QStyle::StandardPixmap sp, const QColor& color, int 
 		p.drawPath(path);
 		break;
 	}
-	case QStyle::SP_MediaPlay:
-		p.drawPolygon(QPolygonF() << QPointF(r.left(), r.top()) << QPointF(r.right(), c.y()) << QPointF(r.left(), r.bottom()));
+	case QStyle::SP_MediaPlay: {
+		QPainterPath path;
+		path.moveTo(r.left(),  r.top());
+		path.lineTo(r.right(), c.y());
+		path.lineTo(r.left(),  r.bottom());
+		path.closeSubpath();
+		p.drawPath(path);
 		break;
+	}
 	case QStyle::SP_MediaStop:
 		p.drawRect(r);
 		break;
@@ -224,7 +230,12 @@ inline QIcon makeThemedIcon(QStyle::StandardPixmap sp, const QColor& color, int 
 		const qreal barW = r.width() * 0.18;
 		const qreal gap  = r.width() * 0.05;
 		const qreal triR = r.right() - barW - gap;
-		p.drawPolygon(QPolygonF() << QPointF(r.left(), r.top()) << QPointF(triR, c.y()) << QPointF(r.left(), r.bottom()));
+		QPainterPath path;
+		path.moveTo(r.left(), r.top());
+		path.lineTo(triR,     c.y());
+		path.lineTo(r.left(), r.bottom());
+		path.closeSubpath();
+		p.drawPath(path);
 		p.drawRect(QRectF(r.right() - barW, r.top(), barW, r.height()));
 		break;
 	}
@@ -234,7 +245,12 @@ inline QIcon makeThemedIcon(QStyle::StandardPixmap sp, const QColor& color, int 
 		const qreal gap  = r.width() * 0.05;
 		const qreal triL = r.left() + barW + gap;
 		p.drawRect(QRectF(r.left(), r.top(), barW, r.height()));
-		p.drawPolygon(QPolygonF() << QPointF(r.right(), r.top()) << QPointF(triL, c.y()) << QPointF(r.right(), r.bottom()));
+		QPainterPath path;
+		path.moveTo(r.right(), r.top());
+		path.lineTo(triL,      c.y());
+		path.lineTo(r.right(), r.bottom());
+		path.closeSubpath();
+		p.drawPath(path);
 		break;
 	}
 	default:
