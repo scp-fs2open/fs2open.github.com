@@ -315,7 +315,10 @@ void HeadAnimationPickerDialog::setSelectedByName(const QString& name)
 	for (int i = 0; i < _list->count(); ++i) {
 		auto* it = _list->item(i);
 		if (it->data(Qt::UserRole).toString() == name) {
-			_list->setCurrentItem(it);
+			{
+				const QSignalBlocker blocker(_list);
+				_list->setCurrentItem(it);
+			}
 			_list->scrollToItem(it, QAbstractItemView::PositionAtCenter);
 			_previewingName = name;
 			_previewElapsedSeconds = 0.0f;
