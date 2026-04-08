@@ -28,6 +28,7 @@ private slots:
 	void on_moveShipsWhenUndocking_toggled(bool checked);
 	void on_alwaysSaveDisplayNames_toggled(bool checked);
 	void on_errorCheckerChecksForPotentialIssues_toggled(bool checked);
+	void on_darkMode_toggled(bool checked);
 	void on_showSexpHelpMissionEvents_toggled(bool checked);
 	void on_showSexpHelpMissionGoals_toggled(bool checked);
 	void on_showSexpHelpMissionCutscenes_toggled(bool checked);

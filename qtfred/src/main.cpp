@@ -4,7 +4,9 @@
 
 #include <QApplication>
 #include <QDir>
+#include <QSettings>
 #include <QSplashScreen>
+#include <QStyleFactory>
 #include <QTimer>
 #include <QtCore/QLoggingCategory>
 
@@ -18,6 +20,7 @@
 #include "globalincs/pstypes.h"
 
 #include "ui/FredView.h"
+#include "ui/Theme.h"
 #include "FredApplication.h"
 
 #include <csignal>
@@ -99,6 +102,15 @@ int main(int argc, char* argv[]) {
 
 	QApplication app(argc, argv);
 	QApplication::setAttribute(Qt::AA_DisableWindowContextHelpButton);
+
+	// Use Fusion style unconditionally — required for reliable dynamic palette switching
+	QApplication::setStyle(QStyleFactory::create("Fusion"));
+	{
+		QSettings startupSettings;
+		startupSettings.beginGroup("Preferences");
+		fso::fred::applyEditorTheme(startupSettings.value("dark_mode", false).toBool());
+		startupSettings.endGroup();
+	}
 
 	// Expect that the platform library is in the same directory
 	QCoreApplication::addLibraryPath(QCoreApplication::applicationDirPath());	

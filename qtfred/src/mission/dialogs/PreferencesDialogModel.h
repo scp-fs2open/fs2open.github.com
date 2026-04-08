@@ -38,6 +38,9 @@ public:
 	bool getShowSexpHelpWingEditor() const;
 	void setShowSexpHelpWingEditor(bool value);
 
+	bool getDarkMode() const;
+	void setDarkMode(bool value);
+
 	// Controls
 	QKeySequence getControlKey(ControlAction action) const;
 	void setControlKey(ControlAction action, const QKeySequence& sequence);
@@ -65,6 +68,7 @@ private:
 	bool _showSexpHelpMissionCutscenes;
 	bool _showSexpHelpShipEditor;
 	bool _showSexpHelpWingEditor;
+	bool _darkMode;
 
 	// Controls
 	std::map<ControlAction, QKeySequence> _controlKeys;

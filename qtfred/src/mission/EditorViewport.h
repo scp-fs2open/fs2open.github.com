@@ -208,6 +208,8 @@ class EditorViewport {
 	bool Show_sexp_help_ship_editor = false;
 	bool Show_sexp_help_wing_editor = false;
 
+	bool Dark_mode = false;
+
 	void saveSettings() const;
 
 	Editor* editor = nullptr;

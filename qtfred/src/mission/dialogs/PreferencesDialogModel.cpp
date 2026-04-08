@@ -1,6 +1,7 @@
 #include "PreferencesDialogModel.h"
 
 #include "mission/EditorViewport.h"
+#include "ui/Theme.h"
 #include "mission/missiongrid.h"
 #include "math/vecmat.h"
 
@@ -16,6 +17,7 @@ PreferencesDialogModel::PreferencesDialogModel(QObject* parent, EditorViewport* 
 	, _showSexpHelpMissionCutscenes(viewport->Show_sexp_help_mission_cutscenes)
 	, _showSexpHelpShipEditor(viewport->Show_sexp_help_ship_editor)
 	, _showSexpHelpWingEditor(viewport->Show_sexp_help_wing_editor)
+	, _darkMode(viewport->Dark_mode)
 	, _gridCenterX(static_cast<int>(viewport->The_grid->center.xyz.x))
 	, _gridCenterY(static_cast<int>(viewport->The_grid->center.xyz.y))
 	, _gridCenterZ(static_cast<int>(viewport->The_grid->center.xyz.z))
@@ -45,8 +47,10 @@ bool PreferencesDialogModel::apply() {
 	_viewport->Show_sexp_help_mission_cutscenes = _showSexpHelpMissionCutscenes;
 	_viewport->Show_sexp_help_ship_editor       = _showSexpHelpShipEditor;
 	_viewport->Show_sexp_help_wing_editor       = _showSexpHelpWingEditor;
+	_viewport->Dark_mode                        = _darkMode;
 
 	_viewport->saveSettings();
+	applyEditorTheme(_darkMode);
 
 	auto& bindings = ControlBindings::instance();
 	for (const auto& entry : _controlKeys) {
@@ -101,6 +105,9 @@ bool PreferencesDialogModel::getShowSexpHelpShipEditor() const { return _showSex
 void PreferencesDialogModel::setShowSexpHelpShipEditor(bool value) { modify(_showSexpHelpShipEditor, value); }
 bool PreferencesDialogModel::getShowSexpHelpWingEditor() const { return _showSexpHelpWingEditor; }
 void PreferencesDialogModel::setShowSexpHelpWingEditor(bool value) { modify(_showSexpHelpWingEditor, value); }
+
+bool PreferencesDialogModel::getDarkMode() const { return _darkMode; }
+void PreferencesDialogModel::setDarkMode(bool value) { modify(_darkMode, value); }
 
 QKeySequence PreferencesDialogModel::getControlKey(ControlAction action) const {
 	auto it = _controlKeys.find(action);

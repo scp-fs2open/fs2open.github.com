@@ -89,6 +89,7 @@ void PreferencesDialog::updateUi() {
 	ui->moveShipsWhenUndocking->setChecked(_model->getMoveShipsWhenUndocking());
 	ui->alwaysSaveDisplayNames->setChecked(_model->getAlwaysSaveDisplayNames());
 	ui->errorCheckerChecksForPotentialIssues->setChecked(_model->getErrorCheckerChecksForPotentialIssues());
+	ui->darkMode->setChecked(_model->getDarkMode());
 	ui->showSexpHelpMissionEvents->setChecked(_model->getShowSexpHelpMissionEvents());
 	ui->showSexpHelpMissionGoals->setChecked(_model->getShowSexpHelpMissionGoals());
 	ui->showSexpHelpMissionCutscenes->setChecked(_model->getShowSexpHelpMissionCutscenes());
@@ -126,6 +127,10 @@ void PreferencesDialog::on_alwaysSaveDisplayNames_toggled(bool checked) {
 
 void PreferencesDialog::on_errorCheckerChecksForPotentialIssues_toggled(bool checked) {
 	_model->setErrorCheckerChecksForPotentialIssues(checked);
+}
+
+void PreferencesDialog::on_darkMode_toggled(bool checked) {
+	_model->setDarkMode(checked);
 }
 
 void PreferencesDialog::on_showSexpHelpMissionEvents_toggled(bool checked) {

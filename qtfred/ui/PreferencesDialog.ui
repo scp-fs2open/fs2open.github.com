@@ -46,6 +46,13 @@
         </widget>
        </item>
        <item>
+        <widget class="QCheckBox" name="darkMode">
+         <property name="text">
+          <string>Dark mode</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QGroupBox" name="sexpHelpGroup">
          <property name="title">
           <string>Show SEXP Help in</string>

@@ -147,6 +147,7 @@ void EditorViewport::loadSettings() {
 	Show_sexp_help_mission_cutscenes   = settings.value("show_sexp_help_mission_cutscenes",   Show_sexp_help_mission_cutscenes).toBool();
 	Show_sexp_help_ship_editor         = settings.value("show_sexp_help_ship_editor",         Show_sexp_help_ship_editor).toBool();
 	Show_sexp_help_wing_editor         = settings.value("show_sexp_help_wing_editor",         Show_sexp_help_wing_editor).toBool();
+	Dark_mode                          = settings.value("dark_mode",                          Dark_mode).toBool();
 	settings.endGroup();
 }
 
@@ -161,6 +162,7 @@ void EditorViewport::saveSettings() const {
 	settings.setValue("show_sexp_help_mission_cutscenes",    Show_sexp_help_mission_cutscenes);
 	settings.setValue("show_sexp_help_ship_editor",          Show_sexp_help_ship_editor);
 	settings.setValue("show_sexp_help_wing_editor",          Show_sexp_help_wing_editor);
+	settings.setValue("dark_mode",                           Dark_mode);
 	settings.endGroup();
 }
 void EditorViewport::needsUpdate() {
