@@ -214,7 +214,10 @@ void WaypointEditorDialogModel::setCurrentlySelectedPath(int id)
 		return; // out of range; ignore
 	}
 
-	if (apply()) {
+	// Only apply if there is actually a current path to save changes to.
+	bool canProceed = (_editor->cur_waypoint_list == nullptr) || apply();
+
+	if (canProceed) {
 		_editor->unmark_all();
 
 		// mark all waypoints belonging to the selected list
