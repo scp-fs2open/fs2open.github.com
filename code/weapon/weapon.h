@@ -444,7 +444,7 @@ struct weapon_info
 	float arm_radius;
 	float det_range;
 	float det_radius;					//How far from target or target subsystem it blows up
-	float proximity_radius;				// Scan radius for proximity detonation; 0 = disabled
+	float proximity_radius;				// Scan radius for proximity detonation; defaults to 50
 	float mine_arm_time;				// seconds after creation before proximity detonation is active; 0 = instantly armed (default)
 	SCP_vector<int> proximity_iff;     // IFF indices that trigger detonation; empty = any IFF
 	SCP_vector<int> proximity_species; // species indices that trigger detonation; empty = any species

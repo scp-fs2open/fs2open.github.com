@@ -1370,8 +1370,8 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 		if (optional_string("+Hitpoints:")) {
 			stuff_int(&wip->weapon_hitpoints);
-		} else {
-			wip->weapon_hitpoints = 50; // default: mines are destructable
+		} else if (first_time) {
+			wip->weapon_hitpoints = 50; // default: mines are destructible
 		}
 
 		if (wip->weapon_hitpoints > 0) {
@@ -1389,12 +1389,12 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 		if (optional_string("+Proximity Radius:")) {
 			stuff_float(&wip->proximity_radius);
-			if (wip->proximity_radius < 0.0f) {
-				wip->proximity_radius = 0.0f;
-				Warning(LOCATION, "Mine weapon '%s': +Proximity Radius cannot be negative. Setting to 0.\n", wip->name);
-			} else if (wip->proximity_radius == 0.0f) {
-				Warning(LOCATION, "Mine weapon '%s': +Proximity Radius is 0, proximity detonation will be disabled.\n", wip->name);
+			if (wip->proximity_radius <= 0.0f) {
+				wip->proximity_radius = 1.0f;
+				Warning(LOCATION, "Mine weapon '%s': +Proximity Radius must be positive. Setting to 1.\n", wip->name);
 			}
+		} else if (first_time) {
+			wip->proximity_radius = 50.0f; // default proximity trigger radius
 		}
 
 		if (optional_string("+Proximity IFF:")) {
