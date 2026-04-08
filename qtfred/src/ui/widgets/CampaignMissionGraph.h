@@ -41,6 +41,7 @@ struct CampaignGraphStyle {
 	// Node card
 	QColor nodeFill{230, 230, 230}; // Qt grey
 	QColor nodeBorder{20, 20, 20};
+	QColor nodeText{20, 20, 20};
 	qreal nodeRadius{8.0};
 	QSizeF nodeSize{240.0, 120.0}; // base size
 	qreal padding{8.0};
@@ -103,6 +104,8 @@ struct CampaignGraphStyle {
 
 	qreal contentMarginX{400.0}; // extra scene space left/right of content on rebuild
 	qreal contentMarginY{400.0}; // extra scene space above/below content on rebuild
+
+	static CampaignGraphStyle makeStyle(bool dark);
 };
 
 /**
@@ -172,6 +175,7 @@ class CampaignMissionGraph final : public QGraphicsView {
   private slots:
 	void onNodeMoved(int missionIndex, QPointF sceneTopLeft);
 	void onSceneSelectionChanged();
+	void applyTheme(bool dark);
 
   private: // NOLINT(readability-redundant-access-specifiers)
 	struct DragState {
