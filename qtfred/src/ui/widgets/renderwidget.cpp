@@ -227,21 +227,18 @@ void RenderWidget::mousePressEvent(QMouseEvent* event) {
 	_viewport->button_down = 1;
 
 	if (event->modifiers().testFlag(Qt::ControlModifier)) {  // add a new object
-		if (!_viewport->Bg_bitmap_dialog) {
-			if (_viewport->on_object == -1) {
-				_viewport->Selection_lock = 0;  // force off selection lock
-				auto spawn_prop = event->modifiers().testFlag(Qt::ShiftModifier);
-				_viewport->on_object = _viewport->create_object_on_grid(event->x(), event->y(), waypoint_instance, spawn_prop);
+		if (_viewport->on_object == -1) {
+			_viewport->Selection_lock = 0;  // force off selection lock
+			auto spawn_prop = event->modifiers().testFlag(Qt::ShiftModifier);
+			_viewport->on_object = _viewport->create_object_on_grid(event->x(), event->y(), waypoint_instance, spawn_prop);
 
-			} else {
-				_viewport->Dup_drag = 1;
-			}
+		} else {
+			_viewport->Dup_drag = 1;
 		}
 
 	} else if (!_viewport->Selection_lock) {
-		if (!_viewport->Bg_bitmap_dialog
-			&& ((event->modifiers().testFlag(Qt::ShiftModifier)) || (_viewport->on_object == -1)
-			|| !(Objects[_viewport->on_object].flags[Object::Object_Flags::Marked]))) {
+		if ((event->modifiers().testFlag(Qt::ShiftModifier)) || (_viewport->on_object == -1)
+			|| !(Objects[_viewport->on_object].flags[Object::Object_Flags::Marked])) {
 			if (!event->modifiers().testFlag(Qt::ShiftModifier)) {
 				fred->unmark_all();
 			}
@@ -304,7 +301,7 @@ void RenderWidget::mouseMoveEvent(QMouseEvent* event) {
 					_viewport->drag_rotate_objects(mouseDX.x(), mouseDX.y());
 				}
 
-			} else if (!_viewport->Bg_bitmap_dialog) {
+			} else {
 				_usingMarkingBox = true;
 			}
 
@@ -344,19 +341,14 @@ void RenderWidget::mouseReleaseEvent(QMouseEvent* event) {
 			}
 		}
 
-		if (_viewport->Bg_bitmap_dialog) {
-			_usingMarkingBox = true;
+		if (_usingMarkingBox) {
+			_viewport->select_objects(_markingBox);
+			_usingMarkingBox = false;
 
-		} else {
-			if (_usingMarkingBox) {
-				_viewport->select_objects(_markingBox);
-				_usingMarkingBox = false;
-
-			} else if ((!_viewport->moved && _viewport->on_object != -1) && !_viewport->Selection_lock
-				&& !event->modifiers().testFlag(Qt::ShiftModifier)) {
-				fred->unmark_all();
-				fred->markObject(_viewport->on_object);
-			}
+		} else if ((!_viewport->moved && _viewport->on_object != -1) && !_viewport->Selection_lock
+			&& !event->modifiers().testFlag(Qt::ShiftModifier)) {
+			fred->unmark_all();
+			fred->markObject(_viewport->on_object);
 		}
 
 		_viewport->button_down = false;
@@ -431,6 +423,6 @@ void RenderWidget::setCursorMode(CursorMode mode) {
 	_cursorMode = mode;
 }
 void RenderWidget::renderFrame() {
-	_viewport->renderer->render_frame(fred->currentObject, fred->Render_subsys, _usingMarkingBox, _markingBox, false);
+	_viewport->renderer->render_frame(fred->currentObject, fred->Render_subsys, _usingMarkingBox, _markingBox);
 }
 } // namespace fso::fred

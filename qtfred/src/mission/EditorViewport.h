@@ -188,8 +188,6 @@ class EditorViewport {
 	int cur_model_index = 0;
 	int cur_prop_index = -1;
 
-	bool Bg_bitmap_dialog = false;
-
 	object_orient_pos rotation_backup[MAX_OBJECTS];
 
 	vec3d saved_cam_pos = vmd_zero_vector;

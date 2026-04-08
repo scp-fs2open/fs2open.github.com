@@ -460,6 +460,10 @@ void FredRenderer::display_ship_info(int cur_object_index) {
 						int idx;
 						waypoint_list* wp_list = find_waypoint_list_with_instance(objp->instance, &idx);
 						Assertion(wp_list != nullptr, "Could not find waypoint list for object instance %d", objp->instance);
+						if (wp_list == nullptr) {
+							objp = GET_NEXT(objp);
+							continue;
+						}
 						sprintf(buf, "%s\nWaypoint %d", wp_list->get_name(), idx + 1);
 					} else if (objp->type == OBJ_POINT) {
 						if (objp->instance == BRIEFING_LOOKAT_POINT_ID)
@@ -637,8 +641,7 @@ void FredRenderer::render_model_x_htl(vec3d* pos, grid* gridp, int  /*col_scheme
 }
 
 void FredRenderer::render_one_model_htl(object* objp,
-										int cur_object_index,
-										bool Bg_bitmap_dialog) {
+										int cur_object_index) {
 	int z;
 	object* o2;
 
@@ -680,9 +683,9 @@ void FredRenderer::render_one_model_htl(object* objp,
 
 	if (!view().Draw_outlines_on_selected_ships && ((OBJ_INDEX(objp) == cur_object_index) || (objp->flags[Object::Object_Flags::Marked]))) {
 		/* don't draw the outlines we would normally draw */;
-	} else if ((OBJ_INDEX(objp) == cur_object_index) && !Bg_bitmap_dialog) {
+	} else if (OBJ_INDEX(objp) == cur_object_index) {
 		Fred_outline = FRED_COLOUR_WHITE;
-	} else if ((objp->flags[Object::Object_Flags::Marked]) && !Bg_bitmap_dialog) { // is it a marked object?
+	} else if (objp->flags[Object::Object_Flags::Marked]) { // is it a marked object?
 		Fred_outline = FRED_COLOUR_YELLOW_GREEN;
 	} else if ((objp->type == OBJ_SHIP) && view().Show_outlines) {
 		color* iff_color = iff_get_color_by_team_and_object(Ships[objp->instance].team, -1, 1, objp);
@@ -882,8 +885,7 @@ void FredRenderer::render_one_model_htl(object* objp,
 	rendering_order.push_back(OBJ_INDEX(objp));
 }
 
-void FredRenderer::render_models(int cur_object_index,
-								 bool Bg_bitmap_dialog) {
+void FredRenderer::render_models(int cur_object_index) {
 	gr_set_color_fast(&colour_white);
 
 	rendering_order.clear();
@@ -899,9 +901,7 @@ void FredRenderer::render_models(int cur_object_index,
 		if (!_viewport->isObjectVisibleInLayer(objp)) {
 			return;
 		}
-		this->render_one_model_htl(objp,
-								   cur_object_index,
-								   Bg_bitmap_dialog);
+		this->render_one_model_htl(objp, cur_object_index);
 	};
 
 	obj_render_all(render_function, &f);
@@ -912,8 +912,7 @@ void FredRenderer::render_models(int cur_object_index,
 void FredRenderer::render_frame(int cur_object_index,
 								subsys_to_render& Render_subsys,
 								bool box_marking,
-								const Marking_box& marking_box,
-								bool Bg_bitmap_dialog) {
+								const Marking_box& marking_box) {
 
 	// Make sure our OpenGL context is used for rendering
 	gr_use_viewport(_targetView);
@@ -942,11 +941,7 @@ void FredRenderer::render_frame(int cur_object_index,
 	g3_set_view_matrix(&_viewport->eye_pos, &_viewport->eye_orient, 0.5f);
 
 	enable_htl();
-	if (Bg_bitmap_dialog) {
-		stars_draw(view().Show_stars, 1, view().Show_stars, 0, 0);
-	} else {
-		stars_draw(view().Show_stars, view().Show_stars, view().Show_stars, 0, 0);
-	}
+	stars_draw(view().Show_stars, view().Show_stars, view().Show_stars, 0, 0);
 	disable_htl();
 
 	if (view().Show_horizon) {
@@ -962,8 +957,7 @@ void FredRenderer::render_frame(int cur_object_index,
 	}
 
 	gr_set_color(0, 0, 64);
-	render_models(cur_object_index,
-				  Bg_bitmap_dialog);
+	render_models(cur_object_index);
 
 	if (view().Show_distances) {
 		display_distances();
@@ -997,13 +991,17 @@ void FredRenderer::render_frame(int cur_object_index,
 			int idx;
 			waypoint_list* wp_list = find_waypoint_list_with_instance(inst, &idx);
 			Assertion(wp_list != nullptr, "Could not find waypoint list for object instance %d", inst);
-			sprintf(buf,
-					"%s\nWaypoint %d\n( %.1f , %.1f , %.1f ) ",
-					wp_list->get_name(),
-					idx + 1,
-					pos.xyz.x,
-					pos.xyz.y,
-					pos.xyz.z);
+			if (wp_list == nullptr) {
+				sprintf(buf, "Waypoint %d\n( %.1f , %.1f , %.1f ) ", idx + 1, pos.xyz.x, pos.xyz.y, pos.xyz.z);
+			} else {
+				sprintf(buf,
+						"%s\nWaypoint %d\n( %.1f , %.1f , %.1f ) ",
+						wp_list->get_name(),
+						idx + 1,
+						pos.xyz.x,
+						pos.xyz.y,
+						pos.xyz.z);
+			}
 		} else if (Objects[_viewport->Cursor_over].type == OBJ_POINT) {
 			sprintf(buf, "Briefing icon\n( %.1f , %.1f , %.1f ) ", pos.xyz.x, pos.xyz.y, pos.xyz.z);
 		} else {

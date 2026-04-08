@@ -59,13 +59,12 @@ class FredRenderer: public QObject {
 
 	void render_model_x_htl(vec3d* pos, grid* gridp, int col_scheme = 0);
 	void render_compass();
-	void render_one_model_htl(object* objp, int cur_object_index, bool Bg_bitmap_dialog);
-	void render_models(int cur_object_index, bool Bg_bitmap_dialog);
+	void render_one_model_htl(object* objp, int cur_object_index);
+	void render_models(int cur_object_index);
 	void render_frame(int cur_object_index,
 					  subsys_to_render& Render_subsys,
 					  bool box_marking,
-					  const Marking_box& marking_box,
-					  bool Bg_bitmap_dialog);
+					  const Marking_box& marking_box);
 
  signals:
 	void scheduleUpdate();
