@@ -1368,7 +1368,9 @@ void parse_player_info2(mission *pm)
 			support_rearm_list.clear();
 			stuff_loadout_list(support_rearm_list, ParseLookupType::MISSION_LOADOUT_WEAPON_LIST);
 
-			if (!pm->support_ships.rearm_pool_from_loadout) {
+			if (pm->support_ships.rearm_pool_from_loadout) {
+				WarningEx(LOCATION, "+Support Rearm Pool is set but +Support Rearm Pool From Loadout is also enabled! The explicit pool will be ignored.\n");
+			} else {
 				for (auto& wc : support_rearm_list) {
 					if (wc.index < 0 || wc.index >= weapon_info_size()) {
 						continue;
@@ -1385,6 +1387,8 @@ void parse_player_info2(mission *pm)
 						pm->support_ships.rearm_weapon_pool[nt][wc.index] = 0;
 					} else if (wc.count < 0) {
 						pm->support_ships.rearm_weapon_pool[nt][wc.index] = -1;
+					} else if (wc.count == 0) {
+						pm->support_ships.rearm_weapon_pool[nt][wc.index] = 0;
 					} else if (wc.count > 0 && pm->support_ships.rearm_weapon_pool[nt][wc.index] >= 0) {
 						pm->support_ships.rearm_weapon_pool[nt][wc.index] += wc.count;
 					}

@@ -16579,13 +16579,12 @@ int ship_do_rearm_frame( object *objp, float frametime )
 						if (objp == Player_obj)
 							joy_ff_play_reload_effect();
 
+						const int prev_ammo = swp->secondary_bank_ammo[i];
 						swp->secondary_bank_ammo[i] += reload_amount;
-						use_mission_rearm_pool_for_weapon(weapon_class, reload_amount, shipp->team);
 						if (swp->secondary_bank_ammo[i] > swp->secondary_bank_start_ammo[i]) {
 							swp->secondary_bank_ammo[i] = swp->secondary_bank_start_ammo[i];
 						}
-					} else {
-					}
+						use_mission_rearm_pool_for_weapon(weapon_class, swp->secondary_bank_ammo[i] - prev_ammo, shipp->team);
 				} else {
 					banks_full++;
 				}
@@ -16670,11 +16669,12 @@ int ship_do_rearm_frame( object *objp, float frametime )
 							if (sound_index.isValid())
 								snd_play_3d(gamesnd_get_game_sound(sound_index), &objp->pos, &View_position);
 
+							const int prev_primary_ammo = swp->primary_bank_ammo[i];
 							swp->primary_bank_ammo[i] += reload_amount;
-							use_mission_rearm_pool_for_weapon(weapon_class, reload_amount, shipp->team);
 							if (swp->primary_bank_ammo[i] > swp->primary_bank_start_ammo[i]) {
 								swp->primary_bank_ammo[i] = swp->primary_bank_start_ammo[i];
 							}
+							use_mission_rearm_pool_for_weapon(weapon_class, swp->primary_bank_ammo[i] - prev_primary_ammo, shipp->team);
 						}
 					} else {
 						primary_banks_full++;
