@@ -25,23 +25,12 @@ SCP_string Voice_script_instructions_string = "$name - name of the message\r\n"
                                               "$note - message notes\r\n\r\n"
                                               "Note that $persona and $sender will only appear for the Message section.";
 
-// TODO: The implementation here is a direct copy of what was in the original FRED code. It is not clear whether the
-// original implementation was intentionally designed to produce the same output as the incorrect implementations in the
-// two editors, or whether it was intended to be a correct normalization but was implemented incorrectly. If the former,
-// then this implementation should be changed to produce the same output as the original implementations in the two
-// editors, even if that output is mathematically incorrect. If the latter, then this implementation should be changed
-// to produce correct normalization into [-180, 180] using a step of 360 instead of 180. This should be evaluated and
-// decided upon before making any changes to this implementation.
-
-// NOTE: FRED and QtFRED Relative coordinates used this version exactly while QtFRED Object orient editor used the
-// correct 360 step version. This version was preserved here to avoid silent behavior changes to FRED during a routine 
-// cleanup pass. This should be fixed intentionally in a dedicated pass once the impact on both editors has been evaluated.
 float normalize_degrees(float deg)
 {
 	while (deg < -180.0f)
-		deg += 180.0f; // was 360.0f in the qtfred object orient version, but this is the original FRED implementation
+		deg += 360.0f;
 	while (deg > 180.0f)
-		deg -= 180.0f; // was 360.0f in the qtfred object orient version, but this is the original FRED implementation
+		deg -= 360.0f;
 	// check for negative zero
 	if (deg == -0.0f)
 		deg = 0.0f;
