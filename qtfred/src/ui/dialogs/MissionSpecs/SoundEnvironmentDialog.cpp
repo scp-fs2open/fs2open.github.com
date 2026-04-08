@@ -1,6 +1,7 @@
 #include "SoundEnvironmentDialog.h"
 
 #include "ui_SoundEnvironmentDialog.h"
+#include "ui/Theme.h"
 
 #include "cfile/cfile.h"
 #include "sound/audiostr.h"
@@ -21,6 +22,8 @@ SoundEnvironmentDialog::SoundEnvironmentDialog(QWidget* parent, EditorViewport* 
 {
 	ui->setupUi(this);
 
+	fso::fred::bindStandardIcon(ui->playButton, QStyle::SP_MediaPlay);
+
 	populatePresets();
 
 	applyPresetFields();
@@ -34,7 +37,7 @@ void SoundEnvironmentDialog::accept()
 	if (_model->apply()) {
 		QDialog::accept();
 	}
-	// else: validation failed, don’t close
+	// else: validation failed, donï¿½t close
 
 	closeWave();
 	disableEnvPreview();

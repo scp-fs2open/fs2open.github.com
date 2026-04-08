@@ -154,10 +154,6 @@
             <property name="text">
              <string/>
             </property>
-            <property name="icon">
-             <iconset resource="../resources/resources.qrc">
-              <normaloff>:/images/play.png</normaloff>:/images/play.png</iconset>
-            </property>
            </widget>
           </item>
          </layout>

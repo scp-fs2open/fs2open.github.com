@@ -1,5 +1,6 @@
 #include "CommandBriefingDialog.h"
 #include "ui_CommandBriefingDialog.h"
+#include "ui/Theme.h"
 #include "mission/util.h"
 #include <globalincs/globals.h>
 #include <globalincs/linklist.h>
@@ -59,6 +60,7 @@ void CommandBriefingDialog::closeEvent(QCloseEvent* e)
 
 void CommandBriefingDialog::initializeUi()
 {
+	fso::fred::bindStandardIcon(ui->actionTestSpeechFileButton, QStyle::SP_MediaPlay);
 	auto list = _model->getTeamList();
 
 	ui->actionChangeTeams->clear();

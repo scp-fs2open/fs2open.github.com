@@ -1,5 +1,6 @@
 #include "DebriefingDialog.h"
 #include "ui_DebriefingDialog.h"
+#include "ui/Theme.h"
 #include "mission/util.h"
 #include <globalincs/globals.h>
 #include <globalincs/linklist.h>
@@ -56,6 +57,7 @@ void DebriefingDialog::closeEvent(QCloseEvent* e)
 
 void DebriefingDialog::initializeUi()
 {
+	fso::fred::bindStandardIcon(ui->voiceFilePlayButton, QStyle::SP_MediaPlay);
 	util::SignalBlockers blockers(this);
 	
 	auto list = _model->getTeamList();

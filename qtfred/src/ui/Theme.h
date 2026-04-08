@@ -1,8 +1,14 @@
 #pragma once
 
+#include <QAbstractButton>
 #include <QApplication>
 #include <QColor>
+#include <QIcon>
+#include <QPainter>
 #include <QPalette>
+#include <QPixmap>
+#include <QPainterPath>
+#include <QStyle>
 
 namespace fso::fred {
 
@@ -127,6 +133,129 @@ inline void applyEditorTheme(bool darkMode) {
         qApp->setPalette(p);
         qApp->setStyleSheet(LIGHT_BUTTON_QSS);
     }
+}
+
+// Draw a palette-aware icon for the given StandardPixmap using QPainter.
+// Qt's Fusion standardIcon() returns pre-baked pixmaps that don't adapt to the
+// palette, so we draw the shapes ourselves using the current ButtonText color.
+inline QIcon makeThemedIcon(QStyle::StandardPixmap sp, const QColor& color, int size = 16)
+{
+	QPixmap pm(size, size);
+	pm.fill(Qt::transparent);
+	QPainter p(&pm);
+	p.setRenderHint(QPainter::Antialiasing);
+	p.setPen(Qt::NoPen);
+	p.setBrush(color);
+
+	const qreal m  = size * 0.15;
+	const QRectF r(m, m, size - 2 * m, size - 2 * m);
+	const QPointF c = r.center();
+
+	// Arrow geometry helpers — shaft+head arrow as a single filled polygon (no seam)
+	const qreal headLen  = r.width()  * 0.50; // how far the arrowhead extends along the axis
+	const qreal shaftW   = r.width()  * 0.38; // width of the rectangular shaft (cross-axis)
+	const qreal shaftOff = (r.width() - shaftW) / 2.0; // offset from edge to shaft side
+
+	switch (sp) {
+	case QStyle::SP_ArrowUp: {
+		const qreal headY = r.top() + headLen;
+		QPainterPath path;
+		path.moveTo(c.x(),               r.top());   // tip
+		path.lineTo(r.right(),           headY);     // head right corner
+		path.lineTo(r.left() + shaftOff + shaftW, headY);     // shoulder right
+		path.lineTo(r.left() + shaftOff + shaftW, r.bottom()); // shaft bottom right
+		path.lineTo(r.left() + shaftOff,           r.bottom()); // shaft bottom left
+		path.lineTo(r.left() + shaftOff,           headY);     // shoulder left
+		path.lineTo(r.left(),            headY);     // head left corner
+		path.closeSubpath();
+		p.drawPath(path);
+		break;
+	}
+	case QStyle::SP_ArrowDown: {
+		const qreal headY = r.bottom() - headLen;
+		QPainterPath path;
+		path.moveTo(r.left() + shaftOff,           r.top());   // shaft top left
+		path.lineTo(r.left() + shaftOff + shaftW, r.top());   // shaft top right
+		path.lineTo(r.left() + shaftOff + shaftW, headY);     // shoulder right
+		path.lineTo(r.right(),           headY);     // head right corner
+		path.lineTo(c.x(),               r.bottom()); // tip
+		path.lineTo(r.left(),            headY);     // head left corner
+		path.lineTo(r.left() + shaftOff, headY);     // shoulder left
+		path.closeSubpath();
+		p.drawPath(path);
+		break;
+	}
+	case QStyle::SP_ArrowLeft: {
+		const qreal headX = r.left() + headLen;
+		QPainterPath path;
+		path.moveTo(r.left(),  c.y());               // tip
+		path.lineTo(headX,     r.top());             // head top corner
+		path.lineTo(headX,     r.top() + shaftOff); // shoulder top
+		path.lineTo(r.right(), r.top() + shaftOff); // shaft right top
+		path.lineTo(r.right(), r.top() + shaftOff + shaftW); // shaft right bottom
+		path.lineTo(headX,     r.top() + shaftOff + shaftW); // shoulder bottom
+		path.lineTo(headX,     r.bottom());          // head bottom corner
+		path.closeSubpath();
+		p.drawPath(path);
+		break;
+	}
+	case QStyle::SP_ArrowRight: {
+		const qreal headX = r.right() - headLen;
+		QPainterPath path;
+		path.moveTo(r.left(), r.top() + shaftOff);           // shaft left top
+		path.lineTo(headX,    r.top() + shaftOff);           // shoulder top
+		path.lineTo(headX,    r.top());                      // head top corner
+		path.lineTo(r.right(), c.y());                       // tip
+		path.lineTo(headX,    r.bottom());                   // head bottom corner
+		path.lineTo(headX,    r.top() + shaftOff + shaftW); // shoulder bottom
+		path.lineTo(r.left(), r.top() + shaftOff + shaftW); // shaft left bottom
+		path.closeSubpath();
+		p.drawPath(path);
+		break;
+	}
+	case QStyle::SP_MediaPlay:
+		p.drawPolygon(QPolygonF() << QPointF(r.left(), r.top()) << QPointF(r.right(), c.y()) << QPointF(r.left(), r.bottom()));
+		break;
+	case QStyle::SP_MediaStop:
+		p.drawRect(r);
+		break;
+	case QStyle::SP_MediaSkipForward: {
+		// triangle pointing right + vertical bar on the right
+		const qreal barW = r.width() * 0.18;
+		const qreal gap  = r.width() * 0.05;
+		const qreal triR = r.right() - barW - gap;
+		p.drawPolygon(QPolygonF() << QPointF(r.left(), r.top()) << QPointF(triR, c.y()) << QPointF(r.left(), r.bottom()));
+		p.drawRect(QRectF(r.right() - barW, r.top(), barW, r.height()));
+		break;
+	}
+	case QStyle::SP_MediaSkipBackward: {
+		// vertical bar on the left + triangle pointing left
+		const qreal barW = r.width() * 0.18;
+		const qreal gap  = r.width() * 0.05;
+		const qreal triL = r.left() + barW + gap;
+		p.drawRect(QRectF(r.left(), r.top(), barW, r.height()));
+		p.drawPolygon(QPolygonF() << QPointF(r.right(), r.top()) << QPointF(triL, c.y()) << QPointF(r.right(), r.bottom()));
+		break;
+	}
+	default:
+		// Fall back to the style's own icon for anything we haven't drawn
+		return qApp->style()->standardIcon(sp);
+	}
+
+	return QIcon(pm);
+}
+
+// Bind a palette-aware icon to a button and refresh it when the theme changes.
+inline void bindStandardIcon(QAbstractButton* btn, QStyle::StandardPixmap sp)
+{
+	auto refresh = [btn, sp]() {
+		const QColor color = qApp->palette().color(QPalette::ButtonText);
+		btn->setIcon(makeThemedIcon(sp, color));
+	};
+	refresh();
+	QObject::connect(qApp, &QApplication::paletteChanged, btn, [refresh](const QPalette&) {
+		refresh();
+	});
 }
 
 } // namespace fso::fred

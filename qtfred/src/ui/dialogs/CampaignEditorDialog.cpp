@@ -1,5 +1,6 @@
 #include "CampaignEditorDialog.h"
 #include "ui_CampaignEditorDialog.h"
+#include "ui/Theme.h"
 
 #include <globalincs/globals.h>
 #include "ui/widgets/sexp_tree.h"
@@ -176,6 +177,10 @@ void CampaignEditorDialog::closeEvent(QCloseEvent* e)
 void CampaignEditorDialog::initializeUi()
 {
 	util::SignalBlockers blocker(this);
+
+	fso::fred::bindStandardIcon(ui->moveBranchUpButton,   QStyle::SP_ArrowUp);
+	fso::fred::bindStandardIcon(ui->moveBranchDownButton, QStyle::SP_ArrowDown);
+	fso::fred::bindStandardIcon(ui->testVoiceButton,      QStyle::SP_MediaPlay);
 
 	// setup the types combo box
 	auto types = _model->getCampaignTypes();

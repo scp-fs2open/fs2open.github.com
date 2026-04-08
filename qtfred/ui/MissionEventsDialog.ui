@@ -163,11 +163,6 @@
          <property name="text">
           <string/>
          </property>
-         <property name="icon">
-          <iconset>
-           <selectedon>:/images/arrow_up.png</selectedon>
-          </iconset>
-         </property>
         </widget>
        </item>
        <item row="13" column="0">
@@ -323,10 +318,6 @@
                <property name="text">
                 <string/>
                </property>
-               <property name="icon">
-                <iconset resource="../resources/resources.qrc">
-                 <normaloff>:/images/play.png</normaloff>:/images/play.png</iconset>
-               </property>
               </widget>
              </item>
              <item row="3" column="2" colspan="2">
@@ -465,11 +456,6 @@
               <property name="text">
                <string/>
               </property>
-              <property name="icon">
-               <iconset>
-                <selectedon>:/images/arrow_up.png</selectedon>
-               </iconset>
-              </property>
              </widget>
             </item>
             <item>
@@ -482,11 +468,6 @@
               </property>
               <property name="text">
                <string/>
-              </property>
-              <property name="icon">
-               <iconset>
-                <selectedon>:/images/arrow_down.png</selectedon>
-               </iconset>
               </property>
              </widget>
             </item>
@@ -582,11 +563,6 @@
          </property>
          <property name="text">
           <string/>
-         </property>
-         <property name="icon">
-          <iconset>
-           <selectedon>:/images/arrow_down.png</selectedon>
-          </iconset>
          </property>
         </widget>
        </item>

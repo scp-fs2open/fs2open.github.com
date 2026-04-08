@@ -1,5 +1,6 @@
 #include "MissionEventsDialog.h"
 #include "ui_MissionEventsDialog.h"
+#include "ui/Theme.h"
 #include "ui/util/SignalBlockers.h"
 #include "ui/dialogs/EventEditor/HeadAnimationPickerDialog.h"
 
@@ -23,6 +24,12 @@ MissionEventsDialog::MissionEventsDialog(QWidget* parent, EditorViewport* viewpo
 	  ui(new Ui::MissionEventsDialog()), _viewport(viewport)
 {
 	ui->setupUi(this);
+
+	fso::fred::bindStandardIcon(ui->eventUpBtn,   QStyle::SP_ArrowUp);
+	fso::fred::bindStandardIcon(ui->eventDownBtn, QStyle::SP_ArrowDown);
+	fso::fred::bindStandardIcon(ui->msgUpBtn,     QStyle::SP_ArrowUp);
+	fso::fred::bindStandardIcon(ui->msgDownBtn,   QStyle::SP_ArrowDown);
+	fso::fred::bindStandardIcon(ui->btnWavePlay,  QStyle::SP_MediaPlay);
 
 	ui->editDirectiveText->setMaxLength(NAME_LENGTH - 1);
 	ui->editDirectiveKeypressText->setMaxLength(NAME_LENGTH - 1);
