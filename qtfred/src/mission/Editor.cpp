@@ -664,7 +664,6 @@ void Editor::clearMission(bool fast_reload) {
 	// however, FRED expects to parse comments from the raw buffer, so we need a nominal string for that
 	allocate_parse_text(1);
 
-	missionLoaded("");
 }
 
 void Editor::initialSetup() {
@@ -893,6 +892,7 @@ void Editor::createNewMission() {
 	stars_post_level_init();
 	undoCount = undoAvailable = 0;
 	autosave("nothing");
+	missionLoaded("");
 }
 void Editor::hideMarkedObjects() {
 	object* ptr;
