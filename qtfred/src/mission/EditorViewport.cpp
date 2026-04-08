@@ -1130,10 +1130,13 @@ int EditorViewport::create_object_on_grid(int x, int y, int waypoint_instance, b
 	if (create_prop) {
 		if (cur_prop_index >= 0 && cur_prop_index < prop_info_size()) {
 			prop_info* pip = &Prop_info[cur_prop_index];
-			if (VALID_FNAME(pip->pof_file)) {
+			if (pip->model_num >= 0) {
+				fallbackDist = model_get_radius(pip->model_num) * 1.5f;
+			} else if (VALID_FNAME(pip->pof_file)) {
 				int modelNum = model_load(pip->pof_file.c_str());
 				if (modelNum >= 0) {
 					fallbackDist = model_get_radius(modelNum) * 1.5f;
+					model_unload(modelNum);
 				}
 			}
 		}

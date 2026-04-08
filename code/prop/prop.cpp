@@ -473,7 +473,9 @@ int prop_create(const matrix* orient, const vec3d* pos, int prop_type, const cha
 		Error(LOCATION, "Cannot create prop %s; pof file is not valid", pip->name.c_str());
 		return -1;
 	}
-	pip->model_num = model_load(pip->pof_file.c_str());
+	if (pip->model_num == -1) {
+		pip->model_num = model_load(pip->pof_file.c_str());
+	}
 
 	polymodel* pm = model_get(pip->model_num);
 
