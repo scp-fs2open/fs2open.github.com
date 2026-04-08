@@ -38,6 +38,28 @@ QPushButton:disabled {
     color: #a0a0a0;
     border-color: #c0c0c0;
 }
+QToolButton {
+    background-color: transparent;
+    border: 1px solid transparent;
+    border-radius: 2px;
+    padding: 2px;
+}
+QToolButton:hover {
+    background-color: #e5f1fb;
+    border-color: #0078d7;
+}
+QToolButton:pressed,
+QToolButton:checked {
+    background-color: #cce4f7;
+    border-color: #005499;
+}
+QToolButton:checked:hover {
+    background-color: #d8ecf9;
+    border-color: #0078d7;
+}
+QToolButton::menu-indicator {
+    image: none;
+}
 )";
 
 const char* const DARK_BUTTON_QSS = R"(
@@ -104,6 +126,13 @@ inline void applyEditorTheme(bool darkMode) {
         p.setColor(QPalette::Link,            QColor(42, 130, 218));
         p.setColor(QPalette::Highlight,       QColor(42, 130, 218));
         p.setColor(QPalette::HighlightedText, Qt::black);
+        // Mid-tone roles — Fusion uses these for scroll bar grooves, frame bevels, spin boxes.
+        // Without them the roles inherit from the system (light-mode) palette, causing
+        // light-gray artifacts on dark backgrounds.
+        p.setColor(QPalette::Mid,       QColor( 45,  45,  45));
+        p.setColor(QPalette::Midlight,  QColor( 65,  65,  65));
+        p.setColor(QPalette::Dark,      QColor( 18,  18,  18));
+        p.setColor(QPalette::Shadow,    QColor(  5,   5,   5));
         // Disabled roles — must set WindowText and Light or Fusion renders
         // disabled text with a bright shadow, making it look blurry
         p.setColor(QPalette::Disabled, QPalette::WindowText, QColor(127, 127, 127));
