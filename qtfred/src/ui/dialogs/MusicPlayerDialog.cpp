@@ -1,10 +1,10 @@
 #include <QMessageBox>
-#include "ui/Theme.h"
 #include <QCloseEvent>
 #include <ui/dialogs/TableViewerDialog.h>
 #include "MusicPlayerDialog.h"
 #include "ui/util/SignalBlockers.h"
 #include "ui_MusicPlayerDialog.h"
+#include "ui/Theme.h"
 
 namespace fso::fred::dialogs {
 

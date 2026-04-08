@@ -485,6 +485,8 @@ CampaignGraphStyle CampaignGraphStyle::makeStyle(bool dark)
 		s.endSinkFill       = QColor( 55,  22,  22);
 		s.endSinkBorder     = QColor(180,  60,  60);
 		s.endSinkText       = QColor(220, 100, 100);
+	} else {
+		// Light mode: struct defaults apply (white/light-gray nodes, dark borders and text).
 	}
 	// Port colors (inbound/standard/loop/fork) are vivid enough to work in both modes unchanged.
 	return s;
