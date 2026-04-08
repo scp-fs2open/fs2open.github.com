@@ -16585,6 +16585,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 							swp->secondary_bank_ammo[i] = swp->secondary_bank_start_ammo[i];
 						}
 						use_mission_rearm_pool_for_weapon(weapon_class, swp->secondary_bank_ammo[i] - prev_ammo, shipp->team);
+					}
 				} else {
 					banks_full++;
 				}
