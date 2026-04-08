@@ -258,7 +258,7 @@ inline QIcon makeThemedIcon(QStyle::StandardPixmap sp, const QColor& color, int 
 		return qApp->style()->standardIcon(sp);
 	}
 
-	return QIcon(pm);
+	return {pm};
 }
 
 // Bind a palette-aware icon to a button and refresh it when the theme changes.
