@@ -56,12 +56,17 @@ bool WaypointPathGeneratorDialogModel::apply()
 	}
 
 	int totalPoints = _numPoints * _loops;
+	if (totalPoints <= 0) {
+		showErrorDialog("Total waypoints value is invalid.");
+		return false;
+	}
 
 	// Generate positions
 	SCP_vector<vec3d> positions;
 	positions.reserve(totalPoints);
 
 	for (int i = 0; i < totalPoints; ++i) {
+		// _numPoints >= 3 is guaranteed by validateData(), so no division by zero
 		float angle = (2.0f * PI * i) / static_cast<float>(_numPoints);
 
 		float driftOffset = 0.0f;
@@ -95,9 +100,11 @@ bool WaypointPathGeneratorDialogModel::apply()
 		positions.push_back(pos);
 	}
 
-	// Create the first waypoint, this creates a new list with an auto-generated name
+	// Create the first waypoint, this creates a new list with an auto-generated name.
+	// Capture the index before the call since waypoint_add always appends.
+	int listIndex = static_cast<int>(Waypoint_lists.size());
 	waypoint_add(positions.data(), -1);
-	int listIndex = static_cast<int>(Waypoint_lists.size()) - 1;
+	Assertion(listIndex < static_cast<int>(Waypoint_lists.size()), "waypoint_add() failed to append a new waypoint list!");
 
 	// Rename the list to the user specified name
 	Waypoint_lists[listIndex].set_name(_pathName.c_str());
@@ -202,6 +209,7 @@ void WaypointPathGeneratorDialogModel::showErrorDialog(const SCP_string& message
 	}
 	_bypass_errors = true;
 	_viewport->dialogProvider->showButtonDialog(DialogType::Error, "Error", message, {DialogButton::Ok});
+	_bypass_errors = false;
 }
 
 // --- Getters/Setters ---
