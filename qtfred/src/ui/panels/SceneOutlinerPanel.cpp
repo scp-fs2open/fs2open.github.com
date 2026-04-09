@@ -55,9 +55,47 @@ SceneOutlinerPanel::~SceneOutlinerPanel() = default;
 // Tree construction
 // ---------------------------------------------------------------------------
 
+void SceneOutlinerPanel::rememberExpansionState()
+{
+	for (int li = 0; li < _tree->topLevelItemCount(); li++) {
+		auto* layerItem = _tree->topLevelItem(li);
+		const auto layerName = layerItem->data(0, LayerNameRole).toString();
+		if (layerName.isEmpty()) continue;
+
+		_expansionState[QString("L|%1").arg(layerName)] = layerItem->isExpanded();
+
+		for (int ci = 0; ci < layerItem->childCount(); ci++) {
+			auto* catItem = layerItem->child(ci);
+			const auto catName = catItem->text(0);
+			_expansionState[QString("C|%1|%2").arg(layerName, catName)] = catItem->isExpanded();
+
+			for (int oi = 0; oi < catItem->childCount(); oi++) {
+				auto* objItem = catItem->child(oi);
+				const auto varWing = objItem->data(0, WingIndexRole);
+				if (!varWing.isNull()) {
+					_expansionState[QString("W|%1|%2").arg(layerName).arg(varWing.toInt())] = objItem->isExpanded();
+					continue;
+				}
+
+				const auto varPath = objItem->data(0, WptListIndexRole);
+				if (!varPath.isNull()) {
+					_expansionState[QString("P|%1|%2").arg(layerName).arg(varPath.toInt())] = objItem->isExpanded();
+				}
+			}
+		}
+	}
+}
+
+bool SceneOutlinerPanel::expandedStateOrDefault(const QString& key, bool defaultExpanded) const
+{
+	const auto it = _expansionState.constFind(key);
+	return it == _expansionState.constEnd() ? defaultExpanded : it.value();
+}
+
 void SceneOutlinerPanel::rebuildTree()
 {
 	QSignalBlocker treeBlocker(_tree);
+	rememberExpansionState();
 	_tree->clear();
 
 	const auto& layers = _model->getTree();
@@ -84,14 +122,16 @@ void SceneOutlinerPanel::rebuildTree()
 		layerItem->setData(0, LayerNameRole, layer.name);
 		layerItem->setFlags(layerItem->flags() | Qt::ItemIsUserCheckable);
 		layerItem->setCheckState(0, layer.visible ? Qt::Checked : Qt::Unchecked);
-		layerItem->setExpanded(true);
+		const auto layerKey = QString("L|%1").arg(layer.name);
+		layerItem->setExpanded(expandedStateOrDefault(layerKey, true));
 
 		for (const auto& cat : layer.categories) {
 			auto* catItem = new QTreeWidgetItem(layerItem);
 			catItem->setText(0, cat.name);
 			// Category rows are not selectable — they're just headers
 			catItem->setFlags(Qt::ItemIsEnabled);
-			catItem->setExpanded(true);
+			const auto catKey = QString("C|%1|%2").arg(layer.name, cat.name);
+			catItem->setExpanded(expandedStateOrDefault(catKey, true));
 
 			for (const auto& obj : cat.items) {
 				if (obj.wingIndex >= 0) {
@@ -99,7 +139,8 @@ void SceneOutlinerPanel::rebuildTree()
 					auto* wingItem = new QTreeWidgetItem(catItem);
 					wingItem->setText(0, obj.displayName);
 					wingItem->setData(0, WingIndexRole, obj.wingIndex);
-					wingItem->setExpanded(true);
+					const auto wingKey = QString("W|%1|%2").arg(layer.name).arg(obj.wingIndex);
+					wingItem->setExpanded(expandedStateOrDefault(wingKey, false));
 
 					for (const auto& member : obj.children) {
 						auto* memberItem = new QTreeWidgetItem(wingItem);
@@ -112,7 +153,8 @@ void SceneOutlinerPanel::rebuildTree()
 					auto* pathItem = new QTreeWidgetItem(catItem);
 					pathItem->setText(0, obj.displayName);
 					pathItem->setData(0, WptListIndexRole, obj.waypointListIndex);
-					pathItem->setExpanded(true);
+					const auto pathKey = QString("P|%1|%2").arg(layer.name).arg(obj.waypointListIndex);
+					pathItem->setExpanded(expandedStateOrDefault(pathKey, false));
 
 					for (const auto& wpt : obj.children) {
 						auto* wptItem = new QTreeWidgetItem(pathItem);

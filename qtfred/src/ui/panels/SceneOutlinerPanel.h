@@ -2,6 +2,7 @@
 
 #include <QCheckBox>
 #include <QDockWidget>
+#include <QHash>
 #include <QLineEdit>
 #include <QPushButton>
 #include <QSet>
@@ -40,6 +41,8 @@ public:
 
 private:
 	void rebuildTree();
+	void rememberExpansionState();
+	bool expandedStateOrDefault(const QString& key, bool defaultExpanded) const;
 	void syncSelection();
 	void syncLayerVisibility();
 	void applyFilter(const QString& filter);
@@ -55,6 +58,7 @@ private:
 	QPushButton* _selectAllButton = nullptr;
 	QPushButton* _clearButton = nullptr;
 	QPushButton* _invertButton = nullptr;
+	QHash<QString, bool> _expansionState;
 
 	// Item data roles
 	enum ItemRole {
