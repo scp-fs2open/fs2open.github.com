@@ -132,6 +132,9 @@ void PSNET_TOP_LAYER_PROCESS();
 // initialize psnet to use the specified port
 void psnet_init(uint16_t default_port = 0);
 
+// do a pre-init to set up socket initially, then close out
+void psnet_pre_init(uint16_t default_port = 0);
+
 // is psnet initted properly
 bool psnet_is_active();
 

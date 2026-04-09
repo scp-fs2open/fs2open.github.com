@@ -2184,8 +2184,8 @@ void game_init()
 	techroom_intel_init();			// parse species.tbl, load intel info  
 	hud_positions_init();		//Setup hud positions
 	
-	// initialize psnet
-	psnet_init(Multi_options_g.port);						// initialize the networking code
+	// pre-initialize psnet
+	psnet_pre_init(Multi_options_g.port);
 
 	asteroid_init();
 	mission_brief_common_init();	// Mark all the briefing structures as empty.
