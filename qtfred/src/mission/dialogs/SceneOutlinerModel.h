@@ -57,6 +57,7 @@ public:
 	void selectObjectFromOutliner(int objNum);
 	void multiSelectFromOutliner(const QVector<int>& objNums);
 	void selectWingFromOutliner(int wingIndex);
+	QVector<int> getWingMemberObjects(int wingIndex) const;
 
 	void setNameFilter(const QString& filter);
 	const QString& getNameFilter() const { return _nameFilter; }

@@ -66,24 +66,11 @@ void SceneOutlinerModel::buildTree()
 		}
 		if (!ships.items.isEmpty()) layer.categories.push_back(ships);
 
-		// --- Wings (use layer of first valid member ship) ---
+		// --- Wings (group members by their own layer; a wing may appear in multiple layers) ---
 		OutlinerCategory wings;
 		wings.name = "Wings";
 		for (int wi = 0; wi < MAX_WINGS; wi++) {
 			if (!Wings[wi].wave_count) continue;
-
-			// Find this wing's layer from its first valid member
-			SCP_string wingLayer = "Default";
-			for (int si = 0; si < Wings[wi].wave_count; si++) {
-				int shipIdx = Wings[wi].ship_index[si];
-				if (shipIdx < 0) continue;
-				int objNum = Ships[shipIdx].objnum;
-				if (objNum >= 0 && Objects[objNum].type != OBJ_NONE) {
-					wingLayer = _viewport->getObjectLayerName(objNum);
-					break;
-				}
-			}
-			if (wingLayer != layerName) continue;
 
 			OutlinerObject wingObj;
 			wingObj.wingIndex = wi;
@@ -95,6 +82,7 @@ void SceneOutlinerModel::buildTree()
 				if (shipIdx < 0) continue;
 				int objNum = Ships[shipIdx].objnum;
 				if (objNum < 0 || Objects[objNum].type == OBJ_NONE) continue;
+				if (_viewport->getObjectLayerName(objNum) != layerName) continue;
 				int memberTeam = Ships[shipIdx].team;
 				if (!_filterIff.isEmpty() && memberTeam >= 0 && memberTeam < _filterIff.size() && !_filterIff[memberTeam]) continue;
 
@@ -272,7 +260,18 @@ void SceneOutlinerModel::multiSelectFromOutliner(const QVector<int>& objNums)
 
 void SceneOutlinerModel::selectWingFromOutliner(int wingIndex)
 {
+	const auto objNums = getWingMemberObjects(wingIndex);
+	if (!objNums.isEmpty())
+		multiSelectFromOutliner(objNums);
+}
+
+QVector<int> SceneOutlinerModel::getWingMemberObjects(int wingIndex) const
+{
 	QVector<int> objNums;
+	if (wingIndex < 0 || wingIndex >= MAX_WINGS) {
+		return objNums;
+	}
+
 	for (int si = 0; si < Wings[wingIndex].wave_count; si++) {
 		int shipIdx = Wings[wingIndex].ship_index[si];
 		if (shipIdx < 0) continue;
@@ -280,8 +279,7 @@ void SceneOutlinerModel::selectWingFromOutliner(int wingIndex)
 		if (objNum >= 0 && Objects[objNum].type != OBJ_NONE)
 			objNums.push_back(objNum);
 	}
-	if (!objNums.isEmpty())
-		multiSelectFromOutliner(objNums);
+	return objNums;
 }
 
 // ---------------------------------------------------------------------------

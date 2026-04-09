@@ -341,7 +341,7 @@ void SceneOutlinerPanel::onItemSelectionChanged()
 	if (_model->isUpdatingFromOutliner()) return;
 
 	QVector<int> selectedObjNums;
-	int primaryWingIndex = -1;
+	QVector<int> selectedWings;
 
 	for (auto* item : _tree->selectedItems()) {
 		auto varObjNum = item->data(0, ObjNumRole);
@@ -350,8 +350,11 @@ void SceneOutlinerPanel::onItemSelectionChanged()
 		} else {
 			// Wing header selected
 			auto varWing = item->data(0, WingIndexRole);
-			if (!varWing.isNull() && primaryWingIndex == -1) {
-				primaryWingIndex = varWing.toInt();
+			if (!varWing.isNull()) {
+				const auto wingIndex = varWing.toInt();
+				if (!selectedWings.contains(wingIndex)) {
+					selectedWings.push_back(wingIndex);
+				}
 			}
 			// Waypoint path header: select all children
 			auto varPath = item->data(0, WptListIndexRole);
@@ -364,10 +367,14 @@ void SceneOutlinerPanel::onItemSelectionChanged()
 		}
 	}
 
-	if (!selectedObjNums.isEmpty()) {
+	if (!selectedWings.isEmpty()) {
+		for (auto wingIndex : selectedWings) {
+			const auto wingMembers = _model->getWingMemberObjects(wingIndex);
+			selectedObjNums += wingMembers;
+		}
 		_model->multiSelectFromOutliner(selectedObjNums);
-	} else if (primaryWingIndex >= 0) {
-		_model->selectWingFromOutliner(primaryWingIndex);
+	} else if (!selectedObjNums.isEmpty()) {
+		_model->multiSelectFromOutliner(selectedObjNums);
 	}
 }
 
