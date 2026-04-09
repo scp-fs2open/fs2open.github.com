@@ -47,8 +47,6 @@ private slots:
 	void on_voiceFileLineEdit_textChanged(const QString& string);
 	void on_voiceFileBrowseButton_clicked();
 	void on_voiceFilePlayButton_clicked();
-	void on_formulaTreeView_nodeChanged(int newTree);
-
 	void on_successMusicComboBox_currentIndexChanged(int index);
 	void on_averageMusicComboBox_currentIndexChanged(int index);
 	void on_failureMusicComboBox_currentIndexChanged(int index);
