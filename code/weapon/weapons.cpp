@@ -6259,9 +6259,12 @@ void weapon_process_pre( object *obj, float  frame_time)
 					if (!matched) continue;
 				}
 
-				// Set the triggering ship as the homing object so child spawns with
-				// 'inherit parent target' will home on it
+				// Set the triggering ship as the homing object and target so child
+				// spawns with 'inherit parent target' will home on it.  Both fields
+				// must be set: homing_object is used by weapon_has_homing_object(),
+				// and target_num is what weapon_set_tracking_info() actually receives.
 				wp->homing_object = check_obj;
+				wp->target_num    = OBJ_INDEX(check_obj);
 
 				auto mineParamList = scripting::hook_param_list(
 					scripting::hook_param("Mine",     'o', obj),
