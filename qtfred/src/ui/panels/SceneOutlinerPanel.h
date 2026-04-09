@@ -41,6 +41,7 @@ public:
 
 private:
 	void rebuildTree();
+	void updateFloatingMargins(bool floating);
 	void rememberExpansionState();
 	bool expandedStateOrDefault(const QString& key, bool defaultExpanded) const;
 	void syncSelection();

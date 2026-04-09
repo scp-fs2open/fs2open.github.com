@@ -6,6 +6,7 @@
 #include <mission/dialogs/SceneOutlinerModel.h>
 #include <ui/FredView.h>
 
+#include <QLayout>
 #include <QMenu>
 
 namespace fso::fred {
@@ -45,6 +46,8 @@ SceneOutlinerPanel::SceneOutlinerPanel(FredView* fredView, EditorViewport* viewp
 	connect(_tree, &QTreeWidget::itemSelectionChanged, this, &SceneOutlinerPanel::onItemSelectionChanged);
 	connect(_tree, &QTreeWidget::customContextMenuRequested,
 	        this, &SceneOutlinerPanel::onCustomContextMenuRequested);
+	connect(this, &QDockWidget::topLevelChanged, this, &SceneOutlinerPanel::updateFloatingMargins);
+	updateFloatingMargins(isFloating());
 	// Do NOT call rebuildTree() here — mission data is not initialized at construction time.
 	// The tree is populated when missionLoaded fires, propagating via treeStructureChanged.
 }
@@ -54,6 +57,18 @@ SceneOutlinerPanel::~SceneOutlinerPanel() = default;
 // ---------------------------------------------------------------------------
 // Tree construction
 // ---------------------------------------------------------------------------
+
+void SceneOutlinerPanel::updateFloatingMargins(bool floating)
+{
+	auto* content = widget();
+	if (content == nullptr || content->layout() == nullptr) {
+		return;
+	}
+
+	// Give a little breathing room around the panel contents when floating.
+	// Keep docked layout tight.
+	content->layout()->setContentsMargins(floating ? 8 : 0, floating ? 8 : 0, floating ? 8 : 0, floating ? 8 : 0);
+}
 
 void SceneOutlinerPanel::rememberExpansionState()
 {
