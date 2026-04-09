@@ -133,6 +133,10 @@ MissionEventsDialog::MissionEventsDialog(QWidget* parent, EditorViewport* viewpo
 			sexp_tree_view::applyVisuals(it);
 		});
 
+	// Load data now that all signals are connected, so tree-building signals
+	// (treeCleared, subtreeAdded, annotationApplied) are received by the dialog.
+	_model->initializeData();
+
 	initMessageWidgets();
 
 	initEventWidgets();

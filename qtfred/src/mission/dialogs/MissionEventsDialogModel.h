@@ -118,6 +118,8 @@ class MissionEventsDialogModel : public AbstractDialogModel {
 	const SCP_vector<MMessage>& getMessageList() const;
 	static bool getMissionIsMultiTeam();
 
+	void initializeData();
+
 	void setModified();
 
  signals:
@@ -131,7 +133,6 @@ class MissionEventsDialogModel : public AbstractDialogModel {
 	void annotationApplied(int node_index, const SCP_string& note, int r, int g, int b, bool has_color);
 
   private:
-	void initializeData();
 
 	void initializeEvents();
 	void initializeEventAnnotations();

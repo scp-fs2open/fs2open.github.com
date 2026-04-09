@@ -31,7 +31,6 @@ const SCP_vector<SCP_string>& MissionEventsDialogModel::getExtraHeadAnis()
 MissionEventsDialogModel::MissionEventsDialogModel(QObject* parent, fso::fred::EditorViewport* viewport, SexpTreeModel& tree_model)
 	: AbstractDialogModel(parent, viewport), m_tree_model(tree_model)
 {
-	initializeData();
 }
 
 bool MissionEventsDialogModel::apply()
