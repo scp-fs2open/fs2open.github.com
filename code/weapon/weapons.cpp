@@ -1445,6 +1445,26 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			}
 		}
 
+		if (optional_string("+Chase Duration:")) {
+			stuff_float(&wip->mine_chase_duration);
+			if (wip->mine_chase_duration < 0.0f) {
+				wip->mine_chase_duration = 0.0f;
+				Warning(LOCATION, "Mine weapon '%s': +Chase Duration cannot be negative. Setting to 0 (immediate detonation).\n", wip->name);
+			}
+		}
+
+		if (optional_string("+Detonates on Chase Timeout:")) {
+			stuff_boolean(&wip->mine_detonates_on_chase_timeout);
+		}
+
+		if (optional_string("+Chase Cooldown:")) {
+			stuff_float(&wip->mine_chase_cooldown);
+			if (wip->mine_chase_cooldown < 0.0f) {
+				wip->mine_chase_cooldown = 0.0f;
+				Warning(LOCATION, "Mine weapon '%s': +Chase Cooldown cannot be negative. Setting to 0.\n", wip->name);
+			}
+		}
+
 		// Warn if targetable range makes sensors range unreachable
 		bool targetable_infinite = (wip->mine_targetable_range < 0.0f);
 		bool sensors_infinite    = (wip->mine_sensors_range < 0.0f);
@@ -6240,10 +6260,36 @@ void weapon_process_pre( object *obj, float  frame_time)
 		}
 	}
 
+	// Chase timeout: check every frame whether an active chase has expired
+	if (wip->wi_flags[Weapon::Info_Flags::Mine] && wp->mine_chase_expires.isFinite()) {
+		if (timestamp_elapsed(wp->mine_chase_expires)) {
+			if (wip->mine_detonates_on_chase_timeout) {
+				weapon_detonate(obj);
+				return;
+			} else {
+				// Give up: return to stationary at current position
+				vm_vec_zero(&obj->phys_info.vel);
+				vm_vec_zero(&obj->phys_info.desired_vel);
+				obj->phys_info.speed = 0.0f;
+				wp->weapon_max_vel = 0.0f;
+				wp->homing_object = &obj_used_list;
+				wp->target_num    = -1;
+				wp->target_sig    = -1;
+				wp->mine_chase_expires = TIMESTAMP::invalid();
+				if (wip->mine_chase_cooldown > 0.0f)
+					wp->mine_chase_cooldown_expires = _timestamp(fl2i(wip->mine_chase_cooldown * 1000.0f));
+			}
+		}
+	}
+
 	// Proximity detonation: scan nearby ships and detonate if a qualifying one is within range
 	if (wip->proximity_radius > 0.0f) {
+		// Skip if mine is actively chasing or sitting in post-chase cooldown
+		bool chasing      = wp->mine_chase_expires.isFinite() && !timestamp_elapsed(wp->mine_chase_expires);
+		bool cooling_down = wp->mine_chase_cooldown_expires.isFinite() && !timestamp_elapsed(wp->mine_chase_cooldown_expires);
+
 		// Check arming time: mine will not detonate until this many seconds after creation
-		bool armed = f2fl(Missiontime - wp->creation_time) >= wip->mine_arm_time;
+		bool armed = !chasing && !cooling_down && f2fl(Missiontime - wp->creation_time) >= wip->mine_arm_time;
 
 		if (armed) {
 			float base_prox = wip->proximity_radius;
@@ -6322,26 +6368,34 @@ void weapon_process_pre( object *obj, float  frame_time)
 				if (wip->mine_detonate_chance < 1.0f && frand() >= wip->mine_detonate_chance)
 					continue;
 
-				// Set the triggering ship as the homing object and target so child
-				// spawns with 'inherit parent target' will home on it.  Both fields
+				// Set the triggering ship as the homing object and target.  Both fields
 				// must be set: homing_object is used by weapon_has_homing_object(),
 				// and target_num is what weapon_set_tracking_info() actually receives.
 				wp->homing_object = check_obj;
 				wp->target_num    = OBJ_INDEX(check_obj);
 
-				auto mineParamList = scripting::hook_param_list(
-					scripting::hook_param("Mine",     'o', obj),
-					scripting::hook_param("Ship",     'o', check_obj),
-					scripting::hook_param("Position", 'o', scripting::api::l_Vector.Set(obj->pos))
-				);
-				scripting::hooks::MineDetonatedConditions mineConds{ wp, &Ships[check_obj->instance] };
-				if (scripting::hooks::OnMineDetonated->isActive()) {
-					bool overridden = scripting::hooks::OnMineDetonated->isOverride(mineConds, mineParamList);
-					scripting::hooks::OnMineDetonated->run(mineConds, mineParamList);
-					if (overridden)
-						return;
+				if (wip->mine_chase_duration > 0.0f) {
+					// Chase mode: become a guided missile for the configured duration.
+					// Contact with the ship (handled by normal weapon collision) causes detonation.
+					// The OnMineDetonated hook does not fire here — the mine hasn't detonated yet.
+					wp->mine_chase_expires = _timestamp(fl2i(wip->mine_chase_duration * 1000.0f));
+					wp->weapon_max_vel = wip->max_speed;
+				} else {
+					// Immediate detonation mode.
+					auto mineParamList = scripting::hook_param_list(
+						scripting::hook_param("Mine",     'o', obj),
+						scripting::hook_param("Ship",     'o', check_obj),
+						scripting::hook_param("Position", 'o', scripting::api::l_Vector.Set(obj->pos))
+					);
+					scripting::hooks::MineDetonatedConditions mineConds{ wp, &Ships[check_obj->instance] };
+					if (scripting::hooks::OnMineDetonated->isActive()) {
+						bool overridden = scripting::hooks::OnMineDetonated->isOverride(mineConds, mineParamList);
+						scripting::hooks::OnMineDetonated->run(mineConds, mineParamList);
+						if (overridden)
+							return;
+					}
+					weapon_detonate(obj);
 				}
-				weapon_detonate(obj);
 				return;
 			}
 		} // if (armed)
@@ -7401,6 +7455,9 @@ int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int
 				wp->last_spawn_time[i] = TIMESTAMP::invalid(); // never spawn
 		}
 	}
+
+	wp->mine_chase_expires          = TIMESTAMP::invalid();
+	wp->mine_chase_cooldown_expires = TIMESTAMP::invalid();
 
 	//	Set detail levels for POF-type weapons.
 	if (Weapon_info[wp->weapon_info_index].model_num != -1) {
@@ -9786,6 +9843,9 @@ void weapon_info::reset()
 	this->mine_targetable_range = -1.0f;
 	this->mine_detonate_chance = 1.0f;
 	this->mine_stealth_proximity_multiplier = 1.0f;
+	this->mine_chase_duration = 0.0f;
+	this->mine_detonates_on_chase_timeout = true;
+	this->mine_chase_cooldown = 5.0f;
 
 	this->flak_detonation_accuracy = 65.0f;
 	this->flak_targeting_accuracy = 60.0f; // Standard value as defined in flak.cpp

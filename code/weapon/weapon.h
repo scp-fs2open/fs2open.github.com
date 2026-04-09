@@ -168,6 +168,9 @@ typedef struct weapon {
 	float beam_per_shot_rot; // for type 5 beams
 
 	modular_curves_entry_instance modular_curves_instance;
+
+	TIMESTAMP mine_chase_expires;          // when the active chase expires; TIMESTAMP::invalid() = not chasing
+	TIMESTAMP mine_chase_cooldown_expires; // when the post-chase cooldown ends; TIMESTAMP::invalid() = no cooldown active
 } weapon;
 
 
@@ -456,6 +459,9 @@ struct weapon_info
 	float mine_targetable_range;		// range at which mine is fully targetable; -1.0f = always, 0.0f = never
 	float mine_detonate_chance;			// probability [0,1] that a proximity contact actually detonates the mine; default 1.0
 	float mine_stealth_proximity_multiplier; // scale factor applied to proximity_radius for stealth ships; 0.0 = undetectable, 1.0 = normal range; default 1.0
+	float mine_chase_duration;			// seconds mine chases the triggering ship after proximity contact; 0.0 = detonate immediately (default)
+	bool  mine_detonates_on_chase_timeout;	// if true, detonate when chase timer expires; if false, give up and return to stationary; default true
+	float mine_chase_cooldown;			// seconds after a chase ends before proximity scanning re-enables; default 5.0
 	float flak_detonation_accuracy;		//How far away from a target a flak shell will blow up. Standard is 65.0f
 	float flak_targeting_accuracy;		//Determines the amount of jitter applied to flak targeting. USE WITH CAUTION!
 	float untargeted_flak_range_penalty; //Untargeted flak shells detonate after travelling max range - this parameter. Default 20.0f
