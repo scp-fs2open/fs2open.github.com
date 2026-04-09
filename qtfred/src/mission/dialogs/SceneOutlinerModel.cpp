@@ -3,6 +3,7 @@
 #include "SceneOutlinerModel.h"
 
 #include <globalincs/linklist.h>
+#include <iff_defs/iff_defs.h>
 #include <jumpnode/jumpnode.h>
 #include <object/object.h>
 #include <object/waypoint.h>
@@ -22,6 +23,7 @@ SceneOutlinerModel::SceneOutlinerModel(QObject* parent, EditorViewport* viewport
 	connect(_editor, &Editor::currentObjectChanged, this, &SceneOutlinerModel::onCurrentObjectChanged);
 	connect(_editor, &Editor::objectMarkingChanged, this, &SceneOutlinerModel::onObjectMarkingChanged);
 	connect(_editor, &Editor::layerVisibilityChanged, this, &SceneOutlinerModel::onLayerVisibilityChanged);
+	connect(_editor, &Editor::layerStructureChanged, this, &SceneOutlinerModel::onLayerStructureChanged);
 	connect(_editor, &Editor::missionLoaded, this, [this](const std::string&) { onMissionLoaded(); });
 	connect(_editor, &Editor::missionChanged, this, &SceneOutlinerModel::onMissionChanged);
 	// Do NOT call buildTree() here — mission data (obj_used_list, Ships, etc.) is not
@@ -51,6 +53,8 @@ void SceneOutlinerModel::buildTree()
 			if (ptr->type != OBJ_SHIP && ptr->type != OBJ_START) continue;
 			if (Ships[ptr->instance].wingnum != -1) continue;  // in a wing — shown there
 			if (_viewport->getObjectLayerName(OBJ_INDEX(ptr)) != layerName) continue;
+			int team = Ships[ptr->instance].team;
+			if (!_filterIff.isEmpty() && team >= 0 && team < _filterIff.size() && !_filterIff[team]) continue;
 
 			OutlinerObject obj;
 			obj.objNum = OBJ_INDEX(ptr);
@@ -91,6 +95,8 @@ void SceneOutlinerModel::buildTree()
 				if (shipIdx < 0) continue;
 				int objNum = Ships[shipIdx].objnum;
 				if (objNum < 0 || Objects[objNum].type == OBJ_NONE) continue;
+				int memberTeam = Ships[shipIdx].team;
+				if (!_filterIff.isEmpty() && memberTeam >= 0 && memberTeam < _filterIff.size() && !_filterIff[memberTeam]) continue;
 
 				OutlinerObject member;
 				member.objNum = objNum;
@@ -100,6 +106,7 @@ void SceneOutlinerModel::buildTree()
 					member.displayName += " *";
 				wingObj.children.push_back(member);
 			}
+			if (wingObj.children.isEmpty()) continue;  // all members filtered out
 			wings.items.push_back(wingObj);
 		}
 		if (!wings.items.isEmpty()) layer.categories.push_back(wings);
@@ -317,6 +324,7 @@ void SceneOutlinerModel::onLayerVisibilityChanged()
 
 void SceneOutlinerModel::onMissionLoaded()
 {
+	_filterIff = QVector<bool>(static_cast<int>(Iff_info.size()), true);
 	_rebuildTimer->stop();
 	buildTree();
 	treeStructureChanged();
@@ -334,6 +342,88 @@ void SceneOutlinerModel::onRebuildTimer()
 {
 	buildTree();
 	treeStructureChanged();
+}
+
+void SceneOutlinerModel::onLayerStructureChanged()
+{
+	_rebuildTimer->stop();  // flush any pending debounce — do it immediately
+	buildTree();
+	treeStructureChanged();
+}
+
+// ---------------------------------------------------------------------------
+// IFF filtering
+// ---------------------------------------------------------------------------
+
+void SceneOutlinerModel::setFilterIff(int team, bool visible)
+{
+	if (team < 0 || team >= _filterIff.size()) return;
+	_filterIff[team] = visible;
+	buildTree();
+	treeStructureChanged();
+}
+
+bool SceneOutlinerModel::getFilterIff(int team) const
+{
+	if (team < 0 || team >= _filterIff.size()) return true;
+	return _filterIff[team];
+}
+
+int SceneOutlinerModel::iffCount() const
+{
+	return static_cast<int>(Iff_info.size());
+}
+
+QString SceneOutlinerModel::getIffName(int team) const
+{
+	if (team < 0 || team >= static_cast<int>(Iff_info.size())) return {};
+	return QString::fromUtf8(Iff_info[team].iff_name);
+}
+
+// ---------------------------------------------------------------------------
+// Bulk selection
+// ---------------------------------------------------------------------------
+
+void SceneOutlinerModel::selectAll()
+{
+	_updatingFromOutliner = true;
+	for (auto* ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
+		if (ptr->type == OBJ_SHIP || ptr->type == OBJ_START) {
+			int team = Ships[ptr->instance].team;
+			if (!_filterIff.isEmpty() && team >= 0 && team < _filterIff.size() && !_filterIff[team])
+				continue;
+		}
+		_editor->markObject(OBJ_INDEX(ptr));
+	}
+	_updatingFromOutliner = false;
+	modelChanged();
+}
+
+void SceneOutlinerModel::clearSelection()
+{
+	_updatingFromOutliner = true;
+	_editor->unmark_all();
+	_updatingFromOutliner = false;
+	modelChanged();
+}
+
+void SceneOutlinerModel::invertSelection()
+{
+	_updatingFromOutliner = true;
+	for (auto* ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
+		if (ptr->type == OBJ_SHIP || ptr->type == OBJ_START) {
+			int team = Ships[ptr->instance].team;
+			if (!_filterIff.isEmpty() && team >= 0 && team < _filterIff.size() && !_filterIff[team])
+				continue;
+		}
+		int objNum = OBJ_INDEX(ptr);
+		if (ptr->flags[Object::Object_Flags::Marked])
+			_editor->unmarkObject(objNum);
+		else
+			_editor->markObject(objNum);
+	}
+	_updatingFromOutliner = false;
+	modelChanged();
 }
 
 } // namespace fso::fred::dialogs

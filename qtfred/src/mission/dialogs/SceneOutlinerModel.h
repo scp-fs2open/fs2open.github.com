@@ -61,6 +61,17 @@ public:
 	void setNameFilter(const QString& filter);
 	const QString& getNameFilter() const { return _nameFilter; }
 
+	// IFF filtering
+	void setFilterIff(int team, bool visible);
+	bool getFilterIff(int team) const;
+	int iffCount() const;
+	QString getIffName(int team) const;
+
+	// Bulk selection
+	void selectAll();
+	void clearSelection();
+	void invertSelection();
+
 	bool isUpdatingFromOutliner() const { return _updatingFromOutliner; }
 
 signals:
@@ -75,6 +86,7 @@ private:
 
 	QVector<OutlinerLayer> _tree;
 	QString _nameFilter;
+	QVector<bool> _filterIff;
 	bool _updatingFromOutliner = false;
 	QTimer* _rebuildTimer = nullptr;
 
@@ -82,6 +94,7 @@ private slots:
 	void onCurrentObjectChanged(int newObj);
 	void onObjectMarkingChanged(int obj, bool marked);
 	void onLayerVisibilityChanged();
+	void onLayerStructureChanged();
 	void onMissionLoaded();
 	void onMissionChanged();
 	void onRebuildTimer();

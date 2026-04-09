@@ -31,9 +31,16 @@ SceneOutlinerPanel::SceneOutlinerPanel(FredView* fredView, EditorViewport* viewp
 
 	_searchBar = ui->searchBar;
 	_tree = ui->outlinerTree;
+	_iffFilterWidget = ui->iffFilterWidget;
+	_selectAllButton = ui->selectAllButton;
+	_clearButton = ui->clearButton;
+	_invertButton = ui->invertButton;
 
 	// Connections
 	connect(_searchBar, &QLineEdit::textChanged, this, &SceneOutlinerPanel::onSearchTextChanged);
+	connect(_selectAllButton, &QPushButton::clicked, _model, &dialogs::SceneOutlinerModel::selectAll);
+	connect(_clearButton, &QPushButton::clicked, _model, &dialogs::SceneOutlinerModel::clearSelection);
+	connect(_invertButton, &QPushButton::clicked, _model, &dialogs::SceneOutlinerModel::invertSelection);
 	connect(_tree, &QTreeWidget::itemChanged, this, &SceneOutlinerPanel::onItemChanged);
 	connect(_tree, &QTreeWidget::itemSelectionChanged, this, &SceneOutlinerPanel::onItemSelectionChanged);
 	connect(_tree, &QTreeWidget::customContextMenuRequested,
@@ -258,6 +265,21 @@ void SceneOutlinerPanel::onModelChanged()
 
 void SceneOutlinerPanel::onTreeStructureChanged()
 {
+	// Create IFF checkboxes on first call after missionLoaded, when Iff_info is populated
+	if (_iffCheckBoxes.isEmpty() && _model->iffCount() > 0) {
+		auto* layout = new FlowLayout(_iffFilterWidget, /*hSpacing=*/4, /*vSpacing=*/2);
+		for (int i = 0; i < _model->iffCount(); i++) {
+			auto* cb = new QCheckBox(_model->getIffName(i), _iffFilterWidget);
+			cb->setChecked(true);
+			const int team = i;
+			connect(cb, &QCheckBox::toggled, this, [this, team](bool checked) {
+				_model->setFilterIff(team, checked);
+			});
+			layout->addWidget(cb);
+			_iffCheckBoxes.push_back(cb);
+		}
+	}
+
 	// Full rebuild needed (objects added/removed/renamed/moved between layers)
 	rebuildTree();
 }

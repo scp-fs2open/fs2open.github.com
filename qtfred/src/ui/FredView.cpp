@@ -743,6 +743,16 @@ void FredView::ensureViewportFocus() {
 		if (focusedWindow != nullptr && focusedWindow != this) {
 			return;
 		}
+
+		// Don't steal focus from dock widget children — the user is intentionally
+		// interacting with a panel (search bar, buttons, checkboxes, etc.).
+		QWidget* w = focusedWidget;
+		while (w != nullptr) {
+			if (qobject_cast<QDockWidget*>(w) != nullptr) {
+				return;
+			}
+			w = w->parentWidget();
+		}
 	}
 
 	if (focusedWidget != ui->centralWidget) {

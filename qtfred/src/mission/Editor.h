@@ -117,6 +117,9 @@ class Editor : public QObject {
 	/*! Emit layerVisibilityChanged — called by EditorViewport after toggling a layer. */
 	void notifyLayerVisibilityChanged() { layerVisibilityChanged(); }
 
+	/*! Emit layerStructureChanged — called by EditorViewport when layers are added/removed or objects move between layers. */
+	void notifyLayerStructureChanged() { layerStructureChanged(); }
+
   signals:
 	/**
 	 * @brief Signal for when a new mission has been loaded
@@ -146,6 +149,11 @@ class Editor : public QObject {
 	 * @brief A signal emitted when a layer's visibility has been toggled
 	 */
 	void layerVisibilityChanged();
+
+	/**
+	 * @brief A signal emitted when the layer list changes (add/remove) or an object moves between layers
+	 */
+	void layerStructureChanged();
 
   public:
 	// --- Undo / autosave state ---

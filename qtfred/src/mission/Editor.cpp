@@ -1244,6 +1244,7 @@ int Editor::delete_object(int obj) {
 	int r;
 
 	r = common_object_delete(obj);
+	missionChanged();
 	return r;
 }
 

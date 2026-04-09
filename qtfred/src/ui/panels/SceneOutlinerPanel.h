@@ -1,9 +1,13 @@
 #pragma once
 
+#include <QCheckBox>
 #include <QDockWidget>
 #include <QLineEdit>
+#include <QPushButton>
 #include <QSet>
 #include <QTreeWidget>
+
+#include "FlowLayout.h"
 
 #include <memory>
 
@@ -46,6 +50,11 @@ private:
 	dialogs::SceneOutlinerModel* _model = nullptr;
 	QTreeWidget* _tree = nullptr;
 	QLineEdit* _searchBar = nullptr;
+	QWidget* _iffFilterWidget = nullptr;
+	QVector<QCheckBox*> _iffCheckBoxes;
+	QPushButton* _selectAllButton = nullptr;
+	QPushButton* _clearButton = nullptr;
+	QPushButton* _invertButton = nullptr;
 
 	// Item data roles
 	enum ItemRole {

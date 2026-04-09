@@ -273,6 +273,8 @@ add_file_folder("Source/UI/General"
 )
 
 add_file_folder("Source/UI/Panels"
+	src/ui/panels/FlowLayout.cpp
+	src/ui/panels/FlowLayout.h
 	src/ui/panels/SceneOutlinerPanel.cpp
 	src/ui/panels/SceneOutlinerPanel.h
 )

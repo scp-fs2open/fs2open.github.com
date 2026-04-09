@@ -37,6 +37,37 @@
     </widget>
    </item>
    <item>
+    <widget class="QWidget" name="iffFilterWidget"/>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="bulkButtonLayout">
+     <property name="spacing">
+      <number>2</number>
+     </property>
+     <item>
+      <widget class="QPushButton" name="selectAllButton">
+       <property name="text">
+        <string>All</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="clearButton">
+       <property name="text">
+        <string>Clear</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="invertButton">
+       <property name="text">
+        <string>Invert</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
     <widget class="QTreeWidget" name="outlinerTree">
      <property name="selectionMode">
       <enum>QAbstractItemView::ExtendedSelection</enum>

@@ -940,6 +940,7 @@ bool EditorViewport::addLayer(const SCP_string& name, SCP_string* errorMessage) 
 	_layerNames.push_back(name);
 	_layerVisibility.push_back(true);
 	syncMissionLayerNames();
+	editor->notifyLayerStructureChanged();
 	return true;
 }
 
@@ -969,6 +970,7 @@ bool EditorViewport::deleteLayer(const SCP_string& name, SCP_string* errorMessag
 		}
 	}
 	syncMissionLayerNames();
+	editor->notifyLayerStructureChanged();
 	return true;
 }
 
@@ -1095,6 +1097,7 @@ bool EditorViewport::moveObjectToLayer(int objectIndex, const SCP_string& layerN
 		editor->unmarkObject(objectIndex);
 	}
 	needsUpdate();
+	editor->notifyLayerStructureChanged();
 	return true;
 }
 
@@ -1116,6 +1119,7 @@ void EditorViewport::moveMarkedObjectsToLayer(const SCP_string& layerName, SCP_s
 		}
 	}
 	needsUpdate();
+	editor->notifyLayerStructureChanged();
 }
 
 bool EditorViewport::isObjectVisibleInLayer(const object* objp) const {
@@ -1177,7 +1181,8 @@ int EditorViewport::create_object_on_grid(int x, int y, int waypoint_instance, b
 	if (obj >= 0) {
 		editor->markObject(obj);
 
-			editor->autosave("object create");
+		editor->missionChanged();
+		editor->autosave("object create");
 
 	} else if (obj == -1) {
 		dialogProvider->showButtonDialog(DialogType::Error, "Error", "Maximum ship limit reached.  Can't add any more ships.", { DialogButton::Ok });
