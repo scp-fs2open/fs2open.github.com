@@ -1,6 +1,8 @@
 #include "FredView.h"
 #include "ui_FredView.h"
 
+#include <ui/util/default_dir.h>
+
 #include <QDir>
 #include <QFileDialog>
 #include <QFileInfo>
@@ -254,13 +256,15 @@ void FredView::loadMissionFile(const QString& pathName, int flags) {
 }
 
 void FredView::openLoadMissionDialog() {
-	qDebug() << "Loading from directory:" << QDir::currentPath();
-	QString pathName = QFileDialog::getOpenFileName(this, tr("Load mission"), QString(), tr("FS2 missions (*.fs2)"));
+	const QString lastDir = fso::fred::util::getLastDir("missions/loadMission", CF_TYPE_MISSIONS);
+
+	QString pathName = QFileDialog::getOpenFileName(this, tr("Load mission"), lastDir, tr("FS2 missions (*.fs2)"));
 
 	if (pathName.isEmpty()) {
 		return;
 	}
 
+	fso::fred::util::saveLastDir("missions/loadMission", pathName);
 	loadMissionFile(pathName.replace('/',DIR_SEPARATOR_CHAR));
 }
 
@@ -302,10 +306,15 @@ bool FredView::saveMissionAs() {
 	save.set_fred_alt_names(Fred_alt_names);
 	save.set_fred_callsigns(Fred_callsigns);
 
-	saveName = QFileDialog::getSaveFileName(this, tr("Save mission"), QString(), tr("FS2 missions (*.fs2)"));
+	{
+		const QString lastDir = fso::fred::util::getLastDir("missions/saveMission", CF_TYPE_MISSIONS);
+		saveName = QFileDialog::getSaveFileName(this, tr("Save mission"), lastDir, tr("FS2 missions (*.fs2)"));
 
-	if (saveName.isEmpty()) {
-		return false;
+		if (saveName.isEmpty()) {
+			return false;
+		}
+
+		fso::fred::util::saveLastDir("missions/saveMission", saveName);
 	}
 
 	save.save_mission_file(saveName.replace('/',DIR_SEPARATOR_CHAR).toUtf8().constData());
@@ -319,17 +328,21 @@ void FredView::saveAsTemplate() {
 	if (metaDialog.exec() != QDialog::Accepted)
 		return;
 
-	// Default to data/missions/templates/ and create it if needed
-	QString templatesDir = QDir::currentPath() + "/data/missions/templates";
-	QDir().mkpath(templatesDir);
+	// Ensure templates subdir exists; use missions dir as fallback default
+	const QString defaultTemplatesDir = fso::fred::util::fredDefaultDir(CF_TYPE_MISSIONS) + "/templates";
+	QDir().mkpath(defaultTemplatesDir);
+
+	const QString lastTemplatesDir = fso::fred::util::getLastDir("missions/saveTemplate", defaultTemplatesDir);
 
 	QString templateName = QFileDialog::getSaveFileName(this,
 		tr("Save As Template"),
-		templatesDir,
+		lastTemplatesDir,
 		tr("FS2 mission templates (*.fst)"));
 
 	if (templateName.isEmpty())
 		return;
+
+	fso::fred::util::saveLastDir("missions/saveTemplate", templateName);
 
 	if (!templateName.endsWith(".fst", Qt::CaseInsensitive))
 		templateName += ".fst";
@@ -344,7 +357,7 @@ void FredView::saveAsTemplate() {
 }
 
 void FredView::loadTemplate() {
-	QString templatesDir = QDir::currentPath() + "/data/missions/templates";
+	QString templatesDir = fso::fred::util::fredDefaultDir(CF_TYPE_MISSIONS) + "/templates";
 	QDir().mkpath(templatesDir);
 
 	dialogs::TemplateBrowserDialog browser(this, templatesDir);
@@ -429,17 +442,22 @@ void FredView::on_actionFS1_Mission_triggered(bool) {
 
 	QStringList srcPaths = QFileDialog::getOpenFileNames(this,
 		tr("Select FS1 mission(s) to import"),
-		QString(),
+		fso::fred::util::getLastDir("missions/importFS1Source", QDir::homePath()),
 		tr("FreeSpace Missions (*.fsm)"));
 
 	if (srcPaths.isEmpty())
 		return;
 
+	fso::fred::util::saveLastDir("missions/importFS1Source", srcPaths.first());
+
 	QString destDir = QFileDialog::getExistingDirectory(this,
-		tr("Select destination folder for converted missions"));
+		tr("Select destination folder for converted missions"),
+		fso::fred::util::getLastDir("missions/importFS1Dest", CF_TYPE_MISSIONS));
 
 	if (destDir.isEmpty())
 		return;
+
+	fso::fred::util::saveLastDir("missions/importFS1Dest", destDir);
 
 	QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 

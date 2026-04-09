@@ -1,6 +1,7 @@
 #include "MissionEventsDialog.h"
 #include "ui_MissionEventsDialog.h"
 #include "ui/Theme.h"
+#include "ui/util/default_dir.h"
 #include "ui/util/SignalBlockers.h"
 #include "ui/dialogs/EventEditor/HeadAnimationPickerDialog.h"
 
@@ -12,6 +13,7 @@
 #include <QInputDialog>
 #include <QMessageBox>
 #include <QFileDialog>
+#include <QFileInfo>
 #include <QDebug>
 #include <QKeyEvent>
 #include <mission/missionmessage.h>
@@ -992,20 +994,14 @@ void MissionEventsDialog::on_btnBrowseWave_clicked()
 		return;
 	}
 
-	int z;
-	if (The_mission.game_type & MISSION_TYPE_TRAINING) {
-		z = cfile_push_chdir(CF_TYPE_VOICE_TRAINING);
-	} else {
-		z = cfile_push_chdir(CF_TYPE_VOICE_SPECIAL);
-	}
-	auto interface_path = QDir::currentPath();
-	if (!z) {
-		cfile_pop_dir();
-	}
+	const int voiceCfType = (The_mission.game_type & MISSION_TYPE_TRAINING)
+		? CF_TYPE_VOICE_TRAINING : CF_TYPE_VOICE_SPECIAL;
 
-	auto name = QFileDialog::getOpenFileName(this,
+	const QString lastDir = util::getLastDir("missionEvents/waveFile", voiceCfType);
+
+	const auto name = QFileDialog::getOpenFileName(this,
 		tr("Select message animation"),
-		interface_path,
+		lastDir,
 		"Voice Files (*.ogg *.wav);;Ogg Vorbis Files (*.ogg);;Wave Files (*.wav);;All Files (*)");
 
 	if (name.isEmpty()) {
@@ -1014,6 +1010,7 @@ void MissionEventsDialog::on_btnBrowseWave_clicked()
 	}
 
 	QFileInfo info(name);
+	util::saveLastDir("missionEvents/waveFile", name);
 
 	SCP_string file_name = info.fileName().toUtf8().constData();
 

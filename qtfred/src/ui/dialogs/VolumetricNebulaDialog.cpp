@@ -1,4 +1,5 @@
 #include "ui/dialogs/VolumetricNebulaDialog.h"
+#include "ui/util/default_dir.h"
 #include "ui/util/SignalBlockers.h"
 
 #include "ui_VolumetricNebulaDialog.h"
@@ -6,6 +7,7 @@
 #include <mission/util.h>
 
 #include <QFileDialog>
+#include <QFileInfo>
 #include <QMessageBox>
 
 namespace fso::fred::dialogs {
@@ -201,15 +203,17 @@ void VolumetricNebulaDialog::on_enabled_toggled(bool checked)
 
 void VolumetricNebulaDialog::on_setModelButton_clicked()
 {
+	const QString lastDir = util::getLastDir("volumetricNebula/pofModel", CF_TYPE_MODELS);
+
 	const QString path = QFileDialog::getOpenFileName(this,
 		"Select POF File",
-		QString(),
+		lastDir,
 		"Freespace 2 Model Files (*.pof);;All Files (*)");
 	if (path.isEmpty())
 		return;
 
-	const QString filename = QFileInfo(path).fileName();
-	_model->setHullPof(filename.toUtf8().constData());
+	util::saveLastDir("volumetricNebula/pofModel", path);
+	_model->setHullPof(QFileInfo(path).fileName().toUtf8().constData());
 	updateUi();
 }
 

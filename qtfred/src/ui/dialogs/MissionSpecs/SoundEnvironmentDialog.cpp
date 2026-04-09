@@ -8,9 +8,11 @@
 #include "sound/ds.h"
 #include "sound/sound.h"
 
+#include <ui/util/default_dir.h>
 #include <ui/util/SignalBlockers.h>
 
 #include <QFileDialog>
+#include <QFileInfo>
 #include <QMessageBox>
 #include <QCloseEvent>
 
@@ -164,17 +166,16 @@ void SoundEnvironmentDialog::on_browseButton_clicked()
 {
 	closeWave();
 
-	const int pushed = cfile_push_chdir(CF_TYPE_DATA);
+	const QString lastDir = util::getLastDir("soundEnvironment/soundFile", CF_TYPE_DATA);
 	const QString filter = "Voice Files (*.ogg *.wav);;Ogg Vorbis Files (*.ogg);;Wave Files (*.wav)";
-	const auto path = QFileDialog::getOpenFileName(this, tr("Choose sound"), QString(), filter);
+	const auto path = QFileDialog::getOpenFileName(this, tr("Choose sound"), lastDir, filter);
 
 	if (!path.isEmpty()) {
-		const QString justName = QFileInfo(path).fileName();
-		_waveId = audiostream_open(justName.toUtf8().constData(), ASF_SOUNDFX);
-		ui->fileSelectionLabel->setText(justName);
+		const QFileInfo fi(path);
+		util::saveLastDir("soundEnvironment/soundFile", path);
+		_waveId = audiostream_open(fi.fileName().toUtf8().constData(), ASF_SOUNDFX);
+		ui->fileSelectionLabel->setText(fi.fileName());
 	}
-	if (!pushed)
-		cfile_pop_dir();
 
 	enableOrDisableFields();
 }

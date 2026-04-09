@@ -15,12 +15,14 @@
 #include <globalincs/globals.h>
 #include <globalincs/linklist.h>
 #include <mission/missionbriefcommon.h>
+#include <ui/util/default_dir.h>
 #include <ui/util/SignalBlockers.h>
 
 #include <QCloseEvent>
 #include <QCheckBox>
 #include <QFileDialog>
 #include <QVBoxLayout>
+#include <QFileInfo>
 
 namespace fso::fred::dialogs {
 
@@ -679,20 +681,17 @@ void BriefingEditorDialog::on_voiceFileLineEdit_textChanged(const QString& strin
 
 void BriefingEditorDialog::on_voiceFileBrowseButton_clicked()
 {
-	int dir_pushed = cfile_push_chdir(CF_TYPE_VOICE_DEBRIEFINGS);
+	const QString lastDir = util::getLastDir("briefing/voiceFile", CF_TYPE_VOICE_DEBRIEFINGS);
 
-	QFileDialog dlg(this, "Select Voice File", "", "Voice Files (*.ogg *.wav)");
+	QFileDialog dlg(this, "Select Voice File", lastDir, "Voice Files (*.ogg *.wav)");
 	if (dlg.exec() == QDialog::Accepted) {
 		QStringList files = dlg.selectedFiles();
 		if (!files.isEmpty()) {
-			QFileInfo fileInfo(files.first());
+			const QFileInfo fileInfo(files.first());
+			util::saveLastDir("briefing/voiceFile", files.first());
 			_model->setSpeechFilename(fileInfo.fileName().toUtf8().constData());
 			updateUi();
 		}
-	}
-
-	if (dir_pushed) {
-		cfile_pop_dir();
 	}
 }
 

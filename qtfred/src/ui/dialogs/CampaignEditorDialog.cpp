@@ -5,9 +5,11 @@
 #include <globalincs/globals.h>
 #include "ui/widgets/sexp_tree.h"
 #include "ui/widgets/SimpleListSelectDialog.h"
+#include "ui/util/default_dir.h"
 #include "ui/util/SignalBlockers.h"
 #include "mission/util.h"
 #include <ui/dialogs/MissionSpecs/CustomDataDialog.h>
+#include <QFileInfo>
 #include <QInputDialog>
 #include <QFileDialog>
 #include <QMessageBox>
@@ -387,12 +389,15 @@ void CampaignEditorDialog::on_actionOpen_triggered()
 	}
 
 	// Open a file dialog to let the user select a campaign file.
-	QString pathName = QFileDialog::getOpenFileName(this, "Load Campaign", "", "FS2 Campaigns (*.fc2)");
+	const QString lastDir = util::getLastDir("campaign/loadCampaign", CF_TYPE_MISSIONS);
+
+	QString pathName = QFileDialog::getOpenFileName(this, "Load Campaign", lastDir, "FS2 Campaigns (*.fc2)");
 
 	if (pathName.isEmpty()) {
 		return; // User cancelled the file dialog.
 	}
 
+	util::saveLastDir("campaign/loadCampaign", pathName);
 	QString nativePath = QDir::toNativeSeparators(pathName);
 
 	_model->loadCampaignFromFile(nativePath.toUtf8().constData());
@@ -416,11 +421,15 @@ void CampaignEditorDialog::on_actionSave_triggered()
 void CampaignEditorDialog::on_actionSave_As_triggered()
 {
 	// Open a file dialog to let the user choose a save location and filename.
-	QString pathName = QFileDialog::getSaveFileName(this, "Save Campaign As", "", "FS2 Campaigns (*.fc2)");
+	const QString lastDir = util::getLastDir("campaign/saveCampaign", CF_TYPE_MISSIONS);
+
+	QString pathName = QFileDialog::getSaveFileName(this, "Save Campaign As", lastDir, "FS2 Campaigns (*.fc2)");
 
 	if (pathName.isEmpty()) {
 		return; // User cancelled the file dialog.
 	}
+
+	util::saveLastDir("campaign/saveCampaign", pathName);
 
 	// The model will handle the actual save operation.
 	_model->saveCampaign(pathName.toUtf8().constData());
@@ -744,10 +753,13 @@ void CampaignEditorDialog::on_loopVoiceLineEdit_textChanged(const QString& arg1)
 void CampaignEditorDialog::on_loopAnimBrowseButton_clicked()
 {
 	util::SignalBlockers blocker(this);
-	
-	QString filter = "FSO Animations (*.ani *.eff *.png);;All Files (*.*)";
-	QString fileName = QFileDialog::getOpenFileName(this, "Select Loop Animation", "", filter);
+
+	const QString lastDir = util::getLastDir("campaign/loopAnim", CF_TYPE_INTERFACE);
+
+	const QString filter = "FSO Animations (*.ani *.eff *.png);;All Files (*.*)";
+	const QString fileName = QFileDialog::getOpenFileName(this, "Select Loop Animation", lastDir, filter);
 	if (!fileName.isEmpty()) {
+		util::saveLastDir("campaign/loopAnim", fileName);
 		ui->loopAnimLineEdit->setText(fileName);
 	}
 }
@@ -755,10 +767,13 @@ void CampaignEditorDialog::on_loopAnimBrowseButton_clicked()
 void CampaignEditorDialog::on_loopVoiceBrowseButton_clicked()
 {
 	util::SignalBlockers blocker(this);
-	
-	QString filter = "Audio Files (*.wav *.ogg);;All Files (*.*)";
-	QString fileName = QFileDialog::getOpenFileName(this, "Select Loop Voice", "", filter);
+
+	const QString lastDir = util::getLastDir("campaign/loopVoice", CF_TYPE_VOICE_SPECIAL);
+
+	const QString filter = "Audio Files (*.wav *.ogg);;All Files (*.*)";
+	const QString fileName = QFileDialog::getOpenFileName(this, "Select Loop Voice", lastDir, filter);
 	if (!fileName.isEmpty()) {
+		util::saveLastDir("campaign/loopVoice", fileName);
 		ui->loopVoiceLineEdit->setText(fileName);
 	}
 
