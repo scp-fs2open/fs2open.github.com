@@ -10,42 +10,42 @@
 namespace fso::fred::dialogs {
 
 /**
- * @brief A single selectable object in the scene outliner tree
+ * @brief A single selectable object in the scene browser tree
  *
  * Leaf nodes (ships, props, jump nodes, individual waypoints) have objNum >= 0.
  * Wing headers have wingIndex >= 0 and objNum == -1.
  * Waypoint path headers have waypointListIndex >= 0 and objNum == -1.
  */
-struct OutlinerObject {
+struct BrowserObject {
 	QString displayName;
 	int objNum = -1;
 	int wingIndex = -1;
 	int waypointListIndex = -1;
 	bool isPlayerStart = false;
-	QVector<OutlinerObject> children;
+	QVector<BrowserObject> children;
 };
 
-struct OutlinerCategory {
+struct BrowserCategory {
 	QString name;
-	QVector<OutlinerObject> items;
+	QVector<BrowserObject> items;
 };
 
-struct OutlinerLayer {
+struct BrowserLayer {
 	QString name;
 	bool visible = true;
-	QVector<OutlinerCategory> categories;
+	QVector<BrowserCategory> categories;
 };
 
-class SceneOutlinerModel : public AbstractDialogModel {
+class SceneBrowserModel : public AbstractDialogModel {
 	Q_OBJECT
 
 public:
-	SceneOutlinerModel(QObject* parent, EditorViewport* viewport);
+	SceneBrowserModel(QObject* parent, EditorViewport* viewport);
 
 	bool apply() override { return true; }
 	void reject() override {}
 
-	const QVector<OutlinerLayer>& getTree() const { return _tree; }
+	const QVector<BrowserLayer>& getTree() const { return _tree; }
 	QSet<int> getMarkedSet() const;
 	QVector<QString> getLayerNames() const;
 
@@ -54,9 +54,9 @@ public:
 	void moveWingToLayer(int wingIndex, const QString& layerName);
 	void moveWaypointPathToLayer(int waypointListIndex, const QString& layerName);
 
-	void selectObjectFromOutliner(int objNum);
-	void multiSelectFromOutliner(const QVector<int>& objNums);
-	void selectWingFromOutliner(int wingIndex);
+	void selectObjectFromBrowser(int objNum);
+	void multiSelectFromBrowser(const QVector<int>& objNums);
+	void selectWingFromBrowser(int wingIndex);
 	QVector<int> getWingMemberObjects(int wingIndex) const;
 
 	void setNameFilter(const QString& filter);
@@ -73,7 +73,7 @@ public:
 	void clearSelection();
 	void invertSelection();
 
-	bool isUpdatingFromOutliner() const { return _updatingFromOutliner; }
+	bool isUpdatingFromBrowser() const { return _updatingFromBrowser; }
 
 signals:
 	/**
@@ -85,10 +85,10 @@ signals:
 private:
 	void buildTree();
 
-	QVector<OutlinerLayer> _tree;
+	QVector<BrowserLayer> _tree;
 	QString _nameFilter;
 	QVector<bool> _filterIff;
-	bool _updatingFromOutliner = false;
+	bool _updatingFromBrowser = false;
 	QTimer* _rebuildTimer = nullptr;
 
 private slots:

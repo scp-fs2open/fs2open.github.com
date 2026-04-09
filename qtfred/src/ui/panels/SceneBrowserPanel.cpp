@@ -1,9 +1,9 @@
 //
 
-#include "SceneOutlinerPanel.h"
-#include "ui_SceneOutlinerPanel.h"
+#include "SceneBrowserPanel.h"
+#include "ui_SceneBrowserPanel.h"
 
-#include <mission/dialogs/SceneOutlinerModel.h>
+#include <mission/dialogs/SceneBrowserModel.h>
 #include <ui/FredView.h>
 
 #include <QLayout>
@@ -11,19 +11,19 @@
 
 namespace fso::fred {
 
-SceneOutlinerPanel::SceneOutlinerPanel(FredView* fredView, EditorViewport* viewport)
-	: QDockWidget(tr("Scene Outliner"), fredView)
-	, ui(new ::Ui::SceneOutlinerPanel())
+SceneBrowserPanel::SceneBrowserPanel(FredView* fredView, EditorViewport* viewport)
+	: QDockWidget(tr("Scene Browser"), fredView)
+	, ui(new ::Ui::SceneBrowserPanel())
 	, _fredView(fredView)
 {
-	setObjectName("SceneOutlinerPanel");  // Required for saveState/restoreState
+	setObjectName("SceneBrowserPanel");  // Required for saveState/restoreState
 
 	// Model
-	_model = new dialogs::SceneOutlinerModel(this, viewport);
-	connect(_model, &dialogs::SceneOutlinerModel::modelChanged,
-	        this, &SceneOutlinerPanel::onModelChanged);
-	connect(_model, &dialogs::SceneOutlinerModel::treeStructureChanged,
-	        this, &SceneOutlinerPanel::onTreeStructureChanged);
+	_model = new dialogs::SceneBrowserModel(this, viewport);
+	connect(_model, &dialogs::SceneBrowserModel::modelChanged,
+	        this, &SceneBrowserPanel::onModelChanged);
+	connect(_model, &dialogs::SceneBrowserModel::treeStructureChanged,
+	        this, &SceneBrowserPanel::onTreeStructureChanged);
 
 	// Set up content widget from UI file
 	auto* container = new QWidget(this);
@@ -31,34 +31,34 @@ SceneOutlinerPanel::SceneOutlinerPanel(FredView* fredView, EditorViewport* viewp
 	setWidget(container);
 
 	_searchBar = ui->searchBar;
-	_tree = ui->outlinerTree;
+	_tree = ui->browserTree;
 	_iffFilterWidget = ui->iffFilterWidget;
 	_selectAllButton = ui->selectAllButton;
 	_clearButton = ui->clearButton;
 	_invertButton = ui->invertButton;
 
 	// Connections
-	connect(_searchBar, &QLineEdit::textChanged, this, &SceneOutlinerPanel::onSearchTextChanged);
-	connect(_selectAllButton, &QPushButton::clicked, _model, &dialogs::SceneOutlinerModel::selectAll);
-	connect(_clearButton, &QPushButton::clicked, _model, &dialogs::SceneOutlinerModel::clearSelection);
-	connect(_invertButton, &QPushButton::clicked, _model, &dialogs::SceneOutlinerModel::invertSelection);
-	connect(_tree, &QTreeWidget::itemChanged, this, &SceneOutlinerPanel::onItemChanged);
-	connect(_tree, &QTreeWidget::itemSelectionChanged, this, &SceneOutlinerPanel::onItemSelectionChanged);
+	connect(_searchBar, &QLineEdit::textChanged, this, &SceneBrowserPanel::onSearchTextChanged);
+	connect(_selectAllButton, &QPushButton::clicked, _model, &dialogs::SceneBrowserModel::selectAll);
+	connect(_clearButton, &QPushButton::clicked, _model, &dialogs::SceneBrowserModel::clearSelection);
+	connect(_invertButton, &QPushButton::clicked, _model, &dialogs::SceneBrowserModel::invertSelection);
+	connect(_tree, &QTreeWidget::itemChanged, this, &SceneBrowserPanel::onItemChanged);
+	connect(_tree, &QTreeWidget::itemSelectionChanged, this, &SceneBrowserPanel::onItemSelectionChanged);
 	connect(_tree, &QTreeWidget::customContextMenuRequested,
-	        this, &SceneOutlinerPanel::onCustomContextMenuRequested);
-	connect(this, &QDockWidget::topLevelChanged, this, &SceneOutlinerPanel::updateFloatingMargins);
+	        this, &SceneBrowserPanel::onCustomContextMenuRequested);
+	connect(this, &QDockWidget::topLevelChanged, this, &SceneBrowserPanel::updateFloatingMargins);
 	updateFloatingMargins(isFloating());
 	// Do NOT call rebuildTree() here — mission data is not initialized at construction time.
 	// The tree is populated when missionLoaded fires, propagating via treeStructureChanged.
 }
 
-SceneOutlinerPanel::~SceneOutlinerPanel() = default;
+SceneBrowserPanel::~SceneBrowserPanel() = default;
 
 // ---------------------------------------------------------------------------
 // Tree construction
 // ---------------------------------------------------------------------------
 
-void SceneOutlinerPanel::updateFloatingMargins(bool floating)
+void SceneBrowserPanel::updateFloatingMargins(bool floating)
 {
 	auto* content = widget();
 	if (content == nullptr || content->layout() == nullptr) {
@@ -70,7 +70,7 @@ void SceneOutlinerPanel::updateFloatingMargins(bool floating)
 	content->layout()->setContentsMargins(floating ? 8 : 0, floating ? 8 : 0, floating ? 8 : 0, floating ? 8 : 0);
 }
 
-void SceneOutlinerPanel::rememberExpansionState()
+void SceneBrowserPanel::rememberExpansionState()
 {
 	for (int li = 0; li < _tree->topLevelItemCount(); li++) {
 		auto* layerItem = _tree->topLevelItem(li);
@@ -101,13 +101,13 @@ void SceneOutlinerPanel::rememberExpansionState()
 	}
 }
 
-bool SceneOutlinerPanel::expandedStateOrDefault(const QString& key, bool defaultExpanded) const
+bool SceneBrowserPanel::expandedStateOrDefault(const QString& key, bool defaultExpanded) const
 {
 	const auto it = _expansionState.constFind(key);
 	return it == _expansionState.constEnd() ? defaultExpanded : it.value();
 }
 
-void SceneOutlinerPanel::rebuildTree()
+void SceneBrowserPanel::rebuildTree()
 {
 	QSignalBlocker treeBlocker(_tree);
 	rememberExpansionState();
@@ -192,10 +192,10 @@ void SceneOutlinerPanel::rebuildTree()
 }
 
 // ---------------------------------------------------------------------------
-// Sync (viewport → outliner, selection only — no rebuild)
+// Sync (viewport → browser, selection only — no rebuild)
 // ---------------------------------------------------------------------------
 
-void SceneOutlinerPanel::syncSelection()
+void SceneBrowserPanel::syncSelection()
 {
 	QSignalBlocker treeBlocker(_tree);
 	const auto marked = _model->getMarkedSet();
@@ -228,7 +228,7 @@ void SceneOutlinerPanel::syncSelection()
 		_tree->scrollToItem(firstSelected, QAbstractItemView::EnsureVisible);
 }
 
-void SceneOutlinerPanel::syncLayerVisibility()
+void SceneBrowserPanel::syncLayerVisibility()
 {
 	QSignalBlocker treeBlocker(_tree);
 	const auto& layers = _model->getTree();
@@ -249,7 +249,7 @@ void SceneOutlinerPanel::syncLayerVisibility()
 // Search filter
 // ---------------------------------------------------------------------------
 
-void SceneOutlinerPanel::applyFilter(const QString& filter)
+void SceneBrowserPanel::applyFilter(const QString& filter)
 {
 	if (filter.isEmpty()) {
 		showAllItems(_tree->invisibleRootItem());
@@ -299,7 +299,7 @@ void SceneOutlinerPanel::applyFilter(const QString& filter)
 	}
 }
 
-void SceneOutlinerPanel::showAllItems(QTreeWidgetItem* root)
+void SceneBrowserPanel::showAllItems(QTreeWidgetItem* root)
 {
 	for (int i = 0; i < root->childCount(); i++) {
 		auto* child = root->child(i);
@@ -312,7 +312,7 @@ void SceneOutlinerPanel::showAllItems(QTreeWidgetItem* root)
 // Slots
 // ---------------------------------------------------------------------------
 
-void SceneOutlinerPanel::onModelChanged()
+void SceneBrowserPanel::onModelChanged()
 {
 	// Selection or layer visibility changed — fast sync, no full rebuild
 	syncSelection();
@@ -320,7 +320,7 @@ void SceneOutlinerPanel::onModelChanged()
 	applyFilter(_model->getNameFilter());
 }
 
-void SceneOutlinerPanel::onTreeStructureChanged()
+void SceneBrowserPanel::onTreeStructureChanged()
 {
 	// Create IFF checkboxes on first call after missionLoaded, when Iff_info is populated
 	if (_iffCheckBoxes.isEmpty() && _model->iffCount() > 0) {
@@ -341,7 +341,7 @@ void SceneOutlinerPanel::onTreeStructureChanged()
 	rebuildTree();
 }
 
-void SceneOutlinerPanel::onItemChanged(QTreeWidgetItem* item, int column)
+void SceneBrowserPanel::onItemChanged(QTreeWidgetItem* item, int column)
 {
 	if (column != 0) return;
 	auto varLayer = item->data(0, IsLayerItemRole);
@@ -351,9 +351,9 @@ void SceneOutlinerPanel::onItemChanged(QTreeWidgetItem* item, int column)
 	_model->toggleLayerVisibility(layerName);
 }
 
-void SceneOutlinerPanel::onItemSelectionChanged()
+void SceneBrowserPanel::onItemSelectionChanged()
 {
-	if (_model->isUpdatingFromOutliner()) return;
+	if (_model->isUpdatingFromBrowser()) return;
 
 	QVector<int> selectedObjNums;
 	QVector<int> selectedWings;
@@ -387,13 +387,13 @@ void SceneOutlinerPanel::onItemSelectionChanged()
 			const auto wingMembers = _model->getWingMemberObjects(wingIndex);
 			selectedObjNums += wingMembers;
 		}
-		_model->multiSelectFromOutliner(selectedObjNums);
+		_model->multiSelectFromBrowser(selectedObjNums);
 	} else if (!selectedObjNums.isEmpty()) {
-		_model->multiSelectFromOutliner(selectedObjNums);
+		_model->multiSelectFromBrowser(selectedObjNums);
 	}
 }
 
-void SceneOutlinerPanel::onCustomContextMenuRequested(const QPoint& pos)
+void SceneBrowserPanel::onCustomContextMenuRequested(const QPoint& pos)
 {
 	auto* item = _tree->itemAt(pos);
 	if (!item) return;
@@ -430,7 +430,7 @@ void SceneOutlinerPanel::onCustomContextMenuRequested(const QPoint& pos)
 	}
 }
 
-void SceneOutlinerPanel::onSearchTextChanged(const QString& text)
+void SceneBrowserPanel::onSearchTextChanged(const QString& text)
 {
 	_model->setNameFilter(text);
 }

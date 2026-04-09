@@ -1,6 +1,6 @@
 //
 
-#include "SceneOutlinerModel.h"
+#include "SceneBrowserModel.h"
 
 #include <globalincs/linklist.h>
 #include <iff_defs/iff_defs.h>
@@ -12,20 +12,20 @@
 
 namespace fso::fred::dialogs {
 
-SceneOutlinerModel::SceneOutlinerModel(QObject* parent, EditorViewport* viewport)
+SceneBrowserModel::SceneBrowserModel(QObject* parent, EditorViewport* viewport)
 	: AbstractDialogModel(parent, viewport)
 {
 	_rebuildTimer = new QTimer(this);
 	_rebuildTimer->setSingleShot(true);
 	_rebuildTimer->setInterval(150);  // 150ms debounce for structural rebuilds
-	connect(_rebuildTimer, &QTimer::timeout, this, &SceneOutlinerModel::onRebuildTimer);
+	connect(_rebuildTimer, &QTimer::timeout, this, &SceneBrowserModel::onRebuildTimer);
 
-	connect(_editor, &Editor::currentObjectChanged, this, &SceneOutlinerModel::onCurrentObjectChanged);
-	connect(_editor, &Editor::objectMarkingChanged, this, &SceneOutlinerModel::onObjectMarkingChanged);
-	connect(_editor, &Editor::layerVisibilityChanged, this, &SceneOutlinerModel::onLayerVisibilityChanged);
-	connect(_editor, &Editor::layerStructureChanged, this, &SceneOutlinerModel::onLayerStructureChanged);
+	connect(_editor, &Editor::currentObjectChanged, this, &SceneBrowserModel::onCurrentObjectChanged);
+	connect(_editor, &Editor::objectMarkingChanged, this, &SceneBrowserModel::onObjectMarkingChanged);
+	connect(_editor, &Editor::layerVisibilityChanged, this, &SceneBrowserModel::onLayerVisibilityChanged);
+	connect(_editor, &Editor::layerStructureChanged, this, &SceneBrowserModel::onLayerStructureChanged);
 	connect(_editor, &Editor::missionLoaded, this, [this](const std::string&) { onMissionLoaded(); });
-	connect(_editor, &Editor::missionChanged, this, &SceneOutlinerModel::onMissionChanged);
+	connect(_editor, &Editor::missionChanged, this, &SceneBrowserModel::onMissionChanged);
 	// Do NOT call buildTree() here — mission data (obj_used_list, Ships, etc.) is not
 	// initialized at construction time. The tree is populated when missionLoaded fires.
 }
@@ -34,20 +34,20 @@ SceneOutlinerModel::SceneOutlinerModel(QObject* parent, EditorViewport* viewport
 // Tree building
 // ---------------------------------------------------------------------------
 
-void SceneOutlinerModel::buildTree()
+void SceneBrowserModel::buildTree()
 {
 	_tree.clear();
 
 	const auto layerNames = _viewport->getLayerNames();
 	for (const auto& layerName : layerNames) {
-		OutlinerLayer layer;
+		BrowserLayer layer;
 		layer.name = QString::fromStdString(layerName);
 		bool layerVisible = true;
 		_viewport->getLayerVisibility(layerName, &layerVisible);
 		layer.visible = layerVisible;
 
 		// --- Ships (wingless, including player starts) ---
-		OutlinerCategory ships;
+		BrowserCategory ships;
 		ships.name = "Ships";
 		for (auto* ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
 			if (ptr->type != OBJ_SHIP && ptr->type != OBJ_START) continue;
@@ -56,7 +56,7 @@ void SceneOutlinerModel::buildTree()
 			int team = Ships[ptr->instance].team;
 			if (!_filterIff.isEmpty() && team >= 0 && team < _filterIff.size() && !_filterIff[team]) continue;
 
-			OutlinerObject obj;
+			BrowserObject obj;
 			obj.objNum = OBJ_INDEX(ptr);
 			obj.isPlayerStart = (ptr->type == OBJ_START);
 			obj.displayName = QString::fromUtf8(Ships[ptr->instance].ship_name);
@@ -67,12 +67,12 @@ void SceneOutlinerModel::buildTree()
 		if (!ships.items.isEmpty()) layer.categories.push_back(ships);
 
 		// --- Wings (group members by their own layer; a wing may appear in multiple layers) ---
-		OutlinerCategory wings;
+		BrowserCategory wings;
 		wings.name = "Wings";
 		for (int wi = 0; wi < MAX_WINGS; wi++) {
 			if (!Wings[wi].wave_count) continue;
 
-			OutlinerObject wingObj;
+			BrowserObject wingObj;
 			wingObj.wingIndex = wi;
 			wingObj.objNum = -1;
 			wingObj.displayName = QString::fromUtf8(Wings[wi].name);
@@ -86,7 +86,7 @@ void SceneOutlinerModel::buildTree()
 				int memberTeam = Ships[shipIdx].team;
 				if (!_filterIff.isEmpty() && memberTeam >= 0 && memberTeam < _filterIff.size() && !_filterIff[memberTeam]) continue;
 
-				OutlinerObject member;
+				BrowserObject member;
 				member.objNum = objNum;
 				member.isPlayerStart = (Objects[objNum].type == OBJ_START);
 				member.displayName = QString::fromUtf8(Ships[shipIdx].ship_name);
@@ -100,19 +100,19 @@ void SceneOutlinerModel::buildTree()
 		if (!wings.items.isEmpty()) layer.categories.push_back(wings);
 
 		// --- Waypoint paths ---
-		OutlinerCategory waypoints;
+		BrowserCategory waypoints;
 		waypoints.name = "Waypoints";
 		for (int wli = 0; wli < (int)Waypoint_lists.size(); wli++) {
 			const auto& wl = Waypoint_lists[wli];
 			if (wl.get_fred_layer() != layerName) continue;
 
-			OutlinerObject pathObj;
+			BrowserObject pathObj;
 			pathObj.waypointListIndex = wli;
 			pathObj.objNum = -1;
 			pathObj.displayName = QString::fromUtf8(wl.get_name());
 
 			for (const auto& wpt : wl.get_waypoints()) {
-				OutlinerObject wptObj;
+				BrowserObject wptObj;
 				wptObj.objNum = wpt.get_objnum();
 				SCP_string wptName;
 				waypoint_stuff_name(wptName, wpt);
@@ -124,14 +124,14 @@ void SceneOutlinerModel::buildTree()
 		if (!waypoints.items.isEmpty()) layer.categories.push_back(waypoints);
 
 		// --- Jump nodes ---
-		OutlinerCategory jumpNodes;
+		BrowserCategory jumpNodes;
 		jumpNodes.name = "Jump Nodes";
 		for (auto& jn : Jump_nodes) {
 			if (jn.GetFredLayer() != layerName) continue;
 			int objNum = jn.GetSCPObjectNumber();
 			if (objNum < 0) continue;
 
-			OutlinerObject obj;
+			BrowserObject obj;
 			obj.objNum = objNum;
 			obj.displayName = QString::fromUtf8(jn.GetName());
 			jumpNodes.items.push_back(obj);
@@ -139,7 +139,7 @@ void SceneOutlinerModel::buildTree()
 		if (!jumpNodes.items.isEmpty()) layer.categories.push_back(jumpNodes);
 
 		// --- Props ---
-		OutlinerCategory props;
+		BrowserCategory props;
 		props.name = "Props";
 		for (auto* ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
 			if (ptr->type != OBJ_PROP) continue;
@@ -147,7 +147,7 @@ void SceneOutlinerModel::buildTree()
 			auto* prop = prop_id_lookup(ptr->instance);
 			if (!prop) continue;
 
-			OutlinerObject obj;
+			BrowserObject obj;
 			obj.objNum = OBJ_INDEX(ptr);
 			obj.displayName = QString::fromUtf8(prop->prop_name);
 			props.items.push_back(obj);
@@ -162,7 +162,7 @@ void SceneOutlinerModel::buildTree()
 // Public accessors
 // ---------------------------------------------------------------------------
 
-QSet<int> SceneOutlinerModel::getMarkedSet() const
+QSet<int> SceneBrowserModel::getMarkedSet() const
 {
 	QSet<int> marked;
 	for (auto* ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
@@ -173,7 +173,7 @@ QSet<int> SceneOutlinerModel::getMarkedSet() const
 	return marked;
 }
 
-QVector<QString> SceneOutlinerModel::getLayerNames() const
+QVector<QString> SceneBrowserModel::getLayerNames() const
 {
 	QVector<QString> names;
 	for (const auto& ln : _viewport->getLayerNames())
@@ -185,7 +185,7 @@ QVector<QString> SceneOutlinerModel::getLayerNames() const
 // Layer operations
 // ---------------------------------------------------------------------------
 
-void SceneOutlinerModel::toggleLayerVisibility(const QString& layerName)
+void SceneBrowserModel::toggleLayerVisibility(const QString& layerName)
 {
 	// Store the QByteArray — NOT just constData(), which would dangle after the statement.
 	const QByteArray name = layerName.toUtf8();
@@ -195,7 +195,7 @@ void SceneOutlinerModel::toggleLayerVisibility(const QString& layerName)
 	// setLayerVisibility calls editor->notifyLayerVisibilityChanged() → onLayerVisibilityChanged()
 }
 
-void SceneOutlinerModel::moveObjectToLayer(int objNum, const QString& layerName)
+void SceneBrowserModel::moveObjectToLayer(int objNum, const QString& layerName)
 {
 	// Single inline call: temporary QByteArray lives until end of full expression — safe.
 	_viewport->moveObjectToLayer(objNum, layerName.toUtf8().constData());
@@ -204,7 +204,7 @@ void SceneOutlinerModel::moveObjectToLayer(int objNum, const QString& layerName)
 	treeStructureChanged();
 }
 
-void SceneOutlinerModel::moveWingToLayer(int wingIndex, const QString& layerName)
+void SceneBrowserModel::moveWingToLayer(int wingIndex, const QString& layerName)
 {
 	const QByteArray layer = layerName.toUtf8();
 	for (int si = 0; si < Wings[wingIndex].wave_count; si++) {
@@ -220,7 +220,7 @@ void SceneOutlinerModel::moveWingToLayer(int wingIndex, const QString& layerName
 	treeStructureChanged();
 }
 
-void SceneOutlinerModel::moveWaypointPathToLayer(int waypointListIndex, const QString& layerName)
+void SceneBrowserModel::moveWaypointPathToLayer(int waypointListIndex, const QString& layerName)
 {
 	auto& wl = Waypoint_lists[waypointListIndex];
 	// Moving any one waypoint propagates to the whole path (EditorViewport::setObjectLayerByIndex).
@@ -237,35 +237,35 @@ void SceneOutlinerModel::moveWaypointPathToLayer(int waypointListIndex, const QS
 // Selection
 // ---------------------------------------------------------------------------
 
-void SceneOutlinerModel::selectObjectFromOutliner(int objNum)
+void SceneBrowserModel::selectObjectFromBrowser(int objNum)
 {
-	_updatingFromOutliner = true;
+	_updatingFromBrowser = true;
 	_editor->selectObject(objNum);
-	_updatingFromOutliner = false;
+	_updatingFromBrowser = false;
 }
 
-void SceneOutlinerModel::multiSelectFromOutliner(const QVector<int>& objNums)
+void SceneBrowserModel::multiSelectFromBrowser(const QVector<int>& objNums)
 {
 	if (objNums.isEmpty()) return;
-	_updatingFromOutliner = true;
+	_updatingFromBrowser = true;
 	_editor->unmark_all();
 	for (int id : objNums)
 		_editor->markObject(id);
 	// selectObject sets the current object index via the public API; markObject above is
 	// already a no-op for the last element since it's already marked, so this just sets
-	// the "current" and emits missionChanged (which onMissionChanged guards via _updatingFromOutliner).
+	// the "current" and emits missionChanged (which onMissionChanged guards via _updatingFromBrowser).
 	_editor->selectObject(objNums.last());
-	_updatingFromOutliner = false;
+	_updatingFromBrowser = false;
 }
 
-void SceneOutlinerModel::selectWingFromOutliner(int wingIndex)
+void SceneBrowserModel::selectWingFromBrowser(int wingIndex)
 {
 	const auto objNums = getWingMemberObjects(wingIndex);
 	if (!objNums.isEmpty())
-		multiSelectFromOutliner(objNums);
+		multiSelectFromBrowser(objNums);
 }
 
-QVector<int> SceneOutlinerModel::getWingMemberObjects(int wingIndex) const
+QVector<int> SceneBrowserModel::getWingMemberObjects(int wingIndex) const
 {
 	QVector<int> objNums;
 	if (wingIndex < 0 || wingIndex >= MAX_WINGS) {
@@ -286,7 +286,7 @@ QVector<int> SceneOutlinerModel::getWingMemberObjects(int wingIndex) const
 // Filter
 // ---------------------------------------------------------------------------
 
-void SceneOutlinerModel::setNameFilter(const QString& filter)
+void SceneBrowserModel::setNameFilter(const QString& filter)
 {
 	_nameFilter = filter;
 	modelChanged();
@@ -296,19 +296,19 @@ void SceneOutlinerModel::setNameFilter(const QString& filter)
 // Signal handlers
 // ---------------------------------------------------------------------------
 
-void SceneOutlinerModel::onCurrentObjectChanged(int /*newObj*/)
+void SceneBrowserModel::onCurrentObjectChanged(int /*newObj*/)
 {
-	if (_updatingFromOutliner) return;
+	if (_updatingFromBrowser) return;
 	modelChanged();
 }
 
-void SceneOutlinerModel::onObjectMarkingChanged(int /*obj*/, bool /*marked*/)
+void SceneBrowserModel::onObjectMarkingChanged(int /*obj*/, bool /*marked*/)
 {
-	if (_updatingFromOutliner) return;
+	if (_updatingFromBrowser) return;
 	modelChanged();
 }
 
-void SceneOutlinerModel::onLayerVisibilityChanged()
+void SceneBrowserModel::onLayerVisibilityChanged()
 {
 	// Update layer visibility in existing tree entries without full rebuild
 	const auto layerNames = _viewport->getLayerNames();
@@ -320,7 +320,7 @@ void SceneOutlinerModel::onLayerVisibilityChanged()
 	modelChanged();
 }
 
-void SceneOutlinerModel::onMissionLoaded()
+void SceneBrowserModel::onMissionLoaded()
 {
 	_filterIff = QVector<bool>(static_cast<int>(Iff_info.size()), true);
 	_rebuildTimer->stop();
@@ -328,21 +328,21 @@ void SceneOutlinerModel::onMissionLoaded()
 	treeStructureChanged();
 }
 
-void SceneOutlinerModel::onMissionChanged()
+void SceneBrowserModel::onMissionChanged()
 {
-	if (_updatingFromOutliner) return;
+	if (_updatingFromBrowser) return;
 	// Debounce structural rebuilds — many rapid changes (e.g. selection) trigger
 	// missionChanged, but we only need to rebuild the tree occasionally.
 	_rebuildTimer->start();
 }
 
-void SceneOutlinerModel::onRebuildTimer()
+void SceneBrowserModel::onRebuildTimer()
 {
 	buildTree();
 	treeStructureChanged();
 }
 
-void SceneOutlinerModel::onLayerStructureChanged()
+void SceneBrowserModel::onLayerStructureChanged()
 {
 	_rebuildTimer->stop();  // flush any pending debounce — do it immediately
 	buildTree();
@@ -353,7 +353,7 @@ void SceneOutlinerModel::onLayerStructureChanged()
 // IFF filtering
 // ---------------------------------------------------------------------------
 
-void SceneOutlinerModel::setFilterIff(int team, bool visible)
+void SceneBrowserModel::setFilterIff(int team, bool visible)
 {
 	if (team < 0 || team >= _filterIff.size()) return;
 	_filterIff[team] = visible;
@@ -361,18 +361,18 @@ void SceneOutlinerModel::setFilterIff(int team, bool visible)
 	treeStructureChanged();
 }
 
-bool SceneOutlinerModel::getFilterIff(int team) const
+bool SceneBrowserModel::getFilterIff(int team) const
 {
 	if (team < 0 || team >= _filterIff.size()) return true;
 	return _filterIff[team];
 }
 
-int SceneOutlinerModel::iffCount() const
+int SceneBrowserModel::iffCount() const
 {
 	return static_cast<int>(Iff_info.size());
 }
 
-QString SceneOutlinerModel::getIffName(int team) const
+QString SceneBrowserModel::getIffName(int team) const
 {
 	if (team < 0 || team >= static_cast<int>(Iff_info.size())) return {};
 	return QString::fromUtf8(Iff_info[team].iff_name);
@@ -382,9 +382,9 @@ QString SceneOutlinerModel::getIffName(int team) const
 // Bulk selection
 // ---------------------------------------------------------------------------
 
-void SceneOutlinerModel::selectAll()
+void SceneBrowserModel::selectAll()
 {
-	_updatingFromOutliner = true;
+	_updatingFromBrowser = true;
 	for (auto* ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
 		if (ptr->type == OBJ_SHIP || ptr->type == OBJ_START) {
 			int team = Ships[ptr->instance].team;
@@ -393,21 +393,21 @@ void SceneOutlinerModel::selectAll()
 		}
 		_editor->markObject(OBJ_INDEX(ptr));
 	}
-	_updatingFromOutliner = false;
+	_updatingFromBrowser = false;
 	modelChanged();
 }
 
-void SceneOutlinerModel::clearSelection()
+void SceneBrowserModel::clearSelection()
 {
-	_updatingFromOutliner = true;
+	_updatingFromBrowser = true;
 	_editor->unmark_all();
-	_updatingFromOutliner = false;
+	_updatingFromBrowser = false;
 	modelChanged();
 }
 
-void SceneOutlinerModel::invertSelection()
+void SceneBrowserModel::invertSelection()
 {
-	_updatingFromOutliner = true;
+	_updatingFromBrowser = true;
 	for (auto* ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
 		if (ptr->type == OBJ_SHIP || ptr->type == OBJ_START) {
 			int team = Ships[ptr->instance].team;
@@ -420,7 +420,7 @@ void SceneOutlinerModel::invertSelection()
 		else
 			_editor->markObject(objNum);
 	}
-	_updatingFromOutliner = false;
+	_updatingFromBrowser = false;
 	modelChanged();
 }
 
