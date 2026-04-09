@@ -36,6 +36,13 @@ ShipEditorDialog::ShipEditorDialog(FredView* parent, EditorViewport* viewport)
 	connect(viewport->editor, &Editor::currentObjectChanged, this, &ShipEditorDialog::update);
 	connect(viewport->editor, &Editor::objectMarkingChanged, this, &ShipEditorDialog::update);
 
+	connect(ui->arrivalTree, &sexp_tree_view::modified, this, &ShipEditorDialog::on_arrivalTree_modified);
+	connect(ui->arrivalTree, &sexp_tree_view::helpChanged, this, &ShipEditorDialog::on_arrivalTree_helpChanged);
+	connect(ui->arrivalTree, &sexp_tree_view::miniHelpChanged, this, &ShipEditorDialog::on_arrivalTree_miniHelpChanged);
+	connect(ui->departureTree, &sexp_tree_view::modified, this, &ShipEditorDialog::on_departureTree_modified);
+	connect(ui->departureTree, &sexp_tree_view::helpChanged, this, &ShipEditorDialog::on_departureTree_helpChanged);
+	connect(ui->departureTree, &sexp_tree_view::miniHelpChanged, this, &ShipEditorDialog::on_departureTree_miniHelpChanged);
+
 	// Column One
 
 	connect(ui->cargoCombo->lineEdit(), (&QLineEdit::editingFinished), this, &ShipEditorDialog::cargoChanged);
@@ -82,6 +89,7 @@ void ShipEditorDialog::hideEvent(QHideEvent* e)
 void ShipEditorDialog::showEvent(QShowEvent* e)
 {
 	_model->initializeData();
+	updateUI(true);
 	QDialog::showEvent(e);
 }
 

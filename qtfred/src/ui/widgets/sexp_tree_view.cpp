@@ -1089,11 +1089,11 @@ std::unique_ptr<QMenu> sexp_tree_view::buildContextMenu(QTreeWidgetItem* h) {
 			for (j = 0; j < static_cast<int>(op_menu.size()); j++) {
 				if (op_menu[j].id == get_category(Operators[i].value)) {
 					auto add_act = add_op_submenu[j]->addAction(QString::fromStdString(Operators[i].text),
-						this, [this, i]() { _actions.add_or_replace_operator(i, 0); });
+						this, [this, i]() { _actions.add_or_replace_operator(i, 0); Q_EMIT modified(); });
 					add_act->setEnabled(add_en);
 
 					auto replace_act = replace_op_submenu[j]->addAction(QString::fromStdString(Operators[i].text),
-						this, [this, i]() { _actions.add_or_replace_operator(i, 1); });
+						this, [this, i]() { _actions.add_or_replace_operator(i, 1); Q_EMIT modified(); });
 					replace_act->setEnabled(replace_en);
 
 					auto insert_act = insert_op_submenu[j]->addAction(QString::fromStdString(Operators[i].text),
@@ -1106,11 +1106,11 @@ std::unique_ptr<QMenu> sexp_tree_view::buildContextMenu(QTreeWidgetItem* h) {
 			for (j = 0; j < static_cast<int>(op_submenu.size()); j++) {
 				if (op_submenu[j].id == subcategory_id) {
 					auto add_act = add_op_subcategory_menu[j]->addAction(QString::fromStdString(Operators[i].text),
-						this, [this, i]() { _actions.add_or_replace_operator(i, 0); });
+						this, [this, i]() { _actions.add_or_replace_operator(i, 0); Q_EMIT modified(); });
 					add_act->setEnabled(add_en);
 
 					auto replace_act = replace_op_subcategory_menu[j]->addAction(QString::fromStdString(Operators[i].text),
-						this, [this, i]() { _actions.add_or_replace_operator(i, 1); });
+						this, [this, i]() { _actions.add_or_replace_operator(i, 1); Q_EMIT modified(); });
 					replace_act->setEnabled(replace_en);
 
 					auto insert_act = insert_op_subcategory_menu[j]->addAction(QString::fromStdString(Operators[i].text),
@@ -1520,6 +1520,7 @@ void sexp_tree_view::endOperatorQuickSearch(bool confirm)
 		const int op_num = get_operator_index(chosenOp.toUtf8().constData());
 		if (op_num >= 0) {
 			_actions.add_or_replace_operator(op_num, /*replace_flag*/ 1);
+			Q_EMIT modified();
 			if (tree_nodes[node].handle)
 				tree_item_handle(tree_nodes[node])->setExpanded(true);
 		}
@@ -1580,6 +1581,7 @@ void sexp_tree_view::handleItemChange(QTreeWidgetItem* item, int  /*column*/) {
 		setCurrentItemIndex(node);
 		if (result.operator_index >= 0) {
 			_actions.add_or_replace_operator(result.operator_index, 1);
+			Q_EMIT modified();
 		}
 	} else if (result.negative_number_error) {
 		QMessageBox::critical(this, "Invalid Number", "Can not enter a negative value");
@@ -1602,6 +1604,7 @@ void sexp_tree_view::copyActionHandler() {
 // Paste handler: replaces the current node with clipboard contents via _actions.clipboard_paste_replace().
 void sexp_tree_view::pasteActionHandler() {
 	_actions.clipboard_paste_replace();
+	Q_EMIT modified();
 }
 
 // Inserts an operator ABOVE the current node, wrapping it as a child.
@@ -1622,6 +1625,7 @@ void sexp_tree_view::insertOperatorAction(int op) {
 	}
 
 	setCurrentItemIndex(node);
+	Q_EMIT modified();
 }
 
 // Add Number handler: adds a SEXPT_NUMBER data node via _actions.add_data("number", ...),
@@ -1692,11 +1696,13 @@ void sexp_tree_view::beginItemEdit(QTreeWidgetItem* item) {
 // _actions.replace_data() (if replace) or _actions.add_data() (if add). Frees the list after use.
 void sexp_tree_view::addReplaceTypedDataHandler(int data_idx, bool replace) {
 	_actions.add_or_replace_typed_data(data_idx, replace, m_add_count, m_replace_count);
+	Q_EMIT modified();
 }
 
 // Add Paste handler: adds clipboard contents as a new child via _actions.clipboard_paste_add().
 void sexp_tree_view::addPasteActionHandler() {
 	_actions.clipboard_paste_add();
+	Q_EMIT modified();
 }
 
 // Sets item_index and syncs the Qt selection. If node < 0, clears the selection.
@@ -1719,6 +1725,7 @@ void sexp_tree_view::handleReplaceVariableAction(int id) {
 	const bool allow_type_coercion =
 		(m_modify_variable != 0) || (_model.query_node_argument_type(item_index) == OPF_CONTAINER_VALUE);
 	_actions.replace_variable_with_type_validation(id, node_type, allow_type_coercion);
+	Q_EMIT modified();
 }
 
 // Replace Container Name handler: replaces the current string node with a container name reference.
@@ -1736,6 +1743,7 @@ void sexp_tree_view::handleReplaceContainerNameAction(int idx) {
 		type);
 
 	_actions.replace_container_name(containers[idx]);
+	Q_EMIT modified();
 }
 
 // Replace Container Data handler: replaces the current data node with container data access.
@@ -1754,6 +1762,7 @@ void sexp_tree_view::handleReplaceContainerDataAction(int idx) {
 	// DISCUSSME: what about variable name as SEXP arg type?
 	type &= ~(SEXPT_VARIABLE | SEXPT_CONTAINER_NAME);
 	_actions.replace_container_data(containers[idx], (type | SEXPT_CONTAINER_DATA), true, true, true);
+	Q_EMIT modified();
 
 	auto *handle = tree_item_handle(tree_nodes[item_index]);
 	expand_branch(handle);
