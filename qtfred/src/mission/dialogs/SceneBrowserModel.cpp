@@ -222,6 +222,7 @@ void SceneBrowserModel::moveWingToLayer(int wingIndex, const QString& layerName)
 
 void SceneBrowserModel::moveWaypointPathToLayer(int waypointListIndex, const QString& layerName)
 {
+	if (!SCP_vector_inbounds(Waypoint_lists, waypointListIndex)) return;
 	auto& wl = Waypoint_lists[waypointListIndex];
 	// Moving any one waypoint propagates to the whole path (EditorViewport::setObjectLayerByIndex).
 	// Single inline call — temporary QByteArray lives until end of full expression — safe.

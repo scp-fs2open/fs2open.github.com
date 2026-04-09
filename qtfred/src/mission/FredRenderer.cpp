@@ -1032,8 +1032,9 @@ void FredRenderer::render_frame(int cur_object_index,
 
 	enable_htl();
 	for (auto& jn : Jump_nodes) {
-		if (_viewport->isObjectVisibleInLayer(jn.GetSCPObject())) {
-			jn.Render(&jn.GetSCPObject()->pos);
+		const object* jnObj = jn.GetSCPObject();
+		if (jnObj != nullptr && _viewport->isObjectVisibleInLayer(jnObj)) {
+			jn.Render(&jnObj->pos);
 		}
 	}
 	disable_htl();

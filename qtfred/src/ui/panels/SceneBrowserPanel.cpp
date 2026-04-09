@@ -324,6 +324,7 @@ void SceneBrowserPanel::onTreeStructureChanged()
 {
 	// Create IFF checkboxes on first call after missionLoaded, when Iff_info is populated
 	if (_iffCheckBoxes.isEmpty() && _model->iffCount() > 0) {
+		delete _iffFilterWidget->layout();  // remove any existing layout before setting a new one
 		auto* layout = new FlowLayout(_iffFilterWidget, /*hSpacing=*/4, /*vSpacing=*/2);
 		for (int i = 0; i < _model->iffCount(); i++) {
 			auto* cb = new QCheckBox(_model->getIffName(i), _iffFilterWidget);
