@@ -147,7 +147,7 @@ SexpTreeEditorInterface::SexpTreeEditorInterface(const flagset<TreeFlags>& flags
 SexpTreeEditorInterface::~SexpTreeEditorInterface() = default;
 
 // Returns true if mission-specific (non-builtin) messages exist.
-bool SexpTreeEditorInterface::hasDefaultMessageParamter()
+bool SexpTreeEditorInterface::hasDefaultMessageParameter()
 {
 	return Num_messages > Num_builtin_messages;
 }
@@ -397,6 +397,7 @@ void SexpTreeModel::free_node2(int node)
 	if (modified)
 		*modified = 1;
 	tree_nodes[node].type = SEXPT_UNUSED;
+	tree_nodes[node].handle = nullptr;
 	total_nodes--;
 
 	// Remove any annotation referencing this node so that if allocate_node()
@@ -934,7 +935,7 @@ int SexpTreeModel::query_false(int node) const
 // Look for the valid operator that is the closest match for 'str' and return the operator
 // number of it.  What operators are valid is determined by 'node', and an operator is valid
 // if it is allowed to fit at position 'node'
-const SCP_string& SexpTreeModel::match_closest_operator(const SCP_string& str, int node) const
+SCP_string SexpTreeModel::match_closest_operator(const SCP_string& str, int node) const
 {
 	int z, op, arg_num, opf;
 

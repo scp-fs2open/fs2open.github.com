@@ -170,7 +170,7 @@ public:
 	virtual ~SexpTreeEditorInterface();
 
 	// Returns true if there are mission-specific (non-builtin) messages available
-	virtual bool hasDefaultMessageParamter();
+	virtual bool hasDefaultMessageParameter();
 	// Returns the list of mission-specific message names
 	virtual SCP_vector<SCP_string> getMessages();
 
@@ -510,7 +510,7 @@ public:
 	// Return TRUE if the root operator is OP_FALSE
 	int query_false(int node = -1) const;
 	// Find the valid operator whose name most closely matches 'str' at position 'node'
-	const SCP_string& match_closest_operator(const SCP_string& str, int node) const;
+	SCP_string match_closest_operator(const SCP_string& str, int node) const;
 	// Look up the help text string for the given sexp operator code
 	static const char* help(int code);
 	// Search all editable nodes for matching text; populates 'find' array, returns match count

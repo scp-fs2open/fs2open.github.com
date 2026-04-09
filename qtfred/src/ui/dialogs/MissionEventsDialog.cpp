@@ -227,7 +227,7 @@ SCP_vector<SCP_string> MissionEventsDialog::getMessages()
 	return out;
 }
 
-bool MissionEventsDialog::hasDefaultMessageParamter()
+bool MissionEventsDialog::hasDefaultMessageParameter()
 {
 	return !_model->getMessageList().empty();
 }

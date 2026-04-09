@@ -2762,7 +2762,7 @@ int SexpTreeOPF::query_default_argument_available(int op, int i) const
 		}
 
 		case OPF_MESSAGE:
-			if (_model._interface && _model._interface->hasDefaultMessageParamter())
+			if (_model._interface && _model._interface->hasDefaultMessageParameter())
 				return 1;
 
 			return 0;
