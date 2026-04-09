@@ -87,6 +87,7 @@ namespace fred {
 
 FredView::FredView(QWidget* parent) : QMainWindow(parent), ui(new Ui::FredView()) {
 	ui->setupUi(this);
+	enforceSideDockAreas();
 
 	setFocusPolicy(Qt::NoFocus);
 	setFocusProxy(ui->centralWidget);
@@ -228,6 +229,7 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 	// Scene Outliner dock panel
 	_outlinerPanel = new SceneOutlinerPanel(this, _viewport);
 	addDockWidget(Qt::LeftDockWidgetArea, _outlinerPanel);
+	enforceSideDockAreas();
 
 	// Add a View menu toggle for the outliner
 	auto* outlinerAction = _outlinerPanel->toggleViewAction();
@@ -240,6 +242,7 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 	const auto savedState = settings.value("FredView/mainWindowState").toByteArray();
 	if (!savedState.isEmpty())
 		restoreState(savedState);
+	enforceSideDockAreas();
 }
 
 void FredView::loadMissionFile(const QString& pathName, int flags) {
@@ -759,6 +762,20 @@ void FredView::ensureViewportFocus() {
 		ui->centralWidget->setFocus(Qt::OtherFocusReason);
 	}
 }
+
+void FredView::enforceSideDockAreas()
+{
+	const auto allowedAreas = Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea;
+	for (auto* dock : findChildren<QDockWidget*>()) {
+		dock->setAllowedAreas(allowedAreas);
+
+		const auto area = dockWidgetArea(dock);
+		if (area == Qt::TopDockWidgetArea || area == Qt::BottomDockWidgetArea || area == Qt::NoDockWidgetArea) {
+			addDockWidget(Qt::LeftDockWidgetArea, dock);
+		}
+	}
+}
+
 bool FredView::isMissionModified() const {
 	return _missionModified;
 }
