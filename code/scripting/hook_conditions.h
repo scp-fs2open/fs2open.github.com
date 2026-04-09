@@ -79,7 +79,7 @@ struct WeaponDeathConditions {
 	const weapon* dying_wep;
 };
 
-struct MineDetonatedConditions {
+struct MineProximityTriggeredConditions {
 	HOOK_DEFINE_CONDITIONS;
 	const weapon* mine_wep;
 	const ship* trigger_shipp;

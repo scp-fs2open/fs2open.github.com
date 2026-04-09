@@ -244,9 +244,9 @@ HOOK_CONDITIONS_START(WeaponDeathConditions)
 	HOOK_CONDITION(WeaponDeathConditions, "Weapon class", "Specifies the class of the weapon that died.", dying_wep, conditionParseWeaponClass, conditionCompareWeaponClass);
 HOOK_CONDITIONS_END
 
-HOOK_CONDITIONS_START(MineDetonatedConditions)
-	HOOK_CONDITION(MineDetonatedConditions, "Mine class", "Specifies the class of the mine that detonated.", mine_wep, conditionParseWeaponClass, conditionCompareWeaponClass);
-	HOOK_CONDITION_SHIPP(MineDetonatedConditions, "", "that triggered the mine.", trigger_shipp);
+HOOK_CONDITIONS_START(MineProximityTriggeredConditions)
+	HOOK_CONDITION(MineProximityTriggeredConditions, "Mine class", "Specifies the class of the mine that was triggered.", mine_wep, conditionParseWeaponClass, conditionCompareWeaponClass);
+	HOOK_CONDITION_SHIPP(MineProximityTriggeredConditions, "", "that triggered the mine.", trigger_shipp);
 HOOK_CONDITIONS_END
 
 HOOK_CONDITIONS_START(ObjectDeathConditions)

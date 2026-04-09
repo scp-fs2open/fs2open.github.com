@@ -6364,7 +6364,7 @@ void weapon_process_pre( object *obj, float  frame_time)
 
 				// Probabilistic detonation: skip this ship if the chance roll fails.
 				// This check sits before homing_object assignment and the scripting hook so
-				// that OnMineDetonated only fires when the mine actually detonates.
+				// that OnMineProximityTriggered only fires when the mine actually commits to an action.
 				if (wip->mine_detonate_chance < 1.0f && frand() >= wip->mine_detonate_chance)
 					continue;
 
@@ -6377,7 +6377,7 @@ void weapon_process_pre( object *obj, float  frame_time)
 				if (wip->mine_chase_duration > 0.0f) {
 					// Chase mode: become a guided missile for the configured duration.
 					// Contact with the ship (handled by normal weapon collision) causes detonation.
-					// The OnMineDetonated hook does not fire here — the mine hasn't detonated yet.
+					// OnMineProximityTriggered does not fire here — the mine hasn't committed to detonation yet.
 					wp->mine_chase_expires = _timestamp(fl2i(wip->mine_chase_duration * 1000.0f));
 					wp->weapon_max_vel = wip->max_speed;
 				} else {
@@ -6387,10 +6387,10 @@ void weapon_process_pre( object *obj, float  frame_time)
 						scripting::hook_param("Ship",     'o', check_obj),
 						scripting::hook_param("Position", 'o', scripting::api::l_Vector.Set(obj->pos))
 					);
-					scripting::hooks::MineDetonatedConditions mineConds{ wp, &Ships[check_obj->instance] };
-					if (scripting::hooks::OnMineDetonated->isActive()) {
-						bool overridden = scripting::hooks::OnMineDetonated->isOverride(mineConds, mineParamList);
-						scripting::hooks::OnMineDetonated->run(mineConds, mineParamList);
+					scripting::hooks::MineProximityTriggeredConditions mineConds{ wp, &Ships[check_obj->instance] };
+					if (scripting::hooks::OnMineProximityTriggered->isActive()) {
+						bool overridden = scripting::hooks::OnMineProximityTriggered->isOverride(mineConds, mineParamList);
+						scripting::hooks::OnMineProximityTriggered->run(mineConds, mineParamList);
 						if (overridden)
 							return;
 					}
