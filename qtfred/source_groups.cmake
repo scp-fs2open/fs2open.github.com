@@ -38,6 +38,8 @@ add_file_folder("Source/Mission"
 add_file_folder("Source/Mission/Dialogs"
     src/mission/dialogs/AbstractDialogModel.cpp
     src/mission/dialogs/AbstractDialogModel.h
+	src/mission/dialogs/SceneOutlinerModel.cpp
+	src/mission/dialogs/SceneOutlinerModel.h
 	src/mission/dialogs/AboutDialogModel.cpp
 	src/mission/dialogs/AboutDialogModel.h
 	src/mission/dialogs/AsteroidEditorDialogModel.cpp
@@ -270,6 +272,11 @@ add_file_folder("Source/UI/General"
 	src/ui/dialogs/General/ImagePickerDialog.h
 )
 
+add_file_folder("Source/UI/Panels"
+	src/ui/panels/SceneOutlinerPanel.cpp
+	src/ui/panels/SceneOutlinerPanel.h
+)
+
 add_file_folder("Source/UI/Util"
 	src/ui/util/ImageRenderer.cpp
 	src/ui/util/ImageRenderer.h
@@ -364,6 +371,7 @@ add_file_folder("UI"
 	ui/VariableDialog.ui
 	ui/WingEditorDialog.ui
 	ui/SaveAsTemplateDialog.ui
+	ui/SceneOutlinerPanel.ui
 	ui/TemplateBrowserDialog.ui
 )
 

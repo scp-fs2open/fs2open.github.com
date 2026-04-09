@@ -5850,6 +5850,18 @@ void parse_waypoint_list(mission *pm)
 		stuff_int(&cb);
 	}
 
+	SCP_string wpt_fred_layer = "Default";
+	if (optional_string("+Layer:")) {
+		stuff_string(wpt_fred_layer, F_NAME);
+		if (!mission_has_layer_name(&The_mission, wpt_fred_layer)) {
+			if (wpt_fred_layer.empty()) {
+				wpt_fred_layer = "Default";
+			} else {
+				The_mission.fred_layers.push_back(wpt_fred_layer);
+			}
+		}
+	}
+
 	SCP_vector<vec3d> vec_list;
 	required_string("$List:");
 	stuff_vec3d_list(vec_list);
@@ -5857,13 +5869,14 @@ void parse_waypoint_list(mission *pm)
 	waypoint_add_list(name_buf, vec_list);
 
 	// Apply display properties to the list just added
-	if (no_draw_lines || has_custom_color) {
-		waypoint_list* wl = find_matching_waypoint_list(name_buf);
-		if (wl) {
+	waypoint_list* wl = find_matching_waypoint_list(name_buf);
+	if (wl) {
+		if (no_draw_lines || has_custom_color) {
 			wl->set_no_draw_lines(no_draw_lines);
 			if (has_custom_color)
 				wl->set_color(cr, cg, cb);
 		}
+		wl->set_fred_layer(wpt_fred_layer);
 	}
 }
 
@@ -5909,6 +5922,19 @@ void parse_waypoints_and_jumpnodes(mission *pm)
 			int hide;
 			stuff_boolean(&hide);
 			jnp.SetVisibility(!hide);
+		}
+
+		if (optional_string("+Layer:")) {
+			SCP_string layer_name;
+			stuff_string(layer_name, F_NAME);
+			if (!mission_has_layer_name(&The_mission, layer_name)) {
+				if (layer_name.empty()) {
+					layer_name = "Default";
+				} else {
+					The_mission.fred_layers.push_back(layer_name);
+				}
+			}
+			jnp.SetFredLayer(layer_name);
 		}
 
 		Jump_nodes.push_back(std::move(jnp));

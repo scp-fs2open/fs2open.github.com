@@ -29,6 +29,8 @@ class WingEditorDialog;
 class PropEditorDialog;
 }
 
+class SceneOutlinerPanel;
+
 namespace Ui {
 class FredView;
 }
@@ -47,6 +49,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 	RenderWidget* getRenderWidget();
 
 	void showContextMenu(const QPoint& globalPos);
+	void showContextMenu(int objNum, const QPoint& globalPos);
 
  public slots:
 	void openLoadMissionDialog();
@@ -227,6 +230,8 @@ class FredView: public QMainWindow, public IDialogProvider {
 
 	QLabel* _statusBarViewmode = nullptr;
 	QLabel* _statusBarUnitsLabel = nullptr;
+
+	SceneOutlinerPanel* _outlinerPanel = nullptr;
 
 	QMenu* _viewPopup = nullptr;
 	QMenu* _createSubmenu = nullptr;

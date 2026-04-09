@@ -17,6 +17,7 @@
 #include <ui/dialogs/ShipEditor/ShipEditorDialog.h>
 #include <ui/dialogs/WingEditorDialog.h>
 #include <ui/dialogs/PropEditorDialog.h>
+#include <ui/panels/SceneOutlinerPanel.h>
 #include <ui/dialogs/MissionEventsDialog.h>
 #include <mission/dialogs/MissionEventsDialogModel.h>
 #include <ui/dialogs/AsteroidEditorDialog.h>
@@ -224,6 +225,21 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 	connect(this, &FredView::viewIdle, this, [this]() { ui->actionUndo->setEnabled(fred->undoAvailable != 0); });
 	connect(this, &FredView::viewIdle, this, [this]() { ui->actionDisable_Undo->setChecked(fred->autosaveDisabled != 0); });
 
+	// Scene Outliner dock panel
+	_outlinerPanel = new SceneOutlinerPanel(this, _viewport);
+	addDockWidget(Qt::LeftDockWidgetArea, _outlinerPanel);
+
+	// Add a View menu toggle for the outliner
+	auto* outlinerAction = _outlinerPanel->toggleViewAction();
+	outlinerAction->setText(tr("Scene Outliner"));
+	ui->menuView->insertAction(ui->menuView->actions().first(), outlinerAction);
+	ui->menuView->insertSeparator(ui->menuView->actions().at(1));
+
+	// Restore dock layout from last session
+	QSettings settings;
+	const auto savedState = settings.value("FredView/mainWindowState").toByteArray();
+	if (!savedState.isEmpty())
+		restoreState(savedState);
 }
 
 void FredView::loadMissionFile(const QString& pathName, int flags) {
@@ -798,6 +814,29 @@ void FredView::connectActionToViewSetting(QAction* option, std::vector<bool>* ve
 		});
 }
 
+static bool canObjectBeAssignedLayer(int objType) {
+	return (objType == OBJ_SHIP) || (objType == OBJ_START) || (objType == OBJ_PROP) ||
+	       (objType == OBJ_JUMP_NODE) || (objType == OBJ_WAYPOINT);
+}
+
+void FredView::showContextMenu(int objNum, const QPoint& globalPos) {
+	fred->selectObject(objNum);
+	const auto objType = Objects[objNum].type;
+	const bool canAssignLayer = canObjectBeAssignedLayer(objType);
+	_moveToLayerMenu->menuAction()->setVisible(canAssignLayer);
+	if (canAssignLayer)
+		populateMoveToLayerMenu(objNum);
+
+	SCP_string objName;
+	if (fred->getNumMarked() > 1) {
+		objName = "Marked Objects";
+	} else {
+		objName = object_name(objNum);
+	}
+	_editObjectAction->setText(tr("Edit %1").arg(objName.c_str()));
+	_editPopup->exec(globalPos);
+}
+
 void FredView::showContextMenu(const QPoint& globalPos) {
 	auto localPos = ui->centralWidget->mapFromGlobal(globalPos);
 	_lastContextMenuLocalPos = localPos;
@@ -806,7 +845,7 @@ void FredView::showContextMenu(const QPoint& globalPos) {
 	if (obj >= 0) {
 		fred->selectObject(obj);
 		const auto objType = Objects[obj].type;
-		const bool canAssignLayer = (objType == OBJ_SHIP) || (objType == OBJ_START) || (objType == OBJ_PROP);
+		const bool canAssignLayer = canObjectBeAssignedLayer(objType);
 		_moveToLayerMenu->menuAction()->setVisible(canAssignLayer);
 		if (canAssignLayer) {
 			populateMoveToLayerMenu(obj);
@@ -1141,6 +1180,9 @@ void FredView::changeEvent(QEvent* event) {
 	}
 }
 void FredView::closeEvent(QCloseEvent* event) {
+	QSettings settings;
+	settings.setValue("FredView/mainWindowState", saveState());
+
 	if (!maybePromptToSaveMissionChanges(tr("closing QtFRED"))) {
 		event->ignore();
 		return;

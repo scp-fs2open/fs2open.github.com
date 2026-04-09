@@ -4855,6 +4855,15 @@ int Fred_mission_save::save_waypoints()
 				else
 					fout(" %s", "false");
 			}
+
+			const SCP_string& jn_layer = jnp->GetFredLayer();
+			if (!jn_layer.empty() && stricmp(jn_layer.c_str(), "Default") != 0) {
+				if (optional_string_fred("+Layer:", "$Jump Node:"))
+					parse_comments();
+				else
+					fout("\n+Layer:");
+				fout(" %s", jn_layer.c_str());
+			}
 		}
 
 		fso_comment_pop();
@@ -4885,6 +4894,15 @@ int Fred_mission_save::save_waypoints()
 					fout("\n+Color:");
 				}
 				fout(" %d %d %d", ii.get_color_r(), ii.get_color_g(), ii.get_color_b());
+			}
+
+			const SCP_string& wpt_layer = ii.get_fred_layer();
+			if (!wpt_layer.empty() && stricmp(wpt_layer.c_str(), "Default") != 0) {
+				if (optional_string_fred("+Layer:", "$List:"))
+					parse_comments();
+				else
+					fout("\n+Layer:");
+				fout(" %s", wpt_layer.c_str());
 			}
 		}
 

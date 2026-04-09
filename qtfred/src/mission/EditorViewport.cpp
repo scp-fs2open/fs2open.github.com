@@ -902,6 +902,20 @@ void EditorViewport::setObjectLayerByIndex(int objectIndex, size_t layerIndex) {
 		if (prop != nullptr) {
 			prop->fred_layer = layerName;
 		}
+	} else if (Objects[objectIndex].type == OBJ_JUMP_NODE) {
+		auto* jn = jumpnode_get_by_objnum(objectIndex);
+		if (jn != nullptr) {
+			jn->SetFredLayer(layerName);
+		}
+	} else if (Objects[objectIndex].type == OBJ_WAYPOINT) {
+		// Layer is tracked at the path level; sync all waypoints in the path to the same layer
+		auto* wl = find_waypoint_list_with_instance(Objects[objectIndex].instance, nullptr);
+		if (wl != nullptr) {
+			wl->set_fred_layer(layerName);
+			for (const auto& wpt : wl->get_waypoints()) {
+				_objectLayers[wpt.get_objnum()] = layerIndex;
+			}
+		}
 	}
 }
 
@@ -977,6 +991,7 @@ bool EditorViewport::setLayerVisibility(const SCP_string& name, bool visible, SC
 	}
 
 	needsUpdate();
+	editor->notifyLayerVisibilityChanged();
 	return true;
 }
 
@@ -1036,6 +1051,18 @@ void EditorViewport::reloadLayersFromMission() {
 			auto* prop = prop_id_lookup(objp->instance);
 			if (prop != nullptr) {
 				const auto found = getLayerIndex(prop->fred_layer);
+				layerIndex = found == static_cast<size_t>(-1) ? 0 : found;
+			}
+		} else if (objp->type == OBJ_JUMP_NODE) {
+			auto* jn = jumpnode_get_by_objnum(objectIndex);
+			if (jn != nullptr) {
+				const auto found = getLayerIndex(jn->GetFredLayer());
+				layerIndex = found == static_cast<size_t>(-1) ? 0 : found;
+			}
+		} else if (objp->type == OBJ_WAYPOINT) {
+			auto* wl = find_waypoint_list_with_instance(objp->instance, nullptr);
+			if (wl != nullptr) {
+				const auto found = getLayerIndex(wl->get_fred_layer());
 				layerIndex = found == static_cast<size_t>(-1) ? 0 : found;
 			}
 		}

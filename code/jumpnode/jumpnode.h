@@ -15,6 +15,7 @@
 #include <cstdlib>
 
 #include "globalincs/globals.h"
+#include "globalincs/pstypes.h"
 #include "graphics/2d.h"
 
 struct vec3d;
@@ -45,6 +46,7 @@ private:
 	int m_flags {0};
 	color m_display_color;			// Color node will be shown in (Default:0/255/0/255)
 	vec3d m_pos;
+	SCP_string m_fred_layer = "Default";	// FRED view layer assignment
 
 	CJumpNode(const CJumpNode&);
 	CJumpNode& operator=(const CJumpNode&) = delete;
@@ -75,6 +77,10 @@ public:
 	void SetName(const char *new_name);
 	void SetDisplayName(const char* new_name);
 	void SetVisibility(bool enabled);
+
+	//Getting/Setting FRED layer
+	const SCP_string& GetFredLayer() const { return m_fred_layer; }
+	void SetFredLayer(const SCP_string& layer) { m_fred_layer = layer; }
 
 	//Query
 	bool IsHidden() const;
