@@ -263,6 +263,8 @@ typedef struct spawn_weapon_info
 	float   spawn_interval_delay;               //  A delay before starting continuous spawn
 	float   spawn_chance;						//  Liklihood of spawning on every spawn interval
 	particle::ParticleEffectHandle spawn_effect; // Effect for continuous spawnings
+	bool    spawn_aimed;						//  If true, aim child toward the parent's homing_object instead of a random cone; default false
+	float   spawn_aim_lead;					//  Seconds of constant-velocity lead extrapolation for aimed spawns; 0.0 = no lead; default 0.0
 } spawn_weapon_info;
 
 // use this to extend a beam to "infinity"
@@ -452,6 +454,8 @@ struct weapon_info
 	SCP_vector<int> proximity_class;   // ship class (ship_info) indices that trigger detonation; empty = any class
 	float mine_sensors_range;			// range at which mine shows as a distorted blip; -1.0f = always, 0.0f = never
 	float mine_targetable_range;		// range at which mine is fully targetable; -1.0f = always, 0.0f = never
+	float mine_detonate_chance;			// probability [0,1] that a proximity contact actually detonates the mine; default 1.0
+	float mine_stealth_proximity_multiplier; // scale factor applied to proximity_radius for stealth ships; 0.0 = undetectable, 1.0 = normal range; default 1.0
 	float flak_detonation_accuracy;		//How far away from a target a flak shell will blow up. Standard is 65.0f
 	float flak_targeting_accuracy;		//Determines the amount of jitter applied to flak targeting. USE WITH CAUTION!
 	float untargeted_flak_range_penalty; //Untargeted flak shells detonate after travelling max range - this parameter. Default 20.0f

@@ -1429,6 +1429,22 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			stuff_string_list(Pending_mine_class_names[wip->name]);
 		}
 
+		if (optional_string("+Detonate Chance:")) {
+			stuff_float(&wip->mine_detonate_chance);
+			if (wip->mine_detonate_chance < 0.0f || wip->mine_detonate_chance > 1.0f) {
+				wip->mine_detonate_chance = CLAMP(wip->mine_detonate_chance, 0.0f, 1.0f);
+				Warning(LOCATION, "Mine weapon '%s': +Detonate Chance must be in [0.0, 1.0]. Clamping.\n", wip->name);
+			}
+		}
+
+		if (optional_string("+Stealth Proximity Multiplier:")) {
+			stuff_float(&wip->mine_stealth_proximity_multiplier);
+			if (wip->mine_stealth_proximity_multiplier < 0.0f) {
+				wip->mine_stealth_proximity_multiplier = 0.0f;
+				Warning(LOCATION, "Mine weapon '%s': +Stealth Proximity Multiplier cannot be negative. Setting to 0.\n", wip->name);
+			}
+		}
+
 		// Warn if targetable range makes sensors range unreachable
 		bool targetable_infinite = (wip->mine_targetable_range < 0.0f);
 		bool sensors_infinite    = (wip->mine_sensors_range < 0.0f);
@@ -2876,6 +2892,36 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			wip->spawn_info[spawn_weap].spawn_effect = particle::util::parseEffect(wip->name);
 			spawn_weap++;
 		}
+	}
+
+	spawn_weap = 0;
+
+	while (optional_string("$Spawn Aimed:"))
+	{
+		bool dum_bool;
+		stuff_boolean(&dum_bool);
+		if (spawn_weap < MAX_SPAWN_TYPES_PER_WEAPON)
+			wip->spawn_info[spawn_weap++].spawn_aimed = dum_bool;
+	}
+
+	spawn_weap = 0;
+
+	while (optional_string("$Spawn Aim Lead:"))
+	{
+		stuff_float(&dum_float);
+		if (spawn_weap < MAX_SPAWN_TYPES_PER_WEAPON) {
+			if (dum_float < 0.0f) {
+				Warning(LOCATION, "Weapon '%s': $Spawn Aim Lead cannot be negative. Setting to 0.\n", wip->name);
+				dum_float = 0.0f;
+			}
+			wip->spawn_info[spawn_weap++].spawn_aim_lead = dum_float;
+		}
+	}
+
+	// Cross-validate aimed spawn fields
+	for (int si = 0; si < wip->num_spawn_weapons_defined; si++) {
+		if (wip->spawn_info[si].spawn_aim_lead > 0.0f && !wip->spawn_info[si].spawn_aimed)
+			Warning(LOCATION, "Weapon '%s' spawn %d: $Spawn Aim Lead is set but $Spawn Aimed is NO — lead will be ignored.\n", wip->name, si);
 	}
 
 	if (optional_string("$Lifetime Variation Factor When Child:"))
@@ -6200,7 +6246,7 @@ void weapon_process_pre( object *obj, float  frame_time)
 		bool armed = f2fl(Missiontime - wp->creation_time) >= wip->mine_arm_time;
 
 		if (armed) {
-			float prox_sq = wip->proximity_radius * wip->proximity_radius;
+			float base_prox = wip->proximity_radius;
 
 			for (object *check_obj = GET_FIRST(&obj_used_list);
 			     check_obj != END_OF_LIST(&obj_used_list);
@@ -6217,8 +6263,19 @@ void weapon_process_pre( object *obj, float  frame_time)
 				if (check_obj == obj)
 					continue;
 
-				// Distance check first (cheap rejection)
-				if (vm_vec_dist_squared(&obj->pos, &check_obj->pos) > prox_sq)
+				// Protected ships are immune to mine proximity detonation
+				if (check_obj->flags[Object::Object_Flags::Protected])
+					continue;
+
+				// Stealth ships may have a reduced proximity trigger radius
+				float effective_prox = base_prox;
+				if (wip->mine_stealth_proximity_multiplier < 1.0f &&
+				    Ships[check_obj->instance].flags[Ship::Ship_Flags::Stealth]) {
+					effective_prox *= wip->mine_stealth_proximity_multiplier;
+				}
+
+				// Distance check (cheap rejection)
+				if (vm_vec_dist_squared(&obj->pos, &check_obj->pos) > effective_prox * effective_prox)
 					continue;
 
 				// Apply filters: AND across categories, OR within each category
@@ -6258,6 +6315,12 @@ void weapon_process_pre( object *obj, float  frame_time)
 					}
 					if (!matched) continue;
 				}
+
+				// Probabilistic detonation: skip this ship if the chance roll fails.
+				// This check sits before homing_object assignment and the scripting hook so
+				// that OnMineDetonated only fires when the mine actually detonates.
+				if (wip->mine_detonate_chance < 1.0f && frand() >= wip->mine_detonate_chance)
+					continue;
 
 				// Set the triggering ship as the homing object and target so child
 				// spawns with 'inherit parent target' will home on it.  Both fields
@@ -7525,18 +7588,31 @@ void spawn_child_weapons(object *objp, int spawn_index_override)
 			matrix	orient;
 
 
-			// for multiplayer, use the static randvec functions based on the network signatures to provide
-			// the randomness so that it is the same on all machines.
-			if ( Game_mode & GM_MULTIPLAYER ) {
-				if (wip->spawn_info[i].spawn_min_angle <= 0)
-					static_rand_cone(objp->net_signature + j, &tvec, fvec, wip->spawn_info[i].spawn_angle);
-				else
-					static_rand_cone(objp->net_signature + j, &tvec, fvec, wip->spawn_info[i].spawn_min_angle, wip->spawn_info[i].spawn_angle);
+			// Compute spawn direction.
+			if (wip->spawn_info[i].spawn_aimed && wp != nullptr && weapon_has_homing_object(wp)) {
+				// Aimed spawn: point directly at the homing object with optional constant-velocity
+				// lead extrapolation.  wp != nullptr guard handles beam-spawned weapons (which have
+				// no weapon struct) — they fall through to the random cone below.
+				// Direction is deterministic (derived from a known object position), so no
+				// static_rand seeding is needed for multiplayer consistency.
+				vec3d target_pos = wp->homing_object->pos;
+				if (wip->spawn_info[i].spawn_aim_lead > 0.0f)
+					vm_vec_scale_add2(&target_pos, &wp->homing_object->phys_info.vel, wip->spawn_info[i].spawn_aim_lead);
+				vm_vec_normalized_dir(&tvec, &target_pos, opos);
 			} else {
-				if(wip->spawn_info[i].spawn_min_angle <= 0)
-					vm_vec_random_cone(&tvec, fvec, wip->spawn_info[i].spawn_angle);
-				else
-					vm_vec_random_cone(&tvec, fvec, wip->spawn_info[i].spawn_min_angle, wip->spawn_info[i].spawn_angle);
+				// Standard random cone — for multiplayer, use static randvec functions keyed on
+				// network signatures so all machines produce the same spread.
+				if (Game_mode & GM_MULTIPLAYER) {
+					if (wip->spawn_info[i].spawn_min_angle <= 0)
+						static_rand_cone(objp->net_signature + j, &tvec, fvec, wip->spawn_info[i].spawn_angle);
+					else
+						static_rand_cone(objp->net_signature + j, &tvec, fvec, wip->spawn_info[i].spawn_min_angle, wip->spawn_info[i].spawn_angle);
+				} else {
+					if (wip->spawn_info[i].spawn_min_angle <= 0)
+						vm_vec_random_cone(&tvec, fvec, wip->spawn_info[i].spawn_angle);
+					else
+						vm_vec_random_cone(&tvec, fvec, wip->spawn_info[i].spawn_min_angle, wip->spawn_info[i].spawn_angle);
+				}
 			}
 			vm_vec_scale_add(&pos, opos, &tvec, objp->radius);
 
@@ -9708,6 +9784,8 @@ void weapon_info::reset()
 	this->proximity_class.clear();
 	this->mine_sensors_range = -1.0f;
 	this->mine_targetable_range = -1.0f;
+	this->mine_detonate_chance = 1.0f;
+	this->mine_stealth_proximity_multiplier = 1.0f;
 
 	this->flak_detonation_accuracy = 65.0f;
 	this->flak_targeting_accuracy = 60.0f; // Standard value as defined in flak.cpp
@@ -9754,6 +9832,8 @@ void weapon_info::reset()
 		this->spawn_info[i].spawn_interval = -1.f;
 		this->spawn_info[i].spawn_interval_delay = -1.f;
 		this->spawn_info[i].spawn_chance = 1.f;
+		this->spawn_info[i].spawn_aimed = false;
+		this->spawn_info[i].spawn_aim_lead = 0.0f;
 	}
 
 	this->lifetime_variation_factor_when_child = 0.2f;
