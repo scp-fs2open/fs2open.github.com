@@ -1031,7 +1031,11 @@ void FredRenderer::render_frame(int cur_object_index,
 	gr_set_color(0, 160, 0);
 
 	enable_htl();
-	jumpnode_render_all();
+	for (auto& jn : Jump_nodes) {
+		if (_viewport->isObjectVisibleInLayer(jn.GetSCPObject())) {
+			jn.Render(&jn.GetSCPObject()->pos);
+		}
+	}
 	disable_htl();
 
 	sprintf(buf, "(%.1f,%.1f,%.1f)", _viewport->eye_pos.xyz.x, _viewport->eye_pos.xyz.y, _viewport->eye_pos.xyz.z);
