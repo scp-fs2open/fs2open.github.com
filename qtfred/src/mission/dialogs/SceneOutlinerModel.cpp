@@ -74,7 +74,7 @@ void SceneOutlinerModel::buildTree()
 
 			// Find this wing's layer from its first valid member
 			SCP_string wingLayer = "Default";
-			for (int si = 0; si < Wings[wi].current_count; si++) {
+			for (int si = 0; si < Wings[wi].wave_count; si++) {
 				int shipIdx = Wings[wi].ship_index[si];
 				if (shipIdx < 0) continue;
 				int objNum = Ships[shipIdx].objnum;
@@ -90,7 +90,7 @@ void SceneOutlinerModel::buildTree()
 			wingObj.objNum = -1;
 			wingObj.displayName = QString::fromUtf8(Wings[wi].name);
 
-			for (int si = 0; si < Wings[wi].current_count; si++) {
+			for (int si = 0; si < Wings[wi].wave_count; si++) {
 				int shipIdx = Wings[wi].ship_index[si];
 				if (shipIdx < 0) continue;
 				int objNum = Ships[shipIdx].objnum;
@@ -219,7 +219,7 @@ void SceneOutlinerModel::moveObjectToLayer(int objNum, const QString& layerName)
 void SceneOutlinerModel::moveWingToLayer(int wingIndex, const QString& layerName)
 {
 	const QByteArray layer = layerName.toUtf8();
-	for (int si = 0; si < Wings[wingIndex].current_count; si++) {
+	for (int si = 0; si < Wings[wingIndex].wave_count; si++) {
 		int shipIdx = Wings[wingIndex].ship_index[si];
 		if (shipIdx < 0) continue;
 		int objNum = Ships[shipIdx].objnum;
@@ -273,7 +273,7 @@ void SceneOutlinerModel::multiSelectFromOutliner(const QVector<int>& objNums)
 void SceneOutlinerModel::selectWingFromOutliner(int wingIndex)
 {
 	QVector<int> objNums;
-	for (int si = 0; si < Wings[wingIndex].current_count; si++) {
+	for (int si = 0; si < Wings[wingIndex].wave_count; si++) {
 		int shipIdx = Wings[wingIndex].ship_index[si];
 		if (shipIdx < 0) continue;
 		int objNum = Ships[shipIdx].objnum;
