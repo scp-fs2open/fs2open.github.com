@@ -517,11 +517,13 @@ void ShipEditorDialogModel::initializeData()
 std::vector<std::pair<SCP_string, bool>> ShipEditorDialogModel::getArrivalPaths() const
 {
 	std::vector<std::pair<SCP_string, bool>> m_path_list;
+	if (_m_arrival_target < 0 || _m_arrival_target >= MAX_SHIPS)
+		return m_path_list;
 	int target_class = Ships[_m_arrival_target].ship_info_index;
 	auto m_model = model_get(Ship_info[target_class].model_num);
-	Assert(m_model->ship_bay);
+	if (!m_model || !m_model->ship_bay || m_model->ship_bay->num_paths <= 0)
+		return m_path_list;
 	auto m_num_paths = m_model->ship_bay->num_paths;
-	Assert(m_num_paths > 0);
 	auto m_path_mask = Ships[single_ship].arrival_path_mask;
 
 	for (int i = 0; i < m_num_paths; i++) {
@@ -540,11 +542,13 @@ std::vector<std::pair<SCP_string, bool>> ShipEditorDialogModel::getArrivalPaths(
 std::vector<std::pair<SCP_string, bool>> ShipEditorDialogModel::getDeparturePaths() const
 {
 	std::vector<std::pair<SCP_string, bool>> m_path_list;
-	int target_class = Ships[_m_arrival_target].ship_info_index;
+	if (_m_departure_target < 0 || _m_departure_target >= MAX_SHIPS)
+		return m_path_list;
+	int target_class = Ships[_m_departure_target].ship_info_index;
 	auto m_model = model_get(Ship_info[target_class].model_num);
-	Assert(m_model->ship_bay);
+	if (!m_model || !m_model->ship_bay || m_model->ship_bay->num_paths <= 0)
+		return m_path_list;
 	auto m_num_paths = m_model->ship_bay->num_paths;
-	Assert(m_num_paths > 0);
 	auto m_path_mask = Ships[single_ship].departure_path_mask;
 
 	for (int i = 0; i < m_num_paths; i++) {

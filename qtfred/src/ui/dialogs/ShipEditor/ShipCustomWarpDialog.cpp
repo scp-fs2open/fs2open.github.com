@@ -81,11 +81,13 @@ void ShipCustomWarpDialog::on_comboBoxType_currentIndexChanged(int index)
 }
 void ShipCustomWarpDialog::on_lineEditStartSound_editingFinished()
 {
-	_model->setStartSound(ui->lineEditStartSound->text().toUtf8().constData());
+	SCP_string startSound = ui->lineEditStartSound->text().toUtf8().constData();
+	_model->setStartSound(startSound);
 }
 void ShipCustomWarpDialog::on_lineEditEndSound_editingFinished()
 {
-	_model->setEndSound(ui->lineEditEndSound->text().toUtf8().constData());
+	SCP_string endSound = ui->lineEditEndSound->text().toUtf8().constData();
+	_model->setEndSound(endSound);
 }
 void ShipCustomWarpDialog::on_doubleSpinBoxEngage_valueChanged(double value)
 {
@@ -109,7 +111,8 @@ void ShipCustomWarpDialog::on_doubleSpinBoxRadius_valueChanged(double value)
 }
 void ShipCustomWarpDialog::on_lineEditAnim_editingFinished()
 {
-	_model->setAnim(ui->lineEditAnim->text().toUtf8().constData());
+	SCP_string anim = ui->lineEditAnim->text().toUtf8().constData();
+	_model->setAnim(anim);
 }
 void ShipCustomWarpDialog::on_checkBoxSupercap_toggled(bool state)
 {

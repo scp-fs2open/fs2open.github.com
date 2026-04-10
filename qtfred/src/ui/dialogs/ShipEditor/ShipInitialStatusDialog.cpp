@@ -127,11 +127,13 @@ void ShipInitialStatusDialog::on_subIntegritySpinBox_valueChanged(int value)
 }
 void ShipInitialStatusDialog::on_cargoEdit_editingFinished()
 {
-	_model->setCargo(ui->cargoEdit->text().toUtf8().constData());
+	SCP_string cargo = ui->cargoEdit->text().toUtf8().constData();
+	_model->setCargo(cargo);
 }
 void ShipInitialStatusDialog::on_colourComboBox_currentIndexChanged(int index)
 {
-	_model->setColour(ui->colourComboBox->itemText(index).toUtf8().constData());
+	SCP_string colour = ui->colourComboBox->itemText(index).toUtf8().constData();
+	_model->setColour(colour);
 }
 void ShipInitialStatusDialog::on_okPushButton_clicked()
 {
