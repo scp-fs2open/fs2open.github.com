@@ -36,32 +36,25 @@
           <number>0</number>
          </property>
          <item>
-          <layout class="QGridLayout" name="firstColumnOptions">
-           <item row="1" column="0">
-            <widget class="QLabel" name="shipDisplayNameLabel">
-             <property name="text">
-              <string>Display Name</string>
-             </property>
-            </widget>
-           </item>
-           <item row="5" column="0">
-            <widget class="QLabel" name="altNameLabel">
-             <property name="text">
-              <string>Alt Name</string>
-             </property>
-            </widget>
-           </item>
-           <item row="6" column="1">
-            <widget class="QComboBox" name="AIClassCombo">
-             <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Sets the Ship's AI&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-             </property>
-            </widget>
-           </item>
+          <layout class="QFormLayout" name="formLayout">
            <item row="0" column="0">
             <widget class="QLabel" name="shipNameLabel">
              <property name="text">
               <string>Ship Name</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QLineEdit" name="shipNameEdit">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Sets the ship's name&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="shipDisplayNameLabel">
+             <property name="text">
+              <string>Display Name</string>
              </property>
             </widget>
            </item>
@@ -72,41 +65,17 @@
              </property>
             </widget>
            </item>
-           <item row="7" column="1">
-            <widget class="QComboBox" name="teamCombo">
+           <item row="2" column="0">
+            <widget class="QLabel" name="shipClassLabel">
+             <property name="text">
+              <string>Ship Class</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QComboBox" name="shipClassCombo">
              <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Sets the ship's team&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-             </property>
-            </widget>
-           </item>
-           <item row="8" column="0">
-            <widget class="QLabel" name="cargoLabel">
-             <property name="text">
-              <string>Cargo</string>
-             </property>
-            </widget>
-           </item>
-           <item row="6" column="0">
-            <widget class="QLabel" name="AIClassLabel">
-             <property name="text">
-              <string>AI Class</string>
-             </property>
-            </widget>
-           </item>
-           <item row="7" column="0">
-            <widget class="QLabel" name="teamLabel">
-             <property name="text">
-              <string>Team</string>
-             </property>
-            </widget>
-           </item>
-           <item row="8" column="1">
-            <widget class="QComboBox" name="cargoCombo">
-             <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Type to add Ship's Cargo or select previous&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-             </property>
-             <property name="editable">
-              <bool>true</bool>
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Sets the ship's class&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
             </widget>
            </item>
@@ -114,13 +83,6 @@
             <widget class="QLabel" name="callsignLabel">
              <property name="text">
               <string>Callsign</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="1">
-            <widget class="QLineEdit" name="shipNameEdit">
-             <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Sets the ship's name&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
             </widget>
            </item>
@@ -134,7 +96,14 @@
              </property>
             </widget>
            </item>
-           <item row="5" column="1">
+           <item row="4" column="0">
+            <widget class="QLabel" name="altNameLabel">
+             <property name="text">
+              <string>Alt Name</string>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="1">
             <widget class="QComboBox" name="altNameCombo">
              <property name="toolTip">
               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Change ship's class name (i.e. GTF Ulysses -&amp;gt; NTF Ulysses)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -144,17 +113,48 @@
              </property>
             </widget>
            </item>
-           <item row="2" column="1">
-            <widget class="QComboBox" name="shipClassCombo">
-             <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Sets the ship's class&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           <item row="5" column="0">
+            <widget class="QLabel" name="AIClassLabel">
+             <property name="text">
+              <string>AI Class</string>
              </property>
             </widget>
            </item>
-           <item row="2" column="0">
-            <widget class="QLabel" name="shipClassLabel">
+           <item row="5" column="1">
+            <widget class="QComboBox" name="AIClassCombo">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Sets the Ship's AI&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+            </widget>
+           </item>
+           <item row="6" column="0">
+            <widget class="QLabel" name="teamLabel">
              <property name="text">
-              <string>Ship Class</string>
+              <string>Team</string>
+             </property>
+            </widget>
+           </item>
+           <item row="6" column="1">
+            <widget class="QComboBox" name="teamCombo">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Sets the ship's team&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+            </widget>
+           </item>
+           <item row="7" column="0">
+            <widget class="QLabel" name="cargoLabel">
+             <property name="text">
+              <string>Cargo</string>
+             </property>
+            </widget>
+           </item>
+           <item row="7" column="1">
+            <widget class="QComboBox" name="cargoCombo">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Type to add Ship's Cargo or select previous&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="editable">
+              <bool>true</bool>
              </property>
             </widget>
            </item>
@@ -175,8 +175,15 @@
        <item>
         <layout class="QVBoxLayout" name="middleColumn" stretch="1,1,1,1">
          <item>
-          <layout class="QGridLayout" name="middleOptionsGrid">
-           <item row="1" column="1">
+          <layout class="QFormLayout" name="formLayout_2">
+           <item row="0" column="0">
+            <widget class="QLabel" name="wingLabel">
+             <property name="text">
+              <string>Wing:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
             <widget class="QLabel" name="wing">
              <property name="toolTip">
               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Wing the current ship is in&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -186,62 +193,14 @@
              </property>
             </widget>
            </item>
-           <item row="5" column="1">
-            <widget class="QSpinBox" name="assistEdit">
-             <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;How many points the player gets for an assist&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-             </property>
-             <property name="buttonSymbols">
-              <enum>QAbstractSpinBox::NoButtons</enum>
-             </property>
-            </widget>
-           </item>
-           <item row="4" column="0">
-            <widget class="QLabel" name="scoreLabel">
-             <property name="text">
-              <string>Kill Score</string>
-             </property>
-            </widget>
-           </item>
-           <item row="4" column="1">
-            <widget class="QSpinBox" name="killScoreEdit">
-             <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;How many points the player gets for the kill&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-             </property>
-             <property name="buttonSymbols">
-              <enum>QAbstractSpinBox::NoButtons</enum>
-             </property>
-            </widget>
-           </item>
-           <item row="3" column="0">
-            <widget class="QLabel" name="personaLabel">
-             <property name="text">
-              <string>Persona</string>
-             </property>
-            </widget>
-           </item>
-           <item row="3" column="1">
-            <widget class="fso::fred::PersonaColorComboBox" name="personaCombo">
-             <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Sets the head ani &amp;amp; voice for automated messages&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="0">
+           <item row="1" column="0">
             <widget class="QLabel" name="hotkeyLabel">
              <property name="text">
               <string>Hotkey</string>
              </property>
             </widget>
            </item>
-           <item row="5" column="0">
-            <widget class="QLabel" name="assistLabel">
-             <property name="text">
-              <string>Assist %</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="1">
+           <item row="1" column="1">
             <widget class="QComboBox" name="hotkeyCombo">
              <property name="toolTip">
               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Adds the ship to the specified targeting hotkey&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -298,21 +257,62 @@
              </item>
             </widget>
            </item>
-           <item row="1" column="0">
-            <widget class="QLabel" name="wingLabel">
+           <item row="2" column="0">
+            <widget class="QLabel" name="personaLabel">
              <property name="text">
-              <string>Wing:</string>
+              <string>Persona</string>
              </property>
             </widget>
            </item>
-           <item row="6" column="0">
+           <item row="2" column="1">
+            <widget class="fso::fred::PersonaColorComboBox" name="personaCombo">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Sets the head ani &amp;amp; voice for automated messages&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="0">
+            <widget class="QLabel" name="scoreLabel">
+             <property name="text">
+              <string>Kill Score</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="1">
+            <widget class="QSpinBox" name="killScoreEdit">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;How many points the player gets for the kill&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="buttonSymbols">
+              <enum>QAbstractSpinBox::NoButtons</enum>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="0">
+            <widget class="QLabel" name="assistLabel">
+             <property name="text">
+              <string>Assist %</string>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="1">
+            <widget class="QSpinBox" name="assistEdit">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;How many points the player gets for an assist&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="buttonSymbols">
+              <enum>QAbstractSpinBox::NoButtons</enum>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="0">
             <widget class="QLabel" name="label">
              <property name="text">
               <string>Respawn Priority</string>
              </property>
             </widget>
            </item>
-           <item row="6" column="1">
+           <item row="5" column="1">
             <widget class="QSpinBox" name="respawnSpinBox"/>
            </item>
           </layout>
@@ -364,24 +364,11 @@
         </layout>
        </item>
        <item>
-        <layout class="QGridLayout" name="lastColumn">
+        <layout class="QVBoxLayout" name="verticalLayout">
          <property name="sizeConstraint">
           <enum>QLayout::SetDefaultConstraint</enum>
          </property>
-         <property name="horizontalSpacing">
-          <number>0</number>
-         </property>
-         <item row="5" column="0">
-          <widget class="QPushButton" name="specialStatsButton">
-           <property name="toolTip">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Change ship's max health or explosion damage (Combines olf FRED's Special hits and special exp dialogs)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-           </property>
-           <property name="text">
-            <string>Special Stats</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="0">
+         <item>
           <layout class="QHBoxLayout" name="directionalBtnLayout">
            <property name="spacing">
             <number>6</number>
@@ -396,7 +383,7 @@
              </property>
              <property name="maximumSize">
               <size>
-               <width>35</width>
+               <width>16777215</width>
                <height>16777215</height>
               </size>
              </property>
@@ -415,7 +402,7 @@
              </property>
              <property name="maximumSize">
               <size>
-               <width>35</width>
+               <width>16777215</width>
                <height>16777215</height>
               </size>
              </property>
@@ -426,7 +413,21 @@
            </item>
           </layout>
          </item>
-         <item row="3" column="0">
+         <item>
+          <widget class="QPushButton" name="deleteButton">
+           <property name="text">
+            <string>Delete</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="resetButton">
+           <property name="text">
+            <string>Reset</string>
+           </property>
+          </widget>
+         </item>
+         <item>
           <widget class="QPushButton" name="weaponsButton">
            <property name="toolTip">
             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Change the ships weapons&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -436,7 +437,7 @@
            </property>
           </widget>
          </item>
-         <item row="4" column="0">
+         <item>
           <widget class="QPushButton" name="playerOrdersButton">
            <property name="toolTip">
             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Sets what orders the player can give the ship&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -446,17 +447,13 @@
            </property>
           </widget>
          </item>
-         <item row="2" column="0">
-          <widget class="QPushButton" name="resetButton">
-           <property name="text">
-            <string>Reset</string>
+         <item>
+          <widget class="QPushButton" name="specialStatsButton">
+           <property name="toolTip">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Change ship's max health or explosion damage (Combines olf FRED's Special hits and special exp dialogs)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
-          </widget>
-         </item>
-         <item row="1" column="0">
-          <widget class="QPushButton" name="deleteButton">
            <property name="text">
-            <string>Delete</string>
+            <string>Special Stats</string>
            </property>
           </widget>
          </item>
@@ -533,39 +530,11 @@
          </property>
          <layout class="QVBoxLayout" name="arrivalLayout">
           <item>
-           <layout class="QGridLayout" name="arrivalBoxLayout">
-            <item row="2" column="0">
-             <widget class="QLabel" name="arrivalDistanceLabel">
-              <property name="text">
-               <string>Distance</string>
-              </property>
-             </widget>
-            </item>
+           <layout class="QFormLayout" name="formLayout_3">
             <item row="0" column="0">
              <widget class="QLabel" name="arrivalLocationLabel">
               <property name="text">
                <string>Location</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="1">
-             <widget class="QComboBox" name="arrivalTargetCombo">
-              <property name="toolTip">
-               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Target Ship&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="0">
-             <widget class="QLabel" name="arrivalTargetLabel">
-              <property name="text">
-               <string>Target</string>
-              </property>
-             </widget>
-            </item>
-            <item row="3" column="0">
-             <widget class="QLabel" name="arrivalDelayLabel">
-              <property name="text">
-               <string>Delay</string>
               </property>
              </widget>
             </item>
@@ -576,23 +545,26 @@
               </property>
              </widget>
             </item>
-            <item row="3" column="1">
-             <layout class="QHBoxLayout" name="arrivalDelayLayout">
-              <item>
-               <widget class="QSpinBox" name="arrivalDelaySpinBox">
-                <property name="toolTip">
-                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Time to wait after cue conditions met&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QLabel" name="arrivalSeconds">
-                <property name="text">
-                 <string>Seconds</string>
-                </property>
-               </widget>
-              </item>
-             </layout>
+            <item row="1" column="0">
+             <widget class="QLabel" name="arrivalTargetLabel">
+              <property name="text">
+               <string>Target</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QComboBox" name="arrivalTargetCombo">
+              <property name="toolTip">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Target Ship&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="0">
+             <widget class="QLabel" name="arrivalDistanceLabel">
+              <property name="text">
+               <string>Distance</string>
+              </property>
+             </widget>
             </item>
             <item row="2" column="1">
              <layout class="QHBoxLayout" name="arrivalDistanceLayout">
@@ -621,6 +593,31 @@
                  </size>
                 </property>
                </spacer>
+              </item>
+             </layout>
+            </item>
+            <item row="3" column="0">
+             <widget class="QLabel" name="arrivalDelayLabel">
+              <property name="text">
+               <string>Delay</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="1">
+             <layout class="QHBoxLayout" name="arrivalDelayLayout">
+              <item>
+               <widget class="QSpinBox" name="arrivalDelaySpinBox">
+                <property name="toolTip">
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Time to wait after cue conditions met&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLabel" name="arrivalSeconds">
+                <property name="text">
+                 <string>Seconds</string>
+                </property>
+               </widget>
               </item>
              </layout>
             </item>
@@ -703,7 +700,21 @@
          </property>
          <layout class="QVBoxLayout" name="departureLayout_2">
           <item>
-           <layout class="QGridLayout" name="departureLayout">
+           <layout class="QFormLayout" name="formLayout_4">
+            <item row="0" column="0">
+             <widget class="QLabel" name="departureLocationLabel">
+              <property name="text">
+               <string>Location</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QComboBox" name="departureLocationCombo">
+              <property name="toolTip">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Sets ship's departure location&lt;/p&gt;&lt;p&gt;Hyperspace - Ship leaves from where it is,&lt;/p&gt;&lt;p&gt;Docking Bay - Ship departs into the targets fighter bay&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
+             </widget>
+            </item>
             <item row="1" column="0">
              <widget class="QLabel" name="departureTargetLabel">
               <property name="text">
@@ -715,13 +726,6 @@
              <widget class="QComboBox" name="departureTargetCombo">
               <property name="toolTip">
                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set departure target&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-              </property>
-             </widget>
-            </item>
-            <item row="3" column="0">
-             <widget class="QLabel" name="departureDelayLabel">
-              <property name="text">
-               <string>Delay</string>
               </property>
              </widget>
             </item>
@@ -741,10 +745,10 @@
               </property>
              </spacer>
             </item>
-            <item row="0" column="1">
-             <widget class="QComboBox" name="departureLocationCombo">
-              <property name="toolTip">
-               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Sets ship's departure location&lt;/p&gt;&lt;p&gt;Hyperspace - Ship leaves from where it is,&lt;/p&gt;&lt;p&gt;Docking Bay - Ship departs into the targets fighter bay&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            <item row="3" column="0">
+             <widget class="QLabel" name="departureDelayLabel">
+              <property name="text">
+               <string>Delay</string>
               </property>
              </widget>
             </item>
@@ -778,13 +782,6 @@
                </spacer>
               </item>
              </layout>
-            </item>
-            <item row="0" column="0">
-             <widget class="QLabel" name="departureLocationLabel">
-              <property name="text">
-               <string>Location</string>
-              </property>
-             </widget>
             </item>
            </layout>
           </item>

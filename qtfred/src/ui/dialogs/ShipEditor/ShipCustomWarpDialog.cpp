@@ -80,24 +80,12 @@ void ShipCustomWarpDialog::on_comboBoxType_currentIndexChanged(int index)
 	_model->setType(index);
 }
 void ShipCustomWarpDialog::on_lineEditStartSound_editingFinished()
-{ // String wrangling reqired in order to avoid crashes when directly converting from Qstring to std::string on some
-	// enviroments
-	QString temp(ui->lineEditStartSound->text());
-	if (!temp.isEmpty()) {
-		_model->setStartSound(temp.toLatin1().constData());
-	} else {
-		_model->setStartSound("");
-	}
+{
+	_model->setStartSound(ui->lineEditStartSound->text().toUtf8().constData());
 }
 void ShipCustomWarpDialog::on_lineEditEndSound_editingFinished()
-{ // String wrangling reqired in order to avoid crashes when directly converting from Qstring to std::string on some
-	// enviroments
-	QString temp(ui->lineEditEndSound->text());
-	if (!temp.isEmpty()) {
-		_model->setEndSound(temp.toLatin1().constData());
-	} else {
-		_model->setEndSound("");
-	}
+{
+	_model->setEndSound(ui->lineEditEndSound->text().toUtf8().constData());
 }
 void ShipCustomWarpDialog::on_doubleSpinBoxEngage_valueChanged(double value)
 {
@@ -120,14 +108,8 @@ void ShipCustomWarpDialog::on_doubleSpinBoxRadius_valueChanged(double value)
 	_model->setRadius(value);
 }
 void ShipCustomWarpDialog::on_lineEditAnim_editingFinished()
-{ // String wrangling reqired in order to avoid crashes when directly converting from Qstring to std::string on some
-	// enviroments
-	QString temp(ui->lineEditAnim->text());
-	if (!temp.isEmpty()) {
-		_model->setAnim(temp.toLatin1().constData());
-	} else {
-		_model->setAnim("");
-	}
+{
+	_model->setAnim(ui->lineEditAnim->text().toUtf8().constData());
 }
 void ShipCustomWarpDialog::on_checkBoxSupercap_toggled(bool state)
 {

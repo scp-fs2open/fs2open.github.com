@@ -32,7 +32,6 @@ ShipEditorDialog::ShipEditorDialog(FredView* parent, EditorViewport* viewport)
 	ui->callsignCombo->lineEdit()->setMaxLength(CALLSIGN_LEN);
 
 	connect(_model.get(), &AbstractDialogModel::modelChanged, this, [this] { updateUI(false); });
-	connect(this, &QDialog::accepted, _model.get(), &ShipEditorDialogModel::apply);
 	connect(viewport->editor, &Editor::currentObjectChanged, this, &ShipEditorDialog::update);
 	connect(viewport->editor, &Editor::objectMarkingChanged, this, &ShipEditorDialog::update);
 
@@ -69,8 +68,6 @@ bool ShipEditorDialog::getIfMultipleShips() const
 
 void ShipEditorDialog::closeEvent(QCloseEvent* e)
 {
-	util::SignalBlockers blockers(this);
-	_model->apply();
 	_viewport->editor->autosave("ship editor");
 	QDialog::closeEvent(e);
 }
@@ -118,9 +115,6 @@ void ShipEditorDialog::on_tblInfoButton_clicked()
 void ShipEditorDialog::update()
 {
 	if (this->isVisible()) {
-		if (_model->getNumSelectedObjects() && _model->query_modified()) {
-			_model->apply();
-		}
 		_model->initializeData();
 		updateUI(true);
 	}
@@ -206,10 +200,11 @@ void ShipEditorDialog::updateColumnOne(bool overwrite)
 				for (auto j = 0; j < Mission_alt_type_count; j++) {
 					ui->altNameCombo->addItem(Mission_alt_types[j]);
 				}
-				if (ui->altNameCombo->findText(QString(altname.c_str()))) {
-					ui->altNameCombo->setCurrentIndex(ui->altNameCombo->findText(QString(altname.c_str())));
+				int idx = ui->altNameCombo->findText(QString(altname.c_str()));
+				if (idx >= 0) {
+					ui->altNameCombo->setCurrentIndex(idx);
 				} else {
-					ui->altNameCombo->setCurrentIndex(ui->altNameCombo->findText("<none>"));
+					ui->altNameCombo->setEditText("<none>");
 				}
 			}
 		}
@@ -218,19 +213,19 @@ void ShipEditorDialog::updateColumnOne(bool overwrite)
 		if (_model->getIfMultipleShips()) {
 			ui->callsignCombo->setEnabled(false);
 		} else {
-			ui->callsignCombo->clear();
 			auto callsign = _model->getCallsign();
 			ui->callsignCombo->setEnabled(true);
 			if (overwrite) {
+				ui->callsignCombo->clear();
 				ui->callsignCombo->addItem("<none>");
 				for (auto j = 0; j < Mission_callsign_count; j++) {
 					ui->callsignCombo->addItem(Mission_callsigns[j], QVariant(Mission_callsigns[j]));
 				}
-
-				if (ui->callsignCombo->findText(QString(callsign.c_str()))) {
-					ui->callsignCombo->setCurrentIndex(ui->callsignCombo->findText(QString(callsign.c_str())));
+				int idx = ui->callsignCombo->findText(QString(callsign.c_str()));
+				if (idx >= 0) {
+					ui->callsignCombo->setCurrentIndex(idx);
 				} else {
-					ui->altNameCombo->setCurrentIndex(ui->callsignCombo->findText("<none>"));
+					ui->callsignCombo->setEditText("<none>");
 				}
 			}
 		}
@@ -863,32 +858,32 @@ void ShipEditorDialog::on_departureLocationCombo_currentIndexChanged(int index)
 	auto depLocationIdx = ui->departureLocationCombo->itemData(index).toInt();
 	_model->setDepartureLocationIndex(depLocationIdx);
 }
-void fred::dialogs::ShipEditorDialog::on_departureTargetCombo_currentIndexChanged(int index)
+void ShipEditorDialog::on_departureTargetCombo_currentIndexChanged(int index)
 {
 	auto depLocationIdx = ui->departureTargetCombo->itemData(index).toInt();
 	_model->setDepartureTarget(depLocationIdx);
 }
-void fred::dialogs::ShipEditorDialog::on_departureDelaySpinBox_valueChanged(int value)
+void ShipEditorDialog::on_departureDelaySpinBox_valueChanged(int value)
 {
 	_model->setDepartureDelay(value);
 }
-void fred::dialogs::ShipEditorDialog::on_updateDepartureCueCheckBox_toggled(bool value)
+void ShipEditorDialog::on_updateDepartureCueCheckBox_toggled(bool value)
 {
 	_model->setDepartureCue(value);
 }
-void fred::dialogs::ShipEditorDialog::on_departureTree_rootNodeFormulaChanged(int old, int node)
+void ShipEditorDialog::on_departureTree_rootNodeFormulaChanged(int old, int node)
 {
 	_model->setDepartureFormula(old, node);
 }
-void fred::dialogs::ShipEditorDialog::on_departureTree_helpChanged(const QString& help)
+void ShipEditorDialog::on_departureTree_helpChanged(const QString& help)
 {
 	ui->helpText->setPlainText(help);
 }
-void fred::dialogs::ShipEditorDialog::on_departureTree_miniHelpChanged(const QString& help)
+void ShipEditorDialog::on_departureTree_miniHelpChanged(const QString& help)
 {
 	ui->HelpTitle->setText(help);
 }
-void fred::dialogs::ShipEditorDialog::on_noDepartureWarpCheckBox_toggled(bool value)
+void ShipEditorDialog::on_noDepartureWarpCheckBox_toggled(bool value)
 {
 	_model->setNoDepartureWarp(value);
 }
