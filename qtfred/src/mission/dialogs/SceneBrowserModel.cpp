@@ -162,7 +162,7 @@ void SceneBrowserModel::buildTree()
 // Public accessors
 // ---------------------------------------------------------------------------
 
-QSet<int> SceneBrowserModel::getMarkedSet() const
+QSet<int> SceneBrowserModel::getMarkedSet()
 {
 	QSet<int> marked;
 	for (auto* ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
@@ -266,7 +266,7 @@ void SceneBrowserModel::selectWingFromBrowser(int wingIndex)
 		multiSelectFromBrowser(objNums);
 }
 
-QVector<int> SceneBrowserModel::getWingMemberObjects(int wingIndex) const
+QVector<int> SceneBrowserModel::getWingMemberObjects(int wingIndex)
 {
 	QVector<int> objNums;
 	if (wingIndex < 0 || wingIndex >= MAX_WINGS) {
@@ -368,12 +368,12 @@ bool SceneBrowserModel::getFilterIff(int team) const
 	return _filterIff[team];
 }
 
-int SceneBrowserModel::iffCount() const
+int SceneBrowserModel::iffCount()
 {
 	return static_cast<int>(Iff_info.size());
 }
 
-QString SceneBrowserModel::getIffName(int team) const
+QString SceneBrowserModel::getIffName(int team)
 {
 	if (team < 0 || team >= static_cast<int>(Iff_info.size())) return {};
 	return QString::fromUtf8(Iff_info[team].iff_name);

@@ -39,7 +39,15 @@ public:
 	SceneBrowserPanel(FredView* fredView, EditorViewport* viewport);
 	~SceneBrowserPanel() override;
 
-private:
+private slots:
+	void onModelChanged();
+	void onTreeStructureChanged();
+	void onItemChanged(QTreeWidgetItem* item, int column);
+	void onItemSelectionChanged();
+	void onCustomContextMenuRequested(const QPoint& pos);
+	void onSearchTextChanged(const QString& text);
+
+private: // NOLINT(readability-redundant-access-specifiers)
 	void rebuildTree();
 	void updateFloatingMargins(bool floating);
 	void rememberExpansionState();
@@ -69,14 +77,6 @@ private:
 		IsLayerItemRole = Qt::UserRole + 3,
 		LayerNameRole = Qt::UserRole + 4,
 	};
-
-private slots:
-	void onModelChanged();
-	void onTreeStructureChanged();
-	void onItemChanged(QTreeWidgetItem* item, int column);
-	void onItemSelectionChanged();
-	void onCustomContextMenuRequested(const QPoint& pos);
-	void onSearchTextChanged(const QString& text);
 };
 
 } // namespace fso::fred

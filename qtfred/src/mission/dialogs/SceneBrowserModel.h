@@ -46,7 +46,7 @@ public:
 	void reject() override {}
 
 	const QVector<BrowserLayer>& getTree() const { return _tree; }
-	QSet<int> getMarkedSet() const;
+	static QSet<int> getMarkedSet();
 	QVector<QString> getLayerNames() const;
 
 	void toggleLayerVisibility(const QString& layerName);
@@ -57,7 +57,7 @@ public:
 	void selectObjectFromBrowser(int objNum);
 	void multiSelectFromBrowser(const QVector<int>& objNums);
 	void selectWingFromBrowser(int wingIndex);
-	QVector<int> getWingMemberObjects(int wingIndex) const;
+	static QVector<int> getWingMemberObjects(int wingIndex);
 
 	void setNameFilter(const QString& filter);
 	const QString& getNameFilter() const { return _nameFilter; }
@@ -65,8 +65,8 @@ public:
 	// IFF filtering
 	void setFilterIff(int team, bool visible);
 	bool getFilterIff(int team) const;
-	int iffCount() const;
-	QString getIffName(int team) const;
+	static int iffCount();
+	static QString getIffName(int team);
 
 	// Bulk selection
 	void selectAll();
@@ -91,14 +91,13 @@ private:
 	bool _updatingFromBrowser = false;
 	QTimer* _rebuildTimer = nullptr;
 
-private slots:
-	void onCurrentObjectChanged(int newObj);
-	void onObjectMarkingChanged(int obj, bool marked);
-	void onLayerVisibilityChanged();
-	void onLayerStructureChanged();
-	void onMissionLoaded();
-	void onMissionChanged();
-	void onRebuildTimer();
+	Q_SLOT void onCurrentObjectChanged(int newObj);
+	Q_SLOT void onObjectMarkingChanged(int obj, bool marked);
+	Q_SLOT void onLayerVisibilityChanged();
+	Q_SLOT void onLayerStructureChanged();
+	Q_SLOT void onMissionLoaded();
+	Q_SLOT void onMissionChanged();
+	Q_SLOT void onRebuildTimer();
 };
 
 } // namespace fso::fred::dialogs
