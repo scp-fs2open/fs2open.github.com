@@ -706,8 +706,8 @@ void ShipEditorDialogModel::setShipName(const SCP_string& m_ship_name)
 	}
 
 	// Check for conflict with wing names
-	for (size_t i = 0; i < MAX_WINGS; i++) {
-		if (Wings[i].wave_count && !stricmp(Wings[i].name, new_name.c_str())) {
+	for (auto& w : Wings) {
+		if (w.wave_count && !stricmp(w.name, new_name.c_str())) {
 			_viewport->dialogProvider->showButtonDialog(DialogType::Error,
 				"Ship Name Error",
 				"This ship name is already being used by a wing.",
@@ -719,8 +719,8 @@ void ShipEditorDialogModel::setShipName(const SCP_string& m_ship_name)
 	}
 
 	// Check for conflict with AI target priority group names
-	for (size_t i = 0; i < Ai_tp_list.size(); i++) {
-		if (!stricmp(new_name.c_str(), Ai_tp_list[i].name)) {
+	for (auto& tp : Ai_tp_list) {
+		if (!stricmp(new_name.c_str(), tp.name)) {
 			_viewport->dialogProvider->showButtonDialog(DialogType::Error,
 				"Ship Name Error",
 				"This ship name is already being used by a target priority group.",
