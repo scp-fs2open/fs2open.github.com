@@ -42,7 +42,7 @@ void CustomStringsDialog::accept()
 	if (_model->apply()) {
 		QDialog::accept();
 	}
-	// else: validation failed, don’t close
+	// else: validation failed, don't close
 }
 
 void CustomStringsDialog::reject()
