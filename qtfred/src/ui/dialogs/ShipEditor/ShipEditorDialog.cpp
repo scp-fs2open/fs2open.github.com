@@ -200,9 +200,9 @@ void ShipEditorDialog::updateColumnOne(bool overwrite)
 				for (auto j = 0; j < Mission_alt_type_count; j++) {
 					ui->altNameCombo->addItem(Mission_alt_types[j]);
 				}
-				int idx = ui->altNameCombo->findText(QString(altname.c_str()));
-				if (idx >= 0) {
-					ui->altNameCombo->setCurrentIndex(idx);
+				int altNameIdx = ui->altNameCombo->findText(QString(altname.c_str()));
+				if (altNameIdx >= 0) {
+					ui->altNameCombo->setCurrentIndex(altNameIdx);
 				} else {
 					ui->altNameCombo->setEditText("<none>");
 				}
@@ -221,9 +221,9 @@ void ShipEditorDialog::updateColumnOne(bool overwrite)
 				for (auto j = 0; j < Mission_callsign_count; j++) {
 					ui->callsignCombo->addItem(Mission_callsigns[j], QVariant(Mission_callsigns[j]));
 				}
-				int idx = ui->callsignCombo->findText(QString(callsign.c_str()));
-				if (idx >= 0) {
-					ui->callsignCombo->setCurrentIndex(idx);
+				int callsignIdx = ui->callsignCombo->findText(QString(callsign.c_str()));
+				if (callsignIdx >= 0) {
+					ui->callsignCombo->setCurrentIndex(callsignIdx);
 				} else {
 					ui->callsignCombo->setEditText("<none>");
 				}
