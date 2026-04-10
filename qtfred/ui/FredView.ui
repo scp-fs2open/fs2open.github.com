@@ -321,10 +321,6 @@
    <property name="checkable">
     <bool>true</bool>
    </property>
-   <property name="icon">
-    <iconset resource="../resources/resources.qrc">
-     <normaloff>:/images/select.png</normaloff>:/images/select.png</iconset>
-   </property>
    <property name="text">
     <string>Select</string>
    </property>
@@ -338,10 +334,6 @@
   <action name="actionSelectMove">
    <property name="checkable">
     <bool>true</bool>
-   </property>
-   <property name="icon">
-    <iconset resource="../resources/resources.qrc">
-     <normaloff>:/images/selectmove.png</normaloff>:/images/selectmove.png</iconset>
    </property>
    <property name="text">
     <string>SelectMove</string>
@@ -357,10 +349,6 @@
    <property name="checkable">
     <bool>true</bool>
    </property>
-   <property name="icon">
-    <iconset resource="../resources/resources.qrc">
-     <normaloff>:/images/selectrot.png</normaloff>:/images/selectrot.png</iconset>
-   </property>
    <property name="text">
     <string>SelectRotate</string>
    </property>
@@ -374,10 +362,6 @@
   <action name="actionRotateLocal">
    <property name="checkable">
     <bool>true</bool>
-   </property>
-   <property name="icon">
-    <iconset resource="../resources/resources.qrc">
-     <normaloff>:/images/rotlocal.png</normaloff>:/images/rotlocal.png</iconset>
    </property>
    <property name="text">
     <string>RotateLocal</string>
@@ -393,10 +377,6 @@
    <property name="checkable">
     <bool>true</bool>
    </property>
-   <property name="icon">
-    <iconset resource="../resources/resources.qrc">
-     <normaloff>:/images/constx.png</normaloff>:/images/constx.png</iconset>
-   </property>
    <property name="text">
     <string>ConstraintX</string>
    </property>
@@ -407,10 +387,6 @@
   <action name="actionConstrainY">
    <property name="checkable">
     <bool>true</bool>
-   </property>
-   <property name="icon">
-    <iconset resource="../resources/resources.qrc">
-     <normaloff>:/images/consty.png</normaloff>:/images/consty.png</iconset>
    </property>
    <property name="text">
     <string>ConstraintY</string>
@@ -423,10 +399,6 @@
    <property name="checkable">
     <bool>true</bool>
    </property>
-   <property name="icon">
-    <iconset resource="../resources/resources.qrc">
-     <normaloff>:/images/constz.png</normaloff>:/images/constz.png</iconset>
-   </property>
    <property name="text">
     <string>ConstraintZ</string>
    </property>
@@ -437,10 +409,6 @@
   <action name="actionConstrainXZ">
    <property name="checkable">
     <bool>true</bool>
-   </property>
-   <property name="icon">
-    <iconset resource="../resources/resources.qrc">
-     <normaloff>:/images/constxz.png</normaloff>:/images/constxz.png</iconset>
    </property>
    <property name="text">
     <string>ConstraintXZ</string>
@@ -453,10 +421,6 @@
    <property name="checkable">
     <bool>true</bool>
    </property>
-   <property name="icon">
-    <iconset resource="../resources/resources.qrc">
-     <normaloff>:/images/constyz.png</normaloff>:/images/constyz.png</iconset>
-   </property>
    <property name="text">
     <string>ConstraintYZ</string>
    </property>
@@ -468,10 +432,6 @@
    <property name="checkable">
     <bool>true</bool>
    </property>
-   <property name="icon">
-    <iconset resource="../resources/resources.qrc">
-     <normaloff>:/images/constxy.png</normaloff>:/images/constxy.png</iconset>
-   </property>
    <property name="text">
     <string>ConstraintXY</string>
    </property>
@@ -480,10 +440,6 @@
    </property>
   </action>
   <action name="actionSelectionList">
-   <property name="icon">
-    <iconset resource="../resources/resources.qrc">
-     <normaloff>:/images/selectlist.png</normaloff>:/images/selectlist.png</iconset>
-   </property>
    <property name="text">
     <string>SelectionList</string>
    </property>
@@ -498,10 +454,6 @@
    <property name="checkable">
     <bool>true</bool>
    </property>
-   <property name="icon">
-    <iconset resource="../resources/resources.qrc">
-     <normaloff>:/images/selectlock.png</normaloff>:/images/selectlock.png</iconset>
-   </property>
    <property name="text">
     <string>SelectionLock</string>
    </property>
@@ -513,10 +465,6 @@
    </property>
   </action>
   <action name="actionWingForm">
-   <property name="icon">
-    <iconset resource="../resources/resources.qrc">
-     <normaloff>:/images/wingform.png</normaloff>:/images/wingform.png</iconset>
-   </property>
    <property name="text">
     <string>WingForm</string>
    </property>
@@ -528,10 +476,6 @@
    </property>
   </action>
   <action name="actionWingDisband">
-   <property name="icon">
-    <iconset resource="../resources/resources.qrc">
-     <normaloff>:/images/wingdisband.png</normaloff>:/images/wingdisband.png</iconset>
-   </property>
    <property name="text">
     <string>WingDisband</string>
    </property>
@@ -543,10 +487,6 @@
    </property>
   </action>
   <action name="actionZoomSelected">
-   <property name="icon">
-    <iconset resource="../resources/resources.qrc">
-     <normaloff>:/images/zoomsel.png</normaloff>:/images/zoomsel.png</iconset>
-   </property>
    <property name="text">
     <string>ZoomSelected</string>
    </property>
@@ -558,10 +498,6 @@
    </property>
   </action>
   <action name="actionZoomExtents">
-   <property name="icon">
-    <iconset resource="../resources/resources.qrc">
-     <normaloff>:/images/zoomext.png</normaloff>:/images/zoomext.png</iconset>
-   </property>
    <property name="text">
     <string>ZoomExtents</string>
    </property>
@@ -576,10 +512,6 @@
    <property name="checkable">
     <bool>true</bool>
    </property>
-   <property name="icon">
-    <iconset resource="../resources/resources.qrc">
-     <normaloff>:/images/showdist.png</normaloff>:/images/showdist.png</iconset>
-   </property>
    <property name="text">
     <string>ShowDistances</string>
    </property>
@@ -593,10 +525,6 @@
   <action name="actionOrbitSelected">
    <property name="checkable">
     <bool>true</bool>
-   </property>
-   <property name="icon">
-    <iconset resource="../resources/resources.qrc">
-     <normaloff>:/images/orbitsel.png</normaloff>:/images/orbitsel.png</iconset>
    </property>
    <property name="text">
     <string>OrbitSelected</string>

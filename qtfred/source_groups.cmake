@@ -141,6 +141,8 @@ add_file_folder("Source/UI"
     src/ui/ControlBindings.h
     src/ui/FredView.cpp
     src/ui/FredView.h
+    src/ui/Theme.cpp
+    src/ui/Theme.h
     src/ui/QtGraphicsOperations.cpp
     src/ui/QtGraphicsOperations.h
 )
@@ -381,12 +383,22 @@ add_file_folder("Resources/Images"
     resources/images/black_do.png
     resources/images/chained_directive.png
     resources/images/chained.png
-    resources/images/constx.png
-    resources/images/constxy.png
-    resources/images/constxz.png
-    resources/images/consty.png
-    resources/images/constyz.png
-    resources/images/constz.png
+    resources/images/toolbar/layers-dark.png
+    resources/images/toolbar/layers-light.png
+    resources/images/toolbar/unhide-dark.png
+    resources/images/toolbar/unhide-light.png
+    resources/images/toolbar/constx-dark.png
+    resources/images/toolbar/constx-light.png
+    resources/images/toolbar/constxy-dark.png
+    resources/images/toolbar/constxy-light.png
+    resources/images/toolbar/constxz-dark.png
+    resources/images/toolbar/constxz-light.png
+    resources/images/toolbar/consty-dark.png
+    resources/images/toolbar/consty-light.png
+    resources/images/toolbar/constyz-dark.png
+    resources/images/toolbar/constyz-light.png
+    resources/images/toolbar/constz-dark.png
+    resources/images/toolbar/constz-light.png
     resources/images/cursor_rotate.png
     resources/images/data00.png
     resources/images/data05.png
@@ -411,21 +423,33 @@ add_file_folder("Resources/Images"
     resources/images/data.png
 	resources/images/fred_about.png
     resources/images/green_do.png
-    resources/images/orbitsel.png
+    resources/images/toolbar/orbitsel-dark.png
+    resources/images/toolbar/orbitsel-light.png
     resources/images/root_directive.png
     resources/images/root.png
-    resources/images/rotlocal.png
-    resources/images/selectlist.png
-    resources/images/selectlock.png
-    resources/images/selectmove.png
-    resources/images/select.png
-    resources/images/selectrot.png
-    resources/images/showdist.png
+    resources/images/toolbar/rotlocal-dark.png
+    resources/images/toolbar/rotlocal-light.png
+    resources/images/toolbar/select-dark.png
+    resources/images/toolbar/select-light.png
+    resources/images/toolbar/selectlist-dark.png
+    resources/images/toolbar/selectlist-light.png
+    resources/images/toolbar/selectlock-dark.png
+    resources/images/toolbar/selectlock-light.png
+    resources/images/toolbar/selectmove-dark.png
+    resources/images/toolbar/selectmove-light.png
+    resources/images/toolbar/selectrot-dark.png
+    resources/images/toolbar/selectrot-light.png
+    resources/images/toolbar/showdist-dark.png
+    resources/images/toolbar/showdist-light.png
     resources/images/splash.png
     resources/images/V_fred.ico
     resources/images/variable.png
-    resources/images/wingdisband.png
-    resources/images/wingform.png
-    resources/images/zoomext.png
-    resources/images/zoomsel.png
+    resources/images/toolbar/wingdisband-dark.png
+    resources/images/toolbar/wingdisband-light.png
+    resources/images/toolbar/wingform-dark.png
+    resources/images/toolbar/wingform-light.png
+    resources/images/toolbar/zoomext-dark.png
+    resources/images/toolbar/zoomext-light.png
+    resources/images/toolbar/zoomsel-dark.png
+    resources/images/toolbar/zoomsel-light.png
 )

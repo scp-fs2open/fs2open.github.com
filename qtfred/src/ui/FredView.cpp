@@ -56,6 +56,7 @@
 
 #include "mission/Editor.h"
 #include "mission/management.h"
+#include "ui/Theme.h"
 #include <prop/prop.h>
 #include "mission/missionparse.h"
 #include "missioneditor/missionsave.h"
@@ -133,6 +134,28 @@ FredView::FredView(QWidget* parent) : QMainWindow(parent), ui(new Ui::FredView()
 			_viewport->showAllLayers();
 		}
 	});
+
+	using fso::fred::bindThemeIcon;
+	bindThemeIcon(ui->actionSelect,        QStringLiteral("select"));
+	bindThemeIcon(ui->actionSelectMove,    QStringLiteral("selectmove"));
+	bindThemeIcon(ui->actionSelectRotate,  QStringLiteral("selectrot"));
+	bindThemeIcon(ui->actionRotateLocal,   QStringLiteral("rotlocal"));
+	bindThemeIcon(ui->actionConstrainX,    QStringLiteral("constx"));
+	bindThemeIcon(ui->actionConstrainY,    QStringLiteral("consty"));
+	bindThemeIcon(ui->actionConstrainZ,    QStringLiteral("constz"));
+	bindThemeIcon(ui->actionConstrainXZ,   QStringLiteral("constxz"));
+	bindThemeIcon(ui->actionConstrainYZ,   QStringLiteral("constyz"));
+	bindThemeIcon(ui->actionConstrainXY,   QStringLiteral("constxy"));
+	bindThemeIcon(ui->actionSelectionList, QStringLiteral("selectlist"));
+	bindThemeIcon(ui->actionSelectionLock, QStringLiteral("selectlock"));
+	bindThemeIcon(ui->actionWingForm,      QStringLiteral("wingform"));
+	bindThemeIcon(ui->actionWingDisband,   QStringLiteral("wingdisband"));
+	bindThemeIcon(ui->actionZoomSelected,  QStringLiteral("zoomsel"));
+	bindThemeIcon(ui->actionZoomExtents,   QStringLiteral("zoomext"));
+	bindThemeIcon(ui->actionShowDistances, QStringLiteral("showdist"));
+	bindThemeIcon(ui->actionOrbitSelected, QStringLiteral("orbitsel"));
+	bindThemeIcon(ui->actionManage_Layers, QStringLiteral("layers"));
+	bindThemeIcon(ui->actionUnhide_Layers, QStringLiteral("unhide"));
 }
 
 FredView::~FredView() {

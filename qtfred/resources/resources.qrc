@@ -5,12 +5,6 @@
     <file>images/chained.png</file>
     <file>images/chained_directive.png</file>
     <file>images/comment.png</file>
-    <file>images/constx.png</file>
-    <file>images/constxy.png</file>
-    <file>images/constxz.png</file>
-    <file>images/consty.png</file>
-    <file>images/constyz.png</file>
-    <file>images/constz.png</file>
     <file>images/container_data.png</file>
     <file>images/container_name.png</file>
     <file>images/cursor_rotate.png</file>
@@ -35,24 +29,52 @@
     <file>images/data85.png</file>
     <file>images/data90.png</file>
     <file>images/data95.png</file>
+    <file>images/fred_about.png</file>
     <file>images/green_do.png</file>
-    <file>images/orbitsel.png</file>
     <file>images/root.png</file>
     <file>images/root_directive.png</file>
-    <file>images/rotlocal.png</file>
-    <file>images/select.png</file>
-    <file>images/selectlist.png</file>
-    <file>images/selectlock.png</file>
-    <file>images/selectmove.png</file>
-    <file>images/selectrot.png</file>
-    <file>images/showdist.png</file>
     <file>images/splash.png</file>
     <file>images/V_fred.ico</file>
     <file>images/variable.png</file>
-    <file>images/wingdisband.png</file>
-    <file>images/wingform.png</file>
-    <file>images/zoomext.png</file>
-    <file>images/zoomsel.png</file>
-	<file>images/fred_about.png</file>
+    <file>images/toolbar/layers-dark.png</file>
+    <file>images/toolbar/layers-light.png</file>
+    <file>images/toolbar/unhide-dark.png</file>
+    <file>images/toolbar/unhide-light.png</file>
+    <file>images/toolbar/constx-dark.png</file>
+    <file>images/toolbar/constx-light.png</file>
+    <file>images/toolbar/constxy-dark.png</file>
+    <file>images/toolbar/constxy-light.png</file>
+    <file>images/toolbar/constxz-dark.png</file>
+    <file>images/toolbar/constxz-light.png</file>
+    <file>images/toolbar/consty-dark.png</file>
+    <file>images/toolbar/consty-light.png</file>
+    <file>images/toolbar/constyz-dark.png</file>
+    <file>images/toolbar/constyz-light.png</file>
+    <file>images/toolbar/constz-dark.png</file>
+    <file>images/toolbar/constz-light.png</file>
+    <file>images/toolbar/orbitsel-dark.png</file>
+    <file>images/toolbar/orbitsel-light.png</file>
+    <file>images/toolbar/rotlocal-dark.png</file>
+    <file>images/toolbar/rotlocal-light.png</file>
+    <file>images/toolbar/select-dark.png</file>
+    <file>images/toolbar/select-light.png</file>
+    <file>images/toolbar/selectlist-dark.png</file>
+    <file>images/toolbar/selectlist-light.png</file>
+    <file>images/toolbar/selectlock-dark.png</file>
+    <file>images/toolbar/selectlock-light.png</file>
+    <file>images/toolbar/selectmove-dark.png</file>
+    <file>images/toolbar/selectmove-light.png</file>
+    <file>images/toolbar/selectrot-dark.png</file>
+    <file>images/toolbar/selectrot-light.png</file>
+    <file>images/toolbar/showdist-dark.png</file>
+    <file>images/toolbar/showdist-light.png</file>
+    <file>images/toolbar/wingdisband-dark.png</file>
+    <file>images/toolbar/wingdisband-light.png</file>
+    <file>images/toolbar/wingform-dark.png</file>
+    <file>images/toolbar/wingform-light.png</file>
+    <file>images/toolbar/zoomext-dark.png</file>
+    <file>images/toolbar/zoomext-light.png</file>
+    <file>images/toolbar/zoomsel-dark.png</file>
+    <file>images/toolbar/zoomsel-light.png</file>
   </qresource>
 </RCC>

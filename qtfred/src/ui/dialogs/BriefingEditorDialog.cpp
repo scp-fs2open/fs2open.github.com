@@ -2,6 +2,7 @@
 #include "ui_BriefingEditorDialog.h"
 
 #include "mission/util.h"
+#include "ui/Theme.h"
 #include "ui/widgets/BriefingMapWidget.h"
 #include "BriefingEditor/CameraCoordinatesDialog.h"
 #include "BriefingEditor/IconFromShipDialog.h"
@@ -214,6 +215,7 @@ void BriefingEditorDialog::applyMapWidgetAspectRatio()
 
 void BriefingEditorDialog::initializeUi()
 {
+	fso::fred::bindStandardIcon(ui->voiceFilePlayButton, QStyle::SP_MediaPlay);
 	util::SignalBlockers blockers(this);
 	ui->drawLinesCheckBox->setTristate(true);
 	ui->highlightCheckBox->setTristate(true);
