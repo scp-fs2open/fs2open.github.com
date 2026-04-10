@@ -8,7 +8,7 @@
 
 namespace {
 
-static const char* const LIGHT_BUTTON_QSS = R"(
+const char* const LIGHT_BUTTON_QSS = R"(
 QPushButton {
     background-color: #e1e1e1;
     border: 1px solid #adadad;
@@ -56,7 +56,7 @@ QToolButton::menu-indicator {
 }
 )";
 
-static const char* const DARK_BUTTON_QSS = R"(
+const char* const DARK_BUTTON_QSS = R"(
 QPushButton {
     background-color: #353535;
     border: 1px solid #555555;
