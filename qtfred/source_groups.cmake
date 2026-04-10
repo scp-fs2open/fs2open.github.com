@@ -377,10 +377,6 @@ if (WIN32)
 endif()
 
 add_file_folder("Resources/Images"
-	resources/images/arrow_down.png
-	resources/images/arrow_left.png
-	resources/images/arrow_right.png
-	resources/images/arrow_up.png
     resources/images/operator.png
     resources/images/black_do.png
     resources/images/chained_directive.png
@@ -415,10 +411,7 @@ add_file_folder("Resources/Images"
     resources/images/data.png
 	resources/images/fred_about.png
     resources/images/green_do.png
-	resources/images/next.png
     resources/images/orbitsel.png
-    resources/images/play.png
-	resources/images/prev.png
     resources/images/root_directive.png
     resources/images/root.png
     resources/images/rotlocal.png
@@ -429,7 +422,6 @@ add_file_folder("Resources/Images"
     resources/images/selectrot.png
     resources/images/showdist.png
     resources/images/splash.png
-	resources/images/stop.png
     resources/images/V_fred.ico
     resources/images/variable.png
     resources/images/wingdisband.png

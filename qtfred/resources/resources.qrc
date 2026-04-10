@@ -1,12 +1,5 @@
 <RCC>
   <qresource prefix="/">
-    <file>images/arrow_left.png</file>
-    <file>images/arrow_right.png</file>
-    <file>images/next.png</file>
-    <file>images/prev.png</file>
-    <file>images/stop.png</file>
-    <file>images/arrow_down.png</file>
-    <file>images/arrow_up.png</file>
     <file>images/operator.png</file>
     <file>images/black_do.png</file>
     <file>images/chained.png</file>
@@ -44,7 +37,6 @@
     <file>images/data95.png</file>
     <file>images/green_do.png</file>
     <file>images/orbitsel.png</file>
-    <file>images/play.png</file>
     <file>images/root.png</file>
     <file>images/root_directive.png</file>
     <file>images/rotlocal.png</file>
