@@ -50,6 +50,8 @@ class FredView: public QMainWindow, public IDialogProvider {
 
 	void showContextMenu(const QPoint& globalPos);
 	void showContextMenu(int objNum, const QPoint& globalPos);
+	void showWingContextMenu(int wingIndex, const QPoint& globalPos);
+	void showWaypointPathContextMenu(int pathIndex, const QPoint& globalPos);
 
  public slots:
 	void openLoadMissionDialog();

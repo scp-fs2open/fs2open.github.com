@@ -25,6 +25,7 @@
 #include <ui/dialogs/VolumetricNebulaDialog.h>
 #include <ui/dialogs/BriefingEditorDialog.h>
 #include <ui/dialogs/WaypointEditorDialog.h>
+#include <object/waypoint.h>
 #include <ui/dialogs/WaypointPathGeneratorDialog.h>
 #include <ui/dialogs/JumpNodeEditorDialog.h>
 #include <ui/dialogs/CampaignEditorDialog.h>
@@ -908,6 +909,110 @@ void FredView::showContextMenu(const QPoint& globalPos) {
 		_viewPopup->exec(globalPos);
 	}
 }
+void FredView::showWingContextMenu(int wingIndex, const QPoint& globalPos)
+{
+	if (wingIndex < 0 || wingIndex >= MAX_WINGS) return;
+
+	// Find first valid wing member for layer population and current-object
+	int firstObjNum = -1;
+	fred->unmark_all();
+	for (int si = 0; si < Wings[wingIndex].wave_count; si++) {
+		int shipIdx = Wings[wingIndex].ship_index[si];
+		if (shipIdx < 0) continue;
+		int objNum = Ships[shipIdx].objnum;
+		if (objNum >= 0 && Objects[objNum].type != OBJ_NONE) {
+			fred->markObject(objNum);
+			if (firstObjNum < 0)
+				firstObjNum = objNum;
+		}
+	}
+	if (firstObjNum >= 0)
+		fred->selectObject(firstObjNum);
+
+	QString wingName = QString::fromUtf8(Wings[wingIndex].name);
+
+	QMenu menu;
+
+	auto* editAction = menu.addAction(tr("Edit %1").arg(wingName));
+	connect(editAction, &QAction::triggered, this, &FredView::on_actionWings_triggered);
+
+	menu.addSeparator();
+
+	if (firstObjNum >= 0)
+		populateMoveToLayerMenu(firstObjNum);
+	menu.addMenu(_moveToLayerMenu);  // already has "Manage Layers..." at the bottom
+
+	menu.addSeparator();
+
+	auto* zoomSelAction = menu.addAction(tr("Zoom to Selected"));
+	connect(zoomSelAction, &QAction::triggered, this, &FredView::on_actionZoomSelected_triggered);
+
+	auto* zoomExtAction = menu.addAction(tr("Zoom Extents"));
+	connect(zoomExtAction, &QAction::triggered, this, &FredView::on_actionZoomExtents_triggered);
+
+	menu.addSeparator();
+
+	auto* deleteAction = menu.addAction(tr("Delete %1").arg(wingName));
+	connect(deleteAction, &QAction::triggered, this, [this, wingIndex]() {
+		fred->delete_wing(wingIndex, 0);
+		fred->autosave("wing delete");
+	});
+
+	menu.exec(globalPos);
+}
+
+void FredView::showWaypointPathContextMenu(int pathIndex, const QPoint& globalPos)
+{
+	if (!SCP_vector_inbounds(Waypoint_lists, pathIndex)) return;
+	auto& wl = Waypoint_lists[pathIndex];
+	if (wl.get_waypoints().empty()) return;
+
+	// Select all waypoints in the path
+	int firstObjNum = -1;
+	fred->unmark_all();
+	for (const auto& wp : wl.get_waypoints()) {
+		int objNum = wp.get_objnum();
+		if (objNum >= 0 && Objects[objNum].type != OBJ_NONE) {
+			fred->markObject(objNum);
+			if (firstObjNum < 0)
+				firstObjNum = objNum;
+		}
+	}
+	if (firstObjNum >= 0)
+		fred->selectObject(firstObjNum);
+
+	QString pathName = QString::fromUtf8(wl.get_name());
+
+	QMenu menu;
+
+	auto* editAction = menu.addAction(tr("Edit %1").arg(pathName));
+	connect(editAction, &QAction::triggered, this, &FredView::on_actionWaypoint_Paths_triggered);
+
+	menu.addSeparator();
+
+	if (firstObjNum >= 0)
+		populateMoveToLayerMenu(firstObjNum);
+	menu.addMenu(_moveToLayerMenu);  // already has "Manage Layers..." at the bottom
+
+	menu.addSeparator();
+
+	auto* zoomSelAction = menu.addAction(tr("Zoom to Selected"));
+	connect(zoomSelAction, &QAction::triggered, this, &FredView::on_actionZoomSelected_triggered);
+
+	auto* zoomExtAction = menu.addAction(tr("Zoom Extents"));
+	connect(zoomExtAction, &QAction::triggered, this, &FredView::on_actionZoomExtents_triggered);
+
+	menu.addSeparator();
+
+	auto* deleteAction = menu.addAction(tr("Delete %1").arg(pathName));
+	connect(deleteAction, &QAction::triggered, this, [this]() {
+		fred->delete_marked();
+		fred->autosave("waypoint path delete");
+	});
+
+	menu.exec(globalPos);
+}
+
 void FredView::initializePopupMenus() {
 	_viewPopup = new QMenu(this);
 

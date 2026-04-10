@@ -410,21 +410,10 @@ void SceneBrowserPanel::onCustomContextMenuRequested(const QPoint& pos)
 	auto varWing = item->data(0, WingIndexRole);
 	auto varPath = item->data(0, WptListIndexRole);
 
-	if (!varWing.isNull() || !varPath.isNull()) {
-		// Wing or waypoint path header: custom menu (Move to Layer only)
-		QMenu menu;
-		auto* moveMenu = menu.addMenu(tr("Move to Layer"));
-		for (const auto& layerName : _model->getLayerNames()) {
-			auto* action = moveMenu->addAction(layerName);
-			connect(action, &QAction::triggered, this, [this, varWing, varPath, layerName]() {
-				if (!varWing.isNull()) {
-					_model->moveWingToLayer(varWing.toInt(), layerName);
-				} else if (!varPath.isNull()) {
-					_model->moveWaypointPathToLayer(varPath.toInt(), layerName);
-				}
-			});
-		}
-		menu.exec(globalPos);
+	if (!varWing.isNull()) {
+		_fredView->showWingContextMenu(varWing.toInt(), globalPos);
+	} else if (!varPath.isNull()) {
+		_fredView->showWaypointPathContextMenu(varPath.toInt(), globalPos);
 	} else if (!varObjNum.isNull()) {
 		// Regular object: delegate to FredView's context menu (handles Edit + Move to Layer)
 		_fredView->showContextMenu(varObjNum.toInt(), globalPos);
