@@ -535,7 +535,7 @@ int SexpTreeActions::add_or_replace_typed_data(int data_idx, bool replace, int a
 		Assertion(op >= 0, "Invalid operator index");
 		const auto argcount = replace ? replace_count : add_count;
 		const auto type = query_operator_argument_type(op, argcount);
-		list = _model._opf.get_listing_opf(type, _model.item_index, argcount);
+		list = _model._opf.get_listing_opf(type, op_node, argcount);
 	}
 	Assertion(list, "Failed to get listing OPF");
 
