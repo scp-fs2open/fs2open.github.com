@@ -9563,10 +9563,7 @@ bool check_for_25_1_data()
 			return true;
 	}
 
-	if (std::any_of(Jump_nodes.begin(), Jump_nodes.end(), [](const auto& jn) {
+	return std::any_of(Jump_nodes.begin(), Jump_nodes.end(), [](const auto& jn) {
 		return stricmp(jn.GetFredLayer().c_str(), "Default") != 0;
-	}))
-		return true;
-
-	return false;
+	});
 }
