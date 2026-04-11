@@ -61,7 +61,7 @@ private: // NOLINT(readability-redundant-access-specifiers)
 	void updateUi();
 	void enableDisableControls();
 
-	static bool browseFile(QString* stringIn, const QString& settingsKey, const QString& defaultDir, const QString& filter);
+	bool browseFile(QString* stringIn, const QString& settingsKey, const QString& defaultDir, const QString& filter);
 
 };
 } // namespace fso::fred::dialogs

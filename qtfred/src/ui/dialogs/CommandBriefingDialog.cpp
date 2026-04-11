@@ -174,7 +174,7 @@ void CommandBriefingDialog::on_actionBrowseAnimation_clicked()
 {
 	QString filename;
 
-	if (CommandBriefingDialog::browseFile(&filename, "commandBriefing/animation", util::fredDefaultDir(CF_TYPE_INTERFACE), "FSO Animations (*.ani *.eff *.png);;All Files (*.*)")) {
+	if (browseFile(&filename, "commandBriefing/animation", util::fredDefaultDir(CF_TYPE_INTERFACE), "FSO Animations (*.ani *.eff *.png);;All Files (*.*)")) {
 		_model->setAnimationFilename(filename.toUtf8().constData());
 	}
 	updateUi();
@@ -184,7 +184,7 @@ void CommandBriefingDialog::on_actionBrowseSpeechFile_clicked()
 {
 	QString filename;
 
-	if (CommandBriefingDialog::browseFile(&filename, "commandBriefing/speechFile", util::fredDefaultDir(CF_TYPE_VOICE), "Voice Files (*.ogg *.wav);;All Files (*.*)")) {
+	if (browseFile(&filename, "commandBriefing/speechFile", util::fredDefaultDir(CF_TYPE_VOICE), "Voice Files (*.ogg *.wav);;All Files (*.*)")) {
 		_model->setSpeechFilename(filename.toUtf8().constData());
 	}
 	updateUi();
@@ -199,7 +199,7 @@ void CommandBriefingDialog::on_actionLowResolutionBrowse_clicked()
 {
 	QString filename;
 
-	if (CommandBriefingDialog::browseFile(&filename, "commandBriefing/lowRes", util::fredDefaultDir(CF_TYPE_INTERFACE), "FSO Animations (*.ani *.eff *.png);;All Files (*.*)")) {
+	if (browseFile(&filename, "commandBriefing/lowRes", util::fredDefaultDir(CF_TYPE_INTERFACE), "FSO Animations (*.ani *.eff *.png);;All Files (*.*)")) {
 		_model->setLowResolutionFilename(filename.toUtf8().constData());
 	}
 	updateUi();
@@ -209,7 +209,7 @@ void CommandBriefingDialog::on_actionHighResolutionBrowse_clicked()
 {
 	QString filename;
 
-	if (CommandBriefingDialog::browseFile(&filename, "commandBriefing/highRes", util::fredDefaultDir(CF_TYPE_INTERFACE), "FSO Animations (*.ani *.eff *.png);;All Files (*.*)")) {
+	if (browseFile(&filename, "commandBriefing/highRes", util::fredDefaultDir(CF_TYPE_INTERFACE), "FSO Animations (*.ani *.eff *.png);;All Files (*.*)")) {
 		_model->setHighResolutionFilename(filename.toUtf8().constData());
 	}
 	updateUi();
