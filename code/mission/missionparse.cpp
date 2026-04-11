@@ -9545,5 +9545,29 @@ bool check_for_24_3_data()
 
 bool check_for_25_1_data()
 {
-	return (count_items_with_value(Props) > 0);
+	if (count_items_with_value(Props) > 0)
+		return true;
+
+	for (const auto& so : list_range(&Ship_obj_list))
+	{
+		auto shipp = &Ships[Objects[so->objnum].instance];
+		if (stricmp(shipp->fred_layer.c_str(), "Default") != 0)
+			return true;
+	}
+
+	for (const auto& wl : Waypoint_lists)
+	{
+		if (wl.get_no_draw_lines() || wl.get_has_custom_color())
+			return true;
+		if (stricmp(wl.get_fred_layer().c_str(), "Default") != 0)
+			return true;
+	}
+
+	for (const auto& jn : Jump_nodes)
+	{
+		if (stricmp(jn.GetFredLayer().c_str(), "Default") != 0)
+			return true;
+	}
+
+	return false;
 }
