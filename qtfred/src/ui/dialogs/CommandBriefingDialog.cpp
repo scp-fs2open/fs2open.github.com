@@ -251,7 +251,7 @@ bool CommandBriefingDialog::browseFile(QString* stringIn, const QString& setting
 {
 	const QString lastDir = util::getLastDir(settingsKey, defaultDir);
 
-	const QFileInfo fileInfo(QFileDialog::getOpenFileName(nullptr, QString(), lastDir, filter));
+	const QFileInfo fileInfo(QFileDialog::getOpenFileName(this, QString(), lastDir, filter));
 	*stringIn = fileInfo.fileName();
 
 	if (stringIn->length() >= CF_MAX_FILENAME_LENGTH) {
