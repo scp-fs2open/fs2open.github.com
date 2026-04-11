@@ -7884,6 +7884,30 @@ static void ship_copy_subsystem_fixup(ship_info *sip)
 
 }
 
+// Verify that every model_subsystem on this ship_info is linked into the same
+// model the ship is using.  If any subsystem still points at a different
+// model_num, fail with a diagnostic naming both polymodels.  This is the
+// canonical post-condition check for both ship_copy_subsystem_fixup() and
+// model_load() (which is supposed to link subsystems via do_new_subsystem()).
+// context_label disambiguates the call site in the resulting Error text.
+static void verify_ship_subsystems_linked(const ship_info *sip, const char *context_label)
+{
+	for (int i = 0; i < sip->n_subsystems; i++) {
+		if (sip->subsystems[i].model_num == sip->model_num)
+			continue;
+
+		polymodel *sip_pm = (sip->model_num >= 0) ? model_get(sip->model_num) : nullptr;
+		polymodel *subsys_pm = (sip->subsystems[i].model_num >= 0) ? model_get(sip->subsystems[i].model_num) : nullptr;
+		Error(LOCATION, "%s, ship '%s' does not have subsystem '%s' linked into the model file, '%s'.\n\n(Ship_info model is '%s' and subsystem model is '%s'.)",
+			context_label,
+			sip->name,
+			sip->subsystems[i].subobj_name,
+			sip->pof_file,
+			(sip_pm != nullptr) ? sip_pm->filename : "NULL",
+			(subsys_pm != nullptr) ? subsys_pm->filename : "NULL");
+	}
+}
+
 // as with object, don't set next and prev to NULL because they keep the object on the free and used lists
 void ship_subsys::clear()
 {
@@ -11467,6 +11491,8 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 	polymodel *pm = model_get(sip->model_num);
 
 	ship_copy_subsystem_fixup(sip);
+	verify_ship_subsystems_linked(sip, "After ship_copy_subsystem_fixup in ship_create");
+
 	show_ship_subsys_count();
 
 	if ( sip->num_detail_levels != pm->n_detail_levels )
@@ -19102,30 +19128,13 @@ void ship_page_in()
 					sip->subsystems[j].model_num = -1;
 
 				ship_copy_subsystem_fixup(&(*sip));
-
-#ifndef NDEBUG
-				for (j = 0; j < sip->n_subsystems; j++) {
-					if (sip->subsystems[j].model_num != sip->model_num) {
-						polymodel *sip_pm = (sip->model_num >= 0) ? model_get(sip->model_num) : NULL;
-						polymodel *subsys_pm = (sip->subsystems[j].model_num >= 0) ? model_get(sip->subsystems[j].model_num) : NULL;
-						Warning(LOCATION, "After ship_copy_subsystem_fixup, ship '%s' does not have subsystem '%s' linked into the model file, '%s'.\n\n(Ship_info model is '%s' and subsystem model is '%s'.)", sip->name, sip->subsystems[j].subobj_name, sip->pof_file, (sip_pm != NULL) ? sip_pm->filename : "NULL", (subsys_pm != NULL) ? subsys_pm->filename : "NULL");
-					}
-				}
-#endif
+				verify_ship_subsystems_linked(&(*sip), "After ship_copy_subsystem_fixup in ship_page_in");
 			} else {
 				// Just to be safe (I mean to check that my code works...)
 				Assert( sip->model_num >= 0 );
 				Assert( sip->model_num == model_previously_loaded );
 
-#ifndef NDEBUG
-				for (j = 0; j < sip->n_subsystems; j++) {
-					if (sip->subsystems[j].model_num != sip->model_num) {
-						polymodel *sip_pm = (sip->model_num >= 0) ? model_get(sip->model_num) : NULL;
-						polymodel *subsys_pm = (sip->subsystems[j].model_num >= 0) ? model_get(sip->subsystems[j].model_num) : NULL;
-						Warning(LOCATION, "Without ship_copy_subsystem_fixup, ship '%s' does not have subsystem '%s' linked into the model file, '%s'.\n\n(Ship_info model is '%s' and subsystem model is '%s'.)", sip->name, sip->subsystems[j].subobj_name, sip->pof_file, (sip_pm != NULL) ? sip_pm->filename : "NULL", (subsys_pm != NULL) ? subsys_pm->filename : "NULL");
-					}
-				}
-#endif
+				verify_ship_subsystems_linked(&(*sip), "Without ship_copy_subsystem_fixup in ship_page_in");
 			}
 		} else {
 			// Model not loaded, so load it
@@ -19133,11 +19142,8 @@ void ship_page_in()
 
 			Assert( sip->model_num >= 0 );
 
-#ifndef NDEBUG
-			// Verify that all the subsystem model numbers are updated
-			for (j = 0; j < sip->n_subsystems; j++)
-				Assertion( sip->subsystems[j].model_num == sip->model_num, "Model reference for subsystem %s (model num: %d) on model %s (model num: %d) is invalid.\n", sip->subsystems[j].name, sip->subsystems[j].model_num, sip->pof_file, sip->model_num );	// JAS
-#endif
+			// Verify that all the subsystem model numbers were updated by model_load
+			verify_ship_subsystems_linked(&(*sip), "After model_load in ship_page_in");
 		}
 
 		// more weapon marking, the weapon info in Ship_info[] is the default
