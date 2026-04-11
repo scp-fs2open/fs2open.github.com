@@ -9563,11 +9563,10 @@ bool check_for_25_1_data()
 			return true;
 	}
 
-	for (const auto& jn : Jump_nodes)
-	{
-		if (stricmp(jn.GetFredLayer().c_str(), "Default") != 0)
-			return true;
-	}
+	if (std::any_of(Jump_nodes.begin(), Jump_nodes.end(), [](const auto& jn) {
+		return stricmp(jn.GetFredLayer().c_str(), "Default") != 0;
+	}))
+		return true;
 
 	return false;
 }
