@@ -25,31 +25,96 @@
       </attribute>
       <layout class="QVBoxLayout" name="generalLayout">
        <item>
-        <widget class="QCheckBox" name="moveShipsWhenUndocking">
-         <property name="text">
-          <string>Move Ships When Undocking</string>
+        <widget class="QGroupBox" name="appearanceGroup">
+         <property name="title">
+          <string>Appearance</string>
          </property>
+         <layout class="QFormLayout" name="appearanceLayout">
+          <item row="0" column="0">
+           <widget class="QLabel" name="themeLabel">
+            <property name="text">
+             <string>Theme:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QComboBox" name="themeCombo">
+            <item>
+             <property name="text">
+              <string>Light</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Dark</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="toolbarIconSizeLabel">
+            <property name="text">
+             <string>Toolbar icon size:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QComboBox" name="toolbarIconSizeCombo">
+            <item>
+             <property name="text">
+              <string>Small (16px)</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Medium (24px)</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Large (32px)</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+         </layout>
         </widget>
        </item>
        <item>
-        <widget class="QCheckBox" name="alwaysSaveDisplayNames">
-         <property name="text">
-          <string>Always save Display Names</string>
+        <widget class="QGroupBox" name="missionEditingGroup">
+         <property name="title">
+          <string>Mission Editing</string>
          </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QCheckBox" name="errorCheckerChecksForPotentialIssues">
-         <property name="text">
-          <string>Error checker checks for potential issues</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QCheckBox" name="darkMode">
-         <property name="text">
-          <string>Dark mode</string>
-         </property>
+         <layout class="QVBoxLayout" name="missionEditingLayout">
+          <item>
+           <widget class="QCheckBox" name="offerAutosaveRecovery">
+            <property name="text">
+             <string>Offer to load backup file on mission open</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="moveShipsWhenUndocking">
+            <property name="text">
+             <string>Move Ships When Undocking</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="alwaysSaveDisplayNames">
+            <property name="text">
+             <string>Always save Display Names</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="errorCheckerChecksForPotentialIssues">
+            <property name="text">
+             <string>Error checker checks for potential issues</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </widget>
        </item>
        <item>
@@ -261,7 +326,7 @@
       <enum>Qt::Horizontal</enum>
      </property>
      <property name="standardButtons">
-      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+      <set>QDialogButtonBox::Close</set>
      </property>
     </widget>
    </item>
@@ -269,22 +334,6 @@
  </widget>
  <resources/>
  <connections>
-  <connection>
-   <sender>buttonBox</sender>
-   <signal>accepted()</signal>
-   <receiver>fso::fred::dialogs::PreferencesDialog</receiver>
-   <slot>accept()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>248</x>
-     <y>390</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>157</x>
-     <y>410</y>
-    </hint>
-   </hints>
-  </connection>
   <connection>
    <sender>buttonBox</sender>
    <signal>rejected()</signal>

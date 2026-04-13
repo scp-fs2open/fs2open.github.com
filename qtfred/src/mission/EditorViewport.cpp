@@ -135,6 +135,8 @@ EditorViewport::EditorViewport(Editor* in_editor, std::unique_ptr<FredRenderer>&
 void EditorViewport::loadSettings() {
 	QSettings settings;
 	settings.beginGroup(SETTINGS_GROUP);
+	toolbar_icon_size                  = settings.value("toolbar_icon_size",                  toolbar_icon_size).toInt();
+	Offer_autosave_recovery            = settings.value("offer_autosave_recovery",            Offer_autosave_recovery).toBool();
 	Move_ships_when_undocking          = settings.value("move_ships_when_undocking",          Move_ships_when_undocking).toBool();
 	Always_save_display_names          = settings.value("always_save_display_names",          Always_save_display_names).toBool();
 	Error_checker_checks_potential_issues = settings.value("error_checker_checks_potential_issues", Error_checker_checks_potential_issues).toBool();
@@ -144,12 +146,37 @@ void EditorViewport::loadSettings() {
 	Show_sexp_help_ship_editor         = settings.value("show_sexp_help_ship_editor",         Show_sexp_help_ship_editor).toBool();
 	Show_sexp_help_wing_editor         = settings.value("show_sexp_help_wing_editor",         Show_sexp_help_wing_editor).toBool();
 	Dark_mode                          = settings.value("dark_mode",                          Dark_mode).toBool();
+
+	view.Universal_heading                 = settings.value("view_universal_heading",                 view.Universal_heading).toBool();
+	view.Show_stars                        = settings.value("view_show_stars",                        view.Show_stars).toBool();
+	view.Show_horizon                      = settings.value("view_show_horizon",                      view.Show_horizon).toBool();
+	view.Show_grid                         = settings.value("view_show_grid",                         view.Show_grid).toBool();
+	view.Show_distances                    = settings.value("view_show_distances",                    view.Show_distances).toBool();
+	view.Show_coordinates                  = settings.value("view_show_coordinates",                  view.Show_coordinates).toBool();
+	view.Show_outlines                     = settings.value("view_show_outlines",                     view.Show_outlines).toBool();
+	view.Draw_outlines_on_selected_ships   = settings.value("view_draw_outlines_on_selected_ships",   view.Draw_outlines_on_selected_ships).toBool();
+	view.Draw_outline_at_warpin_position   = settings.value("view_draw_outline_at_warpin_position",   view.Draw_outline_at_warpin_position).toBool();
+	view.Show_grid_positions               = settings.value("view_show_grid_positions",               view.Show_grid_positions).toBool();
+	view.Show_dock_points                  = settings.value("view_show_dock_points",                  view.Show_dock_points).toBool();
+	view.Show_bay_paths                    = settings.value("view_show_bay_paths",                    view.Show_bay_paths).toBool();
+	view.Show_starts                       = settings.value("view_show_starts",                       view.Show_starts).toBool();
+	view.Show_ships                        = settings.value("view_show_ships",                        view.Show_ships).toBool();
+	view.Show_ship_info                    = settings.value("view_show_ship_info",                    view.Show_ship_info).toBool();
+	view.Show_ship_models                  = settings.value("view_show_ship_models",                  view.Show_ship_models).toBool();
+	view.Show_paths_fred                   = settings.value("view_show_paths_fred",                   view.Show_paths_fred).toBool();
+	view.Lighting_on                       = settings.value("view_lighting_on",                       view.Lighting_on).toBool();
+	view.FullDetail                        = settings.value("view_full_detail",                       view.FullDetail).toBool();
+	view.Show_waypoints                    = settings.value("view_show_waypoints",                    view.Show_waypoints).toBool();
+	view.Show_compass                      = settings.value("view_show_compass",                      view.Show_compass).toBool();
+	view.Highlight_selectable_subsys       = settings.value("view_highlight_selectable_subsys",       view.Highlight_selectable_subsys).toBool();
 	settings.endGroup();
 }
 
 void EditorViewport::saveSettings() const {
 	QSettings settings;
 	settings.beginGroup(SETTINGS_GROUP);
+	settings.setValue("toolbar_icon_size",                   toolbar_icon_size);
+	settings.setValue("offer_autosave_recovery",             Offer_autosave_recovery);
 	settings.setValue("move_ships_when_undocking",           Move_ships_when_undocking);
 	settings.setValue("always_save_display_names",           Always_save_display_names);
 	settings.setValue("error_checker_checks_potential_issues", Error_checker_checks_potential_issues);
@@ -159,6 +186,29 @@ void EditorViewport::saveSettings() const {
 	settings.setValue("show_sexp_help_ship_editor",          Show_sexp_help_ship_editor);
 	settings.setValue("show_sexp_help_wing_editor",          Show_sexp_help_wing_editor);
 	settings.setValue("dark_mode",                           Dark_mode);
+
+	settings.setValue("view_universal_heading",                 view.Universal_heading);
+	settings.setValue("view_show_stars",                        view.Show_stars);
+	settings.setValue("view_show_horizon",                      view.Show_horizon);
+	settings.setValue("view_show_grid",                         view.Show_grid);
+	settings.setValue("view_show_distances",                    view.Show_distances);
+	settings.setValue("view_show_coordinates",                  view.Show_coordinates);
+	settings.setValue("view_show_outlines",                     view.Show_outlines);
+	settings.setValue("view_draw_outlines_on_selected_ships",   view.Draw_outlines_on_selected_ships);
+	settings.setValue("view_draw_outline_at_warpin_position",   view.Draw_outline_at_warpin_position);
+	settings.setValue("view_show_grid_positions",               view.Show_grid_positions);
+	settings.setValue("view_show_dock_points",                  view.Show_dock_points);
+	settings.setValue("view_show_bay_paths",                    view.Show_bay_paths);
+	settings.setValue("view_show_starts",                       view.Show_starts);
+	settings.setValue("view_show_ships",                        view.Show_ships);
+	settings.setValue("view_show_ship_info",                    view.Show_ship_info);
+	settings.setValue("view_show_ship_models",                  view.Show_ship_models);
+	settings.setValue("view_show_paths_fred",                   view.Show_paths_fred);
+	settings.setValue("view_lighting_on",                       view.Lighting_on);
+	settings.setValue("view_full_detail",                       view.FullDetail);
+	settings.setValue("view_show_waypoints",                    view.Show_waypoints);
+	settings.setValue("view_show_compass",                      view.Show_compass);
+	settings.setValue("view_highlight_selectable_subsys",       view.Highlight_selectable_subsys);
 	settings.endGroup();
 }
 void EditorViewport::needsUpdate() {

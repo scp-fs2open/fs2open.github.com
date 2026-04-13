@@ -170,6 +170,8 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 	fred = editor;
 	_viewport = viewport;
 
+	setIconSize(QSize(_viewport->toolbar_icon_size, _viewport->toolbar_icon_size));
+
 	// Let the viewport use us for displaying dialogs
 	_viewport->dialogProvider = this;
 
@@ -241,7 +243,7 @@ void FredView::loadMissionFile(const QString& pathName, int flags) {
 		fred->clean_up_selections();
 
 		auto pathToLoad = pathName.toStdString();
-		if (!(flags & MPF_IS_TEMPLATE))
+		if (!(flags & MPF_IS_TEMPLATE) && _viewport->Offer_autosave_recovery)
 			fred->maybeUseAutosave(pathToLoad);
 
 		fred->loadMission(pathToLoad, flags);
@@ -795,6 +797,7 @@ void FredView::connectActionToViewSetting(QAction* option, bool* destination) {
 
 		// View settings have changed so we need to update the window
 		_viewport->needsUpdate();
+		_viewport->saveSettings();
 	});
 }
 void FredView::connectActionToViewSetting(QAction* option, std::vector<bool>* vector, size_t idx) {
