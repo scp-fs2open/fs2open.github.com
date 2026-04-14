@@ -49,6 +49,8 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 
 	static int make_ship_list(int* arr);
 
+	int computeArrivalMinDist() const;
+
 	bool enable = true;
 	int player_count;
 	int ship_count;
