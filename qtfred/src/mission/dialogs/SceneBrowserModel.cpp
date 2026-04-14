@@ -206,6 +206,7 @@ void SceneBrowserModel::moveObjectToLayer(int objNum, const QString& layerName)
 
 void SceneBrowserModel::moveWingToLayer(int wingIndex, const QString& layerName)
 {
+	if (wingIndex < 0 || wingIndex >= MAX_WINGS) return;
 	const QByteArray layer = layerName.toUtf8();
 	for (int si = 0; si < Wings[wingIndex].wave_count; si++) {
 		int shipIdx = Wings[wingIndex].ship_index[si];

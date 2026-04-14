@@ -221,7 +221,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 
 	void initializeStatusBar();
 	void initializePopupMenus();
-	void populateMoveToLayerMenu(int targetObject);
+	void populateMoveToLayerMenu(int targetObject, QMenu* targetMenu = nullptr);
 	void populateCreateShipSubmenu();
 	void populateCreatePropSubmenu();
 	void openLayerManagerDialog();

@@ -856,12 +856,20 @@ static bool canObjectBeAssignedLayer(int objType) {
 }
 
 void FredView::showContextMenu(int objNum, const QPoint& globalPos) {
+	if (!query_valid_object(objNum)) return;
 	fred->selectObject(objNum);
 	const auto objType = Objects[objNum].type;
 	const bool canAssignLayer = canObjectBeAssignedLayer(objType);
 	_moveToLayerMenu->menuAction()->setVisible(canAssignLayer);
 	if (canAssignLayer)
 		populateMoveToLayerMenu(objNum);
+
+	const bool isShip = (objType == OBJ_SHIP) || (objType == OBJ_START);
+	const bool inWing = isShip && Ships[Objects[objNum].instance].wingnum >= 0;
+	_editWingAction->setVisible(isShip);
+	_editWingAction->setEnabled(inWing);
+	_selectWingAction->setVisible(isShip);
+	_selectWingAction->setEnabled(inWing);
 
 	SCP_string objName;
 	if (fred->getNumMarked() > 1) {
@@ -942,9 +950,10 @@ void FredView::showWingContextMenu(int wingIndex, const QPoint& globalPos)
 
 	menu.addSeparator();
 
+	auto* localLayerMenu = new QMenu(tr("Move to Layer"), &menu);
 	if (firstObjNum >= 0)
-		populateMoveToLayerMenu(firstObjNum);
-	menu.addMenu(_moveToLayerMenu);  // already has "Manage Layers..." at the bottom
+		populateMoveToLayerMenu(firstObjNum, localLayerMenu);
+	menu.addMenu(localLayerMenu);
 
 	menu.addSeparator();
 
@@ -994,9 +1003,10 @@ void FredView::showWaypointPathContextMenu(int pathIndex, const QPoint& globalPo
 
 	menu.addSeparator();
 
+	auto* localLayerMenu = new QMenu(tr("Move to Layer"), &menu);
 	if (firstObjNum >= 0)
-		populateMoveToLayerMenu(firstObjNum);
-	menu.addMenu(_moveToLayerMenu);  // already has "Manage Layers..." at the bottom
+		populateMoveToLayerMenu(firstObjNum, localLayerMenu);
+	menu.addMenu(localLayerMenu);
 
 	menu.addSeparator();
 
@@ -1172,15 +1182,16 @@ void FredView::populateCreatePropSubmenu() {
 	}
 }
 
-void FredView::populateMoveToLayerMenu(int targetObject) {
-	_moveToLayerMenu->clear();
+void FredView::populateMoveToLayerMenu(int targetObject, QMenu* targetMenu) {
+	QMenu* dest = targetMenu ? targetMenu : _moveToLayerMenu;
+	dest->clear();
 
 	const auto layerNames = _viewport->getLayerNames();
 	for (const auto& layerName : layerNames) {
 		bool visible = true;
 		_viewport->getLayerVisibility(layerName, &visible);
 
-		auto* layerAction = new QAction(QString::fromStdString(layerName), _moveToLayerMenu);
+		auto* layerAction = new QAction(QString::fromStdString(layerName), dest);
 		layerAction->setCheckable(true);
 		layerAction->setChecked(_viewport->getObjectLayerName(targetObject) == layerName);
 		layerAction->setEnabled(visible);
@@ -1197,11 +1208,11 @@ void FredView::populateMoveToLayerMenu(int targetObject) {
 					showButtonDialog(DialogType::Error, "Layer Error", error, { DialogButton::Ok });
 				}
 			});
-		_moveToLayerMenu->addAction(layerAction);
+		dest->addAction(layerAction);
 	}
 
-	_moveToLayerMenu->addSeparator();
-	auto* manageAction = _moveToLayerMenu->addAction(tr("Manage Layers..."));
+	dest->addSeparator();
+	auto* manageAction = dest->addAction(tr("Manage Layers..."));
 	connect(manageAction, &QAction::triggered, this, [this]() { openLayerManagerDialog(); });
 }
 

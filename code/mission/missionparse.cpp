@@ -9548,10 +9548,12 @@ bool check_for_25_1_data()
 	if (count_items_with_value(Props) > 0)
 		return true;
 
+	constexpr auto defaultLayer = "Default";
+
 	for (const auto& so : list_range(&Ship_obj_list))
 	{
 		auto shipp = &Ships[Objects[so->objnum].instance];
-		if (stricmp(shipp->fred_layer.c_str(), "Default") != 0)
+		if (!shipp->fred_layer.empty() && !lcase_equal(shipp->fred_layer, defaultLayer))
 			return true;
 	}
 
@@ -9559,11 +9561,13 @@ bool check_for_25_1_data()
 	{
 		if (wl.get_no_draw_lines() || wl.get_has_custom_color())
 			return true;
-		if (stricmp(wl.get_fred_layer().c_str(), "Default") != 0)
+		const auto& layer = wl.get_fred_layer();
+		if (!layer.empty() && !lcase_equal(layer, defaultLayer))
 			return true;
 	}
 
-	return std::any_of(Jump_nodes.begin(), Jump_nodes.end(), [](const auto& jn) {
-		return stricmp(jn.GetFredLayer().c_str(), "Default") != 0;
+	return std::any_of(Jump_nodes.begin(), Jump_nodes.end(), [defaultLayer](const auto& jn) {
+		const auto& layer = jn.GetFredLayer();
+		return !layer.empty() && !lcase_equal(layer, defaultLayer);
 	});
 }

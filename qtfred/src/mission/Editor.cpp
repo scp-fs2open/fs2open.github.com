@@ -1236,7 +1236,6 @@ int Editor::common_object_delete(int obj) {
 	//this causes an ugly crash.
 	obj_delete(obj);
 
-	missionChanged();
 	return 0;
 }
 

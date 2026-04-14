@@ -79,7 +79,7 @@ int FlowLayout::doLayout(const QRect& rect, bool testOnly) const
 		x += sz.width() + m_hSpace;
 		lineHeight = qMax(lineHeight, sz.height());
 	}
-	return y + lineHeight - rect.y() + m.top() + m.bottom();
+	return y + lineHeight - rect.y() + m.bottom();
 }
 
 } // namespace fso::fred

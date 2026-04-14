@@ -962,12 +962,16 @@ bool EditorViewport::deleteLayer(const SCP_string& name, SCP_string* errorMessag
 	_layerNames.erase(_layerNames.begin() + static_cast<SCP_vector<SCP_string>::difference_type>(layerIndex));
 	_layerVisibility.erase(_layerVisibility.begin() + static_cast<SCP_vector<bool>::difference_type>(layerIndex));
 
+	std::vector<int> toReassign;
 	for (auto& objectLayer : _objectLayers) {
 		if (objectLayer.second == layerIndex) {
-			setObjectLayerByIndex(objectLayer.first, 0);
+			toReassign.push_back(objectLayer.first);
 		} else if (objectLayer.second > layerIndex) {
 			--objectLayer.second;
 		}
+	}
+	for (int objIdx : toReassign) {
+		setObjectLayerByIndex(objIdx, 0);
 	}
 	syncMissionLayerNames();
 	editor->notifyLayerStructureChanged();

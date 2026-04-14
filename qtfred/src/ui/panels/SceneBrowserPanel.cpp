@@ -220,6 +220,15 @@ void SceneBrowserPanel::syncSelection()
 				}
 				(*it)->setSelected(anyChild);
 			}
+			auto varPath = (*it)->data(0, WptListIndexRole);
+			if (!varPath.isNull()) {
+				bool anyChild = false;
+				for (int c = 0; c < (*it)->childCount(); c++) {
+					auto cv = (*it)->child(c)->data(0, ObjNumRole);
+					if (!cv.isNull() && marked.contains(cv.toInt())) { anyChild = true; break; }
+				}
+				(*it)->setSelected(anyChild);
+			}
 		}
 		++it;
 	}
@@ -391,6 +400,8 @@ void SceneBrowserPanel::onItemSelectionChanged()
 		_model->multiSelectFromBrowser(selectedObjNums);
 	} else if (!selectedObjNums.isEmpty()) {
 		_model->multiSelectFromBrowser(selectedObjNums);
+	} else {
+		_model->multiSelectFromBrowser({});
 	}
 }
 
