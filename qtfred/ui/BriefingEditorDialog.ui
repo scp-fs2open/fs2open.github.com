@@ -657,11 +657,7 @@
              </widget>
             </item>
             <item row="0" column="1">
-             <widget class="QComboBox" name="defaultMusicComboBox">
-              <property name="editable">
-               <bool>false</bool>
-              </property>
-             </widget>
+             <widget class="fso::fred::MusicComboWidget" name="defaultMusicWidget"/>
             </item>
             <item row="1" column="0">
              <widget class="QLabel" name="musicPackLabel">
@@ -674,7 +670,7 @@
              </widget>
             </item>
             <item row="1" column="1">
-             <widget class="QComboBox" name="musicPackComboBox"/>
+             <widget class="fso::fred::MusicComboWidget" name="musicPackWidget"/>
             </item>
            </layout>
           </widget>
@@ -775,6 +771,11 @@
    <class>fso::fred::sexp_tree</class>
    <extends>QTreeView</extends>
    <header>ui/widgets/sexp_tree.h</header>
+  </customwidget>
+  <customwidget>
+   <class>fso::fred::MusicComboWidget</class>
+   <extends>QWidget</extends>
+   <header>ui/widgets/MusicComboWidget.h</header>
   </customwidget>
  </customwidgets>
  <resources>

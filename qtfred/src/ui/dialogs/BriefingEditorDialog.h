@@ -85,8 +85,10 @@ class BriefingEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	void on_voiceFilePlayButton_clicked();
 	void on_formulaTreeView_nodeChanged(int newTree);
 
-	void on_defaultMusicComboBox_currentIndexChanged(int index);
-	void on_musicPackComboBox_currentIndexChanged(int /*index*/);
+	void on_defaultMusicWidget_currentIndexChanged(int spooledMusicIdx);
+	void on_musicPackWidget_currentIndexChanged(int spooledMusicIdx);
+	void on_defaultMusicWidget_playbackStarted();
+	void on_musicPackWidget_playbackStarted();
 
   private: // NOLINT(readability-redundant-access-specifiers)
 	std::unique_ptr<Ui::BriefingEditorDialog> ui;

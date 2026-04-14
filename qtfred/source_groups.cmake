@@ -321,6 +321,8 @@ add_file_folder("Source/UI/Widgets"
 	src/ui/widgets/SimpleListSelectDialog.h
 	src/ui/widgets/weaponList.cpp
 	src/ui/widgets/weaponList.h
+	src/ui/widgets/MusicComboWidget.cpp
+	src/ui/widgets/MusicComboWidget.h
 )
 
 add_file_folder("UI"

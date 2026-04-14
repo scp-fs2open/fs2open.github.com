@@ -230,7 +230,7 @@
              </widget>
             </item>
             <item row="0" column="1">
-             <widget class="QComboBox" name="successMusicComboBox"/>
+             <widget class="fso::fred::MusicComboWidget" name="successMusicWidget"/>
             </item>
             <item row="1" column="0">
              <widget class="QLabel" name="averageMusicLabel">
@@ -240,7 +240,7 @@
              </widget>
             </item>
             <item row="1" column="1">
-             <widget class="QComboBox" name="averageMusicComboBox"/>
+             <widget class="fso::fred::MusicComboWidget" name="averageMusicWidget"/>
             </item>
             <item row="2" column="0">
              <widget class="QLabel" name="failureMusicLabel">
@@ -250,7 +250,7 @@
              </widget>
             </item>
             <item row="2" column="1">
-             <widget class="QComboBox" name="failureMusicComboBox"/>
+             <widget class="fso::fred::MusicComboWidget" name="failureMusicWidget"/>
             </item>
            </layout>
           </widget>
@@ -268,6 +268,11 @@
    <class>fso::fred::sexp_tree</class>
    <extends>QTreeView</extends>
    <header>ui/widgets/sexp_tree.h</header>
+  </customwidget>
+  <customwidget>
+   <class>fso::fred::MusicComboWidget</class>
+   <extends>QWidget</extends>
+   <header>ui/widgets/MusicComboWidget.h</header>
   </customwidget>
  </customwidgets>
  <tabstops>

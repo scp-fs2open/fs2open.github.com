@@ -2,6 +2,7 @@
 #include "ui_DebriefingDialog.h"
 #include "ui/Theme.h"
 #include "mission/util.h"
+#include <gamesnd/eventmusic.h>
 #include <globalincs/globals.h>
 #include <globalincs/linklist.h>
 #include <ui/util/default_dir.h>
@@ -35,6 +36,9 @@ void DebriefingDialog::accept()
 	// If apply() returns true, close the dialog
 	if (_model->apply()) {
 		_viewport->editor->autosave("debriefing editor");
+		ui->successMusicWidget->stopPlayback();
+		ui->averageMusicWidget->stopPlayback();
+		ui->failureMusicWidget->stopPlayback();
 		QDialog::accept();
 	}
 	// else: validation failed, don't close
@@ -46,6 +50,9 @@ void DebriefingDialog::reject()
 	// If they do, it runs _model->apply() and returns the success value
 	// If they don't, it runs _model->reject() and returns true
 	if (rejectOrCloseHandler(this, _model.get(), _viewport)) {
+		ui->successMusicWidget->stopPlayback();
+		ui->averageMusicWidget->stopPlayback();
+		ui->failureMusicWidget->stopPlayback();
 		QDialog::reject(); // actually close
 	}
 	// else: do nothing, don't close
@@ -60,8 +67,9 @@ void DebriefingDialog::closeEvent(QCloseEvent* e)
 void DebriefingDialog::initializeUi()
 {
 	fso::fred::bindStandardIcon(ui->voiceFilePlayButton, QStyle::SP_MediaPlay);
+
 	util::SignalBlockers blockers(this);
-	
+
 	auto list = _model->getTeamList();
 
 	ui->actionChangeTeams->clear();
@@ -69,18 +77,6 @@ void DebriefingDialog::initializeUi()
 	for (const auto& team : list) {
 		ui->actionChangeTeams->addItem(QString::fromStdString(team.first), team.second);
 	}
-
-	auto musicList = _model->getMusicList();
-	QStringList qMusicList;
-	for (const auto& track : musicList) {
-		qMusicList << QString::fromStdString(track);
-	}
-	ui->successMusicComboBox->clear();
-	ui->successMusicComboBox->addItems(qMusicList);
-	ui->averageMusicComboBox->clear();
-	ui->averageMusicComboBox->addItems(qMusicList);
-	ui->failureMusicComboBox->clear();
-	ui->failureMusicComboBox->addItems(qMusicList);
 
 	// Initialize the formula tree editor
 	ui->formulaTreeView->initializeEditor(_viewport->editor, this);
@@ -114,10 +110,10 @@ void DebriefingDialog::updateUi()
 		ui->formulaTreeView->hilite_item(ui->formulaTreeView->select_sexp_node);
 	}
 
-	// Music tracks (data is index, UI is index + 1 to account for "None")
-	ui->successMusicComboBox->setCurrentIndex(_model->getSuccessMusicTrack() + 1);
-	ui->averageMusicComboBox->setCurrentIndex(_model->getAverageMusicTrack() + 1);
-	ui->failureMusicComboBox->setCurrentIndex(_model->getFailureMusicTrack() + 1);
+	// Music tracks: model uses Spooled_music index (-1 = None), widget uses the same convention
+	ui->successMusicWidget->setCurrentMusicIndex(_model->getSuccessMusicTrack());
+	ui->averageMusicWidget->setCurrentMusicIndex(_model->getAverageMusicTrack());
+	ui->failureMusicWidget->setCurrentMusicIndex(_model->getFailureMusicTrack());
 
 	enableDisableControls();
 }
@@ -240,19 +236,37 @@ void DebriefingDialog::on_formulaTreeView_nodeChanged(int newTree)
 	_model->setFormula(newTree);
 }
 
-void DebriefingDialog::on_successMusicComboBox_currentIndexChanged(int index)
+void DebriefingDialog::on_successMusicWidget_currentIndexChanged(int spooledMusicIdx)
 {
-	_model->setSuccessMusicTrack(index - 1); // -1 to account for "None"
+	_model->setSuccessMusicTrack(spooledMusicIdx);
 }
 
-void DebriefingDialog::on_averageMusicComboBox_currentIndexChanged(int index)
+void DebriefingDialog::on_averageMusicWidget_currentIndexChanged(int spooledMusicIdx)
 {
-	_model->setAverageMusicTrack(index - 1); // -1 to account for "None"
+	_model->setAverageMusicTrack(spooledMusicIdx);
 }
 
-void DebriefingDialog::on_failureMusicComboBox_currentIndexChanged(int index)
+void DebriefingDialog::on_failureMusicWidget_currentIndexChanged(int spooledMusicIdx)
 {
-	_model->setFailureMusicTrack(index - 1); // -1 to account for "None"
+	_model->setFailureMusicTrack(spooledMusicIdx);
+}
+
+void DebriefingDialog::on_successMusicWidget_playbackStarted()
+{
+	ui->averageMusicWidget->stopPlayback();
+	ui->failureMusicWidget->stopPlayback();
+}
+
+void DebriefingDialog::on_averageMusicWidget_playbackStarted()
+{
+	ui->successMusicWidget->stopPlayback();
+	ui->failureMusicWidget->stopPlayback();
+}
+
+void DebriefingDialog::on_failureMusicWidget_playbackStarted()
+{
+	ui->successMusicWidget->stopPlayback();
+	ui->averageMusicWidget->stopPlayback();
 }
 
 } // namespace fso::fred::dialogs
