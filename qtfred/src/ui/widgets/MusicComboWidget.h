@@ -25,7 +25,6 @@ class MusicComboWidget : public QWidget {
 	// Selects the entry matching the given Spooled_music index (-1 selects "None").
 	void setCurrentMusicIndex(int spooledIdx);
 
-  public slots:
 	// Stops any active playback and resets the button to its Play state.
 	void stopPlayback();
 
@@ -42,7 +41,6 @@ class MusicComboWidget : public QWidget {
 	void onComboChanged(int comboIdx);
 	void onTimerTick();
 
-  private:
 	QComboBox* _comboBox;
 	QPushButton* _playButton;
 	QTimer _timer;
