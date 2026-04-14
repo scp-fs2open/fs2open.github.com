@@ -41,6 +41,7 @@ class MusicComboWidget : public QWidget {
 	void onComboChanged(int comboIdx);
 	void onTimerTick();
 
+  private: // NOLINT(readability-redundant-access-specifiers)
 	QComboBox* _comboBox;
 	QPushButton* _playButton;
 	QTimer _timer;
