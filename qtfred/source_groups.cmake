@@ -271,6 +271,8 @@ add_file_folder("Source/UI/General"
 )
 
 add_file_folder("Source/UI/Util"
+	src/ui/util/default_dir.cpp
+	src/ui/util/default_dir.h
 	src/ui/util/ImageRenderer.cpp
 	src/ui/util/ImageRenderer.h
 	src/ui/util/menu.cpp

@@ -1,12 +1,12 @@
 #include "BackgroundEditorDialog.h"
 #include <QCloseEvent>
+#include "ui/util/default_dir.h"
 #include "ui/util/SignalBlockers.h"
 #include "ui/dialogs/General/ImagePickerDialog.h"
 #include "ui_BackgroundEditor.h"
 
 #include <globalincs/globals.h>
 #include <QMessageBox>
-#include <QSettings>
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QInputDialog>
@@ -451,9 +451,12 @@ void BackgroundEditorDialog::on_removeButton_clicked()
 
 void BackgroundEditorDialog::on_importButton_clicked()
 {
-	const QString file = QFileDialog::getOpenFileName(this, "Import Backgrounds from File", QString(), "Freespace 2 Mission Files (*.fs2);;All Files (*)");
+	const QString importLastDir = util::getLastDir("background/importBackgrounds", CF_TYPE_MISSIONS);
+
+	const QString file = QFileDialog::getOpenFileName(this, "Import Backgrounds from File", importLastDir, "Freespace 2 Mission Files (*.fs2);;All Files (*)");
 	if (file.isEmpty())
 		return;
+	util::saveLastDir("background/importBackgrounds", file);
 	int count = _model->getImportableBackgroundCount(file.toUtf8().constData());
 
 	if (count <= 0) {
@@ -852,19 +855,15 @@ void BackgroundEditorDialog::updateAmbientSwatch()
 
 void BackgroundEditorDialog::on_skyboxModelButton_clicked()
 {
-	QSettings settings("QtFRED", "BackgroundEditor");
-	const QString lastDir = settings.value("skybox/lastDir", QDir::homePath()).toString();
+	const QString lastDir = util::getLastDir("background/skyboxModel", CF_TYPE_MODELS);
 
 	const QString path =
 		QFileDialog::getOpenFileName(this, tr("Select Skybox Model"), lastDir, tr("FS2 Models (*.pof);;All Files (*)"));
 	if (path.isEmpty())
 		return;
 
-	const QFileInfo fi(path);
-	settings.setValue("skybox/lastDir", fi.absolutePath());
-
-	const QString baseName = fi.completeBaseName();
-	_model->setSkyboxModelName(baseName.toUtf8().constData());
+	util::saveLastDir("background/skyboxModel", path);
+	_model->setSkyboxModelName(QFileInfo(path).completeBaseName().toUtf8().constData());
 
 	updateSkyboxControls();
 }
@@ -940,18 +939,15 @@ void BackgroundEditorDialog::on_subspaceCheckBox_toggled(bool checked)
 
 void BackgroundEditorDialog::on_envMapButton_clicked()
 {
-	QSettings settings("QtFRED", "BackgroundEditor");
-	const QString lastDir = settings.value("envmap/lastDir", QDir::homePath()).toString();
+	const QString lastDir = util::getLastDir("background/envMap", CF_TYPE_MAPS);
 	const QString path = QFileDialog::getOpenFileName(this,
 		tr("Select Environment Map"),
 		lastDir,
 		tr("Environment Maps (*.dds);;All Files (*)"));
 	if (path.isEmpty())
 		return;
-	const QFileInfo fi(path);
-	settings.setValue("envmap/lastDir", fi.absolutePath());
-	const QString baseName = fi.completeBaseName();
-	_model->setEnvironmentMapName(baseName.toUtf8().constData());
+	util::saveLastDir("background/envMap", path);
+	_model->setEnvironmentMapName(QFileInfo(path).completeBaseName().toUtf8().constData());
 	updateMiscControls();
 }
 

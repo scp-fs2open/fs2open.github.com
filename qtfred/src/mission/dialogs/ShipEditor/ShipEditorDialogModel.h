@@ -15,8 +15,6 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	bool _m_player_ship;
 	int _m_departure_tree_formula;
 	int _m_arrival_tree_formula;
-	bool _arrival_tree_dirty = false;
-	bool _departure_tree_dirty = false;
 	SCP_string _m_ship_name;
 	SCP_string _m_ship_display_name;
 	SCP_string _m_cargo1;
@@ -45,13 +43,12 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 
 	void set_modified();
 
-	bool update_ship(int ship);
-	bool update_data();
-
 	void ship_alt_name_close(int base_ship);
 	void ship_callsign_close(int base_ship);
 
 	static int make_ship_list(int* arr);
+
+	int computeArrivalMinDist() const;
 
 	bool enable = true;
 	int player_count;

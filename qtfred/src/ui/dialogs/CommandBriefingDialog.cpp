@@ -4,9 +4,11 @@
 #include "mission/util.h"
 #include <globalincs/globals.h>
 #include <globalincs/linklist.h>
+#include <ui/util/default_dir.h>
 #include <ui/util/SignalBlockers.h>
 #include <QCloseEvent>
 #include <QFileDialog>
+#include <QFileInfo>
 
 namespace fso::fred::dialogs {
 
@@ -172,7 +174,7 @@ void CommandBriefingDialog::on_actionBrowseAnimation_clicked()
 {
 	QString filename;
 
-	if (CommandBriefingDialog::browseFile(&filename)) {
+	if (browseFile(&filename, "commandBriefing/animation", util::fredDefaultDir(CF_TYPE_INTERFACE), "FSO Animations (*.ani *.eff *.png);;All Files (*.*)")) {
 		_model->setAnimationFilename(filename.toUtf8().constData());
 	}
 	updateUi();
@@ -182,12 +184,12 @@ void CommandBriefingDialog::on_actionBrowseSpeechFile_clicked()
 {
 	QString filename;
 
-	if (CommandBriefingDialog::browseFile(&filename)) {
+	if (browseFile(&filename, "commandBriefing/speechFile", util::fredDefaultDir(CF_TYPE_VOICE), "Voice Files (*.ogg *.wav);;All Files (*.*)")) {
 		_model->setSpeechFilename(filename.toUtf8().constData());
 	}
 	updateUi();
 }
-	
+
 void CommandBriefingDialog::on_actionTestSpeechFileButton_clicked()
 {
 	_model->testSpeech();
@@ -197,7 +199,7 @@ void CommandBriefingDialog::on_actionLowResolutionBrowse_clicked()
 {
 	QString filename;
 
-	if (CommandBriefingDialog::browseFile(&filename)) {
+	if (browseFile(&filename, "commandBriefing/lowRes", util::fredDefaultDir(CF_TYPE_INTERFACE), "FSO Animations (*.ani *.eff *.png);;All Files (*.*)")) {
 		_model->setLowResolutionFilename(filename.toUtf8().constData());
 	}
 	updateUi();
@@ -207,7 +209,7 @@ void CommandBriefingDialog::on_actionHighResolutionBrowse_clicked()
 {
 	QString filename;
 
-	if (CommandBriefingDialog::browseFile(&filename)) {
+	if (browseFile(&filename, "commandBriefing/highRes", util::fredDefaultDir(CF_TYPE_INTERFACE), "FSO Animations (*.ani *.eff *.png);;All Files (*.*)")) {
 		_model->setHighResolutionFilename(filename.toUtf8().constData());
 	}
 	updateUi();
@@ -245,9 +247,11 @@ void CommandBriefingDialog::on_actionHighResolutionFilenameEdit_textChanged(cons
 }
 
 // string in returns the file name, and the function returns true for success or false for fail.
-bool CommandBriefingDialog::browseFile(QString* stringIn) 
+bool CommandBriefingDialog::browseFile(QString* stringIn, const QString& settingsKey, const QString& defaultDir, const QString& filter)
 {
-	QFileInfo fileInfo(QFileDialog::getOpenFileName());
+	const QString lastDir = util::getLastDir(settingsKey, defaultDir);
+
+	const QFileInfo fileInfo(QFileDialog::getOpenFileName(this, QString(), lastDir, filter));
 	*stringIn = fileInfo.fileName();
 
 	if (stringIn->length() >= CF_MAX_FILENAME_LENGTH) {
@@ -257,6 +261,7 @@ bool CommandBriefingDialog::browseFile(QString* stringIn)
 		return false;
 	}
 
+	util::saveLastDir(settingsKey, fileInfo.absoluteFilePath());
 	return true;
 }
 

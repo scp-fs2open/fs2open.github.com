@@ -108,7 +108,7 @@ void ShipGoalsDialog::accept()
 	if (_model->apply()) {
 		QDialog::accept();
 	}
-	// else: validation failed, don’t close
+	// else: validation failed, don't close
 }
 
 void ShipGoalsDialog::reject()
@@ -316,11 +316,14 @@ void ShipGoalsDialog::updateUI()
 				_model->setDock(i, -1);
 				ship_subsys* cur_subsys;
 				auto subsysvalue = _model->getSubsys(i);
-				cur_subsys = GET_FIRST(&Ships[i].subsys_list);
-				while (cur_subsys != END_OF_LIST(&Ships[i].subsys_list)) {
-					subsys[i]->addItem(cur_subsys->system_info->subobj_name,
-						QVariant(QString(cur_subsys->system_info->subobj_name)));
-					cur_subsys = GET_NEXT(cur_subsys);
+				int target_ship_idx = _model->getObject(i) & DATA_MASK;
+				if (target_ship_idx >= 0 && target_ship_idx < MAX_SHIPS) {
+					cur_subsys = GET_FIRST(&Ships[target_ship_idx].subsys_list);
+					while (cur_subsys != END_OF_LIST(&Ships[target_ship_idx].subsys_list)) {
+						subsys[i]->addItem(cur_subsys->system_info->subobj_name,
+							QVariant(QString(cur_subsys->system_info->subobj_name)));
+						cur_subsys = GET_NEXT(cur_subsys);
+					}
 				}
 				if (subsysvalue.empty()) {
 					subsys[i]->setCurrentIndex(0);

@@ -4,6 +4,10 @@
 
 #include "missioneditor/common.h"
 
+#include <ui/util/default_dir.h>
+
+#include <QDir>
+#include <QFileInfo>
 #include <QMessageBox>
 #include <QFileDialog>
 
@@ -293,12 +297,16 @@ void VoiceActingManager::on_generateFilenamesButton_clicked()
 }
 void VoiceActingManager::on_generateScriptButton_clicked()
 {
+	const QString lastDir = util::getLastDir("voiceActingManager/exportScript", QDir::homePath());
+
 	const QString path = QFileDialog::getSaveFileName(this,
 		tr("Export Voice Script"),
-		QString(),
+		lastDir,
 		tr("Text files (*.txt);;All files (*)"));
 	if (path.isEmpty())
 		return;
+
+	util::saveLastDir("voiceActingManager/exportScript", path);
 
 	const bool ok = _model->generateScript(path.toUtf8().constData());
 	if (ok) {

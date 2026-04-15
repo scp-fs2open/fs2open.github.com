@@ -35,7 +35,6 @@ extern GLuint Scene_composite_texture;
 extern GLuint Scene_depth_texture;
 extern GLuint Scene_depth_texture_ms;
 extern GLuint Cockpit_depth_texture;
-extern GLuint Scene_stencil_buffer;
 
 extern GLuint Back_framebuffer;
 extern GLuint Back_texture;

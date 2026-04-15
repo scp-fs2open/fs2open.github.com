@@ -127,15 +127,13 @@ void ShipInitialStatusDialog::on_subIntegritySpinBox_valueChanged(int value)
 }
 void ShipInitialStatusDialog::on_cargoEdit_editingFinished()
 {
-	auto cargo = ui->cargoEdit->text();
-	auto cargofixed = cargo.toUtf8();
-	_model->setCargo(cargofixed.toStdString());
+	SCP_string cargo = ui->cargoEdit->text().toUtf8().constData();
+	_model->setCargo(cargo);
 }
 void ShipInitialStatusDialog::on_colourComboBox_currentIndexChanged(int index)
 {
-	auto string = ui->colourComboBox->itemText(index);
-	auto stringfixed = string.toUtf8();
-	_model->setColour(stringfixed.toStdString());
+	SCP_string colour = ui->colourComboBox->itemText(index).toUtf8().constData();
+	_model->setColour(colour);
 }
 void ShipInitialStatusDialog::on_okPushButton_clicked()
 {
@@ -327,9 +325,6 @@ void ShipInitialStatusDialog::list_dockees(int dock_types)
 }
 void ShipInitialStatusDialog::list_dockee_points(int shipnum)
 {
-	ship* shipp = &Ships[_model->getShip()];
-	ship* other_shipp = &Ships[shipnum];
-
 	// enable/disable dropdown
 	ui->dockeePointComboBox->setEnabled((shipnum >= 0));
 
@@ -340,6 +335,9 @@ void ShipInitialStatusDialog::list_dockee_points(int shipnum)
 	if (shipnum < 0) {
 		return;
 	}
+
+	ship* shipp = &Ships[_model->getShip()];
+	ship* other_shipp = &Ships[shipnum];
 
 	// get the required dock type(s)
 	int dock_type = model_get_dock_index_type(Ship_info[shipp->ship_info_index].model_num, cur_docker_point);
