@@ -667,21 +667,18 @@ void ShipEditorDialog::on_specialStatsButton_clicked()
 }
 void ShipEditorDialog::on_hideCuesButton_clicked()
 {
-	if (ui->hideCuesButton->isChecked()) {
-		ui->arrivalGroupBox->setVisible(false);
-		ui->departureGroupBox->setVisible(false);
-		ui->HelpTitle->setVisible(false);
-		ui->helpText->setVisible(false);
-		QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
-		resize(sizeHint());
-	} else {
-		ui->arrivalGroupBox->setVisible(true);
-		ui->departureGroupBox->setVisible(true);
-		ui->HelpTitle->setVisible(true);
-		ui->helpText->setVisible(true);
-		QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
-		resize(sizeHint());
-	}
+	const auto showHelp = _viewport->Show_sexp_help_ship_editor;
+
+	_cues_hidden = !_cues_hidden;
+
+	ui->arrivalGroupBox->setVisible(!_cues_hidden);
+	ui->departureGroupBox->setVisible(!_cues_hidden);
+	ui->HelpTitle->setVisible(!_cues_hidden && showHelp);
+	ui->helpText->setVisible(!_cues_hidden && showHelp);
+	ui->hideCuesButton->setText(_cues_hidden ? "Show Cues" : "Hide Cues");
+
+	QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+	resize(sizeHint());
 }
 void ShipEditorDialog::on_restrictArrivalPathsButton_clicked()
 {

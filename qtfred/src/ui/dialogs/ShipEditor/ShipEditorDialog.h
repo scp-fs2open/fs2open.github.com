@@ -116,10 +116,12 @@ class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	void on_departureTree_helpChanged(const QString&);
 	void on_departureTree_miniHelpChanged(const QString&);
 	void on_noDepartureWarpCheckBox_toggled(bool);
-  private:
+  private: // NOLINT(readability-redundant-access-specifiers)
 	std::unique_ptr<Ui::ShipEditorDialog> ui;
 	std::unique_ptr<ShipEditorDialogModel> _model;
 	EditorViewport* _viewport;
+
+	bool _cues_hidden = false;
 
 	void update();
 

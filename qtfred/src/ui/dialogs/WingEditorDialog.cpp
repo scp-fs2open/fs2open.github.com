@@ -339,12 +339,14 @@ void WingEditorDialog::refreshAllDynamicCombos()
 
 void WingEditorDialog::on_hideCuesButton_clicked()
 {
+	const auto showHelp = _viewport->Show_sexp_help_wing_editor;
+	
 	_cues_hidden = !_cues_hidden;
 	
-	ui->arrivalGroupBox->setHidden(_cues_hidden);
-	ui->departureGroupBox->setHidden(_cues_hidden);
-	ui->helpText->setHidden(_cues_hidden);
-	ui->HelpTitle->setHidden(_cues_hidden);
+	ui->arrivalGroupBox->setVisible(!_cues_hidden);
+	ui->departureGroupBox->setVisible(!_cues_hidden);
+	ui->helpText->setVisible(!_cues_hidden && showHelp);
+	ui->HelpTitle->setVisible(!_cues_hidden && showHelp);
 	ui->hideCuesButton->setText(_cues_hidden ? "Show Cues" : "Hide Cues");
 
 	QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
