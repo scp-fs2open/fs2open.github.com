@@ -216,6 +216,8 @@ add_file_folder("Source/UI/Dialogs"
 	src/ui/dialogs/WaypointPathGeneratorDialog.h
 	src/ui/dialogs/WingEditorDialog.cpp
 	src/ui/dialogs/WingEditorDialog.h
+	src/ui/dialogs/WingFlagsDialog.cpp
+	src/ui/dialogs/WingFlagsDialog.h
 )
 add_file_folder("Source/UI/Dialogs/BriefingEditor"
 	src/ui/dialogs/BriefingEditor/CameraCoordinatesDialog.cpp
@@ -369,6 +371,7 @@ add_file_folder("UI"
 	ui/ShipWeaponsDialog.ui
 	ui/VariableDialog.ui
 	ui/WingEditorDialog.ui
+	ui/WingFlagsDialog.ui
 	ui/SaveAsTemplateDialog.ui
 	ui/SceneBrowserPanel.ui
 	ui/TemplateBrowserDialog.ui
