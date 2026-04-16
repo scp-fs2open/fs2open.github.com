@@ -98,7 +98,7 @@ void ShipTextureReplacementDialog::on_newTextureLineEdit_editingFinished()
 {
 	SCP_string newText;
 	if (!ui->newTextureLineEdit->text().isEmpty()) {
-		newText = ui->newTextureLineEdit->text().toStdString();
+		newText = ui->newTextureLineEdit->text().toUtf8().constData();
 	}
 	_model->setMap(row, "main", newText);
 }
@@ -107,7 +107,7 @@ void ShipTextureReplacementDialog::on_MiscTextureLineEdit_editingFinished()
 {
 	SCP_string newText;
 	if (!ui->MiscTextureLineEdit->text().isEmpty()) {
-		newText = ui->MiscTextureLineEdit->text().toStdString();
+		newText = ui->MiscTextureLineEdit->text().toUtf8().constData();
 		_model->setMap(row, "misc", newText);
 	}
 }
@@ -116,7 +116,7 @@ void ShipTextureReplacementDialog::on_GlowTextureLineEdit_editingFinished()
 {
 	SCP_string newText;
 	if (!ui->GlowTextureLineEdit->text().isEmpty()) {
-		newText = ui->GlowTextureLineEdit->text().toStdString();
+		newText = ui->GlowTextureLineEdit->text().toUtf8().constData();
 		_model->setMap(row, "glow", newText);
 	}
 }
@@ -125,7 +125,7 @@ void ShipTextureReplacementDialog::on_ShineTextureLineEdit_editingFinished()
 {
 	SCP_string newText;
 	if (!ui->ShineTextureLineEdit->text().isEmpty()) {
-		newText = ui->ShineTextureLineEdit->text().toStdString();
+		newText = ui->ShineTextureLineEdit->text().toUtf8().constData();
 		_model->setMap(row, "shine", newText);
 	}
 }
@@ -134,7 +134,7 @@ void ShipTextureReplacementDialog::on_NormalTextureLineEdit_editingFinished()
 {
 	SCP_string newText;
 	if (!ui->NormalTextureLineEdit->text().isEmpty()) {
-		newText = ui->NormalTextureLineEdit->text().toStdString();
+		newText = ui->NormalTextureLineEdit->text().toUtf8().constData();
 		_model->setMap(row, "normal", newText);
 	}
 }
@@ -143,7 +143,7 @@ void ShipTextureReplacementDialog::on_HeightTextureLineEdit_editingFinished()
 {
 	SCP_string newText;
 	if (!ui->HeightTextureLineEdit->text().isEmpty()) {
-		newText = ui->HeightTextureLineEdit->text().toStdString();
+		newText = ui->HeightTextureLineEdit->text().toUtf8().constData();
 		_model->setMap(row, "height", newText);
 	}
 }
@@ -152,7 +152,7 @@ void ShipTextureReplacementDialog::on_AmbiantTextureLineEdit_editingFinished()
 {
 	SCP_string newText;
 	if (!ui->AmbiantTextureLineEdit->text().isEmpty()) {
-		newText = ui->AmbiantTextureLineEdit->text().toStdString();
+		newText = ui->AmbiantTextureLineEdit->text().toUtf8().constData();
 		_model->setMap(row, "ao", newText);
 	}
 }
@@ -161,7 +161,7 @@ void ShipTextureReplacementDialog::on_ReflectTextureLineEdit_editingFinished()
 {
 	SCP_string newText;
 	if (!ui->ReflectTextureLineEdit->text().isEmpty()) {
-		newText = ui->ReflectTextureLineEdit->text().toStdString();
+		newText = ui->ReflectTextureLineEdit->text().toUtf8().constData();
 		_model->setMap(row, "reflect", newText);
 	}
 }
