@@ -78,6 +78,10 @@ execute_process(
     COMMAND "${_QTFRED_QMAKE}" -query QT_INSTALL_BINS
     OUTPUT_VARIABLE _QTFRED_QT_BINS
     OUTPUT_STRIP_TRAILING_WHITESPACE)
+execute_process(
+    COMMAND "${_QTFRED_QMAKE}" -query QT_INSTALL_LIBS
+    OUTPUT_VARIABLE _QTFRED_QT_LIBS
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
 find_program(QHELPGENERATOR_EXECUTABLE
     NAMES qhelpgenerator
     HINTS "${_QTFRED_QT_BINS}"
@@ -91,9 +95,16 @@ file(GLOB_RECURSE QTFRED_HELP_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/help-src/doc/*.css"
     "${CMAKE_CURRENT_SOURCE_DIR}/help-src/doc/*.qhp")
 
+# qhelpgenerator is a Qt application and needs a platform plugin at build time.
+# On headless Linux CI the Qt platform plugins fail to dlopen because the Qt
+# shared libs are not in LD_LIBRARY_PATH for dlopen-loaded plugins (DT_RUNPATH
+# in the main binary does not propagate to dlopen). Pass the Qt lib dir and
+# force the offscreen (no-display) platform explicitly.
 add_custom_command(
     OUTPUT "${QTFRED_HELP_QCH}"
-    COMMAND ${CMAKE_COMMAND} -E env "QT_QPA_PLATFORM=offscreen"
+    COMMAND ${CMAKE_COMMAND} -E env
+        "QT_QPA_PLATFORM=offscreen"
+        "LD_LIBRARY_PATH=${_QTFRED_QT_LIBS}"
         "${QHELPGENERATOR_EXECUTABLE}" "${QTFRED_HELP_QHP}" -o "${QTFRED_HELP_QCH}"
     DEPENDS ${QTFRED_HELP_SOURCES}
     COMMENT "Compiling QtFRED help (qtfred_help.qch)"
