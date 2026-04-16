@@ -436,6 +436,14 @@ void FredRenderer::display_ship_info(int cur_object_index) {
 			}
 		}
 
+		if ((objp->type == OBJ_PROP) && !view().Show_props) {
+			render = 0;
+		}
+
+		if ((objp->type == OBJ_JUMP_NODE) && !view().Show_jump_nodes) {
+			render = 0;
+		}
+
 		if (objp->flags[Object::Object_Flags::Hidden]) {
 			render = 0;
 		}
@@ -654,7 +662,7 @@ void FredRenderer::render_one_model_htl(object* objp,
 		return;
 
 	if (objp->type == OBJ_JUMP_NODE) {
-		return;
+		return; // jump nodes have their own render loop in render_frame
 	}
 
 	if ((objp->type == OBJ_WAYPOINT) && !view().Show_waypoints) {
@@ -673,6 +681,10 @@ void FredRenderer::render_one_model_htl(object* objp,
 		if (!view().Show_iff[Ships[objp->instance].team]) {
 			return;
 		}
+	}
+
+	if ((objp->type == OBJ_PROP) && !view().Show_props) {
+		return;
 	}
 
 	if (objp->flags[Object::Object_Flags::Hidden]) {
@@ -1031,10 +1043,12 @@ void FredRenderer::render_frame(int cur_object_index,
 	gr_set_color(0, 160, 0);
 
 	enable_htl();
-	for (auto& jn : Jump_nodes) {
-		const object* jnObj = jn.GetSCPObject();
-		if (jnObj != nullptr && _viewport->isObjectVisibleInLayer(jnObj)) {
-			jn.Render(&jnObj->pos);
+	if (view().Show_jump_nodes) {
+		for (auto& jn : Jump_nodes) {
+			const object* jnObj = jn.GetSCPObject();
+			if (jnObj != nullptr && _viewport->isObjectVisibleInLayer(jnObj)) {
+				jn.Render(&jnObj->pos);
+			}
 		}
 	}
 	disable_htl();

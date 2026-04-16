@@ -229,6 +229,18 @@ void EditorViewport::select_objects(const Marking_box& box) {
 			}
 
 			break;
+
+		case OBJ_PROP:
+			if (!view.Show_props) {
+				valid = 0;
+			}
+			break;
+
+		case OBJ_JUMP_NODE:
+			if (!view.Show_jump_nodes) {
+				valid = 0;
+			}
+			break;
 		}
 
 		g3_rotate_vertex(&v, &ptr->pos);
@@ -751,6 +763,14 @@ int EditorViewport::object_check_collision(object* objp, vec3d* p0, vec3d* p1, v
 		if (!view.Show_iff[Ships[objp->instance].team]) {
 			return 0;
 		}
+	}
+
+	if ((objp->type == OBJ_PROP) && !view.Show_props) {
+		return 0;
+	}
+
+	if ((objp->type == OBJ_JUMP_NODE) && !view.Show_jump_nodes) {
+		return 0;
 	}
 
 	if (objp->flags[Object::Object_Flags::Hidden, Object::Object_Flags::Locked_from_editing]) {

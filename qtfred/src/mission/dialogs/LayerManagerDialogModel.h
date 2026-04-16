@@ -29,6 +29,10 @@ public:
 	void setShowStarts(bool value);
 	bool getShowWaypoints() const;
 	void setShowWaypoints(bool value);
+	bool getShowProps() const;
+	void setShowProps(bool value);
+	bool getShowJumpNodes() const;
+	void setShowJumpNodes(bool value);
 
 	// IFF team filters
 	static int getIffCount();
