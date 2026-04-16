@@ -32,7 +32,7 @@
    <item>
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>0</number>
+      <number>1</number>
      </property>
      <widget class="QWidget" name="tab">
       <attribute name="title">
@@ -574,14 +574,14 @@
             <item>
              <widget class="QPushButton" name="shiftItemUpButton">
               <property name="text">
-               <string>Shift Up</string>
+               <string/>
               </property>
              </widget>
             </item>
             <item>
              <widget class="QPushButton" name="shiftItemDownButton">
               <property name="text">
-               <string>Shift Down</string>
+               <string/>
               </property>
              </widget>
             </item>

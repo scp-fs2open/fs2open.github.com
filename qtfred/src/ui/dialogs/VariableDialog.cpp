@@ -1,5 +1,6 @@
 #include "VariableDialog.h"
 #include "ui_VariableDialog.h"
+#include "ui/Theme.h"
 #include <ui/util/SignalBlockers.h>
 #include "ui/widgets/LineEditDelegate.h"
 #include <mission/util.h>
@@ -108,6 +109,14 @@ void VariableDialog::initializeUi()
 	ui->selectFormatCombobox->setVisible(false);
 
 	ui->tabWidget->setCurrentIndex(0);
+
+	fso::fred::bindStandardIcon(ui->shiftItemUpButton, QStyle::SP_ArrowUp);
+	ui->shiftItemUpButton->setText(QString());
+	ui->shiftItemUpButton->setToolTip(tr("Shift item up"));
+
+	fso::fred::bindStandardIcon(ui->shiftItemDownButton, QStyle::SP_ArrowDown);
+	ui->shiftItemDownButton->setText(QString());
+	ui->shiftItemDownButton->setToolTip(tr("Shift item down"));
 }
 
 void VariableDialog::updateUi()

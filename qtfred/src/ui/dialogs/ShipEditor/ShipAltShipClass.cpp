@@ -3,6 +3,7 @@
 #include "ui_ShipAltShipClass.h"
 
 #include <mission/util.h>
+#include <ui/Theme.h>
 #include <ui/util/SignalBlockers.h>
 
 #include <QCloseEvent>
@@ -204,6 +205,15 @@ void ShipAltShipClass::initUI()
 		variable_pool->appendRow(item);
 	}
 	ui->variableCombo->setModel(variable_pool);
+
+	fso::fred::bindStandardIcon(ui->upButton, QStyle::SP_ArrowUp);
+	ui->upButton->setText(QString());
+	ui->upButton->setToolTip(tr("Move selected class up"));
+
+	fso::fred::bindStandardIcon(ui->downButton, QStyle::SP_ArrowDown);
+	ui->downButton->setText(QString());
+	ui->downButton->setToolTip(tr("Move selected class down"));
+
 	updateUI();
 }
 
