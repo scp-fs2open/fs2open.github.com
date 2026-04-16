@@ -1438,7 +1438,7 @@ void FredView::on_actionCampaign_triggered(bool) {
 	editorCampaign->setAttribute(Qt::WA_DeleteOnClose);
 	editorCampaign->show();
 }
-void FredView::on_actionObjects_triggered(bool) {
+void FredView::on_actionObject_Orientation_triggered(bool) {
 	orientEditorTriggered();
 }
 void FredView::on_actionCommand_Briefing_triggered(bool) {
@@ -1583,7 +1583,7 @@ void FredView::orientEditorTriggered() {
 	dialog->exec();
 }
 void FredView::onUpdateEditorActions() {
-	ui->actionObjects->setEnabled(query_valid_object(fred->currentObject));
+	ui->actionObject_Orientation->setEnabled(query_valid_object(fred->currentObject));
 
 	const bool validObject = query_valid_object(fred->currentObject);
 	const bool hasMarked = fred->getNumMarked() > 0;
@@ -1596,7 +1596,7 @@ void FredView::onUpdateEditorActions() {
 	ui->actionDelete_Wing->setEnabled(fred->cur_wing >= 0);
 
 	// Objects editor — requires a selected object
-	ui->actionObjects->setEnabled(validObject);
+	ui->actionObject_Orientation->setEnabled(validObject);
 
 	// Level/Align — require something to be selected
 	ui->actionLevel_Object->setEnabled(validObject);

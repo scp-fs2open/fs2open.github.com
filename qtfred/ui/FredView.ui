@@ -194,10 +194,10 @@
     </property>
     <addaction name="actionShips"/>
     <addaction name="actionWings"/>
-    <addaction name="actionObjects"/>
     <addaction name="actionProps"/>
     <addaction name="actionWaypoint_Paths"/>
     <addaction name="actionJump_Nodes"/>
+    <addaction name="actionObject_Orientation"/>
     <addaction name="separator"/>
     <addaction name="actionControl_Object"/>
     <addaction name="actionNext_Object"/>
@@ -1023,9 +1023,9 @@
     <string>Shift+W</string>
    </property>
   </action>
-  <action name="actionObjects">
+  <action name="actionObject_Orientation">
    <property name="text">
-    <string>&amp;Objects</string>
+    <string>Object &amp;Orientation</string>
    </property>
    <property name="shortcut">
     <string>Shift+O</string>
