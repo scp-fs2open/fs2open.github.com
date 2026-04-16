@@ -222,36 +222,46 @@ void ShipAltShipClass::updateUI()
 	if (ui->variableCombo->model()->rowCount() <= 1) {
 		dynamic_cast<InverseSortFilterProxyModel*>(ui->shipCombo->model())->setFilterFixedString("Set From Variable");
 	}
+	// Workaround: avoid model()->match() which returns a QModelIndexList that triggers a
+	// cross-heap free assert on Windows debug builds. Manually iterate instead.
 	{
-		QModelIndexList shipMatches =
-			ui->shipCombo->model()->match(ui->shipCombo->model()->index(0, 0), Qt::UserRole, ship_class);
-		if (!shipMatches.empty()) {
-			ui->shipCombo->setCurrentIndex(shipMatches.first().row());
-		} else {
-			if (ui->classList->model()->rowCount() != 0 && ship_class != -1) {
-				_viewport->dialogProvider->showButtonDialog(DialogType::Error,
-					"Error",
-					"Illegal ship class.\n Resetting to -1",
-					{DialogButton::Ok});
+		int shipRow = 0;
+		bool found = false;
+		auto* shipModel = ui->shipCombo->model();
+		for (int i = 0; i < shipModel->rowCount(); ++i) {
+			if (shipModel->data(shipModel->index(i, 0), Qt::UserRole).toInt() == ship_class) {
+				shipRow = i;
+				found = true;
+				break;
 			}
-			ui->shipCombo->setCurrentIndex(0);
 		}
+		if (!found && ui->classList->model()->rowCount() != 0 && ship_class != -1) {
+			_viewport->dialogProvider->showButtonDialog(DialogType::Error,
+				"Error",
+				"Illegal ship class.\n Resetting to -1",
+				{DialogButton::Ok});
+		}
+		ui->shipCombo->setCurrentIndex(shipRow);
 	}
 
 	{
-		QModelIndexList varMatches =
-			ui->variableCombo->model()->match(ui->variableCombo->model()->index(0, 0), Qt::UserRole, variable);
-		if (!varMatches.empty()) {
-			ui->variableCombo->setCurrentIndex(varMatches.first().row());
-		} else {
-			if (ui->classList->model()->rowCount() != 0) {
-				_viewport->dialogProvider->showButtonDialog(DialogType::Error,
-					"Error",
-					"Illegal variable index.\n Resetting to -1",
-					{DialogButton::Ok});
+		int varRow = 0;
+		bool found = false;
+		auto* varModel = ui->variableCombo->model();
+		for (int i = 0; i < varModel->rowCount(); ++i) {
+			if (varModel->data(varModel->index(i, 0), Qt::UserRole).toInt() == variable) {
+				varRow = i;
+				found = true;
+				break;
 			}
-			ui->variableCombo->setCurrentIndex(0);
 		}
+		if (!found && ui->classList->model()->rowCount() != 0) {
+			_viewport->dialogProvider->showButtonDialog(DialogType::Error,
+				"Error",
+				"Illegal variable index.\n Resetting to -1",
+				{DialogButton::Ok});
+		}
+		ui->variableCombo->setCurrentIndex(varRow);
 	}
 
 	if (ui->variableCombo->model()->rowCount() <= 1) {
