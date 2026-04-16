@@ -28,6 +28,9 @@ class PropEditorDialogModel : public AbstractDialogModel {
 	void selectNextProp();
 	void selectPreviousProp();
 
+	SCP_string getLayer() const;
+	void setLayer(const SCP_string& layer);
+
  signals:
 	void modelDataChanged();
 

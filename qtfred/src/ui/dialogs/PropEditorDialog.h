@@ -22,10 +22,12 @@ class PropEditorDialog : public QDialog {
 	void on_propNameLineEdit_editingFinished();
 	void on_nextButton_clicked();
 	void on_prevButton_clicked();
+	void on_layerCombo_currentIndexChanged(int index);
 
  private: // NOLINT(readability-redundant-access-specifiers)
 	std::unique_ptr<::Ui::PropEditorDialog> ui;
 	std::unique_ptr<PropEditorDialogModel> _model;
+	EditorViewport* _viewport;
 
 	void initializeUi();
 	void updateUi();

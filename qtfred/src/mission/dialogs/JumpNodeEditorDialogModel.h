@@ -35,6 +35,9 @@ class JumpNodeEditorDialogModel : public AbstractDialogModel {
 	void setHidden(bool v);
 	bool getHidden() const;
 
+	SCP_string getLayer() const;
+	void setLayer(const SCP_string& v);
+
   signals:
 	void jumpNodeMarkingChanged();
 

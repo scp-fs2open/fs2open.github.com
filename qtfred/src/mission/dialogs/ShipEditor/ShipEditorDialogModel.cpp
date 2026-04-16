@@ -518,6 +518,26 @@ void ShipEditorDialogModel::initializeData()
 		arrivalPaths.clear();
 		departurePaths.clear();
 	}
+
+	// Compute common layer across all marked ships/players
+	{
+		_m_layer = "";
+		bool first = true;
+		for (auto* ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
+			if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) &&
+				ptr->flags[Object::Object_Flags::Marked]) {
+				SCP_string layer = _viewport->getObjectLayerName(OBJ_INDEX(ptr));
+				if (first) {
+					_m_layer = layer;
+					first = false;
+				} else if (_m_layer != layer) {
+					_m_layer = "";
+					break;
+				}
+			}
+		}
+	}
+
 	modelChanged();
 }
 
@@ -896,6 +916,22 @@ void ShipEditorDialogModel::setTeam(const int m_team)
 int ShipEditorDialogModel::getTeam() const
 {
 	return _m_team;
+}
+
+SCP_string ShipEditorDialogModel::getLayer() const
+{
+	return _m_layer;
+}
+
+void ShipEditorDialogModel::setLayer(const SCP_string& layer)
+{
+	if (_m_layer == layer)
+		return;
+	_m_layer = layer;
+	_viewport->moveMarkedObjectsToLayer(layer);
+	set_modified();
+	_editor->missionChanged();
+	modelChanged();
 }
 
 void ShipEditorDialogModel::setCargo(const SCP_string& m_cargo)

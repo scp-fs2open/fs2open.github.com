@@ -233,6 +233,14 @@ void ShipEditorDialog::updateColumnOne(bool overwrite)
 			}
 		}
 	}
+
+	// Layer combo — always rebuild so it reflects current mission layers
+	ui->layerCombo->clear();
+	for (const auto& name : _viewport->getLayerNames()) {
+		ui->layerCombo->addItem(QString::fromStdString(name), QString::fromStdString(name));
+	}
+	ui->layerCombo->setCurrentIndex(ui->layerCombo->findData(QString::fromStdString(_model->getLayer())));
+	ui->layerCombo->setEnabled(_model->getNumSelectedObjects() > 0);
 }
 void ShipEditorDialog::updateColumnTwo(bool overwrite)
 {
@@ -797,6 +805,12 @@ void ShipEditorDialog::on_teamCombo_currentIndexChanged(int index)
 {
 	auto teamIdx = ui->teamCombo->itemData(index).toInt();
 	_model->setTeam(teamIdx);
+}
+void ShipEditorDialog::on_layerCombo_currentIndexChanged(int index)
+{
+	if (index < 0)
+		return;
+	_model->setLayer(ui->layerCombo->itemData(index).toString().toUtf8().constData());
 }
 void ShipEditorDialog::on_hotkeyCombo_currentIndexChanged(int index)
 {

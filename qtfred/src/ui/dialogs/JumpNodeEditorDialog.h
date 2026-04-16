@@ -26,6 +26,7 @@ class JumpNodeEditorDialog : public QDialog {
 	void on_blueSpinBox_valueChanged(int value);
 	void on_alphaSpinBox_valueChanged(int value);
 	void on_hiddenByDefaultCheckBox_toggled(bool checked);
+	void on_layerCombo_currentIndexChanged(int index);
 
   private: // NOLINT(readability-redundant-access-specifiers)
 	EditorViewport* _viewport;
