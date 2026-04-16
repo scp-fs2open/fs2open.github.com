@@ -709,6 +709,16 @@ ship_flag_description Ship_flag_descriptions[] = {
 	{ Ship_Flags::Maneuver_despite_engines,		"Ship can maneuver even if its engines are disabled or disrupted" },
 	{ Ship_Flags::No_scanned_cargo,             "Ship cargo will never be revealed and will instead only show scanned or not scanned. Only available if using New Scanning Behavior in game_settings.tbl."},
 	{ Ship_Flags::EMP_doesnt_scramble_messages, "EMP does not affect whether messages appear scrambled when sent from or received by this ship." },
+	{ Ship_Flags::Ignore_count,					"Ignore this ship when counting ship types for goals."},
+	{ Ship_Flags::Reinforcement,				"This ship is a reinforcement ship."},
+	{ Ship_Flags::Escort,						"This ship is an escort ship."},
+	{ Ship_Flags::No_arrival_music,				"Don't play arrival music when ship arrives."},
+	{ Ship_Flags::Red_alert_store_status,		"Ship status should be stored/restored if red alert mission."},
+	{ Ship_Flags::Navpoint_carry,				"This ship autopilots with the player."},
+	{ Ship_Flags::Affected_by_gravity,			"Deprecated. Does nothing."},
+	{ Ship_Flags::Navpoint_needslink,			"This ship requires linking for autopilot."},
+	{ Ship_Flags::Set_class_dynamically,		"This ship should have its class assigned rather than simply read from the mission file."},
+	{ Ship_Flags::Kill_before_mission,			"Ship is destroyed before the mission begins. Use with the Destroyed seconds setting."},
 };
 
 extern const size_t Num_ship_flag_names = sizeof(Ship_flag_names) / sizeof(ship_flag_name);
