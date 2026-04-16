@@ -712,6 +712,7 @@ ship_flag_description Ship_flag_descriptions[] = {
 };
 
 extern const size_t Num_ship_flag_names = sizeof(Ship_flag_names) / sizeof(ship_flag_name);
+extern const size_t Num_ship_flag_descriptions = sizeof(Ship_flag_descriptions) / sizeof(ship_flag_description);
 
 // Ditto for wings
 wing_flag_name Wing_flag_names[] = {
@@ -737,6 +738,7 @@ wing_flag_description Wing_flag_descriptions[] = {
 };
 
 extern const size_t Num_wing_flag_names = sizeof(Wing_flag_names) / sizeof(wing_flag_name);
+extern const size_t Num_wing_flag_descriptions = sizeof(Wing_flag_descriptions) / sizeof(wing_flag_description);
 
 static int Laser_energy_out_snd_timer;	// timer so we play out of laser sound effect periodically
 static int Missile_out_snd_timer;	// timer so we play out of laser sound effect periodically

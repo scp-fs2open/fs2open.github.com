@@ -179,6 +179,7 @@ obj_flag_description Object_flag_descriptions[] = {
 };
 
 extern const int Num_object_flag_names = sizeof(Object_flag_names) / sizeof(obj_flag_name);
+extern const size_t Num_object_flag_descriptions = sizeof(Object_flag_descriptions) / sizeof(obj_flag_description);
 
 #ifdef OBJECT_CHECK
 checkobject::checkobject() 

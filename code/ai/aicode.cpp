@@ -226,6 +226,7 @@ ai_flag_description Ai_flag_descriptions[] = {
 };
 
 extern const int Num_ai_flag_names = sizeof(Ai_flag_names) / sizeof(ai_flag_name);
+extern const size_t Num_ai_flag_descriptions = sizeof(Ai_flag_descriptions) / sizeof(ai_flag_description);
 
 const char *Skill_level_names(int level, int translate)
 {

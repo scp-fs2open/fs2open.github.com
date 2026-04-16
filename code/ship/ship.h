@@ -470,6 +470,7 @@ typedef struct ship_flag_description {
 extern ship_flag_name Ship_flag_names[];
 extern ship_flag_description Ship_flag_descriptions[];
 extern const size_t Num_ship_flag_names;
+extern const size_t Num_ship_flag_descriptions;
 
 typedef struct wing_flag_name {
 	Ship::Wing_Flags flag;
@@ -484,6 +485,7 @@ typedef struct wing_flag_description {
 extern wing_flag_name Wing_flag_names[];
 extern wing_flag_description Wing_flag_descriptions[];
 extern const size_t Num_wing_flag_names;
+extern const size_t Num_wing_flag_descriptions;
 
 #define DEFAULT_SHIP_PRIMITIVE_SENSOR_RANGE		10000	// Goober5000
 

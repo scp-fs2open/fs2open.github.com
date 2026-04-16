@@ -1,6 +1,7 @@
 #pragma once
 
 #include <globalincs/pstypes.h>
+#include <mission/dialogs/WingEditorDialogModel.h>
 
 #include <QDialog>
 #include <memory>
@@ -15,7 +16,8 @@ class WingFlagsDialog;
 class WingFlagsDialog : public QDialog {
 	Q_OBJECT
   public:
-	explicit WingFlagsDialog(QWidget* parent, const std::vector<std::pair<SCP_string, bool>>& flags);
+	explicit WingFlagsDialog(QWidget* parent, const std::vector<std::pair<SCP_string, bool>>& flags,
+	                         const std::vector<std::pair<SCP_string, SCP_string>>& descriptions = {});
 	~WingFlagsDialog() override;
 
 	std::vector<std::pair<SCP_string, bool>> getFlags() const;

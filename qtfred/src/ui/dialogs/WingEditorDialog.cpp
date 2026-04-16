@@ -475,7 +475,7 @@ void WingEditorDialog::on_initialOrdersButton_clicked()
 
 void WingEditorDialog::on_wingFlagsButton_clicked()
 {
-	WingFlagsDialog dlg(this, _model->getWingFlags());
+	WingFlagsDialog dlg(this, _model->getWingFlags(), _model->getWingFlagDescriptions());
 	if (dlg.exec() == QDialog::Accepted) {
 		_model->setWingFlags(dlg.getFlags());
 	}

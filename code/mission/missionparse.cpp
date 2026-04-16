@@ -433,6 +433,7 @@ parse_object_flag_description<Mission::Mission_Flags> Parse_mission_flag_descrip
 };
 
 const size_t Num_parse_mission_flags = sizeof(Parse_mission_flags) / sizeof(flag_def_list_new<Mission::Mission_Flags>);
+const size_t Num_parse_mission_flag_descriptions = sizeof(Parse_mission_flag_descriptions) / sizeof(parse_object_flag_description<Mission::Mission_Flags>);
 
 flag_def_list_new<Mission::Parse_Object_Flags> Parse_object_flags[] = {
     { "cargo-known",					Mission::Parse_Object_Flags::SF_Cargo_known,			true, false },
@@ -598,6 +599,7 @@ parse_object_flag_description<Ship::Wing_Flags> Parse_wing_flag_descriptions[] =
 	{ Ship::Wing_Flags::Same_departure_warp_when_docked, "Docked ship use the same warp effect size upon departure as if they were not docked instead of the enlarged aggregate size." }};
 
 const size_t Num_parse_wing_flags = sizeof(Parse_wing_flags) / sizeof(flag_def_list_new<Ship::Wing_Flags>);
+const size_t Num_parse_wing_flag_descriptions = sizeof(Parse_wing_flag_descriptions) / sizeof(parse_object_flag_description<Ship::Wing_Flags>);
 
 flag_def_list_new<Mission::Parse_Object_Flags> Parse_prop_flags[] = {
     { "no_collide",						Mission::Parse_Object_Flags::OF_No_collide,				true, false },
@@ -608,6 +610,7 @@ parse_object_flag_description<Mission::Parse_Object_Flags> Parse_prop_flag_descr
 };
 
 const size_t Num_parse_prop_flags = sizeof(Parse_prop_flags) / sizeof(flag_def_list_new<Mission::Parse_Object_Flags>);
+const size_t Num_parse_prop_flag_descriptions = sizeof(Parse_prop_flag_descriptions) / sizeof(parse_object_flag_description<Mission::Parse_Object_Flags>);
 
 // These are only the flags that are saved to the mission file.  See the MEF_ #defines.
 flag_def_list Mission_event_flags[] = {

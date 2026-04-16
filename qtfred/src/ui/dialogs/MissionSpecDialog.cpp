@@ -124,6 +124,13 @@ void MissionSpecDialog::initFlagList()
 {
 	updateFlags();
 
+	const auto descs = _model->getMissionFlagDescriptions();
+	QVector<std::pair<QString, QString>> qtDescs;
+	qtDescs.reserve(static_cast<int>(descs.size()));
+	for (const auto& d : descs)
+		qtDescs.append({QString::fromUtf8(d.first.c_str()), QString::fromUtf8(d.second.c_str())});
+	ui->flagList->setFlagDescriptions(qtDescs);
+
 	// per flag immediate apply to the model
 	connect(ui->flagList, &fso::fred::FlagListWidget::flagToggled, this, [this](const QString& name, bool checked) {
 		_model->setMissionFlag(name.toUtf8().constData(), checked);

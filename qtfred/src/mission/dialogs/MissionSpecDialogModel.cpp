@@ -432,6 +432,25 @@ const SCP_vector<std::pair<SCP_string, bool>>& MissionSpecDialogModel::getMissio
 	return _m_flag_data;
 }
 
+SCP_vector<std::pair<SCP_string, SCP_string>> MissionSpecDialogModel::getMissionFlagDescriptions() const
+{
+	const size_t num_descs = Num_parse_mission_flag_descriptions;
+	SCP_vector<std::pair<SCP_string, SCP_string>> descriptions;
+	descriptions.reserve(Num_parse_mission_flags);
+	for (size_t i = 0; i < Num_parse_mission_flags; ++i) {
+		const auto& flagDef = Parse_mission_flags[i];
+		if (flagDef.is_special || !flagDef.in_use)
+			continue;
+		for (size_t j = 0; j < num_descs; ++j) {
+			if (Parse_mission_flag_descriptions[j].def == flagDef.def) {
+				descriptions.emplace_back(flagDef.name, Parse_mission_flag_descriptions[j].flag_desc);
+				break;
+			}
+		}
+	}
+	return descriptions;
+}
+
 void MissionSpecDialogModel::setMissionFullWar(bool enabled) {
 	if (_m_full_war != enabled) {
 		_m_full_war = enabled;
