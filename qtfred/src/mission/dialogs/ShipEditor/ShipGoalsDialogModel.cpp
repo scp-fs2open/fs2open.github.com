@@ -472,7 +472,7 @@ namespace fso {
 				}
 				modelChanged();
 			}
-			void ShipGoalsDialogModel::initialize(ai_goal* goals, int ship)
+			void ShipGoalsDialogModel::initialize(ai_goal* goals)
 			{
 				int i, item, inst, flag;
 				ai_goal_mode mode;

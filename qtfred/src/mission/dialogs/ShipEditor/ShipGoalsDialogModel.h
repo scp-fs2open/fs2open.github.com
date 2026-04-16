@@ -23,7 +23,7 @@ constexpr auto MAX_VALID = 99;
 class ShipGoalsDialogModel : public AbstractDialogModel {
   private:
 	int Ai_goal_list_size = Editor::getAigoal_list_size();
-	void initialize(ai_goal* goals, int ship);
+	void initialize(ai_goal* goals);
 	void initialize_multi();
 	void init_combo_data();
 
