@@ -318,7 +318,7 @@ void PropEditorDialogModel::onMissionChanged() {
 	initializeData();
 }
 
-SCP_vector<std::pair<SCP_string, SCP_string>> PropEditorDialogModel::getFlagDescriptions() const
+SCP_vector<std::pair<SCP_string, SCP_string>> PropEditorDialogModel::getPropFlagDescriptions()
 {
 	const size_t num_descs = Num_parse_prop_flag_descriptions;
 	SCP_vector<std::pair<SCP_string, SCP_string>> descriptions;

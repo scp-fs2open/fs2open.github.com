@@ -432,7 +432,7 @@ const SCP_vector<std::pair<SCP_string, bool>>& MissionSpecDialogModel::getMissio
 	return _m_flag_data;
 }
 
-SCP_vector<std::pair<SCP_string, SCP_string>> MissionSpecDialogModel::getMissionFlagDescriptions() const
+SCP_vector<std::pair<SCP_string, SCP_string>> MissionSpecDialogModel::getMissionFlagDescriptions()
 {
 	const size_t num_descs = Num_parse_mission_flag_descriptions;
 	SCP_vector<std::pair<SCP_string, SCP_string>> descriptions;

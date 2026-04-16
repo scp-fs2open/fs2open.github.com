@@ -23,7 +23,7 @@ class ShipFlagsDialogModel : public AbstractDialogModel {
 	void reject() override;
 
 	const SCP_vector<std::pair<SCP_string, int>>& getFlagsList();
-	SCP_vector<std::pair<SCP_string, SCP_string>> getFlagDescriptions() const;
+	static SCP_vector<std::pair<SCP_string, SCP_string>> getShipFlagDescriptions();
 	std::pair<SCP_string, int>* getFlag(const SCP_string& flag_name);
 	void setFlag(const SCP_string& flag_name, int);
 

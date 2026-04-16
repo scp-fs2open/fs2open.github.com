@@ -708,7 +708,7 @@ std::vector<std::pair<SCP_string, bool>> WingEditorDialogModel::getWingFlags() c
 	return flags;
 }
 
-std::vector<std::pair<SCP_string, SCP_string>> WingEditorDialogModel::getWingFlagDescriptions() const
+std::vector<std::pair<SCP_string, SCP_string>> WingEditorDialogModel::getWingFlagDescriptions()
 {
 	const size_t num_descs = Num_parse_wing_flag_descriptions;
 	std::vector<std::pair<SCP_string, SCP_string>> descriptions;

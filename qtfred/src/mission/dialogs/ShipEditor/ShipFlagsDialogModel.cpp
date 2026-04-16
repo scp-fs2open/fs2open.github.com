@@ -158,7 +158,7 @@ const SCP_vector<std::pair<SCP_string, int>>& ShipFlagsDialogModel::getFlagsList
 	return flags;
 }
 
-SCP_vector<std::pair<SCP_string, SCP_string>> ShipFlagsDialogModel::getFlagDescriptions() const
+SCP_vector<std::pair<SCP_string, SCP_string>> ShipFlagsDialogModel::getShipFlagDescriptions()
 {
 	const size_t num_ship_descs = Num_ship_flag_descriptions;
 	const size_t num_ai_descs   = Num_ai_flag_descriptions;

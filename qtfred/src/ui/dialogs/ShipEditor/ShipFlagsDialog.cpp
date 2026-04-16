@@ -32,7 +32,7 @@ ShipFlagsDialog::ShipFlagsDialog(QWidget* parent, EditorViewport* viewport)
 
 	ui->flagList->setFlags(toWidget);
 
-	const auto descs = _model->getFlagDescriptions();
+	const auto descs = _model->getShipFlagDescriptions();
 	QVector<std::pair<QString, QString>> qtDescs;
 	qtDescs.reserve(static_cast<int>(descs.size()));
 	for (const auto& d : descs)

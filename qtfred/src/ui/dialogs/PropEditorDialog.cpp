@@ -56,7 +56,7 @@ void PropEditorDialog::initializeUi() {
 	}
 	ui->propFlagsListWidget->setFlags(toWidget);
 
-	const auto& descs = _model->getFlagDescriptions();
+	const auto& descs = _model->getPropFlagDescriptions();
 	QVector<std::pair<QString, QString>> qtDescs;
 	qtDescs.reserve(static_cast<int>(descs.size()));
 	for (const auto& d : descs)
