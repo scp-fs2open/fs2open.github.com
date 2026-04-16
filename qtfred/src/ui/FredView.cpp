@@ -121,10 +121,6 @@ FredView::FredView(QWidget* parent) : QMainWindow(parent), ui(new Ui::FredView()
 
 	initializeGroupActions();
 
-	auto propsAction = new QAction(tr("Props"), this);
-	connect(propsAction, &QAction::triggered, this, &FredView::on_actionProps_triggered);
-	ui->menuObjects->insertAction(ui->actionWaypoint_Paths, propsAction);
-
 	connect(ui->actionPreferences, &QAction::triggered, this, [this]() {
 		dialogs::PreferencesDialog preferencesDialog(this, _viewport);
 		preferencesDialog.exec();
