@@ -225,7 +225,7 @@ void HelpTopicsDialog::searchTutorials(const QString& query) {
 	}
 
 	static const QRegularExpression tagRe(QStringLiteral("<[^>]+>"));
-	const QStringList terms = trimmed.split(QLatin1Char(' '), Qt::SkipEmptyParts);
+	const QStringList terms = trimmed.split(QLatin1Char(' '), QString::SkipEmptyParts);
 
 	for (const auto& t : HelpTopicsDialogModel::tutorials()) {
 		const auto& content = HelpTopicsDialogModel::tutorialContent();
