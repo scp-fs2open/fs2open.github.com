@@ -462,10 +462,10 @@ namespace fso {
 				init_combo_data();
 
 				if (self_ship >= 0) {
-					initialize(Ai_info[Ships[self_ship].ai_index].goals, self_ship);
+					initialize(Ai_info[Ships[self_ship].ai_index].goals);
 				}
 				else if (self_wing >= 0) {
-					initialize(Wings[self_wing].ai_goals, _editor->cur_ship);
+					initialize(Wings[self_wing].ai_goals);
 				}
 				else {
 					initialize_multi();
@@ -670,7 +670,7 @@ namespace fso {
 				ptr = GET_FIRST(&obj_used_list);
 				while (ptr != END_OF_LIST(&obj_used_list)) {
 					if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && (ptr->flags[Object::Object_Flags::Marked])) {
-						initialize(Ai_info[Ships[ptr->instance].ai_index].goals, ptr->instance);
+						initialize(Ai_info[Ships[ptr->instance].ai_index].goals);
 						if (!flag) {
 							flag = 1;
 							for (i = 0; i < ED_MAX_GOALS; i++) {
