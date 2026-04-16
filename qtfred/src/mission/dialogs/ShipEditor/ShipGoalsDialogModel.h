@@ -2,12 +2,13 @@
 
 #include "../AbstractDialogModel.h"
 
+#include "ai/ai.h"
 #include "ai/aigoals.h"
 
 namespace fso {
 namespace fred {
 namespace dialogs {
-constexpr auto ED_MAX_GOALS = 10;
+constexpr auto ED_MAX_GOALS = MAX_AI_GOALS;
 constexpr auto MAX_EDITOR_GOAL_PRIORITY = 200;
 constexpr auto TYPE_PATH = 0x1000;
 constexpr auto TYPE_SHIP = 0x2000;

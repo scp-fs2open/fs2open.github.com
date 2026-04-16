@@ -16,60 +16,23 @@ ShipGoalsDialog::ShipGoalsDialog(QWidget* parent, EditorViewport* viewport, bool
 	  _model(new ShipGoalsDialogModel(this, viewport, editMultiple, shipID, wingID)), _viewport(viewport)
 {
 	ui->setupUi(this);
-	behaviors[0] = ui->comBehavior1;
-	behaviors[1] = ui->comBehavior2;
-	behaviors[2] = ui->comBehavior3;
-	behaviors[3] = ui->comBehavior4;
-	behaviors[4] = ui->comBehavior5;
-	behaviors[5] = ui->comBehavior6;
-	behaviors[6] = ui->comBehavior7;
-	behaviors[7] = ui->comBehavior8;
-	behaviors[8] = ui->comBehavior9;
-	behaviors[9] = ui->comBehavior10;
+	for (int i = 0; i < ED_MAX_GOALS; i++) {
+		const int row = i + 1; // row 0 is the header
 
-	objects[0] = ui->comObject1;
-	objects[1] = ui->comObject2;
-	objects[2] = ui->comObject3;
-	objects[3] = ui->comObject4;
-	objects[4] = ui->comObject5;
-	objects[5] = ui->comObject6;
-	objects[6] = ui->comObject7;
-	objects[7] = ui->comObject8;
-	objects[8] = ui->comObject9;
-	objects[9] = ui->comObject10;
+		auto* orderLabel = new QLabel(tr("Order %1").arg(i + 1), this);
+		behaviors[i] = new QComboBox(this);
+		objects[i]   = new QComboBox(this);
+		subsys[i]    = new QComboBox(this);
+		docks[i]     = new QComboBox(this);
+		priority[i]  = new QSpinBox(this);
 
-	subsys[0] = ui->comSub1;
-	subsys[1] = ui->comSub2;
-	subsys[2] = ui->comSub3;
-	subsys[3] = ui->comSub4;
-	subsys[4] = ui->comSub5;
-	subsys[5] = ui->comSub6;
-	subsys[6] = ui->comSub7;
-	subsys[7] = ui->comSub8;
-	subsys[8] = ui->comSub9;
-	subsys[9] = ui->comSub10;
-
-	docks[0] = ui->comDock1;
-	docks[1] = ui->comDock2;
-	docks[2] = ui->comDock3;
-	docks[3] = ui->comDock4;
-	docks[4] = ui->comDock5;
-	docks[5] = ui->comDock6;
-	docks[6] = ui->comDock7;
-	docks[7] = ui->comDock8;
-	docks[8] = ui->comDock9;
-	docks[9] = ui->comDock10;
-
-	priority[0] = ui->prioritySpinBox1;
-	priority[1] = ui->prioritySpinBox2;
-	priority[2] = ui->prioritySpinBox3;
-	priority[3] = ui->prioritySpinBox4;
-	priority[4] = ui->prioritySpinBox5;
-	priority[5] = ui->prioritySpinBox6;
-	priority[6] = ui->prioritySpinBox7;
-	priority[7] = ui->prioritySpinBox8;
-	priority[8] = ui->prioritySpinBox9;
-	priority[9] = ui->prioritySpinBox10;
+		ui->gridLayout->addWidget(orderLabel,   row, 0);
+		ui->gridLayout->addWidget(behaviors[i], row, 1);
+		ui->gridLayout->addWidget(objects[i],   row, 2);
+		ui->gridLayout->addWidget(subsys[i],    row, 3);
+		ui->gridLayout->addWidget(docks[i],     row, 4);
+		ui->gridLayout->addWidget(priority[i],  row, 5);
+	}
 
 	connect(_model.get(), &AbstractDialogModel::modelChanged, this, &ShipGoalsDialog::updateUI);
 	for (int i = 0; i < ED_MAX_GOALS; i++) {
@@ -136,6 +99,9 @@ void ShipGoalsDialog::on_cancelButton_clicked()
 }
 void ShipGoalsDialog::updateUI()
 {
+	if (m_updating_ui)
+		return;
+	m_updating_ui = true;
 	util::SignalBlockers blockers(this);
 
 	for (int i = 0; i < ED_MAX_GOALS; i++) {
@@ -154,8 +120,6 @@ void ShipGoalsDialog::updateUI()
 		auto mode = _model->get_first_mode_from_combo_box(i);
 
 		SCP_vector<waypoint_list>::iterator ii;
-		if (i >= MAX_AI_GOALS)
-			behaviors[i]->setEnabled(false);
 		if (value < 1) {
 			objects[i]->setEnabled(false);
 			subsys[i]->setEnabled(false);
@@ -346,14 +310,14 @@ void ShipGoalsDialog::updateUI()
 				subsys[i]->setCurrentIndex(subsys[i]->findData(subsysvalue.c_str()));
 
 				docklist = _viewport->editor->get_docking_list(
-					Ship_info[Ships[_model->getDock(i) & DATA_MASK].ship_info_index].model_num);
+					Ship_info[Ships[_model->getObject(i) & DATA_MASK].ship_info_index].model_num);
 				docks[i]->setEnabled(true);
 				auto dockvalue = _model->getDock(i);
 				docks[i]->clear();
 				for (j = 0; unsigned(j) < docklist.size(); j++) {
 					docks[i]->addItem(docklist[j].c_str(), QVariant(QString(docklist[j].c_str())));
 				}
-				docks[i]->setCurrentIndex(docks[i]->findData(dockvalue));
+				docks[i]->setCurrentIndex(dockvalue);
 				priority[i]->setEnabled(true);
 				priority[i]->setValue(_model->getPriority(i));
 
@@ -368,5 +332,6 @@ void ShipGoalsDialog::updateUI()
 			}
 		}
 	}
+	m_updating_ui = false;
 }
 } // namespace fso::fred::dialogs
