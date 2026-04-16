@@ -102,6 +102,11 @@ QToolButton:checked:hover {
 QToolButton::menu-indicator {
     image: none;
 }
+QMenu::separator {
+    height: 1px;
+    background: #8f8f8f;
+    margin: 4px 8px;
+}
 )";
 
 } // anonymous namespace
