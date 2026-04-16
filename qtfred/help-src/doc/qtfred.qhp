@@ -17,6 +17,7 @@
                 <section title="General">
                     <section title="Layer Manager"  ref="general/LayerManagerDialog.html"/>
                     <section title="Preferences"    ref="general/PreferencesDialog.html"/>
+                    <section title="Scene Browser"  ref="general/SceneBrowserDialog.html"/>
                     <section title="Toolbar"        ref="general/Toolbar.html"/>
                     <section title="Viewport"       ref="general/Viewport.html"/>
                 </section>
@@ -118,6 +119,7 @@
             <keyword name="Music Player"            id="MusicPlayerDialog"              ref="dialogs/MusicPlayerDialog.html"/>
             <keyword name="Object Orientation"      id="ObjectOrientEditorDialog"       ref="dialogs/ObjectOrientEditorDialog.html"/>
             <keyword name="Preferences"             id="PreferencesDialog"              ref="general/PreferencesDialog.html"/>
+            <keyword name="Scene Browser"           id="SceneBrowserDialog"             ref="general/SceneBrowserDialog.html"/>
             <keyword name="Prop Editor"             id="PropEditorDialog"               ref="dialogs/PropEditorDialog.html"/>
             <keyword name="Calculate Relative Coordinates" id="RelativeCoordinatesDialog" ref="dialogs/RelativeCoordinatesDialog.html"/>
             <keyword name="Reinforcements"          id="ReinforcementsEditorDialog"     ref="dialogs/ReinforcementsEditorDialog.html"/>
@@ -168,6 +170,7 @@
             <file>general/Viewport.html</file>
             <file>general/Toolbar.html</file>
             <file>general/LayerManagerDialog.html</file>
+            <file>general/SceneBrowserDialog.html</file>
             <file>dialogs/MissionCutscenesDialog.html</file>
             <file>dialogs/MissionEventsDialog.html</file>
             <file>dialogs/MissionGoalsDialog.html</file>
