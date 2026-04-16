@@ -5,6 +5,7 @@
 
 #include <QDir>
 #include <QFileDialog>
+#include <QPointer>
 #include <QFileInfo>
 #include <QInputDialog>
 #include <QMessageBox>
@@ -38,6 +39,7 @@
 #include <ui/dialogs/MissionCutscenesDialog.h>
 #include <ui/dialogs/FormWingDialog.h>
 #include <ui/dialogs/AboutDialog.h>
+#include <ui/dialogs/HelpTopicsDialog.h>
 #include <ui/dialogs/MissionStatsDialog.h>
 #include <ui/dialogs/BackgroundEditorDialog.h>
 #include <ui/dialogs/ShieldSystemDialog.h>
@@ -2756,6 +2758,17 @@ void FredView::on_actionMark_Wing_triggered(bool) {
 void FredView::on_actionError_Checker_triggered(bool) {
 	fred->global_error_check();
 }
+void FredView::on_actionHelp_Topics_triggered(bool) {
+	// Keep a single instance alive for the session.  The help engine's contentWidget(),
+	// indexWidget(), and search widgets are singletons owned by the engine.
+	static QPointer<dialogs::HelpTopicsDialog> s_helpDialog;
+	if (!s_helpDialog)
+		s_helpDialog = new dialogs::HelpTopicsDialog(this);
+	s_helpDialog->show();
+	s_helpDialog->raise();
+	s_helpDialog->activateWindow();
+}
+
 void FredView::on_actionAbout_triggered(bool) {
 	auto dialog = new dialogs::AboutDialog(this, _viewport);
 	dialog->setAttribute(Qt::WA_DeleteOnClose);

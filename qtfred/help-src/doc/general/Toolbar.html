@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Toolbar - QtFRED Help</title>
+    <link rel="stylesheet" type="text/css" href="../css/help.css"/>
+</head>
+<body>
+<nav class="breadcrumb"><a href="../index.html">QtFRED Help</a> &rsaquo; Toolbar</nav>
+<h1>Toolbar</h1>
+<p>The toolbar provides quick access to the most common editing modes and actions.
+The active mode determines how clicks and drags behave in the
+<a href="Viewport.html">viewport</a>.</p>
+
+<h2>Tools</h2>
+<table>
+    <tr><th>Tool</th><th>Shortcut</th><th>Description</th></tr>
+
+    <tr><td colspan="3"><strong>Mode</strong></td></tr>
+    <tr>
+        <td>Select</td>
+        <td>S</td>
+        <td>Click to select objects. Drag on empty space to box-select.</td>
+    </tr>
+    <tr>
+        <td>Select and Move</td>
+        <td>M</td>
+        <td>Click to select objects; drag a selected object to move it.</td>
+    </tr>
+    <tr>
+        <td>Select and Rotate</td>
+        <td>R</td>
+        <td>Click to select objects; drag a selected object to rotate it.</td>
+    </tr>
+
+    <tr><td colspan="3"><strong>Axis constraints</strong></td></tr>
+    <tr>
+        <td>X Constraint</td>
+        <td></td>
+        <td>Constrains move or rotate to the X axis.</td>
+    </tr>
+    <tr>
+        <td>Y Constraint</td>
+        <td></td>
+        <td>Constrains move or rotate to the Y axis.</td>
+    </tr>
+    <tr>
+        <td>Z Constraint</td>
+        <td></td>
+        <td>Constrains move or rotate to the Z axis.</td>
+    </tr>
+    <tr>
+        <td>XZ Constraint</td>
+        <td></td>
+        <td>Constrains move or rotate to the XZ plane.</td>
+    </tr>
+    <tr>
+        <td>YZ Constraint</td>
+        <td></td>
+        <td>Constrains move or rotate to the YZ plane.</td>
+    </tr>
+    <tr>
+        <td>XY Constraint</td>
+        <td></td>
+        <td>Constrains move or rotate to the XY plane.</td>
+    </tr>
+
+    <tr><td colspan="3"><strong>Selection</strong></td></tr>
+    <tr>
+        <td>Scene Browser</td>
+        <td>H</td>
+        <td>Toggles the Scene Browser panel, which lists all objects in the
+            mission.</td>
+    </tr>
+    <tr>
+        <td>Lock Selection</td>
+        <td>Space</td>
+        <td>Prevents the current selection from changing.</td>
+    </tr>
+
+    <tr><td colspan="3"><strong>Wings</strong></td></tr>
+    <tr>
+        <td>Form Wing</td>
+        <td>Ctrl+W</td>
+        <td>Forms a wing from the currently selected ships.</td>
+    </tr>
+    <tr>
+        <td>Disband Wing</td>
+        <td>Ctrl+D</td>
+        <td>Disbands the wing of the currently selected ships, returning them to
+            individual objects.</td>
+    </tr>
+
+    <tr><td colspan="3"><strong>View</strong></td></tr>
+    <tr>
+        <td>Zoom on Selected</td>
+        <td>Alt+Z</td>
+        <td>Moves the camera to focus on the selected objects.</td>
+    </tr>
+    <tr>
+        <td>Zoom Extents</td>
+        <td>Shift+Z</td>
+        <td>Zooms the camera to fit all objects in the mission into view.</td>
+    </tr>
+    <tr>
+        <td>Show Distances</td>
+        <td>D</td>
+        <td>Toggles display of distance measurements between selected objects.</td>
+    </tr>
+    <tr>
+        <td>Rotate Around Object</td>
+        <td>Alt+R</td>
+        <td>Toggles camera orbit mode, rotating the view around the selected
+            object.</td>
+    </tr>
+
+    <tr><td colspan="3"><strong>Layers</strong></td></tr>
+    <tr>
+        <td>Manage View Layers</td>
+        <td></td>
+        <td>Opens the <a href="LayerManagerDialog.html">Layer Manager</a> to
+            show or hide categories of objects.</td>
+    </tr>
+    <tr>
+        <td>Show All Layers</td>
+        <td></td>
+        <td>Makes all hidden layers visible.</td>
+    </tr>
+</table>
+
+<h2>Object creation dropdowns</h2>
+<p>Two dropdowns at the right end of the toolbar control what is created when you
+click in the viewport.</p>
+<table>
+    <tr><th>Dropdown</th><th>Used by</th><th>Description</th></tr>
+    <tr>
+        <td>Ships</td>
+        <td>Ctrl+click</td>
+        <td>Selects the ship class, waypoint, or jump node to place. The object
+            created on Ctrl+click is determined by this selection.</td>
+    </tr>
+    <tr>
+        <td>Props</td>
+        <td>Ctrl+Shift+click</td>
+        <td>Selects the prop class to place. The prop created on
+            Ctrl+Shift+click is determined by this selection.</td>
+    </tr>
+</table>
+</body>
+</html>
