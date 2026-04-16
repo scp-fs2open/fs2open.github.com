@@ -472,7 +472,7 @@
           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set ship's flags (Add special Features)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
          </property>
          <property name="text">
-          <string>Misc</string>
+          <string>Flags</string>
          </property>
         </widget>
        </item>

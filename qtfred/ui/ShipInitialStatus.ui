@@ -393,7 +393,7 @@
      <item>
       <widget class="QLabel" name="colourLabel">
        <property name="text">
-        <string>Team Colour Setting</string>
+        <string>Team Color Setting</string>
        </property>
       </widget>
      </item>
