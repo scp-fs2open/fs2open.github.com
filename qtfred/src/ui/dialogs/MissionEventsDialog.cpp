@@ -398,6 +398,8 @@ void MissionEventsDialog::updateEventUi() {
 		ui->triggerCountBox->setEnabled(false);
 		ui->intervalTimeBox->setEnabled(false);
 		ui->chainDelayBox->setEnabled(false);
+		ui->useMsecsCheckBox->setChecked(false);
+		ui->useMsecsCheckBox->setEnabled(false);
 		ui->teamCombo->setEnabled(false);
 		ui->editDirectiveText->setEnabled(false);
 		ui->editDirectiveKeypressText->setEnabled(false);
@@ -419,6 +421,7 @@ void MissionEventsDialog::updateEventUi() {
 		ui->chainDelayBox->setValue(0);
 		ui->chainDelayBox->setEnabled(false);
 	}
+	ui->useMsecsCheckBox->setChecked(_model->getUseMsecs());
 
 	ui->editDirectiveText->setText(QString::fromStdString(_model->getEventDirectiveText()));
 	ui->editDirectiveKeypressText->setText(QString::fromStdString(_model->getEventDirectiveKeyText()));
@@ -436,6 +439,7 @@ void MissionEventsDialog::updateEventUi() {
 
 	ui->scoreBox->setEnabled(true);
 	ui->chainedCheckBox->setEnabled(true);
+	ui->useMsecsCheckBox->setEnabled(true);
 	ui->editDirectiveText->setEnabled(true);
 	ui->editDirectiveKeypressText->setEnabled(true);
 	ui->teamCombo->setEnabled(_model->getMissionIsMultiTeam());
@@ -717,6 +721,11 @@ void MissionEventsDialog::on_chainedCheckBox_stateChanged(int state)
 void MissionEventsDialog::on_chainedDelayBox_valueChanged(int value)
 {
 	_model->setChainDelay(value);
+}
+
+void MissionEventsDialog::on_useMsecsCheckBox_stateChanged(int state)
+{
+	_model->setUseMsecs(state == Qt::Checked);
 }
 
 void MissionEventsDialog::on_scoreBox_valueChanged(int value)

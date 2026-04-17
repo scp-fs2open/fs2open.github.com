@@ -843,6 +843,28 @@ void MissionEventsDialogModel::setChainDelay(int delay)
 	modify(event.chain_delay, delay);
 }
 
+bool MissionEventsDialogModel::getUseMsecs() const
+{
+	if (!SCP_vector_inbounds(m_events, m_cur_event)) {
+		return false;
+	}
+	return (m_events[m_cur_event].flags & MEF_USE_MSECS) != 0;
+}
+
+void MissionEventsDialogModel::setUseMsecs(bool useMsecs)
+{
+	if (!SCP_vector_inbounds(m_events, m_cur_event)) {
+		return;
+	}
+	auto& event = m_events[m_cur_event];
+	if (useMsecs) {
+		event.flags |= MEF_USE_MSECS;
+	} else {
+		event.flags &= ~MEF_USE_MSECS;
+	}
+	set_modified();
+}
+
 int MissionEventsDialogModel::getEventScore() const
 {
 	if (!SCP_vector_inbounds(m_events, m_cur_event)) {
