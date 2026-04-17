@@ -1887,7 +1887,9 @@ int opengl_make_render_target( int handle, int *w, int *h, int *bpp, int *mm_lvl
 		glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, ts->texture_id, 0, 0);
 	}
 
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, new_fbo->renderbuffer_id);
+	if (flags & BMP_FLAG_RENDER_TARGET_DEPTH_ATTACHMENT) {
+		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, new_fbo->renderbuffer_id);
+	}
 
 	if ( opengl_check_framebuffer() ) {
 		// Oops!!  reset everything and then bail
