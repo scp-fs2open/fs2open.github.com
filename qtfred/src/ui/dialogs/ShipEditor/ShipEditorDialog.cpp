@@ -30,6 +30,7 @@ ShipEditorDialog::ShipEditorDialog(FredView* parent, EditorViewport* viewport)
 	ui->shipDisplayNameEdit->setMaxLength(NAME_LENGTH - 1);
 	ui->altNameCombo->lineEdit()->setMaxLength(NAME_LENGTH - 1);
 	ui->callsignCombo->lineEdit()->setMaxLength(CALLSIGN_LEN);
+	ui->cargoTitleEdit->setMaxLength(NAME_LENGTH - 1);
 
 	connect(_model.get(), &AbstractDialogModel::modelChanged, this, [this] { updateUI(false); });
 	connect(viewport->editor, &Editor::currentObjectChanged, this, &ShipEditorDialog::update);
@@ -38,6 +39,7 @@ ShipEditorDialog::ShipEditorDialog(FredView* parent, EditorViewport* viewport)
 	// Column One
 
 	connect(ui->cargoCombo->lineEdit(), (&QLineEdit::editingFinished), this, &ShipEditorDialog::cargoChanged);
+	connect(ui->cargoTitleEdit, (&QLineEdit::editingFinished), this, &ShipEditorDialog::cargoTitleChanged);
 	connect(ui->altNameCombo->lineEdit(), (&QLineEdit::textEdited), this, &ShipEditorDialog::altNameChanged);
 	connect(ui->callsignCombo->lineEdit(), (&QLineEdit::textEdited), this, &ShipEditorDialog::callsignChanged);
 
@@ -187,6 +189,7 @@ void ShipEditorDialog::updateColumnOne(bool overwrite)
 
 			ui->cargoCombo->setCurrentIndex(ui->cargoCombo->findText(QString(cargo.c_str())));
 		}
+		ui->cargoTitleEdit->setText(_model->getCargoTitle().c_str());
 	}
 	if (_model->getNumSelectedObjects()) {
 		if (_model->getIfMultipleShips()) {
@@ -484,6 +487,7 @@ void ShipEditorDialog::enableDisable()
 
 	ui->AIClassCombo->setEnabled(_model->getUIEnable());
 	ui->cargoCombo->setEnabled(_model->getUIEnable());
+	ui->cargoTitleEdit->setEnabled(_model->getUIEnable());
 	ui->hotkeyCombo->setEnabled(_model->getUIEnable());
 	if ((_model->getShipClass() >= 0) && !(Ship_info[_model->getShipClass()].flags[Ship::Info_Flags::Cargo]) &&
 		!(Ship_info[_model->getShipClass()].flags[Ship::Info_Flags::No_ship_type]))
@@ -572,6 +576,14 @@ void ShipEditorDialog::cargoChanged()
 		const auto textBytes = entry.toUtf8();
 		const SCP_string NewCargo = textBytes.toStdString();
 		_model->setCargo(NewCargo);
+	}
+}
+void ShipEditorDialog::cargoTitleChanged()
+{
+	const QString entry = ui->cargoTitleEdit->text();
+	if (!entry.isEmpty() && entry != _model->getCargoTitle().c_str()) {
+		const SCP_string NewCargoTitle = entry.toUtf8().constData();
+		_model->setCargoTitle(NewCargoTitle);
 	}
 }
 void ShipEditorDialog::altNameChanged()

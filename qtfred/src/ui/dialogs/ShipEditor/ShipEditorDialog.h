@@ -132,6 +132,7 @@ class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 
 	// column one
 	void cargoChanged();
+	void cargoTitleChanged();
 	void altNameChanged();
 	void callsignChanged();
 };

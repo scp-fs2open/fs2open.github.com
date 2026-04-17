@@ -45,6 +45,7 @@ class ShipInitialStatusDialog : public QDialog {
 	void on_subsystemList_currentRowChanged(int);
 	void on_subIntegritySpinBox_valueChanged(int);
 	void on_cargoEdit_editingFinished();
+	void on_cargoTitleEdit_editingFinished();
 	void on_colourComboBox_currentIndexChanged(int);
 
   private: // NOLINT(readability-redundant-access-specifiers)

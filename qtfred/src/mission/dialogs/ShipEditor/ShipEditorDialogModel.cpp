@@ -370,6 +370,7 @@ void ShipEditorDialogModel::initializeData()
 							_m_ai_class = Ships[i].weapons.ai_class;
 							cargo = Ships[i].cargo1;
 							_m_cargo1 = Cargo_names[cargo];
+							_m_cargo_title = Ships[i].cargo_title;
 							_m_hotkey = Ships[i].hotkey + 1;
 							_m_score = Ships[i].score;
 							_m_assist_score = static_cast<int>(Ships[i].assist_score_pct * 100);
@@ -407,6 +408,10 @@ void ShipEditorDialogModel::initializeData()
 
 							if (Ships[i].cargo1 != cargo) {
 								_m_cargo1 = "";
+							}
+
+							if (_m_cargo_title != Ships[i].cargo_title) {
+								_m_cargo_title = "";
 							}
 
 							_m_score = Ships[i].score;
@@ -495,6 +500,7 @@ void ShipEditorDialogModel::initializeData()
 
 		_m_ai_class = -1;
 		_m_cargo1 = "";
+		_m_cargo_title = "";
 		_m_hotkey = 0;
 		_m_score = 0; // cause control to be blank
 		_m_assist_score = 0;
@@ -926,6 +932,24 @@ void ShipEditorDialogModel::setCargo(const SCP_string& m_cargo)
 SCP_string ShipEditorDialogModel::getCargo() const
 {
 	return _m_cargo1;
+}
+
+void ShipEditorDialogModel::setCargoTitle(const SCP_string& title)
+{
+	if (_m_cargo_title == title)
+		return;
+	_m_cargo_title = title;
+	for (auto* ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
+		if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && (ptr->flags[Object::Object_Flags::Marked])) {
+			strcpy_s(Ships[ptr->instance].cargo_title, title.c_str());
+		}
+	}
+	set_modified();
+}
+
+SCP_string ShipEditorDialogModel::getCargoTitle() const
+{
+	return _m_cargo_title;
 }
 
 void ShipEditorDialogModel::setAltName(const SCP_string& m_altName)

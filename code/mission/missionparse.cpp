@@ -328,6 +328,7 @@ flag_def_list_new<Ship::Ship_Flags> Parse_ship_flags[] = {
 	{"cannot-perform-scan-hide-cargo", Ship::Ship_Flags::Cannot_perform_scan_hide_cargo, true, false},
 	{"cannot-perform-scan-show-cargo", Ship::Ship_Flags::Cannot_perform_scan_show_cargo, true, false},
 	{"no-targeting-limits", Ship::Ship_Flags::No_targeting_limits, true, false},
+	{"no-scanned-cargo", Ship::Ship_Flags::No_scanned_cargo, true, false},
 	{"force-shields-on", Ship::Ship_Flags::Force_shields_on, true, false},
 	{"Destroy before Mission", Ship::Ship_Flags::Kill_before_mission,true, false}, //Not Printed to misson so can use descriptive name
 }
@@ -499,6 +500,7 @@ flag_def_list_new<Mission::Parse_Object_Flags> Parse_object_flags[] = {
 	{ "cannot-perform-scan-hide-cargo",		Mission::Parse_Object_Flags::SF_Cannot_perform_scan_hide_cargo, true, false },
 	{ "cannot-perform-scan-show-cargo",		Mission::Parse_Object_Flags::SF_Cannot_perform_scan_show_cargo, true, false },
 	{ "no-targeting-limits",				Mission::Parse_Object_Flags::SF_No_targeting_limits, true, false},
+	{ "no-scanned-cargo",					Mission::Parse_Object_Flags::SF_No_scanned_cargo, true, false },
 };
 
 parse_object_flag_description<Mission::Parse_Object_Flags> Parse_object_flag_descriptions[] = {
@@ -566,6 +568,7 @@ parse_object_flag_description<Mission::Parse_Object_Flags> Parse_object_flag_des
 	{ Mission::Parse_Object_Flags::SF_Cannot_perform_scan_hide_cargo, "Ship cannot scan other ships, and the cargo line will not be shown on the HUD."},
 	{ Mission::Parse_Object_Flags::SF_Cannot_perform_scan_show_cargo, "Ship cannot scan other ships, but the cargo line will be shown on the HUD."},
 	{ Mission::Parse_Object_Flags::SF_No_targeting_limits,			"Ship is always targetable regardless of AWACS or targeting range limits."},
+	{ Mission::Parse_Object_Flags::SF_No_scanned_cargo,				"Cargo is never revealed; only shows 'Scanned' or 'Not Scanned'. Needs $Unify Scanning Behavior in game_settings.tbl."},
 };
 
 const size_t Num_parse_object_flags = sizeof(Parse_object_flags) / sizeof(flag_def_list_new<Mission::Parse_Object_Flags>);
@@ -3147,6 +3150,8 @@ void resolve_parse_flags(object *objp, flagset<Mission::Parse_Object_Flags> &par
 		shipp->flags.set(Ship::Ship_Flags::Cannot_perform_scan_hide_cargo);
 	if (parse_flags[Mission::Parse_Object_Flags::SF_Cannot_perform_scan_show_cargo])
 		shipp->flags.set(Ship::Ship_Flags::Cannot_perform_scan_show_cargo);
+	if (parse_flags[Mission::Parse_Object_Flags::SF_No_scanned_cargo])
+		shipp->flags.set(Ship::Ship_Flags::No_scanned_cargo);
 
 	if (parse_flags[Mission::Parse_Object_Flags::SF_No_targeting_limits])
 		shipp->flags.set(Ship::Ship_Flags::No_targeting_limits);

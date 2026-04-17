@@ -19,6 +19,7 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	SCP_string _m_ship_name;
 	SCP_string _m_ship_display_name;
 	SCP_string _m_cargo1;
+	SCP_string _m_cargo_title;
 	SCP_string _m_alt_name;
 	SCP_string _m_callsign;
 	int _m_ship_class;
@@ -95,6 +96,9 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 
 	void setCargo(const SCP_string&);
 	SCP_string getCargo() const;
+
+	void setCargoTitle(const SCP_string&);
+	SCP_string getCargoTitle() const;
 
 	void setAltName(const SCP_string&);
 	SCP_string getAltName() const;

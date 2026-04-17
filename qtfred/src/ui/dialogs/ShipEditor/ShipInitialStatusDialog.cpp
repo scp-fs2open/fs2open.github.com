@@ -22,6 +22,7 @@ ShipInitialStatusDialog::ShipInitialStatusDialog(QDialog* parent, EditorViewport
 	ui->setupUi(this);
 
 	ui->cargoEdit->setMaxLength(NAME_LENGTH - 1);
+	ui->cargoTitleEdit->setMaxLength(NAME_LENGTH - 1);
 
 	connect(_model.get(), &AbstractDialogModel::modelChanged, this, &ShipInitialStatusDialog::updateUI);
 
@@ -129,6 +130,11 @@ void ShipInitialStatusDialog::on_cargoEdit_editingFinished()
 {
 	SCP_string cargo = ui->cargoEdit->text().toUtf8().constData();
 	_model->setCargo(cargo);
+}
+void ShipInitialStatusDialog::on_cargoTitleEdit_editingFinished()
+{
+	SCP_string title = ui->cargoTitleEdit->text().toUtf8().constData();
+	_model->setCargoTitle(title);
 }
 void ShipInitialStatusDialog::on_colourComboBox_currentIndexChanged(int index)
 {
@@ -363,12 +369,15 @@ void ShipInitialStatusDialog::updateSubsystems()
 	ship_subsys* ptr;
 	auto index = ui->subsystemList->currentIndex();
 	ui->subsystemList->clear();
-	if (!_model->getIfMultpleShips()) {
+
+	bool multiEdit = _model->getIfMultpleShips();
+	bool useNewScanning = _model->getUseNewScanningBehavior();
+	bool toggleSet = _model->getToggleSubsystemScanning();
+	bool scannable = _model->getShip_has_scannable_subsystems();
+
+	if (!multiEdit) {
 		ui->subsystemList->setEnabled(true);
 		ui->subIntegritySpinBox->setEnabled(true);
-		if (_model->getShip_has_scannable_subsystems()) {
-			ui->cargoEdit->setEnabled(true);
-		}
 		for (ptr = GET_FIRST(&Ships[_model->getShip()].subsys_list);
 			ptr != END_OF_LIST(&Ships[_model->getShip()].subsys_list);
 			ptr = GET_NEXT(ptr)) {
@@ -380,11 +389,30 @@ void ShipInitialStatusDialog::updateSubsystems()
 	} else {
 		ui->subsystemList->setEnabled(false);
 		ui->subIntegritySpinBox->setEnabled(false);
-		ui->cargoEdit->setEnabled(false);
 	}
+
+	// Determine whether subsystem cargo fields should be shown.
+	// Classic mode: ship must have scannable subsystems (huge ship, or non-huge with Toggle_subsystem_scanning).
+	// Unified mode: any ship with Toggle_subsystem_scanning can use subsystem cargo.
+	bool showCargo;
+	if (useNewScanning) {
+		showCargo = !multiEdit && toggleSet;
+	} else {
+		showCargo = !multiEdit && scannable;
+	}
+
+	ui->subsysCargoHelpLabel->setVisible(!showCargo && !multiEdit);
+	ui->cargoLabel->setVisible(showCargo);
+	ui->cargoEdit->setVisible(showCargo);
+	ui->cargoEdit->setEnabled(showCargo);
+	ui->cargoTitleLabel->setVisible(showCargo);
+	ui->cargoTitleEdit->setVisible(showCargo);
+	ui->cargoTitleEdit->setEnabled(showCargo);
+
 	auto value = _model->getDamage();
 	ui->subIntegritySpinBox->setValue(value);
 	auto cargovalue = _model->getCargo();
 	ui->cargoEdit->setText(cargovalue.c_str());
+	ui->cargoTitleEdit->setText(_model->getCargoTitle().c_str());
 }
 } // namespace fso::fred::dialogs

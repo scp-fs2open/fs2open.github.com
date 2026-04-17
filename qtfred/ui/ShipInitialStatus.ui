@@ -368,6 +368,16 @@
        </layout>
       </item>
       <item>
+       <widget class="QLabel" name="subsysCargoHelpLabel">
+        <property name="text">
+         <string>Enable &apos;Toggle Subsystem Scanning&apos; in the ship flags to edit subsystem cargo.</string>
+        </property>
+        <property name="wordWrap">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
        <layout class="QHBoxLayout" name="cargoLayout">
         <item>
          <widget class="QLabel" name="cargoLabel">
@@ -380,6 +390,24 @@
          <widget class="QLineEdit" name="cargoEdit">
           <property name="toolTip">
            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set the subsytems cargo&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="cargoTitleLayout">
+        <item>
+         <widget class="QLabel" name="cargoTitleLabel">
+          <property name="text">
+           <string>Cargo Title</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="cargoTitleEdit">
+          <property name="toolTip">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Overrides the HUD label shown before this subsystem's cargo name. Use &quot;#&quot; as the first character to suppress the label entirely.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
          </widget>
         </item>

@@ -3843,6 +3843,8 @@ int Fred_mission_save::save_objects()
 				fout(" \"cannot-perform-scan-show-cargo\"");
 			if (shipp->flags[Ship::Ship_Flags::No_targeting_limits])
 				fout(" \"no-targeting-limits\"");
+			if (shipp->flags[Ship::Ship_Flags::No_scanned_cargo])
+				fout(" \"no-scanned-cargo\"");
 			fout(" )");
 		}
 		// -----------------------------------------------------------
