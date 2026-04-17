@@ -1,4 +1,5 @@
 #include "ShipGoalsDialogModel.h"
+#include "ui/util/ErrorChecker.h"
 #include <globalincs/linklist.h>
 #include <mission/object.h>
 #include <model/model.h>
@@ -97,7 +98,7 @@ namespace fso {
 						if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && (ptr->flags[Object::Object_Flags::Marked])) {
 							self_ship = ptr->instance;
 							goalp = Ai_info[Ships[self_ship].ai_index].goals;
-							verify_orders(self_ship);
+							verify_orders();
 						}
 
 						ptr = GET_NEXT(ptr);
@@ -108,23 +109,16 @@ namespace fso {
 				return true;
 			}
 
-			int ShipGoalsDialogModel::verify_orders(const int ship)
+			int ShipGoalsDialogModel::verify_orders()
 			{
-				const char* str;
-				SCP_string error_message;
-				if ((str = _editor->error_check_initial_orders(goalp, self_ship, self_wing)) != nullptr) {
-					if (*str == '!')
-						return 1;
-					else if (*str == '*')
-						str++;
+				ErrorChecker checker(_viewport);
+				if (checker.runCheck(ErrorCheckType::InitialOrders, {goalp, self_ship, self_wing}))
+					return 0;
 
-					if (ship >= 0)
-						sprintf(error_message, "Initial orders error for ship \"%s\"\n\n%s", Ships[ship].ship_name, str);
-					else
-						error_message = str;
+				for (const auto& entry : checker.getErrors()) {
 					auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Error,
 						"Order Error",
-						error_message,
+						entry.message,
 						{ DialogButton::Ok, DialogButton::Cancel });
 					if (button != DialogButton::Ok)
 						return 1;

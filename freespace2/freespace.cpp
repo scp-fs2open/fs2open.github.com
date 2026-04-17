@@ -399,6 +399,7 @@ int Show_net_stats;
 bool Pre_player_entry = false;
 
 int	Fred_running = 0;
+int	Qtfred_running = 0;
 bool running_unittests = false;
 
 // required for hudtarget... kinda dumb, but meh

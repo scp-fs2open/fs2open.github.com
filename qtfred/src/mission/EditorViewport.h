@@ -208,7 +208,11 @@ class EditorViewport {
 	bool Move_ships_when_undocking = true;
 	bool Always_save_display_names = false;
 	bool Error_checker_checks_potential_issues = true;
-	bool Error_checker_checks_potential_issues_once = false;
+	bool Error_checker_apply_auto_corrections = true;
+	// One-shot override: when set, the next auto-run of the error checker shows
+	// the dialog and forces potential issues on regardless of the user's saved
+	// preference. Consumed (cleared) by autoRunErrorChecker. Not persisted.
+	bool Error_checker_force_display_potentials_once = false;
 
 	bool Show_sexp_help_mission_events = true;
 	bool Show_sexp_help_mission_goals = true;

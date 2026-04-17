@@ -106,6 +106,7 @@ pending_message Pending_messages[MAX_PENDING_MESSAGES];
 CFREDApp theApp;
 
 int Fred_running = 1;
+int Qtfred_running = 0;
 int FrameCount = 0;
 bool Fred_active = true;
 int Update_window = 1;

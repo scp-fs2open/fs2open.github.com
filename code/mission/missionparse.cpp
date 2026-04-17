@@ -2426,10 +2426,10 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 		// will accept were apparently written out incorrectly with Fred.  This Int3() should
 		// trap these instances.
 #ifndef NDEBUG
-		if (Fred_running)
+		if (Fred_running && !Qtfred_running)
 		{
 			std::set<size_t> default_orders, remaining_orders;
-			
+
 			default_orders = ship_get_default_orders_accepted(&Ship_info[shipp->ship_info_index]);
 			std::set_difference(p_objp->orders_accepted.begin(), p_objp->orders_accepted.end(), default_orders.begin(), default_orders.end(),
 								  std::inserter(remaining_orders, remaining_orders.begin()));
@@ -2963,7 +2963,8 @@ void resolve_parse_flags(object *objp, flagset<Mission::Parse_Object_Flags> &par
 
     if ((parse_flags[Mission::Parse_Object_Flags::OF_No_shields]) && (parse_flags[Mission::Parse_Object_Flags::OF_Force_shields_on]))
     {
-        Warning(LOCATION, "The parser found a ship with both the \"force-shields-on\" and \"no-shields\" flags; this is inconsistent!");
+        if (!Qtfred_running)
+            Warning(LOCATION, "The parser found a ship with both the \"force-shields-on\" and \"no-shields\" flags; this is inconsistent!");
     }
     if (parse_flags[Mission::Parse_Object_Flags::OF_No_shields])
         objp->flags.set(Object::Object_Flags::No_shields);
@@ -3458,7 +3459,8 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 			|| (p_objp->arrival_location == ArrivalLocation::ABOVE_SHIP) || (p_objp->arrival_location == ArrivalLocation::BELOW_SHIP)
 			|| (p_objp->arrival_location == ArrivalLocation::TO_LEFT_OF_SHIP) || (p_objp->arrival_location == ArrivalLocation::TO_RIGHT_OF_SHIP) ))
 		{
-			Warning(LOCATION, "Arrival distance for ship %s cannot be %d.  Setting to 1.\n", p_objp->name, p_objp->arrival_distance);
+			if (!Qtfred_running)
+				Warning(LOCATION, "Arrival distance for ship %s cannot be %d.  Setting to 1.\n", p_objp->name, p_objp->arrival_distance);
 			p_objp->arrival_distance = 1;
 		}
 	}
@@ -3483,7 +3485,8 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 		stuff_int(&delay);
 		if (delay < 0)
 		{
-			Warning(LOCATION, "Cannot have arrival delay < 0 on ship %s", p_objp->name);
+			if (!Qtfred_running)
+				Warning(LOCATION, "Cannot have arrival delay < 0 on ship %s", p_objp->name);
 			delay = 0;
 		}
 
@@ -3520,7 +3523,8 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 		stuff_int(&delay);
 		if (delay < 0)
 		{
-			Warning(LOCATION, "Cannot have departure delay < 0 (ship %s)", p_objp->name);
+			if (!Qtfred_running)
+				Warning(LOCATION, "Cannot have departure delay < 0 (ship %s)", p_objp->name);
 			delay = 0;
 		}
 
@@ -3752,7 +3756,8 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 		stuff_int(&p_objp->destroy_before_mission_time);
 		if (p_objp->destroy_before_mission_time < 0)
 		{
-			Warning(LOCATION, "Cannot set a negative 'destroy before mission' value (ship %s)", p_objp->name);
+			if (!Qtfred_running)
+				Warning(LOCATION, "Cannot set a negative 'destroy before mission' value (ship %s)", p_objp->name);
 			p_objp->destroy_before_mission_time = 0;
 		}
 
@@ -3847,7 +3852,8 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 	if (optional_string("+Persona Index:")) {
 		stuff_int(&p_objp->persona_index);
 		if (p_objp->persona_index < -1 || p_objp->persona_index >= (int)Personas.size()) {
-			Warning(LOCATION, "Persona index %d for %s is out of range!  Setting to -1.", p_objp->persona_index, p_objp->name);
+			if (!Qtfred_running)
+				Warning(LOCATION, "Persona index %d for %s is out of range!  Setting to -1.", p_objp->persona_index, p_objp->name);
 			p_objp->persona_index = -1;
 		}
 	}
@@ -4915,7 +4921,8 @@ void parse_wing(mission *pm)
 			|| (wingp->arrival_location == ArrivalLocation::ABOVE_SHIP) || (wingp->arrival_location == ArrivalLocation::BELOW_SHIP)
 			|| (wingp->arrival_location == ArrivalLocation::TO_LEFT_OF_SHIP) || (wingp->arrival_location == ArrivalLocation::TO_RIGHT_OF_SHIP) ))
 		{
-			Warning(LOCATION, "Arrival distance for wing %s cannot be %d.  Setting to 1.\n", wingp->name, wingp->arrival_distance);
+			if (!Qtfred_running)
+				Warning(LOCATION, "Arrival distance for wing %s cannot be %d.  Setting to 1.\n", wingp->name, wingp->arrival_distance);
 			wingp->arrival_distance = 1;
 		}
 	}
@@ -4940,7 +4947,8 @@ void parse_wing(mission *pm)
 		stuff_int(&delay);
 		if (delay < 0)
 		{
-			Warning(LOCATION, "Cannot have arrival delay < 0 on wing %s", wingp->name);
+			if (!Qtfred_running)
+				Warning(LOCATION, "Cannot have arrival delay < 0 on wing %s", wingp->name);
 			delay = 0;
 		}
 
@@ -4977,7 +4985,8 @@ void parse_wing(mission *pm)
 		stuff_int(&delay);
 		if (delay < 0)
 		{
-			Warning(LOCATION, "Cannot have departure delay < 0 on wing %s", wingp->name);
+			if (!Qtfred_running)
+				Warning(LOCATION, "Cannot have departure delay < 0 on wing %s", wingp->name);
 			delay = 0;
 		}
 
@@ -5152,7 +5161,8 @@ void parse_wing(mission *pm)
 
 			// Goober5000 - if this is a player start object, there shouldn't be a wing arrival delay (Mantis #2678)
 			if ((p_objp->flags[Mission::Parse_Object_Flags::OF_Player_start]) && (wingp->arrival_delay != 0)) {
-				Warning(LOCATION, "Wing %s specifies an arrival delay of %ds, but it also contains a player.  The arrival delay will be reset to 0.", wingp->name, abs(wingp->arrival_delay));
+				if (!Qtfred_running)
+					Warning(LOCATION, "Wing %s specifies an arrival delay of %ds, but it also contains a player.  The arrival delay will be reset to 0.", wingp->name, abs(wingp->arrival_delay));
 				if (!Fred_running && wingp->arrival_delay > 0) {
 					// timestamp has been set, so set it again
 					wingp->arrival_delay = timestamp(0);
@@ -5423,7 +5433,9 @@ void post_process_ships_wings()
 	// error checking for custom wings
 	if (strcmp(Starting_wing_names[0], TVT_wing_names[0]) != 0)
 	{
-		Error(LOCATION, "The first starting wing and the first team-versus-team wing must have the same wing name.\n");
+		// In QtFRED this is surfaced via ErrorChecker::checkPlayerWings so the editor can load the mission.
+		if (!Qtfred_running)
+			Error(LOCATION, "The first starting wing and the first team-versus-team wing must have the same wing name.\n");
 	}
 
 	// set up wing indexes
@@ -5610,7 +5622,8 @@ void post_process_ships_wings()
 			for (int i = 1; i < MAX_STARTING_WINGS; i++) {
 				// If there was a wing for this squadron entry, check the last one. If it's empty, we found a mistake, so move the wing names over.
 				if (Squadron_wing_names_found[i] && !Squadron_wing_names_found[i - 1]) {
-					Warning(LOCATION, "Squadron wings are not in the correct order and may cause wings to disappear in multi.\n\nEither wing %s should exist or the %s entry needs to come before it in the list.\n\nPlease go back and fix the mission.", Squadron_wing_names[i - 1], Squadron_wing_names[i]);
+					if (!Qtfred_running)
+						Warning(LOCATION, "Squadron wings are not in the correct order and may cause wings to disappear in multi.\n\nEither wing %s should exist or the %s entry needs to come before it in the list.\n\nPlease go back and fix the mission.", Squadron_wing_names[i - 1], Squadron_wing_names[i]);
 					char temp_chars[NAME_LENGTH];
 					strcpy_s(temp_chars, Squadron_wing_names[i - 1]);
 					strcpy_s(Squadron_wing_names[i - 1], Squadron_wing_names[i]);
@@ -5648,7 +5661,8 @@ void parse_event(mission *pm)
 		// sanity check on the repeat count variable
 		// _argv[-1] - negative repeat count is now legal; means repeat indefinitely.
 		if ( event->repeat_count == 0 ){
-			Warning(LOCATION, "Repeat count for mission event %s is 0.\nMust be >= 1 or negative!  Setting to 1.", event->name.c_str() );
+			if (!Qtfred_running)
+				Warning(LOCATION, "Repeat count for mission event %s is 0.\nMust be >= 1 or negative!  Setting to 1.", event->name.c_str() );
 			event->repeat_count = 1;
 		}
 	}
@@ -5665,7 +5679,8 @@ void parse_event(mission *pm)
 		// sanity check on the trigger count variable
 		// negative trigger count is also legal
 		if ( event->trigger_count == 0 ){
-			Warning(LOCATION, "Trigger count for mission event %s is 0.\nMust be >= 1 or negative!  Setting to 1.", event->name.c_str() );
+			if (!Qtfred_running)
+				Warning(LOCATION, "Trigger count for mission event %s is 0.\nMust be >= 1 or negative!  Setting to 1.", event->name.c_str() );
 			event->trigger_count = 1;
 		}
 	}
@@ -6021,7 +6036,8 @@ void parse_reinforcement(mission *pm)
 		stuff_int(&delay);
 		if (delay < 0)
 		{
-			Warning(LOCATION, "Cannot have arrival delay < 0 on reinforcement %s", ptr->name);
+			if (!Qtfred_running)
+				Warning(LOCATION, "Cannot have arrival delay < 0 on reinforcement %s", ptr->name);
 			delay = 0;
 		}
 
@@ -6041,14 +6057,16 @@ void parse_reinforcement(mission *pm)
 
 	if (rforce_obj == NULL) {
 		if ((instance = wing_name_lookup(ptr->name, 1)) == -1) {
-			Warning(LOCATION, "Reinforcement %s not found as ship or wing", ptr->name);
+			if (!Qtfred_running)
+				Warning(LOCATION, "Reinforcement %s not found as ship or wing", ptr->name);
 			return;
 		}
 	} else {
 		// Individual ships in wings can't be reinforcements - FUBAR
 		if (rforce_obj->wingnum >= 0)
 		{
-			Warning(LOCATION, "Reinforcement %s is part of a wing - Ignoring reinforcement declaration", ptr->name);
+			if (!Qtfred_running)
+				Warning(LOCATION, "Reinforcement %s is part of a wing - Ignoring reinforcement declaration", ptr->name);
 			return;
 		}
 		else
@@ -6798,7 +6816,9 @@ bool parse_mission(mission *pm, int flags)
 	if (!post_process_mission(pm))
 		return false;
 
-	if ((saved_warning_count - Global_warning_count) > 10 || (saved_error_count - Global_error_count) > 0) {
+	// QtFRED surfaces parse issues through its own error checker, so skip this summary popup there; Fred2 and the game still show it.
+	if (!Qtfred_running &&
+		((saved_warning_count - Global_warning_count) > 10 || (saved_error_count - Global_error_count) > 0)) {
 		char text[512];
 		sprintf(text, "Warning!\n\nThe current mission has generated %d warnings and/or errors during load.  These are usually caused by corrupted ship models or syntax errors in the mission file.  While FreeSpace Open will attempt to compensate for these issues, it cannot guarantee a trouble-free gameplay experience.  Source Code Project staff cannot provide assistance or support for these problems, as they are caused by the mission's data files, not FreeSpace Open's source code.", (saved_warning_count - Global_warning_count) + (saved_error_count - Global_error_count));
 		popup(PF_TITLE_BIG | PF_TITLE_RED | PF_USE_AFFIRMATIVE_ICON | PF_NO_NETWORKING, 1, POPUP_OK, text);
@@ -6936,7 +6956,9 @@ bool post_process_mission(mission *pm)
 					error_msg += "\n\n(Bad node appears to be: ";
 					error_msg += bad_node_str;
 					error_msg += ")\n";
-					Warning(LOCATION, "%s", error_msg.c_str());
+					// QtFRED surfaces SEXP errors through ErrorChecker's fred_check_sexp; skip the popup there.
+					if (!Qtfred_running)
+						Warning(LOCATION, "%s", error_msg.c_str());
 
 					// syntax errors are recoverable in Fred but not FS
 					if (!Fred_running && !sexp_recoverable_error(result)) {
@@ -7732,7 +7754,8 @@ void mission_parse_set_up_initial_docks()
 		// display an error if necessary
 		if (dfi.maintained_variables.int_value == 0)
 		{
-			Warning(LOCATION, "In the docking group containing %s, every ship has an arrival cue set to false.  The group will not appear in-mission!\n", pobjp->name);
+			if (!Qtfred_running)
+				Warning(LOCATION, "In the docking group containing %s, every ship has an arrival cue set to false.  The group will not appear in-mission!\n", pobjp->name);
 
 			// for FRED, we must arbitrarily choose a dock leader, otherwise the entire docked group will not be loaded
 			if (Fred_running)
@@ -7740,7 +7763,8 @@ void mission_parse_set_up_initial_docks()
 		}
 		else if (dfi.maintained_variables.int_value > 1)
 		{
-			Warning(LOCATION, "In the docking group containing %s, there is more than one ship with a non-false arrival cue!  There can only be one such ship.  Setting all arrival cues except %s to false...\n", dfi.maintained_variables.objp_value->name, dfi.maintained_variables.objp_value->name);
+			if (!Qtfred_running)
+				Warning(LOCATION, "In the docking group containing %s, there is more than one ship with a non-false arrival cue!  There can only be one such ship.  Setting all arrival cues except %s to false...\n", dfi.maintained_variables.objp_value->name, dfi.maintained_variables.objp_value->name);
 		}
 
 		// clear dfi stuff
