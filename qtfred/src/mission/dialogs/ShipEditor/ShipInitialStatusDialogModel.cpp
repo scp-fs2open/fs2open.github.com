@@ -912,7 +912,7 @@ bool ShipInitialStatusDialogModel::getToggleSubsystemScanning() const
 	return Ships[m_ship].flags[Ship::Ship_Flags::Toggle_subsystem_scanning];
 }
 
-bool ShipInitialStatusDialogModel::getUseNewScanningBehavior() const
+bool ShipInitialStatusDialogModel::getUseNewScanningBehavior()
 {
 	return Use_new_scanning_behavior;
 }

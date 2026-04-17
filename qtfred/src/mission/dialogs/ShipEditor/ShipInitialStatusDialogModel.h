@@ -128,7 +128,7 @@ class ShipInitialStatusDialogModel : public AbstractDialogModel {
 	bool getIfMultpleShips() const;
 
 	bool getToggleSubsystemScanning() const;
-	bool getUseNewScanningBehavior() const;
+	static bool getUseNewScanningBehavior();
 
 	int getGuardian() const;
 	void setGuardian(int);
