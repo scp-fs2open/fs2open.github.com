@@ -40,6 +40,10 @@ int ErrorCheckerDialog::getErrorCount() const {
 	return static_cast<int>(_model->getErrors().size());
 }
 
+const SCP_vector<ErrorEntry>& ErrorCheckerDialog::getErrors() const {
+	return _model->getErrors();
+}
+
 void ErrorCheckerDialog::setForcePotentialsDisplay(bool force) {
 	if (_forcePotentialsDisplay == force)
 		return;

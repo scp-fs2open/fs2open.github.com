@@ -30,6 +30,7 @@ public:
 
 	// Number of entries in the most recent check result (0 if not yet run).
 	int getErrorCount() const;
+	const SCP_vector<ErrorEntry>& getErrors() const;
 
 	// Force potential issues to be displayed on the next updateUi pass even if
 	// the user's saved preference has them hidden. Does not persist and does

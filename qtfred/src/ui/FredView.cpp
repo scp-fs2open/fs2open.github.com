@@ -377,7 +377,7 @@ bool FredView::performPreSaveCheck(int* outFixCount) {
 		return false;
 
 	case dialogs::ErrorCheckerDialog::PreSaveAction::FixAndSave: {
-		const int beforeCount = dlg.getErrorCount();
+		const int beforeCount = countNonPotential(dlg.getErrors());
 
 		// Apply auto-corrections to in-memory data before the file is written.
 		_viewport->Error_checker_checks_potential_issues = false;

@@ -303,7 +303,7 @@ int ErrorChecker::checkObjectList() {
 			names[obj_count] = Ships[i].ship_name;
 			int w = Ships[i].wingnum;
 			if (w >= 0) {
-				if (w < 0 || w >= MAX_WINGS) {
+				if (w >= MAX_WINGS) {
 					return internal_error("A ship has an illegal wing index");
 				}
 
@@ -511,7 +511,7 @@ int ErrorChecker::checkShips() {
 										  Ships[sp].ship_name);
 				}
 
-				auto dock_list = get_docking_list(Ship_info[Ships[i].ship_info_index].model_num);
+				auto dock_list = _viewport->editor->get_docking_list(Ship_info[Ships[i].ship_info_index].model_num);
 				int point = dock_ptr->dockpoint_used;
 				if (point < 0 || point >= (int)dock_list.size()) {
 					return internal_error("Invalid docker point (\"%s\" initially docked with \"%s\")",
@@ -522,7 +522,7 @@ int ErrorChecker::checkShips() {
 										  Ships[i].ship_name);
 				}
 
-				dock_list = get_docking_list(Ship_info[Ships[sp].ship_info_index].model_num);
+				dock_list = _viewport->editor->get_docking_list(Ship_info[Ships[sp].ship_info_index].model_num);
 				point = dock_find_dockpoint_used_by_object(dock_ptr->docked_objp, &Objects[Ships[i].objnum]);
 				if (point < 0 || point >= (int)dock_list.size()) {
 					return internal_error("Invalid dockee point (\"%s\" initially docked with \"%s\")",
@@ -1197,7 +1197,7 @@ int ErrorChecker::checkDockingGroupCues() {
 		int non_false_count = 0;
 		for (int si : group) {
 			int w = Ships[si].wingnum;
-			if (w >= 0) {
+			if (w >= 0 && w < MAX_WINGS) {
 				if (!checked_wings.insert(w).second) continue;
 				if (Wings[w].arrival_cue != Locked_sexp_false)
 					non_false_count++;
@@ -1461,7 +1461,7 @@ int ErrorChecker::checkInitialOrders(ai_goal* goals, int ship, int wing) {
 			}
 
 			model1 = Ship_info[Ships[ship].ship_info_index].model_num;
-			auto model1Docks = get_docking_list(model1);
+			auto model1Docks = _viewport->editor->get_docking_list(model1);
 			for (int j = 0; j < (int)model1Docks.size(); ++j) {
 				if (!stricmp(goals[i].docker.name, model1Docks[j].c_str())) {
 					dock1 = j;
@@ -1470,7 +1470,7 @@ int ErrorChecker::checkInitialOrders(ai_goal* goals, int ship, int wing) {
 			}
 
 			model2 = Ship_info[Ships[inst].ship_info_index].model_num;
-			auto model2Docks = get_docking_list(model2);
+			auto model2Docks = _viewport->editor->get_docking_list(model2);
 			for (int j = 0; j < (int)model2Docks.size(); ++j) {
 				if (!stricmp(goals[i].dockee.name, model2Docks[j].c_str())) {
 					dock2 = j;
@@ -1516,7 +1516,7 @@ int ErrorChecker::checkInitialOrders(ai_goal* goals, int ship, int wing) {
 		case AI_GOAL_DISABLE_SHIP_TACTICAL:
 			if (team == team2)
 				potential("Initial orders error for %s \"%s\"\n\n%s assigned to attack same team",
-						  entity, source, ship >= 0 ? "Ship" : "Wings");
+						  entity, source, ship >= 0 ? "Ship" : "Wing");
 			break;
 
 		default:
@@ -1526,19 +1526,5 @@ int ErrorChecker::checkInitialOrders(ai_goal* goals, int ship, int wing) {
 
 	return 0;
 }
-
-
-SCP_vector<SCP_string> ErrorChecker::get_docking_list(int model_index) {
-	SCP_vector<SCP_string> out;
-
-	polymodel* pm = model_get(model_index);
-	out.reserve(pm->n_docks);
-
-	for (int i = 0; i < pm->n_docks; i++)
-		out.push_back(pm->docking_bays[i].name);
-
-	return out;
-}
-
 
 } // namespace fso::fred

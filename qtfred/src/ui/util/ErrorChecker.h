@@ -135,7 +135,6 @@ private:
 
 	// Helper methods
 	int checkInitialOrders(ai_goal* goals, int ship, int wing);
-	static SCP_vector<SCP_string> get_docking_list(int model_index);
 };
 
 } // namespace fso::fred
