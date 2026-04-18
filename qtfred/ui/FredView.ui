@@ -293,8 +293,6 @@
    <addaction name="actionSelectMove"/>
    <addaction name="actionSelectRotate"/>
    <addaction name="separator"/>
-   <addaction name="actionRotateLocal"/>
-   <addaction name="separator"/>
    <addaction name="actionConstrainX"/>
    <addaction name="actionConstrainY"/>
    <addaction name="actionConstrainZ"/>
@@ -317,6 +315,46 @@
    <addaction name="actionManage_Layers"/>
    <addaction name="actionUnhide_Layers"/>
    <addaction name="separator"/>
+  </widget>
+  <widget class="QToolBar" name="contextToolBar">
+   <property name="windowTitle">
+    <string>Context</string>
+   </property>
+   <property name="movable">
+    <bool>false</bool>
+   </property>
+   <property name="floatable">
+    <bool>false</bool>
+   </property>
+   <property name="iconSize">
+    <size>
+     <width>16</width>
+     <height>16</height>
+    </size>
+   </property>
+   <attribute name="toolBarArea">
+    <enum>TopToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>true</bool>
+   </attribute>
+  </widget>
+  <widget class="QToolBar" name="transformToolBar">
+   <property name="windowTitle">
+    <string>Transform</string>
+   </property>
+   <property name="movable">
+    <bool>false</bool>
+   </property>
+   <property name="floatable">
+    <bool>false</bool>
+   </property>
+   <attribute name="toolBarArea">
+    <enum>BottomToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
   </widget>
   <action name="actionSelect">
    <property name="checkable">
@@ -360,20 +398,6 @@
     <string>R</string>
    </property>
   </action>
-  <action name="actionRotateLocal">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>RotateLocal</string>
-   </property>
-   <property name="toolTip">
-    <string>Rotate Locally (X)</string>
-   </property>
-   <property name="shortcut">
-    <string>X</string>
-   </property>
-  </action>
   <action name="actionConstrainX">
    <property name="checkable">
     <bool>true</bool>
@@ -382,7 +406,7 @@
     <string>ConstraintX</string>
    </property>
    <property name="toolTip">
-    <string>X Constraint</string>
+    <string>Constrain movement/rotation to X axis</string>
    </property>
   </action>
   <action name="actionConstrainY">
@@ -393,7 +417,7 @@
     <string>ConstraintY</string>
    </property>
    <property name="toolTip">
-    <string>Y Constraint</string>
+    <string>Constrain movement/rotation to Y axis</string>
    </property>
   </action>
   <action name="actionConstrainZ">
@@ -404,7 +428,7 @@
     <string>ConstraintZ</string>
    </property>
    <property name="toolTip">
-    <string>Z Constraint</string>
+    <string>Constrain movement/rotation to Z axis</string>
    </property>
   </action>
   <action name="actionConstrainXZ">
@@ -415,7 +439,7 @@
     <string>ConstraintXZ</string>
    </property>
    <property name="toolTip">
-    <string>XZ Constraint</string>
+    <string>Constrain movement/rotation to XZ plane</string>
    </property>
   </action>
   <action name="actionConstrainYZ">
@@ -426,7 +450,7 @@
     <string>ConstraintYZ</string>
    </property>
    <property name="toolTip">
-    <string>YZ Constraint</string>
+    <string>Constrain movement/rotation to YZ plane</string>
    </property>
   </action>
   <action name="actionConstrainXY">
@@ -437,7 +461,7 @@
     <string>ConstraintXY</string>
    </property>
    <property name="toolTip">
-    <string>XY Constaint</string>
+    <string>Constrain movement/rotation to XY plane</string>
    </property>
   </action>
   <action name="actionSelectionList">

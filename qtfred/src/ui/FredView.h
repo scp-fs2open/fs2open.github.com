@@ -6,6 +6,9 @@
 #include <QtGui/QSurfaceFormat>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QComboBox>
+#include <QtWidgets/QDoubleSpinBox>
+#include <QtWidgets/QToolBar>
+#include <QtWidgets/QToolButton>
 #include <QtGui/QSurface>
 #include <QCloseEvent>
 
@@ -138,7 +141,6 @@ class FredView: public QMainWindow, public IDialogProvider {
 
 	void on_actionOrbitSelected_triggered(bool enabled);
 
-	void on_actionRotateLocal_triggered(bool enabled);
 
 	void on_actionSave_Camera_Pos_triggered(bool);
 	void on_actionRestore_Camera_Pos_triggered(bool);
@@ -231,8 +233,9 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void onGroupSelected(int group);
 	void onSetGroup(int group);
 
-	QLabel* _statusBarViewmode = nullptr;
-	QLabel* _statusBarUnitsLabel = nullptr;
+	QLabel* _statusBarObjectCount = nullptr;
+	QLabel* _statusBarViewmode    = nullptr;
+	QLabel* _statusBarUnitsLabel  = nullptr;
 
 	SceneBrowserPanel* _browserPanel = nullptr;
 
@@ -282,6 +285,44 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void onUpdatePropClassBox();
 	void onUpdateEditorActions();
 	void onUpdateWingActionStatus();
+
+	void initializeContextToolbar();
+	void onUpdateContextToolbar();
+	void quickRenameCurrentObject();
+
+	void initializeTransformBar();
+	void onUpdateTransformBar();
+	void onTransformEditingFinished();
+
+	QToolBar* _contextToolBar = nullptr;
+	QLabel*   _contextLabel   = nullptr;
+
+	// Cached selection state... buttons only rebuild when these change
+	int  _ctxCachedObj        = -2;  // -2 = uninitialized
+	int  _ctxCachedMarked     = -1;
+	int  _ctxCachedObjType    = -1;  // single: actual type; multi: common type (-1=mixed)
+	bool _ctxCachedInWing     = false;
+	int  _ctxCachedSharedWing = -2;  // multi-select: shared wing index (-1=none, -2=N/A)
+
+	QToolBar*       _transformToolBar    = nullptr;
+	QLabel*         _transformLabel      = nullptr;
+	QLabel*         _transformLabelA     = nullptr;
+	QLabel*         _transformLabelB     = nullptr;
+	QLabel*         _transformLabelC     = nullptr;
+	QDoubleSpinBox* _transformA          = nullptr;
+	QDoubleSpinBox* _transformB          = nullptr;
+	QDoubleSpinBox* _transformC          = nullptr;
+	QComboBox*      _transformMoveSpeedCombo = nullptr;
+	QComboBox*      _transformRotSpeedCombo  = nullptr;
+	QComboBox*      _transformIffCombo   = nullptr;
+	QLabel*         _transformRadiusLabel = nullptr;
+	QToolButton*    _transformLocalBtn   = nullptr;
+	QComboBox*      _transformLayerCombo = nullptr;
+	int             _tbCachedLayerCount  = -1;   // detect layer list changes
+	bool            _tbIffPopulated      = false; // IFF items are populated lazily (tables load after init)
+	bool            _tbLocalMove         = false; // remembered Local preference while in move mode
+	bool            _tbLocalRotate       = false; // remembered Local preference while in rotate mode
+	int             _tbCachedCursorMode  = -1;   // -1 forces per-mode restore on first update
 
 	void onShipClassSelected(int ship_class);
 	void onPropClassSelected(int prop_class);
