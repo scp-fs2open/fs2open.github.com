@@ -511,7 +511,7 @@ int ErrorChecker::checkShips() {
 										  Ships[sp].ship_name);
 				}
 
-				auto dock_list = _viewport->editor->get_docking_list(Ship_info[Ships[i].ship_info_index].model_num);
+				auto dock_list = Editor::get_docking_list(Ship_info[Ships[i].ship_info_index].model_num);
 				int point = dock_ptr->dockpoint_used;
 				if (point < 0 || point >= (int)dock_list.size()) {
 					return internal_error("Invalid docker point (\"%s\" initially docked with \"%s\")",
@@ -522,7 +522,7 @@ int ErrorChecker::checkShips() {
 										  Ships[i].ship_name);
 				}
 
-				dock_list = _viewport->editor->get_docking_list(Ship_info[Ships[sp].ship_info_index].model_num);
+				dock_list = Editor::get_docking_list(Ship_info[Ships[sp].ship_info_index].model_num);
 				point = dock_find_dockpoint_used_by_object(dock_ptr->docked_objp, &Objects[Ships[i].objnum]);
 				if (point < 0 || point >= (int)dock_list.size()) {
 					return internal_error("Invalid dockee point (\"%s\" initially docked with \"%s\")",
@@ -535,15 +535,15 @@ int ErrorChecker::checkShips() {
 			bool is_in_loadout_screen = (z == OBJ_START);
 			if (!is_in_loadout_screen && w >= 0) {
 				if (multi && The_mission.game_type & MISSION_TYPE_MULTI_TEAMS) {
-					for (int n = 0; n < MAX_TVT_WINGS; n++) {
-						if (!strcmp(Wings[w].name, TVT_wing_names[n])) {
+					for (const char* tvt_wing_name : TVT_wing_names) {
+						if (!strcmp(Wings[w].name, tvt_wing_name)) {
 							is_in_loadout_screen = true;
 							break;
 						}
 					}
 				} else {
-					for (int n = 0; n < MAX_STARTING_WINGS; n++) {
-						if (!strcmp(Wings[w].name, Starting_wing_names[n])) {
+					for (const char* starting_wing_name : Starting_wing_names) {
+						if (!strcmp(Wings[w].name, starting_wing_name)) {
 							is_in_loadout_screen = true;
 							break;
 						}
@@ -956,15 +956,15 @@ int ErrorChecker::checkPlayerWings() {
 
 	if (multi) {
 		if (The_mission.game_type & MISSION_TYPE_MULTI_TEAMS) {
-			for (int i = 0; i < MAX_TVT_WINGS; i++) {
-				if (TVT_wings[i] >= 0) {
-					checkMixedSpecies(TVT_wings[i]);
+			for (int tvt_wing : TVT_wings) {
+				if (tvt_wing >= 0) {
+					checkMixedSpecies(tvt_wing);
 				}
 			}
 		} else {
-			for (int i = 0; i < MAX_STARTING_WINGS; i++) {
-				if (Starting_wings[i] >= 0) {
-					checkMixedSpecies(Starting_wings[i]);
+			for (int starting_wing : Starting_wings) {
+				if (starting_wing >= 0) {
+					checkMixedSpecies(starting_wing);
 				}
 			}
 		}
@@ -1464,7 +1464,7 @@ int ErrorChecker::checkInitialOrders(ai_goal* goals, int ship, int wing) {
 			}
 
 			model1 = Ship_info[Ships[ship].ship_info_index].model_num;
-			auto model1Docks = _viewport->editor->get_docking_list(model1);
+			auto model1Docks = Editor::get_docking_list(model1);
 			for (int j = 0; j < (int)model1Docks.size(); ++j) {
 				if (!stricmp(goals[i].docker.name, model1Docks[j].c_str())) {
 					dock1 = j;
@@ -1473,7 +1473,7 @@ int ErrorChecker::checkInitialOrders(ai_goal* goals, int ship, int wing) {
 			}
 
 			model2 = Ship_info[Ships[inst].ship_info_index].model_num;
-			auto model2Docks = _viewport->editor->get_docking_list(model2);
+			auto model2Docks = Editor::get_docking_list(model2);
 			for (int j = 0; j < (int)model2Docks.size(); ++j) {
 				if (!stricmp(goals[i].dockee.name, model2Docks[j].c_str())) {
 					dock2 = j;
