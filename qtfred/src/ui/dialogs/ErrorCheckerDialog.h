@@ -39,7 +39,7 @@ public:
 	// a data migration). Caller can clear by passing false.
 	void setForcePotentialsDisplay(bool force);
 
-public slots:
+public slots: // NOLINT(readability-redundant-access-specifiers)
 	bool runCheck();
 	void clearErrors();
 
@@ -52,7 +52,7 @@ private slots:
 protected:
 	void changeEvent(QEvent* event) override;
 
-private:
+private: // NOLINT(readability-redundant-access-specifiers)
 	void initializeUi();
 	void updateUi();
 

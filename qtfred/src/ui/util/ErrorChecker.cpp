@@ -257,7 +257,7 @@ int ErrorChecker::checkObjectList() {
 	obj_count = t = 0;
 	object* ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
-		names[obj_count] = NULL;
+		names[obj_count] = nullptr;
 		err_flags[obj_count] = 0;
 		int i = ptr->instance;
 		if ((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) {
@@ -285,8 +285,8 @@ int ErrorChecker::checkObjectList() {
 				}
 
 				int count = 0;
-				for (int n = 0; n < MAX_SHIP_PRIMARY_BANKS; n++) {
-					if (Ships[i].weapons.primary_bank_weapons[n] >= 0) {
+				for (int primary_bank_weapon : Ships[i].weapons.primary_bank_weapons) {
+					if (primary_bank_weapon >= 0) {
 						count++;
 					}
 				}
@@ -354,7 +354,7 @@ int ErrorChecker::checkObjectList() {
 			int waypoint_num;
 			waypoint_list* wp_list = find_waypoint_list_with_instance(i, &waypoint_num);
 
-			if (wp_list == NULL) {
+			if (wp_list == nullptr) {
 				return internal_error("Object references an illegal waypoint path number");
 			}
 
@@ -492,7 +492,7 @@ int ErrorChecker::checkShips() {
 				return -1;
 
 			SCP_set<int> used_dockpoints;
-			for (dock_instance* dock_ptr = Objects[Ships[i].objnum].dock_list; dock_ptr != NULL;
+			for (dock_instance* dock_ptr = Objects[Ships[i].objnum].dock_list; dock_ptr != nullptr;
 				 dock_ptr = dock_ptr->next) {
 				int obj = OBJ_INDEX(dock_ptr->docked_objp);
 
@@ -553,16 +553,16 @@ int ErrorChecker::checkShips() {
 			if (is_in_loadout_screen) {
 				int illegal = 0;
 				z = Ships[i].ship_info_index;
-				for (int n = 0; n < MAX_SHIP_PRIMARY_BANKS; n++) {
-					if (Ships[i].weapons.primary_bank_weapons[n] >= 0
-						&& !Ship_info[z].allowed_weapons[Ships[i].weapons.primary_bank_weapons[n]]) {
+				for (int primary_bank_weapon : Ships[i].weapons.primary_bank_weapons) {
+					if (primary_bank_weapon >= 0
+						&& !Ship_info[z].allowed_weapons[primary_bank_weapon]) {
 						illegal++;
 					}
 				}
 
-				for (int n = 0; n < MAX_SHIP_SECONDARY_BANKS; n++) {
-					if (Ships[i].weapons.secondary_bank_weapons[n] >= 0
-						&& !Ship_info[z].allowed_weapons[Ships[i].weapons.secondary_bank_weapons[n]]) {
+				for (int secondary_bank_weapon : Ships[i].weapons.secondary_bank_weapons) {
+					if (secondary_bank_weapon >= 0
+						&& !Ship_info[z].allowed_weapons[secondary_bank_weapon]) {
 						illegal++;
 					}
 				}
@@ -824,16 +824,16 @@ int ErrorChecker::checkReinforcements() {
 
 		int z = 0;
 		int ship_wingnum = -1;
-		for (int sp = 0; sp < MAX_SHIPS; sp++) {
-			if ((Ships[sp].objnum >= 0) && !stricmp(Ships[sp].ship_name, Reinforcements[i].name)) {
+		for (const auto& ship : Ships) {
+			if ((ship.objnum >= 0) && !stricmp(ship.ship_name, Reinforcements[i].name)) {
 				z = 1;
-				ship_wingnum = Ships[sp].wingnum;
+				ship_wingnum = ship.wingnum;
 				break;
 			}
 		}
 
-		for (int w = 0; w < MAX_WINGS; w++) {
-			if (Wings[w].wave_count && !stricmp(Wings[w].name, Reinforcements[i].name)) {
+		for (const auto& wing : Wings) {
+			if (wing.wave_count && !stricmp(wing.name, Reinforcements[i].name)) {
 				z = 1;
 				break;
 			}
@@ -853,7 +853,7 @@ int ErrorChecker::checkReinforcements() {
 }
 
 int ErrorChecker::checkPlayerWings() {
-	Assert((Player_start_shipnum >= 0) && (Player_start_shipnum < MAX_SHIPS) && (Ships[Player_start_shipnum].objnum >= 0));
+	Assert((Player_start_shipnum >= 0) && (Player_start_shipnum < MAX_SHIPS) && (Ships[Player_start_shipnum].objnum >= 0)); // NOLINT(readability-simplify-boolean-expr)
 
 	const int multi = (The_mission.game_type & MISSION_TYPE_MULTI) ? 1 : 0;
 
@@ -883,8 +883,8 @@ int ErrorChecker::checkPlayerWings() {
 	if (multi && !(The_mission.game_type & MISSION_TYPE_MULTI_TEAMS)) {
 		bool found[MAX_STARTING_WINGS] = {};
 		for (int i = 0; i < MAX_STARTING_WINGS; i++) {
-			for (int j = 0; j < MAX_WINGS; j++) {
-				if (Wings[j].wave_count && !strcmp(Wings[j].name, Squadron_wing_names[i])) {
+			for (const auto& wing : Wings) {
+				if (wing.wave_count && !strcmp(wing.name, Squadron_wing_names[i])) {
 					found[i] = true;
 					break;
 				}
@@ -899,9 +899,9 @@ int ErrorChecker::checkPlayerWings() {
 	}
 
 	if (multi && The_mission.game_type & MISSION_TYPE_MULTI_TEAMS) {
-		for (int i = 0; i < MAX_TVT_WINGS; i++) {
-			if (ship_tvt_wing_lookup(TVT_wing_names[i]) == -1) {
-				error("%s wing is required for multiplayer team vs. team missions", TVT_wing_names[i]);
+		for (const char* tvt_wing_name : TVT_wing_names) {
+			if (ship_tvt_wing_lookup(tvt_wing_name) == -1) {
+				error("%s wing is required for multiplayer team vs. team missions", tvt_wing_name);
 			}
 		}
 	}
@@ -972,8 +972,8 @@ int ErrorChecker::checkPlayerWings() {
 
 	int starting_wing_count[MAX_STARTING_WINGS];
 	int tvt_wing_count[MAX_TVT_WINGS];
-	SCP_string starting_wing_list = "";
-	SCP_string tvt_wing_list = "";
+	SCP_string starting_wing_list;
+	SCP_string tvt_wing_list;
 
 	for (int i = 0; i < MAX_STARTING_WINGS; i++) {
 		starting_wing_count[i] = 0;
@@ -1119,34 +1119,34 @@ int ErrorChecker::checkDebriefings() {
 
 int ErrorChecker::checkWingOrders() {
 
-	for (int i = 0; i < MAX_WINGS; i++) {
-		if (!Wings[i].wave_count) {
+	for (const auto& wing : Wings) {
+		if (!wing.wave_count) {
 			continue;
 		}
 
-		int starting_wing = (ship_starting_wing_lookup(Wings[i].name) != -1);
+		int starting_wing = (ship_starting_wing_lookup(wing.name) != -1);
 
-		if (starting_wing && (Wings[i].flags[Ship::Wing_Flags::Reinforcement])) {
+		if (starting_wing && (wing.flags[Ship::Wing_Flags::Reinforcement])) {
 			error("Starting Wing %s marked as reinforcement.  This wing\nshould either be renamed, or unmarked as reinforcement.",
-				  Wings[i].name);
+				  wing.name);
 		}
 
 		std::set<size_t> default_orders;
 		int default_orders_idx = -1;
-		for (int j = 0; j < Wings[i].wave_count; j++) {
-			if (Objects[Ships[Wings[i].ship_index[j]].objnum].type == OBJ_START) {
+		for (int j = 0; j < wing.wave_count; j++) {
+			if (Objects[Ships[wing.ship_index[j]].objnum].type == OBJ_START) {
 				continue;
 			}
 
-			const std::set<size_t>& orders = Ships[Wings[i].ship_index[j]].orders_accepted;
+			const std::set<size_t>& orders = Ships[wing.ship_index[j]].orders_accepted;
 
 			if (default_orders_idx < 0) {
 				default_orders_idx = j;
 				default_orders = orders;
 			} else if (default_orders != orders) {
 				potential("%s and %s will accept different orders. All ships in a wing must accept the same Player Orders.",
-						  Ships[Wings[i].ship_index[j]].ship_name,
-						  Ships[Wings[i].ship_index[default_orders_idx]].ship_name);
+						  Ships[wing.ship_index[j]].ship_name,
+						  Ships[wing.ship_index[default_orders_idx]].ship_name);
 			}
 		}
 	}
@@ -1280,19 +1280,22 @@ int ErrorChecker::checkInitialOrders(ai_goal* goals, int ship, int wing) {
 	if (ship >= 0) {
 		source = Ships[ship].ship_name;
 		team = Ships[ship].team;
-		for (int i = 0; i < MAX_AI_GOALS; i++)
+		for (int i = 0; i < MAX_AI_GOALS; i++) {
 			if (!ai_query_goal_valid(ship, goals[i].ai_mode))
 				potential("Order \"%s\" isn't allowed for ship \"%s\"", get_order_name(goals[i].ai_mode), source);
+		}
 	} else {
 		Assert(wing >= 0);
 		Assert(Wings[wing].wave_count > 0);
 		source = Wings[wing].name;
 		team = Ships[Objects[_viewport->editor->wing_objects[wing][0]].instance].team;
-		for (int j = 0; j < Wings[wing].wave_count; j++)
-			for (int i = 0; i < MAX_AI_GOALS; i++)
+		for (int j = 0; j < Wings[wing].wave_count; j++) {
+			for (int i = 0; i < MAX_AI_GOALS; i++) {
 				if (!ai_query_goal_valid(Wings[wing].ship_index[j], goals[i].ai_mode))
 					potential("Order \"%s\" isn't allowed for ship \"%s\"", get_order_name(goals[i].ai_mode),
 							  Ships[Wings[wing].ship_index[j]].ship_name);
+			}
+		}
 	}
 
 	int flag, found;
@@ -1364,7 +1367,7 @@ int ErrorChecker::checkInitialOrders(ai_goal* goals, int ship, int wing) {
 
 		int inst = team2 = -1;
 		if (flag == 1) {
-			if (find_matching_waypoint_list(goals[i].target_name) == NULL)
+			if (find_matching_waypoint_list(goals[i].target_name) == nullptr)
 				return internal_error("Initial orders error for %s \"%s\"\n\nInvalid target waypoint path name", entity, source);
 
 		} else if (flag == 2) {
@@ -1444,7 +1447,7 @@ int ErrorChecker::checkInitialOrders(ai_goal* goals, int ship, int wing) {
 
 		switch (goals[i].ai_mode) {
 		case AI_GOAL_DESTROY_SUBSYSTEM:
-			Assert(flag == 2 && inst >= 0);
+			Assert(flag == 2 && inst >= 0); // NOLINT(readability-simplify-boolean-expr)
 			if (ship_find_subsys(&Ships[inst], goals[i].docker.name) < 0) {
 				potential("Initial orders error for ship \"%s\"\n\nUnknown subsystem type", source);
 				continue;
@@ -1454,7 +1457,7 @@ int ErrorChecker::checkInitialOrders(ai_goal* goals, int ship, int wing) {
 		case AI_GOAL_DOCK: {
 			int dock1 = -1, dock2 = -1, model1, model2;
 
-			Assert(flag == 2 && inst >= 0);
+			Assert(flag == 2 && inst >= 0); // NOLINT(readability-simplify-boolean-expr)
 			if (!ship_docking_valid(ship, inst)) {
 				error("Initial orders error for ship \"%s\"\n\nDocking illegal between given ship types", source);
 				continue;

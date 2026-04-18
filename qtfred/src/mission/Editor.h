@@ -264,7 +264,7 @@ class Editor : public QObject {
 	void select_next_object();
 	void select_previous_object();
 
-	SCP_vector<SCP_string> get_docking_list(int model_index);
+	static SCP_vector<SCP_string> get_docking_list(int model_index);
 
 	bool compareShieldSysData(const SCP_vector<GlobalShieldStatus>& teams, const SCP_vector<GlobalShieldStatus>& types) const;
 	void exportShieldSysData(SCP_vector<GlobalShieldStatus>& teams, SCP_vector<GlobalShieldStatus>& types) const;

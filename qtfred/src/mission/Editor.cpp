@@ -2141,7 +2141,7 @@ SCP_vector<SCP_string> Editor::get_docking_list(int model_index) {
 	out.reserve(pm->n_docks);
 
 	for (i=0; i<pm->n_docks; i++)
-		out.push_back(pm->docking_bays[i].name);
+		out.emplace_back(pm->docking_bays[i].name);
 
 	return out;
 }
