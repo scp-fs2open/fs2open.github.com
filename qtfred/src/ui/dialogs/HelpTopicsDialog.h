@@ -48,7 +48,7 @@ public:
 	// and discover mod tutorial pages... all before the user opens Help Topics.
 	static void prewarm();
 
-public slots:
+public slots: // NOLINT(readability-redundant-access-specifiers)
 	void navigateTo(const QString& keywordId);
 
 private:
