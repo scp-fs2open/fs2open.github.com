@@ -2077,9 +2077,9 @@ int reference_handler(const char *name, sexp_ref_type type, int obj)
 
 			case sexp_src::MISSION_GOAL:
 				if (!Mission_goals[n].name.empty())
-					sprintf(text, "mission goal \"%s\"", Mission_goals[n].name.c_str());
+					sprintf(text, "mission objective \"%s\"", Mission_goals[n].name.c_str());
 				else
-					sprintf(text, "mission goal #%d", n);
+					sprintf(text, "mission objective #%d", n);
 
 				break;
 

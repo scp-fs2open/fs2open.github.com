@@ -3008,7 +3008,7 @@ int CFREDView::global_error_check()
 	}
 
 	for (i=0; i<(int)Mission_goals.size(); i++){
-		if (fred_check_sexp(Mission_goals[i].formula, OPR_BOOL, "mission goal \"%s\"", Mission_goals[i].name.c_str())){
+		if (fred_check_sexp(Mission_goals[i].formula, OPR_BOOL, "mission objective \"%s\"", Mission_goals[i].name.c_str())){
 			return -1;
 		}
 	}

@@ -789,7 +789,9 @@ ade_indexer::ade_indexer(lua_CFunction func,
 	ade_overload_list overloads,
 	const char* desc,
 	const char* ret_type,
-	const char* ret_desc)
+	const char* ret_desc,
+	const gameversion::version& deprecation_version,
+	const char* deprecation_message)
 {
 	// Add function for meta
 	ade_table_entry ate;
@@ -802,6 +804,8 @@ ade_indexer::ade_indexer(lua_CFunction func,
 	ate.Description       = desc;
 	ate.ReturnType        = ret_type;
 	ate.ReturnDescription = ret_desc;
+	ate.DeprecationVersion = deprecation_version;
+	ate.DeprecationMessage = deprecation_message;
 
 	LibIdx = ade_manager::getInstance()->getEntry(parent.GetIdx()).AddSubentry(ate);
 }

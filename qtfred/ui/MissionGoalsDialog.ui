@@ -92,17 +92,17 @@
                </property>
                <item>
                 <property name="text">
-                 <string>Primary Goal</string>
+                 <string>Primary Objective</string>
                 </property>
                </item>
                <item>
                 <property name="text">
-                 <string>Secondary Goal</string>
+                 <string>Secondary Objective</string>
                 </property>
                </item>
                <item>
                 <property name="text">
-                 <string>Bonus Goal</string>
+                 <string>Bonus Objective</string>
                 </property>
                </item>
               </widget>
@@ -183,7 +183,7 @@
              <item row="2" column="0" colspan="2">
               <widget class="QLineEdit" name="goalDescription">
                <property name="placeholderText">
-                <string>Mission goal text</string>
+                <string>Mission objective text</string>
                </property>
               </widget>
              </item>
@@ -203,7 +203,7 @@
           <item row="2" column="0">
            <widget class="QPushButton" name="newObjectiveBtn">
             <property name="text">
-             <string>New Obj.</string>
+             <string>New Objective</string>
             </property>
            </widget>
           </item>
@@ -211,17 +211,17 @@
            <widget class="QComboBox" name="displayTypeCombo">
             <item>
              <property name="text">
-              <string>Primary Goals</string>
+              <string>Primary Objectives</string>
              </property>
             </item>
             <item>
              <property name="text">
-              <string>Secondary Goals</string>
+              <string>Secondary Objectives</string>
              </property>
             </item>
             <item>
              <property name="text">
-              <string>Bonus Goals</string>
+              <string>Bonus Objectives</string>
              </property>
             </item>
            </widget>

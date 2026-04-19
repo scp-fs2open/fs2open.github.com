@@ -75,6 +75,7 @@ enum class ParseLookupType
 
 #define SEXP_SAVE_MODE				1
 #define SEXP_ERROR_CHECK_MODE		2
+#define SEXP_SAVE_MODE_RETAIL		3	// Save mode that substitutes retail-compatible operator names for their FSO replacements
 
 // Goober5000 - this seems to be a pretty universal function
 extern bool end_string_at_first_hash_symbol(char *src, bool ignore_doubled_hash = false);

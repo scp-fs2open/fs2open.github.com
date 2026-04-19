@@ -160,8 +160,8 @@ mission_goal& MissionGoalsDialogModel::createNewGoal() {
 	m_sig.push_back(-1);
 
 	m_goals.back().type = m_display_goal_types;			// this also marks the goal as valid since bit not set
-	m_goals.back().name = "Goal name";
-	m_goals.back().message = "Mission goal text";
+	m_goals.back().name = "Objective name";
+	m_goals.back().message = "Mission objective text";
 
 	set_modified();
 	return m_goals.back();

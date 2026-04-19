@@ -414,7 +414,7 @@ flag_def_list_new<Mission::Mission_Flags> Parse_mission_flags[] = {
 	{"All Teams at War",                          Mission::Mission_Flags::All_attack,                 true, false},
 	{"Use Autopilot Cinematics",                  Mission::Mission_Flags::Use_ap_cinematics,          true, false},
 	{"Deactivate Hardcoded Autopilot",            Mission::Mission_Flags::Deactivate_ap,              true, false},
-	{"Toggle Showing Goals In Briefing",          Mission::Mission_Flags::Toggle_showing_goals,       true, false},
+	{"Toggle Showing Objectives In Briefing",     Mission::Mission_Flags::Toggle_showing_goals,       true, false},
 	{"Mission End to Mainhall",                   Mission::Mission_Flags::End_to_mainhall,            true, false},
 	{"Override #Command with Command Info",       Mission::Mission_Flags::Override_hashcommand,       true, true},
 	{"Toggle Starting in Chase View",             Mission::Mission_Flags::Toggle_start_chase_view,    true, false},
@@ -448,7 +448,7 @@ parse_object_flag_description<Mission::Mission_Flags> Parse_mission_flag_descrip
 	{Mission::Mission_Flags::All_attack,                 "All teams target each other"},
 	{Mission::Mission_Flags::Use_ap_cinematics,          "Use autopilot cinematics"},
 	{Mission::Mission_Flags::Deactivate_ap,              "Deactivate hardcoded autopilot"},
-	{Mission::Mission_Flags::Toggle_showing_goals,       "Show mission goals for training missions, hide otherwise"},
+	{Mission::Mission_Flags::Toggle_showing_goals,       "Show mission objectives for training missions, hide otherwise"},
 	{Mission::Mission_Flags::End_to_mainhall,            "Return to the mainhall after debrief instead of starting the next mission"},
 	{Mission::Mission_Flags::Override_hashcommand,       "Override #Command with the Command info in Mission Specs"},
 	{Mission::Mission_Flags::Toggle_start_chase_view,    "Toggles whether the player starts the mission in chase view"},
@@ -531,7 +531,7 @@ flag_def_list_new<Mission::Parse_Object_Flags> Parse_object_flags[] = {
 
 parse_object_flag_description<Mission::Parse_Object_Flags> Parse_object_flag_descriptions[] = {
     { Mission::Parse_Object_Flags::SF_Cargo_known,					"If set, the ship's cargo can be seen without scanning the ship."},
-    { Mission::Parse_Object_Flags::SF_Ignore_count,					"Ignore this ship when counting ship types for goals."},
+    { Mission::Parse_Object_Flags::SF_Ignore_count,					"Ignore this ship when counting ship types for objectives."},
     { Mission::Parse_Object_Flags::OF_Protected,					"Ship and Turret AI will ignore and not attack ship."},
     { Mission::Parse_Object_Flags::SF_Reinforcement,				"This ship is a reinforcement ship."},
     { Mission::Parse_Object_Flags::OF_No_shields,					"Ship will have no shields (ETS will be rebalanced if shields were off and are enabled)."},
@@ -614,7 +614,7 @@ flag_def_list_new<Ship::Wing_Flags> Parse_wing_flags[] = {
 };
 
 parse_object_flag_description<Ship::Wing_Flags> Parse_wing_flag_descriptions[] = {
-	{ Ship::Wing_Flags::Ignore_count,                    "Ignore this wing when counting ship types for goals." },
+	{ Ship::Wing_Flags::Ignore_count,                    "Ignore this wing when counting ship types for objectives." },
 	{ Ship::Wing_Flags::Reinforcement,                   "This wing is a reinforcement wing." },
 	{ Ship::Wing_Flags::No_arrival_music,                "Don't play arrival music when wing arrives." },
 	{ Ship::Wing_Flags::No_arrival_message,              "Don't play arrival message when wing arrives." },

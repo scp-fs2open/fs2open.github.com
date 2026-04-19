@@ -394,8 +394,8 @@ void CMissionGoalsDlg::OnButtonNewGoal()
 	m_sig.push_back(-1);
 
 	m_goals.back().type = m_display_goal_types;			// this also marks the goal as valid since bit not set
-	m_goals.back().name = "Goal name";
-	m_goals.back().message = "Mission goal text";
+	m_goals.back().name = "Objective name";
+	m_goals.back().message = "Mission objective text";
 	h = m_goals_tree.insert(m_goals.back().name.c_str());
 
 	m_goals_tree.item_index = -1;

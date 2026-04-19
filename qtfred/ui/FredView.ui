@@ -1406,7 +1406,7 @@
   </action>
   <action name="actionMission_Goals">
    <property name="text">
-    <string>Mission Goals</string>
+    <string>Mission Objectives</string>
    </property>
    <property name="shortcut">
     <string>Shift+G</string>

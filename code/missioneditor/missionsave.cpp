@@ -1202,7 +1202,7 @@ int Fred_mission_save::save_briefing()
 
 			required_string_fred("$Formula:");
 			parse_comments();
-			convert_sexp_to_string(sexp_out, bs->formula, SEXP_SAVE_MODE);
+			convert_sexp_to_string(sexp_out, bs->formula, sexp_save_mode());
 			fout(" %s", sexp_out.c_str());
 
 			for (j = 0; j < bs->num_icons; j++) {
@@ -1820,7 +1820,7 @@ int Fred_mission_save::save_cutscenes()
 
 					required_string_fred("+formula:");
 					parse_comments();
-					convert_sexp_to_string(sexp_out, The_mission.cutscenes[i].formula, SEXP_SAVE_MODE);
+					convert_sexp_to_string(sexp_out, The_mission.cutscenes[i].formula, sexp_save_mode());
 					fout(" %s\n", sexp_out.c_str());
 				}
 			}
@@ -1862,7 +1862,7 @@ int Fred_mission_save::save_debriefing()
 		for (i = 0; i < Debriefing->num_stages; i++) {
 			required_string_fred("$Formula:");
 			parse_comments(2);
-			convert_sexp_to_string(sexp_out, Debriefing->stages[i].formula, SEXP_SAVE_MODE);
+			convert_sexp_to_string(sexp_out, Debriefing->stages[i].formula, sexp_save_mode());
 			fout(" %s", sexp_out.c_str());
 
 			// XSTR
@@ -1912,7 +1912,7 @@ int Fred_mission_save::save_events()
 		required_string_either_fred("$Formula:", "#Goals");
 		required_string_fred("$Formula:");
 		parse_comments(i ? 2 : 1);
-		convert_sexp_to_string(sexp_out, Mission_events[i].formula, SEXP_SAVE_MODE);
+		convert_sexp_to_string(sexp_out, Mission_events[i].formula, sexp_save_mode());
 		fout(" %s", sexp_out.c_str());
 
 		if (!Mission_events[i].name.empty()) {
@@ -2188,7 +2188,7 @@ int Fred_mission_save::save_fiction()
 				// save sexp formula if we have one
 				if (stage.formula >= 0 && stage.formula != Locked_sexp_true) {
 					SCP_string sexp_out;
-					convert_sexp_to_string(sexp_out, stage.formula, SEXP_SAVE_MODE);
+					convert_sexp_to_string(sexp_out, stage.formula, sexp_save_mode());
 
 					if (optional_string_fred("$Formula:"))
 						parse_comments();
@@ -2248,7 +2248,7 @@ int Fred_mission_save::save_goals()
 
 		required_string_fred("$Formula:");
 		parse_comments();
-		convert_sexp_to_string(sexp_out, Mission_goals[i].formula, SEXP_SAVE_MODE);
+		convert_sexp_to_string(sexp_out, Mission_goals[i].formula, sexp_save_mode());
 		fout(" %s", sexp_out.c_str());
 
 		if (Mission_goals[i].type & INVALID_GOAL) {
@@ -3645,7 +3645,7 @@ int Fred_mission_save::save_objects()
 
 		required_string_fred("$Arrival Cue:");
 		parse_comments();
-		convert_sexp_to_string(sexp_out, shipp->arrival_cue, SEXP_SAVE_MODE);
+		convert_sexp_to_string(sexp_out, shipp->arrival_cue, sexp_save_mode());
 		fout(" %s", sexp_out.c_str());
 
 		if (shipp->wingnum >= 0) {
@@ -3694,7 +3694,7 @@ int Fred_mission_save::save_objects()
 
 		required_string_fred("$Departure Cue:");
 		parse_comments();
-		convert_sexp_to_string(sexp_out, shipp->departure_cue, SEXP_SAVE_MODE);
+		convert_sexp_to_string(sexp_out, shipp->departure_cue, sexp_save_mode());
 		fout(" %s", sexp_out.c_str());
 
 		save_warp_params(WarpDirection::WARP_IN, shipp);
@@ -5067,7 +5067,7 @@ int Fred_mission_save::save_wings()
 
 		required_string_fred("$Arrival Cue:");
 		parse_comments();
-		convert_sexp_to_string(sexp_out, w.arrival_cue, SEXP_SAVE_MODE);
+		convert_sexp_to_string(sexp_out, w.arrival_cue, sexp_save_mode());
 		fout(" %s", sexp_out.c_str());
 
 		required_string_fred("$Departure Location:");
@@ -5112,7 +5112,7 @@ int Fred_mission_save::save_wings()
 
 		required_string_fred("$Departure Cue:");
 		parse_comments();
-		convert_sexp_to_string(sexp_out, w.departure_cue, SEXP_SAVE_MODE);
+		convert_sexp_to_string(sexp_out, w.departure_cue, sexp_save_mode());
 		fout(" %s", sexp_out.c_str());
 
 		required_string_fred("$Ships:");

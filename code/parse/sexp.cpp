@@ -194,9 +194,9 @@ SCP_vector<sexp_oper> Operators = {
 	{ "is-true-for-duration",			OP_IS_TRUE_FOR_DURATION,				2,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},	// Goober5000
 
 	//Event/Goals Category
-	{ "is-goal-true-delay",				OP_GOAL_TRUE_DELAY,						2,	2,			SEXP_BOOLEAN_OPERATOR,	},
-	{ "is-goal-false-delay",			OP_GOAL_FALSE_DELAY,					2,	2,			SEXP_BOOLEAN_OPERATOR,	},
-	{ "is-goal-incomplete",				OP_GOAL_INCOMPLETE,						1,	1,			SEXP_BOOLEAN_OPERATOR,	},
+	{ "is-objective-true-delay",		OP_GOAL_TRUE_DELAY,				2,	2,			SEXP_BOOLEAN_OPERATOR,	},
+	{ "is-objective-false-delay",		OP_GOAL_FALSE_DELAY,				2,	2,			SEXP_BOOLEAN_OPERATOR,	},
+	{ "is-objective-incomplete",		OP_GOAL_INCOMPLETE,				1,	1,			SEXP_BOOLEAN_OPERATOR,	},
 	{ "is-event-true",					OP_EVENT_TRUE,							1,	1,			SEXP_BOOLEAN_OPERATOR,	},
 	{ "is-event-true-delay",			OP_EVENT_TRUE_DELAY,					2,	3,			SEXP_BOOLEAN_OPERATOR,	},
 	{ "is-event-true-msecs-delay",		OP_EVENT_TRUE_MSECS_DELAY,				2,	3,			SEXP_BOOLEAN_OPERATOR,	},
@@ -204,9 +204,9 @@ SCP_vector<sexp_oper> Operators = {
 	{ "is-event-false-delay",			OP_EVENT_FALSE_DELAY,					2,	3,			SEXP_BOOLEAN_OPERATOR,	},
 	{ "is-event-false-msecs-delay",		OP_EVENT_FALSE_MSECS_DELAY,				2,	3,			SEXP_BOOLEAN_OPERATOR,	},
 	{ "is-event-incomplete",			OP_EVENT_INCOMPLETE,					1,	1,			SEXP_BOOLEAN_OPERATOR,	},
-	{ "is-previous-goal-true",			OP_PREVIOUS_GOAL_TRUE,					2,	3,			SEXP_BOOLEAN_OPERATOR,	},
-	{ "is-previous-goal-false",			OP_PREVIOUS_GOAL_FALSE,					2,	3,			SEXP_BOOLEAN_OPERATOR,	},
-	{ "is-previous-goal-incomplete",	OP_PREVIOUS_GOAL_INCOMPLETE,			2,	3,			SEXP_BOOLEAN_OPERATOR,	},
+	{ "is-previous-objective-true",		OP_PREVIOUS_GOAL_TRUE,				2,	3,			SEXP_BOOLEAN_OPERATOR,	},
+	{ "is-previous-objective-false",	OP_PREVIOUS_GOAL_FALSE,			2,	3,			SEXP_BOOLEAN_OPERATOR,	},
+	{ "is-previous-objective-incomplete",	OP_PREVIOUS_GOAL_INCOMPLETE,		2,	3,			SEXP_BOOLEAN_OPERATOR,	},
 	{ "is-previous-event-true",			OP_PREVIOUS_EVENT_TRUE,					2,	3,			SEXP_BOOLEAN_OPERATOR,	},
 	{ "is-previous-event-false",		OP_PREVIOUS_EVENT_FALSE,				2,	3,			SEXP_BOOLEAN_OPERATOR,	},
 	{ "is-previous-event-incomplete",	OP_PREVIOUS_EVENT_INCOMPLETE,			2,	3,			SEXP_BOOLEAN_OPERATOR,	},
@@ -4768,6 +4768,18 @@ int get_sexp()
 					strcpy_s(token, "add-to-collision-group-new");
 				else if (!stricmp(token, "remove-from-collision-group2"))
 					strcpy_s(token, "remove-from-collision-group-new");
+				else if (!stricmp(token, "is-goal-true-delay"))
+					strcpy_s(token, "is-objective-true-delay");
+				else if (!stricmp(token, "is-goal-false-delay"))
+					strcpy_s(token, "is-objective-false-delay");
+				else if (!stricmp(token, "is-goal-incomplete"))
+					strcpy_s(token, "is-objective-incomplete");
+				else if (!stricmp(token, "is-previous-goal-true"))
+					strcpy_s(token, "is-previous-objective-true");
+				else if (!stricmp(token, "is-previous-goal-false"))
+					strcpy_s(token, "is-previous-objective-false");
+				else if (!stricmp(token, "is-previous-goal-incomplete"))
+					strcpy_s(token, "is-previous-objective-incomplete");
 
 				op = get_operator_index(token);
 				if (op >= 0) {
@@ -5214,6 +5226,26 @@ int num_block_variables()
 	return Num_special_expl_blocks * BLOCK_EXP_SIZE;
 }
 
+// Reverse aliases used when saving in retail-compatible format: map canonical FSO operator names
+// back to the older names that the retail FS2 engine can recognize.
+static const std::pair<const char*, const char*> Sexp_retail_operator_aliases[] = {
+	{ "is-objective-true-delay",         "is-goal-true-delay" },
+	{ "is-objective-false-delay",        "is-goal-false-delay" },
+	{ "is-objective-incomplete",         "is-goal-incomplete" },
+	{ "is-previous-objective-true",      "is-previous-goal-true" },
+	{ "is-previous-objective-false",     "is-previous-goal-false" },
+	{ "is-previous-objective-incomplete","is-previous-goal-incomplete" },
+};
+
+static const char* lookup_retail_operator_alias(const char* text)
+{
+	for (const auto& pair : Sexp_retail_operator_aliases) {
+		if (!stricmp(text, pair.first))
+			return pair.second;
+	}
+	return nullptr;
+}
+
 /**
  * Stuff this particular SEXP node (just the node, not the tree) into a string representation
  */
@@ -5298,6 +5330,13 @@ void stuff_sexp_text_string(SCP_string &dest, int node, int mode)
 					mprintf(("SEXP: '%s' is not a number; using '0' instead\n", ctext_string));
 					ctext_string = "0";
 				}
+			}
+			// when saving in retail-compatible format, substitute the retail name for any
+			// canonical FSO operator name that has a registered retail alias
+			if (mode == SEXP_SAVE_MODE_RETAIL && Sexp_nodes[node].subtype == SEXP_ATOM_OPERATOR) {
+				const char* retail_name = lookup_retail_operator_alias(ctext_string);
+				if (retail_name != nullptr)
+					ctext_string = retail_name;
 			}
 			sprintf(dest, "%s ", ctext_string);
 		}
@@ -38425,30 +38464,30 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"false becomes true).\r\n\r\n"
 		"Returns a boolean value.  Takes 1 boolean argument." },
 
-	{ OP_PREVIOUS_GOAL_TRUE, "Previous Mission Goal True (Boolean operator)\r\n"
-		"\tReturns true if the specified goal in the specified mission is true "
+	{ OP_PREVIOUS_GOAL_TRUE, "Previous Mission Objective True (Boolean operator)\r\n"
+		"\tReturns true if the specified objective in the specified mission is true "
 		"(or succeeded).  It returns false otherwise.\r\n\r\n"
 		"Returns a boolean value.  Takes 2 required arguments and 1 optional argument...\r\n"
 		"\t1:\tName of the mission.\r\n"
-		"\t2:\tName of the goal in the mission.\r\n"
+		"\t2:\tName of the objective in the mission.\r\n"
 		"\t3:\t(Optional) True/False which signifies what this sexpression should return when "
 		"this mission is played as a single mission, or is played as a campaign mission and skipped." },
 
-	{ OP_PREVIOUS_GOAL_FALSE, "Previous Mission Goal False (Boolean operator)\r\n"
-		"\tReturns true if the specified goal in the specified mission "
+	{ OP_PREVIOUS_GOAL_FALSE, "Previous Mission Objective False (Boolean operator)\r\n"
+		"\tReturns true if the specified objective in the specified mission "
 		"is false (or failed).  It returns false otherwise.\r\n\r\n"
 		"Returns a boolean value.  Takes 2 required arguments and 1 optional argument...\r\n"
 		"\t1:\tName of the mission.\r\n"
-		"\t2:\tName of the goal in the mission.\r\n"
+		"\t2:\tName of the objective in the mission.\r\n"
 		"\t3:\t(Optional) True/False which signifies what this sexpression should return when "
 		"this mission is played as a single mission, or is played as a campaign mission and skipped." },
 
-	{ OP_PREVIOUS_GOAL_INCOMPLETE, "Previous Mission Goal Incomplete (Boolean operator)\r\n"
-		"\tReturns true if the specified goal in the specified mission "
+	{ OP_PREVIOUS_GOAL_INCOMPLETE, "Previous Mission Objective Incomplete (Boolean operator)\r\n"
+		"\tReturns true if the specified objective in the specified mission "
 		"is incomplete (not true or false).  It returns false otherwise.\r\n\r\n"
 		"Returns a boolean value.  Takes 2 required arguments and 1 optional argument...\r\n"
 		"\t1:\tName of the mission.\r\n"
-		"\t2:\tName of the goal in the mission.\r\n"
+		"\t2:\tName of the objective in the mission.\r\n"
 		"\t3:\t(Optional) True/False which signifies what this sexpression should return when "
 		"this mission is played as a single mission, or is played as a campaign mission and skipped." },
 
@@ -38479,26 +38518,26 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t3:\t(Optional) True/False which signifies what this sexpression should return when "
 		"this mission is played as a single mission, or is played as a campaign mission and skipped." },
 
-	{ OP_GOAL_TRUE_DELAY, "Mission Goal True (Boolean operator)\r\n"
-		"\tReturns true N seconds after the specified goal in the this mission is true (or succeeded).  It returns false otherwise.\r\n\r\n"
-		"\tThis operator works by checking the mission log.  Since goal status is evaluated after event status, a delay of 0 will cause an event to become true on the frame after the goal becomes true.\r\n\r\n"
+	{ OP_GOAL_TRUE_DELAY, "Mission Objective True (Boolean operator)\r\n"
+		"\tReturns true N seconds after the specified objective in the this mission is true (or succeeded).  It returns false otherwise.\r\n\r\n"
+		"\tThis operator works by checking the mission log.  Since objective status is evaluated after event status, a delay of 0 will cause an event to become true on the frame after the objective becomes true.\r\n\r\n"
 		"Returns a boolean value.  Takes 2 required arguments and 1 optional argument...\r\n"
-		"\t1:\tName of the event in the mission.\r\n"
+		"\t1:\tName of the mission objective.\r\n"
 		"\t2:\tNumber of seconds to delay before returning true."},
 
-	{ OP_GOAL_FALSE_DELAY, "Mission Goal False (Boolean operator)\r\n"
-		"\tReturns true N seconds after the specified goal in the this mission is false (or failed).  It returns false otherwise.\r\n\r\n"
-		"\tThis operator works by checking the mission log.  Since goal status is evaluated after event status, a delay of 0 will cause an event to become true on the frame after the goal becomes false.\r\n\r\n"
+	{ OP_GOAL_FALSE_DELAY, "Mission Objective False (Boolean operator)\r\n"
+		"\tReturns true N seconds after the specified objective in the this mission is false (or failed).  It returns false otherwise.\r\n\r\n"
+		"\tThis operator works by checking the mission log.  Since objective status is evaluated after event status, a delay of 0 will cause an event to become true on the frame after the objective becomes false.\r\n\r\n"
 		"Returns a boolean value.  Takes 2 required arguments and 1 optional argument...\r\n"
-		"\t1:\tName of the event in the mission.\r\n"
+		"\t1:\tName of the mission objective.\r\n"
 		"\t2:\tNumber of seconds to delay before returning true."},
 
-	{ OP_GOAL_INCOMPLETE, "Mission Goal Incomplete (Boolean operator)\r\n"
-		"\tReturns true if the specified goal in the this mission is incomplete.  This "
+	{ OP_GOAL_INCOMPLETE, "Mission Objective Incomplete (Boolean operator)\r\n"
+		"\tReturns true if the specified objective in the this mission is incomplete.  This "
 		"sexpression will only be useful in conjunction with another sexpression like "
 		"has-time-elapsed.  Used alone, it will return true upon mission startup.\r\n"
 		"Returns a boolean value.  Takes 1 argument...\r\n"
-		"\t1:\tName of the event in the mission."},
+		"\t1:\tName of the mission objective."},
 
 	{ OP_EVENT_TRUE_DELAY, "Mission Event True (Boolean operator)\r\n"
 		"\tReturns true N seconds after the specified event in the this mission is true (or succeeded).  It returns false otherwise.\r\n\r\n"

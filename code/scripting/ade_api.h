@@ -436,7 +436,9 @@ class ade_indexer : public ade_lib_handle {
 		ade_overload_list overloads,
 		const char* desc,
 		const char* ret_type,
-		const char* ret_desc);
+		const char* ret_desc,
+		const gameversion::version& deprecation_version,
+		const char* deprecation_message);
 };
 
 /**
@@ -455,7 +457,30 @@ class ade_indexer : public ade_lib_handle {
  */
 #define ADE_INDEXER(parent, args, desc, ret_type, ret_desc)                                                            \
 	static int parent##___indexer_f(lua_State* L);                                                                     \
-	::scripting::ade_indexer parent##___indexer(parent##___indexer_f, parent, args, desc, ret_type, ret_desc);         \
+	::scripting::ade_indexer parent##___indexer(parent##___indexer_f, parent, args, desc, ret_type, ret_desc,          \
+	                                            ::gameversion::version(), nullptr);                                    \
+	static int parent##___indexer_f(lua_State* L)
+
+/**
+ * @brief Declare a deprecated indexer of an object
+ *
+ * Use this with objects to deal with forms such as vec.x, vec['x'], vec[0]. Format string should be "o*%", where * is
+ * indexing value, and % is the value to set to when LUA_SETTTING_VAR is set
+ *
+ * @param parent The library or object containing the indexer
+ * @param args Documentation for the type of the value that may be assigned
+ * @param desc Description of what the variable does
+ * @param ret_type The type of the returned value
+ * @param ret_desc Documentation for the returned value
+ * @param deprecate_version Version starting from which this function is deprecated.
+ * @param deprecated_msg Message for the deprecation notice. May be nullptr.
+ *
+ * @ingroup ade_api
+ */
+#define ADE_INDEXER_DEPRECATED(parent, args, desc, ret_type, ret_desc, deprecate_version, deprecated_msg)              \
+	static int parent##___indexer_f(lua_State* L);                                                                     \
+	::scripting::ade_indexer parent##___indexer(parent##___indexer_f, parent, args, desc, ret_type, ret_desc,          \
+	                                            deprecate_version, deprecated_msg);                                    \
 	static int parent##___indexer_f(lua_State* L)
 
 //*************************Lua return values*************************

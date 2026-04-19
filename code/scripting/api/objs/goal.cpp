@@ -87,7 +87,21 @@ ADE_VIRTVAR(Team, l_Goal, nullptr, "The goal team", "team", "The goal team")
 	return ade_set_args(L, "o", l_Team.Set(Mission_goals[current].team));
 }
 
-ADE_VIRTVAR(isGoalSatisfied, l_Goal, nullptr, "The status of the goal", "number", "0 if failed, 1 if complete, 2 if incomplete")
+ADE_VIRTVAR_DEPRECATED(isGoalSatisfied, l_Goal, nullptr, "The status of the goal", "number", "0 if failed, 1 if complete, 2 if incomplete", gameversion::version(26, 0, 0), "Deprecated in favor of isObjectiveSatisfied")
+{
+	int current;
+	if (!ade_get_args(L, "o", l_Goal.Get(&current))) {
+		return ADE_RETURN_NIL;
+	}
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "i", Mission_goals[current].satisfied);
+}
+
+ADE_VIRTVAR(isObjectiveSatisfied, l_Goal, nullptr, "The status of the objective", "number", "0 if failed, 1 if complete, 2 if incomplete")
 {
 	int current;
 	if (!ade_get_args(L, "o", l_Goal.Get(&current))) {
@@ -115,7 +129,21 @@ ADE_VIRTVAR(Score, l_Goal, nullptr, "The score of the goal", "number", "the scor
 	return ade_set_args(L, "i", Mission_goals[current].score);
 }
 
-ADE_VIRTVAR(isGoalValid, l_Goal, nullptr, "The goal validity", "boolean", "true if valid, false otherwise")
+ADE_VIRTVAR_DEPRECATED(isGoalValid, l_Goal, nullptr, "The goal validity", "boolean", "true if valid, false otherwise", gameversion::version(26, 0, 0), "Deprecated in favor of isObjectiveValid")
+{
+	int current;
+	if (!ade_get_args(L, "o", l_Goal.Get(&current))) {
+		return ADE_RETURN_NIL;
+	}
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "b", !(Mission_goals[current].type & INVALID_GOAL));
+}
+
+ADE_VIRTVAR(isObjectiveValid, l_Goal, nullptr, "The objective validity", "boolean", "true if valid, false otherwise")
 {
 	int current;
 	if (!ade_get_args(L, "o", l_Goal.Get(&current))) {

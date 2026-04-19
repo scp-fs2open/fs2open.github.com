@@ -1056,7 +1056,7 @@ int ErrorChecker::checkMissionEvents() {
 
 int ErrorChecker::checkMissionGoals() {
 	for (const auto& goal : Mission_goals) {
-		if (fred_check_sexp(goal.formula, OPR_BOOL, "mission goal \"%s\"", goal.name.c_str())) {
+		if (fred_check_sexp(goal.formula, OPR_BOOL, "mission objective \"%s\"", goal.name.c_str())) {
 			return -1;
 		}
 	}

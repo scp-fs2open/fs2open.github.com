@@ -149,7 +149,7 @@
           <item>
            <widget class="QCheckBox" name="showSexpHelpMissionGoals">
             <property name="text">
-             <string>Mission Goals</string>
+             <string>Mission Objectives</string>
             </property>
            </widget>
           </item>

@@ -23,6 +23,7 @@
 #include "mission/missionlog.h"
 #include "mission/missionmessage.h"
 #include "mission/missiontraining.h"
+#include "mod_table/mod_table.h"
 #include "missionui/missionbrief.h"
 #include "missionui/missioncmdbrief.h"
 #include "missionui/redalert.h"
@@ -410,9 +411,15 @@ ADE_FUNC(__len, l_Mission_Events, nullptr, "Number of events in mission", "numbe
 }
 
 //****SUBLIBRARY: Mission/Goals
-ADE_LIB_DERIV(l_Mission_Goals, "Goals", nullptr, "Goals", l_Mission);
+ADE_LIB_DERIV(l_Mission_Goals, "Goals", nullptr, "Goals (deprecated in favor of Objectives)", l_Mission);
 
-ADE_INDEXER(l_Mission_Goals, "number/string IndexOrName", "Indexes mission goals list", "mission_goal", "Goal handle, or invalid goal handle if index was invalid")
+ADE_INDEXER_DEPRECATED(l_Mission_Goals,
+	"number/string IndexOrName",
+	"Indexes mission goals list",
+	"mission_goal",
+	"Goal handle, or invalid goal handle if index was invalid",
+	gameversion::version(26, 0, 0),
+	"mn.Goals is deprecated in favor of mn.Objectives.")
 {
 	const char* s;
 	if(!ade_get_args(L, "*s", &s))
@@ -434,7 +441,44 @@ ADE_INDEXER(l_Mission_Goals, "number/string IndexOrName", "Indexes mission goals
 	return ade_set_args(L, "o", l_Goal.Set(i));
 }
 
-ADE_FUNC(__len, l_Mission_Goals, nullptr, "Number of goals in mission", "number", "Number of goals in mission")
+ADE_FUNC_DEPRECATED(__len,
+	l_Mission_Goals,
+	nullptr,
+	"Number of goals in mission",
+	"number",
+	"Number of goals in mission",
+	gameversion::version(26, 0, 0),
+	"mn.Goals is deprecated in favor of mn.Objectives.")
+{
+	return ade_set_args(L, "i", static_cast<int>(Mission_goals.size()));
+}
+
+//****SUBLIBRARY: Mission/Mission_Objectives
+ADE_LIB_DERIV(l_Mission_Objectives, "Mission_Objectives", "Objectives", "Mission objectives", l_Mission);
+
+ADE_INDEXER(l_Mission_Objectives, "number/string IndexOrName", "Indexes mission objectives list", "mission_goal", "Objective handle, or invalid objective handle if index was invalid")
+{
+	const char* s;
+	if(!ade_get_args(L, "*s", &s))
+		return ade_set_error(L, "o", l_Goal.Set(-1));
+
+	int i = mission_goal_lookup(s);
+	if (i >= 0)
+		return ade_set_args(L, "o", l_Goal.Set(i));
+
+	//Now try as a number
+	i = atoi(s);
+	//Lua-->FS2
+	i--;
+
+	if(!SCP_vector_inbounds(Mission_goals, i))
+		return ade_set_error(L, "o", l_Goal.Set(-1));
+
+
+	return ade_set_args(L, "o", l_Goal.Set(i));
+}
+
+ADE_FUNC(__len, l_Mission_Objectives, nullptr, "Number of objectives in mission", "number", "Number of objectives in mission")
 {
 	return ade_set_args(L, "i", static_cast<int>(Mission_goals.size()));
 }

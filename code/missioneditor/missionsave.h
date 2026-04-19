@@ -60,6 +60,10 @@ class Fred_mission_save {
 	Fred_mission_save() = default;
 
 	void set_save_format(MissionFormat fmt) { save_config.save_format = fmt; }
+
+	int sexp_save_mode() const {
+		return (save_config.save_format == MissionFormat::RETAIL) ? SEXP_SAVE_MODE_RETAIL : SEXP_SAVE_MODE;
+	}
 	void set_template_info(const MissionTemplateInfo& info) { save_config.template_info = info; }
 	void set_view_pos(const vec3d& pos) { save_config.view_pos = pos; }
 	void set_view_orient(const matrix& orient) { save_config.view_orient = orient; }
