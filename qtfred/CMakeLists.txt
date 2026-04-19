@@ -105,7 +105,6 @@ add_custom_command(
     COMMAND ${CMAKE_COMMAND} -E env
         "QT_QPA_PLATFORM=offscreen"
         "LD_LIBRARY_PATH=${_QTFRED_QT_LIBS}"
-        "QT_DEBUG_PLUGINS=1"
         "${QHELPGENERATOR_EXECUTABLE}" "${QTFRED_HELP_QHP}" -o "${QTFRED_HELP_QCH}"
     DEPENDS ${QTFRED_HELP_SOURCES}
     COMMENT "Compiling QtFRED help (qtfred_help.qch)"
