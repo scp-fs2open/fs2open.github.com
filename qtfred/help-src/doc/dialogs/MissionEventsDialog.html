@@ -48,16 +48,18 @@ list are processed first, which can affect timing when events interact.</p>
     <tr><td>Trigger count</td><td>How many times the event's condition must become true
         before the event stops firing entirely. Once this count reaches zero the event
         is permanently disabled, overriding any remaining repeat count.</td></tr>
-    <tr><td>Interval</td><td>Minimum time in seconds between successive firings when
-        the repeat count is greater than 1. The interval timer resets after each
-        firing.</td></tr>
+    <tr><td>Interval</td><td>Minimum time in seconds or milliseconds between successive
+        firings when the repeat count is greater than 1. The interval timer resets after
+        each firing.</td></tr>
     <tr><td>Chained</td><td>When checked, this event's condition is not evaluated until
         the immediately preceding event in the list has become true at least once. Used
         to sequence events without adding explicit timing conditions to every
         SEXP.</td></tr>
-    <tr><td>Chain delay</td><td>Number of seconds after the preceding event becomes
-        true before this event's condition begins evaluating. Only meaningful when
-        <strong>Chained</strong> is checked.</td></tr>
+    <tr><td>Chain delay</td><td>Number of seconds or milliseconds after the preceding
+        event becomes true before this event's condition begins evaluating. Only
+        meaningful when <strong>Chained</strong> is checked.</td></tr>
+    <tr><td>Msecs Delay</td><td>Chekcbox that when checked changes both Chain Delay
+         and Interval to being milliseconds instead of seconds.</td></tr>
     <tr><td>Score</td><td>Points awarded to the player when this event becomes
         true.</td></tr>
     <tr><td>Team</td><td>In multiplayer missions, restricts the event to a specific

@@ -60,8 +60,13 @@ one.</p>
 <h2>Subsystems</h2>
 <p>Lists all subsystems on this ship. Select a subsystem to set its starting
 integrity as a percentage of maximum. For subsystems that can be scanned, a cargo
-field is also available to set what the player finds when scanning that
-subsystem.</p>
+field may also available to set what the player finds when scanning that
+subsystem. Additionally a cargo title field may be available which defaults to
+"Cargo:" if not set. The cargo fields are only visible if the ship has scannable
+subsystems. If the <code></code>Unify Scanning Behavior</code> mod flag is active then
+all ships can have scannable cargo by setting the <code></code>Toggle Subsystem Scanning</code>
+ship flag. If the mod flag is not set then huge ships always have scannable subsystems and
+other ships will require the ship flag to be enabled.</p>
 
 <h2>Team color</h2>
 <p>Assigns a team color to this ship. Requires the ship to have a
