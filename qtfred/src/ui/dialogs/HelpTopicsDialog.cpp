@@ -4,16 +4,23 @@
 #include <QApplication>
 #include <QDesktopServices>
 #include <QHelpContentWidget>
+#include <QHelpContentModel>
 #include <QHelpEngine>
 #include <QHelpIndexWidget>
 #include <QHelpSearchEngine>
 #include <QHelpSearchQueryWidget>
 #include <QHelpSearchResultWidget>
 #include <QLabel>
+#include <QLineEdit>
 #include <QListWidget>
 #include <QMessageBox>
+#include <QShortcut>
 #include <QSplitter>
+#include <QStandardItem>
+#include <QStandardItemModel>
 #include <QTabWidget>
+#include <QTextCursor>
+#include <QTextDocument>
 #include <QTreeView>
 #include <QVBoxLayout>
 
@@ -104,6 +111,8 @@ HelpTopicsDialog::HelpTopicsDialog(QWidget* parent)
 
 	bindStandardIcon(ui->backButton,    QStyle::SP_ArrowLeft);
 	bindStandardIcon(ui->forwardButton, QStyle::SP_ArrowRight);
+	bindStandardIcon(ui->findPreviousButton, QStyle::SP_ArrowUp);
+	bindStandardIcon(ui->findNextButton,     QStyle::SP_ArrowDown);
 
 	if (!HelpTopicsDialogModel::ensureEngineReady()) {
 		ui->splitter->setDisabled(true);
@@ -113,7 +122,7 @@ HelpTopicsDialog::HelpTopicsDialog(QWidget* parent)
 
 	QHelpEngine* engine = HelpTopicsDialogModel::helpEngine();
 
-	ui->navigationTabs->addTab(engine->contentWidget(), tr("Contents"));
+	buildContentsTab();
 	ui->navigationTabs->addTab(engine->indexWidget(),   tr("Index"));
 
 	// Search tab: full-text search of built-in help, plus tutorial matches below.
@@ -126,7 +135,7 @@ HelpTopicsDialog::HelpTopicsDialog(QWidget* parent)
 		layout->addWidget(searchEngine->queryWidget());
 		layout->addWidget(searchEngine->resultWidget(), 1);
 
-		_tutorialSearchLabel = new QLabel(tr("Also found in tutorials:"), container);
+		_tutorialSearchLabel = new QLabel(tr("Also found in custom pages:"), container);
 		_tutorialSearchLabel->setVisible(false);
 		layout->addWidget(_tutorialSearchLabel);
 
@@ -167,19 +176,29 @@ HelpTopicsDialog::HelpTopicsDialog(QWidget* parent)
 	connect(ui->helpBrowser,   &QTextBrowser::backwardAvailable, ui->backButton,    &QToolButton::setEnabled);
 	connect(ui->helpBrowser,   &QTextBrowser::forwardAvailable,  ui->forwardButton, &QToolButton::setEnabled);
 
-	connect(engine->contentWidget(), &QTreeView::clicked,
-	        this, [this](const QModelIndex& index) {
-		auto* model = qobject_cast<QHelpContentModel*>(
-		    HelpTopicsDialogModel::helpEngine()->contentWidget()->model());
-		if (!model) return;
-		QHelpContentItem* item = model->contentItemAt(index);
-		if (item && item->url().isValid())
-			loadHelpPage(item->url());
-	});
 	connect(engine->indexWidget(), &QHelpIndexWidget::linkActivated,
 	        this, &HelpTopicsDialog::loadHelpPage);
 	connect(ui->helpBrowser, &QTextBrowser::anchorClicked,
 	        this, &HelpTopicsDialog::loadHelpPage);
+
+	auto* findShortcut = new QShortcut(QKeySequence::Find, this);
+	connect(findShortcut, &QShortcut::activated, this, [this] {
+		ui->findLineEdit->setFocus();
+		ui->findLineEdit->selectAll();
+	});
+	auto* findNextShortcut = new QShortcut(QKeySequence::FindNext, this);
+	connect(findNextShortcut, &QShortcut::activated, this, [this] { findInPage(false); });
+	auto* findPreviousShortcut = new QShortcut(QKeySequence::FindPrevious, this);
+	connect(findPreviousShortcut, &QShortcut::activated, this, [this] { findInPage(true); });
+
+	connect(ui->findLineEdit, &QLineEdit::textChanged, this, [this](const QString& text) {
+		const bool hasQuery = !text.trimmed().isEmpty();
+		ui->findPreviousButton->setEnabled(hasQuery);
+		ui->findNextButton->setEnabled(hasQuery);
+	});
+	connect(ui->findLineEdit, &QLineEdit::returnPressed, this, [this] { findInPage(false); });
+	connect(ui->findPreviousButton, &QToolButton::clicked, this, [this] { findInPage(true); });
+	connect(ui->findNextButton, &QToolButton::clicked, this, [this] { findInPage(false); });
 
 	// Load the help home page.
 	const auto registeredDocuments = engine->registeredDocumentations();
@@ -196,6 +215,109 @@ HelpTopicsDialog::~HelpTopicsDialog() = default;
 // ---------------------------------------------------------------------------
 void HelpTopicsDialog::prewarm() {
 	HelpTopicsDialogModel::prewarm();
+}
+
+void HelpTopicsDialog::findInPage(bool backward) {
+	const QString query = ui->findLineEdit->text().trimmed();
+	if (query.isEmpty())
+		return;
+
+	const QTextDocument::FindFlags flags = backward ? QTextDocument::FindBackward
+	                                                : QTextDocument::FindFlags{};
+	if (ui->helpBrowser->find(query, flags))
+		return;
+
+	// Wrap around when no further match is found from the current cursor.
+	QTextCursor cursor = ui->helpBrowser->textCursor();
+	cursor.movePosition(backward ? QTextCursor::End : QTextCursor::Start);
+	ui->helpBrowser->setTextCursor(cursor);
+	if (!ui->helpBrowser->find(query, flags)) {
+		QMessageBox::information(this,
+		                         tr("Find in page"),
+		                         tr("No matches found for \"%1\".").arg(query));
+	}
+}
+
+void HelpTopicsDialog::buildContentsTab() {
+	QHelpEngine* engine = HelpTopicsDialogModel::helpEngine();
+	if (engine == nullptr)
+		return;
+
+	auto* container = new QWidget(ui->navigationTabs);
+	auto* layout    = new QVBoxLayout(container);
+	layout->setContentsMargins(0, 0, 0, 0);
+
+	_contentsTree = new QTreeView(container);
+	_contentsTree->setHeaderHidden(true);
+	_contentsModel = new QStandardItemModel(_contentsTree);
+
+	auto* helpContentModel = qobject_cast<QHelpContentModel*>(engine->contentWidget()->model());
+	if (helpContentModel != nullptr) {
+		for (int row = 0; row < helpContentModel->rowCount(); ++row) {
+			const QModelIndex index = helpContentModel->index(row, 0);
+			addHelpContentItem(_contentsModel->invisibleRootItem(),
+			                   helpContentModel->contentItemAt(index));
+		}
+	}
+
+	const TutorialEntry* sexpReference = HelpTopicsDialogModel::sexpOperatorReference();
+	if (sexpReference != nullptr) {
+		QStandardItem* fundamentals = findContentItemByTitle(_contentsModel->invisibleRootItem(),
+		                                                     QStringLiteral("Fundamentals"));
+		if (fundamentals != nullptr) {
+			auto* extraItem = new QStandardItem(sexpReference->title);
+			extraItem->setData(QUrl(QStringLiteral("fredtutorial://") + sexpReference->urlPath),
+			                   Qt::UserRole);
+			QStandardItem* parentItem = fundamentals->parent();
+			if (parentItem == nullptr)
+				parentItem = _contentsModel->invisibleRootItem();
+			parentItem->insertRow(fundamentals->row() + 1, extraItem);
+		}
+	}
+
+	_contentsTree->setModel(_contentsModel);
+	layout->addWidget(_contentsTree);
+
+	ui->navigationTabs->addTab(container, tr("Contents"));
+
+	connect(_contentsTree, &QTreeView::clicked, this, [this](const QModelIndex& index) {
+		if (!index.isValid() || _contentsModel == nullptr)
+			return;
+		const auto* item = _contentsModel->itemFromIndex(index);
+		if (item == nullptr)
+			return;
+		const QUrl url = item->data(Qt::UserRole).toUrl();
+		if (url.isValid())
+			loadHelpPage(url);
+	});
+}
+
+void HelpTopicsDialog::addHelpContentItem(QStandardItem* parent, QHelpContentItem* contentItem) {
+	if (parent == nullptr || contentItem == nullptr)
+		return;
+
+	auto* item = new QStandardItem(contentItem->title());
+	item->setData(contentItem->url(), Qt::UserRole);
+	parent->appendRow(item);
+
+	for (int i = 0; i < contentItem->childCount(); ++i)
+		addHelpContentItem(item, contentItem->child(i));
+}
+
+QStandardItem* HelpTopicsDialog::findContentItemByTitle(QStandardItem* root, const QString& title) const {
+	if (root == nullptr)
+		return nullptr;
+
+	for (int i = 0; i < root->rowCount(); ++i) {
+		QStandardItem* child = root->child(i);
+		if (child == nullptr)
+			continue;
+		if (child->text() == title)
+			return child;
+		if (QStandardItem* nested = findContentItemByTitle(child, title))
+			return nested;
+	}
+	return nullptr;
 }
 
 void HelpTopicsDialog::buildTutorialsTab() {
@@ -218,7 +340,11 @@ void HelpTopicsDialog::searchTutorials(const QString& query) {
 	_tutorialSearchResults->clear();
 
 	const QString trimmed = query.trimmed();
-	if (trimmed.isEmpty() || HelpTopicsDialogModel::tutorials().isEmpty()) {
+	QList<TutorialEntry> searchablePages = HelpTopicsDialogModel::tutorials();
+	if (const TutorialEntry* sexpReference = HelpTopicsDialogModel::sexpOperatorReference())
+		searchablePages.append(*sexpReference);
+
+	if (trimmed.isEmpty() || searchablePages.isEmpty()) {
 		_tutorialSearchLabel->setVisible(false);
 		_tutorialSearchResults->setVisible(false);
 		return;
@@ -227,7 +353,7 @@ void HelpTopicsDialog::searchTutorials(const QString& query) {
 	static const QRegularExpression tagRe(QStringLiteral("<[^>]+>"));
 	const QStringList terms = trimmed.split(QLatin1Char(' '), QString::SkipEmptyParts);
 
-	for (const auto& t : HelpTopicsDialogModel::tutorials()) {
+	for (const auto& t : searchablePages) {
 		const auto& content = HelpTopicsDialogModel::tutorialContent();
 		const auto  it      = content.constFind(t.urlPath);
 		if (it == content.constEnd())

@@ -7,6 +7,10 @@
 class QLabel;
 class QListWidget;
 class QListWidgetItem;
+class QHelpContentItem;
+class QStandardItem;
+class QStandardItemModel;
+class QTreeView;
 
 namespace fso::fred::dialogs {
 
@@ -53,6 +57,10 @@ public slots: // NOLINT(readability-redundant-access-specifiers)
 
 private:
 	void loadHelpPage(const QUrl& url);
+	void findInPage(bool backward = false);
+	void buildContentsTab();
+	void addHelpContentItem(QStandardItem* parent, QHelpContentItem* contentItem);
+	QStandardItem* findContentItemByTitle(QStandardItem* root, const QString& title) const;
 	void buildTutorialsTab();
 	void searchTutorials(const QString& query);
 
@@ -62,6 +70,8 @@ private:
 	QLabel*      _tutorialSearchLabel   = nullptr;
 	QListWidget* _tutorialSearchResults = nullptr;
 	QListWidget* _tutorialsWidget       = nullptr;
+	QTreeView*   _contentsTree          = nullptr;
+	QStandardItemModel* _contentsModel  = nullptr;
 };
 
 } // namespace fso::fred::dialogs

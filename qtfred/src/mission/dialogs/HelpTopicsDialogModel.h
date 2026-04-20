@@ -38,6 +38,7 @@ public:
 	static QHelpEngine*                      helpEngine();
 	static const QList<TutorialEntry>&       tutorials();
 	static const QHash<QString, QByteArray>& tutorialContent();
+	static const TutorialEntry*              sexpOperatorReference();
 
 	// Exposed so HelpTopicsDialog can call it directly and show an error on failure.
 	static bool ensureEngineReady();
@@ -51,6 +52,8 @@ private:
 	static QHelpEngine*               _helpEngine;
 	static QList<TutorialEntry>       _tutorials;
 	static QHash<QString, QByteArray> _tutorialContent;
+	static TutorialEntry              _sexpOperatorReference;
+	static bool                       _hasSexpOperatorReference;
 };
 
 } // namespace fso::fred::dialogs

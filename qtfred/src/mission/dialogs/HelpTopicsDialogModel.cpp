@@ -23,6 +23,8 @@ namespace fso::fred::dialogs {
 QHelpEngine*               HelpTopicsDialogModel::_helpEngine    = nullptr;
 QList<TutorialEntry>       HelpTopicsDialogModel::_tutorials;
 QHash<QString, QByteArray> HelpTopicsDialogModel::_tutorialContent;
+TutorialEntry              HelpTopicsDialogModel::_sexpOperatorReference;
+bool                       HelpTopicsDialogModel::_hasSexpOperatorReference = false;
 
 // ---------------------------------------------------------------------------
 HelpTopicsDialogModel::HelpTopicsDialogModel(QObject* parent) : QObject(parent) {}
@@ -31,6 +33,8 @@ HelpTopicsDialogModel::HelpTopicsDialogModel(QObject* parent) : QObject(parent) 
 void HelpTopicsDialogModel::prewarm() {
 	if (ensureEngineReady())
 		_helpEngine->searchEngine()->scheduleIndexDocumentation();
+	_tutorialContent.clear();
+	_hasSexpOperatorReference = false;
 	_tutorials = discoverTutorials();
 }
 
@@ -44,6 +48,10 @@ const QList<TutorialEntry>& HelpTopicsDialogModel::tutorials() {
 
 const QHash<QString, QByteArray>& HelpTopicsDialogModel::tutorialContent() {
 	return _tutorialContent;
+}
+
+const TutorialEntry* HelpTopicsDialogModel::sexpOperatorReference() {
+	return _hasSexpOperatorReference ? &_sexpOperatorReference : nullptr;
 }
 
 // ---------------------------------------------------------------------------
@@ -137,35 +145,65 @@ QString HelpTopicsDialogModel::extractHtmlTitle(const QString& filePath) {
 }
 
 QList<TutorialEntry> HelpTopicsDialogModel::discoverTutorials() {
-	if (!cfile_inited)
-		return {};
-
-	SCP_vector<SCP_string> filenames;
-	cf_get_file_list(filenames, CF_TYPE_FREDDOCS, "*.html");
-
 	QList<TutorialEntry> result;
-	for (const auto& filename : filenames) {
-		// Skip files in subdirectories. Only surface top-level tutorials.
-		// Mods can use subdirectories for assets or linked pages without flooding the list.
-		if (filename.find('/') != SCP_string::npos || filename.find('\\') != SCP_string::npos)
-			continue;
+	if (cfile_inited) {
+		SCP_vector<SCP_string> filenames;
+		cf_get_file_list(filenames, CF_TYPE_FREDDOCS, "*.html");
+		for (const auto& filename : filenames) {
+			// Skip files in subdirectories. Only surface top-level tutorials.
+			// Mods can use subdirectories for assets or linked pages without flooding the list.
+			if (filename.find('/') != SCP_string::npos || filename.find('\\') != SCP_string::npos)
+				continue;
 
-		// cf_get_file_list strips extensions; re-add it for the lookup and URL.
-		const std::string fullFilename = filename + ".html";
-		CFileLocation loc = cf_find_file_location(fullFilename.c_str(), CF_TYPE_FREDDOCS);
-		if (!loc.found)
-			continue;
+			// cf_get_file_list strips extensions; re-add it for the lookup and URL.
+			const std::string fullFilename = filename + ".html";
+			CFileLocation loc = cf_find_file_location(fullFilename.c_str(), CF_TYPE_FREDDOCS);
+			if (!loc.found)
+				continue;
 
-		const QString fullPath = QString::fromStdString(loc.full_name);
-		const QString urlPath  = QStringLiteral("/") + QString::fromStdString(fullFilename);
+			const QString fullPath = QString::fromStdString(loc.full_name);
+			const QString urlPath  = QStringLiteral("/") + QString::fromStdString(fullFilename);
 
-		QFile f(fullPath);
-		if (!f.open(QIODevice::ReadOnly))
-			continue;
+			QFile f(fullPath);
+			if (!f.open(QIODevice::ReadOnly))
+				continue;
 
-		_tutorialContent[urlPath] = f.readAll();
-		result.append({extractHtmlTitle(fullPath), fullPath, urlPath});
+			_tutorialContent[urlPath] = f.readAll();
+
+			if (QString::compare(QString::fromStdString(fullFilename),
+			                     QStringLiteral("sexps.html"),
+			                     Qt::CaseInsensitive) == 0) {
+				_sexpOperatorReference = {QStringLiteral("SEXP Operator Reference"), fullPath, urlPath};
+				_hasSexpOperatorReference = true;
+				continue;
+			}
+
+			result.append({extractHtmlTitle(fullPath), fullPath, urlPath});
+		}
 	}
+
+	// Optional fallback for developers: also accept a loose sexps.html shipped
+	// next to the QtFRED executable (or in its help/ subdirectory).
+	if (!_hasSexpOperatorReference) {
+		const QDir appDir(QCoreApplication::applicationDirPath());
+		const QStringList fallbackPaths = {
+		    appDir.filePath(QStringLiteral("sexps.html")),
+		    appDir.filePath(QStringLiteral("help/sexps.html"))
+		};
+
+		for (const auto& candidate : fallbackPaths) {
+			QFile f(candidate);
+			if (!f.open(QIODevice::ReadOnly))
+				continue;
+
+			const QString urlPath = QStringLiteral("/sexps.html");
+			_tutorialContent[urlPath] = f.readAll();
+			_sexpOperatorReference = {QStringLiteral("SEXP Operator Reference"), candidate, urlPath};
+			_hasSexpOperatorReference = true;
+			break;
+		}
+	}
+
 	return result;
 }
 

@@ -50,6 +50,36 @@
        <item>
         <layout class="QHBoxLayout" name="navBar">
          <item>
+          <widget class="QLineEdit" name="findLineEdit">
+           <property name="placeholderText">
+            <string>Find in page</string>
+           </property>
+           <property name="clearButtonEnabled">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QToolButton" name="findPreviousButton">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="toolTip">
+            <string>Find previous</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QToolButton" name="findNextButton">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="toolTip">
+            <string>Find next</string>
+           </property>
+          </widget>
+         </item>
+         <item>
           <spacer name="navSpacer">
            <property name="orientation">
             <enum>Qt::Horizontal</enum>
@@ -64,21 +94,21 @@
          </item>
          <item>
           <widget class="QToolButton" name="backButton">
-           <property name="toolTip">
-            <string>Back</string>
-           </property>
            <property name="enabled">
             <bool>false</bool>
+           </property>
+           <property name="toolTip">
+            <string>Back</string>
            </property>
           </widget>
          </item>
          <item>
           <widget class="QToolButton" name="forwardButton">
-           <property name="toolTip">
-            <string>Forward</string>
-           </property>
            <property name="enabled">
             <bool>false</bool>
+           </property>
+           <property name="toolTip">
+            <string>Forward</string>
            </property>
           </widget>
          </item>
