@@ -2584,10 +2584,10 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				{
 					char tmp_name[127];
 					cfread_string_len(tmp_name,127,fp);
-					const auto max_buffer_size = MAX_FILENAME_LEN - static_cast<int>(model_texture_longest_suffix().size());
+					const auto max_buffer_size = static_cast<size_t>(MAX_FILENAME_LEN) - model_texture_longest_suffix().size();
 					if (strlen(tmp_name) >= max_buffer_size)
 					{
-						Warning(LOCATION, "Model '%s', texture '%s' filename is too long!  Truncating to %d characters.", pm->filename, tmp_name, max_buffer_size - 1);
+						Warning(LOCATION, "Model '%s', texture '%s' filename is too long!  Truncating to %d characters.", pm->filename, tmp_name, static_cast<int>(max_buffer_size - 1));
 						tmp_name[max_buffer_size - 1] = '\0';
 					}
 					model_load_texture(pm, i, tmp_name);
