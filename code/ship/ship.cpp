@@ -8669,7 +8669,7 @@ static void ship_add_cockpit_display(cockpit_display_info *display, int cockpit_
 	auto& glow_texture = (*Player_cockpit_textures)[glow_target];
 	if ( glow_texture == -1) {
 		bm_get_info(diffuse_handle, &w, &h);
-		glow_texture = bm_make_render_target(w, h, BMP_FLAG_RENDER_TARGET_DYNAMIC);
+		glow_texture = bm_make_render_target(w, h, BMP_FLAG_RENDER_TARGET_DYNAMIC | BMP_FLAG_RENDER_TARGET_DEPTH_ATTACHMENT);
 
 		// if no render target was made, bail
 		if ( glow_texture < 0 ) {
