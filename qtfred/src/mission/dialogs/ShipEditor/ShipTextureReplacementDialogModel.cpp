@@ -1,11 +1,32 @@
 #include "ShipTextureReplacementDialogModel.h"
 
 #include "mission/object.h"
+#include "model/model.h"
 
-// Sub-texture type suffixes, mirroring the strcat_s calls in modelread.cpp.
-// Used both when detecting sub-texture slots in initSubTypes and when parsing
-// new_texture strings on dialog reload.
-static const SCP_string SUBTEXTURE_SUFFIXES[] = { "misc", "shine", "glow", "normal", "height", "ao", "reflect" };
+namespace {
+const SCP_vector<SCP_string>& get_replaceable_texture_types()
+{
+	static const SCP_vector<SCP_string> types = []() {
+		SCP_vector<SCP_string> out;
+		out.reserve(MODEL_TEXTURE_SUFFIXES.size());
+		for (const auto& suffix : MODEL_TEXTURE_SUFFIXES) {
+			out.emplace_back(suffix.second.substr(1)); // strip leading '-'
+		}
+		return out;
+	}();
+	return types;
+}
+
+bool is_known_subtexture_type(const SCP_string& type)
+{
+	for (const auto& suffix : MODEL_TEXTURE_SUFFIXES) {
+		if (lcase_equal(type, suffix.second.substr(1))) {
+			return true;
+		}
+	}
+	return false;
+}
+}
 
 namespace fso {
 	namespace fred {
@@ -122,7 +143,7 @@ namespace fso {
 											// Only treat the suffix as a type if it's a known sub-texture type.
 											// Texture names themselves can contain hyphens (e.g. "fighter01-01a"),
 											// so we must not blindly strip the last segment.
-											for (const auto& kt : SUBTEXTURE_SUFFIXES) {
+											for (const auto& kt : get_replaceable_texture_types()) {
 												if (lcase_equal(possibleType, kt)) {
 													type = possibleType;
 													newText = newText.substr(0, npos);
@@ -187,37 +208,12 @@ namespace fso {
 			}
 			void ShipTextureReplacementDialogModel::initSubTypes(polymodel* model, int MapNum)
 			{
-				subTypesAvailable[MapNum].insert(std::pair<SCP_string, bool>("misc", false));
-				subTypesAvailable[MapNum].insert(std::pair<SCP_string, bool>("shine", false));
-				subTypesAvailable[MapNum].insert(std::pair<SCP_string, bool>("glow", false));
-				subTypesAvailable[MapNum].insert(std::pair<SCP_string, bool>("normal", false));
-				subTypesAvailable[MapNum].insert(std::pair<SCP_string, bool>("height", false));
-				subTypesAvailable[MapNum].insert(std::pair<SCP_string, bool>("ao", false));
-				subTypesAvailable[MapNum].insert(std::pair<SCP_string, bool>("reflect", false));
-
-				currentTextures[MapNum].insert(std::pair<SCP_string, SCP_string>("misc", ""));
-				currentTextures[MapNum].insert(std::pair<SCP_string, SCP_string>("shine", ""));
-				currentTextures[MapNum].insert(std::pair<SCP_string, SCP_string>("glow", ""));
-				currentTextures[MapNum].insert(std::pair<SCP_string, SCP_string>("normal", ""));
-				currentTextures[MapNum].insert(std::pair<SCP_string, SCP_string>("height", ""));
-				currentTextures[MapNum].insert(std::pair<SCP_string, SCP_string>("ao", ""));
-				currentTextures[MapNum].insert(std::pair<SCP_string, SCP_string>("reflect", ""));
-
-				replaceMap[MapNum].insert(std::pair<SCP_string, bool>("misc", false));
-				replaceMap[MapNum].insert(std::pair<SCP_string, bool>("shine", false));
-				replaceMap[MapNum].insert(std::pair<SCP_string, bool>("glow", false));
-				replaceMap[MapNum].insert(std::pair<SCP_string, bool>("normal", false));
-				replaceMap[MapNum].insert(std::pair<SCP_string, bool>("height", false));
-				replaceMap[MapNum].insert(std::pair<SCP_string, bool>("ao", false));
-				replaceMap[MapNum].insert(std::pair<SCP_string, bool>("reflect", false));
-
-				inheritMap[MapNum].insert(std::pair<SCP_string, bool>("misc", true));
-				inheritMap[MapNum].insert(std::pair<SCP_string, bool>("shine", true));
-				inheritMap[MapNum].insert(std::pair<SCP_string, bool>("glow", true));
-				inheritMap[MapNum].insert(std::pair<SCP_string, bool>("normal", true));
-				inheritMap[MapNum].insert(std::pair<SCP_string, bool>("height", true));
-				inheritMap[MapNum].insert(std::pair<SCP_string, bool>("ao", true));
-				inheritMap[MapNum].insert(std::pair<SCP_string, bool>("reflect", true));
+				for (const auto& type : get_replaceable_texture_types()) {
+					subTypesAvailable[MapNum].insert(std::pair<SCP_string, bool>(type, false));
+					currentTextures[MapNum].insert(std::pair<SCP_string, SCP_string>(type, ""));
+					replaceMap[MapNum].insert(std::pair<SCP_string, bool>(type, false));
+					inheritMap[MapNum].insert(std::pair<SCP_string, bool>(type, true));
+				}
 				char subMap[MAX_FILENAME_LEN];
 				//init saftly, probly not necessary
 				for (int j = 1; j < TM_NUM_TYPES; j++) {
@@ -239,18 +235,12 @@ namespace fso {
 						continue;
 					}
 					if (!type.empty()) {
-						if (type == "trans") {
+						if (lcase_equal(type, MODEL_TEXTURE_SUFFIX_TRANS.substr(1))) {
 							// transparency map, not a replaceable subtype
 						} else {
-							bool known = false;
-							for (const auto& kt : SUBTEXTURE_SUFFIXES) {
-								if (lcase_equal(type, kt)) {
-									subTypesAvailable[MapNum][kt] = true;
-									known = true;
-									break;
-								}
-							}
-							if (!known) {
+							if (is_known_subtexture_type(type)) {
+								subTypesAvailable[MapNum][type] = true;
+							} else {
 								error_display(1, "Invalid Map type %s. Check your model's texture names or get a programmer", type.c_str());
 							}
 						}

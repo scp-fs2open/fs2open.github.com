@@ -165,6 +165,26 @@ struct submodel_instance
 									//Used by scripting - if you change this, do a search
 									//to update switch() statement in lua.cpp
 
+inline const SCP_map<int, SCP_string> MODEL_TEXTURE_SUFFIXES = {
+	{ TM_GLOW_TYPE,       "-glow" },
+	{ TM_SPECULAR_TYPE,   "-shine" },
+	{ TM_NORMAL_TYPE,     "-normal" },
+	{ TM_HEIGHT_TYPE,     "-height" },
+	{ TM_MISC_TYPE,       "-misc" },
+	{ TM_SPEC_GLOSS_TYPE, "-reflect" },
+	{ TM_AMBIENT_TYPE,    "-ao" }
+};
+
+inline const SCP_string MODEL_TEXTURE_SUFFIX_TRANS = "-trans"; // -trans is a special case as other suffixes can be appended to it
+
+inline const SCP_string& model_texture_longest_suffix() {
+	return std::max_element(MODEL_TEXTURE_SUFFIXES.begin(),
+		MODEL_TEXTURE_SUFFIXES.end(),
+		[](const std::pair<int, SCP_string>& left, const std::pair<int, SCP_string>& right) {
+			return left.second.size() < right.second.size();
+		})->second;
+}
+
 #define MAX_REPLACEMENT_TEXTURES MAX_MODEL_TEXTURES * TM_NUM_TYPES
 
 // Goober5000 - since we need something < 0
