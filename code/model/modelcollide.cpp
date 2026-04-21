@@ -1150,7 +1150,8 @@ int model_collide(mc_info *mc_info_obj)
 		Mc_pmi = NULL;
 	}
 
-	if (Mc_pmi && Mc->collision_checked.empty()) {
+	if (Mc_pmi && Mc->collision_checked.size() != static_cast<size_t>(Mc_pm->n_models)) {
+		Assertion(Mc->collision_checked.empty(), "model_collide was called with a dirty mc_info state! Please report to the SCP.");
 		Mc->collision_checked.resize(Mc_pm->n_models, 0);
 	}
 
