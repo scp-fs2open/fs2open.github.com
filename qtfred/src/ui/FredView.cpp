@@ -949,9 +949,8 @@ void FredView::quickRenameCurrentObject() {
 
 	const QString current = QString::fromUtf8(object_name(obj));
 	bool ok = false;
-	QString newName = QInputDialog::getText(this, tr("Rename"), tr("New name:"),
-	                                        QLineEdit::Normal, current, &ok);
-	if (!ok || newName.trimmed().isEmpty() || newName == current) return;
+	QString newName = QInputDialog::getText(this, tr("Rename"), tr("New name:"), QLineEdit::Normal, current, &ok).trimmed();
+	if (!ok || newName.isEmpty() || newName == current) return;
 
 	if (Objects[obj].type == OBJ_SHIP || Objects[obj].type == OBJ_START) {
 		fred->rename_ship(Objects[obj].instance, newName.toUtf8().constData());
