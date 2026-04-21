@@ -1,6 +1,7 @@
 #include "CustomDataDialog.h"
 #include "ui_CustomDataDialog.h"
 
+#include "mission/missionparse.h"
 #include "mission/util.h"
 
 #include <ui/util/SignalBlockers.h>
@@ -104,7 +105,7 @@ void CustomDataDialog::buildView()
 	auto* hdr = ui->stringsTableView->horizontalHeader();
 	hdr->setSectionsClickable(false);  // no click/press behavior
 	hdr->setSortIndicatorShown(false); // hide sort arrow
-	hdr->setHighlightSections(false);  // don’t change look when selected
+	hdr->setHighlightSections(false);  // don't change look when selected
 	hdr->setSectionsMovable(false);    // no drag-to-reorder columns
 	hdr->setFocusPolicy(Qt::NoFocus);
 
@@ -158,8 +159,23 @@ void CustomDataDialog::loadRowIntoEditors(int row)
 
 	const auto* keyItem = _tableModel->item(row, ColKey);
 	const auto* valItem = _tableModel->item(row, ColValue);
-	ui->keyLineEdit->setText(keyItem ? keyItem->text() : QString());
+	const auto key = keyItem ? keyItem->text() : QString();
+	ui->keyLineEdit->setText(key);
 	ui->valueLineEdit->setText(valItem ? valItem->text() : QString());
+	updateHelpTextForKey(key);
+}
+
+void CustomDataDialog::updateHelpTextForKey(const QString& key)
+{
+	auto helpText = tr("No help text provided");
+	for (const auto& entry : Default_custom_data) {
+		if (key == QString::fromStdString(entry.key)) {
+			helpText = QString::fromStdString(entry.description);
+			break;
+		}
+	}
+
+	ui->helpTextBrowser->setPlainText(helpText);
 }
 
 std::pair<SCP_string, SCP_string> CustomDataDialog::editorsToEntry() const
@@ -176,6 +192,7 @@ void CustomDataDialog::clearEditors()
 
 	ui->keyLineEdit->clear();
 	ui->valueLineEdit->clear();
+	ui->helpTextBrowser->setPlainText("");
 }
 
 void CustomDataDialog::on_addButton_clicked()

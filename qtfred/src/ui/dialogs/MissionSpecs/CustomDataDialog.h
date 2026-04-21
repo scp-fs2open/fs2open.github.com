@@ -47,6 +47,7 @@ class CustomDataDialog final : public QDialog {
 	void refreshTable();
 	void selectRow(int row);
 	void loadRowIntoEditors(int row);
+	void updateHelpTextForKey(const QString& key);
 	std::pair<SCP_string, SCP_string> editorsToEntry() const;
 	void clearEditors();
 

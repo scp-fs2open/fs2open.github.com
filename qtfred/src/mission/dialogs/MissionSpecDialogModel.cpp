@@ -14,6 +14,7 @@
 #include "localization/localize.h"
 #include "mission/missionmessage.h"
 #include "mission/mission_flags.h"
+#include "scripting/global_hooks.h"
 
 #include <QtWidgets>
 
@@ -201,6 +202,11 @@ bool MissionSpecDialogModel::apply() {
 	}
 
 	Editor::update_custom_wing_indexes();
+
+	// scripts may rebuild LuaEnums when custom data/strings change.
+	if (scripting::hooks::FredOnMissionSpecsSave->isActive()) {
+		scripting::hooks::FredOnMissionSpecsSave->run();
+	}
 
 	return true;
 }
