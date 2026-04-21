@@ -19,11 +19,12 @@ const SCP_vector<SCP_string>& get_replaceable_texture_types()
 
 bool is_known_subtexture_type(const SCP_string& type)
 {
-	for (const auto& suffix : MODEL_TEXTURE_SUFFIXES) {
-		if (lcase_equal(type, suffix.second.substr(1))) {
-			return true;
-		}
+	if (std::any_of(get_replaceable_texture_types().begin(),
+			get_replaceable_texture_types().end(),
+			[&type](const SCP_string& knownType) { return lcase_equal(type, knownType); })) {
+		return true;
 	}
+
 	return false;
 }
 }
