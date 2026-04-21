@@ -211,6 +211,7 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 
 	connect(fred, &Editor::missionLoaded, this, &FredView::on_mission_loaded);
 	connect(fred, &Editor::missionChanged, this, [this]() { _missionModified = true; });
+	connect(fred, &Editor::layerListChanged, this, [this]() { _tbLayerComboDirty = true; });
 
 	// Sets the initial window title
 	on_mission_loaded("");
@@ -621,6 +622,7 @@ void FredView::on_mission_loaded(const std::string& filepath) {
 
 	if (_viewport != nullptr) {
 		_viewport->reloadLayersFromMission();
+		_tbLayerComboDirty = true;
 	}
 
 	QString filename = "Untitled";
@@ -1239,14 +1241,14 @@ void FredView::onUpdateTransformBar() {
 	}
 
 	// ---- Layer combo -------------------------------------------------------
-	// Rebuild contents only when the layer list itself changes.
-	auto layerNames = _viewport->getLayerNames();
-	if (static_cast<int>(layerNames.size()) != _tbCachedLayerCount) {
-		_tbCachedLayerCount = static_cast<int>(layerNames.size());
+	// Rebuild contents only when layer structure has changed.
+	if (_tbLayerComboDirty) {
+		const auto layerNames = _viewport->getLayerNames();
 		QSignalBlocker bl(_transformLayerCombo);
 		_transformLayerCombo->clear();
 		for (const auto& n : layerNames)
 			_transformLayerCombo->addItem(QString::fromUtf8(n.c_str()));
+		_tbLayerComboDirty = false;
 	}
 
 	const bool anySelected = valid || numMarked > 0;

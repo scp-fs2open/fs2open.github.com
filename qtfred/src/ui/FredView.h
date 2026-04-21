@@ -318,11 +318,11 @@ class FredView: public QMainWindow, public IDialogProvider {
 	QLabel*         _transformRadiusLabel = nullptr;
 	QToolButton*    _transformLocalBtn   = nullptr;
 	QComboBox*      _transformLayerCombo = nullptr;
-	int             _tbCachedLayerCount  = -1;   // detect layer list changes
+	bool            _tbLayerComboDirty   = true;  // rebuild layer combo only when layer structure changes
 	bool            _tbIffPopulated      = false; // IFF items are populated lazily (tables load after init)
 	bool            _tbLocalMove         = false; // remembered Local preference while in move mode
 	bool            _tbLocalRotate       = false; // remembered Local preference while in rotate mode
-	int             _tbCachedCursorMode  = -1;   // -1 forces per-mode restore on first update
+	int             _tbCachedCursorMode  = -1;    // -1 forces per-mode restore on first update
 
 	void onShipClassSelected(int ship_class);
 	void onPropClassSelected(int prop_class);

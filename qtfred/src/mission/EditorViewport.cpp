@@ -1011,6 +1011,7 @@ bool EditorViewport::addLayer(const SCP_string& name, SCP_string* errorMessage) 
 	_layerVisibility.push_back(true);
 	syncMissionLayerNames();
 	editor->notifyLayerStructureChanged();
+	editor->notifyLayerListChanged();
 	return true;
 }
 
@@ -1045,6 +1046,7 @@ bool EditorViewport::deleteLayer(const SCP_string& name, SCP_string* errorMessag
 	}
 	syncMissionLayerNames();
 	editor->notifyLayerStructureChanged();
+	editor->notifyLayerListChanged();
 	return true;
 }
 
@@ -1112,6 +1114,7 @@ void EditorViewport::reloadLayersFromMission() {
 
 	_layerVisibility.resize(_layerNames.size(), true);
 	syncMissionLayerNames();
+	editor->notifyLayerListChanged();
 
 	for (int objectIndex = 0; objectIndex < MAX_OBJECTS; ++objectIndex) {
 		auto* objp = &Objects[objectIndex];

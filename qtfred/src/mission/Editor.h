@@ -120,6 +120,9 @@ class Editor : public QObject {
 	/*! Emit layerStructureChanged — called by EditorViewport when layers are added/removed or objects move between layers. */
 	void notifyLayerStructureChanged() { layerStructureChanged(); }
 
+	/*! Emit layerListChanged — called by EditorViewport when layer names are added/removed/reloaded. */
+	void notifyLayerListChanged() { layerListChanged(); }
+
   signals:
 	/**
 	 * @brief Signal for when a new mission has been loaded
@@ -154,6 +157,11 @@ class Editor : public QObject {
 	 * @brief A signal emitted when the layer list changes (add/remove) or an object moves between layers
 	 */
 	void layerStructureChanged();
+
+	/**
+	 * @brief A signal emitted when the layer name list itself changes (add/remove/reload)
+	 */
+	void layerListChanged();
 
   public:
 	// --- Undo / autosave state ---
