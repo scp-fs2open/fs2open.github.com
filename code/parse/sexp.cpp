@@ -13931,26 +13931,31 @@ void sexp_set_friendly_damage_caps(int n) {
  */
 void sexp_set_player_target(int node)
 {
-	int shipnum = ship_name_lookup(CTEXT(node), 1);
+	// int shipnum = ship_name_lookup(CTEXT(node), 1);
+	const ship_registry_entry *ship_entry = eval_ship(node);
+	if (ship_entry == nullptr)
+		return;
+
+	int shipnum = ship_entry->shipnum;
 	if (shipnum < 0)
 		return;
+
 	ship* shipp = &Ships[shipnum];
 	int objnum = shipp->objnum;
 	int n = CDR(node);
+	ship_subsys * new_subsys = nullptr;
 	if (n >= 0) {
 		const char* subsys_name = CTEXT(n);
 		if (stricmp(subsys_name, SEXP_NONE_STRING) != 0) {
-			ship_subsys* ss = ship_get_subsys(shipp, subsys_name);
-			// target ship regardless of whether subsystem is destroyed
-			shipp->last_targeted_subobject[Player_num] = ss;
-		} else {
-			shipp->last_targeted_subobject[Player_num] = nullptr;
+			new_subsys = ship_get_subsys(shipp, subsys_name);
 		}
-	} else {
-		shipp->last_targeted_subobject[Player_num] = nullptr;
 	}
-	// set_target_objnum will call hud_restore_subsystem_target which reads last_targeted_subobject
-	set_target_objnum(Player_ai, objnum);
+	
+    // set_target_objnum will call hud_restore_subsystem_target which reads last_targeted_subobject
+    shipp->last_targeted_subobject[Player_num] = new_subsys;
+
+    set_target_objnum(Player_ai, objnum);
+    set_targeted_subsys(Player_ai, new_subsys, objnum);
 }
 
 // Luytenky
