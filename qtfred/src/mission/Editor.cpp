@@ -11,6 +11,7 @@
 #include <parse/parselo.h>
 #include <missionui/fictionviewer.h>
 #include <mission/missiongoals.h>
+#include <mission/missionparse.h>
 #include <asteroid/asteroid.h>
 #include <jumpnode/jumpnode.h>
 #include <prop/prop.h>
@@ -609,6 +610,7 @@ void Editor::clearMission(bool fast_reload) {
 	strcpy_s(The_mission.modified, The_mission.created);
 	strcpy_s(The_mission.notes, "This is a FRED2_OPEN created mission.");
 	strcpy_s(The_mission.mission_desc, "Put mission description here");
+	apply_default_custom_data(&The_mission);
 
 	// reset alternate name & callsign stuff
 	for (auto i = 0; i < MAX_SHIPS; i++) {
