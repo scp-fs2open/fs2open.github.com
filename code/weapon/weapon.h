@@ -35,6 +35,8 @@
 
 #include "utils/modular_curves.h"
 
+#include <optional>
+
 class object;
 class ship_subsys;
 
@@ -386,6 +388,8 @@ struct weapon_info
 
 	vec3d	closeup_pos;						// position for camera to set an offset for viewing the weapon model
 	float	closeup_zoom;						// zoom when using weapon model in closeup view in loadout selection
+	std::optional<vec3d> icon_closeup_pos;		// icon-specific position for camera for viewing the weapon model
+	std::optional<float> icon_closeup_zoom;	// icon-specific zoom for viewing the weapon model
 
 	char hud_filename[MAX_FILENAME_LEN];			//Name of image to display on HUD in place of text
 	int hud_image_index;					//teh index of the image
