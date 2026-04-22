@@ -172,6 +172,8 @@ public:
 	void resetView();
 
 	void setRenderFlag(LabRenderFlag flag, bool value) { renderFlags.set(flag, value); }
+	void setShowOrientationWidget(bool value) { showOrientationWidget = value; }
+	bool getShowOrientationWidget() const { return showOrientationWidget; }
 
 	static float setAmbientFactor(float factor) { 
 		ltp::lab_set_ambient(factor);
@@ -227,6 +229,7 @@ private:
 	SCP_string currentTeamColor;
 
 	std::unique_ptr<LabCamera> labCamera;
+	bool showOrientationWidget = true;
 
 	float cameraDistance;
 
