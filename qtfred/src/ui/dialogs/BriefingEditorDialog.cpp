@@ -284,7 +284,7 @@ void BriefingEditorDialog::updateUi()
 		const SCP_string& subName = _model->getSubstituteBriefingMusicName();
 		int smIdx = -1;
 		for (int i = 0; i < static_cast<int>(Spooled_music.size()); ++i) {
-			if (Spooled_music[i].name == subName) { smIdx = i; break; }
+			if (stricmp(Spooled_music[i].name, subName.c_str()) == 0) { smIdx = i; break; }
 		}
 		ui->musicPackWidget->setCurrentMusicIndex(smIdx);
 	}
