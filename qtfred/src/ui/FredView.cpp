@@ -361,13 +361,13 @@ bool FredView::performPreSaveCheck(int* outFixCount) {
 	// Use the normal error checker dialog in PreSave mode so the error cards are
 	// rendered identically to what the designer sees when running it manually.
 	dialogs::ErrorCheckerDialog dlg(this, _viewport, dialogs::ErrorCheckerDialog::Mode::PreSave);
-	const bool hadErrors = dlg.runCheck(); // returns true when errors were found
+	const bool errors = dlg.runCheck(); // returns true when errors were found
 
 	// Restore flags before any further work (including the optional fix run below).
 	_viewport->Error_checker_checks_potential_issues = savedPotential;
 	_viewport->Error_checker_apply_auto_corrections  = savedCorrections;
 
-	if (!hadErrors)
+	if (!errors)
 		return true;
 
 	dlg.exec(); // modal — blocks until the designer clicks a button
@@ -2914,7 +2914,7 @@ void FredView::autoRunErrorChecker() {
 	// The designer can apply auto-corrections explicitly via the error checker dialog.
 	const bool savedCorrections = _viewport->Error_checker_apply_auto_corrections;
 	_viewport->Error_checker_apply_auto_corrections = false;
-	bool hadErrors = _errorCheckerDialog->runCheck();
+	bool errors = _errorCheckerDialog->runCheck();
 	_viewport->Error_checker_apply_auto_corrections = savedCorrections;
 
 	if (forceReview) {
@@ -2925,14 +2925,14 @@ void FredView::autoRunErrorChecker() {
 	}
 
 	if (_errorCheckerDialog->isVisible()) {
-		if (hadErrors) {
+		if (errors) {
 			_errorCheckerDialog->raise();
 			_errorCheckerDialog->activateWindow();
 		}
 		return;
 	}
 
-	if (!hadErrors) {
+	if (!errors) {
 		return;
 	}
 

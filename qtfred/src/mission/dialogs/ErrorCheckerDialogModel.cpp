@@ -20,10 +20,10 @@ void ErrorCheckerDialogModel::reject() {
 
 bool ErrorCheckerDialogModel::runCheck() {
 	_checker = std::make_unique<ErrorChecker>(_viewport);
-	bool noErrors = _checker->runFullCheck();
+	bool errors = _checker->runFullCheck();
 	_hasBeenRun = true;
 	modelChanged();
-	return !noErrors;
+	return errors;
 }
 
 void ErrorCheckerDialogModel::clearErrors() {

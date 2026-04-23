@@ -112,19 +112,21 @@ namespace fso {
 			int ShipGoalsDialogModel::verify_orders()
 			{
 				ErrorChecker checker(_viewport);
-				if (checker.runCheck(ErrorCheckType::InitialOrders, {goalp, self_ship, self_wing}))
+				if (!checker.runCheck(ErrorCheckType::InitialOrders, {goalp, self_ship, self_wing}))
 					return 0;
 
+				SCP_string message;
 				for (const auto& entry : checker.getErrors()) {
-					auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Error,
-						"Order Error",
-						entry.message,
-						{ DialogButton::Ok, DialogButton::Cancel });
-					if (button != DialogButton::Ok)
-						return 1;
+					if (!message.empty())
+						message += "\n\n";
+					message += entry.message;
 				}
 
-				return 0;
+				auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Error,
+					"Order Error",
+					message,
+					{ DialogButton::Ok, DialogButton::Cancel });
+				return (button == DialogButton::Ok) ? 0 : 1;
 			}
 
 			void ShipGoalsDialogModel::update_item(const int item)

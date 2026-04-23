@@ -65,7 +65,7 @@ std::pair<int, sexp_src> query_referenced_in_ai_goals(sexp_ref_type type, const 
 	return std::make_pair(-1, sexp_src::NONE);
 }
 
-// Used in the FRED drop-down menu and in error_check_initial_orders
+// Used in the FRED drop-down menu and in ErrorChecker::checkInitialOrders
 // NOTE: Certain goals (Form On Wing, Rearm, Chase Weapon, Fly To Ship) aren't listed here.  This may or may not be intentional,
 // but if they are added in the future, it will be necessary to verify correct functionality in the various FRED dialog functions.
 ai_goal_list Ai_goal_list[] = {

@@ -45,23 +45,23 @@ bool ErrorChecker::runFullCheck() {
 		}
 	} cleanup_guard{this};
 
-	if (checkObjectList() != 0)        return false;
-	if (checkShips() != 0)             return false;
-	if (checkWings() != 0)             return false;
-	if (checkWaypointPaths() != 0)     return false;
-	if (checkPlayerStarts() != 0)      return false;
-	if (checkReinforcements() != 0)    return false;
-	if (checkPlayerWings() != 0)       return false;
-	if (checkTeamLoadout() != 0)       return false;
-	if (checkMissionEvents() != 0)     return false;
-	if (checkMissionGoals() != 0)      return false;
-	if (checkBriefings() != 0)         return false;
-	if (checkDebriefings() != 0)       return false;
-	if (checkWingOrders() != 0)        return false;
-	if (checkAsteroidTargets() != 0)   return false;
-	if (checkDockingGroupCues() != 0)  return false;
+	if (checkObjectList() != 0)        return true;
+	if (checkShips() != 0)             return true;
+	if (checkWings() != 0)             return true;
+	if (checkWaypointPaths() != 0)     return true;
+	if (checkPlayerStarts() != 0)      return true;
+	if (checkReinforcements() != 0)    return true;
+	if (checkPlayerWings() != 0)       return true;
+	if (checkTeamLoadout() != 0)       return true;
+	if (checkMissionEvents() != 0)     return true;
+	if (checkMissionGoals() != 0)      return true;
+	if (checkBriefings() != 0)         return true;
+	if (checkDebriefings() != 0)       return true;
+	if (checkWingOrders() != 0)        return true;
+	if (checkAsteroidTargets() != 0)   return true;
+	if (checkDockingGroupCues() != 0)  return true;
 
-	return g_err == 0;
+	return g_err != 0;
 }
 
 bool ErrorChecker::runCheck(ErrorCheckType type, const ErrorCheckContext& ctx) {
@@ -100,7 +100,7 @@ bool ErrorChecker::runCheck(ErrorCheckType type, const ErrorCheckContext& ctx) {
 	case ErrorCheckType::TeamLoadout:       checkTeamLoadout(); break;
 	}
 
-	return g_err == 0;
+	return g_err != 0;
 }
 
 const SCP_vector<ErrorEntry>& ErrorChecker::getErrors() const {
@@ -1093,6 +1093,11 @@ int ErrorChecker::checkBriefings() {
 	for (int bs = 0; bs < Num_teams; bs++) {
 		for (int s = 0; s < Briefings[bs].num_stages; s++) {
 			brief_stage* sp = &Briefings[bs].stages[s];
+
+			if (fred_check_sexp(sp->formula, OPR_BOOL, "briefing stage %d (team %d)", s + 1, bs + 1)) {
+				return -1;
+			}
+
 			int t = sp->num_icons;
 			for (int i = 0; i < t - 1; i++) {
 				for (int j = i + 1; j < t; j++) {
@@ -1242,7 +1247,7 @@ int ErrorChecker::checkTeamLoadout() {
 			if (usage[j] <= 0)
 				continue;
 
-			if (_viewport->Error_checker_apply_auto_corrections) {
+			if (_viewport->Error_checker_apply_auto_corrections && Team_data[i].num_weapon_choices < MAX_WEAPON_TYPES) {
 				// Add the missing weapon to the pool so the mission is structurally valid.
 				int slot = Team_data[i].num_weapon_choices;
 				Team_data[i].weaponry_pool[slot] = j;
@@ -1262,6 +1267,8 @@ int ErrorChecker::checkTeamLoadout() {
 }
 
 int ErrorChecker::checkInitialOrders(ai_goal* goals, int ship, int wing) {
+	Assertion(_viewport->editor != nullptr, "checkInitialOrders requires a valid editor");
+
 	auto get_order_name = [](ai_goal_mode order) -> const char* {
 		if (order == AI_GOAL_NONE)
 			return "None";

@@ -161,7 +161,8 @@ void ErrorCheckerDialog::initializeUi() {
 
 void ErrorCheckerDialog::updateUi() {
 	while (QLayoutItem* item = _errorLayout->takeAt(0)) {
-		delete item->widget();
+		if (QWidget* w = item->widget())
+			w->deleteLater();
 		delete item;
 	}
 

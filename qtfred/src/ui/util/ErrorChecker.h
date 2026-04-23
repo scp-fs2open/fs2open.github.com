@@ -80,10 +80,10 @@ class ErrorChecker {
 public:
 	explicit ErrorChecker(EditorViewport* viewport);
 
-	// Run all checks in collect mode; returns true if no errors found
+	// Run all checks in collect mode; returns true if errors were found
 	bool runFullCheck();
 
-	// Run a specific check in collect mode; returns true if no errors found.
+	// Run a specific check in collect mode; returns true if errors were found.
 	// Errors are available via getErrors() after the call.
 	bool runCheck(ErrorCheckType type, const ErrorCheckContext& ctx = {});
 
@@ -95,6 +95,11 @@ private:
 	char* names[MAX_OBJECTS];
 	char err_flags[MAX_OBJECTS];
 	int obj_count = 0;
+	// Accumulates whether any error() or warning() has fired during a check run.
+	// Those helpers are void (no return value to propagate), so g_err is the only
+	// way runFullCheck/runCheck can report non-critical issues that don't cause an
+	// early abort. internal_error() sets it too, but also returns -1 for callers
+	// that need to halt immediately.
 	int g_err = 0;
 	SCP_vector<ErrorEntry> _collected_errors;
 	SCP_set<anchor_t> _anchors_checked;

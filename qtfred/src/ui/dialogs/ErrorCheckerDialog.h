@@ -40,7 +40,7 @@ public:
 	void setForcePotentialsDisplay(bool force);
 
 public slots: // NOLINT(readability-redundant-access-specifiers)
-	bool runCheck();
+	bool runCheck(); // returns true if no errors were found
 	void clearErrors();
 
 private slots:
