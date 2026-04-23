@@ -351,7 +351,7 @@ void OrbitCamera::handleInput(
 	updateCamera();
 }
 
-OrbitCamera::WidgetLayout OrbitCamera::getWidgetLayout() const
+OrbitCamera::WidgetLayout OrbitCamera::getWidgetLayout()
 {
 	const int size = WIDGET_CUBE_HALF_SIZE * 4;
 	const int left = gr_screen.center_offset_x + gr_screen.center_w - size - WIDGET_MARGIN;
@@ -379,14 +379,13 @@ bool OrbitCamera::handleOrientationWidgetClick(int mouseX, int mouseY)
 	}
 
 	const auto adjacent_labels = build_adjacent_labels(forward, right, up, layout.center_x, layout.center_y, layout.cube_half);
-	for (const auto& label : adjacent_labels) {
+	return std::any_of(adjacent_labels.begin(), adjacent_labels.end(), [&](const AdjacentLabel& label) {
 		if (point_in_rect(mouseX, mouseY, label.x, label.y, label.w, label.h)) {
 			snapToDirection(label.direction);
 			return true;
 		}
-	}
-
-	return false;
+		return false;
+	});
 }
 
 bool OrbitCamera::isOverlayHit(int mouseX, int mouseY) const
@@ -399,13 +398,9 @@ bool OrbitCamera::isOverlayHit(int mouseX, int mouseY) const
 	vec3d forward, right, up;
 	get_orbit_view_basis(phi, theta, forward, right, up);
 	const auto adjacent_labels = build_adjacent_labels(forward, right, up, layout.center_x, layout.center_y, layout.cube_half);
-	for (const auto& label : adjacent_labels) {
-		if (point_in_rect(mouseX, mouseY, label.x, label.y, label.w, label.h)) {
-			return true;
-		}
-	}
-
-	return false;
+	return std::any_of(adjacent_labels.begin(), adjacent_labels.end(), [&](const AdjacentLabel& label) {
+		return point_in_rect(mouseX, mouseY, label.x, label.y, label.w, label.h);
+	});
 }
 
 void OrbitCamera::snapToDirection(SnapDirection direction)
@@ -443,7 +438,7 @@ void OrbitCamera::snapToDirection(SnapDirection direction)
 	updateCamera();
 }
 
-float OrbitCamera::getObjectFitDistance() const
+float OrbitCamera::getObjectFitDistance()
 {
 	static constexpr float distance_multiplier = 1.6f;
 	float fit_distance = DEFAULT_DISTANCE;

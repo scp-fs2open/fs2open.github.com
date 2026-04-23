@@ -113,11 +113,11 @@ public:
 	struct WidgetLayout {
 		int size, left, top, center_x, center_y, cube_half;
 	};
-	WidgetLayout getWidgetLayout() const;
+	static WidgetLayout getWidgetLayout();
 
 	bool handleOrientationWidgetClick(int mouseX, int mouseY);
 	void snapToDirection(SnapDirection direction);
-	float getObjectFitDistance() const;
+	static float getObjectFitDistance();
 
 	float distance = DEFAULT_DISTANCE;
 	float phi = DEFAULT_PHI;
