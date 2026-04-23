@@ -277,6 +277,7 @@ void WaypointEditorDialogModel::setLayer(const SCP_string& layer)
 			_viewport->moveObjectToLayer(OBJ_INDEX(ptr), layer);
 		}
 	}
+	set_modified();
 	_editor->missionChanged();
 }
 

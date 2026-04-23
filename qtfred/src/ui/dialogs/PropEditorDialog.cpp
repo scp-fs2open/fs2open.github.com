@@ -106,7 +106,9 @@ void PropEditorDialog::on_layerCombo_currentIndexChanged(int index) {
 	if (index < 0)
 		return;
 	_model->setLayer(ui->layerCombo->itemData(index).toString().toUtf8().constData());
-	_model->apply();
+	if (!_model->apply()) {
+		updateUi();
+	}
 }
 
 } // namespace fso::fred::dialogs

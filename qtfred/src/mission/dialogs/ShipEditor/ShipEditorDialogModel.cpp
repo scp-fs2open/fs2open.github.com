@@ -928,7 +928,15 @@ void ShipEditorDialogModel::setLayer(const SCP_string& layer)
 	if (_m_layer == layer)
 		return;
 	_m_layer = layer;
-	_viewport->moveMarkedObjectsToLayer(layer);
+
+	for (auto objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
+		if (objp->flags[Object::Object_Flags::Marked]) {
+			if (objp->type == OBJ_SHIP || objp->type == OBJ_START) {
+				int obj_idx = OBJ_INDEX(objp);
+				_viewport->moveObjectToLayer(obj_idx, layer);
+			}
+		}
+	}
 	set_modified();
 	_editor->missionChanged();
 	modelChanged();

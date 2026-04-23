@@ -305,6 +305,7 @@ void PropEditorDialogModel::setLayer(const SCP_string& layer)
 			continue;
 		_viewport->moveObjectToLayer(obj_idx, layer);
 	}
+	set_modified();
 	_editor->missionChanged();
 }
 

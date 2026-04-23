@@ -394,6 +394,7 @@ void JumpNodeEditorDialogModel::setLayer(const SCP_string& v)
 	if (objnum < 0)
 		return;
 	_viewport->moveObjectToLayer(objnum, v);
+	set_modified();
 	_editor->missionChanged();
 }
 
