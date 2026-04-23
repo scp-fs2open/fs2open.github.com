@@ -30,7 +30,8 @@ public:
 	/// <param name="dx">Mouse delta on the x axis</param>
 	/// <param name="dy">Mouse delta on the y axis</param>
 	/// <param name="dz">Mouse wheel delta</param>
-	/// <param name="lmbDown">State of the left mouse button</param>
+	/// <param name="lmbDown">Whether the left mouse button is currently held</param>
+	/// <param name="lmbPressed">Whether the left mouse button was pressed this frame (rising edge only)</param>
 	/// <param name="rmbDown">State of the right mouse button</param>
 	/// <param name="modifierKeys">State of the various modifier keys. See keys.h</param>
 	virtual void handleInput(
@@ -108,6 +109,11 @@ public:
 	static constexpr float DEFAULT_DISTANCE = 100.0f;
 	static constexpr float DEFAULT_PHI = 1.24f;
 	static constexpr float DEFAULT_THETA = 2.25f;
+
+	struct WidgetLayout {
+		int size, left, top, center_x, center_y, cube_half;
+	};
+	WidgetLayout getWidgetLayout() const;
 
 	bool handleOrientationWidgetClick(int mouseX, int mouseY);
 	void snapToDirection(SnapDirection direction);

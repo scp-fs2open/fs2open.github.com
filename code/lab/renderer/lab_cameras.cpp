@@ -119,7 +119,7 @@ void get_orbit_view_basis(float phi, float theta, vec3d& forward, vec3d& right, 
 	vm_vec_normalize_safe(&up);
 }
 
-SCP_vector<WidgetFaceProjection> build_widget_faces(float phi, float theta, int center_x, int center_y, int half_size_px)
+SCP_vector<WidgetFaceProjection> build_widget_faces(const vec3d& forward, const vec3d& right, const vec3d& up, int center_x, int center_y, int half_size_px)
 {
 	const float cube_half = 1.0f;
 
@@ -174,10 +174,6 @@ SCP_vector<WidgetFaceProjection> build_widget_faces(float phi, float theta, int 
 			vm_vec_new(cube_half, -cube_half, -cube_half),
 			vm_vec_new(cube_half, -cube_half, cube_half)}});
 
-	vec3d forward;
-	vec3d right;
-	vec3d up;
-	get_orbit_view_basis(phi, theta, forward, right, up);
 	vec3d camera_dir;
 	vm_vec_copy_scale(&camera_dir, &forward, -1.0f);
 
@@ -246,12 +242,8 @@ struct AdjacentLabel {
 	int h = 0;
 };
 
-std::array<AdjacentLabel, 4> build_adjacent_labels(float phi, float theta, int center_x, int center_y, int cube_half_px)
+std::array<AdjacentLabel, 4> build_adjacent_labels(const vec3d& forward, const vec3d& right, const vec3d& up, int center_x, int center_y, int cube_half_px)
 {
-	vec3d forward;
-	vec3d right;
-	vec3d up;
-	get_orbit_view_basis(phi, theta, forward, right, up);
 	vec3d camera_dir;
 	vm_vec_copy_scale(&camera_dir, &forward, -1.0f);
 
@@ -359,16 +351,22 @@ void OrbitCamera::handleInput(
 	updateCamera();
 }
 
+OrbitCamera::WidgetLayout OrbitCamera::getWidgetLayout() const
+{
+	const int size = WIDGET_CUBE_HALF_SIZE * 4;
+	const int left = gr_screen.center_offset_x + gr_screen.center_w - size - WIDGET_MARGIN;
+	const int top = gr_screen.center_offset_y + WIDGET_MARGIN;
+	return {size, left, top, left + size / 2, top + size / 2, WIDGET_CUBE_HALF_SIZE};
+}
+
 bool OrbitCamera::handleOrientationWidgetClick(int mouseX, int mouseY)
 {
-	const int widget_size = WIDGET_CUBE_HALF_SIZE * 4;
-	const int widget_left = gr_screen.center_offset_x + gr_screen.center_w - widget_size - WIDGET_MARGIN;
-	const int widget_top = gr_screen.center_offset_y + WIDGET_MARGIN;
-	const int center_x = widget_left + widget_size / 2;
-	const int center_y = widget_top + widget_size / 2;
-	const int cube_half = WIDGET_CUBE_HALF_SIZE;
+	const auto layout = getWidgetLayout();
 
-	const auto faces = build_widget_faces(phi, theta, center_x, center_y, cube_half);
+	vec3d forward, right, up;
+	get_orbit_view_basis(phi, theta, forward, right, up);
+
+	const auto faces = build_widget_faces(forward, right, up, layout.center_x, layout.center_y, layout.cube_half);
 	for (auto it = faces.rbegin(); it != faces.rend(); ++it) {
 		if (!it->visible) {
 			continue;
@@ -380,7 +378,7 @@ bool OrbitCamera::handleOrientationWidgetClick(int mouseX, int mouseY)
 		}
 	}
 
-	const auto adjacent_labels = build_adjacent_labels(phi, theta, center_x, center_y, cube_half);
+	const auto adjacent_labels = build_adjacent_labels(forward, right, up, layout.center_x, layout.center_y, layout.cube_half);
 	for (const auto& label : adjacent_labels) {
 		if (point_in_rect(mouseX, mouseY, label.x, label.y, label.w, label.h)) {
 			snapToDirection(label.direction);
@@ -393,17 +391,14 @@ bool OrbitCamera::handleOrientationWidgetClick(int mouseX, int mouseY)
 
 bool OrbitCamera::isOverlayHit(int mouseX, int mouseY) const
 {
-	const int widget_size = WIDGET_CUBE_HALF_SIZE * 4;
-	const int widget_left = gr_screen.center_offset_x + gr_screen.center_w - widget_size - WIDGET_MARGIN;
-	const int widget_top = gr_screen.center_offset_y + WIDGET_MARGIN;
-	if (point_in_rect(mouseX, mouseY, widget_left, widget_top, widget_size, widget_size)) {
+	const auto layout = getWidgetLayout();
+	if (point_in_rect(mouseX, mouseY, layout.left, layout.top, layout.size, layout.size)) {
 		return true;
 	}
 
-	const int center_x = widget_left + widget_size / 2;
-	const int center_y = widget_top + widget_size / 2;
-	const int cube_half = WIDGET_CUBE_HALF_SIZE;
-	const auto adjacent_labels = build_adjacent_labels(phi, theta, center_x, center_y, cube_half);
+	vec3d forward, right, up;
+	get_orbit_view_basis(phi, theta, forward, right, up);
+	const auto adjacent_labels = build_adjacent_labels(forward, right, up, layout.center_x, layout.center_y, layout.cube_half);
 	for (const auto& label : adjacent_labels) {
 		if (point_in_rect(mouseX, mouseY, label.x, label.y, label.w, label.h)) {
 			return true;
@@ -460,15 +455,15 @@ float OrbitCamera::getObjectFitDistance() const
 
 		// Beams use the muzzle radius
 		if (obj->type == OBJ_BEAM) {
-			weapon_info* wip = &Weapon_info[Beams[obj->instance].weapon_info_index];
-			if (wip != nullptr) {
-				fit_distance = wip->b_info.beam_muzzle_radius * distance_multiplier;
+			const int wip_idx = Beams[obj->instance].weapon_info_index;
+			if (wip_idx >= 0) {
+				fit_distance = Weapon_info[wip_idx].b_info.beam_muzzle_radius * distance_multiplier;
 			}
 		// Lasers use the laser length
 		} else if (obj->type == OBJ_WEAPON) {
-			weapon_info* wip = &Weapon_info[Weapons[obj->instance].weapon_info_index];
-			if (wip != nullptr && wip->render_type == WRT_LASER) {
-				fit_distance = wip->laser_length * distance_multiplier;
+			const int wip_idx = Weapons[obj->instance].weapon_info_index;
+			if (wip_idx >= 0 && Weapon_info[wip_idx].render_type == WRT_LASER) {
+				fit_distance = Weapon_info[wip_idx].laser_length * distance_multiplier;
 			}
 		}
 	}
@@ -503,16 +498,19 @@ void OrbitCamera::updateCamera() {
 
 	vm_vec_scale(&new_position, distance);
 
-	object* obj = &Objects[getLabManager()->CurrentObject];
-	vec3d target = obj->pos;
+	vec3d target = vmd_zero_vector;
+	if (getLabManager()->CurrentObject != -1) {
+		object* obj = &Objects[getLabManager()->CurrentObject];
+		target = obj->pos;
 
-	if (obj->type == OBJ_WEAPON) {
-		weapon_info* wip = &Weapon_info[Weapons[obj->instance].weapon_info_index];
-		if (wip != nullptr && wip->render_type == WRT_LASER) {
-			// Offset target by half the laser length forward along the facing
-			vec3d forward;
-			vm_vec_copy_normalize(&forward, &obj->orient.vec.fvec);
-			vm_vec_scale_add2(&target, &forward, wip->laser_length * 0.5f);
+		if (obj->type == OBJ_WEAPON) {
+			const int wip_idx = Weapons[obj->instance].weapon_info_index;
+			if (wip_idx >= 0 && Weapon_info[wip_idx].render_type == WRT_LASER) {
+				// Offset target by half the laser length forward along the facing
+				vec3d fwd;
+				vm_vec_copy_normalize(&fwd, &obj->orient.vec.fvec);
+				vm_vec_scale_add2(&target, &fwd, Weapon_info[wip_idx].laser_length * 0.5f);
+			}
 		}
 	}
 
@@ -529,23 +527,20 @@ void OrbitCamera::updateCamera() {
 
 void OrbitCamera::renderOverlay() const
 {
-	const int widget_size = WIDGET_CUBE_HALF_SIZE * 4;
-	const int widget_left = gr_screen.center_offset_x + gr_screen.center_w - widget_size - WIDGET_MARGIN;
-	const int widget_top = gr_screen.center_offset_y + WIDGET_MARGIN;
-	const int center_x = widget_left + widget_size / 2;
-	const int center_y = widget_top + widget_size / 2;
-	const int cube_half = WIDGET_CUBE_HALF_SIZE;
+	const auto layout = getWidgetLayout();
 
 	color background;
 	gr_init_alphacolor(&background, 24, 24, 24, 96);
 	gr_set_color_fast(&background);
-	gr_rect(widget_left, widget_top, widget_size, widget_size, GR_RESIZE_NONE);
+	gr_rect(layout.left, layout.top, layout.size, layout.size, GR_RESIZE_NONE);
 
 	int mouse_x = 0;
 	int mouse_y = 0;
 	mouse_get_pos(&mouse_x, &mouse_y);
 
-	const auto faces = build_widget_faces(phi, theta, center_x, center_y, cube_half);
+	vec3d forward, right, up;
+	get_orbit_view_basis(phi, theta, forward, right, up);
+	const auto faces = build_widget_faces(forward, right, up, layout.center_x, layout.center_y, layout.cube_half);
 	for (const auto& face : faces) {
 		if (!face.visible) {
 			continue;
@@ -569,7 +564,7 @@ void OrbitCamera::renderOverlay() const
 		gr_string(face.center_screen_x - (text_w / 2), face.center_screen_y - (text_h / 2), face.label, GR_RESIZE_NONE);
 	}
 
-	const auto adjacent_labels = build_adjacent_labels(phi, theta, center_x, center_y, cube_half);
+	const auto adjacent_labels = build_adjacent_labels(forward, right, up, layout.center_x, layout.center_y, layout.cube_half);
 	for (const auto& label : adjacent_labels) {
 		const bool hovered = point_in_rect(mouse_x, mouse_y, label.x, label.y, label.w, label.h);
 
@@ -587,5 +582,5 @@ void OrbitCamera::renderOverlay() const
 	int subtitle_h = 0;
 	gr_get_string_size(&subtitle_w, &subtitle_h, subtitle);
 	gr_set_color_fast(&Color_silver);
-	gr_string(center_x - (subtitle_w / 2), widget_top + widget_size + 8, subtitle, GR_RESIZE_NONE);
+	gr_string(layout.center_x - (subtitle_w / 2), layout.top + layout.size + 8, subtitle, GR_RESIZE_NONE);
 }
