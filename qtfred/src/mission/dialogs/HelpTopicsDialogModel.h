@@ -43,6 +43,9 @@ public:
 	// Exposed so HelpTopicsDialog can call it directly and show an error on failure.
 	static bool ensureEngineReady();
 
+	// On-demand VFS lookup for assets (CSS, images, scripts) referenced by tutorial pages.
+	static QByteArray loadTutorialAsset(const QString& urlPath);
+
 private:
 	static QString resolveCollectionFile();
 	static QString resolveContentFile();
@@ -52,6 +55,7 @@ private:
 	static QHelpEngine*               _helpEngine;
 	static QList<TutorialEntry>       _tutorials;
 	static QHash<QString, QByteArray> _tutorialContent;
+	static QHash<QString, QByteArray> _assetCache;
 	static TutorialEntry              _sexpOperatorReference;
 	static bool                       _hasSexpOperatorReference;
 };

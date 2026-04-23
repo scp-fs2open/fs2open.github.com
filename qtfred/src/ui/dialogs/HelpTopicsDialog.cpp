@@ -56,10 +56,9 @@ QVariant HelpBrowser::loadResource(int type, const QUrl& name) {
 			}
 			return tutorialBytes;
 		}
-		// On-demand loading for assets (images, CSS, etc.) referenced by tutorial pages.
-		// Falls through to the VFS lookup in cfile, handled in the model's resolveContentFile
-		// path, so we just return empty here for unknown assets.
-		return {};
+		// On-demand loading for assets (CSS, images, scripts) referenced by tutorial pages.
+		const QByteArray asset = HelpTopicsDialogModel::loadTutorialAsset(name.path());
+		return asset.isEmpty() ? QVariant{} : asset;
 	}
 
 	if (name.scheme() == QStringLiteral("qthelp")) {

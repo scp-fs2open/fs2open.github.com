@@ -23,6 +23,7 @@ namespace fso::fred::dialogs {
 QHelpEngine*               HelpTopicsDialogModel::_helpEngine    = nullptr;
 QList<TutorialEntry>       HelpTopicsDialogModel::_tutorials;
 QHash<QString, QByteArray> HelpTopicsDialogModel::_tutorialContent;
+QHash<QString, QByteArray> HelpTopicsDialogModel::_assetCache;
 TutorialEntry              HelpTopicsDialogModel::_sexpOperatorReference;
 bool                       HelpTopicsDialogModel::_hasSexpOperatorReference = false;
 
@@ -34,6 +35,7 @@ void HelpTopicsDialogModel::prewarm() {
 	if (ensureEngineReady())
 		_helpEngine->searchEngine()->scheduleIndexDocumentation();
 	_tutorialContent.clear();
+	_assetCache.clear();
 	_hasSexpOperatorReference = false;
 	_tutorials = discoverTutorials();
 }
@@ -205,6 +207,41 @@ QList<TutorialEntry> HelpTopicsDialogModel::discoverTutorials() {
 	}
 
 	return result;
+}
+
+QByteArray HelpTopicsDialogModel::loadTutorialAsset(const QString& urlPath) {
+	if (!cfile_inited)
+		return {};
+
+	// Reject empty, root-only, non-rooted, or path-traversal requests.
+	if (urlPath.isEmpty() || urlPath == QStringLiteral("/"))
+		return {};
+	if (!urlPath.startsWith(QLatin1Char('/')))
+		return {};
+	if (urlPath.contains(QStringLiteral("..")))
+		return {};
+
+	// Cache both hits and misses to avoid repeated VFS lookups for the same asset.
+	const auto cached = _assetCache.constFind(urlPath);
+	if (cached != _assetCache.constEnd())
+		return *cached;
+
+	// Strip the leading '/' before the VFS lookup (e.g. "/images/logo.png" -> "images/logo.png").
+	// QUrl::path() already decodes percent-encoded characters, so no extra decoding needed.
+	const std::string relPath = urlPath.mid(1).toStdString();
+	CFileLocation loc = cf_find_file_location(relPath.c_str(), CF_TYPE_FREDDOCS);
+	if (!loc.found || loc.full_name.empty()) {
+		_assetCache.insert(urlPath, {});
+		return {};
+	}
+	QFile f(QString::fromStdString(loc.full_name));
+	if (!f.open(QIODevice::ReadOnly)) {
+		_assetCache.insert(urlPath, {});
+		return {};
+	}
+	const QByteArray data = f.readAll();
+	_assetCache.insert(urlPath, data);
+	return data;
 }
 
 } // namespace fso::fred::dialogs
