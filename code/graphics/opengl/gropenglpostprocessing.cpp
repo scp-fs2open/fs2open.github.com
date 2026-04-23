@@ -761,7 +761,7 @@ void gr_opengl_post_process_save_zbuffer()
 	GR_DEBUG_SCOPE("Save z-Buffer");
 	if (Post_initialized)
 	{
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, Cockpit_depth_texture, 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, Cockpit_depth_texture, 0);
 		gr_zbuffer_clear(TRUE);
 		zbuffer_saved = true;
 	}
@@ -777,7 +777,7 @@ void gr_opengl_post_process_restore_zbuffer()
 	GR_DEBUG_SCOPE("Restore z-Buffer");
 
 	if (zbuffer_saved) {
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, Scene_depth_texture, 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, Scene_depth_texture, 0);
 
 		zbuffer_saved = false;
 	}
