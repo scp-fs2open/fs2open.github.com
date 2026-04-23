@@ -239,7 +239,7 @@ QByteArray HelpTopicsDialogModel::loadTutorialAsset(const QString& urlPath) {
 		_assetCache.insert(urlPath, {});
 		return {};
 	}
-	const QByteArray data = f.readAll();
+	QByteArray data = f.readAll();
 	_assetCache.insert(urlPath, data);
 	return data;
 }
