@@ -249,6 +249,7 @@ void HelpTopicsDialog::buildContentsTab() {
 
 	_contentsTree = new QTreeView(container);
 	_contentsTree->setHeaderHidden(true);
+	_contentsTree->setEditTriggers(QAbstractItemView::NoEditTriggers);
 	_contentsModel = new QStandardItemModel(_contentsTree);
 
 	auto* helpContentModel = qobject_cast<QHelpContentModel*>(engine->contentWidget()->model());

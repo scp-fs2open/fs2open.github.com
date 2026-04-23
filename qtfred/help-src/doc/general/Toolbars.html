@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Toolbars - QtFRED Help</title>
+    <link rel="stylesheet" type="text/css" href="../css/help.css"/>
+</head>
+<body>
+<nav class="breadcrumb"><a href="../index.html">QtFRED Help</a> &rsaquo; Toolbars</nav>
+<h1>Toolbars</h1>
+<p>QtFRED has four toolbars: the <a href="#icon-toolbar">icon toolbar</a>, the
+<a href="#context-bar">context bar</a>, the <a href="#transform-bar">transform bar</a>,
+and the <a href="#status-bar">status bar</a>.</p>
+
+<h2 id="icon-toolbar">Icon Toolbar</h2>
+<p>The icon toolbar provides quick access to the most common editing modes and actions.
+The active mode determines how clicks and drags behave in the
+<a href="Viewport.html">viewport</a>.</p>
+
+<h3>Tools</h3>
+<table>
+    <tr><th>Tool</th><th>Shortcut</th><th>Description</th></tr>
+
+    <tr><td colspan="3"><strong>Mode</strong></td></tr>
+    <tr>
+        <td>Select</td>
+        <td>S</td>
+        <td>Click to select objects. Drag on empty space to box-select.</td>
+    </tr>
+    <tr>
+        <td>Select and Move</td>
+        <td>M</td>
+        <td>Click to select objects; drag a selected object to move it.</td>
+    </tr>
+    <tr>
+        <td>Select and Rotate</td>
+        <td>R</td>
+        <td>Click to select objects; drag a selected object to rotate it.</td>
+    </tr>
+
+    <tr><td colspan="3"><strong>Axis constraints</strong></td></tr>
+    <tr>
+        <td>X Constraint</td>
+        <td></td>
+        <td>Constrains move or rotate to the X axis.</td>
+    </tr>
+    <tr>
+        <td>Y Constraint</td>
+        <td></td>
+        <td>Constrains move or rotate to the Y axis.</td>
+    </tr>
+    <tr>
+        <td>Z Constraint</td>
+        <td></td>
+        <td>Constrains move or rotate to the Z axis.</td>
+    </tr>
+    <tr>
+        <td>XZ Constraint</td>
+        <td></td>
+        <td>Constrains move or rotate to the XZ plane.</td>
+    </tr>
+    <tr>
+        <td>YZ Constraint</td>
+        <td></td>
+        <td>Constrains move or rotate to the YZ plane.</td>
+    </tr>
+    <tr>
+        <td>XY Constraint</td>
+        <td></td>
+        <td>Constrains move or rotate to the XY plane.</td>
+    </tr>
+
+    <tr><td colspan="3"><strong>Selection</strong></td></tr>
+    <tr>
+        <td>Scene Browser</td>
+        <td>H</td>
+        <td>Toggles the Scene Browser panel, which lists all objects in the
+            mission.</td>
+    </tr>
+    <tr>
+        <td>Lock Selection</td>
+        <td>Space</td>
+        <td>Prevents the current selection from changing.</td>
+    </tr>
+
+    <tr><td colspan="3"><strong>Wings</strong></td></tr>
+    <tr>
+        <td>Form Wing</td>
+        <td>Ctrl+W</td>
+        <td>Forms a wing from the currently selected ships.</td>
+    </tr>
+    <tr>
+        <td>Disband Wing</td>
+        <td>Ctrl+D</td>
+        <td>Disbands the wing of the currently selected ships, returning them to
+            individual objects.</td>
+    </tr>
+
+    <tr><td colspan="3"><strong>View</strong></td></tr>
+    <tr>
+        <td>Zoom on Selected</td>
+        <td>Alt+Z</td>
+        <td>Moves the camera to focus on the selected objects.</td>
+    </tr>
+    <tr>
+        <td>Zoom Extents</td>
+        <td>Shift+Z</td>
+        <td>Zooms the camera to fit all objects in the mission into view.</td>
+    </tr>
+    <tr>
+        <td>Show Distances</td>
+        <td>D</td>
+        <td>Toggles display of distance measurements between selected objects.</td>
+    </tr>
+    <tr>
+        <td>Rotate Around Object</td>
+        <td>Alt+R</td>
+        <td>Toggles camera orbit mode, rotating the view around the selected
+            object.</td>
+    </tr>
+
+    <tr><td colspan="3"><strong>Layers</strong></td></tr>
+    <tr>
+        <td>Manage View Layers</td>
+        <td></td>
+        <td>Opens the <a href="LayerManagerDialog.html">Layer Manager</a> to
+            show or hide categories of objects.</td>
+    </tr>
+    <tr>
+        <td>Show All Layers</td>
+        <td></td>
+        <td>Makes all hidden layers visible.</td>
+    </tr>
+</table>
+
+<h3>Object creation dropdowns</h3>
+<p>Two dropdowns at the right end of the toolbar control what is created when you
+click in the viewport.</p>
+<table>
+    <tr><th>Dropdown</th><th>Used by</th><th>Description</th></tr>
+    <tr>
+        <td>Ships</td>
+        <td>Ctrl+click</td>
+        <td>Selects the ship class, waypoint, or jump node to place. The object
+            created on Ctrl+click is determined by this selection.</td>
+    </tr>
+    <tr>
+        <td>Props</td>
+        <td>Ctrl+Shift+click</td>
+        <td>Selects the prop class to place. The prop created on
+            Ctrl+Shift+click is determined by this selection.</td>
+    </tr>
+</table>
+
+<h2 id="context-bar">Context Bar</h2>
+<p>The context bar sits below the icon toolbar. Its left side shows a label describing
+the current selection; the right side shows action buttons that change depending on
+what is selected.</p>
+
+<h3>Selection label</h3>
+<table>
+    <tr><th>Selection state</th><th>Label text</th></tr>
+    <tr>
+        <td>Nothing selected</td>
+        <td><em>No Selection</em></td>
+    </tr>
+    <tr>
+        <td>Single ship or player start</td>
+        <td><em>Ship: &lt;name&gt; [&lt;class&gt;]</em> - appends <em>&nbsp;|&nbsp;Wing: &lt;name&gt;</em> when the
+            ship belongs to a wing.</td>
+    </tr>
+    <tr>
+        <td>Single waypoint</td>
+        <td><em>Waypoint: &lt;name&gt;</em> - appends <em>&nbsp;|&nbsp;List: &lt;name&gt;</em> when a waypoint
+            list is active.</td>
+    </tr>
+    <tr>
+        <td>Single jump node</td>
+        <td><em>Jump Node: &lt;name&gt;</em></td>
+    </tr>
+    <tr>
+        <td>Single prop</td>
+        <td><em>Prop: &lt;name&gt;</em></td>
+    </tr>
+    <tr>
+        <td>Multiple objects selected</td>
+        <td>A comma-separated count by type, e.g. <em>2 ship(s), 1 waypoint(s) selected</em>.
+            Appends <em>&nbsp;|&nbsp;Wing: &lt;name&gt;</em> when all selected ships share the
+            same wing.</td>
+    </tr>
+</table>
+
+<h3>Action buttons</h3>
+<p>Buttons appear to the right of the label and are rebuilt whenever the selection
+changes. The set of buttons depends on the type and count of selected objects.</p>
+<table>
+    <tr><th>Button</th><th>Appears when</th><th>Action</th></tr>
+    <tr>
+        <td>Rename</td>
+        <td>Exactly one ship selected</td>
+        <td>Prompts for a new name and renames the ship immediately. For
+            waypoints, props, and jump nodes, use the object's editor instead.</td>
+    </tr>
+    <tr>
+        <td>Edit Ship</td>
+        <td>One or more ships selected (all must be ships)</td>
+        <td>Opens the <a href="../dialogs/ShipEditorDialog.html">Ship Editor</a>.</td>
+    </tr>
+    <tr>
+        <td>Edit Waypoint Path</td>
+        <td>Exactly one waypoint selected</td>
+        <td>Opens the <a href="../dialogs/WaypointEditorDialog.html">Waypoint Editor</a>.</td>
+    </tr>
+    <tr>
+        <td>Edit Jump Node</td>
+        <td>Exactly one jump node selected</td>
+        <td>Opens the <a href="../dialogs/JumpNodeEditorDialog.html">Jump Node Editor</a>.</td>
+    </tr>
+    <tr>
+        <td>Edit Prop</td>
+        <td>Exactly one prop selected</td>
+        <td>Opens the <a href="../dialogs/PropEditorDialog.html">Prop Editor</a>.</td>
+    </tr>
+    <tr>
+        <td>Position/Orientation</td>
+        <td>Any single object selected</td>
+        <td>Opens the <a href="../dialogs/ObjectOrientEditorDialog.html">Object Orientation Editor</a>.</td>
+    </tr>
+    <tr>
+        <td>Edit Wing</td>
+        <td>Selected ship(s) belong to a wing</td>
+        <td>Opens the <a href="../dialogs/WingEditorDialog.html">Wing Editor</a> for that wing.</td>
+    </tr>
+    <tr>
+        <td>Select Wing</td>
+        <td>Selected ship(s) belong to a wing</td>
+        <td>Marks all ships in the wing, replacing the current selection.</td>
+    </tr>
+    <tr>
+        <td>Clone</td>
+        <td>Exactly one object selected</td>
+        <td>Duplicates the selected object.</td>
+    </tr>
+    <tr>
+        <td>Delete</td>
+        <td>Anything selected</td>
+        <td>Deletes all marked objects.</td>
+    </tr>
+</table>
+
+<h2 id="transform-bar">Transform Bar</h2>
+<p>The transform bar sits below the context bar. It is divided into two sections: a
+left section with camera speed controls, and a right section with selection-specific
+fields that change based on the active editing mode.</p>
+
+<h3>Camera speed (left section)</h3>
+<table>
+    <tr><th>Control</th><th>Description</th></tr>
+    <tr>
+        <td>Camera Move</td>
+        <td>Dropdown setting the camera translation speed. Choices are x1, x2, x3,
+            x5, x8, x10, x50, x100. Mirrors the <em>Speed &rsaquo; Movement</em> menu.</td>
+    </tr>
+    <tr>
+        <td>Camera Rot</td>
+        <td>Dropdown setting the camera rotation speed. Choices are x1, x5, x12,
+            x25, x50. Mirrors the <em>Speed &rsaquo; Rotation</em> menu.</td>
+    </tr>
+</table>
+
+<h3>Selection fields (right section)</h3>
+<p>These controls reflect and edit the current selection. Most are disabled when
+nothing is selected or when the toolbar is in Select mode.</p>
+<table>
+    <tr><th>Control</th><th>Description</th></tr>
+    <tr>
+        <td>IFF</td>
+        <td>Dropdown showing the IFF of the selected ship(s). Enabled only
+            when at least one ship is selected. Shows blank when the marked ships
+            have different IFFs. Changing the value applies to all marked ships.</td>
+    </tr>
+    <tr>
+        <td>Local toggle</td>
+        <td>Icon button that switches between local and group transform behaviour
+            for multi-object edits. In <strong>Move</strong> mode: when on, each object moves
+            along its own axes independently; when off, all objects move together
+            as a formation. In <strong>Rotate</strong> mode: when on, each object rotates
+            around its own centre; when off, all objects orbit around the primary
+            selected object. The last setting is remembered separately for Move and
+            Rotate modes.</td>
+    </tr>
+    <tr>
+        <td>Pos X / Y / Z</td>
+        <td>Three spin boxes showing the world-space position of the selected
+            object. Visible in <strong>Select</strong> and <strong>Move</strong> modes. Editing a
+            value moves the object (or, with the Local toggle off and multiple
+            objects marked, the whole group) to the entered coordinate. Disabled
+            in Select mode.</td>
+    </tr>
+    <tr>
+        <td>Ori H / P / B</td>
+        <td>Three spin boxes showing the heading, pitch, and bank of the selected
+            object in degrees. Visible in <strong>Rotate</strong> mode. Editing a value
+            rotates the object (or group, depending on the Local toggle).</td>
+    </tr>
+    <tr>
+        <td>Radius</td>
+        <td>Read-only field. For a single selection, shows the bounding radius of
+            the object. For multiple objects, shows the bounding radius of the
+            entire selection (distance from the centroid to the farthest marked
+            object). Shows &ldquo;--&rdquo; when nothing is selected.</td>
+    </tr>
+    <tr>
+        <td>Layer</td>
+        <td>Dropdown showing the layer the selected object(s) belong to. Changing
+            the value moves all marked objects to the chosen layer. Shows blank
+            when the marked objects are on different layers.</td>
+    </tr>
+</table>
+
+<h2 id="status-bar">Status Bar</h2>
+<p>The status bar runs along the bottom of the window. It has three persistent fields
+and a message area that shows transient notifications during loading.</p>
+<table>
+    <tr><th>Field</th><th>Position</th><th>Description</th></tr>
+    <tr>
+        <td>Object counts</td>
+        <td>Left</td>
+        <td>Counts of objects currently in the mission, e.g.
+            <em>Ships: 4&nbsp;&nbsp;&nbsp;WPs: 2&nbsp;&nbsp;&nbsp;Nodes: 1</em>.
+            Waypoints and jump nodes are omitted when their count is zero.</td>
+    </tr>
+    <tr>
+        <td>Viewpoint</td>
+        <td>Right</td>
+        <td><em>Viewpoint: Camera</em> normally; changes to
+            <em>Viewpoint: &lt;name&gt;</em> when the camera is locked to a
+            ship's perspective.</td>
+    </tr>
+    <tr>
+        <td>Units</td>
+        <td>Right</td>
+        <td><em>Units = N Meters</em> - the size of one grid square in metres.</td>
+    </tr>
+</table>
+</body>
+</html>

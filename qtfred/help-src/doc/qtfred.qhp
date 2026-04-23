@@ -18,7 +18,7 @@
                     <section title="Layer Manager"  ref="general/LayerManagerDialog.html"/>
                     <section title="Preferences"    ref="general/PreferencesDialog.html"/>
                     <section title="Scene Browser"  ref="general/SceneBrowserDialog.html"/>
-                    <section title="Toolbar"        ref="general/Toolbar.html"/>
+                    <section title="Toolbars"       ref="general/Toolbars.html"/>
                     <section title="Viewport"       ref="general/Viewport.html"/>
                 </section>
                 <section title="Dialogs">
@@ -92,7 +92,7 @@
             <keyword name="Messages"                id="concept.messages"           ref="concepts/messages.html"/>
             <keyword name="Campaign Flow"           id="concept.campaignflow"       ref="concepts/campaign-flow.html"/>
             <keyword name="Viewport"                id="concept.viewport"           ref="general/Viewport.html"/>
-            <keyword name="Toolbar"                 id="concept.toolbar"            ref="general/Toolbar.html"/>
+            <keyword name="Toolbars"                id="concept.toolbar"            ref="general/Toolbars.html"/>
             <keyword name="Custom Data"             id="CustomDataDialog"           ref="dialogs/CustomDataDialog.html"/>
             <keyword name="Quickstart"              id="concept.quickstart"         ref="quickstart.html"/>
 
@@ -168,7 +168,7 @@
             <file>dialogs/GlobalShipFlagsDialog.html</file>
             <file>dialogs/JumpNodeEditorDialog.html</file>
             <file>general/Viewport.html</file>
-            <file>general/Toolbar.html</file>
+            <file>general/Toolbars.html</file>
             <file>general/LayerManagerDialog.html</file>
             <file>general/SceneBrowserDialog.html</file>
             <file>dialogs/MissionCutscenesDialog.html</file>
