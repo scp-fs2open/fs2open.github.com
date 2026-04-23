@@ -38,6 +38,7 @@ class ShipGoalsDialog : public QDialog {
 	QSpinBox* priority[ED_MAX_GOALS];
 
 	void updateUI();
+	bool m_updating_ui = false;
 };
 } // namespace fso::fred::dialogs
 #endif // !SHIPGOALSDIALOG_H

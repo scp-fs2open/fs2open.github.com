@@ -78,7 +78,7 @@ int MissionStatsDialogModel::getJumpNodeCount()
 
 int MissionStatsDialogModel::getMessageCount()
 {
-	return Num_messages;
+	return Num_messages - Num_builtin_messages;
 }
 
 int MissionStatsDialogModel::getEventCount()

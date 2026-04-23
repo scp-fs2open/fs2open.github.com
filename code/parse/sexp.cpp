@@ -703,6 +703,8 @@ SCP_vector<sexp_oper> Operators = {
 	{ "hud-force-sensor-static",		OP_HUD_FORCE_SENSOR_STATIC,				1,	1,			SEXP_ACTION_OPERATOR,	},	// MjnMixael
 	{ "hud-force-emp-effect",			OP_HUD_FORCE_EMP_EFFECT,				2,	3,			SEXP_ACTION_OPERATOR,	},	// MjnMixael
 	{ "set-squadron-wings",				OP_SET_SQUADRON_WINGS,			1,	MAX_SQUADRON_WINGS,	SEXP_ACTION_OPERATOR,	},	// Goober5000
+	{ "set-player-target",				OP_SET_PLAYER_TARGET,					1,	2,			SEXP_ACTION_OPERATOR,	},	// LuytenKy
+	{ "clear-player-target",			OP_CLEAR_PLAYER_TARGET,					0,	0,			SEXP_ACTION_OPERATOR,	},	// LuytenKy
 
 	//Nav Sub-Category
 	{ "add-nav-waypoint",				OP_NAV_ADD_WAYPOINT,					3,	4,			SEXP_ACTION_OPERATOR,	},	//kazan
@@ -13921,6 +13923,44 @@ void sexp_set_friendly_damage_caps(int n) {
 	if (!is_nan && !is_nan_forever) {
 		aip.weapon_self_damage_cap[Game_skill_level] = weapon_self_cap;
 	}
+}
+
+// Luytenky
+/*
+ * Sets the player's target to the specified, either ship, and or the subsystem on said ship.
+ */
+void sexp_set_player_target(int node)
+{
+	int shipnum = ship_name_lookup(CTEXT(node), 1);
+	if (shipnum < 0)
+		return;
+	ship* shipp = &Ships[shipnum];
+	int objnum = shipp->objnum;
+	int n = CDR(node);
+	if (n >= 0) {
+		const char* subsys_name = CTEXT(n);
+		if (stricmp(subsys_name, SEXP_NONE_STRING) != 0) {
+			ship_subsys* ss = ship_get_subsys(shipp, subsys_name);
+			// target ship regardless of whether subsystem is destroyed
+			shipp->last_targeted_subobject[Player_num] = ss;
+		} else {
+			shipp->last_targeted_subobject[Player_num] = nullptr;
+		}
+	} else {
+		shipp->last_targeted_subobject[Player_num] = nullptr;
+	}
+	// set_target_objnum will call hud_restore_subsystem_target which reads last_targeted_subobject
+	set_target_objnum(Player_ai, objnum);
+}
+
+// Luytenky
+/*
+ * Clears the player's targeting.
+ */
+void sexp_clear_player_target()
+{
+	set_target_objnum(Player_ai, -1);
+	set_targeted_subsys(Player_ai, nullptr, -1);
 }
 
 // Karajorma
@@ -29109,6 +29149,16 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			// LuytenKy
+			case OP_SET_PLAYER_TARGET:
+				sexp_set_player_target(node);
+				sexp_val = SEXP_TRUE;
+				break;
+			case OP_CLEAR_PLAYER_TARGET:
+				sexp_clear_player_target();
+				sexp_val = SEXP_TRUE;
+				break;
+
 			// Kestrellius
 			case OP_SET_FRIENDLY_DAMAGE_CAPS:
 				sexp_set_friendly_damage_caps(node);
@@ -31737,6 +31787,8 @@ int query_operator_return_type(int op)
 		case OP_TRIGGER_SUBMODEL_ANIMATION:
 		case OP_PLAYER_USE_AI:
 		case OP_PLAYER_NOT_USE_AI:
+		case OP_SET_PLAYER_TARGET:
+		case OP_CLEAR_PLAYER_TARGET:
 		case OP_SET_FRIENDLY_DAMAGE_CAPS:
 		case OP_ALLOW_TREASON:
 		case OP_SET_PLAYER_ORDERS:
@@ -33206,6 +33258,12 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_PLAYER_USE_AI:
 		case OP_PLAYER_NOT_USE_AI:
 			return OPF_NONE;
+
+		case OP_SET_PLAYER_TARGET:
+			if (argnum == 0)
+				return OPF_SHIP;
+			else
+				return OPF_SUBSYSTEM_OR_NONE;
 
 		case OP_CREATE_BOLT:
 			if (argnum == 0)
@@ -36870,6 +36928,8 @@ int get_category(int op_id)
 		case OP_ROTATING_SUBSYS_SET_TURN_TIME:
 		case OP_PLAYER_USE_AI:
 		case OP_PLAYER_NOT_USE_AI:
+		case OP_SET_PLAYER_TARGET:
+		case OP_CLEAR_PLAYER_TARGET:
 		case OP_HUD_DISABLE_EXCEPT_MESSAGES:
 		case OP_FORCE_JUMP:
 		case OP_HUD_SET_TEXT:
@@ -37257,6 +37317,8 @@ int get_subcategory(int op_id)
 		case OP_CHANGE_AI_CLASS:
 		case OP_PLAYER_USE_AI:
 		case OP_PLAYER_NOT_USE_AI:
+		case OP_SET_PLAYER_TARGET:
+		case OP_CLEAR_PLAYER_TARGET:
 		case OP_SET_PLAYER_ORDERS:
 		case OP_CAP_WAYPOINT_SPEED:
 		case OP_SET_WING_FORMATION:
@@ -41798,6 +41860,17 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	// Goober5000
 	{ OP_PLAYER_NOT_USE_AI, "player-not-use-ai\r\n"
 		"\tCauses the player's ship to not be controlled by the FreeSpace AI.  Takes 0 arguments.\r\n"
+	},
+
+	// LuytenKy
+	{ OP_SET_PLAYER_TARGET, "set-player-target\r\n"
+		"\tSets the player's current target to the specified ship, and optionally a subsystem on that ship.\r\n"
+		"\tIf the subsystem is destroyed, the ship will still be targeted. Takes 1 to 2 arguments.\r\n"
+		"\t1:\tThe ship to target.\r\n"
+		"\t2:\t(Optional) The subsystem to target. Use <none> to target no subsystem.\r\n"
+	},
+	{ OP_CLEAR_PLAYER_TARGET, "clear-player-target\r\n"
+		"\tClears the player's current target and subsystem target. Takes 0 arguments.\r\n"
 	},
 
 	// Kestrellius

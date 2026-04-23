@@ -121,6 +121,7 @@ public:
 	void setMissionFlagDirect(Mission::Mission_Flags flag, bool enabled);
 	bool getMissionFlag(Mission::Mission_Flags flag) const;
 	const SCP_vector<std::pair<SCP_string, bool>>& getMissionFlagsList();
+	static SCP_vector<std::pair<SCP_string, SCP_string>> getMissionFlagDescriptions();
 
 	void setMissionFullWar(bool enabled);
 

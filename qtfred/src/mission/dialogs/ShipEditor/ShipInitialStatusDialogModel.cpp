@@ -4,6 +4,7 @@
 
 #include <globalincs/linklist.h>
 #include <localization/localize.h>
+#include <mod_table/mod_table.h>
 
 #include <QtWidgets>
 #include <object/objectdock.cpp>
@@ -766,6 +767,16 @@ void ShipInitialStatusDialogModel::setCargo(const SCP_string& text)
 	modify(m_cargo_name, text);
 }
 
+SCP_string ShipInitialStatusDialogModel::getCargoTitle() const
+{
+	return m_cargo_title;
+}
+
+void ShipInitialStatusDialogModel::setCargoTitle(const SCP_string& text)
+{
+	modify(m_cargo_title, text);
+}
+
 SCP_string ShipInitialStatusDialogModel::getColour() const
 {
 	return m_team_color_setting;
@@ -817,6 +828,9 @@ void ShipInitialStatusDialogModel::change_subsys(const int new_subsys)
 				ptr->subsys_cargo_name = cargo_index;
 			}
 		}
+
+		// update cargo title
+		strcpy_s(ptr->subsys_cargo_title, m_cargo_title.c_str());
 	}
 
 	cur_subsys = z = new_subsys;
@@ -831,15 +845,12 @@ void ShipInitialStatusDialogModel::change_subsys(const int new_subsys)
 		}
 
 		m_damage = 100 - static_cast<int>(ptr->current_hits);
-		if (ship_has_scannable_subsystems) {
-			if (ptr->subsys_cargo_name > 0) {
-				m_cargo_name = Cargo_names[ptr->subsys_cargo_name];
-			} else {
-				m_cargo_name = "";
-			}
+		if (ptr->subsys_cargo_name > 0) {
+			m_cargo_name = Cargo_names[ptr->subsys_cargo_name];
 		} else {
 			m_cargo_name = "";
 		}
+		m_cargo_title = ptr->subsys_cargo_title;
 	}
 	set_modified();
 	modelChanged();
@@ -894,6 +905,16 @@ int ShipInitialStatusDialogModel::getGuardian() const
 void ShipInitialStatusDialogModel::setGuardian(int value)
 {
 	modify(guardian_threshold, value);
+}
+
+bool ShipInitialStatusDialogModel::getToggleSubsystemScanning() const
+{
+	return Ships[m_ship].flags[Ship::Ship_Flags::Toggle_subsystem_scanning];
+}
+
+bool ShipInitialStatusDialogModel::getUseNewScanningBehavior()
+{
+	return Use_new_scanning_behavior;
 }
 
 } // namespace fso::fred::dialogs

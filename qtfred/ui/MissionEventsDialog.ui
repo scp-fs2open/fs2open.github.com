@@ -128,7 +128,51 @@
       </layout>
      </item>
      <item>
-      <layout class="QGridLayout" name="gridLayout" rowstretch="0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0">
+      <layout class="QGridLayout" name="gridLayout" rowstretch="0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0">
+       <item row="6" column="0">
+        <widget class="QSpinBox" name="repeatCountBox">
+         <property name="minimum">
+          <number>-1</number>
+         </property>
+         <property name="maximum">
+          <number>16777215</number>
+         </property>
+        </widget>
+       </item>
+       <item row="11" column="0">
+        <widget class="QCheckBox" name="chainedCheckBox">
+         <property name="text">
+          <string>Chained</string>
+         </property>
+        </widget>
+       </item>
+       <item row="12" column="0">
+        <widget class="QLabel" name="chainLabel">
+         <property name="text">
+          <string>Chain Dela&amp;y</string>
+         </property>
+         <property name="buddy">
+          <cstring>chainDelayBox</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="20" column="0" colspan="2">
+        <widget class="QLineEdit" name="miniHelpBox">
+         <property name="readOnly">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item row="19" column="0" colspan="2">
+        <widget class="QDialogButtonBox" name="okAndCancelButtons">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="standardButtons">
+          <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+         </property>
+        </widget>
+       </item>
        <item row="1" column="0">
         <widget class="QPushButton" name="btnInsertEvent">
          <property name="sizePolicy">
@@ -142,26 +186,27 @@
          </property>
         </widget>
        </item>
-       <item row="8" column="0">
-        <widget class="QSpinBox" name="triggerCountBox">
-         <property name="minimum">
-          <number>-1</number>
-         </property>
+       <item row="10" column="0">
+        <widget class="QSpinBox" name="intervalTimeBox">
          <property name="maximum">
           <number>16777215</number>
          </property>
         </widget>
        </item>
-       <item row="3" column="0">
-        <widget class="QPushButton" name="eventUpBtn">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
+       <item row="14" column="0">
+        <widget class="QCheckBox" name="useMsecsCheckBox">
          <property name="text">
-          <string/>
+          <string>Interval &amp;&amp; Chain in Milliseconds</string>
+         </property>
+        </widget>
+       </item>
+       <item row="5" column="0">
+        <widget class="QLabel" name="repeatLabel">
+         <property name="text">
+          <string>Repeat Co&amp;unt</string>
+         </property>
+         <property name="buddy">
+          <cstring>repeatCountBox</cstring>
          </property>
         </widget>
        </item>
@@ -172,67 +217,7 @@
          </property>
         </widget>
        </item>
-       <item row="9" column="0">
-        <widget class="QLabel" name="label_6">
-         <property name="text">
-          <string>Interval time</string>
-         </property>
-         <property name="buddy">
-          <cstring>intervalTimeBox</cstring>
-         </property>
-        </widget>
-       </item>
-       <item row="12" column="0">
-        <widget class="QLabel" name="label_8">
-         <property name="text">
-          <string>Chain Dela&amp;y</string>
-         </property>
-         <property name="buddy">
-          <cstring>chainDelayBox</cstring>
-         </property>
-        </widget>
-       </item>
-       <item row="14" column="0">
-        <widget class="QLabel" name="label_7">
-         <property name="text">
-          <string>Score</string>
-         </property>
-         <property name="buddy">
-          <cstring>scoreBox</cstring>
-         </property>
-        </widget>
-       </item>
-       <item row="10" column="0">
-        <widget class="QSpinBox" name="intervalTimeBox">
-         <property name="maximum">
-          <number>16777215</number>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="0">
-        <widget class="QPushButton" name="btnNewEvent">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="text">
-          <string>New Event</string>
-         </property>
-        </widget>
-       </item>
-       <item row="18" column="0" colspan="2">
-        <widget class="QDialogButtonBox" name="okAndCancelButtons">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-         <property name="standardButtons">
-          <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="1" rowspan="18">
+       <item row="0" column="1" rowspan="19">
         <widget class="QGroupBox" name="groupBox">
          <property name="title">
           <string>Messages</string>
@@ -476,14 +461,50 @@
          </layout>
         </widget>
        </item>
-       <item row="11" column="0">
-        <widget class="QCheckBox" name="chainedCheckBox">
-         <property name="text">
-          <string>Chained</string>
+       <item row="16" column="0">
+        <widget class="QSpinBox" name="scoreBox">
+         <property name="maximum">
+          <number>16777215</number>
          </property>
         </widget>
        </item>
-       <item row="20" column="0" colspan="2">
+       <item row="18" column="0">
+        <widget class="QComboBox" name="teamCombo"/>
+       </item>
+       <item row="7" column="0">
+        <widget class="QLabel" name="triggerLabel">
+         <property name="text">
+          <string>Tri&amp;gger Count</string>
+         </property>
+         <property name="buddy">
+          <cstring>triggerCountBox</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="0">
+        <widget class="QPushButton" name="eventUpBtn">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+        </widget>
+       </item>
+       <item row="15" column="0">
+        <widget class="QLabel" name="scoreLabel">
+         <property name="text">
+          <string>Score</string>
+         </property>
+         <property name="buddy">
+          <cstring>scoreBox</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="21" column="0" colspan="2">
         <widget class="QTextEdit" name="helpBox">
          <property name="verticalScrollBarPolicy">
           <enum>Qt::ScrollBarAlwaysOff</enum>
@@ -493,17 +514,39 @@
          </property>
         </widget>
        </item>
-       <item row="19" column="0" colspan="2">
-        <widget class="QLineEdit" name="miniHelpBox">
-         <property name="readOnly">
-          <bool>true</bool>
+       <item row="9" column="0">
+        <widget class="QLabel" name="intervalLabel">
+         <property name="text">
+          <string>Interval time</string>
+         </property>
+         <property name="buddy">
+          <cstring>intervalTimeBox</cstring>
          </property>
         </widget>
        </item>
-       <item row="15" column="0">
-        <widget class="QSpinBox" name="scoreBox">
-         <property name="maximum">
-          <number>16777215</number>
+       <item row="0" column="0">
+        <widget class="QPushButton" name="btnNewEvent">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>New Event</string>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="0">
+        <widget class="QPushButton" name="eventDownBtn">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string/>
          </property>
         </widget>
        </item>
@@ -520,21 +563,8 @@
          </property>
         </widget>
        </item>
-       <item row="5" column="0">
-        <widget class="QLabel" name="label_4">
-         <property name="text">
-          <string>Repeat Co&amp;unt</string>
-         </property>
-         <property name="buddy">
-          <cstring>repeatCountBox</cstring>
-         </property>
-        </widget>
-       </item>
-       <item row="16" column="0">
-        <widget class="QComboBox" name="teamCombo"/>
-       </item>
-       <item row="6" column="0">
-        <widget class="QSpinBox" name="repeatCountBox">
+       <item row="8" column="0">
+        <widget class="QSpinBox" name="triggerCountBox">
          <property name="minimum">
           <number>-1</number>
          </property>
@@ -543,26 +573,10 @@
          </property>
         </widget>
        </item>
-       <item row="7" column="0">
-        <widget class="QLabel" name="label_5">
+       <item row="17" column="0">
+        <widget class="QLabel" name="teamLabel">
          <property name="text">
-          <string>Tri&amp;gger Count</string>
-         </property>
-         <property name="buddy">
-          <cstring>triggerCountBox</cstring>
-         </property>
-        </widget>
-       </item>
-       <item row="4" column="0">
-        <widget class="QPushButton" name="eventDownBtn">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="text">
-          <string/>
+          <string>Team</string>
          </property>
         </widget>
        </item>

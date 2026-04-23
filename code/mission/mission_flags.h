@@ -113,6 +113,7 @@ namespace Mission {
 		SF_Cannot_perform_scan_hide_cargo,	// Goober5000 - ship cannot scan other ships, and cargo will not be shown on the HUD
 		SF_Cannot_perform_scan_show_cargo,	// Goober5000 - ship cannot scan other ships, but cargo will be shown on the HUD
 		SF_No_targeting_limits,			// MjnMixael - Ship is always targetable regardless of AWACS or targeting range limits
+		SF_No_scanned_cargo,			// MjnMixael - cargo is never revealed, only shows scanned/not scanned (requires unified scanning)
 		SF_From_player_wing,			// set for ships that are members of any player starting wing
 
 		NUM_VALUES

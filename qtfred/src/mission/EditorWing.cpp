@@ -321,6 +321,7 @@ int Editor::create_wing()
 
 	update_custom_wing_indexes();
 
+	missionChanged();
 	return 0;
 }
 

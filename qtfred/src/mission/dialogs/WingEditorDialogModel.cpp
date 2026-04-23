@@ -708,6 +708,29 @@ std::vector<std::pair<SCP_string, bool>> WingEditorDialogModel::getWingFlags() c
 	return flags;
 }
 
+std::vector<std::pair<SCP_string, SCP_string>> WingEditorDialogModel::getWingFlagDescriptions()
+{
+	const size_t num_descs = Num_parse_wing_flag_descriptions;
+	std::vector<std::pair<SCP_string, SCP_string>> descriptions;
+	descriptions.reserve(Num_parse_wing_flags);
+	for (size_t i = 0; i < Num_parse_wing_flags; ++i) {
+		const auto& flagDef = Parse_wing_flags[i];
+		// Skip the same flags excluded from getWingFlags()
+		if (flagDef.def == Ship::Wing_Flags::No_arrival_warp || flagDef.def == Ship::Wing_Flags::No_departure_warp ||
+			flagDef.def == Ship::Wing_Flags::Same_arrival_warp_when_docked ||
+			flagDef.def == Ship::Wing_Flags::Same_departure_warp_when_docked) {
+			continue;
+		}
+		for (size_t j = 0; j < num_descs; ++j) {
+			if (Parse_wing_flag_descriptions[j].def == flagDef.def) {
+				descriptions.emplace_back(flagDef.name, Parse_wing_flag_descriptions[j].flag_desc);
+				break;
+			}
+		}
+	}
+	return descriptions;
+}
+
 void WingEditorDialogModel::setWingFlags(const std::vector<std::pair<SCP_string, bool>>& newFlags)
 {
 	if (!wingIsValid())

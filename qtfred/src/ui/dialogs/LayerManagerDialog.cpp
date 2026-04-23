@@ -60,9 +60,13 @@ void LayerManagerDialog::updateUi() {
 		QSignalBlocker b1(ui->showShipsCheck);
 		QSignalBlocker b2(ui->showStartsCheck);
 		QSignalBlocker b3(ui->showWaypointsCheck);
+		QSignalBlocker b4(ui->showPropsCheck);
+		QSignalBlocker b5(ui->showJumpNodesCheck);
 		ui->showShipsCheck->setChecked(_model->getShowShips());
 		ui->showStartsCheck->setChecked(_model->getShowStarts());
 		ui->showWaypointsCheck->setChecked(_model->getShowWaypoints());
+		ui->showPropsCheck->setChecked(_model->getShowProps());
+		ui->showJumpNodesCheck->setChecked(_model->getShowJumpNodes());
 	}
 
 	// Sync IFF checkboxes
@@ -141,5 +145,7 @@ void LayerManagerDialog::on_layerList_itemChanged(QListWidgetItem* item) {
 void LayerManagerDialog::on_showShipsCheck_toggled(bool checked)     { _model->setShowShips(checked); }
 void LayerManagerDialog::on_showStartsCheck_toggled(bool checked)    { _model->setShowStarts(checked); }
 void LayerManagerDialog::on_showWaypointsCheck_toggled(bool checked) { _model->setShowWaypoints(checked); }
+void LayerManagerDialog::on_showPropsCheck_toggled(bool checked)     { _model->setShowProps(checked); }
+void LayerManagerDialog::on_showJumpNodesCheck_toggled(bool checked) { _model->setShowJumpNodes(checked); }
 
 } // namespace fso::fred::dialogs

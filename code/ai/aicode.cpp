@@ -223,9 +223,11 @@ ai_flag_description Ai_flag_descriptions[] = {
 	{AI::AI_Flags::No_dynamic,				"Will stop allowing the AI to pursue dynamic goals (eg: chasing ships it was not ordered to)."},
 	{AI::AI_Flags::Free_afterburner_use,	"Will allow AI to use afterburners when attacking a big ship, flying to a target position, guarding a ship, and flying in formation."},
 	{AI::AI_Flags::Waypoints_no_formation,		"Ship will not form up with its wingmates while running waypoints with them." },
+	{AI::AI_Flags::Kamikaze,				"Ship will attack big ships by colliding with them and exploding."},
 };
 
 extern const int Num_ai_flag_names = sizeof(Ai_flag_names) / sizeof(ai_flag_name);
+extern const size_t Num_ai_flag_descriptions = sizeof(Ai_flag_descriptions) / sizeof(ai_flag_description);
 
 const char *Skill_level_names(int level, int translate)
 {

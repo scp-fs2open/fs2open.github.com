@@ -3,6 +3,7 @@
 
 #include "mission/util.h"
 #include "ui/Theme.h"
+#include <gamesnd/eventmusic.h>
 #include "ui/widgets/BriefingMapWidget.h"
 #include "BriefingEditor/CameraCoordinatesDialog.h"
 #include "BriefingEditor/IconFromShipDialog.h"
@@ -111,6 +112,8 @@ void BriefingEditorDialog::accept()
 	// If apply() returns true, close the dialog
 	if (_model->apply()) {
 		_viewport->editor->autosave("briefing editor");
+		ui->defaultMusicWidget->stopPlayback();
+		ui->musicPackWidget->stopPlayback();
 		QDialog::accept();
 		create_default_grid(); // restore the grid back to the normal version
 	}
@@ -123,6 +126,8 @@ void BriefingEditorDialog::reject()
 	// If they do, it runs _model->apply() and returns the success value
 	// If they don't, it runs _model->reject() and returns true
 	if (rejectOrCloseHandler(this, _model.get(), _viewport)) {
+		ui->defaultMusicWidget->stopPlayback();
+		ui->musicPackWidget->stopPlayback();
 		QDialog::reject(); // actually close
 		create_default_grid(); // restore the grid back to the normal version
 	}
@@ -218,6 +223,7 @@ void BriefingEditorDialog::applyMapWidgetAspectRatio()
 void BriefingEditorDialog::initializeUi()
 {
 	fso::fred::bindStandardIcon(ui->voiceFilePlayButton, QStyle::SP_MediaPlay);
+
 	util::SignalBlockers blockers(this);
 	ui->drawLinesCheckBox->setTristate(true);
 	ui->highlightCheckBox->setTristate(true);
@@ -248,12 +254,6 @@ void BriefingEditorDialog::initializeUi()
 		ui->iconTeamComboBox->addItem(iff.second.c_str(), iff.first);
 	}
 
-	auto musicList = _model->getMusicList();
-	for (const auto& m : musicList) {
-		ui->defaultMusicComboBox->addItem(m.c_str());
-		ui->musicPackComboBox->addItem(m.c_str());
-	}
-
 	// Initialize the formula tree editor
 	ui->formulaTreeView->initializeEditor(_viewport->editor, this);
 	connect(ui->formulaTreeView, &sexp_tree_view::modified, this, [this]() {
@@ -279,8 +279,18 @@ void BriefingEditorDialog::updateUi()
 
 	ui->stageTextPlainTextEdit->setPlainText(QString::fromStdString(_model->getStageText()));
 	ui->voiceFileLineEdit->setText(QString::fromStdString(_model->getSpeechFilename()));
-	ui->defaultMusicComboBox->setCurrentIndex(_model->getBriefingMusicIndex());
-	ui->musicPackComboBox->setCurrentIndex(ui->musicPackComboBox->findText(_model->getSubstituteBriefingMusicName().c_str()));
+	// getBriefingMusicIndex() is 1-based (0 = None); widget uses Spooled_music index (-1 = None)
+	ui->defaultMusicWidget->setCurrentMusicIndex(_model->getBriefingMusicIndex() - 1);
+
+	// Substitute music is stored by name; find the corresponding Spooled_music index
+	{
+		const SCP_string& subName = _model->getSubstituteBriefingMusicName();
+		int smIdx = -1;
+		for (int i = 0; i < static_cast<int>(Spooled_music.size()); ++i) {
+			if (stricmp(Spooled_music[i].name, subName.c_str()) == 0) { smIdx = i; break; }
+		}
+		ui->musicPackWidget->setCurrentMusicIndex(smIdx);
+	}
 
 	SCP_string stages = "No Stages";
 	int total = _model->getTotalStages();
@@ -703,14 +713,28 @@ void BriefingEditorDialog::on_voiceFilePlayButton_clicked()
 	_model->testSpeech();
 }
 
-void BriefingEditorDialog::on_defaultMusicComboBox_currentIndexChanged(int index)
+void BriefingEditorDialog::on_defaultMusicWidget_currentIndexChanged(int spooledMusicIdx)
 {
-	_model->setBriefingMusicIndex(index);
+	// Model uses 1-based index (0 = None); widget uses Spooled_music index (-1 = None)
+	_model->setBriefingMusicIndex(spooledMusicIdx + 1);
 }
 
-void BriefingEditorDialog::on_musicPackComboBox_currentIndexChanged(int /*index*/)
+void BriefingEditorDialog::on_musicPackWidget_currentIndexChanged(int spooledMusicIdx)
 {
-	_model->setSubstituteBriefingMusicName(ui->musicPackComboBox->currentText().toUtf8().constData());
+	SCP_string name = (spooledMusicIdx >= 0 && spooledMusicIdx < static_cast<int>(Spooled_music.size()))
+	                      ? Spooled_music[spooledMusicIdx].name
+	                      : "";
+	_model->setSubstituteBriefingMusicName(name);
+}
+
+void BriefingEditorDialog::on_defaultMusicWidget_playbackStarted()
+{
+	ui->musicPackWidget->stopPlayback();
+}
+
+void BriefingEditorDialog::on_musicPackWidget_playbackStarted()
+{
+	ui->defaultMusicWidget->stopPlayback();
 }
 
 } // namespace fso::fred::dialogs

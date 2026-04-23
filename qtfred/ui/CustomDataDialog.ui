@@ -116,6 +116,20 @@
          </property>
         </spacer>
        </item>
+       <item>
+        <widget class="QLabel" name="helpLabel">
+         <property name="text">
+          <string>Description</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPlainTextEdit" name="helpTextBrowser">
+         <property name="readOnly">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
       </layout>
      </item>
      <item>

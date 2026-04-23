@@ -4,6 +4,7 @@
 #include "General/ImagePickerDialog.h"
 #include "ShipEditor/ShipGoalsDialog.h"
 #include "ShipEditor/ShipCustomWarpDialog.h"
+#include "WingFlagsDialog.h"
 
 #include "ui_WingEditorDialog.h"
 
@@ -347,12 +348,14 @@ void WingEditorDialog::refreshAllDynamicCombos()
 
 void WingEditorDialog::on_hideCuesButton_clicked()
 {
+	const auto showHelp = _viewport->Show_sexp_help_wing_editor;
+	
 	_cues_hidden = !_cues_hidden;
 	
-	ui->arrivalGroupBox->setHidden(_cues_hidden);
-	ui->departureGroupBox->setHidden(_cues_hidden);
-	ui->helpText->setHidden(_cues_hidden);
-	ui->HelpTitle->setHidden(_cues_hidden);
+	ui->arrivalGroupBox->setVisible(!_cues_hidden);
+	ui->departureGroupBox->setVisible(!_cues_hidden);
+	ui->helpText->setVisible(!_cues_hidden && showHelp);
+	ui->HelpTitle->setVisible(!_cues_hidden && showHelp);
 	ui->hideCuesButton->setText(_cues_hidden ? "Show Cues" : "Hide Cues");
 
 	QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
@@ -482,32 +485,9 @@ void WingEditorDialog::on_initialOrdersButton_clicked()
 
 void WingEditorDialog::on_wingFlagsButton_clicked()
 {
-	CheckBoxListDialog dlg(this);
-	dlg.setCaption("Select Wing Flags");
-
-	// Get our flag list and convert it to Qt's internal types
-	auto wingFlags = _model->getWingFlags();
-
-	QVector<std::pair<QString, bool>> checkbox_list;
-
-	for (const auto& flag : wingFlags) {
-		checkbox_list.append({flag.first.c_str(), flag.second});
-	}
-
-	dlg.setOptions(checkbox_list); // TODO upgrade checkbox to accept and display item descriptions
-
+	WingFlagsDialog dlg(this, _model->getWingFlags(), _model->getWingFlagDescriptions());
 	if (dlg.exec() == QDialog::Accepted) {
-		auto returned_values = dlg.getCheckedStates();
-
-		std::vector<std::pair<SCP_string, bool>> updatedFlags;
-
-		for (int i = 0; i < checkbox_list.size(); ++i) {
-			// Convert back to std::string
-			std::string name = checkbox_list[i].first.toUtf8().constData();
-			updatedFlags.emplace_back(name, returned_values[i]);
-		}
-
-		_model->setWingFlags(updatedFlags);
+		_model->setWingFlags(dlg.getFlags());
 	}
 }
 

@@ -14,11 +14,9 @@ ShipFlagsDialog::ShipFlagsDialog(QWidget* parent, EditorViewport* viewport)
 	  _viewport(viewport)
 {
 	ui->setupUi(this);
+	setAttribute(Qt::WA_AlwaysShowToolTips);
 
-
-	// Column One
-
-		connect(ui->flagList, &fso::fred::FlagListWidget::flagToggled, this, [this](const QString& name, bool checked) {
+	connect(ui->flagList, &fso::fred::FlagListWidget::flagToggled, this, [this](const QString& name, bool checked) {
 		_model->setFlag(name.toUtf8().constData(), checked);
 		updateUI();
 	});
@@ -33,6 +31,14 @@ ShipFlagsDialog::ShipFlagsDialog(QWidget* parent, EditorViewport* viewport)
 	}
 
 	ui->flagList->setFlags(toWidget);
+
+	const auto descs = _model->getShipFlagDescriptions();
+	QVector<std::pair<QString, QString>> qtDescs;
+	qtDescs.reserve(static_cast<int>(descs.size()));
+	for (const auto& d : descs)
+		qtDescs.append({QString::fromUtf8(d.first.c_str()), QString::fromUtf8(d.second.c_str())});
+	ui->flagList->setFlagDescriptions(qtDescs);
+
 	updateUI();
 	// Resize the dialog to the minimum size
 	resize(QDialog::sizeHint());

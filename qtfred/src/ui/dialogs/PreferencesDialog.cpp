@@ -46,6 +46,8 @@ PreferencesDialog::PreferencesDialog(FredView* parent, EditorViewport* viewport)
 	: QDialog(parent)
 	, ui(new Ui::PreferencesDialog())
 	, _model(new PreferencesDialogModel(this, viewport))
+	, _fredView(parent)
+	, _viewport(viewport)
 {
 	ui->setupUi(this);
 
@@ -53,19 +55,15 @@ PreferencesDialog::PreferencesDialog(FredView* parent, EditorViewport* viewport)
 	updateUi();
 
 	connect(_model.get(), &PreferencesDialogModel::modelChanged, this, &PreferencesDialog::updateUi);
+	connect(_model.get(), &PreferencesDialogModel::modelChanged, this, &PreferencesDialog::applyChanges);
 }
 
 PreferencesDialog::~PreferencesDialog() = default;
 
-void PreferencesDialog::accept() {
-	if (_model->apply()) {
-		QDialog::accept();
-	}
-}
-
-void PreferencesDialog::reject() {
-	_model->reject();
-	QDialog::reject();
+void PreferencesDialog::applyChanges() {
+	_model->apply();
+	_fredView->setIconSize(QSize(_model->getToolbarIconSize(), _model->getToolbarIconSize()));
+	_viewport->needsUpdate();
 }
 
 void PreferencesDialog::initializeUi() {
@@ -86,10 +84,14 @@ void PreferencesDialog::updateUi() {
 	util::SignalBlockers blockers(this);
 
 	// General
+	ui->offerAutosaveRecovery->setChecked(_model->getOfferAutosaveRecovery());
 	ui->moveShipsWhenUndocking->setChecked(_model->getMoveShipsWhenUndocking());
 	ui->alwaysSaveDisplayNames->setChecked(_model->getAlwaysSaveDisplayNames());
 	ui->errorCheckerChecksForPotentialIssues->setChecked(_model->getErrorCheckerChecksForPotentialIssues());
-	ui->darkMode->setChecked(_model->getDarkMode());
+	ui->themeCombo->setCurrentIndex(_model->getDarkMode() ? 1 : 0);
+
+	const int iconSize = _model->getToolbarIconSize();
+	ui->toolbarIconSizeCombo->setCurrentIndex(iconSize <= 16 ? 0 : iconSize >= 32 ? 2 : 1);
 	ui->showSexpHelpMissionEvents->setChecked(_model->getShowSexpHelpMissionEvents());
 	ui->showSexpHelpMissionGoals->setChecked(_model->getShowSexpHelpMissionGoals());
 	ui->showSexpHelpMissionCutscenes->setChecked(_model->getShowSexpHelpMissionCutscenes());
@@ -117,6 +119,10 @@ void PreferencesDialog::updateUi() {
 	}
 }
 
+void PreferencesDialog::on_offerAutosaveRecovery_toggled(bool checked) {
+	_model->setOfferAutosaveRecovery(checked);
+}
+
 void PreferencesDialog::on_moveShipsWhenUndocking_toggled(bool checked) {
 	_model->setMoveShipsWhenUndocking(checked);
 }
@@ -129,8 +135,13 @@ void PreferencesDialog::on_errorCheckerChecksForPotentialIssues_toggled(bool che
 	_model->setErrorCheckerChecksForPotentialIssues(checked);
 }
 
-void PreferencesDialog::on_darkMode_toggled(bool checked) {
-	_model->setDarkMode(checked);
+void PreferencesDialog::on_toolbarIconSizeCombo_currentIndexChanged(int index) {
+	static constexpr int sizes[] = { 16, 24, 32 };
+	_model->setToolbarIconSize(sizes[index]);
+}
+
+void PreferencesDialog::on_themeCombo_currentIndexChanged(int index) {
+	_model->setDarkMode(index == 1);
 }
 
 void PreferencesDialog::on_showSexpHelpMissionEvents_toggled(bool checked) {

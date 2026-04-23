@@ -277,6 +277,15 @@ void model_unload(int modelnum, int force)
 	for (auto& si : Ship_info) {
 		if (pm->id == si.model_num) {
 			si.model_num = -1;
+
+			// also reset any subsystem model_num references that pointed to this model,
+			// otherwise stale ids can survive across missions and cause subsystems to fail
+			// to re-link when the model is reloaded with a different id.
+			for (int k = 0; k < si.n_subsystems; k++) {
+				if (si.subsystems[k].model_num == pm->id) {
+					si.subsystems[k].model_num = -1;
+				}
+			}
 		}
 
 		if (pm->id == si.cockpit_model_num) {
@@ -592,7 +601,11 @@ void model_copy_subsystems( int n_subsystems, model_subsystem *d_sp, model_subsy
 			}
 		}
 		if ( j == n_subsystems )
-			Int3();							// get allender -- something is amiss with models
+			Error(LOCATION, "Subsystem '%s' could not be matched between two ship classes that share a model. "
+				"The destination ship will be missing this subsystem at runtime. "
+				"Check that subsystem names are spelled identically on both ship classes, "
+				"and that any modular table extensions to one ship are mirrored on the other.",
+				source->subobj_name);
 
 	}
 }

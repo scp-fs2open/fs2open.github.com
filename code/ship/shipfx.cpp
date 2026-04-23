@@ -791,13 +791,7 @@ bool shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int light_n )
 	vec3d rp0, rp1;
 	vec3d light_dir;
 
-	// The mc_info struct only needs to be initialized once for this entire function.  This is because
-	// every time the mc variable is reused, every parameter that model_collide reads from is reassigned.
-	// Therefore the stale fields in the rest of the struct do not matter because either a) they are never
-	// read from, or b) they are overwritten by the new collision calculation.
-	mc_info mc;
-
-	rp0 = *eye_pos;	
+	rp0 = *eye_pos;
 	
 	// get the light dir
 	if(!light_get_global_dir(&light_dir, light_n)){
@@ -811,6 +805,8 @@ bool shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int light_n )
 			continue;
 
 		if ( src_obj != objp )	{
+			mc_info mc;
+
 			vm_vec_scale_add( &rp1, &rp0, &light_dir, objp->radius*10.0f );
 
 			mc.model_instance_num = Ships[objp->instance].model_instance_num;
@@ -834,6 +830,8 @@ bool shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int light_n )
 				continue;
 
 			if (src_obj != objp) {
+				mc_info mc;
+
 				vm_vec_scale_add(&rp1, &rp0, &light_dir, objp->radius * 10.0f);
 
 				mc.model_instance_num = p->model_instance_num;
@@ -860,6 +858,8 @@ bool shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int light_n )
 		objp = &Objects[db.objnum];
 
 		vm_vec_scale_add( &rp1, &rp0, &light_dir, objp->radius*10.0f );
+
+		mc_info mc;
 
 		mc.model_instance_num = -1;
 		mc.model_num = db.model_num;	// Fill in the model to check
@@ -888,6 +888,8 @@ bool shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int light_n )
 				object_get_eye(&eye_posi, &eye_ori, Viewer_obj, false);
 				vm_vec_unrotate(&pos, &sip->cockpit_offset, &eye_ori);
 				vm_vec_add2(&pos, &eye_posi);
+
+				mc_info mc;
 
 				mc.model_instance_num = -1;
 				mc.model_num = sip->cockpit_model_num;
@@ -937,6 +939,8 @@ bool shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int light_n )
 			if ( sip->flags[Ship::Info_Flags::Show_ship_model] 
 				&& (!Show_ship_only_if_cockpits_enabled || Cockpit_active) ) {
 				vm_vec_scale_add( &rp1, &rp0, &light_dir, Viewer_obj->radius*10.0f );
+
+				mc_info mc;
 
 				mc.model_instance_num = -1;
 				mc.model_num = sip->model_num;
@@ -1000,6 +1004,8 @@ bool shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int light_n )
         objp = &Objects[ast->objnum];
 
         vm_vec_scale_add( &rp1, &rp0, &light_dir, objp->radius*10.0f );
+
+    	mc_info mc;
 
 		mc.model_instance_num = -1;
 		mc.model_num = Asteroid_info[ast->asteroid_type].subtypes[ast->asteroid_subtype].model_number;	// Fill in the model to check

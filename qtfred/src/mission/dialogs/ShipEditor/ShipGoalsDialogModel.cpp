@@ -1,6 +1,7 @@
 #include "ShipGoalsDialogModel.h"
 #include <globalincs/linklist.h>
 #include <mission/object.h>
+#include <model/model.h>
 namespace fso {
 	namespace fred {
 		namespace dialogs {
@@ -134,7 +135,6 @@ namespace fso {
 
 			void ShipGoalsDialogModel::update_item(const int item)
 			{
-				char* docker, * dockee, * subsys;
 				ai_goal_mode mode;
 				char save[80]{};
 				SCP_string error_message;
@@ -179,13 +179,8 @@ namespace fso {
 				case AI_GOAL_CHASE_SHIP_CLASS:
 					break;
 
-				case AI_GOAL_DESTROY_SUBSYSTEM:
-					subsys = nullptr;
-					if (!m_multi_edit || (m_object[item] && (m_subsys[item].c_str() != nullptr)))
-						subsys = (char*)m_subsys[item].c_str();
-					//MODIFY(goalp[item].ai_submode, m_subsys[item] + 1);
-
-					if (!subsys) {
+				case AI_GOAL_DESTROY_SUBSYSTEM: {
+					if (m_subsys[item].empty()) {
 						sprintf(error_message, "Order #%d doesn't have valid subsystem name.  Order will be removed", item + 1);
 						_viewport->dialogProvider->showButtonDialog(DialogType::Information,
 							"Order Error",
@@ -193,16 +188,38 @@ namespace fso {
 							{ DialogButton::Ok });
 						modify(goalp[item].ai_mode, AI_GOAL_NONE);
 						return;
-
-					}
-					else {
-						if (!goalp[item].docker.name || (goalp[item].docker.name && !stricmp(goalp[item].docker.name, subsys)))
-							set_modified();
-
-						goalp[item].docker.name = subsys;
 					}
 
+					// Look up the subsystem in the target ship to get a persistent name pointer.
+					// Storing m_subsys[item].c_str() directly would dangle after the model is destroyed.
+					const char* persistent_name = nullptr;
+					int target_ship_idx = m_object[item] & DATA_MASK;
+					if (target_ship_idx >= 0 && target_ship_idx < MAX_SHIPS) {
+						ship_subsys* cur_ss = GET_FIRST(&Ships[target_ship_idx].subsys_list);
+						while (cur_ss != END_OF_LIST(&Ships[target_ship_idx].subsys_list)) {
+							if (!stricmp(cur_ss->system_info->subobj_name, m_subsys[item].c_str())) {
+								persistent_name = cur_ss->system_info->subobj_name;
+								break;
+							}
+							cur_ss = GET_NEXT(cur_ss);
+						}
+					}
+
+					if (!persistent_name) {
+						sprintf(error_message, "Order #%d doesn't have valid subsystem name.  Order will be removed", item + 1);
+						_viewport->dialogProvider->showButtonDialog(DialogType::Information,
+							"Order Error",
+							error_message,
+							{ DialogButton::Ok });
+						modify(goalp[item].ai_mode, AI_GOAL_NONE);
+						return;
+					}
+
+					if (!goalp[item].docker.name || stricmp(goalp[item].docker.name, persistent_name) != 0)
+						set_modified();
+					goalp[item].docker.name = persistent_name;
 					break;
+				}
 
 				case AI_GOAL_CHASE:
 				case AI_GOAL_CHASE_WING:
@@ -219,19 +236,37 @@ namespace fso {
 
 					break;
 
-				case AI_GOAL_DOCK:
-					docker = nullptr;
-					if (!m_multi_edit || (m_object[item] && (m_subsys[item].c_str() != nullptr)))
-						docker = (char*)m_subsys[item].c_str();
+				case AI_GOAL_DOCK: {
+					// Resolve persistent dock bay name pointers from the polymodel.
+					// Storing m_subsys[item].c_str() directly would dangle after the model is destroyed.
+					char* docker = nullptr;
+					char* dockee = nullptr;
 
-					dockee = nullptr;
-					if (!m_multi_edit || (m_object[item] && (m_dock2[item] >= 0)))
-						dockee = (char *)m_dock2[item];
+					if (!m_multi_edit || (m_object[item] && !m_subsys[item].empty())) {
+						if (self_ship >= 0) {
+							int model_num = Ship_info[Ships[self_ship].ship_info_index].model_num;
+							polymodel* pm = model_get(model_num);
+							if (pm) {
+								for (int b = 0; b < pm->n_docks; b++) {
+									if (!stricmp(pm->docking_bays[b].name, m_subsys[item].c_str())) {
+										docker = pm->docking_bays[b].name;
+										break;
+									}
+								}
+							}
+						}
+					}
 
-					if (docker == (char*)SIZE_MAX)
-						docker = nullptr;
-					if (dockee == (char*)SIZE_MAX)
-						dockee = nullptr;
+					if (!m_multi_edit || (m_object[item] && (m_dock2[item] >= 0))) {
+						int dockee_ship = m_object[item] & DATA_MASK;
+						if (dockee_ship >= 0 && dockee_ship < MAX_SHIPS && m_dock2[item] >= 0) {
+							int model_num = Ship_info[Ships[dockee_ship].ship_info_index].model_num;
+							polymodel* pm = model_get(model_num);
+							if (pm && m_dock2[item] < pm->n_docks) {
+								dockee = pm->docking_bays[m_dock2[item]].name;
+							}
+						}
+					}
 
 					if (!docker || !dockee) {
 						sprintf(error_message, "Order #%d doesn't have valid docking points.  Order will be removed", item + 1);
@@ -241,17 +276,10 @@ namespace fso {
 							{ DialogButton::Ok });
 						modify(goalp[item].ai_mode, AI_GOAL_NONE);
 						return;
-
-					}
-					else {
-						if (!goalp[item].docker.name)
+					} else {
+						if (!goalp[item].docker.name || stricmp(goalp[item].docker.name, docker) != 0)
 							set_modified();
-						else if (!stricmp(goalp[item].docker.name, docker))
-							set_modified();
-
-						if (!goalp[item].dockee.name)
-							set_modified();
-						else if (!stricmp(goalp[item].dockee.name, dockee))
+						if (!goalp[item].dockee.name || stricmp(goalp[item].dockee.name, dockee) != 0)
 							set_modified();
 
 						goalp[item].docker.name = docker;
@@ -259,6 +287,7 @@ namespace fso {
 					}
 
 					break;
+				}
 
 				case AI_GOAL_GUARD:
 				case AI_GOAL_GUARD_WING:
@@ -433,19 +462,19 @@ namespace fso {
 				init_combo_data();
 
 				if (self_ship >= 0) {
-					initialize(Ai_info[Ships[self_ship].ai_index].goals, self_ship);
+					initialize(Ai_info[Ships[self_ship].ai_index].goals);
 				}
 				else if (self_wing >= 0) {
-					initialize(Wings[self_wing].ai_goals, _editor->cur_ship);
+					initialize(Wings[self_wing].ai_goals);
 				}
 				else {
 					initialize_multi();
 				}
 				modelChanged();
 			}
-			void ShipGoalsDialogModel::initialize(ai_goal* goals, int ship)
+			void ShipGoalsDialogModel::initialize(ai_goal* goals)
 			{
-				int i, item, num, inst, flag;
+				int i, item, inst, flag;
 				ai_goal_mode mode;
 				object* ptr;
 				SCP_vector<SCP_string> docks;
@@ -522,22 +551,16 @@ namespace fso {
 						break;
 
 					case AI_GOAL_DESTROY_SUBSYSTEM:
-						num = ship_name_lookup(goalp[item].target_name, 1);
-						if (num != -1)
-							m_subsys[item] = ship_find_subsys(&Ships[num], goalp[item].docker.name);
-
+						// docker.name already holds the subsystem name string... copy it directly.
+						// (ship_find_subsys returns an int index, not the name, so don't use it here.)
+						if (goalp[item].docker.name != nullptr)
+							m_subsys[item] = goalp[item].docker.name;
 						break;
 
 					case AI_GOAL_DOCK:
-						m_subsys[item] = -1;
-						docks = _editor->get_docking_list(Ship_info[Ships[ship].ship_info_index].model_num);
-						for (i = 0; unsigned(i) < docks.size(); i++) {
-							if (!stricmp(goalp[item].docker.name, docks[i].c_str())) {
-								m_subsys[item] = i;
-								break;
-							}
-						}
-
+						// Store the docker bay name string directly; the persistent pointer lives in the polymodel.
+						if (goalp[item].docker.name != nullptr)
+							m_subsys[item] = goalp[item].docker.name;
 						break;
 
 					case AI_GOAL_CHASE_WING:
@@ -647,7 +670,7 @@ namespace fso {
 				ptr = GET_FIRST(&obj_used_list);
 				while (ptr != END_OF_LIST(&obj_used_list)) {
 					if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && (ptr->flags[Object::Object_Flags::Marked])) {
-						initialize(Ai_info[Ships[ptr->instance].ai_index].goals, ptr->instance);
+						initialize(Ai_info[Ships[ptr->instance].ai_index].goals);
 						if (!flag) {
 							flag = 1;
 							for (i = 0; i < ED_MAX_GOALS; i++) {

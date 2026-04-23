@@ -3,6 +3,8 @@
 
 #include "ShipFlagsDialogModel.h"
 
+#include <object/object.h>
+
 namespace fso::fred::dialogs {
 int ShipFlagsDialogModel::tristate_set(int val, int cur_state)
 {
@@ -154,6 +156,60 @@ void ShipFlagsDialogModel::reject() {}
 const SCP_vector<std::pair<SCP_string, int>>& ShipFlagsDialogModel::getFlagsList()
 {
 	return flags;
+}
+
+SCP_vector<std::pair<SCP_string, SCP_string>> ShipFlagsDialogModel::getShipFlagDescriptions()
+{
+	const size_t num_ship_descs = Num_ship_flag_descriptions;
+	const size_t num_ai_descs   = Num_ai_flag_descriptions;
+	const size_t num_obj_descs  = Num_object_flag_descriptions;
+
+	SCP_vector<std::pair<SCP_string, SCP_string>> descriptions;
+
+	for (size_t i = 0; i < Num_Parse_ship_flags; ++i) {
+		const auto& flagDef = Parse_ship_flags[i];
+		if (flagDef.def == Ship::Ship_Flags::No_arrival_warp ||
+			flagDef.def == Ship::Ship_Flags::No_departure_warp ||
+			flagDef.def == Ship::Ship_Flags::Same_arrival_warp_when_docked ||
+			flagDef.def == Ship::Ship_Flags::Same_departure_warp_when_docked ||
+			flagDef.def == Ship::Ship_Flags::Primaries_locked ||
+			flagDef.def == Ship::Ship_Flags::Secondaries_locked ||
+			flagDef.def == Ship::Ship_Flags::Ship_locked ||
+			flagDef.def == Ship::Ship_Flags::Weapons_locked ||
+			flagDef.def == Ship::Ship_Flags::Afterburner_locked ||
+			flagDef.def == Ship::Ship_Flags::Lock_all_turrets_initially ||
+			flagDef.def == Ship::Ship_Flags::Force_shields_on) {
+			continue;
+		}
+		for (size_t j = 0; j < num_ship_descs; ++j) {
+			if (Ship_flag_descriptions[j].flag == flagDef.def) {
+				descriptions.emplace_back(flagDef.name, Ship_flag_descriptions[j].flag_desc);
+				break;
+			}
+		}
+	}
+
+	for (size_t i = 0; i < Num_Parse_ship_ai_flags; ++i) {
+		const auto& flagDef = Parse_ship_ai_flags[i];
+		for (size_t j = 0; j < num_ai_descs; ++j) {
+			if (Ai_flag_descriptions[j].flag == flagDef.def) {
+				descriptions.emplace_back(flagDef.name, Ai_flag_descriptions[j].flag_desc);
+				break;
+			}
+		}
+	}
+
+	for (size_t i = 0; i < Num_Parse_ship_object_flags; ++i) {
+		const auto& flagDef = Parse_ship_object_flags[i];
+		for (size_t j = 0; j < num_obj_descs; ++j) {
+			if (Object_flag_descriptions[j].flag == flagDef.def) {
+				descriptions.emplace_back(flagDef.name, Object_flag_descriptions[j].flag_desc);
+				break;
+			}
+		}
+	}
+
+	return descriptions;
 }
 
 void ShipFlagsDialogModel::initializeData()

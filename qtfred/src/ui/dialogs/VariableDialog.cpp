@@ -1,9 +1,13 @@
 #include "VariableDialog.h"
 #include "ui_VariableDialog.h"
+#include "ui/Theme.h"
 #include <ui/util/SignalBlockers.h>
 #include "ui/widgets/LineEditDelegate.h"
 #include <mission/util.h>
+#include <QApplication>
+#include <QEvent>
 #include <QMessageBox>
+#include <QPalette>
 
 // Roles to store data for the line edit delegate
 const int IsStringRole = Qt::UserRole + 1;
@@ -37,6 +41,28 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 }
 
 VariableDialog::~VariableDialog() = default;
+
+// Returns a subtle, theme-aware tint: blue for blue_type=true, orange for blue_type=false.
+// Detects dark/light mode via the application window-background lightness.
+QColor VariableDialog::rowTypeColor(bool blue_type)
+{
+	const bool dark_mode = QApplication::palette().color(QPalette::Window).lightness() < 128;
+	if (blue_type) {
+		return dark_mode ? QColor(50, 60, 80) : QColor(225, 235, 252);
+	} else {
+		return dark_mode ? QColor(75, 58, 42) : QColor(255, 240, 225);
+	}
+}
+
+void VariableDialog::changeEvent(QEvent* e)
+{
+	QDialog::changeEvent(e);
+	if (e->type() == QEvent::ApplicationPaletteChange || e->type() == QEvent::PaletteChange) {
+		// Re-apply row colors for the new theme
+		updateVariableList();
+		updateContainerList();
+	}
+}
 
 void VariableDialog::accept()
 {
@@ -91,7 +117,7 @@ void VariableDialog::initializeUi()
 
 	// Create one delegate to be reused for all container editing
 	auto* container_delegate = new LineEditDelegate(this);
-	ui->containersTable->setItemDelegateForColumn(ContName, container_delegate);
+	ui->containersTable->setItemDelegate(container_delegate); // covers ContName and ContType (for blended selection)
 	ui->containerContentsTable->setItemDelegate(container_delegate);
 
 	// Configure Items Table
@@ -108,6 +134,14 @@ void VariableDialog::initializeUi()
 	ui->selectFormatCombobox->setVisible(false);
 
 	ui->tabWidget->setCurrentIndex(0);
+
+	fso::fred::bindStandardIcon(ui->shiftItemUpButton, QStyle::SP_ArrowUp);
+	ui->shiftItemUpButton->setText(QString());
+	ui->shiftItemUpButton->setToolTip(tr("Shift item up"));
+
+	fso::fred::bindStandardIcon(ui->shiftItemDownButton, QStyle::SP_ArrowDown);
+	ui->shiftItemDownButton->setText(QString());
+	ui->shiftItemDownButton->setToolTip(tr("Shift item down"));
 }
 
 void VariableDialog::updateUi()
@@ -144,6 +178,11 @@ void VariableDialog::updateVariableList()
 		if (is_string) {
 			valueItem->setData(MaxLength, TOKEN_LENGTH - 1);
 		}
+
+		// String rows tinted blue, number rows tinted orange
+		const QColor row_color = rowTypeColor(is_string);
+		nameItem->setBackground(row_color);
+		valueItem->setBackground(row_color);
 
 		ui->variablesTable->setItem(table_row, VarName, nameItem);
 		ui->variablesTable->setItem(table_row, VarValue, valueItem);
@@ -211,6 +250,11 @@ void VariableDialog::updateContainerList()
 		// Make the type column read-only
 		typeItem->setFlags(typeItem->flags() & ~Qt::ItemIsEditable);
 		ui->containersTable->setItem(table_row, ContType, typeItem);
+
+		// List rows tinted blue, map rows tinted orange
+		const QColor row_color = rowTypeColor(cont.is_list);
+		nameItem->setBackground(row_color);
+		typeItem->setBackground(row_color);
 
 		table_row++;
 	}

@@ -55,6 +55,14 @@ void PropEditorDialog::initializeUi() {
 		toWidget.append({QString::fromStdString(labels[i].first), _model->getFlagState()[i]});
 	}
 	ui->propFlagsListWidget->setFlags(toWidget);
+
+	const auto& descs = _model->getPropFlagDescriptions();
+	QVector<std::pair<QString, QString>> qtDescs;
+	qtDescs.reserve(static_cast<int>(descs.size()));
+	for (const auto& d : descs)
+		qtDescs.append({QString::fromUtf8(d.first.c_str()), QString::fromUtf8(d.second.c_str())});
+	ui->propFlagsListWidget->setFlagDescriptions(qtDescs);
+
 	ui->propFlagsListWidget->setFilterVisible(true);
 	ui->propFlagsListWidget->setToolbarVisible(true);
 

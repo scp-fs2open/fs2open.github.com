@@ -38,6 +38,8 @@ struct ViewSettings {
 	bool Lighting_on = false;
 	bool FullDetail = false;
 	bool Show_waypoints = true;
+	bool Show_props = true;
+	bool Show_jump_nodes = true;
 	bool Show_compass = true;
 	bool Highlight_selectable_subsys = false;
 
@@ -201,6 +203,8 @@ class EditorViewport {
 
 	bool Group_rotate = true;
 	bool Lookat_mode = false;
+	int  toolbar_icon_size = 24;  ///< Toolbar icon size in pixels (16, 24, or 32)
+	bool Offer_autosave_recovery = true;
 	bool Move_ships_when_undocking = true;
 	bool Always_save_display_names = false;
 	bool Error_checker_checks_potential_issues = true;

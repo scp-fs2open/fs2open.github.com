@@ -71,13 +71,14 @@ CJumpNode::CJumpNode(const vec3d* position)
 }
 
 CJumpNode::CJumpNode(CJumpNode&& other) noexcept
-	: m_radius(other.m_radius), m_modelnum(other.m_modelnum), m_objnum(other.m_objnum), m_polymodel_instance_num(other.m_polymodel_instance_num), m_flags(other.m_flags)
+	: m_radius(other.m_radius), m_modelnum(other.m_modelnum), m_objnum(other.m_objnum), m_polymodel_instance_num(other.m_polymodel_instance_num), m_flags(other.m_flags), m_fred_layer(std::move(other.m_fred_layer))
 {
 	other.m_radius = 0.0f;
 	other.m_modelnum = -1;
 	other.m_objnum = -1;
 	other.m_polymodel_instance_num = -1;
 	other.m_flags = 0;
+	other.m_fred_layer = "Default";
 
 	m_display_color = other.m_display_color;
 	m_pos = other.m_pos;
@@ -95,12 +96,14 @@ CJumpNode& CJumpNode::operator=(CJumpNode&& other) noexcept
 		m_objnum = other.m_objnum;
 		m_flags = other.m_flags;
 		m_polymodel_instance_num = other.m_polymodel_instance_num;
+		m_fred_layer = std::move(other.m_fred_layer);
 
 		other.m_radius = 0.0f;
 		other.m_modelnum = -1;
 		other.m_objnum = -1;
 		other.m_flags = 0;
 		other.m_polymodel_instance_num = -1;
+		other.m_fred_layer = "Default";
 
 		m_display_color = other.m_display_color;
 		m_pos = other.m_pos;

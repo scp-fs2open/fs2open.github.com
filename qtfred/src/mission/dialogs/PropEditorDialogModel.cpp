@@ -72,13 +72,7 @@ void PropEditorDialogModel::initializeData() {
 	_selectedPropObjects = getSelectedPropObjects();
 
 	for (size_t i = 0; i < Num_parse_prop_flags; ++i) {
-		auto& def = Parse_prop_flags[i];
-		auto& desc = Parse_prop_flag_descriptions[i];
-		SCP_string label = def.name;
-		label += " (";
-		label += desc.flag_desc;
-		label += ")";
-		_flagLabels.emplace_back(label, i);
+		_flagLabels.emplace_back(Parse_prop_flags[i].name, i);
 		_flagState.push_back(Qt::Unchecked);
 	}
 
@@ -322,6 +316,23 @@ void PropEditorDialogModel::onSelectedObjectMarkingChanged(int, bool) {
 
 void PropEditorDialogModel::onMissionChanged() {
 	initializeData();
+}
+
+SCP_vector<std::pair<SCP_string, SCP_string>> PropEditorDialogModel::getPropFlagDescriptions()
+{
+	const size_t num_descs = Num_parse_prop_flag_descriptions;
+	SCP_vector<std::pair<SCP_string, SCP_string>> descriptions;
+	descriptions.reserve(Num_parse_prop_flags);
+	for (size_t i = 0; i < Num_parse_prop_flags; ++i) {
+		const auto& flagDef = Parse_prop_flags[i];
+		for (size_t j = 0; j < num_descs; ++j) {
+			if (Parse_prop_flag_descriptions[j].def == flagDef.def) {
+				descriptions.emplace_back(flagDef.name, Parse_prop_flag_descriptions[j].flag_desc);
+				break;
+			}
+		}
+	}
+	return descriptions;
 }
 
 }

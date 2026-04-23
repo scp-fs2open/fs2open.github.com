@@ -114,6 +114,15 @@ class Editor : public QObject {
 	/*! Update the game but doesn't render anything. */
 	void update();
 
+	/*! Emit layerVisibilityChanged — called by EditorViewport after toggling a layer. */
+	void notifyLayerVisibilityChanged() { layerVisibilityChanged(); }
+
+	/*! Emit layerStructureChanged — called by EditorViewport when layers are added/removed or objects move between layers. */
+	void notifyLayerStructureChanged() { layerStructureChanged(); }
+
+	/*! Emit layerListChanged — called by EditorViewport when layer names are added/removed/reloaded. */
+	void notifyLayerListChanged() { layerListChanged(); }
+
   signals:
 	/**
 	 * @brief Signal for when a new mission has been loaded
@@ -138,6 +147,21 @@ class Editor : public QObject {
 	 * @param marked @c true if the object is now marked, @c false otherwise
 	 */
 	void objectMarkingChanged(int obj, bool marked);
+
+	/**
+	 * @brief A signal emitted when a layer's visibility has been toggled
+	 */
+	void layerVisibilityChanged();
+
+	/**
+	 * @brief A signal emitted when the layer list changes (add/remove) or an object moves between layers
+	 */
+	void layerStructureChanged();
+
+	/**
+	 * @brief A signal emitted when the layer name list itself changes (add/remove/reload)
+	 */
+	void layerListChanged();
 
   public:
 	// --- Undo / autosave state ---
@@ -219,6 +243,9 @@ class Editor : public QObject {
 	static WingNameCheck validate_wing_name(const SCP_string& new_name, int ignore_wing = -1);
 
 	bool rename_wing(int wing, const SCP_string& new_name, bool rename_members = true);
+
+	// DA 1/7/99 These ship names are not variables
+	int rename_ship(int ship, const char* name);
 
 	/**
 	 * @brief Delete a whole wing, leaving ships intact but wingless.
@@ -302,9 +329,6 @@ class Editor : public QObject {
 	int delete_ship_from_wing(int ship);
 
 	int invalidate_references(const char* name, sexp_ref_type type);
-
-	// DA 1/7/99 These ship names are not variables
-	int rename_ship(int ship, const char* name);
 
 	void delete_reinforcement(int num);
 

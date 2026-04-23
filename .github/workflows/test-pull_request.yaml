@@ -30,6 +30,8 @@ jobs:
     runs-on: ubuntu-latest
     container: ghcr.io/scp-fs2open/linux_build:sha-71099c9
     steps:
+      - name: Install Qt dependencies
+        run: apt-get -yq update && apt-get -yq install libfontconfig1
       - uses: actions/checkout@v1
         name: Checkout
         with:

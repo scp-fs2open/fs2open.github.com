@@ -176,9 +176,12 @@ obj_flag_description Object_flag_descriptions[] = {
 	{ Object::Object_Flags::Dont_change_orientation,	"Will not let an object change orientation.  Upon destruction it will still do the death roll and explosion."},
 	{ Object::Object_Flags::Collides,					"This object will collide with other objects."},
 	{ Object::Object_Flags::Attackable_if_no_collide,	"Allows the AI to attack this object, even if no-collide is set.  (Normally an object that does not collide is also not attacked.)"},
+	{ Object::Object_Flags::Player_ship,			"Ship is a player ship."},
+	{ Object::Object_Flags::Special_warpin,			"Ship uses the special Knossos warp-in animation."},
 };
 
 extern const int Num_object_flag_names = sizeof(Object_flag_names) / sizeof(obj_flag_name);
+extern const size_t Num_object_flag_descriptions = sizeof(Object_flag_descriptions) / sizeof(obj_flag_description);
 
 #ifdef OBJECT_CHECK
 checkobject::checkobject() 

@@ -2,6 +2,11 @@
 
 #include "mission/object.h"
 
+// Sub-texture type suffixes, mirroring the strcat_s calls in modelread.cpp.
+// Used both when detecting sub-texture slots in initSubTypes and when parsing
+// new_texture strings on dialog reload.
+static const SCP_string SUBTEXTURE_SUFFIXES[] = { "misc", "shine", "glow", "normal", "height", "ao", "reflect" };
+
 namespace fso {
 	namespace fred {
 		namespace dialogs {
@@ -76,24 +81,55 @@ namespace fso {
 					{
 						if (!stricmp(Ships[_editor->cur_ship].ship_name, Fred_texture_replacement.ship_name) && !(Fred_texture_replacement.from_table))
 						{
+							// old_texture is stored as the bare base name by this dialog (no type suffix).
+							// However, entries loaded from old mission files may have a type suffix
+							// (e.g. "fenris-body-misc"), so fall back to stripping if no direct match.
 							SCP_string pureName = Fred_texture_replacement.old_texture;
-							auto npos = pureName.find_last_of('-');
-							if (npos != SCP_string::npos) {
-								pureName = pureName.substr(0, pureName.find_last_of('-'));
+
+							// Find the matching default texture slot.
+							// Try direct match first; fall back to stripping the last '-' segment
+							// for old mission-file entries that stored old_texture with a type suffix.
+							size_t matchIdx = defaultTextures.size();
+							for (size_t i = 0; i < defaultTextures.size(); i++) {
+								if (lcase_equal(defaultTextures[i], pureName)) {
+									matchIdx = i;
+									break;
+								}
+							}
+							if (matchIdx == defaultTextures.size()) {
+								auto stripPos = pureName.find_last_of('-');
+								if (stripPos != SCP_string::npos) {
+									SCP_string stripped = pureName.substr(0, stripPos);
+									for (size_t i = 0; i < defaultTextures.size(); i++) {
+										if (lcase_equal(defaultTextures[i], stripped)) {
+											matchIdx = i;
+											break;
+										}
+									}
+								}
 							}
 
-							// look for corresponding old texture
-							for (size_t i = 0; i < defaultTextures.size(); i++)
+							if (matchIdx < defaultTextures.size())
 							{
-								// if match
-								if (lcase_equal(defaultTextures[i], pureName))
+								size_t i = matchIdx;
 								{
 									SCP_string newText = Fred_texture_replacement.new_texture;
-									npos = newText.find_last_of('-');
 									SCP_string type;
-									if (npos != SCP_string::npos) {
-										type = newText.substr(npos + 1);
-										newText = newText.substr(0, newText.find_last_of('-'));
+									{
+										auto npos = newText.find_last_of('-');
+										if (npos != SCP_string::npos) {
+											SCP_string possibleType = newText.substr(npos + 1);
+											// Only treat the suffix as a type if it's a known sub-texture type.
+											// Texture names themselves can contain hyphens (e.g. "fighter01-01a"),
+											// so we must not blindly strip the last segment.
+											for (const auto& kt : SUBTEXTURE_SUFFIXES) {
+												if (lcase_equal(possibleType, kt)) {
+													type = possibleType;
+													newText = newText.substr(0, npos);
+													break;
+												}
+											}
+										}
 									}
 									if (!type.empty()) {
 										if (type == "misc") {
@@ -142,8 +178,6 @@ namespace fso {
 										currentTextures[i]["main"] = newText;
 									}
 
-									// we found one, so no more to check
-									break;
 								}
 							}
 						}
@@ -206,30 +240,19 @@ namespace fso {
 					}
 					if (!type.empty()) {
 						if (type == "trans") {
-						}
-						else if (type == "misc") {
-							subTypesAvailable[MapNum]["misc"] = true;
-						}
-						else if (type == "shine") {
-							subTypesAvailable[MapNum]["shine"] = true;
-						}
-						else if (type == "glow") {
-							subTypesAvailable[MapNum]["glow"] = true;
-						}
-						else if (type == "normal") {
-							subTypesAvailable[MapNum]["normal"] = true;
-						}
-						else if (type == "height") {
-							subTypesAvailable[MapNum]["height"] = true;
-						}
-						else if (type == "ao") {
-							subTypesAvailable[MapNum]["ao"] = true;
-						}
-						else if (type == "reflect") {
-							subTypesAvailable[MapNum]["reflect"] = true;
-						}
-						else {
-							error_display(1, "Invalid Map type %s. Check your model's texture names or get a programmer", type.c_str());
+							// transparency map, not a replaceable subtype
+						} else {
+							bool known = false;
+							for (const auto& kt : SUBTEXTURE_SUFFIXES) {
+								if (lcase_equal(type, kt)) {
+									subTypesAvailable[MapNum][kt] = true;
+									known = true;
+									break;
+								}
+							}
+							if (!known) {
+								error_display(1, "Invalid Map type %s. Check your model's texture names or get a programmer", type.c_str());
+							}
 						}
 					}
 				}
@@ -564,7 +587,7 @@ namespace fso {
 					{
 						temp_bmp = bm_load_animation(fullName.c_str(), &temp_frames, &temp_fps, nullptr, nullptr, false, true);
 					}
-					return temp_bmp < 0;
+					return temp_bmp >= 0;
 				}
 			}
 

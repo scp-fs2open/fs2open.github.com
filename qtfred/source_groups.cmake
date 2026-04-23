@@ -38,6 +38,8 @@ add_file_folder("Source/Mission"
 add_file_folder("Source/Mission/Dialogs"
     src/mission/dialogs/AbstractDialogModel.cpp
     src/mission/dialogs/AbstractDialogModel.h
+	src/mission/dialogs/SceneBrowserModel.cpp
+	src/mission/dialogs/SceneBrowserModel.h
 	src/mission/dialogs/AboutDialogModel.cpp
 	src/mission/dialogs/AboutDialogModel.h
 	src/mission/dialogs/AsteroidEditorDialogModel.cpp
@@ -84,8 +86,6 @@ add_file_folder("Source/Mission/Dialogs"
 	src/mission/dialogs/ReinforcementsEditorDialogModel.h
 	src/mission/dialogs/RelativeCoordinatesDialogModel.cpp
 	src/mission/dialogs/RelativeCoordinatesDialogModel.h
-	src/mission/dialogs/SelectionDialogModel.cpp
-	src/mission/dialogs/SelectionDialogModel.h
 	src/mission/dialogs/ShieldSystemDialogModel.cpp
 	src/mission/dialogs/ShieldSystemDialogModel.h
 	src/mission/dialogs/TeamLoadoutDialogModel.cpp
@@ -196,8 +196,6 @@ add_file_folder("Source/UI/Dialogs"
 	src/ui/dialogs/RelativeCoordinatesDialog.h
 	src/ui/dialogs/SaveAsTemplateDialog.cpp
 	src/ui/dialogs/SaveAsTemplateDialog.h
-	src/ui/dialogs/SelectionDialog.cpp
-	src/ui/dialogs/SelectionDialog.h
 	src/ui/dialogs/ShieldSystemDialog.h
 	src/ui/dialogs/ShieldSystemDialog.cpp
 	src/ui/dialogs/TableViewerDialog.cpp
@@ -218,6 +216,8 @@ add_file_folder("Source/UI/Dialogs"
 	src/ui/dialogs/WaypointPathGeneratorDialog.h
 	src/ui/dialogs/WingEditorDialog.cpp
 	src/ui/dialogs/WingEditorDialog.h
+	src/ui/dialogs/WingFlagsDialog.cpp
+	src/ui/dialogs/WingFlagsDialog.h
 )
 add_file_folder("Source/UI/Dialogs/BriefingEditor"
 	src/ui/dialogs/BriefingEditor/CameraCoordinatesDialog.cpp
@@ -270,6 +270,13 @@ add_file_folder("Source/UI/General"
 	src/ui/dialogs/General/ImagePickerDialog.h
 )
 
+add_file_folder("Source/UI/Panels"
+	src/ui/panels/FlowLayout.cpp
+	src/ui/panels/FlowLayout.h
+	src/ui/panels/SceneBrowserPanel.cpp
+	src/ui/panels/SceneBrowserPanel.h
+)
+
 add_file_folder("Source/UI/Util"
 	src/ui/util/default_dir.cpp
 	src/ui/util/default_dir.h
@@ -314,6 +321,8 @@ add_file_folder("Source/UI/Widgets"
 	src/ui/widgets/SimpleListSelectDialog.h
 	src/ui/widgets/weaponList.cpp
 	src/ui/widgets/weaponList.h
+	src/ui/widgets/MusicComboWidget.cpp
+	src/ui/widgets/MusicComboWidget.h
 )
 
 add_file_folder("UI"
@@ -346,7 +355,6 @@ add_file_folder("UI"
 	ui/PropEditorDialog.ui
 	ui/ReinforcementsDialog.ui
 	ui/RelativeCoordinatesDialog.ui
-	ui/SelectionDialog.ui
 	ui/ShieldSystemDialog.ui
 	ui/SoundEnvironmentDialog.ui
 	ui/TableViewerDialog.ui
@@ -365,7 +373,9 @@ add_file_folder("UI"
 	ui/ShipWeaponsDialog.ui
 	ui/VariableDialog.ui
 	ui/WingEditorDialog.ui
+	ui/WingFlagsDialog.ui
 	ui/SaveAsTemplateDialog.ui
+	ui/SceneBrowserPanel.ui
 	ui/TemplateBrowserDialog.ui
 )
 

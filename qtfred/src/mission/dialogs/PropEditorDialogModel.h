@@ -23,6 +23,7 @@ class PropEditorDialogModel : public AbstractDialogModel {
 	const SCP_vector<std::pair<SCP_string, size_t>>& getFlagLabels() const;
 	const SCP_vector<int>& getFlagState() const;
 	void setFlagState(size_t index, int state);
+	static SCP_vector<std::pair<SCP_string, SCP_string>> getPropFlagDescriptions();
 
 	void selectNextProp();
 	void selectPreviousProp();
