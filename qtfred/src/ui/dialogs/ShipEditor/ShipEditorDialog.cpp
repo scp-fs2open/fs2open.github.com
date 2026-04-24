@@ -257,6 +257,7 @@ void ShipEditorDialog::updateColumnTwo(bool overwrite)
 
 		ui->playerShipCheckBox->setChecked(_model->getPlayer());
 		ui->respawnSpinBox->setValue(_model->getRespawn());
+		ui->hotkeyCombo->setCurrentIndex(_model->getHotkey());
 	}
 }
 void ShipEditorDialog::updateArrival(bool overwrite)
@@ -814,8 +815,7 @@ void ShipEditorDialog::on_layerCombo_currentIndexChanged(int index)
 }
 void ShipEditorDialog::on_hotkeyCombo_currentIndexChanged(int index)
 {
-	auto hotkeyIdx = ui->hotkeyCombo->itemData(index).toInt();
-	_model->setHotkey(hotkeyIdx);
+	_model->setHotkey(index);
 }
 void ShipEditorDialog::on_personaCombo_currentIndexChanged(int index)
 {
