@@ -31,21 +31,12 @@ ShipEditorDialogModel::ShipEditorDialogModel(QObject* parent, EditorViewport* vi
 
 int ShipEditorDialogModel::tristate_set(int val, int cur_state)
 {
-	if (val) {
-		if (!cur_state) {
-			return Qt::PartiallyChecked;
-		}
-	} else {
-		if (cur_state) {
-			return Qt::PartiallyChecked;
-		}
-	}
-	if (cur_state == 1) {
-
-		return Qt::Checked;
-	} else {
-		return Qt::Unchecked;
-	}
+	if (cur_state == Qt::PartiallyChecked)
+		return Qt::PartiallyChecked;
+	bool cur_bool = (cur_state == Qt::Checked);
+	if (static_cast<bool>(val) != cur_bool)
+		return Qt::PartiallyChecked;
+	return cur_state;
 }
 int ShipEditorDialogModel::getSingleShip() const
 {
@@ -290,7 +281,7 @@ void ShipEditorDialogModel::initializeData()
 					if (base_player >= 0) {
 						_m_ship_class = Ships[i].ship_info_index;
 						_m_team = Ships[i].team;
-						pship = (objp->type == OBJ_START) ? 1 : 0;
+						pship = (objp->type == OBJ_START) ? Qt::Checked : Qt::Unchecked;
 						base_player = -1;
 					} else {
 						if (Ships[i].ship_info_index != _m_ship_class) {

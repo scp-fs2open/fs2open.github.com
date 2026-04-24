@@ -338,7 +338,7 @@ void ShipEditorDialog::updateArrival(bool overwrite)
 			ui->arrivalTree->clear_tree("");
 		}
 
-		ui->noArrivalWarpCheckBox->setChecked(_model->getNoArrivalWarp());
+		ui->noArrivalWarpCheckBox->setCheckState(Qt::CheckState(_model->getNoArrivalWarp()));
 	}
 }
 void ShipEditorDialog::updateDeparture(bool overwrite)
@@ -395,7 +395,7 @@ void ShipEditorDialog::updateDeparture(bool overwrite)
 			ui->departureTree->clear_tree("");
 		}
 
-		ui->noDepartureWarpCheckBox->setChecked(_model->getNoDepartureWarp());
+		ui->noDepartureWarpCheckBox->setCheckState(Qt::CheckState(_model->getNoDepartureWarp()));
 
 		ui->updateDepartureCueCheckBox->setChecked(_model->getDepartureCue());
 	}
