@@ -860,9 +860,11 @@ void ShipEditorDialog::on_updateArrivalCueCheckBox_toggled(bool value)
 {
 	_model->setArrivalCue(value);
 }
-void ShipEditorDialog::on_noArrivalWarpCheckBox_toggled(bool value)
+void ShipEditorDialog::on_noArrivalWarpCheckBox_stateChanged(int state)
 {
-	_model->setNoArrivalWarp(value ? Qt::Checked : Qt::Unchecked);
+	if (state == Qt::PartiallyChecked)
+		return;
+	_model->setNoArrivalWarp(state);
 }
 void ShipEditorDialog::on_arrivalTree_rootNodeFormulaChanged(int old, int node)
 {
@@ -906,8 +908,10 @@ void ShipEditorDialog::on_departureTree_miniHelpChanged(const QString& help)
 {
 	ui->HelpTitle->setText(help);
 }
-void ShipEditorDialog::on_noDepartureWarpCheckBox_toggled(bool value)
+void ShipEditorDialog::on_noDepartureWarpCheckBox_stateChanged(int state)
 {
-	_model->setNoDepartureWarp(value ? Qt::Checked : Qt::Unchecked);
+	if (state == Qt::PartiallyChecked)
+		return;
+	_model->setNoDepartureWarp(state);
 }
 } // namespace fso::fred::dialogs
