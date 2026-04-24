@@ -8,13 +8,13 @@ namespace fso::fred::dialogs {
 
 WingFlagsDialog::WingFlagsDialog(QWidget* parent, const std::vector<std::pair<SCP_string, bool>>& flags,
                                  const std::vector<std::pair<SCP_string, SCP_string>>& descriptions)
-	: QDialog(parent), ui(new Ui::WingFlagsDialog()), _flags(flags)
+	: QDialog(parent), ui(new Ui::WingFlagsDialog())
 {
 	ui->setupUi(this);
 
 	QVector<std::pair<QString, int>> qtFlags;
-	qtFlags.reserve(static_cast<int>(_flags.size()));
-	for (const auto& f : _flags)
+	qtFlags.reserve(static_cast<int>(flags.size()));
+	for (const auto& f : flags)
 		qtFlags.append({QString::fromUtf8(f.first.c_str()), f.second ? Qt::Checked : Qt::Unchecked});
 	ui->flagList->setFlags(qtFlags);
 
@@ -26,15 +26,6 @@ WingFlagsDialog::WingFlagsDialog(QWidget* parent, const std::vector<std::pair<SC
 		ui->flagList->setFlagDescriptions(qtDescs);
 	}
 
-	connect(ui->flagList, &fso::fred::FlagListWidget::flagToggled, this, [this](const QString& name, int checked) {
-		for (auto& flag : _flags) {
-			if (flag.first == name.toUtf8().constData()) {
-				flag.second = (checked == Qt::Checked);
-				break;
-			}
-		}
-	});
-
 	resize(QDialog::sizeHint());
 }
 
@@ -42,7 +33,10 @@ WingFlagsDialog::~WingFlagsDialog() = default;
 
 std::vector<std::pair<SCP_string, bool>> WingFlagsDialog::getFlags() const
 {
-	return _flags;
+	std::vector<std::pair<SCP_string, bool>> result;
+	for (const auto& f : ui->flagList->getFlags())
+		result.emplace_back(f.first.toUtf8().constData(), f.second == Qt::Checked);
+	return result;
 }
 
 } // namespace fso::fred::dialogs

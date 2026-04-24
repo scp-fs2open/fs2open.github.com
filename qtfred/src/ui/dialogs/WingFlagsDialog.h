@@ -24,7 +24,6 @@ class WingFlagsDialog : public QDialog {
 
   private:
 	std::unique_ptr<Ui::WingFlagsDialog> ui;
-	std::vector<std::pair<SCP_string, bool>> _flags;
 };
 
 } // namespace fso::fred::dialogs
