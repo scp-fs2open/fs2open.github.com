@@ -19,7 +19,7 @@ ShipFlagsDialog::ShipFlagsDialog(QWidget* parent, EditorViewport* viewport)
 	connect(ui->flagList, &fso::fred::FlagListWidget::flagsChanged, this,
 		[this](const QVector<std::pair<QString, int>>& snapshot) {
 			for (const auto& [name, state] : snapshot) {
-				_model->setFlag(name.toUtf8().constData(), state != Qt::Unchecked);
+				_model->setFlag(name.toUtf8().constData(), state);
 			}
 			updateUI();
 		});
