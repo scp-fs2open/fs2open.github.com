@@ -952,9 +952,14 @@ void FredRenderer::render_frame(int cur_object_index,
 
 	g3_set_view_matrix(&_viewport->eye_pos, &_viewport->eye_orient, 0.5f);
 
+	// Force max star detail so the editor always shows the full Num_stars count
+	// regardless of the player's graphics quality setting (Detail.num_stars can be 0).
+	int saved_detail_stars = Detail.num_stars;
+	Detail.num_stars = MAX_DETAIL_VALUE;
 	enable_htl();
 	stars_draw(view().Show_stars, view().Show_stars, view().Show_stars, 0, 0);
 	disable_htl();
+	Detail.num_stars = saved_detail_stars;
 
 	if (view().Show_horizon) {
 		gr_set_color(128, 128, 64);

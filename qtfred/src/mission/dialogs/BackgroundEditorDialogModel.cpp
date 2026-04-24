@@ -50,7 +50,6 @@ void BackgroundEditorDialogModel::refreshBackgroundPreview()
 	stars_load_background(Cur_background); // rebuild instances from Backgrounds[]
 	stars_set_background_model(The_mission.skybox_model, nullptr, The_mission.skybox_flags); // rebuild skybox
 	stars_set_background_orientation(&The_mission.skybox_orientation);
-	// TODO make this actually show the stars in the background
 	_editor->missionChanged();
 }
 
