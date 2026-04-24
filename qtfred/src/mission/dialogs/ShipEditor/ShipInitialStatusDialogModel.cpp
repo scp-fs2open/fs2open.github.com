@@ -272,14 +272,9 @@ void ShipInitialStatusDialogModel::initializeData(bool multi)
 		}
 	}
 
-	if (objp != nullptr) {
-		if (objp->type == OBJ_SHIP || objp->type == OBJ_START) {
-			ship* shipp = &Ships[objp->instance];
-
-			if (Ship_info[shipp->ship_info_index].uses_team_colors) {
-				m_use_teams = true;
-			}
-		}
+	if (Ship_info[Ships[m_ship].ship_info_index].uses_team_colors) {
+		m_use_teams = true;
+		m_team_color_setting = Ships[m_ship].team_name;
 	}
 	change_subsys(0);
 
@@ -607,6 +602,7 @@ bool ShipInitialStatusDialogModel::apply()
 				handle_inconsistent_flag(shipp->flags, Ship::Ship_Flags::Secondaries_locked, m_secondaries_locked);
 				handle_inconsistent_flag(shipp->flags, Ship::Ship_Flags::Lock_all_turrets_initially, m_turrets_locked);
 				handle_inconsistent_flag(shipp->flags, Ship::Ship_Flags::Afterburner_locked, m_afterburner_locked);
+				shipp->team_name = m_team_color_setting;
 			}
 
 			objp = GET_NEXT(objp);
@@ -628,8 +624,8 @@ bool ShipInitialStatusDialogModel::apply()
 		handle_inconsistent_flag(Ships[m_ship].flags, Ship::Ship_Flags::Secondaries_locked, m_secondaries_locked);
 		handle_inconsistent_flag(Ships[m_ship].flags, Ship::Ship_Flags::Lock_all_turrets_initially, m_turrets_locked);
 		handle_inconsistent_flag(Ships[m_ship].flags, Ship::Ship_Flags::Afterburner_locked, m_afterburner_locked);
+		Ships[m_ship].team_name = m_team_color_setting;
 	}
-	Ships[m_ship].team_name = m_team_color_setting;
 	update_docking_info();
 	_editor->missionChanged();
 	return true;

@@ -797,6 +797,8 @@ void FredRenderer::render_one_model_htl(object* objp,
 			render_info.set_debug_flags(debug_flags);
 			render_info.set_replacement_textures(model_get_instance(Ships[z].model_instance_num)->texture_replace);
 			render_info.set_flags(flags);
+			if (Ship_info[Ships[z].ship_info_index].uses_team_colors)
+				render_info.set_team_color(Ships[z].team_name, Ships[z].secondary_team_name, Ships[z].team_change_timestamp, Ships[z].team_change_time);
 			model_render_immediate(&render_info, Ship_info[Ships[z].ship_info_index].model_num, Ships[z].model_instance_num, &objp->orient, &objp->pos);
 		}
 
