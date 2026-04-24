@@ -947,7 +947,6 @@ void FredView::onUpdateContextToolbar() {
 		if (numMarked <= 1)
 			addBtn(tr("Rename"),               &FredView::quickRenameCurrentObject);
 		addBtn(tr("Edit Ship"),            &FredView::on_actionShips_triggered);
-		addBtn(tr("Position/Orientation"), &FredView::on_actionObject_Orientation_triggered);
 		if (effectiveInWing) {
 			_contextToolBar->addSeparator();
 			addBtn(tr("Edit Wing"), &FredView::on_actionWings_triggered);
@@ -960,17 +959,15 @@ void FredView::onUpdateContextToolbar() {
 		}
 	} else if (effectiveType == OBJ_WAYPOINT && (numMarked <= 1 || multiSharedWaypointList != nullptr)) {
 		addBtn(tr("Edit Waypoint Path"),   &FredView::on_actionWaypoint_Paths_triggered);
-		addBtn(tr("Position/Orientation"), &FredView::on_actionObject_Orientation_triggered);
 	} else if (numMarked <= 1 && effectiveType == OBJ_JUMP_NODE) {
 		addBtn(tr("Edit Jump Node"),       &FredView::on_actionJump_Nodes_triggered);
-		addBtn(tr("Position/Orientation"), &FredView::on_actionObject_Orientation_triggered);
 	} else if (effectiveType == OBJ_PROP) {
 		addBtn(tr("Edit Prop"),            &FredView::on_actionProps_triggered);
-		addBtn(tr("Position/Orientation"), &FredView::on_actionObject_Orientation_triggered);
 	}
 
 	if (anythingSelected) {
 		_contextToolBar->addSeparator();
+		addBtn(tr("Position/Orientation"), &FredView::on_actionObject_Orientation_triggered);
 		if (numMarked <= 1)
 			addBtn(tr("Clone"), &FredView::on_actionClone_Marked_Objects_triggered);
 		addBtn(tr("Delete"), &FredView::on_actionDelete_triggered);

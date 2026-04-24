@@ -4,6 +4,8 @@
 #include <globalincs/linklist.h>
 #include <ship/ship.h>
 #include <math/bitarray.h>
+#include <jumpnode/jumpnode.h>
+#include <prop/prop.h>
 
 namespace fso::fred::dialogs {
 
@@ -44,8 +46,17 @@ void ObjectOrientEditorDialogModel::initializeData()
 					_pointToObjectList.emplace_back(ObjectEntry(text, OBJ_INDEX(ptr)));
 					break;
 				}
+				case OBJ_JUMP_NODE: {
+					CJumpNode* jnp = jumpnode_get_by_objnum(OBJ_INDEX(ptr));
+					if (jnp)
+						_pointToObjectList.emplace_back(ObjectEntry(jnp->GetName(), OBJ_INDEX(ptr)));
+					break;
+				}
+				case OBJ_PROP:
+					if (Props[ptr->instance].has_value())
+						_pointToObjectList.emplace_back(ObjectEntry(Props[ptr->instance]->prop_name, OBJ_INDEX(ptr)));
+					break;
 				case OBJ_POINT:
-				case OBJ_JUMP_NODE:
 					break;
 				default:
 					Assertion(false, "Unknown object type in Object Orient Dialog!"); // unknown object type
