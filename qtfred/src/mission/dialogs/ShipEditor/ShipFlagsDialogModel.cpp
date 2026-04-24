@@ -80,7 +80,9 @@ void ShipFlagsDialogModel::update_ship(const int shipnum)
 		for (size_t i = 0; i < Num_Parse_ship_flags; ++i) {
 			if (!stricmp(name.c_str(), Parse_ship_flags[i].name)) {
 				if (Parse_ship_flags[i].def == Ship::Ship_Flags::Reinforcement) {
-					_editor->set_reinforcement(shipp->ship_name, set);
+					if (objp->type != OBJ_START) {
+						_editor->set_reinforcement(shipp->ship_name, set);
+					}
 				} else {
 					if (set) {
 						shipp->flags.set(Parse_ship_flags[i].def);
@@ -216,6 +218,14 @@ void ShipFlagsDialogModel::initializeData()
 
 	first = 1;
 
+	bool has_player_ship = false;
+	for (objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
+		if ((objp->type == OBJ_START) && objp->flags[Object::Object_Flags::Marked]) {
+			has_player_ship = true;
+			break;
+		}
+	}
+
 	objp = GET_FIRST(&obj_used_list);
 	while (objp != END_OF_LIST(&obj_used_list)) {
 		if ((objp->type == OBJ_START) || (objp->type == OBJ_SHIP)) {
@@ -240,6 +250,10 @@ void ShipFlagsDialogModel::initializeData()
 							flagDef.def == Ship::Ship_Flags::Afterburner_locked ||
 							flagDef.def == Ship::Ship_Flags::Lock_all_turrets_initially ||
 							flagDef.def == Ship::Ship_Flags::Force_shields_on) {
+							continue;
+						}
+						// Reinforcement doesn't apply to player ships
+						if (has_player_ship && flagDef.def == Ship::Ship_Flags::Reinforcement) {
 							continue;
 						}
 						bool checked = shipp->flags[flagDef.def];
@@ -276,6 +290,10 @@ void ShipFlagsDialogModel::initializeData()
 							flagDef.def == Ship::Ship_Flags::Afterburner_locked ||
 							flagDef.def == Ship::Ship_Flags::Lock_all_turrets_initially ||
 							flagDef.def == Ship::Ship_Flags::Force_shields_on) {
+							continue;
+						}
+						// Reinforcement doesn't apply to player ships
+						if (has_player_ship && flagDef.def == Ship::Ship_Flags::Reinforcement) {
 							continue;
 						}
 						bool checked = shipp->flags[flagDef.def];
