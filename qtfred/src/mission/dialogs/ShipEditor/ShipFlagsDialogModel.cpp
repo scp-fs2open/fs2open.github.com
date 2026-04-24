@@ -6,6 +6,13 @@
 #include <object/object.h>
 
 namespace fso::fred::dialogs {
+
+// Flags that are not applicable to player start ships and should be hidden/skipped for them.
+// Add entries here to extend the list.
+static const Ship::Ship_Flags player_start_hidden_flags[] = {
+	Ship::Ship_Flags::Reinforcement,
+	Ship::Ship_Flags::Kill_before_mission,
+};
 int ShipFlagsDialogModel::tristate_set(int val, int cur_state)
 {
 	// cur_state uses Qt::CheckState encoding (0=Unchecked, 1=PartiallyChecked, 2=Checked)
@@ -79,10 +86,18 @@ void ShipFlagsDialogModel::update_ship(const int shipnum)
 		const bool set = (checked == Qt::Checked);
 		for (size_t i = 0; i < Num_Parse_ship_flags; ++i) {
 			if (!stricmp(name.c_str(), Parse_ship_flags[i].name)) {
-				if (Parse_ship_flags[i].def == Ship::Ship_Flags::Reinforcement) {
-					if (objp->type != OBJ_START) {
-						_editor->set_reinforcement(shipp->ship_name, set);
+
+				// Skip flags that aren't applicable to player start ships, even if they were shown and edited in multi edit mode
+				if (objp->type == OBJ_START) {
+					bool hidden = false;
+					for (const auto& hf : player_start_hidden_flags) {
+						if (Parse_ship_flags[i].def == hf) { hidden = true; break; }
 					}
+					if (hidden) continue;
+				}
+
+				if (Parse_ship_flags[i].def == Ship::Ship_Flags::Reinforcement) {
+					_editor->set_reinforcement(shipp->ship_name, set);
 				} else {
 					if (set) {
 						shipp->flags.set(Parse_ship_flags[i].def);
@@ -259,9 +274,12 @@ void ShipFlagsDialogModel::initializeData()
 							flagDef.def == Ship::Ship_Flags::Force_shields_on) {
 							continue;
 						}
-						// Reinforcement doesn't apply to player ships
-						if (all_player_ships && flagDef.def == Ship::Ship_Flags::Reinforcement) {
-							continue;
+						if (all_player_ships) {
+							bool hidden = false;
+							for (const auto& hf : player_start_hidden_flags) {
+								if (flagDef.def == hf) { hidden = true; break; }
+							}
+							if (hidden) continue;
 						}
 						bool checked = shipp->flags[flagDef.def];
 						flags.emplace_back(flagDef.name, checked ? Qt::Checked : Qt::Unchecked);
@@ -299,9 +317,12 @@ void ShipFlagsDialogModel::initializeData()
 							flagDef.def == Ship::Ship_Flags::Force_shields_on) {
 							continue;
 						}
-						// Reinforcement doesn't apply to player ships
-						if (all_player_ships && flagDef.def == Ship::Ship_Flags::Reinforcement) {
-							continue;
+						if (all_player_ships) {
+							bool hidden = false;
+							for (const auto& hf : player_start_hidden_flags) {
+								if (flagDef.def == hf) { hidden = true; break; }
+							}
+							if (hidden) continue;
 						}
 						bool checked = shipp->flags[flagDef.def];
 						getFlag(flagDef.name)->second = tristate_set(checked, getFlag(flagDef.name)->second);
