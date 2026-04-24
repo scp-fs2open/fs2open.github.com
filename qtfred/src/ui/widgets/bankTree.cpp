@@ -34,7 +34,7 @@ void bankTree::dragMoveEvent(QDragMoveEvent* event)
 		event->ignore();
 	}
 }
-void bankTree::selectionChanged(const QItemSelection& selected, const QItemSelection& deselected)
+/* void bankTree::selectionChanged(const QItemSelection& selected, const QItemSelection& deselected)
 {
 	auto indexes = selected.indexes();
 	if (!indexes.isEmpty()) {
@@ -64,8 +64,43 @@ void bankTree::selectionChanged(const QItemSelection& selected, const QItemSelec
 		}
 	}
 	QTreeView::selectionChanged(selected, deselected);
+}*/
+
+void bankTree::selectionChanged(const QItemSelection& selected, const QItemSelection& deselected) {
+	// Iterate QItemSelection directly as QList<QItemSelectionRange> via const ref
+	// avoids calling .indexes() which returns a new QList<QModelIndex> by value
+	bool hasSelection = false;
+	bool isBank = false;
+	for (const QItemSelectionRange& range : selected) {
+		QModelIndex first = range.topLeft();
+		if (first.isValid()) {
+			hasSelection = true;
+			isBank = (model()->data(first, Qt::UserRole + 2) == true);
+			break;
+		}
+	}
+
+	    if (hasSelection) {
+		// Traverse model manually to avoid model()->match() returning QList by value
+		bool disableValue = !isBank;
+		std::function<void(const QModelIndex&)> traverse = [&](const QModelIndex& parent) {
+			for (int row = 0; row < model()->rowCount(parent); ++row) {
+				QModelIndex idx = model()->index(row, 0, parent);
+				if (model()->data(idx, Qt::UserRole + 2) == disableValue) {
+					auto* item = dynamic_cast<QStandardItemModel*>(model())->itemFromIndex(idx);
+					item->setFlags(item->flags() & ~Qt::ItemIsSelectable);
+				}
+				if (model()->hasChildren(idx)) {
+					traverse(idx);
+				}
+			}
+		};
+		traverse(QModelIndex());
+	}
+
+	QTreeView::selectionChanged(selected, deselected);
 }
-int bankTree::getTypeSelected() const
+	int bankTree::getTypeSelected() const
 {
 	return typeSelected;
 }
