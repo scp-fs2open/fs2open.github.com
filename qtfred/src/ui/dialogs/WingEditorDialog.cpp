@@ -365,7 +365,7 @@ void WingEditorDialog::on_wingLeaderCombo_currentIndexChanged(int index)
 	_model->setWingLeaderIndex(index);
 }
 
-void WingEditorDialog::on_numberOfWavesSpinBox_valueChanged(int value)
+void WingEditorDialog::on_numWavesSpinBox_valueChanged(int value)
 {
 	_model->setNumberOfWaves(value);
 	ui->waveThresholdSpinBox->setMaximum(_model->getMaxWaveThreshold());
