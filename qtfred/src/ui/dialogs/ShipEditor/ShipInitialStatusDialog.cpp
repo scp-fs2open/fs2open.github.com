@@ -63,6 +63,8 @@ void ShipInitialStatusDialog::on_velocitySpinBox_valueChanged(int value)
 }
 void ShipInitialStatusDialog::on_dockpointList_currentItemChanged(QListWidgetItem* current)
 {
+	if (!current)
+		return;
 	cur_docker_point = current->data(Qt::UserRole).toInt();
 	updateUI();
 }
@@ -71,6 +73,11 @@ void ShipInitialStatusDialog::on_dockeeComboBox_currentIndexChanged(int index)
 	auto dockeeData = ui->dockeeComboBox->itemData(index).toInt();
 	cur_dockee = dockeeData;
 	_model->setDockee(cur_docker_point, dockeeData);
+
+	if (cur_dockee >= 0 && ui->dockeePointComboBox->count() > 0) {
+		cur_dockee_point = ui->dockeePointComboBox->itemData(0).toInt();
+		_model->setDockeePoint(cur_docker_point, cur_dockee_point);
+	}
 }
 void ShipInitialStatusDialog::on_dockeePointComboBox_currentIndexChanged(int index)
 {
@@ -152,6 +159,10 @@ void ShipInitialStatusDialog::on_guardianSpinBox_valueChanged(int value)
 {
 	_model->setGuardian(value);
 }
+void ShipInitialStatusDialog::on_moveShipsCheckBox_toggled(bool value)
+{
+	_model->setMoveShipsWhenUndocking(value);
+}
 void ShipInitialStatusDialog::updateUI()
 {
 	util::SignalBlockers blockers(this);
@@ -184,6 +195,7 @@ void ShipInitialStatusDialog::updateUI()
 	updateFlags();
 	updateDocks();
 	updateDockee();
+	ui->moveShipsCheckBox->setChecked(_model->getMoveShipsWhenUndocking());
 	updateSubsystems();
 	ui->colourComboBox->clear();
 	if (_model->getUseTeamcolours()) {
@@ -218,7 +230,7 @@ void ShipInitialStatusDialog::updateFlags()
 }
 void ShipInitialStatusDialog::updateDocks()
 {
-	auto index = ui->dockpointList->currentIndex();
+	int row = ui->dockpointList->currentRow();
 	ui->dockpointList->clear();
 	if (!_model->getIfMultpleShips()) {
 		for (int dockpoint = 0; dockpoint < _model->getnum_dock_points(); dockpoint++) {
@@ -229,7 +241,8 @@ void ShipInitialStatusDialog::updateDocks()
 			ui->dockpointList->addItem(newItem);
 		}
 	}
-	ui->dockpointList->setCurrentIndex(index);
+	if (row >= 0 && row < ui->dockpointList->count())
+		ui->dockpointList->setCurrentRow(row);
 	if (cur_docker_point < 0) {
 		// clear the dropdowns
 		list_dockees(-1);

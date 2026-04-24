@@ -294,6 +294,16 @@
          </widget>
         </item>
         <item>
+         <widget class="QCheckBox" name="moveShipsCheckBox">
+          <property name="toolTip">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;When unoccupying a dockpoint, move the smaller ship away so they don't overlap&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
+          <property name="text">
+           <string>Move ships when undocking</string>
+          </property>
+         </widget>
+        </item>
+        <item>
          <spacer name="dockSpacer">
           <property name="orientation">
            <enum>Qt::Vertical</enum>

@@ -120,6 +120,8 @@ void ShipInitialStatusDialogModel::initializeData(bool multi)
 		Assert(m_ship >= 0);
 	}
 
+	m_move_ships_when_undocking = _viewport->Move_ships_when_undocking;
+
 	// initialize dockpoint stuff
 	if (!m_multi_edit) {
 		num_dock_points = model_get_num_dock_points(Ship_info[Ships[m_ship].ship_info_index].model_num);
@@ -337,7 +339,7 @@ void ShipInitialStatusDialogModel::undock(object* objp1, object* objp2)
 	ship_num = get_ship_from_obj(OBJ_INDEX(objp1));
 	other_ship_num = get_ship_from_obj(OBJ_INDEX(objp2));
 
-	if (_viewport->Move_ships_when_undocking) {
+	if (m_move_ships_when_undocking) {
 		if (ship_class_compare(Ships[ship_num].ship_info_index, Ships[other_ship_num].ship_info_index) <= 0) {
 			vm_vec_scale_add2(&objp2->pos,
 				&v,
@@ -636,6 +638,15 @@ bool ShipInitialStatusDialogModel::apply()
 }
 
 void ShipInitialStatusDialogModel::reject() {}
+
+bool ShipInitialStatusDialogModel::getMoveShipsWhenUndocking() const
+{
+	return m_move_ships_when_undocking;
+}
+void ShipInitialStatusDialogModel::setMoveShipsWhenUndocking(bool value)
+{
+	modify(m_move_ships_when_undocking, value);
+}
 
 void ShipInitialStatusDialogModel::setVelocity(const int value)
 {
