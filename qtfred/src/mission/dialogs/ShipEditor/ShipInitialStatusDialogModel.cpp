@@ -144,48 +144,48 @@ void ShipInitialStatusDialogModel::initializeData(bool multi)
 	m_hull = static_cast<int>(Objects[_editor->currentObject].hull_strength);
 	guardian_threshold = Ships[m_ship].ship_guardian_threshold;
 	if (Objects[_editor->currentObject].flags[Object::Object_Flags::No_shields])
-		m_has_shields = 0;
+		m_has_shields = Qt::Unchecked;
 	else
-		m_has_shields = 1;
+		m_has_shields = Qt::Checked;
 
 	if (Ships[m_ship].flags[Ship::Ship_Flags::Force_shields_on])
-		m_force_shields = 1;
+		m_force_shields = Qt::Checked;
 	else
-		m_force_shields = 0;
+		m_force_shields = Qt::Unchecked;
 
 	if (Ships[m_ship].flags[Ship::Ship_Flags::Ship_locked])
-		m_ship_locked = 1;
+		m_ship_locked = Qt::Checked;
 	else
-		m_ship_locked = 0;
+		m_ship_locked = Qt::Unchecked;
 
 	if (Ships[m_ship].flags[Ship::Ship_Flags::Weapons_locked])
-		m_weapons_locked = 1;
+		m_weapons_locked = Qt::Checked;
 	else
-		m_weapons_locked = 0;
+		m_weapons_locked = Qt::Unchecked;
 	// Lock primaries
 	if (Ships[m_ship].flags[Ship::Ship_Flags::Primaries_locked]) {
-		m_primaries_locked = 1;
+		m_primaries_locked = Qt::Checked;
 	} else {
-		m_primaries_locked = 0;
+		m_primaries_locked = Qt::Unchecked;
 	}
 	// Lock secondaries
 	if (Ships[m_ship].flags[Ship::Ship_Flags::Secondaries_locked]) {
-		m_secondaries_locked = 1;
+		m_secondaries_locked = Qt::Checked;
 	} else {
-		m_secondaries_locked = 0;
+		m_secondaries_locked = Qt::Unchecked;
 	}
 
 	// Lock turrets
 	if (Ships[m_ship].flags[Ship::Ship_Flags::Lock_all_turrets_initially]) {
-		m_turrets_locked = 1;
+		m_turrets_locked = Qt::Checked;
 	} else {
-		m_turrets_locked = 0;
+		m_turrets_locked = Qt::Unchecked;
 	}
 
 	if (Ships[m_ship].flags[Ship::Ship_Flags::Afterburner_locked]) {
-		m_afterburner_locked = 1;
+		m_afterburner_locked = Qt::Checked;
 	} else {
-		m_afterburner_locked = 0;
+		m_afterburner_locked = Qt::Unchecked;
 	}
 
 	if (m_multi_edit) {
@@ -201,11 +201,11 @@ void ShipInitialStatusDialogModel::initializeData(bool multi)
 					hflag = 1;
 				if (objp->flags[Object::Object_Flags::No_shields]) {
 					if (m_has_shields)
-						m_has_shields = 1;
+						m_has_shields = Qt::PartiallyChecked;
 
 				} else {
 					if (!m_has_shields)
-						m_has_shields = 1;
+						m_has_shields = Qt::PartiallyChecked;
 				}
 
 				Assert((objp->type == OBJ_SHIP) || (objp->type == OBJ_START));
@@ -594,9 +594,9 @@ bool ShipInitialStatusDialogModel::apply()
 
 				modify(objp->hull_strength, (float)m_hull);
 
-				if (m_has_shields == 1) {
+				if (m_has_shields == Qt::Checked) {
 					objp->flags.remove(Object::Object_Flags::No_shields);
-				} else if (m_has_shields == 0) {
+				} else if (m_has_shields == Qt::Unchecked) {
 					objp->flags.set(Object::Object_Flags::No_shields);
 				}
 				auto shipp = &Ships[get_ship_from_obj(objp)];
