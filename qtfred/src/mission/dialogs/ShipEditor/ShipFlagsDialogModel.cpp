@@ -218,11 +218,18 @@ void ShipFlagsDialogModel::initializeData()
 
 	first = 1;
 
-	bool has_player_ship = false;
+	bool all_player_ships = false;
+	bool any_marked = false;
 	for (objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
-		if ((objp->type == OBJ_START) && objp->flags[Object::Object_Flags::Marked]) {
-			has_player_ship = true;
-			break;
+		if (((objp->type == OBJ_START) || (objp->type == OBJ_SHIP)) && objp->flags[Object::Object_Flags::Marked]) {
+			if (!any_marked) {
+				all_player_ships = true;
+				any_marked = true;
+			}
+			if (objp->type != OBJ_START) {
+				all_player_ships = false;
+				break;
+			}
 		}
 	}
 
@@ -253,7 +260,7 @@ void ShipFlagsDialogModel::initializeData()
 							continue;
 						}
 						// Reinforcement doesn't apply to player ships
-						if (has_player_ship && flagDef.def == Ship::Ship_Flags::Reinforcement) {
+						if (all_player_ships && flagDef.def == Ship::Ship_Flags::Reinforcement) {
 							continue;
 						}
 						bool checked = shipp->flags[flagDef.def];
@@ -293,7 +300,7 @@ void ShipFlagsDialogModel::initializeData()
 							continue;
 						}
 						// Reinforcement doesn't apply to player ships
-						if (has_player_ship && flagDef.def == Ship::Ship_Flags::Reinforcement) {
+						if (all_player_ships && flagDef.def == Ship::Ship_Flags::Reinforcement) {
 							continue;
 						}
 						bool checked = shipp->flags[flagDef.def];
