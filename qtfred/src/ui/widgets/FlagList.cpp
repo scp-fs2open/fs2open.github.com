@@ -212,11 +212,14 @@ void FlagListWidget::onSelectAll()
 {
 	_updating = true;
 	for (int r = 0; r < _model->rowCount(); ++r) {
-		if (auto* it = _model->item(r, 0)) {
+		if (auto* it = _model->item(r, 0))
 			it->setCheckState(Qt::Checked);
-		}
 	}
 	_updating = false;
+	for (int r = 0; r < _model->rowCount(); ++r) {
+		if (auto* it = _model->item(r, 0))
+			Q_EMIT flagToggled(it->data(KeyRole).toString(), Qt::Checked);
+	}
 	Q_EMIT flagsChanged(snapshot());
 }
 
@@ -224,11 +227,14 @@ void FlagListWidget::onClearAll()
 {
 	_updating = true;
 	for (int r = 0; r < _model->rowCount(); ++r) {
-		if (auto* it = _model->item(r, 0)) {
+		if (auto* it = _model->item(r, 0))
 			it->setCheckState(Qt::Unchecked);
-		}
 	}
 	_updating = false;
+	for (int r = 0; r < _model->rowCount(); ++r) {
+		if (auto* it = _model->item(r, 0))
+			Q_EMIT flagToggled(it->data(KeyRole).toString(), Qt::Unchecked);
+	}
 	Q_EMIT flagsChanged(snapshot());
 }
 

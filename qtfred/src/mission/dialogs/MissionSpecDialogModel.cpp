@@ -422,18 +422,17 @@ bool MissionSpecDialogModel::getMissionFlag(Mission::Mission_Flags flag) const {
 }
 
 const SCP_vector<std::pair<SCP_string, bool>>& MissionSpecDialogModel::getMissionFlagsList() {
-	if (_m_flag_data.empty()) {
-		for (size_t i = 0; i < Num_parse_mission_flags; ++i) {
-			auto flagDef = Parse_mission_flags[i];
+	_m_flag_data.clear();
+	for (size_t i = 0; i < Num_parse_mission_flags; ++i) {
+		auto flagDef = Parse_mission_flags[i];
 
-			// Skip flags that have checkboxes elsewhere than the flag list or are inactive
-			if (flagDef.is_special || !flagDef.in_use) {
-				continue;
-			}
-
-			bool checked = _m_flags[flagDef.def];
-			_m_flag_data.emplace_back(flagDef.name, checked);
+		// Skip flags that have checkboxes elsewhere than the flag list or are inactive
+		if (flagDef.is_special || !flagDef.in_use) {
+			continue;
 		}
+
+		bool checked = _m_flags[flagDef.def];
+		_m_flag_data.emplace_back(flagDef.name, checked);
 	}
 	return _m_flag_data;
 }
