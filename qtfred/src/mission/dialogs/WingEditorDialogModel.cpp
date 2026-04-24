@@ -771,7 +771,8 @@ void WingEditorDialogModel::setArrivalType(ArrivalLocation newArrivalType)
 	auto* w = getCurrentWing();
 	modify(w->arrival_location, newArrivalType);
 
-	// If the new arrival type is a dock bay, clear warp in parameters
+	// If the new arrival type is a dock bay, reset warp-in params to ship class defaults
+	// (dock bay arrivals don't use warp effects; -1 would crash the save code)
 	// else, clear arrival paths
 	if (newArrivalType == ArrivalLocation::FROM_DOCK_BAY) {
 		for (auto& ship : Ships) {
@@ -780,7 +781,7 @@ void WingEditorDialogModel::setArrivalType(ArrivalLocation newArrivalType)
 			if (ship.wingnum != _currentWingIndex)
 				continue;
 
-			ship.warpin_params_index = -1;
+			ship.warpin_params_index = Ship_info[ship.ship_info_index].warpin_params_index;
 		}
 	} else {
 		modify(w->arrival_path_mask, 0);
@@ -1104,7 +1105,8 @@ void WingEditorDialogModel::setDepartureType(DepartureLocation newDepartureType)
 	auto* w = getCurrentWing();
 	modify(w->departure_location, newDepartureType);
 
-	// If the new departure type is a dock bay,clear warp out parameters
+	// If the new departure type is a dock bay, reset warp-out params to ship class defaults
+	// (dock bay departures don't use warp effects; -1 would crash the save code)
 	// else, clear departure paths
 	if (newDepartureType == DepartureLocation::TO_DOCK_BAY) {
 		for (auto& ship : Ships) {
@@ -1113,7 +1115,7 @@ void WingEditorDialogModel::setDepartureType(DepartureLocation newDepartureType)
 			if (ship.wingnum != _currentWingIndex)
 				continue;
 
-			ship.warpout_params_index = -1;
+			ship.warpout_params_index = Ship_info[ship.ship_info_index].warpout_params_index;
 		}
 	} else {
 		modify(w->departure_path_mask, 0);
