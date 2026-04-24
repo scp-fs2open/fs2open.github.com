@@ -2252,6 +2252,7 @@ void FredView::onPropClassSelected(int prop_class) {
 void FredView::on_actionAsteroid_Field_triggered(bool) {
 	auto asteroidFieldEditor = new dialogs::AsteroidEditorDialog(this, _viewport);
 	asteroidFieldEditor->setAttribute(Qt::WA_DeleteOnClose);
+	connect(asteroidFieldEditor, &QDialog::finished, this, [this]() { fred->updateAllViewports(); });
 	asteroidFieldEditor->show();
 }
 void FredView::on_actionVolumetric_Nebula_triggered(bool)
