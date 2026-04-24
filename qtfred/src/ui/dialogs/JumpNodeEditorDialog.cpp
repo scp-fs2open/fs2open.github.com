@@ -56,7 +56,7 @@ void JumpNodeEditorDialog::updateJumpNodeListComboBox()
 void JumpNodeEditorDialog::updateUi()
 {
 	util::SignalBlockers blockers(this);
-	
+
 	ui->nameLineEdit->setText(QString::fromStdString(_model->getName()));
 	ui->displayNameLineEdit->setText(QString::fromStdString(_model->getDisplayName()));
 	ui->modelFileLineEdit->setText(QString::fromStdString(_model->getModelFilename()));
@@ -67,6 +67,12 @@ void JumpNodeEditorDialog::updateUi()
 	ui->alphaSpinBox->setValue(_model->getColorA());
 
 	ui->hiddenByDefaultCheckBox->setChecked(_model->getHidden());
+
+	ui->layerCombo->clear();
+	for (const auto& name : _viewport->getLayerNames()) {
+		ui->layerCombo->addItem(QString::fromStdString(name), QString::fromStdString(name));
+	}
+	ui->layerCombo->setCurrentIndex(ui->layerCombo->findData(QString::fromStdString(_model->getLayer())));
 }
 
 void JumpNodeEditorDialog::enableOrDisableControls()
@@ -81,6 +87,7 @@ void JumpNodeEditorDialog::enableOrDisableControls()
 	ui->blueSpinBox->setEnabled(enable);
 	ui->alphaSpinBox->setEnabled(enable);
 	ui->hiddenByDefaultCheckBox->setEnabled(enable);
+	ui->layerCombo->setEnabled(enable);
 }
 
 void JumpNodeEditorDialog::on_selectJumpNodeComboBox_currentIndexChanged(int index)
@@ -129,6 +136,13 @@ void JumpNodeEditorDialog::on_alphaSpinBox_valueChanged(int value)
 void JumpNodeEditorDialog::on_hiddenByDefaultCheckBox_toggled(bool checked)
 {
 	_model->setHidden(checked);
+}
+
+void JumpNodeEditorDialog::on_layerCombo_currentIndexChanged(int index)
+{
+	if (index < 0)
+		return;
+	_model->setLayer(ui->layerCombo->itemData(index).toString().toUtf8().constData());
 }
 
 } // namespace fso::fred::dialogs

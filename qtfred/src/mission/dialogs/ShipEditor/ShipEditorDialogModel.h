@@ -23,6 +23,7 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	SCP_string _m_callsign;
 	int _m_ship_class;
 	int _m_team;
+	SCP_string _m_layer;
 	int _m_arrival_location;
 	int _m_departure_location;
 	int _m_ai_class;
@@ -92,6 +93,9 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 
 	void setTeam(const int);
 	int getTeam() const;
+
+	void setLayer(const SCP_string& layer);
+	SCP_string getLayer() const;
 
 	void setCargo(const SCP_string&);
 	SCP_string getCargo() const;

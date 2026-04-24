@@ -31,6 +31,9 @@ class WaypointEditorDialogModel: public AbstractDialogModel {
 	bool isEnabled() const;
 	const SCP_vector<std::pair<SCP_string, int>>& getWaypointPathList() const;
 
+	SCP_string getLayer() const;
+	void setLayer(const SCP_string& layer);
+
 signals:
 	void waypointPathMarkingChanged();
 	

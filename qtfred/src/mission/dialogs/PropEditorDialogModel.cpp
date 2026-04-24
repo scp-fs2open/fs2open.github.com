@@ -280,6 +280,35 @@ void PropEditorDialogModel::setFlagState(size_t index, int state) {
 	}
 }
 
+SCP_string PropEditorDialogModel::getLayer() const
+{
+	SCP_string result;
+	bool first = true;
+	for (auto obj_idx : _selectedPropObjects) {
+		if (!query_valid_object(obj_idx) || Objects[obj_idx].type != OBJ_PROP)
+			continue;
+		SCP_string layer = _viewport->getObjectLayerName(obj_idx);
+		if (first) {
+			result = layer;
+			first = false;
+		} else if (result != layer) {
+			return "";
+		}
+	}
+	return result;
+}
+
+void PropEditorDialogModel::setLayer(const SCP_string& layer)
+{
+	for (auto obj_idx : _selectedPropObjects) {
+		if (!query_valid_object(obj_idx) || Objects[obj_idx].type != OBJ_PROP)
+			continue;
+		_viewport->moveObjectToLayer(obj_idx, layer);
+	}
+	set_modified();
+	_editor->missionChanged();
+}
+
 void PropEditorDialogModel::selectNextProp() {
 	if (!hasValidSelection()) {
 		if (hasAnyPropsInMission()) {

@@ -376,4 +376,26 @@ bool JumpNodeEditorDialogModel::getHidden() const
 	return _hidden;
 }
 
+SCP_string JumpNodeEditorDialogModel::getLayer() const
+{
+	if (_currentlySelectedNodeIndex < 0)
+		return "";
+	int objnum = getSelectedJumpNodeObjnum(_currentlySelectedNodeIndex);
+	if (objnum < 0)
+		return "";
+	return _viewport->getObjectLayerName(objnum);
+}
+
+void JumpNodeEditorDialogModel::setLayer(const SCP_string& v)
+{
+	if (_currentlySelectedNodeIndex < 0)
+		return;
+	int objnum = getSelectedJumpNodeObjnum(_currentlySelectedNodeIndex);
+	if (objnum < 0)
+		return;
+	_viewport->moveObjectToLayer(objnum, v);
+	set_modified();
+	_editor->missionChanged();
+}
+
 } // namespace fso::fred::dialogs

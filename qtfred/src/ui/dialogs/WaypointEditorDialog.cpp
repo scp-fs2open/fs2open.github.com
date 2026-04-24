@@ -39,10 +39,17 @@ void WaypointEditorDialog::initializeUi()
 	util::SignalBlockers blockers(this);
 
 	updateWaypointListComboBox();
+
+	ui->layerCombo->clear();
+	for (const auto& name : _viewport->getLayerNames()) {
+		ui->layerCombo->addItem(QString::fromStdString(name), QString::fromStdString(name));
+	}
+
 	bool enabled = _model->isEnabled();
 	ui->nameEdit->setEnabled(enabled);
 	ui->noDrawLinesCheck->setEnabled(enabled);
 	ui->customColorCheck->setEnabled(enabled);
+	ui->layerCombo->setEnabled(enabled);
 }
 
 void WaypointEditorDialog::updateWaypointListComboBox()
@@ -61,6 +68,7 @@ void WaypointEditorDialog::updateUi()
 	util::SignalBlockers blockers(this);
 	ui->nameEdit->setText(QString::fromStdString(_model->getCurrentName()));
 	ui->pathSelection->setCurrentIndex(ui->pathSelection->findData(_model->getCurrentlySelectedPath()));
+	ui->layerCombo->setCurrentIndex(ui->layerCombo->findData(QString::fromStdString(_model->getLayer())));
 
 	ui->noDrawLinesCheck->setChecked(_model->getNoDrawLines());
 	ui->customColorCheck->setChecked(_model->getHasCustomColor());
@@ -149,6 +157,13 @@ void WaypointEditorDialog::on_colorBSpinBox_valueChanged(int value)
 	_model->setColorB(value);
 	updateColorSwatch();
 	_model->apply();
+}
+
+void WaypointEditorDialog::on_layerCombo_currentIndexChanged(int index)
+{
+	if (index < 0)
+		return;
+	_model->setLayer(ui->layerCombo->itemData(index).toString().toUtf8().constData());
 }
 
 } // namespace fso::fred::dialogs
