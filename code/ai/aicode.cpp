@@ -1399,7 +1399,7 @@ void ai_turn_towards_vector(const vec3d* dest, object* objp, const vec3d* slide_
 	}
 
 	//	Don't allow a ship to turn if it's prevented from turning.
-	if ( objp->flags[Object::Object_Flags::Dont_change_orientation, Object::Object_Flags::Immobile] ) {
+	if (objp->flags[Object::Object_Flags::Dont_change_orientation] || objp->flags[Object::Object_Flags::Immobile]) {
 		return;
 	}
 
@@ -2146,7 +2146,8 @@ float get_wing_lowest_av_ab_speed(object *objp)
 		ai_info	*oaip = &Ai_info[oshipp->ai_index];
 		ship_info *osip = &Ship_info[oshipp->ship_info_index];
 
-		if ((oaip->mode == AIM_WAYPOINTS) && (oshipp->wingnum == wingnum) && (oaip->ai_flags[AI::AI_Flags::Formation_object, AI::AI_Flags::Formation_wing])) {
+		if ((oaip->mode == AIM_WAYPOINTS) && (oshipp->wingnum == wingnum) &&
+			(oaip->ai_flags[AI::AI_Flags::Formation_object] || oaip->ai_flags[AI::AI_Flags::Formation_wing])) {
 			
 			float cur_max;
 			if ((oshipp->flags[Ship::Ship_Flags::Afterburner_locked]) || !(osip->flags[Ship::Info_Flags::Afterburner]) || (o->phys_info.afterburner_max_vel.xyz.z <= o->phys_info.max_vel.xyz.z) || !(oaip->ai_flags[AI::AI_Flags::Free_afterburner_use] || oaip->ai_profile_flags[AI::Profile_Flags::Free_afterburner_use])) {
@@ -6650,7 +6651,8 @@ void ai_maybe_announce_shockwave_weapon(object *firing_objp, int weapon_index)
 				ai_info	*aip = &Ai_info[Ships[A->instance].ai_index];
 
 				// AL 1-5-98: only avoid shockwave if not docked or repairing
-				if ( !object_is_docked(A) && !(aip->ai_flags[AI::AI_Flags::Repairing, AI::AI_Flags::Being_repaired]) ) {
+				if (!object_is_docked(A) &&
+					!(aip->ai_flags[AI::AI_Flags::Repairing] || aip->ai_flags[AI::AI_Flags::Being_repaired])) {
 					aip->ai_flags.set(AI::AI_Flags::Avoid_shockwave_weapon);
 				}
 			}
@@ -12318,7 +12320,8 @@ void ai_process_subobjects(int objnum)
 				// (previously in ship_evaluate_ai (previously in ship_process_post))
 				// Cyborg -- Unfortunately Ai info is not reliable and should just not be accessed here.
 				// It will have no real effect on gameplay, since the server decides when turrets fire
-				if (!MULTIPLAYER_CLIENT && (aip->ai_flags[AI::AI_Flags::Being_repaired, AI::AI_Flags::Awaiting_repair]))
+				if (!MULTIPLAYER_CLIENT &&
+					(aip->ai_flags[AI::AI_Flags::Being_repaired] || aip->ai_flags[AI::AI_Flags::Awaiting_repair]))
 				{
 					if (aip->support_ship_objnum >= 0)
 					{
@@ -13167,7 +13170,7 @@ void ai_do_repair_frame(object *objp, ai_info *aip, float frametime)
 	static bool rearm_eta_found=false;
 
 
-	if (aip->ai_flags[AI::AI_Flags::Being_repaired, AI::AI_Flags::Awaiting_repair]) {
+	if (aip->ai_flags[AI::AI_Flags::Being_repaired] || aip->ai_flags[AI::AI_Flags::Awaiting_repair]) {
 		if (Ships[objp->instance].team == Iff_traitor) {
 			ai_abort_rearm_request(objp);
 			return;
@@ -13534,7 +13537,8 @@ void ai_maybe_evade_locked_missile(object *objp, ai_info *aip)
 		return;
 	}
 
-	if (aip->ai_flags[AI::AI_Flags::No_dynamic, AI::AI_Flags::Kamikaze]) {	//	If not allowed to pursue dynamic objectives, don't evade.  Dumb?  Maybe change. -- MK, 3/15/98
+	if (aip->ai_flags[AI::AI_Flags::No_dynamic] || aip->ai_flags[AI::AI_Flags::Kamikaze]) { //	If not allowed to pursue dynamic objectives, don't evade.  Dumb?
+												 //Maybe change. -- MK, 3/15/98
 		return;
 	}
 
@@ -13589,7 +13593,7 @@ void ai_maybe_evade_locked_missile(object *objp, ai_info *aip)
 					}
 					break;
 				case AIM_DOCK:	//	Ships in dock mode can evade iif they are not currently repairing or docked.
-					if (object_is_docked(objp) || (aip->ai_flags[AI::AI_Flags::Repairing, AI::AI_Flags::Being_repaired]))
+					if (object_is_docked(objp) || (aip->ai_flags[AI::AI_Flags::Repairing] || aip->ai_flags[AI::AI_Flags::Being_repaired]))
 						break;
 					FALLTHROUGH;
 				case AIM_GUARD:
@@ -13739,7 +13743,8 @@ void maybe_evade_dumbfire_weapon(ai_info *aip)
 		case AIM_WAYPOINTS:	
 		case AIM_FLY_TO_SHIP:
 		case AIM_SAFETY:
-			if (!(aip->ai_flags[AI::AI_Flags::No_dynamic, AI::AI_Flags::Kamikaze]) && Ship_info[Ships[aip->shipnum].ship_info_index].is_small_ship()) {
+			if (!(aip->ai_flags[AI::AI_Flags::No_dynamic] || aip->ai_flags[AI::AI_Flags::Kamikaze]) &&
+				Ship_info[Ships[aip->shipnum].ship_info_index].is_small_ship()) {
 				aip->active_goal = AI_ACTIVE_GOAL_DYNAMIC;
 				aip->previous_mode = aip->mode;
 				aip->previous_submode = aip->submode;
@@ -14417,7 +14422,8 @@ int num_allies_rearming(object *objp)
 			continue;
 
 		if (Ships[A->instance].team == team) {
-			if (Ai_info[Ships[A->instance].ai_index].ai_flags[AI::AI_Flags::Repairing, AI::AI_Flags::Awaiting_repair]) {
+			if (Ai_info[Ships[A->instance].ai_index].ai_flags[AI::AI_Flags::Repairing] ||
+				Ai_info[Ships[A->instance].ai_index].ai_flags[AI::AI_Flags::Awaiting_repair]) {
 				count++;
 			}
 		}
@@ -14449,7 +14455,7 @@ int maybe_request_support(object *objp)
 		return 0;
 
 	//	A ship that is currently awaiting does not need support!
-	if (aip->ai_flags[AI::AI_Flags::Being_repaired, AI::AI_Flags::Awaiting_repair])
+	if (aip->ai_flags[AI::AI_Flags::Being_repaired] || aip->ai_flags[AI::AI_Flags::Awaiting_repair])
 		return 0;
 
 	if (!timestamp_elapsed(aip->next_rearm_request_timestamp))
@@ -14773,7 +14779,8 @@ void ai_announce_ship_dying(object *dying_objp)
 				ai_info	*aip = &Ai_info[Ships[A->instance].ai_index];
 
 				// AL 1-5-98: only avoid shockwave if not docked or repairing
-				if ( !object_is_docked(A) && !(aip->ai_flags[AI::AI_Flags::Repairing, AI::AI_Flags::Being_repaired]) ) {
+				if (!object_is_docked(A) &&
+					!(aip->ai_flags[AI::AI_Flags::Repairing] || aip->ai_flags[AI::AI_Flags::Being_repaired])) {
 					aip->ai_flags.set(AI::AI_Flags::Avoid_shockwave_ship);
 				}
 			}
@@ -15104,7 +15111,7 @@ int ai_avoid_shockwave(object *objp, ai_info *aip)
 //	Return true if this ship is close to being repaired, else return false.
 int ai_await_repair_frame(object *objp, ai_info *aip)
 {
-	if (!(aip->ai_flags[AI::AI_Flags::Being_repaired, AI::AI_Flags::Awaiting_repair]))
+	if (!(aip->ai_flags[AI::AI_Flags::Being_repaired] || aip->ai_flags[AI::AI_Flags::Awaiting_repair]))
 		return 0;
 
 	if (aip->support_ship_objnum == -1)
@@ -15364,11 +15371,12 @@ void ai_frame(int objnum)
 	ai_process_mission_orders( objnum, aip );
 
 	//	Avoid a shockwave, if necessary.  If a shockwave and rearming, stop rearming.
-	if (aip->mode != AIM_PLAY_DEAD && aip->ai_flags[AI::AI_Flags::Avoid_shockwave_ship, AI::AI_Flags::Avoid_shockwave_weapon]) {
+	if (aip->mode != AIM_PLAY_DEAD &&
+		(aip->ai_flags[AI::AI_Flags::Avoid_shockwave_ship] || aip->ai_flags[AI::AI_Flags::Avoid_shockwave_weapon])) {
 		if (ai_avoid_shockwave(Pl_objp, aip)) {
 			aip->ai_flags.remove(AI::AI_Flags::Big_ship_collide_recover_1);
 			aip->ai_flags.remove(AI::AI_Flags::Big_ship_collide_recover_2);
-			if (aip->ai_flags[AI::AI_Flags::Being_repaired, AI::AI_Flags::Awaiting_repair])
+			if (aip->ai_flags[AI::AI_Flags::Being_repaired] || aip->ai_flags[AI::AI_Flags::Awaiting_repair])
 				ai_abort_rearm_request(Pl_objp);
 			return;
 		}
@@ -15553,7 +15561,7 @@ void ai_frame(int objnum)
 	aip->target_time += flFrametime;
 
 	int in_formation = 0;
-	if (aip->ai_flags[AI::AI_Flags::Formation_object, AI::AI_Flags::Formation_wing]) {
+	if (aip->ai_flags[AI::AI_Flags::Formation_object] || aip->ai_flags[AI::AI_Flags::Formation_wing]) {
 		in_formation = !ai_formation();
 	}
 
@@ -16497,11 +16505,13 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, const vec3d *hit_normal)
 
 	aip->last_hit_time = Missiontime;
 
-	if (aip->ai_flags[AI::AI_Flags::No_dynamic, AI::AI_Flags::Kamikaze])	//	If not allowed to pursue dynamic objectives, don't evade.  Dumb?  Maybe change. -- MK, 3/15/98
+	if (aip->ai_flags[AI::AI_Flags::No_dynamic] ||
+		aip->ai_flags[AI::AI_Flags::Kamikaze]) //	If not allowed to pursue dynamic objectives, don't evade.  Dumb?
+											   //Maybe change. -- MK, 3/15/98
 		return;
 
 	//	If this ship is awaiting repair, abort!
-	if (aip->ai_flags[AI::AI_Flags::Being_repaired, AI::AI_Flags::Awaiting_repair]) {
+	if (aip->ai_flags[AI::AI_Flags::Being_repaired] || aip->ai_flags[AI::AI_Flags::Awaiting_repair]) {
 		if (get_hull_pct(objp_ship) < 0.3f) {
 			//	Note, only abort if hull below a certain level.
 			aip->next_rearm_request_timestamp = timestamp(NEXT_REARM_TIMESTAMP/2);	//	Might request again after 15 seconds.
@@ -16794,7 +16804,7 @@ int ai_abort_rearm_request(object *requester_objp)
 	}	
 	requester_aip = &Ai_info[requester_shipp->ai_index];
 	
-	if (requester_aip->ai_flags[AI::AI_Flags::Being_repaired, AI::AI_Flags::Awaiting_repair]){
+	if (requester_aip->ai_flags[AI::AI_Flags::Being_repaired] || requester_aip->ai_flags[AI::AI_Flags::Awaiting_repair]){
 
 		// support objnum is always valid once a rearm repair has been requested.  It points to the
 		// ship that is coming to repair me.

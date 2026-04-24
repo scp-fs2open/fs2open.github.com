@@ -224,7 +224,8 @@ namespace animation {
 			if (m_flags[Animation_Flags::Random_starting_phase]) {
 				instanceData.time = util::Random::next() * util::Random::INV_F_MAX_VALUE * instanceData.duration;
 				//Check if we might be on the way backwards
-				if (m_flags[Animation_Flags::Loop, Animation_Flags::Auto_Reverse] && !m_flags[Animation_Flags::Reset_at_completion] && util::Random::flip_coin()) {
+				if ((m_flags[Animation_Flags::Loop] || m_flags[Animation_Flags::Auto_Reverse]) &&
+					!m_flags[Animation_Flags::Reset_at_completion] && util::Random::flip_coin()) {
 					prevTime = instanceData.duration;
 					instanceData.canonicalDirection = ModelAnimationDirection::RWD;
 				}
@@ -1378,7 +1379,7 @@ namespace animation {
 		if (Animation_types.find(type)->second.second) {
 			//This is a type where the code does not reset the animation. The animation is expected to auto-reset in one way or another.
 			//If it doesn't, nothing will crash, but the result is most likely unintended.
-			if (!animation->m_flags[Animation_Flags::Auto_Reverse, Animation_Flags::Reset_at_completion]) {
+			if (!(animation->m_flags[Animation_Flags::Auto_Reverse] || animation->m_flags[Animation_Flags::Reset_at_completion])) {
 				error_display(0, "Animation trigger type %s expects an auto-reset flag to be set.", atype);
 			}
 

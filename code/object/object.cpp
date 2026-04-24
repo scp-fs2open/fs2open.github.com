@@ -1641,8 +1641,10 @@ void obj_move_all(float frametime)
 		}
 
 		// Goober5000 - accommodate objects that aren't supposed to move in some way (at least until they're destroyed)
-		bool dont_change_position = objp->flags[Object::Object_Flags::Dont_change_position, Object::Object_Flags::Immobile] && objp->hull_strength > 0.0f;
-		bool dont_change_orientation = objp->flags[Object::Object_Flags::Dont_change_orientation, Object::Object_Flags::Immobile] && objp->hull_strength > 0.0f;
+		bool dont_change_position = (objp->flags[Object::Object_Flags::Dont_change_position] || objp->flags[Object::Object_Flags::Immobile]) && objp->hull_strength > 0.0f;
+		bool dont_change_orientation = (objp->flags[Object::Object_Flags::Dont_change_orientation] ||
+										   objp->flags[Object::Object_Flags::Immobile]) &&
+									   objp->hull_strength > 0.0f;
 
 		// skip the physics if we're totally immobile
 		if (!dont_change_position || !dont_change_orientation) {

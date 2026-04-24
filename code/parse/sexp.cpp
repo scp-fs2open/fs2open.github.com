@@ -4298,7 +4298,9 @@ int check_sexp_potential_issues(int node, int *bad_node, SCP_string &issue_msg)
 					for (const auto so : list_range(&Ship_obj_list))
 					{
 						const auto &obj = Objects[so->objnum];
-						if (obj.flags[Object::Object_Flags::Immobile, Object::Object_Flags::Dont_change_position, Object::Object_Flags::Dont_change_orientation])
+						if (obj.flags[Object::Object_Flags::Immobile] ||
+							obj.flags[Object::Object_Flags::Dont_change_position] ||
+							obj.flags[Object::Object_Flags::Dont_change_orientation])
 						{
 							issue_msg = "At least one ship (";
 							issue_msg += Ships[obj.instance].ship_name;
