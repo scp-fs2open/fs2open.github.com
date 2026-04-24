@@ -554,8 +554,9 @@ std::vector<std::pair<SCP_string, bool>> ShipEditorDialogModel::getArrivalPaths(
 	auto m_path_mask = Ships[single_ship].arrival_path_mask;
 
 	for (int i = 0; i < m_num_paths; i++) {
-		SCP_string name("Path ");
-		name += i2ch(i + 1);
+		int path_id = m_model->ship_bay->path_indexes[i];
+		const char* raw_name = m_model->paths[path_id].name;
+		SCP_string name = (raw_name && raw_name[0]) ? SCP_string{raw_name} : SCP_string{"<unnamed path>"};
 		bool allowed;
 		if (m_path_mask == 0) {
 			allowed = true;
@@ -579,8 +580,9 @@ std::vector<std::pair<SCP_string, bool>> ShipEditorDialogModel::getDeparturePath
 	auto m_path_mask = Ships[single_ship].departure_path_mask;
 
 	for (int i = 0; i < m_num_paths; i++) {
-		SCP_string name("Path ");
-		name += i2ch(i + 1);
+		int path_id = m_model->ship_bay->path_indexes[i];
+		const char* raw_name = m_model->paths[path_id].name;
+		SCP_string name = (raw_name && raw_name[0]) ? SCP_string{raw_name} : SCP_string{"<unnamed path>"};
 		bool allowed;
 		if (m_path_mask == 0) {
 			allowed = true;
