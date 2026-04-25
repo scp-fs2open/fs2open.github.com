@@ -62,6 +62,7 @@ class ShipInitialStatusDialogModel : public AbstractDialogModel {
 	dock_evaluate_tree(object* objp, dock_function_info* infop, void (*function)(object*), ubyte* visited_bitstring);
 	bool m_multi_edit;
 	bool m_use_teams = false;
+	bool m_move_ships_when_undocking = true;
 
   public:
 	ShipInitialStatusDialogModel(QObject* parent, EditorViewport* viewport, bool multi);
@@ -132,6 +133,9 @@ class ShipInitialStatusDialogModel : public AbstractDialogModel {
 
 	int getGuardian() const;
 	void setGuardian(int);
+
+	bool getMoveShipsWhenUndocking() const;
+	void setMoveShipsWhenUndocking(bool);
 };
 
 /**

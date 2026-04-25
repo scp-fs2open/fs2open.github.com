@@ -265,6 +265,7 @@ void ShipEditorDialog::updateColumnTwo(bool overwrite)
 
 		ui->playerShipCheckBox->setChecked(_model->getPlayer());
 		ui->respawnSpinBox->setValue(_model->getRespawn());
+		ui->hotkeyCombo->setCurrentIndex(_model->getHotkey());
 	}
 }
 void ShipEditorDialog::updateArrival(bool overwrite)
@@ -345,7 +346,7 @@ void ShipEditorDialog::updateArrival(bool overwrite)
 			ui->arrivalTree->clear_tree("");
 		}
 
-		ui->noArrivalWarpCheckBox->setChecked(_model->getNoArrivalWarp());
+		ui->noArrivalWarpCheckBox->setCheckState(Qt::CheckState(_model->getNoArrivalWarp()));
 	}
 }
 void ShipEditorDialog::updateDeparture(bool overwrite)
@@ -402,7 +403,7 @@ void ShipEditorDialog::updateDeparture(bool overwrite)
 			ui->departureTree->clear_tree("");
 		}
 
-		ui->noDepartureWarpCheckBox->setChecked(_model->getNoDepartureWarp());
+		ui->noDepartureWarpCheckBox->setCheckState(Qt::CheckState(_model->getNoDepartureWarp()));
 
 		ui->updateDepartureCueCheckBox->setChecked(_model->getDepartureCue());
 	}
@@ -822,8 +823,7 @@ void ShipEditorDialog::on_layerCombo_currentIndexChanged(int index)
 }
 void ShipEditorDialog::on_hotkeyCombo_currentIndexChanged(int index)
 {
-	auto hotkeyIdx = ui->hotkeyCombo->itemData(index).toInt();
-	_model->setHotkey(hotkeyIdx);
+	_model->setHotkey(index);
 }
 void ShipEditorDialog::on_personaCombo_currentIndexChanged(int index)
 {
@@ -868,9 +868,11 @@ void ShipEditorDialog::on_updateArrivalCueCheckBox_toggled(bool value)
 {
 	_model->setArrivalCue(value);
 }
-void ShipEditorDialog::on_noArrivalWarpCheckBox_toggled(bool value)
+void ShipEditorDialog::on_noArrivalWarpCheckBox_stateChanged(int state)
 {
-	_model->setNoArrivalWarp(value);
+	if (state == Qt::PartiallyChecked)
+		return;
+	_model->setNoArrivalWarp(state);
 }
 void ShipEditorDialog::on_arrivalTree_modified()
 {
@@ -914,8 +916,10 @@ void ShipEditorDialog::on_departureTree_miniHelpChanged(const QString& help)
 {
 	ui->HelpTitle->setText(help);
 }
-void ShipEditorDialog::on_noDepartureWarpCheckBox_toggled(bool value)
+void ShipEditorDialog::on_noDepartureWarpCheckBox_stateChanged(int state)
 {
-	_model->setNoDepartureWarp(value);
+	if (state == Qt::PartiallyChecked)
+		return;
+	_model->setNoDepartureWarp(state);
 }
 } // namespace fso::fred::dialogs

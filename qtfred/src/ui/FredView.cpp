@@ -816,11 +816,15 @@ void FredView::onUpdateContextToolbar() {
 	// OBJ_START is treated as OBJ_SHIP throughout.
 	int multiCommonType = -1;
 	int multiSharedWing = -1;
+	waypoint_list* multiSharedWaypointList = nullptr;
 	if (numMarked > 1) {
 		int firstType    = -1;
 		bool allSameType = true;
 		int  sharedWingTmp = -2; // -2 = uninitialized
 		bool allSameWing   = true;
+		waypoint_list* sharedWpListTmp = nullptr;
+		bool firstWpListSet = false;
+		bool allSameWpList  = true;
 		for (object* p = GET_FIRST(&obj_used_list); p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p)) {
 			if (!p->flags[Object::Object_Flags::Marked]) continue;
 			int t = (p->type == OBJ_START) ? OBJ_SHIP : p->type;
@@ -837,11 +841,23 @@ void FredView::onUpdateContextToolbar() {
 					allSameWing = false;
 				}
 			}
+			if (t == OBJ_WAYPOINT) {
+				waypoint* wp = find_waypoint_with_instance(p->instance);
+				waypoint_list* wl = wp ? wp->get_parent_list() : nullptr;
+				if (!firstWpListSet) {
+					sharedWpListTmp = wl;
+					firstWpListSet  = true;
+				} else if (wl != sharedWpListTmp) {
+					allSameWpList = false;
+				}
+			}
 		}
 		if (allSameType && firstType != -1)
 			multiCommonType = firstType;
 		if (multiCommonType == OBJ_SHIP && allSameWing && sharedWingTmp >= 0 && sharedWingTmp < MAX_WINGS)
 			multiSharedWing = sharedWingTmp;
+		if (multiCommonType == OBJ_WAYPOINT && allSameWpList && firstWpListSet)
+			multiSharedWaypointList = sharedWpListTmp;
 	}
 
 	// Unified "effective" selection properties for single and multi
@@ -871,6 +887,8 @@ void FredView::onUpdateContextToolbar() {
 		label = parts.join(", ") + tr(" selected");
 		if (effectiveInWing)
 			label += tr("  |  Wing: %1").arg(QString::fromUtf8(Wings[effectiveWingNum].name));
+		if (multiSharedWaypointList != nullptr)
+			label += tr("  |  List: %1").arg(QString::fromUtf8(multiSharedWaypointList->get_name()));
 	} else if (isShip) {
 		int si = Ships[Objects[curObj].instance].ship_info_index;
 		label = tr("Ship: %1 [%2]")
@@ -892,18 +910,20 @@ void FredView::onUpdateContextToolbar() {
 	_contextLabel->setText(label);
 
 	// Only rebuild buttons when effective selection state changes.
-	const bool needsRebuild = (curObj           != _ctxCachedObj        ||
-	                           numMarked        != _ctxCachedMarked      ||
-	                           effectiveType    != _ctxCachedObjType     ||
-	                           effectiveInWing  != _ctxCachedInWing      ||
-	                           multiSharedWing  != _ctxCachedSharedWing);
+	const bool needsRebuild = (curObj                  != _ctxCachedObj                ||
+	                           numMarked               != _ctxCachedMarked             ||
+	                           effectiveType           != _ctxCachedObjType            ||
+	                           effectiveInWing         != _ctxCachedInWing             ||
+	                           multiSharedWing         != _ctxCachedSharedWing         ||
+	                           multiSharedWaypointList != _ctxCachedSharedWaypointList);
 	if (!needsRebuild) return;
 
-	_ctxCachedObj        = curObj;
-	_ctxCachedMarked     = numMarked;
-	_ctxCachedObjType    = effectiveType;
-	_ctxCachedInWing     = effectiveInWing;
-	_ctxCachedSharedWing = multiSharedWing;
+	_ctxCachedObj                = curObj;
+	_ctxCachedMarked             = numMarked;
+	_ctxCachedObjType            = effectiveType;
+	_ctxCachedInWing             = effectiveInWing;
+	_ctxCachedSharedWing         = multiSharedWing;
+	_ctxCachedSharedWaypointList = multiSharedWaypointList;
 
 	// Tear down previous dynamic buttons, deleting them to avoid leaks.
 	// Toolbar layout: [0]=label widget-action, [1]=separator, [2..]=dynamic
@@ -927,7 +947,6 @@ void FredView::onUpdateContextToolbar() {
 		if (numMarked <= 1)
 			addBtn(tr("Rename"),               &FredView::quickRenameCurrentObject);
 		addBtn(tr("Edit Ship"),            &FredView::on_actionShips_triggered);
-		addBtn(tr("Position/Orientation"), &FredView::on_actionObject_Orientation_triggered);
 		if (effectiveInWing) {
 			_contextToolBar->addSeparator();
 			addBtn(tr("Edit Wing"), &FredView::on_actionWings_triggered);
@@ -938,19 +957,17 @@ void FredView::onUpdateContextToolbar() {
 			});
 			_contextToolBar->addAction(selWingAct);
 		}
-	} else if (numMarked <= 1 && effectiveType == OBJ_WAYPOINT) {
+	} else if (effectiveType == OBJ_WAYPOINT && (numMarked <= 1 || multiSharedWaypointList != nullptr)) {
 		addBtn(tr("Edit Waypoint Path"),   &FredView::on_actionWaypoint_Paths_triggered);
-		addBtn(tr("Position/Orientation"), &FredView::on_actionObject_Orientation_triggered);
 	} else if (numMarked <= 1 && effectiveType == OBJ_JUMP_NODE) {
 		addBtn(tr("Edit Jump Node"),       &FredView::on_actionJump_Nodes_triggered);
-		addBtn(tr("Position/Orientation"), &FredView::on_actionObject_Orientation_triggered);
-	} else if (numMarked <= 1 && effectiveType == OBJ_PROP) {
+	} else if (effectiveType == OBJ_PROP) {
 		addBtn(tr("Edit Prop"),            &FredView::on_actionProps_triggered);
-		addBtn(tr("Position/Orientation"), &FredView::on_actionObject_Orientation_triggered);
 	}
 
 	if (anythingSelected) {
 		_contextToolBar->addSeparator();
+		addBtn(tr("Position/Orientation"), &FredView::on_actionObject_Orientation_triggered);
 		if (numMarked <= 1)
 			addBtn(tr("Clone"), &FredView::on_actionClone_Marked_Objects_triggered);
 		addBtn(tr("Delete"), &FredView::on_actionDelete_triggered);

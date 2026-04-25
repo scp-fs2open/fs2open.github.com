@@ -20,6 +20,8 @@
 #include <memory>
 #include <ui/widgets/ObjectComboBox.h>
 
+class waypoint_list;
+
 namespace fso {
 namespace fred {
 
@@ -298,11 +300,12 @@ class FredView: public QMainWindow, public IDialogProvider {
 	QLabel*   _contextLabel   = nullptr;
 
 	// Cached selection state... buttons only rebuild when these change
-	int  _ctxCachedObj        = -2;  // -2 = uninitialized
-	int  _ctxCachedMarked     = -1;
-	int  _ctxCachedObjType    = -1;  // single: actual type; multi: common type (-1=mixed)
-	bool _ctxCachedInWing     = false;
-	int  _ctxCachedSharedWing = -2;  // multi-select: shared wing index (-1=none, -2=N/A)
+	int            _ctxCachedObj                = -2;     // -2 = uninitialized
+	int            _ctxCachedMarked             = -1;
+	int            _ctxCachedObjType            = -1;     // single: actual type; multi: common type (-1=mixed)
+	bool           _ctxCachedInWing             = false;
+	int            _ctxCachedSharedWing         = -2;     // multi-select: shared wing index (-1=none, -2=N/A)
+	waypoint_list* _ctxCachedSharedWaypointList = nullptr;
 
 	QToolBar*       _transformToolBar    = nullptr;
 	QLabel*         _transformLabel      = nullptr;

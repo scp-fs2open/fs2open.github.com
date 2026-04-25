@@ -104,7 +104,7 @@ class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	void on_arrivalDistanceEdit_valueChanged(int);
 	void on_arrivalDelaySpinBox_valueChanged(int);
 	void on_updateArrivalCueCheckBox_toggled(bool);
-	void on_noArrivalWarpCheckBox_toggled(bool);
+	void on_noArrivalWarpCheckBox_stateChanged(int);
 	void on_arrivalTree_modified();
 	void on_arrivalTree_helpChanged(const QString&);
 	void on_arrivalTree_miniHelpChanged(const QString&);
@@ -117,7 +117,7 @@ class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	void on_departureTree_modified();
 	void on_departureTree_helpChanged(const QString&);
 	void on_departureTree_miniHelpChanged(const QString&);
-	void on_noDepartureWarpCheckBox_toggled(bool);
+	void on_noDepartureWarpCheckBox_stateChanged(int);
   private: // NOLINT(readability-redundant-access-specifiers)
 	std::unique_ptr<Ui::ShipEditorDialog> ui;
 	std::unique_ptr<ShipEditorDialogModel> _model;

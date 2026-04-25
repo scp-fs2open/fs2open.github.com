@@ -16,10 +16,13 @@ ShipFlagsDialog::ShipFlagsDialog(QWidget* parent, EditorViewport* viewport)
 	ui->setupUi(this);
 	setAttribute(Qt::WA_AlwaysShowToolTips);
 
-	connect(ui->flagList, &fso::fred::FlagListWidget::flagToggled, this, [this](const QString& name, bool checked) {
-		_model->setFlag(name.toUtf8().constData(), checked);
-		updateUI();
-	});
+	connect(ui->flagList, &fso::fred::FlagListWidget::flagsChanged, this,
+		[this](const QVector<std::pair<QString, int>>& snapshot) {
+			for (const auto& [name, state] : snapshot) {
+				_model->setFlag(name.toUtf8().constData(), state);
+			}
+			updateUI();
+		});
 
 	const auto& flags = _model->getFlagsList();
 
