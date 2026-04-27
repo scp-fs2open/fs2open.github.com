@@ -667,6 +667,7 @@ ship_flag_name Ship_flag_names[] = {
 	{ Ship_Flags::Scramble_messages,			"scramble-messages"},
 	{ Ship_Flags::Maneuver_despite_engines,		"maneuver-despite-engines" },
 	{ Ship_Flags::No_scanned_cargo,             "no-scanned-cargo"},
+	{ Ship_Flags::Escort,						"escort" },
 	{ Ship_Flags::EMP_doesnt_scramble_messages,	"emp-doesn't-scramble-messages" },
 };
 
