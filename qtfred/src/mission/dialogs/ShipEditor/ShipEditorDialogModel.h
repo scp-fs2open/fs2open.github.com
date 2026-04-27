@@ -70,7 +70,6 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 
 	int respawn_priority;
 
-	std::vector<std::pair<SCP_string, bool>> orders;
 	std::vector<std::pair<SCP_string, bool>> arrivalPaths;
 	std::vector<std::pair<SCP_string, bool>> departurePaths;
 
@@ -244,8 +243,8 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	 */
 	int getIfPlayerShip() const;
 
-	std::vector<std::pair<SCP_string, bool>> getAcceptedOrders() const;
-	void setAcceptedOrders(const std::vector<std::pair<SCP_string, bool>>&);
+	SCP_vector<std::pair<SCP_string, int>> getPlayerOrders() const;
+	void applyPlayerOrders(const SCP_vector<std::pair<SCP_string, int>>& orders);
 
 	std::vector<std::pair<SCP_string, bool>> getArrivalPaths() const;
 	void setArrivalPaths(const std::vector<std::pair<SCP_string, bool>>&);

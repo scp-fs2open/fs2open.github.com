@@ -655,29 +655,20 @@ void ShipEditorDialog::on_weaponsButton_clicked()
 }
 void ShipEditorDialog::on_playerOrdersButton_clicked()
 {
-	CheckBoxListDialog dlg(this);
-	dlg.setCaption("Player Orders Accepted");
-	// Get our flag list and convert it to Qt's internal types
-	auto playerOrders = _model->getAcceptedOrders();
+	QVector<std::pair<QString, int>> toWidget;
+	for (const auto& p : _model->getPlayerOrders())
+		toWidget.append({QString::fromUtf8(p.first.c_str()), p.second});
 
-	QVector<std::pair<QString, bool>> checkbox_list;
+	dialogs::CheckBoxListDialog dlg(this);
+	dlg.setCaption(tr("Player Orders Accepted"));
+	dlg.setTristate(true);
+	dlg.setOptions(toWidget);
 
-	for (const auto& porder : playerOrders) {
-		checkbox_list.append({porder.first.c_str(), porder.second});
-	}
-	dlg.setOptions(checkbox_list); // TODO upgrade checkbox to accept and display item descriptions
 	if (dlg.exec() == QDialog::Accepted) {
-		auto returned_values = dlg.getCheckedStates();
-
-		std::vector<std::pair<SCP_string, bool>> updatedOrders;
-
-		for (int i = 0; i < checkbox_list.size(); ++i) {
-			// Convert back to std::string
-			std::string name = checkbox_list[i].first.toUtf8().constData();
-			updatedOrders.emplace_back(name, returned_values[i]);
-		}
-
-		_model->setAcceptedOrders(updatedOrders);
+		SCP_vector<std::pair<SCP_string, int>> orders;
+		for (const auto& [name, state] : dlg.getFlags())
+			orders.emplace_back(name.toUtf8().constData(), state);
+		_model->applyPlayerOrders(orders);
 	}
 }
 void ShipEditorDialog::on_specialStatsButton_clicked()

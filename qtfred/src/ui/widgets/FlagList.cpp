@@ -117,6 +117,8 @@ void FlagListWidget::rebuildModel(const QVector<std::pair<QString, int>>& flags)
 
 		auto* item = new QStandardItem(name);
 		item->setCheckable(true);
+		if (_tristate)
+			item->setUserTristate(true);
 		item->setCheckState(Qt::CheckState(checked));
 		item->setData(name, KeyRole);
 
@@ -185,6 +187,16 @@ void FlagListWidget::setToolbarVisible(bool visible)
 bool FlagListWidget::toolbarVisible() const
 {
 	return _toolbarVisible;
+}
+
+void FlagListWidget::setTristate(bool tristate)
+{
+	_tristate = tristate;
+}
+
+bool FlagListWidget::tristate() const
+{
+	return _tristate;
 }
 
 void FlagListWidget::onItemChanged(QStandardItem* item)
