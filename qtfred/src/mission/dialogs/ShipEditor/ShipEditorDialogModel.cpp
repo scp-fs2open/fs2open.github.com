@@ -79,7 +79,7 @@ int ShipEditorDialogModel::getIfPlayerShip() const
 	return player_ship;
 }
 
-SCP_vector<std::pair<SCP_string, int>> ShipEditorDialogModel::getPlayerOrders() const
+SCP_vector<std::pair<SCP_string, int>> ShipEditorDialogModel::getPlayerOrders()
 {
 	SCP_vector<std::pair<SCP_string, int>> orders;
 

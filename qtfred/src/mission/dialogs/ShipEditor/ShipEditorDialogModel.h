@@ -243,7 +243,7 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	 */
 	int getIfPlayerShip() const;
 
-	SCP_vector<std::pair<SCP_string, int>> getPlayerOrders() const;
+	static SCP_vector<std::pair<SCP_string, int>> getPlayerOrders();
 	void applyPlayerOrders(const SCP_vector<std::pair<SCP_string, int>>& orders);
 
 	std::vector<std::pair<SCP_string, bool>> getArrivalPaths() const;
