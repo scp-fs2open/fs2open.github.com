@@ -15,7 +15,6 @@
 
 #include <globalincs/globals.h>
 #include <globalincs/linklist.h>
-#include <mission/missionbriefcommon.h>
 #include <ui/util/default_dir.h>
 #include <ui/util/SignalBlockers.h>
 
@@ -26,8 +25,6 @@
 #include <QFileInfo>
 
 namespace fso::fred::dialogs {
-
-int BriefingEditorDialog::_openDialogCount = 0;
 
 namespace {
 float movementSpeedScaleForIndex(int index) {
@@ -78,7 +75,7 @@ BriefingEditorDialog::BriefingEditorDialog(FredView* parent, EditorViewport* vie
 	: QDialog(parent), SexpTreeEditorInterface(flagset<TreeFlags>()), ui(new Ui::BriefingEditorDialog()),
 	  _model(new BriefingEditorDialogModel(this, viewport)), _viewport(viewport)
 {
-	++_openDialogCount;
+	_viewportLock.emplace(_viewport->acquireControlLock());
 
 	this->setFocus();
 	ui->setupUi(this);
@@ -100,11 +97,7 @@ BriefingEditorDialog::BriefingEditorDialog(FredView* parent, EditorViewport* vie
 }
 
 BriefingEditorDialog::~BriefingEditorDialog() {
-	_openDialogCount = std::max(0, _openDialogCount - 1);
-}
-
-bool BriefingEditorDialog::isAnyDialogOpen() {
-	return _openDialogCount > 0;
+	_viewportLock.reset();
 }
 
 void BriefingEditorDialog::accept()
@@ -115,6 +108,7 @@ void BriefingEditorDialog::accept()
 		ui->defaultMusicWidget->stopPlayback();
 		ui->musicPackWidget->stopPlayback();
 		QDialog::accept();
+		_viewportLock.reset(); // unlock before restoring the grid so the viewport can process controls again
 		create_default_grid(); // restore the grid back to the normal version
 	}
 	// else: validation failed, don't close
@@ -129,6 +123,7 @@ void BriefingEditorDialog::reject()
 		ui->defaultMusicWidget->stopPlayback();
 		ui->musicPackWidget->stopPlayback();
 		QDialog::reject(); // actually close
+		_viewportLock.reset(); // unlock before restoring the grid so the viewport can process controls again
 		create_default_grid(); // restore the grid back to the normal version
 	}
 	// else: do nothing, don't close

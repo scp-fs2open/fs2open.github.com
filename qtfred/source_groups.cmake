@@ -19,6 +19,8 @@ if (WIN32)
 endif()
 
 add_file_folder("Source/Mission"
+    src/mission/CameraController.cpp
+    src/mission/CameraController.h
     src/mission/Editor.cpp
 	src/mission/EditorWing.cpp
     src/mission/Editor.h

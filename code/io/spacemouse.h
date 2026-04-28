@@ -57,6 +57,15 @@ namespace io
 			@returns An optional SpaceMouse object, if found
 			*/
 			static std::unique_ptr<SpaceMouse> searchSpaceMice(int pollingFrequency = 10);
+
+			/*
+			@brief Returns a shared SpaceMouse instance for the process.
+
+			This avoids opening the same HID device from multiple call sites.
+			@param pollingFrequency Polling frequency to use when creating the shared instance.
+			@returns A pointer to the shared SpaceMouse instance, or nullptr if no supported device is present.
+			*/
+			static SpaceMouse* getSharedSpaceMouse(int pollingFrequency = 10);
 		};
 	}
 }

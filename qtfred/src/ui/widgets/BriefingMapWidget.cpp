@@ -14,7 +14,9 @@
 
 #include "graphics/2d.h"
 #include "render/3d.h"
+#include "io/spacemouse.h"
 #include "mission/missionbriefcommon.h"
+#include "mod_table/mod_table.h"
 
 namespace fso::fred {
 
@@ -521,7 +523,7 @@ void BriefingMapWidget::renderFrame() {
 			gr_use_viewport(mainView);
 			gr_screen_resize(static_cast<int>(mainSize.first), static_cast<int>(mainSize.second));
 			g3_start_frame(0);
-			g3_set_view_matrix(&_viewport->eye_pos, &_viewport->eye_orient, 0.5f);
+			g3_set_view_matrix(&_viewport->camera.eye_pos, &_viewport->camera.eye_orient, 0.5f);
 		}
 		_rendering = false;
 		return;
@@ -611,7 +613,7 @@ void BriefingMapWidget::renderFrame() {
 		gr_use_viewport(mainView);
 		gr_screen_resize(static_cast<int>(mainSize.first), static_cast<int>(mainSize.second));
 		g3_start_frame(0);
-		g3_set_view_matrix(&_viewport->eye_pos, &_viewport->eye_orient, 0.5f);
+		g3_set_view_matrix(&_viewport->camera.eye_pos, &_viewport->camera.eye_orient, 0.5f);
 	}
 
 	_rendering = false;
@@ -656,6 +658,8 @@ void BriefingMapWidget::keyReleaseEvent(QKeyEvent* event) {
 }
 
 void BriefingMapWidget::applyBoundCameraControls(float frametime) {
+	io::spacemouse::SpaceMouse* const spacemouse = io::spacemouse::SpaceMouse::getSharedSpaceMouse(0);
+
 	auto& bindings = ControlBindings::instance();
 	vec3d camPos = brief_get_current_cam_pos();
 	matrix camOrient = brief_get_current_cam_orient();
@@ -675,6 +679,17 @@ void BriefingMapWidget::applyBoundCameraControls(float frametime) {
 	rotangs.h += bindings.isPressed(ControlAction::YawRight) ? 0.1f * _rotationSpeedScale : 0.0f;
 	rotangs.p += bindings.isPressed(ControlAction::PitchUp) ? -0.1f * _rotationSpeedScale : 0.0f;
 	rotangs.p += bindings.isPressed(ControlAction::PitchDown) ? 0.1f * _rotationSpeedScale : 0.0f;
+
+	if (spacemouse != nullptr) {
+		auto spacemouseMovement = spacemouse->getMovement();
+		spacemouseMovement.handleNonlinearities(Fred_spacemouse_nonlinearity);
+		movementVec.xyz.x += spacemouseMovement.translation.xyz.x;
+		movementVec.xyz.y += spacemouseMovement.translation.xyz.y;
+		movementVec.xyz.z += spacemouseMovement.translation.xyz.z;
+		rotangs.p += spacemouseMovement.rotation.p * _rotationSpeedScale;
+		rotangs.h += spacemouseMovement.rotation.h * _rotationSpeedScale;
+		rotangs.b += spacemouseMovement.rotation.b * _rotationSpeedScale;
+	}
 
 	const auto frameScale = std::max(frametime * 30.0f * _movementSpeedScale, 0.0f);
 	if (movementVec.xyz.x != 0.0f) {
