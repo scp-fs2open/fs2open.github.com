@@ -1005,6 +1005,10 @@ void parse_mod_table(const char *filename)
 				stuff_boolean(&Disable_all_noncustom_generic_debris);
 			}
 
+			if (optional_string("$Render insignias as decals:")) {
+				stuff_boolean(&Render_insignias_as_decals);
+			}
+
 			optional_string("#NETWORK SETTINGS");
 
 			if (optional_string("$FS2NetD port:")) {
@@ -1643,10 +1647,6 @@ void parse_mod_table(const char *filename)
 
 			if (optional_string("$Zero-radius explosions skip fireballs:")) {
 				stuff_boolean(&Zero_radius_explosions_skip_fireballs);
-			}
-
-			if (optional_string("$Render insignias as decals:")) {
-				stuff_boolean(&Render_insignias_as_decals);
 			}
 
 			// end of options ----------------------------------------
