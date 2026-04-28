@@ -735,6 +735,11 @@ typedef struct insignia {
 	vec3d vecs[MAX_INS_VECS];								// vertex list	
 	vec3d offset;	// global position offset for this insignia
 	vec3d norm[MAX_INS_VECS]	;					//normal of the insignia-Bobboau
+
+	// Computed fields for decal rendering
+	vec3d position;
+	matrix orientation;
+	float diameter;
 } insignia;
 
 #define PM_FLAG_ALLOW_TILING			(1<<0)					// Allow texture tiling

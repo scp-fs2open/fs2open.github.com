@@ -2742,6 +2742,11 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 					// read in world offset
 					cfread_vector(&pm->ins[idx].offset, fp);
 
+					vec3d min = {{{FLT_MAX, FLT_MAX, FLT_MAX}}};
+					vec3d max = {{{-FLT_MAX, -FLT_MAX, -FLT_MAX}}};
+					vec3d avg_total = ZERO_VECTOR;
+					vec3d avg_normal = ZERO_VECTOR;
+
 					// read in all the faces
 					for(idx2=0; idx2<pm->ins[idx].num_faces; idx2++){
 						// read in 3 vertices
@@ -2753,18 +2758,37 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 						vec3d tempv;
 
 						//get three points (rotated) and compute normal
+						const vec3d& v1 = pm->ins[idx].vecs[pm->ins[idx].faces[idx2][0]];
+						const vec3d& v2 = pm->ins[idx].vecs[pm->ins[idx].faces[idx2][1]];
+						const vec3d& v3 = pm->ins[idx].vecs[pm->ins[idx].faces[idx2][2]];
 
 						vm_vec_perp(&tempv,
-							&pm->ins[idx].vecs[pm->ins[idx].faces[idx2][0]],
-							&pm->ins[idx].vecs[pm->ins[idx].faces[idx2][1]],
-							&pm->ins[idx].vecs[pm->ins[idx].faces[idx2][2]]);
+							&v1,
+							&v2,
+							&v3);
 
 						vm_vec_normalize_safe(&tempv);
 
 						pm->ins[idx].norm[idx2] = tempv;
-//						mprintf(("insignorm %.2f %.2f %.2f\n",pm->ins[idx].norm[idx2].xyz.x, pm->ins[idx].norm[idx2].xyz.y, pm->ins[idx].norm[idx2].xyz.z));
+	//					mprintf(("insignorm %.2f %.2f %.2f\n",pm->ins[idx].norm[idx2].xyz.x, pm->ins[idx].norm[idx2].xyz.y, pm->ins[idx].norm[idx2].xyz.z));
 
+
+						vm_vec_min(&min, &min, &v1);
+						vm_vec_min(&min, &min, &v2);
+						vm_vec_min(&min, &min, &v3);
+						vm_vec_max(&max, &max, &v1);
+						vm_vec_max(&max, &max, &v2);
+						vm_vec_max(&max, &max, &v3);
+
+						vec3d avg = (v1 + v2 + v3) * (1.0f / 3.0f);
+						avg_total += avg;
+						avg_normal += tempv;
 					}
+
+					pm->ins[idx].position = avg_total / static_cast<float>(num_faces) + pm->ins[idx].offset;
+					vec3d bb = max - min;
+					pm->ins[idx].diameter = std::max({bb.xyz.x, bb.xyz.y, bb.xyz.z});
+					vm_vector_2_matrix(&pm->ins[idx].orientation, &avg_normal, &vmd_z_vector);
 				}
 				break;
 
