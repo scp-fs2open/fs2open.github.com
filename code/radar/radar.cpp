@@ -161,7 +161,7 @@ void HudGaugeRadarStd::drawBlips(int blip_type, int bright, int distort)
 		}
 		else
 		{
-			if (b->radar_image_2d == -1 && b->radar_color_image_2d == -1)
+			if (!Radar_show_2d_icons || (b->radar_image_2d == -1 && b->radar_color_image_2d == -1))
 				drawContactCircle(x, y, b->rad);
 			else
 				drawContactImage(x, y, b->rad, b->radar_image_2d, b->radar_color_image_2d, b->radar_image_size);

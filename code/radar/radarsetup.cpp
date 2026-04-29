@@ -21,6 +21,7 @@
 #include "localization/localize.h"
 #include "network/multi.h"
 #include "object/object.h"
+#include "options/Option.h"
 #include "playerman/player.h"
 #include "radar/radar.h"
 #include "radar/radarorb.h"
@@ -87,6 +88,28 @@ extern int radar_iff_color[5][2][4];
 int See_all = 0;
 
 DCF_BOOL(see_all, See_all);
+
+bool Radar_show_2d_icons = true;
+
+static auto RadarShow2dIconsOption __UNUSED = options::OptionBuilder<bool>("HUD.Radar2dIcons",
+	std::pair<const char*, int>{"Show Radar 2D Icons", 1915},
+	std::pair<const char*, int>{"Enables or disables the display of custom 2D ship icons on the radar", 1916})
+	.category(std::make_pair("Game", 1824))
+	.default_val(true)
+	.bind_to(&Radar_show_2d_icons)
+	.importance(56)
+	.finish();
+
+void radar_check_2d_icon_options()
+{
+	bool has_icons = std::any_of(Ship_info.begin(), Ship_info.end(), [](const ship_info& sip) {
+		return sip.radar_image_2d_idx >= 0 || sip.radar_color_image_2d_idx >= 0;
+	});
+
+	if (!has_icons) {
+		options::OptionsManager::instance()->removeOption(RadarShow2dIconsOption);
+	}
+}
 
 void radar_stuff_blip_info(object *objp, int is_bright, color **blip_color, int *blip_type)
 {

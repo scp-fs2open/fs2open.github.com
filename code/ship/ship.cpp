@@ -6752,6 +6752,8 @@ void ship_init()
 
 		// We shouldn't already have any subsystem pointers at this point.
 		Assertion(Ship_subsystems.empty(), "Some pre-allocated subsystems didn't get cleared out: " SIZE_T_ARG " batches present during ship_init(); get a coder!\n", Ship_subsystems.size());
+	
+		radar_check_2d_icon_options();
 	}
 }
 
