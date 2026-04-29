@@ -13930,8 +13930,7 @@ void sexp_set_friendly_damage_caps(int n) {
  * Sets the player's target to the specified, either ship, and or the subsystem on said ship.
  */
 void sexp_set_player_target(int node)
-{
-	// int shipnum = ship_name_lookup(CTEXT(node), 1);
+{	
 	const ship_registry_entry *ship_entry = eval_ship(node);
 	if (ship_entry == nullptr)
 		return;
@@ -13950,10 +13949,6 @@ void sexp_set_player_target(int node)
 			new_subsys = ship_get_subsys(shipp, subsys_name);
 		}
 	}
-	
-    // set_target_objnum will call hud_restore_subsystem_target which reads last_targeted_subobject
-    shipp->last_targeted_subobject[Player_num] = new_subsys;
-
     set_target_objnum(Player_ai, objnum);
     set_targeted_subsys(Player_ai, new_subsys, objnum);
 }
