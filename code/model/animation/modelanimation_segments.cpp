@@ -3,6 +3,10 @@
 #include <utility>
 
 #include "render/3d.h"
+#include "particle/ParticleManager.h"
+#include "particle/hosts/EffectHostObject.h"
+#include "particle/hosts/EffectHostSubmodel.h"
+#include "particle/hosts/EffectHostVector.h"
 
 namespace animation {
 
@@ -1287,6 +1291,8 @@ namespace animation {
 			instance.interruptableSound = false;
 			instance.currentlyPlaying = sound_handle::invalid();
 		}
+
+		m_segment->forceStopAnimation(pmi_id);
 	}
 
 	void ModelAnimationSegmentSoundDuring::playLoopSnd(polymodel_instance* pmi) {
@@ -1376,6 +1382,108 @@ namespace animation {
 		bool abortSoundIfRunning = !optional_string("+Don't Interrupt Playing Sounds");
 
 		auto segment = std::shared_ptr<ModelAnimationSegmentSoundDuring>(new ModelAnimationSegmentSoundDuring(data->parseSegment(), start_sound, end_sound, loop_sound, flipIfReversed, abortSoundIfRunning, snd_rad, submodel, position));
+
+		return segment;
+	}
+
+
+	ModelAnimationSegmentParticlesDuring::ModelAnimationSegmentParticlesDuring(std::shared_ptr<ModelAnimationSegment> segment, particle::ParticleEffectHandle effect, float atTime, std::shared_ptr<ModelAnimationSubmodel> submodel, std::optional<vec3d> position, std::optional<matrix> orientation) :
+		m_segment(std::move(segment)), m_submodel(std::move(submodel)), m_position(std::move(position)), m_orientation(std::move(orientation)), m_effect(effect), m_atTime(atTime) { }
+
+	ModelAnimationSegment* ModelAnimationSegmentParticlesDuring::copy() const {
+		auto newCopy = new ModelAnimationSegmentParticlesDuring(*this);
+		newCopy->m_segment = std::shared_ptr<ModelAnimationSegment>(newCopy->m_segment->copy());
+		return newCopy;
+	}
+
+	void ModelAnimationSegmentParticlesDuring::recalculate(ModelAnimationSubmodelBuffer& base, ModelAnimationSubmodelBuffer& currentAnimDelta, polymodel_instance* pmi) {
+		m_segment->recalculate(base, currentAnimDelta, pmi);
+		m_duration[pmi->id] = m_segment->getDuration(pmi->id);
+	}
+
+	void ModelAnimationSegmentParticlesDuring::calculateAnimation(ModelAnimationSubmodelBuffer& base, float time, int pmi_id) const {
+		m_segment->calculateAnimation(base, time, pmi_id);
+	}
+
+	void ModelAnimationSegmentParticlesDuring::executeAnimation(const ModelAnimationSubmodelBuffer& state, float timeboundLower, float timeboundUpper, ModelAnimationDirection direction, int pmi_id) {
+		float atTime = fminf(fmaxf(m_atTime, 0.0f), m_duration.at(pmi_id));
+		if (timeboundLower <= atTime && atTime <= timeboundUpper) {
+			createParticleSource(model_get_instance(pmi_id));
+		}
+		m_segment->executeAnimation(state, timeboundLower, timeboundUpper, direction, pmi_id);
+	}
+
+	void ModelAnimationSegmentParticlesDuring::exchangeSubmodelPointers(ModelAnimationSet& replaceWith) {
+		m_segment->exchangeSubmodelPointers(replaceWith);
+	}
+
+	void ModelAnimationSegmentParticlesDuring::forceStopAnimation(int pmi_id) {
+		m_segment->forceStopAnimation(pmi_id);
+	}
+
+	void ModelAnimationSegmentParticlesDuring::createParticleSource(polymodel_instance* pmi) const {
+		if (!m_effect.isValid())
+			return;
+
+		auto source = particle::ParticleManager::get()->createSource(m_effect);
+		if (!source)
+			return;
+
+		matrix orient = m_orientation.value_or(vmd_identity_matrix);
+		vec3d pos = m_position.value_or(vmd_zero_vector);
+
+		std::unique_ptr<EffectHost> host;
+
+		if (m_submodel != nullptr && pmi->objnum >= 0) {
+			auto submodel = m_submodel->findSubmodel(pmi);
+			if (submodel.first != nullptr) {
+				host = std::make_unique<EffectHostSubmodel>(&Objects[pmi->objnum], (int)(submodel.first - pmi->submodel), pos, orient, true);
+			}
+		}
+
+		if (!host && pmi->objnum >= 0) {
+			host = std::make_unique<EffectHostObject>(&Objects[pmi->objnum], pos, orient, true);
+		}
+
+		if (!host) {
+			host = std::make_unique<EffectHostVector>(pos, orient, vmd_zero_vector, vmd_identity_matrix, true);
+		}
+
+		source->setHost(std::move(host));
+		source->finishCreation();
+	}
+
+	std::shared_ptr<ModelAnimationSegment> ModelAnimationSegmentParticlesDuring::parser(ModelAnimationParseHelper* data) {
+		auto submodel = ModelAnimationParseHelper::parseSubmodel();
+		if (!submodel) {
+			if (data->parentSubmodel)
+				submodel = data->parentSubmodel;
+		}
+
+		required_string("+Effect:");
+		auto effect = particle::util::parseEffect(data->m_animationName);
+
+		required_string("+At Time:");
+		float atTime = 0.0f;
+		stuff_float(&atTime);
+
+		std::optional<vec3d> position = std::nullopt;
+		if (optional_string("+Position:")) {
+			vec3d parse;
+			stuff_vec3d(&parse);
+			position = std::move(parse);
+		}
+
+		std::optional<matrix> orientation = std::nullopt;
+		if (optional_string("+Orientation:")) {
+			angles angle;
+			stuff_angles_deg_phb(&angle);
+			matrix mat;
+			vm_angles_2_matrix(&mat, &angle);
+			orientation = std::move(mat);
+		}
+
+		auto segment = std::make_shared<ModelAnimationSegmentParticlesDuring>(data->parseSegment(), effect, atTime, submodel, position, orientation);
 
 		return segment;
 	}

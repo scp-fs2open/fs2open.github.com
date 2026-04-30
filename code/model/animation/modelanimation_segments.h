@@ -2,6 +2,7 @@
 
 #include "math/ik_solver.h"
 #include "model/animation/modelanimation.h"
+#include "particle/particle.h"
 
 namespace animation {
 
@@ -290,6 +291,34 @@ namespace animation {
 
 	};
 	
+	class ModelAnimationSegmentParticlesDuring : public ModelAnimationSegment {
+		std::shared_ptr<ModelAnimationSegment> m_segment;
+
+		std::shared_ptr<ModelAnimationSubmodel> m_submodel;
+		std::optional<vec3d> m_position;
+		std::optional<matrix> m_orientation;
+
+		//configurables:
+	  public:
+		particle::ParticleEffectHandle m_effect;
+		float m_atTime;
+
+	  private:
+		ModelAnimationSegment* copy() const override;
+		void recalculate(ModelAnimationSubmodelBuffer& base, ModelAnimationSubmodelBuffer& currentAnimDelta, polymodel_instance* pmi) override;
+		void calculateAnimation(ModelAnimationSubmodelBuffer& base, float time, int pmi_id) const override;
+		void executeAnimation(const ModelAnimationSubmodelBuffer& state, float timeboundLower, float timeboundUpper, ModelAnimationDirection direction, int pmi_id) override;
+		void exchangeSubmodelPointers(ModelAnimationSet& replaceWith) override;
+		void forceStopAnimation(int pmi_id) override;
+
+		void createParticleSource(polymodel_instance* pmi) const;
+
+	  public:
+		static std::shared_ptr<ModelAnimationSegment> parser(ModelAnimationParseHelper* data);
+		ModelAnimationSegmentParticlesDuring(std::shared_ptr<ModelAnimationSegment> segment, particle::ParticleEffectHandle effect, float atTime, std::shared_ptr<ModelAnimationSubmodel> submodel = nullptr, std::optional<vec3d> position = std::nullopt, std::optional<matrix> orientation = std::nullopt);
+
+	};
+
 	class ModelAnimationSegmentIK : public ModelAnimationSegment {
 		struct instance_data {
 			

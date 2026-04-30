@@ -1816,6 +1816,7 @@ namespace animation {
 		{"$Axis Rotation:", 	ModelAnimationSegmentAxisRotation::parser},
 		{"$Translation:", 		ModelAnimationSegmentTranslation::parser},
 		{"$Sound During:", 		ModelAnimationSegmentSoundDuring::parser},
+		{"$Particles During:", 		ModelAnimationSegmentParticlesDuring::parser},
 		{"$Inverse Kinematics:", 	ModelAnimationSegmentIK::parser}
 	};
 	
