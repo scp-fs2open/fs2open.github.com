@@ -31,7 +31,15 @@ std::pair<SCP_string, int>* ShipFlagsDialogModel::getFlag(const SCP_string& flag
 			return &flag;
 		}
 	}
-	Assertion(false, "Illegal flag name \"[%s]\"", flag_name.c_str());
+	// Only assert if the name isn't a known flag at all; it may have been legitimately filtered out for ship starts
+	bool known = false;
+	for (size_t i = 0; i < Num_Parse_ship_flags && !known; ++i)
+		known = !stricmp(flag_name.c_str(), Parse_ship_flags[i].name);
+	for (size_t i = 0; i < Num_Parse_ship_ai_flags && !known; ++i)
+		known = !stricmp(flag_name.c_str(), Parse_ship_ai_flags[i].name);
+	for (size_t i = 0; i < Num_Parse_ship_object_flags && !known; ++i)
+		known = !stricmp(flag_name.c_str(), Parse_ship_object_flags[i].name);
+	Assertion(known, "Illegal flag name \"%s\"", flag_name.c_str());
 	return nullptr;
 }
 

@@ -96,16 +96,19 @@ void ShipFlagsDialog::updateUI()
 {
 	util::SignalBlockers blockers(this);
 	ui->destroySecondsSpinBox->setValue(_model->getDestroyTime());
-	ui->destroyedlabel->setVisible(_model->getFlag("Destroy before Mission")->second);
-	ui->destroySecondsSpinBox->setVisible(_model->getFlag("Destroy before Mission")->second);
-	ui->destroySecondsLabel->setVisible(_model->getFlag("Destroy before Mission")->second);
+	auto* destroyFlag = _model->getFlag("Destroy before Mission");
+	ui->destroyedlabel->setVisible(destroyFlag && destroyFlag->second);
+	ui->destroySecondsSpinBox->setVisible(destroyFlag && destroyFlag->second);
+	ui->destroySecondsLabel->setVisible(destroyFlag && destroyFlag->second);
 
+	auto* escortFlag = _model->getFlag("escort");
 	ui->escortPrioritySpinBox->setValue(_model->getEscortPriority());
-	ui->escortLabel->setVisible(_model->getFlag("escort")->second);
-	ui->escortPrioritySpinBox->setVisible(_model->getFlag("escort")->second);
+	ui->escortLabel->setVisible(escortFlag && escortFlag->second);
+	ui->escortPrioritySpinBox->setVisible(escortFlag && escortFlag->second);
 
+	auto* kamikazeFlag = _model->getFlag("kamikaze");
 	ui->kamikazeDamageSpinBox->setValue(_model->getKamikazeDamage());
-	ui->kamikazeLabel->setVisible(_model->getFlag("kamikaze")->second);
-	ui->kamikazeDamageSpinBox->setVisible(_model->getFlag("kamikaze")->second);
+	ui->kamikazeLabel->setVisible(kamikazeFlag && kamikazeFlag->second);
+	ui->kamikazeDamageSpinBox->setVisible(kamikazeFlag && kamikazeFlag->second);
 }
 } // namespace fso::fred::dialogs
