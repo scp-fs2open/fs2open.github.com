@@ -1437,16 +1437,16 @@ namespace animation {
 		if (m_submodel != nullptr && pmi->objnum >= 0) {
 			auto submodel = m_submodel->findSubmodel(pmi);
 			if (submodel.first != nullptr) {
-				host = std::make_unique<EffectHostSubmodel>(&Objects[pmi->objnum], (int)(submodel.first - pmi->submodel), pos, orient, true);
+				host = std::make_unique<EffectHostSubmodel>(&Objects[pmi->objnum], static_cast<int>(submodel.first - pmi->submodel), pos, orient);
 			}
 		}
 
 		if (!host && pmi->objnum >= 0) {
-			host = std::make_unique<EffectHostObject>(&Objects[pmi->objnum], pos, orient, true);
+			host = std::make_unique<EffectHostObject>(&Objects[pmi->objnum], pos, orient);
 		}
 
 		if (!host) {
-			host = std::make_unique<EffectHostVector>(pos, orient, vmd_zero_vector, vmd_identity_matrix, true);
+			host = std::make_unique<EffectHostVector>(pos, orient, vmd_zero_vector);
 		}
 
 		source->setHost(std::move(host));
