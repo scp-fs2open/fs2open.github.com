@@ -738,7 +738,7 @@ void FredView::on_actionRun_FreeSpace_2_Open_triggered(bool) {
 
 	QString args = QString::fromStdString(cmdline_build_string());
 
-	if (!QProcess::startDetached(exePath, args.split(' ', QString::SkipEmptyParts))) {
+	if (!QProcess::startDetached(exePath, args.split(' ', Qt::SkipEmptyParts))) {
 		QMessageBox::warning(this, tr("Run FreeSpace"),
 			tr("Failed to launch: %1").arg(exePath));
 	}
@@ -1921,13 +1921,16 @@ void FredView::initializePopupMenus() {
 		if (fred->cur_waypoint != nullptr) {
 			waypoint_instance = Objects[fred->cur_waypoint->get_objnum()].instance;
 		}
-		_viewport->createWaypointAtScreenPos(_lastContextMenuLocalPos.x(), _lastContextMenuLocalPos.y(), waypoint_instance);
+		_viewport->createWaypointAtScreenPos(_lastContextMenuLocalPos.x() * this->devicePixelRatio(),
+			_lastContextMenuLocalPos.y() * this->devicePixelRatio(),
+			waypoint_instance);
 	});
 	createOtherSubmenu->addAction(createWaypointAction);
 
 	auto* createJumpNodeAction = new QAction(tr("Jump Node"), createOtherSubmenu);
 	connect(createJumpNodeAction, &QAction::triggered, this, [this]() {
-		_viewport->createJumpNodeAtScreenPos(_lastContextMenuLocalPos.x(), _lastContextMenuLocalPos.y());
+		_viewport->createJumpNodeAtScreenPos(_lastContextMenuLocalPos.x() * this->devicePixelRatio(),
+			_lastContextMenuLocalPos.y() * this->devicePixelRatio());
 	});
 	createOtherSubmenu->addAction(createJumpNodeAction);
 
@@ -2007,7 +2010,8 @@ void FredView::populateCreateShipSubmenu() {
 		}
 		auto* action = new QAction(QString::fromUtf8(Ship_info[i].name), _createShipSubmenu);
 		connect(action, &QAction::triggered, this, [this, i]() {
-			_viewport->createShipAtScreenPos(_lastContextMenuLocalPos.x(), _lastContextMenuLocalPos.y(), i);
+			_viewport->createShipAtScreenPos(_lastContextMenuLocalPos.x() * this->devicePixelRatio(),
+				_lastContextMenuLocalPos.y() * this->devicePixelRatio(), i);
 		});
 		_createShipSubmenu->addAction(action);
 	}
@@ -2020,7 +2024,9 @@ void FredView::populateCreatePropSubmenu() {
 		}
 		auto* action = new QAction(QString::fromStdString(Prop_info[i].name), _createPropSubmenu);
 		connect(action, &QAction::triggered, this, [this, i]() {
-			_viewport->createPropAtScreenPos(_lastContextMenuLocalPos.x(), _lastContextMenuLocalPos.y(), i);
+			_viewport->createPropAtScreenPos(_lastContextMenuLocalPos.x() * this->devicePixelRatio(),
+				_lastContextMenuLocalPos.y() * this->devicePixelRatio(),
+				i);
 		});
 		_createPropSubmenu->addAction(action);
 	}
@@ -3047,6 +3053,5 @@ void FredView::on_actionWaypointPathGenerator_triggered(bool) {
 	dialog->setAttribute(Qt::WA_DeleteOnClose);
 	dialog->show();
 }
-
 } // namespace fred
 } // namespace fso
