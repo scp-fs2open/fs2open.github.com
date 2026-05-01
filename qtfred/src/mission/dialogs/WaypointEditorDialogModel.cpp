@@ -84,6 +84,7 @@ void WaypointEditorDialogModel::initializeData()
 	}
 
 	Q_EMIT waypointPathMarkingChanged();
+	_modified = false;
 }
 
 void WaypointEditorDialogModel::updateWaypointPathList()

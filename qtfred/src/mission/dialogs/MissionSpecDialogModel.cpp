@@ -91,6 +91,7 @@ void MissionSpecDialogModel::initializeData() {
 	}
 
 	modelChanged();
+	_modified = false;
 }
 
 void MissionSpecDialogModel::prepareSquadLogoList()

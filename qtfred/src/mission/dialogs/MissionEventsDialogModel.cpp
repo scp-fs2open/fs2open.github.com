@@ -115,6 +115,7 @@ void MissionEventsDialogModel::initializeData()
 
 	initializeTeamList();
 	initializeEvents();
+	_modified = false;
 }
 
 void MissionEventsDialogModel::initializeEvents()

@@ -247,6 +247,7 @@ void ShipCustomWarpDialogModel::initializeData()
 			_m_player_warpout_speed = params->warpout_player_speed;
 		}
 	}
+	_modified = false;
 }
 
 void ShipCustomWarpDialogModel::setType(const int index)

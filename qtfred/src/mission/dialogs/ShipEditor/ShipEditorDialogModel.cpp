@@ -534,6 +534,7 @@ void ShipEditorDialogModel::initializeData()
 	}
 
 	modelChanged();
+	_modified = false;
 }
 
 std::vector<std::pair<SCP_string, bool>> ShipEditorDialogModel::getArrivalPaths() const

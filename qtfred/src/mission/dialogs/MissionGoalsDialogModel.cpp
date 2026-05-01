@@ -85,6 +85,7 @@ void MissionGoalsDialogModel::initializeData() {
 
 	cur_goal = -1;
 	modelChanged();
+	_modified = false;
 }
 SCP_vector<mission_goal>& MissionGoalsDialogModel::getGoals() {
 	return m_goals;

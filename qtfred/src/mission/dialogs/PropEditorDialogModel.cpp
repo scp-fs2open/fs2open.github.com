@@ -106,6 +106,7 @@ void PropEditorDialogModel::initializeData() {
 	}
 
 	Q_EMIT modelDataChanged();
+	_modified = false;
 }
 
 bool PropEditorDialogModel::validateData() {

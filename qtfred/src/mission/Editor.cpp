@@ -522,7 +522,7 @@ void Editor::unmark_all() {
 		numMarked = 0;
 		setupCurrentObjectIndices(-1);
 
-		missionChanged();
+		updateAllViewports();
 	}
 }
 void Editor::markObject(int obj) {
@@ -561,7 +561,7 @@ void Editor::unmarkObject(int obj) {
 			setupCurrentObjectIndices(-1);  // can't find one; nothing is marked.
 		}
 
-		missionChanged();
+		updateAllViewports();
 	}
 }
 
@@ -755,8 +755,6 @@ void Editor::selectObject(int objId) {
 	}
 
 	setupCurrentObjectIndices(objId);  // select the new object
-
-	missionChanged();
 }
 void Editor::updateAllViewports() {
 	// This takes all renderers and issues an update request for each of them. For now that is only one but this allows

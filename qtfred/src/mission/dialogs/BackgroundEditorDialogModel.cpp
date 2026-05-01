@@ -16,6 +16,11 @@ namespace fso::fred::dialogs {
 BackgroundEditorDialogModel::BackgroundEditorDialogModel(QObject* parent, EditorViewport* viewport)
 	: AbstractDialogModel(parent, viewport)
 {
+	initializeData();
+}
+
+void BackgroundEditorDialogModel::initializeData()
+{
 	auto& bg = getActiveBackground();
 	auto& bm_list = bg.bitmaps;
 	if (!bm_list.empty()) {
@@ -26,6 +31,7 @@ BackgroundEditorDialogModel::BackgroundEditorDialogModel(QObject* parent, Editor
 	if (!sun_list.empty()) {
 		_selectedSunIndex = 0;
 	}
+	_modified = false;
 }
 
 bool BackgroundEditorDialogModel::apply()

@@ -361,5 +361,6 @@ void ShipFlagsDialogModel::initializeData()
 		objp = GET_NEXT(objp);
 	}
 	modelChanged();
+	_modified = false;
 }
 } // namespace fso::fred::dialogs

@@ -184,6 +184,7 @@ namespace fso {
 					}
 				}
 				modelChanged();
+				_modified = false;
 			}
 			void ShipTextureReplacementDialogModel::initSubTypes(polymodel* model, int MapNum)
 			{

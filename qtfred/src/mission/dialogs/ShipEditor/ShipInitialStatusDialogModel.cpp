@@ -290,6 +290,7 @@ void ShipInitialStatusDialogModel::initializeData(bool multi)
 		m_velocity = BLANKFIELD;
 	}
 	modelChanged();
+	_modified = false;
 }
 
 void ShipInitialStatusDialogModel::update_docking_info()

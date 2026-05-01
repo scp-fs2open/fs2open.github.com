@@ -471,6 +471,7 @@ namespace fso {
 					initialize_multi();
 				}
 				modelChanged();
+				_modified = false;
 			}
 			void ShipGoalsDialogModel::initialize(ai_goal* goals)
 			{
