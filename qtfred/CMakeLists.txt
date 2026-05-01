@@ -23,7 +23,12 @@ set_target_properties(qtfred PROPERTIES
         AUTORCC TRUE
         AUTOUIC FALSE)
 set_target_properties(qtfred PROPERTIES OUTPUT_NAME "qtfred_${FSO_BINARY_SUFFIX}")
-
+get_target_property(QT_PLUGINS_DIR Qt6::Core QT_PLUGINS_DIR)
+if(MSVC AND QT_PLUGINS_DIR)
+    set_property(TARGET ${PROJECT_NAME} PROPERTY
+        VS_DEBUGGER_ENVIRONMENT "QT_QPA_PLATFORM_PLUGIN_PATH=${QT_PLUGINS_DIR}"
+    )
+endif()
 target_compile_definitions(qtfred PRIVATE "$<$<CXX_COMPILER_ID:MSVC>:PDB_DEBUGGING=1>")
 
 # Undefine emit since it conflicts with our code
