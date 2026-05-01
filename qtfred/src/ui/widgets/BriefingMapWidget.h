@@ -5,6 +5,7 @@
 #include <QTimer>
 
 #include "globalincs/pstypes.h"
+#include "mission/CameraController.h"
 #include "osapi/osapi.h"
 #include "ui/QtGraphicsOperations.h"
 
@@ -92,6 +93,8 @@ private:
 	void applyCameraPoseLikeKeyboardControls(const vec3d& camPos, const matrix& camOrient, bool updateModel);
 	void applyBoundCameraControls(float frametime);
 
+	CameraController _cameraController;
+
 	BriefingMapWindow* _window = nullptr;
 	QTimer* _renderTimer = nullptr;
 	std::unique_ptr<BriefingViewport> _briefingViewport; // our os::Viewport for gr_use_viewport
@@ -126,8 +129,6 @@ private:
 	int _cutFadeFrame = 0;
 	int _pendingCutStage = -1;
 
-	float _movementSpeedScale = 1.0f;
-	float _rotationSpeedScale = 1.0f;
 };
 
 } // namespace fso::fred
