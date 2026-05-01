@@ -243,7 +243,6 @@ void RenderWidget::mousePressEvent(QMouseEvent* event) {
 	_viewport->button_down = 1;
 
 	if (event->modifiers().testFlag(Qt::ControlModifier)) {  // add a new object
-				_viewport->on_object =
 		if (_viewport->on_object == -1) {
 			_viewport->Selection_lock = false;  // force off selection lock
 			const bool shift = event->modifiers().testFlag(Qt::ShiftModifier);
