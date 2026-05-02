@@ -13,7 +13,7 @@ public:
 
 	bool hasValidSelection() const;
 	bool hasMultipleSelection() const;
-	bool hasAnyNodesInMission() const;
+	static bool hasAnyNodesInMission();
 	int getSelectionCount() const;
 
 	bool setName(const SCP_string& v);
@@ -49,7 +49,7 @@ private slots:
 	void onSelectedObjectMarkingChanged(int, bool);
 	void onMissionChanged();
 
-private:
+private: // NOLINT(readability-redundant-access-specifiers)
 	void initializeData();
 	void showErrorDialogNoCancel(const SCP_string& message);
 	bool validateName(const SCP_string& name);

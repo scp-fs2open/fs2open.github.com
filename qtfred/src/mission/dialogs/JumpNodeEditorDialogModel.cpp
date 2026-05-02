@@ -107,7 +107,7 @@ bool JumpNodeEditorDialogModel::hasMultipleSelection() const {
 	return _selectedJumpNodes.size() > 1;
 }
 
-bool JumpNodeEditorDialogModel::hasAnyNodesInMission() const {
+bool JumpNodeEditorDialogModel::hasAnyNodesInMission() {
 	return !Jump_nodes.empty();
 }
 
