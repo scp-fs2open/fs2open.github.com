@@ -16,7 +16,8 @@ public:
 	~WaypointEditorDialog() override;
 
 private slots:
-	void on_pathSelection_currentIndexChanged(int index);
+	void on_prevPathButton_clicked();
+	void on_nextPathButton_clicked();
 	void on_nameEdit_editingFinished();
 	void on_noDrawLinesCheck_toggled(bool checked);
 	void on_customColorCheck_toggled(bool checked);
@@ -31,10 +32,8 @@ private slots:
 	std::unique_ptr<WaypointEditorDialogModel> _model;
 
 	void initializeUi();
-	void updateWaypointListComboBox();
 	void updateUi();
 	void updateColorSwatch();
 };
 
 } // namespace fso::fred::dialogs
-
