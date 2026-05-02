@@ -4507,22 +4507,24 @@ int Fred_mission_save::save_plot_info()
 
 int Fred_mission_save::save_reinforcements()
 {
-	int i, j, type;
+	int j, type;
 
 	fred_parse_flag = 0;
 	required_string_fred("#Reinforcements");
 	parse_comments(2);
-	fout("\t\t;! %d total\n", Num_reinforcements);
+	fout("\t\t;! " SIZE_T_ARG " total\n", Reinforcements.size());
 
-	for (i = 0; i < Num_reinforcements; i++) {
+	bool first_r = true;
+	for (const auto &reinforcement: Reinforcements) {
 		required_string_either_fred("$Name:", "#Background bitmaps");
 		required_string_fred("$Name:");
-		parse_comments(i ? 2 : 1);
-		fout(" %s", Reinforcements[i].name);
+		parse_comments(!first_r ? 2 : 1);
+		first_r = false;
+		fout(" %s", reinforcement.name);
 
 		type = TYPE_ATTACK_PROTECT;
 		for (j = 0; j < MAX_SHIPS; j++)
-			if ((Ships[j].objnum != -1) && !stricmp(Ships[j].ship_name, Reinforcements[i].name)) {
+			if ((Ships[j].objnum != -1) && !stricmp(Ships[j].ship_name, reinforcement.name)) {
 				if (Ship_info[Ships[j].ship_info_index].flags[Ship::Info_Flags::Support])
 					type = TYPE_REPAIR_REARM;
 				break;
@@ -4534,13 +4536,13 @@ int Fred_mission_save::save_reinforcements()
 
 		required_string_fred("$Num times:");
 		parse_comments();
-		fout(" %d", Reinforcements[i].uses);
+		fout(" %d", reinforcement.uses);
 
 		if (optional_string_fred("+Arrival Delay:", "$Name:"))
 			parse_comments();
 		else
 			fout("\n+Arrival Delay:");
-		fout(" %d", Reinforcements[i].arrival_delay);
+		fout(" %d", reinforcement.arrival_delay);
 
 		if (optional_string_fred("+No Messages:", "$Name:"))
 			parse_comments();
@@ -4548,8 +4550,8 @@ int Fred_mission_save::save_reinforcements()
 			fout("\n+No Messages:");
 		fout(" (");
 		for (j = 0; j < MAX_REINFORCEMENT_MESSAGES; j++) {
-			if (strlen(Reinforcements[i].no_messages[j]))
-				fout(" \"%s\"", Reinforcements[i].no_messages[j]);
+			if (strlen(reinforcement.no_messages[j]))
+				fout(" \"%s\"", reinforcement.no_messages[j]);
 		}
 		fout(" )");
 
@@ -4559,8 +4561,8 @@ int Fred_mission_save::save_reinforcements()
 			fout("\n+Yes Messages:");
 		fout(" (");
 		for (j = 0; j < MAX_REINFORCEMENT_MESSAGES; j++) {
-			if (strlen(Reinforcements[i].yes_messages[j]))
-				fout(" \"%s\"", Reinforcements[i].yes_messages[j]);
+			if (strlen(reinforcement.yes_messages[j]))
+				fout(" \"%s\"", reinforcement.yes_messages[j]);
 		}
 		fout(" )");
 

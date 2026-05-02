@@ -64,23 +64,22 @@ END_MESSAGE_MAP()
 
 BOOL reinforcement_editor_dlg::OnInitDialog() 
 {
-	int i;
 	CListBox	*box;
 
 	CDialog::OnInitDialog();
 	theApp.init_window(&Reinforcement_wnd_data, this);
 	box = (CListBox *) GetDlgItem(IDC_LIST);
-	for (i=0; i<Num_reinforcements; i++) {
-		m_reinforcements[i] = Reinforcements[i];
-		box->AddString(Reinforcements[i].name);
+
+	m_reinforcements.clear();
+	for (const auto &reinforcement: Reinforcements)
+	{
+		m_reinforcements.push_back(reinforcement);
+		box->AddString(reinforcement.name);
 	}
 
-	m_num_reinforcements = Num_reinforcements;
 	m_uses_spin.SetRange(1, 99);
 	m_delay_spin.SetRange(0, 1000);
 	update_data();
-	if (Num_reinforcements == MAX_REINFORCEMENTS)
-		GetDlgItem(IDC_ADD) -> EnableWindow(FALSE);
 
 	return TRUE;
 }
@@ -137,7 +136,6 @@ void reinforcement_editor_dlg::save_data()
 	UpdateData(TRUE);
 	UpdateData(TRUE);
 	if (cur >= 0) {
-		Assert(cur < m_num_reinforcements);
 		m_reinforcements[cur].uses = m_uses;
 		m_reinforcements[cur].arrival_delay = m_delay;
 
@@ -153,10 +151,11 @@ int reinforcement_editor_dlg::query_modified()
 	int i, j;
 
 	save_data();
-	if (Num_reinforcements != m_num_reinforcements)
+	if (Reinforcements.size() != m_reinforcements.size())
 		return 1;
 
-	for (i=0; i<Num_reinforcements; i++) {
+	int num = sz2i(m_reinforcements.size());
+	for (i=0; i<num; i++) {
 		if (stricmp(m_reinforcements[i].name, Reinforcements[i].name))
 			return 1;
 		if (m_reinforcements[i].uses != Reinforcements[i].uses)
@@ -183,13 +182,13 @@ void reinforcement_editor_dlg::OnOK()
 	int i, j;
 
 	save_data();
-	// clear arrival cues for any new reinforcements to the list
-	for (i=0; i<m_num_reinforcements; i++) {
-		for (j=0; j<Num_reinforcements; j++)
-			if (!stricmp(m_reinforcements[i].name, Reinforcements[j].name))
-				break;
 
-		if (j == Num_reinforcements) {
+	// clear arrival cues for any new reinforcements to the list
+	int m_num = sz2i(m_reinforcements.size());
+	int num = sz2i(Reinforcements.size());
+	for (i=0; i<m_num; i++) {
+		j = find_item_with_string(Reinforcements, &reinforcements::name, m_reinforcements[i].name);
+		if (j < 0) {
 			for (j=0; j<MAX_SHIPS; j++)
 				if ((Ships[j].objnum != -1) && !stricmp(m_reinforcements[i].name, Ships[j].ship_name)) {
 					//free_sexp2(Ships[j].arrival_cue);
@@ -210,17 +209,20 @@ void reinforcement_editor_dlg::OnOK()
 		}
 	}
 
-	if (Num_reinforcements != m_num_reinforcements)
+	if (num != m_num)
 		set_modified();
-
-	Num_reinforcements = m_num_reinforcements;
-	for (i=0; i<m_num_reinforcements; i++) {
-		if (memcmp((void *) &Reinforcements[i], (void *) &m_reinforcements[i], sizeof(reinforcements)))
-			set_modified();
-
-		Reinforcements[i] = m_reinforcements[i];
-		set_reinforcement( Reinforcements[i].name, 1 );		// this call should
+	else {
+		for (i=0; i<m_num; i++) {
+			if (memcmp((void *) &Reinforcements[i], (void *) &m_reinforcements[i], sizeof(reinforcements))) {
+				set_modified();
+				break;
+			}
+		}
 	}
+
+	Reinforcements = m_reinforcements;
+	for (const auto &reinforcement: Reinforcements)
+		set_reinforcement( reinforcement.name, 1 );		// this call should set the appropriate flags
 
 	Update_ship = Update_wing = 1;
 	theApp.record_window_data(&Reinforcement_wnd_data, this);
@@ -311,18 +313,12 @@ void reinforcement_select::OnCancel()
 
 void reinforcement_editor_dlg::OnAdd()
 {
-	int i, wing_index;
+	int wing_index;
 	reinforcement_select dlg;
 	CString name_check;
 
 	dlg.DoModal();
 	if (dlg.cur != -1) {
-		// if we've run out of reinforcement slots
-		if (m_num_reinforcements == MAX_REINFORCEMENTS) {
-			MessageBox("Reached limit on reinforcements.  Can't add more!");
-			return;
-		}
-
 		// if this is a wing, make sure its a valid wing (no mixed ship teams)
 		wing_index = wing_lookup((char*)dlg.name);
 		if(wing_index >= 0){
@@ -332,33 +328,27 @@ void reinforcement_editor_dlg::OnAdd()
 			}
 		}
 
-		i = m_num_reinforcements++;
-		strcpy_s(m_reinforcements[i].name, dlg.name);
+		reinforcements reinforcement;
+		strcpy_s(reinforcement.name, dlg.name);
 		((CListBox *) GetDlgItem(IDC_LIST)) -> AddString(dlg.name);
-		m_reinforcements[i].type = 0;
-		m_reinforcements[i].uses = 1;
-		m_reinforcements[i].arrival_delay = 0;
-		memset( m_reinforcements[i].no_messages, 0, MAX_REINFORCEMENT_MESSAGES * NAME_LENGTH );
-		memset( m_reinforcements[i].yes_messages, 0, MAX_REINFORCEMENT_MESSAGES * NAME_LENGTH );
-		if (m_num_reinforcements == MAX_REINFORCEMENTS){
-			GetDlgItem(IDC_ADD) -> EnableWindow(FALSE);
-		}
+		reinforcement.type = 0;
+		reinforcement.uses = 1;
+		reinforcement.arrival_delay = 0;
+		memset( reinforcement.no_messages, 0, MAX_REINFORCEMENT_MESSAGES * NAME_LENGTH );
+		memset( reinforcement.yes_messages, 0, MAX_REINFORCEMENT_MESSAGES * NAME_LENGTH );
+		m_reinforcements.push_back(std::move(reinforcement));
 	}
 }
 
 void reinforcement_editor_dlg::OnDelete()
 {
-	int i;
-
 	if (cur != -1) {
 		((CListBox *) GetDlgItem(IDC_LIST)) -> DeleteString(cur);
-		for (i=cur; i<m_num_reinforcements-1; i++)
-			m_reinforcements[i] = m_reinforcements[i + 1];
+		m_reinforcements.erase(m_reinforcements.begin() + cur);
 	}
 
-	m_num_reinforcements--;
 	cur = -1;
-	if (!m_reinforcements)
+	if (m_reinforcements.empty())
 		GetDlgItem(IDC_DELETE) -> EnableWindow(FALSE);
 }
 

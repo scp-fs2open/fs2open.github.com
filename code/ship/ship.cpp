@@ -128,7 +128,6 @@ int	Ship_auto_repair = 1;		// flag to indicate auto-repair of subsystem should o
 #endif
 
 int	Num_wings = 0;
-int	Num_reinforcements = 0;
 ship	Ships[MAX_SHIPS];
 
 ship	*Player_ship;
@@ -312,7 +311,7 @@ ship_obj		Ship_objs[MAX_SHIP_OBJS];		// array used to store ship object indexes
 ship_obj		Ship_obj_list;							// head of linked list of ship_obj structs, Standalone ship cannot be in this list or it will cause bugs.
 
 SCP_vector<ship_info>	Ship_info;
-reinforcements	Reinforcements[MAX_REINFORCEMENTS];
+SCP_vector<reinforcements>	Reinforcements;
 SCP_vector<ship_info>	Ship_templates;
 
 SCP_vector<ship_type_info> Ship_types;
@@ -19861,23 +19860,18 @@ int wing_has_conflicting_teams(int wing_index)
 /**
  * Get the team of a reinforcement item
  */
-int ship_get_reinforcement_team(int r_index)
+int ship_get_reinforcement_team(const reinforcements &reinforcement)
 {
 	int wing_index;
 	p_object *p_objp;
 
-	// sanity checks
-	Assert((r_index >= 0) && (r_index < Num_reinforcements));
-	if ((r_index < 0) || (r_index >= Num_reinforcements))
-		return -1;
-
 	// if the reinforcement is a ship	
-	p_objp = mission_parse_get_arrival_ship(Reinforcements[r_index].name);
+	p_objp = mission_parse_get_arrival_ship(reinforcement.name);
 	if (p_objp != NULL)
 		return p_objp->team;
 
 	// if the reinforcement is a ship
-	wing_index = wing_lookup(Reinforcements[r_index].name);
+	wing_index = wing_lookup(reinforcement.name);
 	if (wing_index >= 0)
 	{		
 		// go through the ship arrival list and find any ship in this wing

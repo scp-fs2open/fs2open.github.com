@@ -4506,8 +4506,8 @@ void process_player_order_packet(ubyte *data, header *hinfo)
 	// check to see if the type of order is a reinforcement call.  If so, intercept it, and
 	// then call them in.
 	if ( type == SQUAD_MSG_REINFORCEMENT ) {
-		Assert( (index >= 0) && (index < Num_reinforcements) );
-		hud_squadmsg_call_reinforcement(index, player_num);
+		Assert(Reinforcements.in_bounds(index));
+		hud_squadmsg_call_reinforcement(Reinforcements[index], player_num);
 		return;
 	}
 
@@ -7705,7 +7705,7 @@ void process_reinforcement_avail( ubyte *data, header *hinfo )
 	PACKET_SET_SIZE();
 
 	// sanity check for a valid reinforcement number
-	if ( (rnum >= 0) && (rnum < Num_reinforcements) ) {
+	if (Reinforcements.in_bounds(rnum)) {
 		Reinforcements[rnum].flags |= RF_IS_AVAILABLE;
 	}
 }

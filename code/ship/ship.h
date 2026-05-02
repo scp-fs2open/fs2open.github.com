@@ -57,7 +57,6 @@ extern vec3d	Original_vec_to_deader;
 
 #define	MAX_SHIP_SPARKS			8				// maximum number of spark emitters on a ship
 #define	MAX_SHIP_DETAIL_LEVELS	5				// maximum detail levels that a ship can render at
-#define	MAX_REINFORCEMENTS		32
 
 
 // defines for 'direction' parameter of ship_select_next_primary()
@@ -80,7 +79,7 @@ enum class CycleDirection { NEXT, PREV };
 
 #define RF_IS_AVAILABLE			(1<<0)			// reinforcement is now available
 
-typedef struct {
+struct reinforcements {
 	char	name[NAME_LENGTH];	// ship or wing name (ship and wing names don't collide)
 	int	type;						// what operations this reinforcement unit can perform
 	int	uses;						// number of times reinforcemnt unit can be used
@@ -89,7 +88,7 @@ typedef struct {
 	int	flags;
 	char	no_messages[MAX_REINFORCEMENT_MESSAGES][NAME_LENGTH];		// list of messages to possibly send when calling for reinforcement not available
 	char	yes_messages[MAX_REINFORCEMENT_MESSAGES][NAME_LENGTH];	// list of messages to acknowledge reinforcement on the way
-} reinforcements;
+};
 
 class ship_weapon {
 public:
@@ -1653,9 +1652,8 @@ extern char TVT_wing_names[MAX_TVT_WINGS][NAME_LENGTH];
 
 extern int ai_paused;
 
-extern int Num_reinforcements;
 extern SCP_vector<ship_info> Ship_info;
-extern reinforcements Reinforcements[MAX_REINFORCEMENTS];
+extern SCP_vector<reinforcements> Reinforcements;
 
 // structure definition for ship type counts.  Used to give a count of the number of ships
 // of a particular type, and the number of times that a ship of that particular type has been
@@ -1984,7 +1982,7 @@ int ship_get_turret_type(ship_subsys *subsys);
 int ship_get_by_signature(int sig);
 
 // get the team of a reinforcement item
-int ship_get_reinforcement_team(int r_index);
+int ship_get_reinforcement_team(const reinforcements &reinforcement);
 
 // page in bitmaps for all ships on a given level
 void ship_page_in();
