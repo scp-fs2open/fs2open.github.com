@@ -89,14 +89,17 @@ int See_all = 0;
 
 DCF_BOOL(see_all, See_all);
 
-bool Radar_show_2d_icons = true;
+RadarIconMode Radar_2d_icon_mode = RadarIconMode::On;
 
-static auto RadarShow2dIconsOption __UNUSED = options::OptionBuilder<bool>("HUD.Radar2dIcons",
-	std::pair<const char*, int>{"Show Radar 2D Icons", 1915},
-	std::pair<const char*, int>{"Enables or disables the display of custom 2D ship icons on the radar", 1916})
+static auto RadarIconModeOption __UNUSED = options::OptionBuilder<RadarIconMode>("HUD.Radar2dIconMode",
+	std::pair<const char*, int>{"Radar 2D Icons", 1915},
+	std::pair<const char*, int>{"Controls how custom 2D ship icons are displayed on the radar", 1916})
 	.category(std::make_pair("Game", 1824))
-	.default_val(true)
-	.bind_to(&Radar_show_2d_icons)
+	.values({{RadarIconMode::Off,        {"Off", 1286}},
+	         {RadarIconMode::On,         {"On", 1285}},
+	         {RadarIconMode::TargetOnly, {"Target Only", 1917}}})
+	.default_val(RadarIconMode::On)
+	.bind_to(&Radar_2d_icon_mode)
 	.importance(56)
 	.finish();
 
@@ -107,7 +110,7 @@ void radar_check_2d_icon_options()
 	});
 
 	if (!has_icons) {
-		options::OptionsManager::instance()->removeOption(RadarShow2dIconsOption);
+		options::OptionsManager::instance()->removeOption(RadarIconModeOption);
 	}
 }
 
