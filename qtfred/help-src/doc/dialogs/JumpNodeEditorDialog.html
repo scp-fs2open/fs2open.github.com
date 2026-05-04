@@ -10,24 +10,40 @@
 <h1>Jump Node Editor</h1>
 <p>Opens via <strong>Editors &rsaquo; Jump Node Editor</strong>.</p>
 <p>Creates and configures subspace jump nodes. Jump nodes are fixed points in space that
-ships can use to enter or exit subspace. They appear on the HUD radar and can be targeted.
-Select a node from the drop-down to edit its properties.</p>
+ships can use to enter or exit subspace. They appear on the HUD radar and can be
+targeted.</p>
+
+<p>The dialog tracks the viewport selection. Select jump node objects in the viewport
+to edit their properties. When multiple nodes are selected, color, layer, and hidden
+state changes apply to all selected nodes at once.</p>
+
+<h2>Navigation</h2>
+<table>
+    <tr><th>Button</th><th>Description</th></tr>
+    <tr><td>Prev / Next</td><td>Cycles the viewport selection to the previous or next
+        jump node in the mission, allowing sequential editing without switching back
+        to the viewport.</td></tr>
+</table>
 
 <h2>Key fields</h2>
 <table>
     <tr><th>Field</th><th>Description</th></tr>
-    <tr><td>Jump node</td><td>Selects which placed node to edit.</td></tr>
     <tr><td>Name</td><td>Internal identifier used in SEXPs and mission scripting.
-        Must be unique.</td></tr>
-    <tr><td>Layer</td><td>The layer the jump node is assigned to.</td></tr>
+        Must be unique. When multiple nodes are selected, shows the name of the first
+        selected node and renames only that node.</td></tr>
+    <tr><td>Layer</td><td>The layer the jump node is assigned to. Applied to all
+        selected nodes.</td></tr>
     <tr><td>Display name</td><td>Name shown to the player on the HUD and in targeting.
-        If left blank, the internal name is used instead.</td></tr>
+        If left blank, the internal name is used instead. When multiple nodes are
+        selected, applies only to the first selected node.</td></tr>
     <tr><td>Model file</td><td>POF model rendered at the node's position. Uses the
-        default jump node model if left blank.</td></tr>
+        default jump node model if left blank. When multiple nodes are selected,
+        applies only to the first selected node.</td></tr>
     <tr><td>Node color (RGB)</td><td>Color used to render the node model in the
-        mission.</td></tr>
-    <tr><td>Hidden by default</td><td>When checked, the node starts the mission hidden
-</td></tr>
+        mission. The color swatch next to the fields shows a live preview of the
+        current color. Applied to all selected nodes.</td></tr>
+    <tr><td>Hidden by default</td><td>When checked, the node starts the mission hidden.
+        Applied to all selected nodes.</td></tr>
 </table>
 
 </body>
