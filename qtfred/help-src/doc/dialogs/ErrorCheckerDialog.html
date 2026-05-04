@@ -8,7 +8,82 @@
 <body>
 <nav class="breadcrumb"><a href="../index.html">QtFRED Help</a> &rsaquo; Tools &rsaquo; Error Checker</nav>
 <h1>Error Checker</h1>
-<p>Accessible via <strong>Tools &rsaquo; Error Checker</strong>.</p>
-<div class="stub-notice">Full documentation for this tool is not yet written.</div>
+<p>Opens via <strong>Tools &rsaquo; Error Checker</strong>. Also runs automatically
+before saving when issues are present.</p>
+<p>Scans the entire mission for structural problems, design errors, configuration
+warnings, and potential issues. Results are listed by severity with a description
+of each problem found.</p>
+
+<h2>Controls</h2>
+<table>
+    <tr><th>Control</th><th>Description</th></tr>
+    <tr><td>Rerun</td><td>Runs the check again. Use this after making fixes to confirm
+        they are resolved.</td></tr>
+    <tr><td>Check Potential Issues</td><td>When checked, Potential Issue entries are
+        included in the results alongside errors and warnings. When unchecked,
+        potential issues are silently omitted.</td></tr>
+    <tr><td>Apply Auto-Corrections</td><td>When checked, FRED automatically corrects
+        issues it can resolve without user input each time a check runs. Only applies
+        to correctable errors and warnings; Critical Errors are never auto-corrected.
+        Auto-corrections are applied before results are displayed.</td></tr>
+    <tr><td>Status bar</td><td>Shows a summary of the most recent check: the total
+        number of entries found, or <em>No check has been run yet</em> before the
+        first run.</td></tr>
+</table>
+
+<h2>Severity levels</h2>
+<table>
+    <tr><th>Severity</th><th>Meaning</th></tr>
+    <tr><td>Critical Error</td><td>A serious structural problem that FRED cannot
+        automatically correct. The mission may fail to load or behave unpredictably
+        in-game. Must be fixed manually before the mission is usable.</td></tr>
+    <tr><td>Error</td><td>A mission design problem that must be fixed. The mission may
+        not play correctly.</td></tr>
+    <tr><td>Warning</td><td>A configuration issue that may cause unexpected behavior
+        in-game.</td></tr>
+    <tr><td>Potential Issue</td><td>A situation that may be intentional but is worth
+        reviewing. Only shown when <strong>Check Potential Issues</strong> is
+        checked.</td></tr>
+</table>
+
+<h2>What is checked</h2>
+<p>The checker inspects the following areas of the mission:</p>
+<ul>
+    <li>Object list integrity and name uniqueness</li>
+    <li>Ships — SEXPs, AI goals, anchor references, docking configuration, and loadout
+        weapon availability</li>
+    <li>Wings — structure, SEXPs, AI goals, anchor references, wave thresholds, and
+        accepted orders consistency</li>
+    <li>Player starts and player wing membership</li>
+    <li>Waypoint path names for conflicts with object names</li>
+    <li>Reinforcement name references</li>
+    <li>Mission events and mission objectives — SEXP validation</li>
+    <li>Briefings — icon ID uniqueness</li>
+    <li>Debriefings — SEXP validation</li>
+    <li>Asteroid field target ship name validity</li>
+    <li>Initially-docked groups — must have exactly one non-false arrival cue</li>
+    <li>Team loadout — weapons used in starting wings must be present in the
+        team loadout pool</li>
+</ul>
+
+<h2>Pre-save mode</h2>
+<p>When saving a mission that has unresolved errors, the Error Checker opens
+automatically in pre-save mode. In this mode three additional buttons appear at the
+bottom of the dialog:</p>
+<table>
+    <tr><th>Button</th><th>Description</th></tr>
+    <tr><td>Cancel</td><td>Aborts the save and returns to the editor so issues can be
+        addressed.</td></tr>
+    <tr><td>Save As Is</td><td>Saves the mission despite the reported issues.</td></tr>
+    <tr><td>Fix and Save</td><td>Applies all available auto-corrections and then saves.
+        Only available when <strong>Apply Auto-Corrections</strong> is
+        checked.</td></tr>
+</table>
+
+<h2>Preferences</h2>
+<p>The <strong>Check Potential Issues</strong> and <strong>Apply Auto-Corrections</strong>
+settings are also found in <strong>File &rsaquo; Preferences &rsaquo; Error
+Checker</strong>. They share the same stored value — changing one updates the other.
+Use Preferences to set the default behavior for all future check runs.</p>
 </body>
 </html>
