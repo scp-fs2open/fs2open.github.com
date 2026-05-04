@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Mission Objectives - QtFRED Help</title>
+    <link rel="stylesheet" type="text/css" href="../css/help.css"/>
+</head>
+<body>
+<nav class="breadcrumb"><a href="../index.html">QtFRED Help</a> &rsaquo; Mission &rsaquo; Mission Objectives</nav>
+<h1>Mission Objectives</h1>
+<p>Opens via <strong>Editors &rsaquo; Mission Objectives</strong>.</p>
+<p>Defines the objectives shown to the player at the end of the briefing and tracked on
+the HUD during the mission. When an objective is completed or failed a HUD popup notifies
+the player. Objectives are hidden during the briefing if the
+<em>Toggle Showing Goals In Briefing</em> flag is set in
+<a href="MissionSpecsDialog.html">Mission Specs</a>.</p>
+
+<h2>Objective types</h2>
+<p>Objective type is a classification that affects how objectives are displayed and which
+music plays on completion or failure. The actual consequences of an objective being met
+or failed &mdash; which debriefing stage the player sees, whether the campaign advances
+&mdash; are determined by SEXPs in the
+<a href="DebriefingDialog.html">Debriefing Editor</a> and the
+<a href="CampaignEditorDialog.html">Campaign Editor</a>, which can query objective state
+using operators like <code>goal-true</code> and <code>goal-false</code>.</p>
+<table>
+    <tr><th>Type</th><th>Description</th></tr>
+    <tr><td>Primary</td><td>Shown to the player from the start of the mission.
+        Completion or failure triggers the primary objective music stinger. By convention
+        these are the core objectives designers tie campaign progression and debriefing
+        outcomes to.</td></tr>
+    <tr><td>Secondary</td><td>Shown to the player from the start of the mission.
+        Completion or failure triggers the secondary objective music stinger. Designers
+        typically use these for optional objectives whose state is queried in the
+        debriefing or campaign for bonus outcomes.</td></tr>
+    <tr><td>Bonus</td><td>Hidden from the player until the objective is achieved, at
+        which point the objective text appears on the HUD. Their state is queryable by
+        SEXPs the same as any other objective type.</td></tr>
+</table>
+
+<h2>Objective list</h2>
+<p>The main area displays all objectives as <a href="../concepts/sexps.html">SEXP</a>
+trees. The dropdown at the top filters the list to show one type at a time;
+Primary, Secondary, or Bonus. Use <strong>New Objective</strong> to append a new
+objective of the currently filtered type.</p>
+
+<h2>Objective properties</h2>
+<table>
+    <tr><th>Field</th><th>Description</th></tr>
+    <tr><td>Type</td><td>Primary, Secondary, or Bonus. Changing this moves the objective
+        into the corresponding type group.</td></tr>
+    <tr><td>Name</td><td>Internal identifier used in SEXPs such as
+        <code>goal-true</code> and <code>goal-false</code>, and in mission log
+        entries. Not shown to the player.</td></tr>
+    <tr><td>Objective text</td><td>Text displayed to the player in the briefing
+        objective list and HUD objective display.</td></tr>
+    <tr><td>Score</td><td>Points awarded when this objective is completed.</td></tr>
+    <tr><td>Team</td><td>In multiplayer missions, the team this objective belongs
+        to.</td></tr>
+</table>
+
+<h2>Objective flags</h2>
+<table>
+    <tr><th>Flag</th><th>Description</th></tr>
+    <tr><td>Objective Invalid</td><td>Marks the objective as invalid from the start of
+        the mission. Invalid objectives are not shown to the player and are not
+        evaluated. Objectives can also be marked valid or invalid at runtime by SEXPs,
+        making this useful for objectives that are conditionally activated during
+        play.</td></tr>
+    <tr><td>Don't Play Completion Music</td><td>Suppresses the event music stinger
+        that normally plays when this objective is completed or failed.</td></tr>
+</table>
+</body>
+</html>

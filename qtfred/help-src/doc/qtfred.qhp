@@ -30,7 +30,7 @@
                 <section title="Mission">
                     <section title="Mission Cutscenes"          ref="dialogs/MissionCutscenesDialog.html"/>
                     <section title="Mission Events"             ref="dialogs/MissionEventsDialog.html"/>
-                    <section title="Mission Goals"              ref="dialogs/MissionGoalsDialog.html"/>
+                    <section title="Mission Objectives"          ref="dialogs/MissionObjectivesDialog.html"/>
                     <section title="Mission Specs"              ref="dialogs/MissionSpecsDialog.html">
                         <section title="Custom Data"            ref="dialogs/CustomDataDialog.html"/>
                         <section title="Custom Strings"         ref="dialogs/CustomStringsDialog.html"/>
@@ -110,7 +110,7 @@
             <keyword name="Layer Manager"           id="LayerManagerDialog"             ref="general/LayerManagerDialog.html"/>
             <keyword name="Mission Cutscenes"       id="MissionCutscenesDialog"         ref="dialogs/MissionCutscenesDialog.html"/>
             <keyword name="Mission Events"          id="MissionEventsDialog"            ref="dialogs/MissionEventsDialog.html"/>
-            <keyword name="Mission Goals"           id="MissionGoalsDialog"             ref="dialogs/MissionGoalsDialog.html"/>
+            <keyword name="Mission Objectives"       id="MissionGoalsDialog"             ref="dialogs/MissionObjectivesDialog.html"/>
             <keyword name="Mission Specs"           id="MissionSpecDialog"              ref="dialogs/MissionSpecsDialog.html"/>
             <keyword name="Custom Wing Names"       id="CustomWingNamesDialog"          ref="dialogs/CustomWingNamesDialog.html"/>
             <keyword name="Sound Environment"       id="SoundEnvironmentDialog"         ref="dialogs/SoundEnvironmentDialog.html"/>
@@ -173,7 +173,7 @@
             <file>general/SceneBrowserDialog.html</file>
             <file>dialogs/MissionCutscenesDialog.html</file>
             <file>dialogs/MissionEventsDialog.html</file>
-            <file>dialogs/MissionGoalsDialog.html</file>
+            <file>dialogs/MissionObjectivesDialog.html</file>
             <file>dialogs/MissionSpecsDialog.html</file>
             <file>dialogs/CustomWingNamesDialog.html</file>
             <file>dialogs/CustomStringsDialog.html</file>

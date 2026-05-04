@@ -31,7 +31,7 @@ rework later.</div>
     <li>A hostile fighter wing that arrives ~30 seconds in</li>
     <li>A waypoint path for the transport to follow</li>
     <li>Events: a timed trigger for the hostile arrival, a radio message when they arrive</li>
-    <li>A primary mission goal tied to the transport completing its route</li>
+    <li>A primary mission objective tied to the transport completing its route</li>
     <li>A two-stage briefing and a debriefing</li>
 </ul>
 <p>Knowing this upfront prevents building yourself into a corner. You will still
@@ -114,14 +114,14 @@ select <kbd>Epsilon Inbound</kbd> as the message. Leave the priority at
 
 <p>Save and test. The message should appear on screen as Epsilon jumps in.</p>
 
-<h2>6. Add a mission goal</h2>
-<p>Open <strong>Editors &rsaquo; Mission Goals</strong>. Add a primary goal:</p>
+<h2>6. Add a mission objective</h2>
+<p>Open <strong>Editors &rsaquo; Mission Objectives</strong>. Add a primary objective:</p>
 <ul>
     <li><strong>Description:</strong> <em>Escort the transport to the rendezvous</em></li>
     <li><strong>Completion condition:</strong>
         <code>(are-waypoints-done-delay 0 "Transport 1" "Transport Route")</code></li>
 </ul>
-<p>Add a secondary goal for destroying Epsilon wing if you like. See
+<p>Add a secondary objective for destroying Epsilon wing if you like. See
 <a href="concepts/sexps.html">SEXPs</a> for an overview of how conditions are
 built.</p>
 
@@ -168,7 +168,7 @@ icon placement.</p>
     <li>The transport moves along its route from the start</li>
     <li>The first 30 seconds are calm</li>
     <li>Epsilon and the arrival message both trigger at 30 seconds</li>
-    <li>The primary goal completes when the transport finishes the route</li>
+    <li>The primary objective completes when the transport finishes the route</li>
     <li>The briefing camera moves and icons look correct</li>
     <li>The correct debriefing stage shows depending on outcome</li>
 </ul>
