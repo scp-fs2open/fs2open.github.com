@@ -41,7 +41,7 @@ ADE_FUNC(isValid, l_ShipRegistryEntry, nullptr, "Detects whether handle is valid
 	return ADE_RETURN_TRUE;
 }
 
-ADE_VIRTVAR(Status, l_ShipRegistryEntry, nullptr, "Status of ship", "enumeration", "A SHIP_STATUS_* enumeration (SHIP_STATUS_INVALID, SHIP_STATUS_NOT_YET_PRESENT, SHIP_STATUS_PRESENT, SHIP_STATUS_DEATH_ROLL, SHIP_STATUS_EXITED), or nil if handle is invalid")
+ADE_VIRTVAR(Status, l_ShipRegistryEntry, nullptr, "Status of ship", "enumeration", "A SHIP_STATUS_* enumeration, or nil if handle is invalid")
 {
 	int idx;
 	if (!ade_get_args(L, "o", l_ShipRegistryEntry.Get(&idx)))

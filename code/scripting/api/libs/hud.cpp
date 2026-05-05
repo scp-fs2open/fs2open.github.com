@@ -260,7 +260,7 @@ ADE_FUNC(getHUDGaugeHandle, l_HUD, "string Name", "Returns a handle to a specifi
 		return ade_set_args(L, "o", l_HudGauge.Set(gauge));
 }
 
-ADE_FUNC(flashTargetBox, l_HUD, "enumeration section /* TBOX_* */, [number duration_in_milliseconds]", "Flashes a section of the target box (see TBOX_* enumerations) with a default duration of " SCP_TOKEN_TO_STR(TBOX_FLASH_DURATION) " milliseconds", nullptr, nullptr)
+ADE_FUNC(flashTargetBox, l_HUD, "enumeration section /* TBOX_* */, [number duration_in_milliseconds]", "Flashes a section of the target box with a default duration of " SCP_TOKEN_TO_STR(TBOX_FLASH_DURATION) " milliseconds", nullptr, nullptr)
 {
 	enum_h section;
 	int num_args, duration;

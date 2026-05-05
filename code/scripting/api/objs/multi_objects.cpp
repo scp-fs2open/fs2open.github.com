@@ -626,9 +626,9 @@ ADE_VIRTVAR(Tracker,
 ADE_VIRTVAR(Type,
 	l_NetMission,
 	nullptr,
-	"The type of mission. Can be MULTI_TYPE_COOP, MULTI_TYPE_TEAM, or MULTI_TYPE_DOGFIGHT",
+	"The type of mission.",
 	"enumeration",
-	"the type")
+	"A MULTI_TYPE_* enumeration")
 {
 	net_mission_h current;
 	lua_enum eh_idx = ENUM_INVALID;
@@ -802,9 +802,9 @@ ADE_VIRTVAR(Tracker,
 ADE_VIRTVAR(Type,
 	l_NetCampaign,
 	nullptr,
-	"The type of mission. Can be MULTI_TYPE_COOP, MULTI_TYPE_TEAM, or MULTI_TYPE_DOGFIGHT",
+	"The type of mission.",
 	"enumeration",
-	"the type")
+	"A MULTI_TYPE_* enumeration")
 {
 	net_campaign_h current;
 	lua_enum eh_idx = ENUM_INVALID;

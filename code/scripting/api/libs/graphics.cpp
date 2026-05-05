@@ -2046,7 +2046,7 @@ ADE_FUNC(loadModel, l_Graphics, "string Filename", "Loads the model - will not s
 	return ade_set_args(L, "o", l_Model.Set(model_h(model_num)));
 }
 
-ADE_FUNC(hasViewmode, l_Graphics, "enumeration /* VM_* */", "Specifies if the current viewmode has the specified flag; see VM_* enumerations", "boolean", "true if flag is present, false otherwise")
+ADE_FUNC(hasViewmode, l_Graphics, "enumeration /* VM_* */", "Specifies if the current viewmode has the specified flag.", "boolean", "true if flag is present, false otherwise")
 {
 	enum_h *type = NULL;
 

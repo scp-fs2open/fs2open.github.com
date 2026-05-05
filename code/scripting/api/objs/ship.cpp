@@ -1690,7 +1690,7 @@ ADE_FUNC(clearOrders, l_Ship, NULL, "Clears a ship's orders list", "boolean", "T
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(giveOrder, l_Ship, "enumeration Order /* ORDER_* */, [object Target=nil, subsystem TargetSubsystem=nil, number Priority=1.0, shipclass TargetShipclass=nil, shiptype TargetShiptype=nil]", "Uses the goal code to execute orders using ORDER_* enumerations.  NOTE: This function uses a scale from 0.0-1.0 (up to 2.0) rather than the usual 0-100 (up to 200)", "boolean", "True if order was given, otherwise false or nil")
+ADE_FUNC(giveOrder, l_Ship, "enumeration Order /* ORDER_* */, [object Target=nil, subsystem TargetSubsystem=nil, number Priority=1.0, shipclass TargetShipclass=nil, shiptype TargetShiptype=nil]", "Uses the goal code to execute orders.  NOTE: This function uses a scale from 0.0-1.0 (up to 2.0) rather than the usual 0-100 (up to 200)", "boolean", "True if order was given, otherwise false or nil")
 {
 	object_h *objh = NULL;
 	enum_h *eh = NULL;

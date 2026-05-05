@@ -1286,9 +1286,9 @@ ADE_FUNC(sendBuiltinMessage,
 
 ADE_FUNC(addMessageToScrollback,
 	l_Mission,
-	"string message, [team|enumeration source=HUD_SOURCE_COMPUTER]",
+	"string message, [team|enumeration source = SCROLLBACK_SOURCE_COMPUTER /* SCROLLBACK_* */]",
 	"Adds a string to the message log scrollback without sending it as a message first. Source should be either the team handle "
-	"or one of the SCROLLBACK_SOURCE enumerations.",
+	"or one of the SCROLLBACK_* enumerations.",
 	"boolean",
 	"true if successful, false otherwise")
 {
@@ -2631,7 +2631,7 @@ ADE_FUNC(hasDebriefing,
 	return ade_set_args(L, "b", !(The_mission.flags[Mission::Mission_Flags::Toggle_debriefing]));
 }
 
-ADE_FUNC(getMusicScore, l_Mission, "enumeration score /* SCORE_* */", "Returns the music.tbl entry name for the specified mission music score (see SCORE_* enumerations)", "string", "The name, or nil if the score is invalid")
+ADE_FUNC(getMusicScore, l_Mission, "enumeration score /* SCORE_* */", "Returns the music.tbl entry name for the specified mission music score", "string", "The name, or nil if the score is invalid")
 {
 	enum_h score;
 	if (!ade_get_args(L, "o", l_Enum.Get(&score)))
@@ -2652,7 +2652,7 @@ ADE_FUNC(getMusicScore, l_Mission, "enumeration score /* SCORE_* */", "Returns t
 	return ade_set_args(L, "s", name);
 }
 
-ADE_FUNC(setMusicScore, l_Mission, "enumeration score /* SCORE_* */, string name", "Sets the music.tbl entry for the specified mission music score (see SCORE_* enumerations)", nullptr, nullptr)
+ADE_FUNC(setMusicScore, l_Mission, "enumeration score /* SCORE_* */, string name", "Sets the music.tbl entry for the specified mission music score", nullptr, nullptr)
 {
 	enum_h score;
 	const char *name;
