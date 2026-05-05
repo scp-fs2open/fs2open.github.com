@@ -51,7 +51,7 @@ ADE_FUNC(__newindex, l_RPC, "function(any arg) => void rpc_body", "Sets the func
 	return ade_set_args(L, "u", rpc->func);
 }
 
-ADE_FUNC(__call, l_RPC, "[any = nil, enumeration recipient = default /* as set on RPC creation */]", "Calls the RPC on the specified recipients with the given argument.", "boolean", "True, if RPC call happened (not a guarantee for arrival at the recipient!)")
+ADE_FUNC(__call, l_RPC, "[any = nil, enumeration recipient /* RPC_* */]", "Calls the RPC on the specified RPC_* recipients with the given argument. The recipient defaults to what was set on RPC creation.", "boolean", "True, if RPC call happened (not a guarantee for arrival at the recipient!)")
 {
 	rpc_h rpc;
 	luacpp::LuaValue argument;

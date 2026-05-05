@@ -237,7 +237,7 @@ ADE_FUNC(playElementSound,
 	return ade_set_args(L, "b", scpui::SoundPlugin::instance()->PlayElementSound(el, event, state));
 }
 
-ADE_FUNC(maybePlayCutscene, l_UserInterface, "enumeration MovieType, boolean RestartMusic, number ScoreIndex", "Plays a cutscene, if one exists, for the appropriate state transition.  If RestartMusic is true, then the music score at ScoreIndex will be started after the cutscene plays.", nullptr, "Returns nothing")
+ADE_FUNC(maybePlayCutscene, l_UserInterface, "enumeration MovieType /* MOVIE_* */, boolean RestartMusic, number ScoreIndex", "Plays a cutscene, if one exists, for the appropriate state transition (see MOVIE_* enumerations).  If RestartMusic is true, then the music score at ScoreIndex will be started after the cutscene plays.", nullptr, "Returns nothing")
 {
 	enum_h movie_type;
 	bool restart_music = false;
@@ -821,9 +821,9 @@ ADE_FUNC(skipTraining,
 ADE_FUNC(commitToMission,
 	l_UserInterface_Brief,
 	nullptr,
-	"Commits to the current mission with current loadout data, and starts the mission. Returns one of the COMMIT_ enums to indicate any errors.",
+	"Commits to the current mission with current loadout data, and starts the mission. Returns one of the COMMIT_* enumerations to indicate any errors.",
 	"enumeration",
-	"the error value")
+	"A COMMIT_* enumeration indicating any errors")
 {
 	commit_pressed_status rc;
 
@@ -3447,8 +3447,8 @@ ADE_FUNC(setName,
 
 ADE_FUNC(setGameType,
 	l_UserInterface_MultiStartGame,
-	"enumeration type=MULTI_GAME_TYPE_OPEN, [string | number password_or_rank_index]",
-	"Sets the game's type and, optionally, the password or rank index.",
+	"enumeration type = MULTI_GAME_TYPE_OPEN /* MULTI_GAME_TYPE_* */, [string | number password_or_rank_index]",
+	"Sets the game type using MULTI_GAME_TYPE_* enumerations, and optionally the password or rank index.",
 	"boolean",
 	"True if successful, false otherwise")
 {

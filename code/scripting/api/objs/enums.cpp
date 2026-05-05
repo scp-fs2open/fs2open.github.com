@@ -59,26 +59,39 @@ const lua_enum_def_list Enumerations[] = {
 	{"PARTICLE_SMOKE", LE_PARTICLE_SMOKE, true},
 	{"PARTICLE_SMOKE2", LE_PARTICLE_SMOKE2, true},
 	{"PARTICLE_PERSISTENT_BITMAP", LE_PARTICLE_PERSISTENT_BITMAP, true},
+	{"SEXPVAR_PERSIST_CAMPAIGN", LE_SEXPVAR_CAMPAIGN_PERSISTENT, true},
 	{"SEXPVAR_CAMPAIGN_PERSISTENT", LE_SEXPVAR_CAMPAIGN_PERSISTENT, true},
+	{"SEXPVAR_PERSIST_NONE", LE_SEXPVAR_NOT_PERSISTENT, true},
 	{"SEXPVAR_NOT_PERSISTENT", LE_SEXPVAR_NOT_PERSISTENT, true},
+	{"SEXPVAR_PERSIST_PLAYER", LE_SEXPVAR_PLAYER_PERSISTENT, true},
 	{"SEXPVAR_PLAYER_PERSISTENT", LE_SEXPVAR_PLAYER_PERSISTENT, true},
 	{"SEXPVAR_TYPE_NUMBER", LE_SEXPVAR_TYPE_NUMBER, true},
 	{"SEXPVAR_TYPE_STRING", LE_SEXPVAR_TYPE_STRING, true},
 	{"TEXTURE_STATIC", LE_TEXTURE_STATIC, true},
 	{"TEXTURE_DYNAMIC", LE_TEXTURE_DYNAMIC, true},
+	{"TARGET_LOCK", LE_LOCK, true},
 	{"LOCK", LE_LOCK, true},
+	{"TARGET_UNLOCK", LE_UNLOCK, true},
 	{"UNLOCK", LE_UNLOCK, true},
+	{"TARGET_NONE", LE_NONE, true},
+	{"SHIELD_NONE", LE_NONE, true},
 	{"NONE", LE_NONE, true},
 	{"SHIELD_FRONT", LE_SHIELD_FRONT, true},
 	{"SHIELD_LEFT", LE_SHIELD_LEFT, true},
 	{"SHIELD_RIGHT", LE_SHIELD_RIGHT, true},
 	{"SHIELD_BACK", LE_SHIELD_BACK, true},
 	{"MISSION_REPEAT", LE_MISSION_REPEAT, true},
+	{"FLIGHT_CONTROL_NORMAL", LE_NORMAL_CONTROLS, true},
 	{"NORMAL_CONTROLS", LE_NORMAL_CONTROLS, true},
+	{"FLIGHT_CONTROL_LUA_STEERING", LE_LUA_STEERING_CONTROLS, true},
 	{"LUA_STEERING_CONTROLS", LE_LUA_STEERING_CONTROLS, true},
+	{"FLIGHT_CONTROL_LUA_FULL", LE_LUA_FULL_CONTROLS, true},
 	{"LUA_FULL_CONTROLS", LE_LUA_FULL_CONTROLS, true},
+	{"BUTTON_CONTROL_NORMAL", LE_NORMAL_BUTTON_CONTROLS, true},
 	{"NORMAL_BUTTON_CONTROLS", LE_NORMAL_BUTTON_CONTROLS, true},
+	{"BUTTON_CONTROL_LUA_ADDITIVE", LE_LUA_ADDITIVE_BUTTON_CONTROL, true},
 	{"LUA_ADDITIVE_BUTTON_CONTROL", LE_LUA_ADDITIVE_BUTTON_CONTROL, true},
+	{"BUTTON_CONTROL_LUA_OVERRIDE", LE_LUA_OVERRIDE_BUTTON_CONTROL, true},
 	{"LUA_OVERRIDE_BUTTON_CONTROL", LE_LUA_OVERRIDE_BUTTON_CONTROL, true},
 	{"VM_INTERNAL", LE_VM_INTERNAL, true},
 	{"VM_EXTERNAL", LE_VM_EXTERNAL, true},
@@ -148,10 +161,15 @@ const lua_enum_def_list Enumerations[] = {
 	{"SCORE_DEBRIEFING_AVERAGE", LE_SCORE_DEBRIEFING_AVERAGE, true},
 	{"SCORE_DEBRIEFING_FAILURE", LE_SCORE_DEBRIEFING_FAILURE, true},
 	{"SCORE_FICTION_VIEWER", LE_SCORE_FICTION_VIEWER, true},
+	{"SHIP_STATUS_INVALID", LE_INVALID, true},
 	{"INVALID", LE_INVALID, true},
+	{"SHIP_STATUS_NOT_YET_PRESENT", LE_NOT_YET_PRESENT, true},
 	{"NOT_YET_PRESENT", LE_NOT_YET_PRESENT, true},
+	{"SHIP_STATUS_PRESENT", LE_PRESENT, true},
 	{"PRESENT", LE_PRESENT, true},
+	{"SHIP_STATUS_DEATH_ROLL", LE_DEATH_ROLL, true},
 	{"DEATH_ROLL", LE_DEATH_ROLL, true},
+	{"SHIP_STATUS_EXITED", LE_EXITED, true},
 	{"EXITED", LE_EXITED, true},
 	{"DC_IS_HULL", LE_DC_IS_HULL, (1 << 0), true},
 	{"DC_VAPORIZE", LE_DC_VAPORIZE, (1 << 1), true},
@@ -274,6 +292,119 @@ const lua_enum_def_list Enumerations[] = {
 
 const size_t Num_enumerations = sizeof(Enumerations) / sizeof(lua_enum_def_list);
 
+struct deprecated_enum_name_info {
+	lua_enum value;
+	const char* replacement;
+	gameversion::version deprecated_since;
+};
+
+static const SCP_unordered_map<SCP_string, deprecated_enum_name_info> Deprecated_enumeration_names = {
+	{"LOCK", {LE_LOCK, "TARGET_LOCK", gameversion::version(26, 0)}},
+	{"UNLOCK", {LE_UNLOCK, "TARGET_UNLOCK", gameversion::version(26, 0)}},
+	{"NONE", {LE_NONE, "TARGET_NONE or SHIELD_NONE depending on context", gameversion::version(26, 0)}},
+	{"NORMAL_CONTROLS", {LE_NORMAL_CONTROLS, "FLIGHT_CONTROL_NORMAL", gameversion::version(26, 0)}},
+	{"LUA_STEERING_CONTROLS", {LE_LUA_STEERING_CONTROLS, "FLIGHT_CONTROL_LUA_STEERING", gameversion::version(26, 0)}},
+	{"LUA_FULL_CONTROLS", {LE_LUA_FULL_CONTROLS, "FLIGHT_CONTROL_LUA_FULL", gameversion::version(26, 0)}},
+	{"NORMAL_BUTTON_CONTROLS", {LE_NORMAL_BUTTON_CONTROLS, "BUTTON_CONTROL_NORMAL", gameversion::version(26, 0)}},
+	{"LUA_ADDITIVE_BUTTON_CONTROL", {LE_LUA_ADDITIVE_BUTTON_CONTROL, "BUTTON_CONTROL_LUA_ADDITIVE", gameversion::version(26, 0)}},
+	{"LUA_OVERRIDE_BUTTON_CONTROL", {LE_LUA_OVERRIDE_BUTTON_CONTROL, "BUTTON_CONTROL_LUA_OVERRIDE", gameversion::version(26, 0)}},
+	{"INVALID", {LE_INVALID, "SHIP_STATUS_INVALID", gameversion::version(26, 0)}},
+	{"NOT_YET_PRESENT", {LE_NOT_YET_PRESENT, "SHIP_STATUS_NOT_YET_PRESENT", gameversion::version(26, 0)}},
+	{"PRESENT", {LE_PRESENT, "SHIP_STATUS_PRESENT", gameversion::version(26, 0)}},
+	{"DEATH_ROLL", {LE_DEATH_ROLL, "SHIP_STATUS_DEATH_ROLL", gameversion::version(26, 0)}},
+	{"EXITED", {LE_EXITED, "SHIP_STATUS_EXITED", gameversion::version(26, 0)}},
+	{"SEXPVAR_CAMPAIGN_PERSISTENT", {LE_SEXPVAR_CAMPAIGN_PERSISTENT, "SEXPVAR_PERSIST_CAMPAIGN", gameversion::version(26, 0)}},
+	{"SEXPVAR_NOT_PERSISTENT", {LE_SEXPVAR_NOT_PERSISTENT, "SEXPVAR_PERSIST_NONE", gameversion::version(26, 0)}},
+	{"SEXPVAR_PLAYER_PERSISTENT", {LE_SEXPVAR_PLAYER_PERSISTENT, "SEXPVAR_PERSIST_PLAYER", gameversion::version(26, 0)}},
+	{"VM_EXTERNAL_CAMERA_LOCKED", {LE_VM_EXTERNAL_CAMERA_LOCKED, "VM_CAMERA_LOCKED", gameversion::version(26, 0)}}
+};
+
+static std::optional<deprecated_enum_name_info> get_deprecated_enum_info(const SCP_string& enum_name) {
+	auto deprecated_enum = Deprecated_enumeration_names.find(enum_name);
+	if (deprecated_enum != Deprecated_enumeration_names.end()) {
+		return deprecated_enum->second;
+	}
+
+	return std::nullopt;
+}
+
+bool is_deprecated_enum_name(const char* enum_name) {
+	return enum_name != nullptr && Deprecated_enumeration_names.find(enum_name) != Deprecated_enumeration_names.end();
+}
+
+std::optional<enum_group_info> get_enum_group_info(const char* enum_name) {
+	if (enum_name == nullptr) {
+		return std::nullopt;
+	}
+
+	auto starts = [enum_name](const char* prefix) { return strncmp(enum_name, prefix, strlen(prefix)) == 0; };
+
+	static const SCP_vector<enum_group_info> Enum_groups = {
+		{"ALPHABLEND_", "alphablend", "Alpha Blending", "Alpha blending modes used by rendering functions."},
+		{"CFILE_TYPE_", "cfile-types", "CFile Types", "File backend types for cfile operations."},
+		{"MOUSE_", "mouse-buttons", "Mouse Buttons", "Mouse button constants."},
+		{"FLIGHTMODE_", "flight-modes", "Flight Modes", "Primary flight cursor/ship lock modes."},
+		{"ORDER_", "orders", "Orders", "AI and command order constants."},
+		{"PARTICLE_", "particles", "Particle Types", "Particle rendering and creation types."},
+		{"SEXPVAR_TYPE_", "sexpvar-type", "SEXP Variable Type", "SEXP variable value type constants."},
+		{"SEXPVAR_PERSIST_", "sexpvar-persist", "SEXP Variable Persistence", "SEXP variable persistence level constants."},
+		{"TEXTURE_", "textures", "Texture Sources", "Texture handle source types."},
+		{"TARGET_", "target-lock", "Target Lock Control", "Controls how targeting lock behavior is set or queried."},
+		{"MISSION_", "mission-flow", "Mission Flow", "Mission-level control and mission selection constants."},
+		{"SHIELD_", "shield-quadrants", "Shield Quadrants", "Shield quadrant constants."},
+		{"FLIGHT_CONTROL_", "flight-controls", "Flight Control Mode", "Specifies whether steering is handled by normal controls or Lua control modes."},
+		{"BUTTON_CONTROL_", "button-controls", "Button Control Mode", "Defines how Lua interacts with normal button input handling."},
+		{"VM_", "view-modes", "View Modes", "View and camera modes for rendering/player perspective."},
+		{"MESSAGE_PRIORITY_", "message-priority", "Message Priority", "Mission message priority levels."},
+		{"OPTION_TYPE_", "option-types", "Option Types", "Option UI and value representation types."},
+		{"AUDIOSTREAM_", "audio-stream-types", "Audio Stream Types", "Audio stream categories."},
+		{"CONTEXT_", "execution-context", "Execution Context", "Lua execution context state values."},
+		{"FIREBALL_", "fireball-types", "Fireball Types", "Fireball effect types."},
+		{"GR_RESIZE_", "resize-modes", "Resize Modes", "Graphics resize mode constants."},
+		{"OS_", "object-sound", "Object Sound", "Object sound flags and sound slots."},
+		{"MOVIE_", "movies", "Movie Events", "Campaign/mission movie event positions."},
+		{"TBOX_", "targetbox-flash", "Targetbox Flash", "Targetbox flashing indicator selectors."},
+		{"LUAAI_", "luaai-goals", "Lua AI Goal State", "Lua AI achievability state values."},
+		{"SCORE_", "score-events", "Score Events", "Score event source constants."},
+		{"SHIP_STATUS_", "ship-status", "Ship Presence/State", "Describes high-level ship registry presence and lifecycle state."},
+		{"DC_", "object-create-flags", "Object Creation Flags", "Flags that modify object creation behavior."},
+		{"RPC_", "rpc", "Remote Procedure Call", "RPC routing and reliability mode constants."},
+		{"HOTKEY_", "hotkey-lines", "Hotkey Lines", "Hotkey list line type constants."},
+		{"SCROLLBACK_", "scrollback-sources", "Scrollback Sources", "Mission scrollback/source category constants."},
+		{"MULTI_TYPE_", "multi-types", "Multiplayer Mission Types", "Multiplayer mission type constants."},
+		{"MULTI_OPTION_", "multi-options", "Multiplayer Options", "Multiplayer option scope/permission constants."},
+		{"MULTI_GAME_TYPE_", "multi-game-types", "Multiplayer Game Visibility", "Multiplayer game visibility/filter constants."},
+		{"SEXP_", "sexp-result", "SEXP Results", "SEXP evaluation result state constants."},
+		{"COMMIT_", "commit-status", "Loadout Commit Status", "Loadout/briefing commit result constants."},
+		{"SQUAD_MESSAGE_", "squad-messages", "Squad Messages", "Wingman command/squad message constants."},
+		{"BUILTIN_MESSAGE_", "builtin-messages", "Built-in Messages", "Built-in message event constants."}
+	};
+	for (const auto& group : Enum_groups) {
+		if (starts(group.prefix)) {
+			return group;
+		}
+	}
+
+	return std::nullopt;
+}
+
+static void maybe_warn_deprecated_enum(lua_State* L, const enum_h* e) {
+	if (e == nullptr || !e->isValid()) {
+		return;
+	}
+	auto deprecated_info = get_deprecated_enum_info(e->getName());
+	if (deprecated_info) {
+		const auto& deprecation_version = deprecated_info->deprecated_since;
+		if (mod_supports_version(deprecation_version.major, deprecation_version.minor, deprecation_version.build)) {
+			LuaError(L, "Enumeration '%s' is deprecated since version %s and cannot be used if the mod targets that version or higher. Use '%s' instead.",
+				e->getName().c_str(), gameversion::format_version(deprecation_version).c_str(), deprecated_info->replacement);
+		} else {
+			Warning(LOCATION, "Enumeration '%s' is deprecated from version %s and should be replaced with '%s'.",
+				e->getName().c_str(), gameversion::format_version(deprecation_version).c_str(), deprecated_info->replacement);
+		}
+	}
+}
+
 
 enum_h::enum_h() {
 	index = ENUM_INVALID;
@@ -388,6 +519,8 @@ ADE_FUNC(__newindex,
 		return ade_set_error(L, "o", l_Enum.Set(enum_h()));
 	}
 
+	maybe_warn_deprecated_enum(L, e2);
+
 	if (!e1->is_constant) {
 		e1->index = e2->index;
 	}
@@ -405,6 +538,8 @@ ADE_FUNC(__tostring,
 	if (!ade_get_args(L, "o", l_Enum.GetPtr(&e))) {
 		return ade_set_args(L, "s", "<INVALID>");
 	}
+
+	maybe_warn_deprecated_enum(L, e);
 
 	if (!e->isValid()) {
 		return ade_set_args(L, "s", "<INVALID>");
@@ -430,6 +565,9 @@ ADE_FUNC(__eq,
 		return ade_set_error(L, "o", l_Enum.Set(enum_h()));
 	}
 
+	maybe_warn_deprecated_enum(L, e1);
+	maybe_warn_deprecated_enum(L, e2);
+
 	if (e1 == nullptr || e2 == nullptr) {
 		return ADE_RETURN_FALSE;
 	}
@@ -449,6 +587,9 @@ ADE_FUNC(__add,
 	if (!ade_get_args(L, "oo", l_Enum.GetPtr(&e1), l_Enum.GetPtr(&e2))) {
 		return ade_set_error(L, "o", l_Enum.Set(enum_h()));
 	}
+
+	maybe_warn_deprecated_enum(L, e1);
+	maybe_warn_deprecated_enum(L, e2);
 
 	if (e1 == nullptr || e2 == nullptr || !e1->isValid() || !e2->isValid() || !e1->value ||!e2->value) {
 		return ade_set_error(L, "o", l_Enum.Set(enum_h()));
@@ -470,6 +611,9 @@ ADE_FUNC(__mul,
 		return ade_set_error(L, "o", l_Enum.Set(enum_h()));
 	}
 
+	maybe_warn_deprecated_enum(L, e1);
+	maybe_warn_deprecated_enum(L, e2);
+
 	if (e1 == nullptr || e2 == nullptr || !e1->isValid() || !e2->isValid() || !e1->value || !e2->value) {
 		return ade_set_error(L, "o", l_Enum.Set(enum_h()));
 	}
@@ -483,6 +627,8 @@ ADE_VIRTVAR_DEPRECATED(IntValue, l_Enum, "enumeration", "Internal value of the e
 	if (!ade_get_args(L, "o", l_Enum.GetPtr(&e))) {
 		return ade_set_args(L, "i", -1);
 	}
+
+	maybe_warn_deprecated_enum(L, e);
 
 	if (ADE_SETTING_VAR) {
 		LuaError(L, "IntValue is read only!");
@@ -498,6 +644,8 @@ ADE_VIRTVAR(Value, l_Enum, "enumeration", "Internal bitfield value of the enum. 
 	if (!ade_get_args(L, "o", l_Enum.GetPtr(&e))) {
 		return ade_set_args(L, "i", -1);
 	}
+
+	maybe_warn_deprecated_enum(L, e);
 
 	if (ADE_SETTING_VAR) {
 		LuaError(L, "Value is read only!");

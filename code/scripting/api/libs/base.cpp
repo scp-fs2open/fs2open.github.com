@@ -396,8 +396,8 @@ ADE_FUNC(savePlayer, l_Base, "player plr", "Saves the specified player.", "boole
 
 ADE_FUNC(setControlMode,
 	l_Base,
-	"nil|enumeration mode /* LE_*_CONTROL */",
-	"Sets the current control mode for the game.",
+	"nil|enumeration mode /* FLIGHT_CONTROL_* */",
+	"Sets the current flight control mode for the game. Use FLIGHT_CONTROL_* enumerations.",
 	"string",
 	"Current control mode")
 {
@@ -437,8 +437,8 @@ ADE_FUNC(setControlMode,
 
 ADE_FUNC(setButtonControlMode,
 	l_Base,
-	"nil|enumeration mode /* LE_*_BUTTON_CONTROL */",
-	"Sets the current control mode for the game.",
+	"nil|enumeration mode /* BUTTON_CONTROL_* */",
+	"Sets the current button control mode for the game. Use BUTTON_CONTROL_* enumerations.",
 	"string",
 	"Current control mode")
 {

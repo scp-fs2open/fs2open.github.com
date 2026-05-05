@@ -650,7 +650,7 @@ ADE_FUNC(addPostMoveHook, l_Object, "function(object object) => void callback",
 }
 
 ADE_FUNC(assignSound, l_Object, "soundentry GameSnd, [vector Offset=nil, enumeration Flags=OS_NONE, subsystem Subsys=nil]",
-	"Assigns a sound to this object, with optional offset, sound flags (OS_XXXX), and associated subsystem.",
+	"Assigns a sound to this object, with optional offset, sound flags (OS_*), and associated subsystem.",
 	"number",
 	"Returns the index of the sound on this object, or -1 if a sound could not be assigned.")
 {

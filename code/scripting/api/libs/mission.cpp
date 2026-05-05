@@ -1018,9 +1018,9 @@ int sendMessage_sub(lua_State* L, const void* sender, int messageSource, int mes
 
 ADE_FUNC(sendMessage,
 	l_Mission,
-	"string|ship sender, message message, [number delay=0.0, enumeration priority = MESSAGE_PRIORITY_NORMAL, boolean "
+	"string|ship sender, message message, [number delay=0.0, enumeration priority = MESSAGE_PRIORITY_NORMAL /* MESSAGE_PRIORITY_* */, boolean "
 	"fromCommand = false]",
-	"Sends a message from the given source or ship with the given priority, or optionally sends it from the "
+	"Sends a message from the given source or ship with the given MESSAGE_PRIORITY_* priority, or optionally sends it from the "
 	"mission's command source.<br>"
 	"If delay is specified, the message will be delayed by the specified time in seconds.<br>"
 	"If sender is <i>nil</i> the message will not have a sender.  If sender is a ship object the message will be sent from the ship; "
@@ -1229,10 +1229,10 @@ int getBuiltinMessageType(const enum_h* enumValue)
 
 ADE_FUNC(sendBuiltinMessage,
 	l_Mission,
-	"ship sender, ship subject, enumeration|string type_or_type_name",
+	"ship sender, ship subject, enumeration|string type_or_type_name /* BUILTIN_MESSAGE_* */",
 	"Sends one of the builtin messages from the given source or ship, taking the message subject into account."
 	"The subject can be nil or it can be the target of the message like a response to a destroy order."
-	"The type must be one of the BUILTIN_MESSAGE enumerations or a string matching a custom built-in message defined in messages.tbl.",
+	"The type must be one of the BUILTIN_MESSAGE_* enumerations or a string matching a custom built-in message defined in messages.tbl.",
 	"boolean",
 	"true if successful, false otherwise")
 {
@@ -1857,8 +1857,8 @@ ADE_FUNC(getMissionFilename, l_Mission, NULL, "Gets mission filename", "string",
 
 ADE_FUNC(startMission,
 	l_Mission,
-	"string|enumeration mission /* Filename or MISSION_* enumeration */, [boolean Briefing = true]",
-	"Starts the defined mission",
+	"string|enumeration mission /* MISSION_* */, [boolean Briefing = true]",
+	"Starts the defined mission. Pass a filename string or a MISSION_* enumeration.",
 	"boolean",
 	"True, or false if the function fails")
 {
@@ -2631,7 +2631,7 @@ ADE_FUNC(hasDebriefing,
 	return ade_set_args(L, "b", !(The_mission.flags[Mission::Mission_Flags::Toggle_debriefing]));
 }
 
-ADE_FUNC(getMusicScore, l_Mission, "enumeration score", "Returns the music.tbl entry name for the specified mission music score", "string", "The name, or nil if the score is invalid")
+ADE_FUNC(getMusicScore, l_Mission, "enumeration score /* SCORE_* */", "Returns the music.tbl entry name for the specified mission music score (see SCORE_* enumerations)", "string", "The name, or nil if the score is invalid")
 {
 	enum_h score;
 	if (!ade_get_args(L, "o", l_Enum.Get(&score)))
@@ -2652,7 +2652,7 @@ ADE_FUNC(getMusicScore, l_Mission, "enumeration score", "Returns the music.tbl e
 	return ade_set_args(L, "s", name);
 }
 
-ADE_FUNC(setMusicScore, l_Mission, "enumeration score, string name", "Sets the music.tbl entry for the specified mission music score", nullptr, nullptr)
+ADE_FUNC(setMusicScore, l_Mission, "enumeration score /* SCORE_* */, string name", "Sets the music.tbl entry for the specified mission music score (see SCORE_* enumerations)", nullptr, nullptr)
 {
 	enum_h score;
 	const char *name;

@@ -434,7 +434,7 @@ const std::shared_ptr<OverridableHook<CommOrderConditions>> OnHudCommOrderIssued
 		{"Recipient", "oswpt", "The recipient of the order."},
 		{"Target", "ship", "The target if the order, if any. Usually the Player's current target."},
 		{"Subsystem", "subsystem", "The target subsystem, if any. Usually the Player's current target."},
-		{"Order", "enumeration", "The order issued. Will be one of the SQUAD_MESSAGE enumerations."},
+		{"Order", "enumeration", "The order issued. Will be one of the SQUAD_MESSAGE_* enumerations."},
 		{"Name", "string", "The name of the order as it appears in the squad message menu. Useful for LuaAI orders."}
 	});
 

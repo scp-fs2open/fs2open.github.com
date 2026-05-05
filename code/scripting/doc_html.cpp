@@ -1,7 +1,41 @@
 #include "doc_html.h"
+#include "scripting/api/objs/enums.h"
+#include <cctype>
 
 namespace scripting {
 namespace {
+SCP_string link_enum_group_references(const SCP_string& text) {
+	SCP_string out;
+	SCP_string token;
+	for (size_t i = 0; i <= text.size(); ++i) {
+		const auto ch = (i < text.size()) ? text[i] : ' ';
+		if (std::isalnum(static_cast<unsigned char>(ch)) || ch == '_' || ch == '*') {
+			token.push_back(ch);
+			continue;
+		}
+		if (!token.empty()) {
+			SCP_string lookup = token;
+			while (!lookup.empty() && (lookup.back() == '*' || lookup.back() == ',' || lookup.back() == '.' || lookup.back() == ')' || lookup.back() == ']')) {
+				lookup.pop_back();
+			}
+			auto group = api::get_enum_group_info(lookup.c_str());
+			if (group) {
+				out += "<a href=\"#enum-group-";
+				out += group->id;
+				out += "\">";
+				out += token;
+				out += "</a>";
+			} else {
+				out += token;
+			}
+			token.clear();
+		}
+		if (i < text.size()) {
+			out.push_back(ch);
+		}
+	}
+	return out;
+}
 
 void ade_output_toc(FILE* fp, const std::unique_ptr<DocumentationElement>& el)
 {
@@ -25,8 +59,10 @@ void ade_output_toc(FILE* fp, const std::unique_ptr<DocumentationElement>& el)
 	}
 	fputs("</a>", fp);
 
-	if (!el->description.empty())
-		fprintf(fp, " - %s\n", el->description.c_str());
+	if (!el->description.empty()) {
+		auto description = link_enum_group_references(el->description);
+		fprintf(fp, " - %s\n", description.c_str());
+	}
 
 	fputs("</dd>\n", fp);
 }
@@ -196,12 +232,12 @@ void output_argument_list(FILE* fp, const DocumentationElementFunction::argument
 				fprintf(fp, " <i>%s</i>", arg.name.c_str());
 
 				if (!arg.def_val.empty()) {
-					fprintf(fp, " = <i>%s</i>", arg.def_val.c_str());
+					fprintf(fp, " = <i>%s</i>", link_enum_group_references(arg.def_val).c_str());
 				}
 			}
 
 			if (!arg.comment.empty()) {
-				fprintf(fp, " (%s)", arg.comment.c_str());
+				fprintf(fp, " (%s)", link_enum_group_references(arg.comment).c_str());
 			}
 		}
 
@@ -209,7 +245,7 @@ void output_argument_list(FILE* fp, const DocumentationElementFunction::argument
 			fputs("]", fp);
 		}
 	} else {
-		fprintf(fp, "<i>%s</i>", overload.simple.c_str());
+		fprintf(fp, "<i>%s</i>", link_enum_group_references(overload.simple).c_str());
 	}
 }
 
@@ -285,7 +321,8 @@ void OutputElement(FILE* fp,
 
 			//***Description
 			if (!el->description.empty()) {
-				fprintf(fp, "<dd>%s</dd>\n", el->description.c_str());
+				auto description = link_enum_group_references(el->description);
+				fprintf(fp, "<dd>%s</dd>\n", description.c_str());
 			}
 			break;
 		}
@@ -343,7 +380,8 @@ void OutputElement(FILE* fp,
 
 			//***Description
 			if (!el->description.empty()) {
-				fprintf(fp, "<dd>%s</dd>\n", el->description.c_str());
+				auto description = link_enum_group_references(el->description);
+				fprintf(fp, "<dd>%s</dd>\n", description.c_str());
 			}
 
 			if (el->deprecationVersion.isValid()) {
@@ -365,7 +403,8 @@ void OutputElement(FILE* fp,
 
 			//***Result: ReturnDescription
 			if (!funcEl->returnDocumentation.empty()) {
-				fprintf(fp, "<dd><b>Returns:</b> %s</dd>\n", funcEl->returnDocumentation.c_str());
+				auto returns = link_enum_group_references(funcEl->returnDocumentation);
+				fprintf(fp, "<dd><b>Returns:</b> %s</dd>\n", returns.c_str());
 			} else {
 				fputs("<dd><b>Returns:</b> Nothing</dd>\n", fp);
 			}
@@ -395,11 +434,16 @@ void OutputElement(FILE* fp,
 			fputs("</dt>\n", fp);
 
 			//***Description
-			if (!propEl->description.empty())
-				fprintf(fp, "<dd>%s</dd>\n", propEl->description.c_str());
+			if (!propEl->description.empty()) {
+				auto description = link_enum_group_references(propEl->description);
+				fprintf(fp, "<dd>%s</dd>\n", description.c_str());
+			}
 
 			if (!propEl->returnDocumentation.empty())
-				fprintf(fp, "<dd><b>Value:</b> %s</b></dd>\n", propEl->returnDocumentation.c_str());
+			{
+				auto value = link_enum_group_references(propEl->returnDocumentation);
+				fprintf(fp, "<dd><b>Value:</b> %s</b></dd>\n", value.c_str());
+			}
 			break;
 		}
 		default:
@@ -441,7 +485,7 @@ static void output_hook_variable_list(FILE* fp, const Container& vars)
 		fputs("<dt>", fp);
 		ade_output_type_link(fp, param.type);
 		fprintf(fp, " <i>%s</i></dt>", param.name);
-		fprintf(fp, "<dd><b>Description:</b> %s</dd>", param.description);
+		fprintf(fp, "<dd><b>Description:</b> %s</dd>", link_enum_group_references(param.description).c_str());
 	}
 	fputs("</dl>", fp);
 }
@@ -561,13 +605,26 @@ void output_html_doc(const ScriptingDocumentation& doc, const SCP_string& filena
 
 	//***Enumerations
 	fprintf(fp, "<dt id=\"Enumerations\"><h2>Enumerations</h2></dt>");
+	SCP_unordered_map<SCP_string, SCP_vector<const DocumentationEnum*>> enum_groups;
+	SCP_vector<SCP_string> enum_group_order;
 	for (const auto& enumeration : doc.enumerations) {
-		// Cyborg17 -- Omit the deprecated flag
-		if (enumeration.name == "VM_EXTERNAL_CAMERA_LOCKED") {
-			continue;
+		auto key = enumeration.group_id.empty() ? SCP_string("ungrouped") : enumeration.group_id;
+		if (enum_groups.find(key) == enum_groups.end()) {
+			enum_group_order.push_back(key);
 		}
-		// WMC - For now, print to the file without the description.
-		fprintf(fp, "<dd><b>%s</b></dd>", enumeration.name.c_str());
+		enum_groups[key].push_back(&enumeration);
+	}
+	for (const auto& group_id : enum_group_order) {
+		const auto* first_enum = enum_groups[group_id].front();
+		const auto& group_title = first_enum->group_title.empty() ? SCP_string("Ungrouped Enumerations") : first_enum->group_title;
+		const auto& group_description = first_enum->group_description.empty() ? SCP_string("No group description found. Add a matching prefix entry to get_enum_group_info() in enums.cpp.") : first_enum->group_description;
+		fprintf(fp, "<dt><h3 id=\"enum-group-%s\">%s</h3></dt>", group_id.c_str(), group_title.c_str());
+		fprintf(fp, "<dd>%s</dd>", group_description.c_str());
+		fputs("<dd><dl>", fp);
+		for (const auto* enumeration : enum_groups[group_id]) {
+			fprintf(fp, "<dd><span style=\"font-size: 0.92em;\">%s</span></dd>", enumeration->name.c_str());
+		}
+		fputs("</dl></dd>", fp);
 	}
 	fputs("</dl></body></html>", fp);
 
