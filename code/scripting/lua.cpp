@@ -323,6 +323,10 @@ void script_state::OutputLuaDocumentation(ScriptingDocumentation& doc,
 			e.group_title = group->title;
 			e.group_description = group->description;
 		}
+		const char* desc = get_enum_description(Enumerations[i].name);
+		if (desc != nullptr) {
+			e.description = desc;
+		}
 
 		doc.enumerations.push_back(e);
 	}

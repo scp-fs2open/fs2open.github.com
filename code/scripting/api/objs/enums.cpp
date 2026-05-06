@@ -69,11 +69,8 @@ const lua_enum_def_list Enumerations[] = {
 	{"SEXPVAR_TYPE_STRING", LE_SEXPVAR_TYPE_STRING, true},
 	{"TEXTURE_STATIC", LE_TEXTURE_STATIC, true},
 	{"TEXTURE_DYNAMIC", LE_TEXTURE_DYNAMIC, true},
-	{"TARGET_LOCK", LE_LOCK, true},
 	{"LOCK", LE_LOCK, true},
-	{"TARGET_UNLOCK", LE_UNLOCK, true},
 	{"UNLOCK", LE_UNLOCK, true},
-	{"TARGET_NONE", LE_NONE, true},
 	{"SHIELD_NONE", LE_NONE, true},
 	{"NONE", LE_NONE, true},
 	{"SHIELD_FRONT", LE_SHIELD_FRONT, true},
@@ -299,9 +296,8 @@ struct deprecated_enum_name_info {
 };
 
 static const SCP_unordered_map<SCP_string, deprecated_enum_name_info> Deprecated_enumeration_names = {
-	{"LOCK", {LE_LOCK, "TARGET_LOCK", gameversion::version(26, 0)}},
-	{"UNLOCK", {LE_UNLOCK, "TARGET_UNLOCK", gameversion::version(26, 0)}},
-	{"NONE", {LE_NONE, "TARGET_NONE or SHIELD_NONE depending on context", gameversion::version(26, 0)}},
+	// Deprecated due to renaming during the great enum cleanup of 2026
+	{"NONE", {LE_NONE, "SHIELD_NONE", gameversion::version(26, 0)}},
 	{"NORMAL_CONTROLS", {LE_NORMAL_CONTROLS, "FLIGHT_CONTROL_NORMAL", gameversion::version(26, 0)}},
 	{"LUA_STEERING_CONTROLS", {LE_LUA_STEERING_CONTROLS, "FLIGHT_CONTROL_LUA_STEERING", gameversion::version(26, 0)}},
 	{"LUA_FULL_CONTROLS", {LE_LUA_FULL_CONTROLS, "FLIGHT_CONTROL_LUA_FULL", gameversion::version(26, 0)}},
@@ -316,7 +312,17 @@ static const SCP_unordered_map<SCP_string, deprecated_enum_name_info> Deprecated
 	{"SEXPVAR_CAMPAIGN_PERSISTENT", {LE_SEXPVAR_CAMPAIGN_PERSISTENT, "SEXPVAR_PERSIST_CAMPAIGN", gameversion::version(26, 0)}},
 	{"SEXPVAR_NOT_PERSISTENT", {LE_SEXPVAR_NOT_PERSISTENT, "SEXPVAR_PERSIST_NONE", gameversion::version(26, 0)}},
 	{"SEXPVAR_PLAYER_PERSISTENT", {LE_SEXPVAR_PLAYER_PERSISTENT, "SEXPVAR_PERSIST_PLAYER", gameversion::version(26, 0)}},
-	{"VM_EXTERNAL_CAMERA_LOCKED", {LE_VM_EXTERNAL_CAMERA_LOCKED, "VM_CAMERA_LOCKED", gameversion::version(26, 0)}}
+	// Previously this was a manual deprecation and is now moved moved here with version 26.0.0 because the old way never actually errored
+	{"VM_EXTERNAL_CAMERA_LOCKED", {LE_VM_EXTERNAL_CAMERA_LOCKED, "VM_CAMERA_LOCKED", gameversion::version(26, 0)}},
+	// These target enums are unused - no Lua API function accepts them
+	{"LOCK", {LE_LOCK, "nothing (this enum was never implemented)", gameversion::version(26, 0)}},
+	{"UNLOCK", {LE_UNLOCK, "nothing (this enum was never implemented)", gameversion::version(26, 0)}},
+	// These cfile enums were never implemented — no Lua API function accepts them
+	{"CFILE_TYPE_NORMAL", {LE_CFILE_TYPE_NORMAL, "nothing (these enums were never implemented)", gameversion::version(26, 0)}},
+	{"CFILE_TYPE_MEMORY_MAPPED", {LE_CFILE_TYPE_MEMORY_MAPPED, "nothing (these enums were never implemented)", gameversion::version(26, 0)}},
+	// Deprecated/unused particle types
+	{"PARTICLE_DEBUG", {LE_PARTICLE_DEBUG, "nothing (debug particles were removed in FSO 25.0)", gameversion::version(25, 0)}},
+	{"PARTICLE_PERSISTENT_BITMAP", {LE_PARTICLE_PERSISTENT_BITMAP, "PARTICLE_BITMAP via createPersistentParticle (this enum was never implemented)", gameversion::version(26, 0)}}
 };
 
 static std::optional<deprecated_enum_name_info> get_deprecated_enum_info(const SCP_string& enum_name) {
@@ -341,7 +347,6 @@ std::optional<enum_group_info> get_enum_group_info(const char* enum_name) {
 
 	static const SCP_vector<enum_group_info> Enum_groups = {
 		{"ALPHABLEND_", "alphablend", "Alpha Blending", "Alpha blending modes used by rendering functions."},
-		{"CFILE_TYPE_", "cfile-types", "CFile Types", "File backend types for cfile operations."},
 		{"MOUSE_", "mouse-buttons", "Mouse Buttons", "Mouse button constants."},
 		{"FLIGHTMODE_", "flight-modes", "Flight Modes", "Primary flight cursor/ship lock modes."},
 		{"ORDER_", "orders", "Orders", "AI and command order constants."},
@@ -349,7 +354,6 @@ std::optional<enum_group_info> get_enum_group_info(const char* enum_name) {
 		{"SEXPVAR_TYPE_", "sexpvar-type", "SEXP Variable Type", "SEXP variable value type constants."},
 		{"SEXPVAR_PERSIST_", "sexpvar-persist", "SEXP Variable Persistence", "SEXP variable persistence level constants."},
 		{"TEXTURE_", "textures", "Texture Sources", "Texture handle source types."},
-		{"TARGET_", "target-lock", "Target Lock Control", "Controls how targeting lock behavior is set or queried."},
 		{"MISSION_", "mission-flow", "Mission Flow", "Mission-level control and mission selection constants."},
 		{"SHIELD_", "shield-quadrants", "Shield Quadrants", "Shield quadrant constants."},
 		{"FLIGHT_CONTROL_", "flight-controls", "Flight Control Mode", "Specifies whether steering is handled by normal controls or Lua control modes."},
@@ -365,7 +369,7 @@ std::optional<enum_group_info> get_enum_group_info(const char* enum_name) {
 		{"MOVIE_", "movies", "Movie Events", "Campaign/mission movie event positions."},
 		{"TBOX_", "targetbox-flash", "Targetbox Flash", "Targetbox flashing indicator selectors."},
 		{"LUAAI_", "luaai-goals", "Lua AI Goal State", "Lua AI achievability state values."},
-		{"SCORE_", "score-events", "Score Events", "Score event source constants."},
+		{"SCORE_", "score-events", "Score Events", "Identifies a music score slot for a specific game screen."},
 		{"SHIP_STATUS_", "ship-status", "Ship Presence/State", "Describes high-level ship registry presence and lifecycle state."},
 		{"DC_", "object-create-flags", "Object Creation Flags", "Flags that modify object creation behavior."},
 		{"RPC_", "rpc", "Remote Procedure Call", "RPC routing and reliability mode constants."},
@@ -386,6 +390,339 @@ std::optional<enum_group_info> get_enum_group_info(const char* enum_name) {
 	}
 
 	return std::nullopt;
+}
+
+static const SCP_unordered_map<SCP_string, const char*> Enum_descriptions = {
+	// ALPHABLEND
+	{"ALPHABLEND_NONE", "Always uses standard alpha blending (Alpha * Src + (1 - Alpha) * Dst). Opacity controls transparency."},
+	{"ALPHABLEND_FILTER", "Adaptive blending. For bitmaps with an alpha channel, behaves identically to ALPHABLEND_NONE. For bitmaps without an alpha channel, uses additive blending where the bitmap is added to the background with its intensity scaled by opacity."},
+
+	// MOUSE
+	{"MOUSE_LEFT_BUTTON", "The left mouse button click."},
+	{"MOUSE_RIGHT_BUTTON", "The right mouse button click."},
+	{"MOUSE_MIDDLE_BUTTON", "The middle mouse button click. Scroll wheel movement does not trigger this."},
+	{"MOUSE_X1_BUTTON", "The first extra mouse button (typically the rear side/thumb button). Only available on hardware that provides it."},
+	{"MOUSE_X2_BUTTON", "The second extra mouse button (typically the forward side/thumb button). Only available on hardware that provides it."},
+
+	// FLIGHTMODE
+	{"FLIGHTMODE_FLIGHTCURSOR", "Player inputs move a cursor within a cone in front of the ship; the ship turns toward the cursor.."},
+	{"FLIGHTMODE_SHIPLOCKED", "Player pitch and heading inputs directly rotate the ship. This is the standard flight control mode."},
+
+	// ORDER
+	{"ORDER_ATTACK", "Attack the target. Behavior depends on target type: attacks a ship, chases a weapon, or destroys a subsystem."},
+	{"ORDER_ATTACK_WING", "Attack all ships in the wing that the target ship belongs to."},
+	{"ORDER_ATTACK_SHIP_CLASS", "Attack all ships of the specified ship class."},
+	{"ORDER_ATTACK_SHIP_TYPE", "Attack all ships of the specified ship type."},
+	{"ORDER_ATTACK_ANY", "Attack any enemy ship in the mission."},
+	{"ORDER_DEPART", "Warp out of the mission."},
+	{"ORDER_DISABLE", "Destroy the target ship's engines to disable it. Purges conflicting goals from all ships in the mission."},
+	{"ORDER_DISABLE_TACTICAL", "Destroy the target ship's engines to disable it. Does not purge any other goals."},
+	{"ORDER_DISARM", "Destroy the target ship's turrets to disarm it. Purges conflicting goals from all ships in the mission."},
+	{"ORDER_DISARM_TACTICAL", "Destroy the target ship's turrets to disarm it. Does not purge any other goals."},
+	{"ORDER_DOCK", "Dock with the target ship."},
+	{"ORDER_EVADE", "Actively fly away from and evade the target ship."},
+	{"ORDER_FLY_TO", "Fly toward the target ship; goal completes when within range."},
+	{"ORDER_FORM_ON_WING", "Fly in formation on the wing of the target ship."},
+	{"ORDER_GUARD", "Patrol around and protect the target ship."},
+	{"ORDER_GUARD_WING", "Patrol around and protect the entire wing that the target ship belongs to."},
+	{"ORDER_IGNORE_SHIP", "Stop attacking the target ship and purge conflicting goals from all other ships in the mission."},
+	{"ORDER_IGNORE_SHIP_NEW", "Stop attacking the target ship. Only removes conflicting goals from this ship, not others."},
+	{"ORDER_KEEP_SAFE_DISTANCE", "Maintain a minimum safe distance from the target ship."},
+	{"ORDER_PLAY_DEAD", "Ship drifts inertially and ignores all inputs including hits. Clears all other goals on the ship when issued."},
+	{"ORDER_PLAY_DEAD_PERSISTENT", "Ship drifts inertially and ignores all inputs including hits. Does not clear other goals when issued; queued goals are preserved."},
+	{"ORDER_REARM", "Fly to the target support ship to rearm and repair."},
+	{"ORDER_STAY_NEAR", "Maintain ongoing proximity to the target ship."},
+	{"ORDER_STAY_STILL", "Stop all movement and hold the current position."},
+	{"ORDER_UNDOCK", "Undock from the target ship."},
+	{"ORDER_WAYPOINTS", "Follow the target waypoint path, looping back to the start when complete."},
+	{"ORDER_WAYPOINTS_ONCE", "Follow the target waypoint path once and stop at the final waypoint."},
+	{"ORDER_LUA", "Execute a Lua-defined custom AI goal."},
+
+	// PARTICLE
+	{"PARTICLE_BITMAP", "Renders a particle using a custom texture supplied via the Texture parameter."},
+	{"PARTICLE_FIRE", "Renders a particle using the built-in fire animation (particleexp01)."},
+	{"PARTICLE_SMOKE", "Renders a particle using the first built-in smoke animation (particlesmoke01)."},
+	{"PARTICLE_SMOKE2", "Renders a particle using the second built-in smoke animation (particlesmoke02)."},
+
+	// SEXPVAR_PERSIST
+	{"SEXPVAR_PERSIST_NONE", "Variable is reset to its initial value at the start of the mission."},
+	{"SEXPVAR_PERSIST_CAMPAIGN", "Variable is saved to the campaign save file and resets when the campaign is restarted."},
+	{"SEXPVAR_PERSIST_PLAYER", "Variable is saved to the player save file and never resets."},
+
+	// SEXPVAR_TYPE
+	{"SEXPVAR_TYPE_NUMBER", "SEXP variable holds an integer numeric value. Floats are not supported."},
+	{"SEXPVAR_TYPE_STRING", "SEXP variable holds a string value."},
+
+	// TEXTURE
+	{"TEXTURE_STATIC", "Render target texture written to infrequently. Use when the texture content rarely changes between frames."},
+	{"TEXTURE_DYNAMIC", "Render target texture written to frequently, e.g. every frame. This is the default for gr.createTexture()."},
+
+	// MISSION
+	{"MISSION_REPEAT", "Sentinel value for mn.startMission(): restarts the most recently played mission instead of specifying a filename."},
+
+	// SHIELD
+	{"SHIELD_NONE", "Refers to the entire shield as a whole rather than a specific quadrant. Gets or sets total shield strength across all quadrants."},
+	{"SHIELD_FRONT", "The front shield quadrant."},
+	{"SHIELD_LEFT", "The left shield quadrant."},
+	{"SHIELD_RIGHT", "The right shield quadrant."},
+	{"SHIELD_BACK", "The rear shield quadrant."},
+
+	// FLIGHT_CONTROL
+	{"FLIGHT_CONTROL_NORMAL", "Standard engine handles all steering and flight controls."},
+	{"FLIGHT_CONTROL_LUA_STEERING", "Lua overrides rotational inputs (pitch, heading, bank); the engine still handles throttle and lateral/vertical translation."},
+	{"FLIGHT_CONTROL_LUA_FULL", "Lua overrides all movement axes including pitch, heading, bank, throttle, and lateral/vertical translation. Weapon firing inputs are not affected."},
+
+	// BUTTON_CONTROL
+	{"BUTTON_CONTROL_NORMAL", "Standard engine processes all button inputs."},
+	{"BUTTON_CONTROL_LUA_ADDITIVE", "Lua button inputs are processed alongside normal engine button inputs."},
+	{"BUTTON_CONTROL_LUA_OVERRIDE", "Lua button processing replaces normal engine button input handling entirely."},
+
+	// VM
+	{"VM_INTERNAL", "Cockpit (internal) view. True when no external view flags are active; camera lock and centering state are excluded from this check."},
+	{"VM_EXTERNAL", "View is external to the cockpit. A base flag combined with others such as VM_CHASE or VM_OTHER_SHIP."},
+	{"VM_TRACK", "The external camera rotates to face the currently targeted ship or subsystem."},
+	{"VM_DEAD_VIEW", "Camera view used when the player ship has been destroyed."},
+	{"VM_CHASE", "Chase camera positioned behind and above the player ship."},
+	{"VM_OTHER_SHIP", "Camera positioned on the player's currently targeted ship."},
+	{"VM_CAMERA_LOCKED", "The player does not have manual control of the camera; it is managed by the engine or scripting. Often set alongside padlock and external view flags."},
+	{"VM_WARP_CHASE", "Camera view during the player's warp-out sequence; the camera remains at the departure point as the ship accelerates away."},
+	{"VM_PADLOCK_UP", "Padlock quick-look view directed upward."},
+	{"VM_PADLOCK_REAR", "Padlock quick-look view directed toward the rear."},
+	{"VM_PADLOCK_LEFT", "Padlock quick-look view directed to the left."},
+	{"VM_PADLOCK_RIGHT", "Padlock quick-look view directed to the right."},
+	{"VM_WARPIN_ANCHOR", "Stationary camera anchor point used during a warp-in sequence."},
+	{"VM_TOPDOWN", "Top-down overhead camera looking down at the player ship."},
+	{"VM_FREECAMERA", "A scripted camera not attached to any ship or object, typically set by a SEXP or Lua camera call."},
+	{"VM_CENTERING", "The cockpit view angle is springing back to the forward-facing orientation after freelook or padlock was released."},
+
+	// MESSAGE_PRIORITY
+	{"MESSAGE_PRIORITY_LOW", "Lowest priority. Message is dropped if the sender has been destroyed or departed. Will not interrupt messages that are currently playing."},
+	{"MESSAGE_PRIORITY_NORMAL", "Normal priority. Message is dropped if the sender has been destroyed or departed. Interrupts lower-priority messages currently playing."},
+	{"MESSAGE_PRIORITY_HIGH", "Highest priority. If the sender has been destroyed or departed, the message plays anyway from Terran Command. Interrupts lower-priority messages currently playing."},
+
+	// OPTION_TYPE
+	{"OPTION_TYPE_SELECTION", "Option has a fixed set of discrete values to choose from, such as a dropdown."},
+	{"OPTION_TYPE_RANGE", "Option has a continuous numeric range with interpolation, such as a slider."},
+
+	// AUDIOSTREAM
+	{"AUDIOSTREAM_EVENTMUSIC", "Stream type for in-mission dynamic event music. Volume is controlled by the music volume setting."},
+	{"AUDIOSTREAM_MENUMUSIC", "Stream type for background music in menus and briefings, such as the main hall, credits, and briefing screens. Volume follows the music volume setting."},
+	{"AUDIOSTREAM_VOICE", "Stream type for spoken voice audio such as mission briefings, training narration, and debriefs. Volume is controlled by the voice volume setting."},
+
+	// CONTEXT
+	{"CONTEXT_VALID", "The Lua execution context is running normally."},
+	{"CONTEXT_SUSPENDED", "The context exists but is not currently active; the executor will retry later. For example, a game state that is on the stack but not currently at the top."},
+	{"CONTEXT_INVALID", "The Lua execution context has been destroyed or is unusable."},
+
+	// FIREBALL
+	{"FIREBALL_MEDIUM_EXPLOSION", "A medium-sized explosion fireball effect."},
+	{"FIREBALL_LARGE_EXPLOSION", "A large explosion fireball effect."},
+	{"FIREBALL_WARP_EFFECT", "A warp portal effect used for ship warp-in and warp-out sequences."},
+
+	// MOVIE
+	{"MOVIE_PRE_FICTION", "Plays just before the fiction viewer game state."},
+	{"MOVIE_PRE_CMD_BRIEF", "Plays just before the command briefing game state."},
+	{"MOVIE_PRE_BRIEF", "Plays just before the briefing game state."},
+	{"MOVIE_PRE_GAME", "Plays just before the mission starts after Accept has been pressed."},
+	{"MOVIE_PRE_DEBRIEF", "Plays just before the debriefing game state."},
+	{"MOVIE_POST_DEBRIEF", "Plays when the debriefing has been accepted but before exiting the mission."},
+	{"MOVIE_END_CAMPAIGN", "Plays when the campaign has been completed."},
+
+	// GR_RESIZE
+	{"GR_RESIZE_NONE", "Coordinates are raw pixels with no scaling applied."},
+	{"GR_RESIZE_FULL", "Scale to fill the full screen dimensions."},
+	{"GR_RESIZE_FULL_CENTER", "Scale to fill the full screen, centered within the viewport."},
+	{"GR_RESIZE_MENU", "Coordinates use the standard UI/menu coordinate space."},
+	{"GR_RESIZE_MENU_ZOOMED", "Menu coordinate space that extends into the full display area, including any letterbox or pillarbox borders beyond the standard menu boundary."},
+	{"GR_RESIZE_MENU_NO_OFFSET", "Menu coordinate space without positional offset applied."},
+
+	// OS (object sound slots/flags)
+	{"OS_NONE", "No flags. Assigns a basic persistent sound with default distance attenuation."},
+	{"OS_MAIN", "Sound for which attenuation does not apply within the object's radius. Typically used for primary continuous sounds such as engine idle loops."},
+	{"OS_ENGINE", "Secondary engine sound, typically tied to throttle level."},
+	{"OS_TURRET_BASE_ROTATION", "Sound played while a turret base rotates."},
+	{"OS_TURRET_GUN_ROTATION", "Sound played while a turret gun barrel rotates."},
+	{"OS_SUBSYS_ALIVE", "Continuous sound played while the subsystem is operational."},
+	{"OS_SUBSYS_DEAD", "Continuous sound that plays only while the subsystem is destroyed (has zero hit points)."},
+	{"OS_SUBSYS_DAMAGED", "Sound whose volume scales proportionally with remaining subsystem health; full volume at full health, silent when destroyed."},
+	{"OS_SUBSYS_ROTATION", "Sound played during a subsystem rotation animation."},
+	{"OS_PLAY_ON_PLAYER", "Allow this sound to play even when the source object is the player's own ship, bypassing normal player-ship audio suppression in cockpit view."},
+	{"OS_LOOPING_DISABLED", "Prevent the sound from looping after it finishes playing."},
+
+	// TBOX_FLASH
+	{"TBOX_FLASH_NAME", "The target name section of the target box."},
+	{"TBOX_FLASH_CARGO", "The cargo information section of the target box."},
+	{"TBOX_FLASH_HULL", "The hull integrity section of the target box."},
+	{"TBOX_FLASH_STATUS", "The target status section of the target box."},
+	{"TBOX_FLASH_SUBSYS", "The targeted subsystem section of the target box."},
+
+	// DC (object creation flags)
+	{"DC_IS_HULL", "Mark the debris piece as a hull fragment, using a specific ship geometry submodel with hull-appropriate physics and lifetime."},
+	{"DC_VAPORIZE", "For non-hull debris, use the vaporize-effect model instead of the generic debris model and extend the piece's lifetime."},
+	{"DC_SET_VELOCITY", "Apply explosion-based velocity to the debris, adding a radial kick from the explosion center to the inherited source ship velocity."},
+	{"DC_FIRE_HOOK", "Fire the OnDebrisCreated scripting hook after the debris piece is created."},
+
+	// RPC
+	{"RPC_SERVER", "Send the RPC call to the server only."},
+	{"RPC_CLIENTS", "Send the RPC call to all connected clients."},
+	{"RPC_BOTH", "Send the RPC call to both the server and all clients."},
+	{"RPC_RELIABLE", "Use reliable delivery; packet is guaranteed to arrive."},
+	{"RPC_ORDERED", "Use sequenced delivery over unreliable transport; out-of-order or stale packets are discarded so only the most recent call is processed."},
+	{"RPC_UNRELIABLE", "Use unreliable delivery; fastest option but packets may be dropped."},
+
+	// SEXP results
+	{"SEXP_TRUE", "SEXP evaluated to a true result."},
+	{"SEXP_FALSE", "SEXP evaluated to a false result."},
+	{"SEXP_KNOWN_FALSE", "SEXP is permanently false and will never become true."},
+	{"SEXP_KNOWN_TRUE", "SEXP is permanently true and will never become false."},
+	{"SEXP_UNKNOWN", "The SEXP result is indeterminate and cannot yet be resolved."},
+	{"SEXP_NAN", "Numeric result is unavailable because a referenced ship or wing has not yet arrived. The value may become valid later once the ship arrives."},
+	{"SEXP_NAN_FOREVER", "SEXP will never produce a valid numeric result."},
+	{"SEXP_CANT_EVAL", "The SEXP cannot yet be evaluated, typically because a referenced object does not yet exist. Acts like false until conditions are met."},
+
+	// COMMIT (loadout validation results)
+	{"COMMIT_SUCCESS", "Loadout validation passed; the mission is ready to launch."},
+	{"COMMIT_FAIL", "Generic loadout validation failure."},
+	{"COMMIT_PLAYER_NO_WEAPONS", "Player ship has no weapons assigned."},
+	{"COMMIT_NO_REQUIRED_WEAPON", "A weapon required by the mission is missing from the loadout."},
+	{"COMMIT_NO_REQUIRED_WEAPON_MULTIPLE", "Multiple mission-required weapons are missing from the loadout."},
+	{"COMMIT_BANK_GAP_ERROR", "Weapon banks contain gaps; empty slots appear between assigned weapons."},
+	{"COMMIT_PLAYER_NO_SLOT", "Player has no ship slot assigned in the briefing."},
+	{"COMMIT_MULTI_PLAYERS_NO_SHIPS", "Not all multiplayer players have been assigned to their ship slots yet."},
+	{"COMMIT_MULTI_NOT_ALL_ASSIGNED", "Not all multiplayer pilots have been assigned to a ship slot."},
+	{"COMMIT_MULTI_NO_PRIMARY", "A multiplayer ship has no primary weapon assigned."},
+	{"COMMIT_MULTI_NO_SECONDARY", "A multiplayer ship has no secondary weapon assigned."},
+
+	// MULTI_OPTION
+	{"MULTI_OPTION_RANK", "Restricts the action to the highest-ranking player(s) in the game. Used by NetGame.Orders and NetGame.EndMission."},
+	{"MULTI_OPTION_LEAD", "Restricts the action to wing or team leaders only. Used by NetGame.Orders and NetGame.EndMission."},
+	{"MULTI_OPTION_ANY", "Allows any non-observer player to perform the action. Used by NetGame.Orders and NetGame.EndMission."},
+	{"MULTI_OPTION_HOST", "Restricts the action to the game host only. Used by NetGame.Orders and NetGame.EndMission."},
+
+	// LUAAI
+	{"LUAAI_ACHIEVABLE", "The Lua AI goal can be executed immediately."},
+	{"LUAAI_NOT_YET_ACHIEVABLE", "The Lua AI goal is valid but cannot be started yet."},
+	{"LUAAI_UNACHIEVABLE", "The Lua AI goal can never be achieved and will be cancelled."},
+
+	// SCORE
+	{"SCORE_BRIEFING", "Music score slot for the mission briefing screen."},
+	{"SCORE_DEBRIEFING_SUCCESS", "Music score slot for the debriefing screen when the mission was successful."},
+	{"SCORE_DEBRIEFING_AVERAGE", "Music score slot for the debriefing screen when the mission result was average."},
+	{"SCORE_DEBRIEFING_FAILURE", "Music score slot for the debriefing screen when the mission failed."},
+	{"SCORE_FICTION_VIEWER", "Music score slot for the fiction viewer screen."},
+
+	// SHIP_STATUS
+	{"SHIP_STATUS_INVALID", "The ship registry entry has not been initialized yet."},
+	{"SHIP_STATUS_NOT_YET_PRESENT", "The ship is on the arrival list but has not yet arrived in-mission."},
+	{"SHIP_STATUS_PRESENT", "The ship is currently in-mission; its object and ship pointers are valid."},
+	{"SHIP_STATUS_DEATH_ROLL", "The ship has been destroyed but is still in its death roll; its object and ship pointers remain valid."},
+	{"SHIP_STATUS_EXITED", "The ship has been destroyed, departed, or vanished; its object and ship pointers are no longer valid."},
+
+	// BUILTIN_MESSAGE
+	{"BUILTIN_MESSAGE_ATTACK_TARGET", "Confirmation sent by a wingman acknowledging an Attack order."},
+	{"BUILTIN_MESSAGE_DISABLE_TARGET", "Confirmation sent by a wingman acknowledging a Disable order."},
+	{"BUILTIN_MESSAGE_DISARM_TARGET", "Confirmation sent by a wingman acknowledging a Disarm order."},
+	{"BUILTIN_MESSAGE_ATTACK_SUBSYSTEM", "Confirmation sent by a wingman acknowledging an order to destroy a specific subsystem."},
+	{"BUILTIN_MESSAGE_PROTECT_TARGET", "Confirmation sent by a wingman acknowledging a Protect order."},
+	{"BUILTIN_MESSAGE_FORM_ON_MY_WING", "Confirmation sent by a wingman acknowledging a Form on Wing order."},
+	{"BUILTIN_MESSAGE_COVER_ME", "Confirmation sent by a wingman acknowledging a Cover Me order."},
+	{"BUILTIN_MESSAGE_IGNORE", "Confirmation sent by a wingman acknowledging an Ignore order."},
+	{"BUILTIN_MESSAGE_ENGAGE", "Confirmation sent by a wingman acknowledging an Engage Enemy order."},
+	{"BUILTIN_MESSAGE_WARP_OUT", "Confirmation sent by a wingman acknowledging a Depart order."},
+	{"BUILTIN_MESSAGE_DOCK_YES", "Sent by a ship when it begins a docking sequence."},
+	{"BUILTIN_MESSAGE_YESSIR", "Generic affirmative acknowledgment sent by a wingman when complying with an order."},
+	{"BUILTIN_MESSAGE_NOSIR", "Generic refusal sent by a wingman when an order cannot be carried out."},
+	{"BUILTIN_MESSAGE_NO_TARGET", "Sent by a wingman when the order requires a target but no valid target is available."},
+	{"BUILTIN_MESSAGE_CHECK_6", "Warning sent by a wingman when an enemy fighter or bomber is attacking the player from behind."},
+	{"BUILTIN_MESSAGE_PLAYER_DIED", "Sent by a wingman when the player enters the death roll."},
+	{"BUILTIN_MESSAGE_PRAISE", "Compliment sent by a wingman when the player destroys an enemy ship."},
+	{"BUILTIN_MESSAGE_HIGH_PRAISE", "Enhanced compliment sent by a wingman when the player has accumulated more than ten kills in the mission. Falls back to BUILTIN_MESSAGE_PRAISE."},
+	{"BUILTIN_MESSAGE_BACKUP", "Sent by a ship from a newly arrived friendly wing announcing support."},
+	{"BUILTIN_MESSAGE_HELP", "Distress call sent by a wingman when their hull or shields are critically low."},
+	{"BUILTIN_MESSAGE_WINGMAN_SCREAM", "Death cry sent by a wingman as they are destroyed."},
+	{"BUILTIN_MESSAGE_PRAISE_SELF", "Boast sent by a wingman when they destroy an enemy ship."},
+	{"BUILTIN_MESSAGE_REARM_REQUEST", "Request sent by a wingman when their secondary missile ammunition falls below fifty percent."},
+	{"BUILTIN_MESSAGE_REPAIR_REQUEST", "Request sent by a wingman when their hull integrity is critically low or a subsystem is disabled."},
+	{"BUILTIN_MESSAGE_PRIMARIES_LOW", "Alert sent by a wingman when their ballistic primary weapon ammunition falls below thirty percent. Sent at most once per ship per mission."},
+	{"BUILTIN_MESSAGE_REARM_PRIMARIES", "Request sent by a wingman for primary ballistic ammunition resupply. Falls back to BUILTIN_MESSAGE_REARM_REQUEST."},
+	{"BUILTIN_MESSAGE_REARM_WARP", "Sent by a support ship as it warps in to provide repair or rearm service."},
+	{"BUILTIN_MESSAGE_ON_WAY", "Sent by a support ship confirming it is en route to perform repairs or rearming."},
+	{"BUILTIN_MESSAGE_ALREADY_ON_WAY", "Sent by a support ship when the player requests rearm but it is already en route. Falls back to BUILTIN_MESSAGE_ON_WAY."},
+	{"BUILTIN_MESSAGE_REPAIR_DONE", "Sent by a support ship when it completes repair or rearm service."},
+	{"BUILTIN_MESSAGE_REPAIR_ABORTED", "Sent by a support ship when its repair or rearm operation is interrupted."},
+	{"BUILTIN_MESSAGE_SUPPORT_KILLED", "Sent by Command when the support ship is destroyed."},
+	{"BUILTIN_MESSAGE_ALL_ALONE", "Sent by Command when the player is the last surviving friendly ship in the mission."},
+	{"BUILTIN_MESSAGE_ARRIVE_ENEMY", "Warning sent when a new enemy wing arrives in the mission."},
+	{"BUILTIN_MESSAGE_OOPS", "Sent by a wingman when they are hit by friendly fire."},
+	{"BUILTIN_MESSAGE_HAMMER_SWINE", "Sent by a wingman when the player is identified as a traitor due to repeated friendly fire."},
+	{"BUILTIN_MESSAGE_AWACS_75", "Warning sent by an AWACS ship when its hull integrity drops below seventy-five percent."},
+	{"BUILTIN_MESSAGE_AWACS_25", "Warning sent by an AWACS ship when its hull integrity drops below twenty-five percent."},
+	{"BUILTIN_MESSAGE_STRAY_WARNING", "Repeating warning sent by Command when the player strays outside the mission boundary."},
+	{"BUILTIN_MESSAGE_STRAY_WARNING_FINAL", "Final warning sent by Command immediately before the player is destroyed for straying too far from the mission area."},
+	{"BUILTIN_MESSAGE_INSTRUCTOR_HIT", "Sent during training missions when the player hits the instructor ship with friendly fire."},
+	{"BUILTIN_MESSAGE_INSTRUCTOR_ATTACK", "Sent during training missions when the player directly attacks the instructor ship."},
+	{"BUILTIN_MESSAGE_ALL_CLEAR", "Indicates the area is clear of enemies. Not currently triggered by the engine."},
+	{"BUILTIN_MESSAGE_PERMISSION", "Permission-related response. Not currently triggered by the engine."},
+	{"BUILTIN_MESSAGE_STRAY", "Intended as an initial stray warning. Not currently triggered by the engine."},
+
+	// SQUAD_MESSAGE
+	{"SQUAD_MESSAGE_ATTACK_TARGET", "Order the wingman to attack the player's current target. Removes the target's Protected flag if the ship type permits."},
+	{"SQUAD_MESSAGE_DISABLE_TARGET", "Order the wingman to destroy the target's engines, immobilizing it without destroying the ship."},
+	{"SQUAD_MESSAGE_DISARM_TARGET", "Order the wingman to destroy the target's turrets, neutralizing its weapons while leaving the ship mobile."},
+	{"SQUAD_MESSAGE_PROTECT_TARGET", "Order the wingman to guard and protect the player's current friendly target."},
+	{"SQUAD_MESSAGE_IGNORE_TARGET", "Order the wingman to stop attacking the player's current enemy target."},
+	{"SQUAD_MESSAGE_FORMATION", "Order the wingman to fly in formation on the player's wing."},
+	{"SQUAD_MESSAGE_COVER_ME", "Order the wingman to guard and protect the player."},
+	{"SQUAD_MESSAGE_ENGAGE_ENEMY", "Order the wingman to attack any enemy ship. No target is required."},
+	{"SQUAD_MESSAGE_CAPTURE_TARGET", "Order the wingman to dock with and capture the player's current enemy target. Sets the Protected flag on the target to prevent accidental destruction."},
+	{"SQUAD_MESSAGE_REARM_REPAIR_ME", "Order the designated support ship to rearm and repair the player. Cannot be sent to wings."},
+	{"SQUAD_MESSAGE_ABORT_REARM_REPAIR", "Order the designated support ship to abort an in-progress rearm and repair. Cannot be sent to wings."},
+	{"SQUAD_MESSAGE_STAY_NEAR_ME", "Order a support ship to remain within close range of the player. Cannot be sent to wings."},
+	{"SQUAD_MESSAGE_STAY_NEAR_TARGET", "Order a support ship to remain within close range of the player's current target. Cannot be sent to wings."},
+	{"SQUAD_MESSAGE_KEEP_SAFE_DIST", "Order a support ship to maintain a safe distance from the player. Cannot be sent to wings."},
+	{"SQUAD_MESSAGE_DEPART", "Order the wingman or wing to warp out of the mission."},
+	{"SQUAD_MESSAGE_DISABLE_SUBSYSTEM", "Order the wingman to destroy the player's currently targeted subsystem on an enemy ship."},
+	{"SQUAD_MESSAGE_LUA_AI", "Issues a custom Lua AI order. Not a standard squad menu command; used programmatically to invoke scripted AI behaviors."},
+
+	// MULTI_GAME_TYPE
+	{"MULTI_GAME_TYPE_OPEN", "Game is open to all players with no join restrictions."},
+	{"MULTI_GAME_TYPE_PASSWORD", "Game requires players to provide the correct password to join. Pass the password string as the second argument to setGameType()."},
+	{"MULTI_GAME_TYPE_RANK_ABOVE", "Only players at or above a specified rank may join. Pass the rank index as the second argument to setGameType()."},
+	{"MULTI_GAME_TYPE_RANK_BELOW", "Only players at or below a specified rank may join. Pass the rank index as the second argument to setGameType()."},
+
+	// MULTI_TYPE
+	{"MULTI_TYPE_COOP", "Cooperative multiplayer mode. All players form a single team and play together against AI opposition."},
+	{"MULTI_TYPE_TEAM", "Team vs. Team multiplayer mode. Players are divided into two competing teams. See also MULTI_TYPE_SQUADWAR for the ranked variant."},
+	{"MULTI_TYPE_DOGFIGHT", "Free-for-all multiplayer mode. All players compete individually against each other for score."},
+	{"MULTI_TYPE_SQUADWAR", "Squad War mode. A ranked, PXO tracker-integrated variant of Team vs. Team play. This is a runtime-only mode with no corresponding mission file flag; it can only be active when the mission supports MULTI_TYPE_TEAM."},
+
+	// SCROLLBACK_SOURCE
+	{"SCROLLBACK_SOURCE_COMPUTER", "Standard HUD system messages. Displayed in normal text color in the scrollback viewer."},
+	{"SCROLLBACK_SOURCE_TRAINING", "Training mission narration and instructor messages. Displayed in bright blue text."},
+	{"SCROLLBACK_SOURCE_HIDDEN", "Message is stored in the scrollback log but not rendered in the scrollback viewer; invisible to the player during normal play."},
+	{"SCROLLBACK_SOURCE_IMPORTANT", "Critical mission notification. Displayed in bright white text."},
+	{"SCROLLBACK_SOURCE_FAILED", "A mission objective has failed. Displayed in bright white text with a red circle icon in the scrollback viewer."},
+	{"SCROLLBACK_SOURCE_SATISFIED", "A mission objective has been completed. Displayed in bright white text with a green circle icon in the scrollback viewer."},
+	{"SCROLLBACK_SOURCE_COMMAND", "A message from Terran Command or the mission's commanding authority. Displayed in bright white text."},
+	{"SCROLLBACK_SOURCE_NETPLAYER", "A chat message or communication from a multiplayer network player. Text color is determined by the player's IFF team."},
+
+	// HOTKEY_LINE
+	{"HOTKEY_LINE_NONE", "Sentinel value marking the end of the active hotkey list. Lines at this index and beyond are unused. Not encountered during normal iteration using the standard length operator."},
+	{"HOTKEY_LINE_HEADING", "A non-interactive section header row in the hotkey list, such as 'Friendly Ships' or 'Enemy Ships'. Cannot be selected or assigned a hotkey."},
+	{"HOTKEY_LINE_WING", "A wing (squadron) entry in the hotkey list. Can be expanded to show its constituent ships as HOTKEY_LINE_SUBSHIP entries beneath it, or collapsed to hide them."},
+	{"HOTKEY_LINE_SHIP", "An individual ship that is not part of any wing; appears as a top-level entry in the hotkey list."},
+	{"HOTKEY_LINE_SUBSHIP", "An individual ship that belongs to a wing, displayed as an indented child entry beneath its parent HOTKEY_LINE_WING entry when the wing is expanded."},
+};
+
+const char* get_enum_description(const char* enum_name) {
+	if (enum_name == nullptr) {
+		return nullptr;
+	}
+	auto it = Enum_descriptions.find(enum_name);
+	if (it != Enum_descriptions.end()) {
+		return it->second;
+	}
+	return nullptr;
 }
 
 static void maybe_warn_deprecated_enum(lua_State* L, const enum_h* e) {

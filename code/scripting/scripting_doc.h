@@ -72,6 +72,7 @@ struct DocumentationEnum {
 	SCP_string group_id;
 	SCP_string group_title;
 	SCP_string group_description;
+	SCP_string description;
 };
 
 struct DocumentationOption {

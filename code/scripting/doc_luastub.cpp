@@ -626,6 +626,9 @@ void output_luastub_doc(const ScriptingDocumentation& doc, const SCP_string& fil
 			fputs("\n", fp);
 			fprintf(fp, "--- %s: %s\n", enumeration.group_title.c_str(), enumeration.group_description.c_str());
 		}
+		if (!enumeration.description.empty()) {
+			fprintf(fp, "--- %s\n", enumeration.description.c_str());
+		}
 		fprintf(fp, "--- @const %s\n", enumeration.name.c_str());
 		fprintf(fp, "%s = enumeration\n", enumeration.name.c_str());
 	}

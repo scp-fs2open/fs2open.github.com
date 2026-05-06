@@ -292,6 +292,7 @@ struct enum_group_info {
 
 bool is_deprecated_enum_name(const char* enum_name);
 std::optional<enum_group_info> get_enum_group_info(const char* enum_name);
+const char* get_enum_description(const char* enum_name);
 
 
 struct enum_h {

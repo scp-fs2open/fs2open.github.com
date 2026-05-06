@@ -622,7 +622,12 @@ void output_html_doc(const ScriptingDocumentation& doc, const SCP_string& filena
 		fprintf(fp, "<dd>%s</dd>", group_description.c_str());
 		fputs("<dd><dl>", fp);
 		for (const auto* enumeration : enum_groups[group_id]) {
-			fprintf(fp, "<dd><span style=\"font-size: 0.92em;\">%s</span></dd>", enumeration->name.c_str());
+			if (!enumeration->description.empty()) {
+				fprintf(fp, "<dd><span style=\"font-size: 0.92em;\"><b>%s</b> -; %s</span></dd>",
+					enumeration->name.c_str(), enumeration->description.c_str());
+			} else {
+				fprintf(fp, "<dd><span style=\"font-size: 0.92em;\"><b>%s</b></span></dd>", enumeration->name.c_str());
+			}
 		}
 		fputs("</dl></dd>", fp);
 	}
