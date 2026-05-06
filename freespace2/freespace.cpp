@@ -5433,7 +5433,7 @@ void game_leave_state( int old_state, int new_state )
 				common_select_close();
 			}
 
-			if (new_state != GS_STATE_CONTROL_CONFIG && new_state != GS_STATE_HUD_CONFIG) {
+			if (new_state != GS_STATE_CONTROL_CONFIG && new_state != GS_STATE_HUD_CONFIG && new_state != GS_STATE_INGAME_OPTIONS) {
 				// unpause all sounds, since we could be headed back to the game
 				// only unpause if we're in-mission; we could also be in the main hall
 				if (Game_mode & GM_IN_MISSION) {
