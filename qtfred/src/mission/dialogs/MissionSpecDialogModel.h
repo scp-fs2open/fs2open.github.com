@@ -42,6 +42,7 @@ private:
 	float		_m_max_subsys_repair_val;
 	bool		_m_contrail_threshold_flag;
 	int			_m_contrail_threshold;
+	int			_m_large_ship_no_collide_collision_group;
 	SCP_map<SCP_string, SCP_string> _m_custom_data;
 	SCP_vector<custom_string> _m_custom_strings;
 	sound_env	_m_sound_env;
@@ -119,6 +120,8 @@ public:
 
 	void setMissionFlag(const SCP_string& flag_name, bool enabled);
 	void setMissionFlagDirect(Mission::Mission_Flags flag, bool enabled);
+	void setLargeShipNoCollideCollisionGroup(int group);
+	int getLargeShipNoCollideCollisionGroup() const;
 	bool getMissionFlag(Mission::Mission_Flags flag) const;
 	const SCP_vector<std::pair<SCP_string, bool>>& getMissionFlagsList();
 	static SCP_vector<std::pair<SCP_string, SCP_string>> getMissionFlagDescriptions();

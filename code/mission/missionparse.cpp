@@ -182,6 +182,8 @@ SCP_unordered_set<int> Fred_migrated_immobile_ships;
 int Num_path_restrictions;
 path_restriction_t Path_restrictions[MAX_PATH_RESTRICTIONS];
 
+constexpr int DEFAULT_LARGE_SHIP_NO_COLLIDE_COLLISION_GROUP = 0;
+
 extern int debrief_find_persona_index();
 
 static bool mission_has_layer_name(const mission* pm, const SCP_string& layerName) {
@@ -397,7 +399,8 @@ flag_def_list_new<Mission::Mission_Flags> Parse_mission_flags[] = {
 	{"Toggle Starting in Chase View",             Mission::Mission_Flags::Toggle_start_chase_view,    true, false},
 	{"Nebula Fog Color Override",                 Mission::Mission_Flags::Neb2_fog_color_override,    true, true},
 	{"Full Nebula Background Bitmaps",            Mission::Mission_Flags::Fullneb_background_bitmaps, true, true},
-	{"Preload Subspace Tunnel",                   Mission::Mission_Flags::Preload_subspace,           true, false}
+	{"Preload Subspace Tunnel",                   Mission::Mission_Flags::Preload_subspace,           true, false},
+	{"Large Ships Do Not Collide By Default",    Mission::Mission_Flags::Large_ships_no_collide_by_default, true, false}
 };
 
 parse_object_flag_description<Mission::Mission_Flags> Parse_mission_flag_descriptions[] = {
@@ -431,6 +434,7 @@ parse_object_flag_description<Mission::Mission_Flags> Parse_mission_flag_descrip
 	{Mission::Mission_Flags::Neb2_fog_color_override,    "Whether to use explicit fog colors instead of checking the palette"},
 	{Mission::Mission_Flags::Fullneb_background_bitmaps, "Show background bitmaps despite full nebula"},
 	{Mission::Mission_Flags::Preload_subspace,         "Preload the subspace tunnel for both the sexp and specs checkbox"},
+	{Mission::Mission_Flags::Large_ships_no_collide_by_default, "Automatically places all large ships in the configured collision group, preventing large ships from colliding with each other"},
 };
 
 const size_t Num_parse_mission_flags = sizeof(Parse_mission_flags) / sizeof(flag_def_list_new<Mission::Mission_Flags>);
@@ -842,6 +846,18 @@ void parse_mission_info(mission *pm, bool basic = false)
 	// Goober5000 - ship contrail speed threshold
 	if (optional_string("$Contrail Speed Threshold:")){
 		stuff_int(&pm->contrail_threshold);
+	}
+
+	if (optional_string("+Large Ship Collision Group:")) {
+		stuff_int(&pm->large_ship_no_collide_collision_group);
+
+		if (pm->large_ship_no_collide_collision_group < 0 || pm->large_ship_no_collide_collision_group > 31) {
+			WarningEx(LOCATION,
+				"Invalid large ship collision group id %d specified. Valid IDs range from 0 to 31. Using group %d instead.\n",
+				pm->large_ship_no_collide_collision_group,
+				DEFAULT_LARGE_SHIP_NO_COLLIDE_COLLISION_GROUP);
+			pm->large_ship_no_collide_collision_group = DEFAULT_LARGE_SHIP_NO_COLLIDE_COLLISION_GROUP;
+		}
 	}
 
 	if (optional_string("+Volumetric Nebula:")) {
@@ -2237,6 +2253,11 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 
 	// Goober5000 - set the collision group if one was provided
 	Objects[objnum].collision_group_id = p_objp->collision_group_id;
+
+	// Mission-level performance helper: large ships may be grouped so they skip mutual collision checks.
+	if (The_mission.flags[Mission::Mission_Flags::Large_ships_no_collide_by_default] && sip->is_big_or_huge()) {
+		Objects[objnum].collision_group_id |= (1 << The_mission.large_ship_no_collide_collision_group);
+	}
 
 	// Goober5000 - set some fields that the mission log might need (if logged via parse_bring_in_docked_wing just below)
 	shipp->display_name = p_objp->display_name;
@@ -7178,6 +7199,7 @@ void mission::Reset()
 
 	envmap_name[ 0 ] = '\0';
 	contrail_threshold = CONTRAIL_THRESHOLD_DEFAULT;
+	large_ship_no_collide_collision_group = DEFAULT_LARGE_SHIP_NO_COLLIDE_COLLISION_GROUP;
 	ambient_light_level = DEFAULT_AMBIENT_LIGHT_LEVEL;
 	sound_environment.id = -1;
 
@@ -9557,6 +9579,9 @@ bool check_for_24_3_data()
 
 bool check_for_25_1_data()
 {
+	if (The_mission.flags[Mission::Mission_Flags::Large_ships_no_collide_by_default])
+		return true;
+
 	if (count_items_with_value(Props) > 0)
 		return true;
 

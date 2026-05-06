@@ -36,6 +36,7 @@ namespace Mission {
 		Neb2_fog_color_override,	// Whether to use explicit fog colors instead of checking the palette - Goober5000
 		Fullneb_background_bitmaps, // Show background bitmaps despite fullneb
 		Preload_subspace,			// Preload the subspace tunnel for both the sexp and specs checkbox (for scripts) - MjnMixael
+		Large_ships_no_collide_by_default,	// Automatically puts all large ships in a shared collision group
 		
 		NUM_VALUES
 	};

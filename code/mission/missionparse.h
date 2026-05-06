@@ -207,6 +207,7 @@ typedef struct mission {
 	char	envmap_name[MAX_FILENAME_LEN];
 	int		skybox_flags;
 	int		contrail_threshold;
+	int		large_ship_no_collide_collision_group;
 	int		ambient_light_level;
 	std::optional<volumetric_nebula> volumetrics;
 	sound_env	sound_environment;

@@ -2568,6 +2568,10 @@ int Fred_mission_save::save_mission_info()
 		if (The_mission.contrail_threshold != CONTRAIL_THRESHOLD_DEFAULT) {
 			fout("\n$Contrail Speed Threshold: %d\n", The_mission.contrail_threshold);
 		}
+
+		if (The_mission.flags[Mission::Mission_Flags::Large_ships_no_collide_by_default]) {
+			fout("\n+Large Ship Collision Group: %d\n", The_mission.large_ship_no_collide_collision_group);
+		}
 	}
 
 	{
