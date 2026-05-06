@@ -66,13 +66,16 @@ player_h& player_h::operator=(player_h&& other) noexcept
 ADE_OBJ(l_Player, player_h, "player", "Player handle");
 
 
-ADE_VIRTVAR(Stats, l_Player, "scoring_stats stats", "The scoring stats of this player (read-only)", "scoring_stats", "The player stats or invalid handle") {
+ADE_VIRTVAR(Stats, l_Player, "scoring_stats stats", "The scoring stats of this player that are currently accumulating, e.g. from a campaign or multiplayer session; read-only", "scoring_stats", "The player stats or invalid handle") {
 	player_h* plr;
 	if (!ade_get_args(L, "o", l_Player.GetPtr(&plr)))
 		return ade_set_error(L, "o", l_ScoringStats.Set(scoring_stats_h()));
 
 	if (!plr->isValid())
 		return ade_set_error(L, "o", l_ScoringStats.Set(scoring_stats_h()));
+
+	if (ADE_SETTING_VAR)
+		LuaError(L, "This property is read only.");
 
 	return ade_set_args(L, "o", l_ScoringStats.Set(scoring_stats_h(plr->get()->stats, plr->get())));
 }

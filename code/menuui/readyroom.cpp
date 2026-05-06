@@ -1575,10 +1575,27 @@ void campaign_room_scroll_info_down()
 
 void campaign_reset(const SCP_string& campaign_file)
 {
+	Assert(Player != nullptr);
+
+	// if the caller is resetting a campaign other than the active one (only reachable via the Lua resetCampaign API),
+	// we can't go through mission_campaign_load(): that would swap the global Campaign struct over to the target
+	// campaign and overwrite Player->stats with the wrong running totals.  Just delete the CSG; the next time the
+	// player activates this campaign, mission_campaign_load() will recreate a fresh one.
+	if (stricmp(campaign_file.c_str(), Campaign.filename) != 0) {
+		mission_campaign_savefile_delete(campaign_file.c_str());
+		return;
+	}
+
 	// note: we do not toss all-time stats from player's performance in campaign up till now
+	// save stats before the reset because csg_reset_data() will zero them when the deleted CSG is not found
+	scoring_struct saved_stats = Player->stats;
+
 	mission_campaign_savefile_delete(campaign_file.c_str());
 
 	const int load_status = mission_campaign_load(campaign_file.c_str(), nullptr, nullptr, 1);
+
+	// restore the stats that were cleared during the campaign reload
+	Player->stats = saved_stats;
 
 	// see if we successfully loaded this campaign
 	if (load_status == 0) {
@@ -1586,10 +1603,11 @@ void campaign_reset(const SCP_string& campaign_file)
 		if ((Campaign.flags & CF_CUSTOM_TECH_DATABASE) || !stricmp(Campaign.filename, "freespace2")) {
 			// reset tech database to what's in the tables
 			tech_reset_to_default();
-
-			// write the savefile so that we don't later load a stale techroom
-			Pilot.save_savefile();
 		}
+
+		// re-save the savefile so the CSG persists the restored stats (and the tech database reset, if applicable);
+		// mission_campaign_load() already wrote a fresh CSG with zeroed stats when it found no existing savefile
+		Pilot.save_savefile();
 
 		if (OnCampaignBeginHook->isActive()) {
 			OnCampaignBeginHook->run(scripting::hook_param_list(scripting::hook_param("Campaign", 's', Campaign.filename)));
