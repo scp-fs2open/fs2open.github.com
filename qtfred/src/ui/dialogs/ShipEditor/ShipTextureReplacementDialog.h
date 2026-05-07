@@ -22,7 +22,6 @@ class MapModel : public QAbstractListModel {
 };
 
 class ShipTextureReplacementDialog : public QDialog {
-
 	Q_OBJECT
 
   public:
@@ -63,13 +62,13 @@ class ShipTextureReplacementDialog : public QDialog {
 	void on_inheritAmbiantTexturecheckbox_toggled(bool);
 	void on_inheritReflectTexturecheckbox_toggled(bool);
 
-  private:// NOLINT(readability-redundant-access-specifiers)
+  private: // NOLINT(readability-redundant-access-specifiers)
 	std::unique_ptr<Ui::ShipTextureReplacementDialog> ui;
 	std::unique_ptr<ShipTextureReplacementDialogModel> _model;
 	EditorViewport* _viewport;
-	int row = 0;
-	MapModel* listmodel;
-	void updateUI();
-	void updateUIFull();
+	int _selectedRow = 0;
+	MapModel* _listModel;
+	void updateUi();
+	void updateUiFull();
 };
 } // namespace fso::fred::dialogs

@@ -2,51 +2,44 @@
 
 #include "../AbstractDialogModel.h"
 
-namespace fso {
-	namespace fred {
-		namespace dialogs {
-			constexpr auto NUM__SUBTEXTURE_TYPES = 7;
-			class ShipTextureReplacementDialogModel : public AbstractDialogModel {
-			private:
-				void initSubTypes(polymodel* model, int);
+namespace fso::fred::dialogs {
 
-				bool m_multi;
-				//Used to dermeine what type of texutre a map has.
-				SCP_vector<SCP_map<SCP_string, bool>> subTypesAvailable;
+constexpr auto NUM__SUBTEXTURE_TYPES = 7;
 
-				//Wether to replace textures.
-				SCP_vector<SCP_map<SCP_string, bool>> replaceMap;
-				//Wether to inherit name from base texture.
-				SCP_vector<SCP_map<SCP_string, bool>> inheritMap;
+class ShipTextureReplacementDialogModel : public AbstractDialogModel {
+	Q_OBJECT
+  public:
+	ShipTextureReplacementDialogModel(QObject* parent, EditorViewport* viewport, bool multi);
 
+	bool apply() override;
+	void reject() override;
 
-				SCP_vector<SCP_string> defaultTextures;
-				SCP_vector<SCP_map<SCP_string, SCP_string>> currentTextures;
-				bool mainChanged = false;
-				void saveSubMap(const size_t index, const SCP_string& type);
-				static bool testTexture(const SCP_string&);
-				static texture_replace* texture_set(texture_replace* dest, const texture_replace* src);
-			public:
-				ShipTextureReplacementDialogModel(QObject* parent, EditorViewport* viewport, bool multi);
-			  void initialiseData(bool);
+	size_t getSize() const;
+	SCP_string getDefaultName(size_t index) const;
 
-				bool apply() override;
-				void reject() override;
+	void setMap(size_t index, const SCP_string& type, const SCP_string& newName);
+	SCP_string getMap(size_t index, const SCP_string& type) const;
 
-				size_t getSize() const;
-				SCP_string getDefaultName(const size_t) const;
+	SCP_map<SCP_string, bool> getSubtypesForMap(size_t index) const;
+	SCP_map<SCP_string, bool> getReplace(size_t index) const;
+	SCP_map<SCP_string, bool> getInherit(size_t index) const;
+	void setReplace(size_t index, const SCP_string& type, bool state);
+	void setInherit(size_t index, const SCP_string& type, bool state);
 
-				void setMap(const size_t index, const SCP_string& type, const SCP_string& newName);
-				SCP_string getMap(const size_t index, const SCP_string& type) const;
+  private: // NOLINT(readability-redundant-access-specifiers)
+	void initializeData(bool multi);
+	void initSubTypes(polymodel* model, int mapNum);
+	void saveSubMap(size_t index, const SCP_string& type);
+	static bool testTexture(const SCP_string& name);
+	static texture_replace* texture_set(texture_replace* dest, const texture_replace* src);
 
-				SCP_map<SCP_string, bool> getSubtypesForMap(const size_t index) const;
-				SCP_map<SCP_string, bool> getReplace(const size_t index) const;
-				SCP_map<SCP_string, bool> getInherit(const size_t index) const;
-				void setReplace(const size_t index, const SCP_string& type, const bool state);
-				void setInherit(const size_t index, const SCP_string& type, const bool state);
+	bool _multi;
+	SCP_vector<SCP_map<SCP_string, bool>> _subTypesAvailable;
+	SCP_vector<SCP_map<SCP_string, bool>> _replaceMap;
+	SCP_vector<SCP_map<SCP_string, bool>> _inheritMap;
+	SCP_vector<SCP_string> _defaultTextures;
+	SCP_vector<SCP_map<SCP_string, SCP_string>> _currentTextures;
+	bool _mainChanged = false;
+};
 
-
-			};
-		}
-	}
-}
+} // namespace fso::fred::dialogs
