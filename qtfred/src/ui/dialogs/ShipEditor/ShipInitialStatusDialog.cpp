@@ -24,9 +24,9 @@ ShipInitialStatusDialog::ShipInitialStatusDialog(QDialog* parent, EditorViewport
 	ui->cargoEdit->setMaxLength(NAME_LENGTH - 1);
 	ui->cargoTitleEdit->setMaxLength(NAME_LENGTH - 1);
 
-	connect(_model.get(), &AbstractDialogModel::modelChanged, this, &ShipInitialStatusDialog::updateUI);
+	connect(_model.get(), &AbstractDialogModel::modelChanged, this, &ShipInitialStatusDialog::updateUi);
 
-	updateUI();
+	updateUi();
 
 	// Resize the dialog to the minimum size
 	resize(QDialog::sizeHint());
@@ -65,25 +65,25 @@ void ShipInitialStatusDialog::on_dockpointList_currentItemChanged(QListWidgetIte
 {
 	if (!current)
 		return;
-	cur_docker_point = current->data(Qt::UserRole).toInt();
-	updateUI();
+	_curDockerPoint = current->data(Qt::UserRole).toInt();
+	updateUi();
 }
 void ShipInitialStatusDialog::on_dockeeComboBox_currentIndexChanged(int index)
 {
 	auto dockeeData = ui->dockeeComboBox->itemData(index).toInt();
-	cur_dockee = dockeeData;
-	_model->setDockee(cur_docker_point, dockeeData);
+	_curDockee = dockeeData;
+	_model->setDockee(_curDockerPoint, dockeeData);
 
-	if (cur_dockee >= 0 && ui->dockeePointComboBox->count() > 0) {
-		cur_dockee_point = ui->dockeePointComboBox->itemData(0).toInt();
-		_model->setDockeePoint(cur_docker_point, cur_dockee_point);
+	if (_curDockee >= 0 && ui->dockeePointComboBox->count() > 0) {
+		_curDockeePoint = ui->dockeePointComboBox->itemData(0).toInt();
+		_model->setDockeePoint(_curDockerPoint, _curDockeePoint);
 	}
 }
 void ShipInitialStatusDialog::on_dockeePointComboBox_currentIndexChanged(int index)
 {
 	auto dockeeData = ui->dockeePointComboBox->itemData(index).toInt();
-	cur_dockee_point = dockeeData;
-	_model->setDockeePoint(cur_docker_point, dockeeData);
+	_curDockeePoint = dockeeData;
+	_model->setDockeePoint(_curDockerPoint, dockeeData);
 }
 void ShipInitialStatusDialog::on_hullSpinBox_valueChanged(int value)
 {
@@ -127,7 +127,7 @@ void ShipInitialStatusDialog::on_afterburnerLockCheckBox_stateChanged(int state)
 }
 void ShipInitialStatusDialog::on_subsystemList_currentRowChanged(int index)
 {
-	_model->change_subsys(index);
+	_model->changeSubsys(index);
 }
 void ShipInitialStatusDialog::on_subIntegritySpinBox_valueChanged(int value)
 {
@@ -145,8 +145,8 @@ void ShipInitialStatusDialog::on_cargoTitleEdit_editingFinished()
 }
 void ShipInitialStatusDialog::on_colourComboBox_currentIndexChanged(int index)
 {
-	SCP_string colour = ui->colourComboBox->itemText(index).toUtf8().constData();
-	_model->setColour(colour);
+	SCP_string color = ui->colourComboBox->itemText(index).toUtf8().constData();
+	_model->setColor(color);
 }
 void ShipInitialStatusDialog::on_okPushButton_clicked()
 {
@@ -163,7 +163,7 @@ void ShipInitialStatusDialog::on_moveShipsCheckBox_toggled(bool value)
 {
 	_model->setMoveShipsWhenUndocking(value);
 }
-void ShipInitialStatusDialog::updateUI()
+void ShipInitialStatusDialog::updateUi()
 {
 	util::SignalBlockers blockers(this);
 	auto value = _model->getVelocity();
@@ -207,7 +207,7 @@ void ShipInitialStatusDialog::updateUI()
 			ui->colourComboBox->addItem(Team_Name.c_str(), i);
 			i++;
 		}
-		auto currentText = _model->getColour();
+		auto currentText = _model->getColor();
 		ui->colourComboBox->setCurrentIndex(ui->colourComboBox->findText(currentText.c_str()));
 	}
 }
@@ -232,8 +232,8 @@ void ShipInitialStatusDialog::updateDocks()
 {
 	int row = ui->dockpointList->currentRow();
 	ui->dockpointList->clear();
-	if (!_model->getIfMultpleShips()) {
-		for (int dockpoint = 0; dockpoint < _model->getnum_dock_points(); dockpoint++) {
+	if (!_model->getIfMultipleShips()) {
+		for (int dockpoint = 0; dockpoint < _model->getNumDockPoints(); dockpoint++) {
 			auto newItem = new QListWidgetItem;
 			newItem->setText(
 				model_get_dock_name(Ship_info[Ships[_model->getShip()].ship_info_index].model_num, dockpoint));
@@ -243,20 +243,20 @@ void ShipInitialStatusDialog::updateDocks()
 	}
 	if (row >= 0 && row < ui->dockpointList->count())
 		ui->dockpointList->setCurrentRow(row);
-	if (cur_docker_point < 0) {
+	if (_curDockerPoint < 0) {
 		// clear the dropdowns
-		list_dockees(-1);
-		list_dockee_points(-1);
+		listDockees(-1);
+		listDockeePoints(-1);
 	} else {
 		// populate with all possible dockees
-		list_dockees(
-			model_get_dock_index_type(Ship_info[Ships[_model->getShip()].ship_info_index].model_num, cur_docker_point));
+		listDockees(
+			model_get_dock_index_type(Ship_info[Ships[_model->getShip()].ship_info_index].model_num, _curDockerPoint));
 
 		// see if there's a dockee here
-		if (_model->getdockpoint_array()[cur_docker_point].dockee_shipnum >= 0) {
+		if (_model->getDockpointArray()[_curDockerPoint].dockee_shipnum >= 0) {
 			// select the dockee
 			ui->dockeeComboBox->setCurrentIndex(ui->dockeeComboBox->findText(
-				Ships[_model->getdockpoint_array()[cur_docker_point].dockee_shipnum].ship_name));
+				Ships[_model->getDockpointArray()[_curDockerPoint].dockee_shipnum].ship_name));
 		} else {
 			ui->dockeeComboBox->setCurrentIndex(0);
 		}
@@ -264,27 +264,27 @@ void ShipInitialStatusDialog::updateDocks()
 }
 void ShipInitialStatusDialog::updateDockee()
 {
-	if (cur_dockee < 0) {
+	if (_curDockee < 0) {
 		// clear the dropdown
-		list_dockee_points(-1);
+		listDockeePoints(-1);
 	} else {
 		// populate with dockee points
-		list_dockee_points(cur_dockee);
-		if (_model->getdockpoint_array()[cur_docker_point].dockee_point < 0) {
+		listDockeePoints(_curDockee);
+		if (_model->getDockpointArray()[_curDockerPoint].dockee_point < 0) {
 			// select the dockpoint
 			ui->dockeePointComboBox->setCurrentIndex(0);
 		}
 
 		// see if there's a dockpoint here
-		if (_model->getdockpoint_array()[cur_docker_point].dockee_point >= 0) {
+		if (_model->getDockpointArray()[_curDockerPoint].dockee_point >= 0) {
 			// select the dockpoint
 			ui->dockeePointComboBox->setCurrentIndex(ui->dockeePointComboBox->findText(
-				model_get_dock_name(Ship_info[Ships[cur_dockee].ship_info_index].model_num,
-					_model->getdockpoint_array()[cur_docker_point].dockee_point)));
+				model_get_dock_name(Ship_info[Ships[_curDockee].ship_info_index].model_num,
+					_model->getDockpointArray()[_curDockerPoint].dockee_point)));
 		}
 	}
 }
-void ShipInitialStatusDialog::list_dockees(int dock_types)
+void ShipInitialStatusDialog::listDockees(int dock_types)
 { // enable/disable dropdown
 	ui->dockeeComboBox->setEnabled((dock_types >= 0));
 
@@ -310,14 +310,14 @@ void ShipInitialStatusDialog::list_dockees(int dock_types)
 
 			// mustn't also be docked elsewhere
 			bool docked_elsewhere = false;
-			for (int i = 0; i < _model->getnum_dock_points(); i++) {
+			for (int i = 0; i < _model->getNumDockPoints(); i++) {
 				// don't erroneously check the same point
-				if (i == cur_docker_point) {
+				if (i == _curDockerPoint) {
 					continue;
 				}
 
 				// see if this ship is also on a different dockpoint
-				if (_model->getdockpoint_array()[i].dockee_shipnum == ship) {
+				if (_model->getDockpointArray()[i].dockee_shipnum == ship) {
 					docked_elsewhere = true;
 					break;
 				}
@@ -342,7 +342,7 @@ void ShipInitialStatusDialog::list_dockees(int dock_types)
 		}
 	}
 }
-void ShipInitialStatusDialog::list_dockee_points(int shipnum)
+void ShipInitialStatusDialog::listDockeePoints(int shipnum)
 {
 	// enable/disable dropdown
 	ui->dockeePointComboBox->setEnabled((shipnum >= 0));
@@ -359,7 +359,7 @@ void ShipInitialStatusDialog::list_dockee_points(int shipnum)
 	ship* other_shipp = &Ships[shipnum];
 
 	// get the required dock type(s)
-	int dock_type = model_get_dock_index_type(Ship_info[shipp->ship_info_index].model_num, cur_docker_point);
+	int dock_type = model_get_dock_index_type(Ship_info[shipp->ship_info_index].model_num, _curDockerPoint);
 
 	// populate with the right kind of dockee points
 	for (int i = 0; i < model_get_num_dock_points(Ship_info[other_shipp->ship_info_index].model_num); i++) {
@@ -383,10 +383,10 @@ void ShipInitialStatusDialog::updateSubsystems()
 	auto index = ui->subsystemList->currentIndex();
 	ui->subsystemList->clear();
 
-	bool multiEdit = _model->getIfMultpleShips();
+	bool multiEdit = _model->getIfMultipleShips();
 	bool useNewScanning = _model->getUseNewScanningBehavior();
 	bool toggleSet = _model->getToggleSubsystemScanning();
-	bool scannable = _model->getShip_has_scannable_subsystems();
+	bool scannable = _model->getShipHasScannableSubsystems();
 
 	if (!multiEdit) {
 		ui->subsystemList->setEnabled(true);
