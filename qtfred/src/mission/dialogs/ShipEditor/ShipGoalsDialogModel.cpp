@@ -566,13 +566,13 @@ void ShipGoalsDialogModel::initialize(ai_goal* goals)
 				if ((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) {
 					inst = ptr->instance;
 					if (ptr->type == OBJ_SHIP) {
-						Assert(inst >= 0 && inst < MAX_SHIPS);
+						Assertion(inst >= 0 && inst < MAX_SHIPS, "inst must be a valid ship index"); // NOLINT(readability-simplify-boolean-expr)
 						if (!stricmp(_goalp[item].target_name, Ships[inst].ship_name)) {
 							_object[item] = inst | TYPE_SHIP;
 							break;
 						}
 					} else {
-						Assert(inst >= 0 && inst < MAX_SHIPS);
+						Assertion(inst >= 0 && inst < MAX_SHIPS, "inst must be a valid ship index"); // NOLINT(readability-simplify-boolean-expr)
 						if (!stricmp(_goalp[item].target_name, Ships[inst].ship_name)) {
 							_object[item] = inst | TYPE_PLAYER;
 							break;
