@@ -3,6 +3,8 @@
 #include "mission/object.h"
 #include "model/model.h"
 
+#include <algorithm>
+
 namespace {
 const SCP_vector<SCP_string>& get_replaceable_texture_types()
 {
@@ -22,6 +24,16 @@ bool is_known_subtexture_type(const SCP_string& type)
 	return std::any_of(get_replaceable_texture_types().begin(),
 		get_replaceable_texture_types().end(),
 		[&type](const SCP_string& knownType) { return lcase_equal(type, knownType); });
+}
+
+void remove_ship_entries(const char* ship_name)
+{
+	Fred_texture_replacements.erase(
+		std::remove_if(Fred_texture_replacements.begin(), Fred_texture_replacements.end(),
+			[ship_name](const texture_replace& tr) {
+				return !tr.from_table && !stricmp(tr.ship_name, ship_name);
+			}),
+		Fred_texture_replacements.end());
 }
 }
 
@@ -147,7 +159,8 @@ void ShipTextureReplacementDialogModel::initializeData(bool multi)
 							if (is_known_subtexture_type(type)) {
 								_currentTextures[i][type] = newText;
 								_replaceMap[i][type] = true;
-								_inheritMap[i][type] = (newText == pureName);
+								_inheritMap[i][type] = !_currentTextures[i]["main"].empty() &&
+									lcase_equal(newText, _currentTextures[i]["main"]);
 							}
 						}
 						else {
@@ -206,80 +219,55 @@ void ShipTextureReplacementDialogModel::initSubTypes(polymodel* model, int mapNu
 bool ShipTextureReplacementDialogModel::apply()
 {
 	if (query_modified()) {
+		_mainChanged = false;
+
+		// Remove all existing non-table entries for affected ships before writing new ones.
+		// This ensures that each save operation is a simple append rather than a remove-and-add,
+		// which was causing each type's save to clobber the previous type's entry.
+		if (!_multi) {
+			remove_ship_entries(Ships[_editor->cur_ship].ship_name);
+		} else {
+			object* objp = GET_FIRST(&obj_used_list);
+			while (objp != END_OF_LIST(&obj_used_list)) {
+				if (((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) &&
+					(objp->flags[Object::Object_Flags::Marked])) {
+					remove_ship_entries(Ships[get_ship_from_obj(objp)].ship_name);
+				}
+				objp = GET_NEXT(objp);
+			}
+		}
+
 		for (size_t i = 0; i < getSize(); i++) {
 			if ((!_currentTextures[i]["main"].empty()) && (_currentTextures[i]["main"] != _defaultTextures[i])) {
 				_mainChanged = true;
 				SCP_string name = _currentTextures[i]["main"];
 				if (testTexture(name)) {
-					SCP_vector<texture_replace>::iterator ii, end;
-					end = Fred_texture_replacements.end();
 					if (!_multi) {
-						end = Fred_texture_replacements.end();
-						for (ii = Fred_texture_replacements.begin(); ii != end; ++ii)
-						{
-							if (!stricmp(ii->ship_name, Ships[_editor->cur_ship].ship_name))
-							{
-								do {
-									end--;
-								} while (end != ii && !stricmp(end->ship_name, Ships[_editor->cur_ship].ship_name));
-								if (end == ii)
-									break;
-								texture_set(&(*ii), &(*end));
-							}
-						}
-
-						if (end != Fred_texture_replacements.end())
-							Fred_texture_replacements.erase(end, Fred_texture_replacements.end());
-
-						// now put the new entries on the end of the list
 						texture_replace tr;
 						strcpy_s(tr.old_texture, _defaultTextures[i].c_str());
 						strcpy_s(tr.new_texture, name.c_str());
 						strcpy_s(tr.ship_name, Ships[_editor->cur_ship].ship_name);
 						tr.new_texture_id = -1;
 						tr.from_table = false;
-
-						// assign to global FRED array
 						Fred_texture_replacements.push_back(tr);
 						_editor->missionChanged();
 					}
 					else {
-						object* objp = nullptr;
-						objp = GET_FIRST(&obj_used_list);
+						object* objp = GET_FIRST(&obj_used_list);
 						while (objp != END_OF_LIST(&obj_used_list)) {
 							if (((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) &&
 								(objp->flags[Object::Object_Flags::Marked])) {
 								Assert((objp->type == OBJ_SHIP) || (objp->type == OBJ_START));
 								auto shipp = &Ships[get_ship_from_obj(objp)];
-								end = Fred_texture_replacements.end();
-								for (ii = Fred_texture_replacements.begin(); ii != end; ++ii)
-								{
-									if (!stricmp(ii->ship_name, shipp->ship_name))
-									{
-										do {
-											end--;
-										} while (end != ii && !stricmp(end->ship_name, shipp->ship_name));
-										if (end == ii)
-											break;
-										texture_set(&(*ii), &(*end));
-									}
-								}
-								if (end != Fred_texture_replacements.end())
-									Fred_texture_replacements.erase(end, Fred_texture_replacements.end());
-
-								// now put the new entries on the end of the list
 								texture_replace tr;
 								strcpy_s(tr.old_texture, _defaultTextures[i].c_str());
 								strcpy_s(tr.new_texture, name.c_str());
 								strcpy_s(tr.ship_name, shipp->ship_name);
 								tr.new_texture_id = -1;
 								tr.from_table = false;
-
-								// assign to global FRED array
 								Fred_texture_replacements.push_back(tr);
 								_editor->missionChanged();
 							}
-
 							objp = GET_NEXT(objp);
 						}
 					}
@@ -307,209 +295,58 @@ bool ShipTextureReplacementDialogModel::apply()
 
 void ShipTextureReplacementDialogModel::reject() {}
 
-texture_replace* ShipTextureReplacementDialogModel::texture_set(texture_replace* dest, const texture_replace* src)
-{
-	dest->new_texture_id = src->new_texture_id;
-	strcpy_s(dest->ship_name, src->ship_name);
-	strcpy_s(dest->old_texture, src->old_texture);
-	strcpy_s(dest->new_texture, src->new_texture);
-	dest->from_table = src->from_table;
-
-	return dest;
-}
-
 void ShipTextureReplacementDialogModel::saveSubMap(size_t index, const SCP_string& type)
 {
+	if (!_replaceMap[index][type])
+		return;
+
 	SCP_string fullName;
-	if (_replaceMap[index][type]) {
-		if (_inheritMap[index][type]) {
-			if (_mainChanged) {
-				if (!_currentTextures[index]["main"].empty()) {
-					if (_currentTextures[index]["main"] != "invisible") {
-						fullName = _currentTextures[index]["main"] + "-" + type;
-					}
-					else {
-						fullName = _currentTextures[index]["main"];
-					}
-					if (testTexture(fullName)) {
-						SCP_vector<texture_replace>::iterator ii, end;
-						end = Fred_texture_replacements.end();
-						if (!_multi) {
-							end = Fred_texture_replacements.end();
-							for (ii = Fred_texture_replacements.begin(); ii != end; ++ii)
-							{
-								if (!stricmp(ii->ship_name, Ships[_editor->cur_ship].ship_name))
-								{
-									do {
-										end--;
-									} while (end != ii && !stricmp(end->ship_name, Ships[_editor->cur_ship].ship_name));
-									if (end == ii)
-										break;
-									texture_set(&(*ii), &(*end));
-								}
-							}
+	if (_inheritMap[index][type]) {
+		if (!_mainChanged)
+			return;
+		if (_currentTextures[index]["main"].empty())
+			return;
+		fullName = (_currentTextures[index]["main"] != "invisible")
+			? _currentTextures[index]["main"] + "-" + type
+			: _currentTextures[index]["main"];
+	} else {
+		if (_currentTextures[index][type].empty())
+			return;
+		fullName = (_currentTextures[index][type] != "invisible")
+			? _currentTextures[index][type] + "-" + type
+			: _currentTextures[index][type];
+	}
 
-							if (end != Fred_texture_replacements.end())
-								Fred_texture_replacements.erase(end, Fred_texture_replacements.end());
+	if (!testTexture(fullName)) {
+		_viewport->dialogProvider->showButtonDialog(DialogType::Error, "Missing Texture",
+			"FRED was unable to find %s \n Skipping", { DialogButton::Ok });
+		return;
+	}
 
-							// now put the new entries on the end of the list
-							texture_replace tr;
-							strcpy_s(tr.old_texture, _defaultTextures[index].c_str());
-							strcpy_s(tr.new_texture, fullName.c_str());
-							strcpy_s(tr.ship_name, Ships[_editor->cur_ship].ship_name);
-							tr.new_texture_id = -1;
-							tr.from_table = false;
+	// Existing entries for this ship were already removed at the start of apply(),
+	// so just append the new entry for each affected ship.
+	auto push_entry = [&](const char* ship_name) {
+		texture_replace tr;
+		strcpy_s(tr.old_texture, _defaultTextures[index].c_str());
+		strcpy_s(tr.new_texture, fullName.c_str());
+		strcpy_s(tr.ship_name, ship_name);
+		tr.new_texture_id = -1;
+		tr.from_table = false;
+		Fred_texture_replacements.push_back(tr);
+		_editor->missionChanged();
+	};
 
-							// assign to global FRED array
-							Fred_texture_replacements.push_back(tr);
-							_editor->missionChanged();
-						}
-						else {
-							object* objp = nullptr;
-							objp = GET_FIRST(&obj_used_list);
-							while (objp != END_OF_LIST(&obj_used_list)) {
-								if (((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) &&
-									(objp->flags[Object::Object_Flags::Marked])) {
-									Assert((objp->type == OBJ_SHIP) || (objp->type == OBJ_START));
-									auto shipp = &Ships[get_ship_from_obj(objp)];
-									end = Fred_texture_replacements.end();
-									for (ii = Fred_texture_replacements.begin(); ii != end; ++ii)
-									{
-										if (!stricmp(ii->ship_name, shipp->ship_name))
-										{
-											do {
-												end--;
-											} while (end != ii && !stricmp(end->ship_name, shipp->ship_name));
-											if (end == ii)
-												break;
-											texture_set(&(*ii), &(*end));
-										}
-									}
-
-									if (end != Fred_texture_replacements.end())
-										Fred_texture_replacements.erase(end, Fred_texture_replacements.end());
-
-									// now put the new entries on the end of the list
-									texture_replace tr;
-									strcpy_s(tr.old_texture, _defaultTextures[index].c_str());
-									strcpy_s(tr.new_texture, fullName.c_str());
-									strcpy_s(tr.ship_name, shipp->ship_name);
-									tr.new_texture_id = -1;
-									tr.from_table = false;
-
-									// assign to global FRED array
-									Fred_texture_replacements.push_back(tr);
-									_editor->missionChanged();
-								}
-
-								objp = GET_NEXT(objp);
-							}
-						}
-					}
-					else {
-						auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Error, "Missing Texture", "FRED was unable to find %s \n Skipping",
-							{ DialogButton::Ok });
-						if (button == DialogButton::Ok) {
-							return;
-						}
-					}
-				}
+	if (!_multi) {
+		push_entry(Ships[_editor->cur_ship].ship_name);
+	} else {
+		object* objp = GET_FIRST(&obj_used_list);
+		while (objp != END_OF_LIST(&obj_used_list)) {
+			if (((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) &&
+				(objp->flags[Object::Object_Flags::Marked])) {
+				Assert((objp->type == OBJ_SHIP) || (objp->type == OBJ_START));
+				push_entry(Ships[get_ship_from_obj(objp)].ship_name);
 			}
-			else {
-				error_display(0, "Cannot use inherited data without changing the main texture name. Ignoring %s map change.", type.c_str());
-			}
-		}
-		else {
-			if (!_currentTextures[index][type].empty()) {
-				if (_currentTextures[index][type] != "invisible") {
-					fullName = _currentTextures[index][type] + "-" + type;
-				}
-				else {
-					fullName = _currentTextures[index][type];
-				}
-				if (testTexture(fullName)) {
-					SCP_vector<texture_replace>::iterator ii, end;
-					end = Fred_texture_replacements.end();
-					if (!_multi) {
-						end = Fred_texture_replacements.end();
-						for (ii = Fred_texture_replacements.begin(); ii != end; ++ii)
-						{
-							if (!stricmp(ii->ship_name, Ships[_editor->cur_ship].ship_name))
-							{
-								do {
-									end--;
-								} while (end != ii && !stricmp(end->ship_name, Ships[_editor->cur_ship].ship_name));
-								if (end == ii)
-									break;
-								texture_set(&(*ii), &(*end));
-							}
-						}
-
-						if (end != Fred_texture_replacements.end())
-							Fred_texture_replacements.erase(end, Fred_texture_replacements.end());
-
-						// now put the new entries on the end of the list
-						texture_replace tr;
-						strcpy_s(tr.old_texture, _defaultTextures[index].c_str());
-						strcpy_s(tr.new_texture, fullName.c_str());
-						strcpy_s(tr.ship_name, Ships[_editor->cur_ship].ship_name);
-						tr.new_texture_id = -1;
-						tr.from_table = false;
-
-						// assign to global FRED array
-						Fred_texture_replacements.push_back(tr);
-						_editor->missionChanged();
-					}
-					else {
-						object* objp = nullptr;
-						objp = GET_FIRST(&obj_used_list);
-						while (objp != END_OF_LIST(&obj_used_list)) {
-							if (((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) &&
-								(objp->flags[Object::Object_Flags::Marked])) {
-								Assert((objp->type == OBJ_SHIP) || (objp->type == OBJ_START));
-								auto shipp = &Ships[get_ship_from_obj(objp)];
-								end = Fred_texture_replacements.end();
-								for (ii = Fred_texture_replacements.begin(); ii != end; ++ii)
-								{
-									if (!stricmp(ii->ship_name, shipp->ship_name))
-									{
-										do {
-											end--;
-										} while (end != ii && !stricmp(end->ship_name, shipp->ship_name));
-										if (end == ii)
-											break;
-										texture_set(&(*ii), &(*end));
-									}
-								}
-
-								if (end != Fred_texture_replacements.end())
-									Fred_texture_replacements.erase(end, Fred_texture_replacements.end());
-
-								// now put the new entries on the end of the list
-								texture_replace tr;
-								strcpy_s(tr.old_texture, _defaultTextures[index].c_str());
-								strcpy_s(tr.new_texture, fullName.c_str());
-								strcpy_s(tr.ship_name, shipp->ship_name);
-								tr.new_texture_id = -1;
-								tr.from_table = false;
-
-								// assign to global FRED array
-								Fred_texture_replacements.push_back(tr);
-								_editor->missionChanged();
-							}
-
-							objp = GET_NEXT(objp);
-						}
-					}
-				}
-				else {
-					auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Error, "Missing Texture", "FRED was unable to find %s \n Skipping",
-						{ DialogButton::Ok });
-					if (button == DialogButton::Ok) {
-						return;
-					}
-				}
-			}
+			objp = GET_NEXT(objp);
 		}
 	}
 }

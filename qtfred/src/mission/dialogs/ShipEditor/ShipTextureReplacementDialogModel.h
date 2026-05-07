@@ -4,8 +4,6 @@
 
 namespace fso::fred::dialogs {
 
-constexpr auto NUM__SUBTEXTURE_TYPES = 7;
-
 class ShipTextureReplacementDialogModel : public AbstractDialogModel {
 	Q_OBJECT
   public:
@@ -31,7 +29,6 @@ class ShipTextureReplacementDialogModel : public AbstractDialogModel {
 	void initSubTypes(polymodel* model, int mapNum);
 	void saveSubMap(size_t index, const SCP_string& type);
 	static bool testTexture(const SCP_string& name);
-	static texture_replace* texture_set(texture_replace* dest, const texture_replace* src);
 
 	bool _multi;
 	SCP_vector<SCP_map<SCP_string, bool>> _subTypesAvailable;
