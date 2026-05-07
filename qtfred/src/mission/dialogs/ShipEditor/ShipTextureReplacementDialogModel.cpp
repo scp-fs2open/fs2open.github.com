@@ -257,7 +257,7 @@ bool ShipTextureReplacementDialogModel::apply()
 						while (objp != END_OF_LIST(&obj_used_list)) {
 							if (((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) &&
 								(objp->flags[Object::Object_Flags::Marked])) {
-								Assert((objp->type == OBJ_SHIP) || (objp->type == OBJ_START));
+								Assertion((objp->type == OBJ_SHIP) || (objp->type == OBJ_START), "Expected ship or start object"); // NOLINT(readability-simplify-boolean-expr)
 								auto shipp = &Ships[get_ship_from_obj(objp)];
 								texture_replace tr;
 								strcpy_s(tr.old_texture, _defaultTextures[i].c_str());
@@ -425,7 +425,7 @@ void ShipTextureReplacementDialogModel::saveSubMap(size_t index, const SCP_strin
 		while (objp != END_OF_LIST(&obj_used_list)) {
 			if (((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) &&
 				(objp->flags[Object::Object_Flags::Marked])) {
-				Assert((objp->type == OBJ_SHIP) || (objp->type == OBJ_START));
+				Assertion((objp->type == OBJ_SHIP) || (objp->type == OBJ_START), "Expected ship or start object"); // NOLINT(readability-simplify-boolean-expr)
 				push_entry(Ships[get_ship_from_obj(objp)].ship_name);
 			}
 			objp = GET_NEXT(objp);
