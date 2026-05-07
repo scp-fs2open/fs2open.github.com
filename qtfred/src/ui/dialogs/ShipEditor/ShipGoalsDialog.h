@@ -1,5 +1,4 @@
-#ifndef SHIPGOALSDIALOG_H
-#define SHIPGOALSDIALOG_H
+#pragma once
 
 #include <mission/dialogs/ShipEditor/ShipGoalsDialogModel.h>
 
@@ -26,7 +25,7 @@ class ShipGoalsDialog : public QDialog {
 	void on_okButton_clicked();
 	void on_cancelButton_clicked();
 
-  private:// NOLINT(readability-redundant-access-specifiers)
+  private: // NOLINT(readability-redundant-access-specifiers)
 	std::unique_ptr<Ui::ShipGoalsDialog> ui;
 	std::unique_ptr<ShipGoalsDialogModel> _model;
 	EditorViewport* _viewport;
@@ -37,8 +36,7 @@ class ShipGoalsDialog : public QDialog {
 	QComboBox* docks[ED_MAX_GOALS];
 	QSpinBox* priority[ED_MAX_GOALS];
 
-	void updateUI();
-	bool m_updating_ui = false;
+	void updateUi();
+	bool _updatingUi = false;
 };
 } // namespace fso::fred::dialogs
-#endif // !SHIPGOALSDIALOG_H

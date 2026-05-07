@@ -34,7 +34,7 @@ ShipGoalsDialog::ShipGoalsDialog(QWidget* parent, EditorViewport* viewport, bool
 		ui->gridLayout->addWidget(priority[i],  row, 5);
 	}
 
-	connect(_model.get(), &AbstractDialogModel::modelChanged, this, &ShipGoalsDialog::updateUI);
+	connect(_model.get(), &AbstractDialogModel::modelChanged, this, &ShipGoalsDialog::updateUi);
 	for (int i = 0; i < ED_MAX_GOALS; i++) {
 		connect(behaviors[i], QOverload<int>::of(&QComboBox::currentIndexChanged), [=](int index) {
 			_model->setBehavior(i, index);
@@ -57,7 +57,7 @@ ShipGoalsDialog::ShipGoalsDialog(QWidget* parent, EditorViewport* viewport, bool
 		});
 	}
 
-	updateUI();
+	updateUi();
 
 	// Resize the dialog to the minimum size
 	resize(QDialog::sizeHint());
@@ -97,11 +97,11 @@ void ShipGoalsDialog::on_cancelButton_clicked()
 {
 	reject();
 }
-void ShipGoalsDialog::updateUI()
+void ShipGoalsDialog::updateUi()
 {
-	if (m_updating_ui)
+	if (_updatingUi)
 		return;
-	m_updating_ui = true;
+	_updatingUi = true;
 	util::SignalBlockers blockers(this);
 
 	for (int i = 0; i < ED_MAX_GOALS; i++) {
@@ -110,14 +110,14 @@ void ShipGoalsDialog::updateUI()
 		subsys[i]->clear();
 		docks[i]->clear();
 
-		for (const auto& entry : _model->get_ai_goal_combo_data()) {
+		for (const auto& entry : _model->getAiGoalComboData()) {
 			behaviors[i]->addItem(entry.first);
 		}
 
 		auto value = _model->getBehavior(i);
 		behaviors[i]->setCurrentIndex(value);
 
-		auto mode = _model->get_first_mode_from_combo_box(i);
+		auto mode = _model->getFirstModeFromComboBox(i);
 
 		SCP_vector<waypoint_list>::iterator ii;
 		if (value < 1) {
@@ -332,6 +332,6 @@ void ShipGoalsDialog::updateUI()
 			}
 		}
 	}
-	m_updating_ui = false;
+	_updatingUi = false;
 }
 } // namespace fso::fred::dialogs
