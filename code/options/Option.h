@@ -608,7 +608,7 @@ class OptionBuilder {
 			_instance.setPreset(val.first, json_dump_string_new(_instance.getSerializer()(val.second),
 			                                                    JSON_COMPACT | JSON_ENSURE_ASCII | JSON_ENCODE_ANY));
 		}
-		auto opt_ptr = make_shared<Option<T>>(_instance);
+		auto opt_ptr = std::make_shared<Option<T>>(_instance);
 
 		if (std::holds_alternative<std::pair<const char*, int>>(_title)) {
 			const auto& xstr_info = std::get<std::pair<const char*, int>>(_title);

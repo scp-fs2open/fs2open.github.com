@@ -3690,7 +3690,7 @@ void model_set_bay_path_nums(polymodel *pm)
 	*/
 
 	// malloc out storage for the path information
-	pm->ship_bay = make_shared<ship_bay_t>();
+	pm->ship_bay = std::make_shared<ship_bay_t>();
 
 	pm->ship_bay->num_paths = 0;
 	// TODO: determine if zeroing out here is affecting any earlier initializations

@@ -12,17 +12,17 @@
 
 static SCP_unordered_map<SCP_string, std::vector<VirtualPOFDefinition>, SCP_string_lcase_hash, SCP_string_lcase_equal_to> virtual_pofs;
 static SCP_unordered_map<SCP_string, std::function<std::unique_ptr<VirtualPOFOperation>()>> virtual_pof_operations = {
-	{"$Add Subobject:", &make_unique<VirtualPOFOperationAddSubmodel> },
-	{"$Add Turret:", &make_unique<VirtualPOFOperationAddTurret> },
-	{"$Add Engine:", &make_unique<VirtualPOFOperationAddEngine> },
-	{"$Add Glowpoint:", &make_unique<VirtualPOFOperationAddGlowpoint> },
-	{"$Add Weapon Bank:", &make_unique<VirtualPOFOperationAddWeapons> },
-	{"$Add Dock Point:", &make_unique<VirtualPOFOperationAddDockPoint> },
-	{"$Add Path:", &make_unique<VirtualPOFOperationAddPath> },
-	{"$Rename Subobjects:", &make_unique<VirtualPOFOperationRenameSubobjects> },
-	{"$Set Subsystem Data:", &make_unique<VirtualPOFOperationChangeSubsystemData> },
-	{"$Set Subobject Data:", &make_unique<VirtualPOFOperationChangeData> },
-	{"$Set Header Data:", &make_unique<VirtualPOFOperationHeaderData> }
+	{"$Add Subobject:", &std::make_unique<VirtualPOFOperationAddSubmodel> },
+	{"$Add Turret:", &std::make_unique<VirtualPOFOperationAddTurret> },
+	{"$Add Engine:", &std::make_unique<VirtualPOFOperationAddEngine> },
+	{"$Add Glowpoint:", &std::make_unique<VirtualPOFOperationAddGlowpoint> },
+	{"$Add Weapon Bank:", &std::make_unique<VirtualPOFOperationAddWeapons> },
+	{"$Add Dock Point:", &std::make_unique<VirtualPOFOperationAddDockPoint> },
+	{"$Add Path:", &std::make_unique<VirtualPOFOperationAddPath> },
+	{"$Rename Subobjects:", &std::make_unique<VirtualPOFOperationRenameSubobjects> },
+	{"$Set Subsystem Data:", &std::make_unique<VirtualPOFOperationChangeSubsystemData> },
+	{"$Set Subobject Data:", &std::make_unique<VirtualPOFOperationChangeData> },
+	{"$Set Header Data:", &std::make_unique<VirtualPOFOperationHeaderData> }
 };
 
 /*
@@ -86,7 +86,7 @@ public:
 		
 		//Don't load from cache if it's a virtual pof (always reload these) or we don't have it cached
 		if ((vp_it != virtual_pofs.end() && (int)vp_it->second.size() > depth[pof_name]) || it == cache.end()) {
-			auto pmh = ::make_shared<polymodel_holder>(pof_name, depth);
+			auto pmh = std::make_shared<polymodel_holder>(pof_name, depth);
 			if(pmh->needs_emplace)
 				cache.emplace(pof_name, pmh);
 			return pmh;
@@ -340,7 +340,7 @@ VirtualPOFOperationAddSubmodel::VirtualPOFOperationAddSubmodel() {
 	}
 
 	if (optional_string("$Rename Subobjects:")) {
-		rename = make_unique<VirtualPOFOperationRenameSubobjects>();
+		rename = std::make_unique<VirtualPOFOperationRenameSubobjects>();
 	}
 
 	required_string("+Destination Subobject:");

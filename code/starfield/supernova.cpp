@@ -54,7 +54,7 @@ static particle::ParticleEffectHandle supernova_init_particle() {
 			particle::ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
 			::util::UniformFloatRange(1.f), //Velocity Inherit
 			false, //Velocity Inherit absolute?
-			make_unique<particle::LegacyAACuboidVolume>(0.75f, 1.f, true), //Velocity volume
+			std::make_unique<particle::LegacyAACuboidVolume>(0.75f, 1.f, true), //Velocity volume
 			::util::UniformFloatRange(25.f, 50.f), //Velocity volume multiplier
 			particle::ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
 			std::nullopt, //Orientation-based velocity
@@ -174,11 +174,11 @@ void supernova_do_particles()
 			vm_vec_add2(&b, &Player_obj->pos);
 
 			auto source = particle::ParticleManager::get()->createSource(Supernova_particle_effect);
-			source->setHost(make_unique<EffectHostVector>(a, orient, vel));
+			source->setHost(std::make_unique<EffectHostVector>(a, orient, vel));
 			source->finishCreation();
 
 			auto source2 = particle::ParticleManager::get()->createSource(Supernova_particle_effect);
-			source2->setHost(make_unique<EffectHostVector>(b, orient, vel));
+			source2->setHost(std::make_unique<EffectHostVector>(b, orient, vel));
 			source2->finishCreation();
 		}
 	}

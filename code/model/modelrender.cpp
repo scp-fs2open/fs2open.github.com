@@ -226,7 +226,7 @@ void model_render_params::set_replacement_textures(std::shared_ptr<const model_t
 
 void model_render_params::set_replacement_textures(int modelnum, const SCP_vector<texture_replace>& replacement_textures)
 {
-	auto textures = make_shared<model_texture_replace>();
+	auto textures = std::make_shared<model_texture_replace>();
 
 	polymodel* pm = model_get(modelnum);
 
@@ -3129,7 +3129,7 @@ void modelinstance_replace_active_texture(polymodel_instance* pmi, const char* o
 			texture = bm_load_either(new_name);
 
 		if (pmi->texture_replace == nullptr) {
-			pmi->texture_replace = make_shared<model_texture_replace>();
+			pmi->texture_replace = std::make_shared<model_texture_replace>();
 		}
 
 		(*pmi->texture_replace)[final_index] = texture;

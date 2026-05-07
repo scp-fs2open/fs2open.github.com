@@ -19,9 +19,9 @@ LuaThread LuaThread::create(lua_State* L, const LuaFunction& func)
 	//Usually we'd want to do this when the childs references are GC'd, but creating tables on child threads from C causes tests to fail for some reason.
 	auto threadRef = std::weak_ptr<UniqueLuaReference>(thread.getReference());
 	//These must be pointers to weak pointers, as we cannot know the weak pointers before creating the lambda.
-	auto delFuncRef = make_shared<std::weak_ptr<UniqueLuaReference>>();
-	auto delTabRef = make_shared<std::weak_ptr<UniqueLuaReference>>();
-	auto delUserdataRef = make_shared<std::weak_ptr<UniqueLuaReference>>();
+	auto delFuncRef = std::make_shared<std::weak_ptr<UniqueLuaReference>>();
+	auto delTabRef = std::make_shared<std::weak_ptr<UniqueLuaReference>>();
+	auto delUserdataRef = std::make_shared<std::weak_ptr<UniqueLuaReference>>();
 
 	int stack = lua_gettop(L);
 

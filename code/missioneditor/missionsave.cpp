@@ -1395,7 +1395,7 @@ void Fred_mission_save::fso_comment_push(const char* ver)
 		return;
 	}
 
-	SCP_string before = fso_ver_comment.back();
+	const auto &before = fso_ver_comment.back();
 
 	int major, minor, build, revis;
 	int in_major, in_minor, in_build, in_revis;
@@ -1415,14 +1415,14 @@ void Fred_mission_save::fso_comment_push(const char* ver)
 		((major > in_major) ||
 			((major == in_major) && ((minor > in_minor) || ((minor == in_minor) && (build > in_build)))))) {
 		// the push'd version is older than our current version, so just push a copy of the previous version
-		fso_ver_comment.push_back(std::move(before));
+		fso_ver_comment.push_back(before);
 	} else if ((elem1 == 4) && ((major > in_major) ||
 								   ((major == in_major) &&
 									   ((minor > in_minor) || ((minor == in_minor) &&
 																  ((build > in_build) || ((build == in_build) ||
 																							 (revis > in_revis)))))))) {
 		// the push'd version is older than our current version, so just push a copy of the previous version
-		fso_ver_comment.push_back(std::move(before));
+		fso_ver_comment.push_back(before);
 	} else {
 		fso_ver_comment.push_back(SCP_string(ver));
 	}
