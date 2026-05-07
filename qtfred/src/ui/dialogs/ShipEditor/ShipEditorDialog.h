@@ -1,5 +1,4 @@
-#ifndef SHIPDEDITORDIALOG_H
-#define SHIPDEDITORDIALOG_H
+#pragma once
 
 #include "ShipCustomWarpDialog.h"
 #include "ShipFlagsDialog.h"
@@ -21,38 +20,15 @@ namespace Ui {
 class ShipEditorDialog;
 }
 
-/**
- * @brief QTFred's Ship Editor
- */
 class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
-
 	Q_OBJECT
 
   public:
-	/**
-	 * @brief Constructor
-	 * @param parent The main fred window. Needed for triggering window updates.
-	 * @param viewport The viewport this dialog is attacted to.
-	 */
 	explicit ShipEditorDialog(FredView* parent, EditorViewport* viewport);
 	~ShipEditorDialog() override;
 
-	/**
-	 * @brief Allows subdialogs to get the ships class
-	 * @return Returns the ship_info_index of the current ship or -1 if multiple ships selected.
-	 */
 	int getShipClass() const;
-
-	/**
-	 * @brief Allows subdialogs to get the ship the editor is currently working on.
-	 * @return Returns the index in Ships if working on one or -1 if working on multiple.
-	 */
 	int getSingleShip() const;
-
-	/**
-	 * @brief Allows subdialogs to know if we are working on multiple ships.
-	 * @return true if multiple ships are selected.
-	 */
 	bool getIfMultipleShips() const;
 
   protected:
@@ -126,7 +102,7 @@ class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 
 	void update();
 
-	void updateUI(bool overwrite = false);
+	void updateUi(bool overwrite = false);
 	void updateColumnOne(bool overwrite = false);
 	void updateColumnTwo(bool ovewrite = false);
 	void updateArrival(bool overwrite = false);
@@ -140,5 +116,3 @@ class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	void callsignChanged();
 };
 } // namespace fso::fred::dialogs
-
-#endif // SHIPDEDITORDIALOG_H

@@ -32,7 +32,7 @@ ShipEditorDialog::ShipEditorDialog(FredView* parent, EditorViewport* viewport)
 	ui->callsignCombo->lineEdit()->setMaxLength(CALLSIGN_LEN);
 	ui->cargoTitleEdit->setMaxLength(NAME_LENGTH - 1);
 
-	connect(_model.get(), &AbstractDialogModel::modelChanged, this, [this] { updateUI(false); });
+	connect(_model.get(), &AbstractDialogModel::modelChanged, this, [this] { updateUi(false); });
 	connect(viewport->editor, &Editor::currentObjectChanged, this, &ShipEditorDialog::update);
 	connect(viewport->editor, &Editor::objectMarkingChanged, this, &ShipEditorDialog::update);
 
@@ -45,7 +45,7 @@ ShipEditorDialog::ShipEditorDialog(FredView* parent, EditorViewport* viewport)
 
 	// ui->cargoCombo->installEventFilter(this);
 
-	updateUI(true);
+	updateUi(true);
 
 	// Resize the dialog to the minimum size
 	resize(QDialog::sizeHint());
@@ -118,11 +118,11 @@ void ShipEditorDialog::update()
 {
 	if (this->isVisible()) {
 		_model->initializeData();
-		updateUI(true);
+		updateUi(true);
 	}
 }
 
-void ShipEditorDialog::updateUI(bool overwrite)
+void ShipEditorDialog::updateUi(bool overwrite)
 {
 	util::SignalBlockers blockers(this);
 	enableDisable();
@@ -529,7 +529,7 @@ void ShipEditorDialog::enableDisable()
 	// enable the "set player" button only if single player, single edit, and ship is in player wing
 	{
 		int marked_ship = (_model->getIfPlayerShip() >= 0) ? _model->getIfPlayerShip() : _model->getSingleShip();
-		const bool isPlayerWing = _model->wing_is_player_wing(Ships[marked_ship].wingnum);
+		const bool isPlayerWing = _model->wingIsPlayerWing(Ships[marked_ship].wingnum);
 		if (!(The_mission.game_type & MISSION_TYPE_MULTI) && (_model->getNumSelectedObjects() > 0) &&
 			(_model->getIfMultipleShips() != true) && (isPlayerWing == true))
 			ui->playerShipButton->setEnabled(true);
@@ -633,19 +633,19 @@ void ShipEditorDialog::on_altShipClassButton_clicked()
 }
 void ShipEditorDialog::on_prevButton_clicked()
 {
-	_model->OnPrevious();
+	_model->onPrevious();
 }
 void ShipEditorDialog::on_nextButton_clicked()
 {
-	_model->OnNext();
+	_model->onNext();
 }
 void ShipEditorDialog::on_resetButton_clicked()
 {
-	_model->OnShipReset();
+	_model->onShipReset();
 }
 void ShipEditorDialog::on_deleteButton_clicked()
 {
-	_model->OnDeleteShip();
+	_model->onDeleteShip();
 }
 void ShipEditorDialog::on_weaponsButton_clicked()
 {
@@ -706,11 +706,10 @@ void ShipEditorDialog::on_restrictArrivalPathsButton_clicked()
 	if (dlg.exec() == QDialog::Accepted) {
 		auto returned_values = dlg.getCheckedStates();
 
-		std::vector<std::pair<SCP_string, bool>> updatedPaths;
+		SCP_vector<std::pair<SCP_string, bool>> updatedPaths;
 
 		for (int i = 0; i < checkbox_list.size(); ++i) {
-			// Convert back to std::string
-			std::string name = checkbox_list[i].first.toUtf8().constData();
+			SCP_string name = checkbox_list[i].first.toUtf8().constData();
 			updatedPaths.emplace_back(name, returned_values[i]);
 		}
 
@@ -737,11 +736,10 @@ void ShipEditorDialog::on_restrictDeparturePathsButton_clicked()
 	if (dlg.exec() == QDialog::Accepted) {
 		auto returned_values = dlg.getCheckedStates();
 
-		std::vector<std::pair<SCP_string, bool>> updatedPaths;
+		SCP_vector<std::pair<SCP_string, bool>> updatedPaths;
 
 		for (int i = 0; i < checkbox_list.size(); ++i) {
-			// Convert back to std::string
-			std::string name = checkbox_list[i].first.toUtf8().constData();
+			SCP_string name = checkbox_list[i].first.toUtf8().constData();
 			updatedPaths.emplace_back(name, returned_values[i]);
 		}
 
