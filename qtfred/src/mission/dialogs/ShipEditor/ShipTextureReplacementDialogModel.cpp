@@ -286,6 +286,88 @@ bool ShipTextureReplacementDialogModel::apply()
 			_editor->missionChanged();
 		}
 		_editor->missionChanged();
+
+		// Update each affected ship's pmi so the viewport reflects the new textures immediately.
+		// We cannot use ship::apply_replacement_textures here because all our Fred_texture_replacements
+		// entries share old_texture = base name, so FindTexture always resolves to TM_BASE_TYPE and
+		// sub-type entries would overwrite the base slot. Instead, write slots directly using the
+		// TM_* indices from MODEL_TEXTURE_SUFFIXES.
+		auto load_tex = [](const SCP_string& name) -> int {
+			int id = bm_load(name);
+			if (id < 0) {
+				int nf, fps;
+				id = bm_load_animation(name.c_str(), &nf, &fps, nullptr, nullptr, false, true);
+			}
+			return id;
+		};
+
+		auto apply_to_ship = [&](int ship_index) {
+			auto& shipp = Ships[ship_index];
+			auto* pmi = model_get_instance(shipp.model_instance_num);
+			auto* pm = model_get(Ship_info[shipp.ship_info_index].model_num);
+
+			pmi->texture_replace = std::make_shared<model_texture_replace>();
+
+			for (size_t i = 0; i < getSize(); i++) {
+				if (_defaultTextures[i].empty())
+					continue;
+
+				// Find which texture group owns this base texture.
+				int groupIdx = -1;
+				for (int j = 0; j < pm->n_textures; j++) {
+					if (pm->maps[j].FindTexture(_defaultTextures[i].c_str()) >= 0) {
+						groupIdx = j;
+						break;
+					}
+				}
+				if (groupIdx < 0)
+					continue;
+
+				// Main (base) slot.
+				const SCP_string& mainName = _currentTextures[i].at("main");
+				if (!mainName.empty() && !lcase_equal(mainName, _defaultTextures[i])) {
+					int id = load_tex(mainName);
+					if (id >= 0)
+						(*pmi->texture_replace)[groupIdx * TM_NUM_TYPES + TM_BASE_TYPE] = id;
+				}
+
+				// Sub-type slots.
+				for (const auto& [tmType, suffix] : MODEL_TEXTURE_SUFFIXES) {
+					const SCP_string typeKey = suffix.substr(1);
+					if (!_replaceMap[i].at(typeKey))
+						continue;
+
+					SCP_string fullName;
+					if (_inheritMap[i].at(typeKey)) {
+						if (mainName.empty() || lcase_equal(mainName, _defaultTextures[i]))
+							continue;
+						fullName = (mainName != "invisible") ? mainName + suffix : mainName;
+					} else {
+						const SCP_string& typeName = _currentTextures[i].at(typeKey);
+						if (typeName.empty())
+							continue;
+						fullName = (typeName != "invisible") ? typeName + suffix : typeName;
+					}
+
+					int id = load_tex(fullName);
+					if (id >= 0)
+						(*pmi->texture_replace)[groupIdx * TM_NUM_TYPES + tmType] = id;
+				}
+			}
+		};
+
+		if (!_multi) {
+			apply_to_ship(_editor->cur_ship);
+		} else {
+			object* objp = GET_FIRST(&obj_used_list);
+			while (objp != END_OF_LIST(&obj_used_list)) {
+				if (((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) &&
+					objp->flags[Object::Object_Flags::Marked])
+					apply_to_ship(get_ship_from_obj(objp));
+				objp = GET_NEXT(objp);
+			}
+		}
+
 		return true;
 	}
 	else {
@@ -327,7 +409,7 @@ void ShipTextureReplacementDialogModel::saveSubMap(size_t index, const SCP_strin
 	// so just append the new entry for each affected ship.
 	auto push_entry = [&](const char* ship_name) {
 		texture_replace tr;
-		strcpy_s(tr.old_texture, _defaultTextures[index].c_str());
+		strcpy_s(tr.old_texture, (_defaultTextures[index] + "-" + type).c_str());
 		strcpy_s(tr.new_texture, fullName.c_str());
 		strcpy_s(tr.ship_name, ship_name);
 		tr.new_texture_id = -1;
