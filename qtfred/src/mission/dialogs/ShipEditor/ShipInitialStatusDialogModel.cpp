@@ -130,7 +130,7 @@ void ShipInitialStatusDialogModel::initializeData(bool multi)
 			object* docked_objp = dock_find_object_at_dockpoint(objp, i);
 			if (docked_objp != nullptr) {
 				_dockpointArray[i].dockee_shipnum = docked_objp->instance;
-				_dockpointArray[i].dockee_point = dock_find_dockpoint_used_by_object(docked_objp, objp);
+				_dockpointArray[i].dockee_point = dock_find_dockpoint_used_by_object(docked_objp, objp); // NOLINT(readability-suspicious-call-argument)
 			} else {
 				_dockpointArray[i].dockee_shipnum = -1;
 				_dockpointArray[i].dockee_point = -1;
