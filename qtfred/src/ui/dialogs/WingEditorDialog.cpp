@@ -420,7 +420,7 @@ void WingEditorDialog::on_setSquadLogoButton_clicked()
 	if (dlg.exec() != QDialog::Accepted)
 		return;
 
-	const std::string chosen = dlg.selectedFile().toUtf8().constData();
+	const SCP_string chosen = dlg.selectedFile().toUtf8().constData();
 	_model->setSquadLogo(chosen);
 	updateLogoPreview();
 }
@@ -490,7 +490,7 @@ void WingEditorDialog::on_wingFlagsButton_clicked()
 	dlg.setOptionDescriptions(qtDescs);
 
 	if (dlg.exec() == QDialog::Accepted) {
-		std::vector<std::pair<SCP_string, bool>> result;
+		SCP_vector<std::pair<SCP_string, bool>> result;
 		for (const auto& f : dlg.getFlags())
 			result.emplace_back(f.first.toUtf8().constData(), f.second == Qt::Checked);
 		_model->setWingFlags(result);
@@ -554,11 +554,10 @@ void WingEditorDialog::on_restrictArrivalPathsButton_clicked()
 	if (dlg.exec() == QDialog::Accepted) {
 		auto returned_values = dlg.getCheckedStates();
 
-		std::vector<std::pair<SCP_string, bool>> updatedFlags;
+		SCP_vector<std::pair<SCP_string, bool>> updatedFlags;
 
 		for (int i = 0; i < checkbox_list.size(); ++i) {
-			// Convert back to std::string
-			std::string name = checkbox_list[i].first.toUtf8().constData();
+			SCP_string name = checkbox_list[i].first.toUtf8().constData();
 			updatedFlags.emplace_back(name, returned_values[i]);
 		}
 
@@ -632,11 +631,10 @@ void WingEditorDialog::on_restrictDeparturePathsButton_clicked()
 	if (dlg.exec() == QDialog::Accepted) {
 		auto returned_values = dlg.getCheckedStates();
 
-		std::vector<std::pair<SCP_string, bool>> updatedFlags;
+		SCP_vector<std::pair<SCP_string, bool>> updatedFlags;
 
 		for (int i = 0; i < checkbox_list.size(); ++i) {
-			// Convert back to std::string
-			std::string name = checkbox_list[i].first.toUtf8().constData();
+			SCP_string name = checkbox_list[i].first.toUtf8().constData();
 			updatedFlags.emplace_back(name, returned_values[i]);
 		}
 
