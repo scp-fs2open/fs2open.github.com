@@ -3457,6 +3457,7 @@ int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool
 					if (dl2 >= sm1->num_details ) sm1->num_details = dl2+1;
 					sm1->details[dl2] = j;
   				    mprintf(( "Submodel '%s' is detail level %d of '%s'\n", sm2->name, dl2 + 1, sm1->name ));
+					sm2->flags.set(Model::Submodel_flags::Is_lod);
 					lower_to_higher_detail_submodels.emplace(sm2->name, sm1->name);
 				}
 			}

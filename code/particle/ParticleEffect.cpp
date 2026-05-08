@@ -290,11 +290,11 @@ auto ParticleEffect::processSourceInternal(float interp, const ParticleSource& s
 		vec3d localPos = posNoise;
 
 		if (m_spawnVolume != nullptr) {
-			localPos += m_spawnVolume->sampleRandomPoint(orientation, modularCurvesInput, particleFraction);
+			localPos += m_spawnVolume->sampleRandomPoint(orientation, modularCurvesInput, particleFraction, *source.m_host);
 		}
 
 		if (m_velocityVolume != nullptr) {
-			localVelocity += m_velocityVolume->sampleRandomPoint(orientation, modularCurvesInput, particleFraction) * (m_velocity_scaling.next() * velocityVolumeMultiplier);
+			localVelocity += m_velocityVolume->sampleRandomPoint(orientation, modularCurvesInput, particleFraction, *source.m_host) * (m_velocity_scaling.next() * velocityVolumeMultiplier);
 		}
 
 		if (m_manual_velocity_offset.has_value()) {

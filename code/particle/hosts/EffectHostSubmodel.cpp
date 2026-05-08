@@ -60,6 +60,10 @@ std::pair<int, int> EffectHostSubmodel::getParentObjAndSig() const {
 	return { m_objnum, m_objsig };
 }
 
+int EffectHostSubmodel::getParentSubmodel() const {
+	return m_submodel;
+}
+
 float EffectHostSubmodel::getHostRadius() const {
 	return Objects[m_objnum].radius;
 }
