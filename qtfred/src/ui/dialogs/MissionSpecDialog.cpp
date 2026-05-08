@@ -23,8 +23,6 @@ MissionSpecDialog::MissionSpecDialog(FredView* parent, EditorViewport* viewport)
 	_viewport(viewport) {
     ui->setupUi(this);
 
-	ui->missionTitle->setMaxLength(NAME_LENGTH - 1);
-	ui->missionDesigner->setMaxLength(NAME_LENGTH - 1);
 	ui->squadronName->setMaxLength(NAME_LENGTH - 1);
 	ui->squadronLogo->setMaxLength(MAX_FILENAME_LEN - 1);
 	ui->lowResScreen->setMaxLength(MAX_FILENAME_LEN - 1);

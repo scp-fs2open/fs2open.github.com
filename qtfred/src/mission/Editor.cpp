@@ -308,7 +308,7 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 			SCP_string msg;
 			sprintf(msg,
 					"Fred encountered unknown ship/prop/weapon classes when importing \"%s\" (path \"%s\"). You will have to manually edit the converted mission to correct this.",
-					The_mission.name,
+					The_mission.name.c_str(),
 					filepath.c_str());
 
 			_lastActiveViewport->dialogProvider->showButtonDialog(DialogType::Warning,
@@ -455,7 +455,7 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 
 	if (flags & MPF_IS_TEMPLATE) {
 		// reset fields that should not carry over from the template source
-		strcpy_s(The_mission.name, "Untitled");
+		The_mission.name = "Untitled";
 		The_mission.author = getUsername();
 
 		time_t currentTime;
@@ -592,7 +592,7 @@ void Editor::clearMission(bool fast_reload) {
 	time(&currentTime);
 	auto timeinfo = localtime(&currentTime);
 
-	strcpy_s(The_mission.name, "Untitled");
+	The_mission.name = "Untitled";
 	The_mission.author = userName;
 	time_to_mission_info_string(timeinfo, The_mission.created, DATE_TIME_LENGTH - 1);
 	strcpy_s(The_mission.modified, The_mission.created);

@@ -529,8 +529,8 @@ void CampaignEditorDialog::on_availableMissionsListWidget_itemSelectionChanged()
 		return;
 	}
 
-	if (mission_info.name[0] != '\0') {
-		ui->missionNameLineEdit->setText(QString::fromUtf8(mission_info.name));
+	if (!mission_info.name.empty()) {
+		ui->missionNameLineEdit->setText(QString::fromStdString(mission_info.name));
 	} else {
 		ui->missionNameLineEdit->clear();
 	}
@@ -554,8 +554,8 @@ void CampaignEditorDialog::on_graphView_missionSelected(int missionIndex) {
 		return;
 	}
 
-	if (mission_info.name[0] != '\0') {
-		ui->missionNameLineEdit->setText(QString::fromUtf8(mission_info.name));
+	if (!mission_info.name.empty()) {
+		ui->missionNameLineEdit->setText(QString::fromStdString(mission_info.name));
 	} else {
 		ui->missionNameLineEdit->clear();
 	}

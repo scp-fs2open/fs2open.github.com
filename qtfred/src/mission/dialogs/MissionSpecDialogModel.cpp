@@ -149,7 +149,7 @@ bool MissionSpecDialogModel::apply() {
 	// puts "$End Notes:" on a different line to ensure it's not interpreted as part of a comment
 	Editor::pad_with_newline(_m_mission_notes, NOTES_LENGTH - 1);
 
-	strncpy(The_mission.name, _m_mission_title.c_str(), NAME_LENGTH-1);
+	The_mission.name = _m_mission_title;
 	The_mission.author = _m_designer_name;
 	strncpy(The_mission.loading_screen[GR_640], _m_loading_640.c_str(), NAME_LENGTH-1);
 	strncpy(The_mission.loading_screen[GR_1024], _m_loading_1024.c_str(), NAME_LENGTH-1);
