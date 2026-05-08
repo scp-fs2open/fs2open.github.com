@@ -23,6 +23,7 @@ private slots:
 	void on_colorRSpinBox_valueChanged(int value);
 	void on_colorGSpinBox_valueChanged(int value);
 	void on_colorBSpinBox_valueChanged(int value);
+	void on_layerCombo_currentIndexChanged(int index);
 
  private: // NOLINT(readability-redundant-access-specifiers)
 	EditorViewport* _viewport;

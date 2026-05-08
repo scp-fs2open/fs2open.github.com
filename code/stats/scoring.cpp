@@ -145,7 +145,7 @@ void parse_rank_table(const char* filename)
 					}
 					continue;
 				}
-				Ranks.push_back(rank_t);
+				Ranks.push_back(std::move(rank_t));
 				rank_p = &Ranks.back();
 			}
 

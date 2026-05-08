@@ -11,6 +11,7 @@
 #include <parse/parselo.h>
 #include <missionui/fictionviewer.h>
 #include <mission/missiongoals.h>
+#include <mission/missionparse.h>
 #include <asteroid/asteroid.h>
 #include <jumpnode/jumpnode.h>
 #include <prop/prop.h>
@@ -521,7 +522,7 @@ void Editor::unmark_all() {
 		numMarked = 0;
 		setupCurrentObjectIndices(-1);
 
-		missionChanged();
+		updateAllViewports();
 	}
 }
 void Editor::markObject(int obj) {
@@ -560,7 +561,7 @@ void Editor::unmarkObject(int obj) {
 			setupCurrentObjectIndices(-1);  // can't find one; nothing is marked.
 		}
 
-		missionChanged();
+		updateAllViewports();
 	}
 }
 
@@ -609,6 +610,7 @@ void Editor::clearMission(bool fast_reload) {
 	strcpy_s(The_mission.modified, The_mission.created);
 	strcpy_s(The_mission.notes, "This is a FRED2_OPEN created mission.");
 	strcpy_s(The_mission.mission_desc, "Put mission description here");
+	apply_default_custom_data(&The_mission);
 
 	// reset alternate name & callsign stuff
 	for (auto i = 0; i < MAX_SHIPS; i++) {
@@ -664,7 +666,6 @@ void Editor::clearMission(bool fast_reload) {
 	// however, FRED expects to parse comments from the raw buffer, so we need a nominal string for that
 	allocate_parse_text(1);
 
-	missionLoaded("");
 }
 
 void Editor::initialSetup() {
@@ -754,8 +755,6 @@ void Editor::selectObject(int objId) {
 	}
 
 	setupCurrentObjectIndices(objId);  // select the new object
-
-	missionChanged();
 }
 void Editor::updateAllViewports() {
 	// This takes all renderers and issues an update request for each of them. For now that is only one but this allows
@@ -893,6 +892,7 @@ void Editor::createNewMission() {
 	stars_post_level_init();
 	undoCount = undoAvailable = 0;
 	autosave("nothing");
+	missionLoaded("");
 }
 void Editor::hideMarkedObjects() {
 	object* ptr;
@@ -1036,6 +1036,15 @@ int Editor::dup_object(object* objp) {
 	} else if (objp->type == OBJ_WAYPOINT) {
 		obj = create_waypoint(&objp->pos, waypoint_instance);
 		waypoint_instance = Objects[obj].instance;
+	} else if (objp->type == OBJ_JUMP_NODE) {
+		CJumpNode jnp(&objp->pos);
+		obj = jnp.GetSCPObjectNumber();
+		Jump_nodes.push_back(std::move(jnp));
+	} else if (objp->type == OBJ_PROP) {
+		prop* propp = prop_id_lookup(inst);
+		if (propp != nullptr) {
+			obj = prop_create(&objp->orient, &objp->pos, propp->prop_info_index);
+		}
 	}
 
 	if (obj == -1) {
@@ -1227,7 +1236,6 @@ int Editor::common_object_delete(int obj) {
 	//this causes an ugly crash.
 	obj_delete(obj);
 
-	missionChanged();
 	return 0;
 }
 
@@ -1235,6 +1243,7 @@ int Editor::delete_object(int obj) {
 	int r;
 
 	r = common_object_delete(obj);
+	missionChanged();
 	return r;
 }
 

@@ -2747,7 +2747,7 @@ void multi_pxo_clear_players()
 void multi_pxo_add_player(const char *name)
 {
 	SCP_string new_player = name;
-	Multi_pxo_players.push_back(new_player);
+	Multi_pxo_players.push_back(std::move(new_player));
 }
 
 /**

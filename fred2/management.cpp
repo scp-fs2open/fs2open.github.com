@@ -2302,10 +2302,15 @@ int sexp_reference_handler(int node, sexp_src source, int source_index, char *ms
 		}
 
 		case sexp_src::DEBRIEFING: {
-			debriefing_editor_dlg dlg;
+			if (!Debriefing_dialog) {
+				Debriefing_dialog = new debriefing_editor_dlg;
+				Debriefing_dialog->create();
+			}
 
-			dlg.select_sexp_node = node;
-			dlg.DoModal();
+			Debriefing_dialog->SetWindowPos(&CWnd::wndTop, 0, 0, 0, 0,
+				SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE);
+			Debriefing_dialog->ShowWindow(SW_RESTORE);
+			Debriefing_dialog->focus_sexp(node);
 			break;
 		}
 

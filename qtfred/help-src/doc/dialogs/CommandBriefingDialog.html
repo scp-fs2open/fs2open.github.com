@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Command Briefing - QtFRED Help</title>
+    <link rel="stylesheet" type="text/css" href="../css/help.css"/>
+</head>
+<body>
+<nav class="breadcrumb"><a href="../index.html">QtFRED Help</a> &rsaquo; Narrative &rsaquo; Command Briefing</nav>
+<h1>Command Briefing</h1>
+<p>Opens via <strong>Editors &rsaquo; Command Briefing</strong>.</p>
+<p>Builds the Command Briefing shown to the player after the
+<a href="FictionViewerDialog.html">Fiction Viewer</a> and before the main
+<a href="BriefingEditorDialog.html">Briefing</a>. It consists of one or more stages,
+each combining a looping animation with narrated text. Stages advance automatically
+when the voice clip finishes, or the player can click to skip.</p>
+
+<h2>Teams</h2>
+<p>In multiplayer missions each team can have its own independent command briefing. Use
+the team selector to switch which team's command briefing you are editing.
+<strong>Copy to other team</strong> duplicates the entire command briefing (all stages)
+to the other team, overwriting it.</p>
+
+<h2>Stage controls</h2>
+<table>
+    <tr><th>Control</th><th>Description</th></tr>
+    <tr><td>Prev / Next</td><td>Navigate between stages.</td></tr>
+    <tr><td>Add stage</td><td>Appends a new stage at the end.</td></tr>
+    <tr><td>Insert stage</td><td>Inserts a new stage after the current one.</td></tr>
+    <tr><td>Delete stage</td><td>Removes the current stage.</td></tr>
+</table>
+
+<h2>Per-stage fields</h2>
+<table>
+    <tr><th>Field</th><th>Description</th></tr>
+    <tr><td>Briefing text</td><td>Text displayed on screen during this stage.</td></tr>
+    <tr><td>Animation file</td><td>The ANI, APNG, or EFF animation that loops in the
+        background during this stage.</td></tr>
+    <tr><td>Speech file</td><td>Voice narration played during this stage. The stage
+        advances automatically when the clip ends.</td></tr>
+</table>
+
+<h2>Custom background images</h2>
+<p>Overrides the default command briefing background with a custom image. Two slots
+are provided to accommodate different display resolutions:</p>
+<table>
+    <tr><th>Slot</th><th>Used at</th></tr>
+    <tr><td>Background (lo-res)</td><td>480-line resolutions (e.g. 640&times;480).</td></tr>
+    <tr><td>Background (hi-res)</td><td>768-line resolutions and above.</td></tr>
+</table>
+</body>
+</html>

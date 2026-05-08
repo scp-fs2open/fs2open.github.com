@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>IFF &amp; Teams - QtFRED Help</title>
+    <link rel="stylesheet" type="text/css" href="../css/help.css"/>
+</head>
+<body>
+<nav class="breadcrumb"><a href="../index.html">QtFRED Help</a> &rsaquo; Concepts &rsaquo; IFF &amp; Teams</nav>
+<h1>IFF &amp; Teams</h1>
+<p>IFF stands for <em>Identification Friend or Foe</em>. Every ship in a mission
+belongs to a team, and every team has a defined relationship with every other team.
+Those relationships determine how ships behave toward one another: whether they
+attack, ignore, or treat each other as allies.</p>
+
+<h2>Team relationships</h2>
+<p>Team relationships are defined in <code>iff_defs.tbl</code>, not in the mission
+file. The common defaults are:</p>
+<table>
+    <tr><th>Team</th><th>Typical role</th></tr>
+    <tr><td>Friendly</td><td>Player's side. Ships the player can target for
+        orders and that friendly AI protects.</td></tr>
+    <tr><td>Hostile</td><td>Enemy. Ships that actively attack Friendly
+        ships.</td></tr>
+    <tr><td>Neutral</td><td>Neither side. Not attacked unless attacked
+        first.</td></tr>
+    <tr><td>Unknown</td><td>Unidentified. Treated as neutral until scanned or
+        otherwise identified.</td></tr>
+    <tr><td>Traitor</td><td>Formerly friendly ships that have turned hostile.
+        Attacked by all sides.</td></tr>
+</table>
+<p>Mods can define additional teams and custom relationships between them. The
+teams available in your mission depend on what <code>iff_defs.tbl</code> provides
+for the loaded mod.</p>
+
+<h2>What team membership affects</h2>
+<ul>
+    <li><strong>AI targeting</strong> - ships attack any ship they have a hostile
+        relationship with and avoid attacking allies.</li>
+    <li><strong>Escort and guard behavior</strong> - AI set to guard a ship will
+        also engage enemies threatening it.</li>
+    <li><strong>Comm menu</strong> - the player can only issue orders to ships on
+        the Friendly team.</li>
+    <li><strong>HUD</strong> - target brackets, colors, and the hostile/friendly
+        indicators on the radar all derive from IFF relationships.</li>
+    <li><strong>SEXPs</strong> — many SEXP operators accept a team argument to
+        act on all ships of a given team at once.</li>
+</ul>
+
+<h2>Changing team at runtime</h2>
+<p>A ship's team can be changed during the mission using SEXPs. This is how
+defection scenarios work: reassigning a ship to the Traitor or Hostile team
+immediately causes former allies to engage it.</p>
+
+<div class="note">The Team field in the <a href="../dialogs/ShipEditorDialog.html">Ship Editor</a>
+sets the team at mission start. Runtime changes are made through SEXPs and are
+not reflected back in the editor.</div>
+</body>
+</html>

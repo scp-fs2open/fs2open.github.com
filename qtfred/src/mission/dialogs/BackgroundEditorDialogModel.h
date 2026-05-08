@@ -170,6 +170,7 @@ class BackgroundEditorDialogModel : public AbstractDialogModel {
 	void setLightingProfileName(const SCP_string& name);
 
   private:
+	void initializeData();
 	void refreshBackgroundPreview();
 	static background_t& getActiveBackground();
 	starfield_list_entry* getActiveBitmap() const;

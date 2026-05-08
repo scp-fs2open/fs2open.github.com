@@ -1,8 +1,10 @@
 #pragma once
 
+#include <ui/widgets/FlagList.h>
 
 #include <QDialog>
-#include <QCheckBox>
+#include <QString>
+#include <QVector>
 
 namespace fso::fred::dialogs {
 
@@ -16,12 +18,20 @@ class CheckBoxListDialog : public QDialog {
 	explicit CheckBoxListDialog(QWidget* parent = nullptr);
 
 	void setCaption(const QString& text);
+
+	// Binary mode (backwards-compatible)
 	void setOptions(const QVector<std::pair<QString, bool>>& options);
 	QVector<bool> getCheckedStates() const;
 
+	// Tristate / int-state mode
+	void setOptions(const QVector<std::pair<QString, int>>& options);
+	QVector<std::pair<QString, int>> getFlags() const;
+
+	void setOptionDescriptions(const QVector<std::pair<QString, QString>>& descriptions);
+	void setTristate(bool tristate);
+
   private:
 	Ui::CheckBoxListDialog* ui;
-	QVector<QCheckBox*> _checkboxes;
 };
 
 } // namespace fso::fred::dialogs

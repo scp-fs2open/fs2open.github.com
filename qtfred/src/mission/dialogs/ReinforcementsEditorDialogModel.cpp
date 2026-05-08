@@ -76,6 +76,7 @@ void ReinforcementsDialogModel::initializeData()
 
 	_selectedReinforcements.clear();
 	_selectedReinforcementIndices.clear();
+	_modified = false;
 }
 
 bool ReinforcementsDialogModel::apply() 

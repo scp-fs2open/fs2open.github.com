@@ -7,8 +7,14 @@
 
 #include <object/object.h>
 
-namespace fso {
-namespace fred {
+namespace fso::fred {
+
+struct Marking_box {
+	int x1 = 0;
+	int y1 = 0;
+	int x2 = 0;
+	int y2 = 0;
+};
 
 struct ViewSettings {
 	bool Universal_heading = false;
@@ -32,6 +38,8 @@ struct ViewSettings {
 	bool Lighting_on = false;
 	bool FullDetail = false;
 	bool Show_waypoints = true;
+	bool Show_props = true;
+	bool Show_jump_nodes = true;
 	bool Show_compass = true;
 	bool Highlight_selectable_subsys = false;
 
@@ -127,6 +135,12 @@ class EditorViewport {
 
 	int	create_object(vec3d *pos, int waypoint_instance = -1, bool create_prop = false);
 
+	vec3d getCreatePosition(int x, int y, float fallbackDist);
+	int createShipAtScreenPos(int x, int y, int modelIndex);
+	int createPropAtScreenPos(int x, int y, int propIndex);
+	int createWaypointAtScreenPos(int x, int y, int waypoint_instance = -1);
+	int createJumpNodeAtScreenPos(int x, int y);
+
 	int duplicate_marked_objects();
 	int drag_objects(int x, int y);
 
@@ -176,8 +190,6 @@ class EditorViewport {
 	int cur_model_index = 0;
 	int cur_prop_index = -1;
 
-	bool Bg_bitmap_dialog = false;
-
 	object_orient_pos rotation_backup[MAX_OBJECTS];
 
 	vec3d saved_cam_pos = vmd_zero_vector;
@@ -191,6 +203,8 @@ class EditorViewport {
 
 	bool Group_rotate = true;
 	bool Lookat_mode = false;
+	int  toolbar_icon_size = 24;  ///< Toolbar icon size in pixels (16, 24, or 32)
+	bool Offer_autosave_recovery = true;
 	bool Move_ships_when_undocking = true;
 	bool Always_save_display_names = false;
 	bool Error_checker_checks_potential_issues = true;
@@ -202,6 +216,8 @@ class EditorViewport {
 	bool Show_sexp_help_ship_editor = false;
 	bool Show_sexp_help_wing_editor = false;
 
+	bool Dark_mode = false;
+
 	void saveSettings() const;
 
 	Editor* editor = nullptr;
@@ -212,5 +228,4 @@ private:
 	void loadSettings();
 };
 
-}
-}
+} // namespace fso::fred

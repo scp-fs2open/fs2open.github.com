@@ -14,6 +14,7 @@
 #include "localization/localize.h"
 #include "mission/missionmessage.h"
 #include "mission/mission_flags.h"
+#include "scripting/global_hooks.h"
 
 #include <QtWidgets>
 
@@ -90,6 +91,7 @@ void MissionSpecDialogModel::initializeData() {
 	}
 
 	modelChanged();
+	_modified = false;
 }
 
 void MissionSpecDialogModel::prepareSquadLogoList()
@@ -201,6 +203,11 @@ bool MissionSpecDialogModel::apply() {
 	}
 
 	Editor::update_custom_wing_indexes();
+
+	// scripts may rebuild LuaEnums when custom data/strings change.
+	if (scripting::hooks::FredOnMissionSpecsSave->isActive()) {
+		scripting::hooks::FredOnMissionSpecsSave->run();
+	}
 
 	return true;
 }
@@ -416,20 +423,38 @@ bool MissionSpecDialogModel::getMissionFlag(Mission::Mission_Flags flag) const {
 }
 
 const SCP_vector<std::pair<SCP_string, bool>>& MissionSpecDialogModel::getMissionFlagsList() {
-	if (_m_flag_data.empty()) {
-		for (size_t i = 0; i < Num_parse_mission_flags; ++i) {
-			auto flagDef = Parse_mission_flags[i];
+	_m_flag_data.clear();
+	for (size_t i = 0; i < Num_parse_mission_flags; ++i) {
+		auto flagDef = Parse_mission_flags[i];
 
-			// Skip flags that have checkboxes elsewhere than the flag list or are inactive
-			if (flagDef.is_special || !flagDef.in_use) {
-				continue;
-			}
-
-			bool checked = _m_flags[flagDef.def];
-			_m_flag_data.emplace_back(flagDef.name, checked);
+		// Skip flags that have checkboxes elsewhere than the flag list or are inactive
+		if (flagDef.is_special || !flagDef.in_use) {
+			continue;
 		}
+
+		bool checked = _m_flags[flagDef.def];
+		_m_flag_data.emplace_back(flagDef.name, checked);
 	}
 	return _m_flag_data;
+}
+
+SCP_vector<std::pair<SCP_string, SCP_string>> MissionSpecDialogModel::getMissionFlagDescriptions()
+{
+	const size_t num_descs = Num_parse_mission_flag_descriptions;
+	SCP_vector<std::pair<SCP_string, SCP_string>> descriptions;
+	descriptions.reserve(Num_parse_mission_flags);
+	for (size_t i = 0; i < Num_parse_mission_flags; ++i) {
+		const auto& flagDef = Parse_mission_flags[i];
+		if (flagDef.is_special || !flagDef.in_use)
+			continue;
+		for (size_t j = 0; j < num_descs; ++j) {
+			if (Parse_mission_flag_descriptions[j].def == flagDef.def) {
+				descriptions.emplace_back(flagDef.name, Parse_mission_flag_descriptions[j].flag_desc);
+				break;
+			}
+		}
+	}
+	return descriptions;
 }
 
 void MissionSpecDialogModel::setMissionFullWar(bool enabled) {

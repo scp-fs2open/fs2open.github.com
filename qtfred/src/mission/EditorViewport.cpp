@@ -1,6 +1,3 @@
-//
-//
-
 #include <globalincs/linklist.h>
 #include <object/object.h>
 #include <render/3d.h>
@@ -12,6 +9,7 @@
 
 #include "EditorViewport.h"
 #include <QSettings>
+#include "ui/dialogs/BriefingEditorDialog.h"
 #include <math/fvi.h>
 #include <jumpnode/jumpnode.h>
 #include <mission/missionparse.h>
@@ -110,8 +108,7 @@ void verticalize_object(matrix* orient) {
 
 }
 
-namespace fso {
-namespace fred {
+namespace fso::fred {
 
 const char* EditorViewport::DefaultLayerName = "Default";
 
@@ -138,6 +135,8 @@ EditorViewport::EditorViewport(Editor* in_editor, std::unique_ptr<FredRenderer>&
 void EditorViewport::loadSettings() {
 	QSettings settings;
 	settings.beginGroup(SETTINGS_GROUP);
+	toolbar_icon_size                  = settings.value("toolbar_icon_size",                  toolbar_icon_size).toInt();
+	Offer_autosave_recovery            = settings.value("offer_autosave_recovery",            Offer_autosave_recovery).toBool();
 	Move_ships_when_undocking          = settings.value("move_ships_when_undocking",          Move_ships_when_undocking).toBool();
 	Always_save_display_names          = settings.value("always_save_display_names",          Always_save_display_names).toBool();
 	Error_checker_checks_potential_issues = settings.value("error_checker_checks_potential_issues", Error_checker_checks_potential_issues).toBool();
@@ -146,12 +145,38 @@ void EditorViewport::loadSettings() {
 	Show_sexp_help_mission_cutscenes   = settings.value("show_sexp_help_mission_cutscenes",   Show_sexp_help_mission_cutscenes).toBool();
 	Show_sexp_help_ship_editor         = settings.value("show_sexp_help_ship_editor",         Show_sexp_help_ship_editor).toBool();
 	Show_sexp_help_wing_editor         = settings.value("show_sexp_help_wing_editor",         Show_sexp_help_wing_editor).toBool();
+	Dark_mode                          = settings.value("dark_mode",                          Dark_mode).toBool();
+
+	view.Universal_heading                 = settings.value("view_universal_heading",                 view.Universal_heading).toBool();
+	view.Show_stars                        = settings.value("view_show_stars",                        view.Show_stars).toBool();
+	view.Show_horizon                      = settings.value("view_show_horizon",                      view.Show_horizon).toBool();
+	view.Show_grid                         = settings.value("view_show_grid",                         view.Show_grid).toBool();
+	view.Show_distances                    = settings.value("view_show_distances",                    view.Show_distances).toBool();
+	view.Show_coordinates                  = settings.value("view_show_coordinates",                  view.Show_coordinates).toBool();
+	view.Show_outlines                     = settings.value("view_show_outlines",                     view.Show_outlines).toBool();
+	view.Draw_outlines_on_selected_ships   = settings.value("view_draw_outlines_on_selected_ships",   view.Draw_outlines_on_selected_ships).toBool();
+	view.Draw_outline_at_warpin_position   = settings.value("view_draw_outline_at_warpin_position",   view.Draw_outline_at_warpin_position).toBool();
+	view.Show_grid_positions               = settings.value("view_show_grid_positions",               view.Show_grid_positions).toBool();
+	view.Show_dock_points                  = settings.value("view_show_dock_points",                  view.Show_dock_points).toBool();
+	view.Show_bay_paths                    = settings.value("view_show_bay_paths",                    view.Show_bay_paths).toBool();
+	view.Show_starts                       = settings.value("view_show_starts",                       view.Show_starts).toBool();
+	view.Show_ships                        = settings.value("view_show_ships",                        view.Show_ships).toBool();
+	view.Show_ship_info                    = settings.value("view_show_ship_info",                    view.Show_ship_info).toBool();
+	view.Show_ship_models                  = settings.value("view_show_ship_models",                  view.Show_ship_models).toBool();
+	view.Show_paths_fred                   = settings.value("view_show_paths_fred",                   view.Show_paths_fred).toBool();
+	view.Lighting_on                       = settings.value("view_lighting_on",                       view.Lighting_on).toBool();
+	view.FullDetail                        = settings.value("view_full_detail",                       view.FullDetail).toBool();
+	view.Show_waypoints                    = settings.value("view_show_waypoints",                    view.Show_waypoints).toBool();
+	view.Show_compass                      = settings.value("view_show_compass",                      view.Show_compass).toBool();
+	view.Highlight_selectable_subsys       = settings.value("view_highlight_selectable_subsys",       view.Highlight_selectable_subsys).toBool();
 	settings.endGroup();
 }
 
 void EditorViewport::saveSettings() const {
 	QSettings settings;
 	settings.beginGroup(SETTINGS_GROUP);
+	settings.setValue("toolbar_icon_size",                   toolbar_icon_size);
+	settings.setValue("offer_autosave_recovery",             Offer_autosave_recovery);
 	settings.setValue("move_ships_when_undocking",           Move_ships_when_undocking);
 	settings.setValue("always_save_display_names",           Always_save_display_names);
 	settings.setValue("error_checker_checks_potential_issues", Error_checker_checks_potential_issues);
@@ -160,6 +185,30 @@ void EditorViewport::saveSettings() const {
 	settings.setValue("show_sexp_help_mission_cutscenes",    Show_sexp_help_mission_cutscenes);
 	settings.setValue("show_sexp_help_ship_editor",          Show_sexp_help_ship_editor);
 	settings.setValue("show_sexp_help_wing_editor",          Show_sexp_help_wing_editor);
+	settings.setValue("dark_mode",                           Dark_mode);
+
+	settings.setValue("view_universal_heading",                 view.Universal_heading);
+	settings.setValue("view_show_stars",                        view.Show_stars);
+	settings.setValue("view_show_horizon",                      view.Show_horizon);
+	settings.setValue("view_show_grid",                         view.Show_grid);
+	settings.setValue("view_show_distances",                    view.Show_distances);
+	settings.setValue("view_show_coordinates",                  view.Show_coordinates);
+	settings.setValue("view_show_outlines",                     view.Show_outlines);
+	settings.setValue("view_draw_outlines_on_selected_ships",   view.Draw_outlines_on_selected_ships);
+	settings.setValue("view_draw_outline_at_warpin_position",   view.Draw_outline_at_warpin_position);
+	settings.setValue("view_show_grid_positions",               view.Show_grid_positions);
+	settings.setValue("view_show_dock_points",                  view.Show_dock_points);
+	settings.setValue("view_show_bay_paths",                    view.Show_bay_paths);
+	settings.setValue("view_show_starts",                       view.Show_starts);
+	settings.setValue("view_show_ships",                        view.Show_ships);
+	settings.setValue("view_show_ship_info",                    view.Show_ship_info);
+	settings.setValue("view_show_ship_models",                  view.Show_ship_models);
+	settings.setValue("view_show_paths_fred",                   view.Show_paths_fred);
+	settings.setValue("view_lighting_on",                       view.Lighting_on);
+	settings.setValue("view_full_detail",                       view.FullDetail);
+	settings.setValue("view_show_waypoints",                    view.Show_waypoints);
+	settings.setValue("view_show_compass",                      view.Show_compass);
+	settings.setValue("view_highlight_selectable_subsys",       view.Highlight_selectable_subsys);
 	settings.endGroup();
 }
 void EditorViewport::needsUpdate() {
@@ -229,6 +278,18 @@ void EditorViewport::select_objects(const Marking_box& box) {
 				valid = 0;
 			}
 
+			break;
+
+		case OBJ_PROP:
+			if (!view.Show_props) {
+				valid = 0;
+			}
+			break;
+
+		case OBJ_JUMP_NODE:
+			if (!view.Show_jump_nodes) {
+				valid = 0;
+			}
 			break;
 		}
 
@@ -318,6 +379,9 @@ void EditorViewport::move_mouse(int btn, int mdx, int mdy) {
 ///////////////////////////////////////////////////
 void EditorViewport::process_system_keys() {
 	auto& bindings = ControlBindings::instance();
+	if (dialogs::BriefingEditorDialog::isAnyDialogOpen()) {
+		return;
+	}
 	if (bindings.takeTriggered(ControlAction::ToggleSelectionLock)) {
 		Selection_lock = !Selection_lock;
 	}
@@ -326,6 +390,9 @@ void EditorViewport::process_system_keys() {
 
 void EditorViewport::process_controls(vec3d* pos, matrix* orient, float frametime, int mode) {
 	static std::unique_ptr<io::spacemouse::SpaceMouse> spacemouse = io::spacemouse::SpaceMouse::searchSpaceMice(0);
+	if (dialogs::BriefingEditorDialog::isAnyDialogOpen()) {
+		return;
+	}
 
 	if (Flying_controls_mode) {
 		memset(&view_controls, 0, sizeof(control_info));
@@ -748,6 +815,14 @@ int EditorViewport::object_check_collision(object* objp, vec3d* p0, vec3d* p1, v
 		}
 	}
 
+	if ((objp->type == OBJ_PROP) && !view.Show_props) {
+		return 0;
+	}
+
+	if ((objp->type == OBJ_JUMP_NODE) && !view.Show_jump_nodes) {
+		return 0;
+	}
+
 	if (objp->flags[Object::Object_Flags::Hidden, Object::Object_Flags::Locked_from_editing]) {
 		return 0;
 	}
@@ -791,24 +866,16 @@ int EditorViewport::select_object(int cx, int cy) {
 	vec3d p0, p1, v, hitpos;
 	vertex vt;
 
-	///! \fixme Briefing!
-#if 0
-    if (Briefing_dialog) {
-        best = Briefing_dialog->check_mouse_hit(cx, cy);
-        if (best >= 0)
-        {
-            if ((Selection_lock && !Objects[best].flags[Object::Object_Flags::Marked])) || Objects[best].flags[Object::Object_Flags::Locked_from_editing])
-            {
-                return -1;
-            }
-            return best;
-        }
-    }
-#endif
-
 	/*	gr_reset_clip();
 	g3_start_frame(0); ////////////////
 	g3_set_view_matrix(&eye_pos, &eye_orient, 0.5f);*/
+
+	// Mouse events can arrive when no frame is active (G3_count == 0) or when
+	// another renderer, such as the briefing map widget, has altered the frame state
+	// In those cases we cannot do a valid screen to world conversion
+	if (g3_in_frame() != 1) {
+		return -1;
+	}
 
 	//	Get 3d vector specified by mouse cursor location.
 	g3_point_to_vec(&v, cx, cy);
@@ -905,6 +972,20 @@ void EditorViewport::setObjectLayerByIndex(int objectIndex, size_t layerIndex) {
 		if (prop != nullptr) {
 			prop->fred_layer = layerName;
 		}
+	} else if (Objects[objectIndex].type == OBJ_JUMP_NODE) {
+		auto* jn = jumpnode_get_by_objnum(objectIndex);
+		if (jn != nullptr) {
+			jn->SetFredLayer(layerName);
+		}
+	} else if (Objects[objectIndex].type == OBJ_WAYPOINT) {
+		// Layer is tracked at the path level; sync all waypoints in the path to the same layer
+		auto* wl = find_waypoint_list_with_instance(Objects[objectIndex].instance, nullptr);
+		if (wl != nullptr) {
+			wl->set_fred_layer(layerName);
+			for (const auto& wpt : wl->get_waypoints()) {
+				_objectLayers[wpt.get_objnum()] = layerIndex;
+			}
+		}
 	}
 }
 
@@ -929,6 +1010,8 @@ bool EditorViewport::addLayer(const SCP_string& name, SCP_string* errorMessage) 
 	_layerNames.push_back(name);
 	_layerVisibility.push_back(true);
 	syncMissionLayerNames();
+	editor->notifyLayerStructureChanged();
+	editor->notifyLayerListChanged();
 	return true;
 }
 
@@ -950,14 +1033,20 @@ bool EditorViewport::deleteLayer(const SCP_string& name, SCP_string* errorMessag
 	_layerNames.erase(_layerNames.begin() + static_cast<SCP_vector<SCP_string>::difference_type>(layerIndex));
 	_layerVisibility.erase(_layerVisibility.begin() + static_cast<SCP_vector<bool>::difference_type>(layerIndex));
 
+	std::vector<int> toReassign;
 	for (auto& objectLayer : _objectLayers) {
 		if (objectLayer.second == layerIndex) {
-			setObjectLayerByIndex(objectLayer.first, 0);
+			toReassign.push_back(objectLayer.first);
 		} else if (objectLayer.second > layerIndex) {
 			--objectLayer.second;
 		}
 	}
+	for (int objIdx : toReassign) {
+		setObjectLayerByIndex(objIdx, 0);
+	}
 	syncMissionLayerNames();
+	editor->notifyLayerStructureChanged();
+	editor->notifyLayerListChanged();
 	return true;
 }
 
@@ -980,6 +1069,7 @@ bool EditorViewport::setLayerVisibility(const SCP_string& name, bool visible, SC
 	}
 
 	needsUpdate();
+	editor->notifyLayerVisibilityChanged();
 	return true;
 }
 
@@ -1024,6 +1114,7 @@ void EditorViewport::reloadLayersFromMission() {
 
 	_layerVisibility.resize(_layerNames.size(), true);
 	syncMissionLayerNames();
+	editor->notifyLayerListChanged();
 
 	for (int objectIndex = 0; objectIndex < MAX_OBJECTS; ++objectIndex) {
 		auto* objp = &Objects[objectIndex];
@@ -1039,6 +1130,18 @@ void EditorViewport::reloadLayersFromMission() {
 			auto* prop = prop_id_lookup(objp->instance);
 			if (prop != nullptr) {
 				const auto found = getLayerIndex(prop->fred_layer);
+				layerIndex = found == static_cast<size_t>(-1) ? 0 : found;
+			}
+		} else if (objp->type == OBJ_JUMP_NODE) {
+			auto* jn = jumpnode_get_by_objnum(objectIndex);
+			if (jn != nullptr) {
+				const auto found = getLayerIndex(jn->GetFredLayer());
+				layerIndex = found == static_cast<size_t>(-1) ? 0 : found;
+			}
+		} else if (objp->type == OBJ_WAYPOINT) {
+			auto* wl = find_waypoint_list_with_instance(objp->instance, nullptr);
+			if (wl != nullptr) {
+				const auto found = getLayerIndex(wl->get_fred_layer());
 				layerIndex = found == static_cast<size_t>(-1) ? 0 : found;
 			}
 		}
@@ -1071,6 +1174,7 @@ bool EditorViewport::moveObjectToLayer(int objectIndex, const SCP_string& layerN
 		editor->unmarkObject(objectIndex);
 	}
 	needsUpdate();
+	editor->notifyLayerStructureChanged();
 	return true;
 }
 
@@ -1092,6 +1196,7 @@ void EditorViewport::moveMarkedObjectsToLayer(const SCP_string& layerName, SCP_s
 		}
 	}
 	needsUpdate();
+	editor->notifyLayerStructureChanged();
 }
 
 bool EditorViewport::isObjectVisibleInLayer(const object* objp) const {
@@ -1126,25 +1231,38 @@ int EditorViewport::create_object_on_grid(int x, int y, int waypoint_instance) {
 }
 
 int EditorViewport::create_object_on_grid(int x, int y, int waypoint_instance, bool create_prop) {
-	int obj = -1;
-	float rval;
-	vec3d dir, pos;
-
-	g3_point_to_vec_delayed(&dir, x, y);
-
-	rval = fvi_ray_plane(&pos, &The_grid->center, &The_grid->gmatrix.vec.uvec, &view_pos, &dir, 0.0f);
-
-	if (rval >= 0.0f) {
-		editor->unmark_all();
-		obj = create_object(&pos, waypoint_instance, create_prop);
-		if (obj >= 0) {
-			editor->markObject(obj);
-
-			editor->autosave("object create");
-
-		} else if (obj == -1) {
-			dialogProvider->showButtonDialog(DialogType::Error, "Error", "Maximum ship limit reached.  Can't add any more ships.", { DialogButton::Ok });
+	float fallbackDist = 200.0f;
+	if (create_prop) {
+		if (cur_prop_index >= 0 && cur_prop_index < prop_info_size()) {
+			prop_info* pip = &Prop_info[cur_prop_index];
+			if (pip->model_num >= 0) {
+				fallbackDist = model_get_radius(pip->model_num) * 1.5f;
+			} else if (VALID_FNAME(pip->pof_file)) {
+				int modelNum = model_load(pip->pof_file.c_str());
+				if (modelNum >= 0) {
+					fallbackDist = model_get_radius(modelNum) * 1.5f;
+					model_unload(modelNum);
+				}
+			}
 		}
+	} else if (cur_model_index >= 0 && cur_model_index < (int)Ship_info.size() &&
+		cur_model_index != editor->Id_select_type_waypoint &&
+		cur_model_index != editor->Id_select_type_jump_node &&
+		Ship_info[cur_model_index].model_num >= 0) {
+		fallbackDist = model_get_radius(Ship_info[cur_model_index].model_num) * 1.5f;
+	}
+
+	vec3d pos = getCreatePosition(x, y, fallbackDist);
+	editor->unmark_all();
+	int obj = create_object(&pos, waypoint_instance, create_prop);
+	if (obj >= 0) {
+		editor->markObject(obj);
+
+		editor->missionChanged();
+		editor->autosave("object create");
+
+	} else if (obj == -1) {
+		dialogProvider->showButtonDialog(DialogType::Error, "Error", "Maximum ship limit reached.  Can't add any more ships.", { DialogButton::Ok });
 	}
 
 	return obj;
@@ -1191,6 +1309,56 @@ int EditorViewport::create_object(vec3d* pos, int waypoint_instance, bool create
 	needsUpdate();
 	return obj;
 }
+vec3d EditorViewport::getCreatePosition(int x, int y, float fallbackDist) {
+	vec3d dir, pos;
+	g3_point_to_vec_delayed(&dir, x, y);
+	if (fvi_ray_plane(&pos, &The_grid->center, &The_grid->gmatrix.vec.uvec, &view_pos, &dir, 0.0f) >= 0.0f) {
+		return pos;
+	}
+	vm_vec_scale_add(&pos, &view_pos, &view_orient.vec.fvec, fallbackDist);
+	return pos;
+}
+
+int EditorViewport::createShipAtScreenPos(int x, int y, int modelIndex) {
+	if (modelIndex < 0 || modelIndex >= (int)Ship_info.size() ||
+		Ship_info[modelIndex].flags[Ship::Info_Flags::No_fred]) {
+		return -1;
+	}
+	int savedModelIndex = cur_model_index;
+	cur_model_index = modelIndex;
+	int obj = create_object_on_grid(x, y, -1, false);
+	cur_model_index = savedModelIndex;
+	return obj;
+}
+
+int EditorViewport::createPropAtScreenPos(int x, int y, int propIndex) {
+	if (propIndex < 0 || propIndex >= prop_info_size() ||
+		Prop_info[propIndex].flags[Prop::Info_Flags::No_fred]) {
+		return -1;
+	}
+	int savedPropIndex = cur_prop_index;
+	cur_prop_index = propIndex;
+	int obj = create_object_on_grid(x, y, -1, true);
+	cur_prop_index = savedPropIndex;
+	return obj;
+}
+
+int EditorViewport::createWaypointAtScreenPos(int x, int y, int waypoint_instance) {
+	int savedModelIndex = cur_model_index;
+	cur_model_index = editor->Id_select_type_waypoint;
+	int obj = create_object_on_grid(x, y, waypoint_instance, false);
+	cur_model_index = savedModelIndex;
+	return obj;
+}
+
+int EditorViewport::createJumpNodeAtScreenPos(int x, int y) {
+	int savedModelIndex = cur_model_index;
+	cur_model_index = editor->Id_select_type_jump_node;
+	int obj = create_object_on_grid(x, y, -1, false);
+	cur_model_index = savedModelIndex;
+	return obj;
+}
+
 void EditorViewport::initialSetup() {
 	cur_model_index = get_default_player_ship_index();
 	for (int i = 0; i < prop_info_size(); ++i) {
@@ -1646,5 +1814,4 @@ void EditorViewport::view_object(int obj_num) {
 	needsUpdate();
 }
 
-}
-}
+} // namespace fso::fred

@@ -64,7 +64,7 @@ void read_multi_stats(pilot::FileHandler* handler, scoring_special_t* scoring) {
 		ilist.index = ship_info_lookup(ilist.name.c_str());
 		ilist.val = handler->readInt("val");
 
-		scoring->ship_kills.push_back(ilist);
+		scoring->ship_kills.push_back(std::move(ilist));
 	}
 	handler->endArrayRead();
 
@@ -78,7 +78,7 @@ void read_multi_stats(pilot::FileHandler* handler, scoring_special_t* scoring) {
 		ilist.index = medals_info_lookup(ilist.name.c_str());
 		ilist.val = handler->readInt("val");
 
-		scoring->medals_earned.push_back(ilist);
+		scoring->medals_earned.push_back(std::move(ilist));
 	}
 	handler->endArrayRead();
 }

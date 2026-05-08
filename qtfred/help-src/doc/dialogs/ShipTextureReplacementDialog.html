@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Texture Replacement - QtFRED Help</title>
+    <link rel="stylesheet" type="text/css" href="../css/help.css"/>
+</head>
+<body>
+<nav class="breadcrumb"><a href="../index.html">QtFRED Help</a> &rsaquo; <a href="ShipEditorDialog.html">Ship Editor</a> &rsaquo; Texture Replacement</nav>
+<h1>Texture Replacement</h1>
+<p>Accessed via the <strong>Texture Replacement</strong> button in the <a href="ShipEditorDialog.html">Ship Editor</a>.</p>
+<p>Overrides textures on this ship instance without modifying the ship class or its
+table entry.</p>
+
+<h2>Texture list</h2>
+<p>The left panel lists all base diffuse textures on the ship's model. Select one to
+set its replacement. Type the replacement texture name in the <strong>New
+Texture</strong> field, no file extension needed.</p>
+
+<h2>Other Maps</h2>
+<p>When the selected texture slot has additional map types defined on the model
+(glow, normal, specular, etc.), this section shows a control for each one. Each
+map type has:</p>
+<ul>
+    <li><strong>Replace</strong> - check to enable a replacement for this map
+        type.</li>
+    <li><strong>Inherit</strong> - automatically derives the replacement name by
+        appending the map type suffix to the main texture replacement name (e.g.
+        replacing <code>fighter01</code> with <code>myfighter</code> and inheriting
+        the normal map produces <code>myfighter-normal</code>). Uncheck to enter the
+        name manually.</li>
+</ul>
+<p>Models that only define a base diffuse texture will show no controls in this
+section.</p>
+</body>
+</html>

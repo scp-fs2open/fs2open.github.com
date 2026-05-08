@@ -4123,7 +4123,7 @@ void game_do_full_frame(DEBUG_TIMER_SIG const vec3d* offset = nullptr, const mat
 			if (fov_override)
 				g3_set_fov(*fov_override);
 
-			scripting::hooks::OnHudDraw->run(scripting::hooks::ObjectDrawConditions{ Viewer_obj }, scripting_param_list);
+			scripting::hooks::OnHudDraw->run(scripting::hooks::ObjectDrawConditions{ Viewer_obj }, std::move(scripting_param_list));
 		}
 	}
 
@@ -5433,7 +5433,7 @@ void game_leave_state( int old_state, int new_state )
 				common_select_close();
 			}
 
-			if (new_state != GS_STATE_CONTROL_CONFIG && new_state != GS_STATE_HUD_CONFIG) {
+			if (new_state != GS_STATE_CONTROL_CONFIG && new_state != GS_STATE_HUD_CONFIG && new_state != GS_STATE_INGAME_OPTIONS) {
 				// unpause all sounds, since we could be headed back to the game
 				// only unpause if we're in-mission; we could also be in the main hall
 				if (Game_mode & GM_IN_MISSION) {
@@ -5783,7 +5783,7 @@ void game_enter_state( int old_state, int new_state )
 
 	if(scripting::hooks::OnStateStart->isActive()) {
 		if (scripting::hooks::OnStateStart->isOverride(script_param_list)) {
-			scripting::hooks::OnStateStart->run(script_param_list);
+			scripting::hooks::OnStateStart->run(std::move(script_param_list));
 			return;
 		}
 	}
@@ -7437,11 +7437,11 @@ void Do_model_timings_test()
 	int model_id[MAX_POLYGON_MODELS];
 
 	// Load them all
-	for (auto & sip : Ship_info) {
-		sip.model_num = model_load(sip.pof_file);
+	for (auto & si : Ship_info) {
+		si.model_num = model_load(&si, false);
 
-		model_used[sip.model_num % MAX_POLYGON_MODELS]++;
-		model_id[sip.model_num % MAX_POLYGON_MODELS] = sip.model_num;
+		model_used[si.model_num % MAX_POLYGON_MODELS]++;
+		model_id[si.model_num % MAX_POLYGON_MODELS] = si.model_num;
 	}
 
 	Texture_fp = fopen( NOX("ShipTextures.txt"), "wt" );

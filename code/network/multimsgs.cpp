@@ -8783,7 +8783,7 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 			//spawn particle effect
 			auto particleSource = particle::ParticleManager::get()->createSource(wip.muzzle_effect);
 			//This could potentially be attached to the ship, but might look weird if the spawn position of the weapon is ever interpolated away from the ship's barrel.
-			particleSource->setHost(make_unique<EffectHostVector>(pos, orient, objp->phys_info.vel));
+			particleSource->setHost(std::make_unique<EffectHostVector>(pos, orient, objp->phys_info.vel));
 			particleSource->setTriggerRadius(wp_obj.radius * radius_mult);
 			particleSource->setTriggerVelocity(vm_vec_mag_quick(&wp_obj.phys_info.vel));
 			particleSource->finishCreation();

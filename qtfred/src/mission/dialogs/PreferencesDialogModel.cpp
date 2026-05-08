@@ -1,6 +1,7 @@
 #include "PreferencesDialogModel.h"
 
 #include "mission/EditorViewport.h"
+#include "ui/Theme.h"
 #include "mission/missiongrid.h"
 #include "math/vecmat.h"
 
@@ -8,6 +9,7 @@ namespace fso::fred::dialogs {
 
 PreferencesDialogModel::PreferencesDialogModel(QObject* parent, EditorViewport* viewport)
 	: AbstractDialogModel(parent, viewport)
+	, _offerAutosaveRecovery(viewport->Offer_autosave_recovery)
 	, _moveShipsWhenUndocking(viewport->Move_ships_when_undocking)
 	, _alwaysSaveDisplayNames(viewport->Always_save_display_names)
 	, _errorCheckerChecksForPotentialIssues(viewport->Error_checker_checks_potential_issues)
@@ -16,6 +18,8 @@ PreferencesDialogModel::PreferencesDialogModel(QObject* parent, EditorViewport* 
 	, _showSexpHelpMissionCutscenes(viewport->Show_sexp_help_mission_cutscenes)
 	, _showSexpHelpShipEditor(viewport->Show_sexp_help_ship_editor)
 	, _showSexpHelpWingEditor(viewport->Show_sexp_help_wing_editor)
+	, _darkMode(viewport->Dark_mode)
+	, _toolbarIconSize(viewport->toolbar_icon_size)
 	, _gridCenterX(static_cast<int>(viewport->The_grid->center.xyz.x))
 	, _gridCenterY(static_cast<int>(viewport->The_grid->center.xyz.y))
 	, _gridCenterZ(static_cast<int>(viewport->The_grid->center.xyz.z))
@@ -37,6 +41,7 @@ PreferencesDialogModel::PreferencesDialogModel(QObject* parent, EditorViewport* 
 }
 
 bool PreferencesDialogModel::apply() {
+	_viewport->Offer_autosave_recovery   = _offerAutosaveRecovery;
 	_viewport->Move_ships_when_undocking = _moveShipsWhenUndocking;
 	_viewport->Always_save_display_names = _alwaysSaveDisplayNames;
 	_viewport->Error_checker_checks_potential_issues = _errorCheckerChecksForPotentialIssues;
@@ -45,8 +50,11 @@ bool PreferencesDialogModel::apply() {
 	_viewport->Show_sexp_help_mission_cutscenes = _showSexpHelpMissionCutscenes;
 	_viewport->Show_sexp_help_ship_editor       = _showSexpHelpShipEditor;
 	_viewport->Show_sexp_help_wing_editor       = _showSexpHelpWingEditor;
+	_viewport->Dark_mode                        = _darkMode;
+	_viewport->toolbar_icon_size                = _toolbarIconSize;
 
 	_viewport->saveSettings();
+	applyEditorTheme(_darkMode);
 
 	auto& bindings = ControlBindings::instance();
 	for (const auto& entry : _controlKeys) {
@@ -82,6 +90,9 @@ void PreferencesDialogModel::reject() {
 	// Nothing to do — data sources are not modified until apply()
 }
 
+bool PreferencesDialogModel::getOfferAutosaveRecovery() const { return _offerAutosaveRecovery; }
+void PreferencesDialogModel::setOfferAutosaveRecovery(bool value) { modify(_offerAutosaveRecovery, value); }
+
 bool PreferencesDialogModel::getMoveShipsWhenUndocking() const { return _moveShipsWhenUndocking; }
 void PreferencesDialogModel::setMoveShipsWhenUndocking(bool value) { modify(_moveShipsWhenUndocking, value); }
 
@@ -101,6 +112,12 @@ bool PreferencesDialogModel::getShowSexpHelpShipEditor() const { return _showSex
 void PreferencesDialogModel::setShowSexpHelpShipEditor(bool value) { modify(_showSexpHelpShipEditor, value); }
 bool PreferencesDialogModel::getShowSexpHelpWingEditor() const { return _showSexpHelpWingEditor; }
 void PreferencesDialogModel::setShowSexpHelpWingEditor(bool value) { modify(_showSexpHelpWingEditor, value); }
+
+bool PreferencesDialogModel::getDarkMode() const { return _darkMode; }
+void PreferencesDialogModel::setDarkMode(bool value) { modify(_darkMode, value); }
+
+int  PreferencesDialogModel::getToolbarIconSize() const { return _toolbarIconSize; }
+void PreferencesDialogModel::setToolbarIconSize(int size) { modify(_toolbarIconSize, size); }
 
 QKeySequence PreferencesDialogModel::getControlKey(ControlAction action) const {
 	auto it = _controlKeys.find(action);

@@ -165,6 +165,26 @@ struct submodel_instance
 									//Used by scripting - if you change this, do a search
 									//to update switch() statement in lua.cpp
 
+inline const SCP_map<int, SCP_string> MODEL_TEXTURE_SUFFIXES = {
+	{ TM_GLOW_TYPE,       "-glow" },
+	{ TM_SPECULAR_TYPE,   "-shine" },
+	{ TM_NORMAL_TYPE,     "-normal" },
+	{ TM_HEIGHT_TYPE,     "-height" },
+	{ TM_MISC_TYPE,       "-misc" },
+	{ TM_SPEC_GLOSS_TYPE, "-reflect" },
+	{ TM_AMBIENT_TYPE,    "-ao" }
+};
+
+inline const SCP_string MODEL_TEXTURE_SUFFIX_TRANS = "-trans"; // -trans is a special case as other suffixes can be appended to it
+
+inline const SCP_string& model_texture_longest_suffix() {
+	return std::max_element(MODEL_TEXTURE_SUFFIXES.begin(),
+		MODEL_TEXTURE_SUFFIXES.end(),
+		[](const std::pair<int, SCP_string>& left, const std::pair<int, SCP_string>& right) {
+			return left.second.size() < right.second.size();
+		})->second;
+}
+
 #define MAX_REPLACEMENT_TEXTURES MAX_MODEL_TEXTURES * TM_NUM_TYPES
 
 // Goober5000 - since we need something < 0
@@ -735,6 +755,11 @@ typedef struct insignia {
 	vec3d vecs[MAX_INS_VECS];								// vertex list	
 	vec3d offset;	// global position offset for this insignia
 	vec3d norm[MAX_INS_VECS]	;					//normal of the insignia-Bobboau
+
+	// Computed fields for decal rendering
+	vec3d position;
+	matrix orientation;
+	float diameter;
 } insignia;
 
 #define PM_FLAG_ALLOW_TILING			(1<<0)					// Allow texture tiling
@@ -1000,9 +1025,11 @@ void model_free_all();
 void model_instance_free_all();
 
 // Alias to model_load, checks if a pof tech model exists and loads it if specified, otherwise loads the default pof. --wookieejedi
+// NOTE: Each time model_load is called with a ship_info pointer, which causes it to load subsystems, the model number is also assigned to the ship_info.
 int model_load(ship_info* sip, bool prefer_tech_model);
 
 // Loads a model from disk and returns the model number it loaded into.
+// NOTE: Each time model_load is called with a ship_info pointer, which causes it to load subsystems, the model number is also assigned to the ship_info.
 int model_load(const char *filename, ship_info* sip = nullptr, ErrorType error_type = ErrorType::FATAL_ERROR, bool allow_redundant_load = false);
 
 int model_create_instance(int objnum, int model_num);

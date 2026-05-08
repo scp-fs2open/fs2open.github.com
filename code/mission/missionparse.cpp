@@ -328,6 +328,7 @@ flag_def_list_new<Ship::Ship_Flags> Parse_ship_flags[] = {
 	{"cannot-perform-scan-hide-cargo", Ship::Ship_Flags::Cannot_perform_scan_hide_cargo, true, false},
 	{"cannot-perform-scan-show-cargo", Ship::Ship_Flags::Cannot_perform_scan_show_cargo, true, false},
 	{"no-targeting-limits", Ship::Ship_Flags::No_targeting_limits, true, false},
+	{"no-scanned-cargo", Ship::Ship_Flags::No_scanned_cargo, true, false},
 	{"force-shields-on", Ship::Ship_Flags::Force_shields_on, true, false},
 	{"Destroy before Mission", Ship::Ship_Flags::Kill_before_mission,true, false}, //Not Printed to misson so can use descriptive name
 }
@@ -433,6 +434,7 @@ parse_object_flag_description<Mission::Mission_Flags> Parse_mission_flag_descrip
 };
 
 const size_t Num_parse_mission_flags = sizeof(Parse_mission_flags) / sizeof(flag_def_list_new<Mission::Mission_Flags>);
+const size_t Num_parse_mission_flag_descriptions = sizeof(Parse_mission_flag_descriptions) / sizeof(parse_object_flag_description<Mission::Mission_Flags>);
 
 flag_def_list_new<Mission::Parse_Object_Flags> Parse_object_flags[] = {
     { "cargo-known",					Mission::Parse_Object_Flags::SF_Cargo_known,			true, false },
@@ -499,6 +501,7 @@ flag_def_list_new<Mission::Parse_Object_Flags> Parse_object_flags[] = {
 	{ "cannot-perform-scan-hide-cargo",		Mission::Parse_Object_Flags::SF_Cannot_perform_scan_hide_cargo, true, false },
 	{ "cannot-perform-scan-show-cargo",		Mission::Parse_Object_Flags::SF_Cannot_perform_scan_show_cargo, true, false },
 	{ "no-targeting-limits",				Mission::Parse_Object_Flags::SF_No_targeting_limits, true, false},
+	{ "no-scanned-cargo",					Mission::Parse_Object_Flags::SF_No_scanned_cargo, true, false },
 };
 
 parse_object_flag_description<Mission::Parse_Object_Flags> Parse_object_flag_descriptions[] = {
@@ -566,6 +569,7 @@ parse_object_flag_description<Mission::Parse_Object_Flags> Parse_object_flag_des
 	{ Mission::Parse_Object_Flags::SF_Cannot_perform_scan_hide_cargo, "Ship cannot scan other ships, and the cargo line will not be shown on the HUD."},
 	{ Mission::Parse_Object_Flags::SF_Cannot_perform_scan_show_cargo, "Ship cannot scan other ships, but the cargo line will be shown on the HUD."},
 	{ Mission::Parse_Object_Flags::SF_No_targeting_limits,			"Ship is always targetable regardless of AWACS or targeting range limits."},
+	{ Mission::Parse_Object_Flags::SF_No_scanned_cargo,				"Cargo is never revealed; only shows 'Scanned' or 'Not Scanned'. Needs $Unify Scanning Behavior in game_settings.tbl."},
 };
 
 const size_t Num_parse_object_flags = sizeof(Parse_object_flags) / sizeof(flag_def_list_new<Mission::Parse_Object_Flags>);
@@ -598,6 +602,7 @@ parse_object_flag_description<Ship::Wing_Flags> Parse_wing_flag_descriptions[] =
 	{ Ship::Wing_Flags::Same_departure_warp_when_docked, "Docked ship use the same warp effect size upon departure as if they were not docked instead of the enlarged aggregate size." }};
 
 const size_t Num_parse_wing_flags = sizeof(Parse_wing_flags) / sizeof(flag_def_list_new<Ship::Wing_Flags>);
+const size_t Num_parse_wing_flag_descriptions = sizeof(Parse_wing_flag_descriptions) / sizeof(parse_object_flag_description<Ship::Wing_Flags>);
 
 flag_def_list_new<Mission::Parse_Object_Flags> Parse_prop_flags[] = {
     { "no_collide",						Mission::Parse_Object_Flags::OF_No_collide,				true, false },
@@ -608,6 +613,7 @@ parse_object_flag_description<Mission::Parse_Object_Flags> Parse_prop_flag_descr
 };
 
 const size_t Num_parse_prop_flags = sizeof(Parse_prop_flags) / sizeof(flag_def_list_new<Mission::Parse_Object_Flags>);
+const size_t Num_parse_prop_flag_descriptions = sizeof(Parse_prop_flag_descriptions) / sizeof(parse_object_flag_description<Mission::Parse_Object_Flags>);
 
 // These are only the flags that are saved to the mission file.  See the MEF_ #defines.
 flag_def_list Mission_event_flags[] = {
@@ -3147,6 +3153,8 @@ void resolve_parse_flags(object *objp, flagset<Mission::Parse_Object_Flags> &par
 		shipp->flags.set(Ship::Ship_Flags::Cannot_perform_scan_hide_cargo);
 	if (parse_flags[Mission::Parse_Object_Flags::SF_Cannot_perform_scan_show_cargo])
 		shipp->flags.set(Ship::Ship_Flags::Cannot_perform_scan_show_cargo);
+	if (parse_flags[Mission::Parse_Object_Flags::SF_No_scanned_cargo])
+		shipp->flags.set(Ship::Ship_Flags::No_scanned_cargo);
 
 	if (parse_flags[Mission::Parse_Object_Flags::SF_No_targeting_limits])
 		shipp->flags.set(Ship::Ship_Flags::No_targeting_limits);
@@ -5329,7 +5337,7 @@ void resolve_path_masks(bool path_user_is_ship, const char *path_user, anchor_t 
 	// uninitialized; compute the mask from scratch
 	if (prp->cached_mask & (1 << MAX_SHIP_BAY_PATHS))
 	{
-		int j, bay_path, modelnum;
+		int j, bay_path;
 
 		// get anchor ship
 		Assertion(anchor.isValid() && !(anchor.value() & ANCHOR_SPECIAL_ARRIVAL), "%s %s anchor %d is invalid or is a special arrival.  Get a coder!", path_user_is_ship ? "Ship" : "Wing", path_user, anchor.value());
@@ -5338,13 +5346,13 @@ void resolve_path_masks(bool path_user_is_ship, const char *path_user, anchor_t 
 
 		// Load the anchor ship model with subsystems and all; it'll need to be done for this mission anyway
 		auto anchor_sip = anchor_ship_entry->sip();
-		modelnum = model_load(anchor_sip->pof_file, anchor_sip);
+		anchor_sip->model_num = model_load(anchor_sip->pof_file, anchor_sip);
 
 		// resolve names to indexes
 		*path_mask = 0;
 		for	(j = 0; j < prp->num_paths; j++)
 		{
-			bay_path = model_find_bay_path(modelnum, prp->path_names[j]);
+			bay_path = model_find_bay_path(anchor_sip->model_num, prp->path_names[j]);
 			if (bay_path < 0)
 				continue;
 
@@ -5850,6 +5858,18 @@ void parse_waypoint_list(mission *pm)
 		stuff_int(&cb);
 	}
 
+	SCP_string wpt_fred_layer = "Default";
+	if (optional_string("+Layer:")) {
+		stuff_string(wpt_fred_layer, F_NAME);
+		if (!mission_has_layer_name(&The_mission, wpt_fred_layer)) {
+			if (wpt_fred_layer.empty()) {
+				wpt_fred_layer = "Default";
+			} else {
+				The_mission.fred_layers.push_back(wpt_fred_layer);
+			}
+		}
+	}
+
 	SCP_vector<vec3d> vec_list;
 	required_string("$List:");
 	stuff_vec3d_list(vec_list);
@@ -5857,13 +5877,14 @@ void parse_waypoint_list(mission *pm)
 	waypoint_add_list(name_buf, vec_list);
 
 	// Apply display properties to the list just added
-	if (no_draw_lines || has_custom_color) {
-		waypoint_list* wl = find_matching_waypoint_list(name_buf);
-		if (wl) {
+	waypoint_list* wl = find_matching_waypoint_list(name_buf);
+	if (wl) {
+		if (no_draw_lines || has_custom_color) {
 			wl->set_no_draw_lines(no_draw_lines);
 			if (has_custom_color)
 				wl->set_color(cr, cg, cb);
 		}
+		wl->set_fred_layer(wpt_fred_layer);
 	}
 }
 
@@ -5909,6 +5930,19 @@ void parse_waypoints_and_jumpnodes(mission *pm)
 			int hide;
 			stuff_boolean(&hide);
 			jnp.SetVisibility(!hide);
+		}
+
+		if (optional_string("+Layer:")) {
+			SCP_string layer_name;
+			stuff_string(layer_name, F_NAME);
+			if (!mission_has_layer_name(&The_mission, layer_name)) {
+				if (layer_name.empty()) {
+					layer_name = "Default";
+				} else {
+					The_mission.fred_layers.push_back(layer_name);
+				}
+			}
+			jnp.SetFredLayer(layer_name);
 		}
 
 		Jump_nodes.push_back(std::move(jnp));
@@ -6358,7 +6392,11 @@ void parse_asteroid_fields(mission *pm)
 				if (optional_string("+Field Debris Type:")) {
 					int subtype;
 					stuff_int(&subtype);
-					Asteroid_field.field_asteroid_type.push_back(colors[subtype]);
+					if (subtype >= 0 && subtype < NUM_ASTEROID_SIZES) {
+						Asteroid_field.field_asteroid_type.push_back(colors[subtype]);
+					} else {
+						WarningEx(LOCATION, "Invalid +Field Debris Type value %d in asteroid field (must be 0-%d); ignoring.", subtype, NUM_ASTEROID_SIZES - 1);
+					}
 				}
 			}
 
@@ -6389,7 +6427,7 @@ void parse_asteroid_fields(mission *pm)
 				}
 
 				if (valid){
-					Asteroid_field.field_asteroid_type.push_back(ast_name);
+					Asteroid_field.field_asteroid_type.push_back(std::move(ast_name));
 				} else {
 					WarningEx(LOCATION, "Mission %s\n Invalid asteroid %s!", pm->name, ast_name.c_str());
 				}
@@ -6633,7 +6671,7 @@ void parse_custom_data(mission* pm)
 			required_string("+String:");
 			stuff_string(cs.text, F_MULTITEXT);
 
-			pm->custom_strings.push_back(cs);
+			pm->custom_strings.push_back(std::move(cs));
 		}
 
 		required_string("$end_custom_strings");
@@ -7036,7 +7074,9 @@ bool post_process_mission(mission *pm)
 
 				if (valid) {
 					ship_info* sip = &Ship_info[icon.ship_class];
-					stage.icons[j].modelnum = model_load(sip->pof_file, sip);
+					int modelnum = model_load(sip->pof_file, sip);
+					stage.icons[j].modelnum = modelnum;
+					sip->model_num = modelnum;
 				}
 			}
 		}
@@ -8905,10 +8945,10 @@ void check_anchor_for_hangar_bay(SCP_string &message, SCP_set<anchor_t> &anchors
 	{
 		// Load the anchor ship model with subsystems and all; it'll need to be done for this mission anyway
 		auto anchor_sip = anchor_ship_entry->sip();
-		int modelnum = model_load(anchor_sip->pof_file, anchor_sip);
+		anchor_sip->model_num = model_load(anchor_sip->pof_file, anchor_sip);
 
 		// Check if this model has a hangar bay
-		if (!model_has_hangar_bay(modelnum))
+		if (!model_has_hangar_bay(anchor_sip->model_num))
 		{
 			sprintf(message, "%s (%s) is used as a%s anchor by %s %s (and possibly elsewhere too), but it does not have a hangar bay!", anchor_ship_entry->name,
 				anchor_sip->name, is_arrival ? "n arrival" : " departure", other_is_ship ? "ship" : "wing", other_name);
@@ -9519,5 +9559,29 @@ bool check_for_24_3_data()
 
 bool check_for_25_1_data()
 {
-	return (count_items_with_value(Props) > 0);
+	if (count_items_with_value(Props) > 0)
+		return true;
+
+	constexpr auto defaultLayer = "Default";
+
+	for (const auto& so : list_range(&Ship_obj_list))
+	{
+		auto shipp = &Ships[Objects[so->objnum].instance];
+		if (!shipp->fred_layer.empty() && !lcase_equal(shipp->fred_layer, defaultLayer))
+			return true;
+	}
+
+	for (const auto& wl : Waypoint_lists)
+	{
+		if (wl.get_no_draw_lines() || wl.get_has_custom_color())
+			return true;
+		const auto& layer = wl.get_fred_layer();
+		if (!layer.empty() && !lcase_equal(layer, defaultLayer))
+			return true;
+	}
+
+	return std::any_of(Jump_nodes.begin(), Jump_nodes.end(), [defaultLayer](const auto& jn) {
+		const auto& layer = jn.GetFredLayer();
+		return !layer.empty() && !lcase_equal(layer, defaultLayer);
+	});
 }

@@ -65,9 +65,11 @@ bool LayerManagerDialogModel::isDefaultLayer(const SCP_string& name) {
 
 // --- Object type filters ---
 
-bool LayerManagerDialogModel::getShowShips() const    { return _viewport->view.Show_ships; }
-bool LayerManagerDialogModel::getShowStarts() const   { return _viewport->view.Show_starts; }
-bool LayerManagerDialogModel::getShowWaypoints() const { return _viewport->view.Show_waypoints; }
+bool LayerManagerDialogModel::getShowShips() const      { return _viewport->view.Show_ships; }
+bool LayerManagerDialogModel::getShowStarts() const     { return _viewport->view.Show_starts; }
+bool LayerManagerDialogModel::getShowWaypoints() const  { return _viewport->view.Show_waypoints; }
+bool LayerManagerDialogModel::getShowProps() const      { return _viewport->view.Show_props; }
+bool LayerManagerDialogModel::getShowJumpNodes() const  { return _viewport->view.Show_jump_nodes; }
 
 void LayerManagerDialogModel::setShowShips(bool value) {
 	if (_viewport->view.Show_ships != value) {
@@ -86,6 +88,20 @@ void LayerManagerDialogModel::setShowStarts(bool value) {
 void LayerManagerDialogModel::setShowWaypoints(bool value) {
 	if (_viewport->view.Show_waypoints != value) {
 		_viewport->view.Show_waypoints = value;
+		_viewport->needsUpdate();
+	}
+}
+
+void LayerManagerDialogModel::setShowProps(bool value) {
+	if (_viewport->view.Show_props != value) {
+		_viewport->view.Show_props = value;
+		_viewport->needsUpdate();
+	}
+}
+
+void LayerManagerDialogModel::setShowJumpNodes(bool value) {
+	if (_viewport->view.Show_jump_nodes != value) {
+		_viewport->view.Show_jump_nodes = value;
 		_viewport->needsUpdate();
 	}
 }

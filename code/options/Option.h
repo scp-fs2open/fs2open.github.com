@@ -532,8 +532,8 @@ class OptionBuilder {
 			display_mapping.emplace(p.first, p.second);
 		}
 
-		_instance.setValueEnumerator(VectorEnumerator<T>(values));
-		_instance.setDisplayFunc(MapValueDisplay<T>(display_mapping));
+		_instance.setValueEnumerator(VectorEnumerator<T>(std::move(values)));
+		_instance.setDisplayFunc(MapValueDisplay<T>(std::move(display_mapping)));
 		return *this;
 	}
 	//The string to display for the option values, usually a function that returns a string

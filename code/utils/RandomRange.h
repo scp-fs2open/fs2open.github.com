@@ -84,7 +84,7 @@ class RandomRange {
   public:
 	template <typename T, typename... Ts, typename = typename std::enable_if<(sizeof... (Ts) >=1 || !std::is_convertible<T, ValueType>::value) && !std::is_same_v<std::decay_t<T>, RandomRange>, int>::type>
 	explicit RandomRange(T&& distributionFirstParameter, Ts&&... distributionParameters)
-		: m_generator(std::random_device()()), m_distribution(distributionFirstParameter, distributionParameters...)
+		: m_generator(seeder()), m_distribution(distributionFirstParameter, distributionParameters...)
 	{
 		m_minValue = static_cast<ValueType>(m_distribution.min());
 		m_maxValue = static_cast<ValueType>(m_distribution.max());
@@ -98,7 +98,7 @@ class RandomRange {
 		m_constant = true;
 	}
 
-	RandomRange() : m_generator(std::random_device()()), m_distribution()
+	RandomRange() : m_generator(seeder()), m_distribution()
 	{
 		m_minValue = static_cast<ValueType>(0.0);
 		m_maxValue = static_cast<ValueType>(0.0);

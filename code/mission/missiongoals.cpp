@@ -752,7 +752,7 @@ void mission_goal_status_change( int goal_num, int new_status)
 			isOverride = true; // Override here only prevents displaying the goals and playing the music. Everything
 							   // else still runs.
 		}
-		scripting::hooks::OnMissionGoalStatusChanged->run(paramList);
+		scripting::hooks::OnMissionGoalStatusChanged->run(std::move(paramList));
 	}
 
 	Mission_goals[goal_num].satisfied = new_status;

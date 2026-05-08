@@ -587,7 +587,7 @@ namespace particle {
 				case ParticleEffectLegacyType::Sphere: {
 					parseParticleProperties(effect);
 
-					effect.m_velocityVolume = make_shared<SpheroidVolume>(1.f, 1.f, 1.f);
+					effect.m_velocityVolume = std::make_shared<SpheroidVolume>(1.f, 1.f, 1.f);
 
 					parseVelocityVolumeScale<false>(effect);
 					parseParticleNumber<false>(effect);
@@ -657,7 +657,7 @@ namespace particle {
 						}
 					}
 
-					effect.m_spawnVolume = make_shared<SpheroidVolume>(bias, stretch, radius);
+					effect.m_spawnVolume = std::make_shared<SpheroidVolume>(bias, stretch, radius);
 
 					parseVelocityInherit<false>(effect);
 					parseTiming<false>(effect);

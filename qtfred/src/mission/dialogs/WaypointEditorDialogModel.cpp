@@ -84,6 +84,7 @@ void WaypointEditorDialogModel::initializeData()
 	}
 
 	Q_EMIT waypointPathMarkingChanged();
+	_modified = false;
 }
 
 void WaypointEditorDialogModel::updateWaypointPathList()
@@ -214,7 +215,10 @@ void WaypointEditorDialogModel::setCurrentlySelectedPath(int id)
 		return; // out of range; ignore
 	}
 
-	if (apply()) {
+	// Only apply if there is actually a current path to save changes to.
+	bool canProceed = (_editor->cur_waypoint_list == nullptr) || apply();
+
+	if (canProceed) {
 		_editor->unmark_all();
 
 		// mark all waypoints belonging to the selected list
@@ -238,6 +242,44 @@ bool WaypointEditorDialogModel::isEnabled() const {
 const SCP_vector<std::pair<SCP_string, int>>& WaypointEditorDialogModel::getWaypointPathList() const
 {
 	return _waypointPathList;
+}
+
+SCP_string WaypointEditorDialogModel::getLayer() const
+{
+	if (_editor->cur_waypoint_list == nullptr)
+		return "";
+
+	int listIndex = find_index_of_waypoint_list(_editor->cur_waypoint_list);
+	SCP_string result;
+	bool first = true;
+
+	for (auto* ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
+		if (ptr->type == OBJ_WAYPOINT && calc_waypoint_list_index(ptr->instance) == listIndex) {
+			SCP_string layer = _viewport->getObjectLayerName(OBJ_INDEX(ptr));
+			if (first) {
+				result = layer;
+				first = false;
+			} else if (result != layer) {
+				return "";
+			}
+		}
+	}
+	return result;
+}
+
+void WaypointEditorDialogModel::setLayer(const SCP_string& layer)
+{
+	if (_editor->cur_waypoint_list == nullptr)
+		return;
+
+	int listIndex = find_index_of_waypoint_list(_editor->cur_waypoint_list);
+	for (auto* ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
+		if (ptr->type == OBJ_WAYPOINT && calc_waypoint_list_index(ptr->instance) == listIndex) {
+			_viewport->moveObjectToLayer(OBJ_INDEX(ptr), layer);
+		}
+	}
+	set_modified();
+	_editor->missionChanged();
 }
 
 bool WaypointEditorDialogModel::getNoDrawLines() const { return _noDrawLines; }

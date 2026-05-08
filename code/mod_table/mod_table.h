@@ -205,6 +205,7 @@ extern bool Disable_expensive_turret_target_check;
 extern float Shield_percent_skips_damage;
 extern float Min_radius_for_persistent_debris;
 extern bool Zero_radius_explosions_skip_fireballs;
+extern bool Render_insignias_as_decals;
 
 void mod_table_init();
 void mod_table_post_process();

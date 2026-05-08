@@ -20,9 +20,9 @@ const int INVALID_WAYPOINT_POSITION = INT_MAX;
 //********************CLASS MEMBERS********************
 waypoint::waypoint()
 {
-	this->m_position.xyz.x = 0.0f;
-	this->m_position.xyz.y = 0.0f;
-	this->m_position.xyz.z = 0.0f;
+	this->m_parsed_position.xyz.x = 0.0f;
+	this->m_parsed_position.xyz.y = 0.0f;
+	this->m_parsed_position.xyz.z = 0.0f;
 
 	this->m_objnum = -1;
 }
@@ -31,9 +31,9 @@ waypoint::waypoint(const vec3d *position)
 {
 	Assert(position != NULL);
 
-	this->m_position.xyz.x = position->xyz.x;
-	this->m_position.xyz.y = position->xyz.y;
-	this->m_position.xyz.z = position->xyz.z;
+	this->m_parsed_position.xyz.x = position->xyz.x;
+	this->m_parsed_position.xyz.y = position->xyz.y;
+	this->m_parsed_position.xyz.z = position->xyz.z;
 
 	this->m_objnum = -1;
 }
@@ -45,7 +45,10 @@ waypoint::~waypoint()
 
 const vec3d *waypoint::get_pos() const
 {
-	return &m_position;
+	if (m_objnum >= 0)
+		return &Objects[m_objnum].pos;
+
+	return &m_parsed_position;
 }
 
 int waypoint::get_objnum() const
@@ -90,7 +93,11 @@ int waypoint::get_index() const
 void waypoint::set_pos(const vec3d *pos)
 {
 	Assert(pos != NULL);
-	this->m_position = *pos;
+
+	if (m_objnum >= 0)
+		Objects[m_objnum].pos = *pos;
+	else
+		this->m_parsed_position = *pos;
 }
 
 waypoint_list::waypoint_list()

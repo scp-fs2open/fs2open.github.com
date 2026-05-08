@@ -19,10 +19,12 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	SCP_string _m_ship_name;
 	SCP_string _m_ship_display_name;
 	SCP_string _m_cargo1;
+	SCP_string _m_cargo_title;
 	SCP_string _m_alt_name;
 	SCP_string _m_callsign;
 	int _m_ship_class;
 	int _m_team;
+	SCP_string _m_layer;
 	int _m_arrival_location;
 	int _m_departure_location;
 	int _m_ai_class;
@@ -44,13 +46,12 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 
 	void set_modified();
 
-	bool update_ship(int ship);
-	bool update_data();
-
 	void ship_alt_name_close(int base_ship);
 	void ship_callsign_close(int base_ship);
 
 	static int make_ship_list(int* arr);
+
+	int computeArrivalMinDist() const;
 
 	bool enable = true;
 	int player_count;
@@ -69,7 +70,6 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 
 	int respawn_priority;
 
-	std::vector<std::pair<SCP_string, bool>> orders;
 	std::vector<std::pair<SCP_string, bool>> arrivalPaths;
 	std::vector<std::pair<SCP_string, bool>> departurePaths;
 
@@ -94,8 +94,14 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	void setTeam(const int);
 	int getTeam() const;
 
+	void setLayer(const SCP_string& layer);
+	SCP_string getLayer() const;
+
 	void setCargo(const SCP_string&);
 	SCP_string getCargo() const;
+
+	void setCargoTitle(const SCP_string&);
+	SCP_string getCargoTitle() const;
 
 	void setAltName(const SCP_string&);
 	SCP_string getAltName() const;
@@ -237,8 +243,8 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	 */
 	int getIfPlayerShip() const;
 
-	std::vector<std::pair<SCP_string, bool>> getAcceptedOrders() const;
-	void setAcceptedOrders(const std::vector<std::pair<SCP_string, bool>>&);
+	static SCP_vector<std::pair<SCP_string, int>> getPlayerOrders();
+	void applyPlayerOrders(const SCP_vector<std::pair<SCP_string, int>>& orders);
 
 	std::vector<std::pair<SCP_string, bool>> getArrivalPaths() const;
 	void setArrivalPaths(const std::vector<std::pair<SCP_string, bool>>&);

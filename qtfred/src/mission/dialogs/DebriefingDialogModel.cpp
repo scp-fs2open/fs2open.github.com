@@ -48,6 +48,7 @@ void DebriefingDialogModel::initializeData()
 
 	_currentTeam = 0;
 	_currentStage = 0;
+	_modified = false;
 }
 
 void DebriefingDialogModel::gotoPreviousStage()

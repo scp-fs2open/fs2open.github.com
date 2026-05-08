@@ -6,6 +6,9 @@
 #include <QtGui/QSurfaceFormat>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QComboBox>
+#include <QtWidgets/QDoubleSpinBox>
+#include <QtWidgets/QToolBar>
+#include <QtWidgets/QToolButton>
 #include <QtGui/QSurface>
 #include <QCloseEvent>
 
@@ -15,8 +18,9 @@
 #include <mission/IDialogProvider.h>
 
 #include <memory>
-#include <ui/widgets/ColorComboBox.h>
-#include <ui/widgets/PropComboBox.h>
+#include <ui/widgets/ObjectComboBox.h>
+
+class waypoint_list;
 
 namespace fso {
 namespace fred {
@@ -29,6 +33,8 @@ class ShipEditorDialog;
 class WingEditorDialog;
 class PropEditorDialog;
 }
+
+class SceneBrowserPanel;
 
 namespace Ui {
 class FredView;
@@ -48,6 +54,9 @@ class FredView: public QMainWindow, public IDialogProvider {
 	RenderWidget* getRenderWidget();
 
 	void showContextMenu(const QPoint& globalPos);
+	void showContextMenu(int objNum, const QPoint& globalPos);
+	void showWingContextMenu(int wingIndex, const QPoint& globalPos);
+	void showWaypointPathContextMenu(int pathIndex, const QPoint& globalPos);
 
  public slots:
 	void openLoadMissionDialog();
@@ -112,7 +121,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void on_actionMission_Specs_triggered(bool);
 	void on_actionWaypoint_Paths_triggered(bool);
 	void on_actionJump_Nodes_triggered(bool);
-	void on_actionObjects_triggered(bool);
+	void on_actionObject_Orientation_triggered(bool);
 	void on_actionShips_triggered(bool);
 	void on_actionWings_triggered(bool);
 	void on_actionProps_triggered(bool);
@@ -134,7 +143,6 @@ class FredView: public QMainWindow, public IDialogProvider {
 
 	void on_actionOrbitSelected_triggered(bool enabled);
 
-	void on_actionRotateLocal_triggered(bool enabled);
 
 	void on_actionSave_Camera_Pos_triggered(bool);
 	void on_actionRestore_Camera_Pos_triggered(bool);
@@ -157,6 +165,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 
 	void on_actionError_Checker_triggered(bool);
 
+	void on_actionHelp_Topics_triggered(bool);
 	void on_actionAbout_triggered(bool);
 	void on_actionMission_Statistics_triggered(bool);
 	void on_actionBackground_triggered(bool);
@@ -167,6 +176,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void on_actionMission_Goals_triggered(bool);
 	void on_actionMusic_Player_triggered(bool);
 	void on_actionCalculate_Relative_Coordinates_triggered(bool);
+	void on_actionWaypointPathGenerator_triggered(bool);
  signals:
 	/**
 	 * @brief Special version of FredApplication::onIdle which is limited to the lifetime of this object
@@ -216,23 +226,35 @@ class FredView: public QMainWindow, public IDialogProvider {
 
 	void initializeStatusBar();
 	void initializePopupMenus();
-	void populateMoveToLayerMenu(int targetObject);
+	void populateMoveToLayerMenu(int targetObject, QMenu* targetMenu = nullptr);
+	void populateCreateShipSubmenu();
+	void populateCreatePropSubmenu();
 	void openLayerManagerDialog();
 	void ensureViewportFocus();
+	void enforceSideDockAreas();
 
 	void onGroupSelected(int group);
 	void onSetGroup(int group);
 
-	QLabel* _statusBarViewmode = nullptr;
-	QLabel* _statusBarUnitsLabel = nullptr;
+	QLabel* _statusBarObjectCount = nullptr;
+	QLabel* _statusBarViewmode    = nullptr;
+	QLabel* _statusBarUnitsLabel  = nullptr;
+
+	SceneBrowserPanel* _browserPanel = nullptr;
 
 	QMenu* _viewPopup = nullptr;
+	QMenu* _createSubmenu = nullptr;
+	QMenu* _createShipSubmenu = nullptr;
+	QMenu* _createPropSubmenu = nullptr;
+	QPoint _lastContextMenuLocalPos;
 
 	QMenu* _editPopup = nullptr;
 	QAction* _editObjectAction = nullptr;
 	QAction* _editOrientPositionAction = nullptr;
 	QAction* _editWingAction = nullptr;
+	QAction* _selectWingAction = nullptr;
 	QMenu* _moveToLayerMenu = nullptr;
+	QAction* _viewZoomSelectedAction = nullptr;
 
 	QMenu* _controlModeMenu = nullptr;
 	QAction* _controlModeCamera = nullptr;
@@ -243,8 +265,8 @@ class FredView: public QMainWindow, public IDialogProvider {
 
 	std::unique_ptr<Ui::FredView> ui;
 
-	std::unique_ptr<ColorComboBox> _shipClassBox;
-	std::unique_ptr<PropComboBox> _propClassBox;
+	ObjectComboBox* _shipClassBox = nullptr;
+	ObjectComboBox* _propClassBox = nullptr;
 
 	Editor* fred = nullptr;
 	EditorViewport* _viewport = nullptr;
@@ -266,6 +288,45 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void onUpdatePropClassBox();
 	void onUpdateEditorActions();
 	void onUpdateWingActionStatus();
+
+	void initializeContextToolbar();
+	void onUpdateContextToolbar();
+	void quickRenameCurrentObject();
+
+	void initializeTransformBar();
+	void onUpdateTransformBar();
+	void onTransformEditingFinished();
+
+	QToolBar* _contextToolBar = nullptr;
+	QLabel*   _contextLabel   = nullptr;
+
+	// Cached selection state... buttons only rebuild when these change
+	int            _ctxCachedObj                = -2;     // -2 = uninitialized
+	int            _ctxCachedMarked             = -1;
+	int            _ctxCachedObjType            = -1;     // single: actual type; multi: common type (-1=mixed)
+	bool           _ctxCachedInWing             = false;
+	int            _ctxCachedSharedWing         = -2;     // multi-select: shared wing index (-1=none, -2=N/A)
+	waypoint_list* _ctxCachedSharedWaypointList = nullptr;
+
+	QToolBar*       _transformToolBar    = nullptr;
+	QLabel*         _transformLabel      = nullptr;
+	QLabel*         _transformLabelA     = nullptr;
+	QLabel*         _transformLabelB     = nullptr;
+	QLabel*         _transformLabelC     = nullptr;
+	QDoubleSpinBox* _transformA          = nullptr;
+	QDoubleSpinBox* _transformB          = nullptr;
+	QDoubleSpinBox* _transformC          = nullptr;
+	QComboBox*      _transformMoveSpeedCombo = nullptr;
+	QComboBox*      _transformRotSpeedCombo  = nullptr;
+	QComboBox*      _transformIffCombo   = nullptr;
+	QLabel*         _transformRadiusLabel = nullptr;
+	QToolButton*    _transformLocalBtn   = nullptr;
+	QComboBox*      _transformLayerCombo = nullptr;
+	bool            _tbLayerComboDirty   = true;  // rebuild layer combo only when layer structure changes
+	bool            _tbIffPopulated      = false; // IFF items are populated lazily (tables load after init)
+	bool            _tbLocalMove         = false; // remembered Local preference while in move mode
+	bool            _tbLocalRotate       = false; // remembered Local preference while in rotate mode
+	int             _tbCachedCursorMode  = -1;    // -1 forces per-mode restore on first update
 
 	void onShipClassSelected(int ship_class);
 	void onPropClassSelected(int prop_class);

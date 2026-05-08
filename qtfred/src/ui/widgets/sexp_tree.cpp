@@ -81,7 +81,7 @@ namespace {
 QString node_image_to_resource_name(NodeImage image) {
 	switch (image) {
 	case NodeImage::OPERATOR:
-		return ":/images/bitmap1.png";
+		return ":/images/operator.png";
 	case NodeImage::DATA:
 		return ":/images/data.png";
 	case NodeImage::VARIABLE:
@@ -145,7 +145,7 @@ QString node_image_to_resource_name(NodeImage image) {
 	case NodeImage::CONTAINER_DATA:
 		return ":/images/container_data.png";
 	}
-	return ":/images/bitmap1.png";
+	return ":/images/operator.png";
 }
 
 QPoint s_dragStartPos;

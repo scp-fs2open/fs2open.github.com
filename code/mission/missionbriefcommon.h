@@ -308,13 +308,18 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 void brief_render_icon_line(int stage_num, int line_num);
 void brief_init_map();
 void brief_icons_init();
+void brief_move_icon_reset();
 void brief_common_close();
 void brief_reset_icons(int stage_num);
 void brief_restart_text_wipe();
 void brief_reset_last_new_stage();
+void brief_cancel_pending_highlight_anims();
 void brief_blit_stage_num(int stage_num, int stage_max);
 
 void brief_common_get_icon_dimensions(int *w, int *h, brief_icon *bi);
+
+vec3d brief_get_current_cam_pos();
+matrix brief_get_current_cam_orient();
 
 // voice streaming interface
 void brief_voice_init();

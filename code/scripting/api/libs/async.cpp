@@ -332,7 +332,7 @@ ADE_FUNC(yield,
 		explicit yield_resolve_context(executor::Executor* executor) : m_exec(executor) {}
 		void setResolver(Resolver resolver) override
 		{
-			m_exec->post([resolver]() {
+			m_exec->post([resolver = std::move(resolver)]() {
 				resolver(false, luacpp::LuaValueList());
 				return executor::Executor::CallbackResult::Done;
 			});

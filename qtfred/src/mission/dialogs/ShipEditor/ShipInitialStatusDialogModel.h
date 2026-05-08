@@ -33,6 +33,7 @@ class ShipInitialStatusDialogModel : public AbstractDialogModel {
 	int m_ship_locked;
 	int m_weapons_locked;
 	SCP_string m_cargo_name;
+	SCP_string m_cargo_title;
 	int m_primaries_locked;
 	int m_secondaries_locked;
 	int m_turrets_locked;
@@ -61,6 +62,7 @@ class ShipInitialStatusDialogModel : public AbstractDialogModel {
 	dock_evaluate_tree(object* objp, dock_function_info* infop, void (*function)(object*), ubyte* visited_bitstring);
 	bool m_multi_edit;
 	bool m_use_teams = false;
+	bool m_move_ships_when_undocking = true;
 
   public:
 	ShipInitialStatusDialogModel(QObject* parent, EditorViewport* viewport, bool multi);
@@ -108,6 +110,9 @@ class ShipInitialStatusDialogModel : public AbstractDialogModel {
 	SCP_string getCargo() const;
 	void setCargo(const SCP_string&);
 
+	SCP_string getCargoTitle() const;
+	void setCargoTitle(const SCP_string&);
+
 	SCP_string getColour() const;
 	void setColour(const SCP_string&);
 
@@ -123,8 +128,14 @@ class ShipInitialStatusDialogModel : public AbstractDialogModel {
 	bool getUseTeamcolours() const;
 	bool getIfMultpleShips() const;
 
+	bool getToggleSubsystemScanning() const;
+	static bool getUseNewScanningBehavior();
+
 	int getGuardian() const;
 	void setGuardian(int);
+
+	bool getMoveShipsWhenUndocking() const;
+	void setMoveShipsWhenUndocking(bool);
 };
 
 /**

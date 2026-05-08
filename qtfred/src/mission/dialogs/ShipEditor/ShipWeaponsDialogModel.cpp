@@ -154,6 +154,7 @@ void ShipWeaponsDialogModel::initializeData(bool isMultiEdit)
 		initPrimary(m_ship, true);
 		initSecondary(m_ship, true);
 	}
+	_modified = false;
 }
 
 void ShipWeaponsDialogModel::initPrimary(int inst, bool first)

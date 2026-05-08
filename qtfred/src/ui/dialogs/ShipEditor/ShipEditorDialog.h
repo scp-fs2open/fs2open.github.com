@@ -87,6 +87,7 @@ class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	void on_shipClassCombo_currentIndexChanged(int);
 	void on_AIClassCombo_currentIndexChanged(int);
 	void on_teamCombo_currentIndexChanged(int);
+	void on_layerCombo_currentIndexChanged(int);
 
 	// column two
 	void on_hotkeyCombo_currentIndexChanged(int);
@@ -102,7 +103,7 @@ class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	void on_arrivalDistanceEdit_valueChanged(int);
 	void on_arrivalDelaySpinBox_valueChanged(int);
 	void on_updateArrivalCueCheckBox_toggled(bool);
-	void on_noArrivalWarpCheckBox_toggled(bool);
+	void on_noArrivalWarpCheckBox_stateChanged(int);
 	void on_arrivalTree_rootNodeFormulaChanged(int, int);
 	void on_arrivalTree_helpChanged(const QString&);
 	void on_arrivalTree_miniHelpChanged(const QString&);
@@ -115,11 +116,13 @@ class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	void on_departureTree_rootNodeFormulaChanged(int, int);
 	void on_departureTree_helpChanged(const QString&);
 	void on_departureTree_miniHelpChanged(const QString&);
-	void on_noDepartureWarpCheckBox_toggled(bool);
-  private:
+	void on_noDepartureWarpCheckBox_stateChanged(int);
+  private: // NOLINT(readability-redundant-access-specifiers)
 	std::unique_ptr<Ui::ShipEditorDialog> ui;
 	std::unique_ptr<ShipEditorDialogModel> _model;
 	EditorViewport* _viewport;
+
+	bool _cues_hidden = false;
 
 	void update();
 
@@ -132,6 +135,7 @@ class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 
 	// column one
 	void cargoChanged();
+	void cargoTitleChanged();
 	void altNameChanged();
 	void callsignChanged();
 };

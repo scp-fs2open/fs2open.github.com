@@ -26,6 +26,7 @@ void ShieldSystemDialogModel::initializeData() {
 	for (const auto& iff : Iff_info) {
 		_teamOptions.emplace_back(iff.iff_name);
 	}
+	_modified = false;
 }
 
 bool ShieldSystemDialogModel::apply() {

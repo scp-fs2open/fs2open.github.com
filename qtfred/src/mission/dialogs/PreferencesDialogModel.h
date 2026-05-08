@@ -18,6 +18,9 @@ public:
 	void reject() override;
 
 	// General
+	bool getOfferAutosaveRecovery() const;
+	void setOfferAutosaveRecovery(bool value);
+
 	bool getMoveShipsWhenUndocking() const;
 	void setMoveShipsWhenUndocking(bool value);
 
@@ -38,6 +41,12 @@ public:
 	bool getShowSexpHelpWingEditor() const;
 	void setShowSexpHelpWingEditor(bool value);
 
+	bool getDarkMode() const;
+	void setDarkMode(bool value);
+
+	int  getToolbarIconSize() const;
+	void setToolbarIconSize(int size);
+
 	// Controls
 	QKeySequence getControlKey(ControlAction action) const;
 	void setControlKey(ControlAction action, const QKeySequence& sequence);
@@ -57,6 +66,7 @@ public:
 
 private:
 	// General
+	bool _offerAutosaveRecovery;
 	bool _moveShipsWhenUndocking;
 	bool _alwaysSaveDisplayNames;
 	bool _errorCheckerChecksForPotentialIssues;
@@ -65,6 +75,8 @@ private:
 	bool _showSexpHelpMissionCutscenes;
 	bool _showSexpHelpShipEditor;
 	bool _showSexpHelpWingEditor;
+	bool _darkMode;
+	int  _toolbarIconSize;
 
 	// Controls
 	std::map<ControlAction, QKeySequence> _controlKeys;

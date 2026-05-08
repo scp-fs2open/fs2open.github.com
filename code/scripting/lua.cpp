@@ -314,7 +314,7 @@ void script_state::OutputLuaDocumentation(ScriptingDocumentation& doc,
 		e.name = Enumerations[i].name;
 		e.value = Enumerations[i].def;
 
-		doc.enumerations.push_back(e);
+		doc.enumerations.push_back(std::move(e));
 	}
 
 	auto& optionsList = options::OptionsManager::instance()->getOptions();
@@ -326,7 +326,7 @@ void script_state::OutputLuaDocumentation(ScriptingDocumentation& doc,
 		o.description = thisOpt->getDescription();
 		o.key = thisOpt->getConfigKey();
 
-		doc.options.push_back(o);
+		doc.options.push_back(std::move(o));
 	}
 }
 

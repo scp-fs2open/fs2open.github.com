@@ -1014,7 +1014,7 @@ bool hud_squadmsg_run_order_issued_hook(int command, ship* sendingShip, ship* re
 		}
 		scripting::hooks::OnHudCommOrderIssued->run(
 			scripting::hooks::CommOrderConditions{sendingShip, targetObject, &recipient},
-			paramList);
+			std::move(paramList));
 	}
 
 	return isOverride;
@@ -2858,6 +2858,18 @@ bool HudGaugeSquadMessage::canRender() const
 
 	if ((Viewer_mode & disabled_views)) {
 		return false;
+	}
+
+	if ((Viewer_mode & (VM_CHASE)) == 0 && only_render_in_chase_view) {
+		return false;
+	}
+
+	if (render_for_cockpit_toggle > 0) {
+		if (!(Viewer_mode & VM_CHASE) && Cockpit_active && (render_for_cockpit_toggle == 2)) {
+			return false;
+		} else if (!Cockpit_active && (render_for_cockpit_toggle == 1)) {
+			return false;
+		}
 	}
 
 	if (!( Player->flags & PLAYER_FLAGS_MSG_MODE )) {

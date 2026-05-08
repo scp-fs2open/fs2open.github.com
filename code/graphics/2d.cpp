@@ -3081,9 +3081,9 @@ SCP_vector<DisplayData> gr_enumerate_displays()
 			display.video_modes.push_back(videoMode);
 		}
 
-		data.push_back(display);
+		data.push_back(std::move(display));
 	}
-	
+
 	SDL_QuitSubSystem(SDL_INIT_VIDEO);
 
 	return data;

@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Mission Specs - QtFRED Help</title>
+    <link rel="stylesheet" type="text/css" href="../css/help.css"/>
+</head>
+<body>
+<nav class="breadcrumb"><a href="../index.html">QtFRED Help</a> &rsaquo; Mission &rsaquo; Mission Specs</nav>
+<h1>Mission Specs</h1>
+<p>Opens via <strong>Editors &rsaquo; Mission Specs</strong>.</p>
+<p>Sets mission-wide properties: identity, type, music, support options, and gameplay
+flags. This is typically one of the first dialogs to fill in when starting a new
+mission.</p>
+
+<h2>Identity</h2>
+<table>
+    <tr><th>Field</th><th>Description</th></tr>
+    <tr><td>Title</td><td>Mission title shown in the mission selection screen and
+        campaign room.</td></tr>
+    <tr><td>Designer</td><td>Author name stored in the mission file for
+        reference.</td></tr>
+    <tr><td>Description</td><td>Short summary shown in the mission selection
+        screen.</td></tr>
+    <tr><td>Designer notes</td><td>Free-form notes visible only in the editor; not
+        shown to players.</td></tr>
+</table>
+
+<h2>Mission Type</h2>
+<p>Determines the gameplay rules for the mission.</p>
+<table>
+    <tr><th>Type</th><th>Description</th></tr>
+    <tr><td>Single Player</td><td>Standard single-player mission.</td></tr>
+    <tr><td>Multiplayer</td><td>Sets the mission as a multiplayer mission. A sub-type
+        must then be selected: <em>Co-op</em>, <em>Team vs. Team</em>, or
+        <em>Dogfight</em> (all players against all others).</td></tr>
+    <tr><td>Training</td><td>Intended for tutorial content. A <em>Skip Training</em>
+        button appears on the briefing screen; selecting it marks all mission goals
+        complete and advances the campaign without the player having to fly the
+        mission.</td></tr>
+</table>
+
+<h2>Multiplayer</h2>
+<table>
+    <tr><th>Field</th><th>Description</th></tr>
+    <tr><td>Max Respawns</td><td>Number of times each player may respawn before they
+        are out of the mission.</td></tr>
+    <tr><td>Max Respawn Delay</td><td>Number of seconds after death before a player
+        automatically respawns.</td></tr>
+    <tr><td>Player Entry Delay</td><td>Number of seconds of mission time that pass
+        before the player enters the mission.</td></tr>
+    <tr><td><a href="CustomWingNamesDialog.html">Custom Wing Names</a></td><td>Opens
+        a sub-dialog for assigning special names to player wings. Used in both single
+        and multiplayer missions; affects the player's wing name, which wings appear
+        in the loadout editor, and how wings are labeled on the wing HUD
+        display.</td></tr>
+</table>
+
+<h2>Squadron</h2>
+<p>Overrides the player's squadron name and logo for this mission. The logo is chosen
+from a gallery popup. In campaign mode, the reassignment persists and carries forward
+to all subsequent missions.</p>
+
+<h2>Loading Screen</h2>
+<table>
+    <tr><th>Field</th><th>Description</th></tr>
+    <tr><td>480 (lo-res)</td><td>Custom loading screen image used at lower
+        resolutions.</td></tr>
+    <tr><td>768 (hi-res)</td><td>Custom loading screen image used at higher
+        resolutions.</td></tr>
+</table>
+
+<h2>Support Ships</h2>
+<table>
+    <tr><th>Control</th><th>Description</th></tr>
+    <tr><td>Disallow support ships</td><td>Prevents any support ship from appearing
+        in this mission.</td></tr>
+    <tr><td>Enable hull repair</td><td>Allows the support ship to repair hull damage
+        in addition to subsystems. Subsystem repair is always available when a support
+        ship is present.</td></tr>
+    <tr><td>Hull repair ceiling</td><td>Maximum percentage of hull the support ship
+        can restore, when hull repair is enabled.</td></tr>
+    <tr><td>Subsystem repair ceiling</td><td>Maximum percentage of subsystem
+        integrity the support ship can restore.</td></tr>
+</table>
+
+<h2>Ship Trails</h2>
+<p>Controls engine contrail visibility. By default, trails are <em>on</em> in
+full-nebula missions and <em>off</em> elsewhere. Enabling the toggle reverses this
+default.</p>
+<table>
+    <tr><th>Control</th><th>Description</th></tr>
+    <tr><td>Toggle (off in nebula; on elsewhere)</td><td>Reverses the default
+        contrail behavior: trails become off in nebula and on in non-nebula
+        missions.</td></tr>
+    <tr><td>Enable minimum speed</td><td>When checked, trails are only shown when a
+        ship is moving at or above the configured speed.</td></tr>
+    <tr><td>Minimum speed</td><td>Speed threshold in meters per second below which
+        trails are hidden.</td></tr>
+</table>
+
+<h2>Command Messages</h2>
+<p>Configures the identity of the Command sender used for built-in mission messages.</p>
+<table>
+    <tr><th>Control</th><th>Description</th></tr>
+    <tr><td>Sender</td><td>The ship that speaks as Command. Populated from huge ships
+        present in the current mission, plus the default
+        <code>Command</code> entry.</td></tr>
+    <tr><td>Persona</td><td>Voice persona used for Command messages. Populated from
+        personas flagged as Command personas in the game tables.</td></tr>
+    <tr><td>Override #Command in event messages</td><td>When enabled, any event
+        message whose sender is the literal string <code>#Command</code> will use the
+        Sender and Persona configured here instead of the default Command
+        identity.</td></tr>
+</table>
+
+<h2>Mission Music</h2>
+<p>Assigns the music pack used during the mission. An alternate pack can also be
+specified; it will be used instead if it is present in the current mod.</p>
+
+<h2>AI Profile</h2>
+<p>Selects which AI profile from the game tables governs NPC behavior in this
+mission. Different profiles vary AI aggression, skill ceiling, and target selection
+logic.</p>
+
+<h2>Sound Environment</h2>
+<p>Opens the <a href="SoundEnvironmentDialog.html">Sound Environment</a> sub-dialog,
+which configures audio reverb and environmental effects applied during the
+mission.</p>
+
+<h2>Custom Data</h2>
+<p>See the <a href="../concepts/custom-data.html">Custom Data</a> concept page.</p>
+
+<h2>Custom Strings</h2>
+<p>Opens the <a href="CustomStringsDialog.html">Custom Strings</a> sub-dialog for
+attaching arbitrary named strings to the mission.</p>
+
+<h2>Flags</h2>
+<p>A searchable list of toggles that adjust global mission behavior. Use the filter
+box to find a specific flag by name, or use <strong>Select All</strong> /
+<strong>Select None</strong> to bulk-toggle. Hover over any flag label for a tooltip
+description.</p>
+</body>
+</html>

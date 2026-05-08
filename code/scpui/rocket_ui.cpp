@@ -678,7 +678,7 @@ void reloadContext(Rocket::Core::Context* context)
 		status.visible   = doc->IsVisible();
 		status.focus     = doc->GetFocusLeafNode() != nullptr;
 
-		documents.push_back(status);
+		documents.push_back(std::move(status));
 	}
 
 	Factory::ClearStyleSheetCache();

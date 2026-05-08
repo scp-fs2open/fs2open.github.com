@@ -84,6 +84,7 @@ class WingEditorDialogModel : public AbstractDialogModel {
 		// Initial orders is handled by its own dialog, so no model function here
 		std::vector<std::pair<SCP_string, bool>> getWingFlags() const;
 		void setWingFlags(const std::vector<std::pair<SCP_string, bool>>& newFlags);
+		static std::vector<std::pair<SCP_string, SCP_string>> getWingFlagDescriptions();
 		
 
 		// Arrival controls
@@ -132,6 +133,7 @@ class WingEditorDialogModel : public AbstractDialogModel {
 		void onEditorMissionChanged(); // missionChanged
 
 	private: // NOLINT(readability-redundant-access-specifiers)
+		void initializeData();
 		void reloadFromCurWing();
 		wing* getCurrentWing() const;
 		static std::vector<std::pair<SCP_string, bool>> getDockBayPathsForWingMask(uint32_t mask, int anchorShipnum);

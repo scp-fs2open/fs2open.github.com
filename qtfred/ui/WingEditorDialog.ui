@@ -300,6 +300,43 @@
          <property name="horizontalSpacing">
           <number>0</number>
          </property>
+         <item row="5" column="0">
+          <widget class="QPushButton" name="wingFlagsButton">
+           <property name="toolTip">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set special wing flags&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="text">
+            <string>Set Wing Flags</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="0">
+          <widget class="QPushButton" name="disbandWingButton">
+           <property name="text">
+            <string>Disband Wing</string>
+           </property>
+          </widget>
+         </item>
+         <item row="6" column="0">
+          <spacer name="verticalSpacer_2">
+           <property name="orientation">
+            <enum>Qt::Vertical</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>20</width>
+             <height>40</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item row="2" column="0">
+          <widget class="QPushButton" name="deleteWingButton">
+           <property name="text">
+            <string>Delete Wing</string>
+           </property>
+          </widget>
+         </item>
          <item row="0" column="0">
           <layout class="QHBoxLayout" name="directionalBtnLayout">
            <property name="spacing">
@@ -345,27 +382,7 @@
            </item>
           </layout>
          </item>
-         <item row="5" column="0">
-          <spacer name="verticalSpacer_2">
-           <property name="orientation">
-            <enum>Qt::Vertical</enum>
-           </property>
-           <property name="sizeHint" stdset="0">
-            <size>
-             <width>20</width>
-             <height>40</height>
-            </size>
-           </property>
-          </spacer>
-         </item>
-         <item row="2" column="0">
-          <widget class="QPushButton" name="disbandWingButton">
-           <property name="text">
-            <string>Disband Wing</string>
-           </property>
-          </widget>
-         </item>
-         <item row="3" column="0">
+         <item row="4" column="0">
           <widget class="QPushButton" name="initialOrdersButton">
            <property name="toolTip">
             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Give orders to the ship&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -376,21 +393,17 @@
           </widget>
          </item>
          <item row="1" column="0">
-          <widget class="QPushButton" name="deleteWingButton">
-           <property name="text">
-            <string>Delete Wing</string>
+          <spacer name="verticalSpacer_6">
+           <property name="orientation">
+            <enum>Qt::Vertical</enum>
            </property>
-          </widget>
-         </item>
-         <item row="4" column="0">
-          <widget class="QPushButton" name="wingFlagsButton">
-           <property name="toolTip">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Changes ship's textures&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>20</width>
+             <height>40</height>
+            </size>
            </property>
-           <property name="text">
-            <string>Set Wing Flags</string>
-           </property>
-          </widget>
+          </spacer>
          </item>
         </layout>
        </item>
@@ -873,14 +886,14 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>fso::fred::sexp_tree</class>
-   <extends>QTreeView</extends>
-   <header>ui/widgets/sexp_tree.h</header>
-  </customwidget>
-  <customwidget>
    <class>fso::fred::ShipFlagCheckbox</class>
    <extends>QCheckBox</extends>
    <header>ui/widgets/ShipFlagCheckbox.h</header>
+  </customwidget>
+  <customwidget>
+   <class>fso::fred::sexp_tree</class>
+   <extends>QTreeView</extends>
+   <header>ui/widgets/sexp_tree.h</header>
   </customwidget>
  </customwidgets>
  <resources>

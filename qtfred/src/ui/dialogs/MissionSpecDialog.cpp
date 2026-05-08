@@ -8,10 +8,12 @@
 #include <ui/dialogs/MissionSpecs/CustomStringsDialog.h>
 #include <ui/dialogs/MissionSpecs/CustomWingNamesDialog.h>
 #include <ui/dialogs/MissionSpecs/SoundEnvironmentDialog.h>
+#include <ui/util/default_dir.h>
 #include <ui/util/SignalBlockers.h>
 #include "mission/util.h"
 #include <QCloseEvent>
 #include <QFileDialog>
+#include <QFileInfo>
 #include <QMessageBox>
 
 namespace fso::fred::dialogs {
@@ -122,6 +124,13 @@ void MissionSpecDialog::initFlagList()
 {
 	updateFlags();
 
+	const auto descs = _model->getMissionFlagDescriptions();
+	QVector<std::pair<QString, QString>> qtDescs;
+	qtDescs.reserve(static_cast<int>(descs.size()));
+	for (const auto& d : descs)
+		qtDescs.append({QString::fromUtf8(d.first.c_str()), QString::fromUtf8(d.second.c_str())});
+	ui->flagList->setFlagDescriptions(qtDescs);
+
 	// per flag immediate apply to the model
 	connect(ui->flagList, &fso::fred::FlagListWidget::flagToggled, this, [this](const QString& name, bool checked) {
 		_model->setMissionFlag(name.toUtf8().constData(), checked);
@@ -136,7 +145,7 @@ void MissionSpecDialog::updateFlags()
 	toWidget.reserve(static_cast<int>(flags.size()));
 	for (const auto& p : flags) {
 		QString name = QString::fromUtf8(p.first.c_str());
-		toWidget.append({name, p.second});
+		toWidget.append({name, p.second ? Qt::Checked : Qt::Unchecked});
 	}
 
 	ui->flagList->setFlags(toWidget);
@@ -351,15 +360,23 @@ void MissionSpecDialog::on_squadronLogoButton_clicked() {
 }
 
 void MissionSpecDialog::on_lowResScreenButton_clicked() {
-	QString filename = QFileDialog::getOpenFileName(this, tr("Open Image"), "", tr("Image Files (*.dds *.pcx *.jpg *.jpeg *.tga *.png);;DDS (*.dds);;PCX (*.pcx);;JPG (*.jpg *.jpeg);;TGA (*.tga);;PNG (*.png) ;;All Files (*.*)"));
-	if (!(filename.isNull() || filename.isEmpty())) {
+	const QString lastDir = util::getLastDir("missionSpec/lowResScreen", CF_TYPE_INTERFACE);
+
+	const QString filename = QFileDialog::getOpenFileName(this, tr("Open Image"), lastDir,
+		tr("Image Files (*.dds *.pcx *.jpg *.jpeg *.tga *.png);;DDS (*.dds);;PCX (*.pcx);;JPG (*.jpg *.jpeg);;TGA (*.tga);;PNG (*.png);;All Files (*.*)"));
+	if (!filename.isEmpty()) {
+		util::saveLastDir("missionSpec/lowResScreen", filename);
 		_model->setLowResLoadingScreen(QFileInfo(filename).fileName().toUtf8().constData());
 	}
 }
 
 void MissionSpecDialog::on_highResScreenButton_clicked() {
-	QString filename = QFileDialog::getOpenFileName(this, tr("Open Image"), "", tr("Image Files (*.dds *.pcx *.jpg *.jpeg *.tga *.png);;DDS (*.dds);;PCX (*.pcx);;JPG (*.jpg *.jpeg);;TGA (*.tga);;PNG (*.png) ;;All Files (*.*)"));
-	if (!(filename.isNull() || filename.isEmpty())) {
+	const QString lastDir = util::getLastDir("missionSpec/highResScreen", CF_TYPE_INTERFACE);
+
+	const QString filename = QFileDialog::getOpenFileName(this, tr("Open Image"), lastDir,
+		tr("Image Files (*.dds *.pcx *.jpg *.jpeg *.tga *.png);;DDS (*.dds);;PCX (*.pcx);;JPG (*.jpg *.jpeg);;TGA (*.tga);;PNG (*.png);;All Files (*.*)"));
+	if (!filename.isEmpty()) {
+		util::saveLastDir("missionSpec/highResScreen", filename);
 		_model->setHighResLoadingScreen(QFileInfo(filename).fileName().toUtf8().constData());
 	}
 }

@@ -457,7 +457,11 @@ json_t* playerGet(ResourceContext * /*context*/) {
         json_object_set(obj, "host", (MULTI_HOST(p)) ? json_true() : json_false());
         json_object_set(obj, "observer", (MULTI_OBSERVER(p)) ? json_true() : json_false());
         json_object_set(obj, "callsign", json_string(p.m_player->callsign));
-        json_object_set(obj, "ship", json_string(Ship_info[p.p_info.ship_class].name));
+        if (p.p_info.ship_class >= 0 && p.p_info.ship_class < ship_info_size()) {
+            json_object_set(obj, "ship", json_string(Ship_info[p.p_info.ship_class].name));
+        } else {
+            json_object_set(obj, "ship", json_string(""));
+        }
 
         json_array_append(playerList, obj);
     }

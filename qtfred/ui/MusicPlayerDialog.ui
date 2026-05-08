@@ -30,22 +30,12 @@
           <property name="text">
            <string/>
           </property>
-          <property name="icon">
-           <iconset>
-            <selectedon>:/images/prev.png</selectedon>
-           </iconset>
-          </property>
          </widget>
         </item>
         <item>
          <widget class="QPushButton" name="playButton">
           <property name="text">
            <string/>
-          </property>
-          <property name="icon">
-           <iconset>
-            <selectedon>:/images/play.png</selectedon>
-           </iconset>
           </property>
          </widget>
         </item>
@@ -54,22 +44,12 @@
           <property name="text">
            <string/>
           </property>
-          <property name="icon">
-           <iconset>
-            <selectedon>:/images/next.png</selectedon>
-           </iconset>
-          </property>
          </widget>
         </item>
         <item>
          <widget class="QPushButton" name="stopButton">
           <property name="text">
            <string/>
-          </property>
-          <property name="icon">
-           <iconset>
-            <selectedon>:/images/stop.png</selectedon>
-           </iconset>
           </property>
          </widget>
         </item>

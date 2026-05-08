@@ -1,5 +1,6 @@
 #include "ReinforcementsEditorDialog.h"
 #include "ui_ReinforcementsDialog.h"
+#include "ui/Theme.h"
 #include "mission/util.h"
 #include <globalincs/linklist.h>
 #include <ui/util/SignalBlockers.h>
@@ -16,6 +17,14 @@ ReinforcementsDialog::ReinforcementsDialog(FredView* parent, EditorViewport* vie
 	this->setFocus();
 	ui->setupUi(this);		
 
+	fso::fred::bindStandardIcon(ui->moveSelectionUp, QStyle::SP_ArrowUp);
+	ui->moveSelectionUp->setText(QString());
+	ui->moveSelectionUp->setToolTip(tr("Move selected reinforcement up"));
+
+	fso::fred::bindStandardIcon(ui->moveSelectionDown, QStyle::SP_ArrowDown);
+	ui->moveSelectionDown->setText(QString());
+	ui->moveSelectionDown->setToolTip(tr("Move selected reinforcement down"));
+
 	updateUi();
 }
 
@@ -27,7 +36,7 @@ void ReinforcementsDialog::accept()
 	if (_model->apply()) {
 		QDialog::accept();
 	}
-	// else: validation failed, don’t close
+	// else: validation failed, don't close
 }
 
 void ReinforcementsDialog::reject()

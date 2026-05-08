@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Waypoint Editor - QtFRED Help</title>
+    <link rel="stylesheet" type="text/css" href="../css/help.css"/>
+</head>
+<body>
+<nav class="breadcrumb"><a href="../index.html">QtFRED Help</a> &rsaquo; Objects &rsaquo; Waypoint Editor</nav>
+<h1>Waypoint Editor</h1>
+<p>Opens via <strong>Editors &rsaquo; Waypoints</strong>.</p>
+<p>Creates and edits waypoint paths. Each path is an ordered list of 3D points. Ships
+given a waypoint goal fly through the points in sequence, then optionally loop.
+Waypoint paths are simply ordered sequences of arbitrary positions in space and can
+be used for any purpose a mission designer can express through SEXPs and AI goals.</p>
+
+<h2>Key fields</h2>
+<table>
+    <tr><th>Field</th><th>Description</th></tr>
+    <tr><td>Waypoint path</td><td>Selects which path to edit. New paths are created by
+        placing waypoint objects in the viewport.</td></tr>
+    <tr><td>Name</td><td>Identifies the path in SEXPs and AI goal assignments. Must be
+        unique.</td></tr>
+    <tr><td>Layer</td><td>The layer the waypoint path is assigned to.</td></tr>
+    <tr><td>No Draw Lines</td><td>When checked, the connecting lines between waypoints
+        are hidden in the viewport. The waypoint points themselves are still
+        visible.</td></tr>
+    <tr><td>Custom Color</td><td>When checked, enables the RGB fields below to set a
+        custom color for rendering this path's points and lines in the viewport.
+        Does not affect in-game appearance.</td></tr>
+</table>
+
+<div class="note">Individual waypoint positions are moved by selecting the waypoint
+object in the viewport and dragging, or by editing its coordinates in the
+<a href="ObjectOrientEditorDialog.html">Object Orientation Editor</a>.</div>
+</body>
+</html>

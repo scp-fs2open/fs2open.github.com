@@ -4,6 +4,8 @@
 #include "object/waypoint.h"
 #include "object/objectdock.h"
 #include "ship/ship.h"
+#include "jumpnode/jumpnode.h"
+#include "prop/prop.h"
 
 void object_moved(object *objp)
 {
@@ -65,6 +67,20 @@ const char* object_name(int obj) {
 
 	case OBJ_POINT:
 		return "Briefing icon";
+
+	case OBJ_JUMP_NODE: {
+		const CJumpNode* jnp = jumpnode_get_by_objnum(obj);
+		if (jnp != nullptr)
+			return jnp->GetName();
+		break;
+	}
+
+	case OBJ_PROP: {
+		int idx = Objects[obj].instance;
+		if (idx >= 0 && idx < (int)Props.size() && Props[idx].has_value())
+			return Props[idx]->prop_name;
+		break;
+	}
 	}
 
 	return "*unknown*";

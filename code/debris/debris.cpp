@@ -149,7 +149,7 @@ void debris_init()
 		particle::ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
 		::util::UniformFloatRange(1.f), //Velocity Inherit
 		false, //Velocity Inherit absolute?
-		make_unique<particle::LegacyAACuboidVolume>(0.3f, 1.f, true), //Velocity volume
+		std::make_unique<particle::LegacyAACuboidVolume>(0.3f, 1.f, true), //Velocity volume
 		::util::UniformFloatRange(0.f, 10.f), //Velocity volume multiplier
 		particle::ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
 		std::nullopt, //Orientation-based velocity

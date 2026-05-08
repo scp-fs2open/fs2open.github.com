@@ -1123,7 +1123,7 @@ void parse_intel_table(const char* filename)
 				if (intel_p != nullptr) {
 					error_display(0, "Duplicate entry %s in %s!", intel_t.name, filename);
 				}
-				Intel_info.push_back(intel_t);
+				Intel_info.push_back(std::move(intel_t));
 				intel_p = &Intel_info[Intel_info.size() - 1];
 			} else {
 				if (intel_p == nullptr) {

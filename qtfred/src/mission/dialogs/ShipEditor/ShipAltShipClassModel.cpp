@@ -115,6 +115,7 @@ void ShipAltShipClassModel::initializeData()
 		}
 		objp = GET_NEXT(objp);
 	}
+	_modified = false;
 }
 
 } // namespace fso::fred::dialogs

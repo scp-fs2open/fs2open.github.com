@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Background Editor - QtFRED Help</title>
+    <link rel="stylesheet" type="text/css" href="../css/help.css"/>
+</head>
+<body>
+<nav class="breadcrumb"><a href="../index.html">QtFRED Help</a> &rsaquo; Environment &rsaquo; Background Editor</nav>
+<h1>Background Editor</h1>
+<p>Opens via <strong>Editors &rsaquo; Background Editor</strong>.</p>
+<p>Controls the visual environment that surrounds the mission: background bitmap layers,
+suns, nebula, skybox, ambient lighting, and stars.</p>
+
+<h2>Background slots</h2>
+<p>A mission can define multiple backgrounds. The left drop-down selects the
+<em>active</em> background; the one currently loaded into the scene and visible in
+the viewport. Use <strong>Add</strong> and <strong>Remove</strong> to create or delete
+slots. <strong>Swap</strong> exchanges all data (bitmaps, suns, flags) between the two
+selected backgrounds. The <strong>Import</strong> button lets you pull backgrounds from
+another mission file.</p>
+
+<h2>Bitmaps</h2>
+<p>Full-sphere background images composited behind the scene. Use <strong>Add</strong>
+to open a gallery and pick a new bitmap, <strong>Change</strong> to replace the
+selected one (also gallery), and <strong>Delete</strong> to remove it. You can also
+use the drop-down next to the list for a quicker replacement without the gallery.
+Select a bitmap in the list to edit its properties:</p>
+<table>
+    <tr><th>Field</th><th>Description</th></tr>
+    <tr><td>Pitch / Bank / Heading</td><td>Orientation of the bitmap on the
+        sphere.</td></tr>
+    <tr><td>Scale X / Y</td><td>Stretches the bitmap horizontally and
+        vertically.</td></tr>
+    <tr><td>Divisions</td><td>Number of mesh subdivisions (1–5) used when rendering
+        the bitmap. Higher values improve perspective correction at the cost of
+        slightly more geometry. Only the vertical (Y) axis division is currently
+        active in the engine.</td></tr>
+</table>
+
+<h2>Suns</h2>
+<p>Works the same as Bitmaps; Add, Change (gallery), Delete, and a quick-change
+drop-down. Bank is omitted since suns are circular. Select a sun in the list to
+edit:</p>
+<table>
+    <tr><th>Field</th><th>Description</th></tr>
+    <tr><td>Pitch / Heading</td><td>Position of the sun in the sky. This also
+        determines the direction of dynamic lighting cast on ships.</td></tr>
+    <tr><td>Scale</td><td>Uniform size of the sun flare/glow image.</td></tr>
+</table>
+
+<div class="note"><strong>Save angles in correct format</strong> - a legacy checkbox
+that should always be checked for new missions. It controls whether pitch/bank/heading
+angles are saved using the modern coordinate convention or the older one. Unchecking
+it is only relevant when maintaining compatibility with very old mission
+files.</div>
+
+<h2>Full Nebula</h2>
+<p>Enables the FS2-style nebula environment. When active, the mission takes place
+inside a gas cloud with fog, particle poofs, and optional lightning. This is not the
+same as the volumetric nebula renderer. For that see
+<a href="VolumetricNebulaDialog.html">Volumetric Nebula</a>.</p>
+<table>
+    <tr><th>Field</th><th>Description</th></tr>
+    <tr><td>Pattern</td><td>The background texture file used for the nebula
+        environment.</td></tr>
+    <tr><td>Range</td><td>AWACS and targeting range multiplier inside the nebula.
+        Lower values reduce how far sensors can detect targets.</td></tr>
+    <tr><td>Lightning Storm</td><td>Selects the lightning storm type active in the
+        nebula, or <kbd>&lt;None&gt;</kbd> for no lightning.</td></tr>
+    <tr><td>Poofs</td><td>A list of cloud puff particle types defined in the tables.
+        Check the ones you want active in the nebula.</td></tr>
+    <tr><td>Ship Trails</td><td>Toggles engine contrail streaks left by ships
+        moving through the nebula clouds.</td></tr>
+    <tr><td>Fog Near / Far Multipliers</td><td>Scale the near and far fog distances.
+        Lower near multiplier thickens fog close to the camera; lower far
+        multiplier reduces maximum visibility distance.</td></tr>
+    <tr><td>Display background bitmaps in nebula</td><td>When checked, background
+        bitmaps defined in the Bitmaps section are still visible through the
+        nebula. Uncheck to let the nebula obscure them completely.</td></tr>
+    <tr><td>Override Fog Palette</td><td>When checked, uses the RGB values specified
+        here as the fog color instead of the nebula's default palette.</td></tr>
+</table>
+
+<h2>Ambient Light</h2>
+<p>Sets the global ambient light color applied to all ship and object surfaces. Use
+the RGB sliders to tint the ambient fill.</p>
+
+<h2>Skybox</h2>
+<p>Renders a POF model as a full-environment backdrop, replacing the default
+procedural starfield. Select the POF file and set <strong>Pitch / Bank /
+Heading</strong> to rotate it. Leave the file field blank for no skybox.</p>
+<p>The rendering flags control how the model is drawn:</p>
+<table>
+    <tr><th>Flag</th><th>Effect</th></tr>
+    <tr><td>No Lighting</td><td>Disables dynamic and ambient lighting on the
+        skybox.</td></tr>
+    <tr><td>All Transparent</td><td>Renders the model fully transparent.</td></tr>
+    <tr><td>No Z-buffer</td><td>Disables depth buffer writes so the skybox always
+        renders behind everything else.</td></tr>
+    <tr><td>No Cull</td><td>Renders both front- and back-facing polygons.</td></tr>
+    <tr><td>No Glowmaps</td><td>Disables glow/emission map rendering on the
+        model.</td></tr>
+    <tr><td>Force Clamp</td><td>Forces texture coordinate clamping rather than
+        wrapping.</td></tr>
+</table>
+<div class="note">The default flags for a new skybox are No Z-buffer, No Cull, All
+Transparent, and No Lighting, which is the correct setup for most cases.</div>
+
+<h2>Misc</h2>
+<table>
+    <tr><th>Field</th><th>Description</th></tr>
+    <tr><td>Number of Stars</td><td>Count of procedurally placed background stars.
+        These may not be visible when a skybox is in use.</td></tr>
+    <tr><td>Takes place in subspace</td><td>Loads the subspace tunnel effect for the
+        entire mission.</td></tr>
+    <tr><td>Environment map</td><td>Texture used for environment-mapped reflections
+        and lighting on ship surfaces.</td></tr>
+    <tr><td>Lighting profile</td><td>Selects the lighting profile from the tables to
+        apply to the mission.</td></tr>
+</table>
+
+<h2>Old Nebula</h2>
+<p>A legacy FS1-style nebula system. These settings are read and written for
+backwards compatibility with old mission files, but the renderer that drew them was
+removed.</p>
+</body>
+</html>

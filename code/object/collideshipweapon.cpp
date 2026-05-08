@@ -702,7 +702,7 @@ static std::tuple<bool, bool, ship_weapon_collision_data> prop_weapon_check_coll
 			bool recheck = false;
 			// most of this data is irrevelant for props but let's match it to make it easy
 			ship_weapon_collision_data cd{mc, -1, postproc, -1, -1, ZERO_VECTOR, false, false};
-			return {postproc, recheck, cd};
+			return {postproc, recheck, std::move(cd)};
 		}
 	}
 
@@ -713,7 +713,7 @@ static std::tuple<bool, bool, ship_weapon_collision_data> prop_weapon_check_coll
 	// most of this data is irrevelant for props but let's match it to make it easy
 	ship_weapon_collision_data cd{(valid_hit_occurred ? mc : mc_info{}), -1, postproc, -1, -1, ZERO_VECTOR, false, false};
 
-	return{postproc, recheck, cd};
+	return{postproc, recheck, std::move(cd)};
 }
 
 static void prop_weapon_process_collision(obj_pair* pair, const ship_weapon_collision_data& cd)

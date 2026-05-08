@@ -133,7 +133,7 @@ void parse_prop_table(const char* filename)
 			if (existing != Prop_categories.end()) {
 				*existing = pc; // Replace
 			} else {
-				Prop_categories.push_back(pc); // Add new
+				Prop_categories.push_back(std::move(pc)); // Add new
 			}
 		}
 	}
@@ -346,7 +346,7 @@ void parse_prop_table(const char* filename)
 				required_string("+String:");
 				stuff_string(cs.text, F_MULTITEXT);
 
-				pip->custom_strings.push_back(cs);
+				pip->custom_strings.push_back(std::move(cs));
 			}
 
 			required_string("$end_custom_strings");
@@ -378,7 +378,7 @@ void post_process_props()
 		prop_category pc;
 		pc.name = UnknownCategory;
 		gr_init_color(&pc.list_color, 128, 128, 128);
-		Prop_categories.push_back(pc);
+		Prop_categories.push_back(std::move(pc));
 	}
 
 	// Sort props by category order from Prop_categories, preserving internal order
@@ -473,7 +473,9 @@ int prop_create(const matrix* orient, const vec3d* pos, int prop_type, const cha
 		Error(LOCATION, "Cannot create prop %s; pof file is not valid", pip->name.c_str());
 		return -1;
 	}
-	pip->model_num = model_load(pip->pof_file.c_str());
+	if (pip->model_num == -1) {
+		pip->model_num = model_load(pip->pof_file.c_str());
+	}
 
 	polymodel* pm = model_get(pip->model_num);
 

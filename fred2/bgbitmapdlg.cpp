@@ -530,7 +530,7 @@ void bg_bitmap_dlg::OnClose()
 	// close window stuff
 	theApp.record_window_data(&Bg_wnd_data, this);
 	delete Bg_bitmap_dialog;
-	Bg_bitmap_dialog = NULL;
+	Bg_bitmap_dialog = nullptr;
 
 	FREDDoc_ptr->autosave("background editor");
 }

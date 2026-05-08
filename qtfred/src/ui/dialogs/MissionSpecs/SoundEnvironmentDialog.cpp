@@ -1,15 +1,18 @@
 #include "SoundEnvironmentDialog.h"
 
 #include "ui_SoundEnvironmentDialog.h"
+#include "ui/Theme.h"
 
 #include "cfile/cfile.h"
 #include "sound/audiostr.h"
 #include "sound/ds.h"
 #include "sound/sound.h"
 
+#include <ui/util/default_dir.h>
 #include <ui/util/SignalBlockers.h>
 
 #include <QFileDialog>
+#include <QFileInfo>
 #include <QMessageBox>
 #include <QCloseEvent>
 
@@ -20,6 +23,8 @@ SoundEnvironmentDialog::SoundEnvironmentDialog(QWidget* parent, EditorViewport* 
 	  _model(new SoundEnvironmentDialogModel(this, viewport)), _viewport(viewport)
 {
 	ui->setupUi(this);
+
+	fso::fred::bindStandardIcon(ui->playButton, QStyle::SP_MediaPlay);
 
 	populatePresets();
 
@@ -34,7 +39,7 @@ void SoundEnvironmentDialog::accept()
 	if (_model->apply()) {
 		QDialog::accept();
 	}
-	// else: validation failed, don’t close
+	// else: validation failed, don't close
 
 	closeWave();
 	disableEnvPreview();
@@ -161,17 +166,16 @@ void SoundEnvironmentDialog::on_browseButton_clicked()
 {
 	closeWave();
 
-	const int pushed = cfile_push_chdir(CF_TYPE_DATA);
+	const QString lastDir = util::getLastDir("soundEnvironment/soundFile", CF_TYPE_DATA);
 	const QString filter = "Voice Files (*.ogg *.wav);;Ogg Vorbis Files (*.ogg);;Wave Files (*.wav)";
-	const auto path = QFileDialog::getOpenFileName(this, tr("Choose sound"), QString(), filter);
+	const auto path = QFileDialog::getOpenFileName(this, tr("Choose sound"), lastDir, filter);
 
 	if (!path.isEmpty()) {
-		const QString justName = QFileInfo(path).fileName();
-		_waveId = audiostream_open(justName.toUtf8().constData(), ASF_SOUNDFX);
-		ui->fileSelectionLabel->setText(justName);
+		const QFileInfo fi(path);
+		util::saveLastDir("soundEnvironment/soundFile", path);
+		_waveId = audiostream_open(fi.fileName().toUtf8().constData(), ASF_SOUNDFX);
+		ui->fileSelectionLabel->setText(fi.fileName());
 	}
-	if (!pushed)
-		cfile_pop_dir();
 
 	enableOrDisableFields();
 }

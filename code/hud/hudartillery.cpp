@@ -389,7 +389,7 @@ void ssm_create(object *target, const vec3d *start, size_t ssm_index, const ssm_
 		snd_play(gamesnd_get_game_sound(Ssm_info[ssm_index].sound_index));
 	}
 
-	Ssm_strikes.push_back(ssm);
+	Ssm_strikes.push_back(std::move(ssm));
 }
 
 // delete a finished ssm effect

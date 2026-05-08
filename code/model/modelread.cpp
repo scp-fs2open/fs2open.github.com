@@ -196,7 +196,7 @@ void model_free(polymodel* pm)
 
 			if (pm->submodel[i].collision_tree_index >= 0) {
 				model_remove_bsp_collision_tree(pm->submodel[i].collision_tree_index);
-				pm->submodel[i].collision_tree_index = 0;
+				pm->submodel[i].collision_tree_index = -1;
 			}
 		}
 	}
@@ -277,6 +277,15 @@ void model_unload(int modelnum, int force)
 	for (auto& si : Ship_info) {
 		if (pm->id == si.model_num) {
 			si.model_num = -1;
+
+			// also reset any subsystem model_num references that pointed to this model,
+			// otherwise stale ids can survive across missions and cause subsystems to fail
+			// to re-link when the model is reloaded with a different id.
+			for (int k = 0; k < si.n_subsystems; k++) {
+				if (si.subsystems[k].model_num == pm->id) {
+					si.subsystems[k].model_num = -1;
+				}
+			}
 		}
 
 		if (pm->id == si.cockpit_model_num) {
@@ -592,7 +601,11 @@ void model_copy_subsystems( int n_subsystems, model_subsystem *d_sp, model_subsy
 			}
 		}
 		if ( j == n_subsystems )
-			Int3();							// get allender -- something is amiss with models
+			Error(LOCATION, "Subsystem '%s' could not be matched between two ship classes that share a model. "
+				"The destination ship will be missing this subsystem at runtime. "
+				"Check that subsystem names are spelled identically on both ship classes, "
+				"and that any modular table extensions to one ship are mirrored on the other.",
+				source->subobj_name);
 
 	}
 }
@@ -2571,10 +2584,10 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				{
 					char tmp_name[127];
 					cfread_string_len(tmp_name,127,fp);
-					constexpr int max_buffer_size = MAX_FILENAME_LEN - 8;	// leave room for the longest suffix, "-reflect"
+					const auto max_buffer_size = static_cast<size_t>(MAX_FILENAME_LEN) - model_texture_longest_suffix().size();
 					if (strlen(tmp_name) >= max_buffer_size)
 					{
-						Warning(LOCATION, "Model '%s', texture '%s' filename is too long!  Truncating to %d characters.", pm->filename, tmp_name, max_buffer_size - 1);
+						Warning(LOCATION, "Model '%s', texture '%s' filename is too long!  Truncating to %d characters.", pm->filename, tmp_name, static_cast<int>(max_buffer_size - 1));
 						tmp_name[max_buffer_size - 1] = '\0';
 					}
 					model_load_texture(pm, i, tmp_name);
@@ -2729,6 +2742,11 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 					// read in world offset
 					cfread_vector(&pm->ins[idx].offset, fp);
 
+					vec3d min = {{{FLT_MAX, FLT_MAX, FLT_MAX}}};
+					vec3d max = {{{-FLT_MAX, -FLT_MAX, -FLT_MAX}}};
+					vec3d avg_total = ZERO_VECTOR;
+					vec3d avg_normal = ZERO_VECTOR;
+
 					// read in all the faces
 					for(idx2=0; idx2<pm->ins[idx].num_faces; idx2++){
 						// read in 3 vertices
@@ -2740,18 +2758,37 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 						vec3d tempv;
 
 						//get three points (rotated) and compute normal
+						const vec3d& v1 = pm->ins[idx].vecs[pm->ins[idx].faces[idx2][0]];
+						const vec3d& v2 = pm->ins[idx].vecs[pm->ins[idx].faces[idx2][1]];
+						const vec3d& v3 = pm->ins[idx].vecs[pm->ins[idx].faces[idx2][2]];
 
 						vm_vec_perp(&tempv,
-							&pm->ins[idx].vecs[pm->ins[idx].faces[idx2][0]],
-							&pm->ins[idx].vecs[pm->ins[idx].faces[idx2][1]],
-							&pm->ins[idx].vecs[pm->ins[idx].faces[idx2][2]]);
+							&v1,
+							&v2,
+							&v3);
 
 						vm_vec_normalize_safe(&tempv);
 
 						pm->ins[idx].norm[idx2] = tempv;
-//						mprintf(("insignorm %.2f %.2f %.2f\n",pm->ins[idx].norm[idx2].xyz.x, pm->ins[idx].norm[idx2].xyz.y, pm->ins[idx].norm[idx2].xyz.z));
+	//					mprintf(("insignorm %.2f %.2f %.2f\n",pm->ins[idx].norm[idx2].xyz.x, pm->ins[idx].norm[idx2].xyz.y, pm->ins[idx].norm[idx2].xyz.z));
 
+
+						vm_vec_min(&min, &min, &v1);
+						vm_vec_min(&min, &min, &v2);
+						vm_vec_min(&min, &min, &v3);
+						vm_vec_max(&max, &max, &v1);
+						vm_vec_max(&max, &max, &v2);
+						vm_vec_max(&max, &max, &v3);
+
+						vec3d avg = (v1 + v2 + v3) * (1.0f / 3.0f);
+						avg_total += avg;
+						avg_normal += tempv;
 					}
+
+					pm->ins[idx].position = avg_total / static_cast<float>(num_faces) + pm->ins[idx].offset;
+					vec3d bb = max - min;
+					pm->ins[idx].diameter = std::max({bb.xyz.x, bb.xyz.y, bb.xyz.z});
+					vm_vector_2_matrix(&pm->ins[idx].orientation, &avg_normal, &vmd_z_vector);
 				}
 				break;
 
@@ -3061,7 +3098,7 @@ void model_load_texture(polymodel *pm, int i, const char *file)
 	else
 	{
 		// check if we should be transparent, include "-trans" but make sure to skip anything that might be "-transport"
-		if ( (strstr(tmp_name, "-trans") && !strstr(tmp_name, "-transpo")) || strstr(tmp_name, "shockwave") || !strcmp(tmp_name, "nameplate") ) {
+		if ((strstr(tmp_name, MODEL_TEXTURE_SUFFIX_TRANS.c_str()) && !strstr(tmp_name, "-transpo")) || strstr(tmp_name, "shockwave") || !strcmp(tmp_name, "nameplate")) {
 			tmap->is_transparent = true;
 		}
 
@@ -3086,7 +3123,7 @@ void model_load_texture(polymodel *pm, int i, const char *file)
 	else
 	{
 		strcpy_s(tmp_name, file);
-		strcat_s(tmp_name, "-glow" );
+		strcat_s(tmp_name, MODEL_TEXTURE_SUFFIXES.at(TM_GLOW_TYPE).c_str());
 		strlwr(tmp_name);
 
 		tglow->LoadTexture(tmp_name, pm->filename);
@@ -3105,14 +3142,14 @@ void model_load_texture(polymodel *pm, int i, const char *file)
 	{
 		// look for reflectance map
 		strcpy_s(tmp_name, file);
-		strcat_s(tmp_name, "-reflect");
+		strcat_s(tmp_name, MODEL_TEXTURE_SUFFIXES.at(TM_SPEC_GLOSS_TYPE).c_str());
 		strlwr(tmp_name);
 
 		tspecgloss->LoadTexture(tmp_name, pm->filename);
 
 		// look for a legacy shine map as well
 		strcpy_s(tmp_name, file);
-		strcat_s(tmp_name, "-shine");
+		strcat_s(tmp_name, MODEL_TEXTURE_SUFFIXES.at(TM_SPECULAR_TYPE).c_str());
 		strlwr(tmp_name);
 
 		tspec->LoadTexture(tmp_name, pm->filename);
@@ -3126,7 +3163,7 @@ void model_load_texture(polymodel *pm, int i, const char *file)
 		tnorm->clear();
 	} else {
 		strcpy_s(tmp_name, file);
-		strcat_s(tmp_name, "-normal");
+		strcat_s(tmp_name, MODEL_TEXTURE_SUFFIXES.at(TM_NORMAL_TYPE).c_str());
 		strlwr(tmp_name);
 
 		tnorm->LoadTexture(tmp_name, pm->filename);
@@ -3138,7 +3175,7 @@ void model_load_texture(polymodel *pm, int i, const char *file)
 		theight->clear();
 	} else {
 		strcpy_s(tmp_name, file);
-		strcat_s(tmp_name, "-height");
+		strcat_s(tmp_name, MODEL_TEXTURE_SUFFIXES.at(TM_HEIGHT_TYPE).c_str());
 		strlwr(tmp_name);
 
 		theight->LoadTexture(tmp_name, pm->filename);
@@ -3148,7 +3185,7 @@ void model_load_texture(polymodel *pm, int i, const char *file)
 	texture_info *tambient = &tmap->textures[TM_AMBIENT_TYPE];
 
 	strcpy_s(tmp_name, file);
-	strcat_s(tmp_name, "-ao");
+	strcat_s(tmp_name, MODEL_TEXTURE_SUFFIXES.at(TM_AMBIENT_TYPE).c_str());
 	strlwr(tmp_name);
 
 	tambient->LoadTexture(tmp_name, pm->filename);
@@ -3157,7 +3194,7 @@ void model_load_texture(polymodel *pm, int i, const char *file)
 	texture_info *tmisc = &tmap->textures[TM_MISC_TYPE];
 
 	strcpy_s(tmp_name, file);
-	strcat_s(tmp_name, "-misc");
+	strcat_s(tmp_name, MODEL_TEXTURE_SUFFIXES.at(TM_MISC_TYPE).c_str());
 	strlwr(tmp_name);
 
 	tmisc->LoadTexture(tmp_name, pm->filename);
@@ -3208,6 +3245,8 @@ int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool
 			if (!stricmp(filename , Polygon_models[i]->filename) && !allow_redundant_load) {
 				// Model already loaded; just return.
 				Polygon_models[i]->used_this_mission++;
+				if (sip != nullptr)
+					sip->model_num = Polygon_models[i]->id;
 				return Polygon_models[i]->id;
 			}
 		} else if ( num == -1 )	{
@@ -3482,6 +3521,8 @@ int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool
 	model_set_bay_path_nums(pm);
 
 	unpause_parse();
+	if (sip != nullptr)
+		sip->model_num = pm->id;
 	return pm->id;
 }
 
@@ -3649,7 +3690,7 @@ void model_set_bay_path_nums(polymodel *pm)
 	*/
 
 	// malloc out storage for the path information
-	pm->ship_bay = make_shared<ship_bay_t>();
+	pm->ship_bay = std::make_shared<ship_bay_t>();
 
 	pm->ship_bay->num_paths = 0;
 	// TODO: determine if zeroing out here is affecting any earlier initializations
@@ -5298,7 +5339,7 @@ int model_create_bsp_collision_tree()
 	bsp_collision_tree tree{};
 
 	tree.used = true;
-	Bsp_collision_tree_list.push_back(tree);
+	Bsp_collision_tree_list.push_back(std::move(tree));
 
 	return (int)(Bsp_collision_tree_list.size() - 1);
 }

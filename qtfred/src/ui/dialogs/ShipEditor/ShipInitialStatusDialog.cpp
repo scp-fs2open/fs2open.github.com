@@ -22,6 +22,7 @@ ShipInitialStatusDialog::ShipInitialStatusDialog(QDialog* parent, EditorViewport
 	ui->setupUi(this);
 
 	ui->cargoEdit->setMaxLength(NAME_LENGTH - 1);
+	ui->cargoTitleEdit->setMaxLength(NAME_LENGTH - 1);
 
 	connect(_model.get(), &AbstractDialogModel::modelChanged, this, &ShipInitialStatusDialog::updateUI);
 
@@ -62,6 +63,8 @@ void ShipInitialStatusDialog::on_velocitySpinBox_valueChanged(int value)
 }
 void ShipInitialStatusDialog::on_dockpointList_currentItemChanged(QListWidgetItem* current)
 {
+	if (!current)
+		return;
 	cur_docker_point = current->data(Qt::UserRole).toInt();
 	updateUI();
 }
@@ -70,6 +73,11 @@ void ShipInitialStatusDialog::on_dockeeComboBox_currentIndexChanged(int index)
 	auto dockeeData = ui->dockeeComboBox->itemData(index).toInt();
 	cur_dockee = dockeeData;
 	_model->setDockee(cur_docker_point, dockeeData);
+
+	if (cur_dockee >= 0 && ui->dockeePointComboBox->count() > 0) {
+		cur_dockee_point = ui->dockeePointComboBox->itemData(0).toInt();
+		_model->setDockeePoint(cur_docker_point, cur_dockee_point);
+	}
 }
 void ShipInitialStatusDialog::on_dockeePointComboBox_currentIndexChanged(int index)
 {
@@ -127,15 +135,18 @@ void ShipInitialStatusDialog::on_subIntegritySpinBox_valueChanged(int value)
 }
 void ShipInitialStatusDialog::on_cargoEdit_editingFinished()
 {
-	auto cargo = ui->cargoEdit->text();
-	auto cargofixed = cargo.toUtf8();
-	_model->setCargo(cargofixed.toStdString());
+	SCP_string cargo = ui->cargoEdit->text().toUtf8().constData();
+	_model->setCargo(cargo);
+}
+void ShipInitialStatusDialog::on_cargoTitleEdit_editingFinished()
+{
+	SCP_string title = ui->cargoTitleEdit->text().toUtf8().constData();
+	_model->setCargoTitle(title);
 }
 void ShipInitialStatusDialog::on_colourComboBox_currentIndexChanged(int index)
 {
-	auto string = ui->colourComboBox->itemText(index);
-	auto stringfixed = string.toUtf8();
-	_model->setColour(stringfixed.toStdString());
+	SCP_string colour = ui->colourComboBox->itemText(index).toUtf8().constData();
+	_model->setColour(colour);
 }
 void ShipInitialStatusDialog::on_okPushButton_clicked()
 {
@@ -147,6 +158,10 @@ void ShipInitialStatusDialog::on_cancelPushButton_clicked() {
 void ShipInitialStatusDialog::on_guardianSpinBox_valueChanged(int value)
 {
 	_model->setGuardian(value);
+}
+void ShipInitialStatusDialog::on_moveShipsCheckBox_toggled(bool value)
+{
+	_model->setMoveShipsWhenUndocking(value);
 }
 void ShipInitialStatusDialog::updateUI()
 {
@@ -180,6 +195,7 @@ void ShipInitialStatusDialog::updateUI()
 	updateFlags();
 	updateDocks();
 	updateDockee();
+	ui->moveShipsCheckBox->setChecked(_model->getMoveShipsWhenUndocking());
 	updateSubsystems();
 	ui->colourComboBox->clear();
 	if (_model->getUseTeamcolours()) {
@@ -214,7 +230,7 @@ void ShipInitialStatusDialog::updateFlags()
 }
 void ShipInitialStatusDialog::updateDocks()
 {
-	auto index = ui->dockpointList->currentIndex();
+	int row = ui->dockpointList->currentRow();
 	ui->dockpointList->clear();
 	if (!_model->getIfMultpleShips()) {
 		for (int dockpoint = 0; dockpoint < _model->getnum_dock_points(); dockpoint++) {
@@ -225,7 +241,8 @@ void ShipInitialStatusDialog::updateDocks()
 			ui->dockpointList->addItem(newItem);
 		}
 	}
-	ui->dockpointList->setCurrentIndex(index);
+	if (row >= 0 && row < ui->dockpointList->count())
+		ui->dockpointList->setCurrentRow(row);
 	if (cur_docker_point < 0) {
 		// clear the dropdowns
 		list_dockees(-1);
@@ -327,9 +344,6 @@ void ShipInitialStatusDialog::list_dockees(int dock_types)
 }
 void ShipInitialStatusDialog::list_dockee_points(int shipnum)
 {
-	ship* shipp = &Ships[_model->getShip()];
-	ship* other_shipp = &Ships[shipnum];
-
 	// enable/disable dropdown
 	ui->dockeePointComboBox->setEnabled((shipnum >= 0));
 
@@ -340,6 +354,9 @@ void ShipInitialStatusDialog::list_dockee_points(int shipnum)
 	if (shipnum < 0) {
 		return;
 	}
+
+	ship* shipp = &Ships[_model->getShip()];
+	ship* other_shipp = &Ships[shipnum];
 
 	// get the required dock type(s)
 	int dock_type = model_get_dock_index_type(Ship_info[shipp->ship_info_index].model_num, cur_docker_point);
@@ -365,12 +382,15 @@ void ShipInitialStatusDialog::updateSubsystems()
 	ship_subsys* ptr;
 	auto index = ui->subsystemList->currentIndex();
 	ui->subsystemList->clear();
-	if (!_model->getIfMultpleShips()) {
+
+	bool multiEdit = _model->getIfMultpleShips();
+	bool useNewScanning = _model->getUseNewScanningBehavior();
+	bool toggleSet = _model->getToggleSubsystemScanning();
+	bool scannable = _model->getShip_has_scannable_subsystems();
+
+	if (!multiEdit) {
 		ui->subsystemList->setEnabled(true);
 		ui->subIntegritySpinBox->setEnabled(true);
-		if (_model->getShip_has_scannable_subsystems()) {
-			ui->cargoEdit->setEnabled(true);
-		}
 		for (ptr = GET_FIRST(&Ships[_model->getShip()].subsys_list);
 			ptr != END_OF_LIST(&Ships[_model->getShip()].subsys_list);
 			ptr = GET_NEXT(ptr)) {
@@ -382,11 +402,30 @@ void ShipInitialStatusDialog::updateSubsystems()
 	} else {
 		ui->subsystemList->setEnabled(false);
 		ui->subIntegritySpinBox->setEnabled(false);
-		ui->cargoEdit->setEnabled(false);
 	}
+
+	// Determine whether subsystem cargo fields should be shown.
+	// Classic mode: ship must have scannable subsystems (huge ship, or non-huge with Toggle_subsystem_scanning).
+	// Unified mode: any ship with Toggle_subsystem_scanning can use subsystem cargo.
+	bool showCargo;
+	if (useNewScanning) {
+		showCargo = !multiEdit && toggleSet;
+	} else {
+		showCargo = !multiEdit && scannable;
+	}
+
+	ui->subsysCargoHelpLabel->setVisible(!showCargo && !multiEdit);
+	ui->cargoLabel->setVisible(showCargo);
+	ui->cargoEdit->setVisible(showCargo);
+	ui->cargoEdit->setEnabled(showCargo);
+	ui->cargoTitleLabel->setVisible(showCargo);
+	ui->cargoTitleEdit->setVisible(showCargo);
+	ui->cargoTitleEdit->setEnabled(showCargo);
+
 	auto value = _model->getDamage();
 	ui->subIntegritySpinBox->setValue(value);
 	auto cargovalue = _model->getCargo();
 	ui->cargoEdit->setText(cargovalue.c_str());
+	ui->cargoTitleEdit->setText(_model->getCargoTitle().c_str());
 }
 } // namespace fso::fred::dialogs
