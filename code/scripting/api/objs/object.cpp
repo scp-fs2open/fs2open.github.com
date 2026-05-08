@@ -766,5 +766,37 @@ ADE_FUNC(getIFFColor, l_Object, "boolean ReturnType",
 	}
 }
 
+ADE_FUNC(findWorldPoint, l_Object, "vector", "Calculates the world coordinates of a point in the object's frame of reference", "vector", "Point, or empty vector if handle is not valid")
+{
+	object_h *objh;
+	vec3d pnt, outpnt;
+	if (!ade_get_args(L, "oo", l_Object.GetPtr(&objh), l_Vector.Get(&pnt)))
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	if (!objh->isValid())
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	auto objp = objh->objp();
+	vm_vec_unrotate(&outpnt, &pnt, &objp->orient);
+	outpnt += objp->pos;
+	return ade_set_args(L, "o", l_Vector.Set(outpnt));
+}
+
+ADE_FUNC(findObjectPoint, l_Object, "vector", "Calculates the coordinates in an object's frame of reference, of a point in world coordinates", "vector", "Point, or empty vector if handle is not valid")
+{
+	object_h *objh;
+	vec3d pnt, outpnt;
+	if (!ade_get_args(L, "oo", l_Object.GetPtr(&objh), l_Vector.Get(&pnt)))
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	if (!objh->isValid())
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	auto objp = objh->objp();
+	pnt -= objp->pos;
+	vm_vec_rotate(&outpnt, &pnt, &objp->orient);
+	return ade_set_args(L, "o", l_Vector.Set(outpnt));
+}
+
 } // namespace api
 } // namespace scripting
