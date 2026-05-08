@@ -117,6 +117,7 @@ void JumpNodeEditorDialogModel::initializeData()
 	}
 
 	Q_EMIT jumpNodeMarkingChanged();
+	_modified = false;
 }
 
 void JumpNodeEditorDialogModel::buildNodeList()

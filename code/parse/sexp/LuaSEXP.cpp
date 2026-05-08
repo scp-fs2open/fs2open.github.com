@@ -756,7 +756,7 @@ void LuaSEXP::parseTable() {
 				if (skip)
 					continue;
 
-				thisList.list.push_back(item);
+				thisList.list.push_back(std::move(item));
 			}
 
 			if (thisList.list.size() == 0) {
@@ -810,7 +810,7 @@ void LuaSEXP::parseTable() {
 				dyn_param.operator_name = _name;
 				dyn_param.parameter_map.push_back(param_map);
 
-				Dynamic_parameters.push_back(dyn_param);
+				Dynamic_parameters.push_back(std::move(dyn_param));
 			}
 		}
 		else if (parent_param_index >= 0)
@@ -832,14 +832,14 @@ void LuaSEXP::parseTable() {
 			if (optional_string("+Suffix:")) {
 				SCP_string suffix;
 				stuff_string(suffix, F_NAME);
-				Dynamic_enum_suffixes.push_back({_name, param_index, suffix});
+				Dynamic_enum_suffixes.push_back({_name, param_index, std::move(suffix)});
 			}
 		}
 
 		if (variable_arg_part) {
-			_varargs_type_pattern.push_back(type);
+			_varargs_type_pattern.push_back(std::move(type));
 		} else {
-			_argument_types.push_back(type);
+			_argument_types.push_back(std::move(type));
 		}
 
 		if (optional_string("$Repeat")) {

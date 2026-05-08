@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Shield System - QtFRED Help</title>
+    <link rel="stylesheet" type="text/css" href="../css/help.css"/>
+</head>
+<body>
+<nav class="breadcrumb"><a href="../index.html">QtFRED Help</a> &rsaquo; Mission &rsaquo; Shield System</nav>
+<h1>Shield System</h1>
+<p>Opens via <strong>Editors &rsaquo; Shield System</strong>.</p>
+<p>A convenience tool for enabling or disabling shields on ships in bulk, by ship class
+or by IFF team. When applied, the dialog directly sets the shield flag on every
+existing ship in the mission; it is not a runtime override. If you add new ships
+after using this dialog, reopen it and apply again to include them.</p>
+
+<h2>By ship class (left panel)</h2>
+<p>Select a ship class from the dropdown and choose
+<strong>Has shield system</strong> or <strong>No shield system</strong>. Applying
+sets the flag on all ships of that class currently in the mission.</p>
+
+<h2>By IFF team (right panel)</h2>
+<p>Select a team from the dropdown and choose
+<strong>Has shield system</strong> or <strong>No shield system</strong>. Applying
+sets the flag on all ships belonging to that team currently in the mission.</p>
+
+<div class="note">When both a ship class setting and a team setting apply to the same
+ship, the ship class setting takes precedence.</div>
+<div class="note">The Shield System dialog, the <a href="ShipEditorDialog.html">Ship
+Editor</a> (Initial Status and Ship Flags tabs), and
+<a href="GlobalShipFlagsDialog.html">Global Ship Flags</a> all write to the same
+per-ship shield flag. There is no fixed precedence between them; whichever is
+applied last takes effect. A typical workflow is to use this dialog to establish a
+baseline across the mission, then make individual adjustments per ship in the Ship
+Editor. If you later reopen this dialog and a team or class shows as
+<em>Mixed</em> (some ships differ), applying without changing that setting will
+leave those individual ship values intact.</div>
+</body>
+</html>

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Mission Events - QtFRED Help</title>
+    <link rel="stylesheet" type="text/css" href="../css/help.css"/>
+</head>
+<body>
+<nav class="breadcrumb"><a href="../index.html">QtFRED Help</a> &rsaquo; Mission &rsaquo; Mission Events</nav>
+<h1>Mission Events</h1>
+<p>Opens via <strong>Editors &rsaquo; Mission Events</strong>.</p>
+<p>Mission Events is the primary scripting interface in QtFRED and where the vast majority
+of mission design work happens. Each event is a named unit that pairs a condition with one
+or more actions expressed as <a href="../concepts/sexps.html">SEXPs</a>. The engine
+evaluates every event every frame; when the condition becomes true the actions fire.
+Events can repeat on a cooldown, depend on other events firing first, display objectives
+on the HUD, trigger messages, and much more. The event list is the brain of a mission.</p>
+
+<h2>Event list and SEXP tree</h2>
+<p>The main area shows all events in the mission alongside their SEXP trees. Selecting an
+event expands its condition and action expressions for editing. Right-click any SEXP node
+to add, replace, or remove operators and arguments. See
+<a href="../concepts/sexps.html">SEXPs</a> for a full overview of the expression
+language and the operators available.</p>
+<p>Events are evaluated in list order each frame. Order matters: events earlier in the
+list are processed first, which can affect timing when events interact.</p>
+
+<h2>Event list buttons</h2>
+<table>
+    <tr><th>Button</th><th>Description</th></tr>
+    <tr><td>New</td><td>Appends a new blank event at the end of the list.</td></tr>
+    <tr><td>Insert</td><td>Inserts a new blank event above the currently selected
+        event.</td></tr>
+    <tr><td>Delete</td><td>Removes the selected event.</td></tr>
+    <tr><td>Move Up / Move Down</td><td>Reorders the selected event within the
+        list.</td></tr>
+</table>
+
+<h2>Event properties</h2>
+<p>These fields configure the selected event.</p>
+<table>
+    <tr><th>Field</th><th>Description</th></tr>
+    <tr><td>Name</td><td>Internal label shown in the event list. Referenced by the
+        <strong>Chain</strong> feature of other events and by SEXPs such as
+        <code>event-true</code> and <code>event-false</code>.</td></tr>
+    <tr><td>Repeat count</td><td>How many times the event's actions will run in total.
+        <kbd>-1</kbd> means unlimited.</td></tr>
+    <tr><td>Trigger count</td><td>How many times the event's condition must become true
+        before the event stops firing entirely. Once this count reaches zero the event
+        is permanently disabled, overriding any remaining repeat count.</td></tr>
+    <tr><td>Interval</td><td>Minimum time in seconds or milliseconds between successive
+        firings when the repeat count is greater than 1. The interval timer resets after
+        each firing.</td></tr>
+    <tr><td>Chained</td><td>When checked, this event's condition is not evaluated until
+        the immediately preceding event in the list has become true at least once. Used
+        to sequence events without adding explicit timing conditions to every
+        SEXP.</td></tr>
+    <tr><td>Chain delay</td><td>Number of seconds or milliseconds after the preceding
+        event becomes true before this event's condition begins evaluating. Only
+        meaningful when <strong>Chained</strong> is checked.</td></tr>
+    <tr><td>Interval & Chain Delay in Millliseconds</td><td>Chekcbox that
+        when checked changes both Chain Delay and Interval to being milliseconds instead
+        of seconds.</td></tr>
+    <tr><td>Score</td><td>Points awarded to the player when this event becomes
+        true.</td></tr>
+    <tr><td>Team</td><td>In multiplayer missions, restricts the event to a specific
+        team. Disabled for non-multiplayer missions.</td></tr>
+    <tr><td>Directive text</td><td>Text shown in the player's objective display on the
+        HUD when this event is active. Writing text here makes the event a directive.
+        Directives turn red when they can no longer become true, and blue when they
+        do become true.</td></tr>
+    <tr><td>Directive keypress text</td><td>Helper text displayed beneath the directive
+        in green on the HUD. Keybinds can be embedded by surrounding the bind name
+        with <code>$$</code>, for example <code>$Alt-X$</code>, and they will be
+        automatically translated to the player's current control bindings.</td></tr>
+</table>
+
+<h2>Log flags</h2>
+<p>These checkboxes control when the selected event writes an entry to the engine's
+debug event log (<code>event.log</code>). They are useful for tracing event behavior
+during mission testing.</p>
+<table>
+    <tr><th>Flag</th><th>Logs when&hellip;</th></tr>
+    <tr><td>True</td><td>The event condition evaluates to true.</td></tr>
+    <tr><td>False</td><td>The event condition evaluates to false.</td></tr>
+    <tr><td>Always False</td><td>The event condition is permanently false.</td></tr>
+    <tr><td>Log Previous</td><td>The event changes state; logs the previous state
+        alongside the new one.</td></tr>
+    <tr><td>First Repeat</td><td>The event fires on its first repetition. Flag is
+        cleared after logging once.</td></tr>
+    <tr><td>Last Repeat</td><td>The event fires on its final repetition.</td></tr>
+    <tr><td>First Trigger</td><td>The event fires on its first trigger. Flag is
+        cleared after logging once.</td></tr>
+    <tr><td>Last Trigger</td><td>The event fires on its final trigger.</td></tr>
+</table>
+
+<h2>Messages</h2>
+<p>The messages panel lists all messages defined for this mission. SEXPs such as
+<code>send-message</code> and <code>send-message-list</code> reference messages by
+name. Use the arrow buttons to reorder messages in the list.</p>
+
+<h3>Message list buttons</h3>
+<table>
+    <tr><th>Button</th><th>Description</th></tr>
+    <tr><td>New</td><td>Appends a new blank message at the end of the list.</td></tr>
+    <tr><td>Insert</td><td>Inserts a new blank message above the selected
+        message.</td></tr>
+    <tr><td>Delete</td><td>Removes the selected message.</td></tr>
+    <tr><td>Add Note</td><td>Attaches a note to the selected message that is not
+        visible to the player. Notes function like stage directions and are printed in
+        the generated script exported from the
+        <a href="VoiceActingManager.html">Voice Acting Manager</a>.</td></tr>
+    <tr><td>Update Stuff</td><td>Automatically assigns the head animation and persona
+        for the selected message based on the current mission settings.</td></tr>
+</table>
+
+<h3>Message properties</h3>
+<table>
+    <tr><th>Field</th><th>Description</th></tr>
+    <tr><td>Name</td><td>Internal identifier used to reference this message in SEXPs.
+        Not shown to the player.</td></tr>
+    <tr><td>Message text</td><td>The text displayed on the HUD when this message is
+        sent.</td></tr>
+    <tr><td>Head ANI</td><td>The talking-head animation file shown with the message.
+        Choose from the dropdown for quick access or browse the gallery.</td></tr>
+    <tr><td>Wave file</td><td>The audio file played when this message is sent.</td></tr>
+    <tr><td>Persona</td><td>When a message has a persona assigned and is sent with
+        <code>wingman</code> as the source, the engine finds a random ship from the
+        player's wing that matches this persona to act as sender. If no matching ship
+        exists the message falls back to Terran Command.</td></tr>
+    <tr><td>Team</td><td>In Team vs. Team multiplayer, restricts this message to
+        players on the specified team. <em>None</em> sends the message to all
+        players.</td></tr>
+</table>
+</body>
+</html>

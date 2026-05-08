@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Fundamentals - QtFRED Help</title>
+    <link rel="stylesheet" type="text/css" href="css/help.css"/>
+</head>
+<body>
+<nav class="breadcrumb"><a href="index.html">QtFRED Help</a> &rsaquo; Fundamentals</nav>
+<h1>Fundamentals</h1>
+
+<p>This tutorial walks you through building a small but complete mission with events,
+waypoints, messages, and a briefing. It assumes you have read the
+<a href="quickstart.html">Quickstart</a>. Budget about 30 minutes.</p>
+
+<p>The mission we are building: the player escorts a friendly transport along a waypoint
+route to rendezvous with a friendly capital ship. Hostile fighters arrive shortly
+after the mission starts. If the transport completes its route, the mission
+succeeds.</p>
+
+<div class="note"><strong>Save often.</strong> Press <kbd>Ctrl+S</kbd> every few
+minutes. Test in-game after each major step. Catching problems early saves a lot of
+rework later.</div>
+
+<h2>1. Plan before you open QtFRED</h2>
+<p>Before placing anything, sketch out what the mission needs:</p>
+<ul>
+    <li>A player fighter wing (Alpha)</li>
+    <li>A friendly transport that needs to reach a rendezvous point</li>
+    <li>A friendly capital ship at the destination, set as a protect target</li>
+    <li>A hostile fighter wing that arrives ~30 seconds in</li>
+    <li>A waypoint path for the transport to follow</li>
+    <li>Events: a timed trigger for the hostile arrival, a radio message when they arrive</li>
+    <li>A primary mission goal tied to the transport completing its route</li>
+    <li>A two-stage briefing and a debriefing</li>
+</ul>
+<p>Knowing this upfront prevents building yourself into a corner. You will still
+adjust things as you go and that is normal.</p>
+
+<h2>2. Place the ships</h2>
+<p>Open a new mission. The player ship is already there. Select it and click
+<strong>Form Wing</strong>, name the wing <kbd>Alpha</kbd>. Move Alpha 1 to roughly
+<kbd>0, 0, -2000</kbd> using the
+<a href="dialogs/ObjectOrientEditorDialog.html">Object Orientation Editor</a>.</p>
+
+<p>Place the friendly transport near the origin. Open the
+<a href="dialogs/ShipEditorDialog.html">Ship Editor</a>, name it
+<kbd>Transport 1</kbd>, set its team to <strong>Friendly</strong>, and set its
+initial velocity to 0. It will start stationary and move when given orders.</p>
+
+<p>Place a friendly capital ship some distance away at the end of where the
+transport's route will go. Name it <kbd>Command Ship</kbd> and set it to
+<strong>Friendly</strong>. Open its <a href="dialogs/ShipEditorDialog.html">Ship Editor</a> and click
+<strong>Flags</strong> to open the
+<a href="dialogs/ShipFlagsDialog.html">Ship Flags</a> subdialog. Enable
+<strong>Protect Ship</strong>. This tells hostile AI not to target or attack it,
+making it a safe destination for the transport to reach. Velocity 0 is fine here
+too.</p>
+
+<p>Place two hostile fighters somewhere off to the side. Select both, click
+<strong>Form Wing</strong>, name the wing <kbd>Epsilon</kbd>, set team to
+<strong>Hostile</strong>. Open the Arrival / Departure tab in the Ship Editor for
+each Epsilon ship and set arrival location to <strong>Hyperspace</strong>. Leave
+the arrival cue as <code>true</code> for now.</p>
+
+<div class="note">Save and do a quick test. All ships should appear. Epsilon will
+arrive immediately and that is fine for now.</div>
+
+<h2>3. Add a waypoint path for the transport</h2>
+<p>Select the waypoint tool in the toolbar and <kbd>Ctrl+click</kbd> in the viewport
+to lay out a short route from the transport's position toward the Command Ship.
+Three or four points is plenty. Open the
+<a href="dialogs/WaypointEditorDialog.html">Waypoint Editor</a> and name the path
+<kbd>Transport Route</kbd>.</p>
+
+<p>Open the Ship Editor for Transport 1, go to
+<strong>Initial Orders</strong>, and set its initial goal to
+<strong>Waypoints Once</strong> &rsaquo; <strong>Transport Route</strong>. The
+transport will fly the route once from start to finish.</p>
+
+<p>Save and test. The transport should start moving along the route.</p>
+
+<h2>4. Delay the hostile arrival with an event</h2>
+<p>Open <strong>Editors &rsaquo; Mission Events</strong>. Click <strong>Add
+event</strong> and name it <kbd>Epsilon Arrives</kbd>. Set its
+<strong>Condition</strong> SEXP to:</p>
+<pre><code>(has-time-elapsed 30)</code></pre>
+<p>No action is needed in this event. It acts purely as a named trigger that other
+things can reference.</p>
+
+<p>Now go back to the Ship Editor for each ship in Epsilon wing. In the
+<strong>Arrival / Departure</strong> tab, change the
+<strong>Arrival cue</strong> SEXP to:</p>
+<pre><code>(is-event-true-delay 0 "Epsilon Arrives")</code></pre>
+<p>This way all of Epsilon's ships key off the same named event. If you want to
+change the delay later, you only need to edit the event's condition in one place.</p>
+
+<p>Save and test. The first 30 seconds should be quiet, then Epsilon jumps in.</p>
+
+<h2>5. Send a message when the hostiles arrive</h2>
+<p>Messages are created and sent from the same
+<a href="dialogs/MissionEventsDialog.html">Mission Events</a> editor. On the right
+side of the dialog, click <strong>Add</strong> under the message list to create a
+new message. Give it the name <kbd>Epsilon Inbound</kbd> and write a short line of
+text such as <em>"Hostile fighters inbound! Protect the transport!"</em> Set a
+sender if desired, or leave it as <code>&lt;mission&gt;</code>.</p>
+
+<p>Now create a new event and name it <kbd>Epsilon Arrival Message</kbd>. Set its
+<strong>Condition</strong> to:</p>
+<pre><code>(has-arrived-delay 0 "Epsilon 1")</code></pre>
+<p>In the <strong>Actions</strong> tree, add a <code>send-message</code> SEXP and
+select <kbd>Epsilon Inbound</kbd> as the message. Leave the priority at
+<strong>Normal</strong>.</p>
+
+<p>Save and test. The message should appear on screen as Epsilon jumps in.</p>
+
+<h2>6. Add a mission goal</h2>
+<p>Open <strong>Editors &rsaquo; Mission Goals</strong>. Add a primary goal:</p>
+<ul>
+    <li><strong>Description:</strong> <em>Escort the transport to the rendezvous</em></li>
+    <li><strong>Completion condition:</strong>
+        <code>(are-waypoints-done-delay 0 "Transport 1" "Transport Route")</code></li>
+</ul>
+<p>Add a secondary goal for destroying Epsilon wing if you like. See
+<a href="concepts/sexps.html">SEXPs</a> for an overview of how conditions are
+built.</p>
+
+<h2>7. Write the briefing</h2>
+<p>Write the briefing now. Be creative and give the player a reason to protect
+the transport from Epsilon wing.</p>
+
+<p>Open <strong>Editors &rsaquo; Briefing</strong>. Build two stages:</p>
+<table>
+    <tr><th>Stage</th><th>Camera</th><th>Text</th></tr>
+    <tr><td>1</td><td>Wide view of the whole scene</td><td>Explain the mission:
+        escort the transport safely to the Command Ship.</td></tr>
+    <tr><td>2</td><td>Closer on the transport's route</td><td>Warn that hostile
+        fighters are expected; the player must intercept them while keeping
+        the transport moving.</td></tr>
+</table>
+
+<p>For each stage, position the briefing map camera, add icons for the relevant
+ships using <strong>Make icon from ship</strong>, and type the stage text at the
+bottom. See the <a href="dialogs/BriefingEditorDialog.html">Briefing Editor</a>
+help for full details. Set the <strong>Music</strong> track at the top of the
+dialog.</p>
+
+<p>Save and walk through the briefing before launching to check camera positions and
+icon placement.</p>
+
+<h2>8. Write the debriefing</h2>
+<p>Open <strong>Editors &rsaquo; Debriefing</strong>. Add two stages:</p>
+<table>
+    <tr><th>Stage</th><th>Usage formula</th><th>Text</th></tr>
+    <tr><td>Success</td>
+        <td><code>(are-waypoints-done-delay 0 "Transport 1" "Transport Route")</code></td>
+        <td>The transport completed its route. Commend the player.</td></tr>
+    <tr><td>Failure</td>
+        <td><code>(is-destroyed-delay 0 "Transport 1")</code></td>
+        <td>The transport was lost. Acknowledge the failure.</td></tr>
+</table>
+<p>Assign music tracks for success and failure in the
+<a href="dialogs/DebriefingDialog.html">Debriefing</a> music section.</p>
+
+<h2>9. Final test</h2>
+<p>Save and run a full play-through. Check:</p>
+<ul>
+    <li>The transport moves along its route from the start</li>
+    <li>The first 30 seconds are calm</li>
+    <li>Epsilon and the arrival message both trigger at 30 seconds</li>
+    <li>The primary goal completes when the transport finishes the route</li>
+    <li>The briefing camera moves and icons look correct</li>
+    <li>The correct debriefing stage shows depending on outcome</li>
+</ul>
+
+<h2>Next steps</h2>
+<ul>
+    <li>Add a second hostile wave that arrives when the transport is near the end
+        of its route, using <code>are-waypoints-done-delay</code> on an earlier
+        waypoint as the trigger.</li>
+    <li>Add a <a href="dialogs/CommandBriefingDialog.html">Command Briefing</a>
+        before the main briefing.</li>
+    <li>Chain this into a campaign using the
+        <a href="dialogs/CampaignEditorDialog.html">Campaign Editor</a>.</li>
+</ul>
+</body>
+</html>

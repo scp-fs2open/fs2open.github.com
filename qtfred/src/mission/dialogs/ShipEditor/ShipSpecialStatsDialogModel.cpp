@@ -96,6 +96,7 @@ namespace fso {
 					m_special_exp = true;
 				}
 				modelChanged();
+				_modified = false;
 			}
 
 			bool ShipSpecialStatsDialogModel::apply()

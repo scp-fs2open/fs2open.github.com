@@ -797,6 +797,8 @@ void FredRenderer::render_one_model_htl(object* objp,
 			render_info.set_debug_flags(debug_flags);
 			render_info.set_replacement_textures(model_get_instance(Ships[z].model_instance_num)->texture_replace);
 			render_info.set_flags(flags);
+			if (Ship_info[Ships[z].ship_info_index].uses_team_colors)
+				render_info.set_team_color(Ships[z].team_name, Ships[z].secondary_team_name, Ships[z].team_change_timestamp, Ships[z].team_change_time);
 			model_render_immediate(&render_info, Ship_info[Ships[z].ship_info_index].model_num, Ships[z].model_instance_num, &objp->orient, &objp->pos);
 		}
 
@@ -952,9 +954,14 @@ void FredRenderer::render_frame(int cur_object_index,
 
 	g3_set_view_matrix(&_viewport->eye_pos, &_viewport->eye_orient, 0.5f);
 
+	// Force max star detail so the editor always shows the full Num_stars count
+	// regardless of the player's graphics quality setting (Detail.num_stars can be 0).
+	int saved_detail_stars = Detail.num_stars;
+	Detail.num_stars = MAX_DETAIL_VALUE;
 	enable_htl();
 	stars_draw(view().Show_stars, view().Show_stars, view().Show_stars, 0, 0);
 	disable_htl();
+	Detail.num_stars = saved_detail_stars;
 
 	if (view().Show_horizon) {
 		gr_set_color(128, 128, 64);

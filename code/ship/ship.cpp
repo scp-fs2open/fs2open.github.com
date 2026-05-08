@@ -667,6 +667,7 @@ ship_flag_name Ship_flag_names[] = {
 	{ Ship_Flags::Scramble_messages,			"scramble-messages"},
 	{ Ship_Flags::Maneuver_despite_engines,		"maneuver-despite-engines" },
 	{ Ship_Flags::No_scanned_cargo,             "no-scanned-cargo"},
+	{ Ship_Flags::Escort,						"escort" },
 	{ Ship_Flags::EMP_doesnt_scramble_messages,	"emp-doesn't-scramble-messages" },
 };
 
@@ -2622,7 +2623,7 @@ particle::ParticleEffectHandle create_ship_legacy_particle_effect(LegacyShipPart
 		break;
 	}
 
-	auto velocity_volume = make_shared<particle::LegacyAACuboidVolume>(normal_variance, 1.f, true);
+	auto velocity_volume = std::make_shared<particle::LegacyAACuboidVolume>(normal_variance, 1.f, true);
 	if (variance_curve) {
 		velocity_volume->m_modular_curves.add_curve("Host Radius", particle::LegacyAACuboidVolume::VolumeModularCurveOutput::VARIANCE, *variance_curve);
 	}
@@ -5079,7 +5080,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 				particle::ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
 				::util::UniformFloatRange(1.f), //Velocity Inherit
 				true, //Velocity Inherit absolute?
-				make_unique<particle::LegacyAACuboidVolume>(variance, 1.f, true), //Velocity volume
+				std::make_unique<particle::LegacyAACuboidVolume>(variance, 1.f, true), //Velocity volume
 				::util::UniformFloatRange(0.75f, 1.25f), //Velocity volume multiplier
 				particle::ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
 				std::nullopt, //Orientation-based velocity
@@ -6752,6 +6753,8 @@ void ship_init()
 
 		// We shouldn't already have any subsystem pointers at this point.
 		Assertion(Ship_subsystems.empty(), "Some pre-allocated subsystems didn't get cleared out: " SIZE_T_ARG " batches present during ship_init(); get a coder!\n", Ship_subsystems.size());
+	
+		radar_check_2d_icon_options();
 	}
 }
 
@@ -6936,7 +6939,7 @@ void ship_add_exited_ship( ship *sp, Ship::Exit_Flags reason )
 	if (ship_it != Ship_registry_map.end())
 		Ship_registry[ship_it->second].exited_index = static_cast<int>(Ships_exited.size());
 
-	Ships_exited.push_back(entry);
+	Ships_exited.push_back(std::move(entry));
 }
 
 /**
@@ -7431,7 +7434,7 @@ void ship::apply_replacement_textures(const SCP_vector<texture_replace> &replace
 
 	polymodel_instance* pmi = model_get_instance(model_instance_num);
 
-	pmi->texture_replace = make_shared<model_texture_replace>();
+	pmi->texture_replace = std::make_shared<model_texture_replace>();
 
 	auto pm = model_get(Ship_info[ship_info_index].model_num);
 
@@ -8672,7 +8675,7 @@ void ship_init_cockpit_displays(ship *shipp)
 	}
 
 	// ship's cockpit texture replacements haven't been setup yet, so do it.
-	Player_cockpit_textures = make_shared<model_texture_replace>();
+	Player_cockpit_textures = std::make_shared<model_texture_replace>();
 
 	for ( auto& display : sip->displays ) {
 		ship_add_cockpit_display(&display, cockpit_model_num);
@@ -11861,7 +11864,7 @@ static void ship_model_change(int n, int ship_type)
 	if ( !sip->replacement_textures.empty() ) {
 
 		// clear and reset replacement textures because the new positions may be different
-		pmi->texture_replace = make_shared<model_texture_replace>();
+		pmi->texture_replace = std::make_shared<model_texture_replace>();
 		auto& texture_replace_deref = *pmi->texture_replace;
 
 		// now fill them in according to texture name
@@ -21115,7 +21118,7 @@ void parse_armor_type()
 		parse_string_flag_list(tat.flags, Armor_flags, Num_armor_flags);
 	
 	//Add it to global armor types
-	Armor_types.push_back(tat);
+	Armor_types.push_back(std::move(tat));
 }
 
 void armor_parse_table(const char *filename)

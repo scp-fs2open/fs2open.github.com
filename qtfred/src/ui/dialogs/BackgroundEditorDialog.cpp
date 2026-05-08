@@ -919,7 +919,7 @@ void BackgroundEditorDialog::on_noCullCheckBox_toggled(bool checked)
 	_model->setSkyboxNoCull(checked);
 }
 
-void BackgroundEditorDialog::on_noGlowmapsCheckBox_toggled(bool checked)
+void BackgroundEditorDialog::on_noGlowMapsCheckBox_toggled(bool checked)
 {
 	_model->setSkyboxNoGlowmaps(checked);
 }

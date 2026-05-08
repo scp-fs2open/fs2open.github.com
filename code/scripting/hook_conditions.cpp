@@ -16,7 +16,7 @@
 #define HOOK_CONDITIONS_END return build; \
 }();
 #define HOOK_CONDITION(conditionsClassName, conditionParseName, documentation, argument, argumentParse, argumentValid) \
-	build.emplace(conditionParseName, ::make_unique<ParseableConditionImpl<conditionsClassName, \
+	build.emplace(conditionParseName, std::make_unique<ParseableConditionImpl<conditionsClassName, \
 		decltype(std::declval<conditionsClassName>().argument), decltype(argumentParse(std::declval<SCP_string>()))>> \
 		(documentation, &conditionsClassName::argument, argumentParse, argumentValid))
 
@@ -36,7 +36,7 @@ class ParseableConditionImpl : public ParseableCondition {
 	template<typename _conditions_t, typename _operating_t, typename _cache_t> friend class EvaluatableConditionImpl;
 public:
 	std::unique_ptr<EvaluatableCondition> parse(const SCP_string& input) const override {
-		return ::make_unique<EvaluatableConditionImpl<conditions_t, operating_t, cache_t>>(*this, input);
+		return std::make_unique<EvaluatableConditionImpl<conditions_t, operating_t, cache_t>>(*this, input);
 	}
 
 	ParseableConditionImpl(SCP_string documentation_, const operating_t conditions_t::* object_, std::function<cache_t(const SCP_string&)> cache_, std::function<bool(operating_t, const cache_t&)> evaluate_) :

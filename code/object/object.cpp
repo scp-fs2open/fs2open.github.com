@@ -1903,7 +1903,7 @@ void obj_queue_render(object* obj, model_draw_list* scene)
 
 		// Always execute the hook content
 		bool skip_render = scripting::hooks::OnObjectRender->isOverride(scripting::hooks::ObjectDrawConditions{ obj }, param_list);
-		scripting::hooks::OnObjectRender->run(scripting::hooks::ObjectDrawConditions{ obj }, param_list);
+		scripting::hooks::OnObjectRender->run(scripting::hooks::ObjectDrawConditions{ obj }, std::move(param_list));
 
 		// Clear the render scene context
 		scripting::api::Current_scene = nullptr;

@@ -1,12 +1,13 @@
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
- * All source code herein is the property of Volition, Inc. You may not sell 
- * or otherwise commercially exploit the source or things you created based on the 
+ * All source code herein is the property of Volition, Inc. You may not sell
+ * or otherwise commercially exploit the source or things you created based on the
  * source.
  *
 */
 
+#pragma once
 
 #include "mission/missionbriefcommon.h"
 
@@ -18,6 +19,8 @@ class debriefing_editor_dlg : public CDialog
 // Construction
 public:
 	void OnOK();
+	void create();
+	void focus_sexp(int node);
 	void update_data(int update = 1);
 	debriefing_editor_dlg(CWnd* pParent = NULL);   // standard constructor
 	int select_sexp_node;

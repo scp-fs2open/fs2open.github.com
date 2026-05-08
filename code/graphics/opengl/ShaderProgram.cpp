@@ -246,7 +246,7 @@ void opengl::ShaderUniforms::setTextureUniform(const SCP_string& name, const int
 		new_bind.name  = name;
 		new_bind.value = texture_unit;
 
-		_uniforms.push_back(new_bind);
+		_uniforms.push_back(std::move(new_bind));
 
 		_uniform_lookup[name] = _uniforms.size() - 1;
 	}

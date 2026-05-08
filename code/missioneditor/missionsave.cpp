@@ -1396,13 +1396,13 @@ void Fred_mission_save::fso_comment_push(const char* ver)
 		return;
 	}
 
-	SCP_string before = fso_ver_comment.back();
+	const auto &before = fso_ver_comment.back();
 
 	int major, minor, build, revis;
 	int in_major, in_minor, in_build, in_revis;
 	int elem1, elem2;
 
-	elem1 = scan_fso_version_string(fso_ver_comment.back().c_str(), &major, &minor, &build, &revis);
+	elem1 = scan_fso_version_string(before.c_str(), &major, &minor, &build, &revis);
 	elem2 = scan_fso_version_string(ver, &in_major, &in_minor, &in_build, &in_revis);
 
 	// check consistency

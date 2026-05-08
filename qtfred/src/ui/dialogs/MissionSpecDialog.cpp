@@ -145,7 +145,7 @@ void MissionSpecDialog::updateFlags()
 	toWidget.reserve(static_cast<int>(flags.size()));
 	for (const auto& p : flags) {
 		QString name = QString::fromUtf8(p.first.c_str());
-		toWidget.append({name, p.second});
+		toWidget.append({name, p.second ? Qt::Checked : Qt::Unchecked});
 	}
 
 	ui->flagList->setFlags(toWidget);

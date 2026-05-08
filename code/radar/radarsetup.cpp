@@ -21,6 +21,7 @@
 #include "localization/localize.h"
 #include "network/multi.h"
 #include "object/object.h"
+#include "options/Option.h"
 #include "playerman/player.h"
 #include "radar/radar.h"
 #include "radar/radarorb.h"
@@ -87,6 +88,31 @@ extern int radar_iff_color[5][2][4];
 int See_all = 0;
 
 DCF_BOOL(see_all, See_all);
+
+RadarIconMode Radar_2d_icon_mode = RadarIconMode::On;
+
+static auto RadarIconModeOption __UNUSED = options::OptionBuilder<RadarIconMode>("HUD.Radar2dIconMode",
+	std::pair<const char*, int>{"Radar 2D Icons", 1915},
+	std::pair<const char*, int>{"Controls how custom 2D ship icons are displayed on the radar", 1916})
+	.category(std::make_pair("Game", 1824))
+	.values({{RadarIconMode::Off,        {"Off", 1286}},
+	         {RadarIconMode::On,         {"On", 1285}},
+	         {RadarIconMode::TargetOnly, {"Target Only", 1917}}})
+	.default_val(RadarIconMode::On)
+	.bind_to(&Radar_2d_icon_mode)
+	.importance(56)
+	.finish();
+
+void radar_check_2d_icon_options()
+{
+	bool has_icons = std::any_of(Ship_info.begin(), Ship_info.end(), [](const ship_info& sip) {
+		return sip.radar_image_2d_idx >= 0 || sip.radar_color_image_2d_idx >= 0;
+	});
+
+	if (!has_icons) {
+		options::OptionsManager::instance()->removeOption(RadarIconModeOption);
+	}
+}
 
 void radar_stuff_blip_info(object *objp, int is_bright, color **blip_color, int *blip_type)
 {

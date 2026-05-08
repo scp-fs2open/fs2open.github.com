@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Wing Editor - QtFRED Help</title>
+    <link rel="stylesheet" type="text/css" href="../css/help.css"/>
+</head>
+<body>
+<nav class="breadcrumb"><a href="../index.html">QtFRED Help</a> &rsaquo; Objects &rsaquo; Wing Editor</nav>
+<h1>Wing Editor</h1>
+<p>Opens via <strong>Editors &rsaquo; Wings</strong>.</p>
+<p>Creates and configures wings. A wing groups ships that share arrival and departure
+cues and can receive collective AI goals. Wings support multiple waves and each wave is
+a fresh copy of the wing that spawns when the previous wave drops below the threshold.</p>
+
+<h2>General fields</h2>
+<table>
+    <tr><th>Field</th><th>Description</th></tr>
+    <tr><td>Name</td><td>Wing name shown on the HUD and used in SEXPs
+        (e.g. <kbd>Alpha</kbd>, <kbd>Gamma</kbd>).</td></tr>
+    <tr><td>Wing leader</td><td>Which ship in the wing acts as leader. Other members
+        form up on the leader.</td></tr>
+    <tr><td>Number of waves</td><td>How many waves of this wing will arrive over the
+        course of the mission. Each wave is a full copy of the wing's ships. The first
+        wave is included in this count.</td></tr>
+    <tr><td>Wave threshold</td><td>When the number of surviving ships in the current
+        wave drops to this value or below, the next wave spawns. Set to 0 to require
+        the entire wave to be destroyed before the next arrives.</td></tr>
+    <tr><td>Hotkey</td><td>Function key (F5–F12) that selects this wing during
+        play.</td></tr>
+    <tr><td>Formation</td><td>The flight formation wing members use relative to the
+        leader.</td></tr>
+    <tr><td>Formation scale</td><td>Scales the formation spacing up or down.</td></tr>
+    <tr><td>Squad logo</td><td>Logo displayed on the ships in this wing. Choose from
+        the gallery of available insignia.</td></tr>
+</table>
+
+<h2>Buttons</h2>
+<table>
+    <tr><th>Button</th><th>Description</th></tr>
+    <tr><td>Align Formation</td><td>Repositions all ships in the wing in the editor
+        viewport to match the currently selected formation. Has no effect at
+        runtime.</td></tr>
+    <tr><td>Prev / Next</td><td>Moves the selection to the previous or next wing,
+        allowing sequential editing without switching back to the viewport.</td></tr>
+    <tr><td>Delete Wing</td><td>Removes the wing and all of its ships from the
+        mission.</td></tr>
+    <tr><td>Disband Wing</td><td>Dissolves the wing without deleting its ships. Each
+        ship becomes an independent, unassociated object in the mission.</td></tr>
+    <tr><td><a href="ShipInitialOrdersDialog.html">Initial Orders</a></td><td>AI orders
+        all ships in the wing follow at mission start.</td></tr>
+    <tr><td>Wing Flags</td><td>Opens a checklist of per-wing behavior flags. Each flag
+        has a tooltip describing its effect.</td></tr>
+</table>
+
+<h2>Arrival &amp; Departure</h2>
+<p>Controls when and where the wing enters and leaves the mission. The cue SEXP must
+evaluate to true before arrival or departure can occur. Most arrival locations require
+a target ship or wing to be selected. Departure location options are limited to
+<em>Hyperspace</em> or <em>To Dock Bay</em>.</p>
+
+<h3>Arrival locations</h3>
+<table>
+    <tr><th>Location</th><th>Notes</th></tr>
+    <tr><td>Hyperspace</td><td>Warps in from hyperspace. No target required.</td></tr>
+    <tr><td>Near Ship</td><td>Appears near the target at the specified distance.</td></tr>
+    <tr><td>In Front of Ship</td><td>Appears in front of the target at the specified
+        distance.</td></tr>
+    <tr><td>In Back of Ship</td><td>Appears behind the target at the specified
+        distance.</td></tr>
+    <tr><td>Above Ship</td><td>Appears above the target at the specified
+        distance.</td></tr>
+    <tr><td>Below Ship</td><td>Appears below the target at the specified
+        distance.</td></tr>
+    <tr><td>To Left of Ship</td><td>Appears to the left of the target at the specified
+        distance.</td></tr>
+    <tr><td>To Right of Ship</td><td>Appears to the right of the target at the
+        specified distance.</td></tr>
+    <tr><td>From Dock Bay</td><td>Launches from the target ship's dock bay. Use
+        <strong>Restrict Paths</strong> to limit which bay paths are used.</td></tr>
+</table>
+
+<h3>Fields</h3>
+<table>
+    <tr><th>Field</th><th>Description</th></tr>
+    <tr><td>Target</td><td>The ship or wing this arrival or departure is relative to.
+        Required for all locations except Hyperspace.</td></tr>
+    <tr><td>Distance</td><td>Distance from the target in meters. Arrival only;
+        available for positional locations (Near Ship, In Front of Ship,
+        etc.).</td></tr>
+    <tr><td>Delay</td><td>Seconds after the cue becomes true before the wing
+        arrives or departs.</td></tr>
+    <tr><td>Delay between waves (min / max)</td><td>After a new wave is triggered by
+        the threshold, the engine waits a random number of seconds between these two
+        values before the wave actually spawns. Applies to all waves after the
+        first.</td></tr>
+    <tr><td>Restrict Paths</td><td>Selects which dock bay paths to use. Only available
+        when the location is From Dock Bay or To Dock Bay.</td></tr>
+    <tr><td><a href="ShipCustomWarpDialog.html">Custom Warp Params</a></td><td>Opens
+        a sub-dialog to configure custom warp appearance and behavior.</td></tr>
+    <tr><td>Cue</td><td><a href="../concepts/sexps.html">SEXP</a> that must evaluate
+        to true for arrival or departure to occur.</td></tr>
+    <tr><td>No warp effect</td><td>When checked, the wing appears or leaves without
+        the visual warp effect.</td></tr>
+    <tr><td>Don't Adjust Warp When Docked</td><td>By default, ships that are docked
+        together warp in or out with an enlarged effect sized to cover the combined
+        formation. When checked, each ship instead uses its individual warp effect
+        size, ignoring the docked aggregate.</td></tr>
+</table>
+</body>
+</html>

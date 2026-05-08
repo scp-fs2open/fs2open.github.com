@@ -20,6 +20,7 @@
 #include "globalincs/pstypes.h"
 
 #include "ui/FredView.h"
+#include "ui/dialogs/HelpTopicsDialog.h"
 #include "ui/Theme.h"
 #include "FredApplication.h"
 
@@ -215,6 +216,10 @@ int main(int argc, char* argv[]) {
 
 	// Allow other parts of the code to execute code that needs to run after everything has been set up
 	fredApp->initializeComplete();
+
+	// Initialize the help engine and kick off search indexing in the background
+	// so the Search tab is ready before the user first opens Help Topics.
+	QTimer::singleShot(0, [] { fso::fred::dialogs::HelpTopicsDialog::prewarm(); });
 
 	if (Cmdline_start_mission) {
 		// Automatically load a mission if specified on the command line

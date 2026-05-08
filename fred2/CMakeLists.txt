@@ -164,11 +164,12 @@ set_source_files_properties(fred.rc PROPERTIES
 	LANGUAGE RC
 )
 
-IF(MSVC_USE_RUNTIME_DLL)
+# This should be kept in sync with the corresponding IF() in cmake/toolchain-msvc.cmake
+IF(MSVC_USE_RUNTIME_DLL OR FSO_BUILD_QTFRED)
 	set(CMAKE_MFC_FLAG 2)
-ELSE(MSVC_USE_RUNTIME_DLL)
+ELSE()
 	set(CMAKE_MFC_FLAG 1)
-ENDIF(MSVC_USE_RUNTIME_DLL)
+ENDIF()
 
 IF(MSVC60)
 	link_directories(${STLPORT_INCLUDE_LIB_DIRS})
@@ -197,8 +198,15 @@ FIND_PACKAGE(OpenGL REQUIRED)
 target_link_libraries(FRED2 PUBLIC "${OPENGL_LIBRARY}")
 
 TARGET_LINK_LIBRARIES(FRED2 PUBLIC code) # This will also link all dependencies of code
-TARGET_LINK_LIBRARIES(FRED2 PUBLIC "$<$<NOT:$<CONFIG:Release>>:nafxcwd.lib>")
-TARGET_LINK_LIBRARIES(FRED2 PUBLIC "$<$<CONFIG:Release>:nafxcw.lib>")
+
+# When CMAKE_MFC_FLAG=2 (DLL MFC) MSBuild already links the DLL MFC stub libs (mfcs*.lib);
+# explicitly adding the static MFC libs (nafxcw*) on top causes IsDerivedFrom to be resolved
+# from the static MFC copy while CRuntimeClass structs are initialized in the DLL form,
+# crashing CDocTemplate's ctor on startup.
+IF(NOT (MSVC_USE_RUNTIME_DLL OR FSO_BUILD_QTFRED))
+	TARGET_LINK_LIBRARIES(FRED2 PUBLIC "$<$<NOT:$<CONFIG:Release>>:nafxcwd.lib>")
+	TARGET_LINK_LIBRARIES(FRED2 PUBLIC "$<$<CONFIG:Release>:nafxcw.lib>")
+ENDIF()
 
 target_link_libraries(FRED2 PUBLIC glad_wgl)
 

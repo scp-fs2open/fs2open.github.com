@@ -196,18 +196,10 @@ public:
 };
 
 template <typename T, typename... Args>
-typename std::enable_if<!std::is_array<T>::value, std::unique_ptr<T>>::type make_unique(Args&&... args) {
-	return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
-}
-template <typename T, typename... Args>
 typename std::enable_if<std::is_array<T>::value, std::unique_ptr<T>>::type make_unique(std::size_t n) {
 	return std::unique_ptr<T>(new typename std::remove_extent<T>::type[n]());
 }
 
-template <typename T, typename... Args>
-typename std::enable_if<!std::is_array<T>::value, std::shared_ptr<T>>::type make_shared(Args&&... args) {
-	return std::shared_ptr<T>(new T(std::forward<Args>(args)...));
-}
 template <typename T, typename... Args>
 typename std::enable_if<std::is_array<T>::value, std::shared_ptr<T>>::type make_shared(std::size_t n) {
 	return std::shared_ptr<T>(new typename std::remove_extent<T>::type[n]());

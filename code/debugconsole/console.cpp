@@ -467,7 +467,7 @@ void dc_putc(char c)
 		 */
 		temp_str = line_str->substr(lastwhite);
 		line_str->resize(lastwhite);
-		dc_buffer.push_back(temp_str);
+		dc_buffer.push_back(std::move(temp_str));
 		line_str = &dc_buffer.back();
 
 		if ((dc_buffer.size() > DROWS) && (dc_scroll_y < SCROLL_Y_MAX)) {

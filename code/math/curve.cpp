@@ -89,7 +89,7 @@ void parse_curve_table(const char* filename) {
 			if (index < 0) {
 				Curve curv = Curve(std::move(name));
 				curv.ParseData();
-				Curves.push_back(curv);
+				Curves.push_back(std::move(curv));
 			} else {
 				Curves[index].ParseData();
 			}

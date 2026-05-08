@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Quickstart - QtFRED Help</title>
+    <link rel="stylesheet" type="text/css" href="css/help.css"/>
+</head>
+<body>
+<nav class="breadcrumb"><a href="index.html">QtFRED Help</a> &rsaquo; Quickstart</nav>
+<h1>Quickstart: Your First Mission</h1>
+
+<p>This guide walks you through creating a simple flyable mission from scratch. By the
+end you will have a player ship and a hostile wing to fight. The whole thing takes
+about five minutes.</p>
+
+<h2>1. Open a new mission</h2>
+<p>Launch QtFRED. Go to <strong>File &rsaquo; New</strong>. The viewport shows empty
+space with a reference grid. QtFRED automatically places one ship, this is your
+player start.</p>
+
+<h2>2. Put the player in Alpha wing</h2>
+<p>Click the player ship in the viewport to select it, then click the
+<strong>Form Wing</strong> button in the toolbar. Type <kbd>Alpha</kbd> and click
+<strong>OK</strong>. The ship is renamed <em>Alpha 1</em>.</p>
+<div class="note">The player ship must be in Alpha wing. The engine looks for Alpha 1
+as the default player start.</div>
+
+<h2>3. Add enemies</h2>
+<p>Use the ship class drop-down in the toolbar to select a hostile ship class. It
+will appear in red. Hold <kbd>Ctrl</kbd> and left-click in the viewport twice to place
+two ships. Select both of them (drag a box or shift-click), then click
+<strong>Form Wing</strong> again. Name the wing <kbd>Epsilon</kbd>. The ships are
+renamed Epsilon 1 and Epsilon 2 and are hostile by default.</p>
+
+<h2>4. Optionally add more waves</h2>
+<p>With Epsilon wing selected, open <strong>Editors &rsaquo; Wings</strong> to open the
+<a href="dialogs/WingEditorDialog.html">Wing Editor</a>. Increase
+<strong>Number of waves</strong> to 2 and set a short delay between waves. A second
+wave will jump in after the first is destroyed.</p>
+
+<h2>5. Fill in Mission Specs</h2>
+<p>Open <strong>Editors &rsaquo; Mission Specs</strong>. Give the mission a
+<strong>Title</strong> and a short <strong>Description</strong>. These appear in the
+mission selection screen. Set music tracks if desired.</p>
+
+<h2>6. Add a mission goal</h2>
+<p>Open <strong>Editors &rsaquo; Mission Goals</strong>. Add a primary goal with a
+description such as <em>Destroy all hostiles</em>. Set the completion condition to a
+SEXP that evaluates to true when Epsilon wing is destroyed, for example
+<code>is-destroyed-delay</code>. See <a href="concepts/sexps.html">SEXPs</a> for an
+overview of the scripting system.</p>
+
+<h2>7. Save and play</h2>
+<p>Press <kbd>Ctrl+S</kbd> to save. QtFRED saves to your mod's
+<code>data/missions/</code> folder by default. Launch FreeSpace Open, go to the
+Tech Room &rsaquo; Mission Simulator &rsaquo; Single Missions, and your mission will
+appear there.</p>
+
+<h2>Next steps</h2>
+<ul>
+    <li>Script dynamic events with the <a href="dialogs/MissionEventsDialog.html">Mission Events</a> editor.</li>
+    <li>Add a pre-mission briefing in the <a href="dialogs/BriefingEditorDialog.html">Briefing Editor</a>.</li>
+    <li>Give ships patrol routes with the <a href="dialogs/WaypointEditorDialog.html">Waypoint Editor</a>.</li>
+    <li>Chain missions together in the <a href="dialogs/CampaignEditorDialog.html">Campaign Editor</a>.</li>
+</ul>
+</body>
+</html>

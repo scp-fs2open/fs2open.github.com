@@ -253,19 +253,23 @@ void briefing_editor_dlg::create()
 
 void briefing_editor_dlg::focus_sexp(int select_sexp_node)
 {
-	int i, n;
+	int i, t, n;
 
 	n = m_tree.select_sexp_node = select_sexp_node;
-	if (n != -1) {
-		for (i=0; i<Briefing->num_stages; i++)
-			if (query_node_in_sexp(n, Briefing->stages[i].formula))
-				break;
+	if (n == -1)
+		return;
 
-		if (i < Briefing->num_stages) {
-			m_cur_stage = i;
-			update_data();
-			GetDlgItem(IDC_TREE) -> SetFocus();
-			m_tree.hilite_item(m_tree.select_sexp_node);
+	for (t = 0; t < Num_teams; t++) {
+		for (i = 0; i < Briefings[t].num_stages; i++) {
+			if (query_node_in_sexp(n, Briefings[t].stages[i].formula)) {
+				m_current_briefing = t;
+				Briefing = &Briefings[t];
+				m_cur_stage = i;
+				update_data();
+				GetDlgItem(IDC_TREE)->SetFocus();
+				m_tree.hilite_item(m_tree.select_sexp_node);
+				return;
+			}
 		}
 	}
 }
@@ -307,7 +311,7 @@ void briefing_editor_dlg::OnClose()
 
 	theApp.record_window_data(&Briefing_wnd_data, this);
 	ptr = Briefing_dialog;	// this juggling prevents a crash in certain situations
-	Briefing_dialog = NULL;
+	Briefing_dialog = nullptr;
 	delete ptr;
 
 	FREDDoc_ptr->autosave("briefing editor");

@@ -506,7 +506,7 @@ int build_standalone_mission_list_do_frame(bool API_Access)
 					api_mission.author = The_mission.author;
 					api_mission.visible = 1;
 
-					Sim_Missions.push_back(api_mission);
+					Sim_Missions.push_back(std::move(api_mission));
 				}
 
 				// determine some extra information
@@ -578,7 +578,7 @@ int build_campaign_mission_list_do_frame(bool API_Access)
 				api_mission.author = The_mission.author;
 				api_mission.visible = Campaign.missions[Num_campaign_missions_with_info].completed;
 
-				Sim_CMissions.push_back(api_mission);
+				Sim_CMissions.push_back(std::move(api_mission));
 			}
 
 			// determine some extra information

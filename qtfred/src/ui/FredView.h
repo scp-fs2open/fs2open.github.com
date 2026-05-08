@@ -165,6 +165,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 
 	void on_actionError_Checker_triggered(bool);
 
+	void on_actionHelp_Topics_triggered(bool);
 	void on_actionAbout_triggered(bool);
 	void on_actionMission_Statistics_triggered(bool);
 	void on_actionBackground_triggered(bool);

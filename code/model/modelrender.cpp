@@ -11,7 +11,10 @@
 
 #include "asteroid/asteroid.h"
 #include "cmdline/cmdline.h"
+#include "decals/decals.h"
 #include "gamesequence/gamesequence.h"
+#include "globalincs/systemvars.h"
+#include "math/floating.h"
 #include "graphics/light.h"
 #include "graphics/matrix.h"
 #include "graphics/shadows.h"
@@ -223,7 +226,7 @@ void model_render_params::set_replacement_textures(std::shared_ptr<const model_t
 
 void model_render_params::set_replacement_textures(int modelnum, const SCP_vector<texture_replace>& replacement_textures)
 {
-	auto textures = make_shared<model_texture_replace>();
+	auto textures = std::make_shared<model_texture_replace>();
 
 	polymodel* pm = model_get(modelnum);
 
@@ -2984,7 +2987,30 @@ void model_render_queue(const model_render_params* interp, model_draw_list* scen
 
 	// MARKED!
 	if ( !( model_flags & MR_NO_TEXTURING ) && !( model_flags & MR_NO_INSIGNIA) ) {
-		scene->add_insignia(interp, pm, detail_level, interp->get_insignia_bitmap());
+		int bitmap_num = interp->get_insignia_bitmap();
+		if ( Render_insignias_as_decals && objnum >= 0 && (pm->num_ins > 0) && (bitmap_num >= 0) ) {
+			for (int ins_idx = 0; ins_idx < pm->num_ins; ins_idx++) {
+				const insignia& ins = pm->ins[ins_idx];
+				// skip insignias not on our detail level
+				if (ins.detail_level != detail_level) {
+					continue;
+				}
+
+				decals::Decal decal;
+				decal.object = &Objects[objnum];
+				decal.position = ins.position;
+				decal.submodel = -1;
+				decal.scale = vec3d{{{ins.diameter, ins.diameter, ins.diameter}}};
+				decal.orig_obj_type = OBJ_SHIP;
+				decal.creation_time = f2fl(Missiontime);
+				decal.lifetime = 1.0f;
+				decal.orientation = ins.orientation;
+				decal.definition_handle = std::make_tuple(bitmap_num, -1, -1);
+				decals::addSingleFrameDecal(std::move(decal));
+			}
+		} else {
+			scene->add_insignia(interp, pm, detail_level, bitmap_num);
+		}
 	}
 
 	if ( (model_flags & MR_AUTOCENTER) && (set_autocen) ) {
@@ -3103,7 +3129,7 @@ void modelinstance_replace_active_texture(polymodel_instance* pmi, const char* o
 			texture = bm_load_either(new_name);
 
 		if (pmi->texture_replace == nullptr) {
-			pmi->texture_replace = make_shared<model_texture_replace>();
+			pmi->texture_replace = std::make_shared<model_texture_replace>();
 		}
 
 		(*pmi->texture_replace)[final_index] = texture;

@@ -92,7 +92,7 @@ private slots:
 	void on_forceClampCheckBox_toggled(bool checked);
 	void on_noZBufferCheckBox_toggled(bool checked);
 	void on_noCullCheckBox_toggled(bool checked);
-	void on_noGlowmapsCheckBox_toggled(bool checked);
+	void on_noGlowMapsCheckBox_toggled(bool checked);
 
 	// Misc
 	void on_numStarsSlider_valueChanged(int value);

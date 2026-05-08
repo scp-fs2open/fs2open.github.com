@@ -16,6 +16,11 @@ namespace fso::fred::dialogs {
 BackgroundEditorDialogModel::BackgroundEditorDialogModel(QObject* parent, EditorViewport* viewport)
 	: AbstractDialogModel(parent, viewport)
 {
+	initializeData();
+}
+
+void BackgroundEditorDialogModel::initializeData()
+{
 	auto& bg = getActiveBackground();
 	auto& bm_list = bg.bitmaps;
 	if (!bm_list.empty()) {
@@ -26,6 +31,7 @@ BackgroundEditorDialogModel::BackgroundEditorDialogModel(QObject* parent, Editor
 	if (!sun_list.empty()) {
 		_selectedSunIndex = 0;
 	}
+	_modified = false;
 }
 
 bool BackgroundEditorDialogModel::apply()
@@ -48,9 +54,15 @@ void BackgroundEditorDialogModel::reject()
 void BackgroundEditorDialogModel::refreshBackgroundPreview()
 {
 	stars_load_background(Cur_background); // rebuild instances from Backgrounds[]
-	stars_set_background_model(The_mission.skybox_model, nullptr, The_mission.skybox_flags); // rebuild skybox
+
+	// The mission stores the base model name (no extension); the save code adds .pof when writing.
+	// model_load needs the .pof extension to find the file, so append it if missing.
+	SCP_string skybox_model = The_mission.skybox_model;
+	if (!skybox_model.empty() && skybox_model.find('.') == SCP_string::npos)
+		skybox_model += ".pof";
+
+	stars_set_background_model(skybox_model.c_str(), nullptr, The_mission.skybox_flags); // rebuild skybox
 	stars_set_background_orientation(&The_mission.skybox_orientation);
-	// TODO make this actually show the stars in the background
 	_editor->missionChanged();
 }
 

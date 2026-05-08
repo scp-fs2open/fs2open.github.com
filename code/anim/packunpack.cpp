@@ -142,11 +142,15 @@ int unpack_pixel(anim_instance *ai, ubyte *data, ubyte pix, int aabitmap, int bp
 			bit_16 = (ushort)pix;
 			break;
 		case 8:
-			// 8 bit-per-pixel aa bitmaps are a bit special since they only use a palette index value in the range [0, 15]. These 
-			// palette indexes must be remapped to alpha values between [0, 255] which is what graphics code expects. Palette 
-			// range [0, 14] is a gradient from black to white, and palette index 15 is a special color which indicates the background
-			// area of a HUD gauge. Retail code uses the final alpha value for index 1 for this special index to give gauges a dark
-			// transparent background.
+			// 8-bit-per-pixel HUD gauge ANI aabitmaps use the palette index directly as an alpha value —
+			// the actual RGB colors stored in the palette are completely ignored. The valid range is [0, 15]:
+			//   [0]:    fully transparent (alpha 0)
+			//   [1-14]: black-to-white gradient (alpha = index * 18)
+			//   [15]:   special HUD background (alpha 18, matching index 1, for a dark transparent tint)
+			//   [>15]:  clamped to fully opaque (alpha 255)
+			// Because only the index value matters, the palette in the source file must be ordered so that
+			// index 0 is the transparent end and index 14 is the opaque end. A reversed palette causes the
+			// gauge to render as a solid white square (see GitHub issue #4148).
 			if (pix > 15) {
 				bit_8 = 255;
 			}
@@ -240,11 +244,15 @@ int unpack_pixel_count(anim_instance *ai, ubyte *data, ubyte pix, int count = 0,
 			bit_16 = (ushort)pix;
 			break;
 		case 8 :
-			// 8 bit-per-pixel aa bitmaps are a bit special since they only use a palette index value in the range [0, 15]. These 
-			// palette indexes must be remapped to alpha values between [0, 255] which is what graphics code expects. Palette 
-			// range [0, 14] is a gradient from black to white, and palette index 15 is a special color which indicates the background
-			// area of a HUD gauge. Retail code uses the final alpha value for index 1 for this special index to give gauges a dark
-			// transparent background.
+			// 8-bit-per-pixel HUD gauge ANI aabitmaps use the palette index directly as an alpha value —
+			// the actual RGB colors stored in the palette are completely ignored. The valid range is [0, 15]:
+			//   [0]:    fully transparent (alpha 0)
+			//   [1-14]: black-to-white gradient (alpha = index * 18)
+			//   [15]:   special HUD background (alpha 18, matching index 1, for a dark transparent tint)
+			//   [>15]:  clamped to fully opaque (alpha 255)
+			// Because only the index value matters, the palette in the source file must be ordered so that
+			// index 0 is the transparent end and index 14 is the opaque end. A reversed palette causes the
+			// gauge to render as a solid white square (see GitHub issue #4148).
 			if (pix > 15) {
 				bit_8 = 255;
 			}

@@ -265,7 +265,7 @@ void OptionsManager::set_ingame_binary_option(SCP_string key, bool value)
 		return;
 	}
 
-	const OptionBase* thisOpt = getOptionByKey(key);
+	const OptionBase* thisOpt = getOptionByKey(std::move(key));
 	if (thisOpt != nullptr) {
 		auto val = thisOpt->getCurrentValueDescription();
 		SCP_string newVal = value ? "true" : "false"; // OptionsManager stores values as serialized strings
@@ -281,7 +281,7 @@ void OptionsManager::set_ingame_multi_option(SCP_string key, int value)
 		return;
 	}
 
-	const OptionBase* thisOpt = getOptionByKey(key);
+	const OptionBase* thisOpt = getOptionByKey(std::move(key));
 	if (thisOpt != nullptr) {
 		auto values = thisOpt->getValidValues();
 		thisOpt->setValueDescription(values[value]);
@@ -296,7 +296,7 @@ void OptionsManager::set_ingame_range_option(SCP_string key, int value)
 		return;
 	}
 
-	const OptionBase* thisOpt = getOptionByKey(key);
+	const OptionBase* thisOpt = getOptionByKey(std::move(key));
 	if (thisOpt != nullptr) {
 		SCP_string newVal = std::to_string(value); // OptionsManager stores values as serialized strings
 		thisOpt->setValueDescription({newVal.c_str(), newVal.c_str()});
@@ -311,7 +311,7 @@ void OptionsManager::set_ingame_range_option(SCP_string key, float value)
 		return;
 	}
 
-	const OptionBase* thisOpt = getOptionByKey(key);
+	const OptionBase* thisOpt = getOptionByKey(std::move(key));
 	if (thisOpt != nullptr) {
 		SCP_string newVal = std::to_string(value); // OptionsManager stores values as serialized strings
 		thisOpt->setValueDescription({newVal.c_str(), newVal.c_str()});

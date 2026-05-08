@@ -1990,24 +1990,28 @@ int query_sexp_args_count(int node, bool only_valid_args = false)
 /**
  * Needed to fix bug with sexps like send-message list which have arguments that need to be supplied as a block
  * 
- * @return 0 if the number of arguments for the supplied operation is wrong, 1 otherwise.
+ * @return whether the number of arguments for the supplied operation is correct
  */
-int check_operator_argument_count(int count, int op)
+static bool check_operator_argument_count(int count, int op_index)
 {
-	if (count < Operators[op].min || count > Operators[op].max)
-		return 0;
+	Assertion(op_index >= 0 && op_index < sz2i(Operators.size()), "op_index is out of range!");
+
+	if (count < Operators[op_index].min || count > Operators[op_index].max)
+		return false;
+
+	int op_const = Operators[op_index].value;
 
 	// send-message-list has arguments as blocks of 4
 	// same with send-message-chain, but there's an extra argument
 
-	if (op == OP_SEND_MESSAGE_CHAIN)
+	if (op_const == OP_SEND_MESSAGE_CHAIN)
 		count--;
 
-	if (op == OP_SEND_MESSAGE_LIST || op == OP_SEND_MESSAGE_CHAIN)
+	if (op_const == OP_SEND_MESSAGE_LIST || op_const == OP_SEND_MESSAGE_CHAIN)
 		if (count % 4 != 0)
-			return 0;
+			return false;
 
-	return 1;
+	return true;
 }
 
 // helper functions for check_container_value_data_type()
@@ -2145,23 +2149,23 @@ bool is_special_sender(const char* name) {
  * @return 0 if ok, negative if there's an error in expression..
  * See the returns types in sexp.h
  */
-int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, sexp_mode mode)
+int check_sexp_syntax(int node, int desired_return_type, int recursive, int *bad_node, sexp_mode mode)
 {
-	int i = 0, z, type, argnum = 0, op, type2 = 0, op2;
+	int i = 0, z, argnum = 0, desired_argument_type = OPF_NONE, node_subtype = -1, node_return_type = OPR_NONE;
 	size_t count;
 	int op_node;
 	int var_index = -1;
 	size_t st;
 	const sexp_container *p_container = nullptr; // for SEXPs that take container name as arg
 
-	Assert(node >= 0 && node < Num_sexp_nodes);
-	Assert(Sexp_nodes[node].type != SEXP_NOT_USED);
+	Assertion(node >= 0 && node < Num_sexp_nodes, "Node %d must be a valid SEXP node!", node);
+	Assertion(Sexp_nodes[node].type != SEXP_NOT_USED, "Node %d must be in use!", node);
 
 	op_node = node;		// save the node of the operator since we need to get to other args.
 	if (bad_node)
 		*bad_node = op_node;
 
-	if (Sexp_nodes[node].subtype == SEXP_ATOM_NUMBER && return_type == OPR_BOOL) {
+	if (Sexp_nodes[node].subtype == SEXP_ATOM_NUMBER && desired_return_type == OPR_BOOL) {
 		// special case Mark seems to want supported
 		Assert(Sexp_nodes[node].first == -1);  // only lists should have a first pointer
 		if (Sexp_nodes[node].rest != -1)  // anything after the number?
@@ -2173,25 +2177,26 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 	if (Sexp_nodes[op_node].subtype != SEXP_ATOM_OPERATOR)
 		return SEXP_CHECK_OP_EXPECTED;  // not an operator, which it should always be
 
-	op = get_operator_index(op_node);
-	if (op == -1)
+	int op_index = get_operator_index(op_node);
+	int op_const = SCP_vector_inbounds(Operators, op_index) ? Operators[op_index].value : OP_NOT_AN_OP;
+	if (op_const == OP_NOT_AN_OP)
 		return SEXP_CHECK_UNKNOWN_OP;  // unrecognized operator
 
 	// check that types match - except that OPR_AMBIGUOUS matches everything
-	if (return_type != OPR_AMBIGUOUS)
+	if (desired_return_type != OPR_AMBIGUOUS)
 	{
 		// get the return type of the next thing
-		z = query_operator_return_type(op);
-		if (z == OPR_POSITIVE && return_type == OPR_NUMBER)
+		z = query_operator_return_type(op_const);
+		if (z == OPR_POSITIVE && desired_return_type == OPR_NUMBER)
 		{
 			// positive data type can map to number data type just fine
 		}
 		// Goober5000's number hack
-		else if (z == OPR_NUMBER && return_type == OPR_POSITIVE)
+		else if (z == OPR_NUMBER && desired_return_type == OPR_POSITIVE)
 		{
 			// this isn't kosher, but we hack it to make it work
 		}
-		else if (z != return_type)
+		else if (z != desired_return_type)
 		{
 			// anything else is a mismatch
 			return SEXP_CHECK_TYPE_MISMATCH;
@@ -2200,17 +2205,18 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 
 	count = query_sexp_args_count(op_node);
 
-	if (!check_operator_argument_count(sz2i(count), op))
+	if (!check_operator_argument_count(sz2i(count), op_index))
 		return SEXP_CHECK_BAD_ARG_COUNT;  // incorrect number of arguments
 
 	node = Sexp_nodes[op_node].rest;
 	while (node != -1) {
-		type = query_operator_argument_type(op, argnum);
-		Assert(Sexp_nodes[node].type != SEXP_NOT_USED);
+		desired_argument_type = query_operator_argument_type(op_index, argnum);
+		Assertion(Sexp_nodes[node].type != SEXP_NOT_USED, "Node %d must be in use!", node);
 		if (bad_node)
 			*bad_node = node;
+		node_subtype = Sexp_nodes[node].subtype;
 
-		if (Sexp_nodes[node].subtype == SEXP_ATOM_LIST) {
+		if (node_subtype == SEXP_ATOM_LIST) {
 			i = Sexp_nodes[node].first;
 			if (bad_node)
 				*bad_node = i;
@@ -2221,14 +2227,15 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 			if (Sexp_nodes[i].subtype == SEXP_ATOM_LIST)
 				return 0;
 
-			op2 = get_operator_index(i);
-			if (op2 == -1)
+			int op2_index = get_operator_index(i);
+			int op2_const = SCP_vector_inbounds(Operators, op2_index) ? Operators[op2_index].value : OP_NOT_AN_OP;
+			if (op2_const == OP_NOT_AN_OP)
 				return SEXP_CHECK_UNKNOWN_OP;
 
-			type2 = query_operator_return_type(op2);
+			node_return_type = query_operator_return_type(op2_const);
 			if (recursive) {
 				sexp_opr_t opr;
-				if (!map_opf_to_opr((sexp_opf_t)type, opr)) {
+				if (!map_opf_to_opr((sexp_opf_t)desired_argument_type, opr)) {
 					return SEXP_CHECK_UNKNOWN_TYPE;
 				}
 
@@ -2237,18 +2244,18 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				}
 			}
 
-		} else if (Sexp_nodes[node].subtype == SEXP_ATOM_NUMBER) {
-			type2 = OPR_POSITIVE;
+		} else if (node_subtype == SEXP_ATOM_NUMBER) {
+			node_return_type = OPR_POSITIVE;
 			auto ptr = CTEXT(node);
 			if (*ptr == '-') {
-				type2 = OPR_NUMBER;
+				node_return_type = OPR_NUMBER;
 				ptr++;
 			} else if (*ptr == '+') {
 				ptr++;
 			}
 
-			if (type == OPF_BOOL)  // allow numbers to be used where boolean is required.
-				type2 = OPR_BOOL;
+			if (desired_argument_type == OPF_BOOL)  // allow numbers to be used where boolean is required.
+				node_return_type = OPR_BOOL;
 
 			// Only check that this is a number if it's not <argument>.
 			if (!(Sexp_nodes[node].flags & SNF_SPECIAL_ARG_IN_NODE)) {
@@ -2262,13 +2269,12 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				}
 
 				i = atoi(CTEXT(node));
-				z = get_operator_const(op_node);
-				if ( (z == OP_HAS_DOCKED_DELAY) || (z == OP_HAS_UNDOCKED_DELAY) )
+				if ( (op_const == OP_HAS_DOCKED_DELAY) || (op_const == OP_HAS_UNDOCKED_DELAY) )
 					if ( (argnum == 2) && (i < 1) )
 						return SEXP_CHECK_NUM_RANGE_INVALID;
 
 				// valid color range 0 to 255 - FUBAR
-				if ((z == OP_CHANGE_IFF_COLOR)  && ((argnum >= 2) && (argnum <= 4)))
+				if ((op_const == OP_CHANGE_IFF_COLOR)  && ((argnum >= 2) && (argnum <= 4)))
 				{
 					if ( i < 0 || i > 255) 
 					{
@@ -2276,23 +2282,22 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 					}
 				}
 
-				z = get_operator_index(op_node);
-				if ( (query_operator_return_type(z) == OPR_AI_GOAL) && (argnum == Operators[op].min - 1) )
+				if ( (query_operator_return_type(op_const) == OPR_AI_GOAL) && (argnum == Operators[op_index].min - 1) )
 					if ( (i < 0) || (i > 200) )
 						return SEXP_CHECK_NUM_RANGE_INVALID;
 			}
 
-		} else if (Sexp_nodes[node].subtype == SEXP_ATOM_STRING) {
-			type2 = SEXP_ATOM_STRING;
+		} else if (node_subtype == SEXP_ATOM_STRING) {
+			;	// no special handling
 
-		} else if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER_NAME) {
-			type2 = SEXP_ATOM_CONTAINER_NAME;
+		} else if (node_subtype == SEXP_ATOM_CONTAINER_NAME) {
+			;	// no special handling
 
-		} else if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER_DATA) {
+		} else if (node_subtype == SEXP_ATOM_CONTAINER_DATA) {
 			// this is an instance of "Replace Container Data"
 
 			// can't be used in special argument list
-			if (is_argument_provider_op(get_operator_const(op_node))) {
+			if (is_argument_provider_op(op_const)) {
 				return SEXP_CHECK_TYPE_MISMATCH;
 			}
 
@@ -2304,16 +2309,16 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 			const auto *p_data_container = get_sexp_container(Sexp_nodes[node].text);
 			// name should have already been checked in get_sexp()
 			Assertion(p_data_container,
-				"Attempt to check type of container data for SEXP operator %d at arg %d for non-existent container %s. "
+				"Attempt to check type of container data for SEXP operator %s at arg %d for non-existent container %s. "
 				"Please report!",
-				op,
+				Operators[op_index].text.c_str(),
 				argnum,
 				Sexp_nodes[node].text);
 			const auto &data_container = *p_data_container;
 
-			if (!check_container_data_type(type,
+			if (!check_container_data_type(desired_argument_type,
 					data_container.type,
-					get_operator_const(op_node),
+					op_const,
 					argnum,
 					p_container)) {
 				return SEXP_CHECK_WRONG_CONTAINER_DATA_TYPE;
@@ -2372,18 +2377,18 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 			UNREACHABLE("SEXP subtype is %d when it should be SEXP_ATOM_LIST, SEXP_ATOM_NUMBER, SEXP_ATOM_STRING, "
 						"SEXP_ATOM_CONTAINER_NAME, or "
 						"SEXP_ATOM_CONTAINER_DATA!",
-				Sexp_nodes[node].subtype);
+				node_subtype);
 		}
 
 		// variables should only be typechecked. 
-		if ((Sexp_nodes[node].type & SEXP_FLAG_VARIABLE) && (type != OPF_VARIABLE_NAME)) {
+		if ((Sexp_nodes[node].type & SEXP_FLAG_VARIABLE) && (desired_argument_type != OPF_VARIABLE_NAME)) {
 			var_index = sexp_get_variable_index(node);
 			if (var_index < 0)
 				return SEXP_CHECK_INVALID_VARIABLE;
 
-			if (!check_variable_data_type(type,
+			if (!check_variable_data_type(desired_argument_type,
 					Sexp_variables[var_index].type,
-					get_operator_const(op_node),
+					op_const,
 					argnum,
 					p_container)) {
 				return SEXP_CHECK_INVALID_VARIABLE_TYPE;
@@ -2409,24 +2414,24 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 			}
 		}
 
-		switch (type) {
+		switch (desired_argument_type) {
 			case OPF_NAV_POINT:
-				if (type2 != SEXP_ATOM_STRING){
+				if (node_subtype != SEXP_ATOM_STRING){
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 				break;
 
 			case OPF_NUMBER:
-				if ((type2 != OPR_NUMBER) && (type2 != OPR_POSITIVE)){
+				if ((node_return_type != OPR_NUMBER) && (node_return_type != OPR_POSITIVE)){
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
 				break;
 
 			case OPF_POSITIVE:
-				if (type2 == OPR_NUMBER){
+				if (node_return_type == OPR_NUMBER){
 					// for numeric literals, check whether the number is negative
-					if (Sexp_nodes[node].subtype == SEXP_ATOM_NUMBER){
+					if (node_subtype == SEXP_ATOM_NUMBER){
 						if (*Sexp_nodes[node].text == '-')
 							return SEXP_CHECK_NEGATIVE_NUM;
 					}
@@ -2436,14 +2441,14 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 					// return SEXP_CHECK_NEGATIVE_NUM;
 				}
 
-				if (type2 != OPR_POSITIVE){
+				if (node_return_type != OPR_POSITIVE){
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
 				break;
 
 			case OPF_SHIP_NOT_PLAYER:
-				if (type2 != SEXP_ATOM_STRING){
+				if (node_subtype != SEXP_ATOM_STRING){
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
@@ -2458,7 +2463,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				break;
 
 			case OPF_SHIP_OR_NONE:
-				if (type2 != SEXP_ATOM_STRING)
+				if (node_subtype != SEXP_ATOM_STRING)
 				{
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
@@ -2478,14 +2483,14 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 
 			case OPF_SHIP:
 			case OPF_SHIP_POINT:
-				if (type2 != SEXP_ATOM_STRING){
+				if (node_subtype != SEXP_ATOM_STRING){
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
 				if (ship_name_lookup(CTEXT(node), 1) < 0) {
 					if (Fred_running || !mission_check_ship_yet_to_arrive(CTEXT(node)))
 					{
-						if (type == OPF_SHIP)
+						if (desired_argument_type == OPF_SHIP)
 						{													// return invalid ship if not also looking for point
 							return SEXP_CHECK_INVALID_SHIP;
 						}
@@ -2503,7 +2508,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				break;
 
 			case OPF_PROP:
-				if (type2 != SEXP_ATOM_STRING) {
+				if (node_subtype != SEXP_ATOM_STRING) {
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 				if (prop_name_lookup(CTEXT(node)) < 0) {
@@ -2512,7 +2517,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				break;
 
 			case OPF_WING:
-				if (type2 != SEXP_ATOM_STRING){
+				if (node_subtype != SEXP_ATOM_STRING){
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
@@ -2528,11 +2533,11 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 			case OPF_SHIP_WING_POINT:
 			case OPF_SHIP_WING_POINT_OR_NONE:
 			case OPF_ORDER_RECIPIENT:
-				if ( type2 != SEXP_ATOM_STRING ){
+				if ( node_subtype != SEXP_ATOM_STRING ){
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
-				if (type == OPF_ORDER_RECIPIENT) {
+				if (desired_argument_type == OPF_ORDER_RECIPIENT) {
 					if (!strcmp ("<all fighters>", CTEXT(node))) {
 						break;
 					}
@@ -2548,38 +2553,38 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				}
 
 				// none is okay for _OR_NONE
-				if (type == OPF_SHIP_WING_POINT_OR_NONE && !stricmp(CTEXT(node), SEXP_NONE_STRING))	{
+				if (desired_argument_type == OPF_SHIP_WING_POINT_OR_NONE && !stricmp(CTEXT(node), SEXP_NONE_STRING))	{
 					break;
 				}
 
 				// two different ways of checking teams
-				if ((type == OPF_SHIP_WING_WHOLETEAM) && iff_lookup(CTEXT(node)) >= 0) {
+				if ((desired_argument_type == OPF_SHIP_WING_WHOLETEAM) && iff_lookup(CTEXT(node)) >= 0) {
 					break;
 				}
-				if ((type == OPF_SHIP_WING_SHIPONTEAM_POINT) && sexp_determine_team(CTEXT(node)) >= 0)	{
+				if ((desired_argument_type == OPF_SHIP_WING_SHIPONTEAM_POINT) && sexp_determine_team(CTEXT(node)) >= 0)	{
 					break;
 				}
 
 				// only other possibility is waypoints
-				if (type == OPF_SHIP_WING_SHIPONTEAM_POINT || type == OPF_SHIP_WING_POINT || type == OPF_SHIP_WING_POINT_OR_NONE) {
+				if (desired_argument_type == OPF_SHIP_WING_SHIPONTEAM_POINT || desired_argument_type == OPF_SHIP_WING_POINT || desired_argument_type == OPF_SHIP_WING_POINT_OR_NONE) {
 					if (find_matching_waypoint(CTEXT(node)) == nullptr) {
 						if (verify_vector(CTEXT(node))) {  // non-zero on verify vector mean invalid!
-							return (type == OPF_SHIP_WING_SHIPONTEAM_POINT) ? SEXP_CHECK_INVALID_SHIP_WING_SHIPONTEAM_POINT : SEXP_CHECK_INVALID_SHIP_WING_POINT;
+							return (desired_argument_type == OPF_SHIP_WING_SHIPONTEAM_POINT) ? SEXP_CHECK_INVALID_SHIP_WING_SHIPONTEAM_POINT : SEXP_CHECK_INVALID_SHIP_WING_POINT;
 						}
 					}
 					break;
 				}
 
 				// nothing left
-				if (type == OPF_ORDER_RECIPIENT)
+				if (desired_argument_type == OPF_ORDER_RECIPIENT)
 					return SEXP_CHECK_INVALID_ORDER_RECIPIENT;
-				else if (type == OPF_SHIP_WING_WHOLETEAM)
+				else if (desired_argument_type == OPF_SHIP_WING_WHOLETEAM)
 					return SEXP_CHECK_INVALID_SHIP_WING_WHOLETEAM;
 				else
 					return SEXP_CHECK_INVALID_SHIP_WING;
 
 			case OPF_SHIP_PROP:
-				if (type2 != SEXP_ATOM_STRING) {
+				if (node_subtype != SEXP_ATOM_STRING) {
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 				if (ship_name_lookup(CTEXT(node), 1) >= 0) {
@@ -2606,18 +2611,18 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				int shipnum,ship_class;
 				int ship_node;				
 
-				if (type2 != SEXP_ATOM_STRING){
+				if (node_subtype != SEXP_ATOM_STRING){
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
 				// none is okay for subsys_or_none
-				if (type == OPF_SUBSYSTEM_OR_NONE && !stricmp(CTEXT(node), SEXP_NONE_STRING))
+				if (desired_argument_type == OPF_SUBSYSTEM_OR_NONE && !stricmp(CTEXT(node), SEXP_NONE_STRING))
 				{
 					break;
 				}
 
 				//  subsys_or_generic can also accept generic types
-				if (type == OPF_SUBSYS_OR_GENERIC && get_generic_subsys(CTEXT(node)) != SUBSYSTEM_NONE) {
+				if (desired_argument_type == OPF_SUBSYS_OR_GENERIC && get_generic_subsys(CTEXT(node)) != SUBSYSTEM_NONE) {
 					break;
 				}
 
@@ -2625,7 +2630,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				// with that name.  This code assumes by default that the ship is *always* the first name
 				// in the sexpression.  If this is ever not the case, the code here must be changed to
 				// get the correct ship name.
-				switch(get_operator_const(op_node))
+				switch(op_const)
 				{
 					case OP_CAP_SUBSYS_CARGO_KNOWN_DELAY:
 					case OP_DISTANCE_CENTER_SUBSYSTEM:
@@ -2663,7 +2668,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 						break;
 
 					default:
-						if (get_operator_const(op_node) < First_available_operator_id) {
+						if (op_const < First_available_operator_id) {
 							ship_node = CDR(op_node);
 						} else {
 							int r_count = get_dynamic_parameter_index(Sexp_nodes[op_node].text, argnum);
@@ -2709,7 +2714,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 
 					if (!p_objp)
 					{
-						if (type == OPF_SUBSYSTEM_OR_NONE)
+						if (desired_argument_type == OPF_SUBSYSTEM_OR_NONE)
 							break;
 						else
 						{
@@ -2724,13 +2729,13 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				}
 
 				// check for the special "hull" value
-				if ( (Operators[op].value == OP_SABOTAGE_SUBSYSTEM) || (Operators[op].value == OP_REPAIR_SUBSYSTEM) || (Operators[op].value == OP_SET_SUBSYSTEM_STRNGTH) || (Operators[op].value == OP_SET_ARMOR_TYPE) || (Operators[op].value == OP_BEAM_FIRE)) {
+				if ( (op_const == OP_SABOTAGE_SUBSYSTEM) || (op_const == OP_REPAIR_SUBSYSTEM) || (op_const == OP_SET_SUBSYSTEM_STRNGTH) || (op_const == OP_SET_ARMOR_TYPE) || (op_const == OP_BEAM_FIRE)) {
 					if ( !stricmp( CTEXT(node), SEXP_HULL_STRING) || !stricmp( CTEXT(node), SEXP_SIM_HULL_STRING) ){
 						break;
 					}
 				}
 				// check for special "shields" value for armor types
-				if (Operators[op].value == OP_SET_ARMOR_TYPE) {
+				if (op_const == OP_SET_ARMOR_TYPE) {
 					if ( !stricmp( CTEXT(node), SEXP_SHIELD_STRING) || !stricmp( CTEXT(node), SEXP_SIM_HULL_STRING) ){
 						break;
 					}
@@ -2752,19 +2757,19 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				if(Fred_running)
 				{
 					// if we're checking for an AWACS subsystem and this is not an awacs subsystem
-					if((type == OPF_AWACS_SUBSYSTEM) && !(Ship_info[ship_class].subsystems[i].flags[Model::Subsystem_Flags::Awacs]))
+					if((desired_argument_type == OPF_AWACS_SUBSYSTEM) && !(Ship_info[ship_class].subsystems[i].flags[Model::Subsystem_Flags::Awacs]))
 					{
 						return SEXP_CHECK_INVALID_AWACS_SUBSYS;
 					}
 
 					// rotating subsystem, like above - Goober5000
-					if ((type == OPF_ROTATING_SUBSYSTEM) && !(Ship_info[ship_class].subsystems[i].flags[Model::Subsystem_Flags::Rotates]))
+					if ((desired_argument_type == OPF_ROTATING_SUBSYSTEM) && !(Ship_info[ship_class].subsystems[i].flags[Model::Subsystem_Flags::Rotates]))
 					{
 						return SEXP_CHECK_INVALID_ROTATING_SUBSYS;
 					}
 
 					// translating subsystem, like above - Goober5000
-					if ((type == OPF_TRANSLATING_SUBSYSTEM) && !(Ship_info[ship_class].subsystems[i].flags[Model::Subsystem_Flags::Translates]))
+					if ((desired_argument_type == OPF_TRANSLATING_SUBSYSTEM) && !(Ship_info[ship_class].subsystems[i].flags[Model::Subsystem_Flags::Translates]))
 					{
 						return SEXP_CHECK_INVALID_TRANSLATING_SUBSYS;
 					}
@@ -2779,7 +2784,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				int shipnum,ship_class;
 				int ship_node;
 
-				if (type2 != SEXP_ATOM_STRING){
+				if (node_subtype != SEXP_ATOM_STRING){
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
@@ -2809,7 +2814,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 
 					if (!p_objp)
 					{
-						if (type == OPF_SUBSYSTEM_OR_NONE)
+						if (desired_argument_type == OPF_SUBSYSTEM_OR_NONE)
 							break;
 						else
 						{
@@ -2824,7 +2829,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				}
 
 				const auto& animSet = Ship_info[ship_class].animations;
-				switch(get_operator_const(op_node)) {	
+				switch(op_const) {
 					case OP_TRIGGER_ANIMATION_NEW:
 					case OP_STOP_LOOPING_ANIMATION: {
 						//Second OP trigger type
@@ -2885,7 +2890,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				break;
 
 			case OPF_POINT:
-				if (type2 != SEXP_ATOM_STRING)
+				if (node_subtype != SEXP_ATOM_STRING)
 				{
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
@@ -2901,7 +2906,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				break;
 
 			case OPF_IFF:
-				if (type2 != SEXP_ATOM_STRING)
+				if (node_subtype != SEXP_ATOM_STRING)
 				{
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
@@ -2914,7 +2919,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				break;
 
 			case OPF_AI_CLASS:
-				if (type2 != SEXP_ATOM_STRING)
+				if (node_subtype != SEXP_ATOM_STRING)
 				{
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
@@ -2935,7 +2940,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				break;
 
 			case OPF_ARRIVAL_LOCATION:
-				if (type2 != SEXP_ATOM_STRING)
+				if (node_subtype != SEXP_ATOM_STRING)
 				{
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
@@ -2956,7 +2961,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				break;
 
 			case OPF_DEPARTURE_LOCATION:
-				if (type2 != SEXP_ATOM_STRING)
+				if (node_subtype != SEXP_ATOM_STRING)
 				{
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
@@ -2977,7 +2982,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				break;
 
 			case OPF_ARRIVAL_ANCHOR_ALL:
-				if (type2 != SEXP_ATOM_STRING)
+				if (node_subtype != SEXP_ATOM_STRING)
 				{
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
@@ -3010,7 +3015,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				break;
 
 			case OPF_SOUNDTRACK_NAME:
-				if (type2 != SEXP_ATOM_STRING){
+				if (node_subtype != SEXP_ATOM_STRING){
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
@@ -3030,7 +3035,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				auto name = CTEXT(node);
 				int shipnum = -1;
 
-				if (type2 != SEXP_ATOM_STRING)
+				if (node_subtype != SEXP_ATOM_STRING)
 					return SEXP_CHECK_TYPE_MISMATCH;
 
 				if (!stricmp(name, "<no anchor>"))
@@ -3060,7 +3065,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 			}
 
 			case OPF_SUPPORT_SHIP_CLASS:
-				if (type2 != SEXP_ATOM_STRING){
+				if (node_subtype != SEXP_ATOM_STRING){
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
@@ -3088,28 +3093,28 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				break;
 
 			case OPF_BOOL:
-				if (type2 != OPR_BOOL){
+				if (node_return_type != OPR_BOOL){
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
 				break;
 
 			case OPF_AI_ORDER:
-				if ( type2 != SEXP_ATOM_STRING ){
+				if ( node_subtype != SEXP_ATOM_STRING ){
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
 				break;
 
 			case OPF_NULL:
-				if (type2 != OPR_NULL){
+				if (node_return_type != OPR_NULL){
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
 				break;
 
 			case OPF_SSM_CLASS:
-				if ( type2 != SEXP_ATOM_STRING ) {
+				if ( node_subtype != SEXP_ATOM_STRING ) {
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
@@ -3121,21 +3126,21 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 
 			// Goober5000
 			case OPF_FLEXIBLE_ARGUMENT:
-				if (type2 != OPR_FLEXIBLE_ARGUMENT) {
+				if (node_return_type != OPR_FLEXIBLE_ARGUMENT) {
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 				break;
 
 			// Goober5000
 			case OPF_ANYTHING:
-				if (type2 == SEXP_ATOM_CONTAINER_NAME) {
+				if (node_subtype == SEXP_ATOM_CONTAINER_NAME) {
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 				break;
 
 			case OPF_AI_GOAL:
 			{
-				if (type2 != OPR_AI_GOAL){
+				if (node_return_type != OPR_AI_GOAL){
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
@@ -3149,7 +3154,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 					int ship_num, ship2, wing_num = 0;
 
 					// if it's the "goals" operator, this is part of initial orders, so we can't grab the ship from it
-					if (get_operator_const(op_node) == OP_GOALS_ID) {
+					if (op_const == OP_GOALS_ID) {
 						break;
 					}
 
@@ -3179,7 +3184,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 						}
 					}
 
-					Assert(Sexp_nodes[node].subtype == SEXP_ATOM_LIST);
+					Assert(node_subtype == SEXP_ATOM_LIST);
 					z = Sexp_nodes[node].first;
 					Assert(Sexp_nodes[z].subtype != SEXP_ATOM_LIST);
 					z = get_operator_const(z);
@@ -3214,7 +3219,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 			}
 
 			case OPF_SHIP_TYPE: {
-				if (type2 != SEXP_ATOM_STRING){
+				if (node_subtype != SEXP_ATOM_STRING){
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
@@ -3240,7 +3245,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				break;
 
 			case OPF_MESSAGE:
-				if (type2 != SEXP_ATOM_STRING)
+				if (node_subtype != SEXP_ATOM_STRING)
 					return SEXP_CHECK_TYPE_MISMATCH;
 
 				if (Fred_running) {
@@ -3255,7 +3260,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				break;
 
 			case OPF_PRIORITY: {
-				if (type2 != SEXP_ATOM_STRING)
+				if (node_subtype != SEXP_ATOM_STRING)
 					return SEXP_CHECK_TYPE_MISMATCH;
 
 				if (Fred_running) {  // should still check in Fred though..
@@ -3270,7 +3275,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 			}
 
 			case OPF_MISSION_NAME:
-				if (type2 != SEXP_ATOM_STRING)
+				if (node_subtype != SEXP_ATOM_STRING)
 					return SEXP_CHECK_TYPE_MISMATCH;
 
 				if (Fred_running) {
@@ -3289,8 +3294,8 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 					} else {
 						// mwa -- put the following if statement to prevent Fred errors for possibly valid
 						// conditions.  We should do something else here!!!
-						if ( (Operators[op].value == OP_PREVIOUS_EVENT_TRUE) || (Operators[op].value == OP_PREVIOUS_EVENT_FALSE) || (Operators[op].value == OP_PREVIOUS_EVENT_INCOMPLETE)
-							|| (Operators[op].value == OP_PREVIOUS_GOAL_TRUE) || (Operators[op].value == OP_PREVIOUS_GOAL_FALSE) || (Operators[op].value == OP_PREVIOUS_GOAL_INCOMPLETE) )
+						if ( (op_const == OP_PREVIOUS_EVENT_TRUE) || (op_const == OP_PREVIOUS_EVENT_FALSE) || (op_const == OP_PREVIOUS_EVENT_INCOMPLETE)
+							|| (op_const == OP_PREVIOUS_GOAL_TRUE) || (op_const == OP_PREVIOUS_GOAL_FALSE) || (op_const == OP_PREVIOUS_GOAL_INCOMPLETE) )
 							break;
 
 						if (!(*Mission_filename) || stricmp(Mission_filename, CTEXT(node)) != 0)
@@ -3303,7 +3308,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 			case OPF_GOAL_NAME:
 			case OPF_EVENT_NAME:
 			{
-				if (type2 != SEXP_ATOM_STRING)
+				if (node_subtype != SEXP_ATOM_STRING)
 					return SEXP_CHECK_TYPE_MISMATCH;
 
 				count = 0;
@@ -3345,40 +3350,40 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 						Campaign.missions[i].flags &= ~CMISSION_FLAG_FRED_LOAD_PENDING;
 					}
 
-					if (type == OPF_GOAL_NAME) {
+					if (desired_argument_type == OPF_GOAL_NAME) {
 						count = count_items_with_string(Campaign.missions[i].goals, &mgoal::name, CTEXT(node));
-					} else if (type == OPF_EVENT_NAME) {
+					} else if (desired_argument_type == OPF_EVENT_NAME) {
 						count = count_items_with_string(Campaign.missions[i].events, &mevent::name, CTEXT(node));
 					} else {
-						UNREACHABLE("type == %d; expected OPF_GOAL_NAME or OPF_EVENT_NAME", type);
+						UNREACHABLE("desired_argument_type == %d; expected OPF_GOAL_NAME or OPF_EVENT_NAME", desired_argument_type);
 					}
-				} else if (type == OPF_GOAL_NAME) {
+				} else if (desired_argument_type == OPF_GOAL_NAME) {
 					// neither the previous mission nor the previous goal is guaranteed to exist (missions can be developed out of sequence), so we don't need to check them
-					if ((Operators[op].value == OP_PREVIOUS_GOAL_TRUE) || (Operators[op].value == OP_PREVIOUS_GOAL_FALSE) || (Operators[op].value == OP_PREVIOUS_GOAL_INCOMPLETE))
+					if ((op_const == OP_PREVIOUS_GOAL_TRUE) || (op_const == OP_PREVIOUS_GOAL_FALSE) || (op_const == OP_PREVIOUS_GOAL_INCOMPLETE))
 						break;
 
 					count = count_items_with_string(Mission_goals, &mission_goal::name, CTEXT(node));
-				} else if (type == OPF_EVENT_NAME) {
+				} else if (desired_argument_type == OPF_EVENT_NAME) {
 					// neither the previous mission nor the previous event is guaranteed to exist (missions can be developed out of sequence), so we don't need to check them
-					if ((Operators[op].value == OP_PREVIOUS_EVENT_TRUE) || (Operators[op].value == OP_PREVIOUS_EVENT_FALSE) || (Operators[op].value == OP_PREVIOUS_EVENT_INCOMPLETE))
+					if ((op_const == OP_PREVIOUS_EVENT_TRUE) || (op_const == OP_PREVIOUS_EVENT_FALSE) || (op_const == OP_PREVIOUS_EVENT_INCOMPLETE))
 						break;
 
 					count = count_items_with_string(Mission_events, &mission_event::name, CTEXT(node));
 				} else {
-					UNREACHABLE("type == %d; expected OPF_GOAL_NAME or OPF_EVENT_NAME", type);
+					UNREACHABLE("desired_argument_type == %d; expected OPF_GOAL_NAME or OPF_EVENT_NAME", desired_argument_type);
 				}
 
 				if (count == 0)
-					return (type == OPF_GOAL_NAME) ? SEXP_CHECK_INVALID_GOAL_NAME : SEXP_CHECK_INVALID_EVENT_NAME;
+					return (desired_argument_type == OPF_GOAL_NAME) ? SEXP_CHECK_INVALID_GOAL_NAME : SEXP_CHECK_INVALID_EVENT_NAME;
 				else if (count > 1)
-					return (type == OPF_GOAL_NAME) ? SEXP_CHECK_AMBIGUOUS_GOAL_NAME : SEXP_CHECK_AMBIGUOUS_EVENT_NAME;
+					return (desired_argument_type == OPF_GOAL_NAME) ? SEXP_CHECK_AMBIGUOUS_GOAL_NAME : SEXP_CHECK_AMBIGUOUS_EVENT_NAME;
 
 				break;
 			}
 
 			case OPF_DOCKER_POINT:
 			case OPF_DOCKEE_POINT:
-				if (type2 != SEXP_ATOM_STRING)
+				if (node_subtype != SEXP_ATOM_STRING)
 					return SEXP_CHECK_TYPE_MISMATCH;
 
 				// This makes massive assumptions about the structure of the SEXP using it. If you add any 
@@ -3388,7 +3393,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 
 					// Look for the node containing the docker/dockee ship. In most cases, we want 
 					// the current SEXP operator, but for ai-dock and the docker, we want its parent.
-					if (get_operator_const(op_node) == OP_AI_DOCK && type == OPF_DOCKER_POINT) {
+					if (op_const == OP_AI_DOCK && desired_argument_type == OPF_DOCKER_POINT) {
 						z = find_parent_operator(op_node);
 
 						// if it's the "goals" operator, this is part of initial orders, so we can't grab the ship from it
@@ -3400,10 +3405,10 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 					} else {
 						z = op_node;
 
-						if (get_operator_const(op_node) == OP_AI_DOCK) { // ai-dock with dockee
+						if (op_const == OP_AI_DOCK) { // ai-dock with dockee
 							ship_node = CDR(z);
-						} else if (type == OPF_DOCKER_POINT) {
-							if (get_operator_const(op_node) >= First_available_operator_id) {
+						} else if (desired_argument_type == OPF_DOCKER_POINT) {
+							if (op_const >= First_available_operator_id) {
 								int r_count = get_dynamic_parameter_index(Sexp_nodes[op_node].text, argnum);
 								
 								if (r_count < 0)
@@ -3422,9 +3427,9 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 							} else {
 								ship_node = CDR(z);
 							}
-						} else if (type == OPF_DOCKEE_POINT) {
+						} else if (desired_argument_type == OPF_DOCKEE_POINT) {
 							ship_node = CDDDR(z);
-						} else if (get_operator_const(op_node) >= First_available_operator_id) {
+						} else if (op_const >= First_available_operator_id) {
 							int r_count = get_dynamic_parameter_index(Sexp_nodes[op_node].text, argnum);
 							
 							if (r_count < 0)
@@ -3473,13 +3478,13 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 							break;
 
 					if (i == z)
-						return (type == OPF_DOCKER_POINT) ? SEXP_CHECK_INVALID_DOCKER_POINT : SEXP_CHECK_INVALID_DOCKEE_POINT;
+						return (desired_argument_type == OPF_DOCKER_POINT) ? SEXP_CHECK_INVALID_DOCKER_POINT : SEXP_CHECK_INVALID_DOCKEE_POINT;
 				}
 
 				break;
 
 			case OPF_WHO_FROM:
-				if (type2 != SEXP_ATOM_STRING)
+				if (node_subtype != SEXP_ATOM_STRING)
 					return SEXP_CHECK_TYPE_MISMATCH;
 
 				if (!is_special_sender(CTEXT(node))) {  // not a manual source?
@@ -3494,7 +3499,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 
 			//Karajorma
 			case OPF_PERSONA:
-				if (type2 != SEXP_ATOM_STRING) {
+				if (node_subtype != SEXP_ATOM_STRING) {
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
@@ -3510,7 +3515,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				break;
 
 			case OPF_MISSION_MOOD:
-				if (type2 != SEXP_ATOM_STRING) {
+				if (node_subtype != SEXP_ATOM_STRING) {
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
@@ -3555,7 +3560,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 			}
 
 			case OPF_TEAM_COLOR:
-				if (type2 != SEXP_ATOM_STRING) {
+				if (node_subtype != SEXP_ATOM_STRING) {
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
@@ -3568,7 +3573,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				break;
 
 			case OPF_FONT:
-				if (type2 != SEXP_ATOM_STRING) {
+				if (node_subtype != SEXP_ATOM_STRING) {
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
@@ -3578,7 +3583,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				break;
 				
 			case OPF_SOUND_ENVIRONMENT:
-				if (type2 != SEXP_ATOM_STRING) {
+				if (node_subtype != SEXP_ATOM_STRING) {
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
@@ -3588,7 +3593,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				break;
 
 			case OPF_AUDIO_VOLUME_OPTION:
-				if (type2 != SEXP_ATOM_STRING) {
+				if (node_subtype != SEXP_ATOM_STRING) {
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
@@ -3598,13 +3603,13 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 
 			case OPF_BUILTIN_HUD_GAUGE:
 			{
-				if (type2 != SEXP_ATOM_STRING) {
+				if (node_subtype != SEXP_ATOM_STRING) {
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 				auto gauge_name = CTEXT(node);
 
 				// for compatibility, since this operator now uses a different set of parameters
-				if (get_operator_const(op_node) == OP_FLASH_HUD_GAUGE) {
+				if (op_const == OP_FLASH_HUD_GAUGE) {
 					bool found = false;
 					for (int legacy_idx = 0; legacy_idx < NUM_HUD_GAUGES; legacy_idx++) {
 						if (stricmp(gauge_name, Legacy_HUD_gauges[legacy_idx].hud_gauge_text) == 0) {
@@ -3624,7 +3629,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 			}
 
 			case OPF_CUSTOM_HUD_GAUGE:
-				if (type2 != SEXP_ATOM_STRING) {
+				if (node_subtype != SEXP_ATOM_STRING) {
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
@@ -3635,7 +3640,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				break;
 
 			case OPF_ANY_HUD_GAUGE:
-				if (type2 != SEXP_ATOM_STRING) {
+				if (node_subtype != SEXP_ATOM_STRING) {
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
@@ -3646,7 +3651,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				break;
 
 			case OPF_SOUND_ENVIRONMENT_OPTION:
-				if (type2 != SEXP_ATOM_STRING) {
+				if (node_subtype != SEXP_ATOM_STRING) {
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
@@ -3656,7 +3661,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				break;
 
 			case OPF_EXPLOSION_OPTION:
-				if (type2 != SEXP_ATOM_STRING) {
+				if (node_subtype != SEXP_ATOM_STRING) {
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
@@ -3666,7 +3671,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				break;
 
 			case OPF_KEYPRESS:
-				if (type2 != SEXP_ATOM_STRING)
+				if (node_subtype != SEXP_ATOM_STRING)
 					return SEXP_CHECK_TYPE_MISMATCH;
 
 				break;
@@ -3674,12 +3679,12 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 			case OPF_CARGO:
 			case OPF_STRING:
 			case OPF_MESSAGE_OR_STRING:
-				if (type2 != SEXP_ATOM_STRING)
+				if (node_subtype != SEXP_ATOM_STRING)
 					return SEXP_CHECK_TYPE_MISMATCH;
 				break;
 
 			case OPF_SKILL_LEVEL:
-				if ( type2 != SEXP_ATOM_STRING )
+				if ( node_subtype != SEXP_ATOM_STRING )
 					return SEXP_CHECK_TYPE_MISMATCH;
 
 				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
@@ -3691,7 +3696,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				break;
 
 			case OPF_MEDAL_NAME:
-				if ( type2 != SEXP_ATOM_STRING)
+				if ( node_subtype != SEXP_ATOM_STRING)
 					return SEXP_CHECK_TYPE_MISMATCH;
 
 				for (i = 0; i < (int)Medals.size(); i++) {
@@ -3705,7 +3710,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 
 			case OPF_HUGE_WEAPON:
 			case OPF_WEAPON_NAME:
-				if ( type2 != SEXP_ATOM_STRING )
+				if ( node_subtype != SEXP_ATOM_STRING )
 					return SEXP_CHECK_TYPE_MISMATCH;
 
 				i = weapon_info_lookup(CTEXT(node));
@@ -3714,7 +3719,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 					return SEXP_CHECK_INVALID_WEAPON_NAME;
 
 				// we need to be sure that for huge weapons, the WIF_HUGE flag is set
-				if ( type == OPF_HUGE_WEAPON ) {
+				if (desired_argument_type == OPF_HUGE_WEAPON ) {
 					if ( !(Weapon_info[i].wi_flags[Weapon::Info_Flags::Huge]) )
 						return SEXP_CHECK_INVALID_WEAPON_NAME;
 				}
@@ -3723,7 +3728,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 
 			// Goober5000
 			case OPF_INTEL_NAME:
-				if ( type2 != SEXP_ATOM_STRING )
+				if ( node_subtype != SEXP_ATOM_STRING )
 					return SEXP_CHECK_TYPE_MISMATCH;
 
 				for ( i = 0; i < intel_info_size(); i++ ) {
@@ -3737,7 +3742,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				break;
 
 			case OPF_TURRET_TARGET_ORDER:
-				if ( type2 != SEXP_ATOM_STRING )
+				if ( node_subtype != SEXP_ATOM_STRING )
 					return SEXP_CHECK_TYPE_MISMATCH;
 
 				for (i = 0; i < NUM_TURRET_ORDER_TYPES; i++ ) {
@@ -3751,7 +3756,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				break;
 
 			case OPF_TURRET_TYPE:
-				if (type2 != SEXP_ATOM_STRING)
+				if (node_subtype != SEXP_ATOM_STRING)
 					return SEXP_CHECK_TYPE_MISMATCH;
 
 				for (i = 0; i < NUM_TURRET_TYPES; i++) {
@@ -3765,7 +3770,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				break;
 
 			case OPF_ARMOR_TYPE:
-				if ( type2 != SEXP_ATOM_STRING )
+				if ( node_subtype != SEXP_ATOM_STRING )
 					return SEXP_CHECK_TYPE_MISMATCH;
 
 				if (!stricmp(CTEXT(node), SEXP_NONE_STRING))
@@ -3782,7 +3787,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				break;
 
 			case OPF_DAMAGE_TYPE:
-				if ( type2 != SEXP_ATOM_STRING )
+				if ( node_subtype != SEXP_ATOM_STRING )
 					return SEXP_CHECK_TYPE_MISMATCH;
 
 				if (!stricmp(CTEXT(node), SEXP_NONE_STRING))
@@ -3799,7 +3804,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				break;
 
 			case OPF_ANIMATION_TYPE:
-				if ( type2 != SEXP_ATOM_STRING )
+				if ( node_subtype != SEXP_ATOM_STRING )
 					return SEXP_CHECK_TYPE_MISMATCH;
 
 				if (animation::anim_match_type(CTEXT(node)) == animation::ModelAnimationTriggerType::None )
@@ -3808,7 +3813,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				break;
 
 			case OPF_TARGET_PRIORITIES:
-				if ( type2 != SEXP_ATOM_STRING )
+				if ( node_subtype != SEXP_ATOM_STRING )
 					return SEXP_CHECK_TYPE_MISMATCH;
 	
 				for(st = 0; st < Ai_tp_list.size(); st++) {
@@ -3822,7 +3827,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				break;
 	
 			case OPF_SHIP_CLASS_NAME:
-				if ( type2 != SEXP_ATOM_STRING )
+				if ( node_subtype != SEXP_ATOM_STRING )
 					return SEXP_CHECK_TYPE_MISMATCH;
 
 				if (ship_info_lookup(CTEXT(node)) < 0)
@@ -3831,7 +3836,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				break;
 
 			case OPF_SKYBOX_MODEL_NAME:
-				if ( type2 != SEXP_ATOM_STRING )
+				if ( node_subtype != SEXP_ATOM_STRING )
 					return SEXP_CHECK_TYPE_MISMATCH;
 
 				if ( stricmp(CTEXT(node), NOX("default")) != 0 && stricmp(CTEXT(node), NOX("none")) != 0 && !strstr(CTEXT(node), NOX(".pof")) )
@@ -3840,7 +3845,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				break;
 
 			case OPF_SKYBOX_FLAGS:
-				if ( type2 != SEXP_ATOM_STRING )
+				if ( node_subtype != SEXP_ATOM_STRING )
 					return SEXP_CHECK_TYPE_MISMATCH;
 
 				for ( i = 0; i < Num_skybox_flags; ++i ) {
@@ -3855,7 +3860,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				break;
 
 			case OPF_JUMP_NODE_NAME:
-				if ( type2 != SEXP_ATOM_STRING )
+				if ( node_subtype != SEXP_ATOM_STRING )
 					return SEXP_CHECK_TYPE_MISMATCH;
 
 				if (jumpnode_get_by_name(CTEXT(node)) == nullptr)
@@ -3869,7 +3874,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				if (var_index < 0)
 					return SEXP_CHECK_INVALID_VARIABLE;
 
-				switch (Operators[op].value)
+				switch (op_const)
 				{
 					// some SEXPs demand a number variable
 					case OP_ADD_BACKGROUND_BITMAP:
@@ -3912,13 +3917,13 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 			case OPF_NEBULA_POOF:
 			case OPF_NEBULA_PATTERN:
 			case OPF_POST_EFFECT:
-				if (type2 != SEXP_ATOM_STRING) {
+				if (node_subtype != SEXP_ATOM_STRING) {
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 				break;
 
 			case OPF_HUD_ELEMENT:
-				if (type2 != SEXP_ATOM_STRING) {
+				if (node_subtype != SEXP_ATOM_STRING) {
 					return SEXP_CHECK_TYPE_MISMATCH;
 				} else {
 					auto gauge = CTEXT(node);
@@ -3929,7 +3934,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				return SEXP_CHECK_INVALID_HUD_ELEMENT;
 
 			case OPF_WEAPON_BANK_NUMBER:
-				if (type2 != SEXP_ATOM_STRING) {
+				if (node_subtype != SEXP_ATOM_STRING) {
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
@@ -3947,7 +3952,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				break;
 
 			case OPF_SHIP_EFFECT:
-				if (type2 != SEXP_ATOM_STRING) {
+				if (node_subtype != SEXP_ATOM_STRING) {
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
@@ -3957,14 +3962,14 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				break;
 
 			case OPF_GAME_SND:
-				if (type2 == SEXP_ATOM_NUMBER)
+				if (node_subtype == SEXP_ATOM_NUMBER)
 				{
 					if (!gamesnd_get_by_tbl_index(atoi(CTEXT(node))).isValid())
 					{
 						return SEXP_CHECK_NUM_RANGE_INVALID;
 					}
 				}
-				else if (type2 == SEXP_ATOM_STRING)
+				else if (node_subtype == SEXP_ATOM_STRING)
 				{
 					if (stricmp(CTEXT(node), SEXP_NONE_STRING) != 0 && !gamesnd_get_by_name(CTEXT(node)).isValid())
 					{
@@ -3974,7 +3979,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				break;
 
 			case OPF_FIREBALL:
-				if (type2 == SEXP_ATOM_NUMBER || can_construe_as_integer(CTEXT(node)))
+				if (node_subtype == SEXP_ATOM_NUMBER || can_construe_as_integer(CTEXT(node)))
 				{
 					int num = atoi(CTEXT(node));
 					if (!SCP_vector_inbounds(Fireball_info, num))
@@ -3982,7 +3987,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 						return SEXP_CHECK_NUM_RANGE_INVALID;
 					}
 				}
-				else if (type2 == SEXP_ATOM_STRING)
+				else if (node_subtype == SEXP_ATOM_STRING)
 				{
 					if (fireball_info_lookup(CTEXT(node)) < 0)
 					{
@@ -3992,7 +3997,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				break;
 
 			case OPF_SPECIES:
-				if (type2 != SEXP_ATOM_STRING) {
+				if (node_subtype != SEXP_ATOM_STRING) {
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
@@ -4002,7 +4007,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				break;
 
 			case OPF_LANGUAGE:
-				if (type2 != SEXP_ATOM_STRING) {
+				if (node_subtype != SEXP_ATOM_STRING) {
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
@@ -4010,7 +4015,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				break;
 
 			case OPF_FUNCTIONAL_WHEN_EVAL_TYPE:
-				if (type2 != SEXP_ATOM_STRING) {
+				if (node_subtype != SEXP_ATOM_STRING) {
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
@@ -4023,15 +4028,15 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 			case OPF_LIST_CONTAINER_NAME:
 			case OPF_MAP_CONTAINER_NAME:
 			{
-				if (type2 != SEXP_ATOM_CONTAINER_NAME) {
+				if (node_subtype != SEXP_ATOM_CONTAINER_NAME) {
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
 				p_container = get_sexp_container(Sexp_nodes[node].text);
 				Assertion(p_container, "Attempt to use unknown container %s. Please report!", Sexp_nodes[node].text);
 
-				if ((type == OPF_LIST_CONTAINER_NAME && !p_container->is_list()) ||
-						(type == OPF_MAP_CONTAINER_NAME && !p_container->is_map())) {
+				if ((desired_argument_type == OPF_LIST_CONTAINER_NAME && !p_container->is_list()) ||
+						(desired_argument_type == OPF_MAP_CONTAINER_NAME && !p_container->is_map())) {
 					return SEXP_CHECK_WRONG_CONTAINER_TYPE;
 				}
 				break;
@@ -4040,13 +4045,13 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 			case OPF_CONTAINER_VALUE:
 				Assertion(p_container,
 					"Attempt to check value arg for null container for SEXP operator %d at arg %d. Please report!",
-					op,
+					op_const,
 					argnum);
-				z = check_container_value_data_type(get_operator_const(op_node),
+				z = check_container_value_data_type(op_const,
 					argnum,
 					p_container->type,
-					(type2 == SEXP_ATOM_STRING),
-					(type2 == OPR_NUMBER) || (type2 == OPR_POSITIVE));
+					(node_subtype == SEXP_ATOM_STRING),
+					(node_return_type == OPR_NUMBER) || (node_return_type == OPR_POSITIVE));
 				if (z) {
 					return z;
 				}
@@ -4054,7 +4059,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 
 			case OPF_DATA_OR_STR_CONTAINER:
 			{
-				if (type2 == SEXP_ATOM_CONTAINER_NAME) {
+				if (node_subtype == SEXP_ATOM_CONTAINER_NAME) {
 					// only list containers of strings or map containers with string keys are allowed
 					const auto *p_str_container = get_sexp_container(Sexp_nodes[node].text);
 					Assertion(p_str_container,
@@ -4072,7 +4077,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 			}
 
 			case OPF_ASTEROID_TYPES:
-				if (type2 != SEXP_ATOM_STRING) {
+				if (node_subtype != SEXP_ATOM_STRING) {
 					return SEXP_CHECK_TYPE_MISMATCH;
 				} else {
 					auto list = get_list_valid_asteroid_subtypes();
@@ -4091,7 +4096,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				break;
 
 			case OPF_DEBRIS_TYPES:
-				if (type2 != SEXP_ATOM_STRING) {
+				if (node_subtype != SEXP_ATOM_STRING) {
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
@@ -4101,7 +4106,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				break;
 
 			case OPF_WING_FORMATION:
-				if (type2 != SEXP_ATOM_STRING) {
+				if (node_subtype != SEXP_ATOM_STRING) {
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
@@ -4115,7 +4120,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				break;
 
 			case OPF_MOTION_DEBRIS:
-				if (type2 != SEXP_ATOM_STRING) {
+				if (node_subtype != SEXP_ATOM_STRING) {
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
@@ -4125,7 +4130,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				break;
 
 			case OPF_BOLT_TYPE:
-				if (type2 != SEXP_ATOM_STRING) {
+				if (node_subtype != SEXP_ATOM_STRING) {
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
@@ -4135,7 +4140,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				break;
 
 			case OPF_TRAITOR_OVERRIDE:
-				if (type2 != SEXP_ATOM_STRING) {
+				if (node_subtype != SEXP_ATOM_STRING) {
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
@@ -4145,7 +4150,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				break;
 
 			case OPF_LUA_GENERAL_ORDER:
-				if (type2 != SEXP_ATOM_STRING) {
+				if (node_subtype != SEXP_ATOM_STRING) {
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
@@ -4155,7 +4160,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				break;
 
 			case OPF_MISSION_CUSTOM_STRING:
-				if (type2 != SEXP_ATOM_STRING) {
+				if (node_subtype != SEXP_ATOM_STRING) {
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
@@ -4165,7 +4170,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				break;
 
 			case OPF_MESSAGE_TYPE:
-				if (type2 != SEXP_ATOM_STRING) {
+				if (node_subtype != SEXP_ATOM_STRING) {
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
@@ -4175,9 +4180,9 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				break;
 
 			default: //This handles OPF_CHILD_LUA_ENUM as well
-				if (Dynamic_enums.size() > 0) {
-					if ((type - First_available_opf_id) < (int)Dynamic_enums.size()) {
-						if (type2 != SEXP_ATOM_STRING)
+				if (!Dynamic_enums.empty()) {
+					if ((desired_argument_type - First_available_opf_id) < sz2i(Dynamic_enums.size())) {
+						if (node_subtype != SEXP_ATOM_STRING)
 							return SEXP_CHECK_TYPE_MISMATCH;
 					} else {
 						Error(LOCATION, "Unhandled argument format");
@@ -13930,27 +13935,27 @@ void sexp_set_friendly_damage_caps(int n) {
  * Sets the player's target to the specified, either ship, and or the subsystem on said ship.
  */
 void sexp_set_player_target(int node)
-{
-	int shipnum = ship_name_lookup(CTEXT(node), 1);
+{	
+	const ship_registry_entry *ship_entry = eval_ship(node);
+	if (ship_entry == nullptr)
+		return;
+
+	int shipnum = ship_entry->shipnum;
 	if (shipnum < 0)
 		return;
+
 	ship* shipp = &Ships[shipnum];
 	int objnum = shipp->objnum;
 	int n = CDR(node);
+	ship_subsys * new_subsys = nullptr;
 	if (n >= 0) {
 		const char* subsys_name = CTEXT(n);
 		if (stricmp(subsys_name, SEXP_NONE_STRING) != 0) {
-			ship_subsys* ss = ship_get_subsys(shipp, subsys_name);
-			// target ship regardless of whether subsystem is destroyed
-			shipp->last_targeted_subobject[Player_num] = ss;
-		} else {
-			shipp->last_targeted_subobject[Player_num] = nullptr;
+			new_subsys = ship_get_subsys(shipp, subsys_name);
 		}
-	} else {
-		shipp->last_targeted_subobject[Player_num] = nullptr;
 	}
-	// set_target_objnum will call hud_restore_subsystem_target which reads last_targeted_subobject
-	set_target_objnum(Player_ai, objnum);
+    set_target_objnum(Player_ai, objnum);
+    set_targeted_subsys(Player_ai, new_subsys, objnum);
 }
 
 // Luytenky
@@ -28101,7 +28106,7 @@ void add_to_event_log_buffer(int node, int op_num, int result)
 		}
 	}
 
-	Current_event_log_buffer->push_back(tmp);
+	Current_event_log_buffer->push_back(std::move(tmp));
 }
 
 /**
@@ -32052,35 +32057,35 @@ int query_operator_return_type(int op)
  * @param op operator index
  * @param argnum is 0 indexed.
  */
-int query_operator_argument_type(int op, int argnum)
+int query_operator_argument_type(int op_index, int argnum)
 {
-	if (op < 0)
+	if (op_index < 0)
 		return OPF_NONE;
 
-	int index = op;
-
-	if (op < FIRST_OP)
+	int op_const;
+	if (op_index < FIRST_OP)
 	{
-		Assertion(SCP_vector_inbounds(Operators, index), "Operator index is out of bounds!");
-		op = Operators[index].value;
+		Assertion(SCP_vector_inbounds(Operators, op_index), "Operator index is out of bounds!");
+		op_const = Operators[op_index].value;
 	}
 	else
 	{
 		Warning(LOCATION, "Possible unnecessary search for operator index.  Trace out and see if this is necessary.\n");
+		op_const = op_index;
 
-		int count = static_cast<int>(Operators.size());
-		for (index=0; index<count; index++)
-			if (Operators[index].value == op)
+		int count = sz2i(Operators.size());
+		for (op_index=0; op_index<count; op_index++)
+			if (Operators[op_index].value == op_const)
 				break;
 
-		if (index >= count)
+		if (op_index >= count)
 			return OPF_NONE;
 	}
 
-	if (argnum >= Operators[index].max)
+	if (argnum >= Operators[op_index].max)
 		return OPF_NONE;
 
-	switch (op) {
+	switch (op_const) {
 		case OP_TRUE:
 		case OP_FALSE:
 		case OP_MISSION_TIME:
@@ -33314,7 +33319,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_SEND_MESSAGE_CHAIN:
 		{
 			// chain has one extra argument but is otherwise the same
-			if (op == OP_SEND_MESSAGE_CHAIN)
+			if (op_const == OP_SEND_MESSAGE_CHAIN)
 			{
 				if (argnum == 0)
 					return OPF_EVENT_NAME;
@@ -34937,12 +34942,12 @@ int query_operator_argument_type(int op, int argnum)
 			return OPF_POSITIVE;
 
 		default: {
-			auto dynamicSEXP = sexp::get_dynamic_sexp(op);
+			auto dynamicSEXP = sexp::get_dynamic_sexp(op_const);
 			if (dynamicSEXP != nullptr) {
 				return dynamicSEXP->getArgumentType(argnum);
 			}
 
-			Assertion(false, "query_operator_argument_type(%d, %d) called for unsupported operator type!", op, argnum);
+			Assertion(false, "query_operator_argument_type(%d, %d) called for unsupported operator type!", op_const, argnum);
 		}
 	}
 

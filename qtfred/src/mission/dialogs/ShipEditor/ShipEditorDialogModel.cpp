@@ -79,58 +79,62 @@ int ShipEditorDialogModel::getIfPlayerShip() const
 {
 	return player_ship;
 }
-std::vector<std::pair<SCP_string, bool>> ShipEditorDialogModel::getAcceptedOrders() const
-{
-	std::vector<std::pair<SCP_string, bool>> acceptedOrders;
-	object* objp;
-	SCP_set<size_t> default_orders;
-	if (!multi_edit) {
-		default_orders = ship_get_default_orders_accepted(&Ship_info[Ships[_editor->cur_ship].ship_info_index]);
-	} else {
-		for (objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
-			if (((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) &&
-				(objp->flags[Object::Object_Flags::Marked])) {
-				const SCP_set<size_t>& these_orders =
-					ship_get_default_orders_accepted(&Ship_info[Ships[objp->instance].ship_info_index]);
 
-				if (default_orders.empty()) {
-					default_orders = these_orders;
-				} else {
-					Assert(default_orders == these_orders);
-				}
+SCP_vector<std::pair<SCP_string, int>> ShipEditorDialogModel::getPlayerOrders()
+{
+	SCP_vector<std::pair<SCP_string, int>> orders;
+
+	// Build the canonical default order set from marked ships (caller guarantees all marked ships share it)
+	SCP_set<size_t> default_orders;
+	object* objp;
+	for (objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
+		if (((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) && (objp->flags[Object::Object_Flags::Marked])) {
+			const SCP_set<size_t>& these_orders =
+				ship_get_default_orders_accepted(&Ship_info[Ships[objp->instance].ship_info_index]);
+			if (default_orders.empty()) {
+				default_orders = these_orders;
+			} else {
+				Assert(default_orders == these_orders);
 			}
 		}
 	}
 
 	for (size_t order_id : default_orders) {
 		SCP_string name = Player_orders[order_id].localized_name;
-		bool state = false;
-		const SCP_set<size_t>& orders_accepted = Ships[_editor->cur_ship].orders_accepted;
-		if (orders_accepted.contains(order_id))
-			state = true;
-		acceptedOrders.emplace_back(name, state);
+		int state = -1;
+		for (objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
+			if (((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) &&
+				(objp->flags[Object::Object_Flags::Marked])) {
+				int ship_state = Ships[objp->instance].orders_accepted.contains(order_id) ? Qt::Checked : Qt::Unchecked;
+				state = (state == -1) ? ship_state : tristate_set(ship_state, state);
+			}
+		}
+		orders.emplace_back(name, (state == -1) ? Qt::Unchecked : state);
 	}
-	return acceptedOrders;
+
+	return orders;
 }
-void ShipEditorDialogModel::setAcceptedOrders(const std::vector<std::pair<SCP_string, bool>>& newOrders)
+
+void ShipEditorDialogModel::applyPlayerOrders(const SCP_vector<std::pair<SCP_string, int>>& orders)
 {
-	orders = newOrders;
-	// Write directly to all marked ships
-	for (auto* ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
+	object* ptr;
+	for (ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
 		if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && (ptr->flags[Object::Object_Flags::Marked])) {
 			auto i = ptr->instance;
 			SCP_set<size_t> default_orders = ship_get_default_orders_accepted(&Ship_info[Ships[i].ship_info_index]);
-			SCP_set<size_t> new_orders_set;
 			for (size_t order_id : default_orders) {
-				for (const auto& order : orders) {
-					if (order.first == Player_orders[order_id].localized_name) {
-						if (order.second) {
-							new_orders_set.insert(order_id);
+				for (const auto& [name, state] : orders) {
+					if (name == Player_orders[order_id].localized_name) {
+						if (state == Qt::Checked) {
+							Ships[i].orders_accepted.insert(order_id);
+						} else if (state == Qt::Unchecked) {
+							Ships[i].orders_accepted.erase(order_id);
 						}
+						// Qt::PartiallyChecked: leave each ship's existing state unchanged
+						break;
 					}
 				}
 			}
-			Ships[i].orders_accepted = new_orders_set;
 		}
 	}
 	set_modified();
@@ -531,6 +535,7 @@ void ShipEditorDialogModel::initializeData()
 	}
 
 	modelChanged();
+	_modified = false;
 }
 
 std::vector<std::pair<SCP_string, bool>> ShipEditorDialogModel::getArrivalPaths() const
@@ -546,8 +551,9 @@ std::vector<std::pair<SCP_string, bool>> ShipEditorDialogModel::getArrivalPaths(
 	auto m_path_mask = Ships[single_ship].arrival_path_mask;
 
 	for (int i = 0; i < m_num_paths; i++) {
-		SCP_string name("Path ");
-		name += i2ch(i + 1);
+		int path_id = m_model->ship_bay->path_indexes[i];
+		const char* raw_name = m_model->paths[path_id].name;
+		SCP_string name = (raw_name && raw_name[0]) ? SCP_string{raw_name} : SCP_string{"<unnamed path>"};
 		bool allowed;
 		if (m_path_mask == 0) {
 			allowed = true;
@@ -571,8 +577,9 @@ std::vector<std::pair<SCP_string, bool>> ShipEditorDialogModel::getDeparturePath
 	auto m_path_mask = Ships[single_ship].departure_path_mask;
 
 	for (int i = 0; i < m_num_paths; i++) {
-		SCP_string name("Path ");
-		name += i2ch(i + 1);
+		int path_id = m_model->ship_bay->path_indexes[i];
+		const char* raw_name = m_model->paths[path_id].name;
+		SCP_string name = (raw_name && raw_name[0]) ? SCP_string{raw_name} : SCP_string{"<unnamed path>"};
 		bool allowed;
 		if (m_path_mask == 0) {
 			allowed = true;

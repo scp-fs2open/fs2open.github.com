@@ -4171,7 +4171,7 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 			{
 				SCP_string temp;
 				sprintf(temp, XSTR("%s is unable to carry %s weaponry", 1629), ship_name, wep_display_name);
-				error_messages.push_back(temp);
+				error_messages.push_back(std::move(temp));
 
 				error_flag = true;
 				continue;
@@ -4187,7 +4187,7 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 						sprintf(temp, XSTR("%s is unable to carry %s weaponry in primary bank %d", 1630), ship_name, wep_display_name, cur_bank+1);
 					else
 						sprintf(temp, XSTR("%s is unable to carry %s weaponry in secondary bank %d", 1631), ship_name, wep_display_name, cur_bank+1-MAX_SHIP_PRIMARY_BANKS);
-					error_messages.push_back(temp);
+					error_messages.push_back(std::move(temp));
 
 					error_flag = true;
 					continue;
@@ -4202,7 +4202,7 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 			{
 				SCP_string temp;
 				sprintf(temp, XSTR("Insufficient %s available to arm %s", 1632), Weapon_info[weapon_type_to_add].get_display_name(), ship_name);
-				error_messages.push_back(temp);
+				error_messages.push_back(std::move(temp));
 
 				error_flag = true;
 				continue;

@@ -75,6 +75,7 @@ void ObjectOrientEditorDialogModel::initializeData()
 	}
 
 	modelChanged();
+	_modified = false;
 }
 
 void ObjectOrientEditorDialogModel::updateObject(object* ptr)

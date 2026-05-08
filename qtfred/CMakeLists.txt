@@ -8,7 +8,7 @@ SET(QT5_INSTALL_ROOT "" CACHE PATH
 
 list(APPEND CMAKE_PREFIX_PATH "${QT5_INSTALL_ROOT}")
 
-find_package(Qt5 COMPONENTS Widgets OpenGL REQUIRED)
+find_package(Qt5 COMPONENTS Widgets OpenGL Help REQUIRED)
 
 include(source_groups.cmake)
 
@@ -56,7 +56,7 @@ set(CMAKE_MAP_IMPORTED_CONFIG_FASTDEBUG Release Debug)
 target_link_libraries(qtfred
     PUBLIC
     code
-    Qt5::Widgets Qt5::OpenGL)
+    Qt5::Widgets Qt5::OpenGL Qt5::Help)
 
 include(CreateLaunchers)
 create_target_launcher(qtfred
@@ -71,6 +71,66 @@ INSTALL(
     COMPONENT "qtFRED"
 )
 COPY_FILES_TO_TARGET(qtfred)
+
+# --- QtFRED built-in help ---
+get_target_property(_QTFRED_QMAKE Qt5::qmake IMPORTED_LOCATION)
+execute_process(
+    COMMAND "${_QTFRED_QMAKE}" -query QT_INSTALL_BINS
+    OUTPUT_VARIABLE _QTFRED_QT_BINS
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
+execute_process(
+    COMMAND "${_QTFRED_QMAKE}" -query QT_INSTALL_LIBS
+    OUTPUT_VARIABLE _QTFRED_QT_LIBS
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
+find_program(QHELPGENERATOR_EXECUTABLE
+    NAMES qhelpgenerator
+    HINTS "${_QTFRED_QT_BINS}"
+    REQUIRED)
+
+set(QTFRED_HELP_QHP "${CMAKE_CURRENT_SOURCE_DIR}/help-src/doc/qtfred.qhp")
+set(QTFRED_HELP_QCH "${CMAKE_CURRENT_BINARY_DIR}/qtfred_help.qch")
+
+file(GLOB_RECURSE QTFRED_HELP_SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/help-src/doc/*.html"
+    "${CMAKE_CURRENT_SOURCE_DIR}/help-src/doc/*.css"
+    "${CMAKE_CURRENT_SOURCE_DIR}/help-src/doc/*.qhp")
+
+# qhelpgenerator is a Qt application and needs a platform plugin at build time.
+# On headless Linux CI the Qt platform plugins fail to dlopen because the Qt
+# shared libs are not in LD_LIBRARY_PATH for dlopen-loaded plugins (DT_RUNPATH
+# in the main binary does not propagate to dlopen). Pass the Qt lib dir and
+# force the offscreen (no-display) platform explicitly.
+add_custom_command(
+    OUTPUT "${QTFRED_HELP_QCH}"
+    COMMAND ${CMAKE_COMMAND} -E env
+        "QT_QPA_PLATFORM=offscreen"
+        "LD_LIBRARY_PATH=${_QTFRED_QT_LIBS}"
+        "${QHELPGENERATOR_EXECUTABLE}" "${QTFRED_HELP_QHP}" -o "${QTFRED_HELP_QCH}"
+    DEPENDS ${QTFRED_HELP_SOURCES}
+    COMMENT "Compiling QtFRED help (qtfred_help.qch)"
+    VERBATIM)
+
+add_custom_target(qtfred_help
+    DEPENDS "${QTFRED_HELP_QCH}"
+    SOURCES ${QTFRED_HELP_SOURCES})
+
+add_dependencies(qtfred qtfred_help)
+
+source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/help-src"
+    PREFIX "help-src"
+    FILES ${QTFRED_HELP_SOURCES})
+
+add_custom_command(TARGET qtfred_help POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:qtfred>/help"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${QTFRED_HELP_QCH}"
+        "$<TARGET_FILE_DIR:qtfred>/help/qtfred_help.qch"
+    VERBATIM)
+
+install(FILES "${QTFRED_HELP_QCH}"
+    DESTINATION ${BINARY_DESTINATION}/help
+    COMPONENT "qtFRED")
+# --- end QtFRED built-in help ---
 
 enable_clang_tidy(qtfred)
 
@@ -118,6 +178,19 @@ if (WIN32)
 
     install(FILES ${qwindows_path}
         DESTINATION ${BINARY_DESTINATION}/platforms
+        COMPONENT "qtFRED"
+    )
+
+    # Qt Help requires the SQLite SQL driver
+    set(qsqlite_path "${QT_INSTALL_PLUGINS}/sqldrivers/qsqlite$<$<CONFIG:Debug>:d>.dll")
+
+    add_custom_command(TARGET qtfred
+        POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${qsqlite_path}" "$<TARGET_FILE_DIR:qtfred>/sqldrivers/qsqlite$<$<CONFIG:Debug>:d>.dll"
+    VERBATIM)
+
+    install(FILES ${qsqlite_path}
+        DESTINATION ${BINARY_DESTINATION}/sqldrivers
         COMPONENT "qtFRED"
     )
 elseif(FSO_BUILD_APPIMAGE)

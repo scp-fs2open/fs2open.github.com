@@ -100,6 +100,7 @@ void VoiceActingManagerModel::initializeData()
 	_suffix = Suffix::WAV;
 	_includeSenderInFilename = false;
 	_whichPersonaToSync = 0;
+	_modified = false;
 }
 
 SCP_vector<SCP_string> VoiceActingManagerModel::personaChoices()

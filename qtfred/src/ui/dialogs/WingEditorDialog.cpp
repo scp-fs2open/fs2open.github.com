@@ -4,7 +4,6 @@
 #include "General/ImagePickerDialog.h"
 #include "ShipEditor/ShipGoalsDialog.h"
 #include "ShipEditor/ShipCustomWarpDialog.h"
-#include "WingFlagsDialog.h"
 
 #include "ui_WingEditorDialog.h"
 
@@ -373,7 +372,7 @@ void WingEditorDialog::on_wingLeaderCombo_currentIndexChanged(int index)
 	_model->setWingLeaderIndex(index);
 }
 
-void WingEditorDialog::on_numberOfWavesSpinBox_valueChanged(int value)
+void WingEditorDialog::on_numWavesSpinBox_valueChanged(int value)
 {
 	_model->setNumberOfWaves(value);
 	ui->waveThresholdSpinBox->setMaximum(_model->getMaxWaveThreshold());
@@ -485,9 +484,24 @@ void WingEditorDialog::on_initialOrdersButton_clicked()
 
 void WingEditorDialog::on_wingFlagsButton_clicked()
 {
-	WingFlagsDialog dlg(this, _model->getWingFlags(), _model->getWingFlagDescriptions());
+	QVector<std::pair<QString, int>> qtFlags;
+	for (const auto& f : _model->getWingFlags())
+		qtFlags.append({QString::fromUtf8(f.first.c_str()), f.second ? Qt::Checked : Qt::Unchecked});
+
+	QVector<std::pair<QString, QString>> qtDescs;
+	for (const auto& d : _model->getWingFlagDescriptions())
+		qtDescs.append({QString::fromUtf8(d.first.c_str()), QString::fromUtf8(d.second.c_str())});
+
+	dialogs::CheckBoxListDialog dlg(this);
+	dlg.setCaption(tr("Wing Flags"));
+	dlg.setOptions(qtFlags);
+	dlg.setOptionDescriptions(qtDescs);
+
 	if (dlg.exec() == QDialog::Accepted) {
-		_model->setWingFlags(dlg.getFlags());
+		std::vector<std::pair<SCP_string, bool>> result;
+		for (const auto& f : dlg.getFlags())
+			result.emplace_back(f.first.toUtf8().constData(), f.second == Qt::Checked);
+		_model->setWingFlags(result);
 	}
 }
 

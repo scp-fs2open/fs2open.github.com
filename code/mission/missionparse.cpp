@@ -5338,7 +5338,7 @@ void resolve_path_masks(bool path_user_is_ship, const char *path_user, anchor_t 
 	// uninitialized; compute the mask from scratch
 	if (prp->cached_mask & (1 << MAX_SHIP_BAY_PATHS))
 	{
-		int j, bay_path, modelnum;
+		int j, bay_path;
 
 		// get anchor ship
 		Assertion(anchor.isValid() && !(anchor.value() & ANCHOR_SPECIAL_ARRIVAL), "%s %s anchor %d is invalid or is a special arrival.  Get a coder!", path_user_is_ship ? "Ship" : "Wing", path_user, anchor.value());
@@ -5347,13 +5347,13 @@ void resolve_path_masks(bool path_user_is_ship, const char *path_user, anchor_t 
 
 		// Load the anchor ship model with subsystems and all; it'll need to be done for this mission anyway
 		auto anchor_sip = anchor_ship_entry->sip();
-		modelnum = model_load(anchor_sip->pof_file, anchor_sip);
+		anchor_sip->model_num = model_load(anchor_sip->pof_file, anchor_sip);
 
 		// resolve names to indexes
 		*path_mask = 0;
 		for	(j = 0; j < prp->num_paths; j++)
 		{
-			bay_path = model_find_bay_path(modelnum, prp->path_names[j]);
+			bay_path = model_find_bay_path(anchor_sip->model_num, prp->path_names[j]);
 			if (bay_path < 0)
 				continue;
 
@@ -6393,7 +6393,11 @@ void parse_asteroid_fields(mission *pm)
 				if (optional_string("+Field Debris Type:")) {
 					int subtype;
 					stuff_int(&subtype);
-					Asteroid_field.field_asteroid_type.push_back(colors[subtype]);
+					if (subtype >= 0 && subtype < NUM_ASTEROID_SIZES) {
+						Asteroid_field.field_asteroid_type.push_back(colors[subtype]);
+					} else {
+						WarningEx(LOCATION, "Invalid +Field Debris Type value %d in asteroid field (must be 0-%d); ignoring.", subtype, NUM_ASTEROID_SIZES - 1);
+					}
 				}
 			}
 
@@ -6424,7 +6428,7 @@ void parse_asteroid_fields(mission *pm)
 				}
 
 				if (valid){
-					Asteroid_field.field_asteroid_type.push_back(ast_name);
+					Asteroid_field.field_asteroid_type.push_back(std::move(ast_name));
 				} else {
 					WarningEx(LOCATION, "Mission %s\n Invalid asteroid %s!", pm->name, ast_name.c_str());
 				}
@@ -6668,7 +6672,7 @@ void parse_custom_data(mission* pm)
 			required_string("+String:");
 			stuff_string(cs.text, F_MULTITEXT);
 
-			pm->custom_strings.push_back(cs);
+			pm->custom_strings.push_back(std::move(cs));
 		}
 
 		required_string("$end_custom_strings");
@@ -7071,7 +7075,9 @@ bool post_process_mission(mission *pm)
 
 				if (valid) {
 					ship_info* sip = &Ship_info[icon.ship_class];
-					stage.icons[j].modelnum = model_load(sip->pof_file, sip);
+					int modelnum = model_load(sip->pof_file, sip);
+					stage.icons[j].modelnum = modelnum;
+					sip->model_num = modelnum;
 				}
 			}
 		}
@@ -8940,10 +8946,10 @@ void check_anchor_for_hangar_bay(SCP_string &message, SCP_set<anchor_t> &anchors
 	{
 		// Load the anchor ship model with subsystems and all; it'll need to be done for this mission anyway
 		auto anchor_sip = anchor_ship_entry->sip();
-		int modelnum = model_load(anchor_sip->pof_file, anchor_sip);
+		anchor_sip->model_num = model_load(anchor_sip->pof_file, anchor_sip);
 
 		// Check if this model has a hangar bay
-		if (!model_has_hangar_bay(modelnum))
+		if (!model_has_hangar_bay(anchor_sip->model_num))
 		{
 			sprintf(message, "%s (%s) is used as a%s anchor by %s %s (and possibly elsewhere too), but it does not have a hangar bay!", anchor_ship_entry->name,
 				anchor_sip->name, is_arrival ? "n arrival" : " departure", other_is_ship ? "ship" : "wing", other_name);

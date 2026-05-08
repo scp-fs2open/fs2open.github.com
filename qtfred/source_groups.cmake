@@ -104,6 +104,8 @@ add_file_folder("Source/Mission/Dialogs"
 	src/mission/dialogs/WaypointPathGeneratorDialogModel.h
 	src/mission/dialogs/WingEditorDialogModel.cpp
 	src/mission/dialogs/WingEditorDialogModel.h
+	src/mission/dialogs/HelpTopicsDialogModel.cpp
+	src/mission/dialogs/HelpTopicsDialogModel.h
 )
 add_file_folder("Source/Mission/Dialogs/MissionSpecs"
 	src/mission/dialogs/MissionSpecs/CustomDataDialogModel.cpp
@@ -170,6 +172,8 @@ add_file_folder("Source/UI/Dialogs"
 	src/ui/dialogs/FormWingDialog.h
 	src/ui/dialogs/GlobalShipFlagsDialog.cpp
 	src/ui/dialogs/GlobalShipFlagsDialog.h
+	src/ui/dialogs/HelpTopicsDialog.cpp
+	src/ui/dialogs/HelpTopicsDialog.h
 	src/ui/dialogs/JumpNodeEditorDialog.cpp
 	src/ui/dialogs/JumpNodeEditorDialog.h
 	src/ui/dialogs/LayerManagerDialog.cpp
@@ -216,9 +220,8 @@ add_file_folder("Source/UI/Dialogs"
 	src/ui/dialogs/WaypointPathGeneratorDialog.h
 	src/ui/dialogs/WingEditorDialog.cpp
 	src/ui/dialogs/WingEditorDialog.h
-	src/ui/dialogs/WingFlagsDialog.cpp
-	src/ui/dialogs/WingFlagsDialog.h
 )
+
 add_file_folder("Source/UI/Dialogs/BriefingEditor"
 	src/ui/dialogs/BriefingEditor/CameraCoordinatesDialog.cpp
 	src/ui/dialogs/BriefingEditor/CameraCoordinatesDialog.h
@@ -372,8 +375,8 @@ add_file_folder("UI"
 	ui/ShipAltShipClass.ui
 	ui/ShipWeaponsDialog.ui
 	ui/VariableDialog.ui
+	ui/HelpTopicsDialog.ui
 	ui/WingEditorDialog.ui
-	ui/WingFlagsDialog.ui
 	ui/SaveAsTemplateDialog.ui
 	ui/SceneBrowserPanel.ui
 	ui/TemplateBrowserDialog.ui

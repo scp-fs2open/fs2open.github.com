@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<QtHelpProject version="1.0">
+    <namespace>org.hard-light.qtfred</namespace>
+    <virtualFolder>doc</virtualFolder>
+
+    <filterSection>
+        <toc>
+            <section title="Quickstart" ref="quickstart.html"/>
+                <section title="Fundamentals" ref="fundamentals.html"/>
+                <section title="Concepts">
+                    <section title="AI"              ref="concepts/ai.html"/>
+                    <section title="Campaign Flow"   ref="concepts/campaign-flow.html"/>
+                    <section title="IFF &amp; Teams" ref="concepts/iff.html"/>
+                    <section title="Messages"        ref="concepts/messages.html"/>
+                    <section title="SEXPs"           ref="concepts/sexps.html"/>
+                </section>
+                <section title="General">
+                    <section title="Layer Manager"  ref="general/LayerManagerDialog.html"/>
+                    <section title="Preferences"    ref="general/PreferencesDialog.html"/>
+                    <section title="Scene Browser"  ref="general/SceneBrowserDialog.html"/>
+                    <section title="Toolbars"       ref="general/Toolbars.html"/>
+                    <section title="Viewport"       ref="general/Viewport.html"/>
+                </section>
+                <section title="Dialogs">
+                <section title="Environment">
+                    <section title="Asteroid Editor"        ref="dialogs/AsteroidEditorDialog.html"/>
+                    <section title="Background Editor"      ref="dialogs/BackgroundEditorDialog.html"/>
+                    <section title="Volumetric Nebula"      ref="dialogs/VolumetricNebulaDialog.html"/>
+                </section>
+                <section title="Mission">
+                    <section title="Mission Cutscenes"          ref="dialogs/MissionCutscenesDialog.html"/>
+                    <section title="Mission Events"             ref="dialogs/MissionEventsDialog.html"/>
+                    <section title="Mission Goals"              ref="dialogs/MissionGoalsDialog.html"/>
+                    <section title="Mission Specs"              ref="dialogs/MissionSpecsDialog.html">
+                        <section title="Custom Data"            ref="dialogs/CustomDataDialog.html"/>
+                        <section title="Custom Strings"         ref="dialogs/CustomStringsDialog.html"/>
+                        <section title="Custom Wing Names"      ref="dialogs/CustomWingNamesDialog.html"/>
+                        <section title="Sound Environment"      ref="dialogs/SoundEnvironmentDialog.html"/>
+                    </section>
+                    <section title="Mission Statistics"         ref="dialogs/MissionStatsDialog.html"/>
+                    <section title="Reinforcements"             ref="dialogs/ReinforcementsEditorDialog.html"/>
+                    <section title="Shield System"              ref="dialogs/ShieldSystemDialog.html"/>
+                    <section title="Team Loadout"               ref="dialogs/TeamLoadoutDialog.html"/>
+                    <section title="Variables &amp; Containers" ref="dialogs/VariablesAndContainersDialog.html"/>
+                </section>
+                <section title="Narrative">
+                    <section title="Briefing Editor"        ref="dialogs/BriefingEditorDialog.html"/>
+                    <section title="Campaign Editor"        ref="dialogs/CampaignEditorDialog.html">
+                        <section title="Custom Data"        ref="dialogs/CustomDataDialog.html"/>
+                    </section>
+                    <section title="Command Briefing"       ref="dialogs/CommandBriefingDialog.html"/>
+                    <section title="Debriefing"             ref="dialogs/DebriefingDialog.html"/>
+                    <section title="Fiction Viewer"         ref="dialogs/FictionViewerDialog.html"/>
+                </section>
+                <section title="Objects">
+                    <section title="Jump Node Editor"       ref="dialogs/JumpNodeEditorDialog.html"/>
+                    <section title="Object Orientation"     ref="dialogs/ObjectOrientEditorDialog.html"/>
+                    <section title="Prop Editor"            ref="dialogs/PropEditorDialog.html"/>
+                    <section title="Ship Editor"            ref="dialogs/ShipEditorDialog.html">
+                        <section title="Alt Ship Class"         ref="dialogs/ShipAltShipClass.html"/>
+                        <section title="Custom Warp Params"     ref="dialogs/ShipCustomWarpDialog.html"/>
+                        <section title="Initial Orders"         ref="dialogs/ShipInitialOrdersDialog.html"/>
+                        <section title="Initial Status"         ref="dialogs/ShipInitialStatusDialog.html"/>
+                        <section title="Player Orders"          ref="dialogs/ShipPlayerOrdersDialog.html"/>
+                        <section title="Ship Flags"             ref="dialogs/ShipFlagsDialog.html"/>
+                        <section title="Ship Weapons"           ref="dialogs/ShipWeaponsDialog.html"/>
+                        <section title="Special Stats"          ref="dialogs/ShipSpecialStatsDialog.html"/>
+                        <section title="Texture Replacement"    ref="dialogs/ShipTextureReplacementDialog.html"/>
+                    </section>
+                    <section title="Waypoint Editor"        ref="dialogs/WaypointEditorDialog.html"/>
+                    <section title="Wing Editor"            ref="dialogs/WingEditorDialog.html">
+                        <section title="Custom Warp Params"  ref="dialogs/ShipCustomWarpDialog.html"/>
+                        <section title="Initial Orders"      ref="dialogs/ShipInitialOrdersDialog.html"/>
+                    </section>
+                </section>
+                <section title="Tools">
+                    <section title="Calculate Relative Coordinates" ref="dialogs/RelativeCoordinatesDialog.html"/>
+                    <section title="Error Checker"                  ref="dialogs/ErrorCheckerDialog.html"/>
+                    <section title="Global Ship Flags"              ref="dialogs/GlobalShipFlagsDialog.html"/>
+                    <section title="Music Player"                   ref="dialogs/MusicPlayerDialog.html"/>
+                    <section title="Voice Acting Manager"           ref="dialogs/VoiceActingManager.html"/>
+                    <section title="Waypoint Path Generator"        ref="dialogs/WaypointPathGeneratorDialog.html"/>
+                </section>
+                </section><!-- end Dialogs -->
+        </toc>
+
+        <keywords>
+            <!-- Conceptual pages — dot-namespaced to avoid collision with class names -->
+            <keyword name="SEXPs"                   id="concept.sexp"               ref="concepts/sexps.html"/>
+            <keyword name="IFF &amp; Teams"         id="concept.iff"                ref="concepts/iff.html"/>
+            <keyword name="AI"                      id="concept.ai"                 ref="concepts/ai.html"/>
+            <keyword name="Messages"                id="concept.messages"           ref="concepts/messages.html"/>
+            <keyword name="Campaign Flow"           id="concept.campaignflow"       ref="concepts/campaign-flow.html"/>
+            <keyword name="Viewport"                id="concept.viewport"           ref="general/Viewport.html"/>
+            <keyword name="Toolbars"                id="concept.toolbar"            ref="general/Toolbars.html"/>
+            <keyword name="Custom Data"             id="CustomDataDialog"           ref="dialogs/CustomDataDialog.html"/>
+            <keyword name="Quickstart"              id="concept.quickstart"         ref="quickstart.html"/>
+
+            <!-- Dialogs — id matches the unqualified C++ class name exactly -->
+            <keyword name="Asteroid Editor"         id="AsteroidEditorDialog"           ref="dialogs/AsteroidEditorDialog.html"/>
+            <keyword name="Background Editor"       id="BackgroundEditorDialog"         ref="dialogs/BackgroundEditorDialog.html"/>
+            <keyword name="Briefing Editor"         id="BriefingEditorDialog"           ref="dialogs/BriefingEditorDialog.html"/>
+            <keyword name="Campaign Editor"         id="CampaignEditorDialog"           ref="dialogs/CampaignEditorDialog.html"/>
+            <keyword name="Command Briefing"        id="CommandBriefingDialog"          ref="dialogs/CommandBriefingDialog.html"/>
+            <keyword name="Debriefing"              id="DebriefingDialog"               ref="dialogs/DebriefingDialog.html"/>
+            <keyword name="Event Editor"            id="EventEditor"                    ref="dialogs/EventEditor.html"/>
+            <keyword name="Fiction Viewer"          id="FictionViewerDialog"            ref="dialogs/FictionViewerDialog.html"/>
+            <keyword name="Global Ship Flags"       id="GlobalShipFlagsDialog"          ref="dialogs/GlobalShipFlagsDialog.html"/>
+            <keyword name="Jump Node Editor"        id="JumpNodeEditorDialog"           ref="dialogs/JumpNodeEditorDialog.html"/>
+            <keyword name="Layer Manager"           id="LayerManagerDialog"             ref="general/LayerManagerDialog.html"/>
+            <keyword name="Mission Cutscenes"       id="MissionCutscenesDialog"         ref="dialogs/MissionCutscenesDialog.html"/>
+            <keyword name="Mission Events"          id="MissionEventsDialog"            ref="dialogs/MissionEventsDialog.html"/>
+            <keyword name="Mission Goals"           id="MissionGoalsDialog"             ref="dialogs/MissionGoalsDialog.html"/>
+            <keyword name="Mission Specs"           id="MissionSpecDialog"              ref="dialogs/MissionSpecsDialog.html"/>
+            <keyword name="Custom Wing Names"       id="CustomWingNamesDialog"          ref="dialogs/CustomWingNamesDialog.html"/>
+            <keyword name="Sound Environment"       id="SoundEnvironmentDialog"         ref="dialogs/SoundEnvironmentDialog.html"/>
+            <keyword name="Custom Strings"          id="CustomStringsDialog"            ref="dialogs/CustomStringsDialog.html"/>
+            <keyword name="Mission Statistics"      id="MissionStatsDialog"             ref="dialogs/MissionStatsDialog.html"/>
+            <keyword name="Music Player"            id="MusicPlayerDialog"              ref="dialogs/MusicPlayerDialog.html"/>
+            <keyword name="Object Orientation"      id="ObjectOrientEditorDialog"       ref="dialogs/ObjectOrientEditorDialog.html"/>
+            <keyword name="Preferences"             id="PreferencesDialog"              ref="general/PreferencesDialog.html"/>
+            <keyword name="Scene Browser"           id="SceneBrowserDialog"             ref="general/SceneBrowserDialog.html"/>
+            <keyword name="Prop Editor"             id="PropEditorDialog"               ref="dialogs/PropEditorDialog.html"/>
+            <keyword name="Calculate Relative Coordinates" id="RelativeCoordinatesDialog" ref="dialogs/RelativeCoordinatesDialog.html"/>
+            <keyword name="Reinforcements"          id="ReinforcementsEditorDialog"     ref="dialogs/ReinforcementsEditorDialog.html"/>
+            <keyword name="Shield System"           id="ShieldSystemDialog"             ref="dialogs/ShieldSystemDialog.html"/>
+            <keyword name="Ship Editor"             id="ShipEditorDialog"               ref="dialogs/ShipEditorDialog.html"/>
+            <keyword name="Ship Alt Class"          id="ShipAltShipClass"               ref="dialogs/ShipAltShipClass.html"/>
+            <keyword name="Custom Warp Params"      id="ShipCustomWarpDialog"           ref="dialogs/ShipCustomWarpDialog.html"/>
+            <keyword name="Ship Flags"              id="ShipFlagsDialog"                ref="dialogs/ShipFlagsDialog.html"/>
+            <keyword name="Ship Initial Orders"     id="ShipInitialOrdersDialog"        ref="dialogs/ShipInitialOrdersDialog.html"/>
+            <keyword name="Ship Initial Status"     id="ShipInitialStatusDialog"        ref="dialogs/ShipInitialStatusDialog.html"/>
+            <keyword name="Player Orders"           id="ShipPlayerOrdersDialog"         ref="dialogs/ShipPlayerOrdersDialog.html"/>
+            <keyword name="Ship Special Stats"      id="ShipSpecialStatsDialog"         ref="dialogs/ShipSpecialStatsDialog.html"/>
+            <keyword name="Texture Replacement"     id="ShipTextureReplacementDialog"   ref="dialogs/ShipTextureReplacementDialog.html"/>
+            <keyword name="Ship Weapons"            id="ShipWeaponsDialog"              ref="dialogs/ShipWeaponsDialog.html"/>
+            <keyword name="Team Loadout"            id="TeamLoadoutDialog"              ref="dialogs/TeamLoadoutDialog.html"/>
+            <keyword name="Error Checker"           id="ErrorCheckerDialog"             ref="dialogs/ErrorCheckerDialog.html"/>
+            <keyword name="Variables &amp; Containers" id="VariableDialog"              ref="dialogs/VariablesAndContainersDialog.html"/>
+            <keyword name="Voice Acting Manager"    id="VoiceActingManager"             ref="dialogs/VoiceActingManager.html"/>
+            <keyword name="Volumetric Nebula"       id="VolumetricNebulaDialog"         ref="dialogs/VolumetricNebulaDialog.html"/>
+            <keyword name="Waypoint Editor"         id="WaypointEditorDialog"           ref="dialogs/WaypointEditorDialog.html"/>
+            <keyword name="Waypoint Path Generator" id="WaypointPathGeneratorDialog"    ref="dialogs/WaypointPathGeneratorDialog.html"/>
+            <keyword name="Wing Editor"             id="WingEditorDialog"               ref="dialogs/WingEditorDialog.html"/>
+            <keyword name="Wing Initial Orders"    id="WingInitialOrdersDialog"        ref="dialogs/ShipInitialOrdersDialog.html"/>
+        </keywords>
+
+        <files>
+            <file>index.html</file>
+            <file>quickstart.html</file>
+            <file>fundamentals.html</file>
+            <file>concepts/sexps.html</file>
+            <file>concepts/iff.html</file>
+            <file>concepts/ai.html</file>
+            <file>concepts/messages.html</file>
+            <file>concepts/campaign-flow.html</file>
+            <file>dialogs/CustomDataDialog.html</file>
+            <file>css/help.css</file>
+            <file>dialogs/AsteroidEditorDialog.html</file>
+            <file>dialogs/BackgroundEditorDialog.html</file>
+            <file>dialogs/BriefingEditorDialog.html</file>
+            <file>dialogs/CampaignEditorDialog.html</file>
+            <file>dialogs/CommandBriefingDialog.html</file>
+            <file>dialogs/DebriefingDialog.html</file>
+            <file>dialogs/ErrorCheckerDialog.html</file>
+            <file>dialogs/EventEditor.html</file>
+            <file>dialogs/FictionViewerDialog.html</file>
+            <file>dialogs/GlobalShipFlagsDialog.html</file>
+            <file>dialogs/JumpNodeEditorDialog.html</file>
+            <file>general/Viewport.html</file>
+            <file>general/Toolbars.html</file>
+            <file>general/LayerManagerDialog.html</file>
+            <file>general/SceneBrowserDialog.html</file>
+            <file>dialogs/MissionCutscenesDialog.html</file>
+            <file>dialogs/MissionEventsDialog.html</file>
+            <file>dialogs/MissionGoalsDialog.html</file>
+            <file>dialogs/MissionSpecsDialog.html</file>
+            <file>dialogs/CustomWingNamesDialog.html</file>
+            <file>dialogs/CustomStringsDialog.html</file>
+            <file>dialogs/SoundEnvironmentDialog.html</file>
+            <file>dialogs/MissionStatsDialog.html</file>
+            <file>dialogs/MusicPlayerDialog.html</file>
+            <file>dialogs/ObjectOrientEditorDialog.html</file>
+            <file>general/PreferencesDialog.html</file>
+            <file>dialogs/PropEditorDialog.html</file>
+            <file>dialogs/ReinforcementsEditorDialog.html</file>
+            <file>dialogs/RelativeCoordinatesDialog.html</file>
+            <file>dialogs/ShieldSystemDialog.html</file>
+            <file>dialogs/ShipEditorDialog.html</file>
+            <file>dialogs/ShipAltShipClass.html</file>
+            <file>dialogs/ShipCustomWarpDialog.html</file>
+            <file>dialogs/ShipFlagsDialog.html</file>
+            <file>dialogs/ShipInitialOrdersDialog.html</file>
+            <file>dialogs/ShipInitialStatusDialog.html</file>
+            <file>dialogs/ShipPlayerOrdersDialog.html</file>
+            <file>dialogs/ShipSpecialStatsDialog.html</file>
+            <file>dialogs/ShipTextureReplacementDialog.html</file>
+            <file>dialogs/ShipWeaponsDialog.html</file>
+            <file>dialogs/TeamLoadoutDialog.html</file>
+            <file>dialogs/VariablesAndContainersDialog.html</file>
+            <file>dialogs/VoiceActingManager.html</file>
+            <file>dialogs/VolumetricNebulaDialog.html</file>
+            <file>dialogs/WaypointEditorDialog.html</file>
+            <file>dialogs/WaypointPathGeneratorDialog.html</file>
+            <file>dialogs/WingEditorDialog.html</file>
+        </files>
+    </filterSection>
+</QtHelpProject>

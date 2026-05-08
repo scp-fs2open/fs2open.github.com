@@ -542,7 +542,7 @@ void shipfx_warpin_start( object *objp )
 		auto params = scripting::hook_param_list(scripting::hook_param("Self", 'o', objp));
 		auto conditions = scripting::hooks::ShipSourceConditions{ shipp };
 		if (OnWarpInHook->isOverride(conditions, params)) {
-			OnWarpInHook->run(conditions, params);
+			OnWarpInHook->run(conditions, std::move(params));
 			return;
 		}
 	}
@@ -562,7 +562,7 @@ void shipfx_warpin_start( object *objp )
 	{
 		auto params = scripting::hook_param_list(scripting::hook_param("Self", 'o', objp));
 		auto conditions = scripting::hooks::ShipSourceConditions{ shipp };
-		OnWarpInHook->run(conditions, params);
+		OnWarpInHook->run(conditions, std::move(params));
 	}
 }
 
@@ -705,7 +705,7 @@ void shipfx_warpout_start( object *objp )
 		auto params = scripting::hook_param_list(scripting::hook_param("Self", 'o', objp));
 		auto conditions = scripting::hooks::ShipSourceConditions{ shipp };
 		if (OnWarpOutHook->isOverride(conditions, params)) {
-			OnWarpOutHook->run(conditions, params);
+			OnWarpOutHook->run(conditions, std::move(params));
 			return;
 		}
 	}
@@ -747,7 +747,7 @@ void shipfx_warpout_start( object *objp )
 	if (OnWarpOutHook->isActive()) {
 		auto params = scripting::hook_param_list(scripting::hook_param("Self", 'o', objp));
 		auto conditions = scripting::hooks::ShipSourceConditions{ shipp };
-		OnWarpOutHook->run(conditions, params);
+		OnWarpOutHook->run(conditions, std::move(params));
 	}
 }
 
@@ -1097,7 +1097,7 @@ void shipfx_flash_create(object *objp, int model_num, vec3d *gun_pos, vec3d *gun
 				// spawn particle effect
 				auto particleSource = particle::ParticleManager::get()->createSource(Weapon_info[weapon_info_index].muzzle_effect);
 				//This should probably end up attached to the subobject, not the object, but it's not that much of a problem since primaries / secondaries rarely move.
-				particleSource->setHost(make_unique<EffectHostObject>(objp, *gun_pos, gunOrient, true));
+				particleSource->setHost(std::make_unique<EffectHostObject>(objp, *gun_pos, gunOrient, true));
 
 				auto *weapon_objp = &Objects[weapon_objnum];
 				auto *wp = &Weapons[weapon_objp->instance];

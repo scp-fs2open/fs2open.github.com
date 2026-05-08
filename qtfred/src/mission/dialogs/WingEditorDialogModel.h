@@ -133,6 +133,7 @@ class WingEditorDialogModel : public AbstractDialogModel {
 		void onEditorMissionChanged(); // missionChanged
 
 	private: // NOLINT(readability-redundant-access-specifiers)
+		void initializeData();
 		void reloadFromCurWing();
 		wing* getCurrentWing() const;
 		static std::vector<std::pair<SCP_string, bool>> getDockBayPathsForWingMask(uint32_t mask, int anchorShipnum);

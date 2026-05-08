@@ -181,7 +181,7 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, const vec3d* 
 			vm_vec_normalize(&normalized_center_to_subsys);
 			// spawn particle effect
 			auto source = particle::ParticleManager::get()->createSource(death_effect);
-			source->setHost(make_unique<EffectHostObject>(ship_objp, subsys_local_pos, vmd_identity_matrix));
+			source->setHost(std::make_unique<EffectHostObject>(ship_objp, subsys_local_pos, vmd_identity_matrix));
 			source->setTriggerRadius(psub->radius);
 			source->setNormal(normalized_center_to_subsys);
 			source->finishCreation();
@@ -1917,7 +1917,7 @@ void ship_hit_kill(object *ship_objp, object *other_obj, const vec3d *hitpos, fl
 				hitpos != nullptr));
 
 		if (scripting::hooks::OnShipDeath->isOverride(scripting::hooks::ShipDeathConditions{ sp }, onDeathParamList)) {
-			scripting::hooks::OnShipDeath->run(scripting::hooks::ShipDeathConditions{ sp }, onDeathParamList);
+			scripting::hooks::OnShipDeath->run(scripting::hooks::ShipDeathConditions{ sp }, std::move(onDeathParamList));
 			return;
 		}
 	}

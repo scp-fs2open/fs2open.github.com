@@ -126,6 +126,7 @@ void BriefingEditorDialogModel::initializeData()
 	_currentTeam = 0;
 	_currentStage = 0;
 	_currentIcon = -1;
+	_modified = false;
 }
 
 void BriefingEditorDialogModel::stopSpeech()
