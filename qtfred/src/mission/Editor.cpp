@@ -208,6 +208,12 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 	// activate the localizer hash table
 	fhash_flush();
 
+	// Clear the undo history before tearing down the current mission: command
+	// destructors free captured sexp chains, which must happen while the pool
+	// they were allocated from is still alive. This also covers fast reloads —
+	// history captured against the previous mission is invalid either way.
+	if (_undoStack) _undoStack->clear();
+
 	clearMission(flags & MPF_FAST_RELOAD);
 
 	std::string filepath = mission_name;
@@ -423,10 +429,6 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 	// which will then allow them to update any LuaEnums that may be related to sexps
 	if (scripting::hooks::FredOnMissionLoad->isActive()) {
 		scripting::hooks::FredOnMissionLoad->run();
-	}
-
-	if (!(flags & MPF_FAST_RELOAD)) {
-		// TODO(Phase 3): _undoStack->clear()
 	}
 
 	return true;
@@ -823,10 +825,11 @@ void Editor::fix_ship_name(int ship) {
 }
 
 void Editor::createNewMission() {
+	// Must precede clearMission() — see loadMission().
+	if (_undoStack) _undoStack->clear();
 	clearMission();
 	create_player(&vmd_zero_vector, &vmd_identity_matrix);
 	stars_post_level_init();
-	// TODO(Phase 3): _undoStack->clear()
 	missionLoaded("");
 }
 void Editor::hideMarkedObjects() {

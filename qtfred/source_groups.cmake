@@ -37,6 +37,11 @@ add_file_folder("Source/Mission"
     src/mission/util.h
 )
 
+add_file_folder("Source/Mission/Commands"
+    src/mission/commands/CameraTransformCommand.cpp
+    src/mission/commands/CameraTransformCommand.h
+)
+
 add_file_folder("Source/Mission/Dialogs"
     src/mission/dialogs/AbstractDialogModel.cpp
     src/mission/dialogs/AbstractDialogModel.h

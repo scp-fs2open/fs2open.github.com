@@ -12,6 +12,7 @@
 #include <QObject>
 #include <QString>
 #include <QTimer>
+#include <QUndoStack>
 #include <functional>
 #include <memory>
 #include <stdexcept>
@@ -73,6 +74,9 @@ class Editor : public QObject {
 	void stopAutosaveTimer();
 	void setCurrentMissionPath(const QString& path);
 	const QString& autosaveDirectory() const { return _autosaveDirectory; }
+
+	void setUndoStack(QUndoStack* stack) { _undoStack = stack; }
+	QUndoStack* undoStack() const { return _undoStack; }
 
 	/*! Load a mission. */
 	bool loadMission(const std::string& filepath, int flags = 0);
@@ -266,7 +270,8 @@ class Editor : public QObject {
 	void performTimedAutosave();
 
   private: // NOLINT(readability-redundant-access-specifiers)
-	QTimer*  _autosaveTimer        = nullptr;
+	QTimer*      _autosaveTimer    = nullptr;
+	QUndoStack*  _undoStack        = nullptr;
 	QString  _autosaveDirectory;
 	QString  _currentMissionPath;
 

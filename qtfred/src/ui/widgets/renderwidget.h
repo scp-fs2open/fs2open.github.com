@@ -11,6 +11,7 @@
 namespace fso::fred {
 
 class Editor;
+class FredView;
 class RenderWidget;
 
 class RenderWindow: public QWindow {
@@ -52,6 +53,7 @@ class RenderWidget: public QWidget {
 
 	Editor* fred = nullptr;
 	EditorViewport* _viewport = nullptr;
+	FredView* _fredView = nullptr;
 
 	CursorMode _cursorMode = CursorMode::Selecting;
 
@@ -84,6 +86,7 @@ class RenderWidget: public QWidget {
 	void keyPressEvent(QKeyEvent*) override;
 	void keyReleaseEvent(QKeyEvent*) override;
 	bool event(QEvent* evt) override;
+	void focusInEvent(QFocusEvent* event) override;
 
 	void mouseDoubleClickEvent(QMouseEvent* event) override;
 	void mouseMoveEvent(QMouseEvent* event) override;

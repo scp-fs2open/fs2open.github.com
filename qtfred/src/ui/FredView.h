@@ -3,6 +3,10 @@
 #include <QMainWindow>
 #include <QAction>
 #include <QActionGroup>
+#include <QTimer>
+#include <QUndoGroup>
+#include <QUndoStack>
+#include <math/vecmat.h>
 #include <QtGui/QSurfaceFormat>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QComboBox>
@@ -292,6 +296,18 @@ class FredView: public QMainWindow, public IDialogProvider {
 	ObjectComboBox* _propClassBox = nullptr;
 	ObjectComboBox* _otherClassBox = nullptr;
 
+	QUndoGroup* _undoGroup    = nullptr;
+	QUndoStack* _mainStack    = nullptr;
+	QUndoStack* _cameraStack  = nullptr;
+	QAction*    _undoAction        = nullptr;
+	QAction*    _redoAction        = nullptr;
+	QAction*    _undoCameraAction  = nullptr;
+	QAction*    _redoCameraAction  = nullptr;
+
+	QTimer* _cameraIdleTimer             = nullptr;
+	vec3d   _cameraPosBeforeGesture      = {};
+	matrix  _cameraOrientBeforeGesture   = {};
+
 	Editor* fred = nullptr;
 	EditorViewport* _viewport = nullptr;
 
@@ -374,6 +390,10 @@ class FredView: public QMainWindow, public IDialogProvider {
 								  const SCP_string& title,
 								  const SCP_string& message,
 								  const flagset<DialogButton>& buttons) override;
+
+	QUndoGroup* undoGroup()       const { return _undoGroup; }
+	QUndoStack* mainUndoStack()   const { return _mainStack; }
+	QUndoStack* cameraUndoStack() const { return _cameraStack; }
 
 	std::unique_ptr<IDialog<dialogs::FormWingDialogModel>> createFormWingDialog() override;
 

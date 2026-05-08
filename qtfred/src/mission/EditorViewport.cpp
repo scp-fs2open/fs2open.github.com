@@ -135,6 +135,7 @@ void EditorViewport::loadSettings() {
 	Offer_autosave_recovery            = settings.value("offer_autosave_recovery",            Offer_autosave_recovery).toBool();
 	autosave_interval_seconds         = settings.value("autosave_interval_seconds",          autosave_interval_seconds).toInt();
 	Create_bak_on_save                 = settings.value("create_bak_on_save",                 Create_bak_on_save).toBool();
+	undo_stack_depth                   = settings.value("undo_stack_depth",                   undo_stack_depth).toInt();
 	Move_ships_when_undocking          = settings.value("move_ships_when_undocking",          Move_ships_when_undocking).toBool();
 	Always_save_display_names          = settings.value("always_save_display_names",          Always_save_display_names).toBool();
 	Error_checker_checks_potential_issues = settings.value("error_checker_checks_potential_issues", Error_checker_checks_potential_issues).toBool();
@@ -195,6 +196,7 @@ void EditorViewport::saveSettings() const {
 	settings.setValue("offer_autosave_recovery",             Offer_autosave_recovery);
 	settings.setValue("autosave_interval_seconds",          autosave_interval_seconds);
 	settings.setValue("create_bak_on_save",                  Create_bak_on_save);
+	settings.setValue("undo_stack_depth",                    undo_stack_depth);
 	settings.setValue("move_ships_when_undocking",           Move_ships_when_undocking);
 	settings.setValue("always_save_display_names",           Always_save_display_names);
 	settings.setValue("error_checker_checks_potential_issues", Error_checker_checks_potential_issues);

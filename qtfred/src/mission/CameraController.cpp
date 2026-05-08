@@ -99,6 +99,9 @@ bool CameraController::processControls(vec3d* pos, matrix* orient, float frameti
 	                || (fabs(view_controls.bank) > (frametime / 100))
 	                || (fabs(view_controls.forward) > (frametime / 100));
 
+	vec3d  posBefore    = *pos;
+	matrix orientBefore = *orient;
+
 	physics_read_flying_controls(orient, &view_physics, &view_controls, frametime);
 	if (use_editor_physics) {
 		physics_sim_editor(pos, orient, &view_physics, frametime);
@@ -109,6 +112,10 @@ bool CameraController::processControls(vec3d* pos, matrix* orient, float frameti
 	// Invalidate orbit camera state when the user moves the camera another way
 	if (wantsUpdate)
 		_orbitActive = false;
+
+	if (onViewChanged && (vm_vec_cmp(pos, &posBefore) || vm_matrix_cmp(orient, &orientBefore))) {
+		onViewChanged();
+	}
 
 	return wantsUpdate;
 }
@@ -161,6 +168,9 @@ void CameraController::orbitCameraApply()
 		vec3d grid_up = _orbitGridOrient.vec.uvec;
 		vm_vector_2_matrix(&view_orient, &look_dir, &grid_up, nullptr);
 	}
+
+	if (onViewChanged)
+		onViewChanged();
 }
 
 void CameraController::orbitCameraRotate(int dx, int dy)

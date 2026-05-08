@@ -70,6 +70,7 @@
 #include <iff_defs/iff_defs.h>
 
 #include "mission/Editor.h"
+#include "mission/commands/CameraTransformCommand.h"
 #include "mission/management.h"
 #include "ui/Theme.h"
 #include <prop/prop.h>
@@ -149,6 +150,32 @@ FredView::FredView(QWidget* parent) : QMainWindow(parent), ui(new Ui::FredView()
 	setFocusPolicy(Qt::NoFocus);
 	setFocusProxy(ui->centralWidget);
 
+	// Undo/Redo infrastructure — stacks created here so dialogs can register before setEditor() is called
+	_undoGroup   = new QUndoGroup(this);
+	_mainStack   = new QUndoStack(_undoGroup);
+	_cameraStack = new QUndoStack(this);
+	_undoGroup->setActiveStack(_mainStack);
+
+	_undoAction  = _undoGroup->createUndoAction(this, tr("&Undo"));
+	_undoAction->setShortcuts(QKeySequence::Undo);
+	_redoAction  = _undoGroup->createRedoAction(this, tr("&Redo"));
+	_redoAction->setShortcuts(QKeySequence::Redo);
+
+	_undoCameraAction = _cameraStack->createUndoAction(this, tr("Undo View Change"));
+	_undoCameraAction->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_Z));
+	_redoCameraAction = _cameraStack->createRedoAction(this, tr("Redo View Change"));
+	_redoCameraAction->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_Y));
+
+	// Insert Undo/Redo before the first item in menuEdit
+	ui->menuEdit->insertAction(ui->menuEdit->actions().first(), _redoAction);
+	ui->menuEdit->insertAction(_redoAction, _undoAction);
+	ui->menuEdit->insertSeparator(ui->menuEdit->actions().at(2)); // separator after Redo
+
+	// Insert camera undo/redo after actionRestore_Camera_Pos in menuView
+	QAction* insertAfter = ui->actionRestore_Camera_Pos;
+	ui->menuView->insertAction(ui->menuView->actions().at(ui->menuView->actions().indexOf(insertAfter) + 1), _redoCameraAction);
+	ui->menuView->insertAction(_redoCameraAction, _undoCameraAction);
+
 	// This is not possible to do with the designer
 	ui->actionNew->setShortcuts(QKeySequence::New);
 	ui->actionOpen->setShortcuts(QKeySequence::Open);
@@ -180,6 +207,17 @@ FredView::FredView(QWidget* parent) : QMainWindow(parent), ui(new Ui::FredView()
 	connect(ui->actionPreferences, &QAction::triggered, this, [this]() {
 		dialogs::PreferencesDialog preferencesDialog(this, _viewport);
 		preferencesDialog.exec();
+		if (_viewport) {
+			// Qt ignores setUndoLimit() on a non-empty stack; a new depth takes
+			// effect at the next mission load (see on_mission_loaded), which is
+			// the only point the stacks are guaranteed empty.
+			if (_mainStack->count() == 0) {
+				_mainStack->setUndoLimit(_viewport->undo_stack_depth);
+			}
+			if (_cameraStack->count() == 0) {
+				_cameraStack->setUndoLimit(_viewport->undo_stack_depth);
+			}
+		}
 	});
 
 	connect(ui->actionManage_Layers, &QAction::triggered, this, [this]() { openLayerManagerDialog(); });
@@ -222,6 +260,10 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 
 	fred = editor;
 	_viewport = viewport;
+
+	fred->setUndoStack(_mainStack);
+	_mainStack->setUndoLimit(_viewport->undo_stack_depth);
+	_cameraStack->setUndoLimit(_viewport->undo_stack_depth);
 
 	setIconSize(QSize(_viewport->toolbar_icon_size, _viewport->toolbar_icon_size));
 	applyMenuLayout(_viewport->Classic_menu_layout);
@@ -290,6 +332,31 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 		save.save_autosave_file(savePath.toUtf8().constData());
 	});
 	connect(fred, &Editor::layerListChanged, this, [this]() { _tbLayerComboDirty = true; });
+
+	// Camera undo: fires from any input source (keyboard, SpaceMouse, future mouse camera)
+	// via CameraController::onViewChanged. An idle timer collapses continuous movement
+	// (held key, SpaceMouse pan) into a single undo step.
+	_cameraIdleTimer = new QTimer(this);
+	_cameraIdleTimer->setSingleShot(true);
+	_cameraIdleTimer->setInterval(250);
+
+	_viewport->camera.onViewChanged = [this]() {
+		if (!_cameraIdleTimer->isActive()) {
+			_cameraPosBeforeGesture    = _viewport->camera.view_pos;
+			_cameraOrientBeforeGesture = _viewport->camera.view_orient;
+		}
+		_cameraIdleTimer->start();
+	};
+
+	connect(_cameraIdleTimer, &QTimer::timeout, this, [this]() {
+		if (vm_vec_cmp(&_viewport->camera.view_pos, &_cameraPosBeforeGesture)
+			|| vm_matrix_cmp(&_viewport->camera.view_orient, &_cameraOrientBeforeGesture)) {
+			_cameraStack->push(new CameraTransformCommand(
+				&_viewport->camera,
+				_cameraPosBeforeGesture, _cameraOrientBeforeGesture,
+				_viewport->camera.view_pos, _viewport->camera.view_orient));
+		}
+	});
 
 	// Sets the initial window title
 	on_mission_loaded("");
@@ -810,6 +877,15 @@ void FredView::on_actionRun_FreeSpace_2_Open_triggered(bool) {
 }
 
 void FredView::on_mission_loaded(const std::string& filepath) {
+	_cameraStack->clear();
+
+	// Both stacks are empty now (the editor cleared the main stack before
+	// teardown), so a preferences change made mid-session can be applied.
+	if (_viewport != nullptr) {
+		_mainStack->setUndoLimit(_viewport->undo_stack_depth);
+		_cameraStack->setUndoLimit(_viewport->undo_stack_depth);
+	}
+
 	// Clear browsed head ANIs so the new mission's message scan starts fresh.
 	fso::fred::dialogs::MissionEventsDialogModel::clearBrowsedHeadAnis();
 
