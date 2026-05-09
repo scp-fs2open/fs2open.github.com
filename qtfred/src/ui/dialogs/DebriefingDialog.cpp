@@ -5,20 +5,26 @@
 #include <gamesnd/eventmusic.h>
 #include <globalincs/globals.h>
 #include <globalincs/linklist.h>
+#include <mission/commands/FredCommands.h>
 #include <ui/util/default_dir.h>
 #include <ui/util/SignalBlockers.h>
 #include <QCloseEvent>
 #include <QFileDialog>
 #include <QFileInfo>
+#include <QFocusEvent>
 
 namespace fso::fred::dialogs {
 
 DebriefingDialog::DebriefingDialog(FredView* parent, EditorViewport* viewport)
-	: QDialog(parent), SexpTreeEditorInterface(flagset<TreeFlags>()), 
-	  ui(new Ui::DebriefingDialog()), _model(new DebriefingDialogModel(this, viewport)), _viewport(viewport)
+	: QDialog(parent), SexpTreeEditorInterface(flagset<TreeFlags>()),
+	  ui(new Ui::DebriefingDialog()), _model(new DebriefingDialogModel(this, viewport)),
+	  _viewport(viewport), _fredView(parent)
 {
 	this->setFocus();
 	ui->setupUi(this);
+
+	_dialogStack = new QUndoStack(this);
+	_fredView->undoGroup()->addStack(_dialogStack);
 
 	ui->voiceFileLineEdit->setMaxLength(MAX_FILENAME_LEN - 1);
 
@@ -26,35 +32,44 @@ DebriefingDialog::DebriefingDialog(FredView* parent, EditorViewport* viewport)
 	updateUi();
 
 	resize(QDialog::sizeHint());
-
 }
 
 DebriefingDialog::~DebriefingDialog() = default;
 
 void DebriefingDialog::accept()
 {
-	// If apply() returns true, close the dialog
+	QByteArray stateBefore = _model->captureState();
 	if (_model->apply()) {
 		ui->successMusicWidget->stopPlayback();
 		ui->averageMusicWidget->stopPlayback();
 		ui->failureMusicWidget->stopPlayback();
+		QByteArray stateAfter = _model->captureState();
+		_model->setParent(nullptr);
+		_fredView->mainUndoStack()->push(
+			new ApplyDialogCommand(std::move(_model), stateBefore, stateAfter,
+			                       _viewport->editor, tr("Edit Debriefing")));
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
 		QDialog::accept();
 	}
-	// else: validation failed, don't close
 }
 
 void DebriefingDialog::reject()
 {
-	// Asks the user if they want to save changes, if any
-	// If they do, it runs _model->apply() and returns the success value
-	// If they don't, it runs _model->reject() and returns true
+	if (!_model) {
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
+		QDialog::reject();
+		return;
+	}
 	if (rejectOrCloseHandler(this, _model.get(), _viewport)) {
 		ui->successMusicWidget->stopPlayback();
 		ui->averageMusicWidget->stopPlayback();
 		ui->failureMusicWidget->stopPlayback();
-		QDialog::reject(); // actually close
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
+		QDialog::reject();
 	}
-	// else: do nothing, don't close
 }
 
 void DebriefingDialog::closeEvent(QCloseEvent* e)
@@ -69,6 +84,12 @@ void DebriefingDialog::closeEvent(QCloseEvent* e)
 	} else {
 		e->accept();
 	}
+}
+
+void DebriefingDialog::focusInEvent(QFocusEvent* e)
+{
+	_fredView->undoGroup()->setActiveStack(_dialogStack);
+	QDialog::focusInEvent(e);
 }
 
 void DebriefingDialog::initializeUi()

@@ -18,6 +18,9 @@ class DebriefingDialogModel: public AbstractDialogModel {
 	bool apply() override;
 	void reject() override;
 
+	QByteArray captureState() const override;
+	void restoreState(const QByteArray& state) override;
+
 	int getCurrentTeam() const;
 	void setCurrentTeam(int teamIn);
 	int getCurrentStage() const;
