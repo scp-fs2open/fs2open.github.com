@@ -4,20 +4,25 @@
 #include "mission/util.h"
 #include <globalincs/globals.h>
 #include <globalincs/linklist.h>
+#include <mission/commands/FredCommands.h>
 #include <ui/util/default_dir.h>
 #include <ui/util/SignalBlockers.h>
 #include <QCloseEvent>
 #include <QFileDialog>
 #include <QFileInfo>
+#include <QFocusEvent>
 
 namespace fso::fred::dialogs {
 
 CommandBriefingDialog::CommandBriefingDialog(FredView* parent, EditorViewport* viewport)
 : QDialog(parent), ui(new Ui::CommandBriefingDialog()), _model(new CommandBriefingDialogModel(this, viewport)),
-_viewport(viewport)
+_viewport(viewport), _fredView(parent)
 {
 	this->setFocus();
 	ui->setupUi(this);
+
+	_dialogStack = new QUndoStack(this);
+	_fredView->undoGroup()->addStack(_dialogStack);
 
 	ui->speechFilename->setMaxLength(NAME_LENGTH - 1);
 	ui->animationFilename->setMaxLength(NAME_LENGTH - 1);
@@ -28,29 +33,38 @@ _viewport(viewport)
 	updateUi();
 
 	resize(QDialog::sizeHint());
-
 }
 
 CommandBriefingDialog::~CommandBriefingDialog() = default;
 
 void CommandBriefingDialog::accept()
 {
-	// If apply() returns true, close the dialog
+	QByteArray stateBefore = _model->captureState();
 	if (_model->apply()) {
+		QByteArray stateAfter = _model->captureState();
+		_model->setParent(nullptr);
+		_fredView->mainUndoStack()->push(
+			new ApplyDialogCommand(std::move(_model), stateBefore, stateAfter,
+			                       _viewport->editor, tr("Edit Command Briefing")));
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
 		QDialog::accept();
 	}
-	// else: validation failed, don't close
 }
 
 void CommandBriefingDialog::reject()
 {
-	// Asks the user if they want to save changes, if any
-	// If they do, it runs _model->apply() and returns the success value
-	// If they don't, it runs _model->reject() and returns true
-	if (rejectOrCloseHandler(this, _model.get(), _viewport)) {
-		QDialog::reject(); // actually close
+	if (!_model) {
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
+		QDialog::reject();
+		return;
 	}
-	// else: do nothing, don't close
+	if (rejectOrCloseHandler(this, _model.get(), _viewport)) {
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
+		QDialog::reject();
+	}
 }
 
 void CommandBriefingDialog::closeEvent(QCloseEvent* e)
@@ -65,6 +79,12 @@ void CommandBriefingDialog::closeEvent(QCloseEvent* e)
 	} else {
 		e->accept();
 	}
+}
+
+void CommandBriefingDialog::focusInEvent(QFocusEvent* e)
+{
+	_fredView->undoGroup()->setActiveStack(_dialogStack);
+	QDialog::focusInEvent(e);
 }
 
 void CommandBriefingDialog::initializeUi()

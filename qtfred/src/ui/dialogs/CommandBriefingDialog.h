@@ -27,6 +27,7 @@ public:
 
   protected:
 	void closeEvent(QCloseEvent* e) override; // funnel all Window X presses through reject()
+	void focusInEvent(QFocusEvent* e) override;
 
 private slots:
 	// dialog controls
@@ -56,6 +57,8 @@ private: // NOLINT(readability-redundant-access-specifiers)
 	std::unique_ptr<Ui::CommandBriefingDialog> ui;
 	std::unique_ptr<CommandBriefingDialogModel> _model;
 	EditorViewport* _viewport;
+	FredView*       _fredView    = nullptr;
+	QUndoStack*     _dialogStack = nullptr;
 
 	void initializeUi();
 	void updateUi();
