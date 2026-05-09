@@ -1,14 +1,16 @@
 #include "TeamLoadoutDialog.h"
 #include "ui_TeamLoadoutDialog.h"
+#include "mission/commands/FredCommands.h"
+#include "mission/util.h"
 
 #include <QtWidgets/QMenuBar>
 #include <qlist.h>
 #include <qtablewidget.h>
+#include <QFocusEvent>
 #include <QListWidget>
 #include <QMessageBox>
 #include <QLineEdit>
 #include <QTimer>
-#include <mission/util.h>
 #include "ui/util/SignalBlockers.h"
 #include "ui/widgets/NoWheelSpinBox.h"
 #include "ui/widgets/NoWheelComboBox.h"
@@ -30,10 +32,14 @@ enum class Role : int {
 };
 
 TeamLoadoutDialog::TeamLoadoutDialog(FredView* parent, EditorViewport* viewport)
-	: QDialog(parent), ui(new Ui::TeamLoadoutDialog()), _model(new TeamLoadoutDialogModel(this, viewport)), _viewport(viewport)
+	: QDialog(parent), ui(new Ui::TeamLoadoutDialog()), _model(new TeamLoadoutDialogModel(this, viewport)),
+	  _viewport(viewport), _fredView(parent)
 {
 	this->setFocus();
 	ui->setupUi(this);
+
+	_dialogStack = new QUndoStack(this);
+	_fredView->undoGroup()->addStack(_dialogStack);
 
 	initializeUi();
 	updateUi();
@@ -43,22 +49,32 @@ TeamLoadoutDialog::~TeamLoadoutDialog() = default;
 
 void TeamLoadoutDialog::accept()
 {
-	// If apply() returns true, close the dialog
+	QByteArray stateBefore = _model->captureState();
 	if (_model->apply()) {
+		QByteArray stateAfter = _model->captureState();
+		_model->setParent(nullptr);
+		_fredView->mainUndoStack()->push(
+			new ApplyDialogCommand(std::move(_model), stateBefore, stateAfter,
+			                       _viewport->editor, tr("Edit Team Loadout")));
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
 		QDialog::accept();
 	}
-	// else: validation failed, don't close
 }
 
 void TeamLoadoutDialog::reject()
 {
-	// Asks the user if they want to save changes, if any
-	// If they do, it runs _model->apply() and returns the success value
-	// If they don't, it runs _model->reject() and returns true
-	if (rejectOrCloseHandler(this, _model.get(), _viewport)) {
-		QDialog::reject(); // actually close
+	if (!_model) {
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
+		QDialog::reject();
+		return;
 	}
-	// else: do nothing, don't close
+	if (rejectOrCloseHandler(this, _model.get(), _viewport)) {
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
+		QDialog::reject();
+	}
 }
 
 void TeamLoadoutDialog::closeEvent(QCloseEvent* e)
@@ -73,6 +89,12 @@ void TeamLoadoutDialog::closeEvent(QCloseEvent* e)
 	} else {
 		e->accept();
 	}
+}
+
+void TeamLoadoutDialog::focusInEvent(QFocusEvent* e)
+{
+	_fredView->undoGroup()->setActiveStack(_dialogStack);
+	QDialog::focusInEvent(e);
 }
 
 void TeamLoadoutDialog::initializeUi()

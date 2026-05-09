@@ -57,6 +57,7 @@ add_file_folder("Source/Mission/Dialogs/State"
     src/mission/dialogs/state/MissionGoalsState.cpp
     src/mission/dialogs/state/MissionSpecState.cpp
     src/mission/dialogs/state/ObjectOrientEditorState.cpp
+    src/mission/dialogs/state/TeamLoadoutDialogState.cpp
     src/mission/dialogs/state/VariableDialogState.cpp
     src/mission/dialogs/state/VolumetricNebulaState.cpp
 )

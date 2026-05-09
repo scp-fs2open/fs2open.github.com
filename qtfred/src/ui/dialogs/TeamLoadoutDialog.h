@@ -33,6 +33,7 @@ public:
 
   protected:
 	void closeEvent(QCloseEvent*) override;
+	void focusInEvent(QFocusEvent* e) override;
 
   private slots:
 	// dialog controls
@@ -71,7 +72,9 @@ public:
   private: // NOLINT(readability-redundant-access-specifiers)
 	std::unique_ptr<Ui::TeamLoadoutDialog> ui;
 	std::unique_ptr<TeamLoadoutDialogModel> _model;
-	EditorViewport* _viewport;
+	EditorViewport* _viewport    = nullptr;
+	FredView*       _fredView    = nullptr;
+	QUndoStack*     _dialogStack = nullptr;
 
 	void initializeUi();
 	void updateUi();
