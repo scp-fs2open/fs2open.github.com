@@ -206,9 +206,8 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 		QSettings settings;
 		_tbLocalMove   = settings.value("FredView/transformLocalMove",   false).toBool();
 		_tbLocalRotate = settings.value("FredView/transformLocalRotate", false).toBool();
-		_viewport->physics_speed = settings.value("FredView/cameraSpeedMove", 1).toInt();
-		_viewport->physics_rot   = settings.value("FredView/cameraSpeedRot",  25).toInt();
-		_viewport->resetViewPhysics();
+		_viewport->camera.setPhysicsSpeed(settings.value("FredView/cameraSpeedMove", 1).toInt());
+		_viewport->camera.setPhysicsRot(settings.value("FredView/cameraSpeedRot",  25).toInt());
 	}
 
 	connect(fred, &Editor::missionLoaded, this, &FredView::on_mission_loaded);
@@ -235,11 +234,11 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 			&FredView::viewIdle,
 			this,
 			[this]() { ui->actionZoomSelected->setEnabled(query_valid_object(fred->currentObject)); });
-	connect(this, &FredView::viewIdle, this, [this]() { ui->actionOrbitSelected->setChecked(_viewport->Lookat_mode); });
+	connect(this, &FredView::viewIdle, this, [this]() { ui->actionOrbitSelected->setChecked(_viewport->camera.getLookatMode()); });
 	connect(this,
 			&FredView::viewIdle,
 			this,
-			[this]() { ui->actionRestore_Camera_Pos->setEnabled(!IS_VEC_NULL(&_viewport->saved_cam_orient.vec.fvec)); });
+			[this]() { ui->actionRestore_Camera_Pos->setEnabled(_viewport->camera.hasSavedPosition()); });
 	connect(this, &FredView::viewIdle, this, [this]() { ui->actionRevert->setEnabled(!saveName.isEmpty()); });
 	connect(this, &FredView::viewIdle, this, [this]() { ui->actionUndo->setEnabled(fred->undoAvailable != 0); });
 	connect(this, &FredView::viewIdle, this, [this]() { ui->actionDisable_Undo->setChecked(fred->autosaveDisabled != 0); });
@@ -342,8 +341,8 @@ bool FredView::saveMissionToCurrentPath() {
 	Fred_mission_save save;
 	save.set_save_format(_missionSaveFormat);
 	save.set_always_save_display_names(_viewport->Always_save_display_names);
-	save.set_view_pos(_viewport->view_pos);
-	save.set_view_orient(_viewport->view_orient);
+	save.set_view_pos(_viewport->camera.view_pos);
+	save.set_view_orient(_viewport->camera.view_orient);
 	save.set_fred_alt_names(Fred_alt_names);
 	save.set_fred_callsigns(Fred_callsigns);
 
@@ -359,8 +358,8 @@ bool FredView::saveMissionAs() {
 	Fred_mission_save save;
 	save.set_save_format(_missionSaveFormat);
 	save.set_always_save_display_names(_viewport->Always_save_display_names);
-	save.set_view_pos(_viewport->view_pos);
-	save.set_view_orient(_viewport->view_orient);
+	save.set_view_pos(_viewport->camera.view_pos);
+	save.set_view_orient(_viewport->camera.view_orient);
 	save.set_fred_alt_names(Fred_alt_names);
 	save.set_fred_callsigns(Fred_callsigns);
 
@@ -464,14 +463,14 @@ void FredView::on_actionRevert_triggered(bool) {
 
 void FredView::on_actionUndo_triggered(bool) {
 	// Preserve camera state and saveName because autoload() triggers missionLoaded which would overwrite them
-	auto savedViewPos    = _viewport->view_pos;
-	auto savedViewOrient = _viewport->view_orient;
+	auto savedViewPos    = _viewport->camera.view_pos;
+	auto savedViewOrient = _viewport->camera.view_orient;
 	auto savedSaveName   = saveName;
 
 	fred->autoload();
 
-	_viewport->view_pos    = savedViewPos;
-	_viewport->view_orient = savedViewOrient;
+	_viewport->camera.view_pos    = savedViewPos;
+	_viewport->camera.view_orient = savedViewOrient;
 	saveName               = savedSaveName;
 }
 
@@ -544,8 +543,8 @@ void FredView::on_actionFS1_Mission_triggered(bool) {
 		Fred_mission_save fileSave;
 		fileSave.set_save_format(_missionSaveFormat);
 		fileSave.set_always_save_display_names(_viewport->Always_save_display_names);
-		fileSave.set_view_pos(_viewport->view_pos);
-		fileSave.set_view_orient(_viewport->view_orient);
+		fileSave.set_view_pos(_viewport->camera.view_pos);
+		fileSave.set_view_orient(_viewport->camera.view_orient);
 		fileSave.set_fred_alt_names(Fred_alt_names);
 		fileSave.set_fred_callsigns(Fred_callsigns);
 
@@ -1024,8 +1023,7 @@ void FredView::initializeTransformBar() {
 	_transformToolBar->addWidget(_transformMoveSpeedCombo);
 	connect(_transformMoveSpeedCombo, QOverload<int>::of(&QComboBox::activated), this, [this](int idx) {
 		if (!_viewport) return;
-		_viewport->physics_speed = _transformMoveSpeedCombo->itemData(idx).toInt();
-		_viewport->resetViewPhysics();
+		_viewport->camera.setPhysicsSpeed(_transformMoveSpeedCombo->itemData(idx).toInt());
 	});
 
 	addFixedSpacer(8);
@@ -1044,8 +1042,7 @@ void FredView::initializeTransformBar() {
 	_transformToolBar->addWidget(_transformRotSpeedCombo);
 	connect(_transformRotSpeedCombo, QOverload<int>::of(&QComboBox::activated), this, [this](int idx) {
 		if (!_viewport) return;
-		_viewport->physics_rot = _transformRotSpeedCombo->itemData(idx).toInt();
-		_viewport->resetViewPhysics();
+		_viewport->camera.setPhysicsRot(_transformRotSpeedCombo->itemData(idx).toInt());
 	});
 
 	addFixedSpacer(8);
@@ -1420,8 +1417,8 @@ void FredView::updateUI() {
 	_statusBarUnitsLabel->setText(tr("Units = %1 Meters").arg(_viewport->The_grid->square_size));
 	setWindowModified(isMissionModified());
 
-	if (_viewport->viewpoint == 1) {
-		_statusBarViewmode->setText(tr("Viewpoint: %1").arg(object_name(_viewport->view_obj)));
+	if (_viewport->camera.getViewpoint() == 1) {
+		_statusBarViewmode->setText(tr("Viewpoint: %1").arg(object_name(_viewport->camera.getViewObj())));
 	} else {
 		_statusBarViewmode->setText(tr("Viewpoint: Camera"));
 	}
@@ -2040,8 +2037,8 @@ void FredView::closeEvent(QCloseEvent* event) {
 	settings.setValue("FredView/transformLocalMove",   _tbLocalMove);
 	settings.setValue("FredView/transformLocalRotate", _tbLocalRotate);
 	if (_viewport) {
-		settings.setValue("FredView/cameraSpeedMove", _viewport->physics_speed);
-		settings.setValue("FredView/cameraSpeedRot",  _viewport->physics_rot);
+		settings.setValue("FredView/cameraSpeedMove", _viewport->camera.getPhysicsSpeed());
+		settings.setValue("FredView/cameraSpeedRot",  _viewport->camera.getPhysicsRot());
 	}
 
 	if (!maybePromptToSaveMissionChanges(tr("closing QtFRED"))) {
@@ -2070,26 +2067,26 @@ void FredView::on_actionUnlock_All_Objects_triggered(bool  /*enabled*/) {
 	fred->unlockAllObjects();
 }
 void FredView::onUpdateViewSpeeds() {
-	ui->actionx1->setChecked(_viewport->physics_speed == 1);
-	ui->actionx2->setChecked(_viewport->physics_speed == 2);
-	ui->actionx3->setChecked(_viewport->physics_speed == 3);
-	ui->actionx5->setChecked(_viewport->physics_speed == 5);
-	ui->actionx8->setChecked(_viewport->physics_speed == 8);
-	ui->actionx10->setChecked(_viewport->physics_speed == 10);
-	ui->actionx50->setChecked(_viewport->physics_speed == 50);
-	ui->actionx100->setChecked(_viewport->physics_speed == 100);
+	ui->actionx1->setChecked(_viewport->camera.getPhysicsSpeed() == 1);
+	ui->actionx2->setChecked(_viewport->camera.getPhysicsSpeed() == 2);
+	ui->actionx3->setChecked(_viewport->camera.getPhysicsSpeed() == 3);
+	ui->actionx5->setChecked(_viewport->camera.getPhysicsSpeed() == 5);
+	ui->actionx8->setChecked(_viewport->camera.getPhysicsSpeed() == 8);
+	ui->actionx10->setChecked(_viewport->camera.getPhysicsSpeed() == 10);
+	ui->actionx50->setChecked(_viewport->camera.getPhysicsSpeed() == 50);
+	ui->actionx100->setChecked(_viewport->camera.getPhysicsSpeed() == 100);
 
-	ui->actionRotx1->setChecked(_viewport->physics_rot == 2);
-	ui->actionRotx5->setChecked(_viewport->physics_rot == 10);
-	ui->actionRotx12->setChecked(_viewport->physics_rot == 25);
-	ui->actionRotx25->setChecked(_viewport->physics_rot == 50);
-	ui->actionRotx50->setChecked(_viewport->physics_rot == 100);
+	ui->actionRotx1->setChecked(_viewport->camera.getPhysicsRot() == 2);
+	ui->actionRotx5->setChecked(_viewport->camera.getPhysicsRot() == 10);
+	ui->actionRotx12->setChecked(_viewport->camera.getPhysicsRot() == 25);
+	ui->actionRotx25->setChecked(_viewport->camera.getPhysicsRot() == 50);
+	ui->actionRotx50->setChecked(_viewport->camera.getPhysicsRot() == 100);
 
 	// Keep the bottom-bar combos in sync (covers changes made via keyboard shortcuts or menu).
 	if (_transformMoveSpeedCombo) {
 		QSignalBlocker bl(_transformMoveSpeedCombo);
 		for (int i = 0; i < _transformMoveSpeedCombo->count(); ++i) {
-			if (_transformMoveSpeedCombo->itemData(i).toInt() == _viewport->physics_speed) {
+			if (_transformMoveSpeedCombo->itemData(i).toInt() == _viewport->camera.getPhysicsSpeed()) {
 				_transformMoveSpeedCombo->setCurrentIndex(i);
 				break;
 			}
@@ -2098,7 +2095,7 @@ void FredView::onUpdateViewSpeeds() {
 	if (_transformRotSpeedCombo) {
 		QSignalBlocker bl(_transformRotSpeedCombo);
 		for (int i = 0; i < _transformRotSpeedCombo->count(); ++i) {
-			if (_transformRotSpeedCombo->itemData(i).toInt() == _viewport->physics_rot) {
+			if (_transformRotSpeedCombo->itemData(i).toInt() == _viewport->camera.getPhysicsRot()) {
 				_transformRotSpeedCombo->setCurrentIndex(i);
 				break;
 			}
@@ -2107,112 +2104,99 @@ void FredView::onUpdateViewSpeeds() {
 }
 void FredView::on_actionx1_triggered(bool enabled) {
 	if (enabled) {
-		_viewport->physics_speed = 1;
-		_viewport->resetViewPhysics();
+		_viewport->camera.setPhysicsSpeed(1);
 	}
 }
 void FredView::on_actionx2_triggered(bool enabled) {
 	if (enabled) {
-		_viewport->physics_speed = 2;
-		_viewport->resetViewPhysics();
+		_viewport->camera.setPhysicsSpeed(2);
 	}
 }
 void FredView::on_actionx3_triggered(bool enabled) {
 	if (enabled) {
-		_viewport->physics_speed = 3;
-		_viewport->resetViewPhysics();
+		_viewport->camera.setPhysicsSpeed(3);
 	}
 }
 void FredView::on_actionx5_triggered(bool enabled) {
 	if (enabled) {
-		_viewport->physics_speed = 5;
-		_viewport->resetViewPhysics();
+		_viewport->camera.setPhysicsSpeed(5);
 	}
 }
 void FredView::on_actionx8_triggered(bool enabled) {
 	if (enabled) {
-		_viewport->physics_speed = 8;
-		_viewport->resetViewPhysics();
+		_viewport->camera.setPhysicsSpeed(8);
 	}
 }
 void FredView::on_actionx10_triggered(bool enabled) {
 	if (enabled) {
-		_viewport->physics_speed = 10;
-		_viewport->resetViewPhysics();
+		_viewport->camera.setPhysicsSpeed(10);
 	}
 }
 void FredView::on_actionx50_triggered(bool enabled) {
 	if (enabled) {
-		_viewport->physics_speed = 50;
-		_viewport->resetViewPhysics();
+		_viewport->camera.setPhysicsSpeed(50);
 	}
 }
 void FredView::on_actionx100_triggered(bool enabled) {
 	if (enabled) {
-		_viewport->physics_speed = 100;
-		_viewport->resetViewPhysics();
+		_viewport->camera.setPhysicsSpeed(100);
 	}
 }
 void FredView::on_actionRotx1_triggered(bool enabled) {
 	if (enabled) {
-		_viewport->physics_rot = 2;
-		_viewport->resetViewPhysics();
+		_viewport->camera.setPhysicsRot(2);
 	}
 }
 void FredView::on_actionRotx5_triggered(bool enabled) {
 	if (enabled) {
-		_viewport->physics_rot = 10;
-		_viewport->resetViewPhysics();
+		_viewport->camera.setPhysicsRot(10);
 	}
 }
 void FredView::on_actionRotx12_triggered(bool enabled) {
 	if (enabled) {
-		_viewport->physics_rot = 25;
-		_viewport->resetViewPhysics();
+		_viewport->camera.setPhysicsRot(25);
 	}
 }
 void FredView::on_actionRotx25_triggered(bool enabled) {
 	if (enabled) {
-		_viewport->physics_rot = 50;
-		_viewport->resetViewPhysics();
+		_viewport->camera.setPhysicsRot(50);
 	}
 }
 void FredView::on_actionRotx50_triggered(bool enabled) {
 	if (enabled) {
-		_viewport->physics_rot = 100;
-		_viewport->resetViewPhysics();
+		_viewport->camera.setPhysicsRot(100);
 	}
 }
 void FredView::onUpdateCameraControlActions() {
-	ui->actionCamera->setChecked(_viewport->viewpoint == 0);
-	ui->actionCurrent_Ship->setChecked(_viewport->viewpoint == 1);
+	ui->actionCamera->setChecked(_viewport->camera.getViewpoint() == 0);
+	ui->actionCurrent_Ship->setChecked(_viewport->camera.getViewpoint() == 1);
 
-	_controlModeCamera->setChecked(_viewport->Control_mode == 0);
-	_controlModeCurrentShip->setChecked(_viewport->Control_mode == 1);
+	_controlModeCamera->setChecked(_viewport->camera.getControlMode() == 0);
+	_controlModeCurrentShip->setChecked(_viewport->camera.getControlMode() == 1);
 }
 void FredView::on_actionCamera_triggered(bool enabled) {
 	if (enabled) {
-		_viewport->viewpoint = 0;
+		_viewport->camera.setViewpoint(0);
 
 		_viewport->needsUpdate();
 	}
 }
 void FredView::on_actionCurrent_Ship_triggered(bool enabled) {
 	if (enabled) {
-		_viewport->viewpoint = 1;
-		_viewport->view_obj = fred->currentObject;
+		_viewport->camera.setViewpoint(1);
+		_viewport->camera.setViewObj(fred->currentObject);
 
 		_viewport->needsUpdate();
 	}
 }
 void FredView::on_actionControlModeCamera_triggered(bool enabled) {
 	if (enabled) {
-		_viewport->Control_mode = 0;
+		_viewport->camera.setControlMode(0);
 	}
 }
 void FredView::on_actionControlModeCurrentShip_triggered(bool enabled) {
 	if (enabled) {
-		_viewport->Control_mode = 1;
+		_viewport->camera.setControlMode(1);
 	}
 }
 
@@ -2638,28 +2622,25 @@ void FredView::on_actionSelectionList_triggered(bool checked) {
 	}
 }
 void FredView::on_actionOrbitSelected_triggered(bool enabled) {
-	_viewport->Lookat_mode = enabled;
-	if (_viewport->Lookat_mode && query_valid_object(fred->currentObject)) {
+	_viewport->camera.setLookatMode(enabled);
+	if (_viewport->camera.getLookatMode() && query_valid_object(fred->currentObject)) {
 		vec3d v, loc;
 		matrix m;
 
 		loc = Objects[fred->currentObject].pos;
-		vm_vec_sub(&v, &loc, &_viewport->view_pos);
+		vm_vec_sub(&v, &loc, &_viewport->camera.view_pos);
 
 		if (v.xyz.x || v.xyz.y || v.xyz.z) {
 			vm_vector_2_matrix(&m, &v, NULL, NULL);
-			_viewport->view_orient = m;
+			_viewport->camera.view_orient = m;
 		}
 	}
 }
 void FredView::on_actionSave_Camera_Pos_triggered(bool) {
-	_viewport->saved_cam_pos = _viewport->view_pos;
-	_viewport->saved_cam_orient = _viewport->view_orient;
+	_viewport->camera.savePosition();
 }
 void FredView::on_actionRestore_Camera_Pos_triggered(bool) {
-	_viewport->view_pos = _viewport->saved_cam_pos;
-	_viewport->view_orient = _viewport->saved_cam_orient;
-
+	_viewport->camera.restorePosition();
 	_viewport->needsUpdate();
 }
 void FredView::on_actionClone_Marked_Objects_triggered(bool) {
@@ -2745,7 +2726,7 @@ void FredView::onSetGroup(int group) {
 	fred->updateAllViewports();
 }
 void FredView::on_actionControl_Object_triggered(bool) {
-	_viewport->Control_mode = (_viewport->Control_mode + 1) % 2;
+	_viewport->camera.toggleControlMode();
 }
 void FredView::on_actionLevel_Object_triggered(bool) {
 	_viewport->level_controlled();

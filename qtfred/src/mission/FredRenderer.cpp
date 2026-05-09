@@ -569,8 +569,8 @@ void FredRenderer::render_compass() {
 	gr_set_clip(gr_screen.max_w - 100, 0, 100, 100);
 	g3_start_frame(0); // ** Accounted for
 	// required !!!
-	vm_vec_scale_add2(&eye, &_viewport->eye_orient.vec.fvec, -1.5f);
-	g3_set_view_matrix(&eye, &_viewport->eye_orient, 1.0f);
+	vm_vec_scale_add2(&eye, &_viewport->camera.eye_orient.vec.fvec, -1.5f);
+	g3_set_view_matrix(&eye, &_viewport->camera.eye_orient, 1.0f);
 
 	v.xyz.x = 1.0f;
 	v.xyz.y = v.xyz.z = 0.0f;
@@ -866,7 +866,7 @@ void FredRenderer::render_one_model_htl(object* objp,
 		} else
 			Assert(0);
 
-		float size = fl_sqrt(vm_vec_dist(&_viewport->eye_pos, &objp->pos) / 20.0f);
+		float size = fl_sqrt(vm_vec_dist(&_viewport->camera.eye_pos, &objp->pos) / 20.0f);
 
 		if (size < LOLLIPOP_SIZE) {
 			size = LOLLIPOP_SIZE;
@@ -952,7 +952,7 @@ void FredRenderer::render_frame(int cur_object_index,
 	font::set_font(font::FONT1);
 	light_reset();
 
-	g3_set_view_matrix(&_viewport->eye_pos, &_viewport->eye_orient, 0.5f);
+	g3_set_view_matrix(&_viewport->camera.eye_pos, &_viewport->camera.eye_orient, 0.5f);
 
 	// Force max star detail so the editor always shows the full Num_stars count
 	// regardless of the player's graphics quality setting (Detail.num_stars can be 0).
@@ -1060,7 +1060,7 @@ void FredRenderer::render_frame(int cur_object_index,
 	}
 	disable_htl();
 
-	sprintf(buf, "(%.1f,%.1f,%.1f)", _viewport->eye_pos.xyz.x, _viewport->eye_pos.xyz.y, _viewport->eye_pos.xyz.z);
+	sprintf(buf, "(%.1f,%.1f,%.1f)", _viewport->camera.eye_pos.xyz.x, _viewport->camera.eye_pos.xyz.y, _viewport->camera.eye_pos.xyz.z);
 	gr_get_string_size(&w, &h, buf);
 	gr_set_color_fast(&colour_white);
 	gr_string(gr_screen.max_w - w - 2, 2, buf);
@@ -1082,7 +1082,7 @@ void FredRenderer::render_frame(int cur_object_index,
 	gr_reset_clip();
 
 	g3_start_frame(0); // ** Accounted for
-	g3_set_view_matrix(&_viewport->eye_pos, &_viewport->eye_orient, 0.5f);
+	g3_set_view_matrix(&_viewport->camera.eye_pos, &_viewport->camera.eye_orient, 0.5f);
 }
 void FredRenderer::resize(int width, int height) {
 	// Make sure the following call targets the right view port

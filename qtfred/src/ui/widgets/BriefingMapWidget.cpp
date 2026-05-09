@@ -191,6 +191,11 @@ void BriefingMapWidget::initBriefingMap() {
 		Briefing = savedBriefing;
 	}
 
+	// Initialize the camera controller physics so it is ready before the first frame.
+	// The dialog's combo-box handlers will call setMovementSpeedScale/setRotationSpeedScale
+	// after the widget is shown, which will re-apply the correct speed values.
+	_cameraController.resetViewPhysics();
+
 	_initialized = true;
 	_renderTimer->start();
 	mprintf(("BriefingMapWidget: init complete, timer started for render diagnostics.\n"));
@@ -277,6 +282,7 @@ void BriefingMapWidget::applyStageTransition(int stageNum, int transitionTime) {
 	Brief_text_wipe_time_elapsed = BRIEF_TEXT_WIPE_TIME + 1.0f;
 	brief_reset_icons(stageNum);
 	_currentStage = stageNum;
+	_cameraController.resetViewPhysics(); // clear residual velocity from previous stage
 
 	Briefing = savedBriefing;
 }
@@ -427,11 +433,13 @@ void BriefingMapWidget::applyCameraToCurrentStage(const vec3d& pos, const matrix
 }
 
 void BriefingMapWidget::setMovementSpeedScale(float scale) {
-	_movementSpeedScale = std::max(0.01f, scale);
+	// Dialog sends 4.0, 8.0, 16.0; map to physicsSpeed 1, 2, 4 preserving the 1:2:4 ratio.
+	_cameraController.setPhysicsSpeed(std::max(1, fl2ir(scale / 4.0f)));
 }
 
 void BriefingMapWidget::setRotationSpeedScale(float scale) {
-	_rotationSpeedScale = std::max(0.01f, scale);
+	// Dialog sends 0.0625, 0.125, 0.25; map to physicsRot 8, 15, 30 (max_rotvel *= physicsRot/30).
+	_cameraController.setPhysicsRot(std::max(1, fl2ir(scale * 120.0f)));
 }
 
 void BriefingMapWidget::applyCameraPoseLikeKeyboardControls(const vec3d& camPos, const matrix& camOrient, bool updateModel) {
@@ -521,7 +529,7 @@ void BriefingMapWidget::renderFrame() {
 			gr_use_viewport(mainView);
 			gr_screen_resize(static_cast<int>(mainSize.first), static_cast<int>(mainSize.second));
 			g3_start_frame(0);
-			g3_set_view_matrix(&_viewport->eye_pos, &_viewport->eye_orient, 0.5f);
+			g3_set_view_matrix(&_viewport->camera.eye_pos, &_viewport->camera.eye_orient, 0.5f);
 		}
 		_rendering = false;
 		return;
@@ -611,7 +619,7 @@ void BriefingMapWidget::renderFrame() {
 		gr_use_viewport(mainView);
 		gr_screen_resize(static_cast<int>(mainSize.first), static_cast<int>(mainSize.second));
 		g3_start_frame(0);
-		g3_set_view_matrix(&_viewport->eye_pos, &_viewport->eye_orient, 0.5f);
+		g3_set_view_matrix(&_viewport->camera.eye_pos, &_viewport->camera.eye_orient, 0.5f);
 	}
 
 	_rendering = false;
@@ -656,47 +664,21 @@ void BriefingMapWidget::keyReleaseEvent(QKeyEvent* event) {
 }
 
 void BriefingMapWidget::applyBoundCameraControls(float frametime) {
-	auto& bindings = ControlBindings::instance();
-	vec3d camPos = brief_get_current_cam_pos();
-	matrix camOrient = brief_get_current_cam_orient();
-	const auto oldPos = camPos;
-	const auto oldOrient = camOrient;
+	// Sync from briefing globals each frame so externally-driven moves
+	// (stage transitions, paste, coordinates dialog) are picked up before
+	// applying user input via the shared CameraController.
+	_cameraController.view_pos    = brief_get_current_cam_pos();
+	_cameraController.view_orient = brief_get_current_cam_orient();
 
-	vec3d movementVec = ZERO_VECTOR;
-	angles rotangs{};
-
-	movementVec.xyz.x += bindings.isPressed(ControlAction::MoveLeft) ? -1.0f : 0.0f;
-	movementVec.xyz.x += bindings.isPressed(ControlAction::MoveRight) ? 1.0f : 0.0f;
-	movementVec.xyz.y += bindings.isPressed(ControlAction::MoveForward) ? 1.0f : 0.0f;
-	movementVec.xyz.y += bindings.isPressed(ControlAction::MoveBackward) ? -1.0f : 0.0f;
-	movementVec.xyz.z += bindings.isPressed(ControlAction::MoveUp) ? 1.0f : 0.0f;
-	movementVec.xyz.z += bindings.isPressed(ControlAction::MoveDown) ? -1.0f : 0.0f;
-	rotangs.h += bindings.isPressed(ControlAction::YawLeft) ? -0.1f * _rotationSpeedScale : 0.0f;
-	rotangs.h += bindings.isPressed(ControlAction::YawRight) ? 0.1f * _rotationSpeedScale : 0.0f;
-	rotangs.p += bindings.isPressed(ControlAction::PitchUp) ? -0.1f * _rotationSpeedScale : 0.0f;
-	rotangs.p += bindings.isPressed(ControlAction::PitchDown) ? 0.1f * _rotationSpeedScale : 0.0f;
-
-	const auto frameScale = std::max(frametime * 30.0f * _movementSpeedScale, 0.0f);
-	if (movementVec.xyz.x != 0.0f) {
-		vm_vec_scale_add2(&camPos, &camOrient.vec.rvec, movementVec.xyz.x * frameScale);
-	}
-	if (movementVec.xyz.y != 0.0f) {
-		vm_vec_scale_add2(&camPos, &camOrient.vec.fvec, movementVec.xyz.y * frameScale);
-	}
-	if (movementVec.xyz.z != 0.0f) {
-		vm_vec_scale_add2(&camPos, &camOrient.vec.uvec, movementVec.xyz.z * frameScale);
-	}
-
-	if (rotangs.p != 0.0f || rotangs.h != 0.0f || rotangs.b != 0.0f) {
-		matrix rotmat;
-		matrix newmat;
-		vm_angles_2_matrix(&rotmat, &rotangs);
-		vm_matrix_x_matrix(&newmat, &camOrient, &rotmat);
-		camOrient = newmat;
-	}
-
-	if (vm_vec_cmp(&oldPos, &camPos) || vm_matrix_cmp(&oldOrient, &camOrient)) {
-		applyCameraPoseLikeKeyboardControls(camPos, camOrient, true);
+	if (_cameraController.processControls(
+			&_cameraController.view_pos,
+			&_cameraController.view_orient,
+			frametime,
+			false)) {
+		applyCameraPoseLikeKeyboardControls(
+			_cameraController.view_pos,
+			_cameraController.view_orient,
+			true);
 	}
 }
 

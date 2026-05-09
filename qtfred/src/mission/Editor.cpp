@@ -140,8 +140,8 @@ int Editor::autosave(const char* /*desc*/) {
 
 	Fred_mission_save save;
 	save.set_always_save_display_names(_lastActiveViewport->Always_save_display_names);
-	save.set_view_pos(_lastActiveViewport->view_pos);
-	save.set_view_orient(_lastActiveViewport->view_orient);
+	save.set_view_pos(_lastActiveViewport->camera.view_pos);
+	save.set_view_orient(_lastActiveViewport->camera.view_orient);
 	save.set_fred_alt_names(Fred_alt_names);
 	save.set_fred_callsigns(Fred_callsigns);
 
@@ -460,8 +460,8 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 	}
 
 	for (auto& viewport : _viewports) {
-		viewport->view_orient = Parse_viewer_orient;
-		viewport->view_pos = Parse_viewer_pos;
+		viewport->camera.view_orient = Parse_viewer_orient;
+		viewport->camera.view_pos = Parse_viewer_pos;
 	}
 
 	if (flags & MPF_IS_TEMPLATE) {
@@ -479,8 +479,7 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 		strcpy_s(The_mission.mission_desc, "Put mission description here");
 
 		for (auto& viewport : _viewports) {
-			viewport->resetView();
-			viewport->resetViewPhysics();
+			viewport->reset();
 		}
 	}
 
@@ -654,8 +653,7 @@ void Editor::clearMission(bool fast_reload) {
 	unmark_all();
 
 	for (auto& viewport : _viewports) {
-		viewport->resetView();
-		viewport->resetViewPhysics();
+		viewport->reset();
 	}
 
 	Event_annotations.clear();

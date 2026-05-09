@@ -1,15 +1,15 @@
 #include <globalincs/linklist.h>
+#include <globalincs/systemvars.h>
+#include <io/timer.h>
 #include <object/object.h>
 #include <render/3d.h>
 #include <ship/ship.h>
 #include "ui/ControlBindings.h"
-#include <io/spacemouse.h>
 
 #include "object.h"
 
 #include "EditorViewport.h"
 #include <QSettings>
-#include "ui/dialogs/BriefingEditorDialog.h"
 #include <math/fvi.h>
 #include <jumpnode/jumpnode.h>
 #include <mission/missionparse.h>
@@ -20,50 +20,8 @@ namespace {
 
 constexpr auto SETTINGS_GROUP = "Preferences";
 
-const fix MAX_FRAMETIME = (F1_0 / 4); // Frametime gets saturated at this.
-const fix MIN_FRAMETIME = (F1_0 / 120);
-
 const float REDUCER = 100.0f;
 
-void process_movement_keys(const fso::fred::ControlBindings& bindings, vec3d* mvec, angles* angs) {
-	mvec->xyz.x = 0.0f;
-	mvec->xyz.y = 0.0f;
-	mvec->xyz.z = 0.0f;
-	angs->p = 0.0f;
-	angs->b = 0.0f;
-	angs->h = 0.0f;
-
-	if (bindings.isPressed(fso::fred::ControlAction::MoveLeft)) {
-		mvec->xyz.x += -1.0f;
-	}
-	if (bindings.isPressed(fso::fred::ControlAction::MoveRight)) {
-		mvec->xyz.x += 1.0f;
-	}
-	if (bindings.isPressed(fso::fred::ControlAction::MoveForward)) {
-		mvec->xyz.y += 1.0f;
-	}
-	if (bindings.isPressed(fso::fred::ControlAction::MoveBackward)) {
-		mvec->xyz.y += -1.0f;
-	}
-	if (bindings.isPressed(fso::fred::ControlAction::MoveUp)) {
-		mvec->xyz.z += 1.0f;
-	}
-	if (bindings.isPressed(fso::fred::ControlAction::MoveDown)) {
-		mvec->xyz.z += -1.0f;
-	}
-	if (bindings.isPressed(fso::fred::ControlAction::YawLeft)) {
-		angs->h += -0.1f;
-	}
-	if (bindings.isPressed(fso::fred::ControlAction::YawRight)) {
-		angs->h += 0.1f;
-	}
-	if (bindings.isPressed(fso::fred::ControlAction::PitchUp)) {
-		angs->p += -0.1f;
-	}
-	if (bindings.isPressed(fso::fred::ControlAction::PitchDown)) {
-		angs->p += 0.1f;
-	}
-}
 void align_vector_to_axis(vec3d* v) {
 	float x, y, z;
 
@@ -112,6 +70,42 @@ namespace fso::fred {
 
 const char* EditorViewport::DefaultLayerName = "Default";
 
+EditorViewport::ViewportControlLock::ViewportControlLock(EditorViewport* viewport) : _viewport(viewport)
+{
+	if (_viewport != nullptr) {
+		_viewport->lockControls();
+	}
+}
+
+EditorViewport::ViewportControlLock::~ViewportControlLock()
+{
+	if (_viewport != nullptr) {
+		_viewport->unlockControls();
+	}
+}
+
+EditorViewport::ViewportControlLock::ViewportControlLock(ViewportControlLock&& other) noexcept
+	: _viewport(other._viewport)
+{
+	other._viewport = nullptr;
+}
+
+EditorViewport::ViewportControlLock& EditorViewport::ViewportControlLock::operator=(
+	ViewportControlLock&& other) noexcept
+{
+	if (this == &other) {
+		return *this;
+	}
+
+	if (_viewport != nullptr) {
+		_viewport->unlockControls();
+	}
+
+	_viewport = other._viewport;
+	other._viewport = nullptr;
+	return *this;
+}
+
 EditorViewport::EditorViewport(Editor* in_editor, std::unique_ptr<FredRenderer>&& in_renderer) :
 	_renderer(std::move(in_renderer)), editor(in_editor) {
 	renderer = _renderer.get();
@@ -120,9 +114,8 @@ EditorViewport::EditorViewport(Editor* in_editor, std::unique_ptr<FredRenderer>&
 
 	vm_vec_make(&Constraint, 1.0f, 0.0f, 1.0f);
 	vm_vec_make(&Anticonstraint, 0.0f, 1.0f, 0.0f);
-	resetView();
+	reset();
 
-	memset(&saved_cam_orient, 0, sizeof(saved_cam_orient));
 	_layerNames.emplace_back(DefaultLayerName);
 	_layerVisibility.push_back(true);
 	syncMissionLayerNames();
@@ -214,16 +207,51 @@ void EditorViewport::saveSettings() const {
 void EditorViewport::needsUpdate() {
 	_renderer->scheduleUpdate();
 }
-void EditorViewport::resetViewPhysics() {
-	physics_init(&view_physics);
-	view_physics.max_vel.xyz.x *= physics_speed / 3.0f;
-	view_physics.max_vel.xyz.y *= physics_speed / 3.0f;
-	view_physics.max_vel.xyz.z *= physics_speed / 3.0f;
-	view_physics.max_rear_vel *= physics_speed / 3.0f;
-	view_physics.max_rotvel.xyz.x *= physics_rot / 30.0f;
-	view_physics.max_rotvel.xyz.y *= physics_rot / 30.0f;
-	view_physics.max_rotvel.xyz.z *= physics_rot / 30.0f;
-	view_physics.flags |= PF_ACCELERATES | PF_SLIDE_ENABLED;
+
+bool EditorViewport::areControlsLocked() const
+{
+	return _controlLockCount > 0;
+}
+
+EditorViewport::ViewportControlLock EditorViewport::acquireControlLock()
+{
+	return ViewportControlLock(this);
+}
+
+void EditorViewport::lockControls()
+{
+	++_controlLockCount;
+}
+
+void EditorViewport::unlockControls()
+{
+	Assertion(_controlLockCount > 0, "Mismatched unlock on EditorViewport controls");
+	--_controlLockCount;
+}
+
+bool EditorViewport::incMissionTime() {
+	const fix MAX_FRAMETIME = (F1_0 / 4);
+	const fix MIN_FRAMETIME = (F1_0 / 120);
+
+	fix thistime = timer_get_fixed_seconds();
+	fix time_diff;
+	if (!_lasttime) {
+		time_diff = F1_0 / 30;
+	} else {
+		time_diff = thistime - _lasttime;
+	}
+
+	if (time_diff > MAX_FRAMETIME) {
+		time_diff = MAX_FRAMETIME;
+	} else if (time_diff < MIN_FRAMETIME) {
+		return false;
+	}
+
+	Frametime = time_diff;
+	Missiontime += Frametime;
+	_lasttime = thistime;
+
+	return true;
 }
 void EditorViewport::select_objects(const Marking_box& box) {
 	int x, y, valid, icon_mode = 0;
@@ -330,56 +358,17 @@ void EditorViewport::select_objects(const Marking_box& box) {
 	needsUpdate();
 }
 
-void EditorViewport::resetView() {
-	my_pos = vmd_zero_vector;
-	my_pos.xyz.z = -5.0f;
-	vec3d f, u, r;
-
-	physics_init(&view_physics);
-	view_physics.max_vel.xyz.z = 5.0f; //forward/backward
-	view_physics.max_rotvel.xyz.x = 1.5f; //pitch
-	memset(&view_controls, 0, sizeof(control_info));
-
-	vm_vec_make(&view_pos, 0.0f, 150.0f, -200.0f);
-	vm_vec_make(&f, 0.0f, -0.5f, 0.866025404f); // 30 degree angle
-	vm_vec_make(&u, 0.0f, 0.866025404f, 0.5f);
-	vm_vec_make(&r, 1.0f, 0.0f, 0.0f);
-	vm_vector_2_matrix(&view_orient, &f, &u, &r);
-
+void EditorViewport::reset() {
+	camera.resetView();
+	camera.resetViewPhysics();
 	The_grid = create_default_grid();
-	maybe_create_new_grid(The_grid, &view_pos, &view_orient, 1);
-	//	vm_set_identity(&view_orient);
-}
-
-
-void EditorViewport::move_mouse(int btn, int mdx, int mdy) {
-	int dx, dy;
-
-	dx = mdx - last_x;
-	dy = mdy - last_y;
-	last_x = mdx;
-	last_y = mdy;
-
-	if (btn & 1) {
-		matrix tempm, mousem;
-
-		if (dx || dy) {
-			vm_trackball(dx, dy, &mousem);
-			vm_matrix_x_matrix(&tempm, &trackball_orient, &mousem);
-			trackball_orient = tempm;
-			view_orient = trackball_orient;
-		}
-	}
-
-	if (btn & 2) {
-		my_pos.xyz.z += (float) dy;
-	}
+	maybe_create_new_grid(The_grid, &camera.view_pos, &camera.view_orient, 1);
 }
 
 ///////////////////////////////////////////////////
 void EditorViewport::process_system_keys() {
 	auto& bindings = ControlBindings::instance();
-	if (dialogs::BriefingEditorDialog::isAnyDialogOpen()) {
+	if (areControlsLocked()) {
 		return;
 	}
 	if (bindings.takeTriggered(ControlAction::ToggleSelectionLock)) {
@@ -388,169 +377,65 @@ void EditorViewport::process_system_keys() {
 
 }
 
-void EditorViewport::process_controls(vec3d* pos, matrix* orient, float frametime, int mode) {
-	static std::unique_ptr<io::spacemouse::SpaceMouse> spacemouse = io::spacemouse::SpaceMouse::searchSpaceMice(0);
-	if (dialogs::BriefingEditorDialog::isAnyDialogOpen()) {
-		return;
-	}
-
-	if (Flying_controls_mode) {
-		memset(&view_controls, 0, sizeof(control_info));
-
-		if (spacemouse != nullptr) {
-			auto spacemouse_movement = spacemouse->getMovement();
-			spacemouse_movement.handleNonlinearities(Fred_spacemouse_nonlinearity);
-			view_controls.pitch += spacemouse_movement.rotation.p;
-			view_controls.vertical += spacemouse_movement.translation.xyz.z;
-			view_controls.heading += spacemouse_movement.rotation.h;
-			view_controls.sideways += spacemouse_movement.translation.xyz.x;
-			view_controls.bank += spacemouse_movement.rotation.b;
-			view_controls.forward += spacemouse_movement.translation.xyz.y;
-		}
-
-		auto& bindings = ControlBindings::instance();
-		view_controls.pitch += bindings.isPressed(ControlAction::PitchUp) ? -1.0f : 0.0f;
-		view_controls.pitch += bindings.isPressed(ControlAction::PitchDown) ? 1.0f : 0.0f;
-		view_controls.heading += bindings.isPressed(ControlAction::YawLeft) ? -1.0f : 0.0f;
-		view_controls.heading += bindings.isPressed(ControlAction::YawRight) ? 1.0f : 0.0f;
-		view_controls.sideways += bindings.isPressed(ControlAction::MoveLeft) ? -1.0f : 0.0f;
-		view_controls.sideways += bindings.isPressed(ControlAction::MoveRight) ? 1.0f : 0.0f;
-		view_controls.forward += bindings.isPressed(ControlAction::MoveForward) ? 1.0f : 0.0f;
-		view_controls.forward += bindings.isPressed(ControlAction::MoveBackward) ? -1.0f : 0.0f;
-		view_controls.vertical += bindings.isPressed(ControlAction::MoveUp) ? 1.0f : 0.0f;
-		view_controls.vertical += bindings.isPressed(ControlAction::MoveDown) ? -1.0f : 0.0f;
-
-		if ((fabs(view_controls.pitch) > (frametime / 100)) || (fabs(view_controls.vertical) > (frametime / 100))
-			|| (fabs(view_controls.heading) > (frametime / 100)) || (fabs(view_controls.sideways) > (frametime / 100))
-			|| (fabs(view_controls.bank) > (frametime / 100)) || (fabs(view_controls.forward) > (frametime / 100))) {
-			needsUpdate();
-		}
-
-		//view_physics.flags |= (PF_ACCELERATES | PF_SLIDE_ENABLED);
-		physics_read_flying_controls(orient, &view_physics, &view_controls, frametime);
-		if (mode) {
-			physics_sim_editor(pos, orient, &view_physics, frametime);
-		} else {
-			physics_sim(pos, orient, &view_physics, &vmd_zero_vector, frametime);
-		}
-	} else {
-		vec3d movement_vec, rel_movement_vec;
-		angles rotangs;
-		matrix newmat, rotmat;
-
-		process_movement_keys(ControlBindings::instance(), &movement_vec, &rotangs);
-		if (spacemouse != nullptr) {
-			auto spacemouse_movement = spacemouse->getMovement();
-			spacemouse_movement.handleNonlinearities(Fred_spacemouse_nonlinearity);
-			movement_vec += spacemouse_movement.translation;
-			rotangs += spacemouse_movement.rotation;
-		}
-
-		vm_vec_rotate(&rel_movement_vec, &movement_vec, &The_grid->gmatrix);
-		vm_vec_add2(pos, &rel_movement_vec);
-
-		vm_angles_2_matrix(&rotmat, &rotangs);
-		if (rotangs.h && view.Universal_heading) {
-			vm_transpose(orient);
-		}
-		vm_matrix_x_matrix(&newmat, orient, &rotmat);
-		*orient = newmat;
-		if (rotangs.h && view.Universal_heading) {
-			vm_transpose(orient);
-		}
-	}
-}
-
-/**
-* @brief Increments mission time
-*
-* @details This only increments the mission time if the time difference is greater than the minimum frametime to avoid
-* excessive computation
-*
-* @return @c true if the mission time was incremented, @c false otherwise.
-*/
-bool EditorViewport::inc_mission_time() {
-	fix thistime = timer_get_fixed_seconds();
-	fix time_diff; // This holds the computed time difference since the last time this function was called
-	if (!lasttime) {
-		time_diff = F1_0 / 30;
-	} else {
-		time_diff = thistime - lasttime;
-	}
-
-	if (time_diff > MAX_FRAMETIME) {
-		time_diff = MAX_FRAMETIME;
-	} else if (time_diff < MIN_FRAMETIME) {
-		return false;
-	}
-
-	Frametime = time_diff;
-	Missiontime += Frametime;
-	lasttime = thistime;
-
-	return true;
-}
-
 void EditorViewport::game_do_frame(const int cur_object_index) {
 	int cmode;
-	vec3d viewer_position, control_pos;
+	vec3d control_pos;
 	object* objp;
 	matrix control_orient;
 
-	if (!inc_mission_time()) {
-		// Don't do anything if the mission time wasn't incremented
+	if (!incMissionTime()) {
 		return;
 	}
 
 	// sync all timestamps across the entire frame
 	timer_start_frame();
 
-	viewer_position = my_orient.vec.fvec;
-	vm_vec_scale(&viewer_position, my_pos.xyz.z);
-
-	if ((viewpoint == 1) && !query_valid_object(view_obj)) {
-		viewpoint = 0;
+	if ((camera.getViewpoint() == 1) && !query_valid_object(camera.getViewObj())) {
+		camera.setViewpoint(0);
 	}
 
 	process_system_keys();
-	cmode = Control_mode;
-	if ((viewpoint == 1) && !cmode) {
+	const auto controlsLocked = areControlsLocked();
+	cmode = camera.getControlMode();
+	if ((camera.getViewpoint() == 1) && !cmode) {
 		cmode = 2;
 	}
 
 	control_pos = Last_control_pos;
 	control_orient = Last_control_orient;
 
-	//	if ((key & KEY_MASK) == key)  // unmodified
 	switch (cmode) {
 	case 0: //	Control the viewer's location and orientation
-		process_controls(&view_pos, &view_orient, f2fl(Frametime), 1);
-		control_pos = view_pos;
-		control_orient = view_orient;
+		if (!controlsLocked && camera.processControls(&camera.view_pos, &camera.view_orient, f2fl(Frametime), true)) {
+			needsUpdate();
+		}
+		control_pos = camera.view_pos;
+		control_orient = camera.view_orient;
 		break;
 
 	case 2: // Control viewpoint object
-		if (!Objects[view_obj].flags[Object::Object_Flags::Locked_from_editing]) {
-			process_controls(&Objects[view_obj].pos, &Objects[view_obj].orient, f2fl(Frametime));
-			object_moved(&Objects[view_obj]);
-			control_pos = Objects[view_obj].pos;
-			control_orient = Objects[view_obj].orient;
+		if (!controlsLocked && !Objects[camera.getViewObj()].flags[Object::Object_Flags::Locked_from_editing]) {
+			camera.processControls(&Objects[camera.getViewObj()].pos, &Objects[camera.getViewObj()].orient,
+			                       f2fl(Frametime), false);
+			object_moved(&Objects[camera.getViewObj()]);
+			control_pos = Objects[camera.getViewObj()].pos;
+			control_orient = Objects[camera.getViewObj()].orient;
 		}
 		break;
 
 	case 1: //	Control the current object's location and orientation
-		if (query_valid_object(cur_object_index) && !Objects[cur_object_index].flags[Object::Object_Flags::Locked_from_editing]) {
+		if (!controlsLocked && query_valid_object(cur_object_index) && !Objects[cur_object_index].flags[Object::Object_Flags::Locked_from_editing]) {
 			vec3d delta_pos, leader_old_pos;
 			matrix leader_orient, leader_transpose, tmp;
 			object* leader;
 
 			leader = &Objects[cur_object_index];
-			leader_old_pos = leader->pos; // save original position
-			leader_orient = leader->orient; // save original orientation
+			leader_old_pos = leader->pos;
+			leader_orient = leader->orient;
 			vm_copy_transpose(&leader_transpose, &leader_orient);
 
-			process_controls(&leader->pos, &leader->orient, f2fl(Frametime));
-			vm_vec_sub(&delta_pos, &leader->pos, &leader_old_pos); // get position change
+			camera.processControls(&leader->pos, &leader->orient, f2fl(Frametime), false);
+			vm_vec_sub(&delta_pos, &leader->pos, &leader_old_pos);
 			control_pos = leader->pos;
 			control_orient = leader->orient;
 
@@ -562,36 +447,19 @@ void EditorViewport::game_do_frame(const int cur_object_index) {
 						matrix rot_trans;
 						vec3d tmpv1, tmpv2;
 
-						// change rotation matrix to rotate in opposite direction.  This rotation
-						// matrix is what the leader ship has rotated by.
-						vm_copy_transpose(&rot_trans, &view_physics.last_rotmat);
-
-						// get point relative to our point of rotation (make POR the origin).  Since
-						// only the leader has been moved yet, and not the objects, we have to use
-						// the old leader's position.
+						vm_copy_transpose(&rot_trans, &camera.getLastRotMat());
 						vm_vec_sub(&tmpv1, &objp->pos, &leader_old_pos);
-
-						// convert point from real-world coordinates to leader's relative coordinate
-						// system (z=forward vec, y=up vec, x=right vec
 						vm_vec_rotate(&tmpv2, &tmpv1, &leader_orient);
-
-						// now rotate the point by the transpose from above.
 						vm_vec_rotate(&tmpv1, &tmpv2, &rot_trans);
-
-						// convert point back into real-world coordinates
 						vm_vec_rotate(&tmpv2, &tmpv1, &leader_transpose);
-
-						// and move origin back to real-world origin.  Object is now at its correct
-						// position.  Note we used the leader's new position, instead of old position.
 						vm_vec_add(&objp->pos, &leader->pos, &tmpv2);
 
-						// Now fix the object's orientation to what it should be.
-						vm_matrix_x_matrix(&tmp, &objp->orient, &view_physics.last_rotmat);
-						vm_orthogonalize_matrix(&tmp); // safety check
+						vm_matrix_x_matrix(&tmp, &objp->orient, &camera.getLastRotMat());
+						vm_orthogonalize_matrix(&tmp);
 						objp->orient = tmp;
 					} else {
 						vm_vec_add2(&objp->pos, &delta_pos);
-						vm_matrix_x_matrix(&tmp, &objp->orient, &view_physics.last_rotmat);
+						vm_matrix_x_matrix(&tmp, &objp->orient, &camera.getLastRotMat());
 						objp->orient = tmp;
 					}
 				}
@@ -608,7 +476,6 @@ void EditorViewport::game_do_frame(const int cur_object_index) {
 				objp = GET_NEXT(objp);
 			}
 
-			// Notify the editor that the mission has changed
 			editor->missionChanged();
 		}
 
@@ -618,29 +485,29 @@ void EditorViewport::game_do_frame(const int cur_object_index) {
 		Assert(0);
 	}
 
-	if (Lookat_mode && query_valid_object(cur_object_index)) {
+	if (camera.getLookatMode() && query_valid_object(cur_object_index)) {
 		float dist;
 
-		dist = vm_vec_dist(&view_pos, &Objects[cur_object_index].pos);
-		vm_vec_scale_add(&view_pos, &Objects[cur_object_index].pos, &view_orient.vec.fvec, -dist);
+		dist = vm_vec_dist(&camera.view_pos, &Objects[cur_object_index].pos);
+		vm_vec_scale_add(&camera.view_pos, &Objects[cur_object_index].pos, &camera.view_orient.vec.fvec, -dist);
 	}
 
-	switch (viewpoint) {
+	switch (camera.getViewpoint()) {
 	case 0:
-		eye_pos = view_pos;
-		eye_orient = view_orient;
+		camera.eye_pos = camera.view_pos;
+		camera.eye_orient = camera.view_orient;
 		break;
 
 	case 1:
-		eye_pos = Objects[view_obj].pos;
-		eye_orient = Objects[view_obj].orient;
+		camera.eye_pos = Objects[camera.getViewObj()].pos;
+		camera.eye_orient = Objects[camera.getViewObj()].orient;
 		break;
 
 	default:
 		Assert(0);
 	}
 
-	maybe_create_new_grid(The_grid, &eye_pos, &eye_orient);
+	maybe_create_new_grid(The_grid, &camera.eye_pos, &camera.eye_orient);
 
 	if (Cursor_over != Last_cursor_over) {
 		Last_cursor_over = Cursor_over;
@@ -655,10 +522,8 @@ void EditorViewport::game_do_frame(const int cur_object_index) {
 	}
 
 	// redraw screen if current viewpoint moved or rotated
-	if (vm_vec_cmp(&eye_pos, &Last_eye_pos) || vm_matrix_cmp(&eye_orient, &Last_eye_orient)) {
+	if (camera.hasEyeMoved()) {
 		needsUpdate();
-		Last_eye_pos = eye_pos;
-		Last_eye_orient = eye_orient;
 	}
 }
 
@@ -666,20 +531,20 @@ void EditorViewport::level_controlled() {
 	int cmode, count = 0;
 	object* objp;
 
-	cmode = Control_mode;
-	if ((viewpoint == 1) && !cmode) {
+	cmode = camera.getControlMode();
+	if ((camera.getViewpoint() == 1) && !cmode) {
 		cmode = 2;
 	}
 
 	switch (cmode) {
 	case 0: //	Control the viewer's location and orientation
-		level_object(&view_orient);
+		level_object(&camera.view_orient);
 		break;
 
 	case 2: // Control viewpoint object
-		if (!Objects[view_obj].flags[Object::Object_Flags::Locked_from_editing]) {
-			level_object(&Objects[view_obj].orient);
-			object_moved(&Objects[view_obj]);
+		if (!Objects[camera.getViewObj()].flags[Object::Object_Flags::Locked_from_editing]) {
+			level_object(&Objects[camera.getViewObj()].orient);
+			object_moved(&Objects[camera.getViewObj()]);
 			///! \todo Notify.
 			editor->autosave("level object");
 			editor->missionChanged();
@@ -722,20 +587,20 @@ void EditorViewport::verticalize_controlled() {
 	int cmode, count = 0;
 	object* objp;
 
-	cmode = Control_mode;
-	if ((viewpoint == 1) && !cmode) {
+	cmode = camera.getControlMode();
+	if ((camera.getViewpoint() == 1) && !cmode) {
 		cmode = 2;
 	}
 
 	switch (cmode) {
 	case 0: //	Control the viewer's location and orientation
-		verticalize_object(&view_orient);
+		verticalize_object(&camera.view_orient);
 		break;
 
 	case 2: // Control viewpoint object
-		if (!Objects[view_obj].flags[Object::Object_Flags::Locked_from_editing]) {
-			verticalize_object(&Objects[view_obj].orient);
-			object_moved(&Objects[view_obj]);
+		if (!Objects[camera.getViewObj()].flags[Object::Object_Flags::Locked_from_editing]) {
+			verticalize_object(&Objects[camera.getViewObj()].orient);
+			object_moved(&Objects[camera.getViewObj()]);
 			///! \todo notify.
 			editor->autosave("align object");
 			editor->missionChanged();
@@ -885,14 +750,14 @@ int EditorViewport::select_object(int cx, int cy) {
 		return -1;
 	}
 
-	p0 = view_pos;
+	p0 = camera.view_pos;
 	vm_vec_scale_add(&p1, &p0, &v, 100.0f);
 
 	for (auto objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
 		if (object_check_collision(objp, &p0, &p1, &hitpos)) {
-			hitpos.xyz.x = objp->pos.xyz.x - view_pos.xyz.x;
-			hitpos.xyz.y = objp->pos.xyz.y - view_pos.xyz.y;
-			hitpos.xyz.z = objp->pos.xyz.z - view_pos.xyz.z;
+			hitpos.xyz.x = objp->pos.xyz.x - camera.view_pos.xyz.x;
+			hitpos.xyz.y = objp->pos.xyz.y - camera.view_pos.xyz.y;
+			hitpos.xyz.z = objp->pos.xyz.z - camera.view_pos.xyz.z;
 			dist = hitpos.xyz.x * hitpos.xyz.x + hitpos.xyz.y * hitpos.xyz.y + hitpos.xyz.z * hitpos.xyz.z;
 			if (dist < best_dist) {
 				best = OBJ_INDEX(objp);
@@ -1312,10 +1177,10 @@ int EditorViewport::create_object(vec3d* pos, int waypoint_instance, bool create
 vec3d EditorViewport::getCreatePosition(int x, int y, float fallbackDist) {
 	vec3d dir, pos;
 	g3_point_to_vec_delayed(&dir, x, y);
-	if (fvi_ray_plane(&pos, &The_grid->center, &The_grid->gmatrix.vec.uvec, &view_pos, &dir, 0.0f) >= 0.0f) {
+	if (fvi_ray_plane(&pos, &The_grid->center, &The_grid->gmatrix.vec.uvec, &camera.view_pos, &dir, 0.0f) >= 0.0f) {
 		return pos;
 	}
-	vm_vec_scale_add(&pos, &view_pos, &view_orient.vec.fvec, fallbackDist);
+	vm_vec_scale_add(&pos, &camera.view_pos, &camera.view_orient.vec.fvec, fallbackDist);
 	return pos;
 }
 
@@ -1487,7 +1352,7 @@ int EditorViewport::drag_objects(int x, int y)
 	*/
 
 	// Do not move ships that we are currently centered around (Lookat_mode). The vector math will start going haywire and return NAN
-	if (!query_valid_object(editor->currentObject) || Lookat_mode)
+	if (!query_valid_object(editor->currentObject) || camera.getLookatMode())
 		return -1;
 
 	if (Dup_drag == 1) {
@@ -1526,11 +1391,11 @@ int EditorViewport::drag_objects(int x, int y)
 		vec3d tmpObject = obj;
 
 		tmpAnticonstraint.xyz.x = 0.0f;
-		r = fvi_ray_plane(&int_pnt, &tmpObject, &tmpAnticonstraint, &view_pos, &cursor_dir, 0.0f);
+		r = fvi_ray_plane(&int_pnt, &tmpObject, &tmpAnticonstraint, &camera.view_pos, &cursor_dir, 0.0f);
 
 		//	If intersected behind viewer, don't move.  Too confusing, not what user wants.
-		vm_vec_sub(&vec1, &int_pnt, &view_pos);
-		vm_vec_sub(&vec2, &obj, &view_pos);
+		vm_vec_sub(&vec1, &int_pnt, &camera.view_pos);
+		vm_vec_sub(&vec2, &obj, &camera.view_pos);
 		if ((r>=0.0f) && (vm_vec_dot(&vec1, &vec2) >= 0.0f))	{
 			vec3d tmp1;
 			vm_vec_sub( &tmp1, &int_pnt, &obj );
@@ -1544,11 +1409,11 @@ int EditorViewport::drag_objects(int x, int y)
 
 
 	} else {  // Move in x-z plane, defined by grid.  Preserve height.
-		r = fvi_ray_plane(&int_pnt, &obj, &Anticonstraint, &view_pos, &cursor_dir, 0.0f);
+		r = fvi_ray_plane(&int_pnt, &obj, &Anticonstraint, &camera.view_pos, &cursor_dir, 0.0f);
 
 		//	If intersected behind viewer, don't move.  Too confusing, not what user wants.
-		vm_vec_sub(&vec1, &int_pnt, &view_pos);
-		vm_vec_sub(&vec2, &obj, &view_pos);
+		vm_vec_sub(&vec1, &int_pnt, &camera.view_pos);
+		vm_vec_sub(&vec2, &obj, &camera.view_pos);
 		if ((r>=0.0f) && (vm_vec_dot(&vec1, &vec2) >= 0.0f))
 			distance_moved = vm_vec_dist(&obj, &int_pnt);
 	}
@@ -1728,7 +1593,7 @@ void EditorViewport::cancel_drag() {
 void EditorViewport::view_universe(bool just_marked) {
 	int max = 0;
 	float dist, largest = 20.0f;
-	vec3d center, p1, p2;		// center of all the objects collectively
+	vec3d center, p1, p2;
 	vertex v;
 	object *ptr;
 
@@ -1778,8 +1643,8 @@ void EditorViewport::view_universe(bool just_marked) {
 	}
 
 	dist = fl_sqrt(largest) + 1.0f;
-	vm_vec_scale_add(&view_pos, &center, &view_orient.vec.fvec, -dist);
-	g3_set_view_matrix(&view_pos, &view_orient, 0.5f);
+	vm_vec_scale_add(&camera.view_pos, &center, &camera.view_orient.vec.fvec, -dist);
+	g3_set_view_matrix(&camera.view_pos, &camera.view_orient, 0.5f);
 
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
@@ -1789,10 +1654,10 @@ void EditorViewport::view_universe(bool just_marked) {
 			if (g3_project_vertex(&v) & PF_OVERFLOW)
 				Int3();
 
-			while (v.codes & CC_OFF) {  // is point off screen?
-				dist += 5.0f;  // zoom out a little and check again.
-				vm_vec_scale_add(&view_pos, &center, &view_orient.vec.fvec, -dist);
-				g3_set_view_matrix(&view_pos, &view_orient, 0.5f);
+			while (v.codes & CC_OFF) {
+				dist += 5.0f;
+				vm_vec_scale_add(&camera.view_pos, &center, &camera.view_orient.vec.fvec, -dist);
+				g3_set_view_matrix(&camera.view_pos, &camera.view_orient, 0.5f);
 				g3_rotate_vertex(&v, &ptr->pos);
 				if (g3_project_vertex(&v) & PF_OVERFLOW)
 					Int3();
@@ -1803,13 +1668,14 @@ void EditorViewport::view_universe(bool just_marked) {
 	}
 
 	dist *= 1.1f;
-	vm_vec_scale_add(&view_pos, &center, &view_orient.vec.fvec, -dist);
-	g3_set_view_matrix(&view_pos, &view_orient, 0.5f);
+	vm_vec_scale_add(&camera.view_pos, &center, &camera.view_orient.vec.fvec, -dist);
+	g3_set_view_matrix(&camera.view_pos, &camera.view_orient, 0.5f);
 
 	needsUpdate();
 }
 void EditorViewport::view_object(int obj_num) {
-	vm_vec_scale_add(&view_pos, &Objects[obj_num].pos, &view_orient.vec.fvec, Objects[obj_num].radius * -3.0f);
+	vm_vec_scale_add(&camera.view_pos, &Objects[obj_num].pos, &camera.view_orient.vec.fvec,
+	                 Objects[obj_num].radius * -3.0f);
 
 	needsUpdate();
 }
