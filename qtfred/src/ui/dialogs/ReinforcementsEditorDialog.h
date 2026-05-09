@@ -27,6 +27,7 @@ public:
 
 protected:
 	void closeEvent(QCloseEvent* e) override; // funnel all Window X presses through reject()
+	void focusInEvent(QFocusEvent* e) override;
 
 private slots:
 	void on_okAndCancelButtons_accepted();
@@ -46,7 +47,9 @@ private slots:
 private:  // NOLINT(readability-redundant-access-specifiers)
 	std::unique_ptr<Ui::ReinforcementsDialog> ui;
 	std::unique_ptr<ReinforcementsDialogModel> _model;
-	EditorViewport* _viewport;
+	EditorViewport* _viewport    = nullptr;
+	FredView*       _fredView    = nullptr;
+	QUndoStack*     _dialogStack = nullptr;
 
 	void updateUi();
 	void enableDisableControls();

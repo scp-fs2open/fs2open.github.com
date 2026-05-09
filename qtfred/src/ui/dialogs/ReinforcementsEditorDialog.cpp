@@ -1,10 +1,12 @@
 #include "ReinforcementsEditorDialog.h"
 #include "ui_ReinforcementsDialog.h"
-#include "ui/Theme.h"
+#include "mission/commands/FredCommands.h"
 #include "mission/util.h"
+#include "ui/Theme.h"
 #include <globalincs/linklist.h>
 #include <ui/util/SignalBlockers.h>
 #include <QCloseEvent>
+#include <QFocusEvent>
 #include <qlineedit.h>
 
 namespace fso::fred::dialogs {
@@ -12,10 +14,13 @@ namespace fso::fred::dialogs {
 
 ReinforcementsDialog::ReinforcementsDialog(FredView* parent, EditorViewport* viewport)
 	: QDialog(parent), ui(new Ui::ReinforcementsDialog()), _model(new ReinforcementsDialogModel(this, viewport)),
-	_viewport(viewport)
+	  _viewport(viewport), _fredView(parent)
 {
 	this->setFocus();
-	ui->setupUi(this);		
+	ui->setupUi(this);
+
+	_dialogStack = new QUndoStack(this);
+	_fredView->undoGroup()->addStack(_dialogStack);
 
 	fso::fred::bindStandardIcon(ui->moveSelectionUp, QStyle::SP_ArrowUp);
 	ui->moveSelectionUp->setText(QString());
@@ -32,22 +37,32 @@ ReinforcementsDialog::~ReinforcementsDialog() = default;
 
 void ReinforcementsDialog::accept()
 {
-	// If apply() returns true, close the dialog
+	QByteArray stateBefore = _model->captureState();
 	if (_model->apply()) {
+		QByteArray stateAfter = _model->captureState();
+		_model->setParent(nullptr);
+		_fredView->mainUndoStack()->push(
+			new ApplyDialogCommand(std::move(_model), stateBefore, stateAfter,
+			                       _viewport->editor, tr("Edit Reinforcements")));
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
 		QDialog::accept();
 	}
-	// else: validation failed, don't close
 }
 
 void ReinforcementsDialog::reject()
 {
-	// Asks the user if they want to save changes, if any
-	// If they do, it runs _model->apply() and returns the success value
-	// If they don't, it runs _model->reject() and returns true
-	if (rejectOrCloseHandler(this, _model.get(), _viewport)) {
-		QDialog::reject(); // actually close
+	if (!_model) {
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
+		QDialog::reject();
+		return;
 	}
-	// else: do nothing, don't close
+	if (rejectOrCloseHandler(this, _model.get(), _viewport)) {
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
+		QDialog::reject();
+	}
 }
 
 void ReinforcementsDialog::closeEvent(QCloseEvent* e)
@@ -62,6 +77,12 @@ void ReinforcementsDialog::closeEvent(QCloseEvent* e)
 	} else {
 		e->accept();
 	}
+}
+
+void ReinforcementsDialog::focusInEvent(QFocusEvent* e)
+{
+	_fredView->undoGroup()->setActiveStack(_dialogStack);
+	QDialog::focusInEvent(e);
 }
 
 

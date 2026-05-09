@@ -12,6 +12,9 @@ class ReinforcementsDialogModel : public AbstractDialogModel {
 	bool apply() override;
 	void reject() override;
 
+	QByteArray captureState() const override;
+	void restoreState(const QByteArray& state) override;
+
 	void initializeData();
 
 	SCP_vector<SCP_string> getShipPoolList();
