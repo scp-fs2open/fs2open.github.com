@@ -1,6 +1,9 @@
 #pragma once
 
+#include <memory>
+
 #include <QUndoCommand>
+#include <mission/dialogs/AbstractDialogModel.h>
 #include <globalincs/pstypes.h>
 #include <math/vecmat.h>
 #include <ship/ship.h>
@@ -401,6 +404,27 @@ public:
 	~DeleteWingCommand() override;
 	void undo() override;
 	void redo() override;
+};
+
+// ---------------------------------------------------------------------------
+// ApplyDialogCommand — atomic undo entry pushed when a modal dialog accepts
+// ---------------------------------------------------------------------------
+
+class ApplyDialogCommand : public QUndoCommand {
+    std::unique_ptr<fso::fred::dialogs::AbstractDialogModel> _model;
+    QByteArray                                               _stateBefore;
+    QByteArray                                               _stateAfter;
+    Editor*                                                  _editor;
+
+public:
+    ApplyDialogCommand(std::unique_ptr<fso::fred::dialogs::AbstractDialogModel> model,
+                       QByteArray                                               stateBefore,
+                       QByteArray                                               stateAfter,
+                       Editor*                                                  editor,
+                       const QString&                                           text,
+                       QUndoCommand*                                            parent = nullptr);
+    void undo() override;
+    void redo() override;
 };
 
 } // namespace fso::fred

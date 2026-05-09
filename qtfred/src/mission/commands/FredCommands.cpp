@@ -1402,4 +1402,33 @@ void DeleteWingCommand::redo()
 	_viewport->needsUpdate();
 }
 
+// ===========================================================================
+// ApplyDialogCommand
+// ===========================================================================
+
+ApplyDialogCommand::ApplyDialogCommand(std::unique_ptr<fso::fred::dialogs::AbstractDialogModel> model,
+                                       QByteArray                                               stateBefore,
+                                       QByteArray                                               stateAfter,
+                                       Editor*                                                  editor,
+                                       const QString&                                           text,
+                                       QUndoCommand*                                            parent)
+    : QUndoCommand(text, parent)
+    , _model(std::move(model))
+    , _stateBefore(std::move(stateBefore))
+    , _stateAfter(std::move(stateAfter))
+    , _editor(editor)
+{}
+
+void ApplyDialogCommand::undo()
+{
+    _model->restoreState(_stateBefore);
+    _editor->missionChanged();
+}
+
+void ApplyDialogCommand::redo()
+{
+    _model->restoreState(_stateAfter);
+    _editor->missionChanged();
+}
+
 } // namespace fso::fred

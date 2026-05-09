@@ -46,6 +46,10 @@ add_file_folder("Source/Mission/Commands"
     src/mission/commands/ObjectCapture.h
 )
 
+add_file_folder("Source/Mission/Dialogs/State"
+    src/mission/dialogs/state/DialogStateHelpers.h
+)
+
 add_file_folder("Source/Mission/Dialogs"
     src/mission/dialogs/AbstractDialogModel.cpp
     src/mission/dialogs/AbstractDialogModel.h
