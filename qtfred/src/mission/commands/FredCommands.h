@@ -407,6 +407,27 @@ public:
 };
 
 // ---------------------------------------------------------------------------
+// GenerateWaypointPathCommand — undo/redo for the waypoint path generator
+// ---------------------------------------------------------------------------
+
+class GenerateWaypointPathCommand : public QUndoCommand {
+	SCP_string        _pathName;
+	SCP_vector<vec3d> _positions; // exact positions from initial generation
+	bool              _firstRedo = true;
+	Editor*           _editor;
+
+public:
+	// Construct AFTER apply() succeeds. First redo() is a no-op.
+	GenerateWaypointPathCommand(SCP_string        pathName,
+	                            SCP_vector<vec3d> positions,
+	                            Editor*           editor,
+	                            const QString&    text   = {},
+	                            QUndoCommand*     parent = nullptr);
+	void undo() override;
+	void redo() override;
+};
+
+// ---------------------------------------------------------------------------
 // ApplyDialogCommand — atomic undo entry pushed when a modal dialog accepts
 // ---------------------------------------------------------------------------
 

@@ -1403,6 +1403,70 @@ void DeleteWingCommand::redo()
 }
 
 // ===========================================================================
+// GenerateWaypointPathCommand
+// ===========================================================================
+
+GenerateWaypointPathCommand::GenerateWaypointPathCommand(SCP_string        pathName,
+                                                          SCP_vector<vec3d> positions,
+                                                          Editor*           editor,
+                                                          const QString&    text,
+                                                          QUndoCommand*     parent)
+    : QUndoCommand(text, parent)
+    , _pathName(std::move(pathName))
+    , _positions(std::move(positions))
+    , _editor(editor)
+{}
+
+void GenerateWaypointPathCommand::undo()
+{
+	// Waypoints created by apply() land in obj_create_list, not obj_used_list.
+	// If undo fires before the first render frame, query_valid_object (called by
+	// delete_object → unmarkObject) won't find them.  Promote them first.
+	obj_merge_created_list();
+
+	// Find the generated path by name.
+	waypoint_list* wl = nullptr;
+	for (auto& candidate : Waypoint_lists) {
+		if (!stricmp(candidate.get_name(), _pathName.c_str())) {
+			wl = &candidate;
+			break;
+		}
+	}
+	if (!wl)
+		return;
+
+	// Collect all object numbers before any deletion; waypoint_remove() shifts
+	// the instance values of remaining waypoints as each one is removed, but the
+	// object numbers themselves remain stable until obj_delete() is called.
+	SCP_vector<int> objnums;
+	objnums.reserve(wl->get_waypoints().size());
+	for (const auto& wp : wl->get_waypoints())
+		objnums.push_back(wp.get_objnum());
+
+	for (int objnum : objnums)
+		_editor->delete_object(objnum);
+}
+
+void GenerateWaypointPathCommand::redo()
+{
+	if (_firstRedo) {
+		_firstRedo = false;
+		return;
+	}
+	if (_positions.empty())
+		return;
+
+	int listIndex = static_cast<int>(Waypoint_lists.size());
+	waypoint_add(_positions.data(), -1);
+	Waypoint_lists[static_cast<size_t>(listIndex)].set_name(_pathName.c_str());
+	for (int i = 1; i < static_cast<int>(_positions.size()); ++i)
+		waypoint_add(&_positions[i], calc_waypoint_instance(listIndex, i - 1));
+
+	obj_merge_created_list();
+	_editor->missionChanged();
+}
+
+// ===========================================================================
 // ApplyDialogCommand
 // ===========================================================================
 
