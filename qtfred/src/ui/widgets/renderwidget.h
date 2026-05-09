@@ -71,6 +71,12 @@ class RenderWidget: public QWidget {
 
 	void handleOrbitDrag(QPoint point, Qt::KeyboardModifiers modifiers);
 
+	// Ctrl+drag clone tracking — set on press, consumed on release.
+	bool            _wasDupDrag              = false;
+	bool            _wasInsertDrag           = false;
+	int             _preCloneCurrentObj      = -1;
+	SCP_vector<int> _preCloneSourceSignatures;
+
  public:
 	explicit RenderWidget(QWidget* parent);
 

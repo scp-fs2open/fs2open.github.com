@@ -40,6 +40,10 @@ add_file_folder("Source/Mission"
 add_file_folder("Source/Mission/Commands"
     src/mission/commands/CameraTransformCommand.cpp
     src/mission/commands/CameraTransformCommand.h
+    src/mission/commands/FredCommands.cpp
+    src/mission/commands/FredCommands.h
+    src/mission/commands/ObjectCapture.cpp
+    src/mission/commands/ObjectCapture.h
 )
 
 add_file_folder("Source/Mission/Dialogs"

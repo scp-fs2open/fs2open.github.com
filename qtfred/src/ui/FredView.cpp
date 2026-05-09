@@ -1,6 +1,8 @@
 #include "FredView.h"
 #include "ui_FredView.h"
 
+#include <algorithm>
+
 #include <ui/util/default_dir.h>
 
 #include <QDir>
@@ -34,6 +36,7 @@
 #include <ui/dialogs/BriefingEditorDialog.h>
 #include <ui/dialogs/WaypointEditorDialog.h>
 #include <ui/dialogs/ReorderDialog.h>
+#include <object/object.h>
 #include <object/waypoint.h>
 #include <ui/dialogs/WaypointPathGeneratorDialog.h>
 #include <ui/dialogs/JumpNodeEditorDialog.h>
@@ -71,6 +74,7 @@
 
 #include "mission/Editor.h"
 #include "mission/commands/CameraTransformCommand.h"
+#include "mission/commands/FredCommands.h"
 #include "mission/management.h"
 #include "ui/Theme.h"
 #include <prop/prop.h>
@@ -160,6 +164,13 @@ FredView::FredView(QWidget* parent) : QMainWindow(parent), ui(new Ui::FredView()
 	_undoAction->setShortcuts(QKeySequence::Undo);
 	_redoAction  = _undoGroup->createRedoAction(this, tr("&Redo"));
 	_redoAction->setShortcuts(QKeySequence::Redo);
+	// QKeySequence::Redo includes Ctrl+Shift+Z on Windows and Linux, which conflicts
+	// with the camera undo shortcut below. Strip it so only Ctrl+Y remains.
+	{
+		QList<QKeySequence> redoShortcuts = _redoAction->shortcuts();
+		redoShortcuts.removeAll(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_Z));
+		_redoAction->setShortcuts(redoShortcuts);
+	}
 
 	_undoCameraAction = _cameraStack->createUndoAction(this, tr("Undo View Change"));
 	_undoCameraAction->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_Z));
@@ -1270,10 +1281,14 @@ void FredView::onUpdateContextToolbar() {
 			_contextToolBar->addAction(selWingAct);
 		}
 	} else if (effectiveType == OBJ_WAYPOINT) {
+		addBtn(tr("Rename"),               &FredView::quickRenameCurrentObject);
 		addBtn(tr("Edit Waypoint Path"),   &FredView::on_actionWaypoint_Paths_triggered);
 	} else if (effectiveType == OBJ_JUMP_NODE) {
+		addBtn(tr("Rename"),               &FredView::quickRenameCurrentObject);
 		addBtn(tr("Edit Jump Node"),       &FredView::on_actionJump_Nodes_triggered);
 	} else if (effectiveType == OBJ_PROP) {
+		if (numMarked <= 1)
+			addBtn(tr("Rename"),           &FredView::quickRenameCurrentObject);
 		addBtn(tr("Edit Prop"),            &FredView::on_actionProps_triggered);
 	}
 
@@ -1290,16 +1305,44 @@ void FredView::quickRenameCurrentObject() {
 	const int obj = fred->currentObject;
 	if (!query_valid_object(obj)) return;
 
+	const int type = Objects[obj].type;
+
+	// For waypoint paths, rename the whole path (not the individual waypoint point).
+	// The path has no single object number, so we pass -1 to RenameObjectCommand and
+	// identify it by name.
+	if (type == OBJ_WAYPOINT) {
+		waypoint_list* wl = find_waypoint_list_with_instance(Objects[obj].instance, nullptr);
+		if (!wl) return;
+		const QString current = QString::fromUtf8(wl->get_name());
+		bool ok = false;
+		const QString newName = QInputDialog::getText(
+		    this, tr("Rename"), tr("New path name:"), QLineEdit::Normal, current, &ok).trimmed();
+		if (!ok || newName.isEmpty() || newName == current) return;
+		_mainStack->push(new fso::fred::RenameObjectCommand(
+		    -1,
+		    current.toUtf8().constData(),
+		    newName.toUtf8().constData(),
+		    fred));
+		return;
+	}
+
+	if (type != OBJ_SHIP && type != OBJ_START &&
+	    type != OBJ_JUMP_NODE && type != OBJ_PROP) {
+		return; // wings use their editor dialog
+	}
+
 	const QString current = QString::fromUtf8(object_name(obj));
 	bool ok = false;
-	QString newName = QInputDialog::getText(this, tr("Rename"), tr("New name:"), QLineEdit::Normal, current, &ok).trimmed();
+	const QString newName = QInputDialog::getText(
+	    this, tr("Rename"), tr("New name:"), QLineEdit::Normal, current, &ok).trimmed();
 	if (!ok || newName.isEmpty() || newName == current) return;
 
-	if (Objects[obj].type == OBJ_SHIP || Objects[obj].type == OBJ_START) {
-		fred->rename_ship(Objects[obj].instance, newName.toUtf8().constData());
-	}
-	// Waypoints, props, and jump nodes open their editor (name field is front-and-center)
-	// Wing rename goes through Edit Wing since wings have no standalone scene object
+	// QUndoStack::push() calls redo() immediately, which applies the rename.
+	_mainStack->push(new fso::fred::RenameObjectCommand(
+	    obj,
+	    current.toUtf8().constData(),
+	    newName.toUtf8().constData(),
+	    fred));
 }
 
 
@@ -1375,10 +1418,16 @@ void FredView::initializeTransformBar() {
 	_transformToolBar->addWidget(_transformIffCombo);
 	connect(_transformIffCombo, QOverload<int>::of(&QComboBox::activated), this, [this](int idx) {
 		if (idx < 0 || !_viewport) return;
+		SCP_vector<fso::fred::ShipIFFChange> changes;
 		for (object* p = GET_FIRST(&obj_used_list); p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p)) {
 			if (!p->flags[Object::Object_Flags::Marked]) continue;
-			if (p->type == OBJ_SHIP || p->type == OBJ_START)
+			if (p->type == OBJ_SHIP || p->type == OBJ_START) {
+				changes.push_back({p->signature, Ships[p->instance].team, idx});
 				Ships[p->instance].team = idx;
+			}
+		}
+		if (!changes.empty()) {
+			_mainStack->push(new fso::fred::ChangeIFFCommand(std::move(changes), fred));
 		}
 		fred->missionChanged();
 	});
@@ -1457,8 +1506,18 @@ void FredView::initializeTransformBar() {
 	connect(_transformLayerCombo, QOverload<int>::of(&QComboBox::activated), this, [this](int idx) {
 		if (idx < 0 || !_viewport) return;
 		SCP_string layerName = _transformLayerCombo->itemText(idx).toUtf8().constData();
+		SCP_vector<fso::fred::ObjectLayerChange> changes;
+		for (object* p = GET_FIRST(&obj_used_list); p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p)) {
+			if (!p->flags[Object::Object_Flags::Marked]) continue;
+			SCP_string before = _viewport->getObjectLayerName(OBJ_INDEX(p));
+			if (before != layerName)
+				changes.push_back({p->signature, std::move(before), layerName});
+		}
 		_viewport->moveMarkedObjectsToLayer(layerName, nullptr);
-		fred->missionChanged();
+		if (!changes.empty())
+			_mainStack->push(new fso::fred::MoveLayerCommand(std::move(changes), _viewport, fred));
+		else
+			fred->missionChanged();
 	});
 
 	addFixedSpacer(12);
@@ -1634,6 +1693,17 @@ void FredView::onTransformEditingFinished() {
 	const int  numMarked   = fred->getNumMarked();
 	const bool isMulti     = numMarked > 1;
 
+	// Snapshot before-state for all marked objects.
+	SCP_vector<fso::fred::ObjectTransform> transforms;
+	for (const object* p = GET_FIRST(&obj_used_list); p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p)) {
+		if (!p->flags[Object::Object_Flags::Marked]) continue;
+		fso::fred::ObjectTransform t{};
+		t.signature    = p->signature;
+		t.posBefore    = p->pos;
+		t.orientBefore = p->orient;
+		transforms.push_back(t);
+	}
+
 	if (rotateMode) {
 		if (isMulti && localMode) {
 			// Local delta: compute angle delta from curObj, apply to every marked object.
@@ -1700,7 +1770,25 @@ void FredView::onTransformEditingFinished() {
 		}
 	}
 
-	fred->missionChanged();
+	// Capture after-state and discard entries where nothing changed.
+	for (auto& t : transforms) {
+		const int cur = obj_get_by_signature(t.signature);
+		if (cur >= 0) {
+			t.posAfter    = Objects[cur].pos;
+			t.orientAfter = Objects[cur].orient;
+		}
+	}
+	transforms.erase(std::remove_if(transforms.begin(), transforms.end(),
+	    [](const fso::fred::ObjectTransform& t) {
+	        return vm_vec_cmp(&t.posBefore, &t.posAfter) == 0 &&
+	               vm_matrix_cmp(&t.orientBefore, &t.orientAfter) == 0;
+	    }), transforms.end());
+
+	if (!transforms.empty()) {
+		_mainStack->push(new fso::fred::MoveObjectsCommand(std::move(transforms), fred, _viewport));
+	} else {
+		fred->missionChanged();
+	}
 }
 
 void FredView::updateUI() {
@@ -1963,7 +2051,14 @@ void FredView::showWingContextMenu(int wingIndex, const QPoint& globalPos)
 
 	auto* deleteAction = menu.addAction(tr("Delete %1").arg(wingName));
 	connect(deleteAction, &QAction::triggered, this, [this, wingIndex]() {
-		fred->delete_wing(wingIndex, 0);
+		// Capture before the delete, push only if it wasn't canceled at the
+		// reference check (first redo() is a no-op either way).
+		auto* cmd = new DeleteWingCommand(wingIndex, fred, _viewport);
+		if (fred->delete_wing(wingIndex, 0) == 0) {
+			_mainStack->push(cmd);
+		} else {
+			delete cmd;
+		}
 	});
 
 	menu.exec(globalPos);
@@ -2015,7 +2110,7 @@ void FredView::showWaypointPathContextMenu(int pathIndex, const QPoint& globalPo
 
 	auto* deleteAction = menu.addAction(tr("Delete %1").arg(pathName));
 	connect(deleteAction, &QAction::triggered, this, [this]() {
-		fred->delete_marked();
+		on_actionDelete_triggered(false);
 	});
 
 	menu.exec(globalPos);
@@ -2074,16 +2169,26 @@ void FredView::initializePopupMenus() {
 		if (fred->cur_waypoint != nullptr) {
 			waypoint_instance = Objects[fred->cur_waypoint->get_objnum()].instance;
 		}
-		_viewport->createWaypointAtScreenPos(_lastContextMenuLocalPos.x() * this->devicePixelRatio(),
+		const int objNum = _viewport->createWaypointAtScreenPos(_lastContextMenuLocalPos.x() * this->devicePixelRatio(),
 			_lastContextMenuLocalPos.y() * this->devicePixelRatio(),
 			waypoint_instance);
+		if (objNum >= 0) {
+			_mainStack->push(new fso::fred::CreateObjectCommand(Objects[objNum].pos,
+				_viewport->cur_model_index, _viewport->cur_prop_index, waypoint_instance,
+				CreateKind::Other, OtherKind::Waypoint, objNum, fred, _viewport)); // first redo() is a no-op
+		}
 	});
 	createOtherSubmenu->addAction(createWaypointAction);
 
 	auto* createJumpNodeAction = new QAction(tr("Jump Node"), createOtherSubmenu);
 	connect(createJumpNodeAction, &QAction::triggered, this, [this]() {
-		_viewport->createJumpNodeAtScreenPos(_lastContextMenuLocalPos.x() * this->devicePixelRatio(),
+		const int objNum = _viewport->createJumpNodeAtScreenPos(_lastContextMenuLocalPos.x() * this->devicePixelRatio(),
 			_lastContextMenuLocalPos.y() * this->devicePixelRatio());
+		if (objNum >= 0) {
+			_mainStack->push(new fso::fred::CreateObjectCommand(Objects[objNum].pos,
+				_viewport->cur_model_index, _viewport->cur_prop_index, -1,
+				CreateKind::Other, OtherKind::JumpNode, objNum, fred, _viewport)); // first redo() is a no-op
+		}
 	});
 	createOtherSubmenu->addAction(createJumpNodeAction);
 
@@ -2165,8 +2270,13 @@ void FredView::populateCreateShipSubmenu() {
 		entries.push_back({QString::fromUtf8(Ship_info[i].name), i});
 	}
 	populateDataListMenu(_createShipSubmenu, entries, _viewport->Data_menu_style, [this](int shipClass) {
-		_viewport->createShipAtScreenPos(_lastContextMenuLocalPos.x() * this->devicePixelRatio(),
+		const int objNum = _viewport->createShipAtScreenPos(_lastContextMenuLocalPos.x() * this->devicePixelRatio(),
 			_lastContextMenuLocalPos.y() * this->devicePixelRatio(), shipClass);
+		if (objNum >= 0) {
+			_mainStack->push(new fso::fred::CreateObjectCommand(Objects[objNum].pos,
+				shipClass, _viewport->cur_prop_index, -1,
+				CreateKind::Ship, _viewport->cur_other_kind, objNum, fred, _viewport)); // first redo() is a no-op
+		}
 	});
 }
 
@@ -2179,9 +2289,14 @@ void FredView::populateCreatePropSubmenu() {
 		entries.push_back({QString::fromStdString(Prop_info[i].name), i});
 	}
 	populateDataListMenu(_createPropSubmenu, entries, _viewport->Data_menu_style, [this](int propClass) {
-		_viewport->createPropAtScreenPos(_lastContextMenuLocalPos.x() * this->devicePixelRatio(),
+		const int objNum = _viewport->createPropAtScreenPos(_lastContextMenuLocalPos.x() * this->devicePixelRatio(),
 			_lastContextMenuLocalPos.y() * this->devicePixelRatio(),
 			propClass);
+		if (objNum >= 0) {
+			_mainStack->push(new fso::fred::CreateObjectCommand(Objects[objNum].pos,
+				_viewport->cur_model_index, propClass, -1,
+				CreateKind::Prop, _viewport->cur_other_kind, objNum, fred, _viewport)); // first redo() is a no-op
+		}
 	});
 }
 
@@ -2203,17 +2318,28 @@ void FredView::populateMoveToLayerMenu(int targetObject, QMenu* targetMenu) {
 		layerAction->setEnabled(visible);
 
 		connect(layerAction, &QAction::triggered, this, [this, layerName, targetObject]() {
+			SCP_vector<fso::fred::ObjectLayerChange> changes;
 			SCP_string error;
 			if (Objects[targetObject].flags[Object::Object_Flags::Marked] && fred->getNumMarked() > 1) {
+				for (object* p = GET_FIRST(&obj_used_list); p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p)) {
+					if (!p->flags[Object::Object_Flags::Marked]) continue;
+					SCP_string before = _viewport->getObjectLayerName(OBJ_INDEX(p));
+					if (before != layerName)
+						changes.push_back({p->signature, std::move(before), layerName});
+				}
 				_viewport->moveMarkedObjectsToLayer(layerName, &error);
 			} else {
+				SCP_string before = _viewport->getObjectLayerName(targetObject);
+				if (before != layerName)
+					changes.push_back({Objects[targetObject].signature, std::move(before), layerName});
 				_viewport->moveObjectToLayer(targetObject, layerName, &error);
 			}
-
-				if (!error.empty()) {
-					showButtonDialog(DialogType::Error, "Layer Error", error, { DialogButton::Ok });
-				}
-			});
+			if (!error.empty()) {
+				showButtonDialog(DialogType::Error, "Layer Error", error, { DialogButton::Ok });
+			} else if (!changes.empty()) {
+				_mainStack->push(new fso::fred::MoveLayerCommand(std::move(changes), _viewport, fred));
+			}
+		});
 		dest->addAction(layerAction);
 	}
 
@@ -2872,11 +2998,41 @@ void FredView::on_actionWingForm_triggered(bool  /*enabled*/) {
 		}
 	}
 
-	fred->create_wing();
+	// Capture pre-formation ship names BEFORE create_wing() renames them.
+	SCP_map<int, SCP_string> preFormationNames;
+	for (object* pIter = GET_FIRST(&obj_used_list);
+	     pIter != END_OF_LIST(&obj_used_list);
+	     pIter = GET_NEXT(pIter))
+	{
+		if ((pIter->type == OBJ_SHIP || pIter->type == OBJ_START)
+		    && pIter->flags[Object::Object_Flags::Marked]) {
+			preFormationNames[pIter->instance] = Ships[pIter->instance].ship_name;
+		}
+	}
+
+	if (fred->create_wing() == 0 && fred->cur_wing >= 0) {
+		const int wingNum = fred->cur_wing;
+		SCP_vector<WingMemberPreState> members;
+		for (int i = 0; i < Wings[wingNum].wave_count; i++) {
+			WingMemberPreState m;
+			m.shipIndex = Wings[wingNum].ship_index[i];
+			strcpy_s(m.preName, preFormationNames.count(m.shipIndex)
+			         ? preFormationNames[m.shipIndex].c_str()
+			         : Ships[m.shipIndex].ship_name);
+			members.push_back(m);
+		}
+		_mainStack->push(new FormWingCommand(wingNum, std::move(members), fred, _viewport));
+	}
 }
 void FredView::on_actionWingDisband_triggered(bool  /*enabled*/) {
 	if (fred->query_single_wing_marked()) {
-		fred->disband_wing(fred->cur_wing);
+		const int wingNum = fred->cur_wing;
+		auto* cmd = new DisbandWingCommand(wingNum, fred, _viewport);
+		if (fred->disband_wing(wingNum) == 0) {
+			_mainStack->push(cmd);
+		} else {
+			delete cmd;
+		}
 	} else {
 		showButtonDialog(DialogType::Error,
 						 "Error",
@@ -2972,17 +3128,30 @@ void FredView::on_actionRestore_Camera_Pos_triggered(bool) {
 }
 void FredView::on_actionClone_Marked_Objects_triggered(bool) {
 	if (fred->getNumMarked() > 0) {
-		_viewport->duplicate_marked_objects();
+		auto* cmd = new fso::fred::CloneMarkedObjectsCommand(fred, _viewport);
+		_mainStack->push(cmd); // redo() calls duplicate_marked_objects()
 	}
 }
 void FredView::on_actionDelete_triggered(bool) {
-	if (fred->getNumMarked() > 0) {
-		fred->delete_marked();
+	if (fred->getNumMarked() <= 0) return;
+	auto* cmd = new fso::fred::DeleteObjectsCommand(fred, _viewport);
+	fred->delete_marked();
+	// Only push undo if all marked objects were actually removed (no reference-check abort).
+	if (!cmd->isEmpty() && fred->getNumMarked() == 0) {
+		_mainStack->push(cmd); // first redo() is a no-op
+	} else {
+		delete cmd;
 	}
 }
 void FredView::on_actionDelete_Wing_triggered(bool) {
 	if (fred->cur_wing >= 0) {
-		fred->delete_wing(fred->cur_wing, 0);
+		const int wingNum = fred->cur_wing;
+		auto* cmd = new DeleteWingCommand(wingNum, fred, _viewport);
+		if (fred->delete_wing(wingNum, 0) == 0) {
+			_mainStack->push(cmd);
+		} else {
+			delete cmd;
+		}
 	}
 }
 void FredView::initializeGroupActions() {
@@ -3053,10 +3222,50 @@ void FredView::on_actionControl_Object_triggered(bool) {
 	_viewport->camera.toggleControlMode();
 }
 void FredView::on_actionLevel_Object_triggered(bool) {
+	// Snapshot before state for all marked objects.
+	SCP_vector<fso::fred::ObjectOrientChange> changes;
+	for (const object* p = GET_FIRST(&obj_used_list);
+	     p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p))
+	{
+		if (p->flags[Object::Object_Flags::Marked]) {
+			changes.push_back({p->signature, p->orient, {}});
+		}
+	}
 	_viewport->level_controlled();
+	// Capture after state and filter unchanged entries.
+	for (auto& c : changes) {
+		const int cur = obj_get_by_signature(c.signature);
+		if (cur >= 0) c.orientAfter = Objects[cur].orient;
+	}
+	changes.erase(std::remove_if(changes.begin(), changes.end(),
+	    [](const fso::fred::ObjectOrientChange& c) {
+	        return vm_matrix_cmp(&c.orientBefore, &c.orientAfter) == 0;
+	    }), changes.end());
+	if (!changes.empty()) {
+		_mainStack->push(new fso::fred::LevelObjectsCommand(std::move(changes), fred, _viewport));
+	}
 }
 void FredView::on_actionAlign_Object_triggered(bool) {
+	SCP_vector<fso::fred::ObjectOrientChange> changes;
+	for (const object* p = GET_FIRST(&obj_used_list);
+	     p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p))
+	{
+		if (p->flags[Object::Object_Flags::Marked]) {
+			changes.push_back({p->signature, p->orient, {}});
+		}
+	}
 	_viewport->verticalize_controlled();
+	for (auto& c : changes) {
+		const int cur = obj_get_by_signature(c.signature);
+		if (cur >= 0) c.orientAfter = Objects[cur].orient;
+	}
+	changes.erase(std::remove_if(changes.begin(), changes.end(),
+	    [](const fso::fred::ObjectOrientChange& c) {
+	        return vm_matrix_cmp(&c.orientBefore, &c.orientAfter) == 0;
+	    }), changes.end());
+	if (!changes.empty()) {
+		_mainStack->push(new fso::fred::AlignObjectsCommand(std::move(changes), fred, _viewport));
+	}
 }
 void FredView::on_actionNext_Subsystem_triggered(bool) {
 	fred->select_next_subsystem();
