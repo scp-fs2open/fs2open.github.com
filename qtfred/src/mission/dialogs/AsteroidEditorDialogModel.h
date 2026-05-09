@@ -35,6 +35,9 @@ public:
 	bool apply() override;
 	void reject() override;
 
+	QByteArray captureState() const override;
+	void restoreState(const QByteArray& state) override;
+
 	// toggles
 	void setFieldEnabled(bool enabled);
 	bool getFieldEnabled() const;

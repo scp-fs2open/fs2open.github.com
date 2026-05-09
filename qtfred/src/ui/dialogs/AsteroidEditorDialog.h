@@ -23,6 +23,7 @@ public:
 
 protected:
 	void closeEvent(QCloseEvent* e) override; // funnel all Window X presses through reject()
+	void focusInEvent(QFocusEvent*) override;
 
 // Utilize Qt's "slots" feature to automatically connect UI elements to functions with less code in the initializer
 // As a benefit this also requires zero manual signal setup in the .ui file (which is less obvious to those unfamiliar with Qt)
@@ -71,8 +72,10 @@ private: // NOLINT(readability-redundant-access-specifiers)
 	void updateUi();
 
 	// Boilerplate
-	EditorViewport* _viewport = nullptr;
-	Editor* _editor = nullptr;
+	EditorViewport* _viewport    = nullptr;
+	Editor*         _editor      = nullptr;
+	FredView*       _fredView    = nullptr;
+	QUndoStack*     _dialogStack = nullptr;
 	std::unique_ptr<Ui::AsteroidEditorDialog> ui;
 	std::unique_ptr<AsteroidEditorDialogModel> _model;
 
