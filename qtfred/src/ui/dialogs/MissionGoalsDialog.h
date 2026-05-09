@@ -4,6 +4,7 @@
 
 #include "mission/EditorViewport.h"
 #include "mission/dialogs/MissionGoalsDialogModel.h"
+#include "ui/FredView.h"
 
 #include "ui/widgets/sexp_tree_view.h"
 
@@ -18,7 +19,7 @@ class MissionGoalsDialog : public QDialog, public SexpTreeEditorInterface
     Q_OBJECT
 
 public:
-    explicit MissionGoalsDialog(QWidget *parent, EditorViewport* viewport);
+    explicit MissionGoalsDialog(FredView* parent, EditorViewport* viewport);
     ~MissionGoalsDialog() override;
 
 	void accept() override;
@@ -26,6 +27,7 @@ public:
 
  protected:
 	void closeEvent(QCloseEvent* event) override;
+	void focusInEvent(QFocusEvent* e) override;
 
 private slots:
 	void on_okAndCancelButtons_accepted();
@@ -54,7 +56,9 @@ private slots:
     std::unique_ptr<Ui::MissionGoalsDialog> ui;
     std::unique_ptr<MissionGoalsDialogModel> _model;
 
-    EditorViewport* _viewport = nullptr;
+    EditorViewport* _viewport  = nullptr;
+    FredView*       _fredView  = nullptr;
+    QUndoStack*     _dialogStack = nullptr;
 	void load_tree();
 	void recreate_tree();
 };

@@ -3,16 +3,22 @@
 #include "MissionGoalsDialog.h"
 
 #include "ui/util/SignalBlockers.h"
+#include "mission/commands/FredCommands.h"
 #include "mission/util.h"
 #include "ui_MissionGoalsDialog.h"
+#include <QFocusEvent>
 
 namespace fso::fred::dialogs {
 
-MissionGoalsDialog::MissionGoalsDialog(QWidget* parent, EditorViewport* viewport)
+MissionGoalsDialog::MissionGoalsDialog(FredView* parent, EditorViewport* viewport)
 	: QDialog(parent), SexpTreeEditorInterface({TreeFlags::LabeledRoot, TreeFlags::RootDeletable}),
-	  ui(new Ui::MissionGoalsDialog()), _model(new MissionGoalsDialogModel(this, viewport)), _viewport(viewport)
+	  ui(new Ui::MissionGoalsDialog()), _model(new MissionGoalsDialogModel(this, viewport)),
+	  _viewport(viewport), _fredView(parent)
 {
 	ui->setupUi(this);
+
+	_dialogStack = new QUndoStack(this);
+	_fredView->undoGroup()->addStack(_dialogStack);
 
 	ui->goalEventTree->initializeEditor(viewport->editor, this, viewport);
 	_model->setTreeControl(ui->goalEventTree);
@@ -42,22 +48,32 @@ MissionGoalsDialog::~MissionGoalsDialog() = default;
 
 void MissionGoalsDialog::accept()
 {
-	// If apply() returns true, close the dialog
+	QByteArray stateBefore = _model->captureState();
 	if (_model->apply()) {
+		QByteArray stateAfter = _model->captureState();
+		_model->setParent(nullptr);
+		_fredView->mainUndoStack()->push(
+			new ApplyDialogCommand(std::move(_model), stateBefore, stateAfter,
+			                       _viewport->editor, tr("Edit Mission Goals")));
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
 		QDialog::accept();
 	}
-	// else: validation failed, don't close
 }
 
 void MissionGoalsDialog::reject()
 {
-	// Asks the user if they want to save changes, if any
-	// If they do, it runs _model->apply() and returns the success value
-	// If they don't, it runs _model->reject() and returns true
-	if (rejectOrCloseHandler(this, _model.get(), _viewport)) {
-		QDialog::reject(); // actually close
+	if (!_model) {
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
+		QDialog::reject();
+		return;
 	}
-	// else: do nothing, don't close
+	if (rejectOrCloseHandler(this, _model.get(), _viewport)) {
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
+		QDialog::reject();
+	}
 }
 
 void MissionGoalsDialog::closeEvent(QCloseEvent* e)
@@ -72,6 +88,12 @@ void MissionGoalsDialog::closeEvent(QCloseEvent* e)
 	} else {
 		e->accept();
 	}
+}
+
+void MissionGoalsDialog::focusInEvent(QFocusEvent* e)
+{
+	_fredView->undoGroup()->setActiveStack(_dialogStack);
+	QDialog::focusInEvent(e);
 }
 
 void MissionGoalsDialog::updateUi()
