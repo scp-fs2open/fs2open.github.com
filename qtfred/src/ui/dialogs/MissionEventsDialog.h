@@ -1,9 +1,11 @@
 #pragma once
 
 #include "mission/dialogs/MissionEventsDialogModel.h"
+#include "ui/FredView.h"
 
 #include <QDialog>
 #include <QListWidget>
+#include <QUndoStack>
 
 #include "ui/widgets/sexp_tree_view.h"
 
@@ -24,7 +26,7 @@ class MissionEventsDialog: public QDialog, public SexpTreeEditorInterface {
 	Q_OBJECT
 
   public:
-	explicit MissionEventsDialog(QWidget* parent, EditorViewport* viewport);
+	explicit MissionEventsDialog(FredView* parent, EditorViewport* viewport);
 	~MissionEventsDialog() override;
 
 	void accept() override;
@@ -36,6 +38,7 @@ class MissionEventsDialog: public QDialog, public SexpTreeEditorInterface {
 
   protected:
 	void closeEvent(QCloseEvent* event) override;
+	void focusInEvent(QFocusEvent* e) override;
 
 private slots:
 	void on_okAndCancelButtons_accepted();
@@ -99,6 +102,8 @@ private slots:
 private: // NOLINT(readability-redundant-access-specifiers)
 	std::unique_ptr<Ui::MissionEventsDialog> ui;
 	EditorViewport* _viewport;
+	FredView*       _fredView    = nullptr;
+	QUndoStack*     _dialogStack = nullptr;
 	std::unique_ptr<MissionEventsDialogModel> _model;
 
 	int m_last_message_node = -1;

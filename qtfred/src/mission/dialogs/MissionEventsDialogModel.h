@@ -19,6 +19,8 @@ class MissionEventsDialogModel : public AbstractDialogModel {
 
 	bool apply() override;
 	void reject() override;
+	QByteArray captureState() const override;
+	void restoreState(const QByteArray& state) override;
 
 	bool eventIsValid() const;
 	bool messageIsValid() const;

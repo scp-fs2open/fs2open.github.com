@@ -6,6 +6,7 @@
 #include "ui/util/default_dir.h"
 #include "ui/util/SignalBlockers.h"
 #include "ui/dialogs/EventEditor/HeadAnimationPickerDialog.h"
+#include "mission/commands/FredCommands.h"
 
 #include "mission/util.h"
 
@@ -16,6 +17,7 @@
 #include <QMessageBox>
 #include <QFileDialog>
 #include <QFileInfo>
+#include <QFocusEvent>
 #include <QDebug>
 #include <QKeyEvent>
 #include <mission/missionmessage.h>
@@ -46,11 +48,14 @@ static int annotation_key_for_qt_item(sexp_tree_view* tree, QTreeWidgetItem* h)
 	return -1;
 }
 
-MissionEventsDialog::MissionEventsDialog(QWidget* parent, EditorViewport* viewport) :
+MissionEventsDialog::MissionEventsDialog(FredView* parent, EditorViewport* viewport) :
 	QDialog(parent),
 	SexpTreeEditorInterface({ TreeFlags::LabeledRoot, TreeFlags::RootDeletable, TreeFlags::RootEditable, TreeFlags::AnnotationsAllowed }),
-	  ui(new Ui::MissionEventsDialog()), _viewport(viewport)
+	  ui(new Ui::MissionEventsDialog()), _viewport(viewport), _fredView(parent)
 {
+	_dialogStack = new QUndoStack(this);
+	_fredView->undoGroup()->addStack(_dialogStack);
+
 	ui->setupUi(this);
 
 	// Give the tree panel preference on resize but let the user rebalance via the splitter.
@@ -265,22 +270,38 @@ int MissionEventsDialog::getRootReturnType() const
 
 void MissionEventsDialog::accept()
 {
-	// If apply() returns true, close the dialog
+	QByteArray stateBefore = _model->captureState();
 	if (_model->apply()) {
+		QByteArray stateAfter = _model->captureState();
+		_model->setParent(nullptr);
+		_fredView->mainUndoStack()->push(
+			new ApplyDialogCommand(std::move(_model), stateBefore, stateAfter,
+			                       _viewport->editor, tr("Edit Mission Events")));
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
 		QDialog::accept();
 	}
-	// else: validation failed, don't close
 }
 
 void MissionEventsDialog::reject()
 {
-	// Asks the user if they want to save changes, if any
-	// If they do, it runs _model->apply() and returns the success value
-	// If they don't, it runs _model->reject() and returns true
-	if (rejectOrCloseHandler(this, _model.get(), _viewport)) {
-		QDialog::reject(); // actually close
+	if (!_model) {
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
+		QDialog::reject();
+		return;
 	}
-	// else: do nothing, don't close
+	if (rejectOrCloseHandler(this, _model.get(), _viewport)) {
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
+		QDialog::reject();
+	}
+}
+
+void MissionEventsDialog::focusInEvent(QFocusEvent* e)
+{
+	_fredView->undoGroup()->setActiveStack(_dialogStack);
+	QDialog::focusInEvent(e);
 }
 
 SCP_vector<SCP_string> MissionEventsDialog::getMessages()
@@ -520,7 +541,7 @@ void MissionEventsDialog::initWaveFilenames() {
 }
 
 void MissionEventsDialog::initPersonas() {
-	auto list = _model->getPersonaList();
+	QSignalBlocker blocker(ui->personaCombo);
 
 	ui->personaCombo->clear();
 
@@ -530,23 +551,22 @@ void MissionEventsDialog::initPersonas() {
 }
 
 void MissionEventsDialog::initMessageTeams() {
-	auto list = _model->getTeamList();
+	QSignalBlocker blocker(ui->messageTeamCombo);
 
 	ui->messageTeamCombo->clear();
 
-	for (const auto& team : list) {
+	for (const auto& team : _model->getTeamList()) {
 		ui->messageTeamCombo->addItem(QString::fromStdString(team.first), team.second);
 	}
-
 }
 
 void MissionEventsDialog::initEventTeams()
 {
-	auto list = _model->getTeamList();
+	QSignalBlocker blocker(ui->teamCombo);
 
 	ui->teamCombo->clear();
 
-	for (const auto& team : list) {
+	for (const auto& team : _model->getTeamList()) {
 		ui->teamCombo->addItem(QString::fromStdString(team.first), team.second);
 	}
 }

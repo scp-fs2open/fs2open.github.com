@@ -54,6 +54,7 @@ add_file_folder("Source/Mission/Dialogs/State"
     src/mission/dialogs/state/DebriefingState.cpp
     src/mission/dialogs/state/FictionViewerState.cpp
     src/mission/dialogs/state/MissionCutscenesState.cpp
+    src/mission/dialogs/state/MissionEventsDialogState.cpp
     src/mission/dialogs/state/MissionGoalsState.cpp
     src/mission/dialogs/state/MissionSpecState.cpp
     src/mission/dialogs/state/ObjectOrientEditorState.cpp

@@ -82,8 +82,14 @@ bool MissionEventsDialogModel::apply()
 
 	Num_messages = static_cast<int>(m_messages.size()) + Num_builtin_messages;
 	Messages.resize(Num_messages);
-	for (int i = 0; i < static_cast<int>(m_messages.size()); i++)
+	for (int i = 0; i < static_cast<int>(m_messages.size()); i++) {
 		Messages[i + Num_builtin_messages] = m_messages[i];
+		// The shallow copy transferred ownership of the strdup'd media names to
+		// Messages[]; sever the working copy's pointers so they can't be freed
+		// twice (the model lives on inside the apply-undo command).
+		m_messages[i].avi_info.name  = nullptr;
+		m_messages[i].wave_info.name = nullptr;
+	}
 
 	applyAnnotations();
 
