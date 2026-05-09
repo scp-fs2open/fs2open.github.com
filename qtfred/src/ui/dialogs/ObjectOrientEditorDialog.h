@@ -23,6 +23,7 @@ class ObjectOrientEditorDialog : public QDialog {
 
 protected:
 	void closeEvent(QCloseEvent* e) override; // funnel all Window X presses through reject()
+	void focusInEvent(QFocusEvent*) override;
 
 private slots:
 	// dialog controls
@@ -60,6 +61,8 @@ private: // NOLINT(readability-redundant-access-specifiers)
 	std::unique_ptr<Ui::ObjectOrientEditorDialog> ui;
 	std::unique_ptr<ObjectOrientEditorDialogModel> _model;
 	EditorViewport* _viewport;
+	FredView*       _fredView    = nullptr;
+	QUndoStack*     _dialogStack = nullptr;
 
 	// Group updates
 	void updatePosition();

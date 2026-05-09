@@ -42,6 +42,9 @@ class ObjectOrientEditorDialogModel : public AbstractDialogModel {
 	bool apply() override;
 	void reject() override;
 
+	QByteArray captureState() const override;
+	void restoreState(const QByteArray& state) override;
+
 	bool isOrientationEnabledForType() const {return _orientationEnabledForType;};
 	const SCP_vector<ObjectEntry>& getPointToObjectList() const {return _pointToObjectList;};
 	int getNumObjectsMarked() const {return _editor->getNumMarked();}
