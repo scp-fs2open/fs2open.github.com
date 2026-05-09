@@ -27,7 +27,7 @@ vec3d ModelSurfaceVolume::sampleRandomPoint(const matrix &orientation, decltype(
 
 			const bsp_info* submodel_data = &pm->submodel[submodel];
 			const auto& geometry_data = *submodel_data->buffer.model_list;
-			size_t target_vertex = ::util::UniformUIntRange(0, geometry_data.n_verts - 1).next();
+			size_t target_vertex = ::util::UniformUIntRange(0, static_cast<size_t>(geometry_data.n_verts) - 1).next();
 			
 			//This point is, despite its name, not in world space, but in model local space (NOT submodel local though!)
 			point = geometry_data.vert[target_vertex].world;
