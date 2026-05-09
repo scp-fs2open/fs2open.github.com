@@ -87,11 +87,13 @@ bool VariableDialogModel::apply()
 	SCP_vector<sexp_container> new_containers;
 	SCP_unordered_map<SCP_string, SCP_string, SCP_string_lcase_hash, SCP_string_lcase_equal_to> renamed_containers;
 
+	m_applied_container_renames.clear();
 	for (const auto& cont_info : m_containers) {
 		new_containers.push_back(createSexpContainerFromInfo(cont_info));
 
 		if (!cont_info.originalName.empty() && cont_info.name != cont_info.originalName) {
 			renamed_containers[cont_info.originalName] = cont_info.name;
+			m_applied_container_renames.emplace_back(cont_info.originalName, cont_info.name);
 		}
 	}
 

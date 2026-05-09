@@ -1,6 +1,7 @@
 #pragma once
 
 #include <mission/dialogs/VariableDialogModel.h>
+#include <ui/FredView.h>
 
 #include <QColor>
 #include <QDialog>
@@ -25,6 +26,7 @@ class VariableDialog : public QDialog {
   protected:
 	void closeEvent(QCloseEvent* e) override; // funnel all Window X presses through reject()
 	void changeEvent(QEvent* e) override;     // recolor rows on palette/theme change
+	void focusInEvent(QFocusEvent* e) override;
 
   private slots:
 	// Dialog Controls
@@ -88,7 +90,9 @@ class VariableDialog : public QDialog {
 
   private: // NOLINT(readability-redundant-access-specifiers)
 	// Core UI and Model
-	EditorViewport* _viewport = nullptr;
+	EditorViewport* _viewport    = nullptr;
+	FredView*       _fredView    = nullptr;
+	QUndoStack*     _dialogStack = nullptr;
 	std::unique_ptr<Ui::VariableEditorDialog> ui;
 	std::unique_ptr<VariableDialogModel> _model;
 

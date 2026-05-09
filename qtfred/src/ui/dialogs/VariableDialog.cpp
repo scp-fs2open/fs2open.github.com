@@ -1,11 +1,13 @@
 #include "VariableDialog.h"
 #include "ui_VariableDialog.h"
+#include "mission/commands/FredCommands.h"
+#include "mission/util.h"
 #include "ui/Theme.h"
-#include <ui/util/SignalBlockers.h>
 #include "ui/widgets/LineEditDelegate.h"
-#include <mission/util.h>
+#include <ui/util/SignalBlockers.h>
 #include <QApplication>
 #include <QEvent>
+#include <QFocusEvent>
 #include <QMessageBox>
 #include <QPalette>
 
@@ -34,8 +36,22 @@ VariableDialog::VariableDialog(QWidget* parent, EditorViewport* viewport, Tab in
 	: QDialog(parent), _viewport(viewport), ui(new Ui::VariableEditorDialog()),
 	  _model(new VariableDialogModel(this, viewport))
 {
+	// This dialog can be opened from FredView or from a sexp tree inside
+	// another dialog, so locate the FredView through the parent chain.
+	for (QObject* p = parent; p != nullptr; p = p->parent()) {
+		if (auto* fv = qobject_cast<FredView*>(p)) {
+			_fredView = fv;
+			break;
+		}
+	}
+	Assertion(_fredView != nullptr, "VariableDialog must have a FredView ancestor!");
+
 	this->setFocus();
 	ui->setupUi(this);
+
+	_dialogStack = new QUndoStack(this);
+	_fredView->undoGroup()->addStack(_dialogStack);
+
 	initializeUi();
 	updateUi();
 	ui->tabWidget->setCurrentIndex(static_cast<int>(initialTab));
@@ -66,22 +82,38 @@ void VariableDialog::changeEvent(QEvent* e)
 
 void VariableDialog::accept()
 {
-	// If apply() returns true, close the dialog
+	QByteArray stateBefore = _model->captureState();
 	if (_model->apply()) {
+		QByteArray stateAfter = _model->captureState();
+		_model->setParent(nullptr);
+		_fredView->mainUndoStack()->push(
+			new ApplyDialogCommand(std::move(_model), stateBefore, stateAfter,
+			                       _viewport->editor, tr("Edit Variables")));
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
 		QDialog::accept();
 	}
-	// else: validation failed, don't close
 }
 
 void VariableDialog::reject()
 {
-	// Asks the user if they want to save changes, if any
-	// If they do, it runs _model->apply() and returns the success value
-	// If they don't, it runs _model->reject() and returns true
-	if (rejectOrCloseHandler(this, _model.get(), _viewport)) {
-		QDialog::reject(); // actually close
+	if (!_model) {
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
+		QDialog::reject();
+		return;
 	}
-	// else: do nothing, don't close
+	if (rejectOrCloseHandler(this, _model.get(), _viewport)) {
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
+		QDialog::reject();
+	}
+}
+
+void VariableDialog::focusInEvent(QFocusEvent* e)
+{
+	_fredView->undoGroup()->setActiveStack(_dialogStack);
+	QDialog::focusInEvent(e);
 }
 
 void VariableDialog::closeEvent(QCloseEvent* e)

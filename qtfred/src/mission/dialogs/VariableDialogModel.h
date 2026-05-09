@@ -36,6 +36,9 @@ class VariableDialogModel : public AbstractDialogModel {
 	bool apply() override;
 	void reject() override;
 
+	QByteArray captureState() const override;
+	void restoreState(const QByteArray& state) override;
+
 	// High Level Getters
 	const SCP_vector<VariableInfo>& getVariables() const;
 	const SCP_vector<ContainerInfo>& getContainers() const;
@@ -102,6 +105,11 @@ class VariableDialogModel : public AbstractDialogModel {
 	SCP_vector<ContainerInfo> m_containers;
 
 	SCP_vector<SCP_string> m_deleted_variables;
+
+	// (oldName, newName) container renames performed by apply(). restoreState()
+	// uses these to rewrite sexp container references in the matching direction,
+	// since update_sexp_containers() only replaces the container list itself.
+	SCP_vector<std::pair<SCP_string, SCP_string>> m_applied_container_renames;
 
 	void initializeData();
 
