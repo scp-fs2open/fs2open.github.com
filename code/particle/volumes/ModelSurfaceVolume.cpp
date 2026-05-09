@@ -22,12 +22,12 @@ vec3d ModelSurfaceVolume::sampleRandomPoint(const matrix &orientation, decltype(
 					if (!pm->submodel[i].flags[Model::Submodel_flags::Is_lod, Model::Submodel_flags::Is_damaged, Model::Submodel_flags::Is_live_debris])
 						eligible_submodels.emplace_back(i);
 				}
-				submodel = eligible_submodels[::util::UniformUIntRange(0, eligible_submodels.size() - 1).next()];
+				submodel = eligible_submodels[::util::UniformUIntRange(0U, eligible_submodels.size() - 1).next()];
 			}
 
 			const bsp_info* submodel_data = &pm->submodel[submodel];
 			const auto& geometry_data = *submodel_data->buffer.model_list;
-			size_t target_vertex = ::util::UniformUIntRange(0, static_cast<size_t>(geometry_data.n_verts) - 1).next();
+			size_t target_vertex = ::util::UniformUIntRange(0U, static_cast<size_t>(geometry_data.n_verts) - 1).next();
 			
 			//This point is, despite its name, not in world space, but in model local space (NOT submodel local though!)
 			point = geometry_data.vert[target_vertex].world;
