@@ -22,6 +22,7 @@ public:
 
 protected:
 	void closeEvent(QCloseEvent* e) override; // funnel all Window X presses through reject()
+	void focusInEvent(QFocusEvent* e) override;
 
 
 private slots:
@@ -95,6 +96,8 @@ private: // NOLINT(readability-redundant-access-specifiers)
 	EditorViewport* _viewport = nullptr;
 	std::unique_ptr<Ui::VolumetricNebulaDialog> ui;
 	std::unique_ptr<VolumetricNebulaDialogModel> _model;
+	FredView*   _fredView    = nullptr;
+	QUndoStack* _dialogStack = nullptr;
 };
 
 

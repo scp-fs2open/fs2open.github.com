@@ -4,20 +4,25 @@
 
 #include "ui_VolumetricNebulaDialog.h"
 #include <globalincs/globals.h>
+#include <mission/commands/FredCommands.h>
 #include <mission/util.h>
 
 #include <QFileDialog>
 #include <QFileInfo>
+#include <QFocusEvent>
 #include <QMessageBox>
 
 namespace fso::fred::dialogs {
 
 VolumetricNebulaDialog::VolumetricNebulaDialog(FredView* parent, EditorViewport* viewport) :
 	QDialog(parent), _viewport(viewport), ui(new Ui::VolumetricNebulaDialog()),
-	_model(new VolumetricNebulaDialogModel(this, viewport))
+	_model(new VolumetricNebulaDialogModel(this, viewport)), _fredView(parent)
 {
 	this->setFocus();
 	ui->setupUi(this);
+
+	_dialogStack = new QUndoStack(this);
+	_fredView->undoGroup()->addStack(_dialogStack);
 
 	ui->setModelLineEdit->setMaxLength(MAX_FILENAME_LEN - 1);
 
@@ -30,22 +35,32 @@ VolumetricNebulaDialog::~VolumetricNebulaDialog() = default;
 
 void VolumetricNebulaDialog::accept()
 {
-	// If apply() returns true, close the dialog
+	QByteArray stateBefore = _model->captureState();
 	if (_model->apply()) {
+		QByteArray stateAfter = _model->captureState();
+		_model->setParent(nullptr);
+		_fredView->mainUndoStack()->push(
+			new ApplyDialogCommand(std::move(_model), stateBefore, stateAfter,
+			                       _viewport->editor, tr("Edit Volumetric Nebula")));
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
 		QDialog::accept();
 	}
-	// else: validation failed, don't close
 }
 
 void VolumetricNebulaDialog::reject()
 {
-	// Asks the user if they want to save changes, if any
-	// If they do, it runs _model->apply() and returns the success value
-	// If they don't, it runs _model->reject() and returns true
-	if (rejectOrCloseHandler(this, _model.get(), _viewport)) {
-		QDialog::reject(); // actually close
+	if (!_model) {
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
+		QDialog::reject();
+		return;
 	}
-	// else: do nothing, don't close
+	if (rejectOrCloseHandler(this, _model.get(), _viewport)) {
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
+		QDialog::reject();
+	}
 }
 
 void VolumetricNebulaDialog::closeEvent(QCloseEvent* e)
@@ -60,6 +75,12 @@ void VolumetricNebulaDialog::closeEvent(QCloseEvent* e)
 	} else {
 		e->accept();
 	}
+}
+
+void VolumetricNebulaDialog::focusInEvent(QFocusEvent* e)
+{
+	_fredView->undoGroup()->setActiveStack(_dialogStack);
+	QDialog::focusInEvent(e);
 }
 
 void VolumetricNebulaDialog::initializeUi()
