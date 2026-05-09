@@ -30,6 +30,7 @@ class BriefingEditorDialog : public QDialog, public SexpTreeEditorInterface {
 
   protected:
 	void closeEvent(QCloseEvent* e) override; // funnel all Window X presses through reject()
+	void focusInEvent(QFocusEvent* e) override;
 
   private slots:
 	// dialog controls
@@ -92,6 +93,8 @@ class BriefingEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	std::unique_ptr<Ui::BriefingEditorDialog> ui;
 	std::unique_ptr<BriefingEditorDialogModel> _model;
 	EditorViewport* _viewport;
+	FredView*       _fredView    = nullptr;
+	QUndoStack*     _dialogStack = nullptr;
 	fso::fred::BriefingMapWidget* _mapWidget = nullptr;
 	std::optional<EditorViewport::ViewportControlLock> _viewportLock;
 

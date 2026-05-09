@@ -18,11 +18,14 @@
 #include <ui/util/default_dir.h>
 #include <ui/util/SignalBlockers.h>
 
-#include <QCloseEvent>
+#include <mission/commands/FredCommands.h>
+
 #include <QCheckBox>
+#include <QCloseEvent>
 #include <QFileDialog>
-#include <QVBoxLayout>
 #include <QFileInfo>
+#include <QFocusEvent>
+#include <QVBoxLayout>
 
 namespace fso::fred::dialogs {
 
@@ -73,9 +76,12 @@ vec3d getNewIconPlacement()
 
 BriefingEditorDialog::BriefingEditorDialog(FredView* parent, EditorViewport* viewport)
 	: QDialog(parent), SexpTreeEditorInterface(flagset<TreeFlags>()), ui(new Ui::BriefingEditorDialog()),
-	  _model(new BriefingEditorDialogModel(this, viewport)), _viewport(viewport)
+	  _model(new BriefingEditorDialogModel(this, viewport)), _viewport(viewport), _fredView(parent)
 {
 	_viewportLock.emplace(_viewport->acquireControlLock());
+
+	_dialogStack = new QUndoStack(this);
+	_fredView->undoGroup()->addStack(_dialogStack);
 
 	this->setFocus();
 	ui->setupUi(this);
@@ -106,30 +112,42 @@ BriefingEditorDialog::~BriefingEditorDialog() {
 
 void BriefingEditorDialog::accept()
 {
-	// If apply() returns true, close the dialog
+	QByteArray stateBefore = _model->captureState();
 	if (_model->apply()) {
 		ui->defaultMusicWidget->stopPlayback();
 		ui->musicPackWidget->stopPlayback();
+		QByteArray stateAfter = _model->captureState();
+		_model->setParent(nullptr);
+		_fredView->mainUndoStack()->push(
+			new ApplyDialogCommand(std::move(_model), stateBefore, stateAfter,
+			                       _viewport->editor, tr("Edit Briefing")));
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
 		QDialog::accept();
 		_viewportLock.reset(); // unlock before restoring the grid so the viewport can process controls again
 		create_default_grid(); // restore the grid back to the normal version
 	}
-	// else: validation failed, don't close
 }
 
 void BriefingEditorDialog::reject()
 {
-	// Asks the user if they want to save changes, if any
-	// If they do, it runs _model->apply() and returns the success value
-	// If they don't, it runs _model->reject() and returns true
+	if (!_model) {
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
+		QDialog::reject();
+		_viewportLock.reset();
+		create_default_grid();
+		return;
+	}
 	if (rejectOrCloseHandler(this, _model.get(), _viewport)) {
 		ui->defaultMusicWidget->stopPlayback();
 		ui->musicPackWidget->stopPlayback();
-		QDialog::reject(); // actually close
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
+		QDialog::reject();
 		_viewportLock.reset(); // unlock before restoring the grid so the viewport can process controls again
 		create_default_grid(); // restore the grid back to the normal version
 	}
-	// else: do nothing, don't close
 }
 
 void BriefingEditorDialog::closeEvent(QCloseEvent* e)
@@ -144,6 +162,12 @@ void BriefingEditorDialog::closeEvent(QCloseEvent* e)
 	} else {
 		e->accept();
 	}
+}
+
+void BriefingEditorDialog::focusInEvent(QFocusEvent* e)
+{
+	_fredView->undoGroup()->setActiveStack(_dialogStack);
+	QDialog::focusInEvent(e);
 }
 
 void BriefingEditorDialog::setupMapWidget()
