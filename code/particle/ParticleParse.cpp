@@ -94,6 +94,12 @@ namespace particle {
 			}
 		}
 
+		static void parseLocalPositionScaling(ParticleEffect& effect) {
+			if (optional_string("+Local position scaling:")) {
+				effect.m_local_position_scaling = ::util::ParsedRandomFloatRange::parseRandomRange();
+			}
+		}
+
 		static void parseParentLocal(ParticleEffect& effect) {
 			if (optional_string("+Remain local to parent:")) {
 				stuff_boolean(&effect.m_parent_local);
@@ -378,6 +384,7 @@ namespace particle {
 			parseRadius(effect);
 			parseLength(effect);
 			parseLifetime(effect);
+			parseLocalPositionScaling(effect);
 			parseParentLocal(effect);
 			parseLightEmissionSettings(effect);
 

@@ -18,7 +18,7 @@ vec3d ModelSurfaceVolume::sampleRandomPoint(const matrix &orientation, decltype(
 		if (pm != nullptr) {
 			if (submodel < 0) {
 				SCP_vector<int> eligible_submodels;
-				for (size_t i = 0; i < pm->n_models; ++i) {
+				for (size_t i = 0; i < static_cast<size_t>(pm->n_models); ++i) {
 					if (!pm->submodel[i].flags[Model::Submodel_flags::Is_lod, Model::Submodel_flags::Is_damaged, Model::Submodel_flags::Is_live_debris])
 						eligible_submodels.emplace_back(i);
 				}
