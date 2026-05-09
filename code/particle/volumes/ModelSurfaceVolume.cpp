@@ -3,7 +3,9 @@
 #include "math/vecmat.h"
 
 namespace particle {
-ModelSurfaceVolume::ModelSurfaceVolume() : m_modular_curve_instance(m_modular_curves.create_instance()) { };
+ModelSurfaceVolume::ModelSurfaceVolume() : m_modular_curve_instance(m_modular_curves.create_instance()) {
+	Model_load_clear_CPU_buffers = false;
+};
 
 vec3d ModelSurfaceVolume::sampleRandomPoint(const matrix &orientation, decltype(ParticleEffect::modular_curves_definition)::input_type_t source, float particlesFraction, const EffectHost& host) {
 	int obj_num = host.getParentObjAndSig().first;

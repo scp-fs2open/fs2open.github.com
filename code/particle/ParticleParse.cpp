@@ -7,6 +7,8 @@
 
 #include <anl.h>
 
+#include "volumes/ModelSurfaceVolume.h"
+
 namespace particle {
 
 	//
@@ -125,7 +127,7 @@ namespace particle {
 
 		static std::shared_ptr<ParticleVolume> parseVolume() {
 
-			int type = required_string_one_of(4, "Spheroid", "Cone", "Ring", "Point"); //... and future volumes
+			int type = required_string_one_of(5, "Spheroid", "Cone", "Ring", "Point", "ModelSurface"); //... and future volumes
 			std::shared_ptr<ParticleVolume> volume;
 
 			switch (type) {
@@ -144,6 +146,10 @@ namespace particle {
 				case 3:
 					required_string("Point");
 					volume = std::make_shared<PointVolume>();
+					break;
+				case 4:
+					required_string("ModelSurface");
+					volume = std::make_shared<ModelSurfaceVolume>();
 					break;
 				default:
 					UNREACHABLE("Invalid volume type specified!");

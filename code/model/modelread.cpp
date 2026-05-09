@@ -72,6 +72,10 @@ SCP_vector<bsp_collision_tree> Bsp_collision_tree_list;
 
 const ubyte* Macro_ubyte_bounds = nullptr;
 
+//If true, CPU-side vertex buffers are deleted once the model is on-GPU.
+//This is typically desired for memory reasons, but will prevent certain type of particles.
+bool Model_load_clear_CPU_buffers = true;
+
 static int model_initted = 0;
 
 #ifndef NDEBUG
@@ -1138,7 +1142,8 @@ void create_vertex_buffer(polymodel *pm, const model_read_deferred_tasks& deferr
 		interp_pack_vertex_buffers(pm, i);
 
 		// release temporary memory
-		pm->submodel[i].buffer.release();
+		if (Model_load_clear_CPU_buffers)
+			pm->submodel[i].buffer.release();
 		pm->submodel[i].trans_buffer.release();
 	}
 
