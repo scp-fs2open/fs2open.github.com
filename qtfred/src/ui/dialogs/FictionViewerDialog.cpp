@@ -1,17 +1,22 @@
 
 #include <QCloseEvent>
+#include <QFocusEvent>
 #include "ui/dialogs/FictionViewerDialog.h"
 #include "ui/util/SignalBlockers.h"
 #include "ui_FictionViewerDialog.h"
 #include "mission/util.h"
+#include <mission/commands/FredCommands.h>
 
 namespace fso::fred::dialogs {
 
 FictionViewerDialog::FictionViewerDialog(FredView* parent, EditorViewport* viewport) :
-	QDialog(parent), _viewport(viewport), ui(new Ui::FictionViewerDialog()), _model(new FictionViewerDialogModel(this, viewport))
+	QDialog(parent), _viewport(viewport), ui(new Ui::FictionViewerDialog()),
+	_model(new FictionViewerDialogModel(this, viewport)), _fredView(parent)
 {
-
 	ui->setupUi(this);
+
+	_dialogStack = new QUndoStack(this);
+	_fredView->undoGroup()->addStack(_dialogStack);
 
 	// Initial set up of the UI
 	initializeUi();
@@ -35,24 +40,34 @@ FictionViewerDialog::~FictionViewerDialog() = default;
 
 void FictionViewerDialog::accept()
 {
-	// If apply() returns true, close the dialog
+	QByteArray stateBefore = _model->captureState();
 	if (_model->apply()) {
 		ui->musicWidget->stopPlayback();
+		QByteArray stateAfter = _model->captureState();
+		_model->setParent(nullptr);
+		_fredView->mainUndoStack()->push(
+			new ApplyDialogCommand(std::move(_model), stateBefore, stateAfter,
+			                       _viewport->editor, tr("Edit Fiction Viewer")));
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
 		QDialog::accept();
 	}
-	// else: validation failed, don't close
 }
 
 void FictionViewerDialog::reject()
 {
-	// Asks the user if they want to save changes, if any
-	// If they do, it runs _model->apply() and returns the success value
-	// If they don't, it runs _model->reject() and returns true
+	if (!_model) {
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
+		QDialog::reject();
+		return;
+	}
 	if (rejectOrCloseHandler(this, _model.get(), _viewport)) {
 		ui->musicWidget->stopPlayback();
-		QDialog::reject(); // actually close
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
+		QDialog::reject();
 	}
-	// else: do nothing, don't close
 }
 
 void FictionViewerDialog::closeEvent(QCloseEvent* e)
@@ -67,6 +82,12 @@ void FictionViewerDialog::closeEvent(QCloseEvent* e)
 	} else {
 		e->accept();
 	}
+}
+
+void FictionViewerDialog::focusInEvent(QFocusEvent* e)
+{
+	_fredView->undoGroup()->setActiveStack(_dialogStack);
+	QDialog::focusInEvent(e);
 }
 
 void FictionViewerDialog::initializeUi()

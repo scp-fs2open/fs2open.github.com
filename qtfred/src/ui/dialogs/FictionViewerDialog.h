@@ -22,6 +22,7 @@ public:
 
  protected:
 	void closeEvent(QCloseEvent* e) override; // funnel all Window X presses through reject()
+	void focusInEvent(QFocusEvent* e) override;
 
 private slots:
 	// dialog controls
@@ -42,6 +43,8 @@ private slots:
 	EditorViewport* _viewport = nullptr;
 	std::unique_ptr<Ui::FictionViewerDialog> ui;
 	std::unique_ptr<FictionViewerDialogModel> _model;
+	FredView*       _fredView    = nullptr;
+	QUndoStack*     _dialogStack = nullptr;
 };
 
 } // namespace fso::fred::dialogs

@@ -15,6 +15,9 @@ class FictionViewerDialogModel: public AbstractDialogModel {
 	bool apply() override;
 	void reject() override;
 
+	QByteArray captureState() const override;
+	void restoreState(const QByteArray& state) override;
+
 	const SCP_vector<std::pair<SCP_string, int>>& getMusicOptions();
 
 	SCP_string getStoryFile() const;
