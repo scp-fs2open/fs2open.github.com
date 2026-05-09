@@ -33,6 +33,7 @@
 
 #include <string>
 #include <set>
+#include <optional>
 #include <particle/ParticleManager.h>
 
 class object;
@@ -1346,6 +1347,8 @@ public:
 
 	vec3d	closeup_pos;					// position for camera when using ship in closeup view (eg briefing and techroom)
 	float	closeup_zoom;					// zoom when using ship in closeup view (eg briefing and techroom)
+	std::optional<vec3d> icon_closeup_pos;	// icon-specific position for camera when using ship in closeup view
+	std::optional<float> icon_closeup_zoom;	// icon-specific zoom when using ship in closeup view
 
 	vec3d	closeup_pos_targetbox;			// position for camera when using ship in closeup view for hud target monitor
 	float	closeup_zoom_targetbox;			// zoom when using ship in closeup view for hud target monitor
