@@ -15,6 +15,9 @@ class MissionCutscenesDialogModel: public AbstractDialogModel {
 	bool apply() override;
 	void reject() override;
 
+	QByteArray captureState() const override;
+	void restoreState(const QByteArray& state) override;
+
 	mission_cutscene& getCurrentCutscene();
 
 	bool isCurrentCutsceneValid() const;

@@ -4,6 +4,7 @@
 
 #include "mission/EditorViewport.h"
 #include "mission/dialogs/MissionCutscenesDialogModel.h"
+#include "ui/FredView.h"
 
 #include "ui/widgets/sexp_tree_view.h"
 
@@ -17,7 +18,7 @@ class MissionCutscenesDialog : public QDialog, public SexpTreeEditorInterface {
     Q_OBJECT
 
 public:
-	explicit MissionCutscenesDialog(QWidget* parent, EditorViewport* viewport);
+	explicit MissionCutscenesDialog(FredView* parent, EditorViewport* viewport);
   ~MissionCutscenesDialog() override;
 
 	void accept() override;
@@ -25,6 +26,7 @@ public:
 
  protected:
 	void closeEvent(QCloseEvent* event) override;
+	void focusInEvent(QFocusEvent* e) override;
 
 private slots:
 	void on_okAndCancelButtons_accepted();
@@ -50,7 +52,9 @@ private slots:
     std::unique_ptr<Ui::MissionCutscenesDialog> ui;
 	std::unique_ptr<MissionCutscenesDialogModel> _model;
 
-    EditorViewport* _viewport = nullptr;
+    EditorViewport* _viewport    = nullptr;
+    FredView*       _fredView    = nullptr;
+    QUndoStack*     _dialogStack = nullptr;
 	void load_tree();
 	void recreate_tree();
 };

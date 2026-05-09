@@ -2,17 +2,23 @@
 #include <QShortcut>
 #include "MissionCutscenesDialog.h"
 
-#include "ui/util/SignalBlockers.h"
+#include "mission/commands/FredCommands.h"
 #include "mission/util.h"
+#include "ui/util/SignalBlockers.h"
 #include "ui_MissionCutscenesDialog.h"
+#include <QFocusEvent>
 
 namespace fso::fred::dialogs {
 
-MissionCutscenesDialog::MissionCutscenesDialog(QWidget* parent, EditorViewport* viewport)
+MissionCutscenesDialog::MissionCutscenesDialog(FredView* parent, EditorViewport* viewport)
 	: QDialog(parent), SexpTreeEditorInterface({TreeFlags::LabeledRoot, TreeFlags::RootDeletable}),
-	  ui(new Ui::MissionCutscenesDialog()), _model(new MissionCutscenesDialogModel(this, viewport)), _viewport(viewport)
+	  ui(new Ui::MissionCutscenesDialog()), _model(new MissionCutscenesDialogModel(this, viewport)),
+	  _viewport(viewport), _fredView(parent)
 {
 	ui->setupUi(this);
+
+	_dialogStack = new QUndoStack(this);
+	_fredView->undoGroup()->addStack(_dialogStack);
 
 	populateCutsceneCombos();
 
@@ -44,22 +50,32 @@ MissionCutscenesDialog::~MissionCutscenesDialog() = default;
 
 void MissionCutscenesDialog::accept()
 {
-	// If apply() returns true, close the dialog
+	QByteArray stateBefore = _model->captureState();
 	if (_model->apply()) {
+		QByteArray stateAfter = _model->captureState();
+		_model->setParent(nullptr);
+		_fredView->mainUndoStack()->push(
+			new ApplyDialogCommand(std::move(_model), stateBefore, stateAfter,
+			                       _viewport->editor, tr("Edit Mission Cutscenes")));
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
 		QDialog::accept();
 	}
-	// else: validation failed, don't close
 }
 
 void MissionCutscenesDialog::reject()
 {
-	// Asks the user if they want to save changes, if any
-	// If they do, it runs _model->apply() and returns the success value
-	// If they don't, it runs _model->reject() and returns true
-	if (rejectOrCloseHandler(this, _model.get(), _viewport)) {
-		QDialog::reject(); // actually close
+	if (!_model) {
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
+		QDialog::reject();
+		return;
 	}
-	// else: do nothing, don't close
+	if (rejectOrCloseHandler(this, _model.get(), _viewport)) {
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
+		QDialog::reject();
+	}
 }
 
 void MissionCutscenesDialog::closeEvent(QCloseEvent* e)
@@ -74,6 +90,12 @@ void MissionCutscenesDialog::closeEvent(QCloseEvent* e)
 	} else {
 		e->accept();
 	}
+}
+
+void MissionCutscenesDialog::focusInEvent(QFocusEvent* e)
+{
+	_fredView->undoGroup()->setActiveStack(_dialogStack);
+	QDialog::focusInEvent(e);
 }
 
 void MissionCutscenesDialog::updateUi()
