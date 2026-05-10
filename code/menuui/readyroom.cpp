@@ -1586,16 +1586,11 @@ void campaign_reset(const SCP_string& campaign_file)
 		return;
 	}
 
-	// note: we do not toss all-time stats from player's performance in campaign up till now
-	// save stats before the reset because csg_reset_data() will zero them when the deleted CSG is not found
-	scoring_struct saved_stats = Player->stats;
-
+	// note: we do not toss all-time stats from player's performance in campaign up till now;
+	// preserve_stats=true tells mission_campaign_load() (and through it, csg_reset_data())
+	// to leave Player->stats alone when it recreates the CSG, so accumulated score/rank/kills/medals carry over
 	mission_campaign_savefile_delete(campaign_file.c_str());
-
-	const int load_status = mission_campaign_load(campaign_file.c_str(), nullptr, nullptr, 1);
-
-	// restore the stats that were cleared during the campaign reload
-	Player->stats = saved_stats;
+	const int load_status = mission_campaign_load(campaign_file.c_str(), nullptr, nullptr, true, true);
 
 	// see if we successfully loaded this campaign
 	if (load_status == 0) {
@@ -1603,11 +1598,10 @@ void campaign_reset(const SCP_string& campaign_file)
 		if ((Campaign.flags & CF_CUSTOM_TECH_DATABASE) || !stricmp(Campaign.filename, "freespace2")) {
 			// reset tech database to what's in the tables
 			tech_reset_to_default();
-		}
 
-		// re-save the savefile so the CSG persists the restored stats (and the tech database reset, if applicable);
-		// mission_campaign_load() already wrote a fresh CSG with zeroed stats when it found no existing savefile
-		Pilot.save_savefile();
+			// write the savefile so that we don't later load a stale techroom
+			Pilot.save_savefile();
+		}
 
 		if (OnCampaignBeginHook->isActive()) {
 			OnCampaignBeginHook->run(scripting::hook_param_list(scripting::hook_param("Campaign", 's', Campaign.filename)));
