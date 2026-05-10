@@ -56,8 +56,8 @@ extern void interp_generate_arc_segment(SCP_vector<vec3d> &arc_segment_points, c
 int model_render_determine_elapsed_time(int objnum, uint64_t flags);
 
 SCP_unordered_map<cached_ui_render_instance_key, cached_ui_render_instance_entry, cached_ui_render_instance_key_hash> Cached_ui_render_instance_cache;
-UI_TIMESTAMP Ui_render_instance_cache_last_processed_timestamp = UI_TIMESTAMP::invalid();
-constexpr int UI_RENDER_INSTANCE_CACHE_UNUSED_MS_GRACE = 100;
+int Ui_render_instance_cache_last_processed_framecount = -1;
+constexpr int UI_RENDER_INSTANCE_CACHE_UNUSED_FRAMES_GRACE = 5;
 
 size_t model_hash_subsystem_name_list_for_cache(const SCP_vector<SCP_string>& subsystem_names)
 {
@@ -115,28 +115,25 @@ TriStateBool model_get_cached_ui_render_instance(int model_num, int* model_insta
 		created_new = true;
 	}
 
-	entry.last_used_timestamp = ui_timestamp();
+	entry.last_used_framecount = Framecount;
 	*model_instance_out = entry.model_instance;
 	return created_new ? TriStateBool::TRUE_ : TriStateBool::FALSE_;
 }
 
 void model_process_cached_ui_render_instances()
 {
-	const auto now = ui_timestamp();
-	
-	if (Ui_render_instance_cache_last_processed_timestamp.isValid() &&
-		ui_timestamp_get_delta(Ui_render_instance_cache_last_processed_timestamp, now) == 0) {
+	if (Ui_render_instance_cache_last_processed_framecount == Framecount) {
 		return;
 	}
 
-	Ui_render_instance_cache_last_processed_timestamp = now;
+	Ui_render_instance_cache_last_processed_framecount = Framecount;
 
 	for (auto it = Cached_ui_render_instance_cache.begin(); it != Cached_ui_render_instance_cache.end();) {
 		// This should never trigger but if it does it means something has gone very wrong with the cache management logic
 		Assertion(it->second.model_instance >= 0, "Corrupted UI render instance cache entry found");
 
-		if (it->second.model_instance < 0 || !it->second.last_used_timestamp.isValid() ||
-			ui_timestamp_get_delta(it->second.last_used_timestamp, now) > UI_RENDER_INSTANCE_CACHE_UNUSED_MS_GRACE) {
+		if (it->second.model_instance < 0 || it->second.last_used_framecount < 0 ||
+			(Framecount - it->second.last_used_framecount) > UI_RENDER_INSTANCE_CACHE_UNUSED_FRAMES_GRACE) {
 			if (it->second.model_instance >= 0) {
 				model_delete_instance(it->second.model_instance);
 			}
@@ -156,7 +153,7 @@ void model_clear_cached_ui_render_instances()
 	}
 
 	Cached_ui_render_instance_cache.clear();
-	Ui_render_instance_cache_last_processed_timestamp = UI_TIMESTAMP::invalid();
+	Ui_render_instance_cache_last_processed_framecount = -1;
 }
 
 model_batch_buffer TransformBufferHandler;

@@ -186,7 +186,7 @@ struct cached_ui_render_instance_key_hash {
 
 struct cached_ui_render_instance_entry {
 	int model_instance = -1;
-	UI_TIMESTAMP last_used_timestamp = UI_TIMESTAMP::invalid();
+	int last_used_framecount = -1;
 };
 
 struct arc_effect
