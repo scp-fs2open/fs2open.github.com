@@ -437,7 +437,7 @@ void mission_campaign_get_sw_info()
  * this file.  If you change the format of the campaign file, you should be sure these related
  * functions work properly and update them if it breaks them.
  */
-int mission_campaign_load(const char* filename, const char* full_path, player* pl, bool load_savefile, bool preserve_stats)
+int mission_campaign_load(const char* filename, const char* full_path, player* pl, bool load_savefile, bool reset_accumulated_stats)
 {
 	int i;
 	char name[NAME_LENGTH], type[NAME_LENGTH], temp[NAME_LENGTH];
@@ -710,9 +710,10 @@ int mission_campaign_load(const char* filename, const char* full_path, player* p
 			// start with fresh new campaign data
 			else {
 				// don't reset ships and weapons because they have just been set to the campaign's starting ones;
-				// preserve_stats is true when the caller is resetting an existing campaign and wants to
-				// keep the player's accumulated totals (score, rank, kills, medals)
-				Pilot.clear_savefile(false, preserve_stats);
+				// don't reset score/rank because it tracks all-time score/rank and we want to stay consistent;
+				// reset_accumulated_stats is false when the caller is resetting an existing campaign and wants to
+				// keep the player's accumulated totals
+				Pilot.clear_savefile(false, reset_accumulated_stats, false);
 				Campaign.next_mission = 0;
 				Pilot.save_savefile();
 			}

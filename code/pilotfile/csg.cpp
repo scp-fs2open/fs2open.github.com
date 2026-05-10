@@ -1594,7 +1594,7 @@ void pilotfile::csg_write_container(const sexp_container &container)
 	}
 }
 
-void pilotfile::csg_reset_data(bool reset_ships_and_weapons, bool preserve_stats)
+void pilotfile::csg_reset_data(bool reset_ships_and_weapons, bool reset_accumulated_stats, bool reset_score_and_rank)
 {
 	int idx;
 	cmission *missionp;
@@ -1607,8 +1607,9 @@ void pilotfile::csg_reset_data(bool reset_ships_and_weapons, bool preserve_stats
 
 	// init stats (unless the caller wants to keep the player's accumulated totals,
 	// e.g. for a campaign reset)
-	if (!preserve_stats) {
-		p->stats.init();
+	if (reset_accumulated_stats) {
+		// even when we do clear stats, we might not clear score or rank
+		p->stats.init(reset_score_and_rank);
 	}
 
 	// zero out allowed ships/weapons
@@ -1726,7 +1727,7 @@ bool pilotfile::load_savefile(player *_p, const char *campaign)
 
 	mprintf(("CSG => Loading '%s' with version %d...\n", filename.c_str(), (int)csg_ver));
 
-	csg_reset_data(true);
+	csg_reset_data(true, true, true);
 
 	// the point of all this: read in the CSG contents
 	while ( !cfeof(cfp) ) {
@@ -1951,7 +1952,7 @@ bool pilotfile::save_savefile()
 	return true;
 }
 
-void pilotfile::clear_savefile(bool reset_ships_and_weapons, bool preserve_stats)
+void pilotfile::clear_savefile(bool reset_ships_and_weapons, bool reset_accumulated_stats, bool reset_score_and_rank)
 {
 	if (Game_mode & GM_MULTIPLAYER) {
 		return;
@@ -1961,7 +1962,7 @@ void pilotfile::clear_savefile(bool reset_ships_and_weapons, bool preserve_stats
 	Assert((Player_num >= 0) && (Player_num < MAX_PLAYERS));
 	p = &Players[Player_num];
 
-	csg_reset_data(reset_ships_and_weapons, preserve_stats);
+	csg_reset_data(reset_ships_and_weapons, reset_accumulated_stats, reset_score_and_rank);
 }
 
 /*

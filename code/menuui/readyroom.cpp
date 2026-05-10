@@ -1586,11 +1586,11 @@ void campaign_reset(const SCP_string& campaign_file)
 		return;
 	}
 
-	// note: we do not toss all-time stats from player's performance in campaign up till now;
-	// preserve_stats=true tells mission_campaign_load() (and through it, csg_reset_data())
+	// note: just as in retail, we do not toss all-time stats from player's performance in campaign up till now;
+	// reset_accumulated_stats=false tells mission_campaign_load() (and through it, csg_reset_data())
 	// to leave Player->stats alone when it recreates the CSG, so accumulated score/rank/kills/medals carry over
 	mission_campaign_savefile_delete(campaign_file.c_str());
-	const int load_status = mission_campaign_load(campaign_file.c_str(), nullptr, nullptr, true, true);
+	const int load_status = mission_campaign_load(campaign_file.c_str(), nullptr, nullptr, true, false);
 
 	// see if we successfully loaded this campaign
 	if (load_status == 0) {
