@@ -784,19 +784,15 @@ int ErrorChecker::checkPlayerStarts() {
 
 int ErrorChecker::checkReinforcements() {
 
-	if (Num_reinforcements > MAX_REINFORCEMENTS) {
-		return internal_error("Number of reinforcements exceeds max limit");
-	}
-
-	for (int i = 0; i < Num_reinforcements; i++) {
-		if (Reinforcements[i].arrival_delay < 0) {
-			error("Reinforcement \"%s\" has a negative arrival delay", Reinforcements[i].name);
+	for (const auto& reinforcement : Reinforcements) {
+		if (reinforcement.arrival_delay < 0) {
+			error("Reinforcement \"%s\" has a negative arrival delay", reinforcement.name);
 		}
 
 		int z = 0;
 		int ship_wingnum = -1;
 		for (const auto& ship : Ships) {
-			if ((ship.objnum >= 0) && !stricmp(ship.ship_name, Reinforcements[i].name)) {
+			if ((ship.objnum >= 0) && !stricmp(ship.ship_name, reinforcement.name)) {
 				z = 1;
 				ship_wingnum = ship.wingnum;
 				break;
@@ -804,7 +800,7 @@ int ErrorChecker::checkReinforcements() {
 		}
 
 		for (const auto& wing : Wings) {
-			if (wing.wave_count && !stricmp(wing.name, Reinforcements[i].name)) {
+			if (wing.wave_count && !stricmp(wing.name, reinforcement.name)) {
 				z = 1;
 				break;
 			}
@@ -816,7 +812,7 @@ int ErrorChecker::checkReinforcements() {
 
 		if (ship_wingnum >= 0) {
 			potential("Reinforcement \"%s\" is a ship that belongs to a wing; the reinforcement flag will be ignored",
-					  Reinforcements[i].name);
+					  reinforcement.name);
 		}
 	}
 
