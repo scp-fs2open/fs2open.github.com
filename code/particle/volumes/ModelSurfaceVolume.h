@@ -5,12 +5,12 @@
 
 namespace particle {
 class ModelSurfaceVolume : public ParticleVolume {
-public:
-	enum class VolumeModularCurveOutput : uint8_t {OFFSET_ROT, POINT_TO_ROT, NUM_VALUES};
+	::util::ParsedRandomFloatRange m_modelScale;
+	enum class VolumeModularCurveOutput : uint8_t {SCALE_MULT, OFFSET_ROT, POINT_TO_ROT, NUM_VALUES};
 
-private:
 	constexpr static auto modular_curve_definition = ParticleEffect::modular_curves_definition.derive_modular_curves_subset<float, VolumeModularCurveOutput>(
 		std::array {
+			std::pair { "Scale Mult", VolumeModularCurveOutput::SCALE_MULT },
 			std::pair { "Offset Rotate Around Fvec", VolumeModularCurveOutput::OFFSET_ROT },
 			std::pair { "Point To Rotate Around Fvec", VolumeModularCurveOutput::POINT_TO_ROT }
 		},

@@ -3,7 +3,7 @@
 #include "math/vecmat.h"
 
 namespace particle {
-ModelSurfaceVolume::ModelSurfaceVolume() : m_modular_curve_instance(m_modular_curves.create_instance()) {
+ModelSurfaceVolume::ModelSurfaceVolume() : m_modelScale(::util::UniformFloatRange(1.f)), m_modular_curve_instance(m_modular_curves.create_instance()) {
 	Model_load_clear_CPU_buffers = false;
 };
 
@@ -12,6 +12,8 @@ vec3d ModelSurfaceVolume::sampleRandomPoint(const matrix &orientation, decltype(
 	int submodel = host.getParentSubmodel();
 
 	vec3d point = ZERO_VECTOR;
+
+	auto curveSource = std::tuple_cat(source, std::make_tuple(particlesFraction));
 
 	if (obj_num >= 0) {
 		const polymodel* pm = object_get_model(&Objects[obj_num]);
@@ -31,10 +33,10 @@ vec3d ModelSurfaceVolume::sampleRandomPoint(const matrix &orientation, decltype(
 			
 			//This point is, despite its name, not in world space, but in model local space (NOT submodel local though!)
 			point = geometry_data.vert[target_vertex].world;
+
+			point *= m_modelScale.next() * m_modular_curves.get_output(VolumeModularCurveOutput::SCALE_MULT, curveSource, &m_modular_curve_instance);
 		}
 	}
-
-	auto curveSource = std::tuple_cat(source, std::make_tuple(particlesFraction));
 
 	return pointCompensateForOffsetAndRotOffset(point, orientation,
 				m_modular_curves.get_output(VolumeModularCurveOutput::OFFSET_ROT, curveSource, &m_modular_curve_instance),
@@ -42,6 +44,10 @@ vec3d ModelSurfaceVolume::sampleRandomPoint(const matrix &orientation, decltype(
 }
 
 void ModelSurfaceVolume::parse() {
+	if (optional_string("+Scale:")) {
+		m_modelScale = ::util::ParsedRandomFloatRange::parseRandomRange();
+	}
+
 	ParticleVolume::parseCommon();
 
 	m_modular_curves.parse("$Volume Curve:");
