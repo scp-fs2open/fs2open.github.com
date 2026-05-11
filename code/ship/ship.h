@@ -622,6 +622,7 @@ public:
 	float max_weapon_regen_per_second;		// wookieejedi - make this a ship object variable
 
 	int ship_guardian_threshold;	// Goober5000 - now also determines whether ship is guardian'd
+	float max_guard_radius;      // Optional clamp for guard engagement/resume ranges; <= 0 means unused
 
 
 	char	ship_name[NAME_LENGTH];
