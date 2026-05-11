@@ -312,7 +312,7 @@ static const SCP_unordered_map<SCP_string, deprecated_enum_name_info> Deprecated
 	{"SEXPVAR_CAMPAIGN_PERSISTENT", {LE_SEXPVAR_CAMPAIGN_PERSISTENT, "SEXPVAR_PERSIST_CAMPAIGN", gameversion::version(26, 0)}},
 	{"SEXPVAR_NOT_PERSISTENT", {LE_SEXPVAR_NOT_PERSISTENT, "SEXPVAR_PERSIST_NONE", gameversion::version(26, 0)}},
 	{"SEXPVAR_PLAYER_PERSISTENT", {LE_SEXPVAR_PLAYER_PERSISTENT, "SEXPVAR_PERSIST_PLAYER", gameversion::version(26, 0)}},
-	// Previously this was a manual deprecation and is now moved moved here with version 26.0.0 because the old way never actually errored
+	// Previously this was a manual deprecation and is now moved here with version 26.0.0 because the old way never actually errored
 	{"VM_EXTERNAL_CAMERA_LOCKED", {LE_VM_EXTERNAL_CAMERA_LOCKED, "VM_CAMERA_LOCKED", gameversion::version(26, 0)}},
 	// These target enums are unused - no Lua API function accepts them
 	{"LOCK", {LE_LOCK, "nothing (this enum was never implemented)", gameversion::version(26, 0)}},
@@ -405,7 +405,7 @@ static const SCP_unordered_map<SCP_string, const char*> Enum_descriptions = {
 	{"MOUSE_X2_BUTTON", "The second extra mouse button (typically the forward side/thumb button). Only available on hardware that provides it."},
 
 	// FLIGHTMODE
-	{"FLIGHTMODE_FLIGHTCURSOR", "Player inputs move a cursor within a cone in front of the ship; the ship turns toward the cursor.."},
+	{"FLIGHTMODE_FLIGHTCURSOR", "Player inputs move a cursor within a cone in front of the ship; the ship turns toward the cursor."},
 	{"FLIGHTMODE_SHIPLOCKED", "Player pitch and heading inputs directly rotate the ship. This is the standard flight control mode."},
 
 	// ORDER

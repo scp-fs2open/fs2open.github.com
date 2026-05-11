@@ -317,11 +317,12 @@ void script_state::OutputLuaDocumentation(ScriptingDocumentation& doc,
 		e.name = Enumerations[i].name;
 		e.value = Enumerations[i].def;
 		auto group = get_enum_group_info(Enumerations[i].name);
-		Assertion(group.has_value(), "Enumeration '%s' has no group entry in Enum_groups — add a matching prefix entry to get_enum_group_info().", Enumerations[i].name);
 		if (group) {
 			e.group_id = group->id;
 			e.group_title = group->title;
 			e.group_description = group->description;
+		} else {
+			Warning(LOCATION, "Enumeration '%s' has no group entry in Enum_groups. Add a matching prefix entry to get_enum_group_info().", Enumerations[i].name);
 		}
 		const char* desc = get_enum_description(Enumerations[i].name);
 		if (desc != nullptr) {
