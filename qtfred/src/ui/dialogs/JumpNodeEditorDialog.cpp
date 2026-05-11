@@ -18,6 +18,12 @@ JumpNodeEditorDialog::JumpNodeEditorDialog(FredView* parent, EditorViewport* vie
 	ui->displayNameLineEdit->setMaxLength(NAME_LENGTH - 1);
 	ui->modelFileLineEdit->setMaxLength(MAX_FILENAME_LEN - 1);
 
+	// -1 is the "mixed selection" sentinel... shown as blank via specialValueText.
+	for (auto* sb : {ui->redSpinBox, ui->greenSpinBox, ui->blueSpinBox, ui->alphaSpinBox}) {
+		sb->setMinimum(-1);
+		sb->setSpecialValueText(" ");
+	}
+
 	initializeUi();
 	updateUi();
 
@@ -72,12 +78,14 @@ void JumpNodeEditorDialog::updateUi()
 	ui->displayNameLineEdit->setText(QString::fromStdString(_model->getDisplayName()));
 	ui->modelFileLineEdit->setText(QString::fromStdString(_model->getModelFilename()));
 
-	ui->redSpinBox->setValue(_model->getColorR());
-	ui->greenSpinBox->setValue(_model->getColorG());
-	ui->blueSpinBox->setValue(_model->getColorB());
-	ui->alphaSpinBox->setValue(_model->getColorA());
+	ui->redSpinBox->setValue(_model->isColorRMixed() ? -1 : _model->getColorR());
+	ui->greenSpinBox->setValue(_model->isColorGMixed() ? -1 : _model->getColorG());
+	ui->blueSpinBox->setValue(_model->isColorBMixed() ? -1 : _model->getColorB());
+	ui->alphaSpinBox->setValue(_model->isColorAMixed() ? -1 : _model->getColorA());
 
-	ui->hiddenByDefaultCheckBox->setChecked(_model->getHidden());
+	const int hiddenState = _model->getHiddenState();
+	ui->hiddenByDefaultCheckBox->setTristate(hiddenState == Qt::PartiallyChecked);
+	ui->hiddenByDefaultCheckBox->setCheckState(static_cast<Qt::CheckState>(hiddenState));
 
 	ui->layerCombo->setCurrentIndex(ui->layerCombo->findData(QString::fromStdString(_model->getLayer())));
 
@@ -86,6 +94,15 @@ void JumpNodeEditorDialog::updateUi()
 
 void JumpNodeEditorDialog::updateColorSwatch()
 {
+	if (_model->hasAnyColorMixed()) {
+		// Mixed selection: render a neutral patterned swatch with a "?".
+		ui->colorSwatch->setText("?");
+		ui->colorSwatch->setAlignment(Qt::AlignCenter);
+		ui->colorSwatch->setStyleSheet("background: #888; color: white;"
+		                               "border: 1px solid #444; border-radius: 3px;");
+		return;
+	}
+	ui->colorSwatch->setText("");
 	ui->colorSwatch->setStyleSheet(QString("background: rgba(%1,%2,%3,%4);"
 	                                       "border: 1px solid #444; border-radius: 3px;")
 	        .arg(_model->getColorR())
@@ -152,9 +169,11 @@ void JumpNodeEditorDialog::on_alphaSpinBox_valueChanged(int value)
 	updateColorSwatch();
 }
 
-void JumpNodeEditorDialog::on_hiddenByDefaultCheckBox_toggled(bool checked)
+void JumpNodeEditorDialog::on_hiddenByDefaultCheckBox_clicked()
 {
-	_model->setHidden(checked);
+	// clicked() is used (not toggled()) so a click on a tri-state PartiallyChecked
+	// box still routes here. Read the post-click state from the widget itself.
+	_model->setHidden(ui->hiddenByDefaultCheckBox->isChecked());
 }
 
 void JumpNodeEditorDialog::on_layerCombo_currentIndexChanged(int index)

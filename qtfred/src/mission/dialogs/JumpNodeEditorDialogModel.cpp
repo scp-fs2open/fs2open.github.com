@@ -29,6 +29,8 @@ void JumpNodeEditorDialogModel::reject() {}
 void JumpNodeEditorDialogModel::initializeData()
 {
 	_selectedJumpNodes.clear();
+	_redMixed = _greenMixed = _blueMixed = _alphaMixed = false;
+	_hiddenMixed = false;
 
 	// Collect all marked OBJ_JUMP_NODE objects
 	for (auto* ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
@@ -83,6 +85,14 @@ void JumpNodeEditorDialogModel::initializeData()
 					otherModel = JN_DEFAULT_MODEL;
 				if (_modelFilename != otherModel)
 					modelConsistent = false;
+
+				const auto& oc = other->GetColor();
+				if (oc.red   != _red)   _redMixed   = true;
+				if (oc.green != _green) _greenMixed = true;
+				if (oc.blue  != _blue)  _blueMixed  = true;
+				if (oc.alpha != _alpha) _alphaMixed = true;
+
+				if (other->IsHidden() != _hidden) _hiddenMixed = true;
 			}
 			if (!displayConsistent) _display.clear();
 			if (!modelConsistent)   _modelFilename.clear();
@@ -237,6 +247,8 @@ bool JumpNodeEditorDialogModel::setModelFilename(const SCP_string& v) {
 		return true;
 	}
 
+	_bypass_errors = false;
+
 	if (!lcase_equal(v, JN_DEFAULT_MODEL) && !cf_exists_full(v.c_str(), CF_TYPE_MODELS)) {
 		showErrorDialogNoCancel("This jump node model file does not exist.");
 		return false;
@@ -260,15 +272,31 @@ bool JumpNodeEditorDialogModel::setModelFilename(const SCP_string& v) {
 
 const SCP_string& JumpNodeEditorDialogModel::getModelFilename() const { return _modelFilename; }
 
+// Writes one color channel to every selected node. Channels still flagged as mixed
+// keep their per-node values; the channel being set is cleared of its mixed flag.
+static void applyChannelToAll(const SCP_vector<int>& selected,
+    int red, int green, int blue, int alpha,
+    bool redMixed, bool greenMixed, bool blueMixed, bool alphaMixed)
+{
+	for (auto objnum : selected) {
+		auto* jnp = jumpnode_get_by_objnum(objnum);
+		if (!jnp) continue;
+		const auto& c = jnp->GetColor();
+		int r = redMixed   ? c.red   : red;
+		int g = greenMixed ? c.green : green;
+		int b = blueMixed  ? c.blue  : blue;
+		int a = alphaMixed ? c.alpha : alpha;
+		jnp->SetAlphaColor(r, g, b, a);
+	}
+}
+
 void JumpNodeEditorDialogModel::setColorR(int v) {
+	if (v < 0) return; // mixed-state sentinel from the dialog — no-op
 	CLAMP(v, 0, 255);
 	_red = v;
-	for (auto objnum : _selectedJumpNodes) {
-		auto* jnp = jumpnode_get_by_objnum(objnum);
-		if (jnp) {
-			jnp->SetAlphaColor(_red, _green, _blue, _alpha);
-		}
-	}
+	_redMixed = false;
+	applyChannelToAll(_selectedJumpNodes, _red, _green, _blue, _alpha,
+	    _redMixed, _greenMixed, _blueMixed, _alphaMixed);
 	set_modified();
 	_editor->missionChanged();
 }
@@ -276,14 +304,12 @@ void JumpNodeEditorDialogModel::setColorR(int v) {
 int JumpNodeEditorDialogModel::getColorR() const { return _red; }
 
 void JumpNodeEditorDialogModel::setColorG(int v) {
+	if (v < 0) return;
 	CLAMP(v, 0, 255);
 	_green = v;
-	for (auto objnum : _selectedJumpNodes) {
-		auto* jnp = jumpnode_get_by_objnum(objnum);
-		if (jnp) {
-			jnp->SetAlphaColor(_red, _green, _blue, _alpha);
-		}
-	}
+	_greenMixed = false;
+	applyChannelToAll(_selectedJumpNodes, _red, _green, _blue, _alpha,
+	    _redMixed, _greenMixed, _blueMixed, _alphaMixed);
 	set_modified();
 	_editor->missionChanged();
 }
@@ -291,14 +317,12 @@ void JumpNodeEditorDialogModel::setColorG(int v) {
 int JumpNodeEditorDialogModel::getColorG() const { return _green; }
 
 void JumpNodeEditorDialogModel::setColorB(int v) {
+	if (v < 0) return;
 	CLAMP(v, 0, 255);
 	_blue = v;
-	for (auto objnum : _selectedJumpNodes) {
-		auto* jnp = jumpnode_get_by_objnum(objnum);
-		if (jnp) {
-			jnp->SetAlphaColor(_red, _green, _blue, _alpha);
-		}
-	}
+	_blueMixed = false;
+	applyChannelToAll(_selectedJumpNodes, _red, _green, _blue, _alpha,
+	    _redMixed, _greenMixed, _blueMixed, _alphaMixed);
 	set_modified();
 	_editor->missionChanged();
 }
@@ -306,22 +330,29 @@ void JumpNodeEditorDialogModel::setColorB(int v) {
 int JumpNodeEditorDialogModel::getColorB() const { return _blue; }
 
 void JumpNodeEditorDialogModel::setColorA(int v) {
+	if (v < 0) return;
 	CLAMP(v, 0, 255);
 	_alpha = v;
-	for (auto objnum : _selectedJumpNodes) {
-		auto* jnp = jumpnode_get_by_objnum(objnum);
-		if (jnp) {
-			jnp->SetAlphaColor(_red, _green, _blue, _alpha);
-		}
-	}
+	_alphaMixed = false;
+	applyChannelToAll(_selectedJumpNodes, _red, _green, _blue, _alpha,
+	    _redMixed, _greenMixed, _blueMixed, _alphaMixed);
 	set_modified();
 	_editor->missionChanged();
 }
 
 int JumpNodeEditorDialogModel::getColorA() const { return _alpha; }
 
+bool JumpNodeEditorDialogModel::isColorRMixed() const { return _redMixed; }
+bool JumpNodeEditorDialogModel::isColorGMixed() const { return _greenMixed; }
+bool JumpNodeEditorDialogModel::isColorBMixed() const { return _blueMixed; }
+bool JumpNodeEditorDialogModel::isColorAMixed() const { return _alphaMixed; }
+bool JumpNodeEditorDialogModel::hasAnyColorMixed() const {
+	return _redMixed || _greenMixed || _blueMixed || _alphaMixed;
+}
+
 void JumpNodeEditorDialogModel::setHidden(bool v) {
 	_hidden = v;
+	_hiddenMixed = false;
 	for (auto objnum : _selectedJumpNodes) {
 		auto* jnp = jumpnode_get_by_objnum(objnum);
 		if (jnp) {
@@ -333,6 +364,11 @@ void JumpNodeEditorDialogModel::setHidden(bool v) {
 }
 
 bool JumpNodeEditorDialogModel::getHidden() const { return _hidden; }
+
+int JumpNodeEditorDialogModel::getHiddenState() const {
+	if (_hiddenMixed) return Qt::PartiallyChecked;
+	return _hidden ? Qt::Checked : Qt::Unchecked;
+}
 
 SCP_string JumpNodeEditorDialogModel::getLayer() const {
 	SCP_string result;

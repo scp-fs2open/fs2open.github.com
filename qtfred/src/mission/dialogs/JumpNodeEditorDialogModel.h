@@ -23,7 +23,7 @@ public:
 	bool setModelFilename(const SCP_string& v);
 	const SCP_string& getModelFilename() const;
 
-	void setColorR(int v);
+	void setColorR(int v); // pass -1 for no-op (mixed sentinel)
 	int getColorR() const;
 	void setColorG(int v);
 	int getColorG() const;
@@ -31,9 +31,15 @@ public:
 	int getColorB() const;
 	void setColorA(int v);
 	int getColorA() const;
+	bool isColorRMixed() const;
+	bool isColorGMixed() const;
+	bool isColorBMixed() const;
+	bool isColorAMixed() const;
+	bool hasAnyColorMixed() const;
 
 	void setHidden(bool v);
 	bool getHidden() const;
+	int getHiddenState() const; // returns Qt::CheckState as int (PartiallyChecked when mixed)
 
 	SCP_string getLayer() const;
 	void setLayer(const SCP_string& v);
@@ -62,7 +68,9 @@ private: // NOLINT(readability-redundant-access-specifiers)
 	SCP_string _display;
 	SCP_string _modelFilename;
 	int _red = 0, _green = 0, _blue = 0, _alpha = 0;
+	bool _redMixed = false, _greenMixed = false, _blueMixed = false, _alphaMixed = false;
 	bool _hidden = false;
+	bool _hiddenMixed = false;
 
 	bool _bypass_errors = false;
 };
