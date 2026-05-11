@@ -19,8 +19,8 @@ private slots:
 	void on_prevPathButton_clicked();
 	void on_nextPathButton_clicked();
 	void on_nameEdit_editingFinished();
-	void on_noDrawLinesCheck_toggled(bool checked);
-	void on_customColorCheck_toggled(bool checked);
+	void on_noDrawLinesCheck_clicked();
+	void on_customColorCheck_clicked();
 	void on_colorRSpinBox_valueChanged(int value);
 	void on_colorGSpinBox_valueChanged(int value);
 	void on_colorBSpinBox_valueChanged(int value);

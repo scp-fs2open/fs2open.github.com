@@ -20,6 +20,12 @@ WaypointEditorDialog::WaypointEditorDialog(FredView* parent, EditorViewport* vie
 
 	ui->nameEdit->setMaxLength(NAME_LENGTH - 1);
 
+	// -1 is the "mixed selection" sentinel; shown as blank via specialValueText.
+	for (auto* sb : {ui->colorRSpinBox, ui->colorGSpinBox, ui->colorBSpinBox}) {
+		sb->setMinimum(-1);
+		sb->setSpecialValueText(" ");
+	}
+
 	initializeUi();
 	updateUi();
 
@@ -67,13 +73,20 @@ void WaypointEditorDialog::updateUi()
 	ui->nameEdit->setText(QString::fromStdString(_model->getCurrentName()));
 	ui->layerCombo->setCurrentIndex(ui->layerCombo->findData(QString::fromStdString(_model->getLayer())));
 
-	ui->noDrawLinesCheck->setChecked(_model->getNoDrawLines());
-	ui->customColorCheck->setChecked(_model->getHasCustomColor());
-	ui->colorRSpinBox->setValue(_model->getColorR());
-	ui->colorGSpinBox->setValue(_model->getColorG());
-	ui->colorBSpinBox->setValue(_model->getColorB());
+	const int noDrawState = _model->getNoDrawLinesState();
+	ui->noDrawLinesCheck->setTristate(noDrawState == Qt::PartiallyChecked);
+	ui->noDrawLinesCheck->setCheckState(static_cast<Qt::CheckState>(noDrawState));
 
-	const bool colorEnabled = _model->hasValidSelection() && _model->getHasCustomColor();
+	const int customColorState = _model->getHasCustomColorState();
+	ui->customColorCheck->setTristate(customColorState == Qt::PartiallyChecked);
+	ui->customColorCheck->setCheckState(static_cast<Qt::CheckState>(customColorState));
+
+	ui->colorRSpinBox->setValue(_model->isColorRMixed() ? -1 : _model->getColorR());
+	ui->colorGSpinBox->setValue(_model->isColorGMixed() ? -1 : _model->getColorG());
+	ui->colorBSpinBox->setValue(_model->isColorBMixed() ? -1 : _model->getColorB());
+
+	const bool customResolved = customColorState == Qt::Checked;
+	const bool colorEnabled = _model->hasValidSelection() && customResolved;
 	ui->colorRSpinBox->setEnabled(colorEnabled);
 	ui->colorGSpinBox->setEnabled(colorEnabled);
 	ui->colorBSpinBox->setEnabled(colorEnabled);
@@ -83,6 +96,14 @@ void WaypointEditorDialog::updateUi()
 
 void WaypointEditorDialog::updateColorSwatch()
 {
+	if (_model->hasAnyColorMixed()) {
+		ui->colorSwatch->setText("?");
+		ui->colorSwatch->setAlignment(Qt::AlignCenter);
+		ui->colorSwatch->setStyleSheet("background: #888; color: white;"
+		                               "border: 1px solid #444; border-radius: 3px;");
+		return;
+	}
+	ui->colorSwatch->setText("");
 	ui->colorSwatch->setStyleSheet(QString("background: rgb(%1,%2,%3);"
 	                                       "border: 1px solid #444; border-radius: 3px;")
 	        .arg(_model->getColorR())
@@ -108,19 +129,18 @@ void WaypointEditorDialog::on_nameEdit_editingFinished()
 	}
 }
 
-void WaypointEditorDialog::on_noDrawLinesCheck_toggled(bool checked)
+void WaypointEditorDialog::on_noDrawLinesCheck_clicked()
 {
-	_model->setNoDrawLines(checked);
+	// clicked() (not toggled()) so a click on a tri-state PartiallyChecked box still routes here.
+	_model->setNoDrawLines(ui->noDrawLinesCheck->isChecked());
+	// User has resolved any partial state; refresh so tristate(true) is cleared.
+	updateUi();
 }
 
-void WaypointEditorDialog::on_customColorCheck_toggled(bool checked)
+void WaypointEditorDialog::on_customColorCheck_clicked()
 {
-	_model->setHasCustomColor(checked);
-	const bool colorEnabled = checked;
-	ui->colorRSpinBox->setEnabled(colorEnabled);
-	ui->colorGSpinBox->setEnabled(colorEnabled);
-	ui->colorBSpinBox->setEnabled(colorEnabled);
-	updateColorSwatch();
+	_model->setHasCustomColor(ui->customColorCheck->isChecked());
+	updateUi();
 }
 
 void WaypointEditorDialog::on_colorRSpinBox_valueChanged(int value)
