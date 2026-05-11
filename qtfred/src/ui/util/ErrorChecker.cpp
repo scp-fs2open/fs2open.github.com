@@ -362,10 +362,10 @@ int ErrorChecker::checkObjectList() {
 		ptr = GET_NEXT(ptr);
 	}
 
-	// When auto-corrections are off, a Player_starts mismatch is the expected downstream
-	// effect of refusing to retype a bad start above (the user already saw the Error card).
-	// Reporting it as an internal_error here would abort the rest of the run for no benefit.
-	if (t != Player_starts && _viewport->Error_checker_apply_auto_corrections) {
+	// t and Player_starts are decremented in lockstep when auto-correcting bad player
+	// starts above, so any mismatch here indicates a data-integrity problem regardless
+	// of the auto-correct setting.
+	if (t != Player_starts) {
 		return internal_error("Total number of player ships is incorrect");
 	}
 
@@ -475,7 +475,7 @@ int ErrorChecker::checkShips() {
 				int obj = OBJ_INDEX(dock_ptr->docked_objp);
 
 				if (!query_valid_object(obj)) {
-					return internal_error("Ship \"%s\" initially docked with non-existant ship", Ships[i].ship_name);
+					return internal_error("Ship \"%s\" initially docked with non-existent ship", Ships[i].ship_name);
 				}
 
 				if (Objects[obj].type != OBJ_SHIP && Objects[obj].type != OBJ_START) {
@@ -1027,7 +1027,7 @@ int ErrorChecker::checkPlayerWings() {
 	if (The_mission.game_type & MISSION_TYPE_MULTI_TEAMS) {
 		for (int i = 0; i < MAX_TVT_WINGS; i++) {
 			if (!tvt_wing_count[i]) {
-				error("%s wing doesn't contain any players (which it should)", TVT_wing_names[i]);
+				error("%s wing does not contain any players (which it should)", TVT_wing_names[i]);
 			}
 		}
 	}
@@ -1242,7 +1242,9 @@ int ErrorChecker::checkTeamLoadout() {
 }
 
 int ErrorChecker::checkInitialOrders(ai_goal* goals, int ship, int wing) {
-	Assertion(_viewport->editor != nullptr, "checkInitialOrders requires a valid editor");
+	if (_viewport->editor == nullptr) {
+		return internal_error("checkInitialOrders requires a valid editor");
+	}
 
 	auto get_order_name = [](ai_goal_mode order) -> const char* {
 		if (order == AI_GOAL_NONE)
@@ -1264,7 +1266,7 @@ int ErrorChecker::checkInitialOrders(ai_goal* goals, int ship, int wing) {
 		team = Ships[ship].team;
 		for (int i = 0; i < MAX_AI_GOALS; i++) {
 			if (!ai_query_goal_valid(ship, goals[i].ai_mode))
-				potential("Order \"%s\" isn't allowed for ship \"%s\"", get_order_name(goals[i].ai_mode), source);
+				potential("Order \"%s\" is not allowed for ship \"%s\"", get_order_name(goals[i].ai_mode), source);
 		}
 	} else {
 		Assert(wing >= 0);
@@ -1274,7 +1276,7 @@ int ErrorChecker::checkInitialOrders(ai_goal* goals, int ship, int wing) {
 		for (int j = 0; j < Wings[wing].wave_count; j++) {
 			for (int i = 0; i < MAX_AI_GOALS; i++) {
 				if (!ai_query_goal_valid(Wings[wing].ship_index[j], goals[i].ai_mode))
-					potential("Order \"%s\" isn't allowed for ship \"%s\"", get_order_name(goals[i].ai_mode),
+					potential("Order \"%s\" is not allowed for ship \"%s\"", get_order_name(goals[i].ai_mode),
 							  Ships[Wings[wing].ship_index[j]].ship_name);
 			}
 		}
@@ -1301,7 +1303,7 @@ int ErrorChecker::checkInitialOrders(ai_goal* goals, int ship, int wing) {
 
 		case AI_GOAL_DOCK:
 			if (ship < 0) {
-				error("Initial orders error for wing \"%s\"\n\nWings can't dock", source);
+				error("Initial orders error for wing \"%s\"\n\nWings cannot dock", source);
 				continue;
 			}
 			FALLTHROUGH;

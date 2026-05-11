@@ -428,7 +428,7 @@ bool FredView::saveMissionToCurrentPath() {
 
 	if (fixCount > 0)
 		QMessageBox::information(this, tr("Auto-corrections Applied"),
-			tr("%1 issue(s) were automatically corrected before saving.").arg(fixCount));
+			tr("%n issue(s) were automatically corrected before saving.", "", fixCount));
 	else if (fixCount == 0)
 		QMessageBox::information(this, tr("No Auto-corrections Applied"),
 			tr("No issues could be automatically corrected. The mission was saved with existing errors."));
@@ -467,7 +467,7 @@ bool FredView::saveMissionAs() {
 
 	if (fixCount > 0)
 		QMessageBox::information(this, tr("Auto-corrections Applied"),
-			tr("%1 issue(s) were automatically corrected before saving.").arg(fixCount));
+			tr("%n issue(s) were automatically corrected before saving.", "", fixCount));
 	else if (fixCount == 0)
 		QMessageBox::information(this, tr("No Auto-corrections Applied"),
 			tr("No issues could be automatically corrected. The mission was saved with existing errors."));
