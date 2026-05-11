@@ -114,7 +114,7 @@ bool WaypointEditorDialogModel::hasMultipleSelection() const {
 	return _selectedWaypointPaths.size() > 1;
 }
 
-bool WaypointEditorDialogModel::hasAnyPathsInMission() const {
+bool WaypointEditorDialogModel::hasAnyPathsInMission() {
 	return !Waypoint_lists.empty();
 }
 

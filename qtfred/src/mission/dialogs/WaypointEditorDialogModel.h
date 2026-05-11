@@ -14,7 +14,7 @@ public:
 
 	bool hasValidSelection() const;
 	bool hasMultipleSelection() const;
-	bool hasAnyPathsInMission() const;
+	static bool hasAnyPathsInMission();
 	int getSelectionCount() const;
 
 	const SCP_string& getCurrentName() const;
