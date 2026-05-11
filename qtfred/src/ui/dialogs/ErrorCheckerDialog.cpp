@@ -104,6 +104,18 @@ void ErrorCheckerDialog::initializeUi() {
 		ui->mainLayout->insertWidget(1, legend);
 	}
 
+	// --- Auto-correction nudge (Normal mode only) ---
+	// Sits between the legend and the scroll area. Shown by updateUi() when the
+	// run produced warnings and "Apply auto-corrections" is currently off, so the
+	// designer knows the warnings can be resolved without manual editing.
+	if (_mode == Mode::Normal) {
+		_autoFixNudge = new QLabel(this);
+		_autoFixNudge->setWordWrap(true);
+		_autoFixNudge->setContentsMargins(6, 4, 6, 4);
+		_autoFixNudge->hide();
+		ui->mainLayout->insertWidget(2, _autoFixNudge);
+	}
+
 	// --- Scroll area content (common to both modes) ---
 	auto* scrollContent = new QWidget(ui->errorScrollArea);
 	_errorLayout = new QVBoxLayout(scrollContent);
@@ -166,6 +178,9 @@ void ErrorCheckerDialog::updateUi() {
 		delete item;
 	}
 
+	if (_autoFixNudge)
+		_autoFixNudge->hide();
+
 	if (!_model->hasBeenRun()) {
 		ui->statusLabel->setText(tr("No check has been run yet."));
 		if (_fixSaveButton)
@@ -214,9 +229,6 @@ void ErrorCheckerDialog::updateUi() {
 
 		switch (entry.severity) {
 		case ErrorSeverity::Error:
-			++errorCount;
-			hasAutoFixable = true;
-			break;
 		case ErrorSeverity::InternalError:
 			++errorCount;
 			break;
@@ -269,9 +281,17 @@ void ErrorCheckerDialog::updateUi() {
 	ui->statusLabel->setText(parts.join(tr(", ")) + tr(" found."));
 
 	// "Fix and Save" is only enabled when there are entries the auto-corrector can address.
-	// InternalErrors are data-integrity failures that the corrector cannot resolve.
+	// Under the current taxonomy, only Warnings have auto-fixes; Errors must be addressed manually.
 	if (_fixSaveButton)
 		_fixSaveButton->setEnabled(hasAutoFixable);
+
+	// Surface the auto-correction nudge when the run produced warnings and the
+	// designer doesn't currently have auto-corrections enabled. PreSave mode has
+	// the dedicated "Fix and Save" button instead, so the nudge is suppressed there.
+	if (_autoFixNudge && warningCount > 0 && !_model->getApplyAutoCorrections()) {
+		_autoFixNudge->setText(tr("<b>%1 warning(s)</b> can be fixed automatically. Enable <i>Apply auto-corrections</i> and re-run.").arg(warningCount));
+		_autoFixNudge->show();
+	}
 }
 
 } // namespace fso::fred::dialogs

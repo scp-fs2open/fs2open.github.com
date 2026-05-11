@@ -30,20 +30,18 @@ ErrorChecker::ErrorChecker(EditorViewport* viewport) : _viewport(viewport) {}
 bool ErrorChecker::runFullCheck() {
 	_collected_errors.clear();
 	_anchors_checked.clear();
+	_object_names.clear();
 	g_err = 0;
 
-	// Frees any waypoint-name strings allocated by populateNames()/checkObjectList()
-	// on every exit path — including early returns from internal_error().
-	struct NamesCleanupGuard {
-		ErrorChecker* self;
-		~NamesCleanupGuard() {
-			for (int z = 0; z < self->obj_count; z++) {
-				if (self->err_flags[z])
-					delete[] self->names[z];
-			}
-			self->obj_count = 0;
-		}
-	} cleanup_guard{this};
+	// Surface any auto-corrections the parser had to apply at load time. These would
+	// otherwise be invisible: parse-time mutates negative delays to 0, out-of-range
+	// persona indices to -1, etc., so by the time the checker runs the live data is
+	// already clean and the per-check predicates would never fire.
+	for (const auto& msg : Mission_parse_warnings) {
+		_collected_errors.push_back({msg, ErrorSeverity::Warning});
+		g_err = 1;
+	}
+	Mission_parse_warnings.clear();
 
 	if (checkObjectList() != 0)        return true;
 	if (checkShips() != 0)             return true;
@@ -68,18 +66,7 @@ bool ErrorChecker::runCheck(ErrorCheckType type, const ErrorCheckContext& ctx) {
 	g_err = 0;
 	_collected_errors.clear();
 	_anchors_checked.clear();
-
-	// Same cleanup guard as runFullCheck — harmless for checks that don't populate names.
-	struct NamesCleanupGuard {
-		ErrorChecker* self;
-		~NamesCleanupGuard() {
-			for (int z = 0; z < self->obj_count; z++) {
-				if (self->err_flags[z])
-					delete[] self->names[z];
-			}
-			self->obj_count = 0;
-		}
-	} cleanup_guard{this};
+	_object_names.clear();
 
 	switch (type) {
 	case ErrorCheckType::InitialOrders:     checkInitialOrders(ctx.goals, ctx.ship, ctx.wing); break;
@@ -220,45 +207,35 @@ int ErrorChecker::fred_check_sexp(int sexp, int type, const char* location, ...)
 }
 
 void ErrorChecker::populateNames() {
-	// Free any previously allocated waypoint name strings before repopulating,
-	// so this function is safe to call multiple times.
-	for (int z = 0; z < obj_count; z++) {
-		if (err_flags[z])
-			delete[] names[z];
-	}
-	obj_count = 0;
+	_object_names.clear();
 	object* ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
-		names[obj_count] = nullptr;
-		err_flags[obj_count] = 0;
+		ObjectName entry;
 		int i = ptr->instance;
 		if (ptr->type == OBJ_SHIP || ptr->type == OBJ_START) {
 			if (i >= 0 && i < MAX_SHIPS)
-				names[obj_count] = Ships[i].ship_name;
+				entry.name = Ships[i].ship_name;
 		} else if (ptr->type == OBJ_WAYPOINT) {
 			int waypoint_num;
 			waypoint_list* wp_list = find_waypoint_list_with_instance(i, &waypoint_num);
 			if (wp_list != nullptr && waypoint_num >= 0 && (uint)waypoint_num < wp_list->get_waypoints().size()) {
 				char buf[256];
 				waypoint_stuff_name(buf, i);
-				names[obj_count] = new char[strlen(buf) + 1];
-				strcpy(names[obj_count], buf);
-				err_flags[obj_count] = 1;
+				entry.name = buf;
 			}
 		}
-		obj_count++;
+		_object_names.push_back(std::move(entry));
 		ptr = GET_NEXT(ptr);
 	}
 }
 
 int ErrorChecker::checkObjectList() {
 
-	int t;
-	obj_count = t = 0;
+	int t = 0;
+	_object_names.clear();
 	object* ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
-		names[obj_count] = nullptr;
-		err_flags[obj_count] = 0;
+		ObjectName entry;
 		int i = ptr->instance;
 		if ((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) {
 			if (i < 0 || i >= MAX_SHIPS) {
@@ -278,10 +255,10 @@ int ErrorChecker::checkObjectList() {
 						Player_starts--;
 						t--;
 					}
-					error("Invalid ship type for a player.%s",
-						  _viewport->Error_checker_apply_auto_corrections
-							  ? "  Ship has been reset to non-player ship."
-							  : "");
+					warning("Invalid ship type for a player.%s",
+							_viewport->Error_checker_apply_auto_corrections
+								? "  Ship has been reset to non-player ship."
+								: "  Can be auto-corrected to non-player ship.");
 				}
 
 				int count = 0;
@@ -292,7 +269,7 @@ int ErrorChecker::checkObjectList() {
 				}
 
 				if (!count) {
-					warning("Player \"%s\" has no primary weapons.  Should have at least 1", Ships[i].ship_name);
+					error("Player \"%s\" has no primary weapons.  Should have at least 1", Ships[i].ship_name);
 				}
 			}
 
@@ -300,7 +277,7 @@ int ErrorChecker::checkObjectList() {
 				return internal_error("Object/ship references are corrupt");
 			}
 
-			names[obj_count] = Ships[i].ship_name;
+			entry.name = Ships[i].ship_name;
 			int w = Ships[i].wingnum;
 			if (w >= 0) {
 				if (w >= MAX_WINGS) {
@@ -364,9 +341,7 @@ int ErrorChecker::checkObjectList() {
 
 			char buf[256];
 			waypoint_stuff_name(buf, i);
-			names[obj_count] = new char[strlen(buf) + 1];
-			strcpy(names[obj_count], buf);
-			err_flags[obj_count] = 1;
+			entry.name = buf;
 		} else if (ptr->type == OBJ_POINT) {
 			// Briefing icons are editor-only objects, not mission objects; nothing to validate here.
 		} else if (ptr->type == OBJ_JUMP_NODE || ptr->type == OBJ_PROP) {
@@ -375,23 +350,26 @@ int ErrorChecker::checkObjectList() {
 			return internal_error("An unknown object type (%d) was detected", ptr->type);
 		}
 
-		for (i = 0; i < obj_count; i++) {
-			if (names[i] && names[obj_count]) {
-				if (!stricmp(names[i], names[obj_count])) {
-					return internal_error("Duplicate object names (%s)", names[i]);
+		if (!entry.name.empty()) {
+			for (const auto& existing : _object_names) {
+				if (!existing.name.empty() && !stricmp(existing.name.c_str(), entry.name.c_str())) {
+					return internal_error("Duplicate object names (%s)", existing.name.c_str());
 				}
 			}
 		}
 
-		obj_count++;
+		_object_names.push_back(std::move(entry));
 		ptr = GET_NEXT(ptr);
 	}
 
-	if (t != Player_starts) {
+	// When auto-corrections are off, a Player_starts mismatch is the expected downstream
+	// effect of refusing to retype a bad start above (the user already saw the Error card).
+	// Reporting it as an internal_error here would abort the rest of the run for no benefit.
+	if (t != Player_starts && _viewport->Error_checker_apply_auto_corrections) {
 		return internal_error("Total number of player ships is incorrect");
 	}
 
-	if (obj_count != Num_objects) {
+	if (static_cast<int>(_object_names.size()) != Num_objects) {
 		return internal_error("Num_objects is incorrect");
 	}
 
@@ -682,11 +660,9 @@ int ErrorChecker::checkWings() {
 				}
 			}
 
-			for (j = 0; j < obj_count; j++) {
-				if (names[j]) {
-					if (!stricmp(names[j], Wings[i].name)) {
-						return internal_error("Wing name is also used by an object (%s)", names[j]);
-					}
+			for (const auto& entry : _object_names) {
+				if (!entry.name.empty() && !stricmp(entry.name.c_str(), Wings[i].name)) {
+					return internal_error("Wing name is also used by an object (%s)", entry.name.c_str());
 				}
 			}
 
@@ -768,27 +744,24 @@ int ErrorChecker::checkWaypointPaths() {
 	populateNames();
 
 	for (const auto& ii : Waypoint_lists) {
-		for (int z = 0; z < obj_count; z++) {
-			if (names[z]) {
-				if (!stricmp(names[z], ii.get_name())) {
-					return internal_error("Waypoint path name is also used by an object (%s)", names[z]);
-				}
+		for (const auto& entry : _object_names) {
+			if (!entry.name.empty() && !stricmp(entry.name.c_str(), ii.get_name())) {
+				return internal_error("Waypoint path name is also used by an object (%s)", entry.name.c_str());
 			}
 		}
 
 		for (const auto& jj : ii.get_waypoints()) {
 			char buf[256];
 			waypoint_stuff_name(buf, jj);
-			int z;
-			for (z = 0; z < obj_count; z++) {
-				if (names[z]) {
-					if (!stricmp(names[z], buf)) {
-						break;
-					}
+			bool found = false;
+			for (const auto& entry : _object_names) {
+				if (!entry.name.empty() && !stricmp(entry.name.c_str(), buf)) {
+					found = true;
+					break;
 				}
 			}
 
-			if (z == obj_count) {
+			if (!found) {
 				return internal_error("Waypoint \"%s\" not linked to an object", buf);
 			}
 		}
@@ -853,7 +826,9 @@ int ErrorChecker::checkReinforcements() {
 }
 
 int ErrorChecker::checkPlayerWings() {
-	Assert((Player_start_shipnum >= 0) && (Player_start_shipnum < MAX_SHIPS) && (Ships[Player_start_shipnum].objnum >= 0)); // NOLINT(readability-simplify-boolean-expr)
+	if (Player_start_shipnum < 0 || Player_start_shipnum >= MAX_SHIPS || Ships[Player_start_shipnum].objnum < 0) {
+		return internal_error("Mission has no valid player start ship");
+	}
 
 	const int multi = (The_mission.game_type & MISSION_TYPE_MULTI) ? 1 : 0;
 
@@ -912,10 +887,10 @@ int ErrorChecker::checkPlayerWings() {
 				if (TVT_wings[i] >= 0 && Wings[TVT_wings[i]].num_waves > 1) {
 					if (_viewport->Error_checker_apply_auto_corrections)
 						Wings[TVT_wings[i]].num_waves = 1;
-					error("%s wing must contain only 1 wave.%s", TVT_wing_names[i],
-						  _viewport->Error_checker_apply_auto_corrections
-							  ? "\nThis change has been made for you."
-							  : "");
+					warning("%s wing must contain only 1 wave.%s", TVT_wing_names[i],
+							_viewport->Error_checker_apply_auto_corrections
+								? "  Reset to 1 wave."
+								: "  Can be auto-corrected to 1 wave.");
 				}
 			}
 		} else {
@@ -923,10 +898,10 @@ int ErrorChecker::checkPlayerWings() {
 				if (Starting_wings[i] >= 0 && Wings[Starting_wings[i]].num_waves > 1) {
 					if (_viewport->Error_checker_apply_auto_corrections)
 						Wings[Starting_wings[i]].num_waves = 1;
-					error("%s wing must contain only 1 wave.%s", Starting_wing_names[i],
-						  _viewport->Error_checker_apply_auto_corrections
-							  ? "\nThis change has been made for you."
-							  : "");
+					warning("%s wing must contain only 1 wave.%s", Starting_wing_names[i],
+							_viewport->Error_checker_apply_auto_corrections
+								? "  Reset to 1 wave."
+								: "  Can be auto-corrected to 1 wave.");
 				}
 			}
 		}
@@ -1216,8 +1191,8 @@ int ErrorChecker::checkDockingGroupCues() {
 			error("Docking group containing \"%s\" has no ship with a non-false arrival cue; the group will not appear in-mission",
 				  Ships[i].ship_name);
 		} else if (non_false_count > 1) {
-			warning("Docking group containing \"%s\" has more than one non-false arrival cue; only one is allowed",
-					Ships[i].ship_name);
+			error("Docking group containing \"%s\" has more than one non-false arrival cue; only one is allowed",
+				  Ships[i].ship_name);
 		}
 	}
 
@@ -1255,11 +1230,11 @@ int ErrorChecker::checkTeamLoadout() {
 				strcpy_s(Team_data[i].weaponry_amount_variable[slot], "");
 				strcpy_s(Team_data[i].weaponry_pool_variable[slot], "");
 				Team_data[i].num_weapon_choices++;
-				error("Weapon \"%s\" is used in wings of team %d but was not in the team loadout pool. Added automatically.",
-					  Weapon_info[j].name, i + 1);
+				warning("Weapon \"%s\" is used in wings of team %d but was not in the team loadout pool — added automatically.",
+						Weapon_info[j].name, i + 1);
 			} else {
-				error("Weapon \"%s\" is used in wings of team %d but is not in the team loadout pool",
-					  Weapon_info[j].name, i + 1);
+				warning("Weapon \"%s\" is used in wings of team %d but is not in the team loadout pool — can be auto-corrected by adding it.",
+						Weapon_info[j].name, i + 1);
 			}
 		}
 	}

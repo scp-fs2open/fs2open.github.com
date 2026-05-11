@@ -566,6 +566,11 @@ extern fix Mission_end_time;
 
 extern SCP_vector<SCP_string> Parse_names;
 
+// Populated when Qtfred_running and a parse-time auto-correction fires. Drained by
+// QtFRED's ErrorChecker so the corrections are visible to the designer instead of
+// silently buried. Outside of QtFRED these sites still call Warning(LOCATION, ...).
+extern SCP_vector<SCP_string> Mission_parse_warnings;
+
 extern char			Player_start_shipname[NAME_LENGTH];
 extern int			Player_start_shipnum;
 extern p_object	*Player_start_pobject;

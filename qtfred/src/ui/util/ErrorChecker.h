@@ -28,9 +28,9 @@ inline constexpr std::array<SeverityInfo, 4> severity_info = {{
 	  "A serious structural problem FRED cannot automatically correct. "
 	  "The mission may fail to load or behave unpredictably in-game." },
 	{ 0xE0, 0x78, 0x30, "Error",
-	  "A mission design problem that must be fixed. The mission may not play correctly." },
+	  "A mission design problem that must be manually fixed. The mission may not play correctly otherwise." },
 	{ 0xD4, 0xA0, 0x00, "Warning",
-	  "A configuration issue that may cause unexpected behavior in-game." },
+	  "A problem that can be (or has been) auto-corrected. Review the change before saving." },
 	{ 0x40, 0x80, 0xCC, "Potential Issue",
 	  "A situation that may be intentional but is worth reviewing." },
 }};
@@ -53,7 +53,7 @@ struct ErrorEntry {
 
 enum class ErrorCheckType {
 	InitialOrders,  // standalone check (used by ShipGoalsDialogModel)
-	ObjectList,     // object integrity + names[] population
+	ObjectList,     // object integrity + name collection
 	Ships,          // ship SEXPs, anchors, AI goals, docking, loadout weapons
 	Wings,          // wing structure, SEXPs, anchors, AI goals, thresholds
 	WaypointPaths,  // waypoint path name conflicts with objects
@@ -92,9 +92,12 @@ public:
 private:
 	EditorViewport* _viewport;
 
-	char* names[MAX_OBJECTS];
-	char err_flags[MAX_OBJECTS];
-	int obj_count = 0;
+	// Per-object identity entries built up during ObjectList / Wings / Waypoints checks.
+	// Empty name means an object type with no identifier (briefing icons, jump nodes, props).
+	struct ObjectName {
+		SCP_string name;
+	};
+	SCP_vector<ObjectName> _object_names;
 	// Accumulates whether any error() or warning() has fired during a check run.
 	// Those helpers are void (no return value to propagate), so g_err is the only
 	// way runFullCheck/runCheck can report non-critical issues that don't cause an
@@ -114,8 +117,7 @@ private:
 	void potential(SCP_FORMAT_STRING const char* msg, ...) SCP_FORMAT_STRING_ARGS(2, 3);
 	int fred_check_sexp(int sexp, int type, const char* location, ...);
 
-	// Populates names[], err_flags[], and obj_count from the object list.
-	// Safe to call multiple times; frees any previously allocated waypoint name strings first.
+	// Populates _object_names from the object list. Safe to call multiple times.
 	// Called internally by checkWings() and checkWaypointPaths() — no external call needed.
 	void populateNames();
 

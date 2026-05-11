@@ -5,6 +5,7 @@
 
 #include "mission/dialogs/ErrorCheckerDialogModel.h"
 
+class QLabel;
 class QVBoxLayout;
 
 namespace fso::fred::dialogs {
@@ -59,6 +60,7 @@ private: // NOLINT(readability-redundant-access-specifiers)
 	std::unique_ptr<Ui::ErrorCheckerDialog> ui;
 	std::unique_ptr<ErrorCheckerDialogModel> _model;
 	QVBoxLayout* _errorLayout = nullptr;
+	QLabel*      _autoFixNudge = nullptr; // Normal mode only; populated/shown in updateUi
 
 	Mode          _mode           = Mode::Normal;
 	PreSaveAction _preSaveAction  = PreSaveAction::Cancel;

@@ -175,6 +175,27 @@ p_object *Player_start_pobject;
 // something before that ship has even been loaded yet)
 SCP_vector<SCP_string> Parse_names;
 
+SCP_vector<SCP_string> Mission_parse_warnings;
+
+// Routes a parse-time auto-correction notice to the right surface for the app:
+// outside QtFRED, the existing Warning(LOCATION, ...) popup; inside QtFRED, the
+// Mission_parse_warnings queue so the ErrorChecker can present it without a popup.
+static void parse_warning_or_record(SCP_FORMAT_STRING const char* fmt, ...) SCP_FORMAT_STRING_ARGS(1, 2);
+static void parse_warning_or_record(const char* fmt, ...)
+{
+	SCP_string msg;
+	va_list args;
+	va_start(args, fmt);
+	vsprintf(msg, fmt, args);
+	va_end(args);
+
+	if (Qtfred_running) {
+		Mission_parse_warnings.push_back(std::move(msg));
+	} else {
+		Warning(LOCATION, "%s", msg.c_str());
+	}
+}
+
 SCP_vector<texture_replace> Fred_texture_replacements;
 
 SCP_unordered_set<int> Fred_migrated_immobile_ships;
@@ -2963,8 +2984,7 @@ void resolve_parse_flags(object *objp, flagset<Mission::Parse_Object_Flags> &par
 
     if ((parse_flags[Mission::Parse_Object_Flags::OF_No_shields]) && (parse_flags[Mission::Parse_Object_Flags::OF_Force_shields_on]))
     {
-        if (!Qtfred_running)
-            Warning(LOCATION, "The parser found a ship with both the \"force-shields-on\" and \"no-shields\" flags; this is inconsistent!");
+        parse_warning_or_record("Ship %s has both the \"force-shields-on\" and \"no-shields\" flags; this is inconsistent.", shipp->ship_name);
     }
     if (parse_flags[Mission::Parse_Object_Flags::OF_No_shields])
         objp->flags.set(Object::Object_Flags::No_shields);
@@ -3459,8 +3479,7 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 			|| (p_objp->arrival_location == ArrivalLocation::ABOVE_SHIP) || (p_objp->arrival_location == ArrivalLocation::BELOW_SHIP)
 			|| (p_objp->arrival_location == ArrivalLocation::TO_LEFT_OF_SHIP) || (p_objp->arrival_location == ArrivalLocation::TO_RIGHT_OF_SHIP) ))
 		{
-			if (!Qtfred_running)
-				Warning(LOCATION, "Arrival distance for ship %s cannot be %d.  Setting to 1.\n", p_objp->name, p_objp->arrival_distance);
+			parse_warning_or_record("Arrival distance for ship %s cannot be %d — corrected to 1.", p_objp->name, p_objp->arrival_distance);
 			p_objp->arrival_distance = 1;
 		}
 	}
@@ -3485,8 +3504,7 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 		stuff_int(&delay);
 		if (delay < 0)
 		{
-			if (!Qtfred_running)
-				Warning(LOCATION, "Cannot have arrival delay < 0 on ship %s", p_objp->name);
+			parse_warning_or_record("Arrival delay on ship %s cannot be negative — corrected to 0.", p_objp->name);
 			delay = 0;
 		}
 
@@ -3523,8 +3541,7 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 		stuff_int(&delay);
 		if (delay < 0)
 		{
-			if (!Qtfred_running)
-				Warning(LOCATION, "Cannot have departure delay < 0 (ship %s)", p_objp->name);
+			parse_warning_or_record("Departure delay on ship %s cannot be negative — corrected to 0.", p_objp->name);
 			delay = 0;
 		}
 
@@ -3756,8 +3773,7 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 		stuff_int(&p_objp->destroy_before_mission_time);
 		if (p_objp->destroy_before_mission_time < 0)
 		{
-			if (!Qtfred_running)
-				Warning(LOCATION, "Cannot set a negative 'destroy before mission' value (ship %s)", p_objp->name);
+			parse_warning_or_record("'Destroy before mission' value on ship %s cannot be negative — corrected to 0.", p_objp->name);
 			p_objp->destroy_before_mission_time = 0;
 		}
 
@@ -3852,8 +3868,7 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 	if (optional_string("+Persona Index:")) {
 		stuff_int(&p_objp->persona_index);
 		if (p_objp->persona_index < -1 || p_objp->persona_index >= (int)Personas.size()) {
-			if (!Qtfred_running)
-				Warning(LOCATION, "Persona index %d for %s is out of range!  Setting to -1.", p_objp->persona_index, p_objp->name);
+			parse_warning_or_record("Persona index %d for ship %s is out of range — corrected to -1.", p_objp->persona_index, p_objp->name);
 			p_objp->persona_index = -1;
 		}
 	}
@@ -4921,8 +4936,7 @@ void parse_wing(mission *pm)
 			|| (wingp->arrival_location == ArrivalLocation::ABOVE_SHIP) || (wingp->arrival_location == ArrivalLocation::BELOW_SHIP)
 			|| (wingp->arrival_location == ArrivalLocation::TO_LEFT_OF_SHIP) || (wingp->arrival_location == ArrivalLocation::TO_RIGHT_OF_SHIP) ))
 		{
-			if (!Qtfred_running)
-				Warning(LOCATION, "Arrival distance for wing %s cannot be %d.  Setting to 1.\n", wingp->name, wingp->arrival_distance);
+			parse_warning_or_record("Arrival distance for wing %s cannot be %d — corrected to 1.", wingp->name, wingp->arrival_distance);
 			wingp->arrival_distance = 1;
 		}
 	}
@@ -4947,8 +4961,7 @@ void parse_wing(mission *pm)
 		stuff_int(&delay);
 		if (delay < 0)
 		{
-			if (!Qtfred_running)
-				Warning(LOCATION, "Cannot have arrival delay < 0 on wing %s", wingp->name);
+			parse_warning_or_record("Arrival delay on wing %s cannot be negative — corrected to 0.", wingp->name);
 			delay = 0;
 		}
 
@@ -4985,8 +4998,7 @@ void parse_wing(mission *pm)
 		stuff_int(&delay);
 		if (delay < 0)
 		{
-			if (!Qtfred_running)
-				Warning(LOCATION, "Cannot have departure delay < 0 on wing %s", wingp->name);
+			parse_warning_or_record("Departure delay on wing %s cannot be negative — corrected to 0.", wingp->name);
 			delay = 0;
 		}
 
@@ -5161,8 +5173,7 @@ void parse_wing(mission *pm)
 
 			// Goober5000 - if this is a player start object, there shouldn't be a wing arrival delay (Mantis #2678)
 			if ((p_objp->flags[Mission::Parse_Object_Flags::OF_Player_start]) && (wingp->arrival_delay != 0)) {
-				if (!Qtfred_running)
-					Warning(LOCATION, "Wing %s specifies an arrival delay of %ds, but it also contains a player.  The arrival delay will be reset to 0.", wingp->name, abs(wingp->arrival_delay));
+				parse_warning_or_record("Wing %s specifies an arrival delay of %ds, but it also contains a player — corrected to 0.", wingp->name, abs(wingp->arrival_delay));
 				if (!Fred_running && wingp->arrival_delay > 0) {
 					// timestamp has been set, so set it again
 					wingp->arrival_delay = timestamp(0);
@@ -5622,8 +5633,7 @@ void post_process_ships_wings()
 			for (int i = 1; i < MAX_STARTING_WINGS; i++) {
 				// If there was a wing for this squadron entry, check the last one. If it's empty, we found a mistake, so move the wing names over.
 				if (Squadron_wing_names_found[i] && !Squadron_wing_names_found[i - 1]) {
-					if (!Qtfred_running)
-						Warning(LOCATION, "Squadron wings are not in the correct order and may cause wings to disappear in multi.\n\nEither wing %s should exist or the %s entry needs to come before it in the list.\n\nPlease go back and fix the mission.", Squadron_wing_names[i - 1], Squadron_wing_names[i]);
+					parse_warning_or_record("Squadron wings are not in the correct order and may cause wings to disappear in multi. Either wing %s should exist or the %s entry needs to come before it in the list — wing names have been swapped.", Squadron_wing_names[i - 1], Squadron_wing_names[i]);
 					char temp_chars[NAME_LENGTH];
 					strcpy_s(temp_chars, Squadron_wing_names[i - 1]);
 					strcpy_s(Squadron_wing_names[i - 1], Squadron_wing_names[i]);
@@ -5661,8 +5671,7 @@ void parse_event(mission *pm)
 		// sanity check on the repeat count variable
 		// _argv[-1] - negative repeat count is now legal; means repeat indefinitely.
 		if ( event->repeat_count == 0 ){
-			if (!Qtfred_running)
-				Warning(LOCATION, "Repeat count for mission event %s is 0.\nMust be >= 1 or negative!  Setting to 1.", event->name.c_str() );
+			parse_warning_or_record("Repeat count for mission event %s is 0 — must be >= 1 or negative; corrected to 1.", event->name.c_str());
 			event->repeat_count = 1;
 		}
 	}
@@ -5679,8 +5688,7 @@ void parse_event(mission *pm)
 		// sanity check on the trigger count variable
 		// negative trigger count is also legal
 		if ( event->trigger_count == 0 ){
-			if (!Qtfred_running)
-				Warning(LOCATION, "Trigger count for mission event %s is 0.\nMust be >= 1 or negative!  Setting to 1.", event->name.c_str() );
+			parse_warning_or_record("Trigger count for mission event %s is 0 — must be >= 1 or negative; corrected to 1.", event->name.c_str());
 			event->trigger_count = 1;
 		}
 	}
@@ -6036,8 +6044,7 @@ void parse_reinforcement(mission *pm)
 		stuff_int(&delay);
 		if (delay < 0)
 		{
-			if (!Qtfred_running)
-				Warning(LOCATION, "Cannot have arrival delay < 0 on reinforcement %s", ptr->name);
+			parse_warning_or_record("Arrival delay on reinforcement %s cannot be negative — corrected to 0.", ptr->name);
 			delay = 0;
 		}
 
@@ -6057,16 +6064,14 @@ void parse_reinforcement(mission *pm)
 
 	if (rforce_obj == NULL) {
 		if ((instance = wing_name_lookup(ptr->name, 1)) == -1) {
-			if (!Qtfred_running)
-				Warning(LOCATION, "Reinforcement %s not found as ship or wing", ptr->name);
+			parse_warning_or_record("Reinforcement %s not found as ship or wing — declaration ignored.", ptr->name);
 			return;
 		}
 	} else {
 		// Individual ships in wings can't be reinforcements - FUBAR
 		if (rforce_obj->wingnum >= 0)
 		{
-			if (!Qtfred_running)
-				Warning(LOCATION, "Reinforcement %s is part of a wing - Ignoring reinforcement declaration", ptr->name);
+			parse_warning_or_record("Reinforcement %s is part of a wing — reinforcement declaration ignored.", ptr->name);
 			return;
 		}
 		else
@@ -6715,6 +6720,9 @@ bool parse_mission(mission *pm, int flags)
 {
 	int saved_warning_count = Global_warning_count;
 	int saved_error_count = Global_error_count;
+
+	// Reset the parse-time warning queue so each load starts fresh (only consumed by QtFRED).
+	Mission_parse_warnings.clear();
 
 	// reset parse error stuff
 	Num_unknown_ship_classes = 0;
