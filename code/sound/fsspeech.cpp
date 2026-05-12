@@ -87,7 +87,7 @@ static bool ttsvolume_change(float new_val, bool initial)
 static std::pair<int, SCP_string> ttsvoice_deserializer(const json_t* el)
 {
 	int id;
-	char* name = nullptr;
+	const char* name = nullptr;
 
 	json_error_t err;
 	if (json_unpack_ex((json_t*)el, &err, 0, "{s:i, s:s}", "id", &id, "name", &name) != 0) {

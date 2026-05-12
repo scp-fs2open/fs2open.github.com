@@ -127,11 +127,15 @@ bool speech_stop()
 
 bool speech_set_volume(unsigned short volume)
 {
+	if (Speech_init == false) return true;
     return SUCCEEDED(Voice_device->SetVolume(volume));
 }
 
 bool speech_set_voice(int voice)
 {	
+	if (Speech_init == false) 
+		return false;
+
 	HRESULT                             hr;
 	CComPtr<ISpObjectToken>             cpVoiceToken;
 	CComPtr<IEnumSpObjectTokens>        cpEnum;
@@ -188,6 +192,7 @@ bool speech_set_rate(float rate_percent)
 // Goober5000
 bool speech_is_speaking()
 {
+	if (Speech_init == false) return false;
 	HRESULT			hr;
 	SPVOICESTATUS	pStatus;
 

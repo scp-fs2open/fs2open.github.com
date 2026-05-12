@@ -109,6 +109,10 @@ bool speech_init()
     spd = p_spd_open("freespace_open", "main", nullptr, SPD_MODE_SINGLE);
     if (!spd) {
         mprintf(("Speech: Unable to connect to speech-dispatcher\n"));
+		if (lib_handle) {
+			dlclose(lib_handle);
+			lib_handle = nullptr;
+		}
         return false;
     }
 
@@ -219,6 +223,10 @@ bool speech_set_rate(float rate_percent)
 	return true;
 }
 
+/* 
+	TODO: Try to implement this in some way,
+		  there is no simple way to do it.
+*/
 bool speech_is_speaking()
 {
 	if ( !Speech_init ) {
@@ -239,6 +247,10 @@ SCP_vector<std::pair<int, SCP_string>> speech_enumerate_voices()
 		spd = p_spd_open("freespace_open", "main", nullptr, SPD_MODE_SINGLE);
 		if (!spd) {
 			mprintf(("Speech: Unable to connect to speech-dispatcher\n"));
+			if (lib_handle) {
+				dlclose(lib_handle);
+				lib_handle = nullptr;
+			}
 			return fsoVoices;
 		}
 	}
@@ -258,6 +270,10 @@ SCP_vector<std::pair<int, SCP_string>> speech_enumerate_voices()
 	if (!Speech_init) {
 		p_spd_close(spd);
 		spd = nullptr;
+		if (lib_handle) {
+			dlclose(lib_handle);
+			lib_handle = nullptr;
+		}
 	}
 
 	return fsoVoices;
