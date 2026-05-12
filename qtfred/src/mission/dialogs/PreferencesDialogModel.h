@@ -27,8 +27,12 @@ public:
 	bool getAlwaysSaveDisplayNames() const;
 	void setAlwaysSaveDisplayNames(bool value);
 
-	bool getErrorCheckerChecksForPotentialIssues() const;
-	void setErrorCheckerChecksForPotentialIssues(bool value);
+	// Error Checker
+	bool getCheckPotentialIssues() const;
+	void setCheckPotentialIssues(bool value);
+
+	bool getApplyAutoCorrections() const;
+	void setApplyAutoCorrections(bool value);
 
 	bool getShowSexpHelpMissionEvents() const;
 	void setShowSexpHelpMissionEvents(bool value);
@@ -69,7 +73,8 @@ private:
 	bool _offerAutosaveRecovery;
 	bool _moveShipsWhenUndocking;
 	bool _alwaysSaveDisplayNames;
-	bool _errorCheckerChecksForPotentialIssues;
+	bool _checkPotentialIssues;
+	bool _applyAutoCorrections;
 	bool _showSexpHelpMissionEvents;
 	bool _showSexpHelpMissionGoals;
 	bool _showSexpHelpMissionCutscenes;

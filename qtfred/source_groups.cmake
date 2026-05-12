@@ -58,6 +58,8 @@ add_file_folder("Source/Mission/Dialogs"
 	src/mission/dialogs/DebriefingDialogModel.h
     src/mission/dialogs/FictionViewerDialogModel.cpp
     src/mission/dialogs/FictionViewerDialogModel.h
+	src/mission/dialogs/ErrorCheckerDialogModel.cpp
+	src/mission/dialogs/ErrorCheckerDialogModel.h
 	src/mission/dialogs/FormWingDialogModel.cpp
 	src/mission/dialogs/FormWingDialogModel.h
 	src/mission/dialogs/GlobalShipFlagsDialogModel.cpp
@@ -168,6 +170,8 @@ add_file_folder("Source/UI/Dialogs"
 	src/ui/dialogs/CommandBriefingDialog.h
 	src/ui/dialogs/DebriefingDialog.cpp
 	src/ui/dialogs/DebriefingDialog.h
+	src/ui/dialogs/ErrorCheckerDialog.cpp
+	src/ui/dialogs/ErrorCheckerDialog.h
 	src/ui/dialogs/FictionViewerDialog.cpp
 	src/ui/dialogs/FictionViewerDialog.h
 	src/ui/dialogs/FormWingDialog.cpp
@@ -285,6 +289,8 @@ add_file_folder("Source/UI/Panels"
 add_file_folder("Source/UI/Util"
 	src/ui/util/default_dir.cpp
 	src/ui/util/default_dir.h
+	src/ui/util/ErrorChecker.cpp
+	src/ui/util/ErrorChecker.h
 	src/ui/util/ImageRenderer.cpp
 	src/ui/util/ImageRenderer.h
 	src/ui/util/menu.cpp
@@ -342,6 +348,7 @@ add_file_folder("UI"
 	ui/CustomStringsDialog.ui
 	ui/CustomWingNamesDialog.ui
 	ui/DebriefingDialog.ui
+	ui/ErrorCheckerDialog.ui
 	ui/FictionViewerDialog.ui
 	ui/FormWingDialog.ui
     ui/FredView.ui

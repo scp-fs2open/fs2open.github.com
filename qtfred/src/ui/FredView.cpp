@@ -58,6 +58,8 @@
 #include <ui/dialogs/TemplateBrowserDialog.h>
 #include <ui/dialogs/PreferencesDialog.h>
 #include <ui/dialogs/LayerManagerDialog.h>
+#include <ui/dialogs/ErrorCheckerDialog.h>
+#include <ui/util/ErrorChecker.h>
 #include <ui/ControlBindings.h>
 #include <iff_defs/iff_defs.h>
 
@@ -304,6 +306,7 @@ void FredView::loadMissionFile(const QString& pathName, int flags) {
 		fred->loadMission(pathToLoad, flags);
 
 		QApplication::restoreOverrideCursor();
+		autoRunErrorChecker();
 	} catch (const fso::fred::mission_load_error&) {
 		QApplication::restoreOverrideCursor();
 
@@ -337,7 +340,80 @@ void FredView::on_actionSave_As_triggered(bool) {
 	saveMissionAs();
 }
 
+bool FredView::performPreSaveCheck(int* outFixCount) {
+	// Potentials are advisory and intentionally ignored at save time; fix counts
+	// report only actual problems (Error/Warning/InternalError).
+	auto countNonPotential = [](const SCP_vector<ErrorEntry>& entries) {
+		int n = 0;
+		for (const auto& e : entries)
+			if (e.severity != ErrorSeverity::Potential)
+				++n;
+		return n;
+	};
+
+	// Clamp flags for the pre-save scan: no mutations, no potential issues.
+	const bool savedPotential   = _viewport->Error_checker_checks_potential_issues;
+	const bool savedCorrections = _viewport->Error_checker_apply_auto_corrections;
+	_viewport->Error_checker_checks_potential_issues = false;
+	_viewport->Error_checker_apply_auto_corrections  = false;
+
+	// Use the normal error checker dialog in PreSave mode so the error cards are
+	// rendered identically to what the designer sees when running it manually.
+	dialogs::ErrorCheckerDialog dlg(this, _viewport, dialogs::ErrorCheckerDialog::Mode::PreSave);
+	const bool errors = dlg.runCheck(); // returns true when errors were found
+
+	// Restore flags before any further work (including the optional fix run below).
+	_viewport->Error_checker_checks_potential_issues = savedPotential;
+	_viewport->Error_checker_apply_auto_corrections  = savedCorrections;
+
+	if (!errors)
+		return true;
+
+	dlg.exec(); // modal — blocks until the designer clicks a button
+
+	switch (dlg.preSaveAction()) {
+	case dialogs::ErrorCheckerDialog::PreSaveAction::Cancel:
+		return false;
+
+	case dialogs::ErrorCheckerDialog::PreSaveAction::FixAndSave: {
+		const int beforeCount = countNonPotential(dlg.getErrors());
+
+		// Apply auto-corrections to in-memory data before the file is written.
+		_viewport->Error_checker_checks_potential_issues = false;
+		_viewport->Error_checker_apply_auto_corrections  = true;
+		{
+			ErrorChecker fixer(_viewport);
+			fixer.runFullCheck();
+		}
+		_viewport->Error_checker_apply_auto_corrections  = savedCorrections;
+
+		// Run a second clean check (no mutations) to see how many issues remain,
+		// so we can report to the designer exactly how many were resolved.
+		if (outFixCount) {
+			_viewport->Error_checker_checks_potential_issues = false;
+			ErrorChecker verifier(_viewport);
+			verifier.runFullCheck();
+			*outFixCount = beforeCount - countNonPotential(verifier.getErrors());
+		}
+
+		_viewport->Error_checker_checks_potential_issues = savedPotential;
+		return true;
+	}
+
+	case dialogs::ErrorCheckerDialog::PreSaveAction::SaveAsIs:
+	default:
+		return true;
+	}
+}
+
 bool FredView::saveMissionToCurrentPath() {
+	if (saveName.isEmpty())
+		return saveMissionAs();
+
+	int fixCount = -1;
+	if (!performPreSaveCheck(&fixCount))
+		return false;
+
 	Fred_mission_save save;
 	save.set_save_format(_missionSaveFormat);
 	save.set_always_save_display_names(_viewport->Always_save_display_names);
@@ -345,16 +421,38 @@ bool FredView::saveMissionToCurrentPath() {
 	save.set_view_orient(_viewport->camera.view_orient);
 	save.set_fred_alt_names(Fred_alt_names);
 	save.set_fred_callsigns(Fred_callsigns);
-
-	if (saveName.isEmpty()) {
-		return saveMissionAs();
-	}
 
 	save.save_mission_file(saveName.replace('/', DIR_SEPARATOR_CHAR).toUtf8().constData());
 	_missionModified = false;
+
+	if (fixCount > 0)
+		QMessageBox::information(this, tr("Auto-corrections Applied"),
+			tr("%n issue(s) were automatically corrected before saving.", "", fixCount));
+	else if (fixCount == 0)
+		QMessageBox::information(this, tr("No Auto-corrections Applied"),
+			tr("No issues could be automatically corrected. The mission was saved with existing errors."));
+
+	// Keep the persistent error checker in sync if it is already open.
+	if (_errorCheckerDialog && _errorCheckerDialog->isVisible())
+		_errorCheckerDialog->runCheck();
+
 	return true;
 }
+
 bool FredView::saveMissionAs() {
+	// Run the pre-save check before the file dialog so that cancelling does not
+	// leave the designer with a half-chosen save path.
+	int fixCount = -1;
+	if (!performPreSaveCheck(&fixCount))
+		return false;
+
+	const QString lastDir = fso::fred::util::getLastDir("missions/saveMission", CF_TYPE_MISSIONS);
+	saveName = QFileDialog::getSaveFileName(this, tr("Save mission"), lastDir, tr("FS2 missions (*.fs2)"));
+	if (saveName.isEmpty())
+		return false;
+
+	fso::fred::util::saveLastDir("missions/saveMission", saveName);
+
 	Fred_mission_save save;
 	save.set_save_format(_missionSaveFormat);
 	save.set_always_save_display_names(_viewport->Always_save_display_names);
@@ -363,19 +461,20 @@ bool FredView::saveMissionAs() {
 	save.set_fred_alt_names(Fred_alt_names);
 	save.set_fred_callsigns(Fred_callsigns);
 
-	{
-		const QString lastDir = fso::fred::util::getLastDir("missions/saveMission", CF_TYPE_MISSIONS);
-		saveName = QFileDialog::getSaveFileName(this, tr("Save mission"), lastDir, tr("FS2 missions (*.fs2)"));
-
-		if (saveName.isEmpty()) {
-			return false;
-		}
-
-		fso::fred::util::saveLastDir("missions/saveMission", saveName);
-	}
-
-	save.save_mission_file(saveName.replace('/',DIR_SEPARATOR_CHAR).toUtf8().constData());
+	save.save_mission_file(saveName.replace('/', DIR_SEPARATOR_CHAR).toUtf8().constData());
 	_missionModified = false;
+
+	if (fixCount > 0)
+		QMessageBox::information(this, tr("Auto-corrections Applied"),
+			tr("%n issue(s) were automatically corrected before saving.", "", fixCount));
+	else if (fixCount == 0)
+		QMessageBox::information(this, tr("No Auto-corrections Applied"),
+			tr("No issues could be automatically corrected. The mission was saved with existing errors."));
+
+	// Keep the persistent error checker in sync if it is already open.
+	if (_errorCheckerDialog && _errorCheckerDialog->isVisible())
+		_errorCheckerDialog->runCheck();
+
 	return true;
 }
 
@@ -630,6 +729,10 @@ void FredView::on_actionRun_FreeSpace_2_Open_triggered(bool) {
 void FredView::on_mission_loaded(const std::string& filepath) {
 	// Clear browsed head ANIs so the new mission's message scan starts fresh.
 	fso::fred::dialogs::MissionEventsDialogModel::clearBrowsedHeadAnis();
+
+	if (_errorCheckerDialog) {
+		_errorCheckerDialog->clearErrors();
+	}
 
 	if (_viewport != nullptr) {
 		_viewport->reloadLayersFromMission();
@@ -2755,7 +2858,78 @@ void FredView::on_actionMark_Wing_triggered(bool) {
 	}
 }
 void FredView::on_actionError_Checker_triggered(bool) {
-	fred->global_error_check();
+	openAndRunErrorChecker();
+}
+
+void FredView::openAndRunErrorChecker() {
+	if (!_errorCheckerDialog) {
+		_errorCheckerDialog = new dialogs::ErrorCheckerDialog(this, _viewport);
+		_errorCheckerDialog->setAttribute(Qt::WA_DeleteOnClose);
+		connect(_errorCheckerDialog, &QObject::destroyed, this, [this]() {
+			_errorCheckerDialog = nullptr;
+		});
+	}
+	_errorCheckerDialog->show();
+	_errorCheckerDialog->raise();
+	_errorCheckerDialog->activateWindow();
+	_errorCheckerDialog->runCheck();
+}
+
+void FredView::autoRunErrorChecker() {
+	if (!_errorCheckerDialog) {
+		_errorCheckerDialog = new dialogs::ErrorCheckerDialog(this, _viewport);
+		_errorCheckerDialog->setAttribute(Qt::WA_DeleteOnClose);
+		connect(_errorCheckerDialog, &QObject::destroyed, this, [this]() {
+			_errorCheckerDialog = nullptr;
+		});
+	}
+
+	// Consume the one-shot "force review" flag (set e.g. after a data migration
+	// when the designer asked to review now). When set, we force the dialog open
+	// and override the display filter to include potentials for this session.
+	const bool forceReview = _viewport->Error_checker_force_display_potentials_once;
+	_viewport->Error_checker_force_display_potentials_once = false;
+	_errorCheckerDialog->setForcePotentialsDisplay(forceReview);
+
+	// Never silently mutate mission data on an automatic (load-triggered) check.
+	// The designer can apply auto-corrections explicitly via the error checker dialog.
+	const bool savedCorrections = _viewport->Error_checker_apply_auto_corrections;
+	_viewport->Error_checker_apply_auto_corrections = false;
+	bool errors = _errorCheckerDialog->runCheck();
+	_viewport->Error_checker_apply_auto_corrections = savedCorrections;
+
+	if (forceReview) {
+		_errorCheckerDialog->show();
+		_errorCheckerDialog->raise();
+		_errorCheckerDialog->activateWindow();
+		return;
+	}
+
+	if (_errorCheckerDialog->isVisible()) {
+		if (errors) {
+			_errorCheckerDialog->raise();
+			_errorCheckerDialog->activateWindow();
+		}
+		return;
+	}
+
+	if (!errors) {
+		return;
+	}
+
+	QMessageBox msgBox(this);
+	msgBox.setIcon(QMessageBox::Warning);
+	msgBox.setWindowTitle(tr("Mission Errors Detected"));
+	msgBox.setText(tr("Errors were detected in the mission."));
+	auto* showBtn = msgBox.addButton(tr("Show Errors"), QMessageBox::AcceptRole);
+	msgBox.addButton(tr("Dismiss"), QMessageBox::RejectRole);
+	msgBox.exec();
+
+	if (msgBox.clickedButton() == showBtn) {
+		_errorCheckerDialog->show();
+		_errorCheckerDialog->raise();
+		_errorCheckerDialog->activateWindow();
+	}
 }
 void FredView::on_actionHelp_Topics_triggered(bool) {
 	// Keep a single instance alive for the session.  The help engine's contentWidget(),

@@ -29,6 +29,7 @@
 
 // Globals needed by the engine when built in 'FRED' mode.
 int Fred_running = 1;
+int Qtfred_running = 1;
 int Show_cpu = 0;
 
 // Empty functions to make fred link with the sexp_mission_set_subspace

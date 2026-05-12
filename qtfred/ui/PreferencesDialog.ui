@@ -107,10 +107,26 @@
             </property>
            </widget>
           </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="errorCheckerGroup">
+         <property name="title">
+          <string>Error Checker</string>
+         </property>
+         <layout class="QVBoxLayout" name="errorCheckerLayout">
           <item>
-           <widget class="QCheckBox" name="errorCheckerChecksForPotentialIssues">
+           <widget class="QCheckBox" name="checkPotentialIssues">
             <property name="text">
-             <string>Error checker checks for potential issues</string>
+             <string>Check potential issues</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="applyAutoCorrections">
+            <property name="text">
+             <string>Apply auto-corrections</string>
             </property>
            </widget>
           </item>

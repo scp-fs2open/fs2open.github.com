@@ -133,6 +133,7 @@ void EditorViewport::loadSettings() {
 	Move_ships_when_undocking          = settings.value("move_ships_when_undocking",          Move_ships_when_undocking).toBool();
 	Always_save_display_names          = settings.value("always_save_display_names",          Always_save_display_names).toBool();
 	Error_checker_checks_potential_issues = settings.value("error_checker_checks_potential_issues", Error_checker_checks_potential_issues).toBool();
+	Error_checker_apply_auto_corrections  = settings.value("error_checker_apply_auto_corrections",  Error_checker_apply_auto_corrections).toBool();
 	Show_sexp_help_mission_events      = settings.value("show_sexp_help_mission_events",      Show_sexp_help_mission_events).toBool();
 	Show_sexp_help_mission_goals       = settings.value("show_sexp_help_mission_goals",       Show_sexp_help_mission_goals).toBool();
 	Show_sexp_help_mission_cutscenes   = settings.value("show_sexp_help_mission_cutscenes",   Show_sexp_help_mission_cutscenes).toBool();
@@ -173,6 +174,7 @@ void EditorViewport::saveSettings() const {
 	settings.setValue("move_ships_when_undocking",           Move_ships_when_undocking);
 	settings.setValue("always_save_display_names",           Always_save_display_names);
 	settings.setValue("error_checker_checks_potential_issues", Error_checker_checks_potential_issues);
+	settings.setValue("error_checker_apply_auto_corrections",  Error_checker_apply_auto_corrections);
 	settings.setValue("show_sexp_help_mission_events",       Show_sexp_help_mission_events);
 	settings.setValue("show_sexp_help_mission_goals",        Show_sexp_help_mission_goals);
 	settings.setValue("show_sexp_help_mission_cutscenes",    Show_sexp_help_mission_cutscenes);
