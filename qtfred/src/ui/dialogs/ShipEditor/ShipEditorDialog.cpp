@@ -491,8 +491,8 @@ void ShipEditorDialog::enableDisable()
 		ui->specialStatsButton->setEnabled(false);
 	}
 
-	// disable textures for multiple ships
-	ui->textureReplacementButton->setEnabled(_model->getTexEditEnable());
+	// disable textures unless exactly one ship/player is selected
+	ui->textureReplacementButton->setEnabled(_model->getNumSelectedObjects() == 1);
 
 	ui->AIClassCombo->setEnabled(_model->getUIEnable());
 	ui->cargoCombo->setEnabled(_model->getUIEnable());
@@ -537,8 +537,9 @@ void ShipEditorDialog::enableDisable()
 			ui->playerShipButton->setEnabled(false);
 	}
 
-	ui->deleteButton->setEnabled(_model->getUIEnable());
-	ui->resetButton->setEnabled(_model->getUIEnable());
+	const bool noPlayerSelected = (_model->getNumSelectedPlayers() == 0);
+	ui->deleteButton->setEnabled(_model->getUIEnable() && noPlayerSelected);
+	ui->resetButton->setEnabled(_model->getUIEnable() && noPlayerSelected);
 	ui->killScoreEdit->setEnabled(_model->getUIEnable());
 	ui->assistEdit->setEnabled(_model->getUIEnable());
 
@@ -552,7 +553,10 @@ void ShipEditorDialog::enableDisable()
 		ui->updateDepartureCueCheckBox->setVisible(false);
 	}
 
-	if (_model->getIfMultipleShips() || (_model->getNumSelectedObjects() > 1)) {
+	if (_model->getNumSelectedPlayers() > 0) {
+		// player ships don't take orders from the player
+		ui->playerOrdersButton->setEnabled(false);
+	} else if (_model->getIfMultipleShips() || (_model->getNumSelectedObjects() > 1)) {
 		// we will allow the ignore orders dialog to be multi edit if all selected
 		// ships are the same type.  the ship_type variable holds the ship types
 		// for all ships.  Determine how may bits set and enable/diable window
