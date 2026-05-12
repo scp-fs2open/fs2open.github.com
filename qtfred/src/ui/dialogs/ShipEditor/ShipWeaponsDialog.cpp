@@ -69,7 +69,10 @@ ShipWeaponsDialog::ShipWeaponsDialog(QDialog* parent, EditorViewport* viewport, 
 		Error("No Valid Weapon banks on ship");
 	}
 
-	// Tertiary banks are not implemented in the game engine so hide the placeholder tab until they are.
+	// Tertiary banks are not implemented in the game engine yet, but the UI scaffolding (the
+	// tertiaryPage in the .ui file, the Mode::Tertiary enum value, the default branch in
+	// banksForMode) is intentionally preserved so that wiring the engine side later is a small
+	// follow-up rather than a re-build.
 	ui->tabWidget->removeTab(2);
 
 	initTab(_primary, Primary);
@@ -83,13 +86,7 @@ ShipWeaponsDialog::ShipWeaponsDialog(QDialog* parent, EditorViewport* viewport, 
 	updateUI();
 }
 
-ShipWeaponsDialog::~ShipWeaponsDialog()
-{
-	delete _primary.bankModel;
-	delete _primary.weapons;
-	delete _secondary.bankModel;
-	delete _secondary.weapons;
-}
+ShipWeaponsDialog::~ShipWeaponsDialog() = default;
 
 void ShipWeaponsDialog::initTab(TabState& tab, Mode mode)
 {
@@ -116,7 +113,7 @@ void ShipWeaponsDialog::initTab(TabState& tab, Mode mode)
 	const util::SignalBlockers blockers(this);
 
 	tab.bankModel = new QStandardItemModel(this);
-	tab.weapons = new WeaponModel(static_cast<int>(mode), _model->getShipClass(), _model->isBigShip());
+	tab.weapons = new WeaponModel(static_cast<int>(mode), _model->getShipClass(), _model->isBigShip(), this);
 	loadBankModel(tab);
 	tab.tree->setModel(tab.bankModel);
 	tab.list->setModel(tab.weapons);
@@ -161,11 +158,12 @@ SCP_vector<Banks*> ShipWeaponsDialog::banksForMode(Mode mode) const
 	case Secondary:
 		return _model->getSecondaryBanks();
 	default:
+		// Tertiary banks are unsupported by the engine; placeholder mode returns no banks.
 		return {};
 	}
 }
 
-SCP_string ShipWeaponsDialog::banksLabel(const Banks* banks) const
+SCP_string ShipWeaponsDialog::banksLabel(const Banks* banks)
 {
 	if (banks->getName() == "Pilot") {
 		return banks->getName();
@@ -491,7 +489,7 @@ void ShipWeaponsDialog::refreshBankItem(TabState& tab, const QModelIndex& idx)
 			Qt::ItemFlags ammoFlags = Qt::ItemIsSelectable | Qt::ItemIsEnabled;
 			if (bank->getMaxAmmo() > 0) {
 				if (bank->getAmmo() == -2) {
-					ammoItem->setData(QString(), Qt::DisplayRole);
+					ammoItem->setData(formatAmmoConflict(bank->getMaxAmmo()), Qt::DisplayRole);
 					ammoItem->setData(0, AmmoValueRole);
 				} else {
 					ammoItem->setData(formatAmmoDisplay(bank->getAmmo(), bank->getMaxAmmo()), Qt::DisplayRole);
@@ -594,7 +592,7 @@ void ShipWeaponsDialog::onWeaponMoved(TabState& tab, const QModelIndex& target, 
 	_model->notifyChanged();
 }
 
-QModelIndex ShipWeaponsDialog::indexForBank(const TabState& tab, int banksId, int bankId) const
+QModelIndex ShipWeaponsDialog::indexForBank(const TabState& tab, int banksId, int bankId)
 {
 	if (tab.bankModel == nullptr) {
 		return {};

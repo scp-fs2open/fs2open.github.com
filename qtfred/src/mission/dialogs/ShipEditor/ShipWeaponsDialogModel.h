@@ -17,7 +17,7 @@ struct WeaponItem {
 class WeaponModel : public QAbstractListModel {
 	Q_OBJECT
   public:
-	WeaponModel(int type, int shipClass, bool bigShip);
+	WeaponModel(int type, int shipClass, bool bigShip, QObject* parent = nullptr);
 	~WeaponModel() override;
 	int rowCount(const QModelIndex& parent = QModelIndex()) const override;
 	QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
@@ -30,6 +30,7 @@ class WeaponModel : public QAbstractListModel {
 struct Bank;
 struct Banks {
 	Banks(SCP_string name, int aiIndex, int ship, int multiedit, int _id, ship_subsys* subsys = nullptr);
+	~Banks();
 
   public:
 	int getId() const;
@@ -39,18 +40,19 @@ struct Banks {
 	ship_subsys* getSubsys() const;
 	bool empty() const;
 	SCP_vector<Bank*> getBanks() const;
-	// Returns the single consistent AI class for this bank-set; -1 if multi-edit and ships disagree.
+	// Returns the cached AI class for this bank-set; -1 if multi-edit and ships disagree.
 	int getAiClass() const;
 	void setAiClass(int);
+	// Called per-additional-ship during multi-edit init: marks currentAi mixed (-1) if otherAi
+	// differs from the cached value. Does not mark the bank dirty.
+	void reconcileAiClass(int otherAi);
 	bool isAiClassDirty() const;
 	bool m_isMultiEdit;
-	int getInitialAI() const;
 
   private:
 	SCP_string name;
 	ship_subsys* subsys;
-	int aiClass;
-	int initialAI;
+	int currentAi;
 	bool aiClassDirty = false;
 	SCP_vector<Bank*> banks;
 	int ship;
@@ -79,6 +81,7 @@ namespace dialogs {
 class ShipWeaponsDialogModel : public AbstractDialogModel {
   public:
 	ShipWeaponsDialogModel(QObject* parent, EditorViewport* viewport, bool multi);
+	~ShipWeaponsDialogModel() override;
 
 	// True iff all currently-marked ships share the same ship_info_index. Used to gate multi-edit.
 	static bool selectedShipsShareClass();

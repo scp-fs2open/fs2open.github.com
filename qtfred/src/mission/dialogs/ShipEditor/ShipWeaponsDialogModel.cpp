@@ -71,7 +71,8 @@ WeaponItem::WeaponItem(int inID, QString inName, bool inAllowed)
 {
 }
 
-WeaponModel::WeaponModel(int type, int shipClass, bool bigShip)
+WeaponModel::WeaponModel(int type, int shipClass, bool bigShip, QObject* parent)
+	: QAbstractListModel(parent)
 {
 	weapons.push_back(new WeaponItem(-1, "None", true));
 
@@ -160,9 +161,14 @@ QMimeData* WeaponModel::mimeData(const QModelIndexList& indexes) const
 }
 
 Banks::Banks(SCP_string _name, int aiIndex, int _ship, int multiedit, int _id, ship_subsys* _subsys)
-	: m_isMultiEdit(multiedit), name(std::move(_name)), subsys(_subsys), initialAI(aiIndex), ship(_ship), id(_id)
+	: m_isMultiEdit(multiedit), name(std::move(_name)), subsys(_subsys), currentAi(aiIndex), ship(_ship), id(_id)
 {
-	aiClass = aiIndex;
+}
+Banks::~Banks()
+{
+	for (Bank* b : banks) {
+		delete b;
+	}
 }
 int Banks::getId() const
 {
@@ -194,65 +200,25 @@ SCP_vector<Bank*> Banks::getBanks() const
 }
 int Banks::getAiClass() const
 {
-	auto readShip = [&](int inst) -> int {
-		if (name == "Pilot") {
-			return Ships[inst].weapons.ai_class;
-		}
-		ship_subsys* pss = findTurretByName(inst, name);
-		return pss ? pss->weapons.ai_class : 0;
-	};
-
-	if (!m_isMultiEdit) {
-		return readShip(ship);
-	}
-
-	int common = -1;
-	bool initialized = false;
-	for (object* ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
-		if ((ptr->type != OBJ_SHIP && ptr->type != OBJ_START) || !ptr->flags[Object::Object_Flags::Marked]) {
-			continue;
-		}
-		const int ai = readShip(ptr->instance);
-		if (!initialized) {
-			common = ai;
-			initialized = true;
-		} else if (ai != common) {
-			return -1;
-		}
-	}
-	return common;
+	return currentAi;
 }
 void Banks::setAiClass(int newClass)
 {
-	aiClass = newClass;
+	currentAi = newClass;
 	aiClassDirty = true;
-
-	auto applyToShip = [&](int inst) {
-		if (name == "Pilot") {
-			Ships[inst].weapons.ai_class = newClass;
-		} else if (ship_subsys* pss = findTurretByName(inst, name)) {
-			pss->weapons.ai_class = newClass;
-		}
-	};
-
-	if (m_isMultiEdit) {
-		for (object* ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
-			if ((ptr->type != OBJ_SHIP && ptr->type != OBJ_START) || !ptr->flags[Object::Object_Flags::Marked]) {
-				continue;
-			}
-			applyToShip(ptr->instance);
-		}
-	} else {
-		applyToShip(ship);
+}
+void Banks::reconcileAiClass(int otherAi)
+{
+	if (currentAi == -1) {
+		return;
+	}
+	if (currentAi != otherAi) {
+		currentAi = -1;
 	}
 }
 bool Banks::isAiClassDirty() const
 {
 	return aiClassDirty;
-}
-int Banks::getInitialAI() const
-{
-	return initialAI;
 }
 Bank::Bank(const int _weaponId, const int _bankId, const int _ammoMax, const int _ammo, Banks* _parent)
 {
@@ -313,6 +279,15 @@ ShipWeaponsDialogModel::ShipWeaponsDialogModel(QObject* parent, EditorViewport* 
 {
 	initializeData(isMultiEdit);
 }
+ShipWeaponsDialogModel::~ShipWeaponsDialogModel()
+{
+	for (Banks* b : PrimaryBanks) {
+		delete b;
+	}
+	for (Banks* b : SecondaryBanks) {
+		delete b;
+	}
+}
 bool ShipWeaponsDialogModel::selectedShipsShareClass()
 {
 	int sharedClass = -1;
@@ -336,8 +311,14 @@ void ShipWeaponsDialogModel::initializeData(bool isMultiEdit)
 	SecondaryBanks.clear();
 
 	m_ship = _editor->cur_ship;
-	if (m_ship == -1)
+	if (m_ship == -1) {
+		Assertion(_editor->currentObject >= 0 && _editor->currentObject < MAX_OBJECTS,
+			"ShipWeaponsDialog opened with no valid current ship and an out-of-range currentObject (%d)",
+			_editor->currentObject);
 		m_ship = Objects[_editor->currentObject].instance;
+	}
+	Assertion(m_ship >= 0 && m_ship < MAX_SHIPS,
+		"ShipWeaponsDialog resolved to invalid ship index %d", m_ship);
 
 	if (m_isMultiEdit) {
 		object* ptr = GET_FIRST(&obj_used_list);
@@ -415,6 +396,7 @@ void ShipWeaponsDialogModel::initPrimary(int inst, bool first)
 		// Subsequent ship: reconcile each slot against the tracking Banks built from the first ship.
 		delete pilotBank; // unused; we already have one from the first ship
 		if (Banks* tracking = findBanksByName(PrimaryBanks, "Pilot")) {
+			tracking->reconcileAiClass(Ships[inst].weapons.ai_class);
 			const auto bankList = tracking->getBanks();
 			for (size_t i = 0; i < bankList.size(); i++) {
 				reconcileSlot(bankList[i], Ships[inst].weapons.primary_bank_weapons[i],
@@ -430,6 +412,7 @@ void ShipWeaponsDialogModel::initPrimary(int inst, bool first)
 			if (tracking == nullptr) {
 				continue;
 			}
+			tracking->reconcileAiClass(pss->weapons.ai_class);
 			const auto bankList = tracking->getBanks();
 			for (size_t i = 0; i < bankList.size(); i++) {
 				reconcileSlot(bankList[i], pss->weapons.primary_bank_weapons[i],
@@ -491,6 +474,7 @@ void ShipWeaponsDialogModel::initSecondary(int inst, bool first)
 	} else {
 		delete pilotBank;
 		if (Banks* tracking = findBanksByName(SecondaryBanks, "Pilot")) {
+			tracking->reconcileAiClass(Ships[inst].weapons.ai_class);
 			const auto bankList = tracking->getBanks();
 			for (size_t i = 0; i < bankList.size(); i++) {
 				reconcileSlot(bankList[i], Ships[inst].weapons.secondary_bank_weapons[i],
@@ -506,6 +490,7 @@ void ShipWeaponsDialogModel::initSecondary(int inst, bool first)
 			if (tracking == nullptr) {
 				continue;
 			}
+			tracking->reconcileAiClass(pss->weapons.ai_class);
 			const auto bankList = tracking->getBanks();
 			for (size_t i = 0; i < bankList.size(); i++) {
 				reconcileSlot(bankList[i], pss->weapons.secondary_bank_weapons[i],
@@ -517,10 +502,18 @@ void ShipWeaponsDialogModel::initSecondary(int inst, bool first)
 void ShipWeaponsDialogModel::saveShip(int inst)
 {
 	auto saveBank = [&](Banks* turret, bool isPrimary) {
+		ship_weapon* target = nullptr;
 		if (turret->getName() == "Pilot") {
-			saveSlotsTo(Ships[inst].weapons, turret->getBanks(), isPrimary);
+			target = &Ships[inst].weapons;
 		} else if (ship_subsys* pss = findTurretByName(inst, turret->getName())) {
-			saveSlotsTo(pss->weapons, turret->getBanks(), isPrimary);
+			target = &pss->weapons;
+		}
+		if (target == nullptr) {
+			return;
+		}
+		saveSlotsTo(*target, turret->getBanks(), isPrimary);
+		if (turret->isAiClassDirty()) {
+			target->ai_class = turret->getAiClass();
 		}
 	};
 	for (Banks* turret : PrimaryBanks) {
@@ -549,19 +542,9 @@ bool ShipWeaponsDialogModel::apply()
 }
 void ShipWeaponsDialogModel::reject()
 {
-	// Only restore AI on banks the user explicitly changed. In multi-edit this can only
-	// roll back to the first ship's initial AI for all ships which is acceptable since we only
-	// reach here when the user took the explicit Change AI action.
-	for (Banks* banks : PrimaryBanks) {
-		if (banks->isAiClassDirty()) {
-			banks->setAiClass(banks->getInitialAI());
-		}
-	}
-	for (Banks* banks : SecondaryBanks) {
-		if (banks->isAiClassDirty()) {
-			banks->setAiClass(banks->getInitialAI());
-		}
-	}
+	// Weapons, ammo, and AI class are all buffered in the Banks/Bank model and only written
+	// to Ships[] in apply(). Cancel/close is therefore a true no-op as far as mission data
+	// is concerned: the next dialog open re-reads ship state from scratch.
 }
 SCP_vector<Banks*> ShipWeaponsDialogModel::getPrimaryBanks() const
 {

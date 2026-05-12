@@ -35,7 +35,7 @@ class ShipWeaponsDialog : public QDialog {
 	void on_okAndCancelButtons_accepted();
 	void on_okAndCancelButtons_rejected();
 
-  private:
+  private: // NOLINT(readability-redundant-access-specifiers)
 	enum Mode { Primary = 0, Secondary = 1, Tertiary = 2 };
 
 	struct TabState {
@@ -66,13 +66,13 @@ class ShipWeaponsDialog : public QDialog {
 	void onWeaponMoved(TabState& tab, const QModelIndex& target, int weaponId, int sourceBanksId,
 		int sourceBankId, bool isCopy);
 
-	QModelIndex indexForBank(const TabState& tab, int banksId, int bankId) const;
+	static QModelIndex indexForBank(const TabState& tab, int banksId, int bankId);
 
 	Bank* bankForIndex(const TabState& tab, const QModelIndex& idx) const;
 	Banks* banksForIndex(const TabState& tab, const QModelIndex& idx) const;
 	void refreshBankItem(TabState& tab, const QModelIndex& idx);
 	SCP_vector<Banks*> banksForMode(Mode mode) const;
-	SCP_string banksLabel(const Banks* banks) const;
+	static SCP_string banksLabel(const Banks* banks);
 
 	std::unique_ptr<Ui::ShipWeaponsDialog> ui;
 	std::unique_ptr<ShipWeaponsDialogModel> _model;
