@@ -24,6 +24,11 @@ QString formatAmmoDisplay(int current, int max)
 	return QString::number(current) + "/" + QString::number(max);
 }
 
+QString formatAmmoConflict(int max)
+{
+	return QStringLiteral("--/") + QString::number(max);
+}
+
 class AmmoSpinBoxDelegate : public QStyledItemDelegate {
   public:
 	using QStyledItemDelegate::QStyledItemDelegate;
@@ -167,7 +172,11 @@ SCP_string ShipWeaponsDialog::banksLabel(const Banks* banks) const
 	if (banks->getName() == "Pilot") {
 		return banks->getName();
 	}
-	return banks->getName() + " ( " + Ai_class_names[banks->getAiClass()] + " ) ";
+	const int ai = banks->getAiClass();
+	if (ai < 0) {
+		return banks->getName() + " (Mixed AI)";
+	}
+	return banks->getName() + " ( " + Ai_class_names[ai] + " ) ";
 }
 
 void ShipWeaponsDialog::loadBankModel(TabState& tab)
@@ -218,8 +227,14 @@ void ShipWeaponsDialog::loadBankModel(TabState& tab)
 			auto ammoItem = new QStandardItem();
 			Qt::ItemFlags ammoFlags = Qt::ItemIsSelectable | Qt::ItemIsEnabled;
 			if (bank->getMaxAmmo() > 0) {
-				ammoItem->setData(formatAmmoDisplay(bank->getAmmo(), bank->getMaxAmmo()), Qt::DisplayRole);
-				ammoItem->setData(bank->getAmmo(), AmmoValueRole);
+				if (bank->getAmmo() == -2) {
+					// Multi-edit ammo CONFLICT: show --/max, still editable so user can resolve.
+					ammoItem->setData(formatAmmoConflict(bank->getMaxAmmo()), Qt::DisplayRole);
+					ammoItem->setData(0, AmmoValueRole);
+				} else {
+					ammoItem->setData(formatAmmoDisplay(bank->getAmmo(), bank->getMaxAmmo()), Qt::DisplayRole);
+					ammoItem->setData(bank->getAmmo(), AmmoValueRole);
+				}
 				ammoFlags |= Qt::ItemIsEditable;
 			} else {
 				ammoItem->setData(QString(), Qt::DisplayRole);
@@ -289,16 +304,24 @@ void ShipWeaponsDialog::onSetAllClicked(TabState& tab)
 
 void ShipWeaponsDialog::onAiButtonClicked(TabState& tab)
 {
+	const int comboIdx = tab.aiCombo->currentIndex();
+	if (comboIdx < 0) {
+		return; // No AI picked in the combo (still blank from a mixed selection).
+	}
+	const int newAi = tab.aiCombo->itemData(comboIdx).toInt();
 	bool anyChanged = false;
 	for (const QModelIndex& index : tab.tree->selectionModel()->selectedIndexes()) {
+		if (index.column() != 0) {
+			continue;
+		}
 		Banks* banks = banksForIndex(tab, index);
-		if (banks == nullptr) {
+		if (banks == nullptr || banks->getName() == "Pilot") {
 			continue;
 		}
-		if (banks->getAiClass() == tab.currentAI) {
+		if (banks->getAiClass() == newAi) {
 			continue;
 		}
-		banks->setAiClass(tab.currentAI);
+		banks->setAiClass(newAi);
 		refreshBankItem(tab, index);
 		anyChanged = true;
 	}
@@ -319,6 +342,9 @@ void ShipWeaponsDialog::onTblButtonClicked(TabState& tab)
 
 void ShipWeaponsDialog::onAiComboChanged(TabState& tab, int index)
 {
+	if (index < 0) {
+		return;
+	}
 	tab.currentAI = tab.aiCombo->itemData(index).toInt();
 }
 
@@ -338,10 +364,14 @@ void ShipWeaponsDialog::updateTabUI(TabState& tab)
 	tab.setAllButton->setEnabled(selType == bankTree::SelectionType::Weapon);
 
 	// Pilot AI maps to Ships[].weapons.ai_class, which the Ship Editor also owns. Keep that single
-	// point of truth. A slight regression from old FRED but a more clear separation of responsibilities.
+	// point of truth. Other selected banks (turrets) collectively determine the combo state:
+	//  - all same AI -> show that value
+	//  - any mixed across ships, or differing AIs across selected turrets -> combo blank, user picks
 	bool aiEditable = (selType == bankTree::SelectionType::Bank);
+	int displayedAi = -1;
+	bool combinedInitialized = false;
+	bool combinedMixed = false;
 	if (selType == bankTree::SelectionType::Bank) {
-		Banks* firstBanks = nullptr;
 		for (const QModelIndex& idx : tab.tree->selectionModel()->selectedIndexes()) {
 			if (idx.column() != 0) {
 				continue;
@@ -350,19 +380,29 @@ void ShipWeaponsDialog::updateTabUI(TabState& tab)
 			if (banks == nullptr) {
 				continue;
 			}
-			if (firstBanks == nullptr) {
-				firstBanks = banks;
-			}
 			if (banks->getName() == "Pilot") {
 				aiEditable = false;
+				continue;
 			}
-		}
-		if (firstBanks != nullptr) {
-			tab.currentAI = firstBanks->getAiClass();
+			const int ai = banks->getAiClass();
+			if (ai < 0) {
+				combinedMixed = true;
+			} else if (!combinedInitialized) {
+				displayedAi = ai;
+				combinedInitialized = true;
+			} else if (displayedAi != ai) {
+				combinedMixed = true;
+			}
 		}
 	}
 	tab.aiGroup->setEnabled(aiEditable);
-	tab.aiCombo->setCurrentIndex(tab.aiCombo->findData(tab.currentAI));
+	if (aiEditable && combinedInitialized && !combinedMixed) {
+		tab.currentAI = displayedAi;
+		tab.aiCombo->setCurrentIndex(tab.aiCombo->findData(displayedAi));
+	} else {
+		// Mixed across selection, or only Pilot selected (combo greyed): clear the combo.
+		tab.aiCombo->setCurrentIndex(-1);
+	}
 
 	const bool hasWeaponSelection = tab.list->selectionModel()->hasSelection() &&
 		tab.list->currentIndex().data(Qt::UserRole).toInt() != -1;
@@ -465,8 +505,13 @@ void ShipWeaponsDialog::refreshBankItem(TabState& tab, const QModelIndex& idx)
 		if (ammoItem != nullptr) {
 			Qt::ItemFlags ammoFlags = Qt::ItemIsSelectable | Qt::ItemIsEnabled;
 			if (bank->getMaxAmmo() > 0) {
-				ammoItem->setData(formatAmmoDisplay(bank->getAmmo(), bank->getMaxAmmo()), Qt::DisplayRole);
-				ammoItem->setData(bank->getAmmo(), AmmoValueRole);
+				if (bank->getAmmo() == -2) {
+					ammoItem->setData(QString(), Qt::DisplayRole);
+					ammoItem->setData(0, AmmoValueRole);
+				} else {
+					ammoItem->setData(formatAmmoDisplay(bank->getAmmo(), bank->getMaxAmmo()), Qt::DisplayRole);
+					ammoItem->setData(bank->getAmmo(), AmmoValueRole);
+				}
 				ammoFlags |= Qt::ItemIsEditable;
 			} else {
 				ammoItem->setData(QString(), Qt::DisplayRole);

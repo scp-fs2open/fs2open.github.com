@@ -5,6 +5,67 @@
 #include <QBrush>
 
 namespace fso::fred {
+namespace {
+// Compare one slot of the "tracking" Bank (from the first ship's view) against the corresponding
+// slot of a subsequent ship. Mark the bank as CONFLICT (-2) where they disagree, but never
+// clobber an already-CONFLICT marker.
+void reconcileSlot(Bank* bank, int otherWeaponId, int otherAmmoPct)
+{
+	if (bank->getWeaponId() == -2) {
+		return;
+	}
+	if (bank->getWeaponId() != otherWeaponId) {
+		bank->setWeapon(-2);
+		return;
+	}
+	if (bank->getAmmo() == -2 || bank->getMaxAmmo() <= 0) {
+		return;
+	}
+	const int otherAmmo = fl2ir(otherAmmoPct * bank->getMaxAmmo() / 100.0f);
+	if (bank->getAmmo() != otherAmmo) {
+		bank->setAmmo(-2);
+	}
+}
+
+Banks* findBanksByName(const SCP_vector<Banks*>& banks, const SCP_string& name)
+{
+	for (Banks* b : banks) {
+		if (b->getName() == name) {
+			return b;
+		}
+	}
+	return nullptr;
+}
+
+ship_subsys* findTurretByName(int inst, const SCP_string& name)
+{
+	ship_subsys* ssl = &Ships[inst].subsys_list;
+	for (ship_subsys* pss = GET_FIRST(ssl); pss != END_OF_LIST(ssl); pss = GET_NEXT(pss)) {
+		if (pss->system_info->type == SUBSYSTEM_TURRET &&
+			SCP_string(pss->system_info->subobj_name) == name) {
+			return pss;
+		}
+	}
+	return nullptr;
+}
+
+void saveSlotsTo(ship_weapon& target, const SCP_vector<Bank*>& bankList, bool isPrimary)
+{
+	int* weapons = isPrimary ? target.primary_bank_weapons : target.secondary_bank_weapons;
+	int* ammo = isPrimary ? target.primary_bank_ammo : target.secondary_bank_ammo;
+	for (Bank* bank : bankList) {
+		if (bank->getWeaponId() == -2) {
+			continue; // weapon CONFLICT — preserve per-ship weapon
+		}
+		weapons[bank->getBankId()] = bank->getWeaponId();
+		if (bank->getAmmo() != -2) {
+			ammo[bank->getBankId()] = bank->getMaxAmmo() ? fl2ir(bank->getAmmo() * 100.0f / bank->getMaxAmmo()) : 0;
+		}
+		// else: ammo CONFLICT — preserve per-ship ammo
+	}
+}
+} // namespace
+
 WeaponItem::WeaponItem(int inID, QString inName, bool inAllowed)
 	: name(std::move(inName)), id(inID), allowed(inAllowed)
 {
@@ -111,14 +172,6 @@ void Banks::add(Bank* bank)
 {
 	banks.push_back(bank);
 }
-Bank* Banks::getByBankId(const int bankId)
-{
-	for (auto bank : banks) {
-		if (bankId == bank->getWeaponId())
-			return bank;
-	}
-	return nullptr;
-}
 SCP_string Banks::getName() const
 {
 	return name;
@@ -141,34 +194,61 @@ SCP_vector<Bank*> Banks::getBanks() const
 }
 int Banks::getAiClass() const
 {
-	if (name == "Pilot") {
-		return Ships[ship].weapons.ai_class;
-	} else {
-		return subsys->weapons.ai_class;
+	auto readShip = [&](int inst) -> int {
+		if (name == "Pilot") {
+			return Ships[inst].weapons.ai_class;
+		}
+		ship_subsys* pss = findTurretByName(inst, name);
+		return pss ? pss->weapons.ai_class : 0;
+	};
+
+	if (!m_isMultiEdit) {
+		return readShip(ship);
 	}
+
+	int common = -1;
+	bool initialized = false;
+	for (object* ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
+		if ((ptr->type != OBJ_SHIP && ptr->type != OBJ_START) || !ptr->flags[Object::Object_Flags::Marked]) {
+			continue;
+		}
+		const int ai = readShip(ptr->instance);
+		if (!initialized) {
+			common = ai;
+			initialized = true;
+		} else if (ai != common) {
+			return -1;
+		}
+	}
+	return common;
 }
 void Banks::setAiClass(int newClass)
 {
+	aiClass = newClass;
+	aiClassDirty = true;
+
+	auto applyToShip = [&](int inst) {
+		if (name == "Pilot") {
+			Ships[inst].weapons.ai_class = newClass;
+		} else if (ship_subsys* pss = findTurretByName(inst, name)) {
+			pss->weapons.ai_class = newClass;
+		}
+	};
+
 	if (m_isMultiEdit) {
-		object* ptr = GET_FIRST(&obj_used_list);
-		while (ptr != END_OF_LIST(&obj_used_list)) {
-			if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && (ptr->flags[Object::Object_Flags::Marked])) {
-				int inst = ptr->instance;
-				if (name == "Pilot") {
-					Ships[inst].ai_index = newClass;
-				} else {
-					subsys->weapons.ai_class = newClass;
-				}
+		for (object* ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
+			if ((ptr->type != OBJ_SHIP && ptr->type != OBJ_START) || !ptr->flags[Object::Object_Flags::Marked]) {
+				continue;
 			}
-			ptr = GET_NEXT(ptr);
+			applyToShip(ptr->instance);
 		}
 	} else {
-		if (name == "Pilot") {
-			Ships[ship].weapons.ai_class = newClass;
-		} else {
-			subsys->weapons.ai_class = newClass;
-		}
+		applyToShip(ship);
 	}
+}
+bool Banks::isAiClassDirty() const
+{
+	return aiClassDirty;
 }
 int Banks::getInitalAI() const
 {
@@ -232,6 +312,22 @@ ShipWeaponsDialogModel::ShipWeaponsDialogModel(QObject* parent, EditorViewport* 
 	: AbstractDialogModel(parent, viewport)
 {
 	initializeData(isMultiEdit);
+}
+bool ShipWeaponsDialogModel::selectedShipsShareClass()
+{
+	int sharedClass = -1;
+	for (object* ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
+		if ((ptr->type != OBJ_SHIP && ptr->type != OBJ_START) || !ptr->flags[Object::Object_Flags::Marked]) {
+			continue;
+		}
+		const int cls = Ships[ptr->instance].ship_info_index;
+		if (sharedClass < 0) {
+			sharedClass = cls;
+		} else if (cls != sharedClass) {
+			return false;
+		}
+	}
+	return true;
 }
 void ShipWeaponsDialogModel::initializeData(bool isMultiEdit)
 {
@@ -317,31 +413,28 @@ void ShipWeaponsDialogModel::initPrimary(int inst, bool first)
 			}
 		}
 	} else {
-		for (int i = 0; i < static_cast<int>(PrimaryBanks[0]->getBanks().size()); i++) {
-			if (PrimaryBanks[0]->getBanks()[i]->getWeaponId() != Ships[inst].weapons.primary_bank_weapons[i]) {
-				PrimaryBanks[0]->getBanks()[i]->setWeapon(-2);
-			}
-			if (PrimaryBanks[0]->getBanks()[i]->getAmmo() != Ships[inst].weapons.primary_bank_ammo[i]) {
-				PrimaryBanks[0]->getBanks()[i]->setAmmo(-2);
+		// Subsequent ship: reconcile each slot against the tracking Banks built from the first ship.
+		delete pilotBank; // unused; we already have one from the first ship
+		if (Banks* tracking = findBanksByName(PrimaryBanks, "Pilot")) {
+			const auto bankList = tracking->getBanks();
+			for (size_t i = 0; i < bankList.size(); i++) {
+				reconcileSlot(bankList[i], Ships[inst].weapons.primary_bank_weapons[i],
+					Ships[inst].weapons.primary_bank_ammo[i]);
 			}
 		}
 		ship_subsys* ssl = &Ships[inst].subsys_list;
-		ship_subsys* pss;
-		for (pss = GET_FIRST(ssl); pss != END_OF_LIST(ssl); pss = GET_NEXT(pss)) {
-			model_subsystem* psub = pss->system_info;
-			if (psub->type == SUBSYSTEM_TURRET) {
-				for (auto banks : PrimaryBanks) {
-					if (banks->getSubsys() == pss) {
-						for (int i = 0; i < static_cast<int>(banks->getBanks().size()); i++) {
-							if (banks->getBanks()[i]->getWeaponId() != pss->weapons.primary_bank_weapons[i]) {
-								banks->getBanks()[i]->setWeapon(-2);
-							}
-							if (banks->getBanks()[i]->getAmmo() != pss->weapons.primary_bank_ammo[i]) {
-								banks->getBanks()[i]->setAmmo(-2);
-							}
-						}
-					}
-				}
+		for (ship_subsys* pss = GET_FIRST(ssl); pss != END_OF_LIST(ssl); pss = GET_NEXT(pss)) {
+			if (pss->system_info->type != SUBSYSTEM_TURRET) {
+				continue;
+			}
+			Banks* tracking = findBanksByName(PrimaryBanks, pss->system_info->subobj_name);
+			if (tracking == nullptr) {
+				continue;
+			}
+			const auto bankList = tracking->getBanks();
+			for (size_t i = 0; i < bankList.size(); i++) {
+				reconcileSlot(bankList[i], pss->weapons.primary_bank_weapons[i],
+					pss->weapons.primary_bank_ammo[i]);
 			}
 		}
 	}
@@ -397,76 +490,45 @@ void ShipWeaponsDialogModel::initSecondary(int inst, bool first)
 			}
 		}
 	} else {
-		for (int i = 0; i < static_cast<int>(SecondaryBanks[0]->getBanks().size()); i++) {
-			if (SecondaryBanks[0]->getBanks()[i]->getWeaponId() != Ships[inst].weapons.secondary_bank_weapons[i]) {
-				SecondaryBanks[0]->getBanks()[i]->setWeapon(-2);
-			}
-			if (SecondaryBanks[0]->getBanks()[i]->getAmmo() != Ships[inst].weapons.secondary_bank_ammo[i]) {
-				SecondaryBanks[0]->getBanks()[i]->setAmmo(-2);
+		delete pilotBank;
+		if (Banks* tracking = findBanksByName(SecondaryBanks, "Pilot")) {
+			const auto bankList = tracking->getBanks();
+			for (size_t i = 0; i < bankList.size(); i++) {
+				reconcileSlot(bankList[i], Ships[inst].weapons.secondary_bank_weapons[i],
+					Ships[inst].weapons.secondary_bank_ammo[i]);
 			}
 		}
 		ship_subsys* ssl = &Ships[inst].subsys_list;
-		ship_subsys* pss;
-		for (pss = GET_FIRST(ssl); pss != END_OF_LIST(ssl); pss = GET_NEXT(pss)) {
-			model_subsystem* psub = pss->system_info;
-			if (psub->type == SUBSYSTEM_TURRET) {
-				for (auto banks : SecondaryBanks) {
-					if (banks->getSubsys() == pss) {
-						for (int i = 0; i < static_cast<int>(banks->getBanks().size()); i++) {
-							if (banks->getByBankId(i)->getWeaponId() != pss->weapons.secondary_bank_weapons[i]) {
-								banks->getByBankId(i)->setWeapon(-2);
-							}
-							if (banks->getByBankId(i)->getAmmo() != pss->weapons.secondary_bank_ammo[i]) {
-								banks->getByBankId(i)->setAmmo(-2);
-							}
-						}
-					}
-				}
+		for (ship_subsys* pss = GET_FIRST(ssl); pss != END_OF_LIST(ssl); pss = GET_NEXT(pss)) {
+			if (pss->system_info->type != SUBSYSTEM_TURRET) {
+				continue;
+			}
+			Banks* tracking = findBanksByName(SecondaryBanks, pss->system_info->subobj_name);
+			if (tracking == nullptr) {
+				continue;
+			}
+			const auto bankList = tracking->getBanks();
+			for (size_t i = 0; i < bankList.size(); i++) {
+				reconcileSlot(bankList[i], pss->weapons.secondary_bank_weapons[i],
+					pss->weapons.secondary_bank_ammo[i]);
 			}
 		}
 	}
 }
 void ShipWeaponsDialogModel::saveShip(int inst)
 {
-	for (auto Turret : PrimaryBanks) {
-		if (Turret->getName() == "Pilot") {
-			for (auto bank : Turret->getBanks()) {
-				if (bank->getWeaponId() != -2) {
-					Ships[inst].weapons.primary_bank_weapons[bank->getBankId()] = bank->getWeaponId();
-					Ships[inst].weapons.primary_bank_ammo[bank->getBankId()] =
-						bank->getMaxAmmo() ? fl2ir(bank->getAmmo() * 100.0f / bank->getMaxAmmo()) : 0;
-				}
-			}
-		} else {
-			ship_subsys* pss = Turret->getSubsys();
-			for (auto bank : Turret->getBanks()) {
-				if (bank->getWeaponId() != -2) {
-					pss->weapons.primary_bank_weapons[bank->getBankId()] = bank->getWeaponId();
-					pss->weapons.primary_bank_ammo[bank->getBankId()] =
-						bank->getMaxAmmo() ? fl2ir(bank->getAmmo() * 100.0f / bank->getMaxAmmo()) : 0;
-				}
-			}
+	auto saveBank = [&](Banks* turret, bool isPrimary) {
+		if (turret->getName() == "Pilot") {
+			saveSlotsTo(Ships[inst].weapons, turret->getBanks(), isPrimary);
+		} else if (ship_subsys* pss = findTurretByName(inst, turret->getName())) {
+			saveSlotsTo(pss->weapons, turret->getBanks(), isPrimary);
 		}
+	};
+	for (Banks* turret : PrimaryBanks) {
+		saveBank(turret, true);
 	}
-	for (auto Turret : SecondaryBanks) {
-		if (Turret->getName() == "Pilot") {
-			for (auto bank : Turret->getBanks()) {
-				if (bank->getWeaponId() != -2) {
-					Ships[inst].weapons.secondary_bank_weapons[bank->getBankId()] = bank->getWeaponId();
-					Ships[inst].weapons.secondary_bank_ammo[bank->getBankId()] =
-						bank->getMaxAmmo() ? fl2ir(bank->getAmmo() * 100.0f / bank->getMaxAmmo()) : 0;
-				}
-			}
-		} else {
-			ship_subsys* pss = Turret->getSubsys();
-			for (auto bank : Turret->getBanks()) {
-				if (bank->getWeaponId() != -2) {
-					pss->weapons.secondary_bank_weapons[bank->getBankId()] = bank->getWeaponId();
-					pss->weapons.secondary_bank_ammo[bank->getBankId()] =
-						bank->getMaxAmmo() ? fl2ir(bank->getAmmo() * 100.0f / bank->getMaxAmmo()) : 0;
-				}
-			}
-		}
+	for (Banks* turret : SecondaryBanks) {
+		saveBank(turret, false);
 	}
 }
 bool ShipWeaponsDialogModel::apply()
@@ -488,11 +550,18 @@ bool ShipWeaponsDialogModel::apply()
 }
 void ShipWeaponsDialogModel::reject()
 {
-	for (auto Turret : PrimaryBanks) {
-		Turret->setAiClass(Turret->getInitalAI());
+	// Only restore AI on banks the user explicitly changed. In multi-edit this can only
+	// roll back to the first ship's initial AI for all ships which is acceptable since we only
+	// reach here when the user took the explicit Change AI action.
+	for (Banks* banks : PrimaryBanks) {
+		if (banks->isAiClassDirty()) {
+			banks->setAiClass(banks->getInitalAI());
+		}
 	}
-	for (auto Turret : SecondaryBanks) {
-		Turret->setAiClass(Turret->getInitalAI());
+	for (Banks* banks : SecondaryBanks) {
+		if (banks->isAiClassDirty()) {
+			banks->setAiClass(banks->getInitalAI());
+		}
 	}
 }
 SCP_vector<Banks*> ShipWeaponsDialogModel::getPrimaryBanks() const

@@ -34,14 +34,15 @@ struct Banks {
   public:
 	int getId() const;
 	void add(Bank*);
-	Bank* getByBankId(const int bankId);
 	SCP_string getName() const;
 	int getShip() const;
 	ship_subsys* getSubsys() const;
 	bool empty() const;
 	SCP_vector<Bank*> getBanks() const;
+	// Returns the single consistent AI class for this bank-set; -1 if multi-edit and ships disagree.
 	int getAiClass() const;
 	void setAiClass(int);
+	bool isAiClassDirty() const;
 	bool m_isMultiEdit;
 	int getInitalAI() const;
 
@@ -50,6 +51,7 @@ struct Banks {
 	ship_subsys* subsys;
 	int aiClass;
 	int initalAI;
+	bool aiClassDirty = false;
 	SCP_vector<Bank*> banks;
 	int ship;
 	int id;
@@ -87,7 +89,8 @@ class ShipWeaponsDialogModel : public AbstractDialogModel {
 	 */
 	ShipWeaponsDialogModel(QObject* parent, EditorViewport* viewport, bool multi);
 
-	// void initTertiary(int inst, bool first);
+	// True iff all currently-marked ships share the same ship_info_index. Used to gate multi-edit.
+	static bool selectedShipsShareClass();
 
 	bool apply() override;
 	void reject() override;
