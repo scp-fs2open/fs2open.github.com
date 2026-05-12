@@ -624,8 +624,7 @@ void ShipGoalsDialogModel::initialize(ai_goal* goals)
 		case AI_GOAL_DOCK:
 			_dock2[item] = -1;
 			if (_object[item]) {
-				docks =
-					_editor->get_docking_list(Ship_info[Ships[_object[item] & DATA_MASK].ship_info_index].model_num);
+				docks = fso::fred::Editor::get_docking_list(Ship_info[Ships[_object[item] & DATA_MASK].ship_info_index].model_num);
 				for (i = 0; unsigned(i) < docks.size(); i++) {
 					Assert(_goalp[item].dockee.name);
 					Assert(_goalp[item].dockee.index != -1);
