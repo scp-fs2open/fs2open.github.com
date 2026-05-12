@@ -16,6 +16,7 @@ namespace fso::fred::dialogs {
 // id = UserRole + 3
 // ammo = UserRole + 4
 // maxammo = UserRole + 5
+	// aiclass = Qt::UserRole + 6
 namespace Ui {
 class ShipWeaponsDialog;
 }

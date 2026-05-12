@@ -186,13 +186,13 @@ void ShipWeaponsDialog::updateUI()
 
 	ui->treeBanks->expandAll();
 	// Setall button
-	if (ui->treeBanks->getTypeSelected() == 0) {
+	if (ui->treeBanks->getTypeSelected() == false) {
 		ui->setAllButton->setEnabled(true);
 	} else {
 		ui->setAllButton->setEnabled(false);
 	}
 	// Change AI Button
-	if (ui->treeBanks->getTypeSelected() == 1) {
+	if (ui->treeBanks->getTypeSelected() == true) {
 		ui->aiButton->setEnabled(true);
 	} else {
 		ui->aiButton->setEnabled(false);
@@ -222,9 +222,12 @@ void ShipWeaponsDialog::loadBankModel(SCP_vector<Banks*> modelBanks) {
 	bankModel->removeRows(0, bankModel->rowCount());
 	for (auto banks : modelBanks) {
 		auto item = new QStandardItem();
-		item->setData(banks->getName().c_str(), Qt::DisplayRole);
+		const SCP_string name = banks->getName() + " ( " + Ai_class_names[banks->getAiClass()] + " ) ";
+		item->setData(name.c_str(), Qt::DisplayRole);
 		item->setData(true, Qt::UserRole + 2);
 		item->setData(banks->getId(), Qt::UserRole + 3);
+		item->setData(banks->getAiClass(), Qt::UserRole + 6);
+		item->setFlags(item->flags() & ~Qt::ItemIsEditable);
 		bankModel->appendRow(item);
 		//parent->insertLabel(parent->childCount(), banks->getName().c_str(), banks);
 		//auto currentParent = parent->child(parent->childCount() - 1);
@@ -247,7 +250,8 @@ void ShipWeaponsDialog::loadBankModel(SCP_vector<Banks*> modelBanks) {
 			subitem->setData(bank->getBankId(), Qt::UserRole + 3);
 			subitem->setData(bank->getAmmo(), Qt::UserRole + 4);
 			subitem->setData(bank->getMaxAmmo(), Qt::UserRole + 5);
-			subitem->appendRow(subitem);
+			subitem->setFlags(item->flags() & ~Qt::ItemIsEditable);
+			item->appendRow(subitem);
 			//currentParent->insertBank(currentParent->childCount(), bank);
 		}
 	}
@@ -256,7 +260,11 @@ void ShipWeaponsDialog::loadBankModel(SCP_vector<Banks*> modelBanks) {
 void ShipWeaponsDialog::on_aiButton_clicked()
 {
 	for (auto& index : ui->treeBanks->selectionModel()->selectedIndexes()) {
-		bankModel->setData(index, m_currentAI);
+		bankModel->setData(index, m_currentAI, Qt::UserRole + 6);
+		//bankModel->setData(index, m_currentAI, Qt::DisplayRole);
+		const SCP_string oldName = bankModel->data(index, Qt::DisplayRole).toString().toStdString();
+		const size_t end = oldName.find(' ');
+		const SCP_string justname = oldName.substr(0, end);
 	}
 }
 

@@ -14,12 +14,13 @@ class bankTree : public QTreeView {
   public:
 	bankTree(QWidget*);
 	void selectionChanged(const QItemSelection& selected, const QItemSelection& deselected) override;
-	int getTypeSelected() const;
+	bool getTypeSelected() const;
 
   protected:
 	void dragEnterEvent(QDragEnterEvent*) override;
 	void dropEvent(QDropEvent* event) override;
 	void dragMoveEvent(QDragMoveEvent*) override;
 	int typeSelected = -1;
+	bool currentSelectionIsNotBank;
 };
 } // namespace fso::fred

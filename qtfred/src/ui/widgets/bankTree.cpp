@@ -66,42 +66,60 @@ void bankTree::dragMoveEvent(QDragMoveEvent* event)
 	QTreeView::selectionChanged(selected, deselected);
 }*/
 
-void bankTree::selectionChanged(const QItemSelection& selected, const QItemSelection& deselected) {
-	// Iterate QItemSelection directly as QList<QItemSelectionRange> via const ref
-	// avoids calling .indexes() which returns a new QList<QModelIndex> by value
-	bool hasSelection = false;
-	bool isBank = false;
-	for (const QItemSelectionRange& range : selected) {
-		QModelIndex first = range.topLeft();
-		if (first.isValid()) {
-			hasSelection = true;
-			isBank = (model()->data(first, Qt::UserRole + 2) == true);
-			break;
-		}
-	}
+void bankTree::selectionChanged(const QItemSelection& selected, const QItemSelection& deselected)
+{
+	// 1. Update the internal selection state first
+	QTreeView::selectionChanged(selected, deselected);
 
-	    if (hasSelection) {
-		// Traverse model manually to avoid model()->match() returning QList by value
-		bool disableValue = !isBank;
+	QItemSelectionModel* sm = selectionModel();
+	QStandardItemModel* m = qobject_cast<QStandardItemModel*>(model());
+	if (!m)
+		return;
+
+	// Helper lambda to update the selectable flag across the whole tree
+	auto updateTreeFlags = [&](bool isFiltering, bool filterForBank) {
 		std::function<void(const QModelIndex&)> traverse = [&](const QModelIndex& parent) {
-			for (int row = 0; row < model()->rowCount(parent); ++row) {
-				QModelIndex idx = model()->index(row, 0, parent);
-				if (model()->data(idx, Qt::UserRole + 2) == disableValue) {
-					auto* item = dynamic_cast<QStandardItemModel*>(model())->itemFromIndex(idx);
-					item->setFlags(item->flags() & ~Qt::ItemIsSelectable);
+			for (int r = 0; r < m->rowCount(parent); ++r) {
+				QModelIndex idx = m->index(r, 0, parent);
+				QStandardItem* item = m->itemFromIndex(idx);
+				if (!item)
+					continue;
+
+				if (!isFiltering) {
+					// Reset mode: Everything becomes selectable
+					item->setFlags(item->flags() | Qt::ItemIsSelectable);
+				} else {
+					// Filter mode: Only items matching the 'bank' status stay selectable
+					bool itemIsBank = m->data(idx, Qt::UserRole + 2).toBool();
+					if (itemIsBank == filterForBank) {
+						item->setFlags(item->flags() | Qt::ItemIsSelectable);
+					} else {
+						item->setFlags(item->flags() & ~Qt::ItemIsSelectable);
+					}
 				}
-				if (model()->hasChildren(idx)) {
+
+				if (m->hasChildren(idx))
 					traverse(idx);
-				}
 			}
 		};
 		traverse(QModelIndex());
-	}
+	};
 
-	QTreeView::selectionChanged(selected, deselected);
+	// 2. Handle the "Last Item Unselected" case (prevents the crash)
+		updateTreeFlags(false, false); // Disable filtering, reset all to selectable
+
+	// 3. We have a selection, so determine the current "Master Type"
+	// safe because we checked hasSelection()
+	if (!sm->selectedIndexes().empty()) {
+		QModelIndex first = sm->selectedIndexes().first();
+		if (first.isValid()) {
+			currentSelectionIsNotBank = m->data(first, Qt::UserRole + 2).toBool();
+			updateTreeFlags(true, currentSelectionIsNotBank);
+		}
+	}
 }
-	int bankTree::getTypeSelected() const
+bool bankTree::getTypeSelected() const
 {
-	return typeSelected;
+	return currentSelectionIsNotBank;
 }
 } // namespace fso::fred
