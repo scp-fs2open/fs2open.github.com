@@ -312,12 +312,12 @@ void ShipWeaponsDialogModel::initializeData(bool isMultiEdit)
 
 	m_ship = _editor->cur_ship;
 	if (m_ship == -1) {
-		Assertion(_editor->currentObject >= 0 && _editor->currentObject < MAX_OBJECTS,
+		Assertion(_editor->currentObject >= 0 && _editor->currentObject < MAX_OBJECTS, // NOLINT(readability-simplify-boolean-expr)
 			"ShipWeaponsDialog opened with no valid current ship and an out-of-range currentObject (%d)",
 			_editor->currentObject);
 		m_ship = Objects[_editor->currentObject].instance;
 	}
-	Assertion(m_ship >= 0 && m_ship < MAX_SHIPS,
+	Assertion(m_ship >= 0 && m_ship < MAX_SHIPS, // NOLINT(readability-simplify-boolean-expr)
 		"ShipWeaponsDialog resolved to invalid ship index %d", m_ship);
 
 	if (m_isMultiEdit) {
