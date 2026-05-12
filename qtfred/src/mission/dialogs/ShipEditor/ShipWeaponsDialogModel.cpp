@@ -1,5 +1,103 @@
 #include "ShipWeaponsDialogModel.h"
+
+#include <ship/ship.h>
+
+#include <QBrush>
+
 namespace fso::fred {
+WeaponItem::WeaponItem(int inID, QString inName, bool inAllowed)
+	: name(std::move(inName)), id(inID), allowed(inAllowed)
+{
+}
+
+WeaponModel::WeaponModel(int type, int shipClass, bool bigShip)
+{
+	weapons.push_back(new WeaponItem(-1, "None", true));
+
+	const bool haveShipInfo = shipClass >= 0 && shipClass < ship_info_size();
+	// allowed_weapons is a player-loadout concept and only meaningful for fighters/bombers.
+	// On other ship classes (capships, support, etc.) every weapon is rendered as normal.
+	const bool applyAllowedTint = haveShipInfo && Ship_info[shipClass].is_fighter_bomber();
+
+	const int wantedSubtype = (type == 0) ? WP_LASER : WP_MISSILE;
+	const bool acceptBeams = (type == 0);
+
+	for (int i = 0; i < static_cast<int>(Weapon_info.size()); i++) {
+		const auto& w = Weapon_info[i];
+		if (w.wi_flags[Weapon::Info_Flags::No_fred]) {
+			continue;
+		}
+		if (w.wi_flags[Weapon::Info_Flags::Child]) {
+			continue;
+		}
+		const bool subtypeMatches = (w.subtype == wantedSubtype) || (acceptBeams && w.subtype == WP_BEAM);
+		if (!subtypeMatches) {
+			continue;
+		}
+		if (!bigShip && w.wi_flags[Weapon::Info_Flags::Big_only]) {
+			continue;
+		}
+		const bool allowed = !applyAllowedTint || Ship_info[shipClass].allowed_weapons[i] != 0;
+		weapons.push_back(new WeaponItem(i, w.name, allowed));
+	}
+}
+WeaponModel::~WeaponModel()
+{
+	for (auto pointer : weapons) {
+		delete pointer;
+	}
+}
+int WeaponModel::rowCount(const QModelIndex& parent) const
+{
+	Q_UNUSED(parent);
+	return static_cast<int>(weapons.size());
+}
+QVariant WeaponModel::data(const QModelIndex& index, int role) const
+{
+	if (!index.isValid() || index.row() < 0 || index.row() >= weapons.size()) {
+		return {};
+	}
+	const auto* item = weapons[index.row()];
+	switch (role) {
+	case Qt::DisplayRole:
+		return item->name;
+	case Qt::UserRole:
+		return item->id;
+	case Qt::ForegroundRole:
+		return item->allowed ? QVariant() : QVariant(QBrush(Qt::gray));
+	case Qt::ToolTipRole:
+		return item->allowed ? QVariant() : QVariant(QStringLiteral("Not in this ship class's allowed weapons list."));
+	default:
+		return {};
+	}
+}
+Qt::ItemFlags WeaponModel::flags(const QModelIndex& index) const
+{
+	auto base = QAbstractListModel::flags(index);
+	if (index.isValid()) {
+		base |= Qt::ItemIsDragEnabled;
+	}
+	return base;
+}
+QStringList WeaponModel::mimeTypes() const
+{
+	return {QStringLiteral("application/weaponid")};
+}
+QMimeData* WeaponModel::mimeData(const QModelIndexList& indexes) const
+{
+	auto mimeData = new QMimeData();
+	QByteArray encodedData;
+	QDataStream stream(&encodedData, QIODevice::WriteOnly);
+	for (auto& index : indexes) {
+		if (index.isValid()) {
+			int id = data(index, Qt::UserRole).toInt();
+			stream << id;
+		}
+	}
+	mimeData->setData("application/weaponid", encodedData);
+	return mimeData;
+}
+
 Banks::Banks(SCP_string _name, int aiIndex, int _ship, int multiedit, int _id, ship_subsys* _subsys)
 	: m_isMultiEdit(multiedit), name(std::move(_name)), subsys(_subsys), initalAI(aiIndex), ship(_ship), id(_id)
 {
@@ -13,10 +111,10 @@ void Banks::add(Bank* bank)
 {
 	banks.push_back(bank);
 }
-Bank* Banks::getByBankId(const int id)
+Bank* Banks::getByBankId(const int bankId)
 {
 	for (auto bank : banks) {
-		if (id == bank->getWeaponId())
+		if (bankId == bank->getWeaponId())
 			return bank;
 	}
 	return nullptr;
@@ -103,6 +201,12 @@ int Bank::getMaxAmmo() const
 void Bank::setWeapon(const int id)
 {
 	weaponId = id;
+	if (id < 0) {
+		// "None" or CONFLICT placeholder... no weapon assigned, no ammo capacity.
+		ammoMax = 0;
+		ammo = 0;
+		return;
+	}
 	if (Weapon_info[id].subtype == WP_LASER || Weapon_info[id].subtype == WP_BEAM) {
 		if (parent->getName() == "Pilot") {
 			ammoMax = get_max_ammo_count_for_primary_bank(parent->getShip(), bankId, id);
@@ -115,6 +219,9 @@ void Bank::setWeapon(const int id)
 		} else {
 			ammoMax = get_max_ammo_count_for_turret_bank(&parent->getSubsys()->weapons, bankId, id);
 		}
+	}
+	if (ammo > ammoMax) {
+		ammo = ammoMax;
 	}
 }
 void Bank::setAmmo(const int newAmmo)
@@ -376,6 +483,19 @@ SCP_vector<Banks*> ShipWeaponsDialogModel::getPrimaryBanks() const
 SCP_vector<Banks*> ShipWeaponsDialogModel::getSecondaryBanks() const
 {
 	return SecondaryBanks;
+}
+int ShipWeaponsDialogModel::getShipClass() const
+{
+	return Ships[m_ship].ship_info_index;
+}
+bool ShipWeaponsDialogModel::isBigShip() const
+{
+	return big;
+}
+void ShipWeaponsDialogModel::notifyChanged()
+{
+	set_modified();
+	modelChanged();
 }
 /* void ShipWeaponsDialogModel::initTertiary(int inst, bool first) {
 

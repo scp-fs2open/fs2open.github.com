@@ -34,92 +34,62 @@ void bankTree::dragMoveEvent(QDragMoveEvent* event)
 		event->ignore();
 	}
 }
-/* void bankTree::selectionChanged(const QItemSelection& selected, const QItemSelection& deselected)
-{
-	auto indexes = selected.indexes();
-	if (!indexes.isEmpty()) {
-		auto& first = indexes.first();
-		if (first.isValid()) {
-			if (model()->data(first, Qt::UserRole + 2) == true) {
-				for (auto& index :
-					model()->match(model()->index(0, 0), Qt::UserRole + 2, false, -1, Qt::MatchRecursive)) {
-					if (index.isValid()) {
-						auto item = dynamic_cast<QStandardItemModel*>(model())->itemFromIndex(index);
-						Qt::ItemFlags flags = item->flags();
-						flags &= ~Qt::ItemIsSelectable;
-						item->setFlags(flags);
-					}
-				}
-			} else {
-				for (auto& index :
-					model()->match(model()->index(0, 0), Qt::UserRole + 2, true, -1, Qt::MatchRecursive)) {
-					if (index.isValid()) {
-						auto item = dynamic_cast<QStandardItemModel*>(model())->itemFromIndex(index);
-						Qt::ItemFlags flags = item->flags();
-						flags &= ~Qt::ItemIsSelectable;
-						item->setFlags(flags);
-					}
-				}
-			}
-		}
-	}
-	QTreeView::selectionChanged(selected, deselected);
-}*/
 
 void bankTree::selectionChanged(const QItemSelection& selected, const QItemSelection& deselected)
 {
-	// 1. Update the internal selection state first
 	QTreeView::selectionChanged(selected, deselected);
 
-	QItemSelectionModel* sm = selectionModel();
-	QStandardItemModel* m = qobject_cast<QStandardItemModel*>(model());
-	if (!m)
+	if (m_autoFiltering) {
 		return;
+	}
 
-	// Helper lambda to update the selectable flag across the whole tree
-	auto updateTreeFlags = [&](bool isFiltering, bool filterForBank) {
-		std::function<void(const QModelIndex&)> traverse = [&](const QModelIndex& parent) {
-			for (int r = 0; r < m->rowCount(parent); ++r) {
-				QModelIndex idx = m->index(r, 0, parent);
-				QStandardItem* item = m->itemFromIndex(idx);
-				if (!item)
-					continue;
+	const auto newlySelected = selected.indexes();
+	if (newlySelected.isEmpty()) {
+		return;
+	}
 
-				if (!isFiltering) {
-					// Reset mode: Everything becomes selectable
-					item->setFlags(item->flags() | Qt::ItemIsSelectable);
-				} else {
-					// Filter mode: Only items matching the 'bank' status stay selectable
-					bool itemIsBank = m->data(idx, Qt::UserRole + 2).toBool();
-					if (itemIsBank == filterForBank) {
-						item->setFlags(item->flags() | Qt::ItemIsSelectable);
-					} else {
-						item->setFlags(item->flags() & ~Qt::ItemIsSelectable);
-					}
-				}
-
-				if (m->hasChildren(idx))
-					traverse(idx);
-			}
-		};
-		traverse(QModelIndex());
-	};
-
-	// 2. Handle the "Last Item Unselected" case (prevents the crash)
-		updateTreeFlags(false, false); // Disable filtering, reset all to selectable
-
-	// 3. We have a selection, so determine the current "Master Type"
-	// safe because we checked hasSelection()
-	if (!sm->selectedIndexes().empty()) {
-		QModelIndex first = sm->selectedIndexes().first();
-		if (first.isValid()) {
-			currentSelectionIsNotBank = m->data(first, Qt::UserRole + 2).toBool();
-			updateTreeFlags(true, currentSelectionIsNotBank);
+	QModelIndex pivot;
+	for (const QModelIndex& idx : newlySelected) {
+		if (idx.column() == 0 && idx.isValid()) {
+			pivot = idx;
+			break;
 		}
 	}
+	if (!pivot.isValid()) {
+		return;
+	}
+	const bool pivotIsBank = pivot.data(Qt::UserRole + 2).toBool();
+
+	QItemSelectionModel* sm = selectionModel();
+	QItemSelection toDeselect;
+	for (const QModelIndex& idx : sm->selectedIndexes()) {
+		if (idx.column() != 0) {
+			continue;
+		}
+		if (idx.data(Qt::UserRole + 2).toBool() != pivotIsBank) {
+			toDeselect.select(idx, idx);
+		}
+	}
+
+	if (!toDeselect.isEmpty()) {
+		m_autoFiltering = true;
+		sm->select(toDeselect, QItemSelectionModel::Deselect | QItemSelectionModel::Rows);
+		m_autoFiltering = false;
+	}
 }
-bool bankTree::getTypeSelected() const
+
+bankTree::SelectionType bankTree::getSelectionType() const
 {
-	return currentSelectionIsNotBank;
+	const auto* sm = selectionModel();
+	if (sm == nullptr) {
+		return SelectionType::None;
+	}
+	for (const QModelIndex& idx : sm->selectedIndexes()) {
+		if (idx.column() != 0 || !idx.isValid()) {
+			continue;
+		}
+		return idx.data(Qt::UserRole + 2).toBool() ? SelectionType::Bank : SelectionType::Weapon;
+	}
+	return SelectionType::None;
 }
 } // namespace fso::fred

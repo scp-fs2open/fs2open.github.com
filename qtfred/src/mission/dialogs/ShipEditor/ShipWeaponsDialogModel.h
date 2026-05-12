@@ -4,7 +4,29 @@
 
 #include <weapon/weapon.h>
 
+#include <QAbstractListModel>
+#include <QMimeData>
+
 namespace fso::fred {
+struct WeaponItem {
+	WeaponItem(int id, QString name, bool allowed);
+	const QString name;
+	const int id;
+	const bool allowed;
+};
+class WeaponModel : public QAbstractListModel {
+	Q_OBJECT
+  public:
+	WeaponModel(int type, int shipClass, bool bigShip);
+	~WeaponModel() override;
+	int rowCount(const QModelIndex& parent = QModelIndex()) const override;
+	QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
+	Qt::ItemFlags flags(const QModelIndex& index) const override;
+	QStringList mimeTypes() const override;
+	QMimeData* mimeData(const QModelIndexList& indexes) const override;
+	QVector<WeaponItem*> weapons;
+};
+
 struct Bank;
 struct Banks {
 	Banks(SCP_string name, int aiIndex, int ship, int multiedit, int _id, ship_subsys* subsys = nullptr);
@@ -12,7 +34,7 @@ struct Banks {
   public:
 	int getId() const;
 	void add(Bank*);
-	Bank* getByBankId(const int id);
+	Bank* getByBankId(const int bankId);
 	SCP_string getName() const;
 	int getShip() const;
 	ship_subsys* getSubsys() const;
@@ -71,6 +93,9 @@ class ShipWeaponsDialogModel : public AbstractDialogModel {
 	void reject() override;
 	SCP_vector<Banks*> getPrimaryBanks() const;
 	SCP_vector<Banks*> getSecondaryBanks() const;
+	int getShipClass() const;
+	bool isBigShip() const;
+	void notifyChanged();
 	// SCP_vector<Banks*> getTertiaryBanks() const;
 
   private:
