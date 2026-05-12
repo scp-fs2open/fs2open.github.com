@@ -189,9 +189,6 @@ class Editor : public QObject {
 	 */
 	bool autoload();
 
-	int Id_select_type_jump_node = 0;
-	int Id_select_type_waypoint = 0;
-
 	// object numbers for ships in a wing.
 	int wing_objects[MAX_WINGS][MAX_SHIPS_PER_WING];
 

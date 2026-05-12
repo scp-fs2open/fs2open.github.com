@@ -187,7 +187,8 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 	ui->toolBar->addWidget(shipsLabel);
 	_shipClassBox = new ObjectComboBox(ui->toolBar);
 	_shipClassBox->setFixedWidth(150);
-	_shipClassBox->initForShips(_viewport);
+	_shipClassBox->setToolTip(tr("Ctrl+click in the viewport to place"));
+	_shipClassBox->initForShips();
 	ui->toolBar->addWidget(_shipClassBox);
 	connect(_shipClassBox, &ObjectComboBox::classSelected, this, &FredView::onShipClassSelected);
 
@@ -196,9 +197,20 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 	ui->toolBar->addWidget(propsLabel);
 	_propClassBox = new ObjectComboBox(ui->toolBar);
 	_propClassBox->setFixedWidth(150);
+	_propClassBox->setToolTip(tr("Ctrl+Shift+click in the viewport to place"));
 	_propClassBox->initForProps();
 	ui->toolBar->addWidget(_propClassBox);
 	connect(_propClassBox, &ObjectComboBox::classSelected, this, &FredView::onPropClassSelected);
+
+	auto otherLabel = new QLabel(tr("Other: "), ui->toolBar);
+	otherLabel->setContentsMargins(4, 0, 0, 0);
+	ui->toolBar->addWidget(otherLabel);
+	_otherClassBox = new ObjectComboBox(ui->toolBar);
+	_otherClassBox->setFixedWidth(150);
+	_otherClassBox->setToolTip(tr("Ctrl+Alt+click in the viewport to place"));
+	_otherClassBox->initForOther();
+	ui->toolBar->addWidget(_otherClassBox);
+	connect(_otherClassBox, &ObjectComboBox::classSelected, this, &FredView::onOtherKindSelected);
 
 	initializeContextToolbar();
 	initializeTransformBar();
@@ -228,6 +240,7 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 	connect(this, &FredView::viewIdle, this, &FredView::onUpdateSelectionLock);
 	connect(this, &FredView::viewIdle, this, &FredView::onUpdateShipClassBox);
 	connect(this, &FredView::viewIdle, this, &FredView::onUpdatePropClassBox);
+	connect(this, &FredView::viewIdle, this, &FredView::onUpdateOtherClassBox);
 	connect(this, &FredView::viewIdle, this, &FredView::onUpdateEditorActions);
 	connect(this, &FredView::viewIdle, this, &FredView::onUpdateWingActionStatus);
 	connect(this, &FredView::viewIdle, this, &FredView::onUpdateContextToolbar);
@@ -1876,7 +1889,9 @@ void FredView::initializePopupMenus() {
 	});
 	_createSubmenu->addMenu(_createPropSubmenu);
 
-	auto* createWaypointAction = new QAction(tr("Waypoint"), _createSubmenu);
+	auto* createOtherSubmenu = new QMenu(tr("Other"), _createSubmenu);
+
+	auto* createWaypointAction = new QAction(tr("Waypoint"), createOtherSubmenu);
 	connect(createWaypointAction, &QAction::triggered, this, [this]() {
 		int waypoint_instance = -1;
 		if (fred->cur_waypoint != nullptr) {
@@ -1884,13 +1899,15 @@ void FredView::initializePopupMenus() {
 		}
 		_viewport->createWaypointAtScreenPos(_lastContextMenuLocalPos.x(), _lastContextMenuLocalPos.y(), waypoint_instance);
 	});
-	_createSubmenu->addAction(createWaypointAction);
+	createOtherSubmenu->addAction(createWaypointAction);
 
-	auto* createJumpNodeAction = new QAction(tr("Jump Node"), _createSubmenu);
+	auto* createJumpNodeAction = new QAction(tr("Jump Node"), createOtherSubmenu);
 	connect(createJumpNodeAction, &QAction::triggered, this, [this]() {
 		_viewport->createJumpNodeAtScreenPos(_lastContextMenuLocalPos.x(), _lastContextMenuLocalPos.y());
 	});
-	_createSubmenu->addAction(createJumpNodeAction);
+	createOtherSubmenu->addAction(createJumpNodeAction);
+
+	_createSubmenu->addMenu(createOtherSubmenu);
 
 	_viewPopup->addMenu(_createSubmenu);
 	_viewPopup->addSeparator();
@@ -2349,11 +2366,17 @@ void FredView::onUpdatePropClassBox() {
 	}
 	_propClassBox->selectClass(_viewport->cur_prop_index);
 }
+void FredView::onUpdateOtherClassBox() {
+	_otherClassBox->selectClass(static_cast<int>(_viewport->cur_other_kind));
+}
 void FredView::onShipClassSelected(int ship_class) {
 	_viewport->cur_model_index = ship_class;
 }
 void FredView::onPropClassSelected(int prop_class) {
 	_viewport->cur_prop_index = prop_class;
+}
+void FredView::onOtherKindSelected(int other_kind) {
+	_viewport->cur_other_kind = static_cast<OtherKind>(other_kind);
 }
 void FredView::on_actionAsteroid_Field_triggered(bool) {
 	auto asteroidFieldEditor = new dialogs::AsteroidEditorDialog(this, _viewport);

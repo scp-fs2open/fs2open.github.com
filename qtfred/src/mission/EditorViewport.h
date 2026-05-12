@@ -17,6 +17,17 @@ struct Marking_box {
 	int y2 = 0;
 };
 
+enum class CreateKind {
+	Ship,
+	Prop,
+	Other,
+};
+
+enum class OtherKind {
+	Waypoint,
+	JumpNode,
+};
+
 struct ViewSettings {
 	bool Universal_heading = false;
 	bool Show_stars = true;
@@ -129,9 +140,9 @@ class EditorViewport {
 	void drag_rotate_save_backup();
 
 	int create_object_on_grid(int x, int y, int waypoint_instance);
-	int create_object_on_grid(int x, int y, int waypoint_instance, bool create_prop);
+	int create_object_on_grid(int x, int y, int waypoint_instance, CreateKind kind);
 
-	int	create_object(vec3d *pos, int waypoint_instance = -1, bool create_prop = false);
+	int	create_object(vec3d *pos, int waypoint_instance = -1, CreateKind kind = CreateKind::Ship);
 
 	vec3d getCreatePosition(int x, int y, float fallbackDist);
 	int createShipAtScreenPos(int x, int y, int modelIndex);
@@ -170,6 +181,7 @@ class EditorViewport {
 
 	int cur_model_index = 0;
 	int cur_prop_index = -1;
+	OtherKind cur_other_kind = OtherKind::Waypoint;
 
 	object_orient_pos rotation_backup[MAX_OBJECTS];
 

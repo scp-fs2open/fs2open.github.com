@@ -277,6 +277,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 
 	ObjectComboBox* _shipClassBox = nullptr;
 	ObjectComboBox* _propClassBox = nullptr;
+	ObjectComboBox* _otherClassBox = nullptr;
 
 	Editor* fred = nullptr;
 	EditorViewport* _viewport = nullptr;
@@ -297,6 +298,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void onUpdateSelectionLock();
 	void onUpdateShipClassBox();
 	void onUpdatePropClassBox();
+	void onUpdateOtherClassBox();
 	void onUpdateEditorActions();
 	void onUpdateWingActionStatus();
 
@@ -341,6 +343,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 
 	void onShipClassSelected(int ship_class);
 	void onPropClassSelected(int prop_class);
+	void onOtherKindSelected(int other_kind);
 
 	void windowActivated();
 	void windowDeactivated();
