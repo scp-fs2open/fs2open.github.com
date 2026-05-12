@@ -1,10 +1,10 @@
 #ifndef SHIPWEAPONSDIALOG_H
 #define SHIPWEAPONSDIALOG_H
 
-#include "ui/dialogs/ShipEditor/BankModel.h"
 #include "ui/widgets/bankTree.h"
 
 #include <mission/dialogs/ShipEditor/ShipWeaponsDialogModel.h>
+#include <QStandardItemModel>
 
 #include <QtCore/QItemSelection>
 #include <QtWidgets/QComboBox>
@@ -49,7 +49,6 @@ class ShipWeaponsDialog : public QDialog {
 		QWidget* aiGroup = nullptr;
 		QStandardItemModel* bankModel = nullptr;
 		WeaponModel* weapons = nullptr;
-		int currentAI = 0;
 		// Set while the dialog itself is writing into bankModel, so itemChanged handlers can ignore the resulting signals.
 		bool internalUpdate = false;
 	};
@@ -62,7 +61,6 @@ class ShipWeaponsDialog : public QDialog {
 	void onSetAllClicked(TabState& tab);
 	void onAiButtonClicked(TabState& tab);
 	void onTblButtonClicked(TabState& tab);
-	void onAiComboChanged(TabState& tab, int index);
 	void onBankItemChanged(TabState& tab, QStandardItem* item);
 	void onWeaponDroppedFromList(TabState& tab, const QModelIndex& target, int weaponId);
 	void onWeaponMoved(TabState& tab, const QModelIndex& target, int weaponId, int sourceBanksId,

@@ -26,7 +26,7 @@ void bankTree::dragEnterEvent(QDragEnterEvent* event)
 void bankTree::dragMoveEvent(QDragMoveEvent* event)
 {
 	const QModelIndex index = indexAt(event->pos());
-	if (!index.isValid() || index.data(Qt::UserRole + 2).toBool()) {
+	if (!index.isValid() || index.data(BankItemIsLabelRole).toBool()) {
 		event->ignore();
 		return;
 	}
@@ -36,7 +36,7 @@ void bankTree::dragMoveEvent(QDragMoveEvent* event)
 void bankTree::dropEvent(QDropEvent* event)
 {
 	QModelIndex target = indexAt(event->pos());
-	if (!target.isValid() || target.data(Qt::UserRole + 2).toBool()) {
+	if (!target.isValid() || target.data(BankItemIsLabelRole).toBool()) {
 		event->ignore();
 		return;
 	}
@@ -74,7 +74,7 @@ void bankTree::startDrag(Qt::DropActions /*supportedActions*/)
 		if (idx.column() != 0 || !idx.isValid()) {
 			continue;
 		}
-		if (idx.data(Qt::UserRole + 2).toBool()) {
+		if (idx.data(BankItemIsLabelRole).toBool()) {
 			continue;
 		}
 		source = idx;
@@ -93,8 +93,8 @@ void bankTree::startDrag(Qt::DropActions /*supportedActions*/)
 	if (!parent.isValid()) {
 		return;
 	}
-	const int sourceBanksId = parent.data(Qt::UserRole + 3).toInt();
-	const int sourceBankId = source.data(Qt::UserRole + 3).toInt();
+	const int sourceBanksId = parent.data(BankItemIdRole).toInt();
+	const int sourceBankId = source.data(BankItemIdRole).toInt();
 
 	auto* mime = new QMimeData();
 	QByteArray bytes;
@@ -130,7 +130,7 @@ void bankTree::selectionChanged(const QItemSelection& selected, const QItemSelec
 	if (!pivot.isValid()) {
 		return;
 	}
-	const bool pivotIsBank = pivot.data(Qt::UserRole + 2).toBool();
+	const bool pivotIsBank = pivot.data(BankItemIsLabelRole).toBool();
 
 	QItemSelectionModel* sm = selectionModel();
 	QItemSelection toDeselect;
@@ -138,7 +138,7 @@ void bankTree::selectionChanged(const QItemSelection& selected, const QItemSelec
 		if (idx.column() != 0) {
 			continue;
 		}
-		if (idx.data(Qt::UserRole + 2).toBool() != pivotIsBank) {
+		if (idx.data(BankItemIsLabelRole).toBool() != pivotIsBank) {
 			toDeselect.select(idx, idx);
 		}
 	}
@@ -160,7 +160,7 @@ bankTree::SelectionType bankTree::getSelectionType() const
 		if (idx.column() != 0 || !idx.isValid()) {
 			continue;
 		}
-		return idx.data(Qt::UserRole + 2).toBool() ? SelectionType::Bank : SelectionType::Weapon;
+		return idx.data(BankItemIsLabelRole).toBool() ? SelectionType::Bank : SelectionType::Weapon;
 	}
 	return SelectionType::None;
 }

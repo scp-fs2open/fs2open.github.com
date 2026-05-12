@@ -1,5 +1,4 @@
 #pragma once
-#include "ui/dialogs/ShipEditor/BankModel.h"
 
 #include <QDragEnterEvent>
 #include <QDragMoveEvent>
@@ -7,6 +6,12 @@
 #include <QMimeData>
 #include <QTreeView>
 namespace fso::fred {
+// Custom data roles stored on items of the bank tree's QStandardItemModel.
+// (Qt::UserRole itself is used for the weapon-id on weapon-slot rows.)
+constexpr int BankItemIsLabelRole = Qt::UserRole + 2; // bool: true on bank-label rows, false on weapon-slot rows
+constexpr int BankItemIdRole = Qt::UserRole + 3;      // Banks::getId() on labels, Bank::getBankId() on slots
+constexpr int BankItemMaxAmmoRole = Qt::UserRole + 5; // weapon's max ammo on the bank, 0 if not applicable
+
 class bankTree : public QTreeView {
 	Q_OBJECT
   public:

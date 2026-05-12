@@ -44,13 +44,13 @@ struct Banks {
 	void setAiClass(int);
 	bool isAiClassDirty() const;
 	bool m_isMultiEdit;
-	int getInitalAI() const;
+	int getInitialAI() const;
 
   private:
 	SCP_string name;
 	ship_subsys* subsys;
 	int aiClass;
-	int initalAI;
+	int initialAI;
 	bool aiClassDirty = false;
 	SCP_vector<Bank*> banks;
 	int ship;
@@ -76,17 +76,8 @@ struct Bank {
 	Banks* parent;
 };
 namespace dialogs {
-/**
- * @brief QTFred's Weapons Editor Model
- */
 class ShipWeaponsDialogModel : public AbstractDialogModel {
   public:
-	/**
-	 * @brief QTFred's Weapons Editor Model Constructer.
-	 * @param [in/out]	parent		The dialogs parent.
-	 * @param [in/out]	viewport	Editor viewport.
-	 * @param [in]		multi If editing multiple ships.
-	 */
 	ShipWeaponsDialogModel(QObject* parent, EditorViewport* viewport, bool multi);
 
 	// True iff all currently-marked ships share the same ship_info_index. Used to gate multi-edit.
@@ -99,7 +90,6 @@ class ShipWeaponsDialogModel : public AbstractDialogModel {
 	int getShipClass() const;
 	bool isBigShip() const;
 	void notifyChanged();
-	// SCP_vector<Banks*> getTertiaryBanks() const;
 
   private:
 	void saveShip(int inst);
@@ -112,7 +102,6 @@ class ShipWeaponsDialogModel : public AbstractDialogModel {
 	bool big = true;
 	SCP_vector<Banks*> PrimaryBanks;
 	SCP_vector<Banks*> SecondaryBanks;
-	// SCP_vector<Banks*> TertiaryBanks;
 };
 } // namespace dialogs
 } // namespace fso::fred

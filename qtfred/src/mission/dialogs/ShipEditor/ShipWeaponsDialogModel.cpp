@@ -160,7 +160,7 @@ QMimeData* WeaponModel::mimeData(const QModelIndexList& indexes) const
 }
 
 Banks::Banks(SCP_string _name, int aiIndex, int _ship, int multiedit, int _id, ship_subsys* _subsys)
-	: m_isMultiEdit(multiedit), name(std::move(_name)), subsys(_subsys), initalAI(aiIndex), ship(_ship), id(_id)
+	: m_isMultiEdit(multiedit), name(std::move(_name)), subsys(_subsys), initialAI(aiIndex), ship(_ship), id(_id)
 {
 	aiClass = aiIndex;
 }
@@ -250,9 +250,9 @@ bool Banks::isAiClassDirty() const
 {
 	return aiClassDirty;
 }
-int Banks::getInitalAI() const
+int Banks::getInitialAI() const
 {
-	return initalAI;
+	return initialAI;
 }
 Bank::Bank(const int _weaponId, const int _bankId, const int _ammoMax, const int _ammo, Banks* _parent)
 {
@@ -349,7 +349,6 @@ void ShipWeaponsDialogModel::initializeData(bool isMultiEdit)
 					big = false;
 				initPrimary(inst, first);
 				initSecondary(inst, first);
-				// initTertiary(inst, first);
 				first = false;
 			}
 			ptr = GET_NEXT(ptr);
@@ -555,12 +554,12 @@ void ShipWeaponsDialogModel::reject()
 	// reach here when the user took the explicit Change AI action.
 	for (Banks* banks : PrimaryBanks) {
 		if (banks->isAiClassDirty()) {
-			banks->setAiClass(banks->getInitalAI());
+			banks->setAiClass(banks->getInitialAI());
 		}
 	}
 	for (Banks* banks : SecondaryBanks) {
 		if (banks->isAiClassDirty()) {
-			banks->setAiClass(banks->getInitalAI());
+			banks->setAiClass(banks->getInitialAI());
 		}
 	}
 }
@@ -585,9 +584,5 @@ void ShipWeaponsDialogModel::notifyChanged()
 	set_modified();
 	modelChanged();
 }
-/* void ShipWeaponsDialogModel::initTertiary(int inst, bool first) {
-
-}
-*/
 } // namespace dialogs
 } // namespace fso::fred
