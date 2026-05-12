@@ -386,12 +386,16 @@ void WaypointEditorDialogModel::selectWaypointPathByIndex(int idx) {
 	if (idx < 0 || idx >= static_cast<int>(Waypoint_lists.size()))
 		return;
 
+	// Prevent rebuilding the dialog for each waypoint as we mark them
+	_suppressRefresh = true;
 	_editor->unmark_all();
 	for (auto* ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
 		if (ptr->type == OBJ_WAYPOINT && calc_waypoint_list_index(ptr->instance) == idx) {
 			_editor->markObject(OBJ_INDEX(ptr));
 		}
 	}
+	_suppressRefresh = false;
+	initializeData();
 }
 
 void WaypointEditorDialogModel::selectNextPath() {
