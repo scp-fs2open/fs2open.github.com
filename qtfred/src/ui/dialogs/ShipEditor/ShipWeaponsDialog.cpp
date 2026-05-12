@@ -9,8 +9,50 @@
 
 #include <QCloseEvent>
 #include <QHeaderView>
+#include <QSpinBox>
+#include <QStyledItemDelegate>
 
 namespace fso::fred::dialogs {
+
+namespace {
+// QStandardItem collapses Qt::EditRole into Qt::DisplayRole, so we can't have a formatted string
+// in DisplayRole alongside an int in EditRole. Use a custom role for the spinbox's value.
+constexpr int AmmoValueRole = Qt::UserRole + 7;
+
+QString formatAmmoDisplay(int current, int max)
+{
+	return QString::number(current) + "/" + QString::number(max);
+}
+
+class AmmoSpinBoxDelegate : public QStyledItemDelegate {
+  public:
+	using QStyledItemDelegate::QStyledItemDelegate;
+
+	QWidget* createEditor(QWidget* parent, const QStyleOptionViewItem& /*option*/,
+		const QModelIndex& index) const override
+	{
+		auto* editor = new QSpinBox(parent);
+		editor->setMinimum(0);
+		const QModelIndex col0 = index.sibling(index.row(), 0);
+		editor->setMaximum(col0.data(Qt::UserRole + 5).toInt());
+		editor->setFrame(false);
+		editor->setAutoFillBackground(true);
+		return editor;
+	}
+
+	void setEditorData(QWidget* editor, const QModelIndex& index) const override
+	{
+		static_cast<QSpinBox*>(editor)->setValue(index.data(AmmoValueRole).toInt());
+	}
+
+	void setModelData(QWidget* editor, QAbstractItemModel* model, const QModelIndex& index) const override
+	{
+		auto* spin = static_cast<QSpinBox*>(editor);
+		spin->interpretText();
+		model->setData(index, spin->value(), AmmoValueRole);
+	}
+};
+} // namespace
 
 ShipWeaponsDialog::ShipWeaponsDialog(QDialog* parent, EditorViewport* viewport, bool isMultiEdit)
 	: QDialog(parent), ui(new Ui::ShipWeaponsDialog()),
@@ -76,6 +118,7 @@ void ShipWeaponsDialog::initTab(TabState& tab, Mode mode)
 	tab.tree->expandAll();
 	tab.tree->setHeaderHidden(true);
 	tab.tree->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
+	tab.tree->setItemDelegateForColumn(1, new AmmoSpinBoxDelegate(this));
 
 	tab.aiCombo->clear();
 	for (int i = 0; i < Num_ai_classes; i++) {
@@ -93,6 +136,14 @@ void ShipWeaponsDialog::initTab(TabState& tab, Mode mode)
 		[this, &tab](int idx) { onAiComboChanged(tab, idx); });
 	connect(tab.bankModel, &QStandardItemModel::itemChanged, this,
 		[this, &tab](QStandardItem* item) { onBankItemChanged(tab, item); });
+	connect(tab.tree, &bankTree::weaponDroppedFromList, this,
+		[this, &tab](const QModelIndex& target, int weaponId) {
+			onWeaponDroppedFromList(tab, target, weaponId);
+		});
+	connect(tab.tree, &bankTree::weaponMoved, this,
+		[this, &tab](const QModelIndex& target, int weaponId, int sourceBanksId, int sourceBankId, bool isCopy) {
+			onWeaponMoved(tab, target, weaponId, sourceBanksId, sourceBankId, isCopy);
+		});
 
 	const auto banks = banksForMode(mode);
 	const int tabIndex = (mode == Primary) ? 0 : 1;
@@ -155,16 +206,26 @@ void ShipWeaponsDialog::loadBankModel(TabState& tab)
 			weaponItem->setData(bank->getBankId(), Qt::UserRole + 3);
 			weaponItem->setData(bank->getAmmo(), Qt::UserRole + 4);
 			weaponItem->setData(bank->getMaxAmmo(), Qt::UserRole + 5);
-			weaponItem->setFlags(weaponItem->flags() & ~Qt::ItemIsEditable);
+			Qt::ItemFlags weaponFlags = weaponItem->flags() & ~Qt::ItemIsEditable;
+			// Only slots that have a real weapon can be dragged out.
+			if (bank->getWeaponId() >= 0) {
+				weaponFlags |= Qt::ItemIsDragEnabled;
+			} else {
+				weaponFlags &= ~Qt::ItemIsDragEnabled;
+			}
+			weaponItem->setFlags(weaponFlags);
 
 			auto ammoItem = new QStandardItem();
+			Qt::ItemFlags ammoFlags = Qt::ItemIsSelectable | Qt::ItemIsEnabled;
 			if (bank->getMaxAmmo() > 0) {
-				ammoItem->setData(bank->getAmmo(), Qt::DisplayRole);
-				ammoItem->setData(bank->getAmmo(), Qt::EditRole);
-				ammoItem->setFlags(ammoItem->flags() | Qt::ItemIsEditable);
+				ammoItem->setData(formatAmmoDisplay(bank->getAmmo(), bank->getMaxAmmo()), Qt::DisplayRole);
+				ammoItem->setData(bank->getAmmo(), AmmoValueRole);
+				ammoFlags |= Qt::ItemIsEditable;
 			} else {
-				ammoItem->setFlags(Qt::NoItemFlags);
+				ammoItem->setData(QString(), Qt::DisplayRole);
+				ammoItem->setData(QVariant(), AmmoValueRole);
 			}
+			ammoItem->setFlags(ammoFlags);
 			nameItem->appendRow({weaponItem, ammoItem});
 		}
 	}
@@ -388,20 +449,30 @@ void ShipWeaponsDialog::refreshBankItem(TabState& tab, const QModelIndex& idx)
 	tab.bankModel->setData(col0, bank->getWeaponId(), Qt::UserRole);
 	tab.bankModel->setData(col0, bank->getAmmo(), Qt::UserRole + 4);
 	tab.bankModel->setData(col0, bank->getMaxAmmo(), Qt::UserRole + 5);
+	if (QStandardItem* weaponItem = tab.bankModel->itemFromIndex(col0)) {
+		Qt::ItemFlags f = weaponItem->flags();
+		if (bank->getWeaponId() >= 0) {
+			f |= Qt::ItemIsDragEnabled;
+		} else {
+			f &= ~Qt::ItemIsDragEnabled;
+		}
+		weaponItem->setFlags(f);
+	}
 
 	const QModelIndex col1 = idx.sibling(idx.row(), 1);
 	if (col1.isValid()) {
 		QStandardItem* ammoItem = tab.bankModel->itemFromIndex(col1);
 		if (ammoItem != nullptr) {
+			Qt::ItemFlags ammoFlags = Qt::ItemIsSelectable | Qt::ItemIsEnabled;
 			if (bank->getMaxAmmo() > 0) {
-				ammoItem->setData(bank->getAmmo(), Qt::DisplayRole);
-				ammoItem->setData(bank->getAmmo(), Qt::EditRole);
-				ammoItem->setFlags(ammoItem->flags() | Qt::ItemIsEditable | Qt::ItemIsSelectable | Qt::ItemIsEnabled);
+				ammoItem->setData(formatAmmoDisplay(bank->getAmmo(), bank->getMaxAmmo()), Qt::DisplayRole);
+				ammoItem->setData(bank->getAmmo(), AmmoValueRole);
+				ammoFlags |= Qt::ItemIsEditable;
 			} else {
-				ammoItem->setData(QVariant(), Qt::DisplayRole);
-				ammoItem->setData(QVariant(), Qt::EditRole);
-				ammoItem->setFlags(Qt::NoItemFlags);
+				ammoItem->setData(QString(), Qt::DisplayRole);
+				ammoItem->setData(QVariant(), AmmoValueRole);
 			}
+			ammoItem->setFlags(ammoFlags);
 		}
 	}
 	tab.internalUpdate = false;
@@ -424,7 +495,7 @@ void ShipWeaponsDialog::onBankItemChanged(TabState& tab, QStandardItem* item)
 		return;
 	}
 	bool ok = false;
-	int requested = item->data(Qt::EditRole).toInt(&ok);
+	int requested = item->data(AmmoValueRole).toInt(&ok);
 	if (!ok) {
 		requested = bank->getAmmo();
 	}
@@ -436,9 +507,83 @@ void ShipWeaponsDialog::onBankItemChanged(TabState& tab, QStandardItem* item)
 	// Always write back the canonical value. This covers the case where the user typed an out-of-range
 	// number and our clamp differs from what they entered.
 	tab.internalUpdate = true;
-	item->setData(clamped, Qt::DisplayRole);
-	item->setData(clamped, Qt::EditRole);
+	item->setData(formatAmmoDisplay(clamped, bank->getMaxAmmo()), Qt::DisplayRole);
+	item->setData(clamped, AmmoValueRole);
 	tab.internalUpdate = false;
+}
+
+void ShipWeaponsDialog::onWeaponDroppedFromList(TabState& tab, const QModelIndex& target, int weaponId)
+{
+	Bank* bank = bankForIndex(tab, target);
+	if (bank == nullptr) {
+		return;
+	}
+	if (bank->getWeaponId() == weaponId) {
+		return;
+	}
+	bank->setWeapon(weaponId);
+	refreshBankItem(tab, target);
+	_model->notifyChanged();
+}
+
+void ShipWeaponsDialog::onWeaponMoved(TabState& tab, const QModelIndex& target, int weaponId,
+	int sourceBanksId, int sourceBankId, bool isCopy)
+{
+	Bank* targetBank = bankForIndex(tab, target);
+	if (targetBank == nullptr) {
+		return;
+	}
+
+	Bank* sourceBank = nullptr;
+	for (Banks* banks : banksForMode(tab.mode)) {
+		if (banks->getId() != sourceBanksId) {
+			continue;
+		}
+		for (Bank* b : banks->getBanks()) {
+			if (b->getBankId() == sourceBankId) {
+				sourceBank = b;
+				break;
+			}
+		}
+		break;
+	}
+	if (sourceBank == nullptr || sourceBank == targetBank) {
+		return;
+	}
+
+	targetBank->setWeapon(weaponId);
+	if (!isCopy) {
+		sourceBank->setWeapon(-1);
+	}
+
+	refreshBankItem(tab, target);
+	const QModelIndex sourceIdx = indexForBank(tab, sourceBanksId, sourceBankId);
+	if (sourceIdx.isValid()) {
+		refreshBankItem(tab, sourceIdx);
+	}
+	_model->notifyChanged();
+}
+
+QModelIndex ShipWeaponsDialog::indexForBank(const TabState& tab, int banksId, int bankId) const
+{
+	if (tab.bankModel == nullptr) {
+		return {};
+	}
+	const int topRows = tab.bankModel->rowCount();
+	for (int i = 0; i < topRows; i++) {
+		const QModelIndex parent = tab.bankModel->index(i, 0);
+		if (parent.data(Qt::UserRole + 3).toInt() != banksId) {
+			continue;
+		}
+		const int childRows = tab.bankModel->rowCount(parent);
+		for (int j = 0; j < childRows; j++) {
+			const QModelIndex child = tab.bankModel->index(j, 0, parent);
+			if (child.data(Qt::UserRole + 3).toInt() == bankId) {
+				return child;
+			}
+		}
+	}
+	return {};
 }
 
 } // namespace fso::fred::dialogs

@@ -109,7 +109,7 @@
                <enum>QAbstractScrollArea::AdjustToContentsOnFirstShow</enum>
               </property>
               <property name="dragDropMode">
-               <enum>QAbstractItemView::DropOnly</enum>
+               <enum>QAbstractItemView::DragDrop</enum>
               </property>
               <property name="selectionMode">
                <enum>QAbstractItemView::ExtendedSelection</enum>
@@ -244,7 +244,7 @@
                <enum>QAbstractScrollArea::AdjustToContentsOnFirstShow</enum>
               </property>
               <property name="dragDropMode">
-               <enum>QAbstractItemView::DropOnly</enum>
+               <enum>QAbstractItemView::DragDrop</enum>
               </property>
               <property name="selectionMode">
                <enum>QAbstractItemView::ExtendedSelection</enum>

@@ -207,22 +207,21 @@ void Bank::setWeapon(const int id)
 		ammo = 0;
 		return;
 	}
+	const int shipClass = Ships[parent->getShip()].ship_info_index;
 	if (Weapon_info[id].subtype == WP_LASER || Weapon_info[id].subtype == WP_BEAM) {
 		if (parent->getName() == "Pilot") {
-			ammoMax = get_max_ammo_count_for_primary_bank(parent->getShip(), bankId, id);
+			ammoMax = get_max_ammo_count_for_primary_bank(shipClass, bankId, id);
 		} else {
 			ammoMax = get_max_ammo_count_for_primary_turret_bank(&parent->getSubsys()->weapons, bankId, id);
 		}
 	} else {
 		if (parent->getName() == "Pilot") {
-			ammoMax = get_max_ammo_count_for_bank(parent->getShip(), bankId, id);
+			ammoMax = get_max_ammo_count_for_bank(shipClass, bankId, id);
 		} else {
 			ammoMax = get_max_ammo_count_for_turret_bank(&parent->getSubsys()->weapons, bankId, id);
 		}
 	}
-	if (ammo > ammoMax) {
-		ammo = ammoMax;
-	}
+	ammo = ammoMax;
 }
 void Bank::setAmmo(const int newAmmo)
 {
@@ -275,29 +274,39 @@ void ShipWeaponsDialogModel::initPrimary(int inst, bool first)
 	id++;
 	if (first) {
 		auto pilot = Ships[inst].weapons;
-		for (int i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++) {
-			if (pilot.primary_bank_weapons[i] >= 0) {
-				const int maxAmmo =
-					get_max_ammo_count_for_primary_bank(Ships[inst].ship_info_index, i, pilot.primary_bank_weapons[i]);
-				const int ammo = fl2ir(pilot.primary_bank_ammo[i] * maxAmmo / 100.0f);
-				pilotBank->add(new Bank(pilot.primary_bank_weapons[i], i, maxAmmo, ammo, pilotBank));
+		const int shipClass = Ships[inst].ship_info_index;
+		const int numPilotBanks = Ship_info[shipClass].num_primary_banks;
+		for (int i = 0; i < numPilotBanks; i++) {
+			const int weaponId = pilot.primary_bank_weapons[i];
+			int maxAmmo = 0;
+			int ammo = 0;
+			if (weaponId >= 0) {
+				maxAmmo = get_max_ammo_count_for_primary_bank(shipClass, i, weaponId);
+				ammo = fl2ir(pilot.primary_bank_ammo[i] * maxAmmo / 100.0f);
 			}
+			pilotBank->add(new Bank(weaponId, i, maxAmmo, ammo, pilotBank));
 		}
-		PrimaryBanks.push_back(pilotBank);
+		if (!pilotBank->empty()) {
+			PrimaryBanks.push_back(pilotBank);
+		} else {
+			delete pilotBank;
+		}
 		ship_subsys* ssl = &Ships[inst].subsys_list;
 		ship_subsys* pss;
 		for (pss = GET_FIRST(ssl); pss != END_OF_LIST(ssl); pss = GET_NEXT(pss)) {
 			model_subsystem* psub = pss->system_info;
 			if (psub->type == SUBSYSTEM_TURRET) {
 				auto turretBank = new Banks(psub->subobj_name, pss->weapons.ai_class, inst, m_isMultiEdit,id, pss);
-				for (int i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++) {
-					if (pss->weapons.primary_bank_weapons[i] >= 0) {
-						const int maxAmmo = get_max_ammo_count_for_primary_turret_bank(&pss->weapons,
-							i,
-							pss->weapons.primary_bank_weapons[i]);
-						const int ammo = fl2ir(pss->weapons.primary_bank_ammo[i] * maxAmmo / 100.0f);
-						turretBank->add(new Bank(pss->weapons.primary_bank_weapons[i], i, maxAmmo, ammo, turretBank));
+				const int numTurretBanks = pss->weapons.num_primary_banks;
+				for (int i = 0; i < numTurretBanks; i++) {
+					const int weaponId = pss->weapons.primary_bank_weapons[i];
+					int maxAmmo = 0;
+					int ammo = 0;
+					if (weaponId >= 0) {
+						maxAmmo = get_max_ammo_count_for_primary_turret_bank(&pss->weapons, i, weaponId);
+						ammo = fl2ir(pss->weapons.primary_bank_ammo[i] * maxAmmo / 100.0f);
 					}
+					turretBank->add(new Bank(weaponId, i, maxAmmo, ammo, turretBank));
 				}
 				if (!turretBank->empty()) {
 					PrimaryBanks.push_back(turretBank);
@@ -345,29 +354,39 @@ void ShipWeaponsDialogModel::initSecondary(int inst, bool first)
 	id++;
 	if (first) {
 		auto pilot = Ships[inst].weapons;
-		for (int i = 0; i < MAX_SHIP_SECONDARY_BANKS; i++) {
-			if (pilot.secondary_bank_weapons[i] >= 0) {
-				const int maxAmmo =
-					get_max_ammo_count_for_bank(Ships[inst].ship_info_index, i, pilot.secondary_bank_weapons[i]);
-				const int ammo = fl2ir(pilot.secondary_bank_ammo[i] * maxAmmo / 100.0f);
-				pilotBank->add(new Bank(pilot.secondary_bank_weapons[i], i, maxAmmo, ammo, pilotBank));
+		const int shipClass = Ships[inst].ship_info_index;
+		const int numPilotBanks = Ship_info[shipClass].num_secondary_banks;
+		for (int i = 0; i < numPilotBanks; i++) {
+			const int weaponId = pilot.secondary_bank_weapons[i];
+			int maxAmmo = 0;
+			int ammo = 0;
+			if (weaponId >= 0) {
+				maxAmmo = get_max_ammo_count_for_bank(shipClass, i, weaponId);
+				ammo = fl2ir(pilot.secondary_bank_ammo[i] * maxAmmo / 100.0f);
 			}
+			pilotBank->add(new Bank(weaponId, i, maxAmmo, ammo, pilotBank));
 		}
-		SecondaryBanks.push_back(pilotBank);
+		if (!pilotBank->empty()) {
+			SecondaryBanks.push_back(pilotBank);
+		} else {
+			delete pilotBank;
+		}
 		ship_subsys* ssl = &Ships[inst].subsys_list;
 		ship_subsys* pss;
 		for (pss = GET_FIRST(ssl); pss != END_OF_LIST(ssl); pss = GET_NEXT(pss)) {
 			model_subsystem* psub = pss->system_info;
 			if (psub->type == SUBSYSTEM_TURRET) {
 				auto turretBank = new Banks(psub->subobj_name, pss->weapons.ai_class, inst, m_isMultiEdit,id, pss);
-				for (int i = 0; i < MAX_SHIP_SECONDARY_BANKS; i++) {
-					if (pss->weapons.secondary_bank_weapons[i] >= 0) {
-						const int maxAmmo = get_max_ammo_count_for_turret_bank(&pss->weapons,
-							i,
-							pss->weapons.secondary_bank_weapons[i]);
-						const int ammo = fl2ir(pss->weapons.secondary_bank_ammo[i] * maxAmmo / 100.0f);
-						turretBank->add(new Bank(pss->weapons.secondary_bank_weapons[i], i, maxAmmo, ammo, turretBank));
+				const int numTurretBanks = pss->weapons.num_secondary_banks;
+				for (int i = 0; i < numTurretBanks; i++) {
+					const int weaponId = pss->weapons.secondary_bank_weapons[i];
+					int maxAmmo = 0;
+					int ammo = 0;
+					if (weaponId >= 0) {
+						maxAmmo = get_max_ammo_count_for_turret_bank(&pss->weapons, i, weaponId);
+						ammo = fl2ir(pss->weapons.secondary_bank_ammo[i] * maxAmmo / 100.0f);
 					}
+					turretBank->add(new Bank(weaponId, i, maxAmmo, ammo, turretBank));
 				}
 				if (!turretBank->empty()) {
 					SecondaryBanks.push_back(turretBank);

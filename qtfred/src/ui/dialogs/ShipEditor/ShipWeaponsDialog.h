@@ -64,6 +64,11 @@ class ShipWeaponsDialog : public QDialog {
 	void onTblButtonClicked(TabState& tab);
 	void onAiComboChanged(TabState& tab, int index);
 	void onBankItemChanged(TabState& tab, QStandardItem* item);
+	void onWeaponDroppedFromList(TabState& tab, const QModelIndex& target, int weaponId);
+	void onWeaponMoved(TabState& tab, const QModelIndex& target, int weaponId, int sourceBanksId,
+		int sourceBankId, bool isCopy);
+
+	QModelIndex indexForBank(const TabState& tab, int banksId, int bankId) const;
 
 	Bank* bankForIndex(const TabState& tab, const QModelIndex& idx) const;
 	Banks* banksForIndex(const TabState& tab, const QModelIndex& idx) const;
