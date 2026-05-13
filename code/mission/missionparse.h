@@ -15,6 +15,7 @@
 
 #include "ai/ai.h"
 #include "ai/ai_profiles.h"
+#include "coordinate_points/coordinate_point_flags.h"
 #include "globalincs/version.h"
 #include "graphics/2d.h"
 #include "io/keycontrol.h"
@@ -338,6 +339,10 @@ extern flag_def_list_new<Mission::Parse_Object_Flags> Parse_prop_flags[];
 extern parse_object_flag_description<Mission::Parse_Object_Flags> Parse_prop_flag_descriptions[];
 extern const size_t Num_parse_prop_flags;
 extern const size_t Num_parse_prop_flag_descriptions;
+extern flag_def_list_new<CoordinatePoint::Flags> Parse_coordinate_point_flags[];
+extern parse_object_flag_description<CoordinatePoint::Flags> Parse_coordinate_point_flag_descriptions[];
+extern const size_t Num_parse_coordinate_point_flags;
+extern const size_t Num_parse_coordinate_point_flag_descriptions;
 extern const char *Icon_names[];
 extern const char *Mission_event_log_flags[];
 

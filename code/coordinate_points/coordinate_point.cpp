@@ -91,6 +91,10 @@ int coordinate_point_create(const vec3d* pos, const char* name)
 
 	flagset<Object::Object_Flags> flags;
 	flags.set(Object::Object_Flags::Renders);
+	// Coordinate points have no meaningful orientation; mark that explicitly so any future
+	// physics/rotation code shortcuts cleanly. Position is left mutable so SEXPs and Lua
+	// can relocate the point at runtime.
+	flags.set(Object::Object_Flags::Dont_change_orientation);
 	int objnum = obj_create(OBJ_COORDINATE_POINT, -1, -1, nullptr, pos, COORDINATE_POINT_DEFAULT_RADIUS, flags);
 	if (objnum < 0) {
 		return -1;
@@ -164,6 +168,7 @@ void post_process_mission_coordinate_points()
 		cp->shape           = parsed.shape;
 		cp->size_scale      = parsed.size_scale;
 		cp->escort_priority = parsed.escort_priority;
+		cp->flags           = parsed.flags;
 	}
 
 	Parse_coordinate_points.clear();

@@ -90,6 +90,32 @@ ADE_VIRTVAR(EscortPriority,
 	return ade_set_args(L, "i", cp->escort_priority);
 }
 
+ADE_VIRTVAR(VisibleInMission,
+	l_CoordinatePoint,
+	"boolean",
+	"Whether this coordinate point's shape renders in-game (not just in the editor). Allows the player to target it with the target-in-front reticle. Defaults to false.",
+	"boolean",
+	"true if visible in mission, false otherwise (also false if handle is invalid)")
+{
+	object_h* objh;
+	bool val = false;
+	if (!ade_get_args(L, "o|b", l_CoordinatePoint.GetPtr(&objh), &val))
+		return ADE_RETURN_FALSE;
+
+	if (!objh->isValid() || objh->objp()->type != OBJ_COORDINATE_POINT)
+		return ADE_RETURN_FALSE;
+
+	auto* cp = find_coordinate_point_by_objnum(objh->objnum);
+	if (cp == nullptr)
+		return ADE_RETURN_FALSE;
+
+	if (ADE_SETTING_VAR) {
+		cp->flags.set(CoordinatePoint::Flags::Visible_in_mission, val);
+	}
+
+	return ade_set_args(L, "b", cp->flags[CoordinatePoint::Flags::Visible_in_mission]);
+}
+
 ADE_FUNC(addToEscortList, l_CoordinatePoint, nullptr,
 	"Adds this coordinate point to the player's escort list. Requires EscortPriority > 0; otherwise a no-op.",
 	"boolean",

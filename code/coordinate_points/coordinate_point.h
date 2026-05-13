@@ -1,5 +1,6 @@
 #pragma once
 
+#include "coordinate_points/coordinate_point_flags.h"
 #include "globalincs/pstypes.h"
 #include "graphics/2d.h"
 
@@ -29,6 +30,7 @@ struct mission_coordinate_point
 	CoordinatePointShape shape = CoordinatePointShape::Triangle;
 	float      size_scale = 1.0f;
 	int        escort_priority = 0;      // 0 = not on escort list; >0 = on the list (and sort key)
+	flagset<CoordinatePoint::Flags> flags;
 	int        objnum = -1;
 
 	mission_coordinate_point();
@@ -45,6 +47,7 @@ struct parsed_coordinate_point
 	CoordinatePointShape shape = CoordinatePointShape::Triangle;
 	float      size_scale = 1.0f;
 	int        escort_priority = 0;
+	flagset<CoordinatePoint::Flags> flags;
 
 	parsed_coordinate_point();
 };

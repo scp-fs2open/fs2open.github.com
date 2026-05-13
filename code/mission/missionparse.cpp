@@ -644,6 +644,17 @@ parse_object_flag_description<Mission::Parse_Object_Flags> Parse_prop_flag_descr
 const size_t Num_parse_prop_flags = sizeof(Parse_prop_flags) / sizeof(flag_def_list_new<Mission::Parse_Object_Flags>);
 const size_t Num_parse_prop_flag_descriptions = sizeof(Parse_prop_flag_descriptions) / sizeof(parse_object_flag_description<Mission::Parse_Object_Flags>);
 
+flag_def_list_new<CoordinatePoint::Flags> Parse_coordinate_point_flags[] = {
+    { "visible_in_mission",				CoordinatePoint::Flags::Visible_in_mission,				true, false },
+};
+
+parse_object_flag_description<CoordinatePoint::Flags> Parse_coordinate_point_flag_descriptions[] = {
+    { CoordinatePoint::Flags::Visible_in_mission,					"Render the shape in-game so the player can see and target it, not just in the editor."},
+};
+
+const size_t Num_parse_coordinate_point_flags = sizeof(Parse_coordinate_point_flags) / sizeof(flag_def_list_new<CoordinatePoint::Flags>);
+const size_t Num_parse_coordinate_point_flag_descriptions = sizeof(Parse_coordinate_point_flag_descriptions) / sizeof(parse_object_flag_description<CoordinatePoint::Flags>);
+
 // These are only the flags that are saved to the mission file.  See the MEF_ #defines.
 flag_def_list Mission_event_flags[] = {
 	{ "interval & delay use msecs", MEF_USE_MSECS, 0 },
@@ -5484,6 +5495,16 @@ void parse_coordinate_point(mission* /*pm*/)
 		stuff_int(&cp.escort_priority);
 		if (cp.escort_priority < 0) {
 			cp.escort_priority = 0;
+		}
+	}
+
+	if (optional_string("+Flags:")) {
+		SCP_vector<SCP_string> unparsed;
+		parse_string_flag_list(cp.flags, Parse_coordinate_point_flags, Num_parse_coordinate_point_flags, &unparsed);
+		if (!unparsed.empty()) {
+			for (const auto& f : unparsed) {
+				WarningEx(LOCATION, "Unknown flag in coordinate point flags: %s", f.c_str());
+			}
 		}
 	}
 

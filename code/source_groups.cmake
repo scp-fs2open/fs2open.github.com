@@ -1247,6 +1247,7 @@ add_file_folder("Prop"
 add_file_folder("Coordinate Points"
 	coordinate_points/coordinate_point.cpp
 	coordinate_points/coordinate_point.h
+	coordinate_points/coordinate_point_flags.h
 )
 
 # Radar files

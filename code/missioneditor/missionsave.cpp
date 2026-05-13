@@ -5510,6 +5510,22 @@ int Fred_mission_save::save_coordinate_points()
 			fout(" %d", cp.escort_priority);
 		}
 
+		if (cp.flags.any_set()) {
+			if (optional_string_fred("+Flags:", "$Name:")) {
+				parse_comments();
+				fout(" (");
+			} else {
+				fout("\n+Flags: (");
+			}
+			for (size_t fi = 0; fi < Num_parse_coordinate_point_flags; ++fi) {
+				const auto& def = Parse_coordinate_point_flags[fi];
+				if (cp.flags[def.def]) {
+					fout(" \"%s\"", def.name);
+				}
+			}
+			fout(" )");
+		}
+
 		fso_comment_pop();
 	}
 
