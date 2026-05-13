@@ -1061,7 +1061,7 @@ void FredView::onUpdateContextToolbar() {
 			});
 			_contextToolBar->addAction(selWingAct);
 		}
-	} else if (effectiveType == OBJ_WAYPOINT && (numMarked <= 1 || multiSharedWaypointList != nullptr)) {
+	} else if (effectiveType == OBJ_WAYPOINT) {
 		addBtn(tr("Edit Waypoint Path"),   &FredView::on_actionWaypoint_Paths_triggered);
 	} else if (numMarked <= 1 && effectiveType == OBJ_JUMP_NODE) {
 		addBtn(tr("Edit Jump Node"),       &FredView::on_actionJump_Nodes_triggered);
