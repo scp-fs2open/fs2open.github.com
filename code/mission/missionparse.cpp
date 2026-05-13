@@ -66,6 +66,7 @@
 #include "parse/parselo.h"
 #include "parse/sexp_container.h"
 #include "prop/prop.h"
+#include "coordinate_points/coordinate_point.h"
 #include "scripting/global_hooks.h"
 #include "scripting/hook_api.h"
 #include "scripting/hook_conditions.h"
@@ -5435,8 +5436,65 @@ void parse_wings(mission* pm)
 void parse_props(mission* pm)
 {
 	if (optional_string("#Props")) {
-		while (required_string_either("#Events", "$Name:")) {
+		while (true) {
+			int which = required_string_one_of(3, "#Coordinate Points", "#Events", "$Name:");
+			if (which == -1 || which == 0 || which == 1) {  // #Coordinate Points or #Events
+				break;
+			}
 			parse_prop(pm);
+		}
+	}
+}
+
+void parse_coordinate_point(mission* /*pm*/)
+{
+	parsed_coordinate_point cp;
+
+	required_string("$Name:");
+	stuff_string(cp.name, F_NAME);
+
+	required_string("$Location:");
+	stuff_vec3d(&cp.position);
+
+	if (optional_string("+Category:")) {
+		stuff_string(cp.category, F_NAME);
+	}
+
+	if (optional_string("+Color:")) {
+		int rgb[3] = { 255, 255, 255 };
+		stuff_int_list(rgb, 3, ParseLookupType::RAW_INTEGER_TYPE);
+		for (int& c : rgb) {
+			CLAMP(c, 0, 255);
+		}
+		gr_init_alphacolor(&cp.display_color, rgb[0], rgb[1], rgb[2], 255);
+	}
+
+	if (optional_string("+Shape:")) {
+		SCP_string shape_name;
+		stuff_string(shape_name, F_NAME);
+		cp.shape = coordinate_point_shape_from_string(shape_name.c_str());
+	}
+
+	if (optional_string("+Size:")) {
+		stuff_float(&cp.size_scale);
+		CLAMP(cp.size_scale, COORDINATE_POINT_SIZE_MIN, COORDINATE_POINT_SIZE_MAX);
+	}
+
+	if (optional_string("+Escort Priority:")) {
+		stuff_int(&cp.escort_priority);
+		if (cp.escort_priority < 0) {
+			cp.escort_priority = 0;
+		}
+	}
+
+	Parse_coordinate_points.emplace_back(std::move(cp));
+}
+
+void parse_coordinate_points(mission* pm)
+{
+	if (optional_string("#Coordinate Points")) {
+		while (required_string_either("#Events", "$Name:")) {
+			parse_coordinate_point(pm);
 		}
 	}
 }
@@ -6921,6 +6979,7 @@ bool parse_mission(mission *pm, int flags)
 	parse_objects(pm, flags);
 	parse_wings(pm);
 	parse_props(pm);
+	parse_coordinate_points(pm);
 	parse_events(pm);
 	parse_goals(pm);
 	parse_waypoints_and_jumpnodes(pm);
@@ -7011,6 +7070,7 @@ bool post_process_mission(mission *pm)
 	ship_obj *so;
 
 	post_process_mission_props();
+	post_process_mission_coordinate_points();
 
 	// Goober5000 - this must be done even before post_process_ships_wings because it is a prerequisite
 	ship_clear_ship_type_counts();
@@ -7482,6 +7542,7 @@ void mission_init(mission *pm, bool quick_init)
 	jumpnode_level_close();
 	waypoint_level_close();
 	props_level_close();
+	coordinate_points_level_close();
 
 	red_alert_invalidate_timestamp();
 	event_music_reset_choices();
@@ -7514,6 +7575,7 @@ void mission_init(mission *pm, bool quick_init)
 	Reinforcements.clear();
 
 	Parse_props.clear();
+	Parse_coordinate_points.clear();
 
 	Asteroid_field.num_initial_asteroids = 0;
 

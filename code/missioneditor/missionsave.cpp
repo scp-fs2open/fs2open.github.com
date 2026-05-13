@@ -43,6 +43,7 @@
 #include "parse/sexp.h"
 #include "parse/sexp_container.h"
 #include "prop/prop.h"
+#include "coordinate_points/coordinate_point.h"
 #include "sound/ds.h"
 #include "sound/sound.h"
 #include "starfield/nebula.h"
@@ -3232,6 +3233,8 @@ void Fred_mission_save::save_mission_internal(const char* pathname)
 		err = -8;
 	} else if (save_props()) {
 		err = -18;
+	} else if (save_coordinate_points()) {
+		err = -19;
 	} else if (save_events()) {
 		err = -9;
 	} else if (save_goals()) {
@@ -5422,6 +5425,92 @@ int Fred_mission_save::save_props()
 				fso_comment_pop();
 			}
 		}
+	}
+
+	fso_comment_pop(true);
+	return err;
+}
+
+int Fred_mission_save::save_coordinate_points()
+{
+	if (save_config.save_format == MissionFormat::RETAIL || Coordinate_points.empty()) {
+		return err;
+	}
+
+	fred_parse_flag = 0;
+	size_t count = 0;
+
+	if (optional_string_fred("#Coordinate Points", "#End")) {
+		parse_comments(2);
+	} else {
+		fout("\n\n#Coordinate Points");
+	}
+	fout("\t\t;! " SIZE_T_ARG " total\n", Coordinate_points.size());
+
+	for (const auto& cp : Coordinate_points) {
+		if (cp.objnum < 0) {
+			continue;
+		}
+
+		required_string_either_fred("$Name:", "#Events");
+		required_string_fred("$Name:");
+		parse_comments(count ? 2 : 1);
+		fout(" %s", cp.name.c_str());
+
+		count++;
+
+		required_string_fred("\n$Location:");
+		parse_comments(0);
+		save_vector(Objects[cp.objnum].pos);
+
+		if (!cp.category.empty()) {
+			if (optional_string_fred("+Category:", "$Name:")) {
+				parse_comments();
+			} else {
+				fout("\n+Category:");
+			}
+			fout(" %s", cp.category.c_str());
+		}
+
+		const bool color_is_default =
+			(cp.display_color.red == 255 && cp.display_color.green == 255 && cp.display_color.blue == 255);
+		if (!color_is_default) {
+			if (optional_string_fred("+Color:", "$Name:")) {
+				parse_comments();
+			} else {
+				fout("\n+Color:");
+			}
+			fout(" ( %d %d %d )", cp.display_color.red, cp.display_color.green, cp.display_color.blue);
+		}
+
+		if (cp.shape != CoordinatePointShape::Triangle) {
+			if (optional_string_fred("+Shape:", "$Name:")) {
+				parse_comments();
+			} else {
+				fout("\n+Shape:");
+			}
+			fout(" %s", coordinate_point_shape_to_string(cp.shape));
+		}
+
+		if (cp.size_scale != 1.0f) {
+			if (optional_string_fred("+Size:", "$Name:")) {
+				parse_comments();
+			} else {
+				fout("\n+Size:");
+			}
+			fout(" %f", cp.size_scale);
+		}
+
+		if (cp.escort_priority > 0) {
+			if (optional_string_fred("+Escort Priority:", "$Name:")) {
+				parse_comments();
+			} else {
+				fout("\n+Escort Priority:");
+			}
+			fout(" %d", cp.escort_priority);
+		}
+
+		fso_comment_pop();
 	}
 
 	fso_comment_pop(true);

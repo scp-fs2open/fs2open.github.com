@@ -93,6 +93,8 @@ class Editor : public QObject {
 
 	int create_waypoint(vec3d* pos, int waypoint_instance);
 
+	int create_coordinate_point(vec3d* pos);
+
 	bool query_ship_name_duplicate(int ship);
 
 	void fix_ship_name(int ship);

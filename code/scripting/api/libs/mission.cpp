@@ -37,6 +37,7 @@
 #include "parse/sexp/sexp_lookup.h"
 #include "playerman/player.h"
 #include "prop/prop.h"
+#include "coordinate_points/coordinate_point.h"
 #include "scripting/api/LuaPromise.h"
 #include "scripting/api/objs/LuaEnum.h"
 #include "scripting/api/objs/LuaSEXP.h"
@@ -65,6 +66,7 @@
 #include "scripting/api/objs/ship.h"
 #include "scripting/api/objs/shipclass.h"
 #include "scripting/api/objs/sound.h"
+#include "scripting/api/objs/coordinatepoint.h"
 #include "scripting/api/objs/support_rearm_pool.h"
 #include "scripting/api/objs/team.h"
 #include "scripting/api/objs/vecmath.h"
@@ -663,6 +665,51 @@ ADE_FUNC(__len, l_Mission_Props, nullptr,
 		 "Number of props in the mission, or 0 if props haven't been initialized yet")
 {
 	return ade_set_args(L, "i", object_subclass_count(Props));
+}
+
+//****SUBLIBRARY: Mission/CoordinatePoints
+ADE_LIB_DERIV(l_Mission_CoordinatePoints, "CoordinatePoints", nullptr, "Coordinate points in the mission", l_Mission);
+
+ADE_INDEXER(l_Mission_CoordinatePoints, "number/string IndexOrName", "Gets coordinate point by 1-based index or by name", "coordinatepoint", "Coordinate point handle, or invalid handle if the index or name was not found")
+{
+	const char* name;
+	if (!ade_get_args(L, "*s", &name))
+		return ade_set_error(L, "o", l_CoordinatePoint.Set(object_h()));
+
+	// Try name lookup first
+	auto* cp = find_coordinate_point_by_name(name);
+	if (cp != nullptr && cp->objnum >= 0) {
+		return ade_set_args(L, "o", l_CoordinatePoint.Set(object_h(cp->objnum)));
+	}
+
+	// Fall back to numeric index (1-based, Lua style)
+	char* end_ptr = nullptr;
+	long idx = strtol(name, &end_ptr, 10);
+	if (end_ptr != name && idx >= 1) {
+		long count = 0;
+		for (auto& entry : Coordinate_points) {
+			if (entry.objnum < 0)
+				continue;
+			if (++count == idx) {
+				return ade_set_args(L, "o", l_CoordinatePoint.Set(object_h(entry.objnum)));
+			}
+		}
+	}
+
+	return ade_set_error(L, "o", l_CoordinatePoint.Set(object_h()));
+}
+
+ADE_FUNC(__len, l_Mission_CoordinatePoints, nullptr,
+		 "Number of coordinate points in the mission.",
+		 "number",
+		 "Number of coordinate points in the mission")
+{
+	int count = 0;
+	for (const auto& cp : Coordinate_points) {
+		if (cp.objnum >= 0)
+			++count;
+	}
+	return ade_set_args(L, "i", count);
 }
 
 //****SUBLIBRARY: Mission/Waypoints

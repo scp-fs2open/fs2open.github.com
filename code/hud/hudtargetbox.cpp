@@ -19,6 +19,7 @@
 #include "hud/hudtargetbox.h"
 #include "iff_defs/iff_defs.h"
 #include "io/timer.h"
+#include "coordinate_points/coordinate_point.h"
 #include "jumpnode/jumpnode.h"
 #include "localization/localize.h"
 #include "mission/missionparse.h"
@@ -449,6 +450,10 @@ void HudGaugeTargetBox::render(float frametime, bool config)
 
 			case OBJ_JUMP_NODE:
 				renderTargetJumpNode(target_objp);
+				break;
+
+			case OBJ_COORDINATE_POINT:
+				renderTargetCoordinatePoint(target_objp);
 				break;
 
 			default:
@@ -1385,6 +1390,39 @@ void HudGaugeTargetBox::renderTargetJumpNode(object *target_objp)
 	}
 }
 
+void HudGaugeTargetBox::renderTargetCoordinatePoint(object *target_objp)
+{
+	auto* cp = find_coordinate_point_by_objnum(OBJ_INDEX(target_objp));
+	if (cp == nullptr) {
+		set_target_objnum(Player_ai, -1);
+		return;
+	}
+
+	// Coordinate points have no model and no integrity; just draw the frame, name, category, distance.
+	renderTargetForeground();
+	renderTargetIntegrity(1);
+	setGaugeColor();
+
+	renderString(position[0] + Name_offsets[0], position[1] + Name_offsets[1], EG_TBOX_NAME, cp->name.c_str());
+
+	if (!cp->category.empty()) {
+		renderString(position[0] + Class_offsets[0], position[1] + Class_offsets[1], EG_TBOX_CLASS, cp->category.c_str());
+	}
+
+	float dist = Player_ai->current_target_distance;
+	if (Hud_unit_multiplier > 0.0f) {
+		dist = dist * Hud_unit_multiplier;
+	}
+
+	char outstr[256];
+	sprintf(outstr, XSTR("d: %.0f", 340), dist);
+	hud_num_make_mono(outstr, font_num);
+
+	int w, h;
+	gr_get_string_size(&w, &h, outstr);
+	renderPrintfWithGauge(position[0] + Dist_offsets[0], position[1] + Dist_offsets[1], EG_TBOX_DIST, 1.0f, false, "%s", outstr);
+}
+
 /**
  * Toggle through the valid targetbox modes
  *
@@ -2124,6 +2162,7 @@ void HudGaugeTargetBox::showTargetData(float  /*frametime*/, bool config)
 			break;
 
 		case OBJ_JUMP_NODE:
+		case OBJ_COORDINATE_POINT:
 			return;
 
 		default:

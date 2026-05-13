@@ -1622,7 +1622,8 @@ enum class oswpt_type : uint8_t
 	WHOLE_TEAM,			// e.g. Friendly
 	PARSE_OBJECT,		// a "ship" that hasn't arrived yet
 	EXITED,
-	WING_NOT_PRESENT	// a wing that hasn't arrived yet or is between waves
+	WING_NOT_PRESENT,	// a wing that hasn't arrived yet or is between waves
+	COORDINATE_POINT	// a named point in space defined per-mission
 };
 
 namespace scripting {

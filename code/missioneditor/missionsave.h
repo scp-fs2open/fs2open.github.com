@@ -566,6 +566,8 @@ class Fred_mission_save {
 	 */
 	int save_props();
 
+	int save_coordinate_points();
+
 	/**
 	 * @brief Utility function to save a raw comment, the start of which precedes the current raw_ptr, to a file while
 	 * handling newlines properly

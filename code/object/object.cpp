@@ -142,7 +142,9 @@ const char *Object_type_names[MAX_OBJECT_TYPES] = {
 	"Asteroid",
 	"Jump Node",
 	"Beam",
-	"Raw Pof"
+	"Raw Pof",
+	"Prop",
+	"Coordinate Point"
 //XSTR:ON
 };
 
@@ -284,6 +286,7 @@ int free_object_slots(int target_num_used)
 				case OBJ_BEAM:
 				case OBJ_RAW_POF:
 				case OBJ_PROP:
+				case OBJ_COORDINATE_POINT:
 					break;
 				default:
 					Int3();	//	Hey, what kind of object is this?  Unknown!
@@ -768,6 +771,8 @@ void obj_delete(int objnum)
 	case OBJ_PROP:
 		prop_delete(objp);
 		break;
+	case OBJ_COORDINATE_POINT:
+		break;  // requires no further action, handled by coordinate_point_delete / level close.
 	case OBJ_NONE:
 		Int3();
 		break;
@@ -1279,6 +1284,8 @@ void obj_move_all_pre(object *objp, float frametime)
 		break;
 	case OBJ_PROP:
 		break;
+	case OBJ_COORDINATE_POINT:
+		break;  // coordinate points don't move.
 	case OBJ_NONE:
 		Int3();
 		break;
@@ -1543,6 +1550,9 @@ void obj_move_all_post(object *objp, float frametime)
 
 		case OBJ_PROP:
 			break;
+
+		case OBJ_COORDINATE_POINT:
+			break;  // coordinate points don't move.
 
 		case OBJ_NONE:
 			Int3();
@@ -1965,6 +1975,9 @@ void obj_queue_render(object* obj, model_draw_list* scene)
 	case OBJ_PROP:
 		prop_render(obj, scene);
 		break;
+	case OBJ_COORDINATE_POINT:
+		// Coordinate Points never render in-game; the editor draws them via its own pass.
+		break;
 	default:
 		Error( LOCATION, "Unhandled obj type %d in obj_render", obj->type );
 	}
@@ -2068,10 +2081,11 @@ int obj_team(object *objp)
 		case OBJ_START:
 		case OBJ_NONE:
 		case OBJ_GHOST:
-		case OBJ_SHOCKWAVE:		
+		case OBJ_SHOCKWAVE:
 		case OBJ_BEAM:
 		case OBJ_RAW_POF:
 		case OBJ_PROP:
+		case OBJ_COORDINATE_POINT:
 			team = -1;
 			break;
 

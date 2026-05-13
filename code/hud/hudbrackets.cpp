@@ -15,6 +15,7 @@
 #include "hud/hudbrackets.h"
 #include "hud/hudtarget.h"
 #include "iff_defs/iff_defs.h"
+#include "coordinate_points/coordinate_point.h"
 #include "jumpnode/jumpnode.h"
 #include "mission/missionparse.h"
 #include "object/object.h"
@@ -455,6 +456,17 @@ void HudGaugeBrackets::renderObjectBrackets(object *targetp, color *clr, int w_c
 			}
 			break;
 
+		case OBJ_COORDINATE_POINT:
+			{
+			// Coordinate points have no model; project the world position to screen and draw a small bracket.
+			vertex vtx;
+			g3_rotate_vertex(&vtx, &targetp->pos);
+			g3_project_vertex(&vtx);
+			x1 = x2 = (int)vtx.screen.xyw.x;
+			y1 = y2 = (int)vtx.screen.xyw.y;
+			}
+			break;
+
 		default:
 			Int3();	// should never happen
 			return;
@@ -470,7 +482,15 @@ void HudGaugeBrackets::renderObjectBrackets(object *targetp, color *clr, int w_c
 			Hud_target_h = gr_screen.clip_height;
 		}
 
-		if(clr->red && clr->green && clr->blue ) {
+		if (targetp->type == OBJ_COORDINATE_POINT) {
+			// Coordinate points always use their own display color, even if a component is zero.
+			auto* cp = find_coordinate_point_by_objnum(OBJ_INDEX(targetp));
+			if (cp != nullptr) {
+				gr_set_color_fast(&cp->display_color);
+			} else {
+				gr_set_color_fast(clr);
+			}
+		} else if(clr->red && clr->green && clr->blue ) {
 			gr_set_color_fast(clr);
 		} else {
 			// if no specific color defined, use the IFF color.
@@ -671,10 +691,20 @@ void HudGaugeBrackets::renderBoundingBrackets(int x1, int y1, int x2, int y2, in
 						tinfo_name = XSTR("debris", 348);
 				}
 				break;
-			case OBJ_JUMP_NODE:
+			case OBJ_JUMP_NODE: {
 				auto jnp = jumpnode_get_by_objnum(target_objnum);
 				tinfo_name = jnp ? jnp->GetDisplayName() : "";
 				break;
+			}
+			case OBJ_COORDINATE_POINT: {
+				auto* cp = find_coordinate_point_by_objnum(target_objnum);
+				if (cp != nullptr) {
+					tinfo_name = cp->name.c_str();
+					if (!cp->category.empty())
+						tinfo_class = cp->category.c_str();
+				}
+				break;
+			}
 		}
 
 		if(tinfo_name && (flags & TARGET_DISPLAY_NAME)) {

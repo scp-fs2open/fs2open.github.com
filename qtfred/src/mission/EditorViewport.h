@@ -27,6 +27,7 @@ enum class CreateKind {
 enum class OtherKind {
 	Waypoint,
 	JumpNode,
+	CoordinatePoint,
 };
 
 struct ViewSettings {

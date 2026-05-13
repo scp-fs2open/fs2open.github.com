@@ -22,6 +22,7 @@
 #include "scripting/api/objs/debris.h"
 #include "scripting/api/objs/object.h"
 #include "scripting/api/objs/ship.h"
+#include "scripting/api/objs/coordinatepoint.h"
 #include "scripting/api/objs/waypoint.h"
 #include "scripting/api/objs/weapon.h"
 #include "scripting/lua/LuaFunction.h"
@@ -997,6 +998,8 @@ ade_odata_setter<object_h> ade_object_to_odata(int obj_idx)
 		return l_Weapon.Set(object_h(objp));
 	case OBJ_BEAM:
 		return l_Beam.Set(object_h(objp));
+	case OBJ_COORDINATE_POINT:
+		return l_CoordinatePoint.Set(object_h(objp));
 	default:
 		return l_Object.Set(object_h(objp));
 	}

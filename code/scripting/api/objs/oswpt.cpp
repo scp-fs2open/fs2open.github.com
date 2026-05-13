@@ -1,9 +1,11 @@
 //
 //
 
+#include "object.h"
 #include "oswpt.h"
 #include "parse_object.h"
 #include "ship.h"
+#include "coordinatepoint.h"
 #include "team.h"
 #include "waypoint.h"
 #include "wing.h"
@@ -22,6 +24,7 @@ void scripting::internal::ade_serializable_external<object_ship_wing_point_team>
 	switch (oswpt.type) {
 	case oswpt_type::SHIP:
 	case oswpt_type::WAYPOINT:
+	case oswpt_type::COORDINATE_POINT:
 		ADD_USHORT(oswpt.objp()->net_signature);
 		break;
 	case oswpt_type::PARSE_OBJECT:
@@ -48,7 +51,8 @@ void scripting::internal::ade_serializable_external<object_ship_wing_point_team>
 	GET_DATA(oswpttype);
 	switch (static_cast<oswpt_type>(oswpttype)) {
 	case oswpt_type::SHIP:
-	case oswpt_type::WAYPOINT: {
+	case oswpt_type::WAYPOINT:
+	case oswpt_type::COORDINATE_POINT: {
 		ushort net_signature;
 		GET_USHORT(net_signature);
 		object_ship_wing_point_team oswpt;
@@ -108,6 +112,7 @@ void scripting::internal::ade_serializable_external<object_ship_wing_point_team>
 #define OSWPT_TYPE_PARSE_OBJECT		oswpt_type::PARSE_OBJECT
 #define OSWPT_TYPE_EXITED			oswpt_type::EXITED
 #define OSWPT_TYPE_WING_NOT_PRESENT	oswpt_type::WING_NOT_PRESENT
+#define OSWPT_TYPE_COORDINATE_POINT	oswpt_type::COORDINATE_POINT
 
 
 namespace scripting {
@@ -116,7 +121,7 @@ namespace api {
 //**********HANDLE: Wing
 ADE_OBJ(l_OSWPT, object_ship_wing_point_team, "oswpt", "Handle for LuaSEXP arguments that can hold different types (Object/Ship/Wing/Waypoint/Team)");
 
-ADE_FUNC(getType, l_OSWPT, nullptr, "The data-type this OSWPT yields on the get method.", "string", "The name of the data type. Either 'ship', 'parseobject' (a yet-to-spawn ship), 'wing' (can include yet-to-arrive wings with 0 current ships), 'team' (both explicit and ship-on-team), 'waypoint',  or 'none' (either explicitly specified, a ship that doesn't exist anymore, or invalid OSWPT object).")
+ADE_FUNC(getType, l_OSWPT, nullptr, "The data-type this OSWPT yields on the get method.", "string", "The name of the data type. Either 'ship', 'parseobject' (a yet-to-spawn ship), 'wing' (can include yet-to-arrive wings with 0 current ships), 'team' (both explicit and ship-on-team), 'waypoint', 'coordinatepoint',  or 'none' (either explicitly specified, a ship that doesn't exist anymore, or invalid OSWPT object).")
 {
 	object_ship_wing_point_team oswpt;
 	if (!ade_get_args(L, "o", l_OSWPT.Get(&oswpt)))
@@ -135,6 +140,8 @@ ADE_FUNC(getType, l_OSWPT, nullptr, "The data-type this OSWPT yields on the get 
 		return ade_set_args(L, "s", "team");
 	case OSWPT_TYPE_WAYPOINT:
 		return ade_set_args(L, "s", "waypoint");
+	case OSWPT_TYPE_COORDINATE_POINT:
+		return ade_set_args(L, "s", "coordinatepoint");
 	case OSWPT_TYPE_NONE:
 	case OSWPT_TYPE_EXITED:
 	default:
@@ -142,7 +149,7 @@ ADE_FUNC(getType, l_OSWPT, nullptr, "The data-type this OSWPT yields on the get 
 	}
 }
 
-ADE_FUNC(get, l_OSWPT, nullptr, "Returns the data held by this OSWPT.", "ship | parse_object | wing | team | waypoint | nil", "Returns the data held by this OSWPT, nil if type is 'none'.")
+ADE_FUNC(get, l_OSWPT, nullptr, "Returns the data held by this OSWPT.", "ship | parse_object | wing | team | waypoint | coordinatepoint | nil", "Returns the data held by this OSWPT, nil if type is 'none'.")
 {
 	object_ship_wing_point_team oswpt;
 	if (!ade_get_args(L, "o", l_OSWPT.Get(&oswpt)))
@@ -161,6 +168,8 @@ ADE_FUNC(get, l_OSWPT, nullptr, "Returns the data held by this OSWPT.", "ship | 
 		return ade_set_args(L, "o", l_Team.Set(oswpt.team));
 	case OSWPT_TYPE_WAYPOINT:
 		return ade_set_args(L, "o", l_Waypoint.Set(object_h(oswpt.objnum)));
+	case OSWPT_TYPE_COORDINATE_POINT:
+		return ade_set_args(L, "o", l_CoordinatePoint.Set(object_h(oswpt.objnum)));
 	case OSWPT_TYPE_NONE:
 	case OSWPT_TYPE_EXITED:
 	default:
@@ -215,12 +224,13 @@ ADE_FUNC(forAllShips, l_OSWPT, "function(ship ship) => void body", "Applies this
 	case OSWPT_TYPE_PARSE_OBJECT:
 	case OSWPT_TYPE_WING_NOT_PRESENT:
 	case OSWPT_TYPE_WAYPOINT:
+	case OSWPT_TYPE_COORDINATE_POINT:
 	case OSWPT_TYPE_NONE:
 	case OSWPT_TYPE_EXITED:
 	default:
 		break;
 	}
-	
+
 	return ADE_RETURN_NIL;
 }
 
@@ -273,6 +283,7 @@ ADE_FUNC(forAllParseObjects, l_OSWPT, "function(parse_object po) => void body", 
 	case OSWPT_TYPE_SHIP:
 	case OSWPT_TYPE_WING:
 	case OSWPT_TYPE_WAYPOINT:
+	case OSWPT_TYPE_COORDINATE_POINT:
 	case OSWPT_TYPE_NONE:
 	case OSWPT_TYPE_EXITED:
 	default:

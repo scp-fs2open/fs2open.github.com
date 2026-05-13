@@ -52,9 +52,10 @@
 #define OBJ_BEAM            15	// beam weapons. we have to roll them into the object system to get the benefits of the collision pairs
 #define OBJ_RAW_POF         16	// A raw pof file. has no physics, ai or anything. Currently only used in the Lab to render tech models
 #define OBJ_PROP            17  // A prop object like a landscape. Similar to ships but is entirely non-interactable with the exception of collisions
+#define OBJ_COORDINATE_POINT 18 // A named point in space; editor-only render. Referenced by SEXPs to read its coordinates.
 
 //Make sure to change Object_type_names in Object.c when adding another type!
-#define MAX_OBJECT_TYPES	17
+#define MAX_OBJECT_TYPES	19
 
 #define UNUSED_OBJNUM		(-MAX_OBJECTS*2)	//	Newer systems use this instead of -1 for invalid object.
 

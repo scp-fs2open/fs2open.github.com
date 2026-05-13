@@ -1243,6 +1243,12 @@ add_file_folder("Prop"
 	prop/prop_flags.h
 )
 
+# Coordinate Points files
+add_file_folder("Coordinate Points"
+	coordinate_points/coordinate_point.cpp
+	coordinate_points/coordinate_point.h
+)
+
 # Radar files
 add_file_folder("Radar"
 	radar/radar.cpp
@@ -1535,6 +1541,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/shipwepselect.h
 	scripting/api/objs/sound.cpp
 	scripting/api/objs/sound.h
+	scripting/api/objs/coordinatepoint.cpp
+	scripting/api/objs/coordinatepoint.h
 	scripting/api/objs/species.cpp
 	scripting/api/objs/species.h
 	scripting/api/objs/support_rearm_pool.cpp

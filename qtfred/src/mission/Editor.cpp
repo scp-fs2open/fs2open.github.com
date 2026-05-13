@@ -13,6 +13,7 @@
 #include <asteroid/asteroid.h>
 #include <jumpnode/jumpnode.h>
 #include <prop/prop.h>
+#include <coordinate_points/coordinate_point.h>
 #include <util.h>
 #include <mission/missionmessage.h>
 #include <missioneditor/common.h>
@@ -872,6 +873,14 @@ void Editor::unlockAllObjects() {
 }
 int Editor::create_waypoint(vec3d* pos, int waypoint_instance) {
 	int obj = waypoint_add(pos, waypoint_instance);
+
+	missionChanged();
+
+	return obj;
+}
+
+int Editor::create_coordinate_point(vec3d* pos) {
+	int obj = coordinate_point_create(pos);
 
 	missionChanged();
 

@@ -11,6 +11,7 @@
 
 
 
+#include "coordinate_points/coordinate_point.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
 #include "globalincs/linklist.h"
@@ -331,6 +332,36 @@ void HudGaugeEscort::renderIcon(int x, int y, int index, float scale, bool confi
 	object* objp = nullptr;
 	ship* sp = nullptr;
 
+	// Coordinate-point entries render very differently: name + category, no D, no hull bar.
+	if (!config && Objects[objnum].type == OBJ_COORDINATE_POINT) {
+		auto* cp = find_coordinate_point_by_objnum(objnum);
+		if (cp == nullptr) {
+			return;
+		}
+
+		gr_set_color_fast(&cp->display_color);
+
+		char buf[256];
+		if (!cp->category.empty()) {
+			snprintf(buf, sizeof(buf), "%s (%s)", cp->name.c_str(), cp->category.c_str());
+		} else {
+			snprintf(buf, sizeof(buf), "%s", cp->name.c_str());
+		}
+
+		const int w = font::force_fit_string(buf, 255, fl2i(ship_name_max_width * scale), scale);
+		if (right_align_names) {
+			renderString(x + fl2i(ship_name_offsets[0] * scale) + fl2i(ship_name_max_width * scale) - w,
+						 y + fl2i(ship_name_offsets[1] * scale), EG_ESCORT1 + index, buf, scale, config);
+		} else {
+			renderString(x + fl2i(ship_name_offsets[0] * scale), y + fl2i(ship_name_offsets[1] * scale),
+						 EG_ESCORT1 + index, buf, scale, config);
+		}
+
+		// No 'D', no hull/shield integrity. Leave the bar region empty.
+		setGaugeColor(HUD_C_NONE, config);
+		return;
+	}
+
 	if (!config) {
 		objp = &Objects[objnum];
 		sp = &Ships[objp->instance];
@@ -588,14 +619,27 @@ static bool escort_compare(const escort_info &escort1, const escort_info &escort
 
 		if (escort1.priority != escort2.priority) {
 			return (escort1.priority > escort2.priority);
-		} else if ( (escort1.objnum >= 0) && (Objects[escort1.objnum].instance >= 0) &&
-					(escort2.objnum >= 0) && (Objects[escort2.objnum].instance >= 0) )
-		{
-			const char *name1 = Ships[Objects[escort1.objnum].instance].ship_name;
-			const char *name2 = Ships[Objects[escort2.objnum].instance].ship_name;
-
-			return (stricmp(name1, name2) > 0);
 		}
+
+		// Equal priority: alphabetical by display name. Resolve names per type so
+		// coordinate points (which have no Ships[] entry) don't blow up the sort.
+		auto get_sort_name = [](const escort_info& es) -> const char* {
+			if (es.objnum < 0)
+				return "";
+			const object& obj = Objects[es.objnum];
+			if (obj.type == OBJ_SHIP && obj.instance >= 0) {
+				return Ships[obj.instance].ship_name;
+			}
+			if (obj.type == OBJ_COORDINATE_POINT) {
+				auto* cp = find_coordinate_point_by_objnum(es.objnum);
+				return (cp != nullptr) ? cp->name.c_str() : "";
+			}
+			return "";
+		};
+
+		const char* name1 = get_sort_name(escort1);
+		const char* name2 = get_sort_name(escort2);
+		return (stricmp(name1, name2) > 0);
 	}
 
 	return false;
@@ -676,6 +720,22 @@ void hud_create_complete_escort_list()
 			einfo.obj_signature = objp->signature;
 			einfo.priority = Ships[objp->instance].escort_priority;
 
+			Escort_ships.push_back(einfo);
+		}
+
+		// Auto-add coordinate points whose escort priority is non-zero.
+		for (const auto& cp : Coordinate_points) {
+			if (cp.objnum < 0)
+				continue;
+			if (cp.escort_priority <= 0)
+				continue;
+			if (Objects[cp.objnum].flags[Object::Object_Flags::Should_be_dead])
+				continue;
+
+			escort_info einfo;
+			einfo.objnum = cp.objnum;
+			einfo.obj_signature = Objects[cp.objnum].signature;
+			einfo.priority = cp.escort_priority;
 			Escort_ships.push_back(einfo);
 		}
 	}
@@ -780,6 +840,12 @@ void hud_escort_cull_list()
 						remove = true;
 					}
 				}
+			} else if (Objects[objnum].type == OBJ_COORDINATE_POINT) {
+				// Drop if deleted or had escort priority cleared.
+				auto* cp = find_coordinate_point_by_objnum(objnum);
+				if (cp == nullptr || cp->escort_priority <= 0) {
+					remove = true;
+				}
 			}
 
 			if (remove) {
@@ -817,7 +883,11 @@ void hud_add_ship_to_escort(int objnum, int supress_feedback)
 		return;
 	}
 
-	if (Objects[objnum].type != OBJ_SHIP) {
+	const auto& obj = Objects[objnum];
+	const bool is_ship = (obj.type == OBJ_SHIP);
+	const bool is_coord_point = (obj.type == OBJ_COORDINATE_POINT);
+
+	if (!is_ship && !is_coord_point) {
 		if ( !supress_feedback ) {
 			snd_play( gamesnd_get_game_sound(GameSounds::TARGET_FAIL));
 		}
@@ -825,29 +895,42 @@ void hud_add_ship_to_escort(int objnum, int supress_feedback)
 		return;
 	}
 
-	// check if ship is already on complete escort list
+	// Coordinate points need a positive escort_priority to be added.
+	const mission_coordinate_point* cp_ptr = nullptr;
+	if (is_coord_point) {
+		cp_ptr = find_coordinate_point_by_objnum(objnum);
+		if (cp_ptr == nullptr || cp_ptr->escort_priority <= 0) {
+			if (!supress_feedback) {
+				snd_play(gamesnd_get_game_sound(GameSounds::TARGET_FAIL));
+			}
+			return;
+		}
+	}
+
+	// check if entry is already on complete escort list
 	bool found = false;
 
 	for (auto &es : Escort_ships) {
-		if (es.obj_signature == Objects[objnum].signature) {
+		if (es.obj_signature == obj.signature) {
 			found = true;
 			break;
 		}
 	}
 
-	// add new ship into complete list
+	// add new entry into complete list
 	if ( !found ) {
 		escort_info einfo;
 
 		einfo.objnum = objnum;
-		einfo.obj_signature = Objects[objnum].signature;
-		einfo.priority = Ships[Objects[objnum].instance].escort_priority;
+		einfo.obj_signature = obj.signature;
+		einfo.priority = is_ship ? Ships[obj.instance].escort_priority : cp_ptr->escort_priority;
 
-		// add him to escort list and re-sort
 		Escort_ships.push_back(einfo);
 		Escort_ships.sort(escort_compare);
 
-		Ships[Objects[objnum].instance].flags.set(Ship::Ship_Flags::Escort);
+		if (is_ship) {
+			Ships[obj.instance].flags.set(Ship::Ship_Flags::Escort);
+		}
 	}
 
 	if (hud_escort_num_ships_on_list() > MAX_COMPLETE_ESCORT_LIST) {
@@ -891,7 +974,8 @@ void hud_add_remove_ship_escort(int objnum, int supress_feedback)
 		return;
 	}
 
-	if ( Objects[objnum].type != OBJ_SHIP ) {
+	const auto otype = Objects[objnum].type;
+	if (otype != OBJ_SHIP && otype != OBJ_COORDINATE_POINT) {
 		if ( !supress_feedback ) {
 			snd_play( gamesnd_get_game_sound(GameSounds::TARGET_FAIL));
 		}
@@ -994,7 +1078,11 @@ void hud_escort_target_next()
 	objnum = eship->objnum;
 
 	set_target_objnum( Player_ai,  objnum);
-	hud_restore_subsystem_target(&Ships[Objects[objnum].instance]);
+
+	// hud_restore_subsystem_target is ship-only; skip for non-ship entries (coordinate points etc.).
+	if (Objects[objnum].type == OBJ_SHIP && Objects[objnum].instance >= 0) {
+		hud_restore_subsystem_target(&Ships[Objects[objnum].instance]);
+	}
 }
 
 // return the number of ships currently on the escort list

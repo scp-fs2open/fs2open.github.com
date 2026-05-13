@@ -69,6 +69,10 @@ void ObjectComboBox::buildOtherModel() {
 	jumpNode->setData(static_cast<int>(OtherKind::JumpNode), Qt::UserRole);
 	model->appendRow(jumpNode);
 
+	auto coordinatePoint = new QStandardItem("Coordinate Point");
+	coordinatePoint->setData(static_cast<int>(OtherKind::CoordinatePoint), Qt::UserRole);
+	model->appendRow(coordinatePoint);
+
 	setModel(model);
 }
 

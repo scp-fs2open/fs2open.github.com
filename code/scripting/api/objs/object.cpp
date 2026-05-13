@@ -19,6 +19,7 @@
 #include "object/objectshield.h"
 #include "object/objectsnd.h"
 #include "prop/prop.h"
+#include "coordinate_points/coordinate_point.h"
 #include "scripting/api/LuaEventCallback.h"
 #include "scripting/api/objs/color.h"
 #include "scripting/lua/LuaFunction.h"
@@ -109,6 +110,15 @@ ADE_FUNC(__tostring, l_Object, NULL, "Returns name of object (if any)", "string"
 		case OBJ_PROP:
 			sprintf(buf, "%s prop", Props[Objects[objh->objnum].instance]->prop_name);
 			break;
+		case OBJ_COORDINATE_POINT: {
+			auto* cp = find_coordinate_point_by_objnum(objh->objnum);
+			if (cp != nullptr) {
+				sprintf(buf, "%s coordinate point", cp->name.c_str());
+			} else {
+				sprintf(buf, "coordinate point");
+			}
+			break;
+		}
 		default:
 			sprintf(buf, "object num=%d sig=%d type=%d instance=%d", objh->objnum, objh->sig, objh->objp()->type, objh->objp()->instance);
 			break;
