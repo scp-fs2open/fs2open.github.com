@@ -48,13 +48,14 @@ class ShipWeaponsDialog : public QDialog {
 		QComboBox* aiCombo = nullptr;
 		QWidget* aiGroup = nullptr;
 		QStandardItemModel* bankModel = nullptr;
-		WeaponModel* weapons = nullptr;
+		QStandardItemModel* weapons = nullptr;
 		// Set while the dialog itself is writing into bankModel, so itemChanged handlers can ignore the resulting signals.
 		bool internalUpdate = false;
 	};
 
 	void initTab(TabState& tab, Mode mode);
 	void loadBankModel(TabState& tab);
+	void loadWeaponList(TabState& tab);
 	void updateTabUI(TabState& tab);
 	void updateUI();
 

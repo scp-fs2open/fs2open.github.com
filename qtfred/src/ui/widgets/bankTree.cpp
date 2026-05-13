@@ -5,7 +5,6 @@
 namespace fso::fred {
 
 namespace {
-constexpr const char* MIME_WEAPON_ID = "application/weaponid";
 constexpr const char* MIME_BANK_TREE_WEAPON = "application/banktreeweapon";
 } // namespace
 

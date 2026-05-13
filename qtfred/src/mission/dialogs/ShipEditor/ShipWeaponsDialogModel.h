@@ -4,28 +4,14 @@
 
 #include <weapon/weapon.h>
 
-#include <QAbstractListModel>
-#include <QMimeData>
-
 namespace fso::fred {
 struct WeaponItem {
-	WeaponItem(int id, QString name, bool allowed);
-	const QString name;
-	const int id;
-	const bool allowed;
+	int id;
+	SCP_string name;
+	bool allowed;
 };
-class WeaponModel : public QAbstractListModel {
-	Q_OBJECT
-  public:
-	WeaponModel(int type, int shipClass, bool bigShip, QObject* parent = nullptr);
-	~WeaponModel() override;
-	int rowCount(const QModelIndex& parent = QModelIndex()) const override;
-	QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
-	Qt::ItemFlags flags(const QModelIndex& index) const override;
-	QStringList mimeTypes() const override;
-	QMimeData* mimeData(const QModelIndexList& indexes) const override;
-	QVector<WeaponItem*> weapons;
-};
+
+enum class WeaponListType { Primary, Secondary /*, Tertiary — engine support pending */ };
 
 struct Bank;
 struct Banks {
@@ -90,6 +76,7 @@ class ShipWeaponsDialogModel : public AbstractDialogModel {
 	void reject() override;
 	SCP_vector<Banks*> getPrimaryBanks() const;
 	SCP_vector<Banks*> getSecondaryBanks() const;
+	SCP_vector<WeaponItem> getAvailableWeapons(WeaponListType type) const;
 	int getShipClass() const;
 	bool isBigShip() const;
 	void notifyChanged();

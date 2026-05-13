@@ -7,8 +7,10 @@
 #include <ui/util/SignalBlockers.h>
 #include <weapon/weapon.h>
 
+#include <QBrush>
 #include <QCloseEvent>
 #include <QHeaderView>
+#include <QMimeData>
 #include <QSpinBox>
 #include <QStyledItemDelegate>
 
@@ -28,6 +30,33 @@ QString formatAmmoConflict(int max)
 {
 	return QStringLiteral("--/") + QString::number(max);
 }
+
+// bankTree's drop handler expects the "application/weaponid" MIME type with a single int payload.
+// QStandardItemModel's built-in mimeData uses application/x-qabstractitemmodeldatalist instead, so
+// we override here to keep the existing contract.
+class WeaponListModel : public QStandardItemModel {
+  public:
+	using QStandardItemModel::QStandardItemModel;
+
+	QStringList mimeTypes() const override
+	{
+		return {QLatin1String(MIME_WEAPON_ID)};
+	}
+
+	QMimeData* mimeData(const QModelIndexList& indexes) const override
+	{
+		auto* mime = new QMimeData();
+		QByteArray bytes;
+		QDataStream stream(&bytes, QIODevice::WriteOnly);
+		for (const QModelIndex& index : indexes) {
+			if (index.isValid()) {
+				stream << index.data(Qt::UserRole).toInt();
+			}
+		}
+		mime->setData(QLatin1String(MIME_WEAPON_ID), bytes);
+		return mime;
+	}
+};
 
 class AmmoSpinBoxDelegate : public QStyledItemDelegate {
   public:
@@ -113,8 +142,9 @@ void ShipWeaponsDialog::initTab(TabState& tab, Mode mode)
 	const util::SignalBlockers blockers(this);
 
 	tab.bankModel = new QStandardItemModel(this);
-	tab.weapons = new WeaponModel(static_cast<int>(mode), _model->getShipClass(), _model->isBigShip(), this);
+	tab.weapons = new WeaponListModel(this);
 	loadBankModel(tab);
+	loadWeaponList(tab);
 	tab.tree->setModel(tab.bankModel);
 	tab.list->setModel(tab.weapons);
 	tab.tree->expandAll();
@@ -331,6 +361,23 @@ void ShipWeaponsDialog::onTblButtonClicked(TabState& tab)
 		auto dialog = new TableViewerDialog(this, _viewport, "Weapon TBL Data", "weapons.tbl", "*-wep.tbm",
 			Weapon_info[wc].name);
 		dialog->show();
+	}
+}
+
+void ShipWeaponsDialog::loadWeaponList(TabState& tab)
+{
+	tab.weapons->clear();
+	const auto listType = (tab.mode == Primary) ? WeaponListType::Primary : WeaponListType::Secondary;
+	for (const WeaponItem& item : _model->getAvailableWeapons(listType)) {
+		auto* row = new QStandardItem();
+		row->setData(QString::fromUtf8(item.name.c_str()), Qt::DisplayRole);
+		row->setData(item.id, Qt::UserRole);
+		if (!item.allowed) {
+			row->setData(QBrush(Qt::gray), Qt::ForegroundRole);
+			row->setData(QStringLiteral("Not in this ship class's allowed weapons list."), Qt::ToolTipRole);
+		}
+		row->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled | Qt::ItemIsDragEnabled);
+		tab.weapons->appendRow(row);
 	}
 }
 

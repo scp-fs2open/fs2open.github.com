@@ -6,6 +6,10 @@
 #include <QMimeData>
 #include <QTreeView>
 namespace fso::fred {
+// MIME type for drags originating from the weapons-list view into the bank tree.
+// Payload: a single int (weapon id) written via QDataStream.
+constexpr const char* MIME_WEAPON_ID = "application/weaponid";
+
 // Custom data roles stored on items of the bank tree's QStandardItemModel.
 // (Qt::UserRole itself is used for the weapon-id on weapon-slot rows.)
 constexpr int BankItemIsLabelRole = Qt::UserRole + 2; // bool: true on bank-label rows, false on weapon-slot rows
