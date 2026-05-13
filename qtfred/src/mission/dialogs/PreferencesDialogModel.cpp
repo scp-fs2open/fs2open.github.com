@@ -12,7 +12,8 @@ PreferencesDialogModel::PreferencesDialogModel(QObject* parent, EditorViewport* 
 	, _offerAutosaveRecovery(viewport->Offer_autosave_recovery)
 	, _moveShipsWhenUndocking(viewport->Move_ships_when_undocking)
 	, _alwaysSaveDisplayNames(viewport->Always_save_display_names)
-	, _errorCheckerChecksForPotentialIssues(viewport->Error_checker_checks_potential_issues)
+	, _checkPotentialIssues(viewport->Error_checker_checks_potential_issues)
+	, _applyAutoCorrections(viewport->Error_checker_apply_auto_corrections)
 	, _showSexpHelpMissionEvents(viewport->Show_sexp_help_mission_events)
 	, _showSexpHelpMissionGoals(viewport->Show_sexp_help_mission_goals)
 	, _showSexpHelpMissionCutscenes(viewport->Show_sexp_help_mission_cutscenes)
@@ -43,8 +44,9 @@ PreferencesDialogModel::PreferencesDialogModel(QObject* parent, EditorViewport* 
 bool PreferencesDialogModel::apply() {
 	_viewport->Offer_autosave_recovery   = _offerAutosaveRecovery;
 	_viewport->Move_ships_when_undocking = _moveShipsWhenUndocking;
-	_viewport->Always_save_display_names = _alwaysSaveDisplayNames;
-	_viewport->Error_checker_checks_potential_issues = _errorCheckerChecksForPotentialIssues;
+	_viewport->Always_save_display_names                = _alwaysSaveDisplayNames;
+	_viewport->Error_checker_checks_potential_issues    = _checkPotentialIssues;
+	_viewport->Error_checker_apply_auto_corrections     = _applyAutoCorrections;
 	_viewport->Show_sexp_help_mission_events    = _showSexpHelpMissionEvents;
 	_viewport->Show_sexp_help_mission_goals     = _showSexpHelpMissionGoals;
 	_viewport->Show_sexp_help_mission_cutscenes = _showSexpHelpMissionCutscenes;
@@ -99,8 +101,11 @@ void PreferencesDialogModel::setMoveShipsWhenUndocking(bool value) { modify(_mov
 bool PreferencesDialogModel::getAlwaysSaveDisplayNames() const { return _alwaysSaveDisplayNames; }
 void PreferencesDialogModel::setAlwaysSaveDisplayNames(bool value) { modify(_alwaysSaveDisplayNames, value); }
 
-bool PreferencesDialogModel::getErrorCheckerChecksForPotentialIssues() const { return _errorCheckerChecksForPotentialIssues; }
-void PreferencesDialogModel::setErrorCheckerChecksForPotentialIssues(bool value) { modify(_errorCheckerChecksForPotentialIssues, value); }
+bool PreferencesDialogModel::getCheckPotentialIssues() const { return _checkPotentialIssues; }
+void PreferencesDialogModel::setCheckPotentialIssues(bool value) { modify(_checkPotentialIssues, value); }
+
+bool PreferencesDialogModel::getApplyAutoCorrections() const { return _applyAutoCorrections; }
+void PreferencesDialogModel::setApplyAutoCorrections(bool value) { modify(_applyAutoCorrections, value); }
 
 bool PreferencesDialogModel::getShowSexpHelpMissionEvents() const { return _showSexpHelpMissionEvents; }
 void PreferencesDialogModel::setShowSexpHelpMissionEvents(bool value) { modify(_showSexpHelpMissionEvents, value); }

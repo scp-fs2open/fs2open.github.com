@@ -8,6 +8,18 @@ SET(QT5_INSTALL_ROOT "" CACHE PATH
 
 list(APPEND CMAKE_PREFIX_PATH "${QT5_INSTALL_ROOT}")
 
+# Must be set before find_package -- CMake snapshots this into each imported target's
+# MAP_IMPORTED_CONFIG_FASTDEBUG property at target-creation time, not at link time.
+# The list entries are tried in order:
+#   "Debug"   -- matches the per-config IMPORTED_LOCATION_DEBUG on Qt's libraries.
+#   "Release" -- per-config fallback if any target ships only a Release variant.
+#   ""        -- the empty entry means "fall back to the suffix-less IMPORTED_LOCATION".
+#                Required because Qt's host tools (uic/moc/rcc/qhelpgenerator) set
+#                only IMPORTED_LOCATION (no IMPORTED_CONFIGURATIONS), so without this
+#                CMake errors with "IMPORTED_LOCATION not set for imported target
+#                Qt5::uic configuration FastDebug".
+set(CMAKE_MAP_IMPORTED_CONFIG_FASTDEBUG Debug Release "")
+
 find_package(Qt5 COMPONENTS Widgets OpenGL Help REQUIRED)
 
 include(source_groups.cmake)
@@ -50,8 +62,6 @@ if(WIN32)
     # We handle the main method ourself since the prebuilt version conflicts with our setup
     set_property(TARGET qtfred PROPERTY QT5_NO_LINK_QTMAIN ON)
 endif()
-
-set(CMAKE_MAP_IMPORTED_CONFIG_FASTDEBUG Release Debug)
 
 target_link_libraries(qtfred
     PUBLIC
@@ -169,11 +179,11 @@ if (WIN32)
 
     # Windows requires that the qwindows DLL is copied as well
     execute_process(COMMAND ${QT_QMAKE_EXECUTABLE} -query QT_INSTALL_PLUGINS OUTPUT_VARIABLE QT_INSTALL_PLUGINS OUTPUT_STRIP_TRAILING_WHITESPACE)
-    set(qwindows_path "${QT_INSTALL_PLUGINS}/platforms/qwindows$<$<CONFIG:Debug>:d>.dll")
+    set(qwindows_path "${QT_INSTALL_PLUGINS}/platforms/qwindows$<$<OR:$<CONFIG:Debug>,$<CONFIG:FastDebug>>:d>.dll")
 
     add_custom_command(TARGET qtfred
         POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${qwindows_path}" "$<TARGET_FILE_DIR:qtfred>/platforms/qwindows$<$<CONFIG:Debug>:d>.dll"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${qwindows_path}" "$<TARGET_FILE_DIR:qtfred>/platforms/qwindows$<$<OR:$<CONFIG:Debug>,$<CONFIG:FastDebug>>:d>.dll"
     VERBATIM)
 
     install(FILES ${qwindows_path}
@@ -182,11 +192,11 @@ if (WIN32)
     )
 
     # Qt Help requires the SQLite SQL driver
-    set(qsqlite_path "${QT_INSTALL_PLUGINS}/sqldrivers/qsqlite$<$<CONFIG:Debug>:d>.dll")
+    set(qsqlite_path "${QT_INSTALL_PLUGINS}/sqldrivers/qsqlite$<$<OR:$<CONFIG:Debug>,$<CONFIG:FastDebug>>:d>.dll")
 
     add_custom_command(TARGET qtfred
         POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${qsqlite_path}" "$<TARGET_FILE_DIR:qtfred>/sqldrivers/qsqlite$<$<CONFIG:Debug>:d>.dll"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${qsqlite_path}" "$<TARGET_FILE_DIR:qtfred>/sqldrivers/qsqlite$<$<OR:$<CONFIG:Debug>,$<CONFIG:FastDebug>>:d>.dll"
     VERBATIM)
 
     install(FILES ${qsqlite_path}

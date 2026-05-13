@@ -493,7 +493,7 @@ int build_standalone_mission_list_do_frame(bool API_Access)
 			Lcl_unexpected_tstring_check = nullptr;
 
 			if (condition) {
-				Standalone_mission_names[Num_standalone_missions_with_info] = vm_strdup(The_mission.name);
+				Standalone_mission_names[Num_standalone_missions_with_info] = vm_strdup(The_mission.name.c_str());
 				Standalone_mission_flags[Num_standalone_missions_with_info] = The_mission.game_type;
 				int y = Num_lines * (font_height + 2);
 
@@ -565,7 +565,7 @@ int build_campaign_mission_list_do_frame(bool API_Access)
 			auto filename = Campaign.missions[Num_campaign_missions_with_info].name;
 			
 			// add to list
-			Campaign_mission_names[Num_campaign_missions_with_info] = vm_strdup(The_mission.name);
+			Campaign_mission_names[Num_campaign_missions_with_info] = vm_strdup(The_mission.name.c_str());
 			Campaign_mission_flags[Num_campaign_missions_with_info] = The_mission.game_type;
 			int y = valid_missions_with_info * (font_height + 2);
 

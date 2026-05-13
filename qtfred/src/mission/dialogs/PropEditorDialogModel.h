@@ -18,7 +18,7 @@ class PropEditorDialogModel : public AbstractDialogModel {
 	bool hasMultipleSelection() const;
 	static bool hasAnyPropsInMission();
 	const SCP_string& getPropName() const;
-	void setPropName(const SCP_string& name);
+	bool setPropName(const SCP_string& name);
 
 	const SCP_vector<std::pair<SCP_string, size_t>>& getFlagLabels() const;
 	const SCP_vector<int>& getFlagState() const;
@@ -41,7 +41,6 @@ class PropEditorDialogModel : public AbstractDialogModel {
 
  private: // NOLINT(readability-redundant-access-specifiers)
 	void initializeData();
-	bool validateData();
 	void showErrorDialogNoCancel(const SCP_string& message);
 	void selectPropFromObjectList(object* start, bool forward);
 	void selectFirstPropInMission();

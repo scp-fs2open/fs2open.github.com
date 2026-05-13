@@ -273,10 +273,12 @@ public:
 			modular_curves_submember_input<&ParticleSource::getEffect, &SCP_vector<ParticleEffect>::size>,
 			ModularCurvesMathOperators::division>{}},
 		std::pair {"Total Particle Count", modular_curves_global_submember_input<get_particle_count>{}},
+		std::pair {"Particle Detail Level", modular_curves_global_submember_input<Detail, &detail_levels::num_particles>{}},
 		std::pair {"Particle Usage Score", modular_curves_math_input<
 		    modular_curves_global_submember_input<get_particle_count>,
 			modular_curves_global_submember_input<Detail, &detail_levels::num_particles>,
 			ModularCurvesMathOperators::division>{}},
+		std::pair {"Nebula Detail Level", modular_curves_global_submember_input<Detail, &detail_levels::nebula_detail>{}},
 		std::pair {"Nebula Usage Score", modular_curves_math_input<
 		    modular_curves_global_submember_input<get_particle_count>,
 			modular_curves_global_submember_input<Detail, &detail_levels::nebula_detail>,

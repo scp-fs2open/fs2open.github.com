@@ -3,24 +3,31 @@
 
 namespace fso::fred::dialogs {
 
-class WaypointEditorDialogModel: public AbstractDialogModel {
- Q_OBJECT
+class WaypointEditorDialogModel : public AbstractDialogModel {
+	Q_OBJECT
 
- public:
+public:
 	WaypointEditorDialogModel(QObject* parent, EditorViewport* viewport);
 
 	bool apply() override;
 	void reject() override;
 
+	bool hasValidSelection() const;
+	bool hasMultipleSelection() const;
+	static bool hasAnyPathsInMission();
+	int getSelectionCount() const;
+
 	const SCP_string& getCurrentName() const;
-	void setCurrentName(const SCP_string& name);
-	int getCurrentlySelectedPath() const;
-	void setCurrentlySelectedPath(int elementId);
+	bool setCurrentName(const SCP_string& name);
 
 	bool getNoDrawLines() const;
+	int getNoDrawLinesState() const; // Qt::CheckState as int
 	void setNoDrawLines(bool val);
+
 	bool getHasCustomColor() const;
+	int getHasCustomColorState() const; // Qt::CheckState as int
 	void setHasCustomColor(bool val);
+
 	int getColorR() const;
 	int getColorG() const;
 	int getColorB() const;
@@ -28,35 +35,45 @@ class WaypointEditorDialogModel: public AbstractDialogModel {
 	void setColorG(int g);
 	void setColorB(int b);
 
-	bool isEnabled() const;
-	const SCP_vector<std::pair<SCP_string, int>>& getWaypointPathList() const;
+	bool isColorRMixed() const;
+	bool isColorGMixed() const;
+	bool isColorBMixed() const;
+	bool hasAnyColorMixed() const;
 
 	SCP_string getLayer() const;
 	void setLayer(const SCP_string& layer);
 
+	void selectNextPath();
+	void selectPreviousPath();
+
 signals:
 	void waypointPathMarkingChanged();
-	
 
 private slots:
 	void onSelectedObjectChanged(int);
 	void onSelectedObjectMarkingChanged(int, bool);
 	void onMissionChanged();
 
- private: // NOLINT(readability-redundant-access-specifiers)
+private: // NOLINT(readability-redundant-access-specifiers)
 	void initializeData();
-    void updateWaypointPathList();
-	bool validateData();
 	void showErrorDialogNoCancel(const SCP_string& message);
+	bool validateName(const SCP_string& name);
+	void selectWaypointPathByIndex(int idx);
 
+	SCP_vector<int> _selectedWaypointPaths; // indices into Waypoint_lists
 	SCP_string _currentName;
-	int _currentWaypointPathSelected = -1;
-	bool _enabled = false;
-	SCP_vector<std::pair<SCP_string, int>> _waypointPathList;
 	bool _bypass_errors = false;
 	bool _noDrawLines = false;
 	bool _hasCustomColor = false;
 	int _colorR = 255, _colorG = 255, _colorB = 255;
+
+	bool _noDrawLinesMixed = false;
+	bool _hasCustomColorMixed = false;
+	bool _redMixed = false, _greenMixed = false, _blueMixed = false;
+
+	// Guards against re-entry into initializeData() from selection/marking/mission signals
+	// while we're already mutating mission state (e.g., setLayer fans out unmarks).
+	bool _suppressRefresh = false;
 };
 
 } // namespace fso::fred::dialogs

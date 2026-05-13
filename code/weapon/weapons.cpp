@@ -985,6 +985,24 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		}
 	}
 
+	if (optional_string("+Icon_closeup_pos:")) {
+		vec3d icon_pos;
+		stuff_vec3d(&icon_pos);
+		wip->icon_closeup_pos = icon_pos;
+	}
+
+	if (optional_string("+Icon_closeup_zoom:")) {
+		float icon_zoom;
+		stuff_float(&icon_zoom);
+
+		if (icon_zoom <= 0.0f) {
+			mprintf(("Warning!  Weapon '%s' has a +Icon_closeup_zoom value that is less than or equal to 0 (%f). Ignoring value.\n", wip->name, icon_zoom));
+			wip->icon_closeup_zoom = std::nullopt;
+		} else {
+			wip->icon_closeup_zoom = icon_zoom;
+		}
+	}
+
 	// Weapon fadein effect, used when no ani is specified or weapon_select_3d is active
 	if (first_time) {
 		wip->selection_effect = Default_weapon_select_effect; // By default, use the FS2 effect
@@ -9396,6 +9414,8 @@ void weapon_info::reset()
 
 	vm_vec_zero(&this->closeup_pos);
 	this->closeup_zoom = 1.0f;
+	this->icon_closeup_pos = std::nullopt;
+	this->icon_closeup_zoom = std::nullopt;
 
 	memset(this->hud_filename, 0, sizeof(this->hud_filename));
 	this->hud_image_index = -1;

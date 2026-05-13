@@ -3,7 +3,6 @@
 #include "EditorViewport.h"
 #include "FredRenderer.h"
 
-#include <ai/aigoals.h>
 #include <globalincs/globals.h>
 #include <jumpnode/jumpnode.h>
 #include <object/waypoint.h>
@@ -265,9 +264,7 @@ class Editor : public QObject {
 	void select_next_object();
 	void select_previous_object();
 
-	bool global_error_check();
-
-	SCP_vector<SCP_string> get_docking_list(int model_index);
+	static SCP_vector<SCP_string> get_docking_list(int model_index);
 
 	bool compareShieldSysData(const SCP_vector<GlobalShieldStatus>& teams, const SCP_vector<GlobalShieldStatus>& types) const;
 	void exportShieldSysData(SCP_vector<GlobalShieldStatus>& teams, SCP_vector<GlobalShieldStatus>& types) const;
@@ -283,7 +280,8 @@ class Editor : public QObject {
 
 	static const ai_goal_list* getAi_goal_list();
 	static int getAigoal_list_size();
-	const char* error_check_initial_orders(ai_goal* goals, int ship, int wing);
+
+	void generate_team_weaponry_usage_list(int team, int* arr);
 
   private:
 	void clearMission(bool fast_reload = false);
@@ -308,12 +306,6 @@ class Editor : public QObject {
 	int delete_flag;
 
 	bool already_deleting_wing = false;
-
-	// used by error checker, but needed in more than just one function.
-	char* names[MAX_OBJECTS];
-	char err_flags[MAX_OBJECTS];
-	int obj_count = 0;
-	int g_err = 0;
 
 	// ship and weapon usage pools
 	int _ship_usage[MAX_TVT_TEAMS][MAX_SHIP_CLASSES];
@@ -365,8 +357,6 @@ class Editor : public QObject {
 
 	void generate_wing_weaponry_usage_list(int* arr, int wing);
 
-	void generate_team_weaponry_usage_list(int team, int* arr);
-
 	void generate_ship_usage_list(int* arr, int wing);
 
 	int get_visible_sub_system_count(ship* shipp);
@@ -374,20 +364,6 @@ class Editor : public QObject {
 	int get_next_visible_subsys(ship* shipp, ship_subsys** next_subsys);
 
 	int get_prev_visible_subsys(ship* shipp, ship_subsys** prev_subsys);
-
-	int global_error_check_impl();
-
-	int error(SCP_FORMAT_STRING const char* msg, ...) SCP_FORMAT_STRING_ARGS(2, 3);
-	int internal_error(SCP_FORMAT_STRING const char* msg, ...) SCP_FORMAT_STRING_ARGS(2, 3);
-
-	int fred_check_sexp(int sexp, int type, const char* location, ...);
-
-
-	int global_error_check_mixed_player_wing(int w);
-
-	int global_error_check_player_wings(int multi);
-
-	static const char* get_order_name(ai_goal_mode order);
 
 	void updateStartingWingLoadoutUseCounts();
 };

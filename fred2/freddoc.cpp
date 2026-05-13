@@ -257,9 +257,9 @@ bool CFREDDoc::load_mission(const char *pathname, int flags) {
 	// message 2: unknown classes
 	if ((Num_unknown_ship_classes > 0) || (Num_unknown_prop_classes > 0) || (Num_unknown_weapon_classes > 0) || (Num_unknown_loadout_classes > 0)) {
 		if (flags & MPF_IMPORT_FSM) {
-			char msg[256];
-			sprintf(msg, "Fred encountered unknown ship/prop/weapon classes when importing \"%s\" (path \"%s\"). You will have to manually edit the converted mission to correct this.", The_mission.name, pathname);
-			Fred_view_wnd->MessageBox(msg);
+			SCP_string msg;
+			sprintf(msg, "Fred encountered unknown ship/prop/weapon classes when importing \"%s\" (path \"%s\"). You will have to manually edit the converted mission to correct this.", The_mission.name.c_str(), pathname);
+			Fred_view_wnd->MessageBox(msg.c_str());
 		} else {
 			Fred_view_wnd->MessageBox("Fred encountered unknown ship/prop/weapon classes when parsing the mission file. This may be due to mission disk data you do not have.");
 		}

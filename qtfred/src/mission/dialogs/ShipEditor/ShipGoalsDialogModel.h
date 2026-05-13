@@ -42,7 +42,7 @@ class ShipGoalsDialogModel : public AbstractDialogModel {
 	bool m_multi_edit;
 
 	ai_goal* goalp;
-	int verify_orders(const int ship = -1);
+	int verify_orders();
 
 	void update_item(const int item);
 

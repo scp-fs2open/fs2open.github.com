@@ -70,6 +70,7 @@ void MissionSpecDialogModel::initializeData() {
 
 	_m_contrail_threshold = The_mission.contrail_threshold;
 	_m_contrail_threshold_flag = (_m_contrail_threshold != CONTRAIL_THRESHOLD_DEFAULT);
+	_m_large_ship_no_collide_collision_group = The_mission.large_ship_no_collide_collision_group;
 
 	_m_custom_data = The_mission.custom_data;
 	_m_custom_strings = The_mission.custom_strings;
@@ -125,6 +126,7 @@ bool MissionSpecDialogModel::apply() {
 	The_mission.support_ships.max_support_ships = (_m_disallow_support) ? 0 : -1;
 	The_mission.support_ships.max_hull_repair_val = _m_max_hull_repair_val;
 	The_mission.support_ships.max_subsys_repair_val = _m_max_subsys_repair_val;
+	The_mission.large_ship_no_collide_collision_group = _m_large_ship_no_collide_collision_group;
 	
 	// Copy mission flags
 	The_mission.flags = _m_flags;
@@ -147,7 +149,7 @@ bool MissionSpecDialogModel::apply() {
 	// puts "$End Notes:" on a different line to ensure it's not interpreted as part of a comment
 	Editor::pad_with_newline(_m_mission_notes, NOTES_LENGTH - 1);
 
-	strncpy(The_mission.name, _m_mission_title.c_str(), NAME_LENGTH-1);
+	The_mission.name = _m_mission_title;
 	The_mission.author = _m_designer_name;
 	strncpy(The_mission.loading_screen[GR_640], _m_loading_640.c_str(), NAME_LENGTH-1);
 	strncpy(The_mission.loading_screen[GR_1024], _m_loading_1024.c_str(), NAME_LENGTH-1);
@@ -416,6 +418,22 @@ void MissionSpecDialogModel::setMissionFlagDirect(Mission::Mission_Flags flag, b
 		set_modified();
 		modelChanged();
 	}
+}
+
+void MissionSpecDialogModel::setLargeShipNoCollideCollisionGroup(int group)
+{
+	if (group < 0) {
+		group = 0;
+	} else if (group > 31) {
+		group = 31;
+	}
+
+	modify(_m_large_ship_no_collide_collision_group, group);
+}
+
+int MissionSpecDialogModel::getLargeShipNoCollideCollisionGroup() const
+{
+	return _m_large_ship_no_collide_collision_group;
 }
 
 bool MissionSpecDialogModel::getMissionFlag(Mission::Mission_Flags flag) const {

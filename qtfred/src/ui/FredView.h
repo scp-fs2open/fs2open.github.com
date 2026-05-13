@@ -29,6 +29,7 @@ class Editor;
 class RenderWidget;
 
 namespace dialogs {
+class ErrorCheckerDialog;
 class ShipEditorDialog;
 class WingEditorDialog;
 class PropEditorDialog;
@@ -200,6 +201,15 @@ class FredView: public QMainWindow, public IDialogProvider {
  private:
 	bool saveMissionToCurrentPath();
 	bool saveMissionAs();
+	void openAndRunErrorChecker();
+	void autoRunErrorChecker();
+	// Runs the error checker before a save (no mutations, no potential issues).
+	// If errors are found, shows the error checker in PreSave mode and applies
+	// auto-corrections if the designer chooses "Fix and Save".
+	// Returns false if the save should be cancelled.
+	// If outFixCount is provided it is set to the number of issues auto-corrected
+	// (0 if Fix and Save was chosen but nothing could be fixed, -1 if not attempted).
+	bool performPreSaveCheck(int* outFixCount = nullptr);
 	void saveAsTemplate();
 	void loadTemplate();
 	bool maybePromptToSaveMissionChanges(const QString& actionDescription);
@@ -271,6 +281,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 	Editor* fred = nullptr;
 	EditorViewport* _viewport = nullptr;
 
+	fso::fred::dialogs::ErrorCheckerDialog* _errorCheckerDialog = nullptr;
 	fso::fred::dialogs::ShipEditorDialog* _shipEditorDialog = nullptr;
 	fso::fred::dialogs::WingEditorDialog* _wingEditorDialog = nullptr;
 	fso::fred::dialogs::PropEditorDialog* _propEditorDialog = nullptr;

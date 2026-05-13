@@ -23,8 +23,6 @@ MissionSpecDialog::MissionSpecDialog(FredView* parent, EditorViewport* viewport)
 	_viewport(viewport) {
     ui->setupUi(this);
 
-	ui->missionTitle->setMaxLength(NAME_LENGTH - 1);
-	ui->missionDesigner->setMaxLength(NAME_LENGTH - 1);
 	ui->squadronName->setMaxLength(NAME_LENGTH - 1);
 	ui->squadronLogo->setMaxLength(MAX_FILENAME_LEN - 1);
 	ui->lowResScreen->setMaxLength(MAX_FILENAME_LEN - 1);
@@ -134,6 +132,7 @@ void MissionSpecDialog::initFlagList()
 	// per flag immediate apply to the model
 	connect(ui->flagList, &fso::fred::FlagListWidget::flagToggled, this, [this](const QString& name, bool checked) {
 		_model->setMissionFlag(name.toUtf8().constData(), checked);
+		updateLargeShipCollisionGroup();
 	});
 }
 
@@ -149,6 +148,15 @@ void MissionSpecDialog::updateFlags()
 	}
 
 	ui->flagList->setFlags(toWidget);
+	updateLargeShipCollisionGroup();
+}
+
+void MissionSpecDialog::updateLargeShipCollisionGroup()
+{
+	const auto enabled = _model->getMissionFlag(Mission::Mission_Flags::Large_ships_no_collide_by_default);
+	ui->largeShipCollisionGroupLabel->setVisible(enabled);
+	ui->largeShipCollisionGroup->setVisible(enabled);
+	ui->largeShipCollisionGroup->setValue(_model->getLargeShipNoCollideCollisionGroup());
 }
 
 void MissionSpecDialog::updateMissionType() {
@@ -431,6 +439,11 @@ void MissionSpecDialog::on_defaultMusicCombo_currentIndexChanged(int index) {
 void MissionSpecDialog::on_musicPackCombo_currentIndexChanged(int index) {
 	SCP_string subMusic = ui->musicPackCombo->itemData(index).value<QString>().toUtf8().constData();
 	_model->setSubEventMusic(subMusic);
+}
+
+void MissionSpecDialog::on_largeShipCollisionGroup_valueChanged(int value)
+{
+	_model->setLargeShipNoCollideCollisionGroup(value);
 }
 
 void MissionSpecDialog::on_aiProfileCombo_currentIndexChanged(int index)

@@ -33,6 +33,7 @@
 
 #include <string>
 #include <set>
+#include <optional>
 #include <particle/ParticleManager.h>
 
 class object;
@@ -621,6 +622,7 @@ public:
 	float max_weapon_regen_per_second;		// wookieejedi - make this a ship object variable
 
 	int ship_guardian_threshold;	// Goober5000 - now also determines whether ship is guardian'd
+	float max_guard_radius;      // Optional clamp for guard engagement/resume ranges; <= 0 means unused
 
 
 	char	ship_name[NAME_LENGTH];
@@ -1346,6 +1348,8 @@ public:
 
 	vec3d	closeup_pos;					// position for camera when using ship in closeup view (eg briefing and techroom)
 	float	closeup_zoom;					// zoom when using ship in closeup view (eg briefing and techroom)
+	std::optional<vec3d> icon_closeup_pos;	// icon-specific position for camera when using ship in closeup view
+	std::optional<float> icon_closeup_zoom;	// icon-specific zoom when using ship in closeup view
 
 	vec3d	closeup_pos_targetbox;			// position for camera when using ship in closeup view for hud target monitor
 	float	closeup_zoom_targetbox;			// zoom when using ship in closeup view for hud target monitor

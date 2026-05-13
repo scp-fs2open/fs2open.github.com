@@ -87,7 +87,8 @@ void PreferencesDialog::updateUi() {
 	ui->offerAutosaveRecovery->setChecked(_model->getOfferAutosaveRecovery());
 	ui->moveShipsWhenUndocking->setChecked(_model->getMoveShipsWhenUndocking());
 	ui->alwaysSaveDisplayNames->setChecked(_model->getAlwaysSaveDisplayNames());
-	ui->errorCheckerChecksForPotentialIssues->setChecked(_model->getErrorCheckerChecksForPotentialIssues());
+	ui->checkPotentialIssues->setChecked(_model->getCheckPotentialIssues());
+	ui->applyAutoCorrections->setChecked(_model->getApplyAutoCorrections());
 	ui->themeCombo->setCurrentIndex(_model->getDarkMode() ? 1 : 0);
 
 	const int iconSize = _model->getToolbarIconSize();
@@ -131,8 +132,12 @@ void PreferencesDialog::on_alwaysSaveDisplayNames_toggled(bool checked) {
 	_model->setAlwaysSaveDisplayNames(checked);
 }
 
-void PreferencesDialog::on_errorCheckerChecksForPotentialIssues_toggled(bool checked) {
-	_model->setErrorCheckerChecksForPotentialIssues(checked);
+void PreferencesDialog::on_checkPotentialIssues_toggled(bool checked) {
+	_model->setCheckPotentialIssues(checked);
+}
+
+void PreferencesDialog::on_applyAutoCorrections_toggled(bool checked) {
+	_model->setApplyAutoCorrections(checked);
 }
 
 void PreferencesDialog::on_toolbarIconSizeCombo_currentIndexChanged(int index) {

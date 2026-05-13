@@ -35,10 +35,9 @@ PropEditorDialog::PropEditorDialog(FredView* parent, EditorViewport* viewport)
 					}
 				}
 			}
-			// Applying immediately can re-enter FlagListWidget while it is still processing
-			// itemChanged, which may invalidate the underlying item/model pointers.
-			// Queue the apply until the current signal stack unwinds.
-			QMetaObject::invokeMethod(this, [this]() { _model->apply(); }, Qt::QueuedConnection);
+			// Defer missionChanged to avoid re-entering FlagListWidget while it processes itemChanged,
+			// which could invalidate the underlying item/model pointers.
+			QMetaObject::invokeMethod(this, [this]() { _viewport->editor->missionChanged(); }, Qt::QueuedConnection);
 		});
 
 	resize(QDialog::sizeHint());
@@ -90,8 +89,7 @@ void PropEditorDialog::updateUi() {
 }
 
 void PropEditorDialog::on_propNameLineEdit_editingFinished() {
-	_model->setPropName(ui->propNameLineEdit->text().toUtf8().constData());
-	if (!_model->apply()) {
+	if (!_model->setPropName(ui->propNameLineEdit->text().toUtf8().constData())) {
 		updateUi();
 	}
 }
@@ -108,9 +106,6 @@ void PropEditorDialog::on_layerCombo_currentIndexChanged(int index) {
 	if (index < 0)
 		return;
 	_model->setLayer(ui->layerCombo->itemData(index).toString().toUtf8().constData());
-	if (!_model->apply()) {
-		updateUi();
-	}
 }
 
 } // namespace fso::fred::dialogs

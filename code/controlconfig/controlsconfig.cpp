@@ -2724,8 +2724,7 @@ void control_config_do_frame(float frametime)
 			strcpy_s(buf, Control_config[i].text.c_str());
 		}
 
-		font::force_fit_string(buf, 255, Conflict_wnd_coords[gr_screen.res][CONTROL_W_COORD]);
-		gr_get_string_size(&w, NULL, buf);
+		w = font::force_fit_string(buf, 255, Conflict_wnd_coords[gr_screen.res][CONTROL_W_COORD]);
 		gr_printf_menu(x - w / 2, y, "%s", buf);
 
 	} else if (*bound_string) {
