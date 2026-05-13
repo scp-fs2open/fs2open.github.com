@@ -16,6 +16,7 @@
 #include "hud/hudtarget.h"
 #include "iff_defs/iff_defs.h"
 #include "coordinate_points/coordinate_point.h"
+#include "coordinate_points/coordinate_point_render.h"
 #include "jumpnode/jumpnode.h"
 #include "mission/missionparse.h"
 #include "object/object.h"
@@ -458,12 +459,34 @@ void HudGaugeBrackets::renderObjectBrackets(object *targetp, color *clr, int w_c
 
 		case OBJ_COORDINATE_POINT:
 			{
-			// Coordinate points have no model; project the world position to screen and draw a small bracket.
-			vertex vtx;
-			g3_rotate_vertex(&vtx, &targetp->pos);
-			g3_project_vertex(&vtx);
-			x1 = x2 = (int)vtx.screen.xyw.x;
-			y1 = y2 = (int)vtx.screen.xyw.y;
+			// Coordinate points have no model. Size the bracket so it matches the rendered
+			// shape: use the same world-space radius the renderer uses, project a point offset
+			// along the camera right vector, and measure the screen-space delta to derive a
+			// half-extent. This automatically scales with both distance and the coord point's
+			// size_scale field.
+			vertex v_center;
+			g3_rotate_vertex(&v_center, &targetp->pos);
+			g3_project_vertex(&v_center);
+
+			int half_extent = 0;
+			auto* cp = find_coordinate_point_by_objnum(OBJ_INDEX(targetp));
+			if (cp != nullptr) {
+				const float radius = get_coordinate_point_world_radius(*cp, Eye_position);
+				vec3d offset_pos = targetp->pos;
+				vm_vec_scale_add2(&offset_pos, &Eye_matrix.vec.rvec, radius);
+
+				vertex v_offset;
+				g3_rotate_vertex(&v_offset, &offset_pos);
+				g3_project_vertex(&v_offset);
+
+				half_extent = std::abs(static_cast<int>(v_offset.screen.xyw.x) -
+									   static_cast<int>(v_center.screen.xyw.x));
+			}
+
+			x1 = static_cast<int>(v_center.screen.xyw.x) - half_extent;
+			x2 = static_cast<int>(v_center.screen.xyw.x) + half_extent;
+			y1 = static_cast<int>(v_center.screen.xyw.y) - half_extent;
+			y2 = static_cast<int>(v_center.screen.xyw.y) + half_extent;
 			}
 			break;
 

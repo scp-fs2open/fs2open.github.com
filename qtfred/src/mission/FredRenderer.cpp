@@ -19,6 +19,8 @@
 #include <starfield/starfield.h>
 #include <ship/ship.h>
 #include <ship/shipfx.h>
+#include <coordinate_points/coordinate_point.h>
+#include <coordinate_points/coordinate_point_render.h>
 #include <jumpnode/jumpnode.h>
 #include <asteroid/asteroid.h>
 #include <prop/prop.h>
@@ -410,6 +412,10 @@ void FredRenderer::display_ship_info(int cur_object_index) {
 			render = 0;
 		}
 
+		if ((objp->type == OBJ_COORDINATE_POINT) && !view().Show_coordinate_points) {
+			render = 0;
+		}
+
 		if (objp->flags[Object::Object_Flags::Hidden]) {
 			render = 0;
 		}
@@ -446,6 +452,15 @@ void FredRenderer::display_ship_info(int cur_object_index) {
 						auto propp = prop_id_lookup(objp->instance);
 						if (propp != nullptr) {
 							sprintf(buf, "%s\n", propp->prop_name);
+						}
+					} else if (objp->type == OBJ_COORDINATE_POINT) {
+						auto* cp = find_coordinate_point_by_objnum(OBJ_INDEX(objp));
+						if (cp != nullptr) {
+							if (!cp->category.empty()) {
+								sprintf(buf, "%s\n%s", cp->name.c_str(), cp->category.c_str());
+							} else {
+								sprintf(buf, "%s", cp->name.c_str());
+							}
 						}
 					} else
 						Assert(0);
@@ -637,6 +652,10 @@ void FredRenderer::render_one_model_htl(object* objp,
 
 	if (objp->type == OBJ_JUMP_NODE) {
 		return; // jump nodes have their own render loop in render_frame
+	}
+
+	if (objp->type == OBJ_COORDINATE_POINT) {
+		return; // coordinate points have their own render loop in render_frame
 	}
 
 	if ((objp->type == OBJ_WAYPOINT) && !view().Show_waypoints) {
@@ -1095,6 +1114,18 @@ void FredRenderer::render_frame(int cur_object_index,
 			if (jnObj != nullptr && _viewport->isObjectVisibleInLayer(jnObj)) {
 				jn.Render(&jnObj->pos);
 			}
+		}
+	}
+
+	if (view().Show_coordinate_points) {
+		for (const auto& cp : Coordinate_points) {
+			if (cp.objnum < 0) {
+				continue;
+			}
+			if (!_viewport->isObjectVisibleInLayer(&Objects[cp.objnum])) {
+				continue;
+			}
+			draw_coordinate_point_shape(cp, &_viewport->camera.eye_pos, &_viewport->camera.eye_orient);
 		}
 	}
 	disable_htl();

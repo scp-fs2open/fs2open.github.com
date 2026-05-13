@@ -16,6 +16,7 @@ static const char* Coordinate_point_shape_names[] = {
 	"Pentagon",
 	"Hexagon",
 	"Cross",
+	"Star",
 };
 
 static_assert(sizeof(Coordinate_point_shape_names) / sizeof(Coordinate_point_shape_names[0])
@@ -40,7 +41,7 @@ CoordinatePointShape coordinate_point_shape_from_string(const char* s)
 			}
 		}
 	}
-	return CoordinatePointShape::Triangle;
+	return CoordinatePointShape::Diamond;
 }
 
 mission_coordinate_point::mission_coordinate_point()
@@ -56,12 +57,22 @@ parsed_coordinate_point::parsed_coordinate_point()
 
 void coordinate_points_level_close()
 {
-	for (auto& cp : Coordinate_points) {
-		if (cp.objnum >= 0 && Objects[cp.objnum].type != OBJ_NONE) {
-			obj_delete(cp.objnum);
+	// Snapshot the objnums and clear the list first so the per-object obj_delete callback
+	// (which calls coordinate_point_delete) doesn't try to erase from the list we're walking.
+	SCP_vector<int> objnums;
+	objnums.reserve(Coordinate_points.size());
+	for (const auto& cp : Coordinate_points) {
+		if (cp.objnum >= 0) {
+			objnums.push_back(cp.objnum);
 		}
 	}
 	Coordinate_points.clear();
+
+	for (int objnum : objnums) {
+		if (Objects[objnum].type != OBJ_NONE) {
+			obj_delete(objnum);
+		}
+	}
 }
 
 static bool coordinate_point_name_in_use(const char* name)
@@ -168,7 +179,9 @@ void post_process_mission_coordinate_points()
 		cp->shape           = parsed.shape;
 		cp->size_scale      = parsed.size_scale;
 		cp->escort_priority = parsed.escort_priority;
+		cp->multi_team      = parsed.multi_team;
 		cp->flags           = parsed.flags;
+		cp->fred_layer      = parsed.fred_layer;
 	}
 
 	Parse_coordinate_points.clear();

@@ -33,6 +33,8 @@ public:
 	void setShowProps(bool value);
 	bool getShowJumpNodes() const;
 	void setShowJumpNodes(bool value);
+	bool getShowCoordinatePoints() const;
+	void setShowCoordinatePoints(bool value);
 
 	// IFF team filters
 	static int getIffCount();

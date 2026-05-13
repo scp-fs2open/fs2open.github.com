@@ -341,14 +341,10 @@ void HudGaugeEscort::renderIcon(int x, int y, int index, float scale, bool confi
 
 		gr_set_color_fast(&cp->display_color);
 
-		char buf[256];
-		if (!cp->category.empty()) {
-			snprintf(buf, sizeof(buf), "%s (%s)", cp->name.c_str(), cp->category.c_str());
-		} else {
-			snprintf(buf, sizeof(buf), "%s", cp->name.c_str());
-		}
+		char buf[NAME_LENGTH];
+		snprintf(buf, sizeof(buf), "%s", cp->name.c_str());
 
-		const int w = font::force_fit_string(buf, 255, fl2i(ship_name_max_width * scale), scale);
+		const int w = font::force_fit_string(buf, NAME_LENGTH - 1, fl2i(ship_name_max_width * scale), scale);
 		if (right_align_names) {
 			renderString(x + fl2i(ship_name_offsets[0] * scale) + fl2i(ship_name_max_width * scale) - w,
 						 y + fl2i(ship_name_offsets[1] * scale), EG_ESCORT1 + index, buf, scale, config);

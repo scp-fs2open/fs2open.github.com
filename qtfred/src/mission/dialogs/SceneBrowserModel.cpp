@@ -7,6 +7,7 @@
 #include <jumpnode/jumpnode.h>
 #include <object/object.h>
 #include <object/waypoint.h>
+#include <coordinate_points/coordinate_point.h>
 #include <prop/prop.h>
 #include <ship/ship.h>
 
@@ -153,6 +154,22 @@ void SceneBrowserModel::buildTree()
 			props.items.push_back(obj);
 		}
 		if (!props.items.isEmpty()) layer.categories.push_back(props);
+
+		// --- Coordinate Points ---
+		BrowserCategory coordPoints;
+		coordPoints.name = "Coordinate Points";
+		for (auto* ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
+			if (ptr->type != OBJ_COORDINATE_POINT) continue;
+			if (_viewport->getObjectLayerName(OBJ_INDEX(ptr)) != layerName) continue;
+			auto* cp = find_coordinate_point_by_objnum(OBJ_INDEX(ptr));
+			if (cp == nullptr) continue;
+
+			BrowserObject obj;
+			obj.objNum = OBJ_INDEX(ptr);
+			obj.displayName = QString::fromStdString(cp->name);
+			coordPoints.items.push_back(obj);
+		}
+		if (!coordPoints.items.isEmpty()) layer.categories.push_back(coordPoints);
 
 		_tree.push_back(layer);
 	}

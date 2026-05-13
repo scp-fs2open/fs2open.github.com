@@ -4,6 +4,7 @@
 #include "object/waypoint.h"
 #include "object/objectdock.h"
 #include "ship/ship.h"
+#include "coordinate_points/coordinate_point.h"
 #include "jumpnode/jumpnode.h"
 #include "prop/prop.h"
 
@@ -76,6 +77,13 @@ const char* object_name(int obj) {
 		int idx = Objects[obj].instance;
 		if (idx >= 0 && idx < (int)Props.size() && Props[idx].has_value())
 			return Props[idx]->prop_name;
+		break;
+	}
+
+	case OBJ_COORDINATE_POINT: {
+		auto* cp = find_coordinate_point_by_objnum(obj);
+		if (cp != nullptr)
+			return cp->name.c_str();
 		break;
 	}
 	}

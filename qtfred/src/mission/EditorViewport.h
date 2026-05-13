@@ -54,6 +54,7 @@ struct ViewSettings {
 	bool Show_waypoints = true;
 	bool Show_props = true;
 	bool Show_jump_nodes = true;
+	bool Show_coordinate_points = true;
 	bool Show_compass = true;
 	bool Highlight_selectable_subsys = false;
 	int Outline_lod = 1;

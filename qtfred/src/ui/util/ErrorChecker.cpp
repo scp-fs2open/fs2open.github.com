@@ -1,6 +1,7 @@
 #include "ui/util/ErrorChecker.h"
 
 #include <ai/ai.h>
+#include <coordinate_points/coordinate_point.h>
 #include <ai/aigoals.h>
 #include <globalincs/linklist.h>
 #include <mission/missionbriefcommon.h>
@@ -346,6 +347,12 @@ int ErrorChecker::checkObjectList() {
 			entry.name = buf;
 		} else if (ptr->type == OBJ_JUMP_NODE || ptr->type == OBJ_PROP) {
 			// nothing needed
+		} else if (ptr->type == OBJ_COORDINATE_POINT) {
+			auto* cp = find_coordinate_point_by_objnum(OBJ_INDEX(ptr));
+			if (cp == nullptr) {
+				return internal_error("Coordinate point object has no entry in Coordinate_points");
+			}
+			entry.name = cp->name;
 		} else {
 			return internal_error("An unknown object type (%d) was detected", ptr->type);
 		}

@@ -69,6 +69,7 @@
                         <section title="Texture Replacement"    ref="dialogs/ShipTextureReplacementDialog.html"/>
                     </section>
                     <section title="Waypoint Editor"        ref="dialogs/WaypointEditorDialog.html"/>
+                    <section title="Coordinate Point Editor" ref="dialogs/CoordinatePointEditorDialog.html"/>
                     <section title="Wing Editor"            ref="dialogs/WingEditorDialog.html">
                         <section title="Custom Warp Params"  ref="dialogs/ShipCustomWarpDialog.html"/>
                         <section title="Initial Orders"      ref="dialogs/ShipInitialOrdersDialog.html"/>
@@ -142,6 +143,7 @@
             <keyword name="Voice Acting Manager"    id="VoiceActingManager"             ref="dialogs/VoiceActingManager.html"/>
             <keyword name="Volumetric Nebula"       id="VolumetricNebulaDialog"         ref="dialogs/VolumetricNebulaDialog.html"/>
             <keyword name="Waypoint Editor"         id="WaypointEditorDialog"           ref="dialogs/WaypointEditorDialog.html"/>
+            <keyword name="Coordinate Point Editor" id="CoordinatePointEditorDialog"    ref="dialogs/CoordinatePointEditorDialog.html"/>
             <keyword name="Waypoint Path Generator" id="WaypointPathGeneratorDialog"    ref="dialogs/WaypointPathGeneratorDialog.html"/>
             <keyword name="Wing Editor"             id="WingEditorDialog"               ref="dialogs/WingEditorDialog.html"/>
             <keyword name="Wing Initial Orders"    id="WingInitialOrdersDialog"        ref="dialogs/ShipInitialOrdersDialog.html"/>
@@ -204,6 +206,7 @@
             <file>dialogs/VoiceActingManager.html</file>
             <file>dialogs/VolumetricNebulaDialog.html</file>
             <file>dialogs/WaypointEditorDialog.html</file>
+            <file>dialogs/CoordinatePointEditorDialog.html</file>
             <file>dialogs/WaypointPathGeneratorDialog.html</file>
             <file>dialogs/WingEditorDialog.html</file>
         </files>

@@ -13,6 +13,7 @@ enum class CoordinatePointShape {
 	Pentagon,
 	Hexagon,
 	Cross,
+	Star,
 	NUM_SHAPES
 };
 
@@ -20,17 +21,19 @@ constexpr float COORDINATE_POINT_SIZE_MIN = 0.25f;
 constexpr float COORDINATE_POINT_SIZE_MAX = 8.0f;
 
 const char* coordinate_point_shape_to_string(CoordinatePointShape s);
-CoordinatePointShape coordinate_point_shape_from_string(const char* s);  // returns Triangle on miss
+CoordinatePointShape coordinate_point_shape_from_string(const char* s);  // returns Diamond on miss
 
 struct mission_coordinate_point
 {
 	SCP_string name;
 	SCP_string category;
 	color      display_color;
-	CoordinatePointShape shape = CoordinatePointShape::Triangle;
+	CoordinatePointShape shape = CoordinatePointShape::Diamond;
 	float      size_scale = 1.0f;
 	int        escort_priority = 0;      // 0 = not on escort list; >0 = on the list (and sort key)
+	int        multi_team = -1;          // -1 = visible to all; otherwise TVT team index (0..MAX_TVT_TEAMS-1)
 	flagset<CoordinatePoint::Flags> flags;
+	SCP_string fred_layer = "Default";   // FRED view layer assignment
 	int        objnum = -1;
 
 	mission_coordinate_point();
@@ -44,10 +47,12 @@ struct parsed_coordinate_point
 	SCP_string category;
 	vec3d      position;
 	color      display_color;
-	CoordinatePointShape shape = CoordinatePointShape::Triangle;
+	CoordinatePointShape shape = CoordinatePointShape::Diamond;
 	float      size_scale = 1.0f;
 	int        escort_priority = 0;
+	int        multi_team = -1;
 	flagset<CoordinatePoint::Flags> flags;
+	SCP_string fred_layer = "Default";
 
 	parsed_coordinate_point();
 };

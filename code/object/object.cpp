@@ -21,6 +21,8 @@
 #include "globalincs/vmallocator.h"
 #include "iff_defs/iff_defs.h"
 #include "io/timer.h"
+#include "coordinate_points/coordinate_point.h"
+#include "coordinate_points/coordinate_point_render.h"
 #include "jumpnode/jumpnode.h"
 #include "lighting/lighting.h"
 #include "lighting/lighting_profiles.h"
@@ -772,7 +774,10 @@ void obj_delete(int objnum)
 		prop_delete(objp);
 		break;
 	case OBJ_COORDINATE_POINT:
-		break;  // requires no further action, handled by coordinate_point_delete / level close.
+		// Remove the matching entry from Coordinate_points so the list stays in sync with Objects[].
+		// During level close the list is cleared up-front, so this call becomes a no-op then.
+		coordinate_point_delete(objnum);
+		break;
 	case OBJ_NONE:
 		Int3();
 		break;
@@ -1976,7 +1981,8 @@ void obj_queue_render(object* obj, model_draw_list* scene)
 		prop_render(obj, scene);
 		break;
 	case OBJ_COORDINATE_POINT:
-		// Coordinate Points never render in-game; the editor draws them via its own pass.
+		// Coordinate points are drawn in their own post-scene pass (coordinate_points_render_all_in_mission)
+		// to avoid immediate-mode state leaking into the queued scene render.
 		break;
 	default:
 		Error( LOCATION, "Unhandled obj type %d in obj_render", obj->type );
@@ -2073,9 +2079,13 @@ int obj_team(object *objp)
 			break;
 
 		case OBJ_JUMP_NODE:
+		case OBJ_COORDINATE_POINT:
+			// No real team, but reporting the player's team short-circuits "same-team don't lock"
+			// logic everywhere and keeps the team != -1 invariant the assertion below requires.
+			// Jump nodes have done this since forever; coordinate points piggyback on the same trick.
 			team = Player_ship->team;
 			break;
-					
+
 		case OBJ_FIREBALL:
 		case OBJ_WAYPOINT:
 		case OBJ_START:
@@ -2085,7 +2095,6 @@ int obj_team(object *objp)
 		case OBJ_BEAM:
 		case OBJ_RAW_POF:
 		case OBJ_PROP:
-		case OBJ_COORDINATE_POINT:
 			team = -1;
 			break;
 

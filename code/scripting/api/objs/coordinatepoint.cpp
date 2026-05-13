@@ -5,6 +5,7 @@
 #include "object.h"
 
 #include "coordinate_points/coordinate_point.h"
+#include "globalincs/globals.h"
 #include "hud/hudescort.h"
 
 namespace scripting::api {
@@ -114,6 +115,35 @@ ADE_VIRTVAR(VisibleInMission,
 	}
 
 	return ade_set_args(L, "b", cp->flags[CoordinatePoint::Flags::Visible_in_mission]);
+}
+
+ADE_VIRTVAR(MultiTeam,
+	l_CoordinatePoint,
+	"number",
+	"Multiplayer team filter. -1 (default) = visible to all teams. 0 or higher = visible only to that TVT team in multiplayer. Singleplayer always renders the point regardless of this value.",
+	"number",
+	"Multi team value, or -1 if handle is invalid")
+{
+	object_h* objh;
+	int val = -1;
+	if (!ade_get_args(L, "o|i", l_CoordinatePoint.GetPtr(&objh), &val))
+		return ade_set_error(L, "i", -1);
+
+	if (!objh->isValid() || objh->objp()->type != OBJ_COORDINATE_POINT)
+		return ade_set_error(L, "i", -1);
+
+	auto* cp = find_coordinate_point_by_objnum(objh->objnum);
+	if (cp == nullptr)
+		return ade_set_error(L, "i", -1);
+
+	if (ADE_SETTING_VAR) {
+		if (val < -1 || val >= MAX_TVT_TEAMS) {
+			val = -1;
+		}
+		cp->multi_team = val;
+	}
+
+	return ade_set_args(L, "i", cp->multi_team);
 }
 
 ADE_FUNC(addToEscortList, l_CoordinatePoint, nullptr,

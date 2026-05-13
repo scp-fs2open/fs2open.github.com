@@ -482,7 +482,7 @@ int hud_abort_lock()
 	if ( (Player_ai->target_objnum >= 0) ) {
 		target_team = obj_team(&Objects[Player_ai->target_objnum]);
 
-		if ( ( Player_ship->team == target_team) && ( !iff_x_attacks_y(Player_ship->team, target_team) ) 
+		if ( ( Player_ship->team == target_team) && ( !iff_x_attacks_y(Player_ship->team, target_team) )
 			&& !weapon_has_iff_restrictions(wip)) {
 			// if we're in multiplayer dogfight, ignore this
 			// remember to check if we're firing a missile that doesn't require a current target

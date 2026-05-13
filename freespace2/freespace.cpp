@@ -84,6 +84,7 @@
 #include "io/key.h"
 #include "io/mouse.h"
 #include "io/timer.h"
+#include "coordinate_points/coordinate_point_render.h"
 #include "jumpnode/jumpnode.h"
 #include "lab/labv2.h"
 #include "libs/discord/discord.h"
@@ -3553,6 +3554,9 @@ void game_render_frame( camid cid, const vec3d* offset, const matrix* rot_offset
 
 	shadows_render_all(Proj_fov, &Eye_matrix, &Eye_position, offset, rot_offset, fov_override);
 	obj_render_queue_all();
+
+	// Draw any Visible_in_mission coordinate points as overlays on top of the queued scene.
+	coordinate_points_render_all_in_mission();
 
 	// render all ships with shader effects on them
 	auto obji = effect_ships.begin();

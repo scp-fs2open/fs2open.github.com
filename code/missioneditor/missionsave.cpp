@@ -5473,17 +5473,19 @@ int Fred_mission_save::save_coordinate_points()
 		}
 
 		const bool color_is_default =
-			(cp.display_color.red == 255 && cp.display_color.green == 255 && cp.display_color.blue == 255);
+			(cp.display_color.red == 255 && cp.display_color.green == 255 &&
+			 cp.display_color.blue == 255 && cp.display_color.alpha == 255);
 		if (!color_is_default) {
 			if (optional_string_fred("+Color:", "$Name:")) {
 				parse_comments();
 			} else {
 				fout("\n+Color:");
 			}
-			fout(" ( %d %d %d )", cp.display_color.red, cp.display_color.green, cp.display_color.blue);
+			fout(" ( %d %d %d %d )", cp.display_color.red, cp.display_color.green,
+				 cp.display_color.blue, cp.display_color.alpha);
 		}
 
-		if (cp.shape != CoordinatePointShape::Triangle) {
+		if (cp.shape != CoordinatePointShape::Diamond) {
 			if (optional_string_fred("+Shape:", "$Name:")) {
 				parse_comments();
 			} else {
@@ -5510,6 +5512,15 @@ int Fred_mission_save::save_coordinate_points()
 			fout(" %d", cp.escort_priority);
 		}
 
+		if (cp.multi_team >= 0) {
+			if (optional_string_fred("+Multi Team:", "$Name:")) {
+				parse_comments();
+			} else {
+				fout("\n+Multi Team:");
+			}
+			fout(" %d", cp.multi_team);
+		}
+
 		if (cp.flags.any_set()) {
 			if (optional_string_fred("+Flags:", "$Name:")) {
 				parse_comments();
@@ -5524,6 +5535,17 @@ int Fred_mission_save::save_coordinate_points()
 				}
 			}
 			fout(" )");
+		}
+
+		if (save_config.save_format != MissionFormat::RETAIL &&
+			!cp.fred_layer.empty() &&
+			!lcase_equal(cp.fred_layer, "Default")) {
+			if (optional_string_fred("+Layer:", "$Name:")) {
+				parse_comments();
+			} else {
+				fout("\n+Layer:");
+			}
+			fout(" %s", cp.fred_layer.c_str());
 		}
 
 		fso_comment_pop();

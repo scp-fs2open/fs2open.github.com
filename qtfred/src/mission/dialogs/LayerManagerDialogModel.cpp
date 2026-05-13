@@ -70,6 +70,7 @@ bool LayerManagerDialogModel::getShowStarts() const     { return _viewport->view
 bool LayerManagerDialogModel::getShowWaypoints() const  { return _viewport->view.Show_waypoints; }
 bool LayerManagerDialogModel::getShowProps() const      { return _viewport->view.Show_props; }
 bool LayerManagerDialogModel::getShowJumpNodes() const  { return _viewport->view.Show_jump_nodes; }
+bool LayerManagerDialogModel::getShowCoordinatePoints() const { return _viewport->view.Show_coordinate_points; }
 
 void LayerManagerDialogModel::setShowShips(bool value) {
 	if (_viewport->view.Show_ships != value) {
@@ -102,6 +103,13 @@ void LayerManagerDialogModel::setShowProps(bool value) {
 void LayerManagerDialogModel::setShowJumpNodes(bool value) {
 	if (_viewport->view.Show_jump_nodes != value) {
 		_viewport->view.Show_jump_nodes = value;
+		_viewport->needsUpdate();
+	}
+}
+
+void LayerManagerDialogModel::setShowCoordinatePoints(bool value) {
+	if (_viewport->view.Show_coordinate_points != value) {
+		_viewport->view.Show_coordinate_points = value;
 		_viewport->needsUpdate();
 	}
 }

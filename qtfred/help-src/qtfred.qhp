@@ -67,6 +67,7 @@
                         <section title="Texture Replacement"    ref="doc/dialogs/ShipTextureReplacementDialog.html"/>
                     </section>
                     <section title="Waypoint Editor"        ref="doc/dialogs/WaypointEditorDialog.html"/>
+                    <section title="Coordinate Point Editor" ref="doc/dialogs/CoordinatePointEditorDialog.html"/>
                     <section title="Wing Editor"            ref="doc/dialogs/WingEditorDialog.html">
                         <section title="Custom Warp Params"  ref="doc/dialogs/ShipCustomWarpDialog.html"/>
                         <section title="Initial Orders"      ref="doc/dialogs/ShipInitialOrdersDialog.html"/>
@@ -138,6 +139,7 @@
             <keyword name="Voice Acting Manager"    id="VoiceActingManager"             ref="doc/dialogs/VoiceActingManager.html"/>
             <keyword name="Volumetric Nebula"       id="VolumetricNebulaDialog"         ref="doc/dialogs/VolumetricNebulaDialog.html"/>
             <keyword name="Waypoint Editor"         id="WaypointEditorDialog"           ref="doc/dialogs/WaypointEditorDialog.html"/>
+            <keyword name="Coordinate Point Editor" id="CoordinatePointEditorDialog"    ref="doc/dialogs/CoordinatePointEditorDialog.html"/>
             <keyword name="Waypoint Path Generator" id="WaypointPathGeneratorDialog"    ref="doc/dialogs/WaypointPathGeneratorDialog.html"/>
             <keyword name="Wing Editor"             id="WingEditorDialog"               ref="doc/dialogs/WingEditorDialog.html"/>
             <keyword name="Wing Initial Orders"    id="WingInitialOrdersDialog"        ref="doc/dialogs/ShipInitialOrdersDialog.html"/>
@@ -198,6 +200,7 @@
             <file>doc/dialogs/VoiceActingManager.html</file>
             <file>doc/dialogs/VolumetricNebulaDialog.html</file>
             <file>doc/dialogs/WaypointEditorDialog.html</file>
+            <file>doc/dialogs/CoordinatePointEditorDialog.html</file>
             <file>doc/dialogs/WaypointPathGeneratorDialog.html</file>
             <file>doc/dialogs/WingEditorDialog.html</file>
         </files>

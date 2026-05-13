@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Coordinate Point Editor - QtFRED Help</title>
+    <link rel="stylesheet" type="text/css" href="../css/help.css"/>
+</head>
+<body>
+<nav class="breadcrumb"><a href="../index.html">QtFRED Help</a> &rsaquo; Objects &rsaquo; Coordinate Point Editor</nav>
+<h1>Coordinate Point Editor</h1>
+<p>Opens via <strong>Editors &rsaquo; Coordinate Points</strong>, by double-clicking a
+coordinate point in the viewport, or from the context bar when one is selected.</p>
+
+<p>Coordinate Points are named positions in 3D space. They have no model, no AI, no
+hitpoints, and no collision. SEXPs and Lua scripts can read their position by name,
+and optionally they can be made visible in-mission, added to the escort list, and
+targeted by the player.</p>
+
+<p>The dialog tracks the viewport selection. Select one or more coordinate points and
+the dialog shows their values; edits apply to every selected point at once. When a
+field's value differs across the selection it is rendered as <em>mixed</em> &mdash; an
+empty spin box, a partially-checked checkbox, or a "?" color swatch &mdash; and is
+left alone until you commit a value.</p>
+
+<h2>Navigation</h2>
+<table>
+    <tr><th>Button</th><th>Description</th></tr>
+    <tr><td>Prev / Next</td><td>Cycles the viewport selection to the previous or next
+        coordinate point in the mission, allowing sequential editing without
+        switching back to the viewport.</td></tr>
+</table>
+
+<h2>Fields</h2>
+<table>
+    <tr><th>Field</th><th>Description</th></tr>
+    <tr><td>Name</td><td>Identifies the point for SEXPs, Lua, and the escort list.
+        Must be unique across coordinate points, ships, wings, waypoint paths, and
+        jump nodes. Read-only when multiple points are selected; rename individually.</td></tr>
+    <tr><td>Category</td><td>Free-form string. Shown in the HUD target box and the
+        escort list. Designers can use this for any visible grouping (e.g.
+        <em>Combat</em>, <em>Nav</em>, <em>Objective</em>).</td></tr>
+    <tr><td>Shape</td><td>Outline shape rendered in the editor (and in-mission when
+        the Visible flag is set). Choices: Triangle, Square, Diamond, Pentagon,
+        Hexagon, Cross, Star.</td></tr>
+    <tr><td>Size</td><td>Scales the rendered shape. 1.0 is the default; range
+        0.25-8.0.</td></tr>
+    <tr><td>Escort Priority</td><td>0 (default) means the point is not on the escort
+        list. Any value greater than 0 adds the point to the escort list, using the
+        number as the sort key. Higher numbers sort higher on the list. The player
+        can cycle to the point with the standard escort target key when it is on
+        the list.</td></tr>
+    <tr><td>Visible in Mission</td><td>When checked, the point's shape renders in-game
+        and the player can target it with the standard target-in-front key. When
+        unchecked, the point is visible in the editor only.</td></tr>
+    <tr><td>Multi Team</td><td>Multiplayer team filter. <em>Any team</em> (default) makes
+        the point visible to everyone. Selecting a specific team restricts in-mission
+        visibility to that team only; players on other teams will not see or be able to
+        target it. The selector is disabled when the mission is not a team mission, and
+        the value has no effect in single-player. Distinct from IFF team
+        (Friendly / Hostile).</td></tr>
+    <tr><td>Layer</td><td>The editor view layer this coordinate point belongs to. Hidden
+        layers don't render in the viewport. Layers are saved to the mission file and
+        managed via the <a href="../general/LayerManagerDialog.html">Layer Manager</a>.</td></tr>
+    <tr><td>R / G / B / A</td><td>RGBA color used for the filled shape and the HUD target
+        bracket. Each channel can be edited independently. Alpha below 255 makes the
+        shape semi-transparent in-mission; 255 is fully opaque.</td></tr>
+</table>
+
+<div class="note">Coordinate point positions are moved by selecting the point in the
+viewport and dragging, or by editing its coordinates in the
+<a href="ObjectOrientEditorDialog.html">Object Orientation Editor</a>.</div>
+</body>
+</html>

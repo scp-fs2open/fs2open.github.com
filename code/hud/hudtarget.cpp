@@ -30,6 +30,7 @@
 #include "hud/hudtargetbox.h"
 #include "iff_defs/iff_defs.h"
 #include "io/timer.h"
+#include "coordinate_points/coordinate_point.h"
 #include "jumpnode/jumpnode.h"
 #include "localization/localize.h"
 #include "mission/missionhotkey.h"
@@ -2465,6 +2466,14 @@ int object_targetable_in_reticle(object *target_objp)
 		if (!jnp->IsHidden())
 			return 1;
 	}
+	else if ( obj_type == OBJ_COORDINATE_POINT )
+	{
+		// Only target-in-front-able when the designer marked the point as visible in mission.
+		auto* cp = find_coordinate_point_by_objnum(OBJ_INDEX(target_objp));
+		if (cp != nullptr && cp->flags[CoordinatePoint::Flags::Visible_in_mission]) {
+			return 1;
+		}
+	}
 
 	return 0;
 }
@@ -2550,6 +2559,10 @@ void hud_target_in_reticle_new()
 				continue;
 			mc.model_num = jnp->GetModelNumber();
 			}
+			break;
+		case OBJ_COORDINATE_POINT:
+			// No model to ray-cast against; fall through to the point-distance path below.
+			mc.model_num = -1;
 			break;
 		default:
 			Int3();	//	Illegal object type.

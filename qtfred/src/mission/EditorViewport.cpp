@@ -12,6 +12,8 @@
 #include "EditorViewport.h"
 #include <QSettings>
 #include <math/fvi.h>
+#include <coordinate_points/coordinate_point.h>
+#include <coordinate_points/coordinate_point_render.h>
 #include <jumpnode/jumpnode.h>
 #include <mission/missionparse.h>
 #include <prop/prop.h>
@@ -166,6 +168,7 @@ void EditorViewport::loadSettings() {
 	view.Lighting_on                       = settings.value("view_lighting_on",                       view.Lighting_on).toBool();
 	view.FullDetail                        = settings.value("view_full_detail",                       view.FullDetail).toBool();
 	view.Show_waypoints                    = settings.value("view_show_waypoints",                    view.Show_waypoints).toBool();
+	view.Show_coordinate_points            = settings.value("view_show_coordinate_points",            view.Show_coordinate_points).toBool();
 	view.Show_compass                      = settings.value("view_show_compass",                      view.Show_compass).toBool();
 	view.Highlight_selectable_subsys       = settings.value("view_highlight_selectable_subsys",       view.Highlight_selectable_subsys).toBool();
 	view.Outline_lod                       = settings.value("view_outline_lod",                       view.Outline_lod).toInt();
@@ -213,6 +216,7 @@ void EditorViewport::saveSettings() const {
 	settings.setValue("view_lighting_on",                       view.Lighting_on);
 	settings.setValue("view_full_detail",                       view.FullDetail);
 	settings.setValue("view_show_waypoints",                    view.Show_waypoints);
+	settings.setValue("view_show_coordinate_points",            view.Show_coordinate_points);
 	settings.setValue("view_show_compass",                      view.Show_compass);
 	settings.setValue("view_highlight_selectable_subsys",       view.Highlight_selectable_subsys);
 	settings.setValue("view_outline_lod",                       view.Outline_lod);
@@ -332,6 +336,12 @@ void EditorViewport::select_objects(const Marking_box& box) {
 
 		case OBJ_JUMP_NODE:
 			if (!view.Show_jump_nodes) {
+				valid = 0;
+			}
+			break;
+
+		case OBJ_COORDINATE_POINT:
+			if (!view.Show_coordinate_points) {
 				valid = 0;
 			}
 			break;
@@ -715,6 +725,10 @@ int EditorViewport::object_check_collision(object* objp, vec3d* p0, vec3d* p1, v
 		return 0;
 	}
 
+	if ((objp->type == OBJ_COORDINATE_POINT) && !view.Show_coordinate_points) {
+		return 0;
+	}
+
 	if (objp->flags[Object::Object_Flags::Hidden, Object::Object_Flags::Locked_from_editing]) {
 		return 0;
 	}
@@ -814,7 +828,33 @@ int EditorViewport::select_object(int cx, int cy) {
 				hitpos.xyz.x = vt.screen.xyw.x - cx;
 				hitpos.xyz.y = vt.screen.xyw.y - cy;
 				dist = hitpos.xyz.x * hitpos.xyz.x + hitpos.xyz.y * hitpos.xyz.y;
-				if ((dist < 8) && (dist < best_dist)) {
+
+				// Coordinate points render at a per-instance scaled size; widen the click
+				// tolerance to match the visible shape rather than using the default 2.8-pixel
+				// grace area.
+				double threshold = 8.0;
+				if (objp->type == OBJ_COORDINATE_POINT) {
+					auto* cp = find_coordinate_point_by_objnum(OBJ_INDEX(objp));
+					if (cp != nullptr) {
+						const float world_radius = get_coordinate_point_world_radius(*cp, camera.eye_pos);
+						vec3d offset_pos = objp->pos;
+						vm_vec_scale_add2(&offset_pos, &camera.eye_orient.vec.rvec, world_radius);
+
+						vertex v_offset;
+						g3_rotate_vertex(&v_offset, &offset_pos);
+						if (!(v_offset.codes & CC_BEHIND) &&
+							!(g3_project_vertex(&v_offset) & PF_OVERFLOW)) {
+							const double dx = v_offset.screen.xyw.x - vt.screen.xyw.x;
+							const double dy = v_offset.screen.xyw.y - vt.screen.xyw.y;
+							const double radius_sq = dx * dx + dy * dy;
+							// Keep at least the default tolerance so tiny / very-distant points
+							// stay clickable.
+							threshold = std::max(8.0, radius_sq);
+						}
+					}
+				}
+
+				if ((dist < threshold) && (dist < best_dist)) {
 					best = OBJ_INDEX(objp);
 					best_dist = dist;
 				}
@@ -872,6 +912,11 @@ void EditorViewport::setObjectLayerByIndex(int objectIndex, size_t layerIndex) {
 		auto* jn = jumpnode_get_by_objnum(objectIndex);
 		if (jn != nullptr) {
 			jn->SetFredLayer(layerName);
+		}
+	} else if (Objects[objectIndex].type == OBJ_COORDINATE_POINT) {
+		auto* cp = find_coordinate_point_by_objnum(objectIndex);
+		if (cp != nullptr) {
+			cp->fred_layer = layerName;
 		}
 	} else if (Objects[objectIndex].type == OBJ_WAYPOINT) {
 		// Layer is tracked at the path level; sync all waypoints in the path to the same layer
@@ -1038,6 +1083,12 @@ void EditorViewport::reloadLayersFromMission() {
 			auto* wl = find_waypoint_list_with_instance(objp->instance, nullptr);
 			if (wl != nullptr) {
 				const auto found = getLayerIndex(wl->get_fred_layer());
+				layerIndex = found == static_cast<size_t>(-1) ? 0 : found;
+			}
+		} else if (objp->type == OBJ_COORDINATE_POINT) {
+			auto* cp = find_coordinate_point_by_objnum(objectIndex);
+			if (cp != nullptr) {
+				const auto found = getLayerIndex(cp->fred_layer);
 				layerIndex = found == static_cast<size_t>(-1) ? 0 : found;
 			}
 		}

@@ -5433,9 +5433,9 @@ void parse_wings(mission* pm)
 {
 	required_string("#Wings");
 	while (true) {
-		int which = required_string_one_of(3, "#Events", "#Props", "$Name:");
+		int which = required_string_one_of(4, "#Events", "#Props", "#Coordinate Points", "$Name:");
 
-		if (which == -1 || which == 0 || which == 1) // #Events or #Props
+		if (which == -1 || which == 0 || which == 1 || which == 2) // any section terminator
 			break;
 
 		Assert(Num_wings < MAX_WINGS);
@@ -5472,12 +5472,13 @@ void parse_coordinate_point(mission* /*pm*/)
 	}
 
 	if (optional_string("+Color:")) {
-		int rgb[3] = { 255, 255, 255 };
-		stuff_int_list(rgb, 3, ParseLookupType::RAW_INTEGER_TYPE);
-		for (int& c : rgb) {
+		int rgba[4] = { 255, 255, 255, 255 };
+		// Three-value form (R G B) is accepted for backwards compatibility; alpha defaults to 255.
+		stuff_int_list(rgba, 4, ParseLookupType::RAW_INTEGER_TYPE);
+		for (int& c : rgba) {
 			CLAMP(c, 0, 255);
 		}
-		gr_init_alphacolor(&cp.display_color, rgb[0], rgb[1], rgb[2], 255);
+		gr_init_alphacolor(&cp.display_color, rgba[0], rgba[1], rgba[2], rgba[3]);
 	}
 
 	if (optional_string("+Shape:")) {
@@ -5498,12 +5499,30 @@ void parse_coordinate_point(mission* /*pm*/)
 		}
 	}
 
+	if (optional_string("+Multi Team:")) {
+		stuff_int(&cp.multi_team);
+		if (cp.multi_team < -1 || cp.multi_team >= MAX_TVT_TEAMS) {
+			cp.multi_team = -1;
+		}
+	}
+
 	if (optional_string("+Flags:")) {
 		SCP_vector<SCP_string> unparsed;
 		parse_string_flag_list(cp.flags, Parse_coordinate_point_flags, Num_parse_coordinate_point_flags, &unparsed);
 		if (!unparsed.empty()) {
 			for (const auto& f : unparsed) {
 				WarningEx(LOCATION, "Unknown flag in coordinate point flags: %s", f.c_str());
+			}
+		}
+	}
+
+	if (optional_string("+Layer:")) {
+		stuff_string(cp.fred_layer, F_NAME);
+		if (!mission_has_layer_name(&The_mission, cp.fred_layer)) {
+			if (cp.fred_layer.empty()) {
+				cp.fred_layer = "Default";
+			} else {
+				The_mission.fred_layers.push_back(cp.fred_layer);
 			}
 		}
 	}

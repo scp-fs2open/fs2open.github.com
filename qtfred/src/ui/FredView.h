@@ -121,6 +121,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void on_actionBriefing_triggered(bool);
 	void on_actionMission_Specs_triggered(bool);
 	void on_actionWaypoint_Paths_triggered(bool);
+	void on_actionCoordinate_Points_triggered(bool);
 	void on_actionJump_Nodes_triggered(bool);
 	void on_actionObject_Orientation_triggered(bool);
 	void on_actionShips_triggered(bool);

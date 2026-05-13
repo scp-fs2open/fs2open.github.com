@@ -31,6 +31,7 @@ private slots:
 	void on_showWaypointsCheck_toggled(bool checked);
 	void on_showPropsCheck_toggled(bool checked);
 	void on_showJumpNodesCheck_toggled(bool checked);
+	void on_showCoordinatePointsCheck_toggled(bool checked);
 
 private: // NOLINT(readability-redundant-access-specifiers)
 	void initializeUi();

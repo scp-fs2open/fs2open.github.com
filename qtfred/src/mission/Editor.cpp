@@ -975,6 +975,23 @@ int Editor::dup_object(object* objp) {
 				clone_prop_instance_data(inst, Objects[obj].instance);
 			}
 		}
+	} else if (objp->type == OBJ_COORDINATE_POINT) {
+		auto* src = find_coordinate_point_by_objnum(OBJ_INDEX(objp));
+		obj = coordinate_point_create(&objp->pos);
+		if (obj >= 0 && src != nullptr) {
+			auto* clone = find_coordinate_point_by_objnum(obj);
+			if (clone != nullptr) {
+				// Copy every field except the auto-generated unique name and the objnum.
+				clone->category        = src->category;
+				clone->display_color   = src->display_color;
+				clone->shape           = src->shape;
+				clone->size_scale      = src->size_scale;
+				clone->escort_priority = src->escort_priority;
+				clone->multi_team      = src->multi_team;
+				clone->flags           = src->flags;
+				clone->fred_layer      = src->fred_layer;
+			}
+		}
 	}
 
 	if (obj == -1) {

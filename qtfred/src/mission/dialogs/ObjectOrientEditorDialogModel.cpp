@@ -4,10 +4,20 @@
 #include <globalincs/linklist.h>
 #include <ship/ship.h>
 #include <math/bitarray.h>
+#include <coordinate_points/coordinate_point.h>
 #include <jumpnode/jumpnode.h>
 #include <prop/prop.h>
 
 namespace fso::fred::dialogs {
+
+namespace {
+// Object types that have no meaningful orientation in the editor; the dialog should never
+// write to their orient field, even in multi-select scenarios.
+bool object_type_supports_orientation(int type)
+{
+	return type != OBJ_WAYPOINT && type != OBJ_COORDINATE_POINT;
+}
+} // namespace
 
 ObjectOrientEditorDialogModel::ObjectOrientEditorDialogModel(QObject* parent, EditorViewport* viewport)
 	: AbstractDialogModel(parent, viewport)
@@ -56,6 +66,14 @@ void ObjectOrientEditorDialogModel::initializeData()
 					if (Props[ptr->instance].has_value())
 						_pointToObjectList.emplace_back(ObjectEntry(Props[ptr->instance]->prop_name, OBJ_INDEX(ptr)));
 					break;
+				case OBJ_COORDINATE_POINT: {
+					auto* cp = find_coordinate_point_by_objnum(OBJ_INDEX(ptr));
+					if (cp != nullptr)
+						_pointToObjectList.emplace_back(ObjectEntry(cp->name, OBJ_INDEX(ptr)));
+					break;
+				}
+				case OBJ_POINT:
+					break;
 				default:
 					UNREACHABLE("Unknown object type %d in Object Orient Dialog!", ptr->type); // unknown object type
 			}
@@ -65,7 +83,8 @@ void ObjectOrientEditorDialogModel::initializeData()
 	}
 
 	type = Objects[_editor->currentObject].type;
-	if (_editor->getNumMarked() == 1 && (type == OBJ_WAYPOINT || type == OBJ_JUMP_NODE)) {
+	if (_editor->getNumMarked() == 1 &&
+		(type == OBJ_WAYPOINT || type == OBJ_JUMP_NODE || type == OBJ_COORDINATE_POINT)) {
 		_orientationEnabledForType = false;
 		_selectedPointToObjectIndex = -1;
 	} else {
@@ -78,7 +97,8 @@ void ObjectOrientEditorDialogModel::initializeData()
 
 void ObjectOrientEditorDialogModel::updateObject(object* ptr)
 {
-	if (ptr->type != OBJ_WAYPOINT && _pointTo) {
+	// Waypoints and coordinate points carry no meaningful orientation; "Point To" is a no-op.
+	if (ptr->type != OBJ_WAYPOINT && ptr->type != OBJ_COORDINATE_POINT && _pointTo) {
 		vec3d v;
 		matrix m;
 
@@ -192,12 +212,12 @@ bool ObjectOrientEditorDialogModel::apply()
 		if (_pointTo) {
 			updateObject(origin_objp);
 			_editor->missionChanged();
-		} else if (change_orient) {
+		} else if (change_orient && object_type_supports_orientation(origin_objp->type)) {
 			origin_objp->orient = desired_orient;
 			_editor->missionChanged();
 		}
 
-		if (origin_objp->type != OBJ_WAYPOINT) {
+		if (origin_objp->type != OBJ_WAYPOINT && origin_objp->type != OBJ_COORDINATE_POINT) {
 			vm_transpose(&saved_orient);
 			origin_rotation = saved_orient * origin_objp->orient;
 		}
@@ -219,7 +239,9 @@ bool ObjectOrientEditorDialogModel::apply()
 			vm_vec_unrotate(&transformed_pos, &relative_pos, &origin_rotation);
 			vm_vec_add(&ptr->pos, &transformed_pos, &origin_objp->pos);
 
-			ptr->orient = ptr->orient * origin_rotation;
+			if (object_type_supports_orientation(ptr->type)) {
+				ptr->orient = ptr->orient * origin_rotation;
+			}
 			_editor->missionChanged();
 		} else {
 			// Independent transform of each marked object
@@ -230,7 +252,7 @@ bool ObjectOrientEditorDialogModel::apply()
 			if (_pointTo) {
 				updateObject(ptr);
 				_editor->missionChanged();
-			} else if (change_orient) {
+			} else if (change_orient && object_type_supports_orientation(ptr->type)) {
 				ptr->orient = desired_orient;
 				_editor->missionChanged();
 			}
