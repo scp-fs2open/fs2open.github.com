@@ -70,9 +70,9 @@ wing* WingEditorDialogModel::getCurrentWing() const
 	return &Wings[_currentWingIndex];
 }
 
-std::vector<std::pair<SCP_string, bool>> WingEditorDialogModel::getDockBayPathsForWingMask(uint32_t mask, int anchorShipnum)
+SCP_vector<std::pair<SCP_string, bool>> WingEditorDialogModel::getDockBayPathsForWingMask(uint32_t mask, int anchorShipnum)
 {
-	std::vector<std::pair<SCP_string, bool>> out;
+	SCP_vector<std::pair<SCP_string, bool>> out;
 
 	if (anchorShipnum < 0 || !ship_has_hangar_bay(anchorShipnum))
 		return out;
@@ -104,7 +104,7 @@ void WingEditorDialogModel::prepareSquadLogoList()
 	pilot_load_squad_pic_list();
 
 	for (int i = 0; i < Num_pilot_squad_images; i++) {
-		squadLogoList.emplace_back(Pilot_squad_image_names[i]);
+		_squadLogoList.emplace_back(Pilot_squad_image_names[i]);
 	}
 }
 
@@ -277,9 +277,9 @@ std::pair<int, SCP_vector<SCP_string>> WingEditorDialogModel::getLeaderList() co
 	return items;
 }
 
-std::vector<std::pair<int, std::string>> WingEditorDialogModel::getHotkeyList()
+SCP_vector<std::pair<int, SCP_string>> WingEditorDialogModel::getHotkeyList()
 {
-	std::vector<std::pair<int, std::string>> items;
+	SCP_vector<std::pair<int, SCP_string>> items;
 	items.emplace_back(-1, "None");
 
 	for (int i = 0; i < MAX_KEYED_TARGETS; ++i) {
@@ -293,9 +293,9 @@ std::vector<std::pair<int, std::string>> WingEditorDialogModel::getHotkeyList()
 	return items;
 }
 
-std::vector<std::pair<int, std::string>> WingEditorDialogModel::getFormationList()
+SCP_vector<std::pair<int, SCP_string>> WingEditorDialogModel::getFormationList()
 {
-	std::vector<std::pair<int, std::string>> items;
+	SCP_vector<std::pair<int, SCP_string>> items;
 	items.emplace_back(-1, "Default");
 
 	for (int i = 0; i < static_cast<int>(Wing_formations.size()); i++) {
@@ -305,9 +305,9 @@ std::vector<std::pair<int, std::string>> WingEditorDialogModel::getFormationList
 	return items;
 }
 
-std::vector<std::pair<int, std::string>> WingEditorDialogModel::getArrivalLocationList()
+SCP_vector<std::pair<int, SCP_string>> WingEditorDialogModel::getArrivalLocationList()
 {
-	std::vector<std::pair<int, std::string>> items;
+	SCP_vector<std::pair<int, SCP_string>> items;
 	items.reserve(MAX_ARRIVAL_NAMES);
 	for (int i = 0; i < MAX_ARRIVAL_NAMES; i++) {
 		items.emplace_back(i, Arrival_location_names[i]);
@@ -315,9 +315,9 @@ std::vector<std::pair<int, std::string>> WingEditorDialogModel::getArrivalLocati
 	return items;
 }
 
-std::vector<std::pair<int, std::string>> WingEditorDialogModel::getDepartureLocationList()
+SCP_vector<std::pair<int, SCP_string>> WingEditorDialogModel::getDepartureLocationList()
 {
-	std::vector<std::pair<int, std::string>> items;
+	SCP_vector<std::pair<int, SCP_string>> items;
 	items.reserve(MAX_DEPARTURE_NAMES);
 	for (int i = 0; i < MAX_DEPARTURE_NAMES; i++) {
 		items.emplace_back(i, Departure_location_names[i]);
@@ -336,9 +336,9 @@ static bool shipHasDockBay(int ship_info_index)
 	return pm && pm->ship_bay && pm->ship_bay->num_paths > 0;
 }
 
-std::vector<std::pair<int, std::string>> WingEditorDialogModel::getArrivalTargetList() const
+SCP_vector<std::pair<int, SCP_string>> WingEditorDialogModel::getArrivalTargetList() const
 {
-	std::vector<std::pair<int, std::string>> items;
+	SCP_vector<std::pair<int, SCP_string>> items;
 	const auto* w = getCurrentWing();
 	if (!w)
 		return items;
@@ -378,9 +378,9 @@ std::vector<std::pair<int, std::string>> WingEditorDialogModel::getArrivalTarget
 	return items;
 }
 
-std::vector<std::pair<int, std::string>> WingEditorDialogModel::getDepartureTargetList() const
+SCP_vector<std::pair<int, SCP_string>> WingEditorDialogModel::getDepartureTargetList() const
 {
-	std::vector<std::pair<int, std::string>> items;
+	SCP_vector<std::pair<int, SCP_string>> items;
 	const auto* w = getCurrentWing();
 	if (!w)
 		return items;
@@ -688,9 +688,9 @@ void WingEditorDialogModel::disbandCurrentWing()
 	reloadFromCurWing();
 }
 
-std::vector<std::pair<SCP_string, bool>> WingEditorDialogModel::getWingFlags() const
+SCP_vector<std::pair<SCP_string, bool>> WingEditorDialogModel::getWingFlags() const
 {
-	std::vector<std::pair<SCP_string, bool>> flags;
+	SCP_vector<std::pair<SCP_string, bool>> flags;
 	if (!wingIsValid())
 		return flags;
 
@@ -713,10 +713,10 @@ std::vector<std::pair<SCP_string, bool>> WingEditorDialogModel::getWingFlags() c
 	return flags;
 }
 
-std::vector<std::pair<SCP_string, SCP_string>> WingEditorDialogModel::getWingFlagDescriptions()
+SCP_vector<std::pair<SCP_string, SCP_string>> WingEditorDialogModel::getWingFlagDescriptions()
 {
 	const size_t num_descs = Num_parse_wing_flag_descriptions;
-	std::vector<std::pair<SCP_string, SCP_string>> descriptions;
+	SCP_vector<std::pair<SCP_string, SCP_string>> descriptions;
 	descriptions.reserve(Num_parse_wing_flags);
 	for (size_t i = 0; i < Num_parse_wing_flags; ++i) {
 		const auto& flagDef = Parse_wing_flags[i];
@@ -736,7 +736,7 @@ std::vector<std::pair<SCP_string, SCP_string>> WingEditorDialogModel::getWingFla
 	return descriptions;
 }
 
-void WingEditorDialogModel::setWingFlags(const std::vector<std::pair<SCP_string, bool>>& newFlags)
+void WingEditorDialogModel::setWingFlags(const SCP_vector<std::pair<SCP_string, bool>>& newFlags)
 {
 	if (!wingIsValid())
 		return;
@@ -980,7 +980,7 @@ void WingEditorDialogModel::setArrivalDistance(int newDistance)
 	modify(w->arrival_distance, newDistance);
 }
 
-std::vector<std::pair<SCP_string, bool>> WingEditorDialogModel::getArrivalPaths() const
+SCP_vector<std::pair<SCP_string, bool>> WingEditorDialogModel::getArrivalPaths() const
 {
 	if (!wingIsValid())
 		return {};
@@ -992,7 +992,7 @@ std::vector<std::pair<SCP_string, bool>> WingEditorDialogModel::getArrivalPaths(
 	return getDockBayPathsForWingMask(w->arrival_path_mask, anchor_to_target(w->arrival_anchor));
 }
 
-void WingEditorDialogModel::setArrivalPaths(const std::vector<std::pair<SCP_string, bool>>& chosen)
+void WingEditorDialogModel::setArrivalPaths(const SCP_vector<std::pair<SCP_string, bool>>& chosen)
 {
 	if (!wingIsValid())
 		return;
@@ -1220,7 +1220,7 @@ void WingEditorDialogModel::setDepartureTarget(int targetIndex)
 	modify(w->departure_path_mask, 0);
 }
 
-std::vector<std::pair<SCP_string, bool>> WingEditorDialogModel::getDeparturePaths() const
+SCP_vector<std::pair<SCP_string, bool>> WingEditorDialogModel::getDeparturePaths() const
 {
 	if (!wingIsValid())
 		return {};
@@ -1232,7 +1232,7 @@ std::vector<std::pair<SCP_string, bool>> WingEditorDialogModel::getDeparturePath
 	return getDockBayPathsForWingMask(w->departure_path_mask, anchor_to_target(w->departure_anchor));
 }
 
-void WingEditorDialogModel::setDeparturePaths(const std::vector<std::pair<SCP_string, bool>>& chosen)
+void WingEditorDialogModel::setDeparturePaths(const SCP_vector<std::pair<SCP_string, bool>>& chosen)
 {
 	if (!wingIsValid())
 		return;
