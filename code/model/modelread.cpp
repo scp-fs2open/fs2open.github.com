@@ -2088,7 +2088,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 					sm->flags.set(Model::Submodel_flags::Nocollide_this_only);
 				}
 
-				sm->flags.set(Model::Submodel_flags::Is_damaged, in(sm->name, "-destroyed"));
+				sm->flags.set(Model::Submodel_flags::Is_damaged, submodel_is_destroyed_form(sm->name));
 
 				break;
 			}
@@ -3339,11 +3339,7 @@ int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool
 
 	// Search for models that have destroyed versions
 	for (i=0; i<pm->n_models; i++ )	{
-		char destroyed_name[128];
-		strcpy_s( destroyed_name, pm->submodel[i].name );
-		strcat_s( destroyed_name, "-destroyed" );
-
-		int j = find_item_with_string(pm->submodel.get(), i2sz(pm->n_models), &bsp_info::name, destroyed_name);
+		int j = submodel_find_destroyed_form(pm->id, pm->submodel[i].name);
 		if (j >= 0) {
 			pm->submodel[i].next_form = j;
 			pm->submodel[j].prev_form = i;
@@ -3979,6 +3975,28 @@ int subobj_find_2d_bound(float radius ,matrix * /*orient*/, vec3d * pos,int *x1,
 	return 0;
 }
 
+int submodel_find_destroyed_form(int model_num, const char *name_stem)
+{
+	const auto pm = model_get(model_num);
+	Assertion(pm, "model_num must be valid!");
+
+	SCP_string destroyed_name(name_stem);
+	destroyed_name += "-destroyed";
+
+	return find_item_with_string(pm->submodel.get(), i2sz(pm->n_models), &bsp_info::name, destroyed_name.c_str());
+}
+
+bool submodel_is_destroyed_form(const char *name)
+{
+	constexpr auto suffix = "-destroyed";
+	constexpr auto suffix_len = std::char_traits<char>::length(suffix);
+
+	auto len = strlen(name);
+	if (len <= suffix_len)
+		return false;
+
+	return stricmp(name + len - suffix_len, suffix) == 0;
+}
 
 // Given a rotating submodel, find the local and world axes of rotation.
 void model_get_rotating_submodel_axis(vec3d *model_axis, vec3d *world_axis, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient)

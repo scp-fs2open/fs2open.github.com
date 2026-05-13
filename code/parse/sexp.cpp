@@ -15755,6 +15755,9 @@ void set_subsys_strength_and_maybe_ancestors(ship *shipp, ship_subsys *ss, polym
 		if (ss->submodel_instance_2)
 			ss->submodel_instance_2->blown_off = false;
 
+		// special case for subsystems that don't correspond to a submodel
+		check_subsystem_submodel_link(shipp, ss, false);
+
 		// see if we are handling ancestors and if this subsystem has a submodel
 		int subobj = ss->system_info->subobj_num;
 		if (repair_ancestors && subobj >= 0)

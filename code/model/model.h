@@ -1137,13 +1137,18 @@ extern int model_find_2d_bound_min(int model_num,matrix *orient, vec3d * pos,int
 // rect.
 int submodel_find_2d_bound_min(int model_num,int submodel, matrix *orient, vec3d * pos,int *x1, int *y1, int *x2, int *y2);
 
-
 // Returns zero is x1,y1,x2,y2 are valid
 // Returns 2 for point offscreen.
 // note that x1,y1,x2,y2 aren't clipped to 2d screen coordinates!
 // This function just looks at the radius, and not the orientation, so the
 // bounding box won't change depending on the obj's orient.
 int subobj_find_2d_bound(float radius, matrix *orient, vec3d * pos,int *x1, int *y1, int *x2, int *y2);
+
+// Returns the index of the -destroyed version of a submodel name, if it exists
+int submodel_find_destroyed_form(int model_num, const char *name_stem);
+
+// Returns whether this submodel name is a -destroyed version
+bool submodel_is_destroyed_form(const char *name);
 
 // stats variables
 #ifndef NDEBUG
