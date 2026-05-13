@@ -132,7 +132,7 @@ void DumpStats::get_mission_stats(CString &buffer)
 	// Mission info
 	buffer += "\t MISSION INFO\r\n";
 
-	temp.Format("Title: %s\r\n", The_mission.name);
+	temp.Format("Title: %s\r\n", The_mission.name.c_str());
 	buffer += temp;
 
 	temp.Format("Filename: %s\r\n", Mission_filename);

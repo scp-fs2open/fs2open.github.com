@@ -787,7 +787,7 @@ void parse_mission_info(mission *pm, bool basic = false)
 		throw parse::VersionException("Mission requires version " + gameversion::format_version(pm->required_fso_version), pm->required_fso_version);
 
 	required_string("$Name:");
-	stuff_string(pm->name, F_NAME, NAME_LENGTH);
+	stuff_string(pm->name, F_NAME);
 
 	required_string("$Author:");
 	stuff_string(pm->author, F_NAME);
@@ -1050,7 +1050,7 @@ void parse_mission_info(mission *pm, bool basic = false)
 		if (index >= 0)
 			The_mission.ai_profile = &Ai_profiles[index];
 		else
-			WarningEx(LOCATION, "Mission: %s\nUnknown AI profile %s!", pm->name, temp );
+			WarningEx(LOCATION, "Mission: %s\nUnknown AI profile %s!", pm->name.c_str(), temp );
 	}
 
 	if (optional_string("$Lighting Profile:"))
@@ -1232,7 +1232,7 @@ void parse_player_info2(mission *pm)
 			stuff_string(str, F_NAME, NAME_LENGTH);
 			ptr->default_ship = ship_info_lookup(str);
 			if (-1 == ptr->default_ship) {
-				WarningEx(LOCATION, "Mission: %s\nUnknown default ship %s!  Defaulting to %s.", pm->name, str, Ship_info[ptr->ship_list[0]].name );
+				WarningEx(LOCATION, "Mission: %s\nUnknown default ship %s!  Defaulting to %s.", pm->name.c_str(), str, Ship_info[ptr->ship_list[0]].name );
 				ptr->default_ship = ptr->ship_list[0]; // default to 1st in list
 			}
 			// see if the player's default ship is an allowable ship (campaign only). If not, then what
@@ -1245,7 +1245,7 @@ void parse_player_info2(mission *pm)
 							break;
 						}
 					}
-					Assertion( i < ship_info_size(), "Mission: %s: Could not find a valid default ship.\n", pm->name );
+					Assertion( i < ship_info_size(), "Mission: %s: Could not find a valid default ship.\n", pm->name.c_str() );
 				}
 			}
 		}
@@ -3391,7 +3391,7 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 		// try and find the alternate name
 		p_objp->alt_type_index = mission_parse_lookup_alt(name);
 		if(p_objp->alt_type_index < 0)
-			WarningEx(LOCATION, "Mission %s\nError looking up alternate ship type name %s!\n", pm->name, name);
+			WarningEx(LOCATION, "Mission %s\nError looking up alternate ship type name %s!\n", pm->name.c_str(), name);
 		else
 			mprintf(("Using alternate ship type name: %s\n", name));
 	}
@@ -3405,7 +3405,7 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 		// try and find the callsign
 		p_objp->callsign_index = mission_parse_lookup_callsign(name);
 		if(p_objp->callsign_index < 0)
-			WarningEx(LOCATION, "Mission %s\nError looking up callsign %s!\n", pm->name, name);
+			WarningEx(LOCATION, "Mission %s\nError looking up callsign %s!\n", pm->name.c_str(), name);
 		else
 			mprintf(("Using callsign: %s\n", name));
 	}
@@ -6310,7 +6310,7 @@ void parse_bitmaps(mission *pm)
 			}
 
 			if (z == NUM_NEBULAS)
-				WarningEx(LOCATION, "Mission %s\nUnknown nebula %s!", pm->name, str);
+				WarningEx(LOCATION, "Mission %s\nUnknown nebula %s!", pm->name.c_str(), str);
 
 			if (optional_string("+Color:")) {
 				stuff_string(str, F_NAME, MAX_FILENAME_LEN);
@@ -6323,7 +6323,7 @@ void parse_bitmaps(mission *pm)
 			}
 
 			if (z == NUM_NEBULA_COLORS)
-				WarningEx(LOCATION, "Mission %s\nUnknown nebula color %s!", pm->name, str);
+				WarningEx(LOCATION, "Mission %s\nUnknown nebula color %s!", pm->name.c_str(), str);
 
 			if (optional_string("+Pitch:")){
 				stuff_int(&Nebula_pitch);
@@ -6421,7 +6421,7 @@ void parse_asteroid_fields(mission *pm)
 				if (subtype >= 0) {
 					Asteroid_field.field_debris_type.push_back(subtype);
 				} else {
-					WarningEx(LOCATION, "Mission %s\n Invalid asteroid debris %s!", pm->name, ast_name.c_str());
+					WarningEx(LOCATION, "Mission %s\n Invalid asteroid debris %s!", pm->name.c_str(), ast_name.c_str());
 				}
 			}
 
@@ -6473,7 +6473,7 @@ void parse_asteroid_fields(mission *pm)
 				if (valid){
 					Asteroid_field.field_asteroid_type.push_back(std::move(ast_name));
 				} else {
-					WarningEx(LOCATION, "Mission %s\n Invalid asteroid %s!", pm->name, ast_name.c_str());
+					WarningEx(LOCATION, "Mission %s\n Invalid asteroid %s!", pm->name.c_str(), ast_name.c_str());
 				}
 			}
 		}
@@ -6853,7 +6853,7 @@ bool parse_mission(mission *pm, int flags)
 		popup(PF_TITLE_BIG | PF_TITLE_RED | PF_USE_AFFIRMATIVE_ICON | PF_NO_NETWORKING, 1, POPUP_OK, text);
 	}
 
-	log_printf(LOGFILE_EVENT_LOG, "Mission %s loaded.\n", pm->name); 
+	log_printf(LOGFILE_EVENT_LOG, "Mission %s loaded.\n", pm->name.c_str()); 
 
 	// success
 	return true;
@@ -7203,8 +7203,8 @@ int get_mission_info(const char *filename, mission *mission_p, bool basic, bool 
 
 void mission::Reset()
 {
-	name[ 0 ] = '\0';
-	author = "";
+	name.clear();
+	author.clear();
 	required_fso_version = LEGACY_MISSION_VERSION;
 	created[ 0 ] = '\0';
 	modified[ 0 ] = '\0';

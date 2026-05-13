@@ -909,7 +909,7 @@ void clear_mission(bool fast_reload)
 	time(&currentTime);
 	auto timeinfo = localtime(&currentTime);
 
-	strcpy_s(The_mission.name, "Untitled");
+	The_mission.name = "Untitled";
 	The_mission.author = str;
 	time_to_mission_info_string(timeinfo, The_mission.created, DATE_TIME_LENGTH - 1);
 	strcpy_s(The_mission.modified, The_mission.created);

@@ -185,7 +185,7 @@ struct parse_object_flag_description {
 };
 
 typedef struct mission {
-	char	name[NAME_LENGTH];
+	SCP_string	name;
 	SCP_string	author;
 	gameversion::version	required_fso_version;
 	char	created[DATE_TIME_LENGTH];

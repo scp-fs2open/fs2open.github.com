@@ -2496,7 +2496,7 @@ int Fred_mission_save::save_mission_info()
 	// XSTR
 	required_string_fred("$Name:");
 	parse_comments();
-	fout_ext(" ", "%s", The_mission.name);
+	fout_ext(" ", "%s", The_mission.name.c_str());
 
 	required_string_fred("$Author:");
 	parse_comments();

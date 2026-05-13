@@ -2475,10 +2475,6 @@ int CFREDView::global_error_check()
 	if ( The_mission.game_type & MISSION_TYPE_MULTI )
 		multi = 1;
 
-//	if (!stricmp(The_mission.name, "Untitled"))
-//		if (error("You haven't given this mission a title yet.\nThis is done from the Mission Specs Editor (Shift-N)."))
-//			return 1;
-
 	// cycle though all the objects and verify every possible aspect of them
 	obj_count = t = 0;
 	ptr = GET_FIRST(&obj_used_list);
