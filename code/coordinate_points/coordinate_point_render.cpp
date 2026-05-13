@@ -224,7 +224,10 @@ void draw_coordinate_point_shape(const mission_coordinate_point& cp,
 
 	material mat;
 	mat.set_color(cp.display_color);
-	mat.set_depth_mode(ZBUFFER_TYPE_FULL);
+	// Depth-test but DON'T write to depth: the lightshaft post-pass samples the depth texture
+	// to find occluders, and coordinate points are conceptually HUD overlays, not physical
+	// objects, so they shouldn't carve shadow shafts into the lightshaft pattern.
+	mat.set_depth_mode(ZBUFFER_TYPE_READ);
 	mat.set_blend_mode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
 
 	g3_render_primitives(&mat, tri_verts, def.tri_index_count, PRIM_TYPE_TRIS, false);
