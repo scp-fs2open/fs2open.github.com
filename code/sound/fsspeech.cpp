@@ -125,30 +125,6 @@ static SCP_string ttsvoice_display(const std::pair<int, SCP_string>& vi)
 	return vi.second;
 }
 
-static bool ttsvoice_change(const std::pair<int, SCP_string>& new_voice, bool initial)
-{
-	if (initial) {
-		return false;
-	}
-	speech_set_voice(new_voice.first);
-	return true;
-}
-
-static auto SpeechVoiceOption = options::OptionBuilder<std::pair<int, SCP_string>>("Speech.Voice",
-	std::pair<const char*, int>{"TTS Voice", 1918},
-	std::pair<const char*, int>{"The voice used to read text", 1919})
-	.category(std::make_pair("Audio", 1826))
-	.level(options::ExpertLevel::Beginner)
-	.default_func([]() { return ttsvoice_enumerator().front(); }) // always guarantees at least 1 value
-	.enumerator(ttsvoice_enumerator)
-	.display(ttsvoice_display)
-	.serializer(ttsvoice_serializer)
-	.deserializer(ttsvoice_deserializer)
-	.flags({ options::OptionFlags::ForceMultiValueSelection })
-	.change_listener(ttsvoice_change)
-	.importance(3)
-	.finish();
-
 static auto SpeechVolumeOption = options::OptionBuilder<float>("Speech.Volume",
 	std::pair<const char*, int>{"TTS Volume", 1920},
 	std::pair<const char*, int>{"Volume used for playing TTS speech", 1921})
@@ -167,6 +143,33 @@ static auto SpeechRateOption = options::OptionBuilder<float>("Speech.Rate",
 	.default_val(100.0f)
 	.change_listener(ttsrate_change)
 	.importance(1)
+	.finish();
+
+static bool ttsvoice_change(const std::pair<int, SCP_string>& new_voice, bool initial)
+{
+	if (initial) {
+		return false;
+	}
+	speech_set_voice(new_voice.first);
+	// Re-apply volume and rate, it is needed on Mac and maybe on other OS as well
+	speech_set_volume((unsigned short)SpeechVolumeOption->getValue());
+	speech_set_rate(SpeechRateOption->getValue());
+	return true;
+}
+
+static auto SpeechVoiceOption = options::OptionBuilder<std::pair<int, SCP_string>>("Speech.Voice",
+	std::pair<const char*, int>{"TTS Voice", 1918},
+	std::pair<const char*, int>{"The voice used to read text", 1919})
+	.category(std::make_pair("Audio", 1826))
+	.level(options::ExpertLevel::Beginner)
+	.default_func([]() { return ttsvoice_enumerator().front(); }) // always guarantees at least 1 value
+	.enumerator(ttsvoice_enumerator)
+	.display(ttsvoice_display)
+	.serializer(ttsvoice_serializer)
+	.deserializer(ttsvoice_deserializer)
+	.flags({ options::OptionFlags::ForceMultiValueSelection })
+	.change_listener(ttsvoice_change)
+	.importance(3)
 	.finish();
 
 static auto SpeechBriefingOption = options::OptionBuilder<bool>("Speech.Briefing",
@@ -246,8 +249,9 @@ bool fsspeech_init()
 		FSSpeech_play_from[FSSPEECH_FROM_BRIEFING] = SpeechBriefingOption->getValue();
 		FSSpeech_play_from[FSSPEECH_FROM_INGAME] = SpeechIngameOption->getValue();
 		FSSpeech_play_from[FSSPEECH_FROM_MULTI] = SpeechMultiOption->getValue();
-		speech_set_volume((unsigned short)SpeechVolumeOption->getValue());
+		// The apply order must be Voice->Volume/Rate to avoid issues on Mac.
 		speech_set_voice(SpeechVoiceOption->getValue().first);
+		speech_set_volume((unsigned short)SpeechVolumeOption->getValue());
 		speech_set_rate(SpeechRateOption->getValue());
 	}
 	else 
@@ -258,11 +262,11 @@ bool fsspeech_init()
 			nprintf(("Speech", "Play %s: %s\n", FSSpeech_play_id[i], FSSpeech_play_from[i] ? "true" : "false"));
 		}
 
-		int volume = os_config_read_uint(nullptr, "SpeechVolume", 100);
-		speech_set_volume((unsigned short)volume);
-
 		int voice = os_config_read_uint(nullptr, "SpeechVoice", 0);
 		speech_set_voice(voice);
+
+		int volume = os_config_read_uint(nullptr, "SpeechVolume", 100);
+		speech_set_volume((unsigned short)volume);
 
 		int rate = os_config_read_uint(nullptr, "SpeechRate", 100);
 		speech_set_rate(static_cast<float>(rate));
