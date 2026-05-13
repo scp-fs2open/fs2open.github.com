@@ -3333,22 +3333,20 @@ int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool
 
 	// Set up the default values
 	for (i=0; i<pm->n_models; i++ )	{
-		pm->submodel[i].my_replacement = -1;	// assume nothing replaces this
-		pm->submodel[i].i_replace = -1;		// assume this doesn't replaces anything
+		pm->submodel[i].next_form = -1;		// assume nothing replaces this
+		pm->submodel[i].prev_form = -1;		// assume this doesn't replace anything
 	}
 
 	// Search for models that have destroyed versions
 	for (i=0; i<pm->n_models; i++ )	{
-		int j;
 		char destroyed_name[128];
-
 		strcpy_s( destroyed_name, pm->submodel[i].name );
 		strcat_s( destroyed_name, "-destroyed" );
-		for (j=0; j<pm->n_models; j++ )	{
-			if ( !stricmp( pm->submodel[j].name, destroyed_name ))	{
-				pm->submodel[i].my_replacement = j;
-				pm->submodel[j].i_replace = i;
-			}
+
+		int j = find_item_with_string(pm->submodel.get(), i2sz(pm->n_models), &bsp_info::name, destroyed_name);
+		if (j >= 0) {
+			pm->submodel[i].next_form = j;
+			pm->submodel[j].prev_form = i;
 		}
 
 		// Search for models with live debris
@@ -3366,12 +3364,8 @@ int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool
 				Assert(pm->submodel[i].num_live_debris < MAX_LIVE_DEBRIS);
 				pm->submodel[i].live_debris[pm->submodel[i].num_live_debris++] = j;
 				pm->submodel[j].flags.set(Model::Submodel_flags::Is_live_debris);
-
-				// make sure live debris doesn't have a parent
-				pm->submodel[j].parent = -1;
 			}
 		}
-
 	}
 
 	// maybe generate vertex buffers
@@ -3554,8 +3548,16 @@ int model_create_instance(int objnum, int model_num)
 	}
 	pmi->id = open_slot;
 
-	if (pm->n_models > 0)
+	if (pm->n_models > 0) {
 		pmi->submodel = new submodel_instance[pm->n_models];
+
+		// "damaged" submodels (like -destroyed variants, or debris) are blown-off by default
+		for (int i = 0; i < pm->n_models; i++) {
+			if (pm->submodel[i].flags[Model::Submodel_flags::Is_damaged]) {
+				pmi->submodel[i].blown_off = true;
+			}
+		}
+	}
 
 	// add intrinsic_motion instances if this model is intrinsic-moving
 	if (pm->flags & PM_FLAG_HAS_INTRINSIC_MOTION) {
@@ -4836,8 +4838,9 @@ void model_get_moving_submodel_list(SCP_vector<int> &submodel_vector, const obje
 		const auto& child_submodel = pm->submodel[submodel];
 		const auto& child_submodel_instance = pmi->submodel[submodel];
 
-		// Don't check it or its children if it is destroyed or it is a replacement (non-moving)
-		if (child_submodel.flags[Model::Submodel_flags::No_collisions] || child_submodel_instance.blown_off || child_submodel.i_replace != -1) {
+		// Don't check it or its children if it is destroyed or it is a replacement
+		// (we currently assume replacements are -destroyed versions of submodels that might otherwise move)
+		if (child_submodel.flags[Model::Submodel_flags::No_collisions] || child_submodel_instance.blown_off || child_submodel.prev_form != -1) {
 			skipChildren = true;
 			return;
 		}
@@ -4964,7 +4967,10 @@ void model_set_up_techroom_instance(ship_info *sip, int model_instance_num)
 
 	model_iterate_submodel_tree(pm, pm->detail[0], [&](int submodel, int /*level*/, bool /*isLeaf*/)
 		{
-			model_replicate_submodel_instance(pm, pmi, submodel, empty);
+			auto sm = &pm->submodel[submodel];
+
+			if (sm->flags[Model::Submodel_flags::Can_move])
+				model_replicate_submodel_instance(pm, pmi, submodel, empty);
 		});
 }
 
@@ -4985,17 +4991,21 @@ void model_replicate_submodel_instance_sub(polymodel *pm, polymodel_instance *pm
 
 	submodel_instance *smi = &pmi->submodel[submodel_num];
 	bsp_info *sm = &pm->submodel[submodel_num];
-	
-	// Set the "blown out" flags.
+
+	// Set the "blown off" flags
 	if ( flags[Ship::Subsystem_Flags::No_disappear] ) {
 		smi->blown_off = false;
 	} else if ( copy_from ) {
 		smi->blown_off = copy_from->blown_off;
 	}
 
+	// In the future, we could expand the submodel instance to have a "blown_off_index"
+	// to indicate which form is currently visible, but for now, we'll follow the retail
+	// convention of having just two forms, the second of which is opposite from the first.
+
 	if ( smi->blown_off )	{
-		if ( sm->my_replacement >= 0 && !(flags[Ship::Subsystem_Flags::No_replace]) ) {
-			auto r_smi = &pmi->submodel[sm->my_replacement];
+		if ( sm->next_form >= 0 && !(flags[Ship::Subsystem_Flags::No_replace]) ) {
+			auto r_smi = &pmi->submodel[sm->next_form];
 			r_smi->blown_off = false;
 			if ( copy_from ) {
 				r_smi->cur_angle = copy_from->cur_angle;
@@ -5016,10 +5026,10 @@ void model_replicate_submodel_instance_sub(polymodel *pm, polymodel_instance *pm
 			}
 		}
 	} else {
-		// If submodel isn't yet blown off and has a -destroyed replacement model, we prevent
-		// the replacement model from being drawn by marking it as having been blown off
-		if ( sm->my_replacement >= 0 && sm->my_replacement != submodel_num)	{
-			auto r_smi = &pmi->submodel[sm->my_replacement];
+		// If submodel isn't yet blown off and has a next form (like a -destroyed replacement model),
+		// we prevent the replacement model from being drawn by marking it as having been blown off
+		if ( sm->next_form >= 0 && sm->next_form != submodel_num)	{
+			auto r_smi = &pmi->submodel[sm->next_form];
 			r_smi->blown_off = true;
 		}
 	}

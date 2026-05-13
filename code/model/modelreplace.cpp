@@ -267,11 +267,11 @@ CHANGE_HELPER(change_submodel_numbers, bsp_info, int)
 	for (auto& detail : input.details)
 		REPLACE_IF_EQ(detail);
 	REPLACE_IF_EQ(input.first_child);
-	REPLACE_IF_EQ(input.i_replace);
+	REPLACE_IF_EQ(input.prev_form);
 	for (auto& debris : input.live_debris)
 		REPLACE_IF_EQ(debris);
 	REPLACE_IF_EQ(input.look_at_submodel);
-	REPLACE_IF_EQ(input.my_replacement);
+	REPLACE_IF_EQ(input.next_form);
 	REPLACE_IF_EQ(input.next_sibling);
 	REPLACE_IF_EQ(input.parent);
 CHANGE_HELPER_END

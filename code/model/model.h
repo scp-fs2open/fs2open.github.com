@@ -136,7 +136,7 @@ struct submodel_instance
 	float	shift_accel = 0.0f;
 	TIMESTAMP stepped_translation_started;
 
-	bool	blown_off = false;						// If set, this subobject is blown off
+	bool	blown_off = false;						// If set, this subobject is not rendered or used for collision
 
 	// These fields are the true standard reference for submodel rotation.  They should seldom be read directly
 	// and should almost never be written directly.  In most cases, coders should prefer cur_angle and prev_angle.
@@ -433,7 +433,7 @@ class bsp_info
 public:
 	bsp_info()
 		: bsp_data_size(0), bsp_data(nullptr), collision_tree_index(-1),
-		rad(0.0f), my_replacement(-1), i_replace(-1), num_live_debris(0),
+		rad(0.0f), next_form(-1), prev_form(-1), num_live_debris(0),
 		parent(-1), num_children(0), first_child(-1), next_sibling(-1), num_details(0),
 		outline_buffer(nullptr), n_verts_outline(0), render_sphere_radius(0.0f), use_render_box(0),	use_render_sphere(0)
 	{
@@ -484,8 +484,8 @@ public:
 	vec3d	max;						// The max point of this object's geometry
 	vec3d	bounding_box[8];		// calculated fron min/max
 
-	int		my_replacement;		// If not -1 this subobject is what should get rendered instead of this one
-	int		i_replace;				// If this is not -1, then this subobject will replace i_replace when it is damaged
+	int		next_form;				// If not -1, this submodel can transform into it
+	int		prev_form;				// If not -1, another submodel that can transform into this one
 
 	int		num_live_debris;		// num live debris models assocaiated with a submodel
 	int		live_debris[MAX_LIVE_DEBRIS];	// array of live debris submodels for a submodel
