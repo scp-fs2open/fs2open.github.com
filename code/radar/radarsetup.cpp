@@ -177,6 +177,7 @@ void radar_plot_object( object *objp )
 	vec3d pos, tempv;
 	float awacs_level, dist, max_radar_dist;
 	vec3d world_pos = objp->pos;
+	bool mine_in_targetable_range = true; // for mines, computed below after distance check; non-mines unaffected
 
 	// don't process anything here.  Somehow, a jumpnode object caused this function
 	// to get entered on server side.
@@ -238,7 +239,7 @@ void radar_plot_object( object *objp )
 		{
 			weapon_info *wip = &Weapon_info[Weapons[objp->instance].weapon_info_index];
 
-			if (wip->wi_flags[Weapon::Info_Flags::Mine]) {
+			if (wip->is_mine()) {
 				// if explicitly hidden, return
 				if (wip->wi_flags[Weapon::Info_Flags::Dont_show_on_radar])
 					return;
@@ -299,10 +300,10 @@ void radar_plot_object( object *objp )
 	// Mine range-based visibility: determine state from mine-specific ranges
 	if (objp->type == OBJ_WEAPON) {
 		weapon_info *wip = &Weapon_info[Weapons[objp->instance].weapon_info_index];
-		if (wip->wi_flags[Weapon::Info_Flags::Mine]) {
-			bool in_targetable = (wip->mine_targetable_range < 0.0f || dist <= wip->mine_targetable_range);
-			bool in_sensors    = (wip->mine_sensors_range < 0.0f    || dist <= wip->mine_sensors_range);
-			if (!in_targetable && !in_sensors)
+		if (wip->is_mine()) {
+			mine_in_targetable_range = (wip->mine_targetable_range < 0.0f || dist <= wip->mine_targetable_range);
+			bool in_sensors          = (wip->mine_sensors_range < 0.0f    || dist <= wip->mine_sensors_range);
+			if (!mine_in_targetable_range && !in_sensors)
 				return; // beyond all detection ranges
 		}
 	}
@@ -363,15 +364,9 @@ void radar_plot_object( object *objp )
 
 	// see if blip should be drawn distorted
 	// also determine if alternate image was defined for this ship
-	if (objp->type == OBJ_WEAPON) {
-		weapon_info *wip = &Weapon_info[Weapons[objp->instance].weapon_info_index];
-		if (wip->wi_flags[Weapon::Info_Flags::Mine]) {
-			// Distorted if beyond targetable range but within sensors range
-			bool in_targetable = (wip->mine_targetable_range < 0.0f || dist <= wip->mine_targetable_range);
-			if (!in_targetable)
-				b->flags |= BLIP_DRAW_DISTORTED;
-		}
-	}
+	// Mines outside their targetable range (but inside sensors range, by the earlier gate) get a distorted blip
+	if (!mine_in_targetable_range)
+		b->flags |= BLIP_DRAW_DISTORTED;
 
 	if (objp->type == OBJ_SHIP)
 	{

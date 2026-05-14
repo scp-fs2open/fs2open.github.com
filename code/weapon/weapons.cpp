@@ -86,9 +86,10 @@ typedef struct delayed_ssm_index_data {
 SCP_unordered_map<SCP_string, delayed_ssm_index_data> Delayed_SSM_indices_data;
 SCP_vector<SCP_string> Delayed_SSM_indices;
 
-// Temporary storage for mine proximity type/class names pending resolution after ship_init()
-static SCP_unordered_map<SCP_string, SCP_vector<SCP_string>> Pending_mine_type_names;
-static SCP_unordered_map<SCP_string, SCP_vector<SCP_string>> Pending_mine_class_names;
+// Temporary storage for proximity type/class names pending resolution after ship_init().
+// Keyed by weapon_info_index (not name) so a duplicate-named entry can't clobber another's pending list.
+static SCP_unordered_map<int, SCP_vector<SCP_string>> Pending_proximity_type_names;
+static SCP_unordered_map<int, SCP_vector<SCP_string>> Pending_proximity_class_names;
 
 
 #ifndef NDEBUG
@@ -1357,8 +1358,88 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		stuff_float(&wip->det_radius);
 	}
 
+	// Generic proximity detonation. Any weapon (mine, flak, missile, etc.) can opt in by setting
+	// $Proximity Radius:. The mine-specific behavior (chase, sensors range, etc.) lives in $MineInfo:.
+	if (optional_string("$Proximity Radius:")) {
+		stuff_float(&wip->proximity_radius);
+		if (wip->proximity_radius <= 0.0f) {
+			wip->proximity_radius = 1.0f;
+			Warning(LOCATION, "Weapon '%s': $Proximity Radius must be positive. Setting to 1.\n", wip->name);
+		}
+
+		if (optional_string("+Proximity IFF:")) {
+			SCP_vector<SCP_string> iff_names;
+			stuff_string_list(iff_names);
+			for (const SCP_string& iff_name : iff_names) {
+				int iff_idx = iff_lookup(iff_name.c_str());
+				if (iff_idx < 0)
+					Warning(LOCATION, "Weapon '%s': +Proximity IFF entry '%s' not found.\n", wip->name, iff_name.c_str());
+				else
+					wip->proximity_iff.push_back(iff_idx);
+			}
+		}
+
+		if (optional_string("+Proximity Species:")) {
+			SCP_vector<SCP_string> species_names;
+			stuff_string_list(species_names);
+			for (const SCP_string& species_name : species_names) {
+				int species_idx = species_info_lookup(species_name.c_str());
+				if (species_idx < 0)
+					Warning(LOCATION, "Weapon '%s': +Proximity Species entry '%s' not found.\n", wip->name, species_name.c_str());
+				else
+					wip->proximity_species.push_back(species_idx);
+			}
+		}
+
+		const int wi_index = static_cast<int>(wip - Weapon_info.data());
+
+		if (optional_string("+Proximity Type:")) {
+			stuff_string_list(Pending_proximity_type_names[wi_index]);
+		}
+
+		if (optional_string("+Proximity Class:")) {
+			stuff_string_list(Pending_proximity_class_names[wi_index]);
+		}
+
+		// Launcher-relative filter: hostile/friendly/neutral, combinable. Default (no entry) = any relation.
+		if (optional_string("+Proximity Relation:")) {
+			SCP_vector<SCP_string> relation_names;
+			stuff_string_list(relation_names);
+			for (const SCP_string& rel : relation_names) {
+				if (!stricmp(rel.c_str(), "hostile"))
+					wip->proximity_relation_mask |= Weapon::Proximity::Relation_Hostile;
+				else if (!stricmp(rel.c_str(), "friendly"))
+					wip->proximity_relation_mask |= Weapon::Proximity::Relation_Friendly;
+				else if (!stricmp(rel.c_str(), "neutral"))
+					wip->proximity_relation_mask |= Weapon::Proximity::Relation_Neutral;
+				else
+					Warning(LOCATION, "Weapon '%s': +Proximity Relation entry '%s' is not one of hostile/friendly/neutral.\n", wip->name, rel.c_str());
+			}
+		}
+
+		if (optional_string("+Detonate Chance:")) {
+			stuff_float(&wip->proximity_detonate_chance);
+			if (wip->proximity_detonate_chance < 0.0f || wip->proximity_detonate_chance > 1.0f) {
+				CLAMP(wip->proximity_detonate_chance, 0.0f, 1.0f);
+				Warning(LOCATION, "Weapon '%s': +Detonate Chance must be in [0.0, 1.0]. Clamping.\n", wip->name);
+			}
+		}
+
+		if (optional_string("+Stealth Proximity Multiplier:")) {
+			stuff_float(&wip->proximity_stealth_multiplier);
+			if (wip->proximity_stealth_multiplier < 0.0f) {
+				wip->proximity_stealth_multiplier = 0.0f;
+				Warning(LOCATION, "Weapon '%s': +Stealth Proximity Multiplier cannot be negative. Setting to 0.\n", wip->name);
+			}
+		}
+	}
+
 	if (optional_string("$MineInfo:")) {
 		wip->wi_flags.set(Weapon::Info_Flags::Mine);
+
+		// Mines without an explicit $Proximity Radius: get the historical default
+		if (wip->proximity_radius <= 0.0f)
+			wip->proximity_radius = 50.0f;
 
 		if (optional_string("+Sensors Range:")) {
 			stuff_float(&wip->mine_sensors_range);
@@ -1377,72 +1458,6 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		if (wip->weapon_hitpoints > 0) {
 			wip->wi_flags.set(Weapon::Info_Flags::Turret_Interceptable);
 			wip->wi_flags.set(Weapon::Info_Flags::Fighter_Interceptable);
-		}
-
-		if (optional_string("+Arming Time:")) {
-			stuff_float(&wip->mine_arm_time);
-			if (wip->mine_arm_time < 0.0f) {
-				wip->mine_arm_time = 0.0f;
-				Warning(LOCATION, "Mine weapon '%s': +Arming Time cannot be negative. Setting to 0.\n", wip->name);
-			}
-		}
-
-		if (optional_string("+Proximity Radius:")) {
-			stuff_float(&wip->proximity_radius);
-			if (wip->proximity_radius <= 0.0f) {
-				wip->proximity_radius = 1.0f;
-				Warning(LOCATION, "Mine weapon '%s': +Proximity Radius must be positive. Setting to 1.\n", wip->name);
-			}
-		} else if (first_time) {
-			wip->proximity_radius = 50.0f; // default proximity trigger radius
-		}
-
-		if (optional_string("+Proximity IFF:")) {
-			SCP_vector<SCP_string> iff_names;
-			stuff_string_list(iff_names);
-			for (const SCP_string& iff_name : iff_names) {
-				int iff_idx = iff_lookup(iff_name.c_str());
-				if (iff_idx < 0)
-					Warning(LOCATION, "Mine weapon '%s': +Proximity IFF entry '%s' not found.\n", wip->name, iff_name.c_str());
-				else
-					wip->proximity_iff.push_back(iff_idx);
-			}
-		}
-
-		if (optional_string("+Proximity Species:")) {
-			SCP_vector<SCP_string> species_names;
-			stuff_string_list(species_names);
-			for (const SCP_string& species_name : species_names) {
-				int species_idx = species_info_lookup(species_name.c_str());
-				if (species_idx < 0)
-					Warning(LOCATION, "Mine weapon '%s': +Proximity Species entry '%s' not found.\n", wip->name, species_name.c_str());
-				else
-					wip->proximity_species.push_back(species_idx);
-			}
-		}
-
-		if (optional_string("+Proximity Type:")) {
-			stuff_string_list(Pending_mine_type_names[wip->name]);
-		}
-
-		if (optional_string("+Proximity Class:")) {
-			stuff_string_list(Pending_mine_class_names[wip->name]);
-		}
-
-		if (optional_string("+Detonate Chance:")) {
-			stuff_float(&wip->mine_detonate_chance);
-			if (wip->mine_detonate_chance < 0.0f || wip->mine_detonate_chance > 1.0f) {
-				wip->mine_detonate_chance = CLAMP(wip->mine_detonate_chance, 0.0f, 1.0f);
-				Warning(LOCATION, "Mine weapon '%s': +Detonate Chance must be in [0.0, 1.0]. Clamping.\n", wip->name);
-			}
-		}
-
-		if (optional_string("+Stealth Proximity Multiplier:")) {
-			stuff_float(&wip->mine_stealth_proximity_multiplier);
-			if (wip->mine_stealth_proximity_multiplier < 0.0f) {
-				wip->mine_stealth_proximity_multiplier = 0.0f;
-				Warning(LOCATION, "Mine weapon '%s': +Stealth Proximity Multiplier cannot be negative. Setting to 0.\n", wip->name);
-			}
 		}
 
 		if (optional_string("+Chase Duration:")) {
@@ -1470,9 +1485,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		bool sensors_infinite    = (wip->mine_sensors_range < 0.0f);
 		if (!sensors_infinite) {
 			if (targetable_infinite) {
-				Warning(LOCATION, "Mine weapon '%s': +Targetable Range is infinite but +Sensors Range is finite — the distorted blip state will never occur.\n", wip->name);
+				Warning(LOCATION, "Mine weapon '%s': +Targetable Range is infinite but +Sensors Range is finite. The distorted blip state will never occur.\n", wip->name);
 			} else if (wip->mine_targetable_range >= wip->mine_sensors_range) {
-				Warning(LOCATION, "Mine weapon '%s': +Targetable Range (%.1f) >= +Sensors Range (%.1f) — the distorted blip state will never occur.\n",
+				Warning(LOCATION, "Mine weapon '%s': +Targetable Range (%.1f) >= +Sensors Range (%.1f). The distorted blip state will never occur.\n",
 					wip->name, wip->mine_targetable_range, wip->mine_sensors_range);
 			}
 		}
@@ -2941,7 +2956,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	// Cross-validate aimed spawn fields
 	for (int si = 0; si < wip->num_spawn_weapons_defined; si++) {
 		if (wip->spawn_info[si].spawn_aim_lead > 0.0f && !wip->spawn_info[si].spawn_aimed)
-			Warning(LOCATION, "Weapon '%s' spawn %d: $Spawn Aim Lead is set but $Spawn Aimed is NO — lead will be ignored.\n", wip->name, si);
+			Warning(LOCATION, "Weapon '%s' spawn %d: $Spawn Aim Lead is set but $Spawn Aimed is NO. Lead will be ignored.\n", wip->name, si);
 	}
 
 	if (optional_string("$Lifetime Variation Factor When Child:"))
@@ -5098,37 +5113,45 @@ void weapon_do_post_parse()
 	translate_spawn_types();
 }
 
-/**
- * Called after ship_init() to resolve mine proximity ship type/class names into indices.
- */
+// Called after ship_init() to resolve proximity ship type/class names into indices.
 void weapon_post_ship_init()
 {
-	for (weapon_info& wip : Weapon_info) {
-		auto type_it = Pending_mine_type_names.find(wip.name);
-		if (type_it != Pending_mine_type_names.end()) {
-			for (const SCP_string& type_name : type_it->second) {
-				int idx = ship_type_name_lookup(type_name.c_str());
-				if (idx < 0)
-					Warning(LOCATION, "Mine weapon '%s': +Proximity Type entry '%s' not found.\n", wip.name, type_name.c_str());
-				else
-					wip.proximity_type.push_back(idx);
-			}
-		}
+	const int num_weapons = static_cast<int>(Weapon_info.size());
 
-		auto class_it = Pending_mine_class_names.find(wip.name);
-		if (class_it != Pending_mine_class_names.end()) {
-			for (const SCP_string& class_name : class_it->second) {
-				int idx = ship_info_lookup(class_name.c_str());
-				if (idx < 0)
-					Warning(LOCATION, "Mine weapon '%s': +Proximity Class entry '%s' not found.\n", wip.name, class_name.c_str());
-				else
-					wip.proximity_class.push_back(idx);
-			}
+	for (const auto& entry : Pending_proximity_type_names) {
+		const int wi_index = entry.first;
+		if (wi_index < 0 || wi_index >= num_weapons) {
+			Warning(LOCATION, "Proximity types: stale weapon_info index %d. Entries dropped.\n", wi_index);
+			continue;
+		}
+		weapon_info& wip = Weapon_info[wi_index];
+		for (const SCP_string& type_name : entry.second) {
+			int idx = ship_type_name_lookup(type_name.c_str());
+			if (idx < 0)
+				Warning(LOCATION, "Weapon '%s': +Proximity Type entry '%s' not found.\n", wip.name, type_name.c_str());
+			else
+				wip.proximity_type.push_back(idx);
 		}
 	}
 
-	Pending_mine_type_names.clear();
-	Pending_mine_class_names.clear();
+	for (const auto& entry : Pending_proximity_class_names) {
+		const int wi_index = entry.first;
+		if (wi_index < 0 || wi_index >= num_weapons) {
+			Warning(LOCATION, "Proximity classes: stale weapon_info index %d. Entries dropped.\n", wi_index);
+			continue;
+		}
+		weapon_info& wip = Weapon_info[wi_index];
+		for (const SCP_string& class_name : entry.second) {
+			int idx = ship_info_lookup(class_name.c_str());
+			if (idx < 0)
+				Warning(LOCATION, "Weapon '%s': +Proximity Class entry '%s' not found.\n", wip.name, class_name.c_str());
+			else
+				wip.proximity_class.push_back(idx);
+		}
+	}
+
+	Pending_proximity_type_names.clear();
+	Pending_proximity_class_names.clear();
 }
 
 /**
@@ -6260,53 +6283,71 @@ void weapon_process_pre( object *obj, float  frame_time)
 		}
 	}
 
-	// Chase timeout: check every frame whether an active chase has expired
-	if (wip->wi_flags[Weapon::Info_Flags::Mine] && wp->mine_chase_expires.isFinite()) {
-		if (timestamp_elapsed(wp->mine_chase_expires)) {
+	// Mine chase/cooldown lifecycle: handle every frame for any mine, independent of proximity_radius
+	// (which can theoretically be cleared at runtime). The proximity scan itself is gated on
+	// proximity_radius > 0 below, so future non-mine weapons can opt into proximity detonation
+	// without inheriting the mine-specific chase state machine.
+	if (wip->is_mine()) {
+		// Chase timeout: check whether an active chase has expired
+		if (wp->mine_chase_expires.isFinite() && timestamp_elapsed(wp->mine_chase_expires)) {
 			if (wip->mine_detonates_on_chase_timeout) {
 				weapon_detonate(obj);
 				return;
-			} else {
-				// Give up: return to stationary at current position
-				vm_vec_zero(&obj->phys_info.vel);
-				vm_vec_zero(&obj->phys_info.desired_vel);
-				obj->phys_info.speed = 0.0f;
-				wp->weapon_max_vel = 0.0f;
-				wp->homing_object = &obj_used_list;
-				wp->target_num    = -1;
-				wp->target_sig    = -1;
-				wp->mine_chase_expires = TIMESTAMP::invalid();
-				if (wip->mine_chase_cooldown > 0.0f)
-					wp->mine_chase_cooldown_expires = _timestamp(fl2i(wip->mine_chase_cooldown * 1000.0f));
 			}
+			// Give up: return to stationary at current position. State restored to "pre-chase"
+			// so the mine reappears on radar/sensors and is targetable as before.
+			vm_vec_zero(&obj->phys_info.vel);
+			vm_vec_zero(&obj->phys_info.desired_vel);
+			obj->phys_info.speed = 0.0f;
+			wp->weapon_max_vel = 0.0f;
+			wp->homing_object = &obj_used_list;
+			wp->target_num    = -1;
+			wp->target_sig    = -1;
+			wp->mine_chase_expires = TIMESTAMP::invalid();
+			if (wip->mine_chase_cooldown > 0.0f)
+				wp->mine_chase_cooldown_expires = _timestamp(fl2i(wip->mine_chase_cooldown * 1000.0f));
+			else
+				wp->mine_chase_cooldown_expires = TIMESTAMP::invalid();
 		}
+
+		// Cooldown lapsed - clear it so the field stays clean
+		if (wp->mine_chase_cooldown_expires.isFinite() && timestamp_elapsed(wp->mine_chase_cooldown_expires))
+			wp->mine_chase_cooldown_expires = TIMESTAMP::invalid();
 	}
 
-	// Proximity detonation: scan nearby ships and detonate if a qualifying one is within range
+	// Proximity detonation: scan nearby ships and detonate if a qualifying one is within range.
+	// Gated on proximity_radius (not is_mine()) so future non-mine weapon types can use this path.
 	if (wip->proximity_radius > 0.0f) {
-		// Skip if mine is actively chasing or sitting in post-chase cooldown
-		bool chasing      = wp->mine_chase_expires.isFinite() && !timestamp_elapsed(wp->mine_chase_expires);
-		bool cooling_down = wp->mine_chase_cooldown_expires.isFinite() && !timestamp_elapsed(wp->mine_chase_cooldown_expires);
+		// Skip if mine is actively chasing
+		bool chasing = wp->mine_chase_expires.isFinite() && !timestamp_elapsed(wp->mine_chase_expires);
+		bool cooling_down = wp->mine_chase_cooldown_expires.isFinite();
 
-		// Check arming time: mine will not detonate until this many seconds after creation
-		bool armed = !chasing && !cooling_down && f2fl(Missiontime - wp->creation_time) >= wip->mine_arm_time;
+		// Arming gate: reuse the standard $Arm time: field - a proximity weapon won't trigger
+		// until this many fix-seconds after creation. weapon_armed() also enforces this for
+		// direct collisions; checking here additionally suppresses proximity triggers.
+		bool armed = !chasing && !cooling_down && (Missiontime - wp->creation_time) >= wip->arm_time;
 
-		if (armed) {
+		// Roll detonate chance once per ~62ms time bucket (Missiontime >> 12)
+		// Within a bucket the result is sticky across frames and across all candidate ships.
+		// Deterministic in multiplayer because Missiontime is lockstep-synced; the multiplicative
+		// hash gives per-weapon variation that XOR alone couldn't (net_signature is 16-bit).
+		bool roll_passed = true;
+		if (armed && wip->proximity_detonate_chance < 1.0f) {
+			uint32_t roll_seed = (obj->net_signature * 2654435761u) ^ static_cast<uint32_t>(Missiontime >> 12);
+			roll_passed = (static_randf(static_cast<int>(roll_seed & 0x7FFFFFFFu)) < wip->proximity_detonate_chance);
+		}
+
+		if (armed && roll_passed) {
 			float base_prox = wip->proximity_radius;
 
-			for (object *check_obj = GET_FIRST(&obj_used_list);
-			     check_obj != END_OF_LIST(&obj_used_list);
-			     check_obj = GET_NEXT(check_obj))
-			{
+			for (auto sop : list_range(&Ship_obj_list)) {
+				object *check_obj = &Objects[sop->objnum];
 				if (check_obj->flags[Object::Object_Flags::Should_be_dead])
 					continue;
 
-				// Mines only trigger on ships
-				if (check_obj->type != OBJ_SHIP)
-					continue;
-
-				// Skip the weapon itself
-				if (check_obj == obj)
+				// Dying or departing ships are no longer valid proximity targets
+				if (Ships[check_obj->instance].flags[Ship::Ship_Flags::Dying]
+					|| Ships[check_obj->instance].flags[Ship::Ship_Flags::Depart_warp])
 					continue;
 
 				// Protected ships are immune to mine proximity detonation
@@ -6315,25 +6356,23 @@ void weapon_process_pre( object *obj, float  frame_time)
 
 				// Stealth ships may have a reduced proximity trigger radius
 				float effective_prox = base_prox;
-				if (wip->mine_stealth_proximity_multiplier < 1.0f &&
+				if (wip->proximity_stealth_multiplier < 1.0f &&
 				    Ships[check_obj->instance].flags[Ship::Ship_Flags::Stealth]) {
-					effective_prox *= wip->mine_stealth_proximity_multiplier;
+					effective_prox *= wip->proximity_stealth_multiplier;
 				}
 
 				// Distance check (cheap rejection)
 				if (vm_vec_dist_squared(&obj->pos, &check_obj->pos) > effective_prox * effective_prox)
 					continue;
 
-				// Apply filters: AND across categories, OR within each category
-				// Empty category = pass all
+				// Apply filters: AND across categories, OR within each category. Empty category = pass all.
 				const ship* sp = &Ships[check_obj->instance];
 				const ship_info* sip = &Ship_info[sp->ship_info_index];
 
 				if (!wip->proximity_iff.empty()) {
-					int target_team = sp->team;
 					bool matched = false;
 					for (int iff_idx : wip->proximity_iff) {
-						if (target_team == iff_idx) { matched = true; break; }
+						if (sp->team == iff_idx) { matched = true; break; }
 					}
 					if (!matched) continue;
 				}
@@ -6362,13 +6401,20 @@ void weapon_process_pre( object *obj, float  frame_time)
 					if (!matched) continue;
 				}
 
-				// Probabilistic detonation: skip this ship if the chance roll fails.
-				// This check sits before homing_object assignment and the scripting hook so
-				// that OnMineProximityTriggered only fires when the mine actually commits to an action.
-				if (wip->mine_detonate_chance < 1.0f && frand() >= wip->mine_detonate_chance)
-					continue;
+				// Launcher-relative relation filter. Categories are mutually exclusive and exhaustive:
+				// friendly = same team; hostile = launcher attacks target; neutral = everything else.
+				if (wip->proximity_relation_mask != 0) {
+					bool is_friendly = (wp->team == sp->team);
+					bool is_hostile  = !is_friendly && iff_x_attacks_y(wp->team, sp->team);
+					bool is_neutral  = !is_friendly && !is_hostile;
+					bool matched =
+						((wip->proximity_relation_mask & Weapon::Proximity::Relation_Hostile)  && is_hostile) ||
+						((wip->proximity_relation_mask & Weapon::Proximity::Relation_Friendly) && is_friendly) ||
+						((wip->proximity_relation_mask & Weapon::Proximity::Relation_Neutral)  && is_neutral);
+					if (!matched) continue;
+				}
 
-				// Set the triggering ship as the homing object and target.  Both fields
+				// Set the triggering ship as the homing object and target. Both fields
 				// must be set: homing_object is used by weapon_has_homing_object(),
 				// and target_num is what weapon_set_tracking_info() actually receives.
 				wp->homing_object = check_obj;
@@ -6377,20 +6423,24 @@ void weapon_process_pre( object *obj, float  frame_time)
 				if (wip->mine_chase_duration > 0.0f) {
 					// Chase mode: become a guided missile for the configured duration.
 					// Contact with the ship (handled by normal weapon collision) causes detonation.
-					// OnMineProximityTriggered does not fire here — the mine hasn't committed to detonation yet.
+					// OnWeaponProximityTriggered does not fire here... the weapon hasn't committed to detonation yet.
+					// NOTE: chase reuses the existing homing-missile movement code, so the weapon must
+					// have a homing flag (Homing_aspect/Homing_heat/Homing_javelin) set in its table for
+					// it to actually move. A mine with mine_chase_duration > 0 but no homing flag will
+					// sit still until the chase timer expires - by design.
 					wp->mine_chase_expires = _timestamp(fl2i(wip->mine_chase_duration * 1000.0f));
 					wp->weapon_max_vel = wip->max_speed;
 				} else {
 					// Immediate detonation mode.
-					auto mineParamList = scripting::hook_param_list(
-						scripting::hook_param("Mine",     'o', obj),
+					auto proxParamList = scripting::hook_param_list(
+						scripting::hook_param("Weapon",   'o', obj),
 						scripting::hook_param("Ship",     'o', check_obj),
 						scripting::hook_param("Position", 'o', scripting::api::l_Vector.Set(obj->pos))
 					);
-					scripting::hooks::MineProximityTriggeredConditions mineConds{ wp, &Ships[check_obj->instance] };
-					if (scripting::hooks::OnMineProximityTriggered->isActive()) {
-						bool overridden = scripting::hooks::OnMineProximityTriggered->isOverride(mineConds, mineParamList);
-						scripting::hooks::OnMineProximityTriggered->run(mineConds, mineParamList);
+					scripting::hooks::WeaponProximityTriggeredConditions proxConds{ wp, &Ships[check_obj->instance] };
+					if (scripting::hooks::OnWeaponProximityTriggered->isActive()) {
+						bool overridden = scripting::hooks::OnWeaponProximityTriggered->isOverride(proxConds, proxParamList);
+						scripting::hooks::OnWeaponProximityTriggered->run(proxConds, proxParamList);
 						if (overridden)
 							return;
 					}
@@ -6398,7 +6448,7 @@ void weapon_process_pre( object *obj, float  frame_time)
 				}
 				return;
 			}
-		} // if (armed)
+		}
 	}
 
 	// If this flag is false missile turning is evaluated in weapon_process_post()
@@ -6567,7 +6617,7 @@ void weapon_process_post(object * obj, float frame_time)
 	wip = &Weapon_info[wp->weapon_info_index];
 
 	// Mines have infinite lifetime - skip the countdown
-	if (!wip->wi_flags[Weapon::Info_Flags::Mine]) {
+	if (!wip->is_mine()) {
 		wp->lifeleft -= frame_time;
 	}
 
@@ -6633,7 +6683,7 @@ void weapon_process_post(object * obj, float frame_time)
 	}
 
 	// plot homing missiles on the radar
-	if (((wip->wi_flags[Weapon::Info_Flags::Bomb]) || (wip->wi_flags[Weapon::Info_Flags::Mine]) || (wip->wi_flags[Weapon::Info_Flags::Shown_on_radar])) && !(wip->wi_flags[Weapon::Info_Flags::Dont_show_on_radar])) {
+	if (((wip->wi_flags[Weapon::Info_Flags::Bomb]) || wip->is_mine() || (wip->wi_flags[Weapon::Info_Flags::Shown_on_radar])) && !(wip->wi_flags[Weapon::Info_Flags::Dont_show_on_radar])) {
 		if ( hud_gauge_active(HUD_RADAR) ) {
 			radar_plot_object( obj );
 		}
@@ -7377,7 +7427,7 @@ int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int
 	}
 
 	// Mines are stationary: zero all velocity after all other velocity setup
-	if (wip->wi_flags[Weapon::Info_Flags::Mine]) {
+	if (wip->is_mine()) {
 		vm_vec_zero(&objp->phys_info.vel);
 		vm_vec_zero(&objp->phys_info.desired_vel);
 		objp->phys_info.speed = 0.0f;
@@ -7649,7 +7699,7 @@ void spawn_child_weapons(object *objp, int spawn_index_override)
 			if (wip->spawn_info[i].spawn_aimed && wp != nullptr && weapon_has_homing_object(wp)) {
 				// Aimed spawn: point directly at the homing object with optional constant-velocity
 				// lead extrapolation.  wp != nullptr guard handles beam-spawned weapons (which have
-				// no weapon struct) — they fall through to the random cone below.
+				// no weapon struct). They fall through to the random cone below.
 				// Direction is deterministic (derived from a known object position), so no
 				// static_rand seeding is needed for multiplayer consistency.
 				vec3d target_pos = wp->homing_object->pos;
@@ -7657,7 +7707,7 @@ void spawn_child_weapons(object *objp, int spawn_index_override)
 					vm_vec_scale_add2(&target_pos, &wp->homing_object->phys_info.vel, wip->spawn_info[i].spawn_aim_lead);
 				vm_vec_normalized_dir(&tvec, &target_pos, opos);
 			} else {
-				// Standard random cone — for multiplayer, use static randvec functions keyed on
+				// Standard random cone: for multiplayer, use static randvec functions keyed on
 				// network signatures so all machines produce the same spread.
 				if (Game_mode & GM_MULTIPLAYER) {
 					if (wip->spawn_info[i].spawn_min_angle <= 0)
@@ -9834,15 +9884,15 @@ void weapon_info::reset()
 	this->det_range = 0.0f;
 	this->det_radius = 0.0f;
 	this->proximity_radius = 0.0f;
-	this->mine_arm_time = 0.0f;
 	this->proximity_iff.clear();
 	this->proximity_species.clear();
 	this->proximity_type.clear();
 	this->proximity_class.clear();
+	this->proximity_relation_mask = 0;
+	this->proximity_detonate_chance = 1.0f;
+	this->proximity_stealth_multiplier = 1.0f;
 	this->mine_sensors_range = -1.0f;
 	this->mine_targetable_range = -1.0f;
-	this->mine_detonate_chance = 1.0f;
-	this->mine_stealth_proximity_multiplier = 1.0f;
 	this->mine_chase_duration = 0.0f;
 	this->mine_detonates_on_chase_timeout = true;
 	this->mine_chase_cooldown = 5.0f;

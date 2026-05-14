@@ -421,7 +421,7 @@ ADE_FUNC(getSubmodelAnimationTime, l_Weapon, "string type, string triggeredBy", 
 	return ade_set_args(L, "f", time_s);
 }
 
-ADE_VIRTVAR(isMine, l_Weapon, nullptr, "Whether this weapon is a mine", "boolean", "True if the weapon is a mine type, false otherwise or if handle is invalid")
+ADE_FUNC(isMine, l_Weapon, nullptr, "Returns whether this weapon is a mine.", "boolean", "True if the weapon is a mine type, false otherwise or if handle is invalid")
 {
 	object_h *oh = nullptr;
 	if (!ade_get_args(L, "o", l_Weapon.GetPtr(&oh)))
@@ -431,7 +431,7 @@ ADE_VIRTVAR(isMine, l_Weapon, nullptr, "Whether this weapon is a mine", "boolean
 		return ade_set_error(L, "b", false);
 
 	const weapon_info *wip = &Weapon_info[Weapons[oh->objp()->instance].weapon_info_index];
-	return ade_set_args(L, "b", wip->wi_flags[Weapon::Info_Flags::Mine]);
+	return ade_set_args(L, "b", wip->is_mine());
 }
 
 ADE_FUNC(detonate, l_Weapon, nullptr, "Forces this weapon to detonate immediately.", "boolean", "True if successful, false if handle is invalid")

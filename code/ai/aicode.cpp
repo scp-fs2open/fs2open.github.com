@@ -7474,6 +7474,14 @@ void attack_set_accel(ai_info *aip, ship_info *sip, float dist_to_enemy, float d
 	if (wip != nullptr && wip->optimum_range > 0)
 		optimal_range = wip->optimum_range;
 
+	// Standoff for mines: keep at least 1.2x the target mine's proximity radius
+	// so we shoot it from outside its detonation zone.
+	if (En_objp->type == OBJ_WEAPON) {
+		weapon_info *target_wip = &Weapon_info[Weapons[En_objp->instance].weapon_info_index];
+		if (target_wip->is_mine() && target_wip->proximity_radius > 0.0f)
+			optimal_range = MAX(optimal_range, target_wip->proximity_radius * 1.2f);
+	}
+
 	if (dist_to_enemy > optimal_range + vm_vec_mag_quick(&En_objp->phys_info.vel) * dot_from_enemy + Pl_objp->phys_info.speed * speed_ratio) {
 		if (dist_to_enemy > optimal_range + 600.0f) {
 			if (ai_willing_to_afterburn_hard(aip)) {
@@ -10524,20 +10532,19 @@ void maybe_update_guard_object(object *hit_objp, object *hitter_objp)
 	}
 }
 
-// Scan missile list looking for bombs homing on guarded_objp
-// return 1 if bomb is found (and targeted by guarding_objp), otherwise return 0
-/**
- * Find the closest hostile mine within its own mine_targetable_range of ai_objp.
- * Used for ship self-protection when the Ships_intercept_mines AI profile flag is set.
- * Returns the mine object pointer, or nullptr if none found.
- */
-static object *ai_find_nearby_mine_threat(object *ai_objp)
+// Find the closest hostile mine threatening 'against_objp', ranked by distance from 'from_objp'.
+// If 'against_objp' is null, defaults to 'from_objp' (i.e. find mines threatening the searcher itself).
+// imminent_only: also requires the mine to be within proximity_radius * 1.5 of against_objp;
+// used to preempt a current target when the mine is about to detonate.
+static object *ai_find_nearby_mine_threat(object *from_objp, object *against_objp = nullptr, bool imminent_only = false)
 {
-	missile_obj *mo;
-	object *closest_mine = nullptr;
-	float closest_dist = 999999.0f;
+	if (against_objp == nullptr)
+		against_objp = from_objp;
 
-	for ( mo = GET_NEXT(&Missile_obj_list); mo != END_OF_LIST(&Missile_obj_list); mo = GET_NEXT(mo) ) {
+	object *closest_mine = nullptr;
+	float closest_dist_from = std::numeric_limits<float>::max();
+
+	for (missile_obj *mo = GET_NEXT(&Missile_obj_list); mo != END_OF_LIST(&Missile_obj_list); mo = GET_NEXT(mo)) {
 		Assert(mo->objnum >= 0 && mo->objnum < MAX_OBJECTS);
 		object *mine_objp = &Objects[mo->objnum];
 		if (mine_objp->flags[Object::Object_Flags::Should_be_dead])
@@ -10553,17 +10560,23 @@ static object *ai_find_nearby_mine_threat(object *ai_objp)
 		if (!wip->wi_flags[Weapon::Info_Flags::Fighter_Interceptable])
 			continue;
 
-		// Only engage mines hostile to this ship
-		if (!iff_x_attacks_y(wp->team, obj_team(ai_objp)))
+		// Only engage mines hostile to the threatened ship
+		if (!iff_x_attacks_y(wp->team, obj_team(against_objp)))
 			continue;
 
-		// Mine must be within its own targetable range of this ship
-		float dist = vm_vec_dist_quick(&mine_objp->pos, &ai_objp->pos);
-		if (wip->mine_targetable_range >= 0.0f && dist > wip->mine_targetable_range)
+		float dist_against = vm_vec_dist(&mine_objp->pos, &against_objp->pos);
+
+		// Mine must be within its own targetable range of the threatened ship
+		if (wip->mine_targetable_range >= 0.0f && dist_against > wip->mine_targetable_range)
 			continue;
 
-		if (dist < closest_dist) {
-			closest_dist = dist;
+		// Imminent gate: only consider mines about to detonate on the threatened ship
+		if (imminent_only && wip->proximity_radius > 0.0f && dist_against > wip->proximity_radius * 1.5f)
+			continue;
+
+		float dist_from = (from_objp == against_objp) ? dist_against : vm_vec_dist(&mine_objp->pos, &from_objp->pos);
+		if (dist_from < closest_dist_from) {
+			closest_dist_from = dist_from;
 			closest_mine = mine_objp;
 		}
 	}
@@ -10616,44 +10629,9 @@ int ai_guard_find_nearby_bomb(object *guarding_objp, object *guarded_objp)
 		return 1;
 	}
 
-	// No homing threat found... check for mines within targeting range of the guarded ship.
+	// No homing threat found... check for mines threatening the guarded ship.
 	// Mines are stationary so they won't home; handle them as a lower priority threat.
-	object *closest_mine_objp = nullptr;
-	float closest_mine_dist_to_guarding = 999999.0f;
-
-	for ( mo = GET_NEXT(&Missile_obj_list); mo != END_OF_LIST(&Missile_obj_list); mo = GET_NEXT(mo) ) {
-		Assert(mo->objnum >= 0 && mo->objnum < MAX_OBJECTS);
-		bomb_objp = &Objects[mo->objnum];
-		if (bomb_objp->flags[Object::Object_Flags::Should_be_dead])
-			continue;
-
-		wp = &Weapons[bomb_objp->instance];
-		wip = &Weapon_info[wp->weapon_info_index];
-
-		if (!wip->is_mine())
-			continue;
-
-		// Only engage destructible mines
-		if (!wip->wi_flags[Weapon::Info_Flags::Fighter_Interceptable])
-			continue;
-
-		// Only engage mines that threaten the guarded ship's team
-		if (!iff_x_attacks_y(wp->team, obj_team(guarded_objp)))
-			continue;
-
-		// Mine must be within its targetable range of the guarded ship
-		float dist_to_guarded = vm_vec_dist_quick(&bomb_objp->pos, &guarded_objp->pos);
-		if (wip->mine_targetable_range >= 0.0f && dist_to_guarded > wip->mine_targetable_range)
-			continue;
-
-		float dist_to_guarding = vm_vec_dist_quick(&bomb_objp->pos, &guarding_objp->pos);
-		if (dist_to_guarding < closest_mine_dist_to_guarding) {
-			closest_mine_dist_to_guarding = dist_to_guarding;
-			closest_mine_objp = bomb_objp;
-		}
-	}
-
-	if (closest_mine_objp) {
+	if (object *closest_mine_objp = ai_find_nearby_mine_threat(guarding_objp, guarded_objp)) {
 		guard_object_was_hit(guarding_objp, closest_mine_objp);
 		return 1;
 	}
@@ -15403,6 +15381,21 @@ void ai_frame(int objnum)
 	}
 
 	ai_maybe_depart(Pl_objp);
+
+	//	Imminent-mine override: even if we have a current target, swap to a mine
+	//	that is about to detonate on us (within proximity_radius * 1.5).
+	if (The_mission.ai_profile->flags[AI::Profile_Flags::Ships_intercept_mines]
+		&& aip->mode != AIM_GUARD && aip->mode != AIM_EVADE_WEAPON
+		&& Ship_info[shipp->ship_info_index].class_type > -1
+		&& Ship_types[Ship_info[shipp->ship_info_index].class_type].flags[Ship::Type_Info_Flags::AI_auto_attacks]) {
+		object *imminent_mine = ai_find_nearby_mine_threat(Pl_objp, nullptr, true);
+		if (imminent_mine != nullptr && (target_objnum < 0 || &Objects[target_objnum] != imminent_mine)) {
+			int new_target = OBJ_INDEX(imminent_mine);
+			if (aip->target_objnum != new_target)
+				aip->aspect_locked_time = 0.0f;
+			target_objnum = set_target_objnum(aip, new_target);
+		}
+	}
 
 	//	Find an enemy if don't already have one.
 	En_objp = NULL;
