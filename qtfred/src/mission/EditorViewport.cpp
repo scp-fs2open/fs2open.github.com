@@ -1004,6 +1004,47 @@ void EditorViewport::reloadLayersFromMission() {
 	needsUpdate();
 }
 
+void EditorViewport::registerObjectInLayer(int objectIndex) {
+	if (objectIndex < 0 || objectIndex >= MAX_OBJECTS) {
+		return;
+	}
+	auto* objp = &Objects[objectIndex];
+	if (objp->type == OBJ_NONE) {
+		return;
+	}
+
+	SCP_string layerName;
+	switch (objp->type) {
+	case OBJ_SHIP:
+	case OBJ_START:
+		layerName = Ships[objp->instance].fred_layer;
+		break;
+	case OBJ_PROP:
+		if (auto* p = prop_id_lookup(objp->instance)) {
+			layerName = p->fred_layer;
+		}
+		break;
+	case OBJ_JUMP_NODE:
+		if (auto* jn = jumpnode_get_by_objnum(objectIndex)) {
+			layerName = jn->GetFredLayer();
+		}
+		break;
+	case OBJ_WAYPOINT:
+		if (auto* wl = find_waypoint_list_with_instance(objp->instance, nullptr)) {
+			layerName = wl->get_fred_layer();
+		}
+		break;
+	default:
+		return;
+	}
+
+	auto layerIndex = getLayerIndex(layerName);
+	if (layerIndex == static_cast<size_t>(-1)) {
+		layerIndex = 0;
+	}
+	_objectLayers[objectIndex] = layerIndex;
+}
+
 SCP_string EditorViewport::getObjectLayerName(int objectIndex) const {
 	const auto layerIndex = getObjectLayerIndex(objectIndex);
 	if (layerIndex >= _layerNames.size()) {

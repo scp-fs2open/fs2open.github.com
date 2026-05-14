@@ -997,6 +997,14 @@ int Editor::dup_object(object* objp) {
 	Objects[obj].pos = objp->pos;
 	Objects[obj].orient = objp->orient;
 	Objects[obj].flags.set(Object::Object_Flags::Temp_marked);
+
+	// Sync the viewport's layer-membership map for the new object so it shows
+	// up in the same layer as the source (per-object fred_layer was already
+	// copied by the clone_*_instance_data helpers).
+	if (_lastActiveViewport) {
+		_lastActiveViewport->registerObjectInLayer(obj);
+	}
+
 	return obj;
 }
 
