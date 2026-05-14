@@ -2280,6 +2280,11 @@ void parse_copy_wing_ai_to_ship(wing *wingp, ai_info *aip);
 /**
  * Given a stuffed p_object struct, create an object and fill in the necessary fields.
  * @return object number.
+ *
+ * Per-ship field handling here MUST stay in sync with:
+ *   Fred_mission_save::save_objects() / save_common_object_data() in missionsave.cpp
+ *   clone_ship_instance_data() in missioneditor/objectduplication.cpp
+ * When you add a new editable ship field, touch all three.
  */
 int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 {

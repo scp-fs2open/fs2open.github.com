@@ -1442,6 +1442,10 @@ void Fred_mission_save::fso_comment_pop(bool pop_all)
 	fso_ver_comment.pop_back();
 }
 
+// Per-ship field handling here MUST stay in sync with:
+//   parse_create_object_sub() in missionparse.cpp
+//   clone_ship_instance_data() in missioneditor/objectduplication.cpp
+// When you add a new editable ship field, touch all three.
 int Fred_mission_save::save_common_object_data(object* objp, ship* shipp)
 {
 	int j, z;
@@ -3474,6 +3478,10 @@ int Fred_mission_save::save_warp_params(WarpDirection direction, ship* shipp)
 	return err;
 }
 
+// Per-ship field handling here MUST stay in sync with:
+//   parse_create_object_sub() in missionparse.cpp
+//   clone_ship_instance_data() in missioneditor/objectduplication.cpp
+// When you add a new editable ship field, touch all three.
 int Fred_mission_save::save_objects()
 {
 	SCP_string sexp_out;

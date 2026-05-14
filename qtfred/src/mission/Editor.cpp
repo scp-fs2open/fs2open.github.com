@@ -17,6 +17,7 @@
 #include <mission/missionmessage.h>
 #include <missioneditor/common.h>
 #include <missioneditor/missionsave.h>
+#include <missioneditor/objectduplication.h>
 #include <gamesnd/eventmusic.h>
 #include <starfield/nebula.h>
 #include <object/objectdock.h>
@@ -918,9 +919,6 @@ int Editor::getNumMarked() {
 int Editor::dup_object(object* objp) {
 
 	int i, n, inst, obj = -1;
-	ai_info* aip1, * aip2;
-	object* objp1, * objp2;
-	ship_subsys* subp1, * subp2;
 	static int waypoint_instance(-1);
 
 	if (!objp) {
@@ -930,59 +928,45 @@ int Editor::dup_object(object* objp) {
 
 	inst = objp->instance;
 	if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) {
-		obj = create_ship(&objp->orient, &objp->pos, Ships[inst].ship_info_index);
+		bool clone_as_player_start = false;
+		bool player_start_demoted = false;
+		if (objp->type == OBJ_START && (The_mission.game_type & MISSION_TYPE_MULTI)) {
+			if (Player_starts < MAX_PLAYERS) {
+				clone_as_player_start = true;
+			} else {
+				player_start_demoted = true;
+			}
+		}
+
+		if (clone_as_player_start) {
+			obj = create_player(&objp->pos, &objp->orient, Ships[inst].ship_info_index);
+		} else {
+			obj = create_ship(&objp->orient, &objp->pos, Ships[inst].ship_info_index);
+		}
 		if (obj == -1) {
 			return -1;
 		}
 
 		n = Objects[obj].instance;
-		Ships[n].team = Ships[inst].team;
-		Ships[n].arrival_cue = dup_sexp_chain(Ships[inst].arrival_cue);
-		Ships[n].departure_cue = dup_sexp_chain(Ships[inst].departure_cue);
-		Ships[n].cargo1 = Ships[inst].cargo1;
-		Ships[n].arrival_location = Ships[inst].arrival_location;
-		Ships[n].departure_location = Ships[inst].departure_location;
-		Ships[n].arrival_delay = Ships[inst].arrival_delay;
-		Ships[n].departure_delay = Ships[inst].departure_delay;
-		Ships[n].weapons = Ships[inst].weapons;
-		Ships[n].hotkey = Ships[inst].hotkey;
 
-		aip1 = &Ai_info[Ships[n].ai_index];
-		aip2 = &Ai_info[Ships[inst].ai_index];
-		aip1->ai_class = aip2->ai_class;
-		for (i = 0; i < MAX_AI_GOALS; i++) {
-			aip1->goals[i] = aip2->goals[i];
-		}
+		// Copy every editable per-ship field.  See clone_ship_instance_data() in
+		// code/missioneditor/objectduplication.cpp for the canonical field list.
+		clone_ship_instance_data(inst, n);
 
-		if (aip2->ai_flags[AI::AI_Flags::Kamikaze]) {
-			aip1->ai_flags.set(AI::AI_Flags::Kamikaze);
-		}
-		if (aip2->ai_flags[AI::AI_Flags::No_dynamic]) {
-			aip2->ai_flags.set(AI::AI_Flags::No_dynamic);
-		}
-
-		aip1->kamikaze_damage = aip2->kamikaze_damage;
-
-		objp1 = &Objects[obj];
-		objp2 = &Objects[Ships[inst].objnum];
-		objp1->phys_info.speed = objp2->phys_info.speed;
-		objp1->phys_info.fspeed = objp2->phys_info.fspeed;
-		objp1->hull_strength = objp2->hull_strength;
-		objp1->shield_quadrant[0] = objp2->shield_quadrant[0];
-
-		subp1 = GET_FIRST(&Ships[n].subsys_list);
-		subp2 = GET_FIRST(&Ships[inst].subsys_list);
-		while (subp1 != END_OF_LIST(&Ships[n].subsys_list)) {
-			Assert(subp2 != END_OF_LIST(&Ships[inst].subsys_list));
-			subp1->current_hits = subp2->current_hits;
-			subp1 = GET_NEXT(subp1);
-			subp2 = GET_NEXT(subp2);
-		}
-
+		// Reinforcement-list propagation: if the source ship is listed as a
+		// reinforcement, add a new entry pointing at the duplicate.
 		i = find_item_with_string(Reinforcements, &reinforcements::name, Ships[inst].ship_name);
 		if (i >= 0) {
 			Reinforcements.push_back(Reinforcements[i]);
 			strcpy_s(Reinforcements.back().name, Ships[n].ship_name);
+		}
+
+		if (player_start_demoted && _lastActiveViewport) {
+			_lastActiveViewport->dialogProvider->showButtonDialog(DialogType::Information,
+				"Player Starts",
+				"Cannot create another player start. This mission already has the maximum of 12. "
+				"The duplicate has been created as a regular ship instead.",
+				{ DialogButton::Ok });
 		}
 
 	} else if (objp->type == OBJ_WAYPOINT) {
