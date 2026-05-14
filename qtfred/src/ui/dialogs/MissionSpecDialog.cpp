@@ -12,7 +12,9 @@
 #include <ui/util/default_dir.h>
 #include <ui/util/SignalBlockers.h>
 #include "mission/util.h"
+#include <mission/commands/FredCommands.h>
 #include <QCloseEvent>
+#include <QFocusEvent>
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QMessageBox>
@@ -21,9 +23,14 @@ namespace fso::fred::dialogs {
 
 MissionSpecDialog::MissionSpecDialog(FredView* parent, EditorViewport* viewport) :
 	QDialog(parent), ui(new Ui::MissionSpecDialog()), _model(new MissionSpecDialogModel(this, viewport)),
-	_viewport(viewport) {
+	_viewport(viewport), _fredView(parent) {
     ui->setupUi(this);
 
+	_dialogStack = new QUndoStack(this);
+	_fredView->undoGroup()->addStack(_dialogStack);
+
+	ui->missionTitle->setMaxLength(NAME_LENGTH - 1);
+	ui->missionDesigner->setMaxLength(NAME_LENGTH - 1);
 	ui->squadronName->setMaxLength(NAME_LENGTH - 1);
 	ui->squadronLogo->setMaxLength(MAX_FILENAME_LEN - 1);
 	ui->lowResScreen->setMaxLength(MAX_FILENAME_LEN - 1);
@@ -42,19 +49,36 @@ MissionSpecDialog::~MissionSpecDialog() = default;
 
 void MissionSpecDialog::accept()
 {
-	// If apply() returns true, close the dialog
+	QByteArray stateBefore = _model->captureState();
 	if (_model->apply()) {
+		QByteArray stateAfter = _model->captureState();
+		_model->setParent(nullptr); // detach from Qt parent before transferring ownership
+		_fredView->mainUndoStack()->push(
+			new ApplyDialogCommand(std::move(_model), stateBefore, stateAfter,
+			                       _viewport->editor, tr("Edit Mission Specs")));
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
 		QDialog::accept();
 	}
-	// else: validation failed, don't close
 }
 
 void MissionSpecDialog::reject()
 {
+	if (!_model) {
+		// Model was already moved into the undo command (accept() succeeded);
+		// just restore the active stack and close.
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
+		QDialog::reject();
+		return;
+	}
+
 	// Asks the user if they want to save changes, if any
 	// If they do, it runs _model->apply() and returns the success value
 	// If they don't, it runs _model->reject() and returns true
 	if (rejectOrCloseHandler(this, _model.get(), _viewport)) {
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
 		QDialog::reject(); // actually close
 	}
 	// else: do nothing, don't close
@@ -71,6 +95,11 @@ void MissionSpecDialog::closeEvent(QCloseEvent* e) {
 	} else {
 		e->accept();
 	}
+}
+
+void MissionSpecDialog::focusInEvent(QFocusEvent* e) {
+	_fredView->undoGroup()->setActiveStack(_dialogStack);
+	QDialog::focusInEvent(e);
 }
 
 void MissionSpecDialog::initializeUi()

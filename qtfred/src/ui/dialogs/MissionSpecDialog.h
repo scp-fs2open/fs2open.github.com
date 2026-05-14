@@ -24,6 +24,7 @@ public:
 
 protected:
 	void closeEvent(QCloseEvent*) override;
+	void focusInEvent(QFocusEvent*) override;
 
 private slots:
 	// Dialog controls
@@ -76,6 +77,8 @@ private: // NOLINT(readability-redundant-access-specifiers)
     std::unique_ptr<Ui::MissionSpecDialog> ui;
 	std::unique_ptr<MissionSpecDialogModel> _model;
 	EditorViewport* _viewport;
+	FredView*       _fredView    = nullptr;
+	QUndoStack*     _dialogStack = nullptr;
 
 	void initializeUi();
 	void updateUi();

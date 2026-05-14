@@ -48,6 +48,7 @@ add_file_folder("Source/Mission/Commands"
 
 add_file_folder("Source/Mission/Dialogs/State"
     src/mission/dialogs/state/DialogStateHelpers.h
+    src/mission/dialogs/state/MissionSpecState.cpp
 )
 
 add_file_folder("Source/Mission/Dialogs"
