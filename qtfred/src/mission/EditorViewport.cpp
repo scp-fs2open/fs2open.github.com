@@ -256,7 +256,7 @@ bool EditorViewport::incMissionTime() {
 	return true;
 }
 void EditorViewport::select_objects(const Marking_box& box) {
-	int x, y, valid, icon_mode = 0;
+	int x, y, valid;
 	vertex v;
 	object* ptr;
 
@@ -335,26 +335,11 @@ void EditorViewport::select_objects(const Marking_box& box) {
 					} else {
 						editor->markObject(OBJ_INDEX(ptr));
 					}
-
-					if (ptr->type == OBJ_POINT) {
-						icon_mode = 1;
-					}
 				}
 			}
 		}
 
 		ptr = GET_NEXT(ptr);
-	}
-
-	if (icon_mode) {
-		ptr = GET_FIRST(&obj_used_list);
-		while (ptr != END_OF_LIST(&obj_used_list)) {
-			if ((ptr->flags[Object::Object_Flags::Marked]) && (ptr->type != OBJ_POINT)) {
-				editor->unmarkObject(OBJ_INDEX(ptr));
-			}
-
-			ptr = GET_NEXT(ptr);
-		}
 	}
 
 	needsUpdate();
@@ -660,7 +645,7 @@ void EditorViewport::level_object(matrix* orient) {
 int EditorViewport::object_check_collision(object* objp, vec3d* p0, vec3d* p1, vec3d* hitpos) {
 	mc_info mc;
 
-	if ((objp->type == OBJ_NONE) || (objp->type == OBJ_POINT)) {
+	if (objp->type == OBJ_NONE) {
 		return 0;
 	}
 

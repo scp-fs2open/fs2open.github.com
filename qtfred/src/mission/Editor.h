@@ -199,8 +199,6 @@ class Editor : public QObject {
 	int cur_wing = -1;
 	int cur_ship = -1;
 
-	int cur_wing_index = -1;
-
 	waypoint* cur_waypoint = nullptr;
 	waypoint_list* cur_waypoint_list = nullptr;
 
@@ -273,7 +271,6 @@ class Editor : public QObject {
 
 	static void strip_quotation_marks(SCP_string& str);
 	static void pad_with_newline(SCP_string& str, size_t max_size);
-	static void lcl_fred_replace_stuff(QString& text);
 	static SCP_string get_display_name_for_text_box(const SCP_string &orig_name);
 
 	SCP_vector<int> getStartingWingLoadoutUseCounts();
@@ -302,8 +299,6 @@ class Editor : public QObject {
 
 	SCP_vector<GlobalShieldStatus> Shield_sys_teams;
 	SCP_vector<GlobalShieldStatus> Shield_sys_types;
-
-	int delete_flag;
 
 	bool already_deleting_wing = false;
 

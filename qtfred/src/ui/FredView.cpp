@@ -2555,8 +2555,6 @@ void FredView::handleObjectEditor(int objNum) {
 				// If this is a waypoint, we need to show the waypoint editor
 				on_actionWaypoint_Paths_triggered(false);
 			}
-		} else if (Objects[objNum].type == OBJ_POINT) {
-			return;
 		} else {
 			UNREACHABLE("Unhandled object type!");
 		}

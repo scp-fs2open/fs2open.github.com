@@ -41,8 +41,6 @@ const float FRED_DEAFULT_HTL_DRAW_DIST = 300000.0f;
 const int FRED_COLOUR_WHITE = 0xffffff;
 const int FRED_COLOUR_YELLOW_GREEN = 0xc8ff00;
 
-const int BRIEFING_LOOKAT_POINT_ID = 99999;
-
 void enable_htl() {
 	gr_set_proj_matrix((4.0f / 9.0f) * PI * FRED_DEFAULT_HTL_FOV,
 					   gr_screen.aspect * static_cast<float>(gr_screen.clip_width)
@@ -473,11 +471,6 @@ void FredRenderer::display_ship_info(int cur_object_index) {
 							continue;
 						}
 						sprintf(buf, "%s\nWaypoint %d", wp_list->get_name(), idx + 1);
-					} else if (objp->type == OBJ_POINT) {
-						if (objp->instance == BRIEFING_LOOKAT_POINT_ID)
-							strcpy_s(buf, "Camera lookat point");
-						else
-							strcpy_s(buf, "Briefing icon");
 					} else if (objp->type == OBJ_JUMP_NODE) {
 						CJumpNode* jnp = jumpnode_get_by_objnum(OBJ_INDEX(objp));
 						sprintf(buf, "%s\n%s", jnp->GetName(), jnp->GetDisplayName());
@@ -654,6 +647,10 @@ void FredRenderer::render_one_model_htl(object* objp,
 	object* o2;
 
 	Assert(objp->type != OBJ_NONE);
+	// OBJ_POINT objects (briefing icons / camera lookat) are a FRED2-era construct.  QtFRED's
+	// briefing dialog renders its icons in its own widget and never adds them to the main
+	// object list, so encountering one here means something has gone very wrong.
+	Assertion(objp->type != OBJ_POINT, "OBJ_POINT object (instance %d) appeared in the main editor's render loop; QtFRED does not support OBJ_POINT objects.", objp->instance);
 
 	// if this object isn't fully created yet, don't render it
 	if (objp->type == OBJ_SHIP && Ships[objp->instance].create_time == 0)
@@ -849,16 +846,6 @@ void FredRenderer::render_one_model_htl(object* objp,
 				g = 0;
 				b = 112;
 			}
-		} else if (objp->type == OBJ_POINT) {
-			if (objp->instance != BRIEFING_LOOKAT_POINT_ID) {
-				///! \fixme Briefing stuff!
-				//Assert(Briefing_dialog);
-				return;
-			}
-
-			r = 196;
-			g = 32;
-			b = 196;
 		} else if (objp->type == OBJ_PROP) {
 			r = 255;
 			g = 255;
@@ -1021,8 +1008,6 @@ void FredRenderer::render_frame(int cur_object_index,
 						pos.xyz.y,
 						pos.xyz.z);
 			}
-		} else if (Objects[_viewport->Cursor_over].type == OBJ_POINT) {
-			sprintf(buf, "Briefing icon\n( %.1f , %.1f , %.1f ) ", pos.xyz.x, pos.xyz.y, pos.xyz.z);
 		} else {
 			sprintf(buf, "( %.1f , %.1f , %.1f ) ", pos.xyz.x, pos.xyz.y, pos.xyz.z);
 		}

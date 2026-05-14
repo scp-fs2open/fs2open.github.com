@@ -342,8 +342,6 @@ int ErrorChecker::checkObjectList() {
 			char buf[256];
 			waypoint_stuff_name(buf, i);
 			entry.name = buf;
-		} else if (ptr->type == OBJ_POINT) {
-			// Briefing icons are editor-only objects, not mission objects; nothing to validate here.
 		} else if (ptr->type == OBJ_JUMP_NODE || ptr->type == OBJ_PROP) {
 			// nothing needed
 		} else {
