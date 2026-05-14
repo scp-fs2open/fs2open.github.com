@@ -98,7 +98,11 @@ class EditorViewport {
 	static const char* DefaultLayerName;
 
 	enum {
-		DUP_DRAG_OF_WING = 2
+		DUP_DRAG_OF_WING = 2,
+		// Ctrl+Shift+drag.  Same as a normal Ctrl+drag duplicate, except marked
+		// waypoints insert a copy into their source path rather than starting a
+		// new path.  Non-waypoint object types behave like a plain duplicate.
+		DUP_DRAG_INSERT = 3,
 	};
 
 	EditorViewport(Editor* in_editor, std::unique_ptr<FredRenderer>&& in_renderer);
@@ -157,7 +161,11 @@ class EditorViewport {
 	int createWaypointAtScreenPos(int x, int y, int waypoint_instance = -1);
 	int createJumpNodeAtScreenPos(int x, int y);
 
-	int duplicate_marked_objects();
+	// When `insert_waypoints` is true, marked waypoints get a new waypoint
+	// inserted into their source path (right after the source waypoint) instead
+	// of being duplicated into a fresh path.  Other object types are duplicated
+	// either way.  Triggered from Ctrl+Shift+drag in the viewport.
+	int duplicate_marked_objects(bool insert_waypoints = false);
 	int drag_objects(int x, int y);
 
 	int drag_rotate_objects(int mouse_dx, int mouse_dy);

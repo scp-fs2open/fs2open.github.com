@@ -1270,7 +1270,7 @@ void EditorViewport::initialSetup() {
 	}
 }
 
-int EditorViewport::duplicate_marked_objects()
+int EditorViewport::duplicate_marked_objects(bool insert_waypoints)
 {
 	int z, cobj, flag;
 	object *objp, *ptr;
@@ -1295,24 +1295,41 @@ int EditorViewport::duplicate_marked_objects()
 				Duped_wing = -1;
 			}
 
-			// make sure we dup as many waypoint lists as we have
-			if (objp->type == OBJ_WAYPOINT) {
-				int this_list = calc_waypoint_list_index(objp->instance);
-				if (duping_waypoint_list != this_list) {
-					editor->dup_object(nullptr);  // reset waypoint list
-					duping_waypoint_list = this_list;
-				}
-			}
-
 			flag = 1;
-			z = editor->dup_object(objp);
-			if (z == -1) {
-				cobj = -1;
-				break;
-			}
 
-			if (editor->currentObject == OBJ_INDEX(objp) )
-				cobj = z;
+			if (insert_waypoints && objp->type == OBJ_WAYPOINT) {
+				// Insert a new waypoint into the source path right after this one.
+				// No new list is created, so no list-property copy is needed.
+				z = waypoint_add(&objp->pos, objp->instance, false);
+				if (z < 0) {
+					cobj = -1;
+					break;
+				}
+				Objects[z].pos = objp->pos;
+				Objects[z].orient = objp->orient;
+				Objects[z].flags.set(Object::Object_Flags::Temp_marked);
+				registerObjectInLayer(z);
+				if (editor->currentObject == OBJ_INDEX(objp))
+					cobj = z;
+			} else {
+				// make sure we dup as many waypoint lists as we have
+				if (objp->type == OBJ_WAYPOINT) {
+					int this_list = calc_waypoint_list_index(objp->instance);
+					if (duping_waypoint_list != this_list) {
+						editor->dup_object(nullptr);  // reset waypoint list
+						duping_waypoint_list = this_list;
+					}
+				}
+
+				z = editor->dup_object(objp);
+				if (z == -1) {
+					cobj = -1;
+					break;
+				}
+
+				if (editor->currentObject == OBJ_INDEX(objp))
+					cobj = z;
+			}
 		}
 
 		objp = GET_NEXT(objp);
@@ -1391,8 +1408,9 @@ int EditorViewport::drag_objects(int x, int y)
 	if (!query_valid_object(editor->currentObject) || camera.getLookatMode())
 		return -1;
 
-	if (Dup_drag == 1) {
-		if (duplicate_marked_objects() < 0)
+	if (Dup_drag == 1 || Dup_drag == DUP_DRAG_INSERT) {
+		const bool insert_waypoints = (Dup_drag == DUP_DRAG_INSERT);
+		if (duplicate_marked_objects(insert_waypoints) < 0)
 			return -1;
 
 		if (Duped_wing != -1)

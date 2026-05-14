@@ -4940,6 +4940,10 @@ int Fred_mission_save::save_waypoints()
 		fso_comment_pop();
 	}
 
+	// Per-waypoint-path field handling here MUST stay in sync with:
+	//   parse_waypoint_list() in missionparse.cpp
+	//   clone_waypoint_path_instance_data() in missioneditor/objectduplication.cpp
+	// When you add a new editable waypoint-path field, touch all three.
 	bool first_wpt_list = true;
 	for (const auto& ii : Waypoint_lists) {
 		required_string_either_fred("$Name:", "#Messages");

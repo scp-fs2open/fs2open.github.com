@@ -970,8 +970,18 @@ int Editor::dup_object(object* objp) {
 		}
 
 	} else if (objp->type == OBJ_WAYPOINT) {
+		// waypoint_instance < 0 means create_waypoint() will create a fresh list;
+		// copy editable per-list properties from the source list in that case.
+		bool is_first_of_new_list = (waypoint_instance < 0);
+		int src_list_idx = calc_waypoint_list_index(objp->instance);
 		obj = create_waypoint(&objp->pos, waypoint_instance);
+		if (obj == -1) {
+			return -1;
+		}
 		waypoint_instance = Objects[obj].instance;
+		if (is_first_of_new_list) {
+			clone_waypoint_path_instance_data(src_list_idx, calc_waypoint_list_index(waypoint_instance));
+		}
 	} else if (objp->type == OBJ_JUMP_NODE) {
 		CJumpNode* src_jnp = jumpnode_get_by_objp(objp);
 		CJumpNode jnp(&objp->pos);

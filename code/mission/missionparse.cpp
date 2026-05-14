@@ -5931,6 +5931,10 @@ void parse_goals(mission *pm)
 		throw parse::ParseException("Number of goals is too high and breaks multi!");
 }
 
+// Per-waypoint-path field handling here MUST stay in sync with:
+//   Fred_mission_save::save_waypoints() (waypoint-list section) in missionsave.cpp
+//   clone_waypoint_path_instance_data() in missioneditor/objectduplication.cpp
+// When you add a new editable waypoint-path field, touch all three.
 void parse_waypoint_list(mission *pm)
 {
 	Assert(pm != NULL);

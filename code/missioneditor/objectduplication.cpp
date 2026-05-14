@@ -9,6 +9,7 @@
 #include "mission/missionparse.h"
 #include "model/model.h"
 #include "object/object.h"
+#include "object/waypoint.h"
 #include "parse/sexp.h"
 #include "prop/prop.h"
 #include "ship/ship.h"
@@ -267,4 +268,24 @@ void clone_jump_node_instance_data(const CJumpNode& src, CJumpNode& dest)
 
 	// fred view layer
 	dest.SetFredLayer(src.GetFredLayer());
+}
+
+// Per-path field handling here MUST stay in sync with:
+//   Fred_mission_save::save_waypoints() (waypoint-list section) in missionsave.cpp
+//   parse_waypoint_list() in missionparse.cpp
+void clone_waypoint_path_instance_data(int src_list_index, int dest_list_index)
+{
+	waypoint_list* src = find_waypoint_list_at_index(src_list_index);
+	waypoint_list* dest = find_waypoint_list_at_index(dest_list_index);
+	if (src == nullptr || dest == nullptr || src == dest) {
+		return;
+	}
+
+	dest->set_no_draw_lines(src->get_no_draw_lines());
+	if (src->get_has_custom_color()) {
+		dest->set_color(src->get_color_r(), src->get_color_g(), src->get_color_b());
+	} else {
+		dest->clear_color();
+	}
+	dest->set_fred_layer(src->get_fred_layer());
 }
