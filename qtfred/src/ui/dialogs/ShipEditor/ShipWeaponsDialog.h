@@ -1,5 +1,4 @@
-#ifndef SHIPWEAPONSDIALOG_H
-#define SHIPWEAPONSDIALOG_H
+#pragma once
 
 #include "ui/widgets/bankTree.h"
 
@@ -73,7 +72,7 @@ class ShipWeaponsDialog : public QDialog {
 	Banks* banksForIndex(const TabState& tab, const QModelIndex& idx) const;
 	void refreshBankItem(TabState& tab, const QModelIndex& idx);
 	SCP_vector<Banks*> banksForMode(Mode mode) const;
-	static SCP_string banksLabel(const Banks* banks);
+	SCP_string banksLabel(const Banks* banks) const;
 
 	std::unique_ptr<Ui::ShipWeaponsDialog> ui;
 	std::unique_ptr<ShipWeaponsDialogModel> _model;
@@ -83,4 +82,3 @@ class ShipWeaponsDialog : public QDialog {
 	TabState _secondary;
 };
 } // namespace fso::fred::dialogs
-#endif

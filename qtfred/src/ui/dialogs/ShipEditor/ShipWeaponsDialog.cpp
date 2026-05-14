@@ -153,8 +153,9 @@ void ShipWeaponsDialog::initTab(TabState& tab, Mode mode)
 	tab.tree->setItemDelegateForColumn(1, new AmmoSpinBoxDelegate(this));
 
 	tab.aiCombo->clear();
-	for (int i = 0; i < Num_ai_classes; i++) {
-		tab.aiCombo->addItem(Ai_class_names[i], QVariant(i));
+	const auto aiNames = _model->getAiClassNames();
+	for (int i = 0; i < static_cast<int>(aiNames.size()); i++) {
+		tab.aiCombo->addItem(QString::fromUtf8(aiNames[i].c_str()), QVariant(i));
 	}
 
 	connect(tab.tree->selectionModel(), &QItemSelectionModel::selectionChanged, this,
@@ -193,7 +194,7 @@ SCP_vector<Banks*> ShipWeaponsDialog::banksForMode(Mode mode) const
 	}
 }
 
-SCP_string ShipWeaponsDialog::banksLabel(const Banks* banks)
+SCP_string ShipWeaponsDialog::banksLabel(const Banks* banks) const
 {
 	if (banks->getName() == "Pilot") {
 		return banks->getName();
@@ -202,7 +203,7 @@ SCP_string ShipWeaponsDialog::banksLabel(const Banks* banks)
 	if (ai < 0) {
 		return banks->getName() + " (Mixed AI)";
 	}
-	return banks->getName() + " ( " + Ai_class_names[ai] + " ) ";
+	return banks->getName() + " ( " + _model->getAiClassName(ai) + " ) ";
 }
 
 void ShipWeaponsDialog::loadBankModel(TabState& tab)
@@ -223,18 +224,8 @@ void ShipWeaponsDialog::loadBankModel(TabState& tab)
 		tab.bankModel->appendRow({nameItem, labelAmmoItem});
 		for (auto bank : banks->getBanks()) {
 			auto weaponItem = new QStandardItem();
-			QString weaponName;
-			switch (bank->getWeaponId()) {
-			case -2:
-				weaponName = "CONFLICT";
-				break;
-			case -1:
-				weaponName = "None";
-				break;
-			default:
-				weaponName = Weapon_info[bank->getWeaponId()].name;
-			}
-			weaponItem->setData(weaponName, Qt::DisplayRole);
+			const SCP_string weaponName = _model->getWeaponName(bank->getWeaponId());
+			weaponItem->setData(QString::fromUtf8(weaponName.c_str()), Qt::DisplayRole);
 			weaponItem->setData(bank->getWeaponId(), Qt::UserRole);
 			weaponItem->setData(false, BankItemIsLabelRole);
 			weaponItem->setData(bank->getBankId(), BankItemIdRole);
@@ -358,8 +349,8 @@ void ShipWeaponsDialog::onTblButtonClicked(TabState& tab)
 {
 	const int wc = tab.list->currentIndex().data(Qt::UserRole).toInt();
 	if (wc >= 0) {
-		auto dialog = new TableViewerDialog(this, _viewport, "Weapon TBL Data", "weapons.tbl", "*-wep.tbm",
-			Weapon_info[wc].name);
+		const SCP_string name = _model->getWeaponName(wc);
+		auto dialog = new TableViewerDialog(this, _viewport, "Weapon TBL Data", "weapons.tbl", "*-wep.tbm", name.c_str());
 		dialog->show();
 	}
 }
@@ -504,19 +495,8 @@ void ShipWeaponsDialog::refreshBankItem(TabState& tab, const QModelIndex& idx)
 		tab.internalUpdate = false;
 		return;
 	}
-	QString name;
-	switch (bank->getWeaponId()) {
-	case -2:
-		name = "CONFLICT";
-		break;
-	case -1:
-		name = "None";
-		break;
-	default:
-		name = Weapon_info[bank->getWeaponId()].name;
-		break;
-	}
-	tab.bankModel->setData(col0, name, Qt::DisplayRole);
+	const SCP_string name = _model->getWeaponName(bank->getWeaponId());
+	tab.bankModel->setData(col0, QString::fromUtf8(name.c_str()), Qt::DisplayRole);
 	tab.bankModel->setData(col0, bank->getWeaponId(), Qt::UserRole);
 	tab.bankModel->setData(col0, bank->getMaxAmmo(), BankItemMaxAmmoRole);
 	if (QStandardItem* weaponItem = tab.bankModel->itemFromIndex(col0)) {
