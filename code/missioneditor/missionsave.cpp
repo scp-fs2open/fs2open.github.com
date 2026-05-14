@@ -4502,7 +4502,11 @@ int Fred_mission_save::save_players()
 				if (!Weapon_info[j].wi_flags[Weapon::Info_Flags::Player_allowed]) {
 					continue;
 				}
-				if (The_mission.support_ships.rearm_weapon_pool[i][j] != 0) {
+				// Default is -1 (unlimited). Skip disallow_rearm weapons too, parse normalizes them to 0 anyway.
+				if (Weapon_info[j].disallow_rearm) {
+					continue;
+				}
+				if (The_mission.support_ships.rearm_weapon_pool[i][j] != -1) {
 					fout("\t\"%s\"\t%d\n", Weapon_info[j].name, The_mission.support_ships.rearm_weapon_pool[i][j]);
 				}
 			}

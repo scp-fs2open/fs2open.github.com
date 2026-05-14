@@ -396,13 +396,5 @@ void CSupportRearmDlg::OnOK()
 	The_mission.support_ships.max_subsys_repair_val = m_max_subsys_repair_val;
 	memcpy(The_mission.support_ships.rearm_weapon_pool, m_rearm_weapon_pool, sizeof(m_rearm_weapon_pool));
 
-	for (int i = 0; i < weapon_info_size(); ++i) {
-		if (Weapon_info[i].disallow_rearm || !Weapon_info[i].wi_flags[Weapon::Info_Flags::Player_allowed]) {
-			for (int team = 0; team < MAX_TVT_TEAMS; ++team) {
-				The_mission.support_ships.rearm_weapon_pool[team][i] = 0;
-			}
-		}
-	}
-
 	CDialog::OnOK();
 }

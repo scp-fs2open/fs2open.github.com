@@ -11069,9 +11069,11 @@ void ship_process_post(object * obj, float frametime)
 
 			if (The_mission.support_ships.rearm_pool_from_loadout && shipp->flags[Ship_Flags::From_player_wing]) {
 				const int weapon_class = shipp->weapons.secondary_bank_weapons[i];
-				if (weapon_class >= 0 && weapon_class < MAX_WEAPON_TYPES && The_mission.support_ships.rearm_weapon_pool[get_support_rearm_pool_tvt_team_index(shipp->team)][weapon_class] >= 0) {
-					The_mission.support_ships.rearm_weapon_pool[get_support_rearm_pool_tvt_team_index(shipp->team)][weapon_class] =
-						MAX(0, The_mission.support_ships.rearm_weapon_pool[get_support_rearm_pool_tvt_team_index(shipp->team)][weapon_class] - shipp->weapons.secondary_bank_ammo[i]);
+				if (SCP_vector_inbounds(Weapon_info, weapon_class)) {
+					auto& slot = The_mission.support_ships.rearm_weapon_pool[get_support_rearm_pool_tvt_team_index(shipp->team)][weapon_class];
+					if (slot >= 0) {
+						slot = MAX(0, slot - shipp->weapons.secondary_bank_ammo[i]);
+					}
 				}
 			}
 		}
@@ -11091,9 +11093,9 @@ void ship_process_post(object * obj, float frametime)
 			const int weapon_class = shipp->weapons.primary_bank_weapons[i];
 			if (The_mission.support_ships.rearm_pool_from_loadout && shipp->flags[Ship_Flags::From_player_wing] &&
 				SCP_vector_inbounds(Weapon_info, weapon_class) && Weapon_info[weapon_class].wi_flags[Weapon::Info_Flags::Ballistic]) {
-				if (weapon_class < MAX_WEAPON_TYPES && The_mission.support_ships.rearm_weapon_pool[get_support_rearm_pool_tvt_team_index(shipp->team)][weapon_class] >= 0) {
-					The_mission.support_ships.rearm_weapon_pool[get_support_rearm_pool_tvt_team_index(shipp->team)][weapon_class] =
-						MAX(0, The_mission.support_ships.rearm_weapon_pool[get_support_rearm_pool_tvt_team_index(shipp->team)][weapon_class] - shipp->weapons.primary_bank_ammo[i]);
+				auto& slot = The_mission.support_ships.rearm_weapon_pool[get_support_rearm_pool_tvt_team_index(shipp->team)][weapon_class];
+				if (slot >= 0) {
+					slot = MAX(0, slot - shipp->weapons.primary_bank_ammo[i]);
 				}
 			}
 		}
@@ -16542,49 +16544,47 @@ int ship_do_rearm_frame( object *objp, float frametime )
 				}
 
 				if (swp->secondary_bank_ammo[i] < swp->secondary_bank_start_ammo[i]) {
-					float rearm_time;
 					const int weapon_class = swp->secondary_bank_weapons[i];
 					const int rearm_pool = get_mission_rearm_pool_for_weapon(weapon_class, shipp->team);
 
 					if (rearm_pool == 0) {
-						if (The_mission.support_ships.allow_rearm_weapon_precedence &&
-							swp->secondary_bank_ammo[i] == 0 && maybe_swap_to_precedence_rearm_weapon(shipp, i, true)) {
-							continue;
-						}
-
-						banks_full++;
-						continue;
-					}
-
-					if (objp == Player_obj) {
-						hud_gauge_popup_start(HUD_WEAPONS_GAUGE);
-					}
-
-					if (timestamp_elapsed(swp->secondary_bank_rearm_time[i])) {
-						rearm_time = Weapon_info[weapon_class].rearm_rate;
-						swp->secondary_bank_rearm_time[i] = timestamp((int)(rearm_time * 1000.0f));
-
-						int reload_amount = Weapon_info[weapon_class].reloaded_per_batch;
-						if (rearm_pool > 0) {
-							reload_amount = MIN(reload_amount, rearm_pool);
-						}
-						reload_amount =
-							MIN(reload_amount, swp->secondary_bank_start_ammo[i] - swp->secondary_bank_ammo[i]);
-						if (reload_amount <= 0) {
+						// Pool exhausted: try a precedence swap; otherwise this bank is unrearmable this frame.
+						// Either way, fall through so the trailing "first missile" block still clears the flag.
+						if (!(The_mission.support_ships.allow_rearm_weapon_precedence &&
+								swp->secondary_bank_ammo[i] == 0 &&
+								maybe_swap_to_precedence_rearm_weapon(shipp, i, true))) {
 							banks_full++;
-							continue;
+						}
+					} else {
+						if (objp == Player_obj) {
+							hud_gauge_popup_start(HUD_WEAPONS_GAUGE);
 						}
 
-						snd_play_3d(gamesnd_get_game_sound(GameSounds::MISSILE_LOAD), &objp->pos, &View_position);
-						if (objp == Player_obj)
-							joy_ff_play_reload_effect();
+						if (timestamp_elapsed(swp->secondary_bank_rearm_time[i])) {
+							float rearm_time = Weapon_info[weapon_class].rearm_rate;
+							swp->secondary_bank_rearm_time[i] = timestamp((int)(rearm_time * 1000.0f));
 
-						const int prev_ammo = swp->secondary_bank_ammo[i];
-						swp->secondary_bank_ammo[i] += reload_amount;
-						if (swp->secondary_bank_ammo[i] > swp->secondary_bank_start_ammo[i]) {
-							swp->secondary_bank_ammo[i] = swp->secondary_bank_start_ammo[i];
+							int reload_amount = Weapon_info[weapon_class].reloaded_per_batch;
+							if (rearm_pool > 0) {
+								reload_amount = MIN(reload_amount, rearm_pool);
+							}
+							reload_amount =
+								MIN(reload_amount, swp->secondary_bank_start_ammo[i] - swp->secondary_bank_ammo[i]);
+							if (reload_amount <= 0) {
+								banks_full++;
+							} else {
+								snd_play_3d(gamesnd_get_game_sound(GameSounds::MISSILE_LOAD), &objp->pos, &View_position);
+								if (objp == Player_obj)
+									joy_ff_play_reload_effect();
+
+								const int prev_ammo = swp->secondary_bank_ammo[i];
+								swp->secondary_bank_ammo[i] += reload_amount;
+								if (swp->secondary_bank_ammo[i] > swp->secondary_bank_start_ammo[i]) {
+									swp->secondary_bank_ammo[i] = swp->secondary_bank_start_ammo[i];
+								}
+								use_mission_rearm_pool_for_weapon(weapon_class, swp->secondary_bank_ammo[i] - prev_ammo, shipp->team);
+							}
 						}
-						use_mission_rearm_pool_for_weapon(weapon_class, swp->secondary_bank_ammo[i] - prev_ammo, shipp->team);
 					}
 				} else {
 					banks_full++;
@@ -16626,56 +16626,53 @@ int ship_do_rearm_frame( object *objp, float frametime )
 					}
 
 					if (swp->primary_bank_ammo[i] < swp->primary_bank_start_ammo[i]) {
-						float rearm_time;
 						const int weapon_class = swp->primary_bank_weapons[i];
 						const int rearm_pool = get_mission_rearm_pool_for_weapon(weapon_class, shipp->team);
 
 						if (rearm_pool == 0) {
-							if (The_mission.support_ships.allow_rearm_weapon_precedence &&
-								swp->primary_bank_ammo[i] == 0 &&
-								maybe_swap_to_precedence_rearm_weapon(shipp, i, false)) {
-								continue;
-							}
-
-							primary_banks_full++;
-							continue;
-						}
-
-						if (objp == Player_obj) {
-							hud_gauge_popup_start(HUD_WEAPONS_GAUGE);
-						}
-
-						if (timestamp_elapsed(swp->primary_bank_rearm_time[i])) {
-							rearm_time = Weapon_info[weapon_class].rearm_rate;
-							swp->primary_bank_rearm_time[i] = timestamp((int)(rearm_time * 1000.f));
-
-							int reload_amount = Weapon_info[weapon_class].reloaded_per_batch;
-							if (rearm_pool > 0) {
-								reload_amount = MIN(reload_amount, rearm_pool);
-							}
-							reload_amount =
-								MIN(reload_amount, swp->primary_bank_start_ammo[i] - swp->primary_bank_ammo[i]);
-							if (reload_amount <= 0) {
+							// Pool exhausted: try a precedence swap; otherwise this bank is unrearmable this frame.
+							// Either way, fall through so the trailing "first ballistic" block still clears the flag.
+							if (!(The_mission.support_ships.allow_rearm_weapon_precedence &&
+									swp->primary_bank_ammo[i] == 0 &&
+									maybe_swap_to_precedence_rearm_weapon(shipp, i, false))) {
 								primary_banks_full++;
-								continue;
+							}
+						} else {
+							if (objp == Player_obj) {
+								hud_gauge_popup_start(HUD_WEAPONS_GAUGE);
 							}
 
-							// Goober5000
-							gamesnd_id sound_index;
-							if (gamesnd_game_sound_try_load(GameSounds::BALLISTIC_LOAD))
-								sound_index = GameSounds::BALLISTIC_LOAD;
-							else
-								sound_index = GameSounds::MISSILE_LOAD;
+							if (timestamp_elapsed(swp->primary_bank_rearm_time[i])) {
+								float rearm_time = Weapon_info[weapon_class].rearm_rate;
+								swp->primary_bank_rearm_time[i] = timestamp((int)(rearm_time * 1000.f));
 
-							if (sound_index.isValid())
-								snd_play_3d(gamesnd_get_game_sound(sound_index), &objp->pos, &View_position);
+								int reload_amount = Weapon_info[weapon_class].reloaded_per_batch;
+								if (rearm_pool > 0) {
+									reload_amount = MIN(reload_amount, rearm_pool);
+								}
+								reload_amount =
+									MIN(reload_amount, swp->primary_bank_start_ammo[i] - swp->primary_bank_ammo[i]);
+								if (reload_amount <= 0) {
+									primary_banks_full++;
+								} else {
+									// Goober5000
+									gamesnd_id sound_index;
+									if (gamesnd_game_sound_try_load(GameSounds::BALLISTIC_LOAD))
+										sound_index = GameSounds::BALLISTIC_LOAD;
+									else
+										sound_index = GameSounds::MISSILE_LOAD;
 
-							const int prev_primary_ammo = swp->primary_bank_ammo[i];
-							swp->primary_bank_ammo[i] += reload_amount;
-							if (swp->primary_bank_ammo[i] > swp->primary_bank_start_ammo[i]) {
-								swp->primary_bank_ammo[i] = swp->primary_bank_start_ammo[i];
+									if (sound_index.isValid())
+										snd_play_3d(gamesnd_get_game_sound(sound_index), &objp->pos, &View_position);
+
+									const int prev_primary_ammo = swp->primary_bank_ammo[i];
+									swp->primary_bank_ammo[i] += reload_amount;
+									if (swp->primary_bank_ammo[i] > swp->primary_bank_start_ammo[i]) {
+										swp->primary_bank_ammo[i] = swp->primary_bank_start_ammo[i];
+									}
+									use_mission_rearm_pool_for_weapon(weapon_class, swp->primary_bank_ammo[i] - prev_primary_ammo, shipp->team);
+								}
 							}
-							use_mission_rearm_pool_for_weapon(weapon_class, swp->primary_bank_ammo[i] - prev_primary_ammo, shipp->team);
 						}
 					} else {
 						primary_banks_full++;

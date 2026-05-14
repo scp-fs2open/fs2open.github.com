@@ -148,9 +148,6 @@ bool MissionSpecDialogModel::apply() {
 	for (int team = 0; team < MAX_TVT_TEAMS; ++team) {
 		for (int i = 0; i < weapon_info_size(); ++i) {
 			The_mission.support_ships.rearm_weapon_pool[team][i] = _m_support_rearm_settings.rearmWeaponPool[team][i];
-			if (Weapon_info[i].disallow_rearm || !Weapon_info[i].wi_flags[Weapon::Info_Flags::Player_allowed]) {
-				The_mission.support_ships.rearm_weapon_pool[team][i] = 0;
-			}
 		}
 	}
 	

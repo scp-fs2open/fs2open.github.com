@@ -10,24 +10,10 @@
 namespace fso::fred::dialogs {
 
 SupportRearmDialog::SupportRearmDialog(QWidget* parent, EditorViewport* viewport)
-	: QDialog(parent), ui(new Ui::SupportRearmDialog()), _model(new SupportRearmDialogModel(this, viewport)),
-	  _viewport(viewport)
+	: QDialog(parent), ui(new Ui::SupportRearmDialog()), _model(new SupportRearmDialogModel(this, viewport))
 {
 	ui->setupUi(this);
-	ui->poolTeamCombo->clear();
-	for (int i = 0; i < Num_teams && i < MAX_TVT_TEAMS; ++i) {
-		ui->poolTeamCombo->addItem(QString("Team %1").arg(i + 1), i);
-	}
-	_activePoolTeam = 0;
-	if (ui->poolTeamCombo->count() > 0) {
-		ui->poolTeamCombo->setCurrentIndex(_activePoolTeam);
-	}
-	populateWeaponList();
-	if (ui->weaponList->count() > 0) {
-		ui->weaponList->setCurrentRow(0);
-	}
-	updateFromSelection();
-	updateControlStates();
+	populateTeamCombo();
 }
 
 SupportRearmDialog::~SupportRearmDialog() = default;
@@ -35,60 +21,13 @@ SupportRearmDialog::~SupportRearmDialog() = default;
 void SupportRearmDialog::setInitial(const SupportRearmSettings& settings)
 {
 	_model->setInitial(settings);
-	{
-		util::SignalBlockers blockers(this);
-		ui->supportEnabledCheck->setChecked(!settings.disallowSupportShips);
-		ui->repairHullCheck->setChecked(settings.supportRepairsHull);
-		ui->hullRepairSpin->setValue(settings.maxHullRepair);
-		ui->subsysRepairSpin->setValue(settings.maxSubsysRepair);
-		ui->disallowRearmCheck->setChecked(settings.disallowSupportRearm);
-		ui->limitPoolCheck->setChecked(settings.limitRearmToPool);
-		ui->fromLoadoutCheck->setChecked(settings.rearmPoolFromLoadout);
-		ui->precedenceCheck->setChecked(settings.allowWeaponPrecedence);
-		_activePoolTeam = 0;
-		if (ui->poolTeamCombo->count() > 0) {
-			ui->poolTeamCombo->setCurrentIndex(_activePoolTeam);
-		}
-	}
-	populateWeaponList();
-	if (ui->weaponList->count() > 0) {
-		ui->weaponList->setCurrentRow(0);
-	}
-	updateFromSelection();
-	updateControlStates();
+	_activePoolTeam = 0;
+	syncUiFromModel();
 }
 
 SupportRearmSettings SupportRearmDialog::settings() const
 {
-	auto out = _model->settings();
-	out.disallowSupportShips = !ui->supportEnabledCheck->isChecked();
-	out.supportRepairsHull = ui->repairHullCheck->isChecked();
-	out.maxHullRepair = static_cast<float>(ui->hullRepairSpin->value());
-	out.maxSubsysRepair = static_cast<float>(ui->subsysRepairSpin->value());
-	out.disallowSupportRearm = ui->disallowRearmCheck->isChecked();
-	out.limitRearmToPool = ui->limitPoolCheck->isChecked();
-	out.rearmPoolFromLoadout = ui->fromLoadoutCheck->isChecked();
-	out.allowWeaponPrecedence = ui->precedenceCheck->isChecked();
-	for (int team = 0; team < MAX_TVT_TEAMS; ++team) {
-		for (int i = 0; i < weapon_info_size(); ++i) {
-			if (Weapon_info[i].disallow_rearm) {
-				out.rearmWeaponPool[team][i] = 0;
-			}
-		}
-	}
-	return out;
-}
-
-void SupportRearmDialog::accept()
-{
-	if (_model->apply()) {
-		QDialog::accept();
-	}
-}
-
-void SupportRearmDialog::reject()
-{
-	QDialog::reject();
+	return _model->settings();
 }
 
 void SupportRearmDialog::closeEvent(QCloseEvent* e)
@@ -108,6 +47,43 @@ QString SupportRearmDialog::weaponEntryText(int weaponClass) const
 		return QString::fromStdString(SCP_string(wi.name) + " - Unlimited");
 	}
 	return QString::fromStdString(SCP_string(wi.name) + " - " + std::to_string(amount));
+}
+
+void SupportRearmDialog::populateTeamCombo()
+{
+	util::SignalBlockers blockers(this);
+	ui->poolTeamCombo->clear();
+	for (int i = 0; i < Num_teams && i < MAX_TVT_TEAMS; ++i) {
+		ui->poolTeamCombo->addItem(QString("Team %1").arg(i + 1), i);
+	}
+	if (ui->poolTeamCombo->count() > 0) {
+		ui->poolTeamCombo->setCurrentIndex(_activePoolTeam);
+	}
+}
+
+void SupportRearmDialog::syncUiFromModel()
+{
+	const auto& s = _model->settings();
+	{
+		util::SignalBlockers blockers(this);
+		ui->supportEnabledCheck->setChecked(!s.disallowSupportShips);
+		ui->repairHullCheck->setChecked(s.supportRepairsHull);
+		ui->hullRepairSpin->setValue(s.maxHullRepair);
+		ui->subsysRepairSpin->setValue(s.maxSubsysRepair);
+		ui->disallowRearmCheck->setChecked(s.disallowSupportRearm);
+		ui->limitPoolCheck->setChecked(s.limitRearmToPool);
+		ui->fromLoadoutCheck->setChecked(s.rearmPoolFromLoadout);
+		ui->precedenceCheck->setChecked(s.allowWeaponPrecedence);
+		if (ui->poolTeamCombo->count() > 0) {
+			ui->poolTeamCombo->setCurrentIndex(_activePoolTeam);
+		}
+	}
+	populateWeaponList();
+	if (ui->weaponList->count() > 0) {
+		ui->weaponList->setCurrentRow(0);
+	}
+	updateFromSelection();
+	updateControlStates();
 }
 
 void SupportRearmDialog::populateWeaponList()
@@ -152,9 +128,10 @@ void SupportRearmDialog::updateFromSelection()
 
 void SupportRearmDialog::updateControlStates()
 {
-	const bool supportEnabled = ui->supportEnabledCheck->isChecked();
-	const bool rearmAllowed = supportEnabled && !ui->disallowRearmCheck->isChecked();
-	const bool poolEnabled = rearmAllowed && ui->limitPoolCheck->isChecked() && !ui->fromLoadoutCheck->isChecked();
+	const auto& s = _model->settings();
+	const bool supportEnabled = !s.disallowSupportShips;
+	const bool rearmAllowed = supportEnabled && !s.disallowSupportRearm;
+	const bool poolEnabled = rearmAllowed && s.limitRearmToPool && !s.rearmPoolFromLoadout;
 	const int cls = selectedWeaponClass();
 	const bool selectedDisallowed = (cls >= 0 && cls < weapon_info_size() && Weapon_info[cls].disallow_rearm);
 	const bool rightEnabled = poolEnabled && !selectedDisallowed;
@@ -164,7 +141,7 @@ void SupportRearmDialog::updateControlStates()
 	ui->subsysRepairSpin->setEnabled(supportEnabled);
 	ui->disallowRearmCheck->setEnabled(supportEnabled);
 
-	const bool limitedPoolEnabled = rearmAllowed && ui->limitPoolCheck->isChecked();
+	const bool limitedPoolEnabled = rearmAllowed && s.limitRearmToPool;
 
 	ui->limitPoolCheck->setEnabled(rearmAllowed);
 	ui->fromLoadoutCheck->setEnabled(limitedPoolEnabled);
@@ -179,35 +156,6 @@ void SupportRearmDialog::updateControlStates()
 	ui->setAllAmountButton->setEnabled(rightEnabled);
 	ui->setAllUnlimitedButton->setEnabled(rightEnabled);
 	ui->setAllZeroButton->setEnabled(rightEnabled);
-}
-
-void SupportRearmDialog::setCurrentWeaponAmount(int amount)
-{
-	const int cls = selectedWeaponClass();
-	if (cls < 0 || cls >= weapon_info_size())
-		return;
-	if (Weapon_info[cls].disallow_rearm) {
-		_model->settings().rearmWeaponPool[_activePoolTeam][cls] = 0;
-	} else {
-		_model->settings().rearmWeaponPool[_activePoolTeam][cls] = (amount < 0) ? -1 : amount;
-	}
-	populateWeaponList();
-	updateFromSelection();
-	updateControlStates();
-}
-
-void SupportRearmDialog::setAllVisibleWeaponAmounts(int amount)
-{
-	for (auto cls : _model->visibleWeaponClasses()) {
-		if (Weapon_info[cls].disallow_rearm) {
-			_model->settings().rearmWeaponPool[_activePoolTeam][cls] = 0;
-		} else {
-			_model->settings().rearmWeaponPool[_activePoolTeam][cls] = (amount < 0) ? -1 : amount;
-		}
-	}
-	populateWeaponList();
-	updateFromSelection();
-	updateControlStates();
 }
 
 void SupportRearmDialog::on_okAndCancelButtons_accepted()
@@ -225,51 +173,83 @@ void SupportRearmDialog::on_weaponList_currentRowChanged(int)
 }
 void SupportRearmDialog::on_setAmountButton_clicked()
 {
-	setCurrentWeaponAmount(ui->poolAmountSpin->value());
+	_model->setWeaponPoolEntry(_activePoolTeam, selectedWeaponClass(), ui->poolAmountSpin->value());
+	populateWeaponList();
+	updateFromSelection();
+	updateControlStates();
 }
 void SupportRearmDialog::on_setUnlimitedButton_clicked()
 {
-	setCurrentWeaponAmount(-1);
+	_model->setWeaponPoolEntry(_activePoolTeam, selectedWeaponClass(), -1);
+	populateWeaponList();
+	updateFromSelection();
+	updateControlStates();
 }
 void SupportRearmDialog::on_setZeroButton_clicked()
 {
-	setCurrentWeaponAmount(0);
+	_model->setWeaponPoolEntry(_activePoolTeam, selectedWeaponClass(), 0);
+	populateWeaponList();
+	updateFromSelection();
+	updateControlStates();
 }
 void SupportRearmDialog::on_setAllAmountButton_clicked()
 {
-	setAllVisibleWeaponAmounts(ui->poolAmountSpin->value());
+	_model->setAllVisibleWeaponPoolEntries(_activePoolTeam, ui->poolAmountSpin->value());
+	populateWeaponList();
+	updateFromSelection();
+	updateControlStates();
 }
 void SupportRearmDialog::on_setAllUnlimitedButton_clicked()
 {
-	setAllVisibleWeaponAmounts(-1);
+	_model->setAllVisibleWeaponPoolEntries(_activePoolTeam, -1);
+	populateWeaponList();
+	updateFromSelection();
+	updateControlStates();
 }
 void SupportRearmDialog::on_setAllZeroButton_clicked()
 {
-	setAllVisibleWeaponAmounts(0);
-}
-void SupportRearmDialog::on_supportEnabledCheck_toggled(bool)
-{
+	_model->setAllVisibleWeaponPoolEntries(_activePoolTeam, 0);
+	populateWeaponList();
+	updateFromSelection();
 	updateControlStates();
 }
-void SupportRearmDialog::on_repairHullCheck_toggled(bool) {}
-void SupportRearmDialog::on_disallowRearmCheck_toggled(bool)
+void SupportRearmDialog::on_supportEnabledCheck_toggled(bool checked)
 {
+	_model->setDisallowSupportShips(!checked);
 	updateControlStates();
 }
-void SupportRearmDialog::on_limitPoolCheck_toggled(bool)
+void SupportRearmDialog::on_repairHullCheck_toggled(bool checked)
 {
+	_model->setSupportRepairsHull(checked);
+}
+void SupportRearmDialog::on_disallowRearmCheck_toggled(bool checked)
+{
+	_model->setDisallowSupportRearm(checked);
 	updateControlStates();
 }
-void SupportRearmDialog::on_fromLoadoutCheck_toggled(bool)
+void SupportRearmDialog::on_limitPoolCheck_toggled(bool checked)
 {
+	_model->setLimitRearmToPool(checked);
 	updateControlStates();
 }
-void SupportRearmDialog::on_precedenceCheck_toggled(bool)
+void SupportRearmDialog::on_fromLoadoutCheck_toggled(bool checked)
 {
+	_model->setRearmPoolFromLoadout(checked);
 	updateControlStates();
 }
-void SupportRearmDialog::on_hullRepairSpin_valueChanged(double) {}
-void SupportRearmDialog::on_subsysRepairSpin_valueChanged(double) {}
+void SupportRearmDialog::on_precedenceCheck_toggled(bool checked)
+{
+	_model->setAllowWeaponPrecedence(checked);
+	updateControlStates();
+}
+void SupportRearmDialog::on_hullRepairSpin_valueChanged(double value)
+{
+	_model->setMaxHullRepair(static_cast<float>(value));
+}
+void SupportRearmDialog::on_subsysRepairSpin_valueChanged(double value)
+{
+	_model->setMaxSubsysRepair(static_cast<float>(value));
+}
 
 void SupportRearmDialog::on_poolTeamCombo_currentIndexChanged(int index)
 {

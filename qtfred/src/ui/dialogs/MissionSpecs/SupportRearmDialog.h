@@ -19,9 +19,6 @@ class SupportRearmDialog : public QDialog {
 	void setInitial(const SupportRearmSettings& settings);
 	SupportRearmSettings settings() const;
 
-	void accept() override;
-	void reject() override;
-
   protected:
 	void closeEvent(QCloseEvent* e) override;
 
@@ -46,17 +43,16 @@ class SupportRearmDialog : public QDialog {
 	void on_poolTeamCombo_currentIndexChanged(int);
 
   private: // NOLINT(readability-redundant-access-specifiers)
+	void populateTeamCombo();
 	void populateWeaponList();
+	void syncUiFromModel();
 	void updateFromSelection();
 	void updateControlStates();
 	int selectedWeaponClass() const;
-	void setCurrentWeaponAmount(int amount);
-	void setAllVisibleWeaponAmounts(int amount);
 	QString weaponEntryText(int weaponClass) const;
 
 	std::unique_ptr<Ui::SupportRearmDialog> ui;
 	std::unique_ptr<SupportRearmDialogModel> _model;
-	EditorViewport* _viewport;
 
 	int _activePoolTeam = 0;
 };

@@ -1223,8 +1223,9 @@ void parse_player_info2(mission *pm)
 		OnLoadoutAboutToParseHook->run();
 	}
 
-	// initialize support rearm pool from mission loadout data (weapon index -> count)
-	memset(pm->support_ships.rearm_weapon_pool, 0, sizeof(pm->support_ships.rearm_weapon_pool));
+	// The support rearm pool starts at -1 (unlimited) per-weapon from support_ship_info::reset().
+	// Entries are overridden below for explicit "+Support Rearm Pool:" data, or seeded from the
+	// loadout when "+Support Rearm Pool From Loadout:" is set.
 
 	// read in a ship/weapon pool for each team.
 	for ( nt = 0; nt < Num_teams; nt++ ) {
@@ -1315,6 +1316,14 @@ void parse_player_info2(mission *pm)
 
 		num_choices = 0;
 
+		// When seeding the rearm pool from the loadout, reset this team's row to 0 so the per-weapon
+		// loadout counts below accumulate from a clean baseline (rather than the -1 "unlimited" default).
+		if (pm->support_ships.rearm_pool_from_loadout) {
+			for (int wep = 0; wep < MAX_WEAPON_TYPES; ++wep) {
+				pm->support_ships.rearm_weapon_pool[nt][wep] = 0;
+			}
+		}
+
 		// check weapon class loadout entries
 		for (auto &wc : list2) {
 			// in a campaign, see if the player is allowed the weapons or not.  Remove them from the
@@ -1383,14 +1392,16 @@ void parse_player_info2(mission *pm)
 						continue;
 					}
 
+					auto& slot = pm->support_ships.rearm_weapon_pool[nt][wc.index];
 					if (Weapon_info[wc.index].disallow_rearm) {
-						pm->support_ships.rearm_weapon_pool[nt][wc.index] = 0;
+						slot = 0;
 					} else if (wc.count < 0) {
-						pm->support_ships.rearm_weapon_pool[nt][wc.index] = -1;
+						slot = -1;
 					} else if (wc.count == 0) {
-						pm->support_ships.rearm_weapon_pool[nt][wc.index] = 0;
-					} else if (wc.count > 0 && pm->support_ships.rearm_weapon_pool[nt][wc.index] >= 0) {
-						pm->support_ships.rearm_weapon_pool[nt][wc.index] += wc.count;
+						slot = 0;
+					} else if (wc.count > 0) {
+						// First explicit entry replaces the -1 (unlimited) default; later duplicate entries accumulate.
+						slot = (slot < 0) ? wc.count : slot + wc.count;
 					}
 				}
 			}
@@ -7373,7 +7384,9 @@ void support_ship_info::reset()
 	ship_class = -1;                   // ship class will be determined by the summoning ship's species
 	tally = 0;
 	support_available_for_species = 0; // will be filled in by the next loop
-	memset(&rearm_weapon_pool, -1, sizeof(rearm_weapon_pool));
+	for (auto& team_pool : rearm_weapon_pool) {
+		std::fill(std::begin(team_pool), std::end(team_pool), -1); // -1 == unlimited per-weapon
+	}
 	disallow_rearm = false;
 	allow_rearm_weapon_precedence = false;
 	rearm_pool_from_loadout = false;
