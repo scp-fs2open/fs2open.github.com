@@ -467,8 +467,8 @@ struct weapon_info
 	uint8_t proximity_relation_mask;    // bitmask of Weapon::Proximity::Relation_Flags; 0 = any relation
 	float proximity_detonate_chance;	// probability [0,1] that a proximity contact actually triggers detonation; default 1.0
 	float proximity_stealth_multiplier;	// scale factor applied to proximity_radius for stealth ships; 0.0 = undetectable, 1.0 = normal range; default 1.0
-	float mine_sensors_range;			// range at which mine shows as a distorted blip; -1.0f = always, 0.0f = never
-	float mine_targetable_range;		// range at which mine is fully targetable; -1.0f = always, 0.0f = never
+	float mine_sensors_range;			// range at which mine shows as a distorted blip; 0.0f = never. Always finite for mines after parsing.
+	float mine_targetable_range;		// range at which mine is fully targetable; 0.0f = never. Always finite for mines after parsing.
 	float mine_chase_duration;			// seconds mine chases the triggering ship after proximity contact; 0.0 = detonate immediately (default)
 	bool  mine_detonates_on_chase_timeout;	// if true, detonate when chase timer expires; if false, give up and return to stationary; default true
 	float mine_chase_cooldown;			// seconds after a chase ends before proximity scanning re-enables; default 5.0

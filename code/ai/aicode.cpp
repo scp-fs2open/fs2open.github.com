@@ -10567,11 +10567,12 @@ static object *ai_find_nearby_mine_threat(object *from_objp, object *against_obj
 		float dist_against = vm_vec_dist(&mine_objp->pos, &against_objp->pos);
 
 		// Mine must be within its own targetable range of the threatened ship
-		if (wip->mine_targetable_range >= 0.0f && dist_against > wip->mine_targetable_range)
+		if (dist_against > wip->mine_targetable_range)
 			continue;
 
-		// Imminent gate: only consider mines about to detonate on the threatened ship
-		if (imminent_only && wip->proximity_radius > 0.0f && dist_against > wip->proximity_radius * 1.5f)
+		// Imminent gate: only consider mines about to detonate on the threatened ship.
+		// proximity_radius is always > 0 for mines (parser enforces).
+		if (imminent_only && dist_against > wip->proximity_radius * 1.5f)
 			continue;
 
 		float dist_from = (from_objp == against_objp) ? dist_against : vm_vec_dist(&mine_objp->pos, &from_objp->pos);
@@ -15390,10 +15391,8 @@ void ai_frame(int objnum)
 		&& Ship_types[Ship_info[shipp->ship_info_index].class_type].flags[Ship::Type_Info_Flags::AI_auto_attacks]) {
 		object *imminent_mine = ai_find_nearby_mine_threat(Pl_objp, nullptr, true);
 		if (imminent_mine != nullptr && (target_objnum < 0 || &Objects[target_objnum] != imminent_mine)) {
-			int new_target = OBJ_INDEX(imminent_mine);
-			if (aip->target_objnum != new_target)
-				aip->aspect_locked_time = 0.0f;
-			target_objnum = set_target_objnum(aip, new_target);
+			aip->aspect_locked_time = 0.0f;
+			target_objnum = set_target_objnum(aip, OBJ_INDEX(imminent_mine));
 		}
 	}
 

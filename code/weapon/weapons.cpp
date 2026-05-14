@@ -1443,11 +1443,26 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 		if (optional_string("+Sensors Range:")) {
 			stuff_float(&wip->mine_sensors_range);
+			if (wip->mine_sensors_range < 0.0f) {
+				wip->mine_sensors_range = 0.0f;
+				Warning(LOCATION, "Mine weapon '%s': +Sensors Range cannot be negative. Setting to 0.\n", wip->name);
+			}
 		}
 
 		if (optional_string("+Targetable Range:")) {
 			stuff_float(&wip->mine_targetable_range);
+			if (wip->mine_targetable_range < 0.0f) {
+				wip->mine_targetable_range = 0.0f;
+				Warning(LOCATION, "Mine weapon '%s': +Targetable Range cannot be negative. Setting to 0.\n", wip->name);
+			}
 		}
+
+		// Mines must have finite detection ranges. Defaults scale off proximity_radius so a tiny
+		// proximity radius doesn't accidentally produce a galaxy-spanning blip.
+		if (wip->mine_sensors_range < 0.0f)
+			wip->mine_sensors_range = wip->proximity_radius * 60.0f;
+		if (wip->mine_targetable_range < 0.0f)
+			wip->mine_targetable_range = wip->proximity_radius * 30.0f;
 
 		if (optional_string("+Hitpoints:")) {
 			stuff_int(&wip->weapon_hitpoints);
@@ -1481,15 +1496,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		}
 
 		// Warn if targetable range makes sensors range unreachable
-		bool targetable_infinite = (wip->mine_targetable_range < 0.0f);
-		bool sensors_infinite    = (wip->mine_sensors_range < 0.0f);
-		if (!sensors_infinite) {
-			if (targetable_infinite) {
-				Warning(LOCATION, "Mine weapon '%s': +Targetable Range is infinite but +Sensors Range is finite. The distorted blip state will never occur.\n", wip->name);
-			} else if (wip->mine_targetable_range >= wip->mine_sensors_range) {
-				Warning(LOCATION, "Mine weapon '%s': +Targetable Range (%.1f) >= +Sensors Range (%.1f). The distorted blip state will never occur.\n",
-					wip->name, wip->mine_targetable_range, wip->mine_sensors_range);
-			}
+		if (wip->mine_targetable_range >= wip->mine_sensors_range) {
+			Warning(LOCATION, "Mine weapon '%s': +Targetable Range (%.1f) >= +Sensors Range (%.1f). The distorted blip state will never occur.\n",
+				wip->name, wip->mine_targetable_range, wip->mine_sensors_range);
 		}
 	}
 
@@ -5120,10 +5129,7 @@ void weapon_post_ship_init()
 
 	for (const auto& entry : Pending_proximity_type_names) {
 		const int wi_index = entry.first;
-		if (wi_index < 0 || wi_index >= num_weapons) {
-			Warning(LOCATION, "Proximity types: stale weapon_info index %d. Entries dropped.\n", wi_index);
-			continue;
-		}
+		Assertion(wi_index >= 0 && wi_index < num_weapons, "Pending proximity type entry has out-of-range weapon_info index %d (num_weapons=%d).", wi_index, num_weapons);
 		weapon_info& wip = Weapon_info[wi_index];
 		for (const SCP_string& type_name : entry.second) {
 			int idx = ship_type_name_lookup(type_name.c_str());
@@ -5136,10 +5142,7 @@ void weapon_post_ship_init()
 
 	for (const auto& entry : Pending_proximity_class_names) {
 		const int wi_index = entry.first;
-		if (wi_index < 0 || wi_index >= num_weapons) {
-			Warning(LOCATION, "Proximity classes: stale weapon_info index %d. Entries dropped.\n", wi_index);
-			continue;
-		}
+		Assertion(wi_index >= 0 && wi_index < num_weapons, "Pending proximity class entry has out-of-range weapon_info index %d (num_weapons=%d).", wi_index, num_weapons);
 		weapon_info& wip = Weapon_info[wi_index];
 		for (const SCP_string& class_name : entry.second) {
 			int idx = ship_info_lookup(class_name.c_str());

@@ -301,8 +301,8 @@ void radar_plot_object( object *objp )
 	if (objp->type == OBJ_WEAPON) {
 		weapon_info *wip = &Weapon_info[Weapons[objp->instance].weapon_info_index];
 		if (wip->is_mine()) {
-			mine_in_targetable_range = (wip->mine_targetable_range < 0.0f || dist <= wip->mine_targetable_range);
-			bool in_sensors          = (wip->mine_sensors_range < 0.0f    || dist <= wip->mine_sensors_range);
+			mine_in_targetable_range = (dist <= wip->mine_targetable_range);
+			bool in_sensors          = (dist <= wip->mine_sensors_range);
 			if (!mine_in_targetable_range && !in_sensors)
 				return; // beyond all detection ranges
 		}
