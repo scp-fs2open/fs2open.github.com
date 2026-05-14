@@ -81,9 +81,9 @@ class ShipWeaponsDialogModel : public AbstractDialogModel {
 	SCP_vector<Banks*> getSecondaryBanks() const;
 	SCP_vector<WeaponItem> getAvailableWeapons(WeaponListType type) const;
 	// "None" for -1, "CONFLICT" for -2, otherwise the weapon table name.
-	SCP_string getWeaponName(int weaponId) const;
-	SCP_vector<SCP_string> getAiClassNames() const;
-	SCP_string getAiClassName(int aiClass) const;
+	static SCP_string getWeaponName(int weaponId);
+	static SCP_vector<SCP_string> getAiClassNames();
+	static SCP_string getAiClassName(int aiClass);
 	int getShipClass() const;
 	bool isBigShip() const;
 	void notifyChanged();

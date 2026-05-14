@@ -483,7 +483,7 @@ SCP_vector<WeaponItem> ShipWeaponsDialogModel::getAvailableWeapons(WeaponListTyp
 	}
 	return result;
 }
-SCP_string ShipWeaponsDialogModel::getWeaponName(int weaponId) const
+SCP_string ShipWeaponsDialogModel::getWeaponName(int weaponId)
 {
 	if (weaponId == -2) {
 		return "CONFLICT";
@@ -493,7 +493,7 @@ SCP_string ShipWeaponsDialogModel::getWeaponName(int weaponId) const
 	}
 	return Weapon_info[weaponId].name;
 }
-SCP_vector<SCP_string> ShipWeaponsDialogModel::getAiClassNames() const
+SCP_vector<SCP_string> ShipWeaponsDialogModel::getAiClassNames()
 {
 	SCP_vector<SCP_string> result;
 	result.reserve(Num_ai_classes);
@@ -502,7 +502,7 @@ SCP_vector<SCP_string> ShipWeaponsDialogModel::getAiClassNames() const
 	}
 	return result;
 }
-SCP_string ShipWeaponsDialogModel::getAiClassName(int aiClass) const
+SCP_string ShipWeaponsDialogModel::getAiClassName(int aiClass)
 {
 	if (aiClass < 0 || aiClass >= Num_ai_classes) {
 		return "";
