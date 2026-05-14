@@ -973,13 +973,20 @@ int Editor::dup_object(object* objp) {
 		obj = create_waypoint(&objp->pos, waypoint_instance);
 		waypoint_instance = Objects[obj].instance;
 	} else if (objp->type == OBJ_JUMP_NODE) {
+		CJumpNode* src_jnp = jumpnode_get_by_objp(objp);
 		CJumpNode jnp(&objp->pos);
+		if (src_jnp) {
+			clone_jump_node_instance_data(*src_jnp, jnp);
+		}
 		obj = jnp.GetSCPObjectNumber();
 		Jump_nodes.push_back(std::move(jnp));
 	} else if (objp->type == OBJ_PROP) {
 		prop* propp = prop_id_lookup(inst);
 		if (propp != nullptr) {
 			obj = prop_create(&objp->orient, &objp->pos, propp->prop_info_index);
+			if (obj != -1) {
+				clone_prop_instance_data(inst, Objects[obj].instance);
+			}
 		}
 	}
 

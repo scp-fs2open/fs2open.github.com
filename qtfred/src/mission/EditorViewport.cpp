@@ -1351,10 +1351,6 @@ int EditorViewport::drag_objects(int x, int y)
 		return -1;
 
 	if (Dup_drag == 1) {
-		Dup_drag = 0;
-	}
-
-	if (Dup_drag == 1) {
 		if (duplicate_marked_objects() < 0)
 			return -1;
 

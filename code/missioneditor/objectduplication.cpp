@@ -5,9 +5,12 @@
 
 #include "ai/ai.h"
 #include "globalincs/linklist.h"
+#include "jumpnode/jumpnode.h"
 #include "mission/missionparse.h"
+#include "model/model.h"
 #include "object/object.h"
 #include "parse/sexp.h"
+#include "prop/prop.h"
 #include "ship/ship.h"
 
 // FRED/QtFRED each own their own copy of these arrays (defined in
@@ -210,4 +213,58 @@ void clone_ship_instance_data(int src_shipnum, int dest_shipnum)
 			Fred_texture_replacements.push_back(std::move(entry));
 		}
 	}
+}
+
+// Per-prop field handling here MUST stay in sync with:
+//   Fred_mission_save::save_props() in missionsave.cpp
+//   parse_prop() in missionparse.cpp
+void clone_prop_instance_data(int src_prop_id, int dest_prop_id)
+{
+	Assertion(src_prop_id != dest_prop_id, "clone_prop_instance_data: src and dest are the same prop");
+
+	prop* src = prop_id_lookup(src_prop_id);
+	prop* dest = prop_id_lookup(dest_prop_id);
+	Assertion(src && dest, "clone_prop_instance_data: invalid src or dest prop id");
+	Assertion(src->prop_info_index == dest->prop_info_index, "clone_prop_instance_data: dest must be the same prop class as src");
+
+	// fred view layer
+	dest->fred_layer = src->fred_layer;
+
+	// object flag the prop editor exposes (see save_props)
+	if (Objects[src->objnum].flags[Object::Object_Flags::Collides]) {
+		Objects[dest->objnum].flags.set(Object::Object_Flags::Collides);
+	} else {
+		Objects[dest->objnum].flags.remove(Object::Object_Flags::Collides);
+	}
+}
+
+// Per-jump-node field handling here MUST stay in sync with:
+//   Fred_mission_save::save_waypoints() jump-node section in missionsave.cpp
+//   the "$Jump Node:" parse block in missionparse.cpp
+void clone_jump_node_instance_data(const CJumpNode& src, CJumpNode& dest)
+{
+	// display name (the JN_HAS_DISPLAY_NAME flag is set by SetDisplayName)
+	if (src.HasDisplayName()) {
+		dest.SetDisplayName(src.GetDisplayName());
+	}
+
+	// special model - SetModel also sets m_radius and the JN_SPECIAL_MODEL flag.
+	// Parse uses default show_polys=false; JN_SHOW_POLYS isn't persisted, so we
+	// don't carry it across either.
+	if (src.IsSpecialModel()) {
+		polymodel* pm = model_get(src.GetModelNumber());
+		if (pm) {
+			dest.SetModel(pm->filename);
+		}
+	}
+
+	// color (SetAlphaColor manages the JN_USE_DISPLAY_COLOR flag)
+	const color& c = src.GetColor();
+	dest.SetAlphaColor(c.red, c.green, c.blue, c.alpha);
+
+	// hidden state
+	dest.SetVisibility(!src.IsHidden());
+
+	// fred view layer
+	dest.SetFredLayer(src.GetFredLayer());
 }

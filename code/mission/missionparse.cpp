@@ -5251,6 +5251,10 @@ void parse_wing(mission *pm)
 	// Goober5000 - wing creation stuff moved to post_process_ships_wings
 }
 
+// Per-prop field handling here MUST stay in sync with:
+//   Fred_mission_save::save_props() in missionsave.cpp
+//   clone_prop_instance_data() in missioneditor/objectduplication.cpp
+// When you add a new editable prop field, touch all three.
 void parse_prop(mission* /*pm*/)
 {
 	parsed_prop p;
@@ -5978,6 +5982,10 @@ void parse_waypoint_list(mission *pm)
 	}
 }
 
+// The jump-node section of this function MUST stay in sync with:
+//   Fred_mission_save::save_waypoints() (jump-node section) in missionsave.cpp
+//   clone_jump_node_instance_data() in missioneditor/objectduplication.cpp
+// When you add a new editable jump-node field, touch all three.
 void parse_waypoints_and_jumpnodes(mission *pm)
 {
 	vec3d pos;

@@ -4846,6 +4846,10 @@ int Fred_mission_save::save_vector(const vec3d& v)
 	return 0;
 }
 
+// The jump-node section of this function MUST stay in sync with:
+//   the "$Jump Node:" parse block in missionparse.cpp
+//   clone_jump_node_instance_data() in missioneditor/objectduplication.cpp
+// When you add a new editable jump-node field, touch all three.
 int Fred_mission_save::save_waypoints()
 {
 	// object *ptr;
@@ -5289,6 +5293,10 @@ int Fred_mission_save::save_wings()
 	return err;
 }
 
+// Per-prop field handling here MUST stay in sync with:
+//   parse_prop() in missionparse.cpp
+//   clone_prop_instance_data() in missioneditor/objectduplication.cpp
+// When you add a new editable prop field, touch all three.
 int Fred_mission_save::save_props()
 {
 	auto num_props = count_items_with_value(Props);
