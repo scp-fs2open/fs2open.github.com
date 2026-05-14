@@ -3983,7 +3983,7 @@ int submodel_find_destroyed_form(int model_num, const char *name_stem)
 	SCP_string destroyed_name(name_stem);
 	destroyed_name += "-destroyed";
 
-	return find_item_with_string(pm->submodel.get(), i2sz(pm->n_models), &bsp_info::name, destroyed_name.c_str());
+	return find_item_with_string(pm->submodel.get(), i2sz(pm->n_models), &bsp_info::name, destroyed_name);
 }
 
 bool submodel_is_destroyed_form(const char *name)

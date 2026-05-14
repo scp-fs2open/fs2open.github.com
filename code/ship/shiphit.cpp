@@ -133,10 +133,7 @@ void check_subsystem_submodel_link(const ship *shipp, const ship_subsys *subsys,
 		return;
 
 	// show the submodel, or not, depending on what happened to the subsystem
-	if (was_destroyed)
-		pmi->submodel[j].blown_off = false;
-	else
-		pmi->submodel[j].blown_off = true;
+	pmi->submodel[j].blown_off = !was_destroyed;
 }
 
 // do_subobj_destroyed_stuff is called when a subobject for a ship is killed.  Separated out
