@@ -680,7 +680,7 @@ void copy_bits(int *dest, int src, int mask)
 
 int dup_object(object *objp)
 {
-	int i, n, inst, obj = -1;
+	int inst, obj = -1;
 	static int waypoint_instance(-1);
 
 	if (!objp) {
@@ -708,7 +708,7 @@ int dup_object(object *objp)
 		if (obj == -1)
 			return -1;
 
-		n = Objects[obj].instance;
+		int n = Objects[obj].instance;
 
 		// Copy every editable per-ship field.  See clone_ship_instance_data() in
 		// code/missioneditor/objectduplication.cpp for the canonical field list.
@@ -716,17 +716,19 @@ int dup_object(object *objp)
 
 		// Reinforcement-list propagation: if the source ship is listed as a
 		// reinforcement, add a new entry pointing at the duplicate.
-		i = find_item_with_string(Reinforcements, &reinforcements::name, Ships[inst].ship_name);
+		int i = find_item_with_string(Reinforcements, &reinforcements::name, Ships[inst].ship_name);
 		if (i >= 0) {
 			Reinforcements.push_back(Reinforcements[i]);
 			strcpy_s(Reinforcements.back().name, Ships[n].ship_name);
 		}
 
 		if (player_start_demoted) {
-			AfxMessageBox(
-				"Cannot create another player start. This mission already has the maximum of 12. "
+			CString msg;
+			msg.Format(
+				"Cannot create another player start. This mission already has the maximum of %d. "
 				"The duplicate has been created as a regular ship instead.",
-				MB_OK | MB_ICONINFORMATION);
+				MAX_PLAYERS);
+			AfxMessageBox(msg, MB_OK | MB_ICONINFORMATION);
 		}
 
 	} else if (objp->type == OBJ_WAYPOINT) {

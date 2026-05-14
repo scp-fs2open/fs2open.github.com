@@ -38,7 +38,8 @@ void clone_ship_instance_data(int src_shipnum, int dest_shipnum)
 	ai_info* src_ai = &Ai_info[src->ai_index];
 	ai_info* dest_ai = &Ai_info[dest->ai_index];
 
-	// display name (the Has_display_name flag is carried via the bitset copy below)
+	// display name string only - the Has_display_name bit rides along on the
+	// shipp->flags assignment further down (search "ship flags" below).
 	dest->display_name = src->display_name;
 
 	// alt classes
@@ -200,7 +201,11 @@ void clone_ship_instance_data(int src_shipnum, int dest_shipnum)
 	dest->assist_score_pct = src->assist_score_pct;
 	dest->persona_index = src->persona_index;
 
-	// texture replacement... copy any entries whose ship_name matches src
+	// texture replacement... copy any entries whose ship_name matches src.
+	// Skip from_table entries: those came from the ship class's .tbl/.tbm and
+	// apply to every instance of the class automatically, so re-attaching one
+	// to the duplicate would create a duplicate override that save_objects
+	// wouldn't write anyway.
 	{
 		SCP_vector<texture_replace> new_entries;
 		for (const auto& tr : Fred_texture_replacements) {
