@@ -78,14 +78,12 @@ constexpr int BANK_SWITCH_DELAY = 250;	// after switching banks, 1/4 second dela
 
 #define MAX_SPAWN_TYPES_PER_WEAPON 5
 
-namespace Weapon {
 // Bitmask filter applied during proximity detonation, evaluated relative to the launcher's team.
 // 0 = no relation filter (any relation passes).
-namespace Proximity {
+namespace Weapon::Proximity {
 	constexpr uint8_t Relation_Hostile  = 1 << 0;  // launcher's team attacks target's team
 	constexpr uint8_t Relation_Friendly = 1 << 1;  // same team as launcher
 	constexpr uint8_t Relation_Neutral  = 1 << 2;  // neither attacks the other and not same team
-}
 }
 
 // homing missiles have an extended lifetime so they don't appear to run out of gas before they can hit a moving target at extreme
