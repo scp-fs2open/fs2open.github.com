@@ -24,7 +24,7 @@
 #include "sound/ffmpeg/FFmpegWaveFile.h"
 #endif
 
-#define MAX_STREAM_BUFFERS 4
+#define MAX_STREAM_BUFFERS 8
 
 // status
 #define ASF_FREE	0
@@ -598,6 +598,20 @@ bool AudioStream::ServiceBuffer (void)
 			if ( (m_finished_id>0) && ((uint)timer_get_milliseconds() > m_finished_id) ) {
 				m_finished_id = 0;
 				m_bPastLimit = true;
+			}
+
+			// Recover from buffer underrun: if the source stopped because the queue drained
+			// between service ticks, OpenAL will not auto-resume even after WriteWaveData
+			// queues more buffers. We have to call alSourcePlay again ourselves.
+			ALint state = AL_PLAYING;
+			OpenAL_ErrorPrint( alGetSourcei(m_source_id, AL_SOURCE_STATE, &state) );
+			if (state == AL_STOPPED && m_fPlaying && !m_bReadingDone) {
+				ALint queued = 0;
+				OpenAL_ErrorPrint( alGetSourcei(m_source_id, AL_BUFFERS_QUEUED, &queued) );
+				if (queued > 0) {
+					nprintf(("Sound", "SOUND => Audiostream underrun, restarting playback\n"));
+					OpenAL_ErrorPrint( alSourcePlay(m_source_id) );
+				}
 			}
 
 			if ( PlaybackDone() ) {
