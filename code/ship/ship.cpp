@@ -16550,9 +16550,10 @@ int ship_do_rearm_frame( object *objp, float frametime )
 					if (rearm_pool == 0) {
 						// Pool exhausted: try a precedence swap; otherwise this bank is unrearmable this frame.
 						// Either way, fall through so the trailing "first missile" block still clears the flag.
-						if (!(The_mission.support_ships.allow_rearm_weapon_precedence &&
-								swp->secondary_bank_ammo[i] == 0 &&
-								maybe_swap_to_precedence_rearm_weapon(shipp, i, true))) {
+						const bool swapped = The_mission.support_ships.allow_rearm_weapon_precedence &&
+											 swp->secondary_bank_ammo[i] == 0 &&
+											 maybe_swap_to_precedence_rearm_weapon(shipp, i, true);
+						if (!swapped) {
 							banks_full++;
 						}
 					} else {
@@ -16632,9 +16633,10 @@ int ship_do_rearm_frame( object *objp, float frametime )
 						if (rearm_pool == 0) {
 							// Pool exhausted: try a precedence swap; otherwise this bank is unrearmable this frame.
 							// Either way, fall through so the trailing "first ballistic" block still clears the flag.
-							if (!(The_mission.support_ships.allow_rearm_weapon_precedence &&
-									swp->primary_bank_ammo[i] == 0 &&
-									maybe_swap_to_precedence_rearm_weapon(shipp, i, false))) {
+							const bool swapped = The_mission.support_ships.allow_rearm_weapon_precedence &&
+												 swp->primary_bank_ammo[i] == 0 &&
+												 maybe_swap_to_precedence_rearm_weapon(shipp, i, false);
+							if (!swapped) {
 								primary_banks_full++;
 							}
 						} else {
