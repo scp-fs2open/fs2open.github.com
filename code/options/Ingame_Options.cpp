@@ -98,8 +98,11 @@ void ingame_options_init()
 	}
 }
 
+extern void fsspeech_options_cleanup();
+
 void ingame_options_close()
 {
+	fsspeech_options_cleanup();
 	OCGR.reset();
 }
 

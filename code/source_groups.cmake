@@ -1621,16 +1621,25 @@ add_file_folder("Sound"
 	sound/rtvoice.h
 	sound/sound.cpp
 	sound/sound.h
-	sound/speech.cpp
 	sound/speech.h
 	sound/voicerec.cpp
 	sound/voicerec.h
 )
 
-if (APPLE)
+if (WIN32)
 	add_file_folder("Sound"
 		${file_root_sound}
-		sound/speech.mm
+		sound/speech_win.cpp
+	)
+elseif (APPLE)
+	add_file_folder("Sound"
+		${file_root_sound}
+		sound/speech_mac.mm
+	)
+elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+	add_file_folder("Sound"
+		${file_root_sound}
+		sound/speech_linux.cpp
 	)
 endif()
 
