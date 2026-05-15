@@ -116,7 +116,7 @@ static bool is_subsys_destroyed(ship *shipp, int submodel)
 
 void check_subsystem_submodel_link(const ship *shipp, const ship_subsys *subsys, bool was_destroyed)
 {
-	if (!Link_subsystems_to_destroyed_submodels)
+	if (!Link_special_point_subsystems_to_destroyed_submodels)
 		return;
 
 	Assertion(shipp && subsys, "the ship and subsystem must exist!");
