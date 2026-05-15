@@ -1063,7 +1063,7 @@ void FredView::onUpdateContextToolbar() {
 		}
 	} else if (effectiveType == OBJ_WAYPOINT) {
 		addBtn(tr("Edit Waypoint Path"),   &FredView::on_actionWaypoint_Paths_triggered);
-	} else if (numMarked <= 1 && effectiveType == OBJ_JUMP_NODE) {
+	} else if (effectiveType == OBJ_JUMP_NODE) {
 		addBtn(tr("Edit Jump Node"),       &FredView::on_actionJump_Nodes_triggered);
 	} else if (effectiveType == OBJ_PROP) {
 		addBtn(tr("Edit Prop"),            &FredView::on_actionProps_triggered);
