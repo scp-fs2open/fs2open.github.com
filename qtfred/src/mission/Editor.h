@@ -163,32 +163,6 @@ class Editor : public QObject {
 	void layerListChanged();
 
   public:
-	// --- Undo / autosave state ---
-	int undoAvailable = 0;    ///< Whether an undo state (Backup.002) is available
-	int autosaveDisabled = 0; ///< When non-zero, autosave writes are suppressed
-
-	/**
-	 * @brief Rotate the backup stack and save the current mission state.
-	 *
-	 * Equivalent to CFREDDoc::autosave() in old FRED2.  Should be called after
-	 * any significant edit operation.  Does nothing when @c autosaveDisabled is set.
-	 *
-	 * @param desc Optional human-readable description of the operation being saved.
-	 * @return 0 on success, -1 if the backup write failed.
-	 */
-	int autosave(const char* desc = nullptr);
-
-	/**
-	 * @brief Restore the previous mission state from the backup stack.
-	 *
-	 * Equivalent to CFREDDoc::autoload() in old FRED2.
-	 * Caller is responsible for preserving and restoring the camera state and
-	 * @c saveName around this call.
-	 *
-	 * @return true on success, false if no undo state was available.
-	 */
-	bool autoload();
-
 	// object numbers for ships in a wing.
 	int wing_objects[MAX_WINGS][MAX_SHIPS_PER_WING];
 
@@ -286,11 +260,6 @@ class Editor : public QObject {
 
 	SCP_vector<std::unique_ptr<EditorViewport>> _viewports;
 	EditorViewport* _lastActiveViewport = nullptr;
-
-	int undoCount = 0; ///< Number of autosave operations performed since last reset
-
-	/** @brief Check whether Backup.002 exists and update @c undoAvailable accordingly. */
-	int checkUndo();
 
 	int numMarked = 0;
 

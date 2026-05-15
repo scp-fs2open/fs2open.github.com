@@ -70,7 +70,6 @@ bool ShipEditorDialog::getIfMultipleShips() const
 
 void ShipEditorDialog::closeEvent(QCloseEvent* e)
 {
-	_viewport->editor->autosave("ship editor");
 	QDialog::closeEvent(e);
 }
 

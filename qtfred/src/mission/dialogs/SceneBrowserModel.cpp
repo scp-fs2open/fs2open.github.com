@@ -199,7 +199,6 @@ void SceneBrowserModel::moveObjectToLayer(int objNum, const QString& layerName)
 {
 	// Single inline call: temporary QByteArray lives until end of full expression — safe.
 	_viewport->moveObjectToLayer(objNum, layerName.toUtf8().constData());
-	_editor->autosave("move object to layer");
 	buildTree();
 	treeStructureChanged();
 }
@@ -216,7 +215,6 @@ void SceneBrowserModel::moveWingToLayer(int wingIndex, const QString& layerName)
 			_viewport->moveObjectToLayer(objNum, layer.constData());
 		}
 	}
-	_editor->autosave("move wing to layer");
 	buildTree();
 	treeStructureChanged();
 }
@@ -230,7 +228,6 @@ void SceneBrowserModel::moveWaypointPathToLayer(int waypointListIndex, const QSt
 	if (!wl.get_waypoints().empty()) {
 		_viewport->moveObjectToLayer(wl.get_waypoints().front().get_objnum(), layerName.toUtf8().constData());
 	}
-	_editor->autosave("move waypoint path to layer");
 	buildTree();
 	treeStructureChanged();
 }

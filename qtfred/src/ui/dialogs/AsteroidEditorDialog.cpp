@@ -49,7 +49,6 @@ void AsteroidEditorDialog::accept()
 {
 	// If apply() returns true, close the dialog
 	if (_model->apply()) {
-		_editor->autosave("asteroid field editor");
 		QDialog::accept();
 	}
 	// else: validation failed, don't close

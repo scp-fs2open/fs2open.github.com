@@ -9,7 +9,7 @@
 #include "ship/shipfx.h"
 
 #define MISSION_BACKUP_NAME "Backup"
-inline constexpr int MISSION_BACKUP_DEPTH = 9; // TODO make user configurable in QtFRED's future settings menu
+inline constexpr int MISSION_BACKUP_DEPTH = 9;
 
 struct sexp_container;
 
@@ -41,9 +41,6 @@ struct FredSaveConfig {
 
 	MissionFormat save_format = MissionFormat::STANDARD;
 
-	int mission_backup_depth = MISSION_BACKUP_DEPTH; // TODO make user configurable
-	SCP_string mission_backup_name = MISSION_BACKUP_NAME; // TODO make user configurable
-
 	MissionTemplateInfo template_info;
 };
 
@@ -66,21 +63,11 @@ class Fred_mission_save {
 	void set_fred_alt_names(const char (*names)[NAME_LENGTH + 1]) { save_config.fred_alt_names = names; }
 	void set_fred_callsigns(const char (*callsigns)[NAME_LENGTH + 1]) { save_config.fred_callsigns = callsigns; }
 	void set_always_save_display_names(bool always) { save_config.always_save_display_names = always; }
-	void set_mission_backup_depth(int depth) { save_config.mission_backup_depth = depth; }
-	void set_mission_backup_name(const SCP_string& name) { save_config.mission_backup_name = name; }
-
 
 	/**
-	 * @brief Saves the mission onto the undo stack
+	 * @brief Saves the mission onto the backup stack (used by legacy FRED2 only).
 	 *
-	 * @param[in] pathname The full pathname
-	 *
-	 * @details Returns the value of CFred_mission_save::err, which is:
-	 *
-	 * @returns 0 for no error, or
-	 * @returns A negative value if an error occured.
-	 *
-	 * @see save_mission_internal()
+	 * @deprecated QtFRED no longer uses this. Retained for FRED2 (fred2/freddoc.cpp) compatibility.
 	 */
 	int autosave_mission_file(char* pathname);
 

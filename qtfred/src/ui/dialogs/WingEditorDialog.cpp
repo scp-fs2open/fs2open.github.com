@@ -46,7 +46,6 @@ WingEditorDialog::~WingEditorDialog() = default;
 
 void WingEditorDialog::closeEvent(QCloseEvent* e)
 {
-	_viewport->editor->autosave("wing editor");
 	QDialog::closeEvent(e);
 }
 

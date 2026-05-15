@@ -35,7 +35,6 @@ void DebriefingDialog::accept()
 {
 	// If apply() returns true, close the dialog
 	if (_model->apply()) {
-		_viewport->editor->autosave("debriefing editor");
 		ui->successMusicWidget->stopPlayback();
 		ui->averageMusicWidget->stopPlayback();
 		ui->failureMusicWidget->stopPlayback();

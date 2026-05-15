@@ -33,7 +33,6 @@ BackgroundEditorDialog::~BackgroundEditorDialog() = default;
 void BackgroundEditorDialog::closeEvent(QCloseEvent* e)
 {
 	_model->finalizeFogChanges();
-	_viewport->editor->autosave("background editor");
 	QDialog::closeEvent(e);
 }
 

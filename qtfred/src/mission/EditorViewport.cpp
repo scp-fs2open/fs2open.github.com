@@ -533,7 +533,6 @@ void EditorViewport::level_controlled() {
 			level_object(&Objects[camera.getViewObj()].orient);
 			object_moved(&Objects[camera.getViewObj()]);
 			///! \todo Notify.
-			editor->autosave("level object");
 			editor->missionChanged();
 		}
 		break;
@@ -560,7 +559,6 @@ void EditorViewport::level_controlled() {
 
 		///! \todo Notify.
 		if (count) {
-			editor->autosave(count > 1 ? "level objects" : "level object");
 			editor->missionChanged();
 		}
 
@@ -589,7 +587,6 @@ void EditorViewport::verticalize_controlled() {
 			verticalize_object(&Objects[camera.getViewObj()].orient);
 			object_moved(&Objects[camera.getViewObj()]);
 			///! \todo notify.
-			editor->autosave("align object");
 			editor->missionChanged();
 		}
 		break;
@@ -616,7 +613,6 @@ void EditorViewport::verticalize_controlled() {
 
 		///! \todo Notify.
 		if (count) {
-			editor->autosave(count > 1 ? "align objects" : "align object");
 			editor->missionChanged();
 		}
 
@@ -1109,7 +1105,6 @@ int EditorViewport::create_object_on_grid(int x, int y, int waypoint_instance, C
 		editor->markObject(obj);
 
 		editor->missionChanged();
-		editor->autosave("object create");
 
 	} else if (obj == -1) {
 		dialogProvider->showButtonDialog(DialogType::Error, "Error", "Maximum ship limit reached.  Can't add any more ships.", { DialogButton::Ok });

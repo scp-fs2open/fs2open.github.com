@@ -105,7 +105,6 @@ FredView::FredView(QWidget* parent) : QMainWindow(parent), ui(new Ui::FredView()
 	ui->actionOpen->setShortcuts(QKeySequence::Open);
 	ui->actionSave->setShortcuts(QKeySequence::Save);
 	ui->actionExit->setShortcuts(QKeySequence::Quit);
-	ui->actionUndo->setShortcuts(QKeySequence::Undo);
 	ui->actionDelete->setShortcuts(QKeySequence::Delete);
 
 	connect(ui->actionOpen, &QAction::triggered, this, &FredView::openLoadMissionDialog);
@@ -255,9 +254,6 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 			this,
 			[this]() { ui->actionRestore_Camera_Pos->setEnabled(_viewport->camera.hasSavedPosition()); });
 	connect(this, &FredView::viewIdle, this, [this]() { ui->actionRevert->setEnabled(!saveName.isEmpty()); });
-	connect(this, &FredView::viewIdle, this, [this]() { ui->actionUndo->setEnabled(fred->undoAvailable != 0); });
-	connect(this, &FredView::viewIdle, this, [this]() { ui->actionDisable_Undo->setChecked(fred->autosaveDisabled != 0); });
-
 	// Scene Browser dock panel
 	_browserPanel = new SceneBrowserPanel(this, _viewport);
 	addDockWidget(Qt::LeftDockWidgetArea, _browserPanel);
@@ -571,23 +567,6 @@ void FredView::on_actionRevert_triggered(bool) {
 	// Clear modified flag so loadMissionFile doesn't prompt to save again
 	_missionModified = false;
 	loadMissionFile(saveName);
-}
-
-void FredView::on_actionUndo_triggered(bool) {
-	// Preserve camera state and saveName because autoload() triggers missionLoaded which would overwrite them
-	auto savedViewPos    = _viewport->camera.view_pos;
-	auto savedViewOrient = _viewport->camera.view_orient;
-	auto savedSaveName   = saveName;
-
-	fred->autoload();
-
-	_viewport->camera.view_pos    = savedViewPos;
-	_viewport->camera.view_orient = savedViewOrient;
-	saveName               = savedSaveName;
-}
-
-void FredView::on_actionDisable_Undo_triggered(bool checked) {
-	fred->autosaveDisabled = checked ? 1 : 0;
 }
 
 void FredView::on_actionFS2_Open_triggered(bool) {
@@ -1800,7 +1779,6 @@ void FredView::showWingContextMenu(int wingIndex, const QPoint& globalPos)
 	auto* deleteAction = menu.addAction(tr("Delete %1").arg(wingName));
 	connect(deleteAction, &QAction::triggered, this, [this, wingIndex]() {
 		fred->delete_wing(wingIndex, 0);
-		fred->autosave("wing delete");
 	});
 
 	menu.exec(globalPos);
@@ -1853,7 +1831,6 @@ void FredView::showWaypointPathContextMenu(int pathIndex, const QPoint& globalPo
 	auto* deleteAction = menu.addAction(tr("Delete %1").arg(pathName));
 	connect(deleteAction, &QAction::triggered, this, [this]() {
 		fred->delete_marked();
-		fred->autosave("waypoint path delete");
 	});
 
 	menu.exec(globalPos);
@@ -2682,14 +2659,11 @@ void FredView::on_actionWingForm_triggered(bool  /*enabled*/) {
 		}
 	}
 
-	if (fred->create_wing()) {
-		fred->autosave("form wing");
-	}
+	fred->create_wing();
 }
 void FredView::on_actionWingDisband_triggered(bool  /*enabled*/) {
 	if (fred->query_single_wing_marked()) {
 		fred->remove_wing(fred->cur_wing);
-		fred->autosave("wing disband");
 	} else {
 		showButtonDialog(DialogType::Error,
 						 "Error",
@@ -2786,19 +2760,16 @@ void FredView::on_actionRestore_Camera_Pos_triggered(bool) {
 void FredView::on_actionClone_Marked_Objects_triggered(bool) {
 	if (fred->getNumMarked() > 0) {
 		_viewport->duplicate_marked_objects();
-		fred->autosave("clone marked");
 	}
 }
 void FredView::on_actionDelete_triggered(bool) {
 	if (fred->getNumMarked() > 0) {
 		fred->delete_marked();
-		fred->autosave("object delete");
 	}
 }
 void FredView::on_actionDelete_Wing_triggered(bool) {
 	if (fred->cur_wing >= 0) {
 		fred->delete_wing(fred->cur_wing, 0);
-		fred->autosave("wing delete");
 	}
 }
 void FredView::initializeGroupActions() {
