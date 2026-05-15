@@ -10,55 +10,53 @@
 #include <object/objectdock.cpp>
 
 namespace fso::fred::dialogs {
-void reset_arrival_to_false(int shipnum, bool reset_wing, EditorViewport* _viewport)
+
+void resetArrivalToFalse(int shipnum, bool resetWing, EditorViewport* _viewport)
 {
 	char buf[256];
 	ship* shipp = &Ships[shipnum];
 
 	// falsify the ship cue
-	if (set_cue_to_false(&shipp->arrival_cue)) {
+	if (setCueToFalse(&shipp->arrival_cue)) {
 		sprintf(buf, "Setting arrival cue of ship %s\nto false for initial docking purposes.", shipp->ship_name);
-		// MessageBox(NULL, buf, "", MB_OK | MB_ICONEXCLAMATION);
 		_viewport->dialogProvider->showButtonDialog(DialogType::Information, "Notice", buf, {DialogButton::Ok});
 	}
 
 	// falsify the wing cue and all ships in that wing
-	if (reset_wing && shipp->wingnum >= 0) {
+	if (resetWing && shipp->wingnum >= 0) {
 		int i;
 		wing* wingp = &Wings[shipp->wingnum];
 
-		if (set_cue_to_false(&wingp->arrival_cue)) {
-
+		if (setCueToFalse(&wingp->arrival_cue)) {
 			sprintf(buf, "Setting arrival cue of wing %s\nto false for initial docking purposes.", wingp->name);
-			// MessageBox(NULL, buf, "", MB_OK | MB_ICONEXCLAMATION);
 			_viewport->dialogProvider->showButtonDialog(DialogType::Information, "Notice", buf, {DialogButton::Ok});
 		}
 
 		for (i = 0; i < wingp->wave_count; i++)
-			reset_arrival_to_false(wingp->ship_index[i], false, _viewport);
+			resetArrivalToFalse(wingp->ship_index[i], false, _viewport);
 	}
 }
-bool set_cue_to_false(int* cue)
+
+bool setCueToFalse(int* cue)
 {
 	// if the cue is not false, make it false.  Be sure to set all ship editor dialog functions
 	// to update data before and after we modify the cue.
 	// Comment Above Prbably not nesscary due to new model
 	if (*cue != Locked_sexp_false) {
-
 		free_sexp2(*cue);
 		*cue = Locked_sexp_false;
-
 		return true;
 	} else
 		return false;
 }
 
 // self-explanatory, really
-void initial_status_unmark_dock_handled_flag(object* objp)
+void initialStatusUnmarkDockHandledFlag(object* objp)
 {
 	objp->flags.remove(Object::Object_Flags::Docked_already_handled);
 }
-void initial_status_mark_dock_leader_helper(object* objp, dock_function_info* infop, EditorViewport* viewport)
+
+void initialStatusMarkDockLeaderHelper(object* objp, dock_function_info* infop, EditorViewport* viewport)
 {
 	ship* shipp = &Ships[objp->instance];
 	int cue_to_check;
@@ -87,13 +85,13 @@ void initial_status_mark_dock_leader_helper(object* objp, dock_function_info* in
 			// keep existing leader if he has a higher priority than us
 			if (ship_class_compare(shipp->ship_info_index, leader_shipp->ship_info_index) >= 0) {
 				// set my arrival cue to false
-				reset_arrival_to_false(SHIP_INDEX(shipp), true, viewport);
+				resetArrivalToFalse(SHIP_INDEX(shipp), true, viewport);
 				return;
 			}
 
 			// otherwise, unmark the existing leader and set his arrival cue to false
 			leader_shipp->flags.remove(Ship::Ship_Flags::Dock_leader);
-			reset_arrival_to_false(SHIP_INDEX(leader_shipp), true, viewport);
+			resetArrivalToFalse(SHIP_INDEX(leader_shipp), true, viewport);
 		}
 
 		// mark and save me as the leader
@@ -101,6 +99,7 @@ void initial_status_mark_dock_leader_helper(object* objp, dock_function_info* in
 		infop->maintained_variables.objp_value = objp;
 	}
 }
+
 ShipInitialStatusDialogModel::ShipInitialStatusDialogModel(QObject* parent, EditorViewport* viewport, bool multi)
 	: AbstractDialogModel(parent, viewport)
 {
@@ -109,164 +108,164 @@ ShipInitialStatusDialogModel::ShipInitialStatusDialogModel(QObject* parent, Edit
 
 void ShipInitialStatusDialogModel::initializeData(bool multi)
 {
-	m_multi_edit = multi;
+	_multiEdit = multi;
 	int vflag, sflag, hflag;
 	object* objp = nullptr;
-	m_ship = _editor->cur_ship;
-	if (m_ship == -1) {
+	_ship = _editor->cur_ship;
+	if (_ship == -1) {
 		Assert(
 			(Objects[_editor->currentObject].type == OBJ_SHIP) || (Objects[_editor->currentObject].type == OBJ_START));
-		m_ship = get_ship_from_obj(_editor->currentObject);
-		Assert(m_ship >= 0);
+		_ship = get_ship_from_obj(_editor->currentObject);
+		Assert(_ship >= 0);
 	}
 
-	m_move_ships_when_undocking = _viewport->Move_ships_when_undocking;
+	_moveShipsWhenUndocking = _viewport->Move_ships_when_undocking;
 
 	// initialize dockpoint stuff
-	if (!m_multi_edit) {
-		num_dock_points = model_get_num_dock_points(Ship_info[Ships[m_ship].ship_info_index].model_num);
-		dockpoint_array = new dockpoint_information[num_dock_points];
-		objp = &Objects[Ships[m_ship].objnum];
-		for (int i = 0; i < num_dock_points; i++) {
+	if (!_multiEdit) {
+		_numDockPoints = model_get_num_dock_points(Ship_info[Ships[_ship].ship_info_index].model_num);
+		_dockpointArray = new dockpoint_information[_numDockPoints];
+		objp = &Objects[Ships[_ship].objnum];
+		for (int i = 0; i < _numDockPoints; i++) {
 			object* docked_objp = dock_find_object_at_dockpoint(objp, i);
 			if (docked_objp != nullptr) {
-				dockpoint_array[i].dockee_shipnum = docked_objp->instance;
-				dockpoint_array[i].dockee_point = dock_find_dockpoint_used_by_object(docked_objp, objp);
+				_dockpointArray[i].dockee_shipnum = docked_objp->instance;
+				_dockpointArray[i].dockee_point = dock_find_dockpoint_used_by_object(docked_objp, objp); // NOLINT(readability-suspicious-call-argument)
 			} else {
-				dockpoint_array[i].dockee_shipnum = -1;
-				dockpoint_array[i].dockee_point = -1;
+				_dockpointArray[i].dockee_shipnum = -1;
+				_dockpointArray[i].dockee_point = -1;
 			}
 		}
 	}
 	vflag = sflag = hflag = 0;
-	m_velocity = static_cast<int>(Objects[_editor->currentObject].phys_info.speed);
-	m_shields = static_cast<int>(Objects[_editor->currentObject].shield_quadrant[0]);
-	m_hull = static_cast<int>(Objects[_editor->currentObject].hull_strength);
-	guardian_threshold = Ships[m_ship].ship_guardian_threshold;
+	_velocity = static_cast<int>(Objects[_editor->currentObject].phys_info.speed);
+	_shields = static_cast<int>(Objects[_editor->currentObject].shield_quadrant[0]);
+	_hull = static_cast<int>(Objects[_editor->currentObject].hull_strength);
+	_guardianThreshold = Ships[_ship].ship_guardian_threshold;
 	if (Objects[_editor->currentObject].flags[Object::Object_Flags::No_shields])
-		m_has_shields = Qt::Unchecked;
+		_hasShields = Qt::Unchecked;
 	else
-		m_has_shields = Qt::Checked;
+		_hasShields = Qt::Checked;
 
-	if (Ships[m_ship].flags[Ship::Ship_Flags::Force_shields_on])
-		m_force_shields = Qt::Checked;
+	if (Ships[_ship].flags[Ship::Ship_Flags::Force_shields_on])
+		_forceShields = Qt::Checked;
 	else
-		m_force_shields = Qt::Unchecked;
+		_forceShields = Qt::Unchecked;
 
-	if (Ships[m_ship].flags[Ship::Ship_Flags::Ship_locked])
-		m_ship_locked = Qt::Checked;
+	if (Ships[_ship].flags[Ship::Ship_Flags::Ship_locked])
+		_shipLocked = Qt::Checked;
 	else
-		m_ship_locked = Qt::Unchecked;
+		_shipLocked = Qt::Unchecked;
 
-	if (Ships[m_ship].flags[Ship::Ship_Flags::Weapons_locked])
-		m_weapons_locked = Qt::Checked;
+	if (Ships[_ship].flags[Ship::Ship_Flags::Weapons_locked])
+		_weaponsLocked = Qt::Checked;
 	else
-		m_weapons_locked = Qt::Unchecked;
+		_weaponsLocked = Qt::Unchecked;
 	// Lock primaries
-	if (Ships[m_ship].flags[Ship::Ship_Flags::Primaries_locked]) {
-		m_primaries_locked = Qt::Checked;
+	if (Ships[_ship].flags[Ship::Ship_Flags::Primaries_locked]) {
+		_primariesLocked = Qt::Checked;
 	} else {
-		m_primaries_locked = Qt::Unchecked;
+		_primariesLocked = Qt::Unchecked;
 	}
 	// Lock secondaries
-	if (Ships[m_ship].flags[Ship::Ship_Flags::Secondaries_locked]) {
-		m_secondaries_locked = Qt::Checked;
+	if (Ships[_ship].flags[Ship::Ship_Flags::Secondaries_locked]) {
+		_secondariesLocked = Qt::Checked;
 	} else {
-		m_secondaries_locked = Qt::Unchecked;
+		_secondariesLocked = Qt::Unchecked;
 	}
 
 	// Lock turrets
-	if (Ships[m_ship].flags[Ship::Ship_Flags::Lock_all_turrets_initially]) {
-		m_turrets_locked = Qt::Checked;
+	if (Ships[_ship].flags[Ship::Ship_Flags::Lock_all_turrets_initially]) {
+		_turretsLocked = Qt::Checked;
 	} else {
-		m_turrets_locked = Qt::Unchecked;
+		_turretsLocked = Qt::Unchecked;
 	}
 
-	if (Ships[m_ship].flags[Ship::Ship_Flags::Afterburner_locked]) {
-		m_afterburner_locked = Qt::Checked;
+	if (Ships[_ship].flags[Ship::Ship_Flags::Afterburner_locked]) {
+		_afterburnerLocked = Qt::Checked;
 	} else {
-		m_afterburner_locked = Qt::Unchecked;
+		_afterburnerLocked = Qt::Unchecked;
 	}
 
-	if (m_multi_edit) {
+	if (_multiEdit) {
 		objp = GET_FIRST(&obj_used_list);
 		while (objp != END_OF_LIST(&obj_used_list)) {
 			if (((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) &&
 				(objp->flags[Object::Object_Flags::Marked])) {
-				if (objp->phys_info.speed != m_velocity)
+				if (objp->phys_info.speed != _velocity)
 					vflag = 1;
-				if (static_cast<int>(objp->shield_quadrant[0]) != m_shields)
+				if (static_cast<int>(objp->shield_quadrant[0]) != _shields)
 					sflag = 1;
-				if (static_cast<int>(objp->hull_strength) != m_hull)
+				if (static_cast<int>(objp->hull_strength) != _hull)
 					hflag = 1;
 				if (objp->flags[Object::Object_Flags::No_shields]) {
-					if (m_has_shields)
-						m_has_shields = Qt::PartiallyChecked;
+					if (_hasShields)
+						_hasShields = Qt::PartiallyChecked;
 
 				} else {
-					if (!m_has_shields)
-						m_has_shields = Qt::PartiallyChecked;
+					if (!_hasShields)
+						_hasShields = Qt::PartiallyChecked;
 				}
 
 				Assert((objp->type == OBJ_SHIP) || (objp->type == OBJ_START));
 
 				if (Ships[get_ship_from_obj(objp)].flags[Ship::Ship_Flags::Force_shields_on]) {
-					if (!m_force_shields)
-						m_force_shields = Qt::PartiallyChecked;
+					if (!_forceShields)
+						_forceShields = Qt::PartiallyChecked;
 
 				} else {
-					if (m_force_shields)
-						m_force_shields = Qt::PartiallyChecked;
+					if (_forceShields)
+						_forceShields = Qt::PartiallyChecked;
 				}
 
 				if (Ships[get_ship_from_obj(objp)].flags[Ship::Ship_Flags::Ship_locked]) {
-					if (!m_ship_locked)
-						m_ship_locked = Qt::PartiallyChecked;
+					if (!_shipLocked)
+						_shipLocked = Qt::PartiallyChecked;
 
 				} else {
-					if (m_ship_locked)
-						m_ship_locked = Qt::PartiallyChecked;
+					if (_shipLocked)
+						_shipLocked = Qt::PartiallyChecked;
 				}
 
 				if (Ships[get_ship_from_obj(objp)].flags[Ship::Ship_Flags::Weapons_locked]) {
-					if (!m_weapons_locked)
-						m_weapons_locked = Qt::PartiallyChecked;
+					if (!_weaponsLocked)
+						_weaponsLocked = Qt::PartiallyChecked;
 
 				} else {
-					if (m_weapons_locked)
-						m_weapons_locked = Qt::PartiallyChecked;
+					if (_weaponsLocked)
+						_weaponsLocked = Qt::PartiallyChecked;
 				}
 
 				if (Ships[get_ship_from_obj(objp)].flags[Ship::Ship_Flags::Primaries_locked]) {
-					if (!m_primaries_locked)
-						m_primaries_locked = Qt::PartiallyChecked;
+					if (!_primariesLocked)
+						_primariesLocked = Qt::PartiallyChecked;
 				} else {
-					if (m_primaries_locked)
-						m_primaries_locked = Qt::PartiallyChecked;
+					if (_primariesLocked)
+						_primariesLocked = Qt::PartiallyChecked;
 				}
 
 				if (Ships[get_ship_from_obj(objp)].flags[Ship::Ship_Flags::Secondaries_locked]) {
-					if (!m_secondaries_locked)
-						m_secondaries_locked = Qt::PartiallyChecked;
+					if (!_secondariesLocked)
+						_secondariesLocked = Qt::PartiallyChecked;
 				} else {
-					if (m_secondaries_locked)
-						m_secondaries_locked = Qt::PartiallyChecked;
+					if (_secondariesLocked)
+						_secondariesLocked = Qt::PartiallyChecked;
 				}
 
 				if (Ships[get_ship_from_obj(objp)].flags[Ship::Ship_Flags::Lock_all_turrets_initially]) {
-					if (!m_turrets_locked)
-						m_turrets_locked = Qt::PartiallyChecked;
+					if (!_turretsLocked)
+						_turretsLocked = Qt::PartiallyChecked;
 				} else {
-					if (m_turrets_locked)
-						m_turrets_locked = Qt::PartiallyChecked;
+					if (_turretsLocked)
+						_turretsLocked = Qt::PartiallyChecked;
 				}
 
 				if (Ships[get_ship_from_obj(objp)].flags[Ship::Ship_Flags::Afterburner_locked]) {
-					if (!m_afterburner_locked)
-						m_afterburner_locked = Qt::PartiallyChecked;
+					if (!_afterburnerLocked)
+						_afterburnerLocked = Qt::PartiallyChecked;
 				} else {
-					if (m_afterburner_locked)
-						m_afterburner_locked = Qt::PartiallyChecked;
+					if (_afterburnerLocked)
+						_afterburnerLocked = Qt::PartiallyChecked;
 				}
 			}
 
@@ -274,47 +273,48 @@ void ShipInitialStatusDialogModel::initializeData(bool multi)
 		}
 	}
 
-	if (Ship_info[Ships[m_ship].ship_info_index].uses_team_colors) {
-		m_use_teams = true;
-		m_team_color_setting = Ships[m_ship].team_name;
+	if (Ship_info[Ships[_ship].ship_info_index].uses_team_colors) {
+		_useTeams = true;
+		_teamColorSetting = Ships[_ship].team_name;
 	}
-	change_subsys(0);
+	changeSubsys(0);
 
 	if (vflag) {
-		m_velocity = BLANKFIELD;
+		_velocity = BLANKFIELD;
 	}
 	if (vflag) {
-		m_velocity = BLANKFIELD;
+		_velocity = BLANKFIELD;
 	}
 	if (vflag) {
-		m_velocity = BLANKFIELD;
+		_velocity = BLANKFIELD;
 	}
+	_modified = false;
 	modelChanged();
 	_modified = false;
 }
 
-void ShipInitialStatusDialogModel::update_docking_info()
+void ShipInitialStatusDialogModel::updateDockingInfo()
 {
 	int i;
-	object* objp = &Objects[Ships[m_ship].objnum];
-	for (i = 0; i < num_dock_points; i++) {
+	object* objp = &Objects[Ships[_ship].objnum];
+	for (i = 0; i < _numDockPoints; i++) {
 		// see if the object at this point is no longer there
 		object* dockee_objp = dock_find_object_at_dockpoint(objp, i);
 		if (dockee_objp != nullptr) {
 			// check if the dockee ship thinks that this ship is docked to this dock point
-			if (objp != dock_find_object_at_dockpoint(dockee_objp, dockpoint_array[i].dockee_point)) {
+			if (objp != dock_find_object_at_dockpoint(dockee_objp, _dockpointArray[i].dockee_point)) {
 				// undock it
 				undock(objp, dockee_objp);
 			}
 		}
 	}
 	// add new info
-	for (i = 0; i < num_dock_points; i++) {
+	for (i = 0; i < _numDockPoints; i++) {
 		// see if there is an object at this point that wasn't there before
-		if (dockpoint_array[i].dockee_shipnum >= 0) {
+		if (_dockpointArray[i].dockee_shipnum >= 0) {
 			if (dock_find_object_at_dockpoint(objp, i) == nullptr) {
-				object* dockee_objp = &Objects[Ships[dockpoint_array[i].dockee_shipnum].objnum];
-				int dockee_point = dockpoint_array[i].dockee_point;
+				object* dockee_objp = &Objects[Ships[_dockpointArray[i].dockee_shipnum].objnum];
+				int dockee_point = _dockpointArray[i].dockee_point;
 
 				// dock it
 				dock(objp, i, dockee_objp, dockee_point);
@@ -324,6 +324,7 @@ void ShipInitialStatusDialogModel::update_docking_info()
 
 	_editor->missionChanged();
 }
+
 void ShipInitialStatusDialogModel::undock(object* objp1, object* objp2)
 {
 	vec3d v;
@@ -335,7 +336,7 @@ void ShipInitialStatusDialogModel::undock(object* objp1, object* objp2)
 	ship_num = get_ship_from_obj(OBJ_INDEX(objp1));
 	other_ship_num = get_ship_from_obj(OBJ_INDEX(objp2));
 
-	if (m_move_ships_when_undocking) {
+	if (_moveShipsWhenUndocking) {
 		if (ship_class_compare(Ships[ship_num].ship_info_index, Ships[other_ship_num].ship_info_index) <= 0) {
 			vm_vec_scale_add2(&objp2->pos,
 				&v,
@@ -367,36 +368,38 @@ void ShipInitialStatusDialogModel::undock(object* objp1, object* objp2)
 	if (!object_is_docked(&Objects[Ships[other_ship_num].objnum]))
 		Ships[other_ship_num].flags.remove(Ship::Ship_Flags::Dock_leader);
 }
-void ShipInitialStatusDialogModel::dock(object* objp, int dockpoint, object* other_objp, int other_dockpoint)
+
+void ShipInitialStatusDialogModel::dock(object* objp, int dockpoint, object* otherObjp, int otherDockpoint)
 {
-	if (objp == nullptr || other_objp == nullptr) {
+	if (objp == nullptr || otherObjp == nullptr) {
 		return;
 	}
 
-	if (dockpoint < 0 || other_dockpoint < 0) {
+	if (dockpoint < 0 || otherDockpoint < 0) {
 		return;
 	}
 
 	dock_function_info dfi;
 
 	// do the docking (do it in reverse so that the current object stays put)
-	ai_dock_with_object(other_objp, other_dockpoint, objp, dockpoint, AIDO_DOCK_NOW);
+	ai_dock_with_object(otherObjp, otherDockpoint, objp, dockpoint, AIDO_DOCK_NOW);
 
 	// unmark the handled flag in preparation for the next step
-	dock_evaluate_all_docked_objects(objp, &dfi, initial_status_unmark_dock_handled_flag);
+	dockEvaluateAllDockedObjects(objp, &dfi, initialStatusUnmarkDockHandledFlag);
 
 	// move all other objects to catch up with it
 	dock_move_docked_objects(objp);
 
 	// set the dock leader
-	dock_evaluate_all_docked_objects(objp, &dfi, initial_status_mark_dock_leader_helper);
+	dockEvaluateAllDockedObjects(objp, &dfi, initialStatusMarkDockLeaderHelper);
 
 	// if no leader, mark me
 	if (dfi.maintained_variables.int_value == 0)
 		Ships[objp->instance].flags.set(Ship::Ship_Flags::Dock_leader);
 }
+
 // Duplicated from objectdock to handle scope errors
-void ShipInitialStatusDialogModel::dock_evaluate_all_docked_objects(object* objp,
+void ShipInitialStatusDialogModel::dockEvaluateAllDockedObjects(object* objp,
 	dock_function_info* infop,
 	void (*function)(object*, dock_function_info*, EditorViewport*))
 {
@@ -451,7 +454,7 @@ void ShipInitialStatusDialogModel::dock_evaluate_all_docked_objects(object* objp
 		memset(visited_bitstring, 0, calculate_num_bytes(MAX_OBJECTS));
 
 		// start evaluating the tree
-		dock_evaluate_tree(objp, infop, function, visited_bitstring);
+		dockEvaluateTree(objp, infop, function, visited_bitstring);
 
 		// destroy the bit array
 		vm_free(visited_bitstring);
@@ -459,7 +462,7 @@ void ShipInitialStatusDialogModel::dock_evaluate_all_docked_objects(object* objp
 	}
 }
 
-void ShipInitialStatusDialogModel::dock_evaluate_all_docked_objects(object* objp,
+void ShipInitialStatusDialogModel::dockEvaluateAllDockedObjects(object* objp,
 	dock_function_info* infop,
 	void (*function)(object*))
 {
@@ -514,7 +517,7 @@ void ShipInitialStatusDialogModel::dock_evaluate_all_docked_objects(object* objp
 		memset(visited_bitstring, 0, calculate_num_bytes(MAX_OBJECTS));
 
 		// start evaluating the tree
-		dock_evaluate_tree(objp, infop, function, visited_bitstring);
+		dockEvaluateTree(objp, infop, function, visited_bitstring);
 
 		// destroy the bit array
 		vm_free(visited_bitstring);
@@ -522,7 +525,7 @@ void ShipInitialStatusDialogModel::dock_evaluate_all_docked_objects(object* objp
 	}
 }
 
-void ShipInitialStatusDialogModel::dock_evaluate_tree(object* objp,
+void ShipInitialStatusDialogModel::dockEvaluateTree(object* objp,
 	dock_function_info* infop,
 	void (*function)(object*, dock_function_info*, EditorViewport*),
 	ubyte* visited_bitstring)
@@ -542,13 +545,13 @@ void ShipInitialStatusDialogModel::dock_evaluate_tree(object* objp,
 	// iterate through all docked objects
 	for (dock_instance* ptr = objp->dock_list; ptr != nullptr; ptr = ptr->next) {
 		// start another tree with the docked object as the root, and return if instructed
-		dock_evaluate_tree(ptr->docked_objp, infop, function, visited_bitstring);
+		dockEvaluateTree(ptr->docked_objp, infop, function, visited_bitstring);
 		if (infop->early_return_condition)
 			return;
 	}
 }
 
-void ShipInitialStatusDialogModel::dock_evaluate_tree(object* objp,
+void ShipInitialStatusDialogModel::dockEvaluateTree(object* objp,
 	dock_function_info* infop,
 	void (*function)(object*),
 	ubyte* visited_bitstring)
@@ -568,7 +571,7 @@ void ShipInitialStatusDialogModel::dock_evaluate_tree(object* objp,
 	// iterate through all docked objects
 	for (dock_instance* ptr = objp->dock_list; ptr != nullptr; ptr = ptr->next) {
 		// start another tree with the docked object as the root, and return if instructed
-		dock_evaluate_tree(ptr->docked_objp, infop, function, visited_bitstring);
+		dockEvaluateTree(ptr->docked_objp, infop, function, visited_bitstring);
 		if (infop->early_return_condition)
 			return;
 	}
@@ -578,58 +581,58 @@ bool ShipInitialStatusDialogModel::apply()
 {
 	object* objp;
 
-	change_subsys(0);
-	if (m_multi_edit) {
+	changeSubsys(0);
+	if (_multiEdit) {
 		objp = GET_FIRST(&obj_used_list);
 		while (objp != END_OF_LIST(&obj_used_list)) {
 			if (((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) &&
 				(objp->flags[Object::Object_Flags::Marked])) {
-				modify(objp->phys_info.speed, (float)m_velocity);
+				modify(objp->phys_info.speed, (float)_velocity);
 
-				modify(objp->shield_quadrant[0], (float)m_shields);
+				modify(objp->shield_quadrant[0], (float)_shields);
 
-				modify(objp->hull_strength, (float)m_hull);
+				modify(objp->hull_strength, (float)_hull);
 
-				if (m_has_shields == Qt::Checked) {
+				if (_hasShields == Qt::Checked) {
 					objp->flags.remove(Object::Object_Flags::No_shields);
-				} else if (m_has_shields == Qt::Unchecked) {
+				} else if (_hasShields == Qt::Unchecked) {
 					objp->flags.set(Object::Object_Flags::No_shields);
 				}
 				auto shipp = &Ships[get_ship_from_obj(objp)];
-				shipp->ship_guardian_threshold = guardian_threshold;
+				shipp->ship_guardian_threshold = _guardianThreshold;
 				// We need to ensure that we handle the inconsistent "boolean" value correctly
-				handle_inconsistent_flag(shipp->flags, Ship::Ship_Flags::Force_shields_on, m_force_shields);
-				handle_inconsistent_flag(shipp->flags, Ship::Ship_Flags::Ship_locked, m_ship_locked);
-				handle_inconsistent_flag(shipp->flags, Ship::Ship_Flags::Weapons_locked, m_weapons_locked);
-				handle_inconsistent_flag(shipp->flags, Ship::Ship_Flags::Primaries_locked, m_primaries_locked);
-				handle_inconsistent_flag(shipp->flags, Ship::Ship_Flags::Secondaries_locked, m_secondaries_locked);
-				handle_inconsistent_flag(shipp->flags, Ship::Ship_Flags::Lock_all_turrets_initially, m_turrets_locked);
-				handle_inconsistent_flag(shipp->flags, Ship::Ship_Flags::Afterburner_locked, m_afterburner_locked);
-				shipp->team_name = m_team_color_setting;
+				handle_inconsistent_flag(shipp->flags, Ship::Ship_Flags::Force_shields_on, _forceShields);
+				handle_inconsistent_flag(shipp->flags, Ship::Ship_Flags::Ship_locked, _shipLocked);
+				handle_inconsistent_flag(shipp->flags, Ship::Ship_Flags::Weapons_locked, _weaponsLocked);
+				handle_inconsistent_flag(shipp->flags, Ship::Ship_Flags::Primaries_locked, _primariesLocked);
+				handle_inconsistent_flag(shipp->flags, Ship::Ship_Flags::Secondaries_locked, _secondariesLocked);
+				handle_inconsistent_flag(shipp->flags, Ship::Ship_Flags::Lock_all_turrets_initially, _turretsLocked);
+				handle_inconsistent_flag(shipp->flags, Ship::Ship_Flags::Afterburner_locked, _afterburnerLocked);
+				shipp->team_name = _teamColorSetting;
 			}
 
 			objp = GET_NEXT(objp);
 		}
 
 	} else {
-		modify(Objects[_editor->currentObject].phys_info.speed, (float)m_velocity);
-		modify(Objects[_editor->currentObject].shield_quadrant[0], (float)m_shields);
-		modify(Objects[_editor->currentObject].hull_strength, (float)m_hull);
+		modify(Objects[_editor->currentObject].phys_info.speed, (float)_velocity);
+		modify(Objects[_editor->currentObject].shield_quadrant[0], (float)_shields);
+		modify(Objects[_editor->currentObject].hull_strength, (float)_hull);
 
-		Objects[_editor->currentObject].flags.set(Object::Object_Flags::No_shields, m_has_shields == 0);
-		Ships[m_ship].ship_guardian_threshold = guardian_threshold;
+		Objects[_editor->currentObject].flags.set(Object::Object_Flags::No_shields, _hasShields == 0);
+		Ships[_ship].ship_guardian_threshold = _guardianThreshold;
 		// We need to ensure that we handle the inconsistent "boolean" value correctly. Not strictly needed here but
 		// just to be safe...
-		handle_inconsistent_flag(Ships[m_ship].flags, Ship::Ship_Flags::Force_shields_on, m_force_shields);
-		handle_inconsistent_flag(Ships[m_ship].flags, Ship::Ship_Flags::Ship_locked, m_ship_locked);
-		handle_inconsistent_flag(Ships[m_ship].flags, Ship::Ship_Flags::Weapons_locked, m_weapons_locked);
-		handle_inconsistent_flag(Ships[m_ship].flags, Ship::Ship_Flags::Primaries_locked, m_primaries_locked);
-		handle_inconsistent_flag(Ships[m_ship].flags, Ship::Ship_Flags::Secondaries_locked, m_secondaries_locked);
-		handle_inconsistent_flag(Ships[m_ship].flags, Ship::Ship_Flags::Lock_all_turrets_initially, m_turrets_locked);
-		handle_inconsistent_flag(Ships[m_ship].flags, Ship::Ship_Flags::Afterburner_locked, m_afterburner_locked);
-		Ships[m_ship].team_name = m_team_color_setting;
+		handle_inconsistent_flag(Ships[_ship].flags, Ship::Ship_Flags::Force_shields_on, _forceShields);
+		handle_inconsistent_flag(Ships[_ship].flags, Ship::Ship_Flags::Ship_locked, _shipLocked);
+		handle_inconsistent_flag(Ships[_ship].flags, Ship::Ship_Flags::Weapons_locked, _weaponsLocked);
+		handle_inconsistent_flag(Ships[_ship].flags, Ship::Ship_Flags::Primaries_locked, _primariesLocked);
+		handle_inconsistent_flag(Ships[_ship].flags, Ship::Ship_Flags::Secondaries_locked, _secondariesLocked);
+		handle_inconsistent_flag(Ships[_ship].flags, Ship::Ship_Flags::Lock_all_turrets_initially, _turretsLocked);
+		handle_inconsistent_flag(Ships[_ship].flags, Ship::Ship_Flags::Afterburner_locked, _afterburnerLocked);
+		Ships[_ship].team_name = _teamColorSetting;
 	}
-	update_docking_info();
+	updateDockingInfo();
 	_editor->missionChanged();
 	return true;
 }
@@ -638,190 +641,191 @@ void ShipInitialStatusDialogModel::reject() {}
 
 bool ShipInitialStatusDialogModel::getMoveShipsWhenUndocking() const
 {
-	return m_move_ships_when_undocking;
-}
-void ShipInitialStatusDialogModel::setMoveShipsWhenUndocking(bool value)
-{
-	modify(m_move_ships_when_undocking, value);
+	return _moveShipsWhenUndocking;
 }
 
-void ShipInitialStatusDialogModel::setVelocity(const int value)
+void ShipInitialStatusDialogModel::setMoveShipsWhenUndocking(bool moveShips)
 {
-	modify(m_velocity, value);
+	modify(_moveShipsWhenUndocking, moveShips);
+}
+
+void ShipInitialStatusDialogModel::setVelocity(int velocity)
+{
+	modify(_velocity, velocity);
 }
 
 int ShipInitialStatusDialogModel::getVelocity() const
 {
-	return m_velocity;
+	return _velocity;
 }
 
-void ShipInitialStatusDialogModel::setHull(const int value)
+void ShipInitialStatusDialogModel::setHull(int hull)
 {
-	modify(m_hull, value);
+	modify(_hull, hull);
 }
 
 int ShipInitialStatusDialogModel::getHull() const
 {
-	return m_hull;
+	return _hull;
 }
 
-void ShipInitialStatusDialogModel::setHasShield(const int state)
+void ShipInitialStatusDialogModel::setHasShield(int hasShield)
 {
-	modify(m_has_shields, state);
+	modify(_hasShields, hasShield);
 }
 
 int ShipInitialStatusDialogModel::getHasShield() const
 {
-	return m_has_shields;
+	return _hasShields;
 }
 
-void ShipInitialStatusDialogModel::setShieldHull(const int value)
+void ShipInitialStatusDialogModel::setShieldHull(int shieldHull)
 {
-	modify(m_shields, value);
+	modify(_shields, shieldHull);
 }
 
 int ShipInitialStatusDialogModel::getShieldHull() const
 {
-	return m_shields;
+	return _shields;
 }
 
-void ShipInitialStatusDialogModel::setForceShield(const int state)
+void ShipInitialStatusDialogModel::setForceShield(int forceShield)
 {
-	modify(m_force_shields, state);
+	modify(_forceShields, forceShield);
 }
 
 int ShipInitialStatusDialogModel::getForceShield() const
 {
-	return m_force_shields;
+	return _forceShields;
 }
 
-void ShipInitialStatusDialogModel::setShipLocked(const int state)
+void ShipInitialStatusDialogModel::setShipLocked(int locked)
 {
-	modify(m_ship_locked, state);
+	modify(_shipLocked, locked);
 }
 
 int ShipInitialStatusDialogModel::getShipLocked() const
 {
-	return m_ship_locked;
+	return _shipLocked;
 }
 
-void ShipInitialStatusDialogModel::setWeaponLocked(const int state)
+void ShipInitialStatusDialogModel::setWeaponLocked(int locked)
 {
-	modify(m_weapons_locked, state);
+	modify(_weaponsLocked, locked);
 }
 
 int ShipInitialStatusDialogModel::getWeaponLocked() const
 {
-	return m_weapons_locked;
+	return _weaponsLocked;
 }
 
-void ShipInitialStatusDialogModel::setPrimariesDisabled(const int state)
+void ShipInitialStatusDialogModel::setPrimariesDisabled(int disabled)
 {
-	modify(m_primaries_locked, state);
+	modify(_primariesLocked, disabled);
 }
 
 int ShipInitialStatusDialogModel::getPrimariesDisabled() const
 {
-	return m_primaries_locked;
+	return _primariesLocked;
 }
 
-void ShipInitialStatusDialogModel::setSecondariesDisabled(const int state)
+void ShipInitialStatusDialogModel::setSecondariesDisabled(int disabled)
 {
-	modify(m_secondaries_locked, state);
+	modify(_secondariesLocked, disabled);
 }
 
 int ShipInitialStatusDialogModel::getSecondariesDisabled() const
 {
-	return m_secondaries_locked;
+	return _secondariesLocked;
 }
 
-void ShipInitialStatusDialogModel::setTurretsDisabled(const int state)
+void ShipInitialStatusDialogModel::setTurretsDisabled(int disabled)
 {
-	modify(m_turrets_locked, state);
+	modify(_turretsLocked, disabled);
 }
 
 int ShipInitialStatusDialogModel::getTurretsDisabled() const
 {
-	return m_turrets_locked;
+	return _turretsLocked;
 }
 
-void ShipInitialStatusDialogModel::setAfterburnerDisabled(const int state)
+void ShipInitialStatusDialogModel::setAfterburnerDisabled(int disabled)
 {
-	modify(m_afterburner_locked, state);
+	modify(_afterburnerLocked, disabled);
 }
 
 int ShipInitialStatusDialogModel::getAfterburnerDisabled() const
 {
-	return m_afterburner_locked;
+	return _afterburnerLocked;
 }
 
-void ShipInitialStatusDialogModel::setDamage(const int value)
+void ShipInitialStatusDialogModel::setDamage(int damage)
 {
-	modify(m_damage, value);
+	modify(_damage, damage);
 }
 
 int ShipInitialStatusDialogModel::getDamage() const
 {
-	return m_damage;
+	return _damage;
 }
 
 SCP_string ShipInitialStatusDialogModel::getCargo() const
 {
-	return m_cargo_name;
+	return _cargoName;
 }
 
-void ShipInitialStatusDialogModel::setCargo(const SCP_string& text)
+void ShipInitialStatusDialogModel::setCargo(const SCP_string& cargo)
 {
-	modify(m_cargo_name, text);
+	modify(_cargoName, cargo);
 }
 
 SCP_string ShipInitialStatusDialogModel::getCargoTitle() const
 {
-	return m_cargo_title;
+	return _cargoTitle;
 }
 
-void ShipInitialStatusDialogModel::setCargoTitle(const SCP_string& text)
+void ShipInitialStatusDialogModel::setCargoTitle(const SCP_string& cargoTitle)
 {
-	modify(m_cargo_title, text);
+	modify(_cargoTitle, cargoTitle);
 }
 
-SCP_string ShipInitialStatusDialogModel::getColour() const
+SCP_string ShipInitialStatusDialogModel::getColor() const
 {
-	return m_team_color_setting;
+	return _teamColorSetting;
 }
 
-void ShipInitialStatusDialogModel::setColour(const SCP_string& text)
+void ShipInitialStatusDialogModel::setColor(const SCP_string& color)
 {
-	modify(m_team_color_setting, text);
+	modify(_teamColorSetting, color);
 }
 
-void ShipInitialStatusDialogModel::change_subsys(const int new_subsys)
+void ShipInitialStatusDialogModel::changeSubsys(int subsysIndex)
 {
 	int z, cargo_index;
 	ship_subsys* ptr;
 	// Goober5000
-	ship_has_scannable_subsystems = Ship_info[Ships[m_ship].ship_info_index].is_huge_ship();
-	if (Ships[m_ship].flags[Ship::Ship_Flags::Toggle_subsystem_scanning]) {
-		ship_has_scannable_subsystems = ~ship_has_scannable_subsystems;
+	_shipHasScannableSubsystems = Ship_info[Ships[_ship].ship_info_index].is_huge_ship();
+	if (Ships[_ship].flags[Ship::Ship_Flags::Toggle_subsystem_scanning]) {
+		_shipHasScannableSubsystems = ~_shipHasScannableSubsystems;
 	}
 
-	if (cur_subsys != -1) {
-		ptr = GET_FIRST(&Ships[m_ship].subsys_list);
-		while (cur_subsys--) {
-			Assert(ptr != END_OF_LIST(&Ships[m_ship].subsys_list));
+	if (_curSubsys != -1) {
+		ptr = GET_FIRST(&Ships[_ship].subsys_list);
+		while (_curSubsys--) {
+			Assert(ptr != END_OF_LIST(&Ships[_ship].subsys_list));
 			ptr = GET_NEXT(ptr);
 		}
 
-		ptr->current_hits = 100.0f - (float)m_damage;
+		ptr->current_hits = 100.0f - (float)_damage;
 
 		// update cargo name
-		if (!m_cargo_name.empty()) { //-V805
-			lcl_fred_replace_stuff(m_cargo_name);
-			cargo_index = string_lookup(m_cargo_name.c_str(), Cargo_names, Num_cargo);
+		if (!_cargoName.empty()) { //-V805
+			lcl_fred_replace_stuff(_cargoName);
+			cargo_index = string_lookup(_cargoName.c_str(), Cargo_names, Num_cargo);
 			if (cargo_index == -1) {
 				if (Num_cargo < MAX_CARGO) {
 					cargo_index = Num_cargo++;
-					strcpy(Cargo_names[cargo_index], m_cargo_name.c_str());
+					strcpy(Cargo_names[cargo_index], _cargoName.c_str());
 					ptr->subsys_cargo_name = cargo_index;
 				} else {
 					SCP_string str;
@@ -838,27 +842,27 @@ void ShipInitialStatusDialogModel::change_subsys(const int new_subsys)
 		}
 
 		// update cargo title
-		strcpy_s(ptr->subsys_cargo_title, m_cargo_title.c_str());
+		strcpy_s(ptr->subsys_cargo_title, _cargoTitle.c_str());
 	}
 
-	cur_subsys = z = new_subsys;
+	_curSubsys = z = subsysIndex;
 	if (z == -1) {
-		m_damage = 100;
+		_damage = 100;
 
 	} else {
-		ptr = GET_FIRST(&Ships[m_ship].subsys_list);
+		ptr = GET_FIRST(&Ships[_ship].subsys_list);
 		while (z--) {
-			Assert(ptr != END_OF_LIST(&Ships[m_ship].subsys_list));
+			Assert(ptr != END_OF_LIST(&Ships[_ship].subsys_list));
 			ptr = GET_NEXT(ptr);
 		}
 
-		m_damage = 100 - static_cast<int>(ptr->current_hits);
+		_damage = 100 - static_cast<int>(ptr->current_hits);
 		if (ptr->subsys_cargo_name > 0) {
-			m_cargo_name = Cargo_names[ptr->subsys_cargo_name];
+			_cargoName = Cargo_names[ptr->subsys_cargo_name];
 		} else {
-			m_cargo_name = "";
+			_cargoName = "";
 		}
-		m_cargo_title = ptr->subsys_cargo_title;
+		_cargoTitle = ptr->subsys_cargo_title;
 	}
 	set_modified();
 	modelChanged();
@@ -866,58 +870,58 @@ void ShipInitialStatusDialogModel::change_subsys(const int new_subsys)
 
 int ShipInitialStatusDialogModel::getShip() const
 {
-	return m_ship;
+	return _ship;
 }
 
-int ShipInitialStatusDialogModel::getnum_dock_points() const
+int ShipInitialStatusDialogModel::getNumDockPoints() const
 {
-	return num_dock_points;
+	return _numDockPoints;
 }
 
-int ShipInitialStatusDialogModel::getShip_has_scannable_subsystems() const
+int ShipInitialStatusDialogModel::getShipHasScannableSubsystems() const
 {
-	return ship_has_scannable_subsystems;
+	return _shipHasScannableSubsystems;
 }
 
-dockpoint_information* ShipInitialStatusDialogModel::getdockpoint_array() const
+dockpoint_information* ShipInitialStatusDialogModel::getDockpointArray() const
 {
-	return dockpoint_array;
+	return _dockpointArray;
 }
 
-void ShipInitialStatusDialogModel::setDockee(const int point, const int ship)
+void ShipInitialStatusDialogModel::setDockee(int dockPointIndex, int dockeeShipnum)
 {
-	modify(dockpoint_array[point].dockee_shipnum, ship);
-	modify(dockpoint_array[point].dockee_point, -1);
+	modify(_dockpointArray[dockPointIndex].dockee_shipnum, dockeeShipnum);
+	modify(_dockpointArray[dockPointIndex].dockee_point, -1);
 }
 
-void ShipInitialStatusDialogModel::setDockeePoint(const int dockPoint, const int dockeePoint)
+void ShipInitialStatusDialogModel::setDockeePoint(int dockPointIndex, int dockeePoint)
 {
-	modify(dockpoint_array[dockPoint].dockee_point, dockeePoint);
+	modify(_dockpointArray[dockPointIndex].dockee_point, dockeePoint);
 }
 
 bool ShipInitialStatusDialogModel::getUseTeamcolours() const
 {
-	return m_use_teams;
+	return _useTeams;
 }
 
-bool ShipInitialStatusDialogModel::getIfMultpleShips() const
+bool ShipInitialStatusDialogModel::getIfMultipleShips() const
 {
-	return m_multi_edit;
+	return _multiEdit;
 }
 
 int ShipInitialStatusDialogModel::getGuardian() const
 {
-	return guardian_threshold;
+	return _guardianThreshold;
 }
 
-void ShipInitialStatusDialogModel::setGuardian(int value)
+void ShipInitialStatusDialogModel::setGuardian(int guardian)
 {
-	modify(guardian_threshold, value);
+	modify(_guardianThreshold, guardian);
 }
 
 bool ShipInitialStatusDialogModel::getToggleSubsystemScanning() const
 {
-	return Ships[m_ship].flags[Ship::Ship_Flags::Toggle_subsystem_scanning];
+	return Ships[_ship].flags[Ship::Ship_Flags::Toggle_subsystem_scanning];
 }
 
 bool ShipInitialStatusDialogModel::getUseNewScanningBehavior()
