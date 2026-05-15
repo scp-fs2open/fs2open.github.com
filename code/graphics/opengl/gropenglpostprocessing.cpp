@@ -1111,9 +1111,11 @@ static bool opengl_post_init_framebuffer()
 
 	opengl_setup_bloom_textures();
 
-	if (Gr_aa_mode != AntiAliasMode::None) {
+	// Always set up SMAA resources so the user can switch to an SMAA preset
+	// at runtime even when starting with a non-SMAA AA mode, such as None.
+	//if (Gr_aa_mode != AntiAliasMode::None) {
 		setup_smaa_resources();
-	}
+	//}
 
 	GL_state.BindFrameBuffer(0);
 
