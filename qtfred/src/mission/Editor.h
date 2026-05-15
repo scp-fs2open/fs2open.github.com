@@ -267,7 +267,7 @@ class Editor : public QObject {
   private slots:
 	void performTimedAutosave();
 
-  private:
+  private: // NOLINT(readability-redundant-access-specifiers)
 	QTimer*  _autosaveTimer        = nullptr;
 	QString  _autosaveDirectory;
 	QString  _currentMissionPath;
