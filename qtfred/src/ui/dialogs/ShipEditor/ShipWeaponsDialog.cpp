@@ -324,6 +324,7 @@ void ShipWeaponsDialog::onAiButtonClicked(TabState& tab)
 		return; // No AI picked in the combo (still blank from a mixed selection).
 	}
 	const int newAi = tab.aiCombo->itemData(comboIdx).toInt();
+	TabState& otherTab = (&tab == &_primary) ? _secondary : _primary;
 	bool anyChanged = false;
 	for (const QModelIndex& index : tab.tree->selectionModel()->selectedIndexes()) {
 		if (index.column() != 0) {
@@ -338,9 +339,26 @@ void ShipWeaponsDialog::onAiButtonClicked(TabState& tab)
 		}
 		banks->setAiClass(newAi);
 		refreshBankItem(tab, index);
+		// A turret with both primary and secondary banks has a Banks in each tab pointing at the
+		// same ship_subsys::weapons.ai_class. Keep them in lockstep so saveShip() can't have one
+		// tab silently overwrite the other, and so the other tab's label stays accurate.
+		for (Banks* sibling : banksForMode(otherTab.mode)) {
+			if (sibling == nullptr || sibling->getName() != banks->getName()) {
+				continue;
+			}
+			if (sibling->getAiClass() != newAi) {
+				sibling->setAiClass(newAi);
+			}
+			const QModelIndex siblingIdx = indexForBanks(otherTab, sibling->getId());
+			if (siblingIdx.isValid()) {
+				refreshBankItem(otherTab, siblingIdx);
+			}
+			break;
+		}
 		anyChanged = true;
 	}
 	if (anyChanged) {
+		updateTabUI(otherTab);
 		_model->notifyChanged();
 	}
 }
@@ -636,6 +654,21 @@ QModelIndex ShipWeaponsDialog::indexForBank(const TabState& tab, int banksId, in
 			if (child.data(BankItemIdRole).toInt() == bankId) {
 				return child;
 			}
+		}
+	}
+	return {};
+}
+
+QModelIndex ShipWeaponsDialog::indexForBanks(const TabState& tab, int banksId)
+{
+	if (tab.bankModel == nullptr) {
+		return {};
+	}
+	const int topRows = tab.bankModel->rowCount();
+	for (int i = 0; i < topRows; i++) {
+		const QModelIndex parent = tab.bankModel->index(i, 0);
+		if (parent.data(BankItemIdRole).toInt() == banksId) {
+			return parent;
 		}
 	}
 	return {};

@@ -67,6 +67,7 @@ class ShipWeaponsDialog : public QDialog {
 		int sourceBankId, bool isCopy);
 
 	static QModelIndex indexForBank(const TabState& tab, int banksId, int bankId);
+	static QModelIndex indexForBanks(const TabState& tab, int banksId);
 
 	Bank* bankForIndex(const TabState& tab, const QModelIndex& idx) const;
 	Banks* banksForIndex(const TabState& tab, const QModelIndex& idx) const;
