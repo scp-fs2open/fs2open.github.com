@@ -225,6 +225,16 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 
 	connect(fred, &Editor::missionLoaded, this, &FredView::on_mission_loaded);
 	connect(fred, &Editor::missionChanged, this, [this]() { _missionModified = true; });
+	connect(fred, &Editor::autosaveDue, this, [this](const QString& savePath) {
+		Fred_mission_save save;
+		save.set_save_format(_missionSaveFormat);
+		save.set_always_save_display_names(_viewport->Always_save_display_names);
+		save.set_view_pos(_viewport->camera.view_pos);
+		save.set_view_orient(_viewport->camera.view_orient);
+		save.set_fred_alt_names(Fred_alt_names);
+		save.set_fred_callsigns(Fred_callsigns);
+		save.save_autosave_file(savePath.toUtf8().constData());
+	});
 	connect(fred, &Editor::layerListChanged, this, [this]() { _tbLayerComboDirty = true; });
 
 	// Sets the initial window title
@@ -426,6 +436,7 @@ bool FredView::saveMissionToCurrentPath() {
 	Fred_mission_save save;
 	save.set_save_format(_missionSaveFormat);
 	save.set_always_save_display_names(_viewport->Always_save_display_names);
+	save.set_create_bak_file(_viewport->Create_bak_on_save);
 	save.set_view_pos(_viewport->camera.view_pos);
 	save.set_view_orient(_viewport->camera.view_orient);
 	save.set_fred_alt_names(Fred_alt_names);
@@ -465,6 +476,7 @@ bool FredView::saveMissionAs() {
 	Fred_mission_save save;
 	save.set_save_format(_missionSaveFormat);
 	save.set_always_save_display_names(_viewport->Always_save_display_names);
+	save.set_create_bak_file(_viewport->Create_bak_on_save);
 	save.set_view_pos(_viewport->camera.view_pos);
 	save.set_view_orient(_viewport->camera.view_orient);
 	save.set_fred_alt_names(Fred_alt_names);
@@ -484,7 +496,15 @@ bool FredView::saveMissionAs() {
 	if (_errorCheckerDialog && _errorCheckerDialog->isVisible())
 		_errorCheckerDialog->runCheck();
 
+	fred->setCurrentMissionPath(saveName);
+	restartAutosaveTimer();
 	return true;
+}
+
+void FredView::restartAutosaveTimer() {
+	if (!fred || !_viewport)
+		return;
+	fred->startAutosaveTimer(_viewport->autosave_interval_seconds);
 }
 
 void FredView::saveAsTemplate() {
@@ -634,6 +654,7 @@ void FredView::on_actionFS1_Mission_triggered(bool) {
 		Fred_mission_save fileSave;
 		fileSave.set_save_format(_missionSaveFormat);
 		fileSave.set_always_save_display_names(_viewport->Always_save_display_names);
+		fileSave.set_create_bak_file(_viewport->Create_bak_on_save);
 		fileSave.set_view_pos(_viewport->camera.view_pos);
 		fileSave.set_view_orient(_viewport->camera.view_orient);
 		fileSave.set_fred_alt_names(Fred_alt_names);
@@ -753,6 +774,10 @@ void FredView::on_mission_loaded(const std::string& filepath) {
 	} else {
 		saveName = QString();
 	}
+
+	// Update autosave path and start/stop timer based on whether we have a named file.
+	fred->setCurrentMissionPath(saveName);
+	restartAutosaveTimer();
 
 	_missionModified = false;
 

@@ -21,6 +21,12 @@ public:
 	bool getOfferAutosaveRecovery() const;
 	void setOfferAutosaveRecovery(bool value);
 
+	int  getAutosaveIntervalSeconds() const;
+	void setAutosaveIntervalSeconds(int value);
+
+	bool getCreateBakOnSave() const;
+	void setCreateBakOnSave(bool value);
+
 	bool getMoveShipsWhenUndocking() const;
 	void setMoveShipsWhenUndocking(bool value);
 
@@ -71,6 +77,8 @@ public:
 private:
 	// General
 	bool _offerAutosaveRecovery;
+	int  _autosaveIntervalSeconds;
+	bool _createBakOnSave;
 	bool _moveShipsWhenUndocking;
 	bool _alwaysSaveDisplayNames;
 	bool _checkPotentialIssues;

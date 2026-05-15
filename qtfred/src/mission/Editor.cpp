@@ -35,6 +35,11 @@
 
 #include "ui/QtGraphicsOperations.h"
 
+#include <QDateTime>
+#include <QDir>
+#include <QFileInfo>
+#include <QStandardPaths>
+
 #include "object.h"
 #include "management.h"
 #include "util.h"
@@ -113,6 +118,13 @@ Editor::Editor() : currentObject{ -1 }, Shield_sys_teams(Iff_info.size(), Global
 	// When a mission was loaded we need to notify everyone that the mission has changed
 	connect(this, &Editor::missionLoaded, this, [this](const std::string&) { missionChanged(); });
 
+	_autosaveDirectory = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/autosave/";
+	QDir().mkpath(_autosaveDirectory);
+
+	_autosaveTimer = new QTimer(this);
+	_autosaveTimer->setSingleShot(false);
+	connect(_autosaveTimer, &QTimer::timeout, this, &Editor::performTimedAutosave);
+
 	fredApp->runAfterInit([this]() { initialSetup(); });
 }
 
@@ -133,11 +145,56 @@ void Editor::update() {
 	}
 }
 
-void Editor::maybeUseAutosave(std::string& /*filepath*/)
+void Editor::maybeUseAutosave(std::string& filepath)
 {
-	// TODO(Phase 2): Implement timer-based autosave recovery.
-	// Will check _autosaveDirectory/<basename>.fs2 against the original file's mtime
-	// and offer recovery if the autosave is newer.
+	const QString qpath       = QString::fromStdString(filepath);
+	const QString basename    = QFileInfo(qpath).fileName();
+	const QString autosavePath = _autosaveDirectory + basename;
+
+	const QFileInfo autosaveInfo(autosavePath);
+	if (!autosaveInfo.exists())
+		return;
+
+	const QFileInfo originalInfo(qpath);
+	if (autosaveInfo.lastModified() <= originalInfo.lastModified())
+		return;
+
+	if (_lastActiveViewport == nullptr || _lastActiveViewport->dialogProvider == nullptr)
+		return;
+
+	const auto result = _lastActiveViewport->dialogProvider->showButtonDialog(
+		DialogType::Question,
+		"Autosave Recovery",
+		"An autosave file for this mission is newer than the original. Load the autosave instead?",
+		{ DialogButton::Yes, DialogButton::No });
+
+	if (result == DialogButton::Yes) {
+		filepath = autosavePath.toStdString();
+	}
+}
+
+void Editor::startAutosaveTimer(int intervalSeconds) {
+	_autosaveTimer->stop();
+	if (intervalSeconds > 0)
+		_autosaveTimer->start(intervalSeconds * 1000);
+}
+
+void Editor::stopAutosaveTimer() {
+	_autosaveTimer->stop();
+}
+
+void Editor::setCurrentMissionPath(const QString& path) {
+	_currentMissionPath = path;
+}
+
+void Editor::performTimedAutosave() {
+	QString savePath;
+	if (_currentMissionPath.isEmpty()) {
+		savePath = _autosaveDirectory + "untitled_autosave.fs2";
+	} else {
+		savePath = _autosaveDirectory + QFileInfo(_currentMissionPath).fileName();
+	}
+	autosaveDue(savePath);
 }
 
 bool Editor::loadMission(const std::string& mission_name, int flags) {

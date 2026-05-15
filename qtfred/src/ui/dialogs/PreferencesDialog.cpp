@@ -63,6 +63,7 @@ PreferencesDialog::~PreferencesDialog() = default;
 void PreferencesDialog::applyChanges() {
 	_model->apply();
 	_fredView->setIconSize(QSize(_model->getToolbarIconSize(), _model->getToolbarIconSize()));
+	_fredView->restartAutosaveTimer();
 	_viewport->needsUpdate();
 }
 
@@ -85,6 +86,8 @@ void PreferencesDialog::updateUi() {
 
 	// General
 	ui->offerAutosaveRecovery->setChecked(_model->getOfferAutosaveRecovery());
+	ui->autosaveIntervalSeconds->setValue(_model->getAutosaveIntervalSeconds());
+	ui->createBakOnSave->setChecked(_model->getCreateBakOnSave());
 	ui->moveShipsWhenUndocking->setChecked(_model->getMoveShipsWhenUndocking());
 	ui->alwaysSaveDisplayNames->setChecked(_model->getAlwaysSaveDisplayNames());
 	ui->checkPotentialIssues->setChecked(_model->getCheckPotentialIssues());
@@ -122,6 +125,14 @@ void PreferencesDialog::updateUi() {
 
 void PreferencesDialog::on_offerAutosaveRecovery_toggled(bool checked) {
 	_model->setOfferAutosaveRecovery(checked);
+}
+
+void PreferencesDialog::on_autosaveIntervalSeconds_valueChanged(int value) {
+	_model->setAutosaveIntervalSeconds(value);
+}
+
+void PreferencesDialog::on_createBakOnSave_toggled(bool checked) {
+	_model->setCreateBakOnSave(checked);
 }
 
 void PreferencesDialog::on_moveShipsWhenUndocking_toggled(bool checked) {

@@ -10,6 +10,8 @@
 #include <ship/ship.h>
 
 #include <QObject>
+#include <QString>
+#include <QTimer>
 #include <functional>
 #include <memory>
 #include <stdexcept>
@@ -67,6 +69,11 @@ class Editor : public QObject {
 
 	void maybeUseAutosave(std::string& filepath);
 
+	void startAutosaveTimer(int intervalSeconds);
+	void stopAutosaveTimer();
+	void setCurrentMissionPath(const QString& path);
+	const QString& autosaveDirectory() const { return _autosaveDirectory; }
+
 	/*! Load a mission. */
 	bool loadMission(const std::string& filepath, int flags = 0);
 
@@ -123,6 +130,12 @@ class Editor : public QObject {
 	void notifyLayerListChanged() { layerListChanged(); }
 
   signals:
+	/**
+	 * @brief Emitted when the autosave timer fires; receiver performs the actual file save.
+	 * @param savePath Absolute path for the autosave file
+	 */
+	void autosaveDue(const QString& savePath);
+
 	/**
 	 * @brief Signal for when a new mission has been loaded
 	 * @param filepath The path of the mission file, empty if new mission
@@ -251,7 +264,14 @@ class Editor : public QObject {
 
 	void generate_team_weaponry_usage_list(int team, int* arr);
 
+  private slots:
+	void performTimedAutosave();
+
   private:
+	QTimer*  _autosaveTimer        = nullptr;
+	QString  _autosaveDirectory;
+	QString  _currentMissionPath;
+
 	void clearMission(bool fast_reload = false);
 
 	void initialSetup();

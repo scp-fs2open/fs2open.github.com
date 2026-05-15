@@ -32,6 +32,7 @@ struct FredSaveConfig {
 	matrix view_orient{};
 
 	bool always_save_display_names = false;
+	bool create_bak_file = true;
 
 	// These are a little strange since mission saving and campaign saving use the same class here
 	// which may be worth splitting up in the future. For now these will assert if not set when saving
@@ -63,6 +64,7 @@ class Fred_mission_save {
 	void set_fred_alt_names(const char (*names)[NAME_LENGTH + 1]) { save_config.fred_alt_names = names; }
 	void set_fred_callsigns(const char (*callsigns)[NAME_LENGTH + 1]) { save_config.fred_callsigns = callsigns; }
 	void set_always_save_display_names(bool always) { save_config.always_save_display_names = always; }
+	void set_create_bak_file(bool create) { save_config.create_bak_file = create; }
 
 	/**
 	 * @brief Saves the mission onto the backup stack (used by legacy FRED2 only).
@@ -84,6 +86,17 @@ class Fred_mission_save {
 	 * @see save_mission_internal()
 	 */
 	int save_mission_file(const char* pathname);
+
+	/**
+	 * @brief Saves the mission directly to an absolute path without any .bak rename dance.
+	 *        Used by the QtFRED timer-based autosave, which writes to an AppData directory
+	 *        outside the game's virtual file system.
+	 *
+	 * @param[in] pathname Absolute path for the autosave file
+	 *
+	 * @returns 0 for no error, or a negative value if an error occurred
+	 */
+	int save_autosave_file(const char* pathname);
 
 	/**
 	 * @brief Saves a mission template (.fst) to the given full pathname
