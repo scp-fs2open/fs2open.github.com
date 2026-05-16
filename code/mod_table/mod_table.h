@@ -206,6 +206,7 @@ extern float Shield_percent_skips_damage;
 extern float Min_radius_for_persistent_debris;
 extern bool Zero_radius_explosions_skip_fireballs;
 extern bool Render_insignias_as_decals;
+extern bool Link_special_point_subsystems_to_destroyed_submodels;
 
 void mod_table_init();
 void mod_table_post_process();

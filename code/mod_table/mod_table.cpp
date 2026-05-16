@@ -184,6 +184,7 @@ float Shield_percent_skips_damage;
 float Min_radius_for_persistent_debris;
 bool Zero_radius_explosions_skip_fireballs;
 bool Render_insignias_as_decals;
+bool Link_special_point_subsystems_to_destroyed_submodels;
 
 
 #ifdef WITH_DISCORD
@@ -1649,6 +1650,10 @@ void parse_mod_table(const char *filename)
 				stuff_boolean(&Zero_radius_explosions_skip_fireballs);
 			}
 
+			if (optional_string("$Link special-point subsystems to -destroyed submodels:")) {
+				stuff_boolean(&Link_special_point_subsystems_to_destroyed_submodels);
+			}
+
 			// end of options ----------------------------------------
 
 			// if we've been through once already and are at the same place, force a move
@@ -1897,6 +1902,7 @@ void mod_table_reset()
 	Min_radius_for_persistent_debris = 50.0f;
 	Zero_radius_explosions_skip_fireballs = false;
 	Render_insignias_as_decals = false;
+	Link_special_point_subsystems_to_destroyed_submodels = false;
 }
 
 void mod_table_set_version_flags()

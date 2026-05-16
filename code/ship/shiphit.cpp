@@ -114,6 +114,28 @@ static bool is_subsys_destroyed(ship *shipp, int submodel)
 	return false;
 }
 
+void check_subsystem_submodel_link(const ship *shipp, const ship_subsys *subsys, bool was_destroyed)
+{
+	if (!Link_special_point_subsystems_to_destroyed_submodels)
+		return;
+
+	Assertion(shipp && subsys, "the ship and subsystem must exist!");
+	auto pmi = model_get_instance(shipp->model_instance_num);
+	Assertion(pmi, "the ship's model instance must exist!");
+
+	// check subsystem-submodel link, but only for special-point subsystems
+	// (not subsystems corresponding to a submodel)
+	auto psub = subsys->system_info;
+	if (psub->subobj_num >= 0)
+		return;
+	int j = submodel_find_destroyed_form(pmi->model_num, psub->subobj_name);
+	if (j < 0)
+		return;
+
+	// show the submodel, or not, depending on what happened to the subsystem
+	pmi->submodel[j].blown_off = !was_destroyed;
+}
+
 // do_subobj_destroyed_stuff is called when a subobject for a ship is killed.  Separated out
 // to separate function on 10/15/97 by MWA for easy multiplayer access.  It does all of the
 // cool things like blowing off the model (if applicable, writing the logs, etc)
@@ -346,6 +368,9 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, const vec3d* 
 		if ((psub->subobj_num != psub->turret_gun_sobj) && (psub->turret_gun_sobj >= 0)) {
 			subsys->submodel_instance_2->blown_off = true;
 		}
+
+		// special case for subsystems that don't correspond to a submodel
+		check_subsystem_submodel_link(ship_p, subsys, true);
 	}
 
 	if (notify && !no_explosion) {
