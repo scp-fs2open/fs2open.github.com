@@ -88,6 +88,8 @@ struct reinforcements {
 	int	flags;
 	char	no_messages[MAX_REINFORCEMENT_MESSAGES][NAME_LENGTH];		// list of messages to possibly send when calling for reinforcement not available
 	char	yes_messages[MAX_REINFORCEMENT_MESSAGES][NAME_LENGTH];	// list of messages to acknowledge reinforcement on the way
+
+	reinforcements(const char *reinforcement_name = nullptr);
 };
 
 class ship_weapon {

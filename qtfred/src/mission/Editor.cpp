@@ -1553,13 +1553,7 @@ int Editor::set_reinforcement(const char* name, int state) {
 
 	if (state && (cur == -1)) {
 		Assert(strlen(name) < NAME_LENGTH);
-		reinforcements reinforcement;
-		strcpy_s(reinforcement.name, name);
-		reinforcement.uses = 1;
-		reinforcement.arrival_delay = 0;
-		memset(reinforcement.no_messages, 0, MAX_REINFORCEMENT_MESSAGES * NAME_LENGTH);
-		memset(reinforcement.yes_messages, 0, MAX_REINFORCEMENT_MESSAGES * NAME_LENGTH);
-		Reinforcements.push_back(std::move(reinforcement));
+		Reinforcements.emplace_back(name);
 
 		// set the reinforcement flag on the ship or wing
 		index = ship_name_lookup(name);

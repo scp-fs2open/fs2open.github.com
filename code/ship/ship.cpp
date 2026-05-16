@@ -7646,6 +7646,23 @@ bool wing::has_display_name() const
 	return flags[Ship::Wing_Flags::Has_display_name];
 }
 
+reinforcements::reinforcements(const char *reinforcement_name)
+{
+	if (reinforcement_name)
+		strcpy_s(name, reinforcement_name);
+	else
+		name[0] = '\0';
+
+	type = 0;
+	uses = 1;
+	num_uses = 0;
+	arrival_delay = 0;
+	flags = 0;
+
+	memset(no_messages, 0, MAX_REINFORCEMENT_MESSAGES * NAME_LENGTH);
+	memset(yes_messages, 0, MAX_REINFORCEMENT_MESSAGES * NAME_LENGTH);
+}
+
 // NOTE: Now that the clear() member function exists, this function only sets the stuff associated with the object and ship class.
 static void ship_set(int ship_index, int objnum, int ship_type)
 {

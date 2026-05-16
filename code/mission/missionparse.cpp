@@ -6055,10 +6055,6 @@ void parse_reinforcement(mission *pm)
 
 	required_string("$Num times:");
 	stuff_int(&reinforcement.uses);
-	reinforcement.num_uses = 0;
-
-	// reset the flags to 0
-	reinforcement.flags = 0;
 
 	if ( optional_string("+Arrival delay:") )
 	{

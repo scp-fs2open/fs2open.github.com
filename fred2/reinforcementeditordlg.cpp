@@ -138,11 +138,6 @@ void reinforcement_editor_dlg::save_data()
 	if (cur >= 0) {
 		m_reinforcements[cur].uses = m_uses;
 		m_reinforcements[cur].arrival_delay = m_delay;
-
-		// save the message information to the reinforcement structure.  First clear out the string
-		// entires in the Reinforcement structure
-		memset( m_reinforcements[cur].no_messages, 0, MAX_REINFORCEMENT_MESSAGES * NAME_LENGTH );
-		memset( m_reinforcements[cur].yes_messages, 0, MAX_REINFORCEMENT_MESSAGES * NAME_LENGTH );
 	}
 }
 
@@ -328,15 +323,8 @@ void reinforcement_editor_dlg::OnAdd()
 			}
 		}
 
-		reinforcements reinforcement;
-		strcpy_s(reinforcement.name, dlg.name);
 		((CListBox *) GetDlgItem(IDC_LIST)) -> AddString(dlg.name);
-		reinforcement.type = 0;
-		reinforcement.uses = 1;
-		reinforcement.arrival_delay = 0;
-		memset( reinforcement.no_messages, 0, MAX_REINFORCEMENT_MESSAGES * NAME_LENGTH );
-		memset( reinforcement.yes_messages, 0, MAX_REINFORCEMENT_MESSAGES * NAME_LENGTH );
-		m_reinforcements.push_back(std::move(reinforcement));
+		m_reinforcements.emplace_back(dlg.name);
 	}
 }
 

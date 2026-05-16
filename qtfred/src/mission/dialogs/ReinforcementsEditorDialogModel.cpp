@@ -84,13 +84,9 @@ bool ReinforcementsDialogModel::apply()
 	// Properly set all reinforcement info.
 	Reinforcements.clear();
 	for (auto& modelReinforcement : _reinforcementList) {
-		reinforcements reinforcement;
-		strcpy_s(reinforcement.name, std::get<0>(modelReinforcement).c_str());
+		reinforcements reinforcement(std::get<0>(modelReinforcement).c_str());
 		reinforcement.uses = std::get<1>(modelReinforcement);
 		reinforcement.arrival_delay = std::get<2>(modelReinforcement);
-		reinforcement.type = 0;
-		memset( reinforcement.no_messages, 0, MAX_REINFORCEMENT_MESSAGES * NAME_LENGTH );
-		memset( reinforcement.yes_messages, 0, MAX_REINFORCEMENT_MESSAGES * NAME_LENGTH );
 		Reinforcements.push_back(std::move(reinforcement));
 	}
 
