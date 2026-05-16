@@ -1623,6 +1623,9 @@ enum class oswpt_type : uint8_t
 	PARSE_OBJECT,		// a "ship" that hasn't arrived yet
 	EXITED,
 	WING_NOT_PRESENT,	// a wing that hasn't arrived yet or is between waves
+	// TODO: SEXP support pending sexp_tree_refactor branch merge — the OSWPT serialization paths
+	// and Lua getType/get handlers recognize this value, but no SEXP parser code constructs an
+	// OSWPT of this type yet.
 	COORDINATE_POINT	// a named point in space defined per-mission
 };
 

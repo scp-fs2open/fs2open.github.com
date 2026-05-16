@@ -5472,8 +5472,9 @@ void parse_coordinate_point(mission* /*pm*/)
 	}
 
 	if (optional_string("+Color:")) {
+		// rgba is pre-initialized so a three-value list (R G B) still leaves alpha at 255;
+		// stuff_int_list parses up to 4 ints and leaves trailing entries untouched.
 		int rgba[4] = { 255, 255, 255, 255 };
-		// Three-value form (R G B) is accepted for backwards compatibility; alpha defaults to 255.
 		stuff_int_list(rgba, 4, ParseLookupType::RAW_INTEGER_TYPE);
 		for (int& c : rgba) {
 			CLAMP(c, 0, 255);

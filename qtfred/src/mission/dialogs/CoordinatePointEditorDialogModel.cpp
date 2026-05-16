@@ -361,8 +361,8 @@ bool CoordinatePointEditorDialogModel::missionIsMultiTeam()
 
 SCP_string CoordinatePointEditorDialogModel::getLayer() const
 {
-	// "<mixed>" sentinel when selected points span different layers; the dialog renders that
-	// as a blank combo (currentIndex = -1).
+	// Returns empty string when selected points span different layers; the dialog's
+	// findData("") then yields -1 and the combo renders blank.
 	SCP_string result;
 	bool first = true;
 	for (int objnum : _selectedObjnums) {

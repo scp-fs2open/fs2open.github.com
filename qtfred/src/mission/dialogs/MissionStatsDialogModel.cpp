@@ -12,6 +12,7 @@
 #include <iff_defs/iff_defs.h>
 #include <jumpnode/jumpnode.h>
 #include <prop/prop.h>
+#include <coordinate_points/coordinate_point.h>
 #include <globalincs/globals.h>
 #include <globalincs/linklist.h>
 
@@ -74,6 +75,16 @@ int MissionStatsDialogModel::getWaypointPathCount()
 int MissionStatsDialogModel::getJumpNodeCount()
 {
 	return static_cast<int>(Jump_nodes.size());
+}
+
+int MissionStatsDialogModel::getCoordinatePointCount()
+{
+	int count = 0;
+	for (const auto& cp : Coordinate_points) {
+		if (cp.objnum >= 0)
+			++count;
+	}
+	return count;
 }
 
 int MissionStatsDialogModel::getMessageCount()
@@ -148,6 +159,12 @@ SCP_vector<MissionStatsDialogModel::EscortEntry> MissionStatsDialogModel::getEsc
 		const ship* shipp = &Ships[objp->instance];
 		if (shipp->flags[Ship::Ship_Flags::Escort]) {
 			result.push_back({ shipp->ship_name, shipp->escort_priority });
+		}
+	}
+
+	for (const auto& cp : Coordinate_points) {
+		if (cp.objnum >= 0 && cp.escort_priority > 0) {
+			result.push_back({ cp.name, cp.escort_priority });
 		}
 	}
 

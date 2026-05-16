@@ -38,6 +38,7 @@ public:
 	static int getWingCount();
 	static int getWaypointPathCount();
 	static int getJumpNodeCount();
+	static int getCoordinatePointCount();
 	static int getMessageCount();
 	static int getEventCount();
 	static int getGoalCount();

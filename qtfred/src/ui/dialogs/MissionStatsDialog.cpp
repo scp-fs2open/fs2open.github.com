@@ -52,6 +52,7 @@ void MissionStatsDialog::populateSummaryTab()
 	ui->labelWings->setText(QString::number(_model->getWingCount()));
 	ui->labelWaypoints->setText(QString::number(_model->getWaypointPathCount()));
 	ui->labelJumpNodes->setText(QString::number(_model->getJumpNodeCount()));
+	ui->labelCoordinatePoints->setText(QString::number(_model->getCoordinatePointCount()));
 	ui->labelMessages->setText(QString::number(_model->getMessageCount()));
 	ui->labelEvents->setText(QString::number(_model->getEventCount()));
 	ui->labelGoals->setText(QString::number(_model->getGoalCount()));

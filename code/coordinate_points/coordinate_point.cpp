@@ -127,7 +127,6 @@ void coordinate_point_delete(int objnum)
 {
 	for (auto it = Coordinate_points.begin(); it != Coordinate_points.end(); ++it) {
 		if (it->objnum == objnum) {
-			it->objnum = -1;  // mark detached so destructor / cleanup doesn't double-free
 			Coordinate_points.erase(it);
 			return;
 		}
