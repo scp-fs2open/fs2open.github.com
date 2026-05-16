@@ -261,8 +261,6 @@ add_file_folder("Source/UI/Dialogs/ShipEditor"
 	src/ui/dialogs/ShipEditor/ShipTextureReplacementDialog.cpp
 	src/ui/dialogs/ShipEditor/ShipWeaponsDialog.cpp
 	src/ui/dialogs/ShipEditor/ShipWeaponsDialog.h
-	src/ui/dialogs/ShipEditor/BankModel.cpp
-	src/ui/dialogs/ShipEditor/BankModel.h
 	src/ui/dialogs/ShipEditor/ShipCustomWarpDialog.h
 	src/ui/dialogs/ShipEditor/ShipCustomWarpDialog.cpp
 	src/ui/dialogs/ShipEditor/ShipAltShipClass.h
@@ -330,8 +328,6 @@ add_file_folder("Source/UI/Widgets"
 	src/ui/widgets/ShipFlagCheckbox.cpp
 	src/ui/widgets/SimpleListSelectDialog.cpp
 	src/ui/widgets/SimpleListSelectDialog.h
-	src/ui/widgets/weaponList.cpp
-	src/ui/widgets/weaponList.h
 	src/ui/widgets/MusicComboWidget.cpp
 	src/ui/widgets/MusicComboWidget.h
 )
