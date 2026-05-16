@@ -238,22 +238,23 @@ namespace os
 
 			gr_activate(0);
 
-			int buttonId;
+			int buttonId = -1;	// if dialog is silently suppressed
 			if (SDL_ShowMessageBox(&boxData, &buttonId) < 0)
 			{
 				// Call failed
-				buttonId = 1; // No action
+				buttonId = 1;
 			}
 
 			switch (buttonId)
 			{
-			case 2:
+			case 2:				// Exit
 				abort();
 
-			case 0:
+			case 0:				// Debug
 				Int3();
 				break;
 
+			case 1:				// Continue
 			default:
 				break;
 			}
@@ -282,6 +283,12 @@ namespace os
 		void Error(const char* text)
 		{
 			mprintf(("\n%s\n", text));
+
+			// also output to stderr so the message is visible if the dialog is suppressed
+			// (e.g., the SDL message box is dismissed silently by the window manager when the
+			// game is fullscreen on Linux)
+			fprintf(stderr, "\n%s\n", text);
+			fflush(stderr);
 
 			if (running_unittests) {
 				throw ErrorException(text);
@@ -322,21 +329,22 @@ namespace os
 
 			gr_activate(0);
 
-			int buttonId;
+			int buttonId = -1;	// if dialog is silently suppressed
 			if (SDL_ShowMessageBox(&boxData, &buttonId) < 0)
 			{
 				// Call failed
-				abort();
+				buttonId = 1;
 			}
 
 			switch (buttonId)
 			{
-			case 1:
-				abort();
-
-			default:
+			case 0:				// Debug
 				Int3();
 				break;
+
+			case 1:				// Exit
+			default:
+				abort();
 			}
 			gr_activate(1);
 		}
@@ -348,6 +356,12 @@ namespace os
 
 			// output to the debug log before anything else (so that we have a complete record)
 			mprintf(("WARNING: \"%s\" at %s:%d\n", text.c_str(), filename, line));
+
+			// also output to stderr so the message is visible if the dialog is suppressed
+			// (e.g., the SDL message box is dismissed silently by the window manager when the
+			// game is fullscreen on Linux)
+			fprintf(stderr, "WARNING: \"%s\" at %s:%d\n", text.c_str(), filename, line);
+			fflush(stderr);
 
 			if (running_unittests) {
 				throw WarningException(text);
@@ -390,22 +404,23 @@ namespace os
 
 			gr_activate(0);
 
-			int buttonId;
+			int buttonId = -1;	// if dialog is silently suppressed
 			if (SDL_ShowMessageBox(&boxData, &buttonId) < 0)
 			{
 				// Call failed
-				buttonId = 1; // No action
+				buttonId = 1;
 			}
 
 			switch (buttonId)
 			{
-			case 2:
+			case 2:				// Exit
 				abort();
 
-			case 0:
+			case 0:				// Debug
 				Int3();
 				break;
 
+			case 1:				// Continue
 			default:
 				break;
 			}
