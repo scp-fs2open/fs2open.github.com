@@ -10,13 +10,12 @@ namespace fso::fred {
 class ObjectComboBox : public QComboBox {
 	Q_OBJECT
 
-	EditorViewport* _viewport = nullptr;
-
 public:
 	explicit ObjectComboBox(QWidget* parent = nullptr);
 
-	void initForShips(EditorViewport* viewport);
+	void initForShips();
 	void initForProps();
+	void initForOther();
 
 	void selectClass(int class_index);
 
@@ -26,6 +25,7 @@ signals:
 private:
 	void buildShipsModel();
 	void buildPropsModel();
+	void buildOtherModel();
 	void indexChanged(int index);
 };
 

@@ -229,8 +229,15 @@ void RenderWidget::mousePressEvent(QMouseEvent* event) {
 	if (event->modifiers().testFlag(Qt::ControlModifier)) {  // add a new object
 		if (_viewport->on_object == -1) {
 			_viewport->Selection_lock = false;  // force off selection lock
-			auto spawn_prop = event->modifiers().testFlag(Qt::ShiftModifier);
-			_viewport->on_object = _viewport->create_object_on_grid(event->x(), event->y(), waypoint_instance, spawn_prop);
+			const bool shift = event->modifiers().testFlag(Qt::ShiftModifier);
+			const bool alt   = event->modifiers().testFlag(Qt::AltModifier);
+			auto kind = CreateKind::Ship;
+			if (alt && !shift) {
+				kind = CreateKind::Other;
+			} else if (shift && !alt) {
+				kind = CreateKind::Prop;
+			}
+			_viewport->on_object = _viewport->create_object_on_grid(event->x(), event->y(), waypoint_instance, kind);
 
 		} else {
 			_viewport->Dup_drag = 1;

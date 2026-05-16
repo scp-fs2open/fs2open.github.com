@@ -656,8 +656,6 @@ void Editor::clearMission(bool fast_reload) {
 }
 
 void Editor::initialSetup() {
-	Id_select_type_waypoint = static_cast<int>(Ship_info.size());
-	Id_select_type_jump_node = static_cast<int>(Ship_info.size() + 1);
 }
 
 void Editor::setupCurrentObjectIndices(int selectedObj) {
