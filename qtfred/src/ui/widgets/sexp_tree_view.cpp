@@ -478,8 +478,9 @@ void sexp_tree_view::ensure_visible(int node) {
 // move_branch() to recreate the visual subtree under the new parent.
 void sexp_tree_view::move_branch(int source, int parent) {
 	if (source != -1) {
+		Assertion(parent > -1, "move_branch called with negative parent index %d (source %d)", parent, source);
 		_model.move_branch_data(source, parent);
-		if (parent != -1) {
+		if (parent > 0) {
 			move_branch(tree_item_handle(tree_nodes[source]), tree_item_handle(tree_nodes[parent]));
 		} else {
 			move_branch(tree_item_handle(tree_nodes[source]));
@@ -854,7 +855,7 @@ void sexp_tree_view::update_help(QTreeWidgetItem* h) {
 			for (const auto& menu : op_menu) {
 				if (get_category(oper.value) == menu.id) {
 					if (!help(oper.value)) {
-						mprintf(("Allender!  If you add new sexp operators, add help for them too! :) Sexp %s has no help.\n", oper.text.c_str()));
+						mprintf(("Don't be like Allender!  If you add new sexp operators, add help for them too! :) Sexp %s has no help.\n", oper.text.c_str()));
 					}
 				}
 			}

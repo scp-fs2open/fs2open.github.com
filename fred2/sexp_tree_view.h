@@ -60,7 +60,7 @@ public:
 	int get_type(HTREEITEM h);
 	void setup(CEdit *ptr = NULL);
 	void move_root(HTREEITEM source, HTREEITEM dest, bool insert_before);
-	void move_branch(int source, int parent = -1);
+	void move_branch(int source, int parent);
 	HTREEITEM move_branch(HTREEITEM source, HTREEITEM parent = TVI_ROOT, HTREEITEM after = TVI_LAST);
 	void copy_branch(HTREEITEM source, HTREEITEM parent = TVI_ROOT, HTREEITEM after = TVI_LAST);
 	void setup_selected(HTREEITEM h = NULL);

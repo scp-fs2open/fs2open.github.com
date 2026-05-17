@@ -961,12 +961,12 @@ BOOL sexp_tree_view::OnCommand(WPARAM wParam, LPARAM lParam)
 
 	if ((id >= ID_ADD_MENU) && (id < ID_ADD_MENU + 511)) {
 		auto saved_id = id;
-		Assertion(item_index >= 0, "Invalid item index");
+		Assertion(item_index >= 0, "Invalid item index %d", item_index);
 
 		int type = 0;
 		if (!(tree_nodes[item_index].type & SEXPT_CONTAINER_DATA)) {
 			op = get_operator_index(tree_nodes[item_index].text);
-			Assertion(op >= 0, "Invalid operator index");
+			Assertion(op >= 0, "Invalid operator index %d for operator text '%s' (item_index %d)", op, tree_nodes[item_index].text, item_index);
 			type = query_operator_argument_type(op, m_add_count);
 		}
 		node = _actions.add_or_replace_typed_data(id - ID_ADD_MENU, false, m_add_count, m_replace_count);
@@ -983,7 +983,7 @@ BOOL sexp_tree_view::OnCommand(WPARAM wParam, LPARAM lParam)
 				type = SEXPT_STRING;
 			}
 			else {
-				UNREACHABLE("Unknown sexp variable type");
+				UNREACHABLE("Unknown sexp variable type %d for variable '%s' (var_idx %d)", Sexp_variables[var_idx].type, Sexp_variables[var_idx].variable_name, var_idx);
 			}
 
 			item_index = node;
@@ -1259,13 +1259,6 @@ void sexp_tree_view::NodeDelete()
 	DeleteItem(item_handle);
 
 	theNode = tree_nodes[parent].child;
-/*			if (node != -1 && tree_nodes[node].next == -1 && tree_nodes[node].child == -1) {
-		sprintf(buf, "%s %s", tree_nodes[parent].text, tree_nodes[node].text);
-		SetItem(h_parent, TVIF_TEXT, buf, 0, 0, 0, 0, 0);
-		tree_nodes[parent].flags = OPERAND | EDITABLE;
-		tree_nodes[node].flags = COMBINED;
-		DeleteItem(tree_item_handle(tree_nodes[node]));
-	}*/
 
 	*modified = 1;
 }
@@ -1351,8 +1344,9 @@ void sexp_tree_view::ensure_visible(int node)
 void sexp_tree_view::move_branch(int source, int parent)
 {
 	if (source != -1) {
+		Assertion(parent > -1, "move_branch called with negative parent index %d (source %d)", parent, source);
 		_model.move_branch_data(source, parent);
-		if (parent) {
+		if (parent > 0) {
 			move_branch(tree_item_handle(tree_nodes[source]), tree_item_handle(tree_nodes[parent]));
 		} else {
 			move_branch(tree_item_handle(tree_nodes[source]));
@@ -1360,7 +1354,10 @@ void sexp_tree_view::move_branch(int source, int parent)
 	}
 }
 
-// Recursively re-creates a CTreeCtrl subtree under a new parent/after position.
+// Recursively re-creates a CTreeCtrl subtree under a new parent and removes the source.
+// 'after' is forwarded to InsertItem() as hInsertAfter: the new top-level item is placed
+// directly after the sibling identified by this handle. Pass TVI_LAST (the default) to
+// append to the end of the destination parent's child list, or TVI_FIRST to prepend.
 // Updates tree_nodes[].handle for each moved item, preserves expansion state,
 // and deletes the old source item.
 HTREEITEM sexp_tree_view::move_branch(HTREEITEM source, HTREEITEM parent, HTREEITEM after)
@@ -1402,6 +1399,9 @@ HTREEITEM sexp_tree_view::move_branch(HTREEITEM source, HTREEITEM parent, HTREEI
 }
 
 // Recursively copies a CTreeCtrl subtree under a new parent without removing the source.
+// 'after' is forwarded to InsertItem() as hInsertAfter: the new top-level copy is placed
+// directly after the sibling identified by this handle. Pass TVI_LAST (the default) to
+// append to the end of the destination parent's child list, or TVI_FIRST to prepend.
 // Updates tree_nodes[].handle to point to the copies and preserves expansion state.
 void sexp_tree_view::copy_branch(HTREEITEM source, HTREEITEM parent, HTREEITEM after)
 {
@@ -1464,7 +1464,6 @@ void sexp_tree_view::OnBegindrag(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	UINT flags = 0;
 
-//	ScreenToClient(&m_pt);
 	Assertion(!m_dragging, "Invalid drag state");
 	m_h_drag = HitTest(m_pt, &flags);
 	m_h_drop = NULL;
@@ -1738,7 +1737,7 @@ void sexp_tree_view::update_help(HTREEITEM h)
 		for (int j = 0; j < static_cast<int>(op_menu.size()); j++) {
 			if (get_category(Operators[i].value) == op_menu[j].id) {
 				if (!help(Operators[i].value)) {
-					mprintf(("Allender!  If you add new sexp operators, add help for them too! :) Sexp %s has no help.\n", Operators[i].text.c_str()));
+					mprintf(("Don't be like Allender!  If you add new sexp operators, add help for them too! :) Sexp %s has no help.\n", Operators[i].text.c_str()));
 				}
 			}
 		}

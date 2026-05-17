@@ -104,6 +104,12 @@ FLAG_LIST(TreeFlags) {
 constexpr int SEXP_TREE_MAX_OP_MENUS = 30;
 constexpr int SEXP_TREE_MAX_SUBMENUS = SEXP_TREE_MAX_OP_MENUS * SEXP_TREE_MAX_OP_MENUS;
 
+// Buffer size for a tree node's text field. Sized to hold a variable reference
+// in the "varname(value)" display form: two TOKEN_LENGTH tokens plus the two
+// surrounding parentheses (the trailing null terminator is already included in
+// TOKEN_LENGTH itself).
+constexpr int SEXP_TREE_NODE_TEXT_SIZE = 2 * TOKEN_LENGTH + 2;
+
 
 // -----------------------------------------------------------------------
 // sexp_tree_item — a single node in the sexp tree
@@ -122,7 +128,7 @@ struct sexp_tree_item {
 	int child;     // index of first child node (-1 if none)
 	int next;      // index of next sibling (-1 if none)
 	int flags;
-	char text[2 * TOKEN_LENGTH + 2];
+	char text[SEXP_TREE_NODE_TEXT_SIZE];
 	void* handle;  // opaque UI handle — never dereferenced by model code
 };
 
@@ -163,10 +169,10 @@ class SexpTreeEditorInterface {
 	flagset<TreeFlags> _flags;
 
 public:
-	// Default constructor — uses empty flags (no labeled roots, no root deletion)
-	SexpTreeEditorInterface();
-	// Construct with explicit tree behavior flags
-	explicit SexpTreeEditorInterface(const flagset<TreeFlags>& flags);
+	// Construct with explicit tree behavior flags; defaults to empty flags
+	// (no labeled roots, no root deletion). Dialogs that need labeled roots
+	// (events, goals, cutscenes) pass flags explicitly.
+	explicit SexpTreeEditorInterface(const flagset<TreeFlags>& flags = flagset<TreeFlags>());
 	virtual ~SexpTreeEditorInterface();
 
 	// Returns true if there are mission-specific (non-builtin) messages available
@@ -508,7 +514,7 @@ public:
 	// Return the appropriate numbered data icon for a node based on its sibling position
 	NodeImage get_data_image(int node) const;
 	// Return TRUE if the root operator is OP_FALSE
-	int query_false(int node = -1) const;
+	bool query_false(int node = -1) const;
 	// Find the valid operator whose name most closely matches 'str' at position 'node'
 	SCP_string match_closest_operator(const SCP_string& str, int node) const;
 	// Look up the help text string for the given sexp operator code

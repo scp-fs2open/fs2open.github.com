@@ -103,7 +103,7 @@ class sexp_tree_view: public QTreeWidget, public ISexpTreeUI {
 
 	//! Moves a branch in both the model data and the Qt tree.
 	//! Calls _model.move_branch_data() then the QTreeWidgetItem overload of move_branch().
-	void move_branch(int source, int parent = -1);
+	void move_branch(int source, int parent);
 
 	//! Recursively re-creates a Qt subtree under a new parent. Copies all custom data roles
 	//! (FormulaDataRole, NoteRole, BgColorRole), updates tree_nodes[].handle, preserves

@@ -131,14 +131,6 @@ void sexp_list_item::destroy()
 // SexpTreeEditorInterface implementation
 // -----------------------------------------------------------------------
 
-// Default constructor — no special tree behaviors (no labeled roots, no root deletion).
-// Dialogs that need labeled roots (events, goals, cutscenes) pass flags explicitly.
-SexpTreeEditorInterface::SexpTreeEditorInterface()
-	: SexpTreeEditorInterface(flagset<TreeFlags>())
-{
-}
-
-// Construct with explicit tree behavior flags.
 SexpTreeEditorInterface::SexpTreeEditorInterface(const flagset<TreeFlags>& flags)
 	: _flags(flags)
 {
@@ -286,7 +278,7 @@ int SexpTreeModel::allocate_node()
 		// allocate in blocks of TREE_NODE_INCREMENT
 		tree_nodes.resize(tree_nodes.size() + TREE_NODE_INCREMENT);
 
-		mprintf(("Bumping dynamic tree node limit from %d to %d...\n", old_size, static_cast<int>(tree_nodes.size())));
+		nprintf(("Fred", "Bumping dynamic tree node limit from %d to %d...\n", old_size, static_cast<int>(tree_nodes.size())));
 
 #ifndef NDEBUG
 		for (int i = old_size; i < static_cast<int>(tree_nodes.size()); i++) {
@@ -312,7 +304,10 @@ int SexpTreeModel::allocate_node()
 	return node;
 }
 
-// allocate a child node under 'parent'.  Appends to end of list.
+// allocate a child node under 'parent', inserting it directly after the existing
+// sibling whose tree_nodes index is 'after'.  If 'after' is not found in parent's
+// child list (e.g. -1, or a node belonging to a different parent), the new node is
+// appended to the end of the sibling chain instead.
 int SexpTreeModel::allocate_node(int parent, int after)
 {
 	int i, index = allocate_node();
@@ -343,7 +338,7 @@ void SexpTreeModel::set_node(int node, int type, const char* text)
 	tree_nodes[node].type = type;
 	size_t max_length;
 	if (type & SEXPT_VARIABLE) {
-		max_length = 2 * TOKEN_LENGTH + 2;
+		max_length = SEXP_TREE_NODE_TEXT_SIZE;
 	} else if (type & (SEXPT_CONTAINER_NAME | SEXPT_CONTAINER_DATA)) {
 		max_length = sexp_container::NAME_MAX_LENGTH + 1;
 	} else {
@@ -404,9 +399,10 @@ void SexpTreeModel::free_node2(int node)
 	// reuses this slot, the new node won't inherit a stale annotation.
 	if (annotation_model)
 		annotation_model->removeByKey(node);
+
+	// Recursively free children and following siblings.
 	if (tree_nodes[node].child != -1)
 		free_node2(tree_nodes[node].child);
-
 	if (tree_nodes[node].next != -1)
 		free_node2(tree_nodes[node].next);
 }
@@ -421,9 +417,9 @@ void get_combined_variable_name(char* combined_name, const char* sexp_var_name)
 	int sexp_var_index = get_index_sexp_variable_name(sexp_var_name);
 
 	if (sexp_var_index >= 0)
-		snprintf(combined_name, 2 * TOKEN_LENGTH + 2, "%s(%s)", Sexp_variables[sexp_var_index].variable_name, Sexp_variables[sexp_var_index].text);
+		snprintf(combined_name, SEXP_TREE_NODE_TEXT_SIZE, "%s(%s)", Sexp_variables[sexp_var_index].variable_name, Sexp_variables[sexp_var_index].text);
 	else
-		snprintf(combined_name, 2 * TOKEN_LENGTH + 2, "%s(undefined)", sexp_var_name);
+		snprintf(combined_name, SEXP_TREE_NODE_TEXT_SIZE, "%s(undefined)", sexp_var_name);
 }
 
 // Clear all tree nodes and reset counters. If 'op' is provided and non-empty,
@@ -483,7 +479,7 @@ void SexpTreeModel::load_tree_data(int index, const char* deflt)
 int SexpTreeModel::load_branch(int index, int parent)
 {
 	int cur = -1;
-	char combined_var_name[2 * TOKEN_LENGTH + 2];
+	char combined_var_name[SEXP_TREE_NODE_TEXT_SIZE];
 
 	while (index != -1) {
 		int additional_flags = SEXPT_VALID;
@@ -918,18 +914,14 @@ NodeImage SexpTreeModel::get_data_image(int node) const
 	return static_cast<NodeImage>(static_cast<int>(NodeImage::DATA_00) + idx);
 }
 
-// Return TRUE if the root-level operator is the "false" sexp operator.
-int SexpTreeModel::query_false(int node) const
+// Return true if the root-level operator is the "false" sexp operator.
+bool SexpTreeModel::query_false(int node) const
 {
 	if (node < 0) node = root_item;
 	Assertion(node >= 0, "Invalid node");
 	Assertion(tree_nodes[node].type == (SEXPT_OPERATOR | SEXPT_VALID), "Invalid node type");
 	Assertion(tree_nodes[node].next == -1, "Invalid node next");
-	if (get_operator_const(tree_nodes[node].text) == OP_FALSE) {
-		return TRUE;
-	}
-
-	return FALSE;
+	return get_operator_const(tree_nodes[node].text) == OP_FALSE;
 }
 
 // Look for the valid operator that is the closest match for 'str' and return the operator
@@ -948,9 +940,10 @@ SCP_string SexpTreeModel::match_closest_operator(const SCP_string& str, int node
 	if (op < 0)
 		return str;
 
-	// determine which argument we are of the parent
+	// determine which argument slot 'node' occupies in its parent, and look up
+	// the OPF type the parent operator expects at that position
 	arg_num = find_argument_number(z, node);
-	opf = query_operator_argument_type(op, arg_num);	// check argument type at this position
+	opf = query_operator_argument_type(op, arg_num);
 
 	// find the best operator
 	int best = sexp_match_closest_operator(str, opf);
@@ -1053,7 +1046,7 @@ void get_variable_default_text_from_variable_text(char* text, char* default_text
 int SexpTreeModel::get_item_index_to_var_index() const
 {
 	// check valid item index and node is a variable
-	if ((item_index >= 0) && SCP_vector_inbounds(tree_nodes, item_index) && (tree_nodes[item_index].type & SEXPT_VARIABLE)) {
+	if (SCP_vector_inbounds(tree_nodes, item_index) && (tree_nodes[item_index].type & SEXPT_VARIABLE)) {
 		return get_tree_name_to_sexp_variable_index(tree_nodes[item_index].text);
 	} else {
 		return -1;
@@ -1100,22 +1093,23 @@ int SexpTreeModel::get_modify_variable_type(int parent) const
 			return OPF_AMBIGUOUS;
 		}
 	} else {
-		Int3();  // should not be called otherwise
+		UNREACHABLE("get_modify_variable_type called for operator %d, which is neither modify-variable nor set-variable-by-index", op_const);
 	}
 
 	// if we don't have a valid variable, allow replacement with anything
 	if (sexp_var_index < 0)
 		return OPF_AMBIGUOUS;
 
-	if (Sexp_variables[sexp_var_index].type & SEXP_VARIABLE_BLOCK || Sexp_variables[sexp_var_index].type & SEXP_VARIABLE_NOT_USED) {
-		// assume number so that we can allow tree display of number operators
+	const int var_type = Sexp_variables[sexp_var_index].type;
+
+	// BLOCK/NOT_USED are treated as numbers so that the tree can still display
+	// number operators against them.
+	if (var_type & (SEXP_VARIABLE_BLOCK | SEXP_VARIABLE_NOT_USED | SEXP_VARIABLE_NUMBER)) {
 		return OPF_NUMBER;
-	} else if (Sexp_variables[sexp_var_index].type & SEXP_VARIABLE_NUMBER) {
-		return OPF_NUMBER;
-	} else if (Sexp_variables[sexp_var_index].type & SEXP_VARIABLE_STRING) {
+	} else if (var_type & SEXP_VARIABLE_STRING) {
 		return OPF_AMBIGUOUS;
 	} else {
-		Int3();
+		UNREACHABLE("Sexp variable '%s' has unrecognized type flags 0x%x", Sexp_variables[sexp_var_index].variable_name, var_type);
 		return 0;
 	}
 }
@@ -1530,7 +1524,7 @@ void SexpTreeModel::ctx_compute_add_type(SexpContextMenuState& state)
 		int child = tree_nodes[item_index].child;
 		state.add_count = count_args(child);
 		int op = get_operator_index(tree_nodes[item_index].text);
-		Assertion(op >= 0, "Invalid operator index");
+		Assertion(op >= 0, "Invalid operator index %d for operator text '%s' (item_index %d)", op, tree_nodes[item_index].text, item_index);
 
 		int type = query_operator_argument_type(op, state.add_count);
 		state.add_data_opf_type = type;
