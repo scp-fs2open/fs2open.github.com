@@ -87,23 +87,6 @@ int MissionCutscenesDialogModel::getCutsceneType() const
 {
 	return m_display_cutscene_types;
 }
-bool MissionCutscenesDialogModel::query_modified()
-{
-	if (modified)
-		return true;
-
-	if (The_mission.cutscenes.size() != m_cutscenes.size())
-		return true;
-
-	for (size_t i = 0; i < The_mission.cutscenes.size(); i++) {
-		if (!lcase_equal(The_mission.cutscenes[i].filename, m_cutscenes[i].filename))
-			return true;
-		if (The_mission.cutscenes[i].type != m_cutscenes[i].type)
-			return true;
-	}
-
-	return false;
-}
 void MissionCutscenesDialogModel::setTreeControl(sexp_tree_view* tree)
 {
 	_sexp_tree = tree;

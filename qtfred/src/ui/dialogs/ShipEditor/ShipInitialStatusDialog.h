@@ -1,5 +1,4 @@
-#ifndef SHIPINITIALSTATUSDIALOG_H
-#define SHIPINITIALSTATUSDIALOG_H
+#pragma once
 
 #include <mission/dialogs/ShipEditor/ShipInitialStatusDialogModel.h>
 
@@ -54,18 +53,16 @@ class ShipInitialStatusDialog : public QDialog {
 	std::unique_ptr<ShipInitialStatusDialogModel> _model;
 	EditorViewport* _viewport;
 
-	void updateUI();
+	void updateUi();
 	void updateFlags();
 	void updateDocks();
 	void updateDockee();
-	void list_dockees(int);
-	void list_dockee_points(int);
+	void listDockees(int);
+	void listDockeePoints(int);
 	void updateSubsystems();
 
-	int cur_docker_point = -1;
-	int cur_dockee = -1;
-	int cur_dockee_point = -1;
+	int _curDockerPoint = -1;
+	int _curDockee = -1;
+	int _curDockeePoint = -1;
 };
 } // namespace fso::fred::dialogs
-
-#endif // !SHIPINITIALSTATUSDIALOG_H

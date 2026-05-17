@@ -16,70 +16,38 @@ JumpNodeEditorDialogModel::JumpNodeEditorDialogModel(QObject* parent, EditorView
 	connect(viewport->editor, &Editor::currentObjectChanged, this, &JumpNodeEditorDialogModel::onSelectedObjectChanged);
 	connect(viewport->editor, &Editor::objectMarkingChanged, this, &JumpNodeEditorDialogModel::onSelectedObjectMarkingChanged);
 	connect(viewport->editor, &Editor::missionChanged, this, &JumpNodeEditorDialogModel::onMissionChanged);
-	
+
 	initializeData();
 }
 
-bool JumpNodeEditorDialogModel::apply()
-{
-	if (_currentlySelectedNodeIndex < 0) {
-		// Nothing to apply
-		return true;
-	}
-
-	// Validate
-	if (!validateData()) {
-		return false;
-	}
-
-	// Commit
-	auto* jnp = jumpnode_get_by_objnum(getSelectedJumpNodeObjnum(_currentlySelectedNodeIndex));
-	Assertion(jnp != nullptr, "Jump node not found during apply!");
-
-	char old_name_buf[NAME_LENGTH];
-	std::strncpy(old_name_buf, jnp->GetName(), NAME_LENGTH - 1);
-	old_name_buf[NAME_LENGTH - 1] = '\0';
-
-	lcl_fred_replace_stuff(_display);
-
-	jnp->SetName(_name.c_str());
-	jnp->SetDisplayName(lcase_equal(_display, "<none>") ? _name.c_str() : _display.c_str());
-
-	// Only set a non default model
-	if (!lcase_equal(_modelFilename, JN_DEFAULT_MODEL)) {
-		jnp->SetModel(_modelFilename.c_str());
-	}
-
-	jnp->SetAlphaColor(_red, _green, _blue, _alpha);
-	jnp->SetVisibility(!_hidden);
-
-	// Update sexp references when name changes
-	if (strcmp(old_name_buf, _name.c_str()) != 0) {
-		update_sexp_references(old_name_buf, _name.c_str());
-	}
-
-	_editor->missionChanged();
+bool JumpNodeEditorDialogModel::apply() {
 	return true;
 }
 
-void JumpNodeEditorDialogModel::reject()
-{
-	// do nothing
-}
+void JumpNodeEditorDialogModel::reject() {}
 
 void JumpNodeEditorDialogModel::initializeData()
 {
-	buildNodeList();
-	
-	// Find the currently selected object if it's a jump node
-	int objnum = -1;
-	if (query_valid_object(_editor->currentObject) && Objects[_editor->currentObject].type == OBJ_JUMP_NODE) {
-		objnum = _editor->currentObject;
+	_selectedJumpNodes.clear();
+	_redMixed = _greenMixed = _blueMixed = _alphaMixed = false;
+	_hiddenMixed = false;
+
+	// Collect all marked OBJ_JUMP_NODE objects
+	for (auto* ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
+		if (ptr->type == OBJ_JUMP_NODE && ptr->flags[Object::Object_Flags::Marked]) {
+			_selectedJumpNodes.push_back(OBJ_INDEX(ptr));
+		}
 	}
-	
-	if (objnum >= 0) {
-		auto* jnp = jumpnode_get_by_objnum(objnum);
-		Assertion(jnp != nullptr, "Jump node not found for current object!");
+
+	// Fall back to currentObject if nothing is marked
+	if (_selectedJumpNodes.empty() && query_valid_object(_editor->currentObject) &&
+	    Objects[_editor->currentObject].type == OBJ_JUMP_NODE) {
+		_selectedJumpNodes.push_back(_editor->currentObject);
+	}
+
+	if (!_selectedJumpNodes.empty()) {
+		auto* jnp = jumpnode_get_by_objnum(_selectedJumpNodes.front());
+		Assertion(jnp != nullptr, "Jump node not found for selected object!");
 
 		_name = jnp->GetName();
 		_display = jnp->HasDisplayName() ? jnp->GetDisplayName() : "<none>";
@@ -88,7 +56,7 @@ void JumpNodeEditorDialogModel::initializeData()
 		if (auto* pm = model_get(model_num)) {
 			_modelFilename = pm->filename;
 		} else {
-			_modelFilename.clear();
+			_modelFilename = JN_DEFAULT_MODEL;
 		}
 
 		const auto& c = jnp->GetColor();
@@ -99,12 +67,35 @@ void JumpNodeEditorDialogModel::initializeData()
 
 		_hidden = jnp->IsHidden();
 
-		// Find the index of the jump node in the local list
-		for (const auto& node : _nodes) {
-			if (!stricmp(node.first.c_str(), _name.c_str())) {
-				_currentlySelectedNodeIndex = node.second;
-				break;
+		if (hasMultipleSelection()) {
+			bool displayConsistent = true;
+			bool modelConsistent   = true;
+			for (size_t i = 1; i < _selectedJumpNodes.size(); ++i) {
+				auto* other = jumpnode_get_by_objnum(_selectedJumpNodes[i]);
+				if (!other) continue;
+
+				SCP_string otherDisplay = other->HasDisplayName() ? other->GetDisplayName() : "<none>";
+				if (_display != otherDisplay)
+					displayConsistent = false;
+
+				SCP_string otherModel;
+				if (auto* pm = model_get(other->GetModelNumber()))
+					otherModel = pm->filename;
+				else
+					otherModel = JN_DEFAULT_MODEL;
+				if (_modelFilename != otherModel)
+					modelConsistent = false;
+
+				const auto& oc = other->GetColor();
+				if (oc.red   != _red)   _redMixed   = true;
+				if (oc.green != _green) _greenMixed = true;
+				if (oc.blue  != _blue)  _blueMixed  = true;
+				if (oc.alpha != _alpha) _alphaMixed = true;
+
+				if (other->IsHidden() != _hidden) _hiddenMixed = true;
 			}
+			if (!displayConsistent) _display.clear();
+			if (!modelConsistent)   _modelFilename.clear();
 		}
 	} else {
 		_name.clear();
@@ -112,42 +103,47 @@ void JumpNodeEditorDialogModel::initializeData()
 		_modelFilename.clear();
 		_red = _green = _blue = _alpha = 0;
 		_hidden = false;
-
-		_currentlySelectedNodeIndex = -1;
 	}
 
 	Q_EMIT jumpNodeMarkingChanged();
 	_modified = false;
 }
 
-void JumpNodeEditorDialogModel::buildNodeList()
-{
-	_nodes.clear();
-	int idx = 0;
-	for (auto& node : Jump_nodes) {
-		_nodes.emplace_back(node.GetName(), idx++);
-	}
+bool JumpNodeEditorDialogModel::hasValidSelection() const {
+	return !_selectedJumpNodes.empty();
 }
 
-bool JumpNodeEditorDialogModel::validateData()
-{
-	_bypass_errors = false;
+bool JumpNodeEditorDialogModel::hasMultipleSelection() const {
+	return _selectedJumpNodes.size() > 1;
+}
 
-	SCP_trim(_name);
+bool JumpNodeEditorDialogModel::hasAnyNodesInMission() {
+	return !Jump_nodes.empty();
+}
 
-	const SCP_string name = _name;
+int JumpNodeEditorDialogModel::getSelectionCount() const {
+	return static_cast<int>(_selectedJumpNodes.size());
+}
+
+void JumpNodeEditorDialogModel::showErrorDialogNoCancel(const SCP_string& message) {
+	if (_bypass_errors) {
+		return;
+	}
+	_bypass_errors = true;
+	_viewport->dialogProvider->showButtonDialog(DialogType::Error, "Error", message, {DialogButton::Ok});
+}
+
+bool JumpNodeEditorDialogModel::validateName(const SCP_string& name) {
 	if (name.empty()) {
 		showErrorDialogNoCancel("A jump node name cannot be empty.");
 		return false;
 	}
 
-	// Disallow leading '<'
-	if (!name.empty() && name[0] == '<') {
+	if (name[0] == '<') {
 		showErrorDialogNoCancel("Jump node names are not allowed to begin with '<'.");
 		return false;
 	}
 
-	// Wing name collision
 	for (auto& wing : Wings) {
 		if (!stricmp(wing.name, name.c_str())) {
 			showErrorDialogNoCancel("This jump node name is already being used by a wing.");
@@ -155,7 +151,6 @@ bool JumpNodeEditorDialogModel::validateData()
 		}
 	}
 
-	// Ship/start name collision
 	for (auto* ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
 		if (ptr->type == OBJ_SHIP || ptr->type == OBJ_START) {
 			if (!stricmp(name.c_str(), Ships[ptr->instance].ship_name)) {
@@ -165,7 +160,6 @@ bool JumpNodeEditorDialogModel::validateData()
 		}
 	}
 
-	// AI target priority group collision
 	for (auto& ai : Ai_tp_list) {
 		if (!stricmp(name.c_str(), ai.name)) {
 			showErrorDialogNoCancel("This jump node name is already being used by a target priority group.");
@@ -173,230 +167,294 @@ bool JumpNodeEditorDialogModel::validateData()
 		}
 	}
 
-	// Waypoint path collision
 	if (find_matching_waypoint_list(name.c_str()) != nullptr) {
 		showErrorDialogNoCancel("This jump node name is already being used by a waypoint path.");
 		return false;
 	}
 
-	// Another jump node with the same name (but not this one)
-	auto* jnp = jumpnode_get_by_objnum(getSelectedJumpNodeObjnum(_currentlySelectedNodeIndex));
+	auto* current_jnp = _selectedJumpNodes.empty() ? nullptr : jumpnode_get_by_objnum(_selectedJumpNodes.front());
 	auto* found = jumpnode_get_by_name(name.c_str());
-	if (found != nullptr && found != jnp) {
+	if (found != nullptr && found != current_jnp) {
 		showErrorDialogNoCancel("This jump node name is already being used by another jump node.");
-		return false;
-	}
-
-	if (!cf_exists_full(_modelFilename.c_str(), CF_TYPE_MODELS)) {
-		showErrorDialogNoCancel("This jump node model file does not exist.");
 		return false;
 	}
 
 	return true;
 }
 
-void JumpNodeEditorDialogModel::showErrorDialogNoCancel(const SCP_string& message)
-{
-	if (_bypass_errors) {
-		return;
+bool JumpNodeEditorDialogModel::setName(const SCP_string& v) {
+	if (hasMultipleSelection() || _selectedJumpNodes.empty()) {
+		return true;
 	}
 
-	_bypass_errors = true;
-	_viewport->dialogProvider->showButtonDialog(DialogType::Error, "Error", message, {DialogButton::Ok});
-}
+	_bypass_errors = false;
 
-int JumpNodeEditorDialogModel::getSelectedJumpNodeObjnum(int idx) const
-{
-	// Find the jump node and then mark it
-	for (const auto& node : Jump_nodes) {
-		if (!stricmp(node.GetName(), _nodes[idx].first.c_str())) {
-			return node.GetSCPObjectNumber();
-		}
+	SCP_string trimmed = v;
+	SCP_trim(trimmed);
+
+	if (!validateName(trimmed)) {
+		return false;
 	}
 
-	return -1;
-}
-
-void JumpNodeEditorDialogModel::onSelectedObjectChanged(int)
-{
-	initializeData();
-}
-
-void JumpNodeEditorDialogModel::onSelectedObjectMarkingChanged(int, bool)
-{
-	initializeData();
-}
-
-void JumpNodeEditorDialogModel::onMissionChanged()
-{
-	initializeData();
-}
-
-const SCP_vector<std::pair<SCP_string, int>>& JumpNodeEditorDialogModel::getJumpNodeList() const
-{
-	return _nodes;
-}
-
-void JumpNodeEditorDialogModel::selectJumpNodeByListIndex(int idx)
-{
-	if (_currentlySelectedNodeIndex == idx) {
-		// No change
-		return;
+	auto* jnp = jumpnode_get_by_objnum(_selectedJumpNodes.front());
+	if (!jnp) {
+		return false;
 	}
 
-	if (!SCP_vector_inbounds(_nodes, idx))
-		return;
+	char old_name[NAME_LENGTH];
+	std::strncpy(old_name, jnp->GetName(), NAME_LENGTH - 1);
+	old_name[NAME_LENGTH - 1] = '\0';
 
-	if (apply()) {
-		_editor->unmark_all();
+	jnp->SetName(trimmed.c_str());
 
-		int objnum = getSelectedJumpNodeObjnum(idx);
-
-		if (objnum < 0) {
-			_currentlySelectedNodeIndex = -1;
-			return;
-		}
-
-		_editor->markObject(objnum);
-		_currentlySelectedNodeIndex = idx;
+	if (strcmp(old_name, trimmed.c_str()) != 0) {
+		update_sexp_references(old_name, trimmed.c_str());
 	}
-}
 
-int JumpNodeEditorDialogModel::getCurrentJumpNodeIndex() const
-{
-	return _currentlySelectedNodeIndex;
-}
-bool JumpNodeEditorDialogModel::hasValidSelection() const
-{
-	return _currentlySelectedNodeIndex >= 0;
-}
-
-void JumpNodeEditorDialogModel::setName(const SCP_string& v)
-{
-	SCP_trim(_name);
-	
-	SCP_string current = _name;
-
-	_name = v;
-	if (apply()) {
-		set_modified();
-	} else {
-		_name = current; // restore the old name
-	}
-}
-
-const SCP_string& JumpNodeEditorDialogModel::getName() const
-{
-	return _name;
-}
-
-void JumpNodeEditorDialogModel::setDisplayName(const SCP_string& v)
-{
-	modify(_display, v);
-	apply(); // Apply changes immediately to update the display name
-}
-
-const SCP_string& JumpNodeEditorDialogModel::getDisplayName() const
-{
-	return _display;
-}
-
-void JumpNodeEditorDialogModel::setModelFilename(const SCP_string& v)
-{
-	SCP_string current = _modelFilename;
-
-	_modelFilename = v;
-	if (apply()) {
-		set_modified();
-	} else {
-		_modelFilename = current; // restore the old name
-	}
-}
-
-const SCP_string& JumpNodeEditorDialogModel::getModelFilename() const
-{
-	return _modelFilename;
-}
-
-void JumpNodeEditorDialogModel::setColorR(int v)
-{
-	CLAMP(v, 0, 255);
-	modify(_red, v);
-	apply(); // Apply changes immediately to update the model color
-}
-
-int JumpNodeEditorDialogModel::getColorR() const
-{
-	return _red;
-}
-
-void JumpNodeEditorDialogModel::setColorG(int v)
-{
-	CLAMP(v, 0, 255);
-	modify(_green, v);
-	apply(); // Apply changes immediately to update the model color
-}
-
-int JumpNodeEditorDialogModel::getColorG() const
-{
-	return _green;
-}
-
-void JumpNodeEditorDialogModel::setColorB(int v)
-{
-	CLAMP(v, 0, 255);
-	modify(_blue, v);
-	apply(); // Apply changes immediately to update the model color
-}
-
-int JumpNodeEditorDialogModel::getColorB() const
-{
-	return _blue;
-}
-
-void JumpNodeEditorDialogModel::setColorA(int v)
-{
-	CLAMP(v, 0, 255);
-	modify(_alpha, v);
-	apply(); // Apply changes immediately to update the model color
-}
-
-int JumpNodeEditorDialogModel::getColorA() const
-{
-	return _alpha;
-}
-
-void JumpNodeEditorDialogModel::setHidden(bool v)
-{
-	modify(_hidden, v);
-	apply(); // Apply changes immediately to update the visibility
-}
-
-bool JumpNodeEditorDialogModel::getHidden() const
-{
-	return _hidden;
-}
-
-SCP_string JumpNodeEditorDialogModel::getLayer() const
-{
-	if (_currentlySelectedNodeIndex < 0)
-		return "";
-	int objnum = getSelectedJumpNodeObjnum(_currentlySelectedNodeIndex);
-	if (objnum < 0)
-		return "";
-	return _viewport->getObjectLayerName(objnum);
-}
-
-void JumpNodeEditorDialogModel::setLayer(const SCP_string& v)
-{
-	if (_currentlySelectedNodeIndex < 0)
-		return;
-	int objnum = getSelectedJumpNodeObjnum(_currentlySelectedNodeIndex);
-	if (objnum < 0)
-		return;
-	_viewport->moveObjectToLayer(objnum, v);
+	_name = trimmed;
 	set_modified();
 	_editor->missionChanged();
+	return true;
+}
+
+const SCP_string& JumpNodeEditorDialogModel::getName() const { return _name; }
+
+bool JumpNodeEditorDialogModel::setDisplayName(const SCP_string& v) {
+	if (_selectedJumpNodes.empty() || v.empty()) {
+		return true;
+	}
+
+	SCP_string display = v;
+	lcl_fred_replace_stuff(display);
+	const bool useNodeName = lcase_equal(display, "<none>");
+
+	for (auto objnum : _selectedJumpNodes) {
+		auto* jnp = jumpnode_get_by_objnum(objnum);
+		if (!jnp) continue;
+		jnp->SetDisplayName(useNodeName ? jnp->GetName() : display.c_str());
+	}
+
+	_display = useNodeName ? "<none>" : display;
+	set_modified();
+	_editor->missionChanged();
+	return true;
+}
+
+const SCP_string& JumpNodeEditorDialogModel::getDisplayName() const { return _display; }
+
+bool JumpNodeEditorDialogModel::setModelFilename(const SCP_string& v) {
+	if (_selectedJumpNodes.empty() || v.empty()) {
+		return true;
+	}
+
+	_bypass_errors = false;
+
+	if (!lcase_equal(v, JN_DEFAULT_MODEL) && !cf_exists_full(v.c_str(), CF_TYPE_MODELS)) {
+		showErrorDialogNoCancel("This jump node model file does not exist.");
+		return false;
+	}
+
+	_modelFilename = v;
+	const bool useDefault = lcase_equal(_modelFilename, JN_DEFAULT_MODEL);
+
+	for (auto objnum : _selectedJumpNodes) {
+		auto* jnp = jumpnode_get_by_objnum(objnum);
+		if (!jnp) continue;
+		if (!useDefault) {
+			jnp->SetModel(_modelFilename.c_str());
+		}
+	}
+
+	set_modified();
+	_editor->missionChanged();
+	return true;
+}
+
+const SCP_string& JumpNodeEditorDialogModel::getModelFilename() const { return _modelFilename; }
+
+// Writes one color channel to every selected node. Channels still flagged as mixed
+// keep their per-node values; the channel being set is cleared of its mixed flag.
+static void applyChannelToAll(const SCP_vector<int>& selected,
+    int red, int green, int blue, int alpha,
+    bool redMixed, bool greenMixed, bool blueMixed, bool alphaMixed)
+{
+	for (auto objnum : selected) {
+		auto* jnp = jumpnode_get_by_objnum(objnum);
+		if (!jnp) continue;
+		const auto& c = jnp->GetColor();
+		int r = redMixed   ? c.red   : red;
+		int g = greenMixed ? c.green : green;
+		int b = blueMixed  ? c.blue  : blue;
+		int a = alphaMixed ? c.alpha : alpha;
+		jnp->SetAlphaColor(r, g, b, a);
+	}
+}
+
+void JumpNodeEditorDialogModel::setColorR(int v) {
+	if (v < 0) return; // mixed-state sentinel from the dialog — no-op
+	CLAMP(v, 0, 255);
+	_red = v;
+	_redMixed = false;
+	applyChannelToAll(_selectedJumpNodes, _red, _green, _blue, _alpha,
+	    _redMixed, _greenMixed, _blueMixed, _alphaMixed);
+	set_modified();
+	_editor->missionChanged();
+}
+
+int JumpNodeEditorDialogModel::getColorR() const { return _red; }
+
+void JumpNodeEditorDialogModel::setColorG(int v) {
+	if (v < 0) return;
+	CLAMP(v, 0, 255);
+	_green = v;
+	_greenMixed = false;
+	applyChannelToAll(_selectedJumpNodes, _red, _green, _blue, _alpha,
+	    _redMixed, _greenMixed, _blueMixed, _alphaMixed);
+	set_modified();
+	_editor->missionChanged();
+}
+
+int JumpNodeEditorDialogModel::getColorG() const { return _green; }
+
+void JumpNodeEditorDialogModel::setColorB(int v) {
+	if (v < 0) return;
+	CLAMP(v, 0, 255);
+	_blue = v;
+	_blueMixed = false;
+	applyChannelToAll(_selectedJumpNodes, _red, _green, _blue, _alpha,
+	    _redMixed, _greenMixed, _blueMixed, _alphaMixed);
+	set_modified();
+	_editor->missionChanged();
+}
+
+int JumpNodeEditorDialogModel::getColorB() const { return _blue; }
+
+void JumpNodeEditorDialogModel::setColorA(int v) {
+	if (v < 0) return;
+	CLAMP(v, 0, 255);
+	_alpha = v;
+	_alphaMixed = false;
+	applyChannelToAll(_selectedJumpNodes, _red, _green, _blue, _alpha,
+	    _redMixed, _greenMixed, _blueMixed, _alphaMixed);
+	set_modified();
+	_editor->missionChanged();
+}
+
+int JumpNodeEditorDialogModel::getColorA() const { return _alpha; }
+
+bool JumpNodeEditorDialogModel::isColorRMixed() const { return _redMixed; }
+bool JumpNodeEditorDialogModel::isColorGMixed() const { return _greenMixed; }
+bool JumpNodeEditorDialogModel::isColorBMixed() const { return _blueMixed; }
+bool JumpNodeEditorDialogModel::isColorAMixed() const { return _alphaMixed; }
+bool JumpNodeEditorDialogModel::hasAnyColorMixed() const {
+	return _redMixed || _greenMixed || _blueMixed || _alphaMixed;
+}
+
+void JumpNodeEditorDialogModel::setHidden(bool v) {
+	_hidden = v;
+	_hiddenMixed = false;
+	for (auto objnum : _selectedJumpNodes) {
+		auto* jnp = jumpnode_get_by_objnum(objnum);
+		if (jnp) {
+			jnp->SetVisibility(!v);
+		}
+	}
+	set_modified();
+	_editor->missionChanged();
+}
+
+bool JumpNodeEditorDialogModel::getHidden() const { return _hidden; }
+
+int JumpNodeEditorDialogModel::getHiddenState() const {
+	if (_hiddenMixed) return Qt::PartiallyChecked;
+	return _hidden ? Qt::Checked : Qt::Unchecked;
+}
+
+SCP_string JumpNodeEditorDialogModel::getLayer() const {
+	SCP_string result;
+	bool first = true;
+	for (auto objnum : _selectedJumpNodes) {
+		SCP_string layer = _viewport->getObjectLayerName(objnum);
+		if (first) {
+			result = layer;
+			first = false;
+		} else if (result != layer) {
+			return "";
+		}
+	}
+	return result;
+}
+
+void JumpNodeEditorDialogModel::setLayer(const SCP_string& v) {
+	for (auto objnum : _selectedJumpNodes) {
+		_viewport->moveObjectToLayer(objnum, v);
+	}
+	set_modified();
+	_editor->missionChanged();
+}
+
+void JumpNodeEditorDialogModel::selectNodeFromObjectList(object* start, bool forward) {
+	auto* ptr = start;
+	while (ptr != END_OF_LIST(&obj_used_list)) {
+		if (ptr->type == OBJ_JUMP_NODE) {
+			_editor->unmark_all();
+			_editor->markObject(OBJ_INDEX(ptr));
+			return;
+		}
+		ptr = forward ? GET_NEXT(ptr) : GET_PREV(ptr);
+	}
+	// Wrap around
+	ptr = forward ? GET_FIRST(&obj_used_list) : GET_LAST(&obj_used_list);
+	while (ptr != END_OF_LIST(&obj_used_list)) {
+		if (ptr->type == OBJ_JUMP_NODE) {
+			_editor->unmark_all();
+			_editor->markObject(OBJ_INDEX(ptr));
+			return;
+		}
+		ptr = forward ? GET_NEXT(ptr) : GET_PREV(ptr);
+	}
+}
+
+void JumpNodeEditorDialogModel::selectFirstNodeInMission() {
+	for (auto* ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
+		if (ptr->type == OBJ_JUMP_NODE) {
+			_editor->unmark_all();
+			_editor->markObject(OBJ_INDEX(ptr));
+			return;
+		}
+	}
+}
+
+void JumpNodeEditorDialogModel::selectNextNode() {
+	if (!hasValidSelection()) {
+		if (hasAnyNodesInMission()) {
+			selectFirstNodeInMission();
+		}
+		return;
+	}
+	selectNodeFromObjectList(GET_NEXT(&Objects[_selectedJumpNodes.front()]), true);
+}
+
+void JumpNodeEditorDialogModel::selectPreviousNode() {
+	if (!hasValidSelection()) {
+		if (hasAnyNodesInMission()) {
+			selectFirstNodeInMission();
+		}
+		return;
+	}
+	selectNodeFromObjectList(GET_PREV(&Objects[_selectedJumpNodes.front()]), false);
+}
+
+void JumpNodeEditorDialogModel::onSelectedObjectChanged(int) {
+	initializeData();
+}
+
+void JumpNodeEditorDialogModel::onSelectedObjectMarkingChanged(int, bool) {
+	initializeData();
+}
+
+void JumpNodeEditorDialogModel::onMissionChanged() {
+	initializeData();
 }
 
 } // namespace fso::fred::dialogs

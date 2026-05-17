@@ -13,7 +13,7 @@ MissionGoalsDialog::MissionGoalsDialog(QWidget* parent, EditorViewport* viewport
 {
 	ui->setupUi(this);
 
-	ui->goalEventTree->initializeEditor(viewport->editor, this);
+	ui->goalEventTree->initializeEditor(viewport->editor, this, viewport);
 	_model->setTreeControl(ui->goalEventTree);
 
 	ui->goalName->setMaxLength(NAME_LENGTH - 1);
@@ -22,6 +22,7 @@ MissionGoalsDialog::MissionGoalsDialog(QWidget* parent, EditorViewport* viewport
 	ui->helpTextBox->setVisible(viewport->Show_sexp_help_mission_goals);
 
 	connect(_model.get(), &MissionGoalsDialogModel::modelChanged, this, &MissionGoalsDialog::updateUi);
+	connect(ui->goalEventTree, &sexp_tree_view::modified, this, [this] { _model->setModified(); });
 
 	_model->initializeData();
 

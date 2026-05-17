@@ -38,7 +38,7 @@ class MissionCutscenesDialogModel: public AbstractDialogModel {
 
 	mission_cutscene& createNewCutscene();
 
-	bool query_modified();
+	void setModified() { set_modified(); }
 
 	void setCurrentCutsceneType(int type);
 	void setCurrentCutsceneFilename(const char* filename);
@@ -50,7 +50,6 @@ class MissionCutscenesDialogModel: public AbstractDialogModel {
 	int cur_cutscene = -1;
 	SCP_vector<int> m_sig;
 	SCP_vector<mission_cutscene> m_cutscenes;
-	bool modified = false;
 
 	int m_display_cutscene_types = 0;
 

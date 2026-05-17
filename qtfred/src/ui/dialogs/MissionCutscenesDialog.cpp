@@ -15,7 +15,7 @@ MissionCutscenesDialog::MissionCutscenesDialog(QWidget* parent, EditorViewport* 
 
 	populateCutsceneCombos();
 
-	ui->cutsceneEventTree->initializeEditor(viewport->editor, this);
+	ui->cutsceneEventTree->initializeEditor(viewport->editor, this, viewport);
 	_model->setTreeControl(ui->cutsceneEventTree);
 
 	ui->cutsceneFilename->setMaxLength(NAME_LENGTH - 1);
@@ -24,6 +24,7 @@ MissionCutscenesDialog::MissionCutscenesDialog(QWidget* parent, EditorViewport* 
 	ui->helpTextBox->setVisible(viewport->Show_sexp_help_mission_cutscenes);
 
 	connect(_model.get(), &MissionCutscenesDialogModel::modelChanged, this, &MissionCutscenesDialog::updateUi);
+	connect(ui->cutsceneEventTree, &sexp_tree_view::modified, this, [this] { _model->setModified(); });
 
 	_model->initializeData();
 

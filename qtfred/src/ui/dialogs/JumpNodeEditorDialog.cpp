@@ -18,6 +18,12 @@ JumpNodeEditorDialog::JumpNodeEditorDialog(FredView* parent, EditorViewport* vie
 	ui->displayNameLineEdit->setMaxLength(NAME_LENGTH - 1);
 	ui->modelFileLineEdit->setMaxLength(MAX_FILENAME_LEN - 1);
 
+	// -1 is the "mixed selection" sentinel... shown as blank via specialValueText.
+	for (auto* sb : {ui->redSpinBox, ui->greenSpinBox, ui->blueSpinBox, ui->alphaSpinBox}) {
+		sb->setMinimum(-1);
+		sb->setSpecialValueText(" ");
+	}
+
 	initializeUi();
 	updateUi();
 
@@ -36,21 +42,32 @@ void JumpNodeEditorDialog::initializeUi()
 {
 	util::SignalBlockers blockers(this);
 
-	updateJumpNodeListComboBox();
-	enableOrDisableControls();
-}
-
-void JumpNodeEditorDialog::updateJumpNodeListComboBox()
-{
-	ui->selectJumpNodeComboBox->clear();
-
-	for (auto& wp : _model->getJumpNodeList()) {
-		ui->selectJumpNodeComboBox->addItem(QString::fromStdString(wp.first), wp.second);
+	ui->layerCombo->clear();
+	for (const auto& name : _viewport->getLayerNames()) {
+		ui->layerCombo->addItem(QString::fromStdString(name), QString::fromStdString(name));
 	}
 
-	ui->selectJumpNodeComboBox->setEnabled(!_model->getJumpNodeList().empty());
+	const bool enabled = _model->hasValidSelection();
+	const bool hasAny = _model->hasAnyNodesInMission();
+	const bool multiSelect = _model->hasMultipleSelection();
 
-	ui->selectJumpNodeComboBox->setCurrentIndex(_model->getCurrentJumpNodeIndex());
+	ui->nameLineEdit->setEnabled(enabled && !multiSelect);
+	ui->displayNameLineEdit->setEnabled(enabled);
+	ui->modelFileLineEdit->setEnabled(enabled);
+	ui->redSpinBox->setEnabled(enabled);
+	ui->greenSpinBox->setEnabled(enabled);
+	ui->blueSpinBox->setEnabled(enabled);
+	ui->alphaSpinBox->setEnabled(enabled);
+	ui->hiddenByDefaultCheckBox->setEnabled(enabled);
+	ui->layerCombo->setEnabled(enabled);
+	ui->prevNodeButton->setEnabled(hasAny);
+	ui->nextNodeButton->setEnabled(hasAny);
+
+	if (multiSelect) {
+		setWindowTitle(QString("Edit %1 Jump Nodes").arg(_model->getSelectionCount()));
+	} else {
+		setWindowTitle("Jump Node Editor");
+	}
 }
 
 void JumpNodeEditorDialog::updateUi()
@@ -61,81 +78,102 @@ void JumpNodeEditorDialog::updateUi()
 	ui->displayNameLineEdit->setText(QString::fromStdString(_model->getDisplayName()));
 	ui->modelFileLineEdit->setText(QString::fromStdString(_model->getModelFilename()));
 
-	ui->redSpinBox->setValue(_model->getColorR());
-	ui->greenSpinBox->setValue(_model->getColorG());
-	ui->blueSpinBox->setValue(_model->getColorB());
-	ui->alphaSpinBox->setValue(_model->getColorA());
+	ui->redSpinBox->setValue(_model->isColorRMixed() ? -1 : _model->getColorR());
+	ui->greenSpinBox->setValue(_model->isColorGMixed() ? -1 : _model->getColorG());
+	ui->blueSpinBox->setValue(_model->isColorBMixed() ? -1 : _model->getColorB());
+	ui->alphaSpinBox->setValue(_model->isColorAMixed() ? -1 : _model->getColorA());
 
-	ui->hiddenByDefaultCheckBox->setChecked(_model->getHidden());
+	const int hiddenState = _model->getHiddenState();
+	ui->hiddenByDefaultCheckBox->setTristate(hiddenState == Qt::PartiallyChecked);
+	ui->hiddenByDefaultCheckBox->setCheckState(static_cast<Qt::CheckState>(hiddenState));
 
-	ui->layerCombo->clear();
-	for (const auto& name : _viewport->getLayerNames()) {
-		ui->layerCombo->addItem(QString::fromStdString(name), QString::fromStdString(name));
-	}
 	ui->layerCombo->setCurrentIndex(ui->layerCombo->findData(QString::fromStdString(_model->getLayer())));
+
+	updateColorSwatch();
 }
 
-void JumpNodeEditorDialog::enableOrDisableControls()
+void JumpNodeEditorDialog::updateColorSwatch()
 {
-	const bool enable = _model->hasValidSelection();
-
-	ui->nameLineEdit->setEnabled(enable);
-	ui->displayNameLineEdit->setEnabled(enable);
-	ui->modelFileLineEdit->setEnabled(enable);
-	ui->redSpinBox->setEnabled(enable);
-	ui->greenSpinBox->setEnabled(enable);
-	ui->blueSpinBox->setEnabled(enable);
-	ui->alphaSpinBox->setEnabled(enable);
-	ui->hiddenByDefaultCheckBox->setEnabled(enable);
-	ui->layerCombo->setEnabled(enable);
+	if (_model->hasAnyColorMixed()) {
+		// Mixed selection: render a neutral patterned swatch with a "?".
+		ui->colorSwatch->setText("?");
+		ui->colorSwatch->setAlignment(Qt::AlignCenter);
+		ui->colorSwatch->setStyleSheet("background: #888; color: white;"
+		                               "border: 1px solid #444; border-radius: 3px;");
+		return;
+	}
+	ui->colorSwatch->setText("");
+	ui->colorSwatch->setStyleSheet(QString("background: rgba(%1,%2,%3,%4);"
+	                                       "border: 1px solid #444; border-radius: 3px;")
+	        .arg(_model->getColorR())
+	        .arg(_model->getColorG())
+	        .arg(_model->getColorB())
+	        .arg(_model->getColorA()));
 }
 
-void JumpNodeEditorDialog::on_selectJumpNodeComboBox_currentIndexChanged(int index)
+void JumpNodeEditorDialog::on_prevNodeButton_clicked()
 {
-	auto itemId = ui->selectJumpNodeComboBox->itemData(index).value<int>();
-	_model->selectJumpNodeByListIndex(itemId);
+	_model->selectPreviousNode();
+}
+
+void JumpNodeEditorDialog::on_nextNodeButton_clicked()
+{
+	_model->selectNextNode();
 }
 
 void JumpNodeEditorDialog::on_nameLineEdit_editingFinished()
 {
-	_model->setName(ui->nameLineEdit->text().toUtf8().constData());
-	updateUi(); // Update immediately in case the name change is rejected
+	if (!_model->setName(ui->nameLineEdit->text().toUtf8().constData())) {
+		util::SignalBlockers blockers(this);
+		ui->nameLineEdit->setText(QString::fromStdString(_model->getName()));
+	}
 }
 
 void JumpNodeEditorDialog::on_displayNameLineEdit_editingFinished()
 {
-	_model->setDisplayName(ui->displayNameLineEdit->text().toUtf8().constData());
+	if (!_model->setDisplayName(ui->displayNameLineEdit->text().toUtf8().constData())) {
+		util::SignalBlockers blockers(this);
+		ui->displayNameLineEdit->setText(QString::fromStdString(_model->getDisplayName()));
+	}
 }
 
 void JumpNodeEditorDialog::on_modelFileLineEdit_editingFinished()
 {
-	_model->setModelFilename(ui->modelFileLineEdit->text().toUtf8().constData());
-	updateUi(); // Update immediately in case the name change is rejected
+	if (!_model->setModelFilename(ui->modelFileLineEdit->text().toUtf8().constData())) {
+		util::SignalBlockers blockers(this);
+		ui->modelFileLineEdit->setText(QString::fromStdString(_model->getModelFilename()));
+	}
 }
 
 void JumpNodeEditorDialog::on_redSpinBox_valueChanged(int value)
 {
 	_model->setColorR(value);
+	updateColorSwatch();
 }
 
 void JumpNodeEditorDialog::on_greenSpinBox_valueChanged(int value)
 {
 	_model->setColorG(value);
+	updateColorSwatch();
 }
 
 void JumpNodeEditorDialog::on_blueSpinBox_valueChanged(int value)
 {
 	_model->setColorB(value);
+	updateColorSwatch();
 }
 
 void JumpNodeEditorDialog::on_alphaSpinBox_valueChanged(int value)
 {
 	_model->setColorA(value);
+	updateColorSwatch();
 }
 
-void JumpNodeEditorDialog::on_hiddenByDefaultCheckBox_toggled(bool checked)
+void JumpNodeEditorDialog::on_hiddenByDefaultCheckBox_clicked()
 {
-	_model->setHidden(checked);
+	// clicked() is used (not toggled()) so a click on a tri-state PartiallyChecked
+	// box still routes here. Read the post-click state from the widget itself.
+	_model->setHidden(ui->hiddenByDefaultCheckBox->isChecked());
 }
 
 void JumpNodeEditorDialog::on_layerCombo_currentIndexChanged(int index)

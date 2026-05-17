@@ -5,11 +5,11 @@
 
 #include "globalincs/pstypes.h"
 #include "utils/unicode.h"
-
+#include "speech.h"
 
 static NSSpeechSynthesizer *synth = nil;
 static bool Speech_init = false;
-
+static int voice_default_rate = 200;
 
 bool speech_init()
 {
@@ -36,40 +36,20 @@ void speech_deinit()
 	Speech_init = false;
 }
 
-bool speech_play(const char *text)
+bool speech_play(const SCP_string& text)
 {
 	if ( !Speech_init ) {
 		return false;
 	}
 
-	if ( !text || !strlen(text) ) {
-		nprintf(("Speech", "Not playing speech because passed text is null.\n"));
-		return false;
-	}
-
-	SCP_string work_buffer;
-
-	bool saw_dollar = false;
-	for (auto ch : unicode::codepoint_range(text)) {
-		if (ch == UNICODE_CHAR('$')) {
-			// Skip $ escape sequences which appear in briefing text
-			saw_dollar = true;
-			continue;
-		} else if (saw_dollar) {
-			saw_dollar = false;
-			continue;
-		}
-
-		unicode::encode(ch, std::back_inserter(work_buffer));
-	}
-
-	if (work_buffer.empty()) {
+	if (text.empty()) {
+		nprintf(("Speech", "Not playing speech because passed text is empty.\n"));
 		return false;
 	}
 
 	[synth startSpeakingString:
 		[NSString stringWithUTF8String:
-			work_buffer.c_str()
+			text.c_str()
 		]
 	];
 
@@ -140,7 +120,32 @@ bool speech_set_voice(int voice)
 
 	[synth setVoice: [voices objectAtIndex:voice]];
 
+	// reset voice to defaults
+	[synth setObject:nil forProperty:NSSpeechResetProperty error:nil];
+
+	// get default rate for voice
+	NSNumber *voiceRate = [synth objectForProperty:NSSpeechRateProperty error:nil];
+	voice_default_rate = voiceRate ? [voiceRate intValue] : 200; // median normal rate as default
+
 	return true;
+}
+
+bool speech_set_rate(float rate_percent)
+{
+    if (!Speech_init) {
+        return false;
+    }
+
+	CAP(rate_percent, 25.0f, 300.f);
+
+	int rate = fl2i(voice_default_rate * (rate_percent / 100.0f));
+
+	[synth
+		setObject:[NSNumber numberWithInt:rate]
+		forProperty:NSSpeechRateProperty error:nil
+	];
+
+    return true;
 }
 
 bool speech_is_speaking()
@@ -152,17 +157,17 @@ bool speech_is_speaking()
 	return [synth isSpeaking];
 }
 
-SCP_vector<SCP_string> speech_enumerate_voices()
+SCP_vector<std::pair<int, SCP_string>> speech_enumerate_voices()
 {
 	NSArray *voices = [NSSpeechSynthesizer availableVoices];
 
-	SCP_vector<SCP_string> fsoVoices;
+	SCP_vector<std::pair<int, SCP_string>> fsoVoices;
 
+	int voiceID = 0;
 	for (NSString *voiceIdentifier in voices) {
 		NSDictionary *attributes = [NSSpeechSynthesizer attributesForVoice:voiceIdentifier];
 		NSString *name = [attributes objectForKey:NSVoiceName];
-
-		fsoVoices.push_back([name UTF8String]);
+		fsoVoices.emplace_back(std::make_pair(voiceID++, [name UTF8String]));
 	}
 
 	return fsoVoices;

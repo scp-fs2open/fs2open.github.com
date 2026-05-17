@@ -5,6 +5,7 @@
 
 #include <ui/util/menu.h>
 #include <ui/util/SignalBlockers.h>
+#include <ui/dialogs/VariableDialog.h>
 
 #include <QtWidgets/QMessageBox>
 #include <QtWidgets/QMenu>
@@ -883,7 +884,7 @@ void sexp_tree_view::update_help(QTreeWidgetItem* h) {
 // Stores the Editor and SexpTreeEditorInterface pointers. If no custom interface is provided,
 // creates a default SexpTreeEditorInterface. The interface controls tree behavior flags
 // (e.g. RootDeletable, RootEditable, LabeledRoot).
-void sexp_tree_view::initializeEditor(::fso::fred::Editor* edit, SexpTreeEditorInterface* editorInterface) {
+void sexp_tree_view::initializeEditor(::fso::fred::Editor* edit, SexpTreeEditorInterface* editorInterface, EditorViewport* viewport) {
 	if (editorInterface == nullptr) {
 		// If there is no special interface then we supply the default implementation
 		_owned_interface.reset(new SexpTreeEditorInterface());
@@ -892,6 +893,7 @@ void sexp_tree_view::initializeEditor(::fso::fred::Editor* edit, SexpTreeEditorI
 
 	_editor = edit;
 	_interface = editorInterface;
+	_viewport = viewport;
 }
 
 // Slot connected to customContextMenuRequested. Gets the QTreeWidgetItem at the click position,
@@ -938,11 +940,12 @@ std::unique_ptr<QMenu> sexp_tree_view::buildContextMenu(QTreeWidgetItem* h) {
 
 	update_help(h);
 
-	// get item_index
+	// get item_index — direct assignment like FRED2's update_item(), no signal cascade.
+	// setCurrentItem(h) is deferred until after menu state is computed (see below).
 	item_index = -1;
 	for (i = 0; i < static_cast<int>(tree_nodes.size()); i++) {
 		if (tree_nodes[i].handle == h) {
-			setCurrentItemIndex(i);
+			item_index = i;
 			break;
 		}
 	}
@@ -1000,16 +1003,27 @@ std::unique_ptr<QMenu> sexp_tree_view::buildContextMenu(QTreeWidgetItem* h) {
 
 	popup_menu->addSection("Variables");
 
-	popup_menu->addAction(tr("Add Variable"), this, []() {});
-	auto modify_variable_act = popup_menu->addAction(tr("Modify Variable"), this, []() {});
+	auto modify_variable_act = popup_menu->addAction(tr("Add/Modify Variable"), this, [this]() {
+		if (_viewport) {
+			auto* dlg = new dialogs::VariableDialog(this, _viewport, dialogs::VariableDialog::VariablesTab);
+			dlg->setAttribute(Qt::WA_DeleteOnClose);
+			dlg->show();
+		}
+	});
 
 	auto replace_variable_menu = popup_menu->addMenu(tr("Replace Variable"));
 	popup_menu->addSeparator();
 
 	popup_menu->addSection("Containers");
 
-	auto add_modify_container_act = popup_menu->addAction(tr("Add/Modify Container"), this, []() {});
-	add_modify_container_act->setEnabled(false);
+	auto add_modify_container_act = popup_menu->addAction(tr("Add/Modify Container"), this, [this]() {
+		if (_viewport) {
+			auto* dlg = new dialogs::VariableDialog(this, _viewport, dialogs::VariableDialog::ContainersTab);
+			dlg->setAttribute(Qt::WA_DeleteOnClose);
+			dlg->show();
+		}
+	});
+	add_modify_container_act->setEnabled(_viewport != nullptr);
 	auto replace_container_name_menu = popup_menu->addMenu(tr("Replace Container Name"));
 	auto replace_container_data_menu = popup_menu->addMenu(tr("Replace Container Data"));
 
@@ -1044,8 +1058,7 @@ std::unique_ptr<QMenu> sexp_tree_view::buildContextMenu(QTreeWidgetItem* h) {
 		}
 	}
 
-	// can't modify if no variables
-	modify_variable_act->setEnabled(state.can_modify_variable);
+	modify_variable_act->setEnabled(_viewport != nullptr);
 
 	// add popup menus for all the operator categories
 	QMenu* add_op_submenu[SEXP_TREE_MAX_OP_MENUS];
@@ -1119,6 +1132,18 @@ std::unique_ptr<QMenu> sexp_tree_view::buildContextMenu(QTreeWidgetItem* h) {
 					break;
 				}
 			}
+		}
+	}
+
+	// Now visually select the item and fire selection-change signals, matching FRED2's pattern
+	// of calling SelectItem(h) + update_item(h) AFTER building menu state (not before).
+	setCurrentItem(h);
+	// Re-sync item_index in case the selection signal changed it (mirrors FRED2's update_item after SelectItem)
+	item_index = -1;
+	for (i = 0; i < static_cast<int>(tree_nodes.size()); i++) {
+		if (tree_nodes[i].handle == h) {
+			item_index = i;
+			break;
 		}
 	}
 

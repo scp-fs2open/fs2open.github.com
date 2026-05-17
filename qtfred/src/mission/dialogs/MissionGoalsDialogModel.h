@@ -35,7 +35,7 @@ class MissionGoalsDialogModel: public AbstractDialogModel {
 
 	mission_goal& createNewGoal();
 
-	bool query_modified();
+	void setModified() { set_modified(); }
 
 	void setCurrentGoalMessage(const char* text);
 	void setCurrentGoalScore(int value);
@@ -52,7 +52,6 @@ class MissionGoalsDialogModel: public AbstractDialogModel {
 	int cur_goal = -1;
 	SCP_vector<int> m_sig;
 	SCP_vector<mission_goal> m_goals;
-	bool modified = false;
 
 	int m_display_goal_types = 0;
 

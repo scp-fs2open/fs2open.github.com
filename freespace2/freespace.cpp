@@ -6732,7 +6732,7 @@ void game_spew_pof_info_sub(int model_num, polymodel *pm, int sm, CFILE *out, in
 
 	// find the # of faces for this _individual_ object	
 	total = submodel_get_num_polys(model_num, sm);
-	if(strstr(pm->submodel[sm].name, "-destroyed")){
+	if (submodel_is_destroyed_form(pm->submodel[sm].name)) {
 		sub_total_destroyed = total;
 	}
 	

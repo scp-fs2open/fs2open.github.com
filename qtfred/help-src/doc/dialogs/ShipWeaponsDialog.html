@@ -9,23 +9,106 @@
 <nav class="breadcrumb"><a href="../index.html">QtFRED Help</a> &rsaquo; <a href="ShipEditorDialog.html">Ship Editor</a> &rsaquo; Ship Weapons</nav>
 <h1>Ship Weapons</h1>
 <p>Accessed via the <strong>Weapons</strong> button in the <a href="ShipEditorDialog.html">Ship Editor</a>.</p>
-<p>Assigns weapons to the ship's banks and turrets for this mission instance,
-overriding the ship class defaults.</p>
+<p>Assigns weapons, starting ammo, and per-turret AI class to the ship's banks and
+turrets for this mission instance, overriding the ship class defaults.</p>
+<p>All changes are buffered. Nothing is written to the mission until you click
+<strong>OK</strong>; <strong>Cancel</strong> and closing the dialog discard
+everything.</p>
 
-<h2>Mode</h2>
-<p>Select <strong>Primary</strong>, <strong>Secondary</strong>, or
-<strong>Turret</strong> to switch which set of banks is shown. The
-<strong>Tertiary</strong> option is not currently implemented.</p>
+<h2>Layout</h2>
+<p>Weapons are split across two tabs:</p>
+<ul>
+    <li><strong>Primary</strong> - primary weapon banks for the pilot and any
+        turret with a primary slot.</li>
+    <li><strong>Secondary</strong> - secondary banks for the pilot and any
+        turret with a secondary slot.</li>
+</ul>
+<p>The dialog opens on whichever tab has banks first; if a ship has only secondaries,
+the Secondary tab is shown.</p>
+<p>Each tab contains:</p>
+<ul>
+    <li>A <strong>Weapons</strong> list on the left showing weapons valid for this
+        bank type and ship size. Weapons that are not in the ship class's allowed
+        loadout are shown in gray with a tooltip explaining why; you can still assign
+        them in the editor.</li>
+    <li>A <strong>Banks</strong> tree on the right showing <em>Pilot</em> and each
+        turret as collapsible groups, with their bank slots and current ammo
+        underneath.</li>
+    <li>An <strong>AI</strong> selector beneath the tree for changing a turret's AI
+        class.</li>
+</ul>
 
 <h2>Assigning weapons</h2>
-<p>The right panel lists the banks or turrets for the selected mode. Select the bank
-or turret you want to change. Then select the desired weapon from the left panel and
-click <strong>Set Selected</strong> to assign it.</p>
-<p>Where a weapon uses ammo, the ammo count appears as a second column next to the
-weapon name. Click the value to edit the starting ammo for that bank directly.</p>
+<p>Several ways:</p>
+<ul>
+    <li><strong>Drag from the weapons list onto a bank slot.</strong> The slot is set
+        to the dropped weapon, and ammo capacity is recalculated.</li>
+    <li><strong>Drag from one bank slot to another.</strong> By default the weapon is
+        moved (the source slot becomes empty). Hold <kbd>Ctrl</kbd> while dropping to
+        copy instead.</li>
+    <li><strong>Select one or more bank slots, pick a weapon from the list, and
+        click Set Selected.</strong> The chosen weapon is assigned to every selected
+        slot at once. <strong>Set Selected</strong> is enabled only when slot rows
+        (not turret-group rows) are selected.</li>
+</ul>
+<p>Selection within the Banks tree is restricted to one row type at a time: clicking
+a turret-group row clears any selected slot rows, and vice versa. This keeps the
+AI controls and Set Selected controls clearly applicable to whatever is currently
+highlighted.</p>
 
-<h2>Turret AI class</h2>
-<p>When in Turret mode, a dropdown and button at the bottom allow the AI class of the
-selected turret to be changed independently of the ship's overall AI class.</p>
+<h2>Editing ammo</h2>
+<p>Where a weapon uses ammo, the slot's row has a second column showing
+<em>current/max</em>. Click the value to edit; a spinbox appears, clamped to the
+maximum capacity for that weapon and bank. The display refreshes as soon as the
+edit is committed.</p>
+
+<h2>View Table</h2>
+<p>With a weapon highlighted in the list, the <strong>View Table</strong> button
+opens a viewer for that weapon's <code>weapons.tbl</code> entry (including any
+modular <code>-wep.tbm</code> overrides). Useful for quickly checking damage,
+ammo capacity, or flags without leaving the dialog.</p>
+
+<h2>AI class</h2>
+<p>Each turret has its own AI class, independent of the ship's overall AI class.
+Select one or more <em>turret-group</em> rows (the parent rows, not the individual
+slots), pick an AI class from the combo, and click <strong>Change AI</strong>. The
+new value is applied to every selected turret on every marked ship.</p>
+<p>The combo reflects the selection:</p>
+<ul>
+    <li>All selected turrets share the same AI - the combo shows that value.</li>
+    <li>Selected turrets disagree (within one ship, or across ships in multi-edit)
+        - the combo is blank; pick a value and click Change AI to set them
+        all to that value.</li>
+</ul>
+<p>The <em>Pilot</em> row is shown for context but its AI is owned by the
+<a href="ShipEditorDialog.html">Ship Editor</a> and cannot be changed here. When
+only the Pilot row is selected the AI controls are disabled.</p>
+
+<h2>Editing multiple ships at once</h2>
+<p>If multiple ships of the same class are marked when the dialog is opened,
+edits apply to all of them. The dialog reconciles per-slot state from the marked
+ships at open time:</p>
+<ul>
+    <li>Slots where every marked ship has the same weapon and ammo are shown
+        normally.</li>
+    <li>Slots where ships disagree on the <em>weapon</em> show
+        <strong>CONFLICT</strong>. Leaving the slot as CONFLICT preserves each
+        ship's existing weapon on OK; assigning a weapon overwrites all of them.</li>
+    <li>Slots where ships agree on the weapon but disagree on <em>ammo</em> show
+        <em>--/max</em>. Leaving it preserves each ship's existing ammo; entering
+        a value applies that value to all marked ships.</li>
+    <li>Turret AI is reconciled similarly: matching AIs show in the combo, mixed
+        AIs show as <em>(Mixed AI)</em> in the turret label and leave the combo
+        blank.</li>
+</ul>
+<p>Multi-edit is only available when every marked ship belongs to the same ship
+class. The Ship Editor's <strong>Weapons</strong> button is disabled
+otherwise.</p>
+
+<h2>OK and Cancel</h2>
+<p><strong>OK</strong> commits every change (weapons, ammo, and AI) to every
+relevant ship and closes the dialog. <strong>Cancel</strong>, closing the dialog
+window, or pressing <kbd>Esc</kbd> discards every change; no mission data
+is touched. If unsaved changes exist when closing, you are prompted to keep them.</p>
 </body>
 </html>

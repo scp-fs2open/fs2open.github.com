@@ -1094,12 +1094,12 @@ void EditorViewport::drag_rotate_save_backup() {
 }
 
 int EditorViewport::create_object_on_grid(int x, int y, int waypoint_instance) {
-	return create_object_on_grid(x, y, waypoint_instance, false);
+	return create_object_on_grid(x, y, waypoint_instance, CreateKind::Ship);
 }
 
-int EditorViewport::create_object_on_grid(int x, int y, int waypoint_instance, bool create_prop) {
+int EditorViewport::create_object_on_grid(int x, int y, int waypoint_instance, CreateKind kind) {
 	float fallbackDist = 200.0f;
-	if (create_prop) {
+	if (kind == CreateKind::Prop) {
 		if (cur_prop_index >= 0 && cur_prop_index < prop_info_size()) {
 			prop_info* pip = &Prop_info[cur_prop_index];
 			if (pip->model_num >= 0) {
@@ -1112,16 +1112,14 @@ int EditorViewport::create_object_on_grid(int x, int y, int waypoint_instance, b
 				}
 			}
 		}
-	} else if (cur_model_index >= 0 && cur_model_index < (int)Ship_info.size() &&
-		cur_model_index != editor->Id_select_type_waypoint &&
-		cur_model_index != editor->Id_select_type_jump_node &&
+	} else if (kind == CreateKind::Ship && cur_model_index >= 0 && cur_model_index < (int)Ship_info.size() &&
 		Ship_info[cur_model_index].model_num >= 0) {
 		fallbackDist = model_get_radius(Ship_info[cur_model_index].model_num) * 1.5f;
 	}
 
 	vec3d pos = getCreatePosition(x, y, fallbackDist);
 	editor->unmark_all();
-	int obj = create_object(&pos, waypoint_instance, create_prop);
+	int obj = create_object(&pos, waypoint_instance, kind);
 	if (obj >= 0) {
 		editor->markObject(obj);
 
@@ -1134,10 +1132,10 @@ int EditorViewport::create_object_on_grid(int x, int y, int waypoint_instance, b
 
 	return obj;
 }
-int EditorViewport::create_object(vec3d* pos, int waypoint_instance, bool create_prop) {
+int EditorViewport::create_object(vec3d* pos, int waypoint_instance, CreateKind kind) {
 
 	int obj, n;
-	if (create_prop) {
+	if (kind == CreateKind::Prop) {
 		if (cur_prop_index < 0 || cur_prop_index >= prop_info_size()) {
 			return -1;
 		}
@@ -1146,17 +1144,26 @@ int EditorViewport::create_object(vec3d* pos, int waypoint_instance, bool create
 		if (obj == -1) {
 			return -1;
 		}
-	} else {
-
-		if (cur_model_index == editor->Id_select_type_waypoint) {
+	} else if (kind == CreateKind::Other) {
+		switch (cur_other_kind) {
+		case OtherKind::Waypoint:
 			obj = editor->create_waypoint(pos, waypoint_instance);
-		} else if (cur_model_index == editor->Id_select_type_jump_node) {
+			break;
+		case OtherKind::JumpNode: {
 			CJumpNode jnp(pos);
 			obj = jnp.GetSCPObjectNumber();
 			Jump_nodes.push_back(std::move(jnp));
-		} else if(Ship_info[cur_model_index].flags[Ship::Info_Flags::No_fred]){
+			break;
+		}
+		default:
 			obj = -1;
-		} else {  // creating a ship
+			break;
+		}
+	} else {  // CreateKind::Ship
+		if (cur_model_index < 0 || cur_model_index >= (int)Ship_info.size() ||
+			Ship_info[cur_model_index].flags[Ship::Info_Flags::No_fred]) {
+			obj = -1;
+		} else {
 			obj = editor->create_ship(nullptr, pos, cur_model_index);
 			if (obj == -1)
 				return -1;
@@ -1193,7 +1200,7 @@ int EditorViewport::createShipAtScreenPos(int x, int y, int modelIndex) {
 	}
 	int savedModelIndex = cur_model_index;
 	cur_model_index = modelIndex;
-	int obj = create_object_on_grid(x, y, -1, false);
+	int obj = create_object_on_grid(x, y, -1, CreateKind::Ship);
 	cur_model_index = savedModelIndex;
 	return obj;
 }
@@ -1205,29 +1212,30 @@ int EditorViewport::createPropAtScreenPos(int x, int y, int propIndex) {
 	}
 	int savedPropIndex = cur_prop_index;
 	cur_prop_index = propIndex;
-	int obj = create_object_on_grid(x, y, -1, true);
+	int obj = create_object_on_grid(x, y, -1, CreateKind::Prop);
 	cur_prop_index = savedPropIndex;
 	return obj;
 }
 
 int EditorViewport::createWaypointAtScreenPos(int x, int y, int waypoint_instance) {
-	int savedModelIndex = cur_model_index;
-	cur_model_index = editor->Id_select_type_waypoint;
-	int obj = create_object_on_grid(x, y, waypoint_instance, false);
-	cur_model_index = savedModelIndex;
+	OtherKind savedKind = cur_other_kind;
+	cur_other_kind = OtherKind::Waypoint;
+	int obj = create_object_on_grid(x, y, waypoint_instance, CreateKind::Other);
+	cur_other_kind = savedKind;
 	return obj;
 }
 
 int EditorViewport::createJumpNodeAtScreenPos(int x, int y) {
-	int savedModelIndex = cur_model_index;
-	cur_model_index = editor->Id_select_type_jump_node;
-	int obj = create_object_on_grid(x, y, -1, false);
-	cur_model_index = savedModelIndex;
+	OtherKind savedKind = cur_other_kind;
+	cur_other_kind = OtherKind::JumpNode;
+	int obj = create_object_on_grid(x, y, -1, CreateKind::Other);
+	cur_other_kind = savedKind;
 	return obj;
 }
 
 void EditorViewport::initialSetup() {
 	cur_model_index = get_default_player_ship_index();
+	cur_other_kind = OtherKind::Waypoint;
 	for (int i = 0; i < prop_info_size(); ++i) {
 		if (!Prop_info[i].flags[Prop::Info_Flags::No_fred]) {
 			cur_prop_index = i;

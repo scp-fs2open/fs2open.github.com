@@ -1,6 +1,3 @@
-//
-//
-
 #include "ShipFlagsDialogModel.h"
 
 #include <object/object.h>
@@ -13,81 +10,82 @@ static const Ship::Ship_Flags player_start_hidden_flags[] = {
 	Ship::Ship_Flags::Reinforcement,
 	Ship::Ship_Flags::Kill_before_mission,
 };
-int ShipFlagsDialogModel::tristate_set(int val, int cur_state)
+
+int ShipFlagsDialogModel::tristateSet(int val, int curState)
 {
-	// cur_state uses Qt::CheckState encoding (0=Unchecked, 1=PartiallyChecked, 2=Checked)
-	if (cur_state == Qt::PartiallyChecked)
+	// curState uses Qt::CheckState encoding (0=Unchecked, 1=PartiallyChecked, 2=Checked)
+	if (curState == Qt::PartiallyChecked)
 		return Qt::PartiallyChecked;
-	bool cur_bool = (cur_state == Qt::Checked);
+	bool cur_bool = (curState == Qt::Checked);
 	if (static_cast<bool>(val) != cur_bool)
 		return Qt::PartiallyChecked;
-	return cur_state;
+	return curState;
 }
-std::pair<SCP_string, int>* ShipFlagsDialogModel::getFlag(const SCP_string& flag_name)
-{
 
-	for (auto& flag : flags) {
-		if (!stricmp(flag_name.c_str(), flag.first.c_str())) {
+std::pair<SCP_string, int>* ShipFlagsDialogModel::getFlag(const SCP_string& flagName)
+{
+	for (auto& flag : _flags) {
+		if (!stricmp(flagName.c_str(), flag.first.c_str())) {
 			return &flag;
 		}
 	}
 	// Only assert if the name isn't a known flag at all; it may have been legitimately filtered out for ship starts
 	bool known = false;
 	for (size_t i = 0; i < Num_Parse_ship_flags && !known; ++i)
-		known = !stricmp(flag_name.c_str(), Parse_ship_flags[i].name);
+		known = !stricmp(flagName.c_str(), Parse_ship_flags[i].name);
 	for (size_t i = 0; i < Num_Parse_ship_ai_flags && !known; ++i)
-		known = !stricmp(flag_name.c_str(), Parse_ship_ai_flags[i].name);
+		known = !stricmp(flagName.c_str(), Parse_ship_ai_flags[i].name);
 	for (size_t i = 0; i < Num_Parse_ship_object_flags && !known; ++i)
-		known = !stricmp(flag_name.c_str(), Parse_ship_object_flags[i].name);
-	Assertion(known, "Illegal flag name \"%s\"", flag_name.c_str());
+		known = !stricmp(flagName.c_str(), Parse_ship_object_flags[i].name);
+	Assertion(known, "Illegal flag name \"%s\"", flagName.c_str());
 	return nullptr;
 }
 
-void ShipFlagsDialogModel::setFlag(const SCP_string& flag_name, int value)
+void ShipFlagsDialogModel::setFlag(const SCP_string& flagName, int state)
 {
-	for (auto& flag : flags) {
-		if (!stricmp(flag_name.c_str(), flag.first.c_str())) {
-			flag.second = value;
+	for (auto& flag : _flags) {
+		if (!stricmp(flagName.c_str(), flag.first.c_str())) {
+			flag.second = state;
 			set_modified();
 		}
 	}
 }
 
-void ShipFlagsDialogModel::setDestroyTime(int value)
+void ShipFlagsDialogModel::setDestroyTime(int destroyTime)
 {
-	modify(destroytime, value);
+	modify(_destroyTime, destroyTime);
 }
 
 int ShipFlagsDialogModel::getDestroyTime() const
 {
-	return destroytime;
+	return _destroyTime;
 }
 
-void ShipFlagsDialogModel::setEscortPriority(int value)
+void ShipFlagsDialogModel::setEscortPriority(int priority)
 {
-	modify(escortp, value);
+	modify(_escortPriority, priority);
 }
 
 int ShipFlagsDialogModel::getEscortPriority() const
 {
-	return escortp;
+	return _escortPriority;
 }
 
-void ShipFlagsDialogModel::setKamikazeDamage(int value)
+void ShipFlagsDialogModel::setKamikazeDamage(int damage)
 {
-	modify(kamikazed, value);
+	modify(_kamikazeDamage, damage);
 }
 
 int ShipFlagsDialogModel::getKamikazeDamage() const
 {
-	return kamikazed;
+	return _kamikazeDamage;
 }
 
-void ShipFlagsDialogModel::update_ship(const int shipnum)
+void ShipFlagsDialogModel::updateShip(int shipNum)
 {
-	ship* shipp = &Ships[shipnum];
+	ship* shipp = &Ships[shipNum];
 	object* objp = &Objects[shipp->objnum];
-	for (const auto& [name, checked] : flags) {
+	for (const auto& [name, checked] : _flags) {
 		// PartiallyChecked means mixed selection — leave each ship's flag as-is
 		if (checked == Qt::PartiallyChecked)
 			continue;
@@ -145,10 +143,11 @@ void ShipFlagsDialogModel::update_ship(const int shipnum)
 			}
 		}
 	}
-	Ai_info[shipp->ai_index].kamikaze_damage = kamikazed;
-	shipp->escort_priority = escortp;
-	shipp->final_death_time = destroytime;
+	Ai_info[shipp->ai_index].kamikaze_damage = _kamikazeDamage;
+	shipp->escort_priority = _escortPriority;
+	shipp->final_death_time = _destroyTime;
 }
+
 ShipFlagsDialogModel::ShipFlagsDialogModel(QObject* parent, EditorViewport* viewport)
 	: AbstractDialogModel(parent, viewport)
 {
@@ -163,7 +162,7 @@ bool ShipFlagsDialogModel::apply()
 	while (objp != END_OF_LIST(&obj_used_list)) {
 		if ((objp->type == OBJ_START) || (objp->type == OBJ_SHIP)) {
 			if (objp->flags[Object::Object_Flags::Marked]) {
-				update_ship(objp->instance);
+				updateShip(objp->instance);
 			}
 		}
 		objp = GET_NEXT(objp);
@@ -176,7 +175,7 @@ void ShipFlagsDialogModel::reject() {}
 
 const SCP_vector<std::pair<SCP_string, int>>& ShipFlagsDialogModel::getFlagsList()
 {
-	return flags;
+	return _flags;
 }
 
 SCP_vector<std::pair<SCP_string, SCP_string>> ShipFlagsDialogModel::getShipFlagDescriptions()
@@ -262,9 +261,9 @@ void ShipFlagsDialogModel::initializeData()
 			if (objp->flags[Object::Object_Flags::Marked]) {
 				shipp = &Ships[objp->instance];
 				if (first) {
-					kamikazed = Ai_info[shipp->ai_index].kamikaze_damage;
-					escortp = shipp->escort_priority;
-					destroytime = shipp->final_death_time;
+					_kamikazeDamage = Ai_info[shipp->ai_index].kamikaze_damage;
+					_escortPriority = shipp->escort_priority;
+					_destroyTime = shipp->final_death_time;
 					for (size_t i = 0; i < Num_Parse_ship_flags; i++) {
 						auto flagDef = Parse_ship_flags[i];
 
@@ -290,12 +289,12 @@ void ShipFlagsDialogModel::initializeData()
 							if (hidden) continue;
 						}
 						bool checked = shipp->flags[flagDef.def];
-						flags.emplace_back(flagDef.name, checked ? Qt::Checked : Qt::Unchecked);
+						_flags.emplace_back(flagDef.name, checked ? Qt::Checked : Qt::Unchecked);
 					}
 					for (size_t i = 0; i < Num_Parse_ship_ai_flags; i++) {
 						auto flagDef = Parse_ship_ai_flags[i];
 						bool checked = Ai_info[shipp->ai_index].ai_flags[flagDef.def];
-						flags.emplace_back(flagDef.name, checked ? Qt::Checked : Qt::Unchecked);
+						_flags.emplace_back(flagDef.name, checked ? Qt::Checked : Qt::Unchecked);
 					}
 					for (size_t i = 0; i < Num_Parse_ship_object_flags; i++) {
 						auto flagDef = Parse_ship_object_flags[i];
@@ -305,7 +304,7 @@ void ShipFlagsDialogModel::initializeData()
 						} else {
 							checked = objp->flags[flagDef.def];
 						}
-						flags.emplace_back(flagDef.name, checked ? Qt::Checked : Qt::Unchecked);
+						_flags.emplace_back(flagDef.name, checked ? Qt::Checked : Qt::Unchecked);
 					}
 					first = 0;
 				} else {
@@ -333,12 +332,12 @@ void ShipFlagsDialogModel::initializeData()
 							if (hidden) continue;
 						}
 						bool checked = shipp->flags[flagDef.def];
-						getFlag(flagDef.name)->second = tristate_set(checked, getFlag(flagDef.name)->second);
+						getFlag(flagDef.name)->second = tristateSet(checked, getFlag(flagDef.name)->second);
 					}
 					for (size_t i = 0; i < Num_Parse_ship_ai_flags; i++) {
 						auto flagDef = Parse_ship_ai_flags[i];
 						bool checked = Ai_info[shipp->ai_index].ai_flags[flagDef.def];
-						getFlag(flagDef.name)->second = tristate_set(checked, getFlag(flagDef.name)->second);
+						getFlag(flagDef.name)->second = tristateSet(checked, getFlag(flagDef.name)->second);
 					}
 					for (size_t i = 0; i < Num_Parse_ship_object_flags; i++) {
 						auto flagDef = Parse_ship_object_flags[i];
@@ -352,7 +351,7 @@ void ShipFlagsDialogModel::initializeData()
 						} else {
 							checked = objp->flags[flagDef.def];
 						}
-						getFlag(flagDef.name)->second = tristate_set(checked, getFlag(flagDef.name)->second);
+						getFlag(flagDef.name)->second = tristateSet(checked, getFlag(flagDef.name)->second);
 					}
 				}
 			}
@@ -360,7 +359,9 @@ void ShipFlagsDialogModel::initializeData()
 
 		objp = GET_NEXT(objp);
 	}
+	_modified = false;
 	modelChanged();
 	_modified = false;
 }
+
 } // namespace fso::fred::dialogs

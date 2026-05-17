@@ -16,7 +16,7 @@ ShipCustomWarpDialog::ShipCustomWarpDialog(QDialog* parent, EditorViewport* view
 	  _model(new ShipCustomWarpDialogModel(this, viewport, departure)), _viewport(viewport)
 {
 	ui->setupUi(this);
-	connect(_model.get(), &AbstractDialogModel::modelChanged, this, [this]() { updateUI(false); });
+	connect(_model.get(), &AbstractDialogModel::modelChanged, this, [this]() { updateUi(false); });
 
 	ui->lineEditStartSound->setMaxLength(MAX_FILENAME_LEN - 1);
 	ui->lineEditEndSound->setMaxLength(MAX_FILENAME_LEN - 1);
@@ -27,7 +27,7 @@ ShipCustomWarpDialog::ShipCustomWarpDialog(QDialog* parent, EditorViewport* view
 	} else {
 		this->setWindowTitle("Edit Warp-In Parameters");
 	}
-	updateUI(true);
+	updateUi(true);
 	// Resize the dialog to the minimum size
 	resize(QDialog::sizeHint());
 }
@@ -52,7 +52,7 @@ ShipCustomWarpDialog::ShipCustomWarpDialog(QDialog* parent,
 		_model.reset(new ShipCustomWarpDialogModel(this, viewport, departure));
 	}
 
-	connect(_model.get(), &AbstractDialogModel::modelChanged, this, [this]() { updateUI(false); });
+	connect(_model.get(), &AbstractDialogModel::modelChanged, this, [this]() { updateUi(false); });
 
 	ui->lineEditStartSound->setMaxLength(MAX_FILENAME_LEN - 1);
 	ui->lineEditEndSound->setMaxLength(MAX_FILENAME_LEN - 1);
@@ -63,7 +63,7 @@ ShipCustomWarpDialog::ShipCustomWarpDialog(QDialog* parent,
 	} else {
 		this->setWindowTitle("Edit Warp-In Parameters");
 	}
-	updateUI(true);
+	updateUi(true);
 	// Resize the dialog to the minimum size
 	resize(QDialog::sizeHint());
 }
@@ -146,7 +146,7 @@ void ShipCustomWarpDialog::closeEvent(QCloseEvent* e)
 	reject();
 	e->ignore(); // Don't let the base class close the window
 }
-void ShipCustomWarpDialog::updateUI(const bool firstrun)
+void ShipCustomWarpDialog::updateUi(const bool firstrun)
 {
 	util::SignalBlockers blockers(this);
 	if (firstrun) {

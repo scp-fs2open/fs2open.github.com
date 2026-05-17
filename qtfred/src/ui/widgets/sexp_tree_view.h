@@ -7,6 +7,7 @@
 #include "parse/parselo.h"
 
 #include "mission/Editor.h"
+#include "mission/EditorViewport.h"
 
 #include <QTreeView>
 #include <QTreeWidgetItem>
@@ -169,7 +170,7 @@ class sexp_tree_view: public QTreeWidget, public ISexpTreeUI {
 
 	//! Stores the Editor and SexpTreeEditorInterface pointers. If no interface is provided,
 	//! creates a default SexpTreeEditorInterface.
-	void initializeEditor(Editor* edit, SexpTreeEditorInterface* editorInterface = nullptr);
+	void initializeEditor(Editor* edit, SexpTreeEditorInterface* editorInterface = nullptr, EditorViewport* viewport = nullptr);
 
 	//! Public entry point for deleting the currently selected item. Calls deleteActionHandler().
 	void deleteCurrentItem();
@@ -256,6 +257,7 @@ class sexp_tree_view: public QTreeWidget, public ISexpTreeUI {
 	int& item_index = _model.item_index; //!< Alias for _model.item_index (currently selected node)
 
 	Editor* _editor = nullptr;                                   //!< The FRED Editor instance
+	EditorViewport* _viewport = nullptr;                         //!< The EditorViewport (set by initializeEditor)
 	SexpTreeEditorInterface*& _interface = _model._interface;    //!< Alias for _model._interface (flags for tree behavior)
 	std::unique_ptr<SexpTreeEditorInterface> _owned_interface;   //!< Default interface if none is supplied externally
 

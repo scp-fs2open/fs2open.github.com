@@ -21,7 +21,7 @@ ShipFlagsDialog::ShipFlagsDialog(QWidget* parent, EditorViewport* viewport)
 			for (const auto& [name, state] : snapshot) {
 				_model->setFlag(name.toUtf8().constData(), state);
 			}
-			updateUI();
+			updateUi();
 		});
 
 	const auto& flags = _model->getFlagsList();
@@ -33,16 +33,19 @@ ShipFlagsDialog::ShipFlagsDialog(QWidget* parent, EditorViewport* viewport)
 		toWidget.append({name, p.second});
 	}
 
-	ui->flagList->setFlags(toWidget);
+	{
+		QSignalBlocker blocker(ui->flagList);
+		ui->flagList->setFlags(toWidget);
 
-	const auto descs = _model->getShipFlagDescriptions();
-	QVector<std::pair<QString, QString>> qtDescs;
-	qtDescs.reserve(static_cast<int>(descs.size()));
-	for (const auto& d : descs)
-		qtDescs.append({QString::fromUtf8(d.first.c_str()), QString::fromUtf8(d.second.c_str())});
-	ui->flagList->setFlagDescriptions(qtDescs);
+		const auto descs = _model->getShipFlagDescriptions();
+		QVector<std::pair<QString, QString>> qtDescs;
+		qtDescs.reserve(static_cast<int>(descs.size()));
+		for (const auto& d : descs)
+			qtDescs.append({QString::fromUtf8(d.first.c_str()), QString::fromUtf8(d.second.c_str())});
+		ui->flagList->setFlagDescriptions(qtDescs);
+	}
 
-	updateUI();
+	updateUi();
 	// Resize the dialog to the minimum size
 	resize(QDialog::sizeHint());
 }
@@ -92,7 +95,7 @@ void ShipFlagsDialog::on_kamikazeDamageSpinBox_valueChanged(int value)
 {
 	_model->setKamikazeDamage(value);
 }
-void ShipFlagsDialog::updateUI()
+void ShipFlagsDialog::updateUi()
 {
 	util::SignalBlockers blockers(this);
 	ui->destroySecondsSpinBox->setValue(_model->getDestroyTime());

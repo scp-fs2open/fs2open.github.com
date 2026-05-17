@@ -84,7 +84,7 @@ void WingEditorDialog::updateUi()
 	ui->arrivalTargetCombo->setCurrentIndex(ui->arrivalTargetCombo->findData(_model->getArrivalTarget()));
 	ui->arrivalDistanceSpinBox->setValue(_model->getArrivalDistance());
 
-	ui->arrivalTree->initializeEditor(_viewport->editor, this);
+	ui->arrivalTree->initializeEditor(_viewport->editor, this, _viewport);
 	ui->arrivalTree->load_tree(_model->getArrivalTree());
 	if (ui->arrivalTree->select_sexp_node != -1) {
 		ui->arrivalTree->hilite_item(ui->arrivalTree->select_sexp_node);
@@ -96,7 +96,7 @@ void WingEditorDialog::updateUi()
 	ui->departureLocationCombo->setCurrentIndex(static_cast<int>(_model->getDepartureType()));
 	ui->departureDelaySpinBox->setValue(_model->getDepartureDelay());
 	ui->departureTargetCombo->setCurrentIndex(ui->departureTargetCombo->findData(_model->getDepartureTarget()));
-	ui->departureTree->initializeEditor(_viewport->editor, this);
+	ui->departureTree->initializeEditor(_viewport->editor, this, _viewport);
 	ui->departureTree->load_tree(_model->getDepartureTree());
 	if (ui->departureTree->select_sexp_node != -1) {
 		ui->departureTree->hilite_item(ui->departureTree->select_sexp_node);

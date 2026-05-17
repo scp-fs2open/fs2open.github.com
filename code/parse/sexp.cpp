@@ -2689,7 +2689,10 @@ int check_sexp_syntax(int node, int desired_return_type, int recursive, int *bad
 						}
 						break;
 				}
-				Assert(ship_node >= 0);
+				if (ship_node < 0) {
+					Warning(LOCATION, "Could not find ship node for operator %s!", Operators[op_index].text.c_str());
+					return SEXP_CHECK_INVALID_SHIP;
+				}
 
 				if (is_node_value_dynamic(ship_node)) {
 					const int dyn_val_check = check_dynamic_value_node_type(ship_node, true, false);
@@ -4034,7 +4037,10 @@ int check_sexp_syntax(int node, int desired_return_type, int recursive, int *bad
 				}
 
 				p_container = get_sexp_container(Sexp_nodes[node].text);
-				Assertion(p_container, "Attempt to use unknown container %s. Please report!", Sexp_nodes[node].text);
+				if (!p_container) {
+					Warning(LOCATION, "Attempt to use unknown container %s. Please report!", Sexp_nodes[node].text);
+					return SEXP_CHECK_TYPE_MISMATCH;
+				}
 
 				if ((desired_argument_type == OPF_LIST_CONTAINER_NAME && !p_container->is_list()) ||
 						(desired_argument_type == OPF_MAP_CONTAINER_NAME && !p_container->is_map())) {
@@ -4044,10 +4050,10 @@ int check_sexp_syntax(int node, int desired_return_type, int recursive, int *bad
 			}
 
 			case OPF_CONTAINER_VALUE:
-				Assertion(p_container,
-					"Attempt to check value arg for null container for SEXP operator %d at arg %d. Please report!",
-					op_const,
-					argnum);
+				if (!p_container) {
+					Warning(LOCATION, "Attempt to check value arg for null container for SEXP operator %s at arg %d. Please report!", Operators[op_index].text.c_str(), argnum);
+					return SEXP_CHECK_TYPE_MISMATCH;
+				}
 				z = check_container_value_data_type(op_const,
 					argnum,
 					p_container->type,
@@ -4063,9 +4069,10 @@ int check_sexp_syntax(int node, int desired_return_type, int recursive, int *bad
 				if (node_subtype == SEXP_ATOM_CONTAINER_NAME) {
 					// only list containers of strings or map containers with string keys are allowed
 					const auto *p_str_container = get_sexp_container(Sexp_nodes[node].text);
-					Assertion(p_str_container,
-						"Attempt to use unknown container %s. Please report!",
-						Sexp_nodes[node].text);
+					if (!p_str_container) {
+						Warning(LOCATION, "Attempt to use unknown container %s. Please report!", Sexp_nodes[node].text);
+						return SEXP_CHECK_TYPE_MISMATCH;
+					}
 
 					const auto &str_container = *p_str_container;
 					if (str_container.is_list() && none(str_container.type & ContainerType::STRING_DATA)) {
@@ -15754,6 +15761,9 @@ void set_subsys_strength_and_maybe_ancestors(ship *shipp, ship_subsys *ss, polym
 			ss->submodel_instance_1->blown_off = false;
 		if (ss->submodel_instance_2)
 			ss->submodel_instance_2->blown_off = false;
+
+		// special case for subsystems that don't correspond to a submodel
+		check_subsystem_submodel_link(shipp, ss, false);
 
 		// see if we are handling ancestors and if this subsystem has a submodel
 		int subobj = ss->system_info->subobj_num;

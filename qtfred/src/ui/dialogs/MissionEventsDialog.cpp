@@ -36,7 +36,7 @@ MissionEventsDialog::MissionEventsDialog(QWidget* parent, EditorViewport* viewpo
 	ui->editDirectiveText->setMaxLength(NAME_LENGTH - 1);
 	ui->editDirectiveKeypressText->setMaxLength(NAME_LENGTH - 1);
 
-	ui->eventTree->initializeEditor(viewport->editor, this);
+	ui->eventTree->initializeEditor(viewport->editor, this, viewport);
 	ui->eventTree->clear_tree();
 	ui->eventTree->_model.post_load();
 
