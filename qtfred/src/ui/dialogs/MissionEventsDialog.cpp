@@ -20,6 +20,30 @@
 
 namespace fso::fred::dialogs {
 
+// Compute the annotation key for a Qt tree item. For regular tree nodes this is
+// the tree_nodes[] index; for root labels (event name rows, which aren't stored
+// in tree_nodes) it's the encoded root key from SexpAnnotationModel. Returns -1
+// if the item maps to neither (e.g. a stray item with no FormulaDataRole).
+static int annotation_key_for_qt_item(sexp_tree_view* tree, QTreeWidgetItem* h)
+{
+	if (!h)
+		return -1;
+
+	int node = tree->get_node(h);
+	if (node >= 0)
+		return node;
+
+	if (!h->parent()) {
+		const QVariant v = h->data(0, sexp_tree_view::FormulaDataRole);
+		bool ok = false;
+		const int formula = v.toInt(&ok);
+		if (ok && formula >= 0)
+			return SexpAnnotationModel::rootKey(formula);
+	}
+
+	return -1;
+}
+
 MissionEventsDialog::MissionEventsDialog(QWidget* parent, EditorViewport* viewport) :
 	QDialog(parent),
 	SexpTreeEditorInterface({ TreeFlags::LabeledRoot, TreeFlags::RootDeletable, TreeFlags::RootEditable, TreeFlags::AnnotationsAllowed }),
@@ -121,12 +145,27 @@ MissionEventsDialog::MissionEventsDialog(QWidget* parent, EditorViewport* viewpo
 		});
 
 	connect(_model.get(), &MissionEventsDialogModel::annotationApplied, this,
-		[this](int node_index, const SCP_string& note, int r, int g, int b, bool has_color) {
-			if (node_index < 0 || node_index >= static_cast<int>(ui->eventTree->_model.tree_nodes.size()))
-				return;
-			auto* it = tree_item_handle(ui->eventTree->_model.tree_nodes[node_index]);
+		[this](int key, const SCP_string& note, int r, int g, int b, bool has_color) {
+			// Resolve the annotation key back to a Qt item: regular keys (>= 0) index
+			// directly into tree_nodes[]; root keys (<= -2) are decoded to a formula
+			// and matched against the top-level items via FormulaDataRole.
+			QTreeWidgetItem* it = nullptr;
+			if (SexpAnnotationModel::isRootKey(key)) {
+				const int formula = SexpAnnotationModel::formulaFromRootKey(key);
+				const int n = ui->eventTree->topLevelItemCount();
+				for (int i = 0; i < n; ++i) {
+					auto* candidate = ui->eventTree->topLevelItem(i);
+					if (candidate && candidate->data(0, sexp_tree_view::FormulaDataRole).toInt() == formula) {
+						it = candidate;
+						break;
+					}
+				}
+			} else if (key >= 0 && key < static_cast<int>(ui->eventTree->_model.tree_nodes.size())) {
+				it = tree_item_handle(ui->eventTree->_model.tree_nodes[key]);
+			}
 			if (!it)
 				return;
+
 			const QString q = QString::fromStdString(note);
 			it->setData(0, sexp_tree_view::NoteRole, q);
 			it->setToolTip(0, q);
@@ -165,18 +204,19 @@ void MissionEventsDialog::initEventWidgets() {
 	connect(ui->eventTree, &sexp_tree_view::selectedRootChanged, this, [this](int formula) { MissionEventsDialog::rootNodeSelectedByFormula(formula); });
 
 	connect(ui->eventTree, &sexp_tree_view::nodeAnnotationChanged, this, [this](void* h, const QString& note) {
-		// Translate QTreeWidgetItem* to node index
-		int node_index = ui->eventTree->get_node(static_cast<QTreeWidgetItem*>(h));
-		if (node_index >= 0) {
+		// Translate QTreeWidgetItem* to annotation key (tree_nodes[] index for regular
+		// nodes, or rootKey(formula) for root labels).
+		const int key = annotation_key_for_qt_item(ui->eventTree, static_cast<QTreeWidgetItem*>(h));
+		if (key != -1) {
 			SCP_string text = note.toUtf8().constData();
-			_model->setNodeAnnotation(node_index, text);
+			_model->setNodeAnnotation(key, text);
 		}
 	});
 
 	connect(ui->eventTree, &sexp_tree_view::nodeBgColorChanged, this, [this](void* h, const QColor& c) {
-		int node_index = ui->eventTree->get_node(static_cast<QTreeWidgetItem*>(h));
-		if (node_index >= 0) {
-			_model->setNodeBgColor(node_index, c.red(), c.green(), c.blue(), c.isValid());
+		const int key = annotation_key_for_qt_item(ui->eventTree, static_cast<QTreeWidgetItem*>(h));
+		if (key != -1) {
+			_model->setNodeBgColor(key, c.red(), c.green(), c.blue(), c.isValid());
 		}
 	});
 

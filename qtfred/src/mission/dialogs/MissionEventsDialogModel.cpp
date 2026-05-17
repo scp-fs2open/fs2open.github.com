@@ -168,8 +168,11 @@ void MissionEventsDialogModel::initializeEventAnnotations()
 	m_annotation_model.loadFromGlobal(m_tree_model.tree_nodes, m_events, m_sig);
 	m_tree_model.annotation_model = &m_annotation_model;
 
+	// Emit for any annotation that resolved to a usable key: regular tree-node
+	// indices (>= 0) and root-label keys (<= -2 via SexpAnnotationModel::isRootKey).
+	// Unresolved annotations have node_index == -1 and are skipped.
 	for (const auto& ea : m_annotation_model.annotations()) {
-		if (ea.node_index >= 0) {
+		if (ea.node_index >= 0 || SexpAnnotationModel::isRootKey(ea.node_index)) {
 			const bool hasColor = (ea.r != 255) || (ea.g != 255) || (ea.b != 255);
 			Q_EMIT annotationApplied(ea.node_index, ea.comment, ea.r, ea.g, ea.b, hasColor);
 		}
@@ -993,17 +996,21 @@ void MissionEventsDialogModel::setLogLastTrigger(bool log)
 	set_modified();
 }
 
-void MissionEventsDialogModel::setNodeAnnotation(int node_index, const SCP_string& note)
+// 'key' is an annotation key in the SexpAnnotationModel sense: a tree_nodes[]
+// index (>= 0) for a regular node, or a SexpAnnotationModel::rootKey() encoded
+// value (<= -2) for an annotation attached to a labeled root.
+void MissionEventsDialogModel::setNodeAnnotation(int key, const SCP_string& note)
 {
-	auto& ea = m_annotation_model.ensureByKey(node_index);
+	auto& ea = m_annotation_model.ensureByKey(key);
 	ea.comment = note;
-	Q_EMIT annotationApplied(node_index, note, ea.r, ea.g, ea.b, (ea.r != 255 || ea.g != 255 || ea.b != 255));
+	Q_EMIT annotationApplied(key, note, ea.r, ea.g, ea.b, (ea.r != 255 || ea.g != 255 || ea.b != 255));
 	set_modified();
 }
 
-void MissionEventsDialogModel::setNodeBgColor(int node_index, int r, int g, int b, bool has_color)
+// See setNodeAnnotation for the meaning of 'key'.
+void MissionEventsDialogModel::setNodeBgColor(int key, int r, int g, int b, bool has_color)
 {
-	auto& ea = m_annotation_model.ensureByKey(node_index);
+	auto& ea = m_annotation_model.ensureByKey(key);
 	if (has_color) {
 		ea.r = (ubyte)r;
 		ea.g = (ubyte)g;
@@ -1011,7 +1018,7 @@ void MissionEventsDialogModel::setNodeBgColor(int node_index, int r, int g, int 
 	} else {
 		ea.r = ea.g = ea.b = 255;
 	}
-	Q_EMIT annotationApplied(node_index, ea.comment, ea.r, ea.g, ea.b, has_color);
+	Q_EMIT annotationApplied(key, ea.comment, ea.r, ea.g, ea.b, has_color);
 	set_modified();
 }
 

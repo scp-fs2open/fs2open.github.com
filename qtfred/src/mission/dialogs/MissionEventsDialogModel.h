@@ -90,9 +90,11 @@ class MissionEventsDialogModel : public AbstractDialogModel {
 	bool getLogLastTrigger() const;
 	void setLogLastTrigger(bool log);
 
-	// Event Annotations (node_index is an index into SexpTreeModel::tree_nodes[])
-	void setNodeAnnotation(int node_index, const SCP_string& note);
-	void setNodeBgColor(int node_index, int r, int g, int b, bool has_color);
+	// Event Annotations. 'key' is an annotation key as used by SexpAnnotationModel:
+	// a tree_nodes[] index (>= 0) for a regular node, or rootKey(formula) (<= -2)
+	// for an annotation on a labeled root.
+	void setNodeAnnotation(int key, const SCP_string& note);
+	void setNodeBgColor(int key, int r, int g, int b, bool has_color);
 
 	// Message Management
 	void createMessage();
@@ -132,7 +134,7 @@ class MissionEventsDialogModel : public AbstractDialogModel {
 	void rootSelected(int formula);
 	void eventDeleteRequested();
 	void topLevelIndexRequested(int formula, int desired_index);
-	void annotationApplied(int node_index, const SCP_string& note, int r, int g, int b, bool has_color);
+	void annotationApplied(int key, const SCP_string& note, int r, int g, int b, bool has_color);
 
   private:
 
