@@ -61,7 +61,7 @@ namespace fred {
 
 
 QtGraphicsOperations::QtGraphicsOperations(Editor* editor) : _editor(editor) {
-	if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0) {
+	if ( !SDL_InitSubSystem(SDL_INIT_VIDEO) ) {
 		Error(LOCATION, "Couldn't init SDL video: %s", SDL_GetError());
 		return;
 	}

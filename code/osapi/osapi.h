@@ -27,7 +27,6 @@
 #include <functional>
 #include <memory>
 
-#include <SDL_events.h>
 
 // --------------------------------------------------------------------------------------------------
 // OSAPI DEFINES/VARS
@@ -211,7 +210,7 @@ namespace os
 
 		flagset<ViewPortFlags> flags;
 
-		uint32_t display;
+		SDL_DisplayID display;
 	};
 
 	/**
