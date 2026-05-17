@@ -920,19 +920,7 @@ int fireball_create(vec3d *pos, int fireball_type, int render_type, int parent_o
 		return -1;
 	}
 
-
-	if (!Unused_fireball_indices.empty()) {
-		n = Unused_fireball_indices.back();
-		Unused_fireball_indices.pop_back();
-	}
-	else {
-		n = static_cast<int>(Fireballs.size());
-		Fireballs.emplace_back();
-	}
-
-	fireball* new_fireball = &Fireballs[n];
-
-	// get an lod to use	
+	// get an lod to use
 	fb_lod = fireball_get_lod(pos, fd, size);
 
 	// change lod if low res is desired
@@ -947,8 +935,21 @@ int fireball_create(vec3d *pos, int fireball_type, int render_type, int parent_o
 	}
 	fl = &fd->lod[fb_lod];
 
-	new_fireball->lod = (char)fb_lod;
+	// don't create a fireball without usable graphics
+	if (fl->bitmap_id < 0 || fl->fps <= 0 || fl->num_frames <= 0) {
+		return -1;
+	}
 
+	if (!Unused_fireball_indices.empty()) {
+		n = Unused_fireball_indices.back();
+		Unused_fireball_indices.pop_back();
+	} else {
+		n = sz2i(Fireballs.size());
+		Fireballs.emplace_back();
+	}
+	auto new_fireball = &Fireballs[n];
+
+	new_fireball->lod = (char)fb_lod;
 	new_fireball->flags = extra_flags;
 	new_fireball->warp_open_sound_index = warp_open_sound;
 	new_fireball->warp_close_sound_index = warp_close_sound;
