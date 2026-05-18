@@ -5,7 +5,7 @@
 namespace particle {
 	PointVolume::PointVolume() : m_modular_curve_instance(m_modular_curves.create_instance()) { };
 
-	vec3d PointVolume::sampleRandomPoint(const matrix &orientation, decltype(ParticleEffect::modular_curves_definition)::input_type_t source, float particlesFraction) {
+	vec3d PointVolume::sampleRandomPoint(const matrix &orientation, decltype(ParticleEffect::modular_curves_definition)::input_type_t source, float particlesFraction, const EffectHost& /*host*/) {
 		auto curveSource = std::tuple_cat(source, std::make_tuple(particlesFraction));
 
 		return pointCompensateForOffsetAndRotOffset(ZERO_VECTOR, orientation,

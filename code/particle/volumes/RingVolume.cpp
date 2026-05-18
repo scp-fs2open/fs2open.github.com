@@ -6,7 +6,7 @@ namespace particle {
 	RingVolume::RingVolume() : m_radius(1.f), m_onEdge(false), m_modular_curve_instance(m_modular_curves.create_instance()) { };
 	RingVolume::RingVolume(float radius, bool onEdge) : m_radius(radius), m_onEdge(onEdge), m_modular_curve_instance(m_modular_curves.create_instance()) { };
 
-	vec3d RingVolume::sampleRandomPoint(const matrix &orientation, decltype(ParticleEffect::modular_curves_definition)::input_type_t source, float particlesFraction) {
+	vec3d RingVolume::sampleRandomPoint(const matrix &orientation, decltype(ParticleEffect::modular_curves_definition)::input_type_t source, float particlesFraction, const EffectHost& /*host*/) {
 		auto curveSource = std::tuple_cat(source, std::make_tuple(particlesFraction));
 		vec3d pos;
 		// get an unbiased random point in the sphere
