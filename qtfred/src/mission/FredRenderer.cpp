@@ -26,6 +26,7 @@
 #include <math/fvi.h>
 #include <graphics/light.h>
 #include <mod_table/mod_table.h>
+#include <cfile/cfile.h>
 
 #include "mission/object.h"
 #include "prop/prop.h"
@@ -930,7 +931,20 @@ void FredRenderer::render_volumetric_overlay() {
 		// as already attempted and bails out instead of re-loading.
 		freeVolumetricModel();
 		_volumetric_cached_pof = pof;
-		_volumetric_model_num = model_load(pof.c_str());
+		if (cf_exists_full(pof.c_str(), CF_TYPE_MODELS)) {
+			_volumetric_model_num = model_load(pof.c_str());
+		} else {
+			mprintf(("Volumetric nebula hull POF '%s' not found; skipping editor overlay.\n", pof.c_str()));
+			if (_viewport->dialogProvider != nullptr) {
+				SCP_string msg = "Volumetric nebula hull POF '";
+				msg += pof;
+				msg += "' was not found. The nebula will render without an editor overlay until a valid POF is set in the Volumetric Nebula dialog.";
+				_viewport->dialogProvider->showButtonDialog(DialogType::Warning,
+															"Volumetric Nebula POF Missing",
+															msg,
+															{ DialogButton::Ok });
+			}
+		}
 	}
 
 	if (_volumetric_model_num < 0) {
