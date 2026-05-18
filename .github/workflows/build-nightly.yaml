@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - 'nightly_*'
+  workflow_dispatch:
 
 env:
   QT_VERSION: 5.12.12
