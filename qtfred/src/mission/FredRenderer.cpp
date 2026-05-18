@@ -307,12 +307,24 @@ FredRenderer::FredRenderer(os::Viewport* targetView) : _targetView(targetView) {
 	init_fred_colors();
 }
 FredRenderer::~FredRenderer() {
+	freeVolumetricModel();
 }
 void FredRenderer::setViewport(EditorViewport* viewport) {
 	Assertion(_viewport == nullptr, "Resetting viewport is not supported");
 	Assertion(viewport != nullptr, "Invalid viewport specified!");
 
 	_viewport = viewport;
+
+	connect(_viewport->editor, &Editor::missionLoaded, this,
+		[this](const std::string&) { freeVolumetricModel(); });
+}
+
+void FredRenderer::freeVolumetricModel() {
+	if (_volumetric_model_num >= 0) {
+		model_unload(_volumetric_model_num);
+		_volumetric_model_num = -1;
+	}
+	_volumetric_cached_pof.clear();
 }
 
 void FredRenderer::render_grid(grid* gridp) {
@@ -899,6 +911,52 @@ void FredRenderer::render_one_model_htl(object* objp,
 	rendering_order.push_back(OBJ_INDEX(objp));
 }
 
+void FredRenderer::render_volumetric_overlay() {
+	if (!The_mission.volumetrics) {
+		return;
+	}
+
+	constexpr float alpha = 0.35f;
+
+	const volumetric_nebula& neb = *The_mission.volumetrics;
+	if (!neb.get_enabled() || neb.getHullPof().empty()) {
+		return;
+	}
+
+	const SCP_string& pof = neb.getHullPof();
+	if (pof != _volumetric_cached_pof) {
+		// Stamp the cache before model_load so a re-entrant paint (e.g. from
+		// an Error() dialog pumping events on a missing POF) sees the load
+		// as already attempted and bails out instead of re-loading.
+		freeVolumetricModel();
+		_volumetric_cached_pof = pof;
+		_volumetric_model_num = model_load(pof.c_str());
+	}
+
+	if (_volumetric_model_num < 0) {
+		return;
+	}
+
+	const auto& col = neb.getNebulaColor();
+	// Premultiply by alpha. MR_NO_TEXTURING + MR_ALL_XPARENT lands on
+	// ALPHA_BLEND_ADDITIVE (glBlendFunc(GL_ONE, GL_ONE)) which ignores
+	// src.alpha, so scaling RGB here is what actually controls intensity.
+	const int r = static_cast<int>(std::get<0>(col) * alpha * 255.0f);
+	const int g = static_cast<int>(std::get<1>(col) * alpha * 255.0f);
+	const int b = static_cast<int>(std::get<2>(col) * alpha * 255.0f);
+	const vec3d pos = neb.getPos();
+
+	enable_htl();
+
+	model_render_params fill;
+	fill.set_color(r, g, b);
+	fill.set_alpha(1.0f);
+	fill.set_flags(MR_NO_LIGHTING | MR_NO_TEXTURING | MR_NO_BATCH | MR_ALL_XPARENT);
+	model_render_immediate(&fill, _volumetric_model_num, &vmd_identity_matrix, &pos);
+
+	disable_htl();
+}
+
 void FredRenderer::render_models(int cur_object_index) {
 	gr_set_color_fast(&colour_white);
 
@@ -977,6 +1035,7 @@ void FredRenderer::render_frame(int cur_object_index,
 
 	gr_set_color(0, 0, 64);
 	render_models(cur_object_index);
+	render_volumetric_overlay();
 
 	if (view().Show_distances) {
 		display_distances();
