@@ -1322,13 +1322,11 @@ void HudGaugeTargetBox::renderTargetJumpNode(object *target_objp)
 	matrix		camera_orient = IDENTITY_MATRIX;
 	float			factor, dist;
 	int			hx = 0, hy = 0, w, h;
-	SCP_list<CJumpNode>::iterator jnp;
-	
-	for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
-		if(jnp->GetSCPObject() != target_objp)
+	for (auto &jnp : Jump_nodes) {
+		if(jnp.GetSCPObject() != target_objp)
 			continue;
-	
-		if ( jnp->IsHidden() ) {
+
+		if ( jnp.IsHidden() ) {
 			set_target_objnum( Player_ai, -1 );
 			return;
 		}
@@ -1357,7 +1355,7 @@ void HudGaugeTargetBox::renderTargetJumpNode(object *target_objp)
 				gr_stencil_set(GR_STENCIL_READ);
 			}
 
-			jnp->Render( &obj_pos );
+			jnp.Render( &obj_pos );
 
 			if ( Monitor_mask >= 0 ) {
 				gr_stencil_set(GR_STENCIL_NONE);
@@ -1370,7 +1368,7 @@ void HudGaugeTargetBox::renderTargetJumpNode(object *target_objp)
 		renderTargetIntegrity(1);
 		setGaugeColor();
 
-		renderString(position[0] + Name_offsets[0], position[1] + Name_offsets[1], EG_TBOX_NAME, jnp->GetDisplayName());
+		renderString(position[0] + Name_offsets[0], position[1] + Name_offsets[1], EG_TBOX_NAME, jnp.GetDisplayName());
 
 		dist = Player_ai->current_target_distance;
 		if ( Hud_unit_multiplier > 0.0f ) {	// use a different displayed distance scale

@@ -45,7 +45,6 @@ private:
 
 	int m_flags {0};
 	color m_display_color;			// Color node will be shown in (Default:0/255/0/255)
-	vec3d m_pos;
 	SCP_string m_fred_layer = "Default";	// FRED view layer assignment
 
 	CJumpNode(const CJumpNode&);
@@ -65,6 +64,7 @@ public:
 	const char *GetName() const;
 	const char *GetDisplayName() const;
 	int GetModelNumber() const;
+	float GetRadius() const;
 	int GetSCPObjectNumber() const;
 	int GetPolymodelInstanceNum() const;
 	const object *GetSCPObject() const;
@@ -94,10 +94,11 @@ public:
 };
 
 //-----Globals------
-extern SCP_list<CJumpNode> Jump_nodes;
+extern SCP_vector<CJumpNode> Jump_nodes;
 
 //-----Functions-----
 CJumpNode *jumpnode_get_by_name(const char *name);
+      int  jumpnode_lookup(const char *name);
 CJumpNode *jumpnode_get_by_objnum(int objnum);
 CJumpNode *jumpnode_get_by_objp(const object *objp);
 CJumpNode *jumpnode_get_which_in(const object *objp);
