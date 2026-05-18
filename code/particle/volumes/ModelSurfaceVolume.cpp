@@ -24,17 +24,23 @@ vec3d ModelSurfaceVolume::sampleRandomPoint(const matrix &orientation, decltype(
 					if (!pm->submodel[i].flags[Model::Submodel_flags::Is_lod, Model::Submodel_flags::Is_damaged, Model::Submodel_flags::Is_live_debris])
 						eligible_submodels.emplace_back(i);
 				}
-				submodel = eligible_submodels[::util::UniformUIntRange(0U, static_cast<unsigned int>(eligible_submodels.size()) - 1).next()];
+
+				if (!eligible_submodels.empty())
+					submodel = eligible_submodels[::util::UniformUIntRange(0U, static_cast<unsigned int>(eligible_submodels.size()) - 1).next()];
 			}
 
-			const bsp_info* submodel_data = &pm->submodel[submodel];
-			const auto& geometry_data = *submodel_data->buffer.model_list;
-			size_t target_vertex = ::util::UniformUIntRange(0U, static_cast<unsigned int>(geometry_data.n_verts) - 1).next();
-			
-			//This point is, despite its name, not in world space, but in model local space (NOT submodel local though!)
-			point = geometry_data.vert[target_vertex].world;
+			if (submodel >= 0) {
+				const bsp_info* submodel_data = &pm->submodel[submodel];
+				const auto* geometry_data = submodel_data->buffer.model_list;
+				Assertion(geometry_data != nullptr, "ModelSurfaceVolume particles were spawned on a model with no data available!");
 
-			point *= m_modelScale.next() * m_modular_curves.get_output(VolumeModularCurveOutput::SCALE_MULT, curveSource, &m_modular_curve_instance);
+				size_t target_vertex = ::util::UniformUIntRange(0U, static_cast<unsigned int>(geometry_data->n_verts) - 1).next();
+
+				//This point is, despite its name, not in world space, but in model local space (NOT submodel local though!)
+				point = geometry_data->vert[target_vertex].world;
+
+				point *= m_modelScale.next() * m_modular_curves.get_output(VolumeModularCurveOutput::SCALE_MULT, curveSource, &m_modular_curve_instance);
+			}
 		}
 	}
 

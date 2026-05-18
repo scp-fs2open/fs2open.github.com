@@ -578,7 +578,6 @@ public:
 	size_t stride;
 	size_t vertex_offset;
 	size_t vertex_num_offset;
-	size_t n_verts;
 
 	poly_list *model_list;
 

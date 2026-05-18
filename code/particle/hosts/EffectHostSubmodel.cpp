@@ -5,7 +5,7 @@
 #include "ship/ship.h"
 
 EffectHostSubmodel::EffectHostSubmodel(const object* objp, int submodel, vec3d offset, matrix orientationOverride, bool orientationOverrideRelative) :
-	EffectHost(orientationOverride, orientationOverrideRelative), m_offset(offset), m_objnum(OBJ_INDEX(objp)), m_objsig(objp->signature), m_submodel(submodel) {}
+	EffectHost(orientationOverride, orientationOverrideRelative), m_offset(offset), m_objnum(OBJ_INDEX(objp)), m_objsig(objp->signature), m_submodel(submodel), m_modelnum(object_get_model(&Objects[m_objnum])->id) {}
 
 std::pair<vec3d, matrix> EffectHostSubmodel::getPositionAndOrientation(bool relativeToParent, float interp, const std::optional<vec3d>& tabled_offset) const {
 	vec3d pos = m_offset;
@@ -69,5 +69,5 @@ float EffectHostSubmodel::getHostRadius() const {
 }
 
 bool EffectHostSubmodel::isValid() const {
-	return m_objnum >= 0 && m_submodel >= 0 && Objects[m_objnum].signature == m_objsig && object_get_model_num(&Objects[m_objnum]) >= 0 && object_get_model_instance_num(&Objects[m_objnum]) >= 0;
+	return m_objnum >= 0 && m_submodel >= 0 && Objects[m_objnum].signature == m_objsig && object_get_model_num(&Objects[m_objnum]) >= 0 && object_get_model_instance_num(&Objects[m_objnum]) >= 0 && object_get_model(&Objects[m_objnum])->id == m_modelnum;
 }
