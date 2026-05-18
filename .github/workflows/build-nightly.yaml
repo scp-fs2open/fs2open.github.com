@@ -38,7 +38,7 @@ jobs:
         env:
           CONFIGURATION: ${{ matrix.configuration }}
         run: |
-          LD_LIBRARY_PATH=$Qt5_DIR/lib:$LD_LIBRARY_PATH ninja -k 20 all
+        installRY_PATH=$Qt5_DIR/lib:$LD_LIBRARY_PATH ninja -k 20 all
       - name: Run Tests
         working-directory: ./build
         env:
@@ -48,6 +48,7 @@ jobs:
       - name: Generate AppImage
         working-directory: ./build
         env:
+          QTDIR: Qt5_DIR
           CONFIGURATION: ${{ matrix.configuration }}
         run: $GITHUB_WORKSPACE/ci/linux/generate_appimage.sh $GITHUB_WORKSPACE/build/install
       - name: Upload build result

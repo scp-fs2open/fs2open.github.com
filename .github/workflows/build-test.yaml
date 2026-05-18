@@ -48,6 +48,7 @@ jobs:
       - name: Generate AppImage
         working-directory: ./build
         env:
+          QTDIR: Qt5_DIR
           CONFIGURATION: ${{ matrix.configuration }}
         run: $GITHUB_WORKSPACE/ci/linux/generate_appimage.sh $GITHUB_WORKSPACE/build/install
       - name: Upload build result
