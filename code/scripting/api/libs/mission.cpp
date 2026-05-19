@@ -416,7 +416,7 @@ ADE_LIB_DERIV(l_Mission_Goals, "Goals", nullptr, "Goals (deprecated in favor of 
 ADE_INDEXER_DEPRECATED(l_Mission_Goals,
 	"number/string IndexOrName",
 	"Indexes mission goals list",
-	"mission_goal",
+	"mission_objective",
 	"Goal handle, or invalid goal handle if index was invalid",
 	gameversion::version(26, 0, 0),
 	"mn.Goals is deprecated in favor of mn.Objectives.")
@@ -456,7 +456,7 @@ ADE_FUNC_DEPRECATED(__len,
 //****SUBLIBRARY: Mission/Mission_Objectives
 ADE_LIB_DERIV(l_Mission_Objectives, "Mission_Objectives", "Objectives", "Mission objectives", l_Mission);
 
-ADE_INDEXER(l_Mission_Objectives, "number/string IndexOrName", "Indexes mission objectives list", "mission_goal", "Objective handle, or invalid objective handle if index was invalid")
+ADE_INDEXER(l_Mission_Objectives, "number/string IndexOrName", "Indexes mission objectives list", "mission_objective", "Objective handle, or invalid objective handle if index was invalid")
 {
 	const char* s;
 	if(!ade_get_args(L, "*s", &s))

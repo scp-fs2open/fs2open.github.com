@@ -193,7 +193,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "has-time-elapsed-msecs",			OP_HAS_TIME_ELAPSED_MSECS,				1,	1,			SEXP_BOOLEAN_OPERATOR,	},	// Goober5000
 	{ "is-true-for-duration",			OP_IS_TRUE_FOR_DURATION,				2,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},	// Goober5000
 
-	//Event/Goals Category
+	//Event/Objectives Category
 	{ "is-objective-true-delay",		OP_GOAL_TRUE_DELAY,				2,	2,			SEXP_BOOLEAN_OPERATOR,	},
 	{ "is-objective-false-delay",		OP_GOAL_FALSE_DELAY,				2,	2,			SEXP_BOOLEAN_OPERATOR,	},
 	{ "is-objective-incomplete",		OP_GOAL_INCOMPLETE,				1,	1,			SEXP_BOOLEAN_OPERATOR,	},
@@ -211,7 +211,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "is-previous-event-false",		OP_PREVIOUS_EVENT_FALSE,				2,	3,			SEXP_BOOLEAN_OPERATOR,	},
 	{ "is-previous-event-incomplete",	OP_PREVIOUS_EVENT_INCOMPLETE,			2,	3,			SEXP_BOOLEAN_OPERATOR,	},
 	{ "reset-event",					OP_RESET_EVENT,							1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
-	{ "reset-goal",						OP_RESET_GOAL,							1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
+	{ "reset-objective",				OP_RESET_GOAL,							1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 
 	//Objectives Category
 	{ "is-destroyed",					OP_IS_DESTROYED,						1,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},
@@ -4780,6 +4780,8 @@ int get_sexp()
 					strcpy_s(token, "is-previous-objective-false");
 				else if (!stricmp(token, "is-previous-goal-incomplete"))
 					strcpy_s(token, "is-previous-objective-incomplete");
+				else if (!stricmp(token, "reset-goal"))
+					strcpy_s(token, "reset-objective");
 
 				op = get_operator_index(token);
 				if (op >= 0) {
@@ -38519,21 +38521,21 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"this mission is played as a single mission, or is played as a campaign mission and skipped." },
 
 	{ OP_GOAL_TRUE_DELAY, "Mission Objective True (Boolean operator)\r\n"
-		"\tReturns true N seconds after the specified objective in the this mission is true (or succeeded).  It returns false otherwise.\r\n\r\n"
+		"\tReturns true N seconds after the specified objective in this mission is true (or succeeded).  It returns false otherwise.\r\n\r\n"
 		"\tThis operator works by checking the mission log.  Since objective status is evaluated after event status, a delay of 0 will cause an event to become true on the frame after the objective becomes true.\r\n\r\n"
-		"Returns a boolean value.  Takes 2 required arguments and 1 optional argument...\r\n"
+		"Returns a boolean value.  Takes 2 arguments...\r\n"
 		"\t1:\tName of the mission objective.\r\n"
 		"\t2:\tNumber of seconds to delay before returning true."},
 
 	{ OP_GOAL_FALSE_DELAY, "Mission Objective False (Boolean operator)\r\n"
-		"\tReturns true N seconds after the specified objective in the this mission is false (or failed).  It returns false otherwise.\r\n\r\n"
+		"\tReturns true N seconds after the specified objective in this mission is false (or failed).  It returns false otherwise.\r\n\r\n"
 		"\tThis operator works by checking the mission log.  Since objective status is evaluated after event status, a delay of 0 will cause an event to become true on the frame after the objective becomes false.\r\n\r\n"
-		"Returns a boolean value.  Takes 2 required arguments and 1 optional argument...\r\n"
+		"Returns a boolean value.  Takes 2 arguments...\r\n"
 		"\t1:\tName of the mission objective.\r\n"
 		"\t2:\tNumber of seconds to delay before returning true."},
 
 	{ OP_GOAL_INCOMPLETE, "Mission Objective Incomplete (Boolean operator)\r\n"
-		"\tReturns true if the specified objective in the this mission is incomplete.  This "
+		"\tReturns true if the specified objective in this mission is incomplete.  This "
 		"sexpression will only be useful in conjunction with another sexpression like "
 		"has-time-elapsed.  Used alone, it will return true upon mission startup.\r\n"
 		"Returns a boolean value.  Takes 1 argument...\r\n"
@@ -38588,10 +38590,10 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tAll:\tName of the event"
 	},
 
-	{ OP_RESET_GOAL, "Reset-Goal (Action operator)\r\n"
-		"Clears all information associated with a goal, resetting SEXP nodes and status flags so that it is as if the goal had never been evaluated.  "
+	{ OP_RESET_GOAL, "Reset-Objective (Action operator)\r\n"
+		"Clears all information associated with an objective, resetting SEXP nodes and status flags so that it is as if the objective had never been evaluated.  "
 		"Takes 1 or more arguments...\r\n"
-		"\tAll:\tName of the goal"
+		"\tAll:\tName of the objective"
 	},
 
 	{ OP_IS_DESTROYED_DELAY, "Is destroyed delay (Boolean operator)\r\n"
@@ -43016,7 +43018,7 @@ SCP_vector<op_menu_struct> op_menu =
 	{ "Change",         OP_CATEGORY_CHANGE      },
 	{ "Conditionals",   OP_CATEGORY_CONDITIONAL },
 	{ "Ai goals",       OP_CATEGORY_AI          },
-	{ "Event/Goals",    OP_CATEGORY_GOAL_EVENT  },
+	{ "Event/Objectives", OP_CATEGORY_GOAL_EVENT  },
 	{ "Training",       OP_CATEGORY_TRAINING    },
 };
 

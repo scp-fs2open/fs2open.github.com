@@ -7,8 +7,8 @@
 
 namespace scripting::api
 {
-//**********HANDLE: mission goal
-ADE_OBJ(l_Goal, int, "mission_goal", "Mission goal handle");
+//**********HANDLE: mission objective
+ADE_OBJ(l_Goal, int, "mission_objective", "Mission objective handle");
 
 ADE_VIRTVAR(Name, l_Goal, nullptr, "The name of the goal", "string", "The goal name")
 {

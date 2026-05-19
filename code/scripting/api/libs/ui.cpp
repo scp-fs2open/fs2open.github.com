@@ -1046,7 +1046,7 @@ ADE_LIB_DERIV(l_Briefing_Goals, "Objectives", nullptr, nullptr, l_UserInterface_
 ADE_INDEXER(l_Briefing_Goals,
 	"number Index",
 	"Array of goals",
-	"mission_goal",
+	"mission_objective",
 	"goal handle, or invalid handle if index is invalid")
 {
 	int idx;
