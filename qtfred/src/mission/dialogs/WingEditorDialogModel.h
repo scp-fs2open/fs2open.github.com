@@ -38,6 +38,7 @@ class WingEditorDialogModel : public AbstractDialogModel {
 
 	bool arrivalIsDockBay() const;
 	bool arrivalNeedsTarget() const;
+	bool arrivalNeedsDistance() const;
 	bool departureIsDockBay() const;
 	bool departureNeedsTarget() const;
 	int getMaxWaveThreshold() const;

@@ -1211,6 +1211,22 @@ ArrivalLocation ShipEditorDialogModel::getArrivalLocation() const
 	return static_cast<ArrivalLocation>(_arrivalLocation);
 }
 
+bool ShipEditorDialogModel::arrivalNeedsTarget() const
+{
+	return getArrivalLocation() != ArrivalLocation::AT_LOCATION;
+}
+
+bool ShipEditorDialogModel::arrivalNeedsDistance() const
+{
+	switch (getArrivalLocation()) {
+		case ArrivalLocation::AT_LOCATION:
+		case ArrivalLocation::FROM_DOCK_BAY:
+			return false;
+		default:
+			return true;
+	}
+}
+
 int ShipEditorDialogModel::computeArrivalMinDist() const
 {
 	// Validation only applies when arriving near a ship (not hyperspace or dock bay)
