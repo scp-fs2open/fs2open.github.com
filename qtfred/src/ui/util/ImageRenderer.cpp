@@ -1,6 +1,7 @@
 #include "ImageRenderer.h"
 
 #include <bmpman/bmpman.h> // bm_load, bm_get_info, bm_lock, bm_unlock
+#include <ddsutils/ddsutils.h>
 
 #include <QtGlobal>
 
@@ -12,12 +13,38 @@ static void setError(QString* outError, const QString& text)
 		*outError = text;
 }
 
+// bm_lock_dds keeps compressed data as-is when the renderer reports s3tc/BPTC
+// support, which would crash the regular 32-bpp QImage path. For the picker
+// preview, ask ddsutils to decompress the top mip directly.
+static bool decompressDdsToQImage(const char* bm_filename, QImage& outImage, QString* outError)
+{
+	int w = 0, h = 0;
+	SCP_vector<ubyte> pixels;
+	const int err = dds_decompress_top_mip_bgra(bm_filename, CF_TYPE_ANY, &w, &h, pixels);
+	if (err != DDS_ERROR_NONE) {
+		setError(outError, QStringLiteral("DDS decompress failed (%1).").arg(err));
+		return false;
+	}
+
+	QImage tmp(pixels.data(), w, h, w * 4, QImage::Format_ARGB32);
+	outImage = tmp.copy(); // detach before `pixels` goes out of scope
+	return !outImage.isNull();
+}
+
 bool loadHandleToQImage(int bmHandle, QImage& outImage, QString* outError)
 {
 	outImage = QImage(); // clear
 
 	if (bmHandle < 0) {
 		setError(outError, QStringLiteral("Invalid bitmap handle."));
+		return false;
+	}
+
+	if (bm_is_compressed(bmHandle)) {
+		const char* fname = bm_get_filename(bmHandle);
+		if (fname && *fname)
+			return decompressDdsToQImage(fname, outImage, outError);
+		setError(outError, QStringLiteral("Compressed DDS with no filename; cannot preview."));
 		return false;
 	}
 
@@ -35,8 +62,15 @@ bool loadHandleToQImage(int bmHandle, QImage& outImage, QString* outError)
 		return false;
 	}
 
-	// rowsize is stored in pixels; multiply by bytes-per-pixel for the Qt stride.
-	const int bytesPerLine = bmp->w * (bmp->bpp >> 3);
+	// bm_lock_dds also doesn't honor the requested bpp for uncompressed DDS
+	// (e.g. 24-bpp RGB files), which would have us read past the buffer.
+	if (bmp->bpp != 32) {
+		bm_unlock(bmHandle);
+		setError(outError, QStringLiteral("Unsupported bitmap bpp (%1) for QImage preview.").arg(bmp->bpp));
+		return false;
+	}
+
+	const int bytesPerLine = bmp->w * 4;
 	QImage tmp(reinterpret_cast<const uchar*>(bmp->data), bmp->w, bmp->h, bytesPerLine, QImage::Format_ARGB32);
 	outImage = tmp.copy(); // detach from bmpman memory before unlock
 	bm_unlock(bmHandle);
@@ -67,8 +101,9 @@ bool loadImageToQImage(const std::string& filename, QImage& outImage, QString* o
 
 	const bool ok = loadHandleToQImage(handle, outImage, outError);
 
-
-	// bm_unload(handle); TODO test unloading
+	// bm_unload is load_count aware, so if another
+	// part of qtfred is sharing the handle it stays alive for them.
+	bm_unload(handle);
 
 	return ok;
 }

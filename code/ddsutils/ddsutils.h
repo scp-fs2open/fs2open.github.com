@@ -285,6 +285,15 @@ int dds_read_header(const char *filename, CFILE *img_cfp = NULL, int *width = 0,
 //size of the data it stored in size
 int dds_read_bitmap(const char *filename, ubyte *data, ubyte *bpp = NULL, int cf_type = CF_TYPE_ANY);
 
+// Decompress just the top mip of a 2D FOURCC-compressed DDS (DXT1/3/5, BC7)
+// to 32-bpp BGRA, regardless of what the renderer's compression support is.
+// Intended for tool/preview code that needs raw pixels and doesn't care
+// about mipmaps or cubemap faces. On success, out_pixels is sized to
+// width*height*4 in BGRA byte order.
+int dds_decompress_top_mip_bgra(const char *filename, int cf_type,
+                                int *out_width, int *out_height,
+                                SCP_vector<ubyte> &out_pixels);
+
 // writes a DDS file using given data
 void dds_save_image(int width, int height, int bpp, int num_mipmaps, ubyte *data = NULL, int cubemap = 0, const char *filename = NULL);
 
