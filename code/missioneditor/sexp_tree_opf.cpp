@@ -203,9 +203,9 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_wing()
 {
 	sexp_list_item head;
 
-	for (int i=0; i<MAX_WINGS; i++){
-		if (Wings[i].wave_count){
-			head.add_data(Wings[i].name);
+	for (const auto& w : Wings) {
+		if (w.wave_count) {
+			head.add_data(w.name);
 		}
 	}
 
@@ -314,8 +314,8 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_arrival_location()
 {
 	sexp_list_item head;
 
-	for (int i=0; i<MAX_ARRIVAL_NAMES; i++)
-		head.add_data(Arrival_location_names[i]);
+	for (const auto& name : Arrival_location_names)
+		head.add_data(name);
 
 	return head.next;
 }
@@ -324,8 +324,8 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_departure_location()
 {
 	sexp_list_item head;
 
-	for (int i=0; i<MAX_DEPARTURE_NAMES; i++)
-		head.add_data(Departure_location_names[i]);
+	for (const auto& name : Departure_location_names)
+		head.add_data(name);
 
 	return head.next;
 }
@@ -813,8 +813,8 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_ship_type()
 {
 	sexp_list_item head;
 
-	for (size_t i = 0; i < Ship_types.size(); i++) {
-		head.add_data(Ship_types[i].name);
+	for (const auto& st : Ship_types) {
+		head.add_data(st.name);
 	}
 	if (Fighter_bomber_valid) {
 		head.add_data(Fighter_bomber_type_name);
@@ -1038,17 +1038,17 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_variable_names()
 {
 	sexp_list_item head;
 
-	for (int i=0; i<MAX_SEXP_VARIABLES; i++) {
-		if (Sexp_variables[i].type & SEXP_VARIABLE_SET) {
+	for (const auto& var : Sexp_variables) {
+		if (var.type & SEXP_VARIABLE_SET) {
 			int t = 0;
-			if (Sexp_variables[i].type & SEXP_VARIABLE_NUMBER) {
+			if (var.type & SEXP_VARIABLE_NUMBER) {
 				t = SEXPT_NUMBER;
-			} else if (Sexp_variables[i].type & SEXP_VARIABLE_STRING) {
+			} else if (var.type & SEXP_VARIABLE_STRING) {
 				t = SEXPT_STRING;
 			} else {
 				Assertion(false, "SEXP variable must be a string or a number!");
 			}
-			head.add_data(Sexp_variables[i].variable_name, (t | SEXPT_VALID | SEXPT_VARIABLE));
+			head.add_data(var.variable_name, (t | SEXPT_VALID | SEXPT_VARIABLE));
 		}
 	}
 
@@ -1125,8 +1125,8 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_turret_target_order()
 {
 	sexp_list_item head;
 
-	for (int i=0; i<NUM_TURRET_ORDER_TYPES; i++)
-		head.add_data(Turret_target_order_names[i]);
+	for (const auto& order_name : Turret_target_order_names)
+		head.add_data(order_name);
 
 	return head.next;
 }
