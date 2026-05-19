@@ -1162,6 +1162,8 @@ add_file_folder("Particle\\\\Volumes"
 	particle/volumes/ConeVolume.h
 	particle/volumes/LegacyAACuboidVolume.cpp
 	particle/volumes/LegacyAACuboidVolume.h
+	particle/volumes/ModelSurfaceVolume.cpp
+	particle/volumes/ModelSurfaceVolume.h
 	particle/volumes/PointVolume.cpp
 	particle/volumes/PointVolume.h
 	particle/volumes/RingVolume.cpp

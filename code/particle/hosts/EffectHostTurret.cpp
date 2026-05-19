@@ -74,6 +74,10 @@ std::pair<int, int> EffectHostTurret::getParentObjAndSig() const {
 	return { m_objnum, m_objsig };
 }
 
+int EffectHostTurret::getParentSubmodel() const {
+	return m_submodel;
+}
+
 float EffectHostTurret::getHostRadius() const {
 	return Objects[m_objnum].radius;
 }

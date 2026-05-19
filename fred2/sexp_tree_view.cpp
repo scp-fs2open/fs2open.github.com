@@ -1810,32 +1810,48 @@ void sexp_tree_view::OnKeyDown(NMHDR *pNMHDR, LRESULT *pResult)
 			// before processing the key press.  Ideally they should be
 			// updated when the selection changes, but there are some
 			// hidden side-effects to making it selection-dependent
-			// that are difficult to track down.			
+			// that are difficult to track down.
+			//
+			// Each clipboard action is gated by compute_context_menu_state() so
+			// the hotkey never invokes an operation that is invalid for the
+			// current selection (which used to assert/crash — see issue 4405).
 			if (key == 'X')
 			{
 				update_item(GetSelectedItem());
-				NodeCut();
+				if (item_index >= 0) {
+					auto state = _model.compute_context_menu_state();
+					if (!state.is_labeled_root && state.can_cut)
+						NodeCut();
+				}
 			}
 			else if (key == 'C')
 			{
 				update_item(GetSelectedItem());
-				NodeCopy();
+				if (item_index >= 0) {
+					auto state = _model.compute_context_menu_state();
+					if (!state.is_labeled_root && state.can_copy)
+						NodeCopy();
+				}
 			}
 			else if (key == 'V')
 			{
-				if (GetKeyState(VK_SHIFT) & 0x8000) 
-				{
-					update_item(GetSelectedItem());
-					NodeReplacePaste();
-				}
-				else 
-				{
-					update_item(GetSelectedItem());
-					auto orig_handle = item_handle;
-					NodeAddPaste();
-					// when using the keyboard shortcut, stay on the original node after pasting
-					SelectItem(orig_handle);
-					update_item(orig_handle);
+				update_item(GetSelectedItem());
+				if (item_index >= 0) {
+					auto state = _model.compute_context_menu_state();
+					if (!state.is_labeled_root) {
+						if (GetKeyState(VK_SHIFT) & 0x8000) {
+							if (state.can_paste)
+								NodeReplacePaste();
+						} else {
+							if (state.can_paste_add) {
+								auto orig_handle = item_handle;
+								NodeAddPaste();
+								// when using the keyboard shortcut, stay on the original node after pasting
+								SelectItem(orig_handle);
+								update_item(orig_handle);
+							}
+						}
+					}
 				}
 			}
 		}

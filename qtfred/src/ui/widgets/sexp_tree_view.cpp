@@ -14,6 +14,7 @@
 #include <QtWidgets/QStyledItemDelegate>
 #include <QtWidgets/QStyleOptionViewItem>
 #include <QKeyEvent>
+#include <QShortcut>
 #include <QVBoxLayout>
 #include <QAbstractItemView>
 #include <QScrollBar>
@@ -192,7 +193,30 @@ sexp_tree_view::sexp_tree_view(QWidget* parent) : QTreeWidget(parent), _actions(
 	connect(this, &QTreeWidget::itemDoubleClicked, this, [this](QTreeWidgetItem* item, int /*column*/) {openNodeEditor(item);});
 
 	setItemDelegateForColumn(0, new NoteBadgeDelegate(this));
+
+	// Persistent keyboard shortcuts for Cut/Copy/Paste/Add-Paste/Delete on tree nodes.
+	// Each gate-checks compute_context_menu_state() so we never invoke an action that
+	// is invalid for the current selection (which would otherwise hit an Assertion or
+	// produce a malformed sexp — see issue 4405).
+	installShortcut(QKeySequence::Cut,
+		[](const SexpContextMenuState& s) { return s.can_cut; },
+		[this]() { cutActionHandler(); });
+	installShortcut(QKeySequence::Copy,
+		[](const SexpContextMenuState& s) { return s.can_copy; },
+		[this]() { copyActionHandler(); });
+	// Mapping matches FRED2 (fred.rc): Ctrl+V = add as child, Ctrl+Shift+V = overwrite.
+	// The destructive replace is on the modified combo so it can't be triggered accidentally.
+	installShortcut(QKeySequence::Paste,
+		[](const SexpContextMenuState& s) { return s.can_paste_add; },
+		[this]() { addPasteActionHandler(); });
+	installShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_V),
+		[](const SexpContextMenuState& s) { return s.can_paste; },
+		[this]() { pasteActionHandler(); });
+	installShortcut(QKeySequence::Delete,
+		[](const SexpContextMenuState& s) { return s.can_delete; },
+		[this]() { deleteActionHandler(); });
 }
+
 
 sexp_tree_view::~sexp_tree_view() = default;
 
@@ -970,7 +994,8 @@ std::unique_ptr<QMenu> sexp_tree_view::buildContextMenu(QTreeWidgetItem* h) {
 	auto cut_act = popup_menu->addAction(tr("Cut"), this, [this]() { cutActionHandler(); }, QKeySequence::Cut);
 	cut_act->setEnabled(false);
 	auto copy_act = popup_menu->addAction(tr("Copy"), this, [this]() { copyActionHandler(); }, QKeySequence::Copy);
-	auto paste_act = popup_menu->addAction(tr("Paste"), this, [this]() { pasteActionHandler(); }, QKeySequence::Paste); //TODO match paste/add paste
+	auto paste_act = popup_menu->addAction(tr("Paste (Overwrite)"), this, [this]() { pasteActionHandler(); },
+		QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_V));
 	paste_act->setEnabled(false);
 
 	popup_menu->addSection(tr("Add"));
@@ -984,7 +1009,8 @@ std::unique_ptr<QMenu> sexp_tree_view::buildContextMenu(QTreeWidgetItem* h) {
 	add_data_menu->addSeparator();
 
 	popup_menu->addSeparator();
-	auto add_paste_act = popup_menu->addAction(tr("Add Paste"), this, [this]() { addPasteActionHandler(); });
+	auto add_paste_act = popup_menu->addAction(tr("Paste (Add Child)"), this, [this]() { addPasteActionHandler(); },
+		QKeySequence::Paste);
 	add_paste_act->setEnabled(false);
 	popup_menu->addSeparator();
 
@@ -1151,6 +1177,7 @@ std::unique_ptr<QMenu> sexp_tree_view::buildContextMenu(QTreeWidgetItem* h) {
 	// special case: item is a ROOT node, and a label that can be edited (not an item in the sexp tree)
 	if (state.is_labeled_root) {
 		edit_data_act->setEnabled(state.is_root_editable);
+		delete_act->setEnabled(state.can_delete);
 		copy_act->setEnabled(false);
 		insert_op_menu->setEnabled(false);
 

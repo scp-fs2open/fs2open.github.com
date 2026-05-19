@@ -1322,6 +1322,7 @@ bool SexpTreeModel::ctx_handle_labeled_root(SexpContextMenuState& state) const
 	state.is_root_editable = _interface && _interface->getFlags()[TreeFlags::RootEditable];
 	state.can_edit_text = state.is_root_editable;
 	state.can_copy = false;
+	state.can_delete = _interface->getFlags()[TreeFlags::RootDeletable];
 
 	int num_ops = static_cast<int>(Operators.size());
 	state.op_add_enabled.assign(num_ops, false);

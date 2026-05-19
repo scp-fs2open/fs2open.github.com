@@ -29,6 +29,8 @@ extern color Wireframe_color;
 
 extern int Lab_object_detail_level;
 
+extern bool Model_load_clear_CPU_buffers;
+
 typedef enum {
 	TECH_SHIP,
 	TECH_WEAPON,

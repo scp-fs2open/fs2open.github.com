@@ -6,7 +6,7 @@ namespace particle {
 	SpheroidVolume::SpheroidVolume() : m_bias(1.f), m_stretch(1.f), m_radius(1.f), m_modular_curve_instance(m_modular_curves.create_instance()) { };
 	SpheroidVolume::SpheroidVolume(float bias, float stretch, float radius) : m_bias(bias), m_stretch(stretch), m_radius(radius), m_modular_curve_instance(m_modular_curves.create_instance()) { };
 
-	vec3d SpheroidVolume::sampleRandomPoint(const matrix &orientation, decltype(ParticleEffect::modular_curves_definition)::input_type_t source, float particlesFraction) {
+	vec3d SpheroidVolume::sampleRandomPoint(const matrix &orientation, decltype(ParticleEffect::modular_curves_definition)::input_type_t source, float particlesFraction, const EffectHost& /*host*/) {
 		auto curveSource = std::tuple_cat(source, std::make_tuple(particlesFraction));
 		vec3d pos;
 		// get an unbiased random point in the sphere

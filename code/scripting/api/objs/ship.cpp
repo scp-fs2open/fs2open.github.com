@@ -1162,6 +1162,24 @@ ADE_VIRTVAR(Orders, l_Ship, "shiporders", "Array of ship orders", "shiporders", 
 	return ade_set_args(L, "o", l_ShipOrders.Set(object_h(objh->objp())));
 }
 
+ADE_VIRTVAR(MaxGuardRadius, l_Ship, "number", "Sets the max range in meters at which any ships guarding this ship will engage with threats. If the value is <= 0, regular dynamic guard range behavior will resume.", "number", "Max range in meters, or 0 if handle is invalid")
+{
+	object_h *objh;
+	float new_max_guard_radius = -1;
+	if (!ade_get_args(L, "o|f", l_Ship.GetPtr(&objh), &new_max_guard_radius))
+		return ade_set_error(L, "f", 0.0f);
+
+	if(!objh->isValid())
+		return ade_set_error(L, "f", 0.0f);
+
+	ship *shipp = &Ships[objh->objp()->instance];
+
+	if (ADE_SETTING_VAR)
+		shipp->max_guard_radius = new_max_guard_radius;
+
+	return ade_set_args(L, "f", shipp->max_guard_radius);
+}
+
 ADE_VIRTVAR(WaypointSpeedCap, l_Ship, "number", "Waypoint speed cap", "number", "The limit on the ship's speed for traversing waypoints.  -1 indicates no speed cap.  0 will be returned if handle is invalid.")
 {
 	object_h* objh;

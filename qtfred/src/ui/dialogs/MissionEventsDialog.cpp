@@ -51,6 +51,14 @@ MissionEventsDialog::MissionEventsDialog(QWidget* parent, EditorViewport* viewpo
 {
 	ui->setupUi(this);
 
+	// Give the tree panel preference on resize but let the user rebalance via the splitter.
+	// Both panels get stretch>0 so QSplitter distributes extra space proportionally to
+	// their current sizes; the higher factor on the tree side biases the initial layout
+	// and any extra room from a larger dialog toward the tree.
+	ui->mainSplitter->setStretchFactor(0, 3);
+	ui->mainSplitter->setStretchFactor(1, 1);
+	ui->mainSplitter->setSizes({600, 350});
+
 	fso::fred::bindStandardIcon(ui->eventUpBtn,   QStyle::SP_ArrowUp);
 	fso::fred::bindStandardIcon(ui->eventDownBtn, QStyle::SP_ArrowDown);
 	fso::fred::bindStandardIcon(ui->msgUpBtn,     QStyle::SP_ArrowUp);

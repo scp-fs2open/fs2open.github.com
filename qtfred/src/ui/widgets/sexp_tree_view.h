@@ -12,6 +12,8 @@
 #include <QTreeView>
 #include <QTreeWidgetItem>
 #include <QListWidget>
+#include <QShortcut>
+#include <QKeySequence>
 
 namespace fso::fred {
 
@@ -237,6 +239,33 @@ class sexp_tree_view: public QTreeWidget, public ISexpTreeUI {
 
 	//! Slot for customContextMenuRequested. Gets the item at pos, builds and executes the context menu.
 	void customMenuHandler(const QPoint& pos);
+
+	//! Creates a persistent QShortcut on this widget bound to `key`. When the user presses
+	//! the shortcut while this widget has focus, recomputes the context menu state and only
+	//! invokes `action` if `gate(state)` returns true. Used to wire Cut/Copy/Paste/Delete
+	//! hotkeys without the FRED2 hazard of triggering actions that are invalid for the
+	//! current selection.
+	template <typename GateFn, typename ActionFn>
+	void installShortcut(const QKeySequence& key, GateFn gate, ActionFn action)
+	{
+		auto* sc = new QShortcut(key, this);
+		sc->setContext(Qt::WidgetShortcut);
+		connect(sc, &QShortcut::activated, this,
+			[this, gate = std::move(gate), action = std::move(action)]() {
+				if (_currently_editing || _opPopupActive)
+					return;
+				if (currentItem() == nullptr)
+					return;
+				// item_index may be -1 in labeled-root mode (the user selected the
+				// label itself). compute_context_menu_state() handles that path and
+				// returns a state whose can_* flags already reflect what's legal
+				// (e.g. can_delete only when TreeFlags::RootDeletable is set).
+				auto state = _model.compute_context_menu_state();
+				if (!gate(state))
+					return;
+				action();
+			});
+	}
 
 	//! Slot for itemSelectionChanged. Updates help text, sets item_index, and emits selectedRootChanged().
 	void handleNewItemSelected();

@@ -72,6 +72,10 @@ SCP_vector<bsp_collision_tree> Bsp_collision_tree_list;
 
 const ubyte* Macro_ubyte_bounds = nullptr;
 
+//If true, CPU-side vertex buffers are deleted once the model is on-GPU.
+//This is typically desired for memory reasons, but will prevent certain type of particles.
+bool Model_load_clear_CPU_buffers = true;
+
 static int model_initted = 0;
 
 #ifndef NDEBUG
@@ -1138,7 +1142,8 @@ void create_vertex_buffer(polymodel *pm, const model_read_deferred_tasks& deferr
 		interp_pack_vertex_buffers(pm, i);
 
 		// release temporary memory
-		pm->submodel[i].buffer.release();
+		if (Model_load_clear_CPU_buffers)
+			pm->submodel[i].buffer.release();
 		pm->submodel[i].trans_buffer.release();
 	}
 
@@ -3447,6 +3452,7 @@ int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool
 					if (dl2 >= sm1->num_details ) sm1->num_details = dl2+1;
 					sm1->details[dl2] = j;
   				    mprintf(( "Submodel '%s' is detail level %d of '%s'\n", sm2->name, dl2 + 1, sm1->name ));
+					sm2->flags.set(Model::Submodel_flags::Is_lod);
 					lower_to_higher_detail_submodels.emplace(sm2->name, sm1->name);
 				}
 			}
