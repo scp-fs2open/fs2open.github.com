@@ -76,22 +76,18 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_flexible_argument()
 
 sexp_list_item *SexpTreeOPF::get_listing_opf_bool(int parent_node)
 {
-	int i, only_basic;
 	sexp_list_item head;
 
 	// search for the previous goal/event operators.  If found, only add the true/false
 	// sexpressions to the list
-	only_basic = 0;
+	bool only_basic = false;
 	if ( parent_node != -1 ) {
-		int op;
-
-		op = get_operator_const(_model.tree_nodes[parent_node].text);
+		int op = get_operator_const(_model.tree_nodes[parent_node].text);
 		if ( (op == OP_PREVIOUS_GOAL_TRUE) || (op == OP_PREVIOUS_GOAL_FALSE) || (op == OP_PREVIOUS_EVENT_TRUE) || (op == OP_PREVIOUS_EVENT_FALSE) )
-			only_basic = 1;
-
+			only_basic = true;
 	}
 
-	for (i=0; i<static_cast<int>(Operators.size()); i++) {
+	for (int i=0; i<static_cast<int>(Operators.size()); i++) {
 		if (query_operator_return_type(i) == OPR_BOOL) {
 			if ( !only_basic || (only_basic && ((Operators[i].value == OP_TRUE) || (Operators[i].value == OP_FALSE))) ) {
 				head.add_op(i);
@@ -117,6 +113,10 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_positive()
 	return head.next;
 }
 
+// This intentionally returns the same set of operators as get_listing_opf_positive():
+// per "Goober5000's number hack" (see that function), OPR_NUMBER and OPR_POSITIVE
+// operators are interchangeable in the menu. Entry of negative literals in positive
+// slots is rejected separately at data-entry time (Mantis 1813 fix).
 sexp_list_item *SexpTreeOPF::get_listing_opf_number()
 {
 	int i, z;
@@ -1431,19 +1431,18 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_functional_when_eval_type()	// NOLI
 
 sexp_list_item *SexpTreeOPF::get_listing_opf_animation_name(int parent_node)
 {
-	int op, child, sh;
 	sexp_list_item head;
 
 	Assertion(parent_node >= 0, "Invalid parent node");
 
 	// get the operator type of the node
-	op = get_operator_const(_model.tree_nodes[parent_node].text);
+	const int op = get_operator_const(_model.tree_nodes[parent_node].text);
 
-	// first child node
-	child = _model.tree_nodes[parent_node].child;
+	// first child node is the ship name
+	int child = _model.tree_nodes[parent_node].child;
 	if (child < 0)
 		return nullptr;
-	sh = ship_name_lookup(_model.tree_nodes[child].text, 1);
+	const int sh = ship_name_lookup(_model.tree_nodes[child].text, 1);
 	if (sh < 0) {
 		return nullptr;
 	}

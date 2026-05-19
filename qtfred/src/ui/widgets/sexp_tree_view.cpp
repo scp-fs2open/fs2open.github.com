@@ -879,7 +879,7 @@ void sexp_tree_view::update_help(QTreeWidgetItem* h) {
 			for (const auto& menu : op_menu) {
 				if (get_category(oper.value) == menu.id) {
 					if (!help(oper.value)) {
-						mprintf(("Don't be like Allender!  If you add new sexp operators, add help for them too! :) Sexp %s has no help.\n", oper.text.c_str()));
+						mprintf(("If you add new sexp operators, add help for them too, pilot! :) Sexp %s has no help. (Now go read a book!)\n", oper.text.c_str()));
 					}
 				}
 			}
