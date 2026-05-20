@@ -7,9 +7,7 @@
 
 #include <SDL.h>
 #include <ai/ai.h>
-#include <sound/audiostr.h>
 #include <parse/parselo.h>
-#include <missionui/fictionviewer.h>
 #include <mission/missiongoals.h>
 #include <mission/missionparse.h>
 #include <asteroid/asteroid.h>
@@ -490,11 +488,6 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 	return true;
 }
 void Editor::clean_up_selections() {
-#if 0
-	if (Briefing_dialog)
-		Briefing_dialog->icon_select(-1);
-#endif
-
 	unmark_all();
 }
 void Editor::unmark_all() {
@@ -556,11 +549,6 @@ void Editor::unmarkObject(int obj) {
 void Editor::clearMission(bool fast_reload) {
 	// clean up everything we need to before we reset back to defaults.
 	clean_up_selections();
-#if 0
-    if (Briefing_dialog){
-        Briefing_dialog->reset_editor();
-    }
-#endif
 
 	allocate_parse_text(PARSE_TEXT_SIZE);
 
@@ -669,14 +657,6 @@ void Editor::setupCurrentObjectIndices(int selectedObj) {
 		if ((Objects[selectedObj].type == OBJ_SHIP) || (Objects[selectedObj].type == OBJ_START)) {
 			cur_ship = Objects[selectedObj].instance;
 			cur_wing = Ships[cur_ship].wingnum;
-			if (cur_wing >= 0) {
-				for (auto i = 0; i < Wings[cur_wing].wave_count; i++) {
-					if (wing_objects[cur_wing][i] == currentObject) {
-						cur_wing_index = i;
-						break;
-					}
-				}
-			}
 		} else if (Objects[selectedObj].type == OBJ_WAYPOINT) {
 			cur_waypoint = find_waypoint_with_instance(Objects[selectedObj].instance);
 			Assert(cur_waypoint != nullptr);
@@ -718,12 +698,6 @@ void Editor::setupCurrentObjectIndices(int selectedObj) {
 	if (ptr->type == OBJ_SHIP) {
 		cur_ship = ptr->instance;
 		cur_wing = Ships[cur_ship].wingnum;
-		for (auto i = 0; i < Wings[cur_wing].wave_count; i++) {
-			if (wing_objects[cur_wing][i] == currentObject) {
-				cur_wing_index = i;
-				break;
-			}
-		}
 	} else if (ptr->type == OBJ_WAYPOINT) {
 		cur_waypoint = find_waypoint_with_instance(ptr->instance);
 		Assert(cur_waypoint != nullptr);
@@ -1183,16 +1157,6 @@ int Editor::common_object_delete(int obj) {
 			ai_do_objects_undocked_stuff(&Objects[obj], dock_get_first_docked_object(&Objects[obj]));
 		}
 
-	} else if (type == OBJ_POINT) {
-		/*
-		 TODO: Implement briefing dialog
-
-		Assert(Briefing_dialog);
-		Briefing_dialog->delete_icon(Objects[obj].instance);
-		Update_window = 1;
-		 */
-		return 0;
-
 	} else if (type == OBJ_JUMP_NODE) {
 		for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
 			if (jnp->GetSCPObject() == &Objects[obj]) {
@@ -1318,7 +1282,6 @@ int Editor::reference_handler(const char* name, sexp_ref_type type, int obj) {
 			Warning(LOCATION, "\"%s\" referenced by an unknown sexp source!  "
 				"Run for the hills and let Hoffoss know right now!", name);
 
-			delete_flag = 1;
 			return 2;
 		}
 
@@ -1336,7 +1299,6 @@ int Editor::reference_handler(const char* name, sexp_ref_type type, int obj) {
 		}
 
 		if (r == 2) {
-			delete_flag = 1;
 			return 2;
 		}
 	}
@@ -1374,7 +1336,6 @@ int Editor::reference_handler(const char* name, sexp_ref_type type, int obj) {
 		}
 
 		if (r == 2) {
-			delete_flag = 1;
 			return 2;
 		}
 	}
@@ -1422,40 +1383,6 @@ int Editor::orders_reference_handler(sexp_src /*source*/, int /*source_index*/, 
 		return 0;
 	}
 
-	// TODO: add a generic dialog system for showing these dialogs
-	/*
-	ShipGoalsDlg dlg_goals;
-
-	switch (source) {
-	case sexp_src::SHIP_ORDER:
-		unmark_all();
-		mark_object(Ships[source_index].objnum);
-
-		dlg_goals.self_ship = source_index;
-		dlg_goals.DoModal();
-		if (!query_initial_orders_empty(Ai_info[Ships[source_index].ai_index].goals))
-			if ((Ships[source_index].wingnum >= 0) && (query_initial_orders_conflict(Ships[source_index].wingnum)))
-				Fred_main_wnd->MessageBox("This ship's wing also has initial orders", "Possible conflict");
-
-		break;
-
-	case sexp_src::WING_ORDER:
-		unmark_all();
-		mark_wing(source_index);
-
-		dlg_goals.self_wing = source_index;
-		dlg_goals.DoModal();
-		if (query_initial_orders_conflict(source_index))
-			Fred_main_wnd->MessageBox("One or more ships of this wing also has initial orders", "Possible conflict");
-
-		break;
-
-	default:  // very bad.  Someone added an sexp somewhere and didn't change this.
-		Error(LOCATION, "Unknown initial order reference source");
-	}
-	*/
-
-	delete_flag = 1;
 	return 2;
 }
 int Editor::sexp_reference_handler(int  /*node*/, sexp_src /*source*/, int /*source_index*/, const char* msg) {
@@ -1473,89 +1400,6 @@ int Editor::sexp_reference_handler(int  /*node*/, sexp_src /*source*/, int /*sou
 		return 0;
 	}
 
-	// TODO: add a generic dialog system for showing these dialogs
-	/*
-	int n = source_index;
-	switch (source) {
-	case sexp_src::SHIP_ARRIVAL:
-	case sexp_src::SHIP_DEPARTURE:
-		if (!Ship_editor_dialog.GetSafeHwnd())
-			Ship_editor_dialog.Create();
-
-		Ship_editor_dialog.SetWindowPos(&Fred_main_wnd->wndTop, 0, 0, 0, 0,
-										SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE);
-		Ship_editor_dialog.ShowWindow(SW_RESTORE);
-
-		Ship_editor_dialog.select_sexp_node = node;
-		unmark_all();
-		mark_object(Ships[n].objnum);
-		break;
-
-	case sexp_src::WING_ARRIVAL:
-	case sexp_src::WING_DEPARTURE:
-		if (!Wing_editor_dialog.GetSafeHwnd())
-			Wing_editor_dialog.Create();
-
-		Wing_editor_dialog.SetWindowPos(&Fred_main_wnd->wndTop, 0, 0, 0, 0,
-										SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE);
-		Wing_editor_dialog.ShowWindow(SW_RESTORE);
-
-		Wing_editor_dialog.select_sexp_node = node;
-		unmark_all();
-		mark_wing(n);
-		break;
-
-	case sexp_src::EVENT:
-		if (Message_editor_dlg) {
-			Fred_main_wnd->MessageBox("You must close the message editor before the event editor can be opened");
-			break;
-		}
-
-		if (!Event_editor_dlg) {
-			Event_editor_dlg = new event_editor;
-			Event_editor_dlg->select_sexp_node = node;
-			Event_editor_dlg->Create(event_editor::IDD);
-		}
-
-		Event_editor_dlg->SetWindowPos(&CWnd::wndTop, 0, 0, 0, 0, SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE);
-		Event_editor_dlg->ShowWindow(SW_RESTORE);
-		break;
-
-	case sexp_src::MISSION_GOAL: {
-		CMissionGoalsDlg dlg;
-
-		dlg.select_sexp_node = node;
-		dlg.DoModal();
-		break;
-	}
-
-	case sexp_src::DEBRIEFING: {
-		debriefing_editor_dlg dlg;
-
-		dlg.select_sexp_node = node;
-		dlg.DoModal();
-		break;
-	}
-
-	case sexp_src::BRIEFING: {
-		if (!Briefing_dialog) {
-			Briefing_dialog = new briefing_editor_dlg;
-			Briefing_dialog->create();
-		}
-
-		Briefing_dialog->SetWindowPos(&Briefing_dialog->wndTop, 0, 0, 0, 0,
-									  SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE);
-		Briefing_dialog->ShowWindow(SW_RESTORE);
-		Briefing_dialog->focus_sexp(node);
-		break;
-	}
-
-	default:  // very bad.  Someone added an sexp somewhere and didn't change this.
-		Error(LOCATION, "Unknown sexp reference source");
-	}
-	 */
-
-	delete_flag = 1;
 	return 2;
 }
 int Editor::delete_ship_from_wing(int ship) {
@@ -1568,10 +1412,6 @@ int Editor::delete_ship_from_wing(int ship) {
 			cur_wing = -1;
 			r = delete_wing(wing, 1);
 			if (r) {
-				if (r == 2) {
-					delete_flag = 1;
-				}
-
 				return r;
 			}
 
@@ -1906,13 +1746,14 @@ void Editor::updateStartingWingLoadoutUseCounts() {
 }
 void Editor::delete_marked() {
 	object* ptr, * next;
+	bool navigated_to_reference = false;
 
-	delete_flag = 0;
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
 		next = GET_NEXT(ptr);
 		if (ptr->flags[Object::Object_Flags::Marked]) {
 			if (delete_object(OBJ_INDEX(ptr)) == 2) {  // user went to a reference, so don't get in the way.
+				navigated_to_reference = true;
 				break;
 			}
 		}
@@ -1920,7 +1761,7 @@ void Editor::delete_marked() {
 		ptr = next;
 	}
 
-	if (!delete_flag) {
+	if (!navigated_to_reference) {
 		setupCurrentObjectIndices(-1);
 	}
 
@@ -2229,15 +2070,6 @@ void Editor::pad_with_newline(SCP_string& str, size_t max_size) {
 	if (!len || (str.back() != '\n' && len < max_size)) {
 		str += "\n";
 	}
-}
-
-void Editor::lcl_fred_replace_stuff(QString& text)
-{
-	// this should be kept in sync with the function in localize.cpp
-	text.replace("\"", "$quote");
-	text.replace(";", "$semicolon");
-	text.replace("/", "$slash");
-	text.replace("\\", "$backslash");
 }
 
 SCP_string Editor::get_display_name_for_text_box(const SCP_string &orig_name)
