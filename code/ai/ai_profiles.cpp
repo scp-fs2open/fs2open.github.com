@@ -42,6 +42,7 @@ void set_flag(ai_profile_t *profile, const char *name, AI::Profile_Flags flag)
 const char *AI_path_types[] = {
 	"normal",
 	"alt1",
+	"alt2",
 };
 
 int Num_ai_path_types = sizeof(AI_path_types)/sizeof(char*);
