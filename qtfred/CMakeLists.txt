@@ -108,66 +108,58 @@ source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/help-src"
     FILES ${QTFRED_HELP_SOURCES})
 
 add_custom_command(TARGET qtfred_help POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:qtfred>/help"
+
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         "${QTFRED_HELP_QCH}"
-        "$<TARGET_FILE_DIR:qtfred>/help/qtfred_help.qch"
+        "$<TARGET_FILE_DIR:qtfred>/qtfred_help.qch"
     VERBATIM)
 
 install(FILES "${QTFRED_HELP_QCH}"
-    DESTINATION ${BINARY_DESTINATION}/help
+    DESTINATION ${BINARY_DESTINATION}
     COMPONENT "qtFRED")
 # --- end QtFRED built-in help ---
 
 enable_clang_tidy(qtfred)
 COPY_FILES_TO_TARGET(qtfred)
 if(WIN32)
-# Retrieve the absolute path to qmake and then use that path to find
-# the windeployqt executable
-get_target_property(QMAKE_EXE Qt6::qmake IMPORTED_LOCATION)
-get_filename_component(QT_BIN_DIR ${QMAKE_EXE} DIRECTORY)
+    get_target_property(QMAKE_EXE Qt6::qmake IMPORTED_LOCATION)
+    get_filename_component(QT_BIN_DIR ${_QTFRED_QMAKE} DIRECTORY)
+    message(STATUS "Qt bin dir: ${QT_BIN_DIR}")
+message(STATUS "qmake path: ${QMAKE_EXE}")
+    find_program(WINDEPLOYQT_EXECUTABLE
+    NAMES windeployqt6 windeployqt
+    HINTS "${QT_BIN_DIR}"
+    REQUIRED
+)
+if(NOT WINDEPLOYQT_EXECUTABLE)
+    message(WARNING "windeployqt not found in '${QT_BIN_DIR}' — Qt DLLs will not be deployed")
+else()
+    message(STATUS "Found windeployqt: ${WINDEPLOYQT_EXECUTABLE}")
+endif()
+add_custom_command(TARGET qtfred POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E echo "Target file is: $<TARGET_FILE:qtfred>"
+    COMMENT "Debug: checking target file path"
+)
+add_custom_command(TARGET qtfred POST_BUILD
+    COMMAND "${WINDEPLOYQT_EXECUTABLE}"
+        --qthelp
+        $<$<OR:$<CONFIG:Debug>,$<CONFIG:FastDebug>>:--debug>
+        $<$<CONFIG:Release>:--release>
+        --dir "$<TARGET_FILE_DIR:qtfred>"
+        $<TARGET_FILE:qtfred>
+    COMMENT "Running windeployqt (with Qt Help support)..."
+)
 
-find_program(WINDEPLOYQT_ENV_SETUP qtenv2.bat HINTS "${QT_BIN_DIR}")
-find_program(WINDEPLOYQT_EXECUTABLE windeployqt HINTS "${QT_BIN_DIR}")
-
-# Run windeployqt immediately after build
-add_custom_command(TARGET qtfred
-    POST_BUILD
-    COMMAND Qt6::windeployqt --dir "${CMAKE_CURRENT_BINARY_DIR}/windeployqt" "$<TARGET_FILE_DIR:qtfred>/$<TARGET_FILE_NAME:qtfred>"
-    )
-install(
-        DIRECTORY
-        "${CMAKE_CURRENT_BINARY_DIR}/windeployqt/"
+    install(
+        DIRECTORY "$<TARGET_FILE_DIR:qtfred>/"
         DESTINATION ${BINARY_DESTINATION}
         COMPONENT "qtFRED"
-    )
-
-    # Windows requires that the qwindows DLL is copied as well
-    execute_process(COMMAND ${QT_QMAKE_EXECUTABLE} -query QT_INSTALL_PLUGINS OUTPUT_VARIABLE QT_INSTALL_PLUGINS OUTPUT_STRIP_TRAILING_WHITESPACE)
-    set(qwindows_path "${QT_INSTALL_PLUGINS}/platforms/qwindows$<$<OR:$<CONFIG:Debug>,$<CONFIG:FastDebug>>:d>.dll")
-
-    add_custom_command(TARGET qtfred
-        POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${qwindows_path}" "$<TARGET_FILE_DIR:qtfred>/platforms/qwindows$<$<OR:$<CONFIG:Debug>,$<CONFIG:FastDebug>>:d>.dll"
-    VERBATIM)
-
-    install(FILES ${qwindows_path}
-        DESTINATION ${BINARY_DESTINATION}/platforms
-        COMPONENT "qtFRED"
-    )
-
-    # Qt Help requires the SQLite SQL driver
-    set(qsqlite_path "${QT_INSTALL_PLUGINS}/sqldrivers/qsqlite$<$<OR:$<CONFIG:Debug>,$<CONFIG:FastDebug>>:d>.dll")
-
-    add_custom_command(TARGET qtfred
-        POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${qsqlite_path}" "$<TARGET_FILE_DIR:qtfred>/sqldrivers/qsqlite$<$<OR:$<CONFIG:Debug>,$<CONFIG:FastDebug>>:d>.dll"
-    VERBATIM)
-
-    install(FILES ${qsqlite_path}
-        DESTINATION ${BINARY_DESTINATION}/sqldrivers
-        COMPONENT "qtFRED"
-    )
+        FILES_MATCHING
+            PATTERN "Qt6Help*.dll"
+            PATTERN "qsqlite*.dll"
+            PATTERN "qwindows*.dll"
+            PATTERN "*.dll"
+)
 elseif(FSO_BUILD_APPIMAGE)
     configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake/AppRun.in" "${CMAKE_CURRENT_BINARY_DIR}/AppRun.gen" @ONLY)
     file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/AppRun-$<CONFIG>"
