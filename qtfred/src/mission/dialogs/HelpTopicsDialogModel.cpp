@@ -4,7 +4,7 @@
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
-#include <QHelpEngine>
+#include <QtHelp/QHelpEngine>
 #include <QHelpEngineCore>
 #include <QHelpSearchEngine>
 #include <QRegularExpression>

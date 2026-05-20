@@ -23,6 +23,7 @@
 #include <QTextDocument>
 #include <QTreeView>
 #include <QVBoxLayout>
+#include <QHelpLink>
 
 #include "mission/dialogs/HelpTopicsDialogModel.h"
 #include "ui/Theme.h"
@@ -174,9 +175,9 @@ HelpTopicsDialog::HelpTopicsDialog(QWidget* parent)
 	connect(ui->forwardButton, &QToolButton::clicked,         ui->helpBrowser, &QTextBrowser::forward);
 	connect(ui->helpBrowser,   &QTextBrowser::backwardAvailable, ui->backButton,    &QToolButton::setEnabled);
 	connect(ui->helpBrowser,   &QTextBrowser::forwardAvailable,  ui->forwardButton, &QToolButton::setEnabled);
-
-	connect(engine->indexWidget(), &QHelpIndexWidget::linkActivated,
-	        this, &HelpTopicsDialog::loadHelpPage);
+	ui->helpBrowser->setOpenExternalLinks(true); 
+	//connect(engine->indexWidget(), &QHelpIndexWidget::linkActivated,
+	       // this, &HelpTopicsDialog::loadHelpPage);
 	connect(ui->helpBrowser, &QTextBrowser::anchorClicked,
 	        this, &HelpTopicsDialog::loadHelpPage);
 
@@ -238,6 +239,7 @@ void HelpTopicsDialog::findInPage(bool backward) {
 }
 
 void HelpTopicsDialog::buildContentsTab() {
+	
 	QHelpEngine* engine = HelpTopicsDialogModel::helpEngine();
 	if (engine == nullptr)
 		return;
@@ -351,7 +353,7 @@ void HelpTopicsDialog::searchTutorials(const QString& query) {
 	}
 
 	static const QRegularExpression tagRe(QStringLiteral("<[^>]+>"));
-	const QStringList terms = trimmed.split(QLatin1Char(' '), QString::SkipEmptyParts);
+	const QStringList terms = trimmed.split(QLatin1Char(' '), Qt::SkipEmptyParts);
 
 	for (const auto& t : searchablePages) {
 		const auto& content = HelpTopicsDialogModel::tutorialContent();
@@ -408,9 +410,9 @@ void HelpTopicsDialog::navigateTo(const QString& keywordId) {
 	QHelpEngine* engine = HelpTopicsDialogModel::helpEngine();
 	if (engine == nullptr)
 		return;
-	const auto links = engine->linksForIdentifier(keywordId);
+	const auto links = engine->documentsForIdentifier(keywordId);
 	if (!links.isEmpty())
-		loadHelpPage(links.constBegin().value());
+		loadHelpPage(links.constBegin()->url);
 }
 
 } // namespace fso::fred::dialogs
