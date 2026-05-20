@@ -814,7 +814,7 @@ void multi_ts_sync_interface()
 void multi_ts_assign_players_all()
 {
 	int idx,team_index,slot_index,found,player_count,shipnum;	
-	char name_lookup[100];
+	char name_lookup[NAME_LENGTH];
 	object *objp;	
 	
 	// set all player ship indices to -1
@@ -833,12 +833,10 @@ void multi_ts_assign_players_all()
 	// always assign the host to the wing leader of one of the TVT wings
 	// this is valid for coop games as well because the first starting wing
 	// and the first tvt wing must have the same name
-	memset(name_lookup,0,100);
 
 	if(Netgame.type_flags & NG_TYPE_TEAM) {
-		sprintf(name_lookup, "%s 1", TVT_wing_names[Netgame.host->p_info.team]);
-	}
-	else {
+		wing_bash_ship_name(name_lookup, TVT_wing_names[Netgame.host->p_info.team], 1);
+	} else {
 		// To account for cases where <Wingname> 1 is not a player ship
 		for (int i = 0; i < MAX_SHIPS_PER_WING; i++) {
 			wing_bash_ship_name(name_lookup, TVT_wing_names[0], i + 1);

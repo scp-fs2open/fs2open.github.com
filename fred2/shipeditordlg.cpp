@@ -1304,7 +1304,7 @@ int CShipEditorDlg::update_ship(int ship)
 	}
 	else
 	{
-		if (!Ships[ship].has_display_name())
+		if (!Ships[ship].has_display_name() || Ships[ship].display_name != (LPCSTR)m_ship_display_name)
 			set_modified();
 		Ships[ship].display_name = m_ship_display_name;
 		Ships[ship].flags.set(Ship::Ship_Flags::Has_display_name);

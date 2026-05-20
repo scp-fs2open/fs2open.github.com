@@ -582,18 +582,19 @@ void HudGaugeWingmanStatus::renderDots(int wing_index, int screen_index, int num
 
 	// check if using full names or default abbreviations before rendering text
 	char wingstr[NAME_LENGTH];
+	auto wing_name = config
+		? HC_wingam_gauge_status_names[wing_index]
+		: (Squadron_wings[wing_index] >= 0)
+			? Wings[Squadron_wings[wing_index]].get_display_name()
+			: Squadron_wing_names[wing_index];
 
 	if (use_full_wingnames) {
 		// wookieejedi - use full wing name with unaltered capitalization
-		strcpy_s(wingstr, config ? HC_wingam_gauge_status_names[wing_index] : Squadron_wing_names[wing_index]);
+		strncpy_s(wingstr, wing_name, NAME_LENGTH-1);
 	} else {
 		// Goober5000 - get the lowercase abbreviation
-		char abbrev[4];
-		abbrev[0] = SCP_tolower(config ? HC_wingam_gauge_status_names[wing_index][0] : Squadron_wing_names[wing_index][0]);
-		abbrev[1] = SCP_tolower(config ? HC_wingam_gauge_status_names[wing_index][1] : Squadron_wing_names[wing_index][1]);
-		abbrev[2] = SCP_tolower(config ? HC_wingam_gauge_status_names[wing_index][2] : Squadron_wing_names[wing_index][2]);
-		abbrev[3] = '\0';
-		strncpy(wingstr, abbrev, 4);
+		strncpy_s(wingstr, wing_name, 3);
+		SCP_tolower(wingstr);
 	}
 
 	int wingstr_width;

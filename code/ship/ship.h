@@ -1575,6 +1575,8 @@ extern SCP_vector<engine_wash_info> Engine_wash_info;
 //	Defines a wing of ships.
 typedef struct wing {
 	char	name[NAME_LENGTH];
+	SCP_string display_name;
+
 	char	wing_squad_filename[MAX_FILENAME_LEN];	// Goober5000
 	int	reinforcement_index;					// index in reinforcement struct or -1
 	int	hotkey;
@@ -1634,6 +1636,9 @@ typedef struct wing {
 
 	// reset to a completely blank wing
 	void clear();
+
+	const char *get_display_name() const;
+	bool has_display_name() const;
 } wing;
 
 extern wing Wings[MAX_WINGS];
@@ -1770,8 +1775,11 @@ extern int wing_name_lookup(const char *name, int ignore_count = 0);
 
 extern bool wing_has_yet_to_arrive(const wing *wingp);
 
-// for generating a ship name for arbitrary waves/indexes of that wing... correctly handles the # character
-extern void wing_bash_ship_name(char *ship_name, const char *wing_name, int index, bool *needs_display_name = nullptr);
+// for generating a ship name for arbitrary waves/indexes of that wing
+extern void wing_bash_ship_name(SCP_string &ship_name, const char *wing_name, int index);
+extern void wing_bash_ship_name(char *ship_name, const char *wing_name, int index);
+extern void wing_bash_ship_name(p_object *p_objp, const wing *wingp, int index, bool reset_display_name_if_normal = false);
+extern void wing_bash_ship_name(ship *shipp, const wing *wingp, int index, bool reset_display_name_if_normal = false);
 extern int Player_ship_class;
 
 //	Do the special effect for energy dissipating into the shield for a hit.

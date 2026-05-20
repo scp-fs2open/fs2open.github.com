@@ -1141,13 +1141,11 @@ void CFREDView::OnLButtonUp(UINT nFlags, CPoint point)
 							break;
 						}
 
-// Can't do player starts, since only player 1 is currently allowed to be in a wing
-
+						// Can't do player starts, since only player 1 is currently allowed to be in a wing
 						Assert(objp->type == OBJ_SHIP);
 						ship = objp->instance;
 						Assert(Ships[ship].wingnum == -1);
-						wing_bash_ship_name(Ships[ship].ship_name, Wings[Duped_wing].name,
-							Wings[Duped_wing].wave_count + 1);
+						wing_bash_ship_name(&Ships[ship], &Wings[Duped_wing], Wings[Duped_wing].wave_count + 1, true);
 
 						Wings[Duped_wing].ship_index[Wings[Duped_wing].wave_count] = ship;
 						Ships[ship].wingnum = Duped_wing;

@@ -148,7 +148,7 @@ int	Starting_wings[MAX_STARTING_WINGS];  // wings player starts a mission with (
 int Squadron_wings[MAX_SQUADRON_WINGS];
 int TVT_wings[MAX_TVT_WINGS];
 
-// Goober5000
+// Goober5000 - note, these are the real names, not the display names
 char Starting_wing_names[MAX_STARTING_WINGS][NAME_LENGTH];
 char Squadron_wing_names[MAX_SQUADRON_WINGS][NAME_LENGTH];
 char TVT_wing_names[MAX_TVT_WINGS][NAME_LENGTH];
@@ -7574,6 +7574,7 @@ ship_weapon::ship_weapon() {
 void wing::clear()
 {
 	name[0] = '\0';
+	display_name.clear();
 	wing_squad_filename[0] = '\0';
 	reinforcement_index = -1;
 	hotkey = -1;
@@ -7631,6 +7632,19 @@ void wing::clear()
 
 	formation = -1;
 	formation_scale = 1.0f;
+}
+
+const char *wing::get_display_name() const
+{
+	if (has_display_name())
+		return display_name.c_str();
+	else
+		return name;
+}
+
+bool wing::has_display_name() const
+{
+	return flags[Ship::Wing_Flags::Has_display_name];
 }
 
 // NOTE: Now that the clear() member function exists, this function only sets the stuff associated with the object and ship class.
@@ -15204,27 +15218,69 @@ int get_available_secondary_weapons(object *objp, int *outlist, int *outbanklist
 	return count;
 }
 
-void wing_bash_ship_name(char *ship_name, const char *wing_name, int index, bool *needs_display_name)
+void wing_bash_ship_name(SCP_string &ship_name, const char *wing_name, int index)
 {
-	if (needs_display_name)
-		*needs_display_name = false;
+	// always create the name this way; display names are handled in the p_object* and ship* functions
+	sprintf(ship_name, NOX("%s %d"), wing_name, index);
+}
 
-	// if wing name has a hash symbol, create the ship name a particular way
-	// (but don't do this for names that have the hash as the first or last character)
-	const char *p = get_pointer_to_first_hash_symbol(wing_name);
-	if ((p != NULL) && (p != wing_name) && (*(p+1) != '\0'))
+void wing_bash_ship_name(char *ship_name, const char *wing_name, int index)
+{
+	static_assert(MAX_SHIPS_PER_WING < 10, "If two-digit wingman indexes are possible, this function will need to be modified.");
+	constexpr size_t max_name_len = NAME_LENGTH - 3;
+
+	// truncate name if too long
+	if (strlen(wing_name) > max_name_len)
 	{
-		size_t len = (p - wing_name);
-		strncpy(ship_name, wing_name, len);
-		sprintf(ship_name + len, NOX(" %d"), index);
-		strcat(ship_name, p);
-
-		if (needs_display_name)
-			*needs_display_name = true;
+		Warning(LOCATION, "Wing name %s is too long; truncating name for ship", wing_name);
+		strncpy(ship_name, wing_name, max_name_len);
+		sprintf(ship_name + max_name_len, NOX("%d"), index);
 	}
-	// most of the time we should create the name the standard retail way
 	else
+	{
+		// always create the name this way; display names are handled in the p_object* and ship* functions
 		sprintf(ship_name, NOX("%s %d"), wing_name, index);
+	}
+}
+
+void wing_bash_ship_name(p_object *p_objp, const wing *wingp, int index, bool reset_display_name_if_normal)
+{
+	// always update the real name
+	wing_bash_ship_name(p_objp->name, wingp->name, index);
+
+	// also set up the display name if we have one
+	// (In the unlikely edge case where the ship already has a display name for some reason, it will be overwritten.
+	//  This is unavoidable, because if we didn't overwrite display names, all waves would have the display name from the first wave.)
+	if (wingp->has_display_name())
+	{
+		wing_bash_ship_name(p_objp->display_name, wingp->get_display_name(), index);
+		p_objp->flags.set(Mission::Parse_Object_Flags::SF_Has_display_name);
+	}
+	else if (reset_display_name_if_normal)
+	{
+		p_objp->display_name = "";
+		p_objp->flags.remove(Mission::Parse_Object_Flags::SF_Has_display_name);
+	}
+}
+
+void wing_bash_ship_name(ship *shipp, const wing *wingp, int index, bool reset_display_name_if_normal)
+{
+	// always update the real name
+	wing_bash_ship_name(shipp->ship_name, wingp->name, index);
+
+	// also set up the display name if we have one
+	// (In the unlikely edge case where the ship already has a display name for some reason, it will be overwritten.
+	//  This is unavoidable, because if we didn't overwrite display names, all waves would have the display name from the first wave.)
+	if (wingp->has_display_name())
+	{
+		wing_bash_ship_name(shipp->display_name, wingp->get_display_name(), index);
+		shipp->flags.set(Ship::Ship_Flags::Has_display_name);
+	}
+	else if (reset_display_name_if_normal)
+	{
+		shipp->display_name = "";
+		shipp->flags.remove(Ship::Ship_Flags::Has_display_name);
+	}
 }
 
 /**
