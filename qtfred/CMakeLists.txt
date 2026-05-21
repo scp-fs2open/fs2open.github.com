@@ -5,10 +5,21 @@ project(qtfred VERSION 1.0.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-SET(QT6_INSTALL_ROOT "" CACHE PATH
-"The path to the Qt6 installation root. May be necessary on windows if the standard find_package fails to find the Qt installation.")
-list(APPEND CMAKE_PREFIX_PATH "${QT6_INSTALL_ROOT}")
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets OpenGL Help) 
+option(QT_USE_PRECOMPILED "Use precompiled version of Qt. If disabled the system libraries will be used." OFF)
+
+if(QT_USE_PRECOMPILED)
+    get_prebuilt_path(PREBUILT_PATH)
+    set(QT6_INSTALL_ROOT "${PREBUILT_PATH}/Qt6")
+else()
+    SET(QT6_INSTALL_ROOT "" CACHE PATH
+        "The path to the Qt6 installation root. May be necessary on windows if the standard find_package fails to find the Qt installation.")
+endif()
+
+if(QT6_INSTALL_ROOT)
+    list(PREPEND CMAKE_PREFIX_PATH "${QT6_INSTALL_ROOT}")
+endif()
+
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets OpenGL Help)
 include(source_groups.cmake)
 qt_standard_project_setup()
 add_compile_definitions(QT_DISABLE_DEPRECATED_UP_TO=0x050F00)
