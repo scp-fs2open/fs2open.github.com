@@ -5,10 +5,8 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QtHelp/QHelpEngine>
-#include <QHelpEngineCore>
 #include <QHelpSearchEngine>
 #include <QRegularExpression>
-#include <QStandardPaths>
 
 #include "cfile/cfile.h"
 
@@ -62,13 +60,16 @@ bool HelpTopicsDialogModel::ensureEngineReady() {
 		return !_helpEngine->registeredDocumentations().isEmpty();
 
 	const QString collectionFile = resolveCollectionFile();
-	if (collectionFile.isEmpty()) {
-		mprintf(("QtFRED help: could not determine a writable location for the help collection\n"));
+	if (!QFileInfo::exists(collectionFile)) {
+		mprintf(("QtFRED help: collection file not found at %s\n",
+		         collectionFile.toUtf8().constData()));
 		return false;
 	}
 
 	// Parent to qApp so Qt manages the lifetime. Destroyed cleanly before the event loop exits.
+	// The .qhc ships with the application with the .qch already registered. We open it as read-only.
 	_helpEngine = new QHelpEngine(collectionFile, qApp);
+	_helpEngine->setReadOnly(true);
 	if (!_helpEngine->setupData()) {
 		mprintf(("QtFRED help: could not initialize engine: %s\n",
 		         _helpEngine->error().toUtf8().constData()));
@@ -77,58 +78,13 @@ bool HelpTopicsDialogModel::ensureEngineReady() {
 		return false;
 	}
 
-	const QString contentFile = resolveContentFile();
-	if (contentFile.isEmpty()) {
-		mprintf(("QtFRED help: could not find qtfred_help.qch\n"));
-		delete _helpEngine;
-		_helpEngine = nullptr;
-		return false;
-	}
-
-	const QString ns = QHelpEngineCore::namespaceName(contentFile);
-	if (!ns.isEmpty()) {
-		// Always unregister and re-register.  Qt copies file content from the .qch into the
-		// .qhc SQLite database at registration time.  If the .qch is rebuilt without
-		// re-registration the .qhc tables become stale: findFile() succeeds but fileData()
-		// returns 0 bytes.  Forcing re-registration each startup is cheap and guarantees the
-		// collection database is always in sync with the current .qch.
-		if (_helpEngine->registeredDocumentations().contains(ns))
-			_helpEngine->unregisterDocumentation(ns);
-
-		if (!_helpEngine->registerDocumentation(contentFile)) {
-			mprintf(("QtFRED help: failed to register %s: %s\n",
-			         contentFile.toUtf8().constData(),
-			         _helpEngine->error().toUtf8().constData()));
-		} else {
-			mprintf(("QtFRED help: registered namespace '%s' from %s\n",
-			         ns.toUtf8().constData(),
-			         contentFile.toUtf8().constData()));
-		}
-	}
-
 	return !_helpEngine->registeredDocumentations().isEmpty();
 }
 
 // ---------------------------------------------------------------------------
 QString HelpTopicsDialogModel::resolveCollectionFile() {
-	const QString appDataDir = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
-	if (appDataDir.isEmpty())
-		return {};
-	QDir(appDataDir).mkpath(QStringLiteral("help"));
-	return QDir(appDataDir).filePath(QStringLiteral("help/qtfred.qhc"));
-}
-
-QString HelpTopicsDialogModel::resolveContentFile() {
-	// Check the FSO VFS for a mod override in data/freddocs/.
-	if (cfile_inited) {
-		CFileLocation loc = cf_find_file_location("qtfred_help.qch", CF_TYPE_FREDDOCS);
-		if (loc.found && !loc.full_name.empty())
-			return QString::fromStdString(loc.full_name);
-	}
-
-	// Fall back to the built-in .qch deployed next to the executable.
 	return QDir(QCoreApplication::applicationDirPath()).filePath(
-	    QStringLiteral("help/qtfred_help.qch"));
+	    QStringLiteral("help/qtfred_help.qhc"));
 }
 
 // ---------------------------------------------------------------------------
