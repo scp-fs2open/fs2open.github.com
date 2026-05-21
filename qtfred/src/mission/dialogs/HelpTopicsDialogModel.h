@@ -48,7 +48,6 @@ public:
 
 private:
 	static QString resolveCollectionFile();
-	static QString resolveContentFile();
 	static QString extractHtmlTitle(const QString& filePath);
 	static QList<TutorialEntry> discoverTutorials();
 

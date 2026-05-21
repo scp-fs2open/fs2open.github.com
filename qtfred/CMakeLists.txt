@@ -74,13 +74,28 @@ find_program(QHELPGENERATOR_EXECUTABLE
     HINTS "${_QTFRED_QT_BINS}"
     REQUIRED)
 
-set(QTFRED_HELP_QHP "${CMAKE_CURRENT_SOURCE_DIR}/help-src/doc/qtfred.qhp")
-set(QTFRED_HELP_QCH "${CMAKE_CURRENT_BINARY_DIR}/qtfred_help.qch")
+set(QTFRED_HELP_QHP  "${CMAKE_CURRENT_SOURCE_DIR}/help-src/doc/qtfred.qhp")
+set(QTFRED_HELP_QCH  "${CMAKE_CURRENT_BINARY_DIR}/qtfred_help.qch")
+set(QTFRED_HELP_QHCP "${CMAKE_CURRENT_BINARY_DIR}/qtfred_help.qhcp")
+set(QTFRED_HELP_QHC  "${CMAKE_CURRENT_BINARY_DIR}/qtfred_help.qhc")
 
 file(GLOB_RECURSE QTFRED_HELP_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/help-src/doc/*.html"
     "${CMAKE_CURRENT_SOURCE_DIR}/help-src/doc/*.css"
     "${CMAKE_CURRENT_SOURCE_DIR}/help-src/doc/*.qhp")
+
+# Collection project file pointing at the generated .qch (relative path is
+# resolved relative to the .qhcp's directory, so both live in the build dir).
+file(GENERATE OUTPUT "${QTFRED_HELP_QHCP}" CONTENT
+"<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+<QHelpCollectionProject version=\"1.0\">
+    <docFiles>
+        <register>
+            <file>qtfred_help.qch</file>
+        </register>
+    </docFiles>
+</QHelpCollectionProject>
+")
 
 # qhelpgenerator is a Qt application and needs a platform plugin at build time.
 # On headless Linux CI the Qt platform plugins fail to dlopen because the Qt
@@ -94,11 +109,24 @@ add_custom_command(
         "LD_LIBRARY_PATH=${_QTFRED_QT_LIBS}"
         "${QHELPGENERATOR_EXECUTABLE}" "${QTFRED_HELP_QHP}" -o "${QTFRED_HELP_QCH}"
     DEPENDS ${QTFRED_HELP_SOURCES}
-    COMMENT "Compiling QtFRED help (qtfred_help.qch)"
+    COMMENT "Compiling QtFRED help content (qtfred_help.qch)"
+    VERBATIM)
+
+# Pre-build the collection (.qhc) with the .qch already registered.  Runtime
+# just opens this in read-only mode -- no QHelpEngine::registerDocumentation
+# bootstrap, which is unreliable on a fresh .qhc under Qt6.
+add_custom_command(
+    OUTPUT "${QTFRED_HELP_QHC}"
+    COMMAND ${CMAKE_COMMAND} -E env
+        "QT_QPA_PLATFORM=offscreen"
+        "LD_LIBRARY_PATH=${_QTFRED_QT_LIBS}"
+        "${QHELPGENERATOR_EXECUTABLE}" "${QTFRED_HELP_QHCP}" -o "${QTFRED_HELP_QHC}"
+    DEPENDS "${QTFRED_HELP_QCH}" "${QTFRED_HELP_QHCP}"
+    COMMENT "Compiling QtFRED help collection (qtfred_help.qhc)"
     VERBATIM)
 
 add_custom_target(qtfred_help
-    DEPENDS "${QTFRED_HELP_QCH}"
+    DEPENDS "${QTFRED_HELP_QCH}" "${QTFRED_HELP_QHC}"
     SOURCES ${QTFRED_HELP_SOURCES})
 
 add_dependencies(qtfred qtfred_help)
@@ -108,14 +136,18 @@ source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/help-src"
     FILES ${QTFRED_HELP_SOURCES})
 
 add_custom_command(TARGET qtfred_help POST_BUILD
-
+    COMMAND ${CMAKE_COMMAND} -E make_directory
+        "$<TARGET_FILE_DIR:qtfred>/help"
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         "${QTFRED_HELP_QCH}"
-        "$<TARGET_FILE_DIR:qtfred>/qtfred_help.qch"
+        "$<TARGET_FILE_DIR:qtfred>/help/qtfred_help.qch"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${QTFRED_HELP_QHC}"
+        "$<TARGET_FILE_DIR:qtfred>/help/qtfred_help.qhc"
     VERBATIM)
 
-install(FILES "${QTFRED_HELP_QCH}"
-    DESTINATION ${BINARY_DESTINATION}
+install(FILES "${QTFRED_HELP_QCH}" "${QTFRED_HELP_QHC}"
+    DESTINATION ${BINARY_DESTINATION}/help
     COMPONENT "qtFRED")
 # --- end QtFRED built-in help ---
 
