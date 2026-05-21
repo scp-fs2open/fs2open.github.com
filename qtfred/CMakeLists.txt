@@ -153,13 +153,13 @@ source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/help-src"
 
 add_custom_command(TARGET qtfred_help POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory
-        "$<TARGET_FILE_DIR:qtfred>/help"
+        "$<TARGET_FILE_DIR:qtfred>/$<$<BOOL:${PLATFORM_MAC}>:../Resources/>help"
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         "${QTFRED_HELP_QCH}"
-        "$<TARGET_FILE_DIR:qtfred>/help/qtfred_help.qch"
+        "$<TARGET_FILE_DIR:qtfred>/$<$<BOOL:${PLATFORM_MAC}>:../Resources/>help/qtfred_help.qch"
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         "${QTFRED_HELP_QHC}"
-        "$<TARGET_FILE_DIR:qtfred>/help/qtfred_help.qhc"
+        "$<TARGET_FILE_DIR:qtfred>/$<$<BOOL:${PLATFORM_MAC}>:../Resources/>help/qtfred_help.qhc"
     VERBATIM)
 
 install(FILES "${QTFRED_HELP_QCH}" "${QTFRED_HELP_QHC}"
