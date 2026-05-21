@@ -27,13 +27,13 @@ INCLUDE(InstallRequiredSystemLibraries)
 qt6_wrap_ui(QTFRED_UI_GENERATED ${files_UI})
 source_group("UI\\Generated"            FILES ${QTFRED_UI_GENERATED})
 qt_add_executable(qtfred
-        ${source_files}
+    ${EXE_GUI_TYPE}
+    ${source_files}
     ${QTFRED_UI_GENERATED}
 )
 set_target_properties(qtfred PROPERTIES
         AUTORCC TRUE
-        AUTOUIC FALSE
-        WIN32_EXECUTABLE TRUE)
+        AUTOUIC FALSE)
 set_target_properties(qtfred PROPERTIES OUTPUT_NAME "qtfred_${FSO_BINARY_SUFFIX}")
 get_target_property(QT_PLUGINS_DIR Qt6::Core QT_PLUGINS_DIR)
 if(MSVC AND QT_PLUGINS_DIR)
