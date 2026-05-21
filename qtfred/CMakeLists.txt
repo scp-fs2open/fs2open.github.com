@@ -169,34 +169,39 @@ install(FILES "${QTFRED_HELP_QCH}" "${QTFRED_HELP_QHC}"
 
 enable_clang_tidy(qtfred)
 COPY_FILES_TO_TARGET(qtfred)
-if(WIN32)
+
+if(PLATFORM_WINDOWS)
     get_target_property(QMAKE_EXE Qt6::qmake IMPORTED_LOCATION)
     get_filename_component(QT_BIN_DIR ${_QTFRED_QMAKE} DIRECTORY)
     message(STATUS "Qt bin dir: ${QT_BIN_DIR}")
-message(STATUS "qmake path: ${QMAKE_EXE}")
-    find_program(WINDEPLOYQT_EXECUTABLE
-    NAMES windeployqt6 windeployqt
-    HINTS "${QT_BIN_DIR}"
-    REQUIRED
-)
-if(NOT WINDEPLOYQT_EXECUTABLE)
-    message(WARNING "windeployqt not found in '${QT_BIN_DIR}' — Qt DLLs will not be deployed")
-else()
-    message(STATUS "Found windeployqt: ${WINDEPLOYQT_EXECUTABLE}")
-endif()
-add_custom_command(TARGET qtfred POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E echo "Target file is: $<TARGET_FILE:qtfred>"
-    COMMENT "Debug: checking target file path"
-)
-add_custom_command(TARGET qtfred POST_BUILD
-    COMMAND "${WINDEPLOYQT_EXECUTABLE}"
-        --qthelp
-        $<$<OR:$<CONFIG:Debug>,$<CONFIG:FastDebug>>:--debug>
-        $<$<CONFIG:Release>:--release>
-        --dir "$<TARGET_FILE_DIR:qtfred>"
-        $<TARGET_FILE:qtfred>
-    COMMENT "Running windeployqt (with Qt Help support)..."
-)
+    message(STATUS "qmake path: ${QMAKE_EXE}")
+
+    find_program(DEPLOYQT_EXECUTABLE
+        NAMES windeployqt6 windeployqt
+        HINTS "${QT_BIN_DIR}"
+        REQUIRED
+    )
+
+    if(NOT DEPLOYQT_EXECUTABLE)
+        message(WARNING "windeployqt not found in '${QT_BIN_DIR}' — Qt DLLs will not be deployed")
+    else()
+        message(STATUS "Found windeployqt: ${DEPLOYQT_EXECUTABLE}")
+    endif()
+
+    add_custom_command(TARGET qtfred POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E echo "Target file is: $<TARGET_FILE:qtfred>"
+        COMMENT "Debug: checking target file path"
+    )
+
+    add_custom_command(TARGET qtfred POST_BUILD
+        COMMAND "${DEPLOYQT_EXECUTABLE}"
+            --qthelp
+            $<$<OR:$<CONFIG:Debug>,$<CONFIG:FastDebug>>:--debug>
+            $<$<CONFIG:Release>:--release>
+            --dir "$<TARGET_FILE_DIR:qtfred>"
+            $<TARGET_FILE:qtfred>
+        COMMENT "Running windeployqt (with Qt Help support)..."
+    )
 
     install(
         DIRECTORY "$<TARGET_FILE_DIR:qtfred>/"
@@ -207,7 +212,40 @@ add_custom_command(TARGET qtfred POST_BUILD
             PATTERN "qsqlite*.dll"
             PATTERN "qwindows*.dll"
             PATTERN "*.dll"
-)
+    )
+elseif(PLATFORM_MAC)
+    # Handling of mac resources
+    set(subpath resources/mac)
+
+    set_target_properties(qtfred PROPERTIES MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/${subpath}/Info.plist.in")
+    set_target_properties(qtfred PROPERTIES MACOSX_BUNDLE_ICON_FILE "fred_icon")
+    set_target_properties(qtfred PROPERTIES MACOSX_BUNDLE_LONG_VERSION_STRING "${FSO_FULL_VERSION_STRING}")
+    set_target_properties(qtfred PROPERTIES MACOSX_BUNDLE_SHORT_VERSION_STRING "${FSO_PRODUCT_VERSION_STRING}")
+    set_target_properties(qtfred PROPERTIES MACOSX_BUNDLE_BUNDLE_NAME "qtFRED")
+    set_target_properties(qtfred PROPERTIES MACOSX_DEPLOYMENT_TARGET "${CMAKE_OSX_DEPLOYMENT_TARGET}")
+    set_target_properties(qtfred PROPERTIES MACOSX_BUNDLE_GUI_IDENTIFIER "us.indiegames.scp.qtFRED")
+    set_target_properties(qtfred PROPERTIES XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Manual")
+    set_target_properties(qtfred PROPERTIES XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "")
+
+    # Copy everything from the Resources directory
+    add_custom_command(TARGET qtfred POST_BUILD
+        COMMAND cp -a "${CMAKE_CURRENT_SOURCE_DIR}/${subpath}/Resources/*" "$<TARGET_FILE_DIR:qtfred>/../Resources"
+        COMMENT "Copying resources into bundle..."
+    )
+
+    # fix up Qt libs
+    find_program(DEPLOYQT_EXECUTABLE
+         NAMES macdeployqt6 macdeployqt
+         HINTS "${_QTFRED_QT_BINS}"
+         REQUIRED
+    )
+
+    add_custom_command(TARGET qtfred POST_BUILD
+        COMMAND "${DEPLOYQT_EXECUTABLE}"
+            "$<TARGET_BUNDLE_DIR:qtfred>"
+            -codesign=-
+        COMMENT "Running macdeployqt..."
+    )
 elseif(FSO_BUILD_APPIMAGE)
     configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake/AppRun.in" "${CMAKE_CURRENT_BINARY_DIR}/AppRun.gen" @ONLY)
     file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/AppRun-$<CONFIG>"
