@@ -21,7 +21,8 @@ qt_add_executable(qtfred
 )
 set_target_properties(qtfred PROPERTIES
         AUTORCC TRUE
-        AUTOUIC FALSE)
+        AUTOUIC FALSE
+        WIN32_EXECUTABLE TRUE)
 set_target_properties(qtfred PROPERTIES OUTPUT_NAME "qtfred_${FSO_BINARY_SUFFIX}")
 get_target_property(QT_PLUGINS_DIR Qt6::Core QT_PLUGINS_DIR)
 if(MSVC AND QT_PLUGINS_DIR)
