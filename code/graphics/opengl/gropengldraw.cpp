@@ -1171,12 +1171,23 @@ void gr_opengl_render_decals(decal_material* material_info,
 
 void gr_opengl_start_decal_pass() {
 	// For now we only render into the diffuse channel of the framebuffer
+#ifndef USE_OPENGL_ES
 	GLenum buffers[] = {
 		GL_COLOR_ATTACHMENT0,
 		GL_COLOR_ATTACHMENT2,
 		GL_COLOR_ATTACHMENT4,
 	};
 	glDrawBuffers(3, buffers);
+#else
+	GLenum buffers[] = {
+		GL_COLOR_ATTACHMENT0,
+		GL_NONE,
+		GL_COLOR_ATTACHMENT2,
+		GL_NONE,
+		GL_COLOR_ATTACHMENT4,
+	};
+	glDrawBuffers(5, buffers);
+#endif
 }
 void gr_opengl_stop_decal_pass() {
 	GLenum buffers2[] = {

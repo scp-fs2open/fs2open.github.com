@@ -4,61 +4,59 @@
 #include <vector>
 #include <glad/glad.h>
 #include <KHR/khrplatform.h>
-//TODO/Good to have: 
-//-Deferred is broken
-//-MSAA causes ASSERTION: "GL_state.ValidForFlip()" at gropengl.cpp:141
-//-The entire MSAA path is broken in ES on multiple places
-//-GL_PROXY_TEXTURE_2D and GL_TEXTURE_COMPRESSED_IMAGE_SIZE solution
-//-glGetTexImage()
+/*
+	OpenGL ES 3.2 compatibility layer
+	---------------------------------
+	TODO/Good to have: 
+	-MSAA causes ASSERTION: "GL_state.ValidForFlip()" at gropengl.cpp:141
+	-The entire MSAA path is broken in ES on multiple places
+	-GL_PROXY_TEXTURE_2D and GL_TEXTURE_COMPRESSED_IMAGE_SIZE solution if possible
+	-Screenshoots do not work.
+*/
 
 //Stubs Enums, this does not exist on GLES and need to be handled
-#define GLAD_GL_ARB_draw_buffers_blend		    1
 #define GL_MAP_PERSISTENT_BIT				    0x0040
-#define GLAD_GL_ARB_vertex_attrib_binding	    0
 #define GL_COMPRESSED_RGBA_BPTC_UNORM_ARB	    0x8E8C
 #define GL_PROXY_TEXTURE_2D					    GL_TEXTURE_2D // needs an alternative way to reeplace proxy
 #define GL_TEXTURE_COMPRESSED_IMAGE_SIZE	    0x86A0 // just compile fix
 #define GL_FILL                                 0x1B02
 #define GL_LINE                                 0x1B01
 #define GL_POINT                                0x1B00
-#define GLAD_GL_ARB_timer_query                 0
 #define GL_DOUBLE                               0x140A
-#define GL_TIMESTAMP							1
 #define GL_UNSIGNED_SHORT_1_5_5_5_REV			0x8366
 #define GL_UNSIGNED_INT_8_8_8_8_REV				0x8367
 #define GL_BGR									0x80E0
 #define GL_MULTISAMPLE							0x809D
 
-//Enums
+//Enums Redefinitions
 #define GL_CLIP_DISTANCE0						GL_CLIP_DISTANCE0_EXT // GL_EXT_clip_cull_distance
 #define GL_BGRA									GL_BGRA_EXT // Depends on GL_EXT_texture_format_BGRA8888
 #define GL_DEPTH_COMPONENT32					GL_DEPTH_COMPONENT24
-#define GL_RGB5									GL_RGB5_A1 // has extra alpha bit, not sure if it going to work
-#define GLAD_GL_ARB_texture_storage				1 // Part of 3.2
-#define GLAD_GL_ARB_texture_compression_bptc	GLAD_GL_EXT_texture_compression_bptc
-#define GL_ARB_gpu_shader5						GL_EXT_gpu_shader5
-#define GLAD_GL_ARB_gpu_shader5					GLAD_GL_EXT_gpu_shader5
-#define GLAD_GL_ARB_get_program_binary			GLAD_GL_OES_get_program_binary
-#define GLAD_GL_ARB_buffer_storage				GLAD_GL_EXT_buffer_storage
+#define GL_RGB5									GL_RGB5_A1 // has extra alpha bit
+#define GL_ARB_gpu_shader5						GL_EXT_gpu_shader5 // Optional on ES 3.1, guarranted on ES 3.2
+#define GL_TIMESTAMP							GL_TIMESTAMP_EXT // Depends on GL_EXT_disjoint_timer_query
+#define GLAD_GL_ARB_texture_compression_bptc	GLAD_GL_EXT_texture_compression_bptc // Optional and unlikely
+#define GLAD_GL_ARB_gpu_shader5					GLAD_GL_EXT_gpu_shader5 // Optional on ES 3.1, guarranted on ES 3.2
+#define GLAD_GL_ARB_get_program_binary			GLAD_GL_OES_get_program_binary // ES 2.0
+#define GLAD_GL_ARB_buffer_storage				GLAD_GL_EXT_buffer_storage // ES 2.0
+#define GLAD_GL_ARB_timer_query					GLAD_GL_EXT_disjoint_timer_query // Optional
+#define GLAD_GL_ARB_texture_storage				GL_TRUE // ES 3.2
+#define GLAD_GL_ARB_draw_buffers_blend			GL_TRUE // ES 3.2 (glBlendFunci and glBlendEquationi)
+#define GLAD_GL_ARB_vertex_attrib_binding		GL_TRUE // ES 3.1
 
-//Functions
-#define glBlendFunciARB					glBlendFunci
+//Functions Redefinitions
+#define glBlendFunciARB					glBlendFunci // ES 3.2
 #define glTexImage2DMultisample			glFramebufferTexture2DMultisampleEXT // Depends on GL_EXT_multisampled_render_to_texture
-#define glBufferStorage					glBufferStorageEXT
-#define glGetDebugMessageLogARB         glGetDebugMessageLog
+#define glBufferStorage					glBufferStorageEXT // Depends on GLAD_GL_EXT_buffer_storage
 #define gladLoadGLLoader                gladLoadGLES2Loader
-#define glDebugMessageCallbackARB       glDebugMessageCallback
-#define glDebugMessageControlARB        glDebugMessageControl
-#define glGetDebugMessageLogARB         glGetDebugMessageLog
-#define glDepthRange                    glDepthRangef
+#define glDebugMessageCallbackARB       glDebugMessageCallback // ES 3.2
+#define glDebugMessageControlARB        glDebugMessageControl // ES 3.2
+#define glGetDebugMessageLogARB         glGetDebugMessageLog // ES 3.2
+#define glDepthRange                    glDepthRangef // ES 3.0
 
-// Bring internalFormat info for glTexSubImage3D calls
-static inline GLint query_internalformat_3d(GLenum target, GLint level)
-{
-	GLint ifmt = 0;
-	glGetTexLevelParameteriv(target, level, GL_TEXTURE_INTERNAL_FORMAT, &ifmt);
-	return ifmt;
-}
+/* 
+	Pixel Conversion for unsupported uncompressed formats 
+*/
 
 // BGRA 1_5_5_5_REV -> RGBA 5_5_5_1
 static inline void convert_BGRA1555_REV_to_RGBA5551(const uint16_t* __restrict src, uint16_t* __restrict dst, size_t npx)
@@ -154,6 +152,19 @@ static inline void convert_BGRA1555_REV_to_RGB888(const uint16_t* __restrict src
 		dstRGB8[o + 1] = G;
 		dstRGB8[o + 2] = B;
 	}
+}
+
+/* 
+	Intercept calls to do pixel conversion and format adjustments to something the driver can work with
+	Note: This is only needed for uncompressed texture formats
+*/
+
+// Bring internalFormat info for glTexSubImage3D calls
+static inline GLint query_internalformat_3d(GLenum target, GLint level)
+{
+	GLint ifmt = 0;
+	glGetTexLevelParameteriv(target, level, GL_TEXTURE_INTERNAL_FORMAT, &ifmt);
+	return ifmt;
 }
 
 #ifdef glTexSubImage3D
@@ -290,29 +301,93 @@ static inline void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height,
 	glad_glReadPixels(x, y, width, height, format, type, data);
 }
 
-inline void glDrawBuffer(GLenum data)
+/* 
+	Missing functions for ES 3.2 compatibility 
+*/
+
+// Not present on ES, emulating with glDrawBuffers
+// Positional mapping: element i must be COLOR_ATTACHMENTi o NONE.
+// ONLY for blits/clears. For draw calls the location of frag shader
+// must be equal to the attachment index
+inline void glDrawBuffer(GLenum buf)
 {
-	const GLenum buffer[] = { data };
-	glDrawBuffers(1, buffer);
+	if (buf >= GL_COLOR_ATTACHMENT0 && buf <= GL_COLOR_ATTACHMENT15) {
+		const unsigned idx = buf - GL_COLOR_ATTACHMENT0;
+		GLenum buffers[16] = {GL_NONE}; 
+		buffers[idx] = buf;
+		glDrawBuffers(static_cast<GLsizei>(idx + 1), buffers);
+	} else {
+		// GL_NONE / GL_BACK
+		glDrawBuffers(1, &buf);
+	}
 }
 
 // does not exist on ES, ES uses layout(location=) directly on shader
+// Notes: 
+// -This function is not required to run.
 #define glBindFragDataLocation(program, colorNumber, name) ((void)0)
 
 // glPolygonMode() is not supported on ES,  no wireframe, GL_FILL is default, GL_POINTS, and GL_LINES needs an alternative path
+// Notes: 
+// -This function is not required to run.
+// -Causes wireframes to be render as solid, like WCS target monitor.
 #define glPolygonMode(face, mode) ((void)0)
 
-// No support for this on ES, it is used for profiling?
-static inline void glQueryCounter(GLuint /*id*/, GLenum /*target*/) 
+// try to use GLAD_GL_EXT_disjoint_timer_query
+static inline void glQueryCounter(GLuint id, GLenum target) 
 {
+	#ifdef GL_EXT_disjoint_timer_query
+		if (GLAD_GL_EXT_disjoint_timer_query)
+			glQueryCounterEXT(id, GL_TIMESTAMP_EXT);
+	#else
+		(void)id;
+	#endif
 }
 
 // glGetCompressedTexImage not present on GLES and no equivalent
+// Notes: 
+// -This function is not required to run.
+// -There is not way to emulate
 #define glGetCompressedTexImage(target, level, pixels) ((void)0)
 
-// does not exist, needs an alternative path, stub
-inline void glGetTexImage(GLenum /*target*/, GLint /*level*/, GLenum /*format*/, GLenum /*type*/, void* /*pixels*/)
+// does not exist, try to emulate for target = GL_TEXTURE_2D
+// Notes: 
+// -glGetTexLevelParameteriv is ES 3.1
+// -This function is not required to run.
+inline void glGetTexImage(GLenum target, GLint level, GLenum format, GLenum type, void* pixels)
 {
+	if (target != GL_TEXTURE_2D || pixels == nullptr)
+		return;
+
+	// Requested size
+	GLint width = 0, height = 0;
+	glGetTexLevelParameteriv(target, level, GL_TEXTURE_WIDTH, &width);
+	glGetTexLevelParameteriv(target, level, GL_TEXTURE_HEIGHT, &height);
+	if (width <= 0 || height <= 0)
+		return;
+
+	// Texture is binded to active unit
+	GLint tex = 0;
+	glGetIntegerv(GL_TEXTURE_BINDING_2D, &tex);
+	if (tex == 0)
+		return;
+
+	// Save FBO to restore later
+	GLint prevReadFbo = 0;
+	glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &prevReadFbo);
+
+	GLuint fbo = 0;
+	glGenFramebuffers(1, &fbo);
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
+	glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, static_cast<GLuint>(tex), level);
+
+	if (glCheckFramebufferStatus(GL_READ_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE) {
+		glReadBuffer(GL_COLOR_ATTACHMENT0);
+		glReadPixels(0, 0, width, height, format, type, pixels);
+	}
+
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, static_cast<GLuint>(prevReadFbo));
+	glDeleteFramebuffers(1, &fbo);
 }
 
 // Convert the call to glMapBufferRange
@@ -321,17 +396,17 @@ inline void* glMapBuffer(GLenum target, GLenum access)
 	GLbitfield flags = 0;
 
 	switch (access) {
-	case GL_READ_ONLY:
-		flags = GL_MAP_READ_BIT;
-		break;
-	case GL_WRITE_ONLY:
-		flags = GL_MAP_WRITE_BIT;
-		break;
-	case GL_READ_WRITE:
-		flags = GL_MAP_READ_BIT | GL_MAP_WRITE_BIT;
-		break;
-	default:
-		return nullptr;
+		case GL_READ_ONLY:
+			flags = GL_MAP_READ_BIT;
+			break;
+		case GL_WRITE_ONLY:
+			flags = GL_MAP_WRITE_BIT;
+			break;
+		case GL_READ_WRITE:
+			flags = GL_MAP_READ_BIT | GL_MAP_WRITE_BIT;
+			break;
+		default:
+			return nullptr;
 	}
 
 	GLint bufSize = 0;
@@ -350,7 +425,10 @@ inline void glGetQueryObjectui64v(GLuint id, GLenum pname, GLuint64 *params)
 	*params = static_cast<GLuint64>(available32);
 }
 
-// Debug Enums
+/*
+	Additional Debug enum declarations
+*/
+
 // glEnable flags
 #define GL_DEBUG_OUTPUT                     0x92E0
 #define GL_DEBUG_OUTPUT_SYNCHRONOUS         0x8242
