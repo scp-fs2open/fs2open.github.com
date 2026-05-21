@@ -83,7 +83,14 @@ bool HelpTopicsDialogModel::ensureEngineReady() {
 
 // ---------------------------------------------------------------------------
 QString HelpTopicsDialogModel::resolveCollectionFile() {
-	return QDir(QCoreApplication::applicationDirPath()).filePath(
+	QDir dir(QCoreApplication::applicationDirPath());
+
+#ifdef Q_OS_MACOS
+	dir.cdUp();
+	dir.cd("Resources");
+#endif
+
+	return dir.filePath(
 	    QStringLiteral("help/qtfred_help.qhc"));
 }
 
