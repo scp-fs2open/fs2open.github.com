@@ -102,11 +102,7 @@ DCF(light,"Changes lighting parameters")
 }
 
 // used by In-Game Options menu
-#ifndef USE_OPENGL_ES
 static bool DeferredLightingEnabled = true;
-#else
-static bool DeferredLightingEnabled = false;
-#endif
 
 static void parse_deferred_lighting_func()
 {
@@ -126,11 +122,7 @@ static auto DeferredLightingOption = options::OptionBuilder<bool>("Graphics.Defe
                   .parser(parse_deferred_lighting_func)
                   .finish();
 
-#ifndef USE_OPENGL_ES
 static bool DeferredCockpitLightingEnabled = true;
-#else
-static bool DeferredCockpitLightingEnabled = false;
-#endif
 
 static void parse_deferredcockpit_lighting_func()
 {
