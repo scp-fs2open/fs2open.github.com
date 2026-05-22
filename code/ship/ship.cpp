@@ -15277,8 +15277,18 @@ void wing_bash_ship_name(ship *shipp, const wing *wingp, int ordinal, bool reset
 	//  This is unavoidable, because if we didn't overwrite display names, all waves would have the display name from the first wave.)
 	if (wingp->has_display_name())
 	{
-		wing_bash_ship_name(shipp->display_name, wingp->get_display_name(), ordinal);
-		shipp->flags.set(Ship::Ship_Flags::Has_display_name);
+		// in FRED, since the wing display name takes precedence, clear the ship display name
+		if (Fred_running)
+		{
+			shipp->display_name = "";
+			shipp->flags.remove(Ship::Ship_Flags::Has_display_name);
+		}
+		// in FS, set up the ship display name based on the wing display name
+		else
+		{
+			wing_bash_ship_name(shipp->display_name, wingp->get_display_name(), ordinal);
+			shipp->flags.set(Ship::Ship_Flags::Has_display_name);
+		}
 	}
 	else if (reset_display_name_if_normal)
 	{
