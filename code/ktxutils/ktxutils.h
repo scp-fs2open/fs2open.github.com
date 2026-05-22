@@ -2,7 +2,7 @@
 #include "globalincs/pstypes.h"
 #include "cfile/cfile.h"
 #ifdef WITH_OPENGL
-#include <glad/glad.h>
+#include "glad/glad.h"
 #endif
 
 // ETC2 types
@@ -69,5 +69,5 @@ int ktx1_read_bitmap(const char* filename, ubyte* dst, ubyte* out_bpp);
 //Get the GL enum type for this KTX format type, returns 0 if type is invalid.
 int ktx_map_ktx_format_to_gl_internal(const int ktx_format);
 
-//Get ktx bits per byte from GL internat format enum, returns 0 if internal format is invalid
-uint32_t ktx_etc_block_bytes(const int internal_format);
+//Get ktx block size (bytes per block) from GL internat format enum, returns 0 if internal format is invalid
+uint32_t ktx_etc_block_size(const int internal_format);

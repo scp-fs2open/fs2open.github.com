@@ -13,8 +13,7 @@
 
 static const uint8_t KTX_ID[12] = { 0xAB, 'K', 'T', 'X', ' ', '1', '1', 0xBB, '\r', '\n', 0x1A, '\n' };
 
-// BPB ETC/EAC
-uint32_t ktx_etc_block_bytes(const int internal_format)
+uint32_t ktx_etc_block_size(const int internal_format)
 {
 	switch (internal_format) 
 	{
@@ -32,7 +31,6 @@ uint32_t ktx_etc_block_bytes(const int internal_format)
 			return 0;
 	}
 }
-
 
 int ktx_map_ktx_format_to_gl_internal(const int ktx_format)
 {
@@ -55,7 +53,7 @@ int ktx_map_ktx_format_to_gl_internal(const int ktx_format)
 	}
 }
 
-int ktx_map_gl_internal_to_bm(const int internal_format)
+int ktx_map_gl_internal_to_bm_type(const int internal_format)
 {
 	switch (internal_format) 
 	{
@@ -140,8 +138,8 @@ int ktx1_read_header(const char* filename, CFILE* img_cfp, int* w, int* h, int* 
 	}
 
 	const uint32_t fmt = hdr.glInternalFormat;
-	const uint32_t blockBytes = ktx_etc_block_bytes(fmt);
-	const int bm_ct = ktx_map_gl_internal_to_bm(fmt);
+	const uint32_t blockBytes = ktx_etc_block_size(fmt);
+	const int bm_ct = ktx_map_gl_internal_to_bm_type(fmt);
 	if (blockBytes == 0 || bm_ct == BM_TYPE_NONE) {
 		if (!img_cfp)
 			cfclose(cf);
