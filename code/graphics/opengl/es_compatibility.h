@@ -172,9 +172,9 @@ static inline GLint query_internalformat_3d(GLenum target, GLint level)
 #endif
 static inline void glTexSubImage3D(GLenum target, GLint level, GLint xoff, GLint yoff, GLint zoff, GLsizei w, GLsizei h, GLsizei d, GLenum format, GLenum type, const void* data)
 {
-	const size_t npx = size_t(w) * size_t(h) * size_t(d);
-
-	if (format == GL_BGRA && type == GL_UNSIGNED_SHORT_1_5_5_5_REV) {
+	if (format == GL_BGRA && type == GL_UNSIGNED_SHORT_1_5_5_5_REV) 
+	{
+		const size_t npx = size_t(w) * size_t(h) * size_t(d);
 		GLint internalFormat = query_internalformat_3d(target,level);
 		if (internalFormat == GL_RGBA8)
 		{
@@ -212,9 +212,10 @@ static inline void glTexSubImage3D(GLenum target, GLint level, GLint xoff, GLint
 				return;
 			}
 		}
-	}
-
-	if (format == GL_BGR && type == GL_UNSIGNED_BYTE) {
+	} 
+	else if (format == GL_BGR && type == GL_UNSIGNED_BYTE) 
+	{
+		const size_t npx = size_t(w) * size_t(h) * size_t(d);
 		GLint internalFormat = query_internalformat_3d(target, level);
 		if (internalFormat == GL_RGBA8)
 		{
@@ -238,9 +239,10 @@ static inline void glTexSubImage3D(GLenum target, GLint level, GLint xoff, GLint
 				return;
 			}
 		}
-	}
-
-	if (format == GL_BGRA && type == GL_UNSIGNED_INT_8_8_8_8_REV) { 
+	} 
+	else if (format == GL_BGRA && type == GL_UNSIGNED_INT_8_8_8_8_REV) 
+	{ 
+		const size_t npx = size_t(w) * size_t(h) * size_t(d);
 		type = GL_UNSIGNED_BYTE;
 		if (data != nullptr /* && !GLAD_GL_EXT_texture_format_BGRA8888*/) {
 			// Conversion forced on because the check either does not work or buggy impl on Mali
