@@ -15218,42 +15218,46 @@ int get_available_secondary_weapons(object *objp, int *outlist, int *outbanklist
 	return count;
 }
 
-void wing_bash_ship_name(SCP_string &ship_name, const char *wing_name, int index)
+void wing_bash_ship_name(SCP_string &ship_name, const char *wing_name, int ordinal)
 {
 	// always create the name this way; display names are handled in the p_object* and ship* functions
-	sprintf(ship_name, NOX("%s %d"), wing_name, index);
+	sprintf(ship_name, NOX("%s %d"), wing_name, ordinal);
 }
 
-void wing_bash_ship_name(char *ship_name, const char *wing_name, int index)
+void wing_bash_ship_name(char *ship_name, const char *wing_name, int ordinal)
 {
-	static_assert(MAX_SHIPS_PER_WING < 10, "If two-digit wingman indexes are possible, this function will need to be modified.");
-	constexpr size_t max_name_len = NAME_LENGTH - 3;
+	char ordinal_str[NAME_LENGTH];
+	sprintf(ordinal_str, "%d", ordinal);
+
+	size_t max_name_len = NAME_LENGTH - 2 - strlen(ordinal_str);
 
 	// truncate name if too long
 	if (strlen(wing_name) > max_name_len)
 	{
 		Warning(LOCATION, "Wing name %s is too long; truncating name for ship", wing_name);
 		strncpy(ship_name, wing_name, max_name_len);
-		sprintf(ship_name + max_name_len, NOX("%d"), index);
+		ship_name[max_name_len] = '\0';
 	}
 	else
-	{
-		// always create the name this way; display names are handled in the p_object* and ship* functions
-		sprintf(ship_name, NOX("%s %d"), wing_name, index);
-	}
+		strcpy(ship_name, wing_name);
+
+	// add the rest
+	// always create the name this way; display names are handled in the p_object* and ship* functions
+	strcat(ship_name, " ");
+	strcat(ship_name, ordinal_str);
 }
 
-void wing_bash_ship_name(p_object *p_objp, const wing *wingp, int index, bool reset_display_name_if_normal)
+void wing_bash_ship_name(p_object *p_objp, const wing *wingp, int ordinal, bool reset_display_name_if_normal)
 {
 	// always update the real name
-	wing_bash_ship_name(p_objp->name, wingp->name, index);
+	wing_bash_ship_name(p_objp->name, wingp->name, ordinal);
 
 	// also set up the display name if we have one
 	// (In the unlikely edge case where the ship already has a display name for some reason, it will be overwritten.
 	//  This is unavoidable, because if we didn't overwrite display names, all waves would have the display name from the first wave.)
 	if (wingp->has_display_name())
 	{
-		wing_bash_ship_name(p_objp->display_name, wingp->get_display_name(), index);
+		wing_bash_ship_name(p_objp->display_name, wingp->get_display_name(), ordinal);
 		p_objp->flags.set(Mission::Parse_Object_Flags::SF_Has_display_name);
 	}
 	else if (reset_display_name_if_normal)
@@ -15263,18 +15267,28 @@ void wing_bash_ship_name(p_object *p_objp, const wing *wingp, int index, bool re
 	}
 }
 
-void wing_bash_ship_name(ship *shipp, const wing *wingp, int index, bool reset_display_name_if_normal)
+void wing_bash_ship_name(ship *shipp, const wing *wingp, int ordinal, bool reset_display_name_if_normal)
 {
 	// always update the real name
-	wing_bash_ship_name(shipp->ship_name, wingp->name, index);
+	wing_bash_ship_name(shipp->ship_name, wingp->name, ordinal);
 
 	// also set up the display name if we have one
 	// (In the unlikely edge case where the ship already has a display name for some reason, it will be overwritten.
 	//  This is unavoidable, because if we didn't overwrite display names, all waves would have the display name from the first wave.)
 	if (wingp->has_display_name())
 	{
-		wing_bash_ship_name(shipp->display_name, wingp->get_display_name(), index);
-		shipp->flags.set(Ship::Ship_Flags::Has_display_name);
+		// in FRED, since the wing display name takes precedence, clear the ship display name
+		if (Fred_running)
+		{
+			shipp->display_name = "";
+			shipp->flags.remove(Ship::Ship_Flags::Has_display_name);
+		}
+		// in FS, set up the ship display name based on the wing display name
+		else
+		{
+			wing_bash_ship_name(shipp->display_name, wingp->get_display_name(), ordinal);
+			shipp->flags.set(Ship::Ship_Flags::Has_display_name);
+		}
 	}
 	else if (reset_display_name_if_normal)
 	{

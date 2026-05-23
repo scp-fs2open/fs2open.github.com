@@ -1723,10 +1723,10 @@ void multi_ts_get_shipname( char *ship_name, int team, int slot_index )
 {
 	if ( Netgame.type_flags & NG_TYPE_TEAM ) {
 		Assert( (team >= 0) && (team < MULTI_TS_MAX_TVT_TEAMS) );
-		wing_bash_ship_name(ship_name, TVT_wing_names[team], slot_index);
+		wing_bash_ship_name(ship_name, TVT_wing_names[team], slot_index + 1);
 	} else {
 		Assert( team == 0 );
-		wing_bash_ship_name(ship_name, Starting_wing_names[slot_index / MULTI_TS_NUM_SHIP_SLOTS_TEAM], slot_index % MULTI_TS_NUM_SHIP_SLOTS_TEAM);
+		wing_bash_ship_name(ship_name, Starting_wing_names[slot_index / MULTI_TS_NUM_SHIP_SLOTS_TEAM], (slot_index % MULTI_TS_NUM_SHIP_SLOTS_TEAM) + 1);
 	}
 }
 
