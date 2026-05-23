@@ -1173,9 +1173,7 @@
 #define IDC_DISABLE_ETS                 1630
 #define IDC_DISABLE_ETS2                1632
 #define IDC_CLOAKED                     1632
-#define IDC_NEB2_NEAR_MULTIPLIER        1632
 #define IDC_EDIT6                       1633
-#define IDC_NEB2_FAR_MULTIPLIER         1634
 #define IDC_MISSION_LOG_TRUE            1635
 #define IDC_MISSION_LOG_FALSE           1636
 #define IDC_MISSION_LOG_STATE_CHANGE    1637
@@ -1574,15 +1572,19 @@
 #define ID_INDICATOR_LEFT               59143
 #define ID_INDICATOR_RIGHT              59144
 #define ID_INDICATOR_MODIFIED           59145
+#define IDC_NEB2_FOG_1000M_VIS          1705
+#define IDC_NEB2_FOG_NEAR_DIST          1706
+#define IDC_NEB2_FOG_SKYBOX_CLIP        1707
+#define IDC_NEB2_FOG_CLIP               1708
 
 // Next default values for new objects
-// 
+//
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        335
 #define _APS_NEXT_COMMAND_VALUE         33104
-#define _APS_NEXT_CONTROL_VALUE         1705
+#define _APS_NEXT_CONTROL_VALUE         1709
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif

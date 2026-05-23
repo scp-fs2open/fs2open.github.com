@@ -72,9 +72,15 @@ same as the volumetric nebula renderer. For that see
         Check the ones you want active in the nebula.</td></tr>
     <tr><td>Ship Trails</td><td>Toggles engine contrail streaks left by ships
         moving through the nebula clouds.</td></tr>
-    <tr><td>Fog Near / Far Multipliers</td><td>Scale the near and far fog distances.
-        Lower near multiplier thickens fog close to the camera; lower far
-        multiplier reduces maximum visibility distance.</td></tr>
+    <tr><td>Visibility at 1000m</td><td>Fraction (0&ndash;1, inclusive) of light that
+        survives 1000 meters of fog. Smaller values produce thicker fog. Zero is
+        allowed (fully opaque).</td></tr>
+    <tr><td>Fog Near Distance</td><td>Distance from the camera, in meters, where
+        fog begins. Must be greater than zero.</td></tr>
+    <tr><td>Skybox Clip Distance</td><td>Maximum render distance for the skybox in
+        fog, in meters. 0 disables skybox fog.</td></tr>
+    <tr><td>Fog Clip Distance</td><td>Maximum render distance for the scene in
+        fog, in meters. 0 disables scene fog.</td></tr>
     <tr><td>Display background bitmaps in nebula</td><td>When checked, background
         bitmaps defined in the Bitmaps section are still visible through the
         nebula. Uncheck to let the nebula obscure them completely.</td></tr>
