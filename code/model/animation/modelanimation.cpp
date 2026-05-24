@@ -1062,10 +1062,29 @@ namespace animation {
 		return true;
 	}
 
+	bool ModelAnimationSet::advanceMoveableToFinal(polymodel_instance* pmi, const SCP_string& name) const {
+		SCP_string lowername = name;
+		SCP_tolower(lowername);
+		auto moveable = m_moveableSet.find(lowername);
+		if (moveable == m_moveableSet.end())
+			return false;
+
+		moveable->second->advanceToFinalState(pmi);
+		return true;
+	}
+
 	void ModelAnimationSet::initializeMoveables(polymodel_instance* pmi) {
 		for(const auto& moveable : m_moveableSet){
 			moveable.second->initialize(this, pmi);
 		}
+	}
+
+	void ModelAnimationMoveable::advanceToFinalState(polymodel_instance* pmi) {
+		auto it = m_instances.find(pmi->id);
+		if (it == m_instances.end() || !it->second.animation)
+			return;
+
+		it->second.animation->start(pmi, ModelAnimationDirection::FWD, true, true);
 	}
 
 	SCP_vector<SCP_string> ModelAnimationSet::getRegisteredMoveables() const {
