@@ -28,6 +28,9 @@
 #include "lighting/lighting.h"
 #include "render/3d.h"
 #include "tracing/tracing.h"
+#ifdef USE_OPENGL_ES
+#include "es_compatibility.h"
+#endif
 
 GLuint Scene_framebuffer;
 GLuint Scene_framebuffer_ms;
@@ -358,6 +361,13 @@ void opengl_setup_scene_textures()
 		Gr_enable_soft_particles = false;
 		return;
 	}
+
+#ifdef USE_OPENGL_ES
+	if (Cmdline_msaa_enabled > 0) {
+		Cmdline_msaa_enabled = 0;
+		Warning(LOCATION, "MSAA is not currently supported under OpenGL ES. Disabling MSAA.");
+	}
+#endif
 
 	if (Cmdline_msaa_enabled > 0) {
 		glEnable(GL_MULTISAMPLE);
@@ -1193,12 +1203,23 @@ void gr_opengl_render_decals(decal_material* material_info,
 
 void gr_opengl_start_decal_pass() {
 	// For now we only render into the diffuse channel of the framebuffer
+#ifndef USE_OPENGL_ES
 	GLenum buffers[] = {
 		GL_COLOR_ATTACHMENT0,
 		GL_COLOR_ATTACHMENT2,
 		GL_COLOR_ATTACHMENT4,
 	};
 	glDrawBuffers(3, buffers);
+#else
+	GLenum buffers[] = {
+		GL_COLOR_ATTACHMENT0,
+		GL_NONE,
+		GL_COLOR_ATTACHMENT2,
+		GL_NONE,
+		GL_COLOR_ATTACHMENT4,
+	};
+	glDrawBuffers(5, buffers);
+#endif
 }
 void gr_opengl_stop_decal_pass() {
 	GLenum buffers2[] = {
