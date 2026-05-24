@@ -36,6 +36,7 @@ void TableViewerModel::initializeData(const char* table_filename, const char* mo
 		_text = table_viewer::get_complete_table_text(table_filename, modular_pattern, msg.c_str());
 	}
 	modelChanged();
+	_modified = false;
 }
 
 SCP_string TableViewerModel::getText() const

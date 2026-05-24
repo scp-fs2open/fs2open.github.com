@@ -2,6 +2,7 @@
 
 #include "globalincs/pstypes.h"
 #include "parse/parselo.h"
+#include "particle/EffectHost.h"
 
 #include <optional>
 
@@ -9,7 +10,7 @@ namespace particle {
 	class ParticleSource;
 	class ParticleVolume {
 	public:
-		virtual vec3d sampleRandomPoint(const matrix &orientation, const std::tuple<const ParticleSource&, const size_t&, const vec3d&>& source, float particlesFraction) = 0;
+		virtual vec3d sampleRandomPoint(const matrix &orientation, const std::tuple<const ParticleSource&, const size_t&, const vec3d&>& source, float particlesFraction, const EffectHost& host) = 0;
 
 		virtual void parse() = 0;
 

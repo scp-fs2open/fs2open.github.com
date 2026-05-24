@@ -33,6 +33,7 @@
 
 #include <string>
 #include <set>
+#include <optional>
 #include <particle/ParticleManager.h>
 
 class object;
@@ -470,6 +471,7 @@ typedef struct ship_flag_description {
 extern ship_flag_name Ship_flag_names[];
 extern ship_flag_description Ship_flag_descriptions[];
 extern const size_t Num_ship_flag_names;
+extern const size_t Num_ship_flag_descriptions;
 
 typedef struct wing_flag_name {
 	Ship::Wing_Flags flag;
@@ -484,6 +486,7 @@ typedef struct wing_flag_description {
 extern wing_flag_name Wing_flag_names[];
 extern wing_flag_description Wing_flag_descriptions[];
 extern const size_t Num_wing_flag_names;
+extern const size_t Num_wing_flag_descriptions;
 
 #define DEFAULT_SHIP_PRIMITIVE_SENSOR_RANGE		10000	// Goober5000
 
@@ -619,6 +622,7 @@ public:
 	float max_weapon_regen_per_second;		// wookieejedi - make this a ship object variable
 
 	int ship_guardian_threshold;	// Goober5000 - now also determines whether ship is guardian'd
+	float max_guard_radius;      // Optional clamp for guard engagement/resume ranges; <= 0 means unused
 
 
 	char	ship_name[NAME_LENGTH];
@@ -1344,6 +1348,8 @@ public:
 
 	vec3d	closeup_pos;					// position for camera when using ship in closeup view (eg briefing and techroom)
 	float	closeup_zoom;					// zoom when using ship in closeup view (eg briefing and techroom)
+	std::optional<vec3d> icon_closeup_pos;	// icon-specific position for camera when using ship in closeup view
+	std::optional<float> icon_closeup_zoom;	// icon-specific zoom when using ship in closeup view
 
 	vec3d	closeup_pos_targetbox;			// position for camera when using ship in closeup view for hud target monitor
 	float	closeup_zoom_targetbox;			// zoom when using ship in closeup view for hud target monitor
@@ -1569,6 +1575,8 @@ extern SCP_vector<engine_wash_info> Engine_wash_info;
 //	Defines a wing of ships.
 typedef struct wing {
 	char	name[NAME_LENGTH];
+	SCP_string display_name;
+
 	char	wing_squad_filename[MAX_FILENAME_LEN];	// Goober5000
 	int	reinforcement_index;					// index in reinforcement struct or -1
 	int	hotkey;
@@ -1628,6 +1636,9 @@ typedef struct wing {
 
 	// reset to a completely blank wing
 	void clear();
+
+	const char *get_display_name() const;
+	bool has_display_name() const;
 } wing;
 
 extern wing Wings[MAX_WINGS];
@@ -1764,8 +1775,11 @@ extern int wing_name_lookup(const char *name, int ignore_count = 0);
 
 extern bool wing_has_yet_to_arrive(const wing *wingp);
 
-// for generating a ship name for arbitrary waves/indexes of that wing... correctly handles the # character
-extern void wing_bash_ship_name(char *ship_name, const char *wing_name, int index, bool *needs_display_name = nullptr);
+// for generating a ship name for arbitrary waves/indexes of that wing
+extern void wing_bash_ship_name(SCP_string &ship_name, const char *wing_name, int ordinal);
+extern void wing_bash_ship_name(char *ship_name, const char *wing_name, int ordinal);
+extern void wing_bash_ship_name(p_object *p_objp, const wing *wingp, int ordinal, bool reset_display_name_if_normal = false);
+extern void wing_bash_ship_name(ship *shipp, const wing *wingp, int ordinal, bool reset_display_name_if_normal = false);
 extern int Player_ship_class;
 
 //	Do the special effect for energy dissipating into the shield for a hit.

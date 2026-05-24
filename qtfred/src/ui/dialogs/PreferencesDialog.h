@@ -20,14 +20,16 @@ public:
 	explicit PreferencesDialog(FredView* parent, EditorViewport* viewport);
 	~PreferencesDialog() override;
 
-	void accept() override;
-	void reject() override;
-
 private slots:
+	void applyChanges();
 	// General
+	void on_offerAutosaveRecovery_toggled(bool checked);
 	void on_moveShipsWhenUndocking_toggled(bool checked);
 	void on_alwaysSaveDisplayNames_toggled(bool checked);
-	void on_errorCheckerChecksForPotentialIssues_toggled(bool checked);
+	void on_checkPotentialIssues_toggled(bool checked);
+	void on_applyAutoCorrections_toggled(bool checked);
+	void on_toolbarIconSizeCombo_currentIndexChanged(int index);
+	void on_themeCombo_currentIndexChanged(int index);
 	void on_showSexpHelpMissionEvents_toggled(bool checked);
 	void on_showSexpHelpMissionGoals_toggled(bool checked);
 	void on_showSexpHelpMissionCutscenes_toggled(bool checked);
@@ -55,6 +57,8 @@ private: // NOLINT(readability-redundant-access-specifiers)
 	std::unique_ptr<Ui::PreferencesDialog> ui;
 	std::unique_ptr<PreferencesDialogModel> _model;
 	std::map<ControlAction, QKeySequenceEdit*> _controlEditors;
+	FredView* _fredView = nullptr;
+	EditorViewport* _viewport = nullptr;
 };
 
 } // namespace fso::fred::dialogs

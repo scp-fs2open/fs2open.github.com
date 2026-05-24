@@ -3,11 +3,13 @@
 #include "ui_ShipAltShipClass.h"
 
 #include <mission/util.h>
+#include <ui/Theme.h>
 #include <ui/util/SignalBlockers.h>
 
 #include <QCloseEvent>
 
 namespace fso::fred::dialogs {
+
 ShipAltShipClass::ShipAltShipClass(QDialog* parent, EditorViewport* viewport)
 	: QDialog(parent), ui(new Ui::ShipAltShipClass()),
 	  _model(new ShipAltShipClassModel(this, viewport)), _viewport(viewport)
@@ -20,19 +22,21 @@ ShipAltShipClass::ShipAltShipClass(QDialog* parent, EditorViewport* viewport)
 ShipAltShipClass::~ShipAltShipClass() = default;
 
 void ShipAltShipClass::accept()
-{ // If apply() returns true, close the dialog
-	sync_data();
+{
+	// If apply() returns true, close the dialog
+	syncData();
 	if (_model->apply()) {
 		QDialog::accept();
 	}
-	// else: validation failed, don’t close
+	// else: validation failed, don't close
 }
 
 void ShipAltShipClass::reject()
-{ // Asks the user if they want to save changes, if any
+{
+	// Asks the user if they want to save changes, if any
 	// If they do, it runs _model->apply() and returns the success value
 	// If they don't, it runs _model->reject() and returns true
-	sync_data();
+	syncData();
 	if (rejectOrCloseHandler(this, _model.get(), _viewport)) {
 		QDialog::reject(); // actually close
 	}
@@ -49,6 +53,7 @@ void ShipAltShipClass::on_buttonBox_accepted()
 {
 	accept();
 }
+
 void ShipAltShipClass::on_buttonBox_rejected()
 {
 	reject();
@@ -56,7 +61,7 @@ void ShipAltShipClass::on_buttonBox_rejected()
 
 void ShipAltShipClass::on_addButton_clicked()
 {
-	auto item = generate_item(ui->shipCombo->currentData(Qt::UserRole).toInt(),
+	auto item = generateItem(ui->shipCombo->currentData(Qt::UserRole).toInt(),
 		ui->variableCombo->currentData(Qt::UserRole).toInt(),
 		ui->defaultCheckbox->isChecked());
 	if (item != nullptr) {
@@ -68,7 +73,7 @@ void ShipAltShipClass::on_insertButton_clicked()
 {
 	auto current = ui->classList->currentIndex();
 	if (current.isValid()) {
-		auto item = generate_item(ui->shipCombo->currentData(Qt::UserRole).toInt(),
+		auto item = generateItem(ui->shipCombo->currentData(Qt::UserRole).toInt(),
 			ui->variableCombo->currentData(Qt::UserRole).toInt(),
 			ui->defaultCheckbox->isChecked());
 		if (item != nullptr) {
@@ -128,7 +133,7 @@ void ShipAltShipClass::on_shipCombo_currentIndexChanged(int index)
 				on_variableCombo_currentIndexChanged(1);
 			}
 		} else {
-			QString classname = generate_name(ui->shipCombo->itemData(index, Qt::UserRole).toInt(), -1);
+			QString classname = generateName(ui->shipCombo->itemData(index, Qt::UserRole).toInt(), -1);
 			ui->classList->model()->setData(current, classname, Qt::DisplayRole);
 			ui->classList->model()->setData(current, ui->shipCombo->itemData(index, Qt::UserRole), Qt::UserRole + 1);
 			ui->classList->model()->setData(current, -1, Qt::UserRole + 2);
@@ -151,7 +156,7 @@ void ShipAltShipClass::on_variableCombo_currentIndexChanged(int index)
 		} else {
 			int ship_class =
 				ship_info_lookup(Sexp_variables[ui->variableCombo->itemData(index, Qt::UserRole).toInt()].text);
-			QString classname = generate_name(ship_class, ui->variableCombo->itemData(index, Qt::UserRole).toInt());
+			QString classname = generateName(ship_class, ui->variableCombo->itemData(index, Qt::UserRole).toInt());
 			ui->classList->model()->setData(current, classname, Qt::DisplayRole);
 			ui->classList->model()->setData(current, ship_class, Qt::UserRole + 1);
 			ui->classList->model()->setData(current,
@@ -170,47 +175,56 @@ void ShipAltShipClass::on_defaultCheckbox_toggled(bool toggled)
 		ui->classList->model()->setData(current, toggled, Qt::UserRole);
 	}
 }
+
 void ShipAltShipClass::initUI()
 {
-	alt_pool = new QStandardItemModel();
-	for (auto& alt_class : _model->get_pool()) {
-		auto item = generate_item(alt_class.ship_class, alt_class.variable_index, alt_class.default_to_this_class);
+	_altPool = new QStandardItemModel();
+	for (auto& alt_class : _model->getPool()) {
+		auto item = generateItem(alt_class.ship_class, alt_class.variable_index, alt_class.default_to_this_class);
 		if (item != nullptr) {
-			alt_pool->appendRow(item);
+			_altPool->appendRow(item);
 		}
 	}
 
-	ui->classList->setModel(alt_pool);
+	ui->classList->setModel(_altPool);
 	connect(ui->classList->selectionModel(),
 		&QItemSelectionModel::currentChanged,
 		this,
 		&ShipAltShipClass::classListChanged);
 
 	auto ship_pool = new QStandardItemModel();
-	for (auto& ship : _model->get_classes()) {
-		QString classname = ship.first.c_str();
+	for (auto& shipClass : _model->getClasses()) {
+		QString classname = shipClass.first.c_str();
 		auto item = new QStandardItem(classname);
-		item->setData(ship.second, Qt::UserRole);
+		item->setData(shipClass.second, Qt::UserRole);
 		ship_pool->appendRow(item);
 	}
 	auto shipproxyModel = new InverseSortFilterProxyModel(this);
 	shipproxyModel->setSourceModel(ship_pool);
 	ui->shipCombo->setModel(shipproxyModel);
 	auto variable_pool = new QStandardItemModel();
-	for (auto& variable : _model->get_variables()) {
+	for (auto& variable : _model->getVariables()) {
 		QString classname = variable.first.c_str();
 		auto item = new QStandardItem(classname);
 		item->setData(variable.second, Qt::UserRole);
 		variable_pool->appendRow(item);
 	}
 	ui->variableCombo->setModel(variable_pool);
-	updateUI();
+
+	fso::fred::bindStandardIcon(ui->upButton, QStyle::SP_ArrowUp);
+	ui->upButton->setText(QString());
+	ui->upButton->setToolTip(tr("Move selected class up"));
+
+	fso::fred::bindStandardIcon(ui->downButton, QStyle::SP_ArrowDown);
+	ui->downButton->setText(QString());
+	ui->downButton->setToolTip(tr("Move selected class down"));
+
+	updateUi();
 }
 
-void ShipAltShipClass::updateUI()
+void ShipAltShipClass::updateUi()
 {
 	util::SignalBlockers blockers(this); // block signals while we set up the UI
-	QModelIndexList* list;
 	auto current = ui->classList->currentIndex();
 	auto ship_class = -1;
 	auto variable = -1;
@@ -223,32 +237,46 @@ void ShipAltShipClass::updateUI()
 	if (ui->variableCombo->model()->rowCount() <= 1) {
 		dynamic_cast<InverseSortFilterProxyModel*>(ui->shipCombo->model())->setFilterFixedString("Set From Variable");
 	}
-	list = new QModelIndexList(
-		ui->shipCombo->model()->match(ui->shipCombo->model()->index(0, 0), Qt::UserRole, ship_class));
-	if (!list->empty()) {
-		ui->shipCombo->setCurrentIndex(list->first().row());
-	} else {
-		if (ui->classList->model()->rowCount() != 0 && ship_class != -1) {
+	// Workaround: avoid model()->match() which returns a QModelIndexList that triggers a
+	// cross-heap free assert on Windows debug builds. Manually iterate instead.
+	{
+		int shipRow = 0;
+		bool found = false;
+		auto* shipModel = ui->shipCombo->model();
+		for (int i = 0; i < shipModel->rowCount(); ++i) {
+			if (shipModel->data(shipModel->index(i, 0), Qt::UserRole).toInt() == ship_class) {
+				shipRow = i;
+				found = true;
+				break;
+			}
+		}
+		if (!found && ui->classList->model()->rowCount() != 0 && ship_class != -1) {
 			_viewport->dialogProvider->showButtonDialog(DialogType::Error,
 				"Error",
 				"Illegal ship class.\n Resetting to -1",
 				{DialogButton::Ok});
 		}
-		ui->shipCombo->setCurrentIndex(0);
+		ui->shipCombo->setCurrentIndex(shipRow);
 	}
 
-	auto varlist = new QModelIndexList(
-		ui->variableCombo->model()->match(ui->variableCombo->model()->index(0, 0), Qt::UserRole, variable));
-	if (!varlist->empty()) {
-		ui->variableCombo->setCurrentIndex(varlist->first().row());
-	} else {
-		if (ui->classList->model()->rowCount() != 0) {
+	{
+		int varRow = 0;
+		bool found = false;
+		auto* varModel = ui->variableCombo->model();
+		for (int i = 0; i < varModel->rowCount(); ++i) {
+			if (varModel->data(varModel->index(i, 0), Qt::UserRole).toInt() == variable) {
+				varRow = i;
+				found = true;
+				break;
+			}
+		}
+		if (!found && ui->classList->model()->rowCount() != 0) {
 			_viewport->dialogProvider->showButtonDialog(DialogType::Error,
 				"Error",
 				"Illegal variable index.\n Resetting to -1",
 				{DialogButton::Ok});
 		}
-		ui->variableCombo->setCurrentIndex(0);
+		ui->variableCombo->setCurrentIndex(varRow);
 	}
 
 	if (ui->variableCombo->model()->rowCount() <= 1) {
@@ -256,17 +284,19 @@ void ShipAltShipClass::updateUI()
 	}
 	ui->defaultCheckbox->setChecked(default_ship);
 }
+
 void ShipAltShipClass::classListChanged(const QModelIndex& current)
 {
 	SCP_UNUSED(current);
-	updateUI();
+	updateUi();
 }
-QStandardItem* ShipAltShipClass::generate_item(const int classid, const int variable, const bool default_ship)
+
+QStandardItem* ShipAltShipClass::generateItem(int classid, int variable, bool defaultShip)
 {
-	QString classname = generate_name(classid, variable);
+	QString classname = generateName(classid, variable);
 	if (!classname.isEmpty()) {
 		auto item = new QStandardItem(classname);
-		item->setData(default_ship, Qt::UserRole);
+		item->setData(defaultShip, Qt::UserRole);
 		item->setData(classid, Qt::UserRole + 1);
 		item->setData(variable, Qt::UserRole + 2);
 		return item;
@@ -278,7 +308,8 @@ QStandardItem* ShipAltShipClass::generate_item(const int classid, const int vari
 		return nullptr;
 	}
 }
-QString ShipAltShipClass::generate_name(const int classid, const int variable)
+
+QString ShipAltShipClass::generateName(int classid, int variable)
 {
 	QString classname;
 	if (variable != -1) {
@@ -299,7 +330,9 @@ QString ShipAltShipClass::generate_name(const int classid, const int variable)
 	}
 	return classname;
 }
-void ShipAltShipClass::sync_data() {
+
+void ShipAltShipClass::syncData()
+{
 	SCP_vector<alt_class> new_pool;
 	int n = ui->classList->model()->rowCount();
 	for (int i = 0; i < n; i++) {
@@ -312,12 +345,15 @@ void ShipAltShipClass::sync_data() {
 			dynamic_cast<QStandardItemModel*>(ui->classList->model())->index(i, 0).data(Qt::UserRole + 2).toInt();
 		new_pool.push_back(new_list_item);
 	}
-	_model->sync_data(new_pool);
+	_model->syncData(new_pool);
 }
+
 InverseSortFilterProxyModel::InverseSortFilterProxyModel(QObject* parent) : QSortFilterProxyModel(parent) {}
+
 bool InverseSortFilterProxyModel::filterAcceptsRow(int source_row, const QModelIndex& source_parent) const
 {
 	bool accept = QSortFilterProxyModel::filterAcceptsRow(source_row, source_parent);
 	return !accept;
 }
+
 } // namespace fso::fred::dialogs

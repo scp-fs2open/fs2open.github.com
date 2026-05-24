@@ -308,6 +308,13 @@ enum IoActionId : int {
 
 	CYCLE_PRIMARY_WEAPON_PATTERN,
 
+	TOGGLE_PHOTO_MODE,
+	PHOTO_MODE_FILTER_PREV,
+	PHOTO_MODE_FILTER_NEXT,
+	PHOTO_MODE_FILTER_RESET,
+	PHOTO_MODE_PARAM_DECREASE,
+	PHOTO_MODE_PARAM_INCREASE,
+
 	/*!
 	 * This must always be below the last defined item
 	 */
@@ -585,6 +592,10 @@ public:
  * Control configuration item type.
  * @detail Contains binding info, documentation, behavior, etc. for a single control
  */
+// Conflict group bitmasks. Bindings only conflict if their groups overlap (bitwise AND != 0).
+static const int CONFLICT_GROUP_DEFAULT    = (1 << 0);  //!< Standard gameplay bindings
+static const int CONFLICT_GROUP_PHOTO_MODE = (1 << 1);  //!< Bindings used within photo mode
+
 class CCI : public CCB {
 public:
 // Inherited from CCB
@@ -593,6 +604,7 @@ public:
 
 // Items Set in menu
 	char tab;               //!< what tab (category) it belongs in
+	int  conflict_groups = CONFLICT_GROUP_DEFAULT;  //!< Bitmask of conflict groups. Bindings only conflict with others sharing at least one group.
 	int  indexXSTR;         //!< what string index we should use to translate this with an XSTR 0 = None, 1= Use item index + CONTROL_CONFIG_XSTR, 2 <= use CCI::indexXSTR directly
 	SCP_string text;        //!< describes the action in the config screen
 
@@ -665,7 +677,7 @@ public:
 	 *   If the type is CC_TYPE_TRIGGER or CC_TYPE_CONTINOUS, the primary is assumed to be a key combo and secondary is assumed to be a joy button.
 	 *   If the type is CC_TYPE_AXIS_ABS, CC_TYPE_AXIS_REL, CC_TYPE_AXIS_BTN_POS, or CC_TYPE_AXIS_BTN_NEG, the primary is a Joy0 axis and the secondary is a Mouse axis
 	 */
-	CCI_builder& operator()(IoActionId action_id, short primary, short secondary, char tab, int indexXSTR, const char *text, CC_type type, bool disabled = false);
+	CCI_builder& operator()(IoActionId action_id, short primary, short secondary, char tab, int indexXSTR, const char *text, CC_type type, bool disabled = false, int conflict_groups = CONFLICT_GROUP_DEFAULT);
 
 private:
 	CCI_builder();	// Only one builder per Control Config, so a default constructor is useless

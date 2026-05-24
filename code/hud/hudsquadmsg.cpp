@@ -432,8 +432,7 @@ int hud_squadmsg_count_wings( int add_to_menu )
 			count++;
 			if ( add_to_menu ) {
 				Assert ( Num_menu_items < MAX_MENU_ITEMS );
-				MsgItems[Num_menu_items].text = Wings[wingnum].name;
-				end_string_at_first_hash_symbol(MsgItems[Num_menu_items].text);
+				MsgItems[Num_menu_items].text = Wings[wingnum].get_display_name();
 				MsgItems[Num_menu_items].instance = wingnum;
 				MsgItems[Num_menu_items].active = 1;
 				Num_menu_items++;
@@ -454,8 +453,7 @@ int hud_squadmsg_count_wings( int add_to_menu )
 			count++;
 			if ( add_to_menu ) {
 				Assert ( Num_menu_items < MAX_MENU_ITEMS );
-				MsgItems[Num_menu_items].text = Wings[i].name;
-				end_string_at_first_hash_symbol(MsgItems[Num_menu_items].text); 
+				MsgItems[Num_menu_items].text = Wings[i].get_display_name();
 				MsgItems[Num_menu_items].instance = i;
 				MsgItems[Num_menu_items].active = 1;
 				Num_menu_items++;
@@ -1014,7 +1012,7 @@ bool hud_squadmsg_run_order_issued_hook(int command, ship* sendingShip, ship* re
 		}
 		scripting::hooks::OnHudCommOrderIssued->run(
 			scripting::hooks::CommOrderConditions{sendingShip, targetObject, &recipient},
-			paramList);
+			std::move(paramList));
 	}
 
 	return isOverride;
@@ -2059,7 +2057,6 @@ void hud_squadmsg_reinforcement_select()
 		Num_menu_items = 0;
 		for (i = 0; i < Num_reinforcements; i++) {
 			rp = &Reinforcements[i];
-			SCP_string rp_name = rp->name;
 
 			// don't put reinforcements onto the list that have already been used up.
 			if ( rp->num_uses >= rp->uses ){
@@ -2075,6 +2072,7 @@ void hud_squadmsg_reinforcement_select()
 			// Goober5000 - if it can't arrive, it doesn't count.  This should check
 			// for SEXP_FALSE as well as SEXP_KNOWN_FALSE, otherwise you end up with
 			// a reinforcement menu containing no valid selections.
+			SCP_string rp_name;
 			if ( (wingnum = wing_name_lookup(rp->name, 1)) != -1 ) {
 				Assert ( Wings[wingnum].arrival_cue >= 0 );
 				if ( Sexp_nodes[Wings[wingnum].arrival_cue].value == SEXP_FALSE
@@ -2082,7 +2080,7 @@ void hud_squadmsg_reinforcement_select()
 					continue;
 				}
 
-				end_string_at_first_hash_symbol(rp_name);
+				rp_name = Wings[wingnum].get_display_name();	// this will handle getting rid of the hash if necessary
 			} else {
 				p_object *p_objp;
 				
@@ -2858,6 +2856,18 @@ bool HudGaugeSquadMessage::canRender() const
 
 	if ((Viewer_mode & disabled_views)) {
 		return false;
+	}
+
+	if ((Viewer_mode & (VM_CHASE)) == 0 && only_render_in_chase_view) {
+		return false;
+	}
+
+	if (render_for_cockpit_toggle > 0) {
+		if (!(Viewer_mode & VM_CHASE) && Cockpit_active && (render_for_cockpit_toggle == 2)) {
+			return false;
+		} else if (!Cockpit_active && (render_for_cockpit_toggle == 1)) {
+			return false;
+		}
 	}
 
 	if (!( Player->flags & PLAYER_FLAGS_MSG_MODE )) {

@@ -2747,7 +2747,7 @@ void multi_pxo_clear_players()
 void multi_pxo_add_player(const char *name)
 {
 	SCP_string new_player = name;
-	Multi_pxo_players.push_back(new_player);
+	Multi_pxo_players.push_back(std::move(new_player));
 }
 
 /**
@@ -3029,8 +3029,6 @@ void multi_pxo_chat_process_incoming(const char *txt,int mode)
  */
 void multi_pxo_chat_blit()
 {
-	int token_width;
-	
 	// blit the title line
 	char title[MAX_PXO_TEXT_LEN];
 	memset(title,0,MAX_PXO_TEXT_LEN);
@@ -3043,10 +3041,9 @@ void multi_pxo_chat_blit()
 	} else {
 		strcpy_s(title,XSTR("Parallax Online - No Channel", 956));
 	}	
-	font::force_fit_string(title, MAX_PXO_TEXT_LEN-1, Multi_pxo_chat_coords[gr_screen.res][2] - 10);
-	gr_get_string_size(&token_width,nullptr,title);
+	int title_width = font::force_fit_string(title, MAX_PXO_TEXT_LEN-1, Multi_pxo_chat_coords[gr_screen.res][2] - 10);
 	gr_set_color_fast(&Color_normal);
-	gr_string(Multi_pxo_chat_coords[gr_screen.res][0] + ((Multi_pxo_chat_coords[gr_screen.res][2] - token_width)/2), Multi_pxo_chat_title_y[gr_screen.res], title, GR_RESIZE_MENU);	
+	gr_string(Multi_pxo_chat_coords[gr_screen.res][0] + ((Multi_pxo_chat_coords[gr_screen.res][2] - title_width)/2), Multi_pxo_chat_title_y[gr_screen.res], title, GR_RESIZE_MENU);
 	
 	int disp_count, y_start;
 	int line_height = gr_get_font_height() + 1;
@@ -3078,12 +3075,13 @@ void multi_pxo_chat_blit()
 
 			// normal mode, just highlight the server
 			case CHAT_MODE_PRIVATE:
-			case CHAT_MODE_NORMAL:
+			case CHAT_MODE_NORMAL: {
 				char piece[MAX_CHAT_LINE_LEN + 1];
 				strcpy_s(piece, line->text);
 				tok = strtok(piece, " ");
 				if (tok != nullptr) {
 					// get the width of just the first "piece"
+					int token_width;
 					gr_get_string_size(&token_width, nullptr, tok);
 
 					// draw it brightly
@@ -3101,6 +3099,7 @@ void multi_pxo_chat_blit()
 					}
 				}
 				break;
+			}
 
 			// carry mode, display with no highlight
 			case CHAT_MODE_CARRY:

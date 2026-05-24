@@ -327,6 +327,7 @@ void TeamLoadoutDialogModel::initializeData()
 			}
 		}
 	}
+	_modified = false;
 }
 
 void TeamLoadoutDialogModel::recalcShipCapacities(TeamLoadout& team)

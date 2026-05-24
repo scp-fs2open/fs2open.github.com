@@ -671,7 +671,7 @@ void model_draw_paths_htl( int model_num, uint64_t flags )
 }
 
 /**
- * Docking bay and fighter bay paths
+ * Fighter bay approach/departure paths (paths named $bayN)
  */
 void model_draw_bay_paths_htl(int model_num)
 {
@@ -684,6 +684,40 @@ void model_draw_bay_paths_htl(int model_num)
 	}
 
 	int cull = gr_set_cull(0);
+
+	// render fighter bay paths
+	gr_set_color(0, 255, 255);
+
+	// iterate through the paths that exist in the polymodel, searching for $bayN pathnames
+	for (idx = 0; idx<pm->n_paths; idx++) {
+		if ( !strnicmp(pm->paths[idx].name, NOX("$bay"), 4) ) {
+			for(s_idx=0; s_idx<pm->paths[idx].nverts-1; s_idx++){
+				v1 = pm->paths[idx].verts[s_idx].pos;
+				v2 = pm->paths[idx].verts[s_idx+1].pos;
+
+				g3_render_line_3d(true, &v1, &v2);
+			}
+		}
+	}
+
+	gr_set_cull(cull);
+}
+
+/**
+ * Docking bay slot positions and normals
+ */
+void model_draw_dock_points_htl(int model_num)
+{
+	int idx, s_idx;
+	vec3d v1, v2;
+
+	polymodel *pm = model_get(model_num);
+	if(pm == nullptr){
+		return;
+	}
+
+	int cull = gr_set_cull(0);
+
 	// render docking bay normals
 	gr_set_color(0, 255, 0);
 	for(idx=0; idx<pm->n_docks; idx++){
@@ -693,26 +727,9 @@ void model_draw_bay_paths_htl(int model_num)
 
 			// draw the point and normal
 			g3_render_sphere(&v1, 2.0);
-			//g3_draw_htl_line(&v1, &v2);
 			g3_render_line_3d(true, &v1, &v2);
 		}
 	}
-
-	// render figher bay paths
-	gr_set_color(0, 255, 255);
-		
-	// iterate through the paths that exist in the polymodel, searching for $bayN pathnames
-	for (idx = 0; idx<pm->n_paths; idx++) {
-		if ( !strnicmp(pm->paths[idx].name, NOX("$bay"), 4) ) {						
-			for(s_idx=0; s_idx<pm->paths[idx].nverts-1; s_idx++){
-				v1 = pm->paths[idx].verts[s_idx].pos;
-				v2 = pm->paths[idx].verts[s_idx+1].pos;
-
-				//g3_draw_htl_line(&v1, &v2);
-				g3_render_line_3d(true, &v1, &v2);
-			}
-		}
-	}	
 
 	gr_set_cull(cull);
 }

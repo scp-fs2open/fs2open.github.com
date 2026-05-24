@@ -13,6 +13,7 @@
 #include "globalincs/pstypes.h"
 #include "globalincs/globals.h"
 #include "globalincs/linklist.h"
+#include "camera/photomode.h"
 #include "io/key.h"
 #include "io/joy.h"
 #include "io/timer.h"
@@ -328,6 +329,12 @@ int Normal_key_set[] = {
 	MULTI_SELF_DESTRUCT,
 
 	TOGGLE_HUD,
+	TOGGLE_PHOTO_MODE,
+	PHOTO_MODE_FILTER_PREV,
+	PHOTO_MODE_FILTER_NEXT,
+	PHOTO_MODE_FILTER_RESET,
+	PHOTO_MODE_PARAM_DECREASE,
+	PHOTO_MODE_PARAM_INCREASE,
 
 	HUD_TARGETBOX_TOGGLE_WIREFRAME,
 	AUTO_PILOT_TOGGLE,
@@ -475,6 +482,12 @@ int Non_critical_key_set[] = {
 	MULTI_SELF_DESTRUCT,
 
 	TOGGLE_HUD,
+	TOGGLE_PHOTO_MODE,
+	PHOTO_MODE_FILTER_PREV,
+	PHOTO_MODE_FILTER_NEXT,
+	PHOTO_MODE_FILTER_RESET,
+	PHOTO_MODE_PARAM_DECREASE,
+	PHOTO_MODE_PARAM_INCREASE,
 
 	HUD_TARGETBOX_TOGGLE_WIREFRAME,
 	AUTO_PILOT_TOGGLE,
@@ -1536,9 +1549,13 @@ void game_do_end_mission_popup()
 			if (Game_subspace_effect) {
 				game_start_subspace_ambient_sound();
 			}
-			audiostream_unpause_all();
+
+			if (!game_is_photo_mode_active()) {
+				audiostream_unpause_all();
+				message_resume_all();
+			}
+
 			weapon_unpause_sounds();
-			message_resume_all();
 			break;
 		}
 
@@ -2230,10 +2247,12 @@ int button_function_demo_valid(int n)
 
 	case TIME_SLOW_DOWN:
 		ret = 1;
-		if ( Game_mode & GM_NORMAL && !Time_compression_locked ) {
+		if (Game_mode & GM_NORMAL && (!Time_compression_locked || game_is_photo_mode_active())) {
+			const auto min_compression = game_is_photo_mode_active() ? fl2f(0.01f) : (F1_0 / (Cmdline_retail_time_compression_range ? MAX_TIME_DIVIDER_RETAIL : MAX_TIME_DIVIDER));
+
 			// Goober5000 - time dilation only available in cheat mode (see above);
 			// now you can do it with or without pressing the tilde, per Kazan's request
-			if ((Game_time_compression > F1_0) || (Cheats_enabled && (Game_time_compression > (F1_0 / (Cmdline_retail_time_compression_range ? MAX_TIME_DIVIDER_RETAIL : MAX_TIME_DIVIDER))))) {
+			if ((Game_time_compression > F1_0) || (Game_time_compression > min_compression && (Cheats_enabled || game_is_photo_mode_active()))) {
 				change_time_compression(0.5f);
 				break;
 			}
@@ -2243,7 +2262,7 @@ int button_function_demo_valid(int n)
 
 	case TIME_SPEED_UP:
 		ret = 1;
-		if ( Game_mode & GM_NORMAL && !Time_compression_locked ) {
+		if (Game_mode & GM_NORMAL && (!Time_compression_locked || game_is_photo_mode_active())) {
 			if (Game_time_compression < (F1_0 * (Cmdline_retail_time_compression_range ? MAX_TIME_MULTIPLIER_RETAIL : MAX_TIME_MULTIPLIER))) {
 				change_time_compression(2.0f);
 				break;
@@ -2580,6 +2599,30 @@ int button_function(int n)
 		case TOGGLE_HUD:
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			hud_toggle_draw();
+			break;
+
+		case TOGGLE_PHOTO_MODE:
+			game_toggle_photo_mode();
+			break;
+
+		case PHOTO_MODE_FILTER_PREV:
+			game_cycle_photo_mode_filter(-1);
+			break;
+
+		case PHOTO_MODE_FILTER_NEXT:
+			game_cycle_photo_mode_filter(1);
+			break;
+
+		case PHOTO_MODE_FILTER_RESET:
+			game_reset_photo_mode_filters();
+			break;
+
+		case PHOTO_MODE_PARAM_DECREASE:
+			game_adjust_photo_mode_filter_parameter(-1);
+			break;
+
+		case PHOTO_MODE_PARAM_INCREASE:
+			game_adjust_photo_mode_filter_parameter(1);
 			break;
 
 		case HUD_TARGETBOX_TOGGLE_WIREFRAME:

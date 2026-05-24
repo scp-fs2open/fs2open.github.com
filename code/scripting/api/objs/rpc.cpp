@@ -132,7 +132,7 @@ ADE_FUNC(waitRPC,
 		{
 			// Keep checking the time until the timestamp is elapsed
 			auto self = shared_from_this();
-			auto cb = [this, self, resolver](
+			auto cb = [this, self, resolver = std::move(resolver)](
 				executor::IExecutionContext::State contextState) {
 					if (contextState == executor::IExecutionContext::State::Invalid) {
 						mprintf(("waitRPC: Context is invalid, possibly due to a game state change (current state is %s). Aborting asynchronous context %d.\n", GS_state_text[gameseq_get_state()], m_unique_id));

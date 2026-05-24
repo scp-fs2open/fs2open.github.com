@@ -1,5 +1,7 @@
 #include "MissionEventsDialog.h"
 #include "ui_MissionEventsDialog.h"
+#include "ui/Theme.h"
+#include "ui/util/default_dir.h"
 #include "ui/util/SignalBlockers.h"
 #include "ui/dialogs/EventEditor/HeadAnimationPickerDialog.h"
 
@@ -11,6 +13,7 @@
 #include <QInputDialog>
 #include <QMessageBox>
 #include <QFileDialog>
+#include <QFileInfo>
 #include <QDebug>
 #include <QKeyEvent>
 #include <mission/missionmessage.h>
@@ -23,6 +26,12 @@ MissionEventsDialog::MissionEventsDialog(QWidget* parent, EditorViewport* viewpo
 	  ui(new Ui::MissionEventsDialog()), _viewport(viewport)
 {
 	ui->setupUi(this);
+
+	fso::fred::bindStandardIcon(ui->eventUpBtn,   QStyle::SP_ArrowUp);
+	fso::fred::bindStandardIcon(ui->eventDownBtn, QStyle::SP_ArrowDown);
+	fso::fred::bindStandardIcon(ui->msgUpBtn,     QStyle::SP_ArrowUp);
+	fso::fred::bindStandardIcon(ui->msgDownBtn,   QStyle::SP_ArrowDown);
+	fso::fred::bindStandardIcon(ui->btnWavePlay,  QStyle::SP_MediaPlay);
 
 	ui->editDirectiveText->setMaxLength(NAME_LENGTH - 1);
 	ui->editDirectiveKeypressText->setMaxLength(NAME_LENGTH - 1);
@@ -256,6 +265,7 @@ void MissionEventsDialog::accept()
 {
 	// If apply() returns true, close the dialog
 	if (_model->apply()) {
+		_viewport->editor->autosave("event editor");
 		QDialog::accept();
 	}
 	// else: validation failed, don't close
@@ -388,6 +398,8 @@ void MissionEventsDialog::updateEventUi() {
 		ui->triggerCountBox->setEnabled(false);
 		ui->intervalTimeBox->setEnabled(false);
 		ui->chainDelayBox->setEnabled(false);
+		ui->useMsecsCheckBox->setChecked(false);
+		ui->useMsecsCheckBox->setEnabled(false);
 		ui->teamCombo->setEnabled(false);
 		ui->editDirectiveText->setEnabled(false);
 		ui->editDirectiveKeypressText->setEnabled(false);
@@ -409,6 +421,7 @@ void MissionEventsDialog::updateEventUi() {
 		ui->chainDelayBox->setValue(0);
 		ui->chainDelayBox->setEnabled(false);
 	}
+	ui->useMsecsCheckBox->setChecked(_model->getUseMsecs());
 
 	ui->editDirectiveText->setText(QString::fromStdString(_model->getEventDirectiveText()));
 	ui->editDirectiveKeypressText->setText(QString::fromStdString(_model->getEventDirectiveKeyText()));
@@ -426,6 +439,7 @@ void MissionEventsDialog::updateEventUi() {
 
 	ui->scoreBox->setEnabled(true);
 	ui->chainedCheckBox->setEnabled(true);
+	ui->useMsecsCheckBox->setEnabled(true);
 	ui->editDirectiveText->setEnabled(true);
 	ui->editDirectiveKeypressText->setEnabled(true);
 	ui->teamCombo->setEnabled(_model->getMissionIsMultiTeam());
@@ -709,6 +723,11 @@ void MissionEventsDialog::on_chainedDelayBox_valueChanged(int value)
 	_model->setChainDelay(value);
 }
 
+void MissionEventsDialog::on_useMsecsCheckBox_stateChanged(int state)
+{
+	_model->setUseMsecs(state == Qt::Checked);
+}
+
 void MissionEventsDialog::on_scoreBox_valueChanged(int value)
 {
 	_model->setEventScore(value);
@@ -984,20 +1003,14 @@ void MissionEventsDialog::on_btnBrowseWave_clicked()
 		return;
 	}
 
-	int z;
-	if (The_mission.game_type & MISSION_TYPE_TRAINING) {
-		z = cfile_push_chdir(CF_TYPE_VOICE_TRAINING);
-	} else {
-		z = cfile_push_chdir(CF_TYPE_VOICE_SPECIAL);
-	}
-	auto interface_path = QDir::currentPath();
-	if (!z) {
-		cfile_pop_dir();
-	}
+	const int voiceCfType = (The_mission.game_type & MISSION_TYPE_TRAINING)
+		? CF_TYPE_VOICE_TRAINING : CF_TYPE_VOICE_SPECIAL;
 
-	auto name = QFileDialog::getOpenFileName(this,
+	const QString lastDir = util::getLastDir("missionEvents/waveFile", voiceCfType);
+
+	const auto name = QFileDialog::getOpenFileName(this,
 		tr("Select message animation"),
-		interface_path,
+		lastDir,
 		"Voice Files (*.ogg *.wav);;Ogg Vorbis Files (*.ogg);;Wave Files (*.wav);;All Files (*)");
 
 	if (name.isEmpty()) {
@@ -1006,6 +1019,7 @@ void MissionEventsDialog::on_btnBrowseWave_clicked()
 	}
 
 	QFileInfo info(name);
+	util::saveLastDir("missionEvents/waveFile", name);
 
 	SCP_string file_name = info.fileName().toUtf8().constData();
 

@@ -1290,7 +1290,7 @@ bool multi_fs_tracker_validate_mission_list(SCP_vector<multi_create_info> &file_
 			cf_chksum_long(entry.filename, &item.crc);
 			item.name = entry.filename;
 
-			vdr.files.push_back(item);
+			vdr.files.push_back(std::move(item));
 			vdr.num_files++;
 
 			packet_size += len;
@@ -1375,7 +1375,7 @@ static int validate_table_list(const SCP_vector<SCP_string> &table_list, int &ga
 			cf_chksum_long(tbl.c_str(), &item.crc);
 			item.name = tbl;
 
-			vdr.files.push_back(item);
+			vdr.files.push_back(std::move(item));
 			vdr.num_files++;
 
 			packet_size += len;

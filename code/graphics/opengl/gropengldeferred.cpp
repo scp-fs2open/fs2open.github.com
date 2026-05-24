@@ -22,6 +22,9 @@
 #include "nebula/volumetrics.h"
 #include "render/3d.h"
 #include "tracing/tracing.h"
+#ifdef USE_OPENGL_ES
+#include "es_compatibility.h"
+#endif
 
 #include <math/bitarray.h>
 
@@ -88,7 +91,6 @@ void gr_opengl_deferred_lighting_begin(bool clearNonColorBufs)
 		glDrawBuffer(GL_COLOR_ATTACHMENT4);
 		glReadBuffer(GL_COLOR_ATTACHMENT0);
 		glBlitFramebuffer(0, 0, gr_screen.max_w, gr_screen.max_h, 0, 0, gr_screen.max_w, gr_screen.max_h, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-
 	}
 	
 	glDrawBuffers(6, buffers);
@@ -228,7 +230,7 @@ void gr_opengl_deferred_lighting_finish()
 	// GL_state.DepthMask(GL_FALSE);
 
 	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_DEFERRED_LIGHTING, ENVMAP > 0 ? SDR_FLAG_ENV_MAP : 0));
-
+	
 	// Render on top of the composite buffer texture
 	glDrawBuffer(GL_COLOR_ATTACHMENT5);
 	glReadBuffer(GL_COLOR_ATTACHMENT4);

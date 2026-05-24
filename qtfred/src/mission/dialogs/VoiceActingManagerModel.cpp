@@ -100,6 +100,7 @@ void VoiceActingManagerModel::initializeData()
 	_suffix = Suffix::WAV;
 	_includeSenderInFilename = false;
 	_whichPersonaToSync = 0;
+	_modified = false;
 }
 
 SCP_vector<SCP_string> VoiceActingManagerModel::personaChoices()
@@ -352,7 +353,7 @@ bool VoiceActingManagerModel::generateScript(const SCP_string& absoluteFilePath)
 
 	// Mission metadata
 	fout(fp, "%s\n", Mission_filename);
-	fout(fp, "%s\n\n", The_mission.name);
+	fout(fp, "%s\n\n", The_mission.name.c_str());
 
 	auto writeMessageEntry = [&](const char* filename,
 								 const SCP_string& text,

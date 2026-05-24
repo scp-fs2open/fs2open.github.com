@@ -206,8 +206,10 @@ void gr_aabitmap(int x, int y, int resize_mode, bool mirror, float scale_factor)
 		return;
 	}
 
+	int delta_left = 0, delta_right = 0;
+
 	if (dx1 < clip_left) {
-		sx = clip_left - dx1;
+		delta_left = clip_left - dx1;
 		dx1 = clip_left;
 	}
 
@@ -217,12 +219,17 @@ void gr_aabitmap(int x, int y, int resize_mode, bool mirror, float scale_factor)
 	}
 
 	if (dx2 > clip_right) {
+		delta_right = dx2 - clip_right;
 		dx2 = clip_right;
 	}
 
 	if (dy2 > clip_bottom) {
 		dy2 = clip_bottom;
 	}
+
+	// When mirrored, the destination's left edge maps to the source's right edge,
+	// so a left-side dest clip drops pixels from the right of the source (and vice versa).
+	sx = mirror ? delta_right : delta_left;
 
 	if ((sx < 0) || (sy < 0)) {
 		return;
@@ -307,7 +314,12 @@ void gr_aabitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode,
 		}
 
 		if (dx1 < clip_left) {
-			sx += clip_left - dx1;
+			int delta = clip_left - dx1;
+			// When mirrored, dest-left maps to source-right, so drop from the source's right
+			// edge (handled via reduced w below) instead of advancing sx.
+			if (!mirror) {
+				sx += delta;
+			}
 			dx1 = clip_left;
 		}
 
@@ -317,6 +329,11 @@ void gr_aabitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode,
 		}
 
 		if (dx2 > clip_right) {
+			int delta = dx2 - clip_right;
+			// When mirrored, dest-right maps to source-left, so advance sx by the right delta.
+			if (mirror) {
+				sx += delta;
+			}
 			dx2 = clip_right;
 		}
 
@@ -449,7 +466,12 @@ void gr_bitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode, b
 		}
 
 		if (dx1 < clip_left) {
-			sx += clip_left - dx1;
+			int delta = clip_left - dx1;
+			// When mirrored, dest-left maps to source-right, so drop from the source's right
+			// edge (handled via reduced w below) instead of advancing sx.
+			if (!mirror) {
+				sx += delta;
+			}
 			dx1 = clip_left;
 		}
 
@@ -459,6 +481,11 @@ void gr_bitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode, b
 		}
 
 		if (dx2 > clip_right) {
+			int delta = dx2 - clip_right;
+			// When mirrored, dest-right maps to source-left, so advance sx by the right delta.
+			if (mirror) {
+				sx += delta;
+			}
 			dx2 = clip_right;
 		}
 

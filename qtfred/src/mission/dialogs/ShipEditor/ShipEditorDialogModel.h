@@ -6,244 +6,192 @@
 #include "ui/widgets/sexp_tree.h"
 
 namespace fso::fred::dialogs {
-/**
- * @brief QTFred's Ship Editor's Model
- */
+
 class ShipEditorDialogModel : public AbstractDialogModel {
-  private:
-	int _m_no_departure_warp;
-	int _m_no_arrival_warp;
-	bool _m_player_ship;
-	int _m_departure_tree_formula;
-	int _m_arrival_tree_formula;
-	SCP_string _m_ship_name;
-	SCP_string _m_ship_display_name;
-	SCP_string _m_cargo1;
-	SCP_string _m_alt_name;
-	SCP_string _m_callsign;
-	int _m_ship_class;
-	int _m_team;
-	int _m_arrival_location;
-	int _m_departure_location;
-	int _m_ai_class;
-	int _m_arrival_delay;
-	int _m_departure_delay;
-	int _m_hotkey;
-	bool _m_update_arrival;
-	bool _m_update_departure;
-	int _m_score;
-	int _m_assist_score;
-	int _m_arrival_dist;
-	int _m_arrival_target;
-	int _m_departure_target;
-	int _m_persona;
-
-	SCP_string m_wing;
-
-	int mission_type;
-
-	void set_modified();
-
-	bool update_ship(int ship);
-	bool update_data();
-
-	void ship_alt_name_close(int base_ship);
-	void ship_callsign_close(int base_ship);
-
-	static int make_ship_list(int* arr);
-
-	bool enable = true;
-	int player_count;
-	int ship_count;
-	bool multi_edit;
-	int cue_init;
-	int total_count;
-	int pvalid_count;
-	int pship_count; // a total count of the player ships not marked
-	int single_ship;
-	int player_ship;
-
-	std::set<size_t> ship_orders;
-
-	bool texenable = true;
-
-	int respawn_priority;
-
-	std::vector<std::pair<SCP_string, bool>> orders;
-	std::vector<std::pair<SCP_string, bool>> arrivalPaths;
-	std::vector<std::pair<SCP_string, bool>> departurePaths;
-
+	Q_OBJECT
   public:
-	ShipEditorDialogModel(QObject* parent, EditorViewport* viewport);
-	void initializeData();
+	explicit ShipEditorDialogModel(QObject* parent, EditorViewport* viewport);
 	bool apply() override;
 	void reject() override;
 
-	void setShipName(const SCP_string& m_ship_name);
+	void setShipName(const SCP_string& name);
 	SCP_string getShipName() const;
 
-	void setShipDisplayName(const SCP_string& m_ship_display_name);
+	void setShipDisplayName(const SCP_string& displayName);
 	SCP_string getShipDisplayName() const;
 
-	void setShipClass(const int);
+	void setShipClass(int shipClass);
 	int getShipClass() const;
 
-	void setAIClass(const int);
+	void setAIClass(int aiClass);
 	int getAIClass() const;
 
-	void setTeam(const int);
+	void setTeam(int team);
 	int getTeam() const;
 
-	void setCargo(const SCP_string&);
+	void setLayer(const SCP_string& layer);
+	SCP_string getLayer() const;
+
+	void setCargo(const SCP_string& cargo);
 	SCP_string getCargo() const;
 
-	void setAltName(const SCP_string&);
+	void setCargoTitle(const SCP_string& cargoTitle);
+	SCP_string getCargoTitle() const;
+
+	void setAltName(const SCP_string& altName);
 	SCP_string getAltName() const;
 
-	void setCallsign(const SCP_string&);
+	void setCallsign(const SCP_string& callsign);
 	SCP_string getCallsign() const;
 
-	/**
-	 * @brief Gets the ships wing
-	 * @return Name of the ships wing
-	 */
 	SCP_string getWing() const;
 
-	void setHotkey(const int);
+	void setHotkey(int hotkey);
 	int getHotkey() const;
 
-	void setPersona(const int);
+	void setPersona(int persona);
 	int getPersona() const;
 
-	void setScore(const int);
+	void setScore(int score);
 	int getScore() const;
 
-	void setAssist(const int);
+	void setAssist(int assist);
 	int getAssist() const;
 
-	void setPlayer(const bool);
+	void setPlayer(bool isPlayer);
 	bool getPlayer() const;
 
-	void setRespawn(const int);
+	void setRespawn(int respawn);
 	int getRespawn() const;
 
-	void setArrivalLocationIndex(const int);
+	void setArrivalLocationIndex(int index);
 	int getArrivalLocationIndex() const;
-	void setArrivalLocation(const ArrivalLocation);
+	void setArrivalLocation(ArrivalLocation location);
 	ArrivalLocation getArrivalLocation() const;
 
-	void setArrivalTarget(const int);
+	void setArrivalTarget(int targetIndex);
 	int getArrivalTarget() const;
 
-	void setArrivalDistance(const int);
+	void setArrivalDistance(int distance);
 	int getArrivalDistance() const;
 
-	void setArrivalDelay(const int);
+	void setArrivalDelay(int delay);
 	int getArrivalDelay() const;
 
-	void setArrivalCue(const bool);
+	void setArrivalCue(bool updateCue);
 	bool getArrivalCue() const;
 
-	void setArrivalFormula(const int, const int);
+	void setArrivalFormula(int formula, int objNum);
 	int getArrivalFormula() const;
 
-	void setNoArrivalWarp(const int);
+	void setNoArrivalWarp(int state);
 	int getNoArrivalWarp() const;
 
-	void setDepartureLocationIndex(const int);
+	void setDepartureLocationIndex(int index);
 	int getDepartureLocationIndex() const;
-	void setDepartureLocation(const DepartureLocation);
+	void setDepartureLocation(DepartureLocation location);
 	DepartureLocation getDepartureLocation() const;
 
-	void setDepartureTarget(const int);
+	void setDepartureTarget(int targetIndex);
 	int getDepartureTarget() const;
 
-	void setDepartureDelay(const int);
+	void setDepartureDelay(int delay);
 	int getDepartureDelay() const;
 
-	void setDepartureCue(const bool);
+	void setDepartureCue(bool updateCue);
 	bool getDepartureCue() const;
 
-	void setDepartureFormula(const int, const int);
+	void setDepartureFormula(int formula, int objNum);
 	int getDepartureFormula() const;
-	void setNoDepartureWarp(const int);
+	void setNoDepartureWarp(int state);
 	int getNoDepartureWarp() const;
-	/**
-	 * @brief Selects previous ship on the list
-	 */
-	void OnPrevious();
-	/**
-	 * @brief Selects next ship on the list
-	 */
-	void OnNext();
-	void OnDeleteShip();
-	/**
-	 * @brief Resets Ship/s to class default
-	 * @note Does not cover data from all subdialogs could use expanding
-	 */
-	void OnShipReset();
-	/**
-	 * @brief Returns true if the wing is a player wing
-	 * @param wing Takes an integer id of the wing
-	 */
-	bool wing_is_player_wing(const int) const;
-	const std::set<size_t>& getShipOrders() const;
+
+	void onPrevious();
+	void onNext();
+	void onDeleteShip();
+	void onShipReset();
+
+	bool wingIsPlayerWing(int wingNum) const;
+	const SCP_set<size_t>& getShipOrders() const;
 
 	bool getTexEditEnable() const;
-	/**
-	 * @brief Used for handling conflicts between ships having differing states of the same flag
-	 * @param val Takes the new value
-	 * @param cur_state Takes the current state of the flag
-	 * @return integer state the flag should be set to
-	 * @warning Contains QT code. Will need refactoring if migrated to non QT environment.
-	 */
-	static int tristate_set(const int val, const int cur_state);
 
-	/**
-	 * @brief Returns the ID of the primary marked ship
-	 */
+	static int tristate_set(int val, int curState);
+
 	int getSingleShip() const;
-	/**
-	 * @brief Returns true if multiple ships/players selected
-	 */
 	bool getIfMultipleShips() const;
-	/**
-	 * @brief Returns number of selected players
-	 */
 	int getNumSelectedPlayers() const;
-	/**
-	 * @brief Get number of player ships not selected
-	 */
 	int getNumUnmarkedPlayers() const;
-	/**
-	 * @brief Whether or not to enable the UI
-	 */
 	bool getUIEnable() const;
-	/**
-	 * @brief Get number of non player ships
-	 */
 	int getNumSelectedShips() const;
 	int getUseCue() const;
-	/**
-	 * @brief Get number of Ships selected
-	 */
 	int getNumSelectedObjects() const;
-	/**
-	 * @brief Get number of player ships in mission
-	 */
 	int getNumValidPlayers() const;
-	/**
-	 * @brief Returns true if only a single ship is selected and it is a player ship
-	 */
 	int getIfPlayerShip() const;
 
-	std::vector<std::pair<SCP_string, bool>> getAcceptedOrders() const;
-	void setAcceptedOrders(const std::vector<std::pair<SCP_string, bool>>&);
+	static SCP_vector<std::pair<SCP_string, int>> getPlayerOrders();
+	void applyPlayerOrders(const SCP_vector<std::pair<SCP_string, int>>& orders);
 
-	std::vector<std::pair<SCP_string, bool>> getArrivalPaths() const;
-	void setArrivalPaths(const std::vector<std::pair<SCP_string, bool>>&);
+	SCP_vector<std::pair<SCP_string, bool>> getArrivalPaths() const;
+	void setArrivalPaths(const SCP_vector<std::pair<SCP_string, bool>>& paths);
 
-	std::vector<std::pair<SCP_string, bool>> getDeparturePaths() const;
-	void setDeparturePaths(const std::vector<std::pair<SCP_string, bool>>&);
+	SCP_vector<std::pair<SCP_string, bool>> getDeparturePaths() const;
+	void setDeparturePaths(const SCP_vector<std::pair<SCP_string, bool>>& paths);
+
+	void initializeData();
+
+  private: // NOLINT(readability-redundant-access-specifiers)
+	void setModified();
+	void shipAltNameClose(int baseShip);
+	void shipCallsignClose(int baseShip);
+	static int makeShipList(int* arr);
+	int computeArrivalMinDist() const;
+
+	int _noDepartureWarp;
+	int _noArrivalWarp;
+	bool _isPlayerShip;
+	int _departureTreeFormula;
+	int _arrivalTreeFormula;
+	SCP_string _shipName;
+	SCP_string _shipDisplayName;
+	SCP_string _cargo;
+	SCP_string _cargoTitle;
+	SCP_string _altName;
+	SCP_string _callsign;
+	int _shipClass;
+	int _team;
+	SCP_string _layer;
+	int _arrivalLocation;
+	int _departureLocation;
+	int _aiClass;
+	int _arrivalDelay;
+	int _departureDelay;
+	int _hotkey;
+	bool _updateArrival;
+	bool _updateDeparture;
+	int _score;
+	int _assistScore;
+	int _arrivalDist;
+	int _arrivalTarget;
+	int _departureTarget;
+	int _persona;
+	SCP_string _wing;
+	int _missionType;
+	bool _enable = true;
+	int _playerCount;
+	int _shipCount;
+	bool _multiEdit;
+	int _cueInit;
+	int _totalCount;
+	int _pvalidCount;
+	int _pshipCount;
+	int _singleShip;
+	int _playerShipIndex;
+	SCP_set<size_t> _shipOrders;
+	bool _texEnable = true;
+	int _respawnPriority;
+	SCP_vector<std::pair<SCP_string, bool>> _arrivalPaths;
+	SCP_vector<std::pair<SCP_string, bool>> _departurePaths;
 };
+
 } // namespace fso::fred::dialogs

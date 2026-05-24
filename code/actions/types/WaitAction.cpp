@@ -41,7 +41,7 @@ ActionResult WaitAction::execute(actions::ProgramLocals& locals) const
 }
 std::unique_ptr<Action> WaitAction::clone() const
 {
-	return std::unique_ptr<Action>(new WaitAction(*this));
+	return std::make_unique<WaitAction>(*this);
 }
 
 } // namespace types

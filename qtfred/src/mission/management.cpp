@@ -24,6 +24,7 @@
 #include <model/modelreplace.h>
 #include <nebula/neb.h>
 #include <nebula/neblightning.h>
+#include <parse/sexp.h>
 #include <parse/sexp/sexp_lookup.h>
 #include <prop/prop.h>
 #include <scripting/scripting.h>
@@ -197,6 +198,11 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 	// Initialize SEXPs. Must happen before ship init for LuaAI
 	listener(SubSystem::SEXPs);
 	sexp_startup();
+
+	// Regenerate sexps.html for the Help Topics dialog. Mirrors the FS2 -output_sexps
+	// behavior so QtFRED's SEXP Operator Reference always reflects the current operator
+	// table in the help dialog
+	output_sexps("sexps.html");
 
 	listener(SubSystem::Objects);
 	obj_init();

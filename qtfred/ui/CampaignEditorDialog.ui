@@ -359,22 +359,12 @@
                  <property name="text">
                   <string/>
                  </property>
-                 <property name="icon">
-                  <iconset>
-                   <selectedon>:/images/arrow_up.png</selectedon>
-                  </iconset>
-                 </property>
                 </widget>
                </item>
                <item>
                 <widget class="QPushButton" name="moveBranchDownButton">
                  <property name="text">
                   <string/>
-                 </property>
-                 <property name="icon">
-                  <iconset>
-                   <selectedon>:/images/arrow_down.png</selectedon>
-                  </iconset>
                  </property>
                 </widget>
                </item>
@@ -469,11 +459,6 @@
                 </property>
                 <property name="text">
                  <string/>
-                </property>
-                <property name="icon">
-                 <iconset>
-                  <selectedon>:/images/play.png</selectedon>
-                 </iconset>
                 </property>
                </widget>
               </item>

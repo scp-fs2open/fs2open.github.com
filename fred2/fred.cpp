@@ -106,6 +106,7 @@ pending_message Pending_messages[MAX_PENDING_MESSAGES];
 CFREDApp theApp;
 
 int Fred_running = 1;
+int Qtfred_running = 0;
 int FrameCount = 0;
 bool Fred_active = true;
 int Update_window = 1;
@@ -121,8 +122,9 @@ wing_editor          Wing_editor_dialog;
 waypoint_path_dlg    Waypoint_editor_dialog;
 jumpnode_dlg         Jumpnode_editor_dialog;
 music_player_dlg	 Music_player_dialog;
-bg_bitmap_dlg*       Bg_bitmap_dialog = NULL;
-briefing_editor_dlg* Briefing_dialog = NULL;
+bg_bitmap_dlg*       Bg_bitmap_dialog = nullptr;
+briefing_editor_dlg*   Briefing_dialog   = nullptr;
+debriefing_editor_dlg* Debriefing_dialog = nullptr;
 
 window_data Main_wnd_data;
 window_data Ship_wnd_data;
@@ -136,6 +138,7 @@ window_data Player_wnd_data;
 window_data Events_wnd_data;
 window_data Bg_wnd_data;
 window_data Briefing_wnd_data;
+window_data Debriefing_wnd_data;
 window_data Reinforcement_wnd_data;
 window_data Waypoint_wnd_data;
 window_data Jumpnode_wnd_data;

@@ -1905,7 +1905,7 @@ void render_one_model_htl(object *objp) {
 		uint64_t flags = MR_NORMAL;
 
 		if (Show_dock_points) {
-			debug_flags |= MR_DEBUG_BAY_PATHS;
+			debug_flags |= MR_DEBUG_BAY_PATHS | MR_DEBUG_DOCK_POINTS;
 		}
 
 		if (Show_paths_fred) {

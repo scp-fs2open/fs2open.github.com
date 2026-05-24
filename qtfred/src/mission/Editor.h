@@ -3,7 +3,6 @@
 #include "EditorViewport.h"
 #include "FredRenderer.h"
 
-#include <ai/aigoals.h>
 #include <globalincs/globals.h>
 #include <jumpnode/jumpnode.h>
 #include <object/waypoint.h>
@@ -15,8 +14,13 @@
 #include <memory>
 #include <stdexcept>
 
-namespace fso {
-namespace fred {
+namespace fso::fred {
+
+struct subsys_to_render {
+	bool do_render = false;
+	object* ship_obj = nullptr;
+	ship_subsys* cur_subsys = nullptr;
+};
 
 enum class WingNameError {
 	None,
@@ -109,6 +113,15 @@ class Editor : public QObject {
 	/*! Update the game but doesn't render anything. */
 	void update();
 
+	/*! Emit layerVisibilityChanged — called by EditorViewport after toggling a layer. */
+	void notifyLayerVisibilityChanged() { layerVisibilityChanged(); }
+
+	/*! Emit layerStructureChanged — called by EditorViewport when layers are added/removed or objects move between layers. */
+	void notifyLayerStructureChanged() { layerStructureChanged(); }
+
+	/*! Emit layerListChanged — called by EditorViewport when layer names are added/removed/reloaded. */
+	void notifyLayerListChanged() { layerListChanged(); }
+
   signals:
 	/**
 	 * @brief Signal for when a new mission has been loaded
@@ -134,9 +147,47 @@ class Editor : public QObject {
 	 */
 	void objectMarkingChanged(int obj, bool marked);
 
+	/**
+	 * @brief A signal emitted when a layer's visibility has been toggled
+	 */
+	void layerVisibilityChanged();
+
+	/**
+	 * @brief A signal emitted when the layer list changes (add/remove) or an object moves between layers
+	 */
+	void layerStructureChanged();
+
+	/**
+	 * @brief A signal emitted when the layer name list itself changes (add/remove/reload)
+	 */
+	void layerListChanged();
+
   public:
-	int Id_select_type_jump_node = 0;
-	int Id_select_type_waypoint = 0;
+	// --- Undo / autosave state ---
+	int undoAvailable = 0;    ///< Whether an undo state (Backup.002) is available
+	int autosaveDisabled = 0; ///< When non-zero, autosave writes are suppressed
+
+	/**
+	 * @brief Rotate the backup stack and save the current mission state.
+	 *
+	 * Equivalent to CFREDDoc::autosave() in old FRED2.  Should be called after
+	 * any significant edit operation.  Does nothing when @c autosaveDisabled is set.
+	 *
+	 * @param desc Optional human-readable description of the operation being saved.
+	 * @return 0 on success, -1 if the backup write failed.
+	 */
+	int autosave(const char* desc = nullptr);
+
+	/**
+	 * @brief Restore the previous mission state from the backup stack.
+	 *
+	 * Equivalent to CFREDDoc::autoload() in old FRED2.
+	 * Caller is responsible for preserving and restoring the camera state and
+	 * @c saveName around this call.
+	 *
+	 * @return true on success, false if no undo state was available.
+	 */
+	bool autoload();
 
 	// object numbers for ships in a wing.
 	int wing_objects[MAX_WINGS][MAX_SHIPS_PER_WING];
@@ -144,8 +195,6 @@ class Editor : public QObject {
 	int currentObject = -1;
 	int cur_wing = -1;
 	int cur_ship = -1;
-
-	int cur_wing_index = -1;
 
 	waypoint* cur_waypoint = nullptr;
 	waypoint_list* cur_waypoint_list = nullptr;
@@ -189,6 +238,9 @@ class Editor : public QObject {
 
 	bool rename_wing(int wing, const SCP_string& new_name, bool rename_members = true);
 
+	// DA 1/7/99 These ship names are not variables
+	int rename_ship(int ship, const char* name);
+
 	/**
 	 * @brief Delete a whole wing, leaving ships intact but wingless.
 	 *
@@ -204,9 +256,10 @@ class Editor : public QObject {
 	void select_previous_subsystem();
 	void cancel_select_subsystem();
 
-	bool global_error_check();
+	void select_next_object();
+	void select_previous_object();
 
-	SCP_vector<SCP_string> get_docking_list(int model_index);
+	static SCP_vector<SCP_string> get_docking_list(int model_index);
 
 	bool compareShieldSysData(const SCP_vector<GlobalShieldStatus>& teams, const SCP_vector<GlobalShieldStatus>& types) const;
 	void exportShieldSysData(SCP_vector<GlobalShieldStatus>& teams, SCP_vector<GlobalShieldStatus>& types) const;
@@ -215,14 +268,14 @@ class Editor : public QObject {
 
 	static void strip_quotation_marks(SCP_string& str);
 	static void pad_with_newline(SCP_string& str, size_t max_size);
-	static void lcl_fred_replace_stuff(QString& text);
 	static SCP_string get_display_name_for_text_box(const SCP_string &orig_name);
 
 	SCP_vector<int> getStartingWingLoadoutUseCounts();
 
 	static const ai_goal_list* getAi_goal_list();
 	static int getAigoal_list_size();
-	const char* error_check_initial_orders(ai_goal* goals, int ship, int wing);
+
+	void generate_team_weaponry_usage_list(int team, int* arr);
 
   private:
 	void clearMission(bool fast_reload = false);
@@ -234,20 +287,17 @@ class Editor : public QObject {
 	SCP_vector<std::unique_ptr<EditorViewport>> _viewports;
 	EditorViewport* _lastActiveViewport = nullptr;
 
+	int undoCount = 0; ///< Number of autosave operations performed since last reset
+
+	/** @brief Check whether Backup.002 exists and update @c undoAvailable accordingly. */
+	int checkUndo();
+
 	int numMarked = 0;
 
 	SCP_vector<GlobalShieldStatus> Shield_sys_teams;
 	SCP_vector<GlobalShieldStatus> Shield_sys_types;
 
-	int delete_flag;
-
 	bool already_deleting_wing = false;
-
-	// used by error checker, but needed in more than just one function.
-	char* names[MAX_OBJECTS];
-	char err_flags[MAX_OBJECTS];
-	int obj_count = 0;
-	int g_err = 0;
 
 	// ship and weapon usage pools
 	int _ship_usage[MAX_TVT_TEAMS][MAX_SHIP_CLASSES];
@@ -263,9 +313,6 @@ class Editor : public QObject {
 	int delete_ship_from_wing(int ship);
 
 	int invalidate_references(const char* name, sexp_ref_type type);
-
-	// DA 1/7/99 These ship names are not variables
-	int rename_ship(int ship, const char* name);
 
 	void delete_reinforcement(int num);
 
@@ -302,8 +349,6 @@ class Editor : public QObject {
 
 	void generate_wing_weaponry_usage_list(int* arr, int wing);
 
-	void generate_team_weaponry_usage_list(int team, int* arr);
-
 	void generate_ship_usage_list(int* arr, int wing);
 
 	int get_visible_sub_system_count(ship* shipp);
@@ -312,25 +357,10 @@ class Editor : public QObject {
 
 	int get_prev_visible_subsys(ship* shipp, ship_subsys** prev_subsys);
 
-	int global_error_check_impl();
-
-	int error(SCP_FORMAT_STRING const char* msg, ...) SCP_FORMAT_STRING_ARGS(2, 3);
-	int internal_error(SCP_FORMAT_STRING const char* msg, ...) SCP_FORMAT_STRING_ARGS(2, 3);
-
-	int fred_check_sexp(int sexp, int type, const char* location, ...);
-
-
-	int global_error_check_mixed_player_wing(int w);
-
-	int global_error_check_player_wings(int multi);
-
-	static const char* get_order_name(ai_goal_mode order);
-
 	void updateStartingWingLoadoutUseCounts();
 };
 
-} // namespace fred
-} // namespace fso
+} // namespace fso::fred
 
 extern char Fred_callsigns[MAX_SHIPS][NAME_LENGTH + 1];
 extern char Fred_alt_names[MAX_SHIPS][NAME_LENGTH + 1];

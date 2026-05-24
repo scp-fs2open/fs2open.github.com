@@ -4,6 +4,7 @@
 #include "MusicPlayerDialog.h"
 #include "ui/util/SignalBlockers.h"
 #include "ui_MusicPlayerDialog.h"
+#include "ui/Theme.h"
 
 namespace fso::fred::dialogs {
 
@@ -13,6 +14,11 @@ MusicPlayerDialog::MusicPlayerDialog(FredView* parent, EditorViewport* viewport)
 {
 	setFocus();
 	ui->setupUi(this);
+
+	fso::fred::bindStandardIcon(ui->prevButton, QStyle::SP_MediaSkipBackward);
+	fso::fred::bindStandardIcon(ui->playButton, QStyle::SP_MediaPlay);
+	fso::fred::bindStandardIcon(ui->nextButton, QStyle::SP_MediaSkipForward);
+	fso::fred::bindStandardIcon(ui->stopButton, QStyle::SP_MediaStop);
 
 	// build list
 	_model->loadTracks();

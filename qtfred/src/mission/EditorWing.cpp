@@ -194,6 +194,20 @@ int Editor::create_wing()
 		}
 
 		strcpy_s(Wings[wing].name, dlg->getModel()->getName().c_str());
+
+		// if this name has a hash, create a default display name
+		if (get_pointer_to_first_hash_symbol(Wings[wing].name))
+		{
+			Wings[wing].display_name = Wings[wing].name;
+			end_string_at_first_hash_symbol(Wings[wing].display_name);
+			Wings[wing].flags.set(Ship::Wing_Flags::Has_display_name);
+		}
+		// otherwise reset the display name
+		else
+		{
+			Wings[wing].display_name = "";
+			Wings[wing].flags.remove(Ship::Wing_Flags::Has_display_name);
+		}
 	}
 
 	setupCurrentObjectIndices(-1);
@@ -255,6 +269,8 @@ int Editor::create_wing()
 
 			wing_bash_ship_name(msg, Wings[wing].name, i + 1);
 			rename_ship(ship, msg);
+			// bash it again for the display name
+			wing_bash_ship_name(&Ships[ship], &Wings[wing], i + 1, true);
 
 			Wings[wing].ship_index[i] = ship;
 			Ships[ship].wingnum = wing;
@@ -321,6 +337,7 @@ int Editor::create_wing()
 
 	update_custom_wing_indexes();
 
+	missionChanged();
 	return 0;
 }
 
@@ -358,6 +375,8 @@ void Editor::remove_ship_from_wing(int ship, int min)
 				if (Objects[obj].type == OBJ_SHIP) {
 					wing_bash_ship_name(buf, Wings[wing].name, i + 1);
 					rename_ship(Wings[wing].ship_index[i], buf);
+					// bash it again for the display name
+					wing_bash_ship_name(&Ships[Wings[wing].ship_index[i]], &Wings[wing], i + 1, true);
 				}
 			}
 
@@ -557,6 +576,20 @@ bool Editor::rename_wing(int wing, const SCP_string& new_name, bool rename_membe
 	strncpy(Wings[wing].name, new_name.c_str(), NAME_LENGTH - 1);
 	Wings[wing].name[NAME_LENGTH - 1] = '\0';
 
+	// if this name has a hash, create a default display name
+	if (get_pointer_to_first_hash_symbol(Wings[wing].name))
+	{
+		Wings[wing].display_name = Wings[wing].name;
+		end_string_at_first_hash_symbol(Wings[wing].display_name);
+		Wings[wing].flags.set(Ship::Wing_Flags::Has_display_name);
+	}
+	// otherwise reset the display name
+	else
+	{
+		Wings[wing].display_name = "";
+		Wings[wing].flags.remove(Ship::Wing_Flags::Has_display_name);
+	}
+
 	if (rename_members) {
 		for (int i = 0; i < Wings[wing].wave_count; ++i) {
 			const int ship_idx = Wings[wing].ship_index[i];
@@ -565,6 +598,8 @@ bool Editor::rename_wing(int wing, const SCP_string& new_name, bool rename_membe
 			char buf[NAME_LENGTH];
 			wing_bash_ship_name(buf, Wings[wing].name, i + 1);
 			rename_ship(ship_idx, buf);
+			// bash it again for the display name
+			wing_bash_ship_name(&Ships[ship_idx], &Wings[wing], i + 1, true);
 		}
 	}
 

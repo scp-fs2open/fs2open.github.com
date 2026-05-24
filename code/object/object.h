@@ -43,7 +43,7 @@
 #define OBJ_DEBRIS          6	//a flying piece of ship debris
 //#define OBJ_CMEASURE      7	//a countermeasure, such as chaff
 #define OBJ_GHOST           8	//so far, just a placeholder for when a player dies.
-#define OBJ_POINT           9	//generic object type to display a point in Fred.
+#define OBJ_POINT           9	// FRED2 briefing icons only; not used by QtFRED.  Deprecate with FRED2.
 #define OBJ_SHOCKWAVE       10	// a shockwave
 #define OBJ_WING            11	// not really a type used anywhere, but I need it for Fred.
 #define OBJ_OBSERVER        12	// used for multiplayer observers (possibly single player later)
@@ -120,6 +120,7 @@ typedef struct obj_flag_description {
 extern obj_flag_name Object_flag_names[];
 extern obj_flag_description Object_flag_descriptions[];
 extern const int Num_object_flag_names;
+extern const size_t Num_object_flag_descriptions;
 
 struct dock_instance;
 class model_draw_list;

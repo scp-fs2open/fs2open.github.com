@@ -11,7 +11,10 @@
 
 #include "asteroid/asteroid.h"
 #include "cmdline/cmdline.h"
+#include "decals/decals.h"
 #include "gamesequence/gamesequence.h"
+#include "globalincs/systemvars.h"
+#include "math/floating.h"
 #include "graphics/light.h"
 #include "graphics/matrix.h"
 #include "graphics/shadows.h"
@@ -27,6 +30,7 @@
 #include "nebula/neb.h"
 #include "particle/particle.h"
 #include "prop/prop.h"
+#include "parse/encrypt.h"
 #include "render/3dinternal.h"
 #include "render/batching.h"
 #include "ship/ship.h"
@@ -50,6 +54,107 @@ int Lab_object_detail_level = -1; // Used to display the detail level in the lab
 extern void interp_generate_arc_segment(SCP_vector<vec3d> &arc_segment_points, const vec3d *v1, const vec3d *v2, ubyte depth_limit, ubyte depth);
 
 int model_render_determine_elapsed_time(int objnum, uint64_t flags);
+
+SCP_unordered_map<cached_ui_render_instance_key, cached_ui_render_instance_entry, cached_ui_render_instance_key_hash> Cached_ui_render_instance_cache;
+int Ui_render_instance_cache_last_processed_framecount = -1;
+constexpr int UI_RENDER_INSTANCE_CACHE_UNUSED_FRAMES_GRACE = 5;
+
+size_t model_hash_subsystem_name_list_for_cache(const SCP_vector<SCP_string>& subsystem_names)
+{
+	if (subsystem_names.empty()) {
+		return 0;
+	}
+
+	SCP_vector<SCP_string> normalized_names;
+	normalized_names.reserve(subsystem_names.size());
+
+	for (const auto& name : subsystem_names) {
+		auto normalized = name;
+		SCP_tolower(normalized);
+		normalized_names.push_back(std::move(normalized));
+	}
+
+	std::sort(normalized_names.begin(), normalized_names.end());
+
+	size_t seed = 0;
+	
+	boost::hash_combine(seed, static_cast<uint32_t>(normalized_names.size()));
+	for (const auto& name : normalized_names) {
+		boost::hash_combine(seed, hash_fnv1a(name));
+	}
+
+	return seed;
+}
+
+// Returns TriStateBool::TRUE_ if a new instance was created, TriStateBool::FALSE_ if an existing instance was returned,
+// or TriStateBool::UNKNOWN_ if there was an error (and model_instance_out will be set to -1 in this case)
+TriStateBool model_get_cached_ui_render_instance(int model_num, int* model_instance_out, size_t instance_data_hash)
+{
+	Assertion(model_instance_out != nullptr, "model_instance_out must not be null!");
+	if (model_instance_out == nullptr) {
+		return TriStateBool::UNKNOWN_;
+	}
+
+	cached_ui_render_instance_key key;
+	key.model_num = model_num;
+	key.state_instance_id = gameseq_get_state_instance_id();
+	key.instance_data_hash = instance_data_hash;
+
+	auto& entry = Cached_ui_render_instance_cache[key];
+
+	auto created_new = false;
+
+	if (entry.model_instance < 0) {
+		entry.model_instance = model_create_instance(model_objnum_special::OBJNUM_NONE, model_num);
+		if (entry.model_instance < 0) {
+			Warning(LOCATION, "Failed to create cached UI render model instance for model id %d.", model_num);
+			Cached_ui_render_instance_cache.erase(key);
+			*model_instance_out = -1;
+			return TriStateBool::UNKNOWN_;
+		}
+		created_new = true;
+	}
+
+	entry.last_used_framecount = Framecount;
+	*model_instance_out = entry.model_instance;
+	return created_new ? TriStateBool::TRUE_ : TriStateBool::FALSE_;
+}
+
+void model_process_cached_ui_render_instances()
+{
+	if (Ui_render_instance_cache_last_processed_framecount == Framecount) {
+		return;
+	}
+
+	Ui_render_instance_cache_last_processed_framecount = Framecount;
+
+	for (auto it = Cached_ui_render_instance_cache.begin(); it != Cached_ui_render_instance_cache.end();) {
+		// This should never trigger but if it does it means something has gone very wrong with the cache management logic
+		Assertion(it->second.model_instance >= 0, "Corrupted UI render instance cache entry found");
+
+		if (it->second.model_instance < 0 || it->second.last_used_framecount < 0 ||
+			(Framecount - it->second.last_used_framecount) > UI_RENDER_INSTANCE_CACHE_UNUSED_FRAMES_GRACE) {
+			if (it->second.model_instance >= 0) {
+				model_delete_instance(it->second.model_instance);
+			}
+			it = Cached_ui_render_instance_cache.erase(it);
+		} else {
+			++it;
+		}
+	}
+}
+
+void model_clear_cached_ui_render_instances()
+{
+	for (auto& instance : Cached_ui_render_instance_cache) {
+		if (instance.second.model_instance >= 0) {
+			model_delete_instance(instance.second.model_instance);
+		}
+	}
+
+	Cached_ui_render_instance_cache.clear();
+	Ui_render_instance_cache_last_processed_framecount = -1;
+}
 
 model_batch_buffer TransformBufferHandler;
 
@@ -223,7 +328,7 @@ void model_render_params::set_replacement_textures(std::shared_ptr<const model_t
 
 void model_render_params::set_replacement_textures(int modelnum, const SCP_vector<texture_replace>& replacement_textures)
 {
-	auto textures = make_shared<model_texture_replace>();
+	auto textures = std::make_shared<model_texture_replace>();
 
 	polymodel* pm = model_get(modelnum);
 
@@ -2618,6 +2723,10 @@ void model_render_debug(int model_num, const matrix *orient, const vec3d *pos, u
 		model_draw_bay_paths_htl(model_num);
 	}
 
+	if ( debug_flags & MR_DEBUG_DOCK_POINTS ) {
+		model_draw_dock_points_htl(model_num);
+	}
+
 	if ( (flags & MR_AUTOCENTER) && (set_autocen) ) {
 		g3_done_instance(true);
 	}
@@ -2980,7 +3089,30 @@ void model_render_queue(const model_render_params* interp, model_draw_list* scen
 
 	// MARKED!
 	if ( !( model_flags & MR_NO_TEXTURING ) && !( model_flags & MR_NO_INSIGNIA) ) {
-		scene->add_insignia(interp, pm, detail_level, interp->get_insignia_bitmap());
+		int bitmap_num = interp->get_insignia_bitmap();
+		if ( Render_insignias_as_decals && objnum >= 0 && (pm->num_ins > 0) && (bitmap_num >= 0) ) {
+			for (int ins_idx = 0; ins_idx < pm->num_ins; ins_idx++) {
+				const insignia& ins = pm->ins[ins_idx];
+				// skip insignias not on our detail level
+				if (ins.detail_level != detail_level) {
+					continue;
+				}
+
+				decals::Decal decal;
+				decal.object = &Objects[objnum];
+				decal.position = ins.position;
+				decal.submodel = -1;
+				decal.scale = vec3d{{{ins.diameter, ins.diameter, ins.diameter}}};
+				decal.orig_obj_type = OBJ_SHIP;
+				decal.creation_time = f2fl(Missiontime);
+				decal.lifetime = 1.0f;
+				decal.orientation = ins.orientation;
+				decal.definition_handle = std::make_tuple(bitmap_num, -1, -1);
+				decals::addSingleFrameDecal(std::move(decal));
+			}
+		} else {
+			scene->add_insignia(interp, pm, detail_level, bitmap_num);
+		}
 	}
 
 	if ( (model_flags & MR_AUTOCENTER) && (set_autocen) ) {
@@ -3099,7 +3231,7 @@ void modelinstance_replace_active_texture(polymodel_instance* pmi, const char* o
 			texture = bm_load_either(new_name);
 
 		if (pmi->texture_replace == nullptr) {
-			pmi->texture_replace = make_shared<model_texture_replace>();
+			pmi->texture_replace = std::make_shared<model_texture_replace>();
 		}
 
 		(*pmi->texture_replace)[final_index] = texture;
@@ -3109,7 +3241,7 @@ void modelinstance_replace_active_texture(polymodel_instance* pmi, const char* o
 
 // renders a model as if in the tech room or briefing UI
 // model_type 1 for ship class, 2 for weapon class, 3 for pof
-bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int y2, float zoom, bool lighting, int class_idx, const matrix* orient, const SCP_string &pof_filename, float close_zoom, const vec3d *close_pos, const SCP_string& tcolor)
+bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int y2, float zoom, bool lighting, int class_idx, const matrix* orient, const SCP_string &pof_filename, float close_zoom, const vec3d *close_pos, const SCP_string& tcolor, const SCP_vector<SCP_string>& destroyed_subsystems)
 {
 
 	lighting_profiles::set_non_mission_profile non_mission_lighting_profile;
@@ -3223,10 +3355,37 @@ bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int 
 
 	int model_instance = -1;
 
-	// Create an instance for ships that can be used to clear out destroyed subobjects from rendering
+	// Get a cached UI render instance for ships so repeated UI/Lua renders avoid per-call allocation churn
 	if (model_type == TECH_SHIP) {
-		model_instance = model_create_instance(model_objnum_special::OBJNUM_NONE, model_num);
-		model_set_up_techroom_instance(&Ship_info[class_idx], model_instance);
+		auto sip = &Ship_info[class_idx];
+		const auto subsystem_hash = model_hash_subsystem_name_list_for_cache(destroyed_subsystems);
+		const auto cache_result = model_get_cached_ui_render_instance(model_num, &model_instance, subsystem_hash);
+		if (cache_result == TriStateBool::TRUE_) {
+			model_set_up_techroom_instance(sip, model_instance);
+			if (!destroyed_subsystems.empty()) {
+				auto pm = model_get(model_num);
+				auto pmi = model_get_instance(model_instance);
+				flagset<Ship::Subsystem_Flags> empty;
+
+				for (int idx = 0; idx < sip->n_subsystems; ++idx) {
+					auto& subsystem = sip->subsystems[idx];
+
+					if (subsystem.subobj_num < 0 || subsystem.subobj_num >= pm->n_models ||
+						subsystem.model_num != model_num) {
+						continue;
+					}
+
+					for (auto& destroyed_name : destroyed_subsystems) {
+						if (!stricmp(subsystem.subobj_name, destroyed_name.c_str()) ||
+							!stricmp(subsystem.name, destroyed_name.c_str())) {
+							pmi->submodel[subsystem.subobj_num].blown_off = true;
+							model_replicate_submodel_instance(pm, pmi, subsystem.subobj_num, empty);
+							break;
+						}
+					}
+				}
+			}
+		}
 	}
 
 	render_info.set_detail_level_lock(0);
@@ -3254,10 +3413,6 @@ bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int 
 	// Bye!!
 	g3_end_frame();
 	gr_reset_clip();
-
-	// Now that we've rendered the frame we can remove the instance if one was created for ships
-	if (model_type == TECH_SHIP)
-		model_delete_instance(model_instance);
 
 	return true;
 }

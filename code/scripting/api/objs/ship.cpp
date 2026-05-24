@@ -1162,6 +1162,24 @@ ADE_VIRTVAR(Orders, l_Ship, "shiporders", "Array of ship orders", "shiporders", 
 	return ade_set_args(L, "o", l_ShipOrders.Set(object_h(objh->objp())));
 }
 
+ADE_VIRTVAR(MaxGuardRadius, l_Ship, "number", "Sets the max range in meters at which any ships guarding this ship will engage with threats. If the value is <= 0, regular dynamic guard range behavior will resume.", "number", "Max range in meters, or 0 if handle is invalid")
+{
+	object_h *objh;
+	float new_max_guard_radius = -1;
+	if (!ade_get_args(L, "o|f", l_Ship.GetPtr(&objh), &new_max_guard_radius))
+		return ade_set_error(L, "f", 0.0f);
+
+	if(!objh->isValid())
+		return ade_set_error(L, "f", 0.0f);
+
+	ship *shipp = &Ships[objh->objp()->instance];
+
+	if (ADE_SETTING_VAR)
+		shipp->max_guard_radius = new_max_guard_radius;
+
+	return ade_set_args(L, "f", shipp->max_guard_radius);
+}
+
 ADE_VIRTVAR(WaypointSpeedCap, l_Ship, "number", "Waypoint speed cap", "number", "The limit on the ship's speed for traversing waypoints.  -1 indicates no speed cap.  0 will be returned if handle is invalid.")
 {
 	object_h* objh;
@@ -2291,6 +2309,23 @@ ADE_FUNC(updateSubmodelMoveable, l_Ship, "string name, table values",
 
 	ship* shipp = &Ships[objh->objp()->instance];
 	return Ship_info[shipp->ship_info_index].animations.updateMoveable(model_get_instance(shipp->model_instance_num), name, valuesMoveable) ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
+}
+
+ADE_FUNC(advanceSubmodelMoveableToFinal, l_Ship, "string name",
+	"Advances a moveable animation to its final state immediately. Name is the name of the moveable.",
+	"boolean", "True if successful, false or nil otherwise")
+{
+	object_h* objh;
+	const char* name = nullptr;
+
+	if (!ade_get_args(L, "os", l_Ship.GetPtr(&objh), &name))
+		return ADE_RETURN_NIL;
+
+	if (!objh->isValid())
+		return ADE_RETURN_NIL;
+
+	ship* shipp = &Ships[objh->objp()->instance];
+	return Ship_info[shipp->ship_info_index].animations.advanceMoveableToFinal(model_get_instance(shipp->model_instance_num), name) ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
 }
 
 ADE_FUNC(warpIn, l_Ship, NULL, "Warps ship in", "boolean", "True if successful, or nil if ship handle is invalid")

@@ -300,7 +300,7 @@ static void find_playback_device(OpenALInformation* info)
 			new_device.type = OAL_DEVICE_DEFAULT;
 		}
 
-		PlaybackDevices.push_back( new_device );
+		PlaybackDevices.push_back( std::move(new_device) );
 	}
 
 	if ( PlaybackDevices.empty() ) {
@@ -412,7 +412,7 @@ static void find_capture_device(OpenALInformation* info)
 			new_device.type = OAL_DEVICE_DEFAULT;
 		}
 
-		CaptureDevices.push_back( new_device );
+		CaptureDevices.push_back( std::move(new_device) );
 	}
 
 	if ( CaptureDevices.empty() ) {

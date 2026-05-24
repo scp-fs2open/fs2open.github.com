@@ -185,7 +185,7 @@ struct parse_object_flag_description {
 };
 
 typedef struct mission {
-	char	name[NAME_LENGTH];
+	SCP_string	name;
 	SCP_string	author;
 	gameversion::version	required_fso_version;
 	char	created[DATE_TIME_LENGTH];
@@ -207,6 +207,7 @@ typedef struct mission {
 	char	envmap_name[MAX_FILENAME_LEN];
 	int		skybox_flags;
 	int		contrail_threshold;
+	int		large_ship_no_collide_collision_group;
 	int		ambient_light_level;
 	std::optional<volumetric_nebula> volumetrics;
 	sound_env	sound_environment;
@@ -313,6 +314,7 @@ extern const char *Reinforcement_type_names[];
 extern flag_def_list_new<Mission::Mission_Flags> Parse_mission_flags[];
 extern parse_object_flag_description<Mission::Mission_Flags> Parse_mission_flag_descriptions[];
 extern const size_t Num_parse_mission_flags;
+extern const size_t Num_parse_mission_flag_descriptions;
 extern char *Object_flags[];
 extern flag_def_list_new<Ship::Ship_Flags> Parse_ship_flags[];
 extern const size_t Num_Parse_ship_flags;
@@ -326,9 +328,11 @@ extern const size_t Num_parse_object_flags;
 extern flag_def_list_new<Ship::Wing_Flags> Parse_wing_flags[];
 extern parse_object_flag_description<Ship::Wing_Flags> Parse_wing_flag_descriptions[];
 extern const size_t Num_parse_wing_flags;
+extern const size_t Num_parse_wing_flag_descriptions;
 extern flag_def_list_new<Mission::Parse_Object_Flags> Parse_prop_flags[];
 extern parse_object_flag_description<Mission::Parse_Object_Flags> Parse_prop_flag_descriptions[];
 extern const size_t Num_parse_prop_flags;
+extern const size_t Num_parse_prop_flag_descriptions;
 extern const char *Icon_names[];
 extern const char *Mission_event_log_flags[];
 
@@ -562,6 +566,11 @@ extern matrix Parse_viewer_orient;
 extern fix Mission_end_time;
 
 extern SCP_vector<SCP_string> Parse_names;
+
+// Populated when Qtfred_running and a parse-time auto-correction fires. Drained by
+// QtFRED's ErrorChecker so the corrections are visible to the designer instead of
+// silently buried. Outside of QtFRED these sites still call Warning(LOCATION, ...).
+extern SCP_vector<SCP_string> Mission_parse_warnings;
 
 extern char			Player_start_shipname[NAME_LENGTH];
 extern int			Player_start_shipnum;

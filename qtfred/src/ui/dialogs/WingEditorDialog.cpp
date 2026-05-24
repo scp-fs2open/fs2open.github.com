@@ -1,4 +1,5 @@
 #include "WingEditorDialog.h"
+#include <QCloseEvent>
 #include "General/CheckBoxListDialog.h"
 #include "General/ImagePickerDialog.h"
 #include "ShipEditor/ShipGoalsDialog.h"
@@ -23,6 +24,7 @@ WingEditorDialog::WingEditorDialog(FredView* parent, EditorViewport* viewport)
 	ui->helpText->setVisible(viewport->Show_sexp_help_wing_editor);
 
 	ui->wingNameEdit->setMaxLength(NAME_LENGTH - 1);
+	ui->wingDisplayNameEdit->setMaxLength(NAME_LENGTH - 1);
 
 	setWindowTitle(tr("Wing Editor"));
 	
@@ -42,6 +44,12 @@ WingEditorDialog::WingEditorDialog(FredView* parent, EditorViewport* viewport)
 
 WingEditorDialog::~WingEditorDialog() = default;
 
+void WingEditorDialog::closeEvent(QCloseEvent* e)
+{
+	_viewport->editor->autosave("wing editor");
+	QDialog::closeEvent(e);
+}
+
 void WingEditorDialog::updateUi()
 {
 	util::SignalBlockers blockers(this);
@@ -51,6 +59,7 @@ void WingEditorDialog::updateUi()
 	
 	// Top section, first column
 	ui->wingNameEdit->setText(_model->getWingName().c_str());
+	ui->wingDisplayNameEdit->setText(_model->getWingDisplayName().c_str());
 	ui->wingLeaderCombo->setCurrentIndex(_model->getWingLeaderIndex());
 	ui->numWavesSpinBox->setValue(_model->getNumberOfWaves());
 	ui->waveThresholdSpinBox->setValue(_model->getWaveThreshold());
@@ -115,6 +124,7 @@ void WingEditorDialog::enableOrDisableControls()
 	auto enableAll = [&](bool on) {
 		// Top section, first column
 		ui->wingNameEdit->setEnabled(on);
+		ui->wingDisplayNameEdit->setEnabled(on);
 		ui->wingLeaderCombo->setEnabled(on);
 		ui->numWavesSpinBox->setEnabled(on);
 		ui->waveThresholdSpinBox->setEnabled(on);
@@ -221,6 +231,7 @@ void WingEditorDialog::clearGeneralFields()
 	util::SignalBlockers blockers(this);
 
 	ui->wingNameEdit->clear();
+	ui->wingDisplayNameEdit->clear();
 	ui->wingLeaderCombo->setCurrentIndex(-1);
 
 	ui->hotkeyCombo->setCurrentIndex(-1);
@@ -332,12 +343,14 @@ void WingEditorDialog::refreshAllDynamicCombos()
 
 void WingEditorDialog::on_hideCuesButton_clicked()
 {
+	const auto showHelp = _viewport->Show_sexp_help_wing_editor;
+	
 	_cues_hidden = !_cues_hidden;
 	
-	ui->arrivalGroupBox->setHidden(_cues_hidden);
-	ui->departureGroupBox->setHidden(_cues_hidden);
-	ui->helpText->setHidden(_cues_hidden);
-	ui->HelpTitle->setHidden(_cues_hidden);
+	ui->arrivalGroupBox->setVisible(!_cues_hidden);
+	ui->departureGroupBox->setVisible(!_cues_hidden);
+	ui->helpText->setVisible(!_cues_hidden && showHelp);
+	ui->HelpTitle->setVisible(!_cues_hidden && showHelp);
 	ui->hideCuesButton->setText(_cues_hidden ? "Show Cues" : "Hide Cues");
 
 	QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
@@ -348,6 +361,17 @@ void WingEditorDialog::on_wingNameEdit_editingFinished()
 {
 	const auto newName = ui->wingNameEdit->text().toStdString();
 	_model->setWingName(newName);
+
+	// rename_wing already auto-sets the display name from the hash; just sync the edit box
+	ui->wingDisplayNameEdit->setText(Editor::get_display_name_for_text_box(_model->getWingName()).c_str());
+}
+
+void WingEditorDialog::on_wingDisplayNameEdit_editingFinished()
+{
+	const auto newDisplayName = ui->wingDisplayNameEdit->text().toStdString();
+	if (newDisplayName != _model->getWingDisplayName()) {
+		_model->setWingDisplayName(newDisplayName);
+	}
 }
 
 void WingEditorDialog::on_wingLeaderCombo_currentIndexChanged(int index)
@@ -355,7 +379,7 @@ void WingEditorDialog::on_wingLeaderCombo_currentIndexChanged(int index)
 	_model->setWingLeaderIndex(index);
 }
 
-void WingEditorDialog::on_numberOfWavesSpinBox_valueChanged(int value)
+void WingEditorDialog::on_numWavesSpinBox_valueChanged(int value)
 {
 	_model->setNumberOfWaves(value);
 	ui->waveThresholdSpinBox->setMaximum(_model->getMaxWaveThreshold());
@@ -411,7 +435,7 @@ void WingEditorDialog::on_setSquadLogoButton_clicked()
 	if (dlg.exec() != QDialog::Accepted)
 		return;
 
-	const std::string chosen = dlg.selectedFile().toUtf8().constData();
+	const SCP_string chosen = dlg.selectedFile().toUtf8().constData();
 	_model->setSquadLogo(chosen);
 	updateLogoPreview();
 }
@@ -467,32 +491,24 @@ void WingEditorDialog::on_initialOrdersButton_clicked()
 
 void WingEditorDialog::on_wingFlagsButton_clicked()
 {
-	CheckBoxListDialog dlg(this);
-	dlg.setCaption("Select Wing Flags");
+	QVector<std::pair<QString, int>> qtFlags;
+	for (const auto& f : _model->getWingFlags())
+		qtFlags.append({QString::fromUtf8(f.first.c_str()), f.second ? Qt::Checked : Qt::Unchecked});
 
-	// Get our flag list and convert it to Qt's internal types
-	auto wingFlags = _model->getWingFlags();
+	QVector<std::pair<QString, QString>> qtDescs;
+	for (const auto& d : _model->getWingFlagDescriptions())
+		qtDescs.append({QString::fromUtf8(d.first.c_str()), QString::fromUtf8(d.second.c_str())});
 
-	QVector<std::pair<QString, bool>> checkbox_list;
-
-	for (const auto& flag : wingFlags) {
-		checkbox_list.append({flag.first.c_str(), flag.second});
-	}
-
-	dlg.setOptions(checkbox_list); // TODO upgrade checkbox to accept and display item descriptions
+	dialogs::CheckBoxListDialog dlg(this);
+	dlg.setCaption(tr("Wing Flags"));
+	dlg.setOptions(qtFlags);
+	dlg.setOptionDescriptions(qtDescs);
 
 	if (dlg.exec() == QDialog::Accepted) {
-		auto returned_values = dlg.getCheckedStates();
-
-		std::vector<std::pair<SCP_string, bool>> updatedFlags;
-
-		for (int i = 0; i < checkbox_list.size(); ++i) {
-			// Convert back to std::string
-			std::string name = checkbox_list[i].first.toUtf8().constData();
-			updatedFlags.emplace_back(name, returned_values[i]);
-		}
-
-		_model->setWingFlags(updatedFlags);
+		SCP_vector<std::pair<SCP_string, bool>> result;
+		for (const auto& f : dlg.getFlags())
+			result.emplace_back(f.first.toUtf8().constData(), f.second == Qt::Checked);
+		_model->setWingFlags(result);
 	}
 }
 
@@ -553,11 +569,10 @@ void WingEditorDialog::on_restrictArrivalPathsButton_clicked()
 	if (dlg.exec() == QDialog::Accepted) {
 		auto returned_values = dlg.getCheckedStates();
 
-		std::vector<std::pair<SCP_string, bool>> updatedFlags;
+		SCP_vector<std::pair<SCP_string, bool>> updatedFlags;
 
 		for (int i = 0; i < checkbox_list.size(); ++i) {
-			// Convert back to std::string
-			std::string name = checkbox_list[i].first.toUtf8().constData();
+			SCP_string name = checkbox_list[i].first.toUtf8().constData();
 			updatedFlags.emplace_back(name, returned_values[i]);
 		}
 
@@ -631,11 +646,10 @@ void WingEditorDialog::on_restrictDeparturePathsButton_clicked()
 	if (dlg.exec() == QDialog::Accepted) {
 		auto returned_values = dlg.getCheckedStates();
 
-		std::vector<std::pair<SCP_string, bool>> updatedFlags;
+		SCP_vector<std::pair<SCP_string, bool>> updatedFlags;
 
 		for (int i = 0; i < checkbox_list.size(); ++i) {
-			// Convert back to std::string
-			std::string name = checkbox_list[i].first.toUtf8().constData();
+			SCP_string name = checkbox_list[i].first.toUtf8().constData();
 			updatedFlags.emplace_back(name, returned_values[i]);
 		}
 

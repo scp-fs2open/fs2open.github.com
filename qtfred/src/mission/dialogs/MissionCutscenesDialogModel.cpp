@@ -57,6 +57,7 @@ void MissionCutscenesDialogModel::initializeData()
 
 	cur_cutscene = -1;
 	modelChanged();
+	_modified = false;
 }
 SCP_vector<mission_cutscene>& MissionCutscenesDialogModel::getCutscenes()
 {

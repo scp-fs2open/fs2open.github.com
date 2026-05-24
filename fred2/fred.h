@@ -17,6 +17,7 @@
 
 #include "BgBitmapDlg.h"
 #include "BriefingEditorDlg.h"
+#include "DebriefingEditorDlg.h"
 #include "resource.h"
 #include "ShipEditorDlg.h"
 #include "propdlg.h"
@@ -187,7 +188,8 @@ extern waypoint_path_dlg    Waypoint_editor_dialog; //!< The waypoint editor ins
 extern jumpnode_dlg			Jumpnode_editor_dialog; //!< The jumpnode editor instance
 extern music_player_dlg		Music_player_dialog;    //!< The music player instance
 extern bg_bitmap_dlg*       Bg_bitmap_dialog;       //!< The bitmap dialog instance
-extern briefing_editor_dlg* Briefing_dialog;        //!< The briefing editor instance
+extern briefing_editor_dlg*    Briefing_dialog;    //!< The briefing editor instance
+extern debriefing_editor_dlg*  Debriefing_dialog;  //!< The debriefing editor instance
 
 extern CFREDApp theApp; //!< The application instance
 
@@ -203,6 +205,7 @@ extern window_data Player_wnd_data;
 extern window_data Events_wnd_data;
 extern window_data Bg_wnd_data;
 extern window_data Briefing_wnd_data;
+extern window_data Debriefing_wnd_data;
 extern window_data Reinforcement_wnd_data;
 extern window_data Waypoint_wnd_data;
 extern window_data Jumpnode_wnd_data;

@@ -23,6 +23,9 @@
 #include "parse/parselo.h"
 #include "ship/ship.h"
 #include "tracing/tracing.h"
+#ifdef USE_OPENGL_ES
+#include "es_compatibility.h"
+#endif
 
 extern bool PostProcessing_override;
 extern int opengl_check_framebuffer();
@@ -761,7 +764,7 @@ void gr_opengl_post_process_save_zbuffer()
 	GR_DEBUG_SCOPE("Save z-Buffer");
 	if (Post_initialized)
 	{
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, Cockpit_depth_texture, 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, Cockpit_depth_texture, 0);
 		gr_zbuffer_clear(TRUE);
 		zbuffer_saved = true;
 	}
@@ -777,7 +780,7 @@ void gr_opengl_post_process_restore_zbuffer()
 	GR_DEBUG_SCOPE("Restore z-Buffer");
 
 	if (zbuffer_saved) {
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, Scene_depth_texture, 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, Scene_depth_texture, 0);
 
 		zbuffer_saved = false;
 	}
@@ -1111,9 +1114,11 @@ static bool opengl_post_init_framebuffer()
 
 	opengl_setup_bloom_textures();
 
-	if (Gr_aa_mode != AntiAliasMode::None) {
+	// Always set up SMAA resources so the user can switch to an SMAA preset
+	// at runtime even when starting with a non-SMAA AA mode, such as None.
+	//if (Gr_aa_mode != AntiAliasMode::None) {
 		setup_smaa_resources();
-	}
+	//}
 
 	GL_state.BindFrameBuffer(0);
 

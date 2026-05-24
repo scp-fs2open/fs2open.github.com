@@ -172,6 +172,8 @@ void mission_log_add_entry(LogType type, const char *pname, const char *sname, i
 		Assert(index != -1);
 		Assert(info_index != -1);			// this is the team value
 
+		entry.pname_display = Wings[index].get_display_name();
+
 		// get the team value for this wing.  Departed or destroyed wings will pass the team
 		// value in info_index parameter.  For arriving wings, get the team value from the
 		// first ship in the list because the info_index contains the wave count

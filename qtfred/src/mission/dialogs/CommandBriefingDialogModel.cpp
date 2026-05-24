@@ -39,6 +39,7 @@ void CommandBriefingDialogModel::initializeData()
 
 	_currentTeam = 0;  // default to the first team
 	_currentStage = 0; // default to the first stage
+	_modified = false;
 }
 
 void CommandBriefingDialogModel::gotoPreviousStage()

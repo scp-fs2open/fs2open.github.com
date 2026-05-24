@@ -1085,13 +1085,13 @@ static bool psnet_explode_ip_string(const char *ip_string, SCP_string &host, SCP
 
 	// if it has no dots then assume it's just IPv6
 	if (dot == SCP_string::npos) {
-		host = ip;
+		host = std::move(ip);
 		return true;
 	}
 
 	// if colon before dots then it's likely mapped IPv4
 	if ( (colon != SCP_string::npos) && (dot != SCP_string::npos) && (colon < dot) ) {
-		host = ip;
+		host = std::move(ip);
 		return true;
 	}
 

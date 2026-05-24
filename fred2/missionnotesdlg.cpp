@@ -320,7 +320,7 @@ void CMissionNotesDlg::OnOK()
 	// puts "$End Notes:" on a different line to ensure it's not interpreted as part of a comment
 	pad_with_newline(m_mission_notes, NOTES_LENGTH - 1);
 
-	string_copy(The_mission.name, m_mission_title, NAME_LENGTH - 1, 1);
+	string_copy(The_mission.name, m_mission_title, true);
 	string_copy(The_mission.author, m_designer_name, true);
 	string_copy(The_mission.loading_screen[GR_640], m_loading_640, NAME_LENGTH - 1, 1);
 	string_copy(The_mission.loading_screen[GR_1024], m_loading_1024, NAME_LENGTH - 1, 1);
@@ -388,7 +388,7 @@ BOOL CMissionNotesDlg::OnInitDialog()
 	team = (CButton *)GetDlgItem(IDC_TEAMVTEAM);
 	dogfight = (CButton *)GetDlgItem(IDC_DOGFIGHT);
 
-	m_mission_title_orig = m_mission_title = _T(The_mission.name);
+	m_mission_title_orig = m_mission_title = _T(The_mission.name.c_str());
 	m_designer_name_orig = m_designer_name = _T(The_mission.author.c_str());
 	m_created = _T(The_mission.created);
 	m_modified = _T(The_mission.modified);

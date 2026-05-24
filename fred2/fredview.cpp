@@ -1141,13 +1141,11 @@ void CFREDView::OnLButtonUp(UINT nFlags, CPoint point)
 							break;
 						}
 
-// Can't do player starts, since only player 1 is currently allowed to be in a wing
-
+						// Can't do player starts, since only player 1 is currently allowed to be in a wing
 						Assert(objp->type == OBJ_SHIP);
 						ship = objp->instance;
 						Assert(Ships[ship].wingnum == -1);
-						wing_bash_ship_name(Ships[ship].ship_name, Wings[Duped_wing].name,
-							Wings[Duped_wing].wave_count + 1);
+						wing_bash_ship_name(&Ships[ship], &Wings[Duped_wing], Wings[Duped_wing].wave_count + 1, true);
 
 						Wings[Duped_wing].ship_index[Wings[Duped_wing].wave_count] = ship;
 						Ships[ship].wingnum = Duped_wing;
@@ -2474,10 +2472,6 @@ int CFREDView::global_error_check()
 	g_err = multi = 0;
 	if ( The_mission.game_type & MISSION_TYPE_MULTI )
 		multi = 1;
-
-//	if (!stricmp(The_mission.name, "Untitled"))
-//		if (error("You haven't given this mission a title yet.\nThis is done from the Mission Specs Editor (Shift-N)."))
-//			return 1;
 
 	// cycle though all the objects and verify every possible aspect of them
 	obj_count = t = 0;
@@ -4213,9 +4207,14 @@ void CFREDView::OnEditorsBriefing()
 
 void CFREDView::OnEditorsDebriefing() 
 {
-	debriefing_editor_dlg dlg;
+	if (!Debriefing_dialog) {
+		Debriefing_dialog = new debriefing_editor_dlg;
+		Debriefing_dialog->create();
+	}
 
-	dlg.DoModal();
+	Debriefing_dialog->SetWindowPos(&wndTop, 0, 0, 0, 0,
+		SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE);
+	Debriefing_dialog->ShowWindow(SW_RESTORE);
 }
 
 void CFREDView::OnSaveCamera() 

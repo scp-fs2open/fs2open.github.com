@@ -134,7 +134,7 @@ void LuaAISEXP::parseTable() {
 
 
 	if (optional_string("$Player Order:")) {
-		playerOrder = std::unique_ptr<player_order_lua>(new player_order_lua());
+		playerOrder = std::make_unique<player_order_lua>();
 		auto &order = *playerOrder;
 		if (_arg_type != OPF_SHIP && _arg_type != -1) {
 			error_display(1, "Player orders must have either no target or a ship-type target parameter!");
@@ -265,10 +265,10 @@ void LuaAISEXP::parseTable() {
 		}
 
 		if (variable_arg_part) {
-			_varargs_type_pattern.push_back(type);
+			_varargs_type_pattern.push_back(std::move(type));
 		}
 		else {
-			_argument_types.push_back(type);
+			_argument_types.push_back(std::move(type));
 		}
 
 		if (optional_string("$Repeat")) {

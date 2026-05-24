@@ -92,7 +92,7 @@ private slots:
 	void on_forceClampCheckBox_toggled(bool checked);
 	void on_noZBufferCheckBox_toggled(bool checked);
 	void on_noCullCheckBox_toggled(bool checked);
-	void on_noGlowmapsCheckBox_toggled(bool checked);
+	void on_noGlowMapsCheckBox_toggled(bool checked);
 
 	// Misc
 	void on_numStarsSlider_valueChanged(int value);
@@ -100,6 +100,9 @@ private slots:
 	void on_envMapButton_clicked();
 	void on_envMapEdit_textChanged(const QString& arg1);
 	void on_lightingProfileCombo_currentIndexChanged(int index);
+
+protected:
+	void closeEvent(QCloseEvent* e) override;
 
 private: // NOLINT(readability-redundant-access-specifiers)
     std::unique_ptr<Ui::BackgroundEditor> ui;

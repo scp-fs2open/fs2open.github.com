@@ -138,12 +138,12 @@ void control_config_common_init_bindings() {
 	(TARGET_PREV_BOMB,                      KEY_SHIFTED | KEY_B, -1, TARGET_TAB, 1, "Target Previous Hostile Bomb or Bomber", CC_TYPE_TRIGGER)
 
 	// flight controls (Rotation)
-	(BANK_LEFT,                                        KEY_PAD7, -1, SHIP_TAB, 1, "Bank Left",      CC_TYPE_CONTINUOUS)
-	(BANK_RIGHT,                                       KEY_PAD9, -1, SHIP_TAB, 1, "Bank Right",     CC_TYPE_CONTINUOUS)
-	(PITCH_FORWARD,                                    KEY_PAD8, -1, SHIP_TAB, 1, "Pitch Forward",  CC_TYPE_CONTINUOUS)
-	(PITCH_BACK,                                       KEY_PAD2, -1, SHIP_TAB, 1, "Pitch Backward", CC_TYPE_CONTINUOUS)
-	(YAW_LEFT,                                         KEY_PAD4, -1, SHIP_TAB, 1, "Yaw Left",       CC_TYPE_CONTINUOUS)
-	(YAW_RIGHT,                                        KEY_PAD6, -1, SHIP_TAB, 1, "Yaw Right",      CC_TYPE_CONTINUOUS)
+	(BANK_LEFT,                                        KEY_PAD7, -1, SHIP_TAB, 1, "Bank Left",      CC_TYPE_CONTINUOUS, false, CONFLICT_GROUP_DEFAULT | CONFLICT_GROUP_PHOTO_MODE)
+	(BANK_RIGHT,                                       KEY_PAD9, -1, SHIP_TAB, 1, "Bank Right",     CC_TYPE_CONTINUOUS, false, CONFLICT_GROUP_DEFAULT | CONFLICT_GROUP_PHOTO_MODE)
+	(PITCH_FORWARD,                                    KEY_PAD8, -1, SHIP_TAB, 1, "Pitch Forward",  CC_TYPE_CONTINUOUS, false, CONFLICT_GROUP_DEFAULT | CONFLICT_GROUP_PHOTO_MODE)
+	(PITCH_BACK,                                       KEY_PAD2, -1, SHIP_TAB, 1, "Pitch Backward", CC_TYPE_CONTINUOUS, false, CONFLICT_GROUP_DEFAULT | CONFLICT_GROUP_PHOTO_MODE)
+	(YAW_LEFT,                                         KEY_PAD4, -1, SHIP_TAB, 1, "Yaw Left",       CC_TYPE_CONTINUOUS, false, CONFLICT_GROUP_DEFAULT | CONFLICT_GROUP_PHOTO_MODE)
+	(YAW_RIGHT,                                        KEY_PAD6, -1, SHIP_TAB, 1, "Yaw Right",      CC_TYPE_CONTINUOUS, false, CONFLICT_GROUP_DEFAULT | CONFLICT_GROUP_PHOTO_MODE)
 
 	// flight controls (Throttle)
 	(ZERO_THROTTLE,                                  KEY_BACKSP, -1, SHIP_TAB, 1, "Set Throttle to Zero",           CC_TYPE_TRIGGER)
@@ -154,16 +154,16 @@ void control_config_common_init_bindings() {
 	(MINUS_5_PERCENT_THROTTLE,                        KEY_MINUS, -1, SHIP_TAB, 1, "Decrease Throttle 5 Percent",    CC_TYPE_TRIGGER)
 
 	// flight controls (Thrust)
-	(FORWARD_THRUST,                                      KEY_A, -1, SHIP_TAB, 1, "Forward Thrust", CC_TYPE_CONTINUOUS)
-	(REVERSE_THRUST,                                      KEY_Z, -1, SHIP_TAB, 1, "Reverse Thrust", CC_TYPE_CONTINUOUS)
-	(RIGHT_SLIDE_THRUST,                    KEY_SHIFTED | KEY_3, -1, SHIP_TAB, 1, "Right Thrust",   CC_TYPE_CONTINUOUS)
-	(LEFT_SLIDE_THRUST,                     KEY_SHIFTED | KEY_1, -1, SHIP_TAB, 1, "Left Thrust",    CC_TYPE_CONTINUOUS)
-	(UP_SLIDE_THRUST,                 KEY_SHIFTED | KEY_PADPLUS, -1, SHIP_TAB, 1, "Up Thrust",      CC_TYPE_CONTINUOUS)
-	(DOWN_SLIDE_THRUST,              KEY_SHIFTED | KEY_PADENTER, -1, SHIP_TAB, 1, "Down Thrust",    CC_TYPE_CONTINUOUS)
+	(FORWARD_THRUST,                                      KEY_A, -1, SHIP_TAB, 1, "Forward Thrust", CC_TYPE_CONTINUOUS, false, CONFLICT_GROUP_DEFAULT | CONFLICT_GROUP_PHOTO_MODE)
+	(REVERSE_THRUST,                                      KEY_Z, -1, SHIP_TAB, 1, "Reverse Thrust", CC_TYPE_CONTINUOUS, false, CONFLICT_GROUP_DEFAULT | CONFLICT_GROUP_PHOTO_MODE)
+	(RIGHT_SLIDE_THRUST,                    KEY_SHIFTED | KEY_3, -1, SHIP_TAB, 1, "Right Thrust",   CC_TYPE_CONTINUOUS, false, CONFLICT_GROUP_DEFAULT | CONFLICT_GROUP_PHOTO_MODE)
+	(LEFT_SLIDE_THRUST,                     KEY_SHIFTED | KEY_1, -1, SHIP_TAB, 1, "Left Thrust",    CC_TYPE_CONTINUOUS, false, CONFLICT_GROUP_DEFAULT | CONFLICT_GROUP_PHOTO_MODE)
+	(UP_SLIDE_THRUST,                 KEY_SHIFTED | KEY_PADPLUS, -1, SHIP_TAB, 1, "Up Thrust",      CC_TYPE_CONTINUOUS, false, CONFLICT_GROUP_DEFAULT | CONFLICT_GROUP_PHOTO_MODE)
+	(DOWN_SLIDE_THRUST,              KEY_SHIFTED | KEY_PADENTER, -1, SHIP_TAB, 1, "Down Thrust",    CC_TYPE_CONTINUOUS, false, CONFLICT_GROUP_DEFAULT | CONFLICT_GROUP_PHOTO_MODE)
 
 	// flight controls (flight modes)
 	(BANK_WHEN_PRESSED,                                      -1, -1, SHIP_TAB, 1, "Bank When Pressed",  CC_TYPE_CONTINUOUS)
-	(AFTERBURNER,                                       KEY_TAB,  5, SHIP_TAB, 1, "Afterburner",        CC_TYPE_CONTINUOUS)
+	(AFTERBURNER,                                       KEY_TAB,  5, SHIP_TAB, 1, "Afterburner",        CC_TYPE_CONTINUOUS, false, CONFLICT_GROUP_DEFAULT | CONFLICT_GROUP_PHOTO_MODE)
 	(GLIDE_WHEN_PRESSED,                                     -1, -1, SHIP_TAB, 1774, "Glide When Pressed", CC_TYPE_CONTINUOUS)
 	(TOGGLE_GLIDING,                          KEY_ALTED | KEY_G, -1, SHIP_TAB, 1775, "Toggle Gliding",     CC_TYPE_TRIGGER)
 
@@ -267,6 +267,12 @@ void control_config_common_init_bindings() {
 	(TOGGLE_HUD_CONTRAST,                                         KEY_L, -1, COMPUTER_TAB, 1, "Toggle High HUD Contrast",         CC_TYPE_TRIGGER)
 	(TOGGLE_HUD_SHADOWS,                              KEY_ALTED | KEY_L, -1, COMPUTER_TAB, 1781, "Toggle HUD Drop Shadows",          CC_TYPE_TRIGGER)
 	(HUD_TARGETBOX_TOGGLE_WIREFRAME,    KEY_ALTED | KEY_SHIFTED | KEY_Q, -1, COMPUTER_TAB, 1, "Toggle HUD Wireframe Target View", CC_TYPE_TRIGGER)
+	(TOGGLE_PHOTO_MODE,                                KEY_ALTED | KEY_1, -1, COMPUTER_TAB, 1908, "Toggle Photo Mode",                  CC_TYPE_TRIGGER, false, CONFLICT_GROUP_DEFAULT | CONFLICT_GROUP_PHOTO_MODE)
+	(PHOTO_MODE_FILTER_PREV,                                      KEY_UP, -1, COMPUTER_TAB, 1909, "Photo Mode Previous Parameter",         CC_TYPE_TRIGGER, false, CONFLICT_GROUP_PHOTO_MODE)
+	(PHOTO_MODE_FILTER_NEXT,                                    KEY_DOWN, -1, COMPUTER_TAB, 1910, "Photo Mode Next Parameter",             CC_TYPE_TRIGGER, false, CONFLICT_GROUP_PHOTO_MODE)
+	(PHOTO_MODE_FILTER_RESET,                          KEY_ALTED | KEY_2, -1, COMPUTER_TAB, 1911, "Photo Mode Reset Parameters",           CC_TYPE_TRIGGER, false, CONFLICT_GROUP_PHOTO_MODE)
+	(PHOTO_MODE_PARAM_DECREASE,                                 KEY_LEFT, -1, COMPUTER_TAB, 1912, "Photo Mode Decrease Selected Parameter", CC_TYPE_TRIGGER, false, CONFLICT_GROUP_PHOTO_MODE)
+	(PHOTO_MODE_PARAM_INCREASE,                                KEY_RIGHT, -1, COMPUTER_TAB, 1913, "Photo Mode Increase Selected Parameter", CC_TYPE_TRIGGER, false, CONFLICT_GROUP_PHOTO_MODE)
 
 	// Custom Controls
 	(CUSTOM_CONTROL_1,                  KEY_ALTED | KEY_SHIFTED | KEY_1, -1, COMPUTER_TAB, 1784, "Custom Control 1", CC_TYPE_TRIGGER, true)
@@ -434,6 +440,12 @@ SCP_unordered_map<SCP_string, IoActionId> old_text = {
 	{"Up Thrust",                               UP_SLIDE_THRUST},
 	{"Down Thrust",                             DOWN_SLIDE_THRUST},
 	{"Toggle HUD Wireframe Target View",        HUD_TARGETBOX_TOGGLE_WIREFRAME},
+	{"Toggle Photo Mode",                      TOGGLE_PHOTO_MODE},
+	{"Photo Mode Previous Parameter",             PHOTO_MODE_FILTER_PREV},
+	{"Photo Mode Next Parameter",                 PHOTO_MODE_FILTER_NEXT},
+	{"Photo Mode Reset Parameters",               PHOTO_MODE_FILTER_RESET},
+	{"Photo Mode Decrease Selected Parameter",    PHOTO_MODE_PARAM_DECREASE},
+	{"Photo Mode Increase Selected Parameter",    PHOTO_MODE_PARAM_INCREASE},
 	{"Top-Down View",                           VIEW_TOPDOWN},
 	{"Target Padlock View",                     VIEW_TRACK_TARGET},
 
@@ -1153,6 +1165,12 @@ void LoadEnumsIntoActionMap() {
 	ADD_ENUM_TO_ACTION_MAP(UP_SLIDE_THRUST)
 	ADD_ENUM_TO_ACTION_MAP(DOWN_SLIDE_THRUST)
 	ADD_ENUM_TO_ACTION_MAP(HUD_TARGETBOX_TOGGLE_WIREFRAME)
+	ADD_ENUM_TO_ACTION_MAP(TOGGLE_PHOTO_MODE)
+	ADD_ENUM_TO_ACTION_MAP(PHOTO_MODE_FILTER_PREV)
+	ADD_ENUM_TO_ACTION_MAP(PHOTO_MODE_FILTER_NEXT)
+	ADD_ENUM_TO_ACTION_MAP(PHOTO_MODE_FILTER_RESET)
+	ADD_ENUM_TO_ACTION_MAP(PHOTO_MODE_PARAM_DECREASE)
+	ADD_ENUM_TO_ACTION_MAP(PHOTO_MODE_PARAM_INCREASE)
 	ADD_ENUM_TO_ACTION_MAP(VIEW_TOPDOWN)
 	ADD_ENUM_TO_ACTION_MAP(VIEW_TRACK_TARGET)
 
@@ -2820,6 +2838,7 @@ CCI& CCI::operator=(const CCI& A) {
 	locked = A.locked;
 	scriptEnabledByDefault = A.scriptEnabledByDefault;
 	continuous_ongoing = A.continuous_ongoing;
+	conflict_groups = A.conflict_groups;
 
 	return *this;
 };
@@ -2902,7 +2921,7 @@ CCI_builder& CCI_builder::start() {
 
 void CCI_builder::end() {};
 
-CCI_builder& CCI_builder::operator()(IoActionId action_id, short primary, short secondary, char tab, int indexXSTR, const char *text, CC_type type, bool disabled) {
+CCI_builder& CCI_builder::operator()(IoActionId action_id, short primary, short secondary, char tab, int indexXSTR, const char *text, CC_type type, bool disabled, int conflict_groups) {
 	Assert(action_id < CCFG_MAX);
 	CCI& item = ControlConfig[action_id];
 
@@ -2939,6 +2958,9 @@ CCI_builder& CCI_builder::operator()(IoActionId action_id, short primary, short 
 	if ((tab != NO_TAB) && !disabled) {
 		item.disabled = false;
 	}
+
+	// Assign the conflict group
+	item.conflict_groups = conflict_groups;
 
 	return *this;
 }

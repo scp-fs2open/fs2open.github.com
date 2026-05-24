@@ -1,7 +1,9 @@
 #include "LineEditDelegate.h"
 
+#include <QApplication>
 #include <QIntValidator>
 #include <QLineEdit>
+#include <QStyle>
 #include <limits>
 
 // A custom role to store our boolean flag
@@ -50,6 +52,36 @@ LineEditDelegate::createEditor(QWidget* parent, const QStyleOptionViewItem& /*op
 	}
 
 	return editor;
+}
+
+void LineEditDelegate::paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const
+{
+	QStyleOptionViewItem opt = option;
+	initStyleOption(&opt, index); // fill opt from the index
+
+	if (opt.state & QStyle::State_Selected) {
+		QVariant bgData = index.data(Qt::BackgroundRole);
+		if (bgData.isValid()) {
+			// Determine blue vs orange from the row's background tint, then apply a
+			// proper saturated selection color for that type (theme-aware).
+			const QColor type_color = bgData.value<QBrush>().color();
+			const bool is_blue = type_color.blue() > type_color.red();
+			const bool dark_mode = opt.palette.color(QPalette::Window).lightness() < 128;
+			QColor sel;
+			if (is_blue) {
+				sel = dark_mode ? QColor(55, 95, 155) : QColor(70, 130, 200);
+			} else {
+				sel = dark_mode ? QColor(155, 90, 30) : QColor(200, 120, 40);
+			}
+			opt.palette.setColor(QPalette::Highlight, sel);
+		}
+	}
+
+	// Draw with our modified option directly bypassing QStyledItemDelegate::paint() which
+	// would call initStyleOption() again internally and overwrite the palette changes above.
+	const QWidget* widget = option.widget;
+	QStyle* style = widget ? widget->style() : QApplication::style();
+	style->drawControl(QStyle::CE_ItemViewItem, &opt, painter, widget);
 }
 
 } // namespace fso::fred::dialogs

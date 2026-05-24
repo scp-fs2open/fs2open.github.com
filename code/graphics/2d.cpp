@@ -33,6 +33,7 @@
 #include "graphics/util/UniformBufferManager.h"
 #include "graphics/shadows.h"
 #include "io/mouse.h"
+#include "model/modelrender.h"
 #include "libs/jansson.h"
 #include "options/Option.h"
 #include "osapi/osapi.h"
@@ -2939,6 +2940,8 @@ void gr_flip(bool execute_scripting)
 		}
 	}
 
+	model_process_cached_ui_render_instances();
+
 	gr_reset_immediate_buffer();
 
 	// Do per frame operations on the matrix state
@@ -2974,6 +2977,11 @@ void gr_request_screenshot(const char* filename)
 	if (Pending_screenshot_filename.empty()) {
 		Pending_screenshot_filename = filename;
 	}
+}
+
+bool gr_is_screenshot_requested()
+{
+	return !Pending_screenshot_filename.empty();
 }
 
 void gr_print_timestamp(int x, int y, fix timestamp, int resize_mode)
@@ -3076,9 +3084,9 @@ SCP_vector<DisplayData> gr_enumerate_displays()
 			display.video_modes.push_back(videoMode);
 		}
 
-		data.push_back(display);
+		data.push_back(std::move(display));
 	}
-	
+
 	SDL_QuitSubSystem(SDL_INIT_VIDEO);
 
 	return data;

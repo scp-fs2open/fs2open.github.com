@@ -8,6 +8,10 @@
 #include <QAbstractButton>
 #include <QtWidgets/QDialog>
 
+namespace fso::fred {
+class BriefingMapWidget;
+}
+
 namespace fso::fred::dialogs {
 
 namespace Ui {
@@ -34,19 +38,21 @@ class BriefingEditorDialog : public QDialog, public SexpTreeEditorInterface {
 
 	void on_prevStageButton_clicked();
 	void on_nextStageButton_clicked();
+	void on_cameraCoordinatesButton_clicked();
 	void on_addStageButton_clicked();
 	void on_insertStageButton_clicked();
 	void on_deleteStageButton_clicked();
 
-	void on_saveViewButton_clicked();
-	void on_gotoViewButton_clicked();
-	void on_copyViewButton_clicked();
-	void on_pasteViewButton_clicked();
+	void on_resetCameraButton_clicked();
+	void on_copyCameraButton_clicked();
+	void on_pasteCameraButton_clicked();
 
 	void on_copyToOtherTeamsButton_clicked();
 	void on_teamComboBox_currentIndexChanged(int index);
 
 	void on_cameraTransitionTimeSpinBox_valueChanged(int arg1);
+	void on_movementSpeedComboBox_currentIndexChanged(int index);
+	void on_rotationSpeedComboBox_currentIndexChanged(int index);
 	void on_cutToNextStageCheckBox_toggled(bool checked);
 	void on_cutToPrevStageCheckBox_toggled(bool checked);
 	void on_disableGridCheckBox_toggled(bool checked);
@@ -57,16 +63,18 @@ class BriefingEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	void on_iconImageComboBox_currentIndexChanged(int index);
 	void on_iconShipTypeComboBox_currentIndexChanged(int index);
 	void on_iconTeamComboBox_currentIndexChanged(int index);
-	void on_iconScaleDoubleSpinBox_valueChanged(double arg1);
+	void on_scaleDoubleSpinBox_valueChanged(double arg1);
 
-	void on_drawLinesCheckBox_toggled(bool checked);
+	void on_drawLinesCheckBox_stateChanged(int state);
 	void on_changeLocallyCheckBox_toggled(bool checked);
 	void on_flipIconCheckBox_toggled(bool checked);
 	void on_highlightCheckBox_toggled(bool checked);
-	void on_useWingCheckBox_toggled(bool checked);
-	void on_useCargoCheckBox_toggled(bool checked);
+	void on_useWingIconCheckBox_toggled(bool checked);
+	void on_useCargoIconCheckBox_toggled(bool checked);
 
 	void on_makeIconButton_clicked();
+	void on_makeIconFromShipButton_clicked();
+	void on_iconCoordinatesButton_clicked();
 	void on_deleteIconButton_clicked();
 	void on_propagateIconButton_clicked();
 
@@ -76,16 +84,29 @@ class BriefingEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	void on_voiceFilePlayButton_clicked();
 	void on_formulaTreeView_nodeChanged(int newTree);
 
-	void on_defaultMusicComboBox_currentIndexChanged(int index);
-	void on_musicPackComboBox_currentIndexChanged(int /*index*/);
+	void on_defaultMusicWidget_currentIndexChanged(int spooledMusicIdx);
+	void on_musicPackWidget_currentIndexChanged(int spooledMusicIdx);
+	void on_defaultMusicWidget_playbackStarted();
+	void on_musicPackWidget_playbackStarted();
 
   private: // NOLINT(readability-redundant-access-specifiers)
 	std::unique_ptr<Ui::BriefingEditorDialog> ui;
 	std::unique_ptr<BriefingEditorDialogModel> _model;
 	EditorViewport* _viewport;
+	fso::fred::BriefingMapWidget* _mapWidget = nullptr;
+	std::optional<EditorViewport::ViewportControlLock> _viewportLock;
 
 	void initializeUi();
+	void setupMapWidget();
+	void applyMapWidgetAspectRatio();
 	void updateUi();
 	void enableDisableControls();
+	void captureResetCameraForCurrentStage();
+
+	vec3d _resetCameraPos {};
+	matrix _resetCameraOrient {};
+	int _resetCameraTeam = -1;
+	int _resetCameraStage = -1;
+	bool _resetCameraValid = false;
 };
 } // namespace fso::fred::dialogs

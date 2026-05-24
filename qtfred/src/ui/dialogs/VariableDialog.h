@@ -3,6 +3,7 @@
 #include <mission/dialogs/VariableDialogModel.h>
 #include <ui/FredView.h>
 
+#include <QColor>
 #include <QDialog>
 
 namespace fso::fred::dialogs {
@@ -23,6 +24,7 @@ class VariableDialog : public QDialog {
 
   protected:
 	void closeEvent(QCloseEvent* e) override; // funnel all Window X presses through reject()
+	void changeEvent(QEvent* e) override;     // recolor rows on palette/theme change
 
   private slots:
 	// Dialog Controls
@@ -97,6 +99,9 @@ class VariableDialog : public QDialog {
 
 	void initializeUi();
 	void updateUi();
+
+	// Returns a theme-aware background color: blue-ish for blue_type=true, orange-ish for blue_type=false
+	static QColor rowTypeColor(bool blue_type);
 
 	// Granular update methods
 	void updateVariableList();

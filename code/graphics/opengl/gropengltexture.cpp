@@ -25,6 +25,10 @@
 #include "options/Option.h"
 #include "osapi/osregistry.h"
 #include "ktxutils/ktxutils.h"
+#ifdef USE_OPENGL_ES
+#include "es_compatibility.h"
+#endif
+
 matrix4 GL_texture_matrix;
 
 int GL_texture_ram = 0;
@@ -1333,8 +1337,10 @@ int opengl_compress_image( ubyte **compressed_data, ubyte *in_data, int width, i
 		return 0;
 	}
 
+	#ifndef USE_OPENGL_ES
 	// use best compression quality
 	glHint(GL_TEXTURE_COMPRESSION_HINT, GL_NICEST);
+	#endif
 
 	// alright, it should work if we are still here, now do it for real
 	glTexImage2D(GL_TEXTURE_2D, 0, intFormat, width, height, 0, glFormat, texFormat, in_data);
@@ -1366,9 +1372,9 @@ int opengl_compress_image( ubyte **compressed_data, ubyte *in_data, int width, i
 		glGetCompressedTexImage(GL_TEXTURE_2D, i, out_data + compressed_size);
 		compressed_size += testing;
 	}
-
+	#ifndef USE_OPENGL_ES
 	glHint(GL_TEXTURE_COMPRESSION_HINT, GL_DONT_CARE);
-
+	#endif
 	GL_state.Texture.Delete(tex);
 	glDeleteTextures(1, &tex);
 
@@ -1676,7 +1682,7 @@ int opengl_check_framebuffer()
 			case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
 				strcpy_s(err_txt, "Missing one or more image attachments!");
 				break;
-				
+			#ifndef USE_OPENGL_ES
 			case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER:
 				strcpy_s(err_txt, "Draw buffer attachment point is NONE!");
 				break;
@@ -1684,7 +1690,11 @@ int opengl_check_framebuffer()
 			case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER:
 				strcpy_s(err_txt, "Read buffer attachment point is NONE!");
 				break;
-
+			#else
+			case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE:
+				strcpy_s(err_txt, "Inconsistent multisample state (samples/resolve mismatch)!");
+						break;
+			#endif
 			case GL_FRAMEBUFFER_UNSUPPORTED:
 				strcpy_s(err_txt, "Attached images violate current FBO restrictions!");
 				break;
@@ -1925,7 +1935,9 @@ int opengl_make_render_target( int handle, int *w, int *h, int *bpp, int *mm_lvl
 		glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, ts->texture_id, 0, 0);
 	}
 
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, new_fbo->renderbuffer_id);
+	if (flags & BMP_FLAG_RENDER_TARGET_DEPTH_ATTACHMENT) {
+		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, new_fbo->renderbuffer_id);
+	}
 
 	if ( opengl_check_framebuffer() ) {
 		// Oops!!  reset everything and then bail

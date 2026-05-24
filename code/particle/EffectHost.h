@@ -27,6 +27,7 @@ public:
 	}
 
 	virtual std::pair<int, int> getParentObjAndSig() const { return {-1, -1}; }
+	virtual int getParentSubmodel() const { return -1; }
 
 	virtual float getLifetime() const { return -1.f; }
 

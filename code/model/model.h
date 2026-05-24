@@ -136,7 +136,7 @@ struct submodel_instance
 	float	shift_accel = 0.0f;
 	TIMESTAMP stepped_translation_started;
 
-	bool	blown_off = false;						// If set, this subobject is blown off
+	bool	blown_off = false;						// If set, this subobject is not rendered or used for collision
 
 	// These fields are the true standard reference for submodel rotation.  They should seldom be read directly
 	// and should almost never be written directly.  In most cases, coders should prefer cur_angle and prev_angle.
@@ -164,6 +164,26 @@ struct submodel_instance
 #define TM_NUM_TYPES		8		//WMC - Number of texture_info objects in texture_map
 									//Used by scripting - if you change this, do a search
 									//to update switch() statement in lua.cpp
+
+inline const SCP_map<int, SCP_string> MODEL_TEXTURE_SUFFIXES = {
+	{ TM_GLOW_TYPE,       "-glow" },
+	{ TM_SPECULAR_TYPE,   "-shine" },
+	{ TM_NORMAL_TYPE,     "-normal" },
+	{ TM_HEIGHT_TYPE,     "-height" },
+	{ TM_MISC_TYPE,       "-misc" },
+	{ TM_SPEC_GLOSS_TYPE, "-reflect" },
+	{ TM_AMBIENT_TYPE,    "-ao" }
+};
+
+inline const SCP_string MODEL_TEXTURE_SUFFIX_TRANS = "-trans"; // -trans is a special case as other suffixes can be appended to it
+
+inline const SCP_string& model_texture_longest_suffix() {
+	return std::max_element(MODEL_TEXTURE_SUFFIXES.begin(),
+		MODEL_TEXTURE_SUFFIXES.end(),
+		[](const std::pair<int, SCP_string>& left, const std::pair<int, SCP_string>& right) {
+			return left.second.size() < right.second.size();
+		})->second;
+}
 
 #define MAX_REPLACEMENT_TEXTURES MAX_MODEL_TEXTURES * TM_NUM_TYPES
 
@@ -413,7 +433,7 @@ class bsp_info
 public:
 	bsp_info()
 		: bsp_data_size(0), bsp_data(nullptr), collision_tree_index(-1),
-		rad(0.0f), my_replacement(-1), i_replace(-1), num_live_debris(0),
+		rad(0.0f), next_form(-1), prev_form(-1), num_live_debris(0),
 		parent(-1), num_children(0), first_child(-1), next_sibling(-1), num_details(0),
 		outline_buffer(nullptr), n_verts_outline(0), render_sphere_radius(0.0f), use_render_box(0),	use_render_sphere(0)
 	{
@@ -464,8 +484,8 @@ public:
 	vec3d	max;						// The max point of this object's geometry
 	vec3d	bounding_box[8];		// calculated fron min/max
 
-	int		my_replacement;		// If not -1 this subobject is what should get rendered instead of this one
-	int		i_replace;				// If this is not -1, then this subobject will replace i_replace when it is damaged
+	int		next_form;				// If not -1, this submodel can transform into it
+	int		prev_form;				// If not -1, another submodel that can transform into this one
 
 	int		num_live_debris;		// num live debris models assocaiated with a submodel
 	int		live_debris[MAX_LIVE_DEBRIS];	// array of live debris submodels for a submodel
@@ -735,6 +755,11 @@ typedef struct insignia {
 	vec3d vecs[MAX_INS_VECS];								// vertex list	
 	vec3d offset;	// global position offset for this insignia
 	vec3d norm[MAX_INS_VECS]	;					//normal of the insignia-Bobboau
+
+	// Computed fields for decal rendering
+	vec3d position;
+	matrix orientation;
+	float diameter;
 } insignia;
 
 #define PM_FLAG_ALLOW_TILING			(1<<0)					// Allow texture tiling
@@ -1000,9 +1025,11 @@ void model_free_all();
 void model_instance_free_all();
 
 // Alias to model_load, checks if a pof tech model exists and loads it if specified, otherwise loads the default pof. --wookieejedi
+// NOTE: Each time model_load is called with a ship_info pointer, which causes it to load subsystems, the model number is also assigned to the ship_info.
 int model_load(ship_info* sip, bool prefer_tech_model);
 
 // Loads a model from disk and returns the model number it loaded into.
+// NOTE: Each time model_load is called with a ship_info pointer, which causes it to load subsystems, the model number is also assigned to the ship_info.
 int model_load(const char *filename, ship_info* sip = nullptr, ErrorType error_type = ErrorType::FATAL_ERROR, bool allow_redundant_load = false);
 
 int model_create_instance(int objnum, int model_num);
@@ -1070,7 +1097,7 @@ constexpr uint64_t MR_NO_INSIGNIA = static_cast<uint64_t>(1) << static_cast<uint
 #define MR_DEBUG_PATHS				(1<<1)		// Show the paths associated with a model
 #define MR_DEBUG_RADIUS				(1<<2)		// Show the radius around the object
 #define MR_DEBUG_SHIELDS			(1<<3)		// Show the shield mesh
-#define MR_DEBUG_BAY_PATHS			(1<<4)		// draw bay paths
+#define MR_DEBUG_BAY_PATHS			(1<<4)		// draw fighter bay paths
 #define MR_DEBUG_NO_DIFFUSE			(1<<5)
 #define MR_DEBUG_NO_SPEC			(1<<6)
 #define MR_DEBUG_NO_NORMAL			(1<<7)
@@ -1080,6 +1107,7 @@ constexpr uint64_t MR_NO_INSIGNIA = static_cast<uint64_t>(1) << static_cast<uint
 #define MR_DEBUG_NO_AMBIENT			(1<<11)
 #define MR_DEBUG_NO_MISC			(1<<12)
 #define MR_DEBUG_NO_REFLECT			(1<<13)
+#define MR_DEBUG_DOCK_POINTS		(1<<14)		// draw docking bay slot positions and normals
 
 //Defines for the render parameter of model_render, model_really_render and model_render_buffers
 #define MODEL_RENDER_OPAQUE 1
@@ -1109,13 +1137,18 @@ extern int model_find_2d_bound_min(int model_num,matrix *orient, vec3d * pos,int
 // rect.
 int submodel_find_2d_bound_min(int model_num,int submodel, matrix *orient, vec3d * pos,int *x1, int *y1, int *x2, int *y2);
 
-
 // Returns zero is x1,y1,x2,y2 are valid
 // Returns 2 for point offscreen.
 // note that x1,y1,x2,y2 aren't clipped to 2d screen coordinates!
 // This function just looks at the radius, and not the orientation, so the
 // bounding box won't change depending on the obj's orient.
 int subobj_find_2d_bound(float radius, matrix *orient, vec3d * pos,int *x1, int *y1, int *x2, int *y2);
+
+// Returns the index of the -destroyed version of a submodel name, if it exists
+int submodel_find_destroyed_form(int model_num, const char *name_stem);
+
+// Returns whether this submodel name is a -destroyed version
+bool submodel_is_destroyed_form(const char *name);
 
 // stats variables
 #ifndef NDEBUG
@@ -1470,6 +1503,8 @@ void model_render_shields( polymodel * pm, uint64_t flags );
 void model_draw_paths_htl( int model_num, uint64_t flags );
 
 void model_draw_bay_paths_htl(int model_num);
+
+void model_draw_dock_points_htl(int model_num);
 
 bool model_interp_config_buffer(indexed_vertex_source *vert_src, vertex_buffer *vb, bool update_ibuffer_only);
 bool model_interp_pack_buffer(indexed_vertex_source *vert_src, vertex_buffer *vb);

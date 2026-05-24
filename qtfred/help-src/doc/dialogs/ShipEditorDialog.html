@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Ship Editor - QtFRED Help</title>
+    <link rel="stylesheet" type="text/css" href="../css/help.css"/>
+</head>
+<body>
+<nav class="breadcrumb"><a href="../index.html">QtFRED Help</a> &rsaquo; Objects &rsaquo; Ship Editor</nav>
+<h1>Ship Editor</h1>
+<p>Opens by double-clicking a ship in the viewport, or via <strong>Editors &rsaquo;
+Ships</strong>.</p>
+<p>The Ship Editor configures individual ships. When multiple ships are selected in the
+viewport, editing a field applies the change to all of them simultaneously; some
+fields are disabled during multi-ship editing (such as Name, which must be
+unique). Some fields also behave differently or are unavailable when the selected
+ship is a Player Start.</p>
+
+<h2>General fields</h2>
+<table>
+    <tr><th>Field</th><th>Description</th></tr>
+    <tr><td>Name</td><td>Unique identifier used to reference this ship in SEXPs and
+        mission log entries. Often visible to the player in the targeting HUD.</td></tr>
+    <tr><td>Display name</td><td>If set, shown to the player instead of the ship name
+        in the targeting HUD and other player-facing contexts.</td></tr>
+    <tr><td>Ship class</td><td>The ship class from the game tables, defining the
+        model, stats, and weapon hardpoints.</td></tr>
+    <tr><td>Callsign</td><td>Short identifier appended to the ship name in HUD target
+        boxes (e.g. the ship name may read "Alpha 1 (Braveheart)" if a callsign is
+        set).</td></tr>
+    <tr><td>Alt name</td><td>If set, replaces the ship's class name in HUD target
+        boxes. Use this to display a different class name to the player without
+        changing the actual ship class.</td></tr>
+    <tr><td>AI class</td><td>Overrides the AI skill level for this ship, independent
+        of the mission's global AI profile.</td></tr>
+    <tr><td>Team</td><td>IFF team (Friendly, Hostile, Neutral, etc.) determining
+        which ships treat this one as ally or enemy.</td></tr>
+    <tr><td>Cargo</td><td>Text displayed to the player when the ship is scanned. Use
+        <em>Nothing</em> for ships with no cargo.</td></tr>
+    <tr><td>Cargo Title</td><td>Text title displayed to the player when the ship is scanned.
+         This is the text before the ":" and defaults to "Cargo:" if not set.</td></tr>
+    <tr><td>Wing</td><td>Read-only. Shows which wing this ship belongs to, if
+        any.</td></tr>
+    <tr><td>Hotkey</td><td>Function key (F5–F12) that selects this ship during
+        play.</td></tr>
+    <tr><td>Persona</td><td>Voice persona used when this ship sends messages and when
+        auto-selecting a wingmate sender for messages with a matching persona
+        assigned.</td></tr>
+    <tr><td>Kill score</td><td>Points awarded to the player for destroying this
+        ship.</td></tr>
+    <tr><td>Assist %</td><td>Percentage of the kill score awarded to players who earn
+        an assist on this ship. For example, a value of 50 with a kill score of 100
+        gives assisters 50 points.</td></tr>
+    <tr><td>Respawn priority</td><td>In multiplayer, ships with higher values are
+        prioritized when the engine selects which ship a player respawns into.</td></tr>
+    <tr><td>Player ship</td><td>Read-only indicator. Use <strong>Set Player
+        Ship</strong> to change this.</td></tr>
+</table>
+
+<h2>Buttons</h2>
+<table>
+    <tr><th>Button</th><th>Description</th></tr>
+    <tr><td>Set Player Ship</td><td>Converts the selected ship between a Player Start
+        and a regular ship. This changes the ship's internal object type and updates
+        the player start count, affecting how the engine handles spawning and
+        player-specific logic.</td></tr>
+    <tr><td>Prev / Next</td><td>Moves the selection to the previous or next ship in
+        the mission, allowing quick sequential editing without switching back to the
+        viewport.</td></tr>
+    <tr><td>Layer</td><td>The layer the ship is assigned to.</td></tr>
+    <tr><td>Delete Ship</td><td>Removes the selected ship from the mission.</td></tr>
+    <tr><td>Reset</td><td>Resets the selected ship(s) to their ship class defaults,
+        including cargo, AI class, goals, hull and shield percentages, and weapon
+        loadout.</td></tr>
+</table>
+
+<h2>Subdialogs</h2>
+<table>
+    <tr><th>Dialog</th><th>Description</th></tr>
+    <tr><td><a href="ShipWeaponsDialog.html">Weapons</a></td><td>Primary and secondary
+        weapon bank loadout.</td></tr>
+    <tr><td><a href="ShipPlayerOrdersDialog.html">Player Orders</a></td><td>Configures
+        which comm menu orders the player can issue to this ship.</td></tr>
+    <tr><td><a href="ShipTextureReplacementDialog.html">Texture
+        Replacement</a></td><td>Overrides specific textures on this ship
+        instance.</td></tr>
+    <tr><td><a href="ShipInitialStatusDialog.html">Initial Status</a></td><td>Starting
+        hull, shields, subsystem damage, and weapon ammo.</td></tr>
+    <tr><td><a href="ShipInitialOrdersDialog.html">Initial Orders</a></td><td>AI orders
+        this ship follows at mission start.</td></tr>
+    <tr><td><a href="ShipSpecialStatsDialog.html">Special Stats</a></td><td>Per-instance
+        overrides for ship statistics.</td></tr>
+    <tr><td><a href="ShipFlagsDialog.html">Flags</a></td><td>Per-ship behavior
+        flags.</td></tr>
+    <tr><td><a href="ShipAltShipClass.html">Alt Ship Class</a></td><td>Fallback ship
+        classes used if the primary class is unavailable at mission load.</td></tr>
+</table>
+
+<h2>Arrival &amp; Departure</h2>
+<p>Controls when and where this ship enters and leaves the mission. The cue SEXP must
+evaluate to true before the arrival or departure can occur. Most arrival locations
+require a target ship to be selected. Departure location options are limited to
+<em>Hyperspace</em> or <em>To Dock Bay</em>.</p>
+
+<h3>Arrival locations</h3>
+<table>
+    <tr><th>Location</th><th>Notes</th></tr>
+    <tr><td>Hyperspace</td><td>Warps in from hyperspace. No target required.</td></tr>
+    <tr><td>Near Ship</td><td>Appears near the target ship at the specified
+        distance.</td></tr>
+    <tr><td>In Front of Ship</td><td>Appears in front of the target at the specified
+        distance.</td></tr>
+    <tr><td>In Back of Ship</td><td>Appears behind the target at the specified
+        distance.</td></tr>
+    <tr><td>Above Ship</td><td>Appears above the target at the specified
+        distance.</td></tr>
+    <tr><td>Below Ship</td><td>Appears below the target at the specified
+        distance.</td></tr>
+    <tr><td>To Left of Ship</td><td>Appears to the left of the target at the specified
+        distance.</td></tr>
+    <tr><td>To Right of Ship</td><td>Appears to the right of the target at the
+        specified distance.</td></tr>
+    <tr><td>From Dock Bay</td><td>Launches from the target ship's dock bay. Use
+        <strong>Restrict Paths</strong> to limit which bay paths are
+        used.</td></tr>
+</table>
+
+<h3>Fields</h3>
+<table>
+    <tr><th>Field</th><th>Description</th></tr>
+    <tr><td>Target</td><td>The ship this arrival or departure is relative to. Required
+        for all locations except Hyperspace.</td></tr>
+    <tr><td>Distance</td><td>Distance from the target in meters. Arrival only;
+        available for positional locations (Near Ship, In Front of Ship,
+        etc.).</td></tr>
+    <tr><td>Delay</td><td>Seconds after the cue becomes true before the ship
+        arrives or departs.</td></tr>
+    <tr><td>Restrict Paths</td><td>Selects which dock bay paths to use. Only available
+        when the location is From Dock Bay or To Dock Bay.</td></tr>
+    <tr><td><a href="ShipCustomWarpDialog.html">Custom Warp Params</a></td><td>Opens
+        a sub-dialog to configure custom warp appearance and behavior.</td></tr>
+    <tr><td>Cue</td><td><a href="../concepts/sexps.html">SEXP</a> that must evaluate
+        to true for arrival or departure to occur.</td></tr>
+    <tr><td>No warp effect</td><td>When checked, the ship appears or leaves without
+        the visual warp effect.</td></tr>
+</table>
+</body>
+</html>

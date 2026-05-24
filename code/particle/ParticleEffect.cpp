@@ -185,6 +185,28 @@ void ParticleEffect::sampleNoise(vec3d& noiseTarget, const matrix* orientation, 
 	vm_vec_unrotate(&noiseTarget, &noiseSampleLocal, orientation);
 }
 
+vec3d ParticleEffect::adaptPosition(const vec3d& pos, int parent) const {
+	if (parent < 0 || !m_local_position_scaling.has_value()) {
+		return pos;
+	}
+
+	vec3d pos_local = pos;
+
+	if (!m_parent_local) {
+		pos_local -= Objects[parent].pos;
+		vm_vec_rotate(&pos_local, &pos_local, &Objects[parent].orient);
+	}
+
+	pos_local *= m_local_position_scaling->next();
+
+	if (!m_parent_local) {
+		vm_vec_unrotate(&pos_local, &pos_local, &Objects[parent].orient);
+		vm_vec_add2(&pos_local, &Objects[parent].pos);
+	}
+
+	return pos_local;
+}
+
 /*
  * In persistent mode (should only ever be used by scripting, really), this function returns pointers to the persistent particles
  * In non-persistent mode, this function returns the multiplier for the next spawn time. This is because the source cannot know about the curve evaluation that is required to get this factor
@@ -213,7 +235,8 @@ auto ParticleEffect::processSourceInternal(float interp, const ParticleSource& s
 		}
 	}
 
-	const auto& [pos, hostOrientation] = source.m_host->getPositionAndOrientation(m_parent_local, interp, m_manual_offset);
+	const auto& [pos_hit, hostOrientation] = source.m_host->getPositionAndOrientation(m_parent_local, interp, m_manual_offset);
+	const vec3d& pos = adaptPosition(pos_hit, parent);
 
 	vec3d posGlobal = pos;
 	if (m_parent_local && parent >= 0) {
@@ -290,11 +313,11 @@ auto ParticleEffect::processSourceInternal(float interp, const ParticleSource& s
 		vec3d localPos = posNoise;
 
 		if (m_spawnVolume != nullptr) {
-			localPos += m_spawnVolume->sampleRandomPoint(orientation, modularCurvesInput, particleFraction);
+			localPos += m_spawnVolume->sampleRandomPoint(orientation, modularCurvesInput, particleFraction, *source.m_host);
 		}
 
 		if (m_velocityVolume != nullptr) {
-			localVelocity += m_velocityVolume->sampleRandomPoint(orientation, modularCurvesInput, particleFraction) * (m_velocity_scaling.next() * velocityVolumeMultiplier);
+			localVelocity += m_velocityVolume->sampleRandomPoint(orientation, modularCurvesInput, particleFraction, *source.m_host) * (m_velocity_scaling.next() * velocityVolumeMultiplier);
 		}
 
 		if (m_manual_velocity_offset.has_value()) {

@@ -2,6 +2,7 @@
 
 #include "mission/missionparse.h"
 
+#include <QApplication>
 #include <QScrollBar>
 #include <QGraphicsScene>
 #include <QGraphicsSceneMouseEvent>
@@ -124,7 +125,7 @@ void MissionNodeItem::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidge
 	}
 
 	// Text: filename and mission name
-	p->setPen(Qt::black);
+	p->setPen(m_style.nodeText);
 	QFont f = p->font();
 	f.setPointSizeF(f.pointSizeF() - 1);
 	p->setFont(f);
@@ -470,8 +471,33 @@ void EdgeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, 
 	}
 }
 
+CampaignGraphStyle CampaignGraphStyle::makeStyle(bool dark)
+{
+	CampaignGraphStyle s;
+	if (dark) {
+		s.bgColor           = QColor( 28,  28,  28);
+		s.gridMinor         = QColor( 42,  42,  42);
+		s.gridMajor         = QColor( 58,  58,  58);
+		s.nodeFill          = QColor( 55,  55,  55);
+		s.nodeBorder        = QColor(190, 190, 190);
+		s.nodeText          = QColor(220, 220, 220);
+		s.badgeDisabled     = QColor( 85,  85,  85);
+		s.endSinkFill       = QColor( 55,  22,  22);
+		s.endSinkBorder     = QColor(180,  60,  60);
+		s.endSinkText       = QColor(220, 100, 100);
+	} else {
+		// Light mode: struct defaults apply (white/light-gray nodes, dark borders and text).
+	}
+	// Port colors (inbound/standard/loop/fork) are vivid enough to work in both modes unchanged.
+	return s;
+}
+
 CampaignMissionGraph::CampaignMissionGraph(QWidget* parent) : QGraphicsView(parent)
 {
+	// Set initial style based on current application palette
+	const bool dark = qApp->palette().window().color().value() < 128;
+	m_style = CampaignGraphStyle::makeStyle(dark);
+
 	initScene();
 
 	// View behavior
@@ -485,6 +511,11 @@ CampaignMissionGraph::CampaignMissionGraph(QWidget* parent) : QGraphicsView(pare
 	// Ensure when the scene is smaller than the viewport it sits at the topleft,
 	// and when we reset the scene rect we can scroll to (0,0).
 	setAlignment(Qt::AlignLeft | Qt::AlignTop);
+
+	// Recolor graph when the application theme changes
+	connect(qApp, &QApplication::paletteChanged, this, [this](const QPalette& pal) {
+		applyTheme(pal.window().color().value() < 128);
+	});
 }
 
 void CampaignMissionGraph::onNodeMoved(int missionIndex, QPointF sceneTopLeft)
@@ -604,6 +635,13 @@ void CampaignMissionGraph::setModel(CampaignEditorDialogModel* model)
 {
 	m_model = model;
 	rebuildAll(true);
+}
+
+void CampaignMissionGraph::applyTheme(bool dark)
+{
+	m_style = CampaignGraphStyle::makeStyle(dark);
+	setBackgroundBrush(m_style.bgColor);
+	rebuildAll();
 }
 
 void CampaignMissionGraph::rebuildAll(bool refocus)

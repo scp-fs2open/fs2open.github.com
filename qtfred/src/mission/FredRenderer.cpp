@@ -41,8 +41,6 @@ const float FRED_DEAFULT_HTL_DRAW_DIST = 300000.0f;
 const int FRED_COLOUR_WHITE = 0xffffff;
 const int FRED_COLOUR_YELLOW_GREEN = 0xc8ff00;
 
-const int BRIEFING_LOOKAT_POINT_ID = 99999;
-
 void enable_htl() {
 	gr_set_proj_matrix((4.0f / 9.0f) * PI * FRED_DEFAULT_HTL_FOV,
 					   gr_screen.aspect * static_cast<float>(gr_screen.clip_width)
@@ -79,8 +77,6 @@ void init_fred_colors() {
 int grid_colors_inited = 0;
 color Fred_grid_bright;
 color Fred_grid_dark;
-color Fred_grid_bright_aa;
-color Fred_grid_dark_aa;
 
 void draw_asteroid_field() {
 	int i, j;
@@ -146,7 +142,7 @@ void draw_asteroid_field() {
 	}
 }
 
-void fredhtl_render_subsystem_bounding_box(subsys_to_render *s2r)
+void fredhtl_render_subsystem_bounding_box(fso::fred::subsys_to_render *s2r)
 {
 	vertex text_center;
 	SCP_string buf;
@@ -276,7 +272,7 @@ void fredhtl_render_subsystem_bounding_box(subsys_to_render *s2r)
 	}
 }
 
-void render_active_rect(bool box_marking, const Marking_box& marking_box) {
+void render_active_rect(bool box_marking, const fso::fred::Marking_box& marking_box) {
 	if (box_marking) {
 		gr_set_color(255, 255, 255);
 		gr_line(marking_box.x1, marking_box.y1, marking_box.x1, marking_box.y2);
@@ -301,8 +297,7 @@ void draw_compass_arrow(vec3d* v0) {
 
 }
 
-namespace fso {
-namespace fred {
+namespace fso::fred {
 ViewSettings::ViewSettings() {
 }
 
@@ -327,24 +322,13 @@ void FredRenderer::render_grid(grid* gridp) {
 	if (!grid_colors_inited) {
 		grid_colors_inited = 1;
 
-		gr_init_alphacolor(&Fred_grid_dark_aa, 64, 64, 64, 255);
-		gr_init_alphacolor(&Fred_grid_bright_aa, 128, 128, 128, 255);
 		gr_init_color(&Fred_grid_dark, 64, 64, 64);
 		gr_init_color(&Fred_grid_bright, 128, 128, 128);
 	}
 
 	ncols = gridp->ncols;
 	nrows = gridp->nrows;
-	if (double_fine_gridlines) {
-		ncols *= 2;
-		nrows *= 2;
-	}
-
-	if (view().Aa_gridlines) {
-		gr_set_color_fast(&Fred_grid_dark_aa);
-	} else {
-		gr_set_color_fast(&Fred_grid_dark);
-	}
+	gr_set_color_fast(&Fred_grid_dark);
 
 	//	Draw the column lines.
 	for (i = 0; i <= ncols; i++) {
@@ -359,11 +343,7 @@ void FredRenderer::render_grid(grid* gridp) {
 	nrows = gridp->nrows / 2;
 
 	// now draw the larger, brighter gridlines that is x10 the scale of smaller one.
-	if (view().Aa_gridlines) {
-		gr_set_color_fast(&Fred_grid_bright_aa);
-	} else {
-		gr_set_color_fast(&Fred_grid_bright);
-	}
+	gr_set_color_fast(&Fred_grid_bright);
 
 	for (i = 0; i <= ncols; i++) {
 		g3_draw_htl_line(&gridp->gpoints5[i], &gridp->gpoints6[i]);
@@ -377,32 +357,6 @@ void FredRenderer::render_grid(grid* gridp) {
 	gr_zbuffer_set(1);
 }
 
-void FredRenderer::hilight_bitmap() {
-	/*
-int i;
-vertex p[4];
-
-if (Starfield_bitmaps[Cur_bitmap].bitmap_index == -1)  // can't draw if no bitmap
-return;
-
-for (i=0; i<4; i++)
-{
-g3_rotate_faraway_vertex(&p[i], &Starfield_bitmaps[Cur_bitmap].points[i]);
-if (p[i].codes & CC_BEHIND)
-return;
-
-g3_project_vertex(&p[i]);
-if (p[i].flags & PF_OVERFLOW)
-return;
-}
-
-gr_set_color(255, 255, 255);
-g3_draw_line(&p[0], &p[1]);
-g3_draw_line(&p[1], &p[2]);
-g3_draw_line(&p[2], &p[3]);
-g3_draw_line(&p[3], &p[0]);
-*/
-}
 
 void FredRenderer::display_distances() {
 	char buf[20];
@@ -480,6 +434,14 @@ void FredRenderer::display_ship_info(int cur_object_index) {
 			}
 		}
 
+		if ((objp->type == OBJ_PROP) && !view().Show_props) {
+			render = 0;
+		}
+
+		if ((objp->type == OBJ_JUMP_NODE) && !view().Show_jump_nodes) {
+			render = 0;
+		}
+
 		if (objp->flags[Object::Object_Flags::Hidden]) {
 			render = 0;
 		}
@@ -503,13 +465,12 @@ void FredRenderer::display_ship_info(int cur_object_index) {
 					} else if (objp->type == OBJ_WAYPOINT) {
 						int idx;
 						waypoint_list* wp_list = find_waypoint_list_with_instance(objp->instance, &idx);
-						Assert(wp_list != NULL);
+						Assertion(wp_list != nullptr, "Could not find waypoint list for object instance %d", objp->instance);
+						if (wp_list == nullptr) {
+							objp = GET_NEXT(objp);
+							continue;
+						}
 						sprintf(buf, "%s\nWaypoint %d", wp_list->get_name(), idx + 1);
-					} else if (objp->type == OBJ_POINT) {
-						if (objp->instance == BRIEFING_LOOKAT_POINT_ID)
-							strcpy_s(buf, "Camera lookat point");
-						else
-							strcpy_s(buf, "Briefing icon");
 					} else if (objp->type == OBJ_JUMP_NODE) {
 						CJumpNode* jnp = jumpnode_get_by_objnum(OBJ_INDEX(objp));
 						sprintf(buf, "%s\n%s", jnp->GetName(), jnp->GetDisplayName());
@@ -601,8 +562,8 @@ void FredRenderer::render_compass() {
 	gr_set_clip(gr_screen.max_w - 100, 0, 100, 100);
 	g3_start_frame(0); // ** Accounted for
 	// required !!!
-	vm_vec_scale_add2(&eye, &_viewport->eye_orient.vec.fvec, -1.5f);
-	g3_set_view_matrix(&eye, &_viewport->eye_orient, 1.0f);
+	vm_vec_scale_add2(&eye, &_viewport->camera.eye_orient.vec.fvec, -1.5f);
+	g3_set_view_matrix(&eye, &_viewport->camera.eye_orient, 1.0f);
 
 	v.xyz.x = 1.0f;
 	v.xyz.y = v.xyz.z = 0.0f;
@@ -634,126 +595,7 @@ void FredRenderer::render_compass() {
 	g3_end_frame(); // ** Accounted for
 }
 
-void FredRenderer::draw_orient_sphere2(int col, object* obj, int r, int g, int b) {
-	int flag = 0;
-	vertex v;
-	vec3d v1, v2;
-	float size;
 
-	size = fl_sqrt(vm_vec_dist(&_viewport->eye_pos, &obj->pos) / 20.0f);
-	if (size < LOLLIPOP_SIZE) {
-		size = LOLLIPOP_SIZE;
-	}
-
-	if ((obj->type != OBJ_WAYPOINT) && (obj->type != OBJ_POINT)) {
-		flag = (vm_vec_dot(&_viewport->eye_orient.vec.fvec, &obj->orient.vec.fvec) < 0.0f);
-
-		v1 = v2 = obj->pos;
-		vm_vec_scale_add2(&v1, &obj->orient.vec.fvec, size);
-		vm_vec_scale_add2(&v2, &obj->orient.vec.fvec, size * 1.5f);
-
-		if (!flag) {
-			gr_set_color(192, 192, 192);
-			rpd_line(&v1, &v2);
-		}
-	}
-
-	g3_rotate_vertex(&v, &obj->pos);
-	if (!(v.codes & CC_BEHIND)) {
-		if (!(g3_project_vertex(&v) & PF_OVERFLOW)) {
-			gr_set_color((col >> 16) & 0xff, (col >> 8) & 0xff, col & 0xff);
-			g3_draw_sphere(&v, size);
-			gr_set_color(r, g, b);
-			g3_draw_sphere(&v, size * 0.75f);
-		}
-	}
-
-	if (flag) {
-		gr_set_color(192, 192, 192);
-		rpd_line(&v1, &v2);
-	}
-}
-
-void FredRenderer::draw_orient_sphere(object* obj, int r, int g, int b) {
-	int flag = 0;
-	vertex v;
-	vec3d v1, v2;
-	float size;
-
-	size = fl_sqrt(vm_vec_dist(&_viewport->eye_pos, &obj->pos) / 20.0f);
-	if (size < LOLLIPOP_SIZE) {
-		size = LOLLIPOP_SIZE;
-	}
-
-	if ((obj->type != OBJ_WAYPOINT) && (obj->type != OBJ_POINT)) {
-		flag = (vm_vec_dot(&_viewport->eye_orient.vec.fvec, &obj->orient.vec.fvec) < 0.0f);
-		v1 = v2 = obj->pos;
-		vm_vec_scale_add2(&v1, &obj->orient.vec.fvec, size);
-		vm_vec_scale_add2(&v2, &obj->orient.vec.fvec, size * 1.5f);
-
-		if (!flag) {
-			gr_set_color(192, 192, 192);
-			rpd_line(&v1, &v2);
-		}
-	}
-
-	gr_set_color(r, g, b);
-	g3_rotate_vertex(&v, &obj->pos);
-	if (!(v.codes & CC_BEHIND)) {
-		if (!(g3_project_vertex(&v) & PF_OVERFLOW)) {
-			g3_draw_sphere(&v, size);
-		}
-	}
-
-	if (flag) {
-		gr_set_color(192, 192, 192);
-		rpd_line(&v1, &v2);
-	}
-}
-
-void FredRenderer::render_model_x(vec3d* pos, grid* gridp, int  /*col_scheme*/) {
-	vec3d gpos; //	Location of point on grid.
-	vec3d tpos;
-	float dxz;
-	plane tplane;
-	vec3d* gv;
-
-	if (!view().Show_grid_positions) {
-		return;
-	}
-
-	tplane.A = gridp->gmatrix.vec.uvec.xyz.x;
-	tplane.B = gridp->gmatrix.vec.uvec.xyz.y;
-	tplane.C = gridp->gmatrix.vec.uvec.xyz.z;
-	tplane.D = gridp->planeD;
-
-	compute_point_on_plane(&gpos, &tplane, pos);
-	dxz = vm_vec_dist(pos, &gpos) / 8.0f;
-	gv = &gridp->gmatrix.vec.uvec;
-	if (gv->xyz.x * pos->xyz.x + gv->xyz.y * pos->xyz.y + gv->xyz.z * pos->xyz.z < -gridp->planeD) {
-		gr_set_color(0, 127, 0);
-	} else {
-		gr_set_color(192, 192, 192);
-	}
-
-
-	rpd_line(&gpos, pos); //	Line from grid to object center.
-
-	tpos = gpos;
-
-	vm_vec_scale_add2(&gpos, &gridp->gmatrix.vec.rvec, -dxz / 2);
-	vm_vec_scale_add2(&gpos, &gridp->gmatrix.vec.fvec, -dxz / 2);
-
-	vm_vec_scale_add2(&tpos, &gridp->gmatrix.vec.rvec, dxz / 2);
-	vm_vec_scale_add2(&tpos, &gridp->gmatrix.vec.fvec, dxz / 2);
-
-	rpd_line(&gpos, &tpos);
-
-	vm_vec_scale_add2(&gpos, &gridp->gmatrix.vec.rvec, dxz);
-	vm_vec_scale_add2(&tpos, &gridp->gmatrix.vec.rvec, -dxz);
-
-	rpd_line(&gpos, &tpos);
-}
 
 void FredRenderer::render_model_x_htl(vec3d* pos, grid* gridp, int  /*col_scheme*/) {
 	vec3d gpos; //	Location of point on grid.
@@ -800,12 +642,15 @@ void FredRenderer::render_model_x_htl(vec3d* pos, grid* gridp, int  /*col_scheme
 }
 
 void FredRenderer::render_one_model_htl(object* objp,
-										int cur_object_index,
-										bool Bg_bitmap_dialog) {
+										int cur_object_index) {
 	int z;
 	object* o2;
 
 	Assert(objp->type != OBJ_NONE);
+	// OBJ_POINT objects (briefing icons / camera lookat) are a FRED2-era construct.  QtFRED's
+	// briefing dialog renders its icons in its own widget and never adds them to the main
+	// object list, so encountering one here means something has gone very wrong.
+	Assertion(objp->type != OBJ_POINT, "OBJ_POINT object (instance %d) appeared in the main editor's render loop; QtFRED does not support OBJ_POINT objects.", objp->instance);
 
 	// if this object isn't fully created yet, don't render it
 	if (objp->type == OBJ_SHIP && Ships[objp->instance].create_time == 0)
@@ -814,7 +659,7 @@ void FredRenderer::render_one_model_htl(object* objp,
 		return;
 
 	if (objp->type == OBJ_JUMP_NODE) {
-		return;
+		return; // jump nodes have their own render loop in render_frame
 	}
 
 	if ((objp->type == OBJ_WAYPOINT) && !view().Show_waypoints) {
@@ -835,6 +680,10 @@ void FredRenderer::render_one_model_htl(object* objp,
 		}
 	}
 
+	if ((objp->type == OBJ_PROP) && !view().Show_props) {
+		return;
+	}
+
 	if (objp->flags[Object::Object_Flags::Hidden]) {
 		return;
 	}
@@ -843,9 +692,9 @@ void FredRenderer::render_one_model_htl(object* objp,
 
 	if (!view().Draw_outlines_on_selected_ships && ((OBJ_INDEX(objp) == cur_object_index) || (objp->flags[Object::Object_Flags::Marked]))) {
 		/* don't draw the outlines we would normally draw */;
-	} else if ((OBJ_INDEX(objp) == cur_object_index) && !Bg_bitmap_dialog) {
+	} else if (OBJ_INDEX(objp) == cur_object_index) {
 		Fred_outline = FRED_COLOUR_WHITE;
-	} else if ((objp->flags[Object::Object_Flags::Marked]) && !Bg_bitmap_dialog) { // is it a marked object?
+	} else if (objp->flags[Object::Object_Flags::Marked]) { // is it a marked object?
 		Fred_outline = FRED_COLOUR_YELLOW_GREEN;
 	} else if ((objp->type == OBJ_SHIP) && view().Show_outlines) {
 		color* iff_color = iff_get_color_by_team_and_object(Ships[objp->instance].team, -1, 1, objp);
@@ -905,6 +754,10 @@ void FredRenderer::render_one_model_htl(object* objp,
 
 		uint debug_flags = 0;
 		if (view().Show_dock_points) {
+			debug_flags |= MR_DEBUG_DOCK_POINTS;
+		}
+
+		if (view().Show_bay_paths) {
 			debug_flags |= MR_DEBUG_BAY_PATHS;
 		}
 
@@ -924,21 +777,29 @@ void FredRenderer::render_one_model_htl(object* objp,
 			flags |= MR_FULL_DETAIL;
 		}
 
+		g3_done_instance(false);
+
+		// Outline pass: use a dedicated pass with MR_NO_POLYS so is_outlines_only_htl fires
+		// in the renderer. Modern HTL models don't have outline_buffer, so relying on
+		// MR_SHOW_OUTLINE_HTL alone (without MR_NO_POLYS) silently does nothing.
 		if (Fred_outline) {
-			flags |= MR_SHOW_OUTLINE_HTL;
+			model_render_params outline_info;
+			outline_info.set_color(Fred_outline >> 16, (Fred_outline >> 8) & 0xff, Fred_outline & 0xff);
+			outline_info.set_flags(flags | MR_SHOW_OUTLINE_HTL | MR_NO_POLYS | MR_NO_LIGHTING | MR_NO_TEXTURING);
+			model_render_immediate(&outline_info, Ship_info[Ships[z].ship_info_index].model_num, Ships[z].model_instance_num, &objp->orient, &objp->pos);
 		}
 
-		model_render_params render_info;
-		render_info.set_debug_flags(debug_flags);
-		render_info.set_color(Fred_outline >> 16, (Fred_outline >> 8) & 0xff, Fred_outline & 0xff);
-		render_info.set_replacement_textures(model_get_instance(Ships[z].model_instance_num)->texture_replace);
-		render_info.set_flags(flags);
+		if (view().Show_ship_models) {
+			model_render_params render_info;
+			render_info.set_debug_flags(debug_flags);
+			render_info.set_replacement_textures(model_get_instance(Ships[z].model_instance_num)->texture_replace);
+			render_info.set_flags(flags);
+			if (Ship_info[Ships[z].ship_info_index].uses_team_colors)
+				render_info.set_team_color(Ships[z].team_name, Ships[z].secondary_team_name, Ships[z].team_change_timestamp, Ships[z].team_change_time);
+			model_render_immediate(&render_info, Ship_info[Ships[z].ship_info_index].model_num, Ships[z].model_instance_num, &objp->orient, &objp->pos);
+		}
 
-		g3_done_instance(0);
-
-		model_render_immediate(&render_info, Ship_info[Ships[z].ship_info_index].model_num, Ships[z].model_instance_num, &objp->orient, &objp->pos);
-
-		if (view().Draw_outline_at_warpin_position 
+		if (view().Draw_outline_at_warpin_position
 			&& (Ships[z].arrival_cue != Locked_sexp_true || Ships[z].arrival_delay > 0)
 			&& Ships[z].arrival_cue != Locked_sexp_false
 			&& !Ships[z].flags[Ship::Ship_Flags::No_arrival_warp])
@@ -951,9 +812,10 @@ void FredRenderer::render_one_model_htl(object* objp,
 				vec3d warpin_pos;
 				vm_vec_scale_add(&warpin_pos, &objp->pos, &objp->orient.vec.fvec, warpin_dist);
 
-				render_info.set_color(65, 65, 65);	// grey; see rgba_defaults
-				render_info.set_flags(flags | MR_SHOW_OUTLINE_HTL | MR_NO_LIGHTING | MR_NO_POLYS | MR_NO_TEXTURING);
-				model_render_immediate(&render_info, Ship_info[Ships[z].ship_info_index].model_num, Ships[z].model_instance_num, &objp->orient, &warpin_pos);
+				model_render_params warpin_info;
+				warpin_info.set_color(65, 65, 65);	// grey; see rgba_defaults
+				warpin_info.set_flags(flags | MR_SHOW_OUTLINE_HTL | MR_NO_LIGHTING | MR_NO_POLYS | MR_NO_TEXTURING);
+				model_render_immediate(&warpin_info, Ship_info[Ships[z].ship_info_index].model_num, Ships[z].model_instance_num, &objp->orient, &warpin_pos);
 			}
 		}
 	} else {
@@ -984,16 +846,6 @@ void FredRenderer::render_one_model_htl(object* objp,
 				g = 0;
 				b = 112;
 			}
-		} else if (objp->type == OBJ_POINT) {
-			if (objp->instance != BRIEFING_LOOKAT_POINT_ID) {
-				///! \fixme Briefing stuff!
-				//Assert(Briefing_dialog);
-				return;
-			}
-
-			r = 196;
-			g = 32;
-			b = 196;
 		} else if (objp->type == OBJ_PROP) {
 			r = 255;
 			g = 255;
@@ -1001,7 +853,7 @@ void FredRenderer::render_one_model_htl(object* objp,
 		} else
 			Assert(0);
 
-		float size = fl_sqrt(vm_vec_dist(&_viewport->eye_pos, &objp->pos) / 20.0f);
+		float size = fl_sqrt(vm_vec_dist(&_viewport->camera.eye_pos, &objp->pos) / 20.0f);
 
 		if (size < LOLLIPOP_SIZE) {
 			size = LOLLIPOP_SIZE;
@@ -1034,8 +886,7 @@ void FredRenderer::render_one_model_htl(object* objp,
 	rendering_order.push_back(OBJ_INDEX(objp));
 }
 
-void FredRenderer::render_models(int cur_object_index,
-								 bool Bg_bitmap_dialog) {
+void FredRenderer::render_models(int cur_object_index) {
 	gr_set_color_fast(&colour_white);
 
 	rendering_order.clear();
@@ -1051,30 +902,18 @@ void FredRenderer::render_models(int cur_object_index,
 		if (!_viewport->isObjectVisibleInLayer(objp)) {
 			return;
 		}
-		this->render_one_model_htl(objp,
-								   cur_object_index,
-								   Bg_bitmap_dialog);
+		this->render_one_model_htl(objp, cur_object_index);
 	};
 
 	obj_render_all(render_function, &f);
 
 	disable_htl();
-
-	///! \fixme Handle briefing stuff properly.
-#if 0
-    if (Briefing_dialog)
-    {
-        obj_render_all(render_one_model_briefing_screen, &f);
-        Briefing_dialog->batch_render();
-    }
-#endif
 }
 
 void FredRenderer::render_frame(int cur_object_index,
 								subsys_to_render& Render_subsys,
 								bool box_marking,
-								const Marking_box& marking_box,
-								bool Bg_bitmap_dialog) {
+								const Marking_box& marking_box) {
 
 	// Make sure our OpenGL context is used for rendering
 	gr_use_viewport(_targetView);
@@ -1093,37 +932,6 @@ void FredRenderer::render_frame(int cur_object_index,
 
 	gr_reset_clip();
 	gr_clear();
-	///! \fixme Briefing related!
-#if 0
-    if (Briefing_dialog) {
-        CRect rect;
-
-        Fred_main_wnd->GetClientRect(rect);
-        True_rw = rect.Width();
-        True_rh = rect.Height();
-        if (Fixed_briefing_size) {
-            True_rw = Briefing_window_resolution[0];
-            True_rh = Briefing_window_resolution[1];
-
-        }
-        else {
-            if ((float)True_rh / (float)True_rw > (float)Briefing_window_resolution[1] / (float)Briefing_window_resolution[0]) {
-                True_rh = (int)((float)Briefing_window_resolution[1] * (float)True_rw / (float)Briefing_window_resolution[0]);
-
-            }
-            else {  // Fred is wider than briefing window
-                True_rw = (int)((float)Briefing_window_resolution[0] * (float)True_rh / (float)Briefing_window_resolution[1]);
-            }
-        }
-
-        g3_start_frame(0); // ** Accounted for
-        gr_set_color(255, 255, 255);
-        gr_line(0, True_rh, True_rw, True_rh);
-        gr_line(True_rw, 0, True_rw, True_rh);
-        g3_end_frame();	 // ** Accounted for
-        gr_set_clip(0, 0, True_rw, True_rh);
-    }
-#endif
 
 	g3_start_frame(1); // ** Accounted for
 	// 1 means use zbuffering
@@ -1131,36 +939,31 @@ void FredRenderer::render_frame(int cur_object_index,
 	font::set_font(font::FONT1);
 	light_reset();
 
-	g3_set_view_matrix(&_viewport->eye_pos, &_viewport->eye_orient, 0.5f);
+	g3_set_view_matrix(&_viewport->camera.eye_pos, &_viewport->camera.eye_orient, 0.5f);
 
+	// Force max star detail so the editor always shows the full Num_stars count
+	// regardless of the player's graphics quality setting (Detail.num_stars can be 0).
+	int saved_detail_stars = Detail.num_stars;
+	Detail.num_stars = MAX_DETAIL_VALUE;
 	enable_htl();
-	if (Bg_bitmap_dialog) {
-		stars_draw(view().Show_stars, 1, view().Show_stars, 0, 0);
-	} else {
-		stars_draw(view().Show_stars, view().Show_stars, view().Show_stars, 0, 0);
-	}
+	stars_draw(view().Show_stars, view().Show_stars, view().Show_stars, 0, 0);
 	disable_htl();
+	Detail.num_stars = saved_detail_stars;
 
 	if (view().Show_horizon) {
 		gr_set_color(128, 128, 64);
 		g3_draw_horizon_line();
 	}
 
-	if (view().Show_asteroid_field) {
-		gr_set_color(192, 96, 16);
-		draw_asteroid_field();
-	}
+	gr_set_color(192, 96, 16);
+	draw_asteroid_field();
 
 	if (view().Show_grid) {
 		render_grid(_viewport->The_grid);
 	}
-	if (Bg_bitmap_dialog) {
-		hilight_bitmap();
-	}
 
 	gr_set_color(0, 0, 64);
-	render_models(cur_object_index,
-				  Bg_bitmap_dialog);
+	render_models(cur_object_index);
 
 	if (view().Show_distances) {
 		display_distances();
@@ -1193,16 +996,18 @@ void FredRenderer::render_frame(int cur_object_index,
 		} else if (Objects[_viewport->Cursor_over].type == OBJ_WAYPOINT) {
 			int idx;
 			waypoint_list* wp_list = find_waypoint_list_with_instance(inst, &idx);
-			Assert(wp_list != NULL);
-			sprintf(buf,
-					"%s\nWaypoint %d\n( %.1f , %.1f , %.1f ) ",
-					wp_list->get_name(),
-					idx + 1,
-					pos.xyz.x,
-					pos.xyz.y,
-					pos.xyz.z);
-		} else if (Objects[_viewport->Cursor_over].type == OBJ_POINT) {
-			sprintf(buf, "Briefing icon\n( %.1f , %.1f , %.1f ) ", pos.xyz.x, pos.xyz.y, pos.xyz.z);
+			Assertion(wp_list != nullptr, "Could not find waypoint list for object instance %d", inst);
+			if (wp_list == nullptr) {
+				sprintf(buf, "Waypoint %d\n( %.1f , %.1f , %.1f ) ", idx + 1, pos.xyz.x, pos.xyz.y, pos.xyz.z);
+			} else {
+				sprintf(buf,
+						"%s\nWaypoint %d\n( %.1f , %.1f , %.1f ) ",
+						wp_list->get_name(),
+						idx + 1,
+						pos.xyz.x,
+						pos.xyz.y,
+						pos.xyz.z);
+			}
 		} else {
 			sprintf(buf, "( %.1f , %.1f , %.1f ) ", pos.xyz.x, pos.xyz.y, pos.xyz.z);
 		}
@@ -1230,10 +1035,17 @@ void FredRenderer::render_frame(int cur_object_index,
 	gr_set_color(0, 160, 0);
 
 	enable_htl();
-	jumpnode_render_all();
+	if (view().Show_jump_nodes) {
+		for (auto& jn : Jump_nodes) {
+			const object* jnObj = jn.GetSCPObject();
+			if (jnObj != nullptr && _viewport->isObjectVisibleInLayer(jnObj)) {
+				jn.Render(&jnObj->pos);
+			}
+		}
+	}
 	disable_htl();
 
-	sprintf(buf, "(%.1f,%.1f,%.1f)", _viewport->eye_pos.xyz.x, _viewport->eye_pos.xyz.y, _viewport->eye_pos.xyz.z);
+	sprintf(buf, "(%.1f,%.1f,%.1f)", _viewport->camera.eye_pos.xyz.x, _viewport->camera.eye_pos.xyz.y, _viewport->camera.eye_pos.xyz.z);
 	gr_get_string_size(&w, &h, buf);
 	gr_set_color_fast(&colour_white);
 	gr_string(gr_screen.max_w - w - 2, 2, buf);
@@ -1253,14 +1065,9 @@ void FredRenderer::render_frame(int cur_object_index,
 	gr_flip();
 
 	gr_reset_clip();
-	///! \fixme Briefing related!
-#if 0
-    if (Briefing_dialog)
-        gr_set_clip(0, 0, True_rw, True_rh);
-#endif
 
 	g3_start_frame(0); // ** Accounted for
-	g3_set_view_matrix(&_viewport->eye_pos, &_viewport->eye_orient, 0.5f);
+	g3_set_view_matrix(&_viewport->camera.eye_pos, &_viewport->camera.eye_orient, 0.5f);
 }
 void FredRenderer::resize(int width, int height) {
 	// Make sure the following call targets the right view port
@@ -1275,5 +1082,4 @@ ViewSettings& FredRenderer::view() {
 	return _viewport->view;
 }
 
-}
-}
+} // namespace fso::fred

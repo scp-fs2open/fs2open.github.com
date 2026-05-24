@@ -1,14 +1,32 @@
 #pragma once
 
 
+#include "CameraController.h"
 #include "FredRenderer.h"
 #include "Editor.h"
 #include "IDialogProvider.h"
 
 #include <object/object.h>
 
-namespace fso {
-namespace fred {
+namespace fso::fred {
+
+struct Marking_box {
+	int x1 = 0;
+	int y1 = 0;
+	int x2 = 0;
+	int y2 = 0;
+};
+
+enum class CreateKind {
+	Ship,
+	Prop,
+	Other,
+};
+
+enum class OtherKind {
+	Waypoint,
+	JumpNode,
+};
 
 struct ViewSettings {
 	bool Universal_heading = false;
@@ -16,14 +34,13 @@ struct ViewSettings {
 	bool Show_horizon = false;
 	bool Show_grid = true;
 	bool Show_distances = true;
-	bool Show_asteroid_field = true;
-	bool Aa_gridlines = false;
 	bool Show_coordinates = false;
 	bool Show_outlines = false;
 	bool Draw_outlines_on_selected_ships = true;
 	bool Draw_outline_at_warpin_position = false;
 	bool Show_grid_positions = true;
 	bool Show_dock_points = false;
+	bool Show_bay_paths = false;
 	bool Show_starts = true;
 	bool Show_ships = true;
 	SCP_vector<bool> Show_iff;
@@ -33,6 +50,8 @@ struct ViewSettings {
 	bool Lighting_on = false;
 	bool FullDetail = false;
 	bool Show_waypoints = true;
+	bool Show_props = true;
+	bool Show_jump_nodes = true;
 	bool Show_compass = true;
 	bool Highlight_selectable_subsys = false;
 
@@ -42,26 +61,9 @@ struct ViewSettings {
 class EditorViewport {
 	std::unique_ptr<FredRenderer> _renderer; //!< Internal, owned pointer
 
-	/**
-	* A lot of this stuff doesn't belong here
-	* @todo: Move camera stuff into own class
-	*/
-	int last_x = 0;
-	int last_y = 0;
-
-	matrix my_orient = vmd_identity_matrix;
-	matrix trackball_orient = vmd_identity_matrix;
-	matrix Last_eye_orient = vmd_identity_matrix;
-	matrix Last_control_orient = vmd_identity_matrix;
 	int Last_cursor_over = -1;
 
-	int Flying_controls_mode = 1;
-
-	fix lasttime = 0;
-
-	bool inc_mission_time();
 	void process_system_keys();
-	void process_controls(vec3d* pos, matrix* orient, float frametime, int mode = 0);
 	void level_object(matrix* orient);
 
 	void initialSetup();
@@ -75,7 +77,23 @@ class EditorViewport {
 	bool isLayerVisible(size_t layerIndex) const;
 	void syncMissionLayerNames() const;
 	void setObjectLayerByIndex(int objectIndex, size_t layerIndex);
+
  public:
+	class ViewportControlLock {
+	  public:
+		explicit ViewportControlLock(EditorViewport* viewport);
+		~ViewportControlLock();
+
+		ViewportControlLock(const ViewportControlLock&) = delete;
+		ViewportControlLock& operator=(const ViewportControlLock&) = delete;
+
+		ViewportControlLock(ViewportControlLock&& other) noexcept;
+		ViewportControlLock& operator=(ViewportControlLock&& other) noexcept;
+
+	  private:
+		EditorViewport* _viewport = nullptr;
+	};
+
 	static const char* DefaultLayerName;
 
 	enum {
@@ -85,16 +103,14 @@ class EditorViewport {
 	EditorViewport(Editor* in_editor, std::unique_ptr<FredRenderer>&& in_renderer);
 
 	void needsUpdate();
+	bool areControlsLocked() const;
+	[[nodiscard]] ViewportControlLock acquireControlLock();
 
-	void resetView();
+	void reset();
 
 	void select_objects(const Marking_box& box);
 
-	void resetViewPhysics();
-
 	void game_do_frame(const int cur_object_index);
-
-	void move_mouse(int btn, int mdx, int mdy);
 
 	int object_check_collision(object* objp, vec3d* p0, vec3d* p1, vec3d* hitpos);
 
@@ -124,9 +140,15 @@ class EditorViewport {
 	void drag_rotate_save_backup();
 
 	int create_object_on_grid(int x, int y, int waypoint_instance);
-	int create_object_on_grid(int x, int y, int waypoint_instance, bool create_prop);
+	int create_object_on_grid(int x, int y, int waypoint_instance, CreateKind kind);
 
-	int	create_object(vec3d *pos, int waypoint_instance = -1, bool create_prop = false);
+	int	create_object(vec3d *pos, int waypoint_instance = -1, CreateKind kind = CreateKind::Ship);
+
+	vec3d getCreatePosition(int x, int y, float fallbackDist);
+	int createShipAtScreenPos(int x, int y, int modelIndex);
+	int createPropAtScreenPos(int x, int y, int propIndex);
+	int createWaypointAtScreenPos(int x, int y, int waypoint_instance = -1);
+	int createJumpNodeAtScreenPos(int x, int y);
 
 	int duplicate_marked_objects();
 	int drag_objects(int x, int y);
@@ -138,35 +160,18 @@ class EditorViewport {
 
 	void view_object(int obj_num);
 
-	vec3d Last_eye_pos;
-
-	vec3d eye_pos;
-	vec3d Last_control_pos = vmd_zero_vector;
-	vec3d my_pos;
-	matrix eye_orient;
-	control_info view_controls;
+	CameraController camera;
 
 	ViewSettings view;
 
 	int Cursor_over = -1;
 	CursorMode Editing_mode = CursorMode::Moving;
 
-	matrix view_orient = vmd_identity_matrix;
-	vec3d view_pos;
-	physics_info view_physics;
 	grid* The_grid;
-
-	int physics_speed = 1;
-	int physics_rot = 25;
 
 	vec3d Constraint;
 	vec3d Anticonstraint;
 	bool Single_axis_constraint = false;
-
-	int viewpoint = 0;
-	int view_obj = -1;
-
-	int Control_mode = 0;
 
 	bool Selection_lock = false;
 
@@ -176,13 +181,9 @@ class EditorViewport {
 
 	int cur_model_index = 0;
 	int cur_prop_index = -1;
-
-	bool Bg_bitmap_dialog = false;
+	OtherKind cur_other_kind = OtherKind::Waypoint;
 
 	object_orient_pos rotation_backup[MAX_OBJECTS];
-
-	vec3d saved_cam_pos = vmd_zero_vector;
-	matrix saved_cam_orient;
 
 	vec3d original_pos = vmd_zero_vector;
 
@@ -191,17 +192,24 @@ class EditorViewport {
 	int Duped_wing;
 
 	bool Group_rotate = true;
-	bool Lookat_mode = false;
+	int  toolbar_icon_size = 24;  ///< Toolbar icon size in pixels (16, 24, or 32)
+	bool Offer_autosave_recovery = true;
 	bool Move_ships_when_undocking = true;
 	bool Always_save_display_names = false;
 	bool Error_checker_checks_potential_issues = true;
-	bool Error_checker_checks_potential_issues_once = false;
+	bool Error_checker_apply_auto_corrections = true;
+	// One-shot override: when set, the next auto-run of the error checker shows
+	// the dialog and forces potential issues on regardless of the user's saved
+	// preference. Consumed (cleared) by autoRunErrorChecker. Not persisted.
+	bool Error_checker_force_display_potentials_once = false;
 
 	bool Show_sexp_help_mission_events = true;
 	bool Show_sexp_help_mission_goals = true;
 	bool Show_sexp_help_mission_cutscenes = true;
 	bool Show_sexp_help_ship_editor = false;
 	bool Show_sexp_help_wing_editor = false;
+
+	bool Dark_mode = false;
 
 	void saveSettings() const;
 
@@ -210,8 +218,16 @@ class EditorViewport {
 	IDialogProvider* dialogProvider = nullptr;
 
 private:
+	fix _lasttime = 0;
+	vec3d Last_control_pos = vmd_zero_vector;
+	matrix Last_control_orient = vmd_identity_matrix;
+	int _controlLockCount = 0;
+
+	bool incMissionTime();
 	void loadSettings();
+
+	void lockControls();
+	void unlockControls();
 };
 
-}
-}
+} // namespace fso::fred

@@ -115,6 +115,8 @@ add_file_folder("Bmpman"
 add_file_folder("Camera"
 	camera/camera.cpp
 	camera/camera.h
+	camera/photomode.cpp
+	camera/photomode.h
 )
 
 add_file_folder("Cheats Table"
@@ -513,6 +515,7 @@ if (FSO_BUILD_WITH_OPENGL)
 		graphics/opengl/ShaderProgram.h
 		graphics/opengl/SmaaAreaTex.h
 		graphics/opengl/SmaaSearchTex.h
+		graphics/opengl/es_compatibility.h
 	)
 endif()
 
@@ -1152,6 +1155,8 @@ add_file_folder("Particle\\\\Volumes"
 	particle/volumes/ConeVolume.h
 	particle/volumes/LegacyAACuboidVolume.cpp
 	particle/volumes/LegacyAACuboidVolume.h
+	particle/volumes/ModelSurfaceVolume.cpp
+	particle/volumes/ModelSurfaceVolume.h
 	particle/volumes/PointVolume.cpp
 	particle/volumes/PointVolume.h
 	particle/volumes/RingVolume.cpp
@@ -1619,16 +1624,25 @@ add_file_folder("Sound"
 	sound/rtvoice.h
 	sound/sound.cpp
 	sound/sound.h
-	sound/speech.cpp
 	sound/speech.h
 	sound/voicerec.cpp
 	sound/voicerec.h
 )
 
-if (APPLE)
+if (WIN32)
 	add_file_folder("Sound"
 		${file_root_sound}
-		sound/speech.mm
+		sound/speech_win.cpp
+	)
+elseif (APPLE)
+	add_file_folder("Sound"
+		${file_root_sound}
+		sound/speech_mac.mm
+	)
+elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+	add_file_folder("Sound"
+		${file_root_sound}
+		sound/speech_linux.cpp
 	)
 endif()
 

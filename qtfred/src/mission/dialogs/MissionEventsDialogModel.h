@@ -109,6 +109,8 @@ class MissionEventsDialogModel : public AbstractDialogModel {
 	void setChained(bool chained);
 	int getChainDelay() const;
 	void setChainDelay(int delay);
+	bool getUseMsecs() const;
+	void setUseMsecs(bool useMsecs);
 	int getEventScore() const;
 	void setEventScore(int score);
 	int getEventTeam() const;

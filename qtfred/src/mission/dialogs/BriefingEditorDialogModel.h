@@ -11,6 +11,7 @@ namespace fso::fred::dialogs {
 class BriefingEditorDialogModel : public AbstractDialogModel {
   public:
 	BriefingEditorDialogModel(QObject* parent, EditorViewport* viewport);
+	~BriefingEditorDialogModel() override;
 
 	enum class DrawLinesState {
 		None,    // no lines between any selected pairs
@@ -86,19 +87,20 @@ class BriefingEditorDialogModel : public AbstractDialogModel {
 
 	void setLineSelection(const SCP_vector<int>& indices);
 	void clearLineSelection();
+	const SCP_vector<int>& getLineSelection() const;
 	DrawLinesState getDrawLinesState() const;
 	void applyDrawLines(bool checked);
 
 	bool getChangeLocally() const;
 	void setChangeLocally(bool enabled);
 
-	bool getIconHighlighted() const;
+	TriStateBool getIconHighlightedState() const;
 	void setIconHighlighted(bool enabled);
-	bool getIconFlipped() const;
+	TriStateBool getIconFlippedState() const;
 	void setIconFlipped(bool enabled);
-	bool getIconUseWing() const;
+	TriStateBool getIconUseWingState() const;
 	void setIconUseWing(bool enabled);
-	bool getIconUseCargo() const;
+	TriStateBool getIconUseCargoState() const;
 	void setIconUseCargo(bool enabled);
 
 	void makeIcon(const SCP_string& label, int typeIndex, int teamIndex, int shipClassIndex);
@@ -115,6 +117,21 @@ class BriefingEditorDialogModel : public AbstractDialogModel {
 	static SCP_vector<std::pair<int, SCP_string>> getShipList();
 	static SCP_vector<std::pair<int, SCP_string>> getIffList();
 
+	briefing* getWipBriefingPtr(int team);
+	void makeIconFromShip(int shipIndex);
+	void makeIconFromWing(int wingIndex);
+
+	struct WingShipEntry {
+		SCP_string name;
+		int shipIndex;
+	};
+	struct WingTreeEntry {
+		SCP_string wingName;
+		int wingIndex = -1;
+		SCP_vector<WingShipEntry> ships;
+	};
+	static SCP_vector<WingTreeEntry> getWingShipTree();
+
   private:
 	void initializeData();
 	void stopSpeech();
@@ -122,6 +139,9 @@ class BriefingEditorDialogModel : public AbstractDialogModel {
 	static bool valid_icon_index(const brief_stage& s, int idx);
 	static bool same_line_unordered(int a0, int a1, int b0, int b1);
 	void applyToIconCurrentAndForward(const std::function<void(brief_icon&)>& mutator);
+	void applyToSelectedIconsCurrentAndForward(const std::function<void(brief_icon&)>& mutator);
+	SCP_vector<int> getEffectiveSelection(const brief_stage& s) const;
+	TriStateBool getSelectedIconFlagState(int flag) const;
 
 	briefing _wipBriefings[MAX_TVT_TEAMS];
 	int _briefingMusicIndex;
@@ -130,7 +150,7 @@ class BriefingEditorDialogModel : public AbstractDialogModel {
 	int _currentTeam;
 	int _currentStage;
 	int _currentIcon;
-	int _waveId;
+	int _waveId = -1;
 	SCP_vector<std::pair<SCP_string, int>> _teamList;
 
 	bool _viewClipboardSet = false;

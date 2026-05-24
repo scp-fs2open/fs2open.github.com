@@ -293,7 +293,7 @@ static void beam_set_state(weapon_info* wip, beam* bm, WeaponState state)
 	if ((map_entry != wip->state_effects.end()) && map_entry->second.isValid())
 	{
 		auto source = particle::ParticleManager::get()->createSource(map_entry->second);
-		source->setHost(make_unique<EffectHostBeam>(&Objects[bm->objnum]));
+		source->setHost(std::make_unique<EffectHostBeam>(&Objects[bm->objnum]));
 		source->finishCreation();
 	}
 }

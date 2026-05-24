@@ -1395,13 +1395,13 @@ void Fred_mission_save::fso_comment_push(const char* ver)
 		return;
 	}
 
-	SCP_string before = fso_ver_comment.back();
+	const auto &before = fso_ver_comment.back();
 
 	int major, minor, build, revis;
 	int in_major, in_minor, in_build, in_revis;
 	int elem1, elem2;
 
-	elem1 = scan_fso_version_string(fso_ver_comment.back().c_str(), &major, &minor, &build, &revis);
+	elem1 = scan_fso_version_string(before.c_str(), &major, &minor, &build, &revis);
 	elem2 = scan_fso_version_string(ver, &in_major, &in_minor, &in_build, &in_revis);
 
 	// check consistency
@@ -2496,7 +2496,7 @@ int Fred_mission_save::save_mission_info()
 	// XSTR
 	required_string_fred("$Name:");
 	parse_comments();
-	fout_ext(" ", "%s", The_mission.name);
+	fout_ext(" ", "%s", The_mission.name.c_str());
 
 	required_string_fred("$Author:");
 	parse_comments();
@@ -2567,6 +2567,10 @@ int Fred_mission_save::save_mission_info()
 
 		if (The_mission.contrail_threshold != CONTRAIL_THRESHOLD_DEFAULT) {
 			fout("\n$Contrail Speed Threshold: %d\n", The_mission.contrail_threshold);
+		}
+
+		if (The_mission.flags[Mission::Mission_Flags::Large_ships_no_collide_by_default]) {
+			fout("\n+Large Ship Collision Group: %d\n", The_mission.large_ship_no_collide_collision_group);
 		}
 	}
 
@@ -3454,7 +3458,8 @@ int Fred_mission_save::save_objects()
 		count++;
 
 		// Display name
-		// The display name is only written if there was one at the start to avoid introducing inconsistencies
+		// (If we are always saving display names, the "only/not written" comments do not apply)
+		// The display name is only written if it currently exists and the ship is not part of a wing, to avoid introducing inconsistencies
 		if (save_config.save_format != MissionFormat::RETAIL && ((save_config.always_save_display_names && shipp->wingnum < 0) || shipp->has_display_name())) {
 			char truncated_name[NAME_LENGTH];
 			strcpy_s(truncated_name, shipp->ship_name);
@@ -3462,10 +3467,10 @@ int Fred_mission_save::save_objects()
 
 			// Also, the display name is not written if it's just the truncation of the name at the hash
 			if ((save_config.always_save_display_names && shipp->wingnum < 0) || strcmp(shipp->get_display_name(), truncated_name) != 0) {
-				if (optional_string_fred("$Display name:", "$Class:")) {
+				if (optional_string_fred("$Display Name:", "$Class:")) {
 					parse_comments();
 				} else {
-					fout("\n$Display name:");
+					fout("\n$Display Name:");
 				}
 				fout_ext(" ", "%s", shipp->get_display_name());
 			}
@@ -3843,6 +3848,8 @@ int Fred_mission_save::save_objects()
 				fout(" \"cannot-perform-scan-show-cargo\"");
 			if (shipp->flags[Ship::Ship_Flags::No_targeting_limits])
 				fout(" \"no-targeting-limits\"");
+			if (shipp->flags[Ship::Ship_Flags::No_scanned_cargo])
+				fout(" \"no-scanned-cargo\"");
 			fout(" )");
 		}
 		// -----------------------------------------------------------
@@ -4099,7 +4106,7 @@ int Fred_mission_save::save_objects()
 
 		if (save_config.save_format != MissionFormat::RETAIL &&
 			!shipp->fred_layer.empty() &&
-			stricmp(shipp->fred_layer.c_str(), "Default") != 0) {
+			!lcase_equal(shipp->fred_layer, "Default")) {
 			if (optional_string_fred("+Layer:", "$Name:"))
 				parse_comments();
 			else
@@ -4801,7 +4808,8 @@ int Fred_mission_save::save_waypoints()
 
 		if (save_config.save_format != MissionFormat::RETAIL) {
 
-			// The display name is only written if there was one at the start to avoid introducing inconsistencies
+			// (If we are always saving display names, the "only/not written" comments do not apply)
+			// The display name is only written if it currently exists, to avoid introducing inconsistencies
 			if (save_config.always_save_display_names || jnp->HasDisplayName()) {
 				char truncated_name[NAME_LENGTH];
 				strcpy_s(truncated_name, jnp->GetName());
@@ -4855,6 +4863,15 @@ int Fred_mission_save::save_waypoints()
 				else
 					fout(" %s", "false");
 			}
+
+			const SCP_string& jn_layer = jnp->GetFredLayer();
+			if (!jn_layer.empty() && !lcase_equal(jn_layer, "Default")) {
+				if (optional_string_fred("+Layer:", "$Jump Node:"))
+					parse_comments();
+				else
+					fout("\n+Layer:");
+				fout(" %s", jn_layer.c_str());
+			}
 		}
 
 		fso_comment_pop();
@@ -4885,6 +4902,15 @@ int Fred_mission_save::save_waypoints()
 					fout("\n+Color:");
 				}
 				fout(" %d %d %d", ii.get_color_r(), ii.get_color_g(), ii.get_color_b());
+			}
+
+			const SCP_string& wpt_layer = ii.get_fred_layer();
+			if (!wpt_layer.empty() && !lcase_equal(wpt_layer, "Default")) {
+				if (optional_string_fred("+Layer:", "$List:"))
+					parse_comments();
+				else
+					fout("\n+Layer:");
+				fout(" %s", wpt_layer.c_str());
 			}
 		}
 
@@ -4936,6 +4962,25 @@ int Fred_mission_save::save_wings()
 		fout(" %s", w.name);
 
 		count++;
+
+		// Display name
+		// (If we are always saving display names, the "only/not written" comments do not apply)
+		// The display name is only written if it currently exists, to avoid introducing inconsistencies
+		if (save_config.save_format != MissionFormat::RETAIL && (save_config.always_save_display_names || w.has_display_name())) {
+			char truncated_name[NAME_LENGTH];
+			strcpy_s(truncated_name, w.name);
+			end_string_at_first_hash_symbol(truncated_name);
+
+			// Also, the display name is not written if it's just the truncation of the name at the hash
+			if (save_config.always_save_display_names || strcmp(w.get_display_name(), truncated_name) != 0) {
+				if (optional_string_fred("$Display Name:", "$Waves:")) {
+					parse_comments();
+				} else {
+					fout("\n$Display Name:");
+				}
+				fout_ext(" ", "%s", w.get_display_name());
+			}
+		}
 
 		// squad logo - Goober5000
 		if (save_config.save_format != MissionFormat::RETAIL) {
@@ -5233,7 +5278,7 @@ int Fred_mission_save::save_props()
 
 				if (save_config.save_format != MissionFormat::RETAIL &&
 					!p->fred_layer.empty() &&
-					stricmp(p->fred_layer.c_str(), "Default") != 0) {
+					!lcase_equal(p->fred_layer, "Default")) {
 					if (optional_string_fred("+Layer:", "$Name:"))
 						parse_comments();
 					else

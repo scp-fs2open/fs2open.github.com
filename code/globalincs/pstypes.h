@@ -364,6 +364,7 @@ const float PI_4		= (PI/4.0f);
 
 
 extern int Fred_running;  // Is Fred running, or FreeSpace?
+extern int Qtfred_running;  // Distinguishes QtFRED from legacy Fred2; Fred_running is set in both, but Qtfred_running only in QtFRED.
 extern bool running_unittests;
 
 const size_t INVALID_SIZE = static_cast<size_t>(-1);

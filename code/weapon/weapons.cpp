@@ -985,6 +985,24 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		}
 	}
 
+	if (optional_string("+Icon_closeup_pos:")) {
+		vec3d icon_pos;
+		stuff_vec3d(&icon_pos);
+		wip->icon_closeup_pos = icon_pos;
+	}
+
+	if (optional_string("+Icon_closeup_zoom:")) {
+		float icon_zoom;
+		stuff_float(&icon_zoom);
+
+		if (icon_zoom <= 0.0f) {
+			mprintf(("Warning!  Weapon '%s' has a +Icon_closeup_zoom value that is less than or equal to 0 (%f). Ignoring value.\n", wip->name, icon_zoom));
+			wip->icon_closeup_zoom = std::nullopt;
+		} else {
+			wip->icon_closeup_zoom = icon_zoom;
+		}
+	}
+
 	// Weapon fadein effect, used when no ani is specified or weapon_select_3d is active
 	if (first_time) {
 		wip->selection_effect = Default_weapon_select_effect; // By default, use the FS2 effect
@@ -2363,7 +2381,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 					ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
 					::util::UniformFloatRange(1.f), //Velocity Inherit
 					false, //Velocity Inherit absolute?
-					make_unique<LegacyAACuboidVolume>(variance, 1.f, true), //Velocity volume
+					std::make_unique<LegacyAACuboidVolume>(variance, 1.f, true), //Velocity volume
 					::util::UniformFloatRange(MIN(0.5f * velocity, 2.0f * velocity), MAX(0.5f * velocity, 2.0f * velocity)), //Velocity volume multiplier
 					ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
 					std::nullopt, //Orientation-based velocity
@@ -2395,7 +2413,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 						ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
 						::util::UniformFloatRange(1.f), //Velocity Inherit
 						false, //Velocity Inherit absolute?
-						make_unique<LegacyAACuboidVolume>(variance, 1.f, true), //Velocity volume
+						std::make_unique<LegacyAACuboidVolume>(variance, 1.f, true), //Velocity volume
 						::util::UniformFloatRange(MIN(0.5f * back_velocity, 2.0f * back_velocity), MAX(0.5f * back_velocity, 2.0f * back_velocity)), //Velocity volume multiplier
 						ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
 						std::nullopt, //Orientation-based velocity
@@ -3268,7 +3286,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 						ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
 						::util::UniformFloatRange(0.f), //Velocity Inherit
 						false, //Velocity Inherit absolute?
-						make_unique<SpheroidVolume>(1.f, 1.f, 1.f), //Velocity volume
+						std::make_unique<SpheroidVolume>(1.f, 1.f, 1.f), //Velocity volume
 						::util::UniformFloatRange(baseVelocity * variance), //Velocity volume multiplier
 						ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
 						::util::UniformFloatRange(MIN(baseVelocity, 2.0f * baseVelocity), MAX(baseVelocity, 2.0f * baseVelocity)), //Orientation-based velocity
@@ -3299,7 +3317,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 						ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
 						::util::UniformFloatRange(0.f), //Velocity Inherit
 						false, //Velocity Inherit absolute?
-						make_unique<SpheroidVolume>(1.f, 1.f, 1.f), //Velocity volume
+						std::make_unique<SpheroidVolume>(1.f, 1.f, 1.f), //Velocity volume
 						::util::UniformFloatRange(backVelocity * variance), //Velocity volume multiplier
 						ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
 						::util::UniformFloatRange(MIN(backVelocity, 2.0f * backVelocity), MAX(backVelocity, 2.0f * backVelocity)), //Orientation-based velocity
@@ -6130,7 +6148,7 @@ static void weapon_set_state(weapon_info* wip, weapon* wp, WeaponState state)
 	if ((map_entry != wip->state_effects.end()) && map_entry->second.isValid())
 	{
 		auto source = particle::ParticleManager::get()->createSource(map_entry->second);
-		source->setHost(make_unique<EffectHostObject>(&Objects[wp->objnum], vmd_zero_vector));
+		source->setHost(std::make_unique<EffectHostObject>(&Objects[wp->objnum], vmd_zero_vector));
 		source->finishCreation();
 	}
 
@@ -8809,7 +8827,7 @@ void shield_impact_explosion(const vec3d& hitpos, const vec3d& hitdir, const obj
 	vm_vec_unrotate(&hitdir_global, &hitdir, &objp->orient);
 
 	auto particleSource = particle::ParticleManager::get()->createSource(handle);
-	particleSource->setHost(make_unique<EffectHostObject>(objp, hitpos, localorient));
+	particleSource->setHost(std::make_unique<EffectHostObject>(objp, hitpos, localorient));
 	particleSource->setNormal(hitdir_global);
 	particleSource->setTriggerRadius(radius);
 	particleSource->setTriggerVelocity(vm_vec_mag_quick(&weapon_objp->phys_info.vel));
@@ -9396,6 +9414,8 @@ void weapon_info::reset()
 
 	vm_vec_zero(&this->closeup_pos);
 	this->closeup_zoom = 1.0f;
+	this->icon_closeup_pos = std::nullopt;
+	this->icon_closeup_zoom = std::nullopt;
 
 	memset(this->hud_filename, 0, sizeof(this->hud_filename));
 	this->hud_image_index = -1;

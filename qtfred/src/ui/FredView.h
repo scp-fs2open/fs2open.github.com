@@ -2,18 +2,25 @@
 
 #include <QMainWindow>
 #include <QAction>
+#include <QActionGroup>
 #include <QtGui/QSurfaceFormat>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QComboBox>
+#include <QtWidgets/QDoubleSpinBox>
+#include <QtWidgets/QToolBar>
+#include <QtWidgets/QToolButton>
 #include <QtGui/QSurface>
 #include <QCloseEvent>
+
+#include "missioneditor/missionsave.h"
 
 #include <mission/FredRenderer.h>
 #include <mission/IDialogProvider.h>
 
 #include <memory>
-#include <ui/widgets/ColorComboBox.h>
-#include <ui/widgets/PropComboBox.h>
+#include <ui/widgets/ObjectComboBox.h>
+
+class waypoint_list;
 
 namespace fso {
 namespace fred {
@@ -22,10 +29,13 @@ class Editor;
 class RenderWidget;
 
 namespace dialogs {
+class ErrorCheckerDialog;
 class ShipEditorDialog;
 class WingEditorDialog;
 class PropEditorDialog;
 }
+
+class SceneBrowserPanel;
 
 namespace Ui {
 class FredView;
@@ -45,6 +55,9 @@ class FredView: public QMainWindow, public IDialogProvider {
 	RenderWidget* getRenderWidget();
 
 	void showContextMenu(const QPoint& globalPos);
+	void showContextMenu(int objNum, const QPoint& globalPos);
+	void showWingContextMenu(int wingIndex, const QPoint& globalPos);
+	void showWaypointPathContextMenu(int pathIndex, const QPoint& globalPos);
 
  public slots:
 	void openLoadMissionDialog();
@@ -58,8 +71,16 @@ class FredView: public QMainWindow, public IDialogProvider {
 	 void on_actionSave_As_triggered(bool);
 	 void on_actionSave_triggered(bool);
 	void on_actionExit_triggered(bool);
+	void on_actionRevert_triggered(bool);
+	void on_actionUndo_triggered(bool);
+	void on_actionDisable_Undo_triggered(bool checked);
 	void on_actionLoad_Template_triggered(bool);
 	void on_actionSave_As_Template_triggered(bool);
+	void on_actionFS2_Open_triggered(bool);
+	void on_actionFS2_Retail_triggered(bool);
+	void on_actionFS2_Compatibility_triggered(bool);
+	void on_actionFS1_Mission_triggered(bool);
+	void on_actionRun_FreeSpace_2_Open_triggered(bool);
 
 	void on_actionConstrainX_triggered(bool enabled);
 	void on_actionConstrainXY_triggered(bool enabled);
@@ -71,9 +92,6 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void on_actionSelect_triggered(bool enabled);
 	void on_actionSelectMove_triggered(bool enabled);
 	void on_actionSelectRotate_triggered(bool enabled);
-
-	void on_actionHide_Marked_Objects_triggered(bool enabled);
-	void on_actionShow_All_Hidden_Objects_triggered(bool enabled);
 
 	void on_actionLock_Marked_Objects_triggered(bool enabled);
 	void on_actionUnlock_All_Objects_triggered(bool enabled);
@@ -104,7 +122,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void on_actionMission_Specs_triggered(bool);
 	void on_actionWaypoint_Paths_triggered(bool);
 	void on_actionJump_Nodes_triggered(bool);
-	void on_actionObjects_triggered(bool);
+	void on_actionObject_Orientation_triggered(bool);
 	void on_actionShips_triggered(bool);
 	void on_actionWings_triggered(bool);
 	void on_actionProps_triggered(bool);
@@ -126,13 +144,9 @@ class FredView: public QMainWindow, public IDialogProvider {
 
 	void on_actionOrbitSelected_triggered(bool enabled);
 
-	void on_actionRotateLocal_triggered(bool enabled);
 
 	void on_actionSave_Camera_Pos_triggered(bool);
 	void on_actionRestore_Camera_Pos_triggered(bool);
-
-	void on_actionTool_Bar_triggered(bool enabled);
-	void on_actionStatus_Bar_triggered(bool enabled);
 
 	void on_actionClone_Marked_Objects_triggered(bool);
 	void on_actionDelete_triggered(bool);
@@ -146,8 +160,13 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void on_actionPrev_Subsystem_triggered(bool);
 	void on_actionCancel_Subsystem_triggered(bool);
 
+	void on_actionNext_Object_triggered(bool);
+	void on_actionPrev_Object_triggered(bool);
+	void on_actionMark_Wing_triggered(bool);
+
 	void on_actionError_Checker_triggered(bool);
 
+	void on_actionHelp_Topics_triggered(bool);
 	void on_actionAbout_triggered(bool);
 	void on_actionMission_Statistics_triggered(bool);
 	void on_actionBackground_triggered(bool);
@@ -158,6 +177,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void on_actionMission_Goals_triggered(bool);
 	void on_actionMusic_Player_triggered(bool);
 	void on_actionCalculate_Relative_Coordinates_triggered(bool);
+	void on_actionWaypointPathGenerator_triggered(bool);
  signals:
 	/**
 	 * @brief Special version of FredApplication::onIdle which is limited to the lifetime of this object
@@ -181,6 +201,15 @@ class FredView: public QMainWindow, public IDialogProvider {
  private:
 	bool saveMissionToCurrentPath();
 	bool saveMissionAs();
+	void openAndRunErrorChecker();
+	void autoRunErrorChecker();
+	// Runs the error checker before a save (no mutations, no potential issues).
+	// If errors are found, shows the error checker in PreSave mode and applies
+	// auto-corrections if the designer chooses "Fix and Save".
+	// Returns false if the save should be cancelled.
+	// If outFixCount is provided it is set to the number of issues auto-corrected
+	// (0 if Fix and Save was chosen but nothing could be fixed, -1 if not attempted).
+	bool performPreSaveCheck(int* outFixCount = nullptr);
 	void saveAsTemplate();
 	void loadTemplate();
 	bool maybePromptToSaveMissionChanges(const QString& actionDescription);
@@ -207,38 +236,53 @@ class FredView: public QMainWindow, public IDialogProvider {
 
 	void initializeStatusBar();
 	void initializePopupMenus();
-	void populateMoveToLayerMenu(int targetObject);
+	void populateMoveToLayerMenu(int targetObject, QMenu* targetMenu = nullptr);
+	void populateCreateShipSubmenu();
+	void populateCreatePropSubmenu();
 	void openLayerManagerDialog();
 	void ensureViewportFocus();
+	void enforceSideDockAreas();
 
 	void onGroupSelected(int group);
 	void onSetGroup(int group);
 
-	QLabel* _statusBarViewmode = nullptr;
-	QLabel* _statusBarUnitsLabel = nullptr;
+	QLabel* _statusBarObjectCount = nullptr;
+	QLabel* _statusBarViewmode    = nullptr;
+	QLabel* _statusBarUnitsLabel  = nullptr;
+
+	SceneBrowserPanel* _browserPanel = nullptr;
 
 	QMenu* _viewPopup = nullptr;
+	QMenu* _createSubmenu = nullptr;
+	QMenu* _createShipSubmenu = nullptr;
+	QMenu* _createPropSubmenu = nullptr;
+	QPoint _lastContextMenuLocalPos;
 
 	QMenu* _editPopup = nullptr;
 	QAction* _editObjectAction = nullptr;
 	QAction* _editOrientPositionAction = nullptr;
 	QAction* _editWingAction = nullptr;
+	QAction* _selectWingAction = nullptr;
 	QMenu* _moveToLayerMenu = nullptr;
+	QAction* _viewZoomSelectedAction = nullptr;
 
 	QMenu* _controlModeMenu = nullptr;
 	QAction* _controlModeCamera = nullptr;
 	QAction* _controlModeCurrentShip = nullptr;
 
 	QString saveName = nullptr;
+	MissionFormat _missionSaveFormat = MissionFormat::STANDARD;
 
 	std::unique_ptr<Ui::FredView> ui;
 
-	std::unique_ptr<ColorComboBox> _shipClassBox;
-	std::unique_ptr<PropComboBox> _propClassBox;
+	ObjectComboBox* _shipClassBox = nullptr;
+	ObjectComboBox* _propClassBox = nullptr;
+	ObjectComboBox* _otherClassBox = nullptr;
 
 	Editor* fred = nullptr;
 	EditorViewport* _viewport = nullptr;
 
+	fso::fred::dialogs::ErrorCheckerDialog* _errorCheckerDialog = nullptr;
 	fso::fred::dialogs::ShipEditorDialog* _shipEditorDialog = nullptr;
 	fso::fred::dialogs::WingEditorDialog* _wingEditorDialog = nullptr;
 	fso::fred::dialogs::PropEditorDialog* _propEditorDialog = nullptr;
@@ -254,11 +298,52 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void onUpdateSelectionLock();
 	void onUpdateShipClassBox();
 	void onUpdatePropClassBox();
+	void onUpdateOtherClassBox();
 	void onUpdateEditorActions();
 	void onUpdateWingActionStatus();
 
+	void initializeContextToolbar();
+	void onUpdateContextToolbar();
+	void quickRenameCurrentObject();
+
+	void initializeTransformBar();
+	void onUpdateTransformBar();
+	void onTransformEditingFinished();
+
+	QToolBar* _contextToolBar = nullptr;
+	QLabel*   _contextLabel   = nullptr;
+
+	// Cached selection state... buttons only rebuild when these change
+	int            _ctxCachedObj                = -2;     // -2 = uninitialized
+	int            _ctxCachedMarked             = -1;
+	int            _ctxCachedObjType            = -1;     // single: actual type; multi: common type (-1=mixed)
+	bool           _ctxCachedInWing             = false;
+	int            _ctxCachedSharedWing         = -2;     // multi-select: shared wing index (-1=none, -2=N/A)
+	waypoint_list* _ctxCachedSharedWaypointList = nullptr;
+
+	QToolBar*       _transformToolBar    = nullptr;
+	QLabel*         _transformLabel      = nullptr;
+	QLabel*         _transformLabelA     = nullptr;
+	QLabel*         _transformLabelB     = nullptr;
+	QLabel*         _transformLabelC     = nullptr;
+	QDoubleSpinBox* _transformA          = nullptr;
+	QDoubleSpinBox* _transformB          = nullptr;
+	QDoubleSpinBox* _transformC          = nullptr;
+	QComboBox*      _transformMoveSpeedCombo = nullptr;
+	QComboBox*      _transformRotSpeedCombo  = nullptr;
+	QComboBox*      _transformIffCombo   = nullptr;
+	QLabel*         _transformRadiusLabel = nullptr;
+	QToolButton*    _transformLocalBtn   = nullptr;
+	QComboBox*      _transformLayerCombo = nullptr;
+	bool            _tbLayerComboDirty   = true;  // rebuild layer combo only when layer structure changes
+	bool            _tbIffPopulated      = false; // IFF items are populated lazily (tables load after init)
+	bool            _tbLocalMove         = false; // remembered Local preference while in move mode
+	bool            _tbLocalRotate       = false; // remembered Local preference while in rotate mode
+	int             _tbCachedCursorMode  = -1;    // -1 forces per-mode restore on first update
+
 	void onShipClassSelected(int ship_class);
 	void onPropClassSelected(int prop_class);
+	void onOtherKindSelected(int other_kind);
 
 	void windowActivated();
 	void windowDeactivated();

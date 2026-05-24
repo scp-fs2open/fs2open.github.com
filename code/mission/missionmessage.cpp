@@ -646,7 +646,7 @@ void message_parse(MessageFormat format) {
 	}
 
 	Num_messages++;
-	Messages.push_back(msg); 
+	Messages.push_back(std::move(msg));
 }
 
 void message_frequency_parse()
@@ -705,7 +705,7 @@ void message_moods_parse()
 		stuff_string(buf, F_NAME);
 
 		if (!message_moods_check_existing(buf)) {
-			Builtin_moods.push_back(buf);
+			Builtin_moods.push_back(std::move(buf));
 		} else {
 			mprintf(("Message mood %s already exists. Skipping!", buf.c_str()));
 		}
@@ -2248,7 +2248,7 @@ bool filters_match(MessageFilter& filter, ship* it) {
 		return filter_matches(it->ship_name, filter.ship_name)
 	      && filter_matches(hud_get_ship_callsign(it), filter.callsign)
 		    && filter_matches(hud_get_ship_class(it), filter.class_name)
-		    && filter_matches(wing_name, filter.wing_name)
+		    && filter_matches(std::move(wing_name), filter.wing_name)
 		    && filter_matches(Ship_info[it->ship_info_index].species, filter.species_bitfield)
 		    && (Ship_info[it->ship_info_index].class_type < 0 || filter_matches(Ship_info[it->ship_info_index].class_type, filter.type_bitfield))
 		    && filter_matches(it->team, filter.team_bitfield);
@@ -2654,7 +2654,7 @@ bool add_message(const char* name, const char* message, int persona_index, int m
 		msg.avi_info.index = -1;
 		msg.wave_info.index = -1;
 	}
-	Messages.push_back(msg);
+	Messages.push_back(std::move(msg));
 	Num_messages++;
 
 	return true;

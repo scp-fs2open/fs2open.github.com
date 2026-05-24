@@ -41,6 +41,7 @@
 #include "asteroid/asteroid.h"
 #include "autopilot/autopilot.h"
 #include "bmpman/bmpman.h"
+#include "camera/photomode.h"
 #include "cfile/cfile.h"
 #include "cheats_table/cheats_table.h"
 #include "cmdline/cmdline.h"
@@ -121,6 +122,7 @@
 #include "missionui/missionweaponchoice.h"
 #include "missionui/redalert.h"
 #include "mod_table/mod_table.h"
+#include "model/modelrender.h"
 #include "model/modelreplace.h"
 #include "nebula/neb.h"
 #include "nebula/neblightning.h"
@@ -398,6 +400,7 @@ int Show_net_stats;
 bool Pre_player_entry = false;
 
 int	Fred_running = 0;
+int	Qtfred_running = 0;
 bool running_unittests = false;
 
 // required for hudtarget... kinda dumb, but meh
@@ -948,6 +951,7 @@ void game_level_close()
 		ct_level_close();
 		beam_level_close();
 		mission_brief_common_reset();		// close out parsed briefing/mission stuff
+		photo_mode_set_active(false);
 		cam_close();
 		subtitles_close();
 		animation::ModelAnimationSet::stopAnimations();
@@ -1047,6 +1051,7 @@ void game_level_init()
 
 	Perspective_locked = false;
 	Slew_locked = false;
+	game_set_photo_mode_allowed(true);
 
 	// reset the geometry map and distortion map batcher, this should to be done pretty soon in this mission load process (though it's not required)
 	batch_reset();
@@ -3642,6 +3647,8 @@ void game_simulation_frame()
 		cam_do_frame(flRealframetime);
 	}
 
+	photo_mode_do_frame(flRealframetime);
+
 	// blow ships up in multiplayer dogfight
 	if( MULTIPLAYER_MASTER && (Net_player != nullptr) && (Netgame.type_flags & NG_TYPE_DOGFIGHT) && (f2fl(Missiontime) >= 2.0f) && !dogfight_blown){
 		// blow up all non-player ships
@@ -4118,7 +4125,7 @@ void game_do_full_frame(DEBUG_TIMER_SIG const vec3d* offset = nullptr, const mat
 			if (fov_override)
 				g3_set_fov(*fov_override);
 
-			scripting::hooks::OnHudDraw->run(scripting::hooks::ObjectDrawConditions{ Viewer_obj }, scripting_param_list);
+			scripting::hooks::OnHudDraw->run(scripting::hooks::ObjectDrawConditions{ Viewer_obj }, std::move(scripting_param_list));
 		}
 	}
 
@@ -4155,6 +4162,7 @@ void game_do_full_frame(DEBUG_TIMER_SIG const vec3d* offset = nullptr, const mat
 
 	gr_reset_clip();
 	game_render_post_frame();
+	photo_mode_maybe_render_hud();
 
 	game_tst_frame();
 
@@ -4552,6 +4560,7 @@ void game_do_frame(bool set_frametime)
 	}
 
 	game_update_missiontime();
+	photo_mode_clear_screenshot_queued_flag();
 
 	if (Game_mode & GM_STANDALONE_SERVER) {
 		std_multi_set_standalone_missiontime(f2fl(Missiontime));
@@ -4762,6 +4771,8 @@ int game_poll()
 
 		case KEY_PRINT_SCRN: 
 			{
+				photo_mode_set_screenshot_queued_flag();
+
 				static int counter = os_config_read_uint(nullptr, "ScreenshotNum", 0);
 				char tmp_name[MAX_FILENAME_LEN];
 
@@ -5253,6 +5264,10 @@ void game_leave_state( int old_state, int new_state )
 {
 	events::GameLeaveState(old_state, new_state);
 
+	// Clear cached UI model instances when changing game states.
+	// New state UI screens can lazily recreate any instances they need.
+	model_clear_cached_ui_render_instances();
+
 	int end_mission = 1;
 
 	switch (new_state) {
@@ -5273,6 +5288,10 @@ void game_leave_state( int old_state, int new_state )
 		case GS_STATE_INGAME_OPTIONS:
 			end_mission = 0;  // these events shouldn't end a mission
 			break;
+	}
+
+	if (old_state == GS_STATE_GAME_PLAY && new_state != GS_STATE_GAME_PLAY) {
+		photo_mode_set_active(false);
 	}
 
 	// This is kind of a hack but it ensures options are logged even if scripting calls for a state change with an override active
@@ -5420,7 +5439,7 @@ void game_leave_state( int old_state, int new_state )
 				common_select_close();
 			}
 
-			if (new_state != GS_STATE_CONTROL_CONFIG && new_state != GS_STATE_HUD_CONFIG) {
+			if (new_state != GS_STATE_CONTROL_CONFIG && new_state != GS_STATE_HUD_CONFIG && new_state != GS_STATE_INGAME_OPTIONS) {
 				// unpause all sounds, since we could be headed back to the game
 				// only unpause if we're in-mission; we could also be in the main hall
 				if (Game_mode & GM_IN_MISSION) {
@@ -5770,7 +5789,7 @@ void game_enter_state( int old_state, int new_state )
 
 	if(scripting::hooks::OnStateStart->isActive()) {
 		if (scripting::hooks::OnStateStart->isOverride(script_param_list)) {
-			scripting::hooks::OnStateStart->run(script_param_list);
+			scripting::hooks::OnStateStart->run(std::move(script_param_list));
 			return;
 		}
 	}
@@ -6718,7 +6737,7 @@ void game_spew_pof_info_sub(int model_num, polymodel *pm, int sm, CFILE *out, in
 
 	// find the # of faces for this _individual_ object	
 	total = submodel_get_num_polys(model_num, sm);
-	if(strstr(pm->submodel[sm].name, "-destroyed")){
+	if (submodel_is_destroyed_form(pm->submodel[sm].name)) {
 		sub_total_destroyed = total;
 	}
 	
@@ -7424,11 +7443,11 @@ void Do_model_timings_test()
 	int model_id[MAX_POLYGON_MODELS];
 
 	// Load them all
-	for (auto & sip : Ship_info) {
-		sip.model_num = model_load(sip.pof_file);
+	for (auto & si : Ship_info) {
+		si.model_num = model_load(&si, false);
 
-		model_used[sip.model_num % MAX_POLYGON_MODELS]++;
-		model_id[sip.model_num % MAX_POLYGON_MODELS] = sip.model_num;
+		model_used[si.model_num % MAX_POLYGON_MODELS]++;
+		model_id[si.model_num % MAX_POLYGON_MODELS] = si.model_num;
 	}
 
 	Texture_fp = fopen( NOX("ShipTextures.txt"), "wt" );

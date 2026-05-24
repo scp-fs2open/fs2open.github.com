@@ -223,9 +223,11 @@ ai_flag_description Ai_flag_descriptions[] = {
 	{AI::AI_Flags::No_dynamic,				"Will stop allowing the AI to pursue dynamic goals (eg: chasing ships it was not ordered to)."},
 	{AI::AI_Flags::Free_afterburner_use,	"Will allow AI to use afterburners when attacking a big ship, flying to a target position, guarding a ship, and flying in formation."},
 	{AI::AI_Flags::Waypoints_no_formation,		"Ship will not form up with its wingmates while running waypoints with them." },
+	{AI::AI_Flags::Kamikaze,				"Ship will attack big ships by colliding with them and exploding."},
 };
 
 extern const int Num_ai_flag_names = sizeof(Ai_flag_names) / sizeof(ai_flag_name);
+extern const size_t Num_ai_flag_descriptions = sizeof(Ai_flag_descriptions) / sizeof(ai_flag_description);
 
 const char *Skill_level_names(int level, int translate)
 {
@@ -320,6 +322,18 @@ void ai_cleanup_dock_mode_objective(object *objp);
 // The object that is declared to be the leader of the group formation for
 // the "autopilot"
 object *Autopilot_flight_leader = NULL;
+
+static inline float ai_guard_threshold(const object* guarded_objp, float threshold)
+{
+	if (guarded_objp != nullptr && guarded_objp->type == OBJ_SHIP && guarded_objp->instance >= 0) {
+		const float configured = Ships[guarded_objp->instance].max_guard_radius;
+		if (configured > 0.0f) {
+			return configured;
+		}
+	}
+
+	return threshold;
+}
 
 /**
  * Sets the timestamp used to tell is it is a good time for this team to rearm.  
@@ -4293,7 +4307,7 @@ float ai_path_0()
 //	--------------------------------------------------------------------------
 //	Alternate version of ai_path
 //  1. 
-float ai_path_1()
+float ai_path_1_or_2(bool allow_path_shortcut)
 {
 	int		num_points;
 	float		dot, dist_to_goal, dist_to_next, dot_to_next;
@@ -4348,6 +4362,25 @@ float ai_path_1()
 		vm_vec_scale_add(&next_vec, cvp, &delvec, 10.0f);
 		nvp = &next_vec;
 	}
+
+	if (allow_path_shortcut) {
+		//	See if can reach next point (as opposed to current point)
+		//	However, don't do this if docking and next point is last point.
+		if ((aip->mode != AIM_DOCK) || ((aip->path_cur - aip->path_start) < num_points - 2)) {
+			if ((aip->path_cur + aip->path_dir > aip->path_start) &&
+				(aip->path_cur + aip->path_dir < aip->path_start + num_points - 2)) {
+				if (timestamp_elapsed(aip->path_next_check_time)) {
+					aip->path_next_check_time = timestamp(3000);
+					if (!pp_collide(&Pl_objp->pos, nvp, gobjp, 1.1f * Pl_objp->radius)) {
+						cvp = nvp;
+						aip->path_cur += aip->path_dir;
+						nvp = &Path_points[aip->path_cur].pos;
+					}
+				}
+			}
+		}
+	}
+
 	// Set pvp to the previous vertex of interest on the path (if there is one)
 	int prev_point = aip->path_cur - aip->path_dir;
 	if (prev_point >= aip->path_start && prev_point <= aip->path_start + num_points)
@@ -4464,7 +4497,10 @@ float ai_path()
 		return ai_path_0();
 		break;
 	case AI_PATH_MODE_ALT1:
-		return ai_path_1();
+		return ai_path_1_or_2(false);
+		break;
+	case AI_PATH_MODE_ALT2:
+		return ai_path_1_or_2(true);
 		break;
 	default:
 		Error(LOCATION, "Invalid path mode found: %d\n", The_mission.ai_profile->ai_path_mode);
@@ -5115,9 +5151,10 @@ int maybe_resume_previous_mode(object *objp, ai_info *aip)
 
 			//	If guarding ship is far away from guardee and enemy is far away from guardee,
 			//	then stop chasing and resume guarding.
-			if (dist > (MAX_GUARD_DIST + guard_objp->radius) * 6) {
+			if (dist > ai_guard_threshold(guard_objp, (MAX_GUARD_DIST + guard_objp->radius) * 6))
+				{
 				if ((En_objp != NULL) && (En_objp->type == OBJ_SHIP)) {
-					if (vm_vec_dist_quick(&guard_objp->pos, &En_objp->pos) > (MAX_GUARD_DIST + guard_objp->radius) * 6) {
+					if (vm_vec_dist_quick(&guard_objp->pos, &En_objp->pos) > ai_guard_threshold(guard_objp, (MAX_GUARD_DIST + guard_objp->radius) * 6)) {
 						Assert(aip->previous_mode == AIM_GUARD);
 						aip->mode = aip->previous_mode;
 						aip->submode = AIS_GUARD_PATROL;
@@ -10515,7 +10552,7 @@ int ai_guard_find_nearby_bomb(object *guarding_objp, object *guarded_objp)
 
 		dist = vm_vec_dist_quick(&bomb_objp->pos, &guarded_objp->pos);
 
-		if (dist < (MAX_GUARD_DIST + guarded_objp->radius)*3) {
+		if (dist < ai_guard_threshold(guarded_objp, (MAX_GUARD_DIST + guarded_objp->radius) * 3)) {
 			dist_to_guarding_obj = vm_vec_dist_quick(&bomb_objp->pos, &guarding_objp->pos);
 			if ( dist_to_guarding_obj < closest_dist_to_guarding_obj ) {
 				closest_dist_to_guarding_obj = dist_to_guarding_obj;
@@ -10559,11 +10596,11 @@ void ai_guard_find_nearby_ship(object *guarding_objp, object *guarded_objp)
 			if (Ship_info[eshipp->ship_info_index].class_type >= 0 && (Ship_types[Ship_info[eshipp->ship_info_index].class_type].flags[Ship::Type_Info_Flags::AI_guards_attack]))
 			{
 				dist = vm_vec_dist_quick(&enemy_objp->pos, &guarded_objp->pos);
-				if (dist < (MAX_GUARD_DIST + guarded_objp->radius)*3)
+				if (dist < ai_guard_threshold(guarded_objp, (MAX_GUARD_DIST + guarded_objp->radius) * 3))
 				{
 					guard_object_was_hit(guarding_objp, enemy_objp);
-				}
-				else if ((dist < 3000.0f) && (Ai_info[eshipp->ai_index].target_objnum == guarding_aip->guard_objnum))
+				} else if ((dist < ai_guard_threshold(guarded_objp, 3000.0f)) &&
+						   (Ai_info[eshipp->ai_index].target_objnum == guarding_aip->guard_objnum))
 				{
 					guard_object_was_hit(guarding_objp, enemy_objp);
 				}
@@ -10590,7 +10627,7 @@ void ai_guard_find_nearby_asteroid(object *guarding_objp, object *guarded_objp)
 		if ( asteroid_objp->type == OBJ_ASTEROID ) {
 			// Attack asteroid if near guarded ship
 			dist = vm_vec_dist_quick(&asteroid_objp->pos, &guarded_objp->pos);
-			if ( dist < (MAX_GUARD_DIST + guarded_objp->radius)*2) {
+			if (dist < ai_guard_threshold(guarded_objp, (MAX_GUARD_DIST + guarded_objp->radius) * 2)) {
 				dist_to_self = vm_vec_dist_quick(&asteroid_objp->pos, &guarding_objp->pos);
 				if ( OBJ_INDEX(guarded_objp) == asteroid_collide_objnum(asteroid_objp) ) {
 					if( dist_to_self < closest_danger_asteroid_dist ) {

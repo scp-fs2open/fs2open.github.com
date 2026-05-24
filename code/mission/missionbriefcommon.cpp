@@ -1258,6 +1258,8 @@ void brief_render_icons(int stage_num, float frametime)
 	}
 
 	for ( i = 0; i < num_icons; i++ ) {
+		Briefing->stages[stage_num].icons[i].w = 0;
+		Briefing->stages[stage_num].icons[i].h = 0;
 		brief_render_icon(stage_num, i, frametime, 0);
 	}
 }
@@ -1573,6 +1575,16 @@ void brief_reset_icons(int stage_num)
  * @param orient target orientation for the camera
  * @param time time in ms to reach target
  */
+vec3d brief_get_current_cam_pos()
+{
+	return Current_cam_pos;
+}
+
+matrix brief_get_current_cam_orient()
+{
+	return Current_cam_orient;
+}
+
 void brief_set_camera_target(vec3d *pos, matrix *orient, int time)
 {
 	float time_in_seconds;
@@ -1624,6 +1636,11 @@ void brief_set_camera_target(vec3d *pos, matrix *orient, int time)
 	vm_vec_zero(&W_init);
 
 	get_camera_limits(&Start_cam_orient, &Target_cam_orient, Total_move_time, &Acc_limit, &Vel_limit);
+}
+
+void brief_cancel_pending_highlight_anims()
+{
+	Play_highlight_flag = 0;
 }
 
 

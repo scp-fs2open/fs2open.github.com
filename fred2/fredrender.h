@@ -24,7 +24,7 @@ extern bool Draw_outlines_on_selected_ships;	// If a ship is selected, draw mesh
 extern bool Draw_outline_at_warpin_position;	// Project an outline at the place where the ship will arrive after warping in
 extern bool Always_save_display_names;	// When saving a mission, always write display names to the mission file even if the display name is not set.
 										// But ships in wings are excepted, because a display name will cause a ship to have the same name in every wave.
-										// In the future, a display name feature could be added to the wing dialog to handle this case.
+										// Wings now support display names, or the ship-change-display-name SEXP can be used, to handle that case.
 extern bool Error_checker_checks_potential_issues;	// Error checker checks not only outright errors but also potential issues
 extern bool Error_checker_checks_potential_issues_once;	// Same as above, but only once, and independent of the selected option
 extern int Show_stars;              //!< Bool. If nonzero, draw the starfield, nebulas, and suns. Might also handle skyboxes

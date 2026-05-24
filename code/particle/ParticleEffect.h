@@ -168,6 +168,7 @@ public:
 
 	std::optional<::util::ParsedRandomFloatRange> m_vel_inherit_from_orientation;
 	std::optional<::util::ParsedRandomFloatRange> m_vel_inherit_from_position;
+	std::optional<::util::ParsedRandomFloatRange> m_local_position_scaling;
 
 	std::shared_ptr<::particle::ParticleVolume> m_velocityVolume;
 	std::shared_ptr<::particle::ParticleVolume> m_spawnVolume;
@@ -186,6 +187,7 @@ public:
 	float m_distanceCulled; //Kinda deprecated. Only used by the oldest of legacy effects.
 
 	matrix getNewDirection(const matrix& hostOrientation, const std::optional<vec3d>& normal) const;
+	vec3d adaptPosition(const vec3d& pos, int parent) const;
 
 	template<bool isPersistent>
 	auto processSourceInternal(float interp, const ParticleSource& source, size_t effectNumber, const vec3d& velParent, int parent, int parent_sig, float parentLifetime, float parentRadius, float particle_percent) const;
@@ -273,10 +275,12 @@ public:
 			modular_curves_submember_input<&ParticleSource::getEffect, &SCP_vector<ParticleEffect>::size>,
 			ModularCurvesMathOperators::division>{}},
 		std::pair {"Total Particle Count", modular_curves_global_submember_input<get_particle_count>{}},
+		std::pair {"Particle Detail Level", modular_curves_global_submember_input<Detail, &detail_levels::num_particles>{}},
 		std::pair {"Particle Usage Score", modular_curves_math_input<
 		    modular_curves_global_submember_input<get_particle_count>,
 			modular_curves_global_submember_input<Detail, &detail_levels::num_particles>,
 			ModularCurvesMathOperators::division>{}},
+		std::pair {"Nebula Detail Level", modular_curves_global_submember_input<Detail, &detail_levels::nebula_detail>{}},
 		std::pair {"Nebula Usage Score", modular_curves_math_input<
 		    modular_curves_global_submember_input<get_particle_count>,
 			modular_curves_global_submember_input<Detail, &detail_levels::nebula_detail>,

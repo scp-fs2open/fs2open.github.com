@@ -95,7 +95,7 @@ void AsteroidEditorDialogModel::initializeData()
 			debrisOptions.emplace_back(std::make_pair(Asteroid_info[i].name, static_cast<int>(i)));
 		}
 	}
-
+	_modified = false;
 }
 
 void AsteroidEditorDialogModel::update_internal_field()

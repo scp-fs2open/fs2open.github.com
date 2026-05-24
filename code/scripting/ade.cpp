@@ -582,7 +582,7 @@ std::unique_ptr<DocumentationElement> ade_table_entry::ToDocumentationElement(
 				overloadArgList.simple.assign(overload);
 			}
 
-			obj->overloads.push_back(overloadArgList);
+			obj->overloads.push_back(std::move(overloadArgList));
 		}
 
 		if (ReturnDescription != nullptr) {

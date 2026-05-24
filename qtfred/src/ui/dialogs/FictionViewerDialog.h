@@ -31,16 +31,13 @@ private slots:
 	void on_storyFileEdit_textChanged(const QString& text);
 	void on_fontFileEdit_textChanged(const QString& text);
 	void on_voiceFileEdit_textChanged(const QString& text);
-	void on_musicComboBox_currentIndexChanged(int index);
+
+	void on_musicWidget_currentIndexChanged(int spooledMusicIdx);
 
  private: // NOLINT(readability-redundant-access-specifiers)
 
 	void initializeUi();
 	void updateUi();
-
-	void updateMusicComboBox();
-
-	
 
 	EditorViewport* _viewport = nullptr;
 	std::unique_ptr<Ui::FictionViewerDialog> ui;

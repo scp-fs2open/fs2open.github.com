@@ -27,7 +27,7 @@ public:
 	SCP_string documentation;
 
 	virtual std::unique_ptr<EvaluatableCondition> parse(const SCP_string& /*input*/) const {
-		return make_unique<EvaluatableCondition>();
+		return std::make_unique<EvaluatableCondition>();
 	};
 
 	ParseableCondition() : documentation("Invalid Condition. Will never evaluate.") { }

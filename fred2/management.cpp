@@ -909,7 +909,7 @@ void clear_mission(bool fast_reload)
 	time(&currentTime);
 	auto timeinfo = localtime(&currentTime);
 
-	strcpy_s(The_mission.name, "Untitled");
+	The_mission.name = "Untitled";
 	The_mission.author = str;
 	time_to_mission_info_string(timeinfo, The_mission.created, DATE_TIME_LENGTH - 1);
 	strcpy_s(The_mission.modified, The_mission.created);
@@ -1469,6 +1469,8 @@ int delete_ship_from_wing(int ship)
 				if (Objects[wing_objects[wing][i]].type == OBJ_SHIP) {
 					wing_bash_ship_name(name, Wings[wing].name, i + 1);
 					rename_ship(Wings[wing].ship_index[i], name);
+					// bash it again for the display name
+					wing_bash_ship_name(&Ships[Wings[wing].ship_index[i]], &Wings[wing], i + 1, true);
 				}
 			}
 
@@ -1846,6 +1848,26 @@ int rename_ship(int ship, const char *name)
 	strcpy_s(Ships[ship].ship_name, name);
 	if (ship == cur_ship)
 		Ship_editor_dialog.m_ship_name = _T(name);
+
+	// if this name has a hash, create a default display name
+	if (get_pointer_to_first_hash_symbol(Ships[ship].ship_name))
+	{
+		Ships[ship].display_name = Ships[ship].ship_name;
+		end_string_at_first_hash_symbol(Ships[ship].display_name);
+		Ships[ship].flags.set(Ship::Ship_Flags::Has_display_name);
+
+		if (ship == cur_ship)
+			Ship_editor_dialog.m_ship_display_name = _T(Ships[ship].display_name.c_str());
+	}
+	// otherwise reset the display name
+	else
+	{
+		Ships[ship].display_name = "";
+		Ships[ship].flags.remove(Ship::Ship_Flags::Has_display_name);
+
+		if (ship == cur_ship)
+			Ship_editor_dialog.m_ship_display_name = _T("<none>");
+	}
 
 	return 0;
 }
@@ -2302,10 +2324,15 @@ int sexp_reference_handler(int node, sexp_src source, int source_index, char *ms
 		}
 
 		case sexp_src::DEBRIEFING: {
-			debriefing_editor_dlg dlg;
+			if (!Debriefing_dialog) {
+				Debriefing_dialog = new debriefing_editor_dlg;
+				Debriefing_dialog->create();
+			}
 
-			dlg.select_sexp_node = node;
-			dlg.DoModal();
+			Debriefing_dialog->SetWindowPos(&CWnd::wndTop, 0, 0, 0, 0,
+				SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE);
+			Debriefing_dialog->ShowWindow(SW_RESTORE);
+			Debriefing_dialog->focus_sexp(node);
 			break;
 		}
 

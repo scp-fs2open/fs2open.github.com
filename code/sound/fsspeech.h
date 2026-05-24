@@ -31,4 +31,7 @@ void fsspeech_play_buffer(int type);
 bool fsspeech_play_from(int type);
 bool fsspeech_playing();
 
+// Cleanup the voice cache after the options menu is closed
+void fsspeech_options_cleanup();
+
 #endif	// header define

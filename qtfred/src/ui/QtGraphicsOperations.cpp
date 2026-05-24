@@ -39,6 +39,10 @@ QSurfaceFormat getSurfaceFormat(const os::ViewPortProperties& viewProps, const o
 	case os::OpenGLProfile::Compatibility:
 		format.setProfile(QSurfaceFormat::CompatibilityProfile);
 		break;
+	case os::OpenGLProfile::ES:
+		format.setProfile(QSurfaceFormat::NoProfile);
+		format.setRenderableType(QSurfaceFormat::OpenGLES);
+		break;
 	}
 
 	if (glAttrs.flags[os::OpenGLContextFlags::Debug]) {
@@ -85,15 +89,17 @@ QtGraphicsOperations::createOpenGLContext(os::Viewport* viewport, const os::Open
 }
 
 void QtGraphicsOperations::makeOpenGLContextCurrent(os::Viewport* view, os::OpenGLContext* ctx) {
-	auto qtPort = static_cast<QtViewport*>(view);
 	auto qtContext = static_cast<QtOpenGLContext*>(ctx);
 
-	if (qtPort == nullptr && qtContext == nullptr) {
+	if (view == nullptr && qtContext == nullptr) {
 		if (_lastContext != nullptr) {
 			_lastContext->makeCurrent(nullptr);
 		}
 	} else {
-		qtContext->makeCurrent(qtPort->getWindow()->getRenderSurface());
+		auto qtSurfaceView = dynamic_cast<QtSurfaceViewport*>(view);
+		if (qtSurfaceView != nullptr && qtContext != nullptr) {
+			qtContext->makeCurrent(qtSurfaceView->getRenderSurface());
+		}
 	}
 
 	// We keep track of our last context since the qt information may return contexts managed by the GUI framework
@@ -148,6 +154,9 @@ void QtViewport::minimize() {
 }
 void QtViewport::restore() {
 	_viewportWindow->show();
+}
+QSurface* QtViewport::getRenderSurface() {
+	return _viewportWindow->getRenderSurface();
 }
 const os::ViewPortProperties& QtViewport::getViewProperties() const {
 	return _viewProps;
