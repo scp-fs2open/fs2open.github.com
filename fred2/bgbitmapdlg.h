@@ -123,6 +123,7 @@ protected:
 	CToolTipCtrl* m_FogParamsToolTip;
 
 	virtual BOOL OnInitDialog();
+	virtual BOOL PreTranslateMessage(MSG* pMsg);
 
 	// Generated message map functions
 	//{{AFX_MSG(bg_bitmap_dlg)

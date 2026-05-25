@@ -240,6 +240,15 @@ BOOL bg_bitmap_dlg::OnInitDialog()
 				  // EXCEPTION: OCX Property Pages should return FALSE
 }
 
+BOOL bg_bitmap_dlg::PreTranslateMessage(MSG* pMsg)
+{
+	if (m_CorrectedAnglesToolTip != nullptr)
+		m_CorrectedAnglesToolTip->RelayEvent(pMsg);
+	if (m_FogParamsToolTip != nullptr)
+		m_FogParamsToolTip->RelayEvent(pMsg);
+	return CDialog::PreTranslateMessage(pMsg);
+}
+
 void bg_bitmap_dlg::create()
 {
 	char buf[40];
