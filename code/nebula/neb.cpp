@@ -92,9 +92,10 @@ int neb_tossed_count = 0;		// nebs tossed because of max render count
 // the AWACS suppression level for the nebula
 float Neb2_awacs = -1.0f;
 
-//Deprecated! Only here very temporary until the new values are stored correctly
-float Neb2_fog_near_mult = 1.0f;
-float Neb2_fog_far_mult = 1.0f;
+// Deprecated!  Only used for compatibility
+bool  Neb2_fog_use_legacy_values = false;
+float Neb2_fog_legacy_near_mult = 1.0f;
+float Neb2_fog_legacy_far_mult = 1.0f;
 
 // The visual render distance multipliers for the nebula
 float Neb2_fog_near_distance = 10.0f;
@@ -388,6 +389,11 @@ void neb2_get_fog_color(ubyte *r, ubyte *g, ubyte *b)
 void neb2_pre_level_init()
 {
 	Neb2_awacs = -1.0f;
+
+	Neb2_fog_use_legacy_values = false;
+	Neb2_fog_legacy_near_mult = 1.0f;
+	Neb2_fog_legacy_far_mult = 1.0f;
+
 	Neb2_fog_near_distance = 10.0f;
 	Neb2_fog_1000m_visibility = 0.00464158883f;
 	Neb2_fog_skybox_clip_distance = Max_draw_distance;

@@ -858,33 +858,41 @@ void parse_mission_info(mission *pm, bool basic = false)
 			nebl_set_storm(Mission_parse_storm_name);
 	}
 
-	{
-		float near_mult = 1.f, far_mult = 1.f;
-		//Pre-26.0 missions always need legacy conversion unless the modern values are found (once they are actually stored)
-		bool legacy_fog = gameversion::version(26, 0, 0) > pm->required_fso_version;
-		if(optional_string("+Fog Near Mult:")){
-			stuff_float(&near_mult);
-			extern float Neb2_fog_near_mult;
-			Neb2_fog_near_mult = near_mult;
-			legacy_fog = true;
-		}
-		if(optional_string("+Fog Far Mult:")){
-			stuff_float(&far_mult);
-			extern float Neb2_fog_far_mult;
-			Neb2_fog_far_mult = far_mult;
-			legacy_fog = true;
-		}
+	// Legacy values always need conversion unless the modern values are found
+	Neb2_fog_use_legacy_values = pm->required_fso_version < gameversion::version(26, 0, 0);
+	if (optional_string("+Fog Near Mult:")) {
+		stuff_float(&Neb2_fog_legacy_near_mult);
+	}
+	if (optional_string("+Fog Far Mult:")) {
+		stuff_float(&Neb2_fog_legacy_far_mult);
+	}
 
-		if (legacy_fog) {
-			//This stems from the weird unchangeable constants of legacy fog
-			Neb2_fog_1000m_visibility = powf(10.f, -100.f / (75.f * far_mult - near_mult));
-			Neb2_fog_near_distance = 10.f * near_mult;
-			Neb2_fog_skybox_clip_distance = 0.f; // Apparently, skybox fog was just outright broken...
-			Neb2_fog_clip_distance = Default_max_draw_distance;
-		}
-		else {
-			//To be added once the corresponding FRED dialogue is updated
-		}
+	// Look for the modern values
+	if (optional_string("+Fog 1000m Visibility:")) {
+		stuff_float(&Neb2_fog_1000m_visibility);
+		Neb2_fog_use_legacy_values = false;
+	}
+	if (optional_string("+Fog Near Distance:")) {
+		stuff_float(&Neb2_fog_near_distance);
+		Neb2_fog_use_legacy_values = false;
+	}
+	if (optional_string("+Fog Skybox Clip Distance:")) {
+		stuff_float(&Neb2_fog_skybox_clip_distance);
+		Neb2_fog_use_legacy_values = false;
+	}
+	if (optional_string("+Fog Clip Distance:")) {
+		stuff_float(&Neb2_fog_clip_distance);
+		Neb2_fog_use_legacy_values = false;
+	}
+
+	// Do the conversion if necessary
+	if (Neb2_fog_use_legacy_values) {
+		//This stems from the weird unchangeable constants of legacy fog
+		float denom = std::max(75.f * Neb2_fog_legacy_far_mult - Neb2_fog_legacy_near_mult, 1.0f);
+		Neb2_fog_1000m_visibility = powf(10.f, -100.f / denom);
+		Neb2_fog_near_distance = 10.f * Neb2_fog_legacy_near_mult;
+		Neb2_fog_skybox_clip_distance = 0.f; // Apparently, skybox fog was just outright broken...
+		Neb2_fog_clip_distance = Default_max_draw_distance;
 	}
 
 	// Goober5000 - ship contrail speed threshold
@@ -9643,6 +9651,9 @@ bool check_for_25_1_data()
 		return true;
 
 	if (count_items_with_value(Props) > 0)
+		return true;
+
+	if (The_mission.flags[Mission::Mission_Flags::Fullneb] && !Neb2_fog_use_legacy_values)
 		return true;
 
 	constexpr auto defaultLayer = "Default";

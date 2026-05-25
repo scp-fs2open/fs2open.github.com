@@ -2344,12 +2344,12 @@ ADE_VIRTVAR(NebulaSkyboxClipDistance, l_Mission, "number", "Gets or sets the dis
 	return ade_set_args(L, "f", Neb2_fog_skybox_clip_distance);
 }
 
-ADE_VIRTVAR(NebulaTransparency, l_Mission, "number", "Gets or sets the transparency of the nebula at 1000m nebula depth. 0 is fully opaque, 1 is fully transparent.", "number", "The nebula transparency.")
+ADE_VIRTVAR(NebulaVisibility, l_Mission, "number", "Gets or sets the visibility of the nebula at 1000m nebula depth. 0 is fully opaque, 1 is fully transparent.", "number", "The nebula visibility.")
 {
-	float fog_transparency = 0.0f;
+	float fog_visibility = 0.0f;
 
-	if (ADE_SETTING_VAR && ade_get_args(L, "*f", &fog_transparency))
-		Neb2_fog_1000m_visibility = fog_transparency;
+	if (ADE_SETTING_VAR && ade_get_args(L, "*f", &fog_visibility))
+		Neb2_fog_1000m_visibility = fog_visibility;
 
 	return ade_set_args(L, "f", Neb2_fog_1000m_visibility);
 }
