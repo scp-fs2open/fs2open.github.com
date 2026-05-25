@@ -45,8 +45,8 @@ layout (std140) uniform modelData {
 	model_light lights[MAX_LIGHTS];
 
 	float outlineWidth;
-	float fogStart;
-	float fogScale;
+	float fogNear;
+	float fogDensity;
 	int buffer_matrix_offset;
 
 	vec4 clip_equation;

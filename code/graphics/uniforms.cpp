@@ -6,6 +6,7 @@
 #include "light.h"
 #include "globalincs/systemvars.h"
 #include "shadows.h"
+#include "nebula/neb.h"
 
 #define MODEL_SDR_FLAG_MODE_CPP
 #include "def_files/data/effects/model_shader_flags.h"
@@ -218,6 +219,11 @@ void convert_model_material(model_uniform_data* data_out,
 		auto& fog_params = material.get_fog();
 
 		if (fog_params.enabled) {
+			float fog_near, fog_density;
+			neb2_get_adjusted_fog_values(&fog_near, &fog_density);
+			data_out->fogNear = fog_near;
+			data_out->fogDensity = fog_density;
+
 			data_out->fogColor.xyzw.x = i2fl(fog_params.r) / 255.0f;
 			data_out->fogColor.xyzw.y = i2fl(fog_params.g) / 255.0f;
 			data_out->fogColor.xyzw.z = i2fl(fog_params.b) / 255.0f;

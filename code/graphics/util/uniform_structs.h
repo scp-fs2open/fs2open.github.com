@@ -87,7 +87,8 @@ struct model_uniform_data {
 	model_light lights[MAX_UNIFORM_LIGHTS];
 
 	float outlineWidth;
-	float tempPad[2];
+	float fogNear;
+	float fogDensity;
 	int buffer_matrix_offset;
 
 	vec4 clip_equation;
