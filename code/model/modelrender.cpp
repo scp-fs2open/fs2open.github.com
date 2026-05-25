@@ -1954,11 +1954,11 @@ float model_render_get_point_activation(const glow_point_bank* bank, const glow_
 void model_render_set_glow_points(const polymodel *pm, int objnum)
 {
 	int time = timestamp();
-	glow_point_bank_override *gpo = NULL;
+	glow_point_bank_override *gpo = nullptr;
 	bool override_all = false;
 	SCP_unordered_map<int, void*>::iterator gpoi;
-	ship_info *sip = NULL;
-	ship *shipp = NULL;
+	ship_info *sip = nullptr;
+	ship *shipp = nullptr;
 
 	if ( Glowpoint_override ) {
 		return;
@@ -2717,8 +2717,8 @@ void model_render_queue(const model_render_params* interp, model_draw_list* scen
 		scene->set_light_filter(pos, pm->rad);
 	}
 
-	ship *shipp = NULL;
-	object *objp = NULL;
+	ship *shipp = nullptr;
+	object *objp = nullptr;
 
 	if (objnum >= 0) {
 		objp = &Objects[objnum];
