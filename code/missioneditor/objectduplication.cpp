@@ -38,9 +38,14 @@ void clone_ship_instance_data(int src_shipnum, int dest_shipnum)
 	ai_info* src_ai = &Ai_info[src->ai_index];
 	ai_info* dest_ai = &Ai_info[dest->ai_index];
 
-	// display name string only - the Has_display_name bit rides along on the
-	// shipp->flags assignment further down (search "ship flags" below).
+	// display name (the Has_display_name flag is NOT in Parse_ship_flags, so the
+	// flag-copy loop below doesn't carry it - mirror it here alongside the string).
 	dest->display_name = src->display_name;
+	if (src->flags[Ship::Ship_Flags::Has_display_name]) {
+		dest->flags.set(Ship::Ship_Flags::Has_display_name);
+	} else {
+		dest->flags.remove(Ship::Ship_Flags::Has_display_name);
+	}
 
 	// alt classes
 	dest->s_alt_classes = src->s_alt_classes;
@@ -103,49 +108,52 @@ void clone_ship_instance_data(int src_shipnum, int dest_shipnum)
 
 	// ===== end save_common_object_data mirror =====
 
-	// arrival
-	dest->arrival_location = src->arrival_location;
-	dest->arrival_distance = src->arrival_distance;
-	dest->arrival_anchor = src->arrival_anchor;
-	dest->arrival_path_mask = src->arrival_path_mask;
-	dest->arrival_delay = src->arrival_delay;
-	dest->arrival_cue = dup_sexp_chain(src->arrival_cue);
+	// arrival / departure - skip entirely for player starts: create_player has
+	// already locked arrival_cue to Locked_sexp_true and departure_cue to
+	// Locked_sexp_false, and player starts ignore the other arrival/departure
+	// fields.  Overwriting the cues here would break the locked-cue invariant.
+	if (!dest_obj->flags[Object::Object_Flags::Player_ship]) {
+		dest->arrival_location = src->arrival_location;
+		dest->arrival_distance = src->arrival_distance;
+		dest->arrival_anchor = src->arrival_anchor;
+		dest->arrival_path_mask = src->arrival_path_mask;
+		dest->arrival_delay = src->arrival_delay;
+		dest->arrival_cue = dup_sexp_chain(src->arrival_cue);
 
-	// departure
-	dest->departure_location = src->departure_location;
-	dest->departure_anchor = src->departure_anchor;
-	dest->departure_path_mask = src->departure_path_mask;
-	dest->departure_delay = src->departure_delay;
-	dest->departure_cue = dup_sexp_chain(src->departure_cue);
+		dest->departure_location = src->departure_location;
+		dest->departure_anchor = src->departure_anchor;
+		dest->departure_path_mask = src->departure_path_mask;
+		dest->departure_delay = src->departure_delay;
+		dest->departure_cue = dup_sexp_chain(src->departure_cue);
+	}
 
 	// warp params
 	dest->warpin_params_index = src->warpin_params_index;
 	dest->warpout_params_index = src->warpout_params_index;
 
-	// ship flags
-	dest->flags = src->flags;
-	dest->flags.remove(Ship::Ship_Flags::Dying);
-	dest->flags.remove(Ship::Ship_Flags::Disabled);
-	dest->flags.remove(Ship::Ship_Flags::Depart_warp);
-	dest->flags.remove(Ship::Ship_Flags::Depart_dockbay);
+	// ship flags - driven by Parse_ship_flags so duplication stays in sync with
+	// parse/save automatically when new editor-editable ship flags are added.
+	// Runtime/transient flags (Dying, Depart_warp, From_player_wing, ...) and
+	// instance-coupled flags (Dock_leader) are not in Parse_ship_flags and so
+	// are correctly NOT copied here.
+	for (size_t i = 0; i < Num_Parse_ship_flags; ++i) {
+		const auto flag = Parse_ship_flags[i].def;
+		if (src->flags[flag]) {
+			dest->flags.set(flag);
+		} else {
+			dest->flags.remove(flag);
+		}
+	}
 
-	// object flags (Explicit list of the editor-editable bits from save_objects)
-	const Object::Object_Flags editor_object_flags[] = {
-		Object::Object_Flags::Protected,
-		Object::Object_Flags::No_shields,
-		Object::Object_Flags::Invulnerable,
-		Object::Object_Flags::Beam_protected,
-		Object::Object_Flags::Flak_protected,
-		Object::Object_Flags::Laser_protected,
-		Object::Object_Flags::Missile_protected,
-		Object::Object_Flags::Special_warpin,
-		Object::Object_Flags::Targetable_as_bomb,
-		Object::Object_Flags::Dont_change_position,
-		Object::Object_Flags::Dont_change_orientation,
-		Object::Object_Flags::Collides,
-		Object::Object_Flags::Attackable_if_no_collide,
-	};
-	for (auto flag : editor_object_flags) {
+	// object flags - driven by Parse_ship_object_flags.  Skip Player_ship: that
+	// bit is managed by create_player/create_ship at the caller and copying it
+	// would either redundantly re-set it (player-start -> player-start) or
+	// wrongly promote a regular-ship dup to a player ship (demoted dup case).
+	for (size_t i = 0; i < Num_Parse_ship_object_flags; ++i) {
+		const auto flag = Parse_ship_object_flags[i].def;
+		if (flag == Object::Object_Flags::Player_ship) {
+			continue;
+		}
 		if (src_obj->flags[flag]) {
 			dest_obj->flags.set(flag);
 		} else {
@@ -153,8 +161,18 @@ void clone_ship_instance_data(int src_shipnum, int dest_shipnum)
 		}
 	}
 
-	// AI flags
-	dest_ai->ai_flags = src_ai->ai_flags;
+	// AI flags - driven by Parse_ship_ai_flags so duplication stays in sync with
+	// parse/save automatically when new editor-editable AI flags are added.
+	for (size_t i = 0; i < Num_Parse_ship_ai_flags; ++i) {
+		const auto flag = Parse_ship_ai_flags[i].def;
+		if (src_ai->ai_flags[flag]) {
+			dest_ai->ai_flags.set(flag);
+		} else {
+			dest_ai->ai_flags.remove(flag);
+		}
+	}
+	// kamikaze_damage is editor-editable independent of the Kamikaze flag (see
+	// ShipFlagsDialogModel), so copy unconditionally.
 	dest_ai->kamikaze_damage = src_ai->kamikaze_damage;
 
 	// respawn / escort / guardian
@@ -265,8 +283,10 @@ void clone_jump_node_instance_data(const CJumpNode& src, CJumpNode& dest)
 	}
 
 	// color (SetAlphaColor manages the JN_USE_DISPLAY_COLOR flag)
-	const color& c = src.GetColor();
-	dest.SetAlphaColor(c.red, c.green, c.blue, c.alpha);
+	if (src.IsColored()) {
+		const color& c = src.GetColor();
+		dest.SetAlphaColor(c.red, c.green, c.blue, c.alpha);
+	}
 
 	// hidden state
 	dest.SetVisibility(!src.IsHidden());
