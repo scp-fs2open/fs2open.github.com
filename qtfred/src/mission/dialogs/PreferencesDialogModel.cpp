@@ -42,6 +42,8 @@ PreferencesDialogModel::PreferencesDialogModel(QObject* parent, EditorViewport* 
 }
 
 bool PreferencesDialogModel::apply() {
+	const bool darkModeChanged = (_viewport->Dark_mode != _darkMode);
+
 	_viewport->Offer_autosave_recovery   = _offerAutosaveRecovery;
 	_viewport->Move_ships_when_undocking = _moveShipsWhenUndocking;
 	_viewport->Always_save_display_names                = _alwaysSaveDisplayNames;
@@ -56,7 +58,9 @@ bool PreferencesDialogModel::apply() {
 	_viewport->toolbar_icon_size                = _toolbarIconSize;
 
 	_viewport->saveSettings();
-	applyEditorTheme(_darkMode);
+	if (darkModeChanged) {
+		applyEditorTheme(_darkMode);
+	}
 
 	auto& bindings = ControlBindings::instance();
 	for (const auto& entry : _controlKeys) {
