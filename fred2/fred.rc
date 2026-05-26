@@ -264,6 +264,14 @@ BEGIN
             MENUITEM "Show IFF 8",                  33089
             MENUITEM "Show IFF 9",                  32988
         END
+        POPUP "Outline LOD"
+        BEGIN
+            MENUITEM "LOD 0 (highest detail)",      33107
+            MENUITEM "LOD 1",                       33108, CHECKED
+            MENUITEM "LOD 2",                       33109
+            MENUITEM "LOD 3",                       33110
+            MENUITEM "LOD 4 (lowest detail)",       33111
+        END
         MENUITEM SEPARATOR
         MENUITEM "Hide Marked Objects",         33002
         MENUITEM "Show Hidden Objects",         33003

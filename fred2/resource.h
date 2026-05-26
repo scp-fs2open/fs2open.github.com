@@ -1456,6 +1456,11 @@
 #define ID_NEW_PROP_TYPE                33104
 #define ID_STATIC_SHIP_LABEL            33105
 #define ID_STATIC_PROP_LABEL            33106
+#define ID_OUTLINE_LOD_0                33107
+#define ID_OUTLINE_LOD_1                33108
+#define ID_OUTLINE_LOD_2                33109
+#define ID_OUTLINE_LOD_3                33110
+#define ID_OUTLINE_LOD_4                33111
 #define ID_VIEW_OUTLINES_ON_SELECTED    32982
 #define ID_SHOW_STARFIELD               32983
 #define ID_ASTEROID_EDITOR              32984
@@ -1581,7 +1586,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        335
-#define _APS_NEXT_COMMAND_VALUE         33104
+#define _APS_NEXT_COMMAND_VALUE         33112
 #define _APS_NEXT_CONTROL_VALUE         1705
 #define _APS_NEXT_SYMED_VALUE           105
 #endif

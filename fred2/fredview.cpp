@@ -171,6 +171,16 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_COMMAND(ID_CHANGE_VIEWPOINT_EXTERNAL, OnChangeViewpointExternal)
 	ON_UPDATE_COMMAND_UI(ID_CHANGE_VIEWPOINT_FOLLOW, OnUpdateChangeViewpointFollow)
 	ON_COMMAND(ID_CHANGE_VIEWPOINT_FOLLOW, OnChangeViewpointFollow)
+	ON_COMMAND(ID_OUTLINE_LOD_0, OnOutlineLod0)
+	ON_UPDATE_COMMAND_UI(ID_OUTLINE_LOD_0, OnUpdateOutlineLod0)
+	ON_COMMAND(ID_OUTLINE_LOD_1, OnOutlineLod1)
+	ON_UPDATE_COMMAND_UI(ID_OUTLINE_LOD_1, OnUpdateOutlineLod1)
+	ON_COMMAND(ID_OUTLINE_LOD_2, OnOutlineLod2)
+	ON_UPDATE_COMMAND_UI(ID_OUTLINE_LOD_2, OnUpdateOutlineLod2)
+	ON_COMMAND(ID_OUTLINE_LOD_3, OnOutlineLod3)
+	ON_UPDATE_COMMAND_UI(ID_OUTLINE_LOD_3, OnUpdateOutlineLod3)
+	ON_COMMAND(ID_OUTLINE_LOD_4, OnOutlineLod4)
+	ON_UPDATE_COMMAND_UI(ID_OUTLINE_LOD_4, OnUpdateOutlineLod4)
 	ON_COMMAND(ID_EDITORS_GOALS, OnEditorsGoals)
 	ON_COMMAND(ID_EDITORS_CUTSCENES, OnEditorsCutscenes)
 	ON_COMMAND(ID_SPEED1, OnSpeed1)
@@ -1669,6 +1679,28 @@ void CFREDView::OnChangeViewpointFollow()
 	view_obj = cur_object_index;
 	Update_window = 1;
 }
+
+void CFREDView::OnOutlineLod(int lod)
+{
+	Outline_lod = lod;
+	Update_window = 1;
+}
+
+void CFREDView::OnUpdateOutlineLod(int lod, CCmdUI* pCmdUI)
+{
+	pCmdUI->SetCheck(Outline_lod == lod);
+}
+
+void CFREDView::OnOutlineLod0() { OnOutlineLod(0); }
+void CFREDView::OnOutlineLod1() { OnOutlineLod(1); }
+void CFREDView::OnOutlineLod2() { OnOutlineLod(2); }
+void CFREDView::OnOutlineLod3() { OnOutlineLod(3); }
+void CFREDView::OnOutlineLod4() { OnOutlineLod(4); }
+void CFREDView::OnUpdateOutlineLod0(CCmdUI* pCmdUI) { OnUpdateOutlineLod(0, pCmdUI); }
+void CFREDView::OnUpdateOutlineLod1(CCmdUI* pCmdUI) { OnUpdateOutlineLod(1, pCmdUI); }
+void CFREDView::OnUpdateOutlineLod2(CCmdUI* pCmdUI) { OnUpdateOutlineLod(2, pCmdUI); }
+void CFREDView::OnUpdateOutlineLod3(CCmdUI* pCmdUI) { OnUpdateOutlineLod(3, pCmdUI); }
+void CFREDView::OnUpdateOutlineLod4(CCmdUI* pCmdUI) { OnUpdateOutlineLod(4, pCmdUI); }
 
 void CFREDView::OnEditorsGoals()
 {

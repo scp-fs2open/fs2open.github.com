@@ -126,6 +126,18 @@ protected:
 	afx_msg void OnChangeViewpointExternal();
 	afx_msg void OnUpdateChangeViewpointFollow(CCmdUI* pCmdUI);
 	afx_msg void OnChangeViewpointFollow();
+	afx_msg void OnOutlineLod0();
+	afx_msg void OnOutlineLod1();
+	afx_msg void OnOutlineLod2();
+	afx_msg void OnOutlineLod3();
+	afx_msg void OnOutlineLod4();
+	afx_msg void OnUpdateOutlineLod0(CCmdUI* pCmdUI);
+	afx_msg void OnUpdateOutlineLod1(CCmdUI* pCmdUI);
+	afx_msg void OnUpdateOutlineLod2(CCmdUI* pCmdUI);
+	afx_msg void OnUpdateOutlineLod3(CCmdUI* pCmdUI);
+	afx_msg void OnUpdateOutlineLod4(CCmdUI* pCmdUI);
+	void OnOutlineLod(int lod);
+	void OnUpdateOutlineLod(int lod, CCmdUI* pCmdUI);
 	afx_msg void OnEditorsGoals();
 	afx_msg void OnEditorsCutscenes();
 	afx_msg void OnSpeed1();

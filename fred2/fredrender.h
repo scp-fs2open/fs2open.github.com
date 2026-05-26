@@ -22,6 +22,7 @@ extern int Show_coordinates;        //!< Bool. If nonzero, draw the coordinates 
 extern int Show_outlines;           //!< Bool. If nonzero, draw each object's mesh. If models are shown, highlight them in white.
 extern bool Draw_outlines_on_selected_ships;	// If a ship is selected, draw mesh lines
 extern bool Draw_outline_at_warpin_position;	// Project an outline at the place where the ship will arrive after warping in
+extern int Outline_lod;				// The LOD to use for wireframe outlines (0 = highest detail, default 1)
 extern bool Always_save_display_names;	// When saving a mission, always write display names to the mission file even if the display name is not set.
 										// But ships in wings are excepted, because a display name will cause a ship to have the same name in every wave.
 										// Wings now support display names, or the ship-change-display-name SEXP can be used, to handle that case.
