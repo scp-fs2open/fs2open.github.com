@@ -118,7 +118,8 @@ namespace os
 	enum class OpenGLProfile
 	{
 		Core,
-		Compatibility
+		Compatibility,
+		ES
 	};
 
 	/**

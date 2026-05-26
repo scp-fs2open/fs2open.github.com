@@ -286,6 +286,8 @@ namespace animation {
 
 		virtual void update(polymodel_instance* pmi, const SCP_vector<std::any>& args) = 0;
 		virtual void initialize(ModelAnimationSet* parentSet, polymodel_instance* pmi) = 0;
+
+		void advanceToFinalState(polymodel_instance* pmi);
 	};
 
 
@@ -368,6 +370,7 @@ namespace animation {
 		SCP_set<SCP_string> getRegisteredAnimNames() const;
 
 		bool updateMoveable(polymodel_instance* pmi, const SCP_string& name, const SCP_vector<std::any>& args) const;
+		bool advanceMoveableToFinal(polymodel_instance* pmi, const SCP_string& name) const;
 		void initializeMoveables(polymodel_instance* pmi);
 		SCP_vector<SCP_string> getRegisteredMoveables() const;
 

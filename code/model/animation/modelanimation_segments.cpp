@@ -1522,7 +1522,7 @@ namespace animation {
 			ik->addNode(submodel, chainlink.constraint.get());
 		}
 		
-		ik->solve(m_targetPosition, &(*m_targetRotation));
+		ik->solve(m_targetPosition, m_targetRotation ? &*m_targetRotation : nullptr);
 		
 		auto chainlink_it = m_chain.cbegin();
 		for(const auto& solvedlink : *ik){

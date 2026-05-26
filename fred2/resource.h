@@ -1270,6 +1270,10 @@
 #define IDC_PROP_PREV                   1710
 #define IDC_PROP_NEXT                   1711
 #define IDC_PROP_FLAGS                  1712
+#define IDC_NEB2_FOG_1000M_VIS          1713
+#define IDC_NEB2_FOG_NEAR_DIST          1714
+#define IDC_NEB2_FOG_SKYBOX_CLIP        1715
+#define IDC_NEB2_FOG_CLIP               1716
 #define IDC_SEXP_POPUP_LIST             32770
 #define ID_FILE_MISSIONNOTES            32771
 #define ID_DUPLICATE                    32774
@@ -1454,6 +1458,11 @@
 #define ID_NEW_PROP_TYPE                33104
 #define ID_STATIC_SHIP_LABEL            33105
 #define ID_STATIC_PROP_LABEL            33106
+#define ID_OUTLINE_LOD_0                33107
+#define ID_OUTLINE_LOD_1                33108
+#define ID_OUTLINE_LOD_2                33109
+#define ID_OUTLINE_LOD_3                33110
+#define ID_OUTLINE_LOD_4                33111
 #define ID_VIEW_OUTLINES_ON_SELECTED    32982
 #define ID_SHOW_STARFIELD               32983
 #define ID_ASTEROID_EDITOR              32984
@@ -1572,10 +1581,7 @@
 #define ID_INDICATOR_LEFT               59143
 #define ID_INDICATOR_RIGHT              59144
 #define ID_INDICATOR_MODIFIED           59145
-#define IDC_NEB2_FOG_1000M_VIS          1705
-#define IDC_NEB2_FOG_NEAR_DIST          1706
-#define IDC_NEB2_FOG_SKYBOX_CLIP        1707
-#define IDC_NEB2_FOG_CLIP               1708
+
 
 // Next default values for new objects
 //
@@ -1584,7 +1590,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        335
 #define _APS_NEXT_COMMAND_VALUE         33104
-#define _APS_NEXT_CONTROL_VALUE         1709
+#define _APS_NEXT_CONTROL_VALUE         1717
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif
