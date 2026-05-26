@@ -3,6 +3,8 @@
 
 #include "intelentry.h"
 #include "menuui/techmenu.h"
+#include "model/modelrender.h"
+#include "scripting/api/objs/vecmath.h"
 
 namespace scripting {
 namespace api {
@@ -196,6 +198,82 @@ ADE_FUNC(getIntelEntryIndex, l_Intelentry, nullptr, "Gets the index value of the
 		return ade_set_args(L, "i", -1);
 
 	return ade_set_args(L, "i", idx + 1); // Lua is 1-based
+}
+
+ADE_FUNC(renderTechModel,
+	l_Intelentry,
+	"number X1, number Y1, number X2, number Y2, [number RotationPercent =40, number PitchPercent =0, number "
+	"BankPercent=0, number Zoom=1.3, boolean Lighting=true]",
+	"Draws the intel entry's tech model. True for regular lighting, false for flat lighting. Returns false if the intel entry has no tech model defined.",
+	"boolean",
+	"Whether the intel entry was rendered")
+{
+	int x1, y1, x2, y2;
+	angles rot_angles = {0.0f, 0.0f, 40.0f};
+	int idx;
+	float zoom = 1.3f;
+	bool lighting = true;
+	if (!ade_get_args(L, "oiiii|ffffb", l_Intelentry.Get(&idx), &x1, &y1, &x2, &y2, &rot_angles.h, &rot_angles.p, &rot_angles.b, &zoom, &lighting))
+		return ade_set_error(L, "b", false);
+
+	if (idx < 0 || idx >= intel_info_size())
+		return ade_set_args(L, "b", false);
+
+	if (x2 < x1 || y2 < y1)
+		return ade_set_args(L, "b", false);
+
+	intel_data* iip = &Intel_info[idx];
+
+	if (!VALID_FNAME(iip->tech_model))
+		return ade_set_args(L, "b", false);
+
+	CLAMP(rot_angles.p, 0.0f, 100.0f);
+	CLAMP(rot_angles.b, 0.0f, 100.0f);
+	CLAMP(rot_angles.h, 0.0f, 100.0f);
+
+	// Handle angles
+	matrix orient = vmd_identity_matrix;
+	angles view_angles = {-0.6f, 0.0f, 0.0f};
+	vm_angles_2_matrix(&orient, &view_angles);
+
+	rot_angles.p = (rot_angles.p * 0.01f) * PI2;
+	rot_angles.b = (rot_angles.b * 0.01f) * PI2;
+	rot_angles.h = (rot_angles.h * 0.01f) * PI2;
+	vm_rotate_matrix_by_angles(&orient, &rot_angles);
+
+	return ade_set_args(L, "b", render_tech_model(TECH_POF, x1, y1, x2, y2, zoom, lighting, -1, &orient, iip->tech_model, iip->closeup_zoom, &iip->closeup_pos));
+}
+
+// Nuke's alternate tech model rendering function
+ADE_FUNC(renderTechModel2,
+	l_Intelentry,
+	"number X1, number Y1, number X2, number Y2, [orientation Orientation=nil, number Zoom=1.3]",
+	"Draws the intel entry's tech model. Returns false if the intel entry has no tech model defined.",
+	"boolean",
+	"Whether the intel entry was rendered")
+{
+	int x1, y1, x2, y2;
+	int idx;
+	float zoom = 1.3f;
+	matrix_h* mh = nullptr;
+	if (!ade_get_args(L, "oiiii|of", l_Intelentry.Get(&idx), &x1, &y1, &x2, &y2, l_Matrix.GetPtr(&mh), &zoom))
+		return ade_set_error(L, "b", false);
+
+	if (idx < 0 || idx >= intel_info_size())
+		return ade_set_args(L, "b", false);
+
+	if (x2 < x1 || y2 < y1)
+		return ade_set_args(L, "b", false);
+
+	intel_data* iip = &Intel_info[idx];
+
+	if (!VALID_FNAME(iip->tech_model))
+		return ade_set_args(L, "b", false);
+
+	matrix identity_orient = vmd_identity_matrix;
+	matrix* orient = mh != nullptr ? mh->GetMatrix() : &identity_orient;
+
+	return ade_set_args(L, "b", render_tech_model(TECH_POF, x1, y1, x2, y2, zoom, true, -1, orient, iip->tech_model, iip->closeup_zoom, &iip->closeup_pos));
 }
 
 

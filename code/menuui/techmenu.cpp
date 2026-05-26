@@ -322,7 +322,7 @@ void techroom_select_new_entry()
 				if ((i < Cur_entry + 5) && (i > Cur_entry - 5) )
 					continue;
 
-				mprintf(("TECH ROOM: Dumping excess ship textures...\n"));
+				mprintf(("TECH ROOM: Dumping excess textures...\n"));
 
 				model_page_out_textures(list_entry.model_num);
 
@@ -345,6 +345,44 @@ void techroom_select_new_entry()
 
 
 		Trackball_mode = 0;
+
+		// Intel entries can specify a tech model and, if present, it takes priority over the animation
+		if (Tab == INTEL_DATA_TAB) {
+			intel_data* iip = &Intel_info[Cur_entry_index];
+
+			if (VALID_FNAME(iip->tech_model)) {
+				int i = 0;
+				
+				for (auto& list_entry : *Current_list) {
+					if ((list_entry.model_num > -1) && (list_entry.textures_loaded)) {
+						if ((i < Cur_entry + 5) && (i > Cur_entry - 5))
+							continue;
+
+						mprintf(("TECH ROOM: Dumping excess textures...\n"));
+
+						model_page_out_textures(list_entry.model_num);
+
+						list_entry.textures_loaded = 0;
+					}
+					i++;
+				}
+
+				Techroom_modelnum = model_load(iip->tech_model, nullptr, ErrorType::WARNING);
+
+				if (Techroom_modelnum >= 0) {
+					Current_list->at(Cur_entry).model_num = Techroom_modelnum;
+
+					// intel index isn't a ship_info index; pass -1 so we skip ship-specific paging
+					model_page_in_textures(Techroom_modelnum);
+
+					Current_list->at(Cur_entry).textures_loaded = 1;
+
+					techroom_init_desc(Current_list->at(Cur_entry).desc, Tech_desc_coords[gr_screen.res][SHIP_W_COORD]);
+					fsspeech_play(FSSPEECH_FROM_TECHROOM, Current_list->at(Cur_entry).desc);
+					return;
+				}
+			}
+		}
 
 		// load animation here, we now only have one loaded
 		int stream_result = generic_anim_init_and_stream(&Current_list->at(Cur_entry).animation, Current_list->at(Cur_entry).tech_anim_filename, bm_get_type(Tech_background_bitmap), true);
@@ -544,6 +582,12 @@ void techroom_ships_render(float frametime)
 		if (sip->flags[Ship::Info_Flags::No_lighting])
 			noLighting = true;
 
+	} else if (Tab == INTEL_DATA_TAB) {
+		intel_data* iip = &Intel_info[Cur_entry_index];
+
+		rev_rate *= 3.0f;
+		closeup_pos = iip->closeup_pos;
+		closeup_zoom = iip->closeup_zoom;
 	} else {
 		weapon_info* wip = &Weapon_info[Cur_entry_index];
 
@@ -1075,6 +1119,9 @@ static void intel_info_init(intel_data* inteli)
 	inteli->name[0] = '\0';
 	inteli->desc = "";
 	inteli->anim_filename[0] = '\0';
+	inteli->tech_model[0] = '\0';
+	inteli->closeup_pos = vmd_zero_vector;
+	inteli->closeup_zoom = 0.5f;
 	inteli->flags = IIF_DEFAULT_VALUE;
 	inteli->custom_data = {};
 }
@@ -1130,6 +1177,39 @@ void parse_intel_table(const char* filename)
 
 			if (optional_string("$Anim:")) {
 				stuff_string(intel_p->anim_filename, F_NAME, NAME_LENGTH);
+			}
+
+			if (optional_string("$Tech Model:")) {
+				stuff_string(intel_p->tech_model, F_NAME, NAME_LENGTH);
+
+				if (optional_string("+Closeup_pos:")) {
+					stuff_vec3d(&intel_p->closeup_pos);
+				} else if (VALID_FNAME(intel_p->tech_model)) {
+					// auto-calculate the closeup position from the model
+					int model_idx = model_load(intel_p->tech_model, nullptr, ErrorType::WARNING);
+					if (model_idx >= 0) {
+						polymodel *pm = model_get(model_idx);
+
+						intel_p->closeup_pos.xyz.z = fabsf(pm->maxs.xyz.z);
+
+						float temp = fabsf(pm->mins.xyz.z);
+						if (temp > intel_p->closeup_pos.xyz.z)
+							intel_p->closeup_pos.xyz.z = temp;
+
+						intel_p->closeup_pos.xyz.z *= -2.0f;
+
+						model_unload(model_idx);
+					}
+				}
+
+				if (optional_string("+Closeup_zoom:")) {
+					stuff_float(&intel_p->closeup_zoom);
+
+					if (intel_p->closeup_zoom <= 0.0f) {
+						mprintf(("Warning!  Intel entry '%s' has a +Closeup_zoom value that is less than or equal to 0 (%f). Setting to default value.\n", intel_p->name, intel_p->closeup_zoom));
+						intel_p->closeup_zoom = 0.5f;
+					}
+				}
 			}
 
 			if (optional_string("$AlwaysInTechRoom:")) {
@@ -1481,7 +1561,11 @@ void techroom_do_frame(float frametime)
 			break;
 
 		case INTEL_DATA_TAB:
-			techroom_anim_render(frametime);
+			if (Techroom_modelnum >= 0) {
+				techroom_ships_render(frametime);
+			} else {
+				techroom_anim_render(frametime);
+			}
 			break;
 	}
 

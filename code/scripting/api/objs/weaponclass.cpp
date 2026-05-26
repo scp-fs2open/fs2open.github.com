@@ -1093,8 +1093,8 @@ ADE_FUNC(isValid, l_Weaponclass, NULL, "Detects whether handle is valid", "boole
 
 ADE_FUNC(renderTechModel,
 	l_Weaponclass,
-	"number X1, number Y1, number X2, number Y2, [number RotationPercent =0, number PitchPercent =0, number "
-	"BankPercent=40, number Zoom=1.3, boolean Lighting=true]",
+	"number X1, number Y1, number X2, number Y2, [number RotationPercent =40, number PitchPercent =0, number "
+	"BankPercent=0, number Zoom=1.3, boolean Lighting=true]",
 	"Draws weapon tech model. True for regular lighting, false for flat lighting.",
 	"boolean",
 	"Whether weapon was rendered")

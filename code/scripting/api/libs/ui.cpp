@@ -876,9 +876,9 @@ ADE_FUNC(commitToMission,
 
 ADE_FUNC(renderBriefingModel,
 	l_UserInterface_Brief,
-	"string PofName, number CloseupZoom, vector CloseupPos, number X1, number Y1, number X2, number Y2, [number RotationPercent =0, number PitchPercent =0, "
+	"string PofName, number CloseupZoom, vector CloseupPos, number X1, number Y1, number X2, number Y2, [number RotationPercent =40, number PitchPercent =0, "
 	"number "
-	"BankPercent=40, number Zoom=1.3, boolean Lighting=true, boolean Jumpnode=false]",
+	"BankPercent=0, number Zoom=1.3, boolean Lighting=true, boolean Jumpnode=false]",
 	"Draws a pof. True for regular lighting, false for flat lighting.",
 	"boolean",
 	"Whether pof was rendered")

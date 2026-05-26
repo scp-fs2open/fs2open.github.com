@@ -21,6 +21,9 @@ typedef struct intel_data {
 	char anim_filename[NAME_LENGTH];
 	int  flags;
 	SCP_map<SCP_string, SCP_string> custom_data;
+	char tech_model[NAME_LENGTH];
+	vec3d closeup_pos;
+	float closeup_zoom;
 } intel_data;
 
 // flags by Goober5000
