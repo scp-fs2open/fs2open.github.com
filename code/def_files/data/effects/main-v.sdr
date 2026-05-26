@@ -1,5 +1,15 @@
 //? #version 150
+#ifdef GL_ES
+#extension GL_EXT_gpu_shader5: enable
+precision highp float;
+precision highp int;
+precision highp sampler2D;
+precision highp sampler2DArray;
+precision highp samplerCube;
+precision highp samplerBuffer;
+#else
 #extension GL_ARB_gpu_shader5: enable
+#endif
 
 #include "shadows.sdr"
 
@@ -108,7 +118,7 @@ out VertexOutput {
 #prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_FOG
 
 #ifdef MODEL_SDR_FLAG_SHADOW_MAP
- #if !defined(GL_ARB_gpu_shader5)
+ #if !defined(GL_ARB_gpu_shader5) && !defined(GL_EXT_gpu_shader5) 
 	float instance;
  #endif
 	// This flag is needed to let the geometry shader know that it doesn't need to apply the
@@ -124,6 +134,10 @@ out VertexOutput {
 	vec4 shadowUV[4];
 	vec4 shadowPos;
 #prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
+
+#ifdef GL_ES
+    float vClipDist;
+#endif
 } vertOut;
 
 #define TEXELS_PER_MATRIX 4
@@ -164,7 +178,7 @@ void main()
 	position = modelViewMatrix * orient * vertex;
 	#ifdef MODEL_SDR_FLAG_SHADOW_MAP
 		gl_Position = position;
-		#if !defined(GL_ARB_gpu_shader5)
+		#if !defined(GL_ARB_gpu_shader5) && !defined(GL_EXT_gpu_shader5) 
 			#ifdef APPLE
 				vertOut.instance = float(gl_InstanceIDARB);
 			#else
@@ -202,11 +216,21 @@ void main()
 		#endif
 	#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_TRANSFORM
 
-	if(use_clip_plane) {
-		gl_ClipDistance[0] = dot(clip_equation, modelMatrix * orient * vertex);
-	} else {
-		gl_ClipDistance[0] = 1.0;
-	}
+	#ifdef GL_ES
+		if (use_clip_plane) {
+			vertOut.vClipDist = dot(clip_equation, modelMatrix * orient * vertex); 
+		} else {
+			vertOut.vClipDist = 1.0;
+		}
+	#else
+		if (use_clip_plane) {
+			gl_ClipDistance[0] = dot(clip_equation, modelMatrix * orient * vertex);
+		} else {
+			gl_ClipDistance[0] = 1.0;
+		}
+	#endif
+
+
 
 	#ifndef MODEL_SDR_FLAG_SHADOW_MAP
 		vertOut.position = position;

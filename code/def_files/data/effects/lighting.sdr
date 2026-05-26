@@ -8,7 +8,7 @@ const int LT_AMBIENT		= 4;		// Directionless ambient light
 const float SPEC_FACTOR_NO_SPEC_MAP		= 0.1;
 const float GLOW_MAP_INTENSITY			= 1.5;
 const float GLOW_MAP_SRGB_MULTIPLIER	= 3.0;
-const float PI = 3.14159f;
+const float PI = 3.14159265359;
 
 
 vec3 FresnelSchlick(vec3 halfVec, vec3 view, vec3 specColor)
@@ -57,7 +57,7 @@ vec3 ComputeGGX(vec3 specColor, vec3 diffColor, vec3 light, vec3 normal, vec3 ha
 
 
 
-	vec3 specular = distribution * fresnel * geometry / (4*dotNV*dotNL + 0.0001);
+	vec3 specular = distribution * fresnel * geometry / (4.0*dotNV*dotNL + 0.0001);
 	
 	// Diffuse term - Lambertian, kD represents energy lost to specular reflection.
 	vec3 kD = vec3(1.0)-fresnel;
@@ -70,7 +70,7 @@ vec3 ComputeGGX(vec3 specColor, vec3 diffColor, vec3 light, vec3 normal, vec3 ha
 vec3 computeLighting(vec3 specColor, vec3 diffColor, vec3 light, vec3 normal, vec3 halfVec, vec3 view, float roughness, float fresnelFactor, float dotNL) 
 {
 	#ifdef FLAG_LIGHT_MODEL_BLINN_PHONG
-	return SpecularBlinnPhong(specColor, light, normal, halfVec, 32, fresnelFactor, dotNL);
+	return SpecularBlinnPhong(specColor, light, normal, halfVec, 32.0, fresnelFactor, dotNL);
 	#else
 	return ComputeGGX(specColor, diffColor, light, normal, halfVec, view, roughness, fresnelFactor, dotNL);
 	#endif

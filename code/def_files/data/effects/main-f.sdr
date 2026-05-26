@@ -1,4 +1,12 @@
 //? #version 150
+#ifdef GL_ES
+precision highp float;
+precision highp int;
+precision highp sampler2D;
+precision highp sampler2DArray;
+precision highp samplerCube;
+#endif
+
 #include "shadows.sdr" //! #include "shadows.sdr"
 #include "lighting.sdr" //! #include "lighting.sdr"
 #include "gamma.sdr" //! #include "gamma.sdr"
@@ -110,6 +118,10 @@ in VertexOutput {
 	vec4 shadowUV[4];
 	vec4 shadowPos;
 #prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
+
+#ifdef GL_ES
+    float vClipDist;
+#endif
 } vertIn;
 
 #prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_DIFFUSE
@@ -138,10 +150,10 @@ uniform sampler2DArray shadow_map;
 out vec4 fragOut0;
 
 #ifndef MODEL_SDR_FLAG_SHADOW_MAP
-out vec4 fragOut1;
-out vec4 fragOut2;
-out vec4 fragOut3;
-out vec4 fragOut4;
+layout(location=1)out vec4 fragOut1;
+layout(location=2)out vec4 fragOut2;
+layout(location=3)out vec4 fragOut3;
+layout(location=4)out vec4 fragOut4;
 #endif
 
 vec3 FresnelLazarovEnv(vec3 specColor, vec3 view, vec3 normal, float gloss)
@@ -203,6 +215,10 @@ vec3 CalculateLighting(vec3 normal, vec3 diffuseMaterial, vec3 specularMaterial,
 
 void main()
 {
+	#ifdef GL_ES
+		if (vertIn.vClipDist < 0.0) discard;
+	#endif
+	
 	#ifdef MODEL_SDR_FLAG_SHADOW_MAP
 		// need depth and depth squared for variance shadow maps
 		fragOut0 = vec4(vertIn.position.z, vertIn.position.z * vertIn.position.z * VARIANCE_SHADOW_SCALE_INV, 0.0, 1.0);
@@ -418,11 +434,11 @@ void main()
 		#prereplace IF_NOT_FLAG MODEL_SDR_FLAG_LIGHT
 			#prereplace IF_FLAG MODEL_SDR_FLAG_SPEC
 				baseColor.rgb += pow(1.0 - clamp(dot(eyeDir, normal), 0.0, 1.0), 5.0 * clamp(glossData, 0.01, 1.0)) * specColor.rgb;
-				glossData = 0;
+				glossData = 0.0f;
 			#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_SPEC
 			// If there is no lighting then we copy the color data so far into the emissive.
 			emissiveColor.rgb += baseColor.rgb;
-			aoFactors.x = 0;
+			aoFactors.x = 0.0f;
 		#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_LIGHT
 	#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_DEFERRED
 

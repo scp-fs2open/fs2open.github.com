@@ -1,3 +1,9 @@
+#ifdef GL_ES
+precision highp float;
+precision highp int;
+precision highp sampler2D;
+precision highp sampler2DArray;
+#endif
 
 // NOTE: The technique and some of this code is based on this tutorial:
 // http://martindevans.me/game-development/2015/02/27/Drawing-Stuff-On-Other-Stuff-With-Deferred-Screenspace-Decals/
@@ -6,9 +12,9 @@
 #include "normals.sdr"
 #include "gamma.sdr"
 
-out vec4 fragOut0; // Diffuse buffer
-out vec4 fragOut1; // Normal buffer
-out vec4 fragOut2; // Emissive buffer
+layout (location=0) out vec4 fragOut0; // Diffuse buffer  -> COLOR_ATTACHMENT0
+layout (location=2) out vec4 fragOut1; // Normal buffer   -> COLOR_ATTACHMENT2
+layout (location=4) out vec4 fragOut2; // Emissive buffer -> COLOR_ATTACHMENT4
 
 flat in mat4 invModelMatrix;
 flat in vec3 decalDirection;
@@ -16,12 +22,21 @@ flat in float normal_angle_cutoff;
 flat in float angle_fade_start;
 flat in float alpha_scale;
 
+#ifdef GL_ES
+uniform highp sampler2D gDepthBuffer;
+uniform highp sampler2D gNormalBuffer;
+
+uniform highp sampler2DArray diffuseMap;
+uniform highp sampler2DArray glowMap;
+uniform highp sampler2DArray normalMap;
+#else
 uniform sampler2D gDepthBuffer;
 uniform sampler2D gNormalBuffer;
 
 uniform sampler2DArray diffuseMap;
 uniform sampler2DArray glowMap;
 uniform sampler2DArray normalMap;
+#endif
 
 layout (std140) uniform decalGlobalData {
 	mat4 viewMatrix;
@@ -82,7 +97,7 @@ vec3 getPixelNormal(vec3 frag_position, vec2 tex_coord, inout float alpha, out v
 	}
 
 	// Make a smooth alpha transition leading up to an edge
-	alpha = alpha * (1 - smoothstep(angle_fade_start, normal_angle_cutoff, angle));
+	alpha = alpha * (1.0 - smoothstep(angle_fade_start, normal_angle_cutoff, angle));
 
 	return normal;
 }

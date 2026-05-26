@@ -1,3 +1,10 @@
+#ifdef GL_ES
+precision highp float;
+precision highp int;
+precision highp sampler2D;
+precision highp sampler2DArray;
+precision highp samplerCube;
+#endif
 
 #include "gamma.sdr"
 #include "z-compress.sdr"
@@ -7,10 +14,15 @@ in vec4 fragPosition;
 in vec4 fragTexCoord;
 in vec4 fragColor;
 
-out vec4 fragOut0;
+layout (location=0) out vec4 fragOut0;
 
+#ifdef GL_ES
+uniform highp sampler2DArray baseMap;
+uniform highp sampler2D depthMap;
+#else
 uniform sampler2DArray baseMap;
 uniform sampler2D depthMap;
+#endif
 
 layout (std140) uniform genericData {
 	float window_width;

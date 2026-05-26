@@ -1,3 +1,9 @@
+#ifdef GL_ES
+precision highp float;
+precision highp int;
+precision highp sampler2D;
+precision highp sampler2DArray;
+#endif
 
 #include "gamma.sdr"
 
@@ -6,9 +12,13 @@ const float EMISSIVE_GAIN = 2.0;
 in vec4 fragImpactUV;
 in float fragNormOffset;
 
-out vec4 fragOut0;
+layout (location=0) out vec4 fragOut0;
 
+#ifdef GL_ES
+uniform highp sampler2DArray shieldMap;
+#else
 uniform sampler2DArray shieldMap;
+#endif
 
 layout (std140) uniform genericData {
 	mat4 shieldModelViewMatrix;

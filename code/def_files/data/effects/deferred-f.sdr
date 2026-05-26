@@ -1,10 +1,23 @@
 //? #version 150
+#ifdef GL_ES
+precision highp float;
+precision highp int;
+precision highp sampler2D;
+precision highp sampler2DArray;
+precision highp samplerCube;
+#endif
+
 #include "lighting.sdr" //! #include "lighting.sdr"
 #include "gamma.sdr" //! #include "gamma.sdr"
 #include "shadows.sdr" //! #include "shadows.sdr"
 #include "z-compress.sdr" //! #include "z-compress.sdr"
 
-out vec4 fragOut0;
+layout(location = 0) out vec4 fragOut0;
+layout(location = 1) out vec4 fragOut1;
+layout(location = 2) out vec4 fragOut2;
+layout(location = 3) out vec4 fragOut3;
+layout(location = 4) out vec4 fragOut4;
+layout(location = 5) out vec4 fragOut5;
 
 uniform sampler2D ColorBuffer;
 uniform sampler2D NormalBuffer;
@@ -93,7 +106,7 @@ void GetLightInfo(vec3 position, in float alpha, in vec3 reflectDir, out vec3 li
 			lightDirOut = ExpandLightSize(lightDirOut, reflectDir);
 			dist = length(lightDirOut);
 			// Energy conservation term
-			float alpha_adjust = clamp(alpha + (sourceRadius/(2*dist)), 0.0, 1.0);
+			float alpha_adjust = clamp(alpha + (sourceRadius/(2.0*dist)), 0.0, 1.0);
 			area_normalisation = alpha/alpha_adjust;
 			area_normalisation *= area_normalisation;
 			//end chunk
@@ -135,7 +148,7 @@ void GetLightInfo(vec3 position, in float alpha, in vec3 reflectDir, out vec3 li
 			lightDirOut = ExpandLightSize(lightDirOut, reflectDir);
 			float dist = length(lightDirOut);
 			// Energy conservation term
-			float alpha_adjust = min(alpha + (sourceRadius/(2*dist)), 1.0);
+			float alpha_adjust = min(alpha + (sourceRadius/(2.0*dist)), 1.0);
 			area_normalisation = alpha/alpha_adjust;
 			// don't need to square as it's a line rather than a sphere.
 			//end chunk
@@ -181,11 +194,11 @@ void ComputeEnvLight(float alpha, float ao, vec3 light_dir, vec3 eyeDir, vec3 no
 	// so let s = (2/alpha^2 - 2)
 	// 1/2 log(s + 1) = 1/2 log(2/alpha^2 -1)
 
-	const float ENV_REZ = 512; // Ideally this would be #define'd and shader recompiled with envmap rez changes
-	const float REZ_BIAS = log2(ENV_REZ * sqrt(3));
+	const float ENV_REZ = 512.0; // Ideally this would be #define'd and shader recompiled with envmap rez changes
+	const float REZ_BIAS = log2(ENV_REZ * sqrt(3.0));
 
 	float alphaSqr = alpha * alpha;
-	float rough_bias = 0.5 * log2(2/alphaSqr - 1);
+	float rough_bias = 0.5 * log2(2.0/alphaSqr - 1.0);
 	float mip_bias = REZ_BIAS - rough_bias;
 
 	// Sample light, using mip bias to blur it.
@@ -203,7 +216,7 @@ void ComputeEnvLight(float alpha, float ao, vec3 light_dir, vec3 eyeDir, vec3 no
 	// Pseudo-IBL, so use k_IBL
 	float k = alpha * alpha/ 2.0f;
 
-	float NdotL = max(dot(light_dir, normal),0);
+	float NdotL = max(dot(light_dir, normal),0.0);
 
 	float g1vNL = GeometrySchlickGGX(NdotL, k);
 	vec3 specEnvLighting = specEnvColour.rgb * fresnel * g1vNL;
@@ -273,6 +286,11 @@ void main()
 		float NdotL = clamp(dot(normal, lightDir), 0.0, 1.0);
 		fragmentColor.rgb = computeLighting(specColor.rgb, diffColor, lightDir, normal.xyz, halfVec, eyeDir, roughness, fresnel, NdotL).rgb * diffuseLightColor * attenuation * area_normalisation;
 	}
+	
+	#ifdef GL_ES
+		fragOut5 = max(fragmentColor, vec4(0.0));
+	#else
+		fragOut0 = max(fragmentColor, vec4(0.0));
+	#endif
 
-	fragOut0 = max(fragmentColor, vec4(0.0));
 }

@@ -1,3 +1,9 @@
+#ifdef GL_ES
+precision highp float;
+precision highp int;
+precision highp sampler2D;
+precision highp sampler2DArray;
+#endif
 
 // Enabled at all times but the define is kept here in case this should be configurable in the future
 #define EDGE_AA

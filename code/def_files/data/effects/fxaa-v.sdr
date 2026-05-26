@@ -1,8 +1,16 @@
+#ifdef GL_ES
+precision highp float;
+precision highp int;
+#endif
 
 in vec4 vertPosition;
 
 out vec2 v_rcpFrame;
+#ifdef GL_ES
+out vec2 v_pos;
+#else
 noperspective out vec2 v_pos;
+#endif
 
 layout (std140) uniform genericData {
 	float rt_w;

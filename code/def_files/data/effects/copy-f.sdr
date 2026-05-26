@@ -1,5 +1,12 @@
+#ifdef GL_ES
+precision highp float;
+precision highp int;
+precision highp sampler2D;
+precision highp sampler2DArray;
+#endif
+
 in vec4 fragTexCoord;
-out vec4 fragOut0;
+layout(location=0) out vec4 fragOut0;
 
 #ifdef COPY_ARRAY
 uniform sampler2DArray tex;
@@ -10,7 +17,7 @@ uniform sampler2D tex;
 void main()
 {
 #ifdef COPY_ARRAY
-	fragOut0 = texture(tex, vec3(fragTexCoord.xy, 0));
+	fragOut0 = texture(tex, vec3(fragTexCoord.xy, 0.0));
 #else
 	fragOut0 = texture(tex, fragTexCoord.xy);
 #endif
