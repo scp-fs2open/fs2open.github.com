@@ -1,3 +1,4 @@
+#include "z-compress.sdr"
 #ifdef GL_ES
 precision highp float;
 precision highp int;
