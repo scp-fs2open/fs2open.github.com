@@ -1042,7 +1042,7 @@ int Editor::common_object_delete(int obj) {
 			return 1;
 		}
 
-		Assert((i >= 0) && (i < MAX_SHIPS));
+		Assertion((i >= 0) && (i < MAX_SHIPS), "Invalid ship index %d in player-start delete path", i); // NOLINT(readability-simplify-boolean-expr)
 		sprintf(msg, "Player %d", i + 1);
 		name = msg;
 		r = reference_handler(name, sexp_ref_type::PLAYER, obj);
