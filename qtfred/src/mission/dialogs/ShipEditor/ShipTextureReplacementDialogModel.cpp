@@ -104,71 +104,75 @@ void ShipTextureReplacementDialogModel::initializeData(bool multi)
 	}
 
 	if (!_multi) {
-		for (auto& Fred_texture_replacement : Fred_texture_replacements)
-		{
-			if (!stricmp(Ships[_editor->cur_ship].ship_name, Fred_texture_replacement.ship_name) && !(Fred_texture_replacement.from_table))
-			{
-				// old_texture is stored as the bare base name by this dialog (no type suffix).
-				// However, entries loaded from old mission files may have a type suffix
-				// (e.g. "fenris-body-misc"), so fall back to stripping if no direct match.
-				SCP_string pureName = Fred_texture_replacement.old_texture;
+		// Two-pass load: collect mains first so subtype inherit detection (pass 2) compares
+		// against a fully-loaded main regardless of entry ordering in Fred_texture_replacements.
+		// The type is taken from old_texture's suffix (authoritative... saveSubMap writes
+		// "<base>-<type>") rather than from new_texture, which can legitimately contain hyphens.
+		struct DeferredSubtype {
+			size_t index;
+			SCP_string type;
+			SCP_string newText;
+		};
+		SCP_vector<DeferredSubtype> deferred;
 
-				// Find the matching default texture slot.
-				// Try direct match first; fall back to stripping the last '-' segment
-				// for old mission-file entries that stored old_texture with a type suffix.
-				size_t matchIdx = _defaultTextures.size();
-				for (size_t i = 0; i < _defaultTextures.size(); i++) {
-					if (lcase_equal(_defaultTextures[i], pureName)) {
-						matchIdx = i;
-						break;
-					}
-				}
-				if (matchIdx == _defaultTextures.size()) {
-					auto stripPos = pureName.find_last_of('-');
-					if (stripPos != SCP_string::npos) {
-						SCP_string stripped = pureName.substr(0, stripPos);
-						for (size_t i = 0; i < _defaultTextures.size(); i++) {
-							if (lcase_equal(_defaultTextures[i], stripped)) {
-								matchIdx = i;
-								break;
-							}
-						}
-					}
-				}
+		for (const auto& tr : Fred_texture_replacements) {
+			if (tr.from_table)
+				continue;
+			if (stricmp(Ships[_editor->cur_ship].ship_name, tr.ship_name) != 0)
+				continue;
 
-				if (matchIdx < _defaultTextures.size())
-				{
-					size_t i = matchIdx;
-					{
-						SCP_string newText = Fred_texture_replacement.new_texture;
-						SCP_string type;
-						{
-							auto npos = newText.find_last_of('-');
-							if (npos != SCP_string::npos) {
-								SCP_string possibleType = newText.substr(npos + 1);
-								// Only treat the suffix as a type if it's a known sub-texture type.
-								// Texture names themselves can contain hyphens (e.g. "fighter01-01a"),
-								// so we must not blindly strip the last segment.
-								if (is_known_subtexture_type(possibleType)) {
-									type = possibleType;
-									newText = newText.substr(0, npos);
-								}
-							}
-						}
-						if (!type.empty()) {
-							if (is_known_subtexture_type(type)) {
-								_currentTextures[i][type] = newText;
-								_replaceMap[i][type] = true;
-								_inheritMap[i][type] = !_currentTextures[i]["main"].empty() &&
-									lcase_equal(newText, _currentTextures[i]["main"]);
-							}
-						}
-						else {
-							_currentTextures[i]["main"] = newText;
-						}
-					}
+			SCP_string oldName = tr.old_texture;
+
+			// Direct match -> main entry (old_texture is the bare base name).
+			size_t matchIdx = _defaultTextures.size();
+			for (size_t i = 0; i < _defaultTextures.size(); i++) {
+				if (lcase_equal(_defaultTextures[i], oldName)) {
+					matchIdx = i;
+					break;
 				}
 			}
+			if (matchIdx < _defaultTextures.size()) {
+				_currentTextures[matchIdx]["main"] = tr.new_texture;
+				continue;
+			}
+
+			// Fall back to stripping the suffix -> subtype entry, also handles old mission
+			// files that stored "<base>-<type>" as old_texture.
+			auto stripPos = oldName.find_last_of('-');
+			if (stripPos == SCP_string::npos)
+				continue;
+			SCP_string suffix = oldName.substr(stripPos + 1);
+			if (!is_known_subtexture_type(suffix))
+				continue;
+			SCP_string stripped = oldName.substr(0, stripPos);
+			for (size_t i = 0; i < _defaultTextures.size(); i++) {
+				if (lcase_equal(_defaultTextures[i], stripped)) {
+					deferred.push_back({i, suffix, tr.new_texture});
+					break;
+				}
+			}
+		}
+
+		for (const auto& d : deferred) {
+			const SCP_string& mainName = _currentTextures[d.index]["main"];
+			SCP_string inheritedName;
+			if (!mainName.empty()) {
+				inheritedName = (mainName != "invisible") ? mainName + "-" + d.type : mainName;
+			}
+
+			// The dialog's per-type line edit stores the raw new name without the suffix when
+			// not inheriting (saveSubMap re-appends it). Strip a matching trailing suffix so a
+			// non-inherited round-trip preserves what the user typed.
+			SCP_string typedName = d.newText;
+			SCP_string typedSuffix = "-" + d.type;
+			if (typedName.size() > typedSuffix.size() &&
+				lcase_equal(typedName.substr(typedName.size() - typedSuffix.size()), typedSuffix)) {
+				typedName = typedName.substr(0, typedName.size() - typedSuffix.size());
+			}
+
+			_currentTextures[d.index][d.type] = typedName;
+			_replaceMap[d.index][d.type] = true;
+			_inheritMap[d.index][d.type] = !inheritedName.empty() && lcase_equal(d.newText, inheritedName);
 		}
 	}
 	modelChanged();
@@ -288,11 +292,16 @@ bool ShipTextureReplacementDialogModel::apply()
 		_editor->missionChanged();
 
 		// Update each affected ship's pmi so the viewport reflects the new textures immediately.
-		// We cannot use ship::apply_replacement_textures here because all our Fred_texture_replacements
-		// entries share old_texture = base name, so FindTexture always resolves to TM_BASE_TYPE and
-		// sub-type entries would overwrite the base slot. Instead, write slots directly using the
-		// TM_* indices from MODEL_TEXTURE_SUFFIXES.
+		// Subtype entries are saved as old_texture = "<base>-<type>" by saveSubMap, so the standard
+		// ship::apply_replacement_textures path would resolve them correctly. We instead write slots
+		// directly from _currentTextures because the dialog already has inherit-from-main resolved
+		// and the new bitmaps still need to be loaded. Doing both in one pass is simpler than
+		// pre-populating new_texture_id on every entry just to call apply_replacement_textures.
+		// After rebuilding we re-layer from_table entries (which remove_ship_entries left intact)
+		// so they survive the make_shared reset of pmi->texture_replace.
 		auto load_tex = [](const SCP_string& name) -> int {
+			if (lcase_equal(name, "invisible"))
+				return REPLACE_WITH_INVISIBLE;
 			int id = bm_load(name);
 			if (id < 0) {
 				int nf, fps;
@@ -312,46 +321,60 @@ bool ShipTextureReplacementDialogModel::apply()
 				if (_defaultTextures[i].empty())
 					continue;
 
-				// Find which texture group owns this base texture.
-				int groupIdx = -1;
-				for (int j = 0; j < pm->n_textures; j++) {
-					if (pm->maps[j].FindTexture(_defaultTextures[i].c_str()) >= 0) {
-						groupIdx = j;
-						break;
-					}
-				}
-				if (groupIdx < 0)
-					continue;
-
-				// Main (base) slot.
 				const SCP_string& mainName = _currentTextures[i].at("main");
-				if (!mainName.empty() && !lcase_equal(mainName, _defaultTextures[i])) {
-					int id = load_tex(mainName);
-					if (id >= 0)
-						(*pmi->texture_replace)[groupIdx * TM_NUM_TYPES + TM_BASE_TYPE] = id;
-				}
 
-				// Sub-type slots.
-				for (const auto& [tmType, suffix] : MODEL_TEXTURE_SUFFIXES) {
-					const SCP_string typeKey = suffix.substr(1);
-					if (!_replaceMap[i].at(typeKey))
+				// Apply to every texture group that uses this base texture; two parts can share
+				// a base bitmap and ship::apply_replacement_textures updates them all.
+				for (int groupIdx = 0; groupIdx < pm->n_textures; groupIdx++) {
+					if (pm->maps[groupIdx].FindTexture(_defaultTextures[i].c_str()) < 0)
 						continue;
 
-					SCP_string fullName;
-					if (_inheritMap[i].at(typeKey)) {
-						if (mainName.empty() || lcase_equal(mainName, _defaultTextures[i]))
-							continue;
-						fullName = (mainName != "invisible") ? mainName + suffix : mainName;
-					} else {
-						const SCP_string& typeName = _currentTextures[i].at(typeKey);
-						if (typeName.empty())
-							continue;
-						fullName = (typeName != "invisible") ? typeName + suffix : typeName;
+					// Main (base) slot.
+					if (!mainName.empty() && !lcase_equal(mainName, _defaultTextures[i])) {
+						int id = load_tex(mainName);
+						if (id != -1)
+							(*pmi->texture_replace)[groupIdx * TM_NUM_TYPES + TM_BASE_TYPE] = id;
 					}
 
-					int id = load_tex(fullName);
-					if (id >= 0)
-						(*pmi->texture_replace)[groupIdx * TM_NUM_TYPES + tmType] = id;
+					// Sub-type slots.
+					for (const auto& [tmType, suffix] : MODEL_TEXTURE_SUFFIXES) {
+						const SCP_string typeKey = suffix.substr(1);
+						if (!_replaceMap[i].at(typeKey))
+							continue;
+
+						SCP_string fullName;
+						if (_inheritMap[i].at(typeKey)) {
+							if (mainName.empty() || lcase_equal(mainName, _defaultTextures[i]))
+								continue;
+							fullName = (mainName != "invisible") ? mainName + suffix : mainName;
+						} else {
+							const SCP_string& typeName = _currentTextures[i].at(typeKey);
+							if (typeName.empty())
+								continue;
+							fullName = (typeName != "invisible") ? typeName + suffix : typeName;
+						}
+
+						int id = load_tex(fullName);
+						if (id != -1)
+							(*pmi->texture_replace)[groupIdx * TM_NUM_TYPES + tmType] = id;
+					}
+				}
+			}
+
+			// Re-layer from_table replacements; remove_ship_entries left them in place but the
+			// make_shared above wiped them from the pmi.
+			for (const auto& tr : Fred_texture_replacements) {
+				if (!tr.from_table)
+					continue;
+				if (stricmp(tr.ship_name, shipp.ship_name) != 0)
+					continue;
+				int id = (tr.new_texture_id != -1) ? tr.new_texture_id : load_tex(tr.new_texture);
+				if (id == -1)
+					continue;
+				for (int j = 0; j < pm->n_textures; j++) {
+					int tnum = pm->maps[j].FindTexture(tr.old_texture);
+					if (tnum >= 0)
+						(*pmi->texture_replace)[j * TM_NUM_TYPES + tnum] = id;
 				}
 			}
 		};
@@ -457,13 +480,13 @@ size_t ShipTextureReplacementDialogModel::getSize() const
 
 SCP_string ShipTextureReplacementDialogModel::getDefaultName(size_t index) const
 {
-	Assert(index <= _defaultTextures.size());
+	Assertion(index < _defaultTextures.size(), "Texture index out of bounds");
 	return _defaultTextures[index];
 }
 
 void ShipTextureReplacementDialogModel::setMap(size_t index, const SCP_string& type, const SCP_string& newName)
 {
-	Assert(index < _currentTextures.size());
+	Assertion(index < _currentTextures.size(), "Texture index out of bounds");
 	auto pos = _currentTextures[index].find(type);
 	if (pos == _currentTextures[index].end()) {
 		error_display(1, "Tried to set non existant map type %s. Get a programmer", type.c_str());
@@ -475,11 +498,11 @@ void ShipTextureReplacementDialogModel::setMap(size_t index, const SCP_string& t
 
 SCP_string ShipTextureReplacementDialogModel::getMap(size_t index, const SCP_string& type) const
 {
-	Assert(index < _currentTextures.size());
+	Assertion(index < _currentTextures.size(), "Texture index out of bounds");
 	auto pos = _currentTextures[index].find(type);
 	if (pos == _currentTextures[index].end()) {
 		error_display(1, "Asked for non existant map type %s. Get a programmer", type.c_str());
-		return nullptr;
+		return "";
 	}
 	else {
 		return pos->second;
@@ -488,31 +511,31 @@ SCP_string ShipTextureReplacementDialogModel::getMap(size_t index, const SCP_str
 
 SCP_map<SCP_string, bool> ShipTextureReplacementDialogModel::getSubtypesForMap(size_t index) const
 {
-	Assert(index < _currentTextures.size());
+	Assertion(index < _currentTextures.size(), "Texture index out of bounds");
 	return _subTypesAvailable[index];
 }
 
 SCP_map<SCP_string, bool> ShipTextureReplacementDialogModel::getReplace(size_t index) const
 {
-	Assert(index < _currentTextures.size());
+	Assertion(index < _currentTextures.size(), "Texture index out of bounds");
 	return _replaceMap[index];
 }
 
 SCP_map<SCP_string, bool> ShipTextureReplacementDialogModel::getInherit(size_t index) const
 {
-	Assert(index < _currentTextures.size());
+	Assertion(index < _currentTextures.size(), "Texture index out of bounds");
 	return _inheritMap[index];
 }
 
 void ShipTextureReplacementDialogModel::setReplace(size_t index, const SCP_string& type, bool state)
 {
-	Assert(index < _currentTextures.size());
+	Assertion(index < _currentTextures.size(), "Texture index out of bounds");
 	modify(_replaceMap[index][type], state);
 }
 
 void ShipTextureReplacementDialogModel::setInherit(size_t index, const SCP_string& type, bool state)
 {
-	Assert(index < _currentTextures.size());
+	Assertion(index < _currentTextures.size(), "Texture index out of bounds");
 	modify(_inheritMap[index][type], state);
 }
 

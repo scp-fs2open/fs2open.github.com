@@ -146,10 +146,15 @@ void ShipTextureReplacementDialog::updateUi()
 			widgets.inheritCheckbox->setEnabled(true);
 			widgets.inheritCheckbox->setChecked(inherit);
 			widgets.lineEdit->setEnabled(!inherit);
-			if (inherit)
-				widgets.lineEdit->setText(_model->getMap(_selectedRow, "main").c_str());
-			else
+			if (inherit) {
+				const SCP_string mainName = _model->getMap(_selectedRow, "main");
+				if (mainName.empty() || mainName == "invisible")
+					widgets.lineEdit->setText(mainName.c_str());
+				else
+					widgets.lineEdit->setText((mainName + "-" + type).c_str());
+			} else {
 				widgets.lineEdit->setText(_model->getMap(_selectedRow, type).c_str());
+			}
 		} else {
 			widgets.inheritCheckbox->setDisabled(true);
 			widgets.lineEdit->setDisabled(true);
