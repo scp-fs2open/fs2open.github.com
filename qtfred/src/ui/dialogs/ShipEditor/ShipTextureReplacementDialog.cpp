@@ -148,10 +148,14 @@ void ShipTextureReplacementDialog::updateUi()
 			widgets.lineEdit->setEnabled(!inherit);
 			if (inherit) {
 				const SCP_string mainName = _model->getMap(_selectedRow, "main");
-				if (mainName.empty() || mainName == "invisible")
+				if (mainName.empty() || mainName == "invisible") {
 					widgets.lineEdit->setText(mainName.c_str());
-				else
-					widgets.lineEdit->setText((mainName + "-" + type).c_str());
+				} else {
+					SCP_string derived = mainName;
+					derived += '-';
+					derived += type;
+					widgets.lineEdit->setText(derived.c_str());
+				}
 			} else {
 				widgets.lineEdit->setText(_model->getMap(_selectedRow, type).c_str());
 			}
