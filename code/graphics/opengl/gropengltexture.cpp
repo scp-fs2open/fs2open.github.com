@@ -24,6 +24,7 @@
 #include "math/vecmat.h"
 #include "options/Option.h"
 #include "osapi/osregistry.h"
+#include "ktxutils/ktxutils.h"
 #ifdef USE_OPENGL_ES
 #include "es_compatibility.h"
 #endif
@@ -421,7 +422,8 @@ static int opengl_texture_set_level(int bitmap_handle, int bitmap_type, int bmap
 
 	// check for compressed image types
 	auto block_size = 0;
-	switch (bm_is_compressed(bitmap_handle)) {
+	auto bm_handle = bm_is_compressed(bitmap_handle);
+	switch (bm_handle) {
 	case DDS_DXT1:
 	case DDS_CUBEMAP_DXT1:
 		intFormat  = GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
@@ -443,6 +445,16 @@ static int opengl_texture_set_level(int bitmap_handle, int bitmap_type, int bmap
 	case DDS_BC7:
 		intFormat = GL_COMPRESSED_RGBA_BPTC_UNORM_ARB;
 		block_size = 16;
+		break;
+
+	case KTX_ETC2_RGB:
+	case KTX_ETC2_RGBA_EAC:
+	case KTX_ETC2_SRGB:
+	case KTX_ETC2_SRGBA_EAC:
+	case KTX_ETC2_RGB_A1:
+	case KTX_ETC2_SRGB_A1:
+		intFormat = ktx_map_ktx_format_to_gl_internal(bm_handle);
+		block_size = ktx_etc_block_size(intFormat);
 		break;
 	}
 
@@ -742,7 +754,8 @@ static GLenum opengl_get_internal_format(int handle, int bitmap_type, int bpp) {
 	auto byte_mult = (bpp >> 3);
 
 	// check for compressed image types
-	switch ( bm_is_compressed(handle) ) {
+	auto bm_handle = bm_is_compressed(handle);
+	switch (bm_handle) {
 		case DDS_DXT1:
 		case DDS_CUBEMAP_DXT1:
 			return GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
@@ -758,6 +771,14 @@ static GLenum opengl_get_internal_format(int handle, int bitmap_type, int bpp) {
 
 		case DDS_BC7:
 			return GL_COMPRESSED_RGBA_BPTC_UNORM_ARB;
+
+		case KTX_ETC2_RGB:
+		case KTX_ETC2_RGBA_EAC:
+		case KTX_ETC2_SRGB:
+		case KTX_ETC2_SRGBA_EAC:
+		case KTX_ETC2_RGB_A1:
+		case KTX_ETC2_SRGB_A1:
+			return ktx_map_ktx_format_to_gl_internal(bm_handle);
 
 		default:
 			// Not compressed
@@ -778,18 +799,18 @@ static GLenum opengl_get_internal_format(int handle, int bitmap_type, int bpp) {
 	}
 }
 
-void opengl_determine_bpp_and_flags(int bitmap_handle, int bitmap_type, ushort& flags, int& bpp) {
-	flags = 0;
+void opengl_determine_bpp_and_flags(int bitmap_handle, int bitmap_type, uint& bitmap_flags, int& bpp) {
+	bitmap_flags = 0;
 	bpp = 16;
 	switch (bitmap_type) {
 		case TCACHE_TYPE_AABITMAP:
-			flags |= BMP_AABITMAP;
+			bitmap_flags |= BMP_AABITMAP;
 			bpp = 8;
 			break;
 
 		case TCACHE_TYPE_CUBEMAP:
 		case TCACHE_TYPE_NORMAL:
-			flags |= BMP_TEX_OTHER;
+			bitmap_flags |= BMP_TEX_OTHER;
 			if (bm_get_type(bitmap_handle) == BM_TYPE_PCX) {
 				// PCX is special since the locking code only works with bpp = 16 for some reason
 				bpp = 16;
@@ -804,7 +825,7 @@ void opengl_determine_bpp_and_flags(int bitmap_handle, int bitmap_type, ushort& 
 
 		case TCACHE_TYPE_INTERFACE:
 		case TCACHE_TYPE_XPARENT:
-			flags |= BMP_TEX_XPARENT;
+			bitmap_flags |= BMP_TEX_XPARENT;
 			if (bm_get_type(bitmap_handle) == BM_TYPE_PCX) {
 				// PCX is special since the locking code only works with bpp = 16 for some reason
 				bpp = 16;
@@ -817,33 +838,51 @@ void opengl_determine_bpp_and_flags(int bitmap_handle, int bitmap_type, ushort& 
 			switch ( bm_is_compressed(bitmap_handle) ) {
 				case DDS_DXT1:				//dxt1
 					bpp = 24;
-					flags |= BMP_TEX_DXT1;
+					bitmap_flags |= BMP_TEX_DXT1;
 					break;
 
 				case DDS_DXT3:				//dxt3
 					bpp = 32;
-					flags |= BMP_TEX_DXT3;
+					bitmap_flags |= BMP_TEX_DXT3;
 					break;
 
 				case DDS_DXT5:				//dxt5
 					bpp = 32;
-					flags |= BMP_TEX_DXT5;
+					bitmap_flags |= BMP_TEX_DXT5;
 					break;
 
 				case DDS_BC7:				//bc7
 					bpp = 32;
-					flags |= BMP_TEX_BC7;
+					bitmap_flags |= BMP_TEX_BC7;
 					break;
 
 				case DDS_CUBEMAP_DXT1:
 					bpp = 24;
-					flags |= BMP_TEX_CUBEMAP;
+					bitmap_flags |= BMP_TEX_CUBEMAP;
 					break;
 
 				case DDS_CUBEMAP_DXT3:
 				case DDS_CUBEMAP_DXT5:
 					bpp = 32;
-					flags |= BMP_TEX_CUBEMAP;
+					bitmap_flags |= BMP_TEX_CUBEMAP;
+					break;
+
+				case KTX_ETC2_RGB:
+				case KTX_ETC2_SRGB:
+					bpp = 24;
+					bitmap_flags |= BMP_TEX_ETC2_RGB8;
+					break;
+
+				case KTX_ETC2_RGB_A1:
+				case KTX_ETC2_SRGB_A1:
+					bpp = 24;
+					bitmap_flags |= BMP_TEX_ETC2_RGBA1;
+					break;
+
+				case KTX_ETC2_RGBA_EAC:
+				case KTX_ETC2_SRGBA_EAC:
+					bpp = 32;
+					bitmap_flags |= BMP_TEX_ETC2_RGBA8;
 					break;
 
 				default:
@@ -1042,7 +1081,7 @@ int opengl_create_texture(int bitmap_handle, int bitmap_type, tcache_slot_opengl
 
 	tslot->wrap_mode = GL_CLAMP_TO_EDGE;
 
-	ushort bitmap_flags;
+	uint bitmap_flags;
 	int bits_per_pixel;
 	opengl_determine_bpp_and_flags(animation_begin, bitmap_type, bitmap_flags, bits_per_pixel);
 
@@ -1054,7 +1093,7 @@ int opengl_create_texture(int bitmap_handle, int bitmap_type, tcache_slot_opengl
 #ifndef NDEBUG
         // I'm not sure if these values are consistent across the whole animation but they really should be.
 		// This should catch any instances where this assumption isn't right
-		ushort debug_flags = 0;
+		uint debug_flags = 0;
 		int debug_bpp;
 		opengl_determine_bpp_and_flags(frame, bitmap_type, debug_flags, debug_bpp);
 
