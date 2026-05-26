@@ -1,6 +1,18 @@
 ﻿#include "ktxutils.h"
 #include "bmpman/bmpman.h"
 #include "cfile/cfile.h"
+#ifdef WITH_OPENGL
+#include "glad/glad.h"
+#else
+// GLenum definitions in case of compiling without OpenGL
+// (KTX1 format saves texture type as an glInternalFormat)
+#define GL_COMPRESSED_RGB8_ETC2 0x9274
+#define GL_COMPRESSED_SRGB8_ETC2 0x9275
+#define GL_COMPRESSED_RGB8_PUNCHTHROUGH_ALPHA1_ETC2 0x9276
+#define GL_COMPRESSED_SRGB8_PUNCHTHROUGH_ALPHA1_ETC2 0x9277
+#define GL_COMPRESSED_RGBA8_ETC2_EAC 0x9278
+#define GL_COMPRESSED_SRGB8_ALPHA8_ETC2_EAC 0x9279
+#endif
 //KTX1 Spec definition https://registry.khronos.org/KTX/specs/1.0/ktxspec.v1.html
 //ETC2 formats spec https://registry.khronos.org/DataFormat/specs/1.4/dataformat.1.4.inline.html#ETC2
 /*

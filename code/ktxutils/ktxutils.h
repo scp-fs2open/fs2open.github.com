@@ -1,9 +1,6 @@
 #pragma once
 #include "globalincs/pstypes.h"
 #include "cfile/cfile.h"
-#ifdef WITH_OPENGL
-#include "glad/glad.h"
-#endif
 
 // ETC2 types
 enum KTX_Format {
@@ -14,28 +11,6 @@ enum KTX_Format {
 	KTX_ETC2_RGB_A1,
 	KTX_ETC2_SRGB_A1
 };
-
-// GLenum definitions, ETC2 is guarranted on ES 3.2, but in desktop GL it is supported from 4.3
-// glad loader is GL 3.2 and these definitions are not there. But these will work if the GPU is GL 4.3
-// https://www.sidefx.com/docs/hdk/glcorearb_8h_source.html
-#ifndef GL_COMPRESSED_RGB8_ETC2
-#define GL_COMPRESSED_RGB8_ETC2 0x9274
-#endif
-#ifndef GL_COMPRESSED_SRGB8_ETC2
-#define GL_COMPRESSED_SRGB8_ETC2 0x9275
-#endif
-#ifndef GL_COMPRESSED_RGB8_PUNCHTHROUGH_ALPHA1_ETC2
-#define GL_COMPRESSED_RGB8_PUNCHTHROUGH_ALPHA1_ETC2 0x9276
-#endif
-#ifndef GL_COMPRESSED_SRGB8_PUNCHTHROUGH_ALPHA1_ETC2
-#define GL_COMPRESSED_SRGB8_PUNCHTHROUGH_ALPHA1_ETC2 0x9277
-#endif
-#ifndef GL_COMPRESSED_RGBA8_ETC2_EAC
-#define GL_COMPRESSED_RGBA8_ETC2_EAC 0x9278
-#endif
-#ifndef GL_COMPRESSED_SRGB8_ALPHA8_ETC2_EAC
-#define GL_COMPRESSED_SRGB8_ALPHA8_ETC2_EAC 0x9279
-#endif
 
 enum KTX1_Error {
 	KTX1_ERROR_NONE = 0,
