@@ -38,7 +38,7 @@ extern int Neb2_render_mode;
 // the AWACS suppresion level for the nebula
 extern float Neb2_awacs;
 
-extern bool  Neb2_fog_use_legacy_values;
+extern bool  Neb2_fog_save_legacy_values;
 extern float Neb2_fog_legacy_near_mult;
 extern float Neb2_fog_legacy_far_mult;
 

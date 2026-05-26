@@ -179,7 +179,11 @@ protected:
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 
-private:	
+private:
+	float m_initial_neb_fog_1000m_vis;
+	float m_initial_neb_fog_near_dist;
+	float m_initial_neb_fog_skybox_clip;
+	float m_initial_neb_fog_clip;
 };
 
 #endif

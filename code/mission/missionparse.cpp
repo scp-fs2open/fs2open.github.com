@@ -858,8 +858,8 @@ void parse_mission_info(mission *pm, bool basic = false)
 			nebl_set_storm(Mission_parse_storm_name);
 	}
 
-	// Legacy values always need conversion unless the modern values are found
-	Neb2_fog_use_legacy_values = pm->required_fso_version < gameversion::version(26, 0, 0);
+	bool found_neb2_modern = false;
+
 	if (optional_string("+Fog Near Mult:")) {
 		stuff_float(&Neb2_fog_legacy_near_mult);
 	}
@@ -870,23 +870,26 @@ void parse_mission_info(mission *pm, bool basic = false)
 	// Look for the modern values
 	if (optional_string("+Fog 1000m Visibility:")) {
 		stuff_float(&Neb2_fog_1000m_visibility);
-		Neb2_fog_use_legacy_values = false;
+		found_neb2_modern = true;
 	}
 	if (optional_string("+Fog Near Distance:")) {
 		stuff_float(&Neb2_fog_near_distance);
-		Neb2_fog_use_legacy_values = false;
+		found_neb2_modern = true;
 	}
 	if (optional_string("+Fog Skybox Clip Distance:")) {
 		stuff_float(&Neb2_fog_skybox_clip_distance);
-		Neb2_fog_use_legacy_values = false;
+		found_neb2_modern = true;
 	}
 	if (optional_string("+Fog Clip Distance:")) {
 		stuff_float(&Neb2_fog_clip_distance);
-		Neb2_fog_use_legacy_values = false;
+		found_neb2_modern = true;
 	}
 
-	// Do the conversion if necessary
-	if (Neb2_fog_use_legacy_values) {
+	// write legacy values on save if we are compatible with older formats
+	Neb2_fog_save_legacy_values = !found_neb2_modern;
+
+	// Convert legacy values if this mission was made before modern values were introduced
+	if (!found_neb2_modern) {
 		//This stems from the weird unchangeable constants of legacy fog
 		float denom = std::max(75.f * Neb2_fog_legacy_far_mult - Neb2_fog_legacy_near_mult, 1.0f);
 		Neb2_fog_1000m_visibility = powf(10.f, -100.f / denom);
@@ -9653,7 +9656,7 @@ bool check_for_25_1_data()
 	if (count_items_with_value(Props) > 0)
 		return true;
 
-	if (The_mission.flags[Mission::Mission_Flags::Fullneb] && !Neb2_fog_use_legacy_values)
+	if (The_mission.flags[Mission::Mission_Flags::Fullneb] && !Neb2_fog_save_legacy_values)
 		return true;
 
 	constexpr auto defaultLayer = "Default";

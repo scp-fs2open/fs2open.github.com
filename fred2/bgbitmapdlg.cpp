@@ -409,6 +409,11 @@ void bg_bitmap_dlg::create()
 	m_neb_fog_skybox_clip.Format("%.10g", Neb2_fog_skybox_clip_distance);
 	m_neb_fog_clip.Format("%.10g", Neb2_fog_clip_distance);
 
+	m_initial_neb_fog_1000m_vis = Neb2_fog_1000m_visibility;
+	m_initial_neb_fog_near_dist = Neb2_fog_near_distance;
+	m_initial_neb_fog_skybox_clip = Neb2_fog_skybox_clip_distance;
+	m_initial_neb_fog_clip = Neb2_fog_clip_distance;
+
 	box = (CComboBox *) GetDlgItem(IDC_LIGHT_PROFILE);
 	SCP_vector<SCP_string> profiles = lighting_profiles::list_profiles();
 	m_light_profile_index = 0;
@@ -531,26 +536,20 @@ void bg_bitmap_dlg::OnClose()
 		The_mission.skybox_flags |= MR_FORCE_CLAMP;
 	}
 
-	CString old_1000m_vis, old_near_dist, old_skybox_clip, old_clip;
-	old_1000m_vis.Format("%.10g", Neb2_fog_1000m_visibility);
-	old_near_dist.Format("%.10g", Neb2_fog_near_distance);
-	old_skybox_clip.Format("%.10g", Neb2_fog_skybox_clip_distance);
-	old_clip.Format("%.10g", Neb2_fog_clip_distance);
-
-	// if the user set or changed any modern value, we can no longer use the legacy values
-	// (and we might not have used them in the first place)
-	if (m_neb_fog_1000m_vis != old_1000m_vis
-		|| m_neb_fog_near_dist != old_near_dist
-		|| m_neb_fog_skybox_clip != old_skybox_clip
-		|| m_neb_fog_clip != old_clip)
-	{
-		Neb2_fog_use_legacy_values = false;
-	}
-
 	Neb2_fog_1000m_visibility = (float)atof((LPCSTR)m_neb_fog_1000m_vis);
 	Neb2_fog_near_distance = (float)atof((LPCSTR)m_neb_fog_near_dist);
 	Neb2_fog_skybox_clip_distance = (float)atof((LPCSTR)m_neb_fog_skybox_clip);
 	Neb2_fog_clip_distance = (float)atof((LPCSTR)m_neb_fog_clip);
+
+	// if the user set or changed any modern value, we can no longer save the legacy values
+	// (and we might not have saved them in the first place)
+	if (!fl_equal(Neb2_fog_1000m_visibility, m_initial_neb_fog_1000m_vis)
+		|| !fl_equal(Neb2_fog_near_distance, m_initial_neb_fog_near_dist)
+		|| !fl_equal(Neb2_fog_skybox_clip_distance, m_initial_neb_fog_skybox_clip)
+		|| !fl_equal(Neb2_fog_clip_distance, m_initial_neb_fog_clip))
+	{
+		Neb2_fog_save_legacy_values = false;
+	}
 
 	extern const float Default_max_draw_distance;
 	CLAMP(Neb2_fog_1000m_visibility, 0.0f, 1.0f);
