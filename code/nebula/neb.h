@@ -25,9 +25,6 @@ class ship;
 class object;
 
 extern bool Nebula_sexp_used;
-// fog near and far values for rendering the background nebula
-extern float Neb_backg_fog_near;
-extern float Neb_backg_fog_far;
 
 // nebula rendering mode
 #define NEB2_RENDER_NONE								0			// no rendering

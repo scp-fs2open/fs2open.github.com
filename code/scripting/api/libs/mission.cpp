@@ -2329,7 +2329,7 @@ ADE_VIRTVAR(NebulaClipDistance, l_Mission, "number", "Gets or sets the distance 
 	float fog_clip = 0.0f;
 
 	if (ADE_SETTING_VAR && ade_get_args(L, "*f", &fog_clip))
-		Neb2_fog_clip_distance = fog_clip;
+		Neb2_fog_clip_distance = std::max(0.f, fog_clip);
 
 	return ade_set_args(L, "f", Neb2_fog_clip_distance);
 }
@@ -2339,7 +2339,7 @@ ADE_VIRTVAR(NebulaSkyboxClipDistance, l_Mission, "number", "Gets or sets the dis
 	float fog_clip = 0.0f;
 
 	if (ADE_SETTING_VAR && ade_get_args(L, "*f", &fog_clip))
-		Neb2_fog_skybox_clip_distance = fog_clip;
+		Neb2_fog_skybox_clip_distance = std::max(0.f, fog_clip);
 
 	return ade_set_args(L, "f", Neb2_fog_skybox_clip_distance);
 }
@@ -2349,7 +2349,7 @@ ADE_VIRTVAR(NebulaVisibility, l_Mission, "number", "Gets or sets the visibility 
 	float fog_visibility = 0.0f;
 
 	if (ADE_SETTING_VAR && ade_get_args(L, "*f", &fog_visibility))
-		Neb2_fog_1000m_visibility = fog_visibility;
+		Neb2_fog_1000m_visibility = std::clamp(fog_visibility, 0.0f, 1.0f);
 
 	return ade_set_args(L, "f", Neb2_fog_1000m_visibility);
 }
