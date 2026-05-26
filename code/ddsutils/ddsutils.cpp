@@ -576,7 +576,9 @@ int dds_decompress_top_mip_bgra(const char *filename, int cf_type,
 
 	// only 2D FOURCC-compressed images are supported here
 	if (!(dds_header.ddspf.dwFlags & DDPF_FOURCC) ||
-	    (dds_header.dwCaps2 & DDSCAPS2_CUBEMAP)) {
+	    (dds_header.dwCaps2 & (DDSCAPS2_CUBEMAP | DDSCAPS2_VOLUME)) ||
+	    (dds_header.dwFlags & DDSD_DEPTH) ||
+	    (dds_header.dwDepth > 1)) {
 		cfclose(cfp);
 		return DDS_ERROR_UNSUPPORTED;
 	}
@@ -588,7 +590,9 @@ int dds_decompress_top_mip_bgra(const char *filename, int cf_type,
 		case FOURCC_DXT3: decode = bcdec_bc2; block_size = BCDEC_BC2_BLOCK_SIZE; break;
 		case FOURCC_DXT5: decode = bcdec_bc3; block_size = BCDEC_BC3_BLOCK_SIZE; break;
 		case FOURCC_DX10:
-			if (!valid_dx10_format(dx10_header)) {
+			if (!valid_dx10_format(dx10_header) ||
+			    dx10_header.resourceDimension != D3D10_RESOURCE_DIMENSION::D3D10_RESOURCE_DIMENSION_TEXTURE2D ||
+			    dx10_header.arraySize > 1) {
 				cfclose(cfp);
 				return DDS_ERROR_UNSUPPORTED;
 			}
@@ -602,35 +606,47 @@ int dds_decompress_top_mip_bgra(const char *filename, int cf_type,
 
 	const int w = static_cast<int>(dds_header.dwWidth);
 	const int h = static_cast<int>(dds_header.dwHeight);
-	if (w <= 0 || h <= 0 || (w % 4) != 0 || (h % 4) != 0) {
+	if (w <= 0 || h <= 0) {
 		cfclose(cfp);
 		return DDS_ERROR_INVALID_FORMAT;
 	}
 
+	// BCn data is stored as ceil(w/4) * ceil(h/4) 4x4 blocks; dimensions
+	// don't have to be multiples of 4.
+	const int blocks_w = (w + 3) / 4;
+	const int blocks_h = (h + 3) / 4;
+	const int padded_w = blocks_w * 4;
+	const int padded_h = blocks_h * 4;
+	const size_t compressed_size = static_cast<size_t>(blocks_w) * blocks_h * block_size;
+
 	// _dds_read_header leaves the file positioned right after the header
 	// (including the DX10 sub-header if present), so the next read is the
 	// top mip's pixel data.
-	const int blocks_w = w / 4;
-	const int blocks_h = h / 4;
-	const size_t compressed_size = static_cast<size_t>(blocks_w) * blocks_h * block_size;
-
 	SCP_vector<ubyte> compressed(compressed_size);
 	const int got = cfread(compressed.data(), 1, static_cast<int>(compressed_size), cfp);
 	cfclose(cfp);
 	if (got != static_cast<int>(compressed_size))
 		return DDS_ERROR_INVALID_FORMAT;
 
-	out_pixels.assign(static_cast<size_t>(w) * h * 4, 0);
-	ubyte *const dst = out_pixels.data();
+	// Decode into a padded buffer so edge blocks have room, then crop to w*h.
+	SCP_vector<ubyte> decoded(static_cast<size_t>(padded_w) * padded_h * 4);
+	const int dec_stride = padded_w * 4;
 	const ubyte *src = compressed.data();
-	const int dst_stride = w * 4;
 
 	for (int by = 0; by < blocks_h; ++by) {
 		for (int bx = 0; bx < blocks_w; ++bx) {
-			ubyte *blk_dst = dst + (by * 4) * dst_stride + (bx * 4) * 4;
-			decode(src, blk_dst, dst_stride);
+			ubyte *blk_dst = decoded.data() + (by * 4) * dec_stride + (bx * 4) * 4;
+			decode(src, blk_dst, dec_stride);
 			src += block_size;
 		}
+	}
+
+	out_pixels.assign(static_cast<size_t>(w) * h * 4, 0);
+	const int dst_stride = w * 4;
+	for (int y = 0; y < h; ++y) {
+		std::memcpy(out_pixels.data() + static_cast<size_t>(y) * dst_stride,
+		            decoded.data() + static_cast<size_t>(y) * dec_stride,
+		            static_cast<size_t>(dst_stride));
 	}
 
 	// bcdec outputs RGBA byte-order; swap to BGRA

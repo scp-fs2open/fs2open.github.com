@@ -57,22 +57,34 @@ bool loadHandleToQImage(int bmHandle, QImage& outImage, QString* outError)
 	// All FSO animation types (ANI, APNG, EFF) produce BGRA byte-order data
 	// at 32 bpp, which matches QImage::Format_ARGB32 on little-endian.
 	auto* bmp = bm_lock(bmHandle, 32, BMP_TEX_XPARENT);
-	if (bmp == nullptr || bmp->data == 0) {
+	if (bmp == nullptr) {
+		setError(outError, QStringLiteral("bm_lock failed."));
+		return false;
+	}
+	if (bmp->data == 0) {
+		// bm_lock incremented the refcount before populating data; release it.
+		bm_unlock(bmHandle);
 		setError(outError, QStringLiteral("bm_lock failed."));
 		return false;
 	}
 
-	// bm_lock_dds also doesn't honor the requested bpp for uncompressed DDS
-	// (e.g. 24-bpp RGB files), which would have us read past the buffer.
-	if (bmp->bpp != 32) {
+	// bm_lock ignores the requested bpp for JPG (always 24, BGR) and for
+	// uncompressed DDS (whatever the file uses). Handle the two common
+	// cases (32-bpp BGRA and 24-bpp BGR) and reject anything else.
+	if (bmp->bpp == 32) {
+		const int bytesPerLine = bmp->w * 4;
+		QImage tmp(reinterpret_cast<const uchar*>(bmp->data), bmp->w, bmp->h, bytesPerLine, QImage::Format_ARGB32);
+		outImage = tmp.copy(); // detach from bmpman memory before unlock
+	} else if (bmp->bpp == 24) {
+		const int bytesPerLine = bmp->w * 3;
+		QImage tmp(reinterpret_cast<const uchar*>(bmp->data), bmp->w, bmp->h, bytesPerLine, QImage::Format_RGB888);
+		// FSO stores 24-bpp as BGR; swap to RGB and promote to ARGB32 (also detaches).
+		outImage = tmp.rgbSwapped().convertToFormat(QImage::Format_ARGB32);
+	} else {
 		bm_unlock(bmHandle);
 		setError(outError, QStringLiteral("Unsupported bitmap bpp (%1) for QImage preview.").arg(bmp->bpp));
 		return false;
 	}
-
-	const int bytesPerLine = bmp->w * 4;
-	QImage tmp(reinterpret_cast<const uchar*>(bmp->data), bmp->w, bmp->h, bytesPerLine, QImage::Format_ARGB32);
-	outImage = tmp.copy(); // detach from bmpman memory before unlock
 	bm_unlock(bmHandle);
 
 	if (outImage.isNull()) {
