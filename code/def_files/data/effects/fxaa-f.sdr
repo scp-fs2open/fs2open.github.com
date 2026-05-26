@@ -11,17 +11,15 @@ precision highp samplerCube;
 #define FXAA_FAST_PIXEL_OFFSET 1 // With OpenGL 3.2 we can always do this
 
 #ifndef FXAA_GATHER4_ALPHA
-	#ifdef GL_EXT_gpu_shader5
-		#extension GL_EXT_gpu_shader5 : enable
-		#define FXAA_GATHER4_ALPHA 1
-	#endif
-	#ifdef GL_ARB_gpu_shader5
-		#extension GL_ARB_gpu_shader5 : enable
-		#define FXAA_GATHER4_ALPHA 1
-	#endif
-	#ifdef GL_NV_gpu_shader5
-		#extension GL_NV_gpu_shader5 : enable
-		#define FXAA_GATHER4_ALPHA 1
+	#ifndef GL_ES
+		#ifdef GL_ARB_gpu_shader5
+			#extension GL_ARB_gpu_shader5 : enable
+			#define FXAA_GATHER4_ALPHA 1
+		#endif
+		#ifdef GL_NV_gpu_shader5
+			#extension GL_NV_gpu_shader5 : enable
+			#define FXAA_GATHER4_ALPHA 1
+		#endif
 	#endif
 	#ifndef FXAA_GATHER4_ALPHA
 		#define FXAA_GATHER4_ALPHA 0
