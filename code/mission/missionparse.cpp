@@ -7101,7 +7101,10 @@ bool post_process_mission(mission *pm)
 	}
 	Last_file_checksum = Current_file_checksum;
 
-	if (pm->volumetrics)
+	// Skip the volumetric noise bake under FRED. Only the gameplay deferred
+	// pass and the Lab consume the baked 3D bitmap, and the bake can take
+	// minutes in a debug build for higher quality nebulae.
+	if (pm->volumetrics && !Fred_running)
 		pm->volumetrics->renderVolumeBitmap();
 
 	apply_default_custom_data(pm);
