@@ -679,7 +679,7 @@ void copy_bits(int *dest, int src, int mask)
 
 int dup_object(object *objp)
 {
-	int i, j, n, inst, obj = -1;
+	int i, n, inst, obj = -1;
 	ai_info *aip1, *aip2;
 	object *objp1, *objp2;
 	ship_subsys *subp1, *subp2;
@@ -737,17 +737,11 @@ int dup_object(object *objp)
 			subp2 = GET_NEXT(subp2);
 		}
 
-		for (i=0; i<Num_reinforcements; i++)
-			if (!stricmp(Reinforcements[i].name, Ships[inst].ship_name)) {
-				if (Num_reinforcements < MAX_REINFORCEMENTS) {
-					j = Num_reinforcements++;
-					strcpy_s(Reinforcements[j].name, Ships[n].ship_name);
-					Reinforcements[j].type = Reinforcements[i].type;
-					Reinforcements[j].uses = Reinforcements[i].uses;
-				}
-
-				break;
-			}
+		i = find_item_with_string(Reinforcements, &reinforcements::name, Ships[inst].ship_name);
+		if (i >= 0) {
+			Reinforcements.push_back(Reinforcements[i]);
+			strcpy_s(Reinforcements.back().name, Ships[n].ship_name);
+		}
 
 	} else if (objp->type == OBJ_WAYPOINT) {
 		obj = create_waypoint(&objp->pos, waypoint_instance);
@@ -1345,11 +1339,7 @@ int common_object_delete(int obj)
 			invalidate_references(name, sexp_ref_type::SHIP);
 		}
 
-		for (i = 0; i < Num_reinforcements; i++)
-			if (!stricmp(name, Reinforcements[i].name)) {
-				delete_reinforcement(i);
-				break;
-			}
+		delete_reinforcement(name);
 
 		// check if any ship is docked with this ship and break dock if so
 		while (object_is_docked(&Objects[obj])) {
@@ -1416,14 +1406,13 @@ void delete_marked()
 	Update_window = 1;
 }
 
-void delete_reinforcement(int num)
+void delete_reinforcement(const char *name)
 {
-	int i;
+	int i = find_item_with_string(Reinforcements, &reinforcements::name, name);
+	if (i < 0)
+		return;
 
-	for (i=num; i<Num_reinforcements-1; i++)
-		Reinforcements[i] = Reinforcements[i + 1];
-
-	Num_reinforcements--;
+	Reinforcements.erase(Reinforcements.begin() + i);
 	set_modified();
 }
 
@@ -1733,19 +1722,13 @@ int query_initial_orders_empty(ai_goal *ai_goals)
 	return 1;
 }
 
-int set_reinforcement(char *name, int state)
+int set_reinforcement(const char *name, int state)
 {
-	int i, index, cur = -1;
-
-	for (i=0; i<Num_reinforcements; i++){
-		if (!stricmp(Reinforcements[i].name, name)){
-			cur = i;
-		}
-	}
+	int index;
+	int cur = find_item_with_string(Reinforcements, &reinforcements::name, name);
 
 	if (!state && (cur != -1)) {
-		Num_reinforcements--;
-		Reinforcements[cur] = Reinforcements[Num_reinforcements];
+		Reinforcements.erase(Reinforcements.begin() + cur);
 
 		// clear the ship/wing flag for this reinforcement
 		index = ship_name_lookup(name);
@@ -1765,14 +1748,9 @@ int set_reinforcement(char *name, int state)
 		return -1;
 	}
 
-	if (state && (cur == -1) && (Num_reinforcements < MAX_REINFORCEMENTS)) {
+	if (state && (cur == -1)) {
 		Assert(strlen(name) < NAME_LENGTH);
-		strcpy_s(Reinforcements[Num_reinforcements].name, name);
-		Reinforcements[Num_reinforcements].uses = 1;
-		Reinforcements[Num_reinforcements].arrival_delay = 0;
-		memset( Reinforcements[Num_reinforcements].no_messages, 0, MAX_REINFORCEMENT_MESSAGES * NAME_LENGTH );
-		memset( Reinforcements[Num_reinforcements].yes_messages, 0, MAX_REINFORCEMENT_MESSAGES * NAME_LENGTH );
-		Num_reinforcements++;
+		Reinforcements.emplace_back(name);
 
 		// set the reinforcement flag on the ship or wing
 		index = ship_name_lookup(name);
@@ -1828,8 +1806,6 @@ int get_docking_list(int model_index)
 // DA 1/7/99 These ship names are not variables
 int rename_ship(int ship, const char *name)
 {
-	int i;
-
 	Assert(ship >= 0);
 	Assert(strlen(name) < NAME_LENGTH);
 
@@ -1840,10 +1816,9 @@ int rename_ship(int ship, const char *name)
 	update_sexp_references(Ships[ship].ship_name, name);
 	ai_update_goal_references(sexp_ref_type::SHIP, Ships[ship].ship_name, name);
 	update_texture_replacements(Ships[ship].ship_name, name);
-	for (i=0; i<Num_reinforcements; i++)
-		if (!stricmp(Ships[ship].ship_name, Reinforcements[i].name)) {
-			strcpy_s(Reinforcements[i].name, name);
-		}
+	int i = find_item_with_string(Reinforcements, &reinforcements::name, Ships[ship].ship_name);
+	if (i >= 0)
+		strcpy_s(Reinforcements[i].name, name);
 
 	strcpy_s(Ships[ship].ship_name, name);
 	if (ship == cur_ship)
@@ -1875,16 +1850,14 @@ int rename_ship(int ship, const char *name)
 int invalidate_references(const char *name, sexp_ref_type type)
 {
 	char new_name[512];
-	int i;
 
 	sprintf(new_name, "<%s>", name);
 	update_sexp_references(name, new_name);
 	ai_update_goal_references(type, name, new_name);
 	update_texture_replacements(name, new_name);
-	for (i=0; i<Num_reinforcements; i++)
-		if (!stricmp(name, Reinforcements[i].name)) {
-			strcpy_s(Reinforcements[i].name, new_name);
-		}
+	int i = find_item_with_string(Reinforcements, &reinforcements::name, name);
+	if (i >= 0)
+		strcpy_s(Reinforcements[i].name, new_name);
 
 	return 0;
 }
@@ -2187,11 +2160,8 @@ int reference_handler(const char *name, sexp_ref_type type, int obj)
 	if ((type != sexp_ref_type::SHIP) && (type != sexp_ref_type::WING))
 		return 0;
 
-	for (n=0; n<Num_reinforcements; n++)
-		if (!stricmp(name, Reinforcements[n].name))
-			break;
-
-	if (n < Num_reinforcements) {
+	n = find_item_with_string(Reinforcements, &reinforcements::name, name);
+	if (n >= 0) {
 		sprintf(msg, "Ship \"%s\" is a reinforcement unit.\n"
 			"Do you want to delete it anyway?", name);
 

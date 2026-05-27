@@ -442,11 +442,9 @@ void wing_editor::initialize_data_safe(int full_update)
 			ptr->AddString(Ships[Wings[cur_wing].ship_index[i]].ship_name);
 
 		m_threshold_spin.SetRange(0, static_cast<short>(calc_max_wave_treshold()));
-		for (i=0; i<Num_reinforcements; i++)
-			if (!stricmp(Reinforcements[i].name, Wings[cur_wing].name))
-				break;
 
-		if (i < Num_reinforcements)
+		i = find_item_with_string(Reinforcements, &reinforcements::name, Wings[cur_wing].name);
+		if (i >= 0)
 			m_reinforcement = TRUE;
 		else
 			m_reinforcement = FALSE;
@@ -732,11 +730,9 @@ int wing_editor::update_data(int redraw)
 			update_sexp_references(old_name, str);
 			ai_update_goal_references(sexp_ref_type::WING, old_name, str);
 			update_texture_replacements(old_name, str);
-			for (i=0; i<Num_reinforcements; i++)
-				if (!strcmp(old_name, Reinforcements[i].name)) {
-					Assert(strlen(str) < NAME_LENGTH);
-					strcpy_s(Reinforcements[i].name, str);
-				}
+			i = find_item_with_string(Reinforcements, &reinforcements::name, old_name);
+			if (i >= 0)
+				strcpy_s(Reinforcements[i].name, str);
 
 			for (i=0; i<Wings[cur_wing].wave_count; i++) {
 				if ((Objects[wing_objects[cur_wing][i]].type == OBJ_SHIP) || (Objects[wing_objects[cur_wing][i]].type == OBJ_START)) {
@@ -750,27 +746,8 @@ int wing_editor::update_data(int redraw)
 			Update_window = 1;
 		}
 
-		//Check if we're trying to add more and we've got too many.
-		if( (Num_reinforcements >= MAX_REINFORCEMENTS) && (m_reinforcement == 1))
-		{
-			if (bypass_errors)
-				return 1;
-
-			bypass_errors = 1;
-
-			char error_message[256];
-			sprintf(error_message, "Too many reinforcements; could not add wing '%s' to reinforcement list!", str); 
-			MessageBox(error_message, "Error", MB_ICONEXCLAMATION | MB_OK);
-
-			//clear the flag
-			m_reinforcement = 0;
-			UpdateData(FALSE);
-
-			return -1;
-
-		}
-		//Otherwise, just update as normal.
-		else if (set_reinforcement(str, m_reinforcement) == 1) 
+		// Update as normal.
+		if (set_reinforcement(str, m_reinforcement) == 1) 
 		{
 			free_sexp2(Wings[cur_wing].arrival_cue);
 			Wings[cur_wing].arrival_cue = Locked_sexp_false;

@@ -6042,25 +6042,19 @@ void parse_messages(mission *pm, int flags)
 
 void parse_reinforcement(mission *pm)
 {
-	reinforcements *ptr;
+	reinforcements reinforcement;
 	p_object *rforce_obj = NULL;
 	int instance = -1;
 
-	Assert(Num_reinforcements < MAX_REINFORCEMENTS);
 	Assert(pm != NULL);
-	ptr = &Reinforcements[Num_reinforcements];
 
 	required_string("$Name:");
-	stuff_string(ptr->name, F_NAME, NAME_LENGTH);	
+	stuff_string(reinforcement.name, F_NAME, NAME_LENGTH);
 
-	find_and_stuff("$Type:", &ptr->type, F_NAME, Reinforcement_type_names, Num_reinforcement_type_names, "reinforcement type");
+	find_and_stuff("$Type:", &reinforcement.type, F_NAME, Reinforcement_type_names, Num_reinforcement_type_names, "reinforcement type");
 
 	required_string("$Num times:");
-	stuff_int(&ptr->uses);
-	ptr->num_uses = 0;
-
-	// reset the flags to 0
-	ptr->flags = 0;
+	stuff_int(&reinforcement.uses);
 
 	if ( optional_string("+Arrival delay:") )
 	{
@@ -6068,34 +6062,34 @@ void parse_reinforcement(mission *pm)
 		stuff_int(&delay);
 		if (delay < 0)
 		{
-			parse_warning_or_record("Arrival delay on reinforcement %s cannot be negative — corrected to 0.", ptr->name);
+			parse_warning_or_record("Arrival delay on reinforcement %s cannot be negative — corrected to 0.", reinforcement.name);
 			delay = 0;
 		}
 
-		ptr->arrival_delay = delay;
+		reinforcement.arrival_delay = delay;
 	}
 
 	if ( optional_string("+No Messages:") ){
-		stuff_string_list( ptr->no_messages, MAX_REINFORCEMENT_MESSAGES );
+		stuff_string_list( reinforcement.no_messages, MAX_REINFORCEMENT_MESSAGES );
 	}
 
 	if ( optional_string("+Yes Messages:") ){
-		stuff_string_list( ptr->yes_messages, MAX_REINFORCEMENT_MESSAGES );
+		stuff_string_list( reinforcement.yes_messages, MAX_REINFORCEMENT_MESSAGES );
 	}	
 
 	// sanity check on the names of reinforcements
-	rforce_obj = mission_parse_find_parse_object(ptr->name);
+	rforce_obj = mission_parse_find_parse_object(reinforcement.name);
 
 	if (rforce_obj == NULL) {
-		if ((instance = wing_name_lookup(ptr->name, 1)) == -1) {
-			parse_warning_or_record("Reinforcement %s not found as ship or wing — declaration ignored.", ptr->name);
+		if ((instance = wing_name_lookup(reinforcement.name, 1)) == -1) {
+			parse_warning_or_record("Reinforcement %s not found as ship or wing — declaration ignored.", reinforcement.name);
 			return;
 		}
 	} else {
 		// Individual ships in wings can't be reinforcements - FUBAR
 		if (rforce_obj->wingnum >= 0)
 		{
-			parse_warning_or_record("Reinforcement %s is part of a wing — reinforcement declaration ignored.", ptr->name);
+			parse_warning_or_record("Reinforcement %s is part of a wing — reinforcement declaration ignored.", reinforcement.name);
 			return;
 		}
 		else
@@ -6107,10 +6101,10 @@ void parse_reinforcement(mission *pm)
 	// now, if the reinforcement is a wing, then set the number of waves of the wing == number of
 	// uses of the reinforcement
 	if (instance >= 0) {
-		Wings[instance].num_waves = ptr->uses;
+		Wings[instance].num_waves = reinforcement.uses;
 	}
 
-	Num_reinforcements++;
+	Reinforcements.push_back(std::move(reinforcement));
 }
 
 void parse_reinforcements(mission *pm)
@@ -7360,7 +7354,7 @@ void mission_init(mission *pm, bool quick_init)
 	for (int i = 0; i < MAX_WINGS; i++)
 		Wings[i].clear();
 	
-	Num_reinforcements = 0;
+	Reinforcements.clear();
 
 	Parse_props.clear();
 
@@ -8112,27 +8106,24 @@ int mission_set_arrival_location(anchor_t anchor, ArrivalLocation location, int 
 /**
  * Mark a reinforcement as available
  */
-void mission_parse_mark_reinforcement_available(char *name)
+void mission_parse_mark_reinforcement_available(const char *name)
 {
-	int i;
-	reinforcements *rp;
+	int i = find_item_with_string(Reinforcements, &reinforcements::name, name);
+	if (i >= 0)
+	{
+		auto &r = Reinforcements[i];
+		if (!(r.flags & RF_IS_AVAILABLE))
+		{
+			r.flags |= RF_IS_AVAILABLE;
 
-	for (i = 0; i < Num_reinforcements; i++) {
-		rp = &Reinforcements[i];
-		if ( !stricmp(rp->name, name) ) {
-			if ( !(rp->flags & RF_IS_AVAILABLE) ) {
-				rp->flags |= RF_IS_AVAILABLE;
-
-				// tell all of the clients.
-				if ( MULTIPLAYER_MASTER ) {
-					send_reinforcement_avail( i );
-				}
-			}
-			return;
+			// tell all of the clients.
+			if (MULTIPLAYER_MASTER)
+				send_reinforcement_avail(i);
 		}
+		return;
 	}
 
-	Assert ( i < Num_reinforcements );
+	Assertion(false, "Reinforcement '%s' not found!", name);
 }
 
 /**
@@ -8158,12 +8149,9 @@ int mission_did_ship_arrive(p_object *objp, bool force_arrival)
 
 		// if we're forcing the arrival, then "use" the reinforcement; otherwise don't process anything else
 		if (force_arrival) {
-			for (int i = 0; i < Num_reinforcements; i++) {
-				auto rp = &Reinforcements[i];
-				if (!stricmp(rp->name, objp->name)) {
-					rp->num_uses++;
-					break;
-				}
+			int i = find_item_with_string(Reinforcements, &reinforcements::name, objp->name);
+			if (i >= 0) {
+				Reinforcements[i].num_uses++;
 			}
 		} else {
 			return -1;
@@ -8415,12 +8403,9 @@ bool mission_maybe_make_wing_arrive(int wingnum, bool force_arrival)
 
 		// if we're forcing the arrival, then "use" the reinforcement; otherwise don't process anything else
 		if (force_arrival && wingp->current_count == 0) {
-			for (int i = 0; i < Num_reinforcements; i++) {
-				auto rp = &Reinforcements[i];
-				if (!stricmp(rp->name, wingp->name)) {
-					rp->num_uses++;
-					break;
-				}
+			int i = find_item_with_string(Reinforcements, &reinforcements::name, wingp->name);
+			if (i >= 0) {
+				Reinforcements[i].num_uses++;
 			}
 		} else {
 			// reinforcement wings skip the rest of the function

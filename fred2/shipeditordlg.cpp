@@ -1250,11 +1250,9 @@ int CShipEditorDlg::update_data(int redraw)
 			update_sexp_references(old_name, str);
 			ai_update_goal_references(sexp_ref_type::SHIP, old_name, str);
 			update_texture_replacements(old_name, str);
-			for (i=0; i<Num_reinforcements; i++)
-				if (!strcmp(old_name, Reinforcements[i].name)) {
-					Assert(strlen(str) < NAME_LENGTH);
-					strcpy_s(Reinforcements[i].name, str);
-				}
+			i = find_item_with_string(Reinforcements, &reinforcements::name, old_name);
+			if (i >= 0)
+				strcpy_s(Reinforcements[i].name, str);
 
 			Update_window = 1;
 		}
