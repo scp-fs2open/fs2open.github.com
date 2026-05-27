@@ -64,6 +64,17 @@ foreach (_shader ${SHADERS})
 			)
 
 		target_embed_files(code FILES "${_glslOutput}" RELATIVE_TO "${_shaderOutputDir}" PATH_TYPE_PREFIX "data/effects")
+		
+		#GLES default-material shaders
+		set(_glesGlslOutputs
+			"${CMAKE_CURRENT_SOURCE_DIR}/graphics/shaders/compiled/default-material.vert.spv.gles.glsl"
+			"${CMAKE_CURRENT_SOURCE_DIR}/graphics/shaders/compiled/default-material.frag.spv.gles.glsl"
+		)
+		target_embed_files(code FILES ${_glesGlslOutputs}
+			RELATIVE_TO "${CMAKE_CURRENT_SOURCE_DIR}/graphics/shaders/compiled"
+			PATH_TYPE_PREFIX "data/effects")
+		target_sources(code PRIVATE ${_glesGlslOutputs})
+		
 	else()
 		target_embed_files(code FILES "${_spirvFile}" RELATIVE_TO "${_shaderOutputDir}" PATH_TYPE_PREFIX "data/effects")
 
@@ -73,6 +84,17 @@ foreach (_shader ${SHADERS})
 		list(APPEND _structHeaderList "${_structOutput}")
 
 		target_embed_files(code FILES "${_glslOutput}" RELATIVE_TO "${_shaderOutputDir}" PATH_TYPE_PREFIX "data/effects")
+		
+		#GLES default-material shaders
+		set(_glesGlslOutputs
+			"${CMAKE_CURRENT_SOURCE_DIR}/graphics/shaders/compiled/default-material.vert.spv.gles.glsl"
+			"${CMAKE_CURRENT_SOURCE_DIR}/graphics/shaders/compiled/default-material.frag.spv.gles.glsl"
+		)
+		target_embed_files(code FILES ${_glesGlslOutputs}
+			RELATIVE_TO "${CMAKE_CURRENT_SOURCE_DIR}/graphics/shaders/compiled"
+			PATH_TYPE_PREFIX "data/effects")
+		target_sources(code PRIVATE ${_glesGlslOutputs})
+		
 	endif()
 endforeach ()
 

@@ -1,10 +1,8 @@
 #version 320 es
-#ifdef GL_ES
 precision highp float;
 precision highp int;
 precision highp sampler2D;
 precision highp sampler2DArray;
-#endif
 
 layout(std140) uniform genericData
 {

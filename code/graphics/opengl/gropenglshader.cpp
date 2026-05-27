@@ -137,8 +137,13 @@ static opengl_shader_type_t GL_shader_types[] = {
 	{ SDR_TYPE_BATCHED_BITMAP, "batched-v.sdr", "batched-f.sdr", nullptr,
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD, opengl_vert_attrib::COLOR }, "Batched bitmaps", false },
 
-	{ SDR_TYPE_DEFAULT_MATERIAL, "default-material.vert.spv.glsl", "default-material.frag.spv.glsl", nullptr,
-		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD, opengl_vert_attrib::COLOR }, "Default material", true },
+#ifdef USE_OPENGL_ES
+    { SDR_TYPE_DEFAULT_MATERIAL, "default-material.vert.spv.gles.glsl", "default-material.frag.spv.gles.glsl", nullptr,
+        { opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD, opengl_vert_attrib::COLOR }, "Default material", true },
+#else
+    { SDR_TYPE_DEFAULT_MATERIAL, "default-material.vert.spv.glsl", "default-material.frag.spv.glsl", nullptr,
+        { opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD, opengl_vert_attrib::COLOR }, "Default material", true },
+#endif
 
 	{ SDR_TYPE_NANOVG, "nanovg-v.sdr", "nanovg-f.sdr", nullptr,
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "NanoVG shader", false },
