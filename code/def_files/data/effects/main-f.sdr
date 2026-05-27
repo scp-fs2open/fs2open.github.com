@@ -147,7 +147,7 @@ uniform sampler2DArray sMiscmap;
 uniform sampler2DArray shadow_map;
 #prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
 
-out vec4 fragOut0;
+layout(location=0)out vec4 fragOut0;
 
 #ifndef MODEL_SDR_FLAG_SHADOW_MAP
 layout(location=1)out vec4 fragOut1;
