@@ -4103,7 +4103,7 @@ void beam_handle_collisions(beam *b)
 
 		// draw flash, explosion
 		if (draw_effects &&
-		    ((wi->piercing_impact_effect.isValid()) || (wi->flash_impact_weapon_expl_effect.isValid()))) {
+		    ((wi->piercing_impact_effect.isValid()) || (wi->flash_impact_weapon_expl_effect.isValid()) || (wi->impact_weapon_expl_effect.isValid()))) {
 			float rnd = frand();
 			int do_expl = 0;
 			if ((rnd < 0.2f || apply_beam_physics) && wi->impact_weapon_expl_effect.isValid()) {
