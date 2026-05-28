@@ -290,9 +290,18 @@ void RocketRenderingInterface::RenderGeometry(Vertex* vertices, int num_vertices
 void RocketRenderingInterface::setRenderOffset(const vec2d& render_offset) { renderOffset = render_offset; }
 float RocketRenderingInterface::GetPixelsPerInch()
 {
+	// TODO: SDL3 => The 3.6 API adds SDL_IsPhone(), which would be a more accurate
+	//               check for this. So look into replacing these defines when we
+	//               eventually move to 3.6+.
+#if defined(SDL_PLATFORM_IOS) || defined(SDL_PLATFORM_ANDROID)
+	const bool is_mobile = true;
+#else
+	const bool is_mobile = false;
+#endif
+
 	// This isn't reliable. Docs say to multiply by 160 for mobile
 	// and 96 for everything else.
-	return SDL_GetWindowDisplayScale(os::getSDLMainWindow()) * 96.0f;
+	return SDL_GetWindowDisplayScale(os::getSDLMainWindow()) * (is_mobile ? 160.0f : 96.0f);
 }
 
 void RocketRenderingInterface::renderGeometry(gr_buffer_handle vertex_buffer,
