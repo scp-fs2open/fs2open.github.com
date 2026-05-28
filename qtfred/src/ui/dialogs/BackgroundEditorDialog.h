@@ -60,8 +60,10 @@ private slots:
 	void on_nebulaLightningCombo_currentIndexChanged(int index);
 	void on_poofsListWidget_itemSelectionChanged();
 	void on_shipTrailsCheckBox_toggled(bool checked);
-	void on_fogNearDoubleSpinBox_valueChanged(double arg1);
-	void on_fogFarDoubleSpinBox_valueChanged(double arg1);
+	void on_fog1000mVisDoubleSpinBox_valueChanged(double arg1);
+	void on_fogNearDistanceDoubleSpinBox_valueChanged(double arg1);
+	void on_fogSkyboxClipDoubleSpinBox_valueChanged(double arg1);
+	void on_fogClipDoubleSpinBox_valueChanged(double arg1);
 	void on_displayBgsInNebulaCheckbox_toggled(bool checked);
 	void on_overrideFogPaletteCheckBox_toggled(bool checked);
 	void on_fogOverrideRedSpinBox_valueChanged(int arg1);

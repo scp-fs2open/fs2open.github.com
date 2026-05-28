@@ -857,11 +857,45 @@ void parse_mission_info(mission *pm, bool basic = false)
 		if (!basic)
 			nebl_set_storm(Mission_parse_storm_name);
 	}
-	if(optional_string("+Fog Near Mult:")){
-		stuff_float(&Neb2_fog_near_mult);
+
+	bool found_neb2_modern = false;
+
+	if (optional_string("+Fog Near Mult:")) {
+		stuff_float(&Neb2_fog_legacy_near_mult);
 	}
-	if(optional_string("+Fog Far Mult:")){
-		stuff_float(&Neb2_fog_far_mult);
+	if (optional_string("+Fog Far Mult:")) {
+		stuff_float(&Neb2_fog_legacy_far_mult);
+	}
+
+	// Look for the modern values
+	if (optional_string("+Fog 1000m Visibility:")) {
+		stuff_float(&Neb2_fog_1000m_visibility);
+		found_neb2_modern = true;
+	}
+	if (optional_string("+Fog Near Distance:")) {
+		stuff_float(&Neb2_fog_near_distance);
+		found_neb2_modern = true;
+	}
+	if (optional_string("+Fog Skybox Clip Distance:")) {
+		stuff_float(&Neb2_fog_skybox_clip_distance);
+		found_neb2_modern = true;
+	}
+	if (optional_string("+Fog Clip Distance:")) {
+		stuff_float(&Neb2_fog_clip_distance);
+		found_neb2_modern = true;
+	}
+
+	// write legacy values on save if we are compatible with older formats
+	Neb2_fog_save_legacy_values = !found_neb2_modern;
+
+	// Convert legacy values if this mission was made before modern values were introduced
+	if (!found_neb2_modern) {
+		//This stems from the weird unchangeable constants of legacy fog
+		float denom = std::max(75.f * Neb2_fog_legacy_far_mult - Neb2_fog_legacy_near_mult, 1.0f);
+		Neb2_fog_1000m_visibility = powf(10.f, -100.f / denom);
+		Neb2_fog_near_distance = 10.f * Neb2_fog_legacy_near_mult;
+		Neb2_fog_skybox_clip_distance = 0.f; // Apparently, skybox fog was just outright broken...
+		Neb2_fog_clip_distance = Default_max_draw_distance;
 	}
 
 	// Goober5000 - ship contrail speed threshold
@@ -9612,6 +9646,9 @@ bool check_for_25_1_data()
 		return true;
 
 	if (count_items_with_value(Props) > 0)
+		return true;
+
+	if (The_mission.flags[Mission::Mission_Flags::Fullneb] && !Neb2_fog_save_legacy_values)
 		return true;
 
 	constexpr auto defaultLayer = "Default";

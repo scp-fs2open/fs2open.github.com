@@ -91,8 +91,10 @@ public:
 	float m_skybox_pitch;
 	float m_skybox_bank;
 	float m_skybox_heading;
-	float m_neb_near_multi;
-	float m_neb_far_multi;
+	CString m_neb_fog_1000m_vis;
+	CString m_neb_fog_near_dist;
+	CString m_neb_fog_skybox_clip;
+	CString m_neb_fog_clip;
 	int m_light_profile_index;
 	//}}AFX_DATA
 
@@ -118,8 +120,10 @@ protected:
 	void OnOrientationChange();
 
 	CToolTipCtrl* m_CorrectedAnglesToolTip;
+	CToolTipCtrl* m_FogParamsToolTip;
 
 	virtual BOOL OnInitDialog();
+	virtual BOOL PreTranslateMessage(MSG* pMsg);
 
 	// Generated message map functions
 	//{{AFX_MSG(bg_bitmap_dlg)
@@ -175,7 +179,11 @@ protected:
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 
-private:	
+private:
+	float m_initial_neb_fog_1000m_vis;
+	float m_initial_neb_fog_near_dist;
+	float m_initial_neb_fog_skybox_clip;
+	float m_initial_neb_fog_clip;
 };
 
 #endif

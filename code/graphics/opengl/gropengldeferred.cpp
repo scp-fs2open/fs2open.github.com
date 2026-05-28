@@ -542,8 +542,8 @@ void gr_opengl_deferred_lighting_finish()
 		GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_composite_texture);
 		GL_state.Texture.Enable(1, GL_TEXTURE_2D, Scene_depth_texture);
 
-		float fog_near, fog_far, fog_density;
-		neb2_get_adjusted_fog_values(&fog_near, &fog_far, &fog_density);
+		float fog_near, fog_density;
+		neb2_get_adjusted_fog_values(&fog_near, &fog_density);
 		unsigned char r, g, b;
 		neb2_get_fog_color(&r, &g, &b);
 
@@ -558,6 +558,8 @@ void gr_opengl_deferred_lighting_finish()
 			data->fog_color.xyz.z = b / 255.f;
 			data->zNear           = Min_draw_distance;
 			data->zFar            = Max_draw_distance;
+			data->clip_inf_dist	  = Neb2_fog_skybox_clip_distance;
+			data->clip_dist       = Neb2_fog_clip_distance;
 		});
 
 		opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);

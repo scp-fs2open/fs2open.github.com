@@ -145,8 +145,10 @@ void bg_bitmap_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_SKY_FLAG_NO_CULL, m_sky_flag_4);
 	DDX_Check(pDX, IDC_SKY_FLAG_NO_GLOW, m_sky_flag_5);
 	DDX_Check(pDX, IDC_SKY_FLAG_CLAMP, m_sky_flag_6);
-	DDX_Text(pDX, IDC_NEB2_FAR_MULTIPLIER, m_neb_far_multi);
-	DDX_Text(pDX, IDC_NEB2_NEAR_MULTIPLIER, m_neb_near_multi);
+	DDX_Text(pDX, IDC_NEB2_FOG_1000M_VIS, m_neb_fog_1000m_vis);
+	DDX_Text(pDX, IDC_NEB2_FOG_NEAR_DIST, m_neb_fog_near_dist);
+	DDX_Text(pDX, IDC_NEB2_FOG_SKYBOX_CLIP, m_neb_fog_skybox_clip);
+	DDX_Text(pDX, IDC_NEB2_FOG_CLIP, m_neb_fog_clip);
 	DDX_CBIndex(pDX, IDC_LIGHT_PROFILE, m_light_profile_index);
 	DDX_Text(pDX, IDC_NEB2_FOG_R, m_fog_r);
 	DDV_MinMaxInt(pDX, m_fog_r, 0, 255);
@@ -226,8 +228,25 @@ BOOL bg_bitmap_dlg::OnInitDialog()
 	m_CorrectedAnglesToolTip->AddTool(pWnd, "Mission files saved in 22.0 and earlier versions of FRED use incorrect math for calculating the background angles");
 	m_CorrectedAnglesToolTip->Activate(TRUE);
 
+	m_FogParamsToolTip = new CToolTipCtrl();
+	m_FogParamsToolTip->Create(this);
+	m_FogParamsToolTip->AddTool(GetDlgItem(IDC_NEB2_FOG_1000M_VIS), "Fraction of light that survives 1000 meters of fog (smaller = thicker fog).");
+	m_FogParamsToolTip->AddTool(GetDlgItem(IDC_NEB2_FOG_NEAR_DIST), "Distance from the camera where fog starts (in meters).");
+	m_FogParamsToolTip->AddTool(GetDlgItem(IDC_NEB2_FOG_SKYBOX_CLIP), "Maximum render distance for the skybox in fog (in meters).  0 disables skybox fog.");
+	m_FogParamsToolTip->AddTool(GetDlgItem(IDC_NEB2_FOG_CLIP), "Maximum render distance for the scene in fog (in meters).  0 disables scene fog.");
+	m_FogParamsToolTip->Activate(TRUE);
+
 	return TRUE;  // return TRUE unless you set the focus to a control
 				  // EXCEPTION: OCX Property Pages should return FALSE
+}
+
+BOOL bg_bitmap_dlg::PreTranslateMessage(MSG* pMsg)
+{
+	if (m_CorrectedAnglesToolTip != nullptr)
+		m_CorrectedAnglesToolTip->RelayEvent(pMsg);
+	if (m_FogParamsToolTip != nullptr)
+		m_FogParamsToolTip->RelayEvent(pMsg);
+	return CDialog::PreTranslateMessage(pMsg);
 }
 
 void bg_bitmap_dlg::create()
@@ -385,8 +404,15 @@ void bg_bitmap_dlg::create()
 	sprintf(buf, "Blue: %d", m_amb_blue.GetPos());
 	GetDlgItem(IDC_AMBIENT_B_TEXT)->SetWindowText(buf);
 
-	m_neb_near_multi = Neb2_fog_near_mult;
-	m_neb_far_multi = Neb2_fog_far_mult;
+	m_neb_fog_1000m_vis.Format("%.10g", Neb2_fog_1000m_visibility);
+	m_neb_fog_near_dist.Format("%.10g", Neb2_fog_near_distance);
+	m_neb_fog_skybox_clip.Format("%.10g", Neb2_fog_skybox_clip_distance);
+	m_neb_fog_clip.Format("%.10g", Neb2_fog_clip_distance);
+
+	m_initial_neb_fog_1000m_vis = Neb2_fog_1000m_visibility;
+	m_initial_neb_fog_near_dist = Neb2_fog_near_distance;
+	m_initial_neb_fog_skybox_clip = Neb2_fog_skybox_clip_distance;
+	m_initial_neb_fog_clip = Neb2_fog_clip_distance;
 
 	box = (CComboBox *) GetDlgItem(IDC_LIGHT_PROFILE);
 	SCP_vector<SCP_string> profiles = lighting_profiles::list_profiles();
@@ -510,8 +536,29 @@ void bg_bitmap_dlg::OnClose()
 		The_mission.skybox_flags |= MR_FORCE_CLAMP;
 	}
 
-	Neb2_fog_near_mult = m_neb_near_multi;
-	Neb2_fog_far_mult = m_neb_far_multi;
+	Neb2_fog_1000m_visibility = (float)atof((LPCSTR)m_neb_fog_1000m_vis);
+	Neb2_fog_near_distance = (float)atof((LPCSTR)m_neb_fog_near_dist);
+	Neb2_fog_skybox_clip_distance = (float)atof((LPCSTR)m_neb_fog_skybox_clip);
+	Neb2_fog_clip_distance = (float)atof((LPCSTR)m_neb_fog_clip);
+
+	// if the user set or changed any modern value, we can no longer save the legacy values
+	// (and we might not have saved them in the first place)
+	if (!fl_equal(Neb2_fog_1000m_visibility, m_initial_neb_fog_1000m_vis)
+		|| !fl_equal(Neb2_fog_near_distance, m_initial_neb_fog_near_dist)
+		|| !fl_equal(Neb2_fog_skybox_clip_distance, m_initial_neb_fog_skybox_clip)
+		|| !fl_equal(Neb2_fog_clip_distance, m_initial_neb_fog_clip))
+	{
+		Neb2_fog_save_legacy_values = false;
+	}
+
+	extern const float Default_max_draw_distance;
+	CLAMP(Neb2_fog_1000m_visibility, 0.0f, 1.0f);
+	if (Neb2_fog_near_distance <= 0.0f)
+		Neb2_fog_near_distance = 10.0f;
+	if (Neb2_fog_skybox_clip_distance < 0.0f)
+		Neb2_fog_skybox_clip_distance = Default_max_draw_distance;
+	if (Neb2_fog_clip_distance < 0.0f)
+		Neb2_fog_clip_distance = Default_max_draw_distance;
 
 	The_mission.lighting_profile_name = lighting_profiles::list_profiles()[m_light_profile_index];
 	// close sun data
@@ -610,8 +657,10 @@ void bg_bitmap_dlg::OnFullNeb()
 
 		GetDlgItem(IDC_NEB2_POOF_LIST)->EnableWindow(TRUE);
 
-		GetDlgItem(IDC_NEB2_NEAR_MULTIPLIER)->EnableWindow(TRUE);
-		GetDlgItem(IDC_NEB2_FAR_MULTIPLIER)->EnableWindow(TRUE);
+		GetDlgItem(IDC_NEB2_FOG_1000M_VIS)->EnableWindow(TRUE);
+		GetDlgItem(IDC_NEB2_FOG_NEAR_DIST)->EnableWindow(TRUE);
+		GetDlgItem(IDC_NEB2_FOG_SKYBOX_CLIP)->EnableWindow(TRUE);
+		GetDlgItem(IDC_NEB2_FOG_CLIP)->EnableWindow(TRUE);
 
 		GetDlgItem(IDC_NEB2_PALETTE_OVERRIDE)->EnableWindow(TRUE);
 		GetDlgItem(IDC_NEB2_FOG_R)->EnableWindow(m_fog_color_override);
@@ -643,8 +692,10 @@ void bg_bitmap_dlg::OnFullNeb()
 
 		GetDlgItem(IDC_NEB2_POOF_LIST)->EnableWindow(FALSE);
 
-		GetDlgItem(IDC_NEB2_NEAR_MULTIPLIER)->EnableWindow(FALSE);
-		GetDlgItem(IDC_NEB2_FAR_MULTIPLIER)->EnableWindow(FALSE);
+		GetDlgItem(IDC_NEB2_FOG_1000M_VIS)->EnableWindow(FALSE);
+		GetDlgItem(IDC_NEB2_FOG_NEAR_DIST)->EnableWindow(FALSE);
+		GetDlgItem(IDC_NEB2_FOG_SKYBOX_CLIP)->EnableWindow(FALSE);
+		GetDlgItem(IDC_NEB2_FOG_CLIP)->EnableWindow(FALSE);
 
 		GetDlgItem(IDC_NEB2_PALETTE_OVERRIDE)->EnableWindow(FALSE);
 		GetDlgItem(IDC_NEB2_FOG_R)->EnableWindow(FALSE);
