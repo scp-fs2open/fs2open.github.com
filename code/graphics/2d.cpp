@@ -1861,8 +1861,13 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 		// (be that a window, a render overlay from nsight, or an FSO-internal buffer) instead of directly rendering to the OS-provided direct screen backbuffer.
 		// As the cost of -window_res is one single blit of a fullscreen buffer, it's probably an acceptable compromise to get rid of render artifacts.
 		// As such, forcibly enable -window_res at the screen resolution here, if we're in fullscreen.
-
+		//
 		// Additionally, SDL3+ doesn't work when reading from the GL_FRONT buffers, so we need our own intermediate buffers.
+		//
+		// Furthermore, gamma handling now also requires a blit of the final scene (not just the 3D scene, since it needs to work on menus as well).
+		//
+		// As such, window_res is effectively no longer optional, part of the core render path and must always be enabled.
+		// The only reason it is not yet refactored into an always-on thing is due to issues with FRED integration.
 		Cmdline_window_res.emplace(static_cast<uint16_t>(width), static_cast<uint16_t>(height));
 	}
 
