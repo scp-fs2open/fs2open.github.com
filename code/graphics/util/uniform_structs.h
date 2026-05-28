@@ -408,6 +408,11 @@ struct irrmap_data {
 	int face;
 };
 
+struct gamma_blit_data {
+	float gamma;
+	float pad[3];
+};
+
 } // namespace generic_data
 
 } // namespace graphics

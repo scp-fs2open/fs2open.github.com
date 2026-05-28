@@ -313,7 +313,7 @@ bool Save_custom_screen_size;
 bool Deferred_lighting = false;
 bool High_dynamic_range = false;
 
-static ushort* Gr_original_gamma_ramp = nullptr;
+
 
 static int videodisplay_deserializer(const json_t* value)
 {
@@ -1304,15 +1304,6 @@ void gr_close()
 
 	if(Cmdline_enable_vr)
 		openxr_close();
-
-	if (Gr_original_gamma_ramp != nullptr && os::getSDLMainWindow() != nullptr) {
-		SDL_SetWindowGammaRamp(os::getSDLMainWindow(), Gr_original_gamma_ramp, (Gr_original_gamma_ramp + 256),
-		                       (Gr_original_gamma_ramp + 512));
-	}
-
-	// This is valid even if Gr_original_gamma_ramp is nullptr
-	vm_free(Gr_original_gamma_ramp);
-	Gr_original_gamma_ramp = nullptr;
 
 	gpu_heap_deinit();
 
@@ -3197,100 +3188,14 @@ void gr_heap_deallocate(GpuHeap heap_type, size_t data_offset)
 	gpuHeap->freeGpuData(data_offset);
 }
 
-// I feel dirty...
-static void make_gamma_ramp(float gamma, ushort* ramp)
-{
-	ushort x, y;
-	ushort base_ramp[256];
-
-	Assert(ramp != nullptr);
-
-	// generate the base ramp values first off
-
-	// if no gamma set then just do this quickly
-	if (gamma <= 0.0f) {
-		memset(ramp, 0, 3 * 256 * sizeof(ushort));
-		return;
-	}
-	// identity gamma, avoid all of the math
-	else if (gamma == 1.0f || Gr_original_gamma_ramp == nullptr) {
-		if (Gr_original_gamma_ramp != nullptr) {
-			memcpy(ramp, Gr_original_gamma_ramp, 3 * 256 * sizeof(ushort));
-		}
-		// set identity if no original ramp
-		else {
-			for (x = 0; x < 256; x++) {
-				ramp[x]       = (x << 8) | x;
-				ramp[x + 256] = (x << 8) | x;
-				ramp[x + 512] = (x << 8) | x;
-			}
-		}
-
-		return;
-	}
-	// for everything else we need to actually figure it up
-	else {
-		double g = 1.0 / (double)gamma;
-		double val;
-
-		Assert(Gr_original_gamma_ramp != nullptr);
-
-		for (x = 0; x < 256; x++) {
-			val = (pow(x / 255.0, g) * 65535.0 + 0.5);
-			CLAMP(val, 0., 65535.);
-
-			base_ramp[x] = (ushort)val;
-		}
-
-		for (y = 0; y < 3; y++) {
-			for (x = 0; x < 256; x++) {
-				val = (base_ramp[x] * 2) - Gr_original_gamma_ramp[x + y * 256];
-				CLAMP(val, 0., 65535.);
-
-				ramp[x + y * 256] = (ushort)val;
-			}
-		}
-	}
-}
-
 void gr_set_gamma(float gamma)
 {
 	if (gr_screen.mode == GR_STUB) {
 		return;
 	}
 
-	Gr_gamma = gamma;
-
-	// new way - but not while running FRED
-	if (!Fred_running && !Cmdline_no_set_gamma && os::getSDLMainWindow() != nullptr) {
-		if (Gr_original_gamma_ramp == nullptr) {
-			// First time we are here so get the current (original) gamma ramp here so we can reset it later
-			Gr_original_gamma_ramp = (ushort*)vm_malloc(3 * 256 * sizeof(ushort), memory::quiet_alloc);
-
-			if (Gr_original_gamma_ramp == nullptr) {
-				mprintf(("  Unable to allocate memory for gamma ramp!  Disabling...\n"));
-				Cmdline_no_set_gamma = 1;
-			} else {
-				SDL_GetWindowGammaRamp(os::getSDLMainWindow(), Gr_original_gamma_ramp, (Gr_original_gamma_ramp + 256),
-									   (Gr_original_gamma_ramp + 512));
-			}
-		}
-
-		auto gamma_ramp = (ushort*)vm_malloc(3 * 256 * sizeof(ushort), memory::quiet_alloc);
-
-		if (gamma_ramp == nullptr) {
-			Int3();
-			return;
-		}
-
-		memset(gamma_ramp, 0, 3 * 256 * sizeof(ushort));
-
-		// Create the Gamma lookup table
-		make_gamma_ramp(gamma, gamma_ramp);
-
-		SDL_SetWindowGammaRamp(os::getSDLMainWindow(), gamma_ramp, (gamma_ramp + 256), (gamma_ramp + 512));
-
-		vm_free(gamma_ramp);
+	if (!Cmdline_no_set_gamma) {
+		Gr_gamma = gamma;
 	}
 }
 

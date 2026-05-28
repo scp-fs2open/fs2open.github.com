@@ -119,13 +119,24 @@ void gr_opengl_flip()
 		return;
 
 	if (Cmdline_window_res) {
-		GL_state.BindFrameBuffer(0, GL_DRAW_FRAMEBUFFER);
-		GL_state.BindFrameBuffer(Back_framebuffer, GL_READ_FRAMEBUFFER);
+		GL_state.PushFramebufferState();
+		GL_state.BindFrameBuffer(0, GL_FRAMEBUFFER);
+		glViewport(0, 0, Cmdline_window_res->first, Cmdline_window_res->second);
 
-		glReadBuffer(GL_COLOR_ATTACHMENT0);
-		glDrawBuffer(GL_BACK);
-		glBlitFramebuffer(0, 0, gr_screen.max_w, gr_screen.max_h, 0, 0, Cmdline_window_res->first, Cmdline_window_res->second, GL_COLOR_BUFFER_BIT, GL_LINEAR);
-		glDrawBuffer(GL_NONE);
+		opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_GAMMA_BLIT, 0));
+
+		GL_state.Texture.Enable(0, GL_TEXTURE_2D, Back_texture);
+		Current_shader->program->Uniforms.setTextureUniform("tex", 0);
+
+		GL_state.SetAlphaBlendMode(gr_alpha_blend::ALPHA_BLEND_NONE);
+		GL_state.SetZbufferType(ZBUFFER_TYPE_NONE);
+
+		opengl_set_generic_uniform_data<graphics::generic_data::gamma_blit_data>(
+			[](graphics::generic_data::gamma_blit_data* data) {
+				data->gamma = Gr_gamma;
+			});
+
+		opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
 
 		GL_state.PopFramebufferState();
 	}
