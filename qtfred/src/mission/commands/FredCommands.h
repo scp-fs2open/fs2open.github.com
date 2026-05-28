@@ -478,6 +478,7 @@ namespace FieldId {
     constexpr int WP_ColorG         = 4004;
     constexpr int WP_ColorB         = 4005;
     // Prop editor             4101–4199
+    constexpr int Prop_Flags = 4101;
     // Background editor       4201–4299
     // Wing editor             4301–4399
     // Ship editor             4401–4499
