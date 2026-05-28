@@ -2568,7 +2568,7 @@ int Fred_mission_save::save_mission_info()
 		// write out the nebula clipping multipliers...
 		if (save_config.save_format != MissionFormat::RETAIL) {
 			// legacy values
-			if (Neb2_fog_use_legacy_values)
+			if (Neb2_fog_save_legacy_values)
 			{
 				if (optional_string_fred("+Fog Near Mult:"))
 					parse_comments();
@@ -2582,7 +2582,8 @@ int Fred_mission_save::save_mission_info()
 					fout("\n+Fog Far Mult:");
 				fout(" %f", Neb2_fog_legacy_far_mult);
 			}
-			// modern values
+			// Modern fogging values - note that the writing of these values signals to the parser that this mission was created with a version of FSO that has the modern fogging fixes.
+			// Per Lafiel, these should never be only-if-non-default, since the fogging converter is controlled by their presence or absence.
 			else
 			{
 				if (optional_string_fred("+Fog 1000m Visibility:"))

@@ -93,7 +93,7 @@ int neb_tossed_count = 0;		// nebs tossed because of max render count
 float Neb2_awacs = -1.0f;
 
 // Deprecated!  Only used for compatibility
-bool  Neb2_fog_use_legacy_values = false;
+bool  Neb2_fog_save_legacy_values = false;
 float Neb2_fog_legacy_near_mult = 1.0f;
 float Neb2_fog_legacy_far_mult = 1.0f;
 
@@ -390,7 +390,7 @@ void neb2_pre_level_init()
 {
 	Neb2_awacs = -1.0f;
 
-	Neb2_fog_use_legacy_values = false;
+	Neb2_fog_save_legacy_values = false;
 	Neb2_fog_legacy_near_mult = 1.0f;
 	Neb2_fog_legacy_far_mult = 1.0f;
 

@@ -916,12 +916,12 @@ void BackgroundEditorDialogModel::setFogClipDistance(float v)
 
 void BackgroundEditorDialogModel::finalizeFogChanges()
 {
-	if (Neb2_fog_1000m_visibility != _initial_fog_1000m_vis
-		|| Neb2_fog_near_distance != _initial_fog_near_dist
-		|| Neb2_fog_skybox_clip_distance != _initial_fog_skybox_clip
-		|| Neb2_fog_clip_distance != _initial_fog_clip)
+	if (!fl_equal(Neb2_fog_1000m_visibility, _initial_fog_1000m_vis)
+		|| !fl_equal(Neb2_fog_near_distance, _initial_fog_near_dist)
+		|| !fl_equal(Neb2_fog_skybox_clip_distance, _initial_fog_skybox_clip)
+		|| !fl_equal(Neb2_fog_clip_distance, _initial_fog_clip))
 	{
-		modify(Neb2_fog_use_legacy_values, false);
+		modify(Neb2_fog_save_legacy_values, false);
 	}
 }
 
