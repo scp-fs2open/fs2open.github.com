@@ -15,6 +15,9 @@ public:
 	WaypointEditorDialog(FredView* parent, EditorViewport* viewport);
 	~WaypointEditorDialog() override;
 
+protected:
+	void changeEvent(QEvent* e) override;
+
 private slots:
 	void on_prevPathButton_clicked();
 	void on_nextPathButton_clicked();
@@ -27,6 +30,7 @@ private slots:
 	void on_layerCombo_currentIndexChanged(int index);
 
  private: // NOLINT(readability-redundant-access-specifiers)
+	FredView*       _fredView;
 	EditorViewport* _viewport;
 	std::unique_ptr<Ui::WaypointEditorDialog> ui;
 	std::unique_ptr<WaypointEditorDialogModel> _model;

@@ -125,6 +125,10 @@ int WaypointEditorDialogModel::getSelectionCount() const {
 	return static_cast<int>(_selectedWaypointPaths.size());
 }
 
+const SCP_vector<int>& WaypointEditorDialogModel::getSelectedPathIndices() const {
+	return _selectedWaypointPaths;
+}
+
 bool WaypointEditorDialogModel::validateName(const SCP_string& name) {
 	int exclude_wl = _selectedWaypointPaths.empty() ? -1 : static_cast<int>(_selectedWaypointPaths.front());
 	SCP_string reason = check_name_conflict("waypoint path", name.c_str(), -1, -1, exclude_wl);
