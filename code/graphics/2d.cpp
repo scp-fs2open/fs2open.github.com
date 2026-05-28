@@ -755,7 +755,6 @@ void removeVSyncOption()
 static std::unique_ptr<graphics::util::UniformBufferManager> UniformBufferManager;
 
 // Forward definitions
-static void uniform_buffer_managers_init();
 static void uniform_buffer_managers_deinit();
 static void uniform_buffer_managers_retire_buffers();
 
@@ -1980,9 +1979,6 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 
 	gr_light_init();
 
-	// Initialize uniform buffer managers
-	uniform_buffer_managers_init();
-
 	gpu_heap_init();
 
 	mprintf(("Checking graphics capabilities:\n"));
@@ -2991,7 +2987,7 @@ void gr_print_timestamp(int x, int y, fix timestamp, int resize_mode)
 	gr_string(x, y, time.c_str(), resize_mode);
 }
 
-static void uniform_buffer_managers_init()
+void gr_uniform_buffer_managers_init()
 {
 	if (gr_screen.mode == GR_STUB) {
 		return;

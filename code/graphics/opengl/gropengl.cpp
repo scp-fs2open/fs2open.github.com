@@ -119,8 +119,8 @@ void gr_opengl_flip()
 		return;
 
 	if (Cmdline_window_res) {
-		GL_state.PushFramebufferState();
-		GL_state.BindFrameBuffer(0, GL_FRAMEBUFFER);
+		GL_state.PopFramebufferState();
+
 		glViewport(0, 0, Cmdline_window_res->first, Cmdline_window_res->second);
 
 		opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_GAMMA_BLIT, 0));
@@ -137,8 +137,6 @@ void gr_opengl_flip()
 			});
 
 		opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
-
-		GL_state.PopFramebufferState();
 	}
 
 	if (Cmdline_gl_finish)
@@ -1496,6 +1494,8 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	Gr_current_green = &Gr_green;
 	Gr_current_alpha = &Gr_alpha;
 
+	// Initialize uniform buffer managers
+	gr_uniform_buffer_managers_init();
 
 	gr_setup_frame();
 	gr_opengl_reset_clip();
