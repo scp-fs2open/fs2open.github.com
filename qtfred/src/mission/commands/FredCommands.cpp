@@ -756,12 +756,14 @@ RenameObjectCommand::RenameObjectCommand(int        objNum,
                                          SCP_string oldName,
                                          SCP_string newName,
                                          Editor*    editor,
+                                         bool       skipFirstRedo,
                                          QUndoCommand* parent)
     : QUndoCommand(QObject::tr("Rename"), parent)
     , _signature(objNum >= 0 ? Objects[objNum].signature : -1)
     , _oldName(std::move(oldName))
     , _newName(std::move(newName))
     , _editor(editor)
+    , _skipFirstRedo(skipFirstRedo)
 {}
 
 void RenameObjectCommand::applyName(const SCP_string& name, const SCP_string& current)
@@ -791,6 +793,7 @@ void RenameObjectCommand::undo()
 
 void RenameObjectCommand::redo()
 {
+	if (_skipFirstRedo) { _skipFirstRedo = false; return; }
 	// Object is currently named _oldName; rename it to _newName.
 	applyName(_newName, _oldName);
 }

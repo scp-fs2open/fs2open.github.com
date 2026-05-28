@@ -1,6 +1,8 @@
 #pragma once
 
+#include <functional>
 #include <memory>
+#include <typeinfo>
 
 #include <QUndoCommand>
 #include <mission/dialogs/AbstractDialogModel.h>
@@ -52,6 +54,7 @@ class CreateObjectCommand : public QUndoCommand {
 	int             _savedPropIndex;
 	int             _waypointInstance;
 	SCP_string      _waypointListName; // name of list to append to (empty = create new list)
+	SCP_string      _jumpNodeName;     // original JN name; restored on redo for stable identity
 	CreateKind      _createKind;
 	OtherKind       _otherKind;        // only meaningful when _createKind == Other
 	int             _createdObjNum;
@@ -227,6 +230,7 @@ class RenameObjectCommand : public QUndoCommand {
 	SCP_string _oldName;
 	SCP_string _newName;
 	Editor*    _editor;
+	bool       _skipFirstRedo = false; // set when rename already applied by caller
 
 	// name    = the name to apply
 	// current = the name the object currently has (lookup key for waypoint paths;
@@ -234,10 +238,14 @@ class RenameObjectCommand : public QUndoCommand {
 	void applyName(const SCP_string& name, const SCP_string& current);
 
 public:
+	// skipFirstRedo: pass true when the rename has already been applied by the
+	// caller (e.g. a dialog slot); the first redo() fired by QUndoStack::push()
+	// will be a no-op so the rename is not applied twice.
 	RenameObjectCommand(int        objNum,
 	                    SCP_string oldName,
 	                    SCP_string newName,
 	                    Editor*    editor,
+	                    bool       skipFirstRedo = false,
 	                    QUndoCommand* parent = nullptr);
 	void undo() override;
 	void redo() override;
@@ -446,6 +454,104 @@ public:
                        QUndoCommand*                                            parent = nullptr);
     void undo() override;
     void redo() override;
+};
+
+// ---------------------------------------------------------------------------
+// FieldId — global field identifiers used by FieldEditCommand for merging.
+// Each (dialog, field) pair must have a unique value so that consecutive
+// edits to the same field merge while edits to different fields do not.
+// ---------------------------------------------------------------------------
+
+namespace FieldId {
+    // Jump Node editor
+    constexpr int JN_DisplayName = 3001;
+    constexpr int JN_ModelFile   = 3002;
+    constexpr int JN_ColorR      = 3003;
+    constexpr int JN_ColorG      = 3004;
+    constexpr int JN_ColorB      = 3005;
+    constexpr int JN_ColorA      = 3006;
+    constexpr int JN_Hidden      = 3007;
+    // Waypoint Path editor    4001–4099
+    // Prop editor             4101–4199
+    // Background editor       4201–4299
+    // Wing editor             4301–4399
+    // Ship editor             4401–4499
+}
+
+// ---------------------------------------------------------------------------
+// FieldEditCommand<T> — undo/redo a single-field change on one or more objects
+//
+// Add one Entry per selected object via addEntry().  Single-select dialogs
+// add one entry; multi-select add N.  Consecutive pushes with the same
+// fieldId and entry count/order are merged — only the latest 'after' is kept,
+// collapsing rapid spinbox edits into one undo step.
+//
+// skipFirstRedo: pass true when the caller already applied the change before
+// pushing (e.g. via a model setter that handles validation).  The first
+// redo() fired by QUndoStack::push() is then a no-op.
+// ---------------------------------------------------------------------------
+
+template<typename T>
+class FieldEditCommand : public QUndoCommand {
+    struct Entry {
+        T before;
+        T after;
+        std::function<void(const T&)> setter;
+    };
+
+    SCP_vector<Entry> _entries;
+    int               _fieldId;
+    SCP_string        _targetKey; // identity of the edited object(s); see setTargetKey()
+    Editor*           _editor;
+    bool              _skipFirstRedo;
+
+public:
+    FieldEditCommand(int            fieldId,
+                     Editor*        editor,
+                     const QString& text          = {},
+                     bool           skipFirstRedo = false,
+                     QUndoCommand*  parent        = nullptr)
+        : QUndoCommand(text, parent)
+        , _fieldId(fieldId)
+        , _editor(editor)
+        , _skipFirstRedo(skipFirstRedo)
+    {}
+
+    // Identity of the edited target(s) — e.g. the ship signature(s) or wing
+    // name the setters are bound to. Commands with different keys never merge,
+    // so editing the same field on a different selection starts a new undo
+    // step instead of cross-wiring the previous command's setters.
+    void setTargetKey(SCP_string key) { _targetKey = std::move(key); }
+
+    void addEntry(T before, T after, std::function<void(const T&)> setter) {
+        _entries.push_back({ std::move(before), std::move(after), std::move(setter) });
+    }
+
+    bool isEmpty() const { return _entries.empty(); }
+
+    void undo() override {
+        for (const auto& e : _entries) e.setter(e.before);
+        _editor->missionChanged();
+    }
+
+    void redo() override {
+        if (_skipFirstRedo) { _skipFirstRedo = false; return; }
+        for (const auto& e : _entries) e.setter(e.after);
+        _editor->missionChanged();
+    }
+
+    bool mergeWith(const QUndoCommand* other) override {
+        if (typeid(*other) != typeid(*this)) return false;
+        const auto* o = static_cast<const FieldEditCommand<T>*>(other);
+        if (o->_fieldId != _fieldId) return false;
+        if (o->_targetKey != _targetKey) return false;
+        if (o->_entries.size() != _entries.size()) return false;
+        for (size_t i = 0; i < _entries.size(); ++i)
+            _entries[i].after = o->_entries[i].after;
+        return true;
+    }
+
+    int id() const override { return _fieldId; }
 };
 
 } // namespace fso::fred

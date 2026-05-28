@@ -343,6 +343,23 @@ bool CJumpNode::IsSpecialModel() const
 	return ((m_flags & JN_SPECIAL_MODEL) != 0);
 }
 
+const char* CJumpNode::GetModelFilename() const
+{
+	if (!IsSpecialModel()) return JN_DEFAULT_MODEL;
+	const polymodel* pm = model_get(m_modelnum);
+	return pm ? pm->filename : JN_DEFAULT_MODEL;
+}
+
+void CJumpNode::ResetToDefaultModel()
+{
+	if (IsSpecialModel() && m_modelnum != -1)
+		model_unload(m_modelnum);
+	m_modelnum = model_load(NOX(JN_DEFAULT_MODEL), nullptr, ErrorType::WARNING);
+	m_flags &= ~JN_SPECIAL_MODEL;
+	if (m_modelnum != -1)
+		m_radius = model_get_radius(m_modelnum);
+}
+
 /**
  * @return Does the jump node have a display name?
  */

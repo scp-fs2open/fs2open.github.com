@@ -200,6 +200,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void viewWindowActivated();
  protected:
  bool event(QEvent* event) override;
+	bool eventFilter(QObject* watched, QEvent* event) override;
 	void changeEvent(QEvent* event) override;
  	void closeEvent(QCloseEvent* event) override;
 

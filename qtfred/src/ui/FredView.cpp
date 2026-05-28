@@ -13,6 +13,8 @@
 #include <QMessageBox>
 #include <QDebug>
 #include <QKeyEvent>
+#include <QLineEdit>
+#include <QApplication>
 #include <QProcess>
 #include <QSignalBlocker>
 #include <QSettings>
@@ -164,6 +166,10 @@ FredView::FredView(QWidget* parent) : QMainWindow(parent), ui(new Ui::FredView()
 	_undoAction->setShortcuts(QKeySequence::Undo);
 	_redoAction  = _undoGroup->createRedoAction(this, tr("&Redo"));
 	_redoAction->setShortcuts(QKeySequence::Redo);
+	// Make the main undo/redo shortcuts application-wide so Ctrl+Z/Y fire regardless of which
+	// window (viewport or any dialog) is focused. The undo group routes to the active stack.
+	_undoAction->setShortcutContext(Qt::ApplicationShortcut);
+	_redoAction->setShortcutContext(Qt::ApplicationShortcut);
 	// QKeySequence::Redo includes Ctrl+Shift+Z on Windows and Linux, which conflicts
 	// with the camera undo shortcut below. Strip it so only Ctrl+Y remains.
 	{
@@ -171,6 +177,13 @@ FredView::FredView(QWidget* parent) : QMainWindow(parent), ui(new Ui::FredView()
 		redoShortcuts.removeAll(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_Z));
 		_redoAction->setShortcuts(redoShortcuts);
 	}
+
+	// Text editors (QLineEdit, and the editors inside spin boxes / editable combos) claim
+	// Ctrl+Z/Y by accepting the ShortcutOverride event, which would shadow the mission undo.
+	// This filter lets a focused field keep its own text undo only while it actually has
+	// something to undo; once its local history is empty the keystroke falls through to the
+	// application-wide mission undo/redo. See eventFilter() below.
+	qApp->installEventFilter(this);
 
 	_undoCameraAction = _cameraStack->createUndoAction(this, tr("Undo View Change"));
 	_undoCameraAction->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_Z));
@@ -2454,12 +2467,41 @@ bool FredView::event(QEvent* event) {
 		return QMainWindow::event(event);
 	}
 }
+bool FredView::eventFilter(QObject* watched, QEvent* event) {
+	// Decide, per Ctrl+Z/Y press, whether a focused text editor should keep the key for its own
+	// text undo or whether it should fall through to the application-wide mission undo/redo.
+	if (event->type() == QEvent::ShortcutOverride) {
+		auto* keyEvent = static_cast<QKeyEvent*>(event);
+		const bool isUndo = keyEvent->matches(QKeySequence::Undo);
+		const bool isRedo = keyEvent->matches(QKeySequence::Redo);
+		if (isUndo || isRedo) {
+			// Spin boxes and editable combos delegate focus to an internal QLineEdit, so the
+			// focus widget is the line edit in all three cases.
+			auto* lineEdit = qobject_cast<QLineEdit*>(QApplication::focusWidget());
+			if (lineEdit != nullptr) {
+				const bool fieldCanHandle = isUndo ? lineEdit->isUndoAvailable() : lineEdit->isRedoAvailable();
+				if (!fieldCanHandle) {
+					// Field has nothing to undo/redo: swallow the override so Qt activates the
+					// application-wide undo/redo action instead of handing the key to the field.
+					return true;
+				}
+				// Otherwise let the field accept the override and undo/redo its own text.
+			}
+		}
+	}
+	return QMainWindow::eventFilter(watched, event);
+}
 void FredView::changeEvent(QEvent* event) {
 	QMainWindow::changeEvent(event);
 	// Force menubar repaint when reenabled after a modal dialog closes.
 	// Without this, menu items stay grey until the user mouses over them.
 	if (event->type() == QEvent::EnabledChange && isEnabled()) {
 		menuBar()->update();
+	}
+	// When the main window regains focus, point undo/redo back at the main stack. This restores
+	// main-stack undo after interacting with a modeless dialog that may have changed the active stack.
+	if (event->type() == QEvent::ActivationChange && isActiveWindow()) {
+		_undoGroup->setActiveStack(_mainStack);
 	}
 }
 void FredView::closeEvent(QCloseEvent* event) {
