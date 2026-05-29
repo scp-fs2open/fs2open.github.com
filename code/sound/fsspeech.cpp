@@ -178,7 +178,7 @@ static auto SpeechBriefingOption = options::OptionBuilder<bool>("Speech.Briefing
 	.category(std::make_pair("Audio", 1826))
 	.level(options::ExpertLevel::Beginner)
 	.change_listener(ttsbriefing_change)
-	.default_val(true)
+	.default_val(false)
 	.importance(0)
 	.finish();
 
@@ -188,7 +188,7 @@ static auto SpeechTechroomOption = options::OptionBuilder<bool>("Speech.Techroom
 	.category(std::make_pair("Audio", 1826))
 	.level(options::ExpertLevel::Beginner)
 	.change_listener(ttstechroom_change)
-	.default_val(true)
+	.default_val(false)
 	.importance(0)
 	.finish();
 
@@ -198,7 +198,7 @@ static auto SpeechIngameOption = options::OptionBuilder<bool>("Speech.Ingame",
 	.category(std::make_pair("Audio", 1826))
 	.level(options::ExpertLevel::Beginner)
 	.change_listener(ttsingame_change)
-	.default_val(true)
+	.default_val(false)
 	.importance(0)
 	.finish();
 
@@ -208,7 +208,7 @@ static auto SpeechMultiOption = options::OptionBuilder<bool>("Speech.Multi",
 	.category(std::make_pair("Audio", 1826))
 	.level(options::ExpertLevel::Beginner)
 	.change_listener(ttsmulti_change)
-	.default_val(true)
+	.default_val(false)
 	.importance(0)
 	.finish();
 
