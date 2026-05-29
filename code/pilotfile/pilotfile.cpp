@@ -333,7 +333,7 @@ void pilotfile::set_multi_stats(const scoring_struct *stats)
 	multi_stats.ship_kills.clear();
 	multi_stats.ship_kills.shrink_to_fit();
 
-	auto kills_size = std::min(SDL_arraysize(stats->kills), Ship_info.size());
+	auto kills_size = stats->kills.size();
 
 	for (idx = 0; idx < kills_size; ++idx) {
 		if (stats->kills[idx] <= 0) {
@@ -446,7 +446,7 @@ bool pilotfile::export_stats(scoring_struct *stats)
 
 	// only export ships that this mod knows about (should already be index)
 	for (auto &item : p_stats->ship_kills) {
-		if ( (item.index >= 0) && (item.index < MAX_SHIP_CLASSES) ) {
+		if ( stats->kills.in_bounds(item.index) ) {
 			stats->kills[item.index] = item.val;
 		}
 	}

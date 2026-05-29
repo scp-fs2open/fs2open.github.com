@@ -568,7 +568,7 @@ void pilotfile::plr_read_stats()
 		for (size_t idx = 0; idx < list_size; idx++) {
 			auto j = all_time_stats.ship_kills[idx].index;
 
-			if (j >= 0) {
+			if (p->stats.kills.in_bounds(j)) {
 				p->stats.kills[j] = all_time_stats.ship_kills[idx].val;
 			}
 		}
@@ -665,7 +665,7 @@ void pilotfile::plr_read_stats_multi()
 		for (size_t idx = 0; idx < list_size; idx++) {
 			auto j = multi_stats.ship_kills[idx].index;
 
-			if (j >= 0) {
+			if (p->stats.kills.in_bounds(j)) {
 				p->stats.kills[j] = multi_stats.ship_kills[idx].val;
 			}
 		}

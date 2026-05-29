@@ -392,18 +392,16 @@ void mission_campaign_build_list(bool desc, bool sort, bool multiplayer)
  */
 void mission_campaign_get_sw_info()
 {
-    int i, count, ship_list[MAX_SHIP_CLASSES], weapon_list[MAX_WEAPON_TYPES];
+	if (optional_string("+Starting Ships:")) {
+		SCP_vector<int> ship_list;
+		stuff_int_list(ship_list, ParseLookupType::SHIP_INFO_TYPE);
 
-    if (optional_string("+Starting Ships:")) {
-        count = sz2i(stuff_int_list(ship_list, MAX_SHIP_CLASSES, ParseLookupType::SHIP_INFO_TYPE));
-
-        // now set the array elements stating which ships we are allowed
-        for (i = 0; i < count; i++) {
-            if (Ship_info[ship_list[i]].flags[Ship::Info_Flags::Player_ship])
-                Campaign.ships_allowed[ship_list[i]] = 1;
-        }
-	}
-	else {
+		// now set the array elements stating which ships we are allowed
+		for (int idx : ship_list) {
+			if (Ship_info[idx].flags[Ship::Info_Flags::Player_ship])
+				Campaign.ships_allowed[idx] = 1;
+		}
+	} else {
 		// set allowable ships to the SIF_PLAYER_SHIPs
 		for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
 			if (it->flags[Ship::Info_Flags::Player_ship])
@@ -411,16 +409,16 @@ void mission_campaign_get_sw_info()
 		}
 	}
 
-    if (optional_string("+Starting Weapons:")) {
-        count = sz2i(stuff_int_list(weapon_list, MAX_WEAPON_TYPES, ParseLookupType::WEAPON_POOL_TYPE));
+	if (optional_string("+Starting Weapons:")) {
+		SCP_vector<int> weapon_list;
+		stuff_int_list(weapon_list, ParseLookupType::WEAPON_POOL_TYPE);
 
-        // now set the array elements stating which ships we are allowed
-		for (i = 0; i < count; i++) {
-			if (Weapon_info[weapon_list[i]].wi_flags[Weapon::Info_Flags::Player_allowed])
-				Campaign.weapons_allowed[weapon_list[i]] = 1;
+		// now set the array elements stating which weapons we are allowed
+		for (int idx : weapon_list) {
+			if (Weapon_info[idx].wi_flags[Weapon::Info_Flags::Player_allowed])
+				Campaign.weapons_allowed[idx] = 1;
 		}
-    }
-	else {
+	} else {
 		// set allowable weapons to the player-allowed ones
 		for (auto it = Weapon_info.cbegin(); it != Weapon_info.cend(); ++it) {
 			if (it->wi_flags[Weapon::Info_Flags::Player_allowed])
@@ -732,13 +730,8 @@ void player_loadout_init()
 	memset(Player_loadout.filename, 0, sizeof(Player_loadout.filename));
 	memset(Player_loadout.last_modified, 0, sizeof(Player_loadout.last_modified));
 
-	for ( i = 0; i < MAX_SHIP_CLASSES; i++ ) {
-		Player_loadout.ship_pool[i] = 0;
-	}
-
-	for ( i = 0; i < MAX_WEAPON_TYPES; i++ ) {
-		Player_loadout.weapon_pool[i] = 0;
-	}
+	Player_loadout.ship_pool.assign(ship_info_size(), 0);
+	Player_loadout.weapon_pool.assign(weapon_info_size(), 0);
 
 	for ( i = 0; i < MAX_WSS_SLOTS; i++ ) {
 		Player_loadout.unit_data[i].ship_class = -1;
@@ -1270,8 +1263,8 @@ void mission_campaign_clear()
 	Campaign.loop_reentry = 0;
 	Campaign.realign_required = 0;
 	Campaign.num_players = 0;
-	memset( Campaign.ships_allowed, 0, sizeof(Campaign.ships_allowed) );
-	memset( Campaign.weapons_allowed, 0, sizeof(Campaign.weapons_allowed) );
+	Campaign.ships_allowed.assign(ship_info_size(), 0);
+	Campaign.weapons_allowed.assign(weapon_info_size(), 0);
 	Campaign.persistent_variables.clear(); 
 	Campaign.red_alert_variables.clear();
 	Campaign.persistent_containers.clear();

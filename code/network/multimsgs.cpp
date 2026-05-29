@@ -6564,11 +6564,13 @@ void send_player_stats_block_packet(net_player *pl, int stats_code, net_player *
 	
 	// kill information - alltime
 	switch(stats_code){
-	case STATS_ALLTIME:	
+	case STATS_ALLTIME:
 		// alltime kills
+		// Wire protocol packs offset/count as USHORT; bump to wider field if ship_info_size() ever exceeds USHRT_MAX.
+		Assertion(sc->kills.size() <= USHRT_MAX, "ship_info_size() exceeds STATS_ALLTIME_KILLS packet's USHORT field width");
 		idx = 0;
-		while (idx < MAX_SHIP_CLASSES) {
-			send_player_stats_block_packet(pl, STATS_ALLTIME_KILLS, target, idx, MAX_SHIP_CLASSES-idx);
+		while (idx < sz2i(sc->kills.size())) {
+			send_player_stats_block_packet(pl, STATS_ALLTIME_KILLS, target, idx, sz2i(sc->kills.size())-idx);
 			idx += MAX_SHIPS_PER_PACKET;
 		}
 
@@ -6600,11 +6602,12 @@ void send_player_stats_block_packet(net_player *pl, int stats_code, net_player *
 		ADD_INT(sc->last_backup);  // should be 32-bit value - taylor
 		break;
 
-	case STATS_MISSION:	
-		// mission OKkills	
+	case STATS_MISSION:
+		// mission OKkills
+		Assertion(sc->m_okKills.size() <= USHRT_MAX, "ship_info_size() exceeds STATS_MISSION_CLASS_KILLS packet's USHORT field width");
 		idx = 0;
-		while (idx < MAX_SHIP_CLASSES) {
-			send_player_stats_block_packet(pl, STATS_MISSION_CLASS_KILLS, target, idx, MAX_SHIP_CLASSES-idx);
+		while (idx < sz2i(sc->m_okKills.size())) {
+			send_player_stats_block_packet(pl, STATS_MISSION_CLASS_KILLS, target, idx, sz2i(sc->m_okKills.size())-idx);
 			idx += MAX_SHIPS_PER_PACKET;
 		}
 	
@@ -6720,7 +6723,7 @@ void process_player_stats_block_packet(ubyte *data, header *hinfo)
 		for (idx = si_offset; idx < si_offset+si_count; idx++) {
 			GET_INT(i_tmp);
 
-			if (idx < MAX_SHIP_CLASSES) {
+			if (sc->kills.in_bounds(idx)) {
 				sc->kills[idx] = i_tmp;
 			}
 		}
@@ -6733,7 +6736,7 @@ void process_player_stats_block_packet(ubyte *data, header *hinfo)
 		for (idx = si_offset; idx < si_offset+si_count; idx++) {
 			GET_INT(i_tmp);
 
-			if (idx < MAX_SHIP_CLASSES) {
+			if (sc->m_okKills.in_bounds(idx)) {
 				sc->m_okKills[idx] = i_tmp;
 			}
 		}
