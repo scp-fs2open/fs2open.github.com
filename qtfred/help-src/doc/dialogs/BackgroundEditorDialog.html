@@ -126,9 +126,25 @@ Transparent, and No Lighting, which is the correct setup for most cases.</div>
         apply to the mission.</td></tr>
 </table>
 
-<h2>Old Nebula</h2>
-<p>A legacy FS1-style nebula system. These settings are read and written for
-backwards compatibility with old mission files, but the renderer that drew them was
-removed.</p>
+<h2>Legacy Nebula (deprecated)</h2>
+<p>The original Freespace 1 nebula system, retained only for backwards compatibility
+with old mission files. The renderer that drew this style of nebula is no longer
+present in the engine. <strong>Do not use this for new missions</strong> — use Full
+Nebula instead.</p>
+<p>This section is hidden by default. It expands automatically when a mission file
+already has old-style nebula data, allowing you to view or clear those values. You
+can also expand it manually by clicking the checkbox in the section title, but doing
+so has no effect unless a pattern is actually selected.</p>
+<p>To remove old nebula from a mission, expand the section and set the
+<strong>Pattern</strong> drop-down to <kbd>&lt;None&gt;</kbd>.</p>
+<table>
+    <tr><th>Field</th><th>Description</th></tr>
+    <tr><td>Pattern</td><td>One of three legacy nebula mesh files. Select
+        <kbd>&lt;None&gt;</kbd> to disable old nebula entirely.</td></tr>
+    <tr><td>Color</td><td>One of nine predefined color palettes applied to the
+        nebula mesh.</td></tr>
+    <tr><td>Pitch / Bank / Heading</td><td>Orientation of the nebula mesh in the
+        scene.</td></tr>
+</table>
 </body>
 </html>

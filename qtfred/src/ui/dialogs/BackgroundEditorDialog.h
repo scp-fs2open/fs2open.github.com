@@ -103,12 +103,14 @@ private slots:
 	void on_lightingProfileCombo_currentIndexChanged(int index);
 
 protected:
+	void changeEvent(QEvent* e) override;
 	void closeEvent(QCloseEvent* e) override;
 
 private: // NOLINT(readability-redundant-access-specifiers)
     std::unique_ptr<Ui::BackgroundEditor> ui;
 	std::unique_ptr<BackgroundEditorDialogModel> _model;
 	EditorViewport* _viewport;
+	FredView* _fredView;
 
 	void initializeUi();
 	void updateUi();

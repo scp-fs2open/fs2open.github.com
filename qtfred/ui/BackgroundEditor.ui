@@ -704,9 +704,31 @@
         </widget>
        </item>
        <item>
+        <widget class="QToolButton" name="legacyNebulaToggle">
+         <property name="text">
+          <string>Legacy Nebula (deprecated)</string>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
+         </property>
+         <property name="autoRaise">
+          <bool>true</bool>
+         </property>
+         <property name="toolButtonStyle">
+          <enum>Qt::ToolButtonTextBesideIcon</enum>
+         </property>
+         <property name="arrowType">
+          <enum>Qt::RightArrow</enum>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QGroupBox" name="oldNebulaGroupBox">
          <property name="title">
-          <string>Old Nebula</string>
+          <string/>
+         </property>
+         <property name="visible">
+          <bool>false</bool>
          </property>
          <layout class="QHBoxLayout" name="horizontalLayout_14" stretch="0,0">
           <item>

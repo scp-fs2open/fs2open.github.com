@@ -480,6 +480,51 @@ namespace FieldId {
     // Prop editor             4101–4199
     constexpr int Prop_Flags = 4101;
     // Background editor       4201–4299
+    constexpr int BG_AngleFormat    = 4201;
+    constexpr int BG_BitmapName     = 4202;
+    constexpr int BG_BitmapPitch    = 4203;
+    constexpr int BG_BitmapBank     = 4204;
+    constexpr int BG_BitmapHeading  = 4205;
+    constexpr int BG_BitmapScaleX   = 4206;
+    constexpr int BG_BitmapScaleY   = 4207;
+    constexpr int BG_BitmapDivX     = 4208;
+    constexpr int BG_BitmapDivY     = 4209;
+    constexpr int BG_SunName        = 4210;
+    constexpr int BG_SunPitch       = 4211;
+    constexpr int BG_SunHeading     = 4212;
+    constexpr int BG_SunScale       = 4213;
+    constexpr int BG_FullNebula     = 4214;
+    constexpr int BG_NebulaRange    = 4215;
+    constexpr int BG_NebulaPattern  = 4216;
+    constexpr int BG_Lightning      = 4217;
+    constexpr int BG_Poofs          = 4218;
+    constexpr int BG_ShipTrails     = 4219;
+    constexpr int BG_Fog1000m       = 4220;
+    constexpr int BG_FogNear        = 4221;
+    constexpr int BG_FogSkybox      = 4222;
+    constexpr int BG_FogClip        = 4223;
+    constexpr int BG_DisplayBgInNeb = 4224;
+    constexpr int BG_FogOverride    = 4225;
+    constexpr int BG_FogR           = 4226;
+    constexpr int BG_FogG           = 4227;
+    constexpr int BG_FogB           = 4228;
+    constexpr int BG_OldNebPattern  = 4229;
+    constexpr int BG_OldNebColor    = 4230;
+    constexpr int BG_OldNebPitch    = 4231;
+    constexpr int BG_OldNebBank     = 4232;
+    constexpr int BG_OldNebHeading  = 4233;
+    constexpr int BG_AmbientR       = 4234;
+    constexpr int BG_AmbientG       = 4235;
+    constexpr int BG_AmbientB       = 4236;
+    constexpr int BG_SkyboxModel    = 4237;
+    constexpr int BG_SkyboxPitch    = 4238;
+    constexpr int BG_SkyboxBank     = 4239;
+    constexpr int BG_SkyboxHeading  = 4240;
+    constexpr int BG_SkyboxFlags    = 4241;
+    constexpr int BG_NumStars       = 4242;
+    constexpr int BG_Subspace       = 4243;
+    constexpr int BG_EnvMap         = 4244;
+    constexpr int BG_LightProfile   = 4245;
     // Wing editor             4301–4399
     // Ship editor             4401–4499
 }
