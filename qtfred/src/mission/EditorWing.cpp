@@ -5,6 +5,7 @@
 
 #include <globalincs/linklist.h>
 #include <globalincs/utility.h>
+#include <missioneditor/common.h>
 #include <ship/ship.h>
 
 namespace {
@@ -68,22 +69,6 @@ void Editor::set_cur_wing(int wing)
 			Assert(cur_wing == Ships[Objects[cur_object_index].instance].wingnum);*/
 	updateAllViewports();
 	// TODO: Add notification for a changed selection
-}
-void Editor::update_custom_wing_indexes()
-{
-	int i;
-
-	for (i = 0; i < MAX_STARTING_WINGS; i++) {
-		Starting_wings[i] = wing_name_lookup(Starting_wing_names[i], 1);
-	}
-
-	for (i = 0; i < MAX_SQUADRON_WINGS; i++) {
-		Squadron_wings[i] = wing_name_lookup(Squadron_wing_names[i], 1);
-	}
-
-	for (i = 0; i < MAX_TVT_WINGS; i++) {
-		TVT_wings[i] = wing_name_lookup(TVT_wing_names[i], 1);
-	}
 }
 
 int Editor::create_wing()

@@ -188,11 +188,6 @@ class Editor : public QObject {
 
 	subsys_to_render Render_subsys;
 
-	// Goober5000
-	// This must be done when either the wing name or the custom name is changed.
-	// (It's also duplicated in FS2, in post_process_mission, for setting the indexes at mission load.)
-	static void update_custom_wing_indexes();
-
 	void ai_update_goal_references(sexp_ref_type type, const char* old_name, const char* new_name);
 
 	// Goober5000
