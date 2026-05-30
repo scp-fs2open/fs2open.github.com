@@ -45,6 +45,11 @@ int anchor_to_target(anchor_t anchor);
 
 anchor_t target_to_anchor(int target);
 
+// Rebuild Starting_wings[], Squadron_wings[], TVT_wings[] from their parallel
+// name arrays via wing_name_lookup.  Consolidated from FRED's and qtFRED's
+// previously-duplicated copies.
+void update_custom_wing_indexes();
+
 void generate_weaponry_usage_list_team(int team, int* arr);
 
 void generate_weaponry_usage_list_wing(int wing_num, int* arr);
@@ -73,6 +78,29 @@ void swap_ship_slots(int a, int b, const FredShipSlotConfig& cfg);
 // Move the item at position from_pos in slots to position to_pos, shifting the
 // items in between by one position.
 void rotate_ship_slots(const SCP_vector<int>& slots, int from_pos, int to_pos, const FredShipSlotConfig& cfg);
+
+struct FredWingSlotConfig
+{
+	int (*wing_objects)[MAX_SHIPS_PER_WING] = nullptr;
+	int *cur_wing = nullptr;
+};
+
+// Move the wing currently in Wings[from] into Wings[to], updating every
+// back-reference (Ships[i].wingnum, Starting/Squadron/TVT_wings caches, and
+// editor-side fields supplied via cfg).  Leaves Wings[from] empty.
+// Preconditions: from != to, Wings[from].wave_count > 0, Wings[to].wave_count == 0.
+// No caller may hold a wing* to either slot across this call.
+// Fields in cfg whose pointers are nullptr are skipped.
+void reassign_wing_slot(int from, int to, const FredWingSlotConfig& cfg, bool update_wing_indexes = true);
+
+// Swap the contents of two slots.  Both must be valid (Wings[a].wave_count > 0
+// and Wings[b].wave_count > 0).  Implemented as three calls to
+// reassign_wing_slot via a temporary empty slot.
+void swap_wing_slots(int a, int b, const FredWingSlotConfig& cfg);
+
+// Move the item at position from_pos in slots to position to_pos, shifting the
+// items in between by one position.
+void rotate_wing_slots(const SCP_vector<int>& slots, int from_pos, int to_pos, const FredWingSlotConfig& cfg);
 
 // Restore the obj_used_list invariant for the OBJ_SHIP/OBJ_START subset:
 // among ship-type entries, list order matches Ships[] index order.
