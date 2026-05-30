@@ -6647,7 +6647,7 @@ void send_player_stats_block_packet(net_player *pl, int stats_code, net_player *
 		ADD_USHORT(static_cast<ushort>(offset));
 		ADD_USHORT(static_cast<ushort>(len));
 
-		for (idx = offset; idx < len; idx++) {
+		for (idx = offset; idx < offset + len; idx++) {
 			ADD_INT(sc->m_okKills[idx]);
 		}
 		break;
@@ -6658,7 +6658,7 @@ void send_player_stats_block_packet(net_player *pl, int stats_code, net_player *
 		ADD_USHORT(static_cast<ushort>(offset));
 		ADD_USHORT(static_cast<ushort>(len));
 
-		for (idx = offset; idx < len; idx++) {
+		for (idx = offset; idx < offset + len; idx++) {
 			ADD_INT(sc->kills[idx]);
 		}
 		break;
