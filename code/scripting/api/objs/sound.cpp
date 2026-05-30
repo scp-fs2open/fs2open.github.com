@@ -481,6 +481,7 @@ ADE_FUNC(unload, l_Soundfile, nullptr,
 		return ade_set_error(L, "b", false);
 
 	auto result = snd_unload(handle->idx);
+	snd_unload_cleanup();
 
 	if (result != 0) {
 		// Invalidate this handle so that the script cannot do something bad with it

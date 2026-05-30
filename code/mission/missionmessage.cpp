@@ -1007,6 +1007,7 @@ void message_mission_shutdown()
 			snd_unload( Message_waves[i].num );
 		}
 	}
+	snd_unload_cleanup();
 
 	fsspeech_stop();
 
