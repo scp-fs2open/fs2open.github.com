@@ -157,6 +157,7 @@ public:
 	//float Lab_thrust_len = 0.0f; // Unused
 	bool Weapons_loaded = false;
 	bool CloseThis = false;
+	bool LastLmbDown = false;
 	LabUi labUi;
 
 	void changeShipInternal();
