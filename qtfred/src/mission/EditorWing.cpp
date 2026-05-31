@@ -4,6 +4,7 @@
 #include "mission/dialogs/FormWingDialogModel.h"
 
 #include <globalincs/linklist.h>
+#include <globalincs/utility.h>
 #include <ship/ship.h>
 
 namespace {
@@ -29,12 +30,7 @@ int Editor::delete_wing(int wing_num, int bypass)
 	}
 
 	already_deleting_wing = 1;
-	for (i = 0; i < Num_reinforcements; i++) {
-		if (!stricmp(Wings[wing_num].name, Reinforcements[i].name)) {
-			delete_reinforcement(i);
-			break;
-		}
-	}
+	delete_reinforcement(Wings[wing_num].name);
 
 	invalidate_references(Wings[wing_num].name, sexp_ref_type::WING);
 	if (!bypass) {

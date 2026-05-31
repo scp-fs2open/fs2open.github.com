@@ -2550,21 +2550,70 @@ int Fred_mission_save::save_mission_info()
 
 	fout(" %" PRIu64, The_mission.flags.to_u64());
 
-	// maybe write out Nebula intensity
+	// maybe write out Nebula values
 	if (The_mission.flags[Mission::Mission_Flags::Fullneb]) {
-		Assert(Neb2_awacs > 0.0f);
-		fout("\n+NebAwacs: %f\n", Neb2_awacs);
+		if (optional_string_fred("+NebAwacs:"))
+			parse_comments(2);
+		else
+			fout("\n\n+NebAwacs:");
+		fout(" %f", Neb2_awacs);
 
 		// storm name
-		fout("\n+Storm: %s\n", Mission_parse_storm_name);
+		if (optional_string_fred("+Storm:"))
+			parse_comments();
+		else
+			fout("\n+Storm:");
+		fout(" %s", Mission_parse_storm_name);
+
+		// write out the nebula clipping multipliers...
+		if (save_config.save_format != MissionFormat::RETAIL) {
+			// legacy values
+			if (Neb2_fog_save_legacy_values)
+			{
+				if (optional_string_fred("+Fog Near Mult:"))
+					parse_comments();
+				else
+					fout("\n+Fog Near Mult:");
+				fout(" %f", Neb2_fog_legacy_near_mult);
+
+				if (optional_string_fred("+Fog Far Mult:"))
+					parse_comments();
+				else
+					fout("\n+Fog Far Mult:");
+				fout(" %f", Neb2_fog_legacy_far_mult);
+			}
+			// Modern fogging values - note that the writing of these values signals to the parser that this mission was created with a version of FSO that has the modern fogging fixes.
+			// Per Lafiel, these should never be only-if-non-default, since the fogging converter is controlled by their presence or absence.
+			else
+			{
+				if (optional_string_fred("+Fog 1000m Visibility:"))
+					parse_comments();
+				else
+					fout("\n+Fog 1000m Visibility:");
+				fout(" %f", Neb2_fog_1000m_visibility);
+
+				if (optional_string_fred("+Fog Near Distance:"))
+					parse_comments();
+				else
+					fout("\n+Fog Near Distance:");
+				fout(" %f", Neb2_fog_near_distance);
+
+				if (optional_string_fred("+Fog Skybox Clip Distance:"))
+					parse_comments();
+				else
+					fout("\n+Fog Skybox Clip Distance:");
+				fout(" %f", Neb2_fog_skybox_clip_distance);
+
+				if (optional_string_fred("+Fog Clip Distance:"))
+					parse_comments();
+				else
+					fout("\n+Fog Clip Distance:");
+				fout(" %f", Neb2_fog_clip_distance);
+			}
+		}
 	}
 
-	// Goober5000
 	if (save_config.save_format != MissionFormat::RETAIL) {
-		// write out the nebula clipping multipliers
-		fout("\n+Fog Near Mult: %f\n", Neb2_fog_near_mult);
-		fout("\n+Fog Far Mult: %f\n", Neb2_fog_far_mult);
-
 		if (The_mission.contrail_threshold != CONTRAIL_THRESHOLD_DEFAULT) {
 			fout("\n$Contrail Speed Threshold: %d\n", The_mission.contrail_threshold);
 		}
@@ -4507,22 +4556,24 @@ int Fred_mission_save::save_plot_info()
 
 int Fred_mission_save::save_reinforcements()
 {
-	int i, j, type;
+	int j, type;
 
 	fred_parse_flag = 0;
 	required_string_fred("#Reinforcements");
 	parse_comments(2);
-	fout("\t\t;! %d total\n", Num_reinforcements);
+	fout("\t\t;! " SIZE_T_ARG " total\n", Reinforcements.size());
 
-	for (i = 0; i < Num_reinforcements; i++) {
+	bool first_r = true;
+	for (const auto &reinforcement: Reinforcements) {
 		required_string_either_fred("$Name:", "#Background bitmaps");
 		required_string_fred("$Name:");
-		parse_comments(i ? 2 : 1);
-		fout(" %s", Reinforcements[i].name);
+		parse_comments(!first_r ? 2 : 1);
+		first_r = false;
+		fout(" %s", reinforcement.name);
 
 		type = TYPE_ATTACK_PROTECT;
 		for (j = 0; j < MAX_SHIPS; j++)
-			if ((Ships[j].objnum != -1) && !stricmp(Ships[j].ship_name, Reinforcements[i].name)) {
+			if ((Ships[j].objnum != -1) && !stricmp(Ships[j].ship_name, reinforcement.name)) {
 				if (Ship_info[Ships[j].ship_info_index].flags[Ship::Info_Flags::Support])
 					type = TYPE_REPAIR_REARM;
 				break;
@@ -4534,13 +4585,13 @@ int Fred_mission_save::save_reinforcements()
 
 		required_string_fred("$Num times:");
 		parse_comments();
-		fout(" %d", Reinforcements[i].uses);
+		fout(" %d", reinforcement.uses);
 
 		if (optional_string_fred("+Arrival Delay:", "$Name:"))
 			parse_comments();
 		else
 			fout("\n+Arrival Delay:");
-		fout(" %d", Reinforcements[i].arrival_delay);
+		fout(" %d", reinforcement.arrival_delay);
 
 		if (optional_string_fred("+No Messages:", "$Name:"))
 			parse_comments();
@@ -4548,8 +4599,8 @@ int Fred_mission_save::save_reinforcements()
 			fout("\n+No Messages:");
 		fout(" (");
 		for (j = 0; j < MAX_REINFORCEMENT_MESSAGES; j++) {
-			if (strlen(Reinforcements[i].no_messages[j]))
-				fout(" \"%s\"", Reinforcements[i].no_messages[j]);
+			if (strlen(reinforcement.no_messages[j]))
+				fout(" \"%s\"", reinforcement.no_messages[j]);
 		}
 		fout(" )");
 
@@ -4559,8 +4610,8 @@ int Fred_mission_save::save_reinforcements()
 			fout("\n+Yes Messages:");
 		fout(" (");
 		for (j = 0; j < MAX_REINFORCEMENT_MESSAGES; j++) {
-			if (strlen(Reinforcements[i].yes_messages[j]))
-				fout(" \"%s\"", Reinforcements[i].yes_messages[j]);
+			if (strlen(reinforcement.yes_messages[j]))
+				fout(" \"%s\"", reinforcement.yes_messages[j]);
 		}
 		fout(" )");
 

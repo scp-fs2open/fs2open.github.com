@@ -126,13 +126,28 @@ void LabManager::onFrame(float frametime) {
 	int dx, dy, dz;
 	mouse_get_delta(&dx, &dy);
 	mouse_get_wheel_delta(nullptr, &dz);
+	int mouse_x = 0;
+	int mouse_y = 0;
+	mouse_get_pos(&mouse_x, &mouse_y);
+
+	const bool lmb_down = mouse_down(MOUSE_LEFT_BUTTON) != 0;
+	bool lmb_pressed = lmb_down && !LastLmbDown;
+	LastLmbDown = lmb_down;
+
+	if (lmb_pressed && ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow)) {
+		lmb_pressed = false;
+	}
+
 	if (dz != 0 && ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow)) {
 		dz = 0;
 	}
-	Renderer->getCurrentCamera()->handleInput(dx, dy, dz, mouse_down(MOUSE_LEFT_BUTTON) != 0, mouse_down(MOUSE_RIGHT_BUTTON) != 0, key_get_shift_status());
+	auto& current_camera = Renderer->getCurrentCamera();
+	current_camera->handleInput(
+		dx, dy, dz, lmb_down, lmb_pressed, mouse_down(MOUSE_RIGHT_BUTTON) != 0, key_get_shift_status(), mouse_x, mouse_y);
 
-	if (!Renderer->getCurrentCamera()->handlesObjectPlacement()) {
-		if (mouse_down(MOUSE_LEFT_BUTTON)) {
+	if (!current_camera->handlesObjectPlacement()) {
+		const bool over_camera_overlay = Renderer->getShowOrientationWidget() && current_camera->isOverlayHit(mouse_x, mouse_y);
+		if (lmb_down && !over_camera_overlay) {
 			angles rot_angle;
 			vm_extract_angles_matrix_alternate(&rot_angle, &CurrentOrientation);
 

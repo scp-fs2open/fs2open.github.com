@@ -601,6 +601,7 @@ void gamesnd_unload_gameplay_sounds()
 			}
 		}
 	}
+	snd_unload_cleanup();
 }
 
 /**
@@ -636,6 +637,7 @@ void gamesnd_unload_interface_sounds()
 			}
 		}
 	}
+	snd_unload_cleanup();
 }
 
 void parse_gamesnd_old(game_snd* gs)

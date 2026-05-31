@@ -31,6 +31,7 @@
 #include "starfield/starfield.h" // stars_init, stars_pre_level_init, stars_post_level_init
 #include "hud/hudsquadmsg.h"
 #include "globalincs/linklist.h"
+#include "globalincs/utility.h"
 
 #include "ui/QtGraphicsOperations.h"
 
@@ -249,7 +250,7 @@ void Editor::maybeUseAutosave(std::string& filepath)
 
 bool Editor::loadMission(const std::string& mission_name, int flags) {
 	char name[512], * old_name;
-	int i, j, k, ob;
+	int i, j, ob;
 	object* objp;
 
 	// activate the localizer hash table
@@ -387,11 +388,10 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 					update_sexp_references(old_name, name);
 					ai_update_goal_references(sexp_ref_type::SHIP, old_name, name);
 					update_texture_replacements(old_name, name);
-					for (k = 0; k < Num_reinforcements; k++) {
-						if (!strcmp(old_name, Reinforcements[k].name)) {
-							Assert(strlen(name) < NAME_LENGTH);
-							strcpy_s(Reinforcements[k].name, name);
-						}
+					int k = find_item_with_string(Reinforcements, &reinforcements::name, old_name);
+					if (k >= 0) {
+						Assert(strlen(name) < NAME_LENGTH);
+						strcpy_s(Reinforcements[k].name, name);
 					}
 
 					// bash it again so that we handle display names if needed
@@ -917,7 +917,7 @@ int Editor::getNumMarked() {
 }
 int Editor::dup_object(object* objp) {
 
-	int i, j, n, inst, obj = -1;
+	int i, n, inst, obj = -1;
 	ai_info* aip1, * aip2;
 	object* objp1, * objp2;
 	ship_subsys* subp1, * subp2;
@@ -979,17 +979,10 @@ int Editor::dup_object(object* objp) {
 			subp2 = GET_NEXT(subp2);
 		}
 
-		for (i = 0; i < Num_reinforcements; i++) {
-			if (!stricmp(Reinforcements[i].name, Ships[inst].ship_name)) {
-				if (Num_reinforcements < MAX_REINFORCEMENTS) {
-					j = Num_reinforcements++;
-					strcpy_s(Reinforcements[j].name, Ships[n].ship_name);
-					Reinforcements[j].type = Reinforcements[i].type;
-					Reinforcements[j].uses = Reinforcements[i].uses;
-				}
-
-				break;
-			}
+		i = find_item_with_string(Reinforcements, &reinforcements::name, Ships[inst].ship_name);
+		if (i >= 0) {
+			Reinforcements.push_back(Reinforcements[i]);
+			strcpy_s(Reinforcements.back().name, Ships[n].ship_name);
 		}
 
 	} else if (objp->type == OBJ_WAYPOINT) {
@@ -1145,12 +1138,7 @@ int Editor::common_object_delete(int obj) {
 			invalidate_references(name, sexp_ref_type::SHIP);
 		}
 
-		for (i = 0; i < Num_reinforcements; i++) {
-			if (!stricmp(name, Reinforcements[i].name)) {
-				delete_reinforcement(i);
-				break;
-			}
-		}
+		delete_reinforcement(name);
 
 		// check if any ship is docked with this ship and break dock if so
 		while (object_is_docked(&Objects[obj])) {
@@ -1344,13 +1332,8 @@ int Editor::reference_handler(const char* name, sexp_ref_type type, int obj) {
 		return 0;
 	}
 
-	for (n = 0; n < Num_reinforcements; n++) {
-		if (!stricmp(name, Reinforcements[n].name)) {
-			break;
-		}
-	}
-
-	if (n < Num_reinforcements) {
+	n = find_item_with_string(Reinforcements, &reinforcements::name, name);
+	if (n >= 0) {
 		sprintf(msg, "Ship \"%s\" is a reinforcement unit.\n"
 			"Do you want to delete it anyway?", name);
 
@@ -1468,11 +1451,9 @@ int Editor::invalidate_references(const char* name, sexp_ref_type type) {
 	update_sexp_references(name, new_name);
 	ai_update_goal_references(type, name, new_name);
 	update_texture_replacements(name, new_name);
-	for (i = 0; i < Num_reinforcements; i++) {
-		if (!stricmp(name, Reinforcements[i].name)) {
-			strcpy_s(Reinforcements[i].name, new_name);
-		}
-	}
+	i = find_item_with_string(Reinforcements, &reinforcements::name, name);
+	if (i >= 0)
+		strcpy_s(Reinforcements[i].name, new_name);
 
 	return 0;
 }
@@ -1499,8 +1480,6 @@ void Editor::update_texture_replacements(const char* old_name, const char* new_n
 	}
 }
 int Editor::rename_ship(int ship, const char* name) {
-	int i;
-
 	Assert(ship >= 0);
 	Assert(strlen(name) < NAME_LENGTH);
 
@@ -1511,11 +1490,9 @@ int Editor::rename_ship(int ship, const char* name) {
 	update_sexp_references(Ships[ship].ship_name, name);
 	ai_update_goal_references(sexp_ref_type::SHIP, Ships[ship].ship_name, name);
 	update_texture_replacements(Ships[ship].ship_name, name);
-	for (i = 0; i < Num_reinforcements; i++) {
-		if (!stricmp(Ships[ship].ship_name, Reinforcements[i].name)) {
-			strcpy_s(Reinforcements[i].name, name);
-		}
-	}
+	int i = find_item_with_string(Reinforcements, &reinforcements::name, Ships[ship].ship_name);
+	if (i >= 0)
+		strcpy_s(Reinforcements[i].name, name);
 
 	strcpy_s(Ships[ship].ship_name, name);
 
@@ -1537,14 +1514,12 @@ int Editor::rename_ship(int ship, const char* name) {
 
 	return 0;
 }
-void Editor::delete_reinforcement(int num) {
-	int i;
+void Editor::delete_reinforcement(const char* name) {
+	int i = find_item_with_string(Reinforcements, &reinforcements::name, name);
+	if (i < 0)
+		return;
 
-	for (i = num; i < Num_reinforcements - 1; i++) {
-		Reinforcements[i] = Reinforcements[i + 1];
-	}
-
-	Num_reinforcements--;
+	Reinforcements.erase(Reinforcements.begin() + i);
 	missionChanged();
 }
 int Editor::check_wing_dependencies(int wing_num) {
@@ -1552,17 +1527,11 @@ int Editor::check_wing_dependencies(int wing_num) {
 	return reference_handler(name, sexp_ref_type::WING, -1);
 }
 int Editor::set_reinforcement(const char* name, int state) {
-	int i, index, cur = -1;
-
-	for (i = 0; i < Num_reinforcements; i++) {
-		if (!stricmp(Reinforcements[i].name, name)) {
-			cur = i;
-		}
-	}
+	int index;
+	int cur = find_item_with_string(Reinforcements, &reinforcements::name, name);
 
 	if (!state && (cur != -1)) {
-		Num_reinforcements--;
-		Reinforcements[cur] = Reinforcements[Num_reinforcements];
+		Reinforcements.erase(Reinforcements.begin() + cur);
 
 		// clear the ship/wing flag for this reinforcement
 		index = ship_name_lookup(name);
@@ -1582,14 +1551,9 @@ int Editor::set_reinforcement(const char* name, int state) {
 		return -1;
 	}
 
-	if (state && (cur == -1) && (Num_reinforcements < MAX_REINFORCEMENTS)) {
+	if (state && (cur == -1)) {
 		Assert(strlen(name) < NAME_LENGTH);
-		strcpy_s(Reinforcements[Num_reinforcements].name, name);
-		Reinforcements[Num_reinforcements].uses = 1;
-		Reinforcements[Num_reinforcements].arrival_delay = 0;
-		memset(Reinforcements[Num_reinforcements].no_messages, 0, MAX_REINFORCEMENT_MESSAGES * NAME_LENGTH);
-		memset(Reinforcements[Num_reinforcements].yes_messages, 0, MAX_REINFORCEMENT_MESSAGES * NAME_LENGTH);
-		Num_reinforcements++;
+		Reinforcements.emplace_back(name);
 
 		// set the reinforcement flag on the ship or wing
 		index = ship_name_lookup(name);

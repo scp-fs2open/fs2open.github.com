@@ -499,42 +499,106 @@
             <item>
              <layout class="QFormLayout" name="nebulaBottomForm">
               <item row="0" column="0">
-               <widget class="QLabel" name="fogNearLabel">
+               <widget class="QLabel" name="fog1000mVisLabel">
                 <property name="text">
-                 <string>Fog Near Multiplier</string>
+                 <string>Visibility at 1000m</string>
                 </property>
                </widget>
               </item>
               <item row="1" column="0">
-               <widget class="QLabel" name="fogFarLabel">
+               <widget class="QLabel" name="fogNearDistanceLabel">
                 <property name="text">
-                 <string>Fog Far Multiplier</string>
+                 <string>Fog Near Distance</string>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="0">
+               <widget class="QLabel" name="fogSkyboxClipLabel">
+                <property name="text">
+                 <string>Skybox Clip Distance</string>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="0">
+               <widget class="QLabel" name="fogClipLabel">
+                <property name="text">
+                 <string>Fog Clip Distance</string>
                 </property>
                </widget>
               </item>
               <item row="0" column="1">
-               <widget class="QDoubleSpinBox" name="fogNearDoubleSpinBox">
+               <widget class="QDoubleSpinBox" name="fog1000mVisDoubleSpinBox">
+                <property name="toolTip">
+                 <string>Fraction of light that survives 1000 meters of fog (smaller = thicker fog).</string>
+                </property>
+                <property name="decimals">
+                 <number>8</number>
+                </property>
+                <property name="minimum">
+                 <double>0.000000000000000</double>
+                </property>
                 <property name="maximum">
-                 <double>16777215.000000000000000</double>
+                 <double>1.000000000000000</double>
                 </property>
                 <property name="singleStep">
-                 <double>0.100000000000000</double>
-                </property>
-                <property name="value">
-                 <double>1.000000000000000</double>
+                 <double>0.001000000000000</double>
                 </property>
                </widget>
               </item>
               <item row="1" column="1">
-               <widget class="QDoubleSpinBox" name="fogFarDoubleSpinBox">
+               <widget class="QDoubleSpinBox" name="fogNearDistanceDoubleSpinBox">
+                <property name="toolTip">
+                 <string>Distance from the camera where fog starts (in meters).</string>
+                </property>
+                <property name="decimals">
+                 <number>2</number>
+                </property>
+                <property name="minimum">
+                 <double>0.010000000000000</double>
+                </property>
                 <property name="maximum">
                  <double>16777215.000000000000000</double>
                 </property>
                 <property name="singleStep">
-                 <double>0.100000000000000</double>
-                </property>
-                <property name="value">
                  <double>1.000000000000000</double>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="1">
+               <widget class="QDoubleSpinBox" name="fogSkyboxClipDoubleSpinBox">
+                <property name="toolTip">
+                 <string>Maximum render distance for the skybox in fog (in meters). 0 disables skybox fog.</string>
+                </property>
+                <property name="decimals">
+                 <number>2</number>
+                </property>
+                <property name="minimum">
+                 <double>0.000000000000000</double>
+                </property>
+                <property name="maximum">
+                 <double>16777215.000000000000000</double>
+                </property>
+                <property name="singleStep">
+                 <double>100.000000000000000</double>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="1">
+               <widget class="QDoubleSpinBox" name="fogClipDoubleSpinBox">
+                <property name="toolTip">
+                 <string>Maximum render distance for the scene in fog (in meters). 0 disables scene fog.</string>
+                </property>
+                <property name="decimals">
+                 <number>2</number>
+                </property>
+                <property name="minimum">
+                 <double>0.000000000000000</double>
+                </property>
+                <property name="maximum">
+                 <double>16777215.000000000000000</double>
+                </property>
+                <property name="singleStep">
+                 <double>100.000000000000000</double>
                 </property>
                </widget>
               </item>

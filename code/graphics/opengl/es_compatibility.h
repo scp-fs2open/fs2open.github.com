@@ -27,6 +27,10 @@
 #define GL_UNSIGNED_INT_8_8_8_8_REV				0x8367
 #define GL_BGR									0x80E0
 #define GL_MULTISAMPLE							0x809D
+#define GL_CLAMP_READ_COLOR						0x891C
+#define GL_CLAMP_VERTEX_COLOR					0x891A
+#define GL_CLAMP_FRAGMENT_COLOR					0x891B
+#define GL_FIXED_ONLY							0x891D
 
 //Enums Redefinitions
 #define GL_CLIP_DISTANCE0						GL_CLIP_DISTANCE0_EXT // GL_EXT_clip_cull_distance
@@ -268,6 +272,8 @@ static inline void glTexImage2D(GLenum target, GLint level, GLint internalformat
 		glad_glTexImage2D(target, level, internalformat, width, height, border, GL_RGBA, GL_UNSIGNED_BYTE, data);
 	} else if (internalformat == GL_DEPTH_COMPONENT24) {
 		glad_glTexImage2D(target, level, internalformat, width, height, border, format, GL_UNSIGNED_INT, data);
+	} else if (internalformat == GL_DEPTH24_STENCIL8) {
+		glad_glTexImage2D(target, level, internalformat, width, height, border, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, data);
 	} else {
 		glad_glTexImage2D(target, level, internalformat, width, height, border, format, type, data);
 	}
@@ -306,6 +312,9 @@ static inline void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height,
 /* 
 	Missing functions for ES 3.2 compatibility 
 */
+
+// Used during screenshots, that dont work anyway.
+#define glClampColor(target, clamp) ((void)0)
 
 // Not present on ES, emulating with glDrawBuffers
 // Positional mapping: element i must be COLOR_ATTACHMENTi o NONE.

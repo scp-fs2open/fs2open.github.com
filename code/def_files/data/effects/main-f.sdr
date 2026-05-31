@@ -47,8 +47,8 @@ layout (std140) uniform modelData {
 	model_light lights[MAX_LIGHTS];
 
 	float outlineWidth;
-	float fogStart;
-	float fogScale;
+	float fogNear;
+	float fogDensity;
 	int buffer_matrix_offset;
 
 	vec4 clip_equation;
@@ -392,9 +392,10 @@ void main()
 		#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_DIFFUSE
 		// This code will only be used by the forward renderer so we apply the fog effect to both the emissive and the base
 		// color.
-		baseColor.rgb = mix(emissiveColor.rgb + baseColor.rgb, finalFogColor, vertIn.fogDist);
+		float fogDensityFinal = clamp(1 - pow(fogDensity, vertIn.fogDist) , 0.0, 1.0);
+		baseColor.rgb = mix(emissiveColor.rgb + baseColor.rgb, finalFogColor, fogDensityFinal);
 		emissiveColor.rgb = vec3(0.0); // Zero the emissive color since it has already been added by the previous line
-		specColor.rgb *= vertIn.fogDist;
+		specColor.rgb *= fogDensityFinal;
 	#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_FOG
 
 	#prereplace IF_FLAG MODEL_SDR_FLAG_DIFFUSE

@@ -2980,21 +2980,17 @@ int CFREDView::global_error_check()
 		}
 	}
 
-	if (Num_reinforcements > MAX_REINFORCEMENTS){
-		return internal_error("Number of reinforcements exceeds max limit");
-	}
-
-	for (i=0; i<Num_reinforcements; i++) {
+	for (const auto &reinforcement: Reinforcements) {
 		z = 0;
 		for (ship=0; ship<MAX_SHIPS; ship++){
-			if ((Ships[ship].objnum >= 0) && !stricmp(Ships[ship].ship_name, Reinforcements[i].name)) {
+			if ((Ships[ship].objnum >= 0) && !stricmp(Ships[ship].ship_name, reinforcement.name)) {
 				z = 1;
 				break;
 			}
 		}
 
 		for (wing=0; wing<MAX_WINGS; wing++){
-			if (Wings[wing].wave_count && !stricmp(Wings[wing].name, Reinforcements[i].name)) {
+			if (Wings[wing].wave_count && !stricmp(Wings[wing].name, reinforcement.name)) {
 				z = 1;
 				break;
 			}

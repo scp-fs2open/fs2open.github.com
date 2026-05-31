@@ -301,11 +301,15 @@ void LabUi::build_options_menu()
 {
 	with_Menu("Options")
 	{
+		bool show_widget_menu = getLabManager()->Renderer->getShowOrientationWidget();
 		MenuItem("Render options", nullptr, &show_render_options_dialog);
 		MenuItem("Object selector", nullptr, &show_object_selection_dialog);
 		MenuItem("Background selector", nullptr, &show_background_selection_dialog);
 		MenuItem("Object options", nullptr, &show_object_options_dialog);
 		MenuItem("Controls reference", nullptr, &show_controls_reference_dialog);
+		if (MenuItem("Show orientation cube widget", nullptr, show_widget_menu)) {
+			getLabManager()->Renderer->setShowOrientationWidget(!show_widget_menu);
+		}
 		MenuItem("Reset View", nullptr, &reset_view);
 		MenuItem("Close lab", "ESC", &close_lab);
 	}
@@ -521,6 +525,7 @@ void LabUi::show_render_options()
 	float emissive_factor = ltp::lab_get_emissive();
 	float exposure_level = ltp::current_exposure();
 	auto ppcv = ltp::lab_get_ppc();
+	show_orientation_widget = getLabManager()->Renderer->getShowOrientationWidget();
 
 	bool skip_setting_light_options_this_frame = false;
 
@@ -570,6 +575,7 @@ void LabUi::show_render_options()
 			Checkbox("Hide particles", &no_particles);
 			Checkbox("Render as wireframe", &use_wireframe_rendering);
 			Checkbox("Orthographic projection", &use_orthographic_projection);
+			Checkbox("Show orientation cube widget", &show_orientation_widget);
 			Checkbox("Render without light", &no_lighting);
 			Checkbox("Render with emissive lighting", &show_emissive_lighting);
 			SliderFloat("Light brightness", &light_factor, 0.0f, 10.0f);
@@ -690,6 +696,7 @@ void LabUi::show_render_options()
 		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::MoveSubsystems, animate_subsystems);
 		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::NoParticles, no_particles);
 		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::UseOrthographicProjection, use_orthographic_projection);
+		getLabManager()->Renderer->setShowOrientationWidget(show_orientation_widget);
 		getLabManager()->Renderer->setEmissiveFactor(emissive_factor);
 		getLabManager()->Renderer->setAmbientFactor(ambient_factor);
 		getLabManager()->Renderer->setLightFactor(light_factor);

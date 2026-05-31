@@ -314,7 +314,7 @@ class Editor : public QObject {
 
 	int invalidate_references(const char* name, sexp_ref_type type);
 
-	void delete_reinforcement(int num);
+	void delete_reinforcement(const char* name);
 
 	// changes the currently selected wing.  It is assumed that cur_wing == cur_ship's wing
 	// number.  Don't call this if this won't be true, or else you'll screw things up.
