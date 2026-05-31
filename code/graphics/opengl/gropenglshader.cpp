@@ -870,13 +870,6 @@ void opengl_compile_shader_actual(shader_type sdr, const uint &flags, opengl_sha
 				glBindAttribLocation(program->getShaderHandle(), (GLint)i, GL_vertex_attrib_info[i].name.c_str());
 			}
 
-			// bind fragment data locations before we link the shader
-			glBindFragDataLocation(program->getShaderHandle(), 0, "fragOut0");
-			glBindFragDataLocation(program->getShaderHandle(), 1, "fragOut1");
-			glBindFragDataLocation(program->getShaderHandle(), 2, "fragOut2");
-			glBindFragDataLocation(program->getShaderHandle(), 3, "fragOut3");
-			glBindFragDataLocation(program->getShaderHandle(), 4, "fragOut4");
-
 			if (do_shader_caching()) {
 				// Enable shader caching
 				glProgramParameteri(program->getShaderHandle(), GL_PROGRAM_BINARY_RETRIEVABLE_HINT, GL_TRUE);

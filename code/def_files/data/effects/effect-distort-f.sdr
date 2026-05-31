@@ -11,17 +11,10 @@ in float fragOffset;
 
 layout(location=0) out vec4 fragOut0;
 
-#ifdef GL_ES
-uniform highp sampler2DArray baseMap;
-uniform highp sampler2D depthMap;
-uniform highp sampler2D distMap;
-uniform highp sampler2D frameBuffer;
-#else
 uniform sampler2DArray baseMap;
 uniform sampler2D depthMap;
 uniform sampler2D distMap;
 uniform sampler2D frameBuffer;
-#endif
 
 layout (std140) uniform genericData {
 	float window_width;

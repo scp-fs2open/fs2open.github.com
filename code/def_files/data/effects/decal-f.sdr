@@ -12,9 +12,15 @@ precision highp sampler2DArray;
 #include "normals.sdr"
 #include "gamma.sdr"
 
-layout (location=0) out vec4 fragOut0; // Diffuse buffer  -> COLOR_ATTACHMENT0
+
+layout (location=0) out vec4 fragOut0; // Diffuse buffer
+#ifndef GL_ES
+layout (location=1) out vec4 fragOut1; // Normal buffer
+layout (location=2) out vec4 fragOut2; // Emissive buffer
+#else
 layout (location=2) out vec4 fragOut1; // Normal buffer   -> COLOR_ATTACHMENT2
 layout (location=4) out vec4 fragOut2; // Emissive buffer -> COLOR_ATTACHMENT4
+#endif
 
 flat in mat4 invModelMatrix;
 flat in vec3 decalDirection;
@@ -22,21 +28,12 @@ flat in float normal_angle_cutoff;
 flat in float angle_fade_start;
 flat in float alpha_scale;
 
-#ifdef GL_ES
-uniform highp sampler2D gDepthBuffer;
-uniform highp sampler2D gNormalBuffer;
-
-uniform highp sampler2DArray diffuseMap;
-uniform highp sampler2DArray glowMap;
-uniform highp sampler2DArray normalMap;
-#else
 uniform sampler2D gDepthBuffer;
 uniform sampler2D gNormalBuffer;
 
 uniform sampler2DArray diffuseMap;
 uniform sampler2DArray glowMap;
 uniform sampler2DArray normalMap;
-#endif
 
 layout (std140) uniform decalGlobalData {
 	mat4 viewMatrix;

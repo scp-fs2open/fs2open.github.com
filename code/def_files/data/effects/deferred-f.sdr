@@ -12,7 +12,7 @@ precision highp samplerCube;
 #include "shadows.sdr" //! #include "shadows.sdr"
 #include "z-compress.sdr" //! #include "z-compress.sdr"
 
-#ifdef GL_ES
+#ifndef GL_ES
 layout(location = 0) out vec4 fragOut0;
 #else
 layout(location = 5) out vec4 fragOut0;
