@@ -3195,9 +3195,7 @@ void gr_set_gamma(float gamma)
 		return;
 	}
 
-	if (!Cmdline_no_set_gamma) {
-		Gr_gamma = gamma;
-	}
+	Gr_gamma = gamma;
 }
 
 void gr_get_post_process_effect_names(SCP_vector<SCP_string>& names)

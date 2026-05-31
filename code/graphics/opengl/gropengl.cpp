@@ -133,7 +133,7 @@ void gr_opengl_flip()
 
 		opengl_set_generic_uniform_data<graphics::generic_data::gamma_blit_data>(
 			[](graphics::generic_data::gamma_blit_data* data) {
-				data->gamma = Gr_gamma;
+				data->gamma = Cmdline_no_set_gamma ? 1.f : Gr_gamma;
 			});
 
 		opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
