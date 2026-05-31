@@ -970,11 +970,6 @@ void opengl_tnl_set_model_material(model_material *material_info)
 	if ( material_info->is_batched() ) {
 		GL_state.Texture.Enable(10, GL_TEXTURE_BUFFER, opengl_get_transform_buffer_texture());
 	}
-
-	if ( Deferred_lighting ) {
-		// don't blend if we're drawing to the g-buffers
-		GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
-	}
 }
 
 void opengl_tnl_set_material_particle(particle_material * material_info)

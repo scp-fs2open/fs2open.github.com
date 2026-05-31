@@ -1322,7 +1322,7 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 		}
 
 		rendering_material->set_depth_mode(depth_mode);
-		rendering_material->set_blend_mode(blend_mode);
+		rendering_material->set_blend_mode(Deferred_lighting ? ALPHA_BLEND_NONE : blend_mode);
 		
 		color clr = interp->get_color();
 		model_render_determine_color(&clr, alpha, blend_mode, no_texturing ? true : false, rendering_material->is_desaturated());
