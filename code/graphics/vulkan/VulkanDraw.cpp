@@ -882,6 +882,9 @@ PipelineConfig VulkanDrawManager::buildPipelineConfig(material* mat, primitive_t
 	// Cull mode
 	config.cullEnabled = mat->get_cull_mode();
 
+	// Fill mode
+	config.fillMode = mat->get_fill_mode();
+
 	// Front face winding: match OpenGL which defaults to CCW and only switches to CW
 	// for model rendering (opengl_tnl_set_model_material sets GL_CW).
 	config.frontFaceCW = (config.shaderType == SDR_TYPE_MODEL);
@@ -908,7 +911,6 @@ PipelineConfig VulkanDrawManager::buildPipelineConfig(material* mat, primitive_t
 	}
 
 	// Fill mode and depth bias from draw manager state
-	config.fillMode = m_fillMode;
 	config.depthBiasEnabled = m_depthBiasEnabled;
 
 	// Get current render pass, attachment count, and sample count from state tracker
