@@ -31,7 +31,7 @@ cmake -DCMAKE_INSTALL_PREFIX=$INSTALL_FOLDER/Freespace2 -DCOMPONENT=Unspecified 
 cmake -DCMAKE_INSTALL_PREFIX=$INSTALL_FOLDER/Freespace2 -DCOMPONENT=Freespace2 -P cmake_install.cmake
 
 # We need to be a bit creative for determining the AppImage name since we don't want to hard-code the name
-FILENAME="$(find $INSTALL_FOLDER/Freespace2/bin -name 'fs2_open_*' -type f -printf "%f\n").AppImage"
+FILENAME="$(find $INSTALL_FOLDER/Freespace2/bin -maxdepth 1 -name 'fs2_open_*' -type f -executable -printf "%f\n").AppImage"
 ./bin/appimagetool -n "$INSTALL_FOLDER/Freespace2" "$INSTALL_FOLDER/$FILENAME"
 chmod +x "$INSTALL_FOLDER/$FILENAME"
 
@@ -41,7 +41,7 @@ if [ -f qtfred/cmake_install.cmake ]; then
 	cmake -DCMAKE_INSTALL_PREFIX=$INSTALL_FOLDER/qtFRED -DCOMPONENT=qtFRED -P cmake_install.cmake
 
 	# We need to be a bit creative for determining the AppImage name since we don't want to hard-code the name
-	FILENAME="$(find $INSTALL_FOLDER/qtFRED/bin -iname 'qtfred_*' -type f -printf "%f\n").AppImage"
+	FILENAME="$(find $INSTALL_FOLDER/qtFRED/bin -maxdepth 1 -iname 'qtfred_*' -type f -executable -printf "%f\n").AppImage"
 	./bin/appimagetool -n "$INSTALL_FOLDER/qtFRED" "$INSTALL_FOLDER/$FILENAME"
 	chmod +x "$INSTALL_FOLDER/$FILENAME"
 fi
