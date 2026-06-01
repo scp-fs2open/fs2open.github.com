@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.21)
 
 project(qtfred VERSION 1.0.0 LANGUAGES CXX)
 
@@ -173,48 +173,16 @@ install(FILES "${QTFRED_HELP_QCH}" "${QTFRED_HELP_QHC}"
 enable_clang_tidy(qtfred)
 COPY_FILES_TO_TARGET(qtfred)
 
+set(QTFRED_DEPLOY_PREFIX "$<TARGET_FILE_DIR:qtfred>")
+set(QTFRED_DEPLOY_OPTIONS "")
+
 if(PLATFORM_WINDOWS)
-    get_target_property(QMAKE_EXE Qt6::qmake IMPORTED_LOCATION)
-    get_filename_component(QT_BIN_DIR ${_QTFRED_QMAKE} DIRECTORY)
-    message(STATUS "Qt bin dir: ${QT_BIN_DIR}")
-    message(STATUS "qmake path: ${QMAKE_EXE}")
-
-    find_program(DEPLOYQT_EXECUTABLE
-        NAMES windeployqt6 windeployqt
-        HINTS "${QT_BIN_DIR}"
-        REQUIRED
-    )
-
-    if(NOT DEPLOYQT_EXECUTABLE)
-        message(WARNING "windeployqt not found in '${QT_BIN_DIR}' — Qt DLLs will not be deployed")
-    else()
-        message(STATUS "Found windeployqt: ${DEPLOYQT_EXECUTABLE}")
-    endif()
-
-    add_custom_command(TARGET qtfred POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E echo "Target file is: $<TARGET_FILE:qtfred>"
-        COMMENT "Debug: checking target file path"
-    )
-
-    add_custom_command(TARGET qtfred POST_BUILD
-        COMMAND "${DEPLOYQT_EXECUTABLE}"
-            --qthelp
-            $<$<OR:$<CONFIG:Debug>,$<CONFIG:FastDebug>>:--debug>
-            $<$<CONFIG:Release>:--release>
-            --dir "$<TARGET_FILE_DIR:qtfred>"
-            $<TARGET_FILE:qtfred>
-        COMMENT "Running windeployqt (with Qt Help support)..."
-    )
-
-    install(
-        DIRECTORY "$<TARGET_FILE_DIR:qtfred>/"
-        DESTINATION ${BINARY_DESTINATION}
-        COMPONENT "qtFRED"
-        FILES_MATCHING
-            PATTERN "Qt6Help*.dll"
-            PATTERN "qsqlite*.dll"
-            PATTERN "qwindows*.dll"
-            PATTERN "*.dll"
+    set(QTFRED_DEPLOY_OPTIONS
+        NO_COMPILER_RUNTIME
+        DEPLOY_TOOL_OPTIONS
+            BIN_DIR ${BINARY_DESTINATION}
+            LIB_DIR ${LIBRAY_DESTINATION}
+            NO_OVERWRITE
     )
 elseif(PLATFORM_MAC)
     # Handling of mac resources
@@ -236,18 +204,12 @@ elseif(PLATFORM_MAC)
         COMMENT "Copying resources into bundle..."
     )
 
-    # fix up Qt libs
-    find_program(DEPLOYQT_EXECUTABLE
-         NAMES macdeployqt6 macdeployqt
-         HINTS "${_QTFRED_QT_BINS}"
-         REQUIRED
-    )
-
-    add_custom_command(TARGET qtfred POST_BUILD
-        COMMAND "${DEPLOYQT_EXECUTABLE}"
-            "$<TARGET_BUNDLE_DIR:qtfred>"
+    set(QTFRED_DEPLOY_PREFIX "$<TARGET_BUNDLE_DIR:qtfred>/..")
+    set(QTFRED_DEPLOY_OPTIONS
+        DEPLOY_TOOL_OPTIONS
             -codesign=-
-        COMMENT "Running macdeployqt..."
+            NO_APP_STORE_COMPLIANCE
+            NO_OVERWRITE
     )
 elseif(FSO_BUILD_APPIMAGE)
     configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake/AppRun.in" "${CMAKE_CURRENT_BINARY_DIR}/AppRun.gen" @ONLY)
@@ -266,12 +228,78 @@ elseif(FSO_BUILD_APPIMAGE)
 
     install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/resources/fred_icon.png" DESTINATION "."
             COMPONENT "qtFRED")
+
+    set(QTFRED_DEPLOY_OPTIONS
+        INCLUDE_PLUGINS
+            eglfs linuxfb minimalegl minimal
+            offscreen vkkhrdisplay vnc
+            wayland xcb
+    )
 endif()
 
-if (FSO_INSTALL_DEBUG_FILES)
-    if (MSVC)
-        install(FILES "$<TARGET_PDB_FILE:qtfred>"
-                DESTINATION ${BINARY_DESTINATION}
-                OPTIONAL)
-    endif()
+# create Qt deploy script to fixup Qt libs/plugins
+qt_generate_deploy_app_script(
+    TARGET qtfred
+    OUTPUT_SCRIPT QTFRED_DEPLOY_SCRIPT
+    NO_UNSUPPORTED_PLATFORM_ERROR
+    ${QTFRED_DEPLOY_OPTIONS}
+)
+
+if(PLATFORM_LINUX AND QT_USE_PRECOMPILED)
+    # Using prebuilt Qt libs on Linux poses a problem since the deploy script
+    # needs to be able to find the Qt libs, which aren't in a normal location.
+    # So to address this we need to modify the deploy script to change the RPATH
+    # of the QtFRED binary to include this alternate location, run the deployment
+    # and then reset the RPATH to it's original value.
+    #
+    # WARNING: We do this using undocumented internal functionality of CMake's
+    #          file() command, and requires CMake 3.21 or newer to work.
+
+    # save current RPATH to reset it later
+    get_target_property(install_rpath_old qtfred INSTALL_RPATH)
+    # fix delimiters
+    string(REPLACE ";" ":" QTFRED_RPATH_orig "${install_rpath_old}")
+
+    # set new RPATH to be written to binary
+    # Note: file(RPATH_SET ...) cannot extend RPATH length so we have to do it
+    # this way to reserve enough space for the modified script to work properly
+    set_target_properties(qtfred PROPERTIES
+        INSTALL_RPATH "${QTFRED_RPATH_orig}:${_QTFRED_QT_LIBS}"
+    )
+
+    # swap script name so no other code needs to be changed to use it
+    set(QTFRED_DEPLOY_SCRIPT_orig ${QTFRED_DEPLOY_SCRIPT})
+    set(QTFRED_DEPLOY_SCRIPT "${QTFRED_DEPLOY_SCRIPT_orig}-libfix")
+
+    # create modified deploy script with our RPATH fix/hack
+    file(GENERATE OUTPUT ${QTFRED_DEPLOY_SCRIPT} CONTENT
+"file(RPATH_SET FILE $<TARGET_FILE:qtfred> NEW_RPATH \"${QTFRED_RPATH_orig}:${_QTFRED_QT_LIBS}\")
+include(${QTFRED_DEPLOY_SCRIPT_orig})
+file(RPATH_SET FILE $<TARGET_FILE:qtfred> NEW_RPATH \"${QTFRED_RPATH_orig}\")\n"
+    )
+endif()
+
+# deploy Qt libs/plugins
+add_custom_command(TARGET qtfred POST_BUILD
+    COMMAND ${CMAKE_COMMAND}
+        -D CMAKE_INSTALL_PREFIX=${QTFRED_DEPLOY_PREFIX}
+        -D QT_DEPLOY_PREFIX=${QTFRED_DEPLOY_PREFIX}
+        -D QT_DEPLOY_BIN_DIR=${BINARY_DESTINATION}
+        -D QT_DEPLOY_LIB_DIR=${LIBRAY_DESTINATION}
+        -P "${QTFRED_DEPLOY_SCRIPT}"
+    COMMENT "Running Qt deploy script..."
+    VERBATIM
+)
+
+install(CODE "
+    set(QT_DEPLOY_BIN_DIR ${BINARY_DESTINATION})
+    set(QT_DEPLOY_LIB_DIR ${LIBRAY_DESTINATION})
+" COMPONENT "qtFRED")
+
+install(SCRIPT "${QTFRED_DEPLOY_SCRIPT}" COMPONENT "qtFRED")
+
+if (FSO_INSTALL_DEBUG_FILES AND MSVC)
+    install(FILES "$<TARGET_PDB_FILE:qtfred>"
+            DESTINATION ${BINARY_DESTINATION}
+            OPTIONAL)
 endif()
