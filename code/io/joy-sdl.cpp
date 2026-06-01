@@ -1036,6 +1036,13 @@ namespace joystick
 
 		mprintf(("Initializing Joystick...\n"));
 
+		// Run joystick polling and HID device-detection on a dedicated SDL thread
+		// instead of the main thread. Without this, WM_DEVICECHANGE broadcasts
+		// (caused by wireless HID peripherals waking/sleeping on the USB bus)
+		// trigger SDL to re-walk every HID device class via SetupAPI / cfgmgr32
+		// from inside SDL_PollEvent, stalling the frame loop for multiple seconds.
+		SDL_SetHint(SDL_HINT_JOYSTICK_THREAD, "1");
+
 		if (SDL_InitSubSystem(SDL_INIT_JOYSTICK) < 0)
 		{
 			mprintf(("  Could not initialize joystick: %s\n", SDL_GetError()));
