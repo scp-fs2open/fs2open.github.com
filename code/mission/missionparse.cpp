@@ -1380,7 +1380,7 @@ void parse_player_info2(mission *pm)
 			if (pm->support_ships.rearm_pool_from_loadout) {
 				WarningEx(LOCATION, "+Support Rearm Pool is set but +Support Rearm Pool From Loadout is also enabled! The explicit pool will be ignored.\n");
 			} else {
-				for (auto& wc : support_rearm_list) {
+				for (const auto& wc : support_rearm_list) {
 					if (wc.index < 0 || wc.index >= weapon_info_size()) {
 						continue;
 					}

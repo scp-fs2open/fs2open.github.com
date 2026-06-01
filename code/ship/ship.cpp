@@ -166,7 +166,6 @@ static void ship_set_eye(object *obj, int eye_index);
 static void ship_start_targeting_laser(ship *shipp);
 static void ship_add_ship_type_kill_count(int ship_info_index);
 static int ship_info_lookup_sub(const char *token);
-static int get_support_rearm_pool_tvt_team_index(int tvt_team);
 
 enum class LegacyShipParticleType : uint8_t {DAMAGE_SPEW, SPLIT_PARTICLES, OTHER};
 static particle::ParticleEffectHandle default_ship_particle_effect(LegacyShipParticleType type, int n_high, int n_low, float max_rad, float min_rad, float max_life, float min_life, float max_vel, float min_vel, float variance, float range, int bitmap, float velocityInherit, bool useNormal = false);
@@ -11070,7 +11069,7 @@ void ship_process_post(object * obj, float frametime)
 			if (The_mission.support_ships.rearm_pool_from_loadout && shipp->flags[Ship_Flags::From_player_wing]) {
 				const int weapon_class = shipp->weapons.secondary_bank_weapons[i];
 				if (SCP_vector_inbounds(Weapon_info, weapon_class)) {
-					auto& slot = The_mission.support_ships.rearm_weapon_pool[get_support_rearm_pool_tvt_team_index(shipp->team)][weapon_class];
+					auto& slot = The_mission.support_ships.rearm_weapon_pool[shipp->team][weapon_class];
 					if (slot >= 0) {
 						slot = MAX(0, slot - shipp->weapons.secondary_bank_ammo[i]);
 					}
@@ -11093,7 +11092,7 @@ void ship_process_post(object * obj, float frametime)
 			const int weapon_class = shipp->weapons.primary_bank_weapons[i];
 			if (The_mission.support_ships.rearm_pool_from_loadout && shipp->flags[Ship_Flags::From_player_wing] &&
 				SCP_vector_inbounds(Weapon_info, weapon_class) && Weapon_info[weapon_class].wi_flags[Weapon::Info_Flags::Ballistic]) {
-				auto& slot = The_mission.support_ships.rearm_weapon_pool[get_support_rearm_pool_tvt_team_index(shipp->team)][weapon_class];
+				auto& slot = The_mission.support_ships.rearm_weapon_pool[shipp->team][weapon_class];
 				if (slot >= 0) {
 					slot = MAX(0, slot - shipp->weapons.primary_bank_ammo[i]);
 				}
@@ -16254,19 +16253,8 @@ float ship_calculate_rearm_duration( object *objp )
 	return shield_rep_time + hull_rep_time + subsys_rep_time + prim_rearm_time + sec_rearm_time + 1.2f;
 }
 
-static int get_support_rearm_pool_tvt_team_index(int tvt_team)
-{
-	// If not in TVT then all cases should return 0.
-	if (tvt_team >= 0 && tvt_team < Num_teams && tvt_team < MAX_TVT_TEAMS) {
-		return tvt_team;
-	}
-
-	return 0;
-}
-
 static int get_mission_rearm_pool_for_weapon(int weapon_class, int team)
 {
-	const auto team_index = get_support_rearm_pool_tvt_team_index(team);
 	if ((weapon_class < 0) || (weapon_class >= MAX_WEAPON_TYPES)) {
 		return 0;
 	}
@@ -16279,7 +16267,12 @@ static int get_mission_rearm_pool_for_weapon(int weapon_class, int team)
 		return -1;
 	}
 
-	return The_mission.support_ships.rearm_weapon_pool[team_index][weapon_class];
+	// The pool only exists for player loadout teams; ships on any other team are unrestricted.
+	if (team < 0 || team >= MAX_TVT_TEAMS) {
+		return -1;
+	}
+
+	return The_mission.support_ships.rearm_weapon_pool[team][weapon_class];
 }
 
 static bool weapon_allowed_for_current_game_type(int weapon_flags)
@@ -16378,14 +16371,17 @@ static void use_mission_rearm_pool_for_weapon(int weapon_class, int amount, int 
 		return;
 	}
 
-	const auto team_index = get_support_rearm_pool_tvt_team_index(team);
-
-	if (The_mission.support_ships.rearm_weapon_pool[team_index][weapon_class] < 0) {
+	// The pool only exists for player loadout teams; ships on any other team don't draw from it.
+	if (team < 0 || team >= MAX_TVT_TEAMS) {
 		return;
 	}
 
-	The_mission.support_ships.rearm_weapon_pool[team_index][weapon_class] =
-		MAX(0, The_mission.support_ships.rearm_weapon_pool[team_index][weapon_class] - amount);
+	if (The_mission.support_ships.rearm_weapon_pool[team][weapon_class] < 0) {
+		return;
+	}
+
+	The_mission.support_ships.rearm_weapon_pool[team][weapon_class] =
+		MAX(0, The_mission.support_ships.rearm_weapon_pool[team][weapon_class] - amount);
 }
 
 // ==================================================================================
