@@ -197,7 +197,7 @@ void WingEditorDialog::enableOrDisableControls()
 	const bool arrivalNeedsTarget = _model->arrivalNeedsTarget();
 
 	ui->arrivalTargetCombo->setEnabled(arrivalEditable && arrivalNeedsTarget);
-	ui->arrivalDistanceSpinBox->setEnabled(arrivalEditable && arrivalNeedsTarget);
+	ui->arrivalDistanceSpinBox->setEnabled(arrivalEditable && _model->arrivalNeedsDistance());
 	ui->restrictArrivalPathsButton->setEnabled(arrivalEditable && arrivalIsDockBay);
 	ui->customWarpinButton->setEnabled(arrivalEditable && !arrivalIsDockBay);
 

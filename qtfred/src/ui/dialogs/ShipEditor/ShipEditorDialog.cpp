@@ -422,13 +422,8 @@ void ShipEditorDialog::enableDisable()
 		ui->restrictDeparturePathsButton->setEnabled(false);
 	} else {
 		ui->arrivalLocationCombo->setEnabled(_model->getUIEnable());
-		if (_model->getArrivalLocationIndex()) {
-			ui->arrivalDistanceEdit->setEnabled(_model->getUIEnable());
-			ui->arrivalTargetCombo->setEnabled(_model->getUIEnable());
-		} else {
-			ui->arrivalDistanceEdit->setEnabled(false);
-			ui->arrivalTargetCombo->setEnabled(false);
-		}
+		ui->arrivalDistanceEdit->setEnabled(_model->getUIEnable() && _model->arrivalNeedsDistance());
+		ui->arrivalTargetCombo->setEnabled(_model->getUIEnable() && _model->arrivalNeedsTarget());
 		if (_model->getArrivalLocation() == ArrivalLocation::FROM_DOCK_BAY) {
 			if (_model->getArrivalTarget() >= 0) {
 				ui->restrictArrivalPathsButton->setEnabled(_model->getUIEnable());

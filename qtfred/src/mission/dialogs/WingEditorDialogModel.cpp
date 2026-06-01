@@ -176,6 +176,22 @@ bool WingEditorDialogModel::arrivalNeedsTarget() const
 	}
 }
 
+bool WingEditorDialogModel::arrivalNeedsDistance() const
+{
+	const auto w = getCurrentWing();
+
+	if (!w)
+		return false;
+
+	switch (w->arrival_location) {
+		case ArrivalLocation::AT_LOCATION:
+		case ArrivalLocation::FROM_DOCK_BAY:
+			return false;
+		default:
+			return true;
+	}
+}
+
 
 bool WingEditorDialogModel::departureIsDockBay() const
 {
