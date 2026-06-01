@@ -297,14 +297,15 @@ void radar_plot_object( object *objp )
 		return;
 	}
 
-	// Mine range-based visibility: determine state from mine-specific ranges
+	// Mine range-based visibility: sensors_range is the outer detection envelope. The parser
+	// guarantees sensors_range >= targetable_range, so anything within targetable range is
+	// necessarily within sensors range; targetable range only governs distorted-vs-clear below.
 	if (objp->type == OBJ_WEAPON) {
 		weapon_info *wip = &Weapon_info[Weapons[objp->instance].weapon_info_index];
 		if (wip->is_mine()) {
+			if (dist > wip->mine_sensors_range)
+				return; // beyond detection
 			mine_in_targetable_range = (dist <= wip->mine_targetable_range);
-			bool in_sensors          = (dist <= wip->mine_sensors_range);
-			if (!mine_in_targetable_range && !in_sensors)
-				return; // beyond all detection ranges
 		}
 	}
 
