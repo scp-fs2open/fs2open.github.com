@@ -128,9 +128,11 @@ add_custom_command(
     COMMENT "Compiling QtFRED help content (qtfred_help.qch)"
     VERBATIM)
 
-# Pre-build the collection (.qhc) with the .qch already registered.  Runtime
-# just opens this in read-only mode -- no QHelpEngine::registerDocumentation
-# bootstrap, which is unreliable on a fresh .qhc under Qt6.
+# Pre-build the collection (.qhc) with the .qch already registered.  At runtime
+# we copy this to AppDataLocation (writable on all platforms including macOS) and
+# open it from there so Qt can write the search index alongside it.  We avoid
+# creating a fresh .qhc at runtime because QHelpEngine::registerDocumentation
+# bootstrapping on a new empty collection is unreliable under Qt6.
 add_custom_command(
     OUTPUT "${QTFRED_HELP_QHC}"
     COMMAND ${CMAKE_COMMAND} -E env
