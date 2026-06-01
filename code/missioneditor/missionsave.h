@@ -67,9 +67,18 @@ class Fred_mission_save {
 	void set_create_bak_file(bool create) { save_config.create_bak_file = create; }
 
 	/**
-	 * @brief Saves the mission onto the backup stack (used by legacy FRED2 only).
+	 * @brief Saves the mission onto the backup stack
 	 *
-	 * @deprecated QtFRED no longer uses this. Retained for FRED2 (fred2/freddoc.cpp) compatibility.
+	 * @param[in] pathname The full pathname
+	 *
+	 * @details Returns the value of CFred_mission_save::err, which is:
+	 *
+	 * @returns 0 for no error, or
+	 * @returns A negative value if an error occured.
+	 *
+	 * @see save_mission_internal()
+	 *
+	 * @note Used by legacy FRED2 only; QtFRED uses save_autosave_file() instead.
 	 */
 	int autosave_mission_file(char* pathname);
 
