@@ -47,7 +47,7 @@ public:
 	static QByteArray loadTutorialAsset(const QString& urlPath);
 
 private:
-	static QString resolveCollectionFile();
+	static QString resolveBundleFile(const QString& relativePath);
 	static QString extractHtmlTitle(const QString& filePath);
 	static QList<TutorialEntry> discoverTutorials();
 

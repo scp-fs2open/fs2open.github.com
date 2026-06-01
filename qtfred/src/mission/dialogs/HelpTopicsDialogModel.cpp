@@ -7,6 +7,7 @@
 #include <QtHelp/QHelpEngine>
 #include <QHelpSearchEngine>
 #include <QRegularExpression>
+#include <QStandardPaths>
 
 #include "cfile/cfile.h"
 
@@ -59,17 +60,53 @@ bool HelpTopicsDialogModel::ensureEngineReady() {
 	if (_helpEngine != nullptr)
 		return !_helpEngine->registeredDocumentations().isEmpty();
 
-	const QString collectionFile = resolveCollectionFile();
-	if (!QFileInfo::exists(collectionFile)) {
+	const QString bundleQhcPath = resolveBundleFile(QStringLiteral("help/qtfred_help.qhc"));
+	const QString bundleQchPath = resolveBundleFile(QStringLiteral("help/qtfred_help.qch"));
+
+	if (!QFileInfo::exists(bundleQhcPath)) {
 		mprintf(("QtFRED help: collection file not found at %s\n",
-		         collectionFile.toUtf8().constData()));
+		         bundleQhcPath.toUtf8().constData()));
+		return false;
+	}
+	if (!QFileInfo::exists(bundleQchPath)) {
+		mprintf(("QtFRED help: content file not found at %s\n",
+		         bundleQchPath.toUtf8().constData()));
 		return false;
 	}
 
+	// The collection must live in a writable location so Qt can write the search index
+	// alongside it. On macOS the app bundle is read-only. We keep an up-to-date copy in
+	// AppDataLocation and update it from the bundle when it's missing or newer.
+	// We use a bundle-side pre-built .qhc (not a fresh one) to avoid the Qt6 issue where
+	// setupData()+registerDocumentation() bootstrapping on an empty collection is unreliable.
+	const QString helpDir = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)
+	                        + QStringLiteral("/help");
+	QDir().mkpath(helpDir);
+	const QString writableQhcPath = helpDir + QStringLiteral("/qtfred_help.qhc");
+
+	// We need to know whether the AppDataLocation copy is already for this exact build
+	// before opening the engine.  A small marker file stores the bundle .qch path that
+	// was used when the copy was made.  This correctly handles switching between any build
+	// versions (older or newer) because the comparison is path-based, not time-based.
+	const QString markerPath   = helpDir + QStringLiteral("/qtfred_help_build.txt");
+	QString       storedBundle;
+	{
+		QFile f(markerPath);
+		if (f.open(QIODevice::ReadOnly))
+			storedBundle = QString::fromUtf8(f.readAll()).trimmed();
+	}
+
+	if (storedBundle != bundleQchPath) {
+		QFile::remove(writableQhcPath);
+		if (!QFile::copy(bundleQhcPath, writableQhcPath)) {
+			mprintf(("QtFRED help: could not copy collection to %s\n",
+			         writableQhcPath.toUtf8().constData()));
+			return false;
+		}
+	}
+
 	// Parent to qApp so Qt manages the lifetime. Destroyed cleanly before the event loop exits.
-	// The .qhc ships with the application with the .qch already registered. We open it as read-only.
-	_helpEngine = new QHelpEngine(collectionFile, qApp);
-	_helpEngine->setReadOnly(true);
+	_helpEngine = new QHelpEngine(writableQhcPath, qApp);
 	if (!_helpEngine->setupData()) {
 		mprintf(("QtFRED help: could not initialize engine: %s\n",
 		         _helpEngine->error().toUtf8().constData()));
@@ -78,11 +115,32 @@ bool HelpTopicsDialogModel::ensureEngineReady() {
 		return false;
 	}
 
+	// The copied .qhc stores a relative path to the .qch that won't resolve from
+	// AppDataLocation. Re-register using the absolute bundle path.
+	const QStringList docs = _helpEngine->registeredDocumentations();
+	if (!docs.isEmpty()) {
+		const QString registeredQch = _helpEngine->documentationFileName(docs.first());
+		if (registeredQch != bundleQchPath) {
+			_helpEngine->unregisterDocumentation(docs.first());
+			if (!_helpEngine->registerDocumentation(bundleQchPath)) {
+				mprintf(("QtFRED help: could not re-register documentation: %s\n",
+				         _helpEngine->error().toUtf8().constData()));
+				delete _helpEngine;
+				_helpEngine = nullptr;
+				return false;
+			}
+			// Update the marker to record which build this collection now points to.
+			QFile f(markerPath);
+			if (f.open(QIODevice::WriteOnly))
+				f.write(bundleQchPath.toUtf8());
+		}
+	}
+
 	return !_helpEngine->registeredDocumentations().isEmpty();
 }
 
 // ---------------------------------------------------------------------------
-QString HelpTopicsDialogModel::resolveCollectionFile() {
+QString HelpTopicsDialogModel::resolveBundleFile(const QString& relativePath) {
 	QDir dir(QCoreApplication::applicationDirPath());
 
 #ifdef Q_OS_MACOS
@@ -90,8 +148,7 @@ QString HelpTopicsDialogModel::resolveCollectionFile() {
 	dir.cd("Resources");
 #endif
 
-	return dir.filePath(
-	    QStringLiteral("help/qtfred_help.qhc"));
+	return dir.filePath(relativePath);
 }
 
 // ---------------------------------------------------------------------------
