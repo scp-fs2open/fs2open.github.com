@@ -13,6 +13,7 @@ if(QT_USE_PRECOMPILED)
 else()
     SET(QT6_INSTALL_ROOT "" CACHE PATH
         "The path to the Qt6 installation root. May be necessary on windows if the standard find_package fails to find the Qt installation.")
+    message(STATUS "Using system Qt libraries. Don't distribute these FSO binaries if these are the GPL libraries/plugins!")
 endif()
 
 if(QT6_INSTALL_ROOT)
