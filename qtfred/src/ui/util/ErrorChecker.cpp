@@ -342,8 +342,6 @@ int ErrorChecker::checkObjectList() {
 			char buf[256];
 			waypoint_stuff_name(buf, i);
 			entry.name = buf;
-		} else if (ptr->type == OBJ_POINT) {
-			// Briefing icons are editor-only objects, not mission objects; nothing to validate here.
 		} else if (ptr->type == OBJ_JUMP_NODE || ptr->type == OBJ_PROP) {
 			// nothing needed
 		} else {
@@ -433,7 +431,9 @@ int ErrorChecker::checkShips() {
 				error("Ship \"%s\" has a negative departure delay", Ships[i].ship_name);
 			}
 
-			if (Ships[i].arrival_location != ArrivalLocation::AT_LOCATION && Ships[i].arrival_distance <= 0) {
+			if (Ships[i].arrival_location != ArrivalLocation::AT_LOCATION &&
+				Ships[i].arrival_location != ArrivalLocation::FROM_DOCK_BAY &&
+				Ships[i].arrival_distance <= 0) {
 				error("Arrival distance for ship \"%s\" must be greater than 0", Ships[i].ship_name);
 			}
 
@@ -706,7 +706,9 @@ int ErrorChecker::checkWings() {
 				error("Wing \"%s\" has a negative departure delay", Wings[i].name);
 			}
 
-			if (Wings[i].arrival_location != ArrivalLocation::AT_LOCATION && Wings[i].arrival_distance <= 0) {
+			if (Wings[i].arrival_location != ArrivalLocation::AT_LOCATION &&
+				Wings[i].arrival_location != ArrivalLocation::FROM_DOCK_BAY &&
+				Wings[i].arrival_distance <= 0) {
 				error("Arrival distance for wing \"%s\" must be greater than 0", Wings[i].name);
 			}
 
@@ -786,19 +788,15 @@ int ErrorChecker::checkPlayerStarts() {
 
 int ErrorChecker::checkReinforcements() {
 
-	if (Num_reinforcements > MAX_REINFORCEMENTS) {
-		return internal_error("Number of reinforcements exceeds max limit");
-	}
-
-	for (int i = 0; i < Num_reinforcements; i++) {
-		if (Reinforcements[i].arrival_delay < 0) {
-			error("Reinforcement \"%s\" has a negative arrival delay", Reinforcements[i].name);
+	for (const auto& reinforcement : Reinforcements) {
+		if (reinforcement.arrival_delay < 0) {
+			error("Reinforcement \"%s\" has a negative arrival delay", reinforcement.name);
 		}
 
 		int z = 0;
 		int ship_wingnum = -1;
 		for (const auto& ship : Ships) {
-			if ((ship.objnum >= 0) && !stricmp(ship.ship_name, Reinforcements[i].name)) {
+			if ((ship.objnum >= 0) && !stricmp(ship.ship_name, reinforcement.name)) {
 				z = 1;
 				ship_wingnum = ship.wingnum;
 				break;
@@ -806,7 +804,7 @@ int ErrorChecker::checkReinforcements() {
 		}
 
 		for (const auto& wing : Wings) {
-			if (wing.wave_count && !stricmp(wing.name, Reinforcements[i].name)) {
+			if (wing.wave_count && !stricmp(wing.name, reinforcement.name)) {
 				z = 1;
 				break;
 			}
@@ -818,7 +816,7 @@ int ErrorChecker::checkReinforcements() {
 
 		if (ship_wingnum >= 0) {
 			potential("Reinforcement \"%s\" is a ship that belongs to a wing; the reinforcement flag will be ignored",
-					  Reinforcements[i].name);
+					  reinforcement.name);
 		}
 	}
 

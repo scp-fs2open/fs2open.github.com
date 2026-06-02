@@ -57,7 +57,6 @@ extern vec3d	Original_vec_to_deader;
 
 #define	MAX_SHIP_SPARKS			8				// maximum number of spark emitters on a ship
 #define	MAX_SHIP_DETAIL_LEVELS	5				// maximum detail levels that a ship can render at
-#define	MAX_REINFORCEMENTS		32
 
 
 // defines for 'direction' parameter of ship_select_next_primary()
@@ -80,7 +79,7 @@ enum class CycleDirection { NEXT, PREV };
 
 #define RF_IS_AVAILABLE			(1<<0)			// reinforcement is now available
 
-typedef struct {
+struct reinforcements {
 	char	name[NAME_LENGTH];	// ship or wing name (ship and wing names don't collide)
 	int	type;						// what operations this reinforcement unit can perform
 	int	uses;						// number of times reinforcemnt unit can be used
@@ -89,7 +88,9 @@ typedef struct {
 	int	flags;
 	char	no_messages[MAX_REINFORCEMENT_MESSAGES][NAME_LENGTH];		// list of messages to possibly send when calling for reinforcement not available
 	char	yes_messages[MAX_REINFORCEMENT_MESSAGES][NAME_LENGTH];	// list of messages to acknowledge reinforcement on the way
-} reinforcements;
+
+	reinforcements(const char *reinforcement_name = nullptr);
+};
 
 class ship_weapon {
 public:
@@ -1575,6 +1576,8 @@ extern SCP_vector<engine_wash_info> Engine_wash_info;
 //	Defines a wing of ships.
 typedef struct wing {
 	char	name[NAME_LENGTH];
+	SCP_string display_name;
+
 	char	wing_squad_filename[MAX_FILENAME_LEN];	// Goober5000
 	int	reinforcement_index;					// index in reinforcement struct or -1
 	int	hotkey;
@@ -1634,6 +1637,9 @@ typedef struct wing {
 
 	// reset to a completely blank wing
 	void clear();
+
+	const char *get_display_name() const;
+	bool has_display_name() const;
 } wing;
 
 extern wing Wings[MAX_WINGS];
@@ -1648,9 +1654,8 @@ extern char TVT_wing_names[MAX_TVT_WINGS][NAME_LENGTH];
 
 extern int ai_paused;
 
-extern int Num_reinforcements;
 extern SCP_vector<ship_info> Ship_info;
-extern reinforcements Reinforcements[MAX_REINFORCEMENTS];
+extern SCP_vector<reinforcements> Reinforcements;
 
 // structure definition for ship type counts.  Used to give a count of the number of ships
 // of a particular type, and the number of times that a ship of that particular type has been
@@ -1770,8 +1775,11 @@ extern int wing_name_lookup(const char *name, int ignore_count = 0);
 
 extern bool wing_has_yet_to_arrive(const wing *wingp);
 
-// for generating a ship name for arbitrary waves/indexes of that wing... correctly handles the # character
-extern void wing_bash_ship_name(char *ship_name, const char *wing_name, int index, bool *needs_display_name = nullptr);
+// for generating a ship name for arbitrary waves/indexes of that wing
+extern void wing_bash_ship_name(SCP_string &ship_name, const char *wing_name, int ordinal);
+extern void wing_bash_ship_name(char *ship_name, const char *wing_name, int ordinal);
+extern void wing_bash_ship_name(p_object *p_objp, const wing *wingp, int ordinal, bool reset_display_name_if_normal = false);
+extern void wing_bash_ship_name(ship *shipp, const wing *wingp, int ordinal, bool reset_display_name_if_normal = false);
 extern int Player_ship_class;
 
 //	Do the special effect for energy dissipating into the shield for a hit.
@@ -1976,7 +1984,7 @@ int ship_get_turret_type(ship_subsys *subsys);
 int ship_get_by_signature(int sig);
 
 // get the team of a reinforcement item
-int ship_get_reinforcement_team(int r_index);
+int ship_get_reinforcement_team(const reinforcements &reinforcement);
 
 // page in bitmaps for all ships on a given level
 void ship_page_in();

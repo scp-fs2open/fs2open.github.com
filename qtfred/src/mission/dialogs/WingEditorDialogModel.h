@@ -38,6 +38,7 @@ class WingEditorDialogModel : public AbstractDialogModel {
 
 	bool arrivalIsDockBay() const;
 	bool arrivalNeedsTarget() const;
+	bool arrivalNeedsDistance() const;
 	bool departureIsDockBay() const;
 	bool departureNeedsTarget() const;
 	int getMaxWaveThreshold() const;
@@ -55,6 +56,8 @@ class WingEditorDialogModel : public AbstractDialogModel {
 	// Top section, first column
 	SCP_string getWingName() const;
 	void setWingName(const SCP_string& name);
+	SCP_string getWingDisplayName() const;
+	void setWingDisplayName(const SCP_string& displayName);
 	int getWingLeaderIndex() const;
 	void setWingLeaderIndex(int newLeaderIndex);
 	int getNumberOfWaves() const;

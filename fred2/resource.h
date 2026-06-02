@@ -715,6 +715,7 @@
 #define IDC_MAIN_HALL                   1323
 #define IDC_DEBRIEFING_PERSONA          1324
 #define IDC_DISPLAY_NAME                1325
+#define IDC_WING_DISPLAY_NAME           1326
 #define IDC_DOCK1                       1327
 #define IDC_INNER_MIN_X                 1327
 #define IDC_DOCK2                       1328
@@ -1172,9 +1173,7 @@
 #define IDC_DISABLE_ETS                 1630
 #define IDC_DISABLE_ETS2                1632
 #define IDC_CLOAKED                     1632
-#define IDC_NEB2_NEAR_MULTIPLIER        1632
 #define IDC_EDIT6                       1633
-#define IDC_NEB2_FAR_MULTIPLIER         1634
 #define IDC_MISSION_LOG_TRUE            1635
 #define IDC_MISSION_LOG_FALSE           1636
 #define IDC_MISSION_LOG_STATE_CHANGE    1637
@@ -1271,6 +1270,10 @@
 #define IDC_PROP_PREV                   1710
 #define IDC_PROP_NEXT                   1711
 #define IDC_PROP_FLAGS                  1712
+#define IDC_NEB2_FOG_1000M_VIS          1713
+#define IDC_NEB2_FOG_NEAR_DIST          1714
+#define IDC_NEB2_FOG_SKYBOX_CLIP        1715
+#define IDC_NEB2_FOG_CLIP               1716
 #define IDC_SEXP_POPUP_LIST             32770
 #define ID_FILE_MISSIONNOTES            32771
 #define ID_DUPLICATE                    32774
@@ -1455,6 +1458,11 @@
 #define ID_NEW_PROP_TYPE                33104
 #define ID_STATIC_SHIP_LABEL            33105
 #define ID_STATIC_PROP_LABEL            33106
+#define ID_OUTLINE_LOD_0                33107
+#define ID_OUTLINE_LOD_1                33108
+#define ID_OUTLINE_LOD_2                33109
+#define ID_OUTLINE_LOD_3                33110
+#define ID_OUTLINE_LOD_4                33111
 #define ID_VIEW_OUTLINES_ON_SELECTED    32982
 #define ID_SHOW_STARFIELD               32983
 #define ID_ASTEROID_EDITOR              32984
@@ -1574,14 +1582,15 @@
 #define ID_INDICATOR_RIGHT              59144
 #define ID_INDICATOR_MODIFIED           59145
 
+
 // Next default values for new objects
-// 
+//
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        335
 #define _APS_NEXT_COMMAND_VALUE         33104
-#define _APS_NEXT_CONTROL_VALUE         1705
+#define _APS_NEXT_CONTROL_VALUE         1717
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif

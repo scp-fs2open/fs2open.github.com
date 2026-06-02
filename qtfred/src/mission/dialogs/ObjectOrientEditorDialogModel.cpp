@@ -56,8 +56,6 @@ void ObjectOrientEditorDialogModel::initializeData()
 					if (Props[ptr->instance].has_value())
 						_pointToObjectList.emplace_back(ObjectEntry(Props[ptr->instance]->prop_name, OBJ_INDEX(ptr)));
 					break;
-				case OBJ_POINT:
-					break;
 				default:
 					Assertion(false, "Unknown object type in Object Orient Dialog!"); // unknown object type
 			}

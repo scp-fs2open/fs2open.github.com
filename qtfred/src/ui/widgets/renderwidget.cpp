@@ -240,7 +240,12 @@ void RenderWidget::mousePressEvent(QMouseEvent* event) {
 			_viewport->on_object = _viewport->create_object_on_grid(event->x(), event->y(), waypoint_instance, kind);
 
 		} else {
-			_viewport->Dup_drag = 1;
+			// Ctrl+drag: duplicate marked objects (waypoints start a new path).
+			// Ctrl+Shift+drag: same, except marked waypoints insert into their
+			// source path instead of starting a new one.
+			_viewport->Dup_drag = event->modifiers().testFlag(Qt::ShiftModifier)
+				? EditorViewport::DUP_DRAG_INSERT
+				: 1;
 		}
 
 	} else if (!_viewport->Selection_lock) {
@@ -379,9 +384,7 @@ void RenderWidget::mouseReleaseEvent(QMouseEvent* event) {
 						Assert(objp->type == OBJ_SHIP);
 						ship = objp->instance;
 						Assert(Ships[ship].wingnum == -1);
-						wing_bash_ship_name(Ships[ship].ship_name,
-											Wings[_viewport->Duped_wing].name,
-											Wings[_viewport->Duped_wing].wave_count + 1);
+						wing_bash_ship_name(&Ships[ship], &Wings[_viewport->Duped_wing], Wings[_viewport->Duped_wing].wave_count + 1, true);
 
 						Wings[_viewport->Duped_wing].ship_index[Wings[_viewport->Duped_wing].wave_count] = ship;
 						Ships[ship].wingnum = _viewport->Duped_wing;

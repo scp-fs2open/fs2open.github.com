@@ -24,7 +24,7 @@
 #include "sound/ffmpeg/FFmpegWaveFile.h"
 #endif
 
-#define MAX_STREAM_BUFFERS 4
+constexpr size_t MAX_STREAM_BUFFERS = 8;
 
 // status
 #define ASF_FREE	0
@@ -438,7 +438,7 @@ bool AudioStream::WriteWaveData (uint size, uint *num_bytes_written, int service
 	const auto alFormat = openal_get_format(m_fileProps.bytes_per_sample * 8, m_fileProps.num_channels);
 
 	if ( !service ) {
-		for (int ib = 0; ib < MAX_STREAM_BUFFERS; ib++) {
+		for (auto &buffer_id : m_buffer_ids) {
 			num_bytes_read = m_pwavefile->Read(uncompressed_wave_data, m_cbBufSize);
 
 			// if looping then maybe reset wavefile and keep going
@@ -452,8 +452,8 @@ bool AudioStream::WriteWaveData (uint size, uint *num_bytes_written, int service
 				m_bReadingDone = 1;
 				break;
 			} else if (num_bytes_read > 0) {
-				OpenAL_ErrorCheck( alBufferData(m_buffer_ids[ib], alFormat, uncompressed_wave_data, num_bytes_read, m_fileProps.sample_rate), { fRtn = false; goto ErrorExit; } );
-				OpenAL_ErrorCheck( alSourceQueueBuffers(m_source_id, 1, &m_buffer_ids[ib]), { fRtn = false; goto ErrorExit; } );
+				OpenAL_ErrorCheck( alBufferData(buffer_id, alFormat, uncompressed_wave_data, num_bytes_read, m_fileProps.sample_rate), { fRtn = false; goto ErrorExit; } );
+				OpenAL_ErrorCheck( alSourceQueueBuffers(m_source_id, 1, &buffer_id), { fRtn = false; goto ErrorExit; } );
 
 				*num_bytes_written += num_bytes_read;
 			}
@@ -511,7 +511,7 @@ uint AudioStream::GetMaxWriteSize (void)
 
 	OpenAL_ErrorCheck( alGetSourcei(m_source_id, AL_BUFFERS_QUEUED, &q), return 0 );
 
-	if (!n && (q >= MAX_STREAM_BUFFERS)) //all buffers queued
+	if (!n && (q >= sz2i(MAX_STREAM_BUFFERS))) //all buffers queued
 		dwMaxSize = 0;
 
 	//	nprintf(("Alan","Max write size: %d\n", dwMaxSize));
@@ -598,6 +598,20 @@ bool AudioStream::ServiceBuffer (void)
 			if ( (m_finished_id>0) && ((uint)timer_get_milliseconds() > m_finished_id) ) {
 				m_finished_id = 0;
 				m_bPastLimit = true;
+			}
+
+			// Recover from buffer underrun: if the source stopped because the queue drained
+			// between service ticks, OpenAL will not auto-resume even after WriteWaveData
+			// queues more buffers. We have to call alSourcePlay again ourselves.
+			ALint state = AL_PLAYING;
+			OpenAL_ErrorPrint( alGetSourcei(m_source_id, AL_SOURCE_STATE, &state) );
+			if (state == AL_STOPPED && m_fPlaying && !m_bReadingDone) {
+				ALint queued = 0;
+				OpenAL_ErrorPrint( alGetSourcei(m_source_id, AL_BUFFERS_QUEUED, &queued) );
+				if (queued > 0) {
+					nprintf(("Sound", "SOUND => Audiostream underrun, restarting playback\n"));
+					OpenAL_ErrorPrint( alSourcePlay(m_source_id) );
+				}
 			}
 
 			if ( PlaybackDone() ) {

@@ -432,8 +432,7 @@ int hud_squadmsg_count_wings( int add_to_menu )
 			count++;
 			if ( add_to_menu ) {
 				Assert ( Num_menu_items < MAX_MENU_ITEMS );
-				MsgItems[Num_menu_items].text = Wings[wingnum].name;
-				end_string_at_first_hash_symbol(MsgItems[Num_menu_items].text);
+				MsgItems[Num_menu_items].text = Wings[wingnum].get_display_name();
 				MsgItems[Num_menu_items].instance = wingnum;
 				MsgItems[Num_menu_items].active = 1;
 				Num_menu_items++;
@@ -454,8 +453,7 @@ int hud_squadmsg_count_wings( int add_to_menu )
 			count++;
 			if ( add_to_menu ) {
 				Assert ( Num_menu_items < MAX_MENU_ITEMS );
-				MsgItems[Num_menu_items].text = Wings[i].name;
-				end_string_at_first_hash_symbol(MsgItems[Num_menu_items].text); 
+				MsgItems[Num_menu_items].text = Wings[i].get_display_name();
 				MsgItems[Num_menu_items].instance = i;
 				MsgItems[Num_menu_items].active = 1;
 				Num_menu_items++;
@@ -1723,18 +1721,16 @@ int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, 
 // return number of available reinforcements, 0 if none available
 int hud_squadmsg_reinforcements_available(int team)
 {
-	int i, count = 0;
+	int count = 0;
 
-	for (i = 0; i < Num_reinforcements; i++) {
-		int wingnum;
-
+	for (const auto &reinforcement: Reinforcements) {
 		// no more left
-		if ( Reinforcements[i].num_uses >= Reinforcements[i].uses ){
+		if (reinforcement.num_uses >= reinforcement.uses ){
 			continue;
 		}
 
 		// incorrect team
-		if ( team != ship_get_reinforcement_team(i) ){
+		if ( team != ship_get_reinforcement_team(reinforcement) ){
 			continue;
 		}
 
@@ -1742,7 +1738,7 @@ int hud_squadmsg_reinforcements_available(int team)
 		// Goober5000 - if it can't arrive, it doesn't count.  This should check
 		// for SEXP_FALSE as well as SEXP_KNOWN_FALSE, otherwise you end up with
 		// a reinforcement menu containing no valid selections.
-		if ( (wingnum = wing_name_lookup(Reinforcements[i].name, 1)) != -1 ) {
+		if (int wingnum = wing_name_lookup(reinforcement.name, 1); wingnum != -1) {
 			Assert ( Wings[wingnum].arrival_cue >= 0 );
 			if ( Sexp_nodes[Wings[wingnum].arrival_cue].value == SEXP_FALSE
 				|| Sexp_nodes[Wings[wingnum].arrival_cue].value == SEXP_KNOWN_FALSE ){
@@ -1751,7 +1747,7 @@ int hud_squadmsg_reinforcements_available(int team)
 		} else {
 			p_object *p_objp;
 
-			p_objp = mission_parse_get_arrival_ship( Reinforcements[i].name );
+			p_objp = mission_parse_get_arrival_ship( reinforcement.name );
 			if ( p_objp != NULL ) {
 				if ( Sexp_nodes[p_objp->arrival_cue].value == SEXP_FALSE
 					|| Sexp_nodes[p_objp->arrival_cue].value == SEXP_KNOWN_FALSE ){
@@ -1973,23 +1969,20 @@ void hud_squadmsg_msg_all_fighters()
 
 // called to actually bring in a reinforcement.  For single player games, always gets called.
 // for multiplayer games, always called on the server side.  Clients should never get here
-void hud_squadmsg_call_reinforcement(int reinforcement_num, int  /*player_num*/)
+void hud_squadmsg_call_reinforcement(reinforcements &reinforcement, int  /*player_num*/)
 {
 	int i, delay;
-	reinforcements *rp;
 	p_object *p_objp;
-
-	rp = &Reinforcements[reinforcement_num];
 
 	// safety net mainly for multiplayer servers in case some odd data desync occurs between 
 	// server and clients
-	if ( MULTIPLAYER_MASTER && (rp->num_uses >= rp->uses) ) {
+	if ( MULTIPLAYER_MASTER && (reinforcement.num_uses >= reinforcement.uses) ) {
 		return;
 	}
 
 	// check to see if the reinforcement called was a wing.
 	for (i = 0; i < Num_wings; i++ ) {
-		if ( !stricmp(rp->name, Wings[i].name) ) {
+		if ( !stricmp(reinforcement.name, Wings[i].name) ) {
 			// if the wing is currently present, skip this request so we don't waste a "use"
 			if (Wings[i].current_count > 0) {
 				return;
@@ -2001,7 +1994,7 @@ void hud_squadmsg_call_reinforcement(int reinforcement_num, int  /*player_num*/)
             Wings[i].flags.set(Ship::Wing_Flags::Reset_reinforcement);
 
 			// set up the arrival delay.  If it is 0, then make is some random number of seconds
-			delay = rp->arrival_delay;
+			delay = reinforcement.arrival_delay;
 			if ( delay == 0 )
 				delay = (int)(frand() * 3.0) + 3;
 			Wings[i].arrival_delay = timestamp(delay * 1000);
@@ -2012,14 +2005,14 @@ void hud_squadmsg_call_reinforcement(int reinforcement_num, int  /*player_num*/)
 	// if we found no wing name that matched the reinforcement name, then look for a ship
 	// of the same name
 	if ( i == Num_wings ) {
-		p_objp = mission_parse_get_arrival_ship( rp->name );
+		p_objp = mission_parse_get_arrival_ship( reinforcement.name );
 		if ( p_objp ) {
 			// by resetting the reinforcement flag, we will allow code which normally handles arrivals
 			// to make this reinforcement arrive.  Doing so keeps the data structures clean.
             p_objp->flags.remove(Mission::Parse_Object_Flags::SF_Reinforcement);
 
 			// set up the arrival delay
-			delay = rp->arrival_delay;
+			delay = reinforcement.arrival_delay;
 			if ( delay == 0 )
 				delay = (int)(frand() * 3.0) + 3;		// between 3 and 6 seconds to arrive
 			p_objp->arrival_delay = timestamp(delay * 1000);
@@ -2031,7 +2024,7 @@ void hud_squadmsg_call_reinforcement(int reinforcement_num, int  /*player_num*/)
 
 	// increment the number of times this is used.  Incremented here on single player and multiplayer
 	// server side only.  Clients keep track of own count when they actually call something in.
-	rp->num_uses++;
+	reinforcement.num_uses++;
 
 	// commented out on 9/9/98 because these messages simply are not used
 	/*
@@ -2043,31 +2036,29 @@ void hud_squadmsg_call_reinforcement(int reinforcement_num, int  /*player_num*/)
 			break;
 
 	//if ( i > 0 )
-	//	message_send_to_player( rp->yes_messages[Random::next(i)], rp->name, MESSAGE_PRIORITY_NORMAL, HUD_SOURCE_FRIENDLY );
+	//	message_send_to_player( rp->yes_messages[Random::next(i)], reinforcement.name, MESSAGE_PRIORITY_NORMAL, HUD_SOURCE_FRIENDLY );
 	*/
 
-	mission_log_add_entry(LOG_PLAYER_CALLED_FOR_REINFORCEMENT, rp->name, NULL);
+	mission_log_add_entry(LOG_PLAYER_CALLED_FOR_REINFORCEMENT, reinforcement.name, nullptr);
 }
 
 // function to display a list of reinforcements available to the player
 void hud_squadmsg_reinforcement_select()
 {
-	int i, k, wingnum;
-	reinforcements *rp;
-
 	if ( Num_menu_items == -1 ) {
 		Num_menu_items = 0;
-		for (i = 0; i < Num_reinforcements; i++) {
-			rp = &Reinforcements[i];
-			SCP_string rp_name = rp->name;
+
+		int i = -1;
+		for (const auto &reinforcement: Reinforcements) {
+			++i;	// start at 0; increment at top of loop due to continues
 
 			// don't put reinforcements onto the list that have already been used up.
-			if ( rp->num_uses >= rp->uses ){
+			if (reinforcement.num_uses >= reinforcement.uses) {
 				continue;
 			}
 
 			// don't put items which are not on my team
-			if((Player_ship != NULL) && (ship_get_reinforcement_team(i) != Player_ship->team)){
+			if ((Player_ship != nullptr) && (ship_get_reinforcement_team(reinforcement) != Player_ship->team)) {
 				continue;
 			}
 			
@@ -2075,18 +2066,19 @@ void hud_squadmsg_reinforcement_select()
 			// Goober5000 - if it can't arrive, it doesn't count.  This should check
 			// for SEXP_FALSE as well as SEXP_KNOWN_FALSE, otherwise you end up with
 			// a reinforcement menu containing no valid selections.
-			if ( (wingnum = wing_name_lookup(rp->name, 1)) != -1 ) {
+			const char *r_name;
+			if (int wingnum = wing_name_lookup(reinforcement.name, 1); wingnum != -1) {
 				Assert ( Wings[wingnum].arrival_cue >= 0 );
 				if ( Sexp_nodes[Wings[wingnum].arrival_cue].value == SEXP_FALSE
 					|| Sexp_nodes[Wings[wingnum].arrival_cue].value == SEXP_KNOWN_FALSE ){
 					continue;
 				}
 
-				end_string_at_first_hash_symbol(rp_name);
+				r_name = Wings[wingnum].get_display_name();	// this will handle getting rid of the hash if necessary
 			} else {
 				p_object *p_objp;
 				
-				p_objp = mission_parse_get_arrival_ship( rp->name );
+				p_objp = mission_parse_get_arrival_ship(reinforcement.name );
 				if ( p_objp != NULL ) {
 					if ( Sexp_nodes[p_objp->arrival_cue].value == SEXP_FALSE
 						|| Sexp_nodes[p_objp->arrival_cue].value == SEXP_KNOWN_FALSE ){
@@ -2097,15 +2089,15 @@ void hud_squadmsg_reinforcement_select()
 					continue;
 				}
 
-				rp_name = p_objp->get_display_name();	// this will handle getting rid of the hash if necessary
+				r_name = p_objp->get_display_name();	// this will handle getting rid of the hash if necessary
 			}
 
 			Assert ( Num_menu_items < MAX_MENU_ITEMS );
-			MsgItems[Num_menu_items].text = std::move(rp_name);
+			MsgItems[Num_menu_items].text = r_name;
 			MsgItems[Num_menu_items].instance = i;
 			MsgItems[Num_menu_items].active = 0;
 
-			if ( rp->flags & RF_IS_AVAILABLE ) {
+			if ( reinforcement.flags & RF_IS_AVAILABLE ) {
 				MsgItems[Num_menu_items].active = 1;
 			}
 
@@ -2115,7 +2107,7 @@ void hud_squadmsg_reinforcement_select()
 
 //	hud_squadmsg_display_menu( "Select Reinforcement" );	
 	strcpy_s(Squad_msg_title, XSTR( "Select Ship/Wing", 319)); // AL 11-14-97: Reinforcement didn't fit, so using this for now
-	k = hud_squadmsg_get_key();
+	int k = hud_squadmsg_get_key();
 	if (k != -1) {
 		int rnum;
 
@@ -2135,7 +2127,7 @@ void hud_squadmsg_reinforcement_select()
 			Reinforcements[rnum].num_uses++;			// increment this variable here since clients need to maintain a valid count
 			send_player_order_packet(SQUAD_MSG_REINFORCEMENT, rnum, 0);
 		} else {
-			hud_squadmsg_call_reinforcement(rnum);
+			hud_squadmsg_call_reinforcement(Reinforcements[rnum]);
 		}
 	}
 }

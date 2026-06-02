@@ -43,20 +43,10 @@
          </property>
          <item>
           <layout class="QGridLayout" name="firstColumnOptions">
-           <item row="4" column="0">
-            <widget class="QLabel" name="hotkeyLabel">
+           <item row="0" column="0">
+            <widget class="QLabel" name="wingNameLabel">
              <property name="text">
-              <string>Hotkey</string>
-             </property>
-             <property name="alignment">
-              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="0">
-            <widget class="QLabel" name="numWavesLabel">
-             <property name="text">
-              <string># of Waves</string>
+              <string>Wing Name</string>
              </property>
              <property name="alignment">
               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -70,43 +60,24 @@
              </property>
             </widget>
            </item>
-           <item row="3" column="0">
-            <widget class="QLabel" name="waveThresholdLabel">
+           <item row="1" column="0">
+            <widget class="QLabel" name="wingDisplayNameLabel">
              <property name="text">
-              <string>Wave Threshold</string>
+              <string>Display Name</string>
              </property>
              <property name="alignment">
               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
              </property>
             </widget>
-           </item>
-           <item row="2" column="1">
-            <widget class="QSpinBox" name="numWavesSpinBox">
-             <property name="minimum">
-              <number>1</number>
-             </property>
-             <property name="maximum">
-              <number>16777215</number>
-             </property>
-            </widget>
-           </item>
-           <item row="3" column="1">
-            <widget class="QSpinBox" name="waveThresholdSpinBox"/>
            </item>
            <item row="1" column="1">
-            <widget class="QComboBox" name="wingLeaderCombo"/>
-           </item>
-           <item row="0" column="0">
-            <widget class="QLabel" name="wingNameLabel">
-             <property name="text">
-              <string>Wing Name</string>
-             </property>
-             <property name="alignment">
-              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            <widget class="QLineEdit" name="wingDisplayNameEdit">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Sets the wing's display name&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
             </widget>
            </item>
-           <item row="1" column="0">
+           <item row="2" column="0">
             <widget class="QLabel" name="wingLeaderLabel">
              <property name="text">
               <string>Wing Leader</string>
@@ -116,7 +87,53 @@
              </property>
             </widget>
            </item>
+           <item row="2" column="1">
+            <widget class="QComboBox" name="wingLeaderCombo"/>
+           </item>
+           <item row="3" column="0">
+            <widget class="QLabel" name="numWavesLabel">
+             <property name="text">
+              <string># of Waves</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="1">
+            <widget class="QSpinBox" name="numWavesSpinBox">
+             <property name="minimum">
+              <number>1</number>
+             </property>
+             <property name="maximum">
+              <number>16777215</number>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="0">
+            <widget class="QLabel" name="waveThresholdLabel">
+             <property name="text">
+              <string>Wave Threshold</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+             </property>
+            </widget>
+           </item>
            <item row="4" column="1">
+            <widget class="QSpinBox" name="waveThresholdSpinBox"/>
+           </item>
+           <item row="5" column="0">
+            <widget class="QLabel" name="hotkeyLabel">
+             <property name="text">
+              <string>Hotkey</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="1">
             <widget class="QComboBox" name="hotkeyCombo">
              <property name="autoFillBackground">
               <bool>true</bool>

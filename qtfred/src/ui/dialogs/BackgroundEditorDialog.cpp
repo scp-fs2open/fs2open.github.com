@@ -32,6 +32,7 @@ BackgroundEditorDialog::~BackgroundEditorDialog() = default;
 
 void BackgroundEditorDialog::closeEvent(QCloseEvent* e)
 {
+	_model->finalizeFogChanges();
 	_viewport->editor->autosave("background editor");
 	QDialog::closeEvent(e);
 }
@@ -272,8 +273,10 @@ void BackgroundEditorDialog::updateNebulaControls()
 	ui->nebulaLightningCombo->setEnabled(enabled);
 	ui->poofsListWidget->setEnabled(enabled);
 	ui->shipTrailsCheckBox->setEnabled(enabled);
-	ui->fogNearDoubleSpinBox->setEnabled(enabled);
-	ui->fogFarDoubleSpinBox->setEnabled(enabled);
+	ui->fog1000mVisDoubleSpinBox->setEnabled(enabled);
+	ui->fogNearDistanceDoubleSpinBox->setEnabled(enabled);
+	ui->fogSkyboxClipDoubleSpinBox->setEnabled(enabled);
+	ui->fogClipDoubleSpinBox->setEnabled(enabled);
 	ui->displayBgsInNebulaCheckbox->setEnabled(enabled);
 	ui->overrideFogPaletteCheckBox->setEnabled(enabled);
 
@@ -296,8 +299,10 @@ void BackgroundEditorDialog::updateNebulaControls()
 	}
 
 	ui->shipTrailsCheckBox->setChecked(_model->getShipTrailsToggled());
-	ui->fogNearDoubleSpinBox->setValue(static_cast<double>(_model->getFogNearMultiplier()));
-	ui->fogFarDoubleSpinBox->setValue(static_cast<double>(_model->getFogFarMultiplier()));
+	ui->fog1000mVisDoubleSpinBox->setValue(static_cast<double>(_model->getFog1000mVisibility()));
+	ui->fogNearDistanceDoubleSpinBox->setValue(static_cast<double>(_model->getFogNearDistance()));
+	ui->fogSkyboxClipDoubleSpinBox->setValue(static_cast<double>(_model->getFogSkyboxClipDistance()));
+	ui->fogClipDoubleSpinBox->setValue(static_cast<double>(_model->getFogClipDistance()));
 	ui->displayBgsInNebulaCheckbox->setChecked(_model->getDisplayBackgroundBitmaps());
 	ui->overrideFogPaletteCheckBox->setChecked(override);
 	ui->fogOverrideRedSpinBox->setValue(_model->getFogR());
@@ -743,14 +748,24 @@ void BackgroundEditorDialog::on_shipTrailsCheckBox_toggled(bool checked)
 	_model->setShipTrailsToggled(checked);
 }
 
-void BackgroundEditorDialog::on_fogNearDoubleSpinBox_valueChanged(double arg1)
+void BackgroundEditorDialog::on_fog1000mVisDoubleSpinBox_valueChanged(double arg1)
 {
-	_model->setFogNearMultiplier(static_cast<float>(arg1));
+	_model->setFog1000mVisibility(static_cast<float>(arg1));
 }
 
-void BackgroundEditorDialog::on_fogFarDoubleSpinBox_valueChanged(double arg1)
+void BackgroundEditorDialog::on_fogNearDistanceDoubleSpinBox_valueChanged(double arg1)
 {
-	_model->setFogFarMultiplier(static_cast<float>(arg1));
+	_model->setFogNearDistance(static_cast<float>(arg1));
+}
+
+void BackgroundEditorDialog::on_fogSkyboxClipDoubleSpinBox_valueChanged(double arg1)
+{
+	_model->setFogSkyboxClipDistance(static_cast<float>(arg1));
+}
+
+void BackgroundEditorDialog::on_fogClipDoubleSpinBox_valueChanged(double arg1)
+{
+	_model->setFogClipDistance(static_cast<float>(arg1));
 }
 
 void BackgroundEditorDialog::on_displayBgsInNebulaCheckbox_toggled(bool checked)

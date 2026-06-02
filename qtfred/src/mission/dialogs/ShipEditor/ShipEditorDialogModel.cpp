@@ -16,6 +16,7 @@
 #include "missioneditor/common.h"
 
 #include <globalincs/linklist.h>
+#include <globalincs/utility.h>
 #include <hud/hudsquadmsg.h>
 #include <localization/localize.h>
 #include <mission/object.h>
@@ -811,11 +812,10 @@ void ShipEditorDialogModel::setShipName(const SCP_string& m_ship_name)
 		update_sexp_references(old_name, Ships[_singleShip].ship_name);
 		_editor->ai_update_goal_references(sexp_ref_type::SHIP, old_name, Ships[_singleShip].ship_name);
 		_editor->update_texture_replacements(old_name, Ships[_singleShip].ship_name);
-		for (int j = 0; j < Num_reinforcements; j++) {
-			if (!strcmp(old_name, Reinforcements[j].name)) {
-				Assert(strlen(Ships[_singleShip].ship_name) < NAME_LENGTH);
-				strcpy_s(Reinforcements[j].name, Ships[_singleShip].ship_name);
-			}
+		int j = find_item_with_string(Reinforcements, &reinforcements::name, old_name);
+		if (j >= 0) {
+			Assert(strlen(Ships[_singleShip].ship_name) < NAME_LENGTH);
+			strcpy_s(Reinforcements[j].name, Ships[_singleShip].ship_name);
 		}
 	}
 
@@ -1210,6 +1210,22 @@ void ShipEditorDialogModel::setArrivalLocation(const ArrivalLocation value)
 ArrivalLocation ShipEditorDialogModel::getArrivalLocation() const
 {
 	return static_cast<ArrivalLocation>(_arrivalLocation);
+}
+
+bool ShipEditorDialogModel::arrivalNeedsTarget() const
+{
+	return getArrivalLocation() != ArrivalLocation::AT_LOCATION;
+}
+
+bool ShipEditorDialogModel::arrivalNeedsDistance() const
+{
+	switch (getArrivalLocation()) {
+		case ArrivalLocation::AT_LOCATION:
+		case ArrivalLocation::FROM_DOCK_BAY:
+			return false;
+		default:
+			return true;
+	}
 }
 
 int ShipEditorDialogModel::computeArrivalMinDist() const

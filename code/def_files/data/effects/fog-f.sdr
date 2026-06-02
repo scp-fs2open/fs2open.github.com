@@ -15,6 +15,9 @@ layout (std140) uniform genericData {
 	float fog_density;
 	float zNear;
 	float zFar;
+
+	float clip_inf_dist;
+	float clip_dist;
 };
 
 void main()
@@ -27,6 +30,9 @@ void main()
 	float depth_normalized = 2 * depth_val - 1;
 	// Now we compute the depth value in projection space using the clipping plane information
 	float view_depth = 2.0 * zNear * zFar / (zFar + zNear - depth_normalized * (zFar - zNear));
+
+	float skybox_compat_fake = step(1.0, depth_val);
+	view_depth = clamp(view_depth, 0.0, mix(clip_dist, clip_inf_dist, skybox_compat_fake));
 
 	if (isinf(view_depth)) {
 		fragOut0.rgb = color_in.rgb;

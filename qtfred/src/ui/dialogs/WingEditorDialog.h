@@ -23,6 +23,7 @@ class WingEditorDialog : public QDialog, public SexpTreeEditorInterface {
 
 	// Top section, first column
 	void on_wingNameEdit_editingFinished();
+	void on_wingDisplayNameEdit_editingFinished();
 	void on_wingLeaderCombo_currentIndexChanged(int index);
 	void on_numWavesSpinBox_valueChanged(int value);
 	void on_waveThresholdSpinBox_valueChanged(int value);

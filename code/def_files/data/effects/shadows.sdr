@@ -26,7 +26,7 @@ float sampleNoPCF(sampler2DArray shadow_map, float shadowDepth, int cascade, vec
 	return computeShadowFactor(shadowDepth, sampleShadowMap(shadow_map, shadowUV[cascade].xy, vec2(0.0, 0.0), cascade, 1.0/1024.0), 0.05);
 }
 
-float samplePoissonPCF(sampler2DArray shadow_map, float shadowDepth, int cascade, vec4 shadowUV[4], bool use_simple_pass)
+float samplePoissonPCF(sampler2DArray shadow_map, float shadowDepth, int cascade, vec4 shadowUV[4], bool cockpit_shadow_bias)
 {
 	if(cascade > 3 || cascade < 0) return 1.0;
 
@@ -55,30 +55,16 @@ float samplePoissonPCF(sampler2DArray shadow_map, float shadowDepth, int cascade
 	maxUVOffset[2] = 1.0/200.0;
 	maxUVOffset[3] = 1.0/200.0;
 
-	if (use_simple_pass) {
-		// internal cockpit shadows
-		// bias is a bit smaller to pick up on close/sharp cockpit geometry
-		// favors shadow over light to avoid complex geometry halos
-		float visibility = 1.0f;
-		for (int i=0; i<16; i++) {
-			vec2 shadow_sample = sampleShadowMap(shadow_map, shadowUV[cascade].xy, poissonDisc[i], cascade, maxUVOffset[cascade]);
-			// extra bias value tuned for this distance
-			if( ((shadow_sample.x - 0.002f) > shadowDepth) ) {
-				visibility -= (1.0f/16.0f);
-			}
-		}
-		return visibility;
-	} else {
-		// default external shadows 
-		// bias is a bit larger to only pick up larger geometry
-		// favors light over shadow to avoid flickering/spotty shadows
-		vec2 sum = vec2(0.0f);
-		for (int i=0; i<16; i++) {
-			sum += sampleShadowMap(shadow_map, shadowUV[cascade].xy, poissonDisc[i], cascade, maxUVOffset[cascade]);
-		}
-		return computeShadowFactor(shadowDepth, sum*(1.0f/16.0f), 0.1f);
+	// default external shadows
+	// bias is a bit larger to only pick up larger geometry
+	// favors light over shadow to avoid flickering/spotty shadows
+	// compute Chebyshev per-sample to avoid halos from moment-averaging at occluder edges
+	float visibility = 0.0f;
+	for (int i=0; i<16; i++) {
+		vec2 shadow_sample = sampleShadowMap(shadow_map, shadowUV[cascade].xy, poissonDisc[i], cascade, maxUVOffset[cascade]);
+		visibility += computeShadowFactor(shadowDepth, shadow_sample, cockpit_shadow_bias ? 0.01f : 0.1f);
 	}
-
+	return visibility * (1.0f/16.0f);
 }
 
 float getShadowValue(sampler2DArray shadow_map, float depth, float shadowDepth, vec4 shadowUV[4], float fardist,
@@ -98,19 +84,19 @@ float getShadowValue(sampler2DArray shadow_map, float depth, float shadowDepth, 
 	cascade_start_dist[4] = fardist;
 	if(cascade > 3 || cascade < 0) return 1.0;
 
-    bool use_simple_pass;
+    bool cockpit_shadow_bias;
     if (fardist < 50.0f) {
         // internal cockpit shadows
-        use_simple_pass = true;
+        cockpit_shadow_bias = true;
     } else {
         // default external shadows
-        use_simple_pass = false;
+        cockpit_shadow_bias = false;
     }
 
 	float dist_threshold = (cascade_start_dist[cascade+1] - cascade_start_dist[cascade])*0.2;
 	if(cascade_start_dist[cascade+1] - dist_threshold > depth)
-		return samplePoissonPCF(shadow_map, shadowDepth, cascade, shadowUV, use_simple_pass);
-	return mix(samplePoissonPCF(shadow_map, shadowDepth, cascade, shadowUV, use_simple_pass), samplePoissonPCF(shadow_map, shadowDepth, cascade+1, shadowUV, use_simple_pass),
+		return samplePoissonPCF(shadow_map, shadowDepth, cascade, shadowUV, cockpit_shadow_bias);
+	return mix(samplePoissonPCF(shadow_map, shadowDepth, cascade, shadowUV, cockpit_shadow_bias), samplePoissonPCF(shadow_map, shadowDepth, cascade+1, shadowUV, cockpit_shadow_bias),
 			smoothstep(cascade_start_dist[cascade+1] - dist_threshold, cascade_start_dist[cascade+1], depth));
 }
 

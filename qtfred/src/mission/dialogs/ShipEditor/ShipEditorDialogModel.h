@@ -68,6 +68,9 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	void setArrivalLocation(ArrivalLocation location);
 	ArrivalLocation getArrivalLocation() const;
 
+	bool arrivalNeedsTarget() const;
+	bool arrivalNeedsDistance() const;
+
 	void setArrivalTarget(int targetIndex);
 	int getArrivalTarget() const;
 

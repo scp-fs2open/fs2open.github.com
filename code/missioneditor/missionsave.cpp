@@ -1443,6 +1443,10 @@ void Fred_mission_save::fso_comment_pop(bool pop_all)
 	fso_ver_comment.pop_back();
 }
 
+// Per-ship field handling here MUST stay in sync with:
+//   parse_create_object_sub() in missionparse.cpp
+//   clone_ship_instance_data() in missioneditor/objectduplication.cpp
+// When you add a new editable ship field, touch all three.
 int Fred_mission_save::save_common_object_data(object* objp, ship* shipp)
 {
 	int j, z;
@@ -2551,21 +2555,70 @@ int Fred_mission_save::save_mission_info()
 
 	fout(" %" PRIu64, The_mission.flags.to_u64());
 
-	// maybe write out Nebula intensity
+	// maybe write out Nebula values
 	if (The_mission.flags[Mission::Mission_Flags::Fullneb]) {
-		Assert(Neb2_awacs > 0.0f);
-		fout("\n+NebAwacs: %f\n", Neb2_awacs);
+		if (optional_string_fred("+NebAwacs:"))
+			parse_comments(2);
+		else
+			fout("\n\n+NebAwacs:");
+		fout(" %f", Neb2_awacs);
 
 		// storm name
-		fout("\n+Storm: %s\n", Mission_parse_storm_name);
+		if (optional_string_fred("+Storm:"))
+			parse_comments();
+		else
+			fout("\n+Storm:");
+		fout(" %s", Mission_parse_storm_name);
+
+		// write out the nebula clipping multipliers...
+		if (save_config.save_format != MissionFormat::RETAIL) {
+			// legacy values
+			if (Neb2_fog_save_legacy_values)
+			{
+				if (optional_string_fred("+Fog Near Mult:"))
+					parse_comments();
+				else
+					fout("\n+Fog Near Mult:");
+				fout(" %f", Neb2_fog_legacy_near_mult);
+
+				if (optional_string_fred("+Fog Far Mult:"))
+					parse_comments();
+				else
+					fout("\n+Fog Far Mult:");
+				fout(" %f", Neb2_fog_legacy_far_mult);
+			}
+			// Modern fogging values - note that the writing of these values signals to the parser that this mission was created with a version of FSO that has the modern fogging fixes.
+			// Per Lafiel, these should never be only-if-non-default, since the fogging converter is controlled by their presence or absence.
+			else
+			{
+				if (optional_string_fred("+Fog 1000m Visibility:"))
+					parse_comments();
+				else
+					fout("\n+Fog 1000m Visibility:");
+				fout(" %f", Neb2_fog_1000m_visibility);
+
+				if (optional_string_fred("+Fog Near Distance:"))
+					parse_comments();
+				else
+					fout("\n+Fog Near Distance:");
+				fout(" %f", Neb2_fog_near_distance);
+
+				if (optional_string_fred("+Fog Skybox Clip Distance:"))
+					parse_comments();
+				else
+					fout("\n+Fog Skybox Clip Distance:");
+				fout(" %f", Neb2_fog_skybox_clip_distance);
+
+				if (optional_string_fred("+Fog Clip Distance:"))
+					parse_comments();
+				else
+					fout("\n+Fog Clip Distance:");
+				fout(" %f", Neb2_fog_clip_distance);
+			}
+		}
 	}
 
-	// Goober5000
 	if (save_config.save_format != MissionFormat::RETAIL) {
-		// write out the nebula clipping multipliers
-		fout("\n+Fog Near Mult: %f\n", Neb2_fog_near_mult);
-		fout("\n+Fog Far Mult: %f\n", Neb2_fog_far_mult);
-
 		if (The_mission.contrail_threshold != CONTRAIL_THRESHOLD_DEFAULT) {
 			fout("\n$Contrail Speed Threshold: %d\n", The_mission.contrail_threshold);
 		}
@@ -3426,6 +3479,10 @@ int Fred_mission_save::save_warp_params(WarpDirection direction, ship* shipp)
 	return err;
 }
 
+// Per-ship field handling here MUST stay in sync with:
+//   parse_create_object_sub() in missionparse.cpp
+//   clone_ship_instance_data() in missioneditor/objectduplication.cpp
+// When you add a new editable ship field, touch all three.
 int Fred_mission_save::save_objects()
 {
 	SCP_string sexp_out;
@@ -3459,7 +3516,8 @@ int Fred_mission_save::save_objects()
 		count++;
 
 		// Display name
-		// The display name is only written if there was one at the start to avoid introducing inconsistencies
+		// (If we are always saving display names, the "only/not written" comments do not apply)
+		// The display name is only written if it currently exists and the ship is not part of a wing, to avoid introducing inconsistencies
 		if (save_config.save_format != MissionFormat::RETAIL && ((save_config.always_save_display_names && shipp->wingnum < 0) || shipp->has_display_name())) {
 			char truncated_name[NAME_LENGTH];
 			strcpy_s(truncated_name, shipp->ship_name);
@@ -3467,10 +3525,10 @@ int Fred_mission_save::save_objects()
 
 			// Also, the display name is not written if it's just the truncation of the name at the hash
 			if ((save_config.always_save_display_names && shipp->wingnum < 0) || strcmp(shipp->get_display_name(), truncated_name) != 0) {
-				if (optional_string_fred("$Display name:", "$Class:")) {
+				if (optional_string_fred("$Display Name:", "$Class:")) {
 					parse_comments();
 				} else {
-					fout("\n$Display name:");
+					fout("\n$Display Name:");
 				}
 				fout_ext(" ", "%s", shipp->get_display_name());
 			}
@@ -4507,22 +4565,24 @@ int Fred_mission_save::save_plot_info()
 
 int Fred_mission_save::save_reinforcements()
 {
-	int i, j, type;
+	int j, type;
 
 	fred_parse_flag = 0;
 	required_string_fred("#Reinforcements");
 	parse_comments(2);
-	fout("\t\t;! %d total\n", Num_reinforcements);
+	fout("\t\t;! " SIZE_T_ARG " total\n", Reinforcements.size());
 
-	for (i = 0; i < Num_reinforcements; i++) {
+	bool first_r = true;
+	for (const auto &reinforcement: Reinforcements) {
 		required_string_either_fred("$Name:", "#Background bitmaps");
 		required_string_fred("$Name:");
-		parse_comments(i ? 2 : 1);
-		fout(" %s", Reinforcements[i].name);
+		parse_comments(!first_r ? 2 : 1);
+		first_r = false;
+		fout(" %s", reinforcement.name);
 
 		type = TYPE_ATTACK_PROTECT;
 		for (j = 0; j < MAX_SHIPS; j++)
-			if ((Ships[j].objnum != -1) && !stricmp(Ships[j].ship_name, Reinforcements[i].name)) {
+			if ((Ships[j].objnum != -1) && !stricmp(Ships[j].ship_name, reinforcement.name)) {
 				if (Ship_info[Ships[j].ship_info_index].flags[Ship::Info_Flags::Support])
 					type = TYPE_REPAIR_REARM;
 				break;
@@ -4534,13 +4594,13 @@ int Fred_mission_save::save_reinforcements()
 
 		required_string_fred("$Num times:");
 		parse_comments();
-		fout(" %d", Reinforcements[i].uses);
+		fout(" %d", reinforcement.uses);
 
 		if (optional_string_fred("+Arrival Delay:", "$Name:"))
 			parse_comments();
 		else
 			fout("\n+Arrival Delay:");
-		fout(" %d", Reinforcements[i].arrival_delay);
+		fout(" %d", reinforcement.arrival_delay);
 
 		if (optional_string_fred("+No Messages:", "$Name:"))
 			parse_comments();
@@ -4548,8 +4608,8 @@ int Fred_mission_save::save_reinforcements()
 			fout("\n+No Messages:");
 		fout(" (");
 		for (j = 0; j < MAX_REINFORCEMENT_MESSAGES; j++) {
-			if (strlen(Reinforcements[i].no_messages[j]))
-				fout(" \"%s\"", Reinforcements[i].no_messages[j]);
+			if (strlen(reinforcement.no_messages[j]))
+				fout(" \"%s\"", reinforcement.no_messages[j]);
 		}
 		fout(" )");
 
@@ -4559,8 +4619,8 @@ int Fred_mission_save::save_reinforcements()
 			fout("\n+Yes Messages:");
 		fout(" (");
 		for (j = 0; j < MAX_REINFORCEMENT_MESSAGES; j++) {
-			if (strlen(Reinforcements[i].yes_messages[j]))
-				fout(" \"%s\"", Reinforcements[i].yes_messages[j]);
+			if (strlen(reinforcement.yes_messages[j]))
+				fout(" \"%s\"", reinforcement.yes_messages[j]);
 		}
 		fout(" )");
 
@@ -4787,6 +4847,10 @@ int Fred_mission_save::save_vector(const vec3d& v)
 	return 0;
 }
 
+// The jump-node section of this function MUST stay in sync with:
+//   the "$Jump Node:" parse block in missionparse.cpp
+//   clone_jump_node_instance_data() in missioneditor/objectduplication.cpp
+// When you add a new editable jump-node field, touch all three.
 int Fred_mission_save::save_waypoints()
 {
 	// object *ptr;
@@ -4808,7 +4872,8 @@ int Fred_mission_save::save_waypoints()
 
 		if (save_config.save_format != MissionFormat::RETAIL) {
 
-			// The display name is only written if there was one at the start to avoid introducing inconsistencies
+			// (If we are always saving display names, the "only/not written" comments do not apply)
+			// The display name is only written if it currently exists, to avoid introducing inconsistencies
 			if (save_config.always_save_display_names || jnp->HasDisplayName()) {
 				char truncated_name[NAME_LENGTH];
 				strcpy_s(truncated_name, jnp->GetName());
@@ -4876,6 +4941,10 @@ int Fred_mission_save::save_waypoints()
 		fso_comment_pop();
 	}
 
+	// Per-waypoint-path field handling here MUST stay in sync with:
+	//   parse_waypoint_list() in missionparse.cpp
+	//   clone_waypoint_path_instance_data() in missioneditor/objectduplication.cpp
+	// When you add a new editable waypoint-path field, touch all three.
 	bool first_wpt_list = true;
 	for (const auto& ii : Waypoint_lists) {
 		required_string_either_fred("$Name:", "#Messages");
@@ -4961,6 +5030,25 @@ int Fred_mission_save::save_wings()
 		fout(" %s", w.name);
 
 		count++;
+
+		// Display name
+		// (If we are always saving display names, the "only/not written" comments do not apply)
+		// The display name is only written if it currently exists, to avoid introducing inconsistencies
+		if (save_config.save_format != MissionFormat::RETAIL && (save_config.always_save_display_names || w.has_display_name())) {
+			char truncated_name[NAME_LENGTH];
+			strcpy_s(truncated_name, w.name);
+			end_string_at_first_hash_symbol(truncated_name);
+
+			// Also, the display name is not written if it's just the truncation of the name at the hash
+			if (save_config.always_save_display_names || strcmp(w.get_display_name(), truncated_name) != 0) {
+				if (optional_string_fred("$Display Name:", "$Waves:")) {
+					parse_comments();
+				} else {
+					fout("\n$Display Name:");
+				}
+				fout_ext(" ", "%s", w.get_display_name());
+			}
+		}
 
 		// squad logo - Goober5000
 		if (save_config.save_format != MissionFormat::RETAIL) {
@@ -5210,6 +5298,10 @@ int Fred_mission_save::save_wings()
 	return err;
 }
 
+// Per-prop field handling here MUST stay in sync with:
+//   parse_prop() in missionparse.cpp
+//   clone_prop_instance_data() in missioneditor/objectduplication.cpp
+// When you add a new editable prop field, touch all three.
 int Fred_mission_save::save_props()
 {
 	auto num_props = count_items_with_value(Props);

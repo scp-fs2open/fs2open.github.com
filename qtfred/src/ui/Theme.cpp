@@ -24,6 +24,14 @@ QPushButton:pressed {
     background-color: #cce4f7;
     border-color: #005499;
 }
+QPushButton:checked {
+    background-color: #cce4f7;
+    border-color: #005499;
+}
+QPushButton:checked:hover {
+    background-color: #d8ecf9;
+    border-color: #0078d7;
+}
 QPushButton:default {
     border-color: #0078d7;
 }
@@ -89,6 +97,15 @@ QPushButton:hover {
 QPushButton:pressed {
     background-color: #606060;
     border-color: #909090;
+}
+QPushButton:checked {
+    background-color: #2a82da;
+    border-color: #2a82da;
+    color: #ffffff;
+}
+QPushButton:checked:hover {
+    background-color: #3d92e6;
+    border-color: #3d92e6;
 }
 QPushButton:default {
     border-color: #2a82da;

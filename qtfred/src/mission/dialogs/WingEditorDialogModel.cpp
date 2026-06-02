@@ -176,6 +176,22 @@ bool WingEditorDialogModel::arrivalNeedsTarget() const
 	}
 }
 
+bool WingEditorDialogModel::arrivalNeedsDistance() const
+{
+	const auto w = getCurrentWing();
+
+	if (!w)
+		return false;
+
+	switch (w->arrival_location) {
+		case ArrivalLocation::AT_LOCATION:
+		case ArrivalLocation::FROM_DOCK_BAY:
+			return false;
+		default:
+			return true;
+	}
+}
+
 
 bool WingEditorDialogModel::departureIsDockBay() const
 {
@@ -423,6 +439,35 @@ void WingEditorDialogModel::setWingName(const SCP_string& name)
 		modify(_currentWingName, name);
 		Q_EMIT modelChanged();
 	}
+}
+
+SCP_string WingEditorDialogModel::getWingDisplayName() const
+{
+	if (!wingIsValid())
+		return "";
+	const auto* w = getCurrentWing();
+	return w->has_display_name() ? w->get_display_name() : "<none>";
+}
+
+void WingEditorDialogModel::setWingDisplayName(const SCP_string& displayName)
+{
+	if (!wingIsValid())
+		return;
+
+	SCP_string display = displayName;
+	lcl_fred_replace_stuff(display);
+
+	auto* w = getCurrentWing();
+	if (display == _currentWingName || stricmp(display.c_str(), "<none>") == 0) {
+		w->display_name = "";
+		w->flags.remove(Ship::Wing_Flags::Has_display_name);
+	} else {
+		w->display_name = display;
+		w->flags.set(Ship::Wing_Flags::Has_display_name);
+	}
+	set_modified();
+	_editor->missionChanged();
+	modelChanged();
 }
 
 int WingEditorDialogModel::getWingLeaderIndex() const

@@ -31,6 +31,12 @@ void BackgroundEditorDialogModel::initializeData()
 	if (!sun_list.empty()) {
 		_selectedSunIndex = 0;
 	}
+
+	_initial_fog_1000m_vis = Neb2_fog_1000m_visibility;
+	_initial_fog_near_dist = Neb2_fog_near_distance;
+	_initial_fog_skybox_clip = Neb2_fog_skybox_clip_distance;
+	_initial_fog_clip = Neb2_fog_clip_distance;
+
 	_modified = false;
 }
 
@@ -868,24 +874,55 @@ void BackgroundEditorDialogModel::setShipTrailsToggled(bool on)
 	set_modified();
 }
 
-float BackgroundEditorDialogModel::getFogNearMultiplier()
+float BackgroundEditorDialogModel::getFog1000mVisibility()
 {
-	return Neb2_fog_near_mult;
+	return Neb2_fog_1000m_visibility;
 }
 
-void BackgroundEditorDialogModel::setFogNearMultiplier(float v)
+void BackgroundEditorDialogModel::setFog1000mVisibility(float v)
 {
-	modify(Neb2_fog_near_mult, v);
+	modify(Neb2_fog_1000m_visibility, v);
 }
 
-float BackgroundEditorDialogModel::getFogFarMultiplier()
+float BackgroundEditorDialogModel::getFogNearDistance()
 {
-	return Neb2_fog_far_mult;
+	return Neb2_fog_near_distance;
 }
 
-void BackgroundEditorDialogModel::setFogFarMultiplier(float v)
+void BackgroundEditorDialogModel::setFogNearDistance(float v)
 {
-	modify(Neb2_fog_far_mult, v);
+	modify(Neb2_fog_near_distance, v);
+}
+
+float BackgroundEditorDialogModel::getFogSkyboxClipDistance()
+{
+	return Neb2_fog_skybox_clip_distance;
+}
+
+void BackgroundEditorDialogModel::setFogSkyboxClipDistance(float v)
+{
+	modify(Neb2_fog_skybox_clip_distance, v);
+}
+
+float BackgroundEditorDialogModel::getFogClipDistance()
+{
+	return Neb2_fog_clip_distance;
+}
+
+void BackgroundEditorDialogModel::setFogClipDistance(float v)
+{
+	modify(Neb2_fog_clip_distance, v);
+}
+
+void BackgroundEditorDialogModel::finalizeFogChanges()
+{
+	if (!fl_equal(Neb2_fog_1000m_visibility, _initial_fog_1000m_vis)
+		|| !fl_equal(Neb2_fog_near_distance, _initial_fog_near_dist)
+		|| !fl_equal(Neb2_fog_skybox_clip_distance, _initial_fog_skybox_clip)
+		|| !fl_equal(Neb2_fog_clip_distance, _initial_fog_clip))
+	{
+		modify(Neb2_fog_save_legacy_values, false);
+	}
 }
 
 bool BackgroundEditorDialogModel::getDisplayBackgroundBitmaps()

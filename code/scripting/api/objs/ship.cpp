@@ -2311,6 +2311,23 @@ ADE_FUNC(updateSubmodelMoveable, l_Ship, "string name, table values",
 	return Ship_info[shipp->ship_info_index].animations.updateMoveable(model_get_instance(shipp->model_instance_num), name, valuesMoveable) ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
 }
 
+ADE_FUNC(advanceSubmodelMoveableToFinal, l_Ship, "string name",
+	"Advances a moveable animation to its final state immediately. Name is the name of the moveable.",
+	"boolean", "True if successful, false or nil otherwise")
+{
+	object_h* objh;
+	const char* name = nullptr;
+
+	if (!ade_get_args(L, "os", l_Ship.GetPtr(&objh), &name))
+		return ADE_RETURN_NIL;
+
+	if (!objh->isValid())
+		return ADE_RETURN_NIL;
+
+	ship* shipp = &Ships[objh->objp()->instance];
+	return Ship_info[shipp->ship_info_index].animations.advanceMoveableToFinal(model_get_instance(shipp->model_instance_num), name) ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
+}
+
 ADE_FUNC(warpIn, l_Ship, NULL, "Warps ship in", "boolean", "True if successful, or nil if ship handle is invalid")
 {
 	object_h *objh;

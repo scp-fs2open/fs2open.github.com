@@ -87,8 +87,8 @@ struct model_uniform_data {
 	model_light lights[MAX_UNIFORM_LIGHTS];
 
 	float outlineWidth;
-	float fogStart;
-	float fogScale;
+	float fogNear;
+	float fogDensity;
 	int buffer_matrix_offset;
 
 	vec4 clip_equation;
@@ -288,8 +288,10 @@ struct fog_data {
 	float fog_density;
 	float zNear;
 	float zFar;
+	float clip_inf_dist;
+	float clip_dist;
 
-	float pad[1];
+	float pad[3];
 };
 
 struct volumetric_fog_data {

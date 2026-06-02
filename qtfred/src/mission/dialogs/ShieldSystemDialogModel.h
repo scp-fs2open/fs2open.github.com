@@ -12,6 +12,8 @@ class ShieldSystemDialogModel: public AbstractDialogModel {
 	ShieldSystemDialogModel(QObject* parent, EditorViewport* viewport);
 	~ShieldSystemDialogModel() override = default;
 
+	// AbstractDialogModel requires these, but the dialog no longer uses an
+	// OK/Cancel working-copy contract. Each Apply commits immediately.
 	bool apply() override;
 	void reject() override;
 
@@ -22,16 +24,16 @@ class ShieldSystemDialogModel: public AbstractDialogModel {
 
 	GlobalShieldStatus getCurrentTeamShieldSys() const;
 	GlobalShieldStatus getCurrentTypeShieldSys() const;
-	void setCurrentTeamShieldSys(bool value);
-	void setCurrentTypeShieldSys(bool value);
+
+	void applyTeam(bool hasShields);
+	void applyType(bool hasShields);
 
 	const SCP_vector<SCP_string>& getShipTypeOptions() const;
 	const SCP_vector<SCP_string>& getTeamOptions() const;
 
-	bool query_modified() const;
  private:
 	void initializeData();
-
+	void refresh();
 
 	SCP_vector<SCP_string> _shipTypeOptions;
 	SCP_vector<SCP_string> _teamOptions;

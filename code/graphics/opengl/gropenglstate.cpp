@@ -12,6 +12,9 @@
 #include "graphics/material.h"
 #include "gropenglstate.h"
 #include "math/vecmat.h"
+#ifdef USE_OPENGL_ES
+#include "es_compatibility.h"
+#endif
 
 extern GLfloat GL_max_anisotropy;
 

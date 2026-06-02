@@ -226,7 +226,7 @@ bool CFREDDoc::load_mission(const char *pathname, int flags) {
 	chdir(Fred_base_dir);
 
 	char name[512], *old_name;
-	int i, j, k, ob;
+	int i, j, ob;
 	int used_pool[MAX_WEAPON_TYPES];
 	object *objp;
 
@@ -317,17 +317,18 @@ bool CFREDDoc::load_mission(const char *pathname, int flags) {
 			if ((Objects[wing_objects[i][j]].type == OBJ_SHIP) || (Objects[wing_objects[i][j]].type == OBJ_START)) {  // don't change player ship names
 				wing_bash_ship_name(name, Wings[i].name, j + 1);
 				old_name = Ships[Wings[i].ship_index[j]].ship_name;
-				if (stricmp(name, old_name)) {  // need to fix name
+				if (stricmp(name, old_name) != 0) {  // need to fix name
 					update_sexp_references(old_name, name);
 					ai_update_goal_references(sexp_ref_type::SHIP, old_name, name);
 					update_texture_replacements(old_name, name);
-					for (k = 0; k < Num_reinforcements; k++)
-						if (!strcmp(old_name, Reinforcements[k].name)) {
-							Assert(strlen(name) < NAME_LENGTH);
-							strcpy_s(Reinforcements[k].name, name);
-						}
+					int k = find_item_with_string(Reinforcements, &reinforcements::name, old_name);
+					if (k >= 0) {
+						Assert(strlen(name) < NAME_LENGTH);
+						strcpy_s(Reinforcements[k].name, name);
+					}
 
-					strcpy_s(Ships[Wings[i].ship_index[j]].ship_name, name);
+					// bash it again so that we handle display names if needed
+					wing_bash_ship_name(&Ships[Wings[i].ship_index[j]], &Wings[i], j + 1, true);
 				}
 			}
 		}

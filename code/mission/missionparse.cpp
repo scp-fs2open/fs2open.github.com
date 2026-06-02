@@ -858,11 +858,45 @@ void parse_mission_info(mission *pm, bool basic = false)
 		if (!basic)
 			nebl_set_storm(Mission_parse_storm_name);
 	}
-	if(optional_string("+Fog Near Mult:")){
-		stuff_float(&Neb2_fog_near_mult);
+
+	bool found_neb2_modern = false;
+
+	if (optional_string("+Fog Near Mult:")) {
+		stuff_float(&Neb2_fog_legacy_near_mult);
 	}
-	if(optional_string("+Fog Far Mult:")){
-		stuff_float(&Neb2_fog_far_mult);
+	if (optional_string("+Fog Far Mult:")) {
+		stuff_float(&Neb2_fog_legacy_far_mult);
+	}
+
+	// Look for the modern values
+	if (optional_string("+Fog 1000m Visibility:")) {
+		stuff_float(&Neb2_fog_1000m_visibility);
+		found_neb2_modern = true;
+	}
+	if (optional_string("+Fog Near Distance:")) {
+		stuff_float(&Neb2_fog_near_distance);
+		found_neb2_modern = true;
+	}
+	if (optional_string("+Fog Skybox Clip Distance:")) {
+		stuff_float(&Neb2_fog_skybox_clip_distance);
+		found_neb2_modern = true;
+	}
+	if (optional_string("+Fog Clip Distance:")) {
+		stuff_float(&Neb2_fog_clip_distance);
+		found_neb2_modern = true;
+	}
+
+	// write legacy values on save if we are compatible with older formats
+	Neb2_fog_save_legacy_values = !found_neb2_modern;
+
+	// Convert legacy values if this mission was made before modern values were introduced
+	if (!found_neb2_modern) {
+		//This stems from the weird unchangeable constants of legacy fog
+		float denom = std::max(75.f * Neb2_fog_legacy_far_mult - Neb2_fog_legacy_near_mult, 1.0f);
+		Neb2_fog_1000m_visibility = powf(10.f, -100.f / denom);
+		Neb2_fog_near_distance = 10.f * Neb2_fog_legacy_near_mult;
+		Neb2_fog_skybox_clip_distance = 0.f; // Apparently, skybox fog was just outright broken...
+		Neb2_fog_clip_distance = Default_max_draw_distance;
 	}
 
 	// Goober5000 - ship contrail speed threshold
@@ -2247,6 +2281,11 @@ void parse_copy_wing_ai_to_ship(wing *wingp, ai_info *aip);
 /**
  * Given a stuffed p_object struct, create an object and fill in the necessary fields.
  * @return object number.
+ *
+ * Per-ship field handling here MUST stay in sync with:
+ *   Fred_mission_save::save_objects() / save_common_object_data() in missionsave.cpp
+ *   clone_ship_instance_data() in missioneditor/objectduplication.cpp
+ * When you add a new editable ship field, touch all three.
  */
 int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 {
@@ -4686,18 +4725,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, 
 		wingp->total_arrived_count++;
 		if (wingp->num_waves > 1)
 		{
-			bool needs_display_name;
-			wing_bash_ship_name(p_objp->name, wingp->name, wingp->total_arrived_count + wingp->red_alert_skipped_ships, &needs_display_name);
-
-			// set up display name if we need to
-			// (In the unlikely edge case where the ship already has a display name for some reason, it will be overwritten.
-			// This is unavoidable, because if we didn't overwrite display names, all waves would have the display name from the first wave.)
-			if (needs_display_name)
-			{
-				p_objp->display_name = p_objp->name;
-				end_string_at_first_hash_symbol(p_objp->display_name);
-				p_objp->flags.set(Mission::Parse_Object_Flags::SF_Has_display_name);
-			}
+			wing_bash_ship_name(p_objp, wingp, wingp->total_arrived_count + wingp->red_alert_skipped_ships);
 
 			// subsequent waves of ships will not be in the ship registry, so add them
 			if (!ship_registry_exists(p_objp->name))
@@ -4880,6 +4908,20 @@ void parse_wing(mission *pm)
 	if (wingnum != -1)
 		error_display(0, NOX("Redundant wing name: %s\n"), wingp->name);
 	wingnum = Num_wings;
+
+	// if this name has a hash, create a default display name
+	if (get_pointer_to_first_hash_symbol(wingp->name))
+	{
+		wingp->display_name = wingp->name;
+		end_string_at_first_hash_symbol(wingp->display_name);
+		wingp->flags.set(Ship::Wing_Flags::Has_display_name);
+	}
+
+	if (optional_string("$Display Name:"))
+	{
+		stuff_string(wingp->display_name, F_NAME);
+		wingp->flags.set(Ship::Wing_Flags::Has_display_name);
+	}
 
 	// squad logo - Goober5000
 	if (optional_string("+Squad Logo:"))
@@ -5210,6 +5252,10 @@ void parse_wing(mission *pm)
 	// Goober5000 - wing creation stuff moved to post_process_ships_wings
 }
 
+// Per-prop field handling here MUST stay in sync with:
+//   Fred_mission_save::save_props() in missionsave.cpp
+//   clone_prop_instance_data() in missioneditor/objectduplication.cpp
+// When you add a new editable prop field, touch all three.
 void parse_prop(mission* /*pm*/)
 {
 	parsed_prop p;
@@ -5700,18 +5746,22 @@ void parse_event(mission *pm)
 
 	if ( optional_string("+Trigger Count:")){
 		stuff_int( &(event->trigger_count) );
-		event->flags |= MEF_USING_TRIGGER_COUNT; 
 
-		// if we have a trigger count but no repeat count, we want the event to loop until it has triggered enough times
-		if (event->repeat_count == 1) {
-			event->repeat_count = -1;
-		}
-
-		// sanity check on the trigger count variable
+		// sanity check on the trigger count variable; do this first so the != 1 check below is correct
 		// negative trigger count is also legal
 		if ( event->trigger_count == 0 ){
 			parse_warning_or_record("Trigger count for mission event %s is 0 — must be >= 1 or negative; corrected to 1.", event->name.c_str());
 			event->trigger_count = 1;
+		}
+
+		// a trigger count of 1 is the default, so the field only has runtime effect when it's something else
+		if (event->trigger_count != 1) {
+			event->flags |= MEF_USING_TRIGGER_COUNT;
+
+			// if we have a trigger count but no repeat count, we want the event to loop until it has triggered enough times
+			if (event->repeat_count == 1) {
+				event->repeat_count = -1;
+			}
 		}
 	}
 
@@ -5882,6 +5932,10 @@ void parse_goals(mission *pm)
 		throw parse::ParseException("Number of goals is too high and breaks multi!");
 }
 
+// Per-waypoint-path field handling here MUST stay in sync with:
+//   Fred_mission_save::save_waypoints() (waypoint-list section) in missionsave.cpp
+//   clone_waypoint_path_instance_data() in missioneditor/objectduplication.cpp
+// When you add a new editable waypoint-path field, touch all three.
 void parse_waypoint_list(mission *pm)
 {
 	Assert(pm != NULL);
@@ -5933,6 +5987,10 @@ void parse_waypoint_list(mission *pm)
 	}
 }
 
+// The jump-node section of this function MUST stay in sync with:
+//   Fred_mission_save::save_waypoints() (jump-node section) in missionsave.cpp
+//   clone_jump_node_instance_data() in missioneditor/objectduplication.cpp
+// When you add a new editable jump-node field, touch all three.
 void parse_waypoints_and_jumpnodes(mission *pm)
 {
 	vec3d pos;
@@ -6040,25 +6098,19 @@ void parse_messages(mission *pm, int flags)
 
 void parse_reinforcement(mission *pm)
 {
-	reinforcements *ptr;
+	reinforcements reinforcement;
 	p_object *rforce_obj = NULL;
 	int instance = -1;
 
-	Assert(Num_reinforcements < MAX_REINFORCEMENTS);
 	Assert(pm != NULL);
-	ptr = &Reinforcements[Num_reinforcements];
 
 	required_string("$Name:");
-	stuff_string(ptr->name, F_NAME, NAME_LENGTH);	
+	stuff_string(reinforcement.name, F_NAME, NAME_LENGTH);
 
-	find_and_stuff("$Type:", &ptr->type, F_NAME, Reinforcement_type_names, Num_reinforcement_type_names, "reinforcement type");
+	find_and_stuff("$Type:", &reinforcement.type, F_NAME, Reinforcement_type_names, Num_reinforcement_type_names, "reinforcement type");
 
 	required_string("$Num times:");
-	stuff_int(&ptr->uses);
-	ptr->num_uses = 0;
-
-	// reset the flags to 0
-	ptr->flags = 0;
+	stuff_int(&reinforcement.uses);
 
 	if ( optional_string("+Arrival delay:") )
 	{
@@ -6066,34 +6118,34 @@ void parse_reinforcement(mission *pm)
 		stuff_int(&delay);
 		if (delay < 0)
 		{
-			parse_warning_or_record("Arrival delay on reinforcement %s cannot be negative — corrected to 0.", ptr->name);
+			parse_warning_or_record("Arrival delay on reinforcement %s cannot be negative — corrected to 0.", reinforcement.name);
 			delay = 0;
 		}
 
-		ptr->arrival_delay = delay;
+		reinforcement.arrival_delay = delay;
 	}
 
 	if ( optional_string("+No Messages:") ){
-		stuff_string_list( ptr->no_messages, MAX_REINFORCEMENT_MESSAGES );
+		stuff_string_list( reinforcement.no_messages, MAX_REINFORCEMENT_MESSAGES );
 	}
 
 	if ( optional_string("+Yes Messages:") ){
-		stuff_string_list( ptr->yes_messages, MAX_REINFORCEMENT_MESSAGES );
+		stuff_string_list( reinforcement.yes_messages, MAX_REINFORCEMENT_MESSAGES );
 	}	
 
 	// sanity check on the names of reinforcements
-	rforce_obj = mission_parse_find_parse_object(ptr->name);
+	rforce_obj = mission_parse_find_parse_object(reinforcement.name);
 
 	if (rforce_obj == NULL) {
-		if ((instance = wing_name_lookup(ptr->name, 1)) == -1) {
-			parse_warning_or_record("Reinforcement %s not found as ship or wing — declaration ignored.", ptr->name);
+		if ((instance = wing_name_lookup(reinforcement.name, 1)) == -1) {
+			parse_warning_or_record("Reinforcement %s not found as ship or wing — declaration ignored.", reinforcement.name);
 			return;
 		}
 	} else {
 		// Individual ships in wings can't be reinforcements - FUBAR
 		if (rforce_obj->wingnum >= 0)
 		{
-			parse_warning_or_record("Reinforcement %s is part of a wing — reinforcement declaration ignored.", ptr->name);
+			parse_warning_or_record("Reinforcement %s is part of a wing — reinforcement declaration ignored.", reinforcement.name);
 			return;
 		}
 		else
@@ -6105,10 +6157,10 @@ void parse_reinforcement(mission *pm)
 	// now, if the reinforcement is a wing, then set the number of waves of the wing == number of
 	// uses of the reinforcement
 	if (instance >= 0) {
-		Wings[instance].num_waves = ptr->uses;
+		Wings[instance].num_waves = reinforcement.uses;
 	}
 
-	Num_reinforcements++;
+	Reinforcements.push_back(std::move(reinforcement));
 }
 
 void parse_reinforcements(mission *pm)
@@ -7105,7 +7157,10 @@ bool post_process_mission(mission *pm)
 	}
 	Last_file_checksum = Current_file_checksum;
 
-	if (pm->volumetrics)
+	// Skip the volumetric noise bake under FRED. Only the gameplay deferred
+	// pass and the Lab consume the baked 3D bitmap, and the bake can take
+	// minutes in a debug build for higher quality nebulae.
+	if (pm->volumetrics && !Fred_running)
 		pm->volumetrics->renderVolumeBitmap();
 
 	apply_default_custom_data(pm);
@@ -7358,7 +7413,7 @@ void mission_init(mission *pm, bool quick_init)
 	for (int i = 0; i < MAX_WINGS; i++)
 		Wings[i].clear();
 	
-	Num_reinforcements = 0;
+	Reinforcements.clear();
 
 	Parse_props.clear();
 
@@ -8110,27 +8165,24 @@ int mission_set_arrival_location(anchor_t anchor, ArrivalLocation location, int 
 /**
  * Mark a reinforcement as available
  */
-void mission_parse_mark_reinforcement_available(char *name)
+void mission_parse_mark_reinforcement_available(const char *name)
 {
-	int i;
-	reinforcements *rp;
+	int i = find_item_with_string(Reinforcements, &reinforcements::name, name);
+	if (i >= 0)
+	{
+		auto &r = Reinforcements[i];
+		if (!(r.flags & RF_IS_AVAILABLE))
+		{
+			r.flags |= RF_IS_AVAILABLE;
 
-	for (i = 0; i < Num_reinforcements; i++) {
-		rp = &Reinforcements[i];
-		if ( !stricmp(rp->name, name) ) {
-			if ( !(rp->flags & RF_IS_AVAILABLE) ) {
-				rp->flags |= RF_IS_AVAILABLE;
-
-				// tell all of the clients.
-				if ( MULTIPLAYER_MASTER ) {
-					send_reinforcement_avail( i );
-				}
-			}
-			return;
+			// tell all of the clients.
+			if (MULTIPLAYER_MASTER)
+				send_reinforcement_avail(i);
 		}
+		return;
 	}
 
-	Assert ( i < Num_reinforcements );
+	Assertion(false, "Reinforcement '%s' not found!", name);
 }
 
 /**
@@ -8156,12 +8208,9 @@ int mission_did_ship_arrive(p_object *objp, bool force_arrival)
 
 		// if we're forcing the arrival, then "use" the reinforcement; otherwise don't process anything else
 		if (force_arrival) {
-			for (int i = 0; i < Num_reinforcements; i++) {
-				auto rp = &Reinforcements[i];
-				if (!stricmp(rp->name, objp->name)) {
-					rp->num_uses++;
-					break;
-				}
+			int i = find_item_with_string(Reinforcements, &reinforcements::name, objp->name);
+			if (i >= 0) {
+				Reinforcements[i].num_uses++;
 			}
 		} else {
 			return -1;
@@ -8413,12 +8462,9 @@ bool mission_maybe_make_wing_arrive(int wingnum, bool force_arrival)
 
 		// if we're forcing the arrival, then "use" the reinforcement; otherwise don't process anything else
 		if (force_arrival && wingp->current_count == 0) {
-			for (int i = 0; i < Num_reinforcements; i++) {
-				auto rp = &Reinforcements[i];
-				if (!stricmp(rp->name, wingp->name)) {
-					rp->num_uses++;
-					break;
-				}
+			int i = find_item_with_string(Reinforcements, &reinforcements::name, wingp->name);
+			if (i >= 0) {
+				Reinforcements[i].num_uses++;
 			}
 		} else {
 			// reinforcement wings skip the rest of the function
@@ -9620,6 +9666,9 @@ bool check_for_25_1_data()
 	if (count_items_with_value(Props) > 0)
 		return true;
 
+	if (The_mission.flags[Mission::Mission_Flags::Fullneb] && !Neb2_fog_save_legacy_values)
+		return true;
+
 	constexpr auto defaultLayer = "Default";
 
 	for (const auto& so : list_range(&Ship_obj_list))
@@ -9638,8 +9687,17 @@ bool check_for_25_1_data()
 			return true;
 	}
 
-	return std::any_of(Jump_nodes.begin(), Jump_nodes.end(), [defaultLayer](const auto& jn) {
+	if (std::any_of(Jump_nodes.begin(), Jump_nodes.end(), [defaultLayer](const auto& jn) {
 		const auto& layer = jn.GetFredLayer();
 		return !layer.empty() && !lcase_equal(layer, defaultLayer);
-	});
+	}))
+		return true;
+
+	for (int wingnum = 0; wingnum < Num_wings; wingnum++)
+	{
+		if (Wings[wingnum].has_display_name())
+			return true;
+	}
+
+	return false;
 }

@@ -47,6 +47,7 @@ public:
 	CSpinButtonCtrl	m_threshold_spin;
 	CSpinButtonCtrl	m_waves_spin;
 	CString	m_wing_name;
+	CString	m_wing_display_name;
 	int		m_special_ship;
 	int		m_waves;
 	int		m_threshold;
@@ -115,6 +116,7 @@ protected:
 	afx_msg void OnBnClickedCustomWarpinParams();
 	afx_msg void OnBnClickedCustomWarpoutParams();
 	afx_msg void OnWingFormationAlign();
+	afx_msg void OnChangeWingName();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 

@@ -196,8 +196,6 @@ class Editor : public QObject {
 	int cur_wing = -1;
 	int cur_ship = -1;
 
-	int cur_wing_index = -1;
-
 	waypoint* cur_waypoint = nullptr;
 	waypoint_list* cur_waypoint_list = nullptr;
 
@@ -263,14 +261,12 @@ class Editor : public QObject {
 
 	static SCP_vector<SCP_string> get_docking_list(int model_index);
 
-	bool compareShieldSysData(const SCP_vector<GlobalShieldStatus>& teams, const SCP_vector<GlobalShieldStatus>& types) const;
 	void exportShieldSysData(SCP_vector<GlobalShieldStatus>& teams, SCP_vector<GlobalShieldStatus>& types) const;
 	void importShieldSysData(const SCP_vector<GlobalShieldStatus>& teams, const SCP_vector<GlobalShieldStatus>& types);
 	void normalizeShieldSysData();
 
 	static void strip_quotation_marks(SCP_string& str);
 	static void pad_with_newline(SCP_string& str, size_t max_size);
-	static void lcl_fred_replace_stuff(QString& text);
 	static SCP_string get_display_name_for_text_box(const SCP_string &orig_name);
 
 	SCP_vector<int> getStartingWingLoadoutUseCounts();
@@ -300,8 +296,6 @@ class Editor : public QObject {
 	SCP_vector<GlobalShieldStatus> Shield_sys_teams;
 	SCP_vector<GlobalShieldStatus> Shield_sys_types;
 
-	int delete_flag;
-
 	bool already_deleting_wing = false;
 
 	// ship and weapon usage pools
@@ -319,7 +313,7 @@ class Editor : public QObject {
 
 	int invalidate_references(const char* name, sexp_ref_type type);
 
-	void delete_reinforcement(int num);
+	void delete_reinforcement(const char* name);
 
 	// changes the currently selected wing.  It is assumed that cur_wing == cur_ship's wing
 	// number.  Don't call this if this won't be true, or else you'll screw things up.
