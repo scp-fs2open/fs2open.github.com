@@ -1641,6 +1641,11 @@ elseif (APPLE)
 		${file_root_sound}
 		sound/speech_mac.mm
 	)
+elseif (ANDROID)
+	add_file_folder("Sound"
+		${file_root_sound}
+		sound/speech_android.cpp
+	)
 elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
 	add_file_folder("Sound"
 		${file_root_sound}
