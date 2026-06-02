@@ -2280,6 +2280,11 @@ void parse_copy_wing_ai_to_ship(wing *wingp, ai_info *aip);
 /**
  * Given a stuffed p_object struct, create an object and fill in the necessary fields.
  * @return object number.
+ *
+ * Per-ship field handling here MUST stay in sync with:
+ *   Fred_mission_save::save_objects() / save_common_object_data() in missionsave.cpp
+ *   clone_ship_instance_data() in missioneditor/objectduplication.cpp
+ * When you add a new editable ship field, touch all three.
  */
 int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 {
@@ -5246,6 +5251,10 @@ void parse_wing(mission *pm)
 	// Goober5000 - wing creation stuff moved to post_process_ships_wings
 }
 
+// Per-prop field handling here MUST stay in sync with:
+//   Fred_mission_save::save_props() in missionsave.cpp
+//   clone_prop_instance_data() in missioneditor/objectduplication.cpp
+// When you add a new editable prop field, touch all three.
 void parse_prop(mission* /*pm*/)
 {
 	parsed_prop p;
@@ -5922,6 +5931,10 @@ void parse_goals(mission *pm)
 		throw parse::ParseException("Number of goals is too high and breaks multi!");
 }
 
+// Per-waypoint-path field handling here MUST stay in sync with:
+//   Fred_mission_save::save_waypoints() (waypoint-list section) in missionsave.cpp
+//   clone_waypoint_path_instance_data() in missioneditor/objectduplication.cpp
+// When you add a new editable waypoint-path field, touch all three.
 void parse_waypoint_list(mission *pm)
 {
 	Assert(pm != NULL);
@@ -5973,6 +5986,10 @@ void parse_waypoint_list(mission *pm)
 	}
 }
 
+// The jump-node section of this function MUST stay in sync with:
+//   Fred_mission_save::save_waypoints() (jump-node section) in missionsave.cpp
+//   clone_jump_node_instance_data() in missioneditor/objectduplication.cpp
+// When you add a new editable jump-node field, touch all three.
 void parse_waypoints_and_jumpnodes(mission *pm)
 {
 	vec3d pos;

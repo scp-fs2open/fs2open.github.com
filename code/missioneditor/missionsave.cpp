@@ -1442,6 +1442,10 @@ void Fred_mission_save::fso_comment_pop(bool pop_all)
 	fso_ver_comment.pop_back();
 }
 
+// Per-ship field handling here MUST stay in sync with:
+//   parse_create_object_sub() in missionparse.cpp
+//   clone_ship_instance_data() in missioneditor/objectduplication.cpp
+// When you add a new editable ship field, touch all three.
 int Fred_mission_save::save_common_object_data(object* objp, ship* shipp)
 {
 	int j, z;
@@ -3474,6 +3478,10 @@ int Fred_mission_save::save_warp_params(WarpDirection direction, ship* shipp)
 	return err;
 }
 
+// Per-ship field handling here MUST stay in sync with:
+//   parse_create_object_sub() in missionparse.cpp
+//   clone_ship_instance_data() in missioneditor/objectduplication.cpp
+// When you add a new editable ship field, touch all three.
 int Fred_mission_save::save_objects()
 {
 	SCP_string sexp_out;
@@ -4838,6 +4846,10 @@ int Fred_mission_save::save_vector(const vec3d& v)
 	return 0;
 }
 
+// The jump-node section of this function MUST stay in sync with:
+//   the "$Jump Node:" parse block in missionparse.cpp
+//   clone_jump_node_instance_data() in missioneditor/objectduplication.cpp
+// When you add a new editable jump-node field, touch all three.
 int Fred_mission_save::save_waypoints()
 {
 	// object *ptr;
@@ -4928,6 +4940,10 @@ int Fred_mission_save::save_waypoints()
 		fso_comment_pop();
 	}
 
+	// Per-waypoint-path field handling here MUST stay in sync with:
+	//   parse_waypoint_list() in missionparse.cpp
+	//   clone_waypoint_path_instance_data() in missioneditor/objectduplication.cpp
+	// When you add a new editable waypoint-path field, touch all three.
 	bool first_wpt_list = true;
 	for (const auto& ii : Waypoint_lists) {
 		required_string_either_fred("$Name:", "#Messages");
@@ -5281,6 +5297,10 @@ int Fred_mission_save::save_wings()
 	return err;
 }
 
+// Per-prop field handling here MUST stay in sync with:
+//   parse_prop() in missionparse.cpp
+//   clone_prop_instance_data() in missioneditor/objectduplication.cpp
+// When you add a new editable prop field, touch all three.
 int Fred_mission_save::save_props()
 {
 	auto num_props = count_items_with_value(Props);

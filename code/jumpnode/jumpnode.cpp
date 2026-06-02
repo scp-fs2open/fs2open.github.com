@@ -258,6 +258,16 @@ void CJumpNode::SetModel(const char *model_name, bool show_polys)
 	m_flags |= JN_SPECIAL_MODEL;
 	m_radius = model_get_radius(m_modelnum);
 
+	// keep the engine-side object radius in sync with the new model.  The
+	// in-game jump-into-subspace check uses model_get_radius() directly so it
+	// is unaffected, but render culling, HUD brackets and FRED selection all
+	// read Objects[].radius - leaving it at the default-model radius makes the
+	// node cull/bracket at the wrong size after a $Special Model parse or a
+	// set-jumpnode-model sexp.
+	if (m_objnum >= 0) {
+		Objects[m_objnum].radius = m_radius;
+	}
+
 	//Do we want to change poly showing?
 	if(show_polys)
 		m_flags |= JN_SHOW_POLYS;

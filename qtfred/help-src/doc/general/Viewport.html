@@ -31,6 +31,19 @@ the viewport. Each dropdown is paired with its own modifier chord:</p>
 <h2>Moving objects</h2>
 <p><strong>Drag</strong> a selected object to reposition it in the mission.</p>
 
+<h2>Duplicating objects</h2>
+<ul>
+    <li><strong>Ctrl+drag</strong> a selected object to duplicate everything that is
+        currently marked. Ships, props, and jump nodes are cloned with all their
+        editable fields preserved. Marked waypoints are copied into a new path that
+        inherits the source path's color, layer, and line-drawing settings.</li>
+    <li><strong>Ctrl+Shift+drag</strong> behaves the same as Ctrl+drag except for
+        waypoints: each marked waypoint is inserted into its source path right after
+        the original, extending the path rather than creating a new one. Useful when
+        you want to add more points to an existing path without redrawing it. Other
+        object types in the marked set are duplicated normally.</li>
+</ul>
+
 <h2>Context menu</h2>
 <p><strong>Right-click</strong> anywhere in the viewport to open a context menu with
 options relevant to what was clicked. Available options vary depending on whether

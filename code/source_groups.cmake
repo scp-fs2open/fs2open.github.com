@@ -848,6 +848,8 @@ add_file_folder("MissionEditor"
 	missioneditor/campaignsave.h
 	missioneditor/missionsave.cpp
 	missioneditor/missionsave.h
+	missioneditor/objectduplication.cpp
+	missioneditor/objectduplication.h
 )
 
 # MissionUI files
