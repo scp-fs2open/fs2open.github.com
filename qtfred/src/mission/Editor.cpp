@@ -1972,13 +1972,6 @@ SCP_vector<SCP_string> Editor::get_docking_list(int model_index) {
 	return out;
 }
 
-bool Editor::compareShieldSysData(const SCP_vector<GlobalShieldStatus>& teams, const SCP_vector<GlobalShieldStatus>& types) const {
-	Assertion(Shield_sys_teams.size() == teams.size(), "Mismatched shield data from global shield dialog!");
-	Assertion(Shield_sys_types.size() == types.size(), "Mismatched shield data from global shield dialog!");
-
-	return (Shield_sys_teams == teams) && (Shield_sys_types == types);
-}
-
 void Editor::exportShieldSysData(SCP_vector<GlobalShieldStatus>& teams, SCP_vector<GlobalShieldStatus>& types) const {
 	teams = Shield_sys_teams;
 	types = Shield_sys_types;

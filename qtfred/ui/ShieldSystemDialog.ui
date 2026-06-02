@@ -10,7 +10,7 @@
     <x>0</x>
     <y>0</y>
     <width>441</width>
-    <height>150</height>
+    <height>200</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -32,9 +32,8 @@
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
-      <widget class="QGroupBox" name="shipTypeGroupBox">
-       <property name="title">
-        <string>All ships of type</string>
+      <widget class="QGroupBox" name="shipTypeGroupBox">       <property name="title">
+        <string>All ships of class</string>
        </property>
        <layout class="QVBoxLayout" name="verticalLayout">
         <property name="rightMargin">
@@ -45,6 +44,13 @@
         </property>
         <item>
          <widget class="QComboBox" name="shipTypeCombo"/>
+        </item>
+        <item>
+         <widget class="QLabel" name="typeCurrentStatusLabel">
+          <property name="text">
+           <string>Currently: —</string>
+          </property>
+         </widget>
         </item>
         <item>
          <widget class="QRadioButton" name="typeHasShieldRadio">
@@ -66,6 +72,13 @@
           </attribute>
          </widget>
         </item>
+        <item>
+         <widget class="QPushButton" name="applyTypeButton">
+          <property name="text">
+           <string>Apply to current class</string>
+          </property>
+         </widget>
+        </item>
        </layout>
       </widget>
      </item>
@@ -83,6 +96,13 @@
         </property>
         <item>
          <widget class="QComboBox" name="shipTeamCombo"/>
+        </item>
+        <item>
+         <widget class="QLabel" name="teamCurrentStatusLabel">
+          <property name="text">
+           <string>Currently: —</string>
+          </property>
+         </widget>
         </item>
         <item>
          <widget class="QRadioButton" name="teamHasShieldRadio">
@@ -104,15 +124,25 @@
           </attribute>
          </widget>
         </item>
+        <item>
+         <widget class="QPushButton" name="applyTeamButton">
+          <property name="text">
+           <string>Apply to current team</string>
+          </property>
+         </widget>
+        </item>
        </layout>
       </widget>
      </item>
     </layout>
    </item>
    <item>
-    <widget class="QDialogButtonBox" name="okAndCancelButtons">
-     <property name="standardButtons">
-      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+    <widget class="QLabel" name="applyScopeCaption">
+     <property name="text">
+      <string>Apply affects all existing ships of the chosen class or team and becomes the default for ships of that class or team placed afterwards.</string>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
      </property>
     </widget>
    </item>

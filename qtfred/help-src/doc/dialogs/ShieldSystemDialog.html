@@ -10,20 +10,28 @@
 <h1>Shield System</h1>
 <p>Opens via <strong>Editors &rsaquo; Shield System</strong>.</p>
 <p>A convenience tool for enabling or disabling shields on ships in bulk, by ship class
-or by IFF team. When applied, the dialog directly sets the shield flag on every
-existing ship in the mission; it is not a runtime override. If you add new ships
-after using this dialog, reopen it and apply again to include them.</p>
+or by IFF team. Each side of the dialog is an independent batch operation; pressing
+an <strong>Apply</strong> button writes the shield flag on every existing ship of the
+chosen class or team and also records the choice as the default for ships of that
+class or team placed afterwards. Close the dialog with the window's close button when
+you are done &mdash; there is no separate save step.</p>
 
 <h2>By ship class (left panel)</h2>
-<p>Select a ship class from the dropdown and choose
-<strong>Has shield system</strong> or <strong>No shield system</strong>. Applying
-sets the flag on all ships of that class currently in the mission.</p>
+<p>Pick a ship class from the dropdown. The <em>Currently:</em> label shows the
+current state for that class &mdash; <em>Has shields</em>, <em>No shields</em>, or
+<em>Mixed</em> when ships of the class disagree. Choose
+<strong>Has shield system</strong> or <strong>No shield system</strong> and click
+<strong>Apply to current class</strong> to commit. When the state is <em>Mixed</em>,
+neither radio is preselected and the Apply button stays disabled until you pick a
+value, so you cannot flatten per-ship customisation by accident.</p>
 
 <h2>By IFF team (right panel)</h2>
-<p>Select a team from the dropdown and choose
-<strong>Has shield system</strong> or <strong>No shield system</strong>. Applying
-sets the flag on all ships belonging to that team currently in the mission.</p>
+<p>Works the same way but operates on every ship of the selected team. Use
+<strong>Apply to current team</strong> to commit.</p>
 
+<div class="note">Each Apply only touches the axis whose button you pressed. The
+other side's selection is not affected, so you can switch back and forth and apply
+class- and team-level changes independently in the same session.</div>
 <div class="note">When both a ship class setting and a team setting apply to the same
 ship, the ship class setting takes precedence.</div>
 <div class="note">The Shield System dialog, the <a href="ShipEditorDialog.html">Ship
@@ -32,8 +40,9 @@ Editor</a> (Initial Status and Ship Flags tabs), and
 per-ship shield flag. There is no fixed precedence between them; whichever is
 applied last takes effect. A typical workflow is to use this dialog to establish a
 baseline across the mission, then make individual adjustments per ship in the Ship
-Editor. If you later reopen this dialog and a team or class shows as
-<em>Mixed</em> (some ships differ), applying without changing that setting will
-leave those individual ship values intact.</div>
+Editor. Reopening this dialog re-reads the state from the ships themselves, so if
+individual ships have been edited since the last bulk apply, the class or team will
+show as <em>Mixed</em>; applying without changing the radio choice is not possible
+in that state, which protects per-ship edits from being silently overwritten.</div>
 </body>
 </html>
