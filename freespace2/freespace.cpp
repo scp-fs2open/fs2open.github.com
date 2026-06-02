@@ -904,7 +904,19 @@ static void game_flash_diminish(float frametime)
 		if ( b < 0 ) b = 0; else if ( b > 255 ) b = 255;
 
 		if ( (r!=0) || (g!=0) || (b!=0) ) {
+			// the letterbox bars are drawn earlier in the frame, but game_render_hud calls gr_reset_clip()
+			// before this runs, so the flash would paint over the bars unless we re-apply the letterbox clip
+			bool letterbox_active = (Game_mode & GM_DEAD) || (supernova_stage() >= SUPERNOVA_STAGE::HIT);
+			if (letterbox_active) {
+				int yborder = gr_screen.max_h / 4;
+				gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - yborder*2, GR_RESIZE_NONE);
+			}
+
 			gr_flash( r, g, b );
+
+			if (letterbox_active) {
+				gr_reset_clip();
+			}
 		}
 	}
 	
