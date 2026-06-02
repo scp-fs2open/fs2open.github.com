@@ -1494,6 +1494,15 @@ int Editor::rename_ship(int ship, const char* name) {
 	if (i >= 0)
 		strcpy_s(Reinforcements[i].name, name);
 
+	// keep the ship registry in sync
+	auto reg_it = Ship_registry_map.find(Ships[ship].ship_name);
+	if (reg_it != Ship_registry_map.end()) {
+		int reg_idx = reg_it->second;
+		Ship_registry_map.erase(reg_it);
+		strcpy_s(Ship_registry[reg_idx].name, name);
+		Ship_registry_map[name] = reg_idx;
+	}
+
 	strcpy_s(Ships[ship].ship_name, name);
 
 	// if this name has a hash, create a default display name
