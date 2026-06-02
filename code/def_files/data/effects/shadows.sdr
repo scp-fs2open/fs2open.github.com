@@ -62,7 +62,7 @@ float samplePoissonPCF(sampler2DArray shadow_map, float shadowDepth, int cascade
 	float visibility = 0.0f;
 	for (int i=0; i<16; i++) {
 		vec2 shadow_sample = sampleShadowMap(shadow_map, shadowUV[cascade].xy, poissonDisc[i], cascade, maxUVOffset[cascade]);
-		visibility += computeShadowFactor(shadowDepth, shadow_sample, cockpit_shadow_bias ? 0.001f : 0.1f);
+		visibility += computeShadowFactor(shadowDepth, shadow_sample, cockpit_shadow_bias ? 0.01f : 0.1f);
 	}
 	return visibility * (1.0f/16.0f);
 }
