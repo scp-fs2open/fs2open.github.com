@@ -821,6 +821,21 @@ void game_sunspot_process(float frametime)
 }
 
 
+// Top/bottom bar height for the "dead view" / supernova letterbox
+static int dead_view_letterbox_yborder()
+{
+	return gr_screen.max_h / 4;
+}
+
+// Apply the clip rect for the "dead view" / supernova letterbox interior
+static void set_dead_view_letterbox_clip()
+{
+	int yborder = dead_view_letterbox_yborder();
+	//	Numeric constants encouraged by J "pig farmer" S, who shall remain semi-anonymous.
+	// J.S. I've changed my ways!! See the new "no constants" code!!!
+	gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - yborder*2, GR_RESIZE_NONE);
+}
+
 /**
  * Call once a frame to diminish the flash effect to 0.
  * @param frametime Period over which to dimish at ::DIMINISH_RATE
@@ -908,8 +923,7 @@ static void game_flash_diminish(float frametime)
 			// before this runs, so the flash would paint over the bars unless we re-apply the letterbox clip
 			bool letterbox_active = (Game_mode & GM_DEAD) || (supernova_stage() >= SUPERNOVA_STAGE::HIT);
 			if (letterbox_active) {
-				int yborder = gr_screen.max_h / 4;
-				gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - yborder*2, GR_RESIZE_NONE);
+				set_dead_view_letterbox_clip();
 			}
 
 			gr_flash( r, g, b );
@@ -2587,18 +2601,15 @@ void game_set_view_clip(float  /*frametime*/)
 	if ((Game_mode & GM_DEAD) || (supernova_stage() >= SUPERNOVA_STAGE::HIT))
 	{
 		// Set the clip region for the letterbox "dead view"
-		int yborder = gr_screen.max_h/4;
-
 		if (g3_in_frame() == 0) {
+			int yborder = dead_view_letterbox_yborder();
 			// Ensure that the bars are black
 			gr_set_color(0,0,0);
 			gr_set_bitmap(0); // Valathil - Don't ask me why this has to be here but otherwise the black bars don't draw
 			gr_rect(0, 0, gr_screen.max_w, yborder, GR_RESIZE_NONE);
 			gr_rect(0, gr_screen.max_h-yborder, gr_screen.max_w, yborder, GR_RESIZE_NONE);
 		} else {
-			//	Numeric constants encouraged by J "pig farmer" S, who shall remain semi-anonymous.
-			// J.S. I've changed my ways!! See the new "no constants" code!!!
-			gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - yborder*2, GR_RESIZE_NONE );	
+			set_dead_view_letterbox_clip();
 		}
 	}
 	else {
