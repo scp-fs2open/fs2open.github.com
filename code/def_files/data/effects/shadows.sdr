@@ -72,11 +72,13 @@ float samplePoissonPCF(sampler2DArray shadow_map, float shadowDepth, int cascade
 		// default external shadows 
 		// bias is a bit larger to only pick up larger geometry
 		// favors light over shadow to avoid flickering/spotty shadows
-		vec2 sum = vec2(0.0f);
+		// compute Chebyshev per-sample to avoid halos from moment-averaging at occluder edges
+		float visibility = 0.0f;
 		for (int i=0; i<16; i++) {
-			sum += sampleShadowMap(shadow_map, shadowUV[cascade].xy, poissonDisc[i], cascade, maxUVOffset[cascade]);
+			vec2 shadow_sample = sampleShadowMap(shadow_map, shadowUV[cascade].xy, poissonDisc[i], cascade, maxUVOffset[cascade]);
+			visibility += computeShadowFactor(shadowDepth, shadow_sample, 0.1f);
 		}
-		return computeShadowFactor(shadowDepth, sum*(1.0f/16.0f), 0.1f);
+		return visibility * (1.0f/16.0f);
 	}
 
 }
