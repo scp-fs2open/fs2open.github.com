@@ -526,6 +526,33 @@ namespace FieldId {
     constexpr int BG_EnvMap         = 4244;
     constexpr int BG_LightProfile   = 4245;
     // Wing editor             4301–4399
+    constexpr int Wing_Name              = 4301;
+    constexpr int Wing_DisplayName       = 4302;
+    constexpr int Wing_Leader            = 4303;
+    constexpr int Wing_NumWaves          = 4304;
+    constexpr int Wing_Threshold         = 4305;
+    constexpr int Wing_Hotkey            = 4306;
+    constexpr int Wing_Formation         = 4307;
+    constexpr int Wing_FormationScale    = 4308;
+    constexpr int Wing_SquadLogo         = 4309;
+    constexpr int Wing_ArrivalType       = 4310;
+    constexpr int Wing_ArrivalDelay      = 4311;
+    constexpr int Wing_WaveDelays        = 4312;
+    constexpr int Wing_ArrivalTarget     = 4313;
+    constexpr int Wing_ArrivalDist       = 4314;
+    constexpr int Wing_ArrivalPaths      = 4315;
+    constexpr int Wing_NoArrivalWarp     = 4316;
+    constexpr int Wing_NoArrivalWarpAdj  = 4317;
+    constexpr int Wing_DepartureType     = 4318;
+    constexpr int Wing_DepartureDelay    = 4319;
+    constexpr int Wing_DepartureTarget   = 4320;
+    constexpr int Wing_DeparturePaths    = 4321;
+    constexpr int Wing_NoDepartureWarp   = 4322;
+    constexpr int Wing_NoDepartureWarpAdj = 4323;
+    constexpr int Wing_Flags             = 4324;
+    constexpr int Wing_InitialOrders     = 4325;
+    constexpr int Wing_WarpinParams      = 4326;
+    constexpr int Wing_WarpoutParams     = 4327;
     // Ship editor             4401–4499
 }
 
@@ -555,6 +582,7 @@ class FieldEditCommand : public QUndoCommand {
     SCP_string        _targetKey; // identity of the edited object(s); see setTargetKey()
     Editor*           _editor;
     bool              _skipFirstRedo;
+    bool              _allowMerge = true;
 
 public:
     FieldEditCommand(int            fieldId,
@@ -567,6 +595,10 @@ public:
         , _editor(editor)
         , _skipFirstRedo(skipFirstRedo)
     {}
+
+    // Call for subdialog-triggered commands: each open/close is a discrete
+    // action and should never be collapsed with a subsequent invocation.
+    void setNoMerge() { _allowMerge = false; }
 
     // Identity of the edited target(s) — e.g. the ship signature(s) or wing
     // name the setters are bound to. Commands with different keys never merge,
@@ -602,7 +634,7 @@ public:
         return true;
     }
 
-    int id() const override { return _fieldId; }
+    int id() const override { return _allowMerge ? _fieldId : -1; }
 };
 
 } // namespace fso::fred
