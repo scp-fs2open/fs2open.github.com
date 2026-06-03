@@ -9,6 +9,7 @@
 #include <globalincs/pstypes.h>
 #include <math/vecmat.h>
 #include <mission/missionparse.h>
+#include <object/object.h>
 #include <ship/ship.h>
 #include <ai/aigoals.h>
 
@@ -455,6 +456,34 @@ public:
                        QUndoCommand*                                            parent = nullptr);
     void undo() override;
     void redo() override;
+};
+
+// ---------------------------------------------------------------------------
+// BatchFlagCommand — set a global flag on all (or all fighter/bomber) ships
+// ---------------------------------------------------------------------------
+
+class BatchFlagCommand : public QUndoCommand {
+public:
+    struct ShipSnapshot {
+        int sig;
+        flagset<Object::Object_Flags> objFlags;
+        flagset<Ship::Ship_Flags>     shipFlags;
+    };
+
+    BatchFlagCommand(SCP_vector<ShipSnapshot> before,
+                     SCP_vector<ShipSnapshot> after,
+                     Editor*                  editor,
+                     const QString&           text   = {},
+                     QUndoCommand*            parent = nullptr);
+    void undo() override;
+    void redo() override;
+
+private:
+    SCP_vector<ShipSnapshot> _before;
+    SCP_vector<ShipSnapshot> _after;
+    Editor*                  _editor;
+
+    static void restore(const SCP_vector<ShipSnapshot>& snaps);
 };
 
 // ---------------------------------------------------------------------------

@@ -1470,6 +1470,43 @@ void GenerateWaypointPathCommand::redo()
 }
 
 // ===========================================================================
+// BatchFlagCommand
+// ===========================================================================
+
+BatchFlagCommand::BatchFlagCommand(SCP_vector<ShipSnapshot> before,
+                                   SCP_vector<ShipSnapshot> after,
+                                   Editor*                  editor,
+                                   const QString&           text,
+                                   QUndoCommand*            parent)
+    : QUndoCommand(text, parent)
+    , _before(std::move(before))
+    , _after(std::move(after))
+    , _editor(editor)
+{}
+
+void BatchFlagCommand::restore(const SCP_vector<ShipSnapshot>& snaps)
+{
+    for (const auto& snap : snaps) {
+        const int objNum = obj_get_by_signature(snap.sig);
+        if (objNum < 0) continue;
+        Objects[objNum].flags = snap.objFlags;
+        Ships[Objects[objNum].instance].flags = snap.shipFlags;
+    }
+}
+
+void BatchFlagCommand::undo()
+{
+    restore(_before);
+    _editor->missionChanged();
+}
+
+void BatchFlagCommand::redo()
+{
+    restore(_after);
+    _editor->missionChanged();
+}
+
+// ===========================================================================
 // ApplyDialogCommand
 // ===========================================================================
 
