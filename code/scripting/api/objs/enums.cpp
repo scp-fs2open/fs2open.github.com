@@ -589,7 +589,7 @@ static const SCP_unordered_map<SCP_string, const char*> Enum_descriptions = {
 	{"COMMIT_BANK_GAP_ERROR", "Weapon banks contain gaps; empty slots appear between assigned weapons."},
 	{"COMMIT_PLAYER_NO_SLOT", "Player has no ship slot assigned in the briefing."},
 	{"COMMIT_MULTI_PLAYERS_NO_SHIPS", "Not all multiplayer players have been assigned to their ship slots yet."},
-	{"COMMIT_MULTI_NOT_ALL_ASSIGNED", "Not all multiplayer pilots have been assigned to a ship slot."},
+	{"COMMIT_MULTI_NOT_ALL_ASSIGNED", "Not all multiplayer pilots have been assigned to a ship."},
 	{"COMMIT_MULTI_NO_PRIMARY", "A multiplayer ship has no primary weapon assigned."},
 	{"COMMIT_MULTI_NO_SECONDARY", "A multiplayer ship has no secondary weapon assigned."},
 
