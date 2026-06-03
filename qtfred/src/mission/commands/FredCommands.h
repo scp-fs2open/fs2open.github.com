@@ -468,6 +468,10 @@ public:
         int sig;
         flagset<Object::Object_Flags> objFlags;
         flagset<Ship::Ship_Flags>     shipFlags;
+        bool operator==(const ShipSnapshot& o) const {
+            return sig == o.sig && objFlags == o.objFlags && shipFlags == o.shipFlags;
+        }
+        bool operator!=(const ShipSnapshot& o) const { return !(*this == o); }
     };
 
     BatchFlagCommand(SCP_vector<ShipSnapshot> before,
