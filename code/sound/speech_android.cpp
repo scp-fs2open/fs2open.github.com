@@ -9,7 +9,7 @@
 
 bool Speech_init = false;
 static JNIEnv* env = nullptr;
-static jobject j_game_class = nullptr;
+static jclass j_game_class = nullptr;
 static jmethodID tts_speak      = nullptr;
 static jmethodID tts_stop       = nullptr;
 static jmethodID tts_pause      = nullptr;
