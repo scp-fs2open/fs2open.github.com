@@ -36,7 +36,19 @@ ShipInitialStatusDialog::~ShipInitialStatusDialog() = default;
 
 void ShipInitialStatusDialog::accept()
 {
-	// If apply() returns true, close the dialog
+	// Capture dockee positions before apply() physically moves them.
+	// ShipEditorDialog retrieves these via preApplyDockeePositions() in its
+	// accepted() handler to enable full position restore on undo.
+	_preApplyDockeePositions.clear();
+	if (!_model->getIfMultipleShips()) {
+		for (int i = 0; i < _model->getNumDockPoints(); i++) {
+			int dockeeShip = _model->getDockpointArray()[i].dockee_shipnum;
+			if (dockeeShip >= 0) {
+				const object& obj = Objects[Ships[dockeeShip].objnum];
+				_preApplyDockeePositions.push_back({ obj.signature, obj.pos, obj.orient });
+			}
+		}
+	}
 	if (_model->apply()) {
 		QDialog::accept();
 	}

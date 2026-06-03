@@ -17,6 +17,11 @@ class ShipInitialStatusDialog : public QDialog {
 	explicit ShipInitialStatusDialog(QDialog* parent, EditorViewport* viewport, bool editMultiple);
 	~ShipInitialStatusDialog() override;
 
+	// Positions of ships that will be moved by docking when accept() is called,
+	// captured before apply() runs.  Retrieved by ShipEditorDialog via accepted().
+	struct PreApplyDockeePos { int sig; vec3d pos; matrix orient; };
+	const SCP_vector<PreApplyDockeePos>& preApplyDockeePositions() const { return _preApplyDockeePositions; }
+
 	void accept() override;
 	void reject() override;
 
@@ -64,5 +69,7 @@ class ShipInitialStatusDialog : public QDialog {
 	int _curDockerPoint = -1;
 	int _curDockee = -1;
 	int _curDockeePoint = -1;
+
+	SCP_vector<PreApplyDockeePos> _preApplyDockeePositions;
 };
 } // namespace fso::fred::dialogs

@@ -8,6 +8,7 @@
 #include <mission/dialogs/AbstractDialogModel.h>
 #include <globalincs/pstypes.h>
 #include <math/vecmat.h>
+#include <mission/missionparse.h>
 #include <ship/ship.h>
 #include <ai/aigoals.h>
 
@@ -554,6 +555,43 @@ namespace FieldId {
     constexpr int Wing_WarpinParams      = 4326;
     constexpr int Wing_WarpoutParams     = 4327;
     // Ship editor             4401–4499
+    constexpr int Ship_DisplayName       = 4402;
+    constexpr int Ship_Class             = 4403;
+    constexpr int Ship_AIClass           = 4404;
+    constexpr int Ship_Team              = 4405;
+    constexpr int Ship_Cargo             = 4406;
+    constexpr int Ship_CargoTitle        = 4407;
+    constexpr int Ship_AltName           = 4408;
+    constexpr int Ship_Callsign          = 4409;
+    constexpr int Ship_Hotkey            = 4410;
+    constexpr int Ship_Persona           = 4411;
+    constexpr int Ship_Score             = 4412;
+    constexpr int Ship_Assist            = 4413;
+    constexpr int Ship_Player            = 4414;
+    constexpr int Ship_Respawn           = 4415;
+    constexpr int Ship_ArrivalLocation   = 4416;
+    constexpr int Ship_ArrivalTarget     = 4417;
+    constexpr int Ship_ArrivalDistance   = 4418;
+    constexpr int Ship_ArrivalDelay      = 4419;
+    constexpr int Ship_NoArrivalWarp     = 4420;
+    constexpr int Ship_ArrivalPaths      = 4421;
+    constexpr int Ship_DepartureLocation = 4422;
+    constexpr int Ship_DepartureTarget   = 4423;
+    constexpr int Ship_DepartureDelay    = 4424;
+    constexpr int Ship_NoDepartureWarp   = 4425;
+    constexpr int Ship_DeparturePaths    = 4426;
+    constexpr int Ship_PlayerOrders      = 4427;
+    constexpr int Ship_WarpinParams      = 4428;
+    constexpr int Ship_WarpoutParams     = 4429;
+    constexpr int Ship_Flags             = 4430;
+    constexpr int Ship_InitialStatus     = 4431;
+    constexpr int Ship_InitialOrders     = 4432;
+    constexpr int Ship_Weapons           = 4433;
+    constexpr int Ship_AltClass          = 4434;
+    constexpr int Ship_SpecialStats      = 4435;
+    constexpr int Ship_Reset             = 4436;
+    constexpr int Ship_DockWarpin        = 4437;
+    constexpr int Ship_DockWarpout       = 4438;
 }
 
 // ---------------------------------------------------------------------------
@@ -635,6 +673,30 @@ public:
     }
 
     int id() const override { return _allowMerge ? _fieldId : -1; }
+};
+
+// ---------------------------------------------------------------------------
+// TextureReplacementCommand — undo/redo for the Ship Texture Replacement dialog
+// ---------------------------------------------------------------------------
+
+class TextureReplacementCommand : public QUndoCommand {
+	SCP_string                    _shipName;
+	SCP_vector<texture_replace>   _before;
+	SCP_vector<texture_replace>   _after;
+	Editor*                       _editor;
+
+public:
+	// Construct with the before-state already captured; call setAfter() once apply() succeeds.
+	TextureReplacementCommand(SCP_string               shipName,
+	                          SCP_vector<texture_replace> before,
+	                          Editor*                  editor,
+	                          QUndoCommand*            parent = nullptr);
+	void setAfter(SCP_vector<texture_replace> after);
+	void undo() override;
+	void redo() override;
+
+private:
+	void apply(const SCP_vector<texture_replace>& entries);
 };
 
 } // namespace fso::fred

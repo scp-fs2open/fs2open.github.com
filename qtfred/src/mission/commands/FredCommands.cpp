@@ -1498,4 +1498,34 @@ void ApplyDialogCommand::redo()
     _editor->missionChanged();
 }
 
+// ---------------------------------------------------------------------------
+// TextureReplacementCommand
+// ---------------------------------------------------------------------------
+
+TextureReplacementCommand::TextureReplacementCommand(SCP_string               shipName,
+                                                     SCP_vector<texture_replace> before,
+                                                     Editor*                  editor,
+                                                     QUndoCommand*            parent)
+    : QUndoCommand(QObject::tr("Edit Texture Replacements"), parent)
+    , _shipName(std::move(shipName))
+    , _before(std::move(before))
+    , _editor(editor)
+{}
+
+void TextureReplacementCommand::setAfter(SCP_vector<texture_replace> after)
+{
+    _after = std::move(after);
+}
+
+void TextureReplacementCommand::apply(const SCP_vector<texture_replace>& entries)
+{
+    removeShipTextureReplacements(_shipName.c_str());
+    for (const auto& tr : entries)
+        Fred_texture_replacements.push_back(tr);
+    _editor->missionChanged();
+}
+
+void TextureReplacementCommand::undo() { apply(_before); }
+void TextureReplacementCommand::redo() { apply(_after);  }
+
 } // namespace fso::fred
