@@ -41,6 +41,9 @@ QByteArray MissionSpecDialogModel::captureState() const
 	ds << static_cast<qint32>(The_mission.max_respawn_delay);
 	ds << static_cast<float>(f2fl(Entry_delay_time));
 
+	// Large ship collision exclusion group
+	ds << static_cast<qint32>(The_mission.large_ship_no_collide_collision_group);
+
 	// Support ships
 	ds << static_cast<qint32>(The_mission.support_ships.max_support_ships);
 	ds << The_mission.support_ships.max_hull_repair_val;
@@ -144,6 +147,9 @@ void MissionSpecDialogModel::restoreState(const QByteArray& state)
 	Num_teams = 1;
 	if ((The_mission.game_type & MISSION_TYPE_MULTI) && (The_mission.game_type & MISSION_TYPE_MULTI_TEAMS))
 		Num_teams = 2;
+
+	// Large ship collision exclusion group
+	ds >> i32; The_mission.large_ship_no_collide_collision_group = i32;
 
 	// Support ships
 	ds >> i32; The_mission.support_ships.max_support_ships = i32;

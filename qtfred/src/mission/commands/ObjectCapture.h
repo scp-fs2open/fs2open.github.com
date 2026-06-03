@@ -211,6 +211,12 @@ void recaptureShipForRedo(CapturedShip& data, int objNum);
 // Remove all Fred_texture_replacements entries that belong to ship_name.
 void removeShipTextureReplacements(const char* ship_name);
 
+// Rebuild pmi->texture_replace for ship_index from current Fred_texture_replacements entries.
+// Loads texture bitmaps as needed. Pass after updating Fred_texture_replacements so the
+// viewport reflects the change immediately. Passing an index with no entries resets the pmi
+// to default textures (pmi->texture_replace = nullptr).
+void rebuildShipPmiTextures(int shipIndex);
+
 // ===========================================================================
 // Waypoint List
 // ===========================================================================

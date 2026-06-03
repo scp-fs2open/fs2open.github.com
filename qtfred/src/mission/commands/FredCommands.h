@@ -491,6 +491,51 @@ private:
 };
 
 // ---------------------------------------------------------------------------
+// VoiceActingBatchCommand — undo/redo for the 5 mutation buttons in the
+//                           Voice Acting Manager dialog.
+// ---------------------------------------------------------------------------
+
+class VoiceActingBatchCommand : public QUndoCommand {
+public:
+    struct BriefStage {
+        int        stageIdx;
+        SCP_string filename;
+    };
+    struct MessageSnapshot {
+        SCP_string msgName;         // Messages[i].name — stable identity across add/remove
+        SCP_string waveFilename;    // Messages[i].wave_info.name (empty = nullptr)
+        SCP_string aviFilename;     // Messages[i].avi_info.name  (empty = nullptr)
+        int        personaIndex;
+    };
+    struct ShipPersona {
+        int sig;
+        int personaIndex;
+    };
+    struct Snapshot {
+        SCP_vector<BriefStage>      cmdBriefFilenames;
+        SCP_vector<BriefStage>      briefingVoices;
+        SCP_vector<BriefStage>      debriefingVoices;
+        SCP_vector<MessageSnapshot> messages;
+        SCP_vector<ShipPersona>     ships;
+    };
+
+    VoiceActingBatchCommand(Snapshot       before,
+                            Snapshot       after,
+                            Editor*        editor,
+                            const QString& text   = {},
+                            QUndoCommand*  parent = nullptr);
+    void undo() override;
+    void redo() override;
+
+private:
+    Snapshot _before;
+    Snapshot _after;
+    Editor*  _editor;
+
+    static void restore(const Snapshot& snap);
+};
+
+// ---------------------------------------------------------------------------
 // FieldId — global field identifiers used by FieldEditCommand for merging.
 // Each (dialog, field) pair must have a unique value so that consecutive
 // edits to the same field merge while edits to different fields do not.

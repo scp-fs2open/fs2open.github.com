@@ -11,6 +11,9 @@
 #include <parse/sexp.h>
 #include <globalincs/linklist.h>
 #include <math/vecmat.h>
+#include <mission/missionmessage.h>
+#include <mission/missionbriefcommon.h>
+#include <missionui/missioncmdbrief.h>
 
 #include "mission/Editor.h"
 #include "mission/EditorViewport.h"
@@ -1470,6 +1473,63 @@ void GenerateWaypointPathCommand::redo()
 }
 
 // ===========================================================================
+// VoiceActingBatchCommand
+// ===========================================================================
+
+VoiceActingBatchCommand::VoiceActingBatchCommand(Snapshot       before,
+                                                 Snapshot       after,
+                                                 Editor*        editor,
+                                                 const QString& text,
+                                                 QUndoCommand*  parent)
+    : QUndoCommand(text, parent)
+    , _before(std::move(before))
+    , _after(std::move(after))
+    , _editor(editor)
+{}
+
+void VoiceActingBatchCommand::restore(const Snapshot& snap)
+{
+    for (const auto& s : snap.cmdBriefFilenames)
+        strcpy(Cmd_briefs[0].stage[s.stageIdx].wave_filename, s.filename.c_str());
+
+    for (const auto& s : snap.briefingVoices)
+        strcpy(Briefings[0].stages[s.stageIdx].voice, s.filename.c_str());
+
+    for (const auto& s : snap.debriefingVoices)
+        strcpy(Debriefings[0].stages[s.stageIdx].voice, s.filename.c_str());
+
+    for (const auto& m : snap.messages) {
+        MMessage* msg = nullptr;
+        for (int i = Num_builtin_messages; i < Num_messages; ++i) {
+            if (!stricmp(Messages[i].name, m.msgName.c_str())) { msg = &Messages[i]; break; }
+        }
+        if (!msg) continue;
+        if (msg->wave_info.name) { free(msg->wave_info.name); msg->wave_info.name = nullptr; }
+        if (!m.waveFilename.empty()) msg->wave_info.name = strdup(m.waveFilename.c_str());
+        if (msg->avi_info.name)  { free(msg->avi_info.name);  msg->avi_info.name  = nullptr; }
+        if (!m.aviFilename.empty())  msg->avi_info.name  = strdup(m.aviFilename.c_str());
+        msg->persona_index = m.personaIndex;
+    }
+
+    for (const auto& s : snap.ships) {
+        const int objNum = obj_get_by_signature(s.sig);
+        if (objNum >= 0) Ships[Objects[objNum].instance].persona_index = s.personaIndex;
+    }
+}
+
+void VoiceActingBatchCommand::undo()
+{
+    restore(_before);
+    _editor->missionChanged();
+}
+
+void VoiceActingBatchCommand::redo()
+{
+    restore(_after);
+    _editor->missionChanged();
+}
+
+// ===========================================================================
 // BatchFlagCommand
 // ===========================================================================
 
@@ -1559,6 +1619,12 @@ void TextureReplacementCommand::apply(const SCP_vector<texture_replace>& entries
     removeShipTextureReplacements(_shipName.c_str());
     for (const auto& tr : entries)
         Fred_texture_replacements.push_back(tr);
+
+    // Rebuild the pmi so the viewport reflects the texture change immediately.
+    const int shipIdx = ship_name_lookup(_shipName.c_str());
+    if (shipIdx >= 0)
+        rebuildShipPmiTextures(shipIdx);
+
     _editor->missionChanged();
 }
 

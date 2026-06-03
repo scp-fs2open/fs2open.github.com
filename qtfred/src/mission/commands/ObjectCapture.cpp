@@ -16,6 +16,7 @@
 #include <globalincs/linklist.h>
 #include <jumpnode/jumpnode.h>
 #include <mission/missionparse.h>
+#include <bmpman/bmpman.h>
 #include <model/model.h>
 #include <object/object.h>
 #include <object/objectdock.h>
@@ -477,6 +478,70 @@ void removeShipTextureReplacements(const char* ship_name)
 				return !stricmp(tr.ship_name, ship_name) && !tr.from_table;
 			}),
 		Fred_texture_replacements.end());
+}
+
+void rebuildShipPmiTextures(int shipIndex)
+{
+	ship& shipp  = Ships[shipIndex];
+	auto* pmi    = model_get_instance(shipp.model_instance_num);
+	auto* pm     = model_get(Ship_info[shipp.ship_info_index].model_num);
+
+	auto load_tex = [](const char* name) -> int {
+		if (lcase_equal(name, "invisible"))
+			return REPLACE_WITH_INVISIBLE;
+		int id = bm_load(name);
+		if (id < 0) {
+			int nf, fps;
+			id = bm_load_animation(name, &nf, &fps, nullptr, nullptr, false, true);
+		}
+		return id;
+	};
+
+	// Collect non-table entries for this ship.
+	SCP_vector<const texture_replace*> entries;
+	for (const auto& tr : Fred_texture_replacements)
+		if (!tr.from_table && !stricmp(tr.ship_name, shipp.ship_name))
+			entries.push_back(&tr);
+
+	if (entries.empty()) {
+		// No replacements — restore default textures.
+		pmi->texture_replace = nullptr;
+	} else {
+		pmi->texture_replace = std::make_shared<model_texture_replace>();
+		for (const auto* tr : entries) {
+			int id = load_tex(tr->new_texture);
+			if (id == -1)
+				continue;
+			for (int j = 0; j < pm->n_textures; j++) {
+				int tnum = pm->maps[j].FindTexture(tr->old_texture);
+				if (tnum >= 0)
+					(*pmi->texture_replace)[j * TM_NUM_TYPES + tnum] = id;
+			}
+		}
+	}
+
+	// Re-layer from_table entries (remove_ship_entries leaves them intact, but
+	// make_shared above would have wiped them; nullptr case needs them applied too).
+	bool hasTable = false;
+	for (const auto& tr : Fred_texture_replacements)
+		if (tr.from_table && !stricmp(tr.ship_name, shipp.ship_name)) { hasTable = true; break; }
+
+	if (hasTable) {
+		if (!pmi->texture_replace)
+			pmi->texture_replace = std::make_shared<model_texture_replace>();
+		for (const auto& tr : Fred_texture_replacements) {
+			if (!tr.from_table || stricmp(tr.ship_name, shipp.ship_name) != 0)
+				continue;
+			int id = (tr.new_texture_id != -1) ? tr.new_texture_id : load_tex(tr.new_texture);
+			if (id == -1)
+				continue;
+			for (int j = 0; j < pm->n_textures; j++) {
+				int tnum = pm->maps[j].FindTexture(tr.old_texture);
+				if (tnum >= 0)
+					(*pmi->texture_replace)[j * TM_NUM_TYPES + tnum] = id;
+			}
+		}
+	}
 }
 
 void recaptureShipForRedo(CapturedShip& data, int objNum)
