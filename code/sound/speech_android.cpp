@@ -20,6 +20,19 @@ static jmethodID tts_setRate    = nullptr;
 static jmethodID tts_setVoice   = nullptr;
 static jmethodID tts_getVoices  = nullptr;
 
+// Helper to get a static method from a java class and clear the exception
+// if the method is not found. This is needed to avoid crashing on the next JNI request.
+static jmethodID get_static_method(JNIEnv* e, jclass cls, const char* name, const char* sig)
+{
+	jmethodID m = e->GetStaticMethodID(cls, name, sig);
+	if (e->ExceptionCheck()) {
+		e->ExceptionClear();
+		m = nullptr;
+		mprintf(("Speech : Method: %s. Not found on GameActivity! Signature: %s. \n", name, sig));
+	}
+	return m;
+}
+
 // Ask SDL for the JNI Environment and hook to
 // the external TTSManager on the android side of things.
 // Then assign all method IDs for later use.
@@ -56,15 +69,15 @@ bool speech_init()
 	env->DeleteLocalRef(local_class);
 
 	// Map all static methods from TTSManager
-	tts_speak      = env->GetStaticMethodID(j_game_class, "tts_speak",                    "(Ljava/lang/String;)Z");
-	tts_stop       = env->GetStaticMethodID(j_game_class, "tts_stop",                     "()Z");
-	tts_pause      = env->GetStaticMethodID(j_game_class, "tts_pause",                    "()Z");
-	tts_resume     = env->GetStaticMethodID(j_game_class, "tts_resume",                   "()Z");
-	tts_isSpeaking = env->GetStaticMethodID(j_game_class, "tts_isSpeaking",               "()Z");
-	tts_shutdown   = env->GetStaticMethodID(j_game_class, "tts_shutdown",                 "()V");
-	tts_setRate    = env->GetStaticMethodID(j_game_class, "tts_setRate",                  "(F)V");
-	tts_setVoice   = env->GetStaticMethodID(j_game_class, "tts_setLanguageTag",           "(Ljava/lang/String;)V");
-	tts_getVoices  = env->GetStaticMethodID(j_game_class, "tts_getAvailableLanguageTags", "()[Ljava/lang/String;");
+	tts_speak      = get_static_method (env, j_game_class, "tts_speak",                    "(Ljava/lang/String;)Z");
+	tts_stop       = get_static_method (env, j_game_class, "tts_stop",                     "()Z");
+	tts_pause      = get_static_method (env, j_game_class, "tts_pause",                    "()Z");
+	tts_resume     = get_static_method (env, j_game_class, "tts_resume",                   "()Z");
+	tts_isSpeaking = get_static_method (env, j_game_class, "tts_isSpeaking",               "()Z");
+	tts_shutdown   = get_static_method (env, j_game_class, "tts_shutdown",                 "()V");
+	tts_setRate    = get_static_method (env, j_game_class, "tts_setRate",                  "(F)V");
+	tts_setVoice   = get_static_method (env, j_game_class, "tts_setLanguageTag",           "(Ljava/lang/String;)V");
+	tts_getVoices  = get_static_method (env, j_game_class, "tts_getAvailableLanguageTags", "()[Ljava/lang/String;");
 
 	if (!tts_speak || !tts_stop || !tts_pause || !tts_resume || !tts_isSpeaking || !tts_shutdown || !tts_setRate || !tts_setVoice || !tts_getVoices) {
 		mprintf(("Speech : Unable to map at least one core TTS method to GameActivity!\n"));

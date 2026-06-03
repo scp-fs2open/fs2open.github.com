@@ -75,6 +75,7 @@ static bool ttstechroom_change(bool new_val, bool initial)
 	return true;
 }
 
+#ifndef __ANDROID__
 static bool ttsvolume_change(float new_val, bool initial)
 {
 	if (initial) {
@@ -83,6 +84,7 @@ static bool ttsvolume_change(float new_val, bool initial)
 	speech_set_volume((unsigned short) new_val);
 	return true;
 }
+#endif
 
 static std::pair<int, SCP_string> ttsvoice_deserializer(const json_t* el)
 {
@@ -125,6 +127,7 @@ static SCP_string ttsvoice_display(const std::pair<int, SCP_string>& vi)
 	return vi.second;
 }
 
+#ifndef __ANDROID__ //Note: No independient TTS volume control in Android, remove the option.
 static auto SpeechVolumeOption = options::OptionBuilder<float>("Speech.Volume",
 	std::pair<const char*, int>{"TTS Volume", 1920},
 	std::pair<const char*, int>{"Volume used for playing TTS speech", 1921})
@@ -134,6 +137,7 @@ static auto SpeechVolumeOption = options::OptionBuilder<float>("Speech.Volume",
 	.change_listener(ttsvolume_change)
 	.importance(2)
 	.finish();
+#endif
 
 static auto SpeechRateOption = options::OptionBuilder<float>("Speech.Rate",
 	std::pair<const char*, int>{"TTS Rate", 1922},
@@ -251,7 +255,9 @@ bool fsspeech_init()
 		FSSpeech_play_from[FSSPEECH_FROM_MULTI] = SpeechMultiOption->getValue();
 		// The apply order must be Voice->Volume/Rate to avoid issues on Mac.
 		speech_set_voice(SpeechVoiceOption->getValue().first);
+#ifndef __ANDROID__
 		speech_set_volume((unsigned short)SpeechVolumeOption->getValue());
+#endif
 		speech_set_rate(SpeechRateOption->getValue());
 	}
 	else 
@@ -264,10 +270,10 @@ bool fsspeech_init()
 
 		int voice = os_config_read_uint(nullptr, "SpeechVoice", 0);
 		speech_set_voice(voice);
-
+#ifndef __ANDROID__
 		int volume = os_config_read_uint(nullptr, "SpeechVolume", 100);
 		speech_set_volume((unsigned short)volume);
-
+#endif
 		int rate = os_config_read_uint(nullptr, "SpeechRate", 100);
 		speech_set_rate(static_cast<float>(rate));
 	}
