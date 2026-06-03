@@ -156,7 +156,9 @@ static bool ttsvoice_change(const std::pair<int, SCP_string>& new_voice, bool in
 	}
 	speech_set_voice(new_voice.first);
 	// Re-apply volume and rate, it is needed on Mac and maybe on other OS as well
+#ifndef __ANDROID__
 	speech_set_volume((unsigned short)SpeechVolumeOption->getValue());
+#endif
 	speech_set_rate(SpeechRateOption->getValue());
 	return true;
 }
