@@ -26,7 +26,6 @@ find_package(Qt6 REQUIRED COMPONENTS Core Widgets OpenGL Help)
 include(source_groups.cmake)
 qt_standard_project_setup()
 add_compile_definitions(QT_DISABLE_DEPRECATED_UP_TO=0x050F00)
-INCLUDE(InstallRequiredSystemLibraries)
 qt6_wrap_ui(QTFRED_UI_GENERATED ${files_UI})
 source_group("UI\\Generated"            FILES ${QTFRED_UI_GENERATED})
 qt_add_executable(qtfred
