@@ -55,8 +55,6 @@ target_include_directories(qtfred PUBLIC
     ${CMAKE_CURRENT_BINARY_DIR}
 )
 
-set(CMAKE_MAP_IMPORTED_CONFIG_FASTDEBUG Release Debug)
-
 target_link_libraries(qtfred PUBLIC code Qt6::Widgets Qt6::OpenGL Qt6::Help)
 
 include(CreateLaunchers)
