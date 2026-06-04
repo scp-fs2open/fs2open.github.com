@@ -53,10 +53,10 @@ ADD_SUBDIRECTORY(lz4)
 
 set(HIDAPI_WITH_LIBUSB OFF)
 set(HIDAPI_WITH_HIDRAW ON)
-add_subdirectory(hidapi)
+add_subdirectory(hidapi EXCLUDE_FROM_ALL)
 
 ADD_SUBDIRECTORY(imgui)
 
 if(FSO_BUILD_WITH_OPENXR)
-	add_subdirectory(openxr)
+	add_subdirectory(openxr EXCLUDE_FROM_ALL)
 endif()
