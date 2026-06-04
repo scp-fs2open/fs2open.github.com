@@ -275,7 +275,6 @@ SCP_vector<std::pair<int, SCP_string>> speech_enumerate_voices()
 		return voices;
 
 	jsize count = env->GetArrayLength(tags);
-	voices.reserve((size_t)count);
 
 	for (jsize i = 0; i < count; ++i) {
 		jstring tag = (jstring)env->GetObjectArrayElement(tags, i);
