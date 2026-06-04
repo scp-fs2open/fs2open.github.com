@@ -102,8 +102,13 @@ bool speech_play(const SCP_string& text)
 	}
 	
 	JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
+	if (env == nullptr) {
+		mprintf(("Speech : Unable to get JNI environment!\n"));
+		return false;
+	}
+	
 	jstring j_txt = env->NewStringUTF(text.c_str());
-	mprintf(("Speech : Playing TTS string: %s!\n", text.c_str()));
+	nprintf(("Speech : Playing TTS string: %s!\n", text.c_str()));
 	jboolean ok = env->CallStaticBooleanMethod(j_game_class, tts_speak, j_txt);
 	env->DeleteLocalRef(j_txt);
 
@@ -118,7 +123,13 @@ bool speech_stop()
 {
 	if (!Speech_init)
 		return false;
+	
 	JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
+	if (env == nullptr) {
+		mprintf(("Speech : Unable to get JNI environment!\n"));
+		return false;
+	}
+	
 	return env->CallStaticBooleanMethod(j_game_class, tts_stop) == JNI_TRUE;
 }
 
@@ -126,7 +137,13 @@ bool speech_pause()
 {
 	if (!Speech_init)
 		return false;
+	
 	JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
+	if (env == nullptr) {
+		mprintf(("Speech : Unable to get JNI environment!\n"));
+		return false;
+	}
+	
 	return env->CallStaticBooleanMethod(j_game_class, tts_pause) == JNI_TRUE;
 }
 
@@ -134,7 +151,13 @@ bool speech_resume()
 {
 	if (!Speech_init)
 		return false;
+	
 	JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
+	if (env == nullptr) {
+		mprintf(("Speech : Unable to get JNI environment!\n"));
+		return false;
+	}
+	
 	return env->CallStaticBooleanMethod(j_game_class, tts_resume) == JNI_TRUE;
 }
 
@@ -142,7 +165,13 @@ bool speech_is_speaking()
 {
 	if (!Speech_init)
 		return false;
+	
 	JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
+	if (env == nullptr) {
+		mprintf(("Speech : Unable to get JNI environment!\n"));
+		return false;
+	}
+	
 	return env->CallStaticBooleanMethod(j_game_class, tts_isSpeaking) == JNI_TRUE;
 }
 
@@ -150,9 +179,12 @@ void speech_deinit()
 {
 	if (!Speech_init)
 		return;
+	
 	JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
-	env->CallStaticVoidMethod(j_game_class, tts_shutdown);
-	env->DeleteGlobalRef(j_game_class);
+	if (env != nullptr) {
+		env->CallStaticVoidMethod(j_game_class, tts_shutdown);
+		env->DeleteGlobalRef(j_game_class);
+	}
 	j_game_class    = nullptr;
 	tts_speak       = nullptr;
 	tts_stop        = nullptr;
@@ -187,6 +219,11 @@ bool speech_set_rate(float rate_percent)
 		rate_percent = 50.0;
 	
 	JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
+	if (env == nullptr) {
+		mprintf(("Speech : Unable to get JNI environment!\n"));
+		return false;
+	}
+	
 	float android_rate = rate_percent / 100.0f;   // 0.5 .. 1.0 .. 1.5
 	env->CallStaticVoidMethod(j_game_class, tts_setRate, (jfloat)android_rate);
 	return true;
@@ -198,6 +235,11 @@ bool speech_set_voice(int voice)
 		return false;
 	
 	JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
+	if (env == nullptr) {
+		mprintf(("Speech : Unable to get JNI environment!\n"));
+		return false;
+	}
+	
 	jobjectArray tags = (jobjectArray)env->CallStaticObjectMethod(j_game_class, tts_getVoices);
 	if (tags == nullptr)
 		return false;
@@ -223,6 +265,11 @@ SCP_vector<std::pair<int, SCP_string>> speech_enumerate_voices()
 		return voices;
 	
 	JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
+	if (env == nullptr) {
+		mprintf(("Speech : Unable to get JNI environment!\n"));
+		return voices;
+	}
+	
 	jobjectArray tags = (jobjectArray)env->CallStaticObjectMethod(j_game_class, tts_getVoices);
 	if (tags == nullptr)
 		return voices;
