@@ -5,6 +5,8 @@ project(qtfred VERSION 1.0.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set_policy(CMP0177 NEW)	# normalize install() destination paths
+
 option(QT_USE_PRECOMPILED "Use precompiled version of Qt. If disabled the system libraries will be used." OFF)
 
 if(QT_USE_PRECOMPILED)
