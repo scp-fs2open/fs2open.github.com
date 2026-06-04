@@ -16268,7 +16268,7 @@ static int get_mission_rearm_pool_for_weapon(int weapon_class, int team)
 	}
 
 	// The pool only exists for player loadout teams; ships on any other team are unrestricted.
-	if (team < 0 || team >= MAX_TVT_TEAMS) {
+	if (team < 0 || team >= Num_teams) {
 		return -1;
 	}
 
@@ -16372,7 +16372,7 @@ static void use_mission_rearm_pool_for_weapon(int weapon_class, int amount, int 
 	}
 
 	// The pool only exists for player loadout teams; ships on any other team don't draw from it.
-	if (team < 0 || team >= MAX_TVT_TEAMS) {
+	if (team < 0 || team >= Num_teams) {
 		return;
 	}
 

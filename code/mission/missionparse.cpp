@@ -1339,7 +1339,7 @@ void parse_player_info2(mission *pm)
 			// always allow the pool to be added in FRED, it is a verbal warning
 			// to let the mission dev know about the problem
 			if ( !(Weapon_info[wc.index].wi_flags[Weapon::Info_Flags::Player_allowed]) && !Fred_running ) {
-				WarningEx(LOCATION, "Weapon '%s' in weapon pool isn't allowed on player loadout! Ignoring it ...\n", Weapon_info[wc.index].name);
+				error_display(0, "Weapon '%s' in weapon pool isn't allowed on player loadout! Ignoring it ...\n", Weapon_info[wc.index].name);
 				continue;
 			}
 
@@ -1378,7 +1378,7 @@ void parse_player_info2(mission *pm)
 			stuff_loadout_list(support_rearm_list, ParseLookupType::MISSION_LOADOUT_WEAPON_LIST);
 
 			if (pm->support_ships.rearm_pool_from_loadout) {
-				WarningEx(LOCATION, "+Support Rearm Pool is set but +Support Rearm Pool From Loadout is also enabled! The explicit pool will be ignored.\n");
+				error_display(0, "+Support Rearm Pool is set but +Support Rearm Pool From Loadout is also enabled! The explicit pool will be ignored.\n");
 			} else {
 				for (const auto& wc : support_rearm_list) {
 					if (wc.index < 0 || wc.index >= weapon_info_size()) {
@@ -1386,7 +1386,7 @@ void parse_player_info2(mission *pm)
 					}
 
 					if (!(Weapon_info[wc.index].wi_flags[Weapon::Info_Flags::Player_allowed]) && !Fred_running) {
-						WarningEx(LOCATION,
+						error_display(0,
 							"Weapon '%s' in support rearm pool isn't allowed on player loadout! Ignoring it ...\n",
 							Weapon_info[wc.index].name);
 						continue;
