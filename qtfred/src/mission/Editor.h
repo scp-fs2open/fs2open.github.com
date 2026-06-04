@@ -10,6 +10,8 @@
 #include <ship/ship.h>
 
 #include <QObject>
+#include <QString>
+#include <QTimer>
 #include <functional>
 #include <memory>
 #include <stdexcept>
@@ -66,6 +68,11 @@ class Editor : public QObject {
 	void createNewMission();
 
 	void maybeUseAutosave(std::string& filepath);
+
+	void startAutosaveTimer(int intervalSeconds);
+	void stopAutosaveTimer();
+	void setCurrentMissionPath(const QString& path);
+	const QString& autosaveDirectory() const { return _autosaveDirectory; }
 
 	/*! Load a mission. */
 	bool loadMission(const std::string& filepath, int flags = 0);
@@ -124,6 +131,12 @@ class Editor : public QObject {
 
   signals:
 	/**
+	 * @brief Emitted when the autosave timer fires; receiver performs the actual file save.
+	 * @param savePath Absolute path for the autosave file
+	 */
+	void autosaveDue(const QString& savePath);
+
+	/**
 	 * @brief Signal for when a new mission has been loaded
 	 * @param filepath The path of the mission file, empty if new mission
 	 */
@@ -163,32 +176,6 @@ class Editor : public QObject {
 	void layerListChanged();
 
   public:
-	// --- Undo / autosave state ---
-	int undoAvailable = 0;    ///< Whether an undo state (Backup.002) is available
-	int autosaveDisabled = 0; ///< When non-zero, autosave writes are suppressed
-
-	/**
-	 * @brief Rotate the backup stack and save the current mission state.
-	 *
-	 * Equivalent to CFREDDoc::autosave() in old FRED2.  Should be called after
-	 * any significant edit operation.  Does nothing when @c autosaveDisabled is set.
-	 *
-	 * @param desc Optional human-readable description of the operation being saved.
-	 * @return 0 on success, -1 if the backup write failed.
-	 */
-	int autosave(const char* desc = nullptr);
-
-	/**
-	 * @brief Restore the previous mission state from the backup stack.
-	 *
-	 * Equivalent to CFREDDoc::autoload() in old FRED2.
-	 * Caller is responsible for preserving and restoring the camera state and
-	 * @c saveName around this call.
-	 *
-	 * @return true on success, false if no undo state was available.
-	 */
-	bool autoload();
-
 	// object numbers for ships in a wing.
 	int wing_objects[MAX_WINGS][MAX_SHIPS_PER_WING];
 
@@ -276,7 +263,14 @@ class Editor : public QObject {
 
 	void generate_team_weaponry_usage_list(int team, int* arr);
 
-  private:
+  private slots:
+	void performTimedAutosave();
+
+  private: // NOLINT(readability-redundant-access-specifiers)
+	QTimer*  _autosaveTimer        = nullptr;
+	QString  _autosaveDirectory;
+	QString  _currentMissionPath;
+
 	void clearMission(bool fast_reload = false);
 
 	void initialSetup();
@@ -285,11 +279,6 @@ class Editor : public QObject {
 
 	SCP_vector<std::unique_ptr<EditorViewport>> _viewports;
 	EditorViewport* _lastActiveViewport = nullptr;
-
-	int undoCount = 0; ///< Number of autosave operations performed since last reset
-
-	/** @brief Check whether Backup.002 exists and update @c undoAvailable accordingly. */
-	int checkUndo();
 
 	int numMarked = 0;
 

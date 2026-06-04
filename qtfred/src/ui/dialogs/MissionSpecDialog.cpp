@@ -43,7 +43,6 @@ void MissionSpecDialog::accept()
 {
 	// If apply() returns true, close the dialog
 	if (_model->apply()) {
-		_viewport->editor->autosave("mission specs editor");
 		QDialog::accept();
 	}
 	// else: validation failed, don't close

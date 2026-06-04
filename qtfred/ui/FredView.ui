@@ -69,7 +69,6 @@
     <property name="title">
      <string>E&amp;dit</string>
     </property>
-    <addaction name="actionUndo"/>
     <addaction name="actionClone_Marked_Objects"/>
     <addaction name="actionDelete"/>
     <addaction name="actionDelete_Wing"/>
@@ -77,8 +76,6 @@
     <addaction name="actionLock_Marked_Objects"/>
     <addaction name="actionUnlock_All_Objects"/>
     <addaction name="actionSelectionLock"/>
-    <addaction name="separator"/>
-    <addaction name="actionDisable_Undo"/>
     <addaction name="separator"/>
     <addaction name="actionPreferences"/>
    </widget>
@@ -658,11 +655,6 @@
     <string>&amp;Exit</string>
    </property>
   </action>
-  <action name="actionUndo">
-   <property name="text">
-    <string>&amp;Undo</string>
-   </property>
-  </action>
   <action name="actionClone_Marked_Objects">
    <property name="text">
     <string>&amp;Clone Marked Objects</string>
@@ -689,14 +681,6 @@
   <action name="actionUnlock_All_Objects">
    <property name="text">
     <string>&amp;Unlock All Objects</string>
-   </property>
-  </action>
-  <action name="actionDisable_Undo">
-   <property name="text">
-    <string>D&amp;isable Undo</string>
-   </property>
-   <property name="checkable">
-    <bool>true</bool>
    </property>
   </action>
   <action name="actionVisibility_Layers">

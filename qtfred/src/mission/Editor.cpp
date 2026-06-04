@@ -36,6 +36,11 @@
 
 #include "ui/QtGraphicsOperations.h"
 
+#include <QDateTime>
+#include <QDir>
+#include <QFileInfo>
+#include <QStandardPaths>
+
 #include "object.h"
 #include "management.h"
 #include "util.h"
@@ -114,6 +119,13 @@ Editor::Editor() : currentObject{ -1 }, Shield_sys_teams(Iff_info.size(), Global
 	// When a mission was loaded we need to notify everyone that the mission has changed
 	connect(this, &Editor::missionLoaded, this, [this](const std::string&) { missionChanged(); });
 
+	_autosaveDirectory = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/autosave/";
+	QDir().mkpath(_autosaveDirectory);
+
+	_autosaveTimer = new QTimer(this);
+	_autosaveTimer->setSingleShot(false);
+	connect(_autosaveTimer, &QTimer::timeout, this, &Editor::performTimedAutosave);
+
 	fredApp->runAfterInit([this]() { initialSetup(); });
 }
 
@@ -134,119 +146,56 @@ void Editor::update() {
 	}
 }
 
-int Editor::autosave(const char* /*desc*/) {
-	if (autosaveDisabled || !_lastActiveViewport)
-		return 0;
-
-	Fred_mission_save save;
-	save.set_always_save_display_names(_lastActiveViewport->Always_save_display_names);
-	save.set_view_pos(_lastActiveViewport->camera.view_pos);
-	save.set_view_orient(_lastActiveViewport->camera.view_orient);
-	save.set_fred_alt_names(Fred_alt_names);
-	save.set_fred_callsigns(Fred_callsigns);
-
-	// autosave_mission_file() needs a mutable buffer because it reads but doesn't write through it
-	char backup_name_buf[] = MISSION_BACKUP_NAME;
-	if (save.autosave_mission_file(backup_name_buf)) {
-		undoCount = undoAvailable = 0;
-		return -1;
-	}
-
-	undoCount++;
-	checkUndo();
-	return 0;
-}
-
-int Editor::checkUndo() {
-	undoAvailable = 0;
-	if (undoCount == 0)
-		return 0;
-
-	// Undo is available when Backup.002 exists (Backup.001 is the current, .002 is what we load)
-	CFileLocation loc = cf_find_file_location("Backup.002", CF_TYPE_MISSIONS);
-	if (loc.found) {
-		undoAvailable = 1;
-		return 1;
-	}
-	return 0;
-}
-
-bool Editor::autoload() {
-	if (!undoAvailable || !_lastActiveViewport)
-		return false;
-
-	// Load the previous state from Backup.002
-	if (!loadMission("Backup.002", MPF_FAST_RELOAD))
-		return false;
-
-	// Delete Backup.001 (the state we just replaced)
-	cf_delete("Backup.001", CF_TYPE_MISSIONS);
-
-	// Rotate backups back one slot: .003->.002, .004->.003, etc, .009->.008
-	char old_name[256], new_name[256];
-	for (int i = 1; i < MISSION_BACKUP_DEPTH; i++) {
-		sprintf(old_name, "Backup.%.3d", i + 1);
-		sprintf(new_name, "Backup.%.3d", i);
-		cf_rename(old_name, new_name, CF_TYPE_MISSIONS);
-	}
-
-	if (undoCount > 0)
-		undoCount--;
-	checkUndo();
-	return true;
-}
-
 void Editor::maybeUseAutosave(std::string& filepath)
 {
-	// first, just grab the info of this mission
-	if (!parse_main(filepath.c_str(), MPF_ONLY_MISSION_INFO))
+	const QString qpath       = QString::fromStdString(filepath);
+	const QString basename    = QFileInfo(qpath).fileName();
+	const QString autosavePath = _autosaveDirectory + basename;
+
+	const QFileInfo autosaveInfo(autosavePath);
+	if (!autosaveInfo.exists())
 		return;
-	SCP_string created = The_mission.created;
-	CFileLocation res = cf_find_file_location(filepath.c_str(), CF_TYPE_ANY);
-	time_t modified = res.m_time;
-	if (!res.found)
-	{
-		UNREACHABLE("Couldn't find path '%s' even though parse_main() succeeded!", filepath.c_str());
+
+	const QFileInfo originalInfo(qpath);
+	if (autosaveInfo.lastModified() <= originalInfo.lastModified())
 		return;
+
+	if (_lastActiveViewport == nullptr || _lastActiveViewport->dialogProvider == nullptr)
+		return;
+
+	const auto result = _lastActiveViewport->dialogProvider->showButtonDialog(
+		DialogType::Question,
+		"Autosave Recovery",
+		"An autosave file for this mission is newer than the original. Load the autosave instead?",
+		{ DialogButton::Yes, DialogButton::No });
+
+	if (result == DialogButton::Yes) {
+		filepath = autosavePath.toStdString();
 	}
+}
 
-	// now check all the autosaves
-	SCP_string backup_name;
-	CFileLocation backup_res;
-	for (int i = 1; i <= MISSION_BACKUP_DEPTH; ++i)
-	{
-		backup_name = MISSION_BACKUP_NAME;
-		char extension[5];
-		sprintf(extension, ".%.3d", i);
-		backup_name += extension;
+void Editor::startAutosaveTimer(int intervalSeconds) {
+	_autosaveTimer->stop();
+	if (intervalSeconds > 0)
+		_autosaveTimer->start(intervalSeconds * 1000);
+}
 
-		backup_res = cf_find_file_location(backup_name.c_str(), CF_TYPE_MISSIONS);
-		if (backup_res.found && parse_main(backup_res.full_name.c_str(), MPF_ONLY_MISSION_INFO))
-		{
-			SCP_string this_created = The_mission.created;
-			time_t this_modified = backup_res.m_time;
+void Editor::stopAutosaveTimer() {
+	_autosaveTimer->stop();
+}
 
-			if (created == this_created && this_modified > modified)
-				break;
-		}
+void Editor::setCurrentMissionPath(const QString& path) {
+	_currentMissionPath = path;
+}
 
-		backup_name.clear();
+void Editor::performTimedAutosave() {
+	QString savePath;
+	if (_currentMissionPath.isEmpty()) {
+		savePath = _autosaveDirectory + "untitled_autosave.fs2";
+	} else {
+		savePath = _autosaveDirectory + QFileInfo(_currentMissionPath).fileName();
 	}
-
-	// maybe load from the backup instead
-	if (!backup_name.empty())
-	{
-		SCP_string prompt = "Autosaved file ";
-		prompt += backup_name;
-		prompt += " has a file modification time more recent than the specified file.  Do you want to load the autosave instead?";
-
-		auto z = _lastActiveViewport->dialogProvider->showButtonDialog(DialogType::Question,
-																	"Recover from autosave",
-																	prompt.c_str(),
-																	{ DialogButton::Yes, DialogButton::No });
-		if (z == DialogButton::Yes)
-			filepath = backup_res.full_name;	// replace the specified file with the autosave file
-	}
+	autosaveDue(savePath);
 }
 
 bool Editor::loadMission(const std::string& mission_name, int flags) {
@@ -482,8 +431,7 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 	}
 
 	if (!(flags & MPF_FAST_RELOAD)) {
-		undoCount = undoAvailable = 0;
-		autosave("nothing");
+		// TODO(Phase 3): _undoStack->clear()
 	}
 
 	return true;
@@ -850,8 +798,7 @@ void Editor::createNewMission() {
 	clearMission();
 	create_player(&vmd_zero_vector, &vmd_identity_matrix);
 	stars_post_level_init();
-	undoCount = undoAvailable = 0;
-	autosave("nothing");
+	// TODO(Phase 3): _undoStack->clear()
 	missionLoaded("");
 }
 void Editor::hideMarkedObjects() {

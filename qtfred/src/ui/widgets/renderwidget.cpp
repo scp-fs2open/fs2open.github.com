@@ -433,7 +433,6 @@ void RenderWidget::mouseReleaseEvent(QMouseEvent* event) {
 					_viewport->drag_rotate_objects(0, 0);
 				}
 
-				fred->autosave("object move");
 				fred->missionChanged();
 
 			} else {

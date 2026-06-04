@@ -81,6 +81,7 @@
 			bypass_comment(expected_version " " property);                                            \
 	} while (false)
 
+
 int Fred_mission_save::autosave_mission_file(char* pathname)
 {
 	char backup_name[256], name2[256];
@@ -89,9 +90,9 @@ int Fred_mission_save::autosave_mission_file(char* pathname)
 	auto len = strlen(pathname);
 	strcpy_s(backup_name, pathname);
 	strcpy_s(name2, pathname);
-	sprintf(backup_name + len, ".%.3d", save_config.mission_backup_depth);
+	sprintf(backup_name + len, ".%.3d", MISSION_BACKUP_DEPTH);
 	cf_delete(backup_name, CF_TYPE_MISSIONS);
-	for (i = save_config.mission_backup_depth; i > 1; i--) {
+	for (i = MISSION_BACKUP_DEPTH; i > 1; i--) {
 		sprintf(backup_name + len, ".%.3d", i - 1);
 		sprintf(name2 + len, ".%.3d", i);
 		cf_rename(backup_name, name2, CF_TYPE_MISSIONS);
@@ -2424,24 +2425,34 @@ int Fred_mission_save::save_mission_file(const char* pathname)
 	save_mission_internal(savepath);
 
 	if (!err) {
-		char backup_name[MAX_PATH_LEN];
+		if (save_config.create_bak_file) {
+			char backup_name[MAX_PATH_LEN];
 
-		strcpy_s(backup_name, pathname);
+			strcpy_s(backup_name, pathname);
 
-		// drop extension
-		auto ext_ch = strrchr(backup_name, '.');
-		if (ext_ch != nullptr)
-			*ext_ch = 0;
+			// drop extension
+			auto ext_ch = strrchr(backup_name, '.');
+			if (ext_ch != nullptr)
+				*ext_ch = 0;
 
-		strcat_s(backup_name, ".bak");
+			strcat_s(backup_name, ".bak");
 #ifdef _WIN32
-		cf_attrib(pathname, 0, FILE_ATTRIBUTE_READONLY, CF_TYPE_MISSIONS);
+			cf_attrib(pathname, 0, FILE_ATTRIBUTE_READONLY, CF_TYPE_MISSIONS);
 #endif
-		cf_delete(backup_name, CF_TYPE_MISSIONS);
-		cf_rename(pathname, backup_name, CF_TYPE_MISSIONS);
-		cf_rename(savepath, pathname, CF_TYPE_MISSIONS);
+			cf_delete(backup_name, CF_TYPE_MISSIONS);
+			cf_rename(pathname, backup_name, CF_TYPE_MISSIONS);
+			cf_rename(savepath, pathname, CF_TYPE_MISSIONS);
+		} else {
+			cf_rename(savepath, pathname, CF_TYPE_MISSIONS);
+		}
 	}
 
+	return err;
+}
+
+int Fred_mission_save::save_autosave_file(const char* pathname)
+{
+	save_mission_internal(pathname);
 	return err;
 }
 
