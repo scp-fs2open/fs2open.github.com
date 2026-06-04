@@ -211,23 +211,37 @@ elseif(PLATFORM_MAC)
             NO_APP_STORE_COMPLIANCE
             NO_OVERWRITE
     )
-elseif(FSO_BUILD_APPIMAGE)
-    configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake/AppRun.in" "${CMAKE_CURRENT_BINARY_DIR}/AppRun.gen" @ONLY)
-    file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/AppRun-$<CONFIG>"
-            INPUT "${CMAKE_CURRENT_BINARY_DIR}/AppRun.gen")
+elseif(PLATFORM_LINUX)
+    if (FSO_BUILD_APPIMAGE)
+        configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake/AppRun.in" "${CMAKE_CURRENT_BINARY_DIR}/AppRun.gen" @ONLY)
+        file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/AppRun-$<CONFIG>"
+                INPUT "${CMAKE_CURRENT_BINARY_DIR}/AppRun.gen")
 
-    install(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/AppRun-$<CONFIG>" DESTINATION "." RENAME "AppRun"
-            COMPONENT "qtFRED")
+        install(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/AppRun-$<CONFIG>" DESTINATION "." RENAME "AppRun"
+                COMPONENT "qtFRED")
 
-    configure_file("${CMAKE_CURRENT_LIST_DIR}/cmake/AppImage.desktop.in" "${CMAKE_CURRENT_BINARY_DIR}/AppImage.desktop.gen" @ONLY)
-    file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/AppImage-$<CONFIG>.desktop"
-            INPUT "${CMAKE_CURRENT_BINARY_DIR}/AppImage.desktop.gen")
+        configure_file("${CMAKE_CURRENT_LIST_DIR}/cmake/AppImage.desktop.in" "${CMAKE_CURRENT_BINARY_DIR}/AppImage.desktop.gen" @ONLY)
+        file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/AppImage-$<CONFIG>.desktop"
+                INPUT "${CMAKE_CURRENT_BINARY_DIR}/AppImage.desktop.gen")
 
-    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/AppImage-$<CONFIG>.desktop" DESTINATION "." RENAME "qtfred.desktop"
-            COMPONENT "qtFRED")
+        install(FILES "${CMAKE_CURRENT_BINARY_DIR}/AppImage-$<CONFIG>.desktop" DESTINATION "." RENAME "qtfred.desktop"
+                COMPONENT "qtFRED")
 
-    install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/resources/fred_icon.png" DESTINATION "."
-            COMPONENT "qtFRED")
+        install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/resources/fred_icon.png" DESTINATION "."
+                COMPONENT "qtFRED")
+
+        install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/resources/fonts" DESTINATION ${LIBRAY_DESTINATION}
+                COMPONENT "qtFRED")
+    endif()
+
+    add_custom_command(
+        TARGET qtfred POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different
+            "${CMAKE_CURRENT_SOURCE_DIR}/resources/fonts"
+            "$<TARGET_FILE_DIR:qtfred>/${LIBRAY_DESTINATION}/fonts"
+        COMMENT "Copying QtFRED fonts..."
+        VERBATIM
+    )
 
     set(QTFRED_DEPLOY_OPTIONS
         INCLUDE_PLUGINS
