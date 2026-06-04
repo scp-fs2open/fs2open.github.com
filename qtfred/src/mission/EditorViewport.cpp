@@ -642,6 +642,36 @@ void EditorViewport::level_object(matrix* orient) {
 	vm_fix_matrix(orient);
 }
 
+vec3d EditorViewport::orbitCameraGetPivot()
+{
+	vec3d pivot;
+
+	if (query_valid_object(editor->currentObject)) {
+		// Pivot on current object
+		pivot = Objects[editor->currentObject].pos;
+	} else if (!The_grid) {
+		// Pivot on the origin, if no grid
+		pivot = ZERO_VECTOR;
+	} else {
+		// Intersect camera forward ray with the grid plane
+		vec3d *grid_normal = &The_grid->gmatrix.vec.uvec;
+		float denom = vm_vec_dot(grid_normal, &camera.view_orient.vec.fvec);
+
+		if (fl_abs(denom) > 0.0001f) {
+			float t = -(vm_vec_dot(grid_normal, &camera.view_pos) + The_grid->planeD) / denom;
+			if (t > 0.0f) {
+				vm_vec_scale_add(&pivot, &camera.view_pos, &camera.view_orient.vec.fvec, t);
+			} else {
+				pivot = The_grid->center;
+			}
+		} else {
+			// Camera is parallel to grid plane; fall back to grid center
+			pivot = The_grid->center;
+		}
+	}
+	return pivot;
+}
+
 int EditorViewport::object_check_collision(object* objp, vec3d* p0, vec3d* p1, vec3d* hitpos) {
 	mc_info mc;
 

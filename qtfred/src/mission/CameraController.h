@@ -22,6 +22,16 @@ class CameraController {
 	int _controlMode = 0;
 	bool _lookatMode = false;
 
+	// Orbit camera state
+	vec3d _orbitPivot = vmd_zero_vector;
+	matrix _orbitGridOrient = vmd_identity_matrix;
+	float _orbitDistance = 200.0f;
+	float _orbitPhi = 1.24f;
+	float _orbitTheta = 2.25f;
+	bool _orbitActive = false;
+
+	void orbitCameraApply();
+
 public:
 	vec3d eye_pos;
 	matrix eye_orient;
@@ -61,6 +71,13 @@ public:
 
 	bool getLookatMode() const { return _lookatMode; }
 	void setLookatMode(bool mode) { _lookatMode = mode; }
+
+	void orbitCameraInitFromCurrentView(const vec3d* pivot, const matrix* grid_orient);
+	void orbitCameraRotate(int dx, int dy);
+	void orbitCameraPan(int dx, int dy);
+	void orbitCameraZoom(float delta);
+
+	bool isOrbitActive() const { return _orbitActive; }
 };
 
 } // namespace fso::fred

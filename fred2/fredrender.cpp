@@ -53,6 +53,9 @@
 #include "starfield/starfield.h"
 #include "weapon/weapon.h"
 
+#include <algorithm>
+#include <cmath>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -92,6 +95,14 @@ int Last_cursor_over = -1;
 int last_x = 0;
 int last_y = 0;
 int Lookat_mode = 0;
+
+// Orbit camera state
+vec3d Orbit_pivot = vmd_zero_vector;
+matrix Orbit_grid_orient = vmd_identity_matrix;
+float Orbit_distance = 200.0f;
+float Orbit_phi = 1.24f;
+float Orbit_theta = 2.25f;
+bool Orbit_active = false;
 int rendering_order[MAX_SHIPS];
 int render_count = 0;
 int Show_asteroid_field = 1;
@@ -1275,6 +1286,124 @@ void move_mouse(int btn, int mdx, int mdy) {
 	}
 }
 
+// ---------- Orbit camera functions ----------
+
+vec3d orbit_camera_get_pivot()
+{
+	vec3d pivot;
+
+	if (query_valid_object()) {
+		// Pivot on current object
+		pivot = Objects[cur_object_index].pos;
+	} else if (!The_grid) {
+		// Pivot on the origin, if no grid
+		pivot = ZERO_VECTOR;
+	} else {
+		// Intersect camera forward ray with the grid plane
+		vec3d *grid_normal = &The_grid->gmatrix.vec.uvec;
+		float denom = vm_vec_dot(grid_normal, &view_orient.vec.fvec);
+
+		if (fl_abs(denom) > 0.0001f) {
+			// t = -(dot(normal, view_pos) + planeD) / dot(normal, fvec)
+			float t = -(vm_vec_dot(grid_normal, &view_pos) + The_grid->planeD) / denom;
+			if (t > 0.0f) {
+				vm_vec_scale_add(&pivot, &view_pos, &view_orient.vec.fvec, t);
+			} else {
+				pivot = The_grid->center;
+			}
+		} else {
+			// Camera is parallel to grid plane; fall back to grid center
+			pivot = The_grid->center;
+		}
+	}
+	return pivot;
+}
+
+void orbit_camera_init_from_current_view(const vec3d *pivot, const matrix *grid_orient)
+{
+	Orbit_pivot = pivot ? *pivot : vmd_zero_vector;
+	Orbit_grid_orient = grid_orient ? *grid_orient : vmd_identity_matrix;
+
+	vec3d offset;
+	vm_vec_sub(&offset, &view_pos, &Orbit_pivot);
+
+	Orbit_distance = vm_vec_mag(&offset);
+	if (Orbit_distance < 1.0f)
+		Orbit_distance = 100.0f;
+
+	// Transform offset into grid-local frame for angle decomposition
+	// In local frame, Y is always "up" (the grid plane normal)
+	vec3d local_offset;
+	vm_vec_rotate(&local_offset, &offset, &Orbit_grid_orient);
+
+	Orbit_phi = acosf(std::clamp(local_offset.xyz.y / Orbit_distance, -1.0f, 1.0f));
+	Orbit_theta = atan2f(local_offset.xyz.z, local_offset.xyz.x);
+	Orbit_active = true;
+}
+
+void orbit_camera_apply()
+{
+	float sp = sinf(Orbit_phi);
+
+	// Build offset in grid-local coordinates (Y = up/normal)
+	vec3d local_pos;
+	local_pos.xyz.x = sp * cosf(Orbit_theta);
+	local_pos.xyz.y = cosf(Orbit_phi);
+	local_pos.xyz.z = sp * sinf(Orbit_theta);
+
+	// Transform back to world space
+	vec3d world_offset;
+	vm_vec_unrotate(&world_offset, &local_pos, &Orbit_grid_orient);
+
+	vm_vec_scale(&world_offset, Orbit_distance);
+	vm_vec_add(&view_pos, &Orbit_pivot, &world_offset);
+
+	// Point camera at pivot, using grid's up vector
+	vec3d look_dir;
+	vm_vec_sub(&look_dir, &Orbit_pivot, &view_pos);
+	if (vm_vec_mag(&look_dir) > 0.001f) {
+		vec3d grid_up = Orbit_grid_orient.vec.uvec;
+		vm_vector_2_matrix(&view_orient, &look_dir, &grid_up, nullptr);
+	}
+}
+
+void orbit_camera_rotate(int dx, int dy)
+{
+	float rot_scale = physics_rot / 300.0f;
+	Orbit_theta += dx / 100.0f * rot_scale;
+	Orbit_phi += dy / 100.0f * rot_scale;
+
+	CLAMP(Orbit_phi, 0.01f, PI - 0.01f);
+
+	orbit_camera_apply();
+}
+
+void orbit_camera_pan(int dx, int dy)
+{
+	float speed_factor = 1.0f + (physics_speed - 1) / 499.0f * 9.0f;
+	float pan_scale = Orbit_distance * 0.002f * speed_factor;
+
+	vec3d pan_delta;
+	vm_vec_copy_scale(&pan_delta, &view_orient.vec.rvec, -(float)dx * pan_scale);
+	vm_vec_scale_add2(&pan_delta, &view_orient.vec.uvec, (float)dy * pan_scale);
+
+	vm_vec_add2(&Orbit_pivot, &pan_delta);
+
+	orbit_camera_apply();
+}
+
+void orbit_camera_zoom(float delta)
+{
+	float zoom_speed = 1.0f + (physics_speed - 1) / 499.0f * 4.0f;
+	Orbit_distance *= powf(2.0f, delta * zoom_speed);
+
+	CLAMP(Orbit_distance, 1.0f, 10000000.0f);
+
+	orbit_camera_apply();
+}
+
+// ---------- End orbit camera functions ----------
+
 int object_check_collision(object *objp, vec3d *p0, vec3d *p1, vec3d *hitpos) {
 	mc_info mc;
 
@@ -1333,6 +1462,7 @@ int object_check_collision(object *objp, vec3d *p0, vec3d *p1, vec3d *hitpos) {
 
 void process_controls(vec3d *pos, matrix *orient, float frametime, int key, int mode) {
 	static std::unique_ptr<io::spacemouse::SpaceMouse> spacemouse = io::spacemouse::SpaceMouse::searchSpaceMice(0);
+	bool wantsUpdate = false;
 
 	if (Flying_controls_mode) {
 		grid_read_camera_controls(&view_controls, frametime);
@@ -1350,12 +1480,14 @@ void process_controls(vec3d *pos, matrix *orient, float frametime, int key, int 
 		if (key_get_shift_status())
 			memset(&view_controls, 0, sizeof(control_info));
 
-		if ((fabs(view_controls.pitch) > (frametime / 100)) &&
-			(fabs(view_controls.vertical) > (frametime / 100)) &&
-			(fabs(view_controls.heading) > (frametime / 100)) &&
-			(fabs(view_controls.sideways) > (frametime / 100)) &&
-			(fabs(view_controls.bank) > (frametime / 100)) &&
-			(fabs(view_controls.forward) > (frametime / 100)))
+		wantsUpdate = (fabs(view_controls.pitch) > (frametime / 100))
+		           || (fabs(view_controls.vertical) > (frametime / 100))
+		           || (fabs(view_controls.heading) > (frametime / 100))
+		           || (fabs(view_controls.sideways) > (frametime / 100))
+		           || (fabs(view_controls.bank) > (frametime / 100))
+		           || (fabs(view_controls.forward) > (frametime / 100));
+
+		if (wantsUpdate)
 			Update_window = 1;
 
 		flFrametime = frametime;
@@ -1388,7 +1520,16 @@ void process_controls(vec3d *pos, matrix *orient, float frametime, int key, int 
 		*orient = newmat;
 		if (rotangs.h && Universal_heading)
 			vm_transpose(orient);
+
+		wantsUpdate = !IS_VEC_NULL(&movement_vec)
+		           || rotangs.p != 0.0f
+		           || rotangs.h != 0.0f
+		           || rotangs.b != 0.0f;
 	}
+
+	// Invalidate orbit camera state when the user moves the camera another way
+	if (wantsUpdate)
+		Orbit_active = false;
 }
 
 void process_movement_keys(int key, vec3d *mvec, angles *angs) {

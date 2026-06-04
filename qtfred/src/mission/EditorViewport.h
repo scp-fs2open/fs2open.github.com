@@ -117,6 +117,8 @@ class EditorViewport {
 
 	void game_do_frame(const int cur_object_index);
 
+	vec3d orbitCameraGetPivot();
+
 	int object_check_collision(object* objp, vec3d* p0, vec3d* p1, vec3d* hitpos);
 
 	int select_object(int cx, int cy);
