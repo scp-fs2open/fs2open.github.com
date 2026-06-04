@@ -247,6 +247,7 @@ int script_state::CreateLuaState()
 		eh.index = Enumerations[i].def;
 		eh.value = Enumerations[i].value;
 		eh.is_constant = true;
+		eh.setName(Enumerations[i].name);
 
 		ade_set_args(L, "o", l_Enum.Set(eh));
 		lua_setglobal(L, Enumerations[i].name);

@@ -311,6 +311,7 @@ public:
 	explicit enum_h(lua_enum n_index);
 
 	SCP_string getName() const;
+	void setName(SCP_string n) { name = std::move(n); }
 
 	bool isValid() const;
 
