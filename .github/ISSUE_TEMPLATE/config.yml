@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Feature Request
+    url: https://github.com/ofp-fs2open/fs2open.github.com/discussions/new?category=feature-requests
+    about: Feature requests and proposals belong in Discussions, not Issues.
+  - name: General Discussion
+    url: https://github.com/ofp-fs2open/fs2open.github.com/discussions
+    about: Questions, roadmap discussion, and development conversation.
