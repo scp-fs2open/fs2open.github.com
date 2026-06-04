@@ -108,7 +108,6 @@ bool speech_play(const SCP_string& text)
 	}
 	
 	jstring j_txt = env->NewStringUTF(text.c_str());
-	nprintf(("Speech : Playing TTS string: %s!\n", text.c_str()));
 	jboolean ok = env->CallStaticBooleanMethod(j_game_class, tts_speak, j_txt);
 	env->DeleteLocalRef(j_txt);
 

@@ -264,7 +264,7 @@ bool fsspeech_init()
 
 		int voice = os_config_read_uint(nullptr, "SpeechVoice", 0);
 		speech_set_voice(voice);
-		
+
 		int volume = os_config_read_uint(nullptr, "SpeechVolume", 100);
 		speech_set_volume((unsigned short)volume);
 
