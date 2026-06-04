@@ -3307,9 +3307,17 @@ void ss_synch_interface()
 
 	init_active_list();	// build the list of pool ships
 
-	if ( old_list_start < SS_active_list_size ) {
-		SS_active_list_start = old_list_start;
+	// clamp the preserved scroll offset against the largest valid offset
+	// for the new list size, so the up arrow can still reach items at the
+	// top after a swap shrinks the active list (e.g., to <= MAX_ICONS_ON_SCREEN)
+	int max_start = SS_active_list_size - MAX_ICONS_ON_SCREEN;
+	if ( max_start < 0 ) {
+		max_start = 0;
 	}
+	if ( old_list_start > max_start ) {
+		old_list_start = max_start;
+	}
+	SS_active_list_start = old_list_start;
 
 	for ( i = 0; i < MAX_WSS_SLOTS; i++ ) {
 		slot = &Ss_wings[i/MAX_WING_SLOTS].ss_slots[i%MAX_WING_SLOTS];
