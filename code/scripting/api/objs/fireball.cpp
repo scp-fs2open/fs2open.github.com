@@ -35,7 +35,7 @@ ADE_VIRTVAR(Class, l_Fireball, "fireballclass", "Fireball's class", "fireballcla
 	return ade_set_args(L, "o", l_Fireballclass.Set(fb->fireball_info_index));
 }
 
-ADE_VIRTVAR(RenderType, l_Fireball, "enumeration", "Fireball's render type", "enumeration", "Fireball rendertype, or handle to invalid enum if fireball handle is invalid or a bad enum was given")
+ADE_VIRTVAR(RenderType, l_Fireball, "enumeration", "Fireball's render type; uses FIREBALL_* enumerations.", "enumeration", "Fireball render type as a FIREBALL_* enumeration, or handle to invalid enum if fireball handle is invalid or a bad enum was given")
 {
 	object_h* oh = NULL;
 	enum_h type;

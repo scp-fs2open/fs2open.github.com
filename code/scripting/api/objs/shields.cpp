@@ -22,7 +22,7 @@ ADE_FUNC(__len, l_Shields, nullptr, "Number of shield segments", "number", "Numb
 	return ade_set_args(L, "i", static_cast<int>(objh->objp()->shield_quadrant.size()));
 }
 
-ADE_INDEXER(l_Shields, "enumeration/number", "Gets or sets shield segment strength. Use \"SHIELD_*\" enumerations (for standard 4-quadrant shields) or index of a specific segment, or NONE for the entire shield", "number", "Segment/shield strength, or 0 if handle is invalid")
+ADE_INDEXER(l_Shields, "enumeration/number", "Gets or sets shield segment strength. Use \"SHIELD_*\" enumerations (for standard 4-quadrant shields) or index of a specific segment, or SHIELD_NONE for the entire shield", "number", "Segment/shield strength, or 0 if handle is invalid")
 {
 	object_h *objh;
 	float nval = -1.0f;

@@ -1350,8 +1350,8 @@ extern int sendMessage_sub(lua_State* L, const void* sender, int messageSource, 
 
 ADE_FUNC(sendMessage,
 	l_Ship,
-	"message message, [number delay=0.0, enumeration priority = MESSAGE_PRIORITY_NORMAL]",
-	"Sends a message from the given ship with the given priority.<br>"
+	"message message, [number delay=0.0, enumeration priority = MESSAGE_PRIORITY_NORMAL /* MESSAGE_PRIORITY_* */]",
+	"Sends a message from the given ship with the given MESSAGE_PRIORITY_* priority.<br>"
 	"If delay is specified, the message will be delayed by the specified time in seconds.",
 	"boolean",
 	"true if successful, false otherwise")
@@ -1708,7 +1708,7 @@ ADE_FUNC(clearOrders, l_Ship, NULL, "Clears a ship's orders list", "boolean", "T
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem TargetSubsystem=nil, number Priority=1.0, shipclass TargetShipclass=nil, shiptype TargetShiptype=nil]", "Uses the goal code to execute orders.  NOTE: This function uses a scale from 0.0-1.0 (up to 2.0) rather than the usual 0-100 (up to 200)", "boolean", "True if order was given, otherwise false or nil")
+ADE_FUNC(giveOrder, l_Ship, "enumeration Order /* ORDER_* */, [object Target=nil, subsystem TargetSubsystem=nil, number Priority=1.0, shipclass TargetShipclass=nil, shiptype TargetShiptype=nil]", "Uses the goal code to execute orders.  NOTE: This function uses a scale from 0.0-1.0 (up to 2.0) rather than the usual 0-100 (up to 200)", "boolean", "True if order was given, otherwise false or nil")
 {
 	object_h *objh = NULL;
 	enum_h *eh = NULL;

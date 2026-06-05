@@ -626,9 +626,9 @@ ADE_VIRTVAR(Tracker,
 ADE_VIRTVAR(Type,
 	l_NetMission,
 	nullptr,
-	"The type of mission. Can be MULTI_TYPE_COOP, MULTI_TYPE_TEAM, or MULTI_TYPE_DOGFIGHT",
+	"The type of mission.",
 	"enumeration",
-	"the type")
+	"A MULTI_TYPE_* enumeration")
 {
 	net_mission_h current;
 	lua_enum eh_idx = ENUM_INVALID;
@@ -802,9 +802,9 @@ ADE_VIRTVAR(Tracker,
 ADE_VIRTVAR(Type,
 	l_NetCampaign,
 	nullptr,
-	"The type of mission. Can be MULTI_TYPE_COOP, MULTI_TYPE_TEAM, or MULTI_TYPE_DOGFIGHT",
+	"The type of mission.",
 	"enumeration",
-	"the type")
+	"A MULTI_TYPE_* enumeration")
 {
 	net_campaign_h current;
 	lua_enum eh_idx = ENUM_INVALID;
@@ -1001,10 +1001,10 @@ ADE_VIRTVAR(HostModifiesShips, l_NetGame, "boolean HostModifies", "Whether or no
 
 ADE_VIRTVAR(Orders,
 	l_NetGame,
-	"enumeration Type",
-	"Who can give orders during the game. Will be one of the MULTI_OPTION enums. Returns nil if there's an error.",
 	"enumeration",
-	"the option type")
+	"Who can give orders during the game. Will be one of the MULTI_OPTION_* enumerations. Returns nil if there's an error.",
+	"enumeration",
+	"A MULTI_OPTION_* enumeration")
 {
 	net_game_h current;
 	enum_h* eh_idx = nullptr;
@@ -1043,10 +1043,10 @@ ADE_VIRTVAR(Orders,
 
 ADE_VIRTVAR(EndMission,
 	l_NetGame,
-	"enumeration Type",
-	"Who can end the game. Will be one of the MULTI_OPTION enums. Returns nil if there's an error.",
 	"enumeration",
-	"the option type")
+	"Who can end the game. Will be one of the MULTI_OPTION_* enumerations. Returns nil if there's an error.",
+	"enumeration",
+	"A MULTI_OPTION_* enumeration")
 {
 	net_game_h current;
 	enum_h* eh_idx = nullptr;
@@ -1193,7 +1193,7 @@ ADE_VIRTVAR(Locked, l_NetGame, "boolean", "Whether or not the loadouts have been
 	return ade_set_args(L, "b", static_cast<bool>(multi_ts_is_locked()));
 }
 
-ADE_VIRTVAR(Type, l_NetGame, "enumeration Type", "The current game type. Will be one of the MULTI_TYPE enums. Returns nil if there's an error.", "enumeration", "the game type")
+ADE_VIRTVAR(Type, l_NetGame, "enumeration", "The current game type. Will be one of the MULTI_TYPE_* enumerations. Returns nil if there's an error.", "enumeration", "The game type as a MULTI_TYPE_* enumeration")
 {
 	net_game_h current;
 	enum_h *eh_idx = nullptr;

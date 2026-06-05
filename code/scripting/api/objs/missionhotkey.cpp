@@ -60,9 +60,9 @@ ADE_VIRTVAR(Text, l_Hotkey, nullptr, "The text of this hotkey line", "string", "
 ADE_VIRTVAR(Type,
 	l_Hotkey,
 	nullptr,
-	"The type of this hotkey line: HOTKEY_LINE_NONE, HOTKEY_LINE_HEADING, HOTKEY_LINE_WING, HOTKEY_LINE_SHIP, or HOTKEY_LINE_SUBSHIP.",
+	"The type of this hotkey line.",
 	"enumeration",
-	"The type")
+	"A HOTKEY_* enumeration")
 {
 	hotkey_h current;
 	lua_enum eh_idx = ENUM_INVALID;
