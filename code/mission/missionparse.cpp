@@ -532,6 +532,94 @@ flag_def_list_new<Mission::Parse_Object_Flags> Parse_object_flags[] = {
 	{ "no-scanned-cargo",					Mission::Parse_Object_Flags::SF_No_scanned_cargo, true, false },
 };
 
+// One row per parse flag whose effect is "if set, set the corresponding flag on object/ship/AI."
+// Irregular flags (SF_Locked sets two, OF_No_collide is a remove) are handled by hand after the loop in resolve_parse_flags.
+// Any flag whose handling needs broader context (player-start gate, immobile soft-deprecation, MP red-alert override,
+// shield-strength resolution, reinforcement-in-wing) is handled in the outer wrapper of resolve_parse_flags.
+struct parse_object_flag_mapping
+{
+	Mission::Parse_Object_Flags parse_flag;
+	Object::Object_Flags        object_flag;  // or NUM_VALUES if N/A
+	Ship::Ship_Flags            ship_flag;    // or NUM_VALUES if N/A
+	AI::AI_Flags                ai_flag;      // or NUM_VALUES if N/A
+};
+
+static const parse_object_flag_mapping Parse_object_flag_targets[] =
+{
+	// Object flags
+	{ Mission::Parse_Object_Flags::OF_Protected,                       Object::Object_Flags::Protected,                Ship::Ship_Flags::NUM_VALUES,                       AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::OF_No_shields,                      Object::Object_Flags::No_shields,               Ship::Ship_Flags::NUM_VALUES,                       AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::OF_Player_start,                    Object::Object_Flags::Player_ship,              Ship::Ship_Flags::NUM_VALUES,                       AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::OF_Invulnerable,                    Object::Object_Flags::Invulnerable,             Ship::Ship_Flags::NUM_VALUES,                       AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::OF_Beam_protected,                  Object::Object_Flags::Beam_protected,           Ship::Ship_Flags::NUM_VALUES,                       AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::OF_Flak_protected,                  Object::Object_Flags::Flak_protected,           Ship::Ship_Flags::NUM_VALUES,                       AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::OF_Laser_protected,                 Object::Object_Flags::Laser_protected,          Ship::Ship_Flags::NUM_VALUES,                       AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::OF_Missile_protected,               Object::Object_Flags::Missile_protected,        Ship::Ship_Flags::NUM_VALUES,                       AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::Knossos_warp_in,                    Object::Object_Flags::Special_warpin,           Ship::Ship_Flags::NUM_VALUES,                       AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::OF_Targetable_as_bomb,              Object::Object_Flags::Targetable_as_bomb,       Ship::Ship_Flags::NUM_VALUES,                       AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::OF_Dont_change_position,            Object::Object_Flags::Dont_change_position,     Ship::Ship_Flags::NUM_VALUES,                       AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::OF_Dont_change_orientation,         Object::Object_Flags::Dont_change_orientation,  Ship::Ship_Flags::NUM_VALUES,                       AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::OF_Immobile,                        Object::Object_Flags::Immobile,                 Ship::Ship_Flags::NUM_VALUES,                       AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::OF_Attackable_if_no_collide,        Object::Object_Flags::Attackable_if_no_collide, Ship::Ship_Flags::NUM_VALUES,                       AI::AI_Flags::NUM_VALUES },
+
+	// Ship flags
+	{ Mission::Parse_Object_Flags::SF_Cargo_known,                     Object::Object_Flags::NUM_VALUES,               Ship::Ship_Flags::Cargo_revealed,                   AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::SF_Ignore_count,                    Object::Object_Flags::NUM_VALUES,               Ship::Ship_Flags::Ignore_count,                     AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::SF_Reinforcement,                   Object::Object_Flags::NUM_VALUES,               Ship::Ship_Flags::Reinforcement,                    AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::SF_Escort,                          Object::Object_Flags::NUM_VALUES,               Ship::Ship_Flags::Escort,                           AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::SF_No_arrival_music,                Object::Object_Flags::NUM_VALUES,               Ship::Ship_Flags::No_arrival_music,                 AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::SF_No_arrival_warp,                 Object::Object_Flags::NUM_VALUES,               Ship::Ship_Flags::No_arrival_warp,                  AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::SF_No_departure_warp,               Object::Object_Flags::NUM_VALUES,               Ship::Ship_Flags::No_departure_warp,                AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::SF_Ship_locked,                     Object::Object_Flags::NUM_VALUES,               Ship::Ship_Flags::Ship_locked,                      AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::SF_Weapons_locked,                  Object::Object_Flags::NUM_VALUES,               Ship::Ship_Flags::Weapons_locked,                   AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::SF_Hidden_from_sensors,             Object::Object_Flags::NUM_VALUES,               Ship::Ship_Flags::Hidden_from_sensors,              AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::SF_Scannable,                       Object::Object_Flags::NUM_VALUES,               Ship::Ship_Flags::Scannable,                        AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::SF_Red_alert_store_status,          Object::Object_Flags::NUM_VALUES,               Ship::Ship_Flags::Red_alert_store_status,           AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::SF_Vaporize,                        Object::Object_Flags::NUM_VALUES,               Ship::Ship_Flags::Vaporize,                         AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::SF_Stealth,                         Object::Object_Flags::NUM_VALUES,               Ship::Ship_Flags::Stealth,                          AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::SF_Friendly_stealth_invis,          Object::Object_Flags::NUM_VALUES,               Ship::Ship_Flags::Friendly_stealth_invis,           AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::SF_Dont_collide_invis,              Object::Object_Flags::NUM_VALUES,               Ship::Ship_Flags::Dont_collide_invis,               AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::SF_Dock_leader,                     Object::Object_Flags::NUM_VALUES,               Ship::Ship_Flags::Dock_leader,                      AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::SF_Warp_broken,                     Object::Object_Flags::NUM_VALUES,               Ship::Ship_Flags::Warp_broken,                      AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::SF_Warp_never,                      Object::Object_Flags::NUM_VALUES,               Ship::Ship_Flags::Warp_never,                       AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::SF_Primitive_sensors,               Object::Object_Flags::NUM_VALUES,               Ship::Ship_Flags::Primitive_sensors,                AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::SF_No_subspace_drive,               Object::Object_Flags::NUM_VALUES,               Ship::Ship_Flags::No_subspace_drive,                AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::SF_Nav_carry_status,                Object::Object_Flags::NUM_VALUES,               Ship::Ship_Flags::Navpoint_carry,                   AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::SF_Affected_by_gravity,             Object::Object_Flags::NUM_VALUES,               Ship::Ship_Flags::Affected_by_gravity,              AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::SF_Toggle_subsystem_scanning,       Object::Object_Flags::NUM_VALUES,               Ship::Ship_Flags::Toggle_subsystem_scanning,        AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::SF_No_builtin_messages,             Object::Object_Flags::NUM_VALUES,               Ship::Ship_Flags::No_builtin_messages,              AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::SF_Primaries_locked,                Object::Object_Flags::NUM_VALUES,               Ship::Ship_Flags::Primaries_locked,                 AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::SF_Secondaries_locked,              Object::Object_Flags::NUM_VALUES,               Ship::Ship_Flags::Secondaries_locked,               AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::SF_No_death_scream,                 Object::Object_Flags::NUM_VALUES,               Ship::Ship_Flags::No_death_scream,                  AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::SF_Always_death_scream,             Object::Object_Flags::NUM_VALUES,               Ship::Ship_Flags::Always_death_scream,              AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::SF_Nav_needslink,                   Object::Object_Flags::NUM_VALUES,               Ship::Ship_Flags::Navpoint_needslink,               AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::SF_Hide_ship_name,                  Object::Object_Flags::NUM_VALUES,               Ship::Ship_Flags::Hide_ship_name,                   AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::SF_Set_class_dynamically,           Object::Object_Flags::NUM_VALUES,               Ship::Ship_Flags::Set_class_dynamically,            AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::SF_Lock_all_turrets_initially,      Object::Object_Flags::NUM_VALUES,               Ship::Ship_Flags::Lock_all_turrets_initially,       AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::SF_Afterburner_locked,              Object::Object_Flags::NUM_VALUES,               Ship::Ship_Flags::Afterburner_locked,               AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::OF_Force_shields_on,                Object::Object_Flags::NUM_VALUES,               Ship::Ship_Flags::Force_shields_on,                 AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::SF_No_ets,                          Object::Object_Flags::NUM_VALUES,               Ship::Ship_Flags::No_ets,                           AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::SF_Cloaked,                         Object::Object_Flags::NUM_VALUES,               Ship::Ship_Flags::Cloaked,                          AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::SF_Scramble_messages,               Object::Object_Flags::NUM_VALUES,               Ship::Ship_Flags::Scramble_messages,                AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::SF_No_disabled_self_destruct,       Object::Object_Flags::NUM_VALUES,               Ship::Ship_Flags::No_disabled_self_destruct,        AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::SF_Has_display_name,                Object::Object_Flags::NUM_VALUES,               Ship::Ship_Flags::Has_display_name,                 AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::SF_Hide_mission_log,                Object::Object_Flags::NUM_VALUES,               Ship::Ship_Flags::Hide_mission_log,                 AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::SF_Same_arrival_warp_when_docked,   Object::Object_Flags::NUM_VALUES,               Ship::Ship_Flags::Same_arrival_warp_when_docked,    AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::SF_Same_departure_warp_when_docked, Object::Object_Flags::NUM_VALUES,               Ship::Ship_Flags::Same_departure_warp_when_docked,  AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::SF_Fail_sound_locked_primary,       Object::Object_Flags::NUM_VALUES,               Ship::Ship_Flags::Fail_sound_locked_primary,        AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::SF_Fail_sound_locked_secondary,     Object::Object_Flags::NUM_VALUES,               Ship::Ship_Flags::Fail_sound_locked_secondary,      AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::SF_Aspect_immune,                   Object::Object_Flags::NUM_VALUES,               Ship::Ship_Flags::Aspect_immune,                    AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::SF_Cannot_perform_scan_hide_cargo,  Object::Object_Flags::NUM_VALUES,               Ship::Ship_Flags::Cannot_perform_scan_hide_cargo,   AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::SF_Cannot_perform_scan_show_cargo,  Object::Object_Flags::NUM_VALUES,               Ship::Ship_Flags::Cannot_perform_scan_show_cargo,   AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::SF_No_scanned_cargo,                Object::Object_Flags::NUM_VALUES,               Ship::Ship_Flags::No_scanned_cargo,                 AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::SF_No_targeting_limits,             Object::Object_Flags::NUM_VALUES,               Ship::Ship_Flags::No_targeting_limits,              AI::AI_Flags::NUM_VALUES },
+	{ Mission::Parse_Object_Flags::SF_From_player_wing,                Object::Object_Flags::NUM_VALUES,               Ship::Ship_Flags::From_player_wing,                 AI::AI_Flags::NUM_VALUES },
+
+	// AI flags
+	{ Mission::Parse_Object_Flags::AIF_Kamikaze,                       Object::Object_Flags::NUM_VALUES,               Ship::Ship_Flags::NUM_VALUES,                       AI::AI_Flags::Kamikaze   },
+	{ Mission::Parse_Object_Flags::AIF_No_dynamic,                     Object::Object_Flags::NUM_VALUES,               Ship::Ship_Flags::NUM_VALUES,                       AI::AI_Flags::No_dynamic },
+};
+
 parse_object_flag_description<Mission::Parse_Object_Flags> Parse_object_flag_descriptions[] = {
     { Mission::Parse_Object_Flags::SF_Cargo_known,					"If set, the ship's cargo can be seen without scanning the ship."},
     { Mission::Parse_Object_Flags::SF_Ignore_count,					"Ignore this ship when counting ship types for goals."},
@@ -2521,55 +2609,17 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 	}
 
 	// check the parse object's flags for possible things to set on this newly created ship
-	resolve_parse_flags(&Objects[objnum], p_objp->flags);
+	resolve_parse_flags(p_objp->flags, *shipp, (p_objp->ship_max_shield_strength == 0.0f));
 
-
-	// other flag checks
+	// flag post-processing
 ////////////////////////
 
-	// forcing the shields on or off depending on flags -- but only if shield strength supports it
-
-	// no strength means we can't have shields, period
-    if (p_objp->ship_max_shield_strength == 0.0f)
-        Objects[objnum].flags.set(Object::Object_Flags::No_shields);
-    // force shields on means we have them regardless of other flags; per r5332 this ranks above the next check
-    else if (p_objp->flags[Mission::Parse_Object_Flags::OF_Force_shields_on])
-        Objects[objnum].flags.remove(Object::Object_Flags::No_shields);
-    // intrinsic no-shields means we have them off in-game
-    else if (!Fred_running && (sip->flags[Ship::Info_Flags::Intrinsic_no_shields]))
-        Objects[objnum].flags.set(Object::Object_Flags::No_shields);
-
-	// don't set the flag if the mission is ongoing in a multiplayer situation. This will be set by the players in the
-	// game only before the game or during respawning.
-	// MWA -- changed the next line to remove the !(Game_mode & GM_MULTIPLAYER).  We shouldn't be setting
-	// this flag in single player mode -- it gets set in post process mission.
-    if ((p_objp->flags[Mission::Parse_Object_Flags::OF_Player_start]) && (Fred_running || ((Game_mode & GM_MULTIPLAYER) && !(Game_mode & GM_IN_MISSION)))) {
-		Objects[objnum].flags.set(Object::Object_Flags::Player_ship);
-	}
-
-	// a couple of ai_info flags.  Also, do a reasonable default for the kamikaze damage regardless of
-	// whether this flag is set or not
-	if (p_objp->flags[Mission::Parse_Object_Flags::AIF_Kamikaze])
-	{
-		Ai_info[shipp->ai_index].ai_flags.set(AI::AI_Flags::Kamikaze);
-		Ai_info[shipp->ai_index].kamikaze_damage = p_objp->kamikaze_damage;
-	}
-
-	if (p_objp->flags[Mission::Parse_Object_Flags::AIF_No_dynamic])
-		Ai_info[shipp->ai_index].ai_flags.set(AI::AI_Flags::No_dynamic);
-
-	if (p_objp->flags[Mission::Parse_Object_Flags::SF_Red_alert_store_status])
-	{
-		if (!(Game_mode & GM_MULTIPLAYER)) {
-			shipp->flags.set(Ship::Ship_Flags::Red_alert_store_status);
-		}
-	}
-
-	if (p_objp->flags[Mission::Parse_Object_Flags::Knossos_warp_in])
-	{
-        Objects[objnum].flags.set(Object::Object_Flags::Special_warpin);
+	if (Objects[objnum].flags[Object::Object_Flags::Special_warpin])
 		Knossos_warp_ani_used = true;
-	}
+
+	// do a reasonable default for the kamikaze damage
+	if (Ai_info[shipp->ai_index].ai_flags[AI::AI_Flags::Kamikaze])
+		Ai_info[shipp->ai_index].kamikaze_damage = p_objp->kamikaze_damage;
 
 	// set the orders that this ship will accept.  It will have already been set to default from the
 	// ship create code, so only set them if the parse object flags say they are unique
@@ -3088,234 +3138,87 @@ void parse_copy_wing_ai_to_ship(wing *wingp, ai_info *aip)
 		aip->ai_flags.set(AI::AI_Flags::No_dynamic);
 }
 
-// Goober5000
-void resolve_parse_flags(object *objp, flagset<Mission::Parse_Object_Flags> &parse_flags)
+void resolve_parse_flags(const flagset<Mission::Parse_Object_Flags> &parse_flags, ship &s, bool no_ship_max_shield)
 {
-    Assert(objp != NULL);
-    ship *shipp = &Ships[objp->instance];
-
-    if (parse_flags[Mission::Parse_Object_Flags::SF_Cargo_known])
-        shipp->flags.set(Ship::Ship_Flags::Cargo_revealed);
-
-    if (parse_flags[Mission::Parse_Object_Flags::SF_Ignore_count])
-        shipp->flags.set(Ship::Ship_Flags::Ignore_count);
-
-    if (parse_flags[Mission::Parse_Object_Flags::OF_Protected])
-        objp->flags.set(Object::Object_Flags::Protected);
-
-    if (parse_flags[Mission::Parse_Object_Flags::SF_Reinforcement])
-    {
-        //Individual ships in wings can't be reinforcements - FUBAR
-        if (shipp->wingnum >= 0)
-        {
-            Warning(LOCATION, "Ship %s is a reinforcement unit but is a member of a wing. Ignoring reinforcement flag.", shipp->ship_name);
-        }
-        else
-        {
-            shipp->flags.set(Ship::Ship_Flags::Reinforcement);
-        }
-    }
-
-    if ((parse_flags[Mission::Parse_Object_Flags::OF_No_shields]) && (parse_flags[Mission::Parse_Object_Flags::OF_Force_shields_on]))
-    {
-        parse_warning_or_record("Ship %s has both the \"force-shields-on\" and \"no-shields\" flags; this is inconsistent.", shipp->ship_name);
-    }
-    if (parse_flags[Mission::Parse_Object_Flags::OF_No_shields])
-        objp->flags.set(Object::Object_Flags::No_shields);
-
-    if (parse_flags[Mission::Parse_Object_Flags::SF_Escort])
-        shipp->flags.set(Ship::Ship_Flags::Escort);
-
-    // P_OF_PLAYER_START is handled in parse_create_object_sub
-
-    if (parse_flags[Mission::Parse_Object_Flags::SF_No_arrival_music])
-        shipp->flags.set(Ship::Ship_Flags::No_arrival_music);
-
-    if (parse_flags[Mission::Parse_Object_Flags::SF_No_arrival_warp])
-        shipp->flags.set(Ship::Ship_Flags::No_arrival_warp);
-
-    if (parse_flags[Mission::Parse_Object_Flags::SF_No_departure_warp])
-        shipp->flags.set(Ship::Ship_Flags::No_departure_warp);
-
-    if (parse_flags[Mission::Parse_Object_Flags::SF_Ship_locked])
-        shipp->flags.set(Ship::Ship_Flags::Ship_locked);
-
-    if (parse_flags[Mission::Parse_Object_Flags::SF_Weapons_locked])
-        shipp->flags.set(Ship::Ship_Flags::Weapons_locked);
-
-    if (parse_flags[Mission::Parse_Object_Flags::SF_Locked]) {
-        shipp->flags.set(Ship::Ship_Flags::Ship_locked);
-        shipp->flags.set(Ship::Ship_Flags::Weapons_locked);
-    }
-
-    if (parse_flags[Mission::Parse_Object_Flags::OF_Invulnerable])
-        objp->flags.set(Object::Object_Flags::Invulnerable);
-
-    if (parse_flags[Mission::Parse_Object_Flags::SF_Hidden_from_sensors])
-        shipp->flags.set(Ship::Ship_Flags::Hidden_from_sensors);
-
-    if (parse_flags[Mission::Parse_Object_Flags::SF_Scannable])
-        shipp->flags.set(Ship::Ship_Flags::Scannable);
-
-    // P_AIF_KAMIKAZE, P_AIF_NO_DYNAMIC, and P_SF_RED_ALERT_CARRY are handled in parse_create_object_sub
-
-    if (parse_flags[Mission::Parse_Object_Flags::OF_Beam_protected])
-        objp->flags.set(Object::Object_Flags::Beam_protected);
-
-    if (parse_flags[Mission::Parse_Object_Flags::OF_Flak_protected])
-        objp->flags.set(Object::Object_Flags::Flak_protected);
-
-    if (parse_flags[Mission::Parse_Object_Flags::OF_Laser_protected])
-        objp->flags.set(Object::Object_Flags::Laser_protected);
-
-    if (parse_flags[Mission::Parse_Object_Flags::OF_Missile_protected])
-        objp->flags.set(Object::Object_Flags::Missile_protected);
-
-    if (parse_flags[Mission::Parse_Object_Flags::SF_Vaporize])
-        shipp->flags.set(Ship::Ship_Flags::Vaporize);
-
-    if (parse_flags[Mission::Parse_Object_Flags::SF_Stealth])
-        shipp->flags.set(Ship::Ship_Flags::Stealth);
-
-    if (parse_flags[Mission::Parse_Object_Flags::SF_Friendly_stealth_invis])
-        shipp->flags.set(Ship::Ship_Flags::Friendly_stealth_invis);
-
-    if (parse_flags[Mission::Parse_Object_Flags::SF_Dont_collide_invis])
-        shipp->flags.set(Ship::Ship_Flags::Dont_collide_invis);
-
-    if (parse_flags[Mission::Parse_Object_Flags::SF_Primitive_sensors])
-        shipp->flags.set(Ship::Ship_Flags::Primitive_sensors);
-
-    if (parse_flags[Mission::Parse_Object_Flags::SF_No_subspace_drive])
-        shipp->flags.set(Ship::Ship_Flags::No_subspace_drive);
-
-    if (parse_flags[Mission::Parse_Object_Flags::SF_Nav_carry_status])
-        shipp->flags.set(Ship::Ship_Flags::Navpoint_carry);
-
-    if (parse_flags[Mission::Parse_Object_Flags::SF_Affected_by_gravity])
-        shipp->flags.set(Ship::Ship_Flags::Affected_by_gravity);
-
-    if (parse_flags[Mission::Parse_Object_Flags::SF_Toggle_subsystem_scanning])
-        shipp->flags.set(Ship::Ship_Flags::Toggle_subsystem_scanning);
-
-    if (parse_flags[Mission::Parse_Object_Flags::OF_Targetable_as_bomb])
-        objp->flags.set(Object::Object_Flags::Targetable_as_bomb);
-
-    if (parse_flags[Mission::Parse_Object_Flags::SF_No_builtin_messages])
-        shipp->flags.set(Ship::Ship_Flags::No_builtin_messages);
-
-    if (parse_flags[Mission::Parse_Object_Flags::SF_Primaries_locked])
-        shipp->flags.set(Ship::Ship_Flags::Primaries_locked);
-
-    if (parse_flags[Mission::Parse_Object_Flags::SF_Secondaries_locked])
-        shipp->flags.set(Ship::Ship_Flags::Secondaries_locked);
-
-    if (parse_flags[Mission::Parse_Object_Flags::SF_Set_class_dynamically])
-        shipp->flags.set(Ship::Ship_Flags::Set_class_dynamically);
-
-    if (parse_flags[Mission::Parse_Object_Flags::SF_No_death_scream])
-        shipp->flags.set(Ship::Ship_Flags::No_death_scream);
-
-    if (parse_flags[Mission::Parse_Object_Flags::SF_Always_death_scream])
-        shipp->flags.set(Ship::Ship_Flags::Always_death_scream);
-
-    if (parse_flags[Mission::Parse_Object_Flags::SF_Nav_needslink])
-        shipp->flags.set(Ship::Ship_Flags::Navpoint_needslink);
-
-    if (parse_flags[Mission::Parse_Object_Flags::SF_Hide_ship_name])
-        shipp->flags.set(Ship::Ship_Flags::Hide_ship_name);
-
-    if (parse_flags[Mission::Parse_Object_Flags::SF_Lock_all_turrets_initially])
-        shipp->flags.set(Ship::Ship_Flags::Lock_all_turrets_initially);
-
-    if (parse_flags[Mission::Parse_Object_Flags::SF_Afterburner_locked])
-        shipp->flags.set(Ship::Ship_Flags::Afterburner_locked);
-
-    if (parse_flags[Mission::Parse_Object_Flags::OF_Force_shields_on])
-        shipp->flags.set(Ship::Ship_Flags::Force_shields_on);
-
-    if (parse_flags[Mission::Parse_Object_Flags::OF_Dont_change_position])
-        objp->flags.set(Object::Object_Flags::Dont_change_position);
-
-    if (parse_flags[Mission::Parse_Object_Flags::OF_Dont_change_orientation])
-        objp->flags.set(Object::Object_Flags::Dont_change_orientation);
-
-    if (parse_flags[Mission::Parse_Object_Flags::OF_Immobile])
-    {
-        // handle "soft deprecation" of Immobile by setting the two half-flags, but only in FRED
-        // (FRED has dialog support for the two half-flags but not the legacy Immobile flag)
-        if (Fred_running)
-        {
-            objp->flags.set(Object::Object_Flags::Dont_change_position);
-            objp->flags.set(Object::Object_Flags::Dont_change_orientation);
-
-            // keep track of migrated ships
-            Fred_migrated_immobile_ships.insert(objp->instance);
-        }
-        else
-            objp->flags.set(Object::Object_Flags::Immobile);
-    }
-
-    if (parse_flags[Mission::Parse_Object_Flags::SF_No_ets])
-        shipp->flags.set(Ship::Ship_Flags::No_ets);
-
-    if (parse_flags[Mission::Parse_Object_Flags::SF_Cloaked])
-        shipp->flags.set(Ship::Ship_Flags::Cloaked);
-
-    if (parse_flags[Mission::Parse_Object_Flags::SF_Scramble_messages])
-        shipp->flags.set(Ship::Ship_Flags::Scramble_messages);
-
-    if (parse_flags[Mission::Parse_Object_Flags::OF_No_collide])
-        objp->flags.remove(Object::Object_Flags::Collides);
-
-    if (parse_flags[Mission::Parse_Object_Flags::SF_No_disabled_self_destruct])
-        shipp->flags.set(Ship::Ship_Flags::No_disabled_self_destruct);
-
-    if (parse_flags[Mission::Parse_Object_Flags::SF_Dock_leader])
-        shipp->flags.set(Ship::Ship_Flags::Dock_leader);
-
-    if (parse_flags[Mission::Parse_Object_Flags::SF_Warp_broken])
-        shipp->flags.set(Ship::Ship_Flags::Warp_broken);
-
-    if (parse_flags[Mission::Parse_Object_Flags::SF_Warp_never])
-        shipp->flags.set(Ship::Ship_Flags::Warp_never);
-
-    if (parse_flags[Mission::Parse_Object_Flags::SF_Has_display_name])
-        shipp->flags.set(Ship::Ship_Flags::Has_display_name);
-
-    if (parse_flags[Mission::Parse_Object_Flags::SF_Hide_mission_log])
-        shipp->flags.set(Ship::Ship_Flags::Hide_mission_log);
-
-    if (parse_flags[Mission::Parse_Object_Flags::SF_Same_arrival_warp_when_docked])
-        shipp->flags.set(Ship::Ship_Flags::Same_arrival_warp_when_docked);
-
-    if (parse_flags[Mission::Parse_Object_Flags::SF_Same_departure_warp_when_docked])
-		shipp->flags.set(Ship::Ship_Flags::Same_departure_warp_when_docked);
-
-    if (parse_flags[Mission::Parse_Object_Flags::OF_Attackable_if_no_collide])
-		objp->flags.set(Object::Object_Flags::Attackable_if_no_collide);
-
-	if (parse_flags[Mission::Parse_Object_Flags::SF_Fail_sound_locked_primary])
-		shipp->flags.set(Ship::Ship_Flags::Fail_sound_locked_primary);
-
-	if (parse_flags[Mission::Parse_Object_Flags::SF_Fail_sound_locked_secondary])
-		shipp->flags.set(Ship::Ship_Flags::Fail_sound_locked_secondary);
-
-	if (parse_flags[Mission::Parse_Object_Flags::SF_Aspect_immune])
-		shipp->flags.set(Ship::Ship_Flags::Aspect_immune);
-
-	if (parse_flags[Mission::Parse_Object_Flags::SF_Cannot_perform_scan_hide_cargo])
-		shipp->flags.set(Ship::Ship_Flags::Cannot_perform_scan_hide_cargo);
-	if (parse_flags[Mission::Parse_Object_Flags::SF_Cannot_perform_scan_show_cargo])
-		shipp->flags.set(Ship::Ship_Flags::Cannot_perform_scan_show_cargo);
-	if (parse_flags[Mission::Parse_Object_Flags::SF_No_scanned_cargo])
-		shipp->flags.set(Ship::Ship_Flags::No_scanned_cargo);
-
-	if (parse_flags[Mission::Parse_Object_Flags::SF_No_targeting_limits])
-		shipp->flags.set(Ship::Ship_Flags::No_targeting_limits);
-
-	if (parse_flags[Mission::Parse_Object_Flags::SF_From_player_wing])
-		shipp->flags.set(Ship::Ship_Flags::From_player_wing);
+	auto &o = Objects[s.objnum];
+	auto &a = Ai_info[s.ai_index];
+
+	// don't set the flag if the mission is ongoing in a multiplayer situation. This will be set by the players in the
+	// game only before the game or during respawning.
+	// MWA -- changed the next line to remove the !(Game_mode & GM_MULTIPLAYER).  We shouldn't be setting
+	// this flag in single player mode -- it gets set in post process mission.
+	bool set_player_start_flag = (Fred_running || ((Game_mode & GM_MULTIPLAYER) && !(Game_mode & GM_IN_MISSION)));
+	bool player_start_flag_prev_status = o.flags[Object::Object_Flags::Player_ship];
+
+	if ((parse_flags[Mission::Parse_Object_Flags::OF_No_shields]) && (parse_flags[Mission::Parse_Object_Flags::OF_Force_shields_on]))
+		parse_warning_or_record("Ship %s has both the \"force-shields-on\" and \"no-shields\" flags; this is inconsistent.", s.ship_name);
+
+	resolve_parse_flags(parse_flags, o.flags, s.flags, a.ai_flags);
+
+	// post-resolution: don't set player-start if we shouldn't
+	if (!set_player_start_flag)
+		o.flags.set(Object::Object_Flags::Player_ship, player_start_flag_prev_status);
+
+	// post-resolution: apparently we don't want this flag in multiplayer?
+	if (Game_mode & GM_MULTIPLAYER)
+		s.flags.remove(Ship::Ship_Flags::Red_alert_store_status);
+
+	// post-resolution: handle "soft deprecation" of Immobile by setting the two half-flags, but only in FRED
+	// (FRED has dialog support for the two half-flags but not the legacy Immobile flag)
+	if (Fred_running && o.flags[Object::Object_Flags::Immobile])
+	{
+		o.flags.remove(Object::Object_Flags::Immobile);
+		o.flags.set(Object::Object_Flags::Dont_change_position);
+		o.flags.set(Object::Object_Flags::Dont_change_orientation);
+
+		// keep track of migrated ships
+		Fred_migrated_immobile_ships.insert(o.instance);
+	}
+
+	// post-resolution: force the shields on or off depending on flags -- but only if shield strength supports it
+	// no strength means we can't have shields, period
+	if (no_ship_max_shield)
+		o.flags.set(Object::Object_Flags::No_shields);
+	// force shields on means we have them regardless of other flags; per r5332 this ranks above the next check
+	else if (parse_flags[Mission::Parse_Object_Flags::OF_Force_shields_on])
+		o.flags.remove(Object::Object_Flags::No_shields);
+	// intrinsic no-shields means we have them off in-game
+	else if (!Fred_running && (Ship_info[s.ship_info_index].flags[Ship::Info_Flags::Intrinsic_no_shields]))
+		o.flags.set(Object::Object_Flags::No_shields);
+
+	//Individual ships in wings can't be reinforcements - FUBAR
+	if (s.wingnum >= 0 && s.flags[Ship::Ship_Flags::Reinforcement])
+	{
+		parse_warning_or_record("Ship %s is a reinforcement unit but is a member of a wing. Ignoring reinforcement flag.", s.ship_name);
+		s.flags.remove(Ship::Ship_Flags::Reinforcement);
+	}
+}
+
+void resolve_parse_flags(const flagset<Mission::Parse_Object_Flags> &parse_flags, flagset<Object::Object_Flags> &object_flags, flagset<Ship::Ship_Flags> &ship_flags, flagset<AI::AI_Flags> &ai_flags)
+{
+	// 1-to-1 mappings (most flags)
+	for (const auto &m : Parse_object_flag_targets)
+	{
+		if (!parse_flags[m.parse_flag])
+			continue;
+		if (m.object_flag != Object::Object_Flags::NUM_VALUES)
+			object_flags.set(m.object_flag);
+		if (m.ship_flag != Ship::Ship_Flags::NUM_VALUES)
+			ship_flags.set(m.ship_flag);
+		if (m.ai_flag != AI::AI_Flags::NUM_VALUES)
+			ai_flags.set(m.ai_flag);
+	}
+
+	// SF_Locked is shorthand for both lock flags
+	if (parse_flags[Mission::Parse_Object_Flags::SF_Locked])
+	{
+		ship_flags.set(Ship::Ship_Flags::Ship_locked);
+		ship_flags.set(Ship::Ship_Flags::Weapons_locked);
+	}
+
+	// OF_No_collide removes a flag instead of setting one
+	if (parse_flags[Mission::Parse_Object_Flags::OF_No_collide])
+		object_flags.remove(Object::Object_Flags::Collides);
 }
 
 void fix_old_special_explosions(p_object *p_objp, int variable_index) 
