@@ -1060,8 +1060,13 @@ int common_scroll_up_pressed(int *start, int size, int max_show)
 //
 int common_scroll_down_pressed(int *start, int size, int max_show)
 {
-	// check if we even need to scroll at all
+	// if the whole list fits on screen, the start offset must be 0;
+	// reset a stale non-zero offset so the up arrow doesn't get stuck
 	if ( size <= max_show ) {
+		if ( *start > 0 ) {
+			*start = 0;
+			return 1;
+		}
 		return 0;
 	}
 
