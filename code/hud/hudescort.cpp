@@ -637,8 +637,6 @@ static bool escort_compare(const escort_info &escort1, const escort_info &escort
 		const char* name2 = get_sort_name(escort2);
 		return (stricmp(name1, name2) > 0);
 	}
-
-	return false;
 }
 
 // create complete priority sorted escort list for all active ships
