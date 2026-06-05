@@ -745,6 +745,8 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$cancel future waves of any wing launched from an exited ship:", AI::Profile_Flags::Cancel_future_waves_of_any_wing_launched_from_an_exited_ship);
 
+				set_flag(profile, "$ships intercept mines:", AI::Profile_Flags::Ships_intercept_mines);
+
 
 				// end of options ----------------------------------------
 

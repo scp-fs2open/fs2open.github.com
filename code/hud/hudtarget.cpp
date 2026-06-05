@@ -478,6 +478,18 @@ int hud_target_invalid_awacs(object *objp)
 	return 0;
 }
 
+// Returns true if the weapon object can currently be targeted from source_objp.
+// For mines, uses range-based detection (mine_targetable_range). For other weapons, uses flags.
+static bool weapon_is_targetable_from(object *source_objp, object *objp)
+{
+	weapon_info *wip = &Weapon_info[Weapons[objp->instance].weapon_info_index];
+	if (wip->is_mine()) {
+		Assertion(source_objp != nullptr, "weapon_is_targetable_from called with null source_objp");
+		return vm_vec_dist(&source_objp->pos, &objp->pos) <= wip->mine_targetable_range;
+	}
+	return wip->wi_flags[Weapon::Info_Flags::Can_be_targeted] || wip->wi_flags[Weapon::Info_Flags::Bomb];
+}
+
 ship_subsys *advance_subsys(ship_subsys *cur, int next_flag)
 {
 	if (next_flag) {
@@ -1187,9 +1199,8 @@ void hud_target_common(int team_mask, int next_flag)
 			continue;
 
 		if (A->type == OBJ_WEAPON) {
-			if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Can_be_targeted]) )
-				if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Bomb]) )
-					continue;
+			if (!weapon_is_targetable_from(Player_obj, A))
+				continue;
 
 			if (Weapons[A->instance].lssm_stage == 3)
 				continue;
@@ -1503,10 +1514,9 @@ void hud_target_hostile_bomb_or_bomber(object* source_obj, int next_flag, bool t
 				continue;
 
 			weapon* wp = &Weapons[A->instance];
-			weapon_info* wip = &Weapon_info[wp->weapon_info_index];
 
-			// only allow targeting of bombs
-			if (!(wip->wi_flags[Weapon::Info_Flags::Can_be_targeted]) && !(wip->wi_flags[Weapon::Info_Flags::Bomb]))
+			// only allow targeting of bombs/targetable weapons/mines in range
+			if (!weapon_is_targetable_from(source_obj, A))
 				continue;
 
 			if (wp->lssm_stage == 3)
@@ -2498,11 +2508,8 @@ void hud_target_in_reticle_new()
 		}
 
 		if ( A->type == OBJ_WEAPON ) {
-			if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Can_be_targeted]) ) {
-				if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Bomb]) ){
-					continue;
-				}
-			}
+			if (!weapon_is_targetable_from(Player_obj, A))
+				continue;
 			if (Weapons[A->instance].lssm_stage==3){
 				continue;
 			}
@@ -2607,11 +2614,8 @@ void hud_target_in_reticle_old()
 		}
 
 		if ( A->type == OBJ_WEAPON ) {
-			if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Can_be_targeted]) ){
-				if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Bomb]) ){
-					continue;
-				}
-			}
+			if (!weapon_is_targetable_from(Player_obj, A))
+				continue;
 
 			if (Weapons[A->instance].lssm_stage==3){
 				continue;
@@ -4188,11 +4192,8 @@ void HudGaugeLeadIndicator::renderLeadCurrentTarget(bool config)
 
 	// only allow bombs to have lead indicator displayed
 	if ( targetp->type == OBJ_WEAPON ) {
-		if ( !(Weapon_info[Weapons[targetp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Can_be_targeted]) ) {
-			if ( !(Weapon_info[Weapons[targetp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Bomb]) ) {
-				return;
-			}
-		}
+		if (!weapon_is_targetable_from(Player_obj, targetp))
+			return;
 	}
 
 	// If the target is out of range, then draw the correct frame for the lead indicator
@@ -4363,11 +4364,8 @@ void HudGaugeLeadIndicator::renderLeadQuick(vec3d *target_world_pos, object *tar
 
 	// only allow bombs to have lead indicator displayed
 	if ( targetp->type == OBJ_WEAPON ) {
-		if ( !(Weapon_info[Weapons[targetp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Can_be_targeted]) ) {
-			if ( !(Weapon_info[Weapons[targetp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Bomb]) ) {
-				return;
-			}
-		}
+		if (!weapon_is_targetable_from(Player_obj, targetp))
+			return;
 	}
 
 	// If the target is out of range, then draw the correct frame for the lead indicator

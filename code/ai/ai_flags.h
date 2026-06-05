@@ -132,6 +132,7 @@ namespace AI {
         Smart_shield_management,
         Smart_subsystem_targeting_for_turrets,
         Strict_turret_tagged_only_targeting,
+		Ships_intercept_mines,				// all AI-controlled ships autonomously engage hostile mines within mine_targetable_range of themselves
 		Support_dont_add_primaries, //Prevents support ship from equipping new primary as requested in https://scp.indiegames.us/mantis/view.php?id=3198
         Turrets_ignore_target_radius,
         Use_actual_primary_range,
