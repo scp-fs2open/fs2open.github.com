@@ -134,6 +134,8 @@ set(FRED2_SOURCES
 	shiptexturesdlg.h
 	soundenvironmentdlg.cpp
 	soundenvironmentdlg.h
+	supportrearmdlg.cpp
+	supportrearmdlg.h
 	starfieldeditor.cpp
 	starfieldeditor.h
 	stdafx.cpp
