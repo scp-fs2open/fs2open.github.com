@@ -456,8 +456,8 @@ void FredRenderer::display_ship_info(int cur_object_index) {
 					} else if (objp->type == OBJ_COORDINATE_POINT) {
 						auto* cp = find_coordinate_point_by_objnum(OBJ_INDEX(objp));
 						if (cp != nullptr) {
-							if (!cp->category.empty()) {
-								sprintf(buf, "%s\n%s", cp->name.c_str(), cp->category.c_str());
+							if (!cp->group.empty()) {
+								sprintf(buf, "%s\n%s", cp->name.c_str(), cp->group.c_str());
 							} else {
 								sprintf(buf, "%s", cp->name.c_str());
 							}
@@ -1038,6 +1038,22 @@ void FredRenderer::render_frame(int cur_object_index,
 	render_models(cur_object_index);
 	render_volumetric_overlay();
 
+	// Draw coordinate-point shapes before the text overlays so the per-object label (name,
+	// group, coords) lands ON TOP of the shape rather than getting covered by it.
+	if (view().Show_coordinate_points) {
+		enable_htl();
+		for (const auto& cp : Coordinate_points) {
+			if (cp.objnum < 0) {
+				continue;
+			}
+			if (!_viewport->isObjectVisibleInLayer(&Objects[cp.objnum])) {
+				continue;
+			}
+			draw_coordinate_point_shape(cp, &_viewport->camera.eye_pos, &_viewport->camera.eye_orient);
+		}
+		disable_htl();
+	}
+
 	if (view().Show_distances) {
 		display_distances();
 	}
@@ -1114,18 +1130,6 @@ void FredRenderer::render_frame(int cur_object_index,
 			if (jnObj != nullptr && _viewport->isObjectVisibleInLayer(jnObj)) {
 				jn.Render(&jnObj->pos);
 			}
-		}
-	}
-
-	if (view().Show_coordinate_points) {
-		for (const auto& cp : Coordinate_points) {
-			if (cp.objnum < 0) {
-				continue;
-			}
-			if (!_viewport->isObjectVisibleInLayer(&Objects[cp.objnum])) {
-				continue;
-			}
-			draw_coordinate_point_shape(cp, &_viewport->camera.eye_pos, &_viewport->camera.eye_orient);
 		}
 	}
 	disable_htl();

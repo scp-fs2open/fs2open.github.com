@@ -39,12 +39,12 @@ ADE_VIRTVAR(Name,
 	return ade_set_args(L, "s", cp->name.c_str());
 }
 
-ADE_VIRTVAR(Category,
+ADE_VIRTVAR(Group,
 	l_CoordinatePoint,
 	"string",
-	"Designer-defined category string (may be empty).",
+	"Designer-defined group string (may be empty).",
 	"string",
-	"Coordinate point category, or empty string if handle is invalid")
+	"Coordinate point group, or empty string if handle is invalid")
 {
 	object_h* objh;
 	const char* s = nullptr;
@@ -59,10 +59,10 @@ ADE_VIRTVAR(Category,
 		return ade_set_error(L, "s", "");
 
 	if (ADE_SETTING_VAR && s != nullptr) {
-		cp->category = s;
+		cp->group = s;
 	}
 
-	return ade_set_args(L, "s", cp->category.c_str());
+	return ade_set_args(L, "s", cp->group.c_str());
 }
 
 ADE_VIRTVAR(EscortPriority,

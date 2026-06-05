@@ -36,12 +36,24 @@ left alone until you commit a value.</p>
     <tr><td>Name</td><td>Identifies the point for SEXPs, Lua, and the escort list.
         Must be unique across coordinate points, ships, wings, waypoint paths, and
         jump nodes. Read-only when multiple points are selected; rename individually.</td></tr>
-    <tr><td>Category</td><td>Free-form string. Shown in the HUD target box and the
+    <tr><td>Group</td><td>Free-form string. Shown in the HUD target box and the
         escort list. Designers can use this for any visible grouping (e.g.
         <em>Combat</em>, <em>Nav</em>, <em>Objective</em>).</td></tr>
-    <tr><td>Shape</td><td>Outline shape rendered in the editor (and in-mission when
-        the Visible flag is set). Choices: Triangle, Square, Diamond, Pentagon,
-        Hexagon, Cross, Star.</td></tr>
+    <tr><td>Shape</td><td>The shape rendered in the editor (and in-mission when
+        the Visible flag is set). Two built-in kinds: <em>NGon</em> (regular polygon)
+        and <em>Star</em> (alternating outer / inner points). All other entries are
+        custom shapes loaded from <code>coordinate_points.tbl</code> plus any
+        <code>*-cps.tbm</code> modular tables.</td></tr>
+    <tr><td>Sides</td><td>Number of sides for an NGon shape (range 3-32). Only shown
+        when Shape is NGon. Three sides gives a triangle, four a diamond, and high
+        side counts approximate a circle.</td></tr>
+    <tr><td>Points</td><td>Number of points for a Star shape (range 3-32). Only shown
+        when Shape is Star.</td></tr>
+    <tr><td>Inner Radius</td><td>Inner-vertex radius for a Star shape, as a fraction of
+        the outer radius (range 0.05-0.95). Smaller values give sharper arms. Only shown
+        when Shape is Star.</td></tr>
+    <tr><td>Angle</td><td>In-plane rotation in degrees applied to the shape. 0 (the
+        default) places the first vertex at the top.</td></tr>
     <tr><td>Size</td><td>Scales the rendered shape. 1.0 is the default; range
         0.25-8.0.</td></tr>
     <tr><td>Escort Priority</td><td>0 (default) means the point is not on the escort

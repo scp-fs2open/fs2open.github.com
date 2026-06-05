@@ -44,6 +44,7 @@
 #include "parse/sexp_container.h"
 #include "prop/prop.h"
 #include "coordinate_points/coordinate_point.h"
+#include "coordinate_points/coordinate_shapes.h"
 #include "sound/ds.h"
 #include "sound/sound.h"
 #include "starfield/nebula.h"
@@ -5463,13 +5464,13 @@ int Fred_mission_save::save_coordinate_points()
 		parse_comments(0);
 		save_vector(Objects[cp.objnum].pos);
 
-		if (!cp.category.empty()) {
-			if (optional_string_fred("+Category:", "$Name:")) {
+		if (!cp.group.empty()) {
+			if (optional_string_fred("+Group:", "$Name:")) {
 				parse_comments();
 			} else {
-				fout("\n+Category:");
+				fout("\n+Group:");
 			}
-			fout(" %s", cp.category.c_str());
+			fout(" %s", cp.group.c_str());
 		}
 
 		const bool color_is_default =
@@ -5485,13 +5486,62 @@ int Fred_mission_save::save_coordinate_points()
 				 cp.display_color.blue, cp.display_color.alpha);
 		}
 
-		if (cp.shape != CoordinatePointShape::Diamond) {
+		// +Shape: omit when it's the default (NGon with default sides). For Tabled we look
+		// up the registered name; if the index is somehow stale, just skip the line.
+		const char* shape_name = nullptr;
+		if (cp.shape_kind == CoordinatePointShapeKind::Star) {
+			shape_name = "Star";
+		} else if (cp.shape_kind == CoordinatePointShapeKind::Tabled &&
+				   cp.shape_table_index >= 0 &&
+				   cp.shape_table_index < static_cast<int>(Coordinate_shapes.size())) {
+			shape_name = Coordinate_shapes[cp.shape_table_index].name.c_str();
+		}
+		if (shape_name != nullptr) {
 			if (optional_string_fred("+Shape:", "$Name:")) {
 				parse_comments();
 			} else {
 				fout("\n+Shape:");
 			}
-			fout(" %s", coordinate_point_shape_to_string(cp.shape));
+			fout(" %s", shape_name);
+		}
+
+		// +Sides: only emit for NGon, only when non-default.
+		if (cp.shape_kind == CoordinatePointShapeKind::NGon && cp.shape_sides != 4) {
+			if (optional_string_fred("+Sides:", "$Name:")) {
+				parse_comments();
+			} else {
+				fout("\n+Sides:");
+			}
+			fout(" %d", cp.shape_sides);
+		}
+
+		// +Points: / +Inner Radius: only for Star, only when non-default.
+		if (cp.shape_kind == CoordinatePointShapeKind::Star && cp.shape_points != 5) {
+			if (optional_string_fred("+Points:", "$Name:")) {
+				parse_comments();
+			} else {
+				fout("\n+Points:");
+			}
+			fout(" %d", cp.shape_points);
+		}
+
+		if (cp.shape_kind == CoordinatePointShapeKind::Star && cp.shape_inner_radius != STAR_INNER_DEFAULT) {
+			if (optional_string_fred("+Inner Radius:", "$Name:")) {
+				parse_comments();
+			} else {
+				fout("\n+Inner Radius:");
+			}
+			fout(" %f", cp.shape_inner_radius);
+		}
+
+		// +Angle: applies to every kind; emit when non-zero.
+		if (cp.shape_angle_deg != 0.0f) {
+			if (optional_string_fred("+Angle:", "$Name:")) {
+				parse_comments();
+			} else {
+				fout("\n+Angle:");
+			}
+			fout(" %f", cp.shape_angle_deg);
 		}
 
 		if (cp.size_scale != 1.0f) {

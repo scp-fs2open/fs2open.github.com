@@ -1,5 +1,6 @@
 #include "coordinate_points/coordinate_point.h"
 
+#include "coordinate_points/coordinate_shapes.h"
 #include "object/object.h"
 #include "math/vecmat.h"
 #include "parse/parselo.h"
@@ -8,41 +9,6 @@ SCP_list<mission_coordinate_point> Coordinate_points;
 SCP_vector<parsed_coordinate_point> Parse_coordinate_points;
 
 static constexpr float COORDINATE_POINT_DEFAULT_RADIUS = 1.0f;
-
-static const char* Coordinate_point_shape_names[] = {
-	"Triangle",
-	"Square",
-	"Diamond",
-	"Pentagon",
-	"Hexagon",
-	"Cross",
-	"Star",
-};
-
-static_assert(sizeof(Coordinate_point_shape_names) / sizeof(Coordinate_point_shape_names[0])
-			  == static_cast<size_t>(CoordinatePointShape::NUM_SHAPES),
-			  "Coordinate_point_shape_names is out of sync with CoordinatePointShape");
-
-const char* coordinate_point_shape_to_string(CoordinatePointShape s)
-{
-	auto idx = static_cast<size_t>(s);
-	if (idx >= static_cast<size_t>(CoordinatePointShape::NUM_SHAPES)) {
-		return Coordinate_point_shape_names[0];
-	}
-	return Coordinate_point_shape_names[idx];
-}
-
-CoordinatePointShape coordinate_point_shape_from_string(const char* s)
-{
-	if (s != nullptr) {
-		for (size_t i = 0; i < static_cast<size_t>(CoordinatePointShape::NUM_SHAPES); ++i) {
-			if (!stricmp(Coordinate_point_shape_names[i], s)) {
-				return static_cast<CoordinatePointShape>(i);
-			}
-		}
-	}
-	return CoordinatePointShape::Diamond;
-}
 
 mission_coordinate_point::mission_coordinate_point()
 {
@@ -173,14 +139,33 @@ void post_process_mission_coordinate_points()
 			continue;
 		}
 
-		cp->category        = parsed.category;
-		cp->display_color   = parsed.display_color;
-		cp->shape           = parsed.shape;
-		cp->size_scale      = parsed.size_scale;
-		cp->escort_priority = parsed.escort_priority;
-		cp->multi_team      = parsed.multi_team;
-		cp->flags           = parsed.flags;
-		cp->fred_layer      = parsed.fred_layer;
+		cp->group              = parsed.group;
+		cp->display_color      = parsed.display_color;
+		cp->shape_kind         = parsed.shape_kind;
+		cp->shape_sides        = parsed.shape_sides;
+		cp->shape_points       = parsed.shape_points;
+		cp->shape_inner_radius = parsed.shape_inner_radius;
+		cp->shape_angle_deg    = parsed.shape_angle_deg;
+		cp->size_scale         = parsed.size_scale;
+		cp->escort_priority    = parsed.escort_priority;
+		cp->multi_team         = parsed.multi_team;
+		cp->flags              = parsed.flags;
+		cp->fred_layer         = parsed.fred_layer;
+
+		// Resolve a tabled-shape name to an index. If the name doesn't match anything in the
+		// registry (default table + TBMs), fall back to NGon(3) with a warning so the mission
+		// still loads cleanly.
+		if (cp->shape_kind == CoordinatePointShapeKind::Tabled) {
+			cp->shape_table_index = find_coordinate_shape_index_by_name(parsed.shape_table_name.c_str());
+			if (cp->shape_table_index < 0) {
+				Warning(LOCATION,
+					"Coordinate point '%s' references unknown shape '%s'; falling back to NGon(3).",
+					cp->name.c_str(),
+					parsed.shape_table_name.c_str());
+				cp->shape_kind  = CoordinatePointShapeKind::NGon;
+				cp->shape_sides = 3;
+			}
+		}
 	}
 
 	Parse_coordinate_points.clear();

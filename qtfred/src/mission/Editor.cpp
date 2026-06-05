@@ -982,14 +982,19 @@ int Editor::dup_object(object* objp) {
 			auto* clone = find_coordinate_point_by_objnum(obj);
 			if (clone != nullptr) {
 				// Copy every field except the auto-generated unique name and the objnum.
-				clone->category        = src->category;
-				clone->display_color   = src->display_color;
-				clone->shape           = src->shape;
-				clone->size_scale      = src->size_scale;
-				clone->escort_priority = src->escort_priority;
-				clone->multi_team      = src->multi_team;
-				clone->flags           = src->flags;
-				clone->fred_layer      = src->fred_layer;
+				clone->group              = src->group;
+				clone->display_color      = src->display_color;
+				clone->shape_kind         = src->shape_kind;
+				clone->shape_sides        = src->shape_sides;
+				clone->shape_points       = src->shape_points;
+				clone->shape_inner_radius = src->shape_inner_radius;
+				clone->shape_table_index  = src->shape_table_index;
+				clone->shape_angle_deg    = src->shape_angle_deg;
+				clone->size_scale         = src->size_scale;
+				clone->escort_priority    = src->escort_priority;
+				clone->multi_team         = src->multi_team;
+				clone->flags              = src->flags;
+				clone->fred_layer         = src->fred_layer;
 			}
 		}
 	}

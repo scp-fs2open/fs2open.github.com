@@ -6,29 +6,39 @@
 
 struct vec3d;
 
-enum class CoordinatePointShape {
-	Triangle = 0,
-	Square,
-	Diamond,
-	Pentagon,
-	Hexagon,
-	Cross,
+// What kind of 2D shape this coordinate point draws as. NGon and Star are procedural primitives
+// driven by parameter fields below. Tabled refers to a custom vertex+triangle definition loaded
+// from coordinate_points.tbl / *-cps.tbm.
+enum class CoordinatePointShapeKind : int {
+	NGon = 0,
 	Star,
-	NUM_SHAPES
+	Tabled,
 };
 
 constexpr float COORDINATE_POINT_SIZE_MIN = 0.25f;
 constexpr float COORDINATE_POINT_SIZE_MAX = 8.0f;
 
-const char* coordinate_point_shape_to_string(CoordinatePointShape s);
-CoordinatePointShape coordinate_point_shape_from_string(const char* s);  // returns Diamond on miss
+constexpr int   NGON_SIDES_MIN  = 3;
+constexpr int   NGON_SIDES_MAX  = 32;
+constexpr int   STAR_POINTS_MIN = 3;
+constexpr int   STAR_POINTS_MAX = 32;
+constexpr float STAR_INNER_MIN  = 0.05f;
+constexpr float STAR_INNER_MAX  = 0.95f;
+constexpr float STAR_INNER_DEFAULT = 0.382f;  // classic 5-point arm angle
 
 struct mission_coordinate_point
 {
 	SCP_string name;
-	SCP_string category;
+	SCP_string group;
 	color      display_color;
-	CoordinatePointShape shape = CoordinatePointShape::Diamond;
+
+	CoordinatePointShapeKind shape_kind = CoordinatePointShapeKind::NGon;
+	int   shape_sides        = 4;                  // NGon: clamp [NGON_SIDES_MIN, NGON_SIDES_MAX]
+	int   shape_points       = 5;                  // Star: clamp [STAR_POINTS_MIN, STAR_POINTS_MAX]
+	float shape_inner_radius = STAR_INNER_DEFAULT; // Star: clamp [STAR_INNER_MIN, STAR_INNER_MAX]
+	int   shape_table_index  = -1;                 // Tabled: index into Coordinate_shapes; -1 = unset
+	float shape_angle_deg    = 0.0f;               // all: extra rotation around local Z
+
 	float      size_scale = 1.0f;
 	int        escort_priority = 0;      // 0 = not on escort list; >0 = on the list (and sort key)
 	int        multi_team = -1;          // -1 = visible to all; otherwise TVT team index (0..MAX_TVT_TEAMS-1)
@@ -44,10 +54,17 @@ extern SCP_list<mission_coordinate_point> Coordinate_points;
 struct parsed_coordinate_point
 {
 	SCP_string name;
-	SCP_string category;
+	SCP_string group;
 	vec3d      position;
 	color      display_color;
-	CoordinatePointShape shape = CoordinatePointShape::Diamond;
+
+	CoordinatePointShapeKind shape_kind = CoordinatePointShapeKind::NGon;
+	int   shape_sides        = 4;
+	int   shape_points       = 5;
+	float shape_inner_radius = STAR_INNER_DEFAULT;
+	SCP_string shape_table_name;          // resolved to shape_table_index at post-process time
+	float shape_angle_deg    = 0.0f;
+
 	float      size_scale = 1.0f;
 	int        escort_priority = 0;
 	int        multi_team = -1;

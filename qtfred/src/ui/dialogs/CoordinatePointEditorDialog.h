@@ -19,8 +19,12 @@ private slots:
 	void on_prevPointButton_clicked();
 	void on_nextPointButton_clicked();
 	void on_nameEdit_editingFinished();
-	void on_categoryEdit_editingFinished();
+	void on_groupEdit_editingFinished();
 	void on_shapeCombo_currentIndexChanged(int index);
+	void on_sidesSpinBox_valueChanged(int value);
+	void on_pointsSpinBox_valueChanged(int value);
+	void on_innerRadiusSpinBox_valueChanged(double value);
+	void on_angleSpinBox_valueChanged(double value);
 	void on_sizeSpinBox_valueChanged(double value);
 	void on_escortPrioritySpinBox_valueChanged(int value);
 	void on_multiTeamCombo_currentIndexChanged(int index);

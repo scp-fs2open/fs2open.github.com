@@ -1398,15 +1398,15 @@ void HudGaugeTargetBox::renderTargetCoordinatePoint(object *target_objp)
 		return;
 	}
 
-	// Coordinate points have no model and no integrity; just draw the frame, name, category, distance.
+	// Coordinate points have no model and no integrity; just draw the frame, name, group, distance.
 	renderTargetForeground();
 	renderTargetIntegrity(1);
 	setGaugeColor();
 
 	renderString(position[0] + Name_offsets[0], position[1] + Name_offsets[1], EG_TBOX_NAME, cp->name.c_str());
 
-	if (!cp->category.empty()) {
-		renderString(position[0] + Class_offsets[0], position[1] + Class_offsets[1], EG_TBOX_CLASS, cp->category.c_str());
+	if (!cp->group.empty()) {
+		renderString(position[0] + Class_offsets[0], position[1] + Class_offsets[1], EG_TBOX_CLASS, cp->group.c_str());
 	}
 
 	float dist = Player_ai->current_target_distance;

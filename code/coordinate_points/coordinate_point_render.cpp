@@ -1,6 +1,7 @@
 #include "coordinate_points/coordinate_point_render.h"
 
 #include "coordinate_points/coordinate_point.h"
+#include "coordinate_points/coordinate_shapes.h"
 #include "graphics/material.h"
 #include "math/floating.h"
 #include "math/vecmat.h"
@@ -8,164 +9,130 @@
 #include "object/object.h"
 #include "render/3d.h"
 
-namespace {
+#include <cmath>
 
-// Unit-radius 2D vertex tables per shape, then a triangle-index table that triangulates each
-// shape into a TRIS primitive list (each consecutive index triple is one triangle, CCW).
+namespace {
 
 struct vec2f {
 	float x, y;
 };
 
-// --- Vertex tables ---
+// Cap on locally-built 2D vertex/triangle buffers. NGon caps out at NGON_SIDES_MAX (32), Star
+// caps at 2 * STAR_POINTS_MAX (64), and tabled shapes are bounded by author hand. 128 / 384
+// leaves plenty of headroom.
+constexpr int MAX_LOCAL_VERTS = 128;
+constexpr int MAX_LOCAL_TRIS  = MAX_LOCAL_VERTS * 3;
 
-const vec2f Tri_verts[] = {
-	{  0.0f,    1.0f},
-	{ -0.866f, -0.5f},
-	{  0.866f, -0.5f},
-};
+constexpr float PI_F = 3.14159265358979323846f;
 
-const vec2f Sq_verts[] = {
-	{ -1.0f,  1.0f},
-	{  1.0f,  1.0f},
-	{  1.0f, -1.0f},
-	{ -1.0f, -1.0f},
-};
+// Generate a regular N-gon centered on (0,0), unit radius, first vertex at the top
+// (i.e. starting angle = π/2). CCW winding. Triangulated as a fan from vertex 0.
+void build_ngon(int sides, vec2f* out_verts, int& out_nv, int* out_tris, int& out_ntri_idx)
+{
+	if (sides < NGON_SIDES_MIN) sides = NGON_SIDES_MIN;
+	if (sides > NGON_SIDES_MAX) sides = NGON_SIDES_MAX;
 
-const vec2f Dia_verts[] = {
-	{  0.0f,  1.0f},
-	{  1.0f,  0.0f},
-	{  0.0f, -1.0f},
-	{ -1.0f,  0.0f},
-};
+	const float start = PI_F * 0.5f;                    // top
+	const float step  = 2.0f * PI_F / static_cast<float>(sides);
+	for (int i = 0; i < sides; ++i) {
+		// CCW means angles increase as i increases (standard math convention with +Y up).
+		const float a = start + step * static_cast<float>(i);
+		out_verts[i].x = std::cos(a);
+		out_verts[i].y = std::sin(a);
+	}
+	out_nv = sides;
 
-const vec2f Pent_verts[] = {
-	{  0.0f,      1.0f   },
-	{  0.951f,    0.309f },
-	{  0.588f,   -0.809f },
-	{ -0.588f,   -0.809f },
-	{ -0.951f,    0.309f },
-};
+	// Fan from vertex 0: triangles (0, i, i+1) for i in [1, sides-2].
+	int n = 0;
+	for (int i = 1; i < sides - 1; ++i) {
+		out_tris[n++] = 0;
+		out_tris[n++] = i;
+		out_tris[n++] = i + 1;
+	}
+	out_ntri_idx = n;
+}
 
-const vec2f Hex_verts[] = {
-	{ -0.5f,    0.866f},
-	{  0.5f,    0.866f},
-	{  1.0f,    0.0f  },
-	{  0.5f,   -0.866f},
-	{ -0.5f,   -0.866f},
-	{ -1.0f,    0.0f  },
-};
+// Generate an N-pointed star, unit outer radius, first outer point at the top. Alternates outer
+// (1.0) and inner (inner_r) radius. Triangulated as N arm triangles (outer, inner_prev, inner_next)
+// plus an inner-polygon fan from inner vertex 1.
+void build_star(int points, float inner_r, vec2f* out_verts, int& out_nv, int* out_tris, int& out_ntri_idx)
+{
+	if (points < STAR_POINTS_MIN) points = STAR_POINTS_MIN;
+	if (points > STAR_POINTS_MAX) points = STAR_POINTS_MAX;
+	if (inner_r < STAR_INNER_MIN) inner_r = STAR_INNER_MIN;
+	if (inner_r > STAR_INNER_MAX) inner_r = STAR_INNER_MAX;
 
-const vec2f Cross_verts[] = {
-	{ -0.33f,  1.0f },   // 0: top-left of vertical bar
-	{  0.33f,  1.0f },   // 1: top-right of vertical bar
-	{  0.33f,  0.33f},   // 2
-	{  1.0f,   0.33f},   // 3: top-right of horizontal bar
-	{  1.0f,  -0.33f},   // 4: bottom-right of horizontal bar
-	{  0.33f, -0.33f},   // 5
-	{  0.33f, -1.0f },   // 6: bottom-right of vertical bar
-	{ -0.33f, -1.0f },   // 7: bottom-left of vertical bar
-	{ -0.33f, -0.33f},   // 8
-	{ -1.0f,  -0.33f},   // 9: bottom-left of horizontal bar
-	{ -1.0f,   0.33f},   // 10: top-left of horizontal bar
-	{ -0.33f,  0.33f},   // 11
-};
+	const int   nv    = points * 2;
+	const float start = PI_F * 0.5f;                            // first outer vert at top
+	const float step  = PI_F / static_cast<float>(points);      // half-step between outer & inner
+	for (int i = 0; i < nv; ++i) {
+		const float a = start + step * static_cast<float>(i);
+		const float r = (i & 1) ? inner_r : 1.0f;               // even=outer, odd=inner
+		out_verts[i].x = std::cos(a) * r;
+		out_verts[i].y = std::sin(a) * r;
+	}
+	out_nv = nv;
 
-// 5-point star: alternating outer (radius 1) and inner (radius ≈ 0.382) points, starting at
-// the top and going counterclockwise. Inner radius gives the classic 36° star arm angle.
-const vec2f Star_verts[] = {
-	{  0.000f,   1.000f},   // 0: outer (top)
-	{ -0.225f,   0.309f},   // 1: inner (top-left)
-	{ -0.951f,   0.309f},   // 2: outer (top-left)
-	{ -0.363f,  -0.118f},   // 3: inner (lower-left)
-	{ -0.588f,  -0.809f},   // 4: outer (bottom-left)
-	{  0.000f,  -0.382f},   // 5: inner (bottom)
-	{  0.588f,  -0.809f},   // 6: outer (bottom-right)
-	{  0.363f,  -0.118f},   // 7: inner (lower-right)
-	{  0.951f,   0.309f},   // 8: outer (top-right)
-	{  0.225f,   0.309f},   // 9: inner (top-right)
-};
+	int n = 0;
+	// Arms: each outer vertex paired with its two neighbouring inner vertices.
+	// Outer at index 2k (k = 0..points-1); neighbours are inner at indices 2k-1 (mod nv) and 2k+1.
+	for (int k = 0; k < points; ++k) {
+		const int outer = 2 * k;
+		const int prev_inner = (outer - 1 + nv) % nv;
+		const int next_inner = (outer + 1) % nv;
+		out_tris[n++] = prev_inner;
+		out_tris[n++] = outer;
+		out_tris[n++] = next_inner;
+	}
+	// Inner polygon: vertices at odd indices 1, 3, 5, ..., nv-1. Fan from vertex 1.
+	for (int k = 1; k + 1 < points; ++k) {
+		out_tris[n++] = 1;
+		out_tris[n++] = 1 + 2 * k;
+		out_tris[n++] = 1 + 2 * (k + 1);
+	}
+	out_ntri_idx = n;
+}
 
-// --- Triangle index tables (each triple = one CCW triangle) ---
+// Copy a tabled shape into the local buffers. Caller must have validated def has room.
+bool copy_tabled(const coordinate_shape_def& def, vec2f* out_verts, int& out_nv, int* out_tris, int& out_ntri_idx)
+{
+	if (static_cast<int>(def.verts.size()) > MAX_LOCAL_VERTS ||
+		static_cast<int>(def.tri_indices.size()) > MAX_LOCAL_TRIS) {
+		return false;
+	}
+	out_nv = static_cast<int>(def.verts.size());
+	for (int i = 0; i < out_nv; ++i) {
+		out_verts[i].x = def.verts[i].x;
+		out_verts[i].y = def.verts[i].y;
+	}
+	out_ntri_idx = static_cast<int>(def.tri_indices.size());
+	for (int i = 0; i < out_ntri_idx; ++i) {
+		out_tris[i] = def.tri_indices[i];
+	}
+	return true;
+}
 
-const int Tri_tris[] = {
-	0, 1, 2,
-};
-
-const int Sq_tris[] = {
-	0, 3, 2,
-	0, 2, 1,
-};
-
-const int Dia_tris[] = {
-	0, 3, 2,
-	0, 2, 1,
-};
-
-const int Pent_tris[] = {
-	0, 4, 3,
-	0, 3, 2,
-	0, 2, 1,
-};
-
-const int Hex_tris[] = {
-	0, 5, 4,
-	0, 4, 3,
-	0, 3, 2,
-	0, 2, 1,
-};
-
-// Cross: two rectangles, each split into two triangles. Indices reference Cross_verts above.
-const int Cross_tris[] = {
-	// Vertical bar (corners 0,1,6,7)
-	0, 7, 6,
-	0, 6, 1,
-	// Horizontal bar (corners 10,3,4,9)
-	10, 9, 4,
-	10, 4, 3,
-};
-
-// Star: 5 arm-triangles (outer point + its two neighboring inner points) plus the central
-// inner pentagon fanned from inner vertex 1. Indices reference Star_verts above.
-const int Star_tris[] = {
-	// 5 arms
-	9, 0, 1,    // top arm
-	1, 2, 3,    // top-left arm
-	3, 4, 5,    // bottom-left arm
-	5, 6, 7,    // bottom-right arm
-	7, 8, 9,    // top-right arm
-	// Inner pentagon, fanned from vertex 1
-	1, 3, 5,
-	1, 5, 7,
-	1, 7, 9,
-};
-
-struct ShapeDef {
-	const vec2f* verts;
-	int          vert_count;
-	const int*   tris;
-	int          tri_index_count;  // number of indices, always a multiple of 3
-};
-
-const ShapeDef Shape_defs[] = {
-	{ Tri_verts,    static_cast<int>(sizeof(Tri_verts)   / sizeof(vec2f)),
-	  Tri_tris,     static_cast<int>(sizeof(Tri_tris)    / sizeof(int))   },
-	{ Sq_verts,     static_cast<int>(sizeof(Sq_verts)    / sizeof(vec2f)),
-	  Sq_tris,      static_cast<int>(sizeof(Sq_tris)     / sizeof(int))   },
-	{ Dia_verts,    static_cast<int>(sizeof(Dia_verts)   / sizeof(vec2f)),
-	  Dia_tris,     static_cast<int>(sizeof(Dia_tris)    / sizeof(int))   },
-	{ Pent_verts,   static_cast<int>(sizeof(Pent_verts)  / sizeof(vec2f)),
-	  Pent_tris,    static_cast<int>(sizeof(Pent_tris)   / sizeof(int))   },
-	{ Hex_verts,    static_cast<int>(sizeof(Hex_verts)   / sizeof(vec2f)),
-	  Hex_tris,     static_cast<int>(sizeof(Hex_tris)    / sizeof(int))   },
-	{ Cross_verts,  static_cast<int>(sizeof(Cross_verts) / sizeof(vec2f)),
-	  Cross_tris,   static_cast<int>(sizeof(Cross_tris)  / sizeof(int))   },
-	{ Star_verts,   static_cast<int>(sizeof(Star_verts)  / sizeof(vec2f)),
-	  Star_tris,    static_cast<int>(sizeof(Star_tris)   / sizeof(int))   },
-};
-
-static_assert(sizeof(Shape_defs) / sizeof(ShapeDef) == static_cast<size_t>(CoordinatePointShape::NUM_SHAPES),
-			  "Shape_defs is out of sync with CoordinatePointShape");
+// Build the shape's 2D verts + triangle indices for the given coord point. Returns false if
+// the shape can't be resolved (out-of-range tabled index, oversized table entry).
+bool build_shape_local(const mission_coordinate_point& cp, vec2f* verts, int& nv, int* tris, int& nti)
+{
+	switch (cp.shape_kind) {
+		case CoordinatePointShapeKind::NGon:
+			build_ngon(cp.shape_sides, verts, nv, tris, nti);
+			return true;
+		case CoordinatePointShapeKind::Star:
+			build_star(cp.shape_points, cp.shape_inner_radius, verts, nv, tris, nti);
+			return true;
+		case CoordinatePointShapeKind::Tabled: {
+			const int idx = cp.shape_table_index;
+			if (idx < 0 || idx >= static_cast<int>(Coordinate_shapes.size())) {
+				return false;
+			}
+			return copy_tabled(Coordinate_shapes[idx], verts, nv, tris, nti);
+		}
+	}
+	return false;
+}
 
 } // anonymous namespace
 
@@ -192,34 +159,44 @@ void draw_coordinate_point_shape(const mission_coordinate_point& cp,
 		return;
 	}
 
-	const auto shape_idx = static_cast<size_t>(cp.shape);
-	if (shape_idx >= sizeof(Shape_defs) / sizeof(ShapeDef)) {
+	vec2f local_verts[MAX_LOCAL_VERTS];
+	int   local_tris[MAX_LOCAL_TRIS];
+	int   nv = 0, nti = 0;
+	if (!build_shape_local(cp, local_verts, nv, local_tris, nti)) {
 		return;
 	}
 
-	const ShapeDef& def = Shape_defs[shape_idx];
+	// Apply the per-instance rotation (degrees → radians) in 2D before billboarding.
+	if (cp.shape_angle_deg != 0.0f) {
+		const float a = cp.shape_angle_deg * (PI_F / 180.0f);
+		const float ca = std::cos(a);
+		const float sa = std::sin(a);
+		for (int i = 0; i < nv; ++i) {
+			const float x = local_verts[i].x;
+			const float y = local_verts[i].y;
+			local_verts[i].x = ca * x - sa * y;
+			local_verts[i].y = sa * x + ca * y;
+		}
+	}
+
 	const vec3d& pos = Objects[cp.objnum].pos;
 	const float radius = get_coordinate_point_world_radius(cp, *camera_eye);
 
 	const vec3d& rvec = camera_orient->vec.rvec;
 	const vec3d& uvec = camera_orient->vec.uvec;
 
-	// Build the camera-facing world-space vertices once, then expand the triangle index table
-	// into a flat vertex array for PRIM_TYPE_TRIS.
-	vec3d world_verts[32];
-	Assertion(def.vert_count <= static_cast<int>(sizeof(world_verts) / sizeof(world_verts[0])),
-			  "Coordinate-point shape vertex table is larger than the local buffer");
-	for (int i = 0; i < def.vert_count; ++i) {
+	// Build camera-facing world-space vertices, then expand the triangle index list into a flat
+	// vertex array for PRIM_TYPE_TRIS.
+	vec3d world_verts[MAX_LOCAL_VERTS];
+	for (int i = 0; i < nv; ++i) {
 		world_verts[i] = pos;
-		vm_vec_scale_add2(&world_verts[i], &rvec, def.verts[i].x * radius);
-		vm_vec_scale_add2(&world_verts[i], &uvec, def.verts[i].y * radius);
+		vm_vec_scale_add2(&world_verts[i], &rvec, local_verts[i].x * radius);
+		vm_vec_scale_add2(&world_verts[i], &uvec, local_verts[i].y * radius);
 	}
 
-	vertex tri_verts[64];
-	Assertion(def.tri_index_count <= static_cast<int>(sizeof(tri_verts) / sizeof(tri_verts[0])),
-			  "Coordinate-point shape triangle list is larger than the local buffer");
-	for (int i = 0; i < def.tri_index_count; ++i) {
-		g3_transfer_vertex(&tri_verts[i], &world_verts[def.tris[i]]);
+	vertex tri_verts[MAX_LOCAL_TRIS];
+	for (int i = 0; i < nti; ++i) {
+		g3_transfer_vertex(&tri_verts[i], &world_verts[local_tris[i]]);
 	}
 
 	material mat;
@@ -230,7 +207,7 @@ void draw_coordinate_point_shape(const mission_coordinate_point& cp,
 	mat.set_depth_mode(ZBUFFER_TYPE_READ);
 	mat.set_blend_mode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
 
-	g3_render_primitives(&mat, tri_verts, def.tri_index_count, PRIM_TYPE_TRIS, false);
+	g3_render_primitives(&mat, tri_verts, nti, PRIM_TYPE_TRIS, false);
 }
 
 void coordinate_points_render_all_in_mission()

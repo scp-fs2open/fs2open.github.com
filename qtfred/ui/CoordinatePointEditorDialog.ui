@@ -102,17 +102,17 @@
         </widget>
        </item>
        <item row="4" column="0">
-        <widget class="QLabel" name="categoryLabel">
+        <widget class="QLabel" name="groupLabel">
          <property name="text">
-          <string>&amp;Category</string>
+          <string>&amp;Group</string>
          </property>
          <property name="buddy">
-          <cstring>categoryEdit</cstring>
+          <cstring>groupEdit</cstring>
          </property>
         </widget>
        </item>
        <item row="4" column="1">
-        <widget class="QLineEdit" name="categoryEdit"/>
+        <widget class="QLineEdit" name="groupEdit"/>
        </item>
        <item row="5" column="0">
         <widget class="QLabel" name="shapeLabel">
@@ -135,6 +135,119 @@
         </widget>
        </item>
        <item row="6" column="0">
+        <widget class="QLabel" name="sidesLabel">
+         <property name="text">
+          <string>Sides</string>
+         </property>
+         <property name="toolTip">
+          <string>Number of sides for an NGon shape. Only relevant when Shape is NGon.</string>
+         </property>
+         <property name="buddy">
+          <cstring>sidesSpinBox</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="6" column="1">
+        <widget class="QSpinBox" name="sidesSpinBox">
+         <property name="minimum">
+          <number>2</number>
+         </property>
+         <property name="maximum">
+          <number>32</number>
+         </property>
+         <property name="specialValueText">
+          <string notr="true"> </string>
+         </property>
+        </widget>
+       </item>
+       <item row="7" column="0">
+        <widget class="QLabel" name="pointsLabel">
+         <property name="text">
+          <string>Points</string>
+         </property>
+         <property name="toolTip">
+          <string>Number of points for a Star shape. Only relevant when Shape is Star.</string>
+         </property>
+         <property name="buddy">
+          <cstring>pointsSpinBox</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="7" column="1">
+        <widget class="QSpinBox" name="pointsSpinBox">
+         <property name="minimum">
+          <number>2</number>
+         </property>
+         <property name="maximum">
+          <number>32</number>
+         </property>
+         <property name="specialValueText">
+          <string notr="true"> </string>
+         </property>
+        </widget>
+       </item>
+       <item row="8" column="0">
+        <widget class="QLabel" name="innerRadiusLabel">
+         <property name="text">
+          <string>Inner Radius</string>
+         </property>
+         <property name="toolTip">
+          <string>Inner-vertex radius for a Star shape, as a fraction of the outer radius. Only relevant when Shape is Star.</string>
+         </property>
+         <property name="buddy">
+          <cstring>innerRadiusSpinBox</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="8" column="1">
+        <widget class="QDoubleSpinBox" name="innerRadiusSpinBox">
+         <property name="decimals">
+          <number>3</number>
+         </property>
+         <property name="minimum">
+          <double>-0.010000000000000</double>
+         </property>
+         <property name="maximum">
+          <double>0.950000000000000</double>
+         </property>
+         <property name="singleStep">
+          <double>0.050000000000000</double>
+         </property>
+         <property name="specialValueText">
+          <string notr="true"> </string>
+         </property>
+        </widget>
+       </item>
+       <item row="9" column="0">
+        <widget class="QLabel" name="angleLabel">
+         <property name="text">
+          <string>Angle</string>
+         </property>
+         <property name="toolTip">
+          <string>In-plane rotation in degrees applied to the shape.</string>
+         </property>
+         <property name="buddy">
+          <cstring>angleSpinBox</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="9" column="1">
+        <widget class="QDoubleSpinBox" name="angleSpinBox">
+         <property name="decimals">
+          <number>2</number>
+         </property>
+         <property name="minimum">
+          <double>-360.000000000000000</double>
+         </property>
+         <property name="maximum">
+          <double>360.000000000000000</double>
+         </property>
+         <property name="singleStep">
+          <double>5.000000000000000</double>
+         </property>
+        </widget>
+       </item>
+       <item row="10" column="0">
         <widget class="QLabel" name="sizeLabel">
          <property name="text">
           <string>S&amp;ize</string>
@@ -144,14 +257,14 @@
          </property>
         </widget>
        </item>
-       <item row="6" column="1">
+       <item row="10" column="1">
         <widget class="QDoubleSpinBox" name="sizeSpinBox">
          <property name="decimals">
           <number>2</number>
          </property>
         </widget>
        </item>
-       <item row="7" column="0">
+       <item row="11" column="0">
         <widget class="QLabel" name="escortPriorityLabel">
          <property name="text">
           <string>&amp;Escort Priority</string>
@@ -161,21 +274,21 @@
          </property>
         </widget>
        </item>
-       <item row="7" column="1">
+       <item row="11" column="1">
         <widget class="QSpinBox" name="escortPrioritySpinBox">
          <property name="maximum">
           <number>9999</number>
          </property>
         </widget>
        </item>
-       <item row="8" column="0" colspan="2">
+       <item row="12" column="0" colspan="2">
         <widget class="QCheckBox" name="visibleInMissionCheck">
          <property name="text">
           <string>&amp;Visible in mission (renders in-game, target-in-front works)</string>
          </property>
         </widget>
        </item>
-       <item row="9" column="0" colspan="2">
+       <item row="13" column="0" colspan="2">
         <layout class="QHBoxLayout" name="colorLayout">
          <item>
           <widget class="QLabel" name="colorRLabel">

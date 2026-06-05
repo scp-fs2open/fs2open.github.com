@@ -5467,8 +5467,8 @@ void parse_coordinate_point(mission* /*pm*/)
 	required_string("$Location:");
 	stuff_vec3d(&cp.position);
 
-	if (optional_string("+Category:")) {
-		stuff_string(cp.category, F_NAME);
+	if (optional_string("+Group:")) {
+		stuff_string(cp.group, F_NAME);
 	}
 
 	if (optional_string("+Color:")) {
@@ -5485,7 +5485,47 @@ void parse_coordinate_point(mission* /*pm*/)
 	if (optional_string("+Shape:")) {
 		SCP_string shape_name;
 		stuff_string(shape_name, F_NAME);
-		cp.shape = coordinate_point_shape_from_string(shape_name.c_str());
+
+		// Built-in primitive kinds.
+		if (!stricmp(shape_name.c_str(), "NGon")) {
+			cp.shape_kind = CoordinatePointShapeKind::NGon;
+		} else if (!stricmp(shape_name.c_str(), "Star")) {
+			cp.shape_kind = CoordinatePointShapeKind::Star;
+		} else if (!stricmp(shape_name.c_str(), "Triangle")) {
+			// Legacy alias from before the shape-kind refactor. Equivalent to NGon(3).
+			cp.shape_kind  = CoordinatePointShapeKind::NGon;
+			cp.shape_sides = 3;
+		} else if (!stricmp(shape_name.c_str(), "Diamond")) {
+			// Legacy alias: NGon(4) with point-up convention (the default).
+			cp.shape_kind  = CoordinatePointShapeKind::NGon;
+			cp.shape_sides = 4;
+		} else if (!stricmp(shape_name.c_str(), "Pentagon")) {
+			cp.shape_kind  = CoordinatePointShapeKind::NGon;
+			cp.shape_sides = 5;
+		} else {
+			// Anything else: treat as a tabled shape name; index resolved at post-process.
+			cp.shape_kind       = CoordinatePointShapeKind::Tabled;
+			cp.shape_table_name = shape_name;
+		}
+	}
+
+	if (optional_string("+Sides:")) {
+		stuff_int(&cp.shape_sides);
+		CLAMP(cp.shape_sides, NGON_SIDES_MIN, NGON_SIDES_MAX);
+	}
+
+	if (optional_string("+Points:")) {
+		stuff_int(&cp.shape_points);
+		CLAMP(cp.shape_points, STAR_POINTS_MIN, STAR_POINTS_MAX);
+	}
+
+	if (optional_string("+Inner Radius:")) {
+		stuff_float(&cp.shape_inner_radius);
+		CLAMP(cp.shape_inner_radius, STAR_INNER_MIN, STAR_INNER_MAX);
+	}
+
+	if (optional_string("+Angle:")) {
+		stuff_float(&cp.shape_angle_deg);
 	}
 
 	if (optional_string("+Size:")) {

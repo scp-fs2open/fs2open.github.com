@@ -723,8 +723,8 @@ void HudGaugeBrackets::renderBoundingBrackets(int x1, int y1, int x2, int y2, in
 				auto* cp = find_coordinate_point_by_objnum(target_objnum);
 				if (cp != nullptr) {
 					tinfo_name = cp->name.c_str();
-					if (!cp->category.empty())
-						tinfo_class = cp->category.c_str();
+					if (!cp->group.empty())
+						tinfo_class = cp->group.c_str();
 				}
 				break;
 			}

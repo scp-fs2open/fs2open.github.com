@@ -23,10 +23,10 @@ public:
 	const SCP_string& getCurrentName() const;
 	bool setCurrentName(const SCP_string& name);
 
-	// Category (free-form string).
-	const SCP_string& getCategory() const;
-	bool isCategoryMixed() const;
-	void setCategory(const SCP_string& category);
+	// Group (free-form string).
+	const SCP_string& getGroup() const;
+	bool isGroupMixed() const;
+	void setGroup(const SCP_string& group);
 
 	// Color, per-channel.
 	int getColorR() const;
@@ -43,10 +43,31 @@ public:
 	bool isColorAMixed() const;
 	bool hasAnyColorMixed() const;
 
-	// Shape.
-	CoordinatePointShape getShape() const;
-	bool isShapeMixed() const;
-	void setShape(CoordinatePointShape shape);
+	// Shape kind + per-kind parameters. Mixed-state is tracked separately per field. Setters
+	// write through to every selected point's matching field; per-kind parameters are kept on
+	// every point regardless of its current kind, so toggling kinds doesn't destroy the data.
+	CoordinatePointShapeKind getShapeKind() const;
+	int  getShapeTableIndex() const;  // valid only when kind == Tabled
+	bool isShapeKindMixed() const;
+	// shape_id is encoded for the combo: NGon = -2, Star = -1, Tabled = table index (>= 0).
+	int  getShapeId() const;
+	void setShapeId(int shape_id);
+
+	int  getSides() const;
+	bool isSidesMixed() const;
+	void setSides(int v);
+
+	int  getPoints() const;
+	bool isPointsMixed() const;
+	void setPoints(int v);
+
+	float getInnerRadius() const;
+	bool  isInnerRadiusMixed() const;
+	void  setInnerRadius(float v);
+
+	float getAngle() const;
+	bool  isAngleMixed() const;
+	void  setAngle(float v);
 
 	// Size scale (clamped to [SIZE_MIN, SIZE_MAX] on set).
 	float getSize() const;
@@ -96,17 +117,28 @@ private:
 	SCP_vector<int> _selectedObjnums;
 
 	SCP_string _currentName;
-	SCP_string _category;
+	SCP_string _group;
 	int        _colorR = 255, _colorG = 255, _colorB = 255, _colorA = 255;
-	CoordinatePointShape _shape = CoordinatePointShape::Diamond;
+
+	CoordinatePointShapeKind _shapeKind = CoordinatePointShapeKind::NGon;
+	int   _shapeTableIndex = -1;
+	int   _sides         = 4;
+	int   _points        = 5;
+	float _innerRadius   = STAR_INNER_DEFAULT;
+	float _angle         = 0.0f;
+
 	float      _size = 1.0f;
 	int        _escortPriority = 0;
 	int        _multiTeam = -1;
 	bool       _visibleInMission = false;
 
-	bool _categoryMixed = false;
+	bool _groupMixed = false;
 	bool _redMixed = false, _greenMixed = false, _blueMixed = false, _alphaMixed = false;
-	bool _shapeMixed = false;
+	bool _shapeKindMixed = false;
+	bool _sidesMixed = false;
+	bool _pointsMixed = false;
+	bool _innerRadiusMixed = false;
+	bool _angleMixed = false;
 	bool _sizeMixed = false;
 	bool _escortPriorityMixed = false;
 	bool _multiTeamMixed = false;

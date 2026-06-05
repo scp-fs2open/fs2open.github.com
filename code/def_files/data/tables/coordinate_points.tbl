@@ -1,0 +1,23 @@
+#Coordinate Shapes
+
+; Default tabled shapes for coordinate points. Mods may add new shapes via *-cps.tbm files.
+; TBMs are additive only: duplicate names and the reserved names "NGon" and "Star" are rejected
+; with a warning.
+;
+; Each entry needs $Vertices: (a flat list of x y floats, unit radius, point-up convention) and
+; $Triangles: (a flat list of CCW triangle indices into the vertex list, three per triangle).
+
+$Name: Cross
+$Vertices: (
+	-0.33  1.00     0.33  1.00     0.33  0.33     1.00  0.33
+	 1.00 -0.33     0.33 -0.33     0.33 -1.00    -0.33 -1.00
+	-0.33 -0.33    -1.00 -0.33    -1.00  0.33    -0.33  0.33
+)
+$Triangles: (
+	;  Vertical bar
+	 0  7  6      0  6  1
+	; Horizontal bar
+	10  9  4     10  4  3
+)
+
+#End

@@ -1,5 +1,6 @@
 #include "mission/dialogs/CoordinatePointEditorDialogModel.h"
 
+#include <coordinate_points/coordinate_shapes.h>
 #include <globalincs/globals.h>
 #include <globalincs/linklist.h>
 #include <iff_defs/iff_defs.h>
@@ -34,9 +35,13 @@ mission_coordinate_point* CoordinatePointEditorDialogModel::getSelected(int objn
 void CoordinatePointEditorDialogModel::initializeData()
 {
 	_selectedObjnums.clear();
-	_categoryMixed = false;
+	_groupMixed = false;
 	_redMixed = _greenMixed = _blueMixed = _alphaMixed = false;
-	_shapeMixed = false;
+	_shapeKindMixed = false;
+	_sidesMixed = false;
+	_pointsMixed = false;
+	_innerRadiusMixed = false;
+	_angleMixed = false;
 	_sizeMixed = false;
 	_escortPriorityMixed = false;
 	_multiTeamMixed = false;
@@ -53,12 +58,17 @@ void CoordinatePointEditorDialogModel::initializeData()
 		const mission_coordinate_point* first = getSelected(_selectedObjnums.front());
 		if (first != nullptr) {
 			_currentName      = first->name;
-			_category         = first->category;
+			_group         = first->group;
 			_colorR           = first->display_color.red;
 			_colorG           = first->display_color.green;
 			_colorB           = first->display_color.blue;
 			_colorA           = first->display_color.alpha;
-			_shape            = first->shape;
+			_shapeKind        = first->shape_kind;
+			_shapeTableIndex  = first->shape_table_index;
+			_sides            = first->shape_sides;
+			_points           = first->shape_points;
+			_innerRadius      = first->shape_inner_radius;
+			_angle            = first->shape_angle_deg;
 			_size             = first->size_scale;
 			_escortPriority   = first->escort_priority;
 			_multiTeam        = first->multi_team;
@@ -67,12 +77,22 @@ void CoordinatePointEditorDialogModel::initializeData()
 			for (size_t i = 1; i < _selectedObjnums.size(); ++i) {
 				const auto* other = getSelected(_selectedObjnums[i]);
 				if (other == nullptr) continue;
-				if (other->category          != _category)         _categoryMixed = true;
+				if (other->group          != _group)         _groupMixed = true;
 				if (other->display_color.red   != _colorR)         _redMixed = true;
 				if (other->display_color.green != _colorG)         _greenMixed = true;
 				if (other->display_color.blue  != _colorB)         _blueMixed = true;
 				if (other->display_color.alpha != _colorA)         _alphaMixed = true;
-				if (other->shape             != _shape)            _shapeMixed = true;
+				// Shape kind is mixed if either the kind itself differs OR (for Tabled) the
+				// resolved table index differs -- two points both Tabled but pointing at
+				// different shapes are still "mixed."
+				if (other->shape_kind        != _shapeKind)        _shapeKindMixed = true;
+				else if (_shapeKind == CoordinatePointShapeKind::Tabled &&
+						 other->shape_table_index != _shapeTableIndex)
+					_shapeKindMixed = true;
+				if (other->shape_sides       != _sides)            _sidesMixed = true;
+				if (other->shape_points      != _points)           _pointsMixed = true;
+				if (other->shape_inner_radius != _innerRadius)     _innerRadiusMixed = true;
+				if (other->shape_angle_deg   != _angle)            _angleMixed = true;
 				if (other->size_scale        != _size)             _sizeMixed = true;
 				if (other->escort_priority   != _escortPriority)   _escortPriorityMixed = true;
 				if (other->multi_team        != _multiTeam)        _multiTeamMixed = true;
@@ -82,9 +102,14 @@ void CoordinatePointEditorDialogModel::initializeData()
 		}
 	} else {
 		_currentName.clear();
-		_category.clear();
+		_group.clear();
 		_colorR = _colorG = _colorB = _colorA = 255;
-		_shape = CoordinatePointShape::Diamond;
+		_shapeKind = CoordinatePointShapeKind::NGon;
+		_shapeTableIndex = -1;
+		_sides = 4;
+		_points = 5;
+		_innerRadius = STAR_INNER_DEFAULT;
+		_angle = 0.0f;
 		_size = 1.0f;
 		_escortPriority = 0;
 		_multiTeam = -1;
@@ -192,16 +217,16 @@ bool CoordinatePointEditorDialogModel::setCurrentName(const SCP_string& name)
 	return true;
 }
 
-const SCP_string& CoordinatePointEditorDialogModel::getCategory() const { return _category; }
-bool CoordinatePointEditorDialogModel::isCategoryMixed() const { return _categoryMixed; }
+const SCP_string& CoordinatePointEditorDialogModel::getGroup() const { return _group; }
+bool CoordinatePointEditorDialogModel::isGroupMixed() const { return _groupMixed; }
 
-void CoordinatePointEditorDialogModel::setCategory(const SCP_string& category)
+void CoordinatePointEditorDialogModel::setGroup(const SCP_string& group)
 {
-	_category = category;
-	_categoryMixed = false;
+	_group = group;
+	_groupMixed = false;
 	for (int objnum : _selectedObjnums) {
 		auto* cp = getSelected(objnum);
-		if (cp != nullptr) cp->category = category;
+		if (cp != nullptr) cp->group = group;
 	}
 	_suppressRefresh = true;
 	set_modified();
@@ -295,16 +320,126 @@ void CoordinatePointEditorDialogModel::setColorA(int a)
 	_suppressRefresh = false;
 }
 
-CoordinatePointShape CoordinatePointEditorDialogModel::getShape() const { return _shape; }
-bool CoordinatePointEditorDialogModel::isShapeMixed() const { return _shapeMixed; }
+CoordinatePointShapeKind CoordinatePointEditorDialogModel::getShapeKind() const { return _shapeKind; }
+int CoordinatePointEditorDialogModel::getShapeTableIndex() const { return _shapeTableIndex; }
+bool CoordinatePointEditorDialogModel::isShapeKindMixed() const { return _shapeKindMixed; }
 
-void CoordinatePointEditorDialogModel::setShape(CoordinatePointShape shape)
+int CoordinatePointEditorDialogModel::getShapeId() const
 {
-	_shape = shape;
-	_shapeMixed = false;
+	// Combo encoding: NGon=-2, Star=-1, Tabled=tableIndex.
+	switch (_shapeKind) {
+		case CoordinatePointShapeKind::NGon:   return -2;
+		case CoordinatePointShapeKind::Star:   return -1;
+		case CoordinatePointShapeKind::Tabled: return _shapeTableIndex;
+	}
+	return -2;
+}
+
+void CoordinatePointEditorDialogModel::setShapeId(int shape_id)
+{
+	CoordinatePointShapeKind kind;
+	int tableIdx = -1;
+	if (shape_id == -2) {
+		kind = CoordinatePointShapeKind::NGon;
+	} else if (shape_id == -1) {
+		kind = CoordinatePointShapeKind::Star;
+	} else if (shape_id >= 0 && shape_id < static_cast<int>(Coordinate_shapes.size())) {
+		kind = CoordinatePointShapeKind::Tabled;
+		tableIdx = shape_id;
+	} else {
+		return;  // unknown id (mixed-state sentinel or stale)
+	}
+
+	_shapeKind       = kind;
+	_shapeTableIndex = tableIdx;
+	_shapeKindMixed  = false;
 	for (int objnum : _selectedObjnums) {
 		auto* cp = getSelected(objnum);
-		if (cp != nullptr) cp->shape = shape;
+		if (cp == nullptr) continue;
+		cp->shape_kind = kind;
+		// Only overwrite shape_table_index for Tabled. For NGon/Star leave any prior index
+		// alone (defensively; it shouldn't be used anyway when kind != Tabled).
+		if (kind == CoordinatePointShapeKind::Tabled) {
+			cp->shape_table_index = tableIdx;
+		}
+	}
+	_suppressRefresh = true;
+	set_modified();
+	_editor->missionChanged();
+	_suppressRefresh = false;
+}
+
+int  CoordinatePointEditorDialogModel::getSides() const { return _sides; }
+bool CoordinatePointEditorDialogModel::isSidesMixed() const { return _sidesMixed; }
+
+void CoordinatePointEditorDialogModel::setSides(int v)
+{
+	// Below NGON_SIDES_MIN means "mixed" sentinel from the spinbox; ignore.
+	if (v < NGON_SIDES_MIN) return;
+	if (v > NGON_SIDES_MAX) v = NGON_SIDES_MAX;
+	_sides = v;
+	_sidesMixed = false;
+	for (int objnum : _selectedObjnums) {
+		auto* cp = getSelected(objnum);
+		if (cp != nullptr) cp->shape_sides = v;
+	}
+	_suppressRefresh = true;
+	set_modified();
+	_editor->missionChanged();
+	_suppressRefresh = false;
+}
+
+int  CoordinatePointEditorDialogModel::getPoints() const { return _points; }
+bool CoordinatePointEditorDialogModel::isPointsMixed() const { return _pointsMixed; }
+
+void CoordinatePointEditorDialogModel::setPoints(int v)
+{
+	if (v < STAR_POINTS_MIN) return;
+	if (v > STAR_POINTS_MAX) v = STAR_POINTS_MAX;
+	_points = v;
+	_pointsMixed = false;
+	for (int objnum : _selectedObjnums) {
+		auto* cp = getSelected(objnum);
+		if (cp != nullptr) cp->shape_points = v;
+	}
+	_suppressRefresh = true;
+	set_modified();
+	_editor->missionChanged();
+	_suppressRefresh = false;
+}
+
+float CoordinatePointEditorDialogModel::getInnerRadius() const { return _innerRadius; }
+bool  CoordinatePointEditorDialogModel::isInnerRadiusMixed() const { return _innerRadiusMixed; }
+
+void CoordinatePointEditorDialogModel::setInnerRadius(float v)
+{
+	// Negative = "mixed" sentinel.
+	if (v < 0.0f) return;
+	CLAMP(v, STAR_INNER_MIN, STAR_INNER_MAX);
+	_innerRadius = v;
+	_innerRadiusMixed = false;
+	for (int objnum : _selectedObjnums) {
+		auto* cp = getSelected(objnum);
+		if (cp != nullptr) cp->shape_inner_radius = v;
+	}
+	_suppressRefresh = true;
+	set_modified();
+	_editor->missionChanged();
+	_suppressRefresh = false;
+}
+
+float CoordinatePointEditorDialogModel::getAngle() const { return _angle; }
+bool  CoordinatePointEditorDialogModel::isAngleMixed() const { return _angleMixed; }
+
+void CoordinatePointEditorDialogModel::setAngle(float v)
+{
+	// Angle has no sentinel: it's a free-rotation field with no "mixed" interaction beyond
+	// the spinbox's specialValueText handling. The dialog filters mixed-state via its UI logic.
+	_angle = v;
+	_angleMixed = false;
+	for (int objnum : _selectedObjnums) {
+		auto* cp = getSelected(objnum);
+		if (cp != nullptr) cp->shape_angle_deg = v;
 	}
 	_suppressRefresh = true;
 	set_modified();
