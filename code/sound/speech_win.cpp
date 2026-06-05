@@ -253,7 +253,7 @@ SCP_vector<std::pair<int, SCP_string>> speech_enumerate_voices()
 				SCP_string voiceName;
 				voiceName.resize(buffer_size);
 				WideCharToMultiByte(CP_UTF8, 0, id, (int)idlength, &voiceName[0], buffer_size, nullptr, nullptr);
-				voices.emplace_back(std::make_pair(voiceID++, voiceName));
+				voices.emplace_back(voiceID++, std::move(voiceName));
 			}
 			CoTaskMemFree(id);
 		}
