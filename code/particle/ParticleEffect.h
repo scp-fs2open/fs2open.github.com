@@ -69,6 +69,10 @@ public:
 		SCREEN_ALIGNED
 	};
 
+	enum class DecalOrientationMode : uint8_t {
+		TOWARDS_CENTER
+	};
+
 	enum class ParticleCurvesOutput : uint8_t {
 		PARTICLE_NUM_MULT,
 		PARTICLE_FREQ_MULT,
@@ -130,6 +134,7 @@ public:
 	friend int ::parse_weapon(int, bool, const char*);
 	friend ParticleEffectHandle scripting::api::getLegacyScriptingParticleEffect(int bitmap, bool reversed);
 	friend bool move_particle(float frametime, particle* part);
+	friend bool render_particle(particle* part);
 
 	SCP_string m_name; //!< The name of this effect
 
@@ -139,6 +144,7 @@ public:
 	RotationType m_rotation_type;
 	ShapeDirection m_direction;
 	VelocityScaling m_velocity_directional_scaling;
+	DecalOrientationMode m_decalOrientationMode;
 
 	bool m_affectedByDetail; //Kinda deprecated. Only used by the oldest of legacy effects.
 	bool m_parentLifetime;
@@ -150,6 +156,8 @@ public:
 	bool m_vel_inherit_from_position_absolute;
 	bool m_reverseAnimation;
 	bool m_ignore_velocity_inherit_if_has_parent;
+	bool m_renderAsDecal;
+	bool m_decalEmissive;
 
 	SCP_vector<int> m_bitmap_list;
 	::util::UniformRange<size_t> m_bitmap_range;

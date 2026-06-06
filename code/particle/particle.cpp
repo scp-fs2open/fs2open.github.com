@@ -10,6 +10,7 @@
 
 
 #include "bmpman/bmpman.h"
+#include "decals/decals.h"
 #include "particle/particle.h"
 #include "particle/ParticleManager.h"
 #include "particle/ParticleEffect.h"
@@ -408,7 +409,7 @@ namespace particle
 	 * @param part The particle to render
 	 * @return @c true if the particle has been added to the rendering batch, @c false otherwise
 	 */
-	static bool render_particle(particle* part) {
+	bool render_particle(particle* part) {
 		// skip back-facing particles (ripped from fullneb code)
 		// Wanderer - add support for attached particles
 		vec3d p_pos;
@@ -434,7 +435,42 @@ namespace particle
 		//For anything apart from the velocity curve, "Post-Curves Velocity" is well defined. This is needed to facilitate complex but common particle scaling and appearance curves.
 		const auto& curve_input = std::forward_as_tuple(*part,
 			vm_vec_mag_quick(&part->velocity) * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::VELOCITY_MULT, std::forward_as_tuple(*part, vm_vec_mag_quick(&part->velocity))));
-			
+
+		if (source_effect.m_renderAsDecal) {
+			if (part->attached_objnum < 0 || Objects[part->attached_objnum].type != OBJ_SHIP) {
+				return false;
+			}
+
+			float radius = part->radius * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::RADIUS_MULT, curve_input);
+
+			decals::Decal decalInfo;
+
+			if (source_effect.m_decalEmissive) {
+				decalInfo.definition_handle = std::tuple(-1, part->bitmap, -1);
+			} else {
+				decalInfo.definition_handle = std::tuple(part->bitmap, -1, -1);
+			}
+
+			decalInfo.object        = &Objects[part->attached_objnum];
+			decalInfo.submodel      = -1;
+			decalInfo.creation_time = f2fl(Missiontime) - part->age;
+			decalInfo.lifetime      = 1.0f;
+			decalInfo.position      = part->pos;
+			decalInfo.scale         = {{{ radius, radius, radius }}};
+
+			switch (source_effect.m_decalOrientationMode) {
+			case ParticleEffect::DecalOrientationMode::TOWARDS_CENTER:
+				vm_vector_2_matrix(&decalInfo.orientation, &part->pos, nullptr, nullptr);
+				break;
+			default:
+				decalInfo.orientation = vmd_identity_matrix;
+				break;
+			}
+
+			decals::addSingleFrameDecal(std::move(decalInfo));
+			return false;
+		}
+
 		vec3d p1 = vmd_x_vector;
 
 		if (part_has_length) {
