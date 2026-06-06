@@ -374,6 +374,25 @@ namespace particle {
 			}
 		}
 
+		static void parseModernDeathEffect(ParticleEffect& effect, bool top_layer) {
+			if (optional_string("$Death Effect:")) {
+				SCP_string name;
+				stuff_string(name, F_NAME);
+
+				effect.m_deathEffect = ParticleManager::get()->getEffectByName(name);
+			}
+			else if (top_layer && optional_string("$Death Inline Effect:")) {
+				SCP_string name;
+				stuff_string(name, F_NAME);
+
+				SCP_vector<ParticleEffect> death {constructModernEffect(name, false)};
+				while (optional_string("$Continue Death Effect:"))
+					death.emplace_back(constructModernEffect(name));
+
+				effect.m_deathEffect = ParticleManager::get()->addEffect(std::move(death));
+			}
+		}
+
 		static ParticleEffect constructModernEffect(const SCP_string& name, bool top_layer = true) {
 			ParticleEffect effect(name);
 
@@ -408,6 +427,7 @@ namespace particle {
 			parseModularCurvesSource(effect);
 
 			parseModernTrail(effect, top_layer);
+			parseModernDeathEffect(effect, top_layer);
 
 			return effect;
 		}

@@ -182,6 +182,7 @@ public:
 	std::optional<LightInformation> m_light_source;
 
 	ParticleEffectHandle m_particleTrail;
+	ParticleEffectHandle m_deathEffect;
 
 	float m_particleChance; //Deprecated. Use particle num random ranges instead.
 	float m_distanceCulled; //Kinda deprecated. Only used by the oldest of legacy effects.
