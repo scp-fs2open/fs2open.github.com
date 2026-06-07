@@ -348,6 +348,12 @@ namespace particle {
 				stuff_boolean(&effect.m_renderAsDecal);
 
 				if (effect.m_renderAsDecal) {
+					if (!effect.m_parent_local) {
+						error_display(0, "Particle must be local to parent for decal rendering. Disabling decal rendering.");
+						effect.m_renderAsDecal = false;
+						//We still parse the rest to allow parsing to properly complete for the other effects.
+					}
+
 					if (optional_string("+Orientation Mode:")) {
 						switch (required_string_one_of(1, "Towards Center")) {
 						case 0:
