@@ -398,6 +398,12 @@ void CMissionCutscenesDlg::OnCancel()
 	CDialog::OnCancel();
 }
 
+BOOL CMissionCutscenesDlg::DestroyWindow()
+{
+	Cutscene_editor_dlg = nullptr;
+	return CDialog::DestroyWindow();
+}
+
 void CMissionCutscenesDlg::OnClose()
 {
 	if (query_modified()) {

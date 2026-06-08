@@ -444,7 +444,13 @@ void bg_bitmap_dlg::OnCancel()
 	OnClose();
 }
 
-void bg_bitmap_dlg::OnClose() 
+BOOL bg_bitmap_dlg::DestroyWindow()
+{
+	Bg_bitmap_dialog = nullptr;
+	return CDialog::DestroyWindow();
+}
+
+void bg_bitmap_dlg::OnClose()
 {
 	UpdateData(TRUE);
 	Mission_palette = m_nebula_color;

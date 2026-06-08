@@ -493,7 +493,13 @@ void CMessageEditorDlg::OnNew()
 	update_cur_message();
 }
 
-void CMessageEditorDlg::OnClose() 
+BOOL CMessageEditorDlg::DestroyWindow()
+{
+	Message_editor_dlg = nullptr;
+	return CDialog::DestroyWindow();
+}
+
+void CMessageEditorDlg::OnClose()
 {
 	int z;
 
