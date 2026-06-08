@@ -5834,8 +5834,14 @@ void weapon_home(object *obj, int num, float frame_time)
 	if (wp->homing_subsys != NULL) {
 		if (wp->homing_subsys->flags[Ship::Subsystem_Flags::Missiles_ignore_if_dead]) {
 			if ((wp->homing_subsys->max_hits > 0) && (wp->homing_subsys->current_hits <= 0)) {
-				wp->homing_object = &obj_used_list;
-				return;
+				if (The_mission.ai_profile->flags[AI::Profile_Flags::Fix_ignore_if_dead_flag]) {
+					// fixed way ensures an attack point on the target and proper homing
+					wp->homing_subsys = nullptr;
+				} else {
+					// old way resulted in weapon not homing
+					wp->homing_object = &obj_used_list;
+					return;
+				}
 			}
 		}
 	}

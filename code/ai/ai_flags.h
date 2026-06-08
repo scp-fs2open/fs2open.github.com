@@ -190,6 +190,7 @@ namespace AI {
 		Do_not_set_override_when_assigning_form_on_wing,
 		Purge_player_issued_form_on_wing_after_subsequent_order,
 		Cancel_future_waves_of_any_wing_launched_from_an_exited_ship,
+		Fix_ignore_if_dead_flag,
 
 		NUM_VALUES
 	};
