@@ -45,18 +45,24 @@ VulkanShadercLibrary::VulkanShadercLibrary()
 #if defined(_WIN32)
 	const char* names[] = {"shaderc_shared.dll", "shaderc.dll"};
 #elif defined(__APPLE__)
-	const char* names[] = {"libshaderc.dylib"};
+	const char* names[] = {"libshaderc_shared.1.dylib", "libshaderc_shared.dylib", "libshaderc.dylib"};
 #else
-	const char* names[] = {"libshaderc.so", "libshaderc.so.1"};
+	const char* names[] = {"libshaderc_shared.so.1", "libshaderc_shared.so", "libshaderc.so.1", "libshaderc.so"};
 #endif
+
+	auto base_path = SDL_GetBasePath();
 
 	bool loaded = false;
 	for (const auto* name : names) {
-		if (LoadExternal(name)) {
+		if (LoadExternal(name, base_path)) {
 			loaded = true;
 			mprintf(("VulkanShadercLibrary: Loaded '%s'\n", name));
 			break;
 		}
+	}
+
+	if (base_path) {
+		SDL_free(base_path);
 	}
 
 	if (!loaded) {
