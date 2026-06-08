@@ -17,8 +17,6 @@ LD_LIBRARY_PATH=$Qt5_DIR/lib:$LD_LIBRARY_PATH
 if [ "$RUNNER_OS" = "macOS" ]; then
     CXXFLAGS="-mtune=generic -pipe -Wno-unknown-pragmas"
     CFLAGS="-mtune=generic -pipe -Wno-unknown-pragmas"
-    # TODO: Vulkan support is disabled on MacOS due to issues with the test suite not linking correctly
-    PLATFORM_CMAKE_OPTIONS="-DFSO_BUILD_WITH_VULKAN=OFF"
     export CMAKE_OSX_ARCHITECTURES="$ARCHITECTURE"
 else
     PLATFORM_CMAKE_OPTIONS="-DFSO_BUILD_APPIMAGE=ON -DFORCED_SIMD_INSTRUCTIONS=SSE2 -DUSE_STATIC_LIBCXX=ON"
@@ -28,10 +26,6 @@ CMAKE_OPTIONS="$JOB_CMAKE_OPTIONS"
 if [[ "$COMPILER" =~ ^clang.*$ ]]; then
     # Force clang to silently allow -static-libstdc++ flag
     CMAKE_OPTIONS="$CMAKE_OPTIONS -DCLANG_USE_LIBCXX=ON"
-    # Enable Vulkan for clang builds so the compilation database includes the
-    # bundled Vulkan headers.  Without this, clang-tidy falls back to
-    # system-installed Vulkan headers which may be an incompatible version.
-    CMAKE_OPTIONS="$CMAKE_OPTIONS -DFSO_BUILD_WITH_VULKAN=ON"
 fi
 
 if [ ! "$CCACHE_PATH" = "" ]; then
@@ -56,4 +50,4 @@ fi
 cmake -G Ninja -DFSO_FATAL_WARNINGS=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=ON $CMAKE_OPTIONS $PLATFORM_CMAKE_OPTIONS \
     -DCMAKE_INSTALL_PREFIX="$(pwd)/install" -DCMAKE_BUILD_TYPE=$CONFIGURATION \
     -DFFMPEG_USE_PRECOMPILED=ON -DFSO_BUILD_TESTS=ON -DFSO_BUILD_INCLUDED_LIBS=ON -DFSO_BUILD_QTFRED=${ENABLE_QTFRED:-OFF} \
-    -DSHADERS_ENABLE_COMPILATION=ON -DCMAKE_JOB_POOLS=link=1 -DCMAKE_JOB_POOL_LINK=link ..
+    -DCMAKE_JOB_POOLS=link=1 -DCMAKE_JOB_POOL_LINK=link ..
