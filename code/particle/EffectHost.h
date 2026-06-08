@@ -6,6 +6,17 @@
 
 #include <optional>
 
+namespace effects {
+	struct attachment_object {
+		int objnum = -1;
+		int sig = -1;
+	};
+	struct attachment_particle {
+		particle::WeakParticlePtr particle = particle::WeakParticlePtr();
+	};
+}
+using EffectAttachment = std::variant<std::monostate, effects::attachment_object, effects::attachment_particle>;
+
 class EffectHost {
 
 protected:
