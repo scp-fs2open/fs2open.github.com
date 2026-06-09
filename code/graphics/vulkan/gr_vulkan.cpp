@@ -27,6 +27,10 @@
 #include "lighting/lighting.h"
 #include "pngutils/pngutils.h"
 
+#if defined(_WIN32)
+#include <direct.h>
+#endif
+
 namespace graphics {
 namespace vulkan {
 
