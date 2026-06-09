@@ -234,5 +234,21 @@ void convert_model_material(model_uniform_data* data_out,
 	}
 }
 
+void convert_shadow_material(shadow_uniform_data* data_out,
+							 const matrix4& model_transform,
+							 const vec3d& scale,
+							 size_t transform_buffer_offset)
+{
+	matrix4 scaled_matrix = model_transform;
+
+	scale_matrix(scaled_matrix, scale);
+
+	data_out->modelMatrix = scaled_matrix;
+
+	vm_matrix4_x_matrix4(&data_out->modelViewMatrix, &gr_view_matrix, &scaled_matrix);
+
+	data_out->buffer_matrix_offset = (int) transform_buffer_offset;
+}
+
 }
 }

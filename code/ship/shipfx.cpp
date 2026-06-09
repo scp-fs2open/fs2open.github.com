@@ -19,6 +19,7 @@
 #include "fireball/fireballs.h"
 #include "gamesequence/gamesequence.h"
 #include "gamesnd/gamesnd.h"
+#include "graphics/shadows.h"
 #include "hud/hudmessage.h"
 #include "io/timer.h"
 #include "lighting/lighting.h"
@@ -36,7 +37,6 @@
 #include "prop/prop.h"
 #include "render/3d.h" // needed for View_position, which is used when playing a 3D sound
 #include "render/batching.h"
-#include "graphics/shadow_render_list.h"
 #include "scripting/hook_api.h"
 #include "ship/ship.h"
 #include "ship/shiphit.h"

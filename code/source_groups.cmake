@@ -475,8 +475,6 @@ add_file_folder("Graphics"
 	graphics/render_queue.h
 	graphics/shadows.cpp
 	graphics/shadows.h
-	graphics/shadow_render_list.cpp
-	graphics/shadow_render_list.h
 	graphics/tmapper.h
 	graphics/uniforms.cpp
 	graphics/uniforms.h
