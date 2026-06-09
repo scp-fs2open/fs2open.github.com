@@ -472,6 +472,7 @@ add_file_folder("Graphics"
 	graphics/post_processing.h
 	graphics/render.cpp
 	graphics/render.h
+	graphics/render_queue.h
 	graphics/shadows.cpp
 	graphics/shadows.h
 	graphics/shadow_render_list.cpp

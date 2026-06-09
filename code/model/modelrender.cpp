@@ -156,8 +156,6 @@ void model_clear_cached_ui_render_instances()
 	Ui_render_instance_cache_last_processed_framecount = -1;
 }
 
-model_batch_buffer TransformBufferHandler;
-
 model_render_params::model_render_params() :
 	Model_flags(MR_NORMAL),
 	Debug_flags(0),
@@ -503,59 +501,16 @@ void model_batch_buffer::submit_buffer_data()
 	gr_update_transform_buffer(Mem_alloc, Mem_alloc_size);
 }
 
-model_draw_list::model_draw_list():
-Transformations()
+model_draw_list::model_draw_list()
 {
 	reset();
-}
-
-void model_draw_list::reset()
-{
-	Render_elements.clear();
-	Render_keys.clear();
-
-	Transformations.clear();
-
-	Current_scale.xyz.x = 1.0f;
-	Current_scale.xyz.y = 1.0f;
-	Current_scale.xyz.z = 1.0f;
-
-	Render_initialized = false;
-}
-
-void model_draw_list::sort_draws()
-{
-	std::sort(Render_keys.begin(), Render_keys.end(),
-			  [this](const int a, const int b) { return model_draw_list::sort_draw_pair(this, a, b); });
-}
-
-void model_draw_list::start_model_batch(int n_models)
-{
-	TransformBufferHandler.set_num_models(n_models);
-}
-
-void model_draw_list::add_submodel_to_batch(int model_num)
-{
-	matrix4 transform;
-
-	transform = Transformations.get_transform();
-
-	// set scale
-	vm_vec_scale(&transform.vec.rvec, Current_scale.xyz.x);
-	vm_vec_scale(&transform.vec.uvec, Current_scale.xyz.y);
-	vm_vec_scale(&transform.vec.fvec, Current_scale.xyz.z);
-
-	// set visibility
-	transform.a1d[15] = 0.0f;
-
-	TransformBufferHandler.set_model_transform(transform, model_num);
 }
 
 void model_draw_list::add_arc(const vec3d *v1, const vec3d *v2, const SCP_vector<vec3d> *persistent_arc_points, const color *primary, const color *secondary, float arc_width, ubyte segment_depth)
 {
 	arc_effect new_arc;
 
-	new_arc.transform = Transformations.get_transform();
+	new_arc.transform = get_transform();
 	new_arc.v1 = *v1;
 	new_arc.v2 = *v2;
 	new_arc.primary = *primary;
@@ -569,9 +524,9 @@ void model_draw_list::add_arc(const vec3d *v1, const vec3d *v2, const SCP_vector
 
 void model_draw_list::set_light_filter(const vec3d *pos, float rad)
 {
-	Scene_light_handler.setLightFilter(pos, rad);
+	_lights.setLightFilter(pos, rad);
 
-	Current_lights_set = Scene_light_handler.bufferLights();
+	Current_lights_set = _lights.bufferLights();
 }
 
 void model_draw_list::add_buffer_draw(const model_material *render_material, const indexed_vertex_source *vert_src, const vertex_buffer *buffer, size_t texi, uint tmap_flags)
@@ -580,14 +535,10 @@ void model_draw_list::add_buffer_draw(const model_material *render_material, con
 	draw_data.render_material = *render_material;
 
 	{
-		// If the zbuffer type is FULL then this buffer may be drawn in the deferred lighting part otherwise we need to
-		// make sure that the deferred flag is disabled or else some parts of the rendered colors go missing
-		// TODO: This should really be handled somewhere else. This feels like a crude hack...
 		auto possibly_deferred = draw_data.render_material.get_depth_mode() == ZBUFFER_TYPE_FULL
 			&& gr_is_capable(gr_capability::CAPABILITY_DEFERRED_LIGHTING) && light_deferred_enabled();
 
 		if (possibly_deferred) {
-			// Fog is handled differently in deferred shader situations
 			draw_data.render_material.set_fog();
 		}
 
@@ -603,12 +554,12 @@ void model_draw_list::add_buffer_draw(const model_material *render_material, con
 		draw_data.scale.xyz.y = 1.0f;
 		draw_data.scale.xyz.z = 1.0f;
 
-		draw_data.transform_buffer_offset = TransformBufferHandler.get_buffer_offset();
+		draw_data.transform_buffer_offset = _batchBuffer.get_buffer_offset();
 
 		draw_data.render_material.set_batching(true);
 	} else {
-		draw_data.transform = Transformations.get_transform();
-		draw_data.scale = Current_scale;
+		draw_data.transform = get_transform();
+		draw_data.scale = _scale;
 		draw_data.transform_buffer_offset = INVALID_SIZE;
 		draw_data.render_material.set_batching(false);
 	}
@@ -621,8 +572,7 @@ void model_draw_list::add_buffer_draw(const model_material *render_material, con
 	draw_data.flags = tmap_flags;
 	draw_data.lights = Current_lights_set;
 
-	Render_elements.push_back(draw_data);
-	Render_keys.push_back((int) (Render_elements.size() - 1));
+	push_element(std::move(draw_data));
 }
 
 void model_draw_list::render_buffer(const queued_buffer_draw &render_elements)
@@ -639,14 +589,13 @@ void model_draw_list::render_buffer(const queued_buffer_draw &render_elements)
 vec3d model_draw_list::get_view_position() const
 {
 	matrix basis_world;
-	matrix4 transform_mat = Transformations.get_transform();
+	matrix4 transform_mat = _transforms.get_transform();
 	matrix orient;
 	vec3d pos;
 
 	vm_matrix4_get_orientation(&orient, &transform_mat);
 	vm_matrix4_get_offset(&pos, &transform_mat);
 
-	// get the world basis of our current local space.
 	vm_matrix_x_matrix(&basis_world, &Object_matrix, &orient);
 
 	vec3d eye_pos_local;
@@ -658,52 +607,15 @@ vec3d model_draw_list::get_view_position() const
 	return return_val;
 }
 
-void model_draw_list::push_transform(const vec3d *pos, const matrix *orient)
-{
-	Transformations.push(pos, orient);
-}
-
-void model_draw_list::pop_transform()
-{
-	Transformations.pop();
-}
-
-void model_draw_list::set_scale(const vec3d *scale)
-{
-	if ( scale == NULL ) {
-		Current_scale.xyz.x = 1.0f;
-		Current_scale.xyz.y = 1.0f;
-		Current_scale.xyz.z = 1.0f;
-		return;
-	}
-
-	Current_scale = *scale;
-}
-
 void model_draw_list::init()
 {
 	reset();
 
 	for (auto& l : Lights) {
 		if ( l.type == Light_Type::Directional || !Deferred_lighting ) {
-			Scene_light_handler.addLight(&l);
+			_lights.addLight(&l);
 		}	
 	}
-
-	TransformBufferHandler.reset();
-}
-
-void model_draw_list::init_render(bool sort)
-{
-	if ( sort ) {
-		sort_draws();
-	}
-
-	TransformBufferHandler.submit_buffer_data();
-
-	build_uniform_buffer();
-
-	Render_initialized = true;
 }
 
 void model_draw_list::render_all(gr_zbuffer_type depth_mode)
@@ -711,15 +623,15 @@ void model_draw_list::render_all(gr_zbuffer_type depth_mode)
 	GR_DEBUG_SCOPE("Render draw list");
 	TRACE_SCOPE(tracing::SubmitDraws);
 
-	Assertion(Render_initialized, "init_render must be called before any render_all call!");
+	Assertion(_initialized, "init_render must be called before any render_all call!");
 
-	Scene_light_handler.resetLightState();
+	_lights.resetLightState();
 
-	for ( size_t i = 0; i < Render_keys.size(); ++i ) {
-		int render_index = Render_keys[i];
+	for ( size_t i = 0; i < _keys.size(); ++i ) {
+		int render_index = _keys[i];
 
-		if ( depth_mode == ZBUFFER_TYPE_DEFAULT || Render_elements[render_index].render_material.get_depth_mode() == depth_mode ) {
-			render_buffer(Render_elements[render_index]);
+		if ( depth_mode == ZBUFFER_TYPE_DEFAULT || _elements[render_index].render_material.get_depth_mode() == depth_mode ) {
+			render_buffer(_elements[render_index]);
 		}
 	}
 
@@ -750,7 +662,7 @@ void model_draw_list::add_insignia(const model_render_params *params, const poly
 {
 	insignia_draw_data new_insignia;
 
-	new_insignia.transform = Transformations.get_transform();
+	new_insignia.transform = get_transform();
 	new_insignia.pm = pm;
 	new_insignia.detail_level = detail_level;
 	new_insignia.bitmap_num = bitmap_num;
@@ -798,7 +710,7 @@ void model_draw_list::add_outline(const vertex* vert_array, int n_verts, const c
 	draw_info.vert_array = vert_array;
 	draw_info.n_verts = n_verts;
 	draw_info.clr = *clr;
-	draw_info.transform = Transformations.get_transform();
+	draw_info.transform = get_transform();
 
 	Outlines.push_back(draw_info);
 }
@@ -827,10 +739,10 @@ void model_draw_list::render_outline(const outline_draw &outline_info)
 	g3_done_instance(true);
 }
 
-bool model_draw_list::sort_draw_pair(const model_draw_list* target, const int a, const int b)
+bool model_draw_list::sort_draw_pair(int a, int b) const
 {
-	auto draw_call_a = &target->Render_elements[a];
-	auto draw_call_b = &target->Render_elements[b];
+	auto draw_call_a = &_elements[a];
+	auto draw_call_b = &_elements[b];
 
 	if ( draw_call_a->sdr_flags != draw_call_b->sdr_flags ) {
 		return draw_call_a->sdr_flags < draw_call_b->sdr_flags;
@@ -883,17 +795,15 @@ void model_draw_list::build_uniform_buffer() {
 
 	TRACE_SCOPE(tracing::BuildModelUniforms);
 
-	_dataBuffer = gr_get_uniform_buffer(uniform_block_type::ModelData, Render_keys.size());
+	_dataBuffer = gr_get_uniform_buffer(uniform_block_type::ModelData, _keys.size());
 
-	for (auto render_index : Render_keys) {
-		auto& queued_draw = Render_elements[render_index];
+	for (auto render_index : _keys) {
+		auto& queued_draw = _elements[render_index];
 
-		// Set lighting here so that it can be captured by the uniform conversion below
 		if ( queued_draw.render_material.is_lit() ) {
-			Scene_light_handler.setLights(&queued_draw.lights);
+			_lights.setLights(&queued_draw.lights);
 		} else {
-
-			Scene_light_handler.resetLightState();
+			_lights.resetLightState();
 		}
 
 		auto element = _dataBuffer.aligner().addTypedElement<graphics::model_uniform_data>();
