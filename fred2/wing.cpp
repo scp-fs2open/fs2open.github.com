@@ -443,13 +443,15 @@ void remove_ship_from_wing(int ship, int min) {
 	rename_ship(ship, buf);
 }
 
-void remove_wing(int wing_num)
+void disband_wing(int wing_num)
 {
 	int i, total;
 	object *ptr;
 
 	if (check_wing_dependencies(wing_num))
 		return;
+
+	delete_reinforcement(Wings[wing_num].name);
 
 	Ship_editor_dialog.bypass_errors = Wing_editor_dialog.bypass_errors = 1;
 	Ship_editor_dialog.update_data(0);

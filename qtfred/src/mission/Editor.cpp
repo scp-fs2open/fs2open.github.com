@@ -1551,7 +1551,7 @@ int Editor::set_reinforcement(const char* name, int state) {
 
 	return 0;
 }
-void Editor::remove_wing(int wing_num) {
+void Editor::disband_wing(int wing_num) {
 
 	int i, total;
 	object* ptr;
@@ -1559,6 +1559,8 @@ void Editor::remove_wing(int wing_num) {
 	if (check_wing_dependencies(wing_num)) {
 		return;
 	}
+
+	delete_reinforcement(Wings[wing_num].name);
 
 	total = Wings[wing_num].wave_count;
 	for (i = 0; i < total; i++) {

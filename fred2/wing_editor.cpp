@@ -1078,7 +1078,7 @@ void wing_editor::OnDeleteWing()
 void wing_editor::OnDisbandWing()
 {
 	modified = 0;  // no need to run update checks, since wing will be gone shortly anyway.
-	remove_wing(cur_wing);
+	disband_wing(cur_wing);
 }
 
 void wing_editor::OnGoals2()
