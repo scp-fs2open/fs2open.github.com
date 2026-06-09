@@ -31,6 +31,7 @@
 #include "math/fvi.h"
 #include "math/vecmat.h"
 #include "model/model.h"
+#include "model/modelrender.h"
 #include "model/modelreplace.h"
 #include "model/modelsinc.h"
 #include "parse/parselo.h"
@@ -337,6 +338,10 @@ void model_free_all()
 void model_instance_free_all()
 {
 	size_t i;
+
+	// invalidate the UI render instance cache first so it doesn't retain stale references
+	// into Polygon_model_instances after the loop below
+	model_clear_cached_ui_render_instances();
 
 	// free any outstanding model instances
 	for ( i = 0; i < Polygon_model_instances.size(); ++i ) {
