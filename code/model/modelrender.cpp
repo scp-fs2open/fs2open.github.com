@@ -579,9 +579,7 @@ void model_draw_list::add_buffer_draw(const model_material *render_material, con
 	queued_buffer_draw draw_data;
 	draw_data.render_material = *render_material;
 
-	if (Rendering_to_shadow_map) {
-		draw_data.render_material.set_shadow_casting(true);
-	} else {
+	{
 		// If the zbuffer type is FULL then this buffer may be drawn in the deferred lighting part otherwise we need to
 		// make sure that the deferred flag is disabled or else some parts of the rendered colors go missing
 		// TODO: This should really be handled somewhere else. This feels like a crude hack...

@@ -12,12 +12,17 @@
 #include "cmdline/cmdline.h"
 #include "debris/debris.h"
 #include "graphics/matrix.h"
+#include "graphics/shadow_render_list.h"
 #include "lighting/lighting.h"
 #include "math/vecmat.h"
 #include "mod_table/mod_table.h"
 #include "model/model.h"
 #include "model/modelrender.h"
+#include "object/objectdock.h"
 #include "options/Option.h"
+#include "prop/prop.h"
+#include "ship/ship.h"
+#include "ship/shipfx.h"
 #include "render/3d.h"
 #include "tracing/tracing.h"
 
@@ -462,6 +467,56 @@ void shadows_end_render()
 	gr_shadow_map_end();
 }
 
+static bool shadow_obj_clip_plane(const object* objp, shadow_render_list::clip_plane_info* clip)
+{
+	if (objp->type != OBJ_SHIP)
+		return false;
+
+	ship* shipp = &Ships[objp->instance];
+
+	if (shipp->is_arriving(ship::warpstage::BOTH, true)) {
+		model_render_params dummy;
+		if (shipp->warpin_effect->warpShipClip(&dummy)) {
+			clip->normal = dummy.get_clip_plane_normal();
+			clip->position = dummy.get_clip_plane_pos();
+			return true;
+		}
+	}
+	if (shipp->flags[Ship::Ship_Flags::Depart_warp]) {
+		model_render_params dummy;
+		if (shipp->warpout_effect->warpShipClip(&dummy)) {
+			clip->normal = dummy.get_clip_plane_normal();
+			clip->position = dummy.get_clip_plane_pos();
+			return true;
+		}
+	}
+
+	dock_function_info dfi;
+	dock_evaluate_all_docked_objects(const_cast<object*>(objp), &dfi,
+		[](object* docked, dock_function_info* info) {
+			if (docked->type != OBJ_SHIP) return;
+			auto* dship = &Ships[docked->instance];
+			if (dship->is_arriving(ship::warpstage::BOTH, true) || dship->flags[Ship::Ship_Flags::Depart_warp]) {
+				info->maintained_variables.bool_value = true;
+				info->maintained_variables.objp_value = docked;
+			}
+		});
+
+	if (dfi.maintained_variables.bool_value) {
+		auto* dship = &Ships[dfi.maintained_variables.objp_value->instance];
+		WarpEffect* warp_effect = dship->is_arriving(ship::warpstage::BOTH, true)
+			? dship->warpin_effect : dship->warpout_effect;
+		model_render_params dummy;
+		if (warp_effect->warpShipClip(&dummy)) {
+			clip->normal = dummy.get_clip_plane_normal();
+			clip->position = dummy.get_clip_plane_pos();
+			return true;
+		}
+	}
+
+	return false;
+}
+
 void shadows_render_all(fov_t fov, matrix *eye_orient, vec3d *eye_pos)
 {
 	if (gr_screen.mode == GR_STUB) {
@@ -479,81 +534,105 @@ void shadows_render_all(fov_t fov, matrix *eye_orient, vec3d *eye_pos)
 		return;
 	}
 
-	//shadows_debug_show_frustum(&Player_obj->orient, &Player_obj->pos, fov, gr_screen.clip_aspect, Min_draw_distance, 3000.0f);
-
 	Shadow_view_matrix_render = gr_view_matrix;
 
 	gr_end_proj_matrix();
 	gr_end_view_matrix();
 
-	// the default cascade distances are a result of some arbitrary tuning to give a good balance of quality and banding. 
-	// maybe we could use a more programmatic algorithim? 
-	matrix light_matrix = shadows_start_render(eye_orient, eye_pos, fov, gr_screen.clip_aspect, std::get<0>(Shadow_distances), std::get<1>(Shadow_distances), std::get<2>(Shadow_distances), std::get<3>(Shadow_distances));
+	matrix light_matrix = shadows_start_render(eye_orient, eye_pos, fov, gr_screen.clip_aspect,
+		std::get<0>(Shadow_distances), std::get<1>(Shadow_distances),
+		std::get<2>(Shadow_distances), std::get<3>(Shadow_distances));
 
-	model_draw_list scene;
+	shadow_render_list shadow_list;
 	object *objp = Objects;
 
 	for ( int i = 0; i <= Highest_object_index; i++, objp++ ) {
-		bool cull = true;
+		if ( objp->flags[Object::Object_Flags::Should_be_dead] )
+			continue;
 
+		bool cull = true;
 		for ( int j = 0; j < MAX_SHADOW_CASCADES; ++j ) {
 			if ( shadows_obj_in_frustum(objp, &light_matrix, &Shadow_frustums[j].min, &Shadow_frustums[j].max) ) {
 				cull = false;
 				break;
 			}
 		}
+		if ( cull ) continue;
 
-		if ( cull ) {
-			continue;
+		switch (objp->type) {
+		case OBJ_SHIP: {
+			ship* shipp = &Ships[objp->instance];
+
+			if (shipp->large_ship_blowup_index >= 0) {
+				shipfx_shadow_render_blowup(&shadow_list, shipp);
+				continue;
+			}
+
+			model_clear_instance(Ship_info[shipp->ship_info_index].model_num);
+
+			shadow_render_list::clip_plane_info clip;
+			bool has_clip = shadow_obj_clip_plane(objp, &clip);
+
+			auto pm = model_get(Ship_info[shipp->ship_info_index].model_num);
+			polymodel_instance* pmi = nullptr;
+			if (shipp->model_instance_num >= 0) {
+				pmi = model_get_instance(shipp->model_instance_num);
+			}
+
+			shadow_render_list::add_model_draws(&shadow_list, pm, pmi, OBJ_INDEX(objp), &objp->pos, &objp->orient, has_clip ? &clip : nullptr);
+			break;
 		}
 
-		switch(objp->type)
-		{
 		case OBJ_RAW_POF:
-		case OBJ_PROP:
-		case OBJ_SHIP:
-			{
-				obj_queue_render(objp, &scene);
+		case OBJ_PROP: {
+			int model_num = object_get_model_num(objp);
+			auto pm = model_get(model_num);
+			model_clear_instance(model_num);
+
+			polymodel_instance* pmi = nullptr;
+			int instance_num = object_get_model_instance_num(objp);
+			if (instance_num >= 0) {
+				pmi = model_get_instance(instance_num);
 			}
+
+			shadow_render_list::add_model_draws(&shadow_list, pm, pmi, OBJ_INDEX(objp), &objp->pos, &objp->orient, nullptr);
 			break;
-		case OBJ_ASTEROID:
-			{
-				model_render_params render_info;
+		}
 
-				render_info.set_object_number(OBJ_INDEX(objp));
-				render_info.set_flags(MR_IS_ASTEROID | MR_NO_TEXTURING | MR_NO_LIGHTING);
-				
-				model_clear_instance( Asteroid_info[Asteroids[objp->instance].asteroid_type].subtypes[Asteroids[objp->instance].asteroid_subtype].model_number);
-				model_render_queue(&render_info, &scene, Asteroid_info[Asteroids[objp->instance].asteroid_type].subtypes[Asteroids[objp->instance].asteroid_subtype].model_number, &objp->orient, &objp->pos);
-			}
+		case OBJ_ASTEROID: {
+			int num = objp->instance;
+			auto* ast = &Asteroids[num];
+			int model_num = Asteroid_info[ast->asteroid_type].subtypes[ast->asteroid_subtype].model_number;
+			model_clear_instance(model_num);
+			auto pm = model_get(model_num);
+
+			shadow_render_list::add_model_draws(&shadow_list, pm, nullptr, OBJ_INDEX(objp), &objp->pos, &objp->orient, nullptr);
 			break;
+		}
 
-		case OBJ_DEBRIS:
-			{
-				debris *db;
-				db = &Debris[objp->instance];
+		case OBJ_DEBRIS: {
+			debris* db = &Debris[objp->instance];
+			if ( !(db->flags[Debris_Flags::Used]) ) continue;
 
-				if ( !(db->flags[Debris_Flags::Used])){
-					continue;
-				}
-								
-				auto pm = model_get(db->model_num);
-				auto pmi = db->model_instance_num < 0 ? nullptr : model_get_instance(db->model_instance_num);
+			auto pm = model_get(db->model_num);
+			object* debris_obj = &Objects[db->objnum];
 
-				objp = &Objects[db->objnum];
-
-				model_render_params render_info;
-
-				render_info.set_flags(MR_NO_TEXTURING | MR_NO_LIGHTING);
-
-				submodel_render_queue(&render_info, &scene, pm, pmi, db->submodel_num, &objp->orient, &objp->pos);
+			polymodel_instance* pmi = nullptr;
+			if (db->model_instance_num >= 0) {
+				pmi = model_get_instance(db->model_instance_num);
 			}
-			break; 
+
+			shadow_render_list::add_model_draws(&shadow_list, pm, pmi, db->objnum, &debris_obj->pos, &debris_obj->orient, nullptr);
+			break;
+		}
+
+		default:
+			break;
 		}
 	}
 
-	scene.init_render();
-	scene.render_all(ZBUFFER_TYPE_FULL);
+	shadow_list.init_render(true);
+	shadow_list.render_all();
 
 	shadows_end_render();
 

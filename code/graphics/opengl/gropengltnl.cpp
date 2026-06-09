@@ -646,6 +646,54 @@ void gr_opengl_render_model(model_material* material_info, indexed_vertex_source
 	GL_CHECK_FOR_ERRORS("end of render_buffer()");
 }
 
+void gr_opengl_render_shadow_draw(gr_buffer_handle ubo_handle, size_t ubo_offset, size_t ubo_size,
+                                   vertex_buffer* buffer, indexed_vertex_source* vert_src, size_t texi)
+{
+	auto* datap = &buffer->tex_buf[texi];
+	if (datap->n_verts == 0) {
+		return;
+	}
+
+	int shader_handle = gr_opengl_maybe_create_shader(SDR_TYPE_SHADOW_MAP_GEN, 0);
+	opengl_shader_set_current(shader_handle);
+
+	GL_state.Texture.SetShaderMode(GL_TRUE);
+
+	gr_bind_uniform_buffer(uniform_block_type::ShadowMapData, ubo_offset, ubo_size, ubo_handle);
+
+	// Bind the transform texture buffer so the vertex shader can read model transforms
+	Current_shader->program->Uniforms.setTextureUniform("transform_tex", 10);
+	GL_state.Texture.Enable(10, GL_TEXTURE_BUFFER, opengl_get_transform_buffer_texture());
+
+	GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
+	gr_zbuffer_set(ZBUFFER_TYPE_FULL);
+	gr_set_cull(1);
+	gr_zbias(-1024);
+	gr_set_fill_mode(GR_FILL_MODE_SOLID);
+	GL_state.ColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+
+	GL_state.FrontFaceValue(gr_screen.rendering_to_texture != -1 ? GL_CCW : GL_CW);
+
+	// Enable clip distance; actual clipping is gated by the use_clip_plane uniform in the shader
+	GL_state.ClipDistance(0, true);
+
+	opengl_bind_vertex_layout(buffer->layout,
+		opengl_buffer_get_id(GL_ARRAY_BUFFER, vert_src->Vbuffer_handle),
+		opengl_buffer_get_id(GL_ELEMENT_ARRAY_BUFFER, vert_src->Ibuffer_handle));
+
+	auto ibuffer = reinterpret_cast<GLubyte*>(vert_src->Index_offset);
+	GLenum element_type = (datap->flags & VB_FLAG_LARGE_INDEX) ? GL_UNSIGNED_INT : GL_UNSIGNED_SHORT;
+	GLint base_vertex = (GLint)(vert_src->Base_vertex_offset + buffer->vertex_num_offset);
+
+	glDrawElementsBaseVertex(GL_TRIANGLES,
+	                         (GLsizei)datap->n_verts,
+	                         element_type,
+	                         ibuffer + datap->index_offset,
+	                         base_vertex);
+
+	GL_state.Texture.SetShaderMode(GL_FALSE);
+}
+
 extern GLuint Framebuffer_fallback_texture_id;
 extern GLuint Scene_depth_texture;
 extern GLuint Scene_position_texture;
@@ -694,6 +742,7 @@ void gr_opengl_shadow_map_start(matrix4 *shadow_view_matrix, const matrix *light
 	GLenum buffers[] = { GL_COLOR_ATTACHMENT0};
 	glDrawBuffers(1, buffers);
 
+	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -774,6 +823,7 @@ void opengl_tnl_set_material(material* material_info, bool set_base_map, bool se
 			GL_state.ClipDistance(0, false);
 		} else {
 			Assertion(Current_shader != nullptr && (Current_shader->shader == SDR_TYPE_MODEL
+				|| Current_shader->shader == SDR_TYPE_SHADOW_MAP_GEN
 				|| Current_shader->shader == SDR_TYPE_DEFAULT_MATERIAL),
 					  "Clip planes are not supported by this shader!");
 
@@ -837,7 +887,7 @@ void opengl_tnl_set_model_material(model_material *material_info)
 
 	gr_set_center_alpha(material_info->get_center_alpha());
 
-	Assert( Current_shader->shader == SDR_TYPE_MODEL );
+	Assert( Current_shader->shader == SDR_TYPE_MODEL || Current_shader->shader == SDR_TYPE_SHADOW_MAP_GEN );
 
 	GL_state.Texture.SetShaderMode(GL_TRUE);
 

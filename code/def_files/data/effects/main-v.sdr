@@ -107,16 +107,7 @@ out VertexOutput {
 	float fogDist;
 #prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_FOG
 
-#ifdef MODEL_SDR_FLAG_SHADOW_MAP
- #if !defined(GL_ARB_gpu_shader5)
-	float instance;
- #endif
-	// This flag is needed to let the geometry shader know that it doesn't need to apply the
-	// shadow projection to gl_Position
-	float clipModel;
-#else
 	vec4 position;
-#endif
 	vec3 normal;
 	vec4 texCoord;
 
@@ -162,18 +153,7 @@ void main()
 	// Transform the normal into eye space and normalize the result.
 	normal = normalize(mat3(modelViewMatrix) * mat3(orient) * vertNormal);
 	position = modelViewMatrix * orient * vertex;
-	#ifdef MODEL_SDR_FLAG_SHADOW_MAP
-		gl_Position = position;
-		#if !defined(GL_ARB_gpu_shader5)
-			#ifdef APPLE
-				vertOut.instance = float(gl_InstanceIDARB);
-			#else
-				vertOut.instance = float(gl_InstanceID);
-			#endif
-		#endif
-	#else
 		gl_Position = projMatrix * position;
-	#endif
 	#prereplace IF_FLAG MODEL_SDR_FLAG_SHADOWS
 		vec4 shadowPos = shadow_mv_matrix * modelMatrix * orient * vertPosition;
 		vertOut.shadowPos = shadow_mv_matrix * modelMatrix * orient * vertPosition;
@@ -197,9 +177,6 @@ void main()
 			// Clip this model by moving all vertices outside the clip volume
 			gl_Position = vec4(vec3(-2.0), 1.0);
 		}
-		#ifdef MODEL_SDR_FLAG_SHADOW_MAP
-			vertOut.clipModel = clipModel ? 1.0 : 0.0;
-		#endif
 	#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_TRANSFORM
 
 	if(use_clip_plane) {
@@ -208,12 +185,7 @@ void main()
 		gl_ClipDistance[0] = 1.0;
 	}
 
-	#ifndef MODEL_SDR_FLAG_SHADOW_MAP
-		vertOut.position = position;
-		vertOut.normal = normal;
-		vertOut.texCoord = texCoord;
-	#else
-		vertOut.normal = normal;
-		vertOut.texCoord = texCoord;
-	#endif
+	vertOut.position = position;
+	vertOut.normal = normal;
+	vertOut.texCoord = texCoord;
 }

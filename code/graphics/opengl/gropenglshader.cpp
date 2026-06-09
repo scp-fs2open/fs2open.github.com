@@ -71,6 +71,7 @@ struct opengl_uniform_block_binding {
 opengl_uniform_block_binding GL_uniform_blocks[] = {
     {uniform_block_type::Lights, "lightData"},
     {uniform_block_type::ModelData, "modelData"},
+    {uniform_block_type::ShadowMapData, "shadowMapData"},
     {uniform_block_type::NanoVGData, "NanoVGUniformData"},
     {uniform_block_type::DecalInfo, "decalInfoData"},
     {uniform_block_type::DecalGlobals, "decalGlobalData"},
@@ -178,6 +179,10 @@ static opengl_shader_type_t GL_shader_types[] = {
 
 	{ SDR_TYPE_IRRADIANCE_MAP_GEN, "post-v.sdr", "irrmap-f.sdr", nullptr,
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Irradiance Map Generation", false },
+
+	{ SDR_TYPE_SHADOW_MAP_GEN, "shadow_map-v.sdr", "shadow_map-f.sdr", "shadow_map-g.sdr",
+		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD, opengl_vert_attrib::NORMAL, opengl_vert_attrib::TANGENT, opengl_vert_attrib::MODEL_ID }, "Shadow Map Generation", false },
+
 };
 // clang-format on
 
@@ -830,6 +835,13 @@ void opengl_compile_shader_actual(shader_type sdr, const uint &flags, opengl_sha
 				use_geo_sdr = true;
 				break;
 			}
+		}
+
+		// TODO: This is an ugly hardcoded override. The shadow map generation shader always needs its
+		// geometry shader for cascade instancing. Ideally this should use a proper variant system
+		// (e.g. a variant with flag=0 that always matches for this shader type).
+		if (!use_geo_sdr && sdr == SDR_TYPE_SHADOW_MAP_GEN) {
+			use_geo_sdr = true;
 		}
 	}
 

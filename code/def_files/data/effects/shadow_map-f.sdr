@@ -1,0 +1,15 @@
+//? #version 150
+
+#include "shadows.sdr"
+
+in VertexOutputGeo {
+	vec4 position;
+	vec3 normal;
+} vertIn;
+
+out vec4 fragOut0;
+
+void main()
+{
+	fragOut0 = vec4(vertIn.position.z, vertIn.position.z * vertIn.position.z * VARIANCE_SHADOW_SCALE_INV, 0.0, 1.0);
+}

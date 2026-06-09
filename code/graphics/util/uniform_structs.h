@@ -144,6 +144,18 @@ struct model_uniform_data {
 const size_t model_uniform_data_size = sizeof(model_uniform_data);
 const float mud_align = model_uniform_data_size / 16.0f;
 
+struct shadow_uniform_data {
+	matrix4 modelViewMatrix;        // light view matrix (same for all draws in a pass)
+	matrix4 modelMatrix;            // model-to-world (for clip plane)
+	matrix4 shadow_proj_matrix[4];  // cascade projection matrices
+	vec4 clip_equation;             // xyz = normal, w = -dot(normal, point)
+	int use_clip_plane;             // 1 if clip plane is active
+	int buffer_matrix_offset;       // index into transform_tex
+	float pad[2];                   // alignment to 16 bytes
+};
+
+const size_t shadow_uniform_data_size = sizeof(shadow_uniform_data);
+
 enum class NanoVGShaderType: int32_t {
 	FillGradient = 0, FillImage = 1, Simple = 2, Image = 3
 };

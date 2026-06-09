@@ -63,6 +63,9 @@ GLuint opengl_buffer_get_id(GLenum expected_type, gr_buffer_handle buffer_handle
 
 void gr_opengl_update_transform_buffer(void* data, size_t size);
 
+void gr_opengl_render_shadow_draw(gr_buffer_handle ubo_handle, size_t ubo_offset, size_t ubo_size,
+                                   vertex_buffer* buffer, indexed_vertex_source* vert_src, size_t texi);
+
 void opengl_tnl_init();
 void opengl_tnl_shutdown();
 

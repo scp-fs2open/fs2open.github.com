@@ -154,6 +154,13 @@ void stub_render_model(model_material* /*material_info*/,
 	vertex_buffer* /*bufferp*/,
 	size_t /*texi*/)
 {
+
+}
+
+void stub_render_shadow_draw(gr_buffer_handle /*ubo_handle*/, size_t /*ubo_offset*/, size_t /*ubo_size*/,
+                              vertex_buffer* /*buffer*/, indexed_vertex_source* /*vert_src*/, size_t /*texi*/)
+{
+
 }
 
 void stub_render_primitives(material* /*material_info*/,
@@ -352,6 +359,7 @@ void init_stub_pointers()
 	gr_screen.gf_get_bitmap_from_texture = stub_get_bitmap_from_texture;
 
 	gr_screen.gf_render_model = stub_render_model;
+	gr_screen.gf_render_shadow_draw = stub_render_shadow_draw;
 	gr_screen.gf_render_primitives = stub_render_primitives;
 	gr_screen.gf_render_primitives_particle = stub_render_primitives_particle;
 	gr_screen.gf_render_primitives_distortion = stub_render_primitives_distortion;

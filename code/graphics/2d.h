@@ -214,6 +214,8 @@ enum shader_type {
 
 	SDR_TYPE_IRRADIANCE_MAP_GEN,
 
+	SDR_TYPE_SHADOW_MAP_GEN,
+
 	NUM_SHADER_TYPES
 };
 
@@ -252,6 +254,7 @@ enum class uniform_block_type {
 	Matrices = 6,
 	MovieData = 7,
 	GenericData = 8,
+	ShadowMapData = 9,
 
 	NUM_BLOCK_TYPES
 };
@@ -843,6 +846,9 @@ typedef struct screen {
 	std::function<
 		void(model_material* material_info, indexed_vertex_source* vert_source, vertex_buffer* bufferp, size_t texi)>
 		gf_render_model;
+	std::function<void(gr_buffer_handle ubo_handle, size_t ubo_offset, size_t ubo_size,
+		vertex_buffer* buffer, indexed_vertex_source* vert_src, size_t texi)>
+		gf_render_shadow_draw;
 	std::function<void(shield_material* material_info,
 		primitive_type prim_type,
 		vertex_layout* layout,
@@ -1260,6 +1266,12 @@ inline void gr_render_movie(movie_material* material_info,
 inline void gr_render_model(model_material* material_info, indexed_vertex_source *vert_source, vertex_buffer* bufferp, size_t texi)
 {
 	gr_screen.gf_render_model(material_info, vert_source, bufferp, texi);
+}
+
+inline void gr_render_shadow_draw(gr_buffer_handle ubo_handle, size_t ubo_offset, size_t ubo_size,
+                                   vertex_buffer* buffer, indexed_vertex_source* vert_src, size_t texi)
+{
+	gr_screen.gf_render_shadow_draw(ubo_handle, ubo_offset, ubo_size, buffer, vert_src, texi);
 }
 
 inline void gr_render_rocket_primitives(interface_material* material_info,

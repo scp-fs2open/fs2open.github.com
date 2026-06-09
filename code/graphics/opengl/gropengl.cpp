@@ -1101,6 +1101,7 @@ void gr_opengl_init_function_pointers()
 	gr_screen.gf_stop_decal_pass = gr_opengl_stop_decal_pass;
 
 	gr_screen.gf_render_model = gr_opengl_render_model;
+	gr_screen.gf_render_shadow_draw = gr_opengl_render_shadow_draw;
 	gr_screen.gf_render_primitives= gr_opengl_render_primitives;
 	gr_screen.gf_render_primitives_particle	= gr_opengl_render_primitives_particle;
 	gr_screen.gf_render_primitives_batched	= gr_opengl_render_primitives_batched;

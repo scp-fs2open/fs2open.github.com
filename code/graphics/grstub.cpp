@@ -338,6 +338,12 @@ void gr_stub_render_model(model_material*  /*material_info*/, indexed_vertex_sou
 
 }
 
+void gr_stub_render_shadow_draw(gr_buffer_handle /*ubo_handle*/, size_t /*ubo_offset*/, size_t /*ubo_size*/,
+                                 vertex_buffer* /*buffer*/, indexed_vertex_source* /*vert_src*/, size_t /*texi*/)
+{
+
+}
+
 void gr_stub_render_primitives(material* /*material_info*/,
 	primitive_type /*prim_type*/,
 	vertex_layout* /*layout*/,
@@ -601,6 +607,7 @@ void gr_stub_init_function_pointers() {
 	gr_screen.gf_get_bitmap_from_texture = gr_stub_get_bitmap_from_texture;
 
 	gr_screen.gf_render_model = gr_stub_render_model;
+	gr_screen.gf_render_shadow_draw = gr_stub_render_shadow_draw;
 	gr_screen.gf_render_primitives	= gr_stub_render_primitives;
 	gr_screen.gf_render_primitives_particle	= gr_stub_render_primitives_particle;
 	gr_screen.gf_render_primitives_distortion = gr_stub_render_primitives_distortion;

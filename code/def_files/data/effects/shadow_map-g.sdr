@@ -1,0 +1,60 @@
+//? #version 150
+#extension GL_ARB_gpu_shader5: enable
+
+layout (triangles) in;
+layout (triangle_strip, max_vertices = 3) out;
+#ifdef GL_ARB_gpu_shader5
+layout(invocations = 4) in;
+#endif
+
+layout (std140) uniform shadowMapData {
+	mat4 modelViewMatrix;
+	mat4 modelMatrix;
+	mat4 shadow_proj_matrix[4];
+	vec4 clip_equation;
+	bool use_clip_plane;
+	int buffer_matrix_offset;
+};
+
+in VertexOutput {
+#if !defined(GL_ARB_gpu_shader5)
+    float instance;
+#endif
+	float clipModel;
+	vec3 normal;
+} vertIn[];
+
+out VertexOutputGeo {
+	vec4 position;
+	vec3 normal;
+} vertOut;
+
+void main(void)
+{
+#ifdef GL_ARB_gpu_shader5
+    int instanceID = gl_InvocationID;
+#else
+    int instanceID = int(vertIn[0].instance);
+#endif
+
+	for(int vert = 0; vert < gl_in.length(); vert++)
+	{
+		if (vertIn[vert].clipModel > 0.9) {
+			gl_Position = gl_in[vert].gl_Position;
+		} else {
+		    gl_Position = shadow_proj_matrix[instanceID] * gl_in[vert].gl_Position;
+		}
+
+		if(gl_Position.z < -1.0)
+			gl_Position.z = -1.0;
+
+		vertOut.position = gl_in[vert].gl_Position;
+		vertOut.normal = vertIn[vert].normal;
+
+		gl_Layer = instanceID;
+		gl_ClipDistance[0] = gl_in[vert].gl_ClipDistance[0];
+
+		EmitVertex();
+	}
+	EndPrimitive();
+}

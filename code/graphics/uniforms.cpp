@@ -178,12 +178,6 @@ void convert_model_material(model_uniform_data* data_out,
 		data_out->fardist = Shadow_cascade_distances[3];
 	}
 
-	if (shader_flags & MODEL_SDR_FLAG_SHADOW_MAP) {
-		for (size_t i = 0; i < MAX_SHADOW_CASCADES; ++i) {
-			data_out->shadow_proj_matrix[i] = Shadow_proj_matrix[i];
-		}
-	}
-
 	if (material.is_batched()) {
 		data_out->buffer_matrix_offset = (int) transform_buffer_offset;
 	}
