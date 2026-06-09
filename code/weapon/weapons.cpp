@@ -5834,8 +5834,21 @@ void weapon_home(object *obj, int num, float frame_time)
 	if (wp->homing_subsys != NULL) {
 		if (wp->homing_subsys->flags[Ship::Subsystem_Flags::Missiles_ignore_if_dead]) {
 			if ((wp->homing_subsys->max_hits > 0) && (wp->homing_subsys->current_hits <= 0)) {
-				wp->homing_object = &obj_used_list;
-				return;
+				if (The_mission.ai_profile->flags[AI::Profile_Flags::Fix_ignore_if_dead_flag]) {
+					// fixed way: clear dead subsys so the missile picks a hull attack point 
+					// or, for Javelins, re-acquire another engine
+					wp->homing_subsys = nullptr;
+					if (wip->wi_flags[Weapon::Info_Flags::Homing_javelin] && hobjp->type == OBJ_SHIP) {
+						int sindex = ship_get_by_signature(wp->target_sig);
+						if (sindex >= 0) {
+							wp->homing_subsys = ship_get_closest_subsys_in_sight(&Ships[sindex], SUBSYSTEM_ENGINE, &obj->pos);
+						}
+					}
+				} else {
+					// old way: resulted in weapon not homing
+					wp->homing_object = &obj_used_list;
+					return;
+				}
 			}
 		}
 	}
