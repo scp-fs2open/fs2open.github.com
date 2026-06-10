@@ -105,6 +105,8 @@ set(FRED2_SOURCES
 	propdlg.h
 	reinforcementeditordlg.cpp
 	reinforcementeditordlg.h
+	reorderdlg.cpp
+	reorderdlg.h
 	resource.h
 	restrictpaths.cpp
 	restrictpaths.h
