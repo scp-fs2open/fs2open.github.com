@@ -21,6 +21,17 @@ endif()
 if(QT6_INSTALL_ROOT)
     list(PREPEND CMAKE_PREFIX_PATH "${QT6_INSTALL_ROOT}")
 endif()
+# Must be set before find_package -- CMake snapshots this into each imported target's
+# MAP_IMPORTED_CONFIG_FASTDEBUG property at target-creation time, not at link time.
+# The list entries are tried in order:
+#   "Debug"   -- matches the per-config IMPORTED_LOCATION_DEBUG on Qt's libraries.
+#   "Release" -- per-config fallback if any target ships only a Release variant.
+#   ""        -- the empty entry means "fall back to the suffix-less IMPORTED_LOCATION".
+#                Required because Qt's host tools (uic/moc/rcc/qhelpgenerator) set
+#                only IMPORTED_LOCATION (no IMPORTED_CONFIGURATIONS), so without this
+#                CMake errors with "IMPORTED_LOCATION not set for imported target
+#                Qt5::uic configuration FastDebug".
+set(CMAKE_MAP_IMPORTED_CONFIG_FASTDEBUG Debug Release "")
 
 find_package(Qt6 REQUIRED COMPONENTS Core Widgets OpenGL Help)
 include(source_groups.cmake)
