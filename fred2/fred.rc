@@ -412,6 +412,7 @@ BEGIN
     BEGIN
         MENUITEM "&Voice Acting Manager",       ID_EDITORS_VOICE
         MENUITEM "Set Global Ship Flags",       33073
+        MENUITEM "Reorder Ships and Wings",     ID_REORDER
         MENUITEM "Calculate Relative Coordinates", 33030
         MENUITEM "Music Player",                ID_MUSIC_PLAYER
         MENUITEM "Mission Statistics\tCtrl+Shift+D", 33067
@@ -2046,6 +2047,19 @@ BEGIN
     EDITTEXT        IDC_ORIENTATION_H,255,81,49,14,ES_READONLY
 END
 
+IDD_REORDER DIALOG 0, 0, 185, 191
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Reorder Ships and Wings"
+FONT 8, "MS Sans Serif"
+BEGIN
+    COMBOBOX        IDC_REORDER_TYPE,7,7,98,114,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LISTBOX         IDC_REORDER_LIST,7,25,98,159,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON      "Move to top",IDC_REORDER_MOVE_TO_TOP,112,25,66,14
+    PUSHBUTTON      "Move up",IDC_REORDER_MOVE_UP,112,43,66,14
+    PUSHBUTTON      "Move down",IDC_REORDER_MOVE_DOWN,112,61,66,14
+    PUSHBUTTON      "Move to bottom",IDC_REORDER_MOVE_TO_BOTTOM,112,79,66,14
+END
+
 IDD_SHIELD_SYS DIALOG 0, 0, 192, 106
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Shield System Editor"
@@ -2945,6 +2959,14 @@ BEGIN
         BOTTOMMARGIN, 87
     END
 
+    IDD_REORDER, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 178
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 184
+    END
+
     IDD_SHIELD_SYS, DIALOG
     BEGIN
         LEFTMARGIN, 7
@@ -3815,6 +3837,7 @@ END
 STRINGTABLE
 BEGIN
     ID_CALC_RELATIVE_COORDS "Calculate orientation and distance relative to an origin object"
+    ID_REORDER              "Change the order in which ships and wings are stored in the mission"
     ID_EDITORS_ADJUST_GRID  "Adjust the orientation and level of the grid"
     ID_EDITORS_SHIELD_SYS   "Editor for availability of shield system for ships"
     ID_ALIGN_OBJ            "Align object (or camera if no objects are marked) X/Y/Z axes with the global axes that are closest"
