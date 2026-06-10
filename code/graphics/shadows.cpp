@@ -546,6 +546,7 @@ void shadows_render_all(fov_t fov, matrix *eye_orient, vec3d *eye_pos)
 		std::get<2>(Shadow_distances), std::get<3>(Shadow_distances));
 
 	shadow_render_list shadow_list;
+
 	object *objp = Objects;
 
 	for ( int i = 0; i <= Highest_object_index; i++, objp++ ) {
@@ -633,7 +634,7 @@ void shadows_render_all(fov_t fov, matrix *eye_orient, vec3d *eye_pos)
 		}
 	}
 
-	shadow_list.init_render(true);
+	shadow_list.init_render(false);
 	shadow_list.render_all();
 
 	shadows_end_render();
@@ -666,6 +667,10 @@ void shadow_end_frame() {
 		Shadow_override = shadow_override_backup;
 		last_override = false;
 	}
+}
+
+shadow_render_list::shadow_render_list() {
+	reset();
 }
 
 void shadow_render_list::add_draw(const indexed_vertex_source* vert_src,

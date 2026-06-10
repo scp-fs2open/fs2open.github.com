@@ -80,7 +80,7 @@ public:
 		vec3d position;
 	};
 
-	shadow_render_list() = default;
+	shadow_render_list();
 	~shadow_render_list() = default;
 
 	void add_draw(const indexed_vertex_source* vert_src,
