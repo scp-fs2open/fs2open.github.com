@@ -2321,7 +2321,7 @@ static int spawnParticles(lua_State *L, bool persistent) {
 	// 2. we NEED the return particle ptrs for the persistent path
 	// 3. Scripting gets to set certain values at runtime which are usually encoded as a behaviour in the particle effect and thus tabled statically.
 
-	const auto& [parent, parent_sig] = host->getParentObjAndSig();
+	auto attachment = host->getParentAttachment();
 
 	particle::ParticleSource source;
 	source.setEffect(handle);
@@ -2333,7 +2333,7 @@ static int spawnParticles(lua_State *L, bool persistent) {
 		auto spawned_particles = particle::ParticleManager::get()
 									 ->getEffect(handle)
 									 .front()
-									 .processSourcePersistent(0, source, 0, vel, parent, parent_sig, lifetime, rad, 1);
+									 .processSourcePersistent(0, source, 0, vel, attachment, lifetime, rad, 1);
 
 		Assertion(spawned_particles.size() == 1, "Did not spawn a single particle in createPersistentParticle");
 
@@ -2345,7 +2345,7 @@ static int spawnParticles(lua_State *L, bool persistent) {
 			return persistent ? ADE_RETURN_NIL : ADE_RETURN_FALSE;
 	}
 	else {
-		particle::ParticleManager::get()->getEffect(handle).front().processSource(0, source, 0, vel, parent, parent_sig, lifetime, rad, 1);
+		particle::ParticleManager::get()->getEffect(handle).front().processSource(0, source, 0, vel, attachment, lifetime, rad, 1);
 		return persistent ? ADE_RETURN_NIL : ADE_RETURN_FALSE;
 	}
 }

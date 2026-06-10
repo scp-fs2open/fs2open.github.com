@@ -205,10 +205,13 @@ ADE_VIRTVAR(AttachedObject, l_Particle, "object", "The object this particle is a
 	if (ADE_SETTING_VAR)
 	{
 		if (newObj != nullptr && newObj->isValid())
-			ph->Get().lock()->attached_objnum = newObj->sig;
+			ph->Get().lock()->attachment = effects::attachment_object{newObj->objnum, newObj->sig};
 	}
 
-	return ade_set_object_with_breed(L, ph->Get().lock()->attached_objnum);
+	if (auto* obj = std::get_if<effects::attachment_object>(&ph->Get().lock()->attachment))
+		return ade_set_object_with_breed(L, obj->objnum);
+	else
+		return ade_set_object_with_breed(L, -1);
 }
 
 ADE_FUNC(isValid, l_Particle, NULL, "Detects whether this handle is valid", "boolean", "true if valid false if not")

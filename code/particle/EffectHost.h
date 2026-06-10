@@ -2,9 +2,15 @@
 
 #include "object/object.h"
 #include "globalincs/pstypes.h"
+#include "globalincs/utility.h"
 #include "math/vecmat.h"
 
 #include <optional>
+
+namespace particle {
+	struct particle;
+	typedef std::weak_ptr<particle> WeakParticlePtr;
+}
 
 namespace effects {
 	struct attachment_object {
@@ -16,6 +22,24 @@ namespace effects {
 	};
 }
 using EffectAttachment = std::variant<std::monostate, effects::attachment_object, effects::attachment_particle>;
+
+namespace effects {
+
+vec3d attachment_local_pos_to_global(const EffectAttachment& attachment, const vec3d& local_pos, float interp = 0.0f);
+
+vec3d attachment_local_vel_to_global(const EffectAttachment& attachment, const vec3d& local_vel);
+
+vec3d attachment_local_last_pos_to_global(const EffectAttachment& attachment, const vec3d& last_pos);
+
+bool is_attachment_valid(const EffectAttachment& attachment);
+
+std::pair<vec3d, matrix> get_attachment_frame(const EffectAttachment& attachment, float interp = 0.0f);
+
+inline std::optional<effects::attachment_object> extract_attachment_object(const EffectAttachment& input) {
+	return variant_get_optional<effects::attachment_object>(input);
+}
+
+}
 
 class EffectHost {
 
@@ -37,7 +61,7 @@ public:
 		return vm_vec_mag_quick(&velocity);
 	}
 
-	virtual std::pair<int, int> getParentObjAndSig() const { return {-1, -1}; }
+	virtual EffectAttachment getParentAttachment() const { return {}; }
 	virtual int getParentSubmodel() const { return -1; }
 
 	virtual float getLifetime() const { return -1.f; }
