@@ -149,73 +149,6 @@ namespace particle
 	DCF_BOOL2(particles, Particles_enabled, "Turns particles on/off",
 			  "Usage: particles [bool]\nTurns particle system on/off.  If nothing passed, then toggles it.\n");
 
-	static inline vec3d particle_get_global_pos(const particle& particle) {
-		return std::visit( overloads {
-			[&particle](const std::monostate&) {
-				return particle.pos;
-			},
-			[&particle](const effects::attachment_object& obj) {
-				vec3d pos;
-				vm_vec_unrotate(&pos, &particle.pos, &Objects[obj.objnum].orient);
-				pos += Objects[obj.objnum].pos;
-				return pos;
-			},
-			[&particle](const effects::attachment_particle& parent_part) {
-				return particle.pos + particle_get_global_pos(*parent_part.particle.lock());
-			},
-		}, particle.attachment);
-	}
-
-	static inline vec3d particle_get_global_velocity(const particle& particle) {
-		return std::visit( overloads {
-			[&particle](const std::monostate&) {
-				return particle.pos;
-			},
-			[&particle](const effects::attachment_object& obj) {
-				vec3d vel;
-				vm_vec_unrotate(&vel, &particle.velocity, &Objects[obj.objnum].orient);
-				return vel;
-			},
-			[&particle](const effects::attachment_particle& parent_part) {
-				return particle.velocity + particle_get_global_velocity(*parent_part.particle.lock());
-			},
-		}, particle.attachment);
-	}
-
-	static inline vec3d particle_get_global_last_pos(const particle& particle, const vec3d& last_pos) {
-		return std::visit( overloads {
-			[&last_pos](const std::monostate&) {
-				return last_pos;
-			},
-			[&last_pos](const effects::attachment_object& obj) {
-				vec3d pos = last_pos;
-				if (obj.objnum >= 0) {
-					vm_vec_unrotate(&pos, &pos, &Objects[obj.objnum].last_orient);
-					pos += Objects[obj.objnum].last_pos;
-				}
-				return pos;
-			},
-			[&last_pos](const effects::attachment_particle& parent_part) {
-				const auto& parent_part_lock = parent_part.particle.lock();
-				//Not perfect, but should be sufficient
-				return last_pos + particle_get_global_pos(*parent_part_lock) - particle_get_global_velocity(*parent_part_lock) * flFrametime;
-			},
-		}, particle.attachment);
-	}
-
-	static inline bool particle_is_parent_dead(const particle& particle) {
-		return std::visit( overloads {
-			[](const std::monostate&) {
-				return false;
-			},
-			[](const effects::attachment_object& obj) {
-				return obj.objnum < 0 || obj.objnum >= MAX_OBJECTS || Objects[obj.objnum].signature != obj.sig;
-			},
-			[](const effects::attachment_particle& parent_part) {
-				return parent_part.particle.expired();
-			},
-		}, particle.attachment);
-	}
 
 	static bool maybe_cull_particle(const particle& new_particle) {
 		if (!Particles_enabled)
@@ -223,7 +156,7 @@ namespace particle
 			return true;
 		}
 
-		vec3d world_pos = particle_get_global_pos(new_particle);
+		vec3d world_pos = effects::attachment_local_pos_to_global(new_particle.attachment, new_particle.pos);
 
 		// treat particles on lower detail levels as 'further away' for the purposes of culling
 		float adjusted_dist = vm_vec_dist(&Eye_position, &world_pos) * powf(2.5f, (float)(static_cast<int>(DefaultDetailPreset::Num_detail_presets) - Detail.num_particles));
@@ -262,7 +195,7 @@ namespace particle
 	}
 
 	float getPixelSize(const particle& subject_particle) {
-		vec3d world_pos = particle_get_global_pos(subject_particle);
+		vec3d world_pos = effects::attachment_local_pos_to_global(subject_particle.attachment, subject_particle.pos);
 
 		float distance_to_eye = vm_vec_dist(&Eye_position, &world_pos);
 
@@ -302,7 +235,7 @@ namespace particle
 		}
 
 		// if the particle is attached to an object which has become invalid, kill it
-		if (particle_is_parent_dead(*part))
+		if (!effects::is_attachment_valid(part->attachment))
 		{
 			remove_particle = true;
 		}
@@ -326,7 +259,7 @@ namespace particle
 		if (Detail.lighting > 3 && source_effect.m_light_source) {
 			const auto& light_source = *source_effect.m_light_source;
 
-			vec3d p_pos = particle_get_global_pos(*part);
+			vec3d p_pos = effects::attachment_local_pos_to_global(part->attachment, part->pos);
 			
 			float light_radius = light_source.light_radius * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::LIGHT_RADIUS_MULT, curve_input);
 			float source_radius = light_source.source_radius * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::LIGHT_SOURCE_RADIUS_MULT, curve_input);
@@ -345,13 +278,13 @@ namespace particle
 				light_add_point(&p_pos, light_radius, light_radius, intensity, r, g, b, source_radius);
 				break;
 			case ParticleEffect::LightInformation::LightSourceMode::TO_LAST_POS: {
-				vec3d p_prev_pos = particle_get_global_last_pos(*part, prev_pos);
+			vec3d p_prev_pos = effects::attachment_local_last_pos_to_global(part->attachment, prev_pos);
 				light_add_tube(&p_prev_pos, &p_pos, light_radius, light_radius, intensity, r, g, b, source_radius);
 			}
 			break;
 			case ParticleEffect::LightInformation::LightSourceMode::AS_PARTICLE:
 				if (part->length != 0.0f) {
-					vec3d p1 = particle_get_global_velocity(*part);
+					vec3d p1 = effects::attachment_local_vel_to_global(part->attachment, part->velocity);
 					vm_vec_normalize_safe(&p1);
 					p1 *= part->length * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::LENGTH_MULT, curve_input);
 					p1 += p_pos;
@@ -364,7 +297,7 @@ namespace particle
 			case ParticleEffect::LightInformation::LightSourceMode::CONE: {
 				float cone_angle = light_source.cone_angle * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::LIGHT_CONE_ANGLE_MULT, curve_input);
 				float cone_inner_angle = light_source.cone_inner_angle * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::LIGHT_CONE_INNER_ANGLE_MULT, curve_input);
-				vec3d p1 = particle_get_global_velocity(*part);
+				vec3d p1 = effects::attachment_local_vel_to_global(part->attachment, part->velocity);
 				vm_vec_normalize_safe(&p1);
 
 				light_add_cone(&p_pos, &p1, cone_angle, cone_inner_angle, false, light_radius, light_radius, intensity, r, g, b, source_radius);
@@ -444,7 +377,7 @@ namespace particle
 	static bool render_particle(particle* part) {
 		// skip back-facing particles (ripped from fullneb code)
 		// Wanderer - add support for attached particles
-		vec3d p_pos = particle_get_global_pos(*part);
+		vec3d p_pos = effects::attachment_local_pos_to_global(part->attachment, part->pos);
 
 		bool part_has_length = part->length != 0.0f;
 
@@ -462,7 +395,7 @@ namespace particle
 		vec3d p1 = vmd_x_vector;
 
 		if (part_has_length) {
-			p1 = particle_get_global_velocity(*part);
+			p1 = effects::attachment_local_vel_to_global(part->attachment, part->velocity);
 			vm_vec_normalize_safe(&p1);
 			p1 *= part->length * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::LENGTH_MULT, curve_input);
 			p1 += p_pos;

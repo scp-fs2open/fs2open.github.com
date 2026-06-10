@@ -3,6 +3,8 @@
 #define _FSO_UTILITY_H
 
 #include <vector>
+#include <optional>
+#include <variant>
 
 #include "globalincs/globals.h"
 #include "globalincs/toolchain.h"
@@ -522,5 +524,13 @@ struct overloads : Ts... {
 	constexpr overloads(Ts... t) : Ts(t)... {}
 	using Ts::operator()...;
 };
+
+template<typename out, typename... var>
+inline std::optional<out> variant_get_optional(const std::variant<var...>& input) {
+	if (std::holds_alternative<out>(input))
+		return std::get<out>(input);
+	else
+		return std::nullopt;
+}
 
 #endif

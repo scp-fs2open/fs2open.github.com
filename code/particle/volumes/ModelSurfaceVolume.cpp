@@ -8,7 +8,10 @@ ModelSurfaceVolume::ModelSurfaceVolume() : m_modelScale(::util::UniformFloatRang
 };
 
 vec3d ModelSurfaceVolume::sampleRandomPoint(const matrix &orientation, decltype(ParticleEffect::modular_curves_definition)::input_type_t source, float particlesFraction, const EffectHost& host) {
-	int obj_num = host.getParentObjAndSig().first;
+	auto attachment = host.getParentAttachment();
+	int obj_num = -1;
+	if (auto* obj = std::get_if<effects::attachment_object>(&attachment))
+		obj_num = obj->objnum;
 	int submodel = host.getParentSubmodel();
 
 	vec3d point = ZERO_VECTOR;

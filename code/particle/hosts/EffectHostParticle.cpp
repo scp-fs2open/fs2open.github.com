@@ -16,7 +16,9 @@ EffectHostParticle::EffectHostParticle(particle::WeakParticlePtr particle, matri
 std::pair<vec3d, matrix> EffectHostParticle::getPositionAndOrientation(bool relativeToParent, float interp, const std::optional<vec3d>& tabled_offset) const {
 	const auto& particle = m_particle.lock();
 
-	relativeToParent &= particle->attached_objnum >= 0;
+	auto* obj = std::get_if<effects::attachment_object>(&particle->attachment);
+	bool has_obj_parent = obj && obj->objnum >= 0;
+	relativeToParent &= has_obj_parent;
 
 	vec3d pos;
 	if (interp != 0.0f) {
@@ -27,14 +29,7 @@ std::pair<vec3d, matrix> EffectHostParticle::getPositionAndOrientation(bool rela
 		pos = particle->pos;
 	}
 
-	//We might need to convert the position to global space if the parent particle has a parent
-	if (particle->attached_objnum >= 0) {
-		vec3d global_pos;
-		vm_vec_linear_interpolate(&global_pos, &Objects[particle->attached_objnum].pos, &Objects[particle->attached_objnum].last_pos, interp);
-
-		vm_vec_unrotate(&pos, &pos, &Objects[particle->attached_objnum].orient);
-		pos += global_pos;
-	}
+	pos = effects::attachment_local_pos_to_global(particle->attachment, pos, interp);
 
 	// find the particle direction (normalized vector)
 	// note: this can't be computed for particles with 0 velocity, so use the safe version
@@ -51,13 +46,15 @@ std::pair<vec3d, matrix> EffectHostParticle::getPositionAndOrientation(bool rela
 		orientation = m_orientationOverrideRelative ? m_orientationOverride * *vm_vector_2_matrix_norm(&orientation, &particle_dir) : m_orientationOverride;
 	}
 	else {
+		auto [parent_pos, parent_orient] = effects::get_attachment_frame(particle->attachment, interp);
+
 		//The position data here is in world space
 		//Since we're operating in local space, we can take the orientation override at face value if it's relative, but we need to convert it from global to local otherwise.
 		matrix global_orient_transpose;
-		orientation = m_orientationOverrideRelative ? m_orientationOverride : m_orientationOverride * *vm_copy_transpose(&global_orient_transpose, &Objects[particle->attached_objnum].orient);
+		orientation = m_orientationOverrideRelative ? m_orientationOverride : m_orientationOverride * *vm_copy_transpose(&global_orient_transpose, &parent_orient);
 
-		vm_vec_sub2(&pos, &Objects[particle->attached_objnum].pos);
-		vm_vec_rotate(&pos, &pos, &Objects[particle->attached_objnum].orient);
+		vm_vec_sub2(&pos, &parent_pos);
+		vm_vec_rotate(&pos, &pos, &parent_orient);
 	}
 
 	return { pos, orientation };
@@ -67,9 +64,8 @@ vec3d EffectHostParticle::getVelocity() const {
 	return m_particle.lock()->velocity;
 }
 
-std::pair<int, int> EffectHostParticle::getParentObjAndSig() const {
-	const auto& particle = m_particle.lock();
-	return {particle->attached_objnum, particle->attached_sig};
+EffectAttachment EffectHostParticle::getParentAttachment() const {
+	return effects::attachment_particle{m_particle};
 }
 
 float EffectHostParticle::getLifetime() const {
