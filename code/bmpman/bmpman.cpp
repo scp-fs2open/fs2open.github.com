@@ -1349,14 +1349,13 @@ bool bm_load_and_parse_eff(const char *filename, int dir_type, int *nframes, int
 	memset(file_text, 0, sizeof(file_text));
 	memset(file_text_raw, 0, sizeof(file_text_raw));
 
-	// pause anything that may happen to be parsing right now
-	pause_parse();
-
 	try
 	{
-		// now start parsing the EFF
+		// read the EFF into our own buffers so we don't disturb anything that may happen to be parsing right now
 		read_file_text(filename, dir_type, file_text, file_text_raw);
-		reset_parse(file_text);
+
+		// pause any current parsing and start parsing the EFF; parsing unpauses when the guard goes out of scope
+		PauseParseGuard guard(file_text, filename);
 
 		required_string("$Type:");
 		stuff_string(ext, F_NAME, sizeof(ext));
@@ -1373,12 +1372,8 @@ bool bm_load_and_parse_eff(const char *filename, int dir_type, int *nframes, int
 	catch (const parse::ParseException& e)
 	{
 		mprintf(("BMPMAN: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
-		unpause_parse();
 		return false;
 	}
-
-	// done with EFF so unpause parsing so whatever can continue
-	unpause_parse();
 
 	if (!stricmp(NOX("dds"), ext)) {
 		c_type = BM_TYPE_DDS;

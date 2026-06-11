@@ -348,10 +348,38 @@ extern void parse_int_list(int *ilist, size_t size);
 extern void parse_string_map(SCP_map<SCP_string, SCP_string>& mapOut, const char* end_marker, const char* entry_prefix);
 
 // general
-extern void reset_parse(char *text = NULL);
+extern void reset_parse();
 extern void display_parse_diagnostics();
-extern void pause_parse();
-extern void unpause_parse();
+
+// RAII guard that pauses the current parse so that some other text can be parsed
+// without interfering with the currently parsing file.  The constructor bookmarks
+// the current parse state (buffer, position, filename, and warning/error counts)
+// on a stack, then points the parser at the supplied text and filename with zeroed
+// counts.  The destructor (or an explicit unpause() call) restores the bookmarked
+// state, even if the parse path exits via an exception.  Guards nest in LIFO order.
+//
+// To bookmark the current position for lookahead, pass the parser's own state:
+//     PauseParseGuard guard(Mp, Current_filename);
+// Unpausing rewinds the parser to the bookmarked position.
+class PauseParseGuard
+{
+public:
+	PauseParseGuard(char *text, const char *filename);
+	~PauseParseGuard();
+
+	// restore the bookmarked parse state now, rather than at end of scope;
+	// subsequent calls (including the destructor's) are no-ops
+	void unpause();
+
+	PauseParseGuard(const PauseParseGuard &) = delete;
+	PauseParseGuard &operator=(const PauseParseGuard &) = delete;
+	PauseParseGuard(PauseParseGuard &&) = delete;
+	PauseParseGuard &operator=(PauseParseGuard &&) = delete;
+
+private:
+	size_t m_depth = 0;
+	bool m_active = true;
+};
 // stop parsing, basically just frees up the memory from Parse_text and Parse_text_raw
 extern void stop_parse();
 
@@ -499,6 +527,7 @@ namespace parse
 	{
 	public:
 		SCP_string filename;
+		char* Parse_text;
 		char* Mp;
 		int Warning_count;
 		int Error_count;

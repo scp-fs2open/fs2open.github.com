@@ -3850,7 +3850,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 
 		// figure out whether this is a supercap by doing some parse gymnastics
 		// (flags are parsed several lines later, so we need to skip ahead, peek at the flags, and jump back)
-		pause_parse();
+		PauseParseGuard guard(Mp, Current_filename);	// bookmark the current position for lookahead; rewinds on unpause
 		if (skip_to_string("$Flags:", "$Name:") == 1) {
 			// cache the flag definition so we don't have to keep looking it up
 			static auto supercap_flag_def = std::find_if(std::begin(Ship_flags), std::end(Ship_flags), [](const flag_def_list_new<Info_Flags> &item) {
@@ -3869,7 +3869,6 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 				}
 			}
 		}
-		unpause_parse();
 	}
 
 	// get ship parameters for warpin and warpout

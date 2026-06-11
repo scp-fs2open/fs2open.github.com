@@ -935,9 +935,8 @@ bool script_state::ParseCondition(const char *filename)
 		sat.global_conditions = parsed_conditions;
 		for (const SCP_string& local_condition : conditions) {
 			bool found = false;
-			pause_parse();
 			SCP_vm_unique_ptr<char> parse{ vm_strdup(local_condition.c_str()) };
-			reset_parse(parse.get());	// coverity[escape:FALSE] - this is okay because the pointer escape only lasts until unpause_parse() restores the old state
+			PauseParseGuard guard(parse.get(), buf.c_str());	// coverity[escape:FALSE] - this is okay because the pointer escape only lasts until the guard restores the old state
 			for (const auto& potential_condition : currHook->_conditions) {
 				SCP_string bufCond;
 				sprintf(bufCond, "$%s:", potential_condition.first.c_str());
@@ -949,7 +948,7 @@ bool script_state::ParseCondition(const char *filename)
 					break;
 				}
 			}
-			unpause_parse();
+			guard.unpause();
 			
 			if (!found) {
 				error_display(0, "Condition '%s' is not valid for hook '%s'. The hook will not evaluate!", local_condition.c_str(), currHook->getHookName().c_str());

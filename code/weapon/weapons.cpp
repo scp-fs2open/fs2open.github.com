@@ -410,7 +410,7 @@ void parse_wi_flags(weapon_info *weaponp)
     // have to do this slightly out of order in order to handle spawn properly
     // skip OVER flags, check for +override and reset num_spawn_weapons_defined
     // otherwise if done afterward, new and old spawn weapons can get mixed up
-    pause_parse();
+    PauseParseGuard guard(Mp, Current_filename);	// bookmark the current position for lookahead; rewinds on unpause
     SCP_vector<SCP_string> flags;
     stuff_string_list(flags);
     if (optional_string("+override")) {
@@ -445,7 +445,7 @@ void parse_wi_flags(weapon_info *weaponp)
     	weaponp->wi_flags = cleared_wi_flags;
     	weaponp->num_spawn_weapons_defined = 0;
     }
-    unpause_parse();
+    guard.unpause();	// rewind so the flag list can be parsed for real
 
 	// To make sure +override doesn't overwrite previously parsed values we parse the flags into a separate flagset
     SCP_vector<SCP_string> unparsed;
