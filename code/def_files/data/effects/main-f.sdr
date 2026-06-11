@@ -132,7 +132,7 @@ uniform sampler2D sFramebuffer;
 uniform sampler2DArray sMiscmap;
 #prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_MISC
 #prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
-uniform sampler2DArray shadow_map;
+uniform sampler2DArrayShadow shadow_map;
 #prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
 
 out vec4 fragOut0;
@@ -329,7 +329,7 @@ void main()
 		#prereplace IF_FLAG MODEL_SDR_FLAG_LIGHT
 			float shadow = 1.0;
 			#prereplace IF_FLAG MODEL_SDR_FLAG_SHADOWS
-				shadow = getShadowValue(shadow_map, -vertIn.position.z, vertIn.shadowPos.z, vertIn.shadowUV, fardist, middist, neardist, veryneardist);
+				shadow = getShadowValueNew(shadow_map, -vertIn.position.z, vertIn.shadowUV, fardist, middist, neardist, veryneardist);
 			#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_SHADOWS
 			baseColor.rgb = CalculateLighting(normal, baseColor.rgb, specColor.rgb, glossData, fresnelFactor, shadow, aoFactors.x);
 		#prereplace ELSE_FLAG //MODEL_SDR_FLAG_LIGHT

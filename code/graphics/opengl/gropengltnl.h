@@ -33,7 +33,7 @@ extern float shadow_neardist;
 extern float shadow_middist;
 extern float shadow_fardist;
 
-extern GLuint Shadow_map_texture;
+extern GLuint Shadow_map_depth_texture;
 
 struct opengl_vertex_bind {
 	vertex_format_data::vertex_format format;

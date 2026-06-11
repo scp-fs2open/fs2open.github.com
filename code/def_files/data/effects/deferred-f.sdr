@@ -10,7 +10,7 @@ uniform sampler2D ColorBuffer;
 uniform sampler2D NormalBuffer;
 uniform sampler2D PositionBuffer;
 uniform sampler2D SpecBuffer;
-uniform sampler2DArray shadow_map;
+uniform sampler2DArrayShadow shadow_map;
 
 #ifdef ENV_MAP
 uniform samplerCube sEnvmap;
@@ -265,7 +265,7 @@ void main()
 			fragShadowUV[2] = transformToShadowMap(shadow_proj_matrix[2], 2, fragShadowPos);
 			fragShadowUV[3] = transformToShadowMap(shadow_proj_matrix[3], 3, fragShadowPos);
 
-			attenuation *= getShadowValue(shadow_map, -position.z, fragShadowPos.z, fragShadowUV, fardist, middist,
+			attenuation *= getShadowValueNew(shadow_map, -position.z, fragShadowUV, fardist, middist,
 									neardist, veryneardist);
 		}
 

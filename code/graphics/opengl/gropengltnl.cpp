@@ -63,7 +63,6 @@ size_t GL_vertex_data_in = 0;
 GLint GL_max_elements_vertices = 4096;
 GLint GL_max_elements_indices = 4096;
 
-GLuint Shadow_map_texture = 0;
 GLuint Shadow_map_depth_texture = 0;
 GLuint shadow_fbo = 0;
 int Shadow_texture_size = 0;
@@ -469,24 +468,11 @@ static bool opengl_init_shadow_framebuffer(int size, GLenum color_format)
 	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-	glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_DEPTH_COMPONENT32, size, size, 4, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_COMPARE_MODE, GL_LEQUAL);
+	glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_DEPTH_COMPONENT24, size, size, 4, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
 
 	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, Shadow_map_depth_texture, 0);
-
-	glGenTextures(1, &Shadow_map_texture);
-
-	GL_state.Texture.SetActiveUnit(0);
-	GL_state.Texture.SetTarget(GL_TEXTURE_2D_ARRAY);
-	GL_state.Texture.Enable(Shadow_map_texture);
-
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-	glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, color_format, size, size, 4, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, nullptr);
-
-	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, Shadow_map_texture, 0);
 
 	auto status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 	GL_state.BindFrameBuffer(0);
@@ -499,11 +485,9 @@ static bool opengl_init_shadow_framebuffer(int size, GLenum color_format)
 	}
 
 	// Clean up resources
-	glDeleteTextures(1, &Shadow_map_texture);
 	glDeleteTextures(1, &Shadow_map_depth_texture);
 	glDeleteFramebuffers(1, &shadow_fbo);
 
-	Shadow_map_texture       = 0;
 	Shadow_map_depth_texture = 0;
 	shadow_fbo               = 0;
 
@@ -574,11 +558,6 @@ void opengl_tnl_shutdown()
 	if ( Shadow_map_depth_texture ) {
 		glDeleteTextures(1, &Shadow_map_depth_texture);
 		Shadow_map_depth_texture = 0;
-	}
-
-	if ( Shadow_map_texture ) {
-		glDeleteTextures(1, &Shadow_map_texture);
-		Shadow_map_texture = 0;
 	}
 
 	opengl_destroy_all_buffers();
@@ -670,7 +649,7 @@ void gr_opengl_render_shadow_draw(gr_buffer_handle ubo_handle, size_t ubo_offset
 	gr_set_cull(1);
 	gr_zbias(-1024);
 	gr_set_fill_mode(GR_FILL_MODE_SOLID);
-	GL_state.ColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+	GL_state.ColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 
 	GL_state.FrontFaceValue(gr_screen.rendering_to_texture != -1 ? GL_CCW : GL_CW);
 
@@ -749,12 +728,10 @@ void gr_opengl_shadow_map_start(matrix4 *shadow_view_matrix, const matrix *light
 	GL_state.BindFrameBuffer(shadow_fbo);
 
 	//glDrawBuffer(GL_COLOR_ATTACHMENT0);
-	GLenum buffers[] = { GL_COLOR_ATTACHMENT0};
-	glDrawBuffers(1, buffers);
+	GLenum buffers[] = {};
+	glDrawBuffers(0, buffers);
 
-	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glClear(GL_DEPTH_BUFFER_BIT);
 
 	glEnable(GL_DEPTH_CLAMP);
 
@@ -1015,7 +992,7 @@ void opengl_tnl_set_model_material(model_material *material_info)
 		}
 
 		if (material_info->is_shadow_receiving()) {
-			GL_state.Texture.Enable(8, GL_TEXTURE_2D_ARRAY, Shadow_map_texture);
+			GL_state.Texture.Enable(8, GL_TEXTURE_2D_ARRAY, Shadow_map_depth_texture);
 		}
 
 		if (material_info->get_animated_effect() >= 0) {

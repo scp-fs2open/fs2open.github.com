@@ -22,17 +22,15 @@ layout (std140) uniform shadowMapData {
 
 uniform samplerBuffer transform_tex;
 
+#ifdef GEOMETRY_FALLBACK
 out VertexOutput {
 #if !defined(GL_ARB_gpu_shader5)
 	float instance;
 #endif
-#ifdef GEOMETRY_FALLBACK
 	float clipModel;
-#else
-	vec4 position;
-#endif
 	vec3 normal;
 } vertOut;
+#endif
 
 #define TEXELS_PER_MATRIX 4
 
@@ -59,9 +57,6 @@ void main()
 
 	normal = normalize(mat3(modelViewMatrix) * mat3(orient) * vertNormal);
 	position = modelViewMatrix * orient * vertex;
-#ifndef GEOMETRY_FALLBACK
-	vertOut.position = position;
-#endif
 
 #if !defined(GL_ARB_gpu_shader5)
  #ifdef APPLE
@@ -78,7 +73,7 @@ void main()
 #ifndef GEOMETRY_FALLBACK
         position = shadow_proj_matrix[gl_InstanceID] * position;
         if(position.z < -1.0)
-            position.z = -1.0;
+        	position.z = -1.0;
 #endif
         gl_Position = position;
     }
@@ -89,9 +84,8 @@ void main()
 		gl_ClipDistance[0] = 1.0;
 	}
 
-	vertOut.normal = normal;
-
 #ifdef GEOMETRY_FALLBACK
+    vertOut.normal = normal;
 	vertOut.clipModel = clipModel ? 1.0 : 0.0;
 #else
     gl_Layer = gl_InstanceID;
