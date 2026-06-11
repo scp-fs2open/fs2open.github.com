@@ -17,7 +17,7 @@ public:
 
 	vec3d getVelocity() const override;
 
-	EffectAttachment getParentAttachment() const override;
+	effects::EffectAttachment getParentAttachment() const override;
 
 	float getHostRadius() const override;
 

@@ -70,7 +70,7 @@ vec3d EffectHostTurret::getVelocity() const {
 	return Objects[m_objnum].phys_info.vel;
 }
 
-EffectAttachment EffectHostTurret::getParentAttachment() const {
+effects::EffectAttachment EffectHostTurret::getParentAttachment() const {
 	return effects::attachment_object{m_objnum, m_objsig};
 }
 

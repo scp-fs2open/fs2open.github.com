@@ -29,7 +29,7 @@ std::pair<vec3d, matrix> EffectHostParticle::getPositionAndOrientation(bool rela
 		pos = particle->pos;
 	}
 
-	pos = effects::attachment_local_pos_to_global(particle->attachment, pos, interp);
+	pos = particle->attachment.local_pos_to_global(pos, interp);
 
 	// find the particle direction (normalized vector)
 	// note: this can't be computed for particles with 0 velocity, so use the safe version
@@ -46,7 +46,7 @@ std::pair<vec3d, matrix> EffectHostParticle::getPositionAndOrientation(bool rela
 		orientation = m_orientationOverrideRelative ? m_orientationOverride * *vm_vector_2_matrix_norm(&orientation, &particle_dir) : m_orientationOverride;
 	}
 	else {
-		auto [parent_pos, parent_orient] = effects::get_attachment_frame(particle->attachment, interp);
+		auto [parent_pos, parent_orient] = particle->attachment.get_frame(interp);
 
 		//The position data here is in world space
 		//Since we're operating in local space, we can take the orientation override at face value if it's relative, but we need to convert it from global to local otherwise.
@@ -64,7 +64,7 @@ vec3d EffectHostParticle::getVelocity() const {
 	return m_particle.lock()->velocity;
 }
 
-EffectAttachment EffectHostParticle::getParentAttachment() const {
+effects::EffectAttachment EffectHostParticle::getParentAttachment() const {
 	return effects::attachment_particle{m_particle};
 }
 

@@ -157,7 +157,7 @@ namespace particle
 			return true;
 		}
 
-		vec3d world_pos = effects::attachment_local_pos_to_global(new_particle.attachment, new_particle.pos);
+		vec3d world_pos = new_particle.attachment.local_pos_to_global(new_particle.pos);
 
 		// treat particles on lower detail levels as 'further away' for the purposes of culling
 		float adjusted_dist = vm_vec_dist(&Eye_position, &world_pos) * powf(2.5f, (float)(static_cast<int>(DefaultDetailPreset::Num_detail_presets) - Detail.num_particles));
@@ -196,7 +196,7 @@ namespace particle
 	}
 
 	float getPixelSize(const particle& subject_particle) {
-		vec3d world_pos = effects::attachment_local_pos_to_global(subject_particle.attachment, subject_particle.pos);
+		vec3d world_pos = subject_particle.attachment.local_pos_to_global(subject_particle.pos);
 
 		float distance_to_eye = vm_vec_dist(&Eye_position, &world_pos);
 
@@ -236,7 +236,7 @@ namespace particle
 		}
 
 		// if the particle is attached to an object which has become invalid, kill it
-		if (!effects::is_attachment_valid(part->attachment))
+		if (!part->attachment.is_valid())
 		{
 			remove_particle = true;
 		}
@@ -284,7 +284,7 @@ namespace particle
 		if (Detail.lighting > 3 && source_effect.m_light_source) {
 			const auto& light_source = *source_effect.m_light_source;
 
-			vec3d p_pos = effects::attachment_local_pos_to_global(part->attachment, part->pos);
+			vec3d p_pos = part->attachment.local_pos_to_global(part->pos);
 			
 			float light_radius = light_source.light_radius * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::LIGHT_RADIUS_MULT, curve_input);
 			float source_radius = light_source.source_radius * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::LIGHT_SOURCE_RADIUS_MULT, curve_input);
@@ -303,13 +303,13 @@ namespace particle
 				light_add_point(&p_pos, light_radius, light_radius, intensity, r, g, b, source_radius);
 				break;
 			case ParticleEffect::LightInformation::LightSourceMode::TO_LAST_POS: {
-			vec3d p_prev_pos = effects::attachment_local_last_pos_to_global(part->attachment, prev_pos);
+			vec3d p_prev_pos = part->attachment.local_last_pos_to_global(prev_pos);
 				light_add_tube(&p_prev_pos, &p_pos, light_radius, light_radius, intensity, r, g, b, source_radius);
 			}
 			break;
 			case ParticleEffect::LightInformation::LightSourceMode::AS_PARTICLE:
 				if (part->length != 0.0f) {
-					vec3d p1 = effects::attachment_local_vel_to_global(part->attachment, part->velocity);
+					vec3d p1 = part->attachment.local_vel_to_global(part->velocity);
 					vm_vec_normalize_safe(&p1);
 					p1 *= part->length * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::LENGTH_MULT, curve_input);
 					p1 += p_pos;
@@ -322,7 +322,7 @@ namespace particle
 			case ParticleEffect::LightInformation::LightSourceMode::CONE: {
 				float cone_angle = light_source.cone_angle * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::LIGHT_CONE_ANGLE_MULT, curve_input);
 				float cone_inner_angle = light_source.cone_inner_angle * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::LIGHT_CONE_INNER_ANGLE_MULT, curve_input);
-				vec3d p1 = effects::attachment_local_vel_to_global(part->attachment, part->velocity);
+				vec3d p1 = part->attachment.local_vel_to_global(part->velocity);
 				vm_vec_normalize_safe(&p1);
 
 				light_add_cone(&p_pos, &p1, cone_angle, cone_inner_angle, false, light_radius, light_radius, intensity, r, g, b, source_radius);
@@ -402,7 +402,7 @@ namespace particle
 	static bool render_particle(particle* part) {
 		// skip back-facing particles (ripped from fullneb code)
 		// Wanderer - add support for attached particles
-		vec3d p_pos = effects::attachment_local_pos_to_global(part->attachment, part->pos);
+		vec3d p_pos = part->attachment.local_pos_to_global(part->pos);
 
 		bool part_has_length = part->length != 0.0f;
 
@@ -420,7 +420,7 @@ namespace particle
 		vec3d p1 = vmd_x_vector;
 
 		if (part_has_length) {
-			p1 = effects::attachment_local_vel_to_global(part->attachment, part->velocity);
+			p1 = part->attachment.local_vel_to_global(part->velocity);
 			vm_vec_normalize_safe(&p1);
 			p1 *= part->length * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::LENGTH_MULT, curve_input);
 			p1 += p_pos;
