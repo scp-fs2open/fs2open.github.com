@@ -728,8 +728,7 @@ void gr_opengl_shadow_map_start(matrix4 *shadow_view_matrix, const matrix *light
 	GL_state.BindFrameBuffer(shadow_fbo);
 
 	//glDrawBuffer(GL_COLOR_ATTACHMENT0);
-	GLenum buffers[] = {};
-	glDrawBuffers(0, buffers);
+	glDrawBuffers(0, nullptr);
 
 	glClear(GL_DEPTH_BUFFER_BIT);
 
