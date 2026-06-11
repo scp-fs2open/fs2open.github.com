@@ -220,7 +220,10 @@ static opengl_shader_variant_t GL_shader_variants[] = {
 
 	{SDR_TYPE_COPY_WORLD, false, SDR_FLAG_COPY_FROM_ARRAY, "COPY_ARRAY", {}, "Expects to copy from an array texture"},
 
-	{SDR_TYPE_POST_PROCESS_TONEMAPPING, false, SDR_FLAG_TONEMAPPING_LINEAR_OUT, "LINEAR_OUT", {}, "Will make the tonemapper output in linear color space and not in sRGB"}
+	{SDR_TYPE_POST_PROCESS_TONEMAPPING, false, SDR_FLAG_TONEMAPPING_LINEAR_OUT, "LINEAR_OUT", {}, "Will make the tonemapper output in linear color space and not in sRGB"},
+
+	{SDR_TYPE_SHADOW_MAP_GEN, true, SDR_FLAG_SHADOW_FALLBACK, "GEOMETRY_FALLBACK", {}, "Will make the shadow map generation shader fall back on geometry shaders if multi viewports are not avilable"}
+
 };
 
 static const int GL_num_shader_variants = sizeof(GL_shader_variants) / sizeof(opengl_shader_variant_t);
@@ -835,13 +838,6 @@ void opengl_compile_shader_actual(shader_type sdr, const uint &flags, opengl_sha
 				use_geo_sdr = true;
 				break;
 			}
-		}
-
-		// TODO: This is an ugly hardcoded override. The shadow map generation shader always needs its
-		// geometry shader for cascade instancing. Ideally this should use a proper variant system
-		// (e.g. a variant with flag=0 that always matches for this shader type).
-		if (!use_geo_sdr && sdr == SDR_TYPE_SHADOW_MAP_GEN) {
-			use_geo_sdr = true;
 		}
 	}
 

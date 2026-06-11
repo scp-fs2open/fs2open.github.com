@@ -654,7 +654,7 @@ void gr_opengl_render_shadow_draw(gr_buffer_handle ubo_handle, size_t ubo_offset
 		return;
 	}
 
-	int shader_handle = gr_opengl_maybe_create_shader(SDR_TYPE_SHADOW_MAP_GEN, 0);
+	int shader_handle = gr_opengl_maybe_create_shader(SDR_TYPE_SHADOW_MAP_GEN, gr_is_capable(gr_capability::CAPABILITY_FAST_SHADOWS) ? 0 : SDR_FLAG_SHADOW_FALLBACK);
 	opengl_shader_set_current(shader_handle);
 
 	GL_state.Texture.SetShaderMode(GL_TRUE);
@@ -685,11 +685,21 @@ void gr_opengl_render_shadow_draw(gr_buffer_handle ubo_handle, size_t ubo_offset
 	GLenum element_type = (datap->flags & VB_FLAG_LARGE_INDEX) ? GL_UNSIGNED_INT : GL_UNSIGNED_SHORT;
 	GLint base_vertex = (GLint)(vert_src->Base_vertex_offset + buffer->vertex_num_offset);
 
-	glDrawElementsBaseVertex(GL_TRIANGLES,
-	                         (GLsizei)datap->n_verts,
-	                         element_type,
-	                         ibuffer + datap->index_offset,
-	                         base_vertex);
+	if (gr_is_capable(gr_capability::CAPABILITY_FAST_SHADOWS)) {
+		glDrawElementsInstancedBaseVertex(GL_TRIANGLES,
+							 (GLsizei)datap->n_verts,
+							 element_type,
+							 ibuffer + datap->index_offset,
+							 4,
+							 base_vertex);
+	}
+	else {
+		glDrawElementsBaseVertex(GL_TRIANGLES,
+							 (GLsizei)datap->n_verts,
+							 element_type,
+							 ibuffer + datap->index_offset,
+							 base_vertex);
+	}
 
 	GL_state.Texture.SetShaderMode(GL_FALSE);
 }

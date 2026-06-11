@@ -243,6 +243,8 @@ enum shader_type {
 
 #define SDR_FLAG_ENV_MAP (1 << 0)
 
+#define SDR_FLAG_SHADOW_FALLBACK (1 << 0)
+
 
 enum class uniform_block_type {
 	Lights = 0,

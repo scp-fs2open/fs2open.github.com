@@ -1,6 +1,10 @@
 //? #version 150
 #extension GL_ARB_gpu_shader5: enable
 
+#ifndef GEOMETRY_FALLBACK
+#extension GL_ARB_shader_viewport_layer_array : require
+#endif
+
 in vec4 vertPosition;
 in vec4 vertTexCoord;
 in vec3 vertNormal;
@@ -22,7 +26,9 @@ out VertexOutput {
 #if !defined(GL_ARB_gpu_shader5)
 	float instance;
 #endif
+#ifdef GEOMETRY_FALLBACK
 	float clipModel;
+#endif
 	vec3 normal;
 } vertOut;
 
@@ -51,7 +57,6 @@ void main()
 
 	normal = normalize(mat3(modelViewMatrix) * mat3(orient) * vertNormal);
 	position = modelViewMatrix * orient * vertex;
-	gl_Position = position;
 #if !defined(GL_ARB_gpu_shader5)
  #ifdef APPLE
 	vertOut.instance = float(gl_InstanceIDARB);
@@ -63,6 +68,15 @@ void main()
 	if (clipModel) {
 		gl_Position = vec4(vec3(-2.0), 1.0);
 	}
+#ifndef GEOMETRY_FALLBACK
+    else {
+        position = shadow_proj_matrix[gl_InstanceID] * position
+        if(position.z < -1.0)
+            position.z = -1.0;
+    }
+#endif
+
+    gl_Position = position;
 
 	if (use_clip_plane) {
 		gl_ClipDistance[0] = dot(clip_equation, modelMatrix * orient * vertex);
@@ -70,6 +84,12 @@ void main()
 		gl_ClipDistance[0] = 1.0;
 	}
 
-	vertOut.clipModel = clipModel ? 1.0 : 0.0;
+
 	vertOut.normal = normal;
+
+#ifdef GEOMETRY_FALLBACK
+	vertOut.clipModel = clipModel ? 1.0 : 0.0;
+#else
+    gl_Layer = gl_InstanceID;
+#endif
 }
