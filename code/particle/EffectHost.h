@@ -20,25 +20,17 @@ namespace effects {
 	struct attachment_particle {
 		particle::WeakParticlePtr particle = particle::WeakParticlePtr();
 	};
-}
-using EffectAttachment = std::variant<std::monostate, effects::attachment_object, effects::attachment_particle>;
 
-namespace effects {
+	struct EffectAttachment : public std::variant<std::monostate, attachment_object, attachment_particle> {
+		using std::variant<std::monostate, attachment_object, attachment_particle>::variant;
 
-vec3d attachment_local_pos_to_global(const EffectAttachment& attachment, const vec3d& local_pos, float interp = 0.0f);
-
-vec3d attachment_local_vel_to_global(const EffectAttachment& attachment, const vec3d& local_vel);
-
-vec3d attachment_local_last_pos_to_global(const EffectAttachment& attachment, const vec3d& last_pos);
-
-bool is_attachment_valid(const EffectAttachment& attachment);
-
-std::pair<vec3d, matrix> get_attachment_frame(const EffectAttachment& attachment, float interp = 0.0f);
-
-inline std::optional<effects::attachment_object> extract_attachment_object(const EffectAttachment& input) {
-	return variant_get_optional<effects::attachment_object>(input);
-}
-
+		vec3d local_pos_to_global(const vec3d& local_pos, float interp = 0.0f) const;
+		vec3d local_vel_to_global(const vec3d& local_vel) const;
+		vec3d local_last_pos_to_global(const vec3d& last_pos) const;
+		bool is_valid() const;
+		std::pair<vec3d, matrix> get_frame(float interp = 0.0f) const;
+		std::optional<attachment_object> extract_object() const;
+	};
 }
 
 class EffectHost {
@@ -61,7 +53,7 @@ public:
 		return vm_vec_mag_quick(&velocity);
 	}
 
-	virtual EffectAttachment getParentAttachment() const { return {}; }
+	virtual effects::EffectAttachment getParentAttachment() const { return {}; }
 	virtual int getParentSubmodel() const { return -1; }
 
 	virtual float getLifetime() const { return -1.f; }

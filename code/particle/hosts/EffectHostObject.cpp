@@ -51,7 +51,7 @@ vec3d EffectHostObject::getVelocity() const {
 	return Objects[m_objnum].phys_info.vel;
 }
 
-EffectAttachment EffectHostObject::getParentAttachment() const {
+effects::EffectAttachment EffectHostObject::getParentAttachment() const {
 	return effects::attachment_object{m_objnum, m_objsig};
 }
 

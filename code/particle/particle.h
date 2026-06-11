@@ -89,7 +89,7 @@ namespace particle
 		int		nframes;			// If an ani, how many frames?	
 
 		// new style data
-		EffectAttachment attachment;
+		effects::EffectAttachment attachment;
 
 		bool	reverse;			// play any animations in reverse
 		float   length;				// the length of the particle for laser-style rendering

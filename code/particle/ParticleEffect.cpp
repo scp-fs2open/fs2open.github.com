@@ -26,6 +26,7 @@ ParticleEffect::ParticleEffect(SCP_string name)
 	  m_vel_inherit_from_position_absolute(false),
 	  m_reverseAnimation(false),
 	  m_ignore_velocity_inherit_if_has_parent(false),
+	  m_parent_is_transitive(true),
 	  m_bitmap_list({}),
 	  m_bitmap_range(::util::UniformRange<size_t>(0)),
 	  m_delayRange(::util::UniformFloatRange(0.0f)),
@@ -96,6 +97,7 @@ ParticleEffect::ParticleEffect(SCP_string name,
 	  m_vel_inherit_from_position_absolute(velInheritFromPositionAbsolute),
 	  m_reverseAnimation(reverseAnimation),
 	  m_ignore_velocity_inherit_if_has_parent(ignoreVelocityInheritIfParented),
+	  m_parent_is_transitive(true),
 	  m_bitmap_list({bitmap}),
 	  m_bitmap_range(::util::UniformRange<size_t>(0)),
 	  m_delayRange(::util::UniformFloatRange(0.0f)),
@@ -185,12 +187,12 @@ void ParticleEffect::sampleNoise(vec3d& noiseTarget, const matrix* orientation, 
 	vm_vec_unrotate(&noiseTarget, &noiseSampleLocal, orientation);
 }
 
-vec3d ParticleEffect::adaptPosition(const vec3d& pos, const EffectAttachment& attachment) const {
+vec3d ParticleEffect::adaptPosition(const vec3d& pos, const effects::EffectAttachment& attachment) const {
 	if (std::holds_alternative<std::monostate>(attachment) || !m_local_position_scaling.has_value()) {
 		return pos;
 	}
 
-	auto [parent_pos, parent_orient] = effects::get_attachment_frame(attachment);
+	auto [parent_pos, parent_orient] = attachment.get_frame();
 
 	vec3d pos_local = pos;
 
@@ -215,7 +217,7 @@ vec3d ParticleEffect::adaptPosition(const vec3d& pos, const EffectAttachment& at
  *
  * */
 template<bool isPersistent>
-auto ParticleEffect::processSourceInternal(float interp, const ParticleSource& source, size_t effectNumber, const vec3d& velParent, const EffectAttachment& attachment, float parentLifetime, float parentRadius, float particle_percent) const {
+auto ParticleEffect::processSourceInternal(float interp, const ParticleSource& source, size_t effectNumber, const vec3d& velParent, const effects::EffectAttachment& attachment, float parentLifetime, float parentRadius, float particle_percent) const {
 	using persistentParticlesList = std::conditional_t<isPersistent, SCP_vector<WeakParticlePtr>, bool>;
 	persistentParticlesList createdParticles;
 
@@ -242,7 +244,7 @@ auto ParticleEffect::processSourceInternal(float interp, const ParticleSource& s
 
 	vec3d posGlobal = pos;
 	if (m_parent_local) {
-		posGlobal = effects::attachment_local_pos_to_global(attachment, posGlobal, interp);
+		posGlobal = attachment.local_pos_to_global(posGlobal, interp);
 	}
 
 	auto modularCurvesInput = std::forward_as_tuple(source, effectNumber, posGlobal);
@@ -421,11 +423,11 @@ auto ParticleEffect::processSourceInternal(float interp, const ParticleSource& s
 		return getCurrentFrequencyMult(modularCurvesInput);
 }
 
-float ParticleEffect::processSource(float interp, const ParticleSource& source, size_t effectNumber, const vec3d& velParent, const EffectAttachment& attachment, float parentLifetime, float parentRadius, float particle_percent) const {
+float ParticleEffect::processSource(float interp, const ParticleSource& source, size_t effectNumber, const vec3d& velParent, const effects::EffectAttachment& attachment, float parentLifetime, float parentRadius, float particle_percent) const {
 	return processSourceInternal<false>(interp, source, effectNumber, velParent, attachment, parentLifetime, parentRadius, particle_percent);
 }
 
-SCP_vector<WeakParticlePtr> ParticleEffect::processSourcePersistent(float interp, const ParticleSource& source, size_t effectNumber, const vec3d& velParent, const EffectAttachment& attachment, float parentLifetime, float parentRadius, float particle_percent) const {
+SCP_vector<WeakParticlePtr> ParticleEffect::processSourcePersistent(float interp, const ParticleSource& source, size_t effectNumber, const vec3d& velParent, const effects::EffectAttachment& attachment, float parentLifetime, float parentRadius, float particle_percent) const {
 	return processSourceInternal<true>(interp, source, effectNumber, velParent, attachment, parentLifetime, parentRadius, particle_percent);
 }
 
