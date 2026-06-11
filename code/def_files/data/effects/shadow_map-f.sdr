@@ -4,23 +4,16 @@
 
 #ifdef GEOMETRY_FALLBACK
 in VertexOutputGeo {
+#else
+in VertexOutput {
+#endif
 	vec4 position;
 	vec3 normal;
 } vertIn;
-#else
-in VertexOutput {
-	vec3 normal;
-} vertIn;
-#endif
-
 
 out vec4 fragOut0;
 
 void main()
 {
-#ifdef GEOMETRY_FALLBACK
 	fragOut0 = vec4(vertIn.position.z, vertIn.position.z * vertIn.position.z * VARIANCE_SHADOW_SCALE_INV, 0.0, 1.0);
-#else
-    fragOut0 = vec4(gl_Position.z, gl_Position.z * gl_Position.z * VARIANCE_SHADOW_SCALE_INV, 0.0, 1.0);
-#endif
 }

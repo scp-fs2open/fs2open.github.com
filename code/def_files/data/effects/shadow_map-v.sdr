@@ -28,6 +28,8 @@ out VertexOutput {
 #endif
 #ifdef GEOMETRY_FALLBACK
 	float clipModel;
+#else
+	vec4 position;
 #endif
 	vec3 normal;
 } vertOut;
@@ -57,6 +59,10 @@ void main()
 
 	normal = normalize(mat3(modelViewMatrix) * mat3(orient) * vertNormal);
 	position = modelViewMatrix * orient * vertex;
+#ifndef GEOMETRY_FALLBACK
+	vertOut.position = position;
+#endif
+
 #if !defined(GL_ARB_gpu_shader5)
  #ifdef APPLE
 	vertOut.instance = float(gl_InstanceIDARB);
@@ -68,22 +74,20 @@ void main()
 	if (clipModel) {
 		gl_Position = vec4(vec3(-2.0), 1.0);
 	}
+	else {
 #ifndef GEOMETRY_FALLBACK
-    else {
-        position = shadow_proj_matrix[gl_InstanceID] * position
+        position = shadow_proj_matrix[gl_InstanceID] * position;
         if(position.z < -1.0)
             position.z = -1.0;
-    }
 #endif
-
-    gl_Position = position;
+        gl_Position = position;
+    }
 
 	if (use_clip_plane) {
 		gl_ClipDistance[0] = dot(clip_equation, modelMatrix * orient * vertex);
 	} else {
 		gl_ClipDistance[0] = 1.0;
 	}
-
 
 	vertOut.normal = normal;
 

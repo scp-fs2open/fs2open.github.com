@@ -1385,6 +1385,7 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	mprintf(( "\n" ));
 	mprintf(("Extensions: \n"));
 	mprintf(("  Geo shader support : %s\n", GLAD_GL_ARB_gpu_shader5 ? NOX("YES") : NOX("NO")));
+	mprintf(("  Layered viewport support : %s\n", GLAD_GL_ARB_shader_viewport_layer_array ? NOX("YES") : NOX("NO")));
 	mprintf(("  S3TC texture support : %s\n", GLAD_GL_EXT_texture_compression_s3tc ? NOX("YES") : NOX("NO")));
 	mprintf(("  BPTC texture support : %s\n", GLAD_GL_ARB_texture_compression_bptc ? NOX("YES") : NOX("NO")));
 
