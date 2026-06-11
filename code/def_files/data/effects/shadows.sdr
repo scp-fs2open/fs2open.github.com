@@ -1,4 +1,10 @@
+#define SMOOTH_PCSS 1
+
+#if SMOOTH_PCSS
+#define SAMPLES_PCSS 16
+#else
 #define SAMPLES_PCSS 1
+#endif
 
 vec4 transformToShadowMap(mat4 shadow_proj_matrix, int i, vec4 pos)
 {
@@ -13,6 +19,7 @@ vec4 transformToShadowMap(mat4 shadow_proj_matrix, int i, vec4 pos)
 
 float samplePoissonPCSS(sampler2DArrayShadow shadow_map, int cascade, vec4 shadowUV)
 {
+#if SMOOTH_PCSS
 	vec2 poissonDisc[16] = vec2[](
 		vec2(-0.76275, -0.3432573),
 		vec2(-0.5226235, -0.8277544),
@@ -31,6 +38,11 @@ float samplePoissonPCSS(sampler2DArrayShadow shadow_map, int cascade, vec4 shado
 		vec2(0.81772, -0.02475523),
 		vec2(0.6890262, 0.5191521)
 	);
+#else
+	vec2 poissonDisc[1] = vec2[](
+		vec2(0.0,0.0)
+	);
+#endif
 
 	float maxUVOffset[4];
 	maxUVOffset[0] = 1.0/300.0;
@@ -68,6 +80,13 @@ float getShadowValueNew(sampler2DArrayShadow shadow_map, float depth, vec4 shado
 	cascade_start_dist[4] = fardist;
 	if(cascade > 3 || cascade < 0) return 1.0;
 
-    return samplePoissonPCSS(shadow_map, cascade, shadowUV[cascade]);
+	float dist_threshold = (cascade_start_dist[cascade + 1] - cascade_start_dist[cascade]) * 0.2;
+    if(cascade_start_dist[cascade + 1] - dist_threshold > depth)
+    	return samplePoissonPCSS(shadow_map, cascade, shadowUV[cascade]);
+
+    return mix(
+        samplePoissonPCSS(shadow_map, cascade, shadowUV[cascade]),
+        samplePoissonPCSS(shadow_map, cascade + 1, shadowUV[cascade + 1]),
+    	smoothstep(cascade_start_dist[cascade + 1] - dist_threshold, cascade_start_dist[cascade + 1], depth));
 }
 
