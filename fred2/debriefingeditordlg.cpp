@@ -498,8 +498,9 @@ BOOL debriefing_editor_dlg::OnCommand(WPARAM wParam, LPARAM lParam)
 	return CDialog::OnCommand(wParam, lParam);
 }
 
-BOOL debriefing_editor_dlg::DestroyWindow() 
+BOOL debriefing_editor_dlg::DestroyWindow()
 {
+	Debriefing_dialog = nullptr;
 	audiostream_close_file(m_voice_id, 0);
 	m_play_bm.DeleteObject();
 	return CDialog::DestroyWindow();

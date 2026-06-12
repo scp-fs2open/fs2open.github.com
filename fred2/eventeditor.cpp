@@ -1520,8 +1520,10 @@ void event_editor::OnSelchangeWaveFilename()
 	update_persona();
 }
 
-BOOL event_editor::DestroyWindow() 
+BOOL event_editor::DestroyWindow()
 {
+	Event_editor_dlg = nullptr;
+
 	audiostream_close_file(m_wave_id, 0);
 	m_wave_id = -1;
 

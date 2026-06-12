@@ -5048,9 +5048,9 @@ void CFREDView::OnUpdateViewFullDetail(CCmdUI *pCmdUI)
 	pCmdUI->SetCheck(FullDetail);
 }
 
-BOOL CFREDView::DestroyWindow() 
+BOOL CFREDView::DestroyWindow()
 {
-	// TODO: Add your specialized code here and/or call the base class
+	Fred_view_wnd = nullptr;
 	return CView::DestroyWindow();
 }
 
