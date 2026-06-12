@@ -7,6 +7,7 @@
 #include "globalincs/systemvars.h"
 #include "shadows.h"
 #include "nebula/neb.h"
+#include "mod_table/mod_table.h"
 
 #define MODEL_SDR_FLAG_MODE_CPP
 #include "def_files/data/effects/model_shader_flags.h"
@@ -176,6 +177,11 @@ void convert_model_material(model_uniform_data* data_out,
 		data_out->neardist = Shadow_cascade_distances[1];
 		data_out->middist = Shadow_cascade_distances[2];
 		data_out->fardist = Shadow_cascade_distances[3];
+
+		data_out->maxUVOffset.xyzw.x = Shadow_smoothness_factor[0];
+		data_out->maxUVOffset.xyzw.y = Shadow_smoothness_factor[1];
+		data_out->maxUVOffset.xyzw.z = Shadow_smoothness_factor[2];
+		data_out->maxUVOffset.xyzw.w = Shadow_smoothness_factor[3];
 	}
 
 	if (material.is_batched()) {

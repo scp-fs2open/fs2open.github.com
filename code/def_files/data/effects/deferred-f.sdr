@@ -28,6 +28,8 @@ layout (std140) uniform globalDeferredData {
 	float middist;
 	float fardist;
 
+	vec4 maxUVOffset;
+
 	float invScreenWidth;
 	float invScreenHeight;
 
@@ -266,7 +268,7 @@ void main()
 			fragShadowUV[3] = transformToShadowMap(shadow_proj_matrix[3], 3, fragShadowPos);
 
 			attenuation *= getShadowValueNew(shadow_map, -position.z, fragShadowUV, fardist, middist,
-									neardist, veryneardist);
+									neardist, veryneardist, maxUVOffset);
 		}
 
 		vec3 halfVec = normalize(lightDir + eyeDir);

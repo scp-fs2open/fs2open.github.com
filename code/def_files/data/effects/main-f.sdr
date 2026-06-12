@@ -85,6 +85,8 @@ layout (std140) uniform modelData {
 	float middist;
 	float fardist;
 
+	vec4 maxUVOffset;
+
 	int sGlowmapIndex;
 	int sSpecmapIndex;
 	int sNormalmapIndex;
@@ -329,7 +331,7 @@ void main()
 		#prereplace IF_FLAG MODEL_SDR_FLAG_LIGHT
 			float shadow = 1.0;
 			#prereplace IF_FLAG MODEL_SDR_FLAG_SHADOWS
-				shadow = getShadowValueNew(shadow_map, -vertIn.position.z, vertIn.shadowUV, fardist, middist, neardist, veryneardist);
+				shadow = getShadowValueNew(shadow_map, -vertIn.position.z, vertIn.shadowUV, fardist, middist, neardist, veryneardist, maxUVOffset);
 			#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_SHADOWS
 			baseColor.rgb = CalculateLighting(normal, baseColor.rgb, specColor.rgb, glossData, fresnelFactor, shadow, aoFactors.x);
 		#prereplace ELSE_FLAG //MODEL_SDR_FLAG_LIGHT

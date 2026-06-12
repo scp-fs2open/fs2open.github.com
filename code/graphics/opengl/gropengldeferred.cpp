@@ -20,6 +20,7 @@
 #include "mission/missionparse.h"
 #include "nebula/neb.h"
 #include "nebula/volumetrics.h"
+#include "mod_table/mod_table.h"
 #include "render/3d.h"
 #include "tracing/tracing.h"
 #ifdef USE_OPENGL_ES
@@ -322,6 +323,11 @@ void gr_opengl_deferred_lighting_finish()
 			header->neardist = Shadow_cascade_distances[1];
 			header->middist = Shadow_cascade_distances[2];
 			header->fardist = Shadow_cascade_distances[3];
+
+			header->maxUVOffset.xyzw.x = Shadow_smoothness_factor[0];
+			header->maxUVOffset.xyzw.y = Shadow_smoothness_factor[1];
+			header->maxUVOffset.xyzw.z = Shadow_smoothness_factor[2];
+			header->maxUVOffset.xyzw.w = Shadow_smoothness_factor[3];
 
 			vm_inverse_matrix4(&header->inv_view_matrix, &Shadow_view_matrix_render);
 		}

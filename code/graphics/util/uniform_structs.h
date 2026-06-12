@@ -28,6 +28,8 @@ struct deferred_global_data {
 	float middist;
 	float fardist;
 
+	vec4 maxUVOffset;
+
 	float invScreenWidth;
 	float invScreenHeight;
 	float nearPlane;
@@ -129,6 +131,8 @@ struct model_uniform_data {
 	float neardist;
 	float middist;
 	float fardist;
+
+	vec4 maxUVOffset;
 
 	int sGlowmapIndex;
 	int sSpecmapIndex;

@@ -17,7 +17,7 @@ vec4 transformToShadowMap(mat4 shadow_proj_matrix, int i, vec4 pos)
 	return shadow_proj;
 }
 
-float samplePoissonPCSS(sampler2DArrayShadow shadow_map, int cascade, vec4 shadowUV)
+float samplePoissonPCSS(sampler2DArrayShadow shadow_map, int cascade, vec4 shadowUV, vec4 maxUVOffset)
 {
 #if SMOOTH_PCSS
 	vec2 poissonDisc[16] = vec2[](
@@ -44,12 +44,6 @@ float samplePoissonPCSS(sampler2DArrayShadow shadow_map, int cascade, vec4 shado
 	);
 #endif
 
-	float maxUVOffset[4];
-	maxUVOffset[0] = 1.0/300.0;
-	maxUVOffset[1] = 1.0/250.0;
-	maxUVOffset[2] = 1.0/200.0;
-	maxUVOffset[3] = 1.0/200.0;
-
 	// default external shadows
 	// bias is a bit larger to only pick up larger geometry
 	// favors light over shadow to avoid flickering/spotty shadows
@@ -64,7 +58,7 @@ float samplePoissonPCSS(sampler2DArrayShadow shadow_map, int cascade, vec4 shado
 }
 
 float getShadowValueNew(sampler2DArrayShadow shadow_map, float depth, vec4 shadowUV[4], float fardist,
-					 float middist, float neardist, float veryneardist)
+					 float middist, float neardist, float veryneardist, vec4 maxUVOffset)
 {
 	// Valathil's Shadows
 	int cascade = 4;
@@ -82,11 +76,11 @@ float getShadowValueNew(sampler2DArrayShadow shadow_map, float depth, vec4 shado
 
 	float dist_threshold = (cascade_start_dist[cascade + 1] - cascade_start_dist[cascade]) * 0.2;
     if(cascade_start_dist[cascade + 1] - dist_threshold > depth)
-    	return samplePoissonPCSS(shadow_map, cascade, shadowUV[cascade]);
+    	return samplePoissonPCSS(shadow_map, cascade, shadowUV[cascade], maxUVOffset);
 
     return mix(
-        samplePoissonPCSS(shadow_map, cascade, shadowUV[cascade]),
-        samplePoissonPCSS(shadow_map, cascade + 1, shadowUV[cascade + 1]),
+        samplePoissonPCSS(shadow_map, cascade, shadowUV[cascade], maxUVOffset),
+        samplePoissonPCSS(shadow_map, cascade + 1, shadowUV[cascade + 1], maxUVOffset),
     	smoothstep(cascade_start_dist[cascade + 1] - dist_threshold, cascade_start_dist[cascade + 1], depth));
 }
 

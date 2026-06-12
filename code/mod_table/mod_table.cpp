@@ -129,6 +129,7 @@ bool Neb_affects_particles;
 bool Neb_affects_fireballs;
 std::tuple<float, float, float, float> Shadow_distances;
 std::tuple<float, float, float, float> Shadow_distances_cockpit;
+float Shadow_smoothness_factor[4] = {1.0f/300.0f, 1.0f/250.0f, 1.0f/200.0f, 1.0f/200.0f};
 bool Show_ship_casts_shadow;
 bool Cockpit_shares_coordinate_space;
 bool Show_ship_only_if_cockpits_enabled;
@@ -903,6 +904,22 @@ void parse_mod_table(const char *filename)
 				}
 				else {
 					error_display(0, "$Shadow Cascade Distances Cockpit are %f, %f, %f, %f. One or more are < 0, and/or values are not increasing. Assuming default distances.", dis[0], dis[1], dis[2], dis[3]);
+				}
+			}
+
+			if (optional_string("$Shadow Smoothness Factor:")) {
+				float smoothness[4];
+				stuff_float_list(smoothness, 4);
+				if (smoothness[0] > 0.0f && smoothness[1] > 0.0f && smoothness[2] > 0.0f && smoothness[3] > 0.0f) {
+					Shadow_smoothness_factor[0] = smoothness[0];
+					Shadow_smoothness_factor[1] = smoothness[1];
+					Shadow_smoothness_factor[2] = smoothness[2];
+					Shadow_smoothness_factor[3] = smoothness[3];
+					mprintf(("Game Settings Table: Shadow smoothness factor set to %f, %f, %f, %f\n",
+						smoothness[0], smoothness[1], smoothness[2], smoothness[3]));
+				} else {
+					error_display(0, "$Shadow Smoothness Factor values are %f, %f, %f, %f. All values must be > 0. Using defaults.",
+						smoothness[0], smoothness[1], smoothness[2], smoothness[3]);
 				}
 			}
 
@@ -1833,6 +1850,10 @@ void mod_table_reset()
 	Neb_affects_fireballs = false;
 	Shadow_distances = std::make_tuple(200.0f, 600.0f, 2500.0f, 8000.0f); // Default values tuned by Swifty and added here by wookieejedi
 	Shadow_distances_cockpit = std::make_tuple(0.25f, 0.75f, 1.5f, 3.0f); // Default values tuned by wookieejedi and added here by Lafiel
+	Shadow_smoothness_factor[0] = 1.0f/300.0f;
+	Shadow_smoothness_factor[1] = 1.0f/250.0f;
+	Shadow_smoothness_factor[2] = 1.0f/200.0f;
+	Shadow_smoothness_factor[3] = 1.0f/200.0f;
 	Show_ship_casts_shadow = false;
 	Cockpit_shares_coordinate_space = false;
 	Show_ship_only_if_cockpits_enabled = false;

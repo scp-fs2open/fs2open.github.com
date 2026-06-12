@@ -148,6 +148,7 @@ extern bool Neb_affects_weapons;
 extern bool Neb_affects_particles;
 extern bool Neb_affects_fireballs;
 extern std::tuple<float, float, float, float> Shadow_distances;
+extern float Shadow_smoothness_factor[4];
 extern std::tuple<float, float, float, float> Shadow_distances_cockpit;
 extern bool Show_ship_casts_shadow;
 extern bool Cockpit_shares_coordinate_space;
