@@ -78,14 +78,10 @@ namespace io
 
 			std::swap(this->mAnimationFrames, other.mAnimationFrames);
 			
-			this->mBitmapHandle = other.mBitmapHandle;
-			this->mBeginTimeStamp = other.mBeginTimeStamp;
-			this->mLastFrame = other.mLastFrame;
-			
-			other.mBitmapHandle = -1;
-			other.mBeginTimeStamp = UI_TIMESTAMP::invalid();
-			other.mLastFrame = static_cast<size_t>(-1);
-			
+			this->mBitmapHandle = std::exchange(other.mBitmapHandle, -1);
+			this->mBeginTimeStamp = std::exchange(other.mBeginTimeStamp, UI_TIMESTAMP::invalid());
+			this->mLastFrame = std::exchange(other.mLastFrame, static_cast<size_t>(-1));
+
 			return *this;
 		}
 
