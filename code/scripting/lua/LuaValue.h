@@ -80,9 +80,11 @@ class LuaValue {
 	/**
 	 * @brief Copy-constructor
 	 * @param other The other LuaValue.
+	 * @note The noexcept is a promise that all members remain nothrow-copyable
+	 * (currently a shared_ptr, a raw pointer, and an enum).
 	 */
-	LuaValue(const LuaValue& other);
-	LuaValue& operator=(const LuaValue& other);
+	LuaValue(const LuaValue& other) noexcept;
+	LuaValue& operator=(const LuaValue& other) noexcept;
 
 	/**
 	 * @brief Move-constructor

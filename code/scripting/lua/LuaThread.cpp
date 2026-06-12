@@ -68,8 +68,8 @@ LuaThread LuaThread::create(lua_State* L, const LuaFunction& func)
 LuaThread::LuaThread() = default;
 LuaThread::LuaThread(lua_State* luaState, lua_State* thread) : LuaValue(luaState), _thread(thread) {}
 
-LuaThread::LuaThread(LuaThread&&) = default;
-LuaThread& LuaThread::operator=(LuaThread&&) = default;
+LuaThread::LuaThread(LuaThread&&) noexcept = default;
+LuaThread& LuaThread::operator=(LuaThread&&) noexcept = default;
 
 LuaThread::~LuaThread() = default;
 

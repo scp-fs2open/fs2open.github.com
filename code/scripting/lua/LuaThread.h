@@ -43,8 +43,8 @@ class LuaThread : public LuaValue {
 	LuaThread(const LuaThread&) = delete;
 	LuaThread& operator=(const LuaThread&) = delete;
 
-	LuaThread(LuaThread&&); 
-	LuaThread& operator=(LuaThread&&);
+	LuaThread(LuaThread&&) noexcept;
+	LuaThread& operator=(LuaThread&&) noexcept;
 
 	~LuaThread() override;
 
