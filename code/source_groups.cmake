@@ -1765,6 +1765,7 @@ add_file_folder("Utils"
 	utils/Random.cpp
 	utils/Random.h
 	utils/RandomRange.h
+	utils/reset_on_move.h
 	utils/string_utils.cpp
 	utils/string_utils.h
 	utils/table_viewer.cpp
