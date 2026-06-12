@@ -195,6 +195,10 @@ extern void mission_campaign_mission_over( bool do_next_mission = true );
 // frees all memory at game close time
 extern void mission_campaign_clear( void );
 
+// frees and nulls a mission's five vm_strdup'd strings (name, notes, and the
+// three mission-branch strings)
+extern void mission_campaign_free_mission_strings(cmission &cm);
+
 // used by Fred to get a mission's list of goals.
 void read_mission_goal_list(int num);
 
