@@ -1171,20 +1171,6 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 			}
 		} else {
 			alpha = forced_alpha;
-
-			//Check for invisible or transparent textures so they don't show up in the shadow maps - Valathil
-			if ( Rendering_to_shadow_map ) {
-				if ( (replacement_textures != nullptr) && ((*replacement_textures)[rt_begin_index + TM_BASE_TYPE] >= 0) ) {
-					tex_replace[TM_BASE_TYPE] = texture_info((*replacement_textures)[rt_begin_index + TM_BASE_TYPE]);
-					texture_maps[TM_BASE_TYPE] = model_interp_get_texture(&tex_replace[TM_BASE_TYPE], elapsed_time);
-				} else {
-					texture_maps[TM_BASE_TYPE] = model_interp_get_texture(&tmap->textures[TM_BASE_TYPE], elapsed_time);
-				}
-
-				if ( texture_maps[TM_BASE_TYPE] < 0 ) {
-					continue;
-				}
-			}
 		}
 
 		if ( (texture_maps[TM_BASE_TYPE] == -1) && !no_texturing && !(debug_flags & MR_DEBUG_NO_DIFFUSE) ) {
@@ -1611,11 +1597,7 @@ void submodel_render_queue(const model_render_params *render_info, model_draw_li
 		rendering_material.set_fog();
 	}
 
-	if(Rendering_to_shadow_map) {
-		rendering_material.set_depth_bias(-1024);
-	} else {
-		rendering_material.set_depth_bias(0);
-	}
+	rendering_material.set_depth_bias(0);
 
 	vec3d view_pos = scene->get_view_position();
 
@@ -2027,10 +2009,6 @@ void model_render_glow_points(const polymodel *pm, const polymodel_instance *pmi
 {
 	Assert(pmi == nullptr || pm->id == pmi->model_num);
 
-	if ( Rendering_to_shadow_map ) {
-		return;
-	}
-
 	int i, j;
 
 	int cull = gr_set_cull(0);
@@ -2152,10 +2130,6 @@ void model_queue_render_thrusters(const model_render_params *interp, const polym
 	polymodel_instance *pmi = nullptr;
 	vertex p;
 	bool do_render = false;
-
-	if ( Rendering_to_shadow_map ) {
-		return;
-	}
 
 	if ( pm == NULL ) {
 		Int3();
@@ -2896,11 +2870,7 @@ void model_render_queue(const model_render_params* interp, model_draw_list* scen
 		rendering_material.set_color_mask(true, true, true, true);
 	}
 
-	if ( Rendering_to_shadow_map ) {
-		rendering_material.set_depth_bias(-1024);
-	} else {
-		rendering_material.set_depth_bias(0);
-	}
+	rendering_material.set_depth_bias(0);
 
 	if ( !(model_flags & MR_NO_BATCH) && pm->flags & PM_FLAG_BATCHED
 		&& !(is_outlines_only || is_outlines_only_htl) ) {

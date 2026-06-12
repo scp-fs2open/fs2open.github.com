@@ -801,7 +801,23 @@ void shadow_render_list::add_model_draws(shadow_render_list* list,
 			int tmap_num = detail_buffer.tex_buf[j].texture;
 			int base_tex = pm->maps[tmap_num].textures[TM_BASE_TYPE].GetTexture();
 
-			if (base_tex < 0) {
+			// Replacement textures may make a polygon invisible; skip it for shadow casting
+			bool skip = false;
+			if (pmi != nullptr && pmi->texture_replace != nullptr) {
+				int replace = (*pmi->texture_replace)[tmap_num * TM_NUM_TYPES + TM_BASE_TYPE];
+				if (replace == REPLACE_WITH_INVISIBLE) {
+					skip = true;
+				} else if (replace < 0 && base_tex < 0) {
+					skip = true;
+				} else if (replace >= 0) {
+					// Valid replacement, polygon should cast shadows; suppress the base_tex check below
+					base_tex = 0;
+				}
+			} else if (base_tex < 0) {
+				skip = true;
+			}
+
+			if (skip) {
 				continue;
 			}
 

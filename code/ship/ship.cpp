@@ -8476,9 +8476,6 @@ static void ship_find_warping_ship_helper(object *objp, dock_function_info *info
 	}
 }
 
-//WMC - used for FTL and maneuvering thrusters
-extern bool Rendering_to_shadow_map;
-
 void ship_render_player_ship(object* objp, const vec3d* cam_offset, const matrix* rot_offset, const fov_t* fov_override) {
 	ship* shipp = &Ships[objp->instance];
 	ship_info* sip = &Ship_info[shipp->ship_info_index];
@@ -21767,8 +21764,6 @@ void ship_render_batch_thrusters(object *obj)
 	ship *shipp = &Ships[num];
 	ship_info *sip = &Ship_info[Ships[num].ship_info_index];
 
-	if ( Rendering_to_shadow_map ) return;
-
 	for (size_t i = 0; i < shipp->rcs_activity.size(); i++)
 	{
 		const auto mtp = &sip->rcs_thrusters[i];
@@ -21955,10 +21950,6 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 
 int ship_render_get_insignia(object* obj, ship* shipp)
 {
-	if ( Rendering_to_shadow_map ) {
-		return -1;
-	}
-
 	if ( Game_mode & GM_MULTIPLAYER ) {
 		// if its any player's object
 		int np_index = multi_find_player_by_object( obj );
@@ -21991,7 +21982,7 @@ int ship_render_get_insignia(object* obj, ship* shipp)
 
 void ship_render_set_animated_effect(model_render_params *render_info, ship *shipp, uint64_t * /*render_flags*/)
 {
-	if ( !shipp->shader_effect_timestamp.isValid() || Rendering_to_shadow_map ) {
+	if ( !shipp->shader_effect_timestamp.isValid() ) {
 		return;
 	}
 
@@ -22027,7 +22018,7 @@ void ship_render(object* obj, model_draw_list* scene)
 	ship_info *sip = &Ship_info[Ships[num].ship_info_index];
 	ship *warp_shipp = NULL;
 	bool is_first_stage_arrival = false;
-	bool show_thrusters = (!shipp->flags[Ship_Flags::No_thrusters]) && !Rendering_to_shadow_map;
+	bool show_thrusters = (!shipp->flags[Ship_Flags::No_thrusters]);
 	dock_function_info dfi;
 
 	MONITOR_INC( NumShipsRend, 1 );
@@ -22065,7 +22056,7 @@ void ship_render(object* obj, model_draw_list* scene)
 	}
 
 	model_render_params render_info;
-	if ( obj == Viewer_obj && !Rendering_to_shadow_map ) {
+	if ( obj == Viewer_obj ) {
 		if (!(Viewer_mode & VM_TOPDOWN))
 		{
 			render_info.set_object_number(OBJ_INDEX(obj));
@@ -22082,7 +22073,7 @@ void ship_render(object* obj, model_draw_list* scene)
 	model_instance_clear_arcs(pm, pmi);
 
 	// Only render electrical arcs if within 500m of the eye (for a 10m piece)
-	if ( vm_vec_dist_quick( &obj->pos, &Eye_position ) < obj->radius*50.0f && !Rendering_to_shadow_map ) {
+	if ( vm_vec_dist_quick( &obj->pos, &Eye_position ) < obj->radius*50.0f ) {
 		for (auto &arc: shipp->electrical_arcs)	{
 			if (arc.timestamp.isValid()) {
 				model_instance_add_arc(pm, pmi, -1, &arc.endpoint_1, &arc.endpoint_2, arc.persistent_arc_points.get(), arc.type, &arc.primary_color_1, &arc.primary_color_2, &arc.secondary_color, arc.width, arc.segment_depth);
@@ -22155,10 +22146,6 @@ void ship_render(object* obj, model_draw_list* scene)
 		render_flags |= MR_NO_LIGHTING;
 	}
 
-	if ( Rendering_to_shadow_map ) {
-		render_flags = MR_NO_TEXTURING | MR_NO_LIGHTING;
-	}
-
 	if (shipp->flags[Ship_Flags::Glowmaps_disabled]) {
 		render_flags |= MR_NO_GLOWMAPS;
 	}
@@ -22228,7 +22215,7 @@ void ship_render(object* obj, model_draw_list* scene)
 		model_render_queue(&render_info, scene, sip->model_num, &obj->orient, &obj->pos);
 	}
 
-	if (shipp->shield_hits && !Rendering_to_shadow_map) {
+	if (shipp->shield_hits) {
 		create_shield_explosion_all(obj);
 		shipp->shield_hits = 0;
 	}

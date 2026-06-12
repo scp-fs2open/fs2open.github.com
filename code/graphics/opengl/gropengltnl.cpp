@@ -581,32 +581,21 @@ void opengl_render_model_program(model_material* material_info, indexed_vertex_s
 		opengl_buffer_get_id(GL_ARRAY_BUFFER, vert_source->Vbuffer_handle),
 		opengl_buffer_get_id(GL_ELEMENT_ARRAY_BUFFER, vert_source->Ibuffer_handle));
 
-	// If GL_ARB_gpu_shader5 is supprted then the instancing is handled by the geometry shader
-	if (!GLAD_GL_ARB_gpu_shader5 && Rendering_to_shadow_map) {
-		glDrawElementsInstancedBaseVertex(GL_TRIANGLES,
-			(GLsizei)datap->n_verts,
-			element_type,
-										  ibuffer + datap->index_offset,
-										  4,
-										  (GLint) (vert_source->Base_vertex_offset + bufferp->vertex_num_offset));
+	if (Cmdline_drawelements) {
+		glDrawElementsBaseVertex(GL_TRIANGLES,
+								 (GLsizei) datap->n_verts,
+								 element_type,
+								 ibuffer + datap->index_offset,
+								 (GLint) (vert_source->Base_vertex_offset + bufferp->vertex_num_offset));
 	} else {
-		if (Cmdline_drawelements) {
-			glDrawElementsBaseVertex(GL_TRIANGLES,
-									 (GLsizei) datap->n_verts,
-									 element_type,
-									 ibuffer + datap->index_offset,
-									 (GLint) (vert_source->Base_vertex_offset + bufferp->vertex_num_offset));
-		} else {
-			glDrawRangeElementsBaseVertex(GL_TRIANGLES,
-										  datap->i_first,
-										  datap->i_last,
-										  (GLsizei) datap->n_verts,
-										  element_type,
-										  ibuffer + datap->index_offset,
-										  (GLint) (vert_source->Base_vertex_offset + bufferp->vertex_num_offset));
-		}
+		glDrawRangeElementsBaseVertex(GL_TRIANGLES,
+									  datap->i_first,
+									  datap->i_last,
+									  (GLsizei) datap->n_verts,
+									  element_type,
+									  ibuffer + datap->index_offset,
+									  (GLint) (vert_source->Base_vertex_offset + bufferp->vertex_num_offset));
 	}
-
 
 	GL_state.Texture.SetShaderMode(GL_FALSE);
 }
@@ -663,7 +652,8 @@ void gr_opengl_render_shadow_draw(gr_buffer_handle ubo_handle, size_t ubo_offset
 	GLenum element_type = (datap->flags & VB_FLAG_LARGE_INDEX) ? GL_UNSIGNED_INT : GL_UNSIGNED_SHORT;
 	GLint base_vertex = (GLint)(vert_src->Base_vertex_offset + buffer->vertex_num_offset);
 
-	if (gr_is_capable(gr_capability::CAPABILITY_FAST_SHADOWS)) {
+	//Funnily enough, both the modern shadow rendering (using shader_viewport_layer_array), and the super-old fallback without shader5 use the same instanced draw call
+	if (gr_is_capable(gr_capability::CAPABILITY_FAST_SHADOWS) || !GLAD_GL_ARB_gpu_shader5) {
 		glDrawElementsInstancedBaseVertex(GL_TRIANGLES,
 							 (GLsizei)datap->n_verts,
 							 element_type,
@@ -731,9 +721,6 @@ void gr_opengl_shadow_map_start(matrix4 *shadow_view_matrix, const matrix *light
 
 	glClear(GL_DEPTH_BUFFER_BIT);
 
-	glEnable(GL_DEPTH_CLAMP);
-
-	Rendering_to_shadow_map = true;
 	Glowpoint_override_save = Glowpoint_override;
 	Glowpoint_override = true;
 
@@ -748,13 +735,7 @@ void gr_opengl_shadow_map_start(matrix4 *shadow_view_matrix, const matrix *light
 
 void gr_opengl_shadow_map_end()
 {
-	if(!Rendering_to_shadow_map)
-		return;
-
-	glDisable(GL_DEPTH_CLAMP);
-
 	gr_end_view_matrix();
-	Rendering_to_shadow_map = false;
 
 	gr_zbuffer_set(ZBUFFER_TYPE_FULL);
 	GL_state.PopFramebufferState();

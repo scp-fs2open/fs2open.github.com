@@ -1557,10 +1557,6 @@ void shipfx_queue_render_ship_halves_and_debris(model_draw_list *scene, clip_shi
 	// set up render flags
 	uint64_t render_flags = MR_NORMAL;
 
-	if ( Rendering_to_shadow_map ) {
-		render_flags |= MR_NO_TEXTURING | MR_NO_LIGHTING;
-	}
-
 	if (shipp->flags[Ship::Ship_Flags::Glowmaps_disabled]) {
 		render_flags |= MR_NO_GLOWMAPS;
 	}

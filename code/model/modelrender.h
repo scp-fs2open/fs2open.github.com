@@ -22,8 +22,6 @@
 extern SCP_vector<light> Lights;
 extern int Num_lights;
 
-extern bool Rendering_to_shadow_map;
-
 extern matrix Object_matrix;
 extern vec3d Object_position;
 
