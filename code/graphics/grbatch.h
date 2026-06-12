@@ -32,8 +32,12 @@ public:
 	geometry_batcher(): n_to_render(0), n_allocated(0), vert(NULL), use_radius(true), radius_list(NULL), buffer_offset(-1) {}
 	~geometry_batcher();
 
-    geometry_batcher(const geometry_batcher &geo) { clone(geo); }
-    geometry_batcher& operator=(const geometry_batcher &geo);
+	// delegate to the default constructor so that clone() sees initialized members
+	geometry_batcher(const geometry_batcher &geo) : geometry_batcher() { clone(geo); }
+	geometry_batcher& operator=(const geometry_batcher &geo);
+
+	geometry_batcher(geometry_batcher &&other) noexcept;
+	geometry_batcher& operator=(geometry_batcher &&other) noexcept;
 
 	// initial memory space needed
 	// NOTE: This MUST be called BEFORE calling any of the draw_*() functions!!
