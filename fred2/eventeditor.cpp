@@ -514,7 +514,7 @@ int event_editor::query_modified()
 			return 1;
 		if (safe_stricmp(local.avi_info.name, ref.avi_info.name) != 0)
 			return 1;
-		if (safe_stricmp(local.wave_info.name, ref.avi_info.name) != 0)
+		if (safe_stricmp(local.wave_info.name, ref.wave_info.name) != 0)
 			return 1;
 	}
 
