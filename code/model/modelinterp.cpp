@@ -2452,7 +2452,7 @@ void interp_create_transparency_index_buffer(polymodel *pm, int mn)
 			float u = model_list->vert[index].texture_position.u;
 			float v = model_list->vert[index].texture_position.v;
 
-			if ( texture_lookup.get_channel_alpha(u, v) < 0.75f) {
+			if ( texture_lookup.get_channel_alpha(u, v) < 0.95f) {
 				// temporarily(?) reduced from 0.95f to 0.75f due to certain models (MVP 4.7.3 Triton) having the entire diffuse texture with alpha values less than 1.0f 
 				// which ended up putting the entire geometry into the transparency pass. Somehow looked fine in OpenGL but we have to do this for Vulkan. For now?
 				transparent_tri = true;
@@ -2472,6 +2472,10 @@ void interp_create_transparency_index_buffer(polymodel *pm, int mn)
 
 		buffer_data &new_buff = trans_buffer->tex_buf.back();
 		new_buff.texture = tex_buf->texture;
+
+		if ( transparent_indices.size() > USHRT_MAX ) {
+			new_buff.flags |= VB_FLAG_LARGE_INDEX;
+		}
 
 		for ( int j = 0; j < (int)transparent_indices.size(); ++j ) {
 			new_buff.assign(j, transparent_indices[j]);
