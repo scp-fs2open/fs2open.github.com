@@ -570,13 +570,8 @@ void event_editor::OnButtonOk()
 	for (const auto &name_pair: names)
 		update_sexp_references(name_pair.first.c_str(), name_pair.second.c_str(), OPF_EVENT_NAME);
 
-	for (i=Num_builtin_messages; i<Num_messages; i++) {
-		if (Messages[i].avi_info.name)
-			free(Messages[i].avi_info.name);
-
-		if (Messages[i].wave_info.name)
-			free(Messages[i].wave_info.name);
-	}
+	for (i=Num_builtin_messages; i<Num_messages; i++)
+		message_free_media_names(Messages[i]);
 
 	Num_messages = (int)m_messages.size() + Num_builtin_messages;
 	Messages.resize(Num_messages);

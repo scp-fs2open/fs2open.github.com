@@ -447,16 +447,13 @@ int CMessageEditorDlg::update(int num)
 	return 0;
 }
 
-void CMessageEditorDlg::OnDelete() 
+void CMessageEditorDlg::OnDelete()
 {
 	char buf[256];
 	int i;
 
 	Assert((m_cur_msg >= 0) && (m_cur_msg < Num_messages));
-	if (Messages[m_cur_msg].avi_info.name)
-		free(Messages[m_cur_msg].avi_info.name);
-	if (Messages[m_cur_msg].wave_info.name)
-		free(Messages[m_cur_msg].wave_info.name);
+	message_free_media_names(Messages[m_cur_msg]);
 
 	((CListBox *) GetDlgItem(IDC_MESSAGE_LIST))->DeleteString(m_cur_msg);
 	sprintf(buf, "<%s>", Messages[m_cur_msg].name);
@@ -464,9 +461,9 @@ void CMessageEditorDlg::OnDelete()
 	update_sexp_references(Messages[m_cur_msg].name, buf, OPF_MESSAGE_OR_STRING);
 
 	for (i=m_cur_msg; i<Num_messages-1; i++)
-		Messages[i] = Messages[i + 1];
-
+		Messages[i] = std::move(Messages[i + 1]);
 	Num_messages--;
+
 	if (m_cur_msg >= Num_messages)
 		m_cur_msg = Num_messages - 1;
 
