@@ -84,6 +84,14 @@ CJumpNode& CJumpNode::operator=(CJumpNode&& other) noexcept
 {
 	if (this != &other)
 	{
+		// Release this node's resources before overwriting them, mirroring the destructor.
+		if (m_polymodel_instance_num >= 0)
+			model_delete_instance(m_polymodel_instance_num);
+		if (m_modelnum >= 0)
+			model_unload(m_modelnum);
+		if (m_objnum >= 0 && Objects[m_objnum].type != OBJ_NONE)
+			obj_delete(m_objnum);
+
 		m_radius = other.m_radius;
 		m_modelnum = other.m_modelnum;
 		m_objnum = other.m_objnum;
@@ -112,15 +120,14 @@ CJumpNode& CJumpNode::operator=(CJumpNode&& other) noexcept
  */
 CJumpNode::~CJumpNode()
 {
+	if (m_polymodel_instance_num >= 0)
+		model_delete_instance(m_polymodel_instance_num);
+
 	if (m_modelnum >= 0)
-	{
 		model_unload(m_modelnum);
-	}
 
 	if (m_objnum >= 0 && Objects[m_objnum].type != OBJ_NONE)
-	{
 		obj_delete(m_objnum);
-	}
 }
 
 // Accessor functions for private variables
@@ -249,9 +256,11 @@ void CJumpNode::SetModel(const char *model_name, bool show_polys)
 		Warning(LOCATION, "Couldn't load model file %s for jump node %s", model_name, m_name);
 		return;
 	}
-	
+
 	//If there's an old model, unload it
-	if(m_modelnum != -1)
+	if (m_polymodel_instance_num >= 0)
+		model_delete_instance(m_polymodel_instance_num);
+	if (m_modelnum >= 0)
 		model_unload(m_modelnum);
 
 	//Now actually set stuff
@@ -264,6 +273,13 @@ void CJumpNode::SetModel(const char *model_name, bool show_polys)
 		m_flags |= JN_SHOW_POLYS;
 	else
 		m_flags &= ~JN_SHOW_POLYS;
+
+	// refresh the model instance
+	auto pm = model_get(m_modelnum);
+	if (pm->flags & PM_FLAG_HAS_INTRINSIC_MOTION)
+		m_polymodel_instance_num = model_create_instance(m_objnum, m_modelnum);
+	else
+		m_polymodel_instance_num = -1;
 }
 
 /**
