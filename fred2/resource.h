@@ -138,6 +138,11 @@
 #define IDD_VOLUMETRICS                 332
 #define IDD_EDIT_CUSTOM_STRINGS         333
 #define IDD_SUPPORT_REARM_OPTIONS       334
+#define IDD_REORDER                     335
+#define IDB_MOVE_TO_TOP                 336
+#define IDB_MOVE_UP                     337
+#define IDB_MOVE_DOWN                   338
+#define IDB_MOVE_TO_BOTTOM              339
 #define IDC_SHIP_CLASS                  1003
 #define IDC_SHIP_WING                   1004
 #define IDC_SOUND_CLIP_NAME             1007
@@ -1290,6 +1295,21 @@
 #define IDC_SUPPORT_REARM_SET_ALL_UNLIMITED 1729
 #define IDC_SUPPORT_REARM_SET_ALL_ZERO   1730
 #define IDC_SUPPORT_REARM_POOL_TEAM      1731
+#define IDC_REORDER_TYPE                1732
+#define IDC_REORDER_LIST                1733
+#define IDC_REORDER_MOVE_TO_TOP         1734
+#define IDC_REORDER_MOVE_UP             1735
+#define IDC_REORDER_MOVE_DOWN           1736
+#define IDC_REORDER_MOVE_TO_BOTTOM      1737
+#define IDC_EVENT_MOVE_TO_TOP           1738
+#define IDC_EVENT_MOVE_UP               1739
+#define IDC_EVENT_MOVE_DOWN             1740
+#define IDC_EVENT_MOVE_TO_BOTTOM        1741
+#define IDC_MESSAGE_MOVE_TO_TOP         1742
+#define IDC_MESSAGE_MOVE_UP             1743
+#define IDC_MESSAGE_MOVE_DOWN           1744
+#define IDC_MESSAGE_MOVE_TO_BOTTOM      1745
+#define IDC_INSERT_MSG                  1746
 #define IDC_SEXP_POPUP_LIST             32770
 #define ID_FILE_MISSIONNOTES            32771
 #define ID_DUPLICATE                    32774
@@ -1604,9 +1624,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        335
+#define _APS_NEXT_RESOURCE_VALUE        340
+#define _APS_NEXT_CONTROL_VALUE         1747
 #define _APS_NEXT_COMMAND_VALUE         33112
-#define _APS_NEXT_CONTROL_VALUE         1732
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif
