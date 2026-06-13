@@ -592,6 +592,7 @@ void prop_delete(object* obj)
 	propp.glow_point_bank_active.clear();
 
 	model_delete_instance(propp.model_instance_num);
+	propp.model_instance_num = -1;
 
 	// Leave the slot empty for the duration of the scene
 	// The Props array will be compacted at the end of the level

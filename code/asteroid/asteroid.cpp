@@ -1083,8 +1083,10 @@ void asteroid_delete( object * obj )
 
 	asp = &Asteroids[num];
 
-	if (asp->model_instance_num >= 0)
+	if (asp->model_instance_num >= 0) {
 		model_delete_instance(asp->model_instance_num);
+		asp->model_instance_num = -1;
+	}
 
 	if (asp->target_objnum >= 0) {
 		for (asteroid_target& target : Asteroid_targets) {
