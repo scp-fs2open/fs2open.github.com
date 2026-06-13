@@ -96,6 +96,34 @@ vec3d EffectAttachment::local_vel_to_global(const vec3d& local_vel) const {
 	}, *this);
 }
 
+vec3d EffectAttachment::global_vel_to_local(const vec3d& global_vel) const {
+	return std::visit(overloads {
+		[&global_vel](const std::monostate&) {
+			return global_vel;
+		},
+		[&global_vel](const attachment_object& obj) {
+			if (obj.objnum < 0)
+				return global_vel;
+
+			vec3d vel;
+			vm_vec_rotate(&vel, &global_vel, &Objects[obj.objnum].orient);
+			return vel;
+		},
+		[&global_vel, this](const attachment_particle& parent_part) {
+			const auto& parent = parent_part.particle.lock();
+			Assertion(!parent->parent_effect.getParticleEffect().m_parent_is_transitive, "Encountered live transitive parent in effect attachment.");
+			if (!parent)
+				return global_vel;
+
+			const auto& [parent_pos, parent_orient] = get_frame();
+			vec3d vel;
+			vm_vec_rotate(&vel, &global_vel, &parent_orient);
+
+			return vel + parent->attachment.global_vel_to_local(parent->velocity);
+		},
+	}, *this);
+}
+
 vec3d EffectAttachment::local_last_pos_to_global(const vec3d& last_pos) const {
 	return std::visit(overloads{
 		[&last_pos](const std::monostate&) {
@@ -163,7 +191,10 @@ std::pair<vec3d, matrix> EffectAttachment::get_frame(float interp) const {
 			vm_vec_unrotate(&parent_global_orient_local_velocity, &parent->velocity, &orient);
 			float vel_scalar = parent->parent_effect.getParticleEffect().m_lifetime_curves.get_output(particle::ParticleEffect::ParticleLifetimeCurvesOutput::VELOCITY_MULT, std::forward_as_tuple(*parent, vm_vec_mag_quick(&parent->velocity)));
 
-			return {parent_pos + parent->pos - parent_global_orient_local_velocity * flFrametime * interp * vel_scalar, orient};
+			vec3d pos_rotated;
+			vm_vec_unrotate(&pos_rotated, &parent->pos, &orient);
+
+			return {parent_pos + pos_rotated - parent_global_orient_local_velocity * flFrametime * interp * vel_scalar, orient};
 		},
 	}, *this);
 }
