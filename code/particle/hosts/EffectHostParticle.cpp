@@ -38,8 +38,6 @@ std::pair<vec3d, matrix> EffectHostParticle::getPositionAndOrientation(bool rela
 		particle_dir = particle->attachment.local_vel_to_global(particle->velocity);
 		vm_vec_normalize_safe(&particle_dir);
 		pos = particle->attachment.local_pos_to_global(pos, interp);
-
-		orientation = m_orientationOverrideRelative ? m_orientationOverride * orientation : m_orientationOverride;
 	}
 	else {
 		const auto& [global_pos, global_orient] = particle->attachment.get_frame();

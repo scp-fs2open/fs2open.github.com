@@ -224,8 +224,12 @@ EffectAttachment EffectAttachment::resolve_true_parent() const {
 		[](const attachment_particle& parent_part) -> EffectAttachment  {
 			const auto& parent = parent_part.particle.lock();
 			const auto& effect = parent->parent_effect.getParticleEffect();
-			if (effect.m_parent_is_transitive)
-				return parent->attachment.resolve_true_parent();
+			if (effect.m_parent_is_transitive) {
+				if (parent->attachment.is_valid())
+					return parent->attachment.resolve_true_parent();
+				else
+					return std::monostate{};
+			}
 			else
 				return parent_part;
 		},
