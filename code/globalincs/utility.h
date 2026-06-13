@@ -3,8 +3,6 @@
 #define _FSO_UTILITY_H
 
 #include <vector>
-#include <optional>
-#include <variant>
 
 #include "globalincs/globals.h"
 #include "globalincs/toolchain.h"

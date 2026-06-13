@@ -90,7 +90,8 @@ vec3d EffectAttachment::local_last_pos_to_global(const vec3d& last_pos) const {
 			vec3d pos;
 			vm_vec_unrotate(&pos, &last_pos, &parent_orient);
 
-			return pos + parent_pos - parent->attachment.local_vel_to_global(parent->velocity) * flFrametime;
+			float vel_scalar = parent->parent_effect.getParticleEffect().m_lifetime_curves.get_output(particle::ParticleEffect::ParticleLifetimeCurvesOutput::VELOCITY_MULT, std::forward_as_tuple(*parent, vm_vec_mag_quick(&parent->velocity)));
+			return pos + parent_pos - parent->attachment.local_vel_to_global(parent->velocity) * flFrametime * vel_scalar;
 		},
 	}, *this);
 }
@@ -131,8 +132,9 @@ std::pair<vec3d, matrix> EffectAttachment::get_frame(float interp) const {
 
 			vec3d parent_global_orient_local_velocity;
 			vm_vec_unrotate(&parent_global_orient_local_velocity, &parent->velocity, &orient);
+			float vel_scalar = parent->parent_effect.getParticleEffect().m_lifetime_curves.get_output(particle::ParticleEffect::ParticleLifetimeCurvesOutput::VELOCITY_MULT, std::forward_as_tuple(*parent, vm_vec_mag_quick(&parent->velocity)));
 
-			return {parent_pos + parent->pos - parent_global_orient_local_velocity * flFrametime * interp, orient};
+			return {parent_pos + parent->pos - parent_global_orient_local_velocity * flFrametime * interp * vel_scalar, orient};
 		},
 	}, *this);
 }
