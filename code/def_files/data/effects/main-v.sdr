@@ -84,6 +84,8 @@ layout (std140) uniform modelData {
 	float middist;
 	float fardist;
 
+	vec4 maxUVOffset;
+
 	int sGlowmapIndex;
 
 	int sSpecmapIndex;
