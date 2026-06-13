@@ -39,6 +39,35 @@ vec3d EffectAttachment::local_pos_to_global(const vec3d& local_pos, float interp
 	}, *this);
 }
 
+vec3d EffectAttachment::global_to_local(const vec3d& global_pos) const {
+	return std::visit(overloads {
+		[&global_pos](const std::monostate&) {
+			return global_pos;
+		},
+		[&global_pos](const attachment_object& obj) {
+			if (obj.objnum < 0)
+				return global_pos;
+
+			vec3d pos = global_pos - Objects[obj.objnum].pos;
+			vm_vec_rotate(&pos, &pos, &Objects[obj.objnum].orient);
+
+			return pos;
+		},
+		[&global_pos, this](const attachment_particle& parent_part) {
+			const auto& parent = parent_part.particle.lock();
+			Assertion(!parent->parent_effect.getParticleEffect().m_parent_is_transitive, "Encountered live transitive parent in effect attachment.");
+			if (!parent)
+				return global_pos;
+
+			const auto& [parent_pos, parent_orient] = get_frame();
+			vec3d pos = global_pos - parent_pos;
+			vm_vec_rotate(&pos, &pos, &parent_orient);
+
+			return pos;
+		},
+	}, *this);
+}
+
 vec3d EffectAttachment::local_vel_to_global(const vec3d& local_vel) const {
 	return std::visit(overloads {
 		[&local_vel](const std::monostate&) {
