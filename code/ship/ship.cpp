@@ -19698,6 +19698,9 @@ void ship_page_out_textures(int ship_index, bool release)
 
 void ship_replace_active_texture(int ship_index, const char* old_name, const char* new_name)
 {
+	if (Ships[ship_index].model_instance_num < 0)
+		return;
+	
 	polymodel_instance* pmi = model_get_instance(Ships[ship_index].model_instance_num);
 	modelinstance_replace_active_texture(pmi, old_name, new_name);
 }
