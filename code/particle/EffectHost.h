@@ -30,6 +30,7 @@ namespace effects {
 		bool is_valid() const;
 		std::pair<vec3d, matrix> get_frame(float interp = 0.0f) const;
 		std::optional<attachment_object> extract_object() const;
+		EffectAttachment resolve_true_parent() const;
 	};
 }
 

@@ -65,7 +65,7 @@ vec3d EffectHostParticle::getVelocity() const {
 }
 
 effects::EffectAttachment EffectHostParticle::getParentAttachment() const {
-	return effects::attachment_particle{m_particle};
+	return effects::EffectAttachment(effects::attachment_particle{m_particle}).resolve_true_parent();
 }
 
 float EffectHostParticle::getLifetime() const {
