@@ -28,18 +28,25 @@ std::pair<vec3d, matrix> EffectHostParticle::getPositionAndOrientation(bool rela
 	// note: this can't be computed for particles with 0 velocity, so use the safe version
 	vec3d particle_dir;
 	vm_vec_copy_normalize_safe(&particle_dir, &particle->velocity);
+	particle_dir = particle->attachment.local_vel_to_global(particle->velocity);
+	vm_vec_normalize_safe(&particle_dir);
 
 	matrix orientation;
+	orientation = m_orientationOverrideRelative ? m_orientationOverride * *vm_vector_2_matrix(&orientation, &particle_dir) : m_orientationOverride;
 
 	if (!relativeToParent) {
 		particle_dir = particle->attachment.local_vel_to_global(particle->velocity);
 		vm_vec_normalize_safe(&particle_dir);
 		pos = particle->attachment.local_pos_to_global(pos, interp);
+
+		orientation = m_orientationOverrideRelative ? m_orientationOverride * orientation : m_orientationOverride;
 	}
 	else {
-		particle_dir = particle->attachment.global_vel_to_local(particle->velocity);
-		vm_vec_normalize_safe(&particle_dir);
+		const auto& [global_pos, global_orient] = particle->attachment.get_frame();
 		pos = particle->attachment.global_to_local(pos);
+
+		matrix global_orient_transpose;
+		orientation = orientation * *vm_copy_transpose(&global_orient_transpose, &global_orient);
 	}
 
 	orientation = m_orientationOverrideRelative ? m_orientationOverride * *vm_vector_2_matrix(&orientation, &particle_dir) : m_orientationOverride;
