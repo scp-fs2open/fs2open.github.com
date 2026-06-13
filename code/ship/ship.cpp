@@ -8986,6 +8986,7 @@ void ship_delete( object * obj )
 	ct_ship_delete(shipp);
 	
 	model_delete_instance(shipp->model_instance_num);
+	shipp->model_instance_num = -1;
 
 	// free up any weapon model instances
 	for (int i = 0; i < shipp->weapons.num_primary_banks; ++i)
