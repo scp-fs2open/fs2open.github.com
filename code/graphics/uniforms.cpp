@@ -166,23 +166,7 @@ void convert_model_material(model_uniform_data* data_out,
 		data_out->sMiscmapIndex = bm_get_array_index(material.get_texture_map(TM_MISC_TYPE));
 	}
 
-	if (material.is_shadow_receiving()) {
-		data_out->shadow_mv_matrix = Shadow_view_matrix_light;
 
-		for (size_t i = 0; i < MAX_SHADOW_CASCADES; ++i) {
-			data_out->shadow_proj_matrix[i] = Shadow_proj_matrix[i];
-		}
-
-		data_out->veryneardist = Shadow_cascade_distances[0];
-		data_out->neardist = Shadow_cascade_distances[1];
-		data_out->middist = Shadow_cascade_distances[2];
-		data_out->fardist = Shadow_cascade_distances[3];
-
-		data_out->maxUVOffset.xyzw.x = Shadow_smoothness_factor[0];
-		data_out->maxUVOffset.xyzw.y = Shadow_smoothness_factor[1];
-		data_out->maxUVOffset.xyzw.z = Shadow_smoothness_factor[2];
-		data_out->maxUVOffset.xyzw.w = Shadow_smoothness_factor[3];
-	}
 
 	if (material.is_batched()) {
 		data_out->buffer_matrix_offset = (int) transform_buffer_offset;

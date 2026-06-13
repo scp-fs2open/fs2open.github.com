@@ -11,6 +11,7 @@
 #include "graphics/2d.h"
 #include "graphics/light.h"
 #include "graphics/matrix.h"
+#include "graphics/shadows.h"
 #include "graphics/util/UniformAligner.h"
 #include "graphics/util/UniformBuffer.h"
 #include "graphics/util/uniform_structs.h"
@@ -314,22 +315,8 @@ void gr_opengl_deferred_lighting_finish()
 
 		auto header = light_uniform_aligner.getHeader<deferred_global_data>();
 		if (Shadow_quality != ShadowQuality::Disabled) {
-			// Avoid this overhead when we are not going to use these values
-			header->shadow_mv_matrix = Shadow_view_matrix_light;
-			for (size_t i = 0; i < MAX_SHADOW_CASCADES; ++i) {
-				header->shadow_proj_matrix[i] = Shadow_proj_matrix[i];
-			}
-			header->veryneardist = Shadow_cascade_distances[0];
-			header->neardist = Shadow_cascade_distances[1];
-			header->middist = Shadow_cascade_distances[2];
-			header->fardist = Shadow_cascade_distances[3];
-
-			header->maxUVOffset.xyzw.x = Shadow_smoothness_factor[0];
-			header->maxUVOffset.xyzw.y = Shadow_smoothness_factor[1];
-			header->maxUVOffset.xyzw.z = Shadow_smoothness_factor[2];
-			header->maxUVOffset.xyzw.w = Shadow_smoothness_factor[3];
-
 			vm_inverse_matrix4(&header->inv_view_matrix, &Shadow_view_matrix_render);
+			shadow_cascade_params_bind();
 		}
 
 		header->invScreenWidth = 1.0f / gr_screen.max_w;

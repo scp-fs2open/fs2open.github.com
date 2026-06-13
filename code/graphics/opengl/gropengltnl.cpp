@@ -32,6 +32,7 @@
 #include "graphics/matrix.h"
 #include "graphics/shadows.h"
 #include "graphics/util/uniform_structs.h"
+#include "mod_table/mod_table.h"
 #include "lighting/lighting.h"
 #include "math/vecmat.h"
 #include "options/Option.h"
@@ -469,7 +470,7 @@ static bool opengl_init_shadow_framebuffer(int size, GLenum color_format)
 	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
-	glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_DEPTH_COMPONENT24, size, size, 4, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+	glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_DEPTH_COMPONENT24, size, size, Num_shadow_cascades, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
 
 	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, Shadow_map_depth_texture, 0);
 
@@ -540,6 +541,10 @@ void opengl_tnl_init()
 				Shadow_quality = ShadowQuality::Disabled;
 			}
 		}
+
+		if (Shadow_quality != ShadowQuality::Disabled) {
+			shadow_cascade_params_init();
+		}
 	}
 
 	gr_opengl_deferred_init();
@@ -553,6 +558,8 @@ void opengl_tnl_shutdown()
 	Stored_vertex_arrays.clear();
 
 	gr_opengl_deferred_shutdown();
+
+	shadow_cascade_params_shutdown();
 
 	if ( Shadow_map_depth_texture ) {
 		glDeleteTextures(1, &Shadow_map_depth_texture);
@@ -652,13 +659,12 @@ void gr_opengl_render_shadow_draw(gr_buffer_handle ubo_handle, size_t ubo_offset
 	GLenum element_type = (datap->flags & VB_FLAG_LARGE_INDEX) ? GL_UNSIGNED_INT : GL_UNSIGNED_SHORT;
 	GLint base_vertex = (GLint)(vert_src->Base_vertex_offset + buffer->vertex_num_offset);
 
-	//Funnily enough, both the modern shadow rendering (using shader_viewport_layer_array), and the super-old fallback without shader5 use the same instanced draw call
 	if (gr_is_capable(gr_capability::CAPABILITY_FAST_SHADOWS) || !GLAD_GL_ARB_gpu_shader5) {
 		glDrawElementsInstancedBaseVertex(GL_TRIANGLES,
 							 (GLsizei)datap->n_verts,
 							 element_type,
 							 ibuffer + datap->index_offset,
-							 4,
+							 Num_shadow_cascades,
 							 base_vertex);
 	}
 	else {

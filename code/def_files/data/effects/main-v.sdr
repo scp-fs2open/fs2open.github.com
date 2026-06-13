@@ -32,8 +32,6 @@ layout (std140) uniform modelData {
 	mat4 viewMatrix;
 	mat4 projMatrix;
 	mat4 textureMatrix;
-	mat4 shadow_mv_matrix;
-	mat4 shadow_proj_matrix[4];
 
 	vec4 color;
 
@@ -79,13 +77,6 @@ layout (std140) uniform modelData {
 	float znear;
 	float zfar;
 
-	float veryneardist;
-	float neardist;
-	float middist;
-	float fardist;
-
-	vec4 maxUVOffset;
-
 	int sGlowmapIndex;
 
 	int sSpecmapIndex;
@@ -96,6 +87,13 @@ layout (std140) uniform modelData {
 	float alphaMult;
 
 	int flags;
+};
+
+layout (std140) uniform shadowCascadeParams {
+	mat4 shadow_mv_matrix;
+	mat4 shadow_proj_matrix[NUM_SHADOW_CASCADES];
+	float cascade_distances[NUM_SHADOW_CASCADES];
+	float smoothness_factors[NUM_SHADOW_CASCADES];
 };
 
 #prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_TRANSFORM
@@ -114,7 +112,7 @@ out VertexOutput {
 	vec4 texCoord;
 
 #prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
-	vec4 shadowUV[4];
+	vec4 shadowUV[NUM_SHADOW_CASCADES];
 	vec4 shadowPos;
 #prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
 } vertOut;
@@ -158,11 +156,10 @@ void main()
 		gl_Position = projMatrix * position;
 	#prereplace IF_FLAG MODEL_SDR_FLAG_SHADOWS
 		vec4 shadowPos = shadow_mv_matrix * modelMatrix * orient * vertPosition;
-		vertOut.shadowPos = shadow_mv_matrix * modelMatrix * orient * vertPosition;
-		vertOut.shadowUV[0] = transformToShadowMap(shadow_proj_matrix[0], 0, shadowPos);
-		vertOut.shadowUV[1] = transformToShadowMap(shadow_proj_matrix[1], 1, shadowPos);
-		vertOut.shadowUV[2] = transformToShadowMap(shadow_proj_matrix[2], 2, shadowPos);
-		vertOut.shadowUV[3] = transformToShadowMap(shadow_proj_matrix[3], 3, shadowPos);
+		vertOut.shadowPos = shadowPos;
+		for (int i = 0; i < NUM_SHADOW_CASCADES; i++) {
+			vertOut.shadowUV[i] = transformToShadowMap(shadow_proj_matrix[i], i, shadowPos);
+		}
 	#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_SHADOWS
 
 	// Setup stuff for normal maps and envmaps

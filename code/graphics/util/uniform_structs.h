@@ -18,17 +18,7 @@ namespace graphics {
  */
 
 struct deferred_global_data {
-	matrix4 shadow_mv_matrix;
-	matrix4 shadow_proj_matrix[4];
-
 	matrix4 inv_view_matrix;
-
-	float veryneardist;
-	float neardist;
-	float middist;
-	float fardist;
-
-	vec4 maxUVOffset;
 
 	float invScreenWidth;
 	float invScreenHeight;
@@ -81,8 +71,6 @@ struct model_uniform_data {
 	matrix4 viewMatrix;
 	matrix4 projMatrix;
 	matrix4 textureMatrix;
-	matrix4 shadow_mv_matrix;
-	matrix4 shadow_proj_matrix[4];
 
 	vec4 color;
 
@@ -112,7 +100,7 @@ struct model_uniform_data {
 	int gammaSpec;
 	int envGloss;
 	int effect_num;
-	int sBasemapIndex;  // moved up here to track alignment
+	int sBasemapIndex;
 
 	vec4 fogColor;
 
@@ -126,13 +114,6 @@ struct model_uniform_data {
 	int team_glow_enabled;
 	float znear;
 	float zfar;
-
-	float veryneardist;
-	float neardist;
-	float middist;
-	float fardist;
-
-	vec4 maxUVOffset;
 
 	int sGlowmapIndex;
 	int sSpecmapIndex;
@@ -148,14 +129,17 @@ struct model_uniform_data {
 const size_t model_uniform_data_size = sizeof(model_uniform_data);
 const float mud_align = model_uniform_data_size / 16.0f;
 
+struct shadow_cascade_params_header {
+	matrix4 shadow_mv_matrix;
+};
+
 struct shadow_uniform_data {
-	matrix4 modelViewMatrix;        // light view matrix (same for all draws in a pass)
-	matrix4 modelMatrix;            // model-to-world (for clip plane)
-	matrix4 shadow_proj_matrix[4];  // cascade projection matrices
-	vec4 clip_equation;             // xyz = normal, w = -dot(normal, point)
-	int use_clip_plane;             // 1 if clip plane is active
-	int buffer_matrix_offset;       // index into transform_tex
-	float pad[2];                   // alignment to 16 bytes
+	matrix4 modelViewMatrix;
+	matrix4 modelMatrix;
+	vec4 clip_equation;
+	int use_clip_plane;
+	int buffer_matrix_offset;
+	float pad[2];
 };
 
 const size_t shadow_uniform_data_size = sizeof(shadow_uniform_data);

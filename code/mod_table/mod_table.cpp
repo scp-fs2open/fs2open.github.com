@@ -127,9 +127,11 @@ bool Neb_affects_beams;
 bool Neb_affects_weapons;
 bool Neb_affects_particles;
 bool Neb_affects_fireballs;
-std::tuple<float, float, float, float> Shadow_distances;
-std::tuple<float, float, float, float> Shadow_distances_cockpit;
-float Shadow_smoothness_factor[4] = {1.0f/300.0f, 1.0f/250.0f, 1.0f/200.0f, 1.0f/200.0f};
+SCP_vector<float> Shadow_distances;
+SCP_vector<float> Shadow_distances_cockpit;
+SCP_vector<float> Shadow_smoothness_factor;
+int Num_shadow_cascades = 4;
+int Num_cockpit_shadow_cascades = 4;
 bool Show_ship_casts_shadow;
 bool Cockpit_shares_coordinate_space;
 bool Show_ship_only_if_cockpits_enabled;
@@ -887,39 +889,46 @@ void parse_mod_table(const char *filename)
 			}
 
 			if (optional_string("$Shadow Cascade Distances:")) {
-				float dis[4];
-				stuff_float_list(dis, 4);
-				if ((dis[0] >= 0) && (dis[1] > dis[0]) && (dis[2] > dis[1]) && (dis[3] > dis[2])) {
-					Shadow_distances = std::make_tuple((dis[0]), (dis[1]), (dis[2]), (dis[3]));
+				SCP_vector<float> dis;
+				stuff_float_list(dis);
+				bool valid = !dis.empty() && dis[0] >= 0.0f;
+				for (size_t i = 1; valid && i < dis.size(); i++) {
+					valid = dis[i] > dis[i - 1];
+				}
+				if (valid) {
+					Shadow_distances = std::move(dis);
+					Num_shadow_cascades = static_cast<int>(Shadow_distances.size());
 				} else {
-					error_display(0, "$Shadow Cascade Distances are %f, %f, %f, %f. One or more are < 0, and/or values are not increasing. Assuming default distances.", dis[0], dis[1], dis[2], dis[3]);
+					error_display(0, "$Shadow Cascade Distances: values must be non-negative and strictly increasing. Assuming default distances.");
 				}
 			}
 
 			if (optional_string("$Shadow Cascade Distances Cockpit:")) {
-				float dis[4];
-				stuff_float_list(dis, 4);
-				if ((dis[0] >= 0) && (dis[1] > dis[0]) && (dis[2] > dis[1]) && (dis[3] > dis[2])) {
-					Shadow_distances_cockpit = std::make_tuple((dis[0]), (dis[1]), (dis[2]), (dis[3]));
+				SCP_vector<float> dis;
+				stuff_float_list(dis);
+				bool valid = !dis.empty() && dis[0] >= 0.0f;
+				for (size_t i = 1; valid && i < dis.size(); i++) {
+					valid = dis[i] > dis[i - 1];
 				}
-				else {
-					error_display(0, "$Shadow Cascade Distances Cockpit are %f, %f, %f, %f. One or more are < 0, and/or values are not increasing. Assuming default distances.", dis[0], dis[1], dis[2], dis[3]);
+				if (valid) {
+					Shadow_distances_cockpit = std::move(dis);
+					Num_cockpit_shadow_cascades = static_cast<int>(Shadow_distances_cockpit.size());
+				} else {
+					error_display(0, "$Shadow Cascade Distances Cockpit: values must be non-negative and strictly increasing. Assuming default distances.");
 				}
 			}
 
 			if (optional_string("$Shadow Smoothness Factor:")) {
-				float smoothness[4];
-				stuff_float_list(smoothness, 4);
-				if (smoothness[0] > 0.0f && smoothness[1] > 0.0f && smoothness[2] > 0.0f && smoothness[3] > 0.0f) {
-					Shadow_smoothness_factor[0] = smoothness[0];
-					Shadow_smoothness_factor[1] = smoothness[1];
-					Shadow_smoothness_factor[2] = smoothness[2];
-					Shadow_smoothness_factor[3] = smoothness[3];
-					mprintf(("Game Settings Table: Shadow smoothness factor set to %f, %f, %f, %f\n",
-						smoothness[0], smoothness[1], smoothness[2], smoothness[3]));
+				SCP_vector<float> smoothness;
+				stuff_float_list(smoothness);
+				bool valid = !smoothness.empty();
+				for (size_t i = 0; valid && i < smoothness.size(); i++) {
+					valid = smoothness[i] > 0.0f;
+				}
+				if (valid) {
+					Shadow_smoothness_factor = std::move(smoothness);
 				} else {
-					error_display(0, "$Shadow Smoothness Factor values are %f, %f, %f, %f. All values must be > 0. Using defaults.",
-						smoothness[0], smoothness[1], smoothness[2], smoothness[3]);
+					error_display(0, "$Shadow Smoothness Factor: all values must be > 0. Using defaults.");
 				}
 			}
 
@@ -1848,12 +1857,11 @@ void mod_table_reset()
 	Neb_affects_weapons = false;
 	Neb_affects_particles = false;
 	Neb_affects_fireballs = false;
-	Shadow_distances = std::make_tuple(200.0f, 600.0f, 2500.0f, 8000.0f); // Default values tuned by Swifty and added here by wookieejedi
-	Shadow_distances_cockpit = std::make_tuple(0.25f, 0.75f, 1.5f, 3.0f); // Default values tuned by wookieejedi and added here by Lafiel
-	Shadow_smoothness_factor[0] = 1.0f/300.0f;
-	Shadow_smoothness_factor[1] = 1.0f/250.0f;
-	Shadow_smoothness_factor[2] = 1.0f/200.0f;
-	Shadow_smoothness_factor[3] = 1.0f/200.0f;
+	Shadow_distances = {200.0f, 600.0f, 2500.0f, 8000.0f};
+	Shadow_distances_cockpit = {0.25f, 0.75f, 1.5f, 3.0f};
+	Shadow_smoothness_factor = {1.0f/300.0f, 1.0f/250.0f, 1.0f/200.0f, 1.0f/200.0f};
+	Num_shadow_cascades = static_cast<int>(Shadow_distances.size());
+	Num_cockpit_shadow_cascades = static_cast<int>(Shadow_distances_cockpit.size());
 	Show_ship_casts_shadow = false;
 	Cockpit_shares_coordinate_space = false;
 	Show_ship_only_if_cockpits_enabled = false;

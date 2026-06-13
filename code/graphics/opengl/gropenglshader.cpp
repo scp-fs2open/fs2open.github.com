@@ -79,6 +79,7 @@ opengl_uniform_block_binding GL_uniform_blocks[] = {
     {uniform_block_type::Matrices, "matrixData"},
 	{uniform_block_type::MovieData, "movieData"},
     {uniform_block_type::GenericData, "genericData"},
+    {uniform_block_type::ShadowCascadeParams, "shadowCascadeParams"},
 };
 
 /**
@@ -517,8 +518,8 @@ static SCP_string handle_predefines(const char* filename, const SCP_string& orig
 	SCP_stringstream output;
 	SCP_unordered_map<SCP_string, SCP_string> defines;
 
-	//In any shader, define GLOBAL_FAR_Z
 	output << "#define GLOBAL_FAR_Z " << std::fixed << std::setprecision(2) << Max_draw_distance << std::defaultfloat << '\n';
+	output << "#define NUM_SHADOW_CASCADES " << Num_shadow_cascades << '\n';
 
 	const char* PREDEFINE_STRING = "#predefine";
 	const char* PREREPLACE_STRING = "#prereplace";

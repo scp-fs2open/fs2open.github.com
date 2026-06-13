@@ -28,8 +28,6 @@ layout (std140) uniform modelData {
 	mat4 viewMatrix;
 	mat4 projMatrix;
 	mat4 textureMatrix;
-	mat4 shadow_mv_matrix;
-	mat4 shadow_proj_matrix[4];
 
 	vec4 color;
 
@@ -75,13 +73,6 @@ layout (std140) uniform modelData {
 	float znear;
 	float zfar;
 
-	float veryneardist;
-	float neardist;
-	float middist;
-	float fardist;
-
-	vec4 maxUVOffset;
-
 	int sGlowmapIndex;
 
 	int sSpecmapIndex;
@@ -106,7 +97,7 @@ in VertexOutput {
 	vec4 texCoord;
 
 #prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
-	vec4 shadowUV[4];
+	vec4 shadowUV[NUM_SHADOW_CASCADES];
 	vec4 shadowPos;
 #prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
 } vertIn[];
@@ -123,7 +114,7 @@ out VertexOutput {
 	vec4 texCoord;
 
 #prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
-	vec4 shadowUV[4];
+	vec4 shadowUV[NUM_SHADOW_CASCADES];
 	vec4 shadowPos;
 #prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
 } vertOut;
@@ -168,10 +159,9 @@ out VertexOutput {
                 #prereplace ENDIF_FLAG //MODEL_SDR_FLAG_FOG
 
                 #prereplace IF_FLAG MODEL_SDR_FLAG_SHADOWS
-                	vertOut.shadowUV[0] = vertIn[vert].shadowUV[0];
-                	vertOut.shadowUV[1] = vertIn[vert].shadowUV[1];
-                	vertOut.shadowUV[2] = vertIn[vert].shadowUV[2];
-                	vertOut.shadowUV[3] = vertIn[vert].shadowUV[3];
+                	for (int s = 0; s < NUM_SHADOW_CASCADES; s++) {
+                		vertOut.shadowUV[s] = vertIn[vert].shadowUV[s];
+                	}
                 	vertOut.shadowPos = vertIn[vert].shadowPos;
                 #prereplace ENDIF_FLAG //MODEL_SDR_FLAG_SHADOWS
 

@@ -9,6 +9,7 @@
 
 #include "graphics/shadows.h"
 
+#include "graphics/2d.h"
 #include "graphics/uniforms.h"
 #include "asteroid/asteroid.h"
 #include "cmdline/cmdline.h"
@@ -32,10 +33,10 @@ extern vec3d check_offsets[8];
 
 matrix4 Shadow_view_matrix_light;
 matrix4 Shadow_view_matrix_render;
-matrix4 Shadow_proj_matrix[MAX_SHADOW_CASCADES];
-float Shadow_cascade_distances[MAX_SHADOW_CASCADES];
+SCP_vector<matrix4> Shadow_proj_matrix;
+SCP_vector<float> Shadow_cascade_distances;
 
-light_frustum_info Shadow_frustums[MAX_SHADOW_CASCADES];
+static SCP_vector<light_frustum_info> Shadow_frustums;
 
 ShadowQuality Shadow_quality = ShadowQuality::Disabled;
 
@@ -431,7 +432,7 @@ void shadows_construct_light_frustum(light_frustum_info *shadow_data, matrix *li
 	shadows_construct_light_proj(shadow_data);
 }
 
-matrix shadows_start_render(matrix *eye_orient, vec3d *eye_pos, fov_t fov, float aspect, float veryneardist, float neardist, float middist, float fardist)
+matrix shadows_start_render(matrix *eye_orient, vec3d *eye_pos, fov_t fov, float aspect, const SCP_vector<float>& cascade_distances)
 {	
 	if(Static_light.empty())
 		return vmd_identity_matrix; 
@@ -444,22 +445,29 @@ matrix shadows_start_render(matrix *eye_orient, vec3d *eye_pos, fov_t fov, float
 	vm_vec_copy_normalize(&light_dir, &lp.vec);
 	vm_vector_2_matrix_norm(&light_matrix, &light_dir, &eye_orient->vec.uvec, nullptr);
 
-	shadows_construct_light_frustum(&Shadow_frustums[0], &light_matrix, eye_orient, eye_pos, fov, aspect, 0.0f, veryneardist);
-	shadows_construct_light_frustum(&Shadow_frustums[1], &light_matrix, eye_orient, eye_pos, fov, aspect, veryneardist - (veryneardist - 0.0f)* 0.2f, neardist);
-	shadows_construct_light_frustum(&Shadow_frustums[2], &light_matrix, eye_orient, eye_pos, fov, aspect, neardist - (neardist - veryneardist) * 0.2f, middist);
-	shadows_construct_light_frustum(&Shadow_frustums[3], &light_matrix, eye_orient, eye_pos, fov, aspect, middist - (middist - neardist) * 0.2f, fardist);
-	
-	Shadow_cascade_distances[0] = veryneardist;
-	Shadow_cascade_distances[1] = neardist;
-	Shadow_cascade_distances[2] = middist;
-	Shadow_cascade_distances[3] = fardist;
+	const int num_cascades = static_cast<int>(cascade_distances.size());
 
-	Shadow_proj_matrix[0] = Shadow_frustums[0].proj_matrix;
-	Shadow_proj_matrix[1] = Shadow_frustums[1].proj_matrix;
-	Shadow_proj_matrix[2] = Shadow_frustums[2].proj_matrix;
-	Shadow_proj_matrix[3] = Shadow_frustums[3].proj_matrix;
+	Shadow_frustums.resize(num_cascades);
+	Shadow_cascade_distances.resize(num_cascades);
+	Shadow_proj_matrix.resize(num_cascades);
+
+	for (int i = 0; i < num_cascades; i++) {
+		float z_near;
+		if (i == 0) {
+			z_near = 0.0f;
+		} else {
+			z_near = cascade_distances[i - 1] - (cascade_distances[i - 1] - (i >= 2 ? cascade_distances[i - 2] : 0.0f)) * 0.2f;
+		}
+		float z_far = cascade_distances[i];
+
+		shadows_construct_light_frustum(&Shadow_frustums[i], &light_matrix, eye_orient, eye_pos, fov, aspect, z_near, z_far);
+		Shadow_cascade_distances[i] = cascade_distances[i];
+		Shadow_proj_matrix[i] = Shadow_frustums[i].proj_matrix;
+	}
 
 	gr_shadow_map_start(&Shadow_view_matrix_light, &light_matrix, eye_pos);
+
+	shadow_cascade_params_bind();
 
 	return light_matrix;
 }
@@ -542,8 +550,7 @@ void shadows_render_all(fov_t fov, matrix *eye_orient, vec3d *eye_pos)
 	gr_end_view_matrix();
 
 	matrix light_matrix = shadows_start_render(eye_orient, eye_pos, fov, gr_screen.clip_aspect,
-		std::get<0>(Shadow_distances), std::get<1>(Shadow_distances),
-		std::get<2>(Shadow_distances), std::get<3>(Shadow_distances));
+		Shadow_distances);
 
 	shadow_render_list shadow_list;
 
@@ -554,7 +561,7 @@ void shadows_render_all(fov_t fov, matrix *eye_orient, vec3d *eye_pos)
 			continue;
 
 		bool cull = true;
-		for ( int j = 0; j < MAX_SHADOW_CASCADES; ++j ) {
+		for ( size_t j = 0; j < Shadow_frustums.size(); ++j ) {
 			if ( shadows_obj_in_frustum(objp, &light_matrix, &Shadow_frustums[j].min, &Shadow_frustums[j].max) ) {
 				cull = false;
 				break;
@@ -669,6 +676,69 @@ void shadow_end_frame() {
 	}
 }
 
+static gr_buffer_handle Shadow_cascade_params_buffer;
+static size_t Shadow_cascade_params_buffer_size = 0;
+
+static size_t compute_cascade_params_size(int num_cascades) {
+	return sizeof(matrix4)
+		+ sizeof(matrix4) * num_cascades
+		+ 16 * num_cascades
+		+ 16 * num_cascades;
+}
+
+void shadow_cascade_params_init() {
+	Shadow_cascade_params_buffer_size = compute_cascade_params_size(Num_shadow_cascades);
+	Shadow_cascade_params_buffer = gr_create_buffer(BufferType::Uniform, BufferUsageHint::Dynamic);
+
+	SCP_vector<uint8_t> zero_data(Shadow_cascade_params_buffer_size, 0);
+	gr_update_buffer_data(Shadow_cascade_params_buffer, Shadow_cascade_params_buffer_size, zero_data.data());
+}
+
+void shadow_cascade_params_shutdown() {
+	if (Shadow_cascade_params_buffer.isValid()) {
+		gr_delete_buffer(Shadow_cascade_params_buffer);
+		Shadow_cascade_params_buffer = gr_buffer_handle();
+	}
+}
+
+void shadow_cascade_params_bind() {
+	if (!Shadow_cascade_params_buffer.isValid()) {
+		return;
+	}
+
+	const int num_cascades = static_cast<int>(Shadow_proj_matrix.size());
+	const size_t required_size = compute_cascade_params_size(num_cascades);
+
+	if (required_size > Shadow_cascade_params_buffer_size) {
+		Shadow_cascade_params_buffer_size = required_size;
+	}
+
+	SCP_vector<uint8_t> buffer(required_size, 0);
+	uint8_t* ptr = buffer.data();
+	size_t offset = 0;
+
+	memcpy(ptr + offset, &Shadow_view_matrix_light, sizeof(matrix4));
+	offset += sizeof(matrix4);
+
+	for (int i = 0; i < num_cascades; i++) {
+		memcpy(ptr + offset, &Shadow_proj_matrix[i], sizeof(matrix4));
+		offset += sizeof(matrix4);
+	}
+
+	for (int i = 0; i < num_cascades; i++) {
+		memcpy(ptr + offset, &Shadow_cascade_distances[i], sizeof(float));
+		offset += 16;
+	}
+
+	for (size_t i = 0; i < Shadow_smoothness_factor.size() && i < static_cast<size_t>(num_cascades); i++) {
+		memcpy(ptr + offset, &Shadow_smoothness_factor[i], sizeof(float));
+		offset += 16;
+	}
+
+	gr_update_buffer_data(Shadow_cascade_params_buffer, required_size, buffer.data());
+	gr_bind_uniform_buffer(uniform_block_type::ShadowCascadeParams, 0, required_size, Shadow_cascade_params_buffer);
+}
+
 shadow_render_list::shadow_render_list() {
 	reset();
 }
@@ -735,10 +805,6 @@ void shadow_render_list::build_uniform_buffer()
 		                                            queued_draw.model_matrix,
 		                                            queued_draw.scale,
 		                                            queued_draw.transform_buffer_offset);
-
-		for (size_t i = 0; i < MAX_SHADOW_CASCADES; i++) {
-			element->shadow_proj_matrix[i] = Shadow_proj_matrix[i];
-		}
 
 		element->clip_equation = queued_draw.clip_equation;
 		element->use_clip_plane = queued_draw.has_clip_plane ? 1 : 0;

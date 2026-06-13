@@ -8577,10 +8577,7 @@ void ship_render_player_ship(object* objp, const vec3d* cam_offset, const matrix
 		Shadow_override = false;
 
 		shadows_start_render(&eye_orient, &leaning_position, Proj_fov, gr_screen.clip_aspect,
-			std::get<0>(Shadow_distances_cockpit),
-			std::get<1>(Shadow_distances_cockpit),
-			std::get<2>(Shadow_distances_cockpit),
-			std::get<3>(Shadow_distances_cockpit));
+			Shadow_distances_cockpit);
 
 		if (deferredRenderShipModel) {
 			model_render_params shadow_render_info;

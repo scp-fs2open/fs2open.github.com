@@ -257,6 +257,7 @@ enum class uniform_block_type {
 	MovieData = 7,
 	GenericData = 8,
 	ShadowMapData = 9,
+	ShadowCascadeParams = 10,
 
 	NUM_BLOCK_TYPES
 };

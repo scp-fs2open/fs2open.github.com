@@ -24,6 +24,8 @@ size_t getElementSize(uniform_block_type type)
 		return sizeof(graphics::matrix_uniforms);
 	case uniform_block_type::MovieData:
 		return sizeof(graphics::movie_uniforms);
+	case uniform_block_type::ShadowCascadeParams:
+		return 0;
 	case uniform_block_type::NUM_BLOCK_TYPES:
 	default:
 		UNREACHABLE("Invalid block type encountered!");
@@ -44,6 +46,7 @@ size_t getHeaderSize(uniform_block_type type)
 	case uniform_block_type::Matrices:
 	case uniform_block_type::MovieData:
 	case uniform_block_type::GenericData:
+	case uniform_block_type::ShadowCascadeParams:
 		return 0;
 	case uniform_block_type::NUM_BLOCK_TYPES:
 	default:

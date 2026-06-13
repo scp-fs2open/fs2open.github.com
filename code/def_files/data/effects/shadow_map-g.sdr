@@ -4,16 +4,14 @@
 layout (triangles) in;
 layout (triangle_strip, max_vertices = 3) out;
 #ifdef GL_ARB_gpu_shader5
-layout(invocations = 4) in;
+layout(invocations = NUM_SHADOW_CASCADES) in;
 #endif
 
-layout (std140) uniform shadowMapData {
-	mat4 modelViewMatrix;
-	mat4 modelMatrix;
-	mat4 shadow_proj_matrix[4];
-	vec4 clip_equation;
-	bool use_clip_plane;
-	int buffer_matrix_offset;
+layout (std140) uniform shadowCascadeParams {
+	mat4 shadow_mv_matrix;
+	mat4 shadow_proj_matrix[NUM_SHADOW_CASCADES];
+	float cascade_distances[NUM_SHADOW_CASCADES];
+	float smoothness_factors[NUM_SHADOW_CASCADES];
 };
 
 in VertexOutput {

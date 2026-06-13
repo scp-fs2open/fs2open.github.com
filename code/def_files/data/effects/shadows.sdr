@@ -17,7 +17,7 @@ vec4 transformToShadowMap(mat4 shadow_proj_matrix, int i, vec4 pos)
 	return shadow_proj;
 }
 
-float samplePoissonPCSS(sampler2DArrayShadow shadow_map, int cascade, vec4 shadowUV, vec4 maxUVOffset)
+float samplePoissonPCSS(sampler2DArrayShadow shadow_map, vec4 shadowUV, float maxUVOffset)
 {
 #if SMOOTH_PCSS
 	vec2 poissonDisc[16] = vec2[](
@@ -44,43 +44,33 @@ float samplePoissonPCSS(sampler2DArrayShadow shadow_map, int cascade, vec4 shado
 	);
 #endif
 
-	// default external shadows
-	// bias is a bit larger to only pick up larger geometry
-	// favors light over shadow to avoid flickering/spotty shadows
-	// compute Chebyshev per-sample to avoid halos from moment-averaging at occluder edges
 	float visibility = 0.0f;
 	for (int i=0; i<SAMPLES_PCSS; i++) {
 	    vec4 uv = shadowUV;
-	    uv.xy += poissonDisc[i] * maxUVOffset[cascade];
+	    uv.xy += poissonDisc[i] * maxUVOffset;
 		visibility += texture(shadow_map, uv).r;
 	}
 	return visibility * (1.0f/float(SAMPLES_PCSS));
 }
 
-float getShadowValueNew(sampler2DArrayShadow shadow_map, float depth, vec4 shadowUV[4], float fardist,
-					 float middist, float neardist, float veryneardist, vec4 maxUVOffset)
+float getShadowValue(sampler2DArrayShadow shadow_map, float depth, vec4 shadowUV[NUM_SHADOW_CASCADES],
+					 float cascade_distances[NUM_SHADOW_CASCADES], float smoothness_factors[NUM_SHADOW_CASCADES])
 {
-	// Valathil's Shadows
-	int cascade = 4;
-	cascade -= int(step(depth, fardist));
-	cascade -= int(step(depth, middist));
-	cascade -= int(step(depth, neardist));
-	cascade -= int(step(depth, veryneardist));
-	float cascade_start_dist[5];
-	cascade_start_dist[0] = 0.0;
-	cascade_start_dist[1] = veryneardist;
-	cascade_start_dist[2] = neardist;
-	cascade_start_dist[3] = middist;
-	cascade_start_dist[4] = fardist;
-	if(cascade > 3 || cascade < 0) return 1.0;
+	int cascade = NUM_SHADOW_CASCADES;
+	for (int i = 0; i < NUM_SHADOW_CASCADES; i++) {
+		cascade -= int(step(depth, cascade_distances[i]));
+	}
+	if (cascade >= NUM_SHADOW_CASCADES || cascade < 0) return 1.0;
 
-	float dist_threshold = (cascade_start_dist[cascade + 1] - cascade_start_dist[cascade]) * 0.2;
-    if(cascade_start_dist[cascade + 1] - dist_threshold > depth)
-    	return samplePoissonPCSS(shadow_map, cascade, shadowUV[cascade], maxUVOffset);
+	float cascade_start = (cascade > 0) ? cascade_distances[cascade - 1] : 0.0;
+	float cascade_end = cascade_distances[cascade];
+	float dist_threshold = (cascade_end - cascade_start) * 0.2;
 
-    return mix(
-        samplePoissonPCSS(shadow_map, cascade, shadowUV[cascade], maxUVOffset),
-        samplePoissonPCSS(shadow_map, cascade + 1, shadowUV[cascade + 1], maxUVOffset),
-    	smoothstep(cascade_start_dist[cascade + 1] - dist_threshold, cascade_start_dist[cascade + 1], depth));
+	if (cascade_end - dist_threshold > depth || cascade >= NUM_SHADOW_CASCADES - 1)
+		return samplePoissonPCSS(shadow_map, shadowUV[cascade], smoothness_factors[cascade]);
+
+	return mix(
+		samplePoissonPCSS(shadow_map, shadowUV[cascade], smoothness_factors[cascade]),
+		samplePoissonPCSS(shadow_map, shadowUV[cascade + 1], smoothness_factors[cascade + 1]),
+		smoothstep(cascade_end - dist_threshold, cascade_end, depth));
 }
-
