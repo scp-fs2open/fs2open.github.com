@@ -28,6 +28,7 @@ namespace effects {
 		vec3d local_pos_to_global(const vec3d& local_pos, float interp = 0.0f) const;
 		vec3d global_to_local(const vec3d& global_pos) const ;
 		vec3d local_vel_to_global(const vec3d& local_vel) const;
+		vec3d global_vel_to_local(const vec3d& global_vel) const;
 		vec3d local_last_pos_to_global(const vec3d& last_pos) const;
 		bool is_valid() const;
 		std::pair<vec3d, matrix> get_frame(float interp = 0.0f) const;
