@@ -114,6 +114,10 @@ public:
 	//}}AFX_DATA
 
 	HICON m_play_icon;
+	HICON m_move_to_top_icon;
+	HICON m_move_up_icon;
+	HICON m_move_down_icon;
+	HICON m_move_to_bottom_icon;
 
 // Overrides
 	// ClassWizard generated virtual function overrides
@@ -145,6 +149,7 @@ protected:
 	afx_msg void OnInsert();
 	afx_msg void OnSelchangeMessageList();
 	afx_msg void OnNewMsg();
+	afx_msg void OnInsertMsg();
 	afx_msg void OnDeleteMsg();
 	afx_msg void OnMsgNote();
 	afx_msg void OnBrowseAvi();
@@ -155,12 +160,23 @@ protected:
 	afx_msg void OnSelchangeTeam();
 	afx_msg void OnSelchangeMessageTeam();
 	afx_msg void OnDblclkMessageList();
+	afx_msg void OnEventMoveToTop();
+	afx_msg void OnEventMoveUp();
+	afx_msg void OnEventMoveDown();
+	afx_msg void OnEventMoveToBottom();
+	afx_msg void OnMessageMoveToTop();
+	afx_msg void OnMessageMoveUp();
+	afx_msg void OnMessageMoveDown();
+	afx_msg void OnMessageMoveToBottom();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 
 private:
 	int cur_event;
 	void update_cur_event();
+	void move_event(bool up, bool all_the_way);
+	void move_message(bool up, bool all_the_way);
+	void update_move_buttons();
 	SCP_vector<int> m_sig;
 	SCP_vector<mission_event> m_events;
 	SCP_vector<MMessage> m_messages;
