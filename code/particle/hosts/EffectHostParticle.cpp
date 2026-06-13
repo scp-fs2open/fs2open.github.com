@@ -35,18 +35,14 @@ std::pair<vec3d, matrix> EffectHostParticle::getPositionAndOrientation(bool rela
 		particle_dir = particle->attachment.local_vel_to_global(particle->velocity);
 		vm_vec_normalize_safe(&particle_dir);
 		pos = particle->attachment.local_pos_to_global(pos, interp);
-
-		//As there's no sensible uvec in this particle orientation, relative override orientation is not that sensible. Nonetheless, allow it for compatibility, or future orientation-aware particles
-		orientation = m_orientationOverrideRelative ? m_orientationOverride * *vm_vector_2_matrix(&orientation, &particle_dir) : m_orientationOverride;
 	}
 	else {
 		particle_dir = particle->attachment.global_vel_to_local(particle->velocity);
 		vm_vec_normalize_safe(&particle_dir);
 		pos = particle->attachment.global_to_local(pos);
-
-		//Since we're operating in local space, we can take the orientation override at face value if it's relative, but we need to convert it from global to local otherwise.
-		orientation = m_orientationOverrideRelative ? m_orientationOverride : m_orientationOverride *  *vm_vector_2_matrix(&orientation, &particle_dir);
 	}
+
+	orientation = m_orientationOverrideRelative ? m_orientationOverride * *vm_vector_2_matrix(&orientation, &particle_dir) : m_orientationOverride;
 
 	if (tabled_offset)
 		pos += particle_dir * tabled_offset->xyz.z;
