@@ -26,17 +26,15 @@ vec3d EffectAttachment::local_pos_to_global(const vec3d& local_pos, float interp
 		},
 		[&local_pos, interp, this](const attachment_particle& parent_part) {
 			const auto& parent = parent_part.particle.lock();
+			Assertion(!parent->parent_effect.getParticleEffect().m_parent_is_transitive, "Encountered live transitive parent in effect attachment.");
 			if (!parent)
 				return local_pos;
-			if (parent->parent_effect.getParticleEffect().m_parent_is_transitive)
-				return parent->attachment.local_pos_to_global(local_pos, interp);
-			else {
-				const auto& [parent_pos, parent_orient] = get_frame(interp);
-				vec3d pos;
-				vm_vec_unrotate(&pos, &local_pos, &parent_orient);
 
-				return pos + parent_pos;
-			}
+			const auto& [parent_pos, parent_orient] = get_frame(interp);
+			vec3d pos;
+			vm_vec_unrotate(&pos, &local_pos, &parent_orient);
+
+			return pos + parent_pos;
 		},
 	}, *this);
 }
@@ -56,17 +54,15 @@ vec3d EffectAttachment::local_vel_to_global(const vec3d& local_vel) const {
 		},
 		[&local_vel, this](const attachment_particle& parent_part) {
 			const auto& parent = parent_part.particle.lock();
+			Assertion(!parent->parent_effect.getParticleEffect().m_parent_is_transitive, "Encountered live transitive parent in effect attachment.");
 			if (!parent)
 				return local_vel;
-			if (parent->parent_effect.getParticleEffect().m_parent_is_transitive)
-				return parent->attachment.local_vel_to_global(local_vel);
-			else {
-				const auto& [parent_pos, parent_orient] = get_frame();
-				vec3d vel;
-				vm_vec_unrotate(&vel, &local_vel, &parent_orient);
 
-				return vel + parent->attachment.local_vel_to_global(parent->velocity);
-			}
+			const auto& [parent_pos, parent_orient] = get_frame();
+			vec3d vel;
+			vm_vec_unrotate(&vel, &local_vel, &parent_orient);
+
+			return vel + parent->attachment.local_vel_to_global(parent->velocity);
 		},
 	}, *this);
 }
@@ -86,17 +82,15 @@ vec3d EffectAttachment::local_last_pos_to_global(const vec3d& last_pos) const {
 		},
 		[&last_pos, this](const attachment_particle& parent_part) {
 			const auto& parent = parent_part.particle.lock();
+			Assertion(!parent->parent_effect.getParticleEffect().m_parent_is_transitive, "Encountered live transitive parent in effect attachment.");
 			if (!parent)
 				return last_pos;
-			if (parent->parent_effect.getParticleEffect().m_parent_is_transitive)
-				return parent->attachment.local_last_pos_to_global(last_pos);
-			else {
-				const auto& [parent_pos, parent_orient] = get_frame();
-				vec3d pos;
-				vm_vec_unrotate(&pos, &last_pos, &parent_orient);
 
-				return pos + parent_pos - parent->attachment.local_vel_to_global(parent->velocity) * flFrametime;
-			}
+			const auto& [parent_pos, parent_orient] = get_frame();
+			vec3d pos;
+			vm_vec_unrotate(&pos, &last_pos, &parent_orient);
+
+			return pos + parent_pos - parent->attachment.local_vel_to_global(parent->velocity) * flFrametime;
 		},
 	}, *this);
 }
@@ -110,7 +104,7 @@ bool EffectAttachment::is_valid() const {
 			return obj.objnum >= 0 && obj.objnum < MAX_OBJECTS && Objects[obj.objnum].signature == obj.sig;
 		},
 		[](const effects::attachment_particle& parent_part) {
-			return !parent_part.particle.expired() && (parent_part.particle.lock()->parent_effect.getParticleEffect().m_parent_is_transitive && parent_part.particle.lock()->attachment.is_valid());
+			return !parent_part.particle.expired();
 		},
 	}, *this);
 }
@@ -129,18 +123,16 @@ std::pair<vec3d, matrix> EffectAttachment::get_frame(float interp) const {
 		},
 		[interp](const effects::attachment_particle& parent_part) -> std::pair<vec3d, matrix> {
 			const auto& parent = parent_part.particle.lock();
+			Assertion(!parent->parent_effect.getParticleEffect().m_parent_is_transitive, "Encountered live transitive parent in effect attachment.");
 			if (!parent)
 				return {ZERO_VECTOR, vmd_identity_matrix};
-			if (parent->parent_effect.getParticleEffect().m_parent_is_transitive)
-				return parent->attachment.get_frame(interp);
-			else {
-				auto [parent_pos, orient] = parent->attachment.get_frame(interp);
 
-				vec3d parent_global_orient_local_velocity;
-				vm_vec_unrotate(&parent_global_orient_local_velocity, &parent->velocity, &orient);
+			auto [parent_pos, orient] = parent->attachment.get_frame(interp);
 
-				return {parent_pos + parent->pos - parent_global_orient_local_velocity * flFrametime * interp, orient};
-			}
+			vec3d parent_global_orient_local_velocity;
+			vm_vec_unrotate(&parent_global_orient_local_velocity, &parent->velocity, &orient);
+
+			return {parent_pos + parent->pos - parent_global_orient_local_velocity * flFrametime * interp, orient};
 		},
 	}, *this);
 }
@@ -153,13 +145,27 @@ std::optional<attachment_object> EffectAttachment::extract_object() const {
 		[](const attachment_object& obj) -> std::optional<attachment_object>  {
 			return obj;
 		},
-		[](const attachment_particle& parent_part) -> std::optional<attachment_object>  {
+		[](const attachment_particle&) -> std::optional<attachment_object>  {
+			return std::nullopt;
+		},
+	}, *this);
+}
+
+EffectAttachment EffectAttachment::resolve_true_parent() const {
+	return std::visit(overloads{
+		[](const std::monostate&) -> EffectAttachment  {
+			return std::monostate{};
+		},
+		[](const attachment_object& obj) -> EffectAttachment  {
+			return obj;
+		},
+		[](const attachment_particle& parent_part) -> EffectAttachment  {
 			const auto& parent = parent_part.particle.lock();
 			const auto& effect = parent->parent_effect.getParticleEffect();
 			if (effect.m_parent_is_transitive)
-				return parent->attachment.extract_object();
+				return parent->attachment.resolve_true_parent();
 			else
-				return std::nullopt;
+				return parent_part;
 		},
 	}, *this);
 }
