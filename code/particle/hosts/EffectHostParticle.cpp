@@ -41,7 +41,7 @@ std::pair<vec3d, matrix> EffectHostParticle::getPositionAndOrientation(bool rela
 	}
 	else {
 		const auto& [global_pos, global_orient] = particle->attachment.get_frame();
-		pos = particle->attachment.global_to_local(pos);
+		pos = getParentAttachment().global_to_local(pos);
 
 		matrix global_orient_transpose;
 		orientation = orientation * *vm_copy_transpose(&global_orient_transpose, &global_orient);
