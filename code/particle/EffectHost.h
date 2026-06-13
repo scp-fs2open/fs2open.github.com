@@ -6,6 +6,7 @@
 #include "math/vecmat.h"
 
 #include <optional>
+#include <variant>
 
 namespace particle {
 	struct particle;
