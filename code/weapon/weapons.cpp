@@ -5336,8 +5336,10 @@ void weapon_delete(object *obj)
 	if (wp->hud_in_flight_snd_sig.isValid() && snd_is_playing(wp->hud_in_flight_snd_sig))
 		snd_stop(wp->hud_in_flight_snd_sig);
 
-	if (wp->model_instance_num >= 0)
+	if (wp->model_instance_num >= 0) {
 		model_delete_instance(wp->model_instance_num);
+		wp->model_instance_num = -1;
+	}
 
 	if (wp->cmeasure_ignore_list != nullptr) {
 		delete wp->cmeasure_ignore_list;
