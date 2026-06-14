@@ -99,6 +99,7 @@ event_editor::event_editor(CWnd* pParent /*=NULL*/)
 	m_log_1st_trigger = 0;
 	m_log_last_trigger = 0;
 	m_log_state_change = 0;
+	m_play_icon = nullptr;
 }
 
 void event_editor::DoDataExchange(CDataExchange* pDX)
@@ -203,8 +204,8 @@ BOOL event_editor::OnInitDialog()
 	MMessage msg; 
 
 	CDialog::OnInitDialog();  // let the base class do the default work
-	m_play_bm.LoadBitmap(IDB_PLAY);
-	((CButton *) GetDlgItem(IDC_PLAY)) -> SetBitmap(m_play_bm);
+	m_play_icon = load_button_icon(IDB_PLAY, RGB(192, 192, 192));
+	((CButton *) GetDlgItem(IDC_PLAY)) -> SetIcon(m_play_icon);
 
 	theApp.init_window(&Events_wnd_data, this, 0);
 	m_event_tree.setup((CEdit *) GetDlgItem(IDC_HELP_BOX));
@@ -1527,7 +1528,7 @@ BOOL event_editor::DestroyWindow()
 	audiostream_close_file(m_wave_id, 0);
 	m_wave_id = -1;
 
-	m_play_bm.DeleteObject();
+	if (m_play_icon) DestroyIcon(m_play_icon);
 	return CDialog::DestroyWindow();
 }
 

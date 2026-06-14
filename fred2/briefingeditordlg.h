@@ -74,7 +74,7 @@ public:
 	BOOL	m_use_cargo;
 	//}}AFX_DATA
 
-	CBitmap m_play_bm;
+	HICON m_play_icon;
 
 	// copy view variables
 	int		m_copy_view_set;
