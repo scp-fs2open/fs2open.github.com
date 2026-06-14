@@ -33,7 +33,7 @@ std::pair<vec3d, matrix> EffectHostParticle::getPositionAndOrientation(bool rela
 	if (!relativeToParent) {
 		orientation = m_orientationOverrideRelative ? m_orientationOverride * *vm_vector_2_matrix(&orientation, &particle_dir) : m_orientationOverride;
 	} else {
-		pos = getParentAttachment().global_to_local(pos);
+		pos = getParentAttachment().global_pos_to_local(pos);
 
 		const auto& [parent_pos, parent_orient] = getParentAttachment().get_frame(interp);
 		vm_vec_rotate(&particle_dir, &particle_dir, &parent_orient);

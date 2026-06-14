@@ -39,7 +39,7 @@ vec3d EffectAttachment::local_pos_to_global(const vec3d& local_pos, float interp
 	}, *this);
 }
 
-vec3d EffectAttachment::global_to_local(const vec3d& global_pos) const {
+vec3d EffectAttachment::global_pos_to_local(const vec3d& global_pos) const {
 	return std::visit(overloads {
 		[&global_pos](const std::monostate&) {
 			return global_pos;
