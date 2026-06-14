@@ -71,7 +71,7 @@ vec3d EffectHostTurret::getVelocity() const {
 }
 
 effects::EffectAttachment EffectHostTurret::getParentAttachment() const {
-	return effects::attachment_object{m_objnum, m_objsig};
+	return {effects::attachment_object{m_objnum, m_objsig}};
 }
 
 int EffectHostTurret::getParentSubmodel() const {

@@ -57,7 +57,7 @@ vec3d EffectHostSubmodel::getVelocity() const {
 }
 
 effects::EffectAttachment EffectHostSubmodel::getParentAttachment() const {
-	return effects::attachment_object{m_objnum, m_objsig};
+	return {effects::attachment_object{m_objnum, m_objsig}};
 }
 
 int EffectHostSubmodel::getParentSubmodel() const {

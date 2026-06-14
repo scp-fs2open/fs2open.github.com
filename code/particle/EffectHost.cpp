@@ -5,6 +5,8 @@
 #include "globalincs/utility.h"
 #include "particle/particle.h"
 
+#include <variant>
+
 namespace effects {
 vec3d EffectAttachment::local_pos_to_global(const vec3d& local_pos, float interp) const {
 	return std::visit(overloads {
@@ -36,7 +38,7 @@ vec3d EffectAttachment::local_pos_to_global(const vec3d& local_pos, float interp
 
 			return pos + parent_pos;
 		},
-	}, *this);
+	}, m_variant);
 }
 
 vec3d EffectAttachment::global_pos_to_local(const vec3d& global_pos) const {
@@ -65,7 +67,7 @@ vec3d EffectAttachment::global_pos_to_local(const vec3d& global_pos) const {
 
 			return pos;
 		},
-	}, *this);
+	}, m_variant);
 }
 
 vec3d EffectAttachment::local_vel_to_global(const vec3d& local_vel) const {
@@ -93,7 +95,7 @@ vec3d EffectAttachment::local_vel_to_global(const vec3d& local_vel) const {
 
 			return vel + parent->attachment.local_vel_to_global(parent->velocity);
 		},
-	}, *this);
+	}, m_variant);
 }
 
 vec3d EffectAttachment::global_vel_to_local(const vec3d& global_vel) const {
@@ -121,7 +123,7 @@ vec3d EffectAttachment::global_vel_to_local(const vec3d& global_vel) const {
 
 			return relative_vel;
 		},
-	}, *this);
+	}, m_variant);
 }
 
 vec3d EffectAttachment::local_last_pos_to_global(const vec3d& last_pos) const {
@@ -150,7 +152,7 @@ vec3d EffectAttachment::local_last_pos_to_global(const vec3d& last_pos) const {
 			float vel_scalar = parent->parent_effect.getParticleEffect().m_lifetime_curves.get_output(particle::ParticleEffect::ParticleLifetimeCurvesOutput::VELOCITY_MULT, std::forward_as_tuple(*parent, vm_vec_mag_quick(&parent->velocity)));
 			return pos + parent_pos - parent->attachment.local_vel_to_global(parent->velocity) * flFrametime * vel_scalar;
 		},
-	}, *this);
+	}, m_variant);
 }
 
 bool EffectAttachment::is_valid() const {
@@ -164,7 +166,11 @@ bool EffectAttachment::is_valid() const {
 		[](const effects::attachment_particle& parent_part) {
 			return !parent_part.particle.expired();
 		},
-	}, *this);
+	}, m_variant);
+}
+
+bool EffectAttachment::is_not_attached() const {
+	return std::holds_alternative<std::monostate>(m_variant);
 }
 
 std::pair<vec3d, matrix> EffectAttachment::get_frame(float interp) const {
@@ -196,7 +202,7 @@ std::pair<vec3d, matrix> EffectAttachment::get_frame(float interp) const {
 
 			return {parent_pos + pos_rotated - parent_global_orient_local_velocity * flFrametime * interp * vel_scalar, orient};
 		},
-	}, *this);
+	}, m_variant);
 }
 
 std::optional<attachment_object> EffectAttachment::extract_object() const {
@@ -210,16 +216,16 @@ std::optional<attachment_object> EffectAttachment::extract_object() const {
 		[](const attachment_particle&) -> std::optional<attachment_object>  {
 			return std::nullopt;
 		},
-	}, *this);
+	}, m_variant);
 }
 
 EffectAttachment EffectAttachment::resolve_true_parent() const {
 	return std::visit(overloads{
 		[](const std::monostate&) -> EffectAttachment  {
-			return std::monostate{};
+			return {};
 		},
 		[](const attachment_object& obj) -> EffectAttachment  {
-			return obj;
+			return {obj};
 		},
 		[](const attachment_particle& parent_part) -> EffectAttachment  {
 			const auto& parent = parent_part.particle.lock();
@@ -228,11 +234,11 @@ EffectAttachment EffectAttachment::resolve_true_parent() const {
 				if (parent->attachment.is_valid())
 					return parent->attachment.resolve_true_parent();
 				else
-					return std::monostate{};
+					return {};
 			}
 			else
-				return parent_part;
+				return {parent_part};
 		},
-	}, *this);
+	}, m_variant);
 }
 }

@@ -190,7 +190,7 @@ void ParticleEffect::sampleNoise(vec3d& noiseTarget, const matrix* orientation, 
 }
 
 vec3d ParticleEffect::adaptPosition(const vec3d& pos, const effects::EffectAttachment& attachment) const {
-	if (std::holds_alternative<std::monostate>(attachment) || !m_local_position_scaling.has_value()) {
+	if (attachment.is_not_attached() || !m_local_position_scaling.has_value()) {
 		return pos;
 	}
 
@@ -307,7 +307,7 @@ auto ParticleEffect::processSourceInternal(float interp, const ParticleSource& s
 		if (m_vel_inherit_absolute)
 			vm_vec_normalize_safe(&info.velocity, true);
 
-		info.velocity *= (m_ignore_velocity_inherit_if_has_parent && !std::holds_alternative<std::monostate>(attachment)) ? 0.f : m_vel_inherit.next() * inheritVelocityMultiplier;
+		info.velocity *= (m_ignore_velocity_inherit_if_has_parent && !attachment.is_not_attached()) ? 0.f : m_vel_inherit.next() * inheritVelocityMultiplier;
 
 		vec3d localVelocity = velNoise;
 		vec3d localPos = posNoise;

@@ -52,7 +52,7 @@ vec3d EffectHostObject::getVelocity() const {
 }
 
 effects::EffectAttachment EffectHostObject::getParentAttachment() const {
-	return effects::attachment_object{m_objnum, m_objsig};
+	return {effects::attachment_object{m_objnum, m_objsig}};
 }
 
 float EffectHostObject::getHostRadius() const {
