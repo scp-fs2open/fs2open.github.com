@@ -116,10 +116,10 @@ vec3d EffectAttachment::global_vel_to_local(const vec3d& global_vel) const {
 				return global_vel;
 
 			const auto& [parent_pos, parent_orient] = get_frame();
-			vec3d vel;
-			vm_vec_rotate(&vel, &global_vel, &parent_orient);
+			vec3d relative_vel = global_vel - parent->attachment.local_vel_to_global(parent->velocity);
+			vm_vec_rotate(&relative_vel, &relative_vel, &parent_orient);
 
-			return vel + parent->attachment.global_vel_to_local(parent->velocity);
+			return relative_vel;
 		},
 	}, *this);
 }
