@@ -24,30 +24,27 @@ std::pair<vec3d, matrix> EffectHostParticle::getPositionAndOrientation(bool rela
 		pos = particle->pos;
 	}
 
-	// find the particle direction (normalized vector)
-	// note: this can't be computed for particles with 0 velocity, so use the safe version
-	vec3d particle_dir;
-	vm_vec_copy_normalize_safe(&particle_dir, &particle->velocity);
-	particle_dir = particle->attachment.local_vel_to_global(particle->velocity);
+	vec3d particle_dir = particle->attachment.local_vel_to_global(particle->velocity);
 	vm_vec_normalize_safe(&particle_dir);
 
 	matrix orientation;
-	orientation = m_orientationOverrideRelative ? m_orientationOverride * *vm_vector_2_matrix(&orientation, &particle_dir) : m_orientationOverride;
+	pos = particle->attachment.local_pos_to_global(pos, interp);
 
 	if (!relativeToParent) {
-		particle_dir = particle->attachment.local_vel_to_global(particle->velocity);
-		vm_vec_normalize_safe(&particle_dir);
-		pos = particle->attachment.local_pos_to_global(pos, interp);
-	}
-	else {
-		const auto& [global_pos, global_orient] = particle->attachment.get_frame();
+		orientation = m_orientationOverrideRelative ? m_orientationOverride * *vm_vector_2_matrix(&orientation, &particle_dir) : m_orientationOverride;
+	} else {
 		pos = getParentAttachment().global_to_local(pos);
 
-		matrix global_orient_transpose;
-		orientation = orientation * *vm_copy_transpose(&global_orient_transpose, &global_orient);
-	}
+		const auto& [parent_pos, parent_orient] = getParentAttachment().get_frame(interp);
+		vm_vec_rotate(&particle_dir, &particle_dir, &parent_orient);
 
-	orientation = m_orientationOverrideRelative ? m_orientationOverride * *vm_vector_2_matrix(&orientation, &particle_dir) : m_orientationOverride;
+		if (m_orientationOverrideRelative) {
+			orientation = m_orientationOverride * *vm_vector_2_matrix(&orientation, &particle_dir);
+		} else {
+			matrix parent_orient_transpose;
+			orientation = m_orientationOverride * *vm_copy_transpose(&parent_orient_transpose, &parent_orient);
+		}
+	}
 
 	if (tabled_offset)
 		pos += particle_dir * tabled_offset->xyz.z;
