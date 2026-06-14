@@ -22,18 +22,26 @@ namespace effects {
 		particle::WeakParticlePtr particle = particle::WeakParticlePtr();
 	};
 
-	struct EffectAttachment : public std::variant<std::monostate, attachment_object, attachment_particle> {
-		using std::variant<std::monostate, attachment_object, attachment_particle>::variant;
+	struct EffectAttachment {
+	private:
+		using underlying_type = std::variant<std::monostate, attachment_object, attachment_particle>;
 
+		underlying_type m_variant;
+	public:
 		vec3d local_pos_to_global(const vec3d& local_pos, float interp = 0.0f) const;
 		vec3d global_pos_to_local(const vec3d& global_pos) const ;
 		vec3d local_vel_to_global(const vec3d& local_vel) const;
 		vec3d global_vel_to_local(const vec3d& global_vel) const;
 		vec3d local_last_pos_to_global(const vec3d& last_pos) const;
 		bool is_valid() const;
+		bool is_not_attached() const;
 		std::pair<vec3d, matrix> get_frame(float interp = 0.0f) const;
 		std::optional<attachment_object> extract_object() const;
 		EffectAttachment resolve_true_parent() const;
+
+		constexpr EffectAttachment() : m_variant(std::monostate()) {};
+		EffectAttachment(const underlying_type& variant) : m_variant(variant) {};
+		EffectAttachment(underlying_type&& variant) : m_variant(variant) {};
 	};
 }
 

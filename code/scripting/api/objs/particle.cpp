@@ -205,10 +205,10 @@ ADE_VIRTVAR(AttachedObject, l_Particle, "object", "The object this particle is a
 	if (ADE_SETTING_VAR)
 	{
 		if (newObj != nullptr && newObj->isValid())
-			ph->Get().lock()->attachment = effects::attachment_object{newObj->objnum, newObj->sig};
+			ph->Get().lock()->attachment = {effects::attachment_object{newObj->objnum, newObj->sig}};
 	}
 
-	if (auto* obj = std::get_if<effects::attachment_object>(&ph->Get().lock()->attachment))
+	if (auto obj = ph->Get().lock()->attachment.extract_object())
 		return ade_set_object_with_breed(L, obj->objnum);
 	else
 		return ade_set_object_with_breed(L, -1);
