@@ -600,8 +600,11 @@ void techroom_ships_render(float frametime)
 	render_info.set_detail_level_lock(0);
 
 	int model_instance = -1;
-	model_get_cached_ui_render_instance(Techroom_modelnum, &model_instance);
-	if (Tab == SHIPS_DATA_TAB) {
+	auto cache_result = model_get_cached_ui_render_instance(Techroom_modelnum, &model_instance);
+	// Only set up the instance when it was freshly created; the cached instance persists across
+	// frames, so re-running this every frame would re-apply initial animations on top of the
+	// already-animated pose and make animated submodels (e.g. turrets) flip/jitter.
+	if (Tab == SHIPS_DATA_TAB && cache_result == TriStateBool::TRUE_) {
 		model_set_up_techroom_instance(&Ship_info[Cur_entry_index], model_instance);
 	}
 

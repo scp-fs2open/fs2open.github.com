@@ -828,8 +828,11 @@ void draw_3d_overhead_view(int model_num,
 
 		model_clear_instance(model_num);
 		int model_instance = -1;
-		model_get_cached_ui_render_instance(model_num, &model_instance);
-		model_set_up_techroom_instance(sip, model_instance);
+		auto cache_result = model_get_cached_ui_render_instance(model_num, &model_instance);
+		// Only set up the instance when it was freshly created; the cached instance persists across frames.
+		if (cache_result == TriStateBool::TRUE_) {
+			model_set_up_techroom_instance(sip, model_instance);
+		}
 		polymodel* pm = model_get(model_num);
 
 		if (sip->replacement_textures.size() > 0) {
