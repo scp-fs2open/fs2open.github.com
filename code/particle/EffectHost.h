@@ -26,7 +26,7 @@ namespace effects {
 		using std::variant<std::monostate, attachment_object, attachment_particle>::variant;
 
 		vec3d local_pos_to_global(const vec3d& local_pos, float interp = 0.0f) const;
-		vec3d global_to_local(const vec3d& global_pos) const ;
+		vec3d global_pos_to_local(const vec3d& global_pos) const ;
 		vec3d local_vel_to_global(const vec3d& local_vel) const;
 		vec3d global_vel_to_local(const vec3d& global_vel) const;
 		vec3d local_last_pos_to_global(const vec3d& last_pos) const;
