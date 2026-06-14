@@ -304,13 +304,13 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum, int parent_node) const
 
 		auto ship_entry = eval_ship(this_node);
 
-		if (!ship_entry || !ship_entry->has_shipp()) {
-			// Name is invalid
-			return LuaValue::createValue(_action.getLuaState(), l_Ship.Set(object_h()));
+		if (!ship_entry || !ship_entry->has_objp()) {
+			// Ship is not present in the mission (never arrived, destroyed, or departed)
+			return LuaValue::createValue(_action.getLuaState(), l_Subsystem.Set(ship_subsys_h()));
 		}
 
 		ship_subsys* ss = ship_get_subsys(ship_entry->shipp(), name);
-		
+
 		return LuaValue::createValue(_action.getLuaState(), l_Subsystem.Set(ship_subsys_h(ship_entry->objp(), ss)));
 	}
 	case OPF_DOCKER_POINT: {
@@ -334,7 +334,7 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum, int parent_node) const
 		auto ship_entry = eval_ship(this_node);
 		if (!ship_entry || !ship_entry->has_shipp()) {
 			// Name is invalid
-			return LuaValue::createValue(_action.getLuaState(), l_Ship.Set(object_h()));
+			return LuaValue::createValue(_action.getLuaState(), l_Dockingbay.Set(dockingbay_h()));
 		}
 
 		auto docker_pm = model_get(Ship_info[ship_entry->shipp()->ship_info_index].model_num);

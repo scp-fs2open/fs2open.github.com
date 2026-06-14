@@ -3196,6 +3196,8 @@ void model_render_set_wireframe_color(const color* clr)
 void modelinstance_replace_active_texture(polymodel_instance* pmi, const char* old_name, const char* new_name)
 {
 	Assert(pmi != nullptr);
+	if (pmi == nullptr)
+		return;
 	polymodel* pm = model_get(pmi->model_num);
 
 	int final_index = -1;

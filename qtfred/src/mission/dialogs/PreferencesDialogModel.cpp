@@ -10,6 +10,8 @@ namespace fso::fred::dialogs {
 PreferencesDialogModel::PreferencesDialogModel(QObject* parent, EditorViewport* viewport)
 	: AbstractDialogModel(parent, viewport)
 	, _offerAutosaveRecovery(viewport->Offer_autosave_recovery)
+	, _autosaveIntervalSeconds(viewport->autosave_interval_seconds)
+	, _createBakOnSave(viewport->Create_bak_on_save)
 	, _moveShipsWhenUndocking(viewport->Move_ships_when_undocking)
 	, _alwaysSaveDisplayNames(viewport->Always_save_display_names)
 	, _checkPotentialIssues(viewport->Error_checker_checks_potential_issues)
@@ -45,6 +47,8 @@ bool PreferencesDialogModel::apply() {
 	const bool darkModeChanged = (_viewport->Dark_mode != _darkMode);
 
 	_viewport->Offer_autosave_recovery   = _offerAutosaveRecovery;
+	_viewport->autosave_interval_seconds = _autosaveIntervalSeconds;
+	_viewport->Create_bak_on_save        = _createBakOnSave;
 	_viewport->Move_ships_when_undocking = _moveShipsWhenUndocking;
 	_viewport->Always_save_display_names                = _alwaysSaveDisplayNames;
 	_viewport->Error_checker_checks_potential_issues    = _checkPotentialIssues;
@@ -98,6 +102,12 @@ void PreferencesDialogModel::reject() {
 
 bool PreferencesDialogModel::getOfferAutosaveRecovery() const { return _offerAutosaveRecovery; }
 void PreferencesDialogModel::setOfferAutosaveRecovery(bool value) { modify(_offerAutosaveRecovery, value); }
+
+int  PreferencesDialogModel::getAutosaveIntervalSeconds() const { return _autosaveIntervalSeconds; }
+void PreferencesDialogModel::setAutosaveIntervalSeconds(int value) { modify(_autosaveIntervalSeconds, value); }
+
+bool PreferencesDialogModel::getCreateBakOnSave() const { return _createBakOnSave; }
+void PreferencesDialogModel::setCreateBakOnSave(bool value) { modify(_createBakOnSave, value); }
 
 bool PreferencesDialogModel::getMoveShipsWhenUndocking() const { return _moveShipsWhenUndocking; }
 void PreferencesDialogModel::setMoveShipsWhenUndocking(bool value) { modify(_moveShipsWhenUndocking, value); }

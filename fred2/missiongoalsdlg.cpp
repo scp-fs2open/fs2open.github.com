@@ -507,7 +507,13 @@ void CMissionGoalsDlg::OnCancel()
 	CDialog::OnCancel();
 }
 
-void CMissionGoalsDlg::OnClose() 
+BOOL CMissionGoalsDlg::DestroyWindow()
+{
+	Goal_editor_dlg = nullptr;
+	return CDialog::DestroyWindow();
+}
+
+void CMissionGoalsDlg::OnClose()
 {
 	int z;
 

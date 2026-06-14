@@ -130,6 +130,8 @@ void EditorViewport::loadSettings() {
 	settings.beginGroup(SETTINGS_GROUP);
 	toolbar_icon_size                  = settings.value("toolbar_icon_size",                  toolbar_icon_size).toInt();
 	Offer_autosave_recovery            = settings.value("offer_autosave_recovery",            Offer_autosave_recovery).toBool();
+	autosave_interval_seconds         = settings.value("autosave_interval_seconds",          autosave_interval_seconds).toInt();
+	Create_bak_on_save                 = settings.value("create_bak_on_save",                 Create_bak_on_save).toBool();
 	Move_ships_when_undocking          = settings.value("move_ships_when_undocking",          Move_ships_when_undocking).toBool();
 	Always_save_display_names          = settings.value("always_save_display_names",          Always_save_display_names).toBool();
 	Error_checker_checks_potential_issues = settings.value("error_checker_checks_potential_issues", Error_checker_checks_potential_issues).toBool();
@@ -171,6 +173,8 @@ void EditorViewport::saveSettings() const {
 	settings.beginGroup(SETTINGS_GROUP);
 	settings.setValue("toolbar_icon_size",                   toolbar_icon_size);
 	settings.setValue("offer_autosave_recovery",             Offer_autosave_recovery);
+	settings.setValue("autosave_interval_seconds",          autosave_interval_seconds);
+	settings.setValue("create_bak_on_save",                  Create_bak_on_save);
 	settings.setValue("move_ships_when_undocking",           Move_ships_when_undocking);
 	settings.setValue("always_save_display_names",           Always_save_display_names);
 	settings.setValue("error_checker_checks_potential_issues", Error_checker_checks_potential_issues);
@@ -533,7 +537,6 @@ void EditorViewport::level_controlled() {
 			level_object(&Objects[camera.getViewObj()].orient);
 			object_moved(&Objects[camera.getViewObj()]);
 			///! \todo Notify.
-			editor->autosave("level object");
 			editor->missionChanged();
 		}
 		break;
@@ -560,7 +563,6 @@ void EditorViewport::level_controlled() {
 
 		///! \todo Notify.
 		if (count) {
-			editor->autosave(count > 1 ? "level objects" : "level object");
 			editor->missionChanged();
 		}
 
@@ -589,7 +591,6 @@ void EditorViewport::verticalize_controlled() {
 			verticalize_object(&Objects[camera.getViewObj()].orient);
 			object_moved(&Objects[camera.getViewObj()]);
 			///! \todo notify.
-			editor->autosave("align object");
 			editor->missionChanged();
 		}
 		break;
@@ -616,7 +617,6 @@ void EditorViewport::verticalize_controlled() {
 
 		///! \todo Notify.
 		if (count) {
-			editor->autosave(count > 1 ? "align objects" : "align object");
 			editor->missionChanged();
 		}
 
@@ -640,6 +640,36 @@ void EditorViewport::level_object(matrix* orient) {
 	}
 
 	vm_fix_matrix(orient);
+}
+
+vec3d EditorViewport::orbitCameraGetPivot()
+{
+	vec3d pivot;
+
+	if (query_valid_object(editor->currentObject)) {
+		// Pivot on current object
+		pivot = Objects[editor->currentObject].pos;
+	} else if (!The_grid) {
+		// Pivot on the origin, if no grid
+		pivot = ZERO_VECTOR;
+	} else {
+		// Intersect camera forward ray with the grid plane
+		vec3d *grid_normal = &The_grid->gmatrix.vec.uvec;
+		float denom = vm_vec_dot(grid_normal, &camera.view_orient.vec.fvec);
+
+		if (fl_abs(denom) > 0.0001f) {
+			float t = -(vm_vec_dot(grid_normal, &camera.view_pos) + The_grid->planeD) / denom;
+			if (t > 0.0f) {
+				vm_vec_scale_add(&pivot, &camera.view_pos, &camera.view_orient.vec.fvec, t);
+			} else {
+				pivot = The_grid->center;
+			}
+		} else {
+			// Camera is parallel to grid plane; fall back to grid center
+			pivot = The_grid->center;
+		}
+	}
+	return pivot;
 }
 
 int EditorViewport::object_check_collision(object* objp, vec3d* p0, vec3d* p1, vec3d* hitpos) {
@@ -1150,7 +1180,6 @@ int EditorViewport::create_object_on_grid(int x, int y, int waypoint_instance, C
 		editor->markObject(obj);
 
 		editor->missionChanged();
-		editor->autosave("object create");
 
 	} else if (obj == -1) {
 		dialogProvider->showButtonDialog(DialogType::Error, "Error", "Maximum ship limit reached.  Can't add any more ships.", { DialogButton::Ok });

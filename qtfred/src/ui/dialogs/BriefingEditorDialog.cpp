@@ -104,7 +104,6 @@ void BriefingEditorDialog::accept()
 {
 	// If apply() returns true, close the dialog
 	if (_model->apply()) {
-		_viewport->editor->autosave("briefing editor");
 		ui->defaultMusicWidget->stopPlayback();
 		ui->musicPackWidget->stopPlayback();
 		QDialog::accept();

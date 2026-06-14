@@ -105,7 +105,6 @@ FredView::FredView(QWidget* parent) : QMainWindow(parent), ui(new Ui::FredView()
 	ui->actionOpen->setShortcuts(QKeySequence::Open);
 	ui->actionSave->setShortcuts(QKeySequence::Save);
 	ui->actionExit->setShortcuts(QKeySequence::Quit);
-	ui->actionUndo->setShortcuts(QKeySequence::Undo);
 	ui->actionDelete->setShortcuts(QKeySequence::Delete);
 
 	connect(ui->actionOpen, &QAction::triggered, this, &FredView::openLoadMissionDialog);
@@ -226,6 +225,16 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 
 	connect(fred, &Editor::missionLoaded, this, &FredView::on_mission_loaded);
 	connect(fred, &Editor::missionChanged, this, [this]() { _missionModified = true; });
+	connect(fred, &Editor::autosaveDue, this, [this](const QString& savePath) {
+		Fred_mission_save save;
+		save.set_save_format(_missionSaveFormat);
+		save.set_always_save_display_names(_viewport->Always_save_display_names);
+		save.set_view_pos(_viewport->camera.view_pos);
+		save.set_view_orient(_viewport->camera.view_orient);
+		save.set_fred_alt_names(Fred_alt_names);
+		save.set_fred_callsigns(Fred_callsigns);
+		save.save_autosave_file(savePath.toUtf8().constData());
+	});
 	connect(fred, &Editor::layerListChanged, this, [this]() { _tbLayerComboDirty = true; });
 
 	// Sets the initial window title
@@ -255,9 +264,6 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 			this,
 			[this]() { ui->actionRestore_Camera_Pos->setEnabled(_viewport->camera.hasSavedPosition()); });
 	connect(this, &FredView::viewIdle, this, [this]() { ui->actionRevert->setEnabled(!saveName.isEmpty()); });
-	connect(this, &FredView::viewIdle, this, [this]() { ui->actionUndo->setEnabled(fred->undoAvailable != 0); });
-	connect(this, &FredView::viewIdle, this, [this]() { ui->actionDisable_Undo->setChecked(fred->autosaveDisabled != 0); });
-
 	// Scene Browser dock panel
 	_browserPanel = new SceneBrowserPanel(this, _viewport);
 	addDockWidget(Qt::LeftDockWidgetArea, _browserPanel);
@@ -430,6 +436,7 @@ bool FredView::saveMissionToCurrentPath() {
 	Fred_mission_save save;
 	save.set_save_format(_missionSaveFormat);
 	save.set_always_save_display_names(_viewport->Always_save_display_names);
+	save.set_create_bak_file(_viewport->Create_bak_on_save);
 	save.set_view_pos(_viewport->camera.view_pos);
 	save.set_view_orient(_viewport->camera.view_orient);
 	save.set_fred_alt_names(Fred_alt_names);
@@ -469,6 +476,7 @@ bool FredView::saveMissionAs() {
 	Fred_mission_save save;
 	save.set_save_format(_missionSaveFormat);
 	save.set_always_save_display_names(_viewport->Always_save_display_names);
+	save.set_create_bak_file(_viewport->Create_bak_on_save);
 	save.set_view_pos(_viewport->camera.view_pos);
 	save.set_view_orient(_viewport->camera.view_orient);
 	save.set_fred_alt_names(Fred_alt_names);
@@ -488,7 +496,15 @@ bool FredView::saveMissionAs() {
 	if (_errorCheckerDialog && _errorCheckerDialog->isVisible())
 		_errorCheckerDialog->runCheck();
 
+	fred->setCurrentMissionPath(saveName);
+	restartAutosaveTimer();
 	return true;
+}
+
+void FredView::restartAutosaveTimer() {
+	if (!fred || !_viewport)
+		return;
+	fred->startAutosaveTimer(_viewport->autosave_interval_seconds);
 }
 
 void FredView::saveAsTemplate() {
@@ -573,23 +589,6 @@ void FredView::on_actionRevert_triggered(bool) {
 	loadMissionFile(saveName);
 }
 
-void FredView::on_actionUndo_triggered(bool) {
-	// Preserve camera state and saveName because autoload() triggers missionLoaded which would overwrite them
-	auto savedViewPos    = _viewport->camera.view_pos;
-	auto savedViewOrient = _viewport->camera.view_orient;
-	auto savedSaveName   = saveName;
-
-	fred->autoload();
-
-	_viewport->camera.view_pos    = savedViewPos;
-	_viewport->camera.view_orient = savedViewOrient;
-	saveName               = savedSaveName;
-}
-
-void FredView::on_actionDisable_Undo_triggered(bool checked) {
-	fred->autosaveDisabled = checked ? 1 : 0;
-}
-
 void FredView::on_actionFS2_Open_triggered(bool) {
 	_missionSaveFormat = MissionFormat::STANDARD;
 }
@@ -655,6 +654,7 @@ void FredView::on_actionFS1_Mission_triggered(bool) {
 		Fred_mission_save fileSave;
 		fileSave.set_save_format(_missionSaveFormat);
 		fileSave.set_always_save_display_names(_viewport->Always_save_display_names);
+		fileSave.set_create_bak_file(_viewport->Create_bak_on_save);
 		fileSave.set_view_pos(_viewport->camera.view_pos);
 		fileSave.set_view_orient(_viewport->camera.view_orient);
 		fileSave.set_fred_alt_names(Fred_alt_names);
@@ -774,6 +774,10 @@ void FredView::on_mission_loaded(const std::string& filepath) {
 	} else {
 		saveName = QString();
 	}
+
+	// Update autosave path and start/stop timer based on whether we have a named file.
+	fred->setCurrentMissionPath(saveName);
+	restartAutosaveTimer();
 
 	_missionModified = false;
 
@@ -1800,7 +1804,6 @@ void FredView::showWingContextMenu(int wingIndex, const QPoint& globalPos)
 	auto* deleteAction = menu.addAction(tr("Delete %1").arg(wingName));
 	connect(deleteAction, &QAction::triggered, this, [this, wingIndex]() {
 		fred->delete_wing(wingIndex, 0);
-		fred->autosave("wing delete");
 	});
 
 	menu.exec(globalPos);
@@ -1853,7 +1856,6 @@ void FredView::showWaypointPathContextMenu(int pathIndex, const QPoint& globalPo
 	auto* deleteAction = menu.addAction(tr("Delete %1").arg(pathName));
 	connect(deleteAction, &QAction::triggered, this, [this]() {
 		fred->delete_marked();
-		fred->autosave("waypoint path delete");
 	});
 
 	menu.exec(globalPos);
@@ -2682,14 +2684,11 @@ void FredView::on_actionWingForm_triggered(bool  /*enabled*/) {
 		}
 	}
 
-	if (fred->create_wing()) {
-		fred->autosave("form wing");
-	}
+	fred->create_wing();
 }
 void FredView::on_actionWingDisband_triggered(bool  /*enabled*/) {
 	if (fred->query_single_wing_marked()) {
 		fred->remove_wing(fred->cur_wing);
-		fred->autosave("wing disband");
 	} else {
 		showButtonDialog(DialogType::Error,
 						 "Error",
@@ -2786,19 +2785,16 @@ void FredView::on_actionRestore_Camera_Pos_triggered(bool) {
 void FredView::on_actionClone_Marked_Objects_triggered(bool) {
 	if (fred->getNumMarked() > 0) {
 		_viewport->duplicate_marked_objects();
-		fred->autosave("clone marked");
 	}
 }
 void FredView::on_actionDelete_triggered(bool) {
 	if (fred->getNumMarked() > 0) {
 		fred->delete_marked();
-		fred->autosave("object delete");
 	}
 }
 void FredView::on_actionDelete_Wing_triggered(bool) {
 	if (fred->cur_wing >= 0) {
 		fred->delete_wing(fred->cur_wing, 0);
-		fred->autosave("wing delete");
 	}
 }
 void FredView::initializeGroupActions() {

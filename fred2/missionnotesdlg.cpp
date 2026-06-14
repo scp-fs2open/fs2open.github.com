@@ -21,6 +21,7 @@
 #include "mission/missionparse.h"
 #include "mission/missionmessage.h"
 #include "scripting/global_hooks.h"
+#include "supportrearmdlg.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -58,13 +59,11 @@ CMissionNotesDlg::CMissionNotesDlg(CWnd* pParent /*=NULL*/) : CDialog(CMissionNo
 	m_scramble = FALSE;
 	m_num_respawns = 0;
 	m_max_respawn_delay = -1;
-	m_disallow_support = 0;
 	m_no_promotion = FALSE;
 	m_no_builtin_msgs = FALSE;
 	m_no_builtin_command_msgs = FALSE;
 	m_no_traitor = FALSE;
 	m_toggle_trails = FALSE;
-	m_support_repairs_hull = FALSE;
 	m_beam_free_all_by_default = FALSE;
 	m_player_start_using_ai = FALSE;
 	m_toggle_start_chase_view = FALSE;
@@ -77,8 +76,6 @@ CMissionNotesDlg::CMissionNotesDlg(CWnd* pParent /*=NULL*/) : CDialog(CMissionNo
 	m_end_to_mainhall = FALSE;
 	m_override_hashcommand = FALSE;
 	m_preload_subspace = FALSE;
-	m_max_hull_repair_val = 0.0f;
-	m_max_subsys_repair_val = 100.0f;
 	m_contrail_threshold = CONTRAIL_THRESHOLD_DEFAULT;
 	m_contrail_threshold_flag = FALSE;
 	//}}AFX_DATA_INIT
@@ -112,13 +109,11 @@ void CMissionNotesDlg::DoDataExchange(CDataExchange* pDX)
 	DDV_MinMaxUInt(pDX, m_num_respawns, 0, 99);
 	DDX_Text(pDX, IDC_MAX_RESPAWN_DELAY, m_max_respawn_delay);
 	DDV_MinMaxInt(pDX, m_max_respawn_delay, -1, 999);
-	DDX_Check(pDX, IDC_SUPPORT_ALLOWED, m_disallow_support);
 	DDX_Check(pDX, IDC_NO_PROMOTION, m_no_promotion);
 	DDX_Check(pDX, IDC_DISABLE_BUILTIN_MSGS, m_no_builtin_msgs);
 	DDX_Check(pDX, IDC_DISABLE_BUILTIN_COMMAND_MSGS, m_no_builtin_command_msgs);
 	DDX_Check(pDX, IDC_NO_TRAITOR, m_no_traitor);
 	DDX_Check(pDX, IDC_SPECS_TOGGLE_TRAILS, m_toggle_trails);
-	DDX_Check(pDX, IDC_SUPPORT_REPAIRS_HULL, m_support_repairs_hull);
 	DDX_Check(pDX, IDC_BEAM_FREE_ALL_BY_DEFAULT, m_beam_free_all_by_default);
 	DDX_Check(pDX, IDC_PLAYER_START_AI, m_player_start_using_ai);
 	DDX_Check(pDX, IDC_TOGGLE_START_CHASE, m_toggle_start_chase_view);
@@ -131,10 +126,6 @@ void CMissionNotesDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_END_TO_MAINHALL, m_end_to_mainhall);
 	DDX_Check(pDX, IDC_OVERRIDE_HASHCOMMAND, m_override_hashcommand);
 	DDX_Check(pDX, IDC_PRELOAD_SUBSPACE, m_preload_subspace);
-	DDX_Text(pDX, IDC_MAX_HULL_REPAIR_VAL, m_max_hull_repair_val);
-	DDV_MinMaxFloat(pDX, m_max_hull_repair_val, 0, 100);
-	DDX_Text(pDX, IDC_MAX_SUBSYS_REPAIR_VAL, m_max_subsys_repair_val);
-	DDV_MinMaxFloat(pDX, m_max_subsys_repair_val, 0, 100);
 	DDX_Text(pDX, IDC_CONTRAIL_THRESHOLD, m_contrail_threshold);
 	DDV_MinMaxInt(pDX, m_contrail_threshold, 0, 1000);
 	DDX_Check(pDX, IDC_CONTRAIL_THRESHOLD_CHECK, m_contrail_threshold_flag);
@@ -155,6 +146,7 @@ BEGIN_MESSAGE_MAP(CMissionNotesDlg, CDialog)
 	ON_BN_CLICKED(IDC_SOUND_ENVIRONMENT_BUTTON, OnSoundEnvironment)
 	ON_BN_CLICKED(IDC_OPEN_CUSTOM_DATA, OnCustomData)
 	ON_BN_CLICKED(IDC_OPEN_CUSTOM_STRINGS, OnCustomStrings)
+	ON_BN_CLICKED(IDC_SUPPORT_REARM_OPTIONS, OnSupportRearmOptions)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -232,9 +224,6 @@ void CMissionNotesDlg::OnOK()
 	MODIFY(The_mission.game_type, new_m_type );
 	MODIFY(The_mission.num_respawns, (int)m_num_respawns );
 	MODIFY(The_mission.max_respawn_delay, m_max_respawn_delay );
-	MODIFY(The_mission.support_ships.max_support_ships, (m_disallow_support) ? 0 : -1);
-	MODIFY(The_mission.support_ships.max_hull_repair_val, m_max_hull_repair_val);
-	MODIFY(The_mission.support_ships.max_subsys_repair_val, m_max_subsys_repair_val);
 
 	flags = The_mission.flags;
 
@@ -265,9 +254,6 @@ void CMissionNotesDlg::OnOK()
 	} else {
 		The_mission.contrail_threshold = CONTRAIL_THRESHOLD_DEFAULT;
 	}
-
-	//set support ship repairing flags
-    The_mission.flags.set(Mission::Mission_Flags::Support_repairs_hull, m_support_repairs_hull != 0);
 
 	// set default beam free
     The_mission.flags.set(Mission::Mission_Flags::Beam_free_all_by_default, m_beam_free_all_by_default != 0);
@@ -399,13 +385,11 @@ BOOL CMissionNotesDlg::OnInitDialog()
 	m_red_alert = (The_mission.flags[Mission::Mission_Flags::Red_alert]) ? 1 : 0;
 	m_scramble = (The_mission.flags[Mission::Mission_Flags::Scramble]) ? 1 : 0;
 	m_full_war = Mission_all_attack;
-	m_disallow_support = (The_mission.support_ships.max_support_ships == 0) ? 1 : 0;
 	m_no_promotion = (The_mission.flags[Mission::Mission_Flags::No_promotion]) ? 1 : 0;
 	m_no_builtin_msgs = (The_mission.flags[Mission::Mission_Flags::No_builtin_msgs]) ? 1 : 0;
 	m_no_builtin_command_msgs = (The_mission.flags[Mission::Mission_Flags::No_builtin_command]) ? 1 : 0;
 	m_no_traitor = (The_mission.flags[Mission::Mission_Flags::No_traitor]) ? 1 : 0;
 	m_toggle_trails = (The_mission.flags[Mission::Mission_Flags::Toggle_ship_trails]) ? 1 : 0;
-	m_support_repairs_hull = (The_mission.flags[Mission::Mission_Flags::Support_repairs_hull]) ? 1 : 0;
 	m_beam_free_all_by_default = (The_mission.flags[Mission::Mission_Flags::Beam_free_all_by_default]) ? 1 : 0;
 	m_player_start_using_ai = (The_mission.flags[Mission::Mission_Flags::Player_start_ai]) ? 1 : 0;
 	m_toggle_start_chase_view = (The_mission.flags[Mission::Mission_Flags::Toggle_start_chase_view]) ? 1 : 0;
@@ -511,8 +495,6 @@ BOOL CMissionNotesDlg::OnInitDialog()
 	m_max_respawn_delay_spin.SetRange(-1, 999);
 	m_num_respawns = The_mission.num_respawns;
 	m_max_respawn_delay = The_mission.max_respawn_delay;
-	m_max_hull_repair_val = The_mission.support_ships.max_hull_repair_val;
-	m_max_subsys_repair_val = The_mission.support_ships.max_subsys_repair_val;
 
 	m_contrail_threshold = The_mission.contrail_threshold;
 	m_contrail_threshold_flag = (m_contrail_threshold != CONTRAIL_THRESHOLD_DEFAULT);
@@ -670,7 +652,13 @@ void CMissionNotesDlg::OnLoad640()
 	}	
 }
 
-
+void CMissionNotesDlg::OnSupportRearmOptions()
+{
+	CSupportRearmDlg dlg(this);
+	if (dlg.DoModal() == IDOK) {
+		set_modified();
+	}
+}
 
 void CMissionNotesDlg::OnEnChangeLoadingScreen641()
 {

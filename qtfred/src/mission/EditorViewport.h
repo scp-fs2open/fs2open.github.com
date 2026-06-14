@@ -117,6 +117,8 @@ class EditorViewport {
 
 	void game_do_frame(const int cur_object_index);
 
+	vec3d orbitCameraGetPivot();
+
 	int object_check_collision(object* objp, vec3d* p0, vec3d* p1, vec3d* hitpos);
 
 	int select_object(int cx, int cy);
@@ -208,7 +210,9 @@ class EditorViewport {
 
 	bool Group_rotate = true;
 	int  toolbar_icon_size = 24;  ///< Toolbar icon size in pixels (16, 24, or 32)
-	bool Offer_autosave_recovery = true;
+	bool Offer_autosave_recovery   = true;
+	int  autosave_interval_seconds = 300;  // 5 minutes; 0 = disabled
+	bool Create_bak_on_save        = true;
 	bool Move_ships_when_undocking = true;
 	bool Always_save_display_names = false;
 	bool Error_checker_checks_potential_issues = true;

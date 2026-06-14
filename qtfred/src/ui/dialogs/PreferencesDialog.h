@@ -24,6 +24,8 @@ private slots:
 	void applyChanges();
 	// General
 	void on_offerAutosaveRecovery_toggled(bool checked);
+	void on_autosaveIntervalSeconds_valueChanged(int value);
+	void on_createBakOnSave_toggled(bool checked);
 	void on_moveShipsWhenUndocking_toggled(bool checked);
 	void on_alwaysSaveDisplayNames_toggled(bool checked);
 	void on_checkPotentialIssues_toggled(bool checked);

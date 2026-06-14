@@ -619,12 +619,16 @@ void output_luastub_doc(const ScriptingDocumentation& doc, const SCP_string& fil
 
 	//***Enumerations
 	fprintf(fp, "-- Enumerations\n");
+	SCP_string current_group_id;
 	for (const auto& enumeration : doc.enumerations) {
-		// Cyborg17 -- Omit the deprecated flag
-		if (enumeration.name == "VM_EXTERNAL_CAMERA_LOCKED") {
-			continue;
+		if (enumeration.group_id != current_group_id) {
+			current_group_id = enumeration.group_id;
+			fputs("\n", fp);
+			fprintf(fp, "--- %s: %s\n", enumeration.group_title.c_str(), enumeration.group_description.c_str());
 		}
-		// WMC - For now, print to the file without the description.
+		if (!enumeration.description.empty()) {
+			fprintf(fp, "--- %s\n", enumeration.description.c_str());
+		}
 		fprintf(fp, "--- @const %s\n", enumeration.name.c_str());
 		fprintf(fp, "%s = enumeration\n", enumeration.name.c_str());
 	}

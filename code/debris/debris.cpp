@@ -248,6 +248,7 @@ void debris_delete( object * obj )
 
 	if (db->model_instance_num >= 0) {
 		model_delete_instance(db->model_instance_num);
+		db->model_instance_num = -1;
 	}
 
 	if ( db->is_hull ) {

@@ -5,6 +5,9 @@
 #include <io/spacemouse.h>
 #include <mod_table/mod_table.h>
 
+#include <algorithm>
+#include <cmath>
+
 namespace fso::fred {
 
 void CameraController::resetView() {
@@ -102,7 +105,99 @@ bool CameraController::processControls(vec3d* pos, matrix* orient, float frameti
 	} else {
 		physics_sim(pos, orient, &view_physics, &vmd_zero_vector, frametime);
 	}
+
+	// Invalidate orbit camera state when the user moves the camera another way
+	if (wantsUpdate)
+		_orbitActive = false;
+
 	return wantsUpdate;
 }
+
+// ---------- Orbit camera functions ----------
+
+void CameraController::orbitCameraInitFromCurrentView(const vec3d *pivot, const matrix *grid_orient)
+{
+	_orbitPivot = pivot ? *pivot : vmd_zero_vector;
+	_orbitGridOrient = grid_orient ? *grid_orient : vmd_identity_matrix;
+
+	vec3d offset;
+	vm_vec_sub(&offset, &view_pos, &_orbitPivot);
+
+	_orbitDistance = vm_vec_mag(&offset);
+	if (_orbitDistance < 1.0f)
+		_orbitDistance = 100.0f;
+
+	// Transform offset into grid-local frame for angle decomposition
+	// In local frame, Y is always "up" (the grid plane normal)
+	vec3d local_offset;
+	vm_vec_rotate(&local_offset, &offset, &_orbitGridOrient);
+
+	_orbitPhi = acosf(std::clamp(local_offset.xyz.y / _orbitDistance, -1.0f, 1.0f));
+	_orbitTheta = atan2f(local_offset.xyz.z, local_offset.xyz.x);
+	_orbitActive = true;
+}
+
+void CameraController::orbitCameraApply()
+{
+	float sp = sinf(_orbitPhi);
+
+	// Build offset in grid-local coordinates (Y = up/normal)
+	vec3d local_pos;
+	local_pos.xyz.x = sp * cosf(_orbitTheta);
+	local_pos.xyz.y = cosf(_orbitPhi);
+	local_pos.xyz.z = sp * sinf(_orbitTheta);
+
+	// Transform back to world space
+	vec3d world_offset;
+	vm_vec_unrotate(&world_offset, &local_pos, &_orbitGridOrient);
+
+	vm_vec_scale(&world_offset, _orbitDistance);
+	vm_vec_add(&view_pos, &_orbitPivot, &world_offset);
+
+	// Point camera at pivot, using grid's up vector
+	vec3d look_dir;
+	vm_vec_sub(&look_dir, &_orbitPivot, &view_pos);
+	if (vm_vec_mag(&look_dir) > 0.001f) {
+		vec3d grid_up = _orbitGridOrient.vec.uvec;
+		vm_vector_2_matrix(&view_orient, &look_dir, &grid_up, nullptr);
+	}
+}
+
+void CameraController::orbitCameraRotate(int dx, int dy)
+{
+	float rot_scale = _physicsRot / 300.0f;
+	_orbitTheta += dx / 100.0f * rot_scale;
+	_orbitPhi += dy / 100.0f * rot_scale;
+
+	CLAMP(_orbitPhi, 0.01f, PI - 0.01f);
+
+	orbitCameraApply();
+}
+
+void CameraController::orbitCameraPan(int dx, int dy)
+{
+	float speed_factor = 1.0f + (_physicsSpeed - 1) / 499.0f * 9.0f;
+	float pan_scale = _orbitDistance * 0.002f * speed_factor;
+
+	vec3d pan_delta;
+	vm_vec_copy_scale(&pan_delta, &view_orient.vec.rvec, -(float)dx * pan_scale);
+	vm_vec_scale_add2(&pan_delta, &view_orient.vec.uvec, (float)dy * pan_scale);
+
+	vm_vec_add2(&_orbitPivot, &pan_delta);
+
+	orbitCameraApply();
+}
+
+void CameraController::orbitCameraZoom(float delta)
+{
+	float zoom_speed = 1.0f + (_physicsSpeed - 1) / 499.0f * 4.0f;
+	_orbitDistance *= powf(2.0f, delta * zoom_speed);
+
+	CLAMP(_orbitDistance, 1.0f, 10000000.0f);
+
+	orbitCameraApply();
+}
+
+// ---------- End orbit camera functions ----------
 
 } // namespace fso::fred

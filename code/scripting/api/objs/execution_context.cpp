@@ -25,7 +25,7 @@ ADE_FUNC(determineState,
 	nullptr,
 	"Determines the current state of the context.",
 	"enumeration",
-	"One of the CONTEXT_ enumerations")
+	"One of the CONTEXT_* enumerations")
 {
 	execution_context_h* context = nullptr;
 	if (!ade_get_args(L, "o", l_ExecutionContext.GetPtr(&context))) {

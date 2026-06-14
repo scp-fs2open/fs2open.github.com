@@ -36,6 +36,14 @@ extern int Flying_controls_mode;    //!< Bool. Unknown.
 extern int Group_rotate;            //!< Bool. If nonzero, each object rotates around the leader. If zero. rotate
 extern int Show_horizon;            //!< Bool. If nonzero, draw a line representing the horizon (XZ plane)
 extern int Lookat_mode;             //!< Bool. Unknown.
+
+// Orbit camera state
+extern vec3d Orbit_pivot;
+extern matrix Orbit_grid_orient;
+extern float Orbit_distance;
+extern float Orbit_phi;
+extern float Orbit_theta;
+extern bool Orbit_active;
 extern int True_rw;                 //!< Unsigned. The width of the render area
 extern int True_rh;                 //!< Unsigned. The height of the render area
 extern int Fixed_briefing_size;     //!< Bool. If nonzero then expand the briefing preview as much as we can, maintaining the aspect ratio.
@@ -94,3 +102,11 @@ void verticalize_controlled();
  * @return -1 if no object found
  */
 int select_object(int cx, int cy);
+
+// Orbit camera functions
+vec3d orbit_camera_get_pivot();
+void orbit_camera_init_from_current_view(const vec3d *pivot, const matrix *grid_orient);
+void orbit_camera_apply();
+void orbit_camera_rotate(int dx, int dy);
+void orbit_camera_pan(int dx, int dy);
+void orbit_camera_zoom(float delta);

@@ -59,6 +59,8 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void showWingContextMenu(int wingIndex, const QPoint& globalPos);
 	void showWaypointPathContextMenu(int pathIndex, const QPoint& globalPos);
 
+	void restartAutosaveTimer();
+
  public slots:
 	void openLoadMissionDialog();
 
@@ -72,8 +74,6 @@ class FredView: public QMainWindow, public IDialogProvider {
 	 void on_actionSave_triggered(bool);
 	void on_actionExit_triggered(bool);
 	void on_actionRevert_triggered(bool);
-	void on_actionUndo_triggered(bool);
-	void on_actionDisable_Undo_triggered(bool checked);
 	void on_actionLoad_Template_triggered(bool);
 	void on_actionSave_As_Template_triggered(bool);
 	void on_actionFS2_Open_triggered(bool);

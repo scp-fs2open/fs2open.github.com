@@ -30,7 +30,6 @@ void ObjectOrientEditorDialog::accept()
 {
 	// If apply() returns true, close the dialog
 	if (_model->apply()) {
-		_viewport->editor->autosave("object editor");
 		QDialog::accept();
 	}
 	// else: validation failed, don't close

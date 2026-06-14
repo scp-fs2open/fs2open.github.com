@@ -81,6 +81,7 @@
 			bypass_comment(expected_version " " property);                                            \
 	} while (false)
 
+
 int Fred_mission_save::autosave_mission_file(char* pathname)
 {
 	char backup_name[256], name2[256];
@@ -89,9 +90,9 @@ int Fred_mission_save::autosave_mission_file(char* pathname)
 	auto len = strlen(pathname);
 	strcpy_s(backup_name, pathname);
 	strcpy_s(name2, pathname);
-	sprintf(backup_name + len, ".%.3d", save_config.mission_backup_depth);
+	sprintf(backup_name + len, ".%.3d", MISSION_BACKUP_DEPTH);
 	cf_delete(backup_name, CF_TYPE_MISSIONS);
-	for (i = save_config.mission_backup_depth; i > 1; i--) {
+	for (i = MISSION_BACKUP_DEPTH; i > 1; i--) {
 		sprintf(backup_name + len, ".%.3d", i - 1);
 		sprintf(name2 + len, ".%.3d", i);
 		cf_rename(backup_name, name2, CF_TYPE_MISSIONS);
@@ -2424,24 +2425,34 @@ int Fred_mission_save::save_mission_file(const char* pathname)
 	save_mission_internal(savepath);
 
 	if (!err) {
-		char backup_name[MAX_PATH_LEN];
+		if (save_config.create_bak_file) {
+			char backup_name[MAX_PATH_LEN];
 
-		strcpy_s(backup_name, pathname);
+			strcpy_s(backup_name, pathname);
 
-		// drop extension
-		auto ext_ch = strrchr(backup_name, '.');
-		if (ext_ch != nullptr)
-			*ext_ch = 0;
+			// drop extension
+			auto ext_ch = strrchr(backup_name, '.');
+			if (ext_ch != nullptr)
+				*ext_ch = 0;
 
-		strcat_s(backup_name, ".bak");
+			strcat_s(backup_name, ".bak");
 #ifdef _WIN32
-		cf_attrib(pathname, 0, FILE_ATTRIBUTE_READONLY, CF_TYPE_MISSIONS);
+			cf_attrib(pathname, 0, FILE_ATTRIBUTE_READONLY, CF_TYPE_MISSIONS);
 #endif
-		cf_delete(backup_name, CF_TYPE_MISSIONS);
-		cf_rename(pathname, backup_name, CF_TYPE_MISSIONS);
-		cf_rename(savepath, pathname, CF_TYPE_MISSIONS);
+			cf_delete(backup_name, CF_TYPE_MISSIONS);
+			cf_rename(pathname, backup_name, CF_TYPE_MISSIONS);
+			cf_rename(savepath, pathname, CF_TYPE_MISSIONS);
+		} else {
+			cf_rename(savepath, pathname, CF_TYPE_MISSIONS);
+		}
 	}
 
+	return err;
+}
+
+int Fred_mission_save::save_autosave_file(const char* pathname)
+{
+	save_mission_internal(pathname);
 	return err;
 }
 
@@ -2847,6 +2858,24 @@ int Fred_mission_save::save_mission_info()
 	// this is compatible with non-SCP variants - Goober5000
 	fout(" %d", (The_mission.support_ships.max_support_ships == 0) ? 1 : 0);
 
+	if (save_config.save_format != MissionFormat::RETAIL) {
+		if (optional_string_fred("+Disallow Support Rearm:")) {
+			parse_comments(2);
+		} else {
+			fout("\n+Disallow Support Rearm:");
+		}
+
+		fout(" %d", The_mission.support_ships.disallow_rearm ? 1 : 0);
+
+		if (optional_string_fred("+Allow Support Rearm Weapon Precedence:")) {
+			parse_comments(2);
+		} else {
+			fout("\n+Allow Support Rearm Weapon Precedence:");
+		}
+
+		fout(" %d", The_mission.support_ships.allow_rearm_weapon_precedence ? 1 : 0);
+	}
+
 	// here be WMCoolmon's hull and subsys repair stuff
 	if (save_config.save_format != MissionFormat::RETAIL) {
 		if (optional_string_fred("+Hull Repair Ceiling:")) {
@@ -2862,6 +2891,13 @@ int Fred_mission_save::save_mission_info()
 			fout("\n+Subsystem Repair Ceiling:");
 		}
 		fout(" %f", The_mission.support_ships.max_subsys_repair_val);
+
+		if (optional_string_fred("+Support Rearm Pool From Loadout:")) {
+			parse_comments(1);
+		} else {
+			fout("\n+Support Rearm Pool From Loadout:");
+		}
+		fout(" %d", The_mission.support_ships.rearm_pool_from_loadout ? 1 : 0);
 	}
 
 	if (Mission_all_attack) {
@@ -4472,6 +4508,29 @@ int Fred_mission_save::save_players()
 		}
 
 		fout(")");
+
+		if (save_config.save_format != MissionFormat::RETAIL && !The_mission.support_ships.rearm_pool_from_loadout) {
+			if (optional_string_fred("+Support Rearm Pool:", "$Starting Shipname:")) {
+				parse_comments(2);
+			} else {
+				fout("\n\n+Support Rearm Pool:");
+			}
+
+			fout(" (\n");
+			for (j = 0; j < weapon_info_size(); j++) {
+				if (!Weapon_info[j].wi_flags[Weapon::Info_Flags::Player_allowed]) {
+					continue;
+				}
+				// Default is -1 (unlimited). Skip disallow_rearm weapons too, parse normalizes them to 0 anyway.
+				if (Weapon_info[j].disallow_rearm) {
+					continue;
+				}
+				if (The_mission.support_ships.rearm_weapon_pool[i][j] != -1) {
+					fout("\t\"%s\"\t%d\n", Weapon_info[j].name, The_mission.support_ships.rearm_weapon_pool[i][j]);
+				}
+			}
+			fout(")");
+		}
 
 		// sanity check
 		if (save_config.save_format == MissionFormat::RETAIL && wrote_fso_data) {

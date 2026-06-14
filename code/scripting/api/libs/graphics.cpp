@@ -278,7 +278,7 @@ ADE_VIRTVAR(CurrentRenderTarget, l_Graphics, "texture", "Current rendering targe
 	}
 }
 
-ADE_VIRTVAR(CurrentResizeMode, l_Graphics, "enumeration ResizeMode", "Current resize mode; uses GR_RESIZE_* enumerations.  This resize mode will be used by the gr.* drawing methods.", "enumeration", nullptr)
+ADE_VIRTVAR(CurrentResizeMode, l_Graphics, "enumeration /* GR_RESIZE_* */", "Current resize mode; uses GR_RESIZE_* enumerations.  This resize mode will be used by the gr.* drawing methods.", "enumeration", nullptr)
 {
 	enum_h resize_arg;
 
@@ -1510,7 +1510,7 @@ ADE_FUNC(drawString, l_Graphics, "string|boolean Message, [number X1, number Y1,
 	return drawString_sub(L, false);
 }
 
-ADE_FUNC(drawStringResized, l_Graphics, "enumeration ResizeMode, string|boolean Message, [number X1, number Y1, number X2, number Y2]",
+ADE_FUNC(drawStringResized, l_Graphics, "enumeration ResizeMode /* GR_RESIZE_* */, string|boolean Message, [number X1, number Y1, number X2, number Y2]",
 	"Draws a string, scaled according to the GR_RESIZE_* parameter. Use x1/y1 to control position, x2/y2 to limit textbox size."
 	"Text will automatically move onto new lines, if x2/y2 is specified, however the line spacing will probably not be correct."
 	"Additionally, calling drawString with only a string argument will automatically"
@@ -2046,7 +2046,7 @@ ADE_FUNC(loadModel, l_Graphics, "string Filename", "Loads the model - will not s
 	return ade_set_args(L, "o", l_Model.Set(model_h(model_num)));
 }
 
-ADE_FUNC(hasViewmode, l_Graphics, "enumeration", "Specifies if the current viemode has the specified flag, see VM_* enumeration", "boolean", "true if flag is present, false otherwise")
+ADE_FUNC(hasViewmode, l_Graphics, "enumeration /* VM_* */", "Specifies if the current viewmode has the specified flag.", "boolean", "true if flag is present, false otherwise")
 {
 	enum_h *type = NULL;
 
@@ -2145,7 +2145,7 @@ ADE_FUNC(hasViewmode, l_Graphics, "enumeration", "Specifies if the current viemo
 	return ade_set_args(L, "b", (Viewer_mode & bit) != 0);
 }
 
-ADE_FUNC(setClip, l_Graphics, "number x, number y, number width, number height, [enumeration ResizeMode]", "Sets the clipping region to the specified rectangle. Most drawing functions are able to handle the offset.", "boolean", "true if successful, false otherwise")
+ADE_FUNC(setClip, l_Graphics, "number x, number y, number width, number height, [enumeration /* GR_RESIZE_* */]", "Sets the clipping region to the specified rectangle using GR_RESIZE_* enumerations. Most drawing functions are able to handle the offset.", "boolean", "true if successful, false otherwise")
 {
 	int x, y, width, height;
 	enum_h resize_arg;
