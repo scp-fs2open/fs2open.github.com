@@ -549,18 +549,6 @@ static void render_viewer_shadow(object* objp, const matrix* light_matrix,
 	ship* shipp = &Ships[objp->instance];
 	ship_info* sip = &Ship_info[shipp->ship_info_index];
 
-	const bool hasCockpitModel = sip->cockpit_model_num >= 0;
-
-	const bool renderShipModel = sip->flags[Ship::Info_Flags::Show_ship_model]
-		&& (!Show_ship_only_if_cockpits_enabled || Cockpit_active)
-		&& (!Viewer_mode || (Viewer_mode & VM_PADLOCK_ANY) || (Viewer_mode & VM_OTHER_SHIP) || (Viewer_mode & VM_TRACK) || !(Viewer_mode & VM_EXTERNAL));
-	const bool renderCockpitModel = (Viewer_mode != VM_TOPDOWN) && hasCockpitModel && !Disable_cockpits;
-	const bool prerenderShipModel = renderShipModel && hasCockpitModel && !Cockpit_shares_coordinate_space;
-	const bool deferredRenderShipModel = renderShipModel && !prerenderShipModel;
-
-	if (!deferredRenderShipModel && !renderCockpitModel)
-		return;
-
 	vec3d eye_pos_local;
 	matrix eye_orient;
 	object_get_eye(&eye_pos_local, &eye_orient, objp, true, true, false);
@@ -581,11 +569,10 @@ static void render_viewer_shadow(object* objp, const matrix* light_matrix,
 	vec3d view_pos_local;
 	vm_vec_rotate(&view_pos_local, &eye_pos_local, &objp->orient);
 
-	if (deferredRenderShipModel) {
-		bool all_cascades = ship_render_player_ship_casts_shadow();
-
+	//The player ship always casts shadows into the main scene, but only on the cockpit cascades when properly configured in the tables
+	{
 		matrix4 dummy_view;
-		gr_shadow_map_start(&dummy_view, light_matrix, &vmd_zero_vector, all_cascades, true, false);
+		gr_shadow_map_start(&dummy_view, light_matrix, &vmd_zero_vector, ship_render_player_ship_casts_shadow_on_cockpit(), true, false);
 		shadow_cascade_params_bind();
 
 		model_clear_instance(sip->model_num);
@@ -597,10 +584,12 @@ static void render_viewer_shadow(object* objp, const matrix* light_matrix,
 
 		shadow_render_list viewer_list;
 		shadow_render_list::add_model_draws(&viewer_list, pm, pmi, OBJ_INDEX(objp),
-		                                    &eye_offset, &objp->orient, nullptr, 0, &view_pos_local);
+											&eye_offset, &objp->orient, nullptr, 0, &view_pos_local);
 		viewer_list.init_render(false);
 		viewer_list.render_all();
 	}
+
+	const bool renderCockpitModel = (Viewer_mode != VM_TOPDOWN) && sip->cockpit_model_num >= 0 && !Disable_cockpits;
 
 	if (renderCockpitModel && !Shadow_disable_overrides.disable_cockpit) {
 		matrix4 dummy_view;
@@ -627,7 +616,6 @@ static void render_viewer_shadow(object* objp, const matrix* light_matrix,
 		cockpit_list.init_render(false);
 		cockpit_list.render_all();
 	}
-
 }
 
 void shadows_render_all(fov_t fov, matrix *eye_orient, vec3d *eye_pos,

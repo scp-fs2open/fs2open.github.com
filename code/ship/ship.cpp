@@ -8476,7 +8476,7 @@ static void ship_find_warping_ship_helper(object *objp, dock_function_info *info
 	}
 }
 
-bool ship_render_player_ship_casts_shadow() {
+bool ship_render_player_ship_casts_shadow_on_cockpit() {
 	if (Viewer_obj == nullptr)
 		return false;
 
