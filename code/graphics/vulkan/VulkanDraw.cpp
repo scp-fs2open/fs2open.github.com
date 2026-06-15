@@ -27,6 +27,8 @@
 #include "lighting/lighting.h"
 #include "graphics/util/UniformBuffer.h"
 
+#define MODEL_SDR_FLAG_MODE_CPP
+#include "def_files/data/effects/model_shader_flags.h"
 
 namespace graphics::vulkan {
 
@@ -887,7 +889,7 @@ PipelineConfig VulkanDrawManager::buildPipelineConfig(material* mat, primitive_t
 
 	// Front face winding: match OpenGL which defaults to CCW and only switches to CW
 	// for model rendering (opengl_tnl_set_model_material sets GL_CW).
-	config.frontFaceCW = (config.shaderType == SDR_TYPE_MODEL);
+	config.frontFaceCW = (config.shaderType == SDR_TYPE_MODEL && !(config.shaderFlags & MODEL_SDR_FLAG_SHADOW_MAP));
 
 	// Depth write
 	config.depthWriteEnabled = (config.depthMode == ZBUFFER_TYPE_FULL ||

@@ -742,20 +742,10 @@ void vulkan_shadow_map_start(matrix4* shadow_view_matrix, const matrix* light_ma
 
 	// Set viewport and scissor to shadow texture size
 	{
-		int shadowSize = pp->getShadowTextureSize();
-		vk::Viewport viewport;
-		viewport.x = 0.0f;
-		viewport.y = 0.0f;
-		viewport.width = static_cast<float>(shadowSize);
-		viewport.height = static_cast<float>(shadowSize);
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
-		cmd.setViewport(0, viewport);
+		const int shadowSize = pp->getShadowTextureSize();
 
-		vk::Rect2D scissor;
-		scissor.offset = vk::Offset2D(0, 0);
-		scissor.extent = vk::Extent2D(static_cast<uint32_t>(shadowSize), static_cast<uint32_t>(shadowSize));
-		cmd.setScissor(0, scissor);
+		stateTracker->setViewport(0.0f, 0.0f, static_cast<float>(shadowSize), static_cast<float>(shadowSize), 0.0f, 1.0f);
+		stateTracker->setScissor(0, 0, static_cast<uint32_t>(shadowSize), static_cast<uint32_t>(shadowSize));
 	}
 
 	Rendering_to_shadow_map = true;
