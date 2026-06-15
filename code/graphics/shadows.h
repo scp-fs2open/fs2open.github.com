@@ -99,7 +99,8 @@ public:
 								int obj_num,
 								const vec3d* pos, const matrix* orient,
 								const clip_plane_info* clip,
-								int detail_level_lock = -1);
+								int detail_level_lock = -1,
+								const vec3d* view_pos = nullptr);
 
 private:
 	void build_uniform_buffer();
@@ -112,7 +113,8 @@ private:
 										 polymodel* pm,
 										 polymodel_instance* pmi,
 										 int mn,
-										 const clip_plane_info* clip);
+										 const clip_plane_info* clip,
+										 const vec3d* view_pos);
 };
 
 #endif

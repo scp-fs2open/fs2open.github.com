@@ -578,6 +578,9 @@ static void render_viewer_shadow(object* objp, const matrix* light_matrix,
 	if (!Disable_cockpit_sway)
 		eye_offset += sip->cockpit_sway_val * objp->phys_info.acceleration;
 
+	vec3d view_pos_local;
+	vm_vec_rotate(&view_pos_local, &eye_pos_local, &objp->orient);
+
 	if (deferredRenderShipModel) {
 		bool all_cascades = ship_render_player_ship_casts_shadow();
 
@@ -594,7 +597,7 @@ static void render_viewer_shadow(object* objp, const matrix* light_matrix,
 
 		shadow_render_list viewer_list;
 		shadow_render_list::add_model_draws(&viewer_list, pm, pmi, OBJ_INDEX(objp),
-		                                    &eye_offset, &objp->orient, nullptr, 0);
+		                                    &eye_offset, &objp->orient, nullptr, 0, &view_pos_local);
 		viewer_list.init_render(false);
 		viewer_list.render_all();
 	}
@@ -615,9 +618,12 @@ static void render_viewer_shadow(object* objp, const matrix* light_matrix,
 			cockpit_pmi = model_get_instance(shipp->cockpit_model_instance);
 		auto cockpit_pm = model_get(sip->cockpit_model_num);
 
+		vec3d cockpit_view_local = view_pos_local;
+		vm_vec_sub2(&cockpit_view_local, &sip->cockpit_offset);
+
 		shadow_render_list cockpit_list;
 		shadow_render_list::add_model_draws(&cockpit_list, cockpit_pm, cockpit_pmi, OBJ_INDEX(objp),
-		                                    &cockpit_offset, &objp->orient, nullptr, 0);
+		                                    &cockpit_offset, &objp->orient, nullptr, 0, &cockpit_view_local);
 		cockpit_list.init_render(false);
 		cockpit_list.render_all();
 	}
@@ -713,7 +719,11 @@ void shadows_render_all(fov_t fov, matrix *eye_orient, vec3d *eye_pos,
 				pmi = model_get_instance(shipp->model_instance_num);
 			}
 
-			shadow_render_list::add_model_draws(&shadow_list, pm, pmi, OBJ_INDEX(objp), &objp->pos, &objp->orient, has_clip ? &clip : nullptr);
+			vec3d eye_rel, view_pos_local;
+			vm_vec_sub(&eye_rel, eye_pos, &objp->pos);
+			vm_vec_rotate(&view_pos_local, &eye_rel, &objp->orient);
+
+			shadow_render_list::add_model_draws(&shadow_list, pm, pmi, OBJ_INDEX(objp), &objp->pos, &objp->orient, has_clip ? &clip : nullptr, -1, &view_pos_local);
 			break;
 		}
 
@@ -729,7 +739,11 @@ void shadows_render_all(fov_t fov, matrix *eye_orient, vec3d *eye_pos,
 				pmi = model_get_instance(instance_num);
 			}
 
-			shadow_render_list::add_model_draws(&shadow_list, pm, pmi, OBJ_INDEX(objp), &objp->pos, &objp->orient, nullptr);
+			vec3d eye_rel, view_pos_local;
+			vm_vec_sub(&eye_rel, eye_pos, &objp->pos);
+			vm_vec_rotate(&view_pos_local, &eye_rel, &objp->orient);
+
+			shadow_render_list::add_model_draws(&shadow_list, pm, pmi, OBJ_INDEX(objp), &objp->pos, &objp->orient, nullptr, -1, &view_pos_local);
 			break;
 		}
 
@@ -740,7 +754,11 @@ void shadows_render_all(fov_t fov, matrix *eye_orient, vec3d *eye_pos,
 			model_clear_instance(model_num);
 			auto pm = model_get(model_num);
 
-			shadow_render_list::add_model_draws(&shadow_list, pm, nullptr, OBJ_INDEX(objp), &objp->pos, &objp->orient, nullptr);
+			vec3d eye_rel, view_pos_local;
+			vm_vec_sub(&eye_rel, eye_pos, &objp->pos);
+			vm_vec_rotate(&view_pos_local, &eye_rel, &objp->orient);
+
+			shadow_render_list::add_model_draws(&shadow_list, pm, nullptr, OBJ_INDEX(objp), &objp->pos, &objp->orient, nullptr, -1, &view_pos_local);
 			break;
 		}
 
@@ -756,7 +774,11 @@ void shadows_render_all(fov_t fov, matrix *eye_orient, vec3d *eye_pos,
 				pmi = model_get_instance(db->model_instance_num);
 			}
 
-			shadow_render_list::add_model_draws(&shadow_list, pm, pmi, db->objnum, &debris_obj->pos, &debris_obj->orient, nullptr);
+			vec3d eye_rel, view_pos_local;
+			vm_vec_sub(&eye_rel, eye_pos, &debris_obj->pos);
+			vm_vec_rotate(&view_pos_local, &eye_rel, &debris_obj->orient);
+
+			shadow_render_list::add_model_draws(&shadow_list, pm, pmi, db->objnum, &debris_obj->pos, &debris_obj->orient, nullptr, -1, &view_pos_local);
 			break;
 		}
 
@@ -967,7 +989,8 @@ void shadow_render_list::add_model_draws(shadow_render_list* list,
                                          int obj_num,
                                          const vec3d* pos, const matrix* orient,
                                          const clip_plane_info* clip,
-                                         int detail_level_lock)
+                                         int detail_level_lock,
+                                         const vec3d* view_pos)
 {
 	int detail_level;
 	if (detail_level_lock >= 0) {
@@ -977,6 +1000,13 @@ void shadow_render_list::add_model_draws(shadow_render_list* list,
 		detail_level = model_render_determine_detail(depth, pm->id, -1);
 	}
 	int detail_root = pm->detail[detail_level];
+
+	bool render_root_geometry = true;
+	if (view_pos != nullptr) {
+		if (!model_render_check_detail_box(view_pos, pm, detail_root, 0)) {
+			render_root_geometry = false;
+		}
+	}
 
 	list->clear_transforms();
 	list->push_transform(pos, orient);
@@ -1012,7 +1042,6 @@ void shadow_render_list::add_model_draws(shadow_render_list* list,
 				} else if (replace < 0 && base_tex < 0) {
 					skip = true;
 				} else if (replace >= 0) {
-					// Valid replacement, polygon should cast shadows; suppress the base_tex check below
 					base_tex = 0;
 				}
 			} else if (base_tex < 0) {
@@ -1031,13 +1060,14 @@ void shadow_render_list::add_model_draws(shadow_render_list* list,
 
 	while (i >= 0) {
 		if (!pm->submodel[i].flags[Model::Submodel_flags::Is_thruster]) {
-			render_submodel_children(list, pm, pmi, i, clip);
+			render_submodel_children(list, pm, pmi, i, clip, view_pos);
 		}
 
 		i = pm->submodel[i].next_sibling;
 	}
 
-	list->add_submodel_to_batch(detail_root);
+	if (render_root_geometry)
+		list->add_submodel_to_batch(detail_root);
 
 	list->pop_transform();
 }
@@ -1046,7 +1076,8 @@ void shadow_render_list::render_submodel_children(shadow_render_list* list,
                                                   polymodel* pm,
                                                   polymodel_instance* pmi,
                                                   int mn,
-                                                  const clip_plane_info* clip)
+                                                  const clip_plane_info* clip,
+                                                  const vec3d* view_pos)
 {
 	bsp_info* sm = &pm->submodel[mn];
 	submodel_instance* smi = nullptr;
@@ -1054,6 +1085,12 @@ void shadow_render_list::render_submodel_children(shadow_render_list* list,
 	if (pmi != nullptr) {
 		smi = &pmi->submodel[mn];
 		if (smi->blown_off) {
+			return;
+		}
+	}
+
+	if (view_pos != nullptr) {
+		if (!model_render_check_detail_box(view_pos, pm, mn, 0)) {
 			return;
 		}
 	}
@@ -1074,7 +1111,7 @@ void shadow_render_list::render_submodel_children(shadow_render_list* list,
 	int i = sm->first_child;
 	while (i >= 0) {
 		if (!pm->submodel[i].flags[Model::Submodel_flags::Is_thruster]) {
-			render_submodel_children(list, pm, pmi, i, clip);
+			render_submodel_children(list, pm, pmi, i, clip, view_pos);
 		}
 
 		i = pm->submodel[i].next_sibling;
