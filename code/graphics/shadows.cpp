@@ -569,8 +569,7 @@ static void render_viewer_shadow(object* objp, const matrix* light_matrix,
 	vec3d view_pos_local;
 	vm_vec_rotate(&view_pos_local, &eye_pos_local, &objp->orient);
 
-	//The player ship always casts shadows into the main scene, but only on the cockpit cascades when properly configured in the tables
-	{
+	if (Show_ship_casts_shadow) {
 		matrix4 dummy_view;
 		gr_shadow_map_start(&dummy_view, light_matrix, &vmd_zero_vector, ship_render_player_ship_casts_shadow_on_cockpit(), true, false);
 		shadow_cascade_params_bind();

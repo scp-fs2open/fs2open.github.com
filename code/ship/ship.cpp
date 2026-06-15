@@ -8480,7 +8480,7 @@ bool ship_render_player_ship_casts_shadow_on_cockpit() {
 	if (Viewer_obj == nullptr)
 		return false;
 
-	if (Shadow_disable_overrides.disable_cockpit || !Show_ship_casts_shadow)
+	if (Shadow_disable_overrides.disable_cockpit)
 		return false;
 
 	ship* shipp = &Ships[Viewer_obj->instance];
