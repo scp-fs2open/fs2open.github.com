@@ -8476,6 +8476,12 @@ static void ship_find_warping_ship_helper(object *objp, dock_function_info *info
 	}
 }
 
+static bool ship_render_player_renderShipModel(const ship_info* sip) {
+	return sip->flags[Ship::Info_Flags::Show_ship_model]
+		&& (!Show_ship_only_if_cockpits_enabled || Cockpit_active)
+		&& (!Viewer_mode || (Viewer_mode & VM_PADLOCK_ANY) || (Viewer_mode & VM_OTHER_SHIP) || (Viewer_mode & VM_TRACK) || !(Viewer_mode & VM_EXTERNAL));
+}
+
 bool ship_render_player_ship_casts_shadow_on_cockpit() {
 	if (Viewer_obj == nullptr)
 		return false;
@@ -8487,16 +8493,28 @@ bool ship_render_player_ship_casts_shadow_on_cockpit() {
 	ship_info* sip = &Ship_info[shipp->ship_info_index];
 
 	const bool hasCockpitModel = sip->cockpit_model_num >= 0;
-
-	const bool renderShipModel = sip->flags[Ship::Info_Flags::Show_ship_model]
-		&& (!Show_ship_only_if_cockpits_enabled || Cockpit_active)
-		&& (!Viewer_mode || (Viewer_mode & VM_PADLOCK_ANY) || (Viewer_mode & VM_OTHER_SHIP) || (Viewer_mode & VM_TRACK) || !(Viewer_mode & VM_EXTERNAL));
+	const bool renderShipModel = ship_render_player_renderShipModel(sip);
 
 	//If we aren't sure whether cockpits and external models can share the same worldspace,
 	//we need to pre-render the external ship hull without shadows / deferred and give the cockpit precedence,
 	//unless this ship has no cockpit at all
 	const bool prerenderShipModel = hasCockpitModel && !Cockpit_shares_coordinate_space;
 	return renderShipModel && !prerenderShipModel;
+}
+
+bool ship_render_player_has_closeup_visuals() {
+	if (Viewer_obj == nullptr)
+		return false;
+
+	ship* shipp = &Ships[Viewer_obj->instance];
+	ship_info* sip = &Ship_info[shipp->ship_info_index];
+
+	const bool hasCockpitModel = sip->cockpit_model_num >= 0;
+
+	const bool renderCockpitModel = (Viewer_mode != VM_TOPDOWN) && hasCockpitModel && !Disable_cockpits;
+	const bool renderShipModel = ship_render_player_renderShipModel(sip);
+
+	return renderCockpitModel || renderShipModel;
 }
 
 void ship_render_player_ship(object* objp, const vec3d* cam_offset, const matrix* rot_offset, const fov_t* fov_override) {
@@ -8507,10 +8525,7 @@ void ship_render_player_ship(object* objp, const vec3d* cam_offset, const matrix
 	const bool hasCockpitModel = sip->cockpit_model_num >= 0;
 
 	const bool renderCockpitModel = (Viewer_mode != VM_TOPDOWN) && hasCockpitModel && !Disable_cockpits;
-	const bool renderShipModel = ( 
-		sip->flags[Ship::Info_Flags::Show_ship_model])
-		&& (!Show_ship_only_if_cockpits_enabled || Cockpit_active)
-		&& (!Viewer_mode || (Viewer_mode & VM_PADLOCK_ANY) || (Viewer_mode & VM_OTHER_SHIP) || (Viewer_mode & VM_TRACK) || !(Viewer_mode & VM_EXTERNAL));
+	const bool renderShipModel = ship_render_player_renderShipModel(sip);
 	Cockpit_active = renderCockpitModel;
 
 	//Nothing to do
