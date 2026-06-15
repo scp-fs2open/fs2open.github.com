@@ -12,6 +12,7 @@
 #include "graphics/2d.h"
 #include "graphics/uniforms.h"
 #include "asteroid/asteroid.h"
+#include "camera/camera.h"
 #include "cmdline/cmdline.h"
 #include "debris/debris.h"
 #include "graphics/matrix.h"
@@ -253,7 +254,7 @@ void shadows_debug_show_frustum(matrix* orient, vec3d *pos, float fov, float asp
  	g3_render_line_3d(true, &far_bottom_left, &far_top_left);
 }
 
-void shadows_construct_light_frustum(light_frustum_info *shadow_data, matrix *light_matrix, matrix *orient, vec3d * /*pos*/, fov_t fov, float aspect, float z_near, float z_far)
+void shadows_construct_light_frustum(light_frustum_info *shadow_data, matrix *light_matrix, matrix *orient, vec3d *pos, fov_t fov, float aspect, float z_near, float z_far)
 {
 	// find the widths and heights of the near plane and far plane to determine the points of this frustum
 	float near_l, near_r, near_u, near_d;
@@ -381,6 +382,18 @@ void shadows_construct_light_frustum(light_frustum_info *shadow_data, matrix *li
 	vm_vec_add(&far_bottom_right, &up_scale, &right_scale);
 	vm_vec_add2(&far_bottom_right, &forward_scale_far);
 	
+	//TODO: account for leaning_position for more precise cockpit cascade coverage
+	if (pos != nullptr) {
+		vm_vec_add2(&near_bottom_left, pos);
+		vm_vec_add2(&near_bottom_right, pos);
+		vm_vec_add2(&near_top_right, pos);
+		vm_vec_add2(&near_top_left, pos);
+		vm_vec_add2(&far_top_left, pos);
+		vm_vec_add2(&far_top_right, pos);
+		vm_vec_add2(&far_bottom_right, pos);
+		vm_vec_add2(&far_bottom_left, pos);
+	}
+
 	vec3d frustum_pts[8];
 
 	// bring frustum points into light space
@@ -460,12 +473,12 @@ matrix shadows_start_render(matrix *eye_orient, vec3d *eye_pos, fov_t fov, float
 		}
 		float z_far = cascade_distances[i];
 
-		shadows_construct_light_frustum(&Shadow_frustums[i], &light_matrix, eye_orient, eye_pos, fov, aspect, z_near, z_far);
+		shadows_construct_light_frustum(&Shadow_frustums[i], &light_matrix, eye_orient, nullptr, fov, aspect, z_near, z_far);
 		Shadow_cascade_distances[i] = cascade_distances[i];
 		Shadow_proj_matrix[i] = Shadow_frustums[i].proj_matrix;
 	}
 
-	gr_shadow_map_start(&Shadow_view_matrix_light, &light_matrix, eye_pos);
+	gr_shadow_map_start(&Shadow_view_matrix_light, &light_matrix, eye_pos, true, true, true);
 
 	shadow_cascade_params_bind();
 
@@ -527,7 +540,92 @@ static bool shadow_obj_clip_plane(const object* objp, shadow_render_list::clip_p
 	return false;
 }
 
-void shadows_render_all(fov_t fov, matrix *eye_orient, vec3d *eye_pos)
+static void render_viewer_shadow(object* objp, const matrix* light_matrix,
+                                 const vec3d* cam_offset, const matrix* rot_offset)
+{
+	if (objp == nullptr || objp->type != OBJ_SHIP || objp->instance < 0)
+		return;
+
+	ship* shipp = &Ships[objp->instance];
+	ship_info* sip = &Ship_info[shipp->ship_info_index];
+
+	const bool hasCockpitModel = sip->cockpit_model_num >= 0;
+
+	const bool renderShipModel = sip->flags[Ship::Info_Flags::Show_ship_model]
+		&& (!Show_ship_only_if_cockpits_enabled || Cockpit_active)
+		&& (!Viewer_mode || (Viewer_mode & VM_PADLOCK_ANY) || (Viewer_mode & VM_OTHER_SHIP) || (Viewer_mode & VM_TRACK) || !(Viewer_mode & VM_EXTERNAL));
+	const bool renderCockpitModel = (Viewer_mode != VM_TOPDOWN) && hasCockpitModel && !Disable_cockpits;
+	const bool prerenderShipModel = renderShipModel && hasCockpitModel && !Cockpit_shares_coordinate_space;
+	const bool deferredRenderShipModel = renderShipModel && !prerenderShipModel;
+
+	if (!deferredRenderShipModel && !renderCockpitModel)
+		return;
+
+	vec3d eye_pos_local;
+	matrix eye_orient;
+	object_get_eye(&eye_pos_local, &eye_orient, objp, true, true, false);
+	if (cam_offset != nullptr) {
+		vec3d offset_local;
+		vm_vec_unrotate(&offset_local, cam_offset, &eye_orient);
+		(void)offset_local;
+	}
+	if (rot_offset != nullptr) {
+		eye_orient = *rot_offset * eye_orient;
+	}
+
+	vec3d eye_offset;
+	vm_vec_copy_scale(&eye_offset, &eye_pos_local, -1.0f);
+	if (!Disable_cockpit_sway)
+		eye_offset += sip->cockpit_sway_val * objp->phys_info.acceleration;
+
+	if (deferredRenderShipModel) {
+		bool all_cascades = ship_render_player_ship_casts_shadow();
+
+		matrix4 dummy_view;
+		gr_shadow_map_start(&dummy_view, light_matrix, &vmd_zero_vector, all_cascades, true, false);
+		shadow_cascade_params_bind();
+
+		model_clear_instance(sip->model_num);
+		polymodel_instance* pmi = nullptr;
+		if (shipp->model_instance_num >= 0) {
+			pmi = model_get_instance(shipp->model_instance_num);
+		}
+		auto pm = model_get(sip->model_num);
+
+		shadow_render_list viewer_list;
+		shadow_render_list::add_model_draws(&viewer_list, pm, pmi, OBJ_INDEX(objp),
+		                                    &eye_offset, &objp->orient, nullptr, 0);
+		viewer_list.init_render(false);
+		viewer_list.render_all();
+	}
+
+	if (renderCockpitModel && !Shadow_disable_overrides.disable_cockpit) {
+		matrix4 dummy_view;
+		gr_shadow_map_start(&dummy_view, light_matrix, &vmd_zero_vector, true, false, false);
+		shadow_cascade_params_bind();
+
+		vec3d cockpit_offset = sip->cockpit_offset;
+		vm_vec_unrotate(&cockpit_offset, &cockpit_offset, &objp->orient);
+		if (!Disable_cockpit_sway)
+			cockpit_offset += sip->cockpit_sway_val * objp->phys_info.acceleration;
+
+		model_clear_instance(sip->cockpit_model_num);
+		polymodel_instance* cockpit_pmi = nullptr;
+		if (shipp->cockpit_model_instance >= 0)
+			cockpit_pmi = model_get_instance(shipp->cockpit_model_instance);
+		auto cockpit_pm = model_get(sip->cockpit_model_num);
+
+		shadow_render_list cockpit_list;
+		shadow_render_list::add_model_draws(&cockpit_list, cockpit_pm, cockpit_pmi, OBJ_INDEX(objp),
+		                                    &cockpit_offset, &objp->orient, nullptr, 0);
+		cockpit_list.init_render(false);
+		cockpit_list.render_all();
+	}
+
+}
+
+void shadows_render_all(fov_t fov, matrix *eye_orient, vec3d *eye_pos,
+                        const vec3d* cam_offset, const matrix* rot_offset, const fov_t* fov_override)
 {
 	if (gr_screen.mode == GR_STUB) {
 		return;
@@ -552,6 +650,28 @@ void shadows_render_all(fov_t fov, matrix *eye_orient, vec3d *eye_pos)
 	matrix light_matrix = shadows_start_render(eye_orient, eye_pos, fov, gr_screen.clip_aspect,
 		Shadow_distances);
 
+	fov_t cockpit_fov;
+	if (fov_override)
+		cockpit_fov = *fov_override;
+	else if (Sexp_fov > 0.0f)
+		cockpit_fov = Sexp_fov;
+	else
+		cockpit_fov = COCKPIT_ZOOM_DEFAULT;
+
+	for (int i = 0; i < Num_cockpit_shadow_cascades && i < static_cast<int>(Shadow_frustums.size()); i++) {
+		float z_near;
+		if (i == 0) {
+			z_near = 0.0f;
+		} else {
+			z_near = Shadow_distances[i - 1] - (Shadow_distances[i - 1] - (i >= 2 ? Shadow_distances[i - 2] : 0.0f)) * 0.2f;
+		}
+		float z_far = Shadow_distances[i];
+
+		shadows_construct_light_frustum(&Shadow_frustums[i], &light_matrix, eye_orient, nullptr, cockpit_fov, gr_screen.clip_aspect, z_near, z_far);
+		Shadow_proj_matrix[i] = Shadow_frustums[i].proj_matrix;
+	}
+	shadow_cascade_params_bind();
+
 	shadow_render_list shadow_list;
 
 	object *objp = Objects;
@@ -571,6 +691,10 @@ void shadows_render_all(fov_t fov, matrix *eye_orient, vec3d *eye_pos)
 
 		switch (objp->type) {
 		case OBJ_SHIP: {
+			if (objp == Viewer_obj) {
+				continue;
+			}
+
 			ship* shipp = &Ships[objp->instance];
 
 			if (shipp->large_ship_blowup_index >= 0) {
@@ -643,6 +767,8 @@ void shadows_render_all(fov_t fov, matrix *eye_orient, vec3d *eye_pos)
 
 	shadow_list.init_render(false);
 	shadow_list.render_all();
+
+	render_viewer_shadow(Viewer_obj, &light_matrix, cam_offset, rot_offset);
 
 	shadows_end_render();
 
@@ -840,10 +966,16 @@ void shadow_render_list::add_model_draws(shadow_render_list* list,
                                          polymodel_instance* pmi,
                                          int obj_num,
                                          const vec3d* pos, const matrix* orient,
-                                         const clip_plane_info* clip)
+                                         const clip_plane_info* clip,
+                                         int detail_level_lock)
 {
-	float depth = model_render_determine_depth(obj_num, pm->id, orient, pos, -1);
-	int detail_level = model_render_determine_detail(depth, pm->id, -1);
+	int detail_level;
+	if (detail_level_lock >= 0) {
+		detail_level = detail_level_lock;
+	} else {
+		float depth = model_render_determine_depth(obj_num, pm->id, orient, pos, -1);
+		detail_level = model_render_determine_detail(depth, pm->id, -1);
+	}
 	int detail_root = pm->detail[detail_level];
 
 	list->clear_transforms();
@@ -865,9 +997,13 @@ void shadow_render_list::add_model_draws(shadow_render_list* list,
 			}
 
 			int tmap_num = detail_buffer.tex_buf[j].texture;
+
+			if (pm->maps[tmap_num].is_transparent) {
+				continue;
+			}
+
 			int base_tex = pm->maps[tmap_num].textures[TM_BASE_TYPE].GetTexture();
 
-			// Replacement textures may make a polygon invisible; skip it for shadow casting
 			bool skip = false;
 			if (pmi != nullptr && pmi->texture_replace != nullptr) {
 				int replace = (*pmi->texture_replace)[tmap_num * TM_NUM_TYPES + TM_BASE_TYPE];

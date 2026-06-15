@@ -127,7 +127,7 @@ bool stub_bm_data(int /*n*/, bitmap* /*bm*/) { return true; }
 
 int stub_maybe_create_shader(shader_type /*shader_t*/, unsigned int /*flags*/) { return -1; }
 
-void stub_shadow_map_start(matrix4* /*shadow_view_matrix*/, const matrix* /*light_matrix*/, vec3d* /*eye_pos*/) {}
+void stub_shadow_map_start(matrix4* /*shadow_view_matrix*/, const matrix* /*light_matrix*/, vec3d* /*eye_pos*/, bool /*render_cockpit_cascades*/, bool /*render_scene_cascades*/, bool /*first_pass*/) {}
 
 void stub_shadow_map_end() {}
 

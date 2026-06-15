@@ -30,7 +30,7 @@ static bool matrix_uniform_up_to_date = false;
 static bool  gr_ortho_override_active   = false;
 static float gr_ortho_override_distance = 0.0f;
 
-static matrix4 create_view_matrix(const vec3d* pos, const matrix* orient)
+matrix4 create_view_matrix(const vec3d* pos, const matrix* orient)
 {
 	vec3d scaled_pos;
 	vec3d inv_pos;

@@ -27,6 +27,7 @@ layout (std140) uniform shadowCascadeParams {
 };
 
 uniform samplerBuffer transform_tex;
+uniform int cascade_offset;
 
 #ifdef GEOMETRY_FALLBACK
 out VertexOutput {
@@ -77,7 +78,8 @@ void main()
 	}
 	else {
 #ifndef GEOMETRY_FALLBACK
-        position = shadow_proj_matrix[gl_InstanceID] * position;
+		int cascade_id = cascade_offset + gl_InstanceID;
+        position = shadow_proj_matrix[cascade_id] * position;
         if(position.z < -1.0)
         	position.z = -1.0;
 #endif
@@ -94,6 +96,6 @@ void main()
     vertOut.normal = normal;
 	vertOut.clipModel = clipModel ? 1.0 : 0.0;
 #else
-    gl_Layer = gl_InstanceID;
+    gl_Layer = cascade_offset + gl_InstanceID;
 #endif
 }

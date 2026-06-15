@@ -129,9 +129,6 @@ struct model_uniform_data {
 const size_t model_uniform_data_size = sizeof(model_uniform_data);
 const float mud_align = model_uniform_data_size / 16.0f;
 
-struct shadow_cascade_params_header {
-	matrix4 shadow_mv_matrix;
-};
 
 struct shadow_uniform_data {
 	matrix4 modelViewMatrix;

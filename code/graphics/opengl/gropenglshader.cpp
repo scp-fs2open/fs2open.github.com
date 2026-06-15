@@ -519,7 +519,7 @@ static SCP_string handle_predefines(const char* filename, const SCP_string& orig
 	SCP_unordered_map<SCP_string, SCP_string> defines;
 
 	output << "#define GLOBAL_FAR_Z " << std::fixed << std::setprecision(2) << Max_draw_distance << std::defaultfloat << '\n';
-	output << "#define NUM_SHADOW_CASCADES " << Num_shadow_cascades << '\n';
+	output << "#define NUM_SHADOW_CASCADES " << (Num_shadow_cascades + Num_cockpit_shadow_cascades) << '\n';
 
 	const char* PREDEFINE_STRING = "#predefine";
 	const char* PREREPLACE_STRING = "#prereplace";

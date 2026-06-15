@@ -8476,6 +8476,29 @@ static void ship_find_warping_ship_helper(object *objp, dock_function_info *info
 	}
 }
 
+bool ship_render_player_ship_casts_shadow() {
+	if (Viewer_obj == nullptr)
+		return false;
+
+	if (Shadow_disable_overrides.disable_cockpit || !Show_ship_casts_shadow)
+		return false;
+
+	ship* shipp = &Ships[Viewer_obj->instance];
+	ship_info* sip = &Ship_info[shipp->ship_info_index];
+
+	const bool hasCockpitModel = sip->cockpit_model_num >= 0;
+
+	const bool renderShipModel = sip->flags[Ship::Info_Flags::Show_ship_model]
+		&& (!Show_ship_only_if_cockpits_enabled || Cockpit_active)
+		&& (!Viewer_mode || (Viewer_mode & VM_PADLOCK_ANY) || (Viewer_mode & VM_OTHER_SHIP) || (Viewer_mode & VM_TRACK) || !(Viewer_mode & VM_EXTERNAL));
+
+	//If we aren't sure whether cockpits and external models can share the same worldspace,
+	//we need to pre-render the external ship hull without shadows / deferred and give the cockpit precedence,
+	//unless this ship has no cockpit at all
+	const bool prerenderShipModel = hasCockpitModel && !Cockpit_shares_coordinate_space;
+	return renderShipModel && !prerenderShipModel;
+}
+
 void ship_render_player_ship(object* objp, const vec3d* cam_offset, const matrix* rot_offset, const fov_t* fov_override) {
 	ship* shipp = &Ships[objp->instance];
 	ship_info* sip = &Ship_info[shipp->ship_info_index];
@@ -8571,42 +8594,19 @@ void ship_render_player_ship(object* objp, const vec3d* cam_offset, const matrix
 
 	gr_post_process_save_zbuffer();
 
-	//Deal with shadow if we have to
-	if (shadow_maybe_start_frame(Shadow_disable_overrides.disable_cockpit)) {
-		gr_reset_clip();
-		Shadow_override = false;
-
-		shadows_start_render(&eye_orient, &leaning_position, Proj_fov, gr_screen.clip_aspect,
-			Shadow_distances_cockpit);
-
-		if (deferredRenderShipModel) {
-			model_render_params shadow_render_info;
-			shadow_render_info.set_detail_level_lock(0);
-			//If we just want to recieve, we still have to write to the color buffer but not to the zbuffer, otherwise shadow recieving breaks
-			shadow_render_info.set_flags(MR_NO_TEXTURING | MR_NO_LIGHTING | (Show_ship_casts_shadow ? 0 : MR_NO_ZBUFFER));
-			shadow_render_info.set_object_number(OBJ_INDEX(objp));
-			model_render_immediate(&shadow_render_info, sip->model_num, shipp->model_instance_num, &objp->orient, &eye_offset, MODEL_RENDER_OPAQUE);
-		}
-		if (renderCockpitModel) {
-			model_render_params shadow_render_info;
-			shadow_render_info.set_detail_level_lock(0);
-			shadow_render_info.set_flags(MR_NO_TEXTURING | MR_NO_LIGHTING);
-			shadow_render_info.set_object_number(OBJ_INDEX(objp));
-			vec3d offset = sip->cockpit_offset;
-			vm_vec_unrotate(&offset, &offset, &objp->orient);
-			if (!Disable_cockpit_sway)
-				offset += sip->cockpit_sway_val * objp->phys_info.acceleration;
-			model_render_immediate(&shadow_render_info, sip->cockpit_model_num, shipp->cockpit_model_instance, &objp->orient, &offset, MODEL_RENDER_OPAQUE);
-		}
-
-		shadows_end_render();
-		gr_clear_states();
-	}
-
 	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance_cockpit, Max_draw_distance);
 	gr_set_view_matrix(&leaning_position, &eye_orient);
 
 	Shadow_view_matrix_render = gr_view_matrix;
+
+	matrix4 shadow_view_light_backup = Shadow_view_matrix_light;
+	if (shadow_maybe_start_frame(Shadow_disable_overrides.disable_cockpit)) {
+		Shadow_override = false;
+		Shadow_view_matrix_light.a1d[12] = 0;
+		Shadow_view_matrix_light.a1d[13] = 0;
+		Shadow_view_matrix_light.a1d[14] = 0;
+		shadow_cascade_params_bind();
+	}
 
 	if (light_deferredcockpit_enabled()) {
 		gr_deferred_lighting_begin(true);
@@ -8694,7 +8694,8 @@ void ship_render_player_ship(object* objp, const vec3d* cam_offset, const matrix
 	leaning_position = leaning_backup;
 	Proj_fov = fov_backup;
 
-	//Restore the Shadow_override
+	Shadow_view_matrix_light = shadow_view_light_backup;
+
 	shadow_end_frame();
 
 	gr_post_process_restore_zbuffer();

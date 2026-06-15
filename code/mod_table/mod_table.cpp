@@ -128,7 +128,7 @@ bool Neb_affects_weapons;
 bool Neb_affects_particles;
 bool Neb_affects_fireballs;
 SCP_vector<float> Shadow_distances;
-SCP_vector<float> Shadow_distances_cockpit;
+static SCP_vector<float> Shadow_distances_cockpit;
 SCP_vector<float> Shadow_smoothness_factor;
 int Num_shadow_cascades = 4;
 int Num_cockpit_shadow_cascades = 4;
@@ -1723,6 +1723,35 @@ void mod_table_init()
 	// parse any modular tables
 	parse_modular_table("*-mod.tbm", parse_mod_table);
 
+	//Validate and process shadow settings
+	{
+		//Since we're now merging cockpit shadow cascades into the main scene, we need to make sure that the cockpit shadow cascade distances are smaller than the main scene shadow cascade distances.
+		for (size_t i = 0; i < Shadow_distances_cockpit.size(); ++i) {
+			if (Shadow_distances_cockpit[i] >= Shadow_distances.front()) {
+				error_display(0, "Shadow Cascade Distances Cockpit: Values %d and onwards are larger than the smallest main-scene shadow cascade value. Dropping these cascades...", static_cast<int>(i) );
+				Shadow_distances_cockpit.resize(i);
+				Num_cockpit_shadow_cascades = static_cast<int>(i);
+				break;
+			}
+		}
+
+		//Validate that we have the correct number of shadow smoothness factors
+		if (Num_shadow_cascades + Num_cockpit_shadow_cascades != static_cast<int>(Shadow_smoothness_factor.size())) {
+			error_display(0, "$Shadow Smoothness Factor: number of values (currently %d) must match number of total cascades (%d cockpit cascades + %d main scene cascades = %d total cascades).", static_cast<int>(Shadow_smoothness_factor.size()), Num_cockpit_shadow_cascades, Num_shadow_cascades, Num_cockpit_shadow_cascades + Num_shadow_cascades);
+			int current_last = Shadow_smoothness_factor.size();
+			Shadow_smoothness_factor.resize(Num_shadow_cascades + Num_cockpit_shadow_cascades);
+			for (int i = current_last; i < Num_shadow_cascades + Num_cockpit_shadow_cascades; ++i)
+				Shadow_smoothness_factor[i] = 1.f / 300.f;
+		}
+
+		//Insert the normal distances after the shadow distances as to keep them in ascending order
+		Shadow_distances_cockpit.insert(Shadow_distances_cockpit.end(), Shadow_distances.begin(), Shadow_distances.end());
+		std::swap(Shadow_distances_cockpit, Shadow_distances);
+
+		//Stale data
+		Shadow_distances_cockpit.clear();
+	}
+
 	// if we have the troubleshoot commandline flag to override ingame options then disable them right after all
 	// parsing so we can be sure it doesn't affect anything past this point during engine init.
 	if (Cmdline_no_ingame_options && Using_in_game_options) {
@@ -1859,7 +1888,7 @@ void mod_table_reset()
 	Neb_affects_fireballs = false;
 	Shadow_distances = {200.0f, 600.0f, 2500.0f, 8000.0f};
 	Shadow_distances_cockpit = {0.25f, 0.75f, 1.5f, 3.0f};
-	Shadow_smoothness_factor = {1.0f/300.0f, 1.0f/250.0f, 1.0f/200.0f, 1.0f/200.0f};
+	Shadow_smoothness_factor = {1.0f/300.0f, 1.0f/250.0f, 1.0f/200.0f, 1.0f/200.0f, 1.0f/300.0f, 1.0f/250.0f, 1.0f/200.0f, 1.0f/200.0f};
 	Num_shadow_cascades = static_cast<int>(Shadow_distances.size());
 	Num_cockpit_shadow_cascades = static_cast<int>(Shadow_distances_cockpit.size());
 	Show_ship_casts_shadow = false;

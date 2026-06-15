@@ -149,7 +149,6 @@ extern bool Neb_affects_particles;
 extern bool Neb_affects_fireballs;
 extern SCP_vector<float> Shadow_distances;
 extern SCP_vector<float> Shadow_smoothness_factor;
-extern SCP_vector<float> Shadow_distances_cockpit;
 extern int Num_shadow_cascades;
 extern int Num_cockpit_shadow_cascades;
 extern bool Show_ship_casts_shadow;

@@ -470,7 +470,7 @@ static bool opengl_init_shadow_framebuffer(int size, GLenum color_format)
 	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
-	glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_DEPTH_COMPONENT24, size, size, Num_shadow_cascades, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+	glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_DEPTH_COMPONENT24, size, size, Num_shadow_cascades + Num_cockpit_shadow_cascades, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
 
 	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, Shadow_map_depth_texture, 0);
 
@@ -620,6 +620,9 @@ void gr_opengl_render_model(model_material* material_info, indexed_vertex_source
 	GL_CHECK_FOR_ERRORS("end of render_buffer()");
 }
 
+static int Shadow_cascade_offset = 0;
+static int Shadow_cascade_count = 0;
+
 void gr_opengl_render_shadow_draw(gr_buffer_handle ubo_handle, size_t ubo_offset, size_t ubo_size,
                                    vertex_buffer* buffer, indexed_vertex_source* vert_src, size_t texi)
 {
@@ -638,6 +641,9 @@ void gr_opengl_render_shadow_draw(gr_buffer_handle ubo_handle, size_t ubo_offset
 	// Bind the transform texture buffer so the vertex shader can read model transforms
 	Current_shader->program->Uniforms.setTextureUniform("transform_tex", 10);
 	GL_state.Texture.Enable(10, GL_TEXTURE_BUFFER, opengl_get_transform_buffer_texture());
+
+	Current_shader->program->Uniforms.setTextureUniform("cascade_offset", Shadow_cascade_offset);
+	Current_shader->program->Uniforms.setTextureUniform("cascade_count", Shadow_cascade_count);
 
 	GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
 	gr_zbuffer_set(ZBUFFER_TYPE_FULL);
@@ -664,7 +670,7 @@ void gr_opengl_render_shadow_draw(gr_buffer_handle ubo_handle, size_t ubo_offset
 							 (GLsizei)datap->n_verts,
 							 element_type,
 							 ibuffer + datap->index_offset,
-							 Num_shadow_cascades,
+							 Shadow_cascade_count,
 							 base_vertex);
 	}
 	else {
@@ -714,23 +720,41 @@ bool Glowpoint_override_save;
 
 extern bool gr_htl_projection_matrix_set;
 
-void gr_opengl_shadow_map_start(matrix4 *shadow_view_matrix, const matrix *light_orient, vec3d* eye_pos)
+void gr_opengl_shadow_map_start(matrix4 *shadow_view_matrix, const matrix *light_orient, vec3d* eye_pos,
+                                bool render_cockpit_cascades, bool render_scene_cascades, bool first_pass)
 {
 	if (Shadow_quality == ShadowQuality::Disabled)
 		return;
 
-	GL_state.PushFramebufferState();
-	GL_state.BindFrameBuffer(shadow_fbo);
+	if (first_pass) {
+		GL_state.PushFramebufferState();
+		GL_state.BindFrameBuffer(shadow_fbo);
 
-	//glDrawBuffer(GL_COLOR_ATTACHMENT0);
-	glDrawBuffers(0, nullptr);
+		glDrawBuffers(0, nullptr);
 
-	glClear(GL_DEPTH_BUFFER_BIT);
+		glClear(GL_DEPTH_BUFFER_BIT);
 
-	Glowpoint_override_save = Glowpoint_override;
-	Glowpoint_override = true;
+		Glowpoint_override_save = Glowpoint_override;
+		Glowpoint_override = true;
 
-	gr_htl_projection_matrix_set = true;
+		gr_htl_projection_matrix_set = true;
+	} else {
+		gr_end_view_matrix();
+	}
+
+	if (render_cockpit_cascades && render_scene_cascades) {
+		Shadow_cascade_offset = 0;
+		Shadow_cascade_count = Num_cockpit_shadow_cascades + Num_shadow_cascades;
+	} else if (render_cockpit_cascades) {
+		Shadow_cascade_offset = 0;
+		Shadow_cascade_count = Num_cockpit_shadow_cascades;
+	} else if (render_scene_cascades) {
+		Shadow_cascade_offset = Num_cockpit_shadow_cascades;
+		Shadow_cascade_count = Num_shadow_cascades;
+	} else {
+		Shadow_cascade_offset = 0;
+		Shadow_cascade_count = 0;
+	}
 
 	gr_set_view_matrix(eye_pos, light_orient);
 

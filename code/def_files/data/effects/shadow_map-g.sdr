@@ -14,6 +14,9 @@ layout (std140) uniform shadowCascadeParams {
 	float smoothness_factors[NUM_SHADOW_CASCADES];
 };
 
+uniform int cascade_offset;
+uniform int cascade_count;
+
 in VertexOutput {
 #if !defined(GL_ARB_gpu_shader5)
     float instance;
@@ -25,9 +28,10 @@ in VertexOutput {
 void main(void)
 {
 #ifdef GL_ARB_gpu_shader5
-    int instanceID = gl_InvocationID;
+    if (gl_InvocationID >= cascade_count) return;
+    int cascade_id = cascade_offset + gl_InvocationID;
 #else
-    int instanceID = int(vertIn[0].instance);
+    int cascade_id = cascade_offset + int(vertIn[0].instance);
 #endif
 
 	for(int vert = 0; vert < gl_in.length(); vert++)
@@ -35,13 +39,13 @@ void main(void)
 		if (vertIn[vert].clipModel > 0.9) {
 			gl_Position = gl_in[vert].gl_Position;
 		} else {
-		    gl_Position = shadow_proj_matrix[instanceID] * gl_in[vert].gl_Position;
+		    gl_Position = shadow_proj_matrix[cascade_id] * gl_in[vert].gl_Position;
 		}
 
 		if(gl_Position.z < -1.0)
             gl_Position.z = -1.0;
 
-		gl_Layer = instanceID;
+		gl_Layer = cascade_id;
 		gl_ClipDistance[0] = gl_in[vert].gl_ClipDistance[0];
 
 		EmitVertex();
