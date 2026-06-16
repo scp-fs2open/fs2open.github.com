@@ -1736,7 +1736,7 @@ void mod_table_init()
 		//Validate that we have the correct number of shadow smoothness factors
 		if (Num_shadow_cascades + Num_cockpit_shadow_cascades != static_cast<int>(Shadow_smoothness_factor.size())) {
 			Warning(LOCATION, "$Shadow Smoothness Factor: number of values (currently %d) must match number of total cascades (%d cockpit cascades + %d main scene cascades = %d total cascades).", static_cast<int>(Shadow_smoothness_factor.size()), Num_cockpit_shadow_cascades, Num_shadow_cascades, Num_cockpit_shadow_cascades + Num_shadow_cascades);
-			int current_last = Shadow_smoothness_factor.size();
+			int current_last = static_cast<int>(Shadow_smoothness_factor.size());
 			Shadow_smoothness_factor.resize(Num_shadow_cascades + Num_cockpit_shadow_cascades);
 			for (int i = current_last; i < Num_shadow_cascades + Num_cockpit_shadow_cascades; ++i)
 				Shadow_smoothness_factor[i] = 1.f / 300.f;

@@ -824,7 +824,7 @@ void shadow_cascade_params_shutdown() {
 	}
 }
 
-extern int Shadow_cascade_count;
+int Shadow_cascade_count = 0;
 void shadow_cascade_params_bind(int cascade_offset, int cascade_count) {
 	if (!Shadow_cascade_params_buffer.isValid()) {
 		return;

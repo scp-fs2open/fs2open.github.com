@@ -623,8 +623,6 @@ void gr_opengl_render_model(model_material* material_info, indexed_vertex_source
 	GL_CHECK_FOR_ERRORS("end of render_buffer()");
 }
 
-int Shadow_cascade_count = 0;
-
 void gr_opengl_render_shadow_draw(gr_buffer_handle ubo_handle, size_t ubo_offset, size_t ubo_size,
                                    vertex_buffer* buffer, indexed_vertex_source* vert_src, size_t texi)
 {

@@ -37,6 +37,7 @@ extern bool Shadow_quality_uses_mod_option;
 
 extern SCP_vector<matrix4> Shadow_proj_matrix;
 extern SCP_vector<float> Shadow_cascade_distances;
+extern int Shadow_cascade_count;
 
 void shadows_construct_light_frustum(vec3d *min_out, vec3d *max_out, vec3d light_vec, matrix *orient, vec3d *pos, fov_t fov, float aspect, float z_near, float z_far);
 bool shadows_obj_in_frustum(object *objp, vec3d *min, vec3d *max, matrix *light_orient);
