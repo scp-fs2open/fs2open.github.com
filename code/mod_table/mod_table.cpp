@@ -1725,16 +1725,6 @@ void mod_table_init()
 
 	//Validate and process shadow settings
 	{
-		//Since we're now merging cockpit shadow cascades into the main scene, we need to make sure that the cockpit shadow cascade distances are smaller than the main scene shadow cascade distances.
-		for (size_t i = 0; i < Shadow_distances_cockpit.size(); ++i) {
-			if (Shadow_distances_cockpit[i] >= Shadow_distances.front()) {
-				error_display(0, "Shadow Cascade Distances Cockpit: Values %d and onwards are larger than the smallest main-scene shadow cascade value. Dropping these cascades...", static_cast<int>(i) );
-				Shadow_distances_cockpit.resize(i);
-				Num_cockpit_shadow_cascades = static_cast<int>(i);
-				break;
-			}
-		}
-
 		//Validate that we have the correct number of shadow smoothness factors
 		if (Num_shadow_cascades + Num_cockpit_shadow_cascades != static_cast<int>(Shadow_smoothness_factor.size())) {
 			error_display(0, "$Shadow Smoothness Factor: number of values (currently %d) must match number of total cascades (%d cockpit cascades + %d main scene cascades = %d total cascades).", static_cast<int>(Shadow_smoothness_factor.size()), Num_cockpit_shadow_cascades, Num_shadow_cascades, Num_cockpit_shadow_cascades + Num_shadow_cascades);
