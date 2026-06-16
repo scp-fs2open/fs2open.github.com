@@ -1723,25 +1723,6 @@ void mod_table_init()
 	// parse any modular tables
 	parse_modular_table("*-mod.tbm", parse_mod_table);
 
-	//Validate and process shadow settings
-	{
-		//Validate that we have the correct number of shadow smoothness factors
-		if (Num_shadow_cascades + Num_cockpit_shadow_cascades != static_cast<int>(Shadow_smoothness_factor.size())) {
-			error_display(0, "$Shadow Smoothness Factor: number of values (currently %d) must match number of total cascades (%d cockpit cascades + %d main scene cascades = %d total cascades).", static_cast<int>(Shadow_smoothness_factor.size()), Num_cockpit_shadow_cascades, Num_shadow_cascades, Num_cockpit_shadow_cascades + Num_shadow_cascades);
-			int current_last = Shadow_smoothness_factor.size();
-			Shadow_smoothness_factor.resize(Num_shadow_cascades + Num_cockpit_shadow_cascades);
-			for (int i = current_last; i < Num_shadow_cascades + Num_cockpit_shadow_cascades; ++i)
-				Shadow_smoothness_factor[i] = 1.f / 300.f;
-		}
-
-		//Insert the normal distances after the shadow distances as to keep them in ascending order
-		Shadow_distances_cockpit.insert(Shadow_distances_cockpit.end(), Shadow_distances.begin(), Shadow_distances.end());
-		std::swap(Shadow_distances_cockpit, Shadow_distances);
-
-		//Stale data
-		Shadow_distances_cockpit.clear();
-	}
-
 	// if we have the troubleshoot commandline flag to override ingame options then disable them right after all
 	// parsing so we can be sure it doesn't affect anything past this point during engine init.
 	if (Cmdline_no_ingame_options && Using_in_game_options) {
@@ -1768,6 +1749,32 @@ void mod_table_post_process()
 	mprintf(("Game Settings Table: Show-subtitle adjusted resolution is (%d, %d)\n", Show_subtitle_screen_adjusted_res[0], Show_subtitle_screen_adjusted_res[1]));
 
 	// we don't need to calculate adjusted resolution for hud-set-coords because that function doesn't do screen scaling
+
+	//Validate and process shadow settings
+	{
+		//Validate that we have the correct number of shadow smoothness factors
+		if (Num_shadow_cascades + Num_cockpit_shadow_cascades != static_cast<int>(Shadow_smoothness_factor.size())) {
+			Warning(LOCATION, "$Shadow Smoothness Factor: number of values (currently %d) must match number of total cascades (%d cockpit cascades + %d main scene cascades = %d total cascades).", static_cast<int>(Shadow_smoothness_factor.size()), Num_cockpit_shadow_cascades, Num_shadow_cascades, Num_cockpit_shadow_cascades + Num_shadow_cascades);
+			int current_last = Shadow_smoothness_factor.size();
+			Shadow_smoothness_factor.resize(Num_shadow_cascades + Num_cockpit_shadow_cascades);
+			for (int i = current_last; i < Num_shadow_cascades + Num_cockpit_shadow_cascades; ++i)
+				Shadow_smoothness_factor[i] = 1.f / 300.f;
+		}
+
+		//If we guarantee that no cockpit / local show ship shadows are ever rendered, we can remove the cascades and save some VRAM
+		if (Shadow_disable_overrides.disable_cockpit) {
+			Shadow_smoothness_factor.erase(Shadow_smoothness_factor.begin(), Shadow_smoothness_factor.begin() + Num_cockpit_shadow_cascades);
+			Num_cockpit_shadow_cascades = 0;
+			Shadow_distances_cockpit.clear();
+		}
+
+		//Insert the normal distances after the shadow distances as to keep them in ascending order
+		Shadow_distances_cockpit.insert(Shadow_distances_cockpit.end(), Shadow_distances.begin(), Shadow_distances.end());
+		std::swap(Shadow_distances_cockpit, Shadow_distances);
+
+		//Stale data
+		Shadow_distances_cockpit.clear();
+	}
 }
 
 bool mod_supports_version(int major, int minor, int build)
