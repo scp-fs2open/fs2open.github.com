@@ -54,24 +54,27 @@ float samplePoissonPCSS(sampler2DArrayShadow shadow_map, vec4 shadowUV, float ma
 }
 
 float getShadowValue(sampler2DArrayShadow shadow_map, float depth, vec4 shadowUV[NUM_SHADOW_CASCADES],
-					 float cascade_distances[NUM_SHADOW_CASCADES], float smoothness_factors[NUM_SHADOW_CASCADES],
+					 vec4 cascade_distances[(NUM_SHADOW_CASCADES + 4 - 1) / 4], vec4 smoothness_factors[(NUM_SHADOW_CASCADES + 4 - 1) / 4],
 					 int cascade_offset, int cascade_count)
 {
 	int cascade = cascade_offset + cascade_count;
 	for (int i = 0; i < min(cascade_count, NUM_SHADOW_CASCADES); i++) {
-		cascade -= int(step(depth, cascade_distances[cascade_offset + i]));
+		cascade -= int(step(depth, cascade_distances[(cascade_offset + i) / 4][(cascade_offset + i) % 4]));
 	}
 	if (cascade >= cascade_offset + cascade_count || cascade < cascade_offset) return 1.0;
 
-	float cascade_start = (cascade > cascade_offset) ? cascade_distances[cascade - 1] : 0.0;
-	float cascade_end = cascade_distances[cascade];
+    int cascade_v = cascade / 4;
+    int cascade_i = cascade % 4;
+
+	float cascade_start = (cascade > cascade_offset) ? cascade_distances[(cascade - 1) / 4][(cascade - 1) % 4] : 0.0;
+	float cascade_end = cascade_distances[cascade_v][cascade_i];
 	float dist_threshold = (cascade_end - cascade_start) * 0.2;
 
 	if (cascade_end - dist_threshold > depth || cascade >= cascade_offset + cascade_count - 1)
-		return samplePoissonPCSS(shadow_map, shadowUV[cascade], smoothness_factors[cascade]);
+		return samplePoissonPCSS(shadow_map, shadowUV[cascade], smoothness_factors[cascade_v][cascade_i]);
 
 	return mix(
-		samplePoissonPCSS(shadow_map, shadowUV[cascade], smoothness_factors[cascade]),
-		samplePoissonPCSS(shadow_map, shadowUV[cascade + 1], smoothness_factors[cascade + 1]),
+		samplePoissonPCSS(shadow_map, shadowUV[cascade], smoothness_factors[cascade_v][cascade_i]),
+		samplePoissonPCSS(shadow_map, shadowUV[cascade + 1], smoothness_factors[(cascade + 1) / 4][(cascade + 1) % 4]),
 		smoothstep(cascade_end - dist_threshold, cascade_end, depth));
 }

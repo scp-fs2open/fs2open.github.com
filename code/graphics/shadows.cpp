@@ -807,16 +807,20 @@ void shadow_end_frame() {
 static gr_buffer_handle Shadow_cascade_params_buffer;
 static size_t Shadow_cascade_params_buffer_size = 0;
 
-static size_t compute_cascade_params_size(int num_cascades) {
-	return 16 // cascade_offset, cascade_count, padding
-		+ sizeof(matrix4)
+static std::pair<size_t, size_t> compute_cascade_params_size(int num_cascades) {
+	size_t padding_required = num_cascades % 4;
+	if (padding_required != 0)
+		padding_required = 4 - padding_required;
+
+	return {sizeof(graphics::shadow_cascade_static_data)
 		+ sizeof(matrix4) * num_cascades
-		+ 16 * num_cascades
-		+ 16 * num_cascades;
+		+ sizeof(float) * (num_cascades + padding_required)
+		+ sizeof(float) * (num_cascades + padding_required),
+		padding_required};
 }
 
 void shadow_cascade_params_init() {
-	Shadow_cascade_params_buffer_size = compute_cascade_params_size(Num_shadow_cascades);
+	Shadow_cascade_params_buffer_size = compute_cascade_params_size(Num_shadow_cascades).first;
 	Shadow_cascade_params_buffer = gr_create_buffer(BufferType::Uniform, BufferUsageHint::Dynamic);
 
 	SCP_vector<uint8_t> zero_data(Shadow_cascade_params_buffer_size, 0);
@@ -836,39 +840,42 @@ void shadow_cascade_params_bind(int cascade_offset, int cascade_count) {
 	}
 
 	const int num_cascades = static_cast<int>(Shadow_proj_matrix.size());
-	const size_t required_size = compute_cascade_params_size(num_cascades);
+	const auto [required_size, padding] = compute_cascade_params_size(num_cascades);
 
 	if (required_size > Shadow_cascade_params_buffer_size) {
 		Shadow_cascade_params_buffer_size = required_size;
 	}
 
 	SCP_vector<uint8_t> buffer(required_size, 0);
-	uint8_t* ptr = buffer.data();
 	size_t offset = 0;
 
-	memcpy(ptr + offset, &cascade_offset, sizeof(int));
-	offset += sizeof(int);
-	memcpy(ptr + offset, &cascade_count, sizeof(int));
-	offset += sizeof(int);
-	offset += 8; // padding to align mat4 to 16 bytes
+	auto& static_data = *reinterpret_cast<graphics::shadow_cascade_static_data*>(buffer.data());
 
-	memcpy(ptr + offset, &Shadow_view_matrix_light, sizeof(matrix4));
-	offset += sizeof(matrix4);
+	static_data.cascade_offset = cascade_offset;
+	static_data.cascade_count = cascade_count;
+	static_data.shadow_mv_matrix = Shadow_view_matrix_light;
+
+	offset += sizeof(graphics::shadow_cascade_static_data);
 
 	for (int i = 0; i < num_cascades; i++) {
-		memcpy(ptr + offset, &Shadow_proj_matrix[i], sizeof(matrix4));
+		auto& proj_matrix = *reinterpret_cast<matrix4*>(buffer.data() + offset);
+		proj_matrix = Shadow_proj_matrix[i];
 		offset += sizeof(matrix4);
 	}
 
 	for (int i = 0; i < num_cascades; i++) {
-		memcpy(ptr + offset, &Shadow_cascade_distances[i], sizeof(float));
-		offset += 16;
+		auto& cascade_distance = *reinterpret_cast<float*>(buffer.data() + offset);
+		cascade_distance = Shadow_cascade_distances[i];
+		offset += sizeof(float);
 	}
+	offset += sizeof(float) * padding;
 
-	for (size_t i = 0; i < Shadow_smoothness_factor.size() && i < static_cast<size_t>(num_cascades); i++) {
-		memcpy(ptr + offset, &Shadow_smoothness_factor[i], sizeof(float));
-		offset += 16;
+	for (int i = 0; i < num_cascades; i++) {
+		auto& smoothness_factor = *reinterpret_cast<float*>(buffer.data() + offset);
+		smoothness_factor = Shadow_smoothness_factor[i];
+		offset += sizeof(float);
 	}
+	offset += sizeof(float) * padding;
 
 	gr_update_buffer_data(Shadow_cascade_params_buffer, required_size, buffer.data());
 	gr_bind_uniform_buffer(uniform_block_type::ShadowCascadeParams, 0, required_size, Shadow_cascade_params_buffer);

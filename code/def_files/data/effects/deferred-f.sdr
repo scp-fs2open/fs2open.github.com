@@ -31,8 +31,8 @@ layout (std140) uniform shadowCascadeParams {
 	float pad[2];
 	mat4 shadow_mv_matrix;
 	mat4 shadow_proj_matrix[NUM_SHADOW_CASCADES];
-	float cascade_distances[NUM_SHADOW_CASCADES];
-	float smoothness_factors[NUM_SHADOW_CASCADES];
+	vec4 cascade_distances[(NUM_SHADOW_CASCADES + 4 - 1) / 4];
+	vec4 smoothness_factors[(NUM_SHADOW_CASCADES + 4 - 1) / 4];
 };
 
 layout (std140) uniform matrixData {

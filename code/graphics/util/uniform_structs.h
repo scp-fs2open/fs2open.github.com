@@ -141,6 +141,13 @@ struct shadow_uniform_data {
 
 const size_t shadow_uniform_data_size = sizeof(shadow_uniform_data);
 
+struct shadow_cascade_static_data {
+	int cascade_offset;
+	int cascade_count;
+	float pad[2];
+	matrix4 shadow_mv_matrix;
+};
+
 enum class NanoVGShaderType: int32_t {
 	FillGradient = 0, FillImage = 1, Simple = 2, Image = 3
 };
