@@ -20,6 +20,9 @@ layout (std140) uniform shadowMapData {
 };
 
 layout (std140) uniform shadowCascadeParams {
+    int cascade_offset;
+    int cascade_count;
+    float pad[2];
 	mat4 shadow_mv_matrix;
 	mat4 shadow_proj_matrix[NUM_SHADOW_CASCADES];
 	float cascade_distances[NUM_SHADOW_CASCADES];
@@ -27,7 +30,6 @@ layout (std140) uniform shadowCascadeParams {
 };
 
 uniform samplerBuffer transform_tex;
-uniform int cascade_offset;
 
 #ifdef GEOMETRY_FALLBACK
 out VertexOutput {

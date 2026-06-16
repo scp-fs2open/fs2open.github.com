@@ -316,7 +316,9 @@ void gr_opengl_deferred_lighting_finish()
 		auto header = light_uniform_aligner.getHeader<deferred_global_data>();
 		if (Shadow_quality != ShadowQuality::Disabled) {
 			vm_inverse_matrix4(&header->inv_view_matrix, &Shadow_view_matrix_render);
-			shadow_cascade_params_bind();
+			int offset = (Lighting_mode == lighting_mode::COCKPIT) ? 0 : Num_cockpit_shadow_cascades;
+			int count  = (Lighting_mode == lighting_mode::COCKPIT) ? Num_cockpit_shadow_cascades : Num_shadow_cascades;
+			shadow_cascade_params_bind(offset, count);
 		}
 
 		header->invScreenWidth = 1.0f / gr_screen.max_w;

@@ -45,7 +45,7 @@ void shadows_render_all(fov_t fov, matrix *eye_orient, vec3d *eye_pos,
 
 void shadow_cascade_params_init();
 void shadow_cascade_params_shutdown();
-void shadow_cascade_params_bind();
+void shadow_cascade_params_bind(int cascade_offset, int cascade_count);
 
 matrix shadows_start_render(matrix *eye_orient, vec3d *eye_pos, fov_t fov, fov_t cockpit_fov, float aspect, const SCP_vector<float>& cascade_distances);
 void shadows_end_render();

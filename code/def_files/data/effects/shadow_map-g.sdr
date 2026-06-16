@@ -8,14 +8,14 @@ layout(invocations = NUM_SHADOW_CASCADES) in;
 #endif
 
 layout (std140) uniform shadowCascadeParams {
+    int cascade_offset;
+    int cascade_count;
+    float pad[2];
 	mat4 shadow_mv_matrix;
 	mat4 shadow_proj_matrix[NUM_SHADOW_CASCADES];
 	float cascade_distances[NUM_SHADOW_CASCADES];
 	float smoothness_factors[NUM_SHADOW_CASCADES];
 };
-
-uniform int cascade_offset;
-uniform int cascade_count;
 
 in VertexOutput {
 #if !defined(GL_ARB_gpu_shader5)

@@ -54,19 +54,20 @@ float samplePoissonPCSS(sampler2DArrayShadow shadow_map, vec4 shadowUV, float ma
 }
 
 float getShadowValue(sampler2DArrayShadow shadow_map, float depth, vec4 shadowUV[NUM_SHADOW_CASCADES],
-					 float cascade_distances[NUM_SHADOW_CASCADES], float smoothness_factors[NUM_SHADOW_CASCADES])
+					 float cascade_distances[NUM_SHADOW_CASCADES], float smoothness_factors[NUM_SHADOW_CASCADES],
+					 int cascade_offset, int cascade_count)
 {
-	int cascade = NUM_SHADOW_CASCADES;
-	for (int i = 0; i < NUM_SHADOW_CASCADES; i++) {
-		cascade -= int(step(depth, cascade_distances[i]));
+	int cascade = cascade_offset + cascade_count;
+	for (int i = 0; i < min(cascade_count, NUM_SHADOW_CASCADES); i++) {
+		cascade -= int(step(depth, cascade_distances[cascade_offset + i]));
 	}
-	if (cascade >= NUM_SHADOW_CASCADES || cascade < 0) return 1.0;
+	if (cascade >= cascade_offset + cascade_count || cascade < cascade_offset) return 1.0;
 
-	float cascade_start = (cascade > 0) ? cascade_distances[cascade - 1] : 0.0;
+	float cascade_start = (cascade > cascade_offset) ? cascade_distances[cascade - 1] : 0.0;
 	float cascade_end = cascade_distances[cascade];
 	float dist_threshold = (cascade_end - cascade_start) * 0.2;
 
-	if (cascade_end - dist_threshold > depth || cascade >= NUM_SHADOW_CASCADES - 1)
+	if (cascade_end - dist_threshold > depth || cascade >= cascade_offset + cascade_count - 1)
 		return samplePoissonPCSS(shadow_map, shadowUV[cascade], smoothness_factors[cascade]);
 
 	return mix(

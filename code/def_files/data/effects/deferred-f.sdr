@@ -26,6 +26,9 @@ layout (std140) uniform globalDeferredData {
 };
 
 layout (std140) uniform shadowCascadeParams {
+	int cascade_offset;
+	int cascade_count;
+	float pad[2];
 	mat4 shadow_mv_matrix;
 	mat4 shadow_proj_matrix[NUM_SHADOW_CASCADES];
 	float cascade_distances[NUM_SHADOW_CASCADES];
@@ -262,7 +265,7 @@ void main()
 				fragShadowUV[i] = transformToShadowMap(shadow_proj_matrix[i], i, fragShadowPos);
 			}
 
-			attenuation *= getShadowValue(shadow_map, -position.z, fragShadowUV, cascade_distances, smoothness_factors);
+			attenuation *= getShadowValue(shadow_map, -position.z, fragShadowUV, cascade_distances, smoothness_factors, cascade_offset, cascade_count);
 		}
 
 		vec3 halfVec = normalize(lightDir + eyeDir);

@@ -458,7 +458,7 @@ matrix shadows_start_render(matrix *eye_orient, vec3d *eye_pos, fov_t fov, fov_t
 	vm_vec_copy_normalize(&light_dir, &lp.vec);
 	vm_vector_2_matrix_norm(&light_matrix, &light_dir, &eye_orient->vec.uvec, nullptr);
 
-	const int num_cascades = static_cast<int>(cascade_distances.size());
+	const int num_cascades = Num_shadow_cascades + Num_cockpit_shadow_cascades;
 
 	Shadow_frustums.resize(num_cascades);
 	Shadow_cascade_distances.resize(num_cascades);
@@ -468,7 +468,7 @@ matrix shadows_start_render(matrix *eye_orient, vec3d *eye_pos, fov_t fov, fov_t
 
 	for (int i = 0; i < num_cascades; i++) {
 		float z_near;
-		if (i == 0 || (!render_cockpit_cascades && i <= Num_cockpit_shadow_cascades)) {
+		if (i == 0 || (!render_cockpit_cascades && i == Num_cockpit_shadow_cascades)) {
 			z_near = 0.0f;
 		} else {
 			z_near = cascade_distances[i - 1] - (cascade_distances[i - 1] - (i >= 2 ? cascade_distances[i - 2] : 0.0f)) * 0.2f;
@@ -476,13 +476,13 @@ matrix shadows_start_render(matrix *eye_orient, vec3d *eye_pos, fov_t fov, fov_t
 		float z_far = cascade_distances[i];
 
 		shadows_construct_light_frustum(&Shadow_frustums[i], &light_matrix, eye_orient, nullptr, i < Num_cockpit_shadow_cascades ? cockpit_fov : fov, aspect, z_near, z_far);
-		Shadow_cascade_distances[i] = !render_cockpit_cascades && i <= Num_cockpit_shadow_cascades ? 0.f : cascade_distances[i];
+		Shadow_cascade_distances[i] = cascade_distances[i];
 		Shadow_proj_matrix[i] = Shadow_frustums[i].proj_matrix;
 	}
 
 	gr_shadow_map_start(&Shadow_view_matrix_light, &light_matrix, eye_pos, render_cockpit_cascades, true, true);
 
-	shadow_cascade_params_bind();
+	shadow_cascade_params_bind(0, num_cascades);
 
 	return light_matrix;
 }
@@ -573,8 +573,13 @@ static void render_viewer_shadow(object* objp, const matrix* light_matrix,
 
 	if (Show_ship_casts_shadow) {
 		matrix4 dummy_view;
-		gr_shadow_map_start(&dummy_view, light_matrix, &vmd_zero_vector, ship_render_player_ship_casts_shadow_on_cockpit(), true, false);
-		shadow_cascade_params_bind();
+		bool casts_shadow_on_cockpit = ship_render_player_ship_casts_shadow_on_cockpit();
+
+		gr_shadow_map_start(&dummy_view, light_matrix, &vmd_zero_vector, casts_shadow_on_cockpit, true, false);
+		if (casts_shadow_on_cockpit)
+			shadow_cascade_params_bind(0, Num_cockpit_shadow_cascades + Num_shadow_cascades);
+		else
+			shadow_cascade_params_bind(Num_cockpit_shadow_cascades, Num_shadow_cascades);
 
 		model_clear_instance(sip->model_num);
 		polymodel_instance* pmi = nullptr;
@@ -595,7 +600,7 @@ static void render_viewer_shadow(object* objp, const matrix* light_matrix,
 	if (renderCockpitModel && !Shadow_disable_overrides.disable_cockpit) {
 		matrix4 dummy_view;
 		gr_shadow_map_start(&dummy_view, light_matrix, &vmd_zero_vector, true, false, false);
-		shadow_cascade_params_bind();
+		shadow_cascade_params_bind(0, Num_cockpit_shadow_cascades);
 
 		vec3d cockpit_offset = sip->cockpit_offset;
 		vm_vec_unrotate(&cockpit_offset, &cockpit_offset, &objp->orient);
@@ -803,7 +808,8 @@ static gr_buffer_handle Shadow_cascade_params_buffer;
 static size_t Shadow_cascade_params_buffer_size = 0;
 
 static size_t compute_cascade_params_size(int num_cascades) {
-	return sizeof(matrix4)
+	return 16 // cascade_offset, cascade_count, padding
+		+ sizeof(matrix4)
 		+ sizeof(matrix4) * num_cascades
 		+ 16 * num_cascades
 		+ 16 * num_cascades;
@@ -824,7 +830,7 @@ void shadow_cascade_params_shutdown() {
 	}
 }
 
-void shadow_cascade_params_bind() {
+void shadow_cascade_params_bind(int cascade_offset, int cascade_count) {
 	if (!Shadow_cascade_params_buffer.isValid()) {
 		return;
 	}
@@ -839,6 +845,12 @@ void shadow_cascade_params_bind() {
 	SCP_vector<uint8_t> buffer(required_size, 0);
 	uint8_t* ptr = buffer.data();
 	size_t offset = 0;
+
+	memcpy(ptr + offset, &cascade_offset, sizeof(int));
+	offset += sizeof(int);
+	memcpy(ptr + offset, &cascade_count, sizeof(int));
+	offset += sizeof(int);
+	offset += 8; // padding to align mat4 to 16 bytes
 
 	memcpy(ptr + offset, &Shadow_view_matrix_light, sizeof(matrix4));
 	offset += sizeof(matrix4);

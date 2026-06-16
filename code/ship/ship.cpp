@@ -8620,7 +8620,7 @@ void ship_render_player_ship(object* objp, const vec3d* cam_offset, const matrix
 		Shadow_view_matrix_light.a1d[12] = 0;
 		Shadow_view_matrix_light.a1d[13] = 0;
 		Shadow_view_matrix_light.a1d[14] = 0;
-		shadow_cascade_params_bind();
+		shadow_cascade_params_bind(0, Num_cockpit_shadow_cascades);
 	}
 
 	if (light_deferredcockpit_enabled()) {

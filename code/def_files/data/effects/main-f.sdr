@@ -87,6 +87,9 @@ layout (std140) uniform modelData {
 };
 
 layout (std140) uniform shadowCascadeParams {
+	int cascade_offset;
+	int cascade_count;
+	float pad[2];
 	mat4 shadow_mv_matrix;
 	mat4 shadow_proj_matrix[NUM_SHADOW_CASCADES];
 	float cascade_distances[NUM_SHADOW_CASCADES];
@@ -327,7 +330,7 @@ void main()
 		#prereplace IF_FLAG MODEL_SDR_FLAG_LIGHT
 			float shadow = 1.0;
 			#prereplace IF_FLAG MODEL_SDR_FLAG_SHADOWS
-				shadow = getShadowValue(shadow_map, -vertIn.position.z, vertIn.shadowUV, cascade_distances, smoothness_factors);
+				shadow = getShadowValue(shadow_map, -vertIn.position.z, vertIn.shadowUV, cascade_distances, smoothness_factors, cascade_offset, cascade_count);
 			#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_SHADOWS
 			baseColor.rgb = CalculateLighting(normal, baseColor.rgb, specColor.rgb, glossData, fresnelFactor, shadow, aoFactors.x);
 		#prereplace ELSE_FLAG //MODEL_SDR_FLAG_LIGHT

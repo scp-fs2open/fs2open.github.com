@@ -642,9 +642,6 @@ void gr_opengl_render_shadow_draw(gr_buffer_handle ubo_handle, size_t ubo_offset
 	Current_shader->program->Uniforms.setTextureUniform("transform_tex", 10);
 	GL_state.Texture.Enable(10, GL_TEXTURE_BUFFER, opengl_get_transform_buffer_texture());
 
-	Current_shader->program->Uniforms.setTextureUniform("cascade_offset", Shadow_cascade_offset);
-	Current_shader->program->Uniforms.setTextureUniform("cascade_count", Shadow_cascade_count);
-
 	GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
 	gr_zbuffer_set(ZBUFFER_TYPE_FULL);
 	gr_set_cull(1);
