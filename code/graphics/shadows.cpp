@@ -254,7 +254,7 @@ void shadows_debug_show_frustum(matrix* orient, vec3d *pos, float fov, float asp
  	g3_render_line_3d(true, &far_bottom_left, &far_top_left);
 }
 
-void shadows_construct_light_frustum(light_frustum_info *shadow_data, matrix *light_matrix, matrix *orient, vec3d *pos, fov_t fov, float aspect, float z_near, float z_far)
+void shadows_construct_light_frustum(light_frustum_info *shadow_data, matrix *light_matrix, matrix *orient, vec3d * /*pos*/, fov_t fov, float aspect, float z_near, float z_far)
 {
 	// find the widths and heights of the near plane and far plane to determine the points of this frustum
 	float near_l, near_r, near_u, near_d;
@@ -381,18 +381,6 @@ void shadows_construct_light_frustum(light_frustum_info *shadow_data, matrix *li
 
 	vm_vec_add(&far_bottom_right, &up_scale, &right_scale);
 	vm_vec_add2(&far_bottom_right, &forward_scale_far);
-	
-	//TODO: account for leaning_position for more precise cockpit cascade coverage
-	if (pos != nullptr) {
-		vm_vec_add2(&near_bottom_left, pos);
-		vm_vec_add2(&near_bottom_right, pos);
-		vm_vec_add2(&near_top_right, pos);
-		vm_vec_add2(&near_top_left, pos);
-		vm_vec_add2(&far_top_left, pos);
-		vm_vec_add2(&far_top_right, pos);
-		vm_vec_add2(&far_bottom_right, pos);
-		vm_vec_add2(&far_bottom_left, pos);
-	}
 
 	vec3d frustum_pts[8];
 
@@ -820,7 +808,7 @@ static std::pair<size_t, size_t> compute_cascade_params_size(int num_cascades) {
 }
 
 void shadow_cascade_params_init() {
-	Shadow_cascade_params_buffer_size = compute_cascade_params_size(Num_shadow_cascades).first;
+	Shadow_cascade_params_buffer_size = compute_cascade_params_size(Num_shadow_cascades + Num_cockpit_shadow_cascades).first;
 	Shadow_cascade_params_buffer = gr_create_buffer(BufferType::Uniform, BufferUsageHint::Dynamic);
 
 	SCP_vector<uint8_t> zero_data(Shadow_cascade_params_buffer_size, 0);
@@ -839,12 +827,10 @@ void shadow_cascade_params_bind(int cascade_offset, int cascade_count) {
 		return;
 	}
 
-	const int num_cascades = static_cast<int>(Shadow_proj_matrix.size());
+	const int num_cascades = Num_shadow_cascades + Num_cockpit_shadow_cascades;
 	const auto [required_size, padding] = compute_cascade_params_size(num_cascades);
 
-	if (required_size > Shadow_cascade_params_buffer_size) {
-		Shadow_cascade_params_buffer_size = required_size;
-	}
+	Assertion(required_size == Shadow_cascade_params_buffer_size, "The shadow cascade parameter buffer changed size!");
 
 	SCP_vector<uint8_t> buffer(required_size, 0);
 	size_t offset = 0;

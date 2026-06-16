@@ -451,9 +451,9 @@ void opengl_destroy_all_buffers()
 	GL_vertex_buffers_in_use = 0;
 }
 
-static bool opengl_init_shadow_framebuffer(int size, GLenum color_format)
+static bool opengl_init_shadow_framebuffer(int size)
 {
-	mprintf(("Trying to create %dx%d %d-bit shadow framebuffer\n", size, size, color_format == GL_RGBA32F ? 32 : 16));
+	mprintf(("Trying to create %dx%d 24-bit shadow framebuffer\n", size, size));
 
 	glGenFramebuffers(1, &shadow_fbo);
 	GL_state.BindFrameBuffer(shadow_fbo);
@@ -535,11 +535,9 @@ void opengl_tnl_init()
 			break;
 		}
 
-		if (!opengl_init_shadow_framebuffer(size, GL_RGBA32F)) {
-			if (!opengl_init_shadow_framebuffer(size, GL_RGBA16F)) {
-				mprintf(("Failed to create either 32 or 16-bit color shadow framebuffer. Disabling shadow support.\n"));
-				Shadow_quality = ShadowQuality::Disabled;
-			}
+		if (!opengl_init_shadow_framebuffer(size)) {
+			mprintf(("Failed to create either shadow framebuffer. Disabling shadow support.\n"));
+			Shadow_quality = ShadowQuality::Disabled;
 		}
 
 		if (Shadow_quality != ShadowQuality::Disabled) {
@@ -662,6 +660,7 @@ void gr_opengl_render_shadow_draw(gr_buffer_handle ubo_handle, size_t ubo_offset
 	GLenum element_type = (datap->flags & VB_FLAG_LARGE_INDEX) ? GL_UNSIGNED_INT : GL_UNSIGNED_SHORT;
 	GLint base_vertex = (GLint)(vert_src->Base_vertex_offset + buffer->vertex_num_offset);
 
+	//Funnily enough, both the modern shadow rendering (using shader_viewport_layer_array), and the super-old fallback without shader5 use the same instanced draw call
 	if (gr_is_capable(gr_capability::CAPABILITY_FAST_SHADOWS) || !GLAD_GL_ARB_gpu_shader5) {
 		glDrawElementsInstancedBaseVertex(GL_TRIANGLES,
 							 (GLsizei)datap->n_verts,
@@ -739,19 +738,17 @@ void gr_opengl_shadow_map_start(matrix4 *shadow_view_matrix, const matrix *light
 		gr_end_view_matrix();
 	}
 
-	if (render_cockpit_cascades && render_scene_cascades) {
-		Shadow_cascade_offset = 0;
-		Shadow_cascade_count = Num_cockpit_shadow_cascades + Num_shadow_cascades;
-	} else if (render_cockpit_cascades) {
+	if (render_cockpit_cascades) {
 		Shadow_cascade_offset = 0;
 		Shadow_cascade_count = Num_cockpit_shadow_cascades;
-	} else if (render_scene_cascades) {
+	}
+	else {
 		Shadow_cascade_offset = Num_cockpit_shadow_cascades;
-		Shadow_cascade_count = Num_shadow_cascades;
-	} else {
-		Shadow_cascade_offset = 0;
 		Shadow_cascade_count = 0;
 	}
+
+	if (render_scene_cascades)
+		Shadow_cascade_count += Num_shadow_cascades;
 
 	gr_set_view_matrix(eye_pos, light_orient);
 
@@ -816,7 +813,6 @@ void opengl_tnl_set_material(material* material_info, bool set_base_map, bool se
 			GL_state.ClipDistance(0, false);
 		} else {
 			Assertion(Current_shader != nullptr && (Current_shader->shader == SDR_TYPE_MODEL
-				|| Current_shader->shader == SDR_TYPE_SHADOW_MAP_GEN
 				|| Current_shader->shader == SDR_TYPE_DEFAULT_MATERIAL),
 					  "Clip planes are not supported by this shader!");
 
@@ -880,7 +876,7 @@ void opengl_tnl_set_model_material(model_material *material_info)
 
 	gr_set_center_alpha(material_info->get_center_alpha());
 
-	Assert( Current_shader->shader == SDR_TYPE_MODEL || Current_shader->shader == SDR_TYPE_SHADOW_MAP_GEN );
+	Assert( Current_shader->shader == SDR_TYPE_MODEL );
 
 	GL_state.Texture.SetShaderMode(GL_TRUE);
 
