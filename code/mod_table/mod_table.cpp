@@ -1730,27 +1730,8 @@ void mod_table_init()
 		mprintf((
 			"Game Settings Table: Disabling in-game options system because the commandline override was detected!.\n"));
 	}
-}
 
-// game_settings.tbl is parsed before graphics are actually initialized, so we can't calculate the resolution at that time
-void mod_table_post_process()
-{
-	// use the same widescreen code as in adjust_base_res()
-	// This calculates an adjusted resolution if the aspect ratio of the base resolution doesn't exactly match that of the current resolution.
-	// The base resolution specified in game_settings.tbl does not need to be 1024x768 or even 4:3.
-	float aspect_quotient_subtitle = ((float)gr_screen.center_w / (float)gr_screen.center_h) / ((float)Show_subtitle_screen_base_res[0] / (float)Show_subtitle_screen_base_res[1]);
-	if (aspect_quotient_subtitle >= 1.0) {
-		Show_subtitle_screen_adjusted_res[0] = (int)(Show_subtitle_screen_base_res[0] * aspect_quotient_subtitle);
-		Show_subtitle_screen_adjusted_res[1] = Show_subtitle_screen_base_res[1];
-	} else {
-		Show_subtitle_screen_adjusted_res[0] = Show_subtitle_screen_base_res[0];
-		Show_subtitle_screen_adjusted_res[1] = (int)(Show_subtitle_screen_base_res[1] / aspect_quotient_subtitle);
-	}
-	mprintf(("Game Settings Table: Show-subtitle adjusted resolution is (%d, %d)\n", Show_subtitle_screen_adjusted_res[0], Show_subtitle_screen_adjusted_res[1]));
-
-	// we don't need to calculate adjusted resolution for hud-set-coords because that function doesn't do screen scaling
-
-	//Validate and process shadow settings
+	//Validate and process shadow settings. This has to happen here rather than in mod_table_post_process as to run before graphics init.
 	{
 		//Validate that we have the correct number of shadow smoothness factors
 		if (Num_shadow_cascades + Num_cockpit_shadow_cascades != static_cast<int>(Shadow_smoothness_factor.size())) {
@@ -1775,6 +1756,25 @@ void mod_table_post_process()
 		//Stale data
 		Shadow_distances_cockpit.clear();
 	}
+}
+
+// game_settings.tbl is parsed before graphics are actually initialized, so we can't calculate the resolution at that time
+void mod_table_post_process()
+{
+	// use the same widescreen code as in adjust_base_res()
+	// This calculates an adjusted resolution if the aspect ratio of the base resolution doesn't exactly match that of the current resolution.
+	// The base resolution specified in game_settings.tbl does not need to be 1024x768 or even 4:3.
+	float aspect_quotient_subtitle = ((float)gr_screen.center_w / (float)gr_screen.center_h) / ((float)Show_subtitle_screen_base_res[0] / (float)Show_subtitle_screen_base_res[1]);
+	if (aspect_quotient_subtitle >= 1.0) {
+		Show_subtitle_screen_adjusted_res[0] = (int)(Show_subtitle_screen_base_res[0] * aspect_quotient_subtitle);
+		Show_subtitle_screen_adjusted_res[1] = Show_subtitle_screen_base_res[1];
+	} else {
+		Show_subtitle_screen_adjusted_res[0] = Show_subtitle_screen_base_res[0];
+		Show_subtitle_screen_adjusted_res[1] = (int)(Show_subtitle_screen_base_res[1] / aspect_quotient_subtitle);
+	}
+	mprintf(("Game Settings Table: Show-subtitle adjusted resolution is (%d, %d)\n", Show_subtitle_screen_adjusted_res[0], Show_subtitle_screen_adjusted_res[1]));
+
+	// we don't need to calculate adjusted resolution for hud-set-coords because that function doesn't do screen scaling
 }
 
 bool mod_supports_version(int major, int minor, int build)

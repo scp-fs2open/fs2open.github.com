@@ -392,6 +392,11 @@ void gr_opengl_bind_uniform_buffer(uniform_block_type bind_point, size_t offset,
 
 	glBindBufferRange(GL_UNIFORM_BUFFER, static_cast<GLuint>(bind_point), buffer_handle, static_cast<GLintptr>(offset),
 					  static_cast<GLsizeiptr>(size));
+
+	// glBindBufferRange also modifies the generic GL_UNIFORM_BUFFER binding point.
+	// Sync the state tracker to prevent stale-state skips in subsequent
+	// opengl_bind_buffer_object calls (which rely on BindUniformBuffer's cache).
+	GL_state.Array.BindUniformBuffer(buffer_handle);
 }
 
 gr_buffer_handle opengl_create_texture_buffer_object()
@@ -618,8 +623,7 @@ void gr_opengl_render_model(model_material* material_info, indexed_vertex_source
 	GL_CHECK_FOR_ERRORS("end of render_buffer()");
 }
 
-static int Shadow_cascade_offset = 0;
-static int Shadow_cascade_count = 0;
+int Shadow_cascade_count = 0;
 
 void gr_opengl_render_shadow_draw(gr_buffer_handle ubo_handle, size_t ubo_offset, size_t ubo_size,
                                    vertex_buffer* buffer, indexed_vertex_source* vert_src, size_t texi)
@@ -716,8 +720,7 @@ bool Glowpoint_override_save;
 
 extern bool gr_htl_projection_matrix_set;
 
-void gr_opengl_shadow_map_start(matrix4 *shadow_view_matrix, const matrix *light_orient, vec3d* eye_pos,
-                                bool render_cockpit_cascades, bool render_scene_cascades, bool first_pass)
+void gr_opengl_shadow_map_start(matrix4 *shadow_view_matrix, const matrix *light_orient, vec3d* eye_pos, bool first_pass)
 {
 	if (Shadow_quality == ShadowQuality::Disabled)
 		return;
@@ -737,18 +740,6 @@ void gr_opengl_shadow_map_start(matrix4 *shadow_view_matrix, const matrix *light
 	} else {
 		gr_end_view_matrix();
 	}
-
-	if (render_cockpit_cascades) {
-		Shadow_cascade_offset = 0;
-		Shadow_cascade_count = Num_cockpit_shadow_cascades;
-	}
-	else {
-		Shadow_cascade_offset = Num_cockpit_shadow_cascades;
-		Shadow_cascade_count = 0;
-	}
-
-	if (render_scene_cascades)
-		Shadow_cascade_count += Num_shadow_cascades;
 
 	gr_set_view_matrix(eye_pos, light_orient);
 

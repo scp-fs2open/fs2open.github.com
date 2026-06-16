@@ -28,7 +28,7 @@ layout (std140) uniform globalDeferredData {
 layout (std140) uniform shadowCascadeParams {
 	int cascade_offset;
 	int cascade_count;
-	float pad[2];
+
 	mat4 shadow_mv_matrix;
 	mat4 shadow_proj_matrix[NUM_SHADOW_CASCADES];
 	vec4 cascade_distances[(NUM_SHADOW_CASCADES + 4 - 1) / 4];

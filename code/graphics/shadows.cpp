@@ -468,9 +468,11 @@ matrix shadows_start_render(matrix *eye_orient, vec3d *eye_pos, fov_t fov, fov_t
 		Shadow_proj_matrix[i] = Shadow_frustums[i].proj_matrix;
 	}
 
-	gr_shadow_map_start(&Shadow_view_matrix_light, &light_matrix, eye_pos, render_cockpit_cascades, true, true);
-
-	shadow_cascade_params_bind(0, num_cascades);
+	gr_shadow_map_start(&Shadow_view_matrix_light, &light_matrix, eye_pos, true);
+	if (render_cockpit_cascades)
+		shadow_cascade_params_bind(0, num_cascades);
+	else
+		shadow_cascade_params_bind(Num_cockpit_shadow_cascades, Num_shadow_cascades);
 
 	return light_matrix;
 }
@@ -563,7 +565,7 @@ static void render_viewer_shadow(object* objp, const matrix* light_matrix,
 		matrix4 dummy_view;
 		bool casts_shadow_on_cockpit = ship_render_player_ship_casts_shadow_on_cockpit();
 
-		gr_shadow_map_start(&dummy_view, light_matrix, &vmd_zero_vector, casts_shadow_on_cockpit, true, false);
+		gr_shadow_map_start(&dummy_view, light_matrix, &vmd_zero_vector, false);
 		if (casts_shadow_on_cockpit)
 			shadow_cascade_params_bind(0, Num_cockpit_shadow_cascades + Num_shadow_cascades);
 		else
@@ -587,7 +589,7 @@ static void render_viewer_shadow(object* objp, const matrix* light_matrix,
 
 	if (renderCockpitModel && !Shadow_disable_overrides.disable_cockpit) {
 		matrix4 dummy_view;
-		gr_shadow_map_start(&dummy_view, light_matrix, &vmd_zero_vector, true, false, false);
+		gr_shadow_map_start(&dummy_view, light_matrix, &vmd_zero_vector, false);
 		shadow_cascade_params_bind(0, Num_cockpit_shadow_cascades);
 
 		vec3d cockpit_offset = sip->cockpit_offset;
@@ -822,6 +824,7 @@ void shadow_cascade_params_shutdown() {
 	}
 }
 
+extern int Shadow_cascade_count;
 void shadow_cascade_params_bind(int cascade_offset, int cascade_count) {
 	if (!Shadow_cascade_params_buffer.isValid()) {
 		return;
@@ -830,7 +833,7 @@ void shadow_cascade_params_bind(int cascade_offset, int cascade_count) {
 	const int num_cascades = Num_shadow_cascades + Num_cockpit_shadow_cascades;
 	const auto [required_size, padding] = compute_cascade_params_size(num_cascades);
 
-	Assertion(required_size == Shadow_cascade_params_buffer_size, "The shadow cascade parameter buffer changed size!");
+	Assertion(required_size <= Shadow_cascade_params_buffer_size, "The shadow cascade parameter buffer grew in size!");
 
 	SCP_vector<uint8_t> buffer(required_size, 0);
 	size_t offset = 0;
@@ -840,6 +843,8 @@ void shadow_cascade_params_bind(int cascade_offset, int cascade_count) {
 	static_data.cascade_offset = cascade_offset;
 	static_data.cascade_count = cascade_count;
 	static_data.shadow_mv_matrix = Shadow_view_matrix_light;
+
+	Shadow_cascade_count = cascade_count;
 
 	offset += sizeof(graphics::shadow_cascade_static_data);
 
@@ -863,7 +868,7 @@ void shadow_cascade_params_bind(int cascade_offset, int cascade_count) {
 	}
 	offset += sizeof(float) * padding;
 
-	gr_update_buffer_data(Shadow_cascade_params_buffer, required_size, buffer.data());
+	gr_update_buffer_data_offset(Shadow_cascade_params_buffer, 0, required_size, buffer.data());
 	gr_bind_uniform_buffer(uniform_block_type::ShadowCascadeParams, 0, required_size, Shadow_cascade_params_buffer);
 }
 
