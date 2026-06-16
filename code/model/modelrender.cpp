@@ -627,9 +627,7 @@ void model_draw_list::render_all(gr_zbuffer_type depth_mode)
 
 	_lights.resetLightState();
 
-	for ( size_t i = 0; i < _keys.size(); ++i ) {
-		int render_index = _keys[i];
-
+	for (int render_index : _keys) {
 		if ( depth_mode == ZBUFFER_TYPE_DEFAULT || _elements[render_index].render_material.get_depth_mode() == depth_mode ) {
 			render_buffer(_elements[render_index]);
 		}

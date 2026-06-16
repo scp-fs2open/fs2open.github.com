@@ -85,7 +85,7 @@ auto ShadowQualityOption = options::OptionBuilder<ShadowQuality>("Graphics.Shado
                      .parser(parse_shadow_quality_func)
                      .finish();
 
-bool shadows_obj_in_frustum(object *objp, matrix *light_orient, vec3d *min, vec3d *max)
+bool shadows_obj_in_frustum(const object *objp, const matrix *light_orient, const vec3d *min, const vec3d *max)
 {
 	vec3d pos, pos_rot;
 
@@ -656,8 +656,8 @@ void shadows_render_all(fov_t fov, matrix *eye_orient, vec3d *eye_pos,
 			continue;
 
 		bool cull = true;
-		for ( size_t j = 0; j < Shadow_frustums.size(); ++j ) {
-			if ( shadows_obj_in_frustum(objp, &light_matrix, &Shadow_frustums[j].min, &Shadow_frustums[j].max) ) {
+		for (const auto& Shadow_frustum : Shadow_frustums) {
+			if ( shadows_obj_in_frustum(objp, &light_matrix, &Shadow_frustum.min, &Shadow_frustum.max) ) {
 				cull = false;
 				break;
 			}

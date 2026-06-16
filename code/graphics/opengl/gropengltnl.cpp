@@ -660,7 +660,7 @@ void gr_opengl_render_shadow_draw(gr_buffer_handle ubo_handle, size_t ubo_offset
 
 	auto ibuffer = reinterpret_cast<GLubyte*>(vert_src->Index_offset);
 	GLenum element_type = (datap->flags & VB_FLAG_LARGE_INDEX) ? GL_UNSIGNED_INT : GL_UNSIGNED_SHORT;
-	GLint base_vertex = (GLint)(vert_src->Base_vertex_offset + buffer->vertex_num_offset);
+	auto base_vertex = static_cast<GLint>(vert_src->Base_vertex_offset + buffer->vertex_num_offset);
 
 	//Funnily enough, both the modern shadow rendering (using shader_viewport_layer_array), and the super-old fallback without shader5 use the same instanced draw call
 	if (gr_is_capable(gr_capability::CAPABILITY_FAST_SHADOWS) || !GLAD_GL_ARB_gpu_shader5) {
