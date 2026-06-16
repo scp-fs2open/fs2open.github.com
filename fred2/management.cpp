@@ -2657,3 +2657,65 @@ void update_texture_replacements(const char *old_name, const char *new_name)
 			strcpy_s(ii->ship_name, new_name);
 	}
 }
+
+HBITMAP load_btnface_mapped(UINT id)
+{
+	std::array<COLORMAP, 5> cmap;
+	cmap[0].from = RGB(255, 0, 255);			// magenta (transparent background)
+	cmap[0].to = GetSysColor(COLOR_BTNFACE);
+	cmap[1].from = RGB(192, 192, 192);			// dark gray (traditional background)
+	cmap[1].to = GetSysColor(COLOR_BTNFACE);
+	cmap[2].from = RGB(128, 128, 128);
+	cmap[2].to = GetSysColor(COLOR_BTNSHADOW);
+	cmap[3].from = RGB(255, 255, 255);
+	cmap[3].to = GetSysColor(COLOR_BTNHIGHLIGHT);
+	cmap[4].from = RGB(0, 0, 0);
+	cmap[4].to = GetSysColor(COLOR_BTNTEXT);
+	return CreateMappedBitmap(AfxGetResourceHandle(), id, 0, cmap.data(), sz2i(cmap.size()));
+}
+
+HICON load_button_icon(UINT id, COLORREF transparent)
+{
+	// Load the resource bitmap as a device-dependent bitmap.
+	HBITMAP color = (HBITMAP)::LoadBitmap(AfxGetResourceHandle(), MAKEINTRESOURCE(id));
+	if (color == nullptr)
+		return nullptr;
+
+	BITMAP bm;
+	::GetObject(color, sizeof(bm), &bm);
+
+	HDC screen_dc = ::GetDC(nullptr);
+	HDC color_dc = ::CreateCompatibleDC(screen_dc);
+	HDC mask_dc = ::CreateCompatibleDC(screen_dc);
+
+	// Build a 1-bpp mask: pixels matching the transparent key become white (1),
+	// everything else black (0).  This is the AND mask of the icon.
+	HBITMAP mask = ::CreateBitmap(bm.bmWidth, bm.bmHeight, 1, 1, nullptr);
+	HBITMAP old_color = (HBITMAP)::SelectObject(color_dc, color);
+	HBITMAP old_mask = (HBITMAP)::SelectObject(mask_dc, mask);
+
+	::SetBkColor(color_dc, transparent);
+	::BitBlt(mask_dc, 0, 0, bm.bmWidth, bm.bmHeight, color_dc, 0, 0, SRCCOPY);
+
+	// Punch the transparent pixels in the color bitmap to black (D & ~S), so the
+	// icon's XOR stage leaves the background untouched where the mask is set.
+	::BitBlt(color_dc, 0, 0, bm.bmWidth, bm.bmHeight, mask_dc, 0, 0, 0x00220326 /*DSna: D & ~S*/);
+
+	::SelectObject(color_dc, old_color);
+	::SelectObject(mask_dc, old_mask);
+	::DeleteDC(color_dc);
+	::DeleteDC(mask_dc);
+	::ReleaseDC(nullptr, screen_dc);
+
+	ICONINFO ii = {};
+	ii.fIcon = TRUE;
+	ii.hbmMask = mask;
+	ii.hbmColor = color;
+	HICON icon = ::CreateIconIndirect(&ii);
+
+	// CreateIconIndirect copies the bitmaps, so the originals can be freed.
+	::DeleteObject(mask);
+	::DeleteObject(color);
+
+	return icon;
+}
