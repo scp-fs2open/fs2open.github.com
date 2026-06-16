@@ -27,7 +27,7 @@ FredApplication::FredApplication() {
 	connect(this, &FredApplication::initializeComplete, [this]() { _initializeEmitted = true; });
 
 	// Run our shutdown code after closing last window, but before application quits.
-	connect(qApp, &QApplication::lastWindowClosed, this, &FredApplication::shutdown);
+	//connect(qApp, &QApplication::lastWindowClosed, this, &FredApplication::shutdown);
 
 	//Run late shutdown code when application is about to quit.
 	connect(qApp, &QApplication::aboutToQuit, this, &FredApplication::lateShutdown);

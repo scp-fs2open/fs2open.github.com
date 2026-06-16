@@ -162,7 +162,9 @@ FredView::FredView(QWidget* parent) : QMainWindow(parent), ui(new Ui::FredView()
 	bindThemeIcon(ui->actionUnhide_Layers, QStringLiteral("unhide"));
 }
 
-FredView::~FredView() {
+FredView::~FredView()
+{
+	disconnect(_browserPanel, &QDockWidget::visibilityChanged, this, nullptr);
 }
 
 void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
@@ -275,6 +277,9 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 	ui->actionSelectionList->setToolTip(tr("Toggle Scene Browser (H)"));
 	ui->actionSelectionList->setChecked(_browserPanel->isVisible());
 	connect(_browserPanel, &QDockWidget::visibilityChanged, this, [this](bool visible) {
+		if (!ui || !ui->actionSelectionList) {
+			return;
+		}
 		QSignalBlocker blocker(ui->actionSelectionList);
 		ui->actionSelectionList->setChecked(visible);
 	});
@@ -733,7 +738,7 @@ void FredView::on_actionRun_FreeSpace_2_Open_triggered(bool) {
 
 	QString args = QString::fromStdString(cmdline_build_string());
 
-	if (!QProcess::startDetached(exePath, args.split(' ', QString::SkipEmptyParts))) {
+	if (!QProcess::startDetached(exePath, args.split(' ', Qt::SkipEmptyParts))) {
 		QMessageBox::warning(this, tr("Run FreeSpace"),
 			tr("Failed to launch: %1").arg(exePath));
 	}
@@ -1721,7 +1726,8 @@ void FredView::showContextMenu(const QPoint& globalPos) {
 	auto localPos = ui->centralWidget->mapFromGlobal(globalPos);
 	_lastContextMenuLocalPos = localPos;
 
-	auto obj = _viewport->select_object(localPos.x(), localPos.y());
+	auto obj =
+		_viewport->select_object(localPos.x() * this->devicePixelRatio(), localPos.y() * this->devicePixelRatio());
 	if (obj >= 0) {
 		fred->selectObject(obj);
 		const auto objType = Objects[obj].type;
@@ -1915,13 +1921,16 @@ void FredView::initializePopupMenus() {
 		if (fred->cur_waypoint != nullptr) {
 			waypoint_instance = Objects[fred->cur_waypoint->get_objnum()].instance;
 		}
-		_viewport->createWaypointAtScreenPos(_lastContextMenuLocalPos.x(), _lastContextMenuLocalPos.y(), waypoint_instance);
+		_viewport->createWaypointAtScreenPos(_lastContextMenuLocalPos.x() * this->devicePixelRatio(),
+			_lastContextMenuLocalPos.y() * this->devicePixelRatio(),
+			waypoint_instance);
 	});
 	createOtherSubmenu->addAction(createWaypointAction);
 
 	auto* createJumpNodeAction = new QAction(tr("Jump Node"), createOtherSubmenu);
 	connect(createJumpNodeAction, &QAction::triggered, this, [this]() {
-		_viewport->createJumpNodeAtScreenPos(_lastContextMenuLocalPos.x(), _lastContextMenuLocalPos.y());
+		_viewport->createJumpNodeAtScreenPos(_lastContextMenuLocalPos.x() * this->devicePixelRatio(),
+			_lastContextMenuLocalPos.y() * this->devicePixelRatio());
 	});
 	createOtherSubmenu->addAction(createJumpNodeAction);
 
@@ -2001,7 +2010,8 @@ void FredView::populateCreateShipSubmenu() {
 		}
 		auto* action = new QAction(QString::fromUtf8(Ship_info[i].name), _createShipSubmenu);
 		connect(action, &QAction::triggered, this, [this, i]() {
-			_viewport->createShipAtScreenPos(_lastContextMenuLocalPos.x(), _lastContextMenuLocalPos.y(), i);
+			_viewport->createShipAtScreenPos(_lastContextMenuLocalPos.x() * this->devicePixelRatio(),
+				_lastContextMenuLocalPos.y() * this->devicePixelRatio(), i);
 		});
 		_createShipSubmenu->addAction(action);
 	}
@@ -2014,7 +2024,9 @@ void FredView::populateCreatePropSubmenu() {
 		}
 		auto* action = new QAction(QString::fromStdString(Prop_info[i].name), _createPropSubmenu);
 		connect(action, &QAction::triggered, this, [this, i]() {
-			_viewport->createPropAtScreenPos(_lastContextMenuLocalPos.x(), _lastContextMenuLocalPos.y(), i);
+			_viewport->createPropAtScreenPos(_lastContextMenuLocalPos.x() * this->devicePixelRatio(),
+				_lastContextMenuLocalPos.y() * this->devicePixelRatio(),
+				i);
 		});
 		_createPropSubmenu->addAction(action);
 	}
@@ -2183,7 +2195,8 @@ void FredView::closeEvent(QCloseEvent* event) {
 		event->ignore();
 		return;
 	}
-
+	disconnect();
+	shutdown();
 	QMainWindow::closeEvent(event);
 }
 void FredView::windowActivated() {
@@ -2602,8 +2615,9 @@ void FredView::handleObjectEditor(int objNum) {
 	}
 }
 void FredView::mouseDoubleClickEvent(QMouseEvent* event) {
-	auto viewLocal = ui->centralWidget->mapFromGlobal(event->globalPos());
-	auto obj = _viewport->select_object(viewLocal.x(), viewLocal.y());
+	auto viewLocal = ui->centralWidget->mapFromGlobal(event->globalPosition()); 
+	auto obj =
+		_viewport->select_object(viewLocal.x() * this->devicePixelRatio(), viewLocal.y() * this->devicePixelRatio());
 
 	if (obj >= 0) {
 		handleObjectEditor(obj);
@@ -3039,6 +3053,5 @@ void FredView::on_actionWaypointPathGenerator_triggered(bool) {
 	dialog->setAttribute(Qt::WA_DeleteOnClose);
 	dialog->show();
 }
-
 } // namespace fred
 } // namespace fso

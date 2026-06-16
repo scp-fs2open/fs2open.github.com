@@ -344,7 +344,7 @@ void BriefingMapWidget::drawSelectedIconOutline() {
 		}
 
 		auto& icon = stage.icons[selected];
-		const auto left = icon.x - 2;
+		const auto left = (icon.x - 2);
 		const auto top = icon.y - 2;
 		const auto right = left + icon.w + 4;
 		const auto bottom = top + icon.h + 4;
@@ -527,7 +527,8 @@ void BriefingMapWidget::renderFrame() {
 			auto* mainView = _viewport->renderer->getTargetViewport();
 			auto mainSize = mainView->getSize();
 			gr_use_viewport(mainView);
-			gr_screen_resize(static_cast<int>(mainSize.first), static_cast<int>(mainSize.second));
+			gr_screen_resize(static_cast<int>(mainSize.first) * devicePixelRatio(),
+				static_cast<int>(mainSize.second) * devicePixelRatio());
 			g3_start_frame(0);
 			g3_set_view_matrix(&_viewport->camera.eye_pos, &_viewport->camera.eye_orient, 0.5f);
 		}
@@ -550,7 +551,7 @@ void BriefingMapWidget::renderFrame() {
 	_lastRenderWidth = w;
 	_lastRenderHeight = h;
 
-	gr_screen_resize(w, h);
+	gr_screen_resize(w * devicePixelRatio(), h * devicePixelRatio());
 
 	brief_screen savedBscreen = bscreen;
 	bscreen.map_x1 = 0;
@@ -617,7 +618,7 @@ void BriefingMapWidget::renderFrame() {
 		auto* mainView = _viewport->renderer->getTargetViewport();
 		auto mainSize = mainView->getSize();
 		gr_use_viewport(mainView);
-		gr_screen_resize(static_cast<int>(mainSize.first), static_cast<int>(mainSize.second));
+		gr_screen_resize(static_cast<int>(mainSize.first) * devicePixelRatio(), static_cast<int>(mainSize.second) * devicePixelRatio());
 		g3_start_frame(0);
 		g3_set_view_matrix(&_viewport->camera.eye_pos, &_viewport->camera.eye_orient, 0.5f);
 	}
@@ -697,8 +698,9 @@ void BriefingMapWidget::mousePressEvent(QMouseEvent* event) {
 		return;
 	}
 
-	const auto mouseX = static_cast<float>(event->localPos().x()) * (static_cast<float>(_lastRenderWidth) / static_cast<float>(width()));
-	const auto mouseY = static_cast<float>(event->localPos().y()) * (static_cast<float>(_lastRenderHeight) / static_cast<float>(height()));
+	const auto mouseX = static_cast<float>(event->localPos().x() * devicePixelRatio()) * (static_cast<float>(_lastRenderWidth) / static_cast<float>(width()));
+	const auto mouseY = static_cast<float>(event->localPos().y() * devicePixelRatio()) *
+						(static_cast<float>(_lastRenderHeight) / static_cast<float>(height()));
 
 	auto& stage = briefPtr->stages[_currentStage];
 	int hitIndex = -1;
@@ -745,8 +747,11 @@ void BriefingMapWidget::mouseMoveEvent(QMouseEvent* event) {
 
 	const auto scaleX = static_cast<float>(_lastRenderWidth) / static_cast<float>(width());
 	const auto scaleY = static_cast<float>(_lastRenderHeight) / static_cast<float>(height());
-	const auto deltaX = static_cast<float>(event->localPos().x() - _dragStartMousePos.x()) * scaleX;
-	const auto deltaY = static_cast<float>(event->localPos().y() - _dragStartMousePos.y()) * scaleY;
+	const auto deltaX =
+		static_cast<float>((event->localPos().x() * devicePixelRatio()) - (_dragStartMousePos.x() * devicePixelRatio())) * scaleX;
+	const auto deltaY =
+		static_cast<float>((event->localPos().y() * devicePixelRatio()) - (_dragStartMousePos.y() * devicePixelRatio())) *
+		scaleY;
 
 	const auto camPos = brief_get_current_cam_pos();
 	const auto camOrient = brief_get_current_cam_orient();
