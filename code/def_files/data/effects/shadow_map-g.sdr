@@ -42,9 +42,6 @@ void main(void)
 		    gl_Position = shadow_proj_matrix[cascade_id] * gl_in[vert].gl_Position;
 		}
 
-		if(gl_Position.z < -1.0)
-            gl_Position.z = -1.0;
-
 		gl_Layer = cascade_id;
 		gl_ClipDistance[0] = gl_in[vert].gl_ClipDistance[0];
 

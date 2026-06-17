@@ -82,8 +82,6 @@ void main()
 #ifndef GEOMETRY_FALLBACK
 		int cascade_id = cascade_offset + gl_InstanceID;
         position = shadow_proj_matrix[cascade_id] * position;
-        if(position.z < -1.0)
-        	position.z = -1.0;
 #endif
         gl_Position = position;
     }

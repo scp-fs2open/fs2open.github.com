@@ -731,6 +731,8 @@ void gr_opengl_shadow_map_start(matrix4 *shadow_view_matrix, const matrix *light
 
 		glClear(GL_DEPTH_BUFFER_BIT);
 
+		glEnable(GL_DEPTH_CLAMP);
+
 		Glowpoint_override_save = Glowpoint_override;
 		Glowpoint_override = true;
 
@@ -749,6 +751,8 @@ void gr_opengl_shadow_map_start(matrix4 *shadow_view_matrix, const matrix *light
 void gr_opengl_shadow_map_end()
 {
 	gr_end_view_matrix();
+
+	glDisable(GL_DEPTH_CLAMP);
 
 	gr_zbuffer_set(ZBUFFER_TYPE_FULL);
 	GL_state.PopFramebufferState();
