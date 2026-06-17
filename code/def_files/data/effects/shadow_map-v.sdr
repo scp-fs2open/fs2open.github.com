@@ -2,7 +2,7 @@
 #extension GL_ARB_gpu_shader5: enable
 
 #ifndef GEOMETRY_FALLBACK
-#extension GL_ARB_shader_viewport_layer_array : require
+#extension GL_ARB_shader_viewport_layer_array : enable
 #endif
 
 in vec4 vertPosition;
