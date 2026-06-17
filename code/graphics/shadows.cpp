@@ -644,6 +644,7 @@ void shadows_render_all(fov_t fov, matrix *eye_orient, vec3d *eye_pos,
 		cockpit_fov = Sexp_fov;
 	else
 		cockpit_fov = COCKPIT_ZOOM_DEFAULT;
+	cockpit_fov = cockpit_fov * PROJ_FOV_FACTOR;
 
 	matrix light_matrix = shadows_start_render(eye_orient, eye_pos, fov, cockpit_fov, gr_screen.clip_aspect, Shadow_distances);
 
