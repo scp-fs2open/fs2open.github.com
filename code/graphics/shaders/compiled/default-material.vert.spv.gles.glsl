@@ -1,8 +1,13 @@
 #version 320 es
+#extension GL_EXT_clip_cull_distance : enable
 precision highp float;
 precision highp int;
 precision highp sampler2D;
 precision highp sampler2DArray;
+
+#if defined(GL_EXT_clip_cull_distance)
+#define USE_HW_CLIP_DISTANCE
+#endif
 
 layout(std140) uniform genericData
 {
@@ -29,7 +34,9 @@ in vec4 vertTexCoord;
 out vec4 fragColor;
 in vec4 vertColor;
 in vec4 vertPosition;
+#ifndef USE_HW_CLIP_DISTANCE
 out float vClipDist;
+#endif
 
 void main()
 {
@@ -37,6 +44,9 @@ void main()
     fragColor = vertColor * _22.color;
     gl_Position = (_36.projMatrix * _36.modelViewMatrix) * vertPosition;
 	float d = dot(_22.clipEquation, _22.modelMatrix * vertPosition);
+#ifdef USE_HW_CLIP_DISTANCE
+	gl_ClipDistance[0] = (_22.clipEnabled != 0u) ? d : 1.0;
+#else
 	vClipDist = (_22.clipEnabled != 0u) ? d : 1.0;
+#endif
 }
-

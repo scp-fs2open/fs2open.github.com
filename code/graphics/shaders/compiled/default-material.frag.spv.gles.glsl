@@ -1,8 +1,13 @@
 #version 320 es
+#extension GL_EXT_clip_cull_distance : enable
 precision highp float;
 precision highp int;
 precision highp sampler2D;
 precision highp sampler2DArray;
+
+#if defined(GL_EXT_clip_cull_distance)
+#define USE_HW_CLIP_DISTANCE
+#endif
 
 layout(std140) uniform genericData
 {
@@ -19,16 +24,20 @@ layout(std140) uniform genericData
 } _39;
 
 uniform sampler2DArray baseMap;
+#ifndef USE_HW_CLIP_DISTANCE
 in highp float vClipDist;
+#endif
 in vec4 fragTexCoord;
 in vec4 fragColor;
 layout (location=0) out vec4 fragOut0;
 
 void main()
 {
+#ifndef USE_HW_CLIP_DISTANCE
 	if (_39.clipEnabled != 0u && vClipDist < 0.0) {
 		discard;
 	}
+#endif
     vec4 _48 = texture(baseMap, vec3(fragTexCoord.xy, float(_39.baseMapIndex)));
     if (_39.alphaThreshold > _48.w)
     {
@@ -55,4 +64,3 @@ void main()
     }
     fragOut0 = mix(mix(vec4(_146.x, _146.y, _146.z, _48.w) * _148, vec4(_148.xyz, _146.x * _148.w), vec4(float(_39.alphaTexture))), _148, vec4(float(_39.noTexturing))) * _39.intensity;
 }
-

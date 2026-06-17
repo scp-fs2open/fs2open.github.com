@@ -1,10 +1,15 @@
 //? #version 150
 #ifdef GL_ES
+#extension GL_EXT_clip_cull_distance: enable
 precision highp float;
 precision highp int;
 precision highp sampler2D;
 precision highp sampler2DArray;
 precision highp samplerCube;
+#endif
+
+#if !defined(GL_ES) || defined(GL_EXT_clip_cull_distance)
+#define USE_HW_CLIP_DISTANCE
 #endif
 
 #include "shadows.sdr" //! #include "shadows.sdr"
@@ -215,7 +220,7 @@ vec3 CalculateLighting(vec3 normal, vec3 diffuseMaterial, vec3 specularMaterial,
 
 void main()
 {
-	#ifdef GL_ES
+	#ifndef USE_HW_CLIP_DISTANCE
 		if (vertIn.vClipDist < 0.0) discard;
 	#endif
 	
