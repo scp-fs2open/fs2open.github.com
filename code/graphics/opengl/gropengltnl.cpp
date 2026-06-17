@@ -697,6 +697,8 @@ void gr_opengl_shadow_map_start(matrix4 *shadow_view_matrix, const matrix *light
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+	glEnable(GL_DEPTH_CLAMP);
+
 	Rendering_to_shadow_map = true;
 	Glowpoint_override_save = Glowpoint_override;
 	Glowpoint_override = true;
@@ -714,6 +716,8 @@ void gr_opengl_shadow_map_end()
 {
 	if(!Rendering_to_shadow_map)
 		return;
+
+	glDisable(GL_DEPTH_CLAMP);
 
 	gr_end_view_matrix();
 	Rendering_to_shadow_map = false;
