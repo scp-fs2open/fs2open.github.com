@@ -13,8 +13,8 @@ namespace particle {
 		vm_vec_random_in_circle(&pos, &vmd_zero_vector, &orientation, m_radius * m_modular_curves.get_output(VolumeModularCurveOutput::RADIUS, curveSource, &m_modular_curve_instance), m_onEdge);
 
 		return pointCompensateForOffsetAndRotOffset(pos, orientation,
-					m_modular_curves.get_output(VolumeModularCurveOutput::OFFSET_ROT, curveSource, &m_modular_curve_instance),
-					m_modular_curves.get_output(VolumeModularCurveOutput::POINT_TO_ROT, curveSource, &m_modular_curve_instance));
+			m_modular_curves.get_output_or_default(VolumeModularCurveOutput::OFFSET_ROT, curveSource, 0.f, &m_modular_curve_instance),
+			m_modular_curves.get_output_or_default(VolumeModularCurveOutput::POINT_TO_ROT, curveSource, 0.f, &m_modular_curve_instance));
 	}
 
 	void RingVolume::parse() {
