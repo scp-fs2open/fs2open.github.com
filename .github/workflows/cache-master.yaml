@@ -33,6 +33,9 @@ jobs:
         name: Checkout
         with:
           submodules: true
+      - name: Set workspace as safe
+        # This appears to be broken in current actions, so do it manually
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: ccache
         uses: hendrikmuhs/ccache-action@v1
         with:

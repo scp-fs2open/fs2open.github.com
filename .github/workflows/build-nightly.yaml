@@ -27,6 +27,9 @@ jobs:
         name: Checkout
         with:
           submodules: true
+      - name: Set workspace as safe
+        # This appears to be broken in current actions, so do it manually
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: Configure CMake
         env:
           CONFIGURATION: ${{ matrix.configuration }}
@@ -69,6 +72,9 @@ jobs:
         with:
           submodules: true
           fetch-depth: '0'
+      - name: Set workspace as safe
+        # This appears to be broken in current actions, so do it manually
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: Download Release builds
         uses: actions/download-artifact@v8
         with:
@@ -110,6 +116,9 @@ jobs:
         name: Checkout
         with:
           submodules: true
+      - name: Set workspace as safe
+        # This appears to be broken in current actions, so do it manually
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       # - name: Cache Qt
         # id: cache-qt-win
         # uses: actions/cache@v1
@@ -198,6 +207,9 @@ jobs:
         with:
           submodules: true
           fetch-depth: '0'
+      - name: Set workspace as safe
+        # This appears to be broken in current actions, so do it manually
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: Download Release builds
         uses: actions/download-artifact@v8
         with:
@@ -254,6 +266,9 @@ jobs:
         with:
           submodules: true
           fetch-depth: 0
+      - name: Set workspace as safe
+        # This appears to be broken in current actions, so do it manually
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: Prepare Vulkan SDK
         uses: humbletim/setup-vulkan-sdk@v1.2.1
         with:
@@ -321,6 +336,9 @@ jobs:
           submodules: true
           fetch-depth: '0'
           ref: '${{ github.ref }}'
+      - name: Set workspace as safe
+        # This appears to be broken in current actions, so do it manually
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: Download Release builds
         uses: actions/download-artifact@v8
         with:

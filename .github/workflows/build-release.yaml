@@ -58,6 +58,9 @@ jobs:
         with:
           submodules: true  # `true` to checkout submodules, `recursive` to recursively checkout submodules
           ref: '${{ github.ref }}'
+      - name: Set workspace as safe
+        # This appears to be broken in current actions, so do it manually
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: Configure CMake
         env:
           CONFIGURATION: ${{ matrix.configuration }}
@@ -110,6 +113,9 @@ jobs:
           submodules: true
           fetch-depth: '0'  # value 0 to fetch all history and tags for all branches
           ref: '${{ github.ref }}'
+      - name: Set workspace as safe
+        # This appears to be broken in current actions, so do it manually
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: Download Release builds
         # Grab the release builds
         uses: actions/download-artifact@v8
@@ -163,6 +169,9 @@ jobs:
         with:
           submodules: true
           ref: '${{ github.ref }}'
+      - name: Set workspace as safe
+        # This appears to be broken in current actions, so do it manually
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       # - name: Cache Qt
         # # Cache Qt
         # id: cache-qt-win
@@ -258,6 +267,9 @@ jobs:
           submodules: true
           fetch-depth: '0'
           ref: '${{ github.ref }}'
+      - name: Set workspace as safe
+        # This appears to be broken in current actions, so do it manually
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: Download Release builds
         uses: actions/download-artifact@v8
         with:
@@ -330,6 +342,9 @@ jobs:
           submodules: true
           fetch-depth: 0
           ref: '${{ github.ref }}'
+      - name: Set workspace as safe
+        # This appears to be broken in current actions, so do it manually
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: Prepare Vulkan SDK
         uses: humbletim/setup-vulkan-sdk@v1.2.1
         with:
@@ -391,6 +406,9 @@ jobs:
           submodules: true
           fetch-depth: '0'
           ref: '${{ github.ref }}'
+      - name: Set workspace as safe
+        # This appears to be broken in current actions, so do it manually
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: Download Release builds
         uses: actions/download-artifact@v8
         with:

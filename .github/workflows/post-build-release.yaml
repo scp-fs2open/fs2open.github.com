@@ -49,7 +49,9 @@ jobs:
         with:
           fetch-depth: '0'
           ref: ${{ env.RELEASE_TAG }}
-
+      - name: Set workspace as safe
+        # This appears to be broken in current actions, so do it manually
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: Install Python dependencies
         run: pip install -r ci/post/requirements.txt
 
