@@ -145,6 +145,8 @@ class VulkanRenderer {
 	 */
 	void beginSceneRendering();
 
+	void resumeSceneRendering();
+
 	/**
 	 * @brief Switch from HDR scene pass back to swap chain
 	 *

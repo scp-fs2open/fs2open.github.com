@@ -1625,6 +1625,18 @@ void VulkanRenderer::beginSceneRendering()
 	m_sceneRendering = true;
 }
 
+void VulkanRenderer::resumeSceneRendering()
+{
+	vk::RenderPassBeginInfo rpBegin;
+	rpBegin.renderArea.offset = vk::Offset2D(0, 0);
+	rpBegin.renderArea.extent = m_postProcessor->getSceneExtent();
+
+	rpBegin.renderPass = m_postProcessor->getSceneRenderPassLoad();
+	rpBegin.framebuffer = m_postProcessor->getSceneFramebuffer();
+
+	m_currentCommandBuffer.beginRenderPass(rpBegin, vk::SubpassContents::eInline);
+}
+
 void VulkanRenderer::endSceneRendering()
 {
 	if (!m_postProcessor || !m_postProcessor->isInitialized()) {

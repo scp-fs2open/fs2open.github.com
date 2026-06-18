@@ -683,19 +683,12 @@ namespace graphics::vulkan {
 
 namespace {
 bool Glowpoint_override_save = false;
+bool Restore_swapchain_after_shadow_pass = false;
 } // anonymous namespace
 
 void vulkan_shadow_map_start(matrix4* shadow_view_matrix, const matrix* light_matrix, vec3d* eye_pos)
 {
 	if (Shadow_quality == ShadowQuality::Disabled || !getRendererInstance()->supportsShaderViewportLayerOutput()) {
-		return;
-	}
-
-	// Shadows require the G-buffer render pass (deferred lighting).
-	// In contexts without deferred lighting (e.g. tech room), the active
-	// render pass is the swap chain or 2-attachment scene pass — ending it
-	// and resuming the G-buffer pass would break rendering.
-	if (!getRendererInstance()->isUsingGbufRenderPass()) {
 		return;
 	}
 
@@ -714,7 +707,8 @@ void vulkan_shadow_map_start(matrix4* shadow_view_matrix, const matrix* light_ma
 	auto* stateTracker = getStateTracker();
 	vk::CommandBuffer cmd = stateTracker->getCommandBuffer();
 
-	// End the current G-buffer render pass
+	// End the current render pass but keep track if we need to resume the swapchain render pass or the scene render pass afterwards.
+	Restore_swapchain_after_shadow_pass = !getRendererInstance()->isSceneRendering();
 	cmd.endRenderPass();
 
 	// Shadow render pass is always non-MSAA (1x sample count)
@@ -767,6 +761,7 @@ void vulkan_shadow_map_end()
 
 	auto* pp = getPostProcessor();
 	auto* stateTracker = getStateTracker();
+	auto* renderer = getRendererInstance();
 	vk::CommandBuffer cmd = stateTracker->getCommandBuffer();
 
 	gr_end_view_matrix();
@@ -780,65 +775,10 @@ void vulkan_shadow_map_end()
 	// End shadow render pass (color transitions to eShaderReadOnlyOptimal via finalLayout)
 	cmd.endRenderPass();
 
-	const bool msaaActive = (Cmdline_msaa_enabled > 0 && pp->isMsaaInitialized());
-
-	if (msaaActive) {
-		// Resume MSAA G-buffer render pass
-		pp->transitionMsaaGbufForResume(cmd);
-
-		auto extent = pp->getSceneExtent();
-		vk::RenderPassBeginInfo rpBegin;
-		rpBegin.renderPass = pp->getMsaaGbufRenderPassLoad();
-		rpBegin.framebuffer = pp->getMsaaGbufFramebuffer();
-		rpBegin.renderArea.offset = vk::Offset2D(0, 0);
-		rpBegin.renderArea.extent = extent;
-		std::array<vk::ClearValue, VulkanPostProcessor::MSAA_COLOR_ATTACHMENT_COUNT + 1> clearValues{};
-		clearValues[VulkanPostProcessor::MSAA_COLOR_ATTACHMENT_COUNT].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
-		rpBegin.clearValueCount = static_cast<uint32_t>(clearValues.size());
-		rpBegin.pClearValues = clearValues.data();
-		cmd.beginRenderPass(rpBegin, vk::SubpassContents::eInline);
-		stateTracker->setRenderPass(pp->getMsaaGbufRenderPassLoad(), 0);
-		stateTracker->setColorAttachmentCount(VulkanPostProcessor::MSAA_COLOR_ATTACHMENT_COUNT);
-		stateTracker->setCurrentSampleCount(getRendererInstance()->getMsaaSampleCount());
+	if ( Restore_swapchain_after_shadow_pass ) {
+		renderer->resumeSwapChainPass();
 	} else {
-		// Transition scene color: eShaderReadOnlyOptimal → eColorAttachmentOptimal
-		// (Scene color was in eShaderReadOnlyOptimal from ending G-buffer pass before shadow start)
-		{
-			vk::ImageMemoryBarrier barrier;
-			barrier.srcAccessMask = {};
-			barrier.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
-			barrier.oldLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-			barrier.newLayout = vk::ImageLayout::eColorAttachmentOptimal;
-			barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barrier.image = pp->getSceneColorImage();
-			barrier.subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
-
-			cmd.pipelineBarrier(
-				vk::PipelineStageFlagBits::eTopOfPipe,
-				vk::PipelineStageFlagBits::eColorAttachmentOutput,
-				{}, nullptr, nullptr, barrier);
-		}
-
-		// Transition G-buffer attachments 1-5 for resume
-		pp->transitionGbufForResume(cmd);
-
-		// Resume G-buffer render pass with eLoad
-		auto extent = pp->getSceneExtent();
-		vk::RenderPassBeginInfo rpBegin;
-		rpBegin.renderPass = pp->getGbufRenderPassLoad();
-		rpBegin.framebuffer = pp->getGbufFramebuffer();
-		rpBegin.renderArea.offset = vk::Offset2D(0, 0);
-		rpBegin.renderArea.extent = extent;
-
-		std::array<vk::ClearValue, 7> clearValues{};
-		clearValues[6].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
-		rpBegin.clearValueCount = static_cast<uint32_t>(clearValues.size());
-		rpBegin.pClearValues = clearValues.data();
-
-		cmd.beginRenderPass(rpBegin, vk::SubpassContents::eInline);
-		stateTracker->setRenderPass(pp->getGbufRenderPassLoad(), 0);
-		stateTracker->setColorAttachmentCount(VulkanPostProcessor::GBUF_COLOR_ATTACHMENT_COUNT);
+		renderer->resumeSceneRendering();
 	}
 
 	// Restore viewport and scissor to scene size
