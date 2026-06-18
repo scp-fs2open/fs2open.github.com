@@ -52,7 +52,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     container: ghcr.io/scp-fs2open/linux_build:sha-71099c9
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v7
         # checks-out your repository under $GITHUB_WORKSPACE, so your workflow can access it.
         name: Checkout
         with:
@@ -82,7 +82,7 @@ jobs:
           CONFIGURATION: ${{ matrix.configuration }}
         run: $GITHUB_WORKSPACE/ci/linux/generate_appimage.sh $GITHUB_WORKSPACE/build/install
       - name: Upload build result
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         # Upload the url file for use with other runners
         # upload-artifact.inputs:
         #   if-no-files-found=warn  What to do if path fails to find any files.
@@ -99,12 +99,12 @@ jobs:
     name: Build Linux distribution zip
     needs: build_linux
     runs-on: ubuntu-latest
-    container: ghcr.io/scp-fs2open/sftp_upload:sha-748b19d
+    container: ghcr.io/scp-fs2open/sftp_upload:sha-844131c
     strategy:
       matrix:
         arch: [x86_64, arm64]
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v7
         name: Checkout
         with:
           submodules: true
@@ -112,13 +112,13 @@ jobs:
           ref: '${{ github.ref }}'
       - name: Download Release builds
         # Grab the release builds
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: linux-Release-${{ matrix.arch }}
           path: builds
       - name: Download FastDebug builds
         # Grab the debug builds
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: linux-FastDebug-${{ matrix.arch }}
           path: builds
@@ -135,7 +135,7 @@ jobs:
         run: $GITHUB_WORKSPACE/ci/linux/create_dist_pack.sh Linux
       - name: Upload result package
         # Stash the result to artifact filespace
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ steps.generate_package.outputs.package_name }}
           path: ${{ steps.generate_package.outputs.package_path }}
@@ -157,7 +157,7 @@ jobs:
     name: Windows
     runs-on: windows-2022
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v7
         # Checkout repo
         name: Checkout
         with:
@@ -235,7 +235,7 @@ jobs:
         shell: bash
         run: ./bin/$CONFIGURATION/unittests --gtest_shuffle
       - name: Upload build result
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: windows-${{ matrix.configuration }}-${{ matrix.arch }}-${{ matrix.simd }}
           path: ${{ github.workspace }}/build/install/*
@@ -244,7 +244,7 @@ jobs:
     name: Build Windows distribution zip
     needs: build_windows
     runs-on: ubuntu-latest
-    container: ghcr.io/scp-fs2open/sftp_upload:sha-748b19d
+    container: ghcr.io/scp-fs2open/sftp_upload:sha-844131c
     strategy:
       fail-fast: false  # Run the other jobs in the matrix instead of failing them
       matrix:
@@ -252,20 +252,20 @@ jobs:
         simd: [SSE2, AVX]
 
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v7
         name: Checkout
         with:
           submodules: true
           fetch-depth: '0'
           ref: '${{ github.ref }}'
       - name: Download Release builds
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: windows-Release-${{ matrix.arch }}-${{ matrix.simd }}
           path: builds
 
       - name: Download FastDebug builds
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: windows-FastDebug-${{ matrix.arch }}-${{ matrix.simd }}
           path: builds
@@ -280,13 +280,13 @@ jobs:
         run: $GITHUB_WORKSPACE/ci/linux/create_dist_pack.sh Windows
 
       - name: Upload result package
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ steps.generate_package.outputs.package_name }}
           path: ${{ steps.generate_package.outputs.package_path }}
 
       - name: Upload debug package
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ steps.generate_package.outputs.debug_name }}
           path: ${{ steps.generate_package.outputs.debug_path }}
@@ -324,7 +324,7 @@ jobs:
           # cached: ${{ steps.cache-qt-mac.outputs.cache-hit }}
           # setup-python: 'false'
           # aqtversion: ==1.1.3
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v7
         name: Checkout
         with:
           submodules: true
@@ -372,7 +372,7 @@ jobs:
         # Ref: https://github.com/actions/runner-images/issues/2619
         run: gtar -cvzf macos-build-${{ matrix.configuration }}-${{ matrix.arch }}.tgz *.app
       - name: Upload build result
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: mac-${{ matrix.configuration }}-${{ matrix.arch }}
           path: ${{ github.workspace }}/build/bin/macos-build-${{ matrix.configuration }}-${{ matrix.arch }}.tgz
@@ -380,24 +380,24 @@ jobs:
     name: Build Mac distribution zip
     needs: build_mac
     runs-on: ubuntu-latest
-    container: ghcr.io/scp-fs2open/sftp_upload:sha-748b19d
+    container: ghcr.io/scp-fs2open/sftp_upload:sha-844131c
     strategy:
       matrix:
         arch: [x86_64, arm64]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v7
         name: Checkout
         with:
           submodules: true
           fetch-depth: '0'
           ref: '${{ github.ref }}'
       - name: Download Release builds
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: mac-Release-${{ matrix.arch }}
           path: builds
       - name: Download FastDebug builds
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: mac-FastDebug-${{ matrix.arch }}
           path: builds
@@ -413,7 +413,7 @@ jobs:
           ARCH: ${{ matrix.arch }}
         run: $GITHUB_WORKSPACE/ci/linux/create_dist_pack.sh Mac
       - name: Upload result package
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ steps.generate_package.outputs.package_name }}
           path: ${{ steps.generate_package.outputs.package_path }}

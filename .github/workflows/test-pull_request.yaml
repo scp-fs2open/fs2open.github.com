@@ -32,7 +32,7 @@ jobs:
     steps:
       - name: Install Qt dependencies
         run: apt-get -yq update && apt-get -yq install libfontconfig1
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v7
         name: Checkout
         with:
           submodules: true
@@ -86,7 +86,7 @@ jobs:
     steps:
       - name: Prepare Environment
         run: choco install ninja
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v7
         name: Checkout
         with:
           submodules: true
@@ -199,7 +199,7 @@ jobs:
           # setup-python: 'false'
           # aqtversion: ==1.1.3
           # py7zrversion: '==0.19.*'
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v7
         name: Checkout
         with:
           submodules: true

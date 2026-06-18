@@ -29,7 +29,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v1
+        uses: actions/checkout@v7
         with:
           submodules: recursive # `true` to checkout submodules, `recursive` to recursively checkout submodules
 
