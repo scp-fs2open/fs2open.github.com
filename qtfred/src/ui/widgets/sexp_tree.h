@@ -410,6 +410,11 @@ class sexp_tree: public QTreeWidget {
 	void nodeAnnotationChanged(void* handle, const QString& note);
 	void nodeBgColorChanged(void* handle, const QColor& color);
 
+	// Emitted when a node's tree item changed handle (moved/recreated), or was
+	// deleted (new_handle == nullptr).  Lets the model keep event annotations
+	// attached to their node across tree mutations.
+	void nodeHandleChanged(void* old_handle, void* new_handle);
+
 	// Generated message map functions
  protected:
 	void keyPressEvent(QKeyEvent* e) override;

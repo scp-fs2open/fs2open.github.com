@@ -31,6 +31,10 @@ protected:
 	virtual void PreSubclassWindow();
 	virtual void OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult);
 
+	// keep event annotations attached to their node when the tree recreates or
+	// deletes its handle (new_handle == nullptr means the node was deleted)
+	void on_node_handle_changed(HTREEITEM old_handle, HTREEITEM new_handle) override;
+
 	CStringA m_tooltiptextA;
 	CStringW m_tooltiptextW;
 
