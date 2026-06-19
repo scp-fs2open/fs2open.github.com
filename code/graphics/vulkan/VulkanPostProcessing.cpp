@@ -226,7 +226,7 @@ bool VulkanPostProcessor::init(vk::Device device, vk::PhysicalDevice physDevice,
 		attachments[0].storeOp = vk::AttachmentStoreOp::eStore;
 		attachments[0].stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
 		attachments[0].stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
-		attachments[0].initialLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		attachments[0].initialLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 		attachments[0].finalLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 
 		// Depth — load existing content
