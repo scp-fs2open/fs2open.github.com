@@ -1635,6 +1635,8 @@ void VulkanRenderer::resumeSceneRendering()
 	rpBegin.framebuffer = m_postProcessor->getSceneFramebuffer();
 
 	m_currentCommandBuffer.beginRenderPass(rpBegin, vk::SubpassContents::eInline);
+	m_stateTracker->setRenderPass(m_postProcessor->getSceneRenderPassLoad(), 0);
+	m_stateTracker->setColorAttachmentCount(1);
 }
 
 void VulkanRenderer::endSceneRendering()
