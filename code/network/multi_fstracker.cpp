@@ -893,6 +893,11 @@ void multi_stats_fs_to_tracker(scoring_struct *fs, vmt_stats_struct *vmt, player
 	// find only up to last in array with at least 1 kill
 	vmt->num_ships = MAX_FS2OPEN_COUNTS - vmt->num_medals;
 
+	// can't transmit more ship classes than this mod actually has
+	if (static_cast<size_t>(vmt->num_ships) > fs->kills.size()) {
+		vmt->num_ships = static_cast<unsigned char>(fs->kills.size());
+	}
+
 	for (int idx = vmt->num_ships-1; idx >= 0; --idx) {
 		if (fs->kills[idx] > 0) {
 			break;
@@ -958,7 +963,11 @@ void multi_stats_tracker_to_fs(vmt_stats_struct *vmt,scoring_struct *fs)
 				fs->medal_counts[idx] = static_cast<int>(vmt->counts[idx]);
 			}
 		} else {
-			fs->kills[idx2++] = static_cast<int>(vmt->counts[idx]);
+			// tracker may have more ship slots than this mod's ship_info; drop excess
+			if (fs->kills.in_bounds(idx2)) {
+				fs->kills[idx2] = static_cast<int>(vmt->counts[idx]);
+			}
+			++idx2;
 		}
 	}
 }
