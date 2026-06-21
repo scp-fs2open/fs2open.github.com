@@ -673,6 +673,11 @@ void sexp_tree::free_node2(int node) {
 	Assert(tree_nodes[node].type != SEXPT_UNUSED);
 	Assert(total_nodes > 0);
 	modified();
+
+	// the node is being deleted; let the model drop anything attached to its handle
+	if (tree_nodes[node].handle)
+		nodeHandleChanged(tree_nodes[node].handle, nullptr);
+
 	tree_nodes[node].type = SEXPT_UNUSED;
 	total_nodes--;
 	if (tree_nodes[node].child != -1) {
@@ -2738,6 +2743,9 @@ QTreeWidgetItem* sexp_tree::move_branch(QTreeWidgetItem* source, QTreeWidgetItem
 	h->setData(0, NoteRole, source->data(0, NoteRole));
 	h->setData(0, BgColorRole, source->data(0, BgColorRole));
 	applyVisuals(h);
+
+	// the item was recreated with a new handle; let the model follow it
+	nodeHandleChanged(source, h);
 
 	// Move children safely
 	while (source->childCount() > 0) {
@@ -7296,6 +7304,10 @@ void sexp_tree::deleteActionHandler()
 		if (formulaNode >= 0) {
 			free_node2(formulaNode);
 		}
+
+		// the event-root item is not a tree_nodes entry, so free_node2 above does
+		// not cover an annotation attached to the event root itself
+		nodeHandleChanged(item, nullptr);
 
 		// Remove the UI item and reset selection/index
 		delete item;

@@ -367,6 +367,11 @@ protected:
 	virtual void NodeReplacePaste();
 	virtual void NodeAddPaste();
 
+	// Notifies that the tree item for a node changed handle (moved/recreated), or
+	// was deleted (new_handle == nullptr).  The event tree overrides this to keep
+	// event annotations attached to their node.  Default: no-op.
+	virtual void on_node_handle_changed(HTREEITEM /*old_handle*/, HTREEITEM /*new_handle*/) {}
+
 	void update_item(HTREEITEM handle);
 
 	int load_branch(int index, int parent);
