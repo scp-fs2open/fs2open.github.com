@@ -142,6 +142,10 @@ class MissionEventsDialogModel : public AbstractDialogModel {
 	void setNodeAnnotation(IEventTreeOps::Handle h, const SCP_string& note);
 	void setNodeBgColor(IEventTreeOps::Handle h, int r, int g, int b, bool has_color);
 
+	// Keep annotations attached to their node when the tree recreates (move) or
+	// deletes (new_handle == nullptr) the item's handle.
+	void onNodeHandleChanged(IEventTreeOps::Handle old_handle, IEventTreeOps::Handle new_handle);
+
 	// Message Management
 	void createMessage();
 	void insertMessage();
