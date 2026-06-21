@@ -423,7 +423,7 @@ void CampaignEditorDialogModel::loadCampaignFromFile(const SCP_string& filename)
 
 	// Attempt to load the selected file into the global Campaign struct.
 	// We pass the full path via the filename argument now.
-	if (mission_campaign_load(filename.c_str(), filename.c_str(), nullptr, 0) != 0) {
+	if (mission_campaign_load(filename.c_str(), filename.c_str(), nullptr, false) != 0) {
 		// Load failed. Reset the model to a clean "new campaign" state.
 		initializeData(nullptr);
 		clearCampaignGlobal(); // Ensure cleanup after failed load

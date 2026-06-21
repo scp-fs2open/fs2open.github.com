@@ -123,7 +123,7 @@ public:
 	int				objnum;										// object number for this player
 	button_info		bi;												// structure that holds bit vectors for button presses
 	control_info	ci;											// control info structure for this player
-	scoring_struct	stats;										// scoring and stats info for the player (points to multi_stats or single_stats)	
+	scoring_struct	stats;										// scoring and stats info for the player that are currently accumulating; loaded from multi_stats or all_time_stats
 	
 	int				friendly_hits;								//	Number of times hit a friendly ship this mission.
 	float				friendly_damage;							//	Total friendly damage done in mission.  Diminishes over time.
