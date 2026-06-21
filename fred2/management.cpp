@@ -28,6 +28,7 @@
 #include "mission/missionbriefcommon.h"
 #include "missioneditor/common.h"
 #include "missioneditor/objectduplication.h"
+#include "missioneditor/sexp_annotation_model.h"
 #include "model/modelreplace.h"
 #include "Management.h"
 #include "cfile/cfile.h"

@@ -850,6 +850,14 @@ add_file_folder("MissionEditor"
 	missioneditor/missionsave.h
 	missioneditor/objectduplication.cpp
 	missioneditor/objectduplication.h
+	missioneditor/sexp_annotation_model.cpp
+	missioneditor/sexp_annotation_model.h
+	missioneditor/sexp_tree_model.cpp
+	missioneditor/sexp_tree_model.h
+	missioneditor/sexp_tree_opf.cpp
+	missioneditor/sexp_tree_opf.h
+	missioneditor/sexp_tree_actions.cpp
+	missioneditor/sexp_tree_actions.h
 )
 
 # MissionUI files

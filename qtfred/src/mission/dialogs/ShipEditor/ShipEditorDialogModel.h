@@ -3,7 +3,6 @@
 #include "../AbstractDialogModel.h"
 #include "mission/util.h"
 #include "ship/ship.h"
-#include "ui/widgets/sexp_tree.h"
 
 namespace fso::fred::dialogs {
 
@@ -84,7 +83,7 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	void setArrivalCue(bool updateCue);
 	bool getArrivalCue() const;
 
-	void setArrivalFormula(int formula, int objNum);
+	void setArrivalTreeDirty(int formula);
 	int getArrivalFormula() const;
 
 	void setNoArrivalWarp(int state);
@@ -104,7 +103,7 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	void setDepartureCue(bool updateCue);
 	bool getDepartureCue() const;
 
-	void setDepartureFormula(int formula, int objNum);
+	void setDepartureTreeDirty(int formula);
 	int getDepartureFormula() const;
 	void setNoDepartureWarp(int state);
 	int getNoDepartureWarp() const;
