@@ -15,6 +15,7 @@
 #include "globalincs/globals.h" // for NAME_LENGTH
 #include "globalincs/pstypes.h"
 #include <array>
+#include <utility>
  
 #include "actions/Program.h"
 #include "gamesnd/gamesnd.h"
@@ -566,12 +567,9 @@ struct w_bank
 	w_bank& operator=(w_bank&& other) {
 		this->~w_bank();
 		num_slots = other.num_slots;
-		pnt = other.pnt;
-		norm = other.norm;
-		external_model_angle_offset = other.external_model_angle_offset;
-		other.pnt = nullptr;
-		other.norm = nullptr;
-		other.external_model_angle_offset = nullptr;
+		pnt = std::exchange(other.pnt, nullptr);
+		norm = std::exchange(other.norm, nullptr);
+		external_model_angle_offset = std::exchange(other.external_model_angle_offset, nullptr);
 		return *this;
 	}
 	w_bank(const w_bank& other) = default;
