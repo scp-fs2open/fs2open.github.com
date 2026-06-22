@@ -1,3 +1,8 @@
+#ifdef GL_ES
+precision highp float;
+precision highp int;
+#endif
+
 in vec4 vertPosition;
 in vec4 vertTexCoord;
 in vec4 vertColor;

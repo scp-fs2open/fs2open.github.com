@@ -1,4 +1,18 @@
+#ifdef GL_ES
+#extension GL_EXT_gpu_shader5: enable
+#extension GL_EXT_clip_cull_distance: enable
+precision highp float;
+precision highp int;
+precision highp sampler2D;
+precision highp sampler2DArray;
+precision highp samplerCube;
+#else
 #extension GL_ARB_gpu_shader5: enable
+#endif
+
+#if !defined(GL_ES) || defined(GL_EXT_clip_cull_distance)
+#define USE_HW_CLIP_DISTANCE
+#endif
 
 #conditional_include +"LARGE_SHADER" "main_large.sdr"
 #conditional_include -"LARGE_SHADER" "main_small.sdr"
@@ -13,7 +27,7 @@ layout (triangle_strip, max_vertices = 3) out;
 #endif
 
 #ifdef MODEL_SDR_FLAG_SHADOW_MAP
- #ifdef GL_ARB_gpu_shader5
+ #if defined(GL_ARB_gpu_shader5) || defined(GL_EXT_gpu_shader5)  
 layout(invocations = 4) in;
  #endif
 #endif
@@ -109,7 +123,7 @@ in VertexOutput {
 #prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_FOG
 
 #ifdef MODEL_SDR_FLAG_SHADOW_MAP
- #if !defined(GL_ARB_gpu_shader5)
+ #if !defined(GL_ARB_gpu_shader5) && !defined(GL_EXT_gpu_shader5)  
 	float instance;
  #endif
 	float clipModel;
@@ -123,6 +137,9 @@ in VertexOutput {
 	vec4 shadowUV[4];
 	vec4 shadowPos;
 #prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
+#ifndef USE_HW_CLIP_DISTANCE
+    float vClipDist;
+#endif
 } vertIn[];
 
 out VertexOutput {
@@ -140,12 +157,16 @@ out VertexOutput {
 	vec4 shadowUV[4];
 	vec4 shadowPos;
 #prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
+
+#ifndef USE_HW_CLIP_DISTANCE
+    float vClipDist;
+#endif
 } vertOut;
 
 #ifdef MODEL_SDR_FLAG_SHADOW_MAP
 	void main(void)
 	{
-		#ifdef GL_ARB_gpu_shader5
+		#if defined(GL_ARB_gpu_shader5) || defined(GL_EXT_gpu_shader5)  
 			int instanceID = gl_InvocationID;
 		#else
 			int instanceID = int(vertIn[0].instance);
@@ -186,7 +207,15 @@ out VertexOutput {
 			#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_SHADOWS
 
 			if (use_clip_plane) {
-				gl_ClipDistance[0] = gl_in[vert].gl_ClipDistance[0];
+				#ifndef USE_HW_CLIP_DISTANCE
+					vertOut.vClipDist = vertIn[vert].vClipDist;
+				#else
+					gl_ClipDistance[0] = gl_in[vert].gl_ClipDistance[0];
+				#endif
+			} else {
+				#ifndef USE_HW_CLIP_DISTANCE
+					vertOut.vClipDist = 1.0;
+				#endif
 			}
 			EmitVertex();
 		}
@@ -240,8 +269,17 @@ out VertexOutput {
                 #prereplace ENDIF_FLAG //MODEL_SDR_FLAG_SHADOWS
 
 				if (use_clip_plane) {
-					gl_ClipDistance[0] = gl_in[vert].gl_ClipDistance[0];
+					#ifndef USE_HW_CLIP_DISTANCE
+						vertOut.vClipDist = vertIn[vert].vClipDist;
+					#else
+						gl_ClipDistance[0] = gl_in[vert].gl_ClipDistance[0];
+					#endif
+				} else {
+					#ifndef USE_HW_CLIP_DISTANCE
+						vertOut.vClipDist = 1.0;
+					#endif
 				}
+
 				EmitVertex();
 			}
 

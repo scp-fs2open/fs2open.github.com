@@ -333,11 +333,6 @@ inline void glDrawBuffer(GLenum buf)
 	}
 }
 
-// does not exist on ES, ES uses layout(location=) directly on shader
-// Notes: 
-// -This function is not required to run.
-#define glBindFragDataLocation(program, colorNumber, name) ((void)0)
-
 // glPolygonMode() is not supported on ES,  no wireframe, GL_FILL is default, GL_POINTS, and GL_LINES needs an alternative path
 // Notes: 
 // -This function is not required to run.
@@ -353,6 +348,7 @@ static inline void glQueryCounter(GLuint id, GLenum target)
 	#else
 		(void)id;
 	#endif
+		(void)target;
 }
 
 // glGetCompressedTexImage not present on GLES and no equivalent

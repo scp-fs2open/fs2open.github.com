@@ -1,3 +1,10 @@
+#ifdef GL_ES
+precision highp float;
+precision highp int;
+precision highp sampler2D;
+precision highp sampler2DArray;
+precision highp samplerCube;
+#endif
 
 in vec4 vertPosition;
 in vec4 vertTexCoord;

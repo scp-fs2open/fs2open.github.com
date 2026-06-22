@@ -1,3 +1,15 @@
+#ifdef GL_ES
+#ifdef GL_EXT_gpu_shader5
+	#extension GL_EXT_gpu_shader5 : enable
+	#define FXAA_GATHER4_ALPHA 1
+#endif
+precision highp float;
+precision highp int;
+precision highp sampler2D;
+precision highp sampler2DArray;
+precision highp samplerCube;
+#endif
+
 #define FXAA_EARLY_EXIT 1
 #define FXAA_DISCARD 1
 #define FXAA_FAST_PIXEL_OFFSET 1 // With OpenGL 3.2 we can always do this
@@ -489,8 +501,12 @@ FxaaFloat4 FxaaPixelShader(
 }
 uniform sampler2D tex0;
 in vec2 v_rcpFrame;
+#ifdef GL_ES
+in vec2 v_pos;
+#else
 noperspective in vec2 v_pos;
-out vec4 fragOut0;
+#endif
+layout(location=0)out vec4 fragOut0;
 void main() {
 	fragOut0 = FxaaPixelShader(v_pos, tex0, v_rcpFrame, FXAA_QUALITY_SUBPIX, FXAA_QUALITY_EDGE_THRESHOLD, FXAA_QUALITY_EDGE_THRESHOLD_MIN);
 }

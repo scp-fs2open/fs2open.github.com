@@ -1,5 +1,11 @@
+#ifdef GL_ES
+precision highp float;
+precision highp int;
+precision highp sampler2D;
+#endif
+
 in vec4 fragTexCoord;
-out vec4 fragOut0;
+layout(location=0) out vec4 fragOut0;
 uniform sampler2D tex;
 const float Luminance = 0.08;
 const float fMiddleGray = 0.2;

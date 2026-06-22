@@ -137,8 +137,13 @@ static opengl_shader_type_t GL_shader_types[] = {
 	{ SDR_TYPE_BATCHED_BITMAP, "batched-v.sdr", "batched-f.sdr", nullptr,
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD, opengl_vert_attrib::COLOR }, "Batched bitmaps", false },
 
-	{ SDR_TYPE_DEFAULT_MATERIAL, "default-material.vert.spv.glsl", "default-material.frag.spv.glsl", nullptr,
-		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD, opengl_vert_attrib::COLOR }, "Default material", true },
+#ifdef USE_OPENGL_ES
+    { SDR_TYPE_DEFAULT_MATERIAL, "default-material.vert.spv.gles.glsl", "default-material.frag.spv.gles.glsl", nullptr,
+        { opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD, opengl_vert_attrib::COLOR }, "Default material", true },
+#else
+    { SDR_TYPE_DEFAULT_MATERIAL, "default-material.vert.spv.glsl", "default-material.frag.spv.glsl", nullptr,
+        { opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD, opengl_vert_attrib::COLOR }, "Default material", true },
+#endif
 
 	{ SDR_TYPE_NANOVG, "nanovg-v.sdr", "nanovg-f.sdr", nullptr,
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "NanoVG shader", false },
@@ -864,13 +869,6 @@ void opengl_compile_shader_actual(shader_type sdr, const uint &flags, opengl_sha
 				// assign vert attribute binding locations before we link the shader
 				glBindAttribLocation(program->getShaderHandle(), (GLint)i, GL_vertex_attrib_info[i].name.c_str());
 			}
-
-			// bind fragment data locations before we link the shader
-			glBindFragDataLocation(program->getShaderHandle(), 0, "fragOut0");
-			glBindFragDataLocation(program->getShaderHandle(), 1, "fragOut1");
-			glBindFragDataLocation(program->getShaderHandle(), 2, "fragOut2");
-			glBindFragDataLocation(program->getShaderHandle(), 3, "fragOut3");
-			glBindFragDataLocation(program->getShaderHandle(), 4, "fragOut4");
 
 			if (do_shader_caching()) {
 				// Enable shader caching
