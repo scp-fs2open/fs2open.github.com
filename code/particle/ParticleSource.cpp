@@ -55,7 +55,7 @@ bool ParticleSource::process() {
 	const auto& effectList = getEffect();
 
 	const vec3d& vel = m_host->getVelocity();
-	const auto& [parent, parent_sig] = m_host->getParentObjAndSig();
+	const auto& attachment = m_host->getParentAttachment();
 	float parent_radius = m_host->getScale();
 	float parent_lifetime = m_host->getLifetime();
 	float particleMultiplier = m_host->getParticleMultiplier();
@@ -72,7 +72,7 @@ bool ParticleSource::process() {
 				float interp = static_cast<float>(timestamp_since(timing.m_nextCreation)) / (f2fl(Frametime) * 1000.0f);
 
 				// Some of these
-				float freqMult = effect.processSource(interp, *this, i, vel, parent, parent_sig, parent_lifetime, parent_radius, particleMultiplier);
+				float freqMult = effect.processSource(interp, *this, i, vel, attachment, parent_lifetime, parent_radius, particleMultiplier);
 
 				// we need to clamp this to 1 because a spawn delay lower than it takes to spawn the particle in ms means we try to spawn infinite particles
 				auto time_diff_ms = std::max(fl2i(effect.getNextSpawnDelay() / freqMult * MILLISECONDS_PER_SECOND), 1);

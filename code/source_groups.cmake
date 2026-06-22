@@ -1125,6 +1125,7 @@ add_file_folder("Parse\\\\SEXP"
 # Particle files
 add_file_folder("Particle"
 	particle/EffectHost.h
+	particle/EffectHost.cpp
 	particle/particle.cpp
 	particle/particle.h
 	particle/ParticleEffect.cpp
