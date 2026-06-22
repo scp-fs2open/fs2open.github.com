@@ -411,6 +411,53 @@ void PSNET_TOP_LAYER_PROCESS()
 // PSNET 2 FUNCTIONS
 //
 
+void psnet_pre_init(uint16_t port_num)
+{
+	if (Psnet_active) {
+		return;
+	}
+
+	// if we're a standalone server then always do a full init
+	if (Is_standalone) {
+		psnet_init(port_num);
+		return;
+	}
+
+#ifdef _WIN32
+	WSADATA wsa_data;
+	WORD ws_ver;
+
+	ws_ver = MAKEWORD(2, 2);
+
+	if (WSAStartup(ws_ver, &wsa_data)) {
+		return;
+	}
+#endif
+
+	Network_status = NETWORK_STATUS_NO_PROTOCOL;
+	Psnet_default_port = (port_num > 1023) ? port_num : DEFAULT_GAME_PORT;
+
+	// do this before socket init
+	psnet_init_my_addr();
+
+	// pre-initialize UDP
+	if (psnet_init_socket()) {
+		// everything is set so close out used resources
+		if (Psnet_socket != INVALID_SOCKET) {
+			shutdown(Psnet_socket, 1);
+			closesocket(Psnet_socket);
+		}
+	}
+
+	Psnet_socket = INVALID_SOCKET;
+	Psnet_active = false;
+	Network_status = NETWORK_STATUS_NOT_INITIALIZED;
+
+#ifdef _WIN32
+	WSACleanup();
+#endif
+}
+
 /**
  * Initialize psnet to use the specified port
  */

@@ -39,7 +39,7 @@ TARGET_LINK_LIBRARIES(code PUBLIC ${PNG_LIBS})
 TARGET_LINK_LIBRARIES(code PUBLIC ${JPEG_LIBS})
 TARGET_LINK_LIBRARIES(code PUBLIC lz4)
 
-TARGET_LINK_LIBRARIES(code PUBLIC sdl2)
+TARGET_LINK_LIBRARIES(code PUBLIC sdl3)
 
 if (FSO_BUILD_WITH_FFMPEG)
 	TARGET_LINK_LIBRARIES(code PUBLIC ffmpeg)
@@ -75,8 +75,6 @@ ENDIF(FSO_USE_SPEECH)
 TARGET_LINK_LIBRARIES(code PUBLIC jansson)
 
 target_link_libraries(code PUBLIC anl)
-
-target_link_libraries(code PUBLIC hidapi::hidapi)
 
 target_link_libraries(code PUBLIC imgui)
 

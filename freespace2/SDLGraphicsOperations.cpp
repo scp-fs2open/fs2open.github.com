@@ -5,11 +5,9 @@
 
 #include "cmdline/cmdline.h"
 
-#if SDL_VERSION_ATLEAST(2, 0, 6)
-#include <SDL_vulkan.h>
-#include "backends/imgui_impl_sdl.h"
+#include <SDL3/SDL_vulkan.h>
+#include "backends/imgui_impl_sdl3.h"
 #include "backends/imgui_impl_opengl3.h"
-#endif
 
 namespace {
 void setOGLProperties(const os::ViewPortProperties& props)
@@ -75,11 +73,11 @@ class SDLOpenGLContext: public os::OpenGLContext {
 	}
 
 	~SDLOpenGLContext() override {
-		SDL_GL_DeleteContext(_glCtx);
+		SDL_GL_DestroyContext(_glCtx);
 	}
 
 	os::OpenGLLoadProc getLoaderFunction() override {
-		return SDL_GL_GetProcAddress;
+		return reinterpret_cast<os::OpenGLLoadProc>(SDL_GL_GetProcAddress);
 	}
 
 	void makeCurrent(SDL_Window* window) {
@@ -87,15 +85,47 @@ class SDLOpenGLContext: public os::OpenGLContext {
 	}
 
 	bool setSwapInterval(int status) override {
-		return SDL_GL_SetSwapInterval(status) == 0;
+		return SDL_GL_SetSwapInterval(status);
 	}
 };
 class SDLWindowViewPort: public os::Viewport {
 	SDL_Window* _window;
 	os::ViewPortProperties _props;
+
+	float coord_scale;
+	float content_scale;
+	float scale_factor;
+	ImGuiStyle styleOrig;
+
+	void setDPIScaling() {
+		int window_w, window_h;
+		int framebuffer_w, framebuffer_h;
+
+		SDL_GetWindowSize(_window, &window_w, &window_h);
+		SDL_GetWindowSizeInPixels(_window, &framebuffer_w, &framebuffer_h);
+
+		float sx = framebuffer_w / static_cast<float>(window_w);
+		float sy = framebuffer_h / static_cast<float>(window_h);
+
+		coord_scale = std::max(sx, sy);
+		content_scale = SDL_GetWindowDisplayScale(_window);
+		scale_factor = content_scale / coord_scale;
+	}
+
+	void initDPIScaling() {
+		// save initial imgui style
+		styleOrig = ImGui::GetStyle();
+		// update dpi scaling values
+		setDPIScaling();
+		// scale imgui style
+		ImGui::GetStyle().ScaleAllSizes(scale_factor);
+		ImGui::GetStyle().FontScaleDpi = scale_factor;
+	}
  public:
 	SDLWindowViewPort(SDL_Window* window, const os::ViewPortProperties& props) : _window(window), _props(props) {
 		Assertion(window != nullptr, "Invalid window specified");
+		// scaling for imgui high dpi stuff
+		initDPIScaling();
 	}
 	~SDLWindowViewPort() override {
 		SDL_DestroyWindow(_window);
@@ -110,7 +140,7 @@ class SDLWindowViewPort: public os::Viewport {
 	}
 	std::pair<uint32_t, uint32_t> getSize() override {
 		int width, height;
-		SDL_GetWindowSize(_window, &width, &height);
+		SDL_GetWindowSizeInPixels(_window, &width, &height);
 
 		return std::make_pair(width, height);
 	}
@@ -120,16 +150,33 @@ class SDLWindowViewPort: public os::Viewport {
 	void setState(os::ViewportState state) override {
 		switch (state) {
 			case os::ViewportState::Windowed:
-				SDL_SetWindowFullscreen(_window, 0);
-				SDL_SetWindowBordered(_window, SDL_TRUE);
+				SDL_SetWindowFullscreen(_window, false);
+				SDL_SetWindowBordered(_window, true);
 				break;
 			case os::ViewportState::Borderless:
-				SDL_SetWindowFullscreen(_window, 0);
-				SDL_SetWindowBordered(_window, SDL_FALSE);
+				SDL_SetWindowFullscreen(_window, false);
+				SDL_SetWindowBordered(_window, false);
 				break;
-			case os::ViewportState::Fullscreen:
-				SDL_SetWindowFullscreen(_window, SDL_WINDOW_FULLSCREEN);
+			case os::ViewportState::Fullscreen: {
+				SDL_DisplayMode target;
+				int width, height;
+
+				if (SDL_GetWindowSizeInPixels(_window, &width, &height)) {
+					if (SDL_GetClosestFullscreenDisplayMode(SDL_GetDisplayForWindow(_window),
+															width, height, 0.0f, true, &target))
+					{
+						SDL_SetWindowFullscreenMode(_window, &target);
+					}
+				}
+
+				// NOTE: This can be buggy if the mode failed to set since FSO
+				// doesn't account for a difference between assumed window size
+				// and actual window size. This can present as screen anomalies
+				// such as distortion, mirroring, or flickering.
+				SDL_SetWindowFullscreen(_window, true);
+
 				break;
+			}
 			default:
 				UNREACHABLE("Invalid window state!");
 				break;
@@ -147,6 +194,24 @@ class SDLWindowViewPort: public os::Viewport {
 	void restore() override {
 		SDL_RestoreWindow(_window);
 	}
+
+	float getCoordScale() override {
+		return coord_scale;
+	}
+
+	float getScaled(float val) override {
+		return val * scale_factor;
+	}
+
+	void updateScaling() override {
+		// restore original imgui style
+		ImGui::GetStyle() = styleOrig;
+		// update dpi scaling values
+		setDPIScaling();
+		// scale imgui style
+		ImGui::GetStyle().ScaleAllSizes(scale_factor);
+		ImGui::GetStyle().FontScaleDpi = scale_factor;
+	}
 };
 
 SDLGraphicsOperations::SDLGraphicsOperations() {
@@ -157,7 +222,7 @@ SDLGraphicsOperations::SDLGraphicsOperations() {
 	setenv("force_s3tc_enable", "true", 1);
 #endif
 
-	if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0) {
+	if ( !SDL_InitSubSystem(SDL_INIT_VIDEO) ) {
 		Error(LOCATION, "Couldn't init SDL video: %s", SDL_GetError());
 		return;
 	}
@@ -166,7 +231,7 @@ SDLGraphicsOperations::~SDLGraphicsOperations() {
 	// make sure imgui stuff is initialized before trying to shut it down
 	if (ImGui::GetCurrentContext()) {
 		if (ImGui::GetIO().BackendPlatformUserData) {
-			ImGui_ImplSDL2_Shutdown();
+			ImGui_ImplSDL3_Shutdown();
 		}
 
 		if ( !Cmdline_vulkan && ImGui::GetIO().BackendRendererUserData ) {
@@ -178,31 +243,32 @@ SDLGraphicsOperations::~SDLGraphicsOperations() {
 }
 std::unique_ptr<os::Viewport> SDLGraphicsOperations::createViewport(const os::ViewPortProperties& props)
 {
-	uint32_t windowflags = SDL_WINDOW_SHOWN;
+	uint32_t windowflags = 0;
 	if (props.enable_opengl) {
 		windowflags |= SDL_WINDOW_OPENGL;
 		setOGLProperties(props);
 	}
-#if SDL_VERSION_ATLEAST(2, 0, 6)
 	if (props.enable_vulkan) {
 		windowflags |= SDL_WINDOW_VULKAN;
 	}
-#endif
 	if (props.flags[os::ViewPortFlags::Borderless]) {
 		windowflags |= SDL_WINDOW_BORDERLESS;
 	}
 	if (props.flags[os::ViewPortFlags::Fullscreen]) {
-		windowflags |= SDL_WINDOW_FULLSCREEN;
+		// don't set window flag here since we need to alter the display mode
+		// first and that can only be done after the window is created
+		//
+		// windowflags |= SDL_WINDOW_FULLSCREEN;
 	}
 	if (props.flags[os::ViewPortFlags::Resizeable]) {
 		windowflags |= SDL_WINDOW_RESIZABLE;
 	}
 	if (props.flags[os::ViewPortFlags::Capture_Mouse]) {
-		windowflags |= SDL_WINDOW_INPUT_GRABBED;
+		windowflags |= SDL_WINDOW_MOUSE_GRABBED;
 	}
 
 	SDL_Rect bounds;
-	if (SDL_GetDisplayBounds(props.display, &bounds) != 0) {
+	if ( !SDL_GetDisplayBounds(props.display, &bounds) ) {
 		mprintf(("Failed to get display bounds: %s\n", SDL_GetError()));
 		return nullptr;
 	}
@@ -228,8 +294,6 @@ std::unique_ptr<os::Viewport> SDLGraphicsOperations::createViewport(const os::Vi
 	}
 
 	SDL_Window* window = SDL_CreateWindow(props.title.c_str(),
-										  x,
-										  y,
 										  width,
 										  height,
 										  windowflags);
@@ -238,6 +302,22 @@ std::unique_ptr<os::Viewport> SDLGraphicsOperations::createViewport(const os::Vi
 		return nullptr;
 	}
 
+	// switch to fullscreen if we should
+	if (props.flags[os::ViewPortFlags::Fullscreen]) {
+		SDL_DisplayMode target;
+
+		if (SDL_GetClosestFullscreenDisplayMode(props.display, width, height, 0.0f, true, &target)) {
+			SDL_SetWindowFullscreenMode(window, &target);
+		}
+
+		// NOTE: This can be buggy if the mode failed to set since FSO doesn't
+		// account for a difference between assumed window size and actual window
+		// size. This can present as screen anomalies such as distortion, mirroring,
+		// or flickering.
+		SDL_SetWindowFullscreen(window, true);
+	}
+
+	SDL_SetWindowPosition(window, x, y);
 	SDL_RaiseWindow(window);
 
 	return std::unique_ptr<os::Viewport>(new SDLWindowViewPort(window, props));
@@ -283,7 +363,7 @@ std::unique_ptr<os::OpenGLContext> SDLGraphicsOperations::createOpenGLContext(os
 
 	Assertion(ImGui::GetCurrentContext() != nullptr, "Can't use ImGui without a valid context!");
 
-	ImGui_ImplSDL2_InitForOpenGL(viewport->toSDLWindow(), ctx);
+	ImGui_ImplSDL3_InitForOpenGL(viewport->toSDLWindow(), ctx);
 	#ifndef USE_OPENGL_ES
 	ImGui_ImplOpenGL3_Init();
 	#else

@@ -5,7 +5,6 @@
 #include <thread>
 
 #include "globalincs/pstypes.h"
-#include "sound/openal.h"
 
 #include "Decoder.h"
 #include "VideoPresenter.h"
@@ -25,9 +24,8 @@ struct PlayerState {
 	// Audio state
 	bool audioInited = false;
 	bool hasAudio = false;
-	ALuint audioSid = 0;
-	SCP_vector<ALuint> audioBuffers;
-	SCP_queue<ALuint> unqueuedAudioBuffers;
+	SDL_AudioStream *audioStream = nullptr;
+	SDL_AudioSpec audioSpec;
 
 	// Graphics state following
 	bool videoInited = false;
