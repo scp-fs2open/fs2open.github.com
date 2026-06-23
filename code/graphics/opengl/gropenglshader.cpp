@@ -178,6 +178,9 @@ static opengl_shader_type_t GL_shader_types[] = {
 
 	{ SDR_TYPE_IRRADIANCE_MAP_GEN, "post-v.sdr", "irrmap-f.sdr", nullptr,
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Irradiance Map Generation", false },
+
+	{ SDR_TYPE_GAMMA_BLIT, "post-v.sdr", "gamma-correct-f.sdr", nullptr,
+		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Gamma correct blit", false },
 };
 // clang-format on
 
