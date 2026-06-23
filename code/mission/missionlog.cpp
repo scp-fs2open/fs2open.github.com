@@ -437,16 +437,6 @@ int mission_log_get_count( LogType type, const char *pname, const char *sname )
 }
 
 
-void message_log_add_seg(log_text_seg *entry, int x, int line_offset, int msg_color, const char *text, int flags = 0)
-{
-	// set the vector
-	entry->text.reset(vm_strdup(text));
-	entry->color = msg_color;
-	entry->x = x;
-	entry->line_offset = line_offset;
-	entry->flags = flags;
-}
-
 void message_log_add_seg(log_text_seg *entry, int x, int line_offset, int msg_color, const char *text, size_t len, int flags = 0)
 {
 	// set the vector
@@ -457,66 +447,72 @@ void message_log_add_seg(log_text_seg *entry, int x, int line_offset, int msg_co
 	entry->flags = flags;
 }
 
-void message_log_add_segs(const char *source_string, int msg_color, int flags, SCP_vector<log_text_seg> *entry, bool split_string)
+void message_log_add_seg(log_text_seg *entry, int x, int line_offset, int msg_color, const char *text, int flags = 0)
 {
-	if (!source_string || !entry) {
+	message_log_add_seg(entry, x, line_offset, msg_color, text, strlen(text), flags);
+}
+
+void message_log_add_segs(const char *text, int msg_color, int flags, SCP_vector<log_text_seg> *entry, bool split_string)
+{
+	if (!text || !entry) {
 		mprintf(("Why are you passing a NULL pointer to message_log_add_segs?\n"));
 		return;
 	}
-	if (!*source_string) {
-		return;
-	}
-        
-	// duplicate the string so that we can split it without modifying the source
-	char *dup_string = vm_strdup(source_string);
-	char *str = dup_string;
-	char *split = NULL;
 
 	if (split_string) {
 		int sanity_counter = 0;
 
 		while (true) {
 			if (X == ACTION_X) {
-				while (is_white_space(*str))
-					str++;
+				ignore_white_space(&text);
+			}
+			if (!*text) {
+				return;
 			}
 
-			if (P_width - X > 0) {
-				split = split_str_once(str, P_width - X);
+			int w;
+			auto [split_len, split_next_pos, forced] = split_str_once(text, P_width - X, std::string::npos, 1.0f, &w);
 
-				// if we couldn't actually split the string, try again on a new line
-				if (split == str) {
-					sanity_counter++;
-					if (sanity_counter > 5) {
-						Error(LOCATION, "Too many attempts to wrap a mission log line!  Get a coder!\nLine = %s", str);
-						break;
-					}
-				} else {
-					log_text_seg new_seg;
-					message_log_add_seg(&new_seg, X, Line_offset, msg_color, str, flags);
-					entry->push_back(std::move(new_seg));
-
-					if (!split) {
-						int w;
-						gr_get_string_size(&w, nullptr, str);
-						X += w;
-						break;
-					}
+			// we have more text to write (since we didn't return, above), so if we don't actually have enough room, try again on a new line
+			if (split_len == 0 || forced) {
+				split_next_pos = 0;
+				sanity_counter++;
+				if (sanity_counter > 5) {
+					Error(LOCATION, "Too many attempts to wrap a mission log line!  Get a coder!\nLine = %s", text);
+					break;
 				}
+			} else {
+				log_text_seg new_seg;
+
+				// When this is the final piece of the segment (no further split), preserve the
+				// whole input (including any trailing whitespace) and use its full width.  Other
+				// colored segments may be concatenated onto the same rendered line after this one,
+				// and the trailing whitespace is what visually separates them.
+				if (split_next_pos == 0) {
+					message_log_add_seg(&new_seg, X, Line_offset, msg_color, text, flags);
+					entry->push_back(std::move(new_seg));
+					gr_get_string_size(&w, nullptr, text);
+					X += w;
+					break;
+				}
+
+				message_log_add_seg(&new_seg, X, Line_offset, msg_color, text, split_len, flags);
+				entry->push_back(std::move(new_seg));
 			}
 
 			X = ACTION_X;
 			Line_offset++;
-			str = split;
+			text += split_next_pos;
 		}
 	} else {
+		if (!*text) {
+			return;
+		}
+
 		log_text_seg new_seg;
-		message_log_add_seg(&new_seg, X, Line_offset, msg_color, str, flags);
+		message_log_add_seg(&new_seg, X, Line_offset, msg_color, text, flags);
 		entry->push_back(std::move(new_seg));
 	}
-
-	// free the buffer
-	vm_free(dup_string);
 }
 
 int mission_log_color_get_team(int msg_color)
@@ -691,8 +687,7 @@ void mission_log_init_scrollback(int pw, bool split_string)
 				Assert(!(entry.index & CARGO_NO_DEPLETE));
 
 				message_log_add_segs(XSTR("Cargo revealed: ", 418), LOG_COLOR_NORMAL, 0, &thisEntry.segments, split_string);
-				strncpy(text, Cargo_names[entry.index], sizeof(text) - 1);
-				message_log_add_segs(text, LOG_COLOR_BRIGHT, 0, &thisEntry.segments, split_string);
+				message_log_add_segs(Cargo_names[entry.index], LOG_COLOR_BRIGHT, 0, &thisEntry.segments, split_string);
 				break;
 
 			case LOG_CAP_SUBSYS_CARGO_REVEALED:
@@ -701,8 +696,7 @@ void mission_log_init_scrollback(int pw, bool split_string)
 
 				message_log_add_segs(entry.sname_display.c_str(), LOG_COLOR_NORMAL, 0, &thisEntry.segments, split_string);
 				message_log_add_segs(XSTR( " subsystem cargo revealed: ", 1488), LOG_COLOR_NORMAL, 0, &thisEntry.segments, split_string);
-				strncpy(text, Cargo_names[entry.index], sizeof(text) - 1);
-				message_log_add_segs(text, LOG_COLOR_BRIGHT, 0, &thisEntry.segments, split_string);
+				message_log_add_segs(Cargo_names[entry.index], LOG_COLOR_BRIGHT, 0, &thisEntry.segments, split_string);
 				break;
 
 

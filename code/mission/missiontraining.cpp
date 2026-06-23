@@ -282,7 +282,6 @@ void HudGaugeDirectives::render(float  /*frametime*/, bool config)
 	int bx = x;
 	int by = y + fl2i(middle_frame_offset_y * scale);
 
-	char* second_line;
 	for (int i=0; i<end; i++) {
 		int ox = x + fl2i(text_start_offsets[0] * scale);
 		int oy = y + fl2i(text_start_offsets[1] * scale) + Training_obj_num_display_lines * fl2i(text_h * scale);
@@ -291,36 +290,37 @@ void HudGaugeDirectives::render(float  /*frametime*/, bool config)
 		int line_x_offset = 0;
 
 		color* c = &Color_normal;
-		char buf[256];
+		SCP_string buf;
 		if (!config && Training_obj_lines[i + offset] & TRAINING_OBJ_LINES_KEY) {
-			SCP_string temp_buf = message_translate_tokens(Mission_events[z].objective_key_text.c_str()); // remap keys
-			strcpy_s(buf, temp_buf.c_str());
+			buf = message_translate_tokens(Mission_events[z].objective_key_text.c_str()); // remap keys
 			c = &Color_bright_green;
 			line_x_offset = fl2i(key_line_x_offset * scale);
 		} else if (config){
 			switch (i) {
 			case 0:
-				strcpy_s(buf, "Destroy Enemies");
+				buf = "Destroy Enemies";
 				c = &Color_bright_white;
 				break;
 			case 1:
-				strcpy_s(buf, "Target hostile fighters");
+				buf = "Target hostile fighters";
 				c = &Color_bright_green;
 				line_x_offset = fl2i(key_line_x_offset * scale);
 				break;
 			case 2:
-				strcpy_s(buf, "Protect Friendlies");
+				buf = "Protect Friendlies";
 				c = &Color_bright_red;
 				break;
 			case 3:
-				strcpy_s(buf, "Escort Cruiser");
+				buf = "Escort Cruiser";
 				c = &Color_bright_blue;
 				break;
 			}
 		} else {
-			strcpy_s(buf, Mission_events[z].objective_text.c_str());
+			buf = Mission_events[z].objective_text;
 			if (Mission_events[z].count){
-				sprintf(buf + strlen(buf), NOX(" [%d]"), Mission_events[z].count);
+				buf += NOX(" [");
+				buf += std::to_string(Mission_events[z].count);
+				buf += NOX("]");
 			}
 
 			// if this is a multiplayer tvt game, and this is event is not for my team, don't display it
@@ -361,12 +361,8 @@ void HudGaugeDirectives::render(float  /*frametime*/, bool config)
 		}
 
 		// maybe split the directives line
-		second_line = split_str_once(buf, fl2i(max_line_width * scale), scale);
-
-		// if we are unable to split the line, just print it once
-		if (second_line == buf) {
-			second_line = nullptr;
-		}
+		size_t split_len, split_next_pos;
+		std::tie(split_len, split_next_pos, std::ignore) = split_str_once(buf.c_str(), fl2i(max_line_width * scale), std::string::npos, scale);
 
 		// blit the background frames
 		setGaugeColor(HUD_C_NONE, config);
@@ -376,7 +372,7 @@ void HudGaugeDirectives::render(float  /*frametime*/, bool config)
 		
 		by += fl2i(text_h * scale);
 
-		if ( second_line ) {
+		if ( split_next_pos > 0 ) {
 
 			if (directives_middle.first_frame >= 0)
 				renderBitmap(directives_middle.first_frame, bx, by, scale, config);
@@ -387,14 +383,17 @@ void HudGaugeDirectives::render(float  /*frametime*/, bool config)
 		// blit the text
 		gr_set_color_fast(c);
 		
-		renderString(ox + line_x_offset, oy, EG_OBJ1 + i, buf, scale, config);
+		renderString(ox + line_x_offset, oy, EG_OBJ1 + i, buf.c_str(), split_len, scale, config);
 		
 		Training_obj_num_display_lines++;
 
-		if ( second_line ) {
+		if ( split_next_pos > 0 ) {
+			auto second_line = buf.c_str() + split_next_pos;
+			std::tie(split_len, split_next_pos, std::ignore) = split_str_once(second_line, fl2i(max_line_width * scale), std::string::npos, scale);
+
 			oy = y + fl2i(text_start_offsets[1] * scale) + Training_obj_num_display_lines * fl2i(text_h * scale);
 			
-			renderString(ox+12, oy, EG_OBJ1 + i + 1, second_line, scale, config);
+			renderString(ox+12, oy, EG_OBJ1 + i + 1, second_line, split_len, scale, config);
 			
 			Training_obj_num_display_lines++;
 		}

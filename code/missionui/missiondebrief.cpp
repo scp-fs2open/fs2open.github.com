@@ -2244,7 +2244,6 @@ void debrief_add_award_text(const char *str)
 		return;
 	}
 
-	char *line2;
 	int field_width = (Medal_bitmap > 0) ? Debrief_award_text_width[gr_screen.res][DB_WITH_MEDAL] : Debrief_award_text_width[gr_screen.res][DB_WITHOUT_MEDAL];
 
 	// copy in the line
@@ -2264,10 +2263,22 @@ void debrief_add_award_text(const char *str)
 	// if its too long, split once ONLY
 	// assumes text isnt > 2 lines, but this is a safe assumption due to the char limits of the ranks/badges/etc
 	if (Debrief_award_text_num_lines < AWARD_TEXT_MAX_LINES) {
-		line2 = split_str_once(Debrief_award_text[Debrief_award_text_num_lines-1], field_width);
-		if (line2 != NULL) {
-			sprintf(Debrief_award_text[Debrief_award_text_num_lines], " %s", line2);  // indent a space
+		auto cur_line = Debrief_award_text[Debrief_award_text_num_lines - 1];
+		size_t split_len, split_next_pos;
+		std::tie(split_len, split_next_pos, std::ignore) = split_str_once(cur_line, field_width);
+
+		if (split_next_pos > 0) {
+			cur_line[split_len] = '\0';
+			auto tail = cur_line + split_next_pos;
+
+			auto next_line = Debrief_award_text[Debrief_award_text_num_lines];
+			next_line[0] = ' ';	// indent the next line by one space
+
+			size_t tail_len = std::min<size_t>(strlen(tail), AWARD_TEXT_MAX_LINE_LENGTH - 2);
+			memmove(next_line + 1, tail, tail_len);
+			next_line[tail_len + 1] = '\0';
 		}
+
 		Debrief_award_text_num_lines++;		// leave blank line even if it all fits into 1
 	}
 }
