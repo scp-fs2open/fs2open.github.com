@@ -57,6 +57,9 @@ APPLY_TO_FOV_T(-, sub)
 // Used to set the default value for in-game options
 static float fov_default = DEFAULT_FOV;
 static float cockpit_fov_default = DEFAULT_FOV;
+static bool cockpit_fov_toggle_default = false;
+
+bool Use_cockpit_fov = false;
 
 static SCP_string fov_display(float val)
 {
@@ -80,6 +83,13 @@ static void parse_cockpit_fov_func()
 	stuff_float(&value);
 	CLAMP(value, 0.436332f, 1.5708f);
 	cockpit_fov_default = value;
+}
+
+static void parse_cockpit_fov_toggle_func()
+{
+	bool value;
+	stuff_boolean(&value);
+	cockpit_fov_toggle_default = value;
 }
 
 // coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
@@ -119,18 +129,6 @@ auto CockpitFovOption = options::OptionBuilder<float>("Graphics.CockpitFOV",
 					 .importance(62)
 					 .parser(parse_cockpit_fov_func)
 					 .finish();
-
-bool Use_cockpit_fov = false;
-
-// Used to set the default value for the in-game option
-static bool cockpit_fov_toggle_default = false;
-
-static void parse_cockpit_fov_toggle_func()
-{
-	bool value;
-	stuff_boolean(&value);
-	cockpit_fov_toggle_default = value;
-}
 
 // coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
 auto CockpitFOVToggleOption = options::OptionBuilder<bool>("Graphics.CockpitFOVToggle",
