@@ -389,7 +389,10 @@ void shockwave_move(object *shockwave_objp, float frametime)
 			}
 
 			ship_apply_global_damage(objp, shockwave_objp, &sw->pos, damage, sw->damage_type_idx);
-			weapon_area_apply_blast(nullptr, objp, &sw->pos, blast, true);
+			// Don't jostle the ship during warpout
+			if (!shipp->flags[Ship::Ship_Flags::Depart_warp]) {
+				weapon_area_apply_blast(nullptr, objp, &sw->pos, blast, true);
+			}
 			break;
 			}
 		case OBJ_ASTEROID:
