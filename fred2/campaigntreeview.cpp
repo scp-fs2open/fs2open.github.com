@@ -770,6 +770,8 @@ void campaign_tree_view::OnLButtonUp(UINT nFlags, CPoint point)
 
 int campaign_tree_view::add_link(int from, int to)
 {
+	Assertion(Locked_sexp_true >= 0 && Locked_sexp_false >= 0, "SEXPs are not yet initialized!");
+
 	if (Total_links >= MAX_CAMPAIGN_TREE_LINKS)
 		return -1;
 
@@ -906,6 +908,8 @@ DROPEFFECT campaign_tree_view::OnDragOver(COleDataObject* pDataObject, DWORD dwK
 
 BOOL campaign_tree_view::OnDrop(COleDataObject* pDataObject, DROPEFFECT dropEffect, CPoint point) 
 {
+	Assertion(Locked_sexp_true >= 0 && Locked_sexp_false >= 0, "SEXPs are not yet initialized!");
+
 	int i, level, pos;
 	cmission *cm;
 	HGLOBAL hGlobal;
@@ -1013,6 +1017,8 @@ BOOL campaign_tree_view::OnDrop(COleDataObject* pDataObject, DROPEFFECT dropEffe
 
 void campaign_tree_view::drop_mission(int m, CPoint point)
 {
+	Assertion(Locked_sexp_true >= 0 && Locked_sexp_false >= 0, "SEXPs are not yet initialized!");
+
 	char name[MAX_FILENAME_LEN + 1];
 	int i, item, level, pos;
 	cmission *cm;
