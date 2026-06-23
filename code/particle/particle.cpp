@@ -13,6 +13,7 @@
 #include "particle/particle.h"
 #include "particle/ParticleManager.h"
 #include "particle/ParticleEffect.h"
+#include "particle/hosts/EffectHostVector.h"
 #include "debugconsole/console.h"
 #include "globalincs/systemvars.h"
 #include "graphics/2d.h"
@@ -250,12 +251,36 @@ namespace particle
 			}
 		}
 
+		const auto& source_effect = part->parent_effect.getParticleEffect();
+
 		if (remove_particle)
 		{
+			if (source_effect.m_deathEffect.isValid()) {
+				vec3d world_pos = part->pos;
+				vec3d world_vel = part->velocity;
+
+				// Convert from local to world space if attached to a valid parent
+				if (part->attached_objnum >= 0 &&
+					part->attached_objnum < MAX_OBJECTS &&
+					part->attached_sig == Objects[part->attached_objnum].signature) {
+					vec3d local_vel = part->velocity;
+					vm_vec_unrotate(&world_pos, &world_pos, &Objects[part->attached_objnum].orient);
+					vm_vec_add2(&world_pos, &Objects[part->attached_objnum].pos);
+					vm_vec_unrotate(&world_vel, &local_vel, &Objects[part->attached_objnum].orient);
+				}
+
+				matrix orient = vmd_identity_matrix;
+				if (vm_vec_mag_squared(&world_vel) > 0.0f) {
+					vm_vector_2_matrix(&orient, &world_vel);
+				}
+
+				auto deathSource = ParticleManager::get()->createSource(source_effect.m_deathEffect);
+				deathSource->setHost(std::make_unique<EffectHostVector>(world_pos, orient, world_vel));
+				deathSource->finishCreation();
+			}
+
 			return true;
 		}
-
-		const auto& source_effect = part->parent_effect.getParticleEffect();
 
 		float part_velocity =  vm_vec_mag_quick(&part->velocity);
 		float vel_scalar = source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::VELOCITY_MULT, std::forward_as_tuple(*part, part_velocity) );
