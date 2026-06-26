@@ -43,6 +43,23 @@ owns object storage, lifecycle (create/move/delete), the per-frame update driver
 None directly. Object *types* (categories) are defined in `objecttypes.tbl`
 (parsed by the ship module).
 
+## Architecture diagram (object update + lifecycle)
+
+```mermaid
+flowchart TD
+    create["*_create() → obj_create()<br/>adds to obj_used_list"] --> loop
+    loop["obj_move_all(frametime)<br/>iterate obj_used_list"] --> pre["pre_move event → obj_move_all_pre()"]
+    pre --> phys["obj_move_call_physics()<br/>(code/physics)"]
+    phys --> typemove["type-specific move<br/>(ship_process_post, weapon move, ...)"]
+    typemove --> post["obj_move_all_post() → post_move event"]
+    post --> collide["collision pairs<br/>(objcollide → collide*_check)"]
+    collide --> killcheck{"Should_be_dead<br/>flag set?"}
+    killcheck -->|yes| reap["obj_delete_all_that_should_be_dead()<br/>→ *_delete() → obj_delete()"]
+    killcheck -->|no| render
+    render["obj_render_all() → obj_queue_render()<br/>→ model_draw_list (code/model)"]
+    note["type + instance → type array<br/>(Ships[], Weapons[], ...)"] -.-> typemove
+```
+
 ## See also
 - `code/ship/`, `code/weapon/`, `code/physics/`, `code/model/`.
 - Table option reference: https://wiki.hard-light.net/index.php/Tables

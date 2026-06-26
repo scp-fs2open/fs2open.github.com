@@ -24,6 +24,21 @@ frame. Also provides physics *snapshots* used by multiplayer interpolation/rollb
 None. Per-ship physics values (mass, thrust, max velocities, rotation time,
 glide settings) are defined in `ships.tbl` and applied by the ship module.
 
+## Architecture diagram (per-object integration)
+
+```mermaid
+flowchart TD
+    inputs["inputs: pi->desired_vel, desired_rotvel<br/>(from AI control_info / player), gravity, damping"] --> call
+    call["obj_move_call_physics(objp, frametime)<br/>(code/object)"] --> sim["physics_sim(pos, orient, pi, frametime)"]
+    sim --> vel["physics_sim_vel()<br/>translational (physics.cpp ~274)"]
+    sim --> rot["physics_sim_rot()<br/>rotational (physics.cpp ~151)"]
+    vel --> apply["apply_physics()<br/>damped, frame-rate-independent (physics.cpp ~108)"]
+    rot --> apply
+    apply --> outp["new object pos / orient / velocities"]
+    outp -.->|capture for networking| snap["physics_populate_snapshot()"]
+    snap -.-> restore["physics_apply_pstate_to_object()<br/>(multiplayer interpolation/rollback)"]
+```
+
 ## See also
 - `code/object/object.h` (`physics_populate_snapshot`, `physics_apply_pstate_to_object`).
 - `code/math/` (vectors/matrices), `code/network/multi_interpolate.*`.
