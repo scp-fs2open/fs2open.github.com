@@ -42,15 +42,33 @@ SwapChainStatus VulkanRenderFrame::acquireSwapchainImage(uint32_t& outImageIndex
 {
 	Assertion(!m_inFlight, "Cannot acquire swapchain image when frame is still in flight.");
 
-	uint32_t imageIndex;
-	vk::Result res;
+	// Initialized to a safe value: the pointer overload below only writes this
+	// on success, so it must never be left indeterminate if the acquire fails.
+	uint32_t imageIndex = 0;
+	vk::Result res = vk::Result::eErrorOutOfDateKHR;
 	try {
 		res = m_device.acquireNextImageKHR(m_swapChain,
 			std::numeric_limits<uint64_t>::max(),
 			m_imageAvailableSemaphore.get(),
 			nullptr,
 			&imageIndex);
-	} catch (vk::OutOfDateKHRError&) {
+	} catch (const vk::OutOfDateKHRError&) {
+		return SwapChainStatus::eOutOfDate;
+	}
+
+	// IMPORTANT: this overload of acquireNextImageKHR takes a pImageIndex pointer
+	// and returns the raw vk::Result *without throwing* on error codes. The
+	// try/catch above therefore does NOT catch eErrorOutOfDateKHR (and other
+	// errors); they arrive here as a Result. We must inspect it explicitly,
+	// otherwise an error result would fall through as "success" while leaving
+	// imageIndex unwritten, producing a garbage swap chain index.
+	if (res == vk::Result::eErrorOutOfDateKHR) {
+		return SwapChainStatus::eOutOfDate;
+	}
+	if (res != vk::Result::eSuccess && res != vk::Result::eSuboptimalKHR) {
+		// Surface lost, device lost, timeout, etc. No image was acquired, so the
+		// index is invalid. Force a swap chain recreation rather than indexing
+		// with a bogus value.
 		return SwapChainStatus::eOutOfDate;
 	}
 
