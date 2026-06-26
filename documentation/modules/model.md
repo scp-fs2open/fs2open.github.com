@@ -36,5 +36,22 @@ Splits static geometry (`polymodel`) from per-object runtime state
 
 Table option reference: https://wiki.hard-light.net/index.php/Tables
 
+## Architecture diagram (load → render → collide)
+
+```mermaid
+flowchart TD
+    pof[".pof file"] -->|modelread.cpp| pm["polymodel<br/>(geometry, submodels/bsp, subsystems, LODs)"]
+    vpof["virtual_pofs.tbl"] -->|modelreplace.cpp| pm
+    pm --> inst["polymodel_instance<br/>(per-object submodel orientation/animation)"]
+    anim["animation/ (subobject + procedural)"] -.-> inst
+
+    inst --> rq["obj_queue_render() (code/object)"]
+    rq --> mdl["model_render_queue() (modelrender.cpp)<br/>builds model_draw_list"]
+    mdl --> gr["gr_render_model (code/graphics)"]
+
+    pm --> col["modelcollide.cpp<br/>ray/sphere vs bsp tree"]
+    col --> hit["collision hit point + submodel"]
+```
+
 ## See also
 - `code/graphics/` (rendering backend), `code/ship/` (subsystems map to submodels).
