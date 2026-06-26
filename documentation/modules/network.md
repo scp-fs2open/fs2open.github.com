@@ -30,6 +30,27 @@ Files are prefixed `multi_*`; `multi.h` is the central include.
 ## Configuration tables
 None directly (networked content derives from ships/weapons/mission tables).
 
+## Architecture diagram (client/server object sync)
+
+```mermaid
+flowchart LR
+    subgraph SERVER["Server (MULTIPLAYER_MASTER)"]
+        sim["authoritative simulation<br/>(obj_move_all, AI, collisions)"] --> pack["multi_obj.cpp<br/>pack object updates"]
+        pack --> msg["multimsgs.cpp<br/>build packets"]
+        msg --> sock_s["psnet2.cpp (UDP)"]
+    end
+
+    subgraph CLIENT["Client (MULTIPLAYER_CLIENT)"]
+        sock_c["psnet2.cpp (UDP)"] --> unpack["multi_obj unpack"]
+        unpack --> interp["multi_interpolate.cpp<br/>smooth via physics_snapshot"]
+        interp --> local["local object state for render"]
+    end
+    sock_s -->|state packets| sock_c
+    sock_c -->|input / fire packets| sock_s
+
+    extra["multi_sexp (event sync) · multi_respawn · multi_team<br/>chat/voice · Netgame state (NETGAME_STATE_*)"] -.-> msg
+```
+
 ## See also
 - `code/physics/physics_state.*` (interpolation snapshots), `code/object/multi_obj` flow,
   `code/parse/sexp.*` (`multi_sexp`).

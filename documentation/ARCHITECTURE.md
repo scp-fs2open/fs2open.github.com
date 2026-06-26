@@ -53,6 +53,7 @@ runtime via **SEXPs** (mission scripting) and **Lua** (engine scripting).
 | OS abstraction, registry, logging window | `code/osapi/` |
 | HUD gauges & combat UI | `code/hud/` |
 | In-game/menu UI widgets | `code/ui/`, `code/scpui/`, `code/menuui/`, `code/missionui/` |
+| Front-end menu screens (main hall, barracks, tech room, ...) | `code/menuui/` |
 | Math (vectors, matrices, fixed-point) | `code/math/` |
 | The player (pilot, stats, controls) | `code/playerman/`, `code/pilotfile/` |
 | Camera | `code/camera/` |
@@ -61,6 +62,9 @@ runtime via **SEXPs** (mission scripting) and **Lua** (engine scripting).
 | Asteroids / debris fields | `code/asteroid/`, `code/debris/` |
 | Global engine tunables ("game settings" table) | `code/mod_table/` |
 | Command-line options | `code/cmdline/` |
+| Player options / in-game Options menu | `code/options/` |
+| Localized text / translations (`XSTR`) | `code/localization/` |
+| Asset viewer / test bench (the "Lab") | `code/lab/` |
 | FRED mission editor (separate executables) | `fred2/` (MFC), `qtfred/` (Qt) |
 
 ---
@@ -69,7 +73,9 @@ runtime via **SEXPs** (mission scripting) and **Lua** (engine scripting).
 
 Each major module has its own entry-point guide under `documentation/modules/`
 (purpose, key files, core data structures, major constants, and the config tables
-it parses). When you start working inside a module, open its guide first:
+it parses). Several also include a **subsystem architecture diagram** (object,
+parse/SEXP, ai, physics, model, graphics + OpenGL backend, scripting, network).
+When you start working inside a module, open its guide first:
 
 | Module | Code path | Guide |
 | --- | --- | --- |
@@ -89,8 +95,15 @@ it parses). When you start working inside a module, open its guide first:
 | Input / timing | `code/io/` | `modules/io.md` |
 | HUD | `code/hud/` | `modules/hud.md` |
 | UI widget toolkit | `code/ui/` | `modules/ui.md` |
+| Front-end menu screens (main hall, barracks, ...) | `code/menuui/` | `modules/menuui.md` |
+| Asset viewer / test bench (Lab) | `code/lab/` | `modules/lab.md` |
+| Command-line options | `code/cmdline/` | `modules/cmdline.md` |
+| Player options / in-game Options menu | `code/options/` | `modules/options.md` |
+| Localization / translations | `code/localization/` | `modules/localization.md` |
 | Engine-wide settings table | `code/mod_table/` | `modules/mod_table.md` |
 | Foundation types & limits | `code/globalincs/` | `modules/globalincs.md` |
+| FRED2 mission editor (MFC, Windows) | `fred2/` | `modules/fred2.md` |
+| qtFRED mission editor (Qt, cross-platform) | `qtfred/` | `modules/qtfred.md` |
 
 Full table-option documentation is on the wiki: https://wiki.hard-light.net/index.php/Tables
 

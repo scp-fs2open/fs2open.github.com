@@ -34,6 +34,24 @@ Two related responsibilities:
 `parselo` reads *all* tables; it doesn't own one itself. `strings.tbl` /
 `tstrings.tbl` are read by `code/localization/localize.cpp`.
 
+## Architecture diagram (SEXP evaluation)
+
+```mermaid
+flowchart TD
+    fs2[".fs2 mission file<br/>(events, goals, triggers)"] -->|parselo parse| tree["Sexp_nodes tree<br/>(operators + arguments)"]
+    eval_src["mission_eval_goals() / event triggers<br/>(code/mission)"] --> eval["eval_sexp(node)<br/>(sexp.cpp ~28166)"]
+    tree --> eval
+    eval --> ident["identify OP_* via Operators table<br/>(sexp.cpp ~146)"]
+    ident --> sw["switch(op) dispatch"]
+    sw --> handler["operator handler<br/>(reads args via CAR/CDR walk)"]
+    handler --> ret{"result type"}
+    ret -->|"SEXP_TRUE / SEXP_FALSE"| state["apply effect / report goal status"]
+    ret -->|"SEXP_KNOWN_TRUE/FALSE"| cache["cache & short-circuit<br/>(never re-evaluated)"]
+    ret -->|number / string| state
+    handler -.->|server-authoritative effects| multi["multi_sexp pack/send<br/>(code/network)"]
+    state --> help["FRED shows operator from<br/>Sexp_help (sexp.cpp ~37998)"]
+```
+
 ## See also
 - `code/mission/` (consumes both parsing and SEXPs), `code/cfile/` (file access),
   `code/scripting/` (Lua, the *other* scripting system).

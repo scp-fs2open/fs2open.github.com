@@ -39,5 +39,29 @@ Lua API reference is generated from the ADE bindings (`doc_*`).
 - React to a new event → declare a `scripting::Hook` (or `OverridableHook`) in
   `global_hooks.*` and fire it from the relevant subsystem.
 
+## Architecture diagram (ADE bindings + hooks)
+
+```mermaid
+flowchart TD
+    subgraph REG["Registration (at startup)"]
+        ade["ADE_OBJ / ADE_LIB / ADE_FUNC / ADE_VIRTVAR<br/>(api/objs, api/libs)"] --> reg["registered Lua types & libraries"]
+        tbl["scripting.tbl"] -->|script_parse_table()| scripts["loaded script functions / hook bindings"]
+    end
+
+    subgraph CALL["Lua → engine call"]
+        lua["Lua script calls API"] --> marshal["ade_get_args() unmarshal<br/>→ C++ logic → ade_set_args() return"]
+    end
+
+    subgraph EVT["engine → Lua event"]
+        site["engine event site fires<br/>Hook->run() / isOverride()"] --> active{"hook active?"}
+        active -->|yes| run["run subscribed Lua functions"]
+        run --> ovr{"OverridableHook<br/>& isOverride()?"}
+        ovr -->|yes| suppress["skip default engine behaviour"]
+        ovr -->|no| default["run default behaviour too"]
+    end
+    reg -.exposes.-> lua
+    scripts -.subscribe.-> site
+```
+
 ## See also
 - `code/parse/sexp.*` (the other, mission-designer scripting system).

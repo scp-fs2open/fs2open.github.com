@@ -32,6 +32,29 @@ tunables ("AI profiles"). Per-ship runtime AI state lives in `ai_info`.
 
 Table option reference: https://wiki.hard-light.net/index.php/Tables (see *AI.tbl*, *AI_profiles.tbl*).
 
+## Architecture diagram (per-ship AI tick)
+
+```mermaid
+flowchart TD
+    move["obj_move_all() (code/object)"] --> frame["ai_frame(objnum)<br/>(aicode.cpp ~15324)"]
+    frame --> goals["process AI goals/orders<br/>(aigoals.cpp) → sets aip->mode"]
+    goals --> exec["ai_execute_behavior(aip)<br/>(aicode.cpp ~14262)"]
+    exec --> mode{"switch on aip->mode<br/>(AIM_*)"}
+    mode -->|AIM_CHASE| chase["pursue & attack target"]
+    mode -->|AIM_EVADE| evade["evasive maneuvers"]
+    mode -->|AIM_WAYPOINTS| wp["follow waypoint path"]
+    mode -->|AIM_GUARD / DOCK / ...| other["guard, dock, strafe, etc."]
+    mode -->|AIM_NONE| idle["do nothing"]
+    chase --> out
+    evade --> out
+    wp --> out
+    other --> out
+    profile["ai_profiles.tbl tunables<br/>(skill scaling)"] -.-> exec
+    exec -.-> evade2["maybe_evade_dumbfire_weapon()"]
+    out["set desired heading / throttle / fire<br/>→ control_info + physics desired_vel/rotvel"] --> turret["turret AI fires<br/>(aiturret.cpp)"]
+    out --> phys["physics integrates next<br/>(code/physics)"]
+```
+
 ## See also
 - `code/ship/` (the entity AI controls), `code/physics/` (movement output),
   `code/autopilot/` (player autopilot), `code/parse/sexp.*` (AI goals issued by missions).
