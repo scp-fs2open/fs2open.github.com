@@ -16,6 +16,12 @@ auto-trigger from natural requests; you can also invoke one explicitly by name.
 | `fso-add-hud-gauge` | Add a new built-in HUD gauge (`HudGauge` subclass + `HUD_OBJECT_*` + `hud_gauges.tbl` parsing) | `code/hud/hud.h`, `code/hud/hudparse.*` | `documentation/modules/hud.md` |
 | `fso-build-and-test` | Configure/build with CMake+Ninja, run `unittests`, and run clang-format/clang-tidy, mirroring CI | `CMakeLists.txt`, `ci/linux/*` | root `AGENTS.md` |
 
+## Review skills
+
+| Skill | Use it when you want to… | Invocation |
+| --- | --- | --- |
+| `thermo-nuclear-code-quality-review` | Run an extremely strict maintainability/abstraction audit of the current branch's changes (file-size growth, spaghetti conditionals, missed "code-judo" simplifications) | Explicit only (`disable-model-invocation`); ask for a "thermo-nuclear review" |
+
 ## Conventions shared by all skills
 
 - Builds use `FSO_FATAL_WARNINGS=ON` (CI default) — keep changes warning-clean.
