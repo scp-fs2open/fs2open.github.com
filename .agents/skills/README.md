@@ -1,9 +1,13 @@
 # FSO Project Skills
 
-Project-scoped Cursor Agent Skills for the FreeSpace 2 Open engine. Each skill is
+Vendor-agnostic Agent Skills for the FreeSpace 2 Open engine. Each skill is
 a directory containing a `SKILL.md` that encodes an FSO-specific workflow
 (conventions, the exact files/functions to touch, and how to verify). Skills
 auto-trigger from natural requests; you can also invoke one explicitly by name.
+
+This directory (`.agents/skills/`) is the single source of truth. Vendor skill
+directories contain thin pointer stubs back to it (see "Cross-agent compatibility"
+below).
 
 ## Available skills
 
@@ -38,12 +42,37 @@ auto-trigger from natural requests; you can also invoke one explicitly by name.
   its `SKILL.md` before acting.
 - **Explicit:** reference the skill by name (e.g. "use `fso-add-sexp`").
 
+## Cross-agent compatibility
+
+The skills here live in a vendor-agnostic folder. Each vendor reads its own skills
+directory, so the per-vendor directories carry thin pointer stubs (plain files, not
+symlinks — symlinks are avoided for Windows checkout compatibility).
+
+| Path | Agent | Kind |
+| --- | --- | --- |
+| `.agents/skills/` | opencode (native), shared canonical | full playbooks |
+| `.cursor/skills/` | Cursor | pointer stubs → `.agents/skills` |
+| `.claude/skills/` | Claude Code, opencode | pointer stubs → `.agents/skills` |
+
+Project guidance (build/style/test conventions) is shared via the root `AGENTS.md`,
+read natively by Cursor and opencode; Claude Code reads it through the root
+`CLAUDE.md`, which imports `AGENTS.md`.
+
+Each stub at `.cursor/skills/<name>/SKILL.md` and `.claude/skills/<name>/SKILL.md`
+carries the discovery frontmatter (`name` + `description`) and a body that points
+to the canonical playbook here. Edit the playbook here in `.agents/skills/`; if you
+change a skill's `name`/`description`, mirror that line into the matching stubs so
+triggering stays in sync. The Cursor stub for `thermo-nuclear-code-quality-review`
+also keeps `disable-model-invocation: true` (a Cursor-only field) to preserve its
+explicit-only behavior.
+
 ## Authoring more skills
 
 Use the built-in `create-skill` workflow. Place new project skills here
-(`.cursor/skills/<name>/SKILL.md`); keep descriptions third-person with clear
+(`.agents/skills/<name>/SKILL.md`); keep descriptions third-person with clear
 WHAT + WHEN trigger terms, and link one level deep to the relevant
-`documentation/modules/*.md`.
+`documentation/modules/*.md`. Then add a matching pointer stub under
+`.cursor/skills/<name>/SKILL.md` and `.claude/skills/<name>/SKILL.md`.
 
 ## Related documentation
 
