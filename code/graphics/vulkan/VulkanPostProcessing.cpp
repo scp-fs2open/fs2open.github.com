@@ -311,7 +311,7 @@ bool VulkanPostProcessor::init(vk::Device device, vk::PhysicalDevice physDevice,
 
 		vk::AttachmentReference colorRef;
 		colorRef.attachment = 0;
-		colorRef.layout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		colorRef.layout = vk::ImageLayout::eColorAttachmentOptimal;
 
 		vk::AttachmentReference depthRef;
 		depthRef.attachment = 1;
