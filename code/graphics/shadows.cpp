@@ -433,7 +433,7 @@ void shadows_construct_light_frustum(light_frustum_info *shadow_data, matrix *li
 	shadows_construct_light_proj(shadow_data);
 }
 
-matrix shadows_start_render(matrix *eye_orient, vec3d *eye_pos, fov_t fov, fov_t cockpit_fov, float aspect, const SCP_vector<float>& cascade_distances)
+matrix shadows_start_render(matrix *eye_orient, vec3d *eye_pos, fov_t fov, fov_t cockpit_fov, float aspect, const std::optional<SCP_vector<float>>& cascade_distances_override)
 {	
 	if(Static_light.empty())
 		return vmd_identity_matrix; 
@@ -448,28 +448,50 @@ matrix shadows_start_render(matrix *eye_orient, vec3d *eye_pos, fov_t fov, fov_t
 
 	const int num_cascades = Num_shadow_cascades + Num_cockpit_shadow_cascades;
 
+	SCP_vector<float> cascade_distances_rebuild;
+	int max_skip_override = 0;
+	if (cascade_distances_override.has_value()) {
+		cascade_distances_rebuild.reserve(num_cascades);
+		// If we have override cascades, this is the techroom or similar.
+		// In this case, we must fit the override cascades into the given cascade count allocated for the main game.
+		// Cockpit cascades are skipped. If there is too few cascades in the override, prepend with zeroes.
+		// If there's too many cascades in the override, skip the excess.
+
+		max_skip_override = std::max(Num_cockpit_shadow_cascades, num_cascades - static_cast<int>(cascade_distances_override->size()));
+		for (int i = 0; i < max_skip_override; i++) {
+			cascade_distances_rebuild.emplace_back(0.0f);
+		}
+		for (int i = 0; i < num_cascades - max_skip_override; i++) {
+			cascade_distances_rebuild.emplace_back(cascade_distances_override->at(i));
+		}
+	}
+	const auto& cascade_distances_actual = cascade_distances_override.has_value() ? cascade_distances_rebuild : Shadow_distances;
+
 	Shadow_frustums.resize(num_cascades);
 	Shadow_cascade_distances.resize(num_cascades);
 	Shadow_proj_matrix.resize(num_cascades);
 
-	bool render_cockpit_cascades = ship_render_player_has_closeup_visuals();
+	// Only ever do cockpit cascades if there's no override
+	bool render_cockpit_cascades = !cascade_distances_override.has_value() && ship_render_player_has_closeup_visuals();
 
 	for (int i = 0; i < num_cascades; i++) {
 		float z_near;
 		if (i == 0 || (!render_cockpit_cascades && i == Num_cockpit_shadow_cascades)) {
 			z_near = 0.0f;
 		} else {
-			z_near = cascade_distances[i - 1] - (cascade_distances[i - 1] - (i >= 2 ? cascade_distances[i - 2] : 0.0f)) * 0.2f;
+			z_near = cascade_distances_actual[i - 1] - (cascade_distances_actual[i - 1] - (i >= 2 ? cascade_distances_actual[i - 2] : 0.0f)) * 0.2f;
 		}
-		float z_far = cascade_distances[i];
+		float z_far = cascade_distances_actual[i];
 
 		shadows_construct_light_frustum(&Shadow_frustums[i], &light_matrix, eye_orient, nullptr, i < Num_cockpit_shadow_cascades ? cockpit_fov : fov, aspect, z_near, z_far);
-		Shadow_cascade_distances[i] = cascade_distances[i];
+		Shadow_cascade_distances[i] = cascade_distances_actual[i];
 		Shadow_proj_matrix[i] = Shadow_frustums[i].proj_matrix;
 	}
 
 	gr_shadow_map_start(&Shadow_view_matrix_light, &light_matrix, eye_pos, true);
-	if (render_cockpit_cascades)
+	if (cascade_distances_override)
+		shadow_cascade_params_bind(max_skip_override, num_cascades - max_skip_override);
+	else if (render_cockpit_cascades)
 		shadow_cascade_params_bind(0, num_cascades);
 	else
 		shadow_cascade_params_bind(Num_cockpit_shadow_cascades, Num_shadow_cascades);
@@ -646,7 +668,7 @@ void shadows_render_all(fov_t fov, matrix *eye_orient, vec3d *eye_pos,
 		cockpit_fov = COCKPIT_ZOOM_DEFAULT;
 	cockpit_fov = cockpit_fov * PROJ_FOV_FACTOR;
 
-	matrix light_matrix = shadows_start_render(eye_orient, eye_pos, fov, cockpit_fov, gr_screen.clip_aspect, Shadow_distances);
+	matrix light_matrix = shadows_start_render(eye_orient, eye_pos, fov, cockpit_fov, gr_screen.clip_aspect);
 
 	shadow_render_list shadow_list;
 
