@@ -59,7 +59,6 @@ public:
 	 * copy_effect_texture interrupts the pass.
 	 */
 	vk::RenderPass getSceneRenderPassLoad() const { return m_sceneRenderPassLoad; }
-	vk::RenderPass getSceneRenderPassResume() const { return m_sceneRenderPassResume; }
 
 	/**
 	 * @brief Get the HDR scene framebuffer
@@ -532,7 +531,6 @@ private:
 	// Scene render pass and framebuffer
 	vk::RenderPass m_sceneRenderPass;       // loadOp=eClear (initial scene begin)
 	vk::RenderPass m_sceneRenderPassLoad;   // loadOp=eLoad (resume after copy_effect_texture)
-	vk::RenderPass m_sceneRenderPassResume; // loadOp=eLoad (resume after shadow map pass)
 	vk::Framebuffer m_sceneFramebuffer;     // Shared by both scene render passes (compatible)
 
 	// Sampler for post-processing texture reads (maxLod=0)

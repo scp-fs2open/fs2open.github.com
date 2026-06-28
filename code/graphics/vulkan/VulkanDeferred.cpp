@@ -762,6 +762,7 @@ void vulkan_shadow_map_end()
 	auto* pp = getPostProcessor();
 	auto* stateTracker = getStateTracker();
 	auto* renderer = getRendererInstance();
+	auto* postProcessor = getPostProcessor();
 	vk::CommandBuffer cmd = stateTracker->getCommandBuffer();
 
 	gr_end_view_matrix();
@@ -777,6 +778,67 @@ void vulkan_shadow_map_end()
 
 	if ( Restore_swapchain_after_shadow_pass ) {
 		renderer->resumeSwapChainPass();
+	} else if ( renderer->isUsingGbufRenderPass() ) {
+		const bool msaaActive = (Cmdline_msaa_enabled > 0 && pp->isMsaaInitialized());
+
+		if ( msaaActive ) {
+			// Resume MSAA G-buffer render pass
+			pp->transitionMsaaGbufForResume(cmd);
+
+			auto extent = pp->getSceneExtent();
+			vk::RenderPassBeginInfo rpBegin;
+			rpBegin.renderPass = pp->getMsaaGbufRenderPassLoad();
+			rpBegin.framebuffer = pp->getMsaaGbufFramebuffer();
+			rpBegin.renderArea.offset = vk::Offset2D(0, 0);
+			rpBegin.renderArea.extent = extent;
+			std::array<vk::ClearValue, VulkanPostProcessor::MSAA_COLOR_ATTACHMENT_COUNT + 1> clearValues{};
+			clearValues[VulkanPostProcessor::MSAA_COLOR_ATTACHMENT_COUNT].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+			rpBegin.clearValueCount = static_cast<uint32_t>(clearValues.size());
+			rpBegin.pClearValues = clearValues.data();
+			cmd.beginRenderPass(rpBegin, vk::SubpassContents::eInline);
+			stateTracker->setRenderPass(pp->getMsaaGbufRenderPassLoad(), 0);
+			stateTracker->setColorAttachmentCount(VulkanPostProcessor::MSAA_COLOR_ATTACHMENT_COUNT);
+			stateTracker->setCurrentSampleCount(getRendererInstance()->getMsaaSampleCount());
+		} else {
+			// Transition scene color: eShaderReadOnlyOptimal → eColorAttachmentOptimal
+			// (Scene color was in eShaderReadOnlyOptimal from ending G-buffer pass before shadow start)
+			{
+				vk::ImageMemoryBarrier barrier;
+				barrier.srcAccessMask = {};
+				barrier.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
+				barrier.oldLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+				barrier.newLayout = vk::ImageLayout::eColorAttachmentOptimal;
+				barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+				barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+				barrier.image = pp->getSceneColorImage();
+				barrier.subresourceRange = { vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 };
+
+				cmd.pipelineBarrier(
+					vk::PipelineStageFlagBits::eTopOfPipe,
+					vk::PipelineStageFlagBits::eColorAttachmentOutput,
+					{}, nullptr, nullptr, barrier);
+			}
+
+			// Transition G-buffer attachments 1-5 for resume
+			pp->transitionGbufForResume(cmd);
+
+			// Resume G-buffer render pass with eLoad
+			auto extent = pp->getSceneExtent();
+			vk::RenderPassBeginInfo rpBegin;
+			rpBegin.renderPass = pp->getGbufRenderPassLoad();
+			rpBegin.framebuffer = pp->getGbufFramebuffer();
+			rpBegin.renderArea.offset = vk::Offset2D(0, 0);
+			rpBegin.renderArea.extent = extent;
+
+			std::array<vk::ClearValue, 7> clearValues{};
+			clearValues[6].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+			rpBegin.clearValueCount = static_cast<uint32_t>(clearValues.size());
+			rpBegin.pClearValues = clearValues.data();
+
+			cmd.beginRenderPass(rpBegin, vk::SubpassContents::eInline);
+			stateTracker->setRenderPass(pp->getGbufRenderPassLoad(), 0);
+			stateTracker->setColorAttachmentCount(VulkanPostProcessor::GBUF_COLOR_ATTACHMENT_COUNT);
+		}
 	} else {
 		renderer->resumeSceneRendering();
 	}

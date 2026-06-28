@@ -1631,12 +1631,12 @@ void VulkanRenderer::resumeSceneRendering()
 	rpBegin.renderArea.offset = vk::Offset2D(0, 0);
 	rpBegin.renderArea.extent = m_postProcessor->getSceneExtent();
 
-	rpBegin.renderPass = m_postProcessor->getSceneRenderPassResume();
-	rpBegin.framebuffer = m_postProcessor->getSceneFramebuffer();
+ 	rpBegin.renderPass = m_postProcessor->getSceneRenderPassLoad();
+ 	rpBegin.framebuffer = m_postProcessor->getSceneFramebuffer();
 
 	m_currentCommandBuffer.beginRenderPass(rpBegin, vk::SubpassContents::eInline);
-	m_stateTracker->setRenderPass(m_postProcessor->getSceneRenderPassResume(), 0);
-	m_stateTracker->setColorAttachmentCount(1);
+ 	m_stateTracker->setRenderPass(m_postProcessor->getSceneRenderPassLoad(), 0);
+ 	m_stateTracker->setColorAttachmentCount(1);
 }
 
 void VulkanRenderer::endSceneRendering()
