@@ -3602,7 +3602,7 @@ int Fred_mission_save::save_objects()
 			fout(" %s", save_config.fred_alt_names[i]);
 		}
 
-		Assertion(save_config.fred_callsigns != nullptr, "save_config.fred_alt_names is null!");
+		Assertion(save_config.fred_callsigns != nullptr, "save_config.fred_callsigns is null!");
 
 		// optional callsign
 		if (save_config.save_format != MissionFormat::RETAIL && strlen(save_config.fred_callsigns[i])) {
