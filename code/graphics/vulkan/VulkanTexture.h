@@ -240,6 +240,15 @@ private:
 	void endSingleTimeCommands(vk::CommandBuffer commandBuffer);
 
 	/**
+	 * @brief Create a host-visible staging buffer (eTransferSrc) sized for an upload
+	 *
+	 * Creates the buffer and allocates CpuOnly memory for it. On failure the
+	 * buffer is destroyed and false is returned (outBuffer left null). Callers
+	 * remain responsible for any image/view they allocated beforehand.
+	 */
+	bool createStagingBuffer(size_t size, vk::Buffer& outBuffer, VulkanAllocation& outAllocation);
+
+	/**
 	 * @brief Record layout transitions and buffer-to-image copy into a command buffer
 	 */
 	static void recordUploadCommands(vk::CommandBuffer cmd, vk::Image image, vk::Buffer stagingBuffer,

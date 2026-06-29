@@ -587,6 +587,8 @@ if (FSO_BUILD_WITH_VULKAN)
 		graphics/vulkan/gr_vulkan.h
 		graphics/vulkan/VulkanBuffer.cpp
 		graphics/vulkan/VulkanBuffer.h
+		graphics/vulkan/VulkanConvert.cpp
+		graphics/vulkan/VulkanConvert.h
 		graphics/vulkan/VulkanDeferred.cpp
 		graphics/vulkan/VulkanDeferred.h
 		graphics/vulkan/VulkanDeletionQueue.cpp
@@ -601,14 +603,24 @@ if (FSO_BUILD_WITH_VULKAN)
 		graphics/vulkan/VulkanPipeline.h
 		graphics/vulkan/VulkanPostProcessing.cpp
 		graphics/vulkan/VulkanPostProcessing.h
+		graphics/vulkan/VulkanPostProcessingBloom.cpp
+		graphics/vulkan/VulkanPostProcessingCommon.cpp
+		graphics/vulkan/VulkanPostProcessingDistortion.cpp
+		graphics/vulkan/VulkanPostProcessingFog.cpp
+		graphics/vulkan/VulkanPostProcessingGBuffer.cpp
+		graphics/vulkan/VulkanPostProcessingLDR.cpp
+		graphics/vulkan/VulkanPostProcessingLighting.cpp
+		graphics/vulkan/VulkanPostProcessingMSAA.cpp
+		graphics/vulkan/VulkanPostProcessingShadow.cpp
 		graphics/vulkan/VulkanQuery.cpp
 		graphics/vulkan/VulkanQuery.h
 		graphics/vulkan/VulkanRenderer.cpp
 		graphics/vulkan/VulkanRenderer.h
+		graphics/vulkan/VulkanRendererImGui.cpp
+		graphics/vulkan/VulkanRendererLoop.cpp
+		graphics/vulkan/VulkanRendererSetup.cpp
 		graphics/vulkan/VulkanRenderFrame.cpp
 		graphics/vulkan/VulkanRenderFrame.h
-		graphics/vulkan/VulkanRenderState.cpp
-		graphics/vulkan/VulkanRenderState.h
 		graphics/vulkan/VulkanShader.cpp
 		graphics/vulkan/VulkanShader.h
 		graphics/vulkan/VulkanShaderCompiler.cpp

@@ -497,114 +497,76 @@ int VulkanDrawManager::setCull(int cull)
 	return prev;
 }
 
-void VulkanDrawManager::renderPrimitives(material* material_info, primitive_type prim_type,
-                                          vertex_layout* layout, int offset, int n_verts,
-                                          gr_buffer_handle buffer_handle, size_t buffer_offset)
+void VulkanDrawManager::renderPrimitivesCommon(material* material_info, primitive_type prim_type,
+                                                vertex_layout* layout, int offset, int n_verts,
+                                                gr_buffer_handle buffer_handle, size_t buffer_offset,
+                                                int* statCounter)
 {
 	if (!material_info || !layout || n_verts <= 0) {
 		return;
 	}
 
-	m_frameStats.renderPrimitiveCalls++;
+	if (statCounter != nullptr) {
+		(*statCounter)++;
+	}
 
 	// Apply material state and bind pipeline
 	if (!applyMaterial(material_info, prim_type, layout)) {
 		return;
 	}
 
-	// Bind vertex buffer
+	// Bind vertex buffer and issue the draw call
 	bindVertexBuffer(buffer_handle, buffer_offset);
-
-	// Issue draw call
 	draw(prim_type, offset, n_verts);
+}
+
+void VulkanDrawManager::renderPrimitives(material* material_info, primitive_type prim_type,
+                                          vertex_layout* layout, int offset, int n_verts,
+                                          gr_buffer_handle buffer_handle, size_t buffer_offset)
+{
+	renderPrimitivesCommon(material_info, prim_type, layout, offset, n_verts,
+		buffer_handle, buffer_offset, &m_frameStats.renderPrimitiveCalls);
 }
 
 void VulkanDrawManager::renderPrimitivesBatched(batched_bitmap_material* material_info,
                                                  primitive_type prim_type, vertex_layout* layout,
                                                  int offset, int n_verts, gr_buffer_handle buffer_handle)
 {
-	if (!material_info || !layout || n_verts <= 0) {
-		return;
-	}
-
-	m_frameStats.renderBatchedCalls++;
-
-	// Apply base material state and bind pipeline
-	if (!applyMaterial(material_info, prim_type, layout)) {
-		return;
-	}
-
-	// Bind vertex buffer
-	bindVertexBuffer(buffer_handle, 0);
-
-	// Issue draw call
-	draw(prim_type, offset, n_verts);
+	renderPrimitivesCommon(material_info, prim_type, layout, offset, n_verts,
+		buffer_handle, 0, &m_frameStats.renderBatchedCalls);
 }
 
 void VulkanDrawManager::renderPrimitivesParticle(particle_material* material_info,
                                                   primitive_type prim_type, vertex_layout* layout,
                                                   int offset, int n_verts, gr_buffer_handle buffer_handle)
 {
-	if (!material_info || !layout || n_verts <= 0) {
-		return;
-	}
-
-	m_frameStats.renderParticleCalls++;
-
-	if (!applyMaterial(material_info, prim_type, layout)) {
-		return;
-	}
-	bindVertexBuffer(buffer_handle, 0);
-	draw(prim_type, offset, n_verts);
+	renderPrimitivesCommon(material_info, prim_type, layout, offset, n_verts,
+		buffer_handle, 0, &m_frameStats.renderParticleCalls);
 }
 
 void VulkanDrawManager::renderPrimitivesDistortion(distortion_material* material_info,
                                                     primitive_type prim_type, vertex_layout* layout,
                                                     int offset, int n_verts, gr_buffer_handle buffer_handle)
 {
-	if (!material_info || !layout || n_verts <= 0) {
-		return;
-	}
-
-	if (!applyMaterial(material_info, prim_type, layout)) {
-		return;
-	}
-	bindVertexBuffer(buffer_handle, 0);
-	draw(prim_type, offset, n_verts);
+	// Distortion intentionally tracks no dedicated frame stat counter.
+	renderPrimitivesCommon(material_info, prim_type, layout, offset, n_verts,
+		buffer_handle, 0, nullptr);
 }
 
 void VulkanDrawManager::renderMovie(movie_material* material_info, primitive_type prim_type,
                                      vertex_layout* layout, int n_verts, gr_buffer_handle buffer_handle,
                                      size_t buffer_offset)
 {
-	if (!material_info || !layout || n_verts <= 0) {
-		return;
-	}
-
-	m_frameStats.renderMovieCalls++;
-
-	if (!applyMaterial(material_info, prim_type, layout)) {
-		return;
-	}
-	bindVertexBuffer(buffer_handle, buffer_offset);
-	draw(prim_type, 0, n_verts);
+	renderPrimitivesCommon(material_info, prim_type, layout, 0, n_verts,
+		buffer_handle, buffer_offset, &m_frameStats.renderMovieCalls);
 }
 
 void VulkanDrawManager::renderNanoVG(nanovg_material* material_info, primitive_type prim_type,
                                       vertex_layout* layout, int offset, int n_verts,
                                       gr_buffer_handle buffer_handle)
 {
-	if (!material_info || !layout || n_verts <= 0) {
-		return;
-	}
-
-	m_frameStats.renderNanoVGCalls++;
-
-	if (!applyMaterial(material_info, prim_type, layout)) {
-		return;
-	}
-	bindVertexBuffer(buffer_handle, 0);
-	draw(prim_type, offset, n_verts);
+	renderPrimitivesCommon(material_info, prim_type, layout, offset, n_verts,
+		buffer_handle, 0, &m_frameStats.renderNanoVGCalls);
 }
 
 void VulkanDrawManager::renderRocketPrimitives(interface_material* material_info,
@@ -1191,7 +1153,7 @@ bool VulkanDrawManager::applyMaterial(material* mat, primitive_type prim_type, v
 		bindPendingUBOs(DescriptorSetIndex::Global);
 		{
 			auto* pp = getPostProcessor();
-			if (pp && pp->isShadowInitialized()) {
+			if (pp && pp->shadow().isInitialized()) {
 				writer.setImage(GlobalBinding::ShadowMap, pp->getShadowTextureInfo());
 			}
 		}
@@ -1736,7 +1698,7 @@ void vulkan_render_primitives_particle(particle_material* material_info,
 	// (view-space XYZ) is in eShaderReadOnlyOptimal and free to sample.
 	bool usePosTexture = light_deferred_enabled()
 	                     && !renderer->isUsingGbufRenderPass()
-	                     && pp && pp->isGbufInitialized();
+	                     && pp && pp->deferred().isInitialized();
 
 	if (!usePosTexture) {
 		// Non-deferred path: copy hardware depth buffer
@@ -1775,7 +1737,7 @@ void vulkan_render_primitives_particle(particle_material* material_info,
 		auto nearestSampler = texMgr->getSampler(vk::Filter::eNearest, vk::Filter::eNearest,
 		                                          vk::SamplerAddressMode::eClampToEdge, false, 0.0f, false);
 		drawManager->setDepthTextureOverride(
-			{nearestSampler, pp->getGbufPositionView(), vk::ImageLayout::eShaderReadOnlyOptimal});
+			{nearestSampler, pp->deferred().positionView(), vk::ImageLayout::eShaderReadOnlyOptimal});
 	} else if (renderer->isSceneDepthCopied() && pp) {
 		// Non-deferred path: bind the hardware depth copy
 		auto* texMgr = getTextureManager();

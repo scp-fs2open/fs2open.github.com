@@ -287,6 +287,20 @@ public:
 
 private:
 	/**
+	 * @brief Shared implementation for the non-indexed renderPrimitives* variants
+	 *
+	 * Applies the material/pipeline, binds the vertex buffer, and issues a
+	 * non-indexed draw. The only per-variant differences are the optional frame
+	 * stat counter and the concrete material subtype (passed as material*).
+	 *
+	 * @param statCounter Optional per-variant FrameStats counter to increment (may be null)
+	 */
+	void renderPrimitivesCommon(material* material_info, primitive_type prim_type,
+	                            vertex_layout* layout, int offset, int n_verts,
+	                            gr_buffer_handle buffer_handle, size_t buffer_offset,
+	                            int* statCounter);
+
+	/**
 	 * @brief Apply material state and bind pipeline
 	 * @return true if pipeline was successfully bound
 	 */

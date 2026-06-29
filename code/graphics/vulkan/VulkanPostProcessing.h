@@ -10,6 +10,458 @@
 namespace graphics::vulkan {
 
 /**
+ * @brief Shared drawing infrastructure for post-processing subsystems
+ *
+ * Bundles the handles and helpers that every post-processing pass needs
+ * (logical device, memory manager, scene geometry, samplers, the per-draw
+ * scratch UBO ring, and the image/fullscreen-draw helpers). Owned by
+ * VulkanPostProcessor and intended to be passed by reference to the
+ * individual subsystem passes as they are extracted into their own types.
+ */
+struct PostProcessContext {
+	vk::Device device;
+	VulkanMemoryManager* memoryManager = nullptr;
+	vk::Extent2D sceneExtent;
+	vk::Format depthFormat = vk::Format::eUndefined;
+
+	// Shared samplers for post-processing texture reads
+	vk::Sampler linearSampler;   // maxLod=0
+	vk::Sampler mipmapSampler;   // mipmap support (bloom)
+
+	// Per-draw scratch UBO ring shared by all fullscreen effect passes.
+	// Each draw consumes one slot at scratchUBOCursor; callers reset the
+	// cursor when starting a fresh group of passes.
+	static constexpr size_t   SCRATCH_UBO_SLOT_SIZE = 256; // >= minUniformBufferOffsetAlignment
+	static constexpr uint32_t SCRATCH_UBO_MAX_SLOTS = 24;
+	vk::Buffer scratchUBO;
+	VulkanAllocation scratchUBOAlloc;
+	void* scratchUBOMapped = nullptr;
+	uint32_t scratchUBOCursor = 0;
+
+	/**
+	 * @brief Create a single-mip 2D image + view backed by GPU-only memory
+	 */
+	bool createImage(uint32_t width, uint32_t height, vk::Format format,
+	                 vk::ImageUsageFlags usage, vk::ImageAspectFlags aspect,
+	                 vk::Image& outImage, vk::ImageView& outView,
+	                 VulkanAllocation& outAllocation,
+	                 vk::SampleCountFlagBits sampleCount = vk::SampleCountFlagBits::e1);
+
+	/**
+	 * @brief Draw a fullscreen triangle through the post-processing pipeline
+	 *
+	 * Begins/ends the given render pass and binds material + per-draw sets.
+	 * Optional UBO data is written into the next scratch UBO slot.
+	 */
+	void drawFullscreenTriangle(vk::CommandBuffer cmd, vk::RenderPass renderPass,
+	                            vk::Framebuffer framebuffer, vk::Extent2D extent,
+	                            int shaderType,
+	                            vk::ImageView textureView, vk::Sampler sampler,
+	                            const void* uboData, size_t uboSize,
+	                            int blendMode,
+	                            unsigned int shaderFlags = 0);
+
+	/**
+	 * @brief Generate a mip chain for an image (transitions mip 0 first)
+	 */
+	static void generateMipmaps(vk::CommandBuffer cmd, vk::Image image,
+	                            uint32_t width, uint32_t height, uint32_t mipLevels);
+
+	/**
+	 * @brief Create the shared scratch UBO used by drawFullscreenTriangle
+	 * @return false on failure (caller should treat as fatal)
+	 */
+	bool initScratchUBO();
+	void shutdownScratchUBO();
+};
+
+/**
+ * @brief A single-mip 2D color/depth render target (image + view + allocation)
+ *
+ * Shared value type used by the post-processor and its subsystems.
+ */
+struct RenderTarget {
+	vk::Image image;
+	vk::ImageView view;
+	VulkanAllocation allocation;
+	vk::Format format = vk::Format::eUndefined;
+	uint32_t width = 0;
+	uint32_t height = 0;
+};
+
+/**
+ * @brief Distortion ping-pong textures (32x32 RGBA8)
+ *
+ * Self-contained subsystem: owns two ping-pong textures plus a LINEAR/REPEAT
+ * sampler, and scrolls/refreshes them on a ~30ms timer to match OpenGL's
+ * gr_opengl_update_distortion(). Thruster rendering samples the most recently
+ * written texture via getTextureInfo().
+ */
+class VulkanDistortion {
+public:
+	bool init(PostProcessContext& ctx);
+	void shutdown();
+
+	/**
+	 * @brief Advance the ping-pong textures (no-op until the ~30ms timer fires)
+	 * @param cmd Active command buffer (must be outside a render pass)
+	 * @param frametime Time since last frame in seconds
+	 */
+	void update(vk::CommandBuffer cmd, float frametime);
+
+	bool isInitialized() const { return m_initialized; }
+
+	/**
+	 * @brief DescriptorImageInfo for the current (most recently written) texture
+	 *
+	 * Returns a default-constructed info if not initialized.
+	 */
+	vk::DescriptorImageInfo getTextureInfo() const;
+
+private:
+	PostProcessContext* m_ctx = nullptr;
+	std::array<RenderTarget, 2> m_tex;
+	int m_switch = 0;          // Which texture is the current read source
+	float m_timer = 0.0f;      // Accumulator for ~30ms update interval
+	vk::Sampler m_sampler;     // LINEAR filter, REPEAT wrapping
+	bool m_initialized = false;
+	bool m_firstUpdate = true; // First update needs eUndefined old layout
+};
+
+/**
+ * @brief Cascaded shadow map (VSM) render target
+ *
+ * Self-contained, lazily-initialized subsystem: owns the layered color (VSM
+ * variance) and depth array images, their render pass, and the layered
+ * framebuffer. Sized from the current Shadow_quality on init.
+ */
+class VulkanShadowMap {
+public:
+	/**
+	 * @brief Lazily create shadow resources (sized from Shadow_quality)
+	 * @return false if shadows are disabled or creation failed
+	 */
+	bool init(PostProcessContext& ctx);
+	void shutdown();
+
+	bool isInitialized() const { return m_initialized; }
+	int textureSize() const { return m_textureSize; }
+	vk::ImageView colorView() const { return m_color.view; }
+	vk::Image colorImage() const { return m_color.image; }
+	vk::Image depthImage() const { return m_depth.image; }
+	vk::RenderPass renderPass() const { return m_renderPass; }
+	vk::Framebuffer framebuffer() const { return m_framebuffer; }
+
+private:
+	PostProcessContext* m_ctx = nullptr;
+	RenderTarget m_color;   // RGBA16F, 2D array (MAX_SHADOW_CASCADES layers)
+	RenderTarget m_depth;   // D32F, 2D array (MAX_SHADOW_CASCADES layers)
+	vk::RenderPass m_renderPass;
+	vk::Framebuffer m_framebuffer;
+	int m_textureSize = 0;
+	bool m_initialized = false;
+};
+
+/**
+ * @brief HDR bloom (bright-pass → mip blur → additive composite)
+ *
+ * Self-contained subsystem owning two half-resolution mip chains plus the
+ * bloom/composite render passes. Composites additively back into the scene
+ * color target, which is owned by the post-processor and referenced here.
+ */
+class VulkanBloom {
+public:
+	static constexpr int MAX_MIP_BLUR_LEVELS = 4;
+
+	/**
+	 * @brief Create bloom resources (sized to half the scene extent)
+	 * @param sceneColor Scene HDR color target to composite into (must outlive this)
+	 */
+	bool init(PostProcessContext& ctx, const RenderTarget& sceneColor);
+	void shutdown();
+
+	/**
+	 * @brief Run the full bloom chain and composite it onto the scene color
+	 * @param cmd Active command buffer (must be outside a render pass)
+	 */
+	void execute(vk::CommandBuffer cmd);
+
+	bool isInitialized() const { return m_initialized; }
+
+private:
+	struct BloomTarget {
+		vk::Image image;
+		VulkanAllocation allocation;
+		vk::ImageView fullView;                                          // All mips (textureLod sampling)
+		std::array<vk::ImageView, MAX_MIP_BLUR_LEVELS> mipViews = {};    // Per-mip views (framebuffer attachment)
+		std::array<vk::Framebuffer, MAX_MIP_BLUR_LEVELS> mipFramebuffers = {};
+	};
+
+	PostProcessContext* m_ctx = nullptr;
+	const RenderTarget* m_sceneColor = nullptr;
+	std::array<BloomTarget, 2> m_tex;          // Half-res RGBA16F, 4 mip levels
+	uint32_t m_width = 0;                       // Half of scene width
+	uint32_t m_height = 0;                      // Half of scene height
+	vk::RenderPass m_renderPass;               // Color-only RGBA16F, loadOp=eDontCare
+	vk::RenderPass m_compositeRenderPass;      // Color-only RGBA16F, loadOp=eLoad (additive to scene)
+	vk::Framebuffer m_sceneColorFB;            // Scene color as attachment for bloom composite
+	bool m_initialized = false;
+};
+
+/**
+ * @brief Deferred geometry buffer (G-buffer) + optional MSAA G-buffer & resolve
+ *
+ * Cohesive subsystem owning the single-sample G-buffer targets (position, normal,
+ * specular, emissive, composite + a samplable normal copy) and, when MSAA is
+ * enabled, the multisample G-buffer that resolves into those single-sample
+ * targets. Also owns the render-pass / framebuffer builders shared by both paths.
+ * Renders into the scene color (attachment 0) and scene depth, both owned by the
+ * post-processor and referenced here.
+ */
+class VulkanDeferredGBuffer {
+public:
+	// ===== G-Buffer Layout Constants =====
+	// Full layout:  [0]=color, [1]=position, [2]=normal, [3]=specular, [4]=emissive, [5]=composite, [6]=depth
+	// MSAA layout:  [0]=color, [1]=position, [2]=normal, [3]=specular, [4]=emissive, [5]=depth (no composite)
+	static constexpr uint32_t GBUF_ATT_COLOR     = 0;
+	static constexpr uint32_t GBUF_ATT_POSITION  = 1;
+	static constexpr uint32_t GBUF_ATT_NORMAL    = 2;
+	static constexpr uint32_t GBUF_ATT_SPECULAR  = 3;
+	static constexpr uint32_t GBUF_ATT_EMISSIVE  = 4;
+	static constexpr uint32_t GBUF_ATT_COMPOSITE = 5; // Full layout only
+
+	static constexpr uint32_t GBUF_COLOR_ATTACHMENT_COUNT = 6; // Full layout (with composite)
+	static constexpr uint32_t MSAA_COLOR_ATTACHMENT_COUNT = 5; // MSAA layout (without composite)
+
+	static constexpr vk::Format GBUF_FORMAT_COLOR     = vk::Format::eR16G16B16A16Sfloat;
+	static constexpr vk::Format GBUF_FORMAT_POSITION  = vk::Format::eR16G16B16A16Sfloat;
+	static constexpr vk::Format GBUF_FORMAT_NORMAL    = vk::Format::eR16G16B16A16Sfloat;
+	static constexpr vk::Format GBUF_FORMAT_SPECULAR  = vk::Format::eR8G8B8A8Unorm;
+	static constexpr vk::Format GBUF_FORMAT_EMISSIVE  = vk::Format::eR16G16B16A16Sfloat;
+	static constexpr vk::Format GBUF_FORMAT_COMPOSITE = vk::Format::eR16G16B16A16Sfloat;
+
+	/**
+	 * @brief Create the single-sample G-buffer (sized to the scene extent)
+	 * @param sceneColor Scene HDR color (attachment 0); must outlive this
+	 * @param sceneDepth Scene depth attachment; must outlive this
+	 */
+	bool init(PostProcessContext& ctx, const RenderTarget& sceneColor, const RenderTarget& sceneDepth);
+	void shutdown();
+
+	/**
+	 * @brief Create the multisample G-buffer + resolve resources (lazy)
+	 * @return false if MSAA is disabled or creation failed
+	 */
+	bool initMsaa();
+	void shutdownMsaa();
+
+	bool isInitialized() const { return m_gbufInitialized; }
+	bool isMsaaInitialized() const { return m_msaaInitialized; }
+
+	// Mid-frame layout transitions / copies (all outside a render pass)
+	void transitionForResume(vk::CommandBuffer cmd);
+	void copyNormal(vk::CommandBuffer cmd);
+	void transitionMsaaForBegin(vk::CommandBuffer cmd);
+	void transitionMsaaForResume(vk::CommandBuffer cmd);
+
+	// G-buffer accessors
+	vk::RenderPass renderPass() const { return m_gbufRenderPass; }
+	vk::RenderPass renderPassLoad() const { return m_gbufRenderPassLoad; }
+	vk::Framebuffer framebuffer() const { return m_gbufFramebuffer; }
+	vk::ImageView positionView() const { return m_gbufPosition.view; }
+	vk::ImageView normalView() const { return m_gbufNormal.view; }
+	vk::ImageView specularView() const { return m_gbufSpecular.view; }
+	vk::ImageView emissiveView() const { return m_gbufEmissive.view; }
+	vk::ImageView compositeView() const { return m_gbufComposite.view; }
+	vk::ImageView normalCopyView() const { return m_gbufNormalCopy.view; }
+	vk::Image emissiveImage() const { return m_gbufEmissive.image; }
+	vk::Image compositeImage() const { return m_gbufComposite.image; }
+	vk::Image normalImage() const { return m_gbufNormal.image; }
+
+	// MSAA accessors
+	vk::RenderPass msaaRenderPass() const { return m_msaaGbufRenderPass; }
+	vk::RenderPass msaaRenderPassLoad() const { return m_msaaGbufRenderPassLoad; }
+	vk::Framebuffer msaaFramebuffer() const { return m_msaaGbufFramebuffer; }
+	vk::RenderPass msaaResolveRenderPass() const { return m_msaaResolveRenderPass; }
+	vk::Framebuffer msaaResolveFramebuffer() const { return m_msaaResolveFramebuffer; }
+	vk::RenderPass msaaEmissiveCopyRenderPass() const { return m_msaaEmissiveCopyRenderPass; }
+	vk::Framebuffer msaaEmissiveCopyFramebuffer() const { return m_msaaEmissiveCopyFramebuffer; }
+	vk::ImageView msaaColorView() const { return m_msaaColor.view; }
+	vk::ImageView msaaPositionView() const { return m_msaaPosition.view; }
+	vk::ImageView msaaNormalView() const { return m_msaaNormal.view; }
+	vk::ImageView msaaSpecularView() const { return m_msaaSpecular.view; }
+	vk::ImageView msaaEmissiveView() const { return m_msaaEmissive.view; }
+	vk::ImageView msaaDepthView() const { return m_msaaDepthView; }
+	vk::Image msaaColorImage() const { return m_msaaColor.image; }
+	vk::Image msaaPositionImage() const { return m_msaaPosition.image; }
+	vk::Image msaaNormalImage() const { return m_msaaNormal.image; }
+	vk::Image msaaSpecularImage() const { return m_msaaSpecular.image; }
+	vk::Image msaaEmissiveImage() const { return m_msaaEmissive.image; }
+	vk::Image msaaDepthImage() const { return m_msaaDepthImage; }
+	vk::Buffer msaaResolveUBO() const { return m_msaaResolveUBO; }
+	void* msaaResolveUBOMapped() const { return m_msaaResolveUBOMapped; }
+
+private:
+	struct GbufRenderPassConfig {
+		bool includeComposite;
+		vk::SampleCountFlagBits samples;
+		vk::AttachmentLoadOp colorLoadOp;
+		vk::AttachmentLoadOp depthLoadOp;
+		vk::ImageLayout colorInitialLayout;
+		vk::ImageLayout colorFinalLayout;
+		vk::ImageLayout depthInitialLayout;
+		bool useResolveDependency = false;
+	};
+	vk::RenderPass createGbufRenderPass(const GbufRenderPassConfig& config);
+	vk::Framebuffer createGbufFramebuffer(vk::RenderPass renderPass, bool includeComposite,
+	                                      bool useMsaaImages);
+
+	PostProcessContext* m_ctx = nullptr;
+	const RenderTarget* m_sceneColor = nullptr;
+	const RenderTarget* m_sceneDepth = nullptr;
+
+	// ---- G-Buffer (single-sample) ----
+	RenderTarget m_gbufPosition;   // RGBA16F - view-space position (xyz) + AO (w)
+	RenderTarget m_gbufNormal;     // RGBA16F - view-space normal (xyz) + gloss (w)
+	RenderTarget m_gbufNormalCopy; // RGBA16F - samplable copy of G-buffer normal (for decals)
+	RenderTarget m_gbufSpecular;   // RGBA8   - specular color (rgb) + fresnel (a)
+	RenderTarget m_gbufEmissive;   // RGBA16F - emissive / pre-lit color
+	RenderTarget m_gbufComposite;  // RGBA16F - light accumulation scratch buffer
+	vk::RenderPass m_gbufRenderPass;      // loadOp=eClear (initial)
+	vk::RenderPass m_gbufRenderPassLoad;  // loadOp=eLoad (resume after mid-pass copy)
+	vk::Framebuffer m_gbufFramebuffer;
+	bool m_gbufInitialized = false;
+
+	// ---- MSAA G-buffer (multisample) + resolve ----
+	RenderTarget m_msaaColor;       // RGBA16F (MS)
+	RenderTarget m_msaaPosition;    // RGBA16F (MS)
+	RenderTarget m_msaaNormal;      // RGBA16F (MS)
+	RenderTarget m_msaaSpecular;    // RGBA8 (MS)
+	RenderTarget m_msaaEmissive;    // RGBA16F (MS)
+	vk::Image m_msaaDepthImage;
+	vk::ImageView m_msaaDepthView;
+	VulkanAllocation m_msaaDepthAlloc;
+	vk::RenderPass m_msaaGbufRenderPass;        // eClear, 5 MS color + MS depth
+	vk::RenderPass m_msaaGbufRenderPassLoad;    // eLoad (emissive preserved)
+	vk::Framebuffer m_msaaGbufFramebuffer;
+	vk::RenderPass m_msaaResolveRenderPass;     // 5 non-MSAA color + depth (via gl_FragDepth)
+	vk::Framebuffer m_msaaResolveFramebuffer;
+	vk::RenderPass m_msaaEmissiveCopyRenderPass;   // 1 MS color att (for upsample)
+	vk::Framebuffer m_msaaEmissiveCopyFramebuffer;
+	vk::Buffer m_msaaResolveUBO;                // Per-frame {samples, fov}, persistently mapped
+	VulkanAllocation m_msaaResolveUBOAlloc;
+	void* m_msaaResolveUBOMapped = nullptr;
+	bool m_msaaInitialized = false;
+};
+
+/**
+ * @brief Deferred light accumulation (light volumes → G-buffer composite)
+ *
+ * Lazily-initialized subsystem owning the light-volume meshes (sphere/cylinder),
+ * the per-frame deferred light UBO, and the light-accumulation render pass that
+ * additively blends every scene light into the G-buffer composite. Consumes the
+ * G-buffer, the shadow map, and the scene color as read-only inputs.
+ */
+class VulkanDeferredLighting {
+public:
+	/**
+	 * @brief Wire dependencies (GPU resources are created lazily on first render)
+	 */
+	void init(PostProcessContext& ctx, const RenderTarget& sceneColor,
+	          const VulkanDeferredGBuffer& gbuffer, const VulkanShadowMap& shadow);
+	void shutdown();
+
+	/**
+	 * @brief Accumulate all scene lights into the G-buffer composite
+	 * @param cmd Active command buffer (must be outside a render pass)
+	 */
+	void render(vk::CommandBuffer cmd);
+
+private:
+	// Light volume meshes (sphere + cylinder for positional lights)
+	struct LightVolumeMesh {
+		vk::Buffer vbo;
+		VulkanAllocation vboAlloc;
+		vk::Buffer ibo;
+		VulkanAllocation iboAlloc;
+		uint32_t vertexCount = 0;
+		uint32_t indexCount = 0;
+	};
+
+	bool initLightVolumes();
+	bool initLightAccumPass();
+
+	static constexpr uint32_t DEFERRED_UBO_SIZE = 256 * 1024;  // 256KB for light data
+
+	PostProcessContext* m_ctx = nullptr;
+	const RenderTarget* m_sceneColor = nullptr;
+	const VulkanDeferredGBuffer* m_gbuffer = nullptr;
+	const VulkanShadowMap* m_shadow = nullptr;
+
+	LightVolumeMesh m_sphereMesh;
+	LightVolumeMesh m_cylinderMesh;
+
+	// Per-frame UBO for deferred light data (lights + globals + matrices)
+	vk::Buffer m_deferredUBO;
+	VulkanAllocation m_deferredUBOAlloc;
+
+	vk::RenderPass m_lightAccumRenderPass;    // Single RGBA16F color, loadOp=eLoad, additive blend
+	vk::Framebuffer m_lightAccumFramebuffer;  // Composite image as attachment 0
+	bool m_lightVolumesInitialized = false;
+};
+
+/**
+ * @brief Scene fog + volumetric nebula passes
+ *
+ * Lazily-initialized subsystem owning the fog render pass/framebuffer (which
+ * targets the scene color) and the mipmapped emissive copy used for volumetric
+ * LOD sampling. Consumes the G-buffer composite/emissive and the scene depth
+ * copy, performs its own scene-depth copy, and writes into the scene color.
+ */
+class VulkanFog {
+public:
+	/**
+	 * @brief Wire dependencies (GPU resources are created lazily on first render)
+	 */
+	void init(PostProcessContext& ctx, const RenderTarget& sceneColor,
+	          const RenderTarget& sceneDepth, const RenderTarget& sceneDepthCopy,
+	          const VulkanDeferredGBuffer& gbuffer);
+	void shutdown();
+
+	/**
+	 * @brief Distance fog pass (composite + depth → scene color)
+	 * @param cmd Active command buffer (must be outside a render pass)
+	 */
+	void renderScene(vk::CommandBuffer cmd);
+
+	/**
+	 * @brief Volumetric nebula pass (composite + emissive mips + depth + 3D vol → scene color)
+	 * @param cmd Active command buffer (must be outside a render pass)
+	 */
+	void renderVolumetric(vk::CommandBuffer cmd);
+
+private:
+	bool initFogPass();
+	void copySceneDepth(vk::CommandBuffer cmd);
+
+	PostProcessContext* m_ctx = nullptr;
+	const RenderTarget* m_sceneColor = nullptr;
+	const RenderTarget* m_sceneDepth = nullptr;
+	const RenderTarget* m_sceneDepthCopy = nullptr;
+	const VulkanDeferredGBuffer* m_gbuffer = nullptr;
+
+	vk::RenderPass m_fogRenderPass;           // Color-only RGBA16F, loadOp=eDontCare, finalLayout=eColorAttachmentOptimal
+	vk::Framebuffer m_fogFramebuffer;         // Scene color as color attachment
+	bool m_fogInitialized = false;
+
+	// Mipmapped emissive copy for volumetric fog LOD sampling
+	RenderTarget m_emissiveMipmapped;         // RGBA16F with full mip chain
+	uint32_t m_emissiveMipLevels = 0;
+	vk::ImageView m_emissiveMipmappedFullView;  // View with all mip levels
+	bool m_emissiveMipmappedInitialized = false;
+};
+
+/**
  * @brief Manages Vulkan post-processing pipeline
  *
  * Owns offscreen render targets (HDR scene color + depth), render passes,
@@ -68,7 +520,7 @@ public:
 	/**
 	 * @brief Get the scene rendering extent
 	 */
-	vk::Extent2D getSceneExtent() const { return m_extent; }
+	vk::Extent2D getSceneExtent() const { return m_ctx.sceneExtent; }
 
 	/**
 	 * @brief Execute post-processing passes and draw result to swap chain
@@ -95,7 +547,7 @@ public:
 	 *
 	 * @param cmd Active command buffer (must be outside a render pass)
 	 */
-	void executeBloom(vk::CommandBuffer cmd);
+	void executeBloom(vk::CommandBuffer cmd) { m_bloom.execute(cmd); }
 
 	/**
 	 * @brief Execute tonemapping pass (HDR scene → LDR)
@@ -150,7 +602,7 @@ public:
 	 * @param cmd Active command buffer (must be outside a render pass)
 	 * @param frametime Time since last frame in seconds
 	 */
-	void updateDistortion(vk::CommandBuffer cmd, float frametime);
+	void updateDistortion(vk::CommandBuffer cmd, float frametime) { m_distortion.update(cmd, frametime); }
 
 	/**
 	 * @brief Get a ready-to-use DescriptorImageInfo for the current distortion texture
@@ -158,7 +610,7 @@ public:
 	 * Returns the most recently written distortion texture (the one thrusters
 	 * should read from). Returns a default-constructed info if not initialized.
 	 */
-	vk::DescriptorImageInfo getDistortionTextureInfo() const;
+	vk::DescriptorImageInfo getDistortionTextureInfo() const { return m_distortion.getTextureInfo(); }
 
 	/**
 	 * @brief Copy scene color to effect texture for distortion/soft particle sampling
@@ -170,17 +622,6 @@ public:
 	 * @param cmd Active command buffer (must be outside a render pass)
 	 */
 	void copyEffectTexture(vk::CommandBuffer cmd);
-
-	/**
-	 * @brief Copy G-buffer normal to samplable copy for decal angle rejection
-	 *
-	 * Must be called outside a render pass. Transitions G-buffer normal through
-	 * eTransferSrcOptimal and back to eShaderReadOnlyOptimal. Transitions
-	 * normal copy to eShaderReadOnlyOptimal for fragment shader sampling.
-	 *
-	 * @param cmd Active command buffer (must be outside a render pass)
-	 */
-	void copyGbufNormal(vk::CommandBuffer cmd);
 
 	/**
 	 * @brief Copy scene depth to samplable depth copy for soft particle rendering
@@ -211,7 +652,7 @@ public:
 	/**
 	 * @brief Get the scene color sampler
 	 */
-	vk::Sampler getSceneColorSampler() const { return m_linearSampler; }
+	vk::Sampler getSceneColorSampler() const { return m_ctx.linearSampler; }
 
 	/**
 	 * @brief Get a ready-to-use DescriptorImageInfo for the scene effect texture
@@ -222,7 +663,7 @@ public:
 	 */
 	vk::DescriptorImageInfo getSceneEffectTextureInfo() const {
 		if (!m_sceneEffect.view) return {};
-		return {m_linearSampler, m_sceneEffect.view, vk::ImageLayout::eShaderReadOnlyOptimal};
+		return {m_ctx.linearSampler, m_sceneEffect.view, vk::ImageLayout::eShaderReadOnlyOptimal};
 	}
 
 	/**
@@ -232,60 +673,21 @@ public:
 	 */
 	vk::ImageView getSceneDepthCopyView() const { return m_sceneDepthCopy.view; }
 
-	vk::Format getDepthFormat() const { return m_depthFormat; }
+	vk::Format getDepthFormat() const { return m_ctx.depthFormat; }
 
 	/**
 	 * @brief Check if post-processing is initialized
 	 */
 	bool isInitialized() const { return m_initialized; }
 
-	// ========== G-Buffer (deferred lighting) ==========
-
-	/**
-	 * @brief Get the G-buffer render pass (6 color + depth, loadOp=eClear)
-	 */
-	vk::RenderPass getGbufRenderPass() const { return m_gbufRenderPass; }
-
-	/**
-	 * @brief Get the G-buffer render pass with loadOp=eLoad (resume after mid-pass copy)
-	 */
-	vk::RenderPass getGbufRenderPassLoad() const { return m_gbufRenderPassLoad; }
-
-	/**
-	 * @brief Get the G-buffer framebuffer (6 color + depth)
-	 */
-	vk::Framebuffer getGbufFramebuffer() const { return m_gbufFramebuffer; }
-
-	/**
-	 * @brief Check if G-buffer resources are initialized
-	 */
-	bool isGbufInitialized() const { return m_gbufInitialized; }
-
-	// G-buffer image views (for future light pass texture sampling)
-	vk::ImageView getGbufPositionView() const { return m_gbufPosition.view; }
-	vk::ImageView getGbufNormalView() const { return m_gbufNormal.view; }
-	vk::ImageView getGbufSpecularView() const { return m_gbufSpecular.view; }
-	vk::ImageView getGbufEmissiveView() const { return m_gbufEmissive.view; }
-	vk::ImageView getGbufCompositeView() const { return m_gbufComposite.view; }
-
-	// G-buffer images (for copy operations)
-	vk::Image getGbufEmissiveImage() const { return m_gbufEmissive.image; }
-	vk::Image getGbufCompositeImage() const { return m_gbufComposite.image; }
-	vk::Image getGbufNormalImage() const { return m_gbufNormal.image; }
-
-	// G-buffer normal copy (for decal angle rejection sampling)
-	vk::ImageView getGbufNormalCopyView() const { return m_gbufNormalCopy.view; }
-
-	/**
-	 * @brief Transition G-buffer color attachments 1-5 for render pass resume
-	 *
-	 * After ending the G-buffer render pass, all color attachments are in
-	 * eShaderReadOnlyOptimal. The eLoad pass expects eColorAttachmentOptimal.
-	 * The caller handles attachment 0 (scene color); this transitions the rest.
-	 *
-	 * @param cmd Active command buffer (must be outside a render pass)
-	 */
-	void transitionGbufForResume(vk::CommandBuffer cmd);
+	// ========== Subsystem access ==========
+	// Consumers that drive the deferred / shadow passes operate directly on the
+	// owning subsystem (its resources, render passes, and mid-frame transitions)
+	// rather than through dozens of per-resource forwarding accessors.
+	VulkanDeferredGBuffer& deferred() { return m_deferred; }
+	const VulkanDeferredGBuffer& deferred() const { return m_deferred; }
+	VulkanShadowMap& shadow() { return m_shadow; }
+	const VulkanShadowMap& shadow() const { return m_shadow; }
 
 	// ========== Deferred Light Accumulation ==========
 
@@ -298,17 +700,7 @@ public:
 	 *
 	 * @param cmd Active command buffer (must be outside a render pass)
 	 */
-	void renderDeferredLights(vk::CommandBuffer cmd);
-
-	/**
-	 * @brief Get the light accumulation render pass
-	 */
-	vk::RenderPass getLightAccumRenderPass() const { return m_lightAccumRenderPass; }
-
-	/**
-	 * @brief Get the light accumulation framebuffer
-	 */
-	vk::Framebuffer getLightAccumFramebuffer() const { return m_lightAccumFramebuffer; }
+	void renderDeferredLights(vk::CommandBuffer cmd) { m_lighting.render(cmd); }
 
 	// ========== Shadow Map ==========
 
@@ -316,130 +708,19 @@ public:
 	 * @brief Initialize shadow map resources (lazy, called on first use)
 	 * @return true on success
 	 */
-	bool initShadowPass();
+	bool initShadowPass() { return m_shadow.init(m_ctx); }
 
 	/**
 	 * @brief Shutdown shadow map resources
 	 */
-	void shutdownShadowPass();
-
-	/**
-	 * @brief Check if shadow map resources are initialized
-	 */
-	bool isShadowInitialized() const { return m_shadowInitialized; }
-
-	/**
-	 * @brief Get shadow map texture size (square)
-	 */
-	int getShadowTextureSize() const { return m_shadowTextureSize; }
+	void shutdownShadowPass() { m_shadow.shutdown(); }
 
 	/**
 	 * @brief Get a ready-to-use DescriptorImageInfo for the shadow map texture
 	 */
 	vk::DescriptorImageInfo getShadowTextureInfo() const {
-		return {m_linearSampler, m_shadowColor.view, vk::ImageLayout::eShaderReadOnlyOptimal};
+		return {m_ctx.linearSampler, m_shadow.colorView(), vk::ImageLayout::eShaderReadOnlyOptimal};
 	}
-
-	/**
-	 * @brief Get shadow color image (for layout transitions)
-	 */
-	vk::Image getShadowColorImage() const { return m_shadowColor.image; }
-
-	/**
-	 * @brief Get shadow depth image (for layout transitions)
-	 */
-	vk::Image getShadowDepthImage() const { return m_shadowDepth.image; }
-
-	/**
-	 * @brief Get shadow render pass
-	 */
-	vk::RenderPass getShadowRenderPass() const { return m_shadowRenderPass; }
-
-	/**
-	 * @brief Get shadow framebuffer
-	 */
-	vk::Framebuffer getShadowFramebuffer() const { return m_shadowFramebuffer; }
-
-	// ========== MSAA (deferred lighting) ==========
-
-	/**
-	 * @brief Check if MSAA G-buffer resources are initialized
-	 */
-	bool isMsaaInitialized() const { return m_msaaInitialized; }
-
-	/**
-	 * @brief Get the MSAA G-buffer render pass (eClear variant)
-	 */
-	vk::RenderPass getMsaaGbufRenderPass() const { return m_msaaGbufRenderPass; }
-
-	/**
-	 * @brief Get the MSAA G-buffer render pass (eLoad variant, emissive preserving)
-	 */
-	vk::RenderPass getMsaaGbufRenderPassLoad() const { return m_msaaGbufRenderPassLoad; }
-
-	/**
-	 * @brief Get the MSAA G-buffer framebuffer
-	 */
-	vk::Framebuffer getMsaaGbufFramebuffer() const { return m_msaaGbufFramebuffer; }
-
-	/**
-	 * @brief Get the MSAA resolve render pass (writes to non-MSAA G-buffer)
-	 */
-	vk::RenderPass getMsaaResolveRenderPass() const { return m_msaaResolveRenderPass; }
-
-	/**
-	 * @brief Get the MSAA resolve framebuffer (non-MSAA G-buffer images)
-	 */
-	vk::Framebuffer getMsaaResolveFramebuffer() const { return m_msaaResolveFramebuffer; }
-
-	/**
-	 * @brief Get the emissive copy render pass (for upsampling to MSAA)
-	 */
-	vk::RenderPass getMsaaEmissiveCopyRenderPass() const { return m_msaaEmissiveCopyRenderPass; }
-
-	/**
-	 * @brief Get the emissive copy framebuffer (MSAA emissive target)
-	 */
-	vk::Framebuffer getMsaaEmissiveCopyFramebuffer() const { return m_msaaEmissiveCopyFramebuffer; }
-
-	/**
-	 * @brief Get MSAA image views for resolve shader binding
-	 */
-	vk::ImageView getMsaaColorView() const { return m_msaaColor.view; }
-	vk::ImageView getMsaaPositionView() const { return m_msaaPosition.view; }
-	vk::ImageView getMsaaNormalView() const { return m_msaaNormal.view; }
-	vk::ImageView getMsaaSpecularView() const { return m_msaaSpecular.view; }
-	vk::ImageView getMsaaEmissiveView() const { return m_msaaEmissive.view; }
-	vk::ImageView getMsaaDepthView() const { return m_msaaDepthView; }
-	vk::Image getMsaaColorImage() const { return m_msaaColor.image; }
-	vk::Image getMsaaPositionImage() const { return m_msaaPosition.image; }
-	vk::Image getMsaaNormalImage() const { return m_msaaNormal.image; }
-	vk::Image getMsaaSpecularImage() const { return m_msaaSpecular.image; }
-	vk::Image getMsaaEmissiveImage() const { return m_msaaEmissive.image; }
-	vk::Image getMsaaDepthImage() const { return m_msaaDepthImage; }
-
-	/**
-	 * @brief Get MSAA resolve UBO buffer and mapped pointer
-	 *
-	 * Per-frame slots (one per MAX_FRAMES_IN_FLIGHT) hold {samples, fov} data.
-	 * Persistently mapped. Caller writes to the current frame's slot.
-	 */
-	vk::Buffer getMsaaResolveUBO() const { return m_msaaResolveUBO; }
-	void* getMsaaResolveUBOMapped() const { return m_msaaResolveUBOMapped; }
-
-	/**
-	 * @brief Transition MSAA images to expected layout before eClear render pass
-	 *
-	 * Uses oldLayout=eUndefined so it works regardless of current layout (first
-	 * frame: UNDEFINED, subsequent: eShaderReadOnlyOptimal from resolve).
-	 * Content is discarded — caller must use eClear loadOp.
-	 */
-	void transitionMsaaGbufForBegin(vk::CommandBuffer cmd);
-
-	/**
-	 * @brief Transition MSAA G-buffer color attachments for render pass resume
-	 */
-	void transitionMsaaGbufForResume(vk::CommandBuffer cmd);
 
 	// ========== Fog / Volumetric Nebula ==========
 
@@ -452,7 +733,7 @@ public:
 	 *
 	 * @param cmd Active command buffer (must be outside a render pass)
 	 */
-	void renderSceneFog(vk::CommandBuffer cmd);
+	void renderSceneFog(vk::CommandBuffer cmd) { m_fog.renderScene(cmd); }
 
 	/**
 	 * @brief Render volumetric nebula fog into scene color
@@ -463,7 +744,7 @@ public:
 	 *
 	 * @param cmd Active command buffer (must be outside a render pass)
 	 */
-	void renderVolumetricFog(vk::CommandBuffer cmd);
+	void renderVolumetricFog(vk::CommandBuffer cmd) { m_fog.renderVolumetric(cmd); }
 
 private:
 	void updateTonemappingUBO();
@@ -472,56 +753,41 @@ private:
 	                 vk::ImageUsageFlags usage, vk::ImageAspectFlags aspect,
 	                 vk::Image& outImage, vk::ImageView& outView,
 	                 VulkanAllocation& outAllocation,
-	                 vk::SampleCountFlagBits sampleCount = vk::SampleCountFlagBits::e1);
+	                 vk::SampleCountFlagBits sampleCount = vk::SampleCountFlagBits::e1)
+	{
+		return m_ctx.createImage(width, height, format, usage, aspect,
+		                         outImage, outView, outAllocation, sampleCount);
+	}
 
-	// G-buffer methods (deferred lighting)
-	bool initGBuffer();
-	void shutdownGBuffer();
-
-	struct GbufRenderPassConfig {
-		bool includeComposite;
-		vk::SampleCountFlagBits samples;
-		vk::AttachmentLoadOp colorLoadOp;
-		vk::AttachmentLoadOp depthLoadOp;
-		vk::ImageLayout colorInitialLayout;
-		vk::ImageLayout colorFinalLayout;
-		vk::ImageLayout depthInitialLayout;
-		bool useResolveDependency = false;
-	};
-	vk::RenderPass createGbufRenderPass(const GbufRenderPassConfig& config);
-	vk::Framebuffer createGbufFramebuffer(vk::RenderPass renderPass, bool includeComposite,
-	                                      bool useMsaaImages);
-
-	// Light volume methods (deferred lighting)
-	bool initLightVolumes();
-	void shutdownLightVolumes();
-	bool initLightAccumPass();
+	// G-buffer / MSAA (forwards to the VulkanDeferredGBuffer subsystem)
+	bool initGBuffer() { return m_deferred.init(m_ctx, m_sceneColor, m_sceneDepth); }
+	void shutdownGBuffer() { m_deferred.shutdown(); }
+	bool initMSAA() { return m_deferred.initMsaa(); }
+	void shutdownMSAA() { m_deferred.shutdownMsaa(); }
 
 	// LDR target methods
 	bool initLDRTargets();
 	void shutdownLDRTargets();
 
-	// Bloom pipeline methods
-	bool initBloom();
-	void shutdownBloom();
+	// Bloom pipeline (forwards to the VulkanBloom subsystem)
+	bool initBloom() { return m_bloom.init(m_ctx, m_sceneColor); }
+	void shutdownBloom() { m_bloom.shutdown(); }
 	static void generateMipmaps(vk::CommandBuffer cmd, vk::Image image,
-	                     uint32_t width, uint32_t height, uint32_t mipLevels);
+	                     uint32_t width, uint32_t height, uint32_t mipLevels)
+	{
+		PostProcessContext::generateMipmaps(cmd, image, width, height, mipLevels);
+	}
 	void drawFullscreenTriangle(vk::CommandBuffer cmd, vk::RenderPass renderPass,
 	                            vk::Framebuffer framebuffer, vk::Extent2D extent,
 	                            int shaderType,
 	                            vk::ImageView textureView, vk::Sampler sampler,
 	                            const void* uboData, size_t uboSize,
 	                            int blendMode,
-	                            unsigned int shaderFlags = 0);
-
-	struct RenderTarget {
-		vk::Image image;
-		vk::ImageView view;
-		VulkanAllocation allocation;
-		vk::Format format = vk::Format::eUndefined;
-		uint32_t width = 0;
-		uint32_t height = 0;
-	};
+	                            unsigned int shaderFlags = 0)
+	{
+		m_ctx.drawFullscreenTriangle(cmd, renderPass, framebuffer, extent, shaderType,
+		                             textureView, sampler, uboData, uboSize, blendMode, shaderFlags);
+	}
 
 	RenderTarget m_sceneColor;      // RGBA16F HDR scene color
 	RenderTarget m_sceneDepth;      // Depth buffer for scene
@@ -533,42 +799,12 @@ private:
 	vk::RenderPass m_sceneRenderPassLoad;   // loadOp=eLoad (resume after copy_effect_texture)
 	vk::Framebuffer m_sceneFramebuffer;     // Shared by both scene render passes (compatible)
 
-	// Sampler for post-processing texture reads (maxLod=0)
-	vk::Sampler m_linearSampler;
-	// Sampler with mipmap support for bloom textures
-	vk::Sampler m_mipmapSampler;
-
 	// Persistent UBO for tonemapping shader parameters
 	vk::Buffer m_tonemapUBO;
 	VulkanAllocation m_tonemapUBOAlloc;
 
-	// ---- Bloom resources ----
-	static constexpr int MAX_MIP_BLUR_LEVELS = 4;
-	static constexpr size_t BLOOM_UBO_SLOT_SIZE = 256; // >= minUniformBufferOffsetAlignment
-
-	struct BloomTarget {
-		vk::Image image;
-		VulkanAllocation allocation;
-		vk::ImageView fullView;                      // All mip levels (for textureLod sampling)
-		std::array<vk::ImageView, MAX_MIP_BLUR_LEVELS> mipViews = {};       // Per-mip views (for framebuffer attachment)
-		std::array<vk::Framebuffer, MAX_MIP_BLUR_LEVELS> mipFramebuffers = {};
-	};
-
-	std::array<BloomTarget, 2> m_bloomTex;     // Half-res RGBA16F, 4 mip levels
-	uint32_t m_bloomWidth = 0;                 // Half of scene width
-	uint32_t m_bloomHeight = 0;                // Half of scene height
-	vk::RenderPass m_bloomRenderPass;          // Color-only RGBA16F, loadOp=eDontCare
-	vk::RenderPass m_bloomCompositeRenderPass; // Color-only RGBA16F, loadOp=eLoad (additive to scene)
-	vk::Framebuffer m_sceneColorBloomFB;       // Scene_color as color attachment for bloom composite
-
-	// Per-draw UBO for bloom passes (each draw uses different offset)
-	vk::Buffer m_bloomUBO;
-	VulkanAllocation m_bloomUBOAlloc;
-	void* m_bloomUBOMapped = nullptr;
-	uint32_t m_bloomUBOCursor = 0;             // Current slot index (reset per frame)
-	static constexpr uint32_t BLOOM_UBO_MAX_SLOTS = 24;
-
-	bool m_bloomInitialized = false;
+	// ---- Bloom (self-contained subsystem) ----
+	VulkanBloom m_bloom;
 
 	// ---- LDR / FXAA resources ----
 	RenderTarget m_sceneLdr;           // RGBA8 LDR after tonemapping
@@ -580,124 +816,22 @@ private:
 	bool m_ldrInitialized = false;
 	bool m_postEffectsApplied = false; // Set per-frame by executePostEffects
 
-public:
-	// ========== G-Buffer Layout Constants ==========
-	// Full layout:  [0]=color, [1]=position, [2]=normal, [3]=specular, [4]=emissive, [5]=composite, [6]=depth
-	// MSAA layout:  [0]=color, [1]=position, [2]=normal, [3]=specular, [4]=emissive, [5]=depth (no composite)
+	// ---- Deferred G-buffer + MSAA (self-contained subsystem) ----
+	VulkanDeferredGBuffer m_deferred;
 
-	// Attachment indices (color indices 0-4 shared between full and MSAA layouts)
-	static constexpr uint32_t GBUF_ATT_COLOR     = 0;
-	static constexpr uint32_t GBUF_ATT_POSITION  = 1;
-	static constexpr uint32_t GBUF_ATT_NORMAL    = 2;
-	static constexpr uint32_t GBUF_ATT_SPECULAR  = 3;
-	static constexpr uint32_t GBUF_ATT_EMISSIVE  = 4;
-	static constexpr uint32_t GBUF_ATT_COMPOSITE = 5; // Full layout only
+	// ---- Deferred light accumulation (self-contained subsystem) ----
+	VulkanDeferredLighting m_lighting;
 
-	// Attachment counts
-	static constexpr uint32_t GBUF_COLOR_ATTACHMENT_COUNT = 6; // Full layout (with composite)
-	static constexpr uint32_t MSAA_COLOR_ATTACHMENT_COUNT = 5; // MSAA layout (without composite)
+	// ---- Shadow map (cascaded VSM, self-contained subsystem) ----
+	VulkanShadowMap m_shadow;
 
-	// Per-attachment pixel formats
-	static constexpr vk::Format GBUF_FORMAT_COLOR     = vk::Format::eR16G16B16A16Sfloat;
-	static constexpr vk::Format GBUF_FORMAT_POSITION  = vk::Format::eR16G16B16A16Sfloat;
-	static constexpr vk::Format GBUF_FORMAT_NORMAL    = vk::Format::eR16G16B16A16Sfloat;
-	static constexpr vk::Format GBUF_FORMAT_SPECULAR  = vk::Format::eR8G8B8A8Unorm;
-	static constexpr vk::Format GBUF_FORMAT_EMISSIVE  = vk::Format::eR16G16B16A16Sfloat;
-	static constexpr vk::Format GBUF_FORMAT_COMPOSITE = vk::Format::eR16G16B16A16Sfloat;
+	// ---- Fog / volumetric nebula (self-contained subsystem) ----
+	VulkanFog m_fog;
 
-private:
-	// ---- G-Buffer (deferred lighting) ----
-	RenderTarget m_gbufPosition;   // RGBA16F - view-space position (xyz) + AO (w)
-	RenderTarget m_gbufNormal;     // RGBA16F - view-space normal (xyz) + gloss (w)
-	RenderTarget m_gbufNormalCopy; // RGBA16F - samplable copy of G-buffer normal (for decals)
-	RenderTarget m_gbufSpecular;   // RGBA8   - specular color (rgb) + fresnel (a)
-	RenderTarget m_gbufEmissive;   // RGBA16F - emissive / pre-lit color
-	RenderTarget m_gbufComposite;  // RGBA16F - light accumulation scratch buffer
-	vk::RenderPass m_gbufRenderPass;      // loadOp=eClear (initial)
-	vk::RenderPass m_gbufRenderPassLoad;  // loadOp=eLoad (resume after mid-pass copy)
-	vk::Framebuffer m_gbufFramebuffer;
-	bool m_gbufInitialized = false;
+	// ---- Distortion (ping-pong textures, self-contained subsystem) ----
+	VulkanDistortion m_distortion;
 
-	// ---- Light accumulation (deferred lighting) ----
-	vk::RenderPass m_lightAccumRenderPass;    // Single RGBA16F color, loadOp=eLoad, additive blend
-	vk::Framebuffer m_lightAccumFramebuffer;  // Composite image as attachment 0
-
-	// Light volume meshes (sphere + cylinder for positional lights)
-	struct LightVolumeMesh {
-		vk::Buffer vbo;
-		VulkanAllocation vboAlloc;
-		vk::Buffer ibo;
-		VulkanAllocation iboAlloc;
-		uint32_t vertexCount = 0;
-		uint32_t indexCount = 0;
-	};
-	LightVolumeMesh m_sphereMesh;
-	LightVolumeMesh m_cylinderMesh;
-
-	// Per-frame UBO for deferred light data (lights + globals + matrices)
-	vk::Buffer m_deferredUBO;
-	VulkanAllocation m_deferredUBOAlloc;
-	static constexpr uint32_t DEFERRED_UBO_SIZE = 256 * 1024;  // 256KB for light data
-
-	bool m_lightVolumesInitialized = false;
-
-	// ---- MSAA G-buffer ----
-	RenderTarget m_msaaColor;       // RGBA16F (MS)
-	RenderTarget m_msaaPosition;    // RGBA16F (MS)
-	RenderTarget m_msaaNormal;      // RGBA16F (MS)
-	RenderTarget m_msaaSpecular;    // RGBA8 (MS)
-	RenderTarget m_msaaEmissive;    // RGBA16F (MS)
-	vk::Image m_msaaDepthImage;
-	vk::ImageView m_msaaDepthView;
-	VulkanAllocation m_msaaDepthAlloc;
-	vk::RenderPass m_msaaGbufRenderPass;        // eClear, 5 MS color + MS depth
-	vk::RenderPass m_msaaGbufRenderPassLoad;    // eLoad (emissive preserved), 5 MS color + MS depth
-	vk::Framebuffer m_msaaGbufFramebuffer;
-	vk::RenderPass m_msaaResolveRenderPass;     // 5 non-MSAA color + depth (via gl_FragDepth)
-	vk::Framebuffer m_msaaResolveFramebuffer;
-	vk::RenderPass m_msaaEmissiveCopyRenderPass;   // 1 MS color att (for upsample)
-	vk::Framebuffer m_msaaEmissiveCopyFramebuffer;
-	// Per-frame UBO for MSAA resolve shader data (samples, fov)
-	vk::Buffer m_msaaResolveUBO;
-	VulkanAllocation m_msaaResolveUBOAlloc;
-	void* m_msaaResolveUBOMapped = nullptr;
-	bool m_msaaInitialized = false;
-	bool initMSAA();
-	void shutdownMSAA();
-
-	// ---- Shadow map (cascaded VSM) ----
-	RenderTarget m_shadowColor;       // RGBA16F, 2D array (4 layers)
-	RenderTarget m_shadowDepth;       // D32F, 2D array (4 layers)
-	vk::RenderPass m_shadowRenderPass;
-	vk::Framebuffer m_shadowFramebuffer;
-	int m_shadowTextureSize = 0;
-	bool m_shadowInitialized = false;
-
-	// ---- Fog resources ----
-	vk::RenderPass m_fogRenderPass;           // Color-only RGBA16F, loadOp=eDontCare, finalLayout=eColorAttachmentOptimal
-	vk::Framebuffer m_fogFramebuffer;         // Scene color as color attachment
-	bool m_fogInitialized = false;
-	bool initFogPass();
-	void shutdownFogPass();
-
-	// Mipmapped emissive copy for volumetric fog LOD sampling
-	RenderTarget m_emissiveMipmapped;         // RGBA16F with full mip chain
-	uint32_t m_emissiveMipLevels = 0;
-	vk::ImageView m_emissiveMipmappedFullView;  // View with all mip levels
-	bool m_emissiveMipmappedInitialized = false;
-
-	// ---- Distortion ping-pong textures (32x32 RGBA8) ----
-	std::array<RenderTarget, 2> m_distortionTex;
-	int m_distortionSwitch = 0;        // Which texture is the current read source
-	float m_distortionTimer = 0.0f;    // Accumulator for ~30ms update interval
-	vk::Sampler m_distortionSampler;   // LINEAR filter, REPEAT wrapping
-	bool m_distortionInitialized = false;
-	bool m_distortionFirstUpdate = true;  // First update needs eUndefined old layout
-
-	vk::Device m_device;
-	VulkanMemoryManager* m_memoryManager = nullptr;
-	vk::Extent2D m_extent;
-	vk::Format m_depthFormat = vk::Format::eUndefined;
+	PostProcessContext m_ctx;
 
 	bool m_initialized = false;
 };

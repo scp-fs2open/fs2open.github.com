@@ -15,7 +15,90 @@ namespace graphics::vulkan {
 
 namespace {
 VulkanTextureManager* g_textureManager = nullptr;
+
+// Geometry/format description shared by every texture-upload path (single 2D,
+// animation array, cubemap). Captures exactly what the staging-size, copy-region
+// and per-mip math need, so those calculations live in one place instead of
+// being copy-pasted into each upload function.
+struct TextureUploadLayout {
+	uint32_t width = 0;
+	uint32_t height = 0;
+	uint32_t mipLevels = 1;
+	bool isCompressed = false;
+	size_t blockSize = 0;          // compressed block size (DXT1=8, others=16)
+	size_t dstBytesPerPixel = 0;   // uncompressed destination bpp (24bpp stored as 4)
+};
+
+// Byte size of a single mip level for one layer.
+size_t mipLevelSize(const TextureUploadLayout& l, uint32_t mipW, uint32_t mipH)
+{
+	if (l.isCompressed) {
+		return dds_compressed_mip_size(static_cast<int>(mipW), static_cast<int>(mipH),
+			static_cast<int>(l.blockSize));
+	}
+	return static_cast<size_t>(mipW) * mipH * l.dstBytesPerPixel;
 }
+
+// Total bytes occupied by one layer (all mip levels). Matches the staging
+// layout produced by appendLayerCopyRegions().
+size_t layerByteSize(const TextureUploadLayout& l)
+{
+	size_t total = 0;
+	uint32_t mipW = l.width;
+	uint32_t mipH = l.height;
+	for (uint32_t m = 0; m < l.mipLevels; ++m) {
+		total += mipLevelSize(l, mipW, mipH);
+		mipW = std::max(1u, mipW / 2);
+		mipH = std::max(1u, mipH / 2);
+	}
+	return total;
+}
+
+// Append one vk::BufferImageCopy per mip level for a single array layer/face,
+// starting at layerBufferOffset. Returns the number of bytes the layer occupies
+// (so callers can advance their staging offset). The regions depend only on the
+// layout, not on the pixel data, so this is safe to call even when a frame's
+// data could not be locked.
+size_t appendLayerCopyRegions(SCP_vector<vk::BufferImageCopy>& regions,
+	const TextureUploadLayout& l, uint32_t layerIndex, size_t layerBufferOffset)
+{
+	uint32_t mipW = l.width;
+	uint32_t mipH = l.height;
+	size_t offset = layerBufferOffset;
+	for (uint32_t m = 0; m < l.mipLevels; ++m) {
+		vk::BufferImageCopy region;
+		region.bufferOffset = static_cast<vk::DeviceSize>(offset);
+		region.bufferRowLength = 0;
+		region.bufferImageHeight = 0;
+		region.imageSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
+		region.imageSubresource.mipLevel = m;
+		region.imageSubresource.baseArrayLayer = layerIndex;
+		region.imageSubresource.layerCount = 1;
+		region.imageOffset = vk::Offset3D(0, 0, 0);
+		region.imageExtent = vk::Extent3D(mipW, mipH, 1);
+		regions.push_back(region);
+
+		offset += mipLevelSize(l, mipW, mipH);
+		mipW = std::max(1u, mipW / 2);
+		mipH = std::max(1u, mipH / 2);
+	}
+	return offset - layerBufferOffset;
+}
+
+// Expand 24bpp BGR pixel data to 32bpp BGRA (alpha forced to 255). Vulkan does
+// not support 24bpp optimal-tiling formats, so every upload path widens.
+void expandBgrToBgra(uint8_t* dst, const uint8_t* src, size_t pixelCount)
+{
+	for (size_t i = 0; i < pixelCount; ++i) {
+		dst[0] = src[0];
+		dst[1] = src[1];
+		dst[2] = src[2];
+		dst[3] = 255;
+		src += 3;
+		dst += 4;
+	}
+}
+} // namespace
 
 VulkanTextureManager* getTextureManager()
 {
@@ -458,29 +541,22 @@ bool VulkanTextureManager::uploadAnimationFrames(int handle, bitmap* bm, int com
 		return false;
 	}
 
-	// Calculate per-layer data size
-	size_t blockSize = 0;
-	size_t layerDataSize = 0;
+	// Each animation frame is one array layer; they all share this layout.
 	uint32_t mipLevels = 1;
-
 	if (isCompressed) {
-		blockSize = dds_block_size(compType);
 		mipLevels = static_cast<uint32_t>(bm_get_num_mipmaps(handle));
 		mipLevels = std::max<uint32_t>(mipLevels, 1);
-
-		// Calculate total data size per layer (all mips)
-		uint32_t mipW = width;
-		uint32_t mipH = height;
-		for (uint32_t i = 0; i < mipLevels; i++) {
-			layerDataSize += dds_compressed_mip_size(mipW, mipH, blockSize);
-			mipW = std::max(1u, mipW / 2);
-			mipH = std::max(1u, mipH / 2);
-		}
-	} else {
-		size_t dstBytesPerPixel = (bm->bpp == 24) ? 4 : (bm->bpp / 8);
-		layerDataSize = width * height * dstBytesPerPixel;
 	}
 
+	TextureUploadLayout layout;
+	layout.width = width;
+	layout.height = height;
+	layout.mipLevels = mipLevels;
+	layout.isCompressed = isCompressed;
+	layout.blockSize = isCompressed ? dds_block_size(compType) : 0;
+	layout.dstBytesPerPixel = (bm->bpp == 24) ? 4 : (bm->bpp / 8);
+
+	size_t layerDataSize = layerByteSize(layout);
 	size_t totalDataSize = layerDataSize * arrayLayerCount;
 
 	// Create multi-layer image
@@ -506,26 +582,9 @@ bool VulkanTextureManager::uploadAnimationFrames(int handle, bitmap* bm, int com
 	}
 
 	// Create staging buffer for all layers
-	vk::BufferCreateInfo bufferInfo;
-	bufferInfo.size = totalDataSize;
-	bufferInfo.usage = vk::BufferUsageFlagBits::eTransferSrc;
-	bufferInfo.sharingMode = vk::SharingMode::eExclusive;
-
 	vk::Buffer stagingBuffer;
 	VulkanAllocation stagingAllocation;
-
-	try {
-		stagingBuffer = m_device.createBuffer(bufferInfo);
-	} catch (const vk::SystemError& e) {
-		mprintf(("VulkanTexture: uploadAnimationFrames: failed to create staging buffer: %s\n", e.what()));
-		m_device.destroyImageView(imageView);
-		m_device.destroyImage(image);
-		m_memoryManager->freeAllocation(allocation);
-		return false;
-	}
-
-	if (!m_memoryManager->allocateBufferMemory(stagingBuffer, MemoryUsage::CpuOnly, stagingAllocation)) {
-		m_device.destroyBuffer(stagingBuffer);
+	if (!createStagingBuffer(totalDataSize, stagingBuffer, stagingAllocation)) {
 		m_device.destroyImageView(imageView);
 		m_device.destroyImage(image);
 		m_memoryManager->freeAllocation(allocation);
@@ -556,9 +615,13 @@ bool VulkanTextureManager::uploadAnimationFrames(int handle, bitmap* bm, int com
 	m_uploadingAnimation = true;
 
 	for (int frame = baseFrame; frame < baseFrame + numFrames; frame++) {
-		int layerIndex = frame - baseFrame;
+		auto layerIndex = static_cast<uint32_t>(frame - baseFrame);
 		size_t layerOffset = layerIndex * layerDataSize;
 		uint8_t* dst = static_cast<uint8_t*>(mapped) + layerOffset;
+
+		// Copy regions depend only on the layout, not the pixel data, so build
+		// them up front — even a frame that fails to lock still occupies its layer.
+		appendLayerCopyRegions(copyRegions, layout, layerIndex, layerOffset);
 
 		bitmap* frameBm;
 		bool needUnlock = false;
@@ -573,112 +636,17 @@ bool VulkanTextureManager::uploadAnimationFrames(int handle, bitmap* bm, int com
 				mprintf(("VulkanTexture: uploadAnimationFrames: failed to lock frame %d\n", frame));
 				// Fill with zeros to avoid undefined data
 				memset(dst, 0, layerDataSize);
-				// Build copy regions anyway
-				if (isCompressed) {
-					uint32_t mipW = width, mipH = height;
-					size_t mipOffset = layerOffset;
-					for (uint32_t m = 0; m < mipLevels; m++) {
-						vk::BufferImageCopy region;
-						region.bufferOffset = static_cast<vk::DeviceSize>(mipOffset);
-						region.bufferRowLength = 0;
-						region.bufferImageHeight = 0;
-						region.imageSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
-						region.imageSubresource.mipLevel = m;
-						region.imageSubresource.baseArrayLayer = static_cast<uint32_t>(layerIndex);
-						region.imageSubresource.layerCount = 1;
-						region.imageOffset = vk::Offset3D(0, 0, 0);
-						region.imageExtent = vk::Extent3D(mipW, mipH, 1);
-						copyRegions.push_back(region);
-						uint32_t blocksW = (mipW + 3) / 4;
-						uint32_t blocksH = (mipH + 3) / 4;
-						mipOffset += blocksW * blocksH * blockSize;
-						mipW = std::max(1u, mipW / 2);
-						mipH = std::max(1u, mipH / 2);
-					}
-				} else {
-					vk::BufferImageCopy region;
-					region.bufferOffset = static_cast<vk::DeviceSize>(layerOffset);
-					region.bufferRowLength = 0;
-					region.bufferImageHeight = 0;
-					region.imageSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
-					region.imageSubresource.mipLevel = 0;
-					region.imageSubresource.baseArrayLayer = static_cast<uint32_t>(layerIndex);
-					region.imageSubresource.layerCount = 1;
-					region.imageOffset = vk::Offset3D(0, 0, 0);
-					region.imageExtent = vk::Extent3D(width, height, 1);
-					copyRegions.push_back(region);
-				}
 				continue;
 			}
 			needUnlock = true;
 		}
 
 		// Copy frame data to staging buffer
-		if (isCompressed) {
-			memcpy(dst, reinterpret_cast<const void*>(frameBm->data), layerDataSize);
-
-			// Build per-mip copy regions for this layer
-			uint32_t mipW = width, mipH = height;
-			size_t mipOffset = layerOffset;
-			for (uint32_t m = 0; m < mipLevels; m++) {
-				uint32_t blocksW = (mipW + 3) / 4;
-				uint32_t blocksH = (mipH + 3) / 4;
-				size_t mipSize = blocksW * blocksH * blockSize;
-
-				vk::BufferImageCopy region;
-				region.bufferOffset = static_cast<vk::DeviceSize>(mipOffset);
-				region.bufferRowLength = 0;
-				region.bufferImageHeight = 0;
-				region.imageSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
-				region.imageSubresource.mipLevel = m;
-				region.imageSubresource.baseArrayLayer = static_cast<uint32_t>(layerIndex);
-				region.imageSubresource.layerCount = 1;
-				region.imageOffset = vk::Offset3D(0, 0, 0);
-				region.imageExtent = vk::Extent3D(mipW, mipH, 1);
-				copyRegions.push_back(region);
-
-				mipOffset += mipSize;
-				mipW = std::max(1u, mipW / 2);
-				mipH = std::max(1u, mipH / 2);
-			}
-		} else if (frameBm->bpp == 24) {
-			// Convert BGR (3 bytes) to BGRA (4 bytes)
-			const auto* src = reinterpret_cast<const uint8_t*>(frameBm->data);
-			size_t pixelCount = width * height;
-			for (size_t i = 0; i < pixelCount; ++i) {
-				dst[0] = src[0];  // B
-				dst[1] = src[1];  // G
-				dst[2] = src[2];  // R
-				dst[3] = 255;     // A
-				src += 3;
-				dst += 4;
-			}
-
-			vk::BufferImageCopy region;
-			region.bufferOffset = static_cast<vk::DeviceSize>(layerOffset);
-			region.bufferRowLength = 0;
-			region.bufferImageHeight = 0;
-			region.imageSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
-			region.imageSubresource.mipLevel = 0;
-			region.imageSubresource.baseArrayLayer = static_cast<uint32_t>(layerIndex);
-			region.imageSubresource.layerCount = 1;
-			region.imageOffset = vk::Offset3D(0, 0, 0);
-			region.imageExtent = vk::Extent3D(width, height, 1);
-			copyRegions.push_back(region);
+		if (!isCompressed && frameBm->bpp == 24) {
+			expandBgrToBgra(dst, reinterpret_cast<const uint8_t*>(frameBm->data),
+				static_cast<size_t>(width) * height);
 		} else {
 			memcpy(dst, reinterpret_cast<const void*>(frameBm->data), layerDataSize);
-
-			vk::BufferImageCopy region;
-			region.bufferOffset = static_cast<vk::DeviceSize>(layerOffset);
-			region.bufferRowLength = 0;
-			region.bufferImageHeight = 0;
-			region.imageSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
-			region.imageSubresource.mipLevel = 0;
-			region.imageSubresource.baseArrayLayer = static_cast<uint32_t>(layerIndex);
-			region.imageSubresource.layerCount = 1;
-			region.imageOffset = vk::Offset3D(0, 0, 0);
-			region.imageExtent = vk::Extent3D(width, height, 1);
-			copyRegions.push_back(region);
 		}
 
 		if (needUnlock) {
@@ -783,27 +751,21 @@ bool VulkanTextureManager::uploadCubemap(int handle, bitmap* bm, int compType)
 	size_t blockSize = 0;
 
 	if (isCompressed) {
-		blockSize = (baseCompType == DDS_DXT1) ? 8 : 16;
+		blockSize = dds_block_size(baseCompType);
 		mipLevels = static_cast<uint32_t>(bm_get_num_mipmaps(handle));
 		mipLevels = std::max<uint32_t>(mipLevels, 1);
 	}
 
-	// Calculate per-face data size (all mip levels for one face)
-	size_t perFaceSize = 0;
-	if (isCompressed) {
-		uint32_t mipW = faceW, mipH = faceH;
-		for (uint32_t m = 0; m < mipLevels; m++) {
-			uint32_t blocksW = (mipW + 3) / 4;
-			uint32_t blocksH = (mipH + 3) / 4;
-			perFaceSize += blocksW * blocksH * blockSize;
-			mipW = std::max(1u, mipW / 2);
-			mipH = std::max(1u, mipH / 2);
-		}
-	} else {
-		size_t dstBpp = (bm->bpp == 24) ? 4 : (bm->bpp / 8);
-		perFaceSize = faceW * faceH * dstBpp;
-	}
+	// A cubemap is six array layers; each face has the same layout.
+	TextureUploadLayout layout;
+	layout.width = faceW;
+	layout.height = faceH;
+	layout.mipLevels = mipLevels;
+	layout.isCompressed = isCompressed;
+	layout.blockSize = blockSize;
+	layout.dstBytesPerPixel = (bm->bpp == 24) ? 4 : (bm->bpp / 8);
 
+	size_t perFaceSize = layerByteSize(layout);
 	size_t totalDataSize = perFaceSize * 6;
 
 	// Defer destruction of existing resources
@@ -838,23 +800,14 @@ bool VulkanTextureManager::uploadCubemap(int handle, bitmap* bm, int compType)
 	}
 
 	// Create staging buffer
-	vk::BufferCreateInfo bufferInfo;
-	bufferInfo.size = totalDataSize;
-	bufferInfo.usage = vk::BufferUsageFlagBits::eTransferSrc;
-	bufferInfo.sharingMode = vk::SharingMode::eExclusive;
-
 	vk::Buffer stagingBuffer;
 	VulkanAllocation stagingAllocation;
-
-	try {
-		stagingBuffer = m_device.createBuffer(bufferInfo);
-	} catch (const vk::SystemError& e) {
-		mprintf(("VulkanTexture: uploadCubemap: failed to create staging buffer: %s\n", e.what()));
-		return false;
-	}
-
-	if (!m_memoryManager->allocateBufferMemory(stagingBuffer, MemoryUsage::CpuOnly, stagingAllocation)) {
-		m_device.destroyBuffer(stagingBuffer);
+	if (!createStagingBuffer(totalDataSize, stagingBuffer, stagingAllocation)) {
+		m_device.destroyImageView(ts->imageView);
+		ts->imageView = nullptr;
+		m_device.destroyImage(ts->image);
+		ts->image = nullptr;
+		m_memoryManager->freeAllocation(ts->allocation);
 		return false;
 	}
 
@@ -867,50 +820,19 @@ bool VulkanTextureManager::uploadCubemap(int handle, bitmap* bm, int compType)
 
 	// Copy data to staging buffer
 	// DDS cubemap data layout: face0[mip0..mipN], face1[mip0..mipN], ..., face5[mip0..mipN]
-	if (isCompressed) {
-		memcpy(mapped, reinterpret_cast<const void*>(bm->data), totalDataSize);
-	} else if (bm->bpp == 24) {
+	if (!isCompressed && bm->bpp == 24) {
 		// Convert BGR to BGRA for all 6 faces
-		const auto* src = reinterpret_cast<const uint8_t*>(bm->data);
-		auto* dst = static_cast<uint8_t*>(mapped);
-		size_t pixelCount = faceW * faceH * 6;
-		for (size_t i = 0; i < pixelCount; ++i) {
-			dst[0] = src[0]; dst[1] = src[1]; dst[2] = src[2]; dst[3] = 255;
-			src += 3; dst += 4;
-		}
+		expandBgrToBgra(static_cast<uint8_t*>(mapped),
+			reinterpret_cast<const uint8_t*>(bm->data), static_cast<size_t>(faceW) * faceH * 6);
 	} else {
 		memcpy(mapped, reinterpret_cast<const void*>(bm->data), totalDataSize);
 	}
 
-	// Build per-face, per-mip copy regions
+	// Build per-face, per-mip copy regions (each face is one array layer)
 	SCP_vector<vk::BufferImageCopy> copyRegions;
 	size_t bufferOffset = 0;
 	for (uint32_t face = 0; face < 6; face++) {
-		uint32_t mipW = faceW, mipH = faceH;
-		for (uint32_t mip = 0; mip < mipLevels; mip++) {
-			vk::BufferImageCopy region;
-			region.bufferOffset = static_cast<vk::DeviceSize>(bufferOffset);
-			region.bufferRowLength = 0;
-			region.bufferImageHeight = 0;
-			region.imageSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
-			region.imageSubresource.mipLevel = mip;
-			region.imageSubresource.baseArrayLayer = face;
-			region.imageSubresource.layerCount = 1;
-			region.imageOffset = vk::Offset3D(0, 0, 0);
-			region.imageExtent = vk::Extent3D(mipW, mipH, 1);
-			copyRegions.push_back(region);
-
-			if (isCompressed) {
-				uint32_t blocksW = (mipW + 3) / 4;
-				uint32_t blocksH = (mipH + 3) / 4;
-				bufferOffset += blocksW * blocksH * blockSize;
-			} else {
-				size_t dstBpp = (bm->bpp == 24) ? 4 : (bm->bpp / 8);
-				bufferOffset += mipW * mipH * dstBpp;
-			}
-			mipW = std::max(1u, mipW / 2);
-			mipH = std::max(1u, mipH / 2);
-		}
+		bufferOffset += appendLayerCopyRegions(copyRegions, layout, face, bufferOffset);
 	}
 
 	m_memoryManager->flushMemory(stagingAllocation, 0, totalDataSize);
@@ -1208,28 +1130,13 @@ bool VulkanTextureManager::bm_data(int handle, bitmap* bm, int compType)
 		mipLevels = std::max<uint32_t>(mipLevels, 1);
 
 		// Calculate total data size for all mip levels and build copy regions
-		dataSize = 0;
-		uint32_t mipW = width;
-		uint32_t mipH = height;
-		for (uint32_t i = 0; i < mipLevels; i++) {
-			size_t mipSize = dds_compressed_mip_size(mipW, mipH, blockSize);
-
-			vk::BufferImageCopy region;
-			region.bufferOffset = static_cast<vk::DeviceSize>(dataSize);
-			region.bufferRowLength = 0;
-			region.bufferImageHeight = 0;
-			region.imageSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
-			region.imageSubresource.mipLevel = i;
-			region.imageSubresource.baseArrayLayer = 0;
-			region.imageSubresource.layerCount = 1;
-			region.imageOffset = vk::Offset3D(0, 0, 0);
-			region.imageExtent = vk::Extent3D(mipW, mipH, 1);
-			copyRegions.push_back(region);
-
-			dataSize += mipSize;
-			mipW = std::max(1u, mipW / 2);
-			mipH = std::max(1u, mipH / 2);
-		}
+		TextureUploadLayout layout;
+		layout.width = width;
+		layout.height = height;
+		layout.mipLevels = mipLevels;
+		layout.isCompressed = true;
+		layout.blockSize = blockSize;
+		dataSize = appendLayerCopyRegions(copyRegions, layout, 0, 0);
 	} else {
 		format = bppToVkFormat(bm->bpp);
 		if (format == vk::Format::eUndefined) {
@@ -1308,23 +1215,14 @@ bool VulkanTextureManager::bm_data(int handle, bitmap* bm, int compType)
 	}
 
 	// Create staging buffer
-	vk::BufferCreateInfo bufferInfo;
-	bufferInfo.size = dataSize;
-	bufferInfo.usage = vk::BufferUsageFlagBits::eTransferSrc;
-	bufferInfo.sharingMode = vk::SharingMode::eExclusive;
-
 	vk::Buffer stagingBuffer;
 	VulkanAllocation stagingAllocation;
-
-	try {
-		stagingBuffer = m_device.createBuffer(bufferInfo);
-	} catch (const vk::SystemError& e) {
-		mprintf(("Failed to create staging buffer: %s\n", e.what()));
-		return false;
-	}
-
-	if (!m_memoryManager->allocateBufferMemory(stagingBuffer, MemoryUsage::CpuOnly, stagingAllocation)) {
-		m_device.destroyBuffer(stagingBuffer);
+	if (!createStagingBuffer(dataSize, stagingBuffer, stagingAllocation)) {
+		m_device.destroyImageView(ts->imageView);
+		ts->imageView = nullptr;
+		m_device.destroyImage(ts->image);
+		ts->image = nullptr;
+		m_memoryManager->freeAllocation(ts->allocation);
 		return false;
 	}
 
@@ -1335,18 +1233,8 @@ bool VulkanTextureManager::bm_data(int handle, bitmap* bm, int compType)
 		// Compressed data: copy raw block data directly (includes all mip levels)
 		memcpy(mapped, reinterpret_cast<const void*>(bm->data), dataSize);
 	} else if (bm->bpp == 24) {
-		// Convert BGR (3 bytes) to BGRA (4 bytes), adding alpha=255
-		const auto* src = reinterpret_cast<const uint8_t*>(bm->data);
-		auto* dst = static_cast<uint8_t*>(mapped);
-		size_t pixelCount = width * height;
-		for (size_t i = 0; i < pixelCount; ++i) {
-			dst[0] = src[0];  // B
-			dst[1] = src[1];  // G
-			dst[2] = src[2];  // R
-			dst[3] = 255;     // A
-			src += 3;
-			dst += 4;
-		}
+		expandBgrToBgra(static_cast<uint8_t*>(mapped),
+			reinterpret_cast<const uint8_t*>(bm->data), static_cast<size_t>(width) * height);
 	} else {
 		memcpy(mapped, reinterpret_cast<const void*>(bm->data), dataSize);
 	}
@@ -2180,6 +2068,30 @@ bool VulkanTextureManager::createFallbackTexture(vk::Image& outImage, VulkanAllo
 	m_device.destroyBuffer(stagingBuffer);
 	m_memoryManager->freeAllocation(stagingAlloc);
 
+	return true;
+}
+
+bool VulkanTextureManager::createStagingBuffer(size_t size, vk::Buffer& outBuffer,
+                                               VulkanAllocation& outAllocation)
+{
+	vk::BufferCreateInfo bufferInfo;
+	bufferInfo.size = size;
+	bufferInfo.usage = vk::BufferUsageFlagBits::eTransferSrc;
+	bufferInfo.sharingMode = vk::SharingMode::eExclusive;
+
+	try {
+		outBuffer = m_device.createBuffer(bufferInfo);
+	} catch (const vk::SystemError& e) {
+		mprintf(("VulkanTexture: failed to create staging buffer: %s\n", e.what()));
+		outBuffer = nullptr;
+		return false;
+	}
+
+	if (!m_memoryManager->allocateBufferMemory(outBuffer, MemoryUsage::CpuOnly, outAllocation)) {
+		m_device.destroyBuffer(outBuffer);
+		outBuffer = nullptr;
+		return false;
+	}
 	return true;
 }
 

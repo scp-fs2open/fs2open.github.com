@@ -49,11 +49,11 @@ static void transitionMsaaImages(vk::CommandBuffer cmd, VulkanPostProcessor* pp,
 	std::array<vk::ImageMemoryBarrier, 6> barriers;
 
 	std::array<vk::Image, 5> msaaImages = {
-		pp->getMsaaColorImage(),
-		pp->getMsaaPositionImage(),
-		pp->getMsaaNormalImage(),
-		pp->getMsaaSpecularImage(),
-		pp->getMsaaEmissiveImage(),
+		pp->deferred().msaaColorImage(),
+		pp->deferred().msaaPositionImage(),
+		pp->deferred().msaaNormalImage(),
+		pp->deferred().msaaSpecularImage(),
+		pp->deferred().msaaEmissiveImage(),
 	};
 	for (size_t i = 0; i < msaaImages.size(); ++i) {
 		barriers[i].srcAccessMask = colorSrcAccess;
@@ -72,7 +72,7 @@ static void transitionMsaaImages(vk::CommandBuffer cmd, VulkanPostProcessor* pp,
 	barriers[5].newLayout = depthNewLayout;
 	barriers[5].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 	barriers[5].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	barriers[5].image = pp->getMsaaDepthImage();
+	barriers[5].image = pp->deferred().msaaDepthImage();
 	barriers[5].subresourceRange = {imageAspectFromFormat(pp->getDepthFormat()), 0, 1, 0, 1};
 
 	cmd.pipelineBarrier(srcStage, dstStage, {}, nullptr, nullptr, barriers);
@@ -87,7 +87,7 @@ void vulkan_deferred_lighting_begin(bool clearNonColorBufs)
 	}
 
 	auto* pp = getPostProcessor();
-	if (!pp || !pp->isGbufInitialized()) {
+	if (!pp || !pp->deferred().isInitialized()) {
 		return;
 	}
 
@@ -99,7 +99,7 @@ void vulkan_deferred_lighting_begin(bool clearNonColorBufs)
 	auto* stateTracker = getStateTracker();
 	vk::CommandBuffer cmd = stateTracker->getCommandBuffer();
 
-	const bool msaaActive = (Cmdline_msaa_enabled > 0 && pp->isMsaaInitialized());
+	const bool msaaActive = (Cmdline_msaa_enabled > 0 && pp->deferred().isMsaaInitialized());
 
 	// End the current G-buffer render pass to perform the color→emissive copy.
 	// All 6 color attachments transition to eShaderReadOnlyOptimal (finalLayout).
@@ -109,7 +109,7 @@ void vulkan_deferred_lighting_begin(bool clearNonColorBufs)
 	// Skip both post-barriers — conditional MSAA/non-MSAA code below handles transitions.
 	copyImageToImage(cmd,
 		pp->getSceneColorImage(), vk::ImageLayout::eShaderReadOnlyOptimal, vk::ImageLayout::eTransferSrcOptimal,
-		pp->getGbufEmissiveImage(), vk::ImageLayout::eShaderReadOnlyOptimal, vk::ImageLayout::eTransferDstOptimal,
+		pp->deferred().emissiveImage(), vk::ImageLayout::eShaderReadOnlyOptimal, vk::ImageLayout::eTransferDstOptimal,
 		pp->getSceneExtent());
 
 	if (msaaActive) {
@@ -135,7 +135,7 @@ void vulkan_deferred_lighting_begin(bool clearNonColorBufs)
 			barriers[1].newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 			barriers[1].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 			barriers[1].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barriers[1].image = pp->getGbufEmissiveImage();
+			barriers[1].image = pp->deferred().emissiveImage();
 			barriers[1].subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
 
 			cmd.pipelineBarrier(
@@ -145,28 +145,28 @@ void vulkan_deferred_lighting_begin(bool clearNonColorBufs)
 		}
 
 		// Transition MSAA images to expected initial layouts
-		pp->transitionMsaaGbufForBegin(cmd);
+		pp->deferred().transitionMsaaForBegin(cmd);
 
 		// Begin MSAA G-buffer render pass (eClear — clears all attachments)
 		{
 			auto extent = pp->getSceneExtent();
 			vk::RenderPassBeginInfo rpBegin;
-			rpBegin.renderPass = pp->getMsaaGbufRenderPass();
-			rpBegin.framebuffer = pp->getMsaaGbufFramebuffer();
+			rpBegin.renderPass = pp->deferred().msaaRenderPass();
+			rpBegin.framebuffer = pp->deferred().msaaFramebuffer();
 			rpBegin.renderArea.offset = vk::Offset2D(0, 0);
 			rpBegin.renderArea.extent = extent;
-			std::array<vk::ClearValue, VulkanPostProcessor::MSAA_COLOR_ATTACHMENT_COUNT + 1> clearValues{};
-			clearValues[VulkanPostProcessor::GBUF_ATT_COLOR].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
-			clearValues[VulkanPostProcessor::GBUF_ATT_POSITION].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
-			clearValues[VulkanPostProcessor::GBUF_ATT_NORMAL].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
-			clearValues[VulkanPostProcessor::GBUF_ATT_SPECULAR].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
-			clearValues[VulkanPostProcessor::GBUF_ATT_EMISSIVE].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
-			clearValues[VulkanPostProcessor::MSAA_COLOR_ATTACHMENT_COUNT].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+			std::array<vk::ClearValue, VulkanDeferredGBuffer::MSAA_COLOR_ATTACHMENT_COUNT + 1> clearValues{};
+			clearValues[VulkanDeferredGBuffer::GBUF_ATT_COLOR].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
+			clearValues[VulkanDeferredGBuffer::GBUF_ATT_POSITION].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
+			clearValues[VulkanDeferredGBuffer::GBUF_ATT_NORMAL].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
+			clearValues[VulkanDeferredGBuffer::GBUF_ATT_SPECULAR].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
+			clearValues[VulkanDeferredGBuffer::GBUF_ATT_EMISSIVE].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
+			clearValues[VulkanDeferredGBuffer::MSAA_COLOR_ATTACHMENT_COUNT].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
 			rpBegin.clearValueCount = static_cast<uint32_t>(clearValues.size());
 			rpBegin.pClearValues = clearValues.data();
 			cmd.beginRenderPass(rpBegin, vk::SubpassContents::eInline);
-			stateTracker->setRenderPass(pp->getMsaaGbufRenderPass(), 0);
-			stateTracker->setColorAttachmentCount(VulkanPostProcessor::MSAA_COLOR_ATTACHMENT_COUNT);
+			stateTracker->setRenderPass(pp->deferred().msaaRenderPass(), 0);
+			stateTracker->setColorAttachmentCount(VulkanDeferredGBuffer::MSAA_COLOR_ATTACHMENT_COUNT);
 			stateTracker->setCurrentSampleCount(renderer->getMsaaSampleCount());
 		}
 
@@ -184,9 +184,9 @@ void vulkan_deferred_lighting_begin(bool clearNonColorBufs)
 			config.blendMode = ALPHA_BLEND_NONE;
 			config.cullEnabled = false;
 			config.depthWriteEnabled = false;
-			config.renderPass = pp->getMsaaGbufRenderPass();
+			config.renderPass = pp->deferred().msaaRenderPass();
 			config.sampleCount = renderer->getMsaaSampleCount();
-			config.colorAttachmentCount = VulkanPostProcessor::MSAA_COLOR_ATTACHMENT_COUNT;
+			config.colorAttachmentCount = VulkanDeferredGBuffer::MSAA_COLOR_ATTACHMENT_COUNT;
 
 			// Per-attachment blend: only write to emissive
 			config.perAttachmentBlendEnabled = true;
@@ -194,7 +194,7 @@ void vulkan_deferred_lighting_begin(bool clearNonColorBufs)
 				config.attachmentBlends[i].blendMode = ALPHA_BLEND_NONE;
 				config.attachmentBlends[i].writeMask = {false, false, false, false};
 			}
-			config.attachmentBlends[VulkanPostProcessor::GBUF_ATT_EMISSIVE].writeMask = {true, true, true, true};
+			config.attachmentBlends[VulkanDeferredGBuffer::GBUF_ATT_EMISSIVE].writeMask = {true, true, true, true};
 
 			vertex_layout emptyLayout;
 			vk::Pipeline pipeline = pipelineMgr->getPipeline(config, emptyLayout);
@@ -276,7 +276,7 @@ void vulkan_deferred_lighting_begin(bool clearNonColorBufs)
 			barriers[1].newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 			barriers[1].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 			barriers[1].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barriers[1].image = pp->getGbufEmissiveImage();
+			barriers[1].image = pp->deferred().emissiveImage();
 			barriers[1].subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
 
 			cmd.pipelineBarrier(
@@ -286,22 +286,22 @@ void vulkan_deferred_lighting_begin(bool clearNonColorBufs)
 		}
 
 		// Transition G-buffer attachments 1-5 from eShaderReadOnlyOptimal → eColorAttachmentOptimal
-		pp->transitionGbufForResume(cmd);
+		pp->deferred().transitionForResume(cmd);
 
 		// Resume G-buffer render pass with eLoad
 		{
 			auto extent = pp->getSceneExtent();
 			vk::RenderPassBeginInfo rpBegin;
-			rpBegin.renderPass = pp->getGbufRenderPassLoad();
-			rpBegin.framebuffer = pp->getGbufFramebuffer();
+			rpBegin.renderPass = pp->deferred().renderPassLoad();
+			rpBegin.framebuffer = pp->deferred().framebuffer();
 			rpBegin.renderArea.offset = vk::Offset2D(0, 0);
 			rpBegin.renderArea.extent = extent;
-			std::array<vk::ClearValue, VulkanPostProcessor::GBUF_COLOR_ATTACHMENT_COUNT + 1> clearValues{};
-			clearValues[VulkanPostProcessor::GBUF_COLOR_ATTACHMENT_COUNT].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+			std::array<vk::ClearValue, VulkanDeferredGBuffer::GBUF_COLOR_ATTACHMENT_COUNT + 1> clearValues{};
+			clearValues[VulkanDeferredGBuffer::GBUF_COLOR_ATTACHMENT_COUNT].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
 			rpBegin.clearValueCount = static_cast<uint32_t>(clearValues.size());
 			rpBegin.pClearValues = clearValues.data();
 			cmd.beginRenderPass(rpBegin, vk::SubpassContents::eInline);
-			stateTracker->setRenderPass(pp->getGbufRenderPassLoad(), 0);
+			stateTracker->setRenderPass(pp->deferred().renderPassLoad(), 0);
 		}
 
 		// Optionally clear non-color G-buffer attachments
@@ -317,10 +317,10 @@ void vulkan_deferred_lighting_begin(bool clearNonColorBufs)
 			clearRect.baseArrayLayer = 0;
 			clearRect.layerCount = 1;
 
-			for (uint32_t att : {VulkanPostProcessor::GBUF_ATT_POSITION,
-		                     VulkanPostProcessor::GBUF_ATT_NORMAL,
-		                     VulkanPostProcessor::GBUF_ATT_SPECULAR,
-		                     VulkanPostProcessor::GBUF_ATT_COMPOSITE}) {
+			for (uint32_t att : {VulkanDeferredGBuffer::GBUF_ATT_POSITION,
+		                     VulkanDeferredGBuffer::GBUF_ATT_NORMAL,
+		                     VulkanDeferredGBuffer::GBUF_ATT_SPECULAR,
+		                     VulkanDeferredGBuffer::GBUF_ATT_COMPOSITE}) {
 				clearAtt.colorAttachment = att;
 				cmd.clearAttachments(clearAtt, clearRect);
 			}
@@ -337,7 +337,7 @@ void vulkan_deferred_lighting_msaa()
 	}
 
 	auto* pp = getPostProcessor();
-	if (!pp || !pp->isMsaaInitialized()) {
+	if (!pp || !pp->deferred().isMsaaInitialized()) {
 		return;
 	}
 
@@ -367,13 +367,13 @@ void vulkan_deferred_lighting_msaa()
 	{
 		auto extent = pp->getSceneExtent();
 		vk::RenderPassBeginInfo rpBegin;
-		rpBegin.renderPass = pp->getMsaaResolveRenderPass();
-		rpBegin.framebuffer = pp->getMsaaResolveFramebuffer();
+		rpBegin.renderPass = pp->deferred().msaaResolveRenderPass();
+		rpBegin.framebuffer = pp->deferred().msaaResolveFramebuffer();
 		rpBegin.renderArea.offset = vk::Offset2D(0, 0);
 		rpBegin.renderArea.extent = extent;
 		// 6 attachments: 5 color + depth. loadOp=eDontCare for all (fully overwritten).
-		std::array<vk::ClearValue, VulkanPostProcessor::MSAA_COLOR_ATTACHMENT_COUNT + 1> clearValues{};
-		clearValues[VulkanPostProcessor::MSAA_COLOR_ATTACHMENT_COUNT].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+		std::array<vk::ClearValue, VulkanDeferredGBuffer::MSAA_COLOR_ATTACHMENT_COUNT + 1> clearValues{};
+		clearValues[VulkanDeferredGBuffer::MSAA_COLOR_ATTACHMENT_COUNT].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
 		rpBegin.clearValueCount = static_cast<uint32_t>(clearValues.size());
 		rpBegin.pClearValues = clearValues.data();
 		cmd.beginRenderPass(rpBegin, vk::SubpassContents::eInline);
@@ -390,7 +390,7 @@ void vulkan_deferred_lighting_msaa()
 		config.blendMode = ALPHA_BLEND_NONE;
 		config.cullEnabled = false;
 		config.depthWriteEnabled = true;
-		config.renderPass = pp->getMsaaResolveRenderPass();
+		config.renderPass = pp->deferred().msaaResolveRenderPass();
 		config.colorAttachmentCount = 5;
 
 		vertex_layout emptyLayout;
@@ -434,12 +434,12 @@ void vulkan_deferred_lighting_msaa()
 			// MSAA textures at slots 0-5
 			// Fill all slots with MSAA color view (validation checks ALL elements
 			// even though the shader only accesses 0-5 — sample count must match).
-			texImages.fill({nearestSampler, pp->getMsaaColorView(), vk::ImageLayout::eShaderReadOnlyOptimal});
-			texImages[1] = {nearestSampler, pp->getMsaaPositionView(), vk::ImageLayout::eShaderReadOnlyOptimal};
-			texImages[2] = {nearestSampler, pp->getMsaaNormalView(), vk::ImageLayout::eShaderReadOnlyOptimal};
-			texImages[3] = {nearestSampler, pp->getMsaaSpecularView(), vk::ImageLayout::eShaderReadOnlyOptimal};
-			texImages[4] = {nearestSampler, pp->getMsaaEmissiveView(), vk::ImageLayout::eShaderReadOnlyOptimal};
-			texImages[5] = {nearestSampler, pp->getMsaaDepthView(), vk::ImageLayout::eShaderReadOnlyOptimal};
+			texImages.fill({nearestSampler, pp->deferred().msaaColorView(), vk::ImageLayout::eShaderReadOnlyOptimal});
+			texImages[1] = {nearestSampler, pp->deferred().msaaPositionView(), vk::ImageLayout::eShaderReadOnlyOptimal};
+			texImages[2] = {nearestSampler, pp->deferred().msaaNormalView(), vk::ImageLayout::eShaderReadOnlyOptimal};
+			texImages[3] = {nearestSampler, pp->deferred().msaaSpecularView(), vk::ImageLayout::eShaderReadOnlyOptimal};
+			texImages[4] = {nearestSampler, pp->deferred().msaaEmissiveView(), vk::ImageLayout::eShaderReadOnlyOptimal};
+			texImages[5] = {nearestSampler, pp->deferred().msaaDepthView(), vk::ImageLayout::eShaderReadOnlyOptimal};
 			writer.setImageArray(MaterialBinding::TextureArray, texImages);
 
 			// PerDraw set: GenericData UBO with {samples, fov} at binding 0
@@ -456,11 +456,11 @@ void vulkan_deferred_lighting_msaa()
 
 			uint32_t frame = bufferMgr->getCurrentFrame();
 			uint32_t slotOffset = frame * 256;
-			memcpy(static_cast<uint8_t*>(pp->getMsaaResolveUBOMapped()) + slotOffset,
+			memcpy(static_cast<uint8_t*>(pp->deferred().msaaResolveUBOMapped()) + slotOffset,
 				&resolveData, sizeof(resolveData));
 
 			writer.setBuffer(PerDrawBinding::GenericData,
-				{pp->getMsaaResolveUBO(), slotOffset, 256});
+				{pp->deferred().msaaResolveUBO(), slotOffset, 256});
 			writer.flush();
 			cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
 				pipelineMgr->getPipelineLayout(),
@@ -525,7 +525,7 @@ void vulkan_deferred_lighting_msaa()
 		barrier.newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.image = pp->getGbufCompositeImage();
+		barrier.image = pp->deferred().compositeImage();
 		barrier.subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
 
 		cmd.pipelineBarrier(
@@ -536,14 +536,14 @@ void vulkan_deferred_lighting_msaa()
 
 	// Transition G-buffer attachments 1-5 for resume
 	// (all now in eShaderReadOnlyOptimal: 1-4 from resolve finalLayout, 5 from above)
-	pp->transitionGbufForResume(cmd);
+	pp->deferred().transitionForResume(cmd);
 
 	// Resume the non-MSAA G-buffer render pass with eLoad
 	{
 		auto extent = pp->getSceneExtent();
 		vk::RenderPassBeginInfo rpBegin;
-		rpBegin.renderPass = pp->getGbufRenderPassLoad();
-		rpBegin.framebuffer = pp->getGbufFramebuffer();
+		rpBegin.renderPass = pp->deferred().renderPassLoad();
+		rpBegin.framebuffer = pp->deferred().framebuffer();
 		rpBegin.renderArea.offset = vk::Offset2D(0, 0);
 		rpBegin.renderArea.extent = extent;
 		std::array<vk::ClearValue, 7> clearValues{};
@@ -551,8 +551,8 @@ void vulkan_deferred_lighting_msaa()
 		rpBegin.clearValueCount = static_cast<uint32_t>(clearValues.size());
 		rpBegin.pClearValues = clearValues.data();
 		cmd.beginRenderPass(rpBegin, vk::SubpassContents::eInline);
-		stateTracker->setRenderPass(pp->getGbufRenderPassLoad(), 0);
-		stateTracker->setColorAttachmentCount(VulkanPostProcessor::GBUF_COLOR_ATTACHMENT_COUNT);
+		stateTracker->setRenderPass(pp->deferred().renderPassLoad(), 0);
+		stateTracker->setColorAttachmentCount(VulkanDeferredGBuffer::GBUF_COLOR_ATTACHMENT_COUNT);
 	}
 }
 
@@ -576,7 +576,7 @@ void vulkan_deferred_lighting_finish()
 	}
 
 	auto* pp = getPostProcessor();
-	if (!pp || !pp->isGbufInitialized()) {
+	if (!pp || !pp->deferred().isInitialized()) {
 		return;
 	}
 
@@ -596,8 +596,8 @@ void vulkan_deferred_lighting_finish()
 	// 2. Copy emissive → composite (the emissive data becomes the base for light accumulation)
 	// Emissive → eShaderReadOnlyOptimal (done), composite → eColorAttachmentOptimal (for light accum)
 	copyImageToImage(cmd,
-		pp->getGbufEmissiveImage(), vk::ImageLayout::eShaderReadOnlyOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
-		pp->getGbufCompositeImage(), vk::ImageLayout::eShaderReadOnlyOptimal, vk::ImageLayout::eColorAttachmentOptimal,
+		pp->deferred().emissiveImage(), vk::ImageLayout::eShaderReadOnlyOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
+		pp->deferred().compositeImage(), vk::ImageLayout::eShaderReadOnlyOptimal, vk::ImageLayout::eColorAttachmentOptimal,
 		pp->getSceneExtent());
 
 	// 3. Render deferred lights (begins + ends light accum render pass internally)
@@ -621,7 +621,7 @@ void vulkan_deferred_lighting_finish()
 			// Copy scene color → composite so volumetric reads the fogged result
 			copyImageToImage(cmd,
 				pp->getSceneColorImage(), vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::eColorAttachmentOptimal,
-				pp->getGbufCompositeImage(), vk::ImageLayout::eShaderReadOnlyOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
+				pp->deferred().compositeImage(), vk::ImageLayout::eShaderReadOnlyOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
 				pp->getSceneExtent());
 		}
 	}
@@ -635,7 +635,7 @@ void vulkan_deferred_lighting_finish()
 		// No fog — copy composite → scene color (existing behavior)
 		// Skip src post-barrier (composite not used again in this path)
 		copyImageToImage(cmd,
-			pp->getGbufCompositeImage(), vk::ImageLayout::eShaderReadOnlyOptimal, vk::ImageLayout::eTransferSrcOptimal,
+			pp->deferred().compositeImage(), vk::ImageLayout::eShaderReadOnlyOptimal, vk::ImageLayout::eTransferSrcOptimal,
 			pp->getSceneColorImage(), vk::ImageLayout::eShaderReadOnlyOptimal, vk::ImageLayout::eColorAttachmentOptimal,
 			pp->getSceneExtent());
 	}
@@ -698,7 +698,7 @@ void vulkan_shadow_map_start(matrix4* shadow_view_matrix, const matrix* light_ma
 	}
 
 	// Lazy-init shadow resources
-	if (!pp->isShadowInitialized()) {
+	if (!pp->shadow().isInitialized()) {
 		if (!pp->initShadowPass()) {
 			return;
 		}
@@ -716,10 +716,10 @@ void vulkan_shadow_map_start(matrix4* shadow_view_matrix, const matrix* light_ma
 
 	// Begin shadow render pass (eClear for both color and depth)
 	{
-		int shadowSize = pp->getShadowTextureSize();
+		int shadowSize = pp->shadow().textureSize();
 		vk::RenderPassBeginInfo rpBegin;
-		rpBegin.renderPass = pp->getShadowRenderPass();
-		rpBegin.framebuffer = pp->getShadowFramebuffer();
+		rpBegin.renderPass = pp->shadow().renderPass();
+		rpBegin.framebuffer = pp->shadow().framebuffer();
 		rpBegin.renderArea.offset = vk::Offset2D(0, 0);
 		rpBegin.renderArea.extent = vk::Extent2D(static_cast<uint32_t>(shadowSize), static_cast<uint32_t>(shadowSize));
 
@@ -730,13 +730,13 @@ void vulkan_shadow_map_start(matrix4* shadow_view_matrix, const matrix* light_ma
 		rpBegin.pClearValues = clearValues.data();
 
 		cmd.beginRenderPass(rpBegin, vk::SubpassContents::eInline);
-		stateTracker->setRenderPass(pp->getShadowRenderPass(), 0);
+		stateTracker->setRenderPass(pp->shadow().renderPass(), 0);
 		stateTracker->setColorAttachmentCount(1);
 	}
 
 	// Set viewport and scissor to shadow texture size
 	{
-		const int shadowSize = pp->getShadowTextureSize();
+		const int shadowSize = pp->shadow().textureSize();
 
 		stateTracker->setViewport(0.0f, 0.0f, static_cast<float>(shadowSize), static_cast<float>(shadowSize), 0.0f, 1.0f);
 		stateTracker->setScissor(0, 0, static_cast<uint32_t>(shadowSize), static_cast<uint32_t>(shadowSize));
@@ -779,25 +779,25 @@ void vulkan_shadow_map_end()
 	if ( Restore_swapchain_after_shadow_pass ) {
 		renderer->resumeSwapChainPass();
 	} else if ( renderer->isUsingGbufRenderPass() ) {
-		const bool msaaActive = (Cmdline_msaa_enabled > 0 && pp->isMsaaInitialized());
+		const bool msaaActive = (Cmdline_msaa_enabled > 0 && pp->deferred().isMsaaInitialized());
 
 		if ( msaaActive ) {
 			// Resume MSAA G-buffer render pass
-			pp->transitionMsaaGbufForResume(cmd);
+			pp->deferred().transitionMsaaForResume(cmd);
 
 			auto extent = pp->getSceneExtent();
 			vk::RenderPassBeginInfo rpBegin;
-			rpBegin.renderPass = pp->getMsaaGbufRenderPassLoad();
-			rpBegin.framebuffer = pp->getMsaaGbufFramebuffer();
+			rpBegin.renderPass = pp->deferred().msaaRenderPassLoad();
+			rpBegin.framebuffer = pp->deferred().msaaFramebuffer();
 			rpBegin.renderArea.offset = vk::Offset2D(0, 0);
 			rpBegin.renderArea.extent = extent;
-			std::array<vk::ClearValue, VulkanPostProcessor::MSAA_COLOR_ATTACHMENT_COUNT + 1> clearValues{};
-			clearValues[VulkanPostProcessor::MSAA_COLOR_ATTACHMENT_COUNT].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+			std::array<vk::ClearValue, VulkanDeferredGBuffer::MSAA_COLOR_ATTACHMENT_COUNT + 1> clearValues{};
+			clearValues[VulkanDeferredGBuffer::MSAA_COLOR_ATTACHMENT_COUNT].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
 			rpBegin.clearValueCount = static_cast<uint32_t>(clearValues.size());
 			rpBegin.pClearValues = clearValues.data();
 			cmd.beginRenderPass(rpBegin, vk::SubpassContents::eInline);
-			stateTracker->setRenderPass(pp->getMsaaGbufRenderPassLoad(), 0);
-			stateTracker->setColorAttachmentCount(VulkanPostProcessor::MSAA_COLOR_ATTACHMENT_COUNT);
+			stateTracker->setRenderPass(pp->deferred().msaaRenderPassLoad(), 0);
+			stateTracker->setColorAttachmentCount(VulkanDeferredGBuffer::MSAA_COLOR_ATTACHMENT_COUNT);
 			stateTracker->setCurrentSampleCount(getRendererInstance()->getMsaaSampleCount());
 		} else {
 			// Transition scene color: eShaderReadOnlyOptimal → eColorAttachmentOptimal
@@ -820,13 +820,13 @@ void vulkan_shadow_map_end()
 			}
 
 			// Transition G-buffer attachments 1-5 for resume
-			pp->transitionGbufForResume(cmd);
+			pp->deferred().transitionForResume(cmd);
 
 			// Resume G-buffer render pass with eLoad
 			auto extent = pp->getSceneExtent();
 			vk::RenderPassBeginInfo rpBegin;
-			rpBegin.renderPass = pp->getGbufRenderPassLoad();
-			rpBegin.framebuffer = pp->getGbufFramebuffer();
+			rpBegin.renderPass = pp->deferred().renderPassLoad();
+			rpBegin.framebuffer = pp->deferred().framebuffer();
 			rpBegin.renderArea.offset = vk::Offset2D(0, 0);
 			rpBegin.renderArea.extent = extent;
 
@@ -836,8 +836,8 @@ void vulkan_shadow_map_end()
 			rpBegin.pClearValues = clearValues.data();
 
 			cmd.beginRenderPass(rpBegin, vk::SubpassContents::eInline);
-			stateTracker->setRenderPass(pp->getGbufRenderPassLoad(), 0);
-			stateTracker->setColorAttachmentCount(VulkanPostProcessor::GBUF_COLOR_ATTACHMENT_COUNT);
+			stateTracker->setRenderPass(pp->deferred().renderPassLoad(), 0);
+			stateTracker->setColorAttachmentCount(VulkanDeferredGBuffer::GBUF_COLOR_ATTACHMENT_COUNT);
 		}
 	} else {
 		renderer->resumeSceneRendering();
@@ -869,7 +869,7 @@ void vulkan_start_decal_pass()
 	auto* pp = getPostProcessor();
 	auto* stateTracker = getStateTracker();
 
-	if (!renderer->isSceneRendering() || !pp || !pp->isGbufInitialized()) {
+	if (!renderer->isSceneRendering() || !pp || !pp->deferred().isInitialized()) {
 		return;
 	}
 
@@ -882,7 +882,7 @@ void vulkan_start_decal_pass()
 	pp->copySceneDepth(cmd);
 
 	// Copy G-buffer normal → samplable normal copy (for angle rejection)
-	pp->copyGbufNormal(cmd);
+	pp->deferred().copyNormal(cmd);
 
 	// Transition scene color: eShaderReadOnlyOptimal → eColorAttachmentOptimal
 	{
@@ -903,14 +903,14 @@ void vulkan_start_decal_pass()
 	}
 
 	// Transition G-buffer attachments 1-5 for render pass resume
-	pp->transitionGbufForResume(cmd);
+	pp->deferred().transitionForResume(cmd);
 
 	// Resume G-buffer render pass with eLoad
 	{
 		auto extent = pp->getSceneExtent();
 		vk::RenderPassBeginInfo rpBegin;
-		rpBegin.renderPass = pp->getGbufRenderPassLoad();
-		rpBegin.framebuffer = pp->getGbufFramebuffer();
+		rpBegin.renderPass = pp->deferred().renderPassLoad();
+		rpBegin.framebuffer = pp->deferred().framebuffer();
 		rpBegin.renderArea.offset = vk::Offset2D(0, 0);
 		rpBegin.renderArea.extent = extent;
 
@@ -920,8 +920,8 @@ void vulkan_start_decal_pass()
 		rpBegin.pClearValues = clearValues.data();
 
 		cmd.beginRenderPass(rpBegin, vk::SubpassContents::eInline);
-		stateTracker->setRenderPass(pp->getGbufRenderPassLoad(), 0);
-		stateTracker->setColorAttachmentCount(VulkanPostProcessor::GBUF_COLOR_ATTACHMENT_COUNT);
+		stateTracker->setRenderPass(pp->deferred().renderPassLoad(), 0);
+		stateTracker->setColorAttachmentCount(VulkanDeferredGBuffer::GBUF_COLOR_ATTACHMENT_COUNT);
 	}
 
 	// Restore viewport (Y-flipped for Vulkan scene rendering)
@@ -981,14 +981,14 @@ void vulkan_render_decals(decal_material* material_info,
 		config.attachmentBlends[i].writeMask = {false, false, false, false};
 	}
 	// Color/diffuse — use material blend mode 0
-	config.attachmentBlends[VulkanPostProcessor::GBUF_ATT_COLOR].blendMode = material_info->get_blend_mode(0);
-	config.attachmentBlends[VulkanPostProcessor::GBUF_ATT_COLOR].writeMask = {true, true, true, false};
+	config.attachmentBlends[VulkanDeferredGBuffer::GBUF_ATT_COLOR].blendMode = material_info->get_blend_mode(0);
+	config.attachmentBlends[VulkanDeferredGBuffer::GBUF_ATT_COLOR].writeMask = {true, true, true, false};
 	// Normal — always additive
-	config.attachmentBlends[VulkanPostProcessor::GBUF_ATT_NORMAL].blendMode = ALPHA_BLEND_ADDITIVE;
-	config.attachmentBlends[VulkanPostProcessor::GBUF_ATT_NORMAL].writeMask = {true, true, true, false};
+	config.attachmentBlends[VulkanDeferredGBuffer::GBUF_ATT_NORMAL].blendMode = ALPHA_BLEND_ADDITIVE;
+	config.attachmentBlends[VulkanDeferredGBuffer::GBUF_ATT_NORMAL].writeMask = {true, true, true, false};
 	// Emissive — use material blend mode 2
-	config.attachmentBlends[VulkanPostProcessor::GBUF_ATT_EMISSIVE].blendMode = material_info->get_blend_mode(2);
-	config.attachmentBlends[VulkanPostProcessor::GBUF_ATT_EMISSIVE].writeMask = {true, true, true, false};
+	config.attachmentBlends[VulkanDeferredGBuffer::GBUF_ATT_EMISSIVE].blendMode = material_info->get_blend_mode(2);
+	config.attachmentBlends[VulkanDeferredGBuffer::GBUF_ATT_EMISSIVE].writeMask = {true, true, true, false};
 
 	// Get or create pipeline
 	vk::Pipeline pipeline = pipelineManager->getPipeline(config, *layout);
@@ -1047,7 +1047,7 @@ void vulkan_render_decals(decal_material* material_info,
 		vk::Sampler nearestSampler = texManager->getSampler(
 			vk::Filter::eNearest, vk::Filter::eNearest,
 			vk::SamplerAddressMode::eClampToEdge, false, 0.0f, false);
-		vk::ImageView normalView = pp->getGbufNormalCopyView();
+		vk::ImageView normalView = pp->deferred().normalCopyView();
 		if (normalView && nearestSampler) {
 			writer.setImage(MaterialBinding::DistortionMap, {nearestSampler, normalView, vk::ImageLayout::eShaderReadOnlyOptimal});
 		}
