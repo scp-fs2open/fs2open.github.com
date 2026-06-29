@@ -812,8 +812,8 @@ void hud_add_ship_to_escort(int objnum, int supress_feedback)
 		return;
 	}
 
+	Assertion(objnum >= 0, "Invalid objnum passed to hud_add_ship_to_escort()!");
 	if (objnum < 0) {
-		UNREACHABLE("Invalid objnum passed to hud_add_ship_to_escort()!");
 		return;
 	}
 

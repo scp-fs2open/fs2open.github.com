@@ -989,7 +989,7 @@ void mission_campaign_store_goals_and_events()
 			else
 				stored_event.status = static_cast<int>(EventStatus::FAILED);
 		} else
-			UNREACHABLE("Mission event formula should be marked MEF_EVENT_IS_DONE at end-of-mission");
+			Assertion(false, "Mission event formula should be marked MEF_EVENT_IS_DONE at end-of-mission");
 	}
 }
 

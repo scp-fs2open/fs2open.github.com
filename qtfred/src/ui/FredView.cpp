@@ -2610,7 +2610,7 @@ void FredView::handleObjectEditor(int objNum) {
 				on_actionWaypoint_Paths_triggered(false);
 			}
 		} else {
-			UNREACHABLE("Unhandled object type!");
+			Assertion(false, "Unhandled object type %d!", Objects[objNum].type);
 		}
 	}
 }

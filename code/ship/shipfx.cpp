@@ -2303,7 +2303,7 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 					break;
 
 				default:
-					UNREACHABLE("Unhandled case %d for electrical arc creation in shipfx_do_lightning_arcs_frame()!", n);
+					Assertion(false, "Unhandled case %d for electrical arc creation in shipfx_do_lightning_arcs_frame()!", n);
 				}
 
 				// determine what kind of arc to create

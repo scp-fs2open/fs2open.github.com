@@ -212,7 +212,7 @@ void parse_ssm(const char *filename)
 						s->shape = SSM_SHAPE_SPHERE;
 						break;
 					default:
-						UNREACHABLE("Impossible return value from required_string_one_of(); get a coder!\n");
+						Assertion(false, "Impossible return value from required_string_one_of(); get a coder!");
 				}
 			}
 
@@ -291,7 +291,8 @@ void ssm_get_random_start_pos(vec3d *out, const vec3d *start, const matrix *orie
 		vm_vec_scale_add(&temp, start, &orient->vec.fvec, radius);
 		break;
 	default:
-		UNREACHABLE("Unknown shape '%d' in SSM type #" SIZE_T_ARG " ('%s'). This should not be possible; get a coder!\n", s->shape, ssm_index, s->name);
+		Assertion(false, "Unknown shape '%d' in SSM type #" SIZE_T_ARG " ('%s'). This should not be possible; get a coder!\n", s->shape, ssm_index, s->name);
+		temp = *start;
 		break;
 	}
 

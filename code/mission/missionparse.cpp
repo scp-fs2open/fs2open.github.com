@@ -8216,7 +8216,8 @@ int mission_set_arrival_location(anchor_t anchor, ArrivalLocation location, int 
 			if (location == ArrivalLocation::IN_BACK_OF_SHIP || location == ArrivalLocation::BELOW_SHIP || location == ArrivalLocation::TO_LEFT_OF_SHIP)
 				vm_vec_negate(&rand_vec);
 		} else {
-			UNREACHABLE("Unknown location type discovered when trying to parse %s -- Please let an SCP coder know!", Ships[shipnum].ship_name);
+			Assertion(false, "Unknown location type discovered when trying to parse %s -- Please let an SCP coder know!", Ships[shipnum].ship_name);
+			rand_vec = vmd_zero_vector;
 		}
 
 		// add in the radius of the two ships involved.  This will make the ship arrive further than

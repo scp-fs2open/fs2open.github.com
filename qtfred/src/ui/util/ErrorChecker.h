@@ -42,7 +42,7 @@ inline const SeverityInfo& infoFor(ErrorSeverity sev) {
 	case ErrorSeverity::Warning:       return severity_info[2];
 	case ErrorSeverity::Potential:     return severity_info[3];
 	}
-	UNREACHABLE("Unhandled ErrorSeverity value");
+	Assertion(false, "Unhandled ErrorSeverity value");
 	return severity_info[1];
 }
 
