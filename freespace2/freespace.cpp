@@ -3007,7 +3007,7 @@ void say_view_target()
 				}
 
 			default:
-				UNREACHABLE("Trying to view an invalid object!");
+				Assertion(false, "Trying to view an invalid object %d!", Objects[Player_ai->target_objnum].type);
 				break;
 			}
 

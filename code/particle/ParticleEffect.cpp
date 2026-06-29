@@ -391,7 +391,9 @@ auto ParticleEffect::processSourceInternal(float interp, const ParticleSource& s
 				info.use_angle = false;
 				break;
 			default:
-				UNREACHABLE("Rotation type not supported");
+				Assertion(false, "Rotation type not supported");
+				info.use_angle = Randomize_particle_rotation;
+				break;
 		}
 
 		if (m_particleTrail.isValid()) {

@@ -24,7 +24,7 @@ size_t getElementSize(uniform_block_type type)
 		return sizeof(graphics::movie_uniforms);
 	case uniform_block_type::NUM_BLOCK_TYPES:
 	default:
-		UNREACHABLE("Invalid block type encountered!");
+		Assertion(false, "Invalid block type encountered!");
 		return 0;
 	}
 }
@@ -44,7 +44,7 @@ size_t getHeaderSize(uniform_block_type type)
 		return 0;
 	case uniform_block_type::NUM_BLOCK_TYPES:
 	default:
-		UNREACHABLE("Invalid block type encountered!");
+		Assertion(false, "Invalid block type encountered!");
 		return 0;
 	}
 }

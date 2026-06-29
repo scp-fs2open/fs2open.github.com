@@ -105,7 +105,7 @@ static json_t* json_doc_generate_return_type(const scripting::ade_type_info& typ
 	}
 	}
 
-	UNREACHABLE("Unknown type type!");
+	Assertion(false, "Unknown type type!");
 	return nullptr;
 }
 static json_t* json_doc_function_signature(const SCP_vector<scripting::argument_def>& args)

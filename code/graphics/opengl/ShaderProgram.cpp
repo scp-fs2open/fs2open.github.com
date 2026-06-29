@@ -137,7 +137,7 @@ GLenum get_gl_shader_stage(opengl::ShaderStage stage) {
 		case opengl::STAGE_FRAGMENT:
 			return GL_FRAGMENT_SHADER;
 		default:
-			UNREACHABLE("Unhandled shader type found!");
+			Assertion(false, "Unhandled shader type found!");
 			return GL_NONE;
 	}
 }

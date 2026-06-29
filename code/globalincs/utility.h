@@ -23,9 +23,9 @@ void insertion_sort(array_t& array_base, int array_size, int (*fncompare)(const 
 	// allocate space for the element being moved
 	// (Taylor says that for optimization purposes malloc/free should be used rather than vm_malloc/vm_free here)
 	current_buf = new T();
+	Assertion(current_buf != nullptr, "Malloc failed!");
 	if (current_buf == nullptr)
 	{
-		UNREACHABLE("Malloc failed!");
 		return;
 	}
 

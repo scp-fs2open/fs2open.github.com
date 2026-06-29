@@ -62,7 +62,7 @@ namespace threading {
 					collide_mp_worker_thread(threadIdx);
 					break;
 				default:
-					UNREACHABLE("Invalid threaded worker task!");
+					Assertion(false, "Invalid threaded worker task!");
 			}
 		}
 	}

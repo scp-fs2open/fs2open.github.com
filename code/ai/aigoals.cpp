@@ -1253,7 +1253,7 @@ void ai_add_goal_sub_sexp( int sexp, ai_goal_type type, ai_info *aip, ai_goal *a
 		} else if ( op == OP_AI_IGNORE_NEW ) {
 			aigp->ai_mode = AI_GOAL_IGNORE_NEW;
 		} else
-			UNREACHABLE("Coding error: unhandled AI goal in ai_add_goal_sub_sexp!");
+			Assertion(false, "Coding error: unhandled AI goal %d in ai_add_goal_sub_sexp!", op);
 
 		break;
 
@@ -1278,7 +1278,7 @@ void ai_add_goal_sub_sexp( int sexp, ai_goal_type type, ai_info *aip, ai_goal *a
 			aigp->lua_ai_target = { std::move(target), luaAIMode->sexp.getSEXPArgumentList(CDR(localnode)) };
 		}
 		else {
-			UNREACHABLE("Invalid SEXP-OP number %d for an AI goal!", op);
+			Assertion(false, "Invalid SEXP-OP number %d for an AI goal!", op);
 		}
 	}
 
@@ -1554,7 +1554,7 @@ int ai_remove_goal_sexp_sub( int sexp, ai_goal* aigp, bool &remove_more )
 			priority = eval_priority_et_seq(localnode);
 		}
 		else {
-			UNREACHABLE("Invalid SEXP-OP %s (number %d) for an AI goal!", Sexp_nodes[node].text, op);
+			Assertion(false, "Invalid SEXP-OP %s (number %d) for an AI goal!", Sexp_nodes[node].text, op);
 		}
 		break;
 	};
@@ -1709,7 +1709,7 @@ void ai_add_goal_ship_internal( ai_info *aip, int goal_type, char *name, int  /*
 		break;
 
 	default:
-		UNREACHABLE("unsupported internal goal of %d found in ai_add_goal_ship_internal. Please report to the SCP", goal_type); // see Mike K or Mark A.
+		Assertion(false, "unsupported internal goal of %d found in ai_add_goal_ship_internal. Please report to the SCP", goal_type); // see Mike K or Mark A.
 		return;
 	}
 
@@ -1981,7 +1981,7 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 		}
 
 		default:
-			UNREACHABLE("Unhandled AI goal %d", aigp->ai_mode);
+			Assertion(false, "Unhandled AI goal %d", aigp->ai_mode);
 			status = 0;
 			break;
 	}
@@ -2056,7 +2056,7 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 			if (target_ship_entry->shipp()->subsys_info[SUBSYSTEM_TURRET].type_count == 0)
 				return ai_achievability::NOT_ACHIEVABLE;
 		} else {
-			UNREACHABLE("Target name %s is not an arrived ship!", aigp->target_name);
+			Assertion(false, "Target name %s is not an arrived ship!", aigp->target_name);
 			return ai_achievability::NOT_ACHIEVABLE;			// force this goal to be invalid
 		}
 	}
@@ -2105,8 +2105,8 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 			return ai_achievability::NOT_KNOWN;
 
 		// we must also determine if we're prevented from docking for any reason
+		Assertion(target_ship_entry && target_ship_entry->has_shipp(), "Target name %s is not an arrived ship!", aigp->target_name);
 		if (!target_ship_entry || !target_ship_entry->has_shipp()) {
-			UNREACHABLE("Target name %s is not an arrived ship!", aigp->target_name);
 			return ai_achievability::NOT_ACHIEVABLE;			// force this goal to be invalid
 		}
 		auto goal_objp = target_ship_entry->objp();
@@ -2163,7 +2163,7 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 				if (aip->goal_objnum != target_ship_entry->objnum)
 					return ai_achievability::NOT_KNOWN;
 			} else {
-				UNREACHABLE("Target name %s is not an arrived ship!", aigp->target_name);
+				Assertion(false, "Target name %s is not an arrived ship!", aigp->target_name);
 				return ai_achievability::NOT_ACHIEVABLE;			// force this goal to be invalid
 			}
 		}
@@ -2177,14 +2177,14 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 				aigp->ai_submode = ship_find_subsys( target_ship_entry->shipp(), aigp->docker.name );
 				aigp->flags.remove(AI::Goal_Flags::Subsys_needs_fixup);
 			} else {
-				UNREACHABLE("Target name %s is not an arrived ship!", aigp->target_name);
+				Assertion(false, "Target name %s is not an arrived ship!", aigp->target_name);
 				return ai_achievability::NOT_ACHIEVABLE;			// force this goal to be invalid
 			}
 		}
 	} else if ( ((aigp->ai_mode == AI_GOAL_IGNORE) || (aigp->ai_mode == AI_GOAL_IGNORE_NEW)) && (status == SHIP_STATUS_ARRIVED) ) {
 		// for ignoring a ship, call the ai_ignore object function, then declare the goal satisfied
+		Assertion(target_ship_entry && target_ship_entry->has_objp(), "Target name %s is not an arrived ship!", aigp->target_name);
 		if (!target_ship_entry || !target_ship_entry->has_objp()) {
-			UNREACHABLE("Target name %s is not an arrived ship!", aigp->target_name);
 			return ai_achievability::NOT_ACHIEVABLE;			// force this goal to be invalid
 		}
 		auto ignored = target_ship_entry->objp();
@@ -2222,7 +2222,7 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 			else if ( status == SHIP_STATUS_UNKNOWN )
 				return ai_achievability::NOT_KNOWN;
 
-			UNREACHABLE("Invalid status variable %d for ship %s; get Allender or a SCP member", status, shipp->ship_name);		// get allender -- bad logic
+			Assertion(false, "Invalid status variable %d for ship %s; get Allender or a SCP member", status, shipp->ship_name);		// get allender -- bad logic
 			break;
 		}
 
@@ -2233,16 +2233,16 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 		{
 			// short circuit a couple of cases.  Ship not arrived shouldn't happen.  Ship gone means
 			// we mark the goal as not achievable.
+			Assertion(status != SHIP_STATUS_NOT_ARRIVED, "Ship %s cannot rearm a target %s that hasn't arrived; get Allender or a SCP member", shipp->ship_name, aigp->target_name);	// get Allender.  this shouldn't happen!!!
 			if ( status == SHIP_STATUS_NOT_ARRIVED ) {
-				UNREACHABLE("Ship %s cannot rearm a target %s that hasn't arrived; get Allender or a SCP member", shipp->ship_name, aigp->target_name);	// get Allender.  this shouldn't happen!!!
 				return ai_achievability::NOT_ACHIEVABLE;
 			}
 
 			if ( status == SHIP_STATUS_GONE )
 				return ai_achievability::NOT_ACHIEVABLE;
 
+			Assertion(target_ship_entry && target_ship_entry->has_shipp(), "Target name %s is not an arrived ship!", aigp->target_name);
 			if ( !target_ship_entry || !target_ship_entry->has_shipp() ) {
-				UNREACHABLE("Target name %s is not an arrived ship!", aigp->target_name);
 				return ai_achievability::NOT_ACHIEVABLE;
 			}
 
@@ -2278,7 +2278,7 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 		}
 
 		default:
-			UNREACHABLE("Unhandled AI goal %d", aigp->ai_mode);			// invalid case in switch:
+			Assertion(false, "Unhandled AI goal %d", aigp->ai_mode);			// invalid case in switch:
 	}
 
 	return ai_achievability::NOT_KNOWN;
@@ -2766,7 +2766,7 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 		break;
 
 	default:
-		UNREACHABLE("unsupported goal of %d found in ai_process_mission_orders. Please report to the SCP", current_goal->ai_mode);
+		Assertion(false, "unsupported goal of %d found in ai_process_mission_orders. Please report to the SCP", current_goal->ai_mode);
 		break;
 	}
 

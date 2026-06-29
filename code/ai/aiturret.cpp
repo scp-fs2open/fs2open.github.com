@@ -1051,7 +1051,7 @@ int get_nearest_turret_objnum(int turret_parent_objnum, const ship_subsys *turre
 					break;
 
 				default:
-					UNREACHABLE("Invalid target type of %d sent to get_nearest_turret_objnum.  Please report to the SCP!", turret_subsys->turret_targeting_order[i]);
+					Assertion(false, "Invalid target type of %d sent to get_nearest_turret_objnum.  Please report to the SCP!", turret_subsys->turret_targeting_order[i]);
 			}
 		}
 	}

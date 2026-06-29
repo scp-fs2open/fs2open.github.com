@@ -1606,7 +1606,7 @@ float gamesnd_get_max_duration(game_snd* gs) {
 game_snd_entry* gamesnd_choose_entry(game_snd* gs) {
 	if (gs->sound_entries.empty()) {
 		// This entire game_snd should have been skipped due to having the GAME_SND_NOT_VALID flag before we get to this function
-		UNREACHABLE("No sound entries found in game sound %s! This may not happen!", gs->name.c_str());
+		Assertion(false, "No sound entries found in game sound %s! This may not happen!", gs->name.c_str());
 		gs->sound_entries.emplace_back();	// add an empty entry so that we can return something; it will be invalid and will not be played
 	}
 

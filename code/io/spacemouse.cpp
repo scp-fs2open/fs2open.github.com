@@ -93,7 +93,7 @@ void SpaceMouse::poll() {
 			break;
 		}
 		default:
-			UNREACHABLE("Bad SpaceMouse protocol specified!");
+			Assertion(false, "Bad SpaceMouse protocol specified!");
 		}
 	} while (bytes_read > 0);
 }

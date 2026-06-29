@@ -643,7 +643,7 @@ void TeamLoadoutDialog::on_copyLoadoutToOtherTeamsButton_clicked()
 	case QMessageBox::Cancel:
 		break;
 	default:
-		UNREACHABLE("Bad return value from confirmation message box in the Loadout dialog editor.");
+		Assertion(false, "Bad return value from confirmation message box in the Loadout dialog editor.");
 		break;
 	}
 

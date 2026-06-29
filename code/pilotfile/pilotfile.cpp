@@ -292,7 +292,7 @@ void pilotfile::update_stats_backout(scoring_struct *stats, bool training)
 			if (j >= 0) {
 				p_stats->ship_kills[j].val -= stats->m_okKills[i];
 			} else {
-				UNREACHABLE("Ship kills of '%s' not found, should have been added by pilotfile::update_stats.", Ship_info[i].name);
+				Assertion(false, "Ship kills of '%s' not found, should have been added by pilotfile::update_stats.", Ship_info[i].name);
 			}
 		}
 	}

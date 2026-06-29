@@ -38,7 +38,7 @@ const TypeDefinition& TypeDefinition::forValueType(ValueType type)
 	case ValueType::String:
 		return s_identifier;
 	default:
-		UNREACHABLE("Invalid value type!");
+		Assertion(false, "Invalid value type %d!", static_cast<int>(type));
 		return s_integer; // Make compiler happy
 	}
 }
