@@ -170,12 +170,17 @@ uint32_t deviceTypeScore(vk::PhysicalDeviceType type)
 	}
 }
 
-uint32_t scoreDevice(const PhysicalDeviceValues& device)
+uint64_t scoreDevice(const PhysicalDeviceValues& device)
 {
-	uint32_t score = 0;
+	// Device type is the primary selection criterion (a discrete GPU must always
+	// beat an integrated one). The API version is only a tiebreaker between
+	// devices of the same type. We pack the type into the high bits and the
+	// (already 32-bit) API version into the low bits so the type can never be
+	// overwhelmed by the magnitude of the packed apiVersion value.
+	uint64_t score = 0;
 
-	score += deviceTypeScore(device.properties.deviceType) * 1000;
-	score += device.properties.apiVersion * 100;
+	score |= static_cast<uint64_t>(deviceTypeScore(device.properties.deviceType)) << 32;
+	score |= static_cast<uint64_t>(device.properties.apiVersion);
 
 	return score;
 }
@@ -187,7 +192,7 @@ bool compareDevices(const PhysicalDeviceValues& left, const PhysicalDeviceValues
 
 void printPhysicalDevice(const PhysicalDeviceValues& values)
 {
-	mprintf(("  Found %s (%d) of type %s. API version %d.%d.%d, Driver version %d.%d.%d. Scored as %d\n",
+	mprintf(("  Found %s (%d) of type %s. API version %d.%d.%d, Driver version %d.%d.%d. Scored as %" PRIu64 "\n",
 		values.properties.deviceName.data(),
 		values.properties.deviceID,
 		to_string(values.properties.deviceType).c_str(),
