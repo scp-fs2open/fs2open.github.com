@@ -177,7 +177,7 @@ vk::Pipeline VulkanPipelineManager::getPipeline(const PipelineConfig& config, co
 	vk::Pipeline result = pipeline.get();
 	m_pipelines[fullConfig] = std::move(pipeline);
 
-	nprintf(("Vulkan", "VulkanPipelineManager: Created pipeline for shader type %d (hash 0x%llx)\n",
+	nprintf(("Vulkan", "VulkanPipelineManager: Created pipeline for shader type %d (hash 0x%" PRIx64 ")\n",
 		static_cast<int>(config.shaderType), fullConfig.hash()));
 
 	return result;
