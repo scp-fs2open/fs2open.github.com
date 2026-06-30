@@ -23,8 +23,7 @@
 #define SDL_SUPPORTS_VULKAN 0
 #endif
 
-namespace graphics {
-namespace vulkan {
+namespace graphics::vulkan {
 
 struct QueueIndex {
 	// Poor mans std::optional
@@ -349,5 +348,4 @@ class VulkanRenderer {
 
 };
 
-} // namespace vulkan
-} // namespace graphics
+} // namespace graphics::vulkan

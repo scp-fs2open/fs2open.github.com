@@ -190,7 +190,7 @@ bool PostProcessContext::createImage(uint32_t width, uint32_t height, vk::Format
                                       vk::ImageUsageFlags usage, vk::ImageAspectFlags aspect,
                                       vk::Image& outImage, vk::ImageView& outView,
                                       VulkanAllocation& outAllocation,
-                                      vk::SampleCountFlagBits sampleCount)
+                                      vk::SampleCountFlagBits sampleCount) const
 {
 	// Create image
 	vk::ImageCreateInfo imageInfo;

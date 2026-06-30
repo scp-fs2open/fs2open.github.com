@@ -549,7 +549,7 @@ void VulkanPostProcessor::updateTonemappingUBO()
 	}
 }
 
-void VulkanPostProcessor::copyEffectTexture(vk::CommandBuffer cmd)
+void VulkanPostProcessor::copyEffectTexture(vk::CommandBuffer cmd) const
 {
 	// Called mid-scene, outside a render pass.
 	// Scene color is in eShaderReadOnlyOptimal (from the ended scene render pass).
@@ -560,7 +560,7 @@ void VulkanPostProcessor::copyEffectTexture(vk::CommandBuffer cmd)
 		m_ctx.sceneExtent);
 }
 
-void VulkanPostProcessor::copySceneDepth(vk::CommandBuffer cmd)
+void VulkanPostProcessor::copySceneDepth(vk::CommandBuffer cmd) const
 {
 	// Called mid-scene, outside a render pass.
 	// Copies scene depth → depth copy texture so soft particle shaders can sample it.

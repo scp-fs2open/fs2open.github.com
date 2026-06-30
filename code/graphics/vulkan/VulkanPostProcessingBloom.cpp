@@ -312,7 +312,7 @@ void VulkanBloom::execute(vk::CommandBuffer cmd)
 		ALPHA_BLEND_NONE);
 
 	// 2. Generate mipmaps for bloom_tex[0] (fill mips 1-3 from mip 0)
-	m_ctx->generateMipmaps(cmd, m_tex[0].image, m_width, m_height, MAX_MIP_BLUR_LEVELS);
+	PostProcessContext::generateMipmaps(cmd, m_tex[0].image, m_width, m_height, MAX_MIP_BLUR_LEVELS);
 
 	// 3. Blur iterations (2 iterations of vertical + horizontal ping-pong)
 	for (int iteration = 0; iteration < 2; iteration++) {

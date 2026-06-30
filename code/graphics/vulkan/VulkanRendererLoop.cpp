@@ -15,8 +15,7 @@
 
 extern float flFrametime;
 
-namespace graphics {
-namespace vulkan {
+namespace graphics::vulkan {
 
 void VulkanRenderer::acquireNextSwapChainImage()
 {
@@ -535,5 +534,4 @@ void VulkanRenderer::resumeSwapChainPass()
 	m_stateTracker->setCurrentSampleCount(vk::SampleCountFlagBits::e1);
 }
 
-} // namespace vulkan
-} // namespace graphics
+} // namespace graphics::vulkan

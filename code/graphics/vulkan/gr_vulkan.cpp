@@ -31,8 +31,7 @@
 #include <direct.h>
 #endif
 
-namespace graphics {
-namespace vulkan {
+namespace graphics::vulkan {
 
 namespace {
 
@@ -518,5 +517,4 @@ void cleanup()
 	renderer_instance = nullptr;
 }
 
-} // namespace vulkan
-} // namespace graphics
+} // namespace graphics::vulkan

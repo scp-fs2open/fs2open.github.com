@@ -4,8 +4,7 @@
 
 #include <vulkan/vulkan.hpp>
 
-namespace graphics {
-namespace vulkan {
+namespace graphics::vulkan {
 
 enum class SwapChainStatus {
 	eSuccess,
@@ -43,5 +42,4 @@ class VulkanRenderFrame {
 	uint32_t m_swapChainIdx = 0;
 };
 
-} // namespace vulkan
-} // namespace graphics
+} // namespace graphics::vulkan

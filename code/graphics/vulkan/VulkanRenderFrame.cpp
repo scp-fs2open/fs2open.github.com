@@ -1,8 +1,7 @@
 
 #include "VulkanRenderFrame.h"
 
-namespace graphics {
-namespace vulkan {
+namespace graphics::vulkan {
 
 VulkanRenderFrame::VulkanRenderFrame(vk::Device device, vk::SwapchainKHR swapChain, vk::Queue graphicsQueue, vk::Queue presentQueue)
 	: m_device(device), m_swapChain(swapChain), m_graphicsQueue(graphicsQueue), m_presentQueue(presentQueue)
@@ -133,5 +132,4 @@ void VulkanRenderFrame::updateSwapChain(vk::SwapchainKHR swapChain)
 	m_swapChain = swapChain;
 }
 
-} // namespace vulkan
-} // namespace graphics
+} // namespace graphics::vulkan

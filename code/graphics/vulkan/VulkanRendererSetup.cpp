@@ -22,8 +22,7 @@
 
 extern float flFrametime;
 
-namespace graphics {
-namespace vulkan {
+namespace graphics::vulkan {
 
 namespace {
 #if SDL_SUPPORTS_VULKAN
@@ -929,5 +928,4 @@ bool VulkanRenderer::recreateSwapChain()
 	return true;
 }
 
-} // namespace vulkan
-} // namespace graphics
+} // namespace graphics::vulkan

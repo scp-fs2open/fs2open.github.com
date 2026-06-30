@@ -13,8 +13,7 @@
 
 extern float flFrametime;
 
-namespace graphics {
-namespace vulkan {
+namespace graphics::vulkan {
 
 
 void VulkanRenderer::createImGuiDescriptorPool()
@@ -98,5 +97,4 @@ void VulkanRenderer::shutdownImGui()
 	mprintf(("Vulkan: ImGui backend shut down\n"));
 }
 
-} // namespace vulkan
-} // namespace graphics
+} // namespace graphics::vulkan

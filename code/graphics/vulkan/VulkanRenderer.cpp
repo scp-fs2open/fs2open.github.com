@@ -19,8 +19,7 @@ VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 
 extern float flFrametime;
 
-namespace graphics {
-namespace vulkan {
+namespace graphics::vulkan {
 
 
 VulkanRenderer::VulkanRenderer(std::unique_ptr<os::GraphicsOperations> graphicsOps)
@@ -540,5 +539,4 @@ void VulkanRenderer::shutdown()
 	}
 }
 
-} // namespace vulkan
-} // namespace graphics
+} // namespace graphics::vulkan

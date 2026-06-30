@@ -45,7 +45,8 @@ struct PostProcessContext {
 	                 vk::ImageUsageFlags usage, vk::ImageAspectFlags aspect,
 	                 vk::Image& outImage, vk::ImageView& outView,
 	                 VulkanAllocation& outAllocation,
-	                 vk::SampleCountFlagBits sampleCount = vk::SampleCountFlagBits::e1);
+	                 vk::SampleCountFlagBits sampleCount = vk::SampleCountFlagBits::e1)
+	                 const;
 
 	/**
 	 * @brief Draw a fullscreen triangle through the post-processing pipeline
@@ -621,7 +622,7 @@ public:
 	 *
 	 * @param cmd Active command buffer (must be outside a render pass)
 	 */
-	void copyEffectTexture(vk::CommandBuffer cmd);
+	void copyEffectTexture(vk::CommandBuffer cmd) const;
 
 	/**
 	 * @brief Copy scene depth to samplable depth copy for soft particle rendering
@@ -632,7 +633,7 @@ public:
 	 *
 	 * @param cmd Active command buffer (must be outside a render pass)
 	 */
-	void copySceneDepth(vk::CommandBuffer cmd);
+	void copySceneDepth(vk::CommandBuffer cmd) const;
 
 	/**
 	 * @brief Check if LDR targets are available (tonemapping + FXAA ready)
@@ -754,6 +755,7 @@ private:
 	                 vk::Image& outImage, vk::ImageView& outView,
 	                 VulkanAllocation& outAllocation,
 	                 vk::SampleCountFlagBits sampleCount = vk::SampleCountFlagBits::e1)
+	                 const
 	{
 		return m_ctx.createImage(width, height, format, usage, aspect,
 		                         outImage, outView, outAllocation, sampleCount);
