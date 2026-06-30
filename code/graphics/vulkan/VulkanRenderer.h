@@ -243,6 +243,11 @@ class VulkanRenderer {
 
 	void createFrameBuffers();
 
+	// HDR composition + output-encode resources
+	void createCompositionResources();
+	void createEncodeRenderPass();
+	void encodeToSwapChain();
+
 	void createDepthResources();
 
 	vk::Format findDepthFormat();
@@ -274,11 +279,26 @@ class VulkanRenderer {
 
 	vk::UniqueSwapchainKHR m_swapChain;
 	vk::Format m_swapChainImageFormat;
+	vk::ColorSpaceKHR m_swapChainColorSpace = vk::ColorSpaceKHR::eSrgbNonlinear;
+	bool m_hdrActive = false;            // True when an HDR10 (PQ/BT.2020) swap chain was negotiated
+	bool m_hdrMetadataSupported = false; // VK_EXT_hdr_metadata device extension enabled
 	vk::Extent2D m_swapChainExtent;
 	SCP_vector<vk::Image> m_swapChainImages;
 	SCP_vector<vk::UniqueImageView> m_swapChainImageViews;
 	SCP_vector<vk::UniqueFramebuffer> m_swapChainFramebuffers;
 	SCP_vector<VulkanRenderFrame*> m_swapChainImageRenderImage;
+
+	// HDR composition pipeline: the whole frame is rendered into these fp16
+	// images (via m_renderPass / m_swapChainFramebuffers) instead of directly
+	// into the swap chain image. A final encode pass (m_encodeRenderPass +
+	// m_encodeFramebuffers) converts composition -> swap chain, applying SDR
+	// sRGB passthrough or the HDR10 PQ/BT.2020 transfer.
+	SCP_vector<vk::UniqueImage> m_compositionImages;
+	SCP_vector<vk::UniqueImageView> m_compositionImageViews;
+	SCP_vector<VulkanAllocation> m_compositionAllocations;
+	vk::UniqueSampler m_compositionSampler;
+	SCP_vector<vk::UniqueFramebuffer> m_encodeFramebuffers;
+	vk::UniqueRenderPass m_encodeRenderPass;
 
 	uint32_t m_currentSwapChainImage = 0;
 	uint32_t m_previousSwapChainImage = UINT32_MAX;  // For saveScreen() readback of previous frame

@@ -2,6 +2,7 @@
 
 #include "globalincs/pstypes.h"
 #include "VulkanMemory.h"
+#include "VulkanConstants.h"
 
 #include <array>
 #include <vulkan/vulkan.hpp>
@@ -23,6 +24,13 @@ struct PostProcessContext {
 	VulkanMemoryManager* memoryManager = nullptr;
 	vk::Extent2D sceneExtent;
 	vk::Format depthFormat = vk::Format::eUndefined;
+
+	// True when the renderer negotiated an HDR10 swap chain. Drives fp16 LDR
+	// intermediates and the HDR scene-tonemap path.
+	bool hdrActive = false;
+	// Display-referred LDR intermediate format: fp16 in HDR (so the scene can
+	// carry values above paper white), 8-bit UNORM in SDR.
+	vk::Format ldrFormat = LDR_COLOR_FORMAT;
 
 	// Shared samplers for post-processing texture reads
 	vk::Sampler linearSampler;   // maxLod=0
@@ -489,7 +497,7 @@ public:
 	 */
 	bool init(vk::Device device, vk::PhysicalDevice physDevice,
 	          VulkanMemoryManager* memMgr, vk::Extent2D extent,
-	          vk::Format depthFormat);
+	          vk::Format depthFormat, bool hdrActive = false);
 
 	/**
 	 * @brief Shutdown and free all post-processing resources
@@ -539,6 +547,17 @@ public:
 	 * @param cmd Active command buffer
 	 */
 	void blitToSwapChain(vk::CommandBuffer cmd);
+
+	/**
+	 * @brief Final output-encode pass: composition image -> swap chain image
+	 *
+	 * Begins/ends its own render pass on the swap chain framebuffer and draws a
+	 * fullscreen triangle that samples the fp16 composition image. In SDR this is
+	 * a passthrough copy; in HDR it applies the PQ / BT.2020 (HDR10) transfer.
+	 */
+	void encodeOutput(vk::CommandBuffer cmd, vk::RenderPass renderPass, vk::Framebuffer framebuffer,
+	                  vk::Extent2D extent, vk::ImageView sourceView, vk::Sampler sampler,
+	                  bool hdr, float paperwhiteNits, float peakNits);
 
 	/**
 	 * @brief Execute bloom post-processing passes
@@ -804,6 +823,11 @@ private:
 	// Persistent UBO for tonemapping shader parameters
 	vk::Buffer m_tonemapUBO;
 	VulkanAllocation m_tonemapUBOAlloc;
+
+	// Persistent UBO for the final output-encode pass (separate from m_tonemapUBO
+	// because both can be recorded within a single 3D frame).
+	vk::Buffer m_outputEncodeUBO;
+	VulkanAllocation m_outputEncodeUBOAlloc;
 
 	// ---- Bloom (self-contained subsystem) ----
 	VulkanBloom m_bloom;

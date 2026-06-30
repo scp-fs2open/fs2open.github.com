@@ -3,6 +3,7 @@
 #include "VulkanMemory.h"
 #include "VulkanBuffer.h"
 #include "VulkanTexture.h"
+#include "VulkanPostProcessing.h"
 
 #include "graphics/grinternal.h"
 #include "graphics/post_processing.h"
@@ -26,13 +27,124 @@ VulkanRenderer::VulkanRenderer(std::unique_ptr<os::GraphicsOperations> graphicsO
 	: m_graphicsOps(std::move(graphicsOps))
 {
 }
+void VulkanRenderer::createCompositionResources()
+{
+	// Free any previous composition resources (swap chain recreation path)
+	m_compositionImageViews.clear();
+	m_compositionImages.clear();
+	for (auto& alloc : m_compositionAllocations) {
+		if (alloc.isValid()) {
+			m_memoryManager->freeAllocation(alloc);
+		}
+	}
+	m_compositionAllocations.clear();
+
+	const size_t count = m_swapChainImageViews.size();
+	m_compositionImages.reserve(count);
+	m_compositionImageViews.reserve(count);
+	m_compositionAllocations.reserve(count);
+
+	for (size_t i = 0; i < count; ++i) {
+		vk::ImageCreateInfo imageInfo;
+		imageInfo.imageType = vk::ImageType::e2D;
+		imageInfo.format = HDR_COLOR_FORMAT;
+		imageInfo.extent = vk::Extent3D(m_swapChainExtent.width, m_swapChainExtent.height, 1);
+		imageInfo.mipLevels = 1;
+		imageInfo.arrayLayers = 1;
+		imageInfo.samples = vk::SampleCountFlagBits::e1;
+		imageInfo.tiling = vk::ImageTiling::eOptimal;
+		imageInfo.usage = vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled;
+		imageInfo.sharingMode = vk::SharingMode::eExclusive;
+		imageInfo.initialLayout = vk::ImageLayout::eUndefined;
+
+		auto image = m_device->createImageUnique(imageInfo);
+
+		VulkanAllocation alloc{};
+		m_memoryManager->allocateImageMemory(image.get(), MemoryUsage::GpuOnly, alloc);
+
+		vk::ImageViewCreateInfo viewInfo;
+		viewInfo.image = image.get();
+		viewInfo.viewType = vk::ImageViewType::e2D;
+		viewInfo.format = HDR_COLOR_FORMAT;
+		viewInfo.subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
+		auto view = m_device->createImageViewUnique(viewInfo);
+
+		m_compositionImages.push_back(std::move(image));
+		m_compositionAllocations.push_back(alloc);
+		m_compositionImageViews.push_back(std::move(view));
+	}
+
+	// Sampler used by the output-encode pass to read the composition image.
+	if (!m_compositionSampler) {
+		vk::SamplerCreateInfo sampInfo;
+		sampInfo.magFilter = vk::Filter::eNearest;
+		sampInfo.minFilter = vk::Filter::eNearest;
+		sampInfo.mipmapMode = vk::SamplerMipmapMode::eNearest;
+		sampInfo.addressModeU = vk::SamplerAddressMode::eClampToEdge;
+		sampInfo.addressModeV = vk::SamplerAddressMode::eClampToEdge;
+		sampInfo.addressModeW = vk::SamplerAddressMode::eClampToEdge;
+		m_compositionSampler = m_device->createSamplerUnique(sampInfo);
+	}
+}
+
+void VulkanRenderer::createEncodeRenderPass()
+{
+	// Color-only pass that writes the actual swap chain image. The fullscreen
+	// encode draw overwrites the whole image, so the prior contents are discarded.
+	vk::AttachmentDescription colorAttachment;
+	colorAttachment.format = m_swapChainImageFormat;
+	colorAttachment.samples = vk::SampleCountFlagBits::e1;
+	colorAttachment.loadOp = vk::AttachmentLoadOp::eDontCare;
+	colorAttachment.storeOp = vk::AttachmentStoreOp::eStore;
+	colorAttachment.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
+	colorAttachment.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
+	colorAttachment.initialLayout = vk::ImageLayout::eUndefined;
+	colorAttachment.finalLayout = vk::ImageLayout::ePresentSrcKHR;
+
+	vk::AttachmentReference colorRef;
+	colorRef.attachment = 0;
+	colorRef.layout = vk::ImageLayout::eColorAttachmentOptimal;
+
+	vk::SubpassDescription subpass;
+	subpass.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
+	subpass.colorAttachmentCount = 1;
+	subpass.pColorAttachments = &colorRef;
+
+	// Make the composition image (written by the main pass) available for
+	// sampling, and order against the swap chain image's prior presentation.
+	vk::SubpassDependency dependency;
+	dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+	dependency.dstSubpass = 0;
+	dependency.srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput
+	                        | vk::PipelineStageFlagBits::eFragmentShader;
+	dependency.dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput
+	                        | vk::PipelineStageFlagBits::eFragmentShader;
+	dependency.srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
+	dependency.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite
+	                         | vk::AccessFlagBits::eShaderRead;
+
+	vk::RenderPassCreateInfo rpInfo;
+	rpInfo.attachmentCount = 1;
+	rpInfo.pAttachments = &colorAttachment;
+	rpInfo.subpassCount = 1;
+	rpInfo.pSubpasses = &subpass;
+	rpInfo.dependencyCount = 1;
+	rpInfo.pDependencies = &dependency;
+
+	m_encodeRenderPass = m_device->createRenderPassUnique(rpInfo);
+}
+
 void VulkanRenderer::createFrameBuffers()
 {
-	m_swapChainFramebuffers.reserve(m_swapChainImageViews.size());
-	for (const auto& imageView : m_swapChainImageViews) {
-		// Attachment 0: color, Attachment 1: depth (shared across all framebuffers)
+	m_swapChainFramebuffers.clear();
+	m_encodeFramebuffers.clear();
+
+	// Composition framebuffers: color = fp16 composition image, depth shared.
+	// Indexed by swap chain image so each in-flight frame uses its own image.
+	m_swapChainFramebuffers.reserve(m_compositionImageViews.size());
+	for (const auto& compView : m_compositionImageViews) {
 		const vk::ImageView attachments[] = {
-			imageView.get(),
+			compView.get(),
 			m_depthImageView.get(),
 		};
 
@@ -46,6 +158,40 @@ void VulkanRenderer::createFrameBuffers()
 
 		m_swapChainFramebuffers.push_back(m_device->createFramebufferUnique(framebufferInfo));
 	}
+
+	// Encode framebuffers: color = actual swap chain image.
+	m_encodeFramebuffers.reserve(m_swapChainImageViews.size());
+	for (const auto& scView : m_swapChainImageViews) {
+		const vk::ImageView attachments[] = { scView.get() };
+
+		vk::FramebufferCreateInfo framebufferInfo;
+		framebufferInfo.renderPass = m_encodeRenderPass.get();
+		framebufferInfo.attachmentCount = 1;
+		framebufferInfo.pAttachments = attachments;
+		framebufferInfo.width = m_swapChainExtent.width;
+		framebufferInfo.height = m_swapChainExtent.height;
+		framebufferInfo.layers = 1;
+
+		m_encodeFramebuffers.push_back(m_device->createFramebufferUnique(framebufferInfo));
+	}
+}
+
+void VulkanRenderer::encodeToSwapChain()
+{
+	if (!m_postProcessor || m_currentSwapChainImage >= m_encodeFramebuffers.size()) {
+		return;
+	}
+
+	m_postProcessor->encodeOutput(
+		m_currentCommandBuffer,
+		m_encodeRenderPass.get(),
+		m_encodeFramebuffers[m_currentSwapChainImage].get(),
+		m_swapChainExtent,
+		m_compositionImageViews[m_currentSwapChainImage].get(),
+		m_compositionSampler.get(),
+		m_hdrActive,
+		Gr_hdr_paperwhite_nits,
+		Gr_hdr_peak_nits);
 }
 vk::Format VulkanRenderer::findDepthFormat()
 {
@@ -110,17 +256,20 @@ void VulkanRenderer::createDepthResources()
 void VulkanRenderer::createRenderPass()
 {
 	// Attachment 0: Color - clear each frame
+	// The whole frame is rendered into the fp16 composition image (not directly
+	// into the swap chain). A separate output-encode pass (m_encodeRenderPass)
+	// later samples this image, so the final layout is eShaderReadOnlyOptimal.
 	// UI screens draw their own full-screen backgrounds; 3D clears via scene_texture_begin.
 	// Popups that need previous frame content use gr_save_screen/gr_restore_screen.
 	vk::AttachmentDescription colorAttachment;
-	colorAttachment.format = m_swapChainImageFormat;
+	colorAttachment.format = HDR_COLOR_FORMAT;
 	colorAttachment.samples = vk::SampleCountFlagBits::e1;
 	colorAttachment.loadOp = vk::AttachmentLoadOp::eClear;
 	colorAttachment.storeOp = vk::AttachmentStoreOp::eStore;
 	colorAttachment.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
 	colorAttachment.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
 	colorAttachment.initialLayout = vk::ImageLayout::eUndefined;
-	colorAttachment.finalLayout = vk::ImageLayout::ePresentSrcKHR;
+	colorAttachment.finalLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 
 	// Attachment 1: Depth
 	vk::AttachmentDescription depthAttachment;
@@ -169,10 +318,10 @@ void VulkanRenderer::createRenderPass()
 
 	m_renderPass = m_device->createRenderPassUnique(renderPassInfo);
 
-	// Create a second render pass with loadOp=eLoad for resuming the swap chain
-	// after post-processing. Same formats/samples = render-pass-compatible with m_renderPass.
+	// Create a second render pass with loadOp=eLoad for resuming the composition
+	// pass after post-processing. Same formats/samples = render-pass-compatible with m_renderPass.
 	colorAttachment.loadOp = vk::AttachmentLoadOp::eLoad;
-	colorAttachment.initialLayout = vk::ImageLayout::ePresentSrcKHR;
+	colorAttachment.initialLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 
 	depthAttachment.loadOp = vk::AttachmentLoadOp::eClear;
 	depthAttachment.initialLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
@@ -524,6 +673,18 @@ void VulkanRenderer::shutdown()
 	if (m_memoryManager && m_depthImageMemory.isValid()) {
 		m_memoryManager->freeAllocation(m_depthImageMemory);
 	}
+
+	// Destroy composition resources before memory manager
+	m_compositionImageViews.clear();
+	m_compositionImages.clear();
+	if (m_memoryManager) {
+		for (auto& alloc : m_compositionAllocations) {
+			if (alloc.isValid()) {
+				m_memoryManager->freeAllocation(alloc);
+			}
+		}
+	}
+	m_compositionAllocations.clear();
 
 	// Deletion queue must be flushed before memory manager shutdown
 	if (m_deletionQueue) {

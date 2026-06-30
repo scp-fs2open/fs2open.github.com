@@ -30,34 +30,37 @@ namespace graphics::vulkan {
 
 bool VulkanPostProcessor::initLDRTargets()
 {
-	// Create Scene_ldr (RGBA8, full resolution) — tonemapped LDR output
-	if (!createImage(m_ctx.sceneExtent.width, m_ctx.sceneExtent.height, LDR_COLOR_FORMAT,
+	const vk::Format ldrFormat = m_ctx.ldrFormat;
+
+	// Create Scene_ldr (full resolution) — tonemapped display-referred output.
+	// fp16 in HDR (carries values above paper white), 8-bit UNORM in SDR.
+	if (!createImage(m_ctx.sceneExtent.width, m_ctx.sceneExtent.height, ldrFormat,
 	                 vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled,
 	                 vk::ImageAspectFlagBits::eColor,
 	                 m_sceneLdr.image, m_sceneLdr.view, m_sceneLdr.allocation)) {
 		mprintf(("VulkanPostProcessor: Failed to create Scene_ldr image!\n"));
 		return false;
 	}
-	m_sceneLdr.format = LDR_COLOR_FORMAT;
+	m_sceneLdr.format = ldrFormat;
 	m_sceneLdr.width = m_ctx.sceneExtent.width;
 	m_sceneLdr.height = m_ctx.sceneExtent.height;
 
-	// Create Scene_luminance (RGBA8, full resolution) — LDR with luma in alpha for FXAA
-	if (!createImage(m_ctx.sceneExtent.width, m_ctx.sceneExtent.height, LDR_COLOR_FORMAT,
+	// Create Scene_luminance (full resolution) — LDR with luma in alpha for FXAA
+	if (!createImage(m_ctx.sceneExtent.width, m_ctx.sceneExtent.height, ldrFormat,
 	                 vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled,
 	                 vk::ImageAspectFlagBits::eColor,
 	                 m_sceneLuminance.image, m_sceneLuminance.view, m_sceneLuminance.allocation)) {
 		mprintf(("VulkanPostProcessor: Failed to create Scene_luminance image!\n"));
 		return false;
 	}
-	m_sceneLuminance.format = LDR_COLOR_FORMAT;
+	m_sceneLuminance.format = ldrFormat;
 	m_sceneLuminance.width = m_ctx.sceneExtent.width;
 	m_sceneLuminance.height = m_ctx.sceneExtent.height;
 
-	// Create LDR render pass (color-only RGBA8, loadOp=eDontCare, finalLayout=eShaderReadOnlyOptimal)
+	// Create LDR render pass (color-only, loadOp=eDontCare, finalLayout=eShaderReadOnlyOptimal)
 	{
 		vk::AttachmentDescription att;
-		att.format = LDR_COLOR_FORMAT;
+		att.format = ldrFormat;
 		att.samples = vk::SampleCountFlagBits::e1;
 		att.loadOp = vk::AttachmentLoadOp::eDontCare;
 		att.storeOp = vk::AttachmentStoreOp::eStore;
@@ -132,7 +135,7 @@ bool VulkanPostProcessor::initLDRTargets()
 	// Create LDR load render pass (loadOp=eLoad for additive blending onto existing content)
 	{
 		vk::AttachmentDescription att;
-		att.format = LDR_COLOR_FORMAT;
+		att.format = ldrFormat;
 		att.samples = vk::SampleCountFlagBits::e1;
 		att.loadOp = vk::AttachmentLoadOp::eLoad;
 		att.storeOp = vk::AttachmentStoreOp::eStore;
@@ -271,6 +274,14 @@ void VulkanPostProcessor::executeTonemap(vk::CommandBuffer cmd)
 	tmData.sh_offsetX = ppc.sh_offsetX;
 	tmData.sh_offsetY = ppc.sh_offsetY;
 
+	// In HDR, bypass the SDR tone curve and keep linear values (with head-room
+	// above paper white) in the extended-sRGB encoding consumed by the output pass.
+	if (m_ctx.hdrActive) {
+		tmData.hdr_mode = 1;
+		tmData.hdr_paperwhite_nits = Gr_hdr_paperwhite_nits;
+		tmData.hdr_peak_nits = Gr_hdr_peak_nits;
+	}
+
 	// HDR scene → Scene_ldr via tonemapping shader
 	drawFullscreenTriangle(cmd, m_ldrRenderPass,
 		m_sceneLdrFB, m_ctx.sceneExtent,
@@ -285,7 +296,9 @@ void VulkanPostProcessor::executeTonemap(vk::CommandBuffer cmd)
 
 void VulkanPostProcessor::executeFXAA(vk::CommandBuffer cmd)
 {
-	if (!m_ldrInitialized || !gr_is_fxaa_mode(Gr_aa_mode)) {
+	// FXAA is not compatible with the HDR scene-tonemap encoding, so it is
+	// disabled while HDR output is active.
+	if (!m_ldrInitialized || m_ctx.hdrActive || !gr_is_fxaa_mode(Gr_aa_mode)) {
 		return;
 	}
 

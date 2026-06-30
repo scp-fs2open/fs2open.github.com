@@ -149,8 +149,11 @@ void VulkanRenderer::flip()
 	Assertion(m_drawManager, "Vulkan DrawManager not initialized in flip!");
 	m_drawManager->printFrameStats();
 
-	// End render pass
+	// End the composition render pass (composition image is now in
+	// eShaderReadOnlyOptimal) and run the final output-encode pass that writes
+	// the actual swap chain image (SDR passthrough or HDR10 PQ/BT.2020).
 	m_currentCommandBuffer.endRenderPass();
+	encodeToSwapChain();
 	m_stateTracker->endFrame();
 	m_descriptorManager->endFrame();
 

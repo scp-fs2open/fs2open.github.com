@@ -202,6 +202,21 @@ void printPhysicalDevice(const PhysicalDeviceValues& values)
 
 vk::SurfaceFormatKHR chooseSurfaceFormat(const PhysicalDeviceValues& values)
 {
+	// When HDR output is requested, prefer a 10-bit HDR10 (PQ / ST.2084) surface
+	// using BT.2020 primaries. The final output-encode pass writes PQ-encoded
+	// BT.2020 values into this surface.
+	if (Gr_enable_hdr) {
+		for (const auto& availableFormat : values.surfaceFormats) {
+			if ((availableFormat.format == vk::Format::eA2B10G10R10UnormPack32 ||
+			     availableFormat.format == vk::Format::eA2R10G10B10UnormPack32) &&
+			    availableFormat.colorSpace == vk::ColorSpaceKHR::eHdr10St2084EXT) {
+				mprintf(("Vulkan: Selected HDR10 surface (10-bit, ST.2084/BT.2020)\n"));
+				return availableFormat;
+			}
+		}
+		mprintf(("Vulkan: HDR requested but no HDR10 surface format available; falling back to SDR\n"));
+	}
+
 	// Use a non-sRGB (UNORM) format to match OpenGL's default framebuffer behavior.
 	// The FSO shaders handle gamma correction manually in the fragment shader and
 	// post-processing pipeline, so hardware sRGB conversion would double-correct.
@@ -351,6 +366,8 @@ bool VulkanRenderer::initialize()
 	}
 
 	createDepthResources();
+	createCompositionResources();
+	createEncodeRenderPass();
 	createRenderPass();
 	createFrameBuffers();
 
@@ -410,7 +427,7 @@ bool VulkanRenderer::initialize()
 	// Initialize post-processing
 	m_postProcessor = std::unique_ptr<VulkanPostProcessor>(new VulkanPostProcessor());
 	if (!m_postProcessor->init(m_device.get(), m_physicalDevice, m_memoryManager.get(),
-	                           m_swapChainExtent, m_depthFormat)) {
+	                           m_swapChainExtent, m_depthFormat, m_hdrActive)) {
 		mprintf(("Warning: Failed to initialize Vulkan post-processor, post-processing will be disabled\n"));
 		m_postProcessor.reset();
 	} else {
@@ -534,6 +551,13 @@ bool VulkanRenderer::initializeInstance()
 	mprintf(("Instance extensions:\n"));
 	for (const auto& ext : supportedExtensions) {
 		mprintf(("  Found support for %s version %" PRIu32 "\n", ext.extensionName.data(), ext.specVersion));
+		// Enables the driver to advertise HDR color spaces (e.g. HDR10 ST.2084)
+		// in vkGetPhysicalDeviceSurfaceFormatsKHR. Required to negotiate an HDR
+		// swap chain. Harmless to enable even when HDR output is disabled.
+		if (!stricmp(ext.extensionName, VK_EXT_SWAPCHAIN_COLOR_SPACE_EXTENSION_NAME)) {
+			extensions.push_back(VK_EXT_SWAPCHAIN_COLOR_SPACE_EXTENSION_NAME);
+			mprintf(("  Enabling %s (HDR color space support)\n", VK_EXT_SWAPCHAIN_COLOR_SPACE_EXTENSION_NAME));
+		}
 		if (FSO_DEBUG || Cmdline_graphics_debug_output) {
 			if (!stricmp(ext.extensionName, VK_EXT_DEBUG_REPORT_EXTENSION_NAME)) {
 				extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
@@ -696,12 +720,19 @@ bool VulkanRenderer::createLogicalDevice(const PhysicalDeviceValues& deviceValue
 
 	// Check for VK_EXT_shader_viewport_index_layer (needed for shadow cascade routing)
 	m_supportsShaderViewportLayerOutput = false;
+	m_hdrMetadataSupported = false;
 	for (const auto& ext : deviceValues.extensions) {
 		if (strcmp(ext.extensionName, VK_EXT_SHADER_VIEWPORT_INDEX_LAYER_EXTENSION_NAME) == 0) {
 			m_supportsShaderViewportLayerOutput = true;
 			enabledExtensions.push_back(VK_EXT_SHADER_VIEWPORT_INDEX_LAYER_EXTENSION_NAME);
 			mprintf(("Vulkan: Enabling %s (shadow cascade support)\n", VK_EXT_SHADER_VIEWPORT_INDEX_LAYER_EXTENSION_NAME));
-			break;
+		}
+		// VK_EXT_hdr_metadata lets us advertise mastering display / content
+		// luminance to the compositor for HDR10 output. Optional.
+		if (strcmp(ext.extensionName, VK_EXT_HDR_METADATA_EXTENSION_NAME) == 0) {
+			m_hdrMetadataSupported = true;
+			enabledExtensions.push_back(VK_EXT_HDR_METADATA_EXTENSION_NAME);
+			mprintf(("Vulkan: Enabling %s (HDR10 metadata)\n", VK_EXT_HDR_METADATA_EXTENSION_NAME));
 		}
 	}
 
@@ -804,7 +835,11 @@ bool VulkanRenderer::createSwapChain(const PhysicalDeviceValues& deviceValues, v
 	auto swapChainImages = m_device->getSwapchainImagesKHR(m_swapChain.get());
 	m_swapChainImages.assign(swapChainImages.begin(), swapChainImages.end());
 	m_swapChainImageFormat = surfaceFormat.format;
+	m_swapChainColorSpace = surfaceFormat.colorSpace;
+	m_hdrActive = (surfaceFormat.colorSpace == vk::ColorSpaceKHR::eHdr10St2084EXT);
+	Gr_hdr_output_active = m_hdrActive;
 	m_swapChainExtent = createInfo.imageExtent;
+	mprintf(("Vulkan: Swap chain output mode: %s\n", m_hdrActive ? "HDR10 (PQ/BT.2020)" : "SDR (sRGB)"));
 
 	m_swapChainImageViews.reserve(m_swapChainImages.size());
 	for (const auto& image : m_swapChainImages) {
@@ -874,6 +909,23 @@ bool VulkanRenderer::createSwapChain(const PhysicalDeviceValues& deviceValues, v
 		m_device->freeCommandBuffers(m_graphicsCommandPool.get(), cmdBuffers);
 	}
 
+	// Advertise HDR10 mastering/content metadata to the compositor when active.
+	if (m_hdrActive && m_hdrMetadataSupported) {
+		vk::HdrMetadataEXT metadata;
+		// BT.2020 display primaries and D65 white point
+		metadata.displayPrimaryRed   = vk::XYColorEXT{0.708f, 0.292f};
+		metadata.displayPrimaryGreen = vk::XYColorEXT{0.170f, 0.797f};
+		metadata.displayPrimaryBlue  = vk::XYColorEXT{0.131f, 0.046f};
+		metadata.whitePoint          = vk::XYColorEXT{0.3127f, 0.3290f};
+		metadata.maxLuminance        = Gr_hdr_peak_nits;
+		metadata.minLuminance        = 0.0f;
+		metadata.maxContentLightLevel        = Gr_hdr_peak_nits;
+		metadata.maxFrameAverageLightLevel   = Gr_hdr_paperwhite_nits;
+		m_device->setHdrMetadataEXT(m_swapChain.get(), metadata);
+		mprintf(("Vulkan: HDR10 metadata set (peak %.0f nits, paper white %.0f nits)\n",
+			Gr_hdr_peak_nits, Gr_hdr_paperwhite_nits));
+	}
+
 	return true;
 }
 
@@ -906,8 +958,12 @@ bool VulkanRenderer::recreateSwapChain()
 	}
 
 	// Recreate swap chain, image views, and framebuffers
-	// (createSwapChain clears old resources and transitions new images internally)
+	// (createSwapChain clears old resources and transitions new images internally).
+	// The render passes (including m_encodeRenderPass) are intentionally NOT
+	// recreated so cached pipelines remain valid; only the size-dependent
+	// composition images and framebuffers are rebuilt.
 	createSwapChain(freshValues, m_swapChain.get());
+	createCompositionResources();
 	createFrameBuffers();
 
 	// Update VulkanRenderFrame handles to point to the new swap chain

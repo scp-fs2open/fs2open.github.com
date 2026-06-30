@@ -72,6 +72,16 @@ extern bool Gr_post_processing_enabled;
 
 extern bool Gr_enable_vsync;
 
+// HDR10 (PQ/ST.2084 + BT.2020) output. Currently only honored by the Vulkan renderer.
+extern bool Gr_enable_hdr;
+// True once the renderer has actually negotiated an HDR10 swap chain (read-only,
+// set by the active renderer). Distinct from Gr_enable_hdr, which is the request.
+extern bool Gr_hdr_output_active;
+// Reference white luminance in nits (the brightness of SDR "paper white" / UI when HDR is active).
+extern float Gr_hdr_paperwhite_nits;
+// Display peak luminance in nits used for tone curve clamping and HDR10 metadata.
+extern float Gr_hdr_peak_nits;
+
 extern bool Deferred_lighting;
 extern bool High_dynamic_range;
 
@@ -238,6 +248,7 @@ enum shader_type {
 #define SDR_FLAG_COPY_FROM_ARRAY (1 << 0)
 
 #define SDR_FLAG_TONEMAPPING_LINEAR_OUT (1 << 0)
+#define SDR_FLAG_TONEMAPPING_HDR10 (1 << 1)
 
 #define SDR_FLAG_ENV_MAP (1 << 0)
 

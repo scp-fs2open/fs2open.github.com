@@ -89,7 +89,10 @@ void opengl_post_pass_tonemap()
 		data->x0 = ppc.x0;
 		data->x1 = ppc.x1;
 		data->y0 = ppc.y0; 
-		data->exposure = ltp::current_exposure(); });
+		data->exposure = ltp::current_exposure();
+		data->hdr_mode = 0; // OpenGL renderer does not support HDR10 output
+		data->hdr_paperwhite_nits = 0.0f;
+		data->hdr_peak_nits = 0.0f; });
 
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Scene_ldr_texture, 0);
 
