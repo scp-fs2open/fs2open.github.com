@@ -1749,6 +1749,9 @@ void mod_table_init()
 			Shadow_distances_cockpit.clear();
 		}
 
+		if (Num_cockpit_shadow_cascades + Num_shadow_cascades > 16)
+			Warning(LOCATION, "Requested number of shadow cascades total is %d. Not all systems may support that, and performance will degrade with many shadow cascades.", Num_cockpit_shadow_cascades + Num_shadow_cascades);
+
 		//Insert the normal distances after the shadow distances as to keep them in ascending order
 		Shadow_distances_cockpit.insert(Shadow_distances_cockpit.end(), Shadow_distances.begin(), Shadow_distances.end());
 		std::swap(Shadow_distances_cockpit, Shadow_distances);

@@ -1546,7 +1546,7 @@ bool gr_opengl_is_capable(gr_capability capability)
 	case gr_capability::CAPABILITY_DEFERRED_LIGHTING:
 		return !Cmdline_no_fbo && light_deferred_enabled();
 	case gr_capability::CAPABILITY_SHADOWS:
-			return !Cmdline_no_geo_sdr_effects || (GLAD_GL_ARB_vertex_attrib_binding && GLAD_GL_ARB_shader_viewport_layer_array && GL_ARB_gpu_shader5);
+			return !Cmdline_no_geo_sdr_effects || (GLAD_GL_ARB_vertex_attrib_binding && GLAD_GL_ARB_shader_viewport_layer_array && GLAD_GL_ARB_gpu_shader5);
 	case gr_capability::CAPABILITY_THICK_OUTLINE:
 		return !Cmdline_no_geo_sdr_effects;
 	case gr_capability::CAPABILITY_BATCHED_SUBMODELS:
@@ -1564,7 +1564,7 @@ bool gr_opengl_is_capable(gr_capability capability)
 	case gr_capability::CAPABILITY_INSTANCED_RENDERING:
 		return GLAD_GL_ARB_vertex_attrib_binding;
 	case gr_capability::CAPABILITY_FAST_SHADOWS:
-		return GLAD_GL_ARB_vertex_attrib_binding && GLAD_GL_ARB_shader_viewport_layer_array && GL_ARB_gpu_shader5;
+		return GLAD_GL_ARB_vertex_attrib_binding && GLAD_GL_ARB_shader_viewport_layer_array && GLAD_GL_ARB_gpu_shader5;
 	}
 
 

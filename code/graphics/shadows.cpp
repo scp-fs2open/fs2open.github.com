@@ -467,10 +467,6 @@ matrix shadows_start_render(matrix *eye_orient, vec3d *eye_pos, fov_t fov, fov_t
 	}
 	const auto& cascade_distances_actual = cascade_distances_override.has_value() ? cascade_distances_rebuild : Shadow_distances;
 
-	Shadow_frustums.resize(num_cascades);
-	Shadow_cascade_distances.resize(num_cascades);
-	Shadow_proj_matrix.resize(num_cascades);
-
 	// Only ever do cockpit cascades if there's no override
 	bool render_cockpit_cascades = !cascade_distances_override.has_value() && ship_render_player_has_closeup_visuals();
 
@@ -833,11 +829,16 @@ static std::pair<size_t, size_t> compute_cascade_params_size(int num_cascades) {
 }
 
 void shadow_cascade_params_init() {
-	Shadow_cascade_params_buffer_size = compute_cascade_params_size(Num_shadow_cascades + Num_cockpit_shadow_cascades).first;
+	const int num_cascades = Num_shadow_cascades + Num_cockpit_shadow_cascades;
+	Shadow_cascade_params_buffer_size = compute_cascade_params_size(num_cascades).first;
 	Shadow_cascade_params_buffer = gr_create_buffer(BufferType::Uniform, BufferUsageHint::Dynamic);
 
 	SCP_vector<uint8_t> zero_data(Shadow_cascade_params_buffer_size, 0);
 	gr_update_buffer_data(Shadow_cascade_params_buffer, Shadow_cascade_params_buffer_size, zero_data.data());
+
+	Shadow_frustums.resize(num_cascades);
+	Shadow_cascade_distances.resize(num_cascades);
+	Shadow_proj_matrix.resize(num_cascades);
 }
 
 void shadow_cascade_params_shutdown() {
@@ -857,6 +858,8 @@ void shadow_cascade_params_bind(int cascade_offset, int cascade_count) {
 	const auto [required_size, padding] = compute_cascade_params_size(num_cascades);
 
 	Assertion(required_size <= Shadow_cascade_params_buffer_size, "The shadow cascade parameter buffer grew in size!");
+	Assertion(Shadow_proj_matrix.size() == static_cast<size_t>(num_cascades) && Shadow_cascade_distances.size() == static_cast<size_t>(num_cascades) && Shadow_smoothness_factor.size() == static_cast<size_t>(num_cascades), "Shadow cascade data buffers are of incorrect size! (Expected %d, got %d, %d, %d)", num_cascades, static_cast<int>(Shadow_proj_matrix.size()), static_cast<int>(Shadow_cascade_distances.size()), static_cast<int>(Shadow_smoothness_factor.size()));
+	Assertion(cascade_count + cascade_offset <= num_cascades, "Requested drawing out-of-range cascades!");
 
 	SCP_vector<uint8_t> buffer(required_size, 0);
 	size_t offset = 0;
