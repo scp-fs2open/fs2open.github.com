@@ -82,6 +82,7 @@ gr_capability_def gr_capabilities[] = {
 	gr_capability_def {gr_capability::CAPABILITY_BPTC, "BPTC Texture Compression"}, //This one had a different parse string already!
 	GR_CAPABILITY_ENTRY(LARGE_SHADER),
 	GR_CAPABILITY_ENTRY(INSTANCED_RENDERING),
+	GR_CAPABILITY_ENTRY(FAST_SHADOWS),
 };
 
 const size_t gr_capabilities_num = sizeof(gr_capabilities) / sizeof(gr_capabilities[0]);
