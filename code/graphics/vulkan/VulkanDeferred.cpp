@@ -762,7 +762,6 @@ void vulkan_shadow_map_end()
 	auto* pp = getPostProcessor();
 	auto* stateTracker = getStateTracker();
 	auto* renderer = getRendererInstance();
-	auto* postProcessor = getPostProcessor();
 	vk::CommandBuffer cmd = stateTracker->getCommandBuffer();
 
 	gr_end_view_matrix();

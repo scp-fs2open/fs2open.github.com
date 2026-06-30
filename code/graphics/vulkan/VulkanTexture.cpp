@@ -608,8 +608,8 @@ bool VulkanTextureManager::uploadAnimationFrames(int handle, bitmap* bm, int com
 	// bm->flags contains the lock flags (BMP_AABITMAP, BMP_TEX_OTHER, BMP_TEX_DXT*, etc.)
 	// bm->bpp contains the requested bpp. Using these ensures all frames are locked
 	// consistently (e.g., 8bpp for aabitmaps, 32bpp for RGBA textures).
-	int lockBpp = bm->bpp;
-	ushort lockFlags = bm->flags;
+	auto lockBpp = bm->bpp;
+	auto lockFlags = bm->flags;
 
 	// Set guard flag to make recursive bm_data calls no-ops
 	m_uploadingAnimation = true;

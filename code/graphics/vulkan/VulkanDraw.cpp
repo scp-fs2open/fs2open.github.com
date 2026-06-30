@@ -659,7 +659,7 @@ void VulkanDrawManager::renderModel(model_material* material_info, indexed_verte
 
 	// Issue indexed draw call
 	m_frameStats.drawIndexedCalls++;
-	m_frameStats.totalIndices += datap->n_verts;
+	m_frameStats.totalIndices += static_cast<int>(datap->n_verts);
 
 	// Flush any dirty dynamic state before draw
 	stateTracker->applyDynamicState();
