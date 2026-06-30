@@ -2042,7 +2042,7 @@ bool VulkanTextureManager::createFallbackTexture(vk::Image& outImage, VulkanAllo
 	}
 
 	void* mapped = m_memoryManager->mapMemory(stagingAlloc);
-	memcpy(mapped, whitePixels.data(), bufferSize);
+	memcpy(mapped, whitePixels.data(), static_cast<size_t>(bufferSize));
 	m_memoryManager->unmapMemory(stagingAlloc);
 
 	SCP_vector<vk::BufferImageCopy> regions;

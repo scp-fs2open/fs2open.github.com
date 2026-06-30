@@ -73,11 +73,11 @@ struct PipelineConfig {
 	std::array<AttachmentBlend, MAX_COLOR_ATTACHMENTS> attachmentBlends;
 
 	bool operator==(const PipelineConfig& other) const;
-	size_t hash() const;
+	uint64_t hash() const;
 };
 
 struct PipelineConfigHasher {
-	size_t operator()(const PipelineConfig& config) const {
+	uint64_t operator()(const PipelineConfig& config) const {
 		return config.hash();
 	}
 };

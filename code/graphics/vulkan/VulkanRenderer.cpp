@@ -340,7 +340,7 @@ bool VulkanRenderer::readbackFramebuffer(ubyte** outPixels, uint32_t* outWidth, 
 	if (mappedPtr) {
 		auto* pixels = static_cast<ubyte*>(vm_malloc(static_cast<int>(bufferSize)));
 		if (pixels) {
-			memcpy(pixels, mappedPtr, bufferSize);
+			memcpy(pixels, mappedPtr, static_cast<size_t>(bufferSize));
 			*outPixels = pixels;
 			*outWidth = w;
 			*outHeight = h;

@@ -168,7 +168,7 @@ bool VulkanMemoryManager::allocateBufferMemory(vk::Buffer buffer, MemoryUsage us
 	allocation.mappedPtr = allocInfo.pMappedData;
 
 	++m_allocationCount;
-	m_totalAllocatedBytes += allocation.size;
+	m_totalAllocatedBytes += static_cast<size_t>(allocation.size);
 
 	return true;
 }
@@ -211,7 +211,7 @@ bool VulkanMemoryManager::allocateImageMemory(vk::Image image, MemoryUsage usage
 	allocation.mappedPtr = allocInfo.pMappedData;
 
 	++m_allocationCount;
-	m_totalAllocatedBytes += allocation.size;
+	m_totalAllocatedBytes += static_cast<size_t>(allocation.size);
 
 	return true;
 }
@@ -231,7 +231,7 @@ void VulkanMemoryManager::freeAllocation(VulkanAllocation& allocation)
 	vmaFreeMemory(m_allocator, allocation.vmaAlloc);
 
 	--m_allocationCount;
-	m_totalAllocatedBytes -= allocation.size;
+	m_totalAllocatedBytes -= static_cast<size_t>(allocation.size);
 
 	allocation.vmaAlloc = VK_NULL_HANDLE;
 	allocation.size = 0;

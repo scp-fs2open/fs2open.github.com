@@ -65,9 +65,9 @@ bool PipelineConfig::operator==(const PipelineConfig& other) const
 	       }();
 }
 
-size_t PipelineConfig::hash() const
+uint64_t PipelineConfig::hash() const
 {
-	size_t h = 0;
+	uint64_t h = 0;
 
 	// Combine all fields into hash
 	h ^= std::hash<int>()(static_cast<int>(shaderType)) << 0;
@@ -82,28 +82,30 @@ size_t PipelineConfig::hash() const
 	h ^= std::hash<bool>()(stencilEnabled) << 27;
 	h ^= std::hash<int>()(static_cast<int>(stencilFunc)) << 28;
 	h ^= std::hash<uint32_t>()(stencilMask) << 31;
-	h ^= std::hash<int>()(static_cast<int>(frontStencilOp.stencilFailOperation)) << 33;
-	h ^= std::hash<int>()(static_cast<int>(frontStencilOp.depthFailOperation)) << 35;
-	h ^= std::hash<int>()(static_cast<int>(frontStencilOp.successOperation)) << 37;
-	h ^= std::hash<int>()(static_cast<int>(backStencilOp.stencilFailOperation)) << 39;
-	h ^= std::hash<int>()(static_cast<int>(backStencilOp.depthFailOperation)) << 41;
-	h ^= std::hash<int>()(static_cast<int>(backStencilOp.successOperation)) << 43;
-	h ^= std::hash<int>()((colorWriteMask.x ? 1 : 0) | (colorWriteMask.y ? 2 : 0) |
-	                      (colorWriteMask.z ? 4 : 0) | (colorWriteMask.w ? 8 : 0)) << 44;
-	h ^= std::hash<int>()(fillMode) << 45;
-	h ^= std::hash<bool>()(depthBiasEnabled) << 46;
-	h ^= std::hash<uint64_t>()(reinterpret_cast<uint64_t>(static_cast<VkRenderPass>(renderPass))) << 47;
-	h ^= std::hash<uint32_t>()(subpass) << 51;
-	h ^= std::hash<uint32_t>()(colorAttachmentCount) << 55;
-	h ^= std::hash<int>()(static_cast<int>(sampleCount)) << 56;
-	h ^= std::hash<bool>()(perAttachmentBlendEnabled) << 57;
+	h ^= static_cast<uint64_t>(std::hash<int>()(static_cast<int>(frontStencilOp.stencilFailOperation))) << 33;
+	h ^= static_cast<uint64_t>(std::hash<int>()(static_cast<int>(frontStencilOp.depthFailOperation))) << 35;
+	h ^= static_cast<uint64_t>(std::hash<int>()(static_cast<int>(frontStencilOp.successOperation))) << 37;
+	h ^= static_cast<uint64_t>(std::hash<int>()(static_cast<int>(backStencilOp.stencilFailOperation))) << 39;
+	h ^= static_cast<uint64_t>(std::hash<int>()(static_cast<int>(backStencilOp.depthFailOperation))) << 41;
+	h ^= static_cast<uint64_t>(std::hash<int>()(static_cast<int>(backStencilOp.successOperation))) << 43;
+	h ^= static_cast<uint64_t>(std::hash<int>()((colorWriteMask.x ? 1 : 0) | (colorWriteMask.y ? 2 : 0) |
+	                      (colorWriteMask.z ? 4 : 0) | (colorWriteMask.w ? 8 : 0))) << 44;
+	h ^= static_cast<uint64_t>(std::hash<int>()(fillMode)) << 45;
+	h ^= static_cast<uint64_t>(std::hash<bool>()(depthBiasEnabled)) << 46;
+	h ^= static_cast<uint64_t>(std::hash<uint64_t>()(reinterpret_cast<uint64_t>
+													 (reinterpret_cast<void*>
+													  (static_cast<VkRenderPass>(renderPass))))) << 47;
+	h ^= static_cast<uint64_t>(std::hash<uint32_t>()(subpass)) << 51;
+	h ^= static_cast<uint64_t>(std::hash<uint32_t>()(colorAttachmentCount)) << 55;
+	h ^= static_cast<uint64_t>(std::hash<int>()(static_cast<int>(sampleCount))) << 56;
+	h ^= static_cast<uint64_t>(std::hash<bool>()(perAttachmentBlendEnabled)) << 57;
 	if (perAttachmentBlendEnabled) {
 		for (uint32_t i = 0; i < colorAttachmentCount; ++i) {
-			h ^= std::hash<int>()(static_cast<int>(attachmentBlends[i].blendMode)) << (i * 3 + 2);
-			h ^= std::hash<int>()((attachmentBlends[i].writeMask.x ? 1 : 0) |
+			h ^= static_cast<uint64_t>(std::hash<int>()(static_cast<int>(attachmentBlends[i].blendMode))) << (i * 3 + 2);
+			h ^= static_cast<uint64_t>(std::hash<int>()((attachmentBlends[i].writeMask.x ? 1 : 0) |
 			                      (attachmentBlends[i].writeMask.y ? 2 : 0) |
 			                      (attachmentBlends[i].writeMask.z ? 4 : 0) |
-			                      (attachmentBlends[i].writeMask.w ? 8 : 0)) << (i * 3 + 5);
+			                      (attachmentBlends[i].writeMask.w ? 8 : 0))) << (i * 3 + 5);
 		}
 	}
 
@@ -175,7 +177,7 @@ vk::Pipeline VulkanPipelineManager::getPipeline(const PipelineConfig& config, co
 	vk::Pipeline result = pipeline.get();
 	m_pipelines[fullConfig] = std::move(pipeline);
 
-	nprintf(("Vulkan", "VulkanPipelineManager: Created pipeline for shader type %d (hash 0x%zx)\n",
+	nprintf(("Vulkan", "VulkanPipelineManager: Created pipeline for shader type %d (hash 0x%llx)\n",
 		static_cast<int>(config.shaderType), fullConfig.hash()));
 
 	return result;
