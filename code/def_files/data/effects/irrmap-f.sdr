@@ -1,15 +1,25 @@
 //!#version 150
 #include "gamma.sdr" //! #include "gamma.sdr"
 #define PI 3.1415926535897932384626433832795
-uniform samplerCube envmap;
 
-layout (std140) uniform genericData {
+#ifdef VULKAN
+layout(location = 0) in vec2 fragTexCoord;
+layout(location = 0) out vec4 fragOut0;
+layout(set = 1, binding = 1) uniform samplerCube envmap;
+#else
+uniform samplerCube envmap;
+in vec4 fragTexCoord;
+out vec4 fragOut0;
+#endif
+
+#ifdef VULKAN
+layout(set = 2, binding = 0, std140)
+#else
+layout(std140)
+#endif
+uniform genericData {
 	int face;
 };
-
-in vec4 fragTexCoord;
-
-out vec4 fragOut0;
 
 // Iteratively optimised points to give low discrepancy distribution on arbitrary hemisphere.
 const vec3 points[128] = vec3[128](

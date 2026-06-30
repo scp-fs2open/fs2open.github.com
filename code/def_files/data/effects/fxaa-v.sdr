@@ -1,4 +1,12 @@
 
+#ifdef VULKAN
+layout(location = 0) out vec2 fragTexCoord;
+void main() {
+	vec2 uv = vec2((gl_VertexIndex << 1) & 2, gl_VertexIndex & 2);
+	fragTexCoord = uv;
+	gl_Position = vec4(uv * 2.0 - 1.0, 0.0, 1.0);
+}
+#else
 in vec4 vertPosition;
 
 out vec2 v_rcpFrame;
@@ -14,3 +22,4 @@ void main() {
 	v_rcpFrame = vec2(1.0/rt_w, 1.0/rt_h);
 	v_pos = vertPosition.xy*0.5 + 0.5;
 }
+#endif
