@@ -53,7 +53,8 @@ void VulkanRenderer::createCompositionResources()
 		imageInfo.arrayLayers = 1;
 		imageInfo.samples = vk::SampleCountFlagBits::e1;
 		imageInfo.tiling = vk::ImageTiling::eOptimal;
-		imageInfo.usage = vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled;
+		imageInfo.usage = vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled |
+		                   vk::ImageUsageFlagBits::eTransferSrc;
 		imageInfo.sharingMode = vk::SharingMode::eExclusive;
 		imageInfo.initialLayout = vk::ImageLayout::eUndefined;
 
@@ -347,6 +348,24 @@ void VulkanRenderer::createPresentSyncObjects()
 	m_swapChainImageRenderImage.resize(m_swapChainImages.size(), nullptr);
 }
 
+static float half_to_float(uint16_t h)
+{
+	const uint32_t sign = static_cast<uint32_t>(h & 0x8000u) << 16;
+	const uint32_t exp  = (h >> 10u) & 0x1Fu;
+	const uint32_t mant = static_cast<uint32_t>(h & 0x03FFu);
+	uint32_t f;
+	if (exp == 0u) {
+		f = sign; // zero or subnormal → round to zero
+	} else if (exp == 31u) {
+		f = sign | 0x7F800000u | (mant << 13u); // inf or NaN
+	} else {
+		f = sign | ((exp + (127u - 15u)) << 23u) | (mant << 13u);
+	}
+	float result;
+	memcpy(&result, &f, sizeof(result));
+	return result;
+}
+
 bool VulkanRenderer::readbackFramebuffer(ubyte** outPixels, uint32_t* outWidth, uint32_t* outHeight)
 {
 	*outPixels = nullptr;
@@ -363,10 +382,33 @@ bool VulkanRenderer::readbackFramebuffer(ubyte** outPixels, uint32_t* outWidth, 
 		return false;
 	}
 
-	auto prevImage = m_swapChainImages[m_previousSwapChainImage];
+	// In HDR mode read the fp16 composition image (pre-encode) instead of the
+	// swap-chain image.  The swap-chain image is 10-bit PQ-packed; treating it
+	// as BGRA8 produces garbage, and drawing it back through encodeOutput would
+	// apply PQ a second time.  The composition image stores sRGB-encoded values
+	// (1.0 == paperwhite) in fp16 RGBA; we convert to BGRA8 on the CPU below.
+	const bool hdrReadback = m_hdrActive;
+	vk::Image srcImage;
+	vk::ImageLayout srcInitialLayout;
+	vk::PipelineStageFlags srcStageMask;
+	vk::AccessFlags srcAccessMask;
+	uint32_t bytesPerSrcPixel;
+	if (hdrReadback) {
+		srcImage         = m_compositionImages[m_previousSwapChainImage].get();
+		srcInitialLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		srcStageMask     = vk::PipelineStageFlagBits::eFragmentShader;
+		srcAccessMask    = vk::AccessFlagBits::eShaderRead;
+		bytesPerSrcPixel = 8; // fp16 RGBA = 4 × 2 bytes
+	} else {
+		srcImage         = m_swapChainImages[m_previousSwapChainImage];
+		srcInitialLayout = vk::ImageLayout::ePresentSrcKHR;
+		srcStageMask     = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+		srcAccessMask    = vk::AccessFlagBits::eColorAttachmentWrite;
+		bytesPerSrcPixel = 4; // BGRA8
+	}
 	uint32_t w = m_swapChainExtent.width;
 	uint32_t h = m_swapChainExtent.height;
-	vk::DeviceSize bufferSize = static_cast<vk::DeviceSize>(w) * h * 4;
+	vk::DeviceSize bufferSize = static_cast<vk::DeviceSize>(w) * h * bytesPerSrcPixel;
 
 	// End the current render pass so we can record transfer commands
 	m_currentCommandBuffer.endRenderPass();
@@ -385,19 +427,19 @@ bool VulkanRenderer::readbackFramebuffer(ubyte** outPixels, uint32_t* outWidth, 
 	beginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
 	cmd.begin(beginInfo);
 
-	// Transition previous swap chain image for transfer read
+	// Transition source image to eTransferSrcOptimal for readback
 	vk::ImageMemoryBarrier preBarrier;
-	preBarrier.oldLayout = vk::ImageLayout::ePresentSrcKHR;
-	preBarrier.newLayout = vk::ImageLayout::eTransferSrcOptimal;
+	preBarrier.oldLayout           = srcInitialLayout;
+	preBarrier.newLayout           = vk::ImageLayout::eTransferSrcOptimal;
 	preBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 	preBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	preBarrier.image = prevImage;
-	preBarrier.subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
-	preBarrier.srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
-	preBarrier.dstAccessMask = vk::AccessFlagBits::eTransferRead;
+	preBarrier.image               = srcImage;
+	preBarrier.subresourceRange    = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
+	preBarrier.srcAccessMask       = srcAccessMask;
+	preBarrier.dstAccessMask       = vk::AccessFlagBits::eTransferRead;
 
 	cmd.pipelineBarrier(
-		vk::PipelineStageFlagBits::eColorAttachmentOutput,
+		srcStageMask,
 		vk::PipelineStageFlagBits::eTransfer,
 		{}, nullptr, nullptr, preBarrier);
 
@@ -446,18 +488,18 @@ bool VulkanRenderer::readbackFramebuffer(ubyte** outPixels, uint32_t* outWidth, 
 	region.imageOffset = vk::Offset3D(0, 0, 0);
 	region.imageExtent = vk::Extent3D(w, h, 1);
 
-	cmd.copyImageToBuffer(prevImage, vk::ImageLayout::eTransferSrcOptimal, stagingBuffer, region);
+	cmd.copyImageToBuffer(srcImage, vk::ImageLayout::eTransferSrcOptimal, stagingBuffer, region);
 
-	// Transition previous swap chain image back
+	// Transition source image back to its original layout
 	vk::ImageMemoryBarrier postBarrier;
-	postBarrier.oldLayout = vk::ImageLayout::eTransferSrcOptimal;
-	postBarrier.newLayout = vk::ImageLayout::ePresentSrcKHR;
+	postBarrier.oldLayout           = vk::ImageLayout::eTransferSrcOptimal;
+	postBarrier.newLayout           = srcInitialLayout;
 	postBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 	postBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	postBarrier.image = prevImage;
-	postBarrier.subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
-	postBarrier.srcAccessMask = vk::AccessFlagBits::eTransferRead;
-	postBarrier.dstAccessMask = {};
+	postBarrier.image               = srcImage;
+	postBarrier.subresourceRange    = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
+	postBarrier.srcAccessMask       = vk::AccessFlagBits::eTransferRead;
+	postBarrier.dstAccessMask       = {};
 
 	cmd.pipelineBarrier(
 		vk::PipelineStageFlagBits::eTransfer,
@@ -482,14 +524,35 @@ bool VulkanRenderer::readbackFramebuffer(ubyte** outPixels, uint32_t* outWidth, 
 	m_device->destroyFence(fence);
 	m_device->freeCommandBuffers(m_graphicsCommandPool.get(), cmdBuffers);
 
-	// Read back pixels from staging buffer (raw BGRA matching swap chain format)
+	// Read back and convert pixels from staging buffer.
+	// SDR: raw BGRA8 from swap chain, memcpy directly.
+	// HDR: fp16 RGBA from composition image — convert to BGRA8.  The composition
+	//      image holds sRGB-encoded values (1.0 == paperwhite) so we just clamp to
+	//      [0,1] and scale; no gamma re-encoding needed.  Swap R↔B for BGRA output
+	//      and force alpha = 255 so the bitmap restores as fully opaque.
+	const uint32_t outStride = w * 4u; // always 4 bytes/pixel BGRA8 output
 	bool success = false;
 	auto* mappedPtr = static_cast<ubyte*>(m_memoryManager->mapMemory(stagingAlloc));
 
 	if (mappedPtr) {
-		auto* pixels = static_cast<ubyte*>(vm_malloc(static_cast<int>(bufferSize)));
+		auto* pixels = static_cast<ubyte*>(vm_malloc(static_cast<int>(outStride) * static_cast<int>(h)));
 		if (pixels) {
-			memcpy(pixels, mappedPtr, static_cast<size_t>(bufferSize));
+			if (hdrReadback) {
+				// Clamp fp16 value to [0,1]; NaN-safe (all NaN comparisons yield false → 0).
+				auto hf = [](uint16_t v) -> float {
+					float f = half_to_float(v);
+					return (f >= 0.0f && f <= 1.0f) ? f : (f >= 1.0f ? 1.0f : 0.0f);
+				};
+				const auto* src = reinterpret_cast<const uint16_t*>(mappedPtr);
+				for (uint32_t i = 0; i < w * h; ++i) {
+					pixels[i * 4 + 0] = static_cast<ubyte>(hf(src[i * 4 + 2]) * 255.0f); // B ← src B
+					pixels[i * 4 + 1] = static_cast<ubyte>(hf(src[i * 4 + 1]) * 255.0f); // G ← src G
+					pixels[i * 4 + 2] = static_cast<ubyte>(hf(src[i * 4 + 0]) * 255.0f); // R ← src R
+					pixels[i * 4 + 3] = 255u;                                              // A = opaque
+				}
+			} else {
+				memcpy(pixels, mappedPtr, static_cast<size_t>(outStride) * h);
+			}
 			*outPixels = pixels;
 			*outWidth = w;
 			*outHeight = h;
