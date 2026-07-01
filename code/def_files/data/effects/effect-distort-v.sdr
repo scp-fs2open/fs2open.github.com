@@ -1,3 +1,13 @@
+#ifdef VULKAN
+layout(location = 0) in vec4 vertPosition;
+layout(location = 1) in vec4 vertColor;
+layout(location = 2) in vec4 vertTexCoord;
+layout(location = 6) in float vertRadius;
+
+layout(location = 0) out vec4 fragTexCoord;
+layout(location = 1) out vec4 fragColor;
+layout(location = 2) out float fragOffset;
+#else
 in vec4 vertPosition;
 in vec4 vertTexCoord;
 in vec4 vertColor;
@@ -5,13 +15,24 @@ in float vertRadius;
 out vec4 fragTexCoord;
 out vec4 fragColor;
 out float fragOffset;
+#endif
 
-layout (std140) uniform matrixData {
+#ifdef VULKAN
+layout(std140, set = 2, binding = 1)
+#else
+layout (std140)
+#endif
+uniform matrixData {
 	mat4 modelViewMatrix;
 	mat4 projMatrix;
 };
 
-layout (std140) uniform genericData {
+#ifdef VULKAN
+layout(std140, set = 2, binding = 0)
+#else
+layout (std140)
+#endif
+uniform genericData {
 	float window_width;
 	float window_height;
 	float use_offset;

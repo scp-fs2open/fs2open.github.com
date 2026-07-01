@@ -1,0 +1,298 @@
+#pragma once
+
+#include "globalincs/pstypes.h"
+#include "graphics/2d.h"
+#include "VulkanConstants.h"
+
+#include <array>
+#include <vulkan/vulkan.hpp>
+
+
+namespace graphics::vulkan {
+
+class VulkanBufferManager;
+class VulkanTextureManager;
+
+// ========== Descriptor Set Templates ==========
+
+struct DescriptorBindingTemplate {
+	uint32_t binding;
+	vk::DescriptorType type;
+	uint32_t count;                      // 1 for most, 16 for texture array
+	vk::ShaderStageFlags stages;
+	vk::ImageViewType viewType;          // only meaningful for eCombinedImageSampler
+
+	constexpr DescriptorBindingTemplate(uint32_t binding_, vk::DescriptorType type_,
+	                                     uint32_t count_, vk::ShaderStageFlags stages_,
+	                                     vk::ImageViewType viewType_ = vk::ImageViewType::e2D)
+		: binding(binding_), type(type_), count(count_), stages(stages_), viewType(viewType_) {}
+};
+
+struct DescriptorSetTemplate : ArrayView<DescriptorBindingTemplate> {
+	using ArrayView::ArrayView;
+};
+
+struct DescriptorFallbacks {
+	vk::DescriptorBufferInfo buffer;
+	vk::DescriptorImageInfo texture2D;
+	vk::DescriptorImageInfo texture2DArray;
+	vk::DescriptorImageInfo textureCube;
+	vk::DescriptorImageInfo texture3D;
+
+	const vk::DescriptorImageInfo& getImage(vk::ImageViewType t) const;
+};
+
+/**
+ * @brief Stack-allocated batch writer for descriptor set updates.
+ *
+ * Usage: reset() + writeSet() (pre-fills all bindings with fallbacks)
+ * + setBuffer/setImage overrides for real data + flush().
+ */
+class DescriptorWriter {
+public:
+	static constexpr uint32_t MAX_WRITES = 32;
+	static constexpr uint32_t MAX_BUFFER_INFOS = 20;
+	static constexpr uint32_t MAX_IMAGE_INFOS = 24;
+	static constexpr uint32_t MAX_BINDINGS_PER_SET = 16;
+
+	void reset(vk::Device device, const DescriptorFallbacks& fallbacks) {
+		m_device = device;
+		m_fallbacks = &fallbacks;
+		m_writeCount = 0;
+		m_bufferInfoCount = 0;
+		m_imageInfoCount = 0;
+	}
+
+	void writeSet(vk::DescriptorSet set, const DescriptorSetTemplate& tmpl);
+
+	void setBuffer(uint32_t binding, const vk::DescriptorBufferInfo& info);
+	void setImage(uint32_t binding, const vk::DescriptorImageInfo& info);
+	void setImageArray(uint32_t binding, ArrayView<vk::DescriptorImageInfo> infos);
+
+	void flush() {
+		if (m_writeCount > 0) {
+			m_device.updateDescriptorSets(m_writeCount, m_writes.data(), 0, nullptr);
+		}
+		m_writeCount = 0;
+		m_bufferInfoCount = 0;
+		m_imageInfoCount = 0;
+	}
+
+private:
+	// Per-binding lookup for the current writeSet, indexed by binding number.
+	// Populated by writeSet, used by setBuffer/setImage/setImageArray for O(1) access.
+	struct BindingSlot {
+		vk::DescriptorBufferInfo* bufferInfo = nullptr;  // non-null for buffer bindings
+		vk::DescriptorImageInfo* imageInfo = nullptr;    // non-null for image bindings
+		uint32_t count = 0;                              // descriptor count (1 or 16 for arrays)
+		vk::ImageViewType viewType = vk::ImageViewType::e2D;  // for fallback lookup
+	};
+
+	vk::Device m_device;
+	const DescriptorFallbacks* m_fallbacks = nullptr;
+
+	std::array<vk::WriteDescriptorSet, MAX_WRITES> m_writes;
+	std::array<vk::DescriptorBufferInfo, MAX_BUFFER_INFOS> m_bufferInfos;
+	std::array<vk::DescriptorImageInfo, MAX_IMAGE_INFOS> m_imageInfos;
+	std::array<BindingSlot, MAX_BINDINGS_PER_SET> m_bindingSlots;
+	uint32_t m_writeCount = 0;
+	uint32_t m_bufferInfoCount = 0;
+	uint32_t m_imageInfoCount = 0;
+};
+
+/**
+ * @brief Descriptor set indices for the 3-tier layout
+ *
+ * Set 0: Global - per-frame data (lights, deferred globals, shadow maps)
+ * Set 1: Material - per-material data (model data, textures)
+ * Set 2: Per-Draw - per-draw-call data (generic data, matrices, etc.)
+ */
+enum class DescriptorSetIndex : uint32_t {
+	Global = 0,
+	Material = 1,
+	PerDraw = 2,
+
+	Count = 3
+};
+
+// ========== Descriptor Binding Constants ==========
+
+// Global Set (Set 0) bindings — per-frame data
+namespace GlobalBinding {
+	static constexpr uint32_t Lights       = 0; // UBO: light data
+	static constexpr uint32_t DeferredData = 1; // UBO: deferred globals
+	static constexpr uint32_t ShadowMap    = 2; // sampler2D: shadow map
+	static constexpr uint32_t EnvMap       = 3; // samplerCube: environment map
+	static constexpr uint32_t IrradianceMap = 4; // samplerCube: irradiance map
+}
+
+// Material Set (Set 1) bindings — per-material data
+namespace MaterialBinding {
+	static constexpr uint32_t ModelData    = 0; // UBO: model/material data
+	static constexpr uint32_t TextureArray = 1; // sampler2D[16]: material textures
+	static constexpr uint32_t DecalGlobals = 2; // UBO: decal globals
+	static constexpr uint32_t TransformSSBO = 3; // SSBO: batched transforms
+	static constexpr uint32_t DepthMap     = 4; // sampler2D: depth (soft particles)
+	static constexpr uint32_t SceneColor   = 5; // sampler2D: scene color (distortion)
+	static constexpr uint32_t DistortionMap = 6; // sampler2D: distortion texture
+}
+
+// Texture array slot indices (elements within MaterialBinding::TextureArray)
+namespace TextureSlot {
+	static constexpr uint32_t BaseMap    = 0;
+	static constexpr uint32_t GlowMap   = 1;
+	static constexpr uint32_t SpecMap   = 2;
+	static constexpr uint32_t NormalMap = 3;
+	static constexpr uint32_t HeightMap = 4;
+	static constexpr uint32_t AmbientMap = 5;
+	static constexpr uint32_t MiscMap   = 6;
+}
+
+// PerDraw Set (Set 2) bindings — per-draw-call data
+namespace PerDrawBinding {
+	static constexpr uint32_t GenericData  = 0; // UBO: generic shader data
+	static constexpr uint32_t Matrices     = 1; // UBO: transform matrices
+	static constexpr uint32_t NanoVGData   = 2; // UBO: NanoVG data
+	static constexpr uint32_t DecalInfo    = 3; // UBO: per-decal info
+	static constexpr uint32_t MovieData    = 4; // UBO: movie playback data
+}
+
+
+/**
+ * @brief Manages Vulkan descriptor sets, pools, and layouts
+ *
+ * Provides descriptor set allocation and update functionality.
+ * Uses per-frame pools for transient descriptors.
+ */
+class VulkanDescriptorManager {
+public:
+	static constexpr uint32_t MAX_TEXTURE_BINDINGS = 16;  // Texture array size
+
+	VulkanDescriptorManager() = default;
+	~VulkanDescriptorManager() = default;
+
+	// Non-copyable
+	VulkanDescriptorManager(const VulkanDescriptorManager&) = delete;
+	VulkanDescriptorManager& operator=(const VulkanDescriptorManager&) = delete;
+
+	/**
+	 * @brief Initialize descriptor manager
+	 * @param device Vulkan logical device
+	 * @return true on success
+	 */
+	bool init(vk::Device device);
+
+	/**
+	 * @brief Shutdown and release resources
+	 */
+	void shutdown();
+
+	/**
+	 * @brief Build fallback descriptor values from buffer/texture managers.
+	 * Must be called after buffer and texture managers are initialized.
+	 */
+	void buildFallbacks(VulkanBufferManager* bufMgr, VulkanTextureManager* texMgr);
+
+	/**
+	 * @brief Get the fallback descriptor values
+	 */
+	const DescriptorFallbacks& getFallbacks() const { return m_fallbacks; }
+
+	/**
+	 * @brief Get the set template for a given set index
+	 */
+	static const DescriptorSetTemplate& getSetTemplate(DescriptorSetIndex setIndex);
+
+	/**
+	 * @brief Get descriptor set layout for a given set index
+	 */
+	vk::DescriptorSetLayout getSetLayout(DescriptorSetIndex setIndex) const;
+
+	/**
+	 * @brief Get all descriptor set layouts (for pipeline layout creation)
+	 * @return Reference to the UniqueDescriptorSetLayout array (Global, Material, PerDraw)
+	 */
+	const auto& getAllSetLayouts() const { return m_setLayouts; }
+
+	/**
+	 * @brief Allocate a descriptor set from the per-frame pool
+	 * @param setIndex Which set type to allocate
+	 * @return Allocated descriptor set, or null handle on failure
+	 */
+	vk::DescriptorSet allocateFrameSet(DescriptorSetIndex setIndex);
+
+	/**
+	 * @brief Begin a new frame - reset current frame's pool
+	 */
+	void beginFrame();
+
+	/**
+	 * @brief End current frame - advance to next pool
+	 */
+	void endFrame();
+
+	/**
+	 * @brief Get current frame index
+	 */
+	uint32_t getCurrentFrame() const { return m_currentFrame; }
+
+	/**
+	 * @brief Get the Vulkan device (for DescriptorWriter)
+	 */
+	vk::Device getDevice() const { return m_device; }
+
+	/**
+	 * @brief Entry mapping a UBO binding to its uniform_block_type
+	 */
+	struct UniformBindingEntry {
+		uint32_t binding;
+		uniform_block_type blockType;
+	};
+
+	/**
+	 * @brief Get the UBO bindings for a given descriptor set
+	 */
+	static ArrayView<UniformBindingEntry> getUniformBindings(DescriptorSetIndex setIndex);
+
+private:
+	/**
+	 * @brief Create all descriptor set layouts
+	 */
+	void createSetLayouts();
+
+	/**
+	 * @brief Create descriptor pools
+	 */
+	void createDescriptorPools();
+
+	/**
+	 * @brief Create a single descriptor set layout
+	 */
+	vk::UniqueDescriptorSetLayout createSetLayout(const DescriptorSetTemplate& tmpl);
+
+	/**
+	 * @brief Create a new descriptor pool with standard sizes
+	 */
+	vk::UniqueDescriptorPool createFramePool();
+
+	vk::Device m_device;
+
+	// Descriptor set layouts (one per set type)
+	std::array<vk::UniqueDescriptorSetLayout, static_cast<size_t>(DescriptorSetIndex::Count)> m_setLayouts;
+
+	// Per-frame descriptor pools (growable - new pools added on demand)
+	std::array<SCP_vector<vk::UniqueDescriptorPool>, MAX_FRAMES_IN_FLIGHT> m_framePools;
+
+	// Pre-built fallback descriptor values
+	DescriptorFallbacks m_fallbacks{};
+
+	uint32_t m_currentFrame = 0;
+	bool m_initialized = false;
+};
+
+// Global descriptor manager access
+VulkanDescriptorManager* getDescriptorManager();
+void setDescriptorManager(VulkanDescriptorManager* manager);
+
+} // namespace graphics::vulkan
+

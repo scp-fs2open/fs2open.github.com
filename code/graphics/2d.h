@@ -72,6 +72,16 @@ extern bool Gr_post_processing_enabled;
 
 extern bool Gr_enable_vsync;
 
+// HDR10 (PQ/ST.2084 + BT.2020) output. Currently only honored by the Vulkan renderer.
+extern bool Gr_enable_hdr;
+// True once the renderer has actually negotiated an HDR10 swap chain (read-only,
+// set by the active renderer). Distinct from Gr_enable_hdr, which is the request.
+extern bool Gr_hdr_output_active;
+// Reference white luminance in nits (the brightness of SDR "paper white" / UI when HDR is active).
+extern float Gr_hdr_paperwhite_nits;
+// Display peak luminance in nits used for tone curve clamping and HDR10 metadata.
+extern float Gr_hdr_peak_nits;
+
 extern bool Deferred_lighting;
 extern bool High_dynamic_range;
 
@@ -238,6 +248,7 @@ enum shader_type {
 #define SDR_FLAG_COPY_FROM_ARRAY (1 << 0)
 
 #define SDR_FLAG_TONEMAPPING_LINEAR_OUT (1 << 0)
+#define SDR_FLAG_TONEMAPPING_HDR10 (1 << 1)
 
 #define SDR_FLAG_ENV_MAP (1 << 0)
 
@@ -262,7 +273,6 @@ struct vertex_format_data
 		POSITION4,
 		POSITION3,
 		POSITION2,
-		SCREEN_POS,
 		COLOR3,
 		COLOR4,
 		COLOR4F,
@@ -338,8 +348,10 @@ enum class gr_capability {
 	CAPABILITY_SEPARATE_BLEND_FUNCTIONS,
 	CAPABILITY_PERSISTENT_BUFFER_MAPPING,
 	CAPABILITY_BPTC,
+	CAPABILITY_S3TC,
 	CAPABILITY_LARGE_SHADER,
-	CAPABILITY_INSTANCED_RENDERING
+	CAPABILITY_INSTANCED_RENDERING,
+	CAPABILITY_QUERIES_REUSABLE
 };
 
 struct gr_capability_def {
@@ -933,6 +945,10 @@ typedef struct screen {
 
 	std::function<void(bool set_override)> gf_override_fog;
 
+	// ImGui backend integration
+	std::function<void()> gf_imgui_new_frame;
+	std::function<void()> gf_imgui_render_draw_data;
+
 	//OpenXR functions
 	std::function<SCP_vector<const char*>()> gf_openxr_get_extensions;
 	std::function<bool()> gf_openxr_test_capabilities;
@@ -1194,6 +1210,9 @@ inline void gr_post_process_restore_zbuffer()
 #define gr_render_shield_impact			GR_CALL(gr_screen.gf_render_shield_impact)
 
 #define gr_override_fog					GR_CALL(gr_screen.gf_override_fog)
+
+#define gr_imgui_new_frame				GR_CALL(gr_screen.gf_imgui_new_frame)
+#define gr_imgui_render_draw_data		GR_CALL(gr_screen.gf_imgui_render_draw_data)
 
 inline void gr_render_primitives(material* material_info,
 	primitive_type prim_type,

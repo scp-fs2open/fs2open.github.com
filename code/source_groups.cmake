@@ -231,6 +231,8 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/brightpass-f.sdr
 	def_files/data/effects/copy-f.sdr
 	def_files/data/effects/decal-f.sdr
+	def_files/data/effects/default-material-f.sdr
+	def_files/data/effects/default-material-v.sdr
 	def_files/data/effects/decal-v.sdr
 	def_files/data/effects/deferred-clear-f.sdr
 	def_files/data/effects/deferred-clear-v.sdr
@@ -469,6 +471,10 @@ add_file_folder("Graphics"
 	graphics/post_processing.h
 	graphics/render.cpp
 	graphics/render.h
+	graphics/shader_preprocess.cpp
+	graphics/shader_preprocess.h
+	graphics/shader_types.cpp
+	graphics/shader_types.h
 	graphics/shadows.cpp
 	graphics/shadows.h
 	graphics/tmapper.h
@@ -564,6 +570,8 @@ add_file_folder("Graphics\\\\SoftwareGr\\\\Font"
 add_file_folder("Graphics\\\\Util"
 	graphics/util/GPUMemoryHeap.cpp
 	graphics/util/GPUMemoryHeap.h
+	graphics/util/primitives.h
+	graphics/util/primitives.cpp
 	graphics/util/uniform_structs.h
 	graphics/util/UniformAligner.h
 	graphics/util/UniformAligner.cpp
@@ -577,12 +585,52 @@ if (FSO_BUILD_WITH_VULKAN)
 	add_file_folder("Graphics\\\\Vulkan"
 		graphics/vulkan/gr_vulkan.cpp
 		graphics/vulkan/gr_vulkan.h
-		graphics/vulkan/RenderFrame.cpp
-		graphics/vulkan/RenderFrame.h
-		graphics/vulkan/vulkan_stubs.cpp
-		graphics/vulkan/vulkan_stubs.h
+		graphics/vulkan/VulkanBuffer.cpp
+		graphics/vulkan/VulkanBuffer.h
+		graphics/vulkan/VulkanConvert.cpp
+		graphics/vulkan/VulkanConvert.h
+		graphics/vulkan/VulkanDeferred.cpp
+		graphics/vulkan/VulkanDeferred.h
+		graphics/vulkan/VulkanDeletionQueue.cpp
+		graphics/vulkan/VulkanDeletionQueue.h
+		graphics/vulkan/VulkanDescriptorManager.cpp
+		graphics/vulkan/VulkanDescriptorManager.h
+		graphics/vulkan/VulkanDraw.cpp
+		graphics/vulkan/VulkanDraw.h
+		graphics/vulkan/VulkanMemory.cpp
+		graphics/vulkan/VulkanMemory.h
+		graphics/vulkan/VulkanPipeline.cpp
+		graphics/vulkan/VulkanPipeline.h
+		graphics/vulkan/VulkanPostProcessing.cpp
+		graphics/vulkan/VulkanPostProcessing.h
+		graphics/vulkan/VulkanPostProcessingBloom.cpp
+		graphics/vulkan/VulkanPostProcessingCommon.cpp
+		graphics/vulkan/VulkanPostProcessingDistortion.cpp
+		graphics/vulkan/VulkanPostProcessingFog.cpp
+		graphics/vulkan/VulkanPostProcessingGBuffer.cpp
+		graphics/vulkan/VulkanPostProcessingLDR.cpp
+		graphics/vulkan/VulkanPostProcessingLighting.cpp
+		graphics/vulkan/VulkanPostProcessingMSAA.cpp
+		graphics/vulkan/VulkanPostProcessingShadow.cpp
+		graphics/vulkan/VulkanQuery.cpp
+		graphics/vulkan/VulkanQuery.h
 		graphics/vulkan/VulkanRenderer.cpp
 		graphics/vulkan/VulkanRenderer.h
+		graphics/vulkan/VulkanRendererImGui.cpp
+		graphics/vulkan/VulkanRendererLoop.cpp
+		graphics/vulkan/VulkanRendererSetup.cpp
+		graphics/vulkan/VulkanRenderFrame.cpp
+		graphics/vulkan/VulkanRenderFrame.h
+		graphics/vulkan/VulkanShader.cpp
+		graphics/vulkan/VulkanShader.h
+		graphics/vulkan/VulkanShaderCompiler.cpp
+		graphics/vulkan/VulkanShaderCompiler.h
+		graphics/vulkan/VulkanState.cpp
+		graphics/vulkan/VulkanState.h
+		graphics/vulkan/VulkanTexture.cpp
+		graphics/vulkan/VulkanTexture.h
+		graphics/vulkan/VulkanVertexFormat.cpp
+		graphics/vulkan/VulkanVertexFormat.h
 	)
 endif()
 

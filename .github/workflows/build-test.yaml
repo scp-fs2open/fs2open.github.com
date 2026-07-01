@@ -141,12 +141,6 @@ jobs:
           # arch: win64_msvc2017_64
           # cached: ${{ steps.cache-qt-win.outputs.cache-hit }}
           # aqtversion: ==0.8
-      - name: Prepare Vulkan SDK
-        uses: humbletim/setup-vulkan-sdk@v1.2.1
-        with:
-          vulkan-query-version: 1.4.304.1
-          vulkan-components: Vulkan-Headers, Vulkan-Loader
-          vulkan-use-cache: true
       - name: Configure CMake
         env:
           CONFIGURATION: ${{ matrix.configuration }}
@@ -156,20 +150,11 @@ jobs:
         run: |
           mkdir build
           cd build
-
-          if [ "$ARCHITECTURE" = "Win32" ]; then
-              cmake -DCMAKE_INSTALL_PREFIX="$(pwd)/install" -DFSO_USE_SPEECH="ON" \
-                -DFSO_USE_VOICEREC="ON" -DFORCED_SIMD_INSTRUCTIONS="$SIMD" \
-                -DFSO_BUILD_QTFRED=OFF -DFSO_BUILD_TESTS=ON \
-                -DFSO_INSTALL_DEBUG_FILES="ON" -DFSO_BUILD_WITH_VULKAN="OFF" -A "$ARCHITECTURE" \
-                -G "Visual Studio 17 2022" -T "v143" -DCMAKE_BUILD_TYPE=$CONFIGURATION ..
-          else
-              cmake -DCMAKE_INSTALL_PREFIX="$(pwd)/install" -DFSO_USE_SPEECH="ON" \
-                -DFSO_USE_VOICEREC="ON" -DFORCED_SIMD_INSTRUCTIONS="$SIMD" \
-                -DFSO_BUILD_QTFRED=OFF -DFSO_BUILD_TESTS=ON \
-                -DFSO_INSTALL_DEBUG_FILES="ON" -A "$ARCHITECTURE" \
-                -G "Visual Studio 17 2022" -T "v143" -DCMAKE_BUILD_TYPE=$CONFIGURATION ..
-          fi
+          cmake -DCMAKE_INSTALL_PREFIX="$(pwd)/install" -DFSO_USE_SPEECH="ON" \
+            -DFSO_USE_VOICEREC="ON" -DFORCED_SIMD_INSTRUCTIONS="$SIMD" \
+            -DFSO_BUILD_QTFRED=OFF -DFSO_BUILD_TESTS=ON \
+            -DFSO_INSTALL_DEBUG_FILES="ON" -A "$ARCHITECTURE" \
+            -G "Visual Studio 17 2022" -T "v143" -DCMAKE_BUILD_TYPE=$CONFIGURATION ..
       - name: Compile
         working-directory: ./build
         env:
@@ -268,12 +253,6 @@ jobs:
       - name: Set workspace as safe
         # This appears to be broken in current actions, so do it manually
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
-      - name: Prepare Vulkan SDK
-        uses: humbletim/setup-vulkan-sdk@v1.2.1
-        with:
-          vulkan-query-version: 1.4.304.1
-          vulkan-components: Vulkan-Headers, Vulkan-Loader
-          vulkan-use-cache: true
       - name: Set up test version
         shell: bash
         run: |

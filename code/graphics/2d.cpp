@@ -80,6 +80,7 @@ gr_capability_def gr_capabilities[] = {
 	GR_CAPABILITY_ENTRY(SEPARATE_BLEND_FUNCTIONS),
 	GR_CAPABILITY_ENTRY(PERSISTENT_BUFFER_MAPPING),
 	gr_capability_def {gr_capability::CAPABILITY_BPTC, "BPTC Texture Compression"}, //This one had a different parse string already!
+	gr_capability_def {gr_capability::CAPABILITY_S3TC, "S3TC Texture Compression"},
 	GR_CAPABILITY_ENTRY(LARGE_SHADER),
 	GR_CAPABILITY_ENTRY(INSTANCED_RENDERING),
 };
@@ -752,6 +753,75 @@ void removeVSyncOption()
 	options::OptionsManager::instance()->removeOption(VSyncOption);
 }
 
+bool Gr_enable_hdr = false;
+bool Gr_hdr_output_active = false;
+
+static void parse_hdr_func()
+{
+	bool value;
+	stuff_boolean(&value);
+
+	Gr_enable_hdr = value;
+}
+
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+static auto HDROption __UNUSED = options::OptionBuilder<bool>("Graphics.HDR",
+                     std::pair<const char*, int>{"HDR Output", -1},
+                     std::pair<const char*, int>{"Enables HDR10 (PQ / BT.2020) output on supported displays. Vulkan renderer only. Requires a restart to take effect.", -1})
+                     .category(std::make_pair("Graphics", 1825))
+                     .level(options::ExpertLevel::Advanced)
+                     .default_func([]() { return Gr_enable_hdr; })
+                     .bind_to_once(&Gr_enable_hdr)
+                     .importance(68)
+                     .parser(parse_hdr_func)
+                     .finish();
+
+float Gr_hdr_paperwhite_nits = 200.0f;
+
+static void parse_hdr_paperwhite_func()
+{
+	float value;
+	stuff_float(&value);
+
+	Gr_hdr_paperwhite_nits = value;
+}
+
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+static auto HDRPaperWhiteOption __UNUSED = options::OptionBuilder<float>("Graphics.HDRPaperWhite",
+                     std::pair<const char*, int>{"HDR Paper White", -1},
+                     std::pair<const char*, int>{"Reference white luminance in nits for UI and SDR-referenced content when HDR output is active.", -1})
+                     .category(std::make_pair("Graphics", 1825))
+                     .level(options::ExpertLevel::Advanced)
+                     .default_func([]() { return Gr_hdr_paperwhite_nits; })
+                     .range(80.0f, 480.0f)
+                     .bind_to(&Gr_hdr_paperwhite_nits)
+                     .importance(67)
+                     .parser(parse_hdr_paperwhite_func)
+                     .finish();
+
+float Gr_hdr_peak_nits = 1000.0f;
+
+static void parse_hdr_peak_func()
+{
+	float value;
+	stuff_float(&value);
+
+	Gr_hdr_peak_nits = value;
+}
+
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+static auto HDRPeakOption __UNUSED = options::OptionBuilder<float>("Graphics.HDRPeakLuminance",
+                     std::pair<const char*, int>{"HDR Peak Luminance", -1},
+                     std::pair<const char*, int>{"Display peak luminance in nits used for HDR tone curve clamping and HDR10 metadata.", -1})
+                     .category(std::make_pair("Graphics", 1825))
+                     .level(options::ExpertLevel::Advanced)
+                     .default_func([]() { return Gr_hdr_peak_nits; })
+                     .range(400.0f, 4000.0f)
+                     .bind_to(&Gr_hdr_peak_nits)
+                     .importance(66)
+                     .parser(parse_hdr_peak_func)
+                     .finish();
+
 static std::unique_ptr<graphics::util::UniformBufferManager> UniformBufferManager;
 
 // Forward definitions
@@ -1325,6 +1395,10 @@ void gr_close()
 
 	graphics::paths::PathRenderer::shutdown();
 
+	// Free bitmaps before destroying the graphics backend, since
+	// gf_bm_free_data needs the backend (texture manager, GL context, etc.)
+	bm_close();
+
 	switch (gr_screen.mode) {
 		case GR_OPENGL:
 #ifdef WITH_OPENGL
@@ -1340,12 +1414,10 @@ void gr_close()
 
 		case GR_STUB:
 			break;
-	
+
 		default:
 			Int3();		// Invalid graphics mode
 	}
-
-	bm_close();
 
 	Gr_inited = 0;
 }
@@ -2942,6 +3014,16 @@ void gr_flip(bool execute_scripting)
 
 	model_process_cached_ui_render_instances();
 
+	if (Cmdline_graphics_debug_output) {
+		output_uniform_debug_data();
+	}
+
+	// IMPORTANT: No rendering may happen after this point until gf_flip()/gr_setup_frame().
+	// gr_reset_immediate_buffer() resets the write offset to 0, so any subsequent immediate
+	// buffer write would overwrite vertex data that already-recorded draw commands reference.
+	// In Vulkan (deferred submission), the GPU reads the final buffer state at submit time,
+	// so overwrites here silently corrupt earlier draws. OpenGL's immediate execution hides
+	// this, but it is still logically wrong for any deferred-submission backend.
 	gr_reset_immediate_buffer();
 
 	// Do per frame operations on the matrix state
@@ -2950,10 +3032,6 @@ void gr_flip(bool execute_scripting)
 	gr_reset_clip();
 
 	mouse_reset_deltas();
-
-	if (Cmdline_graphics_debug_output) {
-		output_uniform_debug_data();
-	}
 
 	// Use this opportunity for retiring the uniform buffers
 	uniform_buffer_managers_retire_buffers();

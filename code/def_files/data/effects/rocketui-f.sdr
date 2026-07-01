@@ -1,4 +1,13 @@
 
+#ifdef VULKAN
+layout(location = 0) in vec2 fragTexCoord;
+layout(location = 1) in vec4 fragColor;
+layout(location = 2) in vec2 fragScreenPosition;
+
+layout(location = 0) out vec4 fragOut0;
+
+layout(set = 1, binding = 1) uniform sampler2DArray baseMap;
+#else
 in vec2 fragTexCoord;
 in vec4 fragColor;
 in vec2 fragScreenPosition;
@@ -6,12 +15,18 @@ in vec2 fragScreenPosition;
 out vec4 fragOut0;
 
 uniform sampler2DArray baseMap;
+#endif
 
-layout (std140) uniform genericData {
+#ifdef VULKAN
+layout(std140, set = 2, binding = 0)
+#else
+layout(std140)
+#endif
+uniform genericData {
 	mat4 projMatrix;
 
 	vec2 offset;
-	bool textured;
+	int textured;
 	int baseMapIndex;
 
 	float horizontalSwipeOffset;
@@ -25,7 +40,7 @@ void main() {
 	float distance = horizontalSwipeOffset - fragScreenPosition.x;
 
 	vec4 color;
-	if (textured) {
+	if (textured != 0) {
 		color = texture(baseMap, vec3(fragTexCoord, float(baseMapIndex))) * fragColor;
 	} else {
 		color = fragColor;

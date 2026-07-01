@@ -1,9 +1,25 @@
+#ifdef VULKAN
+layout(location = 0) in vec4 fragTexCoord;
+layout(location = 0) out vec4 fragOut0;
+
+layout(set = 1, binding = 1) uniform sampler2DArray textures[16];
+#define ytex textures[0]
+#define utex textures[1]
+#define vtex textures[2]
+#else
 in vec4 fragTexCoord;
 out vec4 fragOut0;
 uniform sampler2DArray ytex;
 uniform sampler2DArray utex;
 uniform sampler2DArray vtex;
-layout (std140) uniform movieData {
+#endif
+
+#ifdef VULKAN
+layout(std140, set = 2, binding = 4)
+#else
+layout(std140)
+#endif
+uniform movieData {
 	float alpha;
 	float pad[3];
 };

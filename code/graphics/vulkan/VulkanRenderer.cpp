@@ -1,645 +1,157 @@
 
 #include "VulkanRenderer.h"
+#include "VulkanMemory.h"
+#include "VulkanBuffer.h"
+#include "VulkanTexture.h"
+#include "VulkanPostProcessing.h"
 
-#include "globalincs/version.h"
+#include "graphics/grinternal.h"
+#include "graphics/post_processing.h"
 
-#include "backends/imgui_impl_sdl.h"
 #include "backends/imgui_impl_vulkan.h"
-#include "def_files/def_files.h"
 #include "graphics/2d.h"
-#include "libs/renderdoc/renderdoc.h"
+#include "lighting/lighting.h"
 #include "mod_table/mod_table.h"
 
 #if SDL_VERSION_ATLEAST(2, 0, 6)
-#include <SDL_vulkan.h>
 #endif
 
 VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 
-namespace graphics {
-namespace vulkan {
+extern float flFrametime;
 
-namespace {
-#if SDL_SUPPORTS_VULKAN
-const char* EngineName = "FreeSpaceOpen";
+namespace graphics::vulkan {
 
-const gameversion::version MinVulkanVersion(1, 1, 0, 0);
-
-VkBool32 VKAPI_PTR debugReportCallback(
-#if VK_HEADER_VERSION >= 304
-	vk::DebugReportFlagsEXT /*flags*/,
-	vk::DebugReportObjectTypeEXT /*objectType*/,
-#else
-	VkDebugReportFlagsEXT /*flags*/,
-	VkDebugReportObjectTypeEXT /*objectType*/,
-#endif
-	uint64_t /*object*/,
-	size_t /*location*/,
-	int32_t /*messageCode*/,
-	const char* pLayerPrefix,
-	const char* pMessage,
-	void* /*pUserData*/)
-{
-	mprintf(("Vulkan message: [%s]: %s\n", pLayerPrefix, pMessage));
-	return VK_FALSE;
-}
-#endif
-
-const SCP_vector<const char*> RequiredDeviceExtensions = {
-	VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-};
-
-bool checkDeviceExtensionSupport(PhysicalDeviceValues& values)
-{
-	values.extensions = values.device.enumerateDeviceExtensionProperties();
-
-	std::set<std::string> requiredExtensions(RequiredDeviceExtensions.cbegin(), RequiredDeviceExtensions.cend());
-	for (const auto& extension : values.extensions) {
-		requiredExtensions.erase(extension.extensionName);
-	}
-
-	return requiredExtensions.empty();
-}
-
-bool checkSwapChainSupport(PhysicalDeviceValues& values, const vk::UniqueSurfaceKHR& surface)
-{
-	values.surfaceCapabilities = values.device.getSurfaceCapabilitiesKHR(surface.get());
-	values.surfaceFormats = values.device.getSurfaceFormatsKHR(surface.get());
-	values.presentModes = values.device.getSurfacePresentModesKHR(surface.get());
-
-	return !values.surfaceFormats.empty() && !values.presentModes.empty();
-}
-
-bool isDeviceUnsuitable(PhysicalDeviceValues& values, const vk::UniqueSurfaceKHR& surface)
-{
-	// We need a GPU. Reject CPU or "other" types.
-	if (values.properties.deviceType != vk::PhysicalDeviceType::eDiscreteGpu &&
-		values.properties.deviceType != vk::PhysicalDeviceType::eIntegratedGpu &&
-		values.properties.deviceType != vk::PhysicalDeviceType::eVirtualGpu) {
-		mprintf(("Rejecting %s (%d) because the device type is unsuitable.\n",
-			values.properties.deviceName.data(),
-			values.properties.deviceID));
-		return true;
-	}
-
-	uint32_t i = 0;
-	for (const auto& queue : values.queueProperties) {
-		if (!values.graphicsQueueIndex.initialized && queue.queueFlags & vk::QueueFlagBits::eGraphics) {
-			values.graphicsQueueIndex.initialized = true;
-			values.graphicsQueueIndex.index = i;
-		}
-		if (!values.transferQueueIndex.initialized && queue.queueFlags & vk::QueueFlagBits::eTransfer) {
-			values.transferQueueIndex.initialized = true;
-			values.transferQueueIndex.index = i;
-		} else if (queue.queueFlags & vk::QueueFlagBits::eTransfer &&
-				   !(queue.queueFlags & vk::QueueFlagBits::eGraphics)) {
-			// Found a dedicated transfer queue and we prefer that
-			values.transferQueueIndex.initialized = true;
-			values.transferQueueIndex.index = i;
-		}
-		if (!values.presentQueueIndex.initialized && values.device.getSurfaceSupportKHR(i, surface.get())) {
-			values.presentQueueIndex.initialized = true;
-			values.presentQueueIndex.index = i;
-		}
-
-		++i;
-	}
-
-	if (!values.graphicsQueueIndex.initialized) {
-		mprintf(("Rejecting %s (%d) because the device does not have a graphics queue.\n",
-			values.properties.deviceName.data(),
-			values.properties.deviceID));
-		return true;
-	}
-	if (!values.transferQueueIndex.initialized) {
-		mprintf(("Rejecting %s (%d) because the device does not have a transfer queue.\n",
-			values.properties.deviceName.data(),
-			values.properties.deviceID));
-		return true;
-	}
-	if (!values.presentQueueIndex.initialized) {
-		mprintf(("Rejecting %s (%d) because the device does not have a presentation queue.\n",
-			values.properties.deviceName.data(),
-			values.properties.deviceID));
-		return true;
-	}
-
-	if (!checkDeviceExtensionSupport(values)) {
-		mprintf(("Rejecting %s (%d) because the device does not support our required extensions.\n",
-			values.properties.deviceName.data(),
-			values.properties.deviceID));
-		return true;
-	}
-
-	if (!checkSwapChainSupport(values, surface)) {
-		mprintf(("Rejecting %s (%d) because the device swap chain was not compatible.\n",
-			values.properties.deviceName.data(),
-			values.properties.deviceID));
-		return true;
-	}
-
-	return false;
-}
-
-uint32_t deviceTypeScore(vk::PhysicalDeviceType type)
-{
-	switch (type) {
-	case vk::PhysicalDeviceType::eIntegratedGpu:
-		return 1;
-	case vk::PhysicalDeviceType::eDiscreteGpu:
-		return 2;
-	case vk::PhysicalDeviceType::eVirtualGpu:
-	case vk::PhysicalDeviceType::eCpu:
-	case vk::PhysicalDeviceType::eOther:
-	default:
-		return 0;
-	}
-}
-
-uint32_t scoreDevice(const PhysicalDeviceValues& device)
-{
-	uint32_t score = 0;
-
-	score += deviceTypeScore(device.properties.deviceType) * 1000;
-	score += device.properties.apiVersion * 100;
-
-	return score;
-}
-
-bool compareDevices(const PhysicalDeviceValues& left, const PhysicalDeviceValues& right)
-{
-	return scoreDevice(left) < scoreDevice(right);
-}
-
-void printPhysicalDevice(const PhysicalDeviceValues& values)
-{
-	mprintf(("  Found %s (%d) of type %s. API version %d.%d.%d, Driver version %d.%d.%d. Scored as %d\n",
-		values.properties.deviceName.data(),
-		values.properties.deviceID,
-		to_string(values.properties.deviceType).c_str(),
-		VK_VERSION_MAJOR(values.properties.apiVersion),
-		VK_VERSION_MINOR(values.properties.apiVersion),
-		VK_VERSION_PATCH(values.properties.apiVersion),
-		VK_VERSION_MAJOR(values.properties.driverVersion),
-		VK_VERSION_MINOR(values.properties.driverVersion),
-		VK_VERSION_PATCH(values.properties.driverVersion),
-		scoreDevice(values)));
-}
-
-vk::SurfaceFormatKHR chooseSurfaceFormat(const PhysicalDeviceValues& values)
-{
-	for (const auto& availableFormat : values.surfaceFormats) {
-		// Simple check is enough for now
-		if (availableFormat.format == vk::Format::eB8G8R8A8Srgb &&
-			availableFormat.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear) {
-			return availableFormat;
-		}
-	}
-
-	return values.surfaceFormats.front();
-}
-
-vk::PresentModeKHR choosePresentMode(const PhysicalDeviceValues& values)
-{
-	// Depending on if we want Vsync or not, choose the best mode
-	for (const auto& availablePresentMode : values.presentModes) {
-		if (Gr_enable_vsync) {
-			if (availablePresentMode == vk::PresentModeKHR::eMailbox) {
-				return availablePresentMode;
-			}
-		} else {
-			if (availablePresentMode == vk::PresentModeKHR::eImmediate) {
-				return availablePresentMode;
-			}
-		}
-	}
-
-	// Guaranteed to be supported
-	return vk::PresentModeKHR::eFifo;
-}
-
-vk::Extent2D chooseSwapChainExtent(const PhysicalDeviceValues& values, uint32_t width, uint32_t height)
-{
-	if (values.surfaceCapabilities.currentExtent.width != UINT32_MAX) {
-		return values.surfaceCapabilities.currentExtent;
-	} else {
-		VkExtent2D actualExtent = {width, height};
-
-		actualExtent.width = std::max(values.surfaceCapabilities.minImageExtent.width,
-			std::min(values.surfaceCapabilities.maxImageExtent.width, actualExtent.width));
-		actualExtent.height = std::max(values.surfaceCapabilities.minImageExtent.height,
-			std::min(values.surfaceCapabilities.maxImageExtent.height, actualExtent.height));
-
-		return actualExtent;
-	}
-}
-
-} // namespace
 
 VulkanRenderer::VulkanRenderer(std::unique_ptr<os::GraphicsOperations> graphicsOps)
 	: m_graphicsOps(std::move(graphicsOps))
 {
 }
-bool VulkanRenderer::initialize()
+void VulkanRenderer::createCompositionResources()
 {
-	mprintf(("Initializing Vulkan graphics device at %ix%i with %i-bit color...\n",
-		gr_screen.max_w,
-		gr_screen.max_h,
-		gr_screen.bits_per_pixel));
-
-	// Load the RenderDoc API if available before doing anything with OpenGL
-	renderdoc::loadApi();
-
-	if (!initDisplayDevice()) {
-		return false;
-	}
-
-	if (!initializeInstance()) {
-		mprintf(("Failed to create Vulkan instance!\n"));
-		return false;
-	}
-
-	if (!initializeSurface()) {
-		mprintf(("Failed to create Vulkan surface!\n"));
-		return false;
-	}
-
-	PhysicalDeviceValues deviceValues;
-	if (!pickPhysicalDevice(deviceValues)) {
-		mprintf(("Could not find suitable physical Vulkan device.\n"));
-		return false;
-	}
-
-	if (!createLogicalDevice(deviceValues)) {
-		mprintf(("Failed to create logical device.\n"));
-		return false;
-	}
-
-	if (!createSwapChain(deviceValues)) {
-		mprintf(("Failed to create swap chain.\n"));
-		return false;
-	}
-
-	createRenderPass();
-	createGraphicsPipeline();
-	createFrameBuffers();
-	createPresentSyncObjects();
-	createCommandPool(deviceValues);
-
-	// Prepare the rendering state by acquiring our first swap chain image
-	acquireNextSwapChainImage();
-
-	return true;
-}
-
-bool VulkanRenderer::initDisplayDevice() const
-{
-	os::ViewPortProperties attrs;
-	attrs.enable_opengl = false;
-	attrs.enable_vulkan = true;
-
-	attrs.display = os_config_read_uint("Video", "Display", 0);
-	attrs.width = static_cast<uint32_t>(gr_screen.max_w);
-	attrs.height = static_cast<uint32_t>(gr_screen.max_h);
-
-	attrs.title = Osreg_title;
-	if (!Window_title.empty()) {
-		attrs.title = Window_title;
-	}
-
-	if (Using_in_game_options) {
-		switch (Gr_configured_window_state) {
-		case os::ViewportState::Windowed:
-			// That's the default
-			break;
-		case os::ViewportState::Borderless:
-			attrs.flags.set(os::ViewPortFlags::Borderless);
-			break;
-		case os::ViewportState::Fullscreen:
-			attrs.flags.set(os::ViewPortFlags::Fullscreen);
-			break;
-		}
-	} else {
-		if (!Cmdline_window && !Cmdline_fullscreen_window) {
-			attrs.flags.set(os::ViewPortFlags::Fullscreen);
-		} else if (Cmdline_fullscreen_window) {
-			attrs.flags.set(os::ViewPortFlags::Borderless);
+	// Free any previous composition resources (swap chain recreation path)
+	m_compositionImageViews.clear();
+	m_compositionImages.clear();
+	for (auto& alloc : m_compositionAllocations) {
+		if (alloc.isValid()) {
+			m_memoryManager->freeAllocation(alloc);
 		}
 	}
+	m_compositionAllocations.clear();
 
-	if (Cmdline_capture_mouse)
-		attrs.flags.set(os::ViewPortFlags::Capture_Mouse);
+	const size_t count = m_swapChainImageViews.size();
+	m_compositionImages.reserve(count);
+	m_compositionImageViews.reserve(count);
+	m_compositionAllocations.reserve(count);
 
-	auto viewPort = m_graphicsOps->createViewport(attrs);
-	if (!viewPort) {
-		return false;
+	for (size_t i = 0; i < count; ++i) {
+		vk::ImageCreateInfo imageInfo;
+		imageInfo.imageType = vk::ImageType::e2D;
+		imageInfo.format = HDR_COLOR_FORMAT;
+		imageInfo.extent = vk::Extent3D(m_swapChainExtent.width, m_swapChainExtent.height, 1);
+		imageInfo.mipLevels = 1;
+		imageInfo.arrayLayers = 1;
+		imageInfo.samples = vk::SampleCountFlagBits::e1;
+		imageInfo.tiling = vk::ImageTiling::eOptimal;
+		imageInfo.usage = vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled |
+		                   vk::ImageUsageFlagBits::eTransferSrc;
+		imageInfo.sharingMode = vk::SharingMode::eExclusive;
+		imageInfo.initialLayout = vk::ImageLayout::eUndefined;
+
+		auto image = m_device->createImageUnique(imageInfo);
+
+		VulkanAllocation alloc{};
+		m_memoryManager->allocateImageMemory(image.get(), MemoryUsage::GpuOnly, alloc);
+
+		vk::ImageViewCreateInfo viewInfo;
+		viewInfo.image = image.get();
+		viewInfo.viewType = vk::ImageViewType::e2D;
+		viewInfo.format = HDR_COLOR_FORMAT;
+		viewInfo.subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
+		auto view = m_device->createImageViewUnique(viewInfo);
+
+		m_compositionImages.push_back(std::move(image));
+		m_compositionAllocations.push_back(alloc);
+		m_compositionImageViews.push_back(std::move(view));
 	}
 
-	const auto port = os::addViewport(std::move(viewPort));
-	os::setMainViewPort(port);
-
-	return true;
+	// Sampler used by the output-encode pass to read the composition image.
+	if (!m_compositionSampler) {
+		vk::SamplerCreateInfo sampInfo;
+		sampInfo.magFilter = vk::Filter::eNearest;
+		sampInfo.minFilter = vk::Filter::eNearest;
+		sampInfo.mipmapMode = vk::SamplerMipmapMode::eNearest;
+		sampInfo.addressModeU = vk::SamplerAddressMode::eClampToEdge;
+		sampInfo.addressModeV = vk::SamplerAddressMode::eClampToEdge;
+		sampInfo.addressModeW = vk::SamplerAddressMode::eClampToEdge;
+		m_compositionSampler = m_device->createSamplerUnique(sampInfo);
+	}
 }
-bool VulkanRenderer::initializeInstance()
+
+void VulkanRenderer::createEncodeRenderPass()
 {
-#if SDL_SUPPORTS_VULKAN
-	const auto vkGetInstanceProcAddr =
-		reinterpret_cast<PFN_vkGetInstanceProcAddr>(SDL_Vulkan_GetVkGetInstanceProcAddr());
+	// Color-only pass that writes the actual swap chain image. The fullscreen
+	// encode draw overwrites the whole image, so the prior contents are discarded.
+	vk::AttachmentDescription colorAttachment;
+	colorAttachment.format = m_swapChainImageFormat;
+	colorAttachment.samples = vk::SampleCountFlagBits::e1;
+	colorAttachment.loadOp = vk::AttachmentLoadOp::eDontCare;
+	colorAttachment.storeOp = vk::AttachmentStoreOp::eStore;
+	colorAttachment.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
+	colorAttachment.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
+	colorAttachment.initialLayout = vk::ImageLayout::eUndefined;
+	colorAttachment.finalLayout = vk::ImageLayout::ePresentSrcKHR;
 
-	VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
+	vk::AttachmentReference colorRef;
+	colorRef.attachment = 0;
+	colorRef.layout = vk::ImageLayout::eColorAttachmentOptimal;
 
-	const auto window = os::getSDLMainWindow();
+	vk::SubpassDescription subpass;
+	subpass.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
+	subpass.colorAttachmentCount = 1;
+	subpass.pColorAttachments = &colorRef;
 
-	unsigned int count;
-	if (!SDL_Vulkan_GetInstanceExtensions(window, &count, nullptr)) {
-		mprintf(("Error in first SDL_Vulkan_GetInstanceExtensions: %s\n", SDL_GetError()));
-		return false;
-	}
+	// Make the composition image (written by the main pass) available for
+	// sampling, and order against the swap chain image's prior presentation.
+	vk::SubpassDependency dependency;
+	dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+	dependency.dstSubpass = 0;
+	dependency.srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput
+	                        | vk::PipelineStageFlagBits::eFragmentShader;
+	dependency.dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput
+	                        | vk::PipelineStageFlagBits::eFragmentShader;
+	dependency.srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
+	dependency.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite
+	                         | vk::AccessFlagBits::eShaderRead;
 
-	std::vector<const char*> extensions;
-	extensions.resize(count);
+	vk::RenderPassCreateInfo rpInfo;
+	rpInfo.attachmentCount = 1;
+	rpInfo.pAttachments = &colorAttachment;
+	rpInfo.subpassCount = 1;
+	rpInfo.pSubpasses = &subpass;
+	rpInfo.dependencyCount = 1;
+	rpInfo.pDependencies = &dependency;
 
-	if (!SDL_Vulkan_GetInstanceExtensions(window, &count, extensions.data())) {
-		mprintf(("Error in second SDL_Vulkan_GetInstanceExtensions: %s\n", SDL_GetError()));
-		return false;
-	}
-
-	const auto instanceVersion = vk::enumerateInstanceVersion();
-	gameversion::version vulkanVersion(VK_VERSION_MAJOR(instanceVersion),
-		VK_VERSION_MINOR(instanceVersion),
-		VK_VERSION_PATCH(instanceVersion),
-		0);
-	mprintf(("Vulkan instance version %s\n", gameversion::format_version(vulkanVersion).c_str()));
-
-	if (vulkanVersion < MinVulkanVersion) {
-		mprintf(("Vulkan version is less than the minimum which is %s.\n",
-			gameversion::format_version(MinVulkanVersion).c_str()));
-		return false;
-	}
-
-	const auto supportedExtensions = vk::enumerateInstanceExtensionProperties();
-	mprintf(("Instance extensions:\n"));
-	for (const auto& ext : supportedExtensions) {
-		mprintf(("  Found support for %s version %" PRIu32 "\n", ext.extensionName.data(), ext.specVersion));
-		if (FSO_DEBUG || Cmdline_graphics_debug_output) {
-			if (!stricmp(ext.extensionName, VK_EXT_DEBUG_REPORT_EXTENSION_NAME)) {
-				extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
-				m_debugReportEnabled = true;
-			}
-		}
-	}
-
-	std::vector<const char*> layers;
-	const auto supportedLayers = vk::enumerateInstanceLayerProperties();
-	mprintf(("Instance layers:\n"));
-	for (const auto& layer : supportedLayers) {
-		mprintf(("  Found layer %s(%s). Spec version %d.%d.%d and implementation %" PRIu32 "\n",
-			layer.layerName.data(),
-			layer.description.data(),
-			VK_VERSION_MAJOR(layer.specVersion),
-			VK_VERSION_MINOR(layer.specVersion),
-			VK_VERSION_PATCH(layer.specVersion),
-			layer.implementationVersion));
-		if (FSO_DEBUG || Cmdline_graphics_debug_output) {
-			if (!stricmp(layer.layerName, "VK_LAYER_LUNARG_core_validation")) {
-				layers.push_back("VK_LAYER_LUNARG_core_validation");
-			}
-		}
-	}
-
-	vk::ApplicationInfo appInfo(Window_title.c_str(), 1, EngineName, 1, VK_API_VERSION_1_1);
-
-	// Now we can make the Vulkan instance
-	vk::InstanceCreateInfo createInfo(vk::Flags<vk::InstanceCreateFlagBits>(), &appInfo);
-	createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
-	createInfo.ppEnabledExtensionNames = extensions.data();
-	createInfo.enabledLayerCount = static_cast<uint32_t>(layers.size());
-	createInfo.ppEnabledLayerNames = layers.data();
-
-	vk::DebugReportCallbackCreateInfoEXT createInstanceReportInfo(vk::DebugReportFlagBitsEXT::eError |
-																  vk::DebugReportFlagBitsEXT::eWarning |
-																  vk::DebugReportFlagBitsEXT::ePerformanceWarning);
-	createInstanceReportInfo.pfnCallback = debugReportCallback;
-
-	vk::StructureChain<vk::InstanceCreateInfo, vk::DebugReportCallbackCreateInfoEXT> createInstanceChain(createInfo,
-		createInstanceReportInfo);
-
-	if (!m_debugReportEnabled) {
-		createInstanceChain.unlink<vk::DebugReportCallbackCreateInfoEXT>();
-	}
-
-	vk::UniqueInstance instance = vk::createInstanceUnique(createInstanceChain.get<vk::InstanceCreateInfo>(), nullptr);
-	if (!instance) {
-		return false;
-	}
-
-	VULKAN_HPP_DEFAULT_DISPATCHER.init(instance.get());
-
-	if (m_debugReportEnabled) {
-		vk::DebugReportCallbackCreateInfoEXT reportCreateInfo(vk::DebugReportFlagBitsEXT::eError |
-															  vk::DebugReportFlagBitsEXT::eWarning |
-															  vk::DebugReportFlagBitsEXT::ePerformanceWarning);
-		reportCreateInfo.pfnCallback = debugReportCallback;
-
-		m_debugReport = instance->createDebugReportCallbackEXTUnique(reportCreateInfo);
-	}
-
-	m_vkInstance = std::move(instance);
-	return true;
-#else
-	mprintf(("SDL does not support Vulkan in its current version.\n"));
-	return false;
-#endif
+	m_encodeRenderPass = m_device->createRenderPassUnique(rpInfo);
 }
 
-bool VulkanRenderer::initializeSurface()
-{
-#if SDL_SUPPORTS_VULKAN
-	const auto window = os::getSDLMainWindow();
-
-	VkSurfaceKHR surface;
-	if (!SDL_Vulkan_CreateSurface(window, static_cast<VkInstance>(*m_vkInstance), &surface)) {
-		mprintf(("Failed to create vulkan surface: %s\n", SDL_GetError()));
-		return false;
-	}
-
-#if VK_HEADER_VERSION >= 301
-	const vk::detail::ObjectDestroy<vk::Instance, VULKAN_HPP_DEFAULT_DISPATCHER_TYPE> deleter(*m_vkInstance,
-#else
-	const vk::ObjectDestroy<vk::Instance, VULKAN_HPP_DEFAULT_DISPATCHER_TYPE> deleter(*m_vkInstance,
-#endif
-		nullptr,
-		VULKAN_HPP_DEFAULT_DISPATCHER);
-	m_vkSurface = vk::UniqueSurfaceKHR(vk::SurfaceKHR(surface), deleter);
-	return true;
-#else
-	return false;
-#endif
-}
-
-bool VulkanRenderer::pickPhysicalDevice(PhysicalDeviceValues& deviceValues)
-{
-	const auto devices = m_vkInstance->enumeratePhysicalDevices();
-	if (devices.empty()) {
-		return false;
-	}
-
-	SCP_vector<PhysicalDeviceValues> values;
-	std::transform(devices.cbegin(), devices.cend(), std::back_inserter(values), [](const vk::PhysicalDevice& dev) {
-		PhysicalDeviceValues vals;
-		vals.device = dev;
-		vals.properties = dev.getProperties2().properties;
-		vals.features = dev.getFeatures2().features;
-		vals.queueProperties = dev.getQueueFamilyProperties();
-		return vals;
-	});
-
-	mprintf(("Physical Vulkan devices:\n"));
-	std::for_each(values.cbegin(), values.cend(), printPhysicalDevice);
-
-	// Remove devices that do not have the features we need
-	values.erase(std::remove_if(values.begin(),
-					 values.end(),
-					 [this](PhysicalDeviceValues& value) { return isDeviceUnsuitable(value, m_vkSurface); }),
-		values.end());
-	if (values.empty()) {
-		return false;
-	}
-
-	// Sort the suitability of the devices in increasing order
-	std::sort(values.begin(), values.end(), compareDevices);
-
-	deviceValues = values.back();
-	mprintf(("Selected device %s (%d) as the primary Vulkan device.\n",
-		deviceValues.properties.deviceName.data(),
-		deviceValues.properties.deviceID));
-	mprintf(("Device extensions:\n"));
-	for (const auto& extProp : deviceValues.extensions) {
-		mprintf(("  Found support for %s version %" PRIu32 "\n", extProp.extensionName.data(), extProp.specVersion));
-	}
-
-	return true;
-}
-
-bool VulkanRenderer::createLogicalDevice(const PhysicalDeviceValues& deviceValues)
-{
-	float queuePriority = 1.0f;
-
-	std::vector<vk::DeviceQueueCreateInfo> queueInfos;
-	const std::set<uint32_t> familyIndices{deviceValues.graphicsQueueIndex.index,
-	                                       deviceValues.transferQueueIndex.index,
-	                                       deviceValues.presentQueueIndex.index};
-
-	queueInfos.reserve(familyIndices.size());
-	for (auto index : familyIndices) {
-		queueInfos.emplace_back(vk::DeviceQueueCreateFlags(), index, 1, &queuePriority);
-	}
-
-	vk::DeviceCreateInfo deviceCreate;
-	deviceCreate.pQueueCreateInfos = queueInfos.data();
-	deviceCreate.queueCreateInfoCount = static_cast<uint32_t>(queueInfos.size());
-	deviceCreate.pEnabledFeatures = &deviceValues.features;
-
-	deviceCreate.ppEnabledExtensionNames = RequiredDeviceExtensions.data();
-	deviceCreate.enabledExtensionCount = static_cast<uint32_t>(RequiredDeviceExtensions.size());
-
-	m_device = deviceValues.device.createDeviceUnique(deviceCreate);
-
-	// Create queues
-	m_graphicsQueue = m_device->getQueue(deviceValues.graphicsQueueIndex.index, 0);
-	m_transferQueue = m_device->getQueue(deviceValues.transferQueueIndex.index, 0);
-	m_presentQueue = m_device->getQueue(deviceValues.presentQueueIndex.index, 0);
-
-	return true;
-}
-bool VulkanRenderer::createSwapChain(const PhysicalDeviceValues& deviceValues)
-{
-	// Choose one more than the minimum to avoid driver synchronization if it is not done with a thread yet
-	uint32_t imageCount = deviceValues.surfaceCapabilities.minImageCount + 1;
-	if (deviceValues.surfaceCapabilities.maxImageCount > 0 &&
-		imageCount > deviceValues.surfaceCapabilities.maxImageCount) {
-		imageCount = deviceValues.surfaceCapabilities.maxImageCount;
-	}
-
-	const auto surfaceFormat = chooseSurfaceFormat(deviceValues);
-
-	vk::SwapchainCreateInfoKHR createInfo;
-	createInfo.surface = m_vkSurface.get();
-	createInfo.minImageCount = imageCount;
-	createInfo.imageFormat = surfaceFormat.format;
-	createInfo.imageColorSpace = surfaceFormat.colorSpace;
-	createInfo.imageExtent = chooseSwapChainExtent(deviceValues, gr_screen.max_w, gr_screen.max_h);
-	createInfo.imageArrayLayers = 1;
-	createInfo.imageUsage = vk::ImageUsageFlagBits::eColorAttachment;
-
-	const uint32_t queueFamilyIndices[] = {deviceValues.graphicsQueueIndex.index, deviceValues.presentQueueIndex.index};
-	if (deviceValues.graphicsQueueIndex.index != deviceValues.presentQueueIndex.index) {
-		createInfo.imageSharingMode = vk::SharingMode::eConcurrent;
-		createInfo.queueFamilyIndexCount = 2;
-		createInfo.pQueueFamilyIndices = queueFamilyIndices;
-	} else {
-		createInfo.imageSharingMode = vk::SharingMode::eExclusive;
-		createInfo.queueFamilyIndexCount = 0;     // Optional
-		createInfo.pQueueFamilyIndices = nullptr; // Optional
-	}
-
-	createInfo.preTransform = deviceValues.surfaceCapabilities.currentTransform;
-	createInfo.compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque;
-	createInfo.presentMode = choosePresentMode(deviceValues);
-	createInfo.clipped = true;
-	createInfo.oldSwapchain = nullptr;
-
-	m_swapChain = m_device->createSwapchainKHRUnique(createInfo);
-
-	std::vector<vk::Image> swapChainImages = m_device->getSwapchainImagesKHR(m_swapChain.get());
-	m_swapChainImages = SCP_vector<vk::Image>(swapChainImages.begin(), swapChainImages.end());
-	m_swapChainImageFormat = surfaceFormat.format;
-	m_swapChainExtent = createInfo.imageExtent;
-
-	m_swapChainImageViews.reserve(m_swapChainImages.size());
-	for (const auto& image : m_swapChainImages) {
-		vk::ImageViewCreateInfo viewCreateInfo;
-		viewCreateInfo.image = image;
-		viewCreateInfo.viewType = vk::ImageViewType::e2D;
-		viewCreateInfo.format = m_swapChainImageFormat;
-
-		viewCreateInfo.components.r = vk::ComponentSwizzle::eIdentity;
-		viewCreateInfo.components.g = vk::ComponentSwizzle::eIdentity;
-		viewCreateInfo.components.b = vk::ComponentSwizzle::eIdentity;
-		viewCreateInfo.components.a = vk::ComponentSwizzle::eIdentity;
-
-		viewCreateInfo.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
-		viewCreateInfo.subresourceRange.baseMipLevel = 0;
-		viewCreateInfo.subresourceRange.levelCount = 1;
-		viewCreateInfo.subresourceRange.baseArrayLayer = 0;
-		viewCreateInfo.subresourceRange.layerCount = 1;
-
-		m_swapChainImageViews.push_back(m_device->createImageViewUnique(viewCreateInfo));
-	}
-
-	return true;
-}
-vk::UniqueShaderModule VulkanRenderer::loadShader(const SCP_string& name)
-{
-	const auto def_file = defaults_get_file(name.c_str());
-
-	vk::ShaderModuleCreateInfo createInfo;
-	createInfo.codeSize = def_file.size;
-	createInfo.pCode = static_cast<const uint32_t*>(def_file.data);
-
-	return m_device->createShaderModuleUnique(createInfo);
-}
 void VulkanRenderer::createFrameBuffers()
 {
-	m_swapChainFramebuffers.reserve(m_swapChainImageViews.size());
-	for (const auto& imageView : m_swapChainImageViews) {
+	m_swapChainFramebuffers.clear();
+	m_encodeFramebuffers.clear();
+
+	// Composition framebuffers: color = fp16 composition image, depth shared.
+	// Indexed by swap chain image so each in-flight frame uses its own image.
+	m_swapChainFramebuffers.reserve(m_compositionImageViews.size());
+	for (const auto& compView : m_compositionImageViews) {
 		const vk::ImageView attachments[] = {
-			imageView.get(),
+			compView.get(),
+			m_depthImageView.get(),
 		};
 
 		vk::FramebufferCreateInfo framebufferInfo;
 		framebufferInfo.renderPass = m_renderPass.get();
-		framebufferInfo.attachmentCount = 1;
+		framebufferInfo.attachmentCount = 2;
 		framebufferInfo.pAttachments = attachments;
 		framebufferInfo.width = m_swapChainExtent.width;
 		framebufferInfo.height = m_swapChainExtent.height;
@@ -647,169 +159,177 @@ void VulkanRenderer::createFrameBuffers()
 
 		m_swapChainFramebuffers.push_back(m_device->createFramebufferUnique(framebufferInfo));
 	}
+
+	// Encode framebuffers: color = actual swap chain image.
+	m_encodeFramebuffers.reserve(m_swapChainImageViews.size());
+	for (const auto& scView : m_swapChainImageViews) {
+		const vk::ImageView attachments[] = { scView.get() };
+
+		vk::FramebufferCreateInfo framebufferInfo;
+		framebufferInfo.renderPass = m_encodeRenderPass.get();
+		framebufferInfo.attachmentCount = 1;
+		framebufferInfo.pAttachments = attachments;
+		framebufferInfo.width = m_swapChainExtent.width;
+		framebufferInfo.height = m_swapChainExtent.height;
+		framebufferInfo.layers = 1;
+
+		m_encodeFramebuffers.push_back(m_device->createFramebufferUnique(framebufferInfo));
+	}
+}
+
+void VulkanRenderer::encodeToSwapChain()
+{
+	if (!m_postProcessor || m_currentSwapChainImage >= m_encodeFramebuffers.size()) {
+		return;
+	}
+
+	m_postProcessor->encodeOutput(
+		m_currentCommandBuffer,
+		m_encodeRenderPass.get(),
+		m_encodeFramebuffers[m_currentSwapChainImage].get(),
+		m_swapChainExtent,
+		m_compositionImageViews[m_currentSwapChainImage].get(),
+		m_compositionSampler.get(),
+		m_hdrActive,
+		Gr_hdr_paperwhite_nits,
+		Gr_hdr_peak_nits);
+}
+vk::Format VulkanRenderer::findDepthFormat()
+{
+	// Prefer D32_SFLOAT for best precision, fall back to D32_SFLOAT_S8 or D24_UNORM_S8
+	const vk::Format candidates[] = {
+		vk::Format::eD32Sfloat,
+		vk::Format::eD32SfloatS8Uint,
+		vk::Format::eD24UnormS8Uint,
+	};
+
+	for (auto format : candidates) {
+		auto props = m_physicalDevice.getFormatProperties(format);
+		if (props.optimalTilingFeatures & vk::FormatFeatureFlagBits::eDepthStencilAttachment) {
+			return format;
+		}
+	}
+
+	// Should never happen on any real GPU
+	Error(LOCATION, "Failed to find supported depth format!");
+	return vk::Format::eD32Sfloat;
+}
+void VulkanRenderer::createDepthResources()
+{
+	m_depthFormat = findDepthFormat();
+
+	// Create depth image
+	vk::ImageCreateInfo imageInfo;
+	imageInfo.imageType = vk::ImageType::e2D;
+	imageInfo.format = m_depthFormat;
+	imageInfo.extent.width = m_swapChainExtent.width;
+	imageInfo.extent.height = m_swapChainExtent.height;
+	imageInfo.extent.depth = 1;
+	imageInfo.mipLevels = 1;
+	imageInfo.arrayLayers = 1;
+	imageInfo.samples = vk::SampleCountFlagBits::e1;
+	imageInfo.tiling = vk::ImageTiling::eOptimal;
+	imageInfo.usage = vk::ImageUsageFlagBits::eDepthStencilAttachment;
+	imageInfo.sharingMode = vk::SharingMode::eExclusive;
+	imageInfo.initialLayout = vk::ImageLayout::eUndefined;
+
+	m_depthImage = m_device->createImageUnique(imageInfo);
+
+	// Allocate GPU memory for the depth image
+	m_memoryManager->allocateImageMemory(m_depthImage.get(), MemoryUsage::GpuOnly, m_depthImageMemory);
+
+	// Create depth image view
+	vk::ImageViewCreateInfo viewInfo;
+	viewInfo.image = m_depthImage.get();
+	viewInfo.viewType = vk::ImageViewType::e2D;
+	viewInfo.format = m_depthFormat;
+	viewInfo.subresourceRange.aspectMask = imageAspectFromFormat(m_depthFormat);
+	viewInfo.subresourceRange.baseMipLevel = 0;
+	viewInfo.subresourceRange.levelCount = 1;
+	viewInfo.subresourceRange.baseArrayLayer = 0;
+	viewInfo.subresourceRange.layerCount = 1;
+
+	m_depthImageView = m_device->createImageViewUnique(viewInfo);
+
+	mprintf(("Vulkan: Created depth buffer (%dx%d, format %d)\n",
+		m_swapChainExtent.width, m_swapChainExtent.height, static_cast<int>(m_depthFormat)));
 }
 void VulkanRenderer::createRenderPass()
 {
+	// Attachment 0: Color - clear each frame
+	// The whole frame is rendered into the fp16 composition image (not directly
+	// into the swap chain). A separate output-encode pass (m_encodeRenderPass)
+	// later samples this image, so the final layout is eShaderReadOnlyOptimal.
+	// UI screens draw their own full-screen backgrounds; 3D clears via scene_texture_begin.
+	// Popups that need previous frame content use gr_save_screen/gr_restore_screen.
 	vk::AttachmentDescription colorAttachment;
-	colorAttachment.format = m_swapChainImageFormat;
+	colorAttachment.format = HDR_COLOR_FORMAT;
 	colorAttachment.samples = vk::SampleCountFlagBits::e1;
-
 	colorAttachment.loadOp = vk::AttachmentLoadOp::eClear;
 	colorAttachment.storeOp = vk::AttachmentStoreOp::eStore;
-
 	colorAttachment.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
 	colorAttachment.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
-
 	colorAttachment.initialLayout = vk::ImageLayout::eUndefined;
-	colorAttachment.finalLayout = vk::ImageLayout::ePresentSrcKHR;
+	colorAttachment.finalLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+
+	// Attachment 1: Depth
+	vk::AttachmentDescription depthAttachment;
+	depthAttachment.format = m_depthFormat;
+	depthAttachment.samples = vk::SampleCountFlagBits::e1;
+	depthAttachment.loadOp = vk::AttachmentLoadOp::eClear;
+	depthAttachment.storeOp = vk::AttachmentStoreOp::eDontCare;
+	depthAttachment.stencilLoadOp = vk::AttachmentLoadOp::eClear;
+	depthAttachment.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
+	depthAttachment.initialLayout = vk::ImageLayout::eUndefined;
+	depthAttachment.finalLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
 
 	vk::AttachmentReference colorAttachRef;
 	colorAttachRef.attachment = 0;
 	colorAttachRef.layout = vk::ImageLayout::eColorAttachmentOptimal;
 
+	vk::AttachmentReference depthAttachRef;
+	depthAttachRef.attachment = 1;
+	depthAttachRef.layout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+
 	vk::SubpassDescription subpass;
 	subpass.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
 	subpass.colorAttachmentCount = 1;
 	subpass.pColorAttachments = &colorAttachRef;
+	subpass.pDepthStencilAttachment = &depthAttachRef;
 
 	vk::SubpassDependency dependency;
 	dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
 	dependency.dstSubpass = 0;
+	dependency.srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput
+	                        | vk::PipelineStageFlagBits::eEarlyFragmentTests;
+	dependency.dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput
+	                        | vk::PipelineStageFlagBits::eEarlyFragmentTests;
+	dependency.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite
+	                         | vk::AccessFlagBits::eDepthStencilAttachmentWrite;
 
-	dependency.srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-
-	dependency.dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-	dependency.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
+	std::array<vk::AttachmentDescription, 2> attachments = {colorAttachment, depthAttachment};
 
 	vk::RenderPassCreateInfo renderPassInfo;
-	renderPassInfo.attachmentCount = 1;
-	renderPassInfo.pAttachments = &colorAttachment;
+	renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+	renderPassInfo.pAttachments = attachments.data();
 	renderPassInfo.subpassCount = 1;
 	renderPassInfo.pSubpasses = &subpass;
 	renderPassInfo.dependencyCount = 1;
 	renderPassInfo.pDependencies = &dependency;
 
 	m_renderPass = m_device->createRenderPassUnique(renderPassInfo);
-}
-void VulkanRenderer::createGraphicsPipeline()
-{
-	auto vertShaderMod = loadShader("vulkan.vert.spv");
-	vk::PipelineShaderStageCreateInfo vertStageCreate;
-	vertStageCreate.stage = vk::ShaderStageFlagBits::eVertex;
-	vertStageCreate.module = vertShaderMod.get();
-	vertStageCreate.pName = "main";
 
-	auto fragShaderMod = loadShader("vulkan.frag.spv");
-	vk::PipelineShaderStageCreateInfo fragStageCreate;
-	fragStageCreate.stage = vk::ShaderStageFlagBits::eFragment;
-	fragStageCreate.module = fragShaderMod.get();
-	fragStageCreate.pName = "main";
+	// Create a second render pass with loadOp=eLoad for resuming the composition
+	// pass after post-processing. Same formats/samples = render-pass-compatible with m_renderPass.
+	colorAttachment.loadOp = vk::AttachmentLoadOp::eLoad;
+	colorAttachment.initialLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 
-	std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStages = {vertStageCreate, fragStageCreate};
+	depthAttachment.loadOp = vk::AttachmentLoadOp::eClear;
+	depthAttachment.initialLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
 
-	vk::PipelineVertexInputStateCreateInfo vertInCreate;
-	vertInCreate.vertexBindingDescriptionCount = 0;
-	vertInCreate.vertexAttributeDescriptionCount = 0;
+	attachments = {colorAttachment, depthAttachment};
 
-	vk::PipelineInputAssemblyStateCreateInfo inputAssembly;
-	inputAssembly.topology = vk::PrimitiveTopology::eTriangleList;
-	inputAssembly.primitiveRestartEnable = false;
-
-	vk::Viewport viewport;
-	viewport.x = 0.0f;
-	viewport.y = 0.0f;
-	viewport.width = i2fl(gr_screen.max_w);
-	viewport.height = i2fl(gr_screen.max_h);
-	viewport.minDepth = 0.0f;
-	viewport.maxDepth = 1.0f;
-
-	vk::Rect2D scissor;
-	scissor.offset.x = 0;
-	scissor.offset.y = 0;
-	scissor.extent = m_swapChainExtent;
-
-	vk::PipelineViewportStateCreateInfo viewportState;
-	viewportState.viewportCount = 1;
-	viewportState.pViewports = &viewport;
-	viewportState.scissorCount = 1;
-	viewportState.pScissors = &scissor;
-
-	vk::PipelineRasterizationStateCreateInfo rasterizer;
-	rasterizer.depthClampEnable = false;
-	rasterizer.rasterizerDiscardEnable = false;
-	rasterizer.polygonMode = vk::PolygonMode::eFill;
-	rasterizer.lineWidth = 1.0f;
-	rasterizer.cullMode |= vk::CullModeFlagBits::eBack;
-	rasterizer.frontFace = vk::FrontFace::eClockwise;
-	rasterizer.depthBiasEnable = false;
-	rasterizer.depthBiasConstantFactor = 0.0f;
-	rasterizer.depthBiasClamp = 0.0f;
-	rasterizer.depthBiasSlopeFactor = 0.0f;
-
-	vk::PipelineMultisampleStateCreateInfo multisampling;
-	multisampling.sampleShadingEnable = false;
-	multisampling.rasterizationSamples = vk::SampleCountFlagBits::e1;
-	multisampling.minSampleShading = 1.0f;
-	multisampling.pSampleMask = nullptr;
-	multisampling.alphaToCoverageEnable = false;
-	multisampling.alphaToOneEnable = false;
-
-	vk::PipelineColorBlendAttachmentState colorBlendAttachment;
-	colorBlendAttachment.colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
-										  vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA;
-	colorBlendAttachment.blendEnable = false;
-	colorBlendAttachment.srcColorBlendFactor = vk::BlendFactor::eOne;  // Optional
-	colorBlendAttachment.dstColorBlendFactor = vk::BlendFactor::eZero; // Optional
-	colorBlendAttachment.colorBlendOp = vk::BlendOp::eAdd;             // Optional
-	colorBlendAttachment.srcAlphaBlendFactor = vk::BlendFactor::eOne;  // Optional
-	colorBlendAttachment.dstAlphaBlendFactor = vk::BlendFactor::eZero; // Optional
-	colorBlendAttachment.alphaBlendOp = vk::BlendOp::eAdd;             // Optional
-
-	vk::PipelineColorBlendStateCreateInfo colorBlending;
-	colorBlending.logicOpEnable = false;
-	colorBlending.logicOp = vk::LogicOp::eCopy;
-	colorBlending.attachmentCount = 1;
-	colorBlending.pAttachments = &colorBlendAttachment;
-	colorBlending.blendConstants[0] = 0.0f;
-	colorBlending.blendConstants[1] = 0.0f;
-	colorBlending.blendConstants[2] = 0.0f;
-	colorBlending.blendConstants[3] = 0.0f;
-
-	vk::DynamicState dynamicStates[] = {
-		vk::DynamicState::eViewport,
-		vk::DynamicState::eLineWidth,
-	};
-
-	vk::PipelineDynamicStateCreateInfo dynamicStateInfo;
-	dynamicStateInfo.dynamicStateCount = 2;
-	dynamicStateInfo.pDynamicStates = dynamicStates;
-
-	vk::PipelineLayoutCreateInfo pipelineLayout;
-	pipelineLayout.setLayoutCount = 0;
-	pipelineLayout.pSetLayouts = nullptr;
-	pipelineLayout.pushConstantRangeCount = 0;
-	pipelineLayout.pPushConstantRanges = nullptr;
-
-	m_pipelineLayout = m_device->createPipelineLayoutUnique(pipelineLayout);
-
-	vk::GraphicsPipelineCreateInfo pipelineInfo;
-	pipelineInfo.stageCount = 2;
-	pipelineInfo.pStages = shaderStages.data();
-	pipelineInfo.pVertexInputState = &vertInCreate;
-	pipelineInfo.pInputAssemblyState = &inputAssembly;
-	pipelineInfo.pViewportState = &viewportState;
-	pipelineInfo.pRasterizationState = &rasterizer;
-	pipelineInfo.pMultisampleState = &multisampling;
-	pipelineInfo.pDepthStencilState = nullptr;
-	pipelineInfo.pColorBlendState = &colorBlending;
-	pipelineInfo.pDynamicState = nullptr;
-	pipelineInfo.layout = m_pipelineLayout.get();
-	pipelineInfo.renderPass = m_renderPass.get();
-	pipelineInfo.subpass = 0;
-	pipelineInfo.basePipelineHandle = nullptr;
-	pipelineInfo.basePipelineIndex = -1;
-
-	m_graphicsPipeline = m_device->createGraphicsPipelineUnique(nullptr, pipelineInfo).value;
+	m_renderPassLoad = m_device->createRenderPassUnique(renderPassInfo);
 }
 void VulkanRenderer::createCommandPool(const PhysicalDeviceValues& values)
 {
@@ -822,79 +342,320 @@ void VulkanRenderer::createCommandPool(const PhysicalDeviceValues& values)
 void VulkanRenderer::createPresentSyncObjects()
 {
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
-		m_frames[i].reset(new RenderFrame(m_device.get(), m_swapChain.get(), m_graphicsQueue, m_presentQueue));
+		m_frames[i].reset(new VulkanRenderFrame(m_device.get(), m_swapChain.get(), m_graphicsQueue, m_presentQueue));
 	}
 
 	m_swapChainImageRenderImage.resize(m_swapChainImages.size(), nullptr);
 }
-void VulkanRenderer::acquireNextSwapChainImage()
+
+static float half_to_float(uint16_t h)
 {
-	m_frames[m_currentFrame]->waitForFinish();
-
-	m_currentSwapChainImage = m_frames[m_currentFrame]->acquireSwapchainImage();
-
-	// Ensure that this image is no longer in use
-	if (m_swapChainImageRenderImage[m_currentSwapChainImage]) {
-		m_swapChainImageRenderImage[m_currentSwapChainImage]->waitForFinish();
+	const uint32_t sign = static_cast<uint32_t>(h & 0x8000u) << 16;
+	const uint32_t exp  = (h >> 10u) & 0x1Fu;
+	const uint32_t mant = static_cast<uint32_t>(h & 0x03FFu);
+	uint32_t f;
+	if (exp == 0u) {
+		f = sign; // zero or subnormal → round to zero
+	} else if (exp == 31u) {
+		f = sign | 0x7F800000u | (mant << 13u); // inf or NaN
+	} else {
+		f = sign | ((exp + (127u - 15u)) << 23u) | (mant << 13u);
 	}
-	// Reserve the image as in use
-	m_swapChainImageRenderImage[m_currentSwapChainImage] = m_frames[m_currentFrame].get();
+	float result;
+	memcpy(&result, &f, sizeof(result));
+	return result;
 }
-void VulkanRenderer::drawScene(vk::Framebuffer destinationFb, vk::CommandBuffer cmdBuffer)
+
+bool VulkanRenderer::readbackFramebuffer(ubyte** outPixels, uint32_t* outWidth, uint32_t* outHeight)
 {
+	*outPixels = nullptr;
+	*outWidth = 0;
+	*outHeight = 0;
+
+	if (m_previousSwapChainImage == UINT32_MAX) {
+		mprintf(("VulkanRenderer::readbackFramebuffer - no previous frame available\n"));
+		return false;
+	}
+
+	if (!m_frameInProgress) {
+		mprintf(("VulkanRenderer::readbackFramebuffer - no frame in progress\n"));
+		return false;
+	}
+
+	// In HDR mode read the fp16 composition image (pre-encode) instead of the
+	// swap-chain image.  The swap-chain image is 10-bit PQ-packed; treating it
+	// as BGRA8 produces garbage, and drawing it back through encodeOutput would
+	// apply PQ a second time.  The composition image stores sRGB-encoded values
+	// (1.0 == paperwhite) in fp16 RGBA; we convert to BGRA8 on the CPU below.
+	const bool hdrReadback = m_hdrActive;
+	vk::Image srcImage;
+	vk::ImageLayout srcInitialLayout;
+	vk::PipelineStageFlags srcStageMask;
+	vk::AccessFlags srcAccessMask;
+	uint32_t bytesPerSrcPixel;
+	if (hdrReadback) {
+		srcImage         = m_compositionImages[m_previousSwapChainImage].get();
+		srcInitialLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		srcStageMask     = vk::PipelineStageFlagBits::eFragmentShader;
+		srcAccessMask    = vk::AccessFlagBits::eShaderRead;
+		bytesPerSrcPixel = 8; // fp16 RGBA = 4 × 2 bytes
+	} else {
+		srcImage         = m_swapChainImages[m_previousSwapChainImage];
+		srcInitialLayout = vk::ImageLayout::ePresentSrcKHR;
+		srcStageMask     = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+		srcAccessMask    = vk::AccessFlagBits::eColorAttachmentWrite;
+		bytesPerSrcPixel = 4; // BGRA8
+	}
+	uint32_t w = m_swapChainExtent.width;
+	uint32_t h = m_swapChainExtent.height;
+	vk::DeviceSize bufferSize = static_cast<vk::DeviceSize>(w) * h * bytesPerSrcPixel;
+
+	// End the current render pass so we can record transfer commands
+	m_currentCommandBuffer.endRenderPass();
+
+	// --- One-shot command buffer to copy previous frame to staging buffer ---
+
+	vk::CommandBufferAllocateInfo cmdAlloc;
+	cmdAlloc.commandPool = m_graphicsCommandPool.get();
+	cmdAlloc.level = vk::CommandBufferLevel::ePrimary;
+	cmdAlloc.commandBufferCount = 1;
+
+	auto cmdBuffers = m_device->allocateCommandBuffers(cmdAlloc);
+	auto cmd = cmdBuffers.front();
+
 	vk::CommandBufferBeginInfo beginInfo;
-	beginInfo.flags |= vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
+	beginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
+	cmd.begin(beginInfo);
 
-	cmdBuffer.begin(beginInfo);
+	// Transition source image to eTransferSrcOptimal for readback
+	vk::ImageMemoryBarrier preBarrier;
+	preBarrier.oldLayout           = srcInitialLayout;
+	preBarrier.newLayout           = vk::ImageLayout::eTransferSrcOptimal;
+	preBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	preBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	preBarrier.image               = srcImage;
+	preBarrier.subresourceRange    = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
+	preBarrier.srcAccessMask       = srcAccessMask;
+	preBarrier.dstAccessMask       = vk::AccessFlagBits::eTransferRead;
 
+	cmd.pipelineBarrier(
+		srcStageMask,
+		vk::PipelineStageFlagBits::eTransfer,
+		{}, nullptr, nullptr, preBarrier);
+
+	// Create staging buffer for readback
+	vk::BufferCreateInfo bufferCreateInfo;
+	bufferCreateInfo.size = bufferSize;
+	bufferCreateInfo.usage = vk::BufferUsageFlagBits::eTransferDst;
+	bufferCreateInfo.sharingMode = vk::SharingMode::eExclusive;
+
+	auto stagingBuffer = m_device->createBuffer(bufferCreateInfo);
+
+	VulkanAllocation stagingAlloc{};
+	if (!m_memoryManager->allocateBufferMemory(stagingBuffer, MemoryUsage::GpuToCpu, stagingAlloc)) {
+		mprintf(("VulkanRenderer::readbackFramebuffer - failed to allocate staging buffer\n"));
+		m_device->destroyBuffer(stagingBuffer);
+		cmd.end();
+		m_device->freeCommandBuffers(m_graphicsCommandPool.get(), cmdBuffers);
+
+		// Re-begin render pass so the frame can continue
+		vk::RenderPassBeginInfo renderPassBegin;
+		renderPassBegin.renderPass = m_renderPass.get();
+		renderPassBegin.framebuffer = m_swapChainFramebuffers[m_currentSwapChainImage].get();
+		renderPassBegin.renderArea.offset.x = 0;
+		renderPassBegin.renderArea.offset.y = 0;
+		renderPassBegin.renderArea.extent = m_swapChainExtent;
+		std::array<vk::ClearValue, 2> clearValues;
+		clearValues[0].color.setFloat32({0.0f, 0.0f, 0.0f, 1.0f});
+		clearValues[1].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+		renderPassBegin.clearValueCount = static_cast<uint32_t>(clearValues.size());
+		renderPassBegin.pClearValues = clearValues.data();
+		m_currentCommandBuffer.beginRenderPass(renderPassBegin, vk::SubpassContents::eInline);
+		m_stateTracker->setRenderPass(m_renderPass.get(), 0);
+		m_stateTracker->setViewport(0.0f,
+			static_cast<float>(m_swapChainExtent.height),
+			static_cast<float>(m_swapChainExtent.width),
+			-static_cast<float>(m_swapChainExtent.height));
+		return false;
+	}
+
+	// Copy image to staging buffer
+	vk::BufferImageCopy region;
+	region.bufferOffset = 0;
+	region.bufferRowLength = 0;   // tightly packed
+	region.bufferImageHeight = 0; // tightly packed
+	region.imageSubresource = {vk::ImageAspectFlagBits::eColor, 0, 0, 1};
+	region.imageOffset = vk::Offset3D(0, 0, 0);
+	region.imageExtent = vk::Extent3D(w, h, 1);
+
+	cmd.copyImageToBuffer(srcImage, vk::ImageLayout::eTransferSrcOptimal, stagingBuffer, region);
+
+	// Transition source image back to its original layout
+	vk::ImageMemoryBarrier postBarrier;
+	postBarrier.oldLayout           = vk::ImageLayout::eTransferSrcOptimal;
+	postBarrier.newLayout           = srcInitialLayout;
+	postBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	postBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	postBarrier.image               = srcImage;
+	postBarrier.subresourceRange    = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
+	postBarrier.srcAccessMask       = vk::AccessFlagBits::eTransferRead;
+	postBarrier.dstAccessMask       = {};
+
+	cmd.pipelineBarrier(
+		vk::PipelineStageFlagBits::eTransfer,
+		vk::PipelineStageFlagBits::eBottomOfPipe,
+		{}, nullptr, nullptr, postBarrier);
+
+	cmd.end();
+
+	// Submit one-shot command buffer and wait
+	auto fence = m_device->createFence({});
+
+	vk::SubmitInfo submitInfo;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &cmd;
+	m_graphicsQueue.submit(submitInfo, fence);
+
+	auto waitResult = m_device->waitForFences(fence, VK_TRUE, UINT64_MAX);
+	if (waitResult != vk::Result::eSuccess) {
+		mprintf(("VulkanRenderer::readbackFramebuffer - fence wait failed\n"));
+	}
+
+	m_device->destroyFence(fence);
+	m_device->freeCommandBuffers(m_graphicsCommandPool.get(), cmdBuffers);
+
+	// Read back and convert pixels from staging buffer.
+	// SDR: raw BGRA8 from swap chain, memcpy directly.
+	// HDR: fp16 RGBA from composition image — convert to BGRA8.  The composition
+	//      image holds sRGB-encoded values (1.0 == paperwhite) so we just clamp to
+	//      [0,1] and scale; no gamma re-encoding needed.  Swap R↔B for BGRA output
+	//      and force alpha = 255 so the bitmap restores as fully opaque.
+	const uint32_t outStride = w * 4u; // always 4 bytes/pixel BGRA8 output
+	bool success = false;
+	auto* mappedPtr = static_cast<ubyte*>(m_memoryManager->mapMemory(stagingAlloc));
+
+	if (mappedPtr) {
+		auto* pixels = static_cast<ubyte*>(vm_malloc(static_cast<int>(outStride) * static_cast<int>(h)));
+		if (pixels) {
+			if (hdrReadback) {
+				// Clamp fp16 value to [0,1]; NaN-safe (all NaN comparisons yield false → 0).
+				auto hf = [](uint16_t v) -> float {
+					float f = half_to_float(v);
+					return (f >= 0.0f && f <= 1.0f) ? f : (f >= 1.0f ? 1.0f : 0.0f);
+				};
+				const auto* src = reinterpret_cast<const uint16_t*>(mappedPtr);
+				for (uint32_t i = 0; i < w * h; ++i) {
+					pixels[i * 4 + 0] = static_cast<ubyte>(hf(src[i * 4 + 2]) * 255.0f); // B ← src B
+					pixels[i * 4 + 1] = static_cast<ubyte>(hf(src[i * 4 + 1]) * 255.0f); // G ← src G
+					pixels[i * 4 + 2] = static_cast<ubyte>(hf(src[i * 4 + 0]) * 255.0f); // R ← src R
+					pixels[i * 4 + 3] = 255u;                                              // A = opaque
+				}
+			} else {
+				memcpy(pixels, mappedPtr, static_cast<size_t>(outStride) * h);
+			}
+			*outPixels = pixels;
+			*outWidth = w;
+			*outHeight = h;
+			success = true;
+		}
+		m_memoryManager->unmapMemory(stagingAlloc);
+	}
+
+	// Free staging buffer
+	m_device->destroyBuffer(stagingBuffer);
+	m_memoryManager->freeAllocation(stagingAlloc);
+
+	// Re-begin render pass on main command buffer
 	vk::RenderPassBeginInfo renderPassBegin;
 	renderPassBegin.renderPass = m_renderPass.get();
-	renderPassBegin.framebuffer = destinationFb;
+	renderPassBegin.framebuffer = m_swapChainFramebuffers[m_currentSwapChainImage].get();
 	renderPassBegin.renderArea.offset.x = 0;
 	renderPassBegin.renderArea.offset.y = 0;
 	renderPassBegin.renderArea.extent = m_swapChainExtent;
 
-	vk::ClearValue clearColor;
-	clearColor.color.setFloat32({0.0f, 0.0f, 0.0f, 1.0f});
+	std::array<vk::ClearValue, 2> clearValues;
+	clearValues[0].color.setFloat32({0.0f, 0.0f, 0.0f, 1.0f});
+	clearValues[1].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
 
-	renderPassBegin.clearValueCount = 1;
-	renderPassBegin.pClearValues = &clearColor;
+	renderPassBegin.clearValueCount = static_cast<uint32_t>(clearValues.size());
+	renderPassBegin.pClearValues = clearValues.data();
 
-	cmdBuffer.beginRenderPass(renderPassBegin, vk::SubpassContents::eInline);
+	m_currentCommandBuffer.beginRenderPass(renderPassBegin, vk::SubpassContents::eInline);
 
-	cmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, m_graphicsPipeline.get());
+	m_stateTracker->setRenderPass(m_renderPass.get(), 0);
+	m_stateTracker->setViewport(0.0f,
+		static_cast<float>(m_swapChainExtent.height),
+		static_cast<float>(m_swapChainExtent.width),
+		-static_cast<float>(m_swapChainExtent.height));
 
-	cmdBuffer.draw(3, 1, 0, 0);
-
-	cmdBuffer.endRenderPass();
-
-	cmdBuffer.end();
+	return success;
 }
-void VulkanRenderer::flip()
+
+uint32_t VulkanRenderer::getMinUniformBufferOffsetAlignment() const
 {
-	vk::CommandBufferAllocateInfo cmdBufferAlloc;
-	cmdBufferAlloc.commandPool = m_graphicsCommandPool.get();
-	cmdBufferAlloc.level = vk::CommandBufferLevel::ePrimary;
-	cmdBufferAlloc.commandBufferCount = 1;
+	if (!m_physicalDevice) {
+		// Fallback to common value if device not initialized
+		return 256;
+	}
 
-	// Uses the non-unique version since we can't get the buffers into the lambda below otherwise. Only C++14 can do
-	// that
-	auto allocatedBuffers = m_device->allocateCommandBuffers(cmdBufferAlloc);
-	auto& cmdBuffer = allocatedBuffers.front();
-
-	drawScene(m_swapChainFramebuffers[m_currentSwapChainImage].get(), cmdBuffer);
-	m_frames[m_currentFrame]->onFrameFinished([this, allocatedBuffers]() mutable {
-		m_device->freeCommandBuffers(m_graphicsCommandPool.get(), allocatedBuffers);
-		allocatedBuffers.clear();
-	});
-
-	m_frames[m_currentFrame]->submitAndPresent(allocatedBuffers);
-
-	// Advance counters to prepare for the next frame
-	m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
-
-	acquireNextSwapChainImage();
+	auto properties = m_physicalDevice.getProperties();
+	return static_cast<uint32_t>(properties.limits.minUniformBufferOffsetAlignment);
 }
+
+uint32_t VulkanRenderer::getMaxUniformBufferSize() const
+{
+	if (!m_physicalDevice) {
+		return 65536;
+	}
+
+	auto properties = m_physicalDevice.getProperties();
+	return properties.limits.maxUniformBufferRange;
+}
+
+float VulkanRenderer::getMaxAnisotropy() const
+{
+	if (!m_physicalDevice) {
+		return 1.0f;
+	}
+
+	auto properties = m_physicalDevice.getProperties();
+	return properties.limits.maxSamplerAnisotropy;
+}
+
+bool VulkanRenderer::isTextureCompressionBCSupported() const
+{
+	if (!m_physicalDevice) {
+		return false;
+	}
+
+	auto features = m_physicalDevice.getFeatures();
+	return features.textureCompressionBC == VK_TRUE;
+}
+
+void VulkanRenderer::waitIdle()
+{
+	if (m_device) {
+		m_device->waitIdle();
+	}
+}
+
+void VulkanRenderer::waitForFrame(uint64_t frameNumber)
+{
+	// Fast path: if enough frames have elapsed, the work is definitely done
+	if (m_frameNumber >= frameNumber + MAX_FRAMES_IN_FLIGHT) {
+		return;
+	}
+
+	// Wait on the specific frame's fence
+	auto frameIndex = static_cast<uint32_t>(frameNumber % MAX_FRAMES_IN_FLIGHT);
+	m_frames[frameIndex]->waitForFinish();
+}
+
+VkCommandBuffer VulkanRenderer::getVkCurrentCommandBuffer() const
+{
+	return static_cast<VkCommandBuffer>(m_currentCommandBuffer);
+}
+
 void VulkanRenderer::shutdown()
 {
 	// Wait for all frames to complete to ensure no drawing is in progress when we destroy the device
@@ -903,7 +664,103 @@ void VulkanRenderer::shutdown()
 	}
 	// For good measure, also wait until the device is idle
 	m_device->waitIdle();
+
+	// Shutdown ImGui Vulkan backend before destroying any Vulkan objects
+	shutdownImGui();
+
+	// Shutdown managers in reverse order of initialization
+	if (m_queryManager) {
+		setQueryManager(nullptr);
+		m_queryManager->shutdown();
+		m_queryManager.reset();
+	}
+
+	if (m_postProcessor) {
+		setPostProcessor(nullptr);
+		m_postProcessor->shutdown();
+		m_postProcessor.reset();
+	}
+
+	// Clean up shared post-processing manager
+	if (graphics::Post_processing_manager) {
+		graphics::Post_processing_manager->clear();
+		graphics::Post_processing_manager = nullptr;
+	}
+
+	if (m_drawManager) {
+		setDrawManager(nullptr);
+		m_drawManager->shutdown();
+		m_drawManager.reset();
+	}
+
+	if (m_stateTracker) {
+		setStateTracker(nullptr);
+		m_stateTracker->shutdown();
+		m_stateTracker.reset();
+	}
+
+	if (m_pipelineManager) {
+		m_pipelineManager->savePipelineCache("vulkan_pipeline.cache");
+		setPipelineManager(nullptr);
+		m_pipelineManager->shutdown();
+		m_pipelineManager.reset();
+	}
+
+	if (m_descriptorManager) {
+		setDescriptorManager(nullptr);
+		m_descriptorManager->shutdown();
+		m_descriptorManager.reset();
+	}
+
+	if (m_shaderManager) {
+		setShaderManager(nullptr);
+		m_shaderManager->shutdown();
+		m_shaderManager.reset();
+	}
+
+	if (m_textureManager) {
+		setTextureManager(nullptr);
+		m_textureManager->shutdown();
+		m_textureManager.reset();
+	}
+
+	if (m_bufferManager) {
+		setBufferManager(nullptr);
+		m_bufferManager->shutdown();
+		m_bufferManager.reset();
+	}
+
+	// Destroy depth resources before memory manager
+	m_depthImageView.reset();
+	m_depthImage.reset();
+	if (m_memoryManager && m_depthImageMemory.isValid()) {
+		m_memoryManager->freeAllocation(m_depthImageMemory);
+	}
+
+	// Destroy composition resources before memory manager
+	m_compositionImageViews.clear();
+	m_compositionImages.clear();
+	if (m_memoryManager) {
+		for (auto& alloc : m_compositionAllocations) {
+			if (alloc.isValid()) {
+				m_memoryManager->freeAllocation(alloc);
+			}
+		}
+	}
+	m_compositionAllocations.clear();
+
+	// Deletion queue must be flushed before memory manager shutdown
+	if (m_deletionQueue) {
+		setDeletionQueue(nullptr);
+		m_deletionQueue->shutdown();
+		m_deletionQueue.reset();
+	}
+
+	if (m_memoryManager) {
+		setMemoryManager(nullptr);
+		m_memoryManager->shutdown();
+		m_memoryManager.reset();
+	}
 }
 
-} // namespace vulkan
-} // namespace graphics
+} // namespace graphics::vulkan

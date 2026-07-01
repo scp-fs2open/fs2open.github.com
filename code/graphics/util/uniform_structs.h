@@ -227,7 +227,12 @@ struct tonemapping_data {
 	float sh_lnA;
 	float sh_offsetX;
 	float sh_offsetY;
-	float pad[1];
+	// HDR10 output parameters (ignored when hdr_mode == 0)
+	int hdr_mode;            // 0 = SDR, 1 = HDR scene tonemap, 2 = HDR10 output encode
+
+	float hdr_paperwhite_nits;
+	float hdr_peak_nits;
+	float pad[2];
 };
 
 struct smaa_data {

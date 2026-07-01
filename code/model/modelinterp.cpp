@@ -2402,8 +2402,7 @@ void interp_create_transparency_index_buffer(polymodel *pm, int mn)
 
 	SCP_vector<buffer_data> &tex_buffers = pm->submodel[mn].buffer.tex_buf;
 	uint current_tri[NUM_VERTS_PER_TRI];
-	bool transparent_tri = false;
-	int num_tris = 0;
+	SCP_vector<int> transparent_indices;
 
 	for ( int i = 0; i < (int)tex_buffers.size(); ++i ) {
 		buffer_data *tex_buf = &tex_buffers[i];
@@ -2433,37 +2432,33 @@ void interp_create_transparency_index_buffer(polymodel *pm, int mn)
 			continue;
 		}
 
-		SCP_vector<int> transparent_indices;
-
-		transparent_tri = false;
-		num_tris = 0;
+		bool transparent_tri = false;
+		transparent_indices.clear();
 
 		for ( size_t j = 0; j < tex_buf->n_verts; ++j ) {
-			uint index = indices[j];
+			if ( j % NUM_VERTS_PER_TRI == 0 && j != 0 && transparent_tri ) {
+				transparent_tri = false;
+
+				// we have a triangle and it's transparent. 
+				// shove index into the transparency buffer
+ 				transparent_indices.push_back(current_tri[0]);
+ 				transparent_indices.push_back(current_tri[1]);
+ 				transparent_indices.push_back(current_tri[2]);
+			}
+
+			const uint index = indices[j];
 
 			// need the uv coords of the vert at this index
 			float u = model_list->vert[index].texture_position.u;
 			float v = model_list->vert[index].texture_position.v;
 
 			if ( texture_lookup.get_channel_alpha(u, v) < 0.95f) {
+				// temporarily(?) reduced from 0.95f to 0.75f due to certain models (MVP 4.7.3 Triton) having the entire diffuse texture with alpha values less than 1.0f 
+				// which ended up putting the entire geometry into the transparency pass. Somehow looked fine in OpenGL but we have to do this for Vulkan. For now?
 				transparent_tri = true;
 			}
 
-			current_tri[num_tris] = index;
-			num_tris++;
-
-			if ( num_tris == NUM_VERTS_PER_TRI ) {
-				if ( transparent_tri ) {
-					// we have a triangle and it's transparent. 
-					// shove index into the transparency buffer
-					transparent_indices.push_back(current_tri[0]);
-					transparent_indices.push_back(current_tri[1]);
-					transparent_indices.push_back(current_tri[2]);
-				}
-
-				transparent_tri = false;
-				num_tris = 0;
-			}
+			current_tri[j % NUM_VERTS_PER_TRI] = index;
 		}
 
 		if ( transparent_indices.empty() ) {
@@ -2477,6 +2472,10 @@ void interp_create_transparency_index_buffer(polymodel *pm, int mn)
 
 		buffer_data &new_buff = trans_buffer->tex_buf.back();
 		new_buff.texture = tex_buf->texture;
+
+		if ( transparent_indices.size() > USHRT_MAX ) {
+			new_buff.flags |= VB_FLAG_LARGE_INDEX;
+		}
 
 		for ( int j = 0; j < (int)transparent_indices.size(); ++j ) {
 			new_buff.assign(j, transparent_indices[j]);
