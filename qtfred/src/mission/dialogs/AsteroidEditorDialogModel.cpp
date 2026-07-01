@@ -424,7 +424,7 @@ QString & AsteroidEditorDialogModel::getBoxText(_box_line_edits type)
 		case _I_MAX_Y: return _inner_max_y;
 		case _I_MAX_Z: return _inner_max_z;
 		default:
-			UNREACHABLE("Unknown asteroid coordinates enum value found (%i); Get a coder! ", type);
+			Assertion(false, "Unknown asteroid coordinates enum value found (%i); Get a coder! ", type);
 			return _min_x;
 	}
 }

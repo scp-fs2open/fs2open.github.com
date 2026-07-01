@@ -732,7 +732,7 @@ void control_config_bind(int i, const CC_bind &new_bind, selItem order, bool API
 
 		// Error
 		default:
-			UNREACHABLE("Unknown order (%i) passed to control_config_bind_btn.", static_cast<int>(order));
+			Assertion(false, "Unknown order (%i) passed to control_config_bind_btn.", static_cast<int>(order));
 	}
 
 	// Save both bindings, because ::take() can clear the other binding if it is equal.
@@ -804,7 +804,7 @@ bool control_config_remove_binding(int ctrl, selItem item, bool API_Access)
 
 	default:
 		// Coder forgot to add a case!
-		UNREACHABLE("Unhandled selItem case.");
+		Assertion(false, "Unhandled selItem case: %i", static_cast<int>(item));
 	}
 
 	if (success)
@@ -1140,7 +1140,7 @@ bool control_config_toggle_invert(int ctrl, selItem item, bool API_Access)
 		cur_bind.second.invert_toggle();
 		break;
 	default:
-		UNREACHABLE("Unhandled selItem in control_config_toggle_invert(): %i\n", static_cast<int>(item));
+		Assertion(false, "Unhandled selItem in control_config_toggle_invert(): %i\n", static_cast<int>(item));
 	}
 
 	return true;
@@ -1406,7 +1406,7 @@ void control_config_cancel_exit(bool API_Access)
 				break;
 
 			default:
-				UNREACHABLE("Unknown popup choice %i", choice);
+				Assertion(false, "Unknown popup choice %i", choice);
 		}
 	}
 
@@ -1878,7 +1878,7 @@ int set_item_color(int line, int select_tease_line, selItem item, bool empty) {
 		conflict_id = Conflicts[z].second;
 		break;
 	default:
-		UNREACHABLE("Invalid selItem passed to set_item_color: %i", static_cast<int>(item));
+		Assertion(false, "Invalid selItem passed to set_item_color: %i", static_cast<int>(item));
 	}
 
 	if (conflict_id >= 0) {
@@ -3120,7 +3120,7 @@ void control_get_axes_readings(int *axis_v, float frame_time)
 			case CC_TYPE_AXIS_BTN_POS:
 			default:
 				//This should never happen, especially with the above Assertion. This is required as incomplete switches on an enum generate warnings
-				UNREACHABLE("Unhandled control item type");
+				Assertion(false, "Unhandled control item type %d", static_cast<int>(item.type));
 				break;
 			}
 		}

@@ -843,7 +843,7 @@ void LabManager::changeDisplayedObject(LabMode mode, int info_index, int subtype
 		break;
 	}
 	default:
-		UNREACHABLE("Unhandled lab mode %d", (int)mode);
+		Assertion(false, "Unhandled lab mode %d", static_cast<int>(mode));
 		ModelFilename = "";
 		break;
 	}

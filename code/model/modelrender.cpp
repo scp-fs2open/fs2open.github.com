@@ -991,7 +991,7 @@ void model_render_add_lightning(model_draw_list *scene, const model_render_param
 			break;
 
 		default:
-			UNREACHABLE("Unknown arc type of %d found in model_render_add_lightning(), please contact an SCP coder!", arc.type);
+			Assertion(false, "Unknown arc type of %d found in model_render_add_lightning(), please contact an SCP coder!", arc.type);
 		}
 
 		// render the actual arc segment

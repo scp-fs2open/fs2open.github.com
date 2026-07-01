@@ -339,7 +339,7 @@ int CMissionCutscenesDlg::handler(int code, int node)
 			return node;
 
 		default:
-			UNREACHABLE("Unknown cutscene context menu case. Please report!");
+			Assertion(false, "Unknown cutscene context menu case %d. Please report!", code);
 	}
 
 	return -1;

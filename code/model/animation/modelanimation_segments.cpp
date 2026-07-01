@@ -1610,7 +1610,7 @@ namespace animation {
 						break;
 					}
 					default:
-						UNREACHABLE("IK constraint of unknown type specified!");
+						Assertion(false, "IK constraint of unknown type specified!");
 						break;
 				}
 			}

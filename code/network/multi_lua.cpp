@@ -133,7 +133,7 @@ static luacpp::LuaValue process_lua_data(ubyte* data, int& offset, lua_State* L)
 		return table;
 	}
 	default:
-		UNREACHABLE("Got invalid lua multi packet data type %d!", dataType);
+		Assertion(false, "Got invalid lua multi packet data type %d!", dataType);
 		return luacpp::LuaValue::createNil(L);
 	}
 }

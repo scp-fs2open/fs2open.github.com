@@ -3077,7 +3077,7 @@ int multi_oo_rate_exceeded(net_player *pl)
 
 	// default level
 	default:
-		UNREACHABLE("Unknown Object Update level in multi_oo_rate_exceeded of %d", pl->p_info.options.obj_update_level);
+		Assertion(false, "Unknown Object Update level in multi_oo_rate_exceeded of %d", pl->p_info.options.obj_update_level);
 		rate_compare = OO_LIMIT_LOW;
 		break;
 	}
@@ -3155,7 +3155,7 @@ void multi_oo_update_server_rate()
 		break;
 
 	default:
-		UNREACHABLE("Unknown Object Update level in multi_oo_update_server_rate of %d", Net_player->p_info.options.obj_update_level);
+		Assertion(false, "Unknown Object Update level in multi_oo_update_server_rate of %d", Net_player->p_info.options.obj_update_level);
 		return;
 	}	
 

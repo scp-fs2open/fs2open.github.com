@@ -2204,8 +2204,8 @@ void send_netgame_descript_packet(net_addr *addr, int code)
 	int packet_size = 0;
 
 	// Get this out of the way, because we don't want to waste our time if the addr is bad.
+	Assertion(addr != nullptr, "Net address not specified!");
 	if (addr == nullptr) {
-		UNREACHABLE("Net address not specified!");
 		return;
 	}
 

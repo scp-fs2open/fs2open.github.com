@@ -158,7 +158,8 @@ namespace particle {
 					volume = std::make_shared<ModelSurfaceVolume>();
 					break;
 				default:
-					UNREACHABLE("Invalid volume type specified!");
+					Assertion(false, "Invalid volume type specified!");
+					return nullptr;
 			}
 			volume->parse();
 			return volume;

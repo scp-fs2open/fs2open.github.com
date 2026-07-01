@@ -81,7 +81,7 @@ ADE_FUNC(__call, l_RPC, "[any = nil, enumeration recipient /* RPC_* */]", "Calls
 		recipient_lua = lua_net_reciever::BOTH;
 		break;
 	default:
-		UNREACHABLE("RPC recipient enum is bad! Get a programmer!");
+		Assertion(false, "RPC recipient enum is bad! Get a programmer!");
 		return ade_set_error(L, "b", false);
 	}
 
@@ -98,7 +98,7 @@ ADE_FUNC(__call, l_RPC, "[any = nil, enumeration recipient /* RPC_* */]", "Calls
 		mode_lua = lua_net_mode::UNRELIABLE;
 		break;
 	default:
-		UNREACHABLE("RPC mode enum is bad! Get a programmer!");
+		Assertion(false, "RPC mode enum is bad! Get a programmer!");
 		return ade_set_error(L, "b", false);
 	}
 
