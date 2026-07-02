@@ -281,7 +281,7 @@ vk::Extent2D chooseSwapChainExtent(const PhysicalDeviceValues& values, uint32_t 
 } // namespace
 bool VulkanRenderer::initialize()
 {
-	mprintf(("Initializing Vulkan graphics device at %ix%i with %i-bit color...\n",
+	nprintf(("vulkan", "Initializing Vulkan graphics device at %ix%i with %i-bit color...\n",
 		gr_screen.max_w,
 		gr_screen.max_h,
 		gr_screen.bits_per_pixel));
@@ -294,18 +294,18 @@ bool VulkanRenderer::initialize()
 	}
 
 	if (!initializeInstance()) {
-		mprintf(("Failed to create Vulkan instance!\n"));
+		nprintf(("vulkan", "Failed to create Vulkan instance!\n"));
 		return false;
 	}
 
 	if (!initializeSurface()) {
-		mprintf(("Failed to create Vulkan surface!\n"));
+		nprintf(("vulkan", "Failed to create Vulkan surface!\n"));
 		return false;
 	}
 
 	PhysicalDeviceValues deviceValues;
 	if (!pickPhysicalDevice(deviceValues)) {
-		mprintf(("Could not find suitable physical Vulkan device.\n"));
+		nprintf(("vulkan", "Could not find suitable physical Vulkan device.\n"));
 		return false;
 	}
 
@@ -321,7 +321,7 @@ bool VulkanRenderer::initialize()
 		case 8:  requested = vk::SampleCountFlagBits::e8; break;
 		case 16: requested = vk::SampleCountFlagBits::e16; break;
 		default:
-			mprintf(("Vulkan: Unsupported MSAA count %d, disabling MSAA\n", Cmdline_msaa_enabled));
+			nprintf(("vulkan", "Vulkan: Unsupported MSAA count %d, disabling MSAA\n", Cmdline_msaa_enabled));
 			Cmdline_msaa_enabled = 0;
 			break;
 		}
@@ -329,7 +329,7 @@ bool VulkanRenderer::initialize()
 		if (Cmdline_msaa_enabled > 0) {
 			if (supported & requested) {
 				m_msaaSampleCount = requested;
-				mprintf(("Vulkan: MSAA enabled with %dx sample count\n", Cmdline_msaa_enabled));
+				nprintf(("vulkan", "Vulkan: MSAA enabled with %dx sample count\n", Cmdline_msaa_enabled));
 			} else {
 				// Clamp down to highest supported
 				vk::SampleCountFlagBits fallback = vk::SampleCountFlagBits::e1;
@@ -341,12 +341,12 @@ bool VulkanRenderer::initialize()
 				}
 
 				if (fallbackCount > 0) {
-					mprintf(("Vulkan: Requested MSAA %dx not supported, falling back to %dx\n",
+					nprintf(("vulkan", "Vulkan: Requested MSAA %dx not supported, falling back to %dx\n",
 						Cmdline_msaa_enabled, fallbackCount));
 					Cmdline_msaa_enabled = fallbackCount;
 					m_msaaSampleCount = fallback;
 				} else {
-					mprintf(("Vulkan: No suitable MSAA support, disabling MSAA\n"));
+					nprintf(("vulkan", "Vulkan: No suitable MSAA support, disabling MSAA\n"));
 					Cmdline_msaa_enabled = 0;
 				}
 			}
@@ -354,14 +354,14 @@ bool VulkanRenderer::initialize()
 	}
 
 	if (!createLogicalDevice(deviceValues)) {
-		mprintf(("Failed to create logical device.\n"));
+		nprintf(("vulkan", "Failed to create logical device.\n"));
 		return false;
 	}
 
 	createCommandPool(deviceValues);
 
 	if (!createSwapChain(deviceValues)) {
-		mprintf(("Failed to create swap chain.\n"));
+		nprintf(("vulkan", "Failed to create swap chain.\n"));
 		return false;
 	}
 
@@ -377,7 +377,7 @@ bool VulkanRenderer::initialize()
 	m_textureManager = std::unique_ptr<VulkanTextureManager>(new VulkanTextureManager());
 	if (!m_textureManager->init(m_device.get(), m_physicalDevice, m_memoryManager.get(),
 	                            m_graphicsCommandPool.get(), m_graphicsQueue)) {
-		mprintf(("Failed to initialize Vulkan texture manager!\n"));
+		nprintf(("vulkan", "Failed to initialize Vulkan texture manager!\n"));
 		return false;
 	}
 	setTextureManager(m_textureManager.get());
@@ -385,7 +385,7 @@ bool VulkanRenderer::initialize()
 	// Initialize shader manager
 	m_shaderManager = std::unique_ptr<VulkanShaderManager>(new VulkanShaderManager());
 	if (!m_shaderManager->init(m_device.get())) {
-		mprintf(("Failed to initialize Vulkan shader manager!\n"));
+		nprintf(("vulkan", "Failed to initialize Vulkan shader manager!\n"));
 		return false;
 	}
 	setShaderManager(m_shaderManager.get());
@@ -428,7 +428,7 @@ bool VulkanRenderer::initialize()
 	// Initialize pipeline manager
 	m_pipelineManager = std::unique_ptr<VulkanPipelineManager>(new VulkanPipelineManager());
 	if (!m_pipelineManager->init(m_device.get(), m_shaderManager.get(), m_descriptorManager.get())) {
-		mprintf(("Failed to initialize Vulkan pipeline manager!\n"));
+		nprintf(("vulkan", "Failed to initialize Vulkan pipeline manager!\n"));
 		return false;
 	}
 	setPipelineManager(m_pipelineManager.get());
@@ -437,7 +437,7 @@ bool VulkanRenderer::initialize()
 	// Initialize state tracker
 	m_stateTracker = std::unique_ptr<VulkanStateTracker>(new VulkanStateTracker());
 	if (!m_stateTracker->init(m_device.get())) {
-		mprintf(("Failed to initialize Vulkan state tracker!\n"));
+		nprintf(("vulkan", "Failed to initialize Vulkan state tracker!\n"));
 		return false;
 	}
 	setStateTracker(m_stateTracker.get());
@@ -445,7 +445,7 @@ bool VulkanRenderer::initialize()
 	// Initialize draw manager
 	m_drawManager = std::unique_ptr<VulkanDrawManager>(new VulkanDrawManager());
 	if (!m_drawManager->init(m_device.get())) {
-		mprintf(("Failed to initialize Vulkan draw manager!\n"));
+		nprintf(("vulkan", "Failed to initialize Vulkan draw manager!\n"));
 		return false;
 	}
 	setDrawManager(m_drawManager.get());
@@ -465,7 +465,7 @@ bool VulkanRenderer::initialize()
 	if (!graphics::Post_processing_manager) {
 		graphics::Post_processing_manager.reset(new graphics::PostProcessingManager());
 		if (!graphics::Post_processing_manager->parse_table()) {
-			mprintf(("Warning: Unable to read post-processing table\n"));
+			nprintf(("vulkan", "Warning: Unable to read post-processing table\n"));
 		}
 	}
 
@@ -477,7 +477,7 @@ bool VulkanRenderer::initialize()
 	m_queryManager = std::unique_ptr<VulkanQueryManager>(new VulkanQueryManager());
 	if (!m_queryManager->init(m_device.get(), m_physicalDevice.getProperties().limits.timestampPeriod,
 	                          m_graphicsCommandPool.get(), m_graphicsQueue)) {
-		mprintf(("Warning: Failed to initialize Vulkan query manager, GPU profiling will be disabled\n"));
+		nprintf(("vulkan", "Warning: Failed to initialize Vulkan query manager, GPU profiling will be disabled\n"));
 		m_queryManager.reset();
 	} else {
 		setQueryManager(m_queryManager.get());
@@ -552,7 +552,7 @@ bool VulkanRenderer::initializeInstance()
 
 	unsigned int count;
 	if (!SDL_Vulkan_GetInstanceExtensions(window, &count, nullptr)) {
-		mprintf(("Error in first SDL_Vulkan_GetInstanceExtensions: %s\n", SDL_GetError()));
+		nprintf(("vulkan", "Error in first SDL_Vulkan_GetInstanceExtensions: %s\n", SDL_GetError()));
 		return false;
 	}
 
@@ -560,7 +560,7 @@ bool VulkanRenderer::initializeInstance()
 	extensions.resize(count);
 
 	if (!SDL_Vulkan_GetInstanceExtensions(window, &count, extensions.data())) {
-		mprintf(("Error in second SDL_Vulkan_GetInstanceExtensions: %s\n", SDL_GetError()));
+		nprintf(("vulkan", "Error in second SDL_Vulkan_GetInstanceExtensions: %s\n", SDL_GetError()));
 		return false;
 	}
 
@@ -569,16 +569,16 @@ bool VulkanRenderer::initializeInstance()
 		VK_VERSION_MINOR(instanceVersion),
 		VK_VERSION_PATCH(instanceVersion),
 		0);
-	mprintf(("Vulkan instance version %s\n", gameversion::format_version(vulkanVersion).c_str()));
+	nprintf(("vulkan", "Vulkan instance version %s\n", gameversion::format_version(vulkanVersion).c_str()));
 
 	if (vulkanVersion < MinVulkanVersion) {
-		mprintf(("Vulkan version is less than the minimum which is %s.\n",
+		nprintf(("vulkan", "Vulkan version is less than the minimum which is %s.\n",
 			gameversion::format_version(MinVulkanVersion).c_str()));
 		return false;
 	}
 
 	const auto supportedExtensions = vk::enumerateInstanceExtensionProperties();
-	mprintf(("Instance extensions:\n"));
+	nprintf(("vulkan", "Instance extensions:\n"));
 	for (const auto& ext : supportedExtensions) {
 		mprintf(("  Found support for %s version %" PRIu32 "\n", ext.extensionName.data(), ext.specVersion));
 		// Enables the driver to advertise HDR color spaces (e.g. HDR10 ST.2084)
@@ -602,9 +602,9 @@ bool VulkanRenderer::initializeInstance()
 
 	SCP_vector<const char*> layers;
 	const auto supportedLayers = vk::enumerateInstanceLayerProperties();
-	mprintf(("Instance layers:\n"));
+	nprintf(("vulkan", "Instance layers:\n"));
 	for (const auto& layer : supportedLayers) {
-		mprintf(("  Found layer %s(%s). Spec version %d.%d.%d and implementation %" PRIu32 "\n",
+		nprintf(("vulkan", "  Found layer %s(%s). Spec version %d.%d.%d and implementation %" PRIu32 "\n",
 			layer.layerName.data(),
 			layer.description.data(),
 			VK_VERSION_MAJOR(layer.specVersion),
@@ -672,7 +672,7 @@ bool VulkanRenderer::initializeSurface()
 
 	VkSurfaceKHR surface;
 	if (!SDL_Vulkan_CreateSurface(window, static_cast<VkInstance>(*m_vkInstance), &surface)) {
-		mprintf(("Failed to create vulkan surface: %s\n", SDL_GetError()));
+		nprintf(("vulkan", "Failed to create vulkan surface: %s\n", SDL_GetError()));
 		return false;
 	}
 
@@ -721,7 +721,7 @@ bool VulkanRenderer::pickPhysicalDevice(PhysicalDeviceValues& deviceValues)
 		return vals;
 	});
 
-	mprintf(("Physical Vulkan devices:\n"));
+	nprintf(("vulkan", "Physical Vulkan devices:\n"));
 	std::for_each(values.cbegin(), values.cend(), printPhysicalDevice);
 
 	// Remove devices that do not have the features we need
@@ -737,12 +737,12 @@ bool VulkanRenderer::pickPhysicalDevice(PhysicalDeviceValues& deviceValues)
 	std::sort(values.begin(), values.end(), compareDevices);
 
 	deviceValues = values.back();
-	mprintf(("Selected device %s (%d) as the primary Vulkan device.\n",
+	nprintf(("vulkan", "Selected device %s (%d) as the primary Vulkan device.\n",
 		deviceValues.properties.deviceName.data(),
 		deviceValues.properties.deviceID));
-	mprintf(("Device extensions:\n"));
+	nprintf(("vulkan", "Device extensions:\n"));
 	for (const auto& extProp : deviceValues.extensions) {
-		mprintf(("  Found support for %s version %" PRIu32 "\n", extProp.extensionName.data(), extProp.specVersion));
+		nprintf(("vulkan", "  Found support for %s version %" PRIu32 "\n", extProp.extensionName.data(), extProp.specVersion));
 	}
 
 	return true;
@@ -889,7 +889,7 @@ bool VulkanRenderer::createLogicalDevice(const PhysicalDeviceValues& deviceValue
 	if (!m_bufferManager->init(m_device.get(), m_memoryManager.get(),
 	                           m_graphicsQueueFamilyIndex, m_transferQueueFamilyIndex,
 	                           getMinUniformBufferOffsetAlignment())) {
-		mprintf(("Failed to initialize Vulkan buffer manager!\n"));
+		nprintf(("vulkan", "Failed to initialize Vulkan buffer manager!\n"));
 		return false;
 	}
 	setBufferManager(m_bufferManager.get());
@@ -1042,7 +1042,7 @@ bool VulkanRenderer::createSwapChain(const PhysicalDeviceValues& deviceValues, v
 
 bool VulkanRenderer::recreateSwapChain()
 {
-	mprintf(("Vulkan: Recreating swap chain...\n"));
+	nprintf(("vulkan", "Vulkan: Recreating swap chain...\n"));
 
 	// Wait for all frames to finish so no resources are in use
 	for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
