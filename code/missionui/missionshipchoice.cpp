@@ -2184,6 +2184,7 @@ void draw_wing_block(int wb_num, int hot_slot, int selected_slot, int class_sele
 		GR_DEBUG_SCOPE("Single ship");
 
 		bitmap_to_draw = -1;
+		color_to_draw = nullptr;
 		ws = &wb->ss_slots[i];
 		slot_index = wb_num*MAX_WING_SLOTS + i;
 
