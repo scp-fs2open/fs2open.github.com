@@ -32,6 +32,7 @@
 #include "graphics/matrix.h"
 #include "graphics/shadows.h"
 #include "graphics/util/uniform_structs.h"
+#include "mod_table/mod_table.h"
 #include "lighting/lighting.h"
 #include "math/vecmat.h"
 #include "options/Option.h"
@@ -63,7 +64,6 @@ size_t GL_vertex_data_in = 0;
 GLint GL_max_elements_vertices = 4096;
 GLint GL_max_elements_indices = 4096;
 
-GLuint Shadow_map_texture = 0;
 GLuint Shadow_map_depth_texture = 0;
 GLuint shadow_fbo = 0;
 int Shadow_texture_size = 0;
@@ -392,6 +392,11 @@ void gr_opengl_bind_uniform_buffer(uniform_block_type bind_point, size_t offset,
 
 	glBindBufferRange(GL_UNIFORM_BUFFER, static_cast<GLuint>(bind_point), buffer_handle, static_cast<GLintptr>(offset),
 					  static_cast<GLsizeiptr>(size));
+
+	// glBindBufferRange also modifies the generic GL_UNIFORM_BUFFER binding point.
+	// Sync the state tracker to prevent stale-state skips in subsequent
+	// opengl_bind_buffer_object calls (which rely on BindUniformBuffer's cache).
+	GL_state.Array.BindUniformBuffer(buffer_handle);
 }
 
 gr_buffer_handle opengl_create_texture_buffer_object()
@@ -451,9 +456,9 @@ void opengl_destroy_all_buffers()
 	GL_vertex_buffers_in_use = 0;
 }
 
-static bool opengl_init_shadow_framebuffer(int size, GLenum color_format)
+static bool opengl_init_shadow_framebuffer(int size)
 {
-	mprintf(("Trying to create %dx%d %d-bit shadow framebuffer\n", size, size, color_format == GL_RGBA32F ? 32 : 16));
+	mprintf(("Trying to create %dx%d 24-bit shadow framebuffer\n", size, size));
 
 	glGenFramebuffers(1, &shadow_fbo);
 	GL_state.BindFrameBuffer(shadow_fbo);
@@ -469,24 +474,10 @@ static bool opengl_init_shadow_framebuffer(int size, GLenum color_format)
 	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-	glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_DEPTH_COMPONENT32, size, size, 4, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+	glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_DEPTH_COMPONENT24, size, size, Num_shadow_cascades + Num_cockpit_shadow_cascades, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
 
 	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, Shadow_map_depth_texture, 0);
-
-	glGenTextures(1, &Shadow_map_texture);
-
-	GL_state.Texture.SetActiveUnit(0);
-	GL_state.Texture.SetTarget(GL_TEXTURE_2D_ARRAY);
-	GL_state.Texture.Enable(Shadow_map_texture);
-
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-	glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, color_format, size, size, 4, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, nullptr);
-
-	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, Shadow_map_texture, 0);
 
 	auto status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 	GL_state.BindFrameBuffer(0);
@@ -499,11 +490,9 @@ static bool opengl_init_shadow_framebuffer(int size, GLenum color_format)
 	}
 
 	// Clean up resources
-	glDeleteTextures(1, &Shadow_map_texture);
 	glDeleteTextures(1, &Shadow_map_depth_texture);
 	glDeleteFramebuffers(1, &shadow_fbo);
 
-	Shadow_map_texture       = 0;
 	Shadow_map_depth_texture = 0;
 	shadow_fbo               = 0;
 
@@ -551,11 +540,13 @@ void opengl_tnl_init()
 			break;
 		}
 
-		if (!opengl_init_shadow_framebuffer(size, GL_RGBA32F)) {
-			if (!opengl_init_shadow_framebuffer(size, GL_RGBA16F)) {
-				mprintf(("Failed to create either 32 or 16-bit color shadow framebuffer. Disabling shadow support.\n"));
-				Shadow_quality = ShadowQuality::Disabled;
-			}
+		if (!opengl_init_shadow_framebuffer(size)) {
+			mprintf(("Failed to create either shadow framebuffer. Disabling shadow support.\n"));
+			Shadow_quality = ShadowQuality::Disabled;
+		}
+
+		if (Shadow_quality != ShadowQuality::Disabled) {
+			shadow_cascade_params_init();
 		}
 	}
 
@@ -571,14 +562,11 @@ void opengl_tnl_shutdown()
 
 	gr_opengl_deferred_shutdown();
 
+	shadow_cascade_params_shutdown();
+
 	if ( Shadow_map_depth_texture ) {
 		glDeleteTextures(1, &Shadow_map_depth_texture);
 		Shadow_map_depth_texture = 0;
-	}
-
-	if ( Shadow_map_texture ) {
-		glDeleteTextures(1, &Shadow_map_texture);
-		Shadow_map_texture = 0;
 	}
 
 	opengl_destroy_all_buffers();
@@ -603,32 +591,21 @@ void opengl_render_model_program(model_material* material_info, indexed_vertex_s
 		opengl_buffer_get_id(GL_ARRAY_BUFFER, vert_source->Vbuffer_handle),
 		opengl_buffer_get_id(GL_ELEMENT_ARRAY_BUFFER, vert_source->Ibuffer_handle));
 
-	// If GL_ARB_gpu_shader5 is supprted then the instancing is handled by the geometry shader
-	if (!GLAD_GL_ARB_gpu_shader5 && Rendering_to_shadow_map) {
-		glDrawElementsInstancedBaseVertex(GL_TRIANGLES,
-			(GLsizei)datap->n_verts,
-			element_type,
-										  ibuffer + datap->index_offset,
-										  4,
-										  (GLint) (vert_source->Base_vertex_offset + bufferp->vertex_num_offset));
+	if (Cmdline_drawelements) {
+		glDrawElementsBaseVertex(GL_TRIANGLES,
+								 (GLsizei) datap->n_verts,
+								 element_type,
+								 ibuffer + datap->index_offset,
+								 (GLint) (vert_source->Base_vertex_offset + bufferp->vertex_num_offset));
 	} else {
-		if (Cmdline_drawelements) {
-			glDrawElementsBaseVertex(GL_TRIANGLES,
-									 (GLsizei) datap->n_verts,
-									 element_type,
-									 ibuffer + datap->index_offset,
-									 (GLint) (vert_source->Base_vertex_offset + bufferp->vertex_num_offset));
-		} else {
-			glDrawRangeElementsBaseVertex(GL_TRIANGLES,
-										  datap->i_first,
-										  datap->i_last,
-										  (GLsizei) datap->n_verts,
-										  element_type,
-										  ibuffer + datap->index_offset,
-										  (GLint) (vert_source->Base_vertex_offset + bufferp->vertex_num_offset));
-		}
+		glDrawRangeElementsBaseVertex(GL_TRIANGLES,
+									  datap->i_first,
+									  datap->i_last,
+									  (GLsizei) datap->n_verts,
+									  element_type,
+									  ibuffer + datap->index_offset,
+									  (GLint) (vert_source->Base_vertex_offset + bufferp->vertex_num_offset));
 	}
-
 
 	GL_state.Texture.SetShaderMode(GL_FALSE);
 }
@@ -644,6 +621,65 @@ void gr_opengl_render_model(model_material* material_info, indexed_vertex_source
 	opengl_render_model_program(material_info, vert_source, bufferp, datap);
 
 	GL_CHECK_FOR_ERRORS("end of render_buffer()");
+}
+
+void gr_opengl_render_shadow_draw(gr_buffer_handle ubo_handle, size_t ubo_offset, size_t ubo_size,
+                                   vertex_buffer* buffer, indexed_vertex_source* vert_src, size_t texi)
+{
+	auto* datap = &buffer->tex_buf[texi];
+	if (datap->n_verts == 0) {
+		return;
+	}
+
+	int shader_handle = gr_opengl_maybe_create_shader(SDR_TYPE_SHADOW_MAP_GEN, gr_is_capable(gr_capability::CAPABILITY_FAST_SHADOWS) ? 0 : SDR_FLAG_SHADOW_FALLBACK);
+	opengl_shader_set_current(shader_handle);
+
+	GL_state.Texture.SetShaderMode(GL_TRUE);
+
+	gr_bind_uniform_buffer(uniform_block_type::ShadowMapData, ubo_offset, ubo_size, ubo_handle);
+
+	// Bind the transform texture buffer so the vertex shader can read model transforms
+	Current_shader->program->Uniforms.setTextureUniform("transform_tex", 10);
+	GL_state.Texture.Enable(10, GL_TEXTURE_BUFFER, opengl_get_transform_buffer_texture());
+
+	GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
+	gr_zbuffer_set(ZBUFFER_TYPE_FULL);
+	gr_set_cull(1);
+	gr_zbias(-1024);
+	gr_set_fill_mode(GR_FILL_MODE_SOLID);
+	GL_state.ColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+
+	GL_state.FrontFaceValue(gr_screen.rendering_to_texture != -1 ? GL_CCW : GL_CW);
+
+	// Enable clip distance; actual clipping is gated by the use_clip_plane uniform in the shader
+	GL_state.ClipDistance(0, true);
+
+	opengl_bind_vertex_layout(buffer->layout,
+		opengl_buffer_get_id(GL_ARRAY_BUFFER, vert_src->Vbuffer_handle),
+		opengl_buffer_get_id(GL_ELEMENT_ARRAY_BUFFER, vert_src->Ibuffer_handle));
+
+	auto ibuffer = reinterpret_cast<GLubyte*>(vert_src->Index_offset);
+	GLenum element_type = (datap->flags & VB_FLAG_LARGE_INDEX) ? GL_UNSIGNED_INT : GL_UNSIGNED_SHORT;
+	auto base_vertex = static_cast<GLint>(vert_src->Base_vertex_offset + buffer->vertex_num_offset);
+
+	//Funnily enough, both the modern shadow rendering (using shader_viewport_layer_array), and the super-old fallback without shader5 use the same instanced draw call
+	if (gr_is_capable(gr_capability::CAPABILITY_FAST_SHADOWS) || !GLAD_GL_ARB_gpu_shader5) {
+		glDrawElementsInstancedBaseVertex(GL_TRIANGLES,
+							 (GLsizei)datap->n_verts,
+							 element_type,
+							 ibuffer + datap->index_offset,
+							 Shadow_cascade_count,
+							 base_vertex);
+	}
+	else {
+		glDrawElementsBaseVertex(GL_TRIANGLES,
+							 (GLsizei)datap->n_verts,
+							 element_type,
+							 ibuffer + datap->index_offset,
+							 base_vertex);
+	}
+
+	GL_state.Texture.SetShaderMode(GL_FALSE);
 }
 
 extern GLuint Framebuffer_fallback_texture_id;
@@ -682,28 +718,28 @@ bool Glowpoint_override_save;
 
 extern bool gr_htl_projection_matrix_set;
 
-void gr_opengl_shadow_map_start(matrix4 *shadow_view_matrix, const matrix *light_orient, vec3d* eye_pos)
+void gr_opengl_shadow_map_start(matrix4 *shadow_view_matrix, const matrix *light_orient, vec3d* eye_pos, bool first_pass)
 {
 	if (Shadow_quality == ShadowQuality::Disabled)
 		return;
 
-	GL_state.PushFramebufferState();
-	GL_state.BindFrameBuffer(shadow_fbo);
+	if (first_pass) {
+		GL_state.PushFramebufferState();
+		GL_state.BindFrameBuffer(shadow_fbo);
 
-	//glDrawBuffer(GL_COLOR_ATTACHMENT0);
-	GLenum buffers[] = { GL_COLOR_ATTACHMENT0};
-	glDrawBuffers(1, buffers);
+		glDrawBuffers(0, nullptr);
 
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glClear(GL_DEPTH_BUFFER_BIT);
 
-	glEnable(GL_DEPTH_CLAMP);
+		glEnable(GL_DEPTH_CLAMP);
 
-	Rendering_to_shadow_map = true;
-	Glowpoint_override_save = Glowpoint_override;
-	Glowpoint_override = true;
+		Glowpoint_override_save = Glowpoint_override;
+		Glowpoint_override = true;
 
-	gr_htl_projection_matrix_set = true;
+		gr_htl_projection_matrix_set = true;
+	} else {
+		gr_end_view_matrix();
+	}
 
 	gr_set_view_matrix(eye_pos, light_orient);
 
@@ -714,13 +750,9 @@ void gr_opengl_shadow_map_start(matrix4 *shadow_view_matrix, const matrix *light
 
 void gr_opengl_shadow_map_end()
 {
-	if(!Rendering_to_shadow_map)
-		return;
+	gr_end_view_matrix();
 
 	glDisable(GL_DEPTH_CLAMP);
-
-	gr_end_view_matrix();
-	Rendering_to_shadow_map = false;
 
 	gr_zbuffer_set(ZBUFFER_TYPE_FULL);
 	GL_state.PopFramebufferState();
@@ -955,7 +987,7 @@ void opengl_tnl_set_model_material(model_material *material_info)
 		}
 
 		if (material_info->is_shadow_receiving()) {
-			GL_state.Texture.Enable(8, GL_TEXTURE_2D_ARRAY, Shadow_map_texture);
+			GL_state.Texture.Enable(8, GL_TEXTURE_2D_ARRAY, Shadow_map_depth_texture);
 		}
 
 		if (material_info->get_animated_effect() >= 0) {

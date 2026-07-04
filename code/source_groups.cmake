@@ -267,6 +267,9 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/post-v.sdr
 	def_files/data/effects/rocketui-f.sdr
 	def_files/data/effects/rocketui-v.sdr
+	def_files/data/effects/shadow_map-f.sdr
+	def_files/data/effects/shadow_map-g.sdr
+	def_files/data/effects/shadow_map-v.sdr
 	def_files/data/effects/shadows.sdr
 	def_files/data/effects/shield-impact-v.sdr
 	def_files/data/effects/shield-impact-f.sdr
@@ -470,6 +473,7 @@ add_file_folder("Graphics"
 	graphics/post_processing.h
 	graphics/render.cpp
 	graphics/render.h
+	graphics/render_queue.h
 	graphics/shadows.cpp
 	graphics/shadows.h
 	graphics/tmapper.h
