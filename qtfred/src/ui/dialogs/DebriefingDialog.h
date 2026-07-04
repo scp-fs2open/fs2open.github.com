@@ -6,7 +6,7 @@
 #include <QAbstractButton>
 #include <QtWidgets/QDialog>
 
-#include "ui/widgets/sexp_tree.h"
+#include "ui/widgets/sexp_tree_view.h"
 
 
 namespace fso::fred::dialogs {
@@ -47,7 +47,6 @@ private slots:
 	void on_voiceFileLineEdit_textChanged(const QString& string);
 	void on_voiceFileBrowseButton_clicked();
 	void on_voiceFilePlayButton_clicked();
-	void on_formulaTreeView_nodeChanged(int newTree);
 
 	void on_successMusicWidget_currentIndexChanged(int spooledMusicIdx);
 	void on_averageMusicWidget_currentIndexChanged(int spooledMusicIdx);

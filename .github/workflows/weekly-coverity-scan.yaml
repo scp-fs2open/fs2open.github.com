@@ -29,9 +29,12 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v1
+        uses: actions/checkout@v7
         with:
           submodules: recursive # `true` to checkout submodules, `recursive` to recursively checkout submodules
+      - name: Set workspace as safe
+        # This appears to be broken in current actions, so do it manually
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
       # pipe results of wget to a log file because it's very verbose and rarely fails
       - name: Install Coverity

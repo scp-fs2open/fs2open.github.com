@@ -34,10 +34,6 @@ extern int fred_parse_flag;
 extern int Token_found_flag;
 
 
-#define	COMMENT_CHAR	(char)';'
-#define	EOLN			(char)0x0a
-#define CARRIAGE_RETURN (char)0x0d
-
 enum class LineEndingType { UNKNOWN, CR, CRLF, LF };
 
 #define	F_NAME					1

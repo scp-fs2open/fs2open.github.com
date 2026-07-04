@@ -3135,7 +3135,7 @@ void HudGaugeReticleTriangle::renderTriangle(vec3d *hostile_pos, int aspect_flag
 		unsize(&hostile_vertex.screen.xyw.x, &hostile_vertex.screen.xyw.y);
 	}
 
-	float ang = atan2(-(hostile_vertex.screen.xyw.y - tablePosY), hostile_vertex.screen.xyw.x - tablePosX);
+	float ang = atan2_safe(-(hostile_vertex.screen.xyw.y - tablePosY), hostile_vertex.screen.xyw.x - tablePosX);
 	float sin_ang=sinf(ang);
 	float cos_ang=cosf(ang);
 
