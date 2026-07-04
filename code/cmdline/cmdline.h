@@ -166,8 +166,6 @@ extern int Cmdline_multithreading;
 enum class WeaponSpewType { NONE = 0, STANDARD, ALL };
 extern WeaponSpewType Cmdline_spew_weapon_stats;
 
-extern void removeVSyncOption();
-extern void removeWindowModeOption();
 extern void removeResolutionOption();
 extern void removeResolutionVROption();
 

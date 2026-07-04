@@ -223,6 +223,70 @@ const auto LightingOption __UNUSED = options::OptionBuilder<int>("Graphics.Light
                      .parser(parse_lighting_func)
                      .finish();
 
+// The Graphics.RenderAPI option only exists in builds that actually support choosing a backend at runtime.
+// In an OpenGL-only build there's nothing to choose between, so there's no point cluttering the options menu
+// with a one-item dropdown -- gr_get_configured_render_api() just returns the fixed default in that case.
+#ifdef WITH_VULKAN
+
+int Gr_configured_render_api = GR_OPENGL;
+
+static void parse_render_api_func()
+{
+	SCP_string value;
+	stuff_string(value, F_NAME);
+	if (lcase_equal(value, "opengl")) {
+		Gr_configured_render_api = GR_OPENGL;
+	} else if (lcase_equal(value, "vulkan")) {
+		Gr_configured_render_api = GR_VULKAN;
+	} else {
+		error_display(0, "%s is an invalid render API", value.c_str());
+	}
+}
+
+static SCP_vector<int> render_api_enumerator() { return {GR_OPENGL, GR_VULKAN}; }
+
+static SCP_string render_api_display(const int& api)
+{
+	switch (api) {
+	case GR_VULKAN:
+		return "Vulkan";
+	case GR_OPENGL:
+	default:
+		return "OpenGL";
+	}
+}
+
+// Read directly via getValue() at the one call site that needs it (freespace.cpp, right before gr_init()),
+// rather than bound to a global via a change listener -- like Resolution/Anisotropy, this can't take effect
+// without a restart, so there is no "live" value to keep in sync.
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+static auto RenderAPIOption __UNUSED = options::OptionBuilder<int>("Graphics.RenderAPI",
+                     SCP_string("Render API"),
+                     SCP_string("Selects the rendering backend used by the engine. Requires a restart to take effect."))
+                     .category(std::make_pair("Graphics", 1825))
+                     .level(options::ExpertLevel::Advanced)
+                     .enumerator(render_api_enumerator)
+                     .display(render_api_display)
+                     .flags({options::OptionFlags::ForceMultiValueSelection})
+                     .default_func([]() { return Gr_configured_render_api; })
+                     .importance(99)
+                     .parser(parse_render_api_func)
+                     .finish();
+
+int gr_get_configured_render_api()
+{
+	return RenderAPIOption->getValue();
+}
+
+#else
+
+int gr_get_configured_render_api()
+{
+	return GR_DEFAULT;
+}
+
+#endif
+
 os::ViewportState Gr_configured_window_state = os::ViewportState::Fullscreen;
 
 static bool mode_change_func(os::ViewportState state, bool initial)
@@ -272,11 +336,6 @@ static auto WindowModeOption __UNUSED = options::OptionBuilder<os::ViewportState
                      .change_listener(mode_change_func)
                      .parser(parse_window_mode_func)
                      .finish();
-
-void removeWindowModeOption()
-{
-	options::OptionsManager::instance()->removeOption(WindowModeOption);
-}
 
 // coverity[GLOBAL_INIT_ORDER] -- safe; Hook::Factory() uses Meyers singleton
 const std::shared_ptr<scripting::OverridableHook<>> OnFrameHook = scripting::OverridableHook<>::Factory(
