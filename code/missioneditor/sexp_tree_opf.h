@@ -162,7 +162,7 @@ public:
 	int query_default_argument_available(int op, int i) const;
 	//! Determine and populate the default value for argument position i of operator op.
 	//! Returns 0 on success, -1 if no default available.
-	int get_default_value(sexp_list_item* item, char* text_buf, int op, int i);
+	int get_default_value(sexp_list_item* item, int op, int i);
 
 private:
 	SexpTreeModel& _model;
