@@ -518,11 +518,7 @@ void sexp_tree_view::move_branch(int source, int parent) {
 	if (source != -1) {
 		Assertion(parent > -1, "move_branch called with negative parent index %d (source %d)", parent, source);
 		_model.move_branch_data(source, parent);
-		if (parent > 0) {
-			move_branch(tree_item_handle(tree_nodes[source]), tree_item_handle(tree_nodes[parent]));
-		} else {
-			move_branch(tree_item_handle(tree_nodes[source]));
-		}
+		move_branch(tree_item_handle(tree_nodes[source]), tree_item_handle(tree_nodes[parent]));
 	}
 }
 

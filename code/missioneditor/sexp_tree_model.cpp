@@ -601,7 +601,7 @@ void SexpTreeModel::move_branch_data(int source, int parent)
 	// link source as child of new parent
 	tree_nodes[source].parent = parent;
 	tree_nodes[source].next = -1;
-	if (parent != -1 && parent != 0) {
+	if (parent != -1) {
 		if (tree_nodes[parent].child == -1) {
 			tree_nodes[parent].child = source;
 		} else {
