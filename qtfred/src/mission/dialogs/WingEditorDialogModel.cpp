@@ -4,6 +4,7 @@
 #include "iff_defs/iff_defs.h"
 #include "mission/missionhotkey.h"
 #include "mission/missionparse.h"
+#include "mission/object.h"
 #include "missioneditor/common.h"
 #include <QObject>
 #include <QMessageBox>
@@ -635,6 +636,9 @@ void WingEditorDialogModel::alignWingFormation()
 
 		get_absolute_wing_pos(&objp->pos, leader_objp, _currentWingIndex, i, false);
 		objp->orient = leader_objp->orient;
+
+		// drag any docked partners along (no-op for undocked ships)
+		object_moved(objp);
 	}
 
 	// roll back temporary formation
