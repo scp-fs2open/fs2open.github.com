@@ -491,28 +491,33 @@ void briefing_editor_dlg::update_data(int update)
 			}
 			strcpy_s(ptr->icons[m_last_icon].closeup_label, buf);
 
-			if (m_icon_scale > 0)
-				ptr->icons[m_last_icon].scale_factor = m_icon_scale / 100.0f;
+			if (m_icon_scale > 0) {
+				float new_scale = m_icon_scale / 100.0f;
+				if ((ptr->icons[m_last_icon].scale_factor != new_scale) && !m_change_local) {
+					set_modified();
+					reset_icon_loop(m_last_stage);
+					while (get_next_icon(m_id))
+						iconp->scale_factor = new_scale;
+				}
+				ptr->icons[m_last_icon].scale_factor = new_scale;
+			}
 
-			if ( m_hilight )
-				ptr->icons[m_last_icon].flags |= BI_HIGHLIGHT;
-			else
-				ptr->icons[m_last_icon].flags &= ~BI_HIGHLIGHT;
+			// build the new flags for this icon from the checkboxes, preserving any non-editable bits
+			const int editable_flags = BI_HIGHLIGHT | BI_MIRROR_ICON | BI_USE_WING_ICON | BI_USE_CARGO_ICON;
+			int new_flags = ptr->icons[m_last_icon].flags;
+			if (m_hilight)   new_flags |= BI_HIGHLIGHT;      else new_flags &= ~BI_HIGHLIGHT;
+			if (m_flipicon)  new_flags |= BI_MIRROR_ICON;    else new_flags &= ~BI_MIRROR_ICON;
+			if (m_use_wing)  new_flags |= BI_USE_WING_ICON;  else new_flags &= ~BI_USE_WING_ICON;
+			if (m_use_cargo) new_flags |= BI_USE_CARGO_ICON; else new_flags &= ~BI_USE_CARGO_ICON;
 
-			if (m_flipicon)
-				ptr->icons[m_last_icon].flags |= BI_MIRROR_ICON;
-			else
-				ptr->icons[m_last_icon].flags &= ~BI_MIRROR_ICON;
-
-			if (m_use_wing)
-				ptr->icons[m_last_icon].flags |= BI_USE_WING_ICON;
-			else
-				ptr->icons[m_last_icon].flags &= ~BI_USE_WING_ICON;
-
-			if (m_use_cargo)
-				ptr->icons[m_last_icon].flags |= BI_USE_CARGO_ICON;
-			else
-				ptr->icons[m_last_icon].flags &= ~BI_USE_CARGO_ICON;
+			if ((ptr->icons[m_last_icon].flags != new_flags) && !m_change_local) {
+				set_modified();
+				reset_icon_loop(m_last_stage);
+				// apply only the editable bits to later icons, preserving their other flags
+				while (get_next_icon(m_id))
+					iconp->flags = (iconp->flags & ~editable_flags) | (new_flags & editable_flags);
+			}
+			ptr->icons[m_last_icon].flags = new_flags;
 
 			if ((ptr->icons[m_last_icon].type != m_icon_image) && !m_change_local) {
 				set_modified();
@@ -1355,7 +1360,7 @@ int briefing_editor_dlg::get_next_icon(int id)
 		icon_loop++;
 		if (icon_loop >= Briefing->stages[stage_loop].num_icons) {
 			stage_loop++;
-			if (stage_loop > Briefing->num_stages)
+			if (stage_loop >= Briefing->num_stages)
 				return 0;
 
 			icon_loop = -1;
