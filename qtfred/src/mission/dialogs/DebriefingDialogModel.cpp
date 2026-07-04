@@ -1,23 +1,52 @@
 #include "DebriefingDialogModel.h"
 #include "mission/missionparse.h"
 #include "gamesnd/eventmusic.h"
+#include "parse/sexp.h"
 #include "sound/audiostr.h"
 #include <QMessageBox>
 
 namespace fso::fred::dialogs {
 
-DebriefingDialogModel::DebriefingDialogModel(QObject* parent, EditorViewport* viewport) 
+DebriefingDialogModel::DebriefingDialogModel(QObject* parent, EditorViewport* viewport)
 	: AbstractDialogModel(parent, viewport)
 {
 		initializeData();
+}
+
+DebriefingDialogModel::~DebriefingDialogModel()
+{
+	stopSpeech();
+	for (auto& wip : _wipDebriefing) {
+		for (auto& stage : wip.stages) {
+			if (stage.formula >= 0) {
+				free_sexp2(stage.formula);
+				stage.formula = -1;
+			}
+		}
+	}
 }
 
 bool DebriefingDialogModel::apply()
 {
 	stopSpeech();
 
+	// Capture any pending edits from the visible tree into _wipDebriefing.
+	commitCurrentFormula();
+
 	for (int i = 0; i < MAX_TVT_TEAMS; i++) {
+		// Free Debriefings's existing formulas before they get overwritten by the assignment.
+		for (auto& stage : Debriefings[i].stages) {
+			if (stage.formula >= 0) {
+				free_sexp2(stage.formula);
+				stage.formula = -1;
+			}
+		}
 		Debriefings[i] = _wipDebriefing[i];
+		// Ownership of the formulas has transferred to Debriefings; sever the
+		// _wipDebriefing references so the destructor doesn't double-free.
+		for (auto& stage : _wipDebriefing[i].stages) {
+			stage.formula = -1;
+		}
 	}
 
 	Mission_music[SCORE_DEBRIEFING_SUCCESS] = _successMusic;
@@ -27,7 +56,7 @@ bool DebriefingDialogModel::apply()
 	return true;
 }
 
-void DebriefingDialogModel::reject() 
+void DebriefingDialogModel::reject()
 {
 	stopSpeech();
 
@@ -36,10 +65,17 @@ void DebriefingDialogModel::reject()
 void DebriefingDialogModel::initializeData()
 {
 	initializeTeamList();
-	
+
 	// Make a working copy
 	for (int i = 0; i < MAX_TVT_TEAMS; i++) {
 		_wipDebriefing[i] = Debriefings[i];
+		// The struct assignment shallow-copied formula indices; give _wipDebriefing
+		// its own sexp trees so edits/frees can't corrupt the live Debriefings[].
+		for (auto& stage : _wipDebriefing[i].stages) {
+			if (stage.formula >= 0) {
+				stage.formula = dup_sexp_chain(stage.formula);
+			}
+		}
 	}
 
 	_successMusic = Mission_music[SCORE_DEBRIEFING_SUCCESS];
@@ -51,6 +87,23 @@ void DebriefingDialogModel::initializeData()
 	_modified = false;
 }
 
+void DebriefingDialogModel::commitCurrentFormula()
+{
+	if (_sexpTree == nullptr)
+		return;
+	if (_currentTeam < 0 || _currentTeam >= MAX_TVT_TEAMS)
+		return;
+	if (_currentStage < 0 || _currentStage >= _wipDebriefing[_currentTeam].num_stages)
+		return;
+
+	int newFormula = _sexpTree->_model.save_tree();
+	auto& stage = _wipDebriefing[_currentTeam].stages[_currentStage];
+	if (stage.formula >= 0 && stage.formula != newFormula) {
+		free_sexp2(stage.formula);
+	}
+	stage.formula = newFormula;
+}
+
 void DebriefingDialogModel::gotoPreviousStage()
 {
 	if (_currentStage <= 0) {
@@ -58,6 +111,7 @@ void DebriefingDialogModel::gotoPreviousStage()
 		return;
 	}
 
+	commitCurrentFormula();
 	stopSpeech();
 	_currentStage--;
 }
@@ -73,13 +127,15 @@ void DebriefingDialogModel::gotoNextStage()
 		_currentStage = _wipDebriefing[_currentTeam].num_stages - 1;
 		return;
 	}
-	
+
+	commitCurrentFormula();
 	_currentStage++;
 	stopSpeech();
 }
 
 void DebriefingDialogModel::addStage()
 {
+	commitCurrentFormula();
 	stopSpeech();
 
 	if (_wipDebriefing[_currentTeam].num_stages >= MAX_DEBRIEF_STAGES) {
@@ -101,6 +157,7 @@ void DebriefingDialogModel::addStage()
 // copies the current stage as the next stage and then moves the rest of the stages over.
 void DebriefingDialogModel::insertStage()
 {
+	commitCurrentFormula();
 	stopSpeech();
 
 	if (_wipDebriefing[_currentTeam].num_stages >= MAX_DEBRIEF_STAGES) {
@@ -109,10 +166,24 @@ void DebriefingDialogModel::insertStage()
 		return;
 	}
 
+	const int last = _wipDebriefing[_currentTeam].num_stages; // new tail slot (post-increment index)
 	_wipDebriefing[_currentTeam].num_stages++;
 
-	for (int i = _wipDebriefing[_currentTeam].num_stages - 1; i > _currentStage; i--) {
+	// If the slot we're about to overwrite was owned, free it first.
+	if (_wipDebriefing[_currentTeam].stages[last].formula >= 0) {
+		free_sexp2(_wipDebriefing[_currentTeam].stages[last].formula);
+		_wipDebriefing[_currentTeam].stages[last].formula = -1;
+	}
+
+	for (int i = last; i > _currentStage; i--) {
 		_wipDebriefing[_currentTeam].stages[i] = _wipDebriefing[_currentTeam].stages[i - 1];
+	}
+
+	// The shifted-up slot at _currentStage+1 now shares its formula index with
+	// _currentStage. Give it its own owned copy.
+	auto& inserted = _wipDebriefing[_currentTeam].stages[_currentStage + 1];
+	if (inserted.formula >= 0) {
+		inserted.formula = dup_sexp_chain(inserted.formula);
 	}
 
 	// Future TODO: Add a QtFRED Option to clear the inserted stage instead of copying the current one.
@@ -122,11 +193,15 @@ void DebriefingDialogModel::insertStage()
 
 void DebriefingDialogModel::deleteStage()
 {
+	commitCurrentFormula();
 	stopSpeech();
 
 	// Clear everything if we were on the last stage.
 	if (_wipDebriefing[_currentTeam].num_stages <= 1) {
 		_wipDebriefing[_currentTeam].num_stages = 0;
+		if (_wipDebriefing[_currentTeam].stages[0].formula >= 0) {
+			free_sexp2(_wipDebriefing[_currentTeam].stages[0].formula);
+		}
 		_wipDebriefing[_currentTeam].stages[0].text.clear();
 		_wipDebriefing[_currentTeam].stages[0].recommendation_text.clear();
 		memset(_wipDebriefing[_currentTeam].stages[0].voice, 0, CF_MAX_FILENAME_LENGTH);
@@ -134,7 +209,13 @@ void DebriefingDialogModel::deleteStage()
 		set_modified();
 		return;
 	}
-	
+
+	// Free the formula at _currentStage before the loop overwrites it.
+	if (_wipDebriefing[_currentTeam].stages[_currentStage].formula >= 0) {
+		free_sexp2(_wipDebriefing[_currentTeam].stages[_currentStage].formula);
+		_wipDebriefing[_currentTeam].stages[_currentStage].formula = -1;
+	}
+
 	// copy the stages backwards until we get to the stage we're on
 	for (int i = _currentStage; i + 1 < _wipDebriefing[_currentTeam].num_stages; i++) {
 		_wipDebriefing[_currentTeam].stages[i] = _wipDebriefing[_currentTeam].stages[i + 1];
@@ -142,7 +223,8 @@ void DebriefingDialogModel::deleteStage()
 
 	_wipDebriefing[_currentTeam].num_stages--;
 
-	// Clear the tail
+	// Clear the tail. The last shift left it sharing its formula with the slot
+	// above it, so just sever the reference (no free — the slot above owns it now).
 	const int tail = _wipDebriefing[_currentTeam].num_stages; // index of the old last element
 	_wipDebriefing[_currentTeam].stages[tail].text.clear();
 	_wipDebriefing[_currentTeam].stages[tail].recommendation_text.clear();
@@ -171,11 +253,25 @@ void DebriefingDialogModel::testSpeech()
 
 void DebriefingDialogModel::copyToOtherTeams()
 {
+	commitCurrentFormula();
 	stopSpeech();
 
 	for (int i = 0; i < MAX_TVT_TEAMS; i++) {
 		if (i != _currentTeam) {
+			// Free this team's existing formulas before they get overwritten.
+			for (auto& stage : _wipDebriefing[i].stages) {
+				if (stage.formula >= 0) {
+					free_sexp2(stage.formula);
+					stage.formula = -1;
+				}
+			}
 			_wipDebriefing[i] = _wipDebriefing[_currentTeam];
+			// Shallow copy shared formula indices across teams; give each team its own copy.
+			for (auto& stage : _wipDebriefing[i].stages) {
+				if (stage.formula >= 0) {
+					stage.formula = dup_sexp_chain(stage.formula);
+				}
+			}
 		}
 	}
 	set_modified();
@@ -214,6 +310,9 @@ int DebriefingDialogModel::getCurrentTeam() const
 
 void DebriefingDialogModel::setCurrentTeam(int teamIn)
 {
+	if (teamIn != _currentTeam) {
+		commitCurrentFormula();
+	}
 	modify(_currentTeam, teamIn);
 };
 
@@ -261,11 +360,6 @@ void DebriefingDialogModel::setSpeechFilename(const SCP_string& speechFilename)
 int DebriefingDialogModel::getFormula() const
 {
 	return _wipDebriefing[_currentTeam].stages[_currentStage].formula;
-}
-
-void DebriefingDialogModel::setFormula(int formula)
-{
-	modify(_wipDebriefing[_currentTeam].stages[_currentStage].formula, formula);
 }
 
 SCP_vector<SCP_string> DebriefingDialogModel::getMusicList()

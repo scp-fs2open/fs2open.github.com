@@ -249,7 +249,11 @@ void BriefingEditorDialog::initializeUi()
 	}
 
 	// Initialize the formula tree editor
-	ui->formulaTreeView->initializeEditor(_viewport->editor, this);
+	ui->formulaTreeView->initializeEditor(_viewport->editor, this, _viewport);
+	_model->setTreeControl(ui->formulaTreeView);
+	connect(ui->formulaTreeView, &sexp_tree_view::modified, this, [this]() {
+		_model->setModified();
+	});
 
 	on_movementSpeedComboBox_currentIndexChanged(ui->movementSpeedComboBox->currentIndex());
 	on_rotationSpeedComboBox_currentIndexChanged(ui->rotationSpeedComboBox->currentIndex());
@@ -702,11 +706,6 @@ void BriefingEditorDialog::on_voiceFileBrowseButton_clicked()
 void BriefingEditorDialog::on_voiceFilePlayButton_clicked()
 {
 	_model->testSpeech();
-}
-
-void BriefingEditorDialog::on_formulaTreeView_nodeChanged(int newTree)
-{
-	_model->setFormula(newTree);
 }
 
 void BriefingEditorDialog::on_defaultMusicWidget_currentIndexChanged(int spooledMusicIdx)

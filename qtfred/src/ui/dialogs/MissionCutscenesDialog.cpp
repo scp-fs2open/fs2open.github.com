@@ -15,7 +15,7 @@ MissionCutscenesDialog::MissionCutscenesDialog(QWidget* parent, EditorViewport* 
 
 	populateCutsceneCombos();
 
-	ui->cutsceneEventTree->initializeEditor(viewport->editor, this);
+	ui->cutsceneEventTree->initializeEditor(viewport->editor, this, viewport);
 	_model->setTreeControl(ui->cutsceneEventTree);
 
 	ui->cutsceneFilename->setMaxLength(NAME_LENGTH - 1);
@@ -24,6 +24,7 @@ MissionCutscenesDialog::MissionCutscenesDialog(QWidget* parent, EditorViewport* 
 	ui->helpTextBox->setVisible(viewport->Show_sexp_help_mission_cutscenes);
 
 	connect(_model.get(), &MissionCutscenesDialogModel::modelChanged, this, &MissionCutscenesDialog::updateUi);
+	connect(ui->cutsceneEventTree, &sexp_tree_view::modified, this, [this] { _model->setModified(); });
 
 	_model->initializeData();
 
@@ -90,9 +91,9 @@ void MissionCutscenesDialog::load_tree()
 	ui->cutsceneEventTree->clear_tree();
 	auto& cutscenes = _model->getCutscenes();
 	for (auto& scene : cutscenes) {
-		scene.formula = ui->cutsceneEventTree->load_sub_tree(scene.formula, true, "true");
+		scene.formula = ui->cutsceneEventTree->_model.load_sub_tree(scene.formula, true, "true");
 	}
-	ui->cutsceneEventTree->post_load();
+	ui->cutsceneEventTree->_model.post_load();
 }
 void MissionCutscenesDialog::recreate_tree()
 {
@@ -104,7 +105,7 @@ void MissionCutscenesDialog::recreate_tree()
 		}
 
 		auto h = ui->cutsceneEventTree->insert(scene.filename);
-		h->setData(0, sexp_tree::FormulaDataRole, scene.formula);
+		h->setData(0, sexp_tree_view::FormulaDataRole, scene.formula);
 		ui->cutsceneEventTree->add_sub_tree(scene.formula, h);
 	}
 
@@ -119,7 +120,7 @@ void MissionCutscenesDialog::createNewCutscene()
 	ui->cutsceneEventTree->setCurrentItemIndex(-1);
 	ui->cutsceneEventTree->add_operator("true", h);
 	auto index = scene.formula = ui->cutsceneEventTree->getCurrentItemIndex();
-	h->setData(0, sexp_tree::FormulaDataRole, index);
+	h->setData(0, sexp_tree_view::FormulaDataRole, index);
 
 	ui->cutsceneEventTree->setCurrentItem(h);
 }

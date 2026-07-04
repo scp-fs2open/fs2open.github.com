@@ -20,12 +20,44 @@
 
 namespace fso::fred::dialogs {
 
+// Compute the annotation key for a Qt tree item. For regular tree nodes this is
+// the tree_nodes[] index; for root labels (event name rows, which aren't stored
+// in tree_nodes) it's the encoded root key from SexpAnnotationModel. Returns -1
+// if the item maps to neither (e.g. a stray item with no FormulaDataRole).
+static int annotation_key_for_qt_item(sexp_tree_view* tree, QTreeWidgetItem* h)
+{
+	if (!h)
+		return -1;
+
+	int node = tree->get_node(h);
+	if (node >= 0)
+		return node;
+
+	if (!h->parent()) {
+		const QVariant v = h->data(0, sexp_tree_view::FormulaDataRole);
+		bool ok = false;
+		const int formula = v.toInt(&ok);
+		if (ok && formula >= 0)
+			return SexpAnnotationModel::rootKey(formula);
+	}
+
+	return -1;
+}
+
 MissionEventsDialog::MissionEventsDialog(QWidget* parent, EditorViewport* viewport) :
 	QDialog(parent),
 	SexpTreeEditorInterface({ TreeFlags::LabeledRoot, TreeFlags::RootDeletable, TreeFlags::RootEditable, TreeFlags::AnnotationsAllowed }),
 	  ui(new Ui::MissionEventsDialog()), _viewport(viewport)
 {
 	ui->setupUi(this);
+
+	// Give the tree panel preference on resize but let the user rebalance via the splitter.
+	// Both panels get stretch>0 so QSplitter distributes extra space proportionally to
+	// their current sizes; the higher factor on the tree side biases the initial layout
+	// and any extra room from a larger dialog toward the tree.
+	ui->mainSplitter->setStretchFactor(0, 3);
+	ui->mainSplitter->setStretchFactor(1, 1);
+	ui->mainSplitter->setSizes({600, 350});
 
 	fso::fred::bindStandardIcon(ui->eventUpBtn,   QStyle::SP_ArrowUp);
 	fso::fred::bindStandardIcon(ui->eventDownBtn, QStyle::SP_ArrowDown);
@@ -36,180 +68,123 @@ MissionEventsDialog::MissionEventsDialog(QWidget* parent, EditorViewport* viewpo
 	ui->editDirectiveText->setMaxLength(NAME_LENGTH - 1);
 	ui->editDirectiveKeypressText->setMaxLength(NAME_LENGTH - 1);
 
-	// Build the Qt adapter for our data model
-	// This is kinda messy but the sexp_tree widget owns both the ui and the data for the tree
-	// Simultaneously our tree model needs to be able to tell the tree when things change and also
-	// be able to read data from the tree as needed. So we pass in this small adapter object with
-	// the relevant tree operations allowing the model to do all the cross talk it needs
-	struct QtTreeOps final : IEventTreeOps {
-		explicit QtTreeOps(sexp_tree& t) : tree(t) {}
-		sexp_tree& tree;
+	ui->eventTree->initializeEditor(viewport->editor, this, viewport);
+	ui->eventTree->clear_tree();
+	ui->eventTree->_model.post_load();
 
-		int load_sub_tree(int formula, bool allow_empty = false, const char* default_body = "do-nothing") override
-		{
-			return tree.load_sub_tree(formula, allow_empty, default_body);
-		}
+	// Construct the model with a direct reference to the shared sexp tree model
+	_model = std::make_unique<MissionEventsDialogModel>(this, _viewport, ui->eventTree->_model);
 
-		void post_load() override
-		{
-			tree.post_load();
-		}
+	// Connect model signals to widget operations
+	connect(_model.get(), &MissionEventsDialogModel::treeCleared, this, [this]() {
+		ui->eventTree->clear();
+	});
 
-		void add_sub_tree(const SCP_string& name, NodeImage image, int formula) override
-		{
-			auto h = tree.insert(name.c_str(), image);
-			h->setData(0, sexp_tree::FormulaDataRole, formula);
-			tree.add_sub_tree(formula, h);
-		}
+	connect(_model.get(), &MissionEventsDialogModel::subtreeAdded, this,
+		[this](const SCP_string& name, NodeImage image, int formula) {
+			auto h = ui->eventTree->insert(name.c_str(), image);
+			h->setData(0, sexp_tree_view::FormulaDataRole, formula);
+			ui->eventTree->add_sub_tree(formula, h);
+		});
 
-		QTreeWidgetItem* findRootByFormula(int formula)
-		{
-			const int n = tree.topLevelItemCount();
-			for (int i = 0; i < n; ++i) {
-				auto* it = tree.topLevelItem(i);
-				if (it && it->data(0, sexp_tree::FormulaDataRole).toInt() == formula)
-					return it;
-			}
-			return nullptr;
-		}
-
-		int build_default_root(const SCP_string& name, int after_root) override
-		{
-			QTreeWidgetItem* afterItem = (after_root >= 0) ? findRootByFormula(after_root) : nullptr;
-
-			auto* root = tree.insert(name.c_str(), NodeImage::ROOT, /*parent*/ nullptr, afterItem);
-
-			// Build default body: when -> true -> do-nothing
-			tree.setCurrentItemIndex(-1);
-			int whenIdx = tree.add_operator("when", root);
-			root->setData(0, sexp_tree::FormulaDataRole, whenIdx);
-			tree.add_operator("true");
-			tree.setCurrentItemIndex(whenIdx);
-			tree.add_operator("do-nothing");
-
-			tree.clearSelection();
-			root->setSelected(true);
-
-			return root->data(0, sexp_tree::FormulaDataRole).toInt();
-		}
-
-		int save_tree(int root_formula) override
-		{
-			return tree.save_tree(root_formula);
-		}
-
-		void ensure_top_level_index(int root_formula, int desired_index) override
-		{
-			if (auto* item = findRootByFormula(root_formula)) {
-				int cur = tree.indexOfTopLevelItem(item);
-				if (cur != desired_index) {
-					tree.takeTopLevelItem(cur);
-					tree.insertTopLevelItem(desired_index, item);
+	connect(_model.get(), &MissionEventsDialogModel::defaultRootBuilt, this,
+		[this](const SCP_string& name, int after_root_formula, int new_formula) {
+			// Find the item to insert after (if any)
+			QTreeWidgetItem* afterItem = nullptr;
+			if (after_root_formula >= 0) {
+				const int n = ui->eventTree->topLevelItemCount();
+				for (int i = 0; i < n; ++i) {
+					auto* it = ui->eventTree->topLevelItem(i);
+					if (it && it->data(0, sexp_tree_view::FormulaDataRole).toInt() == after_root_formula) {
+						afterItem = it;
+						break;
+					}
 				}
 			}
-		}
 
-		void select_root(int root_formula) override
-		{
-			if (auto* item = findRootByFormula(root_formula))
-				tree.setCurrentItem(item);
-		}
+			// Insert the root item
+			auto* root = ui->eventTree->insert(name.c_str(), NodeImage::ROOT, nullptr, afterItem);
+			root->setData(0, sexp_tree_view::FormulaDataRole, new_formula);
 
-		void clear() override
-		{
-			tree.clear();
-		}
+			// Build the visual subtree from the model's tree_nodes
+			ui->eventTree->add_sub_tree(new_formula, root);
 
-		void delete_event() override
-		{
-			// This is such an ugly hack but I don't want to rewrite sexp_tree just for this..
-			auto item = tree.currentItem();
-			while (item->parent() != nullptr) {
-				item = item->parent();
+			ui->eventTree->clearSelection();
+			root->setSelected(true);
+		});
+
+	connect(_model.get(), &MissionEventsDialogModel::rootSelected, this, [this](int formula) {
+		const int n = ui->eventTree->topLevelItemCount();
+		for (int i = 0; i < n; ++i) {
+			auto* it = ui->eventTree->topLevelItem(i);
+			if (it && it->data(0, sexp_tree_view::FormulaDataRole).toInt() == formula) {
+				ui->eventTree->setCurrentItem(it);
+				break;
 			}
-			tree.setCurrentItem(item);
-
-			tree.deleteCurrentItem();
 		}
+	});
 
-		Handle parent_of(Handle node) override
-		{
-			auto* it = static_cast<QTreeWidgetItem*>(node);
-			return static_cast<Handle>(it ? it->parent() : nullptr);
+	connect(_model.get(), &MissionEventsDialogModel::eventDeleteRequested, this, [this]() {
+		// Walk to root before deleting
+		auto item = ui->eventTree->currentItem();
+		while (item && item->parent() != nullptr) {
+			item = item->parent();
 		}
+		if (item) {
+			ui->eventTree->setCurrentItem(item);
+			ui->eventTree->deleteCurrentItem();
+		}
+	});
 
-		int index_in_parent(Handle node) override
-		{
-			auto* it = static_cast<QTreeWidgetItem*>(node);
+	connect(_model.get(), &MissionEventsDialogModel::topLevelIndexRequested, this,
+		[this](int formula, int desired_index) {
+			const int n = ui->eventTree->topLevelItemCount();
+			for (int i = 0; i < n; ++i) {
+				auto* it = ui->eventTree->topLevelItem(i);
+				if (it && it->data(0, sexp_tree_view::FormulaDataRole).toInt() == formula) {
+					int cur = ui->eventTree->indexOfTopLevelItem(it);
+					if (cur != desired_index) {
+						ui->eventTree->takeTopLevelItem(cur);
+						ui->eventTree->insertTopLevelItem(desired_index, it);
+					}
+					break;
+				}
+			}
+		});
+
+	connect(_model.get(), &MissionEventsDialogModel::annotationApplied, this,
+		[this](int key, const SCP_string& note, int r, int g, int b, bool has_color) {
+			// Resolve the annotation key back to a Qt item: regular keys (>= 0) index
+			// directly into tree_nodes[]; root keys (<= -2) are decoded to a formula
+			// and matched against the top-level items via FormulaDataRole.
+			QTreeWidgetItem* it = nullptr;
+			if (SexpAnnotationModel::isRootKey(key)) {
+				const int formula = SexpAnnotationModel::formulaFromRootKey(key);
+				const int n = ui->eventTree->topLevelItemCount();
+				for (int i = 0; i < n; ++i) {
+					auto* candidate = ui->eventTree->topLevelItem(i);
+					if (candidate && candidate->data(0, sexp_tree_view::FormulaDataRole).toInt() == formula) {
+						it = candidate;
+						break;
+					}
+				}
+			} else if (key >= 0 && key < static_cast<int>(ui->eventTree->_model.tree_nodes.size())) {
+				it = tree_item_handle(ui->eventTree->_model.tree_nodes[key]);
+			}
 			if (!it)
-				return -1;
-			auto* p = it->parent();
-			return p ? p->indexOfChild(it) : -1;
-		}
+				return;
 
-		int root_formula_of(Handle node) override
-		{
-			auto* it = static_cast<QTreeWidgetItem*>(node);
-			if (!it)
-				return -1;
-			while (it->parent())
-				it = it->parent();
-			return it->data(0, sexp_tree::FormulaDataRole).toInt();
-		}
+			const QString q = QString::fromStdString(note);
+			it->setData(0, sexp_tree_view::NoteRole, q);
+			it->setToolTip(0, q);
+			it->setData(0, sexp_tree_view::BgColorRole, QColor(r, g, b));
+			it->setBackground(0, has_color ? QBrush(QColor(r, g, b)) : QBrush());
+			sexp_tree_view::applyVisuals(it);
+		});
 
-		bool is_handle_valid(Handle h) override
-		{
-			auto* it = static_cast<QTreeWidgetItem*>(h);
-			return it && it->treeWidget() == &tree;
-		}
-
-		Handle get_root_by_formula(int formula) override
-		{
-			return static_cast<Handle>(findRootByFormula(formula));
-		}
-
-		int child_count(Handle node) override
-		{
-			auto* it = static_cast<QTreeWidgetItem*>(node);
-			return it ? it->childCount() : 0;
-		}
-
-		Handle child_at(Handle node, int idx) override
-		{
-			auto* it = static_cast<QTreeWidgetItem*>(node);
-			if (!it || idx < 0 || idx >= it->childCount())
-				return nullptr;
-			return static_cast<Handle>(it->child(idx));
-		}
-
-		void set_node_note(Handle node, const SCP_string& note) override
-		{
-			if (auto* it = static_cast<QTreeWidgetItem*>(node)) {
-				const QString q = QString::fromStdString(note);
-				it->setData(0, sexp_tree::NoteRole, q);
-				it->setToolTip(0, q);
-				sexp_tree::applyVisuals(it);
-			}
-		}
-
-		void set_node_bg_color(Handle node, int r, int g, int b, bool has_color) override
-		{
-			if (auto* it = static_cast<QTreeWidgetItem*>(node)) {
-				it->setData(0, sexp_tree::BgColorRole, QColor(r, g, b));
-				it->setBackground(0, has_color ? QBrush(QColor(r, g, b)) : QBrush());
-				sexp_tree::applyVisuals(it);
-			}
-		}
-	};
-
-	_treeOps = std::make_unique<QtTreeOps>(QtTreeOps{*ui->eventTree});
-
-	ui->eventTree->initializeEditor(viewport->editor, this);
-	ui->eventTree->clear_tree();
-	ui->eventTree->post_load();
-
-	// Now construct the model with reference to tree ops
-	_model = std::make_unique<MissionEventsDialogModel>(this, _viewport, *_treeOps);
+	// Load data now that all signals are connected, so tree-building signals
+	// (treeCleared, subtreeAdded, annotationApplied) are received by the dialog.
+	_model->initializeData();
 
 	initMessageWidgets();
 
@@ -228,29 +203,37 @@ void MissionEventsDialog::initEventWidgets() {
 	ui->helpBox->setVisible(_viewport->Show_sexp_help_mission_events);
 
 	// connect the sexp tree stuff
-	connect(ui->eventTree, &sexp_tree::modified, this, [this]() { _model->setModified(); });
-	connect(ui->eventTree, &sexp_tree::rootNodeDeleted, this, &MissionEventsDialog::rootNodeDeleted);
-	connect(ui->eventTree, &sexp_tree::rootNodeRenamed, this, &MissionEventsDialog::rootNodeRenamed);
-	connect(ui->eventTree, &sexp_tree::rootNodeFormulaChanged, this, &MissionEventsDialog::rootNodeFormulaChanged);
-	connect(ui->eventTree, &sexp_tree::miniHelpChanged, this, [this](const QString& help) { ui->miniHelpBox->setText(help); });
-	connect(ui->eventTree, &sexp_tree::helpChanged, this, [this](const QString& help) { ui->helpBox->setPlainText(help); });
-	connect(ui->eventTree, &sexp_tree::selectedRootChanged, this, [this](int formula) { MissionEventsDialog::rootNodeSelectedByFormula(formula); });
+	connect(ui->eventTree, &sexp_tree_view::modified, this, [this]() { _model->setModified(); });
+	connect(ui->eventTree, &sexp_tree_view::rootNodeDeleted, this, &MissionEventsDialog::rootNodeDeleted);
+	connect(ui->eventTree, &sexp_tree_view::rootNodeRenamed, this, &MissionEventsDialog::rootNodeRenamed);
+	connect(ui->eventTree, &sexp_tree_view::rootNodeFormulaChanged, this, &MissionEventsDialog::rootNodeFormulaChanged);
+	connect(ui->eventTree, &sexp_tree_view::miniHelpChanged, this, [this](const QString& help) { ui->miniHelpBox->setText(help); });
+	connect(ui->eventTree, &sexp_tree_view::helpChanged, this, [this](const QString& help) { ui->helpBox->setPlainText(help); });
+	connect(ui->eventTree, &sexp_tree_view::selectedRootChanged, this, [this](int formula) { MissionEventsDialog::rootNodeSelectedByFormula(formula); });
 
-	connect(ui->eventTree, &sexp_tree::nodeAnnotationChanged, this, [this](void* h, const QString& note) {
-		SCP_string text = note.toUtf8().constData();
-		_model->setNodeAnnotation(h, text);
+	connect(ui->eventTree, &sexp_tree_view::nodeAnnotationChanged, this, [this](void* h, const QString& note) {
+		// Translate QTreeWidgetItem* to annotation key (tree_nodes[] index for regular
+		// nodes, or rootKey(formula) for root labels).
+		const int key = annotation_key_for_qt_item(ui->eventTree, static_cast<QTreeWidgetItem*>(h));
+		if (key != -1) {
+			SCP_string text = note.toUtf8().constData();
+			_model->setNodeAnnotation(key, text);
+		}
 	});
 
-	connect(ui->eventTree, &sexp_tree::nodeBgColorChanged, this, [this](void* h, const QColor& c) {
-		_model->setNodeBgColor(h, c.red(), c.green(), c.blue(), c.isValid());
+	connect(ui->eventTree, &sexp_tree_view::nodeBgColorChanged, this, [this](void* h, const QColor& c) {
+		const int key = annotation_key_for_qt_item(ui->eventTree, static_cast<QTreeWidgetItem*>(h));
+		if (key != -1) {
+			_model->setNodeBgColor(key, c.red(), c.green(), c.blue(), c.isValid());
+		}
 	});
 
-	connect(ui->eventTree, &sexp_tree::rootOrderChanged, this, [this] {
+	connect(ui->eventTree, &sexp_tree_view::rootOrderChanged, this, [this] {
 		SCP_vector<int> order;
 		order.reserve(ui->eventTree->topLevelItemCount());
 		for (int i = 0; i < ui->eventTree->topLevelItemCount(); ++i) {
 			auto* it = ui->eventTree->topLevelItem(i);
-			order.push_back(it->data(0, sexp_tree::FormulaDataRole).toInt());
+			order.push_back(it->data(0, sexp_tree_view::FormulaDataRole).toInt());
 		}
 		_model->reorderByRootFormulaOrder(order);
 		m_last_message_node = -1;
@@ -259,6 +242,11 @@ void MissionEventsDialog::initEventWidgets() {
 	_model->setCurrentlySelectedEvent(-1);
 
 	updateEventUi();
+}
+
+int MissionEventsDialog::getRootReturnType() const
+{
+	return OPR_NULL;
 }
 
 void MissionEventsDialog::accept()
@@ -292,7 +280,7 @@ SCP_vector<SCP_string> MissionEventsDialog::getMessages()
 	return out;
 }
 
-bool MissionEventsDialog::hasDefaultMessageParamter()
+bool MissionEventsDialog::hasDefaultMessageParameter()
 {
 	return !_model->getMessageList().empty();
 }
@@ -334,7 +322,7 @@ void MissionEventsDialog::rootNodeRenamed(int node) {
 	QTreeWidgetItem* item = nullptr;
 	for (int i = 0; i < ui->eventTree->topLevelItemCount(); ++i) {
 		auto* it = ui->eventTree->topLevelItem(i);
-		if (it && it->data(0, sexp_tree::FormulaDataRole).toInt() == node) {
+		if (it && it->data(0, sexp_tree_view::FormulaDataRole).toInt() == node) {
 			item = it;
 			break;
 		}
@@ -581,13 +569,13 @@ void MissionEventsDialog::updateMessageMoveButtons()
 	ui->msgDownBtn->setEnabled(canDown);
 }
 
-SCP_vector<int> MissionEventsDialog::read_root_formula_order(sexp_tree* tree)
+SCP_vector<int> MissionEventsDialog::read_root_formula_order(sexp_tree_view* tree)
 {
 	SCP_vector<int> order;
 	order.reserve(tree->topLevelItemCount());
 	for (int i = 0; i < tree->topLevelItemCount(); ++i) {
 		auto* it = tree->topLevelItem(i);
-		order.push_back(it->data(0, sexp_tree::FormulaDataRole).toInt());
+		order.push_back(it->data(0, sexp_tree_view::FormulaDataRole).toInt());
 	}
 	return order;
 }
@@ -613,8 +601,8 @@ void MissionEventsDialog::updateEventBitmap() {
 	for (int i = 0; i < ui->eventTree->topLevelItemCount(); ++i) {
 		auto item = ui->eventTree->topLevelItem(i);
 
-		if (item->data(0, sexp_tree::FormulaDataRole).toInt() == _model->getFormula()) {
-			item->setIcon(0, sexp_tree::convertNodeImageToIcon(bitmap));
+		if (item->data(0, sexp_tree_view::FormulaDataRole).toInt() == _model->getFormula()) {
+			item->setIcon(0, sexp_tree_view::convertNodeImageToIcon(bitmap));
 			return;
 		}
 	}
@@ -663,9 +651,6 @@ void MissionEventsDialog::on_eventUpBtn_clicked()
 	QTreeWidgetItem* dest = ui->eventTree->topLevelItem(idx - 1);
 	ui->eventTree->move_root(cur, dest, /*insert_before=*/true); // visual move + modified()
 
-	// Keep model in sync with the new root order TODO remove/add this pending sexp_tree widget refactor
-	//_model->reorderByRootFormulaOrder(read_root_formula_order(ui->eventTree));
-
 	// Ensure it stays selected and visible
 	ui->eventTree->setCurrentItem(cur);
 	ui->eventTree->scrollToItem(cur);
@@ -684,9 +669,6 @@ void MissionEventsDialog::on_eventDownBtn_clicked()
 
 	QTreeWidgetItem* dest = ui->eventTree->topLevelItem(idx + 1);
 	ui->eventTree->move_root(cur, dest, /*insert_before=*/false); // visual move + modified()
-
-	// Keep model in sync with the new root order TODO remove/add this pending sexp_tree widget refactor
-	//_model->reorderByRootFormulaOrder(read_root_formula_order(ui->eventTree));
 
 	ui->eventTree->setCurrentItem(cur);
 	ui->eventTree->scrollToItem(cur);
@@ -808,7 +790,7 @@ void MissionEventsDialog::on_messageList_itemDoubleClicked(QListWidgetItem* item
 	}
 
 	int nodes[MAX_SEARCH_MESSAGE_DEPTH];
-	const int num = ui->eventTree->find_text(name.toUtf8().constData(), nodes, MAX_SEARCH_MESSAGE_DEPTH);
+	const int num = ui->eventTree->_model.find_text(name.toUtf8().constData(), nodes, MAX_SEARCH_MESSAGE_DEPTH);
 	if (num <= 0) {
 		QMessageBox::information(this, tr("Error"), tr("No events using message '%1'").arg(name));
 		return;
@@ -1059,4 +1041,3 @@ void MissionEventsDialog::on_messageTeamCombo_currentIndexChanged(int index)
 }
 
 } // namespace fso::fred::dialogs
-
