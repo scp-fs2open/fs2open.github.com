@@ -1992,6 +1992,10 @@ void game_init()
 		sdlGraphicsOperations.reset(new SDLGraphicsOperations());
 	}
 
+	if (Using_in_game_options) {
+		graphics_api = gr_get_configured_render_api();
+	}
+
 	if (!gr_init(std::move(sdlGraphicsOperations))) {
 		os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR, "Error initializing graphics!");
 		exit(1);
