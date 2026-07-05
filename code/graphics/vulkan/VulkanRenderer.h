@@ -212,8 +212,13 @@ class VulkanRenderer {
 	 *
 	 * Ends the current RT render pass and resumes the swap chain render pass
 	 * with loadOp=eLoad to preserve existing content.
+	 *
+	 * @param ts The render target just finished, or nullptr. When it has more
+	 * than one mip level (e.g. the env/irradiance cubemaps), the mip chain is
+	 * regenerated here via blits since nothing else populates it -- render
+	 * passes only ever write to mip 0.
 	 */
-	void endRenderTarget();
+	void endRenderTarget(tcache_slot_vulkan* ts = nullptr);
 
 	/**
 	 * @brief Resume the swap chain render pass with loadOp=eLoad

@@ -2042,7 +2042,10 @@ void vulkan_calculate_irrmap()
 		return;
 	}
 	auto* envTs = static_cast<tcache_slot_vulkan*>(envSlot->gr_info);
-	vk::ImageView envmapView = envTs->isCubemap ? envTs->cubeImageView : envTs->imageView;
+	// tcache_slot_vulkan::cubeImageView is never populated (dead field) -- both the
+	// render-target and static-file cubemap upload paths store the cube-sampling
+	// view in imageView, so that's what must be used here regardless of isCubemap.
+	vk::ImageView envmapView = envTs->imageView;
 	if (!envmapView) {
 		return;
 	}

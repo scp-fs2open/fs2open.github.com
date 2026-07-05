@@ -504,15 +504,45 @@ void VulkanRenderer::beginRenderTarget(tcache_slot_vulkan* ts, int face)
 	m_renderTargetActive = true;
 }
 
-void VulkanRenderer::endRenderTarget()
+void VulkanRenderer::endRenderTarget(tcache_slot_vulkan* ts)
 {
 	if (!m_renderTargetActive) {
 		return;
 	}
 
-	// End the RT render pass (finalLayout transitions to eShaderReadOnlyOptimal)
+	// End the RT render pass (finalLayout transitions mip 0 to eShaderReadOnlyOptimal)
 	m_currentCommandBuffer.endRenderPass();
 	m_renderTargetActive = false;
+
+	// Render passes only ever draw into mip 0 (each face's framebuffer is a
+	// single-mip view), so higher mips are otherwise left uninitialized.
+	// Regenerate the chain now via blits so effects that sample it with an
+	// explicit LOD (e.g. the env map's roughness-based reflection blur) see
+	// real data instead of garbage/undefined content.
+	if (ts && ts->mipLevels > 1) {
+		uint32_t layers = ts->isCubemap ? 6u : ts->arrayLayers;
+
+		vk::ImageMemoryBarrier barrier;
+		barrier.srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
+		barrier.dstAccessMask = vk::AccessFlagBits::eTransferRead;
+		barrier.oldLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		barrier.newLayout = vk::ImageLayout::eTransferSrcOptimal;
+		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.image = ts->image;
+		barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+		barrier.subresourceRange.baseMipLevel = 0;
+		barrier.subresourceRange.levelCount = 1;
+		barrier.subresourceRange.baseArrayLayer = 0;
+		barrier.subresourceRange.layerCount = layers;
+
+		m_currentCommandBuffer.pipelineBarrier(
+			vk::PipelineStageFlagBits::eColorAttachmentOutput,
+			vk::PipelineStageFlagBits::eTransfer,
+			{}, {}, {}, barrier);
+
+		vulkan_generate_mipmap_chain(m_currentCommandBuffer, ts->image, ts->width, ts->height, ts->mipLevels, layers);
+	}
 
 	resumeSwapChainPass();
 }

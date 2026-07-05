@@ -1489,7 +1489,14 @@ int VulkanTextureManager::bm_set_render_target(int handle, int face)
 	// handle < 0 means reset to default framebuffer
 	if (handle < 0) {
 		if (renderer->isRenderTargetActive()) {
-			renderer->endRenderTarget();
+			tcache_slot_vulkan* prevTs = nullptr;
+			if (m_currentRenderTarget >= 0) {
+				auto* prevSlot = bm_get_slot(m_currentRenderTarget, true);
+				if (prevSlot && prevSlot->gr_info) {
+					prevTs = static_cast<tcache_slot_vulkan*>(prevSlot->gr_info);
+				}
+			}
+			renderer->endRenderTarget(prevTs);
 		}
 		m_currentRenderTarget = -1;
 		return 1;

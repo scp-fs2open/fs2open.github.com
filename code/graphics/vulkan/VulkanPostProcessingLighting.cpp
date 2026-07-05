@@ -568,9 +568,17 @@ void VulkanDeferredLighting::render(vk::CommandBuffer cmd)
 
 	bool rtShadowsActive = shadows_use_raytracing() && m_shadow->isInitialized() && Shadow_quality != ShadowQuality::Disabled;
 
+	unsigned int lightShaderFlags = 0;
+	if (rtShadowsActive) {
+		lightShaderFlags |= SDR_FLAG_DEFERRED_RT_SHADOWS;
+	}
+	if (envMapAvailable) {
+		lightShaderFlags |= SDR_FLAG_ENV_MAP;
+	}
+
 	PipelineConfig lightConfig;
 	lightConfig.shaderType = SDR_TYPE_DEFERRED_LIGHTING;
-	lightConfig.shaderFlags = rtShadowsActive ? SDR_FLAG_DEFERRED_RT_SHADOWS : 0;
+	lightConfig.shaderFlags = lightShaderFlags;
 	lightConfig.vertexLayoutHash = volLayout.hash();
 	lightConfig.primitiveType = PRIM_TYPE_TRIS;
 	lightConfig.depthMode = ZBUFFER_TYPE_NONE;
