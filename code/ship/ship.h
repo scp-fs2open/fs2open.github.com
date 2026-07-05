@@ -1688,6 +1688,7 @@ extern SCP_vector<wing_formation> Wing_formations;
 
 extern void ship_init();				// called once	at game start
 extern void ship_level_init();		// called before the start of each level
+extern void ship_level_close();		// called after the end of each level
 
 //returns -1 if failed
 extern int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name = nullptr, bool standalone_ship = false);
@@ -1702,13 +1703,14 @@ extern void ship_delete( object * objp );
 extern int ship_check_collision_fast( object * obj, object * other_obj, vec3d * hitpos );
 extern int ship_get_num_ships();
 
-#define SHIP_VANISHED			(1<<0)
-#define SHIP_DESTROYED			(1<<1)
-#define SHIP_DEPARTED_WARP		(1<<2)
-#define SHIP_DEPARTED_BAY		(1<<3)
-#define SHIP_DEPARTED			( SHIP_DEPARTED_BAY | SHIP_DEPARTED_WARP )
-#define SHIP_DESTROYED_REDALERT	(1<<4)
-#define SHIP_DEPARTED_REDALERT	(1<<5)
+#define SHIP_VANISHED               (1<<0)
+#define SHIP_DESTROYED              (1<<1)
+#define SHIP_DEPARTED_WARP          (1<<2)
+#define SHIP_DEPARTED_BAY           (1<<3)
+#define SHIP_DEPARTED               ( SHIP_DEPARTED_BAY | SHIP_DEPARTED_WARP )
+#define SHIP_DESTROYED_REDALERT     (1<<4)
+#define SHIP_DEPARTED_REDALERT      (1<<5)
+#define SHIP_PRESENT_AT_MISSION_END (1<<6)
 
 /**
  * @brief Deletes and de-inits a ship.

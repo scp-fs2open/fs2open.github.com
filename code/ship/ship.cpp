@@ -6914,6 +6914,25 @@ void ship_level_init()
 	Man_thruster_reset_timestamp = timestamp(0);
 }
 
+void ship_level_close()
+{
+	// at this point ships have all gone through ship_delete;
+	// clean up any ships that are still present so we don't
+	// leave any stray references behind (e.g. for sexps)
+	for (auto &ship_entry : Ship_registry)
+	{
+		if (ship_entry.status == ShipStatus::PRESENT || ship_entry.status == ShipStatus::DEATH_ROLL)
+		{
+			ship_entry.cleanup_mode = (ship_entry.status == ShipStatus::DEATH_ROLL) ? SHIP_DESTROYED : SHIP_PRESENT_AT_MISSION_END;
+			ship_entry.status = ShipStatus::EXITED;
+			ship_entry.objnum = -1;
+			ship_entry.shipnum = -1;
+		}
+	}
+
+	ship_close_cockpit_displays(Player_ship);
+}
+
 /**
  * Add a ship onto the exited ships list.
  *
@@ -8755,6 +8774,7 @@ void ship_close_cockpit_displays(ship* shipp)
 {
 	if (shipp && shipp->cockpit_model_instance >= 0) {
 		model_delete_instance(shipp->cockpit_model_instance);
+		shipp->cockpit_model_instance = -1;
 	}
 
 	for ( int i = 0; i < (int)Player_displays.size(); i++ ) {

@@ -12808,7 +12808,7 @@ int sexp_is_iff_or_species(int n, bool iff)
 					// ship is in the EXITED state but probably in the process of exploding
 					else if (oswpt.has_shipp())
 					{
-						UNREACHABLE("With the addition of the ShipStatus::DEATH_ROLL state, this shouldn't happen");
+						Assertion(false, "With the addition of the ShipStatus::DEATH_ROLL state, this shouldn't happen");
 						return SEXP_KNOWN_FALSE;
 					}
 					// ship has vanished
