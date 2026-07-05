@@ -1,7 +1,6 @@
 #include "graphics/util/pixel_swizzle.h"
 
-namespace graphics {
-namespace util {
+namespace graphics::util {
 
 void swizzle_bgra_to_rgba(uint8_t* pixels, size_t count)
 {
@@ -152,5 +151,4 @@ void expand_R8_to_RGB(const uint8_t* RESTRICT src, uint8_t* RESTRICT dst, size_t
 	}
 }
 
-} // namespace util
-} // namespace graphics
+} // namespace graphics::util

@@ -1,13 +1,12 @@
 #ifndef PIXEL_SWIZZLE_H
 #define PIXEL_SWIZZLE_H
 
+#include "globalincs/pstypes.h"
+
 #include <cstddef>
 #include <cstdint>
 
-#include "globalincs/pstypes.h"
-
-namespace graphics {
-namespace util {
+namespace graphics::util {
 
 // ---- BGR/BGRA ↔ RGB/RGBA channel swaps ----
 
@@ -53,7 +52,6 @@ void expand_R8_to_RGBA(const uint8_t* RESTRICT src, uint8_t* RESTRICT dst, size_
 // R8 → RGB888 (R replicated to R/G/B)
 void expand_R8_to_RGB(const uint8_t* RESTRICT src, uint8_t* RESTRICT dst, size_t count);
 
-} // namespace util
-} // namespace graphics
+} // namespace graphics::util
 
 #endif

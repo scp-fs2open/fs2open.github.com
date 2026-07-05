@@ -1,14 +1,14 @@
 #pragma once
 
 #include "globalincs/pstypes.h"
+
+#include "VulkanDescriptorManager.h"
+#include "VulkanPipeline.h"
+
 #include "graphics/2d.h"
 #include "graphics/material.h"
 
-#include "VulkanPipeline.h"
-#include "VulkanDescriptorManager.h"
-
 #include <vulkan/vulkan.hpp>
-
 
 namespace graphics::vulkan {
 
@@ -20,7 +20,7 @@ namespace graphics::vulkan {
  * and what needs to be updated before draw calls.
  */
 class VulkanStateTracker {
-public:
+  public:
 	VulkanStateTracker() = default;
 	~VulkanStateTracker() = default;
 
@@ -57,7 +57,10 @@ public:
 	/**
 	 * @brief Get current render pass
 	 */
-	vk::RenderPass getCurrentRenderPass() const { return m_currentRenderPass; }
+	vk::RenderPass getCurrentRenderPass() const
+	{
+		return m_currentRenderPass;
+	}
 
 	// ========== Dynamic State ==========
 
@@ -101,20 +104,27 @@ public:
 	/**
 	 * @brief Get currently bound pipeline
 	 */
-	vk::Pipeline getCurrentPipeline() const { return m_currentPipeline; }
+	vk::Pipeline getCurrentPipeline() const
+	{
+		return m_currentPipeline;
+	}
 
 	/**
 	 * @brief Get current pipeline layout
 	 */
-	vk::PipelineLayout getCurrentPipelineLayout() const { return m_currentPipelineLayout; }
+	vk::PipelineLayout getCurrentPipelineLayout() const
+	{
+		return m_currentPipelineLayout;
+	}
 
 	// ========== Descriptor State ==========
 
 	/**
 	 * @brief Bind descriptor set
 	 */
-	void bindDescriptorSet(DescriptorSetIndex setIndex, vk::DescriptorSet set,
-	                       const SCP_vector<uint32_t>& dynamicOffsets = {});
+	void bindDescriptorSet(DescriptorSetIndex setIndex,
+		vk::DescriptorSet set,
+		const SCP_vector<uint32_t>& dynamicOffsets = {});
 
 	// ========== Buffer Binding ==========
 
@@ -134,7 +144,8 @@ public:
 	 * @brief Get current command buffer.
 	 * Asserts if no command buffer is active — rendering outside a frame is always a bug.
 	 */
-	vk::CommandBuffer getCommandBuffer() const {
+	vk::CommandBuffer getCommandBuffer() const
+	{
 		Assertion(m_cmdBuffer, "No active command buffer — rendering outside a frame?");
 		return m_cmdBuffer;
 	}
@@ -142,13 +153,18 @@ public:
 	/**
 	 * @brief Check if scissor test is enabled
 	 */
-	bool isScissorEnabled() const { return m_scissorEnabled; }
+	bool isScissorEnabled() const
+	{
+		return m_scissorEnabled;
+	}
 
 	/**
-     * @brief Get current clear color
-     */
-    const vk::ClearColorValue getClearColor() const {
-		// Don't manually store the clear color here, it's a bad idea to have two possibly desynced globals with the same semantics.
+	 * @brief Get current clear color
+	 */
+	static vk::ClearColorValue getClearColor()
+	{
+		// Don't manually store the clear color here, it's a bad idea to have two possibly desynced globals with the
+		// same semantics.
 		float fr = static_cast<float>(gr_screen.current_clear_color.red) / 255.0f;
 		float fg = static_cast<float>(gr_screen.current_clear_color.green) / 255.0f;
 		float fb = static_cast<float>(gr_screen.current_clear_color.blue) / 255.0f;
@@ -167,35 +183,71 @@ public:
 	/**
 	 * @brief Set current zbuffer mode (for tracking)
 	 */
-	void setZBufferMode(gr_zbuffer_type mode) { m_zbufferMode = mode; }
-	gr_zbuffer_type getZBufferMode() const { return m_zbufferMode; }
+	void setZBufferMode(gr_zbuffer_type mode)
+	{
+		m_zbufferMode = mode;
+	}
+	gr_zbuffer_type getZBufferMode() const
+	{
+		return m_zbufferMode;
+	}
 
 	/**
 	 * @brief Set current stencil mode (for tracking)
 	 */
-	void setStencilMode(int mode) { m_stencilMode = mode; }
-	int getStencilMode() const { return m_stencilMode; }
+	void setStencilMode(int mode)
+	{
+		m_stencilMode = mode;
+	}
+	int getStencilMode() const
+	{
+		return m_stencilMode;
+	}
 
 	/**
 	 * @brief Set current cull mode (for tracking)
 	 */
-	void setCullMode(bool enabled) { m_cullEnabled = enabled; }
-	bool getCullMode() const { return m_cullEnabled; }
+	void setCullMode(bool enabled)
+	{
+		m_cullEnabled = enabled;
+	}
+	bool getCullMode() const
+	{
+		return m_cullEnabled;
+	}
 
-	void setAlphaThreshold(float threshold) { m_alphaThreshold = threshold; }
-	float getAlphaThreshold() const { return m_alphaThreshold; }
+	void setAlphaThreshold(float threshold)
+	{
+		m_alphaThreshold = threshold;
+	}
+	float getAlphaThreshold() const
+	{
+		return m_alphaThreshold;
+	}
 
 	/**
 	 * @brief Set color attachment count for current render pass
 	 */
-	void setColorAttachmentCount(uint32_t count) { m_colorAttachmentCount = count; }
-	uint32_t getColorAttachmentCount() const { return m_colorAttachmentCount; }
+	void setColorAttachmentCount(uint32_t count)
+	{
+		m_colorAttachmentCount = count;
+	}
+	uint32_t getColorAttachmentCount() const
+	{
+		return m_colorAttachmentCount;
+	}
 
 	/**
 	 * @brief Set current MSAA sample count for pipeline creation
 	 */
-	void setCurrentSampleCount(vk::SampleCountFlagBits count) { m_currentSampleCount = count; }
-	vk::SampleCountFlagBits getCurrentSampleCount() const { return m_currentSampleCount; }
+	void setCurrentSampleCount(vk::SampleCountFlagBits count)
+	{
+		m_currentSampleCount = count;
+	}
+	vk::SampleCountFlagBits getCurrentSampleCount() const
+	{
+		return m_currentSampleCount;
+	}
 
 	/**
 	 * @brief Apply pending dynamic state to command buffer
@@ -207,8 +259,7 @@ public:
 	 */
 	void applyDynamicState();
 
-private:
-
+  private:
 	vk::Device m_device;
 	vk::CommandBuffer m_cmdBuffer;
 
@@ -261,4 +312,3 @@ int vulkan_alpha_mask_set(int mode, float alpha);
 void vulkan_set_viewport(int x, int y, int width, int height);
 
 } // namespace graphics::vulkan
-

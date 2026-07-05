@@ -1,13 +1,15 @@
 #pragma once
 
 #include "globalincs/pstypes.h"
-#include "graphics/2d.h"
-#include "graphics/material.h"
+
 #include "VulkanPipeline.h"
 
-#include <vulkan/vulkan.hpp>
-#include <array>
+#include "graphics/2d.h"
+#include "graphics/material.h"
 
+#include <vulkan/vulkan.hpp>
+
+#include <array>
 
 namespace graphics::vulkan {
 
@@ -20,7 +22,7 @@ class DescriptorWriter;
  * to prevent stale lastWriteStreamOffset if the buffer is updated between bind and draw.
  */
 struct PendingUniformBinding {
-	gr_buffer_handle bufferHandle;  // FSO buffer handle - lookup vk::Buffer at draw time
+	gr_buffer_handle bufferHandle; // FSO buffer handle - lookup vk::Buffer at draw time
 	vk::DeviceSize offset = 0;     // Fully resolved offset (frame base + caller offset)
 	vk::DeviceSize size = 0;
 	bool valid = false;
@@ -33,7 +35,7 @@ struct PendingUniformBinding {
  * including primitive rendering, batched rendering, and special effects.
  */
 class VulkanDrawManager {
-public:
+  public:
 	VulkanDrawManager() = default;
 	~VulkanDrawManager() = default;
 
@@ -61,7 +63,7 @@ public:
 	/**
 	 * @brief Set clear color
 	 */
-	void setClearColor(int r, int g, int b);
+	static void setClearColor(int r, int g, int b);
 
 	// ========== Clipping ==========
 
@@ -119,52 +121,73 @@ public:
 	/**
 	 * @brief Render primitives with material
 	 */
-	void renderPrimitives(material* material_info, primitive_type prim_type,
-	                      vertex_layout* layout, int offset, int n_verts,
-	                      gr_buffer_handle buffer_handle, size_t buffer_offset);
+	void renderPrimitives(material* material_info,
+		primitive_type prim_type,
+		vertex_layout* layout,
+		int offset,
+		int n_verts,
+		gr_buffer_handle buffer_handle,
+		size_t buffer_offset);
 
 	/**
 	 * @brief Render batched bitmaps
 	 */
 	void renderPrimitivesBatched(batched_bitmap_material* material_info,
-	                             primitive_type prim_type, vertex_layout* layout,
-	                             int offset, int n_verts, gr_buffer_handle buffer_handle);
+		primitive_type prim_type,
+		vertex_layout* layout,
+		int offset,
+		int n_verts,
+		gr_buffer_handle buffer_handle);
 
 	/**
 	 * @brief Render particles
 	 */
 	void renderPrimitivesParticle(particle_material* material_info,
-	                              primitive_type prim_type, vertex_layout* layout,
-	                              int offset, int n_verts, gr_buffer_handle buffer_handle);
+		primitive_type prim_type,
+		vertex_layout* layout,
+		int offset,
+		int n_verts,
+		gr_buffer_handle buffer_handle);
 
 	/**
 	 * @brief Render distortion effect
 	 */
 	void renderPrimitivesDistortion(distortion_material* material_info,
-	                                primitive_type prim_type, vertex_layout* layout,
-	                                int offset, int n_verts, gr_buffer_handle buffer_handle);
+		primitive_type prim_type,
+		vertex_layout* layout,
+		int offset,
+		int n_verts,
+		gr_buffer_handle buffer_handle);
 
 	/**
 	 * @brief Render movie frame
 	 */
-	void renderMovie(movie_material* material_info, primitive_type prim_type,
-	                 vertex_layout* layout, int n_verts, gr_buffer_handle buffer_handle,
-	                 size_t buffer_offset);
+	void renderMovie(movie_material* material_info,
+		primitive_type prim_type,
+		vertex_layout* layout,
+		int n_verts,
+		gr_buffer_handle buffer_handle,
+		size_t buffer_offset);
 
 	/**
 	 * @brief Render NanoVG UI
 	 */
-	void renderNanoVG(nanovg_material* material_info, primitive_type prim_type,
-	                  vertex_layout* layout, int offset, int n_verts,
-	                  gr_buffer_handle buffer_handle);
+	void renderNanoVG(nanovg_material* material_info,
+		primitive_type prim_type,
+		vertex_layout* layout,
+		int offset,
+		int n_verts,
+		gr_buffer_handle buffer_handle);
 
 	/**
 	 * @brief Render Rocket UI primitives (indexed)
 	 */
 	void renderRocketPrimitives(interface_material* material_info,
-	                            primitive_type prim_type, vertex_layout* layout,
-	                            int n_indices, gr_buffer_handle vertex_buffer,
-	                            gr_buffer_handle index_buffer);
+		primitive_type prim_type,
+		vertex_layout* layout,
+		int n_indices,
+		gr_buffer_handle vertex_buffer,
+		gr_buffer_handle index_buffer);
 
 	/**
 	 * @brief Render 3D model with indexed geometry
@@ -173,8 +196,8 @@ public:
 	 * @param bufferp Vertex buffer with layout and texture info
 	 * @param texi Index into tex_buf array for this draw
 	 */
-	void renderModel(model_material* material_info, indexed_vertex_source* vert_source,
-	                 vertex_buffer* bufferp, size_t texi);
+	void
+	renderModel(model_material* material_info, indexed_vertex_source* vert_source, vertex_buffer* bufferp, size_t texi);
 
 	/**
 	 * @brief Render one cascaded-shadow-map draw call (shadow_render_list)
@@ -184,8 +207,12 @@ public:
 	 * renderModel(), this does not go through a model_material - the shadow
 	 * pipeline/state is fixed and the only per-draw data is the shadowMapData UBO.
 	 */
-	void renderShadowDraw(gr_buffer_handle ubo_handle, size_t ubo_offset, size_t ubo_size,
-	                      vertex_buffer* buffer, indexed_vertex_source* vert_src, size_t texi) const;
+	void renderShadowDraw(gr_buffer_handle ubo_handle,
+		size_t ubo_offset,
+		size_t ubo_size,
+		vertex_buffer* buffer,
+		indexed_vertex_source* vert_src,
+		size_t texi) const;
 
 	/**
 	 * @brief Draw a unit sphere with the given material
@@ -248,7 +275,10 @@ public:
 	/**
 	 * @brief Get current texture addressing mode
 	 */
-	int getTextureAddressing() const { return m_textureAddressing; }
+	int getTextureAddressing() const
+	{
+		return m_textureAddressing;
+	}
 
 	/**
 	 * @brief Clear all graphics states to defaults
@@ -264,8 +294,10 @@ public:
 	 * @param offset Offset within the buffer
 	 * @param size Size of the bound range
 	 */
-	void setPendingUniformBinding(uniform_block_type blockType, gr_buffer_handle bufferHandle,
-	                              vk::DeviceSize offset, vk::DeviceSize size);
+	void setPendingUniformBinding(uniform_block_type blockType,
+		gr_buffer_handle bufferHandle,
+		vk::DeviceSize offset,
+		vk::DeviceSize size);
 
 	/**
 	 * @brief Clear all pending uniform bindings
@@ -275,7 +307,8 @@ public:
 	/**
 	 * @brief Get a pending uniform binding by block type index
 	 */
-	const PendingUniformBinding& getPendingUniformBinding(size_t index) const {
+	const PendingUniformBinding& getPendingUniformBinding(size_t index) const
+	{
 		Assertion(index < NUM_UNIFORM_BLOCK_TYPES, "getPendingUniformBinding: index %zu out of range!", index);
 		return m_pendingUniformBindings[index];
 	}
@@ -296,7 +329,7 @@ public:
 	 */
 	void printFrameStats();
 
-private:
+  private:
 	/**
 	 * @brief Shared implementation for the non-indexed renderPrimitives* variants
 	 *
@@ -306,10 +339,14 @@ private:
 	 *
 	 * @param statCounter Optional per-variant FrameStats counter to increment (may be null)
 	 */
-	void renderPrimitivesCommon(material* material_info, primitive_type prim_type,
-	                            vertex_layout* layout, int offset, int n_verts,
-	                            gr_buffer_handle buffer_handle, size_t buffer_offset,
-	                            int* statCounter);
+	void renderPrimitivesCommon(material* material_info,
+		primitive_type prim_type,
+		vertex_layout* layout,
+		int offset,
+		int n_verts,
+		gr_buffer_handle buffer_handle,
+		size_t buffer_offset,
+		int* statCounter);
 
 	/**
 	 * @brief Apply material state and bind pipeline
@@ -391,9 +428,9 @@ private:
 	int m_frameStatsFrameNum = 0;
 
 	// Texture overrides for material bindings 4-6.
-	vk::DescriptorImageInfo m_depthTextureInfo;    // binding 4: depth/position for soft particles
-	vk::DescriptorImageInfo m_sceneColorInfo;      // binding 5: scene color for distortion
-	vk::DescriptorImageInfo m_distMapInfo;         // binding 6: distortion map
+	vk::DescriptorImageInfo m_depthTextureInfo; // binding 4: depth/position for soft particles
+	vk::DescriptorImageInfo m_sceneColorInfo;   // binding 5: scene color for distortion
+	vk::DescriptorImageInfo m_distMapInfo;      // binding 6: distortion map
 
 	// Pre-built sphere mesh for draw_sphere / deferred light volumes
 	gr_buffer_handle m_sphereVBO;
@@ -444,27 +481,64 @@ void vulkan_copy_effect_texture();
 
 // 3D primitives
 void vulkan_draw_sphere(material* material_def, float rad);
-void vulkan_render_shield_impact(shield_material* material_info, primitive_type prim_type,
-	vertex_layout* layout, gr_buffer_handle buffer_handle, int n_verts);
-void vulkan_render_model(model_material* material_info, indexed_vertex_source* vert_source,
-	vertex_buffer* bufferp, size_t texi);
-void vulkan_render_shadow_draw(gr_buffer_handle ubo_handle, size_t ubo_offset, size_t ubo_size,
-	vertex_buffer* buffer, indexed_vertex_source* vert_src, size_t texi);
-void vulkan_render_primitives(material* material_info, primitive_type prim_type,
-	vertex_layout* layout, int offset, int n_verts, gr_buffer_handle buffer_handle, size_t buffer_offset);
+void vulkan_render_shield_impact(shield_material* material_info,
+	primitive_type prim_type,
+	vertex_layout* layout,
+	gr_buffer_handle buffer_handle,
+	int n_verts);
+void vulkan_render_model(model_material* material_info,
+	indexed_vertex_source* vert_source,
+	vertex_buffer* bufferp,
+	size_t texi);
+void vulkan_render_shadow_draw(gr_buffer_handle ubo_handle,
+	size_t ubo_offset,
+	size_t ubo_size,
+	vertex_buffer* buffer,
+	indexed_vertex_source* vert_src,
+	size_t texi);
+void vulkan_render_primitives(material* material_info,
+	primitive_type prim_type,
+	vertex_layout* layout,
+	int offset,
+	int n_verts,
+	gr_buffer_handle buffer_handle,
+	size_t buffer_offset);
 void vulkan_render_primitives_particle(particle_material* material_info,
-	primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, gr_buffer_handle buffer_handle);
+	primitive_type prim_type,
+	vertex_layout* layout,
+	int offset,
+	int n_verts,
+	gr_buffer_handle buffer_handle);
 void vulkan_render_primitives_distortion(distortion_material* material_info,
-	primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, gr_buffer_handle buffer_handle);
+	primitive_type prim_type,
+	vertex_layout* layout,
+	int offset,
+	int n_verts,
+	gr_buffer_handle buffer_handle);
 void vulkan_render_primitives_batched(batched_bitmap_material* material_info,
-	primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, gr_buffer_handle buffer_handle);
-void vulkan_render_movie(movie_material* material_info, primitive_type prim_type,
-	vertex_layout* layout, int n_verts, gr_buffer_handle buffer, size_t buffer_offset);
-void vulkan_render_nanovg(nanovg_material* material_info, primitive_type prim_type,
-	vertex_layout* layout, int offset, int n_verts, gr_buffer_handle buffer_handle);
+	primitive_type prim_type,
+	vertex_layout* layout,
+	int offset,
+	int n_verts,
+	gr_buffer_handle buffer_handle);
+void vulkan_render_movie(movie_material* material_info,
+	primitive_type prim_type,
+	vertex_layout* layout,
+	int n_verts,
+	gr_buffer_handle buffer,
+	size_t buffer_offset);
+void vulkan_render_nanovg(nanovg_material* material_info,
+	primitive_type prim_type,
+	vertex_layout* layout,
+	int offset,
+	int n_verts,
+	gr_buffer_handle buffer_handle);
 void vulkan_render_rocket_primitives(interface_material* material_info,
-	primitive_type prim_type, vertex_layout* layout, int n_indices,
-	gr_buffer_handle vertex_buffer, gr_buffer_handle index_buffer);
+	primitive_type prim_type,
+	vertex_layout* layout,
+	int n_indices,
+	gr_buffer_handle vertex_buffer,
+	gr_buffer_handle index_buffer);
 
 // Transform buffer for batched submodel rendering
 void vulkan_update_transform_buffer(void* data, size_t size);
@@ -473,4 +547,3 @@ void vulkan_update_transform_buffer(void* data, size_t size);
 void vulkan_calculate_irrmap();
 
 } // namespace graphics::vulkan
-
