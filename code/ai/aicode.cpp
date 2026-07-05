@@ -13789,6 +13789,10 @@ void ai_manage_bay_doors(object *pl_objp, ai_info *aip, bool done)
 
 	ship *parent_ship = &Ships[shipp->bay_doors_parent_shipnum];
 
+	// the parent may have already been destroyed/departed, leaving stale bay door state behind
+	if (parent_ship->objnum < 0 || parent_ship->model_instance_num < 0)
+		return;
+
 	if (done)
 		parent_ship->bay_doors_wanting_open--;
 
