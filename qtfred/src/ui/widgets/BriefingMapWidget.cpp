@@ -688,7 +688,7 @@ void BriefingMapWidget::mousePressEvent(QMouseEvent* event) {
 		return;
 
 	_lastMousePos = event->pos();
-	_dragStartMousePos = event->localPos();
+	_dragStartMousePos = event->position();
 
 	auto* briefPtr = _model->getWipBriefingPtr(_model->getCurrentTeam());
 	if (!briefPtr || _currentStage < 0 || _currentStage >= briefPtr->num_stages || _lastRenderWidth <= 0 || _lastRenderHeight <= 0 ||
@@ -698,8 +698,8 @@ void BriefingMapWidget::mousePressEvent(QMouseEvent* event) {
 		return;
 	}
 
-	const auto mouseX = static_cast<float>(event->localPos().x() * devicePixelRatio()) * (static_cast<float>(_lastRenderWidth) / static_cast<float>(width()));
-	const auto mouseY = static_cast<float>(event->localPos().y() * devicePixelRatio()) *
+	const auto mouseX = static_cast<float>(event->position().x() * devicePixelRatio()) * (static_cast<float>(_lastRenderWidth) / static_cast<float>(width()));
+	const auto mouseY = static_cast<float>(event->position().y() * devicePixelRatio()) *
 						(static_cast<float>(_lastRenderHeight) / static_cast<float>(height()));
 
 	auto& stage = briefPtr->stages[_currentStage];
@@ -748,9 +748,9 @@ void BriefingMapWidget::mouseMoveEvent(QMouseEvent* event) {
 	const auto scaleX = static_cast<float>(_lastRenderWidth) / static_cast<float>(width());
 	const auto scaleY = static_cast<float>(_lastRenderHeight) / static_cast<float>(height());
 	const auto deltaX =
-		static_cast<float>((event->localPos().x() * devicePixelRatio()) - (_dragStartMousePos.x() * devicePixelRatio())) * scaleX;
-	const auto deltaY =
-		static_cast<float>((event->localPos().y() * devicePixelRatio()) - (_dragStartMousePos.y() * devicePixelRatio())) *
+		static_cast<float>((event->position().x() * devicePixelRatio()) - (_dragStartMousePos.x() * devicePixelRatio())) * scaleX;
+	const auto deltaY = static_cast<float>((event->position().y() * devicePixelRatio()) -
+										   (_dragStartMousePos.y() * devicePixelRatio())) *
 		scaleY;
 
 	const auto camPos = brief_get_current_cam_pos();

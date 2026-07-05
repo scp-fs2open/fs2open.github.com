@@ -411,7 +411,7 @@ void RenderWidget::mouseReleaseEvent(QMouseEvent* event) {
 			// No drag occurred — show context menu
 			auto parentView = static_cast<FredView*>(parentWidget());
 			Q_ASSERT(parentView);
-			parentView->showContextMenu(event->globalPos());
+			parentView->showContextMenu(event->globalPosition().toPoint());
 		}
 		return;
 	}

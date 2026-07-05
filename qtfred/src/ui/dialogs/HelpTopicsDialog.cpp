@@ -369,7 +369,7 @@ void HelpTopicsDialog::searchTutorials(const QString& query) {
 		// All terms must be present.
 		bool allFound = true;
 		int  firstPos = -1;
-		for (const auto& term : qAsConst(terms)) {
+		for (const auto& term : std::as_const(terms)) {
 			const int pos = text.indexOf(term, 0, Qt::CaseInsensitive);
 			if (pos < 0) { allFound = false; break; }
 			if (firstPos < 0 || pos < firstPos) firstPos = pos;

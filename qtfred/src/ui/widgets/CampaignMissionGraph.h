@@ -116,6 +116,8 @@ class CampaignMissionGraph final : public QGraphicsView {
   public:
 	explicit CampaignMissionGraph(QWidget* parent = nullptr);
 
+	bool eventFilter(QObject* watched, QEvent* event);
+
 	// Hook up the working campaign data
 	void setModel(fso::fred::dialogs::CampaignEditorDialogModel* model);
 
