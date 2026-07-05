@@ -353,7 +353,6 @@ static inline void glQueryCounter(GLuint id, GLenum target)
 	#else
 		(void)id;
 	#endif
-		(void)target;
 }
 
 // glGetCompressedTexImage not present on GLES and no equivalent
