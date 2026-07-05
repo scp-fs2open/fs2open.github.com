@@ -123,6 +123,8 @@ bool VulkanDeferredGBuffer::initMsaa()
 			vk::AttachmentLoadOp::eClear, vk::AttachmentLoadOp::eClear,
 			vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::eColorAttachmentOptimal,
 			vk::ImageLayout::eDepthStencilAttachmentOptimal,
+			false, // useResolveDependency
+			{{GBUF_ATT_EMISSIVE, vk::AttachmentLoadOp::eLoad}},
 		});
 	} catch (const vk::SystemError& e) {
 		nprintf(("vulkan", "VulkanPostProcessor: Failed to create MSAA G-buffer render pass: %s\n", e.what()));

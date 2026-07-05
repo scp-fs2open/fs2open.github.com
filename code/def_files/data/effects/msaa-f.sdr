@@ -46,12 +46,14 @@ layout (std140) uniform genericData {
 const float voxelDepth = 2.5f;
 const float voxelDepthFalloff = 2.5f;
 
-#define SORT(a, b) if (a > b) { float t = dists[a]; dists[a] = dists[b]; dists[b] = t; }
+#define SORT(a, b) if (dists[a] > dists[b]) { float t = dists[a]; dists[a] = dists[b]; dists[b] = t; }
 
 //The following sorting networks for median calculation are NOT complete. Calculations that don't affect the
 //median entry are removed, and thus, while the median element is correct, the rest of the array is NOT fully sorted
 
 #ifdef SAMPLES_4
+
+#define SAMPLE_CNT 4
 
 float getMedianDist(ivec2 texel) {
 	float dists[4];
@@ -71,6 +73,8 @@ float getMedianDist(ivec2 texel) {
 
 #else
 #ifdef SAMPLES_8
+
+#define SAMPLE_CNT 8
 
 float getMedianDist(ivec2 texel) {
 	float dists[8];
@@ -102,6 +106,8 @@ float getMedianDist(ivec2 texel) {
 
 #else
 #ifdef SAMPLES_16
+
+#define SAMPLE_CNT 16
 
 float getMedianDist(ivec2 texel) {
 	float dists[16];
@@ -166,6 +172,8 @@ float getMedianDist(ivec2 texel) {
 
 #else
 
+#define SAMPLE_CNT samples
+
 //Fallback, do front first
 float getMedianDist(ivec2 texel) {
 	float minDist = -1000000;
@@ -200,7 +208,7 @@ void main()
 	vec4 emissive = vec4(0);
 	float depth = 0;
 
-	for(int i = 0; i < samples; i++) {
+	for(int i = 0; i < SAMPLE_CNT; i++) {
 		vec4 localPos = texelFetch(texPos, texel, i);
 		localPos.z = uncompress_depth_value(localPos.z);
 		//Calculate local weight from distance Voxel, but if the distance is 0 (i.e. no model at all), set weight to 1 to allow stuff like background emissive

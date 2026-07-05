@@ -39,10 +39,11 @@ vk::RenderPass VulkanDeferredGBuffer::createGbufRenderPass(const GbufRenderPassC
 
 	// Max 6 color + 1 depth = 7 attachments
 	std::array<vk::AttachmentDescription, 7> attachments;
-	for (uint32_t i = 0; i < colorCount; ++i) {
+		for (uint32_t i = 0; i < colorCount; ++i) {
 		attachments[i].format = COLOR_FORMATS[i];
 		attachments[i].samples = config.samples;
-		attachments[i].loadOp = config.colorLoadOp;
+		auto opIt = config.attachmentLoadOpOverrides.find(i);
+		attachments[i].loadOp = (opIt != config.attachmentLoadOpOverrides.end()) ? opIt->second : config.colorLoadOp;
 		attachments[i].storeOp = vk::AttachmentStoreOp::eStore;
 		attachments[i].stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
 		attachments[i].stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
@@ -53,7 +54,8 @@ vk::RenderPass VulkanDeferredGBuffer::createGbufRenderPass(const GbufRenderPassC
 	// Depth — stencil ops mirror the depth loadOp
 	attachments[depthIndex].format = m_ctx->depthFormat;
 	attachments[depthIndex].samples = config.samples;
-	attachments[depthIndex].loadOp = config.depthLoadOp;
+	auto depthOpIt = config.attachmentLoadOpOverrides.find(depthIndex);
+	attachments[depthIndex].loadOp = (depthOpIt != config.attachmentLoadOpOverrides.end()) ? depthOpIt->second : config.depthLoadOp;
 	attachments[depthIndex].storeOp = vk::AttachmentStoreOp::eStore;
 	attachments[depthIndex].stencilLoadOp = config.depthLoadOp;
 	attachments[depthIndex].stencilStoreOp =

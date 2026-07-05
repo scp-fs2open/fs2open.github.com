@@ -147,35 +147,21 @@ void vulkan_deferred_lighting_begin(bool clearNonColorBufs)
 		// Transition MSAA images to expected initial layouts
 		pp->deferred().transitionMsaaForBegin(cmd);
 
-		// Begin MSAA G-buffer render pass (eClear — clears all attachments)
+		// Copy scene color → MSAA emissive via dedicated single-attachment render pass
 		{
+			auto* pipelineMgr = getPipelineManager();
+			auto* descriptorMgr = getDescriptorManager();
+
 			auto extent = pp->getSceneExtent();
 			vk::RenderPassBeginInfo rpBegin;
-			rpBegin.renderPass = pp->deferred().msaaRenderPass();
-			rpBegin.framebuffer = pp->deferred().msaaFramebuffer();
+			rpBegin.renderPass = pp->deferred().msaaEmissiveCopyRenderPass();
+			rpBegin.framebuffer = pp->deferred().msaaEmissiveCopyFramebuffer();
 			rpBegin.renderArea.offset = vk::Offset2D(0, 0);
 			rpBegin.renderArea.extent = extent;
-			std::array<vk::ClearValue, VulkanDeferredGBuffer::MSAA_COLOR_ATTACHMENT_COUNT + 1> clearValues{};
-			clearValues[VulkanDeferredGBuffer::GBUF_ATT_COLOR].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
-			clearValues[VulkanDeferredGBuffer::GBUF_ATT_POSITION].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
-			clearValues[VulkanDeferredGBuffer::GBUF_ATT_NORMAL].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
-			clearValues[VulkanDeferredGBuffer::GBUF_ATT_SPECULAR].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
-			clearValues[VulkanDeferredGBuffer::GBUF_ATT_EMISSIVE].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
-			clearValues[VulkanDeferredGBuffer::MSAA_COLOR_ATTACHMENT_COUNT].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+			std::array<vk::ClearValue, 1> clearValues{};
 			rpBegin.clearValueCount = static_cast<uint32_t>(clearValues.size());
 			rpBegin.pClearValues = clearValues.data();
 			cmd.beginRenderPass(rpBegin, vk::SubpassContents::eInline);
-			stateTracker->setRenderPass(pp->deferred().msaaRenderPass(), 0);
-			stateTracker->setColorAttachmentCount(VulkanDeferredGBuffer::MSAA_COLOR_ATTACHMENT_COUNT);
-			stateTracker->setCurrentSampleCount(renderer->getMsaaSampleCount());
-		}
-
-		// Fill MSAA emissive with pre-deferred scene content (starfield, backgrounds).
-		// Draw a fullscreen tri sampling non-MSAA scene color, writing to all attachments.
-		// Only emissive (attachment 4) matters — the other attachments will be overwritten
-		// by model rendering. Use per-attachment color write mask to write only att 4.
-		{
-			auto* pipelineMgr = getPipelineManager();
 
 			PipelineConfig config;
 			config.shaderType = SDR_TYPE_COPY;
@@ -184,27 +170,15 @@ void vulkan_deferred_lighting_begin(bool clearNonColorBufs)
 			config.blendMode = ALPHA_BLEND_NONE;
 			config.cullEnabled = false;
 			config.depthWriteEnabled = false;
-			config.renderPass = pp->deferred().msaaRenderPass();
+			config.renderPass = pp->deferred().msaaEmissiveCopyRenderPass();
 			config.sampleCount = renderer->getMsaaSampleCount();
-			config.colorAttachmentCount = VulkanDeferredGBuffer::MSAA_COLOR_ATTACHMENT_COUNT;
-
-			// Per-attachment blend: only write to emissive
-			config.perAttachmentBlendEnabled = true;
-			for (uint32_t i = 0; i < config.colorAttachmentCount; ++i) {
-				config.attachmentBlends[i].blendMode = ALPHA_BLEND_NONE;
-				config.attachmentBlends[i].writeMask = {false, false, false, false};
-			}
-			config.attachmentBlends[VulkanDeferredGBuffer::GBUF_ATT_EMISSIVE].writeMask = {true, true, true, true};
+			config.colorAttachmentCount = 1;
 
 			vertex_layout emptyLayout;
 			vk::Pipeline pipeline = pipelineMgr->getPipeline(config, emptyLayout);
 			if (pipeline) {
-				// Use drawFullscreenTriangle pattern but inline since we're already in a render pass
-				auto* descriptorMgr = getDescriptorManager();
-
 				cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
 
-				auto extent = pp->getSceneExtent();
 				vk::Viewport viewport;
 				viewport.x = 0.0f;
 				viewport.y = 0.0f;
@@ -218,7 +192,6 @@ void vulkan_deferred_lighting_begin(bool clearNonColorBufs)
 				scissor.extent = extent;
 				cmd.setScissor(0, scissor);
 
-				// Bind descriptors with scene color as source
 				DescriptorWriter writer;
 				writer.reset(descriptorMgr->getDevice(), descriptorMgr->getFallbacks());
 
@@ -229,7 +202,6 @@ void vulkan_deferred_lighting_begin(bool clearNonColorBufs)
 				vk::DescriptorSet materialSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Material);
 				Verify(materialSet);
 				writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
-				// Scene color at texture array slot 0
 				{
 					std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texImages;
 					texImages.fill(descriptorMgr->getFallbacks().texture2D);
@@ -253,6 +225,30 @@ void vulkan_deferred_lighting_begin(bool clearNonColorBufs)
 
 				cmd.draw(3, 1, 0, 0);
 			}
+
+			cmd.endRenderPass();
+		}
+
+		// Begin MSAA G-buffer render pass (eClear for 0-3+depth, eLoad for emissive [4])
+		{
+			auto extent = pp->getSceneExtent();
+			vk::RenderPassBeginInfo rpBegin;
+			rpBegin.renderPass = pp->deferred().msaaRenderPass();
+			rpBegin.framebuffer = pp->deferred().msaaFramebuffer();
+			rpBegin.renderArea.offset = vk::Offset2D(0, 0);
+			rpBegin.renderArea.extent = extent;
+			std::array<vk::ClearValue, VulkanDeferredGBuffer::MSAA_COLOR_ATTACHMENT_COUNT + 1> clearValues{};
+			clearValues[VulkanDeferredGBuffer::GBUF_ATT_COLOR].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
+			clearValues[VulkanDeferredGBuffer::GBUF_ATT_POSITION].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
+			clearValues[VulkanDeferredGBuffer::GBUF_ATT_NORMAL].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
+			clearValues[VulkanDeferredGBuffer::GBUF_ATT_SPECULAR].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
+			clearValues[VulkanDeferredGBuffer::MSAA_COLOR_ATTACHMENT_COUNT].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+			rpBegin.clearValueCount = static_cast<uint32_t>(clearValues.size());
+			rpBegin.pClearValues = clearValues.data();
+			cmd.beginRenderPass(rpBegin, vk::SubpassContents::eInline);
+			stateTracker->setRenderPass(pp->deferred().msaaRenderPass(), 0);
+			stateTracker->setColorAttachmentCount(VulkanDeferredGBuffer::MSAA_COLOR_ATTACHMENT_COUNT);
+			stateTracker->setCurrentSampleCount(renderer->getMsaaSampleCount());
 		}
 	} else {
 		// --- Non-MSAA path (original) ---
@@ -385,8 +381,22 @@ void vulkan_deferred_lighting_msaa()
 
 		PipelineConfig config;
 		config.shaderType = SDR_TYPE_MSAA_RESOLVE;
+		switch (getRendererInstance()->getMsaaSampleCount()){
+			case vk::SampleCountFlagBits::e4:
+				config.shaderFlags = SDR_FLAG_MSAA_SAMPLES_4;
+				break;
+			case vk::SampleCountFlagBits::e8:
+				config.shaderFlags = SDR_FLAG_MSAA_SAMPLES_8;
+				break;
+			case vk::SampleCountFlagBits::e16:
+				config.shaderFlags = SDR_FLAG_MSAA_SAMPLES_16;
+				break;
+			default:
+				config.shaderFlags = 0; //Dynamic safety fallback
+				break;
+		}
 		config.primitiveType = PRIM_TYPE_TRIS;
-		config.depthMode = ZBUFFER_TYPE_FULL;
+		config.depthMode = ZBUFFER_TYPE_WRITE;
 		config.blendMode = ALPHA_BLEND_NONE;
 		config.cullEnabled = false;
 		config.depthWriteEnabled = true;
