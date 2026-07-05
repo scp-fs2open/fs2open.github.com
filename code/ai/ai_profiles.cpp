@@ -749,6 +749,8 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$fix 'ignore if dead' flag:", AI::Profile_Flags::Fix_ignore_if_dead_flag);
 
+				set_flag(profile, "$no collision avoidance for kamikaze fighters:", AI::Profile_Flags::Kamikaze_no_collision_avoidance);
+
 
 				// end of options ----------------------------------------
 
@@ -974,5 +976,8 @@ void ai_profile_t::reset()
 	}
 	if (mod_supports_version(26, 0, 0)) {
 		flags.set(AI::Profile_Flags::Fix_ignore_if_dead_flag);
+	}
+	if (mod_supports_version(27, 0, 0)) {
+		flags.set(AI::Profile_Flags::Kamikaze_no_collision_avoidance);
 	}
 }
