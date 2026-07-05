@@ -29,7 +29,7 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
-CMissionGoalsDlg *Goal_editor_dlg; // global reference needed by sexp_tree_view class
+CMissionGoalsDlg *Goal_editor_dlg; // global reference needed by sexp_tree class
 
 /////////////////////////////////////////////////////////////////////////////
 // sexp_goal_tree class member functions
@@ -38,8 +38,7 @@ CMissionGoalsDlg *Goal_editor_dlg; // global reference needed by sexp_tree_view 
 // CMissionGoalsDlg dialog class member functions
 
 CMissionGoalsDlg::CMissionGoalsDlg(CWnd* pParent /*=NULL*/)
-	: CDialog(CMissionGoalsDlg::IDD, pParent),
-	  SexpTreeEditorInterface({ TreeFlags::LabeledRoot, TreeFlags::RootDeletable })
+	: CDialog(CMissionGoalsDlg::IDD, pParent)
 {
 	//{{AFX_DATA_INIT(CMissionGoalsDlg)
 	m_goal_desc = _T("");
@@ -51,30 +50,11 @@ CMissionGoalsDlg::CMissionGoalsDlg(CWnd* pParent /*=NULL*/)
 	m_no_music = FALSE;
 	m_team = -1;
 	//}}AFX_DATA_INIT
-	m_goals_tree._model._interface = this;
-	m_goals_tree._model.modified = &modified;
+	m_goals_tree.m_mode = MODE_GOALS;
+	m_goals_tree.link_modified(&modified);
 	modified = 0;
 	select_sexp_node = -1;
 }
-
-int CMissionGoalsDlg::onRootDeleted(int formula_node)
-{
-	int i;
-
-	for (i = 0; i < (int)m_goals.size(); i++) {
-		if (m_goals[i].formula == formula_node) {
-			break;
-		}
-	}
-
-	Assert(i < (int)m_goals.size());
-	m_goals.erase(m_goals.begin() + i);
-	m_sig.erase(m_sig.begin() + i);
-
-	return formula_node;
-}
-void CMissionGoalsDlg::onRootInserted(int old_formula, int new_formula) { insert_handler(old_formula, new_formula); }
-void CMissionGoalsDlg::onRootMoved(int node1, int node2, bool insert_before) { move_handler(node1, node2, insert_before); }
 
 BOOL CMissionGoalsDlg::OnInitDialog()
 {
@@ -164,10 +144,10 @@ void CMissionGoalsDlg::load_tree()
 		if (m_goals[i].name.empty())
 			m_goals[i].name = "<Unnamed>";
 
-		m_goals[i].formula = m_goals_tree._model.load_sub_tree(Mission_goals[i].formula, true, "true");
+		m_goals[i].formula = m_goals_tree.load_sub_tree(Mission_goals[i].formula, true, "true");
 	}
 
-	m_goals_tree._model.post_load();
+	m_goals_tree.post_load();
 	cur_goal = -1;
 	update_cur_goal();
 }
@@ -286,7 +266,7 @@ void CMissionGoalsDlg::update_cur_goal()
 // handler for context menu (i.e. a right mouse button click).
 void CMissionGoalsDlg::OnRclickGoalsTree(NMHDR* pNMHDR, LRESULT* pResult) 
 {
-	m_goals_tree.right_clicked();
+	m_goals_tree.right_clicked(MODE_GOALS);
 	*pResult = 0;
 }
 
@@ -389,7 +369,7 @@ void CMissionGoalsDlg::OnButtonOk()
 	Mission_goals.clear();
 	for (const auto &dialog_goal: m_goals) {
 		Mission_goals.push_back(dialog_goal);
-		Mission_goals.back().formula = m_goals_tree._model.save_tree(dialog_goal.formula);
+		Mission_goals.back().formula = m_goals_tree.save_tree(dialog_goal.formula);
 		if ( The_mission.game_type & MISSION_TYPE_MULTI_TEAMS ) {
 			Assert( dialog_goal.team != -1 );
 		}
@@ -424,6 +404,29 @@ void CMissionGoalsDlg::OnButtonNewGoal()
 	m_goals_tree.SetItemData(h, index);
 
 	m_goals_tree.SelectItem(h);
+}
+
+int CMissionGoalsDlg::handler(int code, int node)
+{
+	int i;
+
+	switch (code) {
+	case ROOT_DELETED:
+		for (i=0; i<(int)m_goals.size(); i++)
+			if (m_goals[i].formula == node)
+				break;
+
+		Assert(i < (int)m_goals.size());
+		m_goals.erase(m_goals.begin() + i);
+		m_sig.erase(m_sig.begin() + i);
+
+		return node;
+
+	default:
+		Int3();
+	}
+
+	return -1;
 }
 
 void CMissionGoalsDlg::OnChangeGoalDesc() 

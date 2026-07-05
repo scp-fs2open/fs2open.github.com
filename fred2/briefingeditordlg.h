@@ -12,7 +12,7 @@
 #ifndef __BRIEFINGEDITORDLG_H__
 #define __BRIEFINGEDITORDLG_H__
 
-#include "sexp_tree_view.h"
+#include "sexp_tree.h"
 
 #include "parse/sexp.h"
 #include "mission/missionbriefcommon.h"
@@ -50,7 +50,7 @@ public:
 // Dialog Data
 	//{{AFX_DATA(briefing_editor_dlg)
 	enum { IDD = IDD_BRIEFING_EDITOR };
-	sexp_tree_view	m_tree;
+	sexp_tree	m_tree;
 	CButton	m_lines;
 	BOOL	m_hilight;
 	int		m_icon_image;

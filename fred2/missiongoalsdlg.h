@@ -9,7 +9,7 @@
 
 
 
-#include "sexp_tree_view.h"
+#include "Sexp_tree.h"
 #include "mission/missiongoals.h"
 
 /////////////////////////////////////////////////////////////////////////////
@@ -18,18 +18,14 @@
 #define OPERAND	0x01
 #define EDITABLE	0x02
 
-class goal_sexp_tree : public sexp_tree_view
+class goal_sexp_tree : public sexp_tree
 {
 };
 
-class CMissionGoalsDlg : public CDialog, public SexpTreeEditorInterface
+class CMissionGoalsDlg : public CDialog
 {
 // Construction
 public:
-	int onRootDeleted(int formula_node) override;
-	void onRootInserted(int old_formula, int new_formula) override;
-	void onRootMoved(int node1, int node2, bool insert_before) override;
-
 	void move_handler(int node1, int node2, bool insert_before);
 	int query_modified();
 	void OnCancel();
@@ -40,6 +36,7 @@ public:
 	void create_tree();
 	CMissionGoalsDlg(CWnd* pParent = NULL);   // standard constructor
 	BOOL OnInitDialog();
+	int handler(int code, int goal);
 	void insert_handler(int old, int node);
 	int select_sexp_node;
 
@@ -96,4 +93,4 @@ protected:
 	int modified;
 };
 
-extern CMissionGoalsDlg *Goal_editor_dlg; // global reference needed by sexp_tree_view class
+extern CMissionGoalsDlg *Goal_editor_dlg; // global reference needed by sexp_tree class

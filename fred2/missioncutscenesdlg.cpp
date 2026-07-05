@@ -24,7 +24,7 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
-CMissionCutscenesDlg* Cutscene_editor_dlg; // global reference needed by sexp_tree_view class
+CMissionCutscenesDlg* Cutscene_editor_dlg; // global reference needed by sexp_tree class
 
 CString cutscene_descriptions[Num_movie_types] = {
 	"Plays just before the fiction viewer game state",
@@ -43,8 +43,7 @@ CString cutscene_descriptions[Num_movie_types] = {
 // CMissionCutscenesDlg dialog class member functions
 
 CMissionCutscenesDlg::CMissionCutscenesDlg(CWnd* pParent /*=NULL*/)
-	: CDialog(CMissionCutscenesDlg::IDD, pParent),
-	  SexpTreeEditorInterface({ TreeFlags::LabeledRoot, TreeFlags::RootDeletable })
+	: CDialog(CMissionCutscenesDlg::IDD, pParent)
 {
 	//{{AFX_DATA_INIT(CMissionCutscenesDlg)
 	m_cutscene_type = -1;
@@ -52,29 +51,11 @@ CMissionCutscenesDlg::CMissionCutscenesDlg(CWnd* pParent /*=NULL*/)
 	m_name = _T("");
 	m_desc = _T("");
 	//}}AFX_DATA_INIT
-	m_cutscenes_tree._model._interface = this;
-	m_cutscenes_tree._model.modified = &modified;
+	m_cutscenes_tree.m_mode = MODE_CUTSCENES; // We don't need to perform actions here, so use the same method as Goals
+	m_cutscenes_tree.link_modified(&modified);
 	modified = 0;
 	select_sexp_node = -1;
 }
-
-int CMissionCutscenesDlg::onRootDeleted(int formula_node)
-{
-	size_t i;
-	for (i = 0; i < m_cutscenes.size(); i++) {
-		if (m_cutscenes[i].formula == formula_node) {
-			break;
-		}
-	}
-
-	Assertion(i < m_cutscenes.size(), "Attempt to delete non-existing cutscene. Please report!");
-	m_cutscenes.erase(m_cutscenes.begin() + i);
-	m_sig.erase(m_sig.begin() + i);
-
-	return formula_node;
-}
-void CMissionCutscenesDlg::onRootInserted(int old_formula, int new_formula) { insert_handler(old_formula, new_formula); }
-void CMissionCutscenesDlg::onRootMoved(int node1, int node2, bool insert_before) { move_handler(node1, node2, insert_before); }
 
 BOOL CMissionCutscenesDlg::OnInitDialog()
 {
@@ -153,10 +134,10 @@ void CMissionCutscenesDlg::load_tree()
 		if (m_cutscenes[i].filename[0] == '\0')
 			strcpy_s(m_cutscenes[i].filename, "<Unnamed>");
 
-		m_cutscenes[i].formula = m_cutscenes_tree._model.load_sub_tree(The_mission.cutscenes[i].formula, true, "true");
+		m_cutscenes[i].formula = m_cutscenes_tree.load_sub_tree(The_mission.cutscenes[i].formula, true, "true");
 	}
 
-	m_cutscenes_tree._model.post_load();
+	m_cutscenes_tree.post_load();
 	cur_cutscene = -1;
 	update_cur_cutscene();
 }
@@ -245,7 +226,7 @@ void CMissionCutscenesDlg::update_cur_cutscene()
 // handler for context menu (i.e. a right mouse button click).
 void CMissionCutscenesDlg::OnRclickCutscenesTree(NMHDR* pNMHDR, LRESULT* pResult)
 {
-	m_cutscenes_tree.right_clicked(); // We don't need to perform actions here, so use the same method as Goals
+	m_cutscenes_tree.right_clicked(MODE_CUTSCENES); // We don't need to perform actions here, so use the same method as Goals
 	*pResult = 0;
 }
 
@@ -316,7 +297,7 @@ void CMissionCutscenesDlg::OnButtonOk()
 	The_mission.cutscenes.clear();
 	for (const auto& dialog_cutscene : m_cutscenes) {
 		The_mission.cutscenes.push_back(dialog_cutscene);
-		The_mission.cutscenes.back().formula = m_cutscenes_tree._model.save_tree(dialog_cutscene.formula);
+		The_mission.cutscenes.back().formula = m_cutscenes_tree.save_tree(dialog_cutscene.formula);
 	}
 
 	theApp.record_window_data(&Mission_cutscenes_wnd_data, this);
@@ -338,6 +319,30 @@ void CMissionCutscenesDlg::OnButtonNewCutscene()
 	m_cutscenes_tree.SetItemData(h, index);
 
 	m_cutscenes_tree.SelectItem(h);
+}
+
+int CMissionCutscenesDlg::handler(int code, int node)
+{
+	switch (code) {
+		case ROOT_DELETED:
+			size_t i;
+			for (i = 0; i < m_cutscenes.size(); i++){
+				if (m_cutscenes[i].formula == node) {
+					break;
+				}
+			}
+
+			Assertion(i < m_cutscenes.size(), "Attempt to delete non-existing cutscene. Please report!");
+			m_cutscenes.erase(m_cutscenes.begin() + i);
+			m_sig.erase(m_sig.begin() + i);
+
+			return node;
+
+		default:
+			UNREACHABLE("Unknown cutscene context menu case. Please report!");
+	}
+
+	return -1;
 }
 
 void CMissionCutscenesDlg::OnSelchangeCutsceneTypeDrop()

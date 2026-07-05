@@ -15,8 +15,7 @@
 namespace fso::fred::dialogs {
 
 WingEditorDialog::WingEditorDialog(FredView* parent, EditorViewport* viewport)
-	: QDialog(parent), SexpTreeEditorInterface(flagset<TreeFlags>()),
-	  ui(new Ui::WingEditorDialog()), _model(new WingEditorDialogModel(this, viewport)),
+	: QDialog(parent), ui(new Ui::WingEditorDialog()), _model(new WingEditorDialogModel(this, viewport)),
 	  _viewport(viewport)
 {
 	ui->setupUi(this);
@@ -35,13 +34,6 @@ WingEditorDialog::WingEditorDialog(FredView* parent, EditorViewport* viewport)
 		refreshAllDynamicCombos();
 		updateUi();
 	});
-
-	connect(ui->arrivalTree, &sexp_tree_view::modified, this, &WingEditorDialog::on_arrivalTree_modified);
-	connect(ui->arrivalTree, &sexp_tree_view::helpChanged, this, [this](const QString& help) { ui->helpText->setPlainText(help); });
-	connect(ui->arrivalTree, &sexp_tree_view::miniHelpChanged, this, [this](const QString& help) { ui->HelpTitle->setText(help); });
-	connect(ui->departureTree, &sexp_tree_view::modified, this, &WingEditorDialog::on_departureTree_modified);
-	connect(ui->departureTree, &sexp_tree_view::helpChanged, this, [this](const QString& help) { ui->helpText->setPlainText(help); });
-	connect(ui->departureTree, &sexp_tree_view::miniHelpChanged, this, [this](const QString& help) { ui->HelpTitle->setText(help); });
 
 	refreshAllDynamicCombos();
 	updateUi();
@@ -85,7 +77,7 @@ void WingEditorDialog::updateUi()
 	ui->arrivalTargetCombo->setCurrentIndex(ui->arrivalTargetCombo->findData(_model->getArrivalTarget()));
 	ui->arrivalDistanceSpinBox->setValue(_model->getArrivalDistance());
 
-	ui->arrivalTree->initializeEditor(_viewport->editor, this, _viewport);
+	ui->arrivalTree->initializeEditor(_viewport->editor, this);
 	ui->arrivalTree->load_tree(_model->getArrivalTree());
 	ui->arrivalTree->expandAll();
 	if (ui->arrivalTree->select_sexp_node != -1) {
@@ -98,7 +90,7 @@ void WingEditorDialog::updateUi()
 	ui->departureLocationCombo->setCurrentIndex(static_cast<int>(_model->getDepartureType()));
 	ui->departureDelaySpinBox->setValue(_model->getDepartureDelay());
 	ui->departureTargetCombo->setCurrentIndex(ui->departureTargetCombo->findData(_model->getDepartureTarget()));
-	ui->departureTree->initializeEditor(_viewport->editor, this, _viewport);
+	ui->departureTree->initializeEditor(_viewport->editor, this);
 	ui->departureTree->load_tree(_model->getDepartureTree());
 	ui->departureTree->expandAll();
 	if (ui->departureTree->select_sexp_node != -1) {
@@ -602,10 +594,9 @@ void WingEditorDialog::on_customWarpinButton_clicked()
 	dlg.exec();
 }
 
-void WingEditorDialog::on_arrivalTree_modified()
+void WingEditorDialog::on_arrivalTree_nodeChanged(int newTree)
 {
-	int new_sexp = ui->arrivalTree->_model.save_tree();
-	_model->setArrivalTree(new_sexp);
+	_model->setArrivalTree(newTree); //TODO This seems broken in a weird way. Will need followup
 }
 
 void WingEditorDialog::on_noArrivalWarpCheckBox_toggled(bool checked)
@@ -680,10 +671,9 @@ void WingEditorDialog::on_customWarpoutButton_clicked()
 	dlg.exec();
 }
 
-void WingEditorDialog::on_departureTree_modified()
+void WingEditorDialog::on_departureTree_nodeChanged(int newTree)
 {
-	int new_sexp = ui->departureTree->_model.save_tree();
-	_model->setDepartureTree(new_sexp);
+	_model->setDepartureTree(newTree); //TODO This seems broken in a weird way. Will need followup
 }
 
 void WingEditorDialog::on_noDepartureWarpCheckBox_toggled(bool checked)

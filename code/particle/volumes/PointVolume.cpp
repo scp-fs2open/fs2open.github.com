@@ -9,8 +9,8 @@ namespace particle {
 		auto curveSource = std::tuple_cat(source, std::make_tuple(particlesFraction));
 
 		return pointCompensateForOffsetAndRotOffset(ZERO_VECTOR, orientation,
-			m_modular_curves.get_output_or_default(VolumeModularCurveOutput::OFFSET_ROT, curveSource, 0.f, &m_modular_curve_instance),
-			m_modular_curves.get_output_or_default(VolumeModularCurveOutput::POINT_TO_ROT, curveSource, 0.f, &m_modular_curve_instance));
+					m_modular_curves.get_output(VolumeModularCurveOutput::OFFSET_ROT, curveSource, &m_modular_curve_instance),
+					m_modular_curves.get_output(VolumeModularCurveOutput::POINT_TO_ROT, curveSource, &m_modular_curve_instance));
 	}
 
 	void PointVolume::parse() {

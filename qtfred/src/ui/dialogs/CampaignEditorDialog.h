@@ -8,7 +8,7 @@
 #include <memory>
 
 #include "mission/dialogs/CampaignEditorDialogModel.h"
-#include "ui/widgets/sexp_tree_view.h"
+#include "ui/widgets/sexp_tree.h"
 
 namespace fso::fred::dialogs {
 
@@ -22,20 +22,6 @@ class CampaignEditorDialog : public QMainWindow, public SexpTreeEditorInterface 
   public:
 	explicit CampaignEditorDialog(QWidget* parent, EditorViewport* viewport);
 	~CampaignEditorDialog() override;
-
-	bool requireCampaignOperators() const override { return true; }
-
-	// Provide the campaign's missions for the OPF_MISSION_NAME data list so the
-	// is-previous-event-*/is-previous-goal-* operators have a real list to pick from
-	// instead of falling back to the (irrelevant) Mission_filename default.
-	SCP_vector<SCP_string> getMissionNames() override;
-	bool hasDefaultMissionName() override;
-
-	// Filter the OPF_GOAL_NAME / OPF_EVENT_NAME data lists to the goals/events that
-	// belong to the mission named by the operator's first argument. Lazy-loads each
-	// referenced mission's goal/event list from disk on first access.
-	SCP_vector<SCP_string> getMissionGoals(const SCP_string& reference_name) override;
-	SCP_vector<SCP_string> getMissionEvents(const SCP_string& reference_name) override;
 
   protected:
 	void closeEvent(QCloseEvent* e) override; // funnel all Window X presses through reject()

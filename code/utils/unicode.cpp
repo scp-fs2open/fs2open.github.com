@@ -19,20 +19,14 @@ text_iterator::text_iterator(const char* in_current_byte, const char* in_range_s
 #endif
 	}
 }
-
-constexpr auto warning_text = "Exception while %s near '%.16s': %s\n\nThis is most likely caused by text created in another encoding, such as Windows-1252, that cannot be interpreted as UTF-8.";
-
 text_iterator& unicode::text_iterator::operator++() {
 	if (Unicode_text_mode) {
 		try {
 			// Increment by UTF-8 encoded codepoints
 			utf8::next(current_byte, range_end_byte);
 		} catch(const std::exception& e) {
-			Warning(LOCATION, warning_text, "incrementing text iterator", current_byte, e.what());
-			// Increment by byte, so we still make progress
-			if (current_byte < range_end_byte) {
-				++current_byte;
-			}
+			Error(LOCATION, "Exception while incrementing UTF-8 sequence near '%.16s': %s", current_byte, e.what());
+			return *this;
 		}
 	} else {
 		// Increment by byte
@@ -47,14 +41,11 @@ text_iterator& text_iterator::operator--() {
 			// Decrement by UTF-8 encoded codepoints
 			utf8::prior(current_byte, range_start_byte);
 		} catch(const std::exception& e) {
-			Warning(LOCATION, warning_text, "decrementing text iterator", current_byte, e.what());
-			// Decrement by byte, so we still make progress
-			if (current_byte > range_start_byte) {
-				--current_byte;
-			}
+			Error(LOCATION, "Exception while decrementing text iterator near '%.16s': %s", current_byte, e.what());
+			return *this;
 		}
 	} else {
-		// Decrement by byte
+		// Increment by byte
 		--current_byte;
 	}
 
@@ -75,8 +66,8 @@ text_iterator::value_type text_iterator::operator*() const {
 		try {
 			return utf8::peek_next(current_byte, range_end_byte);
 		} catch(const std::exception& e) {
-			Warning(LOCATION, warning_text, "decoding UTF-8 sequence", current_byte, e.what());
-			return replacement_char;
+			Error(LOCATION, "Exception while decoding UTF-8 sequence near '%.16s': %s", current_byte, e.what());
+			return 0;
 		}
 	} else {
 		// Use the unsigned byte value here to avoid integer overflows

@@ -645,13 +645,6 @@ public:
 		return result;
 	}
 
-	float get_output_or_default(output_enum output, const input_type& input, float default_val, const modular_curves_entry_instance* instance = nullptr) const {
-		if (has_curve(output))
-			return get_output(output, input, instance);
-		else
-			return default_val;
-	}
-
 	void reset() {
 		for (auto& curve_list : curves) {
 			curve_list.clear();

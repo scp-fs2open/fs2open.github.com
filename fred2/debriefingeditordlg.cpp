@@ -179,7 +179,7 @@ BOOL debriefing_editor_dlg::OnInitDialog()
 	m_debriefAvg_music = Mission_music[SCORE_DEBRIEFING_AVERAGE] + 1;
 	m_debriefFail_music = Mission_music[SCORE_DEBRIEFING_FAILURE] + 1;
 
-	m_tree._model.modified = &modified;  // provide way to indicate trees are modified in dialog
+	m_tree.link_modified(&modified);  // provide way to indicate trees are modified in dialog
 
 	CDialog::OnInitDialog();
 	update_data();
@@ -216,7 +216,7 @@ void debriefing_editor_dlg::update_data(int update)
 		if (ptr->formula >= 0)
 			free_sexp2(ptr->formula);
 
-		ptr->formula = m_tree._model.save_tree();
+		ptr->formula = m_tree.save_tree();
 
 		SCP_string new_text, new_rec_text;
 		deconvert_multiline_string(new_text, m_text);

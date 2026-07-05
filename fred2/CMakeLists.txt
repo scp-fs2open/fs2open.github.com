@@ -110,8 +110,8 @@ set(FRED2_SOURCES
 	restrictpaths.h
 	setglobalshipflags.cpp
 	setglobalshipflags.h
-	sexp_tree_view.cpp
-	sexp_tree_view.h
+	sexp_tree.cpp
+	sexp_tree.h
 	shieldsysdlg.cpp
 	shieldsysdlg.h
 	ship_select.cpp

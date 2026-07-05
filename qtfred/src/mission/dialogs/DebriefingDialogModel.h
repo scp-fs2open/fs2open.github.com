@@ -3,7 +3,6 @@
 #include "AbstractDialogModel.h"
 #include "globalincs/pstypes.h"
 #include "mission/missionbriefcommon.h"
-#include "ui/widgets/sexp_tree_view.h"
 
 
 namespace fso::fred::dialogs {
@@ -13,7 +12,6 @@ class DebriefingDialogModel: public AbstractDialogModel {
  public:
 
 	DebriefingDialogModel(QObject* parent, EditorViewport* viewport);
-	~DebriefingDialogModel() override;
 
 	bool apply() override;
 	void reject() override;
@@ -30,11 +28,8 @@ class DebriefingDialogModel: public AbstractDialogModel {
 	SCP_string getSpeechFilename();
 	void setSpeechFilename(const SCP_string& speechFilename);
 	int getFormula() const;
-
-	void setTreeControl(sexp_tree_view* tree) { _sexpTree = tree; }
-	void setModified() { set_modified(); }
-	void commitCurrentFormula();
-
+	void setFormula(int formula);
+	
 	void gotoPreviousStage();
 	void gotoNextStage();
 	void addStage();
@@ -59,7 +54,6 @@ class DebriefingDialogModel: public AbstractDialogModel {
 	void initializeTeamList();
 
 	debriefing _wipDebriefing[MAX_TVT_TEAMS];
-	sexp_tree_view* _sexpTree = nullptr;
 	int _successMusic;
 	int _averageMusic;
 	int _failureMusic;

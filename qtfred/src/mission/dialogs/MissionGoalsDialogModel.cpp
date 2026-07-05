@@ -43,7 +43,7 @@ bool MissionGoalsDialogModel::apply()
 	Mission_goals.clear();
 	for (const auto &dialog_goal: m_goals) {
 		Mission_goals.push_back(dialog_goal);
-		Mission_goals.back().formula = _sexp_tree->_model.save_tree(dialog_goal.formula);
+		Mission_goals.back().formula = _sexp_tree->save_tree(dialog_goal.formula);
 		if ( The_mission.game_type & MISSION_TYPE_MULTI_TEAMS ) {
 			Assertion(dialog_goal.team != -1, "Invalid goal team!");
 		}
@@ -101,7 +101,30 @@ bool MissionGoalsDialogModel::isGoalVisible(const mission_goal& goal) const {
 void MissionGoalsDialogModel::setGoalDisplayType(int type) {
 	modify(m_display_goal_types, type);
 }
-void MissionGoalsDialogModel::setTreeControl(sexp_tree_view* tree) {
+bool MissionGoalsDialogModel::query_modified()
+{
+	if (modified)
+		return true;
+
+	if (Mission_goals.size() != m_goals.size())
+		return true;
+
+	for (size_t i=0; i<Mission_goals.size(); i++) {
+		if (!lcase_equal(Mission_goals[i].name, m_goals[i].name))
+			return true;
+		if (!lcase_equal(Mission_goals[i].message, m_goals[i].message))
+			return true;
+		if (Mission_goals[i].type != m_goals[i].type)
+			return true;
+		if ( Mission_goals[i].score != m_goals[i].score )
+			return true;
+		if ( Mission_goals[i].team != m_goals[i].team )
+			return true;
+	}
+
+	return false;
+}
+void MissionGoalsDialogModel::setTreeControl(sexp_tree* tree) {
 	_sexp_tree = tree;
 }
 void MissionGoalsDialogModel::deleteGoal(int node) {

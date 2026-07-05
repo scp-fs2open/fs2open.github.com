@@ -33,20 +33,6 @@ namespace unicode {
  */
 typedef char32_t codepoint_t;
 
-/**
- * @brief An invalid and ignorable character, equivalent to -1
- */
-constexpr codepoint_t invalid_char = static_cast<codepoint_t>(-1);
-
-/**
- * @brief Substitute for malformed UTF-8 so that a bad decode can degrade gracefully
- */
-constexpr codepoint_t replacement_char = 0xFFFD;
-
-constexpr codepoint_t comment_char =    static_cast<codepoint_t>(COMMENT_CHAR);
-constexpr codepoint_t eoln =            static_cast<codepoint_t>(EOLN);
-constexpr codepoint_t carriage_return = static_cast<codepoint_t>(CARRIAGE_RETURN);
-
 class text_iterator {
 	const char* current_byte = nullptr;
 	const char* range_end_byte = nullptr;

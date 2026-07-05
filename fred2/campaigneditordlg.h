@@ -11,7 +11,7 @@
 //
 
 #include "resource.h"
-#include "sexp_tree_view.h"
+#include "Sexp_tree.h"
 #include "CampaignFilelistBox.h"
 
 /////////////////////////////////////////////////////////////////////////////
@@ -21,11 +21,11 @@
 #include <afxext.h>
 #endif
 
-class campaign_sexp_tree : public sexp_tree_view
+class campaign_sexp_tree : public sexp_tree
 {
 };
 
-class campaign_editor : public CFormView, public SexpTreeEditorInterface
+class campaign_editor : public CFormView
 {
 private:
 	int m_num_links;
@@ -37,13 +37,6 @@ protected:
 	campaign_editor();           // protected constructor used by dynamic creation
 	DECLARE_DYNCREATE(campaign_editor)
 
-// SexpTreeEditorInterface overrides
-public:
-	bool requireCampaignOperators() const override { return true; }
-	int onRootDeleted(int formula_node) override;
-	void onRootInserted(int old_formula, int new_formula) override;
-	void onRootMoved(int node1, int node2, bool insert_before) override;
-
 // Form Data
 public:
 	void mission_selected(int num);
@@ -52,6 +45,7 @@ public:
 	void update();
 	void load_tree(int save = 1);
 	void save_tree(int clear = 1);
+	int handler(int code, int node, char *str = NULL);
 	void initialize( bool init_files, bool clear_path );
 	void load_campaign(const char *filename, const char *full_path);
 	void update_loop_desc_window();

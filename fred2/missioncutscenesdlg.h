@@ -9,7 +9,7 @@
 
 
 
-#include "sexp_tree_view.h"
+#include "Sexp_tree.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // CMissionCutscenesDlg dialog
@@ -17,18 +17,14 @@
 #define OPERAND	0x01
 #define EDITABLE	0x02
 
-class cutscene_sexp_tree : public sexp_tree_view
+class cutscene_sexp_tree : public sexp_tree
 {
 };
 
-class CMissionCutscenesDlg : public CDialog, public SexpTreeEditorInterface
+class CMissionCutscenesDlg : public CDialog
 {
 // Construction
 public:
-	int onRootDeleted(int formula_node) override;
-	void onRootInserted(int old_formula, int new_formula) override;
-	void onRootMoved(int node1, int node2, bool insert_before) override;
-
 	void move_handler(int node1, int node2, bool insert_before);
 	int query_modified();
 	void OnCancel();
@@ -38,6 +34,7 @@ public:
 	void create_tree();
 	CMissionCutscenesDlg(CWnd* pParent = NULL); // standard constructor
 	BOOL OnInitDialog();
+	int handler(int code, int goal);
 	void insert_handler(int old, int node);
 	int select_sexp_node;
 
@@ -84,4 +81,4 @@ protected:
 	int modified;
 };
 
-extern CMissionCutscenesDlg* Cutscene_editor_dlg; // global reference needed by sexp_tree_view class
+extern CMissionCutscenesDlg* Cutscene_editor_dlg; // global reference needed by sexp_tree class

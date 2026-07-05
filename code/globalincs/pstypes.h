@@ -47,10 +47,6 @@
 #define DIR_SEPARATOR_STR  "/"
 #endif
 
-constexpr char COMMENT_CHAR =    static_cast<char>(';');
-constexpr char EOLN =            static_cast<char>(0x0a);
-constexpr char CARRIAGE_RETURN = static_cast<char>(0x0d);
-
 #ifndef NDEBUG
 constexpr bool FSO_DEBUG = true;
 #else

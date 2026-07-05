@@ -28,7 +28,7 @@ namespace {
 const SCP_string NEW_CONTAINER_NAME = "<New Container Name>";
 } // namespace
 
-CAddModifyContainerDlg::CAddModifyContainerDlg(const sexp_tree_view &s_tree, CWnd *pParent /*=nullptr*/)
+CAddModifyContainerDlg::CAddModifyContainerDlg(const sexp_tree &s_tree, CWnd *pParent /*=nullptr*/)
 	: CDialog(CAddModifyContainerDlg::IDD, pParent), m_sexp_tree(s_tree)
 {
 }
@@ -870,7 +870,7 @@ void CAddModifyContainerDlg::OnBnClickedDeleteContainer()
 	const SCP_string orig_name = orig_name_it->second;
 
 	const int times_used =
-		is_null_container_name(orig_name) ? 0 : m_sexp_tree._model.get_container_usage_count(orig_name);
+		is_null_container_name(orig_name) ? 0 : m_sexp_tree.get_container_usage_count(orig_name);
 	Assertion(times_used >= 0,
 		"Checking usage count of container name %s returned count of %d. Please report!",
 		orig_name.c_str(),

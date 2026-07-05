@@ -247,7 +247,6 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/fxaa-v.sdr
 	def_files/data/effects/fxaapre-f.sdr
 	def_files/data/effects/gamma.sdr
-	def_files/data/effects/gamma-correct-f.sdr
 	def_files/data/effects/irrmap-f.sdr
 	def_files/data/effects/lighting.sdr
 	def_files/data/effects/ls-f.sdr
@@ -855,14 +854,6 @@ add_file_folder("MissionEditor"
 	missioneditor/missionsave.h
 	missioneditor/objectduplication.cpp
 	missioneditor/objectduplication.h
-	missioneditor/sexp_annotation_model.cpp
-	missioneditor/sexp_annotation_model.h
-	missioneditor/sexp_tree_model.cpp
-	missioneditor/sexp_tree_model.h
-	missioneditor/sexp_tree_opf.cpp
-	missioneditor/sexp_tree_opf.h
-	missioneditor/sexp_tree_actions.cpp
-	missioneditor/sexp_tree_actions.h
 )
 
 # MissionUI files

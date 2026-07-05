@@ -699,11 +699,7 @@ static particle::ParticleEffectHandle convertLegacyPspewBuffer(const pspew_legac
 
 			auto vel_vol_temp = std::make_unique<particle::PointVolume>();
 			vel_vol_temp->posOffset = vec3d {{{pspew_buffer.particle_spew_scale, 0.f, 0.f}}};
-			float rot_rnd_min = 0.f;
-			float rot_rnd_max = 1.0f / pspew_buffer.particle_spew_rotation_rate;
-			if (rot_rnd_max < rot_rnd_min)
-				std::swap(rot_rnd_min, rot_rnd_max);
-			vel_vol_temp->m_modular_curves.add_curve("Time Running", particle::PointVolume::VolumeModularCurveOutput::OFFSET_ROT, modular_curves_entry{curve_id, ::util::UniformFloatRange(1.f), ::util::UniformFloatRange(rot_rnd_min, rot_rnd_max), true});
+			vel_vol_temp->m_modular_curves.add_curve("Time Running", particle::PointVolume::VolumeModularCurveOutput::OFFSET_ROT, modular_curves_entry{curve_id, ::util::UniformFloatRange(1.f), ::util::UniformFloatRange(0.f, 1.f / pspew_buffer.particle_spew_rotation_rate), true});
 			velocity_vol = std::move(vel_vol_temp);
 		}
 			break;

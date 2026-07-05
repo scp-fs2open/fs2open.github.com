@@ -215,8 +215,6 @@ enum shader_type {
 	SDR_TYPE_IRRADIANCE_MAP_GEN,
 
 	SDR_TYPE_SHADOW_MAP_GEN,
-  
-	SDR_TYPE_GAMMA_BLIT,
 
 	NUM_SHADER_TYPES
 };
@@ -1507,8 +1505,6 @@ void gr_set_gamma(float gamma);
 void gr_get_post_process_effect_names(SCP_vector<SCP_string> &names);
 
 bool gr_is_viewport_window();
-
-void gr_uniform_buffer_managers_init();
 
 // Include this last to make the 2D rendering function available everywhere
 #include "graphics/render.h"

@@ -32,13 +32,11 @@ namespace particle {
 			vec3d outpnt = point;
 
 			if (rotOffset.has_value()) {
-				vm_vec_rotate(&outpnt, &outpnt, &orientation);
 				vec3d rot = *rotOffset;
 				vm_rot_point_around_line(&rot, &rot, rotOffsetRot, &vmd_zero_vector, &vmd_z_vector);
 				matrix orientUse;
 				vm_vector_2_matrix(&orientUse, &rot);
 				vm_vec_unrotate(&outpnt, &outpnt, &orientUse);
-				vm_vec_unrotate(&outpnt, &outpnt, &orientation);
 			}
 			if (posOffset.has_value()) {
 				vec3d pos = *posOffset;

@@ -184,8 +184,6 @@ static opengl_shader_type_t GL_shader_types[] = {
 	{ SDR_TYPE_SHADOW_MAP_GEN, "shadow_map-v.sdr", "shadow_map-f.sdr", "shadow_map-g.sdr",
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD, opengl_vert_attrib::NORMAL, opengl_vert_attrib::TANGENT, opengl_vert_attrib::MODEL_ID }, "Shadow Map Generation", false },
 
-	{ SDR_TYPE_GAMMA_BLIT, "post-v.sdr", "gamma-correct-f.sdr", nullptr,
-		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Gamma correct blit", false },
 };
 // clang-format on
 

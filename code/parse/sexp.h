@@ -25,7 +25,6 @@ class object;
 class waypoint;
 class p_object;
 struct ship_obj;
-class gamesnd_id;
 
 // bumped to 30 by Goober5000
 #define	OPERATOR_LENGTH	30  // if this ever exceeds TOKEN_LENGTH, let JasonH know!
@@ -1482,7 +1481,6 @@ extern int run_sexp(const char* sexpression, bool run_eval_num = false, bool *is
 extern int stuff_sexp_variable_list();
 extern int eval_sexp(int cur_node, int referenced_node = -1);
 extern int eval_num(int n, bool &is_nan, bool &is_nan_forever);
-extern gamesnd_id sexp_get_sound_index(int node);
 extern bool is_sexp_true(int cur_node, int referenced_node = -1);
 extern bool map_opf_to_opr(sexp_opf_t opf_type, sexp_opr_t &opr_type);
 const char *opr_type_name(sexp_opr_t opr_type);
