@@ -71,6 +71,20 @@ struct PostProcessContext {
 	                            unsigned int shaderFlags = 0);
 
 	/**
+	 * @brief Draw a fullscreen triangle sampling multiple textures
+	 *
+	 * Like drawFullscreenTriangle, but binds `viewCount` textures (all through
+	 * the shared linear sampler) as elements 0..viewCount-1 of the
+	 * Material.TextureArray binding, for shaders that need more than one input
+	 * (e.g. SMAA's blending-weight/neighborhood-blending passes).
+	 */
+	void drawFullscreenTriangleMulti(vk::CommandBuffer cmd, vk::RenderPass renderPass,
+	                                 vk::Framebuffer framebuffer, vk::Extent2D extent,
+	                                 int shaderType,
+	                                 const vk::ImageView* views, uint32_t viewCount,
+	                                 const void* uboData, size_t uboSize);
+
+	/**
 	 * @brief Generate a mip chain for an image (transitions mip 0 first)
 	 */
 	static void generateMipmaps(vk::CommandBuffer cmd, vk::Image image,
@@ -807,6 +821,11 @@ private:
 	bool initLDRTargets();
 	void shutdownLDRTargets();
 
+	// Returns which buffer FXAA/SMAA edge detection should read for luma
+	// computation: Scene_ldr normally, or the tonemap-compressed proxy while
+	// HDR output has left Scene_ldr in extended range.
+	vk::ImageView getAADetectionView() const;
+
 	// SMAA methods (requires LDR targets to already be initialized)
 	bool initSMAA();
 	void shutdownSMAA();
@@ -829,6 +848,15 @@ private:
 	{
 		m_ctx.drawFullscreenTriangle(cmd, renderPass, framebuffer, extent, shaderType,
 		                             textureView, sampler, uboData, uboSize, blendMode, shaderFlags);
+	}
+	void drawFullscreenTriangleMulti(vk::CommandBuffer cmd, vk::RenderPass renderPass,
+	                                 vk::Framebuffer framebuffer, vk::Extent2D extent,
+	                                 int shaderType,
+	                                 const vk::ImageView* views, uint32_t viewCount,
+	                                 const void* uboData, size_t uboSize)
+	{
+		m_ctx.drawFullscreenTriangleMulti(cmd, renderPass, framebuffer, extent, shaderType,
+		                                  views, viewCount, uboData, uboSize);
 	}
 
 	RenderTarget m_sceneColor;      // RGBA16F HDR scene color
@@ -856,10 +884,16 @@ private:
 	// ---- LDR / FXAA resources ----
 	RenderTarget m_sceneLdr;           // RGBA8 LDR after tonemapping
 	RenderTarget m_sceneLuminance;     // RGBA8 LDR with luma in alpha (for FXAA)
+	// RGBA8, tonemapped to [0,1] with the real tone curve (hdr_mode=0) even while
+	// HDR is active; used only as an edge-detection input for FXAA/SMAA (see
+	// getAADetectionView) so their fixed luma thresholds stay valid. Unused (and
+	// left as a duplicate draw of Scene_ldr's own data) when HDR is inactive.
+	RenderTarget m_sceneLdrCompressed;
 	vk::RenderPass m_ldrRenderPass;    // Color-only RGBA8, loadOp=eDontCare
 	vk::RenderPass m_ldrLoadRenderPass; // Color-only RGBA8, loadOp=eLoad (for additive blending)
 	vk::Framebuffer m_sceneLdrFB;
 	vk::Framebuffer m_sceneLuminanceFB;
+	vk::Framebuffer m_sceneLdrCompressedFB;
 	bool m_ldrInitialized = false;
 
 	// ---- SMAA resources ----

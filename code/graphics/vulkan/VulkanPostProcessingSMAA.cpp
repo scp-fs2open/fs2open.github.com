@@ -4,9 +4,6 @@
 
 #include "VulkanRenderer.h"
 #include "VulkanTexture.h"
-#include "VulkanPipeline.h"
-#include "VulkanBuffer.h"
-#include "VulkanDescriptorManager.h"
 #include "graphics/util/uniform_structs.h"
 #include "graphics/2d.h"
 #include "graphics/opengl/SmaaAreaTex.h"
@@ -26,102 +23,6 @@ namespace graphics::vulkan {
 // render pass, so neighborhood blending writes to Scene_luminance (safe to
 // reuse as scratch: FXAA and SMAA are mutually exclusive via Gr_aa_mode) and
 // a final resolve pass copies that back into Scene_ldr.
-
-// Draws a fullscreen triangle sampling multiple textures (bound as elements
-// 0..count-1 of the Material.TextureArray binding), all via the shared linear
-// sampler. Used for the blending-weight (3 textures) and neighborhood-blending
-// (2 textures) passes, which the single-texture drawFullscreenTriangle helper
-// can't express.
-static void smaaDrawMultiTexturePass(PostProcessContext& ctx, vk::CommandBuffer cmd,
-                                      vk::RenderPass renderPass, vk::Framebuffer framebuffer,
-                                      vk::Extent2D extent, shader_type shaderType,
-                                      const vk::ImageView* views, uint32_t viewCount,
-                                      const void* uboData, size_t uboSize)
-{
-	auto* pipelineMgr = getPipelineManager();
-	auto* descriptorMgr = getDescriptorManager();
-	auto* bufferMgr = getBufferManager();
-
-	if (!pipelineMgr || !descriptorMgr || !bufferMgr) {
-		return;
-	}
-
-	PipelineConfig config;
-	config.shaderType = shaderType;
-	config.shaderFlags = 0;
-	config.vertexLayoutHash = 0;
-	config.primitiveType = PRIM_TYPE_TRIS;
-	config.depthMode = ZBUFFER_TYPE_NONE;
-	config.blendMode = ALPHA_BLEND_NONE;
-	config.cullEnabled = false;
-	config.depthWriteEnabled = false;
-	config.renderPass = renderPass;
-
-	vertex_layout emptyLayout;
-	vk::Pipeline pipeline = pipelineMgr->getPipeline(config, emptyLayout);
-	if (!pipeline) {
-		return;
-	}
-
-	vk::PipelineLayout pipelineLayout = pipelineMgr->getPipelineLayout();
-
-	vk::RenderPassBeginInfo rpBegin;
-	rpBegin.renderPass = renderPass;
-	rpBegin.framebuffer = framebuffer;
-	rpBegin.renderArea.offset = vk::Offset2D(0, 0);
-	rpBegin.renderArea.extent = extent;
-
-	cmd.beginRenderPass(rpBegin, vk::SubpassContents::eInline);
-	cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
-
-	vk::Viewport viewport;
-	viewport.x = 0.0f;
-	viewport.y = 0.0f;
-	viewport.width = static_cast<float>(extent.width);
-	viewport.height = static_cast<float>(extent.height);
-	viewport.minDepth = 0.0f;
-	viewport.maxDepth = 1.0f;
-	cmd.setViewport(0, viewport);
-
-	vk::Rect2D scissor;
-	scissor.offset = vk::Offset2D(0, 0);
-	scissor.extent = extent;
-	cmd.setScissor(0, scissor);
-
-	DescriptorWriter writer;
-	writer.reset(ctx.device, descriptorMgr->getFallbacks());
-
-	vk::DescriptorSet materialSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Material);
-	Verify(materialSet);
-	writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
-	{
-		std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texArrayInfos;
-		texArrayInfos.fill(descriptorMgr->getFallbacks().texture2D);
-		for (uint32_t i = 0; i < viewCount; i++) {
-			texArrayInfos[i] = {ctx.linearSampler, views[i], vk::ImageLayout::eShaderReadOnlyOptimal};
-		}
-		writer.setImageArray(MaterialBinding::TextureArray, texArrayInfos);
-	}
-
-	vk::DescriptorSet perDrawSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::PerDraw);
-	Verify(perDrawSet);
-	writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
-	if (uboData && uboSize > 0 && ctx.scratchUBOMapped) {
-		Assertion(ctx.scratchUBOCursor < PostProcessContext::SCRATCH_UBO_MAX_SLOTS, "Scratch UBO slot overflow!");
-		uint32_t slotOffset = ctx.scratchUBOCursor * static_cast<uint32_t>(PostProcessContext::SCRATCH_UBO_SLOT_SIZE);
-		memcpy(static_cast<uint8_t*>(ctx.scratchUBOMapped) + slotOffset, uboData, uboSize);
-		ctx.scratchUBOCursor++;
-		writer.setBuffer(PerDrawBinding::GenericData, {ctx.scratchUBO, slotOffset, PostProcessContext::SCRATCH_UBO_SLOT_SIZE});
-	}
-	writer.flush();
-
-	cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout,
-		static_cast<uint32_t>(DescriptorSetIndex::Material),
-		{materialSet, perDrawSet}, {});
-
-	cmd.draw(3, 1, 0, 0);
-	cmd.endRenderPass();
-}
 
 bool VulkanPostProcessor::initSMAA()
 {
@@ -283,10 +184,7 @@ void VulkanPostProcessor::shutdownSMAA()
 
 void VulkanPostProcessor::executeSMAA(vk::CommandBuffer cmd)
 {
-	// SMAA's luma edge detection assumes normalized LDR input, which doesn't hold
-	// for the extended-range values Scene_ldr carries while HDR output is active
-	// (see executeFXAA's identical restriction).
-	if (!m_smaaInitialized || !m_ldrInitialized || m_ctx.hdrActive || !gr_is_smaa_mode(Gr_aa_mode)) {
+	if (!m_smaaInitialized || !m_ldrInitialized || !gr_is_smaa_mode(Gr_aa_mode)) {
 		return;
 	}
 
@@ -301,27 +199,28 @@ void VulkanPostProcessor::executeSMAA(vk::CommandBuffer cmd)
 	smaaData.pad[0] = 0.0f;
 	smaaData.pad[1] = 0.0f;
 
-	// Pass 1: edge detection. Scene_ldr -> Smaa_edges
+	// Pass 1: edge detection. Detection proxy (Scene_ldr, or the tonemap-compressed
+	// version while HDR is active) -> Smaa_edges
 	drawFullscreenTriangle(cmd, m_ldrRenderPass,
 		m_smaaEdgesFB, m_ctx.sceneExtent,
 		SDR_TYPE_POST_PROCESS_SMAA_EDGE,
-		m_sceneLdr.view, m_ctx.linearSampler,
+		getAADetectionView(), m_ctx.linearSampler,
 		&smaaData, sizeof(smaaData),
 		ALPHA_BLEND_NONE);
 
 	// Pass 2: blending weight calculation. Smaa_edges + area + search -> Smaa_blend
 	{
 		std::array<vk::ImageView, 3> views = {m_smaaEdges.view, m_smaaAreaTexView, m_smaaSearchTexView};
-		smaaDrawMultiTexturePass(m_ctx, cmd, m_ldrRenderPass, m_smaaBlendFB, m_ctx.sceneExtent,
+		drawFullscreenTriangleMulti(cmd, m_ldrRenderPass, m_smaaBlendFB, m_ctx.sceneExtent,
 			SDR_TYPE_POST_PROCESS_SMAA_BLENDING_WEIGHT, views.data(), static_cast<uint32_t>(views.size()),
 			&smaaData, sizeof(smaaData));
 	}
 
-	// Pass 3: neighborhood blending. Scene_ldr + Smaa_blend -> Scene_luminance (scratch;
-	// safe to reuse since FXAA and SMAA are mutually exclusive).
+	// Pass 3: neighborhood blending. Scene_ldr (real, extended-range) + Smaa_blend ->
+	// Scene_luminance (scratch; safe to reuse since FXAA and SMAA are mutually exclusive).
 	{
 		std::array<vk::ImageView, 2> views = {m_sceneLdr.view, m_smaaBlend.view};
-		smaaDrawMultiTexturePass(m_ctx, cmd, m_ldrRenderPass, m_sceneLuminanceFB, m_ctx.sceneExtent,
+		drawFullscreenTriangleMulti(cmd, m_ldrRenderPass, m_sceneLuminanceFB, m_ctx.sceneExtent,
 			SDR_TYPE_POST_PROCESS_SMAA_NEIGHBORHOOD_BLENDING, views.data(), static_cast<uint32_t>(views.size()),
 			&smaaData, sizeof(smaaData));
 	}

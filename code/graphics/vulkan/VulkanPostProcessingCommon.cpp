@@ -186,6 +186,97 @@ void PostProcessContext::drawFullscreenTriangle(vk::CommandBuffer cmd, vk::Rende
 	cmd.endRenderPass();
 }
 
+void PostProcessContext::drawFullscreenTriangleMulti(vk::CommandBuffer cmd, vk::RenderPass renderPass,
+                                                       vk::Framebuffer framebuffer, vk::Extent2D extent,
+                                                       int shaderType,
+                                                       const vk::ImageView* views, uint32_t viewCount,
+                                                       const void* uboData, size_t uboSize)
+{
+	auto* pipelineMgr = getPipelineManager();
+	auto* descriptorMgr = getDescriptorManager();
+	auto* bufferMgr = getBufferManager();
+
+	if (!pipelineMgr || !descriptorMgr || !bufferMgr) {
+		return;
+	}
+
+	PipelineConfig config;
+	config.shaderType = static_cast<shader_type>(shaderType);
+	config.shaderFlags = 0;
+	config.vertexLayoutHash = 0;
+	config.primitiveType = PRIM_TYPE_TRIS;
+	config.depthMode = ZBUFFER_TYPE_NONE;
+	config.blendMode = ALPHA_BLEND_NONE;
+	config.cullEnabled = false;
+	config.depthWriteEnabled = false;
+	config.renderPass = renderPass;
+
+	vertex_layout emptyLayout;
+	vk::Pipeline pipeline = pipelineMgr->getPipeline(config, emptyLayout);
+	if (!pipeline) {
+		return;
+	}
+
+	vk::PipelineLayout pipelineLayout = pipelineMgr->getPipelineLayout();
+
+	vk::RenderPassBeginInfo rpBegin;
+	rpBegin.renderPass = renderPass;
+	rpBegin.framebuffer = framebuffer;
+	rpBegin.renderArea.offset = vk::Offset2D(0, 0);
+	rpBegin.renderArea.extent = extent;
+
+	cmd.beginRenderPass(rpBegin, vk::SubpassContents::eInline);
+	cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
+
+	vk::Viewport viewport;
+	viewport.x = 0.0f;
+	viewport.y = 0.0f;
+	viewport.width = static_cast<float>(extent.width);
+	viewport.height = static_cast<float>(extent.height);
+	viewport.minDepth = 0.0f;
+	viewport.maxDepth = 1.0f;
+	cmd.setViewport(0, viewport);
+
+	vk::Rect2D scissor;
+	scissor.offset = vk::Offset2D(0, 0);
+	scissor.extent = extent;
+	cmd.setScissor(0, scissor);
+
+	DescriptorWriter writer;
+	writer.reset(device, descriptorMgr->getFallbacks());
+
+	vk::DescriptorSet materialSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Material);
+	Verify(materialSet);
+	writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
+	{
+		std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texArrayInfos;
+		texArrayInfos.fill(descriptorMgr->getFallbacks().texture2D);
+		for (uint32_t i = 0; i < viewCount; i++) {
+			texArrayInfos[i] = {linearSampler, views[i], vk::ImageLayout::eShaderReadOnlyOptimal};
+		}
+		writer.setImageArray(MaterialBinding::TextureArray, texArrayInfos);
+	}
+
+	vk::DescriptorSet perDrawSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::PerDraw);
+	Verify(perDrawSet);
+	writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
+	if (uboData && uboSize > 0 && scratchUBOMapped) {
+		Assertion(scratchUBOCursor < SCRATCH_UBO_MAX_SLOTS, "Scratch UBO slot overflow!");
+		uint32_t slotOffset = scratchUBOCursor * static_cast<uint32_t>(SCRATCH_UBO_SLOT_SIZE);
+		memcpy(static_cast<uint8_t*>(scratchUBOMapped) + slotOffset, uboData, uboSize);
+		scratchUBOCursor++;
+		writer.setBuffer(PerDrawBinding::GenericData, {scratchUBO, slotOffset, SCRATCH_UBO_SLOT_SIZE});
+	}
+	writer.flush();
+
+	cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout,
+		static_cast<uint32_t>(DescriptorSetIndex::Material),
+		{materialSet, perDrawSet}, {});
+
+	cmd.draw(3, 1, 0, 0);
+	cmd.endRenderPass();
+}
+
 bool PostProcessContext::createImage(uint32_t width, uint32_t height, vk::Format format,
                                       vk::ImageUsageFlags usage, vk::ImageAspectFlags aspect,
                                       vk::Image& outImage, vk::ImageView& outView,

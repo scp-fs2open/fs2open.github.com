@@ -1,5 +1,6 @@
 #include "VulkanPostProcessing.h"
 
+#include <array>
 
 #include "VulkanRenderer.h"
 #include "VulkanDescriptorManager.h"
@@ -56,6 +57,20 @@ bool VulkanPostProcessor::initLDRTargets()
 	m_sceneLuminance.format = ldrFormat;
 	m_sceneLuminance.width = m_ctx.sceneExtent.width;
 	m_sceneLuminance.height = m_ctx.sceneExtent.height;
+
+	// Create Scene_ldr_compressed (full resolution) — tonemapped to [0,1] using the
+	// real tone curve, purely for FXAA/SMAA edge detection while HDR output is
+	// active (see executeTonemap/getAADetectionView).
+	if (!createImage(m_ctx.sceneExtent.width, m_ctx.sceneExtent.height, ldrFormat,
+	                 vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled,
+	                 vk::ImageAspectFlagBits::eColor,
+	                 m_sceneLdrCompressed.image, m_sceneLdrCompressed.view, m_sceneLdrCompressed.allocation)) {
+		nprintf(("vulkan", "VulkanPostProcessor: Failed to create Scene_ldr_compressed image!\n"));
+		return false;
+	}
+	m_sceneLdrCompressed.format = ldrFormat;
+	m_sceneLdrCompressed.width = m_ctx.sceneExtent.width;
+	m_sceneLdrCompressed.height = m_ctx.sceneExtent.height;
 
 	// Create LDR render pass (color-only, loadOp=eDontCare, finalLayout=eShaderReadOnlyOptimal)
 	{
@@ -130,6 +145,14 @@ bool VulkanPostProcessor::initLDRTargets()
 			nprintf(("vulkan", "VulkanPostProcessor: Failed to create Scene_luminance framebuffer: %s\n", e.what()));
 			return false;
 		}
+
+		fbInfo.pAttachments = &m_sceneLdrCompressed.view;
+		try {
+			m_sceneLdrCompressedFB = m_ctx.device.createFramebuffer(fbInfo);
+		} catch (const vk::SystemError& e) {
+			nprintf(("vulkan", "VulkanPostProcessor: Failed to create Scene_ldr_compressed framebuffer: %s\n", e.what()));
+			return false;
+		}
 	}
 
 	// Create LDR load render pass (loadOp=eLoad for additive blending onto existing content)
@@ -193,6 +216,10 @@ void VulkanPostProcessor::shutdownLDRTargets()
 		return;
 	}
 
+	if (m_sceneLdrCompressedFB) {
+		m_ctx.device.destroyFramebuffer(m_sceneLdrCompressedFB);
+		m_sceneLdrCompressedFB = nullptr;
+	}
 	if (m_sceneLuminanceFB) {
 		m_ctx.device.destroyFramebuffer(m_sceneLuminanceFB);
 		m_sceneLuminanceFB = nullptr;
@@ -208,6 +235,19 @@ void VulkanPostProcessor::shutdownLDRTargets()
 	if (m_ldrRenderPass) {
 		m_ctx.device.destroyRenderPass(m_ldrRenderPass);
 		m_ldrRenderPass = nullptr;
+	}
+
+	// Scene_ldr_compressed
+	if (m_sceneLdrCompressed.view) {
+		m_ctx.device.destroyImageView(m_sceneLdrCompressed.view);
+		m_sceneLdrCompressed.view = nullptr;
+	}
+	if (m_sceneLdrCompressed.image) {
+		m_ctx.device.destroyImage(m_sceneLdrCompressed.image);
+		m_sceneLdrCompressed.image = nullptr;
+	}
+	if (m_sceneLdrCompressed.allocation.isValid()) {
+		m_ctx.memoryManager->freeAllocation(m_sceneLdrCompressed.allocation);
 	}
 
 	// Scene_luminance
@@ -290,15 +330,38 @@ void VulkanPostProcessor::executeTonemap(vk::CommandBuffer cmd)
 		&tmData, sizeof(tmData),
 		ALPHA_BLEND_NONE);
 
+	// While HDR is active, Scene_ldr carries extended-range values (see hdr_mode
+	// above), which breaks the fixed [0,1] luma thresholds FXAA/SMAA edge detection
+	// rely on. So also produce a properly tonemapped (compressed to [0,1]) proxy,
+	// using the same tonemap operator, for those passes to detect edges from —
+	// they still blend the real extended-range Scene_ldr for the actual output.
+	if (m_ctx.hdrActive) {
+		graphics::generic_data::tonemapping_data tmDataCompressed = tmData;
+		tmDataCompressed.hdr_mode = 0;
+
+		drawFullscreenTriangle(cmd, m_ldrRenderPass,
+			m_sceneLdrCompressedFB, m_ctx.sceneExtent,
+			SDR_TYPE_POST_PROCESS_TONEMAPPING,
+			m_sceneColor.view, m_ctx.linearSampler,
+			&tmDataCompressed, sizeof(tmDataCompressed),
+			ALPHA_BLEND_NONE);
+	}
+
 	m_ctx.memoryManager->unmapMemory(m_ctx.scratchUBOAlloc);
 	m_ctx.scratchUBOMapped = nullptr;
 }
 
+// Returns the buffer FXAA/SMAA edge detection should read for luma computation:
+// the real Scene_ldr when it's already bounded to [0,1], or the compressed
+// tonemap proxy when HDR output has left it in extended range.
+vk::ImageView VulkanPostProcessor::getAADetectionView() const
+{
+	return m_ctx.hdrActive ? m_sceneLdrCompressed.view : m_sceneLdr.view;
+}
+
 void VulkanPostProcessor::executeFXAA(vk::CommandBuffer cmd)
 {
-	// FXAA is not compatible with the HDR scene-tonemap encoding, so it is
-	// disabled while HDR output is active.
-	if (!m_ldrInitialized || m_ctx.hdrActive || !gr_is_fxaa_mode(Gr_aa_mode)) {
+	if (!m_ldrInitialized || !gr_is_fxaa_mode(Gr_aa_mode)) {
 		return;
 	}
 
@@ -307,13 +370,14 @@ void VulkanPostProcessor::executeFXAA(vk::CommandBuffer cmd)
 		return;
 	}
 
-	// FXAA prepass: Scene_ldr → Scene_luminance (compute luma in alpha)
-	drawFullscreenTriangle(cmd, m_ldrRenderPass,
-		m_sceneLuminanceFB, m_ctx.sceneExtent,
-		SDR_TYPE_POST_PROCESS_FXAA_PREPASS,
-		m_sceneLdr.view, m_ctx.linearSampler,
-		nullptr, 0,
-		ALPHA_BLEND_NONE);
+	// FXAA prepass: Scene_ldr → Scene_luminance (real color passthrough + luma in
+	// alpha computed from the detection proxy, see getAADetectionView)
+	{
+		std::array<vk::ImageView, 2> views = {m_sceneLdr.view, getAADetectionView()};
+		drawFullscreenTriangleMulti(cmd, m_ldrRenderPass, m_sceneLuminanceFB, m_ctx.sceneExtent,
+			SDR_TYPE_POST_PROCESS_FXAA_PREPASS, views.data(), static_cast<uint32_t>(views.size()),
+			nullptr, 0);
+	}
 
 	// FXAA main pass: Scene_luminance → Scene_ldr
 	graphics::generic_data::fxaa_data fxaaData;
