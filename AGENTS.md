@@ -23,6 +23,10 @@ When making gameplay changes, existing behaviours should be preserved - changes 
 might affect existing gameplay should be gated behind optional table flags, new scripting API
 calls or new sexp functions. 
 
+As a retro gaming engine, the userbase spans the gamut of available hardware, from low
+performing systems to high-end gaming PCs. Features that require certain hardware features
+(for example, presence of specific OpenGL/Vulkan extensions) must be optional with graceful 
+fallbacks.
 
 ## Repository layout
 
@@ -108,6 +112,40 @@ clang-format -i path/to/changed_file.cpp
 
 `.clang-tidy` is also configured and run in CI on clang builds for changed code.
 
+## Runtime logging
+
+Two logging macros are defined in `code/globalincs/pstypes.h`, both routed
+through `code/osapi/outwnd.cpp`:
+
+- **`mprintf(( "...", args ))`** — general/top-level logging. Always tagged
+  under the `"General"` category, which is always enabled, so anything passed
+  to `mprintf` always ends up in the log. Warnings and errors (`Warning(...)`,
+  `Error(...)`) are surfaced through this path automatically — don't
+  hand-log them again with `mprintf`. Use it for one-off, coarse-grained
+  events (subsystem init/shutdown, mission load, major state transitions).
+- **`nprintf(("Category", "...", args))`** — detailed/opt-in logging. The
+  first argument is a category id; categories are looked up against
+  `debug_filter.cfg` and are **disabled by default** unless listed in
+  `FILTERS_ENABLED_BY_DEFAULT` (currently `error`, `warning`, `general`,
+  `scripting` in `code/osapi/outwnd.cpp`). Use `nprintf` for anything verbose
+  or developer-facing — pick an existing category where one fits, or a new,
+  specific one, so it can be filtered on/off without editing code.
+
+Both macros compile to no-ops in release builds unless `SCP_RELEASE_LOGGING`
+is defined (see `LoggingEnabled` in `pstypes.h`), but don't rely on that to
+excuse expensive logging: the format-string arguments are still evaluated
+every call.
+
+- **Never use `mprintf` for anything that can fire per-frame or multiple
+  times per frame** (physics/AI/render inner loops, per-object per-tick
+  checks) — it's always-on and will spam the log and hurt performance. Use
+  `nprintf` under a specific, off-by-default category instead, so it stays
+  silent unless a developer explicitly enables it while debugging.
+- Even with `nprintf`, be mindful of per-frame call sites: prefer logging
+  transitions/edges (state changed, event fired) over logging steady-state
+  conditions every tick, and avoid building the message string when the
+  category is unlikely to be enabled.
+
 ## CI pipeline requirements
 
 Every PR is built by `.github/workflows/test-pull_request.yaml` across a full
@@ -159,6 +197,8 @@ following:
 - Cross-platform matters: code must compile on GCC, Clang, and MSVC. Avoid
   platform-specific APIs outside `osapi/`, `windows_stub/`, and platform guards.
 - Add or update unit tests under `test/src` when changing testable logic.
+- When available, prefer mcp usage over manual exploration of the codebase or
+  performing build tasks.
 
 ## Useful references
 
