@@ -187,6 +187,12 @@ TEST(OptionsManagerOverride, FlagsetOverrideRoundTrips)
 	ASSERT_TRUE(value[FramebufferEffects::Shockwaves]);
 }
 
+// Graphics.Anisotropy is only registered in builds with the OpenGL backend compiled in
+// (its Option<float> lives in gropengltexture.cpp, which the CMake build excludes entirely
+// when FSO_BUILD_WITH_OPENGL is off) -- so, like Graphics.RenderAPI above, round-trip
+// coverage needs a build-config split rather than a single unconditional test.
+#ifdef WITH_OPENGL
+
 TEST(OptionsManagerOverride, FloatOverrideRoundTrips)
 {
 	auto* opt = OptionsManager::instance()->getOptionByKey("Graphics.Anisotropy");
@@ -198,6 +204,15 @@ TEST(OptionsManagerOverride, FloatOverrideRoundTrips)
 
 	ASSERT_FLOAT_EQ(typedOpt->getValue(), 16.0f);
 }
+
+#else
+
+TEST(OptionsManagerOverride, AnisotropyIsAbsentWithoutOpenGLSupport)
+{
+	ASSERT_EQ(OptionsManager::instance()->getOptionByKey("Graphics.Anisotropy"), nullptr);
+}
+
+#endif
 
 TEST(OptionsManagerOverride, LanguageObjectOverrideRoundTrips)
 {
