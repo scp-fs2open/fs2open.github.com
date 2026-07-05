@@ -1665,8 +1665,9 @@ void draw_model_icon(int model_id, uint64_t flags, int x, int y, int w, int h, s
 	Glowpoint_override = true;
 	model_clear_instance(model_id);
 	int model_instance = -1;
-	model_get_cached_ui_render_instance(model_id, &model_instance);
-	if (sip != nullptr) {
+	auto cache_result = model_get_cached_ui_render_instance(model_id, &model_instance);
+	// Only set up the instance when it was freshly created; the cached instance persists across frames.
+	if (sip != nullptr && cache_result == TriStateBool::TRUE_) {
 		model_set_up_techroom_instance(sip, model_instance);
 	}
 
@@ -1688,8 +1689,9 @@ void draw_model_rotating(model_render_params *render_info, int ship_class, int m
 		return;
 
 	int model_instance = -1;
-	model_get_cached_ui_render_instance(model_id, &model_instance);
-	if (!(flags & MR_IS_MISSILE) && SCP_vector_inbounds(Ship_info, ship_class)) {
+	auto cache_result = model_get_cached_ui_render_instance(model_id, &model_instance);
+	// Only set up the instance when it was freshly created; the cached instance persists across frames.
+	if (!(flags & MR_IS_MISSILE) && SCP_vector_inbounds(Ship_info, ship_class) && cache_result == TriStateBool::TRUE_) {
 		model_set_up_techroom_instance(&Ship_info[ship_class], model_instance);
 	}
 
@@ -1843,9 +1845,9 @@ void draw_model_rotating(model_render_params *render_info, int ship_class, int m
 				shadow_render_info.set_flags(flags | MR_NO_TEXTURING | MR_NO_LIGHTING);
 
 				if ( flags & MR_IS_MISSILE )  {
-					shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, gr_screen.clip_aspect, -closeup_pos->xyz.z + pm->rad, -closeup_pos->xyz.z + pm->rad + 20.0f, -closeup_pos->xyz.z + pm->rad + 200.0f, -closeup_pos->xyz.z + pm->rad + 1000.0f);
+					shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, Proj_fov, gr_screen.clip_aspect, SCP_vector {{-closeup_pos->xyz.z + pm->rad, -closeup_pos->xyz.z + pm->rad + 20.0f, -closeup_pos->xyz.z + pm->rad + 200.0f, -closeup_pos->xyz.z + pm->rad + 1000.0f}});
 				} else {
-					shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, gr_screen.clip_aspect, -closeup_pos->xyz.z + pm->rad, -closeup_pos->xyz.z + pm->rad + 200.0f, -closeup_pos->xyz.z + pm->rad + 2000.0f, -closeup_pos->xyz.z + pm->rad + 10000.0f);
+					shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, Proj_fov, gr_screen.clip_aspect, SCP_vector {{-closeup_pos->xyz.z + pm->rad, -closeup_pos->xyz.z + pm->rad + 200.0f, -closeup_pos->xyz.z + pm->rad + 2000.0f, -closeup_pos->xyz.z + pm->rad + 10000.0f}});
 				}
 
 				model_render_immediate(&shadow_render_info, model_id, model_instance, &model_orient, &vmd_zero_vector);
@@ -1935,9 +1937,9 @@ void draw_model_rotating(model_render_params *render_info, int ship_class, int m
 		if(shadow_maybe_start_frame(shadow_disable_override))
 		{
 			if ( flags & MR_IS_MISSILE )  {
-				shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, gr_screen.clip_aspect, -closeup_pos->xyz.z + pm->rad, -closeup_pos->xyz.z + pm->rad + 20.0f, -closeup_pos->xyz.z + pm->rad + 200.0f, -closeup_pos->xyz.z + pm->rad + 1000.0f);
+				shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, Proj_fov, gr_screen.clip_aspect, SCP_vector {{-closeup_pos->xyz.z + pm->rad, -closeup_pos->xyz.z + pm->rad + 20.0f, -closeup_pos->xyz.z + pm->rad + 200.0f, -closeup_pos->xyz.z + pm->rad + 1000.0f}});
 			} else {
-				shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, gr_screen.clip_aspect, -closeup_pos->xyz.z + pm->rad, -closeup_pos->xyz.z + pm->rad + 200.0f, -closeup_pos->xyz.z + pm->rad + 2000.0f, -closeup_pos->xyz.z + pm->rad + 10000.0f);
+				shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, Proj_fov, gr_screen.clip_aspect, SCP_vector {{-closeup_pos->xyz.z + pm->rad, -closeup_pos->xyz.z + pm->rad + 200.0f, -closeup_pos->xyz.z + pm->rad + 2000.0f, -closeup_pos->xyz.z + pm->rad + 10000.0f}});
 			}
 
 			model_render_params shadow_render_info;

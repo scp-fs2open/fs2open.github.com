@@ -83,10 +83,11 @@ briefing_editor_dlg::briefing_editor_dlg(CWnd* pParent /*=NULL*/)
 	m_use_wing = FALSE;
 	m_use_cargo = FALSE;
 	//}}AFX_DATA_INIT
+	m_play_icon = nullptr;
 	m_voice_id = -1;
 	m_cur_stage = 0;
 	m_last_stage = m_cur_icon = m_last_icon = -1;
-	m_tree.link_modified(&modified);  // provide way to indicate trees are modified in dialog
+	m_tree._model.modified = &modified;  // provide way to indicate trees are modified in dialog
 
 	// copy view initialization
 	m_copy_view_set = 0;
@@ -237,8 +238,8 @@ void briefing_editor_dlg::create()
 	for (auto &sm: Spooled_music)
 		box->AddString(sm.name);
 
-	m_play_bm.LoadBitmap(IDB_PLAY);
-	((CButton *) GetDlgItem(IDC_PLAY)) -> SetBitmap(m_play_bm);
+	m_play_icon = load_button_icon(IDB_PLAY, RGB(192, 192, 192));
+	((CButton *) GetDlgItem(IDC_PLAY)) -> SetIcon(m_play_icon);
 
 	m_current_briefing = 0;
 	Briefing = &Briefings[m_current_briefing];
@@ -383,7 +384,7 @@ void briefing_editor_dlg::update_data(int update)
 			ptr->draw_grid = true;
 
 		MODIFY(ptr->flags, i);
-		ptr->formula = m_tree.save_tree();
+		ptr->formula = m_tree._model.save_tree();
 		switch (m_lines.GetCheck()) {
 			case 1:
 				// add lines between every pair of 2 marked icons if there isn't one already.
@@ -1411,7 +1412,7 @@ void briefing_editor_dlg::OnEndlabeleditTree(NMHDR* pNMHDR, LRESULT* pResult)
 BOOL briefing_editor_dlg::DestroyWindow()
 {
 	Briefing_dialog = nullptr;
-	m_play_bm.DeleteObject();
+	if (m_play_icon) DestroyIcon(m_play_icon);
 	audiostream_close_file(m_voice_id, 0);
 	return CDialog::DestroyWindow();
 }

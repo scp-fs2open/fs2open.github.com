@@ -28,7 +28,7 @@ public:
 // Dialog Data
 	//{{AFX_DATA(debriefing_editor_dlg)
 	enum { IDD = IDD_DEBRIEFING_EDITOR };
-	sexp_tree	m_tree;
+	sexp_tree_view	m_tree;
 	CString	m_text;
 	CString	m_voice;
 	CString	m_stage_title;
@@ -39,7 +39,7 @@ public:
 	int		m_current_debriefing;
 	//}}AFX_DATA
 
-	CBitmap m_play_bm;
+	HICON m_play_icon;
 
 // Overrides
 	// ClassWizard generated virtual function overrides

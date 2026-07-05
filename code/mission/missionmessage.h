@@ -167,6 +167,35 @@ typedef struct MessageFilter {
 	int                    team_bitfield;
 } MessageFilter;
 
+// Media reference for a message: the game stores an index into the avi or
+// wave arrays, FRED stores a strdup'd filename.  Implements move operations.
+// No destructor; freeing remains the responsibility of the free() sites.
+struct MessageMediaRef
+{
+	union
+	{
+		int   index;
+		char *name;
+	};
+
+	MessageMediaRef() : name(nullptr) {}
+
+	MessageMediaRef(const MessageMediaRef &) = default;
+	MessageMediaRef &operator=(const MessageMediaRef &) = default;
+
+	MessageMediaRef(MessageMediaRef &&other) noexcept : name(other.name)
+	{
+		other.name = nullptr;
+	}
+
+	MessageMediaRef &operator=(MessageMediaRef &&other) noexcept
+	{
+		name = other.name;
+		other.name = nullptr;
+		return *this;
+	}
+};
+
 typedef struct MissionMessage {
 	char    name[NAME_LENGTH];					// used to identify this message
 	char    message[MESSAGE_LENGTH];			// actual message
@@ -182,21 +211,16 @@ typedef struct MissionMessage {
 	int outer_filter_radius;
 	int boost_level;
 
-	// unions for avi/wave information.  Because of issues with Fred, we are using
+	// avi/wave information.  Because of issues with Fred, we are using
 	// the union to specify either the index into the avi or wave arrays above,
-	// or refernce the name directly.  The currently plan is to only have Fred reference
-	// the name field!!!
-	union {
-		int	index;								// index of avi file to play
-		char	*name;
-	} avi_info;
-
-	union {
-		int	index;
-		char	*name;
-	} wave_info;
+	// or reference the name directly.  The current plan is to only have Fred
+	// reference the name field!!!
+	MessageMediaRef avi_info;
+	MessageMediaRef wave_info;
 
 } MMessage;
+
+extern void message_free_media_names(MMessage &msg);
 
 extern SCP_vector<MMessage> Messages;
 

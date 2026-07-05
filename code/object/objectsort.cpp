@@ -17,7 +17,9 @@
 #include "cmdline/cmdline.h"
 #include "debris/debris.h"
 #include "graphics/light.h"
+#include "graphics/shadows.h"
 #include "jumpnode/jumpnode.h"
+#include "mod_table/mod_table.h"
 #include "mission/missionparse.h"
 #include "model/modelrender.h"
 #include "nebula/neb.h"
@@ -367,6 +369,10 @@ void obj_render_queue_all()
 	}
 
 	scene.init_render();
+
+	if (Shadow_quality != ShadowQuality::Disabled) {
+		shadow_cascade_params_bind(Num_cockpit_shadow_cascades, Num_shadow_cascades);
+	}
 
 	scene.render_all(ZBUFFER_TYPE_FULL);
 	gr_zbuffer_set(ZBUFFER_TYPE_READ);

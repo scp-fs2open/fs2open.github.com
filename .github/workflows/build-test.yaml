@@ -17,10 +17,13 @@ jobs:
     runs-on: ubuntu-latest
     container: ghcr.io/scp-fs2open/linux_build:sha-71099c9
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v7
         name: Checkout
         with:
           submodules: true
+      - name: Set workspace as safe
+        # This appears to be broken in current actions, so do it manually
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: Set up test version
         shell: bash
         run: |
@@ -51,7 +54,7 @@ jobs:
           CONFIGURATION: ${{ matrix.configuration }}
         run: $GITHUB_WORKSPACE/ci/linux/generate_appimage.sh $GITHUB_WORKSPACE/build/install
       - name: Upload build result
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: linux-${{ matrix.configuration }}
           path: ${{ github.workspace }}/build/install/*.AppImage
@@ -59,21 +62,24 @@ jobs:
     name: Build Linux distribution zip
     needs: build_linux
     runs-on: ubuntu-latest
-    container: ghcr.io/scp-fs2open/sftp_upload:sha-748b19d
+    container: ghcr.io/scp-fs2open/sftp_upload:sha-844131c
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v7
         name: Checkout
         with:
           submodules: true
           fetch-depth: '0'
           ref: '${{ github.ref }}'
+      - name: Set workspace as safe
+        # This appears to be broken in current actions, so do it manually
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: Download Release builds
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: linux-Release
           path: builds
       - name: Download FastDebug builds
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: linux-FastDebug
           path: builds
@@ -98,10 +104,13 @@ jobs:
     name: Windows
     runs-on: windows-2022
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v7
         name: Checkout
         with:
           submodules: true
+      - name: Set workspace as safe
+        # This appears to be broken in current actions, so do it manually
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: Set up test version
         shell: bash
         run: |
@@ -177,7 +186,7 @@ jobs:
         shell: bash
         run: ./bin/$CONFIGURATION/unittests --gtest_shuffle
       - name: Upload build result
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: windows-${{ matrix.configuration }}-${{ matrix.arch }}-${{ matrix.simd }}
           path: ${{ github.workspace }}/build/install/*
@@ -185,25 +194,28 @@ jobs:
     name: Build Windows distribution zip
     needs: build_windows
     runs-on: ubuntu-latest
-    container: ghcr.io/scp-fs2open/sftp_upload:sha-748b19d
+    container: ghcr.io/scp-fs2open/sftp_upload:sha-844131c
     strategy:
       matrix:
         arch: [Win32, x64]
         simd: [SSE2]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v7
         name: Checkout
         with:
           submodules: true
           fetch-depth: '0'
           ref: '${{ github.ref }}'
+      - name: Set workspace as safe
+        # This appears to be broken in current actions, so do it manually
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: Download Release builds
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: windows-Release-${{ matrix.arch }}-${{ matrix.simd }}
           path: builds
       - name: Download FastDebug builds
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: windows-FastDebug-${{ matrix.arch }}-${{ matrix.simd }}
           path: builds
@@ -248,11 +260,14 @@ jobs:
           # setup-python: 'false'
           # aqtversion: ==1.1.3
           # py7zrversion: '==0.19.*'
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v7
         name: Checkout
         with:
           submodules: true
           fetch-depth: 0
+      - name: Set workspace as safe
+        # This appears to be broken in current actions, so do it manually
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: Prepare Vulkan SDK
         uses: humbletim/setup-vulkan-sdk@v1.2.1
         with:
@@ -300,7 +315,7 @@ jobs:
         # Ref: https://github.com/actions/runner-images/issues/2619
         run: gtar -cvzf macos-build-${{ matrix.configuration }}-${{ matrix.arch }}.tgz *.app
       - name: Upload build result
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: mac-${{ matrix.configuration }}-${{ matrix.arch }}
           path: ${{ github.workspace }}/build/bin/macos-build-${{ matrix.configuration }}-${{ matrix.arch }}.tgz
@@ -308,24 +323,27 @@ jobs:
     name: Build Mac distribution zip
     needs: build_mac
     runs-on: ubuntu-latest
-    container: ghcr.io/scp-fs2open/sftp_upload:sha-748b19d
+    container: ghcr.io/scp-fs2open/sftp_upload:sha-844131c
     strategy:
       matrix:
         arch: [x86_64, arm64]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v7
         name: Checkout
         with:
           submodules: true
           fetch-depth: '0'
           ref: '${{ github.ref }}'
+      - name: Set workspace as safe
+        # This appears to be broken in current actions, so do it manually
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: Download Release builds
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: mac-Release-${{ matrix.arch }}
           path: builds
       - name: Download FastDebug builds
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: mac-FastDebug-${{ matrix.arch }}
           path: builds

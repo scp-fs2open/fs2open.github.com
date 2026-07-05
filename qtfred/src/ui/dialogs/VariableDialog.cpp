@@ -30,7 +30,7 @@ enum ItemCol {
 	ItemValue = 1
 };
 
-VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
+VariableDialog::VariableDialog(QWidget* parent, EditorViewport* viewport, Tab initialTab)
 	: QDialog(parent), _viewport(viewport), ui(new Ui::VariableEditorDialog()),
 	  _model(new VariableDialogModel(this, viewport))
 {
@@ -38,6 +38,7 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 	ui->setupUi(this);
 	initializeUi();
 	updateUi();
+	ui->tabWidget->setCurrentIndex(static_cast<int>(initialTab));
 }
 
 VariableDialog::~VariableDialog() = default;

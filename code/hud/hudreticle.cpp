@@ -414,6 +414,12 @@ void HudGaugeReticle::getFirepointStatus() {
 				eye eyepoint = pm->view_positions[shipp->current_viewpoint];
 				vec2d ep = { eyepoint.pnt.xyz.x, eyepoint.pnt.xyz.y };
 
+				// Center reticle does not move if player is looking around, so ensure that firepoints also do not move.
+				// Use object_get_eye to get the needed eye values (do not use Eye_matrix b/c firepoints will sway if looking).
+				vec3d unused_eye_pos;
+				matrix eye_orient;
+				object_get_eye(&unused_eye_pos, &eye_orient, &Objects[Player->objnum], false, false, true);
+
 				for (int i = 0; i < pm->n_guns; i++) {
 					int bankactive = 0;
 					ship_weapon *swp = &shipp->weapons;
@@ -497,11 +503,6 @@ void HudGaugeReticle::getFirepointStatus() {
 						}
 
 						vec3d fpfromeye;
-
-						matrix eye_orient, player_transpose;
-
-						vm_copy_transpose(&player_transpose, &Objects[Player->objnum].orient);
-						vm_matrix_x_matrix(&eye_orient, &player_transpose, &Eye_matrix);
 						vm_vec_rotate(&fpfromeye, &pm->gun_banks[i].pnt[j], &eye_orient);
 
 						firepoint tmp = { { fpfromeye.xyz.x - ep.x, ep.y - fpfromeye.xyz.y }, fpactive };

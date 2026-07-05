@@ -33,7 +33,7 @@ extern float shadow_neardist;
 extern float shadow_middist;
 extern float shadow_fardist;
 
-extern GLuint Shadow_map_texture;
+extern GLuint Shadow_map_depth_texture;
 
 struct opengl_vertex_bind {
 	vertex_format_data::vertex_format format;
@@ -62,6 +62,9 @@ void gr_opengl_flush_mapped_buffer(gr_buffer_handle handle, size_t offset, size_
 GLuint opengl_buffer_get_id(GLenum expected_type, gr_buffer_handle buffer_handle);
 
 void gr_opengl_update_transform_buffer(void* data, size_t size);
+
+void gr_opengl_render_shadow_draw(gr_buffer_handle ubo_handle, size_t ubo_offset, size_t ubo_size,
+                                   vertex_buffer* buffer, indexed_vertex_source* vert_src, size_t texi);
 
 void opengl_tnl_init();
 void opengl_tnl_shutdown();

@@ -14,7 +14,7 @@
 #include "MessageEditorDlg.h"
 #include "FREDDoc.h"
 #include "Management.h"
-#include "Sexp_tree.h"
+#include "sexp_tree_view.h"
 #include "EventEditor.h"
 #include "mission/missionmessage.h"
 
@@ -43,7 +43,7 @@ CMessageEditorDlg::CMessageEditorDlg(CWnd* pParent /*=NULL*/)
 	m_persona = -1;
 	//}}AFX_DATA_INIT
 
-	m_tree.link_modified(&modified);
+	m_tree._model.modified = &modified;
 	modified = 0;
 	m_event_num = -1;
 }
@@ -193,7 +193,7 @@ int CMessageEditorDlg::query_modified()
 	if ( (m_persona - 1 ) != Messages[m_cur_msg].persona_index )
 		return 1;
 
-	if (m_tree.query_false()) {
+	if (m_tree._model.query_false()) {
 		if (m_event_num >= 0)
 			return 1;
 
@@ -406,7 +406,7 @@ int CMessageEditorDlg::update(int num)
 		// box list.
 		Messages[num].persona_index = m_persona - 1;
 
-		if (m_tree.query_false()) {
+		if (m_tree._model.query_false()) {
 			if (m_event_num >= 0) {  // need to delete event
 				i = m_event_num;
 				free_sexp2(Mission_events[i].formula);
@@ -425,7 +425,7 @@ int CMessageEditorDlg::update(int num)
 				Mission_events[m_event_num].name = m_message_name;
 			}
 
-			fnode = m_tree.save_tree();
+			fnode = m_tree._model.save_tree();
 			ptr = (char *) (LPCTSTR) m_message_name;
 			node = alloc_sexp(ptr, SEXP_ATOM, SEXP_ATOM_STRING, -1, -1);
 			((CComboBox *) GetDlgItem(IDC_PRIORITY))->GetLBText(m_priority, buf);
@@ -447,16 +447,13 @@ int CMessageEditorDlg::update(int num)
 	return 0;
 }
 
-void CMessageEditorDlg::OnDelete() 
+void CMessageEditorDlg::OnDelete()
 {
 	char buf[256];
 	int i;
 
 	Assert((m_cur_msg >= 0) && (m_cur_msg < Num_messages));
-	if (Messages[m_cur_msg].avi_info.name)
-		free(Messages[m_cur_msg].avi_info.name);
-	if (Messages[m_cur_msg].wave_info.name)
-		free(Messages[m_cur_msg].wave_info.name);
+	message_free_media_names(Messages[m_cur_msg]);
 
 	((CListBox *) GetDlgItem(IDC_MESSAGE_LIST))->DeleteString(m_cur_msg);
 	sprintf(buf, "<%s>", Messages[m_cur_msg].name);
@@ -464,9 +461,9 @@ void CMessageEditorDlg::OnDelete()
 	update_sexp_references(Messages[m_cur_msg].name, buf, OPF_MESSAGE_OR_STRING);
 
 	for (i=m_cur_msg; i<Num_messages-1; i++)
-		Messages[i] = Messages[i + 1];
-
+		Messages[i] = std::move(Messages[i + 1]);
 	Num_messages--;
+
 	if (m_cur_msg >= Num_messages)
 		m_cur_msg = Num_messages - 1;
 

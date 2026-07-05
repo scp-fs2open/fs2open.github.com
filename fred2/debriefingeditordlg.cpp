@@ -13,6 +13,7 @@
 #include "FRED.h"
 #include "DebriefingEditorDlg.h"
 #include "FREDDoc.h"
+#include "management.h"
 #include "mission/missionbriefcommon.h"
 #include "mission/missionparse.h"
 #include "globalincs/linklist.h"
@@ -51,6 +52,7 @@ debriefing_editor_dlg::debriefing_editor_dlg(CWnd* pParent /*=NULL*/)
 	m_last_stage = -1;
 	m_voice_id = -1;
 	select_sexp_node = -1;
+	m_play_icon = nullptr;
 }
 
 void debriefing_editor_dlg::create()
@@ -148,8 +150,8 @@ void debriefing_editor_dlg::OnInitMenu(CMenu* pMenu)
 BOOL debriefing_editor_dlg::OnInitDialog()
 {
 	CDialog::OnInitDialog();
-	m_play_bm.LoadBitmap(IDB_PLAY);
-	((CButton *) GetDlgItem(IDC_PLAY)) -> SetBitmap(m_play_bm);
+	m_play_icon = load_button_icon(IDB_PLAY, RGB(192, 192, 192));
+	((CButton *) GetDlgItem(IDC_PLAY)) -> SetIcon(m_play_icon);
 	CComboBox *box;
 	box = (CComboBox *) GetDlgItem(IDC_ICON_IMAGE);
 
@@ -177,7 +179,7 @@ BOOL debriefing_editor_dlg::OnInitDialog()
 	m_debriefAvg_music = Mission_music[SCORE_DEBRIEFING_AVERAGE] + 1;
 	m_debriefFail_music = Mission_music[SCORE_DEBRIEFING_FAILURE] + 1;
 
-	m_tree.link_modified(&modified);  // provide way to indicate trees are modified in dialog
+	m_tree._model.modified = &modified;  // provide way to indicate trees are modified in dialog
 
 	CDialog::OnInitDialog();
 	update_data();
@@ -214,7 +216,7 @@ void debriefing_editor_dlg::update_data(int update)
 		if (ptr->formula >= 0)
 			free_sexp2(ptr->formula);
 
-		ptr->formula = m_tree.save_tree();
+		ptr->formula = m_tree._model.save_tree();
 
 		SCP_string new_text, new_rec_text;
 		deconvert_multiline_string(new_text, m_text);
@@ -502,7 +504,7 @@ BOOL debriefing_editor_dlg::DestroyWindow()
 {
 	Debriefing_dialog = nullptr;
 	audiostream_close_file(m_voice_id, 0);
-	m_play_bm.DeleteObject();
+	if (m_play_icon) DestroyIcon(m_play_icon);
 	return CDialog::DestroyWindow();
 }
 

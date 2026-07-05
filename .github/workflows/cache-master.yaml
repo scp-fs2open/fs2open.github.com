@@ -29,10 +29,13 @@ jobs:
     steps:
       - name: Install Qt dependencies
         run: apt-get -yq update && apt-get -yq install libfontconfig1
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v7
         name: Checkout
         with:
           submodules: true
+      - name: Set workspace as safe
+        # This appears to be broken in current actions, so do it manually
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: ccache
         uses: hendrikmuhs/ccache-action@v1
         with:

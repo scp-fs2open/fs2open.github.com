@@ -1,0 +1,18 @@
+in vec4 fragTexCoord;
+out vec4 fragOut0;
+
+uniform sampler2D tex;
+
+layout (std140) uniform genericData {
+	float gamma;
+};
+
+void main()
+{
+	vec4 color = texture(tex, fragTexCoord.xy);
+
+	float g = max(gamma, 0.001);
+	color.rgb = pow(color.rgb, vec3(1.0 / g));
+
+	fragOut0 = color;
+}

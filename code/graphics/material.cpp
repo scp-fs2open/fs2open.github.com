@@ -734,9 +734,7 @@ uint model_material::get_shader_flags() const
     }
 
 	if (Shadow_casting) {
-		// if we're building the shadow map, we likely only need the flags here and above so bail
-		Shader_flags |= MODEL_SDR_FLAG_SHADOW_MAP;
-
+		// Shadow map generation now uses a dedicated shader (SDR_TYPE_MODEL_SHADOW_MAP)
 		return Shader_flags;
 	}
 

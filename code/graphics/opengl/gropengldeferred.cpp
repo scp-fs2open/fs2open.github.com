@@ -11,6 +11,7 @@
 #include "graphics/2d.h"
 #include "graphics/light.h"
 #include "graphics/matrix.h"
+#include "graphics/shadows.h"
 #include "graphics/util/UniformAligner.h"
 #include "graphics/util/UniformBuffer.h"
 #include "graphics/util/uniform_structs.h"
@@ -20,6 +21,7 @@
 #include "mission/missionparse.h"
 #include "nebula/neb.h"
 #include "nebula/volumetrics.h"
+#include "mod_table/mod_table.h"
 #include "render/3d.h"
 #include "tracing/tracing.h"
 #ifdef USE_OPENGL_ES
@@ -250,7 +252,7 @@ void gr_opengl_deferred_lighting_finish()
 	GL_state.Texture.Enable(2, GL_TEXTURE_2D, Scene_position_texture);
 	GL_state.Texture.Enable(3, GL_TEXTURE_2D, Scene_specular_texture);
 	if (Shadow_quality != ShadowQuality::Disabled) {
-		GL_state.Texture.Enable(4, GL_TEXTURE_2D_ARRAY, Shadow_map_texture);
+		GL_state.Texture.Enable(4, GL_TEXTURE_2D_ARRAY, Shadow_map_depth_texture);
 	}
 
 	if (ENVMAP > 0) {
@@ -313,17 +315,10 @@ void gr_opengl_deferred_lighting_finish()
 
 		auto header = light_uniform_aligner.getHeader<deferred_global_data>();
 		if (Shadow_quality != ShadowQuality::Disabled) {
-			// Avoid this overhead when we are not going to use these values
-			header->shadow_mv_matrix = Shadow_view_matrix_light;
-			for (size_t i = 0; i < MAX_SHADOW_CASCADES; ++i) {
-				header->shadow_proj_matrix[i] = Shadow_proj_matrix[i];
-			}
-			header->veryneardist = Shadow_cascade_distances[0];
-			header->neardist = Shadow_cascade_distances[1];
-			header->middist = Shadow_cascade_distances[2];
-			header->fardist = Shadow_cascade_distances[3];
-
 			vm_inverse_matrix4(&header->inv_view_matrix, &Shadow_view_matrix_render);
+			int offset = (Lighting_mode == lighting_mode::COCKPIT) ? 0 : Num_cockpit_shadow_cascades;
+			int count  = (Lighting_mode == lighting_mode::COCKPIT) ? Num_cockpit_shadow_cascades : Num_shadow_cascades;
+			shadow_cascade_params_bind(offset, count);
 		}
 
 		header->invScreenWidth = 1.0f / gr_screen.max_w;
