@@ -13,6 +13,17 @@ For a map of the engine's subsystems and where concepts live (so you can navigat
 without blind grepping), read **`documentation/ARCHITECTURE.md`** first. Per-module
 entry-point guides live under **`documentation/modules/`**.
 
+## Core Philosophies
+
+FSO is, at its core, a project dedicated to preserving the FreeSpace 2 game
+experience. We support a vast ecosystem of user-made content as well as the original
+retail release, and our foremost aim is to maintain backwards compatibility with that content.
+
+When making gameplay changes, existing behaviours should be preserved - changes that
+might affect existing gameplay should be gated behind optional table flags, new scripting API
+calls or new sexp functions. 
+
+
 ## Repository layout
 
 - `code/` — Core engine source. Organized by subsystem (e.g. `ship/`, `weapon/`,
@@ -96,6 +107,45 @@ clang-format -i path/to/changed_file.cpp
 ```
 
 `.clang-tidy` is also configured and run in CI on clang builds for changed code.
+
+## CI pipeline requirements
+
+Every PR is built by `.github/workflows/test-pull_request.yaml` across a full
+platform/compiler matrix. A change isn't CI-clean until it satisfies all of the
+following:
+
+- **Warnings are fatal.** All CI configs build with `-DFSO_FATAL_WARNINGS=ON`,
+  so any compiler warning fails the build. Compile locally with that flag
+  before pushing.
+- **Compiler/platform matrix:** Linux (gcc-9, gcc-13, clang-16) × (Debug,
+  Release), plus extra gcc-13 legs with OpenGL/Vulkan toggled off; Windows
+  (MSVC, Win32 and x64) × (Debug, FastDebug, Release); macOS (clang, x86_64 and
+  arm64) × (Debug, Release). Code must compile clean on GCC, Clang, and MSVC —
+  don't rely on one compiler's extensions or warning behavior.
+- **Tests must build and pass:** every CI config builds with
+  `-DFSO_BUILD_TESTS=ON` and runs `unittests --gtest_shuffle`. Linux Debug
+  additionally runs the suite under valgrind (`--leak-check=full
+  --error-exitcode=1`, see `ci/linux/run_tests.sh`), so leaks or
+  uninitialized-memory reads in new code fail CI even if the test assertions
+  pass.
+- **clang-tidy** runs on clang builds (Linux clang-16, macOS clang), scoped to
+  lines changed relative to the PR base branch (`ci/linux/clang_tidy.sh`,
+  checks defined in `.clang-tidy`). Don't introduce new findings in touched
+  code.
+- **clang-format is not enforced by CI** — there's no automated formatting
+  job — but reviewers expect it. Always run `clang-format -i` on changed files;
+  formatting drift is a common review comment even though it won't fail the
+  pipeline.
+- **Registered source files:** if a new file isn't added to the relevant
+  `CMakeLists.txt`/`source_groups.cmake`, it silently isn't compiled or tested
+  at all rather than causing an obvious CI error — verify it's picked up by
+  building locally.
+- Closest local reproduction of the Linux CI leg:
+  ```bash
+  cmake -G Ninja -DFSO_FATAL_WARNINGS=ON -DFSO_BUILD_TESTS=ON \
+    -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
+  ninja -k 20 all && ./bin/unittests --gtest_shuffle
+  ```
 
 ## Conventions for agents
 
