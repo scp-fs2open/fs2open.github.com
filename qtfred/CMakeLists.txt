@@ -15,12 +15,12 @@ if(QT_USE_PRECOMPILED)
 else()
     SET(QT6_INSTALL_ROOT "" CACHE PATH
         "The path to the Qt6 installation root. May be necessary on windows if the standard find_package fails to find the Qt installation.")
-    message(STATUS "Using system Qt libraries. Don't distribute these FSO binaries if these are the GPL libraries/plugins!")
 endif()
 
 if(QT6_INSTALL_ROOT)
     list(PREPEND CMAKE_PREFIX_PATH "${QT6_INSTALL_ROOT}")
 endif()
+
 # Must be set before find_package -- CMake snapshots this into each imported target's
 # MAP_IMPORTED_CONFIG_FASTDEBUG property at target-creation time, not at link time.
 # The list entries are tried in order:
@@ -33,7 +33,20 @@ endif()
 #                Qt5::uic configuration FastDebug".
 set(CMAKE_MAP_IMPORTED_CONFIG_FASTDEBUG Debug Release "")
 
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets OpenGL Help)
+find_package(Qt6 COMPONENTS Core Widgets OpenGL Help)
+
+# fall back to precompiled version if system install not found
+if (NOT Qt6_FOUND AND NOT QT_USE_PRECOMPILED)
+    message(STATUS "Qt6 libraries could not be found. Using prebuilt version...")
+
+    get_prebuilt_path(PREBUILT_PATH)
+    list(PREPEND CMAKE_PREFIX_PATH "${PREBUILT_PATH}/Qt6")
+
+    find_package(Qt6 REQUIRED COMPONENTS Core Widgets OpenGL Help)
+else()
+    message(STATUS "Using system Qt libraries. Don't distribute these FSO binaries if these are the GPL libraries/plugins!")
+endif()
+
 include(source_groups.cmake)
 qt_standard_project_setup()
 add_compile_definitions(QT_DISABLE_DEPRECATED_UP_TO=0x050F00)
