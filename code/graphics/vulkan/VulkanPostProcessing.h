@@ -2,6 +2,7 @@
 
 #include "globalincs/pstypes.h"
 #include "VulkanMemory.h"
+#include "VulkanConstants.h"
 
 #include <array>
 #include <vulkan/vulkan.hpp>
@@ -23,6 +24,13 @@ struct PostProcessContext {
 	VulkanMemoryManager* memoryManager = nullptr;
 	vk::Extent2D sceneExtent;
 	vk::Format depthFormat = vk::Format::eUndefined;
+
+	// True when the renderer negotiated an HDR10 swap chain. Drives fp16 LDR
+	// intermediates and the HDR scene-tonemap path.
+	bool hdrActive = false;
+	// Display-referred LDR intermediate format: fp16 in HDR (so the scene can
+	// carry values above paper white), 8-bit UNORM in SDR.
+	vk::Format ldrFormat = LDR_COLOR_FORMAT;
 
 	// Shared samplers for post-processing texture reads
 	vk::Sampler linearSampler;   // maxLod=0
@@ -130,11 +138,12 @@ private:
 };
 
 /**
- * @brief Cascaded shadow map (VSM) render target
+ * @brief Cascaded shadow map (depth-only, hardware PCF) render target
  *
- * Self-contained, lazily-initialized subsystem: owns the layered color (VSM
- * variance) and depth array images, their render pass, and the layered
- * framebuffer. Sized from the current Shadow_quality on init.
+ * Self-contained, lazily-initialized subsystem: owns the layered depth array
+ * image, its comparison sampler, render pass, and layered framebuffer. Sized
+ * from the current Shadow_quality and the current total cascade count
+ * (Num_shadow_cascades + Num_cockpit_shadow_cascades) on init.
  */
 class VulkanShadowMap {
 public:
@@ -147,16 +156,16 @@ public:
 
 	bool isInitialized() const { return m_initialized; }
 	int textureSize() const { return m_textureSize; }
-	vk::ImageView colorView() const { return m_color.view; }
-	vk::Image colorImage() const { return m_color.image; }
+	vk::ImageView depthView() const { return m_depth.view; }
 	vk::Image depthImage() const { return m_depth.image; }
+	vk::Sampler compareSampler() const { return m_compareSampler; }
 	vk::RenderPass renderPass() const { return m_renderPass; }
 	vk::Framebuffer framebuffer() const { return m_framebuffer; }
 
 private:
 	PostProcessContext* m_ctx = nullptr;
-	RenderTarget m_color;   // RGBA16F, 2D array (MAX_SHADOW_CASCADES layers)
-	RenderTarget m_depth;   // D32F, 2D array (MAX_SHADOW_CASCADES layers)
+	RenderTarget m_depth;   // D32F, 2D array (Num_shadow_cascades + Num_cockpit_shadow_cascades layers)
+	vk::Sampler m_compareSampler; // Depth-compare sampler for hardware PCF (sampler2DArrayShadow)
 	vk::RenderPass m_renderPass;
 	vk::Framebuffer m_framebuffer;
 	int m_textureSize = 0;
@@ -489,7 +498,7 @@ public:
 	 */
 	bool init(vk::Device device, vk::PhysicalDevice physDevice,
 	          VulkanMemoryManager* memMgr, vk::Extent2D extent,
-	          vk::Format depthFormat);
+	          vk::Format depthFormat, bool hdrActive = false);
 
 	/**
 	 * @brief Shutdown and free all post-processing resources
@@ -539,6 +548,17 @@ public:
 	 * @param cmd Active command buffer
 	 */
 	void blitToSwapChain(vk::CommandBuffer cmd);
+
+	/**
+	 * @brief Final output-encode pass: composition image -> swap chain image
+	 *
+	 * Begins/ends its own render pass on the swap chain framebuffer and draws a
+	 * fullscreen triangle that samples the fp16 composition image. In SDR this is
+	 * a passthrough copy; in HDR it applies the PQ / BT.2020 (HDR10) transfer.
+	 */
+	void encodeOutput(vk::CommandBuffer cmd, vk::RenderPass renderPass, vk::Framebuffer framebuffer,
+	                  vk::Extent2D extent, vk::ImageView sourceView, vk::Sampler sampler,
+	                  bool hdr, float paperwhiteNits, float peakNits);
 
 	/**
 	 * @brief Execute bloom post-processing passes
@@ -718,9 +738,12 @@ public:
 
 	/**
 	 * @brief Get a ready-to-use DescriptorImageInfo for the shadow map texture
+	 *
+	 * Uses the shadow map's depth-compare sampler so the shader can declare
+	 * this binding as sampler2DArrayShadow and get hardware PCF.
 	 */
 	vk::DescriptorImageInfo getShadowTextureInfo() const {
-		return {m_ctx.linearSampler, m_shadow.colorView(), vk::ImageLayout::eShaderReadOnlyOptimal};
+		return {m_shadow.compareSampler(), m_shadow.depthView(), vk::ImageLayout::eShaderReadOnlyOptimal};
 	}
 
 	// ========== Fog / Volumetric Nebula ==========
@@ -804,6 +827,11 @@ private:
 	// Persistent UBO for tonemapping shader parameters
 	vk::Buffer m_tonemapUBO;
 	VulkanAllocation m_tonemapUBOAlloc;
+
+	// Persistent UBO for the final output-encode pass (separate from m_tonemapUBO
+	// because both can be recorded within a single 3D frame).
+	vk::Buffer m_outputEncodeUBO;
+	VulkanAllocation m_outputEncodeUBOAlloc;
 
 	// ---- Bloom (self-contained subsystem) ----
 	VulkanBloom m_bloom;

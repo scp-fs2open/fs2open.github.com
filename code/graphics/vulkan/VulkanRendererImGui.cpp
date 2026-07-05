@@ -87,14 +87,14 @@ void VulkanRenderer::initImGui()
 		ImGui_ImplVulkan_DestroyFontUploadObjects();
 	}
 
-	mprintf(("Vulkan: ImGui backend initialized successfully\n"));
+	nprintf(("vulkan", "Vulkan: ImGui backend initialized successfully\n"));
 }
 
 void VulkanRenderer::shutdownImGui()
 {
 	ImGui_ImplVulkan_Shutdown();
 	m_imguiDescriptorPool.reset();
-	mprintf(("Vulkan: ImGui backend shut down\n"));
+	nprintf(("vulkan", "Vulkan: ImGui backend shut down\n"));
 }
 
 } // namespace graphics::vulkan

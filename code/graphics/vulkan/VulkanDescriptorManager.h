@@ -12,6 +12,7 @@ namespace graphics::vulkan {
 
 class VulkanBufferManager;
 class VulkanTextureManager;
+class VulkanRaytracingManager;
 
 // ========== Descriptor Set Templates ==========
 
@@ -39,6 +40,15 @@ struct DescriptorFallbacks {
 	vk::DescriptorImageInfo textureCube;
 	vk::DescriptorImageInfo texture3D;
 
+	// Unlike the fields above (fixed dummy defaults, set once by buildFallbacks()),
+	// this is refreshed every frame by VulkanDescriptorManager::setCurrentShadowTlas()
+	// to the live shadow TLAS -- or the permanent 0-instance fallback before the
+	// first build / when raytraced shadows are disabled. Only valid/used when the
+	// Global set's template actually declares GlobalBinding::Tlas. writeSet()'s
+	// generic per-binding prefill is what makes every Global-set write pick this
+	// up automatically, so callers never need to bind it explicitly.
+	vk::AccelerationStructureKHR shadowTlas;
+
 	const vk::DescriptorImageInfo& getImage(vk::ImageViewType t) const;
 };
 
@@ -53,6 +63,7 @@ public:
 	static constexpr uint32_t MAX_WRITES = 32;
 	static constexpr uint32_t MAX_BUFFER_INFOS = 20;
 	static constexpr uint32_t MAX_IMAGE_INFOS = 24;
+	static constexpr uint32_t MAX_ACCEL_STRUCT_INFOS = 2;
 	static constexpr uint32_t MAX_BINDINGS_PER_SET = 16;
 
 	void reset(vk::Device device, const DescriptorFallbacks& fallbacks) {
@@ -61,6 +72,7 @@ public:
 		m_writeCount = 0;
 		m_bufferInfoCount = 0;
 		m_imageInfoCount = 0;
+		m_accelStructInfoCount = 0;
 	}
 
 	void writeSet(vk::DescriptorSet set, const DescriptorSetTemplate& tmpl);
@@ -76,6 +88,7 @@ public:
 		m_writeCount = 0;
 		m_bufferInfoCount = 0;
 		m_imageInfoCount = 0;
+		m_accelStructInfoCount = 0;
 	}
 
 private:
@@ -94,10 +107,13 @@ private:
 	std::array<vk::WriteDescriptorSet, MAX_WRITES> m_writes;
 	std::array<vk::DescriptorBufferInfo, MAX_BUFFER_INFOS> m_bufferInfos;
 	std::array<vk::DescriptorImageInfo, MAX_IMAGE_INFOS> m_imageInfos;
+	std::array<vk::AccelerationStructureKHR, MAX_ACCEL_STRUCT_INFOS> m_accelStructInfos;
+	std::array<vk::WriteDescriptorSetAccelerationStructureKHR, MAX_ACCEL_STRUCT_INFOS> m_asWriteInfos;
 	std::array<BindingSlot, MAX_BINDINGS_PER_SET> m_bindingSlots;
 	uint32_t m_writeCount = 0;
 	uint32_t m_bufferInfoCount = 0;
 	uint32_t m_imageInfoCount = 0;
+	uint32_t m_accelStructInfoCount = 0;
 };
 
 /**
@@ -121,9 +137,11 @@ enum class DescriptorSetIndex : uint32_t {
 namespace GlobalBinding {
 	static constexpr uint32_t Lights       = 0; // UBO: light data
 	static constexpr uint32_t DeferredData = 1; // UBO: deferred globals
-	static constexpr uint32_t ShadowMap    = 2; // sampler2D: shadow map
+	static constexpr uint32_t ShadowMap    = 2; // sampler2DArrayShadow: cascaded shadow map (depth-compare)
 	static constexpr uint32_t EnvMap       = 3; // samplerCube: environment map
 	static constexpr uint32_t IrradianceMap = 4; // samplerCube: irradiance map
+	static constexpr uint32_t Tlas         = 5; // accelerationStructureEXT: raytraced shadow TLAS (only present when raytraced shadows are supported)
+	static constexpr uint32_t ShadowCascadeParams = 6; // UBO: shadow cascade projection matrices/distances (per-frame, shared by all consumers)
 }
 
 // Material Set (Set 1) bindings — per-material data
@@ -135,6 +153,7 @@ namespace MaterialBinding {
 	static constexpr uint32_t DepthMap     = 4; // sampler2D: depth (soft particles)
 	static constexpr uint32_t SceneColor   = 5; // sampler2D: scene color (distortion)
 	static constexpr uint32_t DistortionMap = 6; // sampler2D: distortion texture
+	static constexpr uint32_t ShadowMapData = 7; // UBO: shadow map generation per-draw data (shadow_render_list)
 }
 
 // Texture array slot indices (elements within MaterialBinding::TextureArray)
@@ -178,9 +197,15 @@ public:
 	/**
 	 * @brief Initialize descriptor manager
 	 * @param device Vulkan logical device
+	 * @param raytracingSupported Whether the Global set's layout should include
+	 *        the acceleration-structure (TLAS) binding. Must reflect whether the
+	 *        raytracing manager actually finished initializing, not just whether
+	 *        the device extensions were negotiated -- a device without
+	 *        VK_KHR_acceleration_structure enabled cannot create a descriptor set
+	 *        layout containing an eAccelerationStructureKHR binding at all.
 	 * @return true on success
 	 */
-	bool init(vk::Device device);
+	bool init(vk::Device device, bool raytracingSupported);
 
 	/**
 	 * @brief Shutdown and release resources
@@ -188,15 +213,29 @@ public:
 	void shutdown();
 
 	/**
-	 * @brief Build fallback descriptor values from buffer/texture managers.
-	 * Must be called after buffer and texture managers are initialized.
+	 * @brief Build fallback descriptor values from buffer/texture/raytracing managers.
+	 * Must be called after those managers are initialized. rtMgr may be null
+	 * if raytraced shadows are unavailable (its fallback is unused in that case).
 	 */
-	void buildFallbacks(VulkanBufferManager* bufMgr, VulkanTextureManager* texMgr);
+	void buildFallbacks(VulkanBufferManager* bufMgr, VulkanTextureManager* texMgr, VulkanRaytracingManager* rtMgr);
 
 	/**
 	 * @brief Get the fallback descriptor values
 	 */
 	const DescriptorFallbacks& getFallbacks() const { return m_fallbacks; }
+
+	/**
+	 * @brief Refresh the TLAS every Global-set write picks up automatically.
+	 * Called once per frame (after VulkanRaytracingManager::buildTlas()) with
+	 * that manager's getTlasForShaderBinding() -- a no-op if raytraced shadows
+	 * aren't enabled, since the Global template has no Tlas binding to write in
+	 * that case. See DescriptorFallbacks::shadowTlas.
+	 */
+	void setCurrentShadowTlas(vk::AccelerationStructureKHR tlas) {
+		if (m_raytracingEnabled) {
+			m_fallbacks.shadowTlas = tlas;
+		}
+	}
 
 	/**
 	 * @brief Get the set template for a given set index
@@ -286,8 +325,18 @@ private:
 	// Pre-built fallback descriptor values
 	DescriptorFallbacks m_fallbacks{};
 
+	// The Global set's binding list, unlike the other sets', is assembled at runtime
+	// in createSetLayouts() (see the comment there) rather than compiled in as a
+	// fixed constexpr array, so it needs real per-instance storage instead of a
+	// constexpr template. getSetTemplate() stays a static method (all ~30 call
+	// sites across the renderer use it that way) by reaching these through the
+	// singleton (getDescriptorManager()) for the Global case only.
+	SCP_vector<DescriptorBindingTemplate> m_globalBindingsRuntime;
+	DescriptorSetTemplate m_globalTemplateRuntime;
+
 	uint32_t m_currentFrame = 0;
 	bool m_initialized = false;
+	bool m_raytracingEnabled = false;
 };
 
 // Global descriptor manager access

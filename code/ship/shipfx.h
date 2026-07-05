@@ -401,4 +401,8 @@ public:
 };
 
 
+class shadow_render_list;
+
+void shipfx_shadow_render_blowup(shadow_render_list* shadow_list, ship* shipp);
+
 #endif

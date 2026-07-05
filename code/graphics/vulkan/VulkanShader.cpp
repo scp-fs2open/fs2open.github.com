@@ -45,7 +45,7 @@ bool VulkanShaderManager::init(vk::Device device)
 	// Initialize runtime shader compiler
 	m_compiler = std::make_unique<VulkanShaderCompiler>();
 	if (!m_compiler->init()) {
-		mprintf(("VulkanShaderManager: Failed to initialize shader compiler!\n"));
+		nprintf(("vulkan", "VulkanShaderManager: Failed to initialize shader compiler!\n"));
 		return false;
 	}
 
@@ -53,7 +53,7 @@ bool VulkanShaderManager::init(vk::Device device)
 
 	m_initialized = true;
 
-	mprintf(("VulkanShaderManager: Initialized with runtime shader compilation\n"));
+	nprintf(("vulkan", "VulkanShaderManager: Initialized with runtime shader compilation\n"));
 	return true;
 }
 
@@ -74,7 +74,7 @@ void VulkanShaderManager::shutdown()
 	}
 
 	m_initialized = false;
-	mprintf(("VulkanShaderManager: Shutdown complete\n"));
+	nprintf(("vulkan", "VulkanShaderManager: Shutdown complete\n"));
 }
 
 int VulkanShaderManager::maybeCreateShader(shader_type type, unsigned int flags)
@@ -113,8 +113,10 @@ void VulkanShaderManager::recompileAllShaders(const std::function<void(size_t, s
 
 			const ShaderTypeInfo* typeInfo = shader_get_type_info(type);
 			if (typeInfo) {
+				bool requiresRaytracing = shader_variant_requires_raytracing(type, flags);
+
 				SCP_string vertFile = typeInfo->vert;
-				auto vertSpirv = m_compiler->compile(vertFile, vk::ShaderStageFlagBits::eVertex, type, flags);
+				auto vertSpirv = m_compiler->compile(vertFile, vk::ShaderStageFlagBits::eVertex, type, flags, requiresRaytracing);
 				if (!vertSpirv.empty()) {
 					vk::ShaderModuleCreateInfo createInfo;
 					createInfo.codeSize = vertSpirv.size() * sizeof(uint32_t);
@@ -122,7 +124,7 @@ void VulkanShaderManager::recompileAllShaders(const std::function<void(size_t, s
 					try {
 						shader.vertexModule = m_device.createShaderModuleUnique(createInfo);
 					} catch (const vk::SystemError& e) {
-						mprintf(("VulkanShaderManager: Failed to create vertex module: %s\n", e.what()));
+						nprintf(("vulkan", "VulkanShaderManager: Failed to create vertex module: %s\n", e.what()));
 					}
 				}
 				shader.vertexInputMask = 0;
@@ -131,7 +133,7 @@ void VulkanShaderManager::recompileAllShaders(const std::function<void(size_t, s
 				}
 
 				SCP_string fragFile = typeInfo->frag;
-				auto fragSpirv = m_compiler->compile(fragFile, vk::ShaderStageFlagBits::eFragment, type, flags);
+				auto fragSpirv = m_compiler->compile(fragFile, vk::ShaderStageFlagBits::eFragment, type, flags, requiresRaytracing);
 				if (!fragSpirv.empty()) {
 					vk::ShaderModuleCreateInfo createInfo;
 					createInfo.codeSize = fragSpirv.size() * sizeof(uint32_t);
@@ -139,7 +141,7 @@ void VulkanShaderManager::recompileAllShaders(const std::function<void(size_t, s
 					try {
 						shader.fragmentModule = m_device.createShaderModuleUnique(createInfo);
 					} catch (const vk::SystemError& e) {
-						mprintf(("VulkanShaderManager: Failed to create fragment module: %s\n", e.what()));
+						nprintf(("vulkan", "VulkanShaderManager: Failed to create fragment module: %s\n", e.what()));
 					}
 				}
 
@@ -153,7 +155,7 @@ void VulkanShaderManager::recompileAllShaders(const std::function<void(size_t, s
 		}
 	}
 
-	mprintf(("VulkanShaderManager: Recompiled %zu shaders\n", total));
+	nprintf(("vulkan", "VulkanShaderManager: Recompiled %zu shaders\n", total));
 }
 
 const VulkanShaderModule* VulkanShaderManager::getShader(int handle) const
@@ -182,7 +184,7 @@ int VulkanShaderManager::loadShader(shader_type type, unsigned int flags)
 {
 	const ShaderTypeInfo* typeInfo = shader_get_type_info(type);
 	if (!typeInfo) {
-		mprintf(("VulkanShaderManager: Unknown shader type: %d\n", static_cast<int>(type)));
+		nprintf(("vulkan", "VulkanShaderManager: Unknown shader type: %d\n", static_cast<int>(type)));
 		return -1;
 	}
 
@@ -198,9 +200,11 @@ int VulkanShaderManager::loadShader(shader_type type, unsigned int flags)
 		shader.description += ")";
 	}
 
+	bool requiresRaytracing = shader_variant_requires_raytracing(type, flags);
+
 	// Compile vertex shader
 	SCP_string vertFile = typeInfo->vert;
-	auto vertSpirv = m_compiler->compile(vertFile, vk::ShaderStageFlagBits::eVertex, type, flags);
+	auto vertSpirv = m_compiler->compile(vertFile, vk::ShaderStageFlagBits::eVertex, type, flags, requiresRaytracing);
 	if (!vertSpirv.empty()) {
 		vk::ShaderModuleCreateInfo createInfo;
 		createInfo.codeSize = vertSpirv.size() * sizeof(uint32_t);
@@ -208,7 +212,7 @@ int VulkanShaderManager::loadShader(shader_type type, unsigned int flags)
 		try {
 			shader.vertexModule = m_device.createShaderModuleUnique(createInfo);
 		} catch (const vk::SystemError& e) {
-			mprintf(("VulkanShaderManager: Failed to create vertex module for %s: %s\n",
+			nprintf(("vulkan", "VulkanShaderManager: Failed to create vertex module for %s: %s\n",
 				vertFile.c_str(), e.what()));
 		}
 	}
@@ -219,7 +223,7 @@ int VulkanShaderManager::loadShader(shader_type type, unsigned int flags)
 
 	// Compile fragment shader
 	SCP_string fragFile = typeInfo->frag;
-	auto fragSpirv = m_compiler->compile(fragFile, vk::ShaderStageFlagBits::eFragment, type, flags);
+	auto fragSpirv = m_compiler->compile(fragFile, vk::ShaderStageFlagBits::eFragment, type, flags, requiresRaytracing);
 	if (!fragSpirv.empty()) {
 		vk::ShaderModuleCreateInfo createInfo;
 		createInfo.codeSize = fragSpirv.size() * sizeof(uint32_t);
@@ -227,7 +231,7 @@ int VulkanShaderManager::loadShader(shader_type type, unsigned int flags)
 		try {
 			shader.fragmentModule = m_device.createShaderModuleUnique(createInfo);
 		} catch (const vk::SystemError& e) {
-			mprintf(("VulkanShaderManager: Failed to create fragment module for %s: %s\n",
+			nprintf(("vulkan", "VulkanShaderManager: Failed to create fragment module for %s: %s\n",
 				fragFile.c_str(), e.what()));
 		}
 	}
@@ -236,7 +240,7 @@ int VulkanShaderManager::loadShader(shader_type type, unsigned int flags)
 	shader.valid = shader.vertexModule && shader.fragmentModule;
 
 	if (!shader.valid) {
-		mprintf(("VulkanShaderManager: Failed to load shader type %d (flags=0x%x)\n",
+		nprintf(("vulkan", "VulkanShaderManager: Failed to load shader type %d (flags=0x%x)\n",
 			static_cast<int>(type), flags));
 	}
 

@@ -34,12 +34,12 @@ bool PostProcessContext::initScratchUBO()
 	try {
 		scratchUBO = device.createBuffer(bufInfo);
 	} catch (const vk::SystemError& e) {
-		mprintf(("PostProcessContext: Failed to create scratch UBO: %s\n", e.what()));
+		nprintf(("vulkan", "PostProcessContext: Failed to create scratch UBO: %s\n", e.what()));
 		return false;
 	}
 
 	if (!memoryManager->allocateBufferMemory(scratchUBO, MemoryUsage::CpuToGpu, scratchUBOAlloc)) {
-		mprintf(("PostProcessContext: Failed to allocate scratch UBO memory!\n"));
+		nprintf(("vulkan", "PostProcessContext: Failed to allocate scratch UBO memory!\n"));
 		device.destroyBuffer(scratchUBO);
 		scratchUBO = nullptr;
 		return false;
@@ -210,13 +210,13 @@ bool PostProcessContext::createImage(uint32_t width, uint32_t height, vk::Format
 	try {
 		outImage = device.createImage(imageInfo);
 	} catch (const vk::SystemError& e) {
-		mprintf(("VulkanPostProcessor: Failed to create image: %s\n", e.what()));
+		nprintf(("vulkan", "VulkanPostProcessor: Failed to create image: %s\n", e.what()));
 		return false;
 	}
 
 	// Allocate memory
 	if (!memoryManager->allocateImageMemory(outImage, MemoryUsage::GpuOnly, outAllocation)) {
-		mprintf(("VulkanPostProcessor: Failed to allocate image memory!\n"));
+		nprintf(("vulkan", "VulkanPostProcessor: Failed to allocate image memory!\n"));
 		device.destroyImage(outImage);
 		outImage = nullptr;
 		return false;
@@ -236,7 +236,7 @@ bool PostProcessContext::createImage(uint32_t width, uint32_t height, vk::Format
 	try {
 		outView = device.createImageView(viewInfo);
 	} catch (const vk::SystemError& e) {
-		mprintf(("VulkanPostProcessor: Failed to create image view: %s\n", e.what()));
+		nprintf(("vulkan", "VulkanPostProcessor: Failed to create image view: %s\n", e.what()));
 		device.destroyImage(outImage);
 		memoryManager->freeAllocation(outAllocation);
 		outImage = nullptr;

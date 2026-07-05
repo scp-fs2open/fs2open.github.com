@@ -29,7 +29,7 @@ bool VulkanQueryManager::init(vk::Device device, float timestampPeriod,
 
 	m_queryPool = m_device.createQueryPool(poolInfo);
 	if (!m_queryPool) {
-		mprintf(("Vulkan: Failed to create timestamp query pool!\n"));
+		nprintf(("vulkan", "Vulkan: Failed to create timestamp query pool!\n"));
 		return false;
 	}
 
@@ -69,7 +69,7 @@ bool VulkanQueryManager::init(vk::Device device, float timestampPeriod,
 	m_deferredFreeSlots.clear();
 	m_lastFrameSubmitted = true;
 
-	mprintf(("Vulkan: Created timestamp query pool (capacity %u, period %.1f ns/tick)\n",
+	nprintf(("vulkan", "Vulkan: Created timestamp query pool (capacity %u, period %.1f ns/tick)\n",
 		POOL_CAPACITY, m_timestampPeriod));
 
 	return true;
@@ -139,7 +139,7 @@ void VulkanQueryManager::beginFrame(vk::CommandBuffer commandBuffer)
 
 	// Report and reset exhaustion counter from previous frame
 	if (m_exhaustionMessageCount > 0) {
-		mprintf(("Vulkan: Query pool exhaustion — %u queries dropped last frame (free: %u)\n",
+		nprintf(("vulkan", "Vulkan: Query pool exhaustion — %u queries dropped last frame (free: %u)\n",
 			m_exhaustionMessageCount, static_cast<uint32_t>(m_freeSlots.size())));
 		m_exhaustionMessageCount = 0;
 	}
@@ -173,7 +173,7 @@ int VulkanQueryManager::createQueryObject()
 				if (s.inUse) inUseCount++;
 			}
 			pendingResetCount = static_cast<uint32_t>(m_resetList.size() + m_inflightResets.size() + m_deferredFreeSlots.size());
-			mprintf(("Vulkan: Query pool exhausted (%u slots: %u in-use, %u pending-reset, %u pending-write)\n",
+			nprintf(("vulkan", "Vulkan: Query pool exhausted (%u slots: %u in-use, %u pending-reset, %u pending-write)\n",
 				POOL_CAPACITY, inUseCount, pendingResetCount, static_cast<uint32_t>(m_pendingWrites.size())));
 		}
 		m_exhaustionMessageCount++;

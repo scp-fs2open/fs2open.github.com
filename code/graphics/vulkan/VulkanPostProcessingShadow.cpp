@@ -7,6 +7,7 @@
 #include "graphics/shadows.h"
 #include "lighting/lighting_profiles.h"
 #include "lighting/lighting.h"
+#include "mod_table/mod_table.h"
 #include "nebula/neb.h"
 #include "mission/missionparse.h"
 
@@ -42,60 +43,14 @@ bool VulkanShadowMap::init(PostProcessContext& ctx)
 	default:                    size = 512; break;
 	}
 
-	mprintf(("VulkanPostProcessor: Creating %dx%d shadow map (%d cascades)\n", size, size, MAX_SHADOW_CASCADES));
+	const auto layers = static_cast<uint32_t>(Num_shadow_cascades + Num_cockpit_shadow_cascades);
 
-	const uint32_t layers = MAX_SHADOW_CASCADES;
+	nprintf(("vulkan", "VulkanPostProcessor: Creating %dx%d shadow map (%d cascades)\n", size, size, layers));
 
-	// Create shadow color image (RGBA16F, 2D array, MAX_SHADOW_CASCADES layers)
-	{
-		vk::ImageCreateInfo imageInfo;
-		imageInfo.imageType = vk::ImageType::e2D;
-		imageInfo.format = HDR_COLOR_FORMAT;
-		imageInfo.extent = vk::Extent3D(static_cast<uint32_t>(size), static_cast<uint32_t>(size), 1);
-		imageInfo.mipLevels = 1;
-		imageInfo.arrayLayers = layers;
-		imageInfo.samples = vk::SampleCountFlagBits::e1;
-		imageInfo.tiling = vk::ImageTiling::eOptimal;
-		imageInfo.usage = vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled;
-		imageInfo.sharingMode = vk::SharingMode::eExclusive;
-		imageInfo.initialLayout = vk::ImageLayout::eUndefined;
-
-		try {
-			m_color.image = m_ctx->device.createImage(imageInfo);
-		} catch (const vk::SystemError& e) {
-			mprintf(("VulkanPostProcessor: Failed to create shadow color image: %s\n", e.what()));
-			return false;
-		}
-
-		if (!m_ctx->memoryManager->allocateImageMemory(m_color.image, MemoryUsage::GpuOnly, m_color.allocation)) {
-			m_ctx->device.destroyImage(m_color.image);
-			m_color.image = nullptr;
-			return false;
-		}
-
-		vk::ImageViewCreateInfo viewInfo;
-		viewInfo.image = m_color.image;
-		viewInfo.viewType = vk::ImageViewType::e2DArray;
-		viewInfo.format = HDR_COLOR_FORMAT;
-		viewInfo.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
-		viewInfo.subresourceRange.baseMipLevel = 0;
-		viewInfo.subresourceRange.levelCount = 1;
-		viewInfo.subresourceRange.baseArrayLayer = 0;
-		viewInfo.subresourceRange.layerCount = layers;
-
-		try {
-			m_color.view = m_ctx->device.createImageView(viewInfo);
-		} catch (const vk::SystemError& e) {
-			mprintf(("VulkanPostProcessor: Failed to create shadow color view: %s\n", e.what()));
-			return false;
-		}
-
-		m_color.format = HDR_COLOR_FORMAT;
-		m_color.width = static_cast<uint32_t>(size);
-		m_color.height = static_cast<uint32_t>(size);
-	}
-
-	// Create shadow depth image (D32F, 2D array, MAX_SHADOW_CASCADES layers)
+	// Create shadow depth image (D32F, 2D array, dynamic cascade count layers).
+	// Depth-only (no VSM color target): sampled directly with a depth-compare
+	// sampler (sampler2DArrayShadow), matching the hardware PCF approach used
+	// by the OpenGL backend.
 	{
 		vk::ImageCreateInfo imageInfo;
 		imageInfo.imageType = vk::ImageType::e2D;
@@ -105,14 +60,14 @@ bool VulkanShadowMap::init(PostProcessContext& ctx)
 		imageInfo.arrayLayers = layers;
 		imageInfo.samples = vk::SampleCountFlagBits::e1;
 		imageInfo.tiling = vk::ImageTiling::eOptimal;
-		imageInfo.usage = vk::ImageUsageFlagBits::eDepthStencilAttachment;
+		imageInfo.usage = vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled;
 		imageInfo.sharingMode = vk::SharingMode::eExclusive;
 		imageInfo.initialLayout = vk::ImageLayout::eUndefined;
 
 		try {
 			m_depth.image = m_ctx->device.createImage(imageInfo);
 		} catch (const vk::SystemError& e) {
-			mprintf(("VulkanPostProcessor: Failed to create shadow depth image: %s\n", e.what()));
+			nprintf(("vulkan", "VulkanPostProcessor: Failed to create shadow depth image: %s\n", e.what()));
 			return false;
 		}
 
@@ -135,7 +90,7 @@ bool VulkanShadowMap::init(PostProcessContext& ctx)
 		try {
 			m_depth.view = m_ctx->device.createImageView(viewInfo);
 		} catch (const vk::SystemError& e) {
-			mprintf(("VulkanPostProcessor: Failed to create shadow depth view: %s\n", e.what()));
+			nprintf(("vulkan", "VulkanPostProcessor: Failed to create shadow depth view: %s\n", e.what()));
 			return false;
 		}
 
@@ -144,12 +99,12 @@ bool VulkanShadowMap::init(PostProcessContext& ctx)
 		m_depth.height = static_cast<uint32_t>(size);
 	}
 
-	// Create shadow render pass: 1 color (RGBA16F) + 1 depth (D32F), both eClear
+	// Create shadow render pass: depth-only (D32F), eClear
 	{
-		std::array<vk::AttachmentDescription, 2> attachments;
+		std::array<vk::AttachmentDescription, 1> attachments;
 
-		// Color attachment (RGBA16F) — stores VSM depth variance
-		attachments[0].format = HDR_COLOR_FORMAT;
+		// Depth attachment (D32F) — sampled afterwards via a depth-compare sampler
+		attachments[0].format = SHADOW_DEPTH_FORMAT;
 		attachments[0].samples = vk::SampleCountFlagBits::e1;
 		attachments[0].loadOp = vk::AttachmentLoadOp::eClear;
 		attachments[0].storeOp = vk::AttachmentStoreOp::eStore;
@@ -158,37 +113,23 @@ bool VulkanShadowMap::init(PostProcessContext& ctx)
 		attachments[0].initialLayout = vk::ImageLayout::eUndefined;
 		attachments[0].finalLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 
-		// Depth attachment (D32F)
-		attachments[1].format = SHADOW_DEPTH_FORMAT;
-		attachments[1].samples = vk::SampleCountFlagBits::e1;
-		attachments[1].loadOp = vk::AttachmentLoadOp::eClear;
-		attachments[1].storeOp = vk::AttachmentStoreOp::eDontCare;
-		attachments[1].stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
-		attachments[1].stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
-		attachments[1].initialLayout = vk::ImageLayout::eUndefined;
-		attachments[1].finalLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
-
-		vk::AttachmentReference colorRef;
-		colorRef.attachment = 0;
-		colorRef.layout = vk::ImageLayout::eColorAttachmentOptimal;
-
 		vk::AttachmentReference depthRef;
-		depthRef.attachment = 1;
+		depthRef.attachment = 0;
 		depthRef.layout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
 
 		vk::SubpassDescription subpass;
 		subpass.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
-		subpass.colorAttachmentCount = 1;
-		subpass.pColorAttachments = &colorRef;
+		subpass.colorAttachmentCount = 0;
+		subpass.pColorAttachments = nullptr;
 		subpass.pDepthStencilAttachment = &depthRef;
 
 		vk::SubpassDependency dep;
 		dep.srcSubpass = VK_SUBPASS_EXTERNAL;
 		dep.dstSubpass = 0;
-		dep.srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eEarlyFragmentTests;
-		dep.dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eEarlyFragmentTests;
+		dep.srcStageMask = vk::PipelineStageFlagBits::eEarlyFragmentTests;
+		dep.dstStageMask = vk::PipelineStageFlagBits::eEarlyFragmentTests;
 		dep.srcAccessMask = {};
-		dep.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eDepthStencilAttachmentWrite;
+		dep.dstAccessMask = vk::AccessFlagBits::eDepthStencilAttachmentWrite;
 
 		vk::RenderPassCreateInfo rpInfo;
 		rpInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
@@ -201,22 +142,17 @@ bool VulkanShadowMap::init(PostProcessContext& ctx)
 		try {
 			m_renderPass = m_ctx->device.createRenderPass(rpInfo);
 		} catch (const vk::SystemError& e) {
-			mprintf(("VulkanPostProcessor: Failed to create shadow render pass: %s\n", e.what()));
+			nprintf(("vulkan", "VulkanPostProcessor: Failed to create shadow render pass: %s\n", e.what()));
 			return false;
 		}
 	}
 
-	// Create layered framebuffer (all MAX_SHADOW_CASCADES layers at once)
+	// Create layered framebuffer (all cascade layers at once, depth-only)
 	{
-		std::array<vk::ImageView, 2> fbAttachments = {
-			m_color.view,
-			m_depth.view,
-		};
-
 		vk::FramebufferCreateInfo fbInfo;
 		fbInfo.renderPass = m_renderPass;
-		fbInfo.attachmentCount = static_cast<uint32_t>(fbAttachments.size());
-		fbInfo.pAttachments = fbAttachments.data();
+		fbInfo.attachmentCount = 1;
+		fbInfo.pAttachments = &m_depth.view;
 		fbInfo.width = static_cast<uint32_t>(size);
 		fbInfo.height = static_cast<uint32_t>(size);
 		fbInfo.layers = layers;
@@ -224,14 +160,37 @@ bool VulkanShadowMap::init(PostProcessContext& ctx)
 		try {
 			m_framebuffer = m_ctx->device.createFramebuffer(fbInfo);
 		} catch (const vk::SystemError& e) {
-			mprintf(("VulkanPostProcessor: Failed to create shadow framebuffer: %s\n", e.what()));
+			nprintf(("vulkan", "VulkanPostProcessor: Failed to create shadow framebuffer: %s\n", e.what()));
+			return false;
+		}
+	}
+
+	// Depth-compare sampler: lets shaders declare this binding as
+	// sampler2DArrayShadow and get hardware PCF (matches GL_TEXTURE_COMPARE_MODE
+	// = GL_COMPARE_REF_TO_TEXTURE on the OpenGL side).
+	{
+		vk::SamplerCreateInfo samplerInfo;
+		samplerInfo.magFilter = vk::Filter::eLinear;
+		samplerInfo.minFilter = vk::Filter::eLinear;
+		samplerInfo.mipmapMode = vk::SamplerMipmapMode::eNearest;
+		samplerInfo.addressModeU = vk::SamplerAddressMode::eClampToEdge;
+		samplerInfo.addressModeV = vk::SamplerAddressMode::eClampToEdge;
+		samplerInfo.addressModeW = vk::SamplerAddressMode::eClampToEdge;
+		samplerInfo.compareEnable = VK_TRUE;
+		samplerInfo.compareOp = vk::CompareOp::eLessOrEqual;
+		samplerInfo.borderColor = vk::BorderColor::eFloatOpaqueWhite;
+
+		try {
+			m_compareSampler = m_ctx->device.createSampler(samplerInfo);
+		} catch (const vk::SystemError& e) {
+			nprintf(("vulkan", "VulkanPostProcessor: Failed to create shadow compare sampler: %s\n", e.what()));
 			return false;
 		}
 	}
 
 	m_textureSize = size;
 	m_initialized = true;
-	mprintf(("VulkanPostProcessor: Shadow map initialized (%dx%d, %d cascades)\n", size, size, MAX_SHADOW_CASCADES));
+	nprintf(("vulkan", "VulkanPostProcessor: Shadow map initialized (%dx%d, %d cascades)\n", size, size, layers));
 	return true;
 }
 
@@ -241,6 +200,10 @@ void VulkanShadowMap::shutdown()
 		return;
 	}
 
+	if (m_compareSampler) {
+		m_ctx->device.destroySampler(m_compareSampler);
+		m_compareSampler = nullptr;
+	}
 	if (m_framebuffer) {
 		m_ctx->device.destroyFramebuffer(m_framebuffer);
 		m_framebuffer = nullptr;
@@ -248,18 +211,6 @@ void VulkanShadowMap::shutdown()
 	if (m_renderPass) {
 		m_ctx->device.destroyRenderPass(m_renderPass);
 		m_renderPass = nullptr;
-	}
-
-	if (m_color.view) {
-		m_ctx->device.destroyImageView(m_color.view);
-		m_color.view = nullptr;
-	}
-	if (m_color.image) {
-		m_ctx->device.destroyImage(m_color.image);
-		m_color.image = nullptr;
-	}
-	if (m_color.allocation.isValid()) {
-		m_ctx->memoryManager->freeAllocation(m_color.allocation);
 	}
 
 	if (m_depth.view) {

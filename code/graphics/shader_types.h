@@ -64,3 +64,16 @@ SCP_string shader_build_variant_defines(shader_type type, unsigned int flags);
 // Returns FXAA preprocessor defines for the given AA mode.
 // gather4_alpha: whether the backend supports textureGather.
 SCP_string shader_get_fxaa_defines(AntiAliasMode aa_mode, bool gather4_alpha);
+
+// Returns the "#define NUM_SHADOW_CASCADES <n>\n" preprocessor define, sized to
+// the current total cascade count (Num_shadow_cascades + Num_cockpit_shadow_cascades).
+// Needed by any shader that references shadow cascade arrays (model, deferred
+// lighting, shadow map generation), for both backends.
+SCP_string shader_get_shadow_cascade_defines();
+
+// Whether this (type, flags) combination requires the GL_EXT_ray_query extension,
+// and therefore a SPIR-V target-env new enough to support it (see
+// VulkanShaderCompiler::compile()'s requiresRaytracing parameter). Centralized here
+// since the two shader types that can request it (model materials, deferred
+// lighting) each encode the raytraced-shadow bit differently.
+bool shader_variant_requires_raytracing(shader_type type, unsigned int flags);

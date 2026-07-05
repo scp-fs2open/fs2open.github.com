@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ui/widgets/sexp_tree.h"
+#include "ui/widgets/sexp_tree_view.h"
 
 #include <mission/dialogs/BriefingEditorDialogModel.h>
 #include <ui/FredView.h>
@@ -82,7 +82,6 @@ class BriefingEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	void on_voiceFileLineEdit_textChanged(const QString& string);
 	void on_voiceFileBrowseButton_clicked();
 	void on_voiceFilePlayButton_clicked();
-	void on_formulaTreeView_nodeChanged(int newTree);
 
 	void on_defaultMusicWidget_currentIndexChanged(int spooledMusicIdx);
 	void on_musicPackWidget_currentIndexChanged(int spooledMusicIdx);

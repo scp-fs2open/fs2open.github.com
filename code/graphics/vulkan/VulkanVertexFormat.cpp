@@ -87,7 +87,7 @@ VertexInputConfig VulkanVertexFormatCache::createVertexInputConfig(const vertex_
 		const VertexFormatMapping* mapping = getVertexFormatMapping(component->format_type);
 
 		if (!mapping) {
-			mprintf(("VulkanVertexFormat: Unknown vertex format %d\n", static_cast<int>(component->format_type)));
+			nprintf(("vulkan", "VulkanVertexFormat: Unknown vertex format %d\n", static_cast<int>(component->format_type)));
 			continue;
 		}
 

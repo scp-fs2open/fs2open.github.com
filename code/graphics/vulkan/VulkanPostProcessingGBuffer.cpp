@@ -189,7 +189,7 @@ bool VulkanDeferredGBuffer::init(PostProcessContext& ctx, const RenderTarget& sc
 	for (auto& t : targets) {
 		if (!m_ctx->createImage(w, h, t.format, gbufUsage, vk::ImageAspectFlagBits::eColor,
 		                 t.target->image, t.target->view, t.target->allocation)) {
-			mprintf(("VulkanPostProcessor: Failed to create G-buffer %s image!\n", t.name));
+			nprintf(("vulkan", "VulkanPostProcessor: Failed to create G-buffer %s image!\n", t.name));
 			shutdown();
 			return false;
 		}
@@ -204,7 +204,7 @@ bool VulkanDeferredGBuffer::init(PostProcessContext& ctx, const RenderTarget& sc
 		if (!m_ctx->createImage(w, h, GBUF_FORMAT_NORMAL, copyUsage,
 		                 vk::ImageAspectFlagBits::eColor,
 		                 m_gbufNormalCopy.image, m_gbufNormalCopy.view, m_gbufNormalCopy.allocation)) {
-			mprintf(("VulkanPostProcessor: Failed to create G-buffer normal copy!\n"));
+			nprintf(("vulkan", "VulkanPostProcessor: Failed to create G-buffer normal copy!\n"));
 			shutdown();
 			return false;
 		}
@@ -222,7 +222,7 @@ bool VulkanDeferredGBuffer::init(PostProcessContext& ctx, const RenderTarget& sc
 			vk::ImageLayout::eUndefined,
 		});
 	} catch (const vk::SystemError& e) {
-		mprintf(("VulkanPostProcessor: Failed to create G-buffer render pass: %s\n", e.what()));
+		nprintf(("vulkan", "VulkanPostProcessor: Failed to create G-buffer render pass: %s\n", e.what()));
 		shutdown();
 		return false;
 	}
@@ -236,7 +236,7 @@ bool VulkanDeferredGBuffer::init(PostProcessContext& ctx, const RenderTarget& sc
 			vk::ImageLayout::eDepthStencilAttachmentOptimal,
 		});
 	} catch (const vk::SystemError& e) {
-		mprintf(("VulkanPostProcessor: Failed to create G-buffer load render pass: %s\n", e.what()));
+		nprintf(("vulkan", "VulkanPostProcessor: Failed to create G-buffer load render pass: %s\n", e.what()));
 		shutdown();
 		return false;
 	}
@@ -245,13 +245,13 @@ bool VulkanDeferredGBuffer::init(PostProcessContext& ctx, const RenderTarget& sc
 	try {
 		m_gbufFramebuffer = createGbufFramebuffer(m_gbufRenderPass, true, false);
 	} catch (const vk::SystemError& e) {
-		mprintf(("VulkanPostProcessor: Failed to create G-buffer framebuffer: %s\n", e.what()));
+		nprintf(("vulkan", "VulkanPostProcessor: Failed to create G-buffer framebuffer: %s\n", e.what()));
 		shutdown();
 		return false;
 	}
 
 	m_gbufInitialized = true;
-	mprintf(("VulkanPostProcessor: G-buffer initialized (%ux%u, 6 color + depth)\n", w, h));
+	nprintf(("vulkan", "VulkanPostProcessor: G-buffer initialized (%ux%u, 6 color + depth)\n", w, h));
 	return true;
 }
 

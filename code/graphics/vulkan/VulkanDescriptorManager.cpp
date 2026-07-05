@@ -1,6 +1,7 @@
 #include "VulkanDescriptorManager.h"
 #include "VulkanBuffer.h"
 #include "VulkanTexture.h"
+#include "VulkanRaytracing.h"
 
 
 namespace graphics::vulkan {
@@ -13,8 +14,18 @@ static constexpr DescriptorBindingTemplate s_globalBindings[] = {
 	{GlobalBinding::ShadowMap,     vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment, vk::ImageViewType::e2DArray},
 	{GlobalBinding::EnvMap,        vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment, vk::ImageViewType::eCube},
 	{GlobalBinding::IrradianceMap, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment, vk::ImageViewType::eCube},
+	{GlobalBinding::ShadowCascadeParams, vk::DescriptorType::eUniformBuffer,  1, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment},
 };
-static constexpr DescriptorSetTemplate s_globalTemplate(s_globalBindings);
+static constexpr DescriptorBindingTemplate s_globalTlasBinding{
+	GlobalBinding::Tlas, vk::DescriptorType::eAccelerationStructureKHR, 1, vk::ShaderStageFlagBits::eFragment};
+
+// The Global set's layout must omit the TLAS binding entirely on devices without
+// VK_KHR_acceleration_structure enabled -- a descriptor type the device didn't
+// enable the extension for is invalid in vkCreateDescriptorSetLayout. So, unlike
+// the other set templates, the Global template is assembled at runtime in
+// createSetLayouts() based on the raytracingSupported flag passed to init(), into
+// the per-instance m_globalBindingsRuntime/m_globalTemplateRuntime members
+// (see VulkanDescriptorManager.h), rather than compiled in as a fixed constexpr array.
 
 static constexpr DescriptorBindingTemplate s_materialBindings[] = {
 	{MaterialBinding::ModelData,     vk::DescriptorType::eUniformBuffer,        1,  vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment},
@@ -24,6 +35,7 @@ static constexpr DescriptorBindingTemplate s_materialBindings[] = {
 	{MaterialBinding::DepthMap,      vk::DescriptorType::eCombinedImageSampler, 1,  vk::ShaderStageFlagBits::eFragment},
 	{MaterialBinding::SceneColor,    vk::DescriptorType::eCombinedImageSampler, 1,  vk::ShaderStageFlagBits::eFragment},
 	{MaterialBinding::DistortionMap, vk::DescriptorType::eCombinedImageSampler, 1,  vk::ShaderStageFlagBits::eFragment},
+	{MaterialBinding::ShadowMapData, vk::DescriptorType::eUniformBuffer,        1,  vk::ShaderStageFlagBits::eVertex},
 };
 static constexpr DescriptorSetTemplate s_materialTemplate(s_materialBindings);
 
@@ -39,14 +51,20 @@ static constexpr DescriptorSetTemplate s_perDrawTemplate(s_perDrawBindings);
 // ========== Static uniform binding mappings ==========
 
 static constexpr VulkanDescriptorManager::UniformBindingEntry s_globalUBOs[] = {
-	{GlobalBinding::Lights,       uniform_block_type::Lights},
-	{GlobalBinding::DeferredData, uniform_block_type::DeferredGlobals},
+	{GlobalBinding::Lights,              uniform_block_type::Lights},
+	{GlobalBinding::DeferredData,        uniform_block_type::DeferredGlobals},
+	{GlobalBinding::ShadowCascadeParams, uniform_block_type::ShadowCascadeParams},
 };
 
 static constexpr VulkanDescriptorManager::UniformBindingEntry s_materialUBOs[] = {
 	{MaterialBinding::ModelData,    uniform_block_type::ModelData},
 	{MaterialBinding::DecalGlobals, uniform_block_type::DecalGlobals},
 };
+// Note: MaterialBinding::ShadowMapData is intentionally NOT in s_materialUBOs --
+// unlike ModelData/DecalGlobals, shadow_render_list passes its UBO handle/offset/size
+// directly into gr_render_shadow_draw() rather than through gr_bind_uniform_buffer(),
+// so VulkanDrawManager::renderShadowDraw() binds it explicitly instead of relying on
+// the generic pending-uniform-binding pass in applyMaterial().
 
 static constexpr VulkanDescriptorManager::UniformBindingEntry s_perDrawUBOs[] = {
 	{PerDrawBinding::GenericData, uniform_block_type::GenericData},
@@ -97,6 +115,7 @@ void DescriptorWriter::writeSet(vk::DescriptorSet set, const DescriptorSetTempla
 		slot.viewType = b.viewType;
 
 		bool isImage = (b.type == vk::DescriptorType::eCombinedImageSampler);
+		bool isAccelStruct = (b.type == vk::DescriptorType::eAccelerationStructureKHR);
 		if (isImage) {
 			Verify(m_imageInfoCount + b.count <= MAX_IMAGE_INFOS);
 			auto* dst = &m_imageInfos[m_imageInfoCount];
@@ -107,6 +126,21 @@ void DescriptorWriter::writeSet(vk::DescriptorSet set, const DescriptorSetTempla
 			w.pImageInfo = dst;
 			slot.imageInfo = dst;
 			m_imageInfoCount += b.count;
+		} else if (isAccelStruct) {
+			// No setAccelStruct() override step needed: m_fallbacks->shadowTlas IS
+			// the live value, kept fresh once per frame by setCurrentShadowTlas().
+			Verify(b.count == 1);
+			Verify(m_accelStructInfoCount < MAX_ACCEL_STRUCT_INFOS);
+			auto* dst = &m_accelStructInfos[m_accelStructInfoCount];
+			*dst = m_fallbacks->shadowTlas;
+
+			auto& asInfo = m_asWriteInfos[m_accelStructInfoCount];
+			asInfo = vk::WriteDescriptorSetAccelerationStructureKHR();
+			asInfo.accelerationStructureCount = 1;
+			asInfo.pAccelerationStructures = dst;
+
+			w.pNext = &asInfo;
+			m_accelStructInfoCount++;
 		} else {
 			Verify(m_bufferInfoCount < MAX_BUFFER_INFOS);
 			m_bufferInfos[m_bufferInfoCount] = m_fallbacks->buffer;
@@ -164,19 +198,21 @@ void setDescriptorManager(VulkanDescriptorManager* manager)
 	g_descriptorManager = manager;
 }
 
-bool VulkanDescriptorManager::init(vk::Device device)
+bool VulkanDescriptorManager::init(vk::Device device, bool raytracingSupported)
 {
 	if (m_initialized) {
 		return true;
 	}
 
 	m_device = device;
+	m_raytracingEnabled = raytracingSupported;
 
 	createSetLayouts();
 	createDescriptorPools();
 
 	m_initialized = true;
-	mprintf(("VulkanDescriptorManager: Initialized\n"));
+	nprintf(("vulkan", "VulkanDescriptorManager: Initialized (raytraced shadows %s)\n",
+		m_raytracingEnabled ? "enabled" : "disabled"));
 	return true;
 }
 
@@ -200,28 +236,34 @@ void VulkanDescriptorManager::shutdown()
 	}
 
 	m_initialized = false;
-	mprintf(("VulkanDescriptorManager: Shutdown complete\n"));
+	nprintf(("vulkan", "VulkanDescriptorManager: Shutdown complete\n"));
 }
 
-void VulkanDescriptorManager::buildFallbacks(VulkanBufferManager* bufMgr, VulkanTextureManager* texMgr)
+void VulkanDescriptorManager::buildFallbacks(VulkanBufferManager* bufMgr, VulkanTextureManager* texMgr,
+	VulkanRaytracingManager* rtMgr)
 {
 	m_fallbacks.buffer = bufMgr->getFallbackUniformBufferInfo();
 	m_fallbacks.texture2D = texMgr->getFallbackTextureInfo2D();
 	m_fallbacks.texture2DArray = texMgr->getFallbackTextureInfo2DArray();
 	m_fallbacks.textureCube = texMgr->getFallbackTextureInfoCube();
 	m_fallbacks.texture3D = texMgr->getFallbackTextureInfo3D();
-	mprintf(("VulkanDescriptorManager: Fallbacks built\n"));
+	if (m_raytracingEnabled && rtMgr != nullptr) {
+		// Seed with the permanent empty TLAS; setCurrentShadowTlas() takes over
+		// once the first real TLAS is built.
+		m_fallbacks.shadowTlas = rtMgr->getFallbackTlas();
+	}
+	nprintf(("vulkan", "VulkanDescriptorManager: Fallbacks built\n"));
 }
 
 const DescriptorSetTemplate& VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex setIndex)
 {
 	switch (setIndex) {
-	case DescriptorSetIndex::Global:   return s_globalTemplate;
+	case DescriptorSetIndex::Global:   return getDescriptorManager()->m_globalTemplateRuntime;
 	case DescriptorSetIndex::Material: return s_materialTemplate;
 	case DescriptorSetIndex::PerDraw:  return s_perDrawTemplate;
 	default:
 		Assertion(false, "Invalid DescriptorSetIndex!");
-		return s_globalTemplate;
+		return getDescriptorManager()->m_globalTemplateRuntime;
 	}
 }
 
@@ -258,7 +300,7 @@ vk::DescriptorSet VulkanDescriptorManager::allocateFrameSet(DescriptorSetIndex s
 
 	// Create a new pool and retry
 	pools.push_back(createFramePool());
-	mprintf(("VulkanDescriptorManager: Grew frame %u pool count to %zu\n",
+	nprintf(("vulkandescriptor", "VulkanDescriptorManager: Grew frame %u pool count to %zu\n",
 		m_currentFrame, pools.size()));
 
 	vk::DescriptorSetAllocateInfo allocInfo;
@@ -270,7 +312,7 @@ vk::DescriptorSet VulkanDescriptorManager::allocateFrameSet(DescriptorSetIndex s
 		auto sets = m_device.allocateDescriptorSets(allocInfo);
 		return sets[0];
 	} catch (const vk::SystemError& e) {
-		mprintf(("VulkanDescriptorManager: Failed to allocate frame descriptor set after pool growth: %s\n", e.what()));
+		nprintf(("vulkan", "VulkanDescriptorManager: Failed to allocate frame descriptor set after pool growth: %s\n", e.what()));
 		return {};
 	}
 }
@@ -316,11 +358,17 @@ VulkanDescriptorManager::getUniformBindings(DescriptorSetIndex setIndex)
 
 void VulkanDescriptorManager::createSetLayouts()
 {
-	m_setLayouts[static_cast<size_t>(DescriptorSetIndex::Global)]   = createSetLayout(s_globalTemplate);
+	m_globalBindingsRuntime.assign(std::begin(s_globalBindings), std::end(s_globalBindings));
+	if (m_raytracingEnabled) {
+		m_globalBindingsRuntime.push_back(s_globalTlasBinding);
+	}
+	m_globalTemplateRuntime = DescriptorSetTemplate(m_globalBindingsRuntime.data(), m_globalBindingsRuntime.size());
+
+	m_setLayouts[static_cast<size_t>(DescriptorSetIndex::Global)]   = createSetLayout(m_globalTemplateRuntime);
 	m_setLayouts[static_cast<size_t>(DescriptorSetIndex::Material)] = createSetLayout(s_materialTemplate);
 	m_setLayouts[static_cast<size_t>(DescriptorSetIndex::PerDraw)]  = createSetLayout(s_perDrawTemplate);
 
-	mprintf(("VulkanDescriptorManager: Created %zu descriptor set layouts\n",
+	nprintf(("vulkan", "VulkanDescriptorManager: Created %zu descriptor set layouts\n",
 		static_cast<size_t>(DescriptorSetIndex::Count)));
 }
 
@@ -337,6 +385,9 @@ vk::UniqueDescriptorPool VulkanDescriptorManager::createFramePool()
 		{ vk::DescriptorType::eCombinedImageSampler, MAX_SAMPLERS },
 		{ vk::DescriptorType::eStorageBuffer, MAX_SETS_PER_POOL },
 	};
+	if (m_raytracingEnabled) {
+		poolSizes.emplace_back(vk::DescriptorType::eAccelerationStructureKHR, MAX_SETS_PER_POOL);
+	}
 
 	vk::DescriptorPoolCreateInfo poolInfo;
 	poolInfo.maxSets = MAX_SETS_PER_POOL;
@@ -353,7 +404,7 @@ void VulkanDescriptorManager::createDescriptorPools()
 		m_framePools[i].push_back(createFramePool());
 	}
 
-	mprintf(("VulkanDescriptorManager: Created %u frame pool chains\n",
+	nprintf(("vulkan", "VulkanDescriptorManager: Created %u frame pool chains\n",
 		MAX_FRAMES_IN_FLIGHT));
 }
 

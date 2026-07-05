@@ -13,6 +13,7 @@
 #include "VulkanDeletionQueue.h"
 #include "VulkanPostProcessing.h"
 #include "VulkanQuery.h"
+#include "VulkanRaytracing.h"
 #include "VulkanRenderFrame.h"
 
 #include <vulkan/vulkan.hpp>
@@ -35,6 +36,15 @@ struct PhysicalDeviceValues {
 	vk::PhysicalDevice device;
 	vk::PhysicalDeviceProperties properties;
 	vk::PhysicalDeviceFeatures features;
+
+	// Ray tracing feature support, queried via a VkPhysicalDeviceFeatures2
+	// pNext chain in pickPhysicalDevice(). These reflect only whether the
+	// device *feature bit* is set -- whether raytraced shadows are actually
+	// usable also requires the corresponding device extensions to be present
+	// (checked separately in createLogicalDevice() against `extensions` below).
+	bool accelerationStructureFeatureSupported = false;
+	bool rayQueryFeatureSupported = false;
+	bool bufferDeviceAddressFeatureSupported = false;
 
 	SCP_vector<vk::ExtensionProperties> extensions;
 
@@ -135,6 +145,13 @@ class VulkanRenderer {
 	 * @brief Check if vertex shader layer output is supported (for shadow cascades)
 	 */
 	bool supportsShaderViewportLayerOutput() const { return m_supportsShaderViewportLayerOutput; }
+
+	/**
+	 * @brief Check if raytraced shadows are supported (VK_KHR_ray_query +
+	 * VK_KHR_acceleration_structure + VK_KHR_deferred_host_operations, with
+	 * the corresponding feature bits enabled on the logical device)
+	 */
+	bool supportsRaytracedShadows() const { return m_supportsRaytracedShadows; }
 
 	/**
 	 * @brief Switch from swap chain pass to HDR scene pass
@@ -243,6 +260,11 @@ class VulkanRenderer {
 
 	void createFrameBuffers();
 
+	// HDR composition + output-encode resources
+	void createCompositionResources();
+	void createEncodeRenderPass();
+	void encodeToSwapChain();
+
 	void createDepthResources();
 
 	vk::Format findDepthFormat();
@@ -274,11 +296,26 @@ class VulkanRenderer {
 
 	vk::UniqueSwapchainKHR m_swapChain;
 	vk::Format m_swapChainImageFormat;
+	vk::ColorSpaceKHR m_swapChainColorSpace = vk::ColorSpaceKHR::eSrgbNonlinear;
+	bool m_hdrActive = false;            // True when an HDR10 (PQ/BT.2020) swap chain was negotiated
+	bool m_hdrMetadataSupported = false; // VK_EXT_hdr_metadata device extension enabled
 	vk::Extent2D m_swapChainExtent;
 	SCP_vector<vk::Image> m_swapChainImages;
 	SCP_vector<vk::UniqueImageView> m_swapChainImageViews;
 	SCP_vector<vk::UniqueFramebuffer> m_swapChainFramebuffers;
 	SCP_vector<VulkanRenderFrame*> m_swapChainImageRenderImage;
+
+	// HDR composition pipeline: the whole frame is rendered into these fp16
+	// images (via m_renderPass / m_swapChainFramebuffers) instead of directly
+	// into the swap chain image. A final encode pass (m_encodeRenderPass +
+	// m_encodeFramebuffers) converts composition -> swap chain, applying SDR
+	// sRGB passthrough or the HDR10 PQ/BT.2020 transfer.
+	SCP_vector<vk::UniqueImage> m_compositionImages;
+	SCP_vector<vk::UniqueImageView> m_compositionImageViews;
+	SCP_vector<VulkanAllocation> m_compositionAllocations;
+	vk::UniqueSampler m_compositionSampler;
+	SCP_vector<vk::UniqueFramebuffer> m_encodeFramebuffers;
+	vk::UniqueRenderPass m_encodeRenderPass;
 
 	uint32_t m_currentSwapChainImage = 0;
 	uint32_t m_previousSwapChainImage = UINT32_MAX;  // For saveScreen() readback of previous frame
@@ -331,6 +368,9 @@ class VulkanRenderer {
 	// Query management (GPU timestamp profiling)
 	std::unique_ptr<VulkanQueryManager> m_queryManager;
 
+	// Raytraced shadow BLAS cache
+	std::unique_ptr<VulkanRaytracingManager> m_raytracingManager;
+
 	// Post-processing
 	std::unique_ptr<VulkanPostProcessor> m_postProcessor;
 	bool m_sceneRendering = false;
@@ -338,6 +378,7 @@ class VulkanRenderer {
 	bool m_useGbufRenderPass = false;  // True when scene uses G-buffer (deferred lighting)
 
 	bool m_supportsShaderViewportLayerOutput = false;  // VK_EXT_shader_viewport_index_layer
+	bool m_supportsRaytracedShadows = false;  // VK_KHR_ray_query + VK_KHR_acceleration_structure + VK_KHR_deferred_host_operations
 	vk::SampleCountFlagBits m_msaaSampleCount = vk::SampleCountFlagBits::e1;  // Validated MSAA sample count
 	bool m_renderTargetActive = false;  // True when rendering to off-screen RT (bm_set_render_target)
 

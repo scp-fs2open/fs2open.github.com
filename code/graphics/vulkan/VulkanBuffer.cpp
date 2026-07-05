@@ -41,14 +41,14 @@ bool VulkanBufferManager::createOneShotBuffer(vk::Flags<vk::BufferUsageFlagBits>
 	try {
 		buf = m_device.createBuffer(bufferInfo);
 	} catch (const vk::SystemError& e) {
-		mprintf(("Failed to create buffer: %s\n", e.what()));
+		nprintf(("vulkan", "Failed to create buffer: %s\n", e.what()));
 		return false;
 	}
 
 	if (!m_memoryManager->allocateBufferMemory(buf, MemoryUsage::CpuToGpu, alloc)) {
 		m_device.destroyBuffer(buf);
 		buf = nullptr;
-		mprintf(("Failed to allocate buffer memory!\n"));
+		nprintf(("vulkan", "Failed to allocate buffer memory!\n"));
 		return false;
 	}
 
@@ -62,7 +62,7 @@ bool VulkanBufferManager::createOneShotBuffer(vk::Flags<vk::BufferUsageFlagBits>
 		m_device.destroyBuffer(buf);
 		buf = nullptr;
 
-		mprintf(("Failed to map buffer memory!\n"));
+		nprintf(("vulkan", "Failed to map buffer memory!\n"));
 		return false;
 	}
 	return true;
@@ -84,14 +84,14 @@ bool VulkanBufferManager::createFrameAllocBuffer(FrameBumpAllocator& alloc, size
 	try {
 		alloc.buffer = m_device.createBuffer(bufferInfo);
 	} catch (const vk::SystemError& e) {
-		mprintf(("Failed to create frame allocator buffer: %s\n", e.what()));
+		nprintf(("vulkan", "Failed to create frame allocator buffer: %s\n", e.what()));
 		return false;
 	}
 
 	if (!m_memoryManager->allocateBufferMemory(alloc.buffer, MemoryUsage::CpuToGpu, alloc.allocation)) {
 		m_device.destroyBuffer(alloc.buffer);
 		alloc.buffer = nullptr;
-		mprintf(("Failed to allocate frame allocator buffer memory!\n"));
+		nprintf(("vulkan", "Failed to allocate frame allocator buffer memory!\n"));
 		return false;
 	}
 
@@ -101,7 +101,7 @@ bool VulkanBufferManager::createFrameAllocBuffer(FrameBumpAllocator& alloc, size
 		m_device.destroyBuffer(alloc.buffer);
 		alloc.buffer = nullptr;
 		alloc.allocation = {};
-		mprintf(("Failed to map frame allocator buffer!\n"));
+		nprintf(("vulkan", "Failed to map frame allocator buffer!\n"));
 		return false;
 	}
 
@@ -115,7 +115,7 @@ void VulkanBufferManager::initFrameAllocators()
 	for (auto & m_frameAlloc : m_frameAllocs) {
 		Verify(createFrameAllocBuffer(m_frameAlloc, FRAME_ALLOC_INITIAL_SIZE));
 	}
-	mprintf(("Frame bump allocators initialized: %u x %zuKB\n",
+	nprintf(("vulkan", "Frame bump allocators initialized: %u x %zuKB\n",
 		MAX_FRAMES_IN_FLIGHT, FRAME_ALLOC_INITIAL_SIZE / 1024));
 }
 
@@ -168,7 +168,7 @@ void VulkanBufferManager::growFrameAllocator()
 		newCapacity *= 2;
 	}
 
-	mprintf(("Growing frame allocator %u: %zuKB -> %zuKB\n",
+	nprintf(("vulkan", "Growing frame allocator %u: %zuKB -> %zuKB\n",
 		m_currentFrame, alloc.capacity / 1024, newCapacity / 1024));
 
 	// Queue old buffer for deferred destruction - the deletion queue's FRAMES_TO_WAIT=2
@@ -194,12 +194,12 @@ bool VulkanBufferManager::init(vk::Device device,
                                uint32_t minUboAlignment)
 {
 	if (m_initialized) {
-		mprintf(("VulkanBufferManager::init called when already initialized!\n"));
+		nprintf(("vulkan", "VulkanBufferManager::init called when already initialized!\n"));
 		return false;
 	}
 
 	if (!device || !memoryManager) {
-		mprintf(("VulkanBufferManager::init called with null device or memory manager!\n"));
+		nprintf(("vulkan", "VulkanBufferManager::init called with null device or memory manager!\n"));
 		return false;
 	}
 
@@ -213,13 +213,13 @@ bool VulkanBufferManager::init(vk::Device device,
 	// Create fallback color buffer with white (1,1,1,1) for shaders expecting vertColor
 	std::array<float, 4> whiteColor = { 1.0f, 1.0f, 1.0f, 1.0f };
 	if (!createOneShotBuffer(vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst, whiteColor.data(), sizeof(whiteColor), m_fallbackColorBuffer, m_fallbackColorAllocation)) {
-		mprintf(("VulkanBufferManager::init could not create fallback color buffer\n"));
+		nprintf(("vulkan", "VulkanBufferManager::init could not create fallback color buffer\n"));
 		return false;
 	}
 
 	std::array<float, 4> zeroTexCoord = { 0.0f, 0.0f, 0.0f, 0.0f };
 	if (!createOneShotBuffer(vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst, zeroTexCoord.data(), sizeof(zeroTexCoord), m_fallbackTexCoordBuffer, m_fallbackTexCoordAllocation)) {
-		mprintf(("VulkanBufferManager::init could not create fallback texcoord buffer\n"));
+		nprintf(("vulkan", "VulkanBufferManager::init could not create fallback texcoord buffer\n"));
 		return false;
 	}
 
@@ -228,14 +228,14 @@ bool VulkanBufferManager::init(vk::Device device,
 	// contain undefined data, causing intermittent rendering failures
 	std::array<float, FALLBACK_UNIFORM_BUFFER_SIZE> dummy_ubo = {};
 	if (!createOneShotBuffer(vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eStorageBuffer, dummy_ubo.data(), sizeof(dummy_ubo), m_fallbackUniformBuffer, m_fallbackUniformAllocation)) {
-		mprintf(("VulkanBufferManager::init could not create fallback uniform buffer\n"));
+		nprintf(("vulkan", "VulkanBufferManager::init could not create fallback uniform buffer\n"));
 		return false;
 	}
 
 	initFrameAllocators();
 
 	m_initialized = true;
-	mprintf(("Vulkan Buffer Manager initialized (frame bump allocator, UBO alignment=%u, %u frames)\n",
+	nprintf(("vulkan", "Vulkan Buffer Manager initialized (frame bump allocator, UBO alignment=%u, %u frames)\n",
 		m_uboAlignment, MAX_FRAMES_IN_FLIGHT));
 	return true;
 }
@@ -297,7 +297,7 @@ void VulkanBufferManager::shutdown()
 	m_totalBufferMemory = 0;
 	m_initialized = false;
 
-	mprintf(("Vulkan Buffer Manager shutdown\n"));
+	nprintf(("vulkan", "Vulkan Buffer Manager shutdown\n"));
 }
 
 void VulkanBufferManager::setCurrentFrame(uint32_t frameIndex)
@@ -310,7 +310,7 @@ void VulkanBufferManager::setCurrentFrame(uint32_t frameIndex)
 
 // ========== Buffer usage / memory helpers ==========
 
-vk::BufferUsageFlags VulkanBufferManager::getVkUsageFlags(BufferType type) 
+vk::BufferUsageFlags VulkanBufferManager::getVkUsageFlags(BufferType type, bool rtCapable)
 {
 	vk::BufferUsageFlags flags = vk::BufferUsageFlagBits::eTransferDst;
 
@@ -324,6 +324,16 @@ vk::BufferUsageFlags VulkanBufferManager::getVkUsageFlags(BufferType type)
 	case BufferType::Uniform:
 		flags |= vk::BufferUsageFlagBits::eUniformBuffer;
 		break;
+	}
+
+	if (rtCapable) {
+		// Required to use this buffer as acceleration structure geometry input
+		// and to query its device address. Only valid if the VMA allocator was
+		// created with VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT (see
+		// VulkanMemoryManager::init), which is only true when
+		// CAPABILITY_RAYTRACED_SHADOWS was negotiated as supported.
+		flags |= vk::BufferUsageFlagBits::eShaderDeviceAddress |
+			vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR;
 	}
 
 	return flags;
@@ -354,13 +364,14 @@ MemoryUsage VulkanBufferManager::getMemoryUsage(BufferUsageHint hint)
 
 // ========== Buffer create / delete ==========
 
-gr_buffer_handle VulkanBufferManager::createBuffer(BufferType type, BufferUsageHint usage)
+gr_buffer_handle VulkanBufferManager::createBuffer(BufferType type, BufferUsageHint usage, bool rtCapable)
 {
 	Verify(m_initialized);
 
 	VulkanBufferObject bufferObj;
 	bufferObj.type = type;
 	bufferObj.usage = usage;
+	bufferObj.rtCapable = rtCapable;
 	bufferObj.valid = true;
 	// Note: actual buffer creation is deferred until data is uploaded
 
@@ -427,7 +438,7 @@ bool VulkanBufferManager::createOrResizeBuffer(VulkanBufferObject& bufferObj, si
 	// Create new buffer
 	vk::BufferCreateInfo bufferInfo;
 	bufferInfo.size = size;
-	bufferInfo.usage = getVkUsageFlags(bufferObj.type);
+	bufferInfo.usage = getVkUsageFlags(bufferObj.type, bufferObj.rtCapable);
 
 	// Handle queue family sharing
 	uint32_t queueFamilies[] = {m_graphicsQueueFamily, m_transferQueueFamily};
@@ -442,7 +453,7 @@ bool VulkanBufferManager::createOrResizeBuffer(VulkanBufferObject& bufferObj, si
 	try {
 		bufferObj.buffer = m_device.createBuffer(bufferInfo);
 	} catch (const vk::SystemError& e) {
-		mprintf(("Failed to create Vulkan buffer: %s\n", e.what()));
+		nprintf(("vulkan", "Failed to create Vulkan buffer: %s\n", e.what()));
 		bufferObj.buffer = oldBuffer;
 		return false;
 	}
@@ -481,6 +492,11 @@ bool VulkanBufferManager::createOrResizeBuffer(VulkanBufferObject& bufferObj, si
 	bufferObj.dataSize = size;
 	m_totalBufferMemory += size;
 
+	// A new VkBuffer was created above (and thus a new device address, if
+	// rtCapable) -- bump the generation so cached-address consumers can
+	// detect staleness.
+	++bufferObj.generation;
+
 	return true;
 }
 
@@ -491,7 +507,7 @@ void VulkanBufferManager::updateBufferData(gr_buffer_handle handle, size_t size,
 	Verify(m_initialized && isValidHandle(handle));
 
 	if (size == 0) {
-		mprintf(("WARNING: updateBufferData called with size 0\n"));
+		nprintf(("vulkan", "WARNING: updateBufferData called with size 0\n"));
 		return;
 	}
 
@@ -606,7 +622,7 @@ void* VulkanBufferManager::mapBuffer(gr_buffer_handle handle)
 
 	// Only persistent mapping buffers should stay mapped
 	if (bufferObj.usage != BufferUsageHint::PersistentMapping) {
-		mprintf(("WARNING: mapBuffer called on non-persistent buffer\n"));
+		nprintf(("vulkan", "WARNING: mapBuffer called on non-persistent buffer\n"));
 	}
 
 	// Map the entire buffer
@@ -682,6 +698,20 @@ size_t VulkanBufferManager::getBufferSize(gr_buffer_handle handle) const
 	return bufferObj.dataSize;
 }
 
+uint64_t VulkanBufferManager::getBufferGeneration(gr_buffer_handle handle) const
+{
+	if (!isValidHandle(handle)) {
+		return 0;
+	}
+
+	const VulkanBufferObject& bufferObj = m_buffers[handle.value()];
+	if (!bufferObj.valid) {
+		return 0;
+	}
+
+	return bufferObj.generation;
+}
+
 size_t VulkanBufferManager::getFrameBaseOffset(gr_buffer_handle handle) const
 {
 	if (!isValidHandle(handle)) {
@@ -735,10 +765,10 @@ const VulkanBufferObject* VulkanBufferManager::getBufferObject(gr_buffer_handle 
 
 // ========== gr_screen function pointer implementations ==========
 
-gr_buffer_handle vulkan_create_buffer(BufferType type, BufferUsageHint usage)
+gr_buffer_handle vulkan_create_buffer(BufferType type, BufferUsageHint usage, bool rt_capable)
 {
 	auto* bufferManager = getBufferManager();
-	return bufferManager->createBuffer(type, usage);
+	return bufferManager->createBuffer(type, usage, rt_capable);
 }
 
 void vulkan_delete_buffer(gr_buffer_handle handle)

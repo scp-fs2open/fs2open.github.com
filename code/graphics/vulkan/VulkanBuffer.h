@@ -37,9 +37,21 @@ struct VulkanBufferObject {
 	bool valid = false;
 	size_t dataSize = 0; // Usable data size. Static: total VkBuffer allocation. Streaming: current frame allocation.
 
+	// If true, the buffer is created with VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT
+	// and VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR so it
+	// can be used as acceleration structure geometry input. Static buffers only.
+	bool rtCapable = false;
+
 	// Static buffer fields (unused for streaming)
 	vk::Buffer buffer = nullptr;
 	VulkanAllocation allocation = {};
+
+	// Incremented each time createOrResizeBuffer() actually creates a new
+	// VkBuffer (i.e. on growth past the current capacity), since that produces
+	// a new VK_KHR_buffer_device_address. Callers that cache a device address
+	// (e.g. a BLAS built against this buffer) must compare against this value
+	// to detect staleness after the heap resizes.
+	uint64_t generation = 0;
 
 	// Frame bump allocator sub-allocation (streaming/dynamic only)
 	vk::Buffer frameAllocBuffer;       // VkBuffer at upload time (may be old allocator buffer after growth)
@@ -108,9 +120,22 @@ public:
 	 * @brief Create a new buffer
 	 * @param type The buffer type (Vertex, Index, Uniform)
 	 * @param usage Usage hint for optimization
+	 * @param rtCapable If true, adds the usage flags needed to use this buffer
+	 *        as acceleration structure geometry input (static buffers only)
 	 * @return Handle to the created buffer, or invalid handle on failure
 	 */
-	gr_buffer_handle createBuffer(BufferType type, BufferUsageHint usage);
+	gr_buffer_handle createBuffer(BufferType type, BufferUsageHint usage, bool rtCapable = false);
+
+	/**
+	 * @brief Get the generation counter for a buffer's underlying VkBuffer
+	 *
+	 * Incremented each time the buffer is grown past its current capacity and
+	 * a new VkBuffer is created (and thus a new device address). Used by
+	 * callers that cache a buffer device address to detect staleness.
+	 * @param handle The buffer to query
+	 * @return The current generation, or 0 if the handle is invalid
+	 */
+	uint64_t getBufferGeneration(gr_buffer_handle handle) const;
 
 	/**
 	 * @brief Delete a buffer
@@ -233,9 +258,9 @@ private:
 	bool createOneShotBuffer(vk::Flags<vk::BufferUsageFlagBits> usage, const void* data, size_t size, vk::Buffer& buf, VulkanAllocation& alloc) const;
 
 	/**
-	 * @brief Convert BufferType to Vulkan usage flags
+	 * @brief Convert BufferType (+ optional RT usage) to Vulkan usage flags
 	 */
-	static vk::BufferUsageFlags getVkUsageFlags(BufferType type) ;
+	static vk::BufferUsageFlags getVkUsageFlags(BufferType type, bool rtCapable) ;
 
 	/**
 	 * @brief Convert BufferUsageHint to memory usage
@@ -301,7 +326,7 @@ void setBufferManager(VulkanBufferManager* manager);
 
 // ========== gr_screen function pointer implementations ==========
 
-gr_buffer_handle vulkan_create_buffer(BufferType type, BufferUsageHint usage);
+gr_buffer_handle vulkan_create_buffer(BufferType type, BufferUsageHint usage, bool rt_capable);
 void vulkan_delete_buffer(gr_buffer_handle handle);
 void vulkan_update_buffer_data(gr_buffer_handle handle, size_t size, const void* data);
 void vulkan_update_buffer_data_offset(gr_buffer_handle handle, size_t offset, size_t size, const void* data);

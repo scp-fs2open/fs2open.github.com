@@ -86,7 +86,11 @@ void DebriefingDialog::initializeUi()
 	}
 
 	// Initialize the formula tree editor
-	ui->formulaTreeView->initializeEditor(_viewport->editor, this);
+	ui->formulaTreeView->initializeEditor(_viewport->editor, this, _viewport);
+	_model->setTreeControl(ui->formulaTreeView);
+	connect(ui->formulaTreeView, &sexp_tree_view::modified, this, [this]() {
+		_model->setModified();
+	});
 }
 
 void DebriefingDialog::updateUi()
@@ -237,11 +241,6 @@ void DebriefingDialog::on_voiceFileBrowseButton_clicked()
 void DebriefingDialog::on_voiceFilePlayButton_clicked()
 {
 	_model->testSpeech();
-}
-
-void DebriefingDialog::on_formulaTreeView_nodeChanged(int newTree)
-{
-	_model->setFormula(newTree);
 }
 
 void DebriefingDialog::on_successMusicWidget_currentIndexChanged(int spooledMusicIdx)

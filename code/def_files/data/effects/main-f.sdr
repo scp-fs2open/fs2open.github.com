@@ -36,8 +36,6 @@ uniform modelData {
 	mat4 viewMatrix;
 	mat4 projMatrix;
 	mat4 textureMatrix;
-	mat4 shadow_mv_matrix;
-	mat4 shadow_proj_matrix[4];
 
 	vec4 color;
 
@@ -55,7 +53,6 @@ uniform modelData {
 	int n_lights;
 	float defaultGloss;
 
-	//EXCLUSIVELY used for non-deferred rendering
 	vec3 ambientFactor;
 	int desaturate;
 
@@ -71,7 +68,6 @@ uniform modelData {
 	int effect_num;
 	int sBasemapIndex;
 
-
 	vec4 fogColor;
 
 	vec3 base_color;
@@ -85,13 +81,7 @@ uniform modelData {
 	float znear;
 	float zfar;
 
-	float veryneardist;
-	float neardist;
-	float middist;
-	float fardist;
-
 	int sGlowmapIndex;
-
 	int sSpecmapIndex;
 	int sNormalmapIndex;
 	int sAmbientmapIndex;
@@ -99,6 +89,21 @@ uniform modelData {
 	int sMiscmapIndex;
 	float alphaMult;
 	int flags;
+};
+
+#ifdef VULKAN
+layout(set = 0, binding = 6, std140)
+#else
+layout(std140)
+#endif
+uniform shadowCascadeParams {
+	int cascade_offset;
+	int cascade_count;
+
+	mat4 shadow_mv_matrix;
+	mat4 shadow_proj_matrix[NUM_SHADOW_CASCADES];
+	vec4 cascade_distances[(NUM_SHADOW_CASCADES + 4 - 1) / 4];
+	vec4 smoothness_factors[(NUM_SHADOW_CASCADES + 4 - 1) / 4];
 };
 
 #ifdef VULKAN
@@ -110,8 +115,12 @@ layout(set = 1, binding = 1) uniform sampler2DArray materialTextures[16];
 #define sAmbientmap materialTextures[5]
 #define sMiscmap materialTextures[6]
 
-layout(set = 0, binding = 2) uniform sampler2DArray shadow_map;
+layout(set = 0, binding = 2) uniform sampler2DArrayShadow shadow_map;
 layout(set = 1, binding = 5) uniform sampler2D sFramebuffer;
+
+#ifdef MODEL_SDR_FLAG_RT_SHADOWS
+layout(set = 0, binding = 5) uniform accelerationStructureEXT shadow_tlas;
+#endif
 
 layout(location = 0) in VertexOutput {
 	vec4 position;
@@ -119,8 +128,11 @@ layout(location = 0) in VertexOutput {
 	vec4 texCoord;
 	mat3 tangentMatrix;
 	float fogDist;
-	vec4 shadowUV[4];
+
+#prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
+	vec4 shadowUV[NUM_SHADOW_CASCADES];
 	vec4 shadowPos;
+#prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
 } vertIn;
 
 layout(location = 0) out vec4 fragOut0;
@@ -149,7 +161,7 @@ uniform sampler2D sFramebuffer;
 uniform sampler2DArray sMiscmap;
 #prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_MISC
 #prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
-uniform sampler2DArray shadow_map;
+uniform sampler2DArrayShadow shadow_map;
 #prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
 
 in VertexOutput {
@@ -164,19 +176,16 @@ in VertexOutput {
 	vec4 texCoord;
 
 #prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
-	vec4 shadowUV[4];
+	vec4 shadowUV[NUM_SHADOW_CASCADES];
 	vec4 shadowPos;
 #prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
 } vertIn;
 
 out vec4 fragOut0;
-#ifndef MODEL_SDR_FLAG_SHADOW_MAP
 out vec4 fragOut1;
 out vec4 fragOut2;
 out vec4 fragOut3;
 out vec4 fragOut4;
-#endif
-
 #endif
 
 vec3 FresnelLazarovEnv(vec3 specColor, vec3 view, vec3 normal, float gloss)
@@ -238,12 +247,6 @@ vec3 CalculateLighting(vec3 normal, vec3 diffuseMaterial, vec3 specularMaterial,
 
 void main()
 {
-	#ifdef MODEL_SDR_FLAG_SHADOW_MAP
-		// need depth and depth squared for variance shadow maps
-		fragOut0 = vec4(vertIn.position.z, vertIn.position.z * vertIn.position.z * VARIANCE_SHADOW_SCALE_INV, 0.0, 1.0);
-		return;
-	#else
-
 	vec3 eyeDir = vec3(normalize(-vertIn.position).xyz);
 	vec2 texCoord = vertIn.texCoord.xy;
 
@@ -375,7 +378,17 @@ void main()
 		#prereplace IF_FLAG MODEL_SDR_FLAG_LIGHT
 			float shadow = 1.0;
 			#prereplace IF_FLAG MODEL_SDR_FLAG_SHADOWS
-				shadow = getShadowValue(shadow_map, -vertIn.position.z, vertIn.shadowPos.z, vertIn.shadowUV, fardist, middist, neardist, veryneardist);
+			#ifdef MODEL_SDR_FLAG_RT_SHADOWS
+            				{
+            					mat4 invView = inverse(viewMatrix);
+            					vec3 worldPos = (invView * vertIn.position).xyz;
+            					vec3 worldNormal = normalize((invView * vec4(normal, 0.0)).xyz);
+            					vec3 worldSunDir = normalize((invView * vec4(lights[0].position.xyz, 0.0)).xyz);
+            					shadow = traceShadowRay(shadow_tlas, worldPos, worldNormal, worldSunDir);
+            				}
+            #else
+				shadow = getShadowValue(shadow_map, -vertIn.position.z, vertIn.shadowUV, cascade_distances, smoothness_factors, cascade_offset, cascade_count);
+			#endif
 			#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_SHADOWS
 			baseColor.rgb = CalculateLighting(normal, baseColor.rgb, specColor.rgb, glossData, fresnelFactor, shadow, aoFactors.x);
 		#prereplace ELSE_FLAG //MODEL_SDR_FLAG_LIGHT
@@ -483,5 +496,4 @@ void main()
 		fragOut3 = vec4(specColor.rgb, fresnelFactor);
 		fragOut4 = emissiveColor;
 	#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_DEFERRED
-	#endif
 }

@@ -56,7 +56,7 @@ VulkanShadercLibrary::VulkanShadercLibrary()
 	for (const auto* name : names) {
 		if (LoadExternal(name, base_path)) {
 			loaded = true;
-			mprintf(("VulkanShadercLibrary: Loaded '%s'\n", name));
+			nprintf(("vulkan", "VulkanShadercLibrary: Loaded '%s'\n", name));
 			break;
 		}
 	}
@@ -66,7 +66,7 @@ VulkanShadercLibrary::VulkanShadercLibrary()
 	}
 
 	if (!loaded) {
-		mprintf(("VulkanShadercLibrary: Could not load shaderc shared library\n"));
+		nprintf(("vulkan", "VulkanShadercLibrary: Could not load shaderc shared library\n"));
 		return;
 	}
 
@@ -97,7 +97,7 @@ VulkanShadercLibrary::VulkanShadercLibrary()
 		&& result_get_bytes && result_get_length;
 
 	if (!m_loaded) {
-		mprintf(("VulkanShadercLibrary: Library loaded but some functions are missing!\n"));
+		nprintf(("vulkan", "VulkanShadercLibrary: Library loaded but some functions are missing!\n"));
 	}
 }
 
@@ -114,7 +114,7 @@ bool VulkanShaderCompiler::init()
 
 	m_shaderc = std::make_unique<VulkanShadercLibrary>();
 	if (!m_shaderc->isLoaded()) {
-		mprintf(("VulkanShaderCompiler: shaderc library not available!\n"
+		nprintf(("vulkan", "VulkanShaderCompiler: shaderc library not available!\n"
 		         "  Install the Vulkan SDK or shaderc shared library:\n"
 		         "    Debian/Ubuntu: sudo apt install libshaderc-dev\n"
 		         "    Vulkan SDK: https://vulkan.lunarg.com/sdk/home\n"));
@@ -123,7 +123,7 @@ bool VulkanShaderCompiler::init()
 	}
 
 	m_initialized = true;
-	mprintf(("VulkanShaderCompiler: Initialized (runtime shaderc compilation)\n"));
+	nprintf(("vulkan", "VulkanShaderCompiler: Initialized (runtime shaderc compilation)\n"));
 	return true;
 }
 
@@ -156,6 +156,8 @@ SCP_string VulkanShaderCompiler::buildHeader(vk::ShaderStageFlagBits /*stage*/, 
 	if (Detail.lighting < 3) {
 		header += "#define FLAG_LIGHT_MODEL_BLINN_PHONG\n";
 	}
+
+	header += shader_get_shadow_cascade_defines();
 
 	// Post-processing shaders need special header injection (matching OpenGL's
 	// opengl_post_shader_header). Effect indices map to #define names, and
@@ -206,17 +208,18 @@ SCP_string VulkanShaderCompiler::computeSourceHash(const SCP_string& header, con
 SCP_vector<uint32_t> VulkanShaderCompiler::compile(const SCP_string& filename,
                                                      vk::ShaderStageFlagBits stage,
                                                      shader_type sdrType,
-                                                     unsigned int flags)
+                                                     unsigned int flags,
+                                                     bool requiresRaytracing)
 {
 	if (!m_initialized || !m_shaderc) {
-		mprintf(("VulkanShaderCompiler: Not initialized!\n"));
+		nprintf(("vulkan", "VulkanShaderCompiler: Not initialized!\n"));
 		return {};
 	}
 
 	// Load and preprocess GLSL source
 	SCP_string source = shader_load_source(filename);
 	if (source.empty()) {
-		mprintf(("VulkanShaderCompiler: Failed to load GLSL source: %s\n", filename.c_str()));
+		nprintf(("vulkan", "VulkanShaderCompiler: Failed to load GLSL source: %s\n", filename.c_str()));
 		return {};
 	}
 
@@ -247,12 +250,16 @@ SCP_vector<uint32_t> VulkanShaderCompiler::compile(const SCP_string& filename,
 	}
 
 	// Cache miss — compile with shaderc
-	mprintf(("VulkanShaderCompiler: Compiling %s (flags=0x%x)...\n", filename.c_str(), flags));
+	nprintf(("vulkan", "VulkanShaderCompiler: Compiling %s (flags=0x%x)...\n", filename.c_str(), flags));
 
 	// Assemble: #version + header (extension + defines) + source
 	SCP_string fullSource;
 	fullSource.reserve(header.size() + source.size() + 32);
-	fullSource += "#version 450\n";
+	// glslang only populates the GL_EXT_ray_query builtin symbol table (rayQueryEXT,
+	// gl_RayFlags*EXT, etc.) under GLSL 460 -- declaring the extension alone under
+	// #version 450 compiles but leaves those identifiers undeclared. Scoped to the
+	// same requiresRaytracing variants as the target-env bump above.
+	fullSource += requiresRaytracing ? "#version 460\n" : "#version 450\n";
 	fullSource += header;
 	fullSource += source;
 
@@ -260,12 +267,17 @@ SCP_vector<uint32_t> VulkanShaderCompiler::compile(const SCP_string& filename,
 
 	shaderc_compiler_t compiler = sc->compiler_initialize();
 	if (!compiler) {
-		mprintf(("VulkanShaderCompiler: Failed to initialize shaderc compiler!\n"));
+		nprintf(("vulkan", "VulkanShaderCompiler: Failed to initialize shaderc compiler!\n"));
 		return {};
 	}
 
 	shaderc_compile_options_t opts = sc->compile_options_initialize();
-	sc->compile_options_set_target_env(opts, shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_0);
+	// Only bump the target-env for the specific shader variants that actually use
+	// GL_EXT_ray_query (see shader_variant_requires_raytracing()) -- everything
+	// else keeps targeting the lowest common Vulkan version so a higher SPIR-V
+	// version tag doesn't risk rejection by more conservative Vulkan 1.0/1.1 ICDs.
+	sc->compile_options_set_target_env(opts, shaderc_target_env_vulkan,
+		requiresRaytracing ? shaderc_env_version_vulkan_1_2 : shaderc_env_version_vulkan_1_0);
 	sc->compile_options_set_optimization_level(opts, shaderc_optimization_level_performance);
 	sc->compile_options_set_generate_debug_info(opts);
 
@@ -284,12 +296,12 @@ SCP_vector<uint32_t> VulkanShaderCompiler::compile(const SCP_string& filename,
 
 	if (status != shaderc_compilation_status_success) {
 		const char* errMsg = sc->result_get_error_message(result);
-		mprintf(("VulkanShaderCompiler: COMPILATION FAILED for %s (flags=0x%x):\n%s\n",
+		nprintf(("vulkan", "VulkanShaderCompiler: COMPILATION FAILED for %s (flags=0x%x):\n%s\n",
 		         filename.c_str(), flags, errMsg ? errMsg : "(no error message)"));
 	} else {
 		if (sc->result_get_num_warnings(result) > 0) {
 			const char* errMsg = sc->result_get_error_message(result);
-			mprintf(("VulkanShaderCompiler: Warnings for %s:\n%s\n",
+			nprintf(("vulkan", "VulkanShaderCompiler: Warnings for %s:\n%s\n",
 			         filename.c_str(), errMsg ? errMsg : ""));
 		}
 
@@ -300,7 +312,7 @@ SCP_vector<uint32_t> VulkanShaderCompiler::compile(const SCP_string& filename,
 			spirv.resize(byteLen / 4);
 			std::memcpy(spirv.data(), bytes, byteLen);
 
-			mprintf(("VulkanShaderCompiler: Compiled %s -> %zu bytes SPIR-V\n",
+			nprintf(("vulkan", "VulkanShaderCompiler: Compiled %s -> %zu bytes SPIR-V\n",
 			         filename.c_str(), byteLen));
 
 			// Save to disk cache

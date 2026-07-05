@@ -63,6 +63,17 @@ public:
 	void queueSampler(vk::Sampler sampler);
 
 	/**
+	 * @brief Queue an acceleration structure for deferred destruction
+	 *
+	 * Needed for the raytraced-shadow TLAS: it's rebuilt (and its backing buffer
+	 * resized) whenever the shadow-caster instance count grows, but the old
+	 * handle may still be referenced by a descriptor set bound earlier in the
+	 * very command buffer currently being recorded (not just prior in-flight
+	 * frames) -- destroying it synchronously invalidates that command buffer.
+	 */
+	void queueAccelerationStructure(vk::AccelerationStructureKHR accelStruct);
+
+	/**
 	 * @brief Process pending destructions - call once per frame
 	 *
 	 * Decrements frame counters and destroys resources that have waited
@@ -94,7 +105,8 @@ private:
 		vk::ImageView,
 		vk::Framebuffer,
 		vk::RenderPass,
-		vk::Sampler
+		vk::Sampler,
+		vk::AccelerationStructureKHR
 	>;
 
 	struct PendingDestruction {

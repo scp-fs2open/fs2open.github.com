@@ -8,7 +8,10 @@
 // so we supply them via VMA_DYNAMIC_VULKAN_FUNCTIONS.
 #define VMA_STATIC_VULKAN_FUNCTIONS 0
 #define VMA_DYNAMIC_VULKAN_FUNCTIONS 0
-#define VMA_VULKAN_VERSION 1001000  // Vulkan 1.1
+// Must stay in lockstep with VulkanApiVersion below: VMA asserts at allocator
+// creation if VmaAllocatorCreateInfo::vulkanApiVersion exceeds what this
+// compile-time macro enabled.
+#define VMA_VULKAN_VERSION 1002000  // Vulkan 1.2
 
 #include <vk_mem_alloc.h>
 
@@ -17,6 +20,15 @@ namespace graphics::vulkan {
 
 // Forward declarations
 class VulkanRenderer;
+
+// Vulkan API version requested at instance, device, and VMA allocator
+// creation. This is a declared target passed to vkCreateInstance's
+// VkApplicationInfo, not a hard requirement -- the actual minimum supported
+// version is enforced separately (see MinVulkanVersion in
+// VulkanRendererSetup.cpp, which stays at 1.1 so 1.1-only drivers can still
+// start the renderer). Bumping this value requires updating VMA_VULKAN_VERSION
+// above in lockstep, or VMA's internal assert will fire.
+constexpr uint32_t VulkanApiVersion = VK_API_VERSION_1_2;
 
 /**
  * @brief Memory allocation info returned when allocating GPU memory.
@@ -62,9 +74,15 @@ public:
 	 * @brief Initialize the memory manager
 	 * @param physicalDevice The physical device to query memory properties from
 	 * @param device The logical device for allocations
+	 * @param enableBufferDeviceAddress If true, creates the VMA allocator with
+	 *        VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT, required for any
+	 *        buffer created with VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT
+	 *        (raytraced shadow geometry buffers). Only valid if the device was
+	 *        created with the VK_KHR_buffer_device_address feature enabled.
 	 * @return true on success
 	 */
-	bool init(vk::Instance instance, vk::PhysicalDevice physicalDevice, vk::Device device);
+	bool init(vk::Instance instance, vk::PhysicalDevice physicalDevice, vk::Device device,
+		bool enableBufferDeviceAddress = false);
 
 	/**
 	 * @brief Shutdown and free all allocations

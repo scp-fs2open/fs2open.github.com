@@ -24,6 +24,7 @@
 #include "graphics/material.h"
 #include "graphics/post_processing.h"
 #include "graphics/grinternal.h"
+#include "graphics/shadows.h"
 #include "lighting/lighting.h"
 #include "pngutils/pngutils.h"
 
@@ -53,6 +54,43 @@ void vulkan_setup_frame()
 void vulkan_flip()
 {
 	renderer_instance->flip();
+}
+
+void vulkan_model_loaded(int pm_id)
+{
+	if (auto* rt = getRaytracingManager()) {
+		rt->onModelLoaded(pm_id);
+	}
+}
+
+void vulkan_model_unloaded(int pm_id)
+{
+	if (auto* rt = getRaytracingManager()) {
+		rt->onModelUnloaded(pm_id);
+	}
+}
+
+void vulkan_build_shadow_tlas()
+{
+	if (auto* rt = getRaytracingManager()) {
+		// vkCmdBuildAccelerationStructuresKHR (and the memory barrier that follows
+		// it in buildTlas()) must be recorded outside any render pass instance.
+		// This is called once per frame, before the shadow map render pass begins,
+		// while the previous render pass (G-buffer/scene) is typically still
+		// active -- end it here. vulkan_shadow_map_start()'s first_pass branch
+		// skips its own endRenderPass() call when it finds none active.
+		auto* stateTracker = getStateTracker();
+		if (stateTracker->getCurrentRenderPass()) {
+			stateTracker->getCommandBuffer().endRenderPass();
+			stateTracker->setRenderPass(vk::RenderPass());
+		}
+
+		rt->buildTlas();
+		// Refresh the Global set's live TLAS fallback so every writeSet(Global)
+		// this frame picks up the freshly built TLAS automatically -- see
+		// DescriptorFallbacks::shadowTlas.
+		getDescriptorManager()->setCurrentShadowTlas(rt->getTlasForShaderBinding());
+	}
 }
 
 bool vulkan_is_capable(gr_capability capability)
@@ -95,10 +133,16 @@ bool vulkan_is_capable(gr_capability capability)
 		return true;
 	case gr_capability::CAPABILITY_INSTANCED_RENDERING:
 		return true;
+	case gr_capability::CAPABILITY_FAST_SHADOWS:
+		// Vulkan always writes gl_Layer directly from the vertex shader (see
+		// shadow_map-v.sdr), so it never needs the geometry-shader cascade fallback.
+		return getRendererInstance()->supportsShaderViewportLayerOutput();
 	case gr_capability::CAPABILITY_QUERIES_REUSABLE:
 		// Vulkan queries require explicit reset between read and write.
 		// The backend manages this lifecycle internally via deleteQueryObject.
 		return false;
+	case gr_capability::CAPABILITY_RAYTRACED_SHADOWS:
+		return getRendererInstance()->supportsRaytracedShadows();
 	}
 	return false;
 }
@@ -378,6 +422,10 @@ void init_function_pointers()
 	gr_screen.gf_create_buffer = vulkan_create_buffer;
 	gr_screen.gf_delete_buffer = vulkan_delete_buffer;
 
+	gr_screen.gf_model_loaded = vulkan_model_loaded;
+	gr_screen.gf_model_unloaded = vulkan_model_unloaded;
+	gr_screen.gf_build_shadow_tlas = vulkan_build_shadow_tlas;
+
 	gr_screen.gf_update_transform_buffer = vulkan_update_transform_buffer;
 	gr_screen.gf_update_buffer_data = vulkan_update_buffer_data;
 	gr_screen.gf_update_buffer_data_offset = vulkan_update_buffer_data_offset;
@@ -430,6 +478,7 @@ void init_function_pointers()
 	gr_screen.gf_get_bitmap_from_texture = vulkan_get_bitmap_from_texture;
 
 	gr_screen.gf_render_model = vulkan_render_model;
+	gr_screen.gf_render_shadow_draw = vulkan_render_shadow_draw;
 	gr_screen.gf_render_primitives = vulkan_render_primitives;
 	gr_screen.gf_render_primitives_particle = vulkan_render_primitives_particle;
 	gr_screen.gf_render_primitives_distortion = vulkan_render_primitives_distortion;
@@ -482,6 +531,15 @@ bool initialize(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 		return false;
 	}
 
+	// Size the CPU-side shadow cascade bookkeeping (Shadow_frustums/Shadow_proj_matrix/
+	// Shadow_cascade_distances) and create the cascade params UBO up front, matching
+	// OpenGL's opengl_tnl_init(). This must happen before any frame is rendered --
+	// shadows_start_render() indexes these vectors unconditionally, so it can't wait
+	// for the shadow map framebuffer's lazy first-use init (see vulkan_shadow_map_start).
+	if (Shadow_quality != ShadowQuality::Disabled) {
+		shadow_cascade_params_init();
+	}
+
 	// Initialize ImGui SDL2 backend for input handling.
 	// The Vulkan rendering backend (ImGui_ImplVulkan) is initialized
 	// inside VulkanRenderer::initImGui() after all Vulkan objects are ready.
@@ -502,7 +560,7 @@ bool initialize(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	// the first flip would hit a null command buffer. Matches OpenGL init behavior.
 	gr_setup_frame();
 
-	mprintf(("Vulkan: Initialization complete\n"));
+	nprintf(("vulkan", "Vulkan: Initialization complete\n"));
 	return true;
 }
 

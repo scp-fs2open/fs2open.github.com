@@ -177,6 +177,17 @@ public:
 	                 vertex_buffer* bufferp, size_t texi);
 
 	/**
+	 * @brief Render one cascaded-shadow-map draw call (shadow_render_list)
+	 *
+	 * Depth-only, instanced once per active shadow cascade (Shadow_cascade_count),
+	 * routed via gl_InstanceIndex -> gl_Layer in the vertex shader. Unlike
+	 * renderModel(), this does not go through a model_material - the shadow
+	 * pipeline/state is fixed and the only per-draw data is the shadowMapData UBO.
+	 */
+	void renderShadowDraw(gr_buffer_handle ubo_handle, size_t ubo_offset, size_t ubo_size,
+	                      vertex_buffer* buffer, indexed_vertex_source* vert_src, size_t texi) const;
+
+	/**
 	 * @brief Draw a unit sphere with the given material
 	 * Used for debug visualization and deferred light volumes
 	 */
@@ -437,6 +448,8 @@ void vulkan_render_shield_impact(shield_material* material_info, primitive_type 
 	vertex_layout* layout, gr_buffer_handle buffer_handle, int n_verts);
 void vulkan_render_model(model_material* material_info, indexed_vertex_source* vert_source,
 	vertex_buffer* bufferp, size_t texi);
+void vulkan_render_shadow_draw(gr_buffer_handle ubo_handle, size_t ubo_offset, size_t ubo_size,
+	vertex_buffer* buffer, indexed_vertex_source* vert_src, size_t texi);
 void vulkan_render_primitives(material* material_info, primitive_type prim_type,
 	vertex_layout* layout, int offset, int n_verts, gr_buffer_handle buffer_handle, size_t buffer_offset);
 void vulkan_render_primitives_particle(particle_material* material_info,

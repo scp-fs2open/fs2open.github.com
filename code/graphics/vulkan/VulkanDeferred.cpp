@@ -684,9 +684,10 @@ namespace graphics::vulkan {
 namespace {
 bool Glowpoint_override_save = false;
 bool Restore_swapchain_after_shadow_pass = false;
+bool Shadow_pass_active = false;
 } // anonymous namespace
 
-void vulkan_shadow_map_start(matrix4* shadow_view_matrix, const matrix* light_matrix, vec3d* eye_pos)
+void vulkan_shadow_map_start(matrix4* shadow_view_matrix, const matrix* light_matrix, vec3d* eye_pos, bool first_pass)
 {
 	if (Shadow_quality == ShadowQuality::Disabled || !getRendererInstance()->supportsShaderViewportLayerOutput()) {
 		return;
@@ -697,7 +698,12 @@ void vulkan_shadow_map_start(matrix4* shadow_view_matrix, const matrix* light_ma
 		return;
 	}
 
-	// Lazy-init shadow resources
+	// Lazy-init shadow resources (framebuffer/render pass). The CPU-side cascade
+	// bookkeeping (Shadow_frustums/Shadow_proj_matrix/Shadow_cascade_distances)
+	// is sized eagerly at Vulkan startup via shadow_cascade_params_init() (see
+	// graphics::vulkan::initialize() in gr_vulkan.cpp) -- shadows_start_render()
+	// indexes those vectors before this function is ever called, so that can't
+	// be deferred to first use here.
 	if (!pp->shadow().isInitialized()) {
 		if (!pp->initShadowPass()) {
 			return;
@@ -707,46 +713,56 @@ void vulkan_shadow_map_start(matrix4* shadow_view_matrix, const matrix* light_ma
 	auto* stateTracker = getStateTracker();
 	vk::CommandBuffer cmd = stateTracker->getCommandBuffer();
 
-	// End the current render pass but keep track if we need to resume the swapchain render pass or the scene render pass afterwards.
-	Restore_swapchain_after_shadow_pass = !getRendererInstance()->isSceneRendering();
-	cmd.endRenderPass();
+	if (first_pass) {
+		// End the current render pass but keep track if we need to resume the swapchain render pass or the scene render pass afterwards.
+		Restore_swapchain_after_shadow_pass = !getRendererInstance()->isSceneRendering();
 
-	// Shadow render pass is always non-MSAA (1x sample count)
-	stateTracker->setCurrentSampleCount(vk::SampleCountFlagBits::e1);
+		// vulkan_build_shadow_tlas() (called just before this, every frame shadows
+		// are enabled) already ends whatever render pass was active -- TLAS builds
+		// are illegal inside a render pass instance -- and nulls out the tracked
+		// render pass. Only end it here if that didn't already happen.
+		if (stateTracker->getCurrentRenderPass()) {
+			cmd.endRenderPass();
+		}
 
-	// Begin shadow render pass (eClear for both color and depth)
-	{
-		int shadowSize = pp->shadow().textureSize();
-		vk::RenderPassBeginInfo rpBegin;
-		rpBegin.renderPass = pp->shadow().renderPass();
-		rpBegin.framebuffer = pp->shadow().framebuffer();
-		rpBegin.renderArea.offset = vk::Offset2D(0, 0);
-		rpBegin.renderArea.extent = vk::Extent2D(static_cast<uint32_t>(shadowSize), static_cast<uint32_t>(shadowSize));
+		// Shadow render pass is always non-MSAA (1x sample count)
+		stateTracker->setCurrentSampleCount(vk::SampleCountFlagBits::e1);
 
-		std::array<vk::ClearValue, 2> clearValues;
-		clearValues[0].color.setFloat32({0.0f, 0.0f, 0.0f, 1.0f});
-		clearValues[1].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
-		rpBegin.clearValueCount = static_cast<uint32_t>(clearValues.size());
-		rpBegin.pClearValues = clearValues.data();
+		// Begin shadow render pass (eClear, depth-only)
+		{
+			int shadowSize = pp->shadow().textureSize();
+			vk::RenderPassBeginInfo rpBegin;
+			rpBegin.renderPass = pp->shadow().renderPass();
+			rpBegin.framebuffer = pp->shadow().framebuffer();
+			rpBegin.renderArea.offset = vk::Offset2D(0, 0);
+			rpBegin.renderArea.extent = vk::Extent2D(static_cast<uint32_t>(shadowSize), static_cast<uint32_t>(shadowSize));
 
-		cmd.beginRenderPass(rpBegin, vk::SubpassContents::eInline);
-		stateTracker->setRenderPass(pp->shadow().renderPass(), 0);
-		stateTracker->setColorAttachmentCount(1);
+			vk::ClearValue clearValue;
+			clearValue.depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+			rpBegin.clearValueCount = 1;
+			rpBegin.pClearValues = &clearValue;
+
+			cmd.beginRenderPass(rpBegin, vk::SubpassContents::eInline);
+			stateTracker->setRenderPass(pp->shadow().renderPass(), 0);
+			stateTracker->setColorAttachmentCount(0);
+		}
+
+		// Set viewport and scissor to shadow texture size
+		{
+			const int shadowSize = pp->shadow().textureSize();
+
+			stateTracker->setViewport(0.0f, 0.0f, static_cast<float>(shadowSize), static_cast<float>(shadowSize), 0.0f, 1.0f);
+			stateTracker->setScissor(0, 0, static_cast<uint32_t>(shadowSize), static_cast<uint32_t>(shadowSize));
+		}
+
+		Shadow_pass_active = true;
+		Glowpoint_override_save = Glowpoint_override;
+		Glowpoint_override = true;
+
+		gr_htl_projection_matrix_set = true;
+	} else {
+		gr_end_view_matrix();
 	}
-
-	// Set viewport and scissor to shadow texture size
-	{
-		const int shadowSize = pp->shadow().textureSize();
-
-		stateTracker->setViewport(0.0f, 0.0f, static_cast<float>(shadowSize), static_cast<float>(shadowSize), 0.0f, 1.0f);
-		stateTracker->setScissor(0, 0, static_cast<uint32_t>(shadowSize), static_cast<uint32_t>(shadowSize));
-	}
-
-	Rendering_to_shadow_map = true;
-	Glowpoint_override_save = Glowpoint_override;
-	Glowpoint_override = true;
-
-	gr_htl_projection_matrix_set = true;
 
 	gr_set_view_matrix(eye_pos, light_matrix);
 
@@ -755,7 +771,7 @@ void vulkan_shadow_map_start(matrix4* shadow_view_matrix, const matrix* light_ma
 
 void vulkan_shadow_map_end()
 {
-	if (!Rendering_to_shadow_map) {
+	if (!Shadow_pass_active) {
 		return;
 	}
 
@@ -765,7 +781,7 @@ void vulkan_shadow_map_end()
 	vk::CommandBuffer cmd = stateTracker->getCommandBuffer();
 
 	gr_end_view_matrix();
-	Rendering_to_shadow_map = false;
+	Shadow_pass_active = false;
 
 	gr_zbuffer_set(ZBUFFER_TYPE_FULL);
 
@@ -992,7 +1008,7 @@ void vulkan_render_decals(decal_material* material_info,
 	// Get or create pipeline
 	vk::Pipeline pipeline = pipelineManager->getPipeline(config, *layout);
 	if (!pipeline) {
-		mprintf(("vulkan_render_decals: Failed to get pipeline!\n"));
+		nprintf(("vulkan", "vulkan_render_decals: Failed to get pipeline!\n"));
 		return;
 	}
 
@@ -1071,7 +1087,7 @@ void vulkan_render_decals(decal_material* material_info,
 	vk::Buffer instBuf = bufferManager->getVkBuffer(instance_buffer);
 
 	if (!boxVBO || !boxIBO || !instBuf) {
-		mprintf(("vulkan_render_decals: Missing buffer(s)!\n"));
+		nprintf(("vulkan", "vulkan_render_decals: Missing buffer(s)!\n"));
 		return;
 	}
 

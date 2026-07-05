@@ -89,7 +89,10 @@ void opengl_post_pass_tonemap()
 		data->x0 = ppc.x0;
 		data->x1 = ppc.x1;
 		data->y0 = ppc.y0; 
-		data->exposure = ltp::current_exposure(); });
+		data->exposure = ltp::current_exposure();
+		data->hdr_mode = 0; // OpenGL renderer does not support HDR10 output
+		data->hdr_paperwhite_nits = 0.0f;
+		data->hdr_peak_nits = 0.0f; });
 
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Scene_ldr_texture, 0);
 
@@ -631,9 +634,8 @@ void gr_opengl_post_process_end()
 //	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
 	GL_state.Texture.SetTarget(GL_TEXTURE_2D_ARRAY);
 //	GL_state.Texture.Enable(Shadow_map_depth_texture);
-	extern GLuint Shadow_map_texture;
 	extern GLuint Post_shadow_texture_id;
-	GL_state.Texture.Enable(Shadow_map_texture);
+	GL_state.Texture.Enable(Shadow_map_depth_texture);
 	glUniform1iARB( opengl_shader_get_uniform("shadow_map"), 0);
 	glUniform1iARB( opengl_shader_get_uniform("index"), 0);
 	//opengl_draw_textured_quad(-1.0f, -1.0f, 0.0f, 0.0f, -0.5f, -0.5f, Scene_texture_u_scale, Scene_texture_u_scale);

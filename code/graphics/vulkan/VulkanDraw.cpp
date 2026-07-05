@@ -111,7 +111,7 @@ void vulkan_update_transform_buffer(void* data, size_t size)
 		try {
 			newBuffer = device.createBuffer(bufferInfo);
 		} catch (const vk::SystemError& e) {
-			mprintf(("vulkan_update_transform_buffer: Failed to create buffer: %s\n", e.what()));
+			nprintf(("vulkan", "vulkan_update_transform_buffer: Failed to create buffer: %s\n", e.what()));
 			return;
 		}
 
@@ -173,7 +173,7 @@ bool VulkanDrawManager::init(vk::Device device)
 	initSphereBuffers();
 
 	m_initialized = true;
-	mprintf(("VulkanDrawManager: Initialized\n"));
+	nprintf(("vulkan", "VulkanDrawManager: Initialized\n"));
 	return true;
 }
 
@@ -202,7 +202,7 @@ void VulkanDrawManager::shutdown()
 	shutdownSphereBuffers();
 
 	m_initialized = false;
-	mprintf(("VulkanDrawManager: Shutdown complete\n"));
+	nprintf(("vulkan", "VulkanDrawManager: Shutdown complete\n"));
 }
 
 void VulkanDrawManager::clear()
@@ -664,16 +664,159 @@ void VulkanDrawManager::renderModel(model_material* material_info, indexed_verte
 	// Flush any dirty dynamic state before draw
 	stateTracker->applyDynamicState();
 
-	// Shadow map rendering uses MAX_SHADOW_CASCADES instances (one per cascade), routed via gl_InstanceIndex → gl_Layer
-	uint32_t instanceCount = Rendering_to_shadow_map ? MAX_SHADOW_CASCADES : 1;
-
 	auto cmdBuffer = stateTracker->getCommandBuffer();
 	cmdBuffer.drawIndexed(
 		static_cast<uint32_t>(datap->n_verts),  // index count
-		instanceCount,                           // instance count
+		1,                                       // instance count
 		firstIndex,                              // first index
 		baseVertex,                              // vertex offset
 		0                                        // first instance
+	);
+}
+
+void VulkanDrawManager::renderShadowDraw(gr_buffer_handle ubo_handle, size_t ubo_offset, size_t ubo_size,
+                                          vertex_buffer* buffer, indexed_vertex_source* vert_src, size_t texi) const
+{
+	if (!buffer || !vert_src) {
+		return;
+	}
+
+	if (texi >= buffer->tex_buf.size()) {
+		return;
+	}
+
+	buffer_data* datap = &buffer->tex_buf[texi];
+	if (datap->n_verts == 0) {
+		return;
+	}
+
+	auto* stateTracker = getStateTracker();
+	auto* pipelineManager = getPipelineManager();
+	auto* descManager = getDescriptorManager();
+	auto* bufferManager = getBufferManager();
+
+	int shaderHandle = gr_maybe_create_shader(SDR_TYPE_SHADOW_MAP_GEN,
+		gr_is_capable(gr_capability::CAPABILITY_FAST_SHADOWS) ? 0 : SDR_FLAG_SHADOW_FALLBACK);
+	auto* shaderManager = getShaderManager();
+	const VulkanShaderModule* shaderModule = shaderHandle >= 0 ? shaderManager->getShaderByHandle(shaderHandle) : nullptr;
+	if (!shaderModule) {
+		return;
+	}
+
+	PipelineConfig config;
+	config.shaderType = shaderModule->type;
+	config.shaderFlags = shaderModule->flags;
+	config.primitiveType = PRIM_TYPE_TRIS;
+	config.depthMode = ZBUFFER_TYPE_FULL;
+	config.depthWriteEnabled = true;
+	config.cullEnabled = true;
+	config.frontFaceCW = true;
+	config.blendMode = ALPHA_BLEND_NONE;
+	config.colorWriteMask = {false, false, false, false};
+	config.depthBiasEnabled = true;
+	config.renderPass = stateTracker->getCurrentRenderPass();
+	config.colorAttachmentCount = stateTracker->getColorAttachmentCount();
+	config.sampleCount = stateTracker->getCurrentSampleCount();
+
+	if (!config.renderPass) {
+		return;
+	}
+
+	vk::Pipeline pipeline = pipelineManager->getPipeline(config, buffer->layout);
+	if (!pipeline) {
+		nprintf(("vulkan", "VulkanDrawManager::renderShadowDraw: Failed to get pipeline!\n"));
+		return;
+	}
+
+	stateTracker->bindPipeline(pipeline, pipelineManager->getPipelineLayout());
+	stateTracker->setDepthBias(-1024.0f, 0.0f);
+
+	// Bind descriptor sets: shadowMapData (per-draw) and shadowCascadeParams
+	// (bound separately, per-frame, via shadow_cascade_params_bind) both live in
+	// the fixed 3-tier layout alongside the batched-submodel transform buffer;
+	// no material textures are needed for depth-only rendering.
+	{
+		DescriptorWriter writer;
+		writer.reset(descManager->getDevice(), descManager->getFallbacks());
+
+		vk::DescriptorSet globalSet = descManager->allocateFrameSet(DescriptorSetIndex::Global);
+		Verify(globalSet);
+		writer.writeSet(globalSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Global));
+		{
+			const auto& pending = getPendingUniformBinding(static_cast<size_t>(uniform_block_type::ShadowCascadeParams));
+			if (pending.valid) {
+				vk::Buffer buf = bufferManager->getVkBuffer(pending.bufferHandle);
+				if (buf) {
+					writer.setBuffer(GlobalBinding::ShadowCascadeParams, {buf, pending.offset, pending.size});
+				}
+			}
+		}
+
+		vk::DescriptorSet materialSet = descManager->allocateFrameSet(DescriptorSetIndex::Material);
+		Verify(materialSet);
+		writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
+		{
+			vk::Buffer buf = bufferManager->getVkBuffer(ubo_handle);
+			if (buf) {
+				writer.setBuffer(MaterialBinding::ShadowMapData,
+					{buf, static_cast<vk::DeviceSize>(ubo_offset), static_cast<vk::DeviceSize>(ubo_size)});
+			}
+		}
+		{
+			uint32_t tfIdx = descManager->getCurrentFrame();
+			auto& tf = g_transformBuffers[tfIdx];
+			if (tf.buffer && tf.lastUploadSize > 0) {
+				writer.setBuffer(MaterialBinding::TransformSSBO, {tf.buffer,
+				                 static_cast<vk::DeviceSize>(tf.lastUploadOffset),
+				                 static_cast<vk::DeviceSize>(tf.lastUploadSize)});
+			}
+		}
+
+		vk::DescriptorSet perDrawSet = descManager->allocateFrameSet(DescriptorSetIndex::PerDraw);
+		Verify(perDrawSet);
+		writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
+		writer.flush();
+
+		stateTracker->bindDescriptorSet(DescriptorSetIndex::Global, globalSet);
+		stateTracker->bindDescriptorSet(DescriptorSetIndex::Material, materialSet);
+		stateTracker->bindDescriptorSet(DescriptorSetIndex::PerDraw, perDrawSet);
+	}
+
+	vk::Buffer vbuffer = bufferManager->getVkBuffer(vert_src->Vbuffer_handle);
+	vk::Buffer ibuffer = bufferManager->getVkBuffer(vert_src->Ibuffer_handle);
+	if (!vbuffer || !ibuffer) {
+		return;
+	}
+
+	stateTracker->bindVertexBuffer(0, vbuffer, 0);
+
+	vk::IndexType indexType = (datap->flags & VB_FLAG_LARGE_INDEX) ?
+	                          vk::IndexType::eUint32 : vk::IndexType::eUint16;
+	stateTracker->bindIndexBuffer(ibuffer, static_cast<vk::DeviceSize>(vert_src->Index_offset), indexType);
+
+	auto baseVertex = static_cast<int32_t>(vert_src->Base_vertex_offset + buffer->vertex_num_offset);
+
+	uint32_t firstIndex;
+	if (indexType == vk::IndexType::eUint32) {
+		firstIndex = static_cast<uint32_t>(datap->index_offset / sizeof(uint32_t));
+	} else {
+		firstIndex = static_cast<uint32_t>(datap->index_offset / sizeof(uint16_t));
+	}
+
+	stateTracker->applyDynamicState();
+
+	// One instance per active shadow cascade, routed via gl_InstanceIndex → gl_Layer
+	// in the vertex shader (CAPABILITY_FAST_SHADOWS path -- Vulkan always writes
+	// gl_Layer directly, no geometry-shader fallback needed).
+	uint32_t instanceCount = static_cast<uint32_t>(std::max(Shadow_cascade_count, 1));
+
+	auto cmdBuffer = stateTracker->getCommandBuffer();
+	cmdBuffer.drawIndexed(
+		static_cast<uint32_t>(datap->n_verts),
+		instanceCount,
+		firstIndex,
+		baseVertex,
+		0
 	);
 }
 
@@ -795,7 +938,7 @@ void VulkanDrawManager::printFrameStats()
 	bool shouldPrint = (m_frameStatsFrameNum < 200) || (m_frameStatsFrameNum % 60 == 0);
 
 	if (shouldPrint) {
-		mprintf(("FRAME %d STATS: draws=%d indexed=%d verts=%d idxs=%d | applyMat=%d/%d fails | noPipeline=%d sdrNeg1=%d\n",
+		nprintf(("vulkanframe", "FRAME %d STATS: draws=%d indexed=%d verts=%d idxs=%d | applyMat=%d/%d fails | noPipeline=%d sdrNeg1=%d\n",
 			m_frameStatsFrameNum,
 			m_frameStats.drawCalls,
 			m_frameStats.drawIndexedCalls,
@@ -805,7 +948,7 @@ void VulkanDrawManager::printFrameStats()
 			m_frameStats.applyMaterialCalls,
 			m_frameStats.noPipelineSkips,
 			m_frameStats.shaderHandleNeg1));
-		mprintf(("  CALLS: prim=%d batch=%d model=%d particle=%d nanovg=%d rocket=%d movie=%d\n",
+		nprintf(("vulkanframe", "  CALLS: prim=%d batch=%d model=%d particle=%d nanovg=%d rocket=%d movie=%d\n",
 			m_frameStats.renderPrimitiveCalls,
 			m_frameStats.renderBatchedCalls,
 			m_frameStats.renderModelCalls,
@@ -851,7 +994,7 @@ PipelineConfig VulkanDrawManager::buildPipelineConfig(material* mat, primitive_t
 
 	// Front face winding: match OpenGL which defaults to CCW and only switches to CW
 	// for model rendering (opengl_tnl_set_model_material sets GL_CW).
-	config.frontFaceCW = (config.shaderType == SDR_TYPE_MODEL && !(config.shaderFlags & MODEL_SDR_FLAG_SHADOW_MAP));
+	config.frontFaceCW = (config.shaderType == SDR_TYPE_MODEL);
 
 	// Depth write
 	config.depthWriteEnabled = (config.depthMode == ZBUFFER_TYPE_FULL ||
@@ -1027,7 +1170,7 @@ bool VulkanDrawManager::bindMaterialTextures(material* mat, DescriptorWriter* wr
 				texSlot = texManager->getTextureSlot(textureHandle);
 
 				if (texLogCount < 20) {
-					mprintf(("bindMaterialTextures: loaded tex %d (type=%d bpp=%d lockFlags=0x%x bmType=%d), slot=%p\n",
+					nprintf(("vulkan", "bindMaterialTextures: loaded tex %d (type=%d bpp=%d lockFlags=0x%x bmType=%d), slot=%p\n",
 						textureHandle, bitmapType, bpp, lockFlags, static_cast<int>(bm_get_type(textureHandle)), texSlot));
 					texLogCount++;
 				}
@@ -1038,7 +1181,7 @@ bool VulkanDrawManager::bindMaterialTextures(material* mat, DescriptorWriter* wr
 			textureInfos[slot].imageView = texSlot->imageView;
 		} else {
 			if (texLogCount < 20) {
-				mprintf(("bindMaterialTextures: slot %u handle %d FAILED to load\n",
+				nprintf(("vulkan", "bindMaterialTextures: slot %u handle %d FAILED to load\n",
 					slot, textureHandle));
 				texLogCount++;
 			}
@@ -1093,7 +1236,7 @@ bool VulkanDrawManager::applyMaterial(material* mat, primitive_type prim_type, v
 	// Check if we have a valid render pass
 	if (!config.renderPass) {
 		m_frameStats.applyMaterialFailures++;
-		mprintf(("VulkanDrawManager: applyMaterial FAIL - no render pass (shaderType=%d)\n",
+		nprintf(("vulkan", "VulkanDrawManager: applyMaterial FAIL - no render pass (shaderType=%d)\n",
 			static_cast<int>(config.shaderType)));
 		return false;
 	}
@@ -1102,7 +1245,7 @@ bool VulkanDrawManager::applyMaterial(material* mat, primitive_type prim_type, v
 	vk::Pipeline pipeline = pipelineManager->getPipeline(config, *layout);
 	if (!pipeline) {
 		m_frameStats.applyMaterialFailures++;
-		mprintf(("VulkanDrawManager: applyMaterial FAIL - no pipeline (shaderType=%d handle=%d)\n",
+		nprintf(("vulkan", "VulkanDrawManager: applyMaterial FAIL - no pipeline (shaderType=%d handle=%d)\n",
 			static_cast<int>(config.shaderType), mat->get_shader_handle()));
 		return false;
 	}
@@ -1312,7 +1455,7 @@ void VulkanDrawManager::initSphereBuffers()
 
 	m_sphereVertexLayout.add_vertex_component(vertex_format_data::POSITION3, sizeof(float) * 3, 0);
 
-	mprintf(("VulkanDrawManager: Sphere mesh created (%u vertices, %u indices)\n",
+	nprintf(("vulkan", "VulkanDrawManager: Sphere mesh created (%u vertices, %u indices)\n",
 		mesh.vertex_count, mesh.index_count));
 }
 
@@ -1667,6 +1810,13 @@ void vulkan_render_model(model_material* material_info,
 	drawManager->renderModel(material_info, vert_source, bufferp, texi);
 }
 
+void vulkan_render_shadow_draw(gr_buffer_handle ubo_handle, size_t ubo_offset, size_t ubo_size,
+                               vertex_buffer* buffer, indexed_vertex_source* vert_src, size_t texi)
+{
+	auto* drawManager = getDrawManager();
+	drawManager->renderShadowDraw(ubo_handle, ubo_offset, ubo_size, buffer, vert_src, texi);
+}
+
 void vulkan_render_primitives(material* material_info,
 	primitive_type prim_type,
 	vertex_layout* layout,
@@ -1943,7 +2093,7 @@ void vulkan_calculate_irrmap()
 	vertex_layout emptyLayout;
 	vk::Pipeline pipeline = pipelineManager->getPipeline(config, emptyLayout);
 	if (!pipeline) {
-		mprintf(("vulkan_calculate_irrmap: Failed to get pipeline!\n"));
+		nprintf(("vulkan", "vulkan_calculate_irrmap: Failed to get pipeline!\n"));
 		return;
 	}
 
@@ -1967,7 +2117,7 @@ void vulkan_calculate_irrmap()
 	try {
 		faceUBO = device.createBuffer(uboBufInfo);
 	} catch (const vk::SystemError& e) {
-		mprintf(("vulkan_calculate_irrmap: Failed to create face UBO: %s\n", e.what()));
+		nprintf(("vulkan", "vulkan_calculate_irrmap: Failed to create face UBO: %s\n", e.what()));
 		return;
 	}
 
@@ -2069,7 +2219,7 @@ void vulkan_calculate_irrmap()
 	// Resume the swap chain pass (irrmap is always called before scene rendering begins)
 	renderer->resumeSwapChainPass();
 
-	mprintf(("vulkan_calculate_irrmap: Generated irradiance cubemap (%ux%u)\n", irrTs->width, irrTs->height));
+	nprintf(("vulkan", "vulkan_calculate_irrmap: Generated irradiance cubemap (%ux%u)\n", irrTs->width, irrTs->height));
 }
 
 } // namespace graphics::vulkan

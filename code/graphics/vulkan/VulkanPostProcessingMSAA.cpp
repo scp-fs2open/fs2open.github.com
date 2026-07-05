@@ -58,7 +58,7 @@ bool VulkanDeferredGBuffer::initMsaa()
 	for (auto& t : targets) {
 		if (!m_ctx->createImage(w, h, t.format, msaaUsage, vk::ImageAspectFlagBits::eColor,
 		                 t.target->image, t.target->view, t.target->allocation, msaaSamples)) {
-			mprintf(("VulkanPostProcessor: Failed to create %s image!\n", t.name));
+			nprintf(("vulkan", "VulkanPostProcessor: Failed to create %s image!\n", t.name));
 			shutdownMsaa();
 			return false;
 		}
@@ -84,13 +84,13 @@ bool VulkanDeferredGBuffer::initMsaa()
 		try {
 			m_msaaDepthImage = m_ctx->device.createImage(imageInfo);
 		} catch (const vk::SystemError& e) {
-			mprintf(("VulkanPostProcessor: Failed to create MSAA depth image: %s\n", e.what()));
+			nprintf(("vulkan", "VulkanPostProcessor: Failed to create MSAA depth image: %s\n", e.what()));
 			shutdownMsaa();
 			return false;
 		}
 
 		if (!m_ctx->memoryManager->allocateImageMemory(m_msaaDepthImage, MemoryUsage::GpuOnly, m_msaaDepthAlloc)) {
-			mprintf(("VulkanPostProcessor: Failed to allocate MSAA depth memory!\n"));
+			nprintf(("vulkan", "VulkanPostProcessor: Failed to allocate MSAA depth memory!\n"));
 			m_ctx->device.destroyImage(m_msaaDepthImage);
 			m_msaaDepthImage = nullptr;
 			shutdownMsaa();
@@ -110,7 +110,7 @@ bool VulkanDeferredGBuffer::initMsaa()
 		try {
 			m_msaaDepthView = m_ctx->device.createImageView(viewInfo);
 		} catch (const vk::SystemError& e) {
-			mprintf(("VulkanPostProcessor: Failed to create MSAA depth view: %s\n", e.what()));
+			nprintf(("vulkan", "VulkanPostProcessor: Failed to create MSAA depth view: %s\n", e.what()));
 			shutdownMsaa();
 			return false;
 		}
@@ -125,7 +125,7 @@ bool VulkanDeferredGBuffer::initMsaa()
 			vk::ImageLayout::eDepthStencilAttachmentOptimal,
 		});
 	} catch (const vk::SystemError& e) {
-		mprintf(("VulkanPostProcessor: Failed to create MSAA G-buffer render pass: %s\n", e.what()));
+		nprintf(("vulkan", "VulkanPostProcessor: Failed to create MSAA G-buffer render pass: %s\n", e.what()));
 		shutdownMsaa();
 		return false;
 	}
@@ -139,7 +139,7 @@ bool VulkanDeferredGBuffer::initMsaa()
 			vk::ImageLayout::eDepthStencilAttachmentOptimal,
 		});
 	} catch (const vk::SystemError& e) {
-		mprintf(("VulkanPostProcessor: Failed to create MSAA G-buffer load render pass: %s\n", e.what()));
+		nprintf(("vulkan", "VulkanPostProcessor: Failed to create MSAA G-buffer load render pass: %s\n", e.what()));
 		shutdownMsaa();
 		return false;
 	}
@@ -148,7 +148,7 @@ bool VulkanDeferredGBuffer::initMsaa()
 	try {
 		m_msaaGbufFramebuffer = createGbufFramebuffer(m_msaaGbufRenderPass, false, true);
 	} catch (const vk::SystemError& e) {
-		mprintf(("VulkanPostProcessor: Failed to create MSAA G-buffer framebuffer: %s\n", e.what()));
+		nprintf(("vulkan", "VulkanPostProcessor: Failed to create MSAA G-buffer framebuffer: %s\n", e.what()));
 		shutdownMsaa();
 		return false;
 	}
@@ -193,7 +193,7 @@ bool VulkanDeferredGBuffer::initMsaa()
 		try {
 			m_msaaEmissiveCopyRenderPass = m_ctx->device.createRenderPass(rpInfo);
 		} catch (const vk::SystemError& e) {
-			mprintf(("VulkanPostProcessor: Failed to create MSAA emissive copy render pass: %s\n", e.what()));
+			nprintf(("vulkan", "VulkanPostProcessor: Failed to create MSAA emissive copy render pass: %s\n", e.what()));
 			shutdownMsaa();
 			return false;
 		}
@@ -213,7 +213,7 @@ bool VulkanDeferredGBuffer::initMsaa()
 		try {
 			m_msaaEmissiveCopyFramebuffer = m_ctx->device.createFramebuffer(fbInfo);
 		} catch (const vk::SystemError& e) {
-			mprintf(("VulkanPostProcessor: Failed to create MSAA emissive copy framebuffer: %s\n", e.what()));
+			nprintf(("vulkan", "VulkanPostProcessor: Failed to create MSAA emissive copy framebuffer: %s\n", e.what()));
 			shutdownMsaa();
 			return false;
 		}
@@ -230,7 +230,7 @@ bool VulkanDeferredGBuffer::initMsaa()
 			true, // useResolveDependency
 		});
 	} catch (const vk::SystemError& e) {
-		mprintf(("VulkanPostProcessor: Failed to create MSAA resolve render pass: %s\n", e.what()));
+		nprintf(("vulkan", "VulkanPostProcessor: Failed to create MSAA resolve render pass: %s\n", e.what()));
 		shutdownMsaa();
 		return false;
 	}
@@ -239,7 +239,7 @@ bool VulkanDeferredGBuffer::initMsaa()
 	try {
 		m_msaaResolveFramebuffer = createGbufFramebuffer(m_msaaResolveRenderPass, false, false);
 	} catch (const vk::SystemError& e) {
-		mprintf(("VulkanPostProcessor: Failed to create MSAA resolve framebuffer: %s\n", e.what()));
+		nprintf(("vulkan", "VulkanPostProcessor: Failed to create MSAA resolve framebuffer: %s\n", e.what()));
 		shutdownMsaa();
 		return false;
 	}
@@ -255,13 +255,13 @@ bool VulkanDeferredGBuffer::initMsaa()
 		try {
 			m_msaaResolveUBO = m_ctx->device.createBuffer(bufInfo);
 		} catch (const vk::SystemError& e) {
-			mprintf(("VulkanPostProcessor: Failed to create MSAA resolve UBO: %s\n", e.what()));
+			nprintf(("vulkan", "VulkanPostProcessor: Failed to create MSAA resolve UBO: %s\n", e.what()));
 			shutdownMsaa();
 			return false;
 		}
 
 		if (!m_ctx->memoryManager->allocateBufferMemory(m_msaaResolveUBO, MemoryUsage::CpuToGpu, m_msaaResolveUBOAlloc)) {
-			mprintf(("VulkanPostProcessor: Failed to allocate MSAA resolve UBO memory!\n"));
+			nprintf(("vulkan", "VulkanPostProcessor: Failed to allocate MSAA resolve UBO memory!\n"));
 			m_ctx->device.destroyBuffer(m_msaaResolveUBO);
 			m_msaaResolveUBO = nullptr;
 			shutdownMsaa();
@@ -270,7 +270,7 @@ bool VulkanDeferredGBuffer::initMsaa()
 
 		m_msaaResolveUBOMapped = m_ctx->memoryManager->mapMemory(m_msaaResolveUBOAlloc);
 		if (!m_msaaResolveUBOMapped) {
-			mprintf(("VulkanPostProcessor: Failed to map MSAA resolve UBO!\n"));
+			nprintf(("vulkan", "VulkanPostProcessor: Failed to map MSAA resolve UBO!\n"));
 			shutdownMsaa();
 			return false;
 		}
@@ -296,7 +296,7 @@ bool VulkanDeferredGBuffer::initMsaa()
 	}
 
 	m_msaaInitialized = true;
-	mprintf(("VulkanPostProcessor: MSAA initialized (%ux%u, %dx samples, 5 color + depth)\n",
+	nprintf(("vulkan", "VulkanPostProcessor: MSAA initialized (%ux%u, %dx samples, 5 color + depth)\n",
 		w, h, Cmdline_msaa_enabled));
 	return true;
 }

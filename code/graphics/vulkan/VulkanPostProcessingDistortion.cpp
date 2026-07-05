@@ -22,7 +22,7 @@ bool VulkanDistortion::init(PostProcessContext& ctx)
 		                        | vk::ImageUsageFlagBits::eSampled,
 		                        vk::ImageAspectFlagBits::eColor,
 		                        m_tex[i].image, m_tex[i].view, m_tex[i].allocation)) {
-			mprintf(("VulkanDistortion: Failed to create distortion texture %zu\n", i));
+			nprintf(("vulkan", "VulkanDistortion: Failed to create distortion texture %zu\n", i));
 			return false;
 		}
 		m_tex[i].format = LDR_COLOR_FORMAT;
@@ -48,12 +48,12 @@ bool VulkanDistortion::init(PostProcessContext& ctx)
 	try {
 		m_sampler = m_ctx->device.createSampler(samplerInfo);
 	} catch (const vk::SystemError& e) {
-		mprintf(("VulkanDistortion: Failed to create distortion sampler: %s\n", e.what()));
+		nprintf(("vulkan", "VulkanDistortion: Failed to create distortion sampler: %s\n", e.what()));
 		return false;
 	}
 
 	m_initialized = true;
-	mprintf(("VulkanDistortion: Distortion textures initialized\n"));
+	nprintf(("vulkan", "VulkanDistortion: Distortion textures initialized\n"));
 	return true;
 }
 

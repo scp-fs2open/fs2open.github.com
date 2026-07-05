@@ -12,6 +12,7 @@
 #include "graphics/util/uniform_structs.h"
 #include "graphics/post_processing.h"
 #include "graphics/grinternal.h"
+#include "graphics/shadows.h"
 #include "graphics/2d.h"
 #include "lighting/lighting_profiles.h"
 #include "lighting/lighting.h"
@@ -43,7 +44,7 @@ void setPostProcessor(VulkanPostProcessor* pp)
 
 bool VulkanPostProcessor::init(vk::Device device, vk::PhysicalDevice physDevice,
                                VulkanMemoryManager* memMgr, vk::Extent2D extent,
-                               vk::Format depthFormat)
+                               vk::Format depthFormat, bool hdrActive)
 {
 	if (m_initialized) {
 		return true;
@@ -53,13 +54,16 @@ bool VulkanPostProcessor::init(vk::Device device, vk::PhysicalDevice physDevice,
 	m_ctx.memoryManager = memMgr;
 	m_ctx.sceneExtent = extent;
 	m_ctx.depthFormat = depthFormat;
+	m_ctx.hdrActive = hdrActive;
+	// In HDR the tonemapped scene must be able to exceed paper white, so use fp16.
+	m_ctx.ldrFormat = hdrActive ? HDR_COLOR_FORMAT : LDR_COLOR_FORMAT;
 
 	// Verify RGBA16F support for color attachment + sampling
 	{
 		vk::FormatProperties props = physDevice.getFormatProperties(HDR_COLOR_FORMAT);
 		if (!(props.optimalTilingFeatures & vk::FormatFeatureFlagBits::eColorAttachment) ||
 		    !(props.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImage)) {
-			mprintf(("VulkanPostProcessor: RGBA16F not supported for color attachment + sampling!\n"));
+			nprintf(("vulkan", "VulkanPostProcessor: RGBA16F not supported for color attachment + sampling!\n"));
 			return false;
 		}
 	}
@@ -72,7 +76,7 @@ bool VulkanPostProcessor::init(vk::Device device, vk::PhysicalDevice physDevice,
 	                 | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst,
 	                 vk::ImageAspectFlagBits::eColor,
 	                 m_sceneColor.image, m_sceneColor.view, m_sceneColor.allocation)) {
-		mprintf(("VulkanPostProcessor: Failed to create scene color image!\n"));
+		nprintf(("vulkan", "VulkanPostProcessor: Failed to create scene color image!\n"));
 		return false;
 	}
 	m_sceneColor.format = HDR_COLOR_FORMAT;
@@ -86,7 +90,7 @@ bool VulkanPostProcessor::init(vk::Device device, vk::PhysicalDevice physDevice,
 	                 | vk::ImageUsageFlagBits::eTransferSrc,
 	                 vk::ImageAspectFlagBits::eDepth,  // View uses depth-only aspect
 	                 m_sceneDepth.image, m_sceneDepth.view, m_sceneDepth.allocation)) {
-		mprintf(("VulkanPostProcessor: Failed to create scene depth image!\n"));
+		nprintf(("vulkan", "VulkanPostProcessor: Failed to create scene depth image!\n"));
 		shutdown();
 		return false;
 	}
@@ -99,7 +103,7 @@ bool VulkanPostProcessor::init(vk::Device device, vk::PhysicalDevice physDevice,
 	                 vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
 	                 vk::ImageAspectFlagBits::eColor,
 	                 m_sceneEffect.image, m_sceneEffect.view, m_sceneEffect.allocation)) {
-		mprintf(("VulkanPostProcessor: Failed to create scene effect image!\n"));
+		nprintf(("vulkan", "VulkanPostProcessor: Failed to create scene effect image!\n"));
 		shutdown();
 		return false;
 	}
@@ -113,7 +117,7 @@ bool VulkanPostProcessor::init(vk::Device device, vk::PhysicalDevice physDevice,
 	                 vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
 	                 vk::ImageAspectFlagBits::eDepth,
 	                 m_sceneDepthCopy.image, m_sceneDepthCopy.view, m_sceneDepthCopy.allocation)) {
-		mprintf(("VulkanPostProcessor: Failed to create scene depth copy image!\n"));
+		nprintf(("vulkan", "VulkanPostProcessor: Failed to create scene depth copy image!\n"));
 		shutdown();
 		return false;
 	}
@@ -195,7 +199,7 @@ bool VulkanPostProcessor::init(vk::Device device, vk::PhysicalDevice physDevice,
 		try {
 			m_sceneRenderPass = m_ctx.device.createRenderPass(rpInfo);
 		} catch (const vk::SystemError& e) {
-			mprintf(("VulkanPostProcessor: Failed to create scene render pass: %s\n", e.what()));
+			nprintf(("vulkan", "VulkanPostProcessor: Failed to create scene render pass: %s\n", e.what()));
 			shutdown();
 			return false;
 		}
@@ -265,7 +269,7 @@ bool VulkanPostProcessor::init(vk::Device device, vk::PhysicalDevice physDevice,
 		try {
 			m_sceneRenderPassLoad = m_ctx.device.createRenderPass(rpInfo);
 		} catch (const vk::SystemError& e) {
-			mprintf(("VulkanPostProcessor: Failed to create scene load render pass: %s\n", e.what()));
+			nprintf(("vulkan", "VulkanPostProcessor: Failed to create scene load render pass: %s\n", e.what()));
 			shutdown();
 			return false;
 		}
@@ -286,7 +290,7 @@ bool VulkanPostProcessor::init(vk::Device device, vk::PhysicalDevice physDevice,
 		try {
 			m_sceneFramebuffer = m_ctx.device.createFramebuffer(fbInfo);
 		} catch (const vk::SystemError& e) {
-			mprintf(("VulkanPostProcessor: Failed to create scene framebuffer: %s\n", e.what()));
+			nprintf(("vulkan", "VulkanPostProcessor: Failed to create scene framebuffer: %s\n", e.what()));
 			shutdown();
 			return false;
 		}
@@ -311,7 +315,7 @@ bool VulkanPostProcessor::init(vk::Device device, vk::PhysicalDevice physDevice,
 		try {
 			m_ctx.linearSampler = m_ctx.device.createSampler(samplerInfo);
 		} catch (const vk::SystemError& e) {
-			mprintf(("VulkanPostProcessor: Failed to create sampler: %s\n", e.what()));
+			nprintf(("vulkan", "VulkanPostProcessor: Failed to create sampler: %s\n", e.what()));
 			shutdown();
 			return false;
 		}
@@ -336,7 +340,7 @@ bool VulkanPostProcessor::init(vk::Device device, vk::PhysicalDevice physDevice,
 		try {
 			m_ctx.mipmapSampler = m_ctx.device.createSampler(samplerInfo);
 		} catch (const vk::SystemError& e) {
-			mprintf(("VulkanPostProcessor: Failed to create mipmap sampler: %s\n", e.what()));
+			nprintf(("vulkan", "VulkanPostProcessor: Failed to create mipmap sampler: %s\n", e.what()));
 			shutdown();
 			return false;
 		}
@@ -352,13 +356,13 @@ bool VulkanPostProcessor::init(vk::Device device, vk::PhysicalDevice physDevice,
 		try {
 			m_tonemapUBO = m_ctx.device.createBuffer(bufInfo);
 		} catch (const vk::SystemError& e) {
-			mprintf(("VulkanPostProcessor: Failed to create tonemap UBO: %s\n", e.what()));
+			nprintf(("vulkan", "VulkanPostProcessor: Failed to create tonemap UBO: %s\n", e.what()));
 			shutdown();
 			return false;
 		}
 
 		if (!m_ctx.memoryManager->allocateBufferMemory(m_tonemapUBO, MemoryUsage::CpuToGpu, m_tonemapUBOAlloc)) {
-			mprintf(("VulkanPostProcessor: Failed to allocate tonemap UBO memory!\n"));
+			nprintf(("vulkan", "VulkanPostProcessor: Failed to allocate tonemap UBO memory!\n"));
 			m_ctx.device.destroyBuffer(m_tonemapUBO);
 			m_tonemapUBO = nullptr;
 			shutdown();
@@ -375,21 +379,45 @@ bool VulkanPostProcessor::init(vk::Device device, vk::PhysicalDevice physDevice,
 		}
 	}
 
+	// Create persistent UBO for the final output-encode pass
+	{
+		vk::BufferCreateInfo bufInfo;
+		bufInfo.size = sizeof(graphics::generic_data::tonemapping_data);
+		bufInfo.usage = vk::BufferUsageFlagBits::eUniformBuffer;
+		bufInfo.sharingMode = vk::SharingMode::eExclusive;
+
+		try {
+			m_outputEncodeUBO = m_ctx.device.createBuffer(bufInfo);
+		} catch (const vk::SystemError& e) {
+			mprintf(("VulkanPostProcessor: Failed to create output-encode UBO: %s\n", e.what()));
+			shutdown();
+			return false;
+		}
+
+		if (!m_ctx.memoryManager->allocateBufferMemory(m_outputEncodeUBO, MemoryUsage::CpuToGpu, m_outputEncodeUBOAlloc)) {
+			mprintf(("VulkanPostProcessor: Failed to allocate output-encode UBO memory!\n"));
+			m_ctx.device.destroyBuffer(m_outputEncodeUBO);
+			m_outputEncodeUBO = nullptr;
+			shutdown();
+			return false;
+		}
+	}
+
 	// Create the shared scratch UBO (used by every subsystem's drawFullscreenTriangle)
 	if (!m_ctx.initScratchUBO()) {
-		mprintf(("VulkanPostProcessor: Failed to create scratch UBO!\n"));
+		nprintf(("vulkan", "VulkanPostProcessor: Failed to create scratch UBO!\n"));
 		shutdown();
 		return false;
 	}
 
 	// Initialize bloom resources (non-fatal if it fails)
 	if (!initBloom()) {
-		mprintf(("VulkanPostProcessor: Bloom initialization failed (non-fatal)\n"));
+		nprintf(("vulkan", "VulkanPostProcessor: Bloom initialization failed (non-fatal)\n"));
 	}
 
 	// Initialize LDR targets for tonemapping + FXAA (non-fatal if it fails)
 	if (!initLDRTargets()) {
-		mprintf(("VulkanPostProcessor: LDR target initialization failed (non-fatal)\n"));
+		nprintf(("vulkan", "VulkanPostProcessor: LDR target initialization failed (non-fatal)\n"));
 	}
 
 	// Initialize distortion ping-pong textures (non-fatal if it fails)
@@ -397,7 +425,7 @@ bool VulkanPostProcessor::init(vk::Device device, vk::PhysicalDevice physDevice,
 
 	// Initialize G-buffer for deferred lighting (non-fatal)
 	if (!initGBuffer()) {
-		mprintf(("VulkanPostProcessor: G-buffer initialization failed (non-fatal)\n"));
+		nprintf(("vulkan", "VulkanPostProcessor: G-buffer initialization failed (non-fatal)\n"));
 	}
 
 	// Wire the deferred light accumulation + fog subsystems (resources are lazy).
@@ -407,13 +435,13 @@ bool VulkanPostProcessor::init(vk::Device device, vk::PhysicalDevice physDevice,
 	// Initialize MSAA resources if MSAA is enabled and G-buffer is ready
 	if (m_deferred.isInitialized() && Cmdline_msaa_enabled > 0) {
 		if (!initMSAA()) {
-			mprintf(("VulkanPostProcessor: MSAA initialization failed (non-fatal, disabling MSAA)\n"));
+			nprintf(("vulkan", "VulkanPostProcessor: MSAA initialization failed (non-fatal, disabling MSAA)\n"));
 			Cmdline_msaa_enabled = 0;
 		}
 	}
 
 	m_initialized = true;
-	mprintf(("VulkanPostProcessor: Initialized (%ux%u, RGBA16F scene color)\n",
+	nprintf(("vulkan", "VulkanPostProcessor: Initialized (%ux%u, RGBA16F scene color)\n",
 		extent.width, extent.height));
 	return true;
 }
@@ -425,6 +453,7 @@ void VulkanPostProcessor::shutdown()
 
 		m_fog.shutdown();
 		shutdownShadowPass();
+		shadow_cascade_params_shutdown();
 		shutdownMSAA();
 		m_lighting.shutdown();
 		shutdownGBuffer();
@@ -444,6 +473,14 @@ void VulkanPostProcessor::shutdown()
 		}
 		if (m_tonemapUBOAlloc.isValid()) {
 			m_ctx.memoryManager->freeAllocation(m_tonemapUBOAlloc);
+		}
+
+		if (m_outputEncodeUBO) {
+			m_ctx.device.destroyBuffer(m_outputEncodeUBO);
+			m_outputEncodeUBO = nullptr;
+		}
+		if (m_outputEncodeUBOAlloc.isValid()) {
+			m_ctx.memoryManager->freeAllocation(m_outputEncodeUBOAlloc);
 		}
 
 		if (m_ctx.linearSampler) {
@@ -545,6 +582,9 @@ void VulkanPostProcessor::updateTonemappingUBO()
 		mapped->sh_lnA = ppc.sh_lnA;
 		mapped->sh_offsetX = ppc.sh_offsetX;
 		mapped->sh_offsetY = ppc.sh_offsetY;
+		mapped->hdr_mode = 0;
+		mapped->hdr_paperwhite_nits = 0.0f;
+		mapped->hdr_peak_nits = 0.0f;
 		m_ctx.memoryManager->unmapMemory(m_tonemapUBOAlloc);
 	}
 }
@@ -609,7 +649,7 @@ void VulkanPostProcessor::blitToSwapChain(vk::CommandBuffer cmd)
 	vertex_layout emptyLayout;  // No vertex components
 	vk::Pipeline pipeline = pipelineMgr->getPipeline(config, emptyLayout);
 	if (!pipeline) {
-		mprintf(("VulkanPostProcessor: Failed to get tonemapping pipeline!\n"));
+		nprintf(("vulkan", "VulkanPostProcessor: Failed to get tonemapping pipeline!\n"));
 		return;
 	}
 
@@ -664,6 +704,101 @@ void VulkanPostProcessor::blitToSwapChain(vk::CommandBuffer cmd)
 
 	// Draw fullscreen triangle (3 vertices from gl_VertexIndex, no vertex buffer)
 	cmd.draw(3, 1, 0, 0);
+}
+
+void VulkanPostProcessor::encodeOutput(vk::CommandBuffer cmd, vk::RenderPass renderPass,
+	vk::Framebuffer framebuffer, vk::Extent2D extent, vk::ImageView sourceView, vk::Sampler sampler,
+	bool hdr, float paperwhiteNits, float peakNits)
+{
+	auto* pipelineMgr = getPipelineManager();
+	auto* descriptorMgr = getDescriptorManager();
+	if (!pipelineMgr || !descriptorMgr || !m_outputEncodeUBO) {
+		return;
+	}
+
+	// SDR: passthrough copy (LINEAR_OUT). HDR: PQ/BT.2020 encode (hdr_mode == 2).
+	PipelineConfig config;
+	config.shaderType = SDR_TYPE_POST_PROCESS_TONEMAPPING;
+	config.shaderFlags = hdr ? 0u : static_cast<unsigned int>(SDR_FLAG_TONEMAPPING_LINEAR_OUT);
+	config.vertexLayoutHash = 0;
+	config.primitiveType = PRIM_TYPE_TRIS;
+	config.depthMode = ZBUFFER_TYPE_NONE;
+	config.blendMode = ALPHA_BLEND_NONE;
+	config.cullEnabled = false;
+	config.depthWriteEnabled = false;
+	config.renderPass = renderPass;
+
+	vertex_layout emptyLayout;
+	vk::Pipeline pipeline = pipelineMgr->getPipeline(config, emptyLayout);
+	if (!pipeline) {
+		mprintf(("VulkanPostProcessor: Failed to get output-encode pipeline!\n"));
+		return;
+	}
+	vk::PipelineLayout pipelineLayout = pipelineMgr->getPipelineLayout();
+
+	// Update encode parameters
+	auto* mapped = static_cast<graphics::generic_data::tonemapping_data*>(
+		m_ctx.memoryManager->mapMemory(m_outputEncodeUBOAlloc));
+	if (mapped) {
+		memset(mapped, 0, sizeof(graphics::generic_data::tonemapping_data));
+		mapped->exposure = 1.0f;
+		mapped->tonemapper = 0;
+		mapped->hdr_mode = hdr ? 2 : 0;
+		mapped->hdr_paperwhite_nits = paperwhiteNits;
+		mapped->hdr_peak_nits = peakNits;
+		m_ctx.memoryManager->unmapMemory(m_outputEncodeUBOAlloc);
+	}
+
+	vk::RenderPassBeginInfo rpBegin;
+	rpBegin.renderPass = renderPass;
+	rpBegin.framebuffer = framebuffer;
+	rpBegin.renderArea.offset = vk::Offset2D(0, 0);
+	rpBegin.renderArea.extent = extent;
+
+	cmd.beginRenderPass(rpBegin, vk::SubpassContents::eInline);
+	cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
+
+	vk::Viewport viewport;
+	viewport.x = 0.0f;
+	viewport.y = 0.0f;
+	viewport.width = static_cast<float>(extent.width);
+	viewport.height = static_cast<float>(extent.height);
+	viewport.minDepth = 0.0f;
+	viewport.maxDepth = 1.0f;
+	cmd.setViewport(0, viewport);
+
+	vk::Rect2D scissor;
+	scissor.offset = vk::Offset2D(0, 0);
+	scissor.extent = extent;
+	cmd.setScissor(0, scissor);
+
+	DescriptorWriter writer;
+	writer.reset(m_ctx.device, descriptorMgr->getFallbacks());
+
+	vk::DescriptorSet materialSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Material);
+	Verify(materialSet);
+	writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
+	{
+		std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texArrayInfos;
+		texArrayInfos.fill(descriptorMgr->getFallbacks().texture2D);
+		texArrayInfos[0].sampler = sampler;
+		texArrayInfos[0].imageView = sourceView;
+		writer.setImageArray(MaterialBinding::TextureArray, texArrayInfos);
+	}
+
+	vk::DescriptorSet perDrawSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::PerDraw);
+	Verify(perDrawSet);
+	writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
+	writer.setBuffer(PerDrawBinding::GenericData, {m_outputEncodeUBO, 0,
+		sizeof(graphics::generic_data::tonemapping_data)});
+	writer.flush();
+
+	cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout,
+		static_cast<uint32_t>(DescriptorSetIndex::Material),
+		{materialSet, perDrawSet}, {});
+
+	cmd.draw(3, 1, 0, 0);
+	cmd.endRenderPass();
 }
 
 // No-op: In OpenGL, begin/end push/pop an FBO and run the post-processing

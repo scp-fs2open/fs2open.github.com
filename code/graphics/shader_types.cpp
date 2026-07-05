@@ -1,5 +1,7 @@
 #include "graphics/shader_types.h"
 
+#include "mod_table/mod_table.h"
+
 // Pull in MODEL_SDR_FLAG_* constants for the variant table
 #define MODEL_SDR_FLAG_MODE_CPP
 #include "def_files/data/effects/model_shader_flags.h"
@@ -102,6 +104,12 @@ static ShaderTypeInfo SHADER_TYPES[] = {
 
 	{ SDR_TYPE_IRRADIANCE_MAP_GEN, "post-v.sdr", "irrmap-f.sdr", nullptr,
 		{ VATTRIB_POSITION, VATTRIB_TEXCOORD }, "Irradiance Map Generation", false },
+
+	{ SDR_TYPE_SHADOW_MAP_GEN, "shadow_map-v.sdr", "shadow_map-f.sdr", "shadow_map-g.sdr",
+		{ VATTRIB_POSITION, VATTRIB_TEXCOORD, VATTRIB_NORMAL, VATTRIB_TANGENT, VATTRIB_MODELID }, "Shadow Map Generation", false },
+
+	{ SDR_TYPE_GAMMA_BLIT, "post-v.sdr", "gamma-correct-f.sdr", nullptr,
+		{ VATTRIB_POSITION, VATTRIB_TEXCOORD }, "Gamma correct blit", false },
 };
 // clang-format on
 
@@ -116,6 +124,8 @@ static ShaderVariantInfo SHADER_VARIANTS[] = {
 	{SDR_TYPE_EFFECT_PARTICLE, true, SDR_FLAG_PARTICLE_POINT_GEN, "FLAG_EFFECT_GEOMETRY", {VATTRIB_UVEC}, "Geometry shader point-based particles"},
 
 	{SDR_TYPE_DEFERRED_LIGHTING, false, SDR_FLAG_ENV_MAP, "ENV_MAP", {}, "Render ambient light with env and irrmaps"},
+
+	{SDR_TYPE_DEFERRED_LIGHTING, false, SDR_FLAG_DEFERRED_RT_SHADOWS, "RT_SHADOWS", {}, "Use raytraced (TLAS ray query) shadows instead of cascaded shadow maps"},
 
 	{SDR_TYPE_POST_PROCESS_BLUR, false, SDR_FLAG_BLUR_HORIZONTAL, "PASS_0", {}, "Horizontal blur pass"},
 
@@ -137,7 +147,9 @@ static ShaderVariantInfo SHADER_VARIANTS[] = {
 
 	{SDR_TYPE_COPY_WORLD, false, SDR_FLAG_COPY_FROM_ARRAY, "COPY_ARRAY", {}, "Expects to copy from an array texture"},
 
-	{SDR_TYPE_POST_PROCESS_TONEMAPPING, false, SDR_FLAG_TONEMAPPING_LINEAR_OUT, "LINEAR_OUT", {}, "Will make the tonemapper output in linear color space and not in sRGB"}
+	{SDR_TYPE_POST_PROCESS_TONEMAPPING, false, SDR_FLAG_TONEMAPPING_LINEAR_OUT, "LINEAR_OUT", {}, "Will make the tonemapper output in linear color space and not in sRGB"},
+
+	{SDR_TYPE_SHADOW_MAP_GEN, true, SDR_FLAG_SHADOW_FALLBACK, "GEOMETRY_FALLBACK", {}, "Use a geometry shader to select the cascade layer instead of writing gl_Layer from the vertex shader"}
 };
 
 const ShaderTypeInfo* shader_get_type_info(shader_type type)
@@ -178,6 +190,18 @@ SCP_string shader_build_variant_defines(shader_type type, unsigned int flags)
 		header += "\n";
 	});
 	return header;
+}
+
+bool shader_variant_requires_raytracing(shader_type type, unsigned int flags)
+{
+	switch (type) {
+	case SDR_TYPE_MODEL:
+		return (flags & MODEL_SDR_FLAG_RT_SHADOWS) != 0;
+	case SDR_TYPE_DEFERRED_LIGHTING:
+		return (flags & SDR_FLAG_DEFERRED_RT_SHADOWS) != 0;
+	default:
+		return false;
+	}
 }
 
 SCP_string shader_get_fxaa_defines(AntiAliasMode aa_mode, bool gather4_alpha)
@@ -222,4 +246,13 @@ SCP_string shader_get_fxaa_defines(AntiAliasMode aa_mode, bool gather4_alpha)
 	}
 
 	return defines;
+}
+
+SCP_string shader_get_shadow_cascade_defines()
+{
+	SCP_string header;
+	header += "#define NUM_SHADOW_CASCADES ";
+	header += std::to_string(Num_shadow_cascades + Num_cockpit_shadow_cascades);
+	header += "\n";
+	return header;
 }

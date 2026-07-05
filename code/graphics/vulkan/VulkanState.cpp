@@ -47,7 +47,7 @@ bool VulkanStateTracker::init(vk::Device device)
 	m_clearColor.float32[3] = 1.0f;
 
 	m_initialized = true;
-	mprintf(("VulkanStateTracker: Initialized\n"));
+	nprintf(("vulkan", "VulkanStateTracker: Initialized\n"));
 	return true;
 }
 
@@ -62,12 +62,12 @@ void VulkanStateTracker::shutdown()
 	m_currentRenderPass = nullptr;
 
 	m_initialized = false;
-	mprintf(("VulkanStateTracker: Shutdown complete\n"));
+	nprintf(("vulkan", "VulkanStateTracker: Shutdown complete\n"));
 }
 
 void VulkanStateTracker::beginFrame(vk::CommandBuffer cmdBuffer)
 {
-	mprintf(("VulkanStateTracker::beginFrame - cmdBuffer=%p\n",
+	nprintf(("vulkanstate", "VulkanStateTracker::beginFrame - cmdBuffer=%p\n",
 		static_cast<void*>(static_cast<VkCommandBuffer>(cmdBuffer))));
 
 	m_cmdBuffer = cmdBuffer;
@@ -90,7 +90,7 @@ void VulkanStateTracker::beginFrame(vk::CommandBuffer cmdBuffer)
 
 void VulkanStateTracker::endFrame()
 {
-	mprintf(("VulkanStateTracker::endFrame - clearing cmdBuffer (was %p)\n",
+	nprintf(("vulkanstate", "VulkanStateTracker::endFrame - clearing cmdBuffer (was %p)\n",
 		static_cast<void*>(static_cast<VkCommandBuffer>(m_cmdBuffer))));
 	m_cmdBuffer = nullptr;
 }

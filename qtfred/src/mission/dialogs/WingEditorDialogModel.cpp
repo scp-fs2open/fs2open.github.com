@@ -1093,7 +1093,11 @@ void WingEditorDialogModel::setArrivalTree(int newTree)
 
 	auto* w = getCurrentWing();
 
-	modify(w->arrival_cue, newTree);
+	if (w->arrival_cue >= 0 && w->arrival_cue != newTree)
+		free_sexp2(w->arrival_cue);
+
+	w->arrival_cue = newTree;
+	set_modified();
 }
 
 bool WingEditorDialogModel::getNoArrivalWarpFlag() const
@@ -1333,7 +1337,11 @@ void WingEditorDialogModel::setDepartureTree(int newTree)
 
 	auto* w = getCurrentWing();
 
-	modify(w->departure_cue, newTree);
+	if (w->departure_cue >= 0 && w->departure_cue != newTree)
+		free_sexp2(w->departure_cue);
+
+	w->departure_cue = newTree;
+	set_modified();
 }
 
 bool WingEditorDialogModel::getNoDepartureWarpFlag() const

@@ -38,12 +38,18 @@ public:
 	 * @param stage     Vertex or fragment
 	 * @param sdrType   Shader type (for variant flag lookup)
 	 * @param flags     SDR_FLAG_* bitmask — matching flags injected as #defines
+	 * @param requiresRaytracing  Whether this (sdrType, flags) combination uses
+	 *        GL_EXT_ray_query (see shader_variant_requires_raytracing()) and
+	 *        therefore needs a SPIR-V target-env new enough to support it.
+	 *        Left false for all other shaders so they keep targeting the
+	 *        lowest common Vulkan version.
 	 * @return SPIR-V words, or empty vector on failure
 	 */
 	SCP_vector<uint32_t> compile(const SCP_string& filename,
 	                             vk::ShaderStageFlagBits stage,
 	                             shader_type sdrType,
-	                             unsigned int flags);
+	                             unsigned int flags,
+	                             bool requiresRaytracing = false);
 
 	/**
 	 * @brief Delete stale cache files older than ~2 months

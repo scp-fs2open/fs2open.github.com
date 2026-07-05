@@ -105,7 +105,7 @@ bool VulkanFog::initFogPass()
 		try {
 			m_fogRenderPass = m_ctx->device.createRenderPass(rpInfo);
 		} catch (const vk::SystemError& e) {
-			mprintf(("VulkanPostProcessor: Failed to create fog render pass: %s\n", e.what()));
+			nprintf(("vulkan", "VulkanPostProcessor: Failed to create fog render pass: %s\n", e.what()));
 			return false;
 		}
 	}
@@ -123,13 +123,13 @@ bool VulkanFog::initFogPass()
 		try {
 			m_fogFramebuffer = m_ctx->device.createFramebuffer(fbInfo);
 		} catch (const vk::SystemError& e) {
-			mprintf(("VulkanPostProcessor: Failed to create fog framebuffer: %s\n", e.what()));
+			nprintf(("vulkan", "VulkanPostProcessor: Failed to create fog framebuffer: %s\n", e.what()));
 			return false;
 		}
 	}
 
 	m_fogInitialized = true;
-	mprintf(("VulkanPostProcessor: Fog pass initialized\n"));
+	nprintf(("vulkan", "VulkanPostProcessor: Fog pass initialized\n"));
 	return true;
 }
 
@@ -341,7 +341,7 @@ void VulkanFog::renderVolumetric(vk::CommandBuffer cmd)
 	int volHandle = neb.getVolumeBitmapHandle();
 	auto* volSlot = texMgr->getTextureSlot(volHandle);
 	if (!volSlot || !volSlot->imageView) {
-		mprintf(("VulkanFog::renderVolumetric: Volume texture not available\n"));
+		nprintf(("vulkan", "VulkanFog::renderVolumetric: Volume texture not available\n"));
 		return;
 	}
 
@@ -377,7 +377,7 @@ void VulkanFog::renderVolumetric(vk::CommandBuffer cmd)
 		try {
 			m_emissiveMipmapped.image = m_ctx->device.createImage(imgInfo);
 		} catch (const vk::SystemError& e) {
-			mprintf(("VulkanPostProcessor: Failed to create mipmapped emissive: %s\n", e.what()));
+			nprintf(("vulkan", "VulkanPostProcessor: Failed to create mipmapped emissive: %s\n", e.what()));
 			return;
 		}
 
@@ -397,7 +397,7 @@ void VulkanFog::renderVolumetric(vk::CommandBuffer cmd)
 		try {
 			m_emissiveMipmappedFullView = m_ctx->device.createImageView(viewInfo);
 		} catch (const vk::SystemError& e) {
-			mprintf(("VulkanPostProcessor: Failed to create mipmapped emissive view: %s\n", e.what()));
+			nprintf(("vulkan", "VulkanPostProcessor: Failed to create mipmapped emissive view: %s\n", e.what()));
 			return;
 		}
 

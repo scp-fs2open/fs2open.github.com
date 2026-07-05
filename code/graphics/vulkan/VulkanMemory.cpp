@@ -29,20 +29,21 @@ VulkanMemoryManager::~VulkanMemoryManager()
 	}
 }
 
-bool VulkanMemoryManager::init(vk::Instance instance, vk::PhysicalDevice physicalDevice, vk::Device device)
+bool VulkanMemoryManager::init(vk::Instance instance, vk::PhysicalDevice physicalDevice, vk::Device device,
+	bool enableBufferDeviceAddress)
 {
 	if (m_initialized) {
-		mprintf(("VulkanMemoryManager::init called when already initialized!\n"));
+		nprintf(("vulkan", "VulkanMemoryManager::init called when already initialized!\n"));
 		return false;
 	}
 
 	// Log memory properties for diagnostics
 	auto memoryProperties = physicalDevice.getMemoryProperties();
-	mprintf(("Vulkan Memory Manager initializing (VMA)\n"));
-	mprintf(("  Memory heaps: %u\n", memoryProperties.memoryHeapCount));
+	nprintf(("vulkan", "Vulkan Memory Manager initializing (VMA)\n"));
+	nprintf(("vulkan", "  Memory heaps: %u\n", memoryProperties.memoryHeapCount));
 	for (uint32_t i = 0; i < memoryProperties.memoryHeapCount; ++i) {
 		const auto& heap = memoryProperties.memoryHeaps[i];
-		mprintf(("    Heap %u: %zu MB%s\n",
+		nprintf(("vulkan", "    Heap %u: %zu MB%s\n",
 			i,
 			static_cast<size_t>(heap.size / (1024 * 1024)),
 			(heap.flags & vk::MemoryHeapFlagBits::eDeviceLocal) ? " (device local)" : ""));
@@ -77,19 +78,28 @@ bool VulkanMemoryManager::init(vk::Instance instance, vk::PhysicalDevice physica
 	vulkanFunctions.vkGetPhysicalDeviceMemoryProperties2KHR = d.vkGetPhysicalDeviceMemoryProperties2;
 
 	VmaAllocatorCreateInfo allocatorInfo = {};
-	allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_1;
+	allocatorInfo.vulkanApiVersion = VulkanApiVersion;
 	allocatorInfo.physicalDevice = static_cast<VkPhysicalDevice>(physicalDevice);
 	allocatorInfo.device = static_cast<VkDevice>(device);
 	allocatorInfo.instance = static_cast<VkInstance>(instance);
 	allocatorInfo.pVulkanFunctions = &vulkanFunctions;
 
+	if (enableBufferDeviceAddress) {
+		// Required for any buffer created with VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT
+		// (raytraced shadow acceleration structure geometry input). Only valid
+		// because the caller only passes true when the device was created with
+		// the VK_KHR_buffer_device_address feature enabled.
+		allocatorInfo.flags |= VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
+		nprintf(("vulkan", "  Buffer device address support enabled\n"));
+	}
+
 	VkResult result = vmaCreateAllocator(&allocatorInfo, &m_allocator);
 	if (result != VK_SUCCESS) {
-		mprintf(("Failed to create VMA allocator! VkResult: %d\n", static_cast<int>(result)));
+		nprintf(("vulkan", "Failed to create VMA allocator! VkResult: %d\n", static_cast<int>(result)));
 		return false;
 	}
 
-	mprintf(("Vulkan Memory Manager initialized (VMA)\n"));
+	nprintf(("vulkan", "Vulkan Memory Manager initialized (VMA)\n"));
 	m_initialized = true;
 	return true;
 }
@@ -101,7 +111,7 @@ void VulkanMemoryManager::shutdown()
 	}
 
 	if (m_allocationCount > 0) {
-		mprintf(("WARNING: VulkanMemoryManager shutdown with %zu allocations still active!\n", m_allocationCount));
+		nprintf(("vulkan", "WARNING: VulkanMemoryManager shutdown with %zu allocations still active!\n", m_allocationCount));
 	}
 
 	if (m_allocator != VK_NULL_HANDLE) {
@@ -133,7 +143,7 @@ VmaMemoryUsage VulkanMemoryManager::toVmaUsage(MemoryUsage usage)
 bool VulkanMemoryManager::allocateBufferMemory(vk::Buffer buffer, MemoryUsage usage, VulkanAllocation& allocation)
 {
 	if (!m_initialized) {
-		mprintf(("VulkanMemoryManager::allocateBufferMemory called before initialization!\n"));
+		nprintf(("vulkan", "VulkanMemoryManager::allocateBufferMemory called before initialization!\n"));
 		return false;
 	}
 
@@ -149,7 +159,7 @@ bool VulkanMemoryManager::allocateBufferMemory(vk::Buffer buffer, MemoryUsage us
 		&allocInfo);
 
 	if (result != VK_SUCCESS) {
-		mprintf(("Failed to allocate buffer memory via VMA! VkResult: %d (allocations: %zu, total: %zu bytes)\n",
+		nprintf(("vulkan", "Failed to allocate buffer memory via VMA! VkResult: %d (allocations: %zu, total: %zu bytes)\n",
 			static_cast<int>(result), m_allocationCount, m_totalAllocatedBytes));
 		allocation.vmaAlloc = VK_NULL_HANDLE;
 		return false;
@@ -158,7 +168,7 @@ bool VulkanMemoryManager::allocateBufferMemory(vk::Buffer buffer, MemoryUsage us
 	// Bind the memory to the buffer
 	result = vmaBindBufferMemory(m_allocator, allocation.vmaAlloc, static_cast<VkBuffer>(buffer));
 	if (result != VK_SUCCESS) {
-		mprintf(("Failed to bind buffer memory via VMA! VkResult: %d\n", static_cast<int>(result)));
+		nprintf(("vulkan", "Failed to bind buffer memory via VMA! VkResult: %d\n", static_cast<int>(result)));
 		vmaFreeMemory(m_allocator, allocation.vmaAlloc);
 		allocation.vmaAlloc = VK_NULL_HANDLE;
 		return false;
@@ -176,7 +186,7 @@ bool VulkanMemoryManager::allocateBufferMemory(vk::Buffer buffer, MemoryUsage us
 bool VulkanMemoryManager::allocateImageMemory(vk::Image image, MemoryUsage usage, VulkanAllocation& allocation)
 {
 	if (!m_initialized) {
-		mprintf(("VulkanMemoryManager::allocateImageMemory called before initialization!\n"));
+		nprintf(("vulkan", "VulkanMemoryManager::allocateImageMemory called before initialization!\n"));
 		return false;
 	}
 
@@ -192,7 +202,7 @@ bool VulkanMemoryManager::allocateImageMemory(vk::Image image, MemoryUsage usage
 		&allocInfo);
 
 	if (result != VK_SUCCESS) {
-		mprintf(("Failed to allocate image memory via VMA! VkResult: %d (allocations: %zu, total: %zu bytes)\n",
+		nprintf(("vulkan", "Failed to allocate image memory via VMA! VkResult: %d (allocations: %zu, total: %zu bytes)\n",
 			static_cast<int>(result), m_allocationCount, m_totalAllocatedBytes));
 		allocation.vmaAlloc = VK_NULL_HANDLE;
 		return false;
@@ -201,7 +211,7 @@ bool VulkanMemoryManager::allocateImageMemory(vk::Image image, MemoryUsage usage
 	// Bind the memory to the image
 	result = vmaBindImageMemory(m_allocator, allocation.vmaAlloc, static_cast<VkImage>(image));
 	if (result != VK_SUCCESS) {
-		mprintf(("Failed to bind image memory via VMA! VkResult: %d\n", static_cast<int>(result)));
+		nprintf(("vulkan", "Failed to bind image memory via VMA! VkResult: %d\n", static_cast<int>(result)));
 		vmaFreeMemory(m_allocator, allocation.vmaAlloc);
 		allocation.vmaAlloc = VK_NULL_HANDLE;
 		return false;
@@ -251,7 +261,7 @@ void* VulkanMemoryManager::mapMemory(VulkanAllocation& allocation)
 
 	VkResult result = vmaMapMemory(m_allocator, allocation.vmaAlloc, &allocation.mappedPtr);
 	if (result != VK_SUCCESS) {
-		mprintf(("Failed to map memory via VMA! VkResult: %d\n", static_cast<int>(result)));
+		nprintf(("vulkan", "Failed to map memory via VMA! VkResult: %d\n", static_cast<int>(result)));
 		allocation.mappedPtr = nullptr;
 		return nullptr;
 	}

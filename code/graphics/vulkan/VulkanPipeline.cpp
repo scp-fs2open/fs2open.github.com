@@ -131,7 +131,7 @@ bool VulkanPipelineManager::init(vk::Device device, VulkanShaderManager* shaderM
 	createPipelineLayout();
 
 	m_initialized = true;
-	mprintf(("VulkanPipelineManager: Initialized\n"));
+	nprintf(("vulkan", "VulkanPipelineManager: Initialized\n"));
 	return true;
 }
 
@@ -151,7 +151,7 @@ void VulkanPipelineManager::shutdown()
 	m_vertexFormatCache.clear();
 
 	m_initialized = false;
-	mprintf(("VulkanPipelineManager: Shutdown complete\n"));
+	nprintf(("vulkan", "VulkanPipelineManager: Shutdown complete\n"));
 }
 
 vk::Pipeline VulkanPipelineManager::getPipeline(const PipelineConfig& config, const vertex_layout& vertexLayout)
@@ -215,11 +215,11 @@ bool VulkanPipelineManager::loadPipelineCache(const SCP_string& filename)
 	try {
 		auto newCache = m_device.createPipelineCacheUnique(cacheInfo);
 		m_pipelineCache = std::move(newCache);
-		mprintf(("VulkanPipelineManager: Loaded pipeline cache: %s (%d bytes)\n",
+		nprintf(("vulkan", "VulkanPipelineManager: Loaded pipeline cache: %s (%d bytes)\n",
 			filename.c_str(), fileSize));
 		return true;
 	} catch (const vk::SystemError& e) {
-		mprintf(("VulkanPipelineManager: Failed to load pipeline cache: %s\n", e.what()));
+		nprintf(("vulkan", "VulkanPipelineManager: Failed to load pipeline cache: %s\n", e.what()));
 		return false;
 	}
 }
@@ -239,7 +239,7 @@ bool VulkanPipelineManager::savePipelineCache(const SCP_string& filename)
 	// Write to file
 	CFILE* fp = cfopen(filename.c_str(), "wb", CF_TYPE_CACHE);
 	if (!fp) {
-		mprintf(("VulkanPipelineManager: Could not create cache file: %s\n", filename.c_str()));
+		nprintf(("vulkan", "VulkanPipelineManager: Could not create cache file: %s\n", filename.c_str()));
 		return false;
 	}
 
@@ -248,7 +248,7 @@ bool VulkanPipelineManager::savePipelineCache(const SCP_string& filename)
 	cfclose(fp);
 
 	if (success) {
-		mprintf(("VulkanPipelineManager: Saved pipeline cache: %s (%zu bytes)\n",
+		nprintf(("vulkan", "VulkanPipelineManager: Saved pipeline cache: %s (%zu bytes)\n",
 			filename.c_str(), cacheData.size()));
 	}
 
@@ -292,7 +292,7 @@ void VulkanPipelineManager::createPipelineLayout()
 
 	m_pipelineLayout = m_device.createPipelineLayoutUnique(layoutInfo);
 
-	mprintf(("VulkanPipelineManager: Created pipeline layout with %zu descriptor sets\n",
+	nprintf(("vulkan", "VulkanPipelineManager: Created pipeline layout with %zu descriptor sets\n",
 		setLayouts.size()));
 }
 
@@ -305,18 +305,18 @@ vk::UniquePipeline VulkanPipelineManager::createPipeline(const PipelineConfig& c
 	// Get shader modules
 	const VulkanShaderModule* shader = (shaderHandle >= 0) ? m_shaderManager->getShader(shaderHandle) : nullptr;
 	if (!shader || !shader->valid) {
-		mprintf(("VulkanPipelineManager: Shader not available for type %d\n",
+		nprintf(("vulkan", "VulkanPipelineManager: Shader not available for type %d\n",
 			static_cast<int>(config.shaderType)));
 		return {};
 	}
 
 	// Debug: Log which shader and vertex layout is being used
-	mprintf(("VulkanPipelineManager: Creating pipeline for shader type %d (%s)\n",
+	nprintf(("vulkan", "VulkanPipelineManager: Creating pipeline for shader type %d (%s)\n",
 		static_cast<int>(config.shaderType), shader->description.c_str()));
-	mprintf(("  Vertex layout has %zu components:\n", vertexLayout.get_num_vertex_components()));
+	nprintf(("vulkan", "  Vertex layout has %zu components:\n", vertexLayout.get_num_vertex_components()));
 	for (size_t i = 0; i < vertexLayout.get_num_vertex_components(); ++i) {
 		const vertex_format_data* comp = vertexLayout.get_vertex_component(i);
-		mprintf(("    [%zu] format=%d offset=%zu stride=%zu\n", i,
+		nprintf(("vulkan", "    [%zu] format=%d offset=%zu stride=%zu\n", i,
 			static_cast<int>(comp->format_type), comp->offset, comp->stride));
 	}
 
@@ -452,7 +452,7 @@ vk::UniquePipeline VulkanPipelineManager::createPipeline(const PipelineConfig& c
 		auto result = m_device.createGraphicsPipelineUnique(m_pipelineCache.get(), pipelineInfo);
 		return std::move(result.value);
 	} catch (const vk::SystemError& e) {
-		mprintf(("VulkanPipelineManager: Failed to create pipeline: %s\n", e.what()));
+		nprintf(("vulkan", "VulkanPipelineManager: Failed to create pipeline: %s\n", e.what()));
 		return {};
 	}
 }

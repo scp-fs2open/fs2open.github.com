@@ -1152,6 +1152,7 @@ void gr_opengl_init_function_pointers()
 	gr_screen.gf_stop_decal_pass = gr_opengl_stop_decal_pass;
 
 	gr_screen.gf_render_model = gr_opengl_render_model;
+	gr_screen.gf_render_shadow_draw = gr_opengl_render_shadow_draw;
 	gr_screen.gf_render_primitives= gr_opengl_render_primitives;
 	gr_screen.gf_render_primitives_particle	= gr_opengl_render_primitives_particle;
 	gr_screen.gf_render_primitives_batched	= gr_opengl_render_primitives_batched;
@@ -1438,6 +1439,7 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	mprintf(( "\n" ));
 	mprintf(("Extensions: \n"));
 	mprintf(("  Geo shader support : %s\n", GLAD_GL_ARB_gpu_shader5 ? NOX("YES") : NOX("NO")));
+	mprintf(("  Layered viewport support : %s\n", GLAD_GL_ARB_shader_viewport_layer_array ? NOX("YES") : NOX("NO")));
 	mprintf(("  S3TC texture support : %s\n", GLAD_GL_EXT_texture_compression_s3tc ? NOX("YES") : NOX("NO")));
 	mprintf(("  BPTC texture support : %s\n", GLAD_GL_ARB_texture_compression_bptc ? NOX("YES") : NOX("NO")));
 
@@ -1600,6 +1602,7 @@ bool gr_opengl_is_capable(gr_capability capability)
 	case gr_capability::CAPABILITY_DEFERRED_LIGHTING:
 		return !Cmdline_no_fbo && light_deferred_enabled();
 	case gr_capability::CAPABILITY_SHADOWS:
+			return !Cmdline_no_geo_sdr_effects || (GLAD_GL_ARB_vertex_attrib_binding && GLAD_GL_ARB_shader_viewport_layer_array && GLAD_GL_ARB_gpu_shader5);
 	case gr_capability::CAPABILITY_THICK_OUTLINE:
 		return !Cmdline_no_geo_sdr_effects;
 	case gr_capability::CAPABILITY_BATCHED_SUBMODELS:
@@ -1618,8 +1621,13 @@ bool gr_opengl_is_capable(gr_capability capability)
 		return !Cmdline_no_large_shaders;
 	case gr_capability::CAPABILITY_INSTANCED_RENDERING:
 		return GLAD_GL_ARB_vertex_attrib_binding;
+	case gr_capability::CAPABILITY_FAST_SHADOWS:
+		return GLAD_GL_ARB_vertex_attrib_binding && GLAD_GL_ARB_shader_viewport_layer_array && GLAD_GL_ARB_gpu_shader5;
 	case gr_capability::CAPABILITY_QUERIES_REUSABLE:
 		return true;
+	case gr_capability::CAPABILITY_RAYTRACED_SHADOWS:
+		// Raytraced shadows are only implemented for the Vulkan backend.
+		return false;
 	}
 
 

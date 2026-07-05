@@ -18,12 +18,12 @@
 namespace fso::fred::dialogs {
 
 ShipEditorDialog::ShipEditorDialog(FredView* parent, EditorViewport* viewport)
-	: QDialog(parent), ui(new Ui::ShipEditorDialog()), _model(new ShipEditorDialogModel(this, viewport)),
+	: QDialog(parent), SexpTreeEditorInterface(flagset<TreeFlags>()),
+	  ui(new Ui::ShipEditorDialog()), _model(new ShipEditorDialogModel(this, viewport)),
 	  _viewport(viewport)
 {
 	this->setFocus();
 	ui->setupUi(this);
-
 	ui->HelpTitle->setVisible(viewport->Show_sexp_help_ship_editor);
 	ui->helpText->setVisible(viewport->Show_sexp_help_ship_editor);
 
@@ -36,6 +36,13 @@ ShipEditorDialog::ShipEditorDialog(FredView* parent, EditorViewport* viewport)
 	connect(_model.get(), &AbstractDialogModel::modelChanged, this, [this] { updateUi(false); });
 	connect(viewport->editor, &Editor::currentObjectChanged, this, &ShipEditorDialog::update);
 	connect(viewport->editor, &Editor::objectMarkingChanged, this, &ShipEditorDialog::update);
+
+	connect(ui->arrivalTree, &sexp_tree_view::modified, this, &ShipEditorDialog::on_arrivalTree_modified);
+	connect(ui->arrivalTree, &sexp_tree_view::helpChanged, this, &ShipEditorDialog::on_arrivalTree_helpChanged);
+	connect(ui->arrivalTree, &sexp_tree_view::miniHelpChanged, this, &ShipEditorDialog::on_arrivalTree_miniHelpChanged);
+	connect(ui->departureTree, &sexp_tree_view::modified, this, &ShipEditorDialog::on_departureTree_modified);
+	connect(ui->departureTree, &sexp_tree_view::helpChanged, this, &ShipEditorDialog::on_departureTree_helpChanged);
+	connect(ui->departureTree, &sexp_tree_view::miniHelpChanged, this, &ShipEditorDialog::on_departureTree_miniHelpChanged);
 
 	// Column One
 
@@ -81,6 +88,7 @@ void ShipEditorDialog::hideEvent(QHideEvent* e)
 void ShipEditorDialog::showEvent(QShowEvent* e)
 {
 	_model->initializeData();
+	updateUi(true);
 	QDialog::showEvent(e);
 }
 
@@ -318,7 +326,7 @@ void ShipEditorDialog::updateArrival(bool overwrite)
 
 		ui->updateArrivalCueCheckBox->setChecked(_model->getArrivalCue());
 
-		ui->arrivalTree->initializeEditor(_viewport->editor, this);
+		ui->arrivalTree->initializeEditor(_viewport->editor, this, _viewport);
 		if (_model->getNumSelectedShips()) {
 
 			if (_model->getIfMultipleShips()) {
@@ -376,7 +384,7 @@ void ShipEditorDialog::updateDeparture(bool overwrite)
 	if (overwrite) {
 		ui->departureDelaySpinBox->setValue(_model->getDepartureDelay());
 
-		ui->departureTree->initializeEditor(_viewport->editor, this);
+		ui->departureTree->initializeEditor(_viewport->editor, this, _viewport);
 		if (_model->getNumSelectedShips()) {
 
 			if (_model->getIfMultipleShips()) {
@@ -865,9 +873,9 @@ void ShipEditorDialog::on_noArrivalWarpCheckBox_stateChanged(int state)
 		return;
 	_model->setNoArrivalWarp(state);
 }
-void ShipEditorDialog::on_arrivalTree_rootNodeFormulaChanged(int old, int node)
+void ShipEditorDialog::on_arrivalTree_modified()
 {
-	_model->setArrivalFormula(old, node);
+	_model->setArrivalTreeDirty(ui->arrivalTree->_model.save_tree());
 }
 void ShipEditorDialog::on_arrivalTree_helpChanged(const QString& help)
 {
@@ -901,9 +909,9 @@ void ShipEditorDialog::on_updateDepartureCueCheckBox_toggled(bool value)
 {
 	_model->setDepartureCue(value);
 }
-void ShipEditorDialog::on_departureTree_rootNodeFormulaChanged(int old, int node)
+void fred::dialogs::ShipEditorDialog::on_departureTree_modified()
 {
-	_model->setDepartureFormula(old, node);
+	_model->setDepartureTreeDirty(ui->departureTree->_model.save_tree());
 }
 void ShipEditorDialog::on_departureTree_helpChanged(const QString& help)
 {

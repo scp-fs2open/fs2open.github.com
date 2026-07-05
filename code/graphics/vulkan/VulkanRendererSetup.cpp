@@ -40,7 +40,7 @@ VkBool32 VKAPI_PTR debugReportCallback(
 	const char* pMessage,
 	void* /*pUserData*/)
 {
-	mprintf(("Vulkan message: [%s]: %s\n", pLayerPrefix, pMessage));
+	nprintf(("vulkan", "Vulkan message: [%s]: %s\n", pLayerPrefix, pMessage));
 	return VK_FALSE;
 }
 #endif
@@ -79,7 +79,7 @@ bool isDeviceUnsuitable(PhysicalDeviceValues& values, const vk::UniqueSurfaceKHR
 	if (values.properties.deviceType != vk::PhysicalDeviceType::eDiscreteGpu &&
 		values.properties.deviceType != vk::PhysicalDeviceType::eIntegratedGpu &&
 		values.properties.deviceType != vk::PhysicalDeviceType::eVirtualGpu) {
-		mprintf(("Rejecting %s (%d) because the device type is unsuitable.\n",
+		nprintf(("vulkan", "Rejecting %s (%d) because the device type is unsuitable.\n",
 			values.properties.deviceName.data(),
 			values.properties.deviceID));
 		return true;
@@ -115,33 +115,33 @@ bool isDeviceUnsuitable(PhysicalDeviceValues& values, const vk::UniqueSurfaceKHR
 	}
 
 	if (!values.graphicsQueueIndex.initialized) {
-		mprintf(("Rejecting %s (%d) because the device does not have a graphics queue.\n",
+		nprintf(("vulkan", "Rejecting %s (%d) because the device does not have a graphics queue.\n",
 			values.properties.deviceName.data(),
 			values.properties.deviceID));
 		return true;
 	}
 	if (!values.transferQueueIndex.initialized) {
-		mprintf(("Rejecting %s (%d) because the device does not have a transfer queue.\n",
+		nprintf(("vulkan", "Rejecting %s (%d) because the device does not have a transfer queue.\n",
 			values.properties.deviceName.data(),
 			values.properties.deviceID));
 		return true;
 	}
 	if (!values.presentQueueIndex.initialized) {
-		mprintf(("Rejecting %s (%d) because the device does not have a presentation queue.\n",
+		nprintf(("vulkan", "Rejecting %s (%d) because the device does not have a presentation queue.\n",
 			values.properties.deviceName.data(),
 			values.properties.deviceID));
 		return true;
 	}
 
 	if (!checkDeviceExtensionSupport(values)) {
-		mprintf(("Rejecting %s (%d) because the device does not support our required extensions.\n",
+		nprintf(("vulkan", "Rejecting %s (%d) because the device does not support our required extensions.\n",
 			values.properties.deviceName.data(),
 			values.properties.deviceID));
 		return true;
 	}
 
 	if (!checkSwapChainSupport(values, surface)) {
-		mprintf(("Rejecting %s (%d) because the device swap chain was not compatible.\n",
+		nprintf(("vulkan", "Rejecting %s (%d) because the device swap chain was not compatible.\n",
 			values.properties.deviceName.data(),
 			values.properties.deviceID));
 		return true;
@@ -187,7 +187,7 @@ bool compareDevices(const PhysicalDeviceValues& left, const PhysicalDeviceValues
 
 void printPhysicalDevice(const PhysicalDeviceValues& values)
 {
-	mprintf(("  Found %s (%d) of type %s. API version %d.%d.%d, Driver version %d.%d.%d. Scored as %" PRIu64 "\n",
+	nprintf(("vulkan", "  Found %s (%d) of type %s. API version %d.%d.%d, Driver version %d.%d.%d. Scored as %" PRIu64 "\n",
 		values.properties.deviceName.data(),
 		values.properties.deviceID,
 		to_string(values.properties.deviceType).c_str(),
@@ -202,6 +202,21 @@ void printPhysicalDevice(const PhysicalDeviceValues& values)
 
 vk::SurfaceFormatKHR chooseSurfaceFormat(const PhysicalDeviceValues& values)
 {
+	// When HDR output is requested, prefer a 10-bit HDR10 (PQ / ST.2084) surface
+	// using BT.2020 primaries. The final output-encode pass writes PQ-encoded
+	// BT.2020 values into this surface.
+	if (Gr_enable_hdr) {
+		for (const auto& availableFormat : values.surfaceFormats) {
+			if ((availableFormat.format == vk::Format::eA2B10G10R10UnormPack32 ||
+			     availableFormat.format == vk::Format::eA2R10G10B10UnormPack32) &&
+			    availableFormat.colorSpace == vk::ColorSpaceKHR::eHdr10St2084EXT) {
+				nprintf(("vulkan", "Vulkan: Selected HDR10 surface (10-bit, ST.2084/BT.2020)\n"));
+				return availableFormat;
+			}
+		}
+		nprintf(("vulkan", "Vulkan: HDR requested but no HDR10 surface format available; falling back to SDR\n"));
+	}
+
 	// Use a non-sRGB (UNORM) format to match OpenGL's default framebuffer behavior.
 	// The FSO shaders handle gamma correction manually in the fragment shader and
 	// post-processing pipeline, so hardware sRGB conversion would double-correct.
@@ -242,7 +257,7 @@ vk::PresentModeKHR choosePresentMode(const PhysicalDeviceValues& values)
 		case vk::PresentModeKHR::eFifoRelaxed:   name = "FIFO Relaxed"; break;
 		default: break;
 	}
-	mprintf(("Vulkan: Present mode: %s (Gr_enable_vsync=%d)\n", name, Gr_enable_vsync ? 1 : 0));
+	nprintf(("vulkan", "Vulkan: Present mode: %s (Gr_enable_vsync=%d)\n", name, Gr_enable_vsync ? 1 : 0));
 
 	return chosen;
 }
@@ -351,6 +366,8 @@ bool VulkanRenderer::initialize()
 	}
 
 	createDepthResources();
+	createCompositionResources();
+	createEncodeRenderPass();
 	createRenderPass();
 	createFrameBuffers();
 
@@ -373,14 +390,40 @@ bool VulkanRenderer::initialize()
 	}
 	setShaderManager(m_shaderManager.get());
 
+	// Initialize raytraced shadow BLAS/TLAS manager (no-op internally if unsupported).
+	// Must happen before the descriptor manager below, since the Global set's
+	// layout needs to know whether to include the TLAS binding, and the
+	// descriptor fallbacks need the raytracing manager's fallback TLAS.
+	m_raytracingManager = std::unique_ptr<VulkanRaytracingManager>(new VulkanRaytracingManager());
+	bool raytracingReady = m_raytracingManager->init(m_device.get(), m_physicalDevice, m_memoryManager.get(),
+	                                                  m_bufferManager.get(), m_graphicsCommandPool.get(),
+	                                                  m_graphicsQueue, m_supportsRaytracedShadows);
+	if (!raytracingReady) {
+		if (m_supportsRaytracedShadows) {
+			mprintf(("Warning: Failed to initialize Vulkan raytracing manager, raytraced shadows will be disabled\n"));
+		}
+		m_raytracingManager.reset();
+	} else {
+		setRaytracingManager(m_raytracingManager.get());
+	}
+	bool rtDescriptorSupport = m_raytracingManager && m_raytracingManager->isEnabled();
+
+	// Keep the public capability query (gr_is_capable(CAPABILITY_RAYTRACED_SHADOWS),
+	// used to decide the shader-side RT path) in lockstep with whether the Global
+	// set's layout actually declares the TLAS binding. m_supportsRaytracedShadows
+	// was originally set from device-extension negotiation alone; downgrade it here
+	// if the raytracing manager itself failed to come up (e.g. fallback TLAS build
+	// failure) so the two can never disagree about whether binding 5 exists.
+	m_supportsRaytracedShadows = rtDescriptorSupport;
+
 	// Initialize descriptor manager
 	m_descriptorManager = std::unique_ptr<VulkanDescriptorManager>(new VulkanDescriptorManager());
-	if (!m_descriptorManager->init(m_device.get())) {
+	if (!m_descriptorManager->init(m_device.get(), rtDescriptorSupport)) {
 		mprintf(("Failed to initialize Vulkan descriptor manager!\n"));
 		return false;
 	}
 	setDescriptorManager(m_descriptorManager.get());
-	m_descriptorManager->buildFallbacks(m_bufferManager.get(), m_textureManager.get());
+	m_descriptorManager->buildFallbacks(m_bufferManager.get(), m_textureManager.get(), m_raytracingManager.get());
 
 	// Initialize pipeline manager
 	m_pipelineManager = std::unique_ptr<VulkanPipelineManager>(new VulkanPipelineManager());
@@ -410,7 +453,7 @@ bool VulkanRenderer::initialize()
 	// Initialize post-processing
 	m_postProcessor = std::unique_ptr<VulkanPostProcessor>(new VulkanPostProcessor());
 	if (!m_postProcessor->init(m_device.get(), m_physicalDevice, m_memoryManager.get(),
-	                           m_swapChainExtent, m_depthFormat)) {
+	                           m_swapChainExtent, m_depthFormat, m_hdrActive)) {
 		mprintf(("Warning: Failed to initialize Vulkan post-processor, post-processing will be disabled\n"));
 		m_postProcessor.reset();
 	} else {
@@ -425,6 +468,10 @@ bool VulkanRenderer::initialize()
 			mprintf(("Warning: Unable to read post-processing table\n"));
 		}
 	}
+
+	// Initialize shared uniform buffer managers; this is renderer-agnostic and OpenGL
+	// creates it in gr_opengl_init().
+	gr_uniform_buffer_managers_init();
 
 	// Initialize query manager for GPU timestamp profiling
 	m_queryManager = std::unique_ptr<VulkanQueryManager>(new VulkanQueryManager());
@@ -534,6 +581,13 @@ bool VulkanRenderer::initializeInstance()
 	mprintf(("Instance extensions:\n"));
 	for (const auto& ext : supportedExtensions) {
 		mprintf(("  Found support for %s version %" PRIu32 "\n", ext.extensionName.data(), ext.specVersion));
+		// Enables the driver to advertise HDR color spaces (e.g. HDR10 ST.2084)
+		// in vkGetPhysicalDeviceSurfaceFormatsKHR. Required to negotiate an HDR
+		// swap chain. Harmless to enable even when HDR output is disabled.
+		if (!stricmp(ext.extensionName, VK_EXT_SWAPCHAIN_COLOR_SPACE_EXTENSION_NAME)) {
+			extensions.push_back(VK_EXT_SWAPCHAIN_COLOR_SPACE_EXTENSION_NAME);
+			mprintf(("  Enabling %s (HDR color space support)\n", VK_EXT_SWAPCHAIN_COLOR_SPACE_EXTENSION_NAME));
+		}
 		if (FSO_DEBUG || Cmdline_graphics_debug_output) {
 			if (!stricmp(ext.extensionName, VK_EXT_DEBUG_REPORT_EXTENSION_NAME)) {
 				extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
@@ -566,7 +620,7 @@ bool VulkanRenderer::initializeInstance()
 		}
 	}
 
-	vk::ApplicationInfo appInfo(Window_title.c_str(), 1, EngineName, 1, VK_API_VERSION_1_1);
+	vk::ApplicationInfo appInfo(Window_title.c_str(), 1, EngineName, 1, VulkanApiVersion);
 
 	// Now we can make the Vulkan instance
 	vk::InstanceCreateInfo createInfo(vk::Flags<vk::InstanceCreateFlagBits>(), &appInfo);
@@ -606,7 +660,7 @@ bool VulkanRenderer::initializeInstance()
 	m_vkInstance = std::move(instance);
 	return true;
 #else
-	mprintf(("SDL does not support Vulkan in its current version.\n"));
+	nprintf(("vulkan", "SDL does not support Vulkan in its current version.\n"));
 	return false;
 #endif
 }
@@ -644,7 +698,24 @@ bool VulkanRenderer::pickPhysicalDevice(PhysicalDeviceValues& deviceValues)
 		PhysicalDeviceValues vals;
 		vals.device = dev;
 		vals.properties = dev.getProperties2().properties;
-		vals.features = dev.getFeatures2().features;
+
+		// Query ray tracing feature bits alongside the base features. It is
+		// safe to include extension feature structs here even if the device
+		// doesn't support the corresponding extension -- this is the standard
+		// way to discover whether to request it below. Extension *presence*
+		// is checked separately in createLogicalDevice() before enabling.
+		auto featureChain = dev.getFeatures2<vk::PhysicalDeviceFeatures2,
+			vk::PhysicalDeviceAccelerationStructureFeaturesKHR,
+			vk::PhysicalDeviceRayQueryFeaturesKHR,
+			vk::PhysicalDeviceBufferDeviceAddressFeatures>();
+		vals.features = featureChain.get<vk::PhysicalDeviceFeatures2>().features;
+		vals.accelerationStructureFeatureSupported =
+			featureChain.get<vk::PhysicalDeviceAccelerationStructureFeaturesKHR>().accelerationStructure != VK_FALSE;
+		vals.rayQueryFeatureSupported =
+			featureChain.get<vk::PhysicalDeviceRayQueryFeaturesKHR>().rayQuery != VK_FALSE;
+		vals.bufferDeviceAddressFeatureSupported =
+			featureChain.get<vk::PhysicalDeviceBufferDeviceAddressFeatures>().bufferDeviceAddress != VK_FALSE;
+
 		auto qprops = dev.getQueueFamilyProperties();
 		vals.queueProperties.assign(qprops.begin(), qprops.end());
 		return vals;
@@ -696,24 +767,95 @@ bool VulkanRenderer::createLogicalDevice(const PhysicalDeviceValues& deviceValue
 
 	// Check for VK_EXT_shader_viewport_index_layer (needed for shadow cascade routing)
 	m_supportsShaderViewportLayerOutput = false;
+	m_hdrMetadataSupported = false;
+	bool hasAccelerationStructureExt = false;
+	bool hasRayQueryExt = false;
+	bool hasDeferredHostOperationsExt = false;
 	for (const auto& ext : deviceValues.extensions) {
 		if (strcmp(ext.extensionName, VK_EXT_SHADER_VIEWPORT_INDEX_LAYER_EXTENSION_NAME) == 0) {
 			m_supportsShaderViewportLayerOutput = true;
 			enabledExtensions.push_back(VK_EXT_SHADER_VIEWPORT_INDEX_LAYER_EXTENSION_NAME);
 			mprintf(("Vulkan: Enabling %s (shadow cascade support)\n", VK_EXT_SHADER_VIEWPORT_INDEX_LAYER_EXTENSION_NAME));
-			break;
 		}
+		// VK_EXT_hdr_metadata lets us advertise mastering display / content
+		// luminance to the compositor for HDR10 output. Optional.
+		if (strcmp(ext.extensionName, VK_EXT_HDR_METADATA_EXTENSION_NAME) == 0) {
+			m_hdrMetadataSupported = true;
+			enabledExtensions.push_back(VK_EXT_HDR_METADATA_EXTENSION_NAME);
+			mprintf(("Vulkan: Enabling %s (HDR10 metadata)\n", VK_EXT_HDR_METADATA_EXTENSION_NAME));
+		}
+		if (strcmp(ext.extensionName, VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME) == 0) {
+			hasAccelerationStructureExt = true;
+		}
+		if (strcmp(ext.extensionName, VK_KHR_RAY_QUERY_EXTENSION_NAME) == 0) {
+			hasRayQueryExt = true;
+		}
+		if (strcmp(ext.extensionName, VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME) == 0) {
+			hasDeferredHostOperationsExt = true;
+		}
+	}
+
+	// Raytraced shadows need the extension trio present AND their feature bits
+	// enabled. bufferDeviceAddress is core in Vulkan 1.2 (no extension name to
+	// check for), but its feature bit still has to be queried/enabled
+	// explicitly -- core promotion only drops the extension-name requirement.
+	m_supportsRaytracedShadows = hasAccelerationStructureExt && hasRayQueryExt && hasDeferredHostOperationsExt &&
+		deviceValues.accelerationStructureFeatureSupported && deviceValues.rayQueryFeatureSupported &&
+		deviceValues.bufferDeviceAddressFeatureSupported;
+
+	if (m_supportsRaytracedShadows) {
+		enabledExtensions.push_back(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
+		enabledExtensions.push_back(VK_KHR_RAY_QUERY_EXTENSION_NAME);
+		enabledExtensions.push_back(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
+		mprintf(("Vulkan: Enabling ray tracing extensions (raytraced shadow support)\n"));
+	} else {
+		nprintf(("vulkan", "Vulkan: Raytraced shadows not available on this device "
+			"(extensions: accel_struct=%d ray_query=%d deferred_host_ops=%d; "
+			"features: accel_struct=%d ray_query=%d buffer_device_address=%d)\n",
+			hasAccelerationStructureExt, hasRayQueryExt, hasDeferredHostOperationsExt,
+			deviceValues.accelerationStructureFeatureSupported, deviceValues.rayQueryFeatureSupported,
+			deviceValues.bufferDeviceAddressFeatureSupported));
 	}
 
 	vk::DeviceCreateInfo deviceCreate;
 	deviceCreate.pQueueCreateInfos = queueInfos.data();
 	deviceCreate.queueCreateInfoCount = static_cast<uint32_t>(queueInfos.size());
-	deviceCreate.pEnabledFeatures = &deviceValues.features;
 
 	deviceCreate.ppEnabledExtensionNames = enabledExtensions.data();
 	deviceCreate.enabledExtensionCount = static_cast<uint32_t>(enabledExtensions.size());
 
-	m_device = deviceValues.device.createDeviceUnique(deviceCreate);
+	// Device features are enabled via a pNext-chained VkPhysicalDeviceFeatures2
+	// rather than the legacy DeviceCreateInfo::pEnabledFeatures, since the spec
+	// requires pEnabledFeatures to be null once a VkPhysicalDeviceFeatures2 is
+	// linked. The RT feature structs are always linked into the chain and
+	// unlinked when unsupported, mirroring the pattern used for the instance's
+	// optional debug report callback above.
+	vk::PhysicalDeviceFeatures2 deviceFeatures2;
+	deviceFeatures2.features = deviceValues.features;
+
+	vk::PhysicalDeviceAccelerationStructureFeaturesKHR accelStructFeatures;
+	accelStructFeatures.accelerationStructure = VK_TRUE;
+
+	vk::PhysicalDeviceRayQueryFeaturesKHR rayQueryFeatures;
+	rayQueryFeatures.rayQuery = VK_TRUE;
+
+	vk::PhysicalDeviceBufferDeviceAddressFeatures bufferDeviceAddressFeatures;
+	bufferDeviceAddressFeatures.bufferDeviceAddress = VK_TRUE;
+
+	vk::StructureChain<vk::DeviceCreateInfo,
+		vk::PhysicalDeviceFeatures2,
+		vk::PhysicalDeviceAccelerationStructureFeaturesKHR,
+		vk::PhysicalDeviceRayQueryFeaturesKHR,
+		vk::PhysicalDeviceBufferDeviceAddressFeatures>
+		deviceCreateChain(deviceCreate, deviceFeatures2, accelStructFeatures, rayQueryFeatures, bufferDeviceAddressFeatures);
+
+	if (!m_supportsRaytracedShadows) {
+		deviceCreateChain.unlink<vk::PhysicalDeviceAccelerationStructureFeaturesKHR>();
+		deviceCreateChain.unlink<vk::PhysicalDeviceRayQueryFeaturesKHR>();
+		deviceCreateChain.unlink<vk::PhysicalDeviceBufferDeviceAddressFeatures>();
+	}
+
+	m_device = deviceValues.device.createDeviceUnique(deviceCreateChain.get<vk::DeviceCreateInfo>());
 
 	// Load device-level function pointers for the dynamic dispatcher
 	VULKAN_HPP_DEFAULT_DISPATCHER.init(m_device.get());
@@ -731,7 +873,7 @@ bool VulkanRenderer::createLogicalDevice(const PhysicalDeviceValues& deviceValue
 
 	// Initialize memory manager
 	m_memoryManager = std::unique_ptr<VulkanMemoryManager>(new VulkanMemoryManager());
-	if (!m_memoryManager->init(m_vkInstance.get(), m_physicalDevice, m_device.get())) {
+	if (!m_memoryManager->init(m_vkInstance.get(), m_physicalDevice, m_device.get(), m_supportsRaytracedShadows)) {
 		mprintf(("Failed to initialize Vulkan memory manager!\n"));
 		return false;
 	}
@@ -804,7 +946,11 @@ bool VulkanRenderer::createSwapChain(const PhysicalDeviceValues& deviceValues, v
 	auto swapChainImages = m_device->getSwapchainImagesKHR(m_swapChain.get());
 	m_swapChainImages.assign(swapChainImages.begin(), swapChainImages.end());
 	m_swapChainImageFormat = surfaceFormat.format;
+	m_swapChainColorSpace = surfaceFormat.colorSpace;
+	m_hdrActive = (surfaceFormat.colorSpace == vk::ColorSpaceKHR::eHdr10St2084EXT);
+	Gr_hdr_output_active = m_hdrActive;
 	m_swapChainExtent = createInfo.imageExtent;
+	mprintf(("Vulkan: Swap chain output mode: %s\n", m_hdrActive ? "HDR10 (PQ/BT.2020)" : "SDR (sRGB)"));
 
 	m_swapChainImageViews.reserve(m_swapChainImages.size());
 	for (const auto& image : m_swapChainImages) {
@@ -874,6 +1020,23 @@ bool VulkanRenderer::createSwapChain(const PhysicalDeviceValues& deviceValues, v
 		m_device->freeCommandBuffers(m_graphicsCommandPool.get(), cmdBuffers);
 	}
 
+	// Advertise HDR10 mastering/content metadata to the compositor when active.
+	if (m_hdrActive && m_hdrMetadataSupported) {
+		vk::HdrMetadataEXT metadata;
+		// BT.2020 display primaries and D65 white point
+		metadata.displayPrimaryRed   = vk::XYColorEXT{0.708f, 0.292f};
+		metadata.displayPrimaryGreen = vk::XYColorEXT{0.170f, 0.797f};
+		metadata.displayPrimaryBlue  = vk::XYColorEXT{0.131f, 0.046f};
+		metadata.whitePoint          = vk::XYColorEXT{0.3127f, 0.3290f};
+		metadata.maxLuminance        = Gr_hdr_peak_nits;
+		metadata.minLuminance        = 0.0f;
+		metadata.maxContentLightLevel        = Gr_hdr_peak_nits;
+		metadata.maxFrameAverageLightLevel   = Gr_hdr_paperwhite_nits;
+		m_device->setHdrMetadataEXT(m_swapChain.get(), metadata);
+		mprintf(("Vulkan: HDR10 metadata set (peak %.0f nits, paper white %.0f nits)\n",
+			Gr_hdr_peak_nits, Gr_hdr_paperwhite_nits));
+	}
+
 	return true;
 }
 
@@ -901,13 +1064,17 @@ bool VulkanRenderer::recreateSwapChain()
 	// Check for 0x0 extent (minimized window) — caller should retry later
 	auto extent = chooseSwapChainExtent(freshValues, gr_screen.max_w, gr_screen.max_h);
 	if (extent.width == 0 || extent.height == 0) {
-		mprintf(("Vulkan: Surface extent is 0x0 (minimized), deferring swap chain recreation\n"));
+		nprintf(("vulkan", "Vulkan: Surface extent is 0x0 (minimized), deferring swap chain recreation\n"));
 		return false;
 	}
 
 	// Recreate swap chain, image views, and framebuffers
-	// (createSwapChain clears old resources and transitions new images internally)
+	// (createSwapChain clears old resources and transitions new images internally).
+	// The render passes (including m_encodeRenderPass) are intentionally NOT
+	// recreated so cached pipelines remain valid; only the size-dependent
+	// composition images and framebuffers are rebuilt.
 	createSwapChain(freshValues, m_swapChain.get());
+	createCompositionResources();
 	createFrameBuffers();
 
 	// Update VulkanRenderFrame handles to point to the new swap chain
@@ -922,7 +1089,7 @@ bool VulkanRenderer::recreateSwapChain()
 
 	m_swapChainNeedsRecreation = false;
 
-	mprintf(("Vulkan: Swap chain recreated successfully (%ux%u, %zu images)\n",
+	nprintf(("vulkan", "Vulkan: Swap chain recreated successfully (%ux%u, %zu images)\n",
 		m_swapChainExtent.width, m_swapChainExtent.height, m_swapChainImages.size()));
 
 	return true;

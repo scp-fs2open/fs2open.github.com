@@ -158,7 +158,7 @@ bool VulkanTextureManager::init(vk::Device device, vk::PhysicalDevice physicalDe
                                 vk::CommandPool commandPool, vk::Queue graphicsQueue)
 {
 	if (m_initialized) {
-		mprintf(("VulkanTextureManager::init called when already initialized!\n"));
+		nprintf(("vulkan", "VulkanTextureManager::init called when already initialized!\n"));
 		return false;
 	}
 
@@ -173,9 +173,9 @@ bool VulkanTextureManager::init(vk::Device device, vk::PhysicalDevice physicalDe
 	m_maxTextureSize = properties.limits.maxImageDimension2D;
 	m_maxAnisotropy = properties.limits.maxSamplerAnisotropy;
 
-	mprintf(("Vulkan Texture Manager initialized\n"));
-	mprintf(("  Max texture size: %u\n", m_maxTextureSize));
-	mprintf(("  Max anisotropy: %.1f\n", m_maxAnisotropy));
+	nprintf(("vulkan", "Vulkan Texture Manager initialized\n"));
+	nprintf(("vulkan", "  Max texture size: %u\n", m_maxTextureSize));
+	nprintf(("vulkan", "  Max anisotropy: %.1f\n", m_maxAnisotropy));
 
 	// Create default sampler
 	vk::SamplerCreateInfo samplerInfo;
@@ -203,7 +203,7 @@ bool VulkanTextureManager::init(vk::Device device, vk::PhysicalDevice physicalDe
 	try {
 		m_defaultSampler = m_device.createSampler(samplerInfo);
 	} catch (const vk::SystemError& e) {
-		mprintf(("Failed to create default sampler: %s\n", e.what()));
+		nprintf(("vulkan", "Failed to create default sampler: %s\n", e.what()));
 		return false;
 	}
 
@@ -297,7 +297,7 @@ void VulkanTextureManager::shutdown()
 	m_samplerCache.clear();
 
 	m_initialized = false;
-	mprintf(("Vulkan Texture Manager shutdown\n"));
+	nprintf(("vulkan", "Vulkan Texture Manager shutdown\n"));
 }
 
 void VulkanTextureManager::flushTextures() const
@@ -374,7 +374,7 @@ void VulkanTextureManager::flushTextures() const
 		}
 	}
 
-	mprintf(("VulkanTextureManager: Flushed %d textures for level transition\n", flushed));
+	nprintf(("vulkan", "VulkanTextureManager: Flushed %d textures for level transition\n", flushed));
 }
 
 void VulkanTextureManager::bm_init(bitmap_slot* slot) const
@@ -517,7 +517,7 @@ void VulkanTextureManager::bm_free_data(bitmap_slot* slot, bool release) const
 bool VulkanTextureManager::uploadAnimationFrames(int handle, bitmap* bm, int compType,
                                                    int baseFrame, int numFrames)
 {
-	mprintf(("VulkanTexture: Uploading animation array: base=%d numFrames=%d triggered by handle=%d\n",
+	nprintf(("vulkan", "VulkanTexture: Uploading animation array: base=%d numFrames=%d triggered by handle=%d\n",
 		baseFrame, numFrames, handle));
 
 	// Get dimensions and format from the triggering frame's bitmap
@@ -536,7 +536,7 @@ bool VulkanTextureManager::uploadAnimationFrames(int handle, bitmap* bm, int com
 		format = bppToVkFormat(bm->bpp);
 	}
 	if (format == vk::Format::eUndefined) {
-		mprintf(("VulkanTexture: uploadAnimationFrames: unsupported format bpp=%d compType=%d\n",
+		nprintf(("vulkan", "VulkanTexture: uploadAnimationFrames: unsupported format bpp=%d compType=%d\n",
 			bm->bpp, compType));
 		return false;
 	}
@@ -566,7 +566,7 @@ bool VulkanTextureManager::uploadAnimationFrames(int handle, bitmap* bm, int com
 
 	if (!createImage(width, height, mipLevels, format, vk::ImageTiling::eOptimal,
 	                 usage, MemoryUsage::GpuOnly, image, allocation, arrayLayerCount)) {
-		mprintf(("VulkanTexture: uploadAnimationFrames: failed to create %ux%u x%d array image\n",
+		nprintf(("vulkan", "VulkanTexture: uploadAnimationFrames: failed to create %ux%u x%d array image\n",
 			width, height, numFrames));
 		return false;
 	}
@@ -575,7 +575,7 @@ bool VulkanTextureManager::uploadAnimationFrames(int handle, bitmap* bm, int com
 	vk::ImageView imageView = createImageView(image, format,
 		vk::ImageAspectFlagBits::eColor, mipLevels, ImageViewType::Array2D, arrayLayerCount);
 	if (!imageView) {
-		mprintf(("VulkanTexture: uploadAnimationFrames: failed to create image view\n"));
+		nprintf(("vulkan", "VulkanTexture: uploadAnimationFrames: failed to create image view\n"));
 		m_device.destroyImage(image);
 		m_memoryManager->freeAllocation(allocation);
 		return false;
@@ -633,7 +633,7 @@ bool VulkanTextureManager::uploadAnimationFrames(int handle, bitmap* bm, int com
 			// Lock this frame to get its data
 			frameBm = bm_lock(frame, lockBpp, lockFlags);
 			if (!frameBm) {
-				mprintf(("VulkanTexture: uploadAnimationFrames: failed to lock frame %d\n", frame));
+				nprintf(("vulkan", "VulkanTexture: uploadAnimationFrames: failed to lock frame %d\n", frame));
 				// Fill with zeros to avoid undefined data
 				memset(dst, 0, layerDataSize);
 				continue;
@@ -705,14 +705,14 @@ bool VulkanTextureManager::uploadAnimationFrames(int handle, bitmap* bm, int com
 		ts->vScale = 1.0f;
 	}
 
-	mprintf(("VulkanTexture: Animation array uploaded: %ux%u x%d layers, %zu bytes total\n",
+	nprintf(("vulkan", "VulkanTexture: Animation array uploaded: %ux%u x%d layers, %zu bytes total\n",
 		width, height, numFrames, totalDataSize));
 	return true;
 }
 
 bool VulkanTextureManager::uploadCubemap(int handle, bitmap* bm, int compType)
 {
-	mprintf(("VulkanTexture: Uploading cubemap: handle=%d w=%d h=%d compType=%d\n",
+	nprintf(("vulkan", "VulkanTexture: Uploading cubemap: handle=%d w=%d h=%d compType=%d\n",
 		handle, bm->w, bm->h, compType));
 
 	auto* slot = bm_get_slot(handle, true);
@@ -743,7 +743,7 @@ bool VulkanTextureManager::uploadCubemap(int handle, bitmap* bm, int compType)
 		format = bppToVkFormat(bm->bpp);
 	}
 	if (format == vk::Format::eUndefined) {
-		mprintf(("VulkanTexture: uploadCubemap: unsupported format\n"));
+		nprintf(("vulkan", "VulkanTexture: uploadCubemap: unsupported format\n"));
 		return false;
 	}
 
@@ -784,7 +784,7 @@ bool VulkanTextureManager::uploadCubemap(int handle, bitmap* bm, int compType)
 	vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
 	if (!createImage(faceW, faceH, mipLevels, format, vk::ImageTiling::eOptimal,
 	                 usage, MemoryUsage::GpuOnly, ts->image, ts->allocation, 6, true)) {
-		mprintf(("VulkanTexture: uploadCubemap: failed to create cubemap image\n"));
+		nprintf(("vulkan", "VulkanTexture: uploadCubemap: failed to create cubemap image\n"));
 		return false;
 	}
 
@@ -792,7 +792,7 @@ bool VulkanTextureManager::uploadCubemap(int handle, bitmap* bm, int compType)
 	ts->imageView = createImageView(ts->image, format, vk::ImageAspectFlagBits::eColor,
 	                                mipLevels, ImageViewType::Cube, 6);
 	if (!ts->imageView) {
-		mprintf(("VulkanTexture: uploadCubemap: failed to create cube image view\n"));
+		nprintf(("vulkan", "VulkanTexture: uploadCubemap: failed to create cube image view\n"));
 		m_device.destroyImage(ts->image);
 		ts->image = nullptr;
 		m_memoryManager->freeAllocation(ts->allocation);
@@ -858,7 +858,7 @@ bool VulkanTextureManager::uploadCubemap(int handle, bitmap* bm, int compType)
 	ts->uScale = 1.0f;
 	ts->vScale = 1.0f;
 
-	mprintf(("VulkanTexture: Cubemap uploaded: %ux%u, %u mips, format=%d\n",
+	nprintf(("vulkan", "VulkanTexture: Cubemap uploaded: %ux%u, %u mips, format=%d\n",
 		faceW, faceH, mipLevels, static_cast<int>(format)));
 	return true;
 }
@@ -901,14 +901,14 @@ bool VulkanTextureManager::upload3DTexture(int handle, bitmap* bm, int texDepth)
 	                 vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
 	                 MemoryUsage::GpuOnly, ts->image, ts->allocation,
 	                 1, false, depth3D, vk::ImageType::e3D)) {
-		mprintf(("Failed to create 3D texture image!\n"));
+		nprintf(("vulkan", "Failed to create 3D texture image!\n"));
 		return false;
 	}
 
 	// Create 3D image view
 	ts->imageView = createImageView(ts->image, format, vk::ImageAspectFlagBits::eColor, 1, ImageViewType::Volume3D);
 	if (!ts->imageView) {
-		mprintf(("Failed to create 3D texture image view!\n"));
+		nprintf(("vulkan", "Failed to create 3D texture image view!\n"));
 		m_device.destroyImage(ts->image);
 		ts->image = nullptr;
 		m_memoryManager->freeAllocation(ts->allocation);
@@ -927,7 +927,7 @@ bool VulkanTextureManager::upload3DTexture(int handle, bitmap* bm, int texDepth)
 	try {
 		stagingBuffer = m_device.createBuffer(bufferInfo);
 	} catch (const vk::SystemError& e) {
-		mprintf(("Failed to create staging buffer for 3D texture: %s\n", e.what()));
+		nprintf(("vulkan", "Failed to create staging buffer for 3D texture: %s\n", e.what()));
 		return false;
 	}
 
@@ -1003,7 +1003,7 @@ bool VulkanTextureManager::upload3DTexture(int handle, bitmap* bm, int texDepth)
 	ts->uScale = 1.0f;
 	ts->vScale = 1.0f;
 
-	mprintf(("VulkanTexture: 3D texture uploaded: %ux%ux%u, format=%d\n",
+	nprintf(("vulkan", "VulkanTexture: 3D texture uploaded: %ux%ux%u, format=%d\n",
 		width, height, depth3D, static_cast<int>(format)));
 	return true;
 }
@@ -1012,7 +1012,7 @@ bool VulkanTextureManager::bm_data(int handle, bitmap* bm, int compType)
 {
 	static int callCount = 0;
 	if (callCount < 20) {
-		mprintf(("VulkanTextureManager::bm_data #%d: handle=%d bm=%p bm->data=%p compType=%d\n",
+		nprintf(("vulkan", "VulkanTextureManager::bm_data #%d: handle=%d bm=%p bm->data=%p compType=%d\n",
 			callCount++, handle, bm, bm ? reinterpret_cast<void*>(bm->data) : nullptr, compType));
 	}
 
@@ -1105,7 +1105,7 @@ bool VulkanTextureManager::bm_data(int handle, bitmap* bm, int compType)
 
 	static int fmtLogCount = 0;
 	if (fmtLogCount < 30) {
-		mprintf(("VulkanTextureManager::bm_data: handle=%d w=%d h=%d bpp=%d true_bpp=%d flags=0x%x compType=%d\n",
+		nprintf(("vulkan", "VulkanTextureManager::bm_data: handle=%d w=%d h=%d bpp=%d true_bpp=%d flags=0x%x compType=%d\n",
 			handle, bm->w, bm->h, bm->bpp, bm->true_bpp, bm->flags, compType));
 		fmtLogCount++;
 	}
@@ -1119,7 +1119,7 @@ bool VulkanTextureManager::bm_data(int handle, bitmap* bm, int compType)
 	if (isCompressed) {
 		format = bppToVkFormat(bm->bpp, true, compType);
 		if (format == vk::Format::eUndefined) {
-			mprintf(("VulkanTextureManager::bm_data: Unsupported compression type %d\n", compType));
+			nprintf(("vulkan", "VulkanTextureManager::bm_data: Unsupported compression type %d\n", compType));
 			return false;
 		}
 
@@ -1140,7 +1140,7 @@ bool VulkanTextureManager::bm_data(int handle, bitmap* bm, int compType)
 	} else {
 		format = bppToVkFormat(bm->bpp);
 		if (format == vk::Format::eUndefined) {
-			mprintf(("VulkanTextureManager::bm_data: Unsupported bpp %d\n", bm->bpp));
+			nprintf(("vulkan", "VulkanTextureManager::bm_data: Unsupported bpp %d\n", bm->bpp));
 			return false;
 		}
 
@@ -1200,14 +1200,14 @@ bool VulkanTextureManager::bm_data(int handle, bitmap* bm, int compType)
 
 	if (!createImage(width, height, mipLevels, format, vk::ImageTiling::eOptimal,
 	                 usage, MemoryUsage::GpuOnly, ts->image, ts->allocation)) {
-		mprintf(("Failed to create texture image!\n"));
+		nprintf(("vulkan", "Failed to create texture image!\n"));
 		return false;
 	}
 
 	// Create image view (sampler2DArray for regular textures)
 	ts->imageView = createImageView(ts->image, format, vk::ImageAspectFlagBits::eColor, mipLevels, ImageViewType::Array2D);
 	if (!ts->imageView) {
-		mprintf(("Failed to create texture image view!\n"));
+		nprintf(("vulkan", "Failed to create texture image view!\n"));
 		m_device.destroyImage(ts->image);
 		ts->image = nullptr;
 		m_memoryManager->freeAllocation(ts->allocation);
@@ -1314,7 +1314,7 @@ int VulkanTextureManager::bm_make_render_target(int handle, int* width, int* hei
 
 	if (!createImage(w, h, mipLevels, format, vk::ImageTiling::eOptimal,
 	                 usage, MemoryUsage::GpuOnly, ts->image, ts->allocation, arrayLayers, isCubemapRT)) {
-		mprintf(("Failed to create render target image!\n"));
+		nprintf(("vulkan", "Failed to create render target image!\n"));
 		return 0;
 	}
 
@@ -1334,7 +1334,7 @@ int VulkanTextureManager::bm_make_render_target(int handle, int* width, int* hei
 			ts->cubeFaceViews[face] = createImageView(ts->image, format, vk::ImageAspectFlagBits::eColor,
 			                                           1, ImageViewType::Plain2D, 1, static_cast<uint32_t>(face));
 			if (!ts->cubeFaceViews[face]) {
-				mprintf(("Failed to create cubemap face %zu view!\n", face));
+				nprintf(("vulkan", "Failed to create cubemap face %zu view!\n", face));
 				// Clean up previously created views
 				for (size_t j = 0; j < face; j++) {
 					m_device.destroyImageView(ts->cubeFaceViews[j]);
@@ -1402,7 +1402,7 @@ int VulkanTextureManager::bm_make_render_target(int handle, int* width, int* hei
 	try {
 		ts->renderPass = m_device.createRenderPass(renderPassInfo);
 	} catch (const vk::SystemError& e) {
-		mprintf(("Failed to create render pass: %s\n", e.what()));
+		nprintf(("vulkan", "Failed to create render pass: %s\n", e.what()));
 		m_device.destroyImageView(ts->imageView);
 		m_device.destroyImage(ts->image);
 		ts->image = nullptr;
@@ -1425,7 +1425,7 @@ int VulkanTextureManager::bm_make_render_target(int handle, int* width, int* hei
 			try {
 				ts->cubeFaceFramebuffers[face] = m_device.createFramebuffer(framebufferInfo);
 			} catch (const vk::SystemError& e) {
-				mprintf(("Failed to create cubemap face %zu framebuffer: %s\n", face, e.what()));
+				nprintf(("vulkan", "Failed to create cubemap face %zu framebuffer: %s\n", face, e.what()));
 				return 0;
 			}
 		}
@@ -1446,7 +1446,7 @@ int VulkanTextureManager::bm_make_render_target(int handle, int* width, int* hei
 		try {
 			ts->framebuffer = m_device.createFramebuffer(framebufferInfo);
 		} catch (const vk::SystemError& e) {
-			mprintf(("Failed to create framebuffer: %s\n", e.what()));
+			nprintf(("vulkan", "Failed to create framebuffer: %s\n", e.what()));
 			m_device.destroyRenderPass(ts->renderPass);
 			m_device.destroyImageView(ts->imageView);
 			m_device.destroyImage(ts->image);
@@ -1485,7 +1485,7 @@ int VulkanTextureManager::bm_make_render_target(int handle, int* width, int* hei
 		*mm_lvl = static_cast<int>(mipLevels);
 	}
 
-	mprintf(("Created Vulkan render target: %ux%u\n", w, h));
+	nprintf(("vulkan", "Created Vulkan render target: %ux%u\n", w, h));
 	return 1;
 }
 
@@ -1544,7 +1544,7 @@ void VulkanTextureManager::update_texture(int bitmap_handle, int bpp, const ubyt
 
 	// Verify dimensions match existing texture
 	if (ts->width != w || ts->height != h) {
-		mprintf(("VulkanTextureManager::update_texture: Size mismatch (%ux%u vs %ux%u)\n",
+		nprintf(("vulkan", "VulkanTextureManager::update_texture: Size mismatch (%ux%u vs %ux%u)\n",
 			w, h, ts->width, ts->height));
 		return;
 	}
@@ -1552,7 +1552,7 @@ void VulkanTextureManager::update_texture(int bitmap_handle, int bpp, const ubyt
 	// Use bppToVkFormat to determine format, matching how bm_data creates textures
 	vk::Format format = bppToVkFormat(bpp);
 	if (format == vk::Format::eUndefined) {
-		mprintf(("VulkanTextureManager::update_texture: Unsupported bpp %d\n", bpp));
+		nprintf(("vulkan", "VulkanTextureManager::update_texture: Unsupported bpp %d\n", bpp));
 		return;
 	}
 
@@ -1573,7 +1573,7 @@ void VulkanTextureManager::update_texture(int bitmap_handle, int bpp, const ubyt
 	try {
 		stagingBuffer = m_device.createBuffer(bufferInfo);
 	} catch (const vk::SystemError& e) {
-		mprintf(("VulkanTextureManager::update_texture: Failed to create staging buffer: %s\n", e.what()));
+		nprintf(("vulkan", "VulkanTextureManager::update_texture: Failed to create staging buffer: %s\n", e.what()));
 		return;
 	}
 
@@ -1663,7 +1663,7 @@ vk::Sampler VulkanTextureManager::getSampler(vk::Filter magFilter, vk::Filter mi
 		m_samplerCache[key] = sampler;
 		return sampler;
 	} catch (const vk::SystemError& e) {
-		mprintf(("Failed to create sampler: %s\n", e.what()));
+		nprintf(("vulkan", "Failed to create sampler: %s\n", e.what()));
 		return m_defaultSampler;
 	}
 }
@@ -1939,7 +1939,7 @@ bool VulkanTextureManager::createImage(uint32_t width, uint32_t height, uint32_t
 	try {
 		image = m_device.createImage(imageInfo);
 	} catch (const vk::SystemError& e) {
-		mprintf(("Failed to create image: %s\n", e.what()));
+		nprintf(("vulkan", "Failed to create image: %s\n", e.what()));
 		return false;
 	}
 
@@ -1986,7 +1986,7 @@ vk::ImageView VulkanTextureManager::createImageView(vk::Image image, vk::Format 
 	try {
 		return m_device.createImageView(viewInfo);
 	} catch (const vk::SystemError& e) {
-		mprintf(("Failed to create image view: %s\n", e.what()));
+		nprintf(("vulkan", "Failed to create image view: %s\n", e.what()));
 		return nullptr;
 	}
 }
@@ -1999,14 +1999,14 @@ bool VulkanTextureManager::createFallbackTexture(vk::Image& outImage, VulkanAllo
 	if (!createImage(1, 1, 1, vk::Format::eR8G8B8A8Unorm, vk::ImageTiling::eOptimal,
 	                 vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
 	                 MemoryUsage::GpuOnly, outImage, outAlloc, arrayLayers, cubemap, 1, imageType)) {
-		mprintf(("Failed to create fallback texture image!\n"));
+		nprintf(("vulkan", "Failed to create fallback texture image!\n"));
 		return false;
 	}
 
 	outView = createImageView(outImage, vk::Format::eR8G8B8A8Unorm,
 	                          vk::ImageAspectFlagBits::eColor, 1, viewType, arrayLayers);
 	if (!outView) {
-		mprintf(("Failed to create fallback texture view!\n"));
+		nprintf(("vulkan", "Failed to create fallback texture view!\n"));
 		m_device.destroyImage(outImage);
 		m_memoryManager->freeAllocation(outAlloc);
 		return false;
@@ -2026,7 +2026,7 @@ bool VulkanTextureManager::createFallbackTexture(vk::Image& outImage, VulkanAllo
 	try {
 		stagingBuffer = m_device.createBuffer(bufferInfo);
 	} catch (const vk::SystemError& e) {
-		mprintf(("Failed to create fallback staging buffer: %s\n", e.what()));
+		nprintf(("vulkan", "Failed to create fallback staging buffer: %s\n", e.what()));
 		m_device.destroyImageView(outView);
 		m_device.destroyImage(outImage);
 		m_memoryManager->freeAllocation(outAlloc);
@@ -2082,7 +2082,7 @@ bool VulkanTextureManager::createStagingBuffer(size_t size, vk::Buffer& outBuffe
 	try {
 		outBuffer = m_device.createBuffer(bufferInfo);
 	} catch (const vk::SystemError& e) {
-		mprintf(("VulkanTexture: failed to create staging buffer: %s\n", e.what()));
+		nprintf(("vulkan", "VulkanTexture: failed to create staging buffer: %s\n", e.what()));
 		outBuffer = nullptr;
 		return false;
 	}
@@ -2327,7 +2327,7 @@ int vulkan_preload(int bitmap_num, int /*is_aabitmap*/)
 	if (!bmp) {
 		static int warnCount = 0;
 		if (warnCount < 10) {
-			mprintf(("vulkan_preload: Failed to lock bitmap %d (compType=%d)\n", bitmap_num, compType));
+			nprintf(("vulkan", "vulkan_preload: Failed to lock bitmap %d (compType=%d)\n", bitmap_num, compType));
 			warnCount++;
 		}
 		return 0;
@@ -2342,7 +2342,7 @@ int vulkan_preload(int bitmap_num, int /*is_aabitmap*/)
 	if (success) {
 		static int successCount = 0;
 		if (successCount < 10) {
-			mprintf(("vulkan_preload: Successfully uploaded texture %d (compressed=%d)\n",
+			nprintf(("vulkan", "vulkan_preload: Successfully uploaded texture %d (compressed=%d)\n",
 				bitmap_num, compType));
 			successCount++;
 		}

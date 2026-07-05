@@ -6,6 +6,7 @@
 #include "asteroid/asteroid.h"
 #include "graphics/debug_sphere.h"
 #include "graphics/matrix.h"
+#include "graphics/shadows.h"
 #include "lab/labv2_internal.h"
 #include "lighting/lighting_profiles.h"
 #include "ship/shiphit.h"
@@ -497,6 +498,34 @@ void LabUi::build_antialiasing_combobox()
 		}
 	}
 }
+
+const char* shadow_render_method_settings[] = {
+	"Shadow Maps",
+	"Raytraced",
+};
+
+void LabUi::build_shadow_method_combobox()
+{
+	// Only offer this control at all when the hardware/renderer can actually do
+	// something with it -- same gate the in-game Shadow Method option's
+	// enumerator uses.
+	if (!shadows_raytracing_supported()) {
+		return;
+	}
+
+	with_Combo("Shadow method", shadow_render_method_settings[static_cast<int>(Shadow_render_method)])
+	{
+		for (int n = 0; n < IM_ARRAYSIZE(shadow_render_method_settings); n++) {
+			bool is_selected = static_cast<int>(Shadow_render_method) == n;
+
+			if (Selectable(shadow_render_method_settings[n], is_selected))
+				getLabManager()->Renderer->setShadowRenderMethod(static_cast<ShadowRenderMethod>(n));
+
+			if (is_selected)
+				SetItemDefaultFocus();
+		}
+	}
+}
 namespace ltp = lighting_profiles;
 using namespace ltp;
 
@@ -585,6 +614,8 @@ void LabUi::show_render_options()
 			SliderInt("Bloom level", &bloom_level, 0, 200);
 
 			build_antialiasing_combobox();
+
+			build_shadow_method_combobox();
 
 			build_tone_mapper_combobox();
 

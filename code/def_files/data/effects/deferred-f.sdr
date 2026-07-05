@@ -17,18 +17,22 @@ layout(set = 1, binding = 1) uniform sampler2D sTextures[16];
 #define PositionBuffer sTextures[2]
 #define SpecBuffer sTextures[3]
 
-layout(set = 0, binding = 2) uniform sampler2DArray shadow_map;
+layout(set = 0, binding = 2) uniform sampler2DArrayShadow shadow_map;
 
 #ifdef ENV_MAP
 layout(set = 0, binding = 3) uniform samplerCube sEnvmap;
 layout(set = 0, binding = 4) uniform samplerCube sIrrmap;
+#endif
+
+#ifdef RT_SHADOWS
+layout(set = 0, binding = 5) uniform accelerationStructureEXT shadow_tlas;
 #endif
 #else
 uniform sampler2D ColorBuffer;
 uniform sampler2D NormalBuffer;
 uniform sampler2D PositionBuffer;
 uniform sampler2D SpecBuffer;
-uniform sampler2DArray shadow_map;
+uniform sampler2DArrayShadow shadow_map;
 
 #ifdef ENV_MAP
 uniform samplerCube sEnvmap;
@@ -42,20 +46,26 @@ layout(set = 0, binding = 1, std140)
 layout(std140)
 #endif
 uniform globalDeferredData {
-	mat4 shadow_mv_matrix;
-	mat4 shadow_proj_matrix[4];
-
 	mat4 inv_view_matrix;
-
-	float veryneardist;
-	float neardist;
-	float middist;
-	float fardist;
 
 	float invScreenWidth;
 	float invScreenHeight;
-
 	float nearPlane;
+};
+
+#ifdef VULKAN
+layout(set = 0, binding = 6, std140)
+#else
+layout(std140)
+#endif
+uniform shadowCascadeParams {
+	int cascade_offset;
+	int cascade_count;
+
+	mat4 shadow_mv_matrix;
+	mat4 shadow_proj_matrix[NUM_SHADOW_CASCADES];
+	vec4 cascade_distances[(NUM_SHADOW_CASCADES + 4 - 1) / 4];
+	vec4 smoothness_factors[(NUM_SHADOW_CASCADES + 4 - 1) / 4];
 };
 
 #ifdef VULKAN
@@ -292,15 +302,21 @@ void main()
 		GetLightInfo(position, alpha, reflectDir, lightDir, attenuation, area_normalisation);
 
 		if (enable_shadows != 0) {
-			vec4 fragShadowPos = shadow_mv_matrix * inv_view_matrix * vec4(position, 1.0);
-			vec4 fragShadowUV[4];
-			fragShadowUV[0] = transformToShadowMap(shadow_proj_matrix[0], 0, fragShadowPos);
-			fragShadowUV[1] = transformToShadowMap(shadow_proj_matrix[1], 1, fragShadowPos);
-			fragShadowUV[2] = transformToShadowMap(shadow_proj_matrix[2], 2, fragShadowPos);
-			fragShadowUV[3] = transformToShadowMap(shadow_proj_matrix[3], 3, fragShadowPos);
+#ifdef RT_SHADOWS
+			vec3 worldPos = (inv_view_matrix * vec4(position, 1.0)).xyz;
+			vec3 worldNormal = normalize((inv_view_matrix * vec4(normal, 0.0)).xyz);
+			vec3 worldSunDir = normalize((inv_view_matrix * vec4(lightDir, 0.0)).xyz);
 
-			attenuation *= getShadowValue(shadow_map, -position.z, fragShadowPos.z, fragShadowUV, fardist, middist,
-									neardist, veryneardist);
+			attenuation *= traceShadowRay(shadow_tlas, worldPos, worldNormal, worldSunDir);
+#else
+			vec4 fragShadowPos = shadow_mv_matrix * inv_view_matrix * vec4(position, 1.0);
+			vec4 fragShadowUV[NUM_SHADOW_CASCADES];
+			for (int i = 0; i < NUM_SHADOW_CASCADES; i++) {
+				fragShadowUV[i] = transformToShadowMap(shadow_proj_matrix[i], i, fragShadowPos);
+			}
+
+			attenuation *= getShadowValue(shadow_map, -position.z, fragShadowUV, cascade_distances, smoothness_factors, cascade_offset, cascade_count);
+#endif
 		}
 
 		vec3 halfVec = normalize(lightDir + eyeDir);

@@ -736,10 +736,6 @@ void prop_render(object* obj, model_draw_list* scene)
 		render_flags |= MR_NO_LIGHTING;
 	}
 
-	if (Rendering_to_shadow_map) {
-		render_flags = MR_NO_TEXTURING | MR_NO_LIGHTING;
-	}
-
 	if (propp->flags[Prop::Prop_Flags::Glowmaps_disabled]) {
 		render_flags |= MR_NO_GLOWMAPS;
 	}

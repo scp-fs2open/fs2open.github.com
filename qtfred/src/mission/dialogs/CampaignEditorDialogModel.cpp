@@ -20,6 +20,57 @@ CampaignEditorDialogModel::CampaignEditorDialogModel(QObject* parent, fso::fred:
 	initializeData();
 }
 
+CampaignEditorDialogModel::~CampaignEditorDialogModel()
+{
+	// Release everything we allocated into the global Campaign struct while the
+	// dialog was open (mission name strings, lazy-loaded goal/event lists, etc.).
+	mission_campaign_clear();
+}
+
+void CampaignEditorDialogModel::syncCampaignMissionList()
+{
+	// The shared sexp tree code (sexp_tree_opf.cpp) reads Campaign.num_missions and
+	// Campaign.missions[].name to decide whether is-previous-event-* /
+	// is-previous-goal-* operators are usable. The OPF_GOAL_NAME / OPF_EVENT_NAME
+	// data-list paths additionally need each referenced mission's goals/events
+	// (which read_mission_goal_list() lazy-loads from disk into the same struct).
+	// Mirror our WIP list into Campaign.missions[] so all of that "just works",
+	// while preserving any lazy-loaded caches for missions whose filename hasn't
+	// changed since the last sync.
+	const int new_count = static_cast<int>(m_missions.size());
+
+	// Free entries that fall outside the new range (e.g. user removed missions).
+	for (int i = new_count; i < Campaign.num_missions; i++) {
+		if (Campaign.missions[i].name) {
+			vm_free(Campaign.missions[i].name);
+			Campaign.missions[i].name = nullptr;
+		}
+		Campaign.missions[i].events.clear();
+		Campaign.missions[i].goals.clear();
+		Campaign.missions[i].flags = 0;
+	}
+
+	Campaign.num_missions = new_count;
+
+	for (int i = 0; i < new_count && i < MAX_CAMPAIGN_MISSIONS; i++) {
+		const char* new_name = m_missions[i].filename.c_str();
+		const bool name_changed = (Campaign.missions[i].name == nullptr)
+			|| (strcmp(Campaign.missions[i].name, new_name) != 0);
+
+		if (name_changed) {
+			if (Campaign.missions[i].name) {
+				vm_free(Campaign.missions[i].name);
+			}
+			Campaign.missions[i].name = vm_strdup(new_name);
+			// New filename — invalidate any cached goal/event list and mark for lazy reload.
+			Campaign.missions[i].events.clear();
+			Campaign.missions[i].goals.clear();
+			Campaign.missions[i].flags |= CMISSION_FLAG_FRED_LOAD_PENDING;
+		}
+		Campaign.missions[i].level = m_missions[i].level;
+	}
+}
+
 bool CampaignEditorDialogModel::apply()
 {
 	stopSpeech();
@@ -124,6 +175,10 @@ void CampaignEditorDialogModel::initializeData(const char* filename)
 	// Set initial selection states to none.
 	m_current_mission_index = -1;
 	m_current_branch_index = -1;
+
+	// Keep Campaign.num_missions in sync so the sexp tree's OPF_MISSION_NAME gate
+	// (used by is-previous-event-*/is-previous-goal-*) sees the loaded campaign.
+	syncCampaignMissionList();
 
 	// Mark the model as unmodified since this is a fresh load or new state.
 	_modified = false;
@@ -436,6 +491,11 @@ void CampaignEditorDialogModel::loadCampaignFromFile(const SCP_string& filename)
 
 	// Immediately clear the global struct again now that we have our safe working copy.
 	clearCampaignGlobal();
+
+	// clearCampaignGlobal() also zeroed Campaign.num_missions, but the sexp tree's
+	// OPF_MISSION_NAME gate needs that count to be non-zero for is-previous-event-* /
+	// is-previous-goal-* to be usable. Restore it from the WIP list.
+	syncCampaignMissionList();
 }
 
 void CampaignEditorDialogModel::saveCampaign(const SCP_string& filename)
@@ -533,6 +593,11 @@ void CampaignEditorDialogModel::saveCampaign(const SCP_string& filename)
 
 		// Clean up the global struct now that the save is complete.
 		clearCampaignGlobal();
+
+		// clearCampaignGlobal() zeroed Campaign.num_missions, but the dialog is still
+		// open and the sexp tree relies on that count for is-previous-event-*/
+		// is-previous-goal-* operator availability.
+		syncCampaignMissionList();
 	}
 }
 
@@ -842,6 +907,7 @@ void CampaignEditorDialogModel::addMission(const SCP_string& filename, int level
 
 	// Adding or removing missions changes the list of available files.
 	loadAvailableMissions();
+	syncCampaignMissionList();
 	set_modified();
 }
 
@@ -863,6 +929,7 @@ void CampaignEditorDialogModel::removeMission(int mission_index)
 
 	// Adding or removing missions changes the list of available files.
 	loadAvailableMissions();
+	syncCampaignMissionList();
 	set_modified();
 }
 
@@ -1000,6 +1067,7 @@ void CampaignEditorDialogModel::setMissionAsFirst(int mission_index)
 	auto mission = m_missions[mission_index];
 	m_missions.erase(m_missions.begin() + mission_index);
 	m_missions.insert(m_missions.begin(), mission);
+	syncCampaignMissionList();
 	set_modified();
 }
 
@@ -1464,30 +1532,6 @@ void CampaignEditorDialogModel::removeBranch(int mission_index, int branch_index
 	mission.branches.erase(mission.branches.begin() + branch_index);
 
 	set_modified();
-}
-
-void CampaignEditorDialogModel::updateCurrentBranch(int internal_node_id)
-{
-	// Ensure a mission and a branch are currently selected.
-	if (!SCP_vector_inbounds(m_missions, m_current_mission_index)) {
-		return;
-	}
-	auto& mission = m_missions[m_current_mission_index];
-	if (!SCP_vector_inbounds(mission.branches, m_current_branch_index)) {
-		return;
-	}
-
-	// Tell the tree to save the specified branch.
-	// The tree will serialize its internal model for that branch into a new SEXP
-	// and return the new formula index.
-	int new_sexp_formula = m_tree_ops.saveSexp(internal_node_id);
-
-	// Update the model's data with the new formula.
-	// The 'modify' helper also handles setting the modified flag.
-	auto& branch = mission.branches[m_current_branch_index];
-	modify(branch.sexp_formula, new_sexp_formula);
-
-	m_tree_ops.expandBranch(internal_node_id);
 }
 
 bool CampaignEditorDialogModel::getCurrentBranchIsSpecial() const

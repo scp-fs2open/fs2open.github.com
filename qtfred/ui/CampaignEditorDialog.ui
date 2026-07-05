@@ -337,7 +337,7 @@
             </property>
             <layout class="QHBoxLayout" name="horizontalLayout">
              <item>
-              <widget class="fso::fred::sexp_tree" name="sxtBranches">
+              <widget class="fso::fred::sexp_tree_view" name="sxtBranches">
                <property name="enabled">
                 <bool>false</bool>
                </property>
@@ -599,9 +599,9 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>fso::fred::sexp_tree</class>
+   <class>fso::fred::sexp_tree_view</class>
    <extends>QTreeView</extends>
-   <header>ui/widgets/sexp_tree.h</header>
+   <header>ui/widgets/sexp_tree_view.h</header>
   </customwidget>
   <customwidget>
    <class>CampaignMissionGraph</class>

@@ -119,6 +119,19 @@ void VulkanDeletionQueue::queueSampler(vk::Sampler sampler)
 	m_pendingDestructions.push_back(pending);
 }
 
+void VulkanDeletionQueue::queueAccelerationStructure(vk::AccelerationStructureKHR accelStruct)
+{
+	Assertion(m_initialized, "VulkanDeletionQueue::queueAccelerationStructure called before initialization!");
+	if (!accelStruct) {
+		return;
+	}
+
+	PendingDestruction pending;
+	pending.resource = accelStruct;
+	pending.framesRemaining = FRAMES_TO_WAIT;
+	m_pendingDestructions.push_back(pending);
+}
+
 void VulkanDeletionQueue::processDestructions()
 {
 	Assertion(m_initialized, "VulkanDeletionQueue::processDestructions called before initialization!");
@@ -186,6 +199,10 @@ void VulkanDeletionQueue::destroyResource(const PendingResource& resource)
 		} else if constexpr (std::is_same_v<T, vk::Sampler>) {
 			if (res) {
 				m_device.destroySampler(res);
+			}
+		} else if constexpr (std::is_same_v<T, vk::AccelerationStructureKHR>) {
+			if (res) {
+				m_device.destroyAccelerationStructureKHR(res);
 			}
 		}
 	}, resource);

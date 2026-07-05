@@ -23,6 +23,7 @@
 #include "graphics/opengl/gropenglstate.h"
 #include "graphics/opengl/gropengltexture.h"
 #include "graphics/opengl/gropengltnl.h"
+#include "graphics/shader_types.h"
 #include "graphics/util/uniform_structs.h"
 #include "lighting/lighting.h"
 #include "math/vecmat.h"
@@ -72,6 +73,7 @@ struct opengl_uniform_block_binding {
 opengl_uniform_block_binding GL_uniform_blocks[] = {
     {uniform_block_type::Lights, "lightData"},
     {uniform_block_type::ModelData, "modelData"},
+    {uniform_block_type::ShadowMapData, "shadowMapData"},
     {uniform_block_type::NanoVGData, "NanoVGUniformData"},
     {uniform_block_type::DecalInfo, "decalInfoData"},
     {uniform_block_type::DecalGlobals, "decalGlobalData"},
@@ -79,6 +81,7 @@ opengl_uniform_block_binding GL_uniform_blocks[] = {
     {uniform_block_type::Matrices, "matrixData"},
 	{uniform_block_type::MovieData, "movieData"},
     {uniform_block_type::GenericData, "genericData"},
+    {uniform_block_type::ShadowCascadeParams, "shadowCascadeParams"},
 };
 
 /**
@@ -178,8 +181,8 @@ static SCP_string opengl_shader_get_header(shader_type type_id, int flags, bool 
 #else
 	sflags << "#version " << GLSL_version << " es\n";
 #endif
-
 	sflags << "#define OPENGL\n";
+	sflags << shader_get_shadow_cascade_defines();
 
 	if (Detail.lighting < 3) {
 		sflags << "#define FLAG_LIGHT_MODEL_BLINN_PHONG\n";

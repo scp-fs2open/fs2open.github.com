@@ -72,6 +72,16 @@ extern bool Gr_post_processing_enabled;
 
 extern bool Gr_enable_vsync;
 
+// HDR10 (PQ/ST.2084 + BT.2020) output. Currently only honored by the Vulkan renderer.
+extern bool Gr_enable_hdr;
+// True once the renderer has actually negotiated an HDR10 swap chain (read-only,
+// set by the active renderer). Distinct from Gr_enable_hdr, which is the request.
+extern bool Gr_hdr_output_active;
+// Reference white luminance in nits (the brightness of SDR "paper white" / UI when HDR is active).
+extern float Gr_hdr_paperwhite_nits;
+// Display peak luminance in nits used for tone curve clamping and HDR10 metadata.
+extern float Gr_hdr_peak_nits;
+
 extern bool Deferred_lighting;
 extern bool High_dynamic_range;
 
@@ -214,6 +224,10 @@ enum shader_type {
 
 	SDR_TYPE_IRRADIANCE_MAP_GEN,
 
+	SDR_TYPE_SHADOW_MAP_GEN,
+
+	SDR_TYPE_GAMMA_BLIT,
+
 	NUM_SHADER_TYPES
 };
 
@@ -238,8 +252,14 @@ enum shader_type {
 #define SDR_FLAG_COPY_FROM_ARRAY (1 << 0)
 
 #define SDR_FLAG_TONEMAPPING_LINEAR_OUT (1 << 0)
+#define SDR_FLAG_TONEMAPPING_HDR10 (1 << 1)
 
 #define SDR_FLAG_ENV_MAP (1 << 0)
+#define SDR_FLAG_DEFERRED_RT_SHADOWS (1 << 1)
+
+#define SDR_FLAG_SHADOW_FALLBACK (1 << 0)
+
+#define SDR_FLAG_SHADOW_FALLBACK (1 << 0)
 
 
 enum class uniform_block_type {
@@ -252,6 +272,8 @@ enum class uniform_block_type {
 	Matrices = 6,
 	MovieData = 7,
 	GenericData = 8,
+	ShadowMapData = 9,
+	ShadowCascadeParams = 10,
 
 	NUM_BLOCK_TYPES
 };
@@ -340,7 +362,9 @@ enum class gr_capability {
 	CAPABILITY_S3TC,
 	CAPABILITY_LARGE_SHADER,
 	CAPABILITY_INSTANCED_RENDERING,
-	CAPABILITY_QUERIES_REUSABLE
+	CAPABILITY_FAST_SHADOWS,
+	CAPABILITY_QUERIES_REUSABLE,
+	CAPABILITY_RAYTRACED_SHADOWS
 };
 
 struct gr_capability_def {
@@ -790,8 +814,21 @@ typedef struct screen {
 
 	std::function<void(int)> gf_set_texture_addressing;
 
-	std::function<gr_buffer_handle(BufferType type, BufferUsageHint usage)> gf_create_buffer;
+	std::function<gr_buffer_handle(BufferType type, BufferUsageHint usage, bool rt_capable)> gf_create_buffer;
 	std::function<void(gr_buffer_handle handle)> gf_delete_buffer;
+
+	// Optional lifecycle hooks for backends that maintain auxiliary per-model GPU
+	// state (e.g. Vulkan's raytraced-shadow BLAS cache). Default to no-ops so
+	// backends that don't need them (OpenGL, stub) don't have to assign anything.
+	std::function<void(int pm_id)> gf_model_loaded = [](int) {};
+	std::function<void(int pm_id)> gf_model_unloaded = [](int) {};
+
+	// Rebuilds the raytraced-shadow top-level acceleration structure for the
+	// current frame from the live shadow-casting object set. Called once per
+	// frame from shadows_render_all(), alongside the cascaded shadow map pass --
+	// the shading pass picks between the two per shadows_use_raytracing().
+	// No-op default.
+	std::function<void()> gf_build_shadow_tlas = []() {};
 
 	std::function<void(gr_buffer_handle handle, size_t size, const void* data)> gf_update_buffer_data;
 	std::function<void(gr_buffer_handle handle, size_t offset, size_t size, const void* data)>
@@ -837,7 +874,7 @@ typedef struct screen {
 	// smaller than the bitmap if the texture was culled at upload; returns nullptr on failure.
 	std::function<ubyte*(int bitmap_num, int* width_out, int* height_out)> gf_get_bitmap_from_texture;
 
-	std::function<void(matrix4* shadow_view_matrix, const matrix* light_matrix, vec3d* eye_pos)> gf_shadow_map_start;
+	std::function<void(matrix4* shadow_view_matrix, const matrix* light_matrix, vec3d* eye_pos, bool first_pass)> gf_shadow_map_start;
 	std::function<void()> gf_shadow_map_end;
 
 	std::function<void()> gf_start_decal_pass;
@@ -847,6 +884,9 @@ typedef struct screen {
 	std::function<
 		void(model_material* material_info, indexed_vertex_source* vert_source, vertex_buffer* bufferp, size_t texi)>
 		gf_render_model;
+	std::function<void(gr_buffer_handle ubo_handle, size_t ubo_offset, size_t ubo_size,
+		vertex_buffer* buffer, indexed_vertex_source* vert_src, size_t texi)>
+		gf_render_shadow_draw;
 	std::function<void(shield_material* material_info,
 		primitive_type prim_type,
 		vertex_layout* layout,
@@ -1145,12 +1185,45 @@ inline int gr_bm_set_render_target(int n, int face = -1)
 
 #define gr_set_texture_addressing GR_CALL(gr_screen.gf_set_texture_addressing)
 
-inline gr_buffer_handle gr_create_buffer(BufferType type, BufferUsageHint usage)
+/**
+ * @brief Create a GPU buffer
+ * @param type The buffer type (Vertex, Index, Uniform)
+ * @param usage Usage hint for optimization
+ * @param rt_capable If true (Vulkan only), the buffer is created with the extra
+ *        usage flags (VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT and
+ *        VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR)
+ *        needed to use it as acceleration structure geometry input. Ignored by
+ *        backends without raytraced shadow support.
+ */
+inline gr_buffer_handle gr_create_buffer(BufferType type, BufferUsageHint usage, bool rt_capable = false)
 {
-	return gr_screen.gf_create_buffer(type, usage);
+	return gr_screen.gf_create_buffer(type, usage, rt_capable);
 }
 
 #define gr_delete_buffer GR_CALL(gr_screen.gf_delete_buffer)
+
+/**
+ * @brief Notify the graphics backend that a model finished loading (its GPU
+ * vertex/index buffers are already uploaded at this point). No-op on backends
+ * that don't need per-model GPU state.
+ */
+inline void gr_model_loaded(int pm_id)
+{
+	gr_screen.gf_model_loaded(pm_id);
+}
+
+/**
+ * @brief Notify the graphics backend that a model is about to be freed, so it
+ * can release any auxiliary per-model GPU state before the model's own GPU
+ * buffers are destroyed.
+ */
+inline void gr_model_unloaded(int pm_id)
+{
+	gr_screen.gf_model_unloaded(pm_id);
+}
+
+#define gr_build_shadow_tlas GR_CALL(gr_screen.gf_build_shadow_tlas)
+
 #define gr_update_buffer_data GR_CALL(gr_screen.gf_update_buffer_data)
 #define gr_update_buffer_data_offset GR_CALL(gr_screen.gf_update_buffer_data_offset)
 inline void* gr_map_buffer(gr_buffer_handle handle)
@@ -1271,6 +1344,12 @@ inline void gr_render_movie(movie_material* material_info,
 inline void gr_render_model(model_material* material_info, indexed_vertex_source *vert_source, vertex_buffer* bufferp, size_t texi)
 {
 	gr_screen.gf_render_model(material_info, vert_source, bufferp, texi);
+}
+
+inline void gr_render_shadow_draw(gr_buffer_handle ubo_handle, size_t ubo_offset, size_t ubo_size,
+                                   vertex_buffer* buffer, indexed_vertex_source* vert_src, size_t texi)
+{
+	gr_screen.gf_render_shadow_draw(ubo_handle, ubo_offset, ubo_size, buffer, vert_src, texi);
 }
 
 inline void gr_render_rocket_primitives(interface_material* material_info,
@@ -1497,6 +1576,8 @@ void gr_set_gamma(float gamma);
 void gr_get_post_process_effect_names(SCP_vector<SCP_string> &names);
 
 bool gr_is_viewport_window();
+
+void gr_uniform_buffer_managers_init();
 
 // Include this last to make the 2D rendering function available everywhere
 #include "graphics/render.h"

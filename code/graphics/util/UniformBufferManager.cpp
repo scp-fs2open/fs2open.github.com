@@ -14,6 +14,8 @@ size_t getElementSize(uniform_block_type type)
 		return sizeof(graphics::deferred_light_data);
 	case uniform_block_type::ModelData:
 		return sizeof(graphics::model_uniform_data);
+	case uniform_block_type::ShadowMapData:
+		return sizeof(graphics::shadow_uniform_data);
 	case uniform_block_type::NanoVGData:
 		return sizeof(graphics::nanovg_draw_data);
 	case uniform_block_type::DecalInfo:
@@ -22,6 +24,8 @@ size_t getElementSize(uniform_block_type type)
 		return sizeof(graphics::matrix_uniforms);
 	case uniform_block_type::MovieData:
 		return sizeof(graphics::movie_uniforms);
+	case uniform_block_type::ShadowCascadeParams:
+		return 0;
 	case uniform_block_type::NUM_BLOCK_TYPES:
 	default:
 		UNREACHABLE("Invalid block type %d encountered!", static_cast<int>(type));
@@ -37,10 +41,12 @@ size_t getHeaderSize(uniform_block_type type)
 	case uniform_block_type::DecalInfo:
 		return sizeof(graphics::decal_globals);
 	case uniform_block_type::ModelData:
+	case uniform_block_type::ShadowMapData:
 	case uniform_block_type::NanoVGData:
 	case uniform_block_type::Matrices:
 	case uniform_block_type::MovieData:
 	case uniform_block_type::GenericData:
+	case uniform_block_type::ShadowCascadeParams:
 		return 0;
 	case uniform_block_type::NUM_BLOCK_TYPES:
 	default:

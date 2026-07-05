@@ -356,6 +356,7 @@ cmdline_parm fb_explosions_arg("-fb_explosions", NULL, AT_NONE);
 cmdline_parm fb_thrusters_arg("-fb_thrusters", NULL, AT_NONE);
 cmdline_parm shadow_quality_arg("-shadow_quality", NULL, AT_INT);
 cmdline_parm enable_shadows_arg("-enable_shadows", NULL, AT_NONE);
+cmdline_parm rt_shadows_arg("-rt_shadows", nullptr, AT_NONE);
 cmdline_parm no_deferred_lighting_arg("-no_deferred", NULL, AT_NONE);	// Cmdline_no_deferred
 cmdline_parm deferred_lighting_cockpit_arg("-deferred_cockpit", nullptr, AT_NONE);
 cmdline_parm anisotropy_level_arg("-anisotropic_filter", NULL, AT_INT);
@@ -2242,6 +2243,14 @@ bool SetCmdlineParams()
 			Shadow_quality = ShadowQuality::Disabled;
 			break;
 		}
+	}
+
+	if( rt_shadows_arg.found() )
+	{
+		// Equivalent to picking "Raytraced" in the Shadow Method option. Silently
+		// has no effect if the renderer/hardware doesn't support
+		// CAPABILITY_RAYTRACED_SHADOWS -- the CSM path is used either way.
+		Shadow_render_method = ShadowRenderMethod::Raytraced;
 	}
 
 	if( no_deferred_lighting_arg.found() )

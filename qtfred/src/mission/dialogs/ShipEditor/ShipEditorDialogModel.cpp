@@ -30,6 +30,7 @@ ShipEditorDialogModel::ShipEditorDialogModel(QObject* parent, EditorViewport* vi
 	initializeData();
 }
 
+
 int ShipEditorDialogModel::tristate_set(int val, int cur_state)
 {
 	if (cur_state == Qt::PartiallyChecked)
@@ -1385,10 +1386,27 @@ bool ShipEditorDialogModel::getArrivalCue() const
 	return _updateArrival;
 }
 
-void ShipEditorDialogModel::setArrivalFormula(const int old_form, const int new_form)
+void ShipEditorDialogModel::setArrivalTreeDirty(int formula)
 {
-	if (old_form != _arrivalTreeFormula)
-		modify(_arrivalTreeFormula, new_form);
+	if (_multiEdit && !_updateArrival)
+		return;
+
+	_arrivalTreeFormula = formula;
+	_updateArrival = true;
+
+	for (auto* ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
+		if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && ptr->flags[Object::Object_Flags::Marked]) {
+			auto i = ptr->instance;
+			if (Ships[i].wingnum >= 0)
+				continue;
+			if (Ships[i].arrival_cue >= 0 && Ships[i].arrival_cue != formula)
+				free_sexp2(Ships[i].arrival_cue);
+			Ships[i].arrival_cue = formula;
+		}
+	}
+
+	setModified();
+	_editor->missionChanged();
 }
 
 int ShipEditorDialogModel::getArrivalFormula() const
@@ -1530,10 +1548,27 @@ bool ShipEditorDialogModel::getDepartureCue() const
 	return _updateDeparture;
 }
 
-void ShipEditorDialogModel::setDepartureFormula(const int old_form, const int new_form)
+void ShipEditorDialogModel::setDepartureTreeDirty(int formula)
 {
-	if (old_form != _departureTreeFormula)
-		modify(_departureTreeFormula, new_form);
+	if (_multiEdit && !_updateDeparture)
+		return;
+
+	_departureTreeFormula = formula;
+	_updateDeparture = true;
+
+	for (auto* ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
+		if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && ptr->flags[Object::Object_Flags::Marked]) {
+			auto i = ptr->instance;
+			if (Ships[i].wingnum >= 0)
+				continue;
+			if (Ships[i].departure_cue >= 0 && Ships[i].departure_cue != formula)
+				free_sexp2(Ships[i].departure_cue);
+			Ships[i].departure_cue = formula;
+		}
+	}
+
+	setModified();
+	_editor->missionChanged();
 }
 
 int ShipEditorDialogModel::getDepartureFormula() const

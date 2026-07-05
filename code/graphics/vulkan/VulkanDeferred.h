@@ -21,7 +21,7 @@ void vulkan_deferred_lighting_finish();
 void vulkan_override_fog(bool set_override);
 
 // Shadow map rendering
-void vulkan_shadow_map_start(matrix4* shadow_view_matrix, const matrix* light_matrix, vec3d* eye_pos);
+void vulkan_shadow_map_start(matrix4* shadow_view_matrix, const matrix* light_matrix, vec3d* eye_pos, bool first_pass);
 void vulkan_shadow_map_end();
 
 // Decal pass

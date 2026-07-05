@@ -19,6 +19,7 @@
 #include "lighting/lighting_profiles.h"
 #include "lighting/lighting.h"
 #include "math/vecmat.h"
+#include "mod_table/mod_table.h"
 #include "render/3d.h"
 #include "tracing/tracing.h"
 #include "nebula/neb.h"
@@ -65,7 +66,7 @@ bool VulkanDeferredLighting::initLightVolumes()
 		try {
 			m_sphereMesh.vbo = m_ctx->device.createBuffer(vboInfo);
 		} catch (const vk::SystemError& e) {
-			mprintf(("VulkanPostProcessor: Failed to create sphere VBO: %s\n", e.what()));
+			nprintf(("vulkan", "VulkanPostProcessor: Failed to create sphere VBO: %s\n", e.what()));
 			return false;
 		}
 
@@ -90,7 +91,7 @@ bool VulkanDeferredLighting::initLightVolumes()
 		try {
 			m_sphereMesh.ibo = m_ctx->device.createBuffer(iboInfo);
 		} catch (const vk::SystemError& e) {
-			mprintf(("VulkanPostProcessor: Failed to create sphere IBO: %s\n", e.what()));
+			nprintf(("vulkan", "VulkanPostProcessor: Failed to create sphere IBO: %s\n", e.what()));
 			return false;
 		}
 
@@ -121,7 +122,7 @@ bool VulkanDeferredLighting::initLightVolumes()
 		try {
 			m_cylinderMesh.vbo = m_ctx->device.createBuffer(vboInfo);
 		} catch (const vk::SystemError& e) {
-			mprintf(("VulkanPostProcessor: Failed to create cylinder VBO: %s\n", e.what()));
+			nprintf(("vulkan", "VulkanPostProcessor: Failed to create cylinder VBO: %s\n", e.what()));
 			return false;
 		}
 
@@ -145,7 +146,7 @@ bool VulkanDeferredLighting::initLightVolumes()
 		try {
 			m_cylinderMesh.ibo = m_ctx->device.createBuffer(iboInfo);
 		} catch (const vk::SystemError& e) {
-			mprintf(("VulkanPostProcessor: Failed to create cylinder IBO: %s\n", e.what()));
+			nprintf(("vulkan", "VulkanPostProcessor: Failed to create cylinder IBO: %s\n", e.what()));
 			return false;
 		}
 
@@ -172,7 +173,7 @@ bool VulkanDeferredLighting::initLightVolumes()
 		try {
 			m_deferredUBO = m_ctx->device.createBuffer(bufInfo);
 		} catch (const vk::SystemError& e) {
-			mprintf(("VulkanPostProcessor: Failed to create deferred UBO: %s\n", e.what()));
+			nprintf(("vulkan", "VulkanPostProcessor: Failed to create deferred UBO: %s\n", e.what()));
 			return false;
 		}
 
@@ -184,7 +185,7 @@ bool VulkanDeferredLighting::initLightVolumes()
 	}
 
 	m_lightVolumesInitialized = true;
-	mprintf(("VulkanPostProcessor: Light volumes initialized (sphere: %u verts/%u idx, cylinder: %u verts/%u idx)\n",
+	nprintf(("vulkan", "VulkanPostProcessor: Light volumes initialized (sphere: %u verts/%u idx, cylinder: %u verts/%u idx)\n",
 		m_sphereMesh.vertexCount, m_sphereMesh.indexCount,
 		m_cylinderMesh.vertexCount, m_cylinderMesh.indexCount));
 	return true;
@@ -277,7 +278,7 @@ bool VulkanDeferredLighting::initLightAccumPass()
 		try {
 			m_lightAccumRenderPass = m_ctx->device.createRenderPass(rpInfo);
 		} catch (const vk::SystemError& e) {
-			mprintf(("VulkanPostProcessor: Failed to create light accum render pass: %s\n", e.what()));
+			nprintf(("vulkan", "VulkanPostProcessor: Failed to create light accum render pass: %s\n", e.what()));
 			return false;
 		}
 	}
@@ -297,7 +298,7 @@ bool VulkanDeferredLighting::initLightAccumPass()
 		try {
 			m_lightAccumFramebuffer = m_ctx->device.createFramebuffer(fbInfo);
 		} catch (const vk::SystemError& e) {
-			mprintf(("VulkanPostProcessor: Failed to create light accum framebuffer: %s\n", e.what()));
+			nprintf(("vulkan", "VulkanPostProcessor: Failed to create light accum framebuffer: %s\n", e.what()));
 			return false;
 		}
 	}
@@ -420,7 +421,7 @@ void VulkanDeferredLighting::render(vk::CommandBuffer cmd)
 	uint32_t totalUBOSize = matrixDataOffset + (static_cast<uint32_t>(total_lights) * matrixDataSize);
 
 	if (totalUBOSize > DEFERRED_UBO_SIZE) {
-		mprintf(("VulkanPostProcessor: Deferred UBO overflow (%u > %u), skipping lights\n", totalUBOSize, DEFERRED_UBO_SIZE));
+		nprintf(("vulkan", "VulkanPostProcessor: Deferred UBO overflow (%u > %u), skipping lights\n", totalUBOSize, DEFERRED_UBO_SIZE));
 		m_ctx->memoryManager->unmapMemory(m_deferredUBOAlloc);
 		return;
 	}
@@ -452,15 +453,11 @@ void VulkanDeferredLighting::render(vk::CommandBuffer cmd)
 		header->nearPlane = gr_near_plane;
 
 		if (m_shadow->isInitialized() && Shadow_quality != ShadowQuality::Disabled) {
-			header->shadow_mv_matrix = Shadow_view_matrix_light;
-			for (size_t i = 0; i < MAX_SHADOW_CASCADES; ++i) {
-				header->shadow_proj_matrix[i] = Shadow_proj_matrix[i];
-			}
-			header->veryneardist = Shadow_cascade_distances[0];
-			header->neardist = Shadow_cascade_distances[1];
-			header->middist = Shadow_cascade_distances[2];
-			header->fardist = Shadow_cascade_distances[3];
 			vm_inverse_matrix4(&header->inv_view_matrix, &Shadow_view_matrix_render);
+
+			int offset = (Lighting_mode == lighting_mode::COCKPIT) ? 0 : Num_cockpit_shadow_cascades;
+			int count  = (Lighting_mode == lighting_mode::COCKPIT) ? Num_cockpit_shadow_cascades : Num_shadow_cascades;
+			shadow_cascade_params_bind(offset, count);
 		}
 	}
 
@@ -565,8 +562,11 @@ void VulkanDeferredLighting::render(vk::CommandBuffer cmd)
 	vertex_layout volLayout;
 	volLayout.add_vertex_component(vertex_format_data::POSITION3, sizeof(float) * 3, 0);
 
+	bool rtShadowsActive = shadows_use_raytracing() && m_shadow->isInitialized() && Shadow_quality != ShadowQuality::Disabled;
+
 	PipelineConfig lightConfig;
 	lightConfig.shaderType = SDR_TYPE_DEFERRED_LIGHTING;
+	lightConfig.shaderFlags = rtShadowsActive ? SDR_FLAG_DEFERRED_RT_SHADOWS : 0;
 	lightConfig.vertexLayoutHash = volLayout.hash();
 	lightConfig.primitiveType = PRIM_TYPE_TRIS;
 	lightConfig.depthMode = ZBUFFER_TYPE_NONE;
@@ -617,10 +617,28 @@ void VulkanDeferredLighting::render(vk::CommandBuffer cmd)
 	gbufTexArray[2] = {m_ctx->linearSampler, m_gbuffer->positionView(), vk::ImageLayout::eShaderReadOnlyOptimal};
 	gbufTexArray[3] = {m_ctx->linearSampler, m_gbuffer->specularView(), vk::ImageLayout::eShaderReadOnlyOptimal};
 
-	// Pre-build shadow/env/irr image infos (shared across all light draws)
+	// Pre-build shadow/env/irr image infos (shared across all light draws).
+	// Shadow map is depth-only, sampled with a depth-compare sampler
+	// (sampler2DArrayShadow) for hardware PCF.
 	vk::DescriptorImageInfo shadowTexInfo;
-	if (m_shadow->isInitialized() && m_shadow->colorView()) {
-		shadowTexInfo = {m_ctx->linearSampler, m_shadow->colorView(), vk::ImageLayout::eShaderReadOnlyOptimal};
+	if (m_shadow->isInitialized() && m_shadow->depthView()) {
+		shadowTexInfo = {m_shadow->compareSampler(), m_shadow->depthView(), vk::ImageLayout::eShaderReadOnlyOptimal};
+	}
+
+	// Shadow cascade params (projection matrices/distances) are bound per-frame via
+	// shadow_cascade_params_bind() -> gr_bind_uniform_buffer(), landing in the draw
+	// manager's pending uniform binding table; pick it up the same way applyMaterial()
+	// does for other pending UBOs.
+	vk::DescriptorBufferInfo shadowCascadeParamsInfo;
+	{
+		auto* drawManager = getDrawManager();
+		const auto& pending = drawManager->getPendingUniformBinding(static_cast<size_t>(uniform_block_type::ShadowCascadeParams));
+		if (pending.valid) {
+			vk::Buffer buf = bufferMgr->getVkBuffer(pending.bufferHandle);
+			if (buf) {
+				shadowCascadeParamsInfo = vk::DescriptorBufferInfo(buf, pending.offset, pending.size);
+			}
+		}
 	}
 	vk::DescriptorImageInfo envTexInfo;
 	if (envMapAvailable && envMapSlot) {
@@ -649,6 +667,7 @@ void VulkanDeferredLighting::render(vk::CommandBuffer cmd)
 		writer.setImage(GlobalBinding::ShadowMap, shadowTexInfo);
 		writer.setImage(GlobalBinding::EnvMap, envTexInfo);
 		writer.setImage(GlobalBinding::IrradianceMap, irrTexInfo);
+		writer.setBuffer(GlobalBinding::ShadowCascadeParams, shadowCascadeParamsInfo);
 
 		// Set 1: Material
 		vk::DescriptorSet materialSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Material);

@@ -55,12 +55,12 @@ bool VulkanBloom::init(PostProcessContext& ctx, const RenderTarget& sceneColor)
 		try {
 			m_tex[i].image = m_ctx->device.createImage(imageInfo);
 		} catch (const vk::SystemError& e) {
-			mprintf(("VulkanBloom: Failed to create bloom image %zu: %s\n", i, e.what()));
+			nprintf(("vulkan", "VulkanBloom: Failed to create bloom image %zu: %s\n", i, e.what()));
 			return false;
 		}
 
 		if (!m_ctx->memoryManager->allocateImageMemory(m_tex[i].image, MemoryUsage::GpuOnly, m_tex[i].allocation)) {
-			mprintf(("VulkanBloom: Failed to allocate bloom image %zu memory!\n", i));
+			nprintf(("vulkan", "VulkanBloom: Failed to allocate bloom image %zu memory!\n", i));
 			return false;
 		}
 
@@ -78,7 +78,7 @@ bool VulkanBloom::init(PostProcessContext& ctx, const RenderTarget& sceneColor)
 		try {
 			m_tex[i].fullView = m_ctx->device.createImageView(fullViewInfo);
 		} catch (const vk::SystemError& e) {
-			mprintf(("VulkanBloom: Failed to create bloom %zu full view: %s\n", i, e.what()));
+			nprintf(("vulkan", "VulkanBloom: Failed to create bloom %zu full view: %s\n", i, e.what()));
 			return false;
 		}
 
@@ -91,7 +91,7 @@ bool VulkanBloom::init(PostProcessContext& ctx, const RenderTarget& sceneColor)
 			try {
 				m_tex[i].mipViews[mip] = m_ctx->device.createImageView(mipViewInfo);
 			} catch (const vk::SystemError& e) {
-				mprintf(("VulkanBloom: Failed to create bloom %zu mip %u view: %s\n", i, mip, e.what()));
+				nprintf(("vulkan", "VulkanBloom: Failed to create bloom %zu mip %u view: %s\n", i, mip, e.what()));
 				return false;
 			}
 		}
@@ -141,7 +141,7 @@ bool VulkanBloom::init(PostProcessContext& ctx, const RenderTarget& sceneColor)
 		try {
 			m_renderPass = m_ctx->device.createRenderPass(rpInfo);
 		} catch (const vk::SystemError& e) {
-			mprintf(("VulkanBloom: Failed to create bloom render pass: %s\n", e.what()));
+			nprintf(("vulkan", "VulkanBloom: Failed to create bloom render pass: %s\n", e.what()));
 			return false;
 		}
 	}
@@ -190,7 +190,7 @@ bool VulkanBloom::init(PostProcessContext& ctx, const RenderTarget& sceneColor)
 		try {
 			m_compositeRenderPass = m_ctx->device.createRenderPass(rpInfo);
 		} catch (const vk::SystemError& e) {
-			mprintf(("VulkanBloom: Failed to create bloom composite render pass: %s\n", e.what()));
+			nprintf(("vulkan", "VulkanBloom: Failed to create bloom composite render pass: %s\n", e.what()));
 			return false;
 		}
 	}
@@ -212,7 +212,7 @@ bool VulkanBloom::init(PostProcessContext& ctx, const RenderTarget& sceneColor)
 			try {
 				m_tex[i].mipFramebuffers[mip] = m_ctx->device.createFramebuffer(fbInfo);
 			} catch (const vk::SystemError& e) {
-				mprintf(("VulkanBloom: Failed to create bloom %zu mip %u framebuffer: %s\n", i, mip, e.what()));
+				nprintf(("vulkan", "VulkanBloom: Failed to create bloom %zu mip %u framebuffer: %s\n", i, mip, e.what()));
 				return false;
 			}
 		}
@@ -231,13 +231,13 @@ bool VulkanBloom::init(PostProcessContext& ctx, const RenderTarget& sceneColor)
 		try {
 			m_sceneColorFB = m_ctx->device.createFramebuffer(fbInfo);
 		} catch (const vk::SystemError& e) {
-			mprintf(("VulkanBloom: Failed to create scene color bloom framebuffer: %s\n", e.what()));
+			nprintf(("vulkan", "VulkanBloom: Failed to create scene color bloom framebuffer: %s\n", e.what()));
 			return false;
 		}
 	}
 
 	m_initialized = true;
-	mprintf(("VulkanBloom: Bloom initialized (%ux%u, %d mip levels)\n",
+	nprintf(("vulkan", "VulkanBloom: Bloom initialized (%ux%u, %d mip levels)\n",
 		m_width, m_height, MAX_MIP_BLUR_LEVELS));
 	return true;
 }
