@@ -144,17 +144,23 @@ public:
 	 */
 	bool isScissorEnabled() const { return m_scissorEnabled; }
 
-	// ========== Clear Operations ==========
-
 	/**
-	 * @brief Set clear color for next clear operation
-	 */
-	void setClearColor(float r, float g, float b, float a);
-
-	/**
-	 * @brief Get current clear color
-	 */
-	const vk::ClearColorValue& getClearColor() const { return m_clearColor; }
+     * @brief Get current clear color
+     */
+    const vk::ClearColorValue getClearColor() const {
+		// Don't manually store the clear color here, it's a bad idea to have two possibly desynced globals with the same semantics.
+		float fr = static_cast<float>(gr_screen.current_clear_color.red) / 255.0f;
+		float fg = static_cast<float>(gr_screen.current_clear_color.green) / 255.0f;
+		float fb = static_cast<float>(gr_screen.current_clear_color.blue) / 255.0f;
+		// Apply HDR gamma if needed
+		if (High_dynamic_range) {
+			const float SRGB_GAMMA = 2.2f;
+			fr = powf(fr, SRGB_GAMMA);
+			fg = powf(fg, SRGB_GAMMA);
+			fb = powf(fb, SRGB_GAMMA);
+		}
+		return {fr, fg, fb, 1.0f};
+	}
 
 	// ========== Render State Tracking ==========
 
@@ -232,9 +238,6 @@ private:
 	bool m_depthBiasDirty = false;
 	bool m_stencilRefDirty = false;
 	bool m_lineWidthDirty = false;
-
-	// Clear values
-	vk::ClearColorValue m_clearColor;
 
 	// Render state tracking (for FSO compatibility)
 	gr_zbuffer_type m_zbufferMode = ZBUFFER_TYPE_NONE;

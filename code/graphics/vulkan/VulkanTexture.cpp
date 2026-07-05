@@ -6,8 +6,10 @@
 #include "VulkanRenderer.h"
 #include "gr_vulkan.h"
 
+#include "graphics/util/pixel_swizzle.h"
 #include "bmpman/bmpman.h"
 #include "ddsutils/ddsutils.h"
+#include "ddsutils/bcdec.h"
 #include "globalincs/systemvars.h"
 
 
@@ -85,19 +87,6 @@ size_t appendLayerCopyRegions(SCP_vector<vk::BufferImageCopy>& regions,
 	return offset - layerBufferOffset;
 }
 
-// Expand 24bpp BGR pixel data to 32bpp BGRA (alpha forced to 255). Vulkan does
-// not support 24bpp optimal-tiling formats, so every upload path widens.
-void expandBgrToBgra(uint8_t* dst, const uint8_t* src, size_t pixelCount)
-{
-	for (size_t i = 0; i < pixelCount; ++i) {
-		dst[0] = src[0];
-		dst[1] = src[1];
-		dst[2] = src[2];
-		dst[3] = 255;
-		src += 3;
-		dst += 4;
-	}
-}
 } // namespace
 
 VulkanTextureManager* getTextureManager()
@@ -643,7 +632,7 @@ bool VulkanTextureManager::uploadAnimationFrames(int handle, bitmap* bm, int com
 
 		// Copy frame data to staging buffer
 		if (!isCompressed && frameBm->bpp == 24) {
-			expandBgrToBgra(dst, reinterpret_cast<const uint8_t*>(frameBm->data),
+			graphics::util::expand_BGR_to_BGRA(reinterpret_cast<const uint8_t*>(frameBm->data), dst,
 				static_cast<size_t>(width) * height);
 		} else {
 			memcpy(dst, reinterpret_cast<const void*>(frameBm->data), layerDataSize);
@@ -822,8 +811,8 @@ bool VulkanTextureManager::uploadCubemap(int handle, bitmap* bm, int compType)
 	// DDS cubemap data layout: face0[mip0..mipN], face1[mip0..mipN], ..., face5[mip0..mipN]
 	if (!isCompressed && bm->bpp == 24) {
 		// Convert BGR to BGRA for all 6 faces
-		expandBgrToBgra(static_cast<uint8_t*>(mapped),
-			reinterpret_cast<const uint8_t*>(bm->data), static_cast<size_t>(faceW) * faceH * 6);
+		graphics::util::expand_BGR_to_BGRA(reinterpret_cast<const uint8_t*>(bm->data),
+			static_cast<uint8_t*>(mapped), static_cast<size_t>(faceW) * faceH * 6);
 	} else {
 		memcpy(mapped, reinterpret_cast<const void*>(bm->data), totalDataSize);
 	}
@@ -1233,8 +1222,8 @@ bool VulkanTextureManager::bm_data(int handle, bitmap* bm, int compType)
 		// Compressed data: copy raw block data directly (includes all mip levels)
 		memcpy(mapped, reinterpret_cast<const void*>(bm->data), dataSize);
 	} else if (bm->bpp == 24) {
-		expandBgrToBgra(static_cast<uint8_t*>(mapped),
-			reinterpret_cast<const uint8_t*>(bm->data), static_cast<size_t>(width) * height);
+		graphics::util::expand_BGR_to_BGRA(reinterpret_cast<const uint8_t*>(bm->data),
+			static_cast<uint8_t*>(mapped), static_cast<size_t>(width) * height);
 	} else {
 		memcpy(mapped, reinterpret_cast<const void*>(bm->data), dataSize);
 	}
@@ -1583,18 +1572,7 @@ void VulkanTextureManager::update_texture(int bitmap_handle, int bpp, const ubyt
 	void* mapped = m_memoryManager->mapMemory(stagingAllocation);
 	Verify(mapped);
 	if (bpp == 24) {
-		// Convert BGR (3 bytes) to BGRA (4 bytes), adding alpha=255
-		const uint8_t* src = data;
-		auto* dst = static_cast<uint8_t*>(mapped);
-		size_t pixelCount = w * h;
-		for (size_t i = 0; i < pixelCount; ++i) {
-			dst[0] = src[0];
-			dst[1] = src[1];
-			dst[2] = src[2];
-			dst[3] = 255;
-			src += 3;
-			dst += 4;
-		}
+		graphics::util::expand_BGR_to_BGRA(data, static_cast<uint8_t*>(mapped), w * h);
 	} else {
 		memcpy(mapped, data, dataSize);
 	}
@@ -1611,14 +1589,267 @@ void VulkanTextureManager::update_texture(int bitmap_handle, int bpp, const ubyt
 	ts->currentLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 }
 
-void VulkanTextureManager::get_bitmap_from_texture(void* data_out, int bitmap_num) const
+void VulkanTextureManager::get_bitmap_from_texture(void* data_out, int bitmap_num)
 {
 	if (!m_initialized || !data_out) {
 		return;
 	}
 
-	// TODO: Implement texture readback
-	(void)bitmap_num;
+	auto* ts = bm_get_gr_info<tcache_slot_vulkan>(bitmap_num, true);
+	if (!ts) {
+		return;
+	}
+
+	// Ensure the texture is uploaded to the GPU.  At model load time the
+	// Vulkan slot exists (vulkan_bm_create) but bm_data hasn't been called
+	// yet, so ts->image is null.  This mirrors gr_opengl_tcache_set which
+	// the OpenGL readback calls to guarantee the texture is resident.
+	if (!ts->image) {
+		vulkan_preload(bitmap_num, 0);
+
+		// Re-fetch slot after preload (bm_data may have replaced the image)
+		ts = bm_get_gr_info<tcache_slot_vulkan>(bitmap_num, true);
+		if (!ts || !ts->image) {
+			return;
+		}
+
+		// bm_data submits uploads asynchronously via submitUploadAsync.
+		// Wait for completion so the GPU layout matches ts->currentLayout
+		// before we record the readback barriers.
+		m_graphicsQueue.waitIdle();
+	}
+
+	// Validate static-texture assumption: format must be one known
+	// from the bm_data upload path, and layout must be initialised.
+	Assertion(ts->format != vk::Format::eUndefined,
+		"get_bitmap_from_texture: undefined format on bitmap %d", bitmap_num);
+	Assertion(ts->currentLayout != vk::ImageLayout::eUndefined,
+		"get_bitmap_from_texture: undefined layout on bitmap %d", bitmap_num);
+	Assertion(
+		ts->format == vk::Format::eB8G8R8A8Unorm ||
+		ts->format == vk::Format::eR8Unorm ||
+		ts->format == vk::Format::eA1R5G5B5UnormPack16 ||
+		ts->format == vk::Format::eBc1RgbaUnormBlock ||
+		ts->format == vk::Format::eBc2UnormBlock ||
+		ts->format == vk::Format::eBc3UnormBlock ||
+		ts->format == vk::Format::eBc7UnormBlock,
+		"get_bitmap_from_texture: unsupported format %d on bitmap %d"
+		" — may be a render target or dynamic texture",
+		static_cast<int>(ts->format), bitmap_num);
+
+	const uint32_t w = ts->width;
+	const uint32_t h = ts->height;
+	const uint32_t pixelCount = w * h;
+	const bool isCompressed = (ts->format == vk::Format::eBc1RgbaUnormBlock ||
+	                           ts->format == vk::Format::eBc2UnormBlock ||
+	                           ts->format == vk::Format::eBc3UnormBlock ||
+	                           ts->format == vk::Format::eBc7UnormBlock);
+	const bool hasAlpha = bm_has_alpha_channel(bitmap_num);
+	const int outChannels = hasAlpha ? 4 : 3;
+
+	// ---- calculate source buffer size & per-pixel layout ----
+	size_t srcBytesPerPixel = 0;
+	size_t srcBufferSize = 0;
+	int blockSize = 0;
+	uint32_t blockW = 0;
+	uint32_t blockH = 0;
+
+	if (isCompressed) {
+		switch (ts->format) {
+		case vk::Format::eBc1RgbaUnormBlock: blockSize = BCDEC_BC1_BLOCK_SIZE; break;
+		case vk::Format::eBc2UnormBlock: blockSize = BCDEC_BC2_BLOCK_SIZE; break;
+		case vk::Format::eBc3UnormBlock: blockSize = BCDEC_BC3_BLOCK_SIZE; break;
+		case vk::Format::eBc7UnormBlock: blockSize = BCDEC_BC7_BLOCK_SIZE; break;
+		default: return;
+		}
+		blockW = (w + 3) / 4;
+		blockH = (h + 3) / 4;
+		srcBufferSize = static_cast<size_t>(blockW) * static_cast<size_t>(blockH) * static_cast<size_t>(blockSize);
+	} else {
+		switch (ts->format) {
+		case vk::Format::eB8G8R8A8Unorm: srcBytesPerPixel = 4; break;
+		case vk::Format::eR8Unorm:        srcBytesPerPixel = 1; break;
+		case vk::Format::eA1R5G5B5UnormPack16: srcBytesPerPixel = 2; break;
+		default: return;
+		}
+		srcBufferSize = static_cast<size_t>(pixelCount) * srcBytesPerPixel;
+	}
+
+	// ---- create readback staging buffer ----
+	vk::Buffer stagingBuffer;
+	VulkanAllocation stagingAlloc;
+	{
+		vk::BufferCreateInfo bufferInfo;
+		bufferInfo.size = srcBufferSize;
+		bufferInfo.usage = vk::BufferUsageFlagBits::eTransferDst;
+		bufferInfo.sharingMode = vk::SharingMode::eExclusive;
+
+		try {
+			stagingBuffer = m_device.createBuffer(bufferInfo);
+		} catch (const vk::SystemError& e) {
+			mprintf(("get_bitmap_from_texture: failed to create readback buffer: %s\n", e.what()));
+			return;
+		}
+
+		if (!m_memoryManager->allocateBufferMemory(stagingBuffer, MemoryUsage::GpuToCpu, stagingAlloc)) {
+			m_device.destroyBuffer(stagingBuffer);
+			return;
+		}
+	}
+
+	// ---- record layout-transition + copy command ----
+	const vk::ImageLayout oldLayout = ts->currentLayout;
+	vk::CommandBuffer cmd = beginSingleTimeCommands();
+
+	// Transition to eTransferSrcOptimal (single mip-0, single layer)
+	{
+		vk::ImageMemoryBarrier barrier;
+		barrier.oldLayout = oldLayout;
+		barrier.newLayout = vk::ImageLayout::eTransferSrcOptimal;
+		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.image = ts->image;
+		barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+		barrier.subresourceRange.baseMipLevel = 0;
+		barrier.subresourceRange.levelCount = 1;
+		barrier.subresourceRange.baseArrayLayer = ts->arrayIndex;
+		barrier.subresourceRange.layerCount = 1;
+		barrier.srcAccessMask = vk::AccessFlagBits::eShaderRead;
+		barrier.dstAccessMask = vk::AccessFlagBits::eTransferRead;
+
+		cmd.pipelineBarrier(vk::PipelineStageFlagBits::eFragmentShader,
+		                    vk::PipelineStageFlagBits::eTransfer,
+		                    {}, nullptr, nullptr, barrier);
+	}
+
+	// Copy image -> buffer
+	{
+		vk::BufferImageCopy region;
+		region.bufferOffset = 0;
+		region.bufferRowLength = 0;
+		region.bufferImageHeight = 0;
+		region.imageSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
+		region.imageSubresource.mipLevel = 0;
+		region.imageSubresource.baseArrayLayer = ts->arrayIndex;
+		region.imageSubresource.layerCount = 1;
+		region.imageOffset = vk::Offset3D(0, 0, 0);
+		region.imageExtent = vk::Extent3D(w, h, 1);
+
+		cmd.copyImageToBuffer(ts->image, vk::ImageLayout::eTransferSrcOptimal,
+		                      stagingBuffer, region);
+	}
+
+	// Transition back to original layout
+	{
+		vk::ImageMemoryBarrier barrier;
+		barrier.oldLayout = vk::ImageLayout::eTransferSrcOptimal;
+		barrier.newLayout = oldLayout;
+		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.image = ts->image;
+		barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+		barrier.subresourceRange.baseMipLevel = 0;
+		barrier.subresourceRange.levelCount = 1;
+		barrier.subresourceRange.baseArrayLayer = ts->arrayIndex;
+		barrier.subresourceRange.layerCount = 1;
+		barrier.srcAccessMask = vk::AccessFlagBits::eTransferRead;
+		barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+
+		cmd.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer,
+		                    vk::PipelineStageFlagBits::eFragmentShader,
+		                    {}, nullptr, nullptr, barrier);
+	}
+
+	endSingleTimeCommands(cmd); // synchronous submit + waitIdle
+
+	// ---- read back & convert ----
+	void* mapped = m_memoryManager->mapMemory(stagingAlloc);
+	if (mapped) {
+		m_memoryManager->invalidateMemory(stagingAlloc, 0, srcBufferSize);
+
+		if (isCompressed) {
+			const uint32_t copyW = blockW * 4;
+			const uint32_t copyH = blockH * 4;
+			const size_t decompressedSize = static_cast<size_t>(copyW) * static_cast<size_t>(copyH) * 4;
+			SCP_vector<uint8_t> temp(decompressedSize);
+
+			const auto* srcBlock = static_cast<const uint8_t*>(mapped);
+			uint8_t* blockRowBase = temp.data();
+
+			for (uint32_t by = 0; by < blockH; ++by) {
+				uint8_t* blockColBase = blockRowBase;
+				for (uint32_t bx = 0; bx < blockW; ++bx) {
+					switch (ts->format) {
+					case vk::Format::eBc1RgbaUnormBlock:
+						bcdec_bc1(srcBlock, blockColBase, static_cast<int>(copyW * 4));
+						break;
+					case vk::Format::eBc2UnormBlock:
+						bcdec_bc2(srcBlock, blockColBase, static_cast<int>(copyW * 4));
+						break;
+					case vk::Format::eBc3UnormBlock:
+						bcdec_bc3(srcBlock, blockColBase, static_cast<int>(copyW * 4));
+						break;
+					case vk::Format::eBc7UnormBlock:
+						bcdec_bc7(srcBlock, blockColBase, static_cast<int>(copyW * 4));
+						break;
+					default: break;
+					}
+					srcBlock += blockSize;
+					blockColBase += 4 * 4; // 4 pixels wide × 4 bytes/pixel
+				}
+				blockRowBase += static_cast<size_t>(4) * copyW * 4; // 4 rows × full stride
+			}
+
+			const auto* src = temp.data();
+			auto* dst = static_cast<uint8_t*>(data_out);
+			if (outChannels == 4) {
+				for (uint32_t y = 0; y < h; ++y) {
+					memcpy(dst + y * w * 4, src + y * copyW * 4, w * 4);
+				}
+			} else {
+				for (uint32_t y = 0; y < h; ++y) {
+					graphics::util::convert_RGBA8888_to_RGB888(
+						src + y * copyW * 4, dst + y * w * 3, w);
+				}
+			}
+		} else {
+			const auto* src = static_cast<const uint8_t*>(mapped);
+			auto* dst = static_cast<uint8_t*>(data_out);
+
+			switch (ts->format) {
+			case vk::Format::eB8G8R8A8Unorm:
+				if (outChannels == 4) {
+					graphics::util::convert_BGRA8888_to_RGBA8888(src, dst, pixelCount);
+				} else {
+					graphics::util::convert_BGRA8888_to_RGB888(src, dst, pixelCount);
+				}
+				break;
+
+			case vk::Format::eR8Unorm:
+				if (outChannels == 4) {
+					graphics::util::expand_R8_to_RGBA(src, dst, pixelCount);
+				} else {
+					graphics::util::expand_R8_to_RGB(src, dst, pixelCount);
+				}
+				break;
+
+			case vk::Format::eA1R5G5B5UnormPack16:
+				if (outChannels == 4) {
+					graphics::util::convert_BGRA1555_REV_to_RGBA8888(reinterpret_cast<const uint16_t*>(src), dst, pixelCount);
+				} else {
+					graphics::util::convert_BGRA1555_REV_to_RGB888(reinterpret_cast<const uint16_t*>(src), dst, pixelCount);
+				}
+				break;
+
+			default: break;
+			}
+		}
+
+		m_memoryManager->unmapMemory(stagingAlloc);
+	}
+
+	m_device.destroyBuffer(stagingBuffer);
+	m_memoryManager->freeAllocation(stagingAlloc);
 }
 
 vk::Sampler VulkanTextureManager::getSampler(vk::Filter magFilter, vk::Filter minFilter,

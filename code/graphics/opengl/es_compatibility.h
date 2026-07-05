@@ -4,6 +4,7 @@
 #include <vector>
 #include <glad/glad.h>
 #include <KHR/khrplatform.h>
+#include "graphics/util/pixel_swizzle.h"
 /*
 	OpenGL ES 3.2 compatibility layer
 	---------------------------------
@@ -59,106 +60,6 @@
 #define glDepthRange                    glDepthRangef // ES 3.0
 
 /* 
-	Pixel Conversion for unsupported uncompressed formats 
-*/
-
-// BGRA 1_5_5_5_REV -> RGBA 5_5_5_1
-static inline void convert_BGRA1555_REV_to_RGBA5551(const uint16_t* __restrict src, uint16_t* __restrict dst, size_t npx)
-{
-	for (size_t i = 0; i < npx; i++) {
-		const uint16_t s = src[i];
-		uint16_t a = (s >> 15) & 0x1;
-		uint16_t r = (s >> 10) & 0x1F;
-		uint16_t g = (s >> 5) & 0x1F;
-		uint16_t b = (s >> 0) & 0x1F;
-		dst[i] = static_cast<uint16_t>((r << 11) | (g << 6) | (b << 1) | a);
-	}
-}
-
-// BGRA1555_REV -> RGBA8888
-static inline void convert_BGRA1555_REV_to_RGBA8888(const uint16_t* __restrict src, uint8_t* __restrict dstRGBA8, size_t npx)
-{
-	for (size_t i = 0; i < npx; ++i) {
-		uint16_t s = src[i];
-		uint8_t A = (s >> 15) ? 255 : 0;
-		uint8_t R5 = (s >> 10) & 0x1F;
-		uint8_t G5 = (s >> 5) & 0x1F;
-		uint8_t B5 = s & 0x1F;
-		// expand 5 to 8 bits
-		uint8_t R = (R5 << 3) | (R5 >> 2);
-		uint8_t G = (G5 << 3) | (G5 >> 2);
-		uint8_t B = (B5 << 3) | (B5 >> 2);
-		size_t o = 4 * i;
-		dstRGBA8[o + 0] = R;
-		dstRGBA8[o + 1] = G;
-		dstRGBA8[o + 2] = B;
-		dstRGBA8[o + 3] = A;
-	}
-}
-
-// BGR -> RGB
-static inline void convert_BGR_to_RGB(const uint8_t* __restrict src, uint8_t* __restrict dst, size_t npx)
-{
-	for (size_t i = 0, s = 0, t = 0; i < npx; ++i, s += 3, t += 3) {
-		uint8_t b = src[s + 0];
-		uint8_t g = src[s + 1];
-		uint8_t r = src[s + 2];
-		dst[t + 0] = r;
-		dst[t + 1] = g;
-		dst[t + 2] = b;
-	}
-}
-
-// BGRA 8888 -> RGBA 8888
-static inline void convert_BGRA8888_to_RGBA8888(const uint8_t* __restrict src, uint8_t* __restrict dst, size_t npx)
-{
-	for (size_t i = 0; i < npx; i++) {
-		const uint8_t b = src[4 * i + 0];
-		const uint8_t g = src[4 * i + 1];
-		const uint8_t r = src[4 * i + 2];
-		const uint8_t a = src[4 * i + 3];
-		dst[4 * i + 0] = r;
-		dst[4 * i + 1] = g;
-		dst[4 * i + 2] = b;
-		dst[4 * i + 3] = a;
-	}
-}
-
-// BGR 3B -> RGBA 4B
-static inline void convert_BGR_to_RGBA(const uint8_t* __restrict src, uint8_t* __restrict dst, size_t npx)
-{
-	for (size_t i = 0; i < npx; ++i) {
-		const size_t s = i * 3;
-		const size_t t = i * 4;
-		dst[t + 0] = src[s + 2]; // R <- B
-		dst[t + 1] = src[s + 1]; // G
-		dst[t + 2] = src[s + 0]; // B <- R
-		dst[t + 3] = 255;        // A
-	}
-}
-
-// BGRA1555_REV -> RGB888
-static inline void convert_BGRA1555_REV_to_RGB888(const uint16_t* __restrict src, uint8_t* __restrict dstRGB8, size_t npx)
-{
-	for (size_t i = 0; i < npx; ++i) {
-		uint16_t s = src[i];
-		uint8_t R5 = (s >> 10) & 0x1F;
-		uint8_t G5 = (s >> 5) & 0x1F;
-		uint8_t B5 = s & 0x1F;
-
-		// expand 5 to 8 bits
-		uint8_t R = (R5 << 3) | (R5 >> 2);
-		uint8_t G = (G5 << 3) | (G5 >> 2);
-		uint8_t B = (B5 << 3) | (B5 >> 2);
-
-		size_t o = 3 * i;
-		dstRGB8[o + 0] = R;
-		dstRGB8[o + 1] = G;
-		dstRGB8[o + 2] = B;
-	}
-}
-
-/* 
 	Intercept calls to do pixel conversion and format adjustments to something the driver can work with
 	Note: This is only needed for uncompressed texture formats
 */
@@ -187,7 +88,7 @@ static inline void glTexSubImage3D(GLenum target, GLint level, GLint xoff, GLint
 			if (data != nullptr) 
 			{
 				std::vector<uint8_t> scratch(npx * 4); // RGBA8888 = 4 BPP
-				convert_BGRA1555_REV_to_RGBA8888(reinterpret_cast<const uint16_t*>(data), scratch.data(), npx);
+				graphics::util::convert_BGRA1555_REV_to_RGBA8888(reinterpret_cast<const uint16_t*>(data), scratch.data(), npx);
 				glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 				glad_glTexSubImage3D(target, level, xoff, yoff, zoff, w, h, d, format, type, scratch.data());
 				return;
@@ -198,7 +99,7 @@ static inline void glTexSubImage3D(GLenum target, GLint level, GLint xoff, GLint
 			if (data != nullptr)
 			{
 				std::vector<uint8_t> scratch(npx * 3); // RGB888 = 3 BPP
-				convert_BGRA1555_REV_to_RGB888(reinterpret_cast<const uint16_t*>(data), scratch.data(), npx);
+				graphics::util::convert_BGRA1555_REV_to_RGB888(reinterpret_cast<const uint16_t*>(data), scratch.data(), npx);
 				glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 				glad_glTexSubImage3D(target, level, xoff, yoff, zoff, w, h, d, format, type, scratch.data());
 				return;
@@ -208,7 +109,7 @@ static inline void glTexSubImage3D(GLenum target, GLint level, GLint xoff, GLint
 			type = GL_UNSIGNED_SHORT_5_5_5_1;
 			if (data != nullptr) {
 				std::vector<uint8_t> scratch(npx * 2); // RGBA5551 = 2 BPP
-				convert_BGRA1555_REV_to_RGBA5551(reinterpret_cast<const uint16_t*>(data),
+				graphics::util::convert_BGRA1555_REV_to_RGBA5551(reinterpret_cast<const uint16_t*>(data),
 					reinterpret_cast<uint16_t*>(scratch.data()),
 					npx);
 				glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
@@ -226,7 +127,7 @@ static inline void glTexSubImage3D(GLenum target, GLint level, GLint xoff, GLint
 			format = GL_RGBA;
 			if (data != nullptr) {
 				std::vector<uint8_t> scratch(npx * 4); // RGBA8888 = 4 BPP
-				convert_BGR_to_RGBA(static_cast<const uint8_t*>(data), scratch.data(), npx);
+				graphics::util::convert_BGR_to_RGBA(static_cast<const uint8_t*>(data), scratch.data(), npx);
 				glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 				glad_glTexSubImage3D(target, level, xoff, yoff, zoff, w, h, d, format, type, scratch.data());
 				return;
@@ -237,7 +138,7 @@ static inline void glTexSubImage3D(GLenum target, GLint level, GLint xoff, GLint
 			format = GL_RGB;
 			if (data != nullptr) {
 				std::vector<uint8_t> scratch(npx * 3); // RGB888 = 3 BPP
-				convert_BGR_to_RGB(static_cast<const uint8_t*>(data), scratch.data(), npx);
+				graphics::util::convert_BGR_to_RGB(static_cast<const uint8_t*>(data), scratch.data(), npx);
 				glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 				glad_glTexSubImage3D(target, level, xoff, yoff, zoff, w, h, d, format, type, scratch.data());
 				return;
@@ -251,7 +152,7 @@ static inline void glTexSubImage3D(GLenum target, GLint level, GLint xoff, GLint
 		if (data != nullptr /* && !GLAD_GL_EXT_texture_format_BGRA8888*/) {
 			// Conversion forced on because the check either does not work or buggy impl on Mali
 			std::vector<uint8_t> scratch(npx * 4);
-			convert_BGRA8888_to_RGBA8888(reinterpret_cast<const uint8_t*>(data), scratch.data(), npx);
+			graphics::util::convert_BGRA8888_to_RGBA8888(reinterpret_cast<const uint8_t*>(data), scratch.data(), npx);
 			glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 			glad_glTexSubImage3D(target, level, xoff, yoff, zoff, w, h, d, GL_RGBA, type, scratch.data());
 			return;

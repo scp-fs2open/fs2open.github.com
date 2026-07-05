@@ -189,6 +189,7 @@ float bitmap_lookup::map_texture_address(float address)
 float bitmap_lookup::get_channel_alpha(float u, float v)
 {
 	Assert( Bitmap_data != NULL );
+	Assertion(Num_channels > 3, "Checked alpha on a bitmap without an alpha channel");
 
 	int x = fl2i(map_texture_address(u) * (Width-1));
 	int y = fl2i(map_texture_address(v) * (Height-1));

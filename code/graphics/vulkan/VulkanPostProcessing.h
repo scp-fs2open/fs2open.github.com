@@ -312,6 +312,7 @@ private:
 		vk::ImageLayout colorFinalLayout;
 		vk::ImageLayout depthInitialLayout;
 		bool useResolveDependency = false;
+		SCP_unordered_map<uint32_t, vk::AttachmentLoadOp> attachmentLoadOpOverrides = {};
 	};
 	vk::RenderPass createGbufRenderPass(const GbufRenderPassConfig& config);
 	vk::Framebuffer createGbufFramebuffer(vk::RenderPass renderPass, bool includeComposite,
