@@ -37,7 +37,6 @@ jobs:
         env:
           CONFIGURATION: ${{ matrix.configuration }}
           COMPILER: gcc-9
-          ENABLE_QTFRED: OFF
         run: $GITHUB_WORKSPACE/ci/linux/configure_cmake.sh
       - name: Compile
         working-directory: ./build
@@ -273,7 +272,6 @@ jobs:
           CONFIGURATION: ${{ matrix.configuration }}
           COMPILER: ${{ matrix.compiler }}
           ARCHITECTURE: ${{ matrix.arch }}
-          ENABLE_QTFRED: OFF
         run: $GITHUB_WORKSPACE/ci/linux/configure_cmake.sh
       - name: Compile
         working-directory: ./build
