@@ -36,15 +36,19 @@ set(CMAKE_MAP_IMPORTED_CONFIG_FASTDEBUG Debug Release "")
 find_package(Qt6 COMPONENTS Core Widgets OpenGL Help)
 
 # fall back to precompiled version if system install not found
-if (NOT Qt6_FOUND AND NOT QT_USE_PRECOMPILED)
-    message(STATUS "Qt6 libraries could not be found. Using prebuilt version...")
-
-    get_prebuilt_path(PREBUILT_PATH)
-    list(PREPEND CMAKE_PREFIX_PATH "${PREBUILT_PATH}/Qt6")
-
-    find_package(Qt6 REQUIRED COMPONENTS Core Widgets OpenGL Help)
-else()
+if(Qt6_FOUND AND NOT QT_USE_PRECOMPILED)
     message(STATUS "Using system Qt libraries. Don't distribute these FSO binaries if these are the GPL libraries/plugins!")
+elseif(NOT Qt6_FOUND)
+    if(NOT QT_USE_PRECOMPILED)
+        message(STATUS "Qt6 libraries could not be found. Using prebuilt version...")
+
+        get_prebuilt_path(PREBUILT_PATH)
+        list(PREPEND CMAKE_PREFIX_PATH "${PREBUILT_PATH}/Qt6")
+
+        find_package(Qt6 REQUIRED COMPONENTS Core Widgets OpenGL Help)
+    else()
+        message(FATAL_ERROR "Required Qt6 libraries were not found!")
+    endif()
 endif()
 
 include(source_groups.cmake)
