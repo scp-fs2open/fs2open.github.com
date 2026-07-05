@@ -133,7 +133,9 @@ int ControlBindings::normalizedCode(const QKeySequence& sequence) {
 	const auto key = combined.key();
 	const auto mods = combined.keyboardModifiers();
 	constexpr auto relevant_mods = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier | Qt::KeypadModifier;
-	return key | (mods & relevant_mods);
+
+	const QKeyCombination result(mods & relevant_mods, key);
+	return result.toCombined();
 }
 
 int ControlBindings::normalizedCode(const QKeyEvent* event) {
