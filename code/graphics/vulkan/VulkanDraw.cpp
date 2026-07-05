@@ -217,7 +217,7 @@ void VulkanDrawManager::clear()
 	vk::ClearAttachment clearAttachment;
 	clearAttachment.aspectMask = vk::ImageAspectFlagBits::eColor;
 	clearAttachment.colorAttachment = 0;
-	clearAttachment.clearValue.color = stateTracker->getClearColor();
+	clearAttachment.clearValue.color = graphics::vulkan::VulkanStateTracker::getClearColor();
 
 	vk::ClearRect clearRect;
 	if (stateTracker->isScissorEnabled()) {
