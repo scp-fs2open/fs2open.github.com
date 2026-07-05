@@ -2,7 +2,7 @@
 # NOTE: These variables must be cached to allow QtFRED to use Qt6 prebuilt libs
 #       without setting Qt6 up project wide
 
-set(PREBUILT_VERSION_NAME "ff66793d" CACHE INTERNAL "")
+set(PREBUILT_VERSION_NAME "62c89ef6" CACHE INTERNAL "")
 
 set(FSO_PREBUILT_OVERRIDE "" CACHE PATH "Path to the prebuilt binaries, if empty the binaries will be downloaded.")
 set(PREBUILT_LIB_DIR "${CMAKE_CURRENT_BINARY_DIR}/prebuilt" CACHE INTERNAL "")
