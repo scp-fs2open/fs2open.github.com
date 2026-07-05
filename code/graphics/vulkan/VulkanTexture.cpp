@@ -6,6 +6,7 @@
 #include "VulkanRenderer.h"
 #include "gr_vulkan.h"
 
+#include "graphics/util/pixel_swizzle.h"
 #include "bmpman/bmpman.h"
 #include "ddsutils/ddsutils.h"
 #include "ddsutils/bcdec.h"
@@ -86,19 +87,6 @@ size_t appendLayerCopyRegions(SCP_vector<vk::BufferImageCopy>& regions,
 	return offset - layerBufferOffset;
 }
 
-// Expand 24bpp BGR pixel data to 32bpp BGRA (alpha forced to 255). Vulkan does
-// not support 24bpp optimal-tiling formats, so every upload path widens.
-void expandBgrToBgra(uint8_t* dst, const uint8_t* src, size_t pixelCount)
-{
-	for (size_t i = 0; i < pixelCount; ++i) {
-		dst[0] = src[0];
-		dst[1] = src[1];
-		dst[2] = src[2];
-		dst[3] = 255;
-		src += 3;
-		dst += 4;
-	}
-}
 } // namespace
 
 VulkanTextureManager* getTextureManager()
@@ -644,7 +632,7 @@ bool VulkanTextureManager::uploadAnimationFrames(int handle, bitmap* bm, int com
 
 		// Copy frame data to staging buffer
 		if (!isCompressed && frameBm->bpp == 24) {
-			expandBgrToBgra(dst, reinterpret_cast<const uint8_t*>(frameBm->data),
+			graphics::util::expand_BGR_to_BGRA(reinterpret_cast<const uint8_t*>(frameBm->data), dst,
 				static_cast<size_t>(width) * height);
 		} else {
 			memcpy(dst, reinterpret_cast<const void*>(frameBm->data), layerDataSize);
@@ -823,8 +811,8 @@ bool VulkanTextureManager::uploadCubemap(int handle, bitmap* bm, int compType)
 	// DDS cubemap data layout: face0[mip0..mipN], face1[mip0..mipN], ..., face5[mip0..mipN]
 	if (!isCompressed && bm->bpp == 24) {
 		// Convert BGR to BGRA for all 6 faces
-		expandBgrToBgra(static_cast<uint8_t*>(mapped),
-			reinterpret_cast<const uint8_t*>(bm->data), static_cast<size_t>(faceW) * faceH * 6);
+		graphics::util::expand_BGR_to_BGRA(reinterpret_cast<const uint8_t*>(bm->data),
+			static_cast<uint8_t*>(mapped), static_cast<size_t>(faceW) * faceH * 6);
 	} else {
 		memcpy(mapped, reinterpret_cast<const void*>(bm->data), totalDataSize);
 	}
@@ -1234,8 +1222,8 @@ bool VulkanTextureManager::bm_data(int handle, bitmap* bm, int compType)
 		// Compressed data: copy raw block data directly (includes all mip levels)
 		memcpy(mapped, reinterpret_cast<const void*>(bm->data), dataSize);
 	} else if (bm->bpp == 24) {
-		expandBgrToBgra(static_cast<uint8_t*>(mapped),
-			reinterpret_cast<const uint8_t*>(bm->data), static_cast<size_t>(width) * height);
+		graphics::util::expand_BGR_to_BGRA(reinterpret_cast<const uint8_t*>(bm->data),
+			static_cast<uint8_t*>(mapped), static_cast<size_t>(width) * height);
 	} else {
 		memcpy(mapped, reinterpret_cast<const void*>(bm->data), dataSize);
 	}
@@ -1584,18 +1572,7 @@ void VulkanTextureManager::update_texture(int bitmap_handle, int bpp, const ubyt
 	void* mapped = m_memoryManager->mapMemory(stagingAllocation);
 	Verify(mapped);
 	if (bpp == 24) {
-		// Convert BGR (3 bytes) to BGRA (4 bytes), adding alpha=255
-		const uint8_t* src = data;
-		auto* dst = static_cast<uint8_t*>(mapped);
-		size_t pixelCount = w * h;
-		for (size_t i = 0; i < pixelCount; ++i) {
-			dst[0] = src[0];
-			dst[1] = src[1];
-			dst[2] = src[2];
-			dst[3] = 255;
-			src += 3;
-			dst += 4;
-		}
+		graphics::util::expand_BGR_to_BGRA(data, static_cast<uint8_t*>(mapped), w * h);
 	} else {
 		memcpy(mapped, data, dataSize);
 	}
@@ -1831,13 +1808,8 @@ void VulkanTextureManager::get_bitmap_from_texture(void* data_out, int bitmap_nu
 				}
 			} else {
 				for (uint32_t y = 0; y < h; ++y) {
-					for (uint32_t x = 0; x < w; ++x) {
-						const uint8_t* s = src + (y * copyW + x) * 4;
-						uint8_t* d = dst + (y * w + x) * 3;
-						d[0] = s[0]; // R
-						d[1] = s[1]; // G
-						d[2] = s[2]; // B
-					}
+					graphics::util::convert_RGBA8888_to_RGB888(
+						src + y * copyW * 4, dst + y * w * 3, w);
 				}
 			}
 		} else {
@@ -1847,67 +1819,27 @@ void VulkanTextureManager::get_bitmap_from_texture(void* data_out, int bitmap_nu
 			switch (ts->format) {
 			case vk::Format::eB8G8R8A8Unorm:
 				if (outChannels == 4) {
-					for (uint32_t i = 0; i < pixelCount; ++i) {
-						dst[i * 4 + 0] = src[i * 4 + 2]; // R
-						dst[i * 4 + 1] = src[i * 4 + 1]; // G
-						dst[i * 4 + 2] = src[i * 4 + 0]; // B
-						dst[i * 4 + 3] = src[i * 4 + 3]; // A
-					}
+					graphics::util::convert_BGRA8888_to_RGBA8888(src, dst, pixelCount);
 				} else {
-					for (uint32_t i = 0; i < pixelCount; ++i) {
-						dst[i * 3 + 0] = src[i * 4 + 2]; // R
-						dst[i * 3 + 1] = src[i * 4 + 1]; // G
-						dst[i * 3 + 2] = src[i * 4 + 0]; // B
-					}
+					graphics::util::convert_BGRA8888_to_RGB888(src, dst, pixelCount);
 				}
 				break;
 
 			case vk::Format::eR8Unorm:
 				if (outChannels == 4) {
-					for (uint32_t i = 0; i < pixelCount; ++i) {
-						const uint8_t r = src[i];
-						dst[i * 4 + 0] = r;
-						dst[i * 4 + 1] = r;
-						dst[i * 4 + 2] = r;
-						dst[i * 4 + 3] = 255;
-					}
+					graphics::util::expand_R8_to_RGBA(src, dst, pixelCount);
 				} else {
-					for (uint32_t i = 0; i < pixelCount; ++i) {
-						const uint8_t r = src[i];
-						dst[i * 3 + 0] = r;
-						dst[i * 3 + 1] = r;
-						dst[i * 3 + 2] = r;
-					}
+					graphics::util::expand_R8_to_RGB(src, dst, pixelCount);
 				}
 				break;
 
-			case vk::Format::eA1R5G5B5UnormPack16: {
-				const auto* src16 = reinterpret_cast<const uint16_t*>(src);
+			case vk::Format::eA1R5G5B5UnormPack16:
 				if (outChannels == 4) {
-					for (uint32_t i = 0; i < pixelCount; ++i) {
-						const uint16_t s = src16[i];
-						const uint8_t a = (s >> 15) & 1;
-						const uint8_t r = (s >> 10) & 0x1F;
-						const uint8_t g = (s >> 5) & 0x1F;
-						const uint8_t b = s & 0x1F;
-						dst[i * 4 + 0] = static_cast<uint8_t>((r << 3) | (r >> 2));
-						dst[i * 4 + 1] = static_cast<uint8_t>((g << 3) | (g >> 2));
-						dst[i * 4 + 2] = static_cast<uint8_t>((b << 3) | (b >> 2));
-						dst[i * 4 + 3] = a ? 255u : 0u;
-					}
+					graphics::util::convert_BGRA1555_REV_to_RGBA8888(reinterpret_cast<const uint16_t*>(src), dst, pixelCount);
 				} else {
-					for (uint32_t i = 0; i < pixelCount; ++i) {
-						const uint16_t s = src16[i];
-						const uint8_t r = (s >> 10) & 0x1F;
-						const uint8_t g = (s >> 5) & 0x1F;
-						const uint8_t b = s & 0x1F;
-						dst[i * 3 + 0] = static_cast<uint8_t>((r << 3) | (r >> 2));
-						dst[i * 3 + 1] = static_cast<uint8_t>((g << 3) | (g >> 2));
-						dst[i * 3 + 2] = static_cast<uint8_t>((b << 3) | (b >> 2));
-					}
+					graphics::util::convert_BGRA1555_REV_to_RGB888(reinterpret_cast<const uint16_t*>(src), dst, pixelCount);
 				}
 				break;
-			}
 
 			default: break;
 			}
