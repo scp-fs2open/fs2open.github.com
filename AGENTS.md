@@ -166,10 +166,12 @@ following:
   --error-exitcode=1`, see `ci/linux/run_tests.sh`), so leaks or
   uninitialized-memory reads in new code fail CI even if the test assertions
   pass.
-- **clang-tidy** runs on clang builds (Linux clang-16, macOS clang), scoped to
-  lines changed relative to the PR base branch (`ci/linux/clang_tidy.sh`,
-  checks defined in `.clang-tidy`). Don't introduce new findings in touched
-  code.
+- **clang-tidy** only runs on the Linux clang-16 leg, scoped to lines changed
+  relative to the PR base branch (`ci/linux/clang_tidy.sh`, checks defined in
+  `.clang-tidy`). It does not run on macOS or Windows — `clang_tidy.sh`
+  hardcodes a Linux container binary path (`/usr/bin/clang-tidy-16`), so don't
+  assume macOS gets clang-tidy coverage. Don't introduce new clang-tidy
+  findings in touched code.
 - **clang-format is not enforced by CI** — there's no automated formatting
   job — but reviewers expect it. Always run `clang-format -i` on changed files;
   formatting drift is a common review comment even though it won't fail the
@@ -199,6 +201,7 @@ following:
 - Add or update unit tests under `test/src` when changing testable logic.
 - When available, prefer mcp usage over manual exploration of the codebase or
   performing build tasks.
+- After making changes, verify the existing documentation and update it if necessary.
 
 ## Useful references
 

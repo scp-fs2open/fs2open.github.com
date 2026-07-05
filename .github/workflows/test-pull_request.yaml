@@ -179,12 +179,3 @@ jobs:
         run: $GITHUB_WORKSPACE/ci/linux/run_tests.sh
       - name: Show CCache statistics
         run: ccache --show-stats
-      - name: Run Clang Tidy
-        # Clang-tidy reuses the precompiled headers so this only makes sense for the clang compilers
-        if: startsWith(matrix.compiler, 'clang-')
-        run: $GITHUB_WORKSPACE/ci/linux/clang_tidy.sh ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }}
-      - name: Process clang-tidy warnings
-        if: startsWith(matrix.compiler, 'clang-')
-        uses: asarium/clang-tidy-action@v1
-        with:
-          fixesFile: clang-fixes.yaml
