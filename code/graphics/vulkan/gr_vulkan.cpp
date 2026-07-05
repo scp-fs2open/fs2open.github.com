@@ -16,6 +16,7 @@
 #include "backends/imgui_impl_vulkan.h"
 #include "osapi/osapi.h"
 
+#include "graphics/util/pixel_swizzle.h"
 #include "bmpman/bmpman.h"
 #include "cfile/cfile.h"
 #include "cmdline/cmdline.h"
@@ -299,15 +300,6 @@ void vulkan_free_screen(int bmp_id)
 	}
 }
 
-// Swizzle BGRA→RGBA in-place for PNG output (swap chain is B8G8R8A8)
-void swizzle_bgra_to_rgba(ubyte* pixels, size_t pixelCount)
-{
-	for (size_t i = 0; i < pixelCount; i++) {
-		size_t off = i * 4;
-		std::swap(pixels[off + 0], pixels[off + 2]);
-	}
-}
-
 void vulkan_print_screen(const char* filename)
 {
 	ubyte* pixels = nullptr;
@@ -316,7 +308,7 @@ void vulkan_print_screen(const char* filename)
 		return;
 	}
 
-	swizzle_bgra_to_rgba(pixels, static_cast<size_t>(w) * h);
+	graphics::util::swizzle_bgra_to_rgba(pixels, static_cast<size_t>(w) * h);
 
 	char tmp[MAX_PATH_LEN];
 	snprintf(tmp, MAX_PATH_LEN - 1, "screenshots/%s.png", filename);
@@ -338,7 +330,7 @@ SCP_string vulkan_blob_screen()
 		return "";
 	}
 
-	swizzle_bgra_to_rgba(pixels, static_cast<size_t>(w) * h);
+	graphics::util::swizzle_bgra_to_rgba(pixels, static_cast<size_t>(w) * h);
 
 	SCP_string result = png_b64_bitmap(w, h, false, pixels);
 
