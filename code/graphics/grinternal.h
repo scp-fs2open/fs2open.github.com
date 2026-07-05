@@ -44,6 +44,7 @@ extern color_gun *Gr_current_red, *Gr_current_green, *Gr_current_blue, *Gr_curre
 
 extern float Gr_gamma;
 
+extern bool Rendering_to_shadow_map;
 extern bool Scene_framebuffer_in_frame;
 
 #define TCACHE_TYPE_AABITMAP				0		// HUD bitmap.  All Alpha.

@@ -47,6 +47,10 @@
 #define DIR_SEPARATOR_STR  "/"
 #endif
 
+constexpr char COMMENT_CHAR =    static_cast<char>(';');
+constexpr char EOLN =            static_cast<char>(0x0a);
+constexpr char CARRIAGE_RETURN = static_cast<char>(0x0d);
+
 #ifndef NDEBUG
 constexpr bool FSO_DEBUG = true;
 #else
@@ -589,6 +593,11 @@ inline void* memset_if_trivial_else_error(ImDrawListSplitter* memset_data, int c
 	}
 
 	inline void *memcpy_if_trivial_else_error(void *memcpy_dest, void *memcpy_src, size_t count)
+	{
+		return ptr_memcpy(memcpy_dest, memcpy_src, count);
+	}
+
+	inline void *memcpy_if_trivial_else_error(void *memcpy_dest, const void *memcpy_src, size_t count)
 	{
 		return ptr_memcpy(memcpy_dest, memcpy_src, count);
 	}

@@ -3551,7 +3551,7 @@ void game_render_frame( camid cid, const vec3d* offset, const matrix* rot_offset
 		stars_draw(1,1,1,0,0);
 	}
 
-	shadows_render_all(Proj_fov, &Eye_matrix, &Eye_position, offset, rot_offset, fov_override);
+	shadows_render_all(Proj_fov, &Eye_matrix, &Eye_position);
 	obj_render_queue_all();
 
 	// render all ships with shader effects on them

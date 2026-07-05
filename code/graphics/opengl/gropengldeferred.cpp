@@ -1,7 +1,7 @@
 
 
 #include "gropengldeferred.h"
-#include "globalincs/vmallocator.h"
+#include "graphics/util/primitives.h"
 
 #include "ShaderProgram.h"
 #include "gropengldraw.h"
@@ -11,7 +11,6 @@
 #include "graphics/2d.h"
 #include "graphics/light.h"
 #include "graphics/matrix.h"
-#include "graphics/shadows.h"
 #include "graphics/util/UniformAligner.h"
 #include "graphics/util/UniformBuffer.h"
 #include "graphics/util/uniform_structs.h"
@@ -21,7 +20,6 @@
 #include "mission/missionparse.h"
 #include "nebula/neb.h"
 #include "nebula/volumetrics.h"
-#include "mod_table/mod_table.h"
 #include "render/3d.h"
 #include "tracing/tracing.h"
 #ifdef USE_OPENGL_ES
@@ -252,7 +250,7 @@ void gr_opengl_deferred_lighting_finish()
 	GL_state.Texture.Enable(2, GL_TEXTURE_2D, Scene_position_texture);
 	GL_state.Texture.Enable(3, GL_TEXTURE_2D, Scene_specular_texture);
 	if (Shadow_quality != ShadowQuality::Disabled) {
-		GL_state.Texture.Enable(4, GL_TEXTURE_2D_ARRAY, Shadow_map_depth_texture);
+		GL_state.Texture.Enable(4, GL_TEXTURE_2D_ARRAY, Shadow_map_texture);
 	}
 
 	if (ENVMAP > 0) {
@@ -315,10 +313,17 @@ void gr_opengl_deferred_lighting_finish()
 
 		auto header = light_uniform_aligner.getHeader<deferred_global_data>();
 		if (Shadow_quality != ShadowQuality::Disabled) {
+			// Avoid this overhead when we are not going to use these values
+			header->shadow_mv_matrix = Shadow_view_matrix_light;
+			for (size_t i = 0; i < MAX_SHADOW_CASCADES; ++i) {
+				header->shadow_proj_matrix[i] = Shadow_proj_matrix[i];
+			}
+			header->veryneardist = Shadow_cascade_distances[0];
+			header->neardist = Shadow_cascade_distances[1];
+			header->middist = Shadow_cascade_distances[2];
+			header->fardist = Shadow_cascade_distances[3];
+
 			vm_inverse_matrix4(&header->inv_view_matrix, &Shadow_view_matrix_render);
-			int offset = (Lighting_mode == lighting_mode::COCKPIT) ? 0 : Num_cockpit_shadow_cascades;
-			int count  = (Lighting_mode == lighting_mode::COCKPIT) ? Num_cockpit_shadow_cascades : Num_shadow_cascades;
-			shadow_cascade_params_bind(offset, count);
 		}
 
 		header->invScreenWidth = 1.0f / gr_screen.max_w;
@@ -703,69 +708,12 @@ void gr_opengl_draw_deferred_light_sphere(const vec3d *position)
 }
 
 
-void gr_opengl_deferred_light_cylinder_init(int segments) // Generate a VBO of a cylinder of radius and height 1.0f, based on code at http://www.ogre3d.org/tikiwiki/ManualSphereMeshes
+void gr_opengl_deferred_light_cylinder_init(int segments)
 {
-	unsigned int nVertex = (segments + 1) * 2 * 3 + 6; // Can someone verify this?
-	unsigned int nIndex = deferred_light_cylinder_icount = 12 * (segments + 1) - 6; //This too
-	float *Vertices = (float*)vm_malloc(sizeof(float) * nVertex);
-	float *pVertex = Vertices;
-	ushort *Indices = (ushort*)vm_malloc(sizeof(ushort) * nIndex);
-	ushort *pIndex = Indices;
+	auto mesh = graphics::util::generate_cylinder_mesh(segments);
 
-	float fDeltaSegAngle = (2.0f * PI / segments);
-	unsigned short wVerticeIndex = 0 ;
-
-	*pVertex++ = 0.0f;
-	*pVertex++ = 0.0f;
-	*pVertex++ = 0.0f;
-	wVerticeIndex ++;
-	*pVertex++ = 0.0f;
-	*pVertex++ = 0.0f;
-	*pVertex++ = 1.0f;
-	wVerticeIndex ++;
-
-	for( int ring = 0; ring <= 1; ring++ ) {
-		float z0 = (float)ring;
-
-		// Generate the group of segments for the current ring
-		for(int seg = 0; seg <= segments; seg++) {
-			float x0 = sinf(seg * fDeltaSegAngle);
-			float y0 = cosf(seg * fDeltaSegAngle);
-
-			// Add one vertex to the strip which makes up the cylinder
-			*pVertex++ = x0;
-			*pVertex++ = y0;
-			*pVertex++ = z0;
-
-			if (!ring) {
-				*pIndex++ = wVerticeIndex + (ushort)segments + 1;
-				*pIndex++ = wVerticeIndex;
-				*pIndex++ = wVerticeIndex + (ushort)segments;
-				*pIndex++ = wVerticeIndex + (ushort)segments + 1;
-				*pIndex++ = wVerticeIndex + 1;
-				*pIndex++ = wVerticeIndex;
-				if(seg != segments)
-				{
-					*pIndex++ = wVerticeIndex + 1;
-					*pIndex++ = wVerticeIndex;
-					*pIndex++ = 0;
-				}
-				wVerticeIndex ++;
-			}
-			else
-			{
-				if(seg != segments)
-				{
-					*pIndex++ = wVerticeIndex + 1;
-					*pIndex++ = wVerticeIndex;
-					*pIndex++ = 1;
-					wVerticeIndex ++;
-				}
-			}
-		}; // end for seg
-	} // end for ring
-
-	deferred_light_cylinder_vcount = wVerticeIndex;
+	deferred_light_cylinder_vcount = static_cast<GLushort>(mesh.vertex_count);
+	deferred_light_cylinder_icount = mesh.index_count;
 
 	glGetError();
 
@@ -774,17 +722,12 @@ void gr_opengl_deferred_light_cylinder_init(int segments) // Generate a VBO of a
 	// make sure we have one
 	if (deferred_light_cylinder_vbo) {
 		glBindBuffer(GL_ARRAY_BUFFER, deferred_light_cylinder_vbo);
-		glBufferData(GL_ARRAY_BUFFER, nVertex * sizeof(float), Vertices, GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, mesh.vertices.size() * sizeof(float), mesh.vertices.data(), GL_STATIC_DRAW);
 
 		// just in case
 		if ( opengl_check_for_errors() ) {
 			glDeleteBuffers(1, &deferred_light_cylinder_vbo);
 			deferred_light_cylinder_vbo = 0;
-
-			vm_free(Indices);
-			Indices = nullptr;
-			vm_free(Vertices);
-			Vertices = nullptr;
 			return;
 		}
 
@@ -796,71 +739,25 @@ void gr_opengl_deferred_light_cylinder_init(int segments) // Generate a VBO of a
 	// make sure we have one
 	if (deferred_light_cylinder_ibo) {
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, deferred_light_cylinder_ibo);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, nIndex * sizeof(ushort), Indices, GL_STATIC_DRAW);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.indices.size() * sizeof(ushort), mesh.indices.data(), GL_STATIC_DRAW);
 
 		// just in case
 		if ( opengl_check_for_errors() ) {
 			glDeleteBuffers(1, &deferred_light_cylinder_ibo);
 			deferred_light_cylinder_ibo = 0;
-
-			vm_free(Indices);
-			Indices = nullptr;
-			vm_free(Vertices);
-			Vertices = nullptr;
 			return;
 		}
 
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	}
-
-	vm_free(Indices);
-	Indices = nullptr;
-	vm_free(Vertices);
-	Vertices = nullptr;
 }
 
-void gr_opengl_deferred_light_sphere_init(int rings, int segments) // Generate a VBO of a sphere of radius 1.0f, based on code at http://www.ogre3d.org/tikiwiki/ManualSphereMeshes
+void gr_opengl_deferred_light_sphere_init(int rings, int segments)
 {
-	unsigned int nVertex = (rings + 1) * (segments+1) * 3;
-	unsigned int nIndex = deferred_light_sphere_icount = 6 * rings * (segments + 1);
-	float *Vertices = (float*)vm_malloc(sizeof(float) * nVertex);
-	float *pVertex = Vertices;
-	ushort *Indices = (ushort*)vm_malloc(sizeof(ushort) * nIndex);
-	ushort *pIndex = Indices;
+	auto mesh = graphics::util::generate_sphere_mesh(rings, segments);
 
-	float fDeltaRingAngle = (PI / rings);
-	float fDeltaSegAngle = (2.0f * PI / segments);
-	unsigned short wVerticeIndex = 0 ;
-
-	// Generate the group of rings for the sphere
-	for( int ring = 0; ring <= rings; ring++ ) {
-		float r0 = sinf (ring * fDeltaRingAngle);
-		float y0 = cosf (ring * fDeltaRingAngle);
-
-		// Generate the group of segments for the current ring
-		for(int seg = 0; seg <= segments; seg++) {
-			float x0 = r0 * sinf(seg * fDeltaSegAngle);
-			float z0 = r0 * cosf(seg * fDeltaSegAngle);
-
-			// Add one vertex to the strip which makes up the sphere
-			*pVertex++ = x0;
-			*pVertex++ = y0;
-			*pVertex++ = z0;
-
-			if (ring != rings) {
-				// each vertex (except the last) has six indices pointing to it
-				*pIndex++ = wVerticeIndex + (ushort)segments + 1;
-				*pIndex++ = wVerticeIndex;
-				*pIndex++ = wVerticeIndex + (ushort)segments;
-				*pIndex++ = wVerticeIndex + (ushort)segments + 1;
-				*pIndex++ = wVerticeIndex + 1;
-				*pIndex++ = wVerticeIndex;
-				wVerticeIndex ++;
-			}
-		}; // end for seg
-	} // end for ring
-
-	deferred_light_sphere_vcount = wVerticeIndex;
+	deferred_light_sphere_vcount = static_cast<GLushort>(mesh.vertex_count);
+	deferred_light_sphere_icount = mesh.index_count;
 
 	glGetError();
 
@@ -869,17 +766,12 @@ void gr_opengl_deferred_light_sphere_init(int rings, int segments) // Generate a
 	// make sure we have one
 	if (deferred_light_sphere_vbo) {
 		glBindBuffer(GL_ARRAY_BUFFER, deferred_light_sphere_vbo);
-		glBufferData(GL_ARRAY_BUFFER, nVertex * sizeof(float), Vertices, GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, mesh.vertices.size() * sizeof(float), mesh.vertices.data(), GL_STATIC_DRAW);
 
 		// just in case
 		if ( opengl_check_for_errors() ) {
 			glDeleteBuffers(1, &deferred_light_sphere_vbo);
 			deferred_light_sphere_vbo = 0;
-			
-			vm_free(Vertices);
-			Vertices = nullptr;
-			vm_free(Indices);
-			Indices = nullptr;
 			return;
 		}
 
@@ -891,27 +783,17 @@ void gr_opengl_deferred_light_sphere_init(int rings, int segments) // Generate a
 	// make sure we have one
 	if (deferred_light_sphere_ibo) {
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, deferred_light_sphere_ibo);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, nIndex * sizeof(ushort), Indices, GL_STATIC_DRAW);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.indices.size() * sizeof(ushort), mesh.indices.data(), GL_STATIC_DRAW);
 
 		// just in case
 		if ( opengl_check_for_errors() ) {
 			glDeleteBuffers(1, &deferred_light_sphere_ibo);
 			deferred_light_sphere_ibo = 0;
-			
-			vm_free(Vertices);
-			Vertices = nullptr;
-			vm_free(Indices);
-			Indices = nullptr;
 			return;
 		}
 
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	}
-	
-	vm_free(Vertices);
-	Vertices = nullptr;
-	vm_free(Indices);
-	Indices = nullptr;
 }
 
 void opengl_draw_sphere()

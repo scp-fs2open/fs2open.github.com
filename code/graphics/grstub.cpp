@@ -301,7 +301,7 @@ int gr_stub_maybe_create_shader(shader_type  /*shader_t*/, unsigned int  /*flags
 	return -1;
 }
 
-void gr_stub_shadow_map_start(matrix4 * /*shadow_view_matrix*/, const matrix*  /*light_matrix*/, vec3d* /*eye_pos*/, bool /*first_pass*/)
+void gr_stub_shadow_map_start(matrix4 * /*shadow_view_matrix*/, const matrix*  /*light_matrix*/, vec3d* /*eye_pos*/)
 {
 }
 
@@ -336,12 +336,6 @@ void gr_stub_render_shield_impact(shield_material* /*material_info*/,
 }
 
 void gr_stub_render_model(model_material*  /*material_info*/, indexed_vertex_source * /*vert_source*/, vertex_buffer*  /*bufferp*/, size_t  /*texi*/)
-{
-
-}
-
-void gr_stub_render_shadow_draw(gr_buffer_handle /*ubo_handle*/, size_t /*ubo_offset*/, size_t /*ubo_size*/,
-                                 vertex_buffer* /*buffer*/, indexed_vertex_source* /*vert_src*/, size_t /*texi*/)
 {
 
 }
@@ -609,7 +603,6 @@ void gr_stub_init_function_pointers() {
 	gr_screen.gf_get_bitmap_from_texture = gr_stub_get_bitmap_from_texture;
 
 	gr_screen.gf_render_model = gr_stub_render_model;
-	gr_screen.gf_render_shadow_draw = gr_stub_render_shadow_draw;
 	gr_screen.gf_render_primitives	= gr_stub_render_primitives;
 	gr_screen.gf_render_primitives_particle	= gr_stub_render_primitives_particle;
 	gr_screen.gf_render_primitives_distortion = gr_stub_render_primitives_distortion;

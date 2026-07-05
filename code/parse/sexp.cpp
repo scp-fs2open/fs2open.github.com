@@ -3972,18 +3972,22 @@ int check_sexp_syntax(int node, int desired_return_type, int recursive, int *bad
 			case OPF_GAME_SND:
 				if (node_subtype == SEXP_ATOM_NUMBER)
 				{
-					if (!gamesnd_get_by_tbl_index(atoi(CTEXT(node))).isValid())
-					{
-						return SEXP_CHECK_NUM_RANGE_INVALID;
-					}
+					int node_num = atoi(CTEXT(node));
+					if (node_num == -1)
+						break;	// explicitly allow a sound of -1, indicating either "no sound" or "default"
+					if (!gamesnd_get_by_tbl_index(node_num).isValid())
+						return SEXP_CHECK_INVALID_GAME_SND;
 				}
 				else if (node_subtype == SEXP_ATOM_STRING)
 				{
-					if (stricmp(CTEXT(node), SEXP_NONE_STRING) != 0 && !gamesnd_get_by_name(CTEXT(node)).isValid())
-					{
+					auto node_text = CTEXT(node);
+					if (stricmp(node_text, SEXP_NONE_STRING) == 0)
+						break;	// explicitly allow "no sound", although some sexps might interpret it as "default"
+					if (!gamesnd_get_by_name(node_text).isValid())
 						return SEXP_CHECK_INVALID_GAME_SND;
-					}
 				}
+				else if (node_subtype != SEXP_ATOM_LIST)
+					return SEXP_CHECK_INVALID_GAME_SND;
 				break;
 
 			case OPF_FIREBALL:
@@ -3991,17 +3995,15 @@ int check_sexp_syntax(int node, int desired_return_type, int recursive, int *bad
 				{
 					int num = atoi(CTEXT(node));
 					if (!SCP_vector_inbounds(Fireball_info, num))
-					{
-						return SEXP_CHECK_NUM_RANGE_INVALID;
-					}
+						return SEXP_CHECK_INVALID_FIREBALL;
 				}
 				else if (node_subtype == SEXP_ATOM_STRING)
 				{
 					if (fireball_info_lookup(CTEXT(node)) < 0)
-					{
 						return SEXP_CHECK_INVALID_FIREBALL;
-					}
 				}
+				else if (node_subtype != SEXP_ATOM_LIST)
+					return SEXP_CHECK_INVALID_FIREBALL;
 				break;
 
 			case OPF_SPECIES:

@@ -3213,7 +3213,7 @@ void model_load_texture(polymodel *pm, int i, const char *file)
 
 	// See if we need to compile a new shader for this material
 	if (Shadow_quality != ShadowQuality::Disabled)
-		gr_maybe_create_shader(SDR_TYPE_SHADOW_MAP_GEN, gr_is_capable(gr_capability::CAPABILITY_FAST_SHADOWS) ? 0 : SDR_FLAG_SHADOW_FALLBACK);
+		gr_maybe_create_shader(SDR_TYPE_MODEL, MODEL_SDR_FLAG_SHADOW_MAP);
 
 	gr_maybe_create_shader(SDR_TYPE_MODEL, 0);
 

@@ -18,7 +18,15 @@ namespace graphics {
  */
 
 struct deferred_global_data {
+	matrix4 shadow_mv_matrix;
+	matrix4 shadow_proj_matrix[4];
+
 	matrix4 inv_view_matrix;
+
+	float veryneardist;
+	float neardist;
+	float middist;
+	float fardist;
 
 	float invScreenWidth;
 	float invScreenHeight;
@@ -71,6 +79,8 @@ struct model_uniform_data {
 	matrix4 viewMatrix;
 	matrix4 projMatrix;
 	matrix4 textureMatrix;
+	matrix4 shadow_mv_matrix;
+	matrix4 shadow_proj_matrix[4];
 
 	vec4 color;
 
@@ -100,7 +110,7 @@ struct model_uniform_data {
 	int gammaSpec;
 	int envGloss;
 	int effect_num;
-	int sBasemapIndex;
+	int sBasemapIndex;  // moved up here to track alignment
 
 	vec4 fogColor;
 
@@ -115,6 +125,11 @@ struct model_uniform_data {
 	float znear;
 	float zfar;
 
+	float veryneardist;
+	float neardist;
+	float middist;
+	float fardist;
+
 	int sGlowmapIndex;
 	int sSpecmapIndex;
 	int sNormalmapIndex;
@@ -128,25 +143,6 @@ struct model_uniform_data {
 
 const size_t model_uniform_data_size = sizeof(model_uniform_data);
 const float mud_align = model_uniform_data_size / 16.0f;
-
-
-struct shadow_uniform_data {
-	matrix4 modelViewMatrix;
-	matrix4 modelMatrix;
-	vec4 clip_equation;
-	int use_clip_plane;
-	int buffer_matrix_offset;
-	float pad[2];
-};
-
-const size_t shadow_uniform_data_size = sizeof(shadow_uniform_data);
-
-struct shadow_cascade_static_data {
-	int cascade_offset;
-	int cascade_count;
-	float pad[2];
-	matrix4 shadow_mv_matrix;
-};
 
 enum class NanoVGShaderType: int32_t {
 	FillGradient = 0, FillImage = 1, Simple = 2, Image = 3

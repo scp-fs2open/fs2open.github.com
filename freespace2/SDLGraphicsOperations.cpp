@@ -128,7 +128,15 @@ class SDLWindowViewPort: public os::Viewport {
 				SDL_SetWindowBordered(_window, SDL_FALSE);
 				break;
 			case os::ViewportState::Fullscreen:
-				SDL_SetWindowFullscreen(_window, SDL_WINDOW_FULLSCREEN);
+				// Use desktop (borderless) fullscreen rather than exclusive
+				// fullscreen. Exclusive fullscreen performs a real video mode
+				// change which is unreliable with an active Vulkan surface
+				// (it can fail or invalidate the surface, stranding swap chain
+				// resources). Desktop fullscreen keeps the surface valid so the
+				// swap chain can simply be recreated.
+				if (SDL_SetWindowFullscreen(_window, SDL_WINDOW_FULLSCREEN_DESKTOP) != 0) {
+					mprintf(("Failed to enter fullscreen: %s\n", SDL_GetError()));
+				}
 				break;
 			default:
 				UNREACHABLE("Invalid window state %d!", static_cast<int>(state));
@@ -192,7 +200,9 @@ std::unique_ptr<os::Viewport> SDLGraphicsOperations::createViewport(const os::Vi
 		windowflags |= SDL_WINDOW_BORDERLESS;
 	}
 	if (props.flags[os::ViewPortFlags::Fullscreen]) {
-		windowflags |= SDL_WINDOW_FULLSCREEN;
+		// Desktop (borderless) fullscreen avoids an exclusive video mode change,
+		// which is unreliable with Vulkan surfaces. See setState() for details.
+		windowflags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
 	}
 	if (props.flags[os::ViewPortFlags::Resizeable]) {
 		windowflags |= SDL_WINDOW_RESIZABLE;

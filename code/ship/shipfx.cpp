@@ -19,7 +19,6 @@
 #include "fireball/fireballs.h"
 #include "gamesequence/gamesequence.h"
 #include "gamesnd/gamesnd.h"
-#include "graphics/shadows.h"
 #include "hud/hudmessage.h"
 #include "io/timer.h"
 #include "lighting/lighting.h"
@@ -1557,6 +1556,10 @@ void shipfx_queue_render_ship_halves_and_debris(model_draw_list *scene, clip_shi
 	// set up render flags
 	uint64_t render_flags = MR_NORMAL;
 
+	if ( Rendering_to_shadow_map ) {
+		render_flags |= MR_NO_TEXTURING | MR_NO_LIGHTING;
+	}
+
 	if (shipp->flags[Ship::Ship_Flags::Glowmaps_disabled]) {
 		render_flags |= MR_NO_GLOWMAPS;
 	}
@@ -2039,39 +2042,6 @@ void shipfx_large_blowup_queue_render(model_draw_list *scene, ship* shipp)
 
 	if (the_split_ship->back_ship.length_left > 0) {
 		shipfx_queue_render_ship_halves_and_debris(scene, &the_split_ship->back_ship,shipp);
-	}
-}
-
-void shipfx_shadow_render_blowup(shadow_render_list* shadow_list, ship* shipp)
-{
-	Assert(shipp->large_ship_blowup_index > -1);
-	Assert(shipp->large_ship_blowup_index < (int)Split_ships.size());
-
-	split_ship* the_split_ship = &Split_ships[shipp->large_ship_blowup_index];
-	Assert(the_split_ship->used);
-
-	auto pmi = model_get_instance(shipp->model_instance_num);
-	auto pm = model_get(pmi->model_num);
-
-	for (int half_idx = 0; half_idx < 2; half_idx++) {
-		clip_ship* half = (half_idx == 0) ? &the_split_ship->front_ship : &the_split_ship->back_ship;
-		if (half->length_left <= 0) continue;
-
-		vec3d clip_plane_norm, orig_ship_world_center, model_clip_plane_pt;
-		vm_vec_unrotate(&clip_plane_norm, &half->clip_plane_norm, &half->orient);
-		vm_vec_unrotate(&orig_ship_world_center, &half->model_center_disp_to_orig_center, &half->orient);
-		vm_vec_add2(&orig_ship_world_center, &half->local_pivot);
-
-		vec3d temp;
-		vm_vec_make(&temp, 0.0f, 0.0f, half->cur_clip_plane_pt);
-		vm_vec_unrotate(&model_clip_plane_pt, &temp, &half->orient);
-		vm_vec_add2(&model_clip_plane_pt, &orig_ship_world_center);
-
-		shadow_render_list::clip_plane_info clip;
-		clip.normal = clip_plane_norm;
-		clip.position = model_clip_plane_pt;
-
-		shadow_render_list::add_model_draws(shadow_list, pm, pmi, shipp->objnum, &half->local_pivot, &half->orient, &clip);
 	}
 }
 

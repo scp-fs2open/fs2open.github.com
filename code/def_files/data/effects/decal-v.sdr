@@ -1,4 +1,20 @@
 
+#ifdef VULKAN
+// Binding 0: box vertex positions
+layout (location = 0) in vec4 vertPosition;
+
+// Binding 1: per-instance model matrix (mat4 = 4 vec4s at locations 8-11)
+layout (location = 8) in vec4 vertModelMatrix0;
+layout (location = 9) in vec4 vertModelMatrix1;
+layout (location = 10) in vec4 vertModelMatrix2;
+layout (location = 11) in vec4 vertModelMatrix3;
+
+layout (location = 0) flat out mat4 invModelMatrix;  // locations 0-3
+layout (location = 4) flat out vec3 decalDirection;
+layout (location = 5) flat out float normal_angle_cutoff;
+layout (location = 6) flat out float angle_fade_start;
+layout (location = 7) flat out float alpha_scale;
+#else
 in vec4 vertPosition;
 in mat4 vertModelMatrix;
 
@@ -7,8 +23,14 @@ flat out vec3 decalDirection;
 flat out float normal_angle_cutoff;
 flat out float angle_fade_start;
 flat out float alpha_scale;
+#endif
 
-layout (std140) uniform decalGlobalData {
+#ifdef VULKAN
+layout (set = 1, binding = 2, std140)
+#else
+layout (std140)
+#endif
+uniform decalGlobalData {
 	mat4 viewMatrix;
 	mat4 projMatrix;
 	mat4 invViewMatrix;
@@ -17,7 +39,12 @@ layout (std140) uniform decalGlobalData {
 	vec2 viewportSize;
 };
 
-layout (std140) uniform decalInfoData {
+#ifdef VULKAN
+layout (set = 2, binding = 3, std140)
+#else
+layout (std140)
+#endif
+uniform decalInfoData {
 	int diffuse_index;
 	int glow_index;
 	int normal_index;
@@ -27,6 +54,11 @@ layout (std140) uniform decalInfoData {
 };
 
 void main() {
+#ifdef VULKAN
+	// Reconstruct per-instance model matrix from 4 vec4 columns
+	mat4 vertModelMatrix = mat4(vertModelMatrix0, vertModelMatrix1, vertModelMatrix2, vertModelMatrix3);
+#endif
+
     normal_angle_cutoff = vertModelMatrix[0][3];
     angle_fade_start = vertModelMatrix[1][3];
     alpha_scale = vertModelMatrix[2][3];

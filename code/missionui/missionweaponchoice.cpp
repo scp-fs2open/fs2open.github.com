@@ -844,12 +844,11 @@ void draw_3d_overhead_view(int model_num,
 			shadows_start_render(&vmd_identity_matrix,
 				&Eye_position,
 				Proj_fov,
-				Proj_fov,
 				gr_screen.clip_aspect,
-				SCP_vector {{-sip->closeup_pos.xyz.z + pm->rad,
+				-sip->closeup_pos.xyz.z + pm->rad,
 				-sip->closeup_pos.xyz.z + pm->rad + 200.0f,
 				-sip->closeup_pos.xyz.z + pm->rad + 2000.0f,
-				-sip->closeup_pos.xyz.z + pm->rad + 10000.0f}});
+				-sip->closeup_pos.xyz.z + pm->rad + 10000.0f);
 
 			render_info.set_flags(MR_NO_TEXTURING | MR_NO_LIGHTING | MR_AUTOCENTER);
 

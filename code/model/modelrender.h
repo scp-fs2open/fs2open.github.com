@@ -11,7 +11,6 @@
 #define _MODELRENDER_H
 
 #include "graphics/material.h"
-#include "graphics/render_queue.h"
 #include "lighting/lighting.h"
 #include "math/vecmat.h"
 #include "model/model.h"
@@ -21,6 +20,8 @@
 
 extern SCP_vector<light> Lights;
 extern int Num_lights;
+
+extern bool Rendering_to_shadow_map;
 
 extern matrix Object_matrix;
 extern vec3d Object_position;
@@ -248,25 +249,57 @@ struct outline_draw
 	color clr;
 };
 
+class model_batch_buffer
+{
+	SCP_vector<matrix4> Submodel_matrices;
+	void* Mem_alloc;
+	size_t Mem_alloc_size;
 
+	size_t Current_offset;
 
-class model_draw_list : public render_queue<model_draw_list, queued_buffer_draw> {
-	friend class render_queue<model_draw_list, queued_buffer_draw>;
+	void allocate_memory();
+public:
+	model_batch_buffer() : Mem_alloc(NULL), Mem_alloc_size(0), Current_offset(0) {};
 
+	void reset();
+
+	size_t get_buffer_offset() const;
+	void set_num_models(int n_models);
+	void set_model_transform(const matrix4 &transform, int model_id);
+
+	void submit_buffer_data();
+
+	void add_matrix(const matrix4 &mat);
+};
+
+class model_draw_list
+{
+	vec3d Current_scale;
+	transform_stack Transformations;
+
+	scene_lights Scene_light_handler;
 	light_indexing_info Current_lights_set;
 
 	void render_arc(const arc_effect &arc);
 	static void render_insignia(const insignia_draw_data &insignia_info);
 	void render_outline(const outline_draw &outline_info);
+	void render_buffer(const queued_buffer_draw &render_elements);
+	
+	SCP_vector<queued_buffer_draw> Render_elements;
+	SCP_vector<int> Render_keys;
 
 	SCP_vector<arc_effect> Arcs;
 	SCP_vector<insignia_draw_data> Insignias;
 	SCP_vector<outline_draw> Outlines;
 
-	void build_uniform_buffer();
-	void render_buffer(const queued_buffer_draw &render_elements);
-	bool sort_draw_pair(int a, int b) const;
+	graphics::util::UniformBuffer _dataBuffer;
 
+	bool Render_initialized = false; //!< A flag for checking if init_render has been called before a render_all call
+	
+	static bool sort_draw_pair(const model_draw_list* target, const int a, const int b);
+	void sort_draws();
+
+	void build_uniform_buffer();
 public:
 	model_draw_list();
 	~model_draw_list();
@@ -276,9 +309,15 @@ public:
 
 	void init();
 
-	void add_buffer_draw(const model_material *render_material, const indexed_vertex_source *vert_src, const vertex_buffer *buffer, size_t texi, uint tmap_flags);
+	void add_submodel_to_batch(int model_num);
+	void start_model_batch(int n_models);
 
+	void add_buffer_draw(const model_material *render_material, const indexed_vertex_source *vert_src, const vertex_buffer *buffer, size_t texi, uint tmap_flags);
+	
 	vec3d get_view_position() const;
+	void push_transform(const vec3d* pos, const matrix* orient);
+	void pop_transform();
+	void set_scale(const vec3d *scale = NULL);
 
 	void add_arc(const vec3d *v1, const vec3d *v2, const SCP_vector<vec3d> *persistent_arc_points, const color *primary, const color *secondary, float arc_width, ubyte segment_depth);
 	void render_arcs();
@@ -291,7 +330,9 @@ public:
 
 	void set_light_filter(const vec3d *pos, float rad);
 
+	void init_render(bool sort = true);
 	void render_all(gr_zbuffer_type depth_mode = ZBUFFER_TYPE_DEFAULT);
+	void reset();
 };
 
 void model_render_only_glowpoint_lights(const model_render_params* interp, int model_num, int model_instance_num, const matrix* orient, const vec3d* pos);
@@ -308,8 +349,6 @@ bool model_render_check_detail_box(const vec3d* view_pos, const polymodel* pm, i
 void model_render_arc(const vec3d* v1, const vec3d* v2, const SCP_vector<vec3d> *persistent_arc_points, const color* primary, const color* secondary, float arc_width, ubyte depth_limit);
 void model_render_insignias(const insignia_draw_data* insignia);
 void model_render_set_wireframe_color(const color* clr);
-float model_render_determine_depth(int obj_num, int model_num, const matrix* orient, const vec3d* pos, int detail_level_locked);
-int model_render_determine_detail(float depth, int model_num, int detail_level_locked);
 bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int y2, float zoom, bool lighting, int class_idx, const matrix* orient, const SCP_string& pof_filename = "", float closeup_zoom = 0, const vec3d* closeup_pos = &vmd_zero_vector, const SCP_string& tcolor = "", const SCP_vector<SCP_string>& destroyed_subsystems = SCP_vector<SCP_string>());
 
 size_t model_hash_subsystem_name_list_for_cache(const SCP_vector<SCP_string>& subsystem_names);

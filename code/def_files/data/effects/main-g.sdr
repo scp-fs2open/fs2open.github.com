@@ -7,6 +7,15 @@
 layout (triangles) in;
 // For every triangle line we generate 2 triangles which can be done with 4 vertices so in total we will need 12 vertices
 layout (triangle_strip, max_vertices = 12) out;
+#elif defined(MODEL_SDR_FLAG_SHADOW_MAP)
+layout (triangles) in;
+layout (triangle_strip, max_vertices = 3) out;
+#endif
+
+#ifdef MODEL_SDR_FLAG_SHADOW_MAP
+ #ifdef GL_ARB_gpu_shader5
+layout(invocations = 4) in;
+ #endif
 #endif
 
 #define MAX_LIGHTS 8
@@ -28,6 +37,8 @@ layout (std140) uniform modelData {
 	mat4 viewMatrix;
 	mat4 projMatrix;
 	mat4 textureMatrix;
+	mat4 shadow_mv_matrix;
+	mat4 shadow_proj_matrix[4];
 
 	vec4 color;
 
@@ -41,7 +52,7 @@ layout (std140) uniform modelData {
 	vec4 clip_equation;
 
 	float thruster_scale;
-	bool use_clip_plane;
+	int use_clip_plane;
 	int n_lights;
 	float defaultGloss;
 
@@ -53,10 +64,10 @@ layout (std140) uniform modelData {
 
 	vec3 emissionFactor;
 
-	bool alphaGloss;
+	int alphaGloss;
 
-	bool gammaSpec;
-	bool envGloss;
+	int gammaSpec;
+	int envGloss;
 	int effect_num;
 	int sBasemapIndex;
 
@@ -69,9 +80,14 @@ layout (std140) uniform modelData {
 	float vpwidth;
 
 	float vpheight;
-	bool team_glow_enabled;
+	int team_glow_enabled;
 	float znear;
 	float zfar;
+
+	float veryneardist;
+	float neardist;
+	float middist;
+	float fardist;
 
 	int sGlowmapIndex;
 
@@ -92,12 +108,19 @@ in VertexOutput {
 	float fogDist;
 #prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_FOG
 
+#ifdef MODEL_SDR_FLAG_SHADOW_MAP
+ #if !defined(GL_ARB_gpu_shader5)
+	float instance;
+ #endif
+	float clipModel;
+#else
 	vec4 position;
+#endif
 	vec3 normal;
 	vec4 texCoord;
 
 #prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
-	vec4 shadowUV[NUM_SHADOW_CASCADES];
+	vec4 shadowUV[4];
 	vec4 shadowPos;
 #prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
 } vertIn[];
@@ -114,12 +137,62 @@ out VertexOutput {
 	vec4 texCoord;
 
 #prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
-	vec4 shadowUV[NUM_SHADOW_CASCADES];
+	vec4 shadowUV[4];
 	vec4 shadowPos;
 #prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
 } vertOut;
 
-#ifdef MODEL_SDR_FLAG_THICK_OUTLINES
+#ifdef MODEL_SDR_FLAG_SHADOW_MAP
+	void main(void)
+	{
+		#ifdef GL_ARB_gpu_shader5
+			int instanceID = gl_InvocationID;
+		#else
+			int instanceID = int(vertIn[0].instance);
+		#endif
+		for(int vert = 0; vert < gl_in.length(); vert++)
+		{
+			#prereplace IF_FLAG MODEL_SDR_FLAG_TRANSFORM
+				if (vertIn[vert].clipModel > 0.9) {
+					// If the model was clipped in the vertex shader then we do not apply the shadow projection matrix here
+					gl_Position = gl_in[vert].gl_Position;
+				} else {
+					gl_Position = shadow_proj_matrix[instanceID] * gl_in[vert].gl_Position;
+				}
+			#prereplace ELSE_FLAG //MODEL_SDR_FLAG_TRANSFORM
+				gl_Position = shadow_proj_matrix[instanceID] * gl_in[vert].gl_Position;
+			#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_TRANSFORM
+
+			vertOut.position = gl_in[vert].gl_Position;
+			vertOut.normal = vertIn[vert].normal;
+			vertOut.texCoord = vertIn[vert].texCoord;
+
+			gl_Layer = instanceID;
+
+			#prereplace IF_FLAG MODEL_SDR_FLAG_NORMAL
+				vertOut.tangentMatrix = vertIn[vert].tangentMatrix;
+			#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_NORMAL
+
+			#prereplace IF_FLAG MODEL_SDR_FLAG_FOG
+				vertOut.fogDist = vertIn[vert].fogDist;
+			#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_FOG
+
+			#prereplace IF_FLAG MODEL_SDR_FLAG_SHADOWS
+				vertOut.shadowUV[0] = vertIn[vert].shadowUV[0];
+				vertOut.shadowUV[1] = vertIn[vert].shadowUV[1];
+				vertOut.shadowUV[2] = vertIn[vert].shadowUV[2];
+				vertOut.shadowUV[3] = vertIn[vert].shadowUV[3];
+				vertOut.shadowPos = vertIn[vert].shadowPos;
+			#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_SHADOWS
+
+			if (use_clip_plane != 0) {
+				gl_ClipDistance[0] = gl_in[vert].gl_ClipDistance[0];
+			}
+			EmitVertex();
+		}
+		EndPrimitive();
+	}
+#elif defined(MODEL_SDR_FLAG_THICK_OUTLINES)
 	const vec2 pixelOffsetDir[4] = vec2[](
 		vec2(0.0, 1.0),
 		vec2(1.0, 1.0),
@@ -159,13 +232,14 @@ out VertexOutput {
                 #prereplace ENDIF_FLAG //MODEL_SDR_FLAG_FOG
 
                 #prereplace IF_FLAG MODEL_SDR_FLAG_SHADOWS
-                	for (int s = 0; s < NUM_SHADOW_CASCADES; s++) {
-                		vertOut.shadowUV[s] = vertIn[vert].shadowUV[s];
-                	}
+                	vertOut.shadowUV[0] = vertIn[vert].shadowUV[0];
+                	vertOut.shadowUV[1] = vertIn[vert].shadowUV[1];
+                	vertOut.shadowUV[2] = vertIn[vert].shadowUV[2];
+                	vertOut.shadowUV[3] = vertIn[vert].shadowUV[3];
                 	vertOut.shadowPos = vertIn[vert].shadowPos;
                 #prereplace ENDIF_FLAG //MODEL_SDR_FLAG_SHADOWS
 
-				if (use_clip_plane) {
+				if (use_clip_plane != 0) {
 					gl_ClipDistance[0] = gl_in[vert].gl_ClipDistance[0];
 				}
 				EmitVertex();

@@ -13,15 +13,11 @@ if [ "$COMPILER" = "clang-16" ]; then
     export CXX=clang++-16
 fi
 
+LD_LIBRARY_PATH=$Qt5_DIR/lib:$LD_LIBRARY_PATH
 if [ "$RUNNER_OS" = "macOS" ]; then
     CXXFLAGS="-mtune=generic -pipe -Wno-unknown-pragmas"
     CFLAGS="-mtune=generic -pipe -Wno-unknown-pragmas"
     export CMAKE_OSX_ARCHITECTURES="$ARCHITECTURE"
-    # the ccache-action should install via homebrew, which means that we can't
-    # hardcode the correct path in the workflow and must override it instead
-    if [ ! "$CCACHE_PATH" = "" ]; then
-        CCACHE_PATH="$(brew --prefix)/bin/ccache"
-    fi
 else
     PLATFORM_CMAKE_OPTIONS="-DFSO_BUILD_APPIMAGE=ON -DFORCED_SIMD_INSTRUCTIONS=SSE2"
 
@@ -40,12 +36,8 @@ if [[ "$COMPILER" =~ ^clang.*$ ]]; then
 fi
 
 if [ ! "$CCACHE_PATH" = "" ]; then
-    if [ -x "$CCACHE_PATH" ]; then
-        echo "Using ccache at $CCACHE_PATH"
-        CMAKE_OPTIONS="$CMAKE_OPTIONS -DCMAKE_C_COMPILER_LAUNCHER=$CCACHE_PATH -DCMAKE_CXX_COMPILER_LAUNCHER=$CCACHE_PATH"
-    else
-        echo "Invalid or missing ccache binary: $CCACHE_PATH"
-    fi
+    echo "Using ccache at $CCACHE_PATH"
+    CMAKE_OPTIONS="$CMAKE_OPTIONS -DCMAKE_C_COMPILER_LAUNCHER=$CCACHE_PATH -DCMAKE_CXX_COMPILER_LAUNCHER=$CCACHE_PATH"
 fi
 
 if [ -n "${ENABLE_QTFRED:-}" ]; then

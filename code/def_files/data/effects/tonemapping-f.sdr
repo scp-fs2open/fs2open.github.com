@@ -1,11 +1,22 @@
 
 #include "gamma.sdr"
 
+#ifdef VULKAN
+layout(location = 0) in vec2 fragTexCoord;
+layout(location = 0) out vec4 fragOut0;
+layout(set = 1, binding = 1) uniform sampler2D tex;
+#else
 in vec4 fragTexCoord;
 out vec4 fragOut0;
 uniform sampler2D tex;
+#endif
 
-layout (std140) uniform genericData {
+#ifdef VULKAN
+layout(set = 2, binding = 0, std140)
+#else
+layout(std140)
+#endif
+uniform genericData {
 	float exposure;
 	int tonemapper;
 	float x0; //from here on these are for the PPC tonemappers
