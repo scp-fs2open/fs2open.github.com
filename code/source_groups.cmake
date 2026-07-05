@@ -282,6 +282,7 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/smaa-edge-f.sdr
 	def_files/data/effects/smaa-neighbour-v.sdr
 	def_files/data/effects/smaa-neighbour-f.sdr
+	def_files/data/effects/smaa-resolve-f.sdr
 	def_files/data/effects/tonemapping-f.sdr
 	def_files/data/effects/video-f.sdr
 	def_files/data/effects/video-v.sdr
@@ -618,6 +619,7 @@ if (FSO_BUILD_WITH_VULKAN)
 		graphics/vulkan/VulkanPostProcessingLDR.cpp
 		graphics/vulkan/VulkanPostProcessingLighting.cpp
 		graphics/vulkan/VulkanPostProcessingMSAA.cpp
+		graphics/vulkan/VulkanPostProcessingSMAA.cpp
 		graphics/vulkan/VulkanPostProcessingShadow.cpp
 		graphics/vulkan/VulkanQuery.cpp
 		graphics/vulkan/VulkanQuery.h

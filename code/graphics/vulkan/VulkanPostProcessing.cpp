@@ -420,6 +420,11 @@ bool VulkanPostProcessor::init(vk::Device device, vk::PhysicalDevice physDevice,
 		nprintf(("vulkan", "VulkanPostProcessor: LDR target initialization failed (non-fatal)\n"));
 	}
 
+	// Initialize SMAA resources (non-fatal if it fails; requires LDR targets)
+	if (m_ldrInitialized && !initSMAA()) {
+		nprintf(("vulkan", "VulkanPostProcessor: SMAA initialization failed (non-fatal)\n"));
+	}
+
 	// Initialize distortion ping-pong textures (non-fatal if it fails)
 	m_distortion.init(m_ctx);
 
@@ -457,6 +462,7 @@ void VulkanPostProcessor::shutdown()
 		shutdownMSAA();
 		m_lighting.shutdown();
 		shutdownGBuffer();
+		shutdownSMAA();
 		shutdownLDRTargets();
 		shutdownBloom();
 

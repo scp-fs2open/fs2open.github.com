@@ -65,6 +65,10 @@ SCP_string shader_build_variant_defines(shader_type type, unsigned int flags);
 // gather4_alpha: whether the backend supports textureGather.
 SCP_string shader_get_fxaa_defines(AntiAliasMode aa_mode, bool gather4_alpha);
 
+// Returns SMAA preprocessor defines (shading language + quality preset) for the given AA mode.
+// glsl4: whether to target the SMAA_GLSL_4 codepath (textureGather-based diagonal search).
+SCP_string shader_get_smaa_defines(AntiAliasMode aa_mode, bool glsl4);
+
 // Returns the "#define NUM_SHADOW_CASCADES <n>\n" preprocessor define, sized to
 // the current total cascade count (Num_shadow_cascades + Num_cockpit_shadow_cascades).
 // Needed by any shader that references shadow cascade arrays (model, deferred

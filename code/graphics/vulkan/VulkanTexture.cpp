@@ -2302,6 +2302,62 @@ bool VulkanTextureManager::createFallbackTexture(vk::Image& outImage, VulkanAllo
 	return true;
 }
 
+bool VulkanTextureManager::createStaticTexture2D(uint32_t width, uint32_t height, vk::Format format,
+                                                  const void* pixelData, size_t dataSize, const char* debugName,
+                                                  vk::Image& outImage, vk::ImageView& outView,
+                                                  VulkanAllocation& outAlloc)
+{
+	if (!createImage(width, height, 1, format, vk::ImageTiling::eOptimal,
+	                 vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
+	                 MemoryUsage::GpuOnly, outImage, outAlloc)) {
+		nprintf(("vulkan", "Failed to create static texture image '%s'!\n", debugName));
+		return false;
+	}
+
+	outView = createImageView(outImage, format, vk::ImageAspectFlagBits::eColor, 1, ImageViewType::Plain2D);
+	if (!outView) {
+		nprintf(("vulkan", "Failed to create static texture view '%s'!\n", debugName));
+		m_device.destroyImage(outImage);
+		m_memoryManager->freeAllocation(outAlloc);
+		return false;
+	}
+
+	vk::Buffer stagingBuffer;
+	VulkanAllocation stagingAlloc;
+	if (!createStagingBuffer(dataSize, stagingBuffer, stagingAlloc)) {
+		nprintf(("vulkan", "Failed to create staging buffer for static texture '%s'!\n", debugName));
+		m_device.destroyImageView(outView);
+		m_device.destroyImage(outImage);
+		m_memoryManager->freeAllocation(outAlloc);
+		return false;
+	}
+
+	void* mapped = m_memoryManager->mapMemory(stagingAlloc);
+	memcpy(mapped, pixelData, dataSize);
+	m_memoryManager->unmapMemory(stagingAlloc);
+
+	vk::BufferImageCopy region;
+	region.bufferOffset = 0;
+	region.bufferRowLength = 0;
+	region.bufferImageHeight = 0;
+	region.imageSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
+	region.imageSubresource.mipLevel = 0;
+	region.imageSubresource.baseArrayLayer = 0;
+	region.imageSubresource.layerCount = 1;
+	region.imageOffset = vk::Offset3D(0, 0, 0);
+	region.imageExtent = vk::Extent3D(width, height, 1);
+
+	vk::CommandBuffer cmd = beginSingleTimeCommands();
+	recordUploadCommands(cmd, outImage, stagingBuffer, format, width, height,
+	                     1, vk::ImageLayout::eUndefined, false, {region}, 1);
+	endSingleTimeCommands(cmd);
+
+	m_device.destroyBuffer(stagingBuffer);
+	m_memoryManager->freeAllocation(stagingAlloc);
+
+	return true;
+}
+
 bool VulkanTextureManager::createStagingBuffer(size_t size, vk::Buffer& outBuffer,
                                                VulkanAllocation& outAllocation)
 {

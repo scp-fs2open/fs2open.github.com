@@ -301,6 +301,7 @@ void VulkanRenderer::endSceneRendering()
 	m_postProcessor->executeBloom(m_currentCommandBuffer);
 	m_postProcessor->executeTonemap(m_currentCommandBuffer);
 	m_postProcessor->executeFXAA(m_currentCommandBuffer);
+	m_postProcessor->executeSMAA(m_currentCommandBuffer);
 	m_postProcessor->executeLightshafts(m_currentCommandBuffer);
 	m_postProcessor->executePostEffects(m_currentCommandBuffer);
 

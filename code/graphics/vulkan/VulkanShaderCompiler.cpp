@@ -183,6 +183,10 @@ SCP_string VulkanShaderCompiler::buildHeader(vk::ShaderStageFlagBits /*stage*/, 
 	} else if (sdrType == SDR_TYPE_POST_PROCESS_FXAA) {
 		// GLSL 450 always has textureGather
 		header += shader_get_fxaa_defines(Gr_aa_mode, true);
+	} else if (sdrType == SDR_TYPE_POST_PROCESS_SMAA_EDGE || sdrType == SDR_TYPE_POST_PROCESS_SMAA_BLENDING_WEIGHT ||
+	           sdrType == SDR_TYPE_POST_PROCESS_SMAA_NEIGHBORHOOD_BLENDING) {
+		// GLSL 450 always has textureGather
+		header += shader_get_smaa_defines(Gr_aa_mode, true);
 	} else {
 		// Inject variant-specific #defines based on flags
 		header += shader_build_variant_defines(sdrType, flags);

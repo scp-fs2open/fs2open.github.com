@@ -592,6 +592,18 @@ public:
 	void executeFXAA(vk::CommandBuffer cmd);
 
 	/**
+	 * @brief Execute SMAA anti-aliasing passes
+	 *
+	 * Called after tonemapping (mutually exclusive with FXAA, selected via
+	 * Gr_aa_mode). Runs edge detection, blending weight calculation, and
+	 * neighborhood blending, then resolves the result back into Scene_ldr.
+	 * Must be called outside a render pass.
+	 *
+	 * @param cmd Active command buffer (must be outside a render pass)
+	 */
+	void executeSMAA(vk::CommandBuffer cmd);
+
+	/**
 	 * @brief Execute post-processing effects (saturation, brightness, etc.)
 	 *
 	 * Called after FXAA and before the final blit. Reads Scene_ldr, writes
@@ -795,6 +807,10 @@ private:
 	bool initLDRTargets();
 	void shutdownLDRTargets();
 
+	// SMAA methods (requires LDR targets to already be initialized)
+	bool initSMAA();
+	void shutdownSMAA();
+
 	// Bloom pipeline (forwards to the VulkanBloom subsystem)
 	bool initBloom() { return m_bloom.init(m_ctx, m_sceneColor); }
 	void shutdownBloom() { m_bloom.shutdown(); }
@@ -845,6 +861,22 @@ private:
 	vk::Framebuffer m_sceneLdrFB;
 	vk::Framebuffer m_sceneLuminanceFB;
 	bool m_ldrInitialized = false;
+
+	// ---- SMAA resources ----
+	// Static lookup textures (uploaded once at init, never change)
+	vk::Image m_smaaAreaTexImage;
+	vk::ImageView m_smaaAreaTexView;
+	VulkanAllocation m_smaaAreaTexAlloc;
+	vk::Image m_smaaSearchTexImage;
+	vk::ImageView m_smaaSearchTexView;
+	VulkanAllocation m_smaaSearchTexAlloc;
+
+	// Intermediate targets (reuse m_ldrRenderPass: same format/loadOp/finalLayout)
+	RenderTarget m_smaaEdges;  // RGBA8 edge detection output
+	RenderTarget m_smaaBlend;  // RGBA8 blending weight output
+	vk::Framebuffer m_smaaEdgesFB;
+	vk::Framebuffer m_smaaBlendFB;
+	bool m_smaaInitialized = false;
 	bool m_postEffectsApplied = false; // Set per-frame by executePostEffects
 
 	// ---- Deferred G-buffer + MSAA (self-contained subsystem) ----

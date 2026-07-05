@@ -99,6 +99,11 @@ static ShaderTypeInfo SHADER_TYPES[] = {
 	{ SDR_TYPE_POST_PROCESS_SMAA_NEIGHBORHOOD_BLENDING, "smaa-neighbour-v.sdr", "smaa-neighbour-f.sdr", nullptr,
 		{ VATTRIB_POSITION, VATTRIB_TEXCOORD }, "SMAA Neighborhood Blending", false },
 
+	// Vulkan-only: copies the SMAA neighborhood-blend result back into Scene_ldr
+	// (OpenGL does the equivalent copy directly via opengl_shader_set_passthrough).
+	{ SDR_TYPE_POST_PROCESS_SMAA_RESOLVE, "post-v.sdr", "smaa-resolve-f.sdr", nullptr,
+		{ VATTRIB_POSITION, VATTRIB_TEXCOORD }, "SMAA Resolve", false },
+
 	{ SDR_TYPE_ENVMAP_SPHERE_WARP, "post-v.sdr", "envmap-sphere-warp-f.sdr", nullptr,
 		{ VATTRIB_POSITION, VATTRIB_TEXCOORD }, "Environment Map Export", false },
 
@@ -243,6 +248,33 @@ SCP_string shader_get_fxaa_defines(AntiAliasMode aa_mode, bool gather4_alpha)
 		break;
 	default:
 		UNREACHABLE("Unhandled FXAA mode!");
+	}
+
+	return defines;
+}
+
+SCP_string shader_get_smaa_defines(AntiAliasMode aa_mode, bool glsl4)
+{
+	SCP_string defines;
+	defines.reserve(64);
+
+	defines += glsl4 ? "#define SMAA_GLSL_4\n" : "#define SMAA_GLSL_3\n";
+
+	switch (aa_mode) {
+	case AntiAliasMode::SMAA_Low:
+		defines += "#define SMAA_PRESET_LOW\n";
+		break;
+	case AntiAliasMode::SMAA_Medium:
+		defines += "#define SMAA_PRESET_MEDIUM\n";
+		break;
+	case AntiAliasMode::SMAA_High:
+		defines += "#define SMAA_PRESET_HIGH\n";
+		break;
+	case AntiAliasMode::SMAA_Ultra:
+		defines += "#define SMAA_PRESET_ULTRA\n";
+		break;
+	default:
+		UNREACHABLE("Unhandled SMAA mode!");
 	}
 
 	return defines;

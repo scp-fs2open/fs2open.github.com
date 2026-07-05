@@ -175,6 +175,16 @@ public:
 	 */
 	tcache_slot_vulkan* getTextureSlot(int handle);
 
+	/**
+	 * @brief Create a static, single-mip, single-layer 2D texture from CPU pixel data
+	 *
+	 * For small fixed lookup tables (e.g. SMAA area/search textures) that aren't
+	 * part of the regular bitmap/tcache system. Uploads synchronously.
+	 */
+	bool createStaticTexture2D(uint32_t width, uint32_t height, vk::Format format,
+	                           const void* pixelData, size_t dataSize, const char* debugName,
+	                           vk::Image& outImage, vk::ImageView& outView, VulkanAllocation& outAlloc);
+
 	// Utility functions
 
 	/**

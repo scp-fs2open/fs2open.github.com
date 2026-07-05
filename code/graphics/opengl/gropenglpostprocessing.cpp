@@ -791,29 +791,7 @@ void gr_opengl_post_process_restore_zbuffer()
 
 void set_smaa_defines(SCP_stringstream& sflags)
 {
-	// Define what GLSL version we use
-	if (GLSL_version >= 400) {
-		sflags << "#define SMAA_GLSL_4\n";
-	} else {
-		sflags << "#define SMAA_GLSL_3\n";
-	}
-
-	switch (Gr_aa_mode) {
-	case AntiAliasMode::SMAA_Low:
-		sflags << "#define SMAA_PRESET_LOW\n";
-		break;
-	case AntiAliasMode::SMAA_Medium:
-		sflags << "#define SMAA_PRESET_MEDIUM\n";
-		break;
-	case AntiAliasMode::SMAA_High:
-		sflags << "#define SMAA_PRESET_HIGH\n";
-		break;
-	case AntiAliasMode::SMAA_Ultra:
-		sflags << "#define SMAA_PRESET_ULTRA\n";
-		break;
-	default:
-		UNREACHABLE("Unhandled SMAA mode %d!", static_cast<int>(Gr_aa_mode));
-	}
+	sflags << shader_get_smaa_defines(Gr_aa_mode, GLSL_version >= 400).c_str();
 }
 void opengl_post_shader_header(SCP_stringstream& sflags, shader_type shader_t, int flags)
 {
