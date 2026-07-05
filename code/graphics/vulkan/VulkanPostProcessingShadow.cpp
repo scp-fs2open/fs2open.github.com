@@ -43,9 +43,7 @@ bool VulkanShadowMap::init(PostProcessContext& ctx)
 	default:                    size = 512; break;
 	}
 
-	nprintf(("vulkan", "VulkanPostProcessor: Creating %dx%d shadow map (%d cascades)\n", size, size, MAX_SHADOW_CASCADES));
 	const auto layers = static_cast<uint32_t>(Num_shadow_cascades + Num_cockpit_shadow_cascades);
-
 	nprintf(("vulkan", "VulkanPostProcessor: Creating %dx%d shadow map (%d cascades)\n", size, size, layers));
 
 	// Create shadow depth image (D32F, 2D array, dynamic cascade count layers).
@@ -191,7 +189,7 @@ bool VulkanShadowMap::init(PostProcessContext& ctx)
 
 	m_textureSize = size;
 	m_initialized = true;
-	nprintf(("vulkan", "VulkanPostProcessor: Shadow map initialized (%dx%d, %d cascades)\n", size, size, MAX_SHADOW_CASCADES));
+	nprintf(("vulkan", "VulkanPostProcessor: Shadow map initialized (%dx%d, %d cascades)\n", size, size, layers));
 	return true;
 }
 
