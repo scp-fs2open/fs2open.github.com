@@ -193,7 +193,8 @@ jobs:
           cmake -DCMAKE_INSTALL_PREFIX="$(pwd)/install" -DFSO_USE_SPEECH=ON \
             -DFSO_USE_VOICEREC=ON -DFORCED_SIMD_INSTRUCTIONS="$SIMD" \
             -DFSO_BUILD_TESTS=ON -DFSO_INSTALL_DEBUG_FILES=ON -A "$ARCHITECTURE" \
-            -G "Visual Studio 17 2022" -T "v143" -DCMAKE_BUILD_TYPE=$CONFIGURATION ..
+            -DQT_USE_PRECOMPILED=ON -G "Visual Studio 17 2022" -T "v143" \
+            -DCMAKE_BUILD_TYPE=$CONFIGURATION ..
       - name: Compile
         working-directory: ./build
         env:
