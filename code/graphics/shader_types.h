@@ -75,6 +75,12 @@ SCP_string shader_get_smaa_defines(AntiAliasMode aa_mode, bool glsl4);
 // lighting, shadow map generation), for both backends.
 SCP_string shader_get_shadow_cascade_defines();
 
+// Returns the "#define MAX_RT_SHADOW_LIGHTS <n>\n" preprocessor define, sized to
+// Max_rt_shadow_lights. Needed by the MODEL shader's raytraced-shadow code path
+// (main-f.sdr), for both backends -- harmless on OpenGL/non-raytraced builds since
+// that code path only compiles in under MODEL_SDR_FLAG_RT_SHADOWS.
+SCP_string shader_get_rt_shadow_light_limit_define();
+
 // Whether this (type, flags) combination requires the GL_EXT_ray_query extension,
 // and therefore a SPIR-V target-env new enough to support it (see
 // VulkanShaderCompiler::compile()'s requiresRaytracing parameter). Centralized here

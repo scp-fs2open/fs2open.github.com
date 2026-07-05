@@ -526,6 +526,19 @@ void LabUi::build_shadow_method_combobox()
 		}
 	}
 }
+
+void LabUi::build_max_rt_shadow_lights_slider()
+{
+	// Only meaningful when raytraced shadows are actually the active method.
+	if (!shadows_raytracing_supported() || Shadow_render_method != ShadowRenderMethod::Raytraced) {
+		return;
+	}
+
+	int count = Max_rt_shadow_lights;
+	if (SliderInt("Max Raytraced Shadow Lights", &count, 1, 8)) {
+		getLabManager()->Renderer->setMaxRtShadowLights(count);
+	}
+}
 namespace ltp = lighting_profiles;
 using namespace ltp;
 
@@ -616,6 +629,8 @@ void LabUi::show_render_options()
 			build_antialiasing_combobox();
 
 			build_shadow_method_combobox();
+
+			build_max_rt_shadow_lights_slider();
 
 			build_tone_mapper_combobox();
 

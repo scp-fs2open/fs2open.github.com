@@ -130,6 +130,12 @@ public:
 		Shadow_render_method = method;
 	}
 
+	// Session-only override, same as setShadowRenderMethod -- does not touch the
+	// persisted Max Raytraced Shadow Lights option.
+	static void setMaxRtShadowLights(int count) {
+		Max_rt_shadow_lights = count;
+	}
+
 	static void setTonemapper(ltp::TonemapperAlgorithm mode) {
 		ltp::lab_set_tonemapper(mode);
 	}

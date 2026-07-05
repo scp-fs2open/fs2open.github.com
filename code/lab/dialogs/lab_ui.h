@@ -44,6 +44,7 @@ class LabUi {
 	void build_texture_quality_combobox();
 	void build_antialiasing_combobox();
 	static void build_shadow_method_combobox();
+	static void build_max_rt_shadow_lights_slider();
 	void build_tone_mapper_combobox();
 	void build_model_info_box(ship_info* sip, polymodel* pm) const;
 	void build_subsystem_list(object* objp, ship* shipp) const;

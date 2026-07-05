@@ -1,5 +1,6 @@
 #include "graphics/shader_types.h"
 
+#include "graphics/shadows.h"
 #include "mod_table/mod_table.h"
 
 // Pull in MODEL_SDR_FLAG_* constants for the variant table
@@ -285,6 +286,15 @@ SCP_string shader_get_shadow_cascade_defines()
 	SCP_string header;
 	header += "#define NUM_SHADOW_CASCADES ";
 	header += std::to_string(Num_shadow_cascades + Num_cockpit_shadow_cascades);
+	header += "\n";
+	return header;
+}
+
+SCP_string shader_get_rt_shadow_light_limit_define()
+{
+	SCP_string header;
+	header += "#define MAX_RT_SHADOW_LIGHTS ";
+	header += std::to_string(Max_rt_shadow_lights);
 	header += "\n";
 	return header;
 }

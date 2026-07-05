@@ -129,6 +129,26 @@ auto ShadowRenderMethodOption = options::OptionBuilder<ShadowRenderMethod>("Grap
                      .parser(parse_shadow_render_method_func)
                      .finish();
 
+int Max_rt_shadow_lights = 4;
+
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+auto MaxRtShadowLightsOption = options::OptionBuilder<int>("Graphics.MaxRtShadowLights",
+                     std::pair<const char*, int>{"Max Raytraced Shadow Lights", -1},
+                     std::pair<const char*, int>{"Maximum number of directional lights that cast raytraced shadows", -1})
+                     .enumerator([]() -> SCP_vector<int> {
+                         if (shadows_raytracing_supported()) {
+                             return {1, 2, 3, 4, 5, 6, 7, 8};
+                         }
+                         return {4}; // inert default when RT isn't supported
+                     })
+                     .bind_to(&Max_rt_shadow_lights)
+                     .flags({options::OptionFlags::ForceMultiValueSelection})
+                     .level(options::ExpertLevel::Advanced)
+                     .category(std::make_pair("Graphics", 1825))
+                     .default_func([]() { return 4; })
+                     .importance(78)
+                     .finish();
+
 bool shadows_raytracing_supported()
 {
 	return gr_is_capable(gr_capability::CAPABILITY_RAYTRACED_SHADOWS);

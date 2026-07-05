@@ -225,11 +225,33 @@ vec3 CalculateLighting(vec3 normal, vec3 diffuseMaterial, vec3 specularMaterial,
 	vec3 lightAmbient = ambientFactor * aoFactor;
 	vec3 lightDiffuse = vec3(0.0, 0.0, 0.0);
 	vec3 lightSpecular = vec3(0.0, 0.0, 0.0);
+
+#ifdef MODEL_SDR_FLAG_RT_SHADOWS
+	// Whenever this compile-time flag is present we're always in Vulkan/large-shader
+	// mode, so `flags`/MODEL_SDR_FLAG_SHADOWS (the runtime shadow-receiving gate that
+	// IF_FLAG expands to elsewhere in this file) are guaranteed to exist here too.
+	bool rtShadowsActive = (flags & MODEL_SDR_FLAG_SHADOWS) != 0;
+	mat4 invView = inverse(viewMatrix);
+	vec3 worldPos = (invView * vertIn.position).xyz;
+	vec3 worldNormal = normalize((invView * vec4(normal, 0.0)).xyz);
+	int shadowedDirectionalCount = 0;
+#endif
+
 	#pragma optionNV unroll all
 	for (int i = 0; i < n_lights; ++i) {
+#ifdef MODEL_SDR_FLAG_RT_SHADOWS
+		if (rtShadowsActive && lights[i].light_type == LT_DIRECTIONAL && shadowedDirectionalCount < MAX_RT_SHADOW_LIGHTS) {
+			vec3 worldSunDir = normalize((invView * vec4(lights[i].position.xyz, 0.0)).xyz);
+			shadow = traceShadowRay(shadow_tlas, worldPos, worldNormal, worldSunDir);
+			++shadowedDirectionalCount;
+		} else {
+			shadow = 1.0;
+		}
+#else
         if(i > 0) {
             shadow = 1.0;
         }
+#endif
 		float roughness = clamp(1.0f - gloss, 0.0f, 1.0f);
 		float alpha = roughness * roughness;
 		vec3 lightDir;
@@ -378,15 +400,10 @@ void main()
 		#prereplace IF_FLAG MODEL_SDR_FLAG_LIGHT
 			float shadow = 1.0;
 			#prereplace IF_FLAG MODEL_SDR_FLAG_SHADOWS
-			#ifdef MODEL_SDR_FLAG_RT_SHADOWS
-            				{
-            					mat4 invView = inverse(viewMatrix);
-            					vec3 worldPos = (invView * vertIn.position).xyz;
-            					vec3 worldNormal = normalize((invView * vec4(normal, 0.0)).xyz);
-            					vec3 worldSunDir = normalize((invView * vec4(lights[0].position.xyz, 0.0)).xyz);
-            					shadow = traceShadowRay(shadow_tlas, worldPos, worldNormal, worldSunDir);
-            				}
-            #else
+			// Raytraced shadows are computed per-light (for every directional light,
+			// up to MAX_RT_SHADOW_LIGHTS) inside CalculateLighting()'s loop instead --
+			// this single shared `shadow` value only matters for the CSM fallback below.
+			#ifndef MODEL_SDR_FLAG_RT_SHADOWS
 				shadow = getShadowValue(shadow_map, -vertIn.position.z, vertIn.shadowUV, cascade_distances, smoothness_factors, cascade_offset, cascade_count);
 			#endif
 			#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_SHADOWS

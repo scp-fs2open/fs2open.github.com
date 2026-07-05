@@ -183,6 +183,7 @@ static SCP_string opengl_shader_get_header(shader_type type_id, int flags, bool 
 #endif
 	sflags << "#define OPENGL\n";
 	sflags << shader_get_shadow_cascade_defines();
+	sflags << shader_get_rt_shadow_light_limit_define();
 
 	if (Detail.lighting < 3) {
 		sflags << "#define FLAG_LIGHT_MODEL_BLINN_PHONG\n";

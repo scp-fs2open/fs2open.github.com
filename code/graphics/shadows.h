@@ -37,6 +37,11 @@ enum class ShadowRenderMethod { ShadowMap = 0, Raytraced = 1 };
 
 extern ShadowRenderMethod Shadow_render_method;
 
+// Maximum number of directional lights that will cast raytraced shadows in a given frame.
+// Only meaningful when shadows_use_raytracing() is true -- see MaxRtShadowLightsOption's
+// enumerator in shadows.cpp.
+extern int Max_rt_shadow_lights;
+
 // Whether the current hardware/renderer can do anything with ShadowRenderMethod::Raytraced
 // at all (Vulkan + VK_KHR_acceleration_structure + VK_KHR_ray_query support). Independent
 // of which method is currently selected -- use this to decide whether to offer the choice.

@@ -463,18 +463,22 @@ void VulkanDeferredLighting::render(vk::CommandBuffer cmd)
 
 	// Pack per-light data
 	size_t lightIdx = 0;
-	bool first_directional = true;
+	int shadowedDirectionalCount = 0;
+	// Cascade shadow maps are only ever built for a single light (Static_light.front()),
+	// so only raytraced shadows can shadow more than one directional light here -- a second
+	// light reading the first light's cascade data would produce incorrect shadows.
+	int maxShadowedDirectionalLights = shadows_use_raytracing() ? Max_rt_shadow_lights : 1;
 
 	for (auto& l : full_frame_lights) {
 		auto* ld = prepare_light_uniforms(l, uboMapped + lightDataOffset + (lightIdx * lightDataSize), lp);
 
 		if (l.type == Light_Type::Directional) {
-			if (m_shadow->isInitialized() && Shadow_quality != ShadowQuality::Disabled) {
-				ld->enable_shadows = first_directional ? 1 : 0;
-			}
-
-			if (first_directional) {
-				first_directional = false;
+			if (m_shadow->isInitialized() && Shadow_quality != ShadowQuality::Disabled
+			    && shadowedDirectionalCount < maxShadowedDirectionalLights) {
+				ld->enable_shadows = 1;
+				++shadowedDirectionalCount;
+			} else {
+				ld->enable_shadows = 0;
 			}
 
 			vec4 light_dir;

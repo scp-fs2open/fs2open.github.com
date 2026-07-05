@@ -158,6 +158,7 @@ SCP_string VulkanShaderCompiler::buildHeader(vk::ShaderStageFlagBits /*stage*/, 
 	}
 
 	header += shader_get_shadow_cascade_defines();
+	header += shader_get_rt_shadow_light_limit_define();
 
 	// Post-processing shaders need special header injection (matching OpenGL's
 	// opengl_post_shader_header). Effect indices map to #define names, and
