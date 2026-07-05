@@ -5,9 +5,6 @@ on:
     branches:
       - master
 
-env:
-  QT_VERSION: 5.12.12
-
 jobs:
   build_linux:
     strategy:
@@ -25,10 +22,8 @@ jobs:
             cmake_options: -DFSO_BUILD_WITH_OPENGL=OFF -DFSO_BUILD_WITH_VULKAN=OFF
     name: Linux
     runs-on: ubuntu-latest
-    container: ghcr.io/scp-fs2open/linux_build:sha-71099c9
+    container: ghcr.io/scp-fs2open/linux_build:sha-ab87451
     steps:
-      - name: Install Qt dependencies
-        run: apt-get -yq update && apt-get -yq install libfontconfig1
       - uses: actions/checkout@v7
         name: Checkout
         with:
@@ -37,7 +32,7 @@ jobs:
         # This appears to be broken in current actions, so do it manually
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: ccache
-        uses: hendrikmuhs/ccache-action@v1
+        uses: hendrikmuhs/ccache-action@v1.2.23
         with:
           key: ${{ runner.os }}-${{ matrix.configuration }}-${{ matrix.compiler }}
       - name: Configure ccache
@@ -51,11 +46,51 @@ jobs:
           COMPILER: ${{ matrix.compiler }}
           JOB_CMAKE_OPTIONS: ${{ matrix.cmake_options }}
           CCACHE_PATH: /usr/local/bin/ccache
-          ENABLE_QTFRED: ON
-          Qt5_DIR: /qt/${{ env.QT_VERSION }}/gcc_64/lib/cmake/Qt5
+          ENABLE_QTFRED: OFF
         run: $GITHUB_WORKSPACE/ci/linux/configure_cmake.sh
       - name: Compile
         working-directory: ./build
-        run: LD_LIBRARY_PATH=$Qt5_DIR/lib:$LD_LIBRARY_PATH ninja -k 20 all
+        run: ninja -k 20 all
+      - name: Show CCache statistics
+        run: ccache --show-stats
+
+
+  build_mac:
+    strategy:
+      matrix:
+        configuration: [Debug, Release]
+        compiler: [clang]
+        arch: [x86_64, arm64]
+        cmake_options: [""]
+    name: Mac
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+        name: Checkout
+        with:
+          submodules: true
+      - name: Set workspace as safe
+        # This appears to be broken in current actions, so do it manually
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.2.23
+        with:
+          key: ${{ runner.os }}-${{ matrix.configuration }}-${{ matrix.compiler }}
+      - name: Configure ccache
+        run: |
+          ccache --set-config=sloppiness=pch_defines,time_macros
+          ccache -p
+
+      - name: Configure CMake
+        env:
+          CONFIGURATION: ${{ matrix.configuration }}
+          COMPILER: ${{ matrix.compiler }}
+          JOB_CMAKE_OPTIONS: ${{ matrix.cmake_options }}
+          CCACHE_PATH: /usr/local/bin/ccache
+          ENABLE_QTFRED: OFF
+        run: $GITHUB_WORKSPACE/ci/linux/configure_cmake.sh
+      - name: Compile
+        working-directory: ./build
+        run: ninja -k 20 all
       - name: Show CCache statistics
         run: ccache --show-stats
