@@ -136,7 +136,7 @@ public:
 	/**
 	 * @brief Read texture data back to CPU
 	 */
-	void get_bitmap_from_texture(void* data_out, int bitmap_num) const;
+	void get_bitmap_from_texture(void* data_out, int bitmap_num);
 
 	// Sampler management
 
