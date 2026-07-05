@@ -2202,6 +2202,34 @@ void vulkan_calculate_irrmap()
 	// Queue UBO for deferred destruction (safe to destroy after frame submission)
 	getDeletionQueue()->queueBuffer(faceUBO, faceUBOAlloc);
 
+	// This path renders each face directly rather than going through
+	// bm_set_render_target()/endRenderTarget(), so the mip chain that
+	// deferred-f.sdr's implicit-LOD `texture(sIrrmap, ...)` can reach
+	// (high-frequency normals/silhouettes push the derivative-based LOD up)
+	// would otherwise be left uninitialized above mip 0.
+	if (irrTs->mipLevels > 1) {
+		vk::ImageMemoryBarrier barrier;
+		barrier.srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
+		barrier.dstAccessMask = vk::AccessFlagBits::eTransferRead;
+		barrier.oldLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		barrier.newLayout = vk::ImageLayout::eTransferSrcOptimal;
+		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.image = irrTs->image;
+		barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+		barrier.subresourceRange.baseMipLevel = 0;
+		barrier.subresourceRange.levelCount = 1;
+		barrier.subresourceRange.baseArrayLayer = 0;
+		barrier.subresourceRange.layerCount = 6;
+
+		cmd.pipelineBarrier(
+			vk::PipelineStageFlagBits::eColorAttachmentOutput,
+			vk::PipelineStageFlagBits::eTransfer,
+			{}, {}, {}, barrier);
+
+		vulkan_generate_mipmap_chain(cmd, irrTs->image, irrTs->width, irrTs->height, irrTs->mipLevels, 6);
+	}
+
 	// Resume the swap chain pass (irrmap is always called before scene rendering begins)
 	renderer->resumeSwapChainPass();
 
