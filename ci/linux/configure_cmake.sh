@@ -13,13 +13,15 @@ if [ "$COMPILER" = "clang-16" ]; then
     export CXX=clang++-16
 fi
 
-LD_LIBRARY_PATH=$Qt5_DIR/lib:$LD_LIBRARY_PATH
 if [ "$RUNNER_OS" = "macOS" ]; then
     CXXFLAGS="-mtune=generic -pipe -Wno-unknown-pragmas"
     CFLAGS="-mtune=generic -pipe -Wno-unknown-pragmas"
-    # TODO: Vulkan support is disabled on MacOS due to issues with the test suite not linking correctly
-    PLATFORM_CMAKE_OPTIONS="-DFSO_BUILD_WITH_VULKAN=OFF"
     export CMAKE_OSX_ARCHITECTURES="$ARCHITECTURE"
+    # the ccache-action should install via homebrew, which means that we can't
+    # hardcode the correct path in the workflow and must override it instead
+    if [ ! "$CCACHE_PATH" = "" ]; then
+        CCACHE_PATH="$(brew --prefix)/bin/ccache"
+    fi
 else
     PLATFORM_CMAKE_OPTIONS="-DFSO_BUILD_APPIMAGE=ON -DFORCED_SIMD_INSTRUCTIONS=SSE2 -DUSE_STATIC_LIBCXX=ON"
 fi
@@ -31,8 +33,12 @@ if [[ "$COMPILER" =~ ^clang.*$ ]]; then
 fi
 
 if [ ! "$CCACHE_PATH" = "" ]; then
-    echo "Using ccache at $CCACHE_PATH"
-    CMAKE_OPTIONS="$CMAKE_OPTIONS -DCMAKE_C_COMPILER_LAUNCHER=$CCACHE_PATH -DCMAKE_CXX_COMPILER_LAUNCHER=$CCACHE_PATH"
+    if [ -x "$CCACHE_PATH" ]; then
+        echo "Using ccache at $CCACHE_PATH"
+        CMAKE_OPTIONS="$CMAKE_OPTIONS -DCMAKE_C_COMPILER_LAUNCHER=$CCACHE_PATH -DCMAKE_CXX_COMPILER_LAUNCHER=$CCACHE_PATH"
+    else
+        echo "Invalid or missing ccache binary: $CCACHE_PATH"
+    fi
 fi
 
 mkdir build
@@ -51,5 +57,5 @@ fi
 
 cmake -G Ninja -DFSO_FATAL_WARNINGS=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=ON $CMAKE_OPTIONS $PLATFORM_CMAKE_OPTIONS \
     -DCMAKE_INSTALL_PREFIX="$(pwd)/install" -DCMAKE_BUILD_TYPE=$CONFIGURATION \
-    -DFFMPEG_USE_PRECOMPILED=ON -DFSO_BUILD_TESTS=ON -DFSO_BUILD_INCLUDED_LIBS=ON -DFSO_BUILD_QTFRED=${ENABLE_QTFRED:-OFF} \
-    -DSHADERS_ENABLE_COMPILATION=ON -DCMAKE_JOB_POOLS=link=1 -DCMAKE_JOB_POOL_LINK=link ..
+    -DFFMPEG_USE_PRECOMPILED=ON -DFSO_BUILD_TESTS=ON -DFSO_BUILD_INCLUDED_LIBS=ON \
+    -DFSO_BUILD_QTFRED=${ENABLE_QTFRED:-OFF} -DCMAKE_JOB_POOLS=link=1 -DCMAKE_JOB_POOL_LINK=link ..
