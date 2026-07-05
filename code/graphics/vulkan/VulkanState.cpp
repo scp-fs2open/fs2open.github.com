@@ -40,12 +40,6 @@ bool VulkanStateTracker::init(vk::Device device)
 	m_scissor.extent.width = gr_screen.max_w;
 	m_scissor.extent.height = gr_screen.max_h;
 
-	// Initialize clear color (dark blue for debugging - shows clears are working)
-	m_clearColor.float32[0] = 0.0f;
-	m_clearColor.float32[1] = 0.0f;
-	m_clearColor.float32[2] = 0.3f;
-	m_clearColor.float32[3] = 1.0f;
-
 	m_initialized = true;
 	mprintf(("VulkanStateTracker: Initialized\n"));
 	return true;
@@ -229,14 +223,6 @@ void VulkanStateTracker::bindIndexBuffer(vk::Buffer buffer, vk::DeviceSize offse
 	Assertion(m_cmdBuffer, "bindIndexBuffer called without active command buffer!");
 	Assertion(buffer, "bindIndexBuffer called with null buffer!");
 	m_cmdBuffer.bindIndexBuffer(buffer, offset, indexType);
-}
-
-void VulkanStateTracker::setClearColor(float r, float g, float b, float a)
-{
-	m_clearColor.float32[0] = r;
-	m_clearColor.float32[1] = g;
-	m_clearColor.float32[2] = b;
-	m_clearColor.float32[3] = a;
 }
 
 void VulkanStateTracker::applyDynamicState()

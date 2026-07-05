@@ -225,6 +225,8 @@ void VulkanFog::renderScene(vk::CommandBuffer cmd)
 		fogData.fog_color.xyz.z = b / 255.f;
 		fogData.zNear = Min_draw_distance;
 		fogData.zFar = Max_draw_distance;
+		fogData.clip_dist = Neb2_fog_clip_distance;
+		fogData.clip_inf_dist = Neb2_fog_skybox_clip_distance;
 	}
 
 	// Custom descriptor writes to bind depth copy at binding 4

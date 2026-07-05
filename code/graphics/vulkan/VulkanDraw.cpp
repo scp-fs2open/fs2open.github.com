@@ -240,23 +240,6 @@ void VulkanDrawManager::clear()
 
 void VulkanDrawManager::setClearColor(int r, int g, int b)
 {
-	(void)this;
-	auto* stateTracker = getStateTracker();
-
-	float fr = static_cast<float>(r) / 255.0f;
-	float fg = static_cast<float>(g) / 255.0f;
-	float fb = static_cast<float>(b) / 255.0f;
-
-	// Apply HDR gamma if needed
-	if (High_dynamic_range) {
-		const float SRGB_GAMMA = 2.2f;
-		fr = powf(fr, SRGB_GAMMA);
-		fg = powf(fg, SRGB_GAMMA);
-		fb = powf(fb, SRGB_GAMMA);
-	}
-
-	stateTracker->setClearColor(fr, fg, fb, 1.0f);
-
 	// Also update gr_screen for compatibility
 	gr_screen.current_clear_color.red = static_cast<ubyte>(r);
 	gr_screen.current_clear_color.green = static_cast<ubyte>(g);
