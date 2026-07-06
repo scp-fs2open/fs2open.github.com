@@ -265,7 +265,7 @@ void shadows_construct_light_proj(light_frustum_info *shadow_data)
 	shadow_data->proj_matrix.a1d[13] = -(shadow_data->max.xyz.y + shadow_data->min.xyz.y) / ( shadow_data->max.xyz.y - shadow_data->min.xyz.y );
 	shadow_data->proj_matrix.a1d[15] = 1.0f;
 
-	if (gr_screen.mode == GR_VULKAN) {
+	if (gr_screen.mode == GraphicsAPI::Vulkan) {
 		// Vulkan uses [0, 1] depth range
 		shadow_data->proj_matrix.a1d[10] = -1.0f / ( shadow_data->max.xyz.z - shadow_data->min.xyz.z );
 		shadow_data->proj_matrix.a1d[14] = -shadow_data->min.xyz.z / ( shadow_data->max.xyz.z - shadow_data->min.xyz.z );
@@ -795,7 +795,7 @@ static void render_viewer_shadow(object* objp, const matrix* light_matrix,
 void shadows_render_all(fov_t fov, matrix *eye_orient, vec3d *eye_pos,
                         const vec3d* cam_offset, const matrix* rot_offset, const fov_t* fov_override)
 {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 

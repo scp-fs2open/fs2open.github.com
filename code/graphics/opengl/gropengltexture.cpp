@@ -1234,7 +1234,7 @@ int gr_opengl_tcache_set(int bitmap_handle, int bitmap_type, float *u_scale, flo
 
 void opengl_preload_init()
 {
-	if (gr_screen.mode != GR_OPENGL)
+	if (gr_screen.mode != GraphicsAPI::OpenGL)
 		return;
 
 //	opengl_tcache_flush ();
@@ -1245,7 +1245,7 @@ int gr_opengl_preload(int bitmap_num, int is_aabitmap)
 	float u_scale, v_scale;
 	int retval;
 
-	Assert( gr_screen.mode == GR_OPENGL );
+	Assert( gr_screen.mode == GraphicsAPI::OpenGL );
 
 	if ( !GL_should_preload ) {
 		return 0;

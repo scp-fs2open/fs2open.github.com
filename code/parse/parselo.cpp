@@ -15,6 +15,7 @@
 #include <csetjmp>
 
 #include <cctype>
+#include "cmdline/cmdline.h"
 #include "globalincs/version.h"
 #include "localization/fhash.h"
 #include "localization/localize.h"

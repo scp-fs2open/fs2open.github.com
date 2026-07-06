@@ -11,6 +11,7 @@
 // the other platforms do not go before the #includes because this will cause conflicts from symbols defined in XLib,
 // specifically None and Always; see https://stackoverflow.com/questions/22476110/c-compiling-error-including-x11-x-h-x11-xlib-h
 
+#include "cmdline/cmdline.h"
 #include "io/cursor.h"
 #include "io/mouse.h"
 #include "graphics/matrix.h"

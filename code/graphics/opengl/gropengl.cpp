@@ -1698,7 +1698,7 @@ DCF(ogl_anisotropy, "toggles anisotropic filtering")
 	bool process = true;
 	int value;
 
-	if ( gr_screen.mode != GR_OPENGL ) {
+	if ( gr_screen.mode != GraphicsAPI::OpenGL ) {
 		dc_printf("Can only set anisotropic filter in OpenGL mode.\n");
 		return;
 	}

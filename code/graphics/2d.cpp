@@ -1392,19 +1392,19 @@ void gr_close()
 	bm_close();
 
 	switch (gr_screen.mode) {
-		case GR_OPENGL:
+		case GraphicsAPI::OpenGL:
 #ifdef WITH_OPENGL
 			gr_opengl_cleanup(true);
 #endif
 			break;
 
-		case GR_VULKAN:
+		case GraphicsAPI::Vulkan:
 #ifdef WITH_VULKAN
 			graphics::vulkan::cleanup();
 #endif
 			break;
 
-		case GR_STUB:
+		case GraphicsAPI::Stub:
 			break;
 
 		default:
@@ -1600,25 +1600,25 @@ static void init_colors()
 	Gr_ta_alpha.scale = 17;
 }
 
-static void gr_init_function_pointers(int mode) {
+static void gr_init_function_pointers(GraphicsAPI mode) {
 	gr_screen = {};
 
 	switch (mode) {
-	case GR_OPENGL:
+	case GraphicsAPI::OpenGL:
 #ifdef WITH_OPENGL
 		gr_opengl_init_function_pointers();
 #else
 		Error(LOCATION, "OpenGL renderer was requested but that was not compiled into this build.");
 #endif
 		break;
-	case GR_VULKAN:
+	case GraphicsAPI::Vulkan:
 #ifdef WITH_VULKAN
 		graphics::vulkan::initialize_function_pointers();
 #else
 		Error(LOCATION, "Vulkan renderer was requested but that was not compiled into this build.");
 #endif
 		break;
-	case GR_STUB:
+	case GraphicsAPI::Stub:
 		gr_stub_init_function_pointers();
 		break;
 	default:
@@ -1626,7 +1626,7 @@ static void gr_init_function_pointers(int mode) {
 	}
 }
 
-static bool gr_init_sub(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int mode, int width, int height,
+static bool gr_init_sub(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, GraphicsAPI mode, int width, int height,
 						int depth, float center_aspect_ratio)
 {
 	int res = GR_1024;
@@ -1660,7 +1660,7 @@ static bool gr_init_sub(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, i
 	if (Fred_running) {
 		gr_screen.custom_size = false;
 		res = GR_640;
-		mode = GR_OPENGL;
+		mode = GraphicsAPI::OpenGL;
 	}
 
 	Save_custom_screen_size = gr_screen.custom_size;
@@ -1728,7 +1728,7 @@ static bool gr_init_sub(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, i
 	init_colors();
 
 	switch (mode) {
-	case GR_OPENGL:
+	case GraphicsAPI::OpenGL:
 #ifdef WITH_OPENGL
 		rc = gr_opengl_init(std::move(graphicsOps));
 #else
@@ -1736,7 +1736,7 @@ static bool gr_init_sub(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, i
 		rc = false;
 #endif
 		break;
-	case GR_VULKAN:
+	case GraphicsAPI::Vulkan:
 #ifdef WITH_VULKAN
 		rc = graphics::vulkan::initialize(std::move(graphicsOps));
 #else
@@ -1744,7 +1744,7 @@ static bool gr_init_sub(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, i
 		rc = false;
 #endif
 		break;
-	case GR_STUB:
+	case GraphicsAPI::Stub:
 		SCP_UNUSED(graphicsOps);
 		rc = gr_stub_init();
 		break;
@@ -1800,21 +1800,22 @@ SCP_string gr_capability_to_human_readable_string(gr_capability capability)
 		return "Invalid Capability";
 }
 
-bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, int d_width, int d_height, int d_depth)
+bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, GraphicsAPI d_mode, int d_width, int d_height, int d_depth)
 {
-	int width = 1024, height = 768, depth = 32, mode = GR_OPENGL;
+	int width = 1024, height = 768, depth = 32;
+	GraphicsAPI mode = GraphicsAPI::OpenGL;
 	float center_aspect_ratio = -1.0f;
 	const char *ptr = NULL;
 	// If already inited, shutdown the previous graphics
 	if (Gr_inited) {
 		switch (gr_screen.mode) {
-			case GR_OPENGL:
+			case GraphicsAPI::OpenGL:
 #ifdef WITH_OPENGL
 				gr_opengl_cleanup(false);
 #endif
 				break;
 			
-			case GR_STUB:
+			case GraphicsAPI::Stub:
 				break;
 	
 			default:
@@ -1824,7 +1825,7 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 
 	if (Using_in_game_options) {
 		if (Cmdline_enable_vr) {
-			// in VR mode, so set resolution using VR values 
+			// in VR mode, so set resolution using VR values
 			// and hide/disable the default resolution option
 			auto res = ResolutionVROption->getValue();
 			width = res.width;
@@ -1838,6 +1839,7 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 			height = res.height;
 			removeResolutionVROption();
 		}
+		//TODO set d_mode from Ingame Options if available here
 	} else if ( !Is_standalone ) {
 		// We cannot continue without this, quit, but try to help the user out first
 		ptr = os_config_read_string(nullptr, NOX("VideocardFs2open"), nullptr);
@@ -1897,26 +1899,31 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 			SCP_string videoApi(ptr, ptr + 4);
 
 			if (videoApi == "OGL ") {
-				d_mode = GR_OPENGL; // GR_OPENGL;
+				d_mode = GraphicsAPI::OpenGL; // GR_OPENGL;
 			} else if (videoApi == "VK  ") {
-				d_mode = GR_VULKAN;
+				d_mode = GraphicsAPI::Vulkan;
 			} else {
 				ReleaseWarning(LOCATION, "Unknown video API '%s'", videoApi.c_str());
 			}
 		}
 
-		if (Cmdline_res != nullptr) {
-			int tmp_width = 0;
-			int tmp_height = 0;
-
-			if ( sscanf(Cmdline_res, "%dx%d", &tmp_width, &tmp_height) == 2 ) {
-				width = tmp_width;
-				height = tmp_height;
-			}
-		}
-
 		Gr_enable_soft_particles = Cmdline_softparticles != 0;
 	}
+
+	//Commandline ALWAYS wins for Graphics API and resolution
+	if (Cmdline_graphics_api != GraphicsAPI::Default)
+		d_mode = Cmdline_graphics_api;
+
+	if (Cmdline_res != nullptr) {
+		int tmp_width = 0;
+		int tmp_height = 0;
+
+		if ( sscanf(Cmdline_res, "%dx%d", &tmp_width, &tmp_height) == 2 ) {
+			width = tmp_width;
+			height = tmp_height;
+		}
+	}
+
 	if (Cmdline_center_res != NULL) {
 		int tmp_center_width = 0;
 		int tmp_center_height = 0;
@@ -1944,9 +1951,9 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 		Cmdline_window_res.emplace(static_cast<uint16_t>(width), static_cast<uint16_t>(height));
 	}
 
-	if (d_mode == GR_DEFAULT) {
-		// OpenGL should be default
-		mode = GR_OPENGL;
+	if (d_mode == GraphicsAPI::Default) {
+		// OpenGL should be default.
+		mode = GraphicsAPI::OpenGL;
 	} else {
 		mode = d_mode;
 	}
@@ -1963,7 +1970,7 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 
 	// if we are in standalone mode then just use special defaults
 	if (Is_standalone) {
-		mode = GR_STUB;
+		mode = GraphicsAPI::Stub;
 		width = 640;
 		height = 480;
 		depth = 16;
@@ -2255,7 +2262,7 @@ void gr_bitmap(int _x, int _y, int resize_mode, bool mirror, float scale_factor)
 	float x, y, w, h;
 	vertex verts[4];
 
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -2976,7 +2983,7 @@ void gr_set_bitmap(int bitmap_num, int alphablend_mode, int bitblt_mode, float a
 
 static void output_uniform_debug_data()
 {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -3069,7 +3076,7 @@ void gr_print_timestamp(int x, int y, fix timestamp, int resize_mode)
 
 void gr_uniform_buffer_managers_init()
 {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -3078,7 +3085,7 @@ void gr_uniform_buffer_managers_init()
 
 static void uniform_buffer_managers_deinit()
 {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -3087,7 +3094,7 @@ static void uniform_buffer_managers_deinit()
 
 static void uniform_buffer_managers_retire_buffers()
 {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -3228,7 +3235,7 @@ size_t vertex_layout::hash() const {
 static std::unique_ptr<graphics::util::GPUMemoryHeap> gpu_heaps [static_cast<size_t>(GpuHeap::NUM_VALUES)];
 
 static void gpu_heap_init() {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -3271,7 +3278,7 @@ void gr_heap_deallocate(GpuHeap heap_type, size_t data_offset)
 
 void gr_set_gamma(float gamma)
 {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 

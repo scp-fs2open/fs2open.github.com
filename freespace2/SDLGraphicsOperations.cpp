@@ -3,6 +3,7 @@
 
 #include "SDLGraphicsOperations.h"
 
+#include "backends/imgui_impl_vulkan.h"
 #include "cmdline/cmdline.h"
 
 #if SDL_VERSION_ATLEAST(2, 0, 6)
@@ -177,8 +178,18 @@ SDLGraphicsOperations::~SDLGraphicsOperations() {
 			ImGui_ImplSDL2_Shutdown();
 		}
 
-		if ( !Cmdline_vulkan && ImGui::GetIO().BackendRendererUserData ) {
-			ImGui_ImplOpenGL3_Shutdown();
+		if ( ImGui::GetIO().BackendRendererUserData ) {
+			switch (gr_screen.mode) {
+				case GraphicsAPI::OpenGL:
+					ImGui_ImplOpenGL3_Shutdown();
+					break;
+				case GraphicsAPI::Vulkan:
+					ImGui_ImplVulkan_Shutdown();
+					break;
+				default:
+					break;
+			}
+
 		}
 	}
 
