@@ -27,7 +27,7 @@ class FredApplication: public QObject {
 	 *
 	 * @param action The function to execute
 	 */
-	void runAfterInit(std::function<void()>&& action);
+	void runAfterInit(std::function<void()>&& action) const;
 
 	bool eventFilter(QObject* watched, QEvent* event) override;
  signals:
@@ -36,7 +36,7 @@ class FredApplication: public QObject {
 	void onIdle();
 
 private slots:
-	void shutdown();
+	static void shutdown();
 
 	void lateShutdown();
 

@@ -16,8 +16,7 @@
 
 #include "FredApplication.h"
 
-namespace fso {
-namespace fred {
+namespace fso::fred {
 
 FredApplication* fredApp = nullptr;
 
@@ -52,7 +51,7 @@ bool FredApplication::isInitializeComplete() const {
 	return _initializeEmitted;
 }
 
-void FredApplication::runAfterInit(std::function<void()>&& action) {
+void FredApplication::runAfterInit(std::function<void()>&& action) const {
 	if (_initializeEmitted) {
 		action();
 	} else {
@@ -81,6 +80,5 @@ bool FredApplication::eventFilter(QObject* watched, QEvent* event) {
 		qDebug() << watched << " " << event;
 	}
 	return QObject::eventFilter(watched, event);
-}
 }
 }
