@@ -33,6 +33,10 @@ Splits static geometry (`polymodel`) from per-object runtime state
 | --- | --- | --- |
 | `glowpoints.tbl` | `parse_glowpoint_table()` | Reusable glowpoint presets |
 | `virtual_pofs.tbl` | `parse_virtual_pof_table()` | Assemble models from POF parts |
+| `*-anim.tbm` | `ModelAnimationParseHelper::parseTables()` (`code/model/animation/modelanimation.cpp`) | Modular subobject/procedural animation definitions |
+
+Legacy per-subsystem animations can also be defined inline in `ships.tbl`
+(`ModelAnimationParseHelper::parseLegacyAnimationTable()`).
 
 Table option reference: https://wiki.hard-light.net/index.php/Tables
 
