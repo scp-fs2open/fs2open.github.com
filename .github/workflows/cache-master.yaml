@@ -46,7 +46,6 @@ jobs:
           COMPILER: ${{ matrix.compiler }}
           JOB_CMAKE_OPTIONS: ${{ matrix.cmake_options }}
           CCACHE_PATH: /usr/local/bin/ccache
-          ENABLE_QTFRED: OFF
         run: $GITHUB_WORKSPACE/ci/linux/configure_cmake.sh
       - name: Compile
         working-directory: ./build
@@ -87,7 +86,6 @@ jobs:
           COMPILER: ${{ matrix.compiler }}
           JOB_CMAKE_OPTIONS: ${{ matrix.cmake_options }}
           CCACHE_PATH: /usr/local/bin/ccache
-          ENABLE_QTFRED: OFF
         run: $GITHUB_WORKSPACE/ci/linux/configure_cmake.sh
       - name: Compile
         working-directory: ./build
