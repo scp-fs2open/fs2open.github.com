@@ -40,11 +40,8 @@ player_h::~player_h()
 		delete _plr;
 }
 player_h::player_h(player_h&& other) noexcept
-	: _owned(other._owned), _plr(other._plr)
-{
-	other._owned = false;
-	other._plr = nullptr;
-}
+	: _owned(std::exchange(other._owned, false)), _plr(std::exchange(other._plr, nullptr))
+{}
 player_h& player_h::operator=(player_h&& other) noexcept
 {
 	if (this != &other)
@@ -52,11 +49,8 @@ player_h& player_h::operator=(player_h&& other) noexcept
 		if (_owned)
 			delete _plr;
 
-		_owned = other._owned;
-		_plr = other._plr;
-
-		other._owned = false;
-		other._plr = nullptr;
+		_owned = std::exchange(other._owned, false);
+		_plr = std::exchange(other._plr, nullptr);
 	}
 
 	return *this;
