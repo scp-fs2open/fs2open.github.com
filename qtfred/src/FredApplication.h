@@ -5,8 +5,7 @@
 #include <functional>
 #include <QtCore/QElapsedTimer>
 
-namespace fso {
-namespace fred {
+namespace fso::fred {
 
 class FredApplication: public QObject {
  Q_OBJECT
@@ -45,5 +44,4 @@ private slots:
 
 extern FredApplication* fredApp;
 
-}
 }
