@@ -181,11 +181,12 @@ jobs:
         run: ccache --show-stats
       - name: Install clang-tidy
         # macOS runners don't ship clang-tidy; pin to the same version as the Linux
-        # container's clang-tidy-16 for consistent diagnostics.
+        # container's clang-tidy-16 for consistent diagnostics. pyyaml is required
+        # too: clang-tidy-diff.py only accepts -export-fixes when it can import yaml.
         # --break-system-packages is required since the runner's Homebrew Python
         # is externally managed (PEP 668); the runner is ephemeral so this is safe.
         if: startsWith(matrix.compiler, 'clang')
-        run: pip3 install --break-system-packages clang-tidy==16.0.4
+        run: pip3 install --break-system-packages clang-tidy==16.0.4 pyyaml
       - name: Run Clang Tidy
         # Clang-tidy reuses the precompiled headers so this only makes sense for the clang compilers
         if: startsWith(matrix.compiler, 'clang')
