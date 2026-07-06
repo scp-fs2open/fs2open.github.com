@@ -57,23 +57,33 @@ git submodule update --init --recursive
 
 The project uses CMake. Build types: `Debug`, `Release`, `FastDebug`.
 Always build out-of-source (the top-level `CMakeLists.txt` refuses in-source builds).
-There are already configured build dirs: `cmake-build-debug/`,
-`cmake-build-release/`, `cmake-build-relwithdebinfo/`.
+Build in your own dedicated directory (e.g. `cmake-build-agent/`) rather than
+reconfiguring or reusing `cmake-build-debug/`, `cmake-build-release/`,
+`cmake-build-relwithdebinfo/` — those are typically IDE-managed build caches
+(CLion, etc.) and touching them can conflict with the user's own tooling. Only
+build in one of those directories if the user explicitly directs you to.
 
 Typical Linux configure + build (mirrors CI in `ci/linux/configure_cmake.sh`):
 
 ```bash
-mkdir -p build && cd build
+mkdir -p cmake-build-agent && cd cmake-build-agent
 cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DFSO_BUILD_TESTS=ON \
   -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
 ninja -k 20 all
 ```
+
+Ninja parallelizes automatically, but pass `-j<N>` (e.g. `-j8`) to cap it if
+you're running alongside other builds (IDE, other agents, etc.). Build a
+single target instead of `all` when iterating, e.g. `ninja unittests`,
+`ninja FRED2` (Windows MFC editor), `ninja qtfred` (needs `FSO_BUILD_QTFRED=ON`).
 
 Useful CMake options (see top-level `CMakeLists.txt` for the full list):
 
 - `FSO_BUILD_TESTS` — build unit tests (default OFF; turn ON to run tests).
 - `FSO_BUILD_FRED2` (Win) / `FSO_BUILD_QTFRED` — build the editors.
 - `FSO_BUILD_WITH_OPENGL` / `FSO_BUILD_WITH_VULKAN` — renderer backends.
+- `FSO_BUILD_WITH_OPENGL_DEBUG` — enables the OpenGL debug/validation context
+  (default OFF); useful when debugging renderer issues.
 - `FSO_FATAL_WARNINGS` — warnings become errors (used in CI; keep code clean).
 - `FSO_BUILD_INCLUDED_LIBS` — build bundled libs instead of system libs
   (default ON for Win/macOS, OFF for Linux).
@@ -81,7 +91,7 @@ Useful CMake options (see top-level `CMakeLists.txt` for the full list):
 ## Tests
 
 Unit tests use GoogleTest and are only built when `FSO_BUILD_TESTS=ON`.
-The produced binary is `unittests` (under `build/bin/`).
+The produced binary is `unittests` (under `<build-dir>/bin/`).
 
 ```bash
 ./bin/unittests --gtest_shuffle
@@ -104,11 +114,10 @@ Formatting is enforced via `.clang-format` (LLVM-based, customized) and
 - **Includes:** sorted and regrouped; `globalincs/*.h` always come first.
   Let clang-format handle include ordering.
 
-Run formatting on changed files before submitting:
-
-```bash
-clang-format -i path/to/changed_file.cpp
-```
+Match these conventions by hand in code you write; don't run `clang-format`
+yourself — reformatting whole files introduces unrelated changes to existing
+code. If the user asks you to run a reformat pass, use `git-clang-format`
+scoped to your changed lines rather than `clang-format -i` on the whole file.
 
 `.clang-tidy` is also configured and run in CI on clang builds for changed code.
 
@@ -146,6 +155,30 @@ every call.
   conditions every tick, and avoid building the message string when the
   category is unlikely to be enabled.
 
+### Error/warning reporting vs. logging
+
+Separate from `mprintf`/`nprintf`, FSO has a family of user/developer-facing
+diagnostics (declared in `code/osapi/dialogs.h`):
+
+- **`Assert(expr)`** — a programmer invariant that must never fail; a tripped
+  Assert means a bug in engine code, not bad user data. Compiled to a no-op
+  check in `NDEBUG` (release) builds, so never rely on its side effects.
+- **`Error(...)`** — the program is in an unrecoverable state because of
+  invalid *user* data (bad mission/table/model file), not a programming
+  error — use `Assert`/`Assertion` for those instead. Usually fatal and does
+  not return.
+- **`Warning(...)`** — a recoverable user-data problem; only shown in debug
+  builds.
+- **`WarningEx(...)`** — same as `Warning`, but only shown when
+  `Cmdline_extra_warn` is set.
+- **`ReleaseWarning(...)`** — same as `Warning`, but also shown in release
+  builds.
+- **`error_display(error_level, ...)`** (`code/parse/parselo.*`) — the
+  table-parsing-specific helper; picks Warning/ReleaseWarning/Error based on
+  `error_level` and automatically tags the message with the current parse
+  file/line. Prefer it over raw `Warning`/`Error` inside `.tbl`/`.tbm`
+  parsing code.
+
 ## CI pipeline requirements
 
 Every PR is built by `.github/workflows/test-pull_request.yaml` across a full
@@ -166,16 +199,17 @@ following:
   --error-exitcode=1`, see `ci/linux/run_tests.sh`), so leaks or
   uninitialized-memory reads in new code fail CI even if the test assertions
   pass.
-- **clang-tidy** only runs on the Linux clang-16 leg, scoped to lines changed
-  relative to the PR base branch (`ci/linux/clang_tidy.sh`, checks defined in
-  `.clang-tidy`). It does not run on macOS or Windows — `clang_tidy.sh`
-  hardcodes a Linux container binary path (`/usr/bin/clang-tidy-16`), so don't
-  assume macOS gets clang-tidy coverage. Don't introduce new clang-tidy
-  findings in touched code.
+- **clang-tidy** runs on the Linux clang-16 leg (using the container's
+  `clang-tidy-16`) and on the macOS clang legs (via a pip-installed
+  `clang-tidy==16.0.4`, version-matched for consistent diagnostics), scoped to
+  lines changed relative to the PR base branch (`ci/linux/clang_tidy.sh`,
+  checks defined in `.clang-tidy`). It does not run on Windows. Don't
+  introduce new clang-tidy findings in touched code.
 - **clang-format is not enforced by CI** — there's no automated formatting
-  job — but reviewers expect it. Always run `clang-format -i` on changed files;
-  formatting drift is a common review comment even though it won't fail the
-  pipeline.
+  job — but reviewers expect new code to match `.clang-format`. Match the
+  style by hand; don't blanket-run `clang-format -i`, since it reformats
+  whole files and introduces unrelated churn. Only reformat pre-existing code
+  if the user asks, and prefer `git-clang-format` scoped to changed lines.
 - **Registered source files:** if a new file isn't added to the relevant
   `CMakeLists.txt`/`source_groups.cmake`, it silently isn't compiled or tested
   at all rather than causing an obvious CI error — verify it's picked up by
