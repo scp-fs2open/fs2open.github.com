@@ -2,6 +2,7 @@
 #include "matrix.h"
 
 #include "graphics/util/UniformBuffer.h"
+#include "cmdline/cmdline.h"
 
 #include <graphics/util/uniform_structs.h>
 
@@ -58,7 +59,7 @@ static void create_perspective_projection_matrix(matrix4 *out, float left, float
 	out->a1d[9] = (top + bottom) / (top - bottom);
 	out->a1d[11] = -1.0f;
 
-	if (gr_screen.mode == GR_VULKAN) {
+	if (gr_screen.mode == GraphicsAPI::Vulkan) {
 		// Vulkan NDC Z range is [0, 1] (OpenGL is [-1, 1])
 		// Y-flip is handled by negative viewport height (VK_KHR_maintenance1)
 		out->a1d[10] = -far_dist / (far_dist - near_dist);
@@ -80,7 +81,7 @@ static void create_orthographic_projection_matrix(matrix4* out, float left, floa
 	out->a1d[13] = -(top + bottom) / (top - bottom);
 	out->a1d[15] = 1.0f;
 
-	if (gr_screen.mode == GR_VULKAN) {
+	if (gr_screen.mode == GraphicsAPI::Vulkan) {
 		// Vulkan NDC Z range is [0, 1] (OpenGL is [-1, 1])
 		// Y-flip is handled by negative viewport height (VK_KHR_maintenance1)
 		out->a1d[10] = -1.0f / (far_dist - near_dist);

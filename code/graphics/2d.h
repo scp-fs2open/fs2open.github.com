@@ -41,6 +41,9 @@ extern float Min_draw_distance;
 extern float Max_draw_distance;
 extern int Gr_inited;
 
+// # Software Re-added by Kazan --- THIS HAS TO STAY -- It is used by standalone!
+enum class GraphicsAPI : uint8_t { Default, Stub, OpenGL, Vulkan };
+
 // z-buffering stuff
 extern int gr_zbuffering, gr_zbuffering_mode;
 extern int gr_global_zbuffering;
@@ -672,7 +675,7 @@ typedef struct screen {
 	int save_center_w = 0, save_center_h = 0; // Width and height of center monitor
 	int save_center_offset_x = 0, save_center_offset_y = 0;
 	int res = 0;                             // GR_640 or GR_1024
-	int mode = 0;                            // What mode gr_init was called with.
+	GraphicsAPI mode = GraphicsAPI::Default;                            // What mode gr_init was called with.
 	float aspect = 0.0f, clip_aspect = 0.0f; // Aspect ratio = 0, aspect of clip_width/clip_height
 	int rowsize = 0;                         // What you need to add to go to next row (includes bytes_per_pixel)
 	int bits_per_pixel = 0;                  // How many bits per pixel it is. (7,8,15,16,24,32)
@@ -990,11 +993,7 @@ bool gr_lua_context_active();
 //--------------------------------------
 // Call this at application startup
 
-// # Software Re-added by Kazan --- THIS HAS TO STAY -- It is used by standalone!
-#define GR_DEFAULT				(-1)		// set to use default settings
-#define GR_STUB					(100)
-#define GR_OPENGL (104) // Use OpenGl hardware renderer
-#define GR_VULKAN (105) // Use Vulkan hardware renderer
+#define GR_DEFAULT (-1)
 
 // resolution constants   - always keep resolutions in ascending order and starting from 0  
 #define GR_NUM_RESOLUTIONS			2
@@ -1006,7 +1005,7 @@ bool gr_lua_context_active();
 
 extern const char *Resolution_prefixes[GR_NUM_RESOLUTIONS];
 
-extern bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode = GR_DEFAULT,
+extern bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, GraphicsAPI d_mode = GraphicsAPI::Default,
 					int d_width = GR_DEFAULT, int d_height = GR_DEFAULT, int d_depth = GR_DEFAULT);
 
 extern void gr_screen_resize(int width, int height);

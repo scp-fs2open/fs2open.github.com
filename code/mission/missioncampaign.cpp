@@ -27,6 +27,7 @@
 #include "freespace.h"
 #include "missioncampaign.h"
 #include "cfile/cfile.h"
+#include "cmdline/cmdline.h"
 #include "cutscene/cutscenes.h"
 #include "cutscene/movie.h"
 #include "gamesequence/gamesequence.h"

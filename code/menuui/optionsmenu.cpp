@@ -12,6 +12,7 @@
 
 #include "bmpman/bmpman.h"
 #include "freespace.h"
+#include "cmdline/cmdline.h"
 #include "controlconfig/controlsconfig.h"
 #include "gamesequence/gamesequence.h"
 #include "gamesnd/eventmusic.h"

@@ -201,13 +201,13 @@ SCP_string get_version_string()
 
 	// Lets get some more info in here
 	switch (gr_screen.mode) {
-	case GR_OPENGL:
+	case GraphicsAPI::OpenGL:
 		str += " OpenGL";
 		#ifdef USE_OPENGL_ES
 		str += " ES";
 		#endif
 		break;
-	case GR_VULKAN:
+	case GraphicsAPI::Vulkan:
 		str += " Vulkan";
 		break;
 	}

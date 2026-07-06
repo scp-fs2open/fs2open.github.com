@@ -4,6 +4,7 @@
 #include "globalincs/systemvars.h"
 #include "parse/parselo.h"
 #include "io/timer.h"
+#include "cmdline/cmdline.h"
 
 #include "TraceEventWriter.h"
 #include "MainFrameTimer.h"

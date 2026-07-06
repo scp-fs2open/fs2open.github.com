@@ -7,6 +7,8 @@
 #include "options/Option.h"
 #include "popup/popup.h"
 
+#include "cmdline/cmdline.h"
+
 #include "freespace.h"
 
 

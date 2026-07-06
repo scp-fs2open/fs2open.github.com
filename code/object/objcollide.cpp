@@ -8,6 +8,7 @@
 */ 
 
 
+#include "cmdline/cmdline.h"
 #include "globalincs/linklist.h"
 #include "io/timer.h"
 #include "object/objcollide.h"
