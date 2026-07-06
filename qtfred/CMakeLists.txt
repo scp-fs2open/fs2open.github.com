@@ -42,12 +42,21 @@ elseif(NOT Qt6_FOUND)
     if(NOT QT_USE_PRECOMPILED)
         message(STATUS "Qt6 libraries could not be found. Using prebuilt version...")
 
+        set(QT_USE_PRECOMPILED ON)
         get_prebuilt_path(PREBUILT_PATH)
         list(PREPEND CMAKE_PREFIX_PATH "${PREBUILT_PATH}/Qt6")
 
         find_package(Qt6 REQUIRED COMPONENTS Core Widgets OpenGL Help)
     else()
         message(FATAL_ERROR "Required Qt6 libraries were not found!")
+    endif()
+endif()
+
+if(CLANG_USE_LIBCXX AND NOT APPLE)
+    if(QT_USE_PRECOMPILED)
+        message(FATAL_ERROR "Prebuilt Qt6 libraries are not compatible with clang's libc++!")
+    else()
+        mesage(WARNING "Clang's libc++ enabled, QtFRED may not link properly!")
     endif()
 endif()
 

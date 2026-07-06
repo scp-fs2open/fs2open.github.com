@@ -23,13 +23,20 @@ if [ "$RUNNER_OS" = "macOS" ]; then
         CCACHE_PATH="$(brew --prefix)/bin/ccache"
     fi
 else
-    PLATFORM_CMAKE_OPTIONS="-DFSO_BUILD_APPIMAGE=ON -DFORCED_SIMD_INSTRUCTIONS=SSE2 -DUSE_STATIC_LIBCXX=ON"
+    PLATFORM_CMAKE_OPTIONS="-DFSO_BUILD_APPIMAGE=ON -DFORCED_SIMD_INSTRUCTIONS=SSE2"
+
+    # Optionally use static libstdc++/libc++ on Linux, but default to off
+    # (Issue #5571 enabled it as a fix for 20.04 compatibility, but we've moved to 22.04)
+    PLATFORM_CMAKE_OPTIONS="$PLATFORM_CMAKE_OPTIONS -DUSE_STATIC_LIBCXX=${USE_STATIC_LIBCXX:-OFF}"
 fi
 
 CMAKE_OPTIONS="$JOB_CMAKE_OPTIONS"
 if [[ "$COMPILER" =~ ^clang.*$ ]]; then
-    CMAKE_OPTIONS="$CMAKE_OPTIONS -DCLANG_USE_LIBCXX=ON"
-    # force clang to silently allow -static-libstdc++ flag
+    # Default to allowing system standard c++ library be used. On Linux, which
+    # typically uses libstdc++ by default, using libc++ causes a conflict with
+    # Qt6 libs. So an error/warning is in place to catch that case when QtFRED
+    # is enabled.
+    CMAKE_OPTIONS="$CMAKE_OPTIONS -DCLANG_USE_LIBCXX=${CLANG_USE_LIBCXX:-OFF}"
 fi
 
 if [ ! "$CCACHE_PATH" = "" ]; then
