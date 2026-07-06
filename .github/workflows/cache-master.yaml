@@ -11,6 +11,7 @@ jobs:
       matrix:
         configuration: [Debug, Release]
         compiler: [gcc-9, gcc-13, clang-16]
+        arch: [x86_64]
         cmake_options: [""]
         include:
           # Also include configurations that check if the code compiles without the graphics backends
@@ -34,7 +35,8 @@ jobs:
       - name: ccache
         uses: hendrikmuhs/ccache-action@v1.2.23
         with:
-          key: ${{ runner.os }}-${{ matrix.configuration }}-${{ matrix.compiler }}
+          key: ${{ runner.os }}-${{ matrix.configuration }}-${{ matrix.compiler }}-${{ matrix.arch }}
+          max-size: 750MB
       - name: Configure ccache
         run: |
           ccache --set-config=sloppiness=pch_defines,time_macros
@@ -75,7 +77,8 @@ jobs:
       - name: ccache
         uses: hendrikmuhs/ccache-action@v1.2.23
         with:
-          key: ${{ runner.os }}-${{ matrix.configuration }}-${{ matrix.compiler }}
+          key: ${{ runner.os }}-${{ matrix.configuration }}-${{ matrix.arch }}
+          max-size: 750MB
       - name: Configure ccache
         run: |
           ccache --set-config=sloppiness=pch_defines,time_macros
@@ -85,6 +88,7 @@ jobs:
         env:
           CONFIGURATION: ${{ matrix.configuration }}
           COMPILER: ${{ matrix.compiler }}
+          ARCHITECTURE: ${{ matrix.arch }}
           JOB_CMAKE_OPTIONS: ${{ matrix.cmake_options }}
           CCACHE_PATH: /usr/local/bin/ccache
           ENABLE_QTFRED: OFF
