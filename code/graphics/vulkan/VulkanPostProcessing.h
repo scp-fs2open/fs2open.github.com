@@ -416,7 +416,22 @@ private:
 	bool initLightVolumes();
 	bool initLightAccumPass();
 
-	static constexpr uint32_t DEFERRED_UBO_SIZE = 256 * 1024;  // 256KB for light data
+	// Sized for a generous simultaneous-light budget so a large battle (many ships'
+	// weapons fire, thrusters, explosions, muzzle flashes) can't silently exceed
+	// it -- render()'s overflow check skips the ENTIRE light-accumulation pass for
+	// the frame (every light, including directional/ambient, not just whichever
+	// light pushed it over) when this is undersized. Confirmed in the wild: a
+	// mission log showed "Deferred UBO overflow (270464 > 262144)" repeatedly at
+	// the old 256KB size, i.e. the light count was hovering right at capacity and
+	// tipping over as dynamic lights came and went, blacking out lighting for
+	// those frames entirely.
+	//
+	// Per-light cost is (sizeof(deferred_light_data) + sizeof(matrix_uniforms)),
+	// each independently rounded up to minUniformBufferOffsetAlignment (device-
+	// dependent, queried at runtime in render()) -- 256 bytes is a conservative
+	// upper bound seen in practice, so budget worst-case 2x that per light.
+	static constexpr uint32_t DEFERRED_MAX_LIGHTS = 4096;
+	static constexpr uint32_t DEFERRED_UBO_SIZE = 64 * 1024 + DEFERRED_MAX_LIGHTS * 512; // ~2.06MB
 
 	PostProcessContext* m_ctx = nullptr;
 	const RenderTarget* m_sceneColor = nullptr;

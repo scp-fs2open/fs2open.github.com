@@ -14,11 +14,27 @@
 #include "asteroid/asteroid.h"
 #include "debris/debris.h"
 #include "model/model.h"
+#include "model/modelrender.h"
 #include "object/object.h"
+#include "render/3d.h"
 #include "ship/ship.h"
 #include "ship/ship_flags.h"
 
 namespace graphics::vulkan {
+
+// Mirrors model_draw_list::get_view_position() (modelrender.cpp): expresses the camera
+// position in the local space of a submodel given that submodel's already-composed
+// world orientation/position, which is exactly what model_render_check_detail_box()'s
+// render-box/render-sphere distance checks are evaluated against.
+static bool submodelPassesDetailBox(const polymodel* pm, int submodel_num, const matrix& world_orient, const vec3d& world_pos)
+{
+	vec3d eye_to_submodel;
+	vm_vec_sub(&eye_to_submodel, &Eye_position, &world_pos);
+	vec3d local_view_pos;
+	vm_vec_rotate(&local_view_pos, &eye_to_submodel, &world_orient);
+
+	return model_render_check_detail_box(&local_view_pos, pm, submodel_num, 0);
+}
 
 void VulkanRaytracingManager::pushInstance(SCP_vector<vk::AccelerationStructureInstanceKHR>& instances,
 	vk::DeviceAddress blasAddress,
@@ -51,6 +67,10 @@ void VulkanRaytracingManager::addSingleSubmodelInstance(SCP_vector<vk::Accelerat
 	}
 
 	if (pm->submodel[submodel_num].flags[Model::Submodel_flags::Is_thruster]) {
+		return;
+	}
+
+	if (!submodelPassesDetailBox(pm, submodel_num, orient, pos)) {
 		return;
 	}
 
@@ -100,14 +120,27 @@ void VulkanRaytracingManager::walkSubmodelTree(SCP_vector<vk::AccelerationStruct
 
 	stack.push(&submodel_offset, &submodel_orient);
 
+	matrix4 world_transform = stack.get_transform();
+	matrix world_orient;
+	vec3d world_pos;
+	vm_matrix4_get_orientation(&world_orient, &world_transform);
+	vm_matrix4_get_offset(&world_pos, &world_transform);
+
+	// Mirrors the detail-box gate model_render_children_buffers applies (modelrender.cpp)
+	// before rendering or recursing into a submodel's children. Without this, a submodel
+	// the rasterizer only draws inside (or outside) a configured render-box/render-sphere
+	// distance -- e.g. small greeble/antennae visible up close -- still cast raytraced
+	// shadows regardless of camera distance, mismatching what was actually on screen and
+	// producing self-shadowing flicker that only stabilized once the camera cleared the
+	// model's detail-box distance. A failing check also skips this submodel's whole
+	// subtree, exactly like the rasterized path (a culled parent hides its children too).
+	if (!submodelPassesDetailBox(pm, submodel_num, world_orient, world_pos)) {
+		stack.pop();
+		return;
+	}
+
 	const BlasEntry* entry = getOrBuildBlasEntry(pm->id, submodel_num);
 	if (entry != nullptr) {
-		matrix4 world_transform = stack.get_transform();
-		matrix world_orient;
-		vec3d world_pos;
-		vm_matrix4_get_orientation(&world_orient, &world_transform);
-		vm_matrix4_get_offset(&world_pos, &world_transform);
-
 		pushInstance(instances, entry->address, world_orient, world_pos);
 	}
 
@@ -196,49 +229,49 @@ void VulkanRaytracingManager::gatherShadowCasterInstances(SCP_vector<vk::Acceler
 	}
 }
 
-bool VulkanRaytracingManager::ensureInstanceCapacity(vk::DeviceSize requiredBytes)
+bool VulkanRaytracingManager::ensureInstanceCapacity(FrameTlasResources& frame, vk::DeviceSize requiredBytes)
 {
-	if (requiredBytes <= m_instanceCapacity) {
+	if (requiredBytes <= frame.instanceCapacity) {
 		return true;
 	}
 
 	m_graphicsQueue.waitIdle();
 
-	if (m_instanceBuffer) {
-		if (m_instanceMapped) {
-			m_memoryManager->unmapMemory(m_instanceAllocation);
-			m_instanceMapped = nullptr;
+	if (frame.instanceBuffer) {
+		if (frame.instanceMapped) {
+			m_memoryManager->unmapMemory(frame.instanceAllocation);
+			frame.instanceMapped = nullptr;
 		}
-		m_device.destroyBuffer(m_instanceBuffer);
-		m_instanceBuffer = nullptr;
+		m_device.destroyBuffer(frame.instanceBuffer);
+		frame.instanceBuffer = nullptr;
 	}
-	if (m_instanceAllocation.isValid()) {
-		m_memoryManager->freeAllocation(m_instanceAllocation);
+	if (frame.instanceAllocation.isValid()) {
+		m_memoryManager->freeAllocation(frame.instanceAllocation);
 	}
-	m_instanceCapacity = 0;
+	frame.instanceCapacity = 0;
 
 	if (!createRawBuffer(requiredBytes,
 			vk::BufferUsageFlagBits::eShaderDeviceAddress |
 				vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR,
 			MemoryUsage::CpuToGpu,
-			m_instanceBuffer,
-			m_instanceAllocation)) {
+			frame.instanceBuffer,
+			frame.instanceAllocation)) {
 		return false;
 	}
 
-	m_instanceMapped = m_memoryManager->mapMemory(m_instanceAllocation);
-	if (m_instanceMapped == nullptr) {
+	frame.instanceMapped = m_memoryManager->mapMemory(frame.instanceAllocation);
+	if (frame.instanceMapped == nullptr) {
 		nprintf(("vulkan", "VulkanRaytracingManager: failed to map TLAS instance buffer\n"));
 		return false;
 	}
 
-	m_instanceCapacity = requiredBytes;
+	frame.instanceCapacity = requiredBytes;
 	return true;
 }
 
-bool VulkanRaytracingManager::ensureTlasCapacity(vk::DeviceSize requiredBytes)
+bool VulkanRaytracingManager::ensureTlasCapacity(FrameTlasResources& frame, vk::DeviceSize requiredBytes)
 {
-	if (requiredBytes <= m_tlasCapacity && m_tlas) {
+	if (requiredBytes <= frame.tlasCapacity && frame.tlas) {
 		return true;
 	}
 
@@ -248,72 +281,72 @@ bool VulkanRaytracingManager::ensureTlasCapacity(vk::DeviceSize requiredBytes)
 	// frames -- destroying it synchronously here invalidates that command
 	// buffer even though it hasn't been submitted yet. Defer the actual
 	// destruction via the deletion queue instead of an immediate reset/destroy.
-	if (m_tlas) {
-		getDeletionQueue()->queueAccelerationStructure(m_tlas.release());
+	if (frame.tlas) {
+		getDeletionQueue()->queueAccelerationStructure(frame.tlas.release());
 	}
-	if (m_tlasBuffer) {
-		getDeletionQueue()->queueBuffer(m_tlasBuffer, m_tlasAllocation);
-		m_tlasBuffer = nullptr;
-		m_tlasAllocation = VulkanAllocation();
+	if (frame.tlasBuffer) {
+		getDeletionQueue()->queueBuffer(frame.tlasBuffer, frame.tlasAllocation);
+		frame.tlasBuffer = nullptr;
+		frame.tlasAllocation = VulkanAllocation();
 	}
-	m_tlasCapacity = 0;
+	frame.tlasCapacity = 0;
 
 	if (!createRawBuffer(requiredBytes,
 			vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR | vk::BufferUsageFlagBits::eShaderDeviceAddress,
 			MemoryUsage::GpuOnly,
-			m_tlasBuffer,
-			m_tlasAllocation)) {
+			frame.tlasBuffer,
+			frame.tlasAllocation)) {
 		return false;
 	}
 
 	vk::AccelerationStructureCreateInfoKHR createInfo;
-	createInfo.buffer = m_tlasBuffer;
+	createInfo.buffer = frame.tlasBuffer;
 	createInfo.offset = 0;
 	createInfo.size = requiredBytes;
 	createInfo.type = vk::AccelerationStructureTypeKHR::eTopLevel;
 
 	try {
-		m_tlas = m_device.createAccelerationStructureKHRUnique(createInfo);
+		frame.tlas = m_device.createAccelerationStructureKHRUnique(createInfo);
 	} catch (const vk::SystemError& e) {
 		nprintf(("vulkan", "VulkanRaytracingManager: failed to create TLAS: %s\n", e.what()));
-		m_device.destroyBuffer(m_tlasBuffer);
-		m_tlasBuffer = nullptr;
-		m_memoryManager->freeAllocation(m_tlasAllocation);
+		m_device.destroyBuffer(frame.tlasBuffer);
+		frame.tlasBuffer = nullptr;
+		m_memoryManager->freeAllocation(frame.tlasAllocation);
 		return false;
 	}
 
-	m_tlasCapacity = requiredBytes;
+	frame.tlasCapacity = requiredBytes;
 	return true;
 }
 
-bool VulkanRaytracingManager::ensureScratchCapacity(vk::DeviceSize requiredBytes)
+bool VulkanRaytracingManager::ensureScratchCapacity(FrameTlasResources& frame, vk::DeviceSize requiredBytes)
 {
 	// Over-allocate so the aligned address always fits within the buffer.
 	vk::DeviceSize paddedSize = requiredBytes + m_scratchAlignment;
-	if (paddedSize <= m_tlasScratchCapacity) {
+	if (paddedSize <= frame.tlasScratchCapacity) {
 		return true;
 	}
 
 	m_graphicsQueue.waitIdle();
 
-	if (m_tlasScratchBuffer) {
-		m_device.destroyBuffer(m_tlasScratchBuffer);
-		m_tlasScratchBuffer = nullptr;
+	if (frame.tlasScratchBuffer) {
+		m_device.destroyBuffer(frame.tlasScratchBuffer);
+		frame.tlasScratchBuffer = nullptr;
 	}
-	if (m_tlasScratchAllocation.isValid()) {
-		m_memoryManager->freeAllocation(m_tlasScratchAllocation);
+	if (frame.tlasScratchAllocation.isValid()) {
+		m_memoryManager->freeAllocation(frame.tlasScratchAllocation);
 	}
-	m_tlasScratchCapacity = 0;
+	frame.tlasScratchCapacity = 0;
 
 	if (!createRawBuffer(paddedSize,
 			vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eShaderDeviceAddress,
 			MemoryUsage::GpuOnly,
-			m_tlasScratchBuffer,
-			m_tlasScratchAllocation)) {
+			frame.tlasScratchBuffer,
+			frame.tlasScratchAllocation)) {
 		return false;
 	}
 
-	m_tlasScratchCapacity = paddedSize;
+	frame.tlasScratchCapacity = paddedSize;
 	return true;
 }
 
@@ -323,23 +356,28 @@ void VulkanRaytracingManager::buildTlas()
 		return;
 	}
 
+	// Each frame-in-flight slot owns its own instance/TLAS/scratch buffers (see
+	// FrameTlasResources' declaration for why a single shared set would race
+	// across overlapping in-flight frames).
+	FrameTlasResources& frame = m_frameTlas[currentFrameIndex()];
+
 	SCP_vector<vk::AccelerationStructureInstanceKHR> instances;
 	gatherShadowCasterInstances(instances);
 
 	if (instances.empty()) {
-		return; // keep whatever TLAS (if any) was built last frame
+		return; // keep whatever TLAS (if any) was built last time this slot was used
 	}
 
 	vk::DeviceSize requiredInstanceBytes = sizeof(vk::AccelerationStructureInstanceKHR) * instances.size();
-	if (!ensureInstanceCapacity(requiredInstanceBytes)) {
+	if (!ensureInstanceCapacity(frame, requiredInstanceBytes)) {
 		return;
 	}
-	memcpy(m_instanceMapped, instances.data(), static_cast<size_t>(requiredInstanceBytes));
-	m_memoryManager->flushMemory(m_instanceAllocation, 0, requiredInstanceBytes);
+	memcpy(frame.instanceMapped, instances.data(), static_cast<size_t>(requiredInstanceBytes));
+	m_memoryManager->flushMemory(frame.instanceAllocation, 0, requiredInstanceBytes);
 
 	vk::AccelerationStructureGeometryInstancesDataKHR instancesData;
 	instancesData.arrayOfPointers = VK_FALSE;
-	instancesData.data.deviceAddress = m_device.getBufferAddress(vk::BufferDeviceAddressInfo{m_instanceBuffer});
+	instancesData.data.deviceAddress = m_device.getBufferAddress(vk::BufferDeviceAddressInfo{frame.instanceBuffer});
 
 	vk::AccelerationStructureGeometryKHR geometry;
 	geometry.geometryType = vk::GeometryTypeKHR::eInstances;
@@ -357,15 +395,15 @@ void VulkanRaytracingManager::buildTlas()
 	vk::AccelerationStructureBuildSizesInfoKHR sizeInfo = m_device.getAccelerationStructureBuildSizesKHR(
 		vk::AccelerationStructureBuildTypeKHR::eDevice, buildInfo, primitiveCount);
 
-	if (!ensureTlasCapacity(sizeInfo.accelerationStructureSize)) {
+	if (!ensureTlasCapacity(frame, sizeInfo.accelerationStructureSize)) {
 		return;
 	}
-	if (!ensureScratchCapacity(sizeInfo.buildScratchSize)) {
+	if (!ensureScratchCapacity(frame, sizeInfo.buildScratchSize)) {
 		return;
 	}
 
-	buildInfo.dstAccelerationStructure = m_tlas.get();
-	vk::DeviceAddress scratchRaw = m_device.getBufferAddress(vk::BufferDeviceAddressInfo{m_tlasScratchBuffer});
+	buildInfo.dstAccelerationStructure = frame.tlas.get();
+	vk::DeviceAddress scratchRaw = m_device.getBufferAddress(vk::BufferDeviceAddressInfo{frame.tlasScratchBuffer});
 	buildInfo.scratchData.deviceAddress = alignUp(scratchRaw, m_scratchAlignment);
 
 	vk::AccelerationStructureBuildRangeInfoKHR range;

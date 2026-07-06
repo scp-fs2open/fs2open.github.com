@@ -144,7 +144,8 @@ const size_t shadow_uniform_data_size = sizeof(shadow_uniform_data);
 struct shadow_cascade_static_data {
 	int cascade_offset;
 	int cascade_count;
-	float pad[2];
+	float rtShadowBiasMin;
+	float rtShadowBiasMax;
 	matrix4 shadow_mv_matrix;
 };
 

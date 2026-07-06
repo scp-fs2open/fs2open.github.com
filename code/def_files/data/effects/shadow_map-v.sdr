@@ -40,6 +40,8 @@ layout(std140)
 uniform shadowCascadeParams {
     int cascade_offset;
     int cascade_count;
+    float rtShadowBiasMin;
+    float rtShadowBiasMax;
 
 	mat4 shadow_mv_matrix;
 	mat4 shadow_proj_matrix[NUM_SHADOW_CASCADES];

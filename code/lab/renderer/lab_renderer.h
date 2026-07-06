@@ -136,6 +136,17 @@ public:
 		Max_rt_shadow_lights = count;
 	}
 
+	// Session-only overrides, same as setMaxRtShadowLights -- do not touch the
+	// persisted Min/Max Raytraced Shadow Bias options. See Rt_shadow_bias_min/max
+	// in shadows.h.
+	static void setRtShadowBiasMin(float bias) {
+		Rt_shadow_bias_min = bias;
+	}
+
+	static void setRtShadowBiasMax(float bias) {
+		Rt_shadow_bias_max = bias;
+	}
+
 	static void setTonemapper(ltp::TonemapperAlgorithm mode) {
 		ltp::lab_set_tonemapper(mode);
 	}

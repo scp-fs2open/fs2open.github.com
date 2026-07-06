@@ -149,6 +149,79 @@ auto MaxRtShadowLightsOption = options::OptionBuilder<int>("Graphics.MaxRtShadow
                      .importance(78)
                      .finish();
 
+RTShadowQuality Rt_shadow_quality = RTShadowQuality::Low;
+
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+auto RTShadowQualityOption = options::OptionBuilder<RTShadowQuality>("Graphics.RTShadowQuality",
+                     std::pair<const char*, int>{"Raytraced Shadow Quality", -1},
+                     std::pair<const char*, int>{"Low shadows directional lights only (up to Max Raytraced Shadow Lights); High also shadows point, tube, and cone lights", -1})
+                     .enumerator([]() -> SCP_vector<RTShadowQuality> {
+                         if (shadows_raytracing_supported()) {
+                             return {RTShadowQuality::Low, RTShadowQuality::High};
+                         }
+                         return {RTShadowQuality::Low};
+                     })
+                     .display(options::MapValueDisplay<RTShadowQuality>({
+                         {RTShadowQuality::Low, {"Low", -1}},
+                         {RTShadowQuality::High, {"High", -1}}
+                     }))
+                     .bind_to(&Rt_shadow_quality)
+                     .flags({options::OptionFlags::ForceMultiValueSelection})
+                     .level(options::ExpertLevel::Advanced)
+                     .category(std::make_pair("Graphics", 1825))
+                     .default_func([]() { return RTShadowQuality::Low; })
+                     .importance(77)
+                     .finish();
+
+int Max_rt_shadow_local_lights = 3;
+
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+auto MaxRtShadowLocalLightsOption = options::OptionBuilder<int>("Graphics.MaxRtShadowLocalLights",
+                     std::pair<const char*, int>{"Max Raytraced Local Shadow Lights", -1},
+                     std::pair<const char*, int>{"Maximum number of point, tube, and cone lights that cast raytraced shadows (only used at High Raytraced Shadow Quality)", -1})
+                     .enumerator([]() -> SCP_vector<int> {
+                         if (shadows_raytracing_supported()) {
+                             return {0, 1, 2, 3, 4, 5, 6, 7, 8};
+                         }
+                         return {3}; // inert default when RT isn't supported
+                     })
+                     .bind_to(&Max_rt_shadow_local_lights)
+                     .flags({options::OptionFlags::ForceMultiValueSelection})
+                     .level(options::ExpertLevel::Advanced)
+                     .category(std::make_pair("Graphics", 1825))
+                     .default_func([]() { return 3; })
+                     .importance(76)
+                     .finish();
+
+// Defaults confirmed by empirical testing via the LabUi slider: 0.5 clears acne on
+// even very close geometry, and distant geometry never needed more than 4.0.
+float Rt_shadow_bias_min = 0.5f;
+float Rt_shadow_bias_max = 4.0f;
+
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+auto RtShadowBiasMinOption = options::OptionBuilder<float>("Graphics.RtShadowBiasMin",
+                     std::pair<const char*, int>{"Min Raytraced Shadow Bias", -1},
+                     std::pair<const char*, int>{"Raytraced shadow ray origin offset (world units) used for geometry close to the camera, to avoid self-intersection shadow acne", -1})
+                     .category(std::make_pair("Graphics", 1825))
+                     .level(options::ExpertLevel::Advanced)
+                     .default_func([]() { return 0.5f; })
+                     .range(0.0f, 4.0f)
+                     .bind_to(&Rt_shadow_bias_min)
+                     .importance(75)
+                     .finish();
+
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+auto RtShadowBiasMaxOption = options::OptionBuilder<float>("Graphics.RtShadowBiasMax",
+                     std::pair<const char*, int>{"Max Raytraced Shadow Bias", -1},
+                     std::pair<const char*, int>{"Raytraced shadow ray origin offset (world units) used for geometry far from the camera, to avoid self-intersection shadow acne", -1})
+                     .category(std::make_pair("Graphics", 1825))
+                     .level(options::ExpertLevel::Advanced)
+                     .default_func([]() { return 4.0f; })
+                     .range(0.5f, 16.0f)
+                     .bind_to(&Rt_shadow_bias_max)
+                     .importance(74)
+                     .finish();
+
 bool shadows_raytracing_supported()
 {
 	return gr_is_capable(gr_capability::CAPABILITY_RAYTRACED_SHADOWS);
@@ -157,6 +230,11 @@ bool shadows_raytracing_supported()
 bool shadows_use_raytracing()
 {
 	return Shadow_render_method == ShadowRenderMethod::Raytraced && shadows_raytracing_supported();
+}
+
+bool shadows_use_raytraced_local_lights()
+{
+	return shadows_use_raytracing() && Rt_shadow_quality == RTShadowQuality::High;
 }
 
 bool shadows_obj_in_frustum(const object *objp, const matrix *light_orient, const vec3d *min, const vec3d *max)
@@ -957,6 +1035,8 @@ void shadow_cascade_params_bind(int cascade_offset, int cascade_count) {
 
 	static_data.cascade_offset = cascade_offset;
 	static_data.cascade_count = cascade_count;
+	static_data.rtShadowBiasMin = Rt_shadow_bias_min;
+	static_data.rtShadowBiasMax = Rt_shadow_bias_max;
 	static_data.shadow_mv_matrix = Shadow_view_matrix_light;
 
 	Shadow_cascade_count = cascade_count;

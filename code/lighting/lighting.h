@@ -56,6 +56,8 @@ typedef struct light {
 
 #define LF_DUAL_CONE	(1<<0)		// should the cone be shining in both directions?
 #define LF_NO_GLARE		(1<<1)		// for example, a sun with $NoGlare
+#define LF_NO_RT_SHADOW	(1<<2)		// never a raytraced-shadow-casting candidate (see shadows_use_raytraced_local_lights()) --
+									// e.g. WRT_LASER weapon bolt lights, which fire far too often for their shadow to be worth the cost
 #define LF_DEFAULT		0			// no flags by default
 
 extern SCP_vector<light> Static_light;
@@ -99,8 +101,8 @@ extern void light_reset();
 
 extern void light_add_directional(const vec3d *dir, int sun_index, bool no_glare, const hdr_color *new_color, const float source_radius = 0.0f );
 extern void light_add_directional(const vec3d *dir, int sun_index, bool no_glare, float intensity, float r, float g, float b, const float source_radius = 0.0f);
-extern void light_add_point(const vec3d * pos, float r1, float r2, const hdr_color *new_color, const float source_radius = 0.0f);
-extern void light_add_point(const vec3d * pos, float r1, float r2, float intensity, float r, float g, float b, const float source_radius = 0.0f);
+extern void light_add_point(const vec3d * pos, float r1, float r2, const hdr_color *new_color, const float source_radius = 0.0f, bool no_rt_shadow = false);
+extern void light_add_point(const vec3d * pos, float r1, float r2, float intensity, float r, float g, float b, const float source_radius = 0.0f, bool no_rt_shadow = false);
 extern void light_add_tube(const vec3d *p0, const vec3d *p1, float r1, float r2, const hdr_color *new_color, const float source_radius = 0.0f);
 extern void light_add_tube(const vec3d *p0, const vec3d *p1, float r1, float r2, float intensity, float r, float g, float b, const float source_radius = 0.0f);
 extern void light_add_cone(const vec3d * pos, const vec3d * dir, float angle, float inner_angle, bool dual_cone, float r1, float r2, const hdr_color *new_color, const float source_radius = 0.0f);

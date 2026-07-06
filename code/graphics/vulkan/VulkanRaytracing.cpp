@@ -178,37 +178,39 @@ void VulkanRaytracingManager::shutdown()
 		m_memoryManager->freeAllocation(m_fallbackTlasAllocation);
 	}
 
-	m_tlas.reset();
-	if (m_tlasBuffer) {
-		m_device.destroyBuffer(m_tlasBuffer);
-		m_tlasBuffer = nullptr;
-	}
-	if (m_tlasAllocation.isValid()) {
-		m_memoryManager->freeAllocation(m_tlasAllocation);
-	}
-	m_tlasCapacity = 0;
-
-	if (m_tlasScratchBuffer) {
-		m_device.destroyBuffer(m_tlasScratchBuffer);
-		m_tlasScratchBuffer = nullptr;
-	}
-	if (m_tlasScratchAllocation.isValid()) {
-		m_memoryManager->freeAllocation(m_tlasScratchAllocation);
-	}
-	m_tlasScratchCapacity = 0;
-
-	if (m_instanceBuffer) {
-		if (m_instanceMapped) {
-			m_memoryManager->unmapMemory(m_instanceAllocation);
-			m_instanceMapped = nullptr;
+	for (auto& frame : m_frameTlas) {
+		frame.tlas.reset();
+		if (frame.tlasBuffer) {
+			m_device.destroyBuffer(frame.tlasBuffer);
+			frame.tlasBuffer = nullptr;
 		}
-		m_device.destroyBuffer(m_instanceBuffer);
-		m_instanceBuffer = nullptr;
+		if (frame.tlasAllocation.isValid()) {
+			m_memoryManager->freeAllocation(frame.tlasAllocation);
+		}
+		frame.tlasCapacity = 0;
+
+		if (frame.tlasScratchBuffer) {
+			m_device.destroyBuffer(frame.tlasScratchBuffer);
+			frame.tlasScratchBuffer = nullptr;
+		}
+		if (frame.tlasScratchAllocation.isValid()) {
+			m_memoryManager->freeAllocation(frame.tlasScratchAllocation);
+		}
+		frame.tlasScratchCapacity = 0;
+
+		if (frame.instanceBuffer) {
+			if (frame.instanceMapped) {
+				m_memoryManager->unmapMemory(frame.instanceAllocation);
+				frame.instanceMapped = nullptr;
+			}
+			m_device.destroyBuffer(frame.instanceBuffer);
+			frame.instanceBuffer = nullptr;
+		}
+		if (frame.instanceAllocation.isValid()) {
+			m_memoryManager->freeAllocation(frame.instanceAllocation);
+		}
+		frame.instanceCapacity = 0;
 	}
-	if (m_instanceAllocation.isValid()) {
-		m_memoryManager->freeAllocation(m_instanceAllocation);
-	}
-	m_instanceCapacity = 0;
 
 	m_initialized = false;
 }

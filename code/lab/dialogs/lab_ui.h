@@ -45,6 +45,7 @@ class LabUi {
 	void build_antialiasing_combobox();
 	static void build_shadow_method_combobox();
 	static void build_max_rt_shadow_lights_slider();
+	static void build_rt_shadow_bias_sliders();
 	void build_tone_mapper_combobox();
 	void build_model_info_box(ship_info* sip, polymodel* pm) const;
 	void build_subsystem_list(object* objp, ship* shipp) const;
@@ -55,9 +56,9 @@ class LabUi {
 		object* objp,
 		ship* shipp) const;
 	void build_weapon_options(ship* shipp) const;
-	void build_primary_weapon_combobox(SCP_string& text,
+	static void build_primary_weapon_combobox(SCP_string& text,
 		weapon_info* wip,
-		int& primary_slot) const;
+		int& primary_slot) ;
 	void build_secondary_weapon_combobox(SCP_string& text, weapon_info* wip, int& secondary_slot) const;
 	static void build_dock_test_options(ship* shipp);
 	static void build_bay_test_options(ship_info* sip);

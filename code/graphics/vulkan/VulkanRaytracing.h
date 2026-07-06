@@ -96,11 +96,9 @@ public:
 	 * shader reads, so this does not stall the GPU/CPU on the common path.
 	 * No-op if raytraced shadows are disabled.
 	 *
-	 * Known simplifications vs. the rasterized shadow pass, both affecting a
-	 * small minority of models and not correctness-critical for occlusion:
-	 * no per-submodel detail-box culling (depends on legacy 3D-pipeline
-	 * global state not reproduced standalone) and no model autocentering
-	 * offset.
+	 * Known simplification vs. the rasterized shadow pass, affecting a small
+	 * minority of models and not correctness-critical for occlusion: no model
+	 * autocentering offset.
 	 */
 	void buildTlas();
 
@@ -121,10 +119,13 @@ public:
 
 	/**
 	 * @brief The TLAS to bind into the Global descriptor set this frame:
-	 * the current real TLAS if one has been built, otherwise the fallback.
+	 * the current frame slot's real TLAS if one has been built, otherwise the
+	 * fallback. Uses the same frame slot buildTlas() just wrote/will write this
+	 * frame (see currentFrameIndex()).
 	 */
 	vk::AccelerationStructureKHR getTlasForShaderBinding() const {
-		return m_tlas ? m_tlas.get() : getFallbackTlas();
+		const FrameTlasResources& frame = m_frameTlas[currentFrameIndex()];
+		return frame.tlas ? frame.tlas.get() : getFallbackTlas();
 	}
 
 private:
@@ -209,13 +210,48 @@ private:
 		const matrix& orient,
 		const vec3d& pos);
 
+	// One full set of grow-only TLAS resources per frame-in-flight slot, indexed
+	// by currentFrameIndex() -- NOT a single shared instance. buildTlas()
+	// rebuilds these in place every frame, and with MAX_FRAMES_IN_FLIGHT frames
+	// able to be in flight simultaneously, a single shared instance would let one
+	// frame's rebuild race a still-in-flight previous frame's shader reads of the
+	// old TLAS/instance data (a torn/inconsistent acceleration structure, not
+	// just stale-but-consistent data -- undefined per the Vulkan spec). Mirrors
+	// the per-slot pattern already used for VulkanBufferManager::m_frameAllocs
+	// and VulkanDescriptorManager::m_framePools, which rely on the same
+	// per-frame-slot fence wait (see VulkanRenderFrame::waitForFinish(), called
+	// from acquireNextSwapChainImage() before this slot is reused) to guarantee
+	// a slot's previous occupant has finished on the GPU before it's rewritten.
+	struct FrameTlasResources {
+		vk::Buffer instanceBuffer;
+		VulkanAllocation instanceAllocation;
+		void* instanceMapped = nullptr;
+		vk::DeviceSize instanceCapacity = 0;
+
+		vk::UniqueAccelerationStructureKHR tlas;
+		vk::Buffer tlasBuffer;
+		VulkanAllocation tlasAllocation;
+		vk::DeviceSize tlasCapacity = 0;
+
+		vk::Buffer tlasScratchBuffer;
+		VulkanAllocation tlasScratchAllocation;
+		vk::DeviceSize tlasScratchCapacity = 0;
+	};
+
 	// Grow-only: (re)allocates the buffer if `requiredBytes` exceeds current
 	// capacity. Returns false on allocation failure. A regrow stalls the
 	// queue (safe but rare -- only happens while capacity ramps up to a
 	// mission's peak instance/AS-size high-water mark).
-	bool ensureInstanceCapacity(vk::DeviceSize requiredBytes);
-	bool ensureTlasCapacity(vk::DeviceSize requiredBytes);
-	bool ensureScratchCapacity(vk::DeviceSize requiredBytes);
+	bool ensureInstanceCapacity(FrameTlasResources& frame, vk::DeviceSize requiredBytes);
+	bool ensureTlasCapacity(FrameTlasResources& frame, vk::DeviceSize requiredBytes);
+	bool ensureScratchCapacity(FrameTlasResources& frame, vk::DeviceSize requiredBytes);
+
+	// Which of the MAX_FRAMES_IN_FLIGHT slots in m_frameTlas the current frame
+	// should use -- shares VulkanBufferManager's frame counter so this manager
+	// doesn't need its own frame-advance plumbing. Falls back to slot 0 if
+	// queried before init() (m_bufferManager not yet set); real usage is always
+	// gated behind m_enabled/m_initialized so this only matters defensively.
+	uint32_t currentFrameIndex() const { return m_bufferManager != nullptr ? m_bufferManager->getCurrentFrame() : 0; }
 
 	vk::Device m_device;
 	vk::PhysicalDevice m_physicalDevice;
@@ -231,20 +267,7 @@ private:
 
 	SCP_unordered_map<uint64_t, BlasEntry> m_blasCache;
 
-	// Persistent, grow-only per-frame TLAS resources.
-	vk::Buffer m_instanceBuffer;
-	VulkanAllocation m_instanceAllocation;
-	void* m_instanceMapped = nullptr;
-	vk::DeviceSize m_instanceCapacity = 0;
-
-	vk::UniqueAccelerationStructureKHR m_tlas;
-	vk::Buffer m_tlasBuffer;
-	VulkanAllocation m_tlasAllocation;
-	vk::DeviceSize m_tlasCapacity = 0;
-
-	vk::Buffer m_tlasScratchBuffer;
-	VulkanAllocation m_tlasScratchAllocation;
-	vk::DeviceSize m_tlasScratchCapacity = 0;
+	std::array<FrameTlasResources, MAX_FRAMES_IN_FLIGHT> m_frameTlas;
 
 	// Permanent, 0-instance fallback TLAS (see getFallbackTlas()).
 	vk::UniqueAccelerationStructureKHR m_fallbackTlas;

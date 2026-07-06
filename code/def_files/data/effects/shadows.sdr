@@ -73,23 +73,55 @@ float getShadowValue(sampler2DArrayShadow shadow_map, float depth, vec4 shadowUV
 // genuine compile-time #defines (not the runtime `flags` uniform branch that
 // other MODEL_SDR_FLAG_* bits use), so GL_EXT_ray_query and its types never
 // appear in a shader compiled for hardware that doesn't support them.
+// Distance used for lights with no physical extent to shadow against (directional/sun
+// lights) -- effectively unbounded relative to any FS2Open mission scale. Defined
+// unconditionally (not just under the RT_SHADOWS guard below) since GetLightInfo()
+// in deferred-f.sdr/main-f.sdr references it regardless of which shadow method is active.
+const float RT_SHADOW_MAX_DISTANCE = 10000.0;
+
 #if defined(MODEL_SDR_FLAG_RT_SHADOWS) || defined(RT_SHADOWS)
 #extension GL_EXT_ray_query : require
 
-// worldPos/worldNormal/worldSunDir must all be in the same world space the
-// shadow TLAS was built in (see VulkanRaytracingManager::buildTlas()) -- i.e.
-// FS2Open object-space positions/orientations, not view/eye-space. worldNormal
-// biases the ray origin off the surface to avoid self-intersection acne;
-// worldSunDir must point FROM the surface TOWARD the sun.
-float traceShadowRay(accelerationStructureEXT tlas, vec3 worldPos, vec3 worldNormal, vec3 worldSunDir)
+// Ray origin bias grows with distance from the camera, between the rtShadowBiasMin/
+// rtShadowBiasMax bounds (see shadowCascadeParams uniform block, and the Min/Max
+// Raytraced Shadow Bias options in shadows.cpp). Empirically, geometry close to the
+// camera only needs biasMin worth of offset to clear self-intersection acne, while
+// distant geometry needs more -- consistent with the error source being G-buffer/
+// rasterization position-reconstruction precision (which degrades with view depth),
+// not a fixed float-precision quantity (a prior attempt using the Ray Tracing Gems
+// ch.6 "next representable float" technique, which only accounts for the latter,
+// made acne *worse* since its offset was far too small for the actual error here).
+// cameraDist is view-space distance (i.e. length() of the camera-relative position
+// already available at both call sites), not world-space distance from the origin.
+const float RT_SHADOW_BIAS_RAMP_DISTANCE = 2000.0;
+
+float computeRtShadowBias(float cameraDist, float biasMin, float biasMax)
 {
-	const float bias = 0.5;
+	return mix(biasMin, biasMax, clamp(cameraDist / RT_SHADOW_BIAS_RAMP_DISTANCE, 0.0, 1.0));
+}
+
+// worldPos/worldNormal/worldLightDir must all be in the same world space the
+// shadow TLAS was built in (see VulkanRaytracingManager::buildTlas()) -- i.e.
+// FS2Open object-space positions/orientations, not view/eye-space. worldLightDir
+// must point FROM the surface TOWARD the light.
+//
+// tMax must be the actual distance to the light (RT_SHADOW_MAX_DISTANCE for
+// directional lights, which have no real distance). For point/tube/cone lights this
+// is a correctness requirement, not just a cost bound: without it, geometry sitting
+// behind the light (farther from the surface than the light itself) would register
+// as a hit and incorrectly shadow the fragment, since a light can't be occluded by
+// something it doesn't reach.
+//
+// bias is a world-unit offset applied along worldNormal before tracing, to clear
+// the source triangle -- see computeRtShadowBias() above for how callers derive it.
+float traceShadowRay(accelerationStructureEXT tlas, vec3 worldPos, vec3 worldNormal, vec3 worldLightDir, float tMax, float bias)
+{
 	vec3 origin = worldPos + worldNormal * bias;
-	vec3 direction = normalize(worldSunDir);
+	vec3 direction = normalize(worldLightDir);
 
 	rayQueryEXT rq;
 	rayQueryInitializeEXT(rq, tlas, gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT,
-		0xFF, origin, 0.001, direction, 10000.0);
+		0xFF, origin, 0.001, direction, tMax);
 	while (rayQueryProceedEXT(rq)) {}
 
 	return (rayQueryGetIntersectionTypeEXT(rq, true) == gl_RayQueryCommittedIntersectionNoneEXT) ? 1.0 : 0.0;

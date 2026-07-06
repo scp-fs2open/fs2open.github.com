@@ -61,6 +61,8 @@ layout(std140)
 uniform shadowCascadeParams {
 	int cascade_offset;
 	int cascade_count;
+	float rtShadowBiasMin;
+	float rtShadowBiasMax;
 
 	mat4 shadow_mv_matrix;
 	mat4 shadow_proj_matrix[NUM_SHADOW_CASCADES];
@@ -118,12 +120,13 @@ vec3 ExpandLightSize(in vec3 lightDir, in vec3 reflectDir) {
 	vec3 centerToRay = max(dot(lightDir, reflectDir),sourceRadius) * reflectDir - lightDir;
 	return lightDir + centerToRay * clamp(sourceRadius/length(centerToRay), 0.0, 1.0);
 }
-void GetLightInfo(vec3 position, in float alpha, in vec3 reflectDir, out vec3 lightDirOut, out float attenuation, out float area_normalisation)
+void GetLightInfo(vec3 position, in float alpha, in vec3 reflectDir, out vec3 lightDirOut, out float attenuation, out float area_normalisation, out float lightDist)
 {
 	if (lightType == LT_DIRECTIONAL) {
 		lightDirOut = normalize(lightDir);
 		attenuation = 1.0;
 		area_normalisation = 1.0;
+		lightDist = RT_SHADOW_MAX_DISTANCE;
 	} else {
 		vec3 lightPosition = modelViewMatrix[3].xyz;
 		// Positional light source
@@ -136,6 +139,7 @@ void GetLightInfo(vec3 position, in float alpha, in vec3 reflectDir, out vec3 li
 			// move lightDirOut towards the ray defined by reflectDir
 			lightDirOut = ExpandLightSize(lightDirOut, reflectDir);
 			dist = length(lightDirOut);
+			lightDist = dist;
 			// Energy conservation term
 			float alpha_adjust = clamp(alpha + (sourceRadius/(2*dist)), 0.0, 1.0);
 			area_normalisation = alpha/alpha_adjust;
@@ -178,6 +182,7 @@ void GetLightInfo(vec3 position, in float alpha, in vec3 reflectDir, out vec3 li
 			// Same principle as in LT_POINT, treat chosen location as a spherelight.
 			lightDirOut = ExpandLightSize(lightDirOut, reflectDir);
 			float dist = length(lightDirOut);
+			lightDist = dist;
 			// Energy conservation term
 			float alpha_adjust = min(alpha + (sourceRadius/(2*dist)), 1.0);
 			area_normalisation = alpha/alpha_adjust;
@@ -193,6 +198,7 @@ void GetLightInfo(vec3 position, in float alpha, in vec3 reflectDir, out vec3 li
 			lightDirOut = lightPosition - position.xyz;
 			float coneDot = dot(normalize(-lightDirOut), coneDir);
 			float dist = length(lightDirOut);
+			lightDist = dist;
 			attenuation = 1.0 - clamp(sqrt(dist / lightRadius), 0.0, 1.0);
 			area_normalisation = 1.0;
 
@@ -299,15 +305,17 @@ void main()
 		vec3 lightDir;
 		float attenuation;
 		float area_normalisation;
-		GetLightInfo(position, alpha, reflectDir, lightDir, attenuation, area_normalisation);
+		float lightDist;
+		GetLightInfo(position, alpha, reflectDir, lightDir, attenuation, area_normalisation, lightDist);
 
 		if (enable_shadows != 0) {
 #ifdef RT_SHADOWS
 			vec3 worldPos = (inv_view_matrix * vec4(position, 1.0)).xyz;
 			vec3 worldNormal = normalize((inv_view_matrix * vec4(normal, 0.0)).xyz);
-			vec3 worldSunDir = normalize((inv_view_matrix * vec4(lightDir, 0.0)).xyz);
+			vec3 worldLightDir = normalize((inv_view_matrix * vec4(lightDir, 0.0)).xyz);
 
-			attenuation *= traceShadowRay(shadow_tlas, worldPos, worldNormal, worldSunDir);
+			float rtShadowBias = computeRtShadowBias(length(position), rtShadowBiasMin, rtShadowBiasMax);
+			attenuation *= traceShadowRay(shadow_tlas, worldPos, worldNormal, worldLightDir, lightDist, rtShadowBias);
 #else
 			vec4 fragShadowPos = shadow_mv_matrix * inv_view_matrix * vec4(position, 1.0);
 			vec4 fragShadowUV[NUM_SHADOW_CASCADES];

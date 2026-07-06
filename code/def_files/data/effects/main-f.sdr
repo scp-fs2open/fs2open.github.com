@@ -99,6 +99,8 @@ layout(std140)
 uniform shadowCascadeParams {
 	int cascade_offset;
 	int cascade_count;
+	float rtShadowBiasMin;
+	float rtShadowBiasMax;
 
 	mat4 shadow_mv_matrix;
 	mat4 shadow_proj_matrix[NUM_SHADOW_CASCADES];
@@ -242,7 +244,8 @@ vec3 CalculateLighting(vec3 normal, vec3 diffuseMaterial, vec3 specularMaterial,
 #ifdef MODEL_SDR_FLAG_RT_SHADOWS
 		if (rtShadowsActive && lights[i].light_type == LT_DIRECTIONAL && shadowedDirectionalCount < MAX_RT_SHADOW_LIGHTS) {
 			vec3 worldSunDir = normalize((invView * vec4(lights[i].position.xyz, 0.0)).xyz);
-			shadow = traceShadowRay(shadow_tlas, worldPos, worldNormal, worldSunDir);
+			float rtShadowBias = computeRtShadowBias(length(vertIn.position.xyz), rtShadowBiasMin, rtShadowBiasMax);
+			shadow = traceShadowRay(shadow_tlas, worldPos, worldNormal, worldSunDir, RT_SHADOW_MAX_DISTANCE, rtShadowBias);
 			++shadowedDirectionalCount;
 		} else {
 			shadow = 1.0;

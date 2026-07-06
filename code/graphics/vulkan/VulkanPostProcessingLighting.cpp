@@ -500,7 +500,61 @@ void VulkanDeferredLighting::render(vk::CommandBuffer cmd)
 		++lightIdx;
 	}
 
-	for (auto& l : sphere_lights) {
+	// Decide which local (point/tube/cone) lights get raytraced shadows this frame. This
+	// cap is independent of maxShadowedDirectionalLights above -- directional and local
+	// lights have very different per-mission counts, so one slider can't sensibly tune
+	// both. Priority is nearest-to-camera first, ranked across both light-volume groups
+	// together (sphere_lights covers point/cone, cylinder_lights covers tube) so the cap
+	// isn't biased toward whichever group happens to be packed first.
+	SCP_vector<bool> sphereLightShadowed(sphere_lights.size(), false);
+	SCP_vector<bool> cylinderLightShadowed(cylinder_lights.size(), false);
+	if (shadows_use_raytraced_local_lights() && m_shadow->isInitialized() && Shadow_quality != ShadowQuality::Disabled) {
+		struct LocalLightCandidate {
+			float dist_sq;
+			bool is_cylinder;
+			size_t index;
+		};
+		SCP_vector<LocalLightCandidate> candidates;
+		candidates.reserve(sphere_lights.size() + cylinder_lights.size());
+
+		auto distSqToEye = [](const vec3d& pos) {
+			vec3d diff;
+			vm_vec_sub(&diff, &pos, &Eye_position);
+			return vm_vec_mag_squared(&diff);
+		};
+
+		for (size_t i = 0; i < sphere_lights.size(); ++i) {
+			// e.g. WRT_LASER weapon bolt lights -- these fire far too often to be worth
+			// raytracing a shadow for, and excluding them here is a large, cheap cut to
+			// the number of lights this selection has to consider every frame.
+			if (sphere_lights[i].flags & LF_NO_RT_SHADOW) {
+				continue;
+			}
+			candidates.push_back({distSqToEye(sphere_lights[i].vec), false, i});
+		}
+		for (size_t i = 0; i < cylinder_lights.size(); ++i) {
+			if (cylinder_lights[i].flags & LF_NO_RT_SHADOW) {
+				continue;
+			}
+			candidates.push_back({distSqToEye(cylinder_lights[i].vec), true, i});
+		}
+
+		std::sort(candidates.begin(), candidates.end(), [](const LocalLightCandidate& a, const LocalLightCandidate& b) {
+			return a.dist_sq < b.dist_sq;
+		});
+
+		size_t shadowCount = std::min(candidates.size(), static_cast<size_t>(std::max(Max_rt_shadow_local_lights, 0)));
+		for (size_t i = 0; i < shadowCount; ++i) {
+			if (candidates[i].is_cylinder) {
+				cylinderLightShadowed[candidates[i].index] = true;
+			} else {
+				sphereLightShadowed[candidates[i].index] = true;
+			}
+		}
+	}
+
+	for (size_t sphereIdx = 0; sphereIdx < sphere_lights.size(); ++sphereIdx) {
+		light& l = sphere_lights[sphereIdx];
 		auto* ld = prepare_light_uniforms(l, uboMapped + lightDataOffset + (lightIdx * lightDataSize), lp);
 
 		if (l.type == Light_Type::Cone) {
@@ -509,6 +563,7 @@ void VulkanDeferredLighting::render(vk::CommandBuffer cmd)
 			ld->coneInnerAngle = l.cone_inner_angle;
 			ld->coneDir = l.vec2;
 		}
+		ld->enable_shadows = sphereLightShadowed[sphereIdx] ? 1 : 0;
 		float rad = (Lighting_mode == lighting_mode::COCKPIT)
 						? lp->cockpit_light_radius_modifier.handle(MAX(l.rada, l.radb))
 						: MAX(l.rada, l.radb);
@@ -526,12 +581,14 @@ void VulkanDeferredLighting::render(vk::CommandBuffer cmd)
 		++lightIdx;
 	}
 
-	for (auto& l : cylinder_lights) {
+	for (size_t cylinderIdx = 0; cylinderIdx < cylinder_lights.size(); ++cylinderIdx) {
+		light& l = cylinder_lights[cylinderIdx];
 		auto* ld = prepare_light_uniforms(l, uboMapped + lightDataOffset + (lightIdx * lightDataSize), lp);
 		float rad =
 			(Lighting_mode == lighting_mode::COCKPIT) ? lp->cockpit_light_radius_modifier.handle(l.radb) : l.radb;
 		ld->lightRadius = rad;
 		ld->lightType = LT_TUBE;
+		ld->enable_shadows = cylinderLightShadowed[cylinderIdx] ? 1 : 0;
 
 		vec3d a;
 		vm_vec_sub(&a, &l.vec, &l.vec2);
