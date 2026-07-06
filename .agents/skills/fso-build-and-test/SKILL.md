@@ -24,7 +24,7 @@ git submodule update --init --recursive
 ## Configure + build (Linux/macOS, Ninja)
 
 ```bash
-mkdir -p build && cd build
+mkdir -p cmake-build-agent && cd cmake-build-agent
 cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug \
   -DFSO_BUILD_TESTS=ON -DFSO_FATAL_WARNINGS=ON \
   -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
@@ -32,14 +32,16 @@ ninja -k 20 all
 ```
 
 - Build types: `Debug`, `Release`, `FastDebug`.
-- Existing build dirs in-tree: `cmake-build-debug/`, `cmake-build-release/`,
-  `cmake-build-relwithdebinfo/` — reuse one instead of reconfiguring if present.
+- Build in your own directory (e.g. `cmake-build-agent/`); don't reconfigure or
+  reuse `cmake-build-debug/`, `cmake-build-release/`, `cmake-build-relwithdebinfo/`
+  unless the user explicitly says to — those are typically IDE-managed build
+  caches (CLion, etc.).
 - The CI configure script is `ci/linux/configure_cmake.sh` (adds ccache, SIMD,
   AppImage flags); match its options when reproducing a CI build.
 
 ## Run unit tests
 
-Tests build only with `FSO_BUILD_TESTS=ON`; the binary is `unittests` in `build/bin/`.
+Tests build only with `FSO_BUILD_TESTS=ON`; the binary is `unittests` in `<build-dir>/bin/`.
 
 ```bash
 ./bin/unittests --gtest_shuffle
@@ -51,13 +53,12 @@ CI test runner: `ci/linux/run_tests.sh` (Debug non-macOS runs under valgrind).
 
 ## Formatting & static analysis (pre-PR)
 
-```bash
-# Format only files you changed:
-clang-format -i path/to/changed_file.cpp
-```
-
-- `.clang-format` (LLVM-based) and `.clang-tidy` are enforced; CI runs clang-tidy
-  on changed code for clang builds (`ci/linux/clang_tidy.sh`).
+- Match `.clang-format` (LLVM-based) conventions by hand; don't run
+  `clang-format` yourself — it reformats whole files and introduces unrelated
+  changes to existing code. Only use `git-clang-format` (scoped to changed
+  lines) if the user explicitly asks for a reformat pass.
+- `.clang-tidy` is enforced; CI runs clang-tidy on changed code for clang
+  builds (`ci/linux/clang_tidy.sh`), on both Linux and macOS.
 - Indentation is tabs (width 4); column limit 120; left pointer alignment.
 
 ## Workflow
@@ -67,7 +68,7 @@ clang-format -i path/to/changed_file.cpp
 - [ ] Configure (Ninja, FSO_BUILD_TESTS=ON, FSO_FATAL_WARNINGS=ON)
 - [ ] ninja all builds with zero warnings
 - [ ] unittests pass (--gtest_shuffle)
-- [ ] clang-format applied to changed files
+- [ ] Changed code matches .clang-format conventions (checked by hand, not auto-run)
 ```
 
 ## Notes

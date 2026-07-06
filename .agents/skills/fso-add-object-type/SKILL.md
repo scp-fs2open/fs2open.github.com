@@ -14,6 +14,11 @@ Every world entity is an `object` (`code/object/object.h`) whose `type` is an
 type means defining that array + the create/move/delete trio and registering it
 with the object system.
 
+This is a last resort: adding a new `OBJ_*` type touches `MAX_OBJECT_TYPES`,
+every switch over object type, and the collision matrix. Prefer extending an
+existing type (ship subsystem, weapon subtype, etc.) if it can represent the
+new entity at all.
+
 ## Checklist
 
 ```
