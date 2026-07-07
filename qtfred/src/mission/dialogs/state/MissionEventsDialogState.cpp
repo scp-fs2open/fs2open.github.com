@@ -1,10 +1,8 @@
 // captureState() and restoreState() for MissionEventsDialogModel.
 //
-// Snapshots Mission_events, Messages (non-builtin), and Event_annotations so
-// that undo/redo can restore event parameters, messages, and annotations.
-//
-// TODO(sexp_tree_refactor): mission_event::formula is not serialized.
-// formula is set to -1 on restore; sexp tree content is lost on undo/redo.
+// Snapshots Mission_events (including sexp formulas), Messages (non-builtin),
+// and Event_annotations so that undo/redo can restore event parameters,
+// messages, and annotations.
 //
 // TODO: MMessage filter fields (sender_filter, subject_filter, outer_filter,
 // mood, excluded_moods, boost_level) are not serialized.  These fields are not
@@ -34,7 +32,7 @@ QByteArray MissionEventsDialogModel::captureState() const
 	ds << static_cast<qint32>(Mission_events.size());
 	for (const mission_event& e : Mission_events) {
 		ds << QString::fromStdString(e.name);
-		fso::fred::state::writeSexpStub(ds); // formula — TODO(sexp_tree_refactor)
+		fso::fred::state::writeSexp(ds, e.formula);
 		ds << static_cast<qint32>(e.repeat_count);
 		ds << static_cast<qint32>(e.trigger_count);
 		ds << static_cast<qint32>(e.interval);
@@ -84,6 +82,8 @@ void MissionEventsDialogModel::restoreState(const QByteArray& state)
 	qint32 eventCount;
 	ds >> eventCount;
 
+	for (const mission_event& e : Mission_events)
+		fso::fred::state::freeSexpFormula(e.formula);
 	Mission_events.clear();
 	Mission_events.resize(static_cast<size_t>(eventCount));
 
@@ -93,8 +93,7 @@ void MissionEventsDialogModel::restoreState(const QByteArray& state)
 		qint32 repeat, trigger, interval, score, chainDelay, flags, team, logFlags;
 
 		ds >> name;
-		fso::fred::state::readSexpStub(ds); // formula — TODO(sexp_tree_refactor)
-		e.formula = -1;
+		e.formula = fso::fred::state::readSexp(ds);
 		ds >> repeat >> trigger >> interval >> score >> chainDelay >> flags;
 		ds >> objText >> objKeyText;
 		ds >> team >> logFlags;
