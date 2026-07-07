@@ -23,6 +23,7 @@
 #include "ui/Theme.h"
 #include "FredApplication.h"
 
+#include <cmdline/cmdline.h>
 #include <csignal>
 #include <project.h>
 
