@@ -1,9 +1,6 @@
 // captureState() and restoreState() for MissionGoalsDialogModel.
 // Snapshots Mission_goals from the live global so that undo/redo can restore
-// goal names, types, messages, scores, flags, and team assignments.
-//
-// TODO(sexp_tree_refactor): mission_goal::formula is not serialized.
-// formula is set to -1 ("no condition") on restore; sexp content is lost.
+// goal names, types, messages, scores, flags, teams, and sexp formulas.
 
 #include <mission/dialogs/MissionGoalsDialogModel.h>
 
@@ -27,7 +24,7 @@ QByteArray MissionGoalsDialogModel::captureState() const
 		ds << static_cast<qint32>(g.type);
 		ds << static_cast<qint32>(g.satisfied);
 		ds << QString::fromStdString(g.message);
-		fso::fred::state::writeSexpStub(ds); // formula — TODO(sexp_tree_refactor)
+		fso::fred::state::writeSexp(ds, g.formula);
 		ds << static_cast<qint32>(g.score);
 		ds << static_cast<qint32>(g.flags);
 		ds << static_cast<qint32>(g.team);
@@ -43,6 +40,8 @@ void MissionGoalsDialogModel::restoreState(const QByteArray& state)
 	qint32 count;
 	ds >> count;
 
+	for (const mission_goal& g : Mission_goals)
+		fso::fred::state::freeSexpFormula(g.formula);
 	Mission_goals.clear();
 	Mission_goals.resize(static_cast<size_t>(count));
 
@@ -52,8 +51,7 @@ void MissionGoalsDialogModel::restoreState(const QByteArray& state)
 		qint32 type, satisfied, score, flags, team;
 
 		ds >> name >> type >> satisfied >> message;
-		fso::fred::state::readSexpStub(ds); // formula — TODO(sexp_tree_refactor)
-		g.formula = -1;
+		g.formula = fso::fred::state::readSexp(ds);
 		ds >> score >> flags >> team;
 
 		g.name      = name.toStdString();
