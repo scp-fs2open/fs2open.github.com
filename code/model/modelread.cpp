@@ -1300,7 +1300,7 @@ void determine_submodel_movement(bool is_rotation, const char *filename, bsp_inf
 
 		if (in(p, props, axis_string))
 		{
-			if (get_user_vec3d_value(p + 20, movement_axis, true, sm->name, filename))
+			if (get_user_vec3d_value(p + strlen(axis_string), movement_axis, true, sm->name, filename))
 			{
 				if (!fl_near_zero(vm_vec_mag(movement_axis)))
 					vm_vec_normalize(movement_axis);
@@ -4075,7 +4075,7 @@ void submodel_canonicalize_translation(bsp_info *sm, submodel_instance *smi)
 	smi->canonical_prev_offset = smi->canonical_offset;
 
 	// get the vector
-	switch (sm->rotation_axis_id)
+	switch (sm->translation_axis_id)
 	{
 		case MOVEMENT_AXIS_X:
 			vm_vec_copy_scale(&smi->canonical_offset, &vmd_x_vector, smi->cur_offset);
