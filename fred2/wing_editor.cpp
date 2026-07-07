@@ -1475,6 +1475,9 @@ void wing_editor::OnWingFormationAlign()
 
 		get_absolute_wing_pos(&objp->pos, leader_objp, cur_wing, i, false);
 		objp->orient = leader_objp->orient;
+
+		// drag any docked partners along (no-op for undocked ships)
+		object_moved(objp);
 	}
 
 	// roll back temporary formation
