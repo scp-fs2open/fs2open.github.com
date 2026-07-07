@@ -503,17 +503,16 @@ void main()
 
 	fragOut0 = baseColor;
 
-#ifdef VULKAN
-	// Vulkan has undefined values for unwritten outputs; zero-init G-buffer outputs
-	fragOut1 = vec4(0.0);
-	fragOut2 = vec4(0.0);
-	fragOut3 = vec4(0.0);
-	fragOut4 = vec4(0.0);
-#endif
 	#prereplace IF_FLAG MODEL_SDR_FLAG_DEFERRED
 		fragOut1 = vec4(vertIn.position.xy, compress_depth_value(vertIn.position.z), aoFactors.x);
 		fragOut2 = vec4(normal, glossData);
 		fragOut3 = vec4(specColor.rgb, fresnelFactor);
 		fragOut4 = emissiveColor;
-	#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_DEFERRED
+	#prereplace ELSE_FLAG //MODEL_SDR_FLAG_DEFERRED
+		// Vulkan has undefined values for unwritten outputs; zero-init G-buffer outputs
+    	fragOut1 = vec4(0.0);
+    	fragOut2 = vec4(0.0);
+    	fragOut3 = vec4(0.0);
+    	fragOut4 = vec4(0.0);
+    #prereplace ENDIF_FLAG //MODEL_SDR_FLAG_DEFERRED
 }

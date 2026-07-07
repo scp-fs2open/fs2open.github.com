@@ -38,7 +38,7 @@ struct deferred_light_data {
 	float coneInnerAngle;
 
 	vec3d coneDir;
-	float dualCone;
+	int dualCone;
 
 	vec3d scale;
 	float lightRadius;
