@@ -32,19 +32,11 @@ enum ItemCol {
 	ItemValue = 1
 };
 
-VariableDialog::VariableDialog(QWidget* parent, EditorViewport* viewport, Tab initialTab)
-	: QDialog(parent), _viewport(viewport), ui(new Ui::VariableEditorDialog()),
+VariableDialog::VariableDialog(QWidget* parent, EditorViewport* viewport, FredView* fredView, Tab initialTab)
+	: QDialog(parent), _viewport(viewport), _fredView(fredView), ui(new Ui::VariableEditorDialog()),
 	  _model(new VariableDialogModel(this, viewport))
 {
-	// This dialog can be opened from FredView or from a sexp tree inside
-	// another dialog, so locate the FredView through the parent chain.
-	for (QObject* p = parent; p != nullptr; p = p->parent()) {
-		if (auto* fv = qobject_cast<FredView*>(p)) {
-			_fredView = fv;
-			break;
-		}
-	}
-	Assertion(_fredView != nullptr, "VariableDialog must have a FredView ancestor!");
+	Assertion(_fredView != nullptr, "VariableDialog requires a FredView!");
 
 	this->setFocus();
 	ui->setupUi(this);

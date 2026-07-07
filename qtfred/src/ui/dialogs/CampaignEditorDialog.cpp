@@ -20,7 +20,7 @@
 
 namespace fso::fred::dialogs {
 
-CampaignEditorDialog::CampaignEditorDialog(QWidget* parent, EditorViewport* viewport)
+CampaignEditorDialog::CampaignEditorDialog(FredView* parent, EditorViewport* viewport)
 	: QMainWindow(parent), SexpTreeEditorInterface({TreeFlags::LabeledRoot, TreeFlags::RootDeletable}),
 	  ui(new Ui::CampaignEditorDialog), _viewport(viewport)
 {
@@ -105,7 +105,7 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget* parent, EditorViewport* view
 
 	_treeOps = std::make_unique<QtCampaignTreeOps>(QtCampaignTreeOps{*ui->sxtBranches});
 
-	ui->sxtBranches->initializeEditor(_viewport->editor, this, _viewport);
+	ui->sxtBranches->initializeEditor(_viewport->editor, this, _viewport, parent);
 	ui->sxtBranches->clear_tree();
 	ui->sxtBranches->_model.post_load();
 

@@ -20,7 +20,7 @@ MissionGoalsDialog::MissionGoalsDialog(FredView* parent, EditorViewport* viewpor
 	_dialogStack = new QUndoStack(this);
 	_fredView->undoGroup()->addStack(_dialogStack);
 
-	ui->goalEventTree->initializeEditor(viewport->editor, this, viewport);
+	ui->goalEventTree->initializeEditor(viewport->editor, this, viewport, parent);
 	_model->setTreeControl(ui->goalEventTree);
 
 	ui->goalName->setMaxLength(NAME_LENGTH - 1);

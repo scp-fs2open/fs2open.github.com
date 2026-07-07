@@ -754,6 +754,59 @@ public:
 };
 
 // ---------------------------------------------------------------------------
+// SexpCueEditCommand — undo/redo one arrival/departure cue tree edit
+//
+// Pushed by the ship/wing editors after a sexp_tree_view mutation has been
+// applied to mission data (skipFirstRedo pattern). The command owns dup'd
+// copies of the before/after SEXP chains; every undo/redo hands the owners a
+// fresh dup so the masters stay valid across repeated cycles.
+//
+// Owners are located inside the get/set lambdas (by ship signature or wing
+// name, matching FieldEditCommand conventions). setCue must only assign the
+// formula — the command frees each owner's current cue exactly once first,
+// which matters because a multi-edit assigns one shared formula index to
+// every marked ship.
+// ---------------------------------------------------------------------------
+
+class SexpCueEditCommand : public QUndoCommand {
+public:
+	SexpCueEditCommand(Editor*        editor,
+	                   const QString& text,
+	                   bool           skipFirstRedo = false,
+	                   QUndoCommand*  parent        = nullptr);
+	~SexpCueEditCommand() override;
+
+	// Call BEFORE the edit is applied to mission data: dups beforeCue immediately.
+	// getCue reads the owner's current cue slot; setCue assigns a formula to it.
+	void addOwner(int beforeCue, std::function<int()> getCue, std::function<void(int)> setCue);
+
+	// Call AFTER the edit is applied, with the new live formula: dups it.
+	void captureAfter(int afterCue);
+
+	bool isEmpty() const { return _owners.empty(); }
+
+	void undo() override;
+	void redo() override;
+
+private:
+	struct Owner {
+		int                      beforeDup; // SHIP_CUE_* sentinel or command-owned dup
+		std::function<int()>     getCue;
+		std::function<void(int)> setCue;
+	};
+
+	// Free each owner's current live cue exactly once (owners may share one
+	// formula index after a multi-edit; freeing per-owner would corrupt nodes
+	// reused by the dups allocated in between).
+	void freeCurrentCues();
+
+	SCP_vector<Owner> _owners;
+	int               _afterDup;
+	Editor*           _editor;
+	bool              _skipFirstRedo;
+};
+
+// ---------------------------------------------------------------------------
 // TextureReplacementCommand — undo/redo for the Ship Texture Replacement dialog
 // ---------------------------------------------------------------------------
 

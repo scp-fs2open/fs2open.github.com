@@ -20,7 +20,7 @@ class CampaignEditorDialog : public QMainWindow, public SexpTreeEditorInterface 
 	Q_OBJECT
 
   public:
-	explicit CampaignEditorDialog(QWidget* parent, EditorViewport* viewport);
+	explicit CampaignEditorDialog(FredView* parent, EditorViewport* viewport);
 	~CampaignEditorDialog() override;
 
 	bool requireCampaignOperators() const override { return true; }

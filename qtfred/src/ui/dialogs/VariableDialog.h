@@ -17,7 +17,9 @@ class VariableDialog : public QDialog {
 
   public:
 	enum Tab { VariablesTab = 0, ContainersTab = 1 };
-	explicit VariableDialog(QWidget* parent, EditorViewport* viewport, Tab initialTab = VariablesTab);
+	// parent controls window stacking (the host dialog when opened from a sexp
+	// tree's context menu); fredView provides the undo group and main stack.
+	explicit VariableDialog(QWidget* parent, EditorViewport* viewport, FredView* fredView, Tab initialTab = VariablesTab);
 	~VariableDialog() override;
 
 	void accept() override;

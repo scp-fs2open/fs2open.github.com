@@ -248,7 +248,7 @@ void BriefingEditorDialog::initializeUi()
 	}
 
 	// Initialize the formula tree editor
-	ui->formulaTreeView->initializeEditor(_viewport->editor, this, _viewport);
+	ui->formulaTreeView->initializeEditor(_viewport->editor, this, _viewport, _fredView);
 	_model->setTreeControl(ui->formulaTreeView);
 	connect(ui->formulaTreeView, &sexp_tree_view::modified, this, [this]() {
 		_model->setModified();

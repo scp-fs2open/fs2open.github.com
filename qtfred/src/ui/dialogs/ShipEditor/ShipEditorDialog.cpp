@@ -959,7 +959,7 @@ void ShipEditorDialog::updateUi()
 
 	ui->updateArrivalCueCheckBox->setChecked(_model->getArrivalCue());
 
-	ui->arrivalTree->initializeEditor(_viewport->editor, this, _viewport);
+	ui->arrivalTree->initializeEditor(_viewport->editor, this, _viewport, _fredView);
 	if (_model->getNumSelectedShips()) {
 		if (_model->getIfMultipleShips()) {
 			ui->arrivalTree->clear_tree("");
@@ -993,7 +993,7 @@ void ShipEditorDialog::updateUi()
 
 	ui->departureDelaySpinBox->setValue(_model->getDepartureDelay());
 
-	ui->departureTree->initializeEditor(_viewport->editor, this, _viewport);
+	ui->departureTree->initializeEditor(_viewport->editor, this, _viewport, _fredView);
 	if (_model->getNumSelectedShips()) {
 		if (_model->getIfMultipleShips()) {
 			ui->departureTree->clear_tree("");

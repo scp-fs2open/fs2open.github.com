@@ -136,7 +136,7 @@ CapturedShip::CapturedShip(CapturedShip&& o) noexcept
 // captureShip / restoreShip
 // ===========================================================================
 
-static int captureSexpCue(int cue)
+int captureSexpCue(int cue)
 {
 	if (cue == Locked_sexp_true)  return SHIP_CUE_LOCKED_TRUE;
 	if (cue == Locked_sexp_false) return SHIP_CUE_LOCKED_FALSE;
@@ -144,6 +144,21 @@ static int captureSexpCue(int cue)
 	// TODO(sexp_tree_refactor): dup_sexp_chain shallow-copies SEXP_FLAG_VARIABLE nodes;
 	// variable-reference indices become dangling after free_sexp2() on the live tree.
 	return dup_sexp_chain(cue);
+}
+
+int materializeSexpCue(int cue_dup)
+{
+	if (cue_dup == SHIP_CUE_LOCKED_TRUE)  return Locked_sexp_true;
+	if (cue_dup == SHIP_CUE_LOCKED_FALSE) return Locked_sexp_false;
+	if (cue_dup == SHIP_CUE_NONE)         return -1;
+	return dup_sexp_chain(cue_dup);
+}
+
+void freeSexpCueDup(int& cue_dup)
+{
+	if (cue_dup >= 0)
+		free_sexp2(cue_dup);
+	cue_dup = SHIP_CUE_NONE;
 }
 
 CapturedShip captureShip(int objNum)

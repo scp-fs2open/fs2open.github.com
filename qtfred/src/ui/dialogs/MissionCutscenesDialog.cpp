@@ -22,7 +22,7 @@ MissionCutscenesDialog::MissionCutscenesDialog(FredView* parent, EditorViewport*
 
 	populateCutsceneCombos();
 
-	ui->cutsceneEventTree->initializeEditor(viewport->editor, this, viewport);
+	ui->cutsceneEventTree->initializeEditor(viewport->editor, this, viewport, parent);
 	_model->setTreeControl(ui->cutsceneEventTree);
 
 	ui->cutsceneFilename->setMaxLength(NAME_LENGTH - 1);

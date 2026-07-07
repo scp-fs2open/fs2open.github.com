@@ -36,6 +36,18 @@ static constexpr int SHIP_CUE_LOCKED_TRUE  = -1; // restore to Locked_sexp_true
 static constexpr int SHIP_CUE_LOCKED_FALSE = -2; // restore to Locked_sexp_false
 static constexpr int SHIP_CUE_NONE         = -3; // command holds no dup right now
 
+// Capture one SEXP cue formula: returns a SHIP_CUE_* sentinel, or a dup of the
+// chain owned by the caller.
+int captureSexpCue(int cue);
+
+// Produce a live formula from a captured cue for assignment into mission data.
+// Sentinels map back to the locked sexps / -1; owned dups are copied again so
+// the capture stays valid for repeated undo/redo cycles.
+int materializeSexpCue(int cue_dup);
+
+// Free an owned dup (no-op for sentinels) and reset to SHIP_CUE_NONE.
+void freeSexpCueDup(int& cue_dup);
+
 // ===========================================================================
 // Ship / Player-Start (OBJ_SHIP / OBJ_START)
 // ===========================================================================

@@ -1596,6 +1596,78 @@ void ApplyDialogCommand::redo()
 }
 
 // ---------------------------------------------------------------------------
+// SexpCueEditCommand
+// ---------------------------------------------------------------------------
+
+SexpCueEditCommand::SexpCueEditCommand(Editor*        editor,
+                                       const QString& text,
+                                       bool           skipFirstRedo,
+                                       QUndoCommand*  parent)
+	: QUndoCommand(text, parent)
+	, _afterDup(SHIP_CUE_NONE)
+	, _editor(editor)
+	, _skipFirstRedo(skipFirstRedo)
+{
+}
+
+SexpCueEditCommand::~SexpCueEditCommand()
+{
+	for (auto& o : _owners)
+		freeSexpCueDup(o.beforeDup);
+	freeSexpCueDup(_afterDup);
+}
+
+void SexpCueEditCommand::addOwner(int beforeCue, std::function<int()> getCue, std::function<void(int)> setCue)
+{
+	_owners.push_back({ captureSexpCue(beforeCue), std::move(getCue), std::move(setCue) });
+}
+
+void SexpCueEditCommand::captureAfter(int afterCue)
+{
+	freeSexpCueDup(_afterDup);
+	_afterDup = captureSexpCue(afterCue);
+}
+
+void SexpCueEditCommand::freeCurrentCues()
+{
+	SCP_vector<int> freed;
+	for (auto& o : _owners) {
+		const int cue = o.getCue();
+		if (cue < 0 || cue == Locked_sexp_true || cue == Locked_sexp_false)
+			continue;
+		if (std::find(freed.begin(), freed.end(), cue) != freed.end())
+			continue;
+		free_sexp2(cue);
+		freed.push_back(cue);
+	}
+}
+
+void SexpCueEditCommand::undo()
+{
+	freeCurrentCues();
+	for (auto& o : _owners)
+		o.setCue(materializeSexpCue(o.beforeDup));
+	_editor->missionChanged();
+}
+
+void SexpCueEditCommand::redo()
+{
+	if (_skipFirstRedo) {
+		_skipFirstRedo = false;
+		return;
+	}
+	freeCurrentCues();
+	// Every caller adds a single owner (one wing, one ship), so this is a per-owner
+	// restore. Do NOT reintroduce multi-owner use with a shared formula: the model
+	// setters serialize a separate expression per ship, and aliasing several owners
+	// onto one index means freeing one corrupts the rest.
+	const int formula = materializeSexpCue(_afterDup);
+	for (auto& o : _owners)
+		o.setCue(formula);
+	_editor->missionChanged();
+}
+
+// ---------------------------------------------------------------------------
 // TextureReplacementCommand
 // ---------------------------------------------------------------------------
 

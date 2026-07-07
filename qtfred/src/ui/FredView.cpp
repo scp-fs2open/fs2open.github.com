@@ -2722,14 +2722,16 @@ namespace {
 // rather than creating a second one.  Returns the newly-created dialog, or
 // nullptr if an existing instance was reused (so callers can do extra one-time
 // setup only on first open).
-template <typename DialogT>
-DialogT* showSingleInstanceDialog(FredView* parent, EditorViewport* viewport) {
+// Any constructor arguments beyond the viewport (e.g. the FredView* that
+// VariableDialog needs for undo-group access) are forwarded after `viewport`.
+template <typename DialogT, typename... Args>
+DialogT* showSingleInstanceDialog(FredView* parent, EditorViewport* viewport, Args&&... args) {
 	if (auto* existing = parent->findChild<DialogT*>(QString(), Qt::FindDirectChildrenOnly)) {
 		existing->raise();
 		existing->activateWindow();
 		return nullptr;
 	}
-	auto* dialog = new DialogT(parent, viewport);
+	auto* dialog = new DialogT(parent, viewport, std::forward<Args>(args)...);
 	dialog->setAttribute(Qt::WA_DeleteOnClose);
 	dialog->show();
 	return dialog;
@@ -2857,7 +2859,7 @@ void FredView::on_actionLoadout_triggered(bool) {
 	showSingleInstanceDialog<dialogs::TeamLoadoutDialog>(this, _viewport);
 }
 void FredView::on_actionVariables_triggered(bool) {
-	showSingleInstanceDialog<dialogs::VariableDialog>(this, _viewport);
+	showSingleInstanceDialog<dialogs::VariableDialog>(this, _viewport, this);
 }
 
 DialogButton FredView::showButtonDialog(DialogType type,
