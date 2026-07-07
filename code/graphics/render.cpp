@@ -47,7 +47,7 @@ static void gr_flash_internal(int r, int g, int b, int a, bool alpha_flash)
 }
 
 void gr_flash(int r, int g, int b) {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -59,7 +59,7 @@ void gr_flash(int r, int g, int b) {
 }
 
 void gr_flash_alpha(int r, int g, int b, int a) {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -167,7 +167,7 @@ static void bitmap_ex_internal(int x,
 }
 
 void gr_aabitmap(int x, int y, int resize_mode, bool mirror, float scale_factor) {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -254,7 +254,7 @@ void gr_aabitmap(int x, int y, int resize_mode, bool mirror, float scale_factor)
 					   scale_factor);
 }
 void gr_aabitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode, bool mirror, float scale_factor) {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -406,7 +406,7 @@ void gr_aabitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode,
 }
 //these are penguins bitmap functions
 void gr_bitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode, bool mirror, float scale_factor) {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -793,7 +793,7 @@ void endDrawing(graphics::paths::PathRenderer* path) {
 
 void gr_string(float sx, float sy, const char* s, int resize_mode, float scaleMultiplier, size_t in_length)
 {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -996,7 +996,7 @@ static void gr_line(float x1, float y1, float x2, float y2, int resize_mode) {
 }
 
 void gr_line(int x1, int y1, int x2, int y2, int resize_mode) {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -1004,7 +1004,7 @@ void gr_line(int x1, int y1, int x2, int y2, int resize_mode) {
 }
 
 void gr_aaline(vertex* v1, vertex* v2) {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -1018,7 +1018,7 @@ void gr_aaline(vertex* v1, vertex* v2) {
 }
 
 void gr_gradient(int x1, int y1, int x2, int y2, int resize_mode) {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -1044,7 +1044,7 @@ void gr_gradient(int x1, int y1, int x2, int y2, int resize_mode) {
 	endDrawing(path);
 }
 void gr_pixel(int x, int y, int resize_mode) {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -1052,7 +1052,7 @@ void gr_pixel(int x, int y, int resize_mode) {
 }
 
 void gr_circle(int xc, int yc, int d, int resize_mode) {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -1065,7 +1065,7 @@ void gr_circle(int xc, int yc, int d, int resize_mode) {
 	endDrawing(path);
 }
 void gr_unfilled_circle(int xc, int yc, int d, int resize_mode) {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -1078,7 +1078,7 @@ void gr_unfilled_circle(int xc, int yc, int d, int resize_mode) {
 	endDrawing(path);
 }
 void gr_arc(int xc, int yc, float r, float angle_start, float angle_end, bool fill, int resize_mode) {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -1108,7 +1108,7 @@ void gr_arc(int xc, int yc, float r, float angle_start, float angle_end, bool fi
 	endDrawing(path);
 }
 void gr_curve(int xc, int yc, int r, int direction, int resize_mode) {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -1159,7 +1159,7 @@ void gr_curve(int xc, int yc, int r, int direction, int resize_mode) {
 }
 
 void gr_rect(int x, int y, int w, int h, int resize_mode, float angle) {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -1180,7 +1180,7 @@ void gr_rect(int x, int y, int w, int h, int resize_mode, float angle) {
 }
 
 void gr_shade(int x, int y, int w, int h, int resize_mode) {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -1202,7 +1202,7 @@ void gr_shade(int x, int y, int w, int h, int resize_mode) {
 }
 
 void gr_2d_start_buffer() {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -1215,7 +1215,7 @@ void gr_2d_start_buffer() {
 }
 
 void gr_2d_stop_buffer() {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -1233,7 +1233,7 @@ static size_t immediate_buffer_size = 0;
 static const size_t IMMEDIATE_BUFFER_RESIZE_BLOCK_SIZE = 2048;
 
 size_t gr_add_to_immediate_buffer(size_t size, void* data) {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return 0;
 	}
 
@@ -1263,7 +1263,7 @@ size_t gr_add_to_immediate_buffer(size_t size, void* data) {
 	return old_offset;
 }
 void gr_reset_immediate_buffer() {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -1285,7 +1285,7 @@ void gr_render_primitives_immediate(material* material_info,
 									int n_verts,
 									void* data,
 									size_t size) {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -1301,7 +1301,7 @@ void gr_render_primitives_2d_immediate(material* material_info,
 	void* data,
 	size_t size)
 {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -1458,7 +1458,7 @@ static void draw_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode, 
 
 void gr_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode, float angle)
 {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -1473,7 +1473,7 @@ void gr_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode, float ang
 
 void gr_aabitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode, float angle)
 {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 

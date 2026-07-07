@@ -16,6 +16,7 @@
 #include <direct.h>
 #endif
 
+#include "cmdline/cmdline.h"
 #include "osapi/DebugWindow.h"
 #include "osapi/osapi.h"
 #include "osapi/outwnd.h"

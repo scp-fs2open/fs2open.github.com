@@ -187,7 +187,7 @@ namespace io
 
 		Cursor* CursorManager::loadFromBitmap(int bitmapHandle)
 		{
-			Assertion(gr_screen.mode != GR_STUB, "Cursors can not be used with the stub renderer!");
+			Assertion(gr_screen.mode != GraphicsAPI::Stub, "Cursors can not be used with the stub renderer!");
 
 			Assertion(bm_is_valid(bitmapHandle), "%d is no valid bitmap handle!", bitmapHandle);
 

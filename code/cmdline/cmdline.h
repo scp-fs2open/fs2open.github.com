@@ -13,6 +13,7 @@
 #define FS_CMDLINE_HEADER_FILE
 
 #include <optional>
+#include "graphics/2d.h"
 
 int parse_cmdline(int argc, char *argv[]);
 
@@ -158,7 +159,7 @@ extern bool Cmdline_slow_frames_ok;
 extern bool Cmdline_lua_devmode;
 extern bool Cmdline_override_data;
 extern bool Cmdline_show_imgui_debug;
-extern bool Cmdline_vulkan;
+extern GraphicsAPI Cmdline_graphics_api;
 extern int Cmdline_multithreading;
 
 enum class WeaponSpewType { NONE = 0, STANDARD, ALL };

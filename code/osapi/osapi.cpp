@@ -8,7 +8,7 @@
  */
 
 #include "freespace.h"
-
+#include "cmdline/cmdline.h"
 #include "gamesequence/gamesequence.h"
 #include "globalincs/pstypes.h"
 #include "parse/parselo.h"
