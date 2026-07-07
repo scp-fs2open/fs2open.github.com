@@ -57,6 +57,13 @@ LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/finder")
 LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/external/rpavlik-cmake-modules")
 LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/external/cotire")
 
+# this must be set before include(toolchain)
+if(WIN32 AND CMAKE_SIZEOF_VOID_P EQUAL 4)
+	set(FSO_BUILD_QTFRED OFF CACHE INTERNAL "" FORCE)
+else()
+	OPTION(FSO_BUILD_QTFRED "Build qtFRED2 binary" ON)
+endif()
+
 INCLUDE(globals)
 INCLUDE(toolchain)
 include(embed_file)
@@ -93,8 +100,6 @@ OPTION(FSO_BUILD_TOOLS "Build tools related to FSO" OFF)
 OPTION(FSO_BUILD_TESTS "Build unit tests" OFF)
 
 OPTION(FSO_DEVELOPMENT_MODE "Generate binaries in development mode, only use if you know what you're doing!" OFF)
-
-OPTION(FSO_BUILD_QTFRED "Build qtFRED2 binary" OFF)
 
 IF(WIN32 OR APPLE)
 	# On windows and mac the default should be to always build the included libraries

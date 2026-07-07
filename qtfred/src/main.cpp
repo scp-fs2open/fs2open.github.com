@@ -103,7 +103,7 @@ int main(int argc, char* argv[]) {
 	QCoreApplication::setApplicationName("qtFRED");
 
 	QApplication app(argc, argv);
-	QApplication::setAttribute(Qt::AA_DisableWindowContextHelpButton);
+	//QApplication::setAttribute(Qt::AA_DisableWindowContextHelpButton); //No longer needed set by default
 
 	// Use Fusion style unconditionally — required for reliable dynamic palette switching
 	QApplication::setStyle(QStyleFactory::create("Fusion"));

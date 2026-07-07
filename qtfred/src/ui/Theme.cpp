@@ -7,7 +7,25 @@
 #include <QPixmap>
 
 namespace {
+class PaletteChangeFilter : public QObject {
+  public:
+	PaletteChangeFilter(QObject* parent, std::function<void()> callback)
+		: QObject(parent), m_callback(std::move(callback))
+	{
+	}
 
+  protected:
+	bool eventFilter(QObject* watched, QEvent* event) override
+	{
+		if (event->type() == QEvent::ApplicationPaletteChange) {
+			m_callback();
+		}
+		return QObject::eventFilter(watched, event);
+	}
+
+  private:
+	std::function<void()> m_callback;
+};
 const char* const LIGHT_BUTTON_QSS = R"(
 QPushButton {
     background-color: #e1e1e1;
@@ -351,9 +369,8 @@ void bindStandardIcon(QAbstractButton* btn, QStyle::StandardPixmap sp)
 		btn->setIcon(makeThemedIcon(sp, color));
 	};
 	refresh();
-	QObject::connect(qApp, &QApplication::paletteChanged, btn, [refresh](const QPalette&) {
-		refresh();
-	});
+	auto* filter = new PaletteChangeFilter(btn, refresh);
+	qApp->installEventFilter(filter);
 }
 
 void bindThemeIcon(QAction* action, const QString& baseName)
@@ -366,9 +383,8 @@ void bindThemeIcon(QAction* action, const QString& baseName)
 		action->setIcon(QIcon(path));
 	};
 	refresh();
-	QObject::connect(qApp, &QApplication::paletteChanged, action, [refresh](const QPalette&) {
-		refresh();
-	});
+	auto* filter = new PaletteChangeFilter(action, refresh);
+	qApp->installEventFilter(filter);
 }
 
 void bindThemeIcon(QAbstractButton* btn, const QString& baseName)
@@ -381,9 +397,8 @@ void bindThemeIcon(QAbstractButton* btn, const QString& baseName)
 		btn->setIcon(QIcon(path));
 	};
 	refresh();
-	QObject::connect(qApp, &QApplication::paletteChanged, btn, [refresh](const QPalette&) {
-		refresh();
-	});
+	auto* filter = new PaletteChangeFilter(btn, refresh);
+	qApp->installEventFilter(filter);
 }
 
 } // namespace fso::fred

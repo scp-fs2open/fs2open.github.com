@@ -23,13 +23,20 @@ if [ "$RUNNER_OS" = "macOS" ]; then
         CCACHE_PATH="$(brew --prefix)/bin/ccache"
     fi
 else
-    PLATFORM_CMAKE_OPTIONS="-DFSO_BUILD_APPIMAGE=ON -DFORCED_SIMD_INSTRUCTIONS=SSE2 -DUSE_STATIC_LIBCXX=ON"
+    PLATFORM_CMAKE_OPTIONS="-DFSO_BUILD_APPIMAGE=ON -DFORCED_SIMD_INSTRUCTIONS=SSE2"
+
+    # Optionally use static libstdc++/libc++ on Linux, but default to off
+    # (Issue #5571 enabled it as a fix for 20.04 compatibility, but we've moved to 22.04)
+    PLATFORM_CMAKE_OPTIONS="$PLATFORM_CMAKE_OPTIONS -DUSE_STATIC_LIBCXX=${USE_STATIC_LIBCXX:-OFF}"
 fi
 
 CMAKE_OPTIONS="$JOB_CMAKE_OPTIONS"
 if [[ "$COMPILER" =~ ^clang.*$ ]]; then
-    CMAKE_OPTIONS="$CMAKE_OPTIONS -DCLANG_USE_LIBCXX=ON"
-    # force clang to silently allow -static-libstdc++ flag
+    # Default to allowing system standard c++ library be used. On Linux, which
+    # typically uses libstdc++ by default, using libc++ causes a conflict with
+    # Qt6 libs. So an error/warning is in place to catch that case when QtFRED
+    # is enabled.
+    CMAKE_OPTIONS="$CMAKE_OPTIONS -DCLANG_USE_LIBCXX=${CLANG_USE_LIBCXX:-OFF}"
 fi
 
 if [ ! "$CCACHE_PATH" = "" ]; then
@@ -39,6 +46,10 @@ if [ ! "$CCACHE_PATH" = "" ]; then
     else
         echo "Invalid or missing ccache binary: $CCACHE_PATH"
     fi
+fi
+
+if [ -n "${ENABLE_QTFRED:-}" ]; then
+    CMAKE_OPTIONS="$CMAKE_OPTIONS -DFSO_BUILD_QTFRED=${ENABLE_QTFRED}"
 fi
 
 mkdir build
@@ -56,6 +67,6 @@ fi
 # we have some build rules that do not play nice with parallel invocation and that fixes these issues
 
 cmake -G Ninja -DFSO_FATAL_WARNINGS=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=ON $CMAKE_OPTIONS $PLATFORM_CMAKE_OPTIONS \
-    -DCMAKE_INSTALL_PREFIX="$(pwd)/install" -DCMAKE_BUILD_TYPE=$CONFIGURATION \
+    -DCMAKE_INSTALL_PREFIX="$(pwd)/install" -DCMAKE_BUILD_TYPE=$CONFIGURATION -DQT_USE_PRECOMPILED=ON \
     -DFFMPEG_USE_PRECOMPILED=ON -DFSO_BUILD_TESTS=ON -DFSO_BUILD_INCLUDED_LIBS=ON \
-    -DFSO_BUILD_QTFRED=${ENABLE_QTFRED:-OFF} -DCMAKE_JOB_POOLS=link=1 -DCMAKE_JOB_POOL_LINK=link ..
+    -DCMAKE_JOB_POOLS=link=1 -DCMAKE_JOB_POOL_LINK=link ..

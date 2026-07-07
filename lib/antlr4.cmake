@@ -18,7 +18,7 @@ endif()
 set(WITH_DEMO FALSE)
 set(ANTLR4_INSTALL FALSE)
 
-add_subdirectory(antlr4-cpp-runtime)
+add_subdirectory(antlr4-cpp-runtime EXCLUDE_FROM_ALL)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_LIST_DIR}/antlr4-cpp-runtime/cmake" PARENT_SCOPE)
 suppress_warnings(antlr4_static)

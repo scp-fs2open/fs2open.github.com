@@ -24,7 +24,7 @@ void bankTree::dragEnterEvent(QDragEnterEvent* event)
 
 void bankTree::dragMoveEvent(QDragMoveEvent* event)
 {
-	const QModelIndex index = indexAt(event->pos());
+	const QModelIndex index = indexAt(event->position().toPoint());
 	if (!index.isValid() || index.data(BankItemIsLabelRole).toBool()) {
 		event->ignore();
 		return;
@@ -34,7 +34,7 @@ void bankTree::dragMoveEvent(QDragMoveEvent* event)
 
 void bankTree::dropEvent(QDropEvent* event)
 {
-	QModelIndex target = indexAt(event->pos());
+	QModelIndex target = indexAt(event->position().toPoint());
 	if (!target.isValid() || target.data(BankItemIsLabelRole).toBool()) {
 		event->ignore();
 		return;
@@ -51,7 +51,7 @@ void bankTree::dropEvent(QDropEvent* event)
 		int sourceBanksId = 0;
 		int sourceBankId = 0;
 		stream >> weaponId >> sourceBanksId >> sourceBankId;
-		const bool isCopy = (event->keyboardModifiers() & Qt::ControlModifier) != 0;
+		const bool isCopy = (event->modifiers() & Qt::ControlModifier) != 0;
 		weaponMoved(target, weaponId, sourceBanksId, sourceBankId, isCopy);
 		event->acceptProposedAction();
 	} else if (mime->hasFormat(MIME_WEAPON_ID)) {
