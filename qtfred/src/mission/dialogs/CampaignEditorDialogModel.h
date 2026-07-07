@@ -198,7 +198,7 @@ class CampaignEditorDialogModel : public AbstractDialogModel {
 	int m_current_mission_index = -1;
 	int m_current_branch_index = -1;
 
-	int _waveId;
+	int _waveId = -1;
 
 	CampaignFormat m_save_format = CampaignFormat::FSO;
 

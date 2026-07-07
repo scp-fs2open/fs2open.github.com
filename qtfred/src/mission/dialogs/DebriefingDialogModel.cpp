@@ -289,7 +289,7 @@ bool DebriefingDialogModel::getMissionIsMultiTeam()
 
 void DebriefingDialogModel::stopSpeech()
 {
-	if (_waveId >= -1) {
+	if (_waveId >= 0) {
 		audiostream_close_file(_waveId, false);
 		_waveId = -1;
 	}

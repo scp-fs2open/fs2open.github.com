@@ -66,7 +66,7 @@ class DebriefingDialogModel: public AbstractDialogModel {
 
 	int _currentTeam;
 	int _currentStage;
-	int _waveId;
+	int _waveId = -1;
 	SCP_vector<std::pair<SCP_string, int>> _teamList;
 };
 
