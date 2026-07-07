@@ -348,6 +348,7 @@ void ShipEditorDialog::updateArrival(bool overwrite)
 		}
 
 		ui->noArrivalWarpCheckBox->setCheckState(Qt::CheckState(_model->getNoArrivalWarp()));
+		ui->dockWarpinCheckBox->setCheckState(Qt::CheckState(_model->getDockWarpinChange()));
 	}
 }
 void ShipEditorDialog::updateDeparture(bool overwrite)
@@ -405,6 +406,7 @@ void ShipEditorDialog::updateDeparture(bool overwrite)
 		}
 
 		ui->noDepartureWarpCheckBox->setCheckState(Qt::CheckState(_model->getNoDepartureWarp()));
+		ui->dockWarpoutCheckBox->setCheckState(Qt::CheckState(_model->getDockWarpoutChange()));
 
 		ui->updateDepartureCueCheckBox->setChecked(_model->getDepartureCue());
 	}
@@ -426,6 +428,9 @@ void ShipEditorDialog::enableDisable()
 
 		ui->noArrivalWarpCheckBox->setEnabled(false);
 		ui->noDepartureWarpCheckBox->setEnabled(false);
+
+		ui->dockWarpinCheckBox->setEnabled(false);
+		ui->dockWarpoutCheckBox->setEnabled(false);
 
 		ui->restrictArrivalPathsButton->setEnabled(false);
 		ui->restrictDeparturePathsButton->setEnabled(false);
@@ -467,8 +472,11 @@ void ShipEditorDialog::enableDisable()
 		ui->arrivalTree->setEnabled(_model->getUIEnable());
 		ui->departureDelaySpinBox->setEnabled(_model->getUIEnable());
 		ui->departureTree->setEnabled(_model->getUIEnable());
-		ui->noArrivalWarpCheckBox->setEnabled(_model->getUIEnable());
+		ui->noArrivalWarpCheckBox->setEnabled(_model->getUIEnable() && !_model->getPlayer());
 		ui->noDepartureWarpCheckBox->setEnabled(_model->getUIEnable());
+
+		ui->dockWarpinCheckBox->setEnabled(_model->getUIEnable() && !_model->getPlayer());
+		ui->dockWarpoutCheckBox->setEnabled(_model->getUIEnable());
 	}
 
 	if (_model->getNumSelectedObjects()) {
@@ -875,6 +883,12 @@ void ShipEditorDialog::on_arrivalTree_miniHelpChanged(const QString& help)
 {
 	ui->HelpTitle->setText(help);
 }
+void ShipEditorDialog::on_dockWarpinCheckBox_stateChanged(int state)
+{
+	if (state == Qt::PartiallyChecked)
+		return;
+	_model->setDockWarpinChange(state);
+}
 void ShipEditorDialog::on_departureLocationCombo_currentIndexChanged(int index)
 {
 	auto depLocationIdx = ui->departureLocationCombo->itemData(index).toInt();
@@ -910,5 +924,11 @@ void ShipEditorDialog::on_noDepartureWarpCheckBox_stateChanged(int state)
 	if (state == Qt::PartiallyChecked)
 		return;
 	_model->setNoDepartureWarp(state);
+}
+void ShipEditorDialog::on_dockWarpoutCheckBox_stateChanged(int state)
+{
+	if (state == Qt::PartiallyChecked)
+		return;
+	_model->setDockWarpoutChange(state);
 }
 } // namespace fso::fred::dialogs
