@@ -96,6 +96,8 @@ void vulkan_deferred_lighting_begin(bool clearNonColorBufs)
 		return;
 	}
 
+	GR_DEBUG_SCOPE("Deferred lighting begin");
+
 	auto* stateTracker = getStateTracker();
 	vk::CommandBuffer cmd = stateTracker->getCommandBuffer();
 
@@ -336,6 +338,8 @@ void vulkan_deferred_lighting_msaa()
 	if (!pp || !pp->deferred().isMsaaInitialized()) {
 		return;
 	}
+
+	GR_DEBUG_SCOPE("MSAA Pass");
 
 	auto* stateTracker = getStateTracker();
 	vk::CommandBuffer cmd = stateTracker->getCommandBuffer();
@@ -594,6 +598,8 @@ void vulkan_deferred_lighting_finish()
 	if (!renderer->isSceneRendering()) {
 		return;
 	}
+
+	GR_DEBUG_SCOPE("Deferred lighting finish");
 
 	auto* stateTracker = getStateTracker();
 	vk::CommandBuffer cmd = stateTracker->getCommandBuffer();

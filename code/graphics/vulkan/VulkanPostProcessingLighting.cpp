@@ -353,6 +353,8 @@ void VulkanDeferredLighting::render(vk::CommandBuffer cmd)
 		return;
 	}
 
+	GR_DEBUG_SCOPE("Build buffer data");
+
 	// Sort lights by type (same stable sort as OpenGL)
 	std::stable_sort(Lights.begin(), Lights.end(), light_compare_by_type);
 
@@ -616,6 +618,8 @@ void VulkanDeferredLighting::render(vk::CommandBuffer cmd)
 
 	m_ctx->memoryManager->unmapMemory(m_deferredUBOAlloc);
 
+	GR_DEBUG_SCOPE("Render light geometry");
+
 	// Both fullscreen and volume lights use the same vertex layout (POSITION3).
 	// For fullscreen lights the shader ignores vertex data and generates positions
 	// from gl_VertexIndex, but Vulkan requires all declared vertex inputs to have
@@ -766,6 +770,8 @@ void VulkanDeferredLighting::render(vk::CommandBuffer cmd)
 	if (!full_frame_lights.empty()) {
 		cmd.bindVertexBuffers(0, m_sphereMesh.vbo, vk::DeviceSize(0));
 		for (size_t i = 0; i < full_frame_lights.size(); ++i) {
+			GR_DEBUG_SCOPE("Deferred apply single dir light");
+
 			if (bindLightDescriptors(lightIdx)) {
 				cmd.draw(3, 1, 0, 0);
 			}

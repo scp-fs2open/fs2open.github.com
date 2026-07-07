@@ -295,6 +295,8 @@ void VulkanBloom::execute(vk::CommandBuffer cmd)
 		return;
 	}
 
+	GR_DEBUG_SCOPE("Bloom");
+
 	// Map shared scratch UBO for writing per-draw data
 	m_ctx->scratchUBOMapped = m_ctx->memoryManager->mapMemory(m_ctx->scratchUBOAlloc);
 	if (!m_ctx->scratchUBOMapped) {
@@ -303,13 +305,17 @@ void VulkanBloom::execute(vk::CommandBuffer cmd)
 	m_ctx->scratchUBOCursor = 0;
 
 	// 1. Bright pass: extract pixels brighter than 1.0 from scene color → bloom_tex[0] mip 0
-	m_ctx->drawFullscreenTriangle(cmd, m_renderPass,
-		m_tex[0].mipFramebuffers[0],
-		vk::Extent2D(m_width, m_height),
-		SDR_TYPE_POST_PROCESS_BRIGHTPASS,
-		m_sceneColor->view, m_ctx->linearSampler,
-		nullptr, 0,  // Brightpass has no UBO
-		ALPHA_BLEND_NONE);
+	{
+		GR_DEBUG_SCOPE("Bloom bright pass");
+
+		m_ctx->drawFullscreenTriangle(cmd, m_renderPass,
+			m_tex[0].mipFramebuffers[0],
+			vk::Extent2D(m_width, m_height),
+			SDR_TYPE_POST_PROCESS_BRIGHTPASS,
+			m_sceneColor->view, m_ctx->linearSampler,
+			nullptr, 0,  // Brightpass has no UBO
+			ALPHA_BLEND_NONE);
+	}
 
 	// 2. Generate mipmaps for bloom_tex[0] (fill mips 1-3 from mip 0)
 	PostProcessContext::generateMipmaps(cmd, m_tex[0].image, m_width, m_height, MAX_MIP_BLUR_LEVELS);
@@ -318,6 +324,8 @@ void VulkanBloom::execute(vk::CommandBuffer cmd)
 	for (int iteration = 0; iteration < 2; iteration++) {
 		for (int pass = 0; pass < 2; pass++) {
 			// pass 0 = vertical (tex[0] → tex[1]), pass 1 = horizontal (tex[1] → tex[0])
+			GR_DEBUG_SCOPE("Bloom iteration step");
+
 			int srcIdx = pass;
 			int dstIdx = 1 - pass;
 			bool isVertical = (pass == 0);
@@ -370,19 +378,23 @@ void VulkanBloom::execute(vk::CommandBuffer cmd)
 	}
 
 	// 5. Bloom composite: additively blend blurred bloom onto scene color
-	graphics::generic_data::bloom_composition_data compData;
-	compData.bloom_intensity = gr_bloom_intensity() / 100.0f;
-	compData.levels = MAX_MIP_BLUR_LEVELS;
-	compData.pad[0] = 0.0f;
-	compData.pad[1] = 0.0f;
+	{
+		GR_DEBUG_SCOPE("Bloom composite step");
 
-	m_ctx->drawFullscreenTriangle(cmd, m_compositeRenderPass,
-		m_sceneColorFB,
-		m_ctx->sceneExtent,
-		SDR_TYPE_POST_PROCESS_BLOOM_COMP,
-		m_tex[0].fullView, m_ctx->mipmapSampler,
-		&compData, sizeof(compData),
-		ALPHA_BLEND_ADDITIVE);
+		graphics::generic_data::bloom_composition_data compData;
+		compData.bloom_intensity = gr_bloom_intensity() / 100.0f;
+		compData.levels = MAX_MIP_BLUR_LEVELS;
+		compData.pad[0] = 0.0f;
+		compData.pad[1] = 0.0f;
+
+		m_ctx->drawFullscreenTriangle(cmd, m_compositeRenderPass,
+			m_sceneColorFB,
+			m_ctx->sceneExtent,
+			SDR_TYPE_POST_PROCESS_BLOOM_COMP,
+			m_tex[0].fullView, m_ctx->mipmapSampler,
+			&compData, sizeof(compData),
+			ALPHA_BLEND_ADDITIVE);
+	}
 
 	// Scene color is now in eShaderReadOnlyOptimal (from bloom composite render pass finalLayout)
 

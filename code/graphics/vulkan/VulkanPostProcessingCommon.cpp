@@ -95,6 +95,8 @@ void PostProcessContext::drawFullscreenTriangle(vk::CommandBuffer cmd, vk::Rende
                                                   int blendMode,
                                                   unsigned int shaderFlags)
 {
+	GR_DEBUG_SCOPE("Draw full screen triangle");
+
 	auto* pipelineMgr = getPipelineManager();
 	auto* descriptorMgr = getDescriptorManager();
 	auto* bufferMgr = getBufferManager();
@@ -192,6 +194,8 @@ void PostProcessContext::drawFullscreenTriangleMulti(vk::CommandBuffer cmd, vk::
                                                        const vk::ImageView* views, uint32_t viewCount,
                                                        const void* uboData, size_t uboSize)
 {
+	GR_DEBUG_SCOPE("Draw full screen triangle (multi-view)");
+
 	auto* pipelineMgr = getPipelineManager();
 	auto* descriptorMgr = getDescriptorManager();
 	auto* bufferMgr = getBufferManager();

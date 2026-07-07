@@ -639,6 +639,8 @@ void VulkanPostProcessor::blitToSwapChain(vk::CommandBuffer cmd)
 		return;
 	}
 
+	GR_DEBUG_SCOPE("Draw scene texture");
+
 	// Build pipeline config for tonemapping (fullscreen, no depth, no blending)
 	PipelineConfig config;
 	config.shaderType = SDR_TYPE_POST_PROCESS_TONEMAPPING;
@@ -721,6 +723,8 @@ void VulkanPostProcessor::encodeOutput(vk::CommandBuffer cmd, vk::RenderPass ren
 	if (!pipelineMgr || !descriptorMgr || !m_outputEncodeUBO) {
 		return;
 	}
+
+	GR_DEBUG_SCOPE("Draw scene texture");
 
 	// SDR: passthrough copy (LINEAR_OUT). HDR: PQ/BT.2020 encode (hdr_mode == 2).
 	PipelineConfig config;

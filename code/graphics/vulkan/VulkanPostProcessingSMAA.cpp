@@ -188,6 +188,8 @@ void VulkanPostProcessor::executeSMAA(vk::CommandBuffer cmd)
 		return;
 	}
 
+	GR_DEBUG_SCOPE("SMAA");
+
 	m_ctx.scratchUBOMapped = m_ctx.memoryManager->mapMemory(m_ctx.scratchUBOAlloc);
 	if (!m_ctx.scratchUBOMapped) {
 		return;
@@ -201,15 +203,21 @@ void VulkanPostProcessor::executeSMAA(vk::CommandBuffer cmd)
 
 	// Pass 1: edge detection. Detection proxy (Scene_ldr, or the tonemap-compressed
 	// version while HDR is active) -> Smaa_edges
-	drawFullscreenTriangle(cmd, m_ldrRenderPass,
-		m_smaaEdgesFB, m_ctx.sceneExtent,
-		SDR_TYPE_POST_PROCESS_SMAA_EDGE,
-		getAADetectionView(), m_ctx.linearSampler,
-		&smaaData, sizeof(smaaData),
-		ALPHA_BLEND_NONE);
+	{
+		GR_DEBUG_SCOPE("SMAA Detect Edges");
+
+		drawFullscreenTriangle(cmd, m_ldrRenderPass,
+			m_smaaEdgesFB, m_ctx.sceneExtent,
+			SDR_TYPE_POST_PROCESS_SMAA_EDGE,
+			getAADetectionView(), m_ctx.linearSampler,
+			&smaaData, sizeof(smaaData),
+			ALPHA_BLEND_NONE);
+	}
 
 	// Pass 2: blending weight calculation. Smaa_edges + area + search -> Smaa_blend
 	{
+		GR_DEBUG_SCOPE("SMAA Blending Weights calculation");
+
 		std::array<vk::ImageView, 3> views = {m_smaaEdges.view, m_smaaAreaTexView, m_smaaSearchTexView};
 		drawFullscreenTriangleMulti(cmd, m_ldrRenderPass, m_smaaBlendFB, m_ctx.sceneExtent,
 			SDR_TYPE_POST_PROCESS_SMAA_BLENDING_WEIGHT, views.data(), static_cast<uint32_t>(views.size()),
@@ -219,6 +227,8 @@ void VulkanPostProcessor::executeSMAA(vk::CommandBuffer cmd)
 	// Pass 3: neighborhood blending. Scene_ldr (real, extended-range) + Smaa_blend ->
 	// Scene_luminance (scratch; safe to reuse since FXAA and SMAA are mutually exclusive).
 	{
+		GR_DEBUG_SCOPE("SMAA Neighborhood Blending");
+
 		std::array<vk::ImageView, 2> views = {m_sceneLdr.view, m_smaaBlend.view};
 		drawFullscreenTriangleMulti(cmd, m_ldrRenderPass, m_sceneLuminanceFB, m_ctx.sceneExtent,
 			SDR_TYPE_POST_PROCESS_SMAA_NEIGHBORHOOD_BLENDING, views.data(), static_cast<uint32_t>(views.size()),
@@ -226,12 +236,16 @@ void VulkanPostProcessor::executeSMAA(vk::CommandBuffer cmd)
 	}
 
 	// Pass 4: resolve. Scene_luminance -> Scene_ldr
-	drawFullscreenTriangle(cmd, m_ldrRenderPass,
-		m_sceneLdrFB, m_ctx.sceneExtent,
-		SDR_TYPE_POST_PROCESS_SMAA_RESOLVE,
-		m_sceneLuminance.view, m_ctx.linearSampler,
-		nullptr, 0,
-		ALPHA_BLEND_NONE);
+	{
+		GR_DEBUG_SCOPE("SMAA Resolve");
+
+		drawFullscreenTriangle(cmd, m_ldrRenderPass,
+			m_sceneLdrFB, m_ctx.sceneExtent,
+			SDR_TYPE_POST_PROCESS_SMAA_RESOLVE,
+			m_sceneLuminance.view, m_ctx.linearSampler,
+			nullptr, 0,
+			ALPHA_BLEND_NONE);
+	}
 
 	m_ctx.memoryManager->unmapMemory(m_ctx.scratchUBOAlloc);
 	m_ctx.scratchUBOMapped = nullptr;

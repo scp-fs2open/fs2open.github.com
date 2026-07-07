@@ -285,6 +285,8 @@ void VulkanPostProcessor::executeTonemap(vk::CommandBuffer cmd)
 		return;
 	}
 
+	GR_DEBUG_SCOPE("Tonemapping");
+
 	namespace ltp = lighting_profiles;
 
 	// Map bloom UBO for the tonemapping draw's UBO slot
@@ -365,6 +367,8 @@ void VulkanPostProcessor::executeFXAA(vk::CommandBuffer cmd)
 		return;
 	}
 
+	GR_DEBUG_SCOPE("FXAA");
+
 	m_ctx.scratchUBOMapped = m_ctx.memoryManager->mapMemory(m_ctx.scratchUBOAlloc);
 	if (!m_ctx.scratchUBOMapped) {
 		return;
@@ -421,6 +425,8 @@ bool VulkanPostProcessor::executePostEffects(vk::CommandBuffer cmd)
 	if (effectFlags == 0) {
 		return false;
 	}
+
+	GR_DEBUG_SCOPE("Draw post effects");
 
 	m_ctx.scratchUBOMapped = m_ctx.memoryManager->mapMemory(m_ctx.scratchUBOAlloc);
 	if (!m_ctx.scratchUBOMapped) {
@@ -541,6 +547,8 @@ void VulkanPostProcessor::executeLightshafts(vk::CommandBuffer cmd)
 	if (!found) {
 		return;
 	}
+
+	GR_DEBUG_SCOPE("Lightshafts");
 
 	// Transition scene depth from eDepthStencilAttachmentOptimal to eShaderReadOnlyOptimal for sampling
 	{

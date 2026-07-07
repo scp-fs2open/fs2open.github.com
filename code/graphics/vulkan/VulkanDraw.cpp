@@ -485,6 +485,8 @@ void VulkanDrawManager::renderPrimitivesCommon(material* material_info, primitiv
                                                 gr_buffer_handle buffer_handle, size_t buffer_offset,
                                                 int* statCounter)
 {
+	GR_DEBUG_SCOPE("Render primitives");
+
 	if (!material_info || !layout || n_verts <= 0) {
 		return;
 	}
@@ -515,6 +517,8 @@ void VulkanDrawManager::renderPrimitivesBatched(batched_bitmap_material* materia
                                                  primitive_type prim_type, vertex_layout* layout,
                                                  int offset, int n_verts, gr_buffer_handle buffer_handle)
 {
+	GR_DEBUG_SCOPE("Render batched primitives");
+
 	renderPrimitivesCommon(material_info, prim_type, layout, offset, n_verts,
 		buffer_handle, 0, &m_frameStats.renderBatchedCalls);
 }
@@ -540,6 +544,8 @@ void VulkanDrawManager::renderMovie(movie_material* material_info, primitive_typ
                                      vertex_layout* layout, int n_verts, gr_buffer_handle buffer_handle,
                                      size_t buffer_offset)
 {
+	GR_DEBUG_SCOPE("Render movie frame");
+
 	renderPrimitivesCommon(material_info, prim_type, layout, 0, n_verts,
 		buffer_handle, buffer_offset, &m_frameStats.renderMovieCalls);
 }
@@ -548,6 +554,8 @@ void VulkanDrawManager::renderNanoVG(nanovg_material* material_info, primitive_t
                                       vertex_layout* layout, int offset, int n_verts,
                                       gr_buffer_handle buffer_handle)
 {
+	GR_DEBUG_SCOPE("Render NanoVG primitives");
+
 	renderPrimitivesCommon(material_info, prim_type, layout, offset, n_verts,
 		buffer_handle, 0, &m_frameStats.renderNanoVGCalls);
 }
@@ -560,6 +568,8 @@ void VulkanDrawManager::renderRocketPrimitives(interface_material* material_info
 	if (!material_info || !layout || n_indices <= 0) {
 		return;
 	}
+
+	GR_DEBUG_SCOPE("Render rocket ui primitives");
 
 	m_frameStats.renderRocketCalls++;
 
@@ -1674,6 +1684,8 @@ void vulkan_clear_states()
 
 void vulkan_scene_texture_begin()
 {
+	GR_DEBUG_SCOPE("Begin scene texture");
+
 	auto* renderer = getRendererInstance();
 
 	// Switch to HDR scene render pass when post-processing is enabled
@@ -1707,6 +1719,8 @@ void vulkan_scene_texture_begin()
 
 void vulkan_scene_texture_end()
 {
+	GR_DEBUG_SCOPE("End scene texture");
+
 	auto* renderer = getRendererInstance();
 
 	// If we were rendering to the HDR scene target, switch back to swap chain
@@ -1719,6 +1733,8 @@ void vulkan_scene_texture_end()
 
 void vulkan_copy_effect_texture()
 {
+	GR_DEBUG_SCOPE("Copy effect texture");
+
 	auto* renderer = getRendererInstance();
 
 	// Only copy if we're actively rendering the HDR scene
