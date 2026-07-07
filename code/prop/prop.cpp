@@ -473,9 +473,8 @@ int prop_create(const matrix* orient, const vec3d* pos, int prop_type, const cha
 		Error(LOCATION, "Cannot create prop %s; pof file is not valid", pip->name.c_str());
 		return -1;
 	}
-	if (pip->model_num == -1) {
-		pip->model_num = model_load(pip->pof_file.c_str());
-	}
+
+	pip->model_num = model_load(pip->pof_file.c_str());
 
 	polymodel* pm = model_get(pip->model_num);
 
@@ -613,9 +612,7 @@ static void prop_model_change(int n, int prop_type)
 	//polymodel_instance* pmi = model_get_instance(sp->model_instance_num);
 
 	// get new model
-	if (sip->model_num == -1) {
-		sip->model_num = model_load(sip->pof_file.c_str());
-	}
+	sip->model_num = model_load(sip->pof_file.c_str());
 
 	polymodel* pm = model_get(sip->model_num);
 	Objects[sp->objnum].radius = model_get_radius(pm->id);
