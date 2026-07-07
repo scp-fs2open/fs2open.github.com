@@ -17485,7 +17485,7 @@ int ship_get_random_ship_in_wing(int wingnum, int flags, float max_dist, int get
 // this function returns a random index into the Ship array of a ship of the given team
 // cargo containers are not counted as ships for the purposes of this function.  Why???
 // because now it is only used for getting a random ship for a message and cargo containers
-// can't send mesages.  This function is an example of kind of bad coding :-(
+// can't send messages.  This function is an example of kind of bad coding :-(
 // input:	max_dist	=>	OPTIONAL PARAMETER (default value 0.0f) max range ship can be from player
 int ship_get_random_team_ship(int team_mask, int flags, float max_dist )
 {
