@@ -1,8 +1,6 @@
 // captureState() and restoreState() for FictionViewerDialogModel.
-// Snapshots all fiction viewer stages and music selection from live globals.
-//
-// TODO(sexp_tree_refactor): fiction_viewer_stage::formula is not serialized.
-// Replace writeSexpStub/readSexpStub with real sexp tree serialization.
+// Snapshots all fiction viewer stages (including sexp formulas) and music
+// selection from live globals.
 
 #include <mission/dialogs/FictionViewerDialogModel.h>
 
@@ -30,7 +28,7 @@ QByteArray FictionViewerDialogModel::captureState() const
 		ds << QString::fromLatin1(stage.ui_name);
 		for (const auto& background : stage.background)
 			ds << QString::fromLatin1(background);
-		fso::fred::state::writeSexpStub(ds); // formula — TODO(sexp_tree_refactor)
+		fso::fred::state::writeSexp(ds, stage.formula);
 	}
 
 	ds << static_cast<qint32>(Mission_music[SCORE_FICTION_VIEWER]);
@@ -45,6 +43,8 @@ void FictionViewerDialogModel::restoreState(const QByteArray& state)
 	qint32 count;
 	ds >> count;
 
+	for (const fiction_viewer_stage& stage : Fiction_viewer_stages)
+		fso::fred::state::freeSexpFormula(stage.formula);
 	Fiction_viewer_stages.clear();
 	Fiction_viewer_stages.resize(static_cast<size_t>(count));
 
@@ -66,7 +66,7 @@ void FictionViewerDialogModel::restoreState(const QByteArray& state)
 			strncpy(background, bg.toLatin1().constData(), MAX_FILENAME_LEN - 1);
 			background[MAX_FILENAME_LEN - 1] = '\0';
 		}
-		fso::fred::state::readSexpStub(ds); // formula — TODO(sexp_tree_refactor)
+		stage.formula = fso::fred::state::readSexp(ds);
 	}
 
 	qint32 music;

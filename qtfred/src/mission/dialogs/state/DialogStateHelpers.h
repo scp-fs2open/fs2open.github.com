@@ -77,17 +77,4 @@ inline void freeSexpFormula(int formula)
 		free_sexp2(formula);
 }
 
-// Transitional stubs — removed once every state file uses writeSexp/readSexp.
-inline void writeSexpStub(QDataStream& ds)
-{
-    ds << static_cast<qint32>(-1);
-}
-
-inline void readSexpStub(QDataStream& ds)
-{
-    qint32 sentinel;
-    ds >> sentinel;
-    // sentinel == -1 confirms this is an unimplemented SEXP slot
-}
-
 } // namespace fso::fred::state
