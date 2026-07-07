@@ -580,15 +580,28 @@ public:
 	void blitToSwapChain(vk::CommandBuffer cmd);
 
 	/**
-	 * @brief Final output-encode pass: composition image -> swap chain image
+	 * @brief Final output-encode pass: composition image -> swap chain image (HDR10 only)
 	 *
 	 * Begins/ends its own render pass on the swap chain framebuffer and draws a
-	 * fullscreen triangle that samples the fp16 composition image. In SDR this is
-	 * a passthrough copy; in HDR it applies the PQ / BT.2020 (HDR10) transfer.
+	 * fullscreen triangle that samples the fp16 composition image, applying the
+	 * PQ / BT.2020 (HDR10) transfer. Only called when the swap chain negotiated
+	 * HDR10 output -- the SDR leg is a direct blit (or encodeOutputPassthrough()
+	 * as a fallback), not a shader draw. See VulkanRenderer::encodeToSwapChain().
 	 */
 	void encodeOutput(vk::CommandBuffer cmd, vk::RenderPass renderPass, vk::Framebuffer framebuffer,
 	                  vk::Extent2D extent, vk::ImageView sourceView, vk::Sampler sampler,
-	                  bool hdr, float paperwhiteNits, float peakNits);
+	                  float paperwhiteNits, float peakNits);
+
+	/**
+	 * @brief SDR output-encode fallback: composition image -> swap chain image
+	 *
+	 * Plain passthrough copy (SDR_TYPE_COPY, no UBO) into the swap chain
+	 * framebuffer. Used only when the device can't blit HDR_COLOR_FORMAT
+	 * directly into the swap chain format -- otherwise VulkanRenderer does a
+	 * raw blit instead of calling this.
+	 */
+	void encodeOutputPassthrough(vk::CommandBuffer cmd, vk::RenderPass renderPass, vk::Framebuffer framebuffer,
+	                  vk::Extent2D extent, vk::ImageView sourceView, vk::Sampler sampler);
 
 	/**
 	 * @brief Execute bloom post-processing passes
@@ -899,10 +912,11 @@ private:
 	// ---- LDR / FXAA resources ----
 	RenderTarget m_sceneLdr;           // RGBA8 LDR after tonemapping
 	RenderTarget m_sceneLuminance;     // RGBA8 LDR with luma in alpha (for FXAA)
-	// RGBA8, tonemapped to [0,1] with the real tone curve (hdr_mode=0) even while
-	// HDR is active; used only as an edge-detection input for FXAA/SMAA (see
-	// getAADetectionView) so their fixed luma thresholds stay valid. Unused (and
-	// left as a duplicate draw of Scene_ldr's own data) when HDR is inactive.
+	// RGBA8, a [0,1]-clamped copy of Scene_ldr (see executeTonemap); used only
+	// as an edge-detection input for FXAA/SMAA (see getAADetectionView) so
+	// their fixed luma thresholds stay valid even though Scene_ldr itself can
+	// carry values above 1.0 while HDR is active. Unused (and left as a
+	// duplicate of Scene_ldr's own data) when HDR is inactive.
 	RenderTarget m_sceneLdrCompressed;
 	vk::RenderPass m_ldrRenderPass;    // Color-only RGBA8, loadOp=eDontCare
 	vk::RenderPass m_ldrLoadRenderPass; // Color-only RGBA8, loadOp=eLoad (for additive blending)
@@ -988,6 +1002,32 @@ void copyImageToImage(
     vk::Extent2D extent,
     vk::ImageAspectFlags aspect = vk::ImageAspectFlagBits::eColor,
     uint32_t dstMipLevels = 1);
+
+/**
+ * @brief Blit one image to another with automatic barrier management
+ *
+ * Same barrier structure as copyImageToImage(), but uses vkCmdBlitImage
+ * (vk::Filter::eNearest) instead of vkCmdCopyImage, so src and dst may have
+ * different formats/texel sizes (e.g. RGBA16F -> BGRA8) -- a plain image
+ * copy requires matching texel size and can't do this. Intended for 1:1
+ * resolution transfers only (nearest filtering, no scaling).
+ *
+ * @param cmd         Active command buffer (must be outside a render pass)
+ * @param src         Source image
+ * @param srcOldLayout Current layout of source image
+ * @param srcNewLayout Desired layout of source image after the blit
+ * @param dst         Destination image
+ * @param dstOldLayout Current layout of destination image
+ * @param dstNewLayout Desired layout of destination image after the blit
+ * @param extent      Blit region (width x height), same for src and dst
+ * @param aspect      Image aspect (eColor or eDepth)
+ */
+void blitImageToImage(
+    vk::CommandBuffer cmd,
+    vk::Image src, vk::ImageLayout srcOldLayout, vk::ImageLayout srcNewLayout,
+    vk::Image dst, vk::ImageLayout dstOldLayout, vk::ImageLayout dstNewLayout,
+    vk::Extent2D extent,
+    vk::ImageAspectFlags aspect = vk::ImageAspectFlagBits::eColor);
 
 } // namespace graphics::vulkan
 

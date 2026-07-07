@@ -31,7 +31,6 @@ uniform genericData {
 	float sh_offsetX;
 	float sh_offsetY;
 
-	int hdr_mode;            // 0 = SDR, 1 = HDR scene tonemap, 2 = HDR10 output encode
 	float hdr_paperwhite_nits;
 	float hdr_peak_nits;
 };
@@ -125,6 +124,19 @@ vec3 linearToneMapping(vec3 hdr_color)
 	return hdr_color;
 }
 
+// Display-referred, paper-white-relative. Unlike every other tonemapper here,
+// this one does not compress to [0,1] -- it keeps linear values with
+// head-room above paper white (up to peak_nits/paperwhite_nits), stored in
+// the shared extended-sRGB encoding that hdr10-encode-f.sdr later expects as
+// its input. Only ever selected via TonemapperAlgorithm::HdrScene, which
+// current_tonemapper() forces exclusively whenever HDR10 output is active.
+vec3 hdrSceneToneMapping(vec3 hdr_color)
+{
+	float headroom = max(hdr_peak_nits / max(hdr_paperwhite_nits, 1.0), 1.0);
+	hdr_color = min(hdr_color, vec3(headroom));
+	return hdr_color;
+}
+
 float toe( float x ) {
 	return exp(toe_lnA + toe_B * log(x));
 }
@@ -191,28 +203,7 @@ void main()
 {
 	vec4 color = texture(tex, fragTexCoord.xy);
 
-	// HDR10 output-encode pass: the input is the fully composited frame in the
-	// shared extended-sRGB encoding (1.0 == paper white). Decode to linear,
-	// scale to display nits, convert to BT.2020 primaries, apply PQ.
-	if (hdr_mode == 2) {
-		vec3 lin = srgb_to_linear(max(color.rgb, vec3(0.0)));
-		vec3 nits = min(lin * hdr_paperwhite_nits, vec3(hdr_peak_nits));
-		vec3 rec2020 = bt709_to_bt2020(nits / 10000.0);
-		fragOut0 = vec4(linear_to_pq(rec2020), 1.0);
-		return;
-	}
-
 	color *= exposure;
-
-	// HDR scene tonemap: skip the SDR operators (they compress to [0,1]) and
-	// keep linear values with head-room above paper white, stored in the shared
-	// extended-sRGB encoding consumed by the output-encode pass above.
-	if (hdr_mode == 1) {
-		float headroom = max(hdr_peak_nits / max(hdr_paperwhite_nits, 1.0), 1.0);
-		color.rgb = min(color.rgb, vec3(headroom));
-		fragOut0 = vec4(linear_to_srgb(color.rgb), 1.0);
-		return;
-	}
 
 	switch(tonemapper){
 		case 0:
@@ -241,6 +232,9 @@ void main()
 			break;
 		case 8:
 			color.rgb = PPC_RGB(color.rgb);
+			break;
+		case 9:
+			color.rgb = hdrSceneToneMapping(color.rgb);
 			break;
 
 	}

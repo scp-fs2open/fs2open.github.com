@@ -312,15 +312,17 @@ class VulkanRenderer {
 
 	// HDR composition pipeline: the whole frame is rendered into these fp16
 	// images (via m_renderPass / m_swapChainFramebuffers) instead of directly
-	// into the swap chain image. A final encode pass (m_encodeRenderPass +
-	// m_encodeFramebuffers) converts composition -> swap chain, applying SDR
-	// sRGB passthrough or the HDR10 PQ/BT.2020 transfer.
+	// into the swap chain image. encodeToSwapChain() converts composition ->
+	// swap chain: a direct blit (or encodeOutputPassthrough() as a fallback)
+	// for SDR, or encodeOutput() (m_encodeRenderPass + m_encodeFramebuffers)
+	// for the HDR10 PQ/BT.2020 transfer.
 	SCP_vector<vk::UniqueImage> m_compositionImages;
 	SCP_vector<vk::UniqueImageView> m_compositionImageViews;
 	SCP_vector<VulkanAllocation> m_compositionAllocations;
 	vk::UniqueSampler m_compositionSampler;
 	SCP_vector<vk::UniqueFramebuffer> m_encodeFramebuffers;
 	vk::UniqueRenderPass m_encodeRenderPass;
+	bool m_swapChainBlitSupported = false; // Device can blit HDR_COLOR_FORMAT -> m_swapChainImageFormat directly
 
 	uint32_t m_currentSwapChainImage = 0;
 	uint32_t m_previousSwapChainImage = UINT32_MAX;  // For saveScreen() readback of previous frame

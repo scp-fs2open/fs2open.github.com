@@ -4,6 +4,7 @@
 #include "lab_ui_helpers.h"
 
 #include "asteroid/asteroid.h"
+#include "graphics/2d.h"
 #include "graphics/debug_sphere.h"
 #include "graphics/matrix.h"
 #include "graphics/shadows.h"
@@ -564,6 +565,13 @@ using namespace ltp;
 
 void LabUi::build_tone_mapper_combobox()
 {
+	// current_tonemapper() forces TonemapperAlgorithm::HdrScene while HDR10
+	// output is active, ignoring whatever's stored -- so there's nothing
+	// meaningful left to pick here.
+	if (Gr_hdr_output_active) {
+		return;
+	}
+
 	with_Combo("Tonemapper", ltp::tonemapper_to_name(ltp::current_tonemapper()).c_str())
 	{
 		for (int n = 0; n < IM_ARRAYSIZE(tonemappers); n++) {

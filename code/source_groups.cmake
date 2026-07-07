@@ -250,6 +250,7 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/fxaapre-f.sdr
 	def_files/data/effects/gamma.sdr
 	def_files/data/effects/gamma-correct-f.sdr
+	def_files/data/effects/hdr10-encode-f.sdr
 	def_files/data/effects/irrmap-f.sdr
 	def_files/data/effects/lighting.sdr
 	def_files/data/effects/ls-f.sdr

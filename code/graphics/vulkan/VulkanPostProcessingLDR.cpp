@@ -316,10 +316,10 @@ void VulkanPostProcessor::executeTonemap(vk::CommandBuffer cmd)
 	tmData.sh_offsetX = ppc.sh_offsetX;
 	tmData.sh_offsetY = ppc.sh_offsetY;
 
-	// In HDR, bypass the SDR tone curve and keep linear values (with head-room
-	// above paper white) in the extended-sRGB encoding consumed by the output pass.
+	// current_tonemapper() (used above) forces TonemapperAlgorithm::HdrScene
+	// whenever HDR10 output is active, so tmData.tonemapper already selects
+	// the right shader case; just supply the nits it needs.
 	if (m_ctx.hdrActive) {
-		tmData.hdr_mode = 1;
 		tmData.hdr_paperwhite_nits = Gr_hdr_paperwhite_nits;
 		tmData.hdr_peak_nits = Gr_hdr_peak_nits;
 	}
@@ -332,21 +332,21 @@ void VulkanPostProcessor::executeTonemap(vk::CommandBuffer cmd)
 		&tmData, sizeof(tmData),
 		ALPHA_BLEND_NONE);
 
-	// While HDR is active, Scene_ldr carries extended-range values (see hdr_mode
-	// above), which breaks the fixed [0,1] luma thresholds FXAA/SMAA edge detection
-	// rely on. So also produce a properly tonemapped (compressed to [0,1]) proxy,
-	// using the same tonemap operator, for those passes to detect edges from —
-	// they still blend the real extended-range Scene_ldr for the actual output.
+	// While HDR is active, Scene_ldr carries extended-range values (the
+	// HdrScene tonemapper only clamps to headroom, not [0,1]), which breaks
+	// the fixed [0,1] luma thresholds FXAA/SMAA edge detection rely on. So
+	// also derive a cheap [0,1]-bounded proxy for those passes to detect
+	// edges from — they still blend the real extended-range Scene_ldr for
+	// the actual output. This just clamps the already-tonemapped Scene_ldr,
+	// rather than re-running exposure+tonemap from Scene_color a second time.
 	if (m_ctx.hdrActive) {
-		graphics::generic_data::tonemapping_data tmDataCompressed = tmData;
-		tmDataCompressed.hdr_mode = 0;
-
 		drawFullscreenTriangle(cmd, m_ldrRenderPass,
 			m_sceneLdrCompressedFB, m_ctx.sceneExtent,
-			SDR_TYPE_POST_PROCESS_TONEMAPPING,
-			m_sceneColor.view, m_ctx.linearSampler,
-			&tmDataCompressed, sizeof(tmDataCompressed),
-			ALPHA_BLEND_NONE);
+			SDR_TYPE_COPY,
+			m_sceneLdr.view, m_ctx.linearSampler,
+			nullptr, 0,
+			ALPHA_BLEND_NONE,
+			SDR_FLAG_COPY_CLAMP01);
 	}
 
 	m_ctx.memoryManager->unmapMemory(m_ctx.scratchUBOAlloc);

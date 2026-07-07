@@ -379,10 +379,11 @@ bool VulkanPostProcessor::init(vk::Device device, vk::PhysicalDevice physDevice,
 		}
 	}
 
-	// Create persistent UBO for the final output-encode pass
+	// Create persistent UBO for the final output-encode pass (HDR10 leg only;
+	// the SDR leg is a blit or the UBO-less SDR_TYPE_COPY fallback)
 	{
 		vk::BufferCreateInfo bufInfo;
-		bufInfo.size = sizeof(graphics::generic_data::tonemapping_data);
+		bufInfo.size = sizeof(graphics::generic_data::hdr10_encode_data);
 		bufInfo.usage = vk::BufferUsageFlagBits::eUniformBuffer;
 		bufInfo.sharingMode = vk::SharingMode::eExclusive;
 
@@ -588,7 +589,6 @@ void VulkanPostProcessor::updateTonemappingUBO()
 		mapped->sh_lnA = ppc.sh_lnA;
 		mapped->sh_offsetX = ppc.sh_offsetX;
 		mapped->sh_offsetY = ppc.sh_offsetY;
-		mapped->hdr_mode = 0;
 		mapped->hdr_paperwhite_nits = 0.0f;
 		mapped->hdr_peak_nits = 0.0f;
 		m_ctx.memoryManager->unmapMemory(m_tonemapUBOAlloc);
@@ -716,7 +716,7 @@ void VulkanPostProcessor::blitToSwapChain(vk::CommandBuffer cmd)
 
 void VulkanPostProcessor::encodeOutput(vk::CommandBuffer cmd, vk::RenderPass renderPass,
 	vk::Framebuffer framebuffer, vk::Extent2D extent, vk::ImageView sourceView, vk::Sampler sampler,
-	bool hdr, float paperwhiteNits, float peakNits)
+	float paperwhiteNits, float peakNits)
 {
 	auto* pipelineMgr = getPipelineManager();
 	auto* descriptorMgr = getDescriptorManager();
@@ -726,10 +726,10 @@ void VulkanPostProcessor::encodeOutput(vk::CommandBuffer cmd, vk::RenderPass ren
 
 	GR_DEBUG_SCOPE("Draw scene texture");
 
-	// SDR: passthrough copy (LINEAR_OUT). HDR: PQ/BT.2020 encode (hdr_mode == 2).
+	// HDR10/PQ/BT.2020 encode only -- the SDR leg is handled by a blit
+	// (or encodeOutputPassthrough() as a fallback) instead of a shader draw.
 	PipelineConfig config;
-	config.shaderType = SDR_TYPE_POST_PROCESS_TONEMAPPING;
-	config.shaderFlags = hdr ? 0u : static_cast<unsigned int>(SDR_FLAG_TONEMAPPING_LINEAR_OUT);
+	config.shaderType = SDR_TYPE_POST_PROCESS_HDR10_ENCODE;
 	config.vertexLayoutHash = 0;
 	config.primitiveType = PRIM_TYPE_TRIS;
 	config.depthMode = ZBUFFER_TYPE_NONE;
@@ -747,13 +747,10 @@ void VulkanPostProcessor::encodeOutput(vk::CommandBuffer cmd, vk::RenderPass ren
 	vk::PipelineLayout pipelineLayout = pipelineMgr->getPipelineLayout();
 
 	// Update encode parameters
-	auto* mapped = static_cast<graphics::generic_data::tonemapping_data*>(
+	auto* mapped = static_cast<graphics::generic_data::hdr10_encode_data*>(
 		m_ctx.memoryManager->mapMemory(m_outputEncodeUBOAlloc));
 	if (mapped) {
-		memset(mapped, 0, sizeof(graphics::generic_data::tonemapping_data));
-		mapped->exposure = 1.0f;
-		mapped->tonemapper = 0;
-		mapped->hdr_mode = hdr ? 2 : 0;
+		memset(mapped, 0, sizeof(graphics::generic_data::hdr10_encode_data));
 		mapped->hdr_paperwhite_nits = paperwhiteNits;
 		mapped->hdr_peak_nits = peakNits;
 		m_ctx.memoryManager->unmapMemory(m_outputEncodeUBOAlloc);
@@ -800,7 +797,90 @@ void VulkanPostProcessor::encodeOutput(vk::CommandBuffer cmd, vk::RenderPass ren
 	Verify(perDrawSet);
 	writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
 	writer.setBuffer(PerDrawBinding::GenericData, {m_outputEncodeUBO, 0,
-		sizeof(graphics::generic_data::tonemapping_data)});
+		sizeof(graphics::generic_data::hdr10_encode_data)});
+	writer.flush();
+
+	cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout,
+		static_cast<uint32_t>(DescriptorSetIndex::Material),
+		{materialSet, perDrawSet}, {});
+
+	cmd.draw(3, 1, 0, 0);
+	cmd.endRenderPass();
+}
+
+void VulkanPostProcessor::encodeOutputPassthrough(vk::CommandBuffer cmd, vk::RenderPass renderPass,
+	vk::Framebuffer framebuffer, vk::Extent2D extent, vk::ImageView sourceView, vk::Sampler sampler)
+{
+	auto* pipelineMgr = getPipelineManager();
+	auto* descriptorMgr = getDescriptorManager();
+	if (!pipelineMgr || !descriptorMgr) {
+		return;
+	}
+
+	GR_DEBUG_SCOPE("Draw scene texture");
+
+	// SDR fallback for devices that can't blit HDR_COLOR_FORMAT -> the swap
+	// chain format directly (see VulkanRenderer::encodeToSwapChain()). Plain
+	// passthrough copy, no UBO -- the composition image already carries the
+	// final display-ready sRGB-encoded frame.
+	PipelineConfig config;
+	config.shaderType = SDR_TYPE_COPY;
+	config.vertexLayoutHash = 0;
+	config.primitiveType = PRIM_TYPE_TRIS;
+	config.depthMode = ZBUFFER_TYPE_NONE;
+	config.blendMode = ALPHA_BLEND_NONE;
+	config.cullEnabled = false;
+	config.depthWriteEnabled = false;
+	config.renderPass = renderPass;
+
+	vertex_layout emptyLayout;
+	vk::Pipeline pipeline = pipelineMgr->getPipeline(config, emptyLayout);
+	if (!pipeline) {
+		mprintf(("VulkanPostProcessor: Failed to get output-encode passthrough pipeline!\n"));
+		return;
+	}
+	vk::PipelineLayout pipelineLayout = pipelineMgr->getPipelineLayout();
+
+	vk::RenderPassBeginInfo rpBegin;
+	rpBegin.renderPass = renderPass;
+	rpBegin.framebuffer = framebuffer;
+	rpBegin.renderArea.offset = vk::Offset2D(0, 0);
+	rpBegin.renderArea.extent = extent;
+
+	cmd.beginRenderPass(rpBegin, vk::SubpassContents::eInline);
+	cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
+
+	vk::Viewport viewport;
+	viewport.x = 0.0f;
+	viewport.y = 0.0f;
+	viewport.width = static_cast<float>(extent.width);
+	viewport.height = static_cast<float>(extent.height);
+	viewport.minDepth = 0.0f;
+	viewport.maxDepth = 1.0f;
+	cmd.setViewport(0, viewport);
+
+	vk::Rect2D scissor;
+	scissor.offset = vk::Offset2D(0, 0);
+	scissor.extent = extent;
+	cmd.setScissor(0, scissor);
+
+	DescriptorWriter writer;
+	writer.reset(m_ctx.device, descriptorMgr->getFallbacks());
+
+	vk::DescriptorSet materialSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Material);
+	Verify(materialSet);
+	writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
+	{
+		std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texArrayInfos;
+		texArrayInfos.fill(descriptorMgr->getFallbacks().texture2D);
+		texArrayInfos[0].sampler = sampler;
+		texArrayInfos[0].imageView = sourceView;
+		writer.setImageArray(MaterialBinding::TextureArray, texArrayInfos);
+	}
+
+	vk::DescriptorSet perDrawSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::PerDraw);
+	Verify(perDrawSet);
+	writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
 	writer.flush();
 
 	cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout,

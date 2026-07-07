@@ -19,4 +19,11 @@ void main()
 #else
 	fragOut0 = texture(tex, fragTexCoord.xy);
 #endif
+
+#ifdef CLAMP01
+	// Used to derive a [0,1]-bounded proxy from an extended-range HDR source,
+	// e.g. for FXAA/SMAA edge detection when the real output carries values
+	// above 1.0.
+	fragOut0 = min(fragOut0, vec4(1.0));
+#endif
 }

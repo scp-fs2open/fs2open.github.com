@@ -90,7 +90,8 @@ void opengl_post_pass_tonemap()
 		data->x1 = ppc.x1;
 		data->y0 = ppc.y0; 
 		data->exposure = ltp::current_exposure();
-		data->hdr_mode = 0; // OpenGL renderer does not support HDR10 output
+		// OpenGL never negotiates HDR10 output, so Gr_hdr_output_active is
+		// always false here and current_tonemapper() never returns HdrScene.
 		data->hdr_paperwhite_nits = 0.0f;
 		data->hdr_peak_nits = 0.0f; });
 

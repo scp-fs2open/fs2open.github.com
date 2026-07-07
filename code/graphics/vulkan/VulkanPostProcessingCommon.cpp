@@ -341,6 +341,39 @@ bool PostProcessContext::createImage(uint32_t width, uint32_t height, vk::Format
 	return true;
 }
 
+// Derive access mask and pipeline stage from a layout, for the transfer-op
+// pre/post barriers shared by copyImageToImage() and blitImageToImage().
+// 'leaving' = true for srcAccessMask (flushing writes before transition),
+// false for dstAccessMask (making data available after transition).
+static std::pair<vk::AccessFlags, vk::PipelineStageFlags> transferLayoutInfo(vk::ImageLayout layout, bool leaving)
+{
+	switch (layout) {
+	case vk::ImageLayout::eUndefined:
+		return {{}, vk::PipelineStageFlagBits::eTopOfPipe};
+	case vk::ImageLayout::eShaderReadOnlyOptimal:
+		return {leaving ? vk::AccessFlags{} : vk::AccessFlagBits::eShaderRead,
+		        vk::PipelineStageFlagBits::eFragmentShader};
+	case vk::ImageLayout::eColorAttachmentOptimal:
+		return {leaving ? vk::AccessFlagBits::eColorAttachmentWrite
+		               : (vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite),
+		        vk::PipelineStageFlagBits::eColorAttachmentOutput};
+	case vk::ImageLayout::eDepthStencilAttachmentOptimal:
+		return {leaving ? vk::AccessFlagBits::eDepthStencilAttachmentWrite
+		               : (vk::AccessFlagBits::eDepthStencilAttachmentRead | vk::AccessFlagBits::eDepthStencilAttachmentWrite),
+		        leaving ? vk::PipelineStageFlagBits::eLateFragmentTests
+		                : vk::PipelineStageFlagBits::eEarlyFragmentTests};
+	case vk::ImageLayout::ePresentSrcKHR:
+		return {leaving ? vk::AccessFlags{} : vk::AccessFlags{}, vk::PipelineStageFlagBits::eBottomOfPipe};
+	case vk::ImageLayout::eTransferSrcOptimal:
+		return {vk::AccessFlagBits::eTransferRead, vk::PipelineStageFlagBits::eTransfer};
+	case vk::ImageLayout::eTransferDstOptimal:
+		return {vk::AccessFlagBits::eTransferWrite, vk::PipelineStageFlagBits::eTransfer};
+	default:
+		Assertion(false, "transferLayoutInfo: unsupported layout %d", static_cast<int>(layout));
+		return {{}, vk::PipelineStageFlagBits::eAllCommands};
+	}
+}
+
 void copyImageToImage(
     vk::CommandBuffer cmd,
     vk::Image src, vk::ImageLayout srcOldLayout, vk::ImageLayout srcNewLayout,
@@ -349,35 +382,7 @@ void copyImageToImage(
     vk::ImageAspectFlags aspect,
     uint32_t dstMipLevels)
 {
-	// Derive access mask and pipeline stage from a layout.
-	// 'leaving' = true for srcAccessMask (flushing writes before transition),
-	// false for dstAccessMask (making data available after transition).
-	auto layoutInfo = [](vk::ImageLayout layout, bool leaving)
-	    -> std::pair<vk::AccessFlags, vk::PipelineStageFlags> {
-		switch (layout) {
-		case vk::ImageLayout::eUndefined:
-			return {{}, vk::PipelineStageFlagBits::eTopOfPipe};
-		case vk::ImageLayout::eShaderReadOnlyOptimal:
-			return {leaving ? vk::AccessFlags{} : vk::AccessFlagBits::eShaderRead,
-			        vk::PipelineStageFlagBits::eFragmentShader};
-		case vk::ImageLayout::eColorAttachmentOptimal:
-			return {leaving ? vk::AccessFlagBits::eColorAttachmentWrite
-			               : (vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite),
-			        vk::PipelineStageFlagBits::eColorAttachmentOutput};
-		case vk::ImageLayout::eDepthStencilAttachmentOptimal:
-			return {leaving ? vk::AccessFlagBits::eDepthStencilAttachmentWrite
-			               : (vk::AccessFlagBits::eDepthStencilAttachmentRead | vk::AccessFlagBits::eDepthStencilAttachmentWrite),
-			        leaving ? vk::PipelineStageFlagBits::eLateFragmentTests
-			                : vk::PipelineStageFlagBits::eEarlyFragmentTests};
-		case vk::ImageLayout::eTransferSrcOptimal:
-			return {vk::AccessFlagBits::eTransferRead, vk::PipelineStageFlagBits::eTransfer};
-		case vk::ImageLayout::eTransferDstOptimal:
-			return {vk::AccessFlagBits::eTransferWrite, vk::PipelineStageFlagBits::eTransfer};
-		default:
-			Assertion(false, "copyImageToImage: unsupported layout %d", static_cast<int>(layout));
-			return {{}, vk::PipelineStageFlagBits::eAllCommands};
-		}
-	};
+	auto layoutInfo = transferLayoutInfo;
 
 	// 1. Pre-barriers: transition src → eTransferSrcOptimal, dst → eTransferDstOptimal
 	{
@@ -461,6 +466,117 @@ void copyImageToImage(
 			barriers[count].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 			barriers[count].image = dst;
 			barriers[count].subresourceRange = {aspect, 0, dstMipLevels, 0, 1};
+			count++;
+			postDstStage |= stage;
+		}
+
+		cmd.pipelineBarrier(
+			vk::PipelineStageFlagBits::eTransfer,
+			postDstStage,
+			{}, nullptr, nullptr,
+			vk::ArrayProxy<const vk::ImageMemoryBarrier>(count, barriers.data()));
+	}
+}
+
+void blitImageToImage(
+    vk::CommandBuffer cmd,
+    vk::Image src, vk::ImageLayout srcOldLayout, vk::ImageLayout srcNewLayout,
+    vk::Image dst, vk::ImageLayout dstOldLayout, vk::ImageLayout dstNewLayout,
+    vk::Extent2D extent,
+    vk::ImageAspectFlags aspect)
+{
+	auto layoutInfo = transferLayoutInfo;
+
+	// 1. Pre-barriers: transition src → eTransferSrcOptimal, dst → eTransferDstOptimal
+	{
+		auto [srcAccess, srcStage] = layoutInfo(srcOldLayout, true);
+		auto [dstAccess, dstStage] = layoutInfo(dstOldLayout, true);
+
+		std::array<vk::ImageMemoryBarrier, 2> barriers;
+
+		barriers[0].srcAccessMask = srcAccess;
+		barriers[0].dstAccessMask = vk::AccessFlagBits::eTransferRead;
+		barriers[0].oldLayout = srcOldLayout;
+		barriers[0].newLayout = vk::ImageLayout::eTransferSrcOptimal;
+		barriers[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barriers[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barriers[0].image = src;
+		barriers[0].subresourceRange = {aspect, 0, 1, 0, 1};
+
+		barriers[1].srcAccessMask = dstAccess;
+		barriers[1].dstAccessMask = vk::AccessFlagBits::eTransferWrite;
+		barriers[1].oldLayout = dstOldLayout;
+		barriers[1].newLayout = vk::ImageLayout::eTransferDstOptimal;
+		barriers[1].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barriers[1].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barriers[1].image = dst;
+		barriers[1].subresourceRange = {aspect, 0, 1, 0, 1};
+
+		cmd.pipelineBarrier(
+			srcStage | dstStage,
+			vk::PipelineStageFlagBits::eTransfer,
+			{}, nullptr, nullptr, barriers);
+	}
+
+	// 2. Blit (always mip 0, layer 0). Unlike copyImageToImage, this performs
+	// numeric format conversion, which is what lets it go between images of
+	// different texel sizes/formats (e.g. RGBA16F -> BGRA8) -- a plain
+	// vkCmdCopyImage requires matching texel size and can't do this. Nearest
+	// filtering is correct/cheapest here since src and dst are always the
+	// same resolution (1:1 texel mapping, no actual scaling).
+	{
+		vk::ImageBlit region;
+		region.srcSubresource = {aspect, 0, 0, 1};
+		region.srcOffsets[0] = vk::Offset3D(0, 0, 0);
+		region.srcOffsets[1] = vk::Offset3D(static_cast<int32_t>(extent.width), static_cast<int32_t>(extent.height), 1);
+		region.dstSubresource = {aspect, 0, 0, 1};
+		region.dstOffsets[0] = vk::Offset3D(0, 0, 0);
+		region.dstOffsets[1] = vk::Offset3D(static_cast<int32_t>(extent.width), static_cast<int32_t>(extent.height), 1);
+
+		cmd.blitImage(
+			src, vk::ImageLayout::eTransferSrcOptimal,
+			dst, vk::ImageLayout::eTransferDstOptimal,
+			region, vk::Filter::eNearest);
+	}
+
+	// 3. Post-barriers: transition src → srcNewLayout, dst → dstNewLayout
+	// Skip rule: if newLayout matches the transfer layout, skip that barrier
+	{
+		bool skipSrc = (srcNewLayout == vk::ImageLayout::eTransferSrcOptimal);
+		bool skipDst = (dstNewLayout == vk::ImageLayout::eTransferDstOptimal);
+
+		if (skipSrc && skipDst) {
+			return;
+		}
+
+		std::array<vk::ImageMemoryBarrier, 2> barriers;
+		uint32_t count = 0;
+		vk::PipelineStageFlags postDstStage = {};
+
+		if (!skipSrc) {
+			auto [access, stage] = layoutInfo(srcNewLayout, false);
+			barriers[count].srcAccessMask = vk::AccessFlagBits::eTransferRead;
+			barriers[count].dstAccessMask = access;
+			barriers[count].oldLayout = vk::ImageLayout::eTransferSrcOptimal;
+			barriers[count].newLayout = srcNewLayout;
+			barriers[count].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			barriers[count].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			barriers[count].image = src;
+			barriers[count].subresourceRange = {aspect, 0, 1, 0, 1};
+			count++;
+			postDstStage |= stage;
+		}
+
+		if (!skipDst) {
+			auto [access, stage] = layoutInfo(dstNewLayout, false);
+			barriers[count].srcAccessMask = vk::AccessFlagBits::eTransferWrite;
+			barriers[count].dstAccessMask = access;
+			barriers[count].oldLayout = vk::ImageLayout::eTransferDstOptimal;
+			barriers[count].newLayout = dstNewLayout;
+			barriers[count].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			barriers[count].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			barriers[count].image = dst;
+			barriers[count].subresourceRange = {aspect, 0, 1, 0, 1};
 			count++;
 			postDstStage |= stage;
 		}
