@@ -417,12 +417,12 @@ bool VulkanPostProcessor::init(vk::Device device, vk::PhysicalDevice physDevice,
 	}
 
 	// Initialize LDR targets for tonemapping + FXAA (non-fatal if it fails)
-	if (!initLDRTargets()) {
+	if (!m_ldr.init(m_ctx, m_sceneColor, m_sceneDepth, m_bloom)) {
 		nprintf(("vulkan", "VulkanPostProcessor: LDR target initialization failed (non-fatal)\n"));
 	}
 
 	// Initialize SMAA resources (non-fatal if it fails; requires LDR targets)
-	if (m_ldrInitialized && !initSMAA()) {
+	if (m_ldr.isInitialized() && !m_smaa.init(m_ctx, m_ldr)) {
 		nprintf(("vulkan", "VulkanPostProcessor: SMAA initialization failed (non-fatal)\n"));
 	}
 
@@ -463,8 +463,8 @@ void VulkanPostProcessor::shutdown()
 		shutdownMSAA();
 		m_lighting.shutdown();
 		shutdownGBuffer();
-		shutdownSMAA();
-		shutdownLDRTargets();
+		m_smaa.shutdown();
+		m_ldr.shutdown();
 		shutdownBloom();
 
 		m_ctx.shutdownScratchUBO();
@@ -623,7 +623,7 @@ void VulkanPostProcessor::blitToSwapChain(vk::CommandBuffer cmd)
 	// If LDR targets exist, executeTonemap()+executeFXAA() already ran.
 	// Blit from the latest post-processing result with passthrough settings.
 	// Otherwise, fall back to direct HDR→swap chain tonemapping.
-	bool useLdr = m_ldrInitialized;
+	bool useLdr = m_ldr.isInitialized();
 
 	if (!useLdr) {
 		// Update tonemapping parameters from engine lighting profile
@@ -683,8 +683,8 @@ void VulkanPostProcessor::blitToSwapChain(vk::CommandBuffer cmd)
 		std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texArrayInfos;
 		texArrayInfos.fill(descriptorMgr->getFallbacks().texture2D);
 		texArrayInfos[0].sampler = m_ctx.linearSampler;
-		texArrayInfos[0].imageView = m_postEffectsApplied ? m_sceneLuminance.view
-		                            : useLdr ? m_sceneLdr.view
+		texArrayInfos[0].imageView = m_ldr.postEffectsApplied() ? m_ldr.luminanceView()
+		                            : useLdr ? m_ldr.ldrView()
 		                            : m_sceneColor.view;
 		writer.setImageArray(MaterialBinding::TextureArray, texArrayInfos);
 	}
@@ -728,6 +728,12 @@ void VulkanPostProcessor::encodeOutput(vk::CommandBuffer cmd, vk::RenderPass ren
 
 	// HDR10/PQ/BT.2020 encode only -- the SDR leg is handled by a blit
 	// (or encodeOutputPassthrough() as a fallback) instead of a shader draw.
+	//
+	// Deliberately NOT routed through drawFullscreenTriangle()'s shared
+	// scratch UBO ring: this pass runs once, last, per frame -- after every
+	// other pass (tonemap/FXAA/SMAA/lightshafts/post-effects/bloom) has
+	// already consumed its slots -- so sharing the ring risks overflowing
+	// SCRATCH_UBO_MAX_SLOTS. Uses its own persistent m_outputEncodeUBO instead.
 	PipelineConfig config;
 	config.shaderType = SDR_TYPE_POST_PROCESS_HDR10_ENCODE;
 	config.vertexLayoutHash = 0;
@@ -811,84 +817,14 @@ void VulkanPostProcessor::encodeOutput(vk::CommandBuffer cmd, vk::RenderPass ren
 void VulkanPostProcessor::encodeOutputPassthrough(vk::CommandBuffer cmd, vk::RenderPass renderPass,
 	vk::Framebuffer framebuffer, vk::Extent2D extent, vk::ImageView sourceView, vk::Sampler sampler)
 {
-	auto* pipelineMgr = getPipelineManager();
-	auto* descriptorMgr = getDescriptorManager();
-	if (!pipelineMgr || !descriptorMgr) {
-		return;
-	}
-
 	GR_DEBUG_SCOPE("Draw scene texture");
 
 	// SDR fallback for devices that can't blit HDR_COLOR_FORMAT -> the swap
 	// chain format directly (see VulkanRenderer::encodeToSwapChain()). Plain
 	// passthrough copy, no UBO -- the composition image already carries the
 	// final display-ready sRGB-encoded frame.
-	PipelineConfig config;
-	config.shaderType = SDR_TYPE_COPY;
-	config.vertexLayoutHash = 0;
-	config.primitiveType = PRIM_TYPE_TRIS;
-	config.depthMode = ZBUFFER_TYPE_NONE;
-	config.blendMode = ALPHA_BLEND_NONE;
-	config.cullEnabled = false;
-	config.depthWriteEnabled = false;
-	config.renderPass = renderPass;
-
-	vertex_layout emptyLayout;
-	vk::Pipeline pipeline = pipelineMgr->getPipeline(config, emptyLayout);
-	if (!pipeline) {
-		mprintf(("VulkanPostProcessor: Failed to get output-encode passthrough pipeline!\n"));
-		return;
-	}
-	vk::PipelineLayout pipelineLayout = pipelineMgr->getPipelineLayout();
-
-	vk::RenderPassBeginInfo rpBegin;
-	rpBegin.renderPass = renderPass;
-	rpBegin.framebuffer = framebuffer;
-	rpBegin.renderArea.offset = vk::Offset2D(0, 0);
-	rpBegin.renderArea.extent = extent;
-
-	cmd.beginRenderPass(rpBegin, vk::SubpassContents::eInline);
-	cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
-
-	vk::Viewport viewport;
-	viewport.x = 0.0f;
-	viewport.y = 0.0f;
-	viewport.width = static_cast<float>(extent.width);
-	viewport.height = static_cast<float>(extent.height);
-	viewport.minDepth = 0.0f;
-	viewport.maxDepth = 1.0f;
-	cmd.setViewport(0, viewport);
-
-	vk::Rect2D scissor;
-	scissor.offset = vk::Offset2D(0, 0);
-	scissor.extent = extent;
-	cmd.setScissor(0, scissor);
-
-	DescriptorWriter writer;
-	writer.reset(m_ctx.device, descriptorMgr->getFallbacks());
-
-	vk::DescriptorSet materialSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Material);
-	Verify(materialSet);
-	writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
-	{
-		std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texArrayInfos;
-		texArrayInfos.fill(descriptorMgr->getFallbacks().texture2D);
-		texArrayInfos[0].sampler = sampler;
-		texArrayInfos[0].imageView = sourceView;
-		writer.setImageArray(MaterialBinding::TextureArray, texArrayInfos);
-	}
-
-	vk::DescriptorSet perDrawSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::PerDraw);
-	Verify(perDrawSet);
-	writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
-	writer.flush();
-
-	cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout,
-		static_cast<uint32_t>(DescriptorSetIndex::Material),
-		{materialSet, perDrawSet}, {});
-
-	cmd.draw(3, 1, 0, 0);
-	cmd.endRenderPass();
+	m_ctx.drawFullscreenTriangle(cmd, renderPass, framebuffer, extent,
+		SDR_TYPE_COPY, sourceView, sampler, nullptr, 0, ALPHA_BLEND_NONE);
 }
 
 // No-op: In OpenGL, begin/end push/pop an FBO and run the post-processing

@@ -93,7 +93,9 @@ void PostProcessContext::drawFullscreenTriangle(vk::CommandBuffer cmd, vk::Rende
                                                   vk::ImageView textureView, vk::Sampler sampler,
                                                   const void* uboData, size_t uboSize,
                                                   int blendMode,
-                                                  unsigned int shaderFlags)
+                                                  unsigned int shaderFlags,
+                                                  vk::SampleCountFlagBits sampleCount,
+                                                  bool bindGlobalSet)
 {
 	GR_DEBUG_SCOPE("Draw full screen triangle");
 
@@ -117,6 +119,7 @@ void PostProcessContext::drawFullscreenTriangle(vk::CommandBuffer cmd, vk::Rende
 	config.cullEnabled = false;
 	config.depthWriteEnabled = false;
 	config.renderPass = renderPass;
+	config.sampleCount = sampleCount;
 
 	vertex_layout emptyLayout;
 	vk::Pipeline pipeline = pipelineMgr->getPipeline(config, emptyLayout);
@@ -154,6 +157,16 @@ void PostProcessContext::drawFullscreenTriangle(vk::CommandBuffer cmd, vk::Rende
 	DescriptorWriter writer;
 	writer.reset(device, descriptorMgr->getFallbacks());
 
+	// Set 0: Global -- normally already bound from frame setup. bindGlobalSet
+	// is for draws that may run before that binding happened this frame (e.g.
+	// mid-G-buffer-pass copies that run ahead of any material draw).
+	vk::DescriptorSet globalSet;
+	if (bindGlobalSet) {
+		globalSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Global);
+		Verify(globalSet);
+		writer.writeSet(globalSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Global));
+	}
+
 	// Set 1: Material
 	vk::DescriptorSet materialSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Material);
 	Verify(materialSet);
@@ -179,10 +192,18 @@ void PostProcessContext::drawFullscreenTriangle(vk::CommandBuffer cmd, vk::Rende
 	}
 	writer.flush();
 
-	// Bind descriptor sets (Set 0 already bound from frame setup)
-	cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout,
-		static_cast<uint32_t>(DescriptorSetIndex::Material),
-		{materialSet, perDrawSet}, {});
+	// Bind descriptor sets. DescriptorSetIndex::{Global,Material,PerDraw} are
+	// contiguous (0,1,2), so when Global is (re)bound here it and Material/PerDraw
+	// go in one call; otherwise Set 0 is left as whatever frame setup bound.
+	if (bindGlobalSet) {
+		cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout,
+			static_cast<uint32_t>(DescriptorSetIndex::Global),
+			{globalSet, materialSet, perDrawSet}, {});
+	} else {
+		cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout,
+			static_cast<uint32_t>(DescriptorSetIndex::Material),
+			{materialSet, perDrawSet}, {});
+	}
 
 	cmd.draw(3, 1, 0, 0);
 	cmd.endRenderPass();

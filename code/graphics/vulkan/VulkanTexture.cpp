@@ -1073,6 +1073,11 @@ bool VulkanTextureManager::bm_data(int handle, bitmap* bm, int compType)
 		return upload3DTexture(handle, bm, bm->d);
 	}
 
+	return uploadTexture2D(handle, bm, compType);
+}
+
+bool VulkanTextureManager::uploadTexture2D(int handle, bitmap* bm, int compType)
+{
 	auto* slot = bm_get_slot(handle, true);
 	if (!slot) {
 		return false;
@@ -1773,90 +1778,96 @@ void VulkanTextureManager::get_bitmap_from_texture(void* data_out, int bitmap_nu
 	void* mapped = m_memoryManager->mapMemory(stagingAlloc);
 	if (mapped) {
 		m_memoryManager->invalidateMemory(stagingAlloc, 0, srcBufferSize);
-
-		if (isCompressed) {
-			const uint32_t copyW = blockW * 4;
-			const uint32_t copyH = blockH * 4;
-			const size_t decompressedSize = static_cast<size_t>(copyW) * static_cast<size_t>(copyH) * 4;
-			SCP_vector<uint8_t> temp(decompressedSize);
-
-			const auto* srcBlock = static_cast<const uint8_t*>(mapped);
-			uint8_t* blockRowBase = temp.data();
-
-			for (uint32_t by = 0; by < blockH; ++by) {
-				uint8_t* blockColBase = blockRowBase;
-				for (uint32_t bx = 0; bx < blockW; ++bx) {
-					switch (ts->format) {
-					case vk::Format::eBc1RgbaUnormBlock:
-						bcdec_bc1(srcBlock, blockColBase, static_cast<int>(copyW * 4));
-						break;
-					case vk::Format::eBc2UnormBlock:
-						bcdec_bc2(srcBlock, blockColBase, static_cast<int>(copyW * 4));
-						break;
-					case vk::Format::eBc3UnormBlock:
-						bcdec_bc3(srcBlock, blockColBase, static_cast<int>(copyW * 4));
-						break;
-					case vk::Format::eBc7UnormBlock:
-						bcdec_bc7(srcBlock, blockColBase, static_cast<int>(copyW * 4));
-						break;
-					default: break;
-					}
-					srcBlock += blockSize;
-					blockColBase += 4 * 4; // 4 pixels wide × 4 bytes/pixel
-				}
-				blockRowBase += static_cast<size_t>(4) * copyW * 4; // 4 rows × full stride
-			}
-
-			const auto* src = temp.data();
-			auto* dst = static_cast<uint8_t*>(data_out);
-			if (outChannels == 4) {
-				for (uint32_t y = 0; y < h; ++y) {
-					memcpy(dst + y * w * 4, src + y * copyW * 4, w * 4);
-				}
-			} else {
-				for (uint32_t y = 0; y < h; ++y) {
-					graphics::util::convert_RGBA8888_to_RGB888(
-						src + y * copyW * 4, dst + y * w * 3, w);
-				}
-			}
-		} else {
-			const auto* src = static_cast<const uint8_t*>(mapped);
-			auto* dst = static_cast<uint8_t*>(data_out);
-
-			switch (ts->format) {
-			case vk::Format::eB8G8R8A8Unorm:
-				if (outChannels == 4) {
-					graphics::util::convert_BGRA8888_to_RGBA8888(src, dst, pixelCount);
-				} else {
-					graphics::util::convert_BGRA8888_to_RGB888(src, dst, pixelCount);
-				}
-				break;
-
-			case vk::Format::eR8Unorm:
-				if (outChannels == 4) {
-					graphics::util::expand_R8_to_RGBA(src, dst, pixelCount);
-				} else {
-					graphics::util::expand_R8_to_RGB(src, dst, pixelCount);
-				}
-				break;
-
-			case vk::Format::eA1R5G5B5UnormPack16:
-				if (outChannels == 4) {
-					graphics::util::convert_BGRA1555_REV_to_RGBA8888(reinterpret_cast<const uint16_t*>(src), dst, pixelCount);
-				} else {
-					graphics::util::convert_BGRA1555_REV_to_RGB888(reinterpret_cast<const uint16_t*>(src), dst, pixelCount);
-				}
-				break;
-
-			default: break;
-			}
-		}
-
+		decodeReadbackBuffer(mapped, ts->format, isCompressed, w, h, blockW, blockH, blockSize, outChannels, data_out);
 		m_memoryManager->unmapMemory(stagingAlloc);
 	}
 
 	m_device.destroyBuffer(stagingBuffer);
 	m_memoryManager->freeAllocation(stagingAlloc);
+}
+
+void VulkanTextureManager::decodeReadbackBuffer(const void* mapped, vk::Format format, bool isCompressed,
+                                                 uint32_t w, uint32_t h, uint32_t blockW, uint32_t blockH,
+                                                 int blockSize, int outChannels, void* data_out)
+{
+	if (isCompressed) {
+		const uint32_t copyW = blockW * 4;
+		const uint32_t copyH = blockH * 4;
+		const size_t decompressedSize = static_cast<size_t>(copyW) * static_cast<size_t>(copyH) * 4;
+		SCP_vector<uint8_t> temp(decompressedSize);
+
+		const auto* srcBlock = static_cast<const uint8_t*>(mapped);
+		uint8_t* blockRowBase = temp.data();
+
+		for (uint32_t by = 0; by < blockH; ++by) {
+			uint8_t* blockColBase = blockRowBase;
+			for (uint32_t bx = 0; bx < blockW; ++bx) {
+				switch (format) {
+				case vk::Format::eBc1RgbaUnormBlock:
+					bcdec_bc1(srcBlock, blockColBase, static_cast<int>(copyW * 4));
+					break;
+				case vk::Format::eBc2UnormBlock:
+					bcdec_bc2(srcBlock, blockColBase, static_cast<int>(copyW * 4));
+					break;
+				case vk::Format::eBc3UnormBlock:
+					bcdec_bc3(srcBlock, blockColBase, static_cast<int>(copyW * 4));
+					break;
+				case vk::Format::eBc7UnormBlock:
+					bcdec_bc7(srcBlock, blockColBase, static_cast<int>(copyW * 4));
+					break;
+				default: break;
+				}
+				srcBlock += blockSize;
+				blockColBase += 4 * 4; // 4 pixels wide × 4 bytes/pixel
+			}
+			blockRowBase += static_cast<size_t>(4) * copyW * 4; // 4 rows × full stride
+		}
+
+		const auto* src = temp.data();
+		auto* dst = static_cast<uint8_t*>(data_out);
+		if (outChannels == 4) {
+			for (uint32_t y = 0; y < h; ++y) {
+				memcpy(dst + y * w * 4, src + y * copyW * 4, w * 4);
+			}
+		} else {
+			for (uint32_t y = 0; y < h; ++y) {
+				graphics::util::convert_RGBA8888_to_RGB888(
+					src + y * copyW * 4, dst + y * w * 3, w);
+			}
+		}
+	} else {
+		const uint32_t pixelCount = w * h;
+		const auto* src = static_cast<const uint8_t*>(mapped);
+		auto* dst = static_cast<uint8_t*>(data_out);
+
+		switch (format) {
+		case vk::Format::eB8G8R8A8Unorm:
+			if (outChannels == 4) {
+				graphics::util::convert_BGRA8888_to_RGBA8888(src, dst, pixelCount);
+			} else {
+				graphics::util::convert_BGRA8888_to_RGB888(src, dst, pixelCount);
+			}
+			break;
+
+		case vk::Format::eR8Unorm:
+			if (outChannels == 4) {
+				graphics::util::expand_R8_to_RGBA(src, dst, pixelCount);
+			} else {
+				graphics::util::expand_R8_to_RGB(src, dst, pixelCount);
+			}
+			break;
+
+		case vk::Format::eA1R5G5B5UnormPack16:
+			if (outChannels == 4) {
+				graphics::util::convert_BGRA1555_REV_to_RGBA8888(reinterpret_cast<const uint16_t*>(src), dst, pixelCount);
+			} else {
+				graphics::util::convert_BGRA1555_REV_to_RGB888(reinterpret_cast<const uint16_t*>(src), dst, pixelCount);
+			}
+			break;
+
+		default: break;
+		}
+	}
 }
 
 vk::Sampler VulkanTextureManager::getSampler(vk::Filter magFilter, vk::Filter minFilter,
@@ -2566,145 +2577,5 @@ uint32_t VulkanTextureManager::calculateMipLevels(uint32_t width, uint32_t heigh
 	return static_cast<uint32_t>(std::floor(std::log2(std::max(width, height)))) + 1;
 }
 
-// ========== gr_screen function pointer implementations ==========
-
-int vulkan_preload(int bitmap_num, int /*is_aabitmap*/)
-{
-	auto* texManager = getTextureManager();
-
-	// Check if texture is already loaded
-	auto* slot = texManager->getTextureSlot(bitmap_num);
-	if (slot && slot->imageView) {
-		return 1;  // Already loaded
-	}
-
-	// Determine lock parameters based on compression type.
-	// For compressed DDS textures, lock with the matching DXT/BC7 flags to get
-	// raw compressed data with all pre-baked mipmap levels.
-	int compType = bm_is_compressed(bitmap_num);
-	int lockBpp = 32;
-	ubyte lockFlags = BMP_TEX_XPARENT;
-
-	switch (compType) {
-	case DDS_DXT1:
-		lockBpp = 24;
-		lockFlags = BMP_TEX_DXT1;
-		break;
-	case DDS_DXT3:
-		lockBpp = 32;
-		lockFlags = BMP_TEX_DXT3;
-		break;
-	case DDS_DXT5:
-		lockBpp = 32;
-		lockFlags = BMP_TEX_DXT5;
-		break;
-	case DDS_BC7:
-		lockBpp = 32;
-		lockFlags = BMP_TEX_BC7;
-		break;
-	case DDS_CUBEMAP_DXT1:
-		lockBpp = 24;
-		lockFlags = BMP_TEX_CUBEMAP;
-		break;
-	case DDS_CUBEMAP_DXT3:
-	case DDS_CUBEMAP_DXT5:
-		lockBpp = 32;
-		lockFlags = BMP_TEX_CUBEMAP;
-		break;
-	default:
-		// Uncompressed — use 32bpp decompressed
-		compType = 0;
-		break;
-	}
-
-	bitmap* bmp = bm_lock(bitmap_num, static_cast<ubyte>(lockBpp), lockFlags);
-	if (!bmp) {
-		static int warnCount = 0;
-		if (warnCount < 10) {
-			nprintf(("vulkan", "vulkan_preload: Failed to lock bitmap %d (compType=%d)\n", bitmap_num, compType));
-			warnCount++;
-		}
-		return 0;
-	}
-
-	// Upload the texture
-	bool success = texManager->bm_data(bitmap_num, bmp, compType);
-
-	// Unlock bitmap
-	bm_unlock(bitmap_num);
-
-	if (success) {
-		static int successCount = 0;
-		if (successCount < 10) {
-			nprintf(("vulkan", "vulkan_preload: Successfully uploaded texture %d (compressed=%d)\n",
-				bitmap_num, compType));
-			successCount++;
-		}
-	}
-
-	return success ? 1 : 0;
-}
-
-void vulkan_bm_create(bitmap_slot* slot)
-{
-	auto* texManager = getTextureManager();
-	texManager->bm_create(slot);
-}
-
-void vulkan_bm_free_data(bitmap_slot* slot, bool release)
-{
-	auto* texManager = getTextureManager();
-	texManager->bm_free_data(slot, release);
-}
-
-void vulkan_bm_init(bitmap_slot* slot)
-{
-	auto* texManager = getTextureManager();
-	texManager->bm_init(slot);
-}
-
-bool vulkan_bm_data(int handle, bitmap* bm)
-{
-	auto* texManager = getTextureManager();
-	int compType = bm_is_compressed(handle);
-	return texManager->bm_data(handle, bm, compType);
-}
-
-void vulkan_bm_page_in_start()
-{
-	// Flush all GPU texture resources so that textures not needed in the next
-	// mission are freed. Matches the OpenGL pattern (opengl_tcache_flush in
-	// opengl_preload_init, currently commented out there). Textures that ARE
-	// needed will be re-uploaded on demand during level load / first use.
-	// Without this, Vulkan VkImage/VMA allocations accumulate across missions
-	// because bm_unload_fast() only frees CPU-side pixel data.
-	auto* texManager = getTextureManager();
-	texManager->flushTextures();
-}
-
-int vulkan_bm_make_render_target(int handle, int* width, int* height, int* bpp, int* mm_lvl, int flags)
-{
-	auto* texManager = getTextureManager();
-	return texManager->bm_make_render_target(handle, width, height, bpp, mm_lvl, flags);
-}
-
-int vulkan_bm_set_render_target(int handle, int face)
-{
-	auto* texManager = getTextureManager();
-	return texManager->bm_set_render_target(handle, face);
-}
-
-void vulkan_update_texture(int bitmap_handle, int bpp, const ubyte* data, int width, int height)
-{
-	auto* texManager = getTextureManager();
-	texManager->update_texture(bitmap_handle, bpp, data, width, height);
-}
-
-void vulkan_get_bitmap_from_texture(void* data_out, int bitmap_num)
-{
-	auto* texManager = getTextureManager();
-	texManager->get_bitmap_from_texture(data_out, bitmap_num);
-}
 
 } // namespace graphics::vulkan
-

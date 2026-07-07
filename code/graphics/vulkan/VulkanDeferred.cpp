@@ -149,87 +149,15 @@ void vulkan_deferred_lighting_begin(bool clearNonColorBufs)
 		// Transition MSAA images to expected initial layouts
 		pp->deferred().transitionMsaaForBegin(cmd);
 
-		// Copy scene color → MSAA emissive via dedicated single-attachment render pass
-		{
-			auto* pipelineMgr = getPipelineManager();
-			auto* descriptorMgr = getDescriptorManager();
-
-			auto extent = pp->getSceneExtent();
-			vk::RenderPassBeginInfo rpBegin;
-			rpBegin.renderPass = pp->deferred().msaaEmissiveCopyRenderPass();
-			rpBegin.framebuffer = pp->deferred().msaaEmissiveCopyFramebuffer();
-			rpBegin.renderArea.offset = vk::Offset2D(0, 0);
-			rpBegin.renderArea.extent = extent;
-			std::array<vk::ClearValue, 1> clearValues{};
-			rpBegin.clearValueCount = static_cast<uint32_t>(clearValues.size());
-			rpBegin.pClearValues = clearValues.data();
-			cmd.beginRenderPass(rpBegin, vk::SubpassContents::eInline);
-
-			PipelineConfig config;
-			config.shaderType = SDR_TYPE_COPY;
-			config.primitiveType = PRIM_TYPE_TRIS;
-			config.depthMode = ZBUFFER_TYPE_NONE;
-			config.blendMode = ALPHA_BLEND_NONE;
-			config.cullEnabled = false;
-			config.depthWriteEnabled = false;
-			config.renderPass = pp->deferred().msaaEmissiveCopyRenderPass();
-			config.sampleCount = renderer->getMsaaSampleCount();
-			config.colorAttachmentCount = 1;
-
-			vertex_layout emptyLayout;
-			vk::Pipeline pipeline = pipelineMgr->getPipeline(config, emptyLayout);
-			if (pipeline) {
-				cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
-
-				vk::Viewport viewport;
-				viewport.x = 0.0f;
-				viewport.y = 0.0f;
-				viewport.width = static_cast<float>(extent.width);
-				viewport.height = static_cast<float>(extent.height);
-				viewport.minDepth = 0.0f;
-				viewport.maxDepth = 1.0f;
-				cmd.setViewport(0, viewport);
-				vk::Rect2D scissor;
-				scissor.offset = vk::Offset2D(0, 0);
-				scissor.extent = extent;
-				cmd.setScissor(0, scissor);
-
-				DescriptorWriter writer;
-				writer.reset(descriptorMgr->getDevice(), descriptorMgr->getFallbacks());
-
-				vk::DescriptorSet globalSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Global);
-				Verify(globalSet);
-				writer.writeSet(globalSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Global));
-
-				vk::DescriptorSet materialSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Material);
-				Verify(materialSet);
-				writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
-				{
-					std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texImages;
-					texImages.fill(descriptorMgr->getFallbacks().texture2D);
-					texImages[0] = {pp->getSceneColorSampler(), pp->getSceneColorView(), vk::ImageLayout::eShaderReadOnlyOptimal};
-					writer.setImageArray(MaterialBinding::TextureArray, texImages);
-				}
-
-				vk::DescriptorSet perDrawSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::PerDraw);
-				Verify(perDrawSet);
-				writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
-				writer.flush();
-				cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
-					pipelineMgr->getPipelineLayout(),
-					static_cast<uint32_t>(DescriptorSetIndex::Global), globalSet, {});
-				cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
-					pipelineMgr->getPipelineLayout(),
-					static_cast<uint32_t>(DescriptorSetIndex::Material), materialSet, {});
-				cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
-					pipelineMgr->getPipelineLayout(),
-					static_cast<uint32_t>(DescriptorSetIndex::PerDraw), perDrawSet, {});
-
-				cmd.draw(3, 1, 0, 0);
-			}
-
-			cmd.endRenderPass();
-		}
+		// Copy scene color → MSAA emissive via dedicated single-attachment render pass.
+		// bindGlobalSet=true: this can run before any material draw this frame has
+		// bound Set 0. sampleCount matches the MSAA G-buffer this feeds into.
+		pp->context().drawFullscreenTriangle(cmd,
+			pp->deferred().msaaEmissiveCopyRenderPass(), pp->deferred().msaaEmissiveCopyFramebuffer(),
+			pp->getSceneExtent(), SDR_TYPE_COPY,
+			pp->getSceneColorView(), pp->getSceneColorSampler(),
+			nullptr, 0, ALPHA_BLEND_NONE, 0,
+			renderer->getMsaaSampleCount(), true);
 
 		// Begin MSAA G-buffer render pass (eClear for 0-3+depth, eLoad for emissive [4])
 		{

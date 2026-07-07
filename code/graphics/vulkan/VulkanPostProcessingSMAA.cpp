@@ -24,15 +24,18 @@ namespace graphics::vulkan {
 // reuse as scratch: FXAA and SMAA are mutually exclusive via Gr_aa_mode) and
 // a final resolve pass copies that back into Scene_ldr.
 
-bool VulkanPostProcessor::initSMAA()
+bool VulkanSMAA::init(PostProcessContext& ctx, const VulkanLDR& ldr)
 {
-	if (m_smaaInitialized) {
+	if (m_initialized) {
 		return true;
 	}
 
-	if (!m_ldrInitialized) {
+	if (!ldr.isInitialized()) {
 		return false;
 	}
+
+	m_ctx = &ctx;
+	m_ldr = &ldr;
 
 	auto* texMgr = getTextureManager();
 	if (!texMgr) {
@@ -42,40 +45,40 @@ bool VulkanPostProcessor::initSMAA()
 	if (!texMgr->createStaticTexture2D(AREATEX_WIDTH, AREATEX_HEIGHT, vk::Format::eR8G8Unorm,
 	                                   areaTexBytes, sizeof(areaTexBytes), "SMAA Area Texture",
 	                                   m_smaaAreaTexImage, m_smaaAreaTexView, m_smaaAreaTexAlloc)) {
-		nprintf(("vulkan", "VulkanPostProcessor: Failed to upload SMAA area texture!\n"));
+		nprintf(("vulkan", "VulkanSMAA: Failed to upload SMAA area texture!\n"));
 		return false;
 	}
 
 	if (!texMgr->createStaticTexture2D(SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT, vk::Format::eR8Unorm,
 	                                   searchTexBytes, sizeof(searchTexBytes), "SMAA Search Texture",
 	                                   m_smaaSearchTexImage, m_smaaSearchTexView, m_smaaSearchTexAlloc)) {
-		nprintf(("vulkan", "VulkanPostProcessor: Failed to upload SMAA search texture!\n"));
-		shutdownSMAA();
+		nprintf(("vulkan", "VulkanSMAA: Failed to upload SMAA search texture!\n"));
+		shutdown();
 		return false;
 	}
 
-	const vk::Format ldrFormat = m_ctx.ldrFormat;
-	const uint32_t w = m_ctx.sceneExtent.width;
-	const uint32_t h = m_ctx.sceneExtent.height;
+	const vk::Format ldrFormat = m_ctx->ldrFormat;
+	const uint32_t w = m_ctx->sceneExtent.width;
+	const uint32_t h = m_ctx->sceneExtent.height;
 
-	if (!m_ctx.createImage(w, h, ldrFormat,
+	if (!m_ctx->createImage(w, h, ldrFormat,
 	                       vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled,
 	                       vk::ImageAspectFlagBits::eColor,
 	                       m_smaaEdges.image, m_smaaEdges.view, m_smaaEdges.allocation)) {
-		nprintf(("vulkan", "VulkanPostProcessor: Failed to create SMAA edges image!\n"));
-		shutdownSMAA();
+		nprintf(("vulkan", "VulkanSMAA: Failed to create SMAA edges image!\n"));
+		shutdown();
 		return false;
 	}
 	m_smaaEdges.format = ldrFormat;
 	m_smaaEdges.width = w;
 	m_smaaEdges.height = h;
 
-	if (!m_ctx.createImage(w, h, ldrFormat,
+	if (!m_ctx->createImage(w, h, ldrFormat,
 	                       vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled,
 	                       vk::ImageAspectFlagBits::eColor,
 	                       m_smaaBlend.image, m_smaaBlend.view, m_smaaBlend.allocation)) {
-		nprintf(("vulkan", "VulkanPostProcessor: Failed to create SMAA blend image!\n"));
-		shutdownSMAA();
+		nprintf(("vulkan", "VulkanSMAA: Failed to create SMAA blend image!\n"));
+		shutdown();
 		return false;
 	}
 	m_smaaBlend.format = ldrFormat;
@@ -86,7 +89,7 @@ bool VulkanPostProcessor::initSMAA()
 	// loadOp=eDontCare and finalLayout=eShaderReadOnlyOptimal, so it's compatible.
 	{
 		vk::FramebufferCreateInfo fbInfo;
-		fbInfo.renderPass = m_ldrRenderPass;
+		fbInfo.renderPass = m_ldr->renderPass();
 		fbInfo.attachmentCount = 1;
 		fbInfo.width = w;
 		fbInfo.height = h;
@@ -94,110 +97,110 @@ bool VulkanPostProcessor::initSMAA()
 
 		fbInfo.pAttachments = &m_smaaEdges.view;
 		try {
-			m_smaaEdgesFB = m_ctx.device.createFramebuffer(fbInfo);
+			m_smaaEdgesFB = m_ctx->device.createFramebuffer(fbInfo);
 		} catch (const vk::SystemError& e) {
-			nprintf(("vulkan", "VulkanPostProcessor: Failed to create SMAA edges framebuffer: %s\n", e.what()));
-			shutdownSMAA();
+			nprintf(("vulkan", "VulkanSMAA: Failed to create SMAA edges framebuffer: %s\n", e.what()));
+			shutdown();
 			return false;
 		}
 
 		fbInfo.pAttachments = &m_smaaBlend.view;
 		try {
-			m_smaaBlendFB = m_ctx.device.createFramebuffer(fbInfo);
+			m_smaaBlendFB = m_ctx->device.createFramebuffer(fbInfo);
 		} catch (const vk::SystemError& e) {
-			nprintf(("vulkan", "VulkanPostProcessor: Failed to create SMAA blend framebuffer: %s\n", e.what()));
-			shutdownSMAA();
+			nprintf(("vulkan", "VulkanSMAA: Failed to create SMAA blend framebuffer: %s\n", e.what()));
+			shutdown();
 			return false;
 		}
 	}
 
-	m_smaaInitialized = true;
-	nprintf(("vulkan", "VulkanPostProcessor: SMAA initialized (%ux%u)\n", w, h));
+	m_initialized = true;
+	nprintf(("vulkan", "VulkanSMAA: SMAA initialized (%ux%u)\n", w, h));
 	return true;
 }
 
-void VulkanPostProcessor::shutdownSMAA()
+void VulkanSMAA::shutdown()
 {
-	if (!m_ctx.device) {
+	if (!m_ctx || !m_ctx->device) {
 		return;
 	}
 
 	if (m_smaaBlendFB) {
-		m_ctx.device.destroyFramebuffer(m_smaaBlendFB);
+		m_ctx->device.destroyFramebuffer(m_smaaBlendFB);
 		m_smaaBlendFB = nullptr;
 	}
 	if (m_smaaEdgesFB) {
-		m_ctx.device.destroyFramebuffer(m_smaaEdgesFB);
+		m_ctx->device.destroyFramebuffer(m_smaaEdgesFB);
 		m_smaaEdgesFB = nullptr;
 	}
 
 	if (m_smaaBlend.view) {
-		m_ctx.device.destroyImageView(m_smaaBlend.view);
+		m_ctx->device.destroyImageView(m_smaaBlend.view);
 		m_smaaBlend.view = nullptr;
 	}
 	if (m_smaaBlend.image) {
-		m_ctx.device.destroyImage(m_smaaBlend.image);
+		m_ctx->device.destroyImage(m_smaaBlend.image);
 		m_smaaBlend.image = nullptr;
 	}
 	if (m_smaaBlend.allocation.isValid()) {
-		m_ctx.memoryManager->freeAllocation(m_smaaBlend.allocation);
+		m_ctx->memoryManager->freeAllocation(m_smaaBlend.allocation);
 	}
 
 	if (m_smaaEdges.view) {
-		m_ctx.device.destroyImageView(m_smaaEdges.view);
+		m_ctx->device.destroyImageView(m_smaaEdges.view);
 		m_smaaEdges.view = nullptr;
 	}
 	if (m_smaaEdges.image) {
-		m_ctx.device.destroyImage(m_smaaEdges.image);
+		m_ctx->device.destroyImage(m_smaaEdges.image);
 		m_smaaEdges.image = nullptr;
 	}
 	if (m_smaaEdges.allocation.isValid()) {
-		m_ctx.memoryManager->freeAllocation(m_smaaEdges.allocation);
+		m_ctx->memoryManager->freeAllocation(m_smaaEdges.allocation);
 	}
 
 	if (m_smaaSearchTexView) {
-		m_ctx.device.destroyImageView(m_smaaSearchTexView);
+		m_ctx->device.destroyImageView(m_smaaSearchTexView);
 		m_smaaSearchTexView = nullptr;
 	}
 	if (m_smaaSearchTexImage) {
-		m_ctx.device.destroyImage(m_smaaSearchTexImage);
+		m_ctx->device.destroyImage(m_smaaSearchTexImage);
 		m_smaaSearchTexImage = nullptr;
 	}
 	if (m_smaaSearchTexAlloc.isValid()) {
-		m_ctx.memoryManager->freeAllocation(m_smaaSearchTexAlloc);
+		m_ctx->memoryManager->freeAllocation(m_smaaSearchTexAlloc);
 	}
 
 	if (m_smaaAreaTexView) {
-		m_ctx.device.destroyImageView(m_smaaAreaTexView);
+		m_ctx->device.destroyImageView(m_smaaAreaTexView);
 		m_smaaAreaTexView = nullptr;
 	}
 	if (m_smaaAreaTexImage) {
-		m_ctx.device.destroyImage(m_smaaAreaTexImage);
+		m_ctx->device.destroyImage(m_smaaAreaTexImage);
 		m_smaaAreaTexImage = nullptr;
 	}
 	if (m_smaaAreaTexAlloc.isValid()) {
-		m_ctx.memoryManager->freeAllocation(m_smaaAreaTexAlloc);
+		m_ctx->memoryManager->freeAllocation(m_smaaAreaTexAlloc);
 	}
 
-	m_smaaInitialized = false;
+	m_initialized = false;
 }
 
-void VulkanPostProcessor::executeSMAA(vk::CommandBuffer cmd)
+void VulkanSMAA::execute(vk::CommandBuffer cmd)
 {
-	if (!m_smaaInitialized || !m_ldrInitialized || !gr_is_smaa_mode(Gr_aa_mode)) {
+	if (!m_initialized || !m_ldr->isInitialized() || !gr_is_smaa_mode(Gr_aa_mode)) {
 		return;
 	}
 
 	GR_DEBUG_SCOPE("SMAA");
 
-	m_ctx.scratchUBOMapped = m_ctx.memoryManager->mapMemory(m_ctx.scratchUBOAlloc);
-	if (!m_ctx.scratchUBOMapped) {
+	m_ctx->scratchUBOMapped = m_ctx->memoryManager->mapMemory(m_ctx->scratchUBOAlloc);
+	if (!m_ctx->scratchUBOMapped) {
 		return;
 	}
 
 	graphics::generic_data::smaa_data smaaData;
-	smaaData.smaa_rt_metrics.x = static_cast<float>(m_ctx.sceneExtent.width);
-	smaaData.smaa_rt_metrics.y = static_cast<float>(m_ctx.sceneExtent.height);
+	smaaData.smaa_rt_metrics.x = static_cast<float>(m_ctx->sceneExtent.width);
+	smaaData.smaa_rt_metrics.y = static_cast<float>(m_ctx->sceneExtent.height);
 	smaaData.pad[0] = 0.0f;
 	smaaData.pad[1] = 0.0f;
 
@@ -206,10 +209,10 @@ void VulkanPostProcessor::executeSMAA(vk::CommandBuffer cmd)
 	{
 		GR_DEBUG_SCOPE("SMAA Detect Edges");
 
-		drawFullscreenTriangle(cmd, m_ldrRenderPass,
-			m_smaaEdgesFB, m_ctx.sceneExtent,
+		m_ctx->drawFullscreenTriangle(cmd, m_ldr->renderPass(),
+			m_smaaEdgesFB, m_ctx->sceneExtent,
 			SDR_TYPE_POST_PROCESS_SMAA_EDGE,
-			getAADetectionView(), m_ctx.linearSampler,
+			m_ldr->getAADetectionView(), m_ctx->linearSampler,
 			&smaaData, sizeof(smaaData),
 			ALPHA_BLEND_NONE);
 	}
@@ -219,7 +222,7 @@ void VulkanPostProcessor::executeSMAA(vk::CommandBuffer cmd)
 		GR_DEBUG_SCOPE("SMAA Blending Weights calculation");
 
 		std::array<vk::ImageView, 3> views = {m_smaaEdges.view, m_smaaAreaTexView, m_smaaSearchTexView};
-		drawFullscreenTriangleMulti(cmd, m_ldrRenderPass, m_smaaBlendFB, m_ctx.sceneExtent,
+		m_ctx->drawFullscreenTriangleMulti(cmd, m_ldr->renderPass(), m_smaaBlendFB, m_ctx->sceneExtent,
 			SDR_TYPE_POST_PROCESS_SMAA_BLENDING_WEIGHT, views.data(), static_cast<uint32_t>(views.size()),
 			&smaaData, sizeof(smaaData));
 	}
@@ -229,8 +232,8 @@ void VulkanPostProcessor::executeSMAA(vk::CommandBuffer cmd)
 	{
 		GR_DEBUG_SCOPE("SMAA Neighborhood Blending");
 
-		std::array<vk::ImageView, 2> views = {m_sceneLdr.view, m_smaaBlend.view};
-		drawFullscreenTriangleMulti(cmd, m_ldrRenderPass, m_sceneLuminanceFB, m_ctx.sceneExtent,
+		std::array<vk::ImageView, 2> views = {m_ldr->ldrView(), m_smaaBlend.view};
+		m_ctx->drawFullscreenTriangleMulti(cmd, m_ldr->renderPass(), m_ldr->luminanceFramebuffer(), m_ctx->sceneExtent,
 			SDR_TYPE_POST_PROCESS_SMAA_NEIGHBORHOOD_BLENDING, views.data(), static_cast<uint32_t>(views.size()),
 			&smaaData, sizeof(smaaData));
 	}
@@ -239,16 +242,16 @@ void VulkanPostProcessor::executeSMAA(vk::CommandBuffer cmd)
 	{
 		GR_DEBUG_SCOPE("SMAA Resolve");
 
-		drawFullscreenTriangle(cmd, m_ldrRenderPass,
-			m_sceneLdrFB, m_ctx.sceneExtent,
+		m_ctx->drawFullscreenTriangle(cmd, m_ldr->renderPass(),
+			m_ldr->ldrFramebuffer(), m_ctx->sceneExtent,
 			SDR_TYPE_POST_PROCESS_SMAA_RESOLVE,
-			m_sceneLuminance.view, m_ctx.linearSampler,
+			m_ldr->luminanceView(), m_ctx->linearSampler,
 			nullptr, 0,
 			ALPHA_BLEND_NONE);
 	}
 
-	m_ctx.memoryManager->unmapMemory(m_ctx.scratchUBOAlloc);
-	m_ctx.scratchUBOMapped = nullptr;
+	m_ctx->memoryManager->unmapMemory(m_ctx->scratchUBOAlloc);
+	m_ctx->scratchUBOMapped = nullptr;
 }
 
 } // namespace graphics::vulkan

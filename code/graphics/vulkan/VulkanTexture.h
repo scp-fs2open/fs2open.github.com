@@ -303,6 +303,22 @@ private:
 	 */
 	bool upload3DTexture(int handle, bitmap* bm, int texDepth);
 
+	/**
+	 * @brief Upload a plain 2D texture (the common case once animation/cubemap/3D are ruled out)
+	 */
+	bool uploadTexture2D(int handle, bitmap* bm, int compType);
+
+	/**
+	 * @brief Decode a get_bitmap_from_texture() readback buffer into data_out
+	 *
+	 * Handles both the BC-compressed (block-decode via bcdec) and uncompressed
+	 * (per-format channel expand/convert) cases; data_out is tightly packed
+	 * w*h pixels at outChannels (3 or 4) bytes each.
+	 */
+	void decodeReadbackBuffer(const void* mapped, vk::Format format, bool isCompressed,
+	                          uint32_t w, uint32_t h, uint32_t blockW, uint32_t blockH,
+	                          int blockSize, int outChannels, void* data_out);
+
 	// Guard flag to prevent recursion when bm_lock calls bm_data during animation upload
 	bool m_uploadingAnimation = false;
 

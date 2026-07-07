@@ -606,6 +606,7 @@ if (FSO_BUILD_WITH_VULKAN)
 		graphics/vulkan/VulkanDescriptorManager.h
 		graphics/vulkan/VulkanDraw.cpp
 		graphics/vulkan/VulkanDraw.h
+		graphics/vulkan/VulkanDrawAPI.cpp
 		graphics/vulkan/VulkanMemory.cpp
 		graphics/vulkan/VulkanMemory.h
 		graphics/vulkan/VulkanPipeline.cpp
@@ -643,6 +644,7 @@ if (FSO_BUILD_WITH_VULKAN)
 		graphics/vulkan/VulkanState.h
 		graphics/vulkan/VulkanTexture.cpp
 		graphics/vulkan/VulkanTexture.h
+		graphics/vulkan/VulkanTextureAPI.cpp
 		graphics/vulkan/VulkanVertexFormat.cpp
 		graphics/vulkan/VulkanVertexFormat.h
 	)

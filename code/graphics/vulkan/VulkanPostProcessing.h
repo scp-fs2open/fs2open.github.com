@@ -61,6 +61,14 @@ struct PostProcessContext {
 	 *
 	 * Begins/ends the given render pass and binds material + per-draw sets.
 	 * Optional UBO data is written into the next scratch UBO slot.
+	 *
+	 * @param sampleCount Pipeline sample count; only needed when renderPass is a
+	 *                    multisampled render pass (e.g. an MSAA G-buffer pass).
+	 * @param bindGlobalSet Also allocate/write/bind the Global descriptor set.
+	 *                      Normal callers rely on Set 0 already being bound from
+	 *                      frame setup; pass true for draws that may run before
+	 *                      that binding happened this frame (e.g. mid-G-buffer-pass
+	 *                      copies that run ahead of any material draw).
 	 */
 	void drawFullscreenTriangle(vk::CommandBuffer cmd, vk::RenderPass renderPass,
 	                            vk::Framebuffer framebuffer, vk::Extent2D extent,
@@ -68,7 +76,9 @@ struct PostProcessContext {
 	                            vk::ImageView textureView, vk::Sampler sampler,
 	                            const void* uboData, size_t uboSize,
 	                            int blendMode,
-	                            unsigned int shaderFlags = 0);
+	                            unsigned int shaderFlags = 0,
+	                            vk::SampleCountFlagBits sampleCount = vk::SampleCountFlagBits::e1,
+	                            bool bindGlobalSet = false);
 
 	/**
 	 * @brief Draw a fullscreen triangle sampling multiple textures
@@ -502,6 +512,139 @@ private:
 };
 
 /**
+ * @brief Tonemapping + FXAA + post-effects + lightshafts (the LDR pass chain)
+ *
+ * Self-contained subsystem owning the full-resolution LDR targets (tonemapped
+ * output, luma-for-FXAA scratch, and a [0,1]-clamped detection proxy used by
+ * FXAA/SMAA edge detection while HDR output is active) plus their render
+ * passes/framebuffers. Reads the HDR scene color (tonemap) and scene depth
+ * (lightshafts) as read-only inputs owned by the post-processor, and the
+ * bloom subsystem's init state (to decide whether to reset the shared
+ * scratch-UBO cursor, since bloom itself resets it when it runs).
+ */
+class VulkanLDR {
+public:
+	/**
+	 * @brief Create LDR targets (sized to the scene extent)
+	 */
+	bool init(PostProcessContext& ctx, const RenderTarget& sceneColor, const RenderTarget& sceneDepth,
+	          const VulkanBloom& bloom);
+	void shutdown();
+
+	bool isInitialized() const { return m_initialized; }
+
+	/**
+	 * @brief HDR scene → Scene_ldr via the tonemapping shader
+	 * @param cmd Active command buffer (must be outside a render pass)
+	 */
+	void executeTonemap(vk::CommandBuffer cmd);
+
+	/**
+	 * @brief FXAA prepass (luma) + main pass, both operating on Scene_ldr
+	 * @param cmd Active command buffer (must be outside a render pass)
+	 */
+	void executeFXAA(vk::CommandBuffer cmd);
+
+	/**
+	 * @brief Saturation/brightness/etc. post effects: Scene_ldr -> Scene_luminance
+	 * @param cmd Active command buffer (must be outside a render pass)
+	 * @return true if effects were applied (blit should read the luminance target)
+	 */
+	bool executePostEffects(vk::CommandBuffer cmd);
+
+	/**
+	 * @brief Lightshafts (god rays), additively blended onto Scene_ldr
+	 * @param cmd Active command buffer (must be outside a render pass)
+	 */
+	void executeLightshafts(vk::CommandBuffer cmd);
+
+	/**
+	 * @brief Buffer FXAA/SMAA edge detection should read for luma computation:
+	 * the real Scene_ldr when it's already bounded to [0,1], or the compressed
+	 * tonemap proxy when HDR output has left it in extended range.
+	 */
+	vk::ImageView getAADetectionView() const;
+
+	bool postEffectsApplied() const { return m_postEffectsApplied; }
+
+	// Accessors for VulkanSMAA (reuses this render pass/targets) and
+	// VulkanPostProcessor::blitToSwapChain (reads the final LDR result).
+	vk::RenderPass renderPass() const { return m_ldrRenderPass; }
+	vk::RenderPass loadRenderPass() const { return m_ldrLoadRenderPass; }
+	vk::ImageView ldrView() const { return m_sceneLdr.view; }
+	vk::Framebuffer ldrFramebuffer() const { return m_sceneLdrFB; }
+	vk::ImageView luminanceView() const { return m_sceneLuminance.view; }
+	vk::Framebuffer luminanceFramebuffer() const { return m_sceneLuminanceFB; }
+
+private:
+	PostProcessContext* m_ctx = nullptr;
+	const RenderTarget* m_sceneColor = nullptr;
+	const RenderTarget* m_sceneDepth = nullptr;
+	const VulkanBloom* m_bloom = nullptr;
+
+	RenderTarget m_sceneLdr;           // RGBA8 LDR after tonemapping
+	RenderTarget m_sceneLuminance;     // RGBA8 LDR with luma in alpha (for FXAA)
+	// RGBA8, a [0,1]-clamped copy of Scene_ldr (see executeTonemap); used only
+	// as an edge-detection input for FXAA/SMAA (see getAADetectionView) so
+	// their fixed luma thresholds stay valid even though Scene_ldr itself can
+	// carry values above 1.0 while HDR is active. Unused (and left as a
+	// duplicate of Scene_ldr's own data) when HDR is inactive.
+	RenderTarget m_sceneLdrCompressed;
+	vk::RenderPass m_ldrRenderPass;    // Color-only RGBA8, loadOp=eDontCare
+	vk::RenderPass m_ldrLoadRenderPass; // Color-only RGBA8, loadOp=eLoad (for additive blending)
+	vk::Framebuffer m_sceneLdrFB;
+	vk::Framebuffer m_sceneLuminanceFB;
+	vk::Framebuffer m_sceneLdrCompressedFB;
+	bool m_initialized = false;
+	bool m_postEffectsApplied = false; // Set per-frame by executePostEffects
+};
+
+/**
+ * @brief SMAA anti-aliasing (edge detection -> blending weights -> neighborhood blend -> resolve)
+ *
+ * Self-contained subsystem owning the static SMAA area/search lookup textures
+ * and the edge/blend-weight intermediate targets. Reuses VulkanLDR's render
+ * pass and Scene_ldr/Scene_luminance targets (same format/loadOp/finalLayout),
+ * so it depends on VulkanLDR rather than owning its own LDR-shaped state.
+ */
+class VulkanSMAA {
+public:
+	/**
+	 * @brief Upload SMAA lookup textures and create edge/blend intermediate targets
+	 * @param ldr Must already be initialized; its render pass and targets are reused.
+	 */
+	bool init(PostProcessContext& ctx, const VulkanLDR& ldr);
+	void shutdown();
+
+	bool isInitialized() const { return m_initialized; }
+
+	/**
+	 * @brief Run the full SMAA chain, resolving the result back into Scene_ldr
+	 * @param cmd Active command buffer (must be outside a render pass)
+	 */
+	void execute(vk::CommandBuffer cmd);
+
+private:
+	PostProcessContext* m_ctx = nullptr;
+	const VulkanLDR* m_ldr = nullptr;
+
+	// Static lookup textures (uploaded once at init, never change)
+	vk::Image m_smaaAreaTexImage;
+	vk::ImageView m_smaaAreaTexView;
+	VulkanAllocation m_smaaAreaTexAlloc;
+	vk::Image m_smaaSearchTexImage;
+	vk::ImageView m_smaaSearchTexView;
+	VulkanAllocation m_smaaSearchTexAlloc;
+
+	// Intermediate targets (reuse VulkanLDR's render pass: same format/loadOp/finalLayout)
+	RenderTarget m_smaaEdges;  // RGBA8 edge detection output
+	RenderTarget m_smaaBlend;  // RGBA8 blending weight output
+	vk::Framebuffer m_smaaEdgesFB;
+	vk::Framebuffer m_smaaBlendFB;
+	bool m_initialized = false;
+};
+
+/**
  * @brief Manages Vulkan post-processing pipeline
  *
  * Owns offscreen render targets (HDR scene color + depth), render passes,
@@ -621,7 +764,7 @@ public:
 	 *
 	 * @param cmd Active command buffer (must be outside a render pass)
 	 */
-	void executeTonemap(vk::CommandBuffer cmd);
+	void executeTonemap(vk::CommandBuffer cmd) { m_ldr.executeTonemap(cmd); }
 
 	/**
 	 * @brief Execute FXAA anti-aliasing passes
@@ -631,7 +774,7 @@ public:
 	 *
 	 * @param cmd Active command buffer (must be outside a render pass)
 	 */
-	void executeFXAA(vk::CommandBuffer cmd);
+	void executeFXAA(vk::CommandBuffer cmd) { m_ldr.executeFXAA(cmd); }
 
 	/**
 	 * @brief Execute SMAA anti-aliasing passes
@@ -643,7 +786,7 @@ public:
 	 *
 	 * @param cmd Active command buffer (must be outside a render pass)
 	 */
-	void executeSMAA(vk::CommandBuffer cmd);
+	void executeSMAA(vk::CommandBuffer cmd) { m_smaa.execute(cmd); }
 
 	/**
 	 * @brief Execute post-processing effects (saturation, brightness, etc.)
@@ -654,7 +797,7 @@ public:
 	 * @param cmd Active command buffer (must be outside a render pass)
 	 * @return true if effects were applied (blit should read Scene_luminance)
 	 */
-	bool executePostEffects(vk::CommandBuffer cmd);
+	bool executePostEffects(vk::CommandBuffer cmd) { return m_ldr.executePostEffects(cmd); }
 
 	/**
 	 * @brief Execute lightshafts (god rays) pass
@@ -665,7 +808,7 @@ public:
 	 *
 	 * @param cmd Active command buffer (must be outside a render pass)
 	 */
-	void executeLightshafts(vk::CommandBuffer cmd);
+	void executeLightshafts(vk::CommandBuffer cmd) { m_ldr.executeLightshafts(cmd); }
 
 	/**
 	 * @brief Update distortion ping-pong textures
@@ -713,7 +856,7 @@ public:
 	/**
 	 * @brief Check if LDR targets are available (tonemapping + FXAA ready)
 	 */
-	bool hasLDRTargets() const { return m_ldrInitialized; }
+	bool hasLDRTargets() const { return m_ldr.isInitialized(); }
 
 	/**
 	 * @brief Get the scene color image (for layout transitions outside post-processor)
@@ -764,6 +907,11 @@ public:
 	const VulkanDeferredGBuffer& deferred() const { return m_deferred; }
 	VulkanShadowMap& shadow() { return m_shadow; }
 	const VulkanShadowMap& shadow() const { return m_shadow; }
+
+	// Shared draw/image helpers (fullscreen-triangle draws, image creation) for
+	// free-function callers outside VulkanPostProcessor itself, e.g. the deferred
+	// lighting pass driver in VulkanDeferred.cpp.
+	PostProcessContext& context() { return m_ctx; }
 
 	// ========== Deferred Light Accumulation ==========
 
@@ -845,19 +993,6 @@ private:
 	bool initMSAA() { return m_deferred.initMsaa(); }
 	void shutdownMSAA() { m_deferred.shutdownMsaa(); }
 
-	// LDR target methods
-	bool initLDRTargets();
-	void shutdownLDRTargets();
-
-	// Returns which buffer FXAA/SMAA edge detection should read for luma
-	// computation: Scene_ldr normally, or the tonemap-compressed proxy while
-	// HDR output has left Scene_ldr in extended range.
-	vk::ImageView getAADetectionView() const;
-
-	// SMAA methods (requires LDR targets to already be initialized)
-	bool initSMAA();
-	void shutdownSMAA();
-
 	// Bloom pipeline (forwards to the VulkanBloom subsystem)
 	bool initBloom() { return m_bloom.init(m_ctx, m_sceneColor); }
 	void shutdownBloom() { m_bloom.shutdown(); }
@@ -901,46 +1036,23 @@ private:
 	vk::Buffer m_tonemapUBO;
 	VulkanAllocation m_tonemapUBOAlloc;
 
-	// Persistent UBO for the final output-encode pass (separate from m_tonemapUBO
-	// because both can be recorded within a single 3D frame).
+	// Persistent UBO for the final output-encode pass. Deliberately NOT the
+	// shared per-frame scratch UBO ring (PostProcessContext::scratchUBO):
+	// encodeOutput() runs once, last, per frame -- after every other pass has
+	// already consumed its scratch slots -- so sharing the ring risks
+	// overflowing SCRATCH_UBO_MAX_SLOTS on frames where the other passes
+	// (tonemap+FXAA/SMAA+lightshafts+post-effects+bloom) already used all of it.
 	vk::Buffer m_outputEncodeUBO;
 	VulkanAllocation m_outputEncodeUBOAlloc;
 
 	// ---- Bloom (self-contained subsystem) ----
 	VulkanBloom m_bloom;
 
-	// ---- LDR / FXAA resources ----
-	RenderTarget m_sceneLdr;           // RGBA8 LDR after tonemapping
-	RenderTarget m_sceneLuminance;     // RGBA8 LDR with luma in alpha (for FXAA)
-	// RGBA8, a [0,1]-clamped copy of Scene_ldr (see executeTonemap); used only
-	// as an edge-detection input for FXAA/SMAA (see getAADetectionView) so
-	// their fixed luma thresholds stay valid even though Scene_ldr itself can
-	// carry values above 1.0 while HDR is active. Unused (and left as a
-	// duplicate of Scene_ldr's own data) when HDR is inactive.
-	RenderTarget m_sceneLdrCompressed;
-	vk::RenderPass m_ldrRenderPass;    // Color-only RGBA8, loadOp=eDontCare
-	vk::RenderPass m_ldrLoadRenderPass; // Color-only RGBA8, loadOp=eLoad (for additive blending)
-	vk::Framebuffer m_sceneLdrFB;
-	vk::Framebuffer m_sceneLuminanceFB;
-	vk::Framebuffer m_sceneLdrCompressedFB;
-	bool m_ldrInitialized = false;
+	// ---- LDR / FXAA / post-effects / lightshafts (self-contained subsystem) ----
+	VulkanLDR m_ldr;
 
-	// ---- SMAA resources ----
-	// Static lookup textures (uploaded once at init, never change)
-	vk::Image m_smaaAreaTexImage;
-	vk::ImageView m_smaaAreaTexView;
-	VulkanAllocation m_smaaAreaTexAlloc;
-	vk::Image m_smaaSearchTexImage;
-	vk::ImageView m_smaaSearchTexView;
-	VulkanAllocation m_smaaSearchTexAlloc;
-
-	// Intermediate targets (reuse m_ldrRenderPass: same format/loadOp/finalLayout)
-	RenderTarget m_smaaEdges;  // RGBA8 edge detection output
-	RenderTarget m_smaaBlend;  // RGBA8 blending weight output
-	vk::Framebuffer m_smaaEdgesFB;
-	vk::Framebuffer m_smaaBlendFB;
-	bool m_smaaInitialized = false;
-	bool m_postEffectsApplied = false; // Set per-frame by executePostEffects
+	// ---- SMAA (self-contained subsystem, depends on VulkanLDR) ----
+	VulkanSMAA m_smaa;
 
 	// ---- Deferred G-buffer + MSAA (self-contained subsystem) ----
 	VulkanDeferredGBuffer m_deferred;

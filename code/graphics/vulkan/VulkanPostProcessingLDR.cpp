@@ -29,48 +29,54 @@ namespace graphics::vulkan {
 
 // ===== LDR Targets + FXAA Pipeline Implementation =====
 
-bool VulkanPostProcessor::initLDRTargets()
+bool VulkanLDR::init(PostProcessContext& ctx, const RenderTarget& sceneColor, const RenderTarget& sceneDepth,
+                      const VulkanBloom& bloom)
 {
-	const vk::Format ldrFormat = m_ctx.ldrFormat;
+	m_ctx = &ctx;
+	m_sceneColor = &sceneColor;
+	m_sceneDepth = &sceneDepth;
+	m_bloom = &bloom;
+
+	const vk::Format ldrFormat = m_ctx->ldrFormat;
 
 	// Create Scene_ldr (full resolution) — tonemapped display-referred output.
 	// fp16 in HDR (carries values above paper white), 8-bit UNORM in SDR.
-	if (!createImage(m_ctx.sceneExtent.width, m_ctx.sceneExtent.height, ldrFormat,
+	if (!m_ctx->createImage(m_ctx->sceneExtent.width, m_ctx->sceneExtent.height, ldrFormat,
 	                 vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled,
 	                 vk::ImageAspectFlagBits::eColor,
 	                 m_sceneLdr.image, m_sceneLdr.view, m_sceneLdr.allocation)) {
-		nprintf(("vulkan", "VulkanPostProcessor: Failed to create Scene_ldr image!\n"));
+		nprintf(("vulkan", "VulkanLDR: Failed to create Scene_ldr image!\n"));
 		return false;
 	}
 	m_sceneLdr.format = ldrFormat;
-	m_sceneLdr.width = m_ctx.sceneExtent.width;
-	m_sceneLdr.height = m_ctx.sceneExtent.height;
+	m_sceneLdr.width = m_ctx->sceneExtent.width;
+	m_sceneLdr.height = m_ctx->sceneExtent.height;
 
 	// Create Scene_luminance (full resolution) — LDR with luma in alpha for FXAA
-	if (!createImage(m_ctx.sceneExtent.width, m_ctx.sceneExtent.height, ldrFormat,
+	if (!m_ctx->createImage(m_ctx->sceneExtent.width, m_ctx->sceneExtent.height, ldrFormat,
 	                 vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled,
 	                 vk::ImageAspectFlagBits::eColor,
 	                 m_sceneLuminance.image, m_sceneLuminance.view, m_sceneLuminance.allocation)) {
-		nprintf(("vulkan", "VulkanPostProcessor: Failed to create Scene_luminance image!\n"));
+		nprintf(("vulkan", "VulkanLDR: Failed to create Scene_luminance image!\n"));
 		return false;
 	}
 	m_sceneLuminance.format = ldrFormat;
-	m_sceneLuminance.width = m_ctx.sceneExtent.width;
-	m_sceneLuminance.height = m_ctx.sceneExtent.height;
+	m_sceneLuminance.width = m_ctx->sceneExtent.width;
+	m_sceneLuminance.height = m_ctx->sceneExtent.height;
 
 	// Create Scene_ldr_compressed (full resolution) — tonemapped to [0,1] using the
 	// real tone curve, purely for FXAA/SMAA edge detection while HDR output is
 	// active (see executeTonemap/getAADetectionView).
-	if (!createImage(m_ctx.sceneExtent.width, m_ctx.sceneExtent.height, ldrFormat,
+	if (!m_ctx->createImage(m_ctx->sceneExtent.width, m_ctx->sceneExtent.height, ldrFormat,
 	                 vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled,
 	                 vk::ImageAspectFlagBits::eColor,
 	                 m_sceneLdrCompressed.image, m_sceneLdrCompressed.view, m_sceneLdrCompressed.allocation)) {
-		nprintf(("vulkan", "VulkanPostProcessor: Failed to create Scene_ldr_compressed image!\n"));
+		nprintf(("vulkan", "VulkanLDR: Failed to create Scene_ldr_compressed image!\n"));
 		return false;
 	}
 	m_sceneLdrCompressed.format = ldrFormat;
-	m_sceneLdrCompressed.width = m_ctx.sceneExtent.width;
-	m_sceneLdrCompressed.height = m_ctx.sceneExtent.height;
+	m_sceneLdrCompressed.width = m_ctx->sceneExtent.width;
+	m_sceneLdrCompressed.height = m_ctx->sceneExtent.height;
 
 	// Create LDR render pass (color-only, loadOp=eDontCare, finalLayout=eShaderReadOnlyOptimal)
 	{
@@ -114,9 +120,9 @@ bool VulkanPostProcessor::initLDRTargets()
 		rpInfo.pDependencies = &dep;
 
 		try {
-			m_ldrRenderPass = m_ctx.device.createRenderPass(rpInfo);
+			m_ldrRenderPass = m_ctx->device.createRenderPass(rpInfo);
 		} catch (const vk::SystemError& e) {
-			nprintf(("vulkan", "VulkanPostProcessor: Failed to create LDR render pass: %s\n", e.what()));
+			nprintf(("vulkan", "VulkanLDR: Failed to create LDR render pass: %s\n", e.what()));
 			return false;
 		}
 	}
@@ -127,30 +133,30 @@ bool VulkanPostProcessor::initLDRTargets()
 		fbInfo.renderPass = m_ldrRenderPass;
 		fbInfo.attachmentCount = 1;
 		fbInfo.pAttachments = &m_sceneLdr.view;
-		fbInfo.width = m_ctx.sceneExtent.width;
-		fbInfo.height = m_ctx.sceneExtent.height;
+		fbInfo.width = m_ctx->sceneExtent.width;
+		fbInfo.height = m_ctx->sceneExtent.height;
 		fbInfo.layers = 1;
 
 		try {
-			m_sceneLdrFB = m_ctx.device.createFramebuffer(fbInfo);
+			m_sceneLdrFB = m_ctx->device.createFramebuffer(fbInfo);
 		} catch (const vk::SystemError& e) {
-			nprintf(("vulkan", "VulkanPostProcessor: Failed to create Scene_ldr framebuffer: %s\n", e.what()));
+			nprintf(("vulkan", "VulkanLDR: Failed to create Scene_ldr framebuffer: %s\n", e.what()));
 			return false;
 		}
 
 		fbInfo.pAttachments = &m_sceneLuminance.view;
 		try {
-			m_sceneLuminanceFB = m_ctx.device.createFramebuffer(fbInfo);
+			m_sceneLuminanceFB = m_ctx->device.createFramebuffer(fbInfo);
 		} catch (const vk::SystemError& e) {
-			nprintf(("vulkan", "VulkanPostProcessor: Failed to create Scene_luminance framebuffer: %s\n", e.what()));
+			nprintf(("vulkan", "VulkanLDR: Failed to create Scene_luminance framebuffer: %s\n", e.what()));
 			return false;
 		}
 
 		fbInfo.pAttachments = &m_sceneLdrCompressed.view;
 		try {
-			m_sceneLdrCompressedFB = m_ctx.device.createFramebuffer(fbInfo);
+			m_sceneLdrCompressedFB = m_ctx->device.createFramebuffer(fbInfo);
 		} catch (const vk::SystemError& e) {
-			nprintf(("vulkan", "VulkanPostProcessor: Failed to create Scene_ldr_compressed framebuffer: %s\n", e.what()));
+			nprintf(("vulkan", "VulkanLDR: Failed to create Scene_ldr_compressed framebuffer: %s\n", e.what()));
 			return false;
 		}
 	}
@@ -197,91 +203,91 @@ bool VulkanPostProcessor::initLDRTargets()
 		rpInfo.pDependencies = &dep;
 
 		try {
-			m_ldrLoadRenderPass = m_ctx.device.createRenderPass(rpInfo);
+			m_ldrLoadRenderPass = m_ctx->device.createRenderPass(rpInfo);
 		} catch (const vk::SystemError& e) {
-			nprintf(("vulkan", "VulkanPostProcessor: Failed to create LDR load render pass: %s\n", e.what()));
+			nprintf(("vulkan", "VulkanLDR: Failed to create LDR load render pass: %s\n", e.what()));
 			return false;
 		}
 	}
 
-	m_ldrInitialized = true;
-	nprintf(("vulkan", "VulkanPostProcessor: LDR targets initialized (%ux%u, RGBA8)\n",
-		m_ctx.sceneExtent.width, m_ctx.sceneExtent.height));
+	m_initialized = true;
+	nprintf(("vulkan", "VulkanLDR: LDR targets initialized (%ux%u, RGBA8)\n",
+		m_ctx->sceneExtent.width, m_ctx->sceneExtent.height));
 	return true;
 }
 
-void VulkanPostProcessor::shutdownLDRTargets()
+void VulkanLDR::shutdown()
 {
-	if (!m_ldrInitialized) {
+	if (!m_initialized) {
 		return;
 	}
 
 	if (m_sceneLdrCompressedFB) {
-		m_ctx.device.destroyFramebuffer(m_sceneLdrCompressedFB);
+		m_ctx->device.destroyFramebuffer(m_sceneLdrCompressedFB);
 		m_sceneLdrCompressedFB = nullptr;
 	}
 	if (m_sceneLuminanceFB) {
-		m_ctx.device.destroyFramebuffer(m_sceneLuminanceFB);
+		m_ctx->device.destroyFramebuffer(m_sceneLuminanceFB);
 		m_sceneLuminanceFB = nullptr;
 	}
 	if (m_sceneLdrFB) {
-		m_ctx.device.destroyFramebuffer(m_sceneLdrFB);
+		m_ctx->device.destroyFramebuffer(m_sceneLdrFB);
 		m_sceneLdrFB = nullptr;
 	}
 	if (m_ldrLoadRenderPass) {
-		m_ctx.device.destroyRenderPass(m_ldrLoadRenderPass);
+		m_ctx->device.destroyRenderPass(m_ldrLoadRenderPass);
 		m_ldrLoadRenderPass = nullptr;
 	}
 	if (m_ldrRenderPass) {
-		m_ctx.device.destroyRenderPass(m_ldrRenderPass);
+		m_ctx->device.destroyRenderPass(m_ldrRenderPass);
 		m_ldrRenderPass = nullptr;
 	}
 
 	// Scene_ldr_compressed
 	if (m_sceneLdrCompressed.view) {
-		m_ctx.device.destroyImageView(m_sceneLdrCompressed.view);
+		m_ctx->device.destroyImageView(m_sceneLdrCompressed.view);
 		m_sceneLdrCompressed.view = nullptr;
 	}
 	if (m_sceneLdrCompressed.image) {
-		m_ctx.device.destroyImage(m_sceneLdrCompressed.image);
+		m_ctx->device.destroyImage(m_sceneLdrCompressed.image);
 		m_sceneLdrCompressed.image = nullptr;
 	}
 	if (m_sceneLdrCompressed.allocation.isValid()) {
-		m_ctx.memoryManager->freeAllocation(m_sceneLdrCompressed.allocation);
+		m_ctx->memoryManager->freeAllocation(m_sceneLdrCompressed.allocation);
 	}
 
 	// Scene_luminance
 	if (m_sceneLuminance.view) {
-		m_ctx.device.destroyImageView(m_sceneLuminance.view);
+		m_ctx->device.destroyImageView(m_sceneLuminance.view);
 		m_sceneLuminance.view = nullptr;
 	}
 	if (m_sceneLuminance.image) {
-		m_ctx.device.destroyImage(m_sceneLuminance.image);
+		m_ctx->device.destroyImage(m_sceneLuminance.image);
 		m_sceneLuminance.image = nullptr;
 	}
 	if (m_sceneLuminance.allocation.isValid()) {
-		m_ctx.memoryManager->freeAllocation(m_sceneLuminance.allocation);
+		m_ctx->memoryManager->freeAllocation(m_sceneLuminance.allocation);
 	}
 
 	// Scene_ldr
 	if (m_sceneLdr.view) {
-		m_ctx.device.destroyImageView(m_sceneLdr.view);
+		m_ctx->device.destroyImageView(m_sceneLdr.view);
 		m_sceneLdr.view = nullptr;
 	}
 	if (m_sceneLdr.image) {
-		m_ctx.device.destroyImage(m_sceneLdr.image);
+		m_ctx->device.destroyImage(m_sceneLdr.image);
 		m_sceneLdr.image = nullptr;
 	}
 	if (m_sceneLdr.allocation.isValid()) {
-		m_ctx.memoryManager->freeAllocation(m_sceneLdr.allocation);
+		m_ctx->memoryManager->freeAllocation(m_sceneLdr.allocation);
 	}
 
-	m_ldrInitialized = false;
+	m_initialized = false;
 }
 
-void VulkanPostProcessor::executeTonemap(vk::CommandBuffer cmd)
+void VulkanLDR::executeTonemap(vk::CommandBuffer cmd)
 {
-	if (!m_ldrInitialized) {
+	if (!m_initialized) {
 		return;
 	}
 
@@ -290,14 +296,14 @@ void VulkanPostProcessor::executeTonemap(vk::CommandBuffer cmd)
 	namespace ltp = lighting_profiles;
 
 	// Map bloom UBO for the tonemapping draw's UBO slot
-	m_ctx.scratchUBOMapped = m_ctx.memoryManager->mapMemory(m_ctx.scratchUBOAlloc);
-	if (!m_ctx.scratchUBOMapped) {
+	m_ctx->scratchUBOMapped = m_ctx->memoryManager->mapMemory(m_ctx->scratchUBOAlloc);
+	if (!m_ctx->scratchUBOMapped) {
 		return;
 	}
 
 	// Reset cursor if bloom didn't run this frame (bloom resets to 0 when it runs)
-	if (gr_bloom_intensity() <= 0 || !m_bloom.isInitialized()) {
-		m_ctx.scratchUBOCursor = 0;
+	if (gr_bloom_intensity() <= 0 || !m_bloom->isInitialized()) {
+		m_ctx->scratchUBOCursor = 0;
 	}
 
 	// Build tonemapping data directly from lighting profiles
@@ -319,16 +325,16 @@ void VulkanPostProcessor::executeTonemap(vk::CommandBuffer cmd)
 	// current_tonemapper() (used above) forces TonemapperAlgorithm::HdrScene
 	// whenever HDR10 output is active, so tmData.tonemapper already selects
 	// the right shader case; just supply the nits it needs.
-	if (m_ctx.hdrActive) {
+	if (m_ctx->hdrActive) {
 		tmData.hdr_paperwhite_nits = Gr_hdr_paperwhite_nits;
 		tmData.hdr_peak_nits = Gr_hdr_peak_nits;
 	}
 
 	// HDR scene → Scene_ldr via tonemapping shader
-	drawFullscreenTriangle(cmd, m_ldrRenderPass,
-		m_sceneLdrFB, m_ctx.sceneExtent,
+	m_ctx->drawFullscreenTriangle(cmd, m_ldrRenderPass,
+		m_sceneLdrFB, m_ctx->sceneExtent,
 		SDR_TYPE_POST_PROCESS_TONEMAPPING,
-		m_sceneColor.view, m_ctx.linearSampler,
+		m_sceneColor->view, m_ctx->linearSampler,
 		&tmData, sizeof(tmData),
 		ALPHA_BLEND_NONE);
 
@@ -339,38 +345,38 @@ void VulkanPostProcessor::executeTonemap(vk::CommandBuffer cmd)
 	// edges from — they still blend the real extended-range Scene_ldr for
 	// the actual output. This just clamps the already-tonemapped Scene_ldr,
 	// rather than re-running exposure+tonemap from Scene_color a second time.
-	if (m_ctx.hdrActive) {
-		drawFullscreenTriangle(cmd, m_ldrRenderPass,
-			m_sceneLdrCompressedFB, m_ctx.sceneExtent,
+	if (m_ctx->hdrActive) {
+		m_ctx->drawFullscreenTriangle(cmd, m_ldrRenderPass,
+			m_sceneLdrCompressedFB, m_ctx->sceneExtent,
 			SDR_TYPE_COPY,
-			m_sceneLdr.view, m_ctx.linearSampler,
+			m_sceneLdr.view, m_ctx->linearSampler,
 			nullptr, 0,
 			ALPHA_BLEND_NONE,
 			SDR_FLAG_COPY_CLAMP01);
 	}
 
-	m_ctx.memoryManager->unmapMemory(m_ctx.scratchUBOAlloc);
-	m_ctx.scratchUBOMapped = nullptr;
+	m_ctx->memoryManager->unmapMemory(m_ctx->scratchUBOAlloc);
+	m_ctx->scratchUBOMapped = nullptr;
 }
 
 // Returns the buffer FXAA/SMAA edge detection should read for luma computation:
 // the real Scene_ldr when it's already bounded to [0,1], or the compressed
 // tonemap proxy when HDR output has left it in extended range.
-vk::ImageView VulkanPostProcessor::getAADetectionView() const
+vk::ImageView VulkanLDR::getAADetectionView() const
 {
-	return m_ctx.hdrActive ? m_sceneLdrCompressed.view : m_sceneLdr.view;
+	return m_ctx->hdrActive ? m_sceneLdrCompressed.view : m_sceneLdr.view;
 }
 
-void VulkanPostProcessor::executeFXAA(vk::CommandBuffer cmd)
+void VulkanLDR::executeFXAA(vk::CommandBuffer cmd)
 {
-	if (!m_ldrInitialized || !gr_is_fxaa_mode(Gr_aa_mode)) {
+	if (!m_initialized || !gr_is_fxaa_mode(Gr_aa_mode)) {
 		return;
 	}
 
 	GR_DEBUG_SCOPE("FXAA");
 
-	m_ctx.scratchUBOMapped = m_ctx.memoryManager->mapMemory(m_ctx.scratchUBOAlloc);
-	if (!m_ctx.scratchUBOMapped) {
+	m_ctx->scratchUBOMapped = m_ctx->memoryManager->mapMemory(m_ctx->scratchUBOAlloc);
+	if (!m_ctx->scratchUBOMapped) {
 		return;
 	}
 
@@ -378,34 +384,34 @@ void VulkanPostProcessor::executeFXAA(vk::CommandBuffer cmd)
 	// alpha computed from the detection proxy, see getAADetectionView)
 	{
 		std::array<vk::ImageView, 2> views = {m_sceneLdr.view, getAADetectionView()};
-		drawFullscreenTriangleMulti(cmd, m_ldrRenderPass, m_sceneLuminanceFB, m_ctx.sceneExtent,
+		m_ctx->drawFullscreenTriangleMulti(cmd, m_ldrRenderPass, m_sceneLuminanceFB, m_ctx->sceneExtent,
 			SDR_TYPE_POST_PROCESS_FXAA_PREPASS, views.data(), static_cast<uint32_t>(views.size()),
 			nullptr, 0);
 	}
 
 	// FXAA main pass: Scene_luminance → Scene_ldr
 	graphics::generic_data::fxaa_data fxaaData;
-	fxaaData.rt_w = static_cast<float>(m_ctx.sceneExtent.width);
-	fxaaData.rt_h = static_cast<float>(m_ctx.sceneExtent.height);
+	fxaaData.rt_w = static_cast<float>(m_ctx->sceneExtent.width);
+	fxaaData.rt_h = static_cast<float>(m_ctx->sceneExtent.height);
 	fxaaData.pad[0] = 0.0f;
 	fxaaData.pad[1] = 0.0f;
 
-	drawFullscreenTriangle(cmd, m_ldrRenderPass,
-		m_sceneLdrFB, m_ctx.sceneExtent,
+	m_ctx->drawFullscreenTriangle(cmd, m_ldrRenderPass,
+		m_sceneLdrFB, m_ctx->sceneExtent,
 		SDR_TYPE_POST_PROCESS_FXAA,
-		m_sceneLuminance.view, m_ctx.linearSampler,
+		m_sceneLuminance.view, m_ctx->linearSampler,
 		&fxaaData, sizeof(fxaaData),
 		ALPHA_BLEND_NONE);
 
-	m_ctx.memoryManager->unmapMemory(m_ctx.scratchUBOAlloc);
-	m_ctx.scratchUBOMapped = nullptr;
+	m_ctx->memoryManager->unmapMemory(m_ctx->scratchUBOAlloc);
+	m_ctx->scratchUBOMapped = nullptr;
 }
 
-bool VulkanPostProcessor::executePostEffects(vk::CommandBuffer cmd)
+bool VulkanLDR::executePostEffects(vk::CommandBuffer cmd)
 {
 	m_postEffectsApplied = false;
 
-	if (!m_ldrInitialized || !graphics::Post_processing_manager) {
+	if (!m_initialized || !graphics::Post_processing_manager) {
 		return false;
 	}
 
@@ -428,8 +434,8 @@ bool VulkanPostProcessor::executePostEffects(vk::CommandBuffer cmd)
 
 	GR_DEBUG_SCOPE("Draw post effects");
 
-	m_ctx.scratchUBOMapped = m_ctx.memoryManager->mapMemory(m_ctx.scratchUBOAlloc);
-	if (!m_ctx.scratchUBOMapped) {
+	m_ctx->scratchUBOMapped = m_ctx->memoryManager->mapMemory(m_ctx->scratchUBOAlloc);
+	if (!m_ctx->scratchUBOMapped) {
 		return false;
 	}
 
@@ -497,24 +503,24 @@ bool VulkanPostProcessor::executePostEffects(vk::CommandBuffer cmd)
 	}
 
 	// Post-effects: Scene_ldr → Scene_luminance (reusing luminance target as temp)
-	drawFullscreenTriangle(cmd, m_ldrRenderPass,
-		m_sceneLuminanceFB, m_ctx.sceneExtent,
+	m_ctx->drawFullscreenTriangle(cmd, m_ldrRenderPass,
+		m_sceneLuminanceFB, m_ctx->sceneExtent,
 		SDR_TYPE_POST_PROCESS_MAIN,
-		m_sceneLdr.view, m_ctx.linearSampler,
+		m_sceneLdr.view, m_ctx->linearSampler,
 		&uboData, sizeof(uboData),
 		ALPHA_BLEND_NONE,
 		static_cast<unsigned int>(effectFlags));
 
-	m_ctx.memoryManager->unmapMemory(m_ctx.scratchUBOAlloc);
-	m_ctx.scratchUBOMapped = nullptr;
+	m_ctx->memoryManager->unmapMemory(m_ctx->scratchUBOAlloc);
+	m_ctx->scratchUBOMapped = nullptr;
 
 	m_postEffectsApplied = true;
 	return true;
 }
 
-void VulkanPostProcessor::executeLightshafts(vk::CommandBuffer cmd)
+void VulkanLDR::executeLightshafts(vk::CommandBuffer cmd)
 {
-	if (!m_ldrInitialized || !graphics::Post_processing_manager) {
+	if (!m_initialized || !graphics::Post_processing_manager) {
 		return;
 	}
 
@@ -559,8 +565,8 @@ void VulkanPostProcessor::executeLightshafts(vk::CommandBuffer cmd)
 		barrier.newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.image = m_sceneDepth.image;
-		barrier.subresourceRange.aspectMask = imageAspectFromFormat(m_ctx.depthFormat);
+		barrier.image = m_sceneDepth->image;
+		barrier.subresourceRange.aspectMask = imageAspectFromFormat(m_ctx->depthFormat);
 		barrier.subresourceRange.baseMipLevel = 0;
 		barrier.subresourceRange.levelCount = 1;
 		barrier.subresourceRange.baseArrayLayer = 0;
@@ -607,21 +613,21 @@ void VulkanPostProcessor::executeLightshafts(vk::CommandBuffer cmd)
 	lsData.cp_intensity = Sun_spot * ls_params.cpintensity;
 	lsData.pad[0] = 0.0f;
 
-	m_ctx.scratchUBOMapped = m_ctx.memoryManager->mapMemory(m_ctx.scratchUBOAlloc);
-	if (!m_ctx.scratchUBOMapped) {
+	m_ctx->scratchUBOMapped = m_ctx->memoryManager->mapMemory(m_ctx->scratchUBOAlloc);
+	if (!m_ctx->scratchUBOMapped) {
 		return;
 	}
 
 	// Additive blend lightshafts onto Scene_ldr
-	drawFullscreenTriangle(cmd, m_ldrLoadRenderPass,
-		m_sceneLdrFB, m_ctx.sceneExtent,
+	m_ctx->drawFullscreenTriangle(cmd, m_ldrLoadRenderPass,
+		m_sceneLdrFB, m_ctx->sceneExtent,
 		SDR_TYPE_POST_PROCESS_LIGHTSHAFTS,
-		m_sceneDepth.view, m_ctx.linearSampler,
+		m_sceneDepth->view, m_ctx->linearSampler,
 		&lsData, sizeof(lsData),
 		ALPHA_BLEND_ADDITIVE);
 
-	m_ctx.memoryManager->unmapMemory(m_ctx.scratchUBOAlloc);
-	m_ctx.scratchUBOMapped = nullptr;
+	m_ctx->memoryManager->unmapMemory(m_ctx->scratchUBOAlloc);
+	m_ctx->scratchUBOMapped = nullptr;
 }
 
 } // namespace graphics::vulkan
