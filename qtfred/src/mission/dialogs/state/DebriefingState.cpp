@@ -1,9 +1,7 @@
 // captureState() and restoreState() for DebriefingDialogModel.
-// Snapshots all debriefing stages and music track selections from the live
-// globals so that undo/redo can restore them without reopening the dialog.
-//
-// TODO(sexp_tree_refactor): debrief_stage::formula is not serialized yet.
-// Replace writeSexpStub/readSexpStub with real sexp tree serialization.
+// Snapshots all debriefing stages (including sexp formulas) and music track
+// selections from the live globals so that undo/redo can restore them
+// without reopening the dialog.
 
 #include <mission/dialogs/DebriefingDialogModel.h>
 
@@ -27,7 +25,7 @@ QByteArray DebriefingDialogModel::captureState() const
 		ds << static_cast<qint32>(deb.num_stages);
 
 		for (const auto& stage : deb.stages) {
-			fso::fred::state::writeSexpStub(ds); // formula — TODO(sexp_tree_refactor)
+			fso::fred::state::writeSexp(ds, stage.formula);
 			ds << QString::fromStdString(stage.text);
 			ds << QString::fromLatin1(stage.voice);
 			ds << QString::fromStdString(stage.recommendation_text);
@@ -55,7 +53,8 @@ void DebriefingDialogModel::restoreState(const QByteArray& state)
 
 		for (auto& stage : deb.stages) {
 			QString text, voice, recText;
-			fso::fred::state::readSexpStub(ds); // formula — TODO(sexp_tree_refactor)
+			fso::fred::state::freeSexpFormula(stage.formula);
+			stage.formula = fso::fred::state::readSexp(ds);
 			ds >> text >> voice >> recText;
 			stage.text = text.toStdString();
 			strncpy(stage.voice, voice.toLatin1().constData(), MAX_FILENAME_LEN - 1);
