@@ -4810,6 +4810,12 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, 
 				Ship_registry_map[p_objp->name] = static_cast<int>(Ship_registry.size() - 1);
 			}
 		}
+		// make sure we still handle wing display names in a single-wave wing
+		else if (wingp->has_display_name())
+		{
+			wing_bash_ship_name(p_objp->display_name, wingp->get_display_name(), wingp->total_arrived_count + wingp->red_alert_skipped_ships);
+			p_objp->flags.set(Mission::Parse_Object_Flags::SF_Has_display_name);
+		}
 
 		// also, if multiplayer, set the parse object's net signature to be wing's net signature
 		// base + total_arrived_count (before adding 1)
