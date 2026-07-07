@@ -210,6 +210,9 @@ SCP_string get_version_string()
 	case GraphicsAPI::Vulkan:
 		str += " Vulkan";
 		break;
+	default:
+		str += " Unknown???";
+		break;
 	}
 
 	return str;

@@ -375,7 +375,7 @@ void gr_opengl_deferred_lighting_finish()
 			auto light_data = prepare_light_uniforms(l, light_uniform_aligner, lp);
 
 			if (l.type == Light_Type::Cone) {
-				light_data->dualCone = (l.flags & LF_DUAL_CONE) ? 1.0f : 0.0f;
+				light_data->dualCone = (l.flags & LF_DUAL_CONE) ? 1 : 0;
 				light_data->coneAngle = l.cone_angle;
 				light_data->coneInnerAngle = l.cone_inner_angle;
 				light_data->coneDir = l.vec2;

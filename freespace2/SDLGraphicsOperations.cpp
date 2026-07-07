@@ -3,7 +3,9 @@
 
 #include "SDLGraphicsOperations.h"
 
+#ifdef WITH_VULKAN
 #include "backends/imgui_impl_vulkan.h"
+#endif
 #include "cmdline/cmdline.h"
 
 #if SDL_VERSION_ATLEAST(2, 0, 6)
@@ -184,7 +186,9 @@ SDLGraphicsOperations::~SDLGraphicsOperations() {
 					ImGui_ImplOpenGL3_Shutdown();
 					break;
 				case GraphicsAPI::Vulkan:
+#ifdef WITH_VULKAN
 					ImGui_ImplVulkan_Shutdown();
+#endif
 					break;
 				default:
 					break;

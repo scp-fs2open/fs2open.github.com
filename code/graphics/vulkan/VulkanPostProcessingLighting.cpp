@@ -558,7 +558,7 @@ void VulkanDeferredLighting::render(vk::CommandBuffer cmd)
 		auto* ld = prepare_light_uniforms(l, uboMapped + lightDataOffset + (lightIdx * lightDataSize), lp);
 
 		if (l.type == Light_Type::Cone) {
-			ld->dualCone = (l.flags & LF_DUAL_CONE) ? 1.0f : 0.0f;
+			ld->dualCone = (l.flags & LF_DUAL_CONE) ? 1 : 0;
 			ld->coneAngle = l.cone_angle;
 			ld->coneInnerAngle = l.cone_inner_angle;
 			ld->coneDir = l.vec2;
