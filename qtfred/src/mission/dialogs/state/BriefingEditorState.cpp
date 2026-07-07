@@ -5,8 +5,6 @@
 // brief_icon authoring fields are serialized individually; runtime fields
 // (screen coords, bitmap/model handles, anim state) are skipped and
 // zero-initialised on restore.
-//
-// TODO(sexp_tree_refactor): brief_stage::formula is not serialized.
 
 #include <mission/dialogs/BriefingEditorDialogModel.h>
 
@@ -80,7 +78,7 @@ static void writeStage(QDataStream& ds, const brief_stage& s)
 	ds << s.camera_orient.vec.fvec.xyz.x << s.camera_orient.vec.fvec.xyz.y << s.camera_orient.vec.fvec.xyz.z;
 	ds << static_cast<qint32>(s.camera_time);
 	ds << static_cast<qint32>(s.flags);
-	fso::fred::state::writeSexpStub(ds); // formula — TODO(sexp_tree_refactor)
+	fso::fred::state::writeSexp(ds, s.formula);
 	ds << s.draw_grid;
 	ds << static_cast<quint8>(s.grid_color.red)
 	   << static_cast<quint8>(s.grid_color.green)
@@ -127,7 +125,8 @@ static void readStage(QDataStream& ds, brief_stage& s)
 	s.camera_time = static_cast<int>(camTime);
 	s.flags       = static_cast<int>(flags);
 
-	fso::fred::state::readSexpStub(ds); // formula — TODO(sexp_tree_refactor)
+	fso::fred::state::freeSexpFormula(s.formula);
+	s.formula = fso::fred::state::readSexp(ds);
 
 	ds >> s.draw_grid;
 	quint8 cr, cg, cb, ca, cat;
