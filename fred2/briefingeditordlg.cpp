@@ -1198,7 +1198,7 @@ void briefing_editor_dlg::OnDeleteIcon()
 
 void briefing_editor_dlg::delete_icon(int num)
 {
-	int i, z;
+	int i, l, z;
 
 	if (num < 0)
 		num = m_cur_icon;
@@ -1217,6 +1217,24 @@ void briefing_editor_dlg::delete_icon(int num)
 	m_cur_icon = -1;
 	update_data(1);
 	obj_delete(icon_obj[num]);
+
+	// remove any lines that reference the icon being deleted
+	i = Briefing->stages[m_cur_stage].num_lines;
+	while (i--)
+		if ((Briefing->stages[m_cur_stage].lines[i].start_icon == num) || (Briefing->stages[m_cur_stage].lines[i].end_icon == num)) {
+			Briefing->stages[m_cur_stage].num_lines--;
+			for (l=i; l<Briefing->stages[m_cur_stage].num_lines; l++)
+				Briefing->stages[m_cur_stage].lines[l] = Briefing->stages[m_cur_stage].lines[l+1];
+		}
+
+	// fix the indexes of lines that reference the icons being shifted down
+	for (i=0; i<Briefing->stages[m_cur_stage].num_lines; i++) {
+		if (Briefing->stages[m_cur_stage].lines[i].start_icon > num)
+			Briefing->stages[m_cur_stage].lines[i].start_icon--;
+		if (Briefing->stages[m_cur_stage].lines[i].end_icon > num)
+			Briefing->stages[m_cur_stage].lines[i].end_icon--;
+	}
+
 	for (i=num+1; i<Briefing->stages[m_cur_stage].num_icons; i++) {
 		Briefing->stages[m_cur_stage].icons[i-1] = Briefing->stages[m_cur_stage].icons[i];
 		icon_obj[i-1] = icon_obj[i];
