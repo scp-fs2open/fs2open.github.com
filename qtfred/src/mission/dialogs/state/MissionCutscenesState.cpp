@@ -1,9 +1,6 @@
 // captureState() and restoreState() for MissionCutscenesDialogModel.
 // Snapshots The_mission.cutscenes from the live global so that undo/redo
-// can restore cutscene type and filename assignments.
-//
-// TODO(sexp_tree_refactor): mission_cutscene::formula is not serialized.
-// formula is set to -1 ("no condition") on restore.
+// can restore cutscene type, filename, and sexp formula assignments.
 
 #include <mission/dialogs/MissionCutscenesDialogModel.h>
 
@@ -26,7 +23,7 @@ QByteArray MissionCutscenesDialogModel::captureState() const
 	for (const mission_cutscene& c : The_mission.cutscenes) {
 		ds << static_cast<qint32>(c.type);
 		ds << QString::fromLatin1(c.filename);
-		fso::fred::state::writeSexpStub(ds); // formula — TODO(sexp_tree_refactor)
+		fso::fred::state::writeSexp(ds, c.formula);
 	}
 
 	return data;
@@ -39,6 +36,8 @@ void MissionCutscenesDialogModel::restoreState(const QByteArray& state)
 	qint32 count;
 	ds >> count;
 
+	for (const mission_cutscene& c : The_mission.cutscenes)
+		fso::fred::state::freeSexpFormula(c.formula);
 	The_mission.cutscenes.clear();
 	The_mission.cutscenes.resize(static_cast<size_t>(count));
 
@@ -48,8 +47,7 @@ void MissionCutscenesDialogModel::restoreState(const QByteArray& state)
 		QString filename;
 
 		ds >> type >> filename;
-		fso::fred::state::readSexpStub(ds); // formula — TODO(sexp_tree_refactor)
-		c.formula = -1;
+		c.formula = fso::fred::state::readSexp(ds);
 
 		c.type = static_cast<int>(type);
 		strncpy(c.filename, filename.toLatin1().constData(), MAX_FILENAME_LEN - 1);
