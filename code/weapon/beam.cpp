@@ -323,7 +323,7 @@ bool beam_has_valid_params(beam_fire_info* fire_info) {
 				return false;
 			break;		
 		default:
-			Assertion(false, "Unrecognized beam fire method in beam_has_valid_params");
+			UNREACHABLE("Unrecognized beam fire method %d in beam_has_valid_params", fire_info->fire_method);
 			return false;
 	}
 
@@ -2968,7 +2968,7 @@ void beam_aim(beam *b)
 		break;
 
 	default:
-		Assertion(false, "Impossible beam type (%d); get a coder!\n", static_cast<int>(b->type));
+		UNREACHABLE("Impossible beam type (%d); get a coder!\n", static_cast<int>(b->type));
 	}
 
 	if (!Weapon_info[b->weapon_info_index].wi_flags[Weapon::Info_Flags::No_collide]) {

@@ -575,7 +575,7 @@ void opengl_state::BindFrameBuffer(GLuint name, GLenum mode) {
 			}
 			break;
 		default:
-			Assertion(false, "Invalid BindFrameBuffer mode %d!", mode);
+			UNREACHABLE("Invalid BindFrameBuffer mode %d!", mode);
 	}
 }
 void opengl_state::BindFrameBufferBoth(GLuint read, GLuint draw) {

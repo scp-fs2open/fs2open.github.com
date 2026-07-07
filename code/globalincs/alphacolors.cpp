@@ -578,7 +578,7 @@ void parse_everything_else(const char *filename)
 					}
 					break;
 				default:
-					Assertion(false, "MageKing17 made a coding error somewhere, and you should laugh at him (and report this error).\n");
+					UNREACHABLE("MageKing17 made a coding error somewhere, and you should laugh at him (and report this error).\n");
 					break;
 				}
 			}

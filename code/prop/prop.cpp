@@ -1066,7 +1066,7 @@ int prop_check_collision(object* prop_obj, object* other_obj, vec3d* hitpos, col
 				mc.radius = light_obj->radius;
 				break;
 			default:
-				Assertion(false, "Unknown object type %d in prop_check_collision", light_obj->type);
+				UNREACHABLE("Unknown object type %d in prop_check_collision", light_obj->type);
 			};
 
 			mc_ret_val = model_collide(&mc);

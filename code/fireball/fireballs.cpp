@@ -1006,7 +1006,7 @@ int fireball_create(vec3d *pos, int fireball_type, int render_type, int parent_o
 			break;
 
 		default:
-			Assertion(false, "Bad type %d set in fireball_create", new_fireball->fireball_render_type);
+			UNREACHABLE("Bad type %d set in fireball_create", new_fireball->fireball_render_type);
 			break;
 	}
 

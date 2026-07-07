@@ -8216,7 +8216,7 @@ int mission_set_arrival_location(anchor_t anchor, ArrivalLocation location, int 
 			if (location == ArrivalLocation::IN_BACK_OF_SHIP || location == ArrivalLocation::BELOW_SHIP || location == ArrivalLocation::TO_LEFT_OF_SHIP)
 				vm_vec_negate(&rand_vec);
 		} else {
-			Assertion(false, "Unknown location type discovered when trying to parse %s -- Please let an SCP coder know!", Ships[shipnum].ship_name);
+			UNREACHABLE("Unknown location type discovered when trying to parse %s -- Please let an SCP coder know!", Ships[shipnum].ship_name);
 			rand_vec = vmd_zero_vector;
 		}
 
@@ -8268,7 +8268,7 @@ void mission_parse_mark_reinforcement_available(const char *name)
 		return;
 	}
 
-	Assertion(false, "Reinforcement '%s' not found!", name);
+	Warning(LOCATION, "Reinforcement '%s' not found!", name);
 }
 
 /**

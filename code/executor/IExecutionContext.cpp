@@ -21,7 +21,7 @@ Executor::Callback runInContext(const std::shared_ptr<IExecutionContext>& contex
 			// This state will not become valid again so we do not need to be rescheduled
 			return Executor::CallbackResult::Done;
 		default:
-			Assertion(false, "Unhandled context state %d", static_cast<int>(ctxState));
+			UNREACHABLE("Unhandled context state %d", static_cast<int>(ctxState));
 			return Executor::CallbackResult::Done;
 		}
 	};

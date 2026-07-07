@@ -255,7 +255,7 @@ const char *Skill_level_names(int level, int translate)
 			str = XSTR("Insane", 473);
 			break;
 		default:	
-			Assertion(false, "Unhandled difficulty level of '%d' was passed to Skill_level_names().", level);
+			UNREACHABLE("Unhandled difficulty level of '%d' was passed to Skill_level_names().", level);
 		}
 	} else {
 		switch( level )	{
@@ -275,7 +275,7 @@ const char *Skill_level_names(int level, int translate)
 			str = NOX("Insane");
 			break;
 		default:	
-			Assertion(false, "An invalid difficulty level of '%d' was passed to Skill_level_names().", level);
+			UNREACHABLE("An invalid difficulty level of '%d' was passed to Skill_level_names().", level);
 		}
 	}
 
@@ -1140,7 +1140,7 @@ float get_skill_stealth_dist_scaler()
 		return 1.3f;
 
 	default:
-		Assertion(false, "An invalid difficulty level of %d was passed to get_skill_stealth_dist_scaler().", Game_skill_level);
+		UNREACHABLE("An invalid difficulty level of %d was passed to get_skill_stealth_dist_scaler().", Game_skill_level);
 
 	}
 
@@ -1169,7 +1169,7 @@ float get_skill_stealth_dot_scaler()
 		return 0.7f;
 
 	default:
-		Assertion(false, "An invalid difficulty level of %d was passed to get_skill_stealth_dot_scaler().", Game_skill_level);
+		UNREACHABLE("An invalid difficulty level of %d was passed to get_skill_stealth_dot_scaler().", Game_skill_level);
 	}
 
 	return 1.0f;
@@ -3496,7 +3496,7 @@ void ai_dock_with_object(object *docker, int docker_index, object *dockee, int d
 		aip->submode_start_time = Missiontime;
 		break;
 	default:
-		Assertion(false, "Unknown dock type in ai_dock_with_object of %d. Please report to the SCP!", dock_type);		//	Bogus dock_type.
+		UNREACHABLE("Unknown dock type in ai_dock_with_object of %d. Please report to the SCP!", dock_type);		//	Bogus dock_type.
 	}
 
 	// Goober5000 - we no longer need to set dock_path_index because it's easier to grab the path from the dockpoint
@@ -4646,7 +4646,7 @@ void ai_safety()
 		break;
 	case AISS_1a:   //	Pick a safe point because we just got whacked!
 	default:
-		Assertion(false, "Bad AI submode for ai_safety mode of %d. Please report to the SCP!", aip->submode);		//	Illegal submode for ai_safety();
+		UNREACHABLE("Bad AI submode for ai_safety mode of %d. Please report to the SCP!", aip->submode);		//	Illegal submode for ai_safety();
 		break;
 	}
 }
@@ -8021,7 +8021,7 @@ void ai_stealth_sweep()
 		break;
 
 	default:
-		Assertion(false, "Bad submode in ai_steath_sweep of %d. Please report to the SCP!", aip->submode_parm0);
+		UNREACHABLE("Bad submode in ai_steath_sweep of %d. Please report to the SCP!", aip->submode_parm0);
 		break;
 	}
 
@@ -9462,7 +9462,7 @@ void ai_chase()
 				}
 				break;
 			default:
-				Assertion(false, "Somehow we changed a call to get a random number in ai_chase so it's not 0-4, please report to the SCP!");	//	Impossible!
+				UNREACHABLE("Somehow we changed a call to get a random number in ai_chase so it's not 0-4, please report to the SCP!");	//	Impossible!
 			}
 		}
 
@@ -10982,7 +10982,7 @@ void ai_big_guard()
 		break;
 
 	default:
-		Assertion(false, "Illegal submode of %d for guard mode in ai_big_guard. Please report to the SCP!", aip->submode);
+		UNREACHABLE("Illegal submode of %d for guard mode in ai_big_guard. Please report to the SCP!", aip->submode);
 		// AL 06/03/97 comment out Int3() to allow milestone to get out the door
 		aip->submode = AIS_GUARD_PATROL;
 		aip->submode_start_time = Missiontime;
@@ -11203,7 +11203,7 @@ void ai_guard()
 
 		break;
 	default:
-		Assertion(false, "Illegal ai submode of %d for guard mode in ai_guard for ship %s. Pleae report to the SCP!", aip->submode, shipp->ship_name);
+		UNREACHABLE("Illegal ai submode of %d for guard mode in ai_guard for ship %s. Pleae report to the SCP!", aip->submode, shipp->ship_name);
 		// AL 06/03/97 comment out Int3() to allow milestone to get out the door
 		aip->submode = AIS_GUARD_PATROL;
 		aip->submode_start_time = Missiontime;
@@ -11359,7 +11359,7 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 		break;
 
 	default:
-		Assertion(false, "Illegal repair info type of %d in ai_do_objects_repairing_stuff. Pleae report to the SCP!", how);
+		UNREACHABLE("Illegal repair info type of %d in ai_do_objects_repairing_stuff. Pleae report to the SCP!", how);
 	}
 
 	// repair_objp might be NULL if we are cleaning up this mode because of the support ship
@@ -11396,7 +11396,7 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 			break;
 
 		default:
-			Assertion(false, "Illegal repair info type of %d in ai_do_objects_repairing_stuff. Pleae report to the SCP!", how);
+			UNREACHABLE("Illegal repair info type of %d in ai_do_objects_repairing_stuff. Pleae report to the SCP!", how);
 		}
 	}
 
@@ -12220,7 +12220,7 @@ void ai_dock()
 
 	default:
 	{
-		Assertion(false, "Illegal dock submode of %d in ai_dock. Pleae report to the SCP!", aip->submode);
+		UNREACHABLE("Illegal dock submode of %d in ai_dock. Pleae report to the SCP!", aip->submode);
 	}
 
 	}	// end of switch statement
@@ -13630,7 +13630,7 @@ void ai_maybe_evade_locked_missile(object *objp, ai_info *aip)
 				case AIM_WARP_OUT:
 					break;
 				default:
-					Assertion(false, "Unknown AI Mode %d! Get a coder!", aip->mode);
+					UNREACHABLE("Unknown AI Mode %d! Get a coder!", aip->mode);
 					break;
 				}
 			}
@@ -13691,7 +13691,7 @@ void maybe_evade_dumbfire_weapon(ai_info *aip)
 	case AIM_LUA:
 		return;
 	default:
-		Assertion(false, "Unknown AI Mode %d! Get a coder!", aip->mode);
+		UNREACHABLE("Unknown AI Mode %d! Get a coder!", aip->mode);
 		return;
 	}
 
@@ -13760,7 +13760,7 @@ void maybe_evade_dumbfire_weapon(ai_info *aip)
 		case AIM_LUA:
 			break;
 		default:
-			Assertion(false, "Unknown AI Mode %d! Get a coder!", aip->mode);
+			UNREACHABLE("Unknown AI Mode %d! Get a coder!", aip->mode);
 		}
 	}
 }
@@ -14372,7 +14372,7 @@ void ai_execute_behavior(ai_info *aip)
 		ai_lua(aip);
 		break;
 	default:
-		Assertion(false, "Unknown AI Mode %d! Get a coder!", aip->mode);
+		UNREACHABLE("Unknown AI Mode %d! Get a coder!", aip->mode);
 		break;
 	}
 
@@ -14709,7 +14709,7 @@ void ai_warp_out(object *objp)
 	case AIS_WARP_5:
 		break;
 	default:
-		Assertion(false, "Illegal ai submode of %d in ai_warp_out. Pleae report to the SCP!", aip->submode);
+		UNREACHABLE("Illegal ai submode of %d in ai_warp_out. Pleae report to the SCP!", aip->submode);
 	}
 }
 
@@ -15302,7 +15302,7 @@ void validate_mode_submode(ai_info *aip)
 		case SM_ATTACK_FOREVER:
 			break;
 		default:
-			Assertion(false, "validate_mode_submode found an illegal submode for AIM_CHASE of %d. Please report to the SCP!", aip->submode);
+			UNREACHABLE("validate_mode_submode found an illegal submode for AIM_CHASE of %d. Please report to the SCP!", aip->submode);
 		}
 		break;
 
@@ -15316,7 +15316,7 @@ void validate_mode_submode(ai_info *aip)
 		case AIS_STRAFE_POSITION:
 			break;
 		default:
-			Assertion(false, "validate_mode_submode found an illegal submode for AIM_STRAFE of %d. Please report to the SCP!", aip->submode);
+			UNREACHABLE("validate_mode_submode found an illegal submode for AIM_STRAFE of %d. Please report to the SCP!", aip->submode);
 		}
 		break;
 	}
@@ -16606,7 +16606,7 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, const vec3d *hit_normal)
 	case AIM_LUA:
 		return;
 	default:
-		Assertion(false, "Unknown AI Mode %d! Get a coder!", aip->mode);
+		UNREACHABLE("Unknown AI Mode %d! Get a coder!", aip->mode);
 	}
 
 	if (timestamp_elapsed(aip->ok_to_target_timestamp)) {
@@ -16921,7 +16921,7 @@ int ai_issue_rearm_request(object *requester_objp)
 	// we aren't able to do anything!
 	else {
 		Assert(result == 4);
-		Assertion(false, "This case should have already been caught by the is_support_allowed precheck!");
+		UNREACHABLE("This case should have already been caught by the is_support_allowed precheck!");
 		return -1;
 	}
 }

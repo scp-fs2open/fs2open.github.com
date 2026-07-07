@@ -470,7 +470,7 @@ void parse_helptbl(const char *filename)
 					break;
 				case 4: // $end
 				default:
-					Assertion(false, "Type %d is not handled by the switch; this is a coding error.", type);
+					UNREACHABLE("Type %d is not handled by the switch; this is a coding error.", type);
 					break;
 				}
 			}		// end while

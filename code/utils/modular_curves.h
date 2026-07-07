@@ -421,7 +421,7 @@ struct modular_curves_definition {
 			if constexpr (parsing)
 				error_display(1, "Unexpected modular curve input %s!", input);
 			else
-				Assertion(false, "Unexpected modular curve input %s!", input);
+				UNREACHABLE("Unexpected modular curve input %s!", input);
 		}
 		return result;
 	}

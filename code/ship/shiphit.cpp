@@ -1647,7 +1647,7 @@ static void player_died_start(const object *killer_objp)
 			break;
 
 		default:
-			Assertion(false, "Unhandled object type %d in player_died_start()", killer_objp->type);		//	Killed by an object of a peculiar type.  What is it?
+			UNREACHABLE("Unhandled object type %d in player_died_start()", killer_objp->type);		//	Killed by an object of a peculiar type.  What is it?
 			other_objp = killer_objp;	//	Enable to continue, just in case we shipped it with this bug...
 		}
 	} else {

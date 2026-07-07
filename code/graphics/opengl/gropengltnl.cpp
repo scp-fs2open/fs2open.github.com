@@ -113,7 +113,7 @@ static GLenum convertBufferType(BufferType type) {
 		case BufferType::Uniform:
 			return GL_UNIFORM_BUFFER;
 		default:
-			Assertion(false, "Unhandled enum value!");
+			UNREACHABLE("Unhandled enum value %d!", static_cast<int>(type));
 			return GL_INVALID_ENUM;
 	}
 }
@@ -129,7 +129,7 @@ static GLenum convertUsageHint(BufferUsageHint usage) {
 	    case BufferUsageHint::PersistentMapping:
 		    return GL_NONE; // Dummy value
 	    default:
-			Assertion(false, "Unhandled enum value!");
+			UNREACHABLE("Unhandled enum value %d!", static_cast<int>(usage));
 			return GL_INVALID_ENUM;
 	}
 }
@@ -153,7 +153,7 @@ static GLenum convertStencilOp(const StencilOperation stencil_op) {
 	case StencilOperation::Invert:
 		return GL_INVERT;
 	default:
-		Assertion(false, "Unhandled enum value encountered!");
+		UNREACHABLE("Unhandled enum value %d encountered!", static_cast<int>(stencil_op));
 		return GL_NONE;
 	}
 }
@@ -186,7 +186,7 @@ static GLenum convertComparisionFunction(ComparisionFunction func) {
 		mode = GL_NOTEQUAL;
 		break;
 	default:
-		Assertion(false, "Unhandled comparision function value!");
+		UNREACHABLE("Unhandled comparision function value %d!", static_cast<int>(func));
 		mode = GL_ALWAYS;
 		break;
 	}

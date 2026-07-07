@@ -129,7 +129,7 @@ void show_stats_numbers(StatsType type, int sx, int sy, int dy)
 			break;
 
 		default:
-			Assertion(false, "Unhandled StatsType %d in show_stats_numbers()", static_cast<int>(type));
+			UNREACHABLE("Unhandled StatsType %d in show_stats_numbers()", static_cast<int>(type));
 	}
 }
 
@@ -150,7 +150,7 @@ int stats_get_kills(StatsType type, int ship_class)
 				return stats_get_kills(All_time_ever_stats, false, ship_class);
 
 		default:
-			Assertion(false, "Unhandled StatsType %d in stats_get_kills()", static_cast<int>(type));
+			UNREACHABLE("Unhandled StatsType %d in stats_get_kills()", static_cast<int>(type));
 			return 0;
 	}
 }

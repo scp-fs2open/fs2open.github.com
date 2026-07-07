@@ -253,7 +253,7 @@ namespace animation {
 
 		case ModelAnimationState::PAUSED:
 			//Shouldn't happen. Paused Animations are only allowed to be apply only.
-			Assertion(false, "Tried to play a paused animation without starting it. Get a coder.");
+			UNREACHABLE("Tried to play a paused animation without starting it. Get a coder.");
 			break;
 		}
 		
@@ -385,7 +385,7 @@ namespace animation {
 				//Currently not moving. Keep in buffer in case some other animation starts on that submodel, but don't play without manual starting
 				break;
 			case ModelAnimationState::UNTRIGGERED:
-				Assertion(false, "An untriggered animation should not be in the runningAnimations buffer");
+				UNREACHABLE("An untriggered animation should not be in the runningAnimations buffer");
 				break;
 			}
 

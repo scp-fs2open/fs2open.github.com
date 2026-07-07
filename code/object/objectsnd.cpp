@@ -619,7 +619,7 @@ void obj_snd_do_frame()
 						break;
 
 					default:
-						Assertion(false, "Unhandled object type %d for persistent sound; get a coder!", objp->type);
+						UNREACHABLE("Unhandled object type %d for persistent sound; get a coder!", objp->type);
 						break;
 				} // end switch
 

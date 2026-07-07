@@ -1792,7 +1792,7 @@ void control_config_common_read_section(int s, bool first_override) {
 			break;
 
 		default:
-			Assertion(false, "[controlconfigdefaults.tbl] required_string_either passed something other than 0 or 1!");
+			UNREACHABLE("[controlconfigdefaults.tbl] required_string_either passed something other than 0 or 1!");
 			item_id = Control_config.size();
 		}
 
@@ -2360,7 +2360,7 @@ SCP_string ValToCCTab(char tab) {
 
 	if (it == mCCTabNameToVal.cend()) {
 		// Shouldn't happen
-		Assertion(false, "Unknown Tab value %i", static_cast<int>(tab));
+		UNREACHABLE("Unknown Tab value %i", static_cast<int>(tab));
 		return "NONE";
 
 	} else {
@@ -2374,7 +2374,7 @@ SCP_string ValToCCType(CC_type type) {
 
 	if (it == mCCTypeNameToVal.cend()) {
 		// Shouldn't happen
-		Assertion(false, "Unknown CC_type value %i", static_cast<int>(type));
+		UNREACHABLE("Unknown CC_type value %i", static_cast<int>(type));
 		return "NONE";
 
 	} else {
@@ -2388,7 +2388,7 @@ SCP_string ValToCID(CID id) {
 
 	if (it == mCIDNameToVal.cend()) {
 		// Shouldn't happen
-		Error(LOCATION, "Unknown CID value %i", id);
+		UNREACHABLE("Unknown CID value %i", id);
 		return "NONE";
 
 	} else {
@@ -2517,7 +2517,7 @@ SCP_string ValToJoy(const CC_bind &bind) {
 
 		if (it == mAxisNameToVal.end()) {
 			// should never happen
-			Assertion(false, "Unknown error occured during reverse lookup of joy input string.");
+			UNREACHABLE("Unknown error occured during reverse lookup of joy input string.");
 			str = "NONE";
 		} else {
 			// print out value

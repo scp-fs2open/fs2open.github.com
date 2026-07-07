@@ -719,7 +719,7 @@ void mission_log_init_scrollback(int pw, bool split_string)
 				break;
 			}	// matches case statement!
 			default:
-				Assertion(false, "Unhandled enum value!");
+				UNREACHABLE("Unhandled enum value %d!", entry.type);
 				break;
 		}
 

@@ -24,7 +24,7 @@ const char* getTypeStr(tracing::EventType type) {
 		case EventType::Counter:
 			return "C";
 		default: 
-			Assertion(false, "Invalid enum value %d!", static_cast<int>(type));
+			UNREACHABLE("Invalid enum value %d!", static_cast<int>(type));
 			return "";
 	}
 }
@@ -114,7 +114,7 @@ void TraceEventWriter::processEvent(const trace_event* event) {
 			break;
 		}
 		default:
-			Assertion(false, "Unhandled enum value %d! This function should not have been called with this value!", static_cast<int>(event->type));
+			UNREACHABLE("Unhandled enum value %d! This function should not have been called with this value!", static_cast<int>(event->type));
 			break;
 	}
 

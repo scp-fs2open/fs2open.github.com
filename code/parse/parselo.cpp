@@ -3345,7 +3345,7 @@ struct StuffIntListParser
 					break;
 
 				default:
-					Assertion(false, "Unsupported lookup_type %d in stuff_int_list", static_cast<int>(lookup_type));
+					UNREACHABLE("Unsupported lookup_type %d in stuff_int_list", static_cast<int>(lookup_type));
 					break;
 			}
 
@@ -3412,7 +3412,7 @@ void stuff_loadout_list(SCP_vector<loadout_row> &list, ParseLookupType lookup_ty
 				break;
 
 			default:
-				Assertion(false, "Unsupported lookup_type %d in stuff_loadout_list", static_cast<int>(lookup_type));
+				UNREACHABLE("Unsupported lookup_type %d in stuff_loadout_list", static_cast<int>(lookup_type));
 				return false;
 		}
 
