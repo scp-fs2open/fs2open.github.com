@@ -1660,7 +1660,6 @@ static bool gr_init_sub(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, G
 	if (Fred_running) {
 		gr_screen.custom_size = false;
 		res = GR_640;
-		mode = GraphicsAPI::OpenGL;
 	}
 
 	Save_custom_screen_size = gr_screen.custom_size;
@@ -1975,6 +1974,14 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, GraphicsAPI 
 		height = 480;
 		depth = 16;
 		center_aspect_ratio = -1.0f;
+	}
+
+	// FRED doesn't support Vulkan yet (see qtfred/README.md for what's needed to change that), so it always
+	// falls back to OpenGL regardless of what was requested. This must happen before gr_init_function_pointers()
+	// below, since that's what binds gr_screen's gf_* dispatch table to the chosen API; doing the override any
+	// later (e.g. in gr_init_sub()) would leave the dispatch table pointing at the wrong backend.
+	if (Fred_running) {
+		mode = GraphicsAPI::OpenGL;
 	}
 
 	gr_init_function_pointers(mode);

@@ -40,6 +40,43 @@ in 64-bit mode.
 Our CMake setup will automatically handle copying the relevant Qt DLLs to the build folder and if you use the CMake install
 functionality the DLLs will also be copied to the correct paths in the destination folder.
 
+Rendering backend (OpenGL / Vulkan)
+------------------------------------
+qtFRED currently always initializes the OpenGL renderer, even if `-vulkan` is passed on the command line
+(`Fred_running` forces `mode = GraphicsAPI::OpenGL` in `gr_init()`, `code/graphics/2d.cpp`). This is intentional:
+qtFRED's windowing (`QtGraphicsOperations`/`QtViewport` in `qtfred/src/ui/QtGraphicsOperations.cpp`) only knows how
+to create a Qt-native (`QOpenGLWidget`-backed) render surface. Unlike the retail engine's `SDLGraphicsOperations`,
+it never creates a real `SDL_Window`, and `QtViewport::toSDLWindow()` unconditionally returns `nullptr`.
+
+The Vulkan backend (`code/graphics/vulkan/`), however, was written exclusively against `SDLGraphicsOperations`'s
+windowing:
+- `VulkanRenderer::initializeInstance()` (`VulkanRendererSetup.cpp`) obtains `vkGetInstanceProcAddr` via
+  `SDL_Vulkan_GetVkGetInstanceProcAddr()`, which only returns a valid pointer once SDL has loaded the Vulkan
+  loader — which normally happens automatically when a window is created with the `SDL_WINDOW_VULKAN` flag
+  (see `freespace2/SDLGraphicsOperations.cpp`).
+- `VulkanRenderer::initializeSurface()` creates the `VkSurfaceKHR` via `SDL_Vulkan_CreateSurface(window, ...)`,
+  which likewise needs a real `SDL_Window*`.
+
+Since qtFRED never creates an SDL window, both calls fail: the first call aborts immediately
+(`VULKAN_HPP_DEFAULT_DISPATCHER.init()` is handed a null function pointer), and even if that were papered over,
+surface creation would fail right after.
+
+If you removed the `Fred_running` OpenGL override in `gr_init()` to experiment with Vulkan in the editor, this is
+the crash you'll hit. To make Vulkan actually work in qtFRED, `QtGraphicsOperations` needs a real Vulkan surface
+path, e.g. one of:
+
+1. Create a genuine (possibly hidden/embedded) `SDL_Window` with `SDL_WINDOW_VULKAN` set purely so the existing
+   SDL-based Vulkan plumbing (loader + instance extensions + surface creation) keeps working unmodified, while
+   still presenting through Qt.
+2. Bypass SDL for Vulkan entirely: load the Vulkan loader directly (`SDL_Vulkan_LoadLibrary(nullptr)` works
+   without any window), and create the `VkSurfaceKHR` from the Qt window's native handle
+   (`QWindow::winId()`/native handle APIs) using the appropriate platform extension
+   (`VK_KHR_win32_surface`, `VK_KHR_xcb_surface`, `VK_KHR_wayland_surface`, etc.) instead of
+   `SDL_Vulkan_CreateSurface`.
+
+Either approach is a real chunk of implementation work, not a quick fix — plan for it as its own task rather than
+bundling it with unrelated changes.
+
 Directories
 -----------
 

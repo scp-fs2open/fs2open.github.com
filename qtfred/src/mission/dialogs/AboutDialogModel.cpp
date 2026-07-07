@@ -27,11 +27,14 @@ SCP_string AboutDialogModel::getVersionString()
 {
 	SCP_string graphicsAPI;
 	switch (gr_screen.mode) {
-	case GR_OPENGL:
+	case GraphicsAPI::OpenGL:
 		graphicsAPI = "OpenGL";
 		break;
-	case GR_VULKAN:
+	case GraphicsAPI::Vulkan:
 		graphicsAPI = "Vulkan";
+		break;
+	default:
+		graphicsAPI = "Unknown";
 		break;
 	}
 
@@ -61,16 +64,19 @@ SCP_vector<SCP_string> AboutDialogModel::getQtFREDCredits()
 SCP_vector<SCP_string> AboutDialogModel::getGraphicsCredits()
 {
 	switch (gr_screen.mode) {
-	case GR_OPENGL:
+	case GraphicsAPI::OpenGL:
 		return {
 			"Ported to OpenGL by RandomTiger",
 			"Original FSO OpenGL port by Phreak and Fry_Day",
 		};
-	case GR_VULKAN:
-		// TODO: Add Vulkan port credits when available
-		return { "Vulkan not ported yet" };
+	case GraphicsAPI::Vulkan:
+		return {
+			"Ported to Vulkan by Mara van der Laan (laanwj)",
+			"with additional porting work by taylor, BMagnu and The_E",
+		};
+	default:
+		return {};
 	}
-	return {};
 }
 
 SCP_string AboutDialogModel::getSCPCreditsText()
