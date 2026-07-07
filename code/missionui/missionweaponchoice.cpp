@@ -3132,6 +3132,9 @@ void wl_render_icon(int index, int x, int y, int num, int draw_num_flag, int hot
 	}
 	else
 	{
+		// the icon bitmap can be invalid without a color having been chosen, e.g. when the icon ani is missing frames
+		if (color_to_draw == nullptr)
+			color_to_draw = &Icon_colors[ICON_FRAME_NORMAL];
 		gr_set_color_fast(color_to_draw);
 
 		graphics::line_draw_list line_draw_list;
