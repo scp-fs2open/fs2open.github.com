@@ -56,7 +56,7 @@ if(CLANG_USE_LIBCXX AND NOT APPLE)
     if(QT_USE_PRECOMPILED)
         message(FATAL_ERROR "Prebuilt Qt6 libraries are not compatible with clang's libc++!")
     else()
-        mesage(WARNING "Clang's libc++ enabled, QtFRED may not link properly!")
+        message(WARNING "Clang's libc++ enabled, QtFRED may not link properly!")
     endif()
 endif()
 
