@@ -1697,6 +1697,9 @@ void draw_ship_icon_with_number(int screen_offset, int ship_class)
 			ss_icon->model_index = model_load(sip, true);
 			mprintf(("SL WARNING: Had to attempt to page in model for %s paged in manually! Result: %d\n", sip->name, ss_icon->model_index));
 		}
+		// the icon bitmap can be invalid without a color having been chosen, e.g. when the icon ani is missing frames
+		if (color_to_draw == nullptr)
+			color_to_draw = &Icon_colors[ICON_FRAME_NORMAL];
 		gr_set_color_fast(color_to_draw);
 
 		graphics::line_draw_list line_draw_list;
@@ -2184,6 +2187,7 @@ void draw_wing_block(int wb_num, int hot_slot, int selected_slot, int class_sele
 		GR_DEBUG_SCOPE("Single ship");
 
 		bitmap_to_draw = -1;
+		color_to_draw = nullptr;
 		ws = &wb->ss_slots[i];
 		slot_index = wb_num*MAX_WING_SLOTS + i;
 

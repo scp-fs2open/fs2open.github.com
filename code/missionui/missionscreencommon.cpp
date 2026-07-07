@@ -1560,8 +1560,12 @@ int restore_wss_data(ubyte *data)
 
 void draw_model_icon(int model_id, uint64_t flags, int x, int y, int w, int h, ship_info* sip, weapon_info* wip, float zoom_multiplier, int resize_mode)
 {
+	// Can't draw a non-model
+	if (model_id < 0)
+		return;
+
 	lighting_profiles::set_non_mission_profile non_mission_lighting_profile;
-	
+
 	matrix	object_orient	= IDENTITY_MATRIX;
 	angles rot_angles = vmd_zero_angles;
 
