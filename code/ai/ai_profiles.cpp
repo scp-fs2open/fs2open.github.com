@@ -977,7 +977,7 @@ void ai_profile_t::reset()
 	if (mod_supports_version(26, 0, 0)) {
 		flags.set(AI::Profile_Flags::Fix_ignore_if_dead_flag);
 	}
-	if (mod_supports_version(27, 0, 0)) {
+	if (mod_supports_version(26, 2, 0)) {
 		flags.set(AI::Profile_Flags::Kamikaze_no_collision_avoidance);
 	}
 }
