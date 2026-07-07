@@ -192,12 +192,10 @@ WingEditorDialog::WingEditorDialog(FredView* parent, EditorViewport* viewport)
 		updateUi();
 	});
 
-	connect(ui->arrivalTree, &sexp_tree_view::modified, this, &WingEditorDialog::on_arrivalTree_modified);
-	connect(ui->arrivalTree, &sexp_tree_view::helpChanged, this, [this](const QString& help) { ui->helpText->setPlainText(help); });
-	connect(ui->arrivalTree, &sexp_tree_view::miniHelpChanged, this, [this](const QString& help) { ui->HelpTitle->setText(help); });
-	connect(ui->departureTree, &sexp_tree_view::modified, this, &WingEditorDialog::on_departureTree_modified);
-	connect(ui->departureTree, &sexp_tree_view::helpChanged, this, [this](const QString& help) { ui->helpText->setPlainText(help); });
-	connect(ui->departureTree, &sexp_tree_view::miniHelpChanged, this, [this](const QString& help) { ui->HelpTitle->setText(help); });
+	// The on_arrivalTree_*/on_departureTree_* slots (modified, helpChanged,
+	// miniHelpChanged) are auto-connected by setupUi's connectSlotsByName;
+	// connecting them here again would run each handler twice per signal (and
+	// push duplicate undo commands).
 
 	// "Select Wing" menu: jump the editor to any wing in the mission.
 	Editor* editor = viewport->editor;
@@ -1211,9 +1209,28 @@ void WingEditorDialog::on_customWarpinButton_clicked()
 
 void WingEditorDialog::on_arrivalTree_modified()
 {
-	// TODO(sexp_tree_refactor): wire arrival cue sexp undo (Phase 8).
-	int new_sexp = ui->arrivalTree->_model.save_tree();
-	_model->setArrivalTree(new_sexp);
+	if (!_model->wingIsValid()) {
+		_model->setArrivalTree(ui->arrivalTree->_model.save_tree());
+		return;
+	}
+
+	const SCP_string wingName = _model->getWingName();
+	auto* cmd = new SexpCueEditCommand(_viewport->editor, tr("Edit Wing Arrival Cue"), true);
+	cmd->addOwner(Wings[_model->getCurrentWingIndex()].arrival_cue,
+		[wingName]() {
+			const int w = findWingByName(wingName);
+			return w < 0 ? -1 : Wings[w].arrival_cue;
+		},
+		[wingName](int formula) {
+			const int w = findWingByName(wingName);
+			if (w >= 0)
+				Wings[w].arrival_cue = formula;
+		});
+
+	const int newFormula = ui->arrivalTree->_model.save_tree();
+	_model->setArrivalTree(newFormula);
+	cmd->captureAfter(newFormula);
+	_fredView->mainUndoStack()->push(cmd);
 }
 
 void WingEditorDialog::on_noArrivalWarpCheckBox_toggled(bool checked)
@@ -1432,9 +1449,28 @@ void WingEditorDialog::on_customWarpoutButton_clicked()
 
 void WingEditorDialog::on_departureTree_modified()
 {
-	// TODO(sexp_tree_refactor): wire departure cue sexp undo (Phase 8).
-	int new_sexp = ui->departureTree->_model.save_tree();
-	_model->setDepartureTree(new_sexp);
+	if (!_model->wingIsValid()) {
+		_model->setDepartureTree(ui->departureTree->_model.save_tree());
+		return;
+	}
+
+	const SCP_string wingName = _model->getWingName();
+	auto* cmd = new SexpCueEditCommand(_viewport->editor, tr("Edit Wing Departure Cue"), true);
+	cmd->addOwner(Wings[_model->getCurrentWingIndex()].departure_cue,
+		[wingName]() {
+			const int w = findWingByName(wingName);
+			return w < 0 ? -1 : Wings[w].departure_cue;
+		},
+		[wingName](int formula) {
+			const int w = findWingByName(wingName);
+			if (w >= 0)
+				Wings[w].departure_cue = formula;
+		});
+
+	const int newFormula = ui->departureTree->_model.save_tree();
+	_model->setDepartureTree(newFormula);
+	cmd->captureAfter(newFormula);
+	_fredView->mainUndoStack()->push(cmd);
 }
 
 void WingEditorDialog::on_noDepartureWarpCheckBox_toggled(bool checked)
