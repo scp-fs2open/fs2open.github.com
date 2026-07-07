@@ -77,6 +77,37 @@ path, e.g. one of:
 Either approach is a real chunk of implementation work, not a quick fix — plan for it as its own task rather than
 bundling it with unrelated changes.
 
+Known issues
+------------
+
+### Blank/empty render viewport under Wayland
+On Linux, qtFRED's main 3D viewport can render as a completely blank panel — no starfield, no
+grid, no models, nothing — when running under a native Wayland session (confirmed on Arch Linux
+with a KDE Plasma/Wayland session). The rest of the UI works fine, and the underlying FSO/OpenGL
+init succeeds without errors; only the embedded render surface fails to display anything.
+
+**Cause**: `RenderWidget` (`qtfred/src/ui/widgets/renderwidget.cpp`) creates the OpenGL render
+surface as a raw `QWindow` and embeds it into the widget hierarchy via
+`QWidget::createWindowContainer()`. This relies on native child-window embedding, which X11
+supports directly (`XReparentWindow`) but Wayland has no equivalent for — Qt's Wayland QPA plugin
+emulates it with `wl_subsurface`, and that emulation is a known source of bugs across
+Qt/compositor version combinations, up to and including the embedded surface never compositing
+into the visible window at all (i.e. exactly this symptom). qtFRED has no Wayland-specific
+handling anywhere in its code, so it hits this unmodified.
+
+**Workaround**: force Qt to run through XWayland (the X11 compatibility layer nearly all Wayland
+compositors, including KWin, provide) instead of the native Wayland backend:
+
+```
+QT_QPA_PLATFORM=xcb ./qtfred
+```
+
+This has been confirmed to fix the blank viewport. There is no code-level fix for this yet — a
+real fix would mean replacing the `createWindowContainer`-based render surface with something
+Wayland-native (e.g. a top-level `QWindow`/`QOpenGLWindow` instead of an embedded child window,
+or a `QOpenGLWidget`-based surface), which is a larger architectural change to qtFRED's rendering
+widget, not a quick patch.
+
 Directories
 -----------
 
