@@ -7520,7 +7520,7 @@ void ship_weapon::clear()
         primary_bank_weapons[i] = -1;
 
 		primary_bank_external_model_instance[i] = -1;
-		primary_bank_model_instance_check[i] = false;
+		primary_bank_model_instance_weapon[i] = -1;
 
         next_primary_fire_stamp[i] = timestamp(0);
         last_primary_fire_stamp[i] = timestamp(-1);
@@ -21864,6 +21864,46 @@ void ship_render_batch_thrusters(object *obj)
 	}
 }
 
+// Lazily creates the model instance used to spin the Gun_rotation submodels of the external
+// weapon model in the given primary bank, recreating it if the bank's weapon has changed since
+// the last call (weapons can be swapped mid-mission by SEXPs, scripts, or rearming).  The ideal
+// place to create the instance would be in parse_object_create_sub, but the player can alter
+// the ship loadout after that function runs.
+// Returns the model instance number, or -1 if the bank's weapon doesn't need an instance.
+int ship_get_external_weapon_model_instance(ship_weapon *swp, int bank)
+{
+	int weapon_idx = swp->primary_bank_weapons[bank];
+
+	if (swp->primary_bank_model_instance_weapon[bank] != weapon_idx)
+	{
+		// the weapon changed, so any existing instance belongs to the old weapon's model
+		if (swp->primary_bank_external_model_instance[bank] >= 0)
+		{
+			model_delete_instance(swp->primary_bank_external_model_instance[bank]);
+			swp->primary_bank_external_model_instance[bank] = -1;
+		}
+
+		if (weapon_idx >= 0 && Weapon_info[weapon_idx].external_model_num >= 0)
+		{
+			auto pm = model_get(Weapon_info[weapon_idx].external_model_num);
+
+			// create a model instance only if at least one submodel has gun rotation
+			for (int mn = 0; mn < pm->n_models; mn++)
+			{
+				if (pm->submodel[mn].flags[Model::Submodel_flags::Gun_rotation])
+				{
+					swp->primary_bank_external_model_instance[bank] = model_create_instance(model_objnum_special::OBJNUM_NONE, Weapon_info[weapon_idx].external_model_num);
+					break;
+				}
+			}
+		}
+
+		swp->primary_bank_model_instance_weapon[bank] = weapon_idx;
+	}
+
+	return swp->primary_bank_external_model_instance[bank];
+}
+
 // Computes the position and orientation, in the ship model's frame, at which to render an
 // external weapon model on slot `slot` of weapon bank `bank`.  reload_slide_back is the
 // distance a partially reloaded missile is slid backward along the bank's -Z axis; pass
@@ -21907,31 +21947,13 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 			continue;
 		}
 
-		// Lazily create the model instance here, if we need to.  The ideal place to put this
-		// would be in parse_object_create_sub, but the player can alter the ship loadout
-		// after that function runs.
-		if (!swp->primary_bank_model_instance_check[i])
-		{
-			auto pm = model_get(wip->external_model_num);
-
-			// create a model instance only if at least one submodel has gun rotation
-			for (int mn = 0; mn < pm->n_models; mn++)
-			{
-				if (pm->submodel[mn].flags[Model::Submodel_flags::Gun_rotation])
-				{
-					swp->primary_bank_external_model_instance[i] = model_create_instance(model_objnum_special::OBJNUM_NONE, wip->external_model_num);
-					break;
-				}
-			}
-
-			swp->primary_bank_model_instance_check[i] = true;
-		}
+		int external_model_instance = ship_get_external_weapon_model_instance(swp, i);
 
 		auto bank = &ship_pm->gun_banks[i];
 
-		if ( swp->primary_bank_external_model_instance[i] >= 0 )
+		if ( external_model_instance >= 0 )
 		{
-			auto pmi = model_get_instance(swp->primary_bank_external_model_instance[i]);
+			auto pmi = model_get_instance(external_model_instance);
 			auto pm = model_get(pmi->model_num);
 
 			// spin the submodels by the gun rotation
@@ -21951,7 +21973,7 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 			matrix slot_orient;
 			ship_get_weapon_model_slot_transform(bank, k, 0.0f, &slot_pnt, &slot_orient);
 
-			model_render_queue(ship_render_info, scene, wip->external_model_num, swp->primary_bank_external_model_instance[i], &slot_orient, &slot_pnt);
+			model_render_queue(ship_render_info, scene, wip->external_model_num, external_model_instance, &slot_orient, &slot_pnt);
 		}
 	}
 

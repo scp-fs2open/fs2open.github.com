@@ -7999,6 +7999,8 @@ void HudGaugeHardpoints::render(float /*frametime*/, bool config)
 						renderCircle((int)draw_point.screen.xyw.x + position[0], (int)draw_point.screen.xyw.y + position[1], 10);
 				}
 			} else {
+				int external_model_instance = ship_get_external_weapon_model_instance(swp, i);
+
 				for ( k = 0; k < bank->num_slots; k++ ) {
 					model_render_params weapon_render_info;
 					weapon_render_info.set_detail_level_lock(detail_level_lock);
@@ -8016,7 +8018,7 @@ void HudGaugeHardpoints::render(float /*frametime*/, bool config)
 					matrix model_orient;
 					vm_matrix_x_matrix(&model_orient, &object_orient, &slot_orient);
 
-					model_render_immediate(&weapon_render_info, wip->external_model_num, swp->primary_bank_external_model_instance[i], &model_orient, &world_position);
+					model_render_immediate(&weapon_render_info, wip->external_model_num, external_model_instance, &model_orient, &world_position);
 				}
 			}
 		}
