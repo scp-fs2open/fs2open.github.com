@@ -52,6 +52,7 @@ add_subdirectory(accidental-noise)
 ADD_SUBDIRECTORY(lz4)
 
 ADD_SUBDIRECTORY(imgui)
+ADD_SUBDIRECTORY(implot)
 
 if(FSO_BUILD_WITH_OPENXR)
 	add_subdirectory(openxr EXCLUDE_FROM_ALL)
