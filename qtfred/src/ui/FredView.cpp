@@ -150,7 +150,7 @@ FredView::FredView(QWidget* parent) : QMainWindow(parent), ui(new Ui::FredView()
 	bindThemeIcon(ui->actionConstrainXZ,   QStringLiteral("constxz"));
 	bindThemeIcon(ui->actionConstrainYZ,   QStringLiteral("constyz"));
 	bindThemeIcon(ui->actionConstrainXY,   QStringLiteral("constxy"));
-	bindThemeIcon(ui->actionSelectionList, QStringLiteral("selectlist"));
+	bindThemeIcon(ui->actionSceneBrowser, QStringLiteral("selectlist"));
 	bindThemeIcon(ui->actionSelectionLock, QStringLiteral("selectlock"));
 	bindThemeIcon(ui->actionWingForm,      QStringLiteral("wingform"));
 	bindThemeIcon(ui->actionWingDisband,   QStringLiteral("wingdisband"));
@@ -271,17 +271,14 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 	addDockWidget(Qt::LeftDockWidgetArea, _browserPanel);
 	enforceSideDockAreas();
 
-	// Reuse the existing toolbar/menu Selection List action as a Scene Browser toggle
-	ui->actionSelectionList->setCheckable(true);
-	ui->actionSelectionList->setText(tr("Scene Browser"));
-	ui->actionSelectionList->setToolTip(tr("Toggle Scene Browser (H)"));
-	ui->actionSelectionList->setChecked(_browserPanel->isVisible());
+	// Keep the Scene Browser toggle action in sync with the dock's visibility
+	ui->actionSceneBrowser->setChecked(_browserPanel->isVisible());
 	connect(_browserPanel, &QDockWidget::visibilityChanged, this, [this](bool visible) {
-		if (!ui || !ui->actionSelectionList) {
+		if (!ui || !ui->actionSceneBrowser) {
 			return;
 		}
-		QSignalBlocker blocker(ui->actionSelectionList);
-		ui->actionSelectionList->setChecked(visible);
+		QSignalBlocker blocker(ui->actionSceneBrowser);
+		ui->actionSceneBrowser->setChecked(visible);
 	});
 
 	// Restore dock/toolbar layout and window geometry from last session.
@@ -2769,7 +2766,7 @@ bool FredView::showModalDialog(IBaseDialog* dlg) {
 
 	return ret == QDialog::Accepted;
 }
-void FredView::on_actionSelectionList_triggered(bool checked) {
+void FredView::on_actionSceneBrowser_triggered(bool checked) {
 	if (_browserPanel != nullptr) {
 		_browserPanel->setVisible(checked);
 	}

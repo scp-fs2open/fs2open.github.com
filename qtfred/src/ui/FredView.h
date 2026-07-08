@@ -140,7 +140,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void on_actionZoomSelected_triggered(bool);
 	void on_actionZoomExtents_triggered(bool);
 
-	void on_actionSelectionList_triggered(bool);
+	void on_actionSceneBrowser_triggered(bool);
 
 	void on_actionOrbitSelected_triggered(bool enabled);
 

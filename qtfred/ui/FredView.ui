@@ -100,6 +100,8 @@
      <addaction name="actionCamera"/>
      <addaction name="actionCurrent_Ship"/>
     </widget>
+    <addaction name="actionSceneBrowser"/>
+    <addaction name="separator"/>
     <addaction name="actionVisibility_Layers"/>
     <addaction name="menuOutline_LOD"/>
     <addaction name="separator"/>
@@ -308,7 +310,7 @@
    <addaction name="actionConstrainYZ"/>
    <addaction name="actionConstrainXY"/>
    <addaction name="separator"/>
-   <addaction name="actionSelectionList"/>
+   <addaction name="actionSceneBrowser"/>
    <addaction name="actionSelectionLock"/>
    <addaction name="separator"/>
    <addaction name="actionWingForm"/>
@@ -472,12 +474,15 @@
     <string>Constrain movement/rotation to XY plane</string>
    </property>
   </action>
-  <action name="actionSelectionList">
+  <action name="actionSceneBrowser">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
-    <string>SelectionList</string>
+    <string>Scene Browser</string>
    </property>
    <property name="toolTip">
-    <string>Selection List (H)</string>
+    <string>Toggle Scene Browser (H)</string>
    </property>
    <property name="shortcut">
     <string>H</string>
