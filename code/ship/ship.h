@@ -102,6 +102,7 @@ struct external_weapon_state
 	int fp_counter = 0;				// cycles through the model's firing points, for "chain external model fps" weapons
 	float rotate_rate = 0.0f;		// current spin rate of the model's Gun_rotation submodels (primaries only)
 	float rotate_ang = 0.0f;		// current spin angle of the model's Gun_rotation submodels (primaries only)
+	bool spin_up_requested = false;	// set each frame the bank tries to fire; consumed by update_external_weapon_spin()
 };
 
 class ship_weapon {

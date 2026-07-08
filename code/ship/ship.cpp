@@ -10609,6 +10609,49 @@ void update_firing_sounds(object* objp, ship* shipp)
 	}
 }
 
+// Spins the Gun_rotation submodels of external weapon models up or down.  A bank that tried to
+// fire this frame requests spin-up (see ship_fire_primary, which also refuses to fire until the
+// barrels are up to speed); all other banks wind down.  Only primary banks spin.
+void update_external_weapon_spin(ship *shipp, float frametime)
+{
+	ship_weapon *swp = &shipp->weapons;
+
+	for (int i = 0; i < swp->num_primary_banks; i++)
+	{
+		auto &ext = swp->primary_bank_external_weapon[i];
+
+		if (swp->primary_bank_weapons[i] < 0)
+		{
+			ext.rotate_rate = 0.0f;
+			ext.spin_up_requested = false;
+			continue;
+		}
+
+		auto wip = &Weapon_info[swp->primary_bank_weapons[i]];
+
+		if (ext.spin_up_requested && wip->weapon_submodel_rotate_vel > 0.0f)
+		{
+			ext.rotate_rate += wip->weapon_submodel_rotate_accell * frametime;
+			if (ext.rotate_rate > wip->weapon_submodel_rotate_vel)
+				ext.rotate_rate = wip->weapon_submodel_rotate_vel;
+		}
+		else if (ext.rotate_rate > 0.0f)
+		{
+			ext.rotate_rate -= wip->weapon_submodel_rotate_accell * frametime;
+			if (ext.rotate_rate < 0.0f)
+				ext.rotate_rate = 0.0f;
+		}
+		ext.spin_up_requested = false;
+
+		if (ext.rotate_rate > 0.0f)
+		{
+			ext.rotate_ang += ext.rotate_rate * frametime;
+			while (ext.rotate_ang > PI2)
+				ext.rotate_ang -= PI2;
+		}
+	}
+}
+
 // This was previously part of obj_move_call_physics(), but secondary_point_reload_pct is only used for rendering and has nothing to do with physics at all.
 void update_reload_percent(ship *shipp, float frametime)
 {
@@ -10694,6 +10737,8 @@ void ship_process_post(object * obj, float frametime)
 	update_firing_sounds(obj, shipp);
 
 	update_reload_percent(shipp, frametime);
+
+	update_external_weapon_spin(shipp, frametime);
 
 	ship_dying_frame(obj, num);
 
@@ -12583,7 +12628,6 @@ DCF(t_max, "")
 static int ship_stop_fire_primary_bank(object * obj, int bank_to_stop)
 {
 	ship			*shipp;
-	ship_weapon	*swp;
 
 	if(obj == NULL){
 		return 0;
@@ -12594,24 +12638,9 @@ static int ship_stop_fire_primary_bank(object * obj, int bank_to_stop)
 	}
 
 	shipp = &Ships[obj->instance];
-	swp = &shipp->weapons;
 
-	if(swp->primary_bank_weapons[bank_to_stop] >= 0){
-		auto &ext = swp->primary_bank_external_weapon[bank_to_stop];
+	// (external weapon model spin-down is handled by update_external_weapon_spin)
 
-		if(ext.rotate_rate > 0.0f)
-			ext.rotate_rate -= Weapon_info[swp->primary_bank_weapons[bank_to_stop]].weapon_submodel_rotate_accell*flFrametime;
-		if(ext.rotate_rate < 0.0f)
-			ext.rotate_rate = 0.0f;
-		if(Ship_info[shipp->ship_info_index].draw_primary_models[bank_to_stop]){
-			ext.rotate_ang += ext.rotate_rate*flFrametime;
-			if(ext.rotate_ang > PI2)
-				ext.rotate_ang -= PI2;
-			if(ext.rotate_ang < 0.0f)
-				ext.rotate_ang += PI2;
-		}
-	}
-	
 	if(shipp->was_firing_last_frame[bank_to_stop] == 0)
 		return 0;
 
@@ -12931,17 +12960,9 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 		if (winfo_p->weapon_submodel_rotate_vel > 0.0f) {
 			auto &ext = swp->primary_bank_external_weapon[bank_to_fire];
 
-			if (ext.rotate_rate < winfo_p->weapon_submodel_rotate_vel)
-				ext.rotate_rate += winfo_p->weapon_submodel_rotate_accell*flFrametime;
-			if (ext.rotate_rate > winfo_p->weapon_submodel_rotate_vel)
-				ext.rotate_rate = winfo_p->weapon_submodel_rotate_vel;
-			if (sip->draw_primary_models[bank_to_fire]) {
-				ext.rotate_ang += ext.rotate_rate*flFrametime;
-				if (ext.rotate_ang > PI2)
-					ext.rotate_ang -= PI2;
-				if (ext.rotate_ang < 0.0f)
-					ext.rotate_ang += PI2;
-			}
+			// spin up the Gun_rotation submodels (see update_external_weapon_spin), and
+			// don't fire until the barrels are up to speed
+			ext.spin_up_requested = true;
 			if (ext.rotate_rate < winfo_p->weapon_submodel_rotate_vel)
 				continue;
 		}
