@@ -50,7 +50,7 @@ bool isDataFamily(NodeImage image) {
 
 // Loads a sexp icon master from the Qt resource system.
 QPixmap loadSexpMaster(const char* name) {
-	return QPixmap(QStringLiteral(":/images/sexp_icons/") + QLatin1String(name) + QStringLiteral(".png"));
+	return {QStringLiteral(":/images/sexp_icons/") + QLatin1String(name) + QStringLiteral(".png")};
 }
 
 // Shrinks `src` by `factor` and re-centers it on a transparent canvas of the original size,
@@ -148,7 +148,7 @@ bool isRoot(QTreeWidgetItem* it)
 
 // Builds a QIcon for a NodeImage by colorizing the shared master art (see renderSexpPixmap).
 QIcon sexp_tree_view::convertNodeImageToIcon(NodeImage image, int number) {
-	return QIcon(renderSexpPixmap(image, number));
+	return {renderSexpPixmap(image, number)};
 }
 
 /**
