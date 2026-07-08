@@ -272,7 +272,6 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	SDL_SetMainReady();
 
 	Random::seed(static_cast<unsigned int>(time(nullptr)));
-	init_pending_messages();
 
 	os_init(Osreg_class_name, Osreg_app_name);
 
