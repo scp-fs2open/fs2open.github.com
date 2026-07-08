@@ -666,12 +666,18 @@ void VulkanDeferredLighting::render(vk::CommandBuffer cmd)
 		cmd.beginRenderPass(rpBegin, vk::SubpassContents::eInline);
 	}
 
-	// Set viewport and scissor
+	// Set viewport and scissor.
+	// Negative-height viewport (Y-flip) to match the G-buffer render pass: the sphere/cylinder
+	// light volumes are transformed with the same projMatrix/modelViewMatrix convention used
+	// for regular scene geometry, which assumes this flip. Without it, point/tube light volumes
+	// rasterize mirrored vertically relative to the G-buffer they're sampling, misaligning them
+	// with the actual light position (full-frame directional/ambient lights are unaffected since
+	// their fullscreen triangle covers every pixel regardless of orientation).
 	vk::Viewport viewport;
 	viewport.x = 0.0f;
-	viewport.y = 0.0f;
+	viewport.y = static_cast<float>(m_ctx->sceneExtent.height);
 	viewport.width = static_cast<float>(m_ctx->sceneExtent.width);
-	viewport.height = static_cast<float>(m_ctx->sceneExtent.height);
+	viewport.height = -static_cast<float>(m_ctx->sceneExtent.height);
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
 	cmd.setViewport(0, viewport);

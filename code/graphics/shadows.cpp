@@ -181,15 +181,15 @@ auto MaxRtShadowLocalLightsOption = options::OptionBuilder<int>("Graphics.MaxRtS
                      std::pair<const char*, int>{"Maximum number of point, tube, and cone lights that cast raytraced shadows (only used at High Raytraced Shadow Quality)", -1})
                      .enumerator([]() -> SCP_vector<int> {
                          if (shadows_raytracing_supported()) {
-                             return {0, 1, 2, 3, 4, 5, 6, 7, 8};
+                             return {4, 8, 16, 32, 64};
                          }
-                         return {3}; // inert default when RT isn't supported
+                         return {4}; // inert default when RT isn't supported
                      })
                      .bind_to(&Max_rt_shadow_local_lights)
                      .flags({options::OptionFlags::ForceMultiValueSelection})
                      .level(options::ExpertLevel::Advanced)
                      .category(std::make_pair("Graphics", 1825))
-                     .default_func([]() { return 3; })
+                     .default_func([]() { return 4; })
                      .importance(76)
                      .finish();
 
