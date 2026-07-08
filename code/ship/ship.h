@@ -96,12 +96,9 @@ struct reinforcements {
 // points when the ship enables $Show Primary Models: / $Show Secondary Models:.
 struct external_weapon_state
 {
-	int model_instance = -1;		// model instance used to spin Gun_rotation submodels, or -1 if the weapon doesn't need one
+	int model_instance = -1;		// model instance used to animate the external model, or -1 if the weapon doesn't need one
 	int model_instance_weapon = -1;	// the weapon the model instance state was created for, or -1 if not yet checked
 	int fp_counter = 0;				// cycles through the model's firing points, for "chain external model fps" weapons
-	float rotate_rate = 0.0f;		// current spin rate of the model's Gun_rotation submodels (primaries only)
-	float rotate_ang = 0.0f;		// current spin angle of the model's Gun_rotation submodels (primaries only)
-	bool spin_up_requested = false;	// set each frame the bank tries to fire; consumed by update_external_weapon_spin()
 	bool warmup_requested = false;	// set each frame the bank tries to fire; consumed by update_external_weapon_animations()
 	bool warmup_active = false;		// whether the weapon-warmup animations are currently triggered
 };

@@ -414,8 +414,6 @@ namespace animation {
 		static SCP_unordered_map<SCP_string, ParsedModelAnimation> s_animationsById;
 		static SCP_unordered_map<SCP_string, std::shared_ptr<ModelAnimationMoveable>> s_moveablesById;
 
-		static unsigned int getUniqueAnimationID(const SCP_string& animName, char uniquePrefix, const SCP_string& parentName);
-
 		//Internal Parsing Methods
 		static void parseSingleAnimation();
 		static void parseSingleMoveable();
@@ -423,6 +421,8 @@ namespace animation {
 
 
 	public:
+		static unsigned int getUniqueAnimationID(const SCP_string& animName, char uniquePrefix, const SCP_string& parentName);
+
 		std::shared_ptr<ModelAnimationSegment> parseSegment();
 		//Per Animation parsing Data
 		SCP_string m_animationName;

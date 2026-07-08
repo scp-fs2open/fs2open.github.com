@@ -10693,7 +10693,10 @@ void update_firing_sounds(object* objp, ship* shipp)
 static void update_external_weapon_bank_animations(external_weapon_state *ext, int weapon_idx, float frametime)
 {
 	if (weapon_idx < 0)
+	{
+		ext->warmup_requested = false;
 		return;
+	}
 
 	weapon_info *wip = &Weapon_info[weapon_idx];
 
@@ -10723,54 +10726,18 @@ static void update_external_weapon_bank_animations(external_weapon_state *ext, i
 	animation::ModelAnimation::stepAnimations(frametime, pmi);
 }
 
-// Spins the Gun_rotation submodels of external weapon models up or down.  A bank that tried to
-// fire this frame requests spin-up (see ship_fire_primary, which also refuses to fire until the
-// barrels are up to speed); all other banks wind down.  Only primary banks spin.
+// Updates the animations of all of a ship's external weapon models.  A bank that tried to fire
+// this frame starts its warmup animations (see ship_fire_primary, which also refuses to fire
+// until they are fully started); all other banks wind theirs down.
 void update_external_weapon_animations(ship *shipp, float frametime)
 {
 	ship_weapon *swp = &shipp->weapons;
 
 	for (int i = 0; i < swp->num_primary_banks; i++)
-	{
-		auto &ext = swp->primary_bank_external_weapon[i];
+		update_external_weapon_bank_animations(&swp->primary_bank_external_weapon[i], swp->primary_bank_weapons[i], frametime);
 
-		if (swp->primary_bank_weapons[i] < 0)
-		{
-			ext.rotate_rate = 0.0f;
-			ext.spin_up_requested = false;
-			ext.warmup_requested = false;
-			continue;
-		}
-
-		auto wip = &Weapon_info[swp->primary_bank_weapons[i]];
-
-		if (ext.spin_up_requested && wip->weapon_submodel_rotate_vel > 0.0f)
-		{
-			ext.rotate_rate += wip->weapon_submodel_rotate_accell * frametime;
-			if (ext.rotate_rate > wip->weapon_submodel_rotate_vel)
-				ext.rotate_rate = wip->weapon_submodel_rotate_vel;
-		}
-		else if (ext.rotate_rate > 0.0f)
-		{
-			ext.rotate_rate -= wip->weapon_submodel_rotate_accell * frametime;
-			if (ext.rotate_rate < 0.0f)
-				ext.rotate_rate = 0.0f;
-		}
-		ext.spin_up_requested = false;
-
-		if (ext.rotate_rate > 0.0f)
-		{
-			ext.rotate_ang += ext.rotate_rate * frametime;
-			while (ext.rotate_ang > PI2)
-				ext.rotate_ang -= PI2;
-		}
-
-		update_external_weapon_bank_animations(&ext, swp->primary_bank_weapons[i], frametime);
-	}
-
-	for (int i = 0; i < swp->num_secondary_banks; i++) {
+	for (int i = 0; i < swp->num_secondary_banks; i++)
 		update_external_weapon_bank_animations(&swp->secondary_bank_external_weapon[i], swp->secondary_bank_weapons[i], frametime);
-	}
 }
 
 // This was previously part of obj_move_call_physics(), but secondary_point_reload_pct is only used for rendering and has nothing to do with physics at all.
@@ -12758,7 +12725,7 @@ static int ship_stop_fire_primary_bank(object * obj, int bank_to_stop)
 
 	shipp = &Ships[obj->instance];
 
-	// (external weapon model spin-down is handled by update_external_weapon_spin)
+	// (external weapon model warmup shutdown is handled by update_external_weapon_animations)
 
 	if(shipp->was_firing_last_frame[bank_to_stop] == 0)
 		return 0;
@@ -13087,16 +13054,6 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 			target_velocity_vec = Objects[aip->target_objnum].phys_info.vel;
 			if (The_mission.ai_profile->flags[AI::Profile_Flags::Use_additive_weapon_velocity])
 				vm_vec_scale_sub2(&target_velocity_vec, &obj->phys_info.vel, winfo_p->vel_inherit_amount);
-		}
-
-		if (winfo_p->weapon_submodel_rotate_vel > 0.0f) {
-			auto &ext = swp->primary_bank_external_weapon[bank_to_fire];
-
-			// spin up the Gun_rotation submodels (see update_external_weapon_animations), and
-			// don't fire until the barrels are up to speed
-			ext.spin_up_requested = true;
-			if (ext.rotate_rate < winfo_p->weapon_submodel_rotate_vel)
-				continue;
 		}
 
 		if (!winfo_p->animations.isEmpty()) {
@@ -21776,25 +21733,9 @@ int ship_get_external_weapon_model_instance(external_weapon_state *ext, int weap
 
 		if (weapon_idx >= 0 && display_model_num >= 0)
 		{
-			// create a model instance only if something will animate it: either the weapon has
-			// animations, or the model has old-style gun rotation submodels
-			bool needs_instance = !Weapon_info[weapon_idx].animations.isEmpty();
-
-			if (!needs_instance)
-			{
-				auto pm = model_get(display_model_num);
-
-				for (int mn = 0; mn < pm->n_models; mn++)
-				{
-					if (pm->submodel[mn].flags[Model::Submodel_flags::Gun_rotation])
-					{
-						needs_instance = true;
-						break;
-					}
-				}
-			}
-
-			if (needs_instance)
+			// create a model instance only if the weapon has animations to play on it
+			// (old-style Gun_rotation submodels get a warmup animation synthesized at page-in)
+			if (!Weapon_info[weapon_idx].animations.isEmpty())
 				ext->model_instance = model_create_instance(model_objnum_special::OBJNUM_NONE, display_model_num);
 		}
 
@@ -21874,23 +21815,6 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 		int external_model_instance = ship_get_external_weapon_model_instance(&swp->primary_bank_external_weapon[i], swp->primary_bank_weapons[i], display_model_num);
 
 		auto bank = &ship_pm->gun_banks[i];
-
-		if ( external_model_instance >= 0 )
-		{
-			auto pmi = model_get_instance(external_model_instance);
-			auto pm = model_get(pmi->model_num);
-
-			// spin the submodels by the gun rotation
-			for (int mn = 0; mn < pm->n_models; ++mn)
-			{
-				if (pm->submodel[mn].flags[Model::Submodel_flags::Gun_rotation])
-				{
-					angles angs = vmd_zero_angles;
-					angs.b = swp->primary_bank_external_weapon[i].rotate_ang;
-					vm_angles_2_matrix(&pmi->submodel[mn].canonical_orient, &angs);
-				}
-			}
-		}
 
 		for ( k = 0; k < bank->num_slots; k++ ) {
 			vec3d slot_pnt;
