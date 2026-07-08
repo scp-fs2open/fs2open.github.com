@@ -7938,14 +7938,26 @@ void HudGaugeHardpoints::render(float /*frametime*/, bool config)
 				auto weapon_pm = model_get(display_model_num);
 				num_secondaries_rendered = 0;
 
+				// a weapon-reload animation replaces the slide-back reload visual: reloading
+				// points are hidden until the animation completes
+				bool anim_reload = !sip->animations.getAll(model_get_instance(sp->model_instance_num), animation::ModelAnimationTriggerType::WeaponReload, i, true).isEmpty();
+
 				for(k = 0; k < bank->num_slots; k++)
 				{
 					if (num_secondaries_rendered >= sp->weapons.secondary_bank_ammo[i])
 						break;
 
-					float reload_pct = sp->secondary_point_reload_pct.get(i, k);
-					if (reload_pct <= 0.0f)
-						continue;
+					float reload_slide_back = 0.0f;
+
+					if (anim_reload) {
+						if ( !timestamp_elapsed(sp->secondary_point_reload_stamp.get(i, k)) )
+							continue;
+					} else {
+						float reload_pct = sp->secondary_point_reload_pct.get(i, k);
+						if (reload_pct <= 0.0f)
+							continue;
+						reload_slide_back = (1.0f - reload_pct) * weapon_pm->rad;
+					}
 
 					model_render_params weapon_render_info;
 
@@ -7962,7 +7974,7 @@ void HudGaugeHardpoints::render(float /*frametime*/, bool config)
 
 					vec3d slot_pnt;
 					matrix slot_orient;
-					ship_get_weapon_model_slot_transform(bank, k, (1.0f - reload_pct) * weapon_pm->rad, &slot_pnt, &slot_orient);
+					ship_get_weapon_model_slot_transform(bank, k, reload_slide_back, &slot_pnt, &slot_orient);
 
 					// We need to transform the position local to the model to be in "world" space relative to the rendered outline
 					vec3d world_position;

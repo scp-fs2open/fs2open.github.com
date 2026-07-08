@@ -896,6 +896,7 @@ public:
 	int bay_doors_parent_shipnum;	// our parent ship, what we are entering/leaving
 	
 	reload_pct<float> secondary_point_reload_pct;	//after fireing a secondary it takes some time for that secondary weapon to reload, this is how far along in that proces it is (from 0 to 1)
+	reload_pct<int> secondary_point_reload_stamp;	//for banks with a weapon-reload animation (which replaces the slide-back visual), when each point's missile reappears
 
 	SCP_vector<std::tuple<TIMESTAMP, int, float>> rcs_activity;	//Timestamp of when thrusters started
 																//Sound index for thrusters

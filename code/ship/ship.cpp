@@ -6993,6 +6993,7 @@ void ship::clear()
 	}
 
 	secondary_point_reload_pct.init(0, 0, 0.0f);
+	secondary_point_reload_stamp.init(0, 0, 0);
 	// ---------- done with weapons init
 
 	shield_hits = 0;
@@ -7493,6 +7494,7 @@ static void ship_set(int ship_index, int objnum, int ship_type)
 			max_points_per_bank = num_slots;
 	}
 	shipp->secondary_point_reload_pct.init(sip->num_secondary_banks, max_points_per_bank, 1.0f);
+	shipp->secondary_point_reload_stamp.init(sip->num_secondary_banks, max_points_per_bank, 0);
 
 	shipp->armor_type_idx = sip->armor_type_idx;
 	shipp->shield_armor_type_idx = sip->shield_armor_type_idx;
@@ -14534,6 +14536,17 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 				pnt_index = 0;
 			}
 			shipp->secondary_point_reload_pct.set(bank, pnt_index, 0.0f);
+
+			// a weapon-reload animation replaces the slide-back reload visual: start it and
+			// keep this point's missile hidden until it completes
+			{
+				auto reload_anims = sip->animations.getAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::WeaponReload, bank, true);
+				if (!reload_anims.isEmpty()) {
+					reload_anims.start(animation::ModelAnimationDirection::FWD, true);
+					shipp->secondary_point_reload_stamp.set(bank, pnt_index, timestamp(reload_anims.getTime()));
+				}
+			}
+
 			pnt = pm->missile_banks[bank].pnt[pnt_index];
 			vec3d dir;
 			dir = pm->missile_banks[bank].norm[pnt_index];
@@ -21877,6 +21890,7 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 	int i,k;
 	ship_weapon *swp = &shipp->weapons;
 	auto ship_pm = model_get(sip->model_num);
+	auto ship_pmi = model_get_instance(shipp->model_instance_num);
 
 	scene->push_transform(&obj->pos, &obj->orient);
 
@@ -21942,21 +21956,34 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 			auto weapon_pm = model_get(display_model_num);
 			int num_secondaries_rendered = 0;
 
+			// a weapon-reload animation replaces the slide-back reload visual: reloading
+			// points are hidden until the animation completes
+			bool anim_reload = !sip->animations.getAll(ship_pmi, animation::ModelAnimationTriggerType::WeaponReload, i, true).isEmpty();
+
 			for ( k = 0; k < bank->num_slots; k++ ) {
 				if ( num_secondaries_rendered >= shipp->weapons.secondary_bank_ammo[i] ) {
 					break;
 				}
 
-				float reload_pct = shipp->secondary_point_reload_pct.get(i, k);
-				if ( reload_pct <= 0.0f ) {
-					continue;
+				float reload_slide_back = 0.0f;
+
+				if (anim_reload) {
+					if ( !timestamp_elapsed(shipp->secondary_point_reload_stamp.get(i, k)) ) {
+						continue;
+					}
+				} else {
+					float reload_pct = shipp->secondary_point_reload_pct.get(i, k);
+					if ( reload_pct <= 0.0f ) {
+						continue;
+					}
+					reload_slide_back = (1.0f - reload_pct) * weapon_pm->rad;
 				}
 
 				num_secondaries_rendered++;
 
 				vec3d slot_pnt;
 				matrix slot_orient;
-				ship_get_weapon_model_slot_transform(bank, k, (1.0f - reload_pct) * weapon_pm->rad, &slot_pnt, &slot_orient);
+				ship_get_weapon_model_slot_transform(bank, k, reload_slide_back, &slot_pnt, &slot_orient);
 
 				model_render_queue(ship_render_info, scene, display_model_num, external_model_instance, &slot_orient, &slot_pnt);
 			}
@@ -21964,8 +21991,6 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 	}
 
 	//turret weapons
-	auto ship_pmi = model_get_instance(shipp->model_instance_num);
-
 	for (ship_subsys *pss = GET_FIRST(&shipp->subsys_list); pss != END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss)) {
 		auto tp = pss->system_info;
 

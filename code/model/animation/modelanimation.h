@@ -365,6 +365,7 @@ namespace animation {
 			bool isFullyStarted() const;
 			//True if any animation in the list has been triggered and has not yet fully reset
 			bool anyActive() const;
+			inline bool isEmpty() const { return animations.empty(); }
 			void setFlag(Animation_Instance_Flags flag, bool set = true) const;
 			void setSpeed(float speed = 1.0f) const;
 			AnimationList& operator+=(const AnimationList& rhs);
