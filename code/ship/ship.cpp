@@ -425,6 +425,7 @@ flag_def_list_new<Model::Subsystem_Flags> Subsystem_flags[] = {
 	{ "starts locked",              Model::Subsystem_Flags::Turret_locked,                      true, false },
 	{ "no aggregate",			    Model::Subsystem_Flags::No_aggregate,		                true, false },
 	{ "wait for animation",         Model::Subsystem_Flags::Turret_anim_wait,                   true, false },
+	{ "show external weapon model", Model::Subsystem_Flags::Show_external_weapon_model,         true, false },
 	{ "play fire sound for player", Model::Subsystem_Flags::Player_turret_sound,                true, false },
 	{ "only target if can fire",    Model::Subsystem_Flags::Turret_only_target_if_can_fire,     true, false },
 	{ "no disappear",			    Model::Subsystem_Flags::No_disappear,                       true, false },
@@ -5620,6 +5621,10 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 				//If we've set any subsystem as landable, set a ship-info flag as a shortcut for later
 				if (sp->flags[Model::Subsystem_Flags::Allow_landing])
 					sip->flags.set(Ship::Info_Flags::Allow_landings);
+
+				//Turrets showing external weapon models render through the same path as bank weapon models
+				if (sp->flags[Model::Subsystem_Flags::Show_external_weapon_model])
+					sip->flags.set(Ship::Info_Flags::Draw_weapon_models);
 			}
 
 			if (turret_has_barrel_fov)
@@ -7742,6 +7747,11 @@ void ship_subsys::clear()
 
 	turret_animation_position = MA_POS_NOT_SET;
 	turret_animation_done_time = 0;
+
+	for (i = 0; i < MAX_TFP; i++) {
+		turret_external_weapon_state[i] = TurretExternalWeaponState::LOADED;
+		turret_external_weapon_reload_stamp[i] = 0;
+	}
 
 	for (i = 0; i < MAX_TFP; i++)
 		turret_swarm_info_index[i] = -1;
@@ -10726,9 +10736,65 @@ static void update_external_weapon_bank_animations(external_weapon_state *ext, i
 	animation::ModelAnimation::stepAnimations(frametime, pmi);
 }
 
+// Progresses the external weapon model state of one turret: firing points emptied by firing
+// become loaded again once the turret's post-firing animations complete, playing the
+// weapon-reload animation first if the ship has one.  The weapon model reappears when the
+// reload animation completes, since the animation may show the round being moved into place.
+static void update_turret_external_weapon_models(ship *shipp, ship_subsys *pss)
+{
+	model_subsystem *tp = pss->system_info;
+
+	if ( !(tp->flags[Model::Subsystem_Flags::Show_external_weapon_model]) || tp->turret_num_firing_points < 1 )
+		return;
+
+	auto sip_anims = &Ship_info[shipp->ship_info_index].animations;
+	polymodel_instance *pmi = model_get_instance(shipp->model_instance_num);
+
+	// lazily computed: the model may not reappear while the turret's firing (door) or
+	// post-firing animations are still playing
+	bool anims_checked = false;
+	bool anims_idle = false;
+
+	for (int k = 0; k < tp->turret_num_firing_points; k++)
+	{
+		auto &state = pss->turret_external_weapon_state[k];
+
+		if (state == TurretExternalWeaponState::EMPTY)
+		{
+			if (!anims_checked)
+			{
+				//For legacy animations using subtype for turret number
+				anims_idle = !(sip_anims->getAll(pmi, animation::ModelAnimationTriggerType::TurretFiring, tp->subobj_num, true)
+					//For modern animations using proper triggered-by-subsys name
+					+ sip_anims->get(pmi, animation::ModelAnimationTriggerType::TurretFiring, animation::anim_name_from_subsys(tp))).anyActive()
+					&& !sip_anims->get(pmi, animation::ModelAnimationTriggerType::TurretFired, animation::anim_name_from_subsys(tp)).anyActive();
+				anims_checked = true;
+			}
+
+			if (anims_idle)
+			{
+				auto reload_anims = sip_anims->get(pmi, animation::ModelAnimationTriggerType::WeaponReload, animation::anim_name_from_subsys(tp));
+				if (reload_anims.start(animation::ModelAnimationDirection::FWD, true))
+				{
+					state = TurretExternalWeaponState::RELOADING;
+					pss->turret_external_weapon_reload_stamp[k] = timestamp(reload_anims.getTime());
+				}
+				else
+					state = TurretExternalWeaponState::LOADED;
+			}
+		}
+		else if (state == TurretExternalWeaponState::RELOADING)
+		{
+			if (timestamp_elapsed(pss->turret_external_weapon_reload_stamp[k]))
+				state = TurretExternalWeaponState::LOADED;
+		}
+	}
+}
+
 // Updates the animations of all of a ship's external weapon models.  A bank that tried to fire
 // this frame starts its warmup animations (see ship_fire_primary, which also refuses to fire
-// until they are fully started); all other banks wind theirs down.
+// until they are fully started); all other banks wind theirs down.  Turret firing points
+// emptied by firing reload once the turret's post-firing animations complete.
 void update_external_weapon_animations(ship *shipp, float frametime)
 {
 	ship_weapon *swp = &shipp->weapons;
@@ -10738,6 +10804,9 @@ void update_external_weapon_animations(ship *shipp, float frametime)
 
 	for (int i = 0; i < swp->num_secondary_banks; i++)
 		update_external_weapon_bank_animations(&swp->secondary_bank_external_weapon[i], swp->secondary_bank_weapons[i], frametime);
+
+	for (auto pss: list_range(&shipp->subsys_list))
+		update_turret_external_weapon_models(shipp, pss);
 }
 
 // This was previously part of obj_move_call_physics(), but secondary_point_reload_pct is only used for rendering and has nothing to do with physics at all.
@@ -21745,6 +21814,25 @@ int ship_get_external_weapon_model_instance(external_weapon_state *ext, int weap
 	return ext->model_instance;
 }
 
+// Picks the weapon whose model is displayed at a turret's firing points: the first weapon
+// with a displayable model, secondaries preferred.  Returns -1 if there is none.
+static int turret_get_display_weapon(const ship_weapon *swp)
+{
+	for (int i = 0; i < swp->num_secondary_banks; i++)
+	{
+		int weapon_idx = swp->secondary_bank_weapons[i];
+		if (weapon_idx >= 0 && (Weapon_info[weapon_idx].external_model_num >= 0 || Weapon_info[weapon_idx].model_num >= 0))
+			return weapon_idx;
+	}
+	for (int i = 0; i < swp->num_primary_banks; i++)
+	{
+		int weapon_idx = swp->primary_bank_weapons[i];
+		if (weapon_idx >= 0 && (Weapon_info[weapon_idx].external_model_num >= 0 || Weapon_info[weapon_idx].model_num >= 0))
+			return weapon_idx;
+	}
+	return -1;
+}
+
 // Computes the position and orientation, in the ship model's frame, at which to render an
 // external weapon model on slot `slot` of weapon bank `bank`.  The model points along the
 // slot's firing normal and is "banked" (rolled) by the slot's angle offset.
@@ -21872,6 +21960,51 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 
 				model_render_queue(ship_render_info, scene, display_model_num, external_model_instance, &slot_orient, &slot_pnt);
 			}
+		}
+	}
+
+	//turret weapons
+	auto ship_pmi = model_get_instance(shipp->model_instance_num);
+
+	for (ship_subsys *pss = GET_FIRST(&shipp->subsys_list); pss != END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss)) {
+		auto tp = pss->system_info;
+
+		if ( !(tp->flags[Model::Subsystem_Flags::Show_external_weapon_model]) )
+			continue;
+		if ( tp->turret_num_firing_points < 1 || tp->turret_gun_sobj < 0 )
+			continue;
+
+		// don't show weapons on a destroyed turret
+		if ( pss->max_hits > 0.0f && pss->current_hits <= 0.0f )
+			continue;
+
+		int weapon_idx = turret_get_display_weapon(&pss->weapons);
+		if ( weapon_idx < 0 )
+			continue;
+		auto wip = &Weapon_info[weapon_idx];
+
+		// if the weapon has no dedicated external model, display the weapon's own model, if it has one
+		int display_model_num = (wip->external_model_num >= 0) ? wip->external_model_num : wip->model_num;
+		if ( display_model_num < 0 )
+			continue;
+
+		for ( k = 0; k < tp->turret_num_firing_points; k++ ) {
+			if ( pss->turret_external_weapon_state[k] != TurretExternalWeaponState::LOADED )
+				continue;
+
+			// the firing points are in the turret gun submodel's frame, so transform them
+			// (and the firing normal) through the submodel chain into the ship's frame
+			vec3d slot_pnt;
+			model_instance_local_to_global_point(&slot_pnt, &tp->turret_firing_point[k], ship_pm, ship_pmi, tp->turret_gun_sobj);
+
+			vec3d fire_dir;
+			model_instance_local_to_global_dir(&fire_dir, &tp->turret_norm, ship_pm, ship_pmi, tp->turret_gun_sobj);
+			vm_vec_normalize_safe(&fire_dir);
+
+			matrix slot_orient;
+			vm_vector_2_matrix_norm(&slot_orient, &fire_dir);
+
+			model_render_queue(ship_render_info, scene, display_model_num, &slot_orient, &slot_pnt);
 		}
 	}
 

@@ -3480,7 +3480,12 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 	if (weapon_objnum != -1) {
 		if ( Weapon_info[wid].launch_snd.isValid() ) {
 			snd_play_3d( gamesnd_get_game_sound(Weapon_info[wid].launch_snd), &pos, &View_position );
-		}		
+		}
+
+		// hide the external weapon model at the firing point; the client cycles its own
+		// firing points, which stays visually consistent even if it drifts from the server
+		turret_external_weapon_model_fired(ssp, ssp->turret_next_fire_pos);
+		ssp->turret_next_fire_pos++;
 	}
 }
 
@@ -8785,6 +8790,11 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 		if ( wip.launch_snd.isValid() ) {
 			snd_play_3d( gamesnd_get_game_sound(Weapon_info[wid].launch_snd), &pos, &View_position );
 		}
+
+		// hide the external weapon model at the firing point; the client cycles its own
+		// firing points, which stays visually consistent even if it drifts from the server
+		turret_external_weapon_model_fired(ssp, ssp->turret_next_fire_pos);
+		ssp->turret_next_fire_pos++;
 
 		object& wp_obj = Objects[weapon_objnum];
 		const weapon& wp = Weapons[wp_obj.instance];

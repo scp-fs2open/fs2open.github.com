@@ -2013,7 +2013,9 @@ bool turret_fire_weapon(int weapon_num,
 
 					wp->target_num = turret->turret_enemy_objnum;
 					// AL 1-6-97: Store pointer to turret subsystem
-					wp->turret_subsys = turret;	
+					wp->turret_subsys = turret;
+
+					turret_external_weapon_model_fired(turret, turret->turret_next_fire_pos);
 
 					if (scripting::hooks::OnTurretFired->isActive()) {
 						scripting::hooks::OnTurretFired->run(scripting::hooks::WeaponUsedConditions{ parent_ship , turret_enemy_objp, SCP_vector<int>{ turret_weapon_class }, wip->subtype == WP_LASER },
@@ -2099,6 +2101,18 @@ bool turret_fire_weapon(int weapon_num,
 	return true;
 }
 
+void turret_external_weapon_model_fired(ship_subsys *turret, int fire_pos)
+{
+	model_subsystem *tp = turret->system_info;
+
+	if ( !(tp->flags[Model::Subsystem_Flags::Show_external_weapon_model]) || tp->turret_num_firing_points < 1 )
+		return;
+
+	// the point stays empty until the turret's post-firing animations complete and any
+	// weapon-reload animation has played; see update_turret_external_weapon_models()
+	turret->turret_external_weapon_state[fire_pos % tp->turret_num_firing_points] = TurretExternalWeaponState::EMPTY;
+}
+
 //void turret_swarm_fire_from_turret(ship_subsys *turret, int parent_objnum, int target_objnum, ship_subsys *target_subsys)
 void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 {
@@ -2153,6 +2167,9 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 		Ships[Objects[tsi->parent_objnum].instance].last_fired_turret = tsi->turret;
 		tsi->turret->last_fired_weapon_info_index = tsi->weapon_class;
 		tsi->turret->turret_last_fired = _timestamp();
+
+		// the firing point was incremented after the firing position was calculated above
+		turret_external_weapon_model_fired(tsi->turret, tsi->turret->turret_next_fire_pos - 1);
 
 		if (scripting::hooks::OnTurretFired->isActive()) {
 			scripting::hooks::OnTurretFired->run(scripting::hooks::WeaponUsedConditions{

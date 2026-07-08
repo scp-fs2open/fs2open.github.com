@@ -348,11 +348,22 @@ typedef struct lock_info {
 	float lock_gauge_time_elapsed;
 	float lock_anim_time_elapsed;
 } lock_info;
+
 struct guard_range_entry {
 	float range;
 	int shipnum;
 	guard_range_entry(float _range, int _shipnum) : range(_range), shipnum(_shipnum) {}
 };
+
+// display state of the external weapon model at one of a turret's firing points
+// (see the "show external weapon model" subsystem flag)
+enum class TurretExternalWeaponState : ubyte
+{
+	LOADED,		// the weapon model is shown at the firing point
+	EMPTY,		// the firing point fired; nothing is shown until the turret's post-firing animations complete
+	RELOADING,	// the weapon-reload animation is playing (it may show the round being moved into place); the weapon model appears when it completes
+};
+
 // structure definition for a linked list of subsystems for a ship.  Each subsystem has a pointer
 // to the static data for the subsystem.  The obj_subsystem data is defined and read in the model
 // code.  Other dynamic data (such as current_hits) should remain in this structure.
@@ -404,9 +415,14 @@ public:
 	EModelAnimationPosition	turret_animation_position;
 	int		turret_animation_done_time;
 
+	// external weapon model display state, per firing point (see the "show external weapon model" subsystem flag):
+	// a fired point's model is hidden until the turret's post-firing animations complete and any weapon-reload animation has played
+	TurretExternalWeaponState	turret_external_weapon_state[MAX_TFP];
+	int		turret_external_weapon_reload_stamp[MAX_TFP];	// when a RELOADING firing point becomes LOADED again
+
 	// swarm (rapid fire) info
-	int		turret_swarm_info_index[MAX_TFP];	
-	int		turret_swarm_num;	
+	int		turret_swarm_info_index[MAX_TFP];
+	int		turret_swarm_num;
 
 	// awacs info
 	float		awacs_intensity;
@@ -2054,6 +2070,11 @@ int is_support_allowed(object *objp, bool do_simple_check = false);
 //		*gpos: absolute position of gun firing point
 //		*gvec: vector fro *gpos to *targetp
 void ship_get_global_turret_gun_info(const object *objp, const ship_subsys *ssp, vec3d *gpos, bool avg_origin, vec3d *gvec, bool use_angles, const vec3d *targetp);
+
+// Marks the firing point a turret just fired from as empty, so that its external weapon model
+// stops rendering until the turret reloads (see the "show external weapon model" subsystem
+// flag).  fire_pos is the turret_next_fire_pos value that was used for the shot.
+void turret_external_weapon_model_fired(ship_subsys *turret, int fire_pos);
 
 //	Given an object and a turret on that object, return the global position and forward vector
 //	of the turret.   The gun normal is the unrotated gun normal, (the center of the FOV cone), not

@@ -50,6 +50,7 @@ namespace animation {
 		PrimaryFired,    // Triggered when a primary weapon has fired.
 		SecondaryFired,  // Triggered when a secondary weapon has fired.
 		WeaponWarmup,	 // Weapon-owned animations (on the weapon's external model): plays while the weapon's bank is trying to fire; the bank holds fire until the animation is fully started (e.g. gatling barrel spin-up).
+		WeaponReload,	 // Plays while a firing point reloads its external weapon model, which reappears when the animation completes.  Keyed by turret subsystem name for turrets (see the "show external weapon model" subsystem flag), or by secondary bank index for ship weapon banks (replacing the slide-back reload visual).
 
 		MaxAnimationTypes
 	};
@@ -362,6 +363,8 @@ namespace animation {
 			int getTime() const;
 			//True once every animation in the list is fully started (see ModelAnimation::isFullyStarted); true for an empty list
 			bool isFullyStarted() const;
+			//True if any animation in the list has been triggered and has not yet fully reset
+			bool anyActive() const;
 			void setFlag(Animation_Instance_Flags flag, bool set = true) const;
 			void setSpeed(float speed = 1.0f) const;
 			AnimationList& operator+=(const AnimationList& rhs);

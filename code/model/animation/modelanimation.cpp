@@ -1062,6 +1062,17 @@ namespace animation {
 			[this](const std::shared_ptr<ModelAnimation>& anim) { return anim->isFullyStarted(pmi_id); });
 	}
 
+	bool ModelAnimationSet::AnimationList::anyActive() const {
+		if (pmi_id < 0)
+			return false;
+
+		return std::any_of(animations.cbegin(), animations.cend(),
+			[this](const std::shared_ptr<ModelAnimation>& anim) {
+				auto instance = anim->m_instances.find(pmi_id);
+				return instance != anim->m_instances.end() && instance->second.state != ModelAnimationState::UNTRIGGERED;
+			});
+	}
+
 	int ModelAnimationSet::AnimationList::getTime() const {
 		if (pmi_id < 0)
 			return 0;
@@ -1153,6 +1164,17 @@ namespace animation {
 		case ModelAnimationTriggerType::TurretFired:
 		case ModelAnimationTriggerType::TurretFiring: {
 			//Name of the turret subsys that needs to be firing
+			SCP_string name(triggeredBy);
+			SCP_tolower(name);
+
+			return get(pmi, type, name);
+		}
+
+		case ModelAnimationTriggerType::WeaponReload: {
+			//The name of the turret subsys, or the index of the secondary bank
+			if (can_construe_as_integer(triggeredBy.c_str()))
+				return getAll(pmi, type, atoi(triggeredBy.c_str()), true);
+
 			SCP_string name(triggeredBy);
 			SCP_tolower(name);
 
@@ -1293,7 +1315,8 @@ namespace animation {
 	{ModelAnimationTriggerType::TurretFired, {"turret-fired", true}},
 	{ModelAnimationTriggerType::PrimaryFired,   {"primary-fired", true}},
 	{ModelAnimationTriggerType::SecondaryFired, {"secondary-fired", true}},
-	{ModelAnimationTriggerType::WeaponWarmup, {"weapon-warmup", false}}
+	{ModelAnimationTriggerType::WeaponWarmup, {"weapon-warmup", false}},
+	{ModelAnimationTriggerType::WeaponReload, {"weapon-reload", true}}
 	};
 
 	ModelAnimationTriggerType anim_match_type(const char* p)
@@ -1477,6 +1500,20 @@ namespace animation {
 				stuff_string(parsedname, F_NAME, NAME_LENGTH);
 				strlwr(parsedname);
 				name = parsedname;
+				break;
+			}
+			case ModelAnimationTriggerType::WeaponReload: {
+				//The name of the turret subsys, or the index of the secondary bank
+				char parsedname[NAME_LENGTH];
+				stuff_string(parsedname, F_NAME, NAME_LENGTH);
+
+				if (can_construe_as_integer(parsedname))
+					subtype = atoi(parsedname);
+				else {
+					strlwr(parsedname);
+					name = parsedname;
+				}
+
 				break;
 			}
 
