@@ -12980,17 +12980,19 @@ static int ship_stop_fire_primary_bank(object * obj, int bank_to_stop)
 
 	shipp = &Ships[obj->instance];
 	swp = &shipp->weapons;
-	
-	if(shipp->primary_rotate_rate[bank_to_stop] > 0.0f)
-		shipp->primary_rotate_rate[bank_to_stop] -= Weapon_info[swp->primary_bank_weapons[bank_to_stop]].weapon_submodel_rotate_accell*flFrametime;
-	if(shipp->primary_rotate_rate[bank_to_stop] < 0.0f)
-		shipp->primary_rotate_rate[bank_to_stop] = 0.0f;
-	if(Ship_info[shipp->ship_info_index].draw_primary_models[bank_to_stop]){
-		shipp->primary_rotate_ang[bank_to_stop] += shipp->primary_rotate_rate[bank_to_stop]*flFrametime;
-		if(shipp->primary_rotate_ang[bank_to_stop] > PI2)
-			shipp->primary_rotate_ang[bank_to_stop] -= PI2;
-		if(shipp->primary_rotate_ang[bank_to_stop] < 0.0f)
-			shipp->primary_rotate_ang[bank_to_stop] += PI2;
+
+	if(swp->primary_bank_weapons[bank_to_stop] >= 0){
+		if(shipp->primary_rotate_rate[bank_to_stop] > 0.0f)
+			shipp->primary_rotate_rate[bank_to_stop] -= Weapon_info[swp->primary_bank_weapons[bank_to_stop]].weapon_submodel_rotate_accell*flFrametime;
+		if(shipp->primary_rotate_rate[bank_to_stop] < 0.0f)
+			shipp->primary_rotate_rate[bank_to_stop] = 0.0f;
+		if(Ship_info[shipp->ship_info_index].draw_primary_models[bank_to_stop]){
+			shipp->primary_rotate_ang[bank_to_stop] += shipp->primary_rotate_rate[bank_to_stop]*flFrametime;
+			if(shipp->primary_rotate_ang[bank_to_stop] > PI2)
+				shipp->primary_rotate_ang[bank_to_stop] -= PI2;
+			if(shipp->primary_rotate_ang[bank_to_stop] < 0.0f)
+				shipp->primary_rotate_ang[bank_to_stop] += PI2;
+		}
 	}
 	
 	if(shipp->was_firing_last_frame[bank_to_stop] == 0)
@@ -21945,6 +21947,9 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 
 	//primary weapons
 	for ( i = 0; i < swp->num_primary_banks; i++ ) {
+		if ( swp->primary_bank_weapons[i] < 0 ) {
+			continue;
+		}
 		auto wip = &Weapon_info[swp->primary_bank_weapons[i]];
 
 		if ( wip->external_model_num < 0 || !sip->draw_primary_models[i] ) {
@@ -21983,6 +21988,9 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 
 	//secondary weapons
 	for (i = 0; i < swp->num_secondary_banks; i++) {
+		if ( swp->secondary_bank_weapons[i] < 0 ) {
+			continue;
+		}
 		auto wip = &Weapon_info[swp->secondary_bank_weapons[i]];
 
 		if ( wip->external_model_num < 0 || !sip->draw_secondary_models[i] ) {

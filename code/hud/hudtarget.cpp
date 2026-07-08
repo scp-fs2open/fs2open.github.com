@@ -7905,9 +7905,11 @@ void HudGaugeHardpoints::render(float /*frametime*/, bool config)
 		auto ship_pm = model_get(sip->model_num);
 
 		for (i = 0; i < swp->num_secondary_banks; i++) {
+			if (swp->secondary_bank_weapons[i] < 0)
+				continue;
 			auto wip = &Weapon_info[swp->secondary_bank_weapons[i]];
 
-			if (wip->external_model_num == -1 || !sip->draw_secondary_models[i])
+			if (wip->external_model_num < 0 || !sip->draw_secondary_models[i])
 				continue;
 
 			auto bank = &ship_pm->missile_banks[i];
@@ -7984,10 +7986,10 @@ void HudGaugeHardpoints::render(float /*frametime*/, bool config)
 		auto ship_pm = model_get(sip->model_num);
 
 		for ( i = 0; i < swp->num_primary_banks; i++ ) {
-			auto wip = &Weapon_info[swp->primary_bank_weapons[i]];
 			auto bank = &ship_pm->gun_banks[i];
+			auto wip = (swp->primary_bank_weapons[i] >= 0) ? &Weapon_info[swp->primary_bank_weapons[i]] : nullptr;
 
-			if ( wip->external_model_num < 0 || !sip->draw_primary_models[i] ) {
+			if ( wip == nullptr || wip->external_model_num < 0 || !sip->draw_primary_models[i] ) {
 				// no model to draw, so just mark each firing point with a circle
 				for ( k = 0; k < bank->num_slots; k++ ) {
 					vm_vec_unrotate(&subobj_pos, &bank->pnt[k], &object_orient);
