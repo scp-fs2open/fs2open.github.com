@@ -40,6 +40,8 @@ class FrameProfiler {
 
 	SCP_vector<profile_sample_history> history;
 
+	frame_overlay_snapshot overlaySnapshot;
+
 	std::int64_t _mainThreadID = -1;
 
 	SCP_string content;
@@ -69,6 +71,11 @@ class FrameProfiler {
 					 uint64_t end_profile_time,
 					 SCP_vector<profile_sample>& samples);
 
+	/**
+	 * Builds the structured overlay snapshot (see frame_overlay_snapshot) from this frame's
+	 * processed sample tree. Called once per processFrame(), alongside dump_output().
+	 */
+	void build_overlay_snapshot(SCP_vector<profile_sample>& samples);
 
  public:
 	FrameProfiler();
@@ -79,6 +86,8 @@ class FrameProfiler {
 	void processFrame();
 
 	SCP_string getContent();
+
+	const frame_overlay_snapshot& getOverlaySnapshot() const { return overlaySnapshot; }
 };
 
 }

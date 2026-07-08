@@ -279,6 +279,44 @@ void FrameProfiler::dump_output(SCP_stringstream& out,
 SCP_string FrameProfiler::getContent() {
 	return content;
 }
+
+void FrameProfiler::build_overlay_snapshot(SCP_vector<profile_sample>& samples) {
+	SCP_unordered_map<SCP_string, uint64_t> self_time_by_name;
+	uint64_t total = 0;
+
+	for (auto& sample : samples) {
+		Assert(sample.open_profiles == 0);
+
+		uint64_t self_time = sample.accumulator - sample.children_sample_time;
+		self_time_by_name[sample.name] += self_time;
+
+		if (sample.parent < 0) {
+			// Top-level samples' accumulators are inclusive of all their children, so summing
+			// them gives the total traced time for the frame (MainFrame itself isn't in `samples`).
+			total += sample.accumulator;
+		}
+	}
+
+	SCP_vector<std::pair<SCP_string, uint64_t>> sorted(self_time_by_name.begin(), self_time_by_name.end());
+	std::sort(sorted.begin(), sorted.end(), [](const std::pair<SCP_string, uint64_t>& a, const std::pair<SCP_string, uint64_t>& b) {
+		return a.second > b.second;
+	});
+
+	overlaySnapshot.valid = true;
+	overlaySnapshot.total_nanosec = total;
+	overlaySnapshot.top_contributors.clear();
+	overlaySnapshot.other_nanosec = 0;
+
+	constexpr size_t MAX_CONTRIBUTORS = 5;
+
+	for (size_t i = 0; i < sorted.size(); i++) {
+		if (i < MAX_CONTRIBUTORS) {
+			overlaySnapshot.top_contributors.push_back({sorted[i].first, sorted[i].second});
+		} else {
+			overlaySnapshot.other_nanosec += sorted[i].second;
+		}
+	}
+}
 void FrameProfiler::processFrame() {
 
 	std::lock_guard<std::mutex> vectorGuard(_eventsMutex);
@@ -318,6 +356,7 @@ void FrameProfiler::processFrame() {
 	_bufferedEvents.clear();
 
 	dump_output(stream, start_profile_time, end_profile_time, samples);
+	build_overlay_snapshot(samples);
 
 	content = stream.str();
 }
