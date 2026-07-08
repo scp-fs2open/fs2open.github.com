@@ -21939,6 +21939,10 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 	auto ship_render_flags = ship_render_info->get_model_flags();
 	ship_render_info->set_flags(ship_render_flags & ~MR_SHOW_THRUSTERS);
 
+	// weapon models aren't rendered beyond this distance, and they choose their detail
+	// level based on their own position rather than the ship's
+	ship_render_info->set_attached_model_draw_distance(sip->weapon_model_draw_distance);
+
 	//primary weapons
 	for ( i = 0; i < swp->num_primary_banks; i++ ) {
 		auto wip = &Weapon_info[swp->primary_bank_weapons[i]];
@@ -22021,6 +22025,7 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 	}
 
 	ship_render_info->set_flags(ship_render_flags);
+	ship_render_info->set_attached_model_draw_distance(-1.0f);
 
 	scene->pop_transform();
 }

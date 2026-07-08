@@ -76,6 +76,8 @@ class model_render_params
 
 	float Depth_scale;
 
+	float Attached_model_draw_distance;
+
 	int Warp_bitmap;
 	float Warp_alpha;
 	vec3d Warp_scale;
@@ -117,6 +119,7 @@ public:
 	void set_object_number(int num);
 	void set_detail_level_lock(int detail_level_lock);
 	void set_depth_scale(float scale);
+	void set_attached_model_draw_distance(float distance);
 	void set_warp_params(int bitmap, float alpha, const vec3d &scale);
 	void set_color(const color &clr);
 	void set_color(int r, int g, int b);
@@ -143,6 +146,7 @@ public:
 	int get_object_number() const;
 	int get_detail_level_lock() const;
 	float get_depth_scale() const;
+	float get_attached_model_draw_distance() const;
 	int get_warp_bitmap() const;
 	float get_warp_alpha() const;
 	const vec3d& get_warp_scale() const;
@@ -308,7 +312,7 @@ bool model_render_check_detail_box(const vec3d* view_pos, const polymodel* pm, i
 void model_render_arc(const vec3d* v1, const vec3d* v2, const SCP_vector<vec3d> *persistent_arc_points, const color* primary, const color* secondary, float arc_width, ubyte depth_limit);
 void model_render_insignias(const insignia_draw_data* insignia);
 void model_render_set_wireframe_color(const color* clr);
-float model_render_determine_depth(int obj_num, int model_num, const matrix* orient, const vec3d* pos, int detail_level_locked);
+float model_render_determine_depth(int obj_num, int model_num, const matrix* orient, const vec3d* pos, int detail_level_locked, const vec3d* eye_pos = nullptr);
 int model_render_determine_detail(float depth, int model_num, int detail_level_locked);
 bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int y2, float zoom, bool lighting, int class_idx, const matrix* orient, const SCP_string& pof_filename = "", float closeup_zoom = 0, const vec3d* closeup_pos = &vmd_zero_vector, const SCP_string& tcolor = "", const SCP_vector<SCP_string>& destroyed_subsystems = SCP_vector<SCP_string>());
 
