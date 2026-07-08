@@ -72,7 +72,7 @@ SCP_vector<SCP_string> AboutDialogModel::getGraphicsCredits()
 	case GraphicsAPI::Vulkan:
 		return {
 			"Ported to Vulkan by Mara van der Laan (laanwj)",
-			"with additional porting work by taylor, BMagnu and The_E",
+			"with additional porting work by taylor, Swifty, BMagnu and The_E",
 		};
 	default:
 		return {};
