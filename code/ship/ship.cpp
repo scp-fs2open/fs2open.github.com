@@ -12773,19 +12773,23 @@ bool in_autoaim_fov(ship *shipp, int bank_to_fire, object *obj)
 }
 
 
-// Gets the offset, relative to the ship's firing point, of the firing point within an external
-// weapon model that the next shot should be fired from.  Handles the "chain external model fps"
-// weapon flag: chained weapons cycle through the external model's firing points using the bank's
-// chain counter; non-chained weapons use the sub_shot index directly.
+// Gets the offset, in the ship model's frame, from the ship's firing point to the firing point
+// within an external weapon model that the next shot should be fired from.  Handles the "chain
+// external model fps" weapon flag: chained weapons cycle through the external model's firing
+// points using the bank's chain counter; non-chained weapons use the sub_shot index directly.
+// The offset is rotated to match how the model is rendered on the slot (aligned to the slot's
+// firing normal and rolled by its angle offset; see ship_get_weapon_model_slot_transform).
 //
-// ext is the bank's external weapon state.  advance_counter should be true when actually firing
-// a shot, and false for queries such as the AI's line-of-sight check.
-vec3d ship_get_external_model_fp_offset(external_weapon_state *ext, const weapon_info *wip, const polymodel *weapon_model, bool advance_counter, int sub_shot)
+// ext is the bank's external weapon state; ship_bank and slot identify the ship firing point
+// the weapon model is mounted on.  advance_counter should be true when actually firing a shot,
+// and false for queries such as the AI's line-of-sight check.
+vec3d ship_get_external_model_fp_offset(external_weapon_state *ext, const weapon_info *wip, const polymodel *weapon_model, const w_bank *ship_bank, int slot, bool advance_counter, int sub_shot)
 {
 	if (weapon_model == nullptr || weapon_model->n_guns < 1 || weapon_model->gun_banks[0].num_slots < 1)
 		return vmd_zero_vector;
 
 	auto &bank = weapon_model->gun_banks[0];
+	vec3d local_offset;
 
 	if (wip->wi_flags[Weapon::Info_Flags::External_weapon_fp])
 	{
@@ -12797,11 +12801,20 @@ vec3d ship_get_external_model_fp_offset(external_weapon_state *ext, const weapon
 		if (advance_counter)
 			ext->fp_counter++;
 
-		return bank.pnt[fp];
+		local_offset = bank.pnt[fp];
+	}
+	else
+	{
+		Assertion(sub_shot >= 0 && sub_shot < bank.num_slots, "sub_shot %d is out of range for the external model of weapon %s, which has %d firing points", sub_shot, wip->name, bank.num_slots);
+		local_offset = bank.pnt[sub_shot];
 	}
 
-	Assertion(sub_shot >= 0 && sub_shot < bank.num_slots, "sub_shot %d is out of range for the external model of weapon %s, which has %d firing points", sub_shot, wip->name, bank.num_slots);
-	return bank.pnt[sub_shot];
+	vec3d slot_pnt, offset;
+	matrix slot_orient;
+	ship_get_weapon_model_slot_transform(ship_bank, slot, 0.0f, &slot_pnt, &slot_orient);
+	vm_vec_unrotate(&offset, &local_offset, &slot_orient);
+
+	return offset;
 }
 
 // fires a primary weapon for the given object.  It also handles multiplayer cases.
@@ -13485,7 +13498,7 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 							vec3d dir;
 							dir = pm->gun_banks[bank_to_fire].norm[pt];
 
-							vec3d external_fp_offset = ship_get_external_model_fp_offset(&swp->primary_bank_external_weapon[bank_to_fire], winfo_p, weapon_model, true, s);
+							vec3d external_fp_offset = ship_get_external_model_fp_offset(&swp->primary_bank_external_weapon[bank_to_fire], winfo_p, weapon_model, &pm->gun_banks[bank_to_fire], pt, true, s);
 							vm_vec_add2(&pnt, &external_fp_offset);
 
 							vm_vec_unrotate(&gun_point, &pnt, &obj->orient);
@@ -14339,7 +14352,7 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 			shipp->secondary_point_reload_pct.set(bank, pnt_index, 0.0f);
 			pnt = pm->missile_banks[bank].pnt[pnt_index];
 			vec3d dir;
-			dir = pm->missile_banks[bank].norm[pnt_index++];
+			dir = pm->missile_banks[bank].norm[pnt_index];
 
 			// external model firing points only apply when the external models are actually drawn
 			// (matching the primary bank behavior in ship_fire_primary)
@@ -14349,8 +14362,9 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 			}
 
 			// chained weapons cycle through the external model's firing points; other weapons use the 0 index slot
-			vec3d external_fp_offset = ship_get_external_model_fp_offset(&swp->secondary_bank_external_weapon[bank], wip, weapon_model, true);
+			vec3d external_fp_offset = ship_get_external_model_fp_offset(&swp->secondary_bank_external_weapon[bank], wip, weapon_model, &pm->missile_banks[bank], pnt_index, true);
 			vm_vec_add2(&pnt, &external_fp_offset);
+			pnt_index++;
 			vm_vec_unrotate(&missile_point, &pnt, &obj->orient);
 			vm_vec_add(&firing_pos, &missile_point, &obj->pos);
 
@@ -21549,19 +21563,27 @@ int ship_get_external_weapon_model_instance(ship_weapon *swp, int bank, int disp
 }
 
 // Computes the position and orientation, in the ship model's frame, at which to render an
-// external weapon model on slot `slot` of weapon bank `bank`.  reload_slide_back is the
-// distance a partially reloaded missile is slid backward along the bank's -Z axis; pass
-// 0.0f for primaries and launcher-style secondaries, which don't slide.
+// external weapon model on slot `slot` of weapon bank `bank`.  The model points along the
+// slot's firing normal and is "banked" (rolled) by the slot's angle offset.
+// reload_slide_back is the distance a partially reloaded missile is slid backward along the
+// firing normal; pass 0.0f for primaries and launcher-style secondaries, which don't slide.
 void ship_get_weapon_model_slot_transform(const w_bank *bank, int slot, float reload_slide_back, vec3d *outpnt, matrix *outorient)
 {
+	// point the model along the slot's firing direction (identity for the usual dead-ahead normal)
+	matrix norm_orient;
+	vm_vector_2_matrix_norm(&norm_orient, &bank->norm[slot]);
+
 	// "Bank" the external model by the angle offset
 	angles angs = { 0.0f, bank->external_model_angle_offset[slot], 0.0f };
-	vm_angles_2_matrix(outorient, &angs);
+	matrix bank_orient;
+	vm_angles_2_matrix(&bank_orient, &angs);
+
+	vm_matrix_x_matrix(outorient, &norm_orient, &bank_orient);
 
 	*outpnt = bank->pnt[slot];
 
 	if (reload_slide_back > 0.0f)
-		vm_vec_scale_add2(outpnt, &vmd_z_vector, -reload_slide_back);
+		vm_vec_scale_add2(outpnt, &bank->norm[slot], -reload_slide_back);
 }
 
 void ship_render_weapon_models(model_render_params *ship_render_info, model_draw_list *scene, object *obj)

@@ -1822,7 +1822,7 @@ extern void ship_actually_depart(int shipnum, int method = SHIP_DEPARTED_WARP);
 extern bool in_autoaim_fov(ship *shipp, int bank_to_fire, object *obj);
 extern int ship_stop_fire_primary(object * obj);
 extern int ship_fire_primary(object * objp, int force = 0, bool rollback_shot = false);
-extern vec3d ship_get_external_model_fp_offset(external_weapon_state *ext, const weapon_info *wip, const polymodel *weapon_model, bool advance_counter, int sub_shot = 0);
+extern vec3d ship_get_external_model_fp_offset(external_weapon_state *ext, const weapon_info *wip, const polymodel *weapon_model, const w_bank *ship_bank, int slot, bool advance_counter, int sub_shot = 0);
 extern void ship_get_weapon_model_slot_transform(const w_bank *bank, int slot, float reload_slide_back, vec3d *outpnt, matrix *outorient);
 extern int ship_get_external_weapon_model_instance(ship_weapon *swp, int bank, int display_model_num);
 extern int ship_fire_secondary(object * objp, int allow_swarm = 0, bool rollback_shot = false );
