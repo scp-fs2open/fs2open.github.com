@@ -165,6 +165,9 @@ void EditorViewport::loadSettings() {
 	view.Show_waypoints                    = settings.value("view_show_waypoints",                    view.Show_waypoints).toBool();
 	view.Show_compass                      = settings.value("view_show_compass",                      view.Show_compass).toBool();
 	view.Highlight_selectable_subsys       = settings.value("view_highlight_selectable_subsys",       view.Highlight_selectable_subsys).toBool();
+	view.Outline_lod                       = settings.value("view_outline_lod",                       view.Outline_lod).toInt();
+	camera.setInvertOrbitX(settings.value("camera_invert_orbit_x", camera.getInvertOrbitX()).toBool());
+	camera.setInvertOrbitY(settings.value("camera_invert_orbit_y", camera.getInvertOrbitY()).toBool());
 	settings.endGroup();
 }
 
@@ -208,6 +211,9 @@ void EditorViewport::saveSettings() const {
 	settings.setValue("view_show_waypoints",                    view.Show_waypoints);
 	settings.setValue("view_show_compass",                      view.Show_compass);
 	settings.setValue("view_highlight_selectable_subsys",       view.Highlight_selectable_subsys);
+	settings.setValue("view_outline_lod",                       view.Outline_lod);
+	settings.setValue("camera_invert_orbit_x",                  camera.getInvertOrbitX());
+	settings.setValue("camera_invert_orbit_y",                  camera.getInvertOrbitY());
 	settings.endGroup();
 }
 void EditorViewport::needsUpdate() {

@@ -23,6 +23,9 @@ PreferencesDialogModel::PreferencesDialogModel(QObject* parent, EditorViewport* 
 	, _showSexpHelpWingEditor(viewport->Show_sexp_help_wing_editor)
 	, _darkMode(viewport->Dark_mode)
 	, _toolbarIconSize(viewport->toolbar_icon_size)
+	, _outlineLod(viewport->view.Outline_lod)
+	, _invertOrbitX(viewport->camera.getInvertOrbitX())
+	, _invertOrbitY(viewport->camera.getInvertOrbitY())
 	, _gridCenterX(static_cast<int>(viewport->The_grid->center.xyz.x))
 	, _gridCenterY(static_cast<int>(viewport->The_grid->center.xyz.y))
 	, _gridCenterZ(static_cast<int>(viewport->The_grid->center.xyz.z))
@@ -60,6 +63,9 @@ bool PreferencesDialogModel::apply() {
 	_viewport->Show_sexp_help_wing_editor       = _showSexpHelpWingEditor;
 	_viewport->Dark_mode                        = _darkMode;
 	_viewport->toolbar_icon_size                = _toolbarIconSize;
+	_viewport->view.Outline_lod                 = _outlineLod;
+	_viewport->camera.setInvertOrbitX(_invertOrbitX);
+	_viewport->camera.setInvertOrbitY(_invertOrbitY);
 
 	_viewport->saveSettings();
 	if (darkModeChanged) {
@@ -72,26 +78,49 @@ bool PreferencesDialogModel::apply() {
 	}
 	bindings.save();
 
-	_viewport->The_grid->center.xyz.x = static_cast<float>(_gridCenterX);
-	_viewport->The_grid->center.xyz.y = static_cast<float>(_gridCenterY);
-	_viewport->The_grid->center.xyz.z = static_cast<float>(_gridCenterZ);
-
-	switch (_gridPlane) {
-	case GridPlane::XY:
-		_viewport->The_grid->gmatrix.vec.fvec = vmd_x_vector;
-		_viewport->The_grid->gmatrix.vec.rvec = vmd_y_vector;
-		break;
-	case GridPlane::XZ:
-		_viewport->The_grid->gmatrix.vec.fvec = vmd_x_vector;
-		_viewport->The_grid->gmatrix.vec.rvec = vmd_z_vector;
-		break;
-	case GridPlane::YZ:
-		_viewport->The_grid->gmatrix.vec.fvec = vmd_y_vector;
-		_viewport->The_grid->gmatrix.vec.rvec = vmd_z_vector;
-		break;
+	// Only rebuild the grid when its settings actually changed. apply() runs on every
+	// preference change, and an unnecessary rebuild has visible side effects (e.g. it would
+	// re-derive the grid plane orientation each time).
+	const auto& curUvec = _viewport->The_grid->gmatrix.vec.uvec;
+	GridPlane curPlane;
+	if (curUvec.xyz.y != 0.0f) {
+		curPlane = GridPlane::XZ;
+	} else if (curUvec.xyz.z != 0.0f) {
+		curPlane = GridPlane::XY;
+	} else {
+		curPlane = GridPlane::YZ;
 	}
 
-	modify_grid(_viewport->The_grid);
+	const bool gridChanged = _gridPlane != curPlane
+		|| _gridCenterX != static_cast<int>(_viewport->The_grid->center.xyz.x)
+		|| _gridCenterY != static_cast<int>(_viewport->The_grid->center.xyz.y)
+		|| _gridCenterZ != static_cast<int>(_viewport->The_grid->center.xyz.z);
+
+	if (gridChanged) {
+		_viewport->The_grid->center.xyz.x = static_cast<float>(_gridCenterX);
+		_viewport->The_grid->center.xyz.y = static_cast<float>(_gridCenterY);
+		_viewport->The_grid->center.xyz.z = static_cast<float>(_gridCenterZ);
+
+		switch (_gridPlane) {
+		case GridPlane::XY:
+			_viewport->The_grid->gmatrix.vec.fvec = vmd_x_vector;
+			_viewport->The_grid->gmatrix.vec.rvec = vmd_y_vector;
+			break;
+		case GridPlane::XZ:
+			// fvec/rvec must be ordered so that uvec = fvec x rvec points +Y, matching
+			// create_default_grid(); the reverse (X, Z) yields a -Y normal that flips the
+			// grid plane and turns the orbit camera upside down.
+			_viewport->The_grid->gmatrix.vec.fvec = vmd_z_vector;
+			_viewport->The_grid->gmatrix.vec.rvec = vmd_x_vector;
+			break;
+		case GridPlane::YZ:
+			_viewport->The_grid->gmatrix.vec.fvec = vmd_y_vector;
+			_viewport->The_grid->gmatrix.vec.rvec = vmd_z_vector;
+			break;
+		}
+
+		modify_grid(_viewport->The_grid);
+	}
 
 	return true;
 }
@@ -138,6 +167,9 @@ void PreferencesDialogModel::setDarkMode(bool value) { modify(_darkMode, value);
 int  PreferencesDialogModel::getToolbarIconSize() const { return _toolbarIconSize; }
 void PreferencesDialogModel::setToolbarIconSize(int size) { modify(_toolbarIconSize, size); }
 
+int  PreferencesDialogModel::getOutlineLod() const { return _outlineLod; }
+void PreferencesDialogModel::setOutlineLod(int value) { modify(_outlineLod, value); }
+
 QKeySequence PreferencesDialogModel::getControlKey(ControlAction action) const {
 	auto it = _controlKeys.find(action);
 	Assertion(it != _controlKeys.end(), "Unknown control action!");
@@ -149,6 +181,12 @@ void PreferencesDialogModel::setControlKey(ControlAction action, const QKeySeque
 	Assertion(it != _controlKeys.end(), "Unknown control action!");
 	modify(it->second, sequence);
 }
+
+bool PreferencesDialogModel::getInvertOrbitX() const { return _invertOrbitX; }
+void PreferencesDialogModel::setInvertOrbitX(bool value) { modify(_invertOrbitX, value); }
+
+bool PreferencesDialogModel::getInvertOrbitY() const { return _invertOrbitY; }
+void PreferencesDialogModel::setInvertOrbitY(bool value) { modify(_invertOrbitY, value); }
 
 void PreferencesDialogModel::resetControlDefaults() {
 	auto& bindings = ControlBindings::instance();

@@ -57,10 +57,18 @@ public:
 	int  getToolbarIconSize() const;
 	void setToolbarIconSize(int size);
 
+	int  getOutlineLod() const;
+	void setOutlineLod(int value);
+
 	// Controls
 	QKeySequence getControlKey(ControlAction action) const;
 	void setControlKey(ControlAction action, const QKeySequence& sequence);
 	void resetControlDefaults();
+
+	bool getInvertOrbitX() const;
+	void setInvertOrbitX(bool value);
+	bool getInvertOrbitY() const;
+	void setInvertOrbitY(bool value);
 
 	// Grid
 	int getGridCenterX() const;
@@ -90,9 +98,12 @@ private:
 	bool _showSexpHelpWingEditor;
 	bool _darkMode;
 	int  _toolbarIconSize;
+	int  _outlineLod;
 
 	// Controls
 	std::map<ControlAction, QKeySequence> _controlKeys;
+	bool _invertOrbitX;
+	bool _invertOrbitY;
 
 	// Grid
 	int _gridCenterX;
