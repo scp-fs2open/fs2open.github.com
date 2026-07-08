@@ -166,8 +166,7 @@ void vulkan_reset_clip()
 
 void vulkan_set_clear_color(int r, int g, int b)
 {
-	auto* drawManager = getDrawManager();
-	drawManager->setClearColor(r, g, b);
+	graphics::vulkan::VulkanDrawManager::setClearColor(r, g, b);
 }
 
 void vulkan_set_clip(int x, int y, int w, int h, int resize_mode)

@@ -315,7 +315,7 @@ private:
 	 * (per-format channel expand/convert) cases; data_out is tightly packed
 	 * w*h pixels at outChannels (3 or 4) bytes each.
 	 */
-	void decodeReadbackBuffer(const void* mapped, vk::Format format, bool isCompressed,
+	static void decodeReadbackBuffer(const void* mapped, vk::Format format, bool isCompressed,
 	                          uint32_t w, uint32_t h, uint32_t blockW, uint32_t blockH,
 	                          int blockSize, int outChannels, void* data_out);
 
