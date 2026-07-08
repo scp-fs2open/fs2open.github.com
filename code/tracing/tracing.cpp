@@ -9,6 +9,7 @@
 #include "TraceEventWriter.h"
 #include "MainFrameTimer.h"
 #include "FrameProfiler.h"
+#include "options/Option.h"
 
 #include <cinttypes>
 #include <fstream>
@@ -116,6 +117,14 @@ bool do_trace_events = false;
 bool do_async_events = false;
 bool do_counter_events = false;
 std::int64_t main_thread_id = -1;
+
+}
+
+namespace tracing {
+bool Profiler_overlay_enabled = false;
+}
+
+namespace {
 
 int gpu_start_query = -1;
 std::uint64_t gpu_start_time = 0;
@@ -240,10 +249,10 @@ void init() {
 		mainFrameTimer.reset(new ThreadedMainFrameTimer());
 		do_async_events = true;
 	}
-	if (Cmdline_frame_profile) {
-		frameProfiler.reset(new FrameProfiler());
-		do_trace_events = true;
-	}
+	// Seed the runtime profiler-overlay toggle from -profile_frame_time (kept for backward
+	// compatibility); this also lazily constructs the FrameProfiler and folds
+	// Cmdline_json_profiling/Cmdline_frame_profile into do_trace_events.
+	set_frame_profiling_enabled(Cmdline_frame_profile);
 
 	do_gpu_queries = gr_is_capable(gr_capability::CAPABILITY_TIMESTAMP_QUERY);
 	queries_reusable = gr_is_capable(gr_capability::CAPABILITY_QUERIES_REUSABLE);
@@ -275,6 +284,40 @@ SCP_string get_frame_profile_output() {
 
 	return frameProfiler->getContent();
 }
+
+const frame_overlay_snapshot& get_frame_profiler_overlay_snapshot() {
+	Assertion(frameProfiler, "Frame profiling must be enabled for this function!");
+
+	return frameProfiler->getOverlaySnapshot();
+}
+
+bool frame_profiling_active() {
+	return Profiler_overlay_enabled;
+}
+
+void set_frame_profiling_enabled(bool enable) {
+	Profiler_overlay_enabled = enable;
+
+	if (enable && !frameProfiler) {
+		frameProfiler.reset(new FrameProfiler());
+	}
+
+	do_trace_events = Cmdline_json_profiling || Cmdline_frame_profile || Profiler_overlay_enabled;
+}
+
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+static auto ProfilerOverlayOption = options::OptionBuilder<bool>("Game.ProfilerOverlay",
+	std::pair<const char*, int>{"Frame Profiler Overlay", 1932},
+	std::pair<const char*, int>{"Show an ImGui overlay with a frametime graph and a breakdown of what's taking up frame time", 1933})
+	.category(std::make_pair("Graphics", 1825))
+	.level(options::ExpertLevel::Advanced)
+	.default_func([]() { return Profiler_overlay_enabled; })
+	.change_listener([](const bool& val, bool) {
+		set_frame_profiling_enabled(val);
+		return true;
+	})
+	.importance(69)
+	.finish();
 
 void shutdown() {
 	if (queries_reusable) {
