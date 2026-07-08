@@ -3367,6 +3367,19 @@ p_object::~p_object()
 	dock_free_dock_list(this);
 }
 
+p_object &p_object::operator=(p_object &&other) noexcept
+{
+	if (this != &other) {
+		// free our dock list, which the memberwise assignment below would otherwise overwrite (and leak)
+		dock_free_dock_list(this);
+
+		// shallow memberwise copy, then transfer ownership of the dock list by nulling the source's handle
+		*this = other;
+		other.dock_list = nullptr;
+	}
+	return *this;
+}
+
 const char* p_object::get_display_name() {
 	if (has_display_name()) {
 		return display_name.c_str();

@@ -15,6 +15,7 @@
 #include "CampaignTreeView.h"
 #include "CampaignEditorDlg.h"
 #include "CampaignTreeWnd.h"
+#include "mission/missioncampaign.h"
 #include "mission/missionparse.h"
 
 #ifdef _DEBUG
@@ -1292,7 +1293,19 @@ void campaign_tree_view::remove_mission(int m)
 	}
 
 	Elements[m] = Elements[z];
+
+	// free the removed mission's strings before its slot is overwritten, then
+	// null the vacated slot's pointers, which now alias slot m's strings.  (If
+	// m == z, the assignment is a self-assign of freed pointers, and the
+	// nulling below leaves the slot clean.)
+	mission_campaign_free_mission_strings(Campaign.missions[m]);
 	Campaign.missions[m] = Campaign.missions[z];
+	Campaign.missions[z].name = nullptr;
+	Campaign.missions[z].notes = nullptr;
+	Campaign.missions[z].mission_branch_desc = nullptr;
+	Campaign.missions[z].mission_branch_brief_anim = nullptr;
+	Campaign.missions[z].mission_branch_brief_sound = nullptr;
+
 	if (m == Cur_campaign_mission) {
 		Cur_campaign_mission = -1;
 		box = (CEdit *) Campaign_tree_formp->GetDlgItem(IDC_HELP_BOX);
