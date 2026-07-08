@@ -821,7 +821,7 @@ void brief_compact_stages()
 
 			Briefing->stages[num].num_icons = 0;
 			for ( i = num+1; i < Briefing->num_stages; i++ ) {
-				Briefing->stages[i-1] = Briefing->stages[i];
+				swap(Briefing->stages[i-1], Briefing->stages[i]);
 			}
 			Briefing->num_stages--;
 			continue;
@@ -832,7 +832,7 @@ void brief_compact_stages()
 	// completely clear out the old entries (if any) so we don't access them by mistake - taylor
 	if ( before > Briefing->num_stages ) {
 		for ( i = Briefing->num_stages; i < before; i++ ) {
-			Briefing->stages[i] = brief_stage();
+			Briefing->stages[i].reset();
 		}
 	}
 }
