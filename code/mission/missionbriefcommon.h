@@ -20,6 +20,8 @@
 #include "hud/hud.h"
 #include "utils/unicode.h"
 
+#include <utility>
+
 #define MAX_TEXT_STREAMS	2		// how many concurrent streams of text can be displayed
 
 // ------------------------------------------------------------------------
@@ -163,14 +165,53 @@ public:
 	bool		draw_grid;
 	color		grid_color;
 
-	brief_stage( ) 
-		: camera_time( 0 ), flags( 0 ), formula( -1 ), num_icons(0), icons(nullptr), num_lines(0), lines(nullptr),
-		  draw_grid(true)
-	{ 
+	brief_stage( )
+	{
+		reset();
+	}
+
+	// Restore this stage to its default-constructed state.  Does not free
+	// the icons/lines buffers; the caller is responsible for those.
+	void reset()
+	{
+		text.clear();
 		voice[ 0 ] = 0;
 		camera_pos = vmd_zero_vector;
 		camera_orient = vmd_identity_matrix;
+		camera_time = 0;
+		flags = 0;
+		formula = -1;
+		num_icons = 0;
+		icons = nullptr;
+		num_lines = 0;
+		lines = nullptr;
+		draw_grid = true;
 		grid_color = Color_briefing_grid;
+	}
+
+	// icons and lines are raw owning pointers, so the memberwise copy/move
+	// operations would alias those buffers across two stages; use swap() to
+	// rearrange stages, or copy the buffer contents explicitly
+	brief_stage(const brief_stage&) = delete;
+	brief_stage& operator=(const brief_stage&) = delete;
+	brief_stage(brief_stage&&) = delete;
+	brief_stage& operator=(brief_stage&&) = delete;
+
+	friend void swap(brief_stage& a, brief_stage& b)
+	{
+		std::swap(a.text, b.text);
+		std::swap(a.voice, b.voice);
+		std::swap(a.camera_pos, b.camera_pos);
+		std::swap(a.camera_orient, b.camera_orient);
+		std::swap(a.camera_time, b.camera_time);
+		std::swap(a.flags, b.flags);
+		std::swap(a.formula, b.formula);
+		std::swap(a.num_icons, b.num_icons);
+		std::swap(a.icons, b.icons);
+		std::swap(a.num_lines, b.num_lines);
+		std::swap(a.lines, b.lines);
+		std::swap(a.draw_grid, b.draw_grid);
+		std::swap(a.grid_color, b.grid_color);
 	}
 };
 
