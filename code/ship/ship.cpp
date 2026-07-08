@@ -3699,7 +3699,9 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	if(optional_string("$Show Primary Models:"))
 	{
 		sip->flags.set(Ship::Info_Flags::Draw_weapon_models);
-		stuff_bool_list(sip->draw_primary_models, sip->num_primary_banks);
+		size_t num_bools = stuff_bool_list(sip->draw_primary_models, sip->num_primary_banks);
+		if (num_bools != static_cast<size_t>(sip->num_primary_banks))
+			error_display(0, "$Show Primary Models: on ship class %s lists " SIZE_T_ARG " entries, but the ship has %d primary banks.", sip->name, num_bools, sip->num_primary_banks);
 	}
 
 	// Set the weapons filter used in weapons loadout (for secondary weapons)
@@ -3712,7 +3714,9 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	if(optional_string("$Show Secondary Models:"))
 	{
 		sip->flags.set(Ship::Info_Flags::Draw_weapon_models);
-		stuff_bool_list(sip->draw_secondary_models, sip->num_secondary_banks);
+		size_t num_bools = stuff_bool_list(sip->draw_secondary_models, sip->num_secondary_banks);
+		if (num_bools != static_cast<size_t>(sip->num_secondary_banks))
+			error_display(0, "$Show Secondary Models: on ship class %s lists " SIZE_T_ARG " entries, but the ship has %d secondary banks.", sip->name, num_bools, sip->num_secondary_banks);
 	}
 
 	if (optional_string("$Ship Recoil Modifier:")){
