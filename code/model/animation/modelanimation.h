@@ -49,6 +49,7 @@ namespace animation {
 		TurretFired,	 // Triggered after a turret has fired -The E
 		PrimaryFired,    // Triggered when a primary weapon has fired.
 		SecondaryFired,  // Triggered when a secondary weapon has fired.
+		WeaponWarmup,	 // Weapon-owned animations (on the weapon's external model): plays while the weapon's bank is trying to fire; the bank holds fire until the animation is fully started (e.g. gatling barrel spin-up).
 
 		MaxAnimationTypes
 	};

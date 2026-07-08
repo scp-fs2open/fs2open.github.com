@@ -102,6 +102,8 @@ struct external_weapon_state
 	float rotate_rate = 0.0f;		// current spin rate of the model's Gun_rotation submodels (primaries only)
 	float rotate_ang = 0.0f;		// current spin angle of the model's Gun_rotation submodels (primaries only)
 	bool spin_up_requested = false;	// set each frame the bank tries to fire; consumed by update_external_weapon_spin()
+	bool warmup_requested = false;	// set each frame the bank tries to fire; consumed by update_external_weapon_animations()
+	bool warmup_active = false;		// whether the weapon-warmup animations are currently triggered
 };
 
 class ship_weapon {
@@ -1834,7 +1836,7 @@ extern int ship_stop_fire_primary(object * obj);
 extern int ship_fire_primary(object * objp, int force = 0, bool rollback_shot = false);
 extern vec3d ship_get_external_model_fp_offset(external_weapon_state *ext, const weapon_info *wip, const polymodel *weapon_model, const w_bank *ship_bank, int slot, bool advance_counter, int sub_shot = 0);
 extern void ship_get_weapon_model_slot_transform(const w_bank *bank, int slot, float reload_slide_back, vec3d *outpnt, matrix *outorient);
-extern int ship_get_external_weapon_model_instance(ship_weapon *swp, int bank, int display_model_num);
+extern int ship_get_external_weapon_model_instance(external_weapon_state *ext, int weapon_idx, int display_model_num);
 extern int ship_fire_secondary(object * objp, int allow_swarm = 0, bool rollback_shot = false );
 extern bool ship_secondary_bank_can_dual_fire(const ship *shipp, int bank);
 bool ship_start_secondary_fire(object* objp);

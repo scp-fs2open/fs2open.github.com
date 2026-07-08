@@ -326,17 +326,15 @@ namespace animation {
 
 		instance_data& instanceData = m_instances[pmi->id];
 
-		if (multiOverrideTime == nullptr && m_isMultiCompatible && (Game_mode & GM_MULTIPLAYER) && id != 0) {
+		//Model instances that don't belong to an object (external weapon models, the skybox, cockpits) cannot be
+		//multi-synced; their animations just run locally on each machine.
+		if (multiOverrideTime == nullptr && m_isMultiCompatible && (Game_mode & GM_MULTIPLAYER) && id != 0 && pmi->objnum >= 0) {
 			//We are in multiplayer. Send animation to server to start. Server starts animation online, and sends start request back (which'll have multiOverride == true).
 			//If we _are_ the server, also just start the animation
 
-			object* objp = pmi->objnum >= 0 ? &Objects[pmi->objnum] : nullptr;
+			object* objp = &Objects[pmi->objnum];
 
-			if(objp != nullptr)
-				send_animation_triggered_packet(id, objp, 0, direction, force, instant, pause);
-			else {
-				//Find special mode based on id and send
-			}
+			send_animation_triggered_packet(id, objp, 0, direction, force, instant, pause);
 
 			if(MULTIPLAYER_CLIENT)
 				return;
@@ -1140,6 +1138,10 @@ namespace animation {
 
 			return getAll(pmi, type, subtype);
 
+		case ModelAnimationTriggerType::WeaponWarmup:
+			//Weapon-owned animations have no subtype
+			return getAll(pmi, type);
+
 		case ModelAnimationTriggerType::DockBayDoor:
 			//Index of the dock bay door
 			subtype = atoi(triggeredBy.c_str());
@@ -1290,7 +1292,8 @@ namespace animation {
 	{ModelAnimationTriggerType::Scripted, {"scripted", false}},
 	{ModelAnimationTriggerType::TurretFired, {"turret-fired", true}},
 	{ModelAnimationTriggerType::PrimaryFired,   {"primary-fired", true}},
-	{ModelAnimationTriggerType::SecondaryFired, {"secondary-fired", true}}
+	{ModelAnimationTriggerType::SecondaryFired, {"secondary-fired", true}},
+	{ModelAnimationTriggerType::WeaponWarmup, {"weapon-warmup", false}}
 	};
 
 	ModelAnimationTriggerType anim_match_type(const char* p)

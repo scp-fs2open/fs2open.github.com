@@ -8691,6 +8691,7 @@ void ship_delete( object * obj )
 	{
 		if (ext.model_instance >= 0)
 		{
+			animation::ModelAnimationSet::stopAnimations(model_get_instance(ext.model_instance));
 			model_delete_instance(ext.model_instance);
 			ext.model_instance = -1;
 		}
@@ -8699,6 +8700,7 @@ void ship_delete( object * obj )
 	{
 		if (ext.model_instance >= 0)
 		{
+			animation::ModelAnimationSet::stopAnimations(model_get_instance(ext.model_instance));
 			model_delete_instance(ext.model_instance);
 			ext.model_instance = -1;
 		}
@@ -10546,13 +10548,13 @@ void ship_do_thruster_sounds(object *obj)
 	}
 }
 
-void update_external_weapon_spin(ship *shipp, float frametime);
+void update_external_weapon_animations(ship *shipp, float frametime);
 
 void ship_process_pre(object *obj, float frametime)
 {
-	// update the external weapon model spin before any firing attempts this frame
+	// update the external weapon model animations before any firing attempts this frame
 	if ( (obj != nullptr) && (obj->type == OBJ_SHIP) && (frametime != 0.0f) )
-		update_external_weapon_spin(&Ships[obj->instance], frametime);
+		update_external_weapon_animations(&Ships[obj->instance], frametime);
 
 	// Cyborg, to enable turrets movement on clients, we need to process them here before  bailing
 	if (MULTIPLAYER_CLIENT)
@@ -10685,10 +10687,46 @@ void update_firing_sounds(object* objp, ship* shipp)
 	}
 }
 
+// Updates the animation state of one bank's external weapon model: makes sure the bank's model
+// instance exists, starts or winds down the weapon's warmup animations based on whether the
+// bank tried to fire this frame, and steps the instance's running animations.
+static void update_external_weapon_bank_animations(external_weapon_state *ext, int weapon_idx, float frametime)
+{
+	if (weapon_idx < 0)
+		return;
+
+	weapon_info *wip = &Weapon_info[weapon_idx];
+
+	// the instance is also created at render time, but a ship that is never rendered still
+	// needs its animations (and the warmup firing gate) to work
+	int display_model_num = (wip->external_model_num >= 0) ? wip->external_model_num : wip->model_num;
+	int instance_num = ship_get_external_weapon_model_instance(ext, weapon_idx, display_model_num);
+
+	if (instance_num < 0)
+		return;
+
+	polymodel_instance *pmi = model_get_instance(instance_num);
+
+	bool warmup_wanted = ext->warmup_requested;
+	ext->warmup_requested = false;
+
+	if (warmup_wanted != ext->warmup_active)
+	{
+		auto warmup_anims = wip->animations.getAll(pmi, animation::ModelAnimationTriggerType::WeaponWarmup);
+		if (warmup_wanted)
+			warmup_anims.start(animation::ModelAnimationDirection::FWD);
+		else
+			warmup_anims.startShutdown();
+		ext->warmup_active = warmup_wanted;
+	}
+
+	animation::ModelAnimation::stepAnimations(frametime, pmi);
+}
+
 // Spins the Gun_rotation submodels of external weapon models up or down.  A bank that tried to
 // fire this frame requests spin-up (see ship_fire_primary, which also refuses to fire until the
 // barrels are up to speed); all other banks wind down.  Only primary banks spin.
-void update_external_weapon_spin(ship *shipp, float frametime)
+void update_external_weapon_animations(ship *shipp, float frametime)
 {
 	ship_weapon *swp = &shipp->weapons;
 
@@ -10700,6 +10738,7 @@ void update_external_weapon_spin(ship *shipp, float frametime)
 		{
 			ext.rotate_rate = 0.0f;
 			ext.spin_up_requested = false;
+			ext.warmup_requested = false;
 			continue;
 		}
 
@@ -10725,6 +10764,12 @@ void update_external_weapon_spin(ship *shipp, float frametime)
 			while (ext.rotate_ang > PI2)
 				ext.rotate_ang -= PI2;
 		}
+
+		update_external_weapon_bank_animations(&ext, swp->primary_bank_weapons[i], frametime);
+	}
+
+	for (int i = 0; i < swp->num_secondary_banks; i++) {
+		update_external_weapon_bank_animations(&swp->secondary_bank_external_weapon[i], swp->secondary_bank_weapons[i], frametime);
 	}
 }
 
@@ -13047,10 +13092,21 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 		if (winfo_p->weapon_submodel_rotate_vel > 0.0f) {
 			auto &ext = swp->primary_bank_external_weapon[bank_to_fire];
 
-			// spin up the Gun_rotation submodels (see update_external_weapon_spin), and
+			// spin up the Gun_rotation submodels (see update_external_weapon_animations), and
 			// don't fire until the barrels are up to speed
 			ext.spin_up_requested = true;
 			if (ext.rotate_rate < winfo_p->weapon_submodel_rotate_vel)
+				continue;
+		}
+
+		if (!winfo_p->animations.isEmpty()) {
+			auto &ext = swp->primary_bank_external_weapon[bank_to_fire];
+
+			// start the weapon's warmup animations (see update_external_weapon_animations), and
+			// don't fire until they are fully started
+			ext.warmup_requested = true;
+			if (ext.model_instance >= 0
+					&& !winfo_p->animations.getAll(model_get_instance(ext.model_instance), animation::ModelAnimationTriggerType::WeaponWarmup).isFullyStarted())
 				continue;
 		}
 		// if this is a targeting laser, start it up   ///- only targeting laser if it is tag-c, otherwise it's a fighter beam -Bobboau
@@ -13862,6 +13918,13 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 			if (banks_fired & (1 << bank)) {
 				//Start Animation in Forced mode: Always restart it from its initial position rather than just flip it to FWD motion if it was still moving. This is to make it work best for uses like recoil.
 				sip->animations.getAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::PrimaryFired, bank).start(animation::ModelAnimationDirection::FWD, true);
+
+				// also fire any primary-fired animations on the weapon's own external model (e.g. recoil)
+				int fired_weapon = shipp->weapons.primary_bank_weapons[bank];
+				if (fired_weapon >= 0 && shipp->weapons.primary_bank_external_weapon[bank].model_instance >= 0) {
+					Weapon_info[fired_weapon].animations.getAll(model_get_instance(shipp->weapons.primary_bank_external_weapon[bank].model_instance), animation::ModelAnimationTriggerType::PrimaryFired).start(animation::ModelAnimationDirection::FWD, true);
+				}
+
 				firedWeapons.emplace_back(shipp->weapons.primary_bank_weapons[bank]);
 			}
 		}
@@ -14628,6 +14691,11 @@ done_secondary:
 
 		//Start Animation in Forced mode: Always restart it from its initial position rather than just flip it to FWD motion if it was still moving. This is to make it work best for uses like recoil.
 		sip->animations.getAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::SecondaryFired, bank).start(animation::ModelAnimationDirection::FWD, true);
+
+		// also fire any secondary-fired animations on the weapon's own external model (e.g. launcher recoil)
+		if (swp->secondary_bank_external_weapon[bank].model_instance >= 0) {
+			wip->animations.getAll(model_get_instance(swp->secondary_bank_external_weapon[bank].model_instance), animation::ModelAnimationTriggerType::SecondaryFired).start(animation::ModelAnimationDirection::FWD, true);
+		}
 
 		if (scripting::hooks::OnWeaponFired->isActive() || scripting::hooks::OnSecondaryFired->isActive()) {
 			auto param_list = scripting::hook_param_list(
@@ -21684,47 +21752,56 @@ void ship_render_batch_thrusters(object *obj)
 	}
 }
 
-// Lazily creates the model instance used to spin the Gun_rotation submodels of the external
-// weapon model in the given primary bank, recreating it if the bank's weapon has changed since
-// the last call (weapons can be swapped mid-mission by SEXPs, scripts, or rearming).  The ideal
-// place to create the instance would be in parse_object_create_sub, but the player can alter
-// the ship loadout after that function runs.
+// Lazily creates the model instance used to animate a bank's external weapon model (spinning
+// Gun_rotation submodels or playing the weapon's animations), recreating it if the bank's
+// weapon has changed since the last call (weapons can be swapped mid-mission by SEXPs, scripts,
+// or rearming).  The ideal place to create the instance would be in parse_object_create_sub,
+// but the player can alter the ship loadout after that function runs.
 // display_model_num is the model the caller renders for this bank (the weapon's external model,
 // or its own model as the fallback).
 // Returns the model instance number, or -1 if the bank's weapon doesn't need an instance.
-int ship_get_external_weapon_model_instance(ship_weapon *swp, int bank, int display_model_num)
+int ship_get_external_weapon_model_instance(external_weapon_state *ext, int weapon_idx, int display_model_num)
 {
-	int weapon_idx = swp->primary_bank_weapons[bank];
-	auto &ext = swp->primary_bank_external_weapon[bank];
-
-	if (ext.model_instance_weapon != weapon_idx)
+	if (ext->model_instance_weapon != weapon_idx)
 	{
 		// the weapon changed, so any existing instance belongs to the old weapon's model
-		if (ext.model_instance >= 0)
+		if (ext->model_instance >= 0)
 		{
-			model_delete_instance(ext.model_instance);
-			ext.model_instance = -1;
+			animation::ModelAnimationSet::stopAnimations(model_get_instance(ext->model_instance));
+			model_delete_instance(ext->model_instance);
+			ext->model_instance = -1;
 		}
+		ext->warmup_requested = false;
+		ext->warmup_active = false;
 
 		if (weapon_idx >= 0 && display_model_num >= 0)
 		{
-			auto pm = model_get(display_model_num);
+			// create a model instance only if something will animate it: either the weapon has
+			// animations, or the model has old-style gun rotation submodels
+			bool needs_instance = !Weapon_info[weapon_idx].animations.isEmpty();
 
-			// create a model instance only if at least one submodel has gun rotation
-			for (int mn = 0; mn < pm->n_models; mn++)
+			if (!needs_instance)
 			{
-				if (pm->submodel[mn].flags[Model::Submodel_flags::Gun_rotation])
+				auto pm = model_get(display_model_num);
+
+				for (int mn = 0; mn < pm->n_models; mn++)
 				{
-					ext.model_instance = model_create_instance(model_objnum_special::OBJNUM_NONE, display_model_num);
-					break;
+					if (pm->submodel[mn].flags[Model::Submodel_flags::Gun_rotation])
+					{
+						needs_instance = true;
+						break;
+					}
 				}
 			}
+
+			if (needs_instance)
+				ext->model_instance = model_create_instance(model_objnum_special::OBJNUM_NONE, display_model_num);
 		}
 
-		ext.model_instance_weapon = weapon_idx;
+		ext->model_instance_weapon = weapon_idx;
 	}
 
-	return ext.model_instance;
+	return ext->model_instance;
 }
 
 // Computes the position and orientation, in the ship model's frame, at which to render an
@@ -21794,7 +21871,7 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 			continue;
 		}
 
-		int external_model_instance = ship_get_external_weapon_model_instance(swp, i, display_model_num);
+		int external_model_instance = ship_get_external_weapon_model_instance(&swp->primary_bank_external_weapon[i], swp->primary_bank_weapons[i], display_model_num);
 
 		auto bank = &ship_pm->gun_banks[i];
 
@@ -21837,6 +21914,8 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 			continue;
 		}
 
+		int external_model_instance = ship_get_external_weapon_model_instance(&swp->secondary_bank_external_weapon[i], swp->secondary_bank_weapons[i], display_model_num);
+
 		auto bank = &ship_pm->missile_banks[i];
 
 		if (wip->wi_flags[Weapon::Info_Flags::External_weapon_lnch]) {
@@ -21845,7 +21924,7 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 				matrix slot_orient;
 				ship_get_weapon_model_slot_transform(bank, k, 0.0f, &slot_pnt, &slot_orient);
 
-				model_render_queue(ship_render_info, scene, display_model_num, &slot_orient, &slot_pnt);
+				model_render_queue(ship_render_info, scene, display_model_num, external_model_instance, &slot_orient, &slot_pnt);
 			}
 		} else {
 			auto weapon_pm = model_get(display_model_num);
@@ -21867,7 +21946,7 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 				matrix slot_orient;
 				ship_get_weapon_model_slot_transform(bank, k, (1.0f - reload_pct) * weapon_pm->rad, &slot_pnt, &slot_orient);
 
-				model_render_queue(ship_render_info, scene, display_model_num, &slot_orient, &slot_pnt);
+				model_render_queue(ship_render_info, scene, display_model_num, external_model_instance, &slot_orient, &slot_pnt);
 			}
 		}
 	}
