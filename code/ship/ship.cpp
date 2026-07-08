@@ -21864,7 +21864,23 @@ void ship_render_batch_thrusters(object *obj)
 	}
 }
 
-void ship_render_weapon_models(model_render_params *ship_render_info, model_draw_list *scene, object *obj, uint64_t render_flags)
+// Computes the position and orientation, in the ship model's frame, at which to render an
+// external weapon model on slot `slot` of weapon bank `bank`.  reload_slide_back is the
+// distance a partially reloaded missile is slid backward along the bank's -Z axis; pass
+// 0.0f for primaries and launcher-style secondaries, which don't slide.
+void ship_get_weapon_model_slot_transform(const w_bank *bank, int slot, float reload_slide_back, vec3d *outpnt, matrix *outorient)
+{
+	// "Bank" the external model by the angle offset
+	angles angs = { 0.0f, bank->external_model_angle_offset[slot], 0.0f };
+	vm_angles_2_matrix(outorient, &angs);
+
+	*outpnt = bank->pnt[slot];
+
+	if (reload_slide_back > 0.0f)
+		vm_vec_scale_add2(outpnt, &vmd_z_vector, -reload_slide_back);
+}
+
+void ship_render_weapon_models(model_render_params *ship_render_info, model_draw_list *scene, object *obj)
 {
 	int num = obj->instance;
 	ship *shipp = &Ships[num];
@@ -21881,8 +21897,7 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 	scene->push_transform(&obj->pos, &obj->orient);
 
 	auto ship_render_flags = ship_render_info->get_model_flags();
-	render_flags &= ~MR_SHOW_THRUSTERS;
-	ship_render_info->set_flags(render_flags);
+	ship_render_info->set_flags(ship_render_flags & ~MR_SHOW_THRUSTERS);
 
 	//primary weapons
 	for ( i = 0; i < swp->num_primary_banks; i++ ) {
@@ -21932,61 +21947,53 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 		}
 
 		for ( k = 0; k < bank->num_slots; k++ ) {
-			// "Bank" the external model by the angle offset
-			angles angs = { 0.0f, bank->external_model_angle_offset[k], 0.0f };
-			matrix model_orient;
-			vm_angles_2_matrix(&model_orient, &angs);
+			vec3d slot_pnt;
+			matrix slot_orient;
+			ship_get_weapon_model_slot_transform(bank, k, 0.0f, &slot_pnt, &slot_orient);
 
-			model_render_queue(ship_render_info, scene, wip->external_model_num, swp->primary_bank_external_model_instance[i], &model_orient, &bank->pnt[k]);
+			model_render_queue(ship_render_info, scene, wip->external_model_num, swp->primary_bank_external_model_instance[i], &slot_orient, &slot_pnt);
 		}
 	}
 
 	//secondary weapons
-	int num_secondaries_rendered = 0;
-	vec3d secondary_weapon_pos;
-
 	for (i = 0; i < swp->num_secondary_banks; i++) {
 		auto wip = &Weapon_info[swp->secondary_bank_weapons[i]];
 
-		if ( wip->external_model_num == -1 || !sip->draw_secondary_models[i] ) {
+		if ( wip->external_model_num < 0 || !sip->draw_secondary_models[i] ) {
 			continue;
 		}
 
 		auto bank = &ship_pm->missile_banks[i];
 
-		if (wip->wi_flags[Weapon::Info_Flags::External_weapon_lnch]) {			
+		if (wip->wi_flags[Weapon::Info_Flags::External_weapon_lnch]) {
 			for(k = 0; k < bank->num_slots; k++) {
-				// "Bank" the external model by the angle offset
-				angles angs = { 0.0f, bank->external_model_angle_offset[k], 0.0f };
-				matrix model_orient;
-				vm_angles_2_matrix(&model_orient, &angs);
+				vec3d slot_pnt;
+				matrix slot_orient;
+				ship_get_weapon_model_slot_transform(bank, k, 0.0f, &slot_pnt, &slot_orient);
 
-				model_render_queue(ship_render_info, scene, wip->external_model_num, &model_orient, &bank->pnt[k]);
+				model_render_queue(ship_render_info, scene, wip->external_model_num, &slot_orient, &slot_pnt);
 			}
 		} else {
-			num_secondaries_rendered = 0;
+			auto weapon_pm = model_get(wip->external_model_num);
+			int num_secondaries_rendered = 0;
 
 			for ( k = 0; k < bank->num_slots; k++ ) {
-				secondary_weapon_pos = bank->pnt[k];
-
 				if ( num_secondaries_rendered >= shipp->weapons.secondary_bank_ammo[i] ) {
 					break;
 				}
 
-				if ( shipp->secondary_point_reload_pct.get(i, k) <= 0.0 ) {
+				float reload_pct = shipp->secondary_point_reload_pct.get(i, k);
+				if ( reload_pct <= 0.0f ) {
 					continue;
 				}
 
 				num_secondaries_rendered++;
 
-				vm_vec_scale_add2(&secondary_weapon_pos, &vmd_z_vector, -(1.0f-shipp->secondary_point_reload_pct.get(i, k)) * model_get(wip->external_model_num)->rad);
+				vec3d slot_pnt;
+				matrix slot_orient;
+				ship_get_weapon_model_slot_transform(bank, k, (1.0f - reload_pct) * weapon_pm->rad, &slot_pnt, &slot_orient);
 
-				// "Bank" the external model by the angle offset
-				angles angs = { 0.0f, bank->external_model_angle_offset[k], 0.0f };
-				matrix model_orient;
-				vm_angles_2_matrix(&model_orient, &angs);
-
-				model_render_queue(ship_render_info, scene, wip->external_model_num, &model_orient, &secondary_weapon_pos);
+				model_render_queue(ship_render_info, scene, wip->external_model_num, &slot_orient, &slot_pnt);
 			}
 		}
 	}
@@ -22245,7 +22252,7 @@ void ship_render(object* obj, model_draw_list* scene)
 	render_info.set_debug_flags(debug_flags);
 
 	//draw weapon models
-	ship_render_weapon_models(&render_info, scene, obj, render_flags);
+	ship_render_weapon_models(&render_info, scene, obj);
 
 	render_info.set_object_number(OBJ_INDEX(obj));
 	render_info.set_replacement_textures(pmi->texture_replace);
