@@ -57,6 +57,37 @@ struct trace_event {
 };
 
 /**
+ * A single named contributor to a frame's total traced time, used by the ImGui frame profiler
+ * overlay's pie chart.
+ */
+struct frame_overlay_contributor {
+	SCP_string name;
+	uint64_t self_nanosec;
+};
+
+/**
+ * A structured, per-frame snapshot of profiling data meant for the ImGui overlay (as opposed to
+ * get_frame_profile_output()'s preformatted text dump). top_contributors holds the top 5 categories
+ * by self-time, sorted descending; everything else is folded into other_nanosec. total_nanosec
+ * is the sum of every sample's self-time (top_contributors + other_nanosec). All times are in
+ * nanoseconds, matching trace_event::timestamp/duration (timer_get_nanoseconds()).
+ */
+struct frame_overlay_snapshot {
+	bool valid = false;
+	uint64_t total_nanosec = 0;
+	SCP_vector<frame_overlay_contributor> top_contributors;
+	uint64_t other_nanosec = 0;
+};
+
+/**
+ * @brief Whether frame profiling data collection is currently enabled. Driven by the "Frame
+ * Profiler Overlay" option (and seeded from -profile_frame_time at startup); toggling it is the
+ * single thing that gates the profiler's runtime cost, so prefer set_frame_profiling_enabled()
+ * over writing this directly.
+ */
+extern bool Profiler_overlay_enabled;
+
+/**
  * @brief Initializes the tracing subsystem
  */
 void init();
@@ -73,6 +104,23 @@ void frame_profile_process_frame();
  * @return The frame profiler output
  */
 SCP_string get_frame_profile_output();
+
+/**
+ * @brief Gets a structured snapshot of the current frame's profiling data, for the ImGui overlay.
+ * @return The frame profiler overlay snapshot
+ */
+const frame_overlay_snapshot& get_frame_profiler_overlay_snapshot();
+
+/**
+ * @brief True if frame profiling data is currently being collected (see set_frame_profiling_enabled()).
+ */
+bool frame_profiling_active();
+
+/**
+ * @brief Enables or disables frame profiling collection at runtime (lazily constructs the profiler
+ * on first enable). This is the single toggle the ImGui overlay's options-menu checkbox drives.
+ */
+void set_frame_profiling_enabled(bool enable);
 
 /**
  * @brief Deinitializes the tracing subsystem
