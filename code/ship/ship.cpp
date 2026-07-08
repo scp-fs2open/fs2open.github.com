@@ -13121,6 +13121,40 @@ bool in_autoaim_fov(ship *shipp, int bank_to_fire, object *obj)
 }
 
 
+// Gets the offset, relative to the ship's firing point, of the firing point within an external
+// weapon model that the next shot should be fired from.  Handles the "chain external model fps"
+// weapon flag: chained weapons cycle through the external model's firing points using the bank's
+// chain counter; non-chained weapons use the sub_shot index directly.
+//
+// fp_counter_index indexes swp->external_model_fp_counter[]: the bank number for primaries, or
+// the bank number plus MAX_SHIP_PRIMARY_BANKS for secondaries.  advance_counter should be true
+// when actually firing a shot, and false for queries such as the AI's line-of-sight check.
+vec3d ship_get_external_model_fp_offset(ship_weapon *swp, const weapon_info *wip, const polymodel *weapon_model, int fp_counter_index, bool advance_counter, int sub_shot)
+{
+	if (weapon_model == nullptr || weapon_model->n_guns < 1 || weapon_model->gun_banks[0].num_slots < 1)
+		return vmd_zero_vector;
+
+	auto &bank = weapon_model->gun_banks[0];
+
+	if (wip->wi_flags[Weapon::Info_Flags::External_weapon_fp])
+	{
+		int &fp_counter = swp->external_model_fp_counter[fp_counter_index];
+
+		// the counter cycles through the firing points of the model's first gun bank
+		if (fp_counter < 0 || fp_counter >= bank.num_slots)
+			fp_counter = 0;
+
+		int fp = fp_counter;
+		if (advance_counter)
+			fp_counter++;
+
+		return bank.pnt[fp];
+	}
+
+	Assertion(sub_shot >= 0 && sub_shot < bank.num_slots, "sub_shot %d is out of range for the external model of weapon %s, which has %d firing points", sub_shot, wip->name, bank.num_slots);
+	return bank.pnt[sub_shot];
+}
+
 // fires a primary weapon for the given object.  It also handles multiplayer cases.
 // in multiplayer, the starting network signature, and number of banks fired are sent
 // to all the clients in the game. All the info is passed to send_primary at the end of
@@ -13796,28 +13830,19 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 					}
 
 					for (int j = 0; j < shot_count; j++) {
-						if (weapon_model)
-							if ((weapon_model->n_guns <= swp->external_model_fp_counter[bank_to_fire]) || (swp->external_model_fp_counter[bank_to_fire] < 0))
-								swp->external_model_fp_counter[bank_to_fire] = 0;
-
 						int sub_shots = 1;
-						// Use 0 instead of bank_to_fire as index when checking the number of external weapon model firingpoints
-						if (weapon_model && weapon_model->n_guns)
-							if (!(winfo_p->wi_flags[Weapon::Info_Flags::External_weapon_fp]))
-								sub_shots = weapon_model->gun_banks[0].num_slots;
+						// weapons that don't chain their external model firing points fire from all of them at once
+						// (note that external model firing points always come from the model's first gun bank)
+						if (weapon_model && weapon_model->n_guns && !(winfo_p->wi_flags[Weapon::Info_Flags::External_weapon_fp]))
+							sub_shots = weapon_model->gun_banks[0].num_slots;
 
 						for(int s = 0; s<sub_shots; s++){
 							pnt = pm->gun_banks[bank_to_fire].pnt[pt];
 							vec3d dir;
 							dir = pm->gun_banks[bank_to_fire].norm[pt];
-							// Use 0 instead of bank_to_fire as index to external weapon model firingpoints 
-							if (weapon_model && weapon_model->n_guns) {
-								if (winfo_p->wi_flags[Weapon::Info_Flags::External_weapon_fp]) {
-									vm_vec_add2(&pnt, &weapon_model->gun_banks[0].pnt[swp->external_model_fp_counter[bank_to_fire]]);
-								} else {
-									vm_vec_add2(&pnt, &weapon_model->gun_banks[0].pnt[s]);
-								}
-							}
+
+							vec3d external_fp_offset = ship_get_external_model_fp_offset(swp, winfo_p, weapon_model, bank_to_fire, true, s);
+							vm_vec_add2(&pnt, &external_fp_offset);
 
 							vm_vec_unrotate(&gun_point, &pnt, &obj->orient);
 							vm_vec_add(&firing_pos, &gun_point, &obj->pos);
@@ -13953,7 +13978,6 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 								multi_ship_record_add_rollback_wep(weapon_objnum);
 							}
 						}
-						swp->external_model_fp_counter[bank_to_fire]++;
 					}
 				}
 
@@ -14673,23 +14697,14 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 			vec3d dir;
 			dir = pm->missile_banks[bank].norm[pnt_index++];
 
-			polymodel *weapon_model = NULL;
+			polymodel *weapon_model = nullptr;
 			if(wip->external_model_num >= 0){
 				weapon_model = model_get(wip->external_model_num);
 			}
 
-			if (weapon_model && weapon_model->n_guns) {
-				int external_bank = bank + MAX_SHIP_PRIMARY_BANKS;
-				if (wip->wi_flags[Weapon::Info_Flags::External_weapon_fp]) {
-					if ((weapon_model->n_guns <= swp->external_model_fp_counter[external_bank]) || (swp->external_model_fp_counter[external_bank] < 0))
-						swp->external_model_fp_counter[external_bank] = 0;
-					vm_vec_add2(&pnt, &weapon_model->gun_banks[0].pnt[swp->external_model_fp_counter[external_bank]]);
-					swp->external_model_fp_counter[external_bank]++;
-				} else {
-					// make it use the 0 index slot
-					vm_vec_add2(&pnt, &weapon_model->gun_banks[0].pnt[0]);
-				}
-			}
+			// chained weapons cycle through the external model's firing points; other weapons use the 0 index slot
+			vec3d external_fp_offset = ship_get_external_model_fp_offset(swp, wip, weapon_model, bank + MAX_SHIP_PRIMARY_BANKS, true);
+			vm_vec_add2(&pnt, &external_fp_offset);
 			vm_vec_unrotate(&missile_point, &pnt, &obj->orient);
 			vm_vec_add(&firing_pos, &missile_point, &obj->pos);
 
