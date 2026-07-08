@@ -6922,9 +6922,6 @@ void ship::clear()
 	// ---------- special weapons init that isn't setting things to 0
 	for (int i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++)
 	{
-		// not part of weapons!
-		primary_rotate_rate[i] = 0.0f;
-		primary_rotate_ang[i] = 0.0f;
 		// for fighter beams
 		was_firing_last_frame[i] = 0;
 	}
@@ -7130,8 +7127,7 @@ void ship_weapon::clear()
     {
         primary_bank_weapons[i] = -1;
 
-		primary_bank_external_model_instance[i] = -1;
-		primary_bank_model_instance_weapon[i] = -1;
+		primary_bank_external_weapon[i] = external_weapon_state();
 
         next_primary_fire_stamp[i] = timestamp(0);
         last_primary_fire_stamp[i] = timestamp(-1);
@@ -7153,7 +7149,6 @@ void ship_weapon::clear()
 
         burst_counter[i] = 0;
 		burst_seed[i] = Random::next();
-        external_model_fp_counter[i] = 0;
 
 		primary_firepoint_indices[i].clear();
 		primary_firepoint_next_to_fire_index[i] = 0;
@@ -7164,6 +7159,8 @@ void ship_weapon::clear()
     for (int i = 0; i < MAX_SHIP_SECONDARY_BANKS; i++)
     {
         secondary_bank_weapons[i] = -1;
+
+		secondary_bank_external_weapon[i] = external_weapon_state();
 
         next_secondary_fire_stamp[i] = timestamp(0);
         last_secondary_fire_stamp[i] = timestamp(-1);
@@ -7181,7 +7178,6 @@ void ship_weapon::clear()
 		secondary_bank_substitution_pattern_index[i] = 0;
 
         burst_counter[i + MAX_SHIP_PRIMARY_BANKS] = 0;
-        external_model_fp_counter[i + MAX_SHIP_PRIMARY_BANKS] = 0;
     }
 
     tertiary_bank_ammo = 0;
@@ -8630,12 +8626,20 @@ void ship_delete( object * obj )
 	shipp->model_instance_num = -1;
 
 	// free up any weapon model instances
-	for (int i = 0; i < shipp->weapons.num_primary_banks; ++i)
+	for (auto &ext : shipp->weapons.primary_bank_external_weapon)
 	{
-		if (shipp->weapons.primary_bank_external_model_instance[i] >= 0)
+		if (ext.model_instance >= 0)
 		{
-			model_delete_instance(shipp->weapons.primary_bank_external_model_instance[i]);
-			shipp->weapons.primary_bank_external_model_instance[i] = -1;
+			model_delete_instance(ext.model_instance);
+			ext.model_instance = -1;
+		}
+	}
+	for (auto &ext : shipp->weapons.secondary_bank_external_weapon)
+	{
+		if (ext.model_instance >= 0)
+		{
+			model_delete_instance(ext.model_instance);
+			ext.model_instance = -1;
 		}
 	}
 }
@@ -12593,16 +12597,18 @@ static int ship_stop_fire_primary_bank(object * obj, int bank_to_stop)
 	swp = &shipp->weapons;
 
 	if(swp->primary_bank_weapons[bank_to_stop] >= 0){
-		if(shipp->primary_rotate_rate[bank_to_stop] > 0.0f)
-			shipp->primary_rotate_rate[bank_to_stop] -= Weapon_info[swp->primary_bank_weapons[bank_to_stop]].weapon_submodel_rotate_accell*flFrametime;
-		if(shipp->primary_rotate_rate[bank_to_stop] < 0.0f)
-			shipp->primary_rotate_rate[bank_to_stop] = 0.0f;
+		auto &ext = swp->primary_bank_external_weapon[bank_to_stop];
+
+		if(ext.rotate_rate > 0.0f)
+			ext.rotate_rate -= Weapon_info[swp->primary_bank_weapons[bank_to_stop]].weapon_submodel_rotate_accell*flFrametime;
+		if(ext.rotate_rate < 0.0f)
+			ext.rotate_rate = 0.0f;
 		if(Ship_info[shipp->ship_info_index].draw_primary_models[bank_to_stop]){
-			shipp->primary_rotate_ang[bank_to_stop] += shipp->primary_rotate_rate[bank_to_stop]*flFrametime;
-			if(shipp->primary_rotate_ang[bank_to_stop] > PI2)
-				shipp->primary_rotate_ang[bank_to_stop] -= PI2;
-			if(shipp->primary_rotate_ang[bank_to_stop] < 0.0f)
-				shipp->primary_rotate_ang[bank_to_stop] += PI2;
+			ext.rotate_ang += ext.rotate_rate*flFrametime;
+			if(ext.rotate_ang > PI2)
+				ext.rotate_ang -= PI2;
+			if(ext.rotate_ang < 0.0f)
+				ext.rotate_ang += PI2;
 		}
 	}
 	
@@ -12739,10 +12745,9 @@ bool in_autoaim_fov(ship *shipp, int bank_to_fire, object *obj)
 // weapon flag: chained weapons cycle through the external model's firing points using the bank's
 // chain counter; non-chained weapons use the sub_shot index directly.
 //
-// fp_counter_index indexes swp->external_model_fp_counter[]: the bank number for primaries, or
-// the bank number plus MAX_SHIP_PRIMARY_BANKS for secondaries.  advance_counter should be true
-// when actually firing a shot, and false for queries such as the AI's line-of-sight check.
-vec3d ship_get_external_model_fp_offset(ship_weapon *swp, const weapon_info *wip, const polymodel *weapon_model, int fp_counter_index, bool advance_counter, int sub_shot)
+// ext is the bank's external weapon state.  advance_counter should be true when actually firing
+// a shot, and false for queries such as the AI's line-of-sight check.
+vec3d ship_get_external_model_fp_offset(external_weapon_state *ext, const weapon_info *wip, const polymodel *weapon_model, bool advance_counter, int sub_shot)
 {
 	if (weapon_model == nullptr || weapon_model->n_guns < 1 || weapon_model->gun_banks[0].num_slots < 1)
 		return vmd_zero_vector;
@@ -12751,15 +12756,13 @@ vec3d ship_get_external_model_fp_offset(ship_weapon *swp, const weapon_info *wip
 
 	if (wip->wi_flags[Weapon::Info_Flags::External_weapon_fp])
 	{
-		int &fp_counter = swp->external_model_fp_counter[fp_counter_index];
-
 		// the counter cycles through the firing points of the model's first gun bank
-		if (fp_counter < 0 || fp_counter >= bank.num_slots)
-			fp_counter = 0;
+		if (ext->fp_counter < 0 || ext->fp_counter >= bank.num_slots)
+			ext->fp_counter = 0;
 
-		int fp = fp_counter;
+		int fp = ext->fp_counter;
 		if (advance_counter)
-			fp_counter++;
+			ext->fp_counter++;
 
 		return bank.pnt[fp];
 	}
@@ -12926,18 +12929,20 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 		}
 
 		if (winfo_p->weapon_submodel_rotate_vel > 0.0f) {
-			if (shipp->primary_rotate_rate[bank_to_fire] < winfo_p->weapon_submodel_rotate_vel)
-				shipp->primary_rotate_rate[bank_to_fire] += winfo_p->weapon_submodel_rotate_accell*flFrametime;
-			if (shipp->primary_rotate_rate[bank_to_fire] > winfo_p->weapon_submodel_rotate_vel)
-				shipp->primary_rotate_rate[bank_to_fire] = winfo_p->weapon_submodel_rotate_vel;
+			auto &ext = swp->primary_bank_external_weapon[bank_to_fire];
+
+			if (ext.rotate_rate < winfo_p->weapon_submodel_rotate_vel)
+				ext.rotate_rate += winfo_p->weapon_submodel_rotate_accell*flFrametime;
+			if (ext.rotate_rate > winfo_p->weapon_submodel_rotate_vel)
+				ext.rotate_rate = winfo_p->weapon_submodel_rotate_vel;
 			if (sip->draw_primary_models[bank_to_fire]) {
-				shipp->primary_rotate_ang[bank_to_fire] += shipp->primary_rotate_rate[bank_to_fire]*flFrametime;
-				if (shipp->primary_rotate_ang[bank_to_fire] > PI2)
-					shipp->primary_rotate_ang[bank_to_fire] -= PI2;
-				if (shipp->primary_rotate_ang[bank_to_fire] < 0.0f)
-					shipp->primary_rotate_ang[bank_to_fire] += PI2;
+				ext.rotate_ang += ext.rotate_rate*flFrametime;
+				if (ext.rotate_ang > PI2)
+					ext.rotate_ang -= PI2;
+				if (ext.rotate_ang < 0.0f)
+					ext.rotate_ang += PI2;
 			}
-			if (shipp->primary_rotate_rate[bank_to_fire] < winfo_p->weapon_submodel_rotate_vel)
+			if (ext.rotate_rate < winfo_p->weapon_submodel_rotate_vel)
 				continue;
 		}
 		// if this is a targeting laser, start it up   ///- only targeting laser if it is tag-c, otherwise it's a fighter beam -Bobboau
@@ -13454,7 +13459,7 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 							vec3d dir;
 							dir = pm->gun_banks[bank_to_fire].norm[pt];
 
-							vec3d external_fp_offset = ship_get_external_model_fp_offset(swp, winfo_p, weapon_model, bank_to_fire, true, s);
+							vec3d external_fp_offset = ship_get_external_model_fp_offset(&swp->primary_bank_external_weapon[bank_to_fire], winfo_p, weapon_model, true, s);
 							vm_vec_add2(&pnt, &external_fp_offset);
 
 							vm_vec_unrotate(&gun_point, &pnt, &obj->orient);
@@ -14316,7 +14321,7 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 			}
 
 			// chained weapons cycle through the external model's firing points; other weapons use the 0 index slot
-			vec3d external_fp_offset = ship_get_external_model_fp_offset(swp, wip, weapon_model, bank + MAX_SHIP_PRIMARY_BANKS, true);
+			vec3d external_fp_offset = ship_get_external_model_fp_offset(&swp->secondary_bank_external_weapon[bank], wip, weapon_model, true);
 			vm_vec_add2(&pnt, &external_fp_offset);
 			vm_vec_unrotate(&missile_point, &pnt, &obj->orient);
 			vm_vec_add(&firing_pos, &missile_point, &obj->pos);
@@ -21481,14 +21486,15 @@ void ship_render_batch_thrusters(object *obj)
 int ship_get_external_weapon_model_instance(ship_weapon *swp, int bank)
 {
 	int weapon_idx = swp->primary_bank_weapons[bank];
+	auto &ext = swp->primary_bank_external_weapon[bank];
 
-	if (swp->primary_bank_model_instance_weapon[bank] != weapon_idx)
+	if (ext.model_instance_weapon != weapon_idx)
 	{
 		// the weapon changed, so any existing instance belongs to the old weapon's model
-		if (swp->primary_bank_external_model_instance[bank] >= 0)
+		if (ext.model_instance >= 0)
 		{
-			model_delete_instance(swp->primary_bank_external_model_instance[bank]);
-			swp->primary_bank_external_model_instance[bank] = -1;
+			model_delete_instance(ext.model_instance);
+			ext.model_instance = -1;
 		}
 
 		if (weapon_idx >= 0 && Weapon_info[weapon_idx].external_model_num >= 0)
@@ -21500,16 +21506,16 @@ int ship_get_external_weapon_model_instance(ship_weapon *swp, int bank)
 			{
 				if (pm->submodel[mn].flags[Model::Submodel_flags::Gun_rotation])
 				{
-					swp->primary_bank_external_model_instance[bank] = model_create_instance(model_objnum_special::OBJNUM_NONE, Weapon_info[weapon_idx].external_model_num);
+					ext.model_instance = model_create_instance(model_objnum_special::OBJNUM_NONE, Weapon_info[weapon_idx].external_model_num);
 					break;
 				}
 			}
 		}
 
-		swp->primary_bank_model_instance_weapon[bank] = weapon_idx;
+		ext.model_instance_weapon = weapon_idx;
 	}
 
-	return swp->primary_bank_external_model_instance[bank];
+	return ext.model_instance;
 }
 
 // Computes the position and orientation, in the ship model's frame, at which to render an
@@ -21577,7 +21583,7 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 				if (pm->submodel[mn].flags[Model::Submodel_flags::Gun_rotation])
 				{
 					angles angs = vmd_zero_angles;
-					angs.b = shipp->primary_rotate_ang[i];
+					angs.b = swp->primary_bank_external_weapon[i].rotate_ang;
 					vm_angles_2_matrix(&pmi->submodel[mn].canonical_orient, &angs);
 				}
 			}

@@ -6787,8 +6787,8 @@ bool check_los(int objnum, int target_objnum, float threshold, int primary_bank,
 		}
 
 		// use the same firing point the next shot will use
-		int external_bank = is_primary ? primary_bank : secondary_bank + MAX_SHIP_PRIMARY_BANKS;
-		vec3d external_fp_offset = ship_get_external_model_fp_offset(swp, wip, weapon_model, external_bank, false);
+		auto ext = is_primary ? &swp->primary_bank_external_weapon[primary_bank] : &swp->secondary_bank_external_weapon[secondary_bank];
+		vec3d external_fp_offset = ship_get_external_model_fp_offset(ext, wip, weapon_model, false);
 		vm_vec_add2(&pnt, &external_fp_offset);
 
 		vm_vec_unrotate(&firing_point, &pnt, &firing_ship->orient);
