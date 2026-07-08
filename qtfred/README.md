@@ -62,35 +62,3 @@ qtFRED has some special coding style requirements that should be observed when w
 For a more detailed, practical breakdown of the design preferences for new and updated code — dialog interaction
 patterns, signal/slot conventions, dirty-state handling, and help-doc requirements — see the
 [QtFRED Design Guide](DESIGN_GUIDE.md).
-
-### Front end - Back end separation
-The original FRED freely mixed MFC (the UI framework it used) and mission editor logic code. This created a hard to maintain
-code mess which used tight coupling wherever necessary.
-
-To avoid this issue qtFRED tries to follow a front end - back end separation coding style where the code that handles the UI is
-separate from the editor logic code. The original FRED also used global dialog and window instances for handling callbacks.
-Since Qt has its own signal/slot functionality qtFRED uses that for handling event notification.
-
-The logic of the mission editor has been extracted into multiple classes which do not use Qt functionality (except signals and
-slots). These are `Editor` and `EditorViewport`.
-
-- `Editor` is an instance of a mission editor and keeps all state related to that. It is similar to the `management.cpp` file
-of the orignal FRED which used a lot of global variables for state keeping in the original FRED. The names of the fields and
-functions are mostly the same so FRED code should be easy to port to this new class.
-- `EditorViewport` is a single view into an editor instance. It encapsulates the state of a single main window and could be
-used in the future to support multiple viewports (which is also the reason it exists). Dialogs use an instance of this for
-keeping a reference to their parent editor viewport.
-
-#### Dialog models
-The dialogs follow a similar system. Each `QDialog` subclass should have a corresponding `AbstractDialogModel` subclass. Obviously
-this is not required for non-editor dialogs like the About dialog.
-
-This should be done for every dialog but if the original FRED code is too reliant on the old programming model and refactoring
-would require too much work it is acceptable to break this system for the initial qtFRED port.
-
-### Adding new files
-New files need to be added to the appropriate folders in `source_groups.cmake`. If a new source folder is created it should be added
-with an appropriate name.
-
-UI form files need to be added to the `UI` folder. They will be automatically included in the build that way and they will be
-recompiled when the form is changed at a later time.
