@@ -1654,7 +1654,7 @@ ADE_FUNC(callSupport,
 		return ADE_RETURN_FALSE;
 	}
 
-	if (aip->ai_flags[AI::AI_Flags::Being_repaired] || aip->ai_flags[AI::AI_Flags::Awaiting_repair]) {
+	if (aip->ai_flags.any_of(AI::AI_Flags::Being_repaired,AI::AI_Flags::Awaiting_repair)) {
 		return ADE_RETURN_FALSE;
 	}
 

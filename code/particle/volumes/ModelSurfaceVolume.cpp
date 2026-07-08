@@ -21,9 +21,7 @@ vec3d ModelSurfaceVolume::sampleRandomPoint(const matrix &orientation, decltype(
 			if (submodel < 0) {
 				SCP_vector<int> eligible_submodels;
 				for (int i = 0; i < pm->n_models; ++i) {
-					if (!pm->submodel[i].flags[Model::Submodel_flags::Is_lod] ||
-						!pm->submodel[i].flags[Model::Submodel_flags::Is_damaged] ||
-						!pm->submodel[i].flags[Model::Submodel_flags::Is_live_debris])
+					if (pm->submodel[i].flags.none_of(Model::Submodel_flags::Is_lod,Model::Submodel_flags::Is_damaged,Model::Submodel_flags::Is_live_debris))
 						eligible_submodels.emplace_back(i);
 				}
 

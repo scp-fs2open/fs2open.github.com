@@ -1463,7 +1463,7 @@ void select_objects()
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
 		valid = 1;
-		if (ptr->flags[Object::Object_Flags::Hidden, Object::Object_Flags::Locked_from_editing])
+		if (ptr->flags.any_of(Object::Object_Flags::Hidden, Object::Object_Flags::Locked_from_editing))
 			valid = 0;
 
 		Assert(ptr->type != OBJ_NONE);

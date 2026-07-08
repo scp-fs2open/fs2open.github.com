@@ -23,7 +23,20 @@ class flagset {
 			set(val);
 		}
 	}
+	template <typename... Ts>
+	bool any_of(T first, Ts... rest) const
+	{
+		static_assert((std::is_same<Ts, T>::value && ...),
+			"All arguments to any_of() must be flags of the same enum type");
+		return (*this)[first] || ((*this)[rest] || ...);
+	}
 
+	// Returns true if none of the given flags are set.
+	template <typename... Ts>
+	bool none_of(T first, Ts... rest) const
+	{
+		return !any_of(first, rest...);
+	}
 	bool operator[](const T idx) const { return values[(static_cast < size_t >(idx))]; };
 
 	template<size_t COMB_SIZE>
