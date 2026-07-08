@@ -24,6 +24,9 @@ public:
 	int  getAutosaveIntervalSeconds() const;
 	void setAutosaveIntervalSeconds(int value);
 
+	int  getSexpNumberEveryN() const;
+	void setSexpNumberEveryN(int value);
+
 	bool getCreateBakOnSave() const;
 	void setCreateBakOnSave(bool value);
 
@@ -78,6 +81,7 @@ private:
 	// General
 	bool _offerAutosaveRecovery;
 	int  _autosaveIntervalSeconds;
+	int  _sexpNumberEveryN;
 	bool _createBakOnSave;
 	bool _moveShipsWhenUndocking;
 	bool _alwaysSaveDisplayNames;

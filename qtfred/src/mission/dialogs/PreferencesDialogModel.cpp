@@ -11,6 +11,7 @@ PreferencesDialogModel::PreferencesDialogModel(QObject* parent, EditorViewport* 
 	: AbstractDialogModel(parent, viewport)
 	, _offerAutosaveRecovery(viewport->Offer_autosave_recovery)
 	, _autosaveIntervalSeconds(viewport->autosave_interval_seconds)
+	, _sexpNumberEveryN(viewport->sexp_number_every_n)
 	, _createBakOnSave(viewport->Create_bak_on_save)
 	, _moveShipsWhenUndocking(viewport->Move_ships_when_undocking)
 	, _alwaysSaveDisplayNames(viewport->Always_save_display_names)
@@ -48,6 +49,7 @@ bool PreferencesDialogModel::apply() {
 
 	_viewport->Offer_autosave_recovery   = _offerAutosaveRecovery;
 	_viewport->autosave_interval_seconds = _autosaveIntervalSeconds;
+	_viewport->sexp_number_every_n       = _sexpNumberEveryN;
 	_viewport->Create_bak_on_save        = _createBakOnSave;
 	_viewport->Move_ships_when_undocking = _moveShipsWhenUndocking;
 	_viewport->Always_save_display_names                = _alwaysSaveDisplayNames;
@@ -105,6 +107,9 @@ void PreferencesDialogModel::setOfferAutosaveRecovery(bool value) { modify(_offe
 
 int  PreferencesDialogModel::getAutosaveIntervalSeconds() const { return _autosaveIntervalSeconds; }
 void PreferencesDialogModel::setAutosaveIntervalSeconds(int value) { modify(_autosaveIntervalSeconds, value); }
+
+int  PreferencesDialogModel::getSexpNumberEveryN() const { return _sexpNumberEveryN; }
+void PreferencesDialogModel::setSexpNumberEveryN(int value) { modify(_sexpNumberEveryN, value); }
 
 bool PreferencesDialogModel::getCreateBakOnSave() const { return _createBakOnSave; }
 void PreferencesDialogModel::setCreateBakOnSave(bool value) { modify(_createBakOnSave, value); }

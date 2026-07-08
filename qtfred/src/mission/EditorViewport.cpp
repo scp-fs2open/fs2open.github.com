@@ -129,6 +129,7 @@ void EditorViewport::loadSettings() {
 	QSettings settings;
 	settings.beginGroup(SETTINGS_GROUP);
 	toolbar_icon_size                  = settings.value("toolbar_icon_size",                  toolbar_icon_size).toInt();
+	sexp_number_every_n                = settings.value("sexp_number_every_n",                sexp_number_every_n).toInt();
 	Offer_autosave_recovery            = settings.value("offer_autosave_recovery",            Offer_autosave_recovery).toBool();
 	autosave_interval_seconds         = settings.value("autosave_interval_seconds",          autosave_interval_seconds).toInt();
 	Create_bak_on_save                 = settings.value("create_bak_on_save",                 Create_bak_on_save).toBool();
@@ -172,6 +173,7 @@ void EditorViewport::saveSettings() const {
 	QSettings settings;
 	settings.beginGroup(SETTINGS_GROUP);
 	settings.setValue("toolbar_icon_size",                   toolbar_icon_size);
+	settings.setValue("sexp_number_every_n",                 sexp_number_every_n);
 	settings.setValue("offer_autosave_recovery",             Offer_autosave_recovery);
 	settings.setValue("autosave_interval_seconds",          autosave_interval_seconds);
 	settings.setValue("create_bak_on_save",                  Create_bak_on_save);
