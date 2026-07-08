@@ -6775,14 +6775,18 @@ bool check_los(int objnum, int target_objnum, float threshold, int primary_bank,
 		bool is_primary = secondary_bank == -1;
 		ship *shipp = &Ships[firing_ship->instance];
 		ship_weapon *swp = &shipp->weapons;
+		ship_info *sip = &Ship_info[shipp->ship_info_index];
 		weapon_info *wip = &Weapon_info[is_primary ? swp->primary_bank_weapons[primary_bank] : swp->secondary_bank_weapons[secondary_bank]];
-		polymodel* pm = model_get(Ship_info[shipp->ship_info_index].model_num);
-		
+		polymodel* pm = model_get(sip->model_num);
+
 		vec3d pnt = is_primary ? pm->gun_banks[primary_bank].pnt[swp->primary_next_slot[primary_bank]] : pm->missile_banks[secondary_bank].pnt[swp->secondary_next_slot[secondary_bank]];
 		vec3d firing_point;
 
+		// external model firing points only apply when the external models are actually drawn
+		// (matching ship_fire_primary and ship_fire_secondary)
+		bool draw_models = is_primary ? sip->draw_primary_models[primary_bank] : sip->draw_secondary_models[secondary_bank];
 		polymodel* weapon_model = nullptr;
-		if (wip->external_model_num >= 0) {
+		if (draw_models && wip->external_model_num >= 0) {
 			weapon_model = model_get(wip->external_model_num);
 		}
 

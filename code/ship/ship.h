@@ -1824,7 +1824,7 @@ extern int ship_stop_fire_primary(object * obj);
 extern int ship_fire_primary(object * objp, int force = 0, bool rollback_shot = false);
 extern vec3d ship_get_external_model_fp_offset(external_weapon_state *ext, const weapon_info *wip, const polymodel *weapon_model, bool advance_counter, int sub_shot = 0);
 extern void ship_get_weapon_model_slot_transform(const w_bank *bank, int slot, float reload_slide_back, vec3d *outpnt, matrix *outorient);
-extern int ship_get_external_weapon_model_instance(ship_weapon *swp, int bank);
+extern int ship_get_external_weapon_model_instance(ship_weapon *swp, int bank, int display_model_num);
 extern int ship_fire_secondary(object * objp, int allow_swarm = 0, bool rollback_shot = false );
 bool ship_start_secondary_fire(object* objp);
 bool ship_stop_secondary_fire(object* objp);

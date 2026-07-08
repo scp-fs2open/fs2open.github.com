@@ -386,7 +386,7 @@ struct weapon_info
 	char	pofbitmap_name[MAX_FILENAME_LEN];	// Name of the pof representing this if POF, or bitmap filename if bitmap
 	int		model_num;							// modelnum of weapon -- -1 if no model
 	char	external_model_name[MAX_FILENAME_LEN];					//the model rendered on the weapon points of a ship
-	int		external_model_num;					//the model rendered on the weapon points of a ship
+	int		external_model_num;					// modelnum of the model rendered on the weapon points of a ship; -1 if $External Model File: was not given
 
 	std::unique_ptr<char[]> tech_desc;		// weapon's description (in tech database)
 	char	tech_anim_filename[MAX_FILENAME_LEN];	// weapon's tech room animation

@@ -13428,8 +13428,9 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 					firepoint_list = nullptr;
 				}
 
+				// external model firing points only apply when the external models are actually drawn
 				polymodel *weapon_model = nullptr;
-				if (sip->draw_primary_models[bank_to_fire] && (winfo_p->external_model_num >= 0)) 
+				if (sip->draw_primary_models[bank_to_fire] && (winfo_p->external_model_num >= 0))
 					weapon_model = model_get(winfo_p->external_model_num);
 
 				for (int pt_count = 0; pt_count < point_count; pt_count++) {
@@ -14336,8 +14337,10 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 			vec3d dir;
 			dir = pm->missile_banks[bank].norm[pnt_index++];
 
+			// external model firing points only apply when the external models are actually drawn
+			// (matching the primary bank behavior in ship_fire_primary)
 			polymodel *weapon_model = nullptr;
-			if(wip->external_model_num >= 0){
+			if(sip->draw_secondary_models[bank] && wip->external_model_num >= 0){
 				weapon_model = model_get(wip->external_model_num);
 			}
 
@@ -21503,8 +21506,10 @@ void ship_render_batch_thrusters(object *obj)
 // the last call (weapons can be swapped mid-mission by SEXPs, scripts, or rearming).  The ideal
 // place to create the instance would be in parse_object_create_sub, but the player can alter
 // the ship loadout after that function runs.
+// display_model_num is the model the caller renders for this bank (the weapon's external model,
+// or its own model as the fallback).
 // Returns the model instance number, or -1 if the bank's weapon doesn't need an instance.
-int ship_get_external_weapon_model_instance(ship_weapon *swp, int bank)
+int ship_get_external_weapon_model_instance(ship_weapon *swp, int bank, int display_model_num)
 {
 	int weapon_idx = swp->primary_bank_weapons[bank];
 	auto &ext = swp->primary_bank_external_weapon[bank];
@@ -21518,16 +21523,16 @@ int ship_get_external_weapon_model_instance(ship_weapon *swp, int bank)
 			ext.model_instance = -1;
 		}
 
-		if (weapon_idx >= 0 && Weapon_info[weapon_idx].external_model_num >= 0)
+		if (weapon_idx >= 0 && display_model_num >= 0)
 		{
-			auto pm = model_get(Weapon_info[weapon_idx].external_model_num);
+			auto pm = model_get(display_model_num);
 
 			// create a model instance only if at least one submodel has gun rotation
 			for (int mn = 0; mn < pm->n_models; mn++)
 			{
 				if (pm->submodel[mn].flags[Model::Submodel_flags::Gun_rotation])
 				{
-					ext.model_instance = model_create_instance(model_objnum_special::OBJNUM_NONE, Weapon_info[weapon_idx].external_model_num);
+					ext.model_instance = model_create_instance(model_objnum_special::OBJNUM_NONE, display_model_num);
 					break;
 				}
 			}
@@ -21580,16 +21585,18 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 
 	//primary weapons
 	for ( i = 0; i < swp->num_primary_banks; i++ ) {
-		if ( swp->primary_bank_weapons[i] < 0 ) {
+		if ( swp->primary_bank_weapons[i] < 0 || !sip->draw_primary_models[i] ) {
 			continue;
 		}
 		auto wip = &Weapon_info[swp->primary_bank_weapons[i]];
 
-		if ( wip->external_model_num < 0 || !sip->draw_primary_models[i] ) {
+		// if the weapon has no dedicated external model, display the weapon's own model, if it has one
+		int display_model_num = (wip->external_model_num >= 0) ? wip->external_model_num : wip->model_num;
+		if ( display_model_num < 0 ) {
 			continue;
 		}
 
-		int external_model_instance = ship_get_external_weapon_model_instance(swp, i);
+		int external_model_instance = ship_get_external_weapon_model_instance(swp, i, display_model_num);
 
 		auto bank = &ship_pm->gun_banks[i];
 
@@ -21615,18 +21622,20 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 			matrix slot_orient;
 			ship_get_weapon_model_slot_transform(bank, k, 0.0f, &slot_pnt, &slot_orient);
 
-			model_render_queue(ship_render_info, scene, wip->external_model_num, external_model_instance, &slot_orient, &slot_pnt);
+			model_render_queue(ship_render_info, scene, display_model_num, external_model_instance, &slot_orient, &slot_pnt);
 		}
 	}
 
 	//secondary weapons
 	for (i = 0; i < swp->num_secondary_banks; i++) {
-		if ( swp->secondary_bank_weapons[i] < 0 ) {
+		if ( swp->secondary_bank_weapons[i] < 0 || !sip->draw_secondary_models[i] ) {
 			continue;
 		}
 		auto wip = &Weapon_info[swp->secondary_bank_weapons[i]];
 
-		if ( wip->external_model_num < 0 || !sip->draw_secondary_models[i] ) {
+		// if the weapon has no dedicated external model, display the weapon's own model, if it has one
+		int display_model_num = (wip->external_model_num >= 0) ? wip->external_model_num : wip->model_num;
+		if ( display_model_num < 0 ) {
 			continue;
 		}
 
@@ -21638,10 +21647,10 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 				matrix slot_orient;
 				ship_get_weapon_model_slot_transform(bank, k, 0.0f, &slot_pnt, &slot_orient);
 
-				model_render_queue(ship_render_info, scene, wip->external_model_num, &slot_orient, &slot_pnt);
+				model_render_queue(ship_render_info, scene, display_model_num, &slot_orient, &slot_pnt);
 			}
 		} else {
-			auto weapon_pm = model_get(wip->external_model_num);
+			auto weapon_pm = model_get(display_model_num);
 			int num_secondaries_rendered = 0;
 
 			for ( k = 0; k < bank->num_slots; k++ ) {
@@ -21660,7 +21669,7 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 				matrix slot_orient;
 				ship_get_weapon_model_slot_transform(bank, k, (1.0f - reload_pct) * weapon_pm->rad, &slot_pnt, &slot_orient);
 
-				model_render_queue(ship_render_info, scene, wip->external_model_num, &slot_orient, &slot_pnt);
+				model_render_queue(ship_render_info, scene, display_model_num, &slot_orient, &slot_pnt);
 			}
 		}
 	}

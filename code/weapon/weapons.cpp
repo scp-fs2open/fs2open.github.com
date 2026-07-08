@@ -8844,10 +8844,6 @@ static void weapon_page_in_one(weapon_info *wip, bool load_graphics)
 	if (VALID_FNAME(wip->external_model_name))
 		wip->external_model_num = model_load(wip->external_model_name);
 
-	if (wip->external_model_num == -1)
-		wip->external_model_num = wip->model_num;
-
-
 	//Load shockwaves
 	shockwave_create_info_load(&wip->shockwave);
 	shockwave_create_info_load(&wip->dinky_shockwave);
