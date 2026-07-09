@@ -1,4 +1,5 @@
 #include "WingEditorDialog.h"
+#include <ui/util/DialogUndo.h>
 #include "General/CheckBoxListDialog.h"
 #include "General/ImagePickerDialog.h"
 #include "ShipEditor/ShipGoalsDialog.h"
@@ -158,7 +159,9 @@ WingEditorDialog::WingEditorDialog(FredView* parent, EditorViewport* viewport)
 	  ui(new Ui::WingEditorDialog()), _model(new WingEditorDialogModel(this, viewport)),
 	  _fredView(parent), _viewport(viewport)
 {
+
 	ui->setupUi(this);
+	util::installMainStackUndoShortcuts(this, _fredView->mainUndoStack());
 
 	_show_sexp_help = viewport->Show_sexp_help_wing_editor;
 	ui->HelpTitle->setVisible(_show_sexp_help);

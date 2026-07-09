@@ -1,4 +1,5 @@
 #include <QFocusEvent>
+#include <ui/util/DialogUndo.h>
 #include <QRadioButton>
 #include "ShieldSystemDialog.h"
 #include "ui/util/SignalBlockers.h"
@@ -59,7 +60,9 @@ ShieldSystemDialog::ShieldSystemDialog(FredView* parent, EditorViewport* viewpor
 	_viewport(viewport),
 	ui(new Ui::ShieldSystemDialog()),
 	_model(new ShieldSystemDialogModel(this, viewport)) {
+
     ui->setupUi(this);
+    util::installMainStackUndoShortcuts(this, _fredView->mainUndoStack());
 
 	initializeUi();
 	updateUi();

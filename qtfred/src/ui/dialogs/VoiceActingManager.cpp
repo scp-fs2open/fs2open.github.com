@@ -1,4 +1,5 @@
 #include "VoiceActingManager.h"
+#include <ui/util/DialogUndo.h>
 
 #include "ui_VoiceActingManager.h"
 
@@ -57,7 +58,9 @@ VoiceActingManager::VoiceActingManager(FredView* parent, EditorViewport* viewpor
 	: QDialog(parent), _fredView(parent), _viewport(viewport), ui(new Ui::VoiceActingManager()),
 	  _model(new VoiceActingManagerModel(this, viewport))
 {
+
     ui->setupUi(this);
+    util::installMainStackUndoShortcuts(this, _fredView->mainUndoStack());
 
 	ui->abbrevBriefingLineEdit->setMaxLength(NAME_LENGTH - 1);
 	ui->abbrevCampaignLineEdit->setMaxLength(NAME_LENGTH - 1);

@@ -162,14 +162,14 @@ FredView::FredView(QWidget* parent) : QMainWindow(parent), ui(new Ui::FredView()
 	_cameraStack = new QUndoStack(this);
 	_undoGroup->setActiveStack(_mainStack);
 
+	// These actions' shortcuts are window-scoped (the default): every editing
+	// window owns its own Ctrl+Z/Ctrl+Y — modal dialogs via setupDialogUndo(),
+	// direct-edit dialogs via installMainStackUndoShortcuts() — so shortcut
+	// delivery never depends on reaching another window's actions.
 	_undoAction  = _undoGroup->createUndoAction(this, tr("&Undo"));
 	_undoAction->setShortcuts(QKeySequence::Undo);
 	_redoAction  = _undoGroup->createRedoAction(this, tr("&Redo"));
 	_redoAction->setShortcuts(QKeySequence::Redo);
-	// Make the main undo/redo shortcuts application-wide so Ctrl+Z/Y fire regardless of which
-	// window (viewport or any dialog) is focused. The undo group routes to the active stack.
-	_undoAction->setShortcutContext(Qt::ApplicationShortcut);
-	_redoAction->setShortcutContext(Qt::ApplicationShortcut);
 	// QKeySequence::Redo includes Ctrl+Shift+Z on Windows and Linux, which conflicts
 	// with the camera undo shortcut below. Strip it so only Ctrl+Y remains.
 	{
@@ -182,13 +182,29 @@ FredView::FredView(QWidget* parent) : QMainWindow(parent), ui(new Ui::FredView()
 	// Ctrl+Z/Y by accepting the ShortcutOverride event, which would shadow the mission undo.
 	// This filter lets a focused field keep its own text undo only while it actually has
 	// something to undo; once its local history is empty the keystroke falls through to the
-	// application-wide mission undo/redo. See eventFilter() below.
+	// window's mission/dialog undo actions. See eventFilter() below.
 	qApp->installEventFilter(this);
 
-	_undoCameraAction = _cameraStack->createUndoAction(this, tr("Undo View Change"));
+	// Camera undo/redo are plain actions (not createUndoAction) so their
+	// enabled state can be gated: camera history is main-viewport state, so
+	// the shortcuts and menu items are only live while the main stack is
+	// active — a focused dialog must not move the camera behind itself.
+	_undoCameraAction = new QAction(tr("Undo View Change"), this);
 	_undoCameraAction->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_Z));
-	_redoCameraAction = _cameraStack->createRedoAction(this, tr("Redo View Change"));
+	connect(_undoCameraAction, &QAction::triggered, this, [this]() { _cameraStack->undo(); });
+	_redoCameraAction = new QAction(tr("Redo View Change"), this);
 	_redoCameraAction->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_Y));
+	connect(_redoCameraAction, &QAction::triggered, this, [this]() { _cameraStack->redo(); });
+
+	auto updateCameraUndoActions = [this]() {
+		const bool mainActive = _undoGroup->activeStack() == _mainStack;
+		_undoCameraAction->setEnabled(mainActive && _cameraStack->canUndo());
+		_redoCameraAction->setEnabled(mainActive && _cameraStack->canRedo());
+	};
+	connect(_cameraStack, &QUndoStack::canUndoChanged, this, updateCameraUndoActions);
+	connect(_cameraStack, &QUndoStack::canRedoChanged, this, updateCameraUndoActions);
+	connect(_undoGroup, &QUndoGroup::activeStackChanged, this, updateCameraUndoActions);
+	updateCameraUndoActions();
 
 	// Insert Undo/Redo before the first item in menuEdit
 	ui->menuEdit->insertAction(ui->menuEdit->actions().first(), _redoAction);
@@ -1085,6 +1101,31 @@ void FredView::initializeStatusBar() {
 	_statusBarUnitsLabel = new QLabel();
 	_statusBarUnitsLabel->setContentsMargins(16, 0, 0, 0);
 	statusBar()->addPermanentWidget(_statusBarUnitsLabel);
+
+	// Passive indicator of which undo stack Ctrl+Z currently targets — the
+	// main mission stack or a focused dialog's internal stack (named via
+	// setupDialogUndo).
+	_statusBarUndoScope = new QLabel();
+	_statusBarUndoScope->setContentsMargins(16, 0, 0, 0);
+	statusBar()->addPermanentWidget(_statusBarUndoScope);
+
+	connect(_undoGroup, &QUndoGroup::activeStackChanged, this, &FredView::updateUndoStatusIndicator);
+	updateUndoStatusIndicator();
+}
+
+void FredView::updateUndoStatusIndicator()
+{
+	auto* stack = _undoGroup->activeStack();
+	if (stack == nullptr) {
+		_statusBarUndoScope->clear();
+		return;
+	}
+
+	QString scope = (stack == _mainStack) ? tr("Mission") : stack->objectName();
+	if (scope.isEmpty())
+		scope = tr("Dialog");
+
+	_statusBarUndoScope->setText(tr("Undo: %1").arg(scope));
 }
 
 void FredView::setLastSaved(const QDateTime& when) {

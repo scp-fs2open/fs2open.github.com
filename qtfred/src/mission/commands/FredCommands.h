@@ -4,6 +4,7 @@
 #include <memory>
 #include <typeinfo>
 
+#include <QByteArray>
 #include <QUndoCommand>
 #include <mission/dialogs/AbstractDialogModel.h>
 #include <globalincs/pstypes.h>
@@ -683,6 +684,11 @@ namespace FieldId {
 // skipFirstRedo: pass true when the caller already applied the change before
 // pushing (e.g. via a model setter that handles validation).  The first
 // redo() fired by QUndoStack::push() is then a no-op.
+//
+// editor may be null for dialog-internal commands (per-dialog undo stacks):
+// the setters then write the dialog's working copy instead of mission data,
+// no missionChanged() is emitted, and each setter is responsible for
+// refreshing the dialog UI.
 // ---------------------------------------------------------------------------
 
 template<typename T>
@@ -730,13 +736,13 @@ public:
 
     void undo() override {
         for (const auto& e : _entries) e.setter(e.before);
-        _editor->missionChanged();
+        if (_editor) _editor->missionChanged();
     }
 
     void redo() override {
         if (_skipFirstRedo) { _skipFirstRedo = false; return; }
         for (const auto& e : _entries) e.setter(e.after);
-        _editor->missionChanged();
+        if (_editor) _editor->missionChanged();
     }
 
     bool mergeWith(const QUndoCommand* other) override {
@@ -751,6 +757,45 @@ public:
     }
 
     int id() const override { return _allowMerge ? _fieldId : -1; }
+};
+
+// ---------------------------------------------------------------------------
+// DialogSnapshotCommand — before/after blob undo for dialog-internal state
+//
+// Used by the per-dialog undo stacks for edits where per-field commands
+// don't fit — chiefly sexp tree mutations, where a single modified() signal
+// can mean any structural change, and icon edits that propagate across
+// stages. The dialog serializes the relevant slice of its working state
+// (its choice of format) and provides a restore callback that applies a
+// blob and refreshes the UI. skipFirstRedo follows the usual pattern: the
+// edit has already been applied when the command is pushed.
+//
+// mergeId: -1 (default) never merges. A non-negative id merges consecutive
+// pushes with the same id — first 'before' and latest 'after' are kept —
+// collapsing continuous edits (typing in an icon label, spinner drags) into
+// one undo step, mirroring FieldEditCommand's fieldId merging. Ids share
+// the FieldId number space and must not collide with any fieldId.
+// ---------------------------------------------------------------------------
+
+class DialogSnapshotCommand : public QUndoCommand {
+	QByteArray                             _before;
+	QByteArray                             _after;
+	std::function<void(const QByteArray&)> _restore;
+	bool                                   _skipFirstRedo;
+	int                                    _mergeId;
+
+public:
+	DialogSnapshotCommand(QByteArray                             before,
+	                      QByteArray                             after,
+	                      std::function<void(const QByteArray&)> restore,
+	                      const QString&                         text,
+	                      bool                                   skipFirstRedo = true,
+	                      int                                    mergeId       = -1,
+	                      QUndoCommand*                          parent        = nullptr);
+	void undo() override;
+	void redo() override;
+	int id() const override { return _mergeId; }
+	bool mergeWith(const QUndoCommand* other) override;
 };
 
 // ---------------------------------------------------------------------------

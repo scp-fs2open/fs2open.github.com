@@ -44,7 +44,6 @@ add_file_folder("Source/Mission/Commands"
     src/mission/commands/FredCommands.h
     src/mission/commands/ObjectCapture.cpp
     src/mission/commands/ObjectCapture.h
-    src/mission/commands/SexpUndoInterface.h
 )
 
 add_file_folder("Source/Mission/Dialogs/State"
@@ -324,6 +323,8 @@ add_file_folder("Source/UI/Panels"
 add_file_folder("Source/UI/Util"
 	src/ui/util/default_dir.cpp
 	src/ui/util/default_dir.h
+	src/ui/util/DialogUndo.cpp
+	src/ui/util/DialogUndo.h
 	src/ui/util/ErrorChecker.cpp
 	src/ui/util/ErrorChecker.h
 	src/ui/util/ImageRenderer.cpp

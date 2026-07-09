@@ -1,4 +1,5 @@
 #include "ui/dialogs/JumpNodeEditorDialog.h"
+#include <ui/util/DialogUndo.h>
 #include "ui/util/SignalBlockers.h"
 
 #include <QShortcut>
@@ -32,7 +33,9 @@ JumpNodeEditorDialog::JumpNodeEditorDialog(FredView* parent, EditorViewport* vie
 	  _model(new JumpNodeEditorDialogModel(this, viewport))
 {
 	this->setFocus();
+
 	ui->setupUi(this);
+	util::installMainStackUndoShortcuts(this, _fredView->mainUndoStack());
 
 	// F6 / Shift+F6 cycle to the next / previous jump node, mirroring the Next/Prev buttons.
 	auto* nextShortcut = new QShortcut(QKeySequence(Qt::Key_F6), this);

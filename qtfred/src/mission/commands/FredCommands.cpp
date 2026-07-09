@@ -1596,6 +1596,51 @@ void ApplyDialogCommand::redo()
 }
 
 // ---------------------------------------------------------------------------
+// DialogSnapshotCommand
+// ---------------------------------------------------------------------------
+
+DialogSnapshotCommand::DialogSnapshotCommand(QByteArray                             before,
+                                             QByteArray                             after,
+                                             std::function<void(const QByteArray&)> restore,
+                                             const QString&                         text,
+                                             bool                                   skipFirstRedo,
+                                             int                                    mergeId,
+                                             QUndoCommand*                          parent)
+	: QUndoCommand(text, parent)
+	, _before(std::move(before))
+	, _after(std::move(after))
+	, _restore(std::move(restore))
+	, _skipFirstRedo(skipFirstRedo)
+	, _mergeId(mergeId)
+{
+}
+
+void DialogSnapshotCommand::undo()
+{
+	_restore(_before);
+}
+
+void DialogSnapshotCommand::redo()
+{
+	if (_skipFirstRedo) {
+		_skipFirstRedo = false;
+		return;
+	}
+	_restore(_after);
+}
+
+bool DialogSnapshotCommand::mergeWith(const QUndoCommand* other)
+{
+	if (typeid(*other) != typeid(*this))
+		return false;
+	const auto* o = static_cast<const DialogSnapshotCommand*>(other);
+	if (_mergeId == -1 || o->_mergeId != _mergeId)
+		return false;
+	_after = o->_after;
+	return true;
+}
+
+// ---------------------------------------------------------------------------
 // SexpCueEditCommand
 // ---------------------------------------------------------------------------
 

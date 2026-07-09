@@ -1,4 +1,5 @@
 #include <QCloseEvent>
+#include <ui/util/DialogUndo.h>
 #include <QFocusEvent>
 #include <QKeyEvent>
 #include "GlobalShipFlagsDialog.h"
@@ -30,7 +31,9 @@ SCP_vector<BatchFlagCommand::ShipSnapshot> captureShipFlagSnapshots()
 GlobalShipFlagsDialog::GlobalShipFlagsDialog(FredView* parent, EditorViewport* viewport) :
 	QDialog(parent), _fredView(parent), _viewport(viewport),
 	ui(new Ui::GlobalShipFlagsDialog()), _model(new GlobalShipFlagsDialogModel(this, viewport)) {
+
     ui->setupUi(this);
+    util::installMainStackUndoShortcuts(this, _fredView->mainUndoStack());
 }
 GlobalShipFlagsDialog::~GlobalShipFlagsDialog() = default;
 

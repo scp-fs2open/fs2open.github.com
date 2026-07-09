@@ -1,4 +1,5 @@
 #include "BackgroundEditorDialog.h"
+#include <ui/util/DialogUndo.h>
 #include <QCloseEvent>
 #include "ui/util/default_dir.h"
 #include "ui/util/SignalBlockers.h"
@@ -79,7 +80,9 @@ BackgroundEditorDialog::BackgroundEditorDialog(FredView* parent, EditorViewport*
 	ui(new Ui::BackgroundEditor()), _model(new BackgroundEditorDialogModel(this, viewport)),
 	_viewport(viewport), _fredView(parent) {
 
+
 	ui->setupUi(this);
+	util::installMainStackUndoShortcuts(this, _fredView->mainUndoStack());
 
 	ui->skyboxEdit->setMaxLength(MAX_FILENAME_LEN - 1);
 	ui->envMapEdit->setMaxLength(MAX_FILENAME_LEN - 1);
