@@ -742,6 +742,29 @@ namespace FieldId {
     // Wave-file edits are message-scope snapshots (they can auto-select the
     // persona and head ani as a side effect); merge id is base + messageIndex.
     constexpr int Msg_SnapWave          = 500000;
+    // Campaign editor (in-dialog stack; file-scoped, no apply step)
+    constexpr int Camp_Name         = 6001;
+    constexpr int Camp_Description  = 6002;
+    constexpr int Camp_Type         = 6003;
+    constexpr int Camp_TechReset    = 6004;
+    constexpr int Camp_CustomData   = 6005;
+    constexpr int Camp_RetailFormat = 6006;
+    constexpr int Camp_ShipAllowed   = 700000; // + shipClassIndex
+    constexpr int Camp_WeaponAllowed = 710000; // + weaponClassIndex
+    // Per-mission fields: base + missionIndex * Camp_MissionFieldStride
+    constexpr int Camp_MissionFieldStride = 8;
+    constexpr int Camp_MissionCutscene    = 720000;
+    constexpr int Camp_MissionMainhall    = 720001;
+    constexpr int Camp_MissionSubMainhall = 720002;
+    constexpr int Camp_MissionPersona     = 720003;
+    constexpr int Camp_MissionNodePos     = 720004;
+    // Per-branch loop fields: base + (missionIndex * Camp_BranchesPerMission
+    // + branchIndex) * Camp_BranchFieldStride
+    constexpr int Camp_BranchesPerMission = 100;
+    constexpr int Camp_BranchFieldStride  = 4;
+    constexpr int Camp_LoopDescription    = 800000;
+    constexpr int Camp_LoopAnim           = 800001;
+    constexpr int Camp_LoopVoice          = 800002;
     // Briefing icon-edit snapshot merge ids (DialogSnapshotCommand): base +
     // (team * MAX_BRIEF_STAGES + stage) + firstSelectedIcon * 80, so edits to
     // a different stage or selection never merge.

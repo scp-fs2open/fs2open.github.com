@@ -4,8 +4,10 @@
 #include <QtWidgets/QMenuBar>
 #include <QListWidgetItem>
 #include <QTextDocument>
+#include <QUndoStack>
 
 #include <memory>
+#include <utility>
 
 #include "mission/dialogs/CampaignEditorDialogModel.h"
 #include "ui/widgets/sexp_tree_view.h"
@@ -68,6 +70,10 @@ class CampaignEditorDialog : public QMainWindow, public SexpTreeEditorInterface 
 	void on_graphView_addRepeatBranchRequested(int missionIndex);
 	void on_graphView_createMissionAtAndConnectRequested(QPointF sceneTopLeft, int fromIndex, bool isSpecial);
 	void on_graphView_setFirstMissionRequested(int missionIndex);
+	void on_graphView_branchConnectRequested(int fromIndex, int toIndex, bool isSpecial);
+	void on_graphView_endBranchConnectRequested(int fromIndex);
+	void on_graphView_nodeDragStarted(int missionIndex);
+	void on_graphView_nodeDragFinished(int missionIndex);
 
 	void on_briefCutsceneComboBox_currentIndexChanged(const QString& arg1);
 	void on_debriefingPersonaSpinBox_valueChanged(int arg1);
@@ -93,6 +99,32 @@ class CampaignEditorDialog : public QMainWindow, public SexpTreeEditorInterface 
 	std::unique_ptr<ICampaignEditorTreeOps> _treeOps;
 	std::unique_ptr<CampaignEditorDialogModel> _model;
 	EditorViewport* const _viewport;
+	FredView*       _fredView    = nullptr;
+	QUndoStack*     _dialogStack = nullptr;
+
+	// Running before-state for tree-edit snapshots: the tree mutates before
+	// modified() fires, so the cache holds the pre-edit capture.
+	QByteArray _workingStateCache;
+	bool _suppressTreeUndo = false;
+
+	// A branch delete is handled in two stages (the model work is queued to
+	// escape the widget's delete handler): the direct stage captures the
+	// pre-delete state and mutes the widget's trailing modified().
+	QByteArray _branchDeleteBefore;
+	bool _branchDeletePending = false;
+
+	// Node drag gesture bracket: pre-drag positions captured on drag start,
+	// keyed by mission index — a multi-select drag moves several nodes but
+	// only the node under the cursor emits nodeDragFinished.
+	SCP_map<int, std::pair<int, int>> _nodeDragBefore;
+
+	void onBranchTreeModified();
+	void pushWorkingStateSnapshot(const QByteArray& before, const QString& label);
+	void syncShipListItem(int shipClassIndex);
+	void syncWeaponListItem(int weaponClassIndex);
+	void refreshMainhallCombos();
+	bool doSave();
+	bool doSaveAs();
 
 	void initializeUi();
 	void updateUi();

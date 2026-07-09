@@ -50,6 +50,7 @@ add_file_folder("Source/Mission/Dialogs/State"
     src/mission/dialogs/state/DialogStateHelpers.h
     src/mission/dialogs/state/AsteroidEditorState.cpp
     src/mission/dialogs/state/BriefingEditorState.cpp
+    src/mission/dialogs/state/CampaignEditorState.cpp
     src/mission/dialogs/state/CommandBriefingState.cpp
     src/mission/dialogs/state/DebriefingState.cpp
     src/mission/dialogs/state/FictionViewerState.cpp
