@@ -643,9 +643,9 @@ BOOL CFREDDoc::OnOpenDocument(LPCTSTR pathname)
 	SCP_string created = The_mission.created;
 	CFileLocation res = cf_find_file_location(pathname, CF_TYPE_ANY);
 	time_t modified = res.m_time;
+	Assertion(res.found, "Couldn't find path '%s' even though parse_main() succeeded!", pathname);
 	if (!res.found)
 	{
-		UNREACHABLE("Couldn't find path '%s' even though parse_main() succeeded!", pathname);
 		created = "";	// prevent any backup check from succeeding so we just load the actual specified file
 	}
 

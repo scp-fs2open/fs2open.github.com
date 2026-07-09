@@ -804,7 +804,7 @@ bool control_config_remove_binding(int ctrl, selItem item, bool API_Access)
 
 	default:
 		// Coder forgot to add a case!
-		UNREACHABLE("Unhandled selItem case.");
+		UNREACHABLE("Unhandled selItem case: %i", static_cast<int>(item));
 	}
 
 	if (success)
@@ -3120,7 +3120,7 @@ void control_get_axes_readings(int *axis_v, float frame_time)
 			case CC_TYPE_AXIS_BTN_POS:
 			default:
 				//This should never happen, especially with the above Assertion. This is required as incomplete switches on an enum generate warnings
-				UNREACHABLE("Unhandled control item type");
+				UNREACHABLE("Unhandled control item type %d", static_cast<int>(item.type));
 				break;
 			}
 		}

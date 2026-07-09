@@ -157,7 +157,7 @@ int VoiceActingManager::exportSelectionToIndex(ExportSelection sel)
 	case ExportSelection::Messages:
 		return 4;
 	default:
-		Assertion(false, "Invalid export selection!");
+		UNREACHABLE("Invalid export selection %d!", static_cast<int>(sel));
 		return 0;
 	}
 }
@@ -170,7 +170,7 @@ int VoiceActingManager::suffixToIndex(Suffix s)
 		case Suffix::OGG:
 			return 1;
 		default:
-			Assertion(false, "Invalid file type selected!");
+			UNREACHABLE("Invalid file type %d selected!", static_cast<int>(s));
 			return 0;
 	}
 }
@@ -183,7 +183,7 @@ Suffix VoiceActingManager::indexToSuffix(int idx)
 		case 1:
 			return Suffix::OGG;
 		default:
-			Assertion(false, "Invalid file type selected!");
+			UNREACHABLE("Invalid file type %d selected", idx);
 			return Suffix::WAV;
 	}
 }

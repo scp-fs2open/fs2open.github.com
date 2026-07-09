@@ -52,7 +52,7 @@ void setOGLProperties(const os::ViewPortProperties& props)
 			profile = SDL_GL_CONTEXT_PROFILE_ES;
 			break;
 		default:
-			UNREACHABLE("Unhandled profile value!");
+			UNREACHABLE("Unhandled profile value %d!", static_cast<int>(props.gl_attributes.profile));
 			return;
 	}
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, profile);
@@ -131,7 +131,7 @@ class SDLWindowViewPort: public os::Viewport {
 				SDL_SetWindowFullscreen(_window, SDL_WINDOW_FULLSCREEN);
 				break;
 			default:
-				UNREACHABLE("Invalid window state!");
+				UNREACHABLE("Invalid window state %d!", static_cast<int>(state));
 				break;
 		}
 	}

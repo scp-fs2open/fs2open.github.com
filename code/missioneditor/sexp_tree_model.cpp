@@ -1093,7 +1093,7 @@ int SexpTreeModel::get_modify_variable_type(int parent) const
 			return OPF_AMBIGUOUS;
 		}
 	} else {
-		UNREACHABLE("get_modify_variable_type called for operator %d, which is neither modify-variable nor set-variable-by-index", op_const);
+		Assertion(false, "get_modify_variable_type called for operator %d, which is neither modify-variable nor set-variable-by-index", op_const);
 	}
 
 	// if we don't have a valid variable, allow replacement with anything
@@ -1109,7 +1109,7 @@ int SexpTreeModel::get_modify_variable_type(int parent) const
 	} else if (var_type & SEXP_VARIABLE_STRING) {
 		return OPF_AMBIGUOUS;
 	} else {
-		UNREACHABLE("Sexp variable '%s' has unrecognized type flags 0x%x", Sexp_variables[sexp_var_index].variable_name, var_type);
+		Assertion(false, "Sexp variable '%s' has unrecognized type flags 0x%x", Sexp_variables[sexp_var_index].variable_name, var_type);
 		return 0;
 	}
 }

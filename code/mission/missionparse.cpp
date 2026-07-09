@@ -8230,6 +8230,7 @@ int mission_set_arrival_location(anchor_t anchor, ArrivalLocation location, int 
 				vm_vec_negate(&rand_vec);
 		} else {
 			UNREACHABLE("Unknown location type discovered when trying to parse %s -- Please let an SCP coder know!", Ships[shipnum].ship_name);
+			rand_vec = vmd_zero_vector;
 		}
 
 		// add in the radius of the two ships involved.  This will make the ship arrive further than
@@ -8280,7 +8281,7 @@ void mission_parse_mark_reinforcement_available(const char *name)
 		return;
 	}
 
-	Assertion(false, "Reinforcement '%s' not found!", name);
+	Warning(LOCATION, "Reinforcement '%s' not found!", name);
 }
 
 /**

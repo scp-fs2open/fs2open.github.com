@@ -6029,7 +6029,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		case -1:	// Possible return value if -noparseerrors is used
 			break;
 		default:
-			UNREACHABLE("This should never happen.\n");	// Impossible return value from required_string_one_of.
+			UNREACHABLE("This should never happen");	// Impossible return value from required_string_one_of.
 		}
 	}
 
@@ -9171,7 +9171,7 @@ void wing_maybe_cleanup( wing *wingp, int team )
 						// TODO: I think this Int3() is triggered when a wing whose ships are all docked to ships of another
 						// wing departs.  It can be reliably seen in TVWP chapter 1 mission 7, when Torino and Iota wing depart.
 						// Not sure how to fix this. -- Goober5000
-						UNREACHABLE("A ship is still present even though its wing should be gone!");
+						Assertion(false, "A ship %s is still present even though its wing should be gone!", Ships[Objects[so->objnum].instance].ship_name);
 					}
 				}
 			}
@@ -14962,7 +14962,7 @@ bool ship_select_next_primary(object *objp, CycleDirection direction)
 	}
 	else if ( swp->num_primary_banks > MAX_SHIP_PRIMARY_BANKS )
 	{
-		UNREACHABLE("The ship %s has more primary banks than the maximum!", shipp->ship_name);
+		Assertion(false, "The ship %s has more primary banks than the maximum!", shipp->ship_name);
 		return false;
 	}
 
@@ -15267,8 +15267,8 @@ int get_available_secondary_weapons(object *objp, int *outlist, int *outbanklist
 				weapon_range_max = wepp->weapon_range;
 				//If weapon range is not set in the weapon info, derive it
 				if (weapon_range_max >= WEAPON_DEFAULT_TABLED_MAX_RANGE) {
+					Assertion(!wepp->is_beam(), "Since when do we have a beam that is a secondary weapon?");
 					if (wepp->is_beam()) {
-						UNREACHABLE("Since when do we have a beam that is a secondary weapon?");
 						weapon_range_max = wepp->b_info.range;
 					}
 					else {
@@ -22339,7 +22339,7 @@ bool ship::is_arriving(ship::warpstage stage, bool dock_leader_or_single) const
 	}
 
 	// should never reach here
-	Assertion(false, "ship::is_arriving didn't handle all possible states; get a coder!");
+	UNREACHABLE("ship::is_arriving didn't handle all possible states; get a coder!");
 	return false;
 }
 

@@ -228,7 +228,7 @@ bool Decal::isValid() const  {
 			return false;
 		}
 	} else {
-		Assertion(false, "Only ships are currently supported for decals!");
+		UNREACHABLE("Only ships are currently supported for decals!");
 		return false;
 	}
 

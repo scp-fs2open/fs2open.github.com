@@ -1253,7 +1253,7 @@ void ai_add_goal_sub_sexp( int sexp, ai_goal_type type, ai_info *aip, ai_goal *a
 		} else if ( op == OP_AI_IGNORE_NEW ) {
 			aigp->ai_mode = AI_GOAL_IGNORE_NEW;
 		} else
-			UNREACHABLE("Coding error: unhandled AI goal in ai_add_goal_sub_sexp!");
+			UNREACHABLE("Coding error: unhandled AI goal %d in ai_add_goal_sub_sexp!", op);
 
 		break;
 
@@ -2056,7 +2056,7 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 			if (target_ship_entry->shipp()->subsys_info[SUBSYSTEM_TURRET].type_count == 0)
 				return ai_achievability::NOT_ACHIEVABLE;
 		} else {
-			UNREACHABLE("Target name %s is not an arrived ship!", aigp->target_name);
+			Assertion(false, "Target name %s is not an arrived ship!", aigp->target_name);
 			return ai_achievability::NOT_ACHIEVABLE;			// force this goal to be invalid
 		}
 	}
@@ -2105,8 +2105,8 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 			return ai_achievability::NOT_KNOWN;
 
 		// we must also determine if we're prevented from docking for any reason
+		Assertion(target_ship_entry && target_ship_entry->has_shipp(), "Target name %s is not an arrived ship!", aigp->target_name);
 		if (!target_ship_entry || !target_ship_entry->has_shipp()) {
-			UNREACHABLE("Target name %s is not an arrived ship!", aigp->target_name);
 			return ai_achievability::NOT_ACHIEVABLE;			// force this goal to be invalid
 		}
 		auto goal_objp = target_ship_entry->objp();
@@ -2163,7 +2163,7 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 				if (aip->goal_objnum != target_ship_entry->objnum)
 					return ai_achievability::NOT_KNOWN;
 			} else {
-				UNREACHABLE("Target name %s is not an arrived ship!", aigp->target_name);
+				Assertion(false, "Target name %s is not an arrived ship!", aigp->target_name);
 				return ai_achievability::NOT_ACHIEVABLE;			// force this goal to be invalid
 			}
 		}
@@ -2177,14 +2177,14 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 				aigp->ai_submode = ship_find_subsys( target_ship_entry->shipp(), aigp->docker.name );
 				aigp->flags.remove(AI::Goal_Flags::Subsys_needs_fixup);
 			} else {
-				UNREACHABLE("Target name %s is not an arrived ship!", aigp->target_name);
+				Assertion(false, "Target name %s is not an arrived ship!", aigp->target_name);
 				return ai_achievability::NOT_ACHIEVABLE;			// force this goal to be invalid
 			}
 		}
 	} else if ( ((aigp->ai_mode == AI_GOAL_IGNORE) || (aigp->ai_mode == AI_GOAL_IGNORE_NEW)) && (status == SHIP_STATUS_ARRIVED) ) {
 		// for ignoring a ship, call the ai_ignore object function, then declare the goal satisfied
+		Assertion(target_ship_entry && target_ship_entry->has_objp(), "Target name %s is not an arrived ship!", aigp->target_name);
 		if (!target_ship_entry || !target_ship_entry->has_objp()) {
-			UNREACHABLE("Target name %s is not an arrived ship!", aigp->target_name);
 			return ai_achievability::NOT_ACHIEVABLE;			// force this goal to be invalid
 		}
 		auto ignored = target_ship_entry->objp();
@@ -2233,16 +2233,16 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 		{
 			// short circuit a couple of cases.  Ship not arrived shouldn't happen.  Ship gone means
 			// we mark the goal as not achievable.
+			Assertion(status != SHIP_STATUS_NOT_ARRIVED, "Ship %s cannot rearm a target %s that hasn't arrived; get Allender or a SCP member", shipp->ship_name, aigp->target_name);	// get Allender.  this shouldn't happen!!!
 			if ( status == SHIP_STATUS_NOT_ARRIVED ) {
-				UNREACHABLE("Ship %s cannot rearm a target %s that hasn't arrived; get Allender or a SCP member", shipp->ship_name, aigp->target_name);	// get Allender.  this shouldn't happen!!!
 				return ai_achievability::NOT_ACHIEVABLE;
 			}
 
 			if ( status == SHIP_STATUS_GONE )
 				return ai_achievability::NOT_ACHIEVABLE;
 
+			Assertion(target_ship_entry && target_ship_entry->has_shipp(), "Target name %s is not an arrived ship!", aigp->target_name);
 			if ( !target_ship_entry || !target_ship_entry->has_shipp() ) {
-				UNREACHABLE("Target name %s is not an arrived ship!", aigp->target_name);
 				return ai_achievability::NOT_ACHIEVABLE;
 			}
 

@@ -747,7 +747,7 @@ static particle::ParticleEffectHandle convertLegacyPspewBuffer(const pspew_legac
 			absolutePositionVelocityInherit = true;
 			break;
 		default:
-			UNREACHABLE("Invalid PSPEW legacy type!");
+			UNREACHABLE("Invalid PSPEW legacy type %d!", pspew_buffer.particle_spew_type);
 	}
 
 	return particle::ParticleManager::get()->addEffect(particle::ParticleEffect(
@@ -5260,7 +5260,8 @@ void weapon_level_init()
 					case LockRestrictionType::CLASS: idx = ship_info_lookup(name); break;
 					case LockRestrictionType::SPECIES: idx = species_info_lookup(name); break;
 					case LockRestrictionType::IFF: idx = iff_lookup(name); break;
-					default: Assertion(false, "Unknown multi lock restriction type %d", (int)pair.first);
+					default:
+						UNREACHABLE("Unknown multi lock restriction type %d", static_cast<int>(pair.first));
 						idx = -1;
 				}
 				if ( idx >= 0 ) {

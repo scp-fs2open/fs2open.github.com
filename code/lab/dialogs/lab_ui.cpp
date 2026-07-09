@@ -1202,7 +1202,7 @@ void LabUi::maybe_show_animation_category(const SCP_vector<animation::ModelAnima
 						break;
 					default:
 						// We really shouldn't be here, but just in case
-						Assertion(false, "Unexpected animation trigger type %d", static_cast<int>(trigger_type));
+						UNREACHABLE("Unexpected animation trigger type %d", static_cast<int>(trigger_type));
 						button_label += "Trigger Animation " + std::to_string(count++);
 						break;
 					}

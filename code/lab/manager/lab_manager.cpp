@@ -353,7 +353,7 @@ void LabManager::onFrame(float frametime) {
 						break;
 					}
 					default:
-						Assertion(false, "Invalid Lab Turret Aim Type!");
+						UNREACHABLE("Invalid Lab Turret Aim Type %d!", static_cast<int>(mode));
 						break;
 				}
 
@@ -843,7 +843,7 @@ void LabManager::changeDisplayedObject(LabMode mode, int info_index, int subtype
 		break;
 	}
 	default:
-		UNREACHABLE("Unhandled lab mode %d", (int)mode);
+		UNREACHABLE("Unhandled lab mode %d", static_cast<int>(mode));
 		ModelFilename = "";
 		break;
 	}
