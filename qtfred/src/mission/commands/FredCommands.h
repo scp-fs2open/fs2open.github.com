@@ -773,6 +773,29 @@ namespace FieldId {
     constexpr int Camp_LoopDescription    = 800000;
     constexpr int Camp_LoopAnim           = 800001;
     constexpr int Camp_LoopVoice          = 800002;
+    // Variable editor (in-dialog stack): index-strided per-variable and
+    // per-container ranges. The persistence/network/eternal commands track
+    // the whole flags word since the bits interact (persistence None clears
+    // Eternal); distinct field constants keep different controls from
+    // merging with each other.
+    constexpr int Var_FieldStride  = 8;
+    constexpr int Var_Name         = 850000; // + variableIndex * Var_FieldStride
+    constexpr int Var_Value        = 850001;
+    constexpr int Var_Persistence  = 850002;
+    constexpr int Var_Network      = 850003;
+    constexpr int Var_Eternal      = 850004;
+    constexpr int Cont_FieldStride = 8;
+    constexpr int Cont_Name        = 860000; // + containerIndex * Cont_FieldStride
+    constexpr int Cont_KeyType     = 860001;
+    constexpr int Cont_Persistence = 860002;
+    constexpr int Cont_Network     = 860003;
+    constexpr int Cont_Eternal     = 860004;
+    // Container item cells: base + containerIndex * Item_ContainerStride
+    // + itemIndex (list values and map values; map keys are snapshots
+    // because editing one re-sorts the map)
+    constexpr int Item_ContainerStride = 2048;
+    constexpr int Item_ListValue       = 900000;  // containers 0–97
+    constexpr int Item_MapValue        = 1100000; // containers 0–97
     // Briefing icon-edit snapshot merge ids (DialogSnapshotCommand): base +
     // (team * MAX_BRIEF_STAGES + stage) + firstSelectedIcon * 80, so edits to
     // a different stage or selection never merge.

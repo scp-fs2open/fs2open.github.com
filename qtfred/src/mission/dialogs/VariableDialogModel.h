@@ -39,6 +39,12 @@ class VariableDialogModel : public AbstractDialogModel {
 	QByteArray captureState() const override;
 	void restoreState(const QByteArray& state) override;
 
+	// Working-state serialization for the in-dialog undo stack: variables,
+	// containers, and the deleted-variables bookkeeping (so undoing a delete
+	// also unmarks the apply-time removal).
+	QByteArray captureWorkingState() const;
+	void restoreWorkingState(const QByteArray& state);
+
 	// High Level Getters
 	const SCP_vector<VariableInfo>& getVariables() const;
 	const SCP_vector<ContainerInfo>& getContainers() const;
@@ -61,6 +67,9 @@ class VariableDialogModel : public AbstractDialogModel {
 	void setVariableEternal(int index, bool enabled);
 	int getVariablePersistenceType(int index) const;
 	void setVariablePersistenceType(int index, int type);
+	// Raw flags-word setter for undo commands: persistence, network, and
+	// eternal live in one word whose bits interact.
+	void setVariableFlagsAt(int index, int flags);
 
 	// Containers
 	void addNewContainer();
@@ -82,6 +91,7 @@ class VariableDialogModel : public AbstractDialogModel {
 	void setContainerEternal(int index, bool enabled);
 	int getContainerPersistenceType(int index) const;
 	void setContainerPersistenceType(int index, int type);
+	void setContainerFlagsAt(int index, int flags);
 
 	// Container Lists
 	void addListItem(int containerIndex);

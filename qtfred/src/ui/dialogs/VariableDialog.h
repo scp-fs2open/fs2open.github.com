@@ -28,7 +28,6 @@ class VariableDialog : public QDialog {
   protected:
 	void closeEvent(QCloseEvent* e) override; // funnel all Window X presses through reject()
 	void changeEvent(QEvent* e) override;     // recolor rows on palette/theme change
-	void focusInEvent(QFocusEvent* e) override;
 
   private slots:
 	// Dialog Controls
@@ -105,6 +104,13 @@ class VariableDialog : public QDialog {
 
 	void initializeUi();
 	void updateUi();
+
+	void pushWorkingStateSnapshot(const QByteArray& before, const QString& label);
+	void changeContainerKeyType(bool keys_are_strings);
+	// The persistence/network/eternal bits interact, so their commands track
+	// the whole flags word; beforeFlags is read before the live setter runs.
+	void pushVariableFlagsCommand(int index, int fieldConst, const QString& label, int beforeFlags);
+	void pushContainerFlagsCommand(int index, int fieldConst, const QString& label, int beforeFlags);
 
 	// Returns a theme-aware background color: blue-ish for blue_type=true, orange-ish for blue_type=false
 	static QColor rowTypeColor(bool blue_type);

@@ -134,4 +134,120 @@ void VariableDialogModel::restoreState(const QByteArray& state)
 	update_sexp_containers(new_containers, renames);
 }
 
+// ---------------------------------------------------------------------------
+// Working-state capture/restore for the in-dialog undo stack: the WIP
+// variable and container lists plus the deleted-variables bookkeeping.
+// ---------------------------------------------------------------------------
+
+static void writeStringVector(QDataStream& ds, const SCP_vector<SCP_string>& v)
+{
+	ds << static_cast<qint32>(v.size());
+	for (const auto& s : v)
+		ds << QString::fromStdString(s);
+}
+
+static void readStringVector(QDataStream& ds, SCP_vector<SCP_string>& v)
+{
+	v.clear();
+	qint32 count;
+	ds >> count;
+	v.reserve(count);
+	for (int i = 0; i < count; ++i) {
+		QString s;
+		ds >> s;
+		v.push_back(s.toStdString());
+	}
+}
+
+QByteArray VariableDialogModel::captureWorkingState() const
+{
+	QByteArray data;
+	QDataStream ds(&data, QIODevice::WriteOnly);
+
+	ds << static_cast<qint32>(m_variables.size());
+	for (const auto& var : m_variables) {
+		ds << QString::fromStdString(var.name);
+		ds << QString::fromStdString(var.originalName);
+		ds << static_cast<quint8>(var.is_string ? 1 : 0);
+		ds << static_cast<qint32>(var.flags);
+		ds << static_cast<qint32>(var.numberValue);
+		ds << QString::fromStdString(var.stringValue);
+	}
+
+	ds << static_cast<qint32>(m_containers.size());
+	for (const auto& cont : m_containers) {
+		ds << QString::fromStdString(cont.name);
+		ds << QString::fromStdString(cont.originalName);
+		ds << static_cast<quint8>(cont.is_list ? 1 : 0);
+		ds << static_cast<quint8>(cont.values_are_strings ? 1 : 0);
+		ds << static_cast<quint8>(cont.keys_are_strings ? 1 : 0);
+		ds << static_cast<qint32>(cont.flags);
+		writeStringVector(ds, cont.keys);
+		ds << static_cast<qint32>(cont.numberValues.size());
+		for (int val : cont.numberValues)
+			ds << static_cast<qint32>(val);
+		writeStringVector(ds, cont.stringValues);
+	}
+
+	writeStringVector(ds, m_deleted_variables);
+
+	return data;
+}
+
+void VariableDialogModel::restoreWorkingState(const QByteArray& state)
+{
+	QDataStream ds(state);
+
+	qint32 varCount;
+	ds >> varCount;
+	m_variables.clear();
+	m_variables.reserve(varCount);
+	for (int i = 0; i < varCount; ++i) {
+		auto& var = m_variables.emplace_back();
+		QString name, originalName, stringValue;
+		quint8 isString;
+		qint32 flags, numberValue;
+		ds >> name >> originalName >> isString >> flags >> numberValue >> stringValue;
+		var.name         = name.toStdString();
+		var.originalName = originalName.toStdString();
+		var.is_string    = (isString != 0);
+		var.flags        = static_cast<int>(flags);
+		var.numberValue  = static_cast<int>(numberValue);
+		var.stringValue  = stringValue.toStdString();
+	}
+
+	qint32 contCount;
+	ds >> contCount;
+	m_containers.clear();
+	m_containers.reserve(contCount);
+	for (int i = 0; i < contCount; ++i) {
+		auto& cont = m_containers.emplace_back();
+		QString name, originalName;
+		quint8 isList, valuesAreStrings, keysAreStrings;
+		qint32 flags;
+		ds >> name >> originalName >> isList >> valuesAreStrings >> keysAreStrings >> flags;
+		cont.name               = name.toStdString();
+		cont.originalName       = originalName.toStdString();
+		cont.is_list            = (isList != 0);
+		cont.values_are_strings = (valuesAreStrings != 0);
+		cont.keys_are_strings   = (keysAreStrings != 0);
+		cont.flags              = static_cast<int>(flags);
+		readStringVector(ds, cont.keys);
+		qint32 numCount;
+		ds >> numCount;
+		cont.numberValues.clear();
+		cont.numberValues.reserve(numCount);
+		for (int j = 0; j < numCount; ++j) {
+			qint32 val;
+			ds >> val;
+			cont.numberValues.push_back(static_cast<int>(val));
+		}
+		readStringVector(ds, cont.stringValues);
+	}
+
+	readStringVector(ds, m_deleted_variables);
+
+	set_modified();
+}
+
 } // namespace fso::fred::dialogs

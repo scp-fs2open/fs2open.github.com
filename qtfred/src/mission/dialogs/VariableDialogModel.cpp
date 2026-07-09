@@ -572,6 +572,14 @@ void VariableDialogModel::setVariablePersistenceType(int index, int type)
 	modify(m_variables[index].flags, flags);
 }
 
+void VariableDialogModel::setVariableFlagsAt(int index, int flags)
+{
+	if (!SCP_vector_inbounds(m_variables, index)) {
+		return;
+	}
+	modify(m_variables[index].flags, flags);
+}
+
 void VariableDialogModel::addNewContainer()
 {
 	ContainerInfo new_cont;
@@ -868,6 +876,14 @@ void VariableDialogModel::setContainerPersistenceType(int index, int type)
 		// If persistence is set to "None", the "Eternal" flag must also be cleared.
 		flags &= ~SEXP_VARIABLE_SAVE_TO_PLAYER_FILE;
 		break;
+	}
+	modify(m_containers[index].flags, flags);
+}
+
+void VariableDialogModel::setContainerFlagsAt(int index, int flags)
+{
+	if (!SCP_vector_inbounds(m_containers, index)) {
+		return;
 	}
 	modify(m_containers[index].flags, flags);
 }
