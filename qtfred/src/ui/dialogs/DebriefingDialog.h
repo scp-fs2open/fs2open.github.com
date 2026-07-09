@@ -27,7 +27,6 @@ public:
 
   protected:
 	void closeEvent(QCloseEvent* e) override; // funnel all Window X presses through reject()
-	void focusInEvent(QFocusEvent* e) override;
 
 private slots:
 	// dialog controls
@@ -66,5 +65,11 @@ private: // NOLINT(readability-redundant-access-specifiers)
 	void initializeUi();
 	void updateUi();
 	void enableDisableControls();
+
+	// In-dialog undo helpers. Tree edits and stage-structure ops go through
+	// working-state snapshots; field edits push merging FieldEditCommands.
+	void onFormulaTreeModified();
+	void pushWorkingStateSnapshot(const QByteArray& before, const QString& label);
+	void changeVoiceFilename(const SCP_string& newFilename);
 };
 } // namespace fso::fred::dialogs

@@ -1,8 +1,11 @@
 #include "DebriefingDialogModel.h"
+#include "state/DialogStateHelpers.h"
 #include "mission/missionparse.h"
 #include "gamesnd/eventmusic.h"
 #include "parse/sexp.h"
 #include "sound/audiostr.h"
+#include <QDataStream>
+#include <QIODevice>
 #include <QMessageBox>
 
 namespace fso::fred::dialogs {
@@ -85,6 +88,71 @@ void DebriefingDialogModel::initializeData()
 	_currentTeam = 0;
 	_currentStage = 0;
 	_modified = false;
+}
+
+QByteArray DebriefingDialogModel::captureWorkingState() const
+{
+	QByteArray data;
+	QDataStream ds(&data, QIODevice::WriteOnly);
+
+	for (const auto& deb : _wipDebriefing) {
+		ds << static_cast<qint32>(deb.num_stages);
+		for (const auto& stage : deb.stages) {
+			fso::fred::state::writeSexp(ds, stage.formula);
+			ds << QString::fromStdString(stage.text);
+			ds << QString::fromLatin1(stage.voice);
+			ds << QString::fromStdString(stage.recommendation_text);
+		}
+		// Not editable in this dialog, but Copy To Other Teams overwrites it,
+		// so it must round-trip for that snapshot to restore fully.
+		for (const auto& background : deb.background)
+			ds << QString::fromLatin1(background);
+	}
+
+	ds << static_cast<qint32>(_successMusic);
+	ds << static_cast<qint32>(_averageMusic);
+	ds << static_cast<qint32>(_failureMusic);
+	ds << static_cast<qint32>(_currentTeam);
+	ds << static_cast<qint32>(_currentStage);
+
+	return data;
+}
+
+void DebriefingDialogModel::restoreWorkingState(const QByteArray& state)
+{
+	QDataStream ds(state);
+
+	for (auto& deb : _wipDebriefing) {
+		qint32 numStages;
+		ds >> numStages;
+		deb.num_stages = static_cast<int>(numStages);
+		for (auto& stage : deb.stages) {
+			fso::fred::state::freeSexpFormula(stage.formula);
+			stage.formula = fso::fred::state::readSexp(ds);
+			QString text, voice, rec;
+			ds >> text >> voice >> rec;
+			stage.text = text.toStdString();
+			strncpy(stage.voice, voice.toLatin1().constData(), MAX_FILENAME_LEN - 1);
+			stage.voice[MAX_FILENAME_LEN - 1] = '\0';
+			stage.recommendation_text = rec.toStdString();
+		}
+		for (auto& background : deb.background) {
+			QString bg;
+			ds >> bg;
+			strncpy(background, bg.toLatin1().constData(), MAX_FILENAME_LEN - 1);
+			background[MAX_FILENAME_LEN - 1] = '\0';
+		}
+	}
+
+	qint32 success, average, failure, team, stage;
+	ds >> success >> average >> failure >> team >> stage;
+	_successMusic = static_cast<int>(success);
+	_averageMusic = static_cast<int>(average);
+	_failureMusic = static_cast<int>(failure);
+	_currentTeam  = static_cast<int>(team);
+	_currentStage = static_cast<int>(stage);
+
+	set_modified();
 }
 
 void DebriefingDialogModel::commitCurrentFormula()
@@ -360,6 +428,28 @@ void DebriefingDialogModel::setSpeechFilename(const SCP_string& speechFilename)
 int DebriefingDialogModel::getFormula() const
 {
 	return _wipDebriefing[_currentTeam].stages[_currentStage].formula;
+}
+
+void DebriefingDialogModel::setStageTextAt(int team, int stage, const SCP_string& text)
+{
+	if (team < 0 || team >= MAX_TVT_TEAMS || stage < 0 || stage >= MAX_DEBRIEF_STAGES)
+		return;
+	modify(_wipDebriefing[team].stages[stage].text, text);
+}
+
+void DebriefingDialogModel::setRecommendationTextAt(int team, int stage, const SCP_string& text)
+{
+	if (team < 0 || team >= MAX_TVT_TEAMS || stage < 0 || stage >= MAX_DEBRIEF_STAGES)
+		return;
+	modify(_wipDebriefing[team].stages[stage].recommendation_text, text);
+}
+
+void DebriefingDialogModel::setSpeechFilenameAt(int team, int stage, const SCP_string& speechFilename)
+{
+	if (team < 0 || team >= MAX_TVT_TEAMS || stage < 0 || stage >= MAX_DEBRIEF_STAGES)
+		return;
+	strcpy_s(_wipDebriefing[team].stages[stage].voice, speechFilename.c_str());
+	set_modified();
 }
 
 SCP_vector<SCP_string> DebriefingDialogModel::getMusicList()
