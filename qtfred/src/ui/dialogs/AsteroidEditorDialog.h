@@ -5,6 +5,8 @@
 #include <mission/dialogs/AsteroidEditorDialogModel.h>
 #include <ui/FredView.h>
 
+class QLineEdit;
+
 namespace fso::fred::dialogs {
 
 namespace Ui {
@@ -23,7 +25,6 @@ public:
 
 protected:
 	void closeEvent(QCloseEvent* e) override; // funnel all Window X presses through reject()
-	void focusInEvent(QFocusEvent*) override;
 
 // Utilize Qt's "slots" feature to automatically connect UI elements to functions with less code in the initializer
 // As a benefit this also requires zero manual signal setup in the .ui file (which is less obvious to those unfamiliar with Qt)
@@ -70,6 +71,11 @@ private slots:
 private: // NOLINT(readability-redundant-access-specifiers)
 	void initializeUi();
 	void updateUi();
+
+	// Shared by the twelve bound-box edits: applies the text and pushes one
+	// merging command per box field that also restores the line edit on undo.
+	void changeBoxText(QLineEdit* edit, AsteroidEditorDialogModel::_box_line_edits type, const QString& text);
+	void changeFieldType(field_type_t type, debris_genre_t genre);
 
 	// Boilerplate
 	EditorViewport* _viewport    = nullptr;

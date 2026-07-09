@@ -75,6 +75,11 @@ public:
 
 	QVector<std::pair<QString, bool>> getShipSelections();
 	void setShipSelections(const QVector<bool>& selected);
+	// Resolved target-name list — the undoable form of the ship selection.
+	// The checkbox bitmap is only meaningful against the ship list captured
+	// when the subdialog opened, which can change while the editor is open.
+	const SCP_vector<SCP_string>& getShipTargetNames() const { return _field_target_names; }
+	void setShipTargetNames(const SCP_vector<SCP_string>& names);
 
 private:
 

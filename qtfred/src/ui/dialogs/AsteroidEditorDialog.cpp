@@ -7,7 +7,9 @@
 #include "ui_AsteroidEditorDialog.h"
 #include <mission/util.h>
 #include <mission/commands/FredCommands.h>
-#include <QFocusEvent>
+#include <ui/util/DialogUndo.h>
+
+#include <utility>
 
 namespace fso::fred::dialogs {
 
@@ -24,6 +26,7 @@ AsteroidEditorDialog::AsteroidEditorDialog(FredView *parent, EditorViewport* vie
 
 	_dialogStack = new QUndoStack(this);
 	_fredView->undoGroup()->addStack(_dialogStack);
+	util::setupDialogUndo(this, _fredView->undoGroup(), _dialogStack, tr("Asteroid Field"));
 
 	// set our internal values, update the UI
 	initializeUi();
@@ -95,11 +98,6 @@ void AsteroidEditorDialog::closeEvent(QCloseEvent* e)
 	}
 }
 
-void AsteroidEditorDialog::focusInEvent(QFocusEvent* e)
-{
-	_fredView->undoGroup()->setActiveStack(_dialogStack);
-	QDialog::focusInEvent(e);
-}
 
 void AsteroidEditorDialog::initializeUi()
 {
@@ -212,122 +210,255 @@ void AsteroidEditorDialog::on_okAndCancelButtons_rejected()
 
 void AsteroidEditorDialog::on_enabled_toggled(bool enabled)
 {
+	const bool before = _model->getFieldEnabled();
+	if (before == enabled) {
+		return;
+	}
+
 	_model->setFieldEnabled(enabled);
 	updateUi();
+
+	auto* cmd = new FieldEditCommand<bool>(FieldId::Ast_FieldEnabled, nullptr, tr("Toggle Asteroid Field"), true);
+	cmd->addEntry(before, enabled, [this](const bool& v) {
+		_model->setFieldEnabled(v);
+		QSignalBlocker blocker(ui->enabled);
+		ui->enabled->setChecked(v);
+		updateUi();
+	});
+	_dialogStack->push(cmd);
 }
 
 void AsteroidEditorDialog::on_innerBoxEnabled_toggled(bool enabled)
 {
+	const bool before = _model->getInnerBoxEnabled();
+	if (before == enabled) {
+		return;
+	}
+
 	_model->setInnerBoxEnabled(enabled);
 	updateUi();
+
+	auto* cmd = new FieldEditCommand<bool>(FieldId::Ast_InnerEnabled, nullptr, tr("Toggle Inner Box"), true);
+	cmd->addEntry(before, enabled, [this](const bool& v) {
+		_model->setInnerBoxEnabled(v);
+		QSignalBlocker blocker(ui->innerBoxEnabled);
+		ui->innerBoxEnabled->setChecked(v);
+		updateUi();
+	});
+	_dialogStack->push(cmd);
 }
 
 void AsteroidEditorDialog::on_enhancedFieldEnabled_toggled(bool enabled)
 {
+	const bool before = _model->getEnhancedEnabled();
+	if (before == enabled) {
+		return;
+	}
+
 	_model->setEnhancedEnabled(enabled);
+
+	auto* cmd = new FieldEditCommand<bool>(FieldId::Ast_Enhanced, nullptr, tr("Toggle Enhanced Field"), true);
+	cmd->addEntry(before, enabled, [this](const bool& v) {
+		_model->setEnhancedEnabled(v);
+		QSignalBlocker blocker(ui->enhancedFieldEnabled);
+		ui->enhancedFieldEnabled->setChecked(v);
+	});
+	_dialogStack->push(cmd);
+}
+
+// Field type and debris genre change together (an active field forces the
+// asteroid genre), so the radio commands track the (type, genre) pair.
+void AsteroidEditorDialog::changeFieldType(field_type_t type, debris_genre_t genre)
+{
+	const std::pair<int, int> before{_model->getFieldType(), _model->getDebrisGenre()};
+	const std::pair<int, int> after{type, genre};
+	if (before == after) {
+		return;
+	}
+
+	_model->setFieldType(type);
+	_model->setDebrisGenre(genre);
+	updateUi();
+
+	auto* cmd = new FieldEditCommand<std::pair<int, int>>(FieldId::Ast_FieldType, nullptr, tr("Change Field Type"), true);
+	cmd->addEntry(before, after, [this](const std::pair<int, int>& v) {
+		_model->setFieldType(static_cast<field_type_t>(v.first));
+		_model->setDebrisGenre(static_cast<debris_genre_t>(v.second));
+		QSignalBlocker blockActive(ui->radioButtonActiveField);
+		QSignalBlocker blockPassive(ui->radioButtonPassiveField);
+		ui->radioButtonActiveField->setChecked(v.first == FT_ACTIVE);
+		ui->radioButtonPassiveField->setChecked(v.first == FT_PASSIVE);
+		updateUi();
+	});
+	_dialogStack->push(cmd);
 }
 
 void AsteroidEditorDialog::on_radioButtonActiveField_toggled(bool checked)
 {
 	if (checked) {
-		_model->setFieldType(FT_ACTIVE);
-		_model->setDebrisGenre(DG_ASTEROID); // only allow asteroids in active fields
-		updateUi();
+		changeFieldType(FT_ACTIVE, DG_ASTEROID); // only allow asteroids in active fields
 	}
 }
 
 void AsteroidEditorDialog::on_radioButtonPassiveField_toggled(bool checked)
 {
 	if (checked) {
-		_model->setFieldType(FT_PASSIVE);
-		updateUi();
+		changeFieldType(FT_PASSIVE, _model->getDebrisGenre());
 	}
 }
 
 void AsteroidEditorDialog::on_radioButtonAsteroid_toggled(bool checked)
 {
-	if (checked) {
+	if (checked && _model->getDebrisGenre() != DG_ASTEROID) {
 		_model->setDebrisGenre(DG_ASTEROID);
 		updateUi();
+
+		auto* cmd = new FieldEditCommand<int>(FieldId::Ast_DebrisGenre, nullptr, tr("Change Debris Genre"), true);
+		cmd->addEntry(DG_DEBRIS, DG_ASTEROID, [this](const int& v) {
+			_model->setDebrisGenre(static_cast<debris_genre_t>(v));
+			updateUi(); // re-checks the genre radios
+		});
+		_dialogStack->push(cmd);
 	}
 }
 
 void AsteroidEditorDialog::on_radioButtonDebris_toggled(bool checked)
 {
-	if (checked) {
+	if (checked && _model->getDebrisGenre() != DG_DEBRIS) {
 		_model->setDebrisGenre(DG_DEBRIS);
 		updateUi();
+
+		auto* cmd = new FieldEditCommand<int>(FieldId::Ast_DebrisGenre, nullptr, tr("Change Debris Genre"), true);
+		cmd->addEntry(DG_ASTEROID, DG_DEBRIS, [this](const int& v) {
+			_model->setDebrisGenre(static_cast<debris_genre_t>(v));
+			updateUi(); // re-checks the genre radios
+		});
+		_dialogStack->push(cmd);
 	}
 }
 
 void AsteroidEditorDialog::on_spinBoxNumber_valueChanged(int num_asteroids)
 {
+	const int before = _model->getNumAsteroids();
+	if (before == num_asteroids) {
+		return;
+	}
+
 	_model->setNumAsteroids(num_asteroids);
+
+	auto* cmd = new FieldEditCommand<int>(FieldId::Ast_NumAsteroids, nullptr, tr("Change Asteroid Count"), true);
+	cmd->addEntry(before, num_asteroids, [this](const int& v) {
+		_model->setNumAsteroids(v);
+		QSignalBlocker blocker(ui->spinBoxNumber);
+		ui->spinBoxNumber->setValue(v);
+	});
+	_dialogStack->push(cmd);
 }
 
 void AsteroidEditorDialog::on_lineEditAvgSpeed_textEdited(const QString& text)
 {
+	const QString before = _model->getAvgSpeed();
+	if (before == text) {
+		return;
+	}
+
 	_model->setAvgSpeed(text);
+
+	auto* cmd = new FieldEditCommand<QString>(FieldId::Ast_AvgSpeed, nullptr, tr("Change Average Speed"), true);
+	cmd->addEntry(before, text, [this](const QString& v) {
+		_model->setAvgSpeed(v);
+		// textEdited does not fire for programmatic setText
+		ui->lineEditAvgSpeed->setText(v);
+	});
+	_dialogStack->push(cmd);
+}
+
+void AsteroidEditorDialog::changeBoxText(QLineEdit* edit, AsteroidEditorDialogModel::_box_line_edits type, const QString& text)
+{
+	const QString before = _model->getBoxText(type);
+	if (before == text) {
+		return;
+	}
+
+	_model->setBoxText(text, type);
+
+	auto* cmd = new FieldEditCommand<QString>(FieldId::Ast_Box + type, nullptr, tr("Change Field Bounds"), true);
+	cmd->addEntry(before, text, [this, edit, type](const QString& v) {
+		_model->setBoxText(v, type);
+		// textEdited does not fire for programmatic setText
+		edit->setText(v);
+	});
+	_dialogStack->push(cmd);
 }
 
 void AsteroidEditorDialog::on_lineEdit_obox_minX_textEdited(const QString& text)
 {
-	_model->setBoxText(text, AsteroidEditorDialogModel::_O_MIN_X);
+	changeBoxText(ui->lineEdit_obox_minX, AsteroidEditorDialogModel::_O_MIN_X, text);
 }
 
 void AsteroidEditorDialog::on_lineEdit_obox_minY_textEdited(const QString& text)
 {
-	_model->setBoxText(text, AsteroidEditorDialogModel::_O_MIN_Y);
+	changeBoxText(ui->lineEdit_obox_minY, AsteroidEditorDialogModel::_O_MIN_Y, text);
 }
 
 void AsteroidEditorDialog::on_lineEdit_obox_minZ_textEdited(const QString& text)
 {
-	_model->setBoxText(text, AsteroidEditorDialogModel::_O_MIN_Z);
+	changeBoxText(ui->lineEdit_obox_minZ, AsteroidEditorDialogModel::_O_MIN_Z, text);
 }
 
 void AsteroidEditorDialog::on_lineEdit_obox_maxX_textEdited(const QString& text)
 {
-	_model->setBoxText(text, AsteroidEditorDialogModel::_O_MAX_X);
+	changeBoxText(ui->lineEdit_obox_maxX, AsteroidEditorDialogModel::_O_MAX_X, text);
 }
 
 void AsteroidEditorDialog::on_lineEdit_obox_maxY_textEdited(const QString& text)
 {
-	_model->setBoxText(text, AsteroidEditorDialogModel::_O_MAX_Y);
+	changeBoxText(ui->lineEdit_obox_maxY, AsteroidEditorDialogModel::_O_MAX_Y, text);
 }
 
 void AsteroidEditorDialog::on_lineEdit_obox_maxZ_textEdited(const QString& text)
 {
-	_model->setBoxText(text, AsteroidEditorDialogModel::_O_MAX_Z);
+	changeBoxText(ui->lineEdit_obox_maxZ, AsteroidEditorDialogModel::_O_MAX_Z, text);
 }
 
 void AsteroidEditorDialog::on_lineEdit_ibox_minX_textEdited(const QString& text)
 {
-	_model->setBoxText(text, AsteroidEditorDialogModel::_I_MIN_X);
+	changeBoxText(ui->lineEdit_ibox_minX, AsteroidEditorDialogModel::_I_MIN_X, text);
 }
 
 void AsteroidEditorDialog::on_lineEdit_ibox_minY_textEdited(const QString& text)
 {
-	_model->setBoxText(text, AsteroidEditorDialogModel::_I_MIN_Y);
+	changeBoxText(ui->lineEdit_ibox_minY, AsteroidEditorDialogModel::_I_MIN_Y, text);
 }
 
 void AsteroidEditorDialog::on_lineEdit_ibox_minZ_textEdited(const QString& text)
 {
-	_model->setBoxText(text, AsteroidEditorDialogModel::_I_MIN_Z);
+	changeBoxText(ui->lineEdit_ibox_minZ, AsteroidEditorDialogModel::_I_MIN_Z, text);
 }
 
 void AsteroidEditorDialog::on_lineEdit_ibox_maxX_textEdited(const QString& text)
 {
-	_model->setBoxText(text, AsteroidEditorDialogModel::_I_MAX_X);
+	changeBoxText(ui->lineEdit_ibox_maxX, AsteroidEditorDialogModel::_I_MAX_X, text);
 }
 
 void AsteroidEditorDialog::on_lineEdit_ibox_maxY_textEdited(const QString& text)
 {
-	_model->setBoxText(text, AsteroidEditorDialogModel::_I_MAX_Y);
+	changeBoxText(ui->lineEdit_ibox_maxY, AsteroidEditorDialogModel::_I_MAX_Y, text);
 }
 
 void AsteroidEditorDialog::on_lineEdit_ibox_maxZ_textEdited(const QString& text)
 {
-	_model->setBoxText(text, AsteroidEditorDialogModel::_I_MAX_Z);
+	changeBoxText(ui->lineEdit_ibox_maxZ, AsteroidEditorDialogModel::_I_MAX_Z, text);
+}
+
+static QVector<bool> checkedStates(const QVector<std::pair<QString, bool>>& options)
+{
+	QVector<bool> out;
+	out.reserve(options.size());
+	for (const auto& option : options) {
+		out.push_back(option.second);
+	}
+	return out;
 }
 
 void AsteroidEditorDialog::on_asteroidSelectButton_clicked()
@@ -336,9 +467,22 @@ void AsteroidEditorDialog::on_asteroidSelectButton_clicked()
 	dlg.setCaption("Select Asteroid Types");
 	dlg.setOptions(_model->getAsteroidSelections());
 
-	if (dlg.exec() == QDialog::Accepted) {
-		_model->setAsteroidSelections(dlg.getCheckedStates());
+	if (dlg.exec() != QDialog::Accepted) {
+		return;
 	}
+
+	const QVector<bool> before = checkedStates(_model->getAsteroidSelections());
+	const QVector<bool> after  = dlg.getCheckedStates();
+	if (before == after) {
+		return;
+	}
+
+	_model->setAsteroidSelections(after);
+
+	auto* cmd = new FieldEditCommand<QVector<bool>>(FieldId::Ast_AsteroidSel, nullptr, tr("Select Asteroid Types"), true);
+	cmd->setNoMerge(); // each subdialog visit is a discrete action
+	cmd->addEntry(before, after, [this](const QVector<bool>& v) { _model->setAsteroidSelections(v); });
+	_dialogStack->push(cmd);
 }
 
 void AsteroidEditorDialog::on_debrisSelectButton_clicked()
@@ -347,9 +491,22 @@ void AsteroidEditorDialog::on_debrisSelectButton_clicked()
 	dlg.setCaption("Select Debris Types");
 	dlg.setOptions(_model->getDebrisSelections());
 
-	if (dlg.exec() == QDialog::Accepted) {
-		_model->setDebrisSelections(dlg.getCheckedStates());
+	if (dlg.exec() != QDialog::Accepted) {
+		return;
 	}
+
+	const QVector<bool> before = checkedStates(_model->getDebrisSelections());
+	const QVector<bool> after  = dlg.getCheckedStates();
+	if (before == after) {
+		return;
+	}
+
+	_model->setDebrisSelections(after);
+
+	auto* cmd = new FieldEditCommand<QVector<bool>>(FieldId::Ast_DebrisSel, nullptr, tr("Select Debris Types"), true);
+	cmd->setNoMerge();
+	cmd->addEntry(before, after, [this](const QVector<bool>& v) { _model->setDebrisSelections(v); });
+	_dialogStack->push(cmd);
 }
 
 void AsteroidEditorDialog::on_shipSelectButton_clicked()
@@ -357,9 +514,25 @@ void AsteroidEditorDialog::on_shipSelectButton_clicked()
 	CheckBoxListDialog dlg(this);
 	dlg.setCaption("Select Ship Debris Types");
 	dlg.setOptions(_model->getShipSelections());
-	if (dlg.exec() == QDialog::Accepted) {
-		_model->setShipSelections(dlg.getCheckedStates());
+	if (dlg.exec() != QDialog::Accepted) {
+		return;
 	}
+
+	// Undo state is the resolved target-name list, not the checkbox bitmap:
+	// the bitmap only has meaning against the ship list captured when the
+	// subdialog opened (setShipSelections consumes and clears that list).
+	const SCP_vector<SCP_string> before = _model->getShipTargetNames();
+	_model->setShipSelections(dlg.getCheckedStates());
+	const SCP_vector<SCP_string> after = _model->getShipTargetNames();
+	if (before == after) {
+		return;
+	}
+
+	auto* cmd = new FieldEditCommand<SCP_vector<SCP_string>>(
+		FieldId::Ast_ShipSel, nullptr, tr("Select Ship Debris Types"), true);
+	cmd->setNoMerge();
+	cmd->addEntry(before, after, [this](const SCP_vector<SCP_string>& v) { _model->setShipTargetNames(v); });
+	_dialogStack->push(cmd);
 }
 
 } // namespace fso::fred::dialogs

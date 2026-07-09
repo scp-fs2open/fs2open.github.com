@@ -813,6 +813,18 @@ namespace FieldId {
     constexpr int FV_FontFile  = 7202;
     constexpr int FV_VoiceFile = 7203;
     constexpr int FV_Music     = 7204;
+    // Asteroid Field editor (in-dialog stack)
+    constexpr int Ast_FieldEnabled = 7301;
+    constexpr int Ast_InnerEnabled = 7302;
+    constexpr int Ast_Enhanced     = 7303;
+    constexpr int Ast_FieldType    = 7304; // (type, genre) pair: active forces the asteroid genre
+    constexpr int Ast_DebrisGenre  = 7305;
+    constexpr int Ast_NumAsteroids = 7306;
+    constexpr int Ast_AvgSpeed     = 7307;
+    constexpr int Ast_AsteroidSel  = 7308;
+    constexpr int Ast_DebrisSel    = 7309;
+    constexpr int Ast_ShipSel      = 7310;
+    constexpr int Ast_Box          = 7320; // + _box_line_edits constant (7320–7331)
     // Briefing icon-edit snapshot merge ids (DialogSnapshotCommand): base +
     // (team * MAX_BRIEF_STAGES + stage) + firstSelectedIcon * 80, so edits to
     // a different stage or selection never merge.
