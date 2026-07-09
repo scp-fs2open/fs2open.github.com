@@ -34,6 +34,8 @@ public:
 	void OnOK();
 	void OnCancel();
 	int find_icon(int id, int stage);
+	bool briefing_icon_id_used(int id);
+	int get_unused_briefing_icon_id();
 	void propagate_icon(int num);
 	void reset_editor();
 	int check_mouse_hit(int x, int y);

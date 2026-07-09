@@ -697,6 +697,10 @@ int BriefingEditorDialogModel::getIconId() const
 
 void BriefingEditorDialogModel::setIconId(int id)
 {
+	// briefing icon ids must never be negative
+	if (id < 0)
+		return;
+
 	applyToSelectedIconsCurrentAndForward([&](brief_icon& ic) { modify(ic.id, id); });
 }
 
