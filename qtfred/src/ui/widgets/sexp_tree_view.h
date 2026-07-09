@@ -256,6 +256,13 @@ class sexp_tree_view: public QTreeWidget, public ISexpTreeUI {
 					return;
 				if (currentItem() == nullptr)
 					return;
+				// Re-sync item_index to the currently selected item before computing
+				// menu state. Some mutations (like a paste that adds a child) move the
+				// model's item_index onto the newly created node without changing the
+				// visual selection, which would otherwise make a repeated hotkey act on
+				// the wrong node and fail its gate. The right-click menu re-derives
+				// item_index the same way, which is why the menu path can be repeated.
+				item_index = get_node(currentItem());
 				// item_index may be -1 in labeled-root mode (the user selected the
 				// label itself). compute_context_menu_state() handles that path and
 				// returns a state whose can_* flags already reflect what's legal

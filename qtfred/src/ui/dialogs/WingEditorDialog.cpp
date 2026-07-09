@@ -87,6 +87,7 @@ void WingEditorDialog::updateUi()
 
 	ui->arrivalTree->initializeEditor(_viewport->editor, this, _viewport);
 	ui->arrivalTree->load_tree(_model->getArrivalTree());
+	ui->arrivalTree->expandAll();
 	if (ui->arrivalTree->select_sexp_node != -1) {
 		ui->arrivalTree->hilite_item(ui->arrivalTree->select_sexp_node);
 	}
@@ -99,6 +100,7 @@ void WingEditorDialog::updateUi()
 	ui->departureTargetCombo->setCurrentIndex(ui->departureTargetCombo->findData(_model->getDepartureTarget()));
 	ui->departureTree->initializeEditor(_viewport->editor, this, _viewport);
 	ui->departureTree->load_tree(_model->getDepartureTree());
+	ui->departureTree->expandAll();
 	if (ui->departureTree->select_sexp_node != -1) {
 		ui->departureTree->hilite_item(ui->departureTree->select_sexp_node);
 	}
