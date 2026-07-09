@@ -334,6 +334,7 @@ void ShipEditorDialog::updateArrival(bool overwrite)
 			}
 			if (_model->getUseCue()) {
 				ui->arrivalTree->load_tree(_model->getArrivalFormula());
+				ui->arrivalTree->expandAll();
 			} else {
 				ui->arrivalTree->clear_tree("");
 			}
@@ -390,6 +391,7 @@ void ShipEditorDialog::updateDeparture(bool overwrite)
 			}
 			if (_model->getUseCue()) {
 				ui->departureTree->load_tree(_model->getDepartureFormula(), "false");
+				ui->departureTree->expandAll();
 			} else {
 				ui->departureTree->clear_tree("");
 			}

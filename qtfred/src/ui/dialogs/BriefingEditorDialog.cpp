@@ -300,6 +300,7 @@ void BriefingEditorDialog::updateUi()
 
 	// SEXP tree formula
 	ui->formulaTreeView->load_tree(_model->getFormula());
+	ui->formulaTreeView->expandAll();
 	if (ui->formulaTreeView->select_sexp_node != -1) {
 		ui->formulaTreeView->hilite_item(ui->formulaTreeView->select_sexp_node);
 	}

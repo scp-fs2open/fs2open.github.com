@@ -183,6 +183,14 @@ sexp_tree_view::sexp_tree_view(QWidget* parent) : QTreeWidget(parent), _actions(
 
 	setHeaderHidden(true);
 
+	// Editing is always initiated explicitly (Space or the context menu's Edit Data),
+	// so disable Qt's automatic edit triggers. Otherwise a double-click on an editable
+	// item would start an inline edit and fight with the expand-on-double-click below.
+	setEditTriggers(QAbstractItemView::NoEditTriggers);
+	// We toggle expansion ourselves in the itemDoubleClicked handler, so turn off Qt's
+	// built-in double-click expansion to avoid toggling twice.
+	setExpandsOnDoubleClick(false);
+
 	select_sexp_node = -1;
 	root_item = -1;
 	clear_tree();
@@ -190,7 +198,13 @@ sexp_tree_view::sexp_tree_view(QWidget* parent) : QTreeWidget(parent), _actions(
 	connect(this, &QWidget::customContextMenuRequested, this, &sexp_tree_view::customMenuHandler);
 	connect(this, &QTreeWidget::itemChanged, this, &sexp_tree_view::handleItemChange);
 	connect(this, &QTreeWidget::itemSelectionChanged, this, &sexp_tree_view::handleNewItemSelected);
-	connect(this, &QTreeWidget::itemDoubleClicked, this, [this](QTreeWidgetItem* item, int /*column*/) {openNodeEditor(item);});
+	// Double-clicking a node toggles its expansion when it has children; a leaf node
+	// has nothing to expand, so double-clicking it does nothing.
+	connect(this, &QTreeWidget::itemDoubleClicked, this, [](QTreeWidgetItem* item, int /*column*/) {
+		if (item && item->childCount() > 0) {
+			item->setExpanded(!item->isExpanded());
+		}
+	});
 
 	setItemDelegateForColumn(0, new NoteBadgeDelegate(this));
 
@@ -681,9 +695,16 @@ void sexp_tree_view::keyPressEvent(QKeyEvent* e)
 		}
 	}
 
-	// Space opens the editor for the selected node
+	// Space enters "Edit Data" mode on the selected node. For editable data nodes this
+	// starts inline text editing. Operator nodes have no editable data of their own, 
+	// so they fall back to the operator quick-search popup.
 	if (e->key() == Qt::Key_Space && currentItem()) {
-		openNodeEditor(currentItem());
+		item_index = get_node(currentItem());
+		if (_model.compute_context_menu_state().can_edit_text) {
+			editDataActionHandler();
+		} else {
+			openNodeEditor(currentItem());
+		}
 		return;
 	}
 
