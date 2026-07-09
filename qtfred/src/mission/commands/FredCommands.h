@@ -749,6 +749,14 @@ namespace FieldId {
     constexpr int Camp_TechReset    = 6004;
     constexpr int Camp_CustomData   = 6005;
     constexpr int Camp_RetailFormat = 6006;
+    // Command Briefing editor 6101–6499 (in-dialog stack; per-stage ids are
+    // offset by team * CMD_BRIEF_STAGES_MAX + stage; backgrounds are per team)
+    constexpr int CmdBrief_CurrentTeam = 6101;
+    constexpr int CmdBrief_LowResBg    = 6110; // + team
+    constexpr int CmdBrief_HighResBg   = 6120; // + team
+    constexpr int CmdBrief_StageText   = 6200; // 6200–6219
+    constexpr int CmdBrief_AniFile     = 6300; // 6300–6319
+    constexpr int CmdBrief_WaveFile    = 6400; // 6400–6419
     constexpr int Camp_ShipAllowed   = 700000; // + shipClassIndex
     constexpr int Camp_WeaponAllowed = 710000; // + weaponClassIndex
     // Per-mission fields: base + missionIndex * Camp_MissionFieldStride

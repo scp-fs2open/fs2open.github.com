@@ -27,7 +27,6 @@ public:
 
   protected:
 	void closeEvent(QCloseEvent* e) override; // funnel all Window X presses through reject()
-	void focusInEvent(QFocusEvent* e) override;
 
 private slots:
 	// dialog controls
@@ -59,6 +58,10 @@ private: // NOLINT(readability-redundant-access-specifiers)
 	EditorViewport* _viewport;
 	FredView*       _fredView    = nullptr;
 	QUndoStack*     _dialogStack = nullptr;
+
+	void pushWorkingStateSnapshot(const QByteArray& before, const QString& label);
+	void changeAnimationFilename(const SCP_string& newFilename);
+	void changeSpeechFilename(const SCP_string& newFilename);
 
 	void initializeUi();
 	void updateUi();
