@@ -70,4 +70,50 @@ void ObjectOrientEditorDialogModel::restoreState(const QByteArray& state)
 	}
 }
 
+// ---------------------------------------------------------------------------
+// Working-state capture/restore for the in-dialog undo stack: the edit
+// fields, modes, and the relative-mode rebase baseline.
+// ---------------------------------------------------------------------------
+
+QByteArray ObjectOrientEditorDialogModel::captureWorkingState() const
+{
+	QByteArray data;
+	QDataStream ds(&data, QIODevice::WriteOnly);
+
+	ds << _position.xyz.x << _position.xyz.y << _position.xyz.z;
+	ds << _orientationDeg.xyz.x << _orientationDeg.xyz.y << _orientationDeg.xyz.z;
+	ds << _location.xyz.x << _location.xyz.y << _location.xyz.z;
+	ds << _rebaseRefPos.xyz.x << _rebaseRefPos.xyz.y << _rebaseRefPos.xyz.z;
+	ds << _rebaseRefAnglesDeg.xyz.x << _rebaseRefAnglesDeg.xyz.y << _rebaseRefAnglesDeg.xyz.z;
+	ds << static_cast<qint32>(_setMode);
+	ds << static_cast<qint32>(_transformMode);
+	ds << static_cast<qint32>(_pointMode);
+	ds << static_cast<quint8>(_pointTo ? 1 : 0);
+	ds << static_cast<qint32>(_selectedPointToObjectIndex);
+
+	return data;
+}
+
+void ObjectOrientEditorDialogModel::restoreWorkingState(const QByteArray& state)
+{
+	QDataStream ds(state);
+
+	qint32 setMode, transformMode, pointMode, pointObject;
+	quint8 pointTo;
+	ds >> _position.xyz.x >> _position.xyz.y >> _position.xyz.z;
+	ds >> _orientationDeg.xyz.x >> _orientationDeg.xyz.y >> _orientationDeg.xyz.z;
+	ds >> _location.xyz.x >> _location.xyz.y >> _location.xyz.z;
+	ds >> _rebaseRefPos.xyz.x >> _rebaseRefPos.xyz.y >> _rebaseRefPos.xyz.z;
+	ds >> _rebaseRefAnglesDeg.xyz.x >> _rebaseRefAnglesDeg.xyz.y >> _rebaseRefAnglesDeg.xyz.z;
+	ds >> setMode >> transformMode >> pointMode >> pointTo >> pointObject;
+
+	_setMode                    = static_cast<SetMode>(setMode);
+	_transformMode              = static_cast<TransformMode>(transformMode);
+	_pointMode                  = static_cast<PointToMode>(pointMode);
+	_pointTo                    = (pointTo != 0);
+	_selectedPointToObjectIndex = static_cast<int>(pointObject);
+
+	set_modified();
+}
+
 } // namespace fso::fred::dialogs

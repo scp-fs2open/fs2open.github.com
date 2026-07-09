@@ -4,6 +4,7 @@
 
 #include <ui/FredView.h>
 
+#include <mission/commands/FredCommands.h>
 #include <mission/dialogs/ObjectOrientEditorDialogModel.h>
 
 namespace fso::fred::dialogs {
@@ -23,7 +24,6 @@ class ObjectOrientEditorDialog : public QDialog {
 
 protected:
 	void closeEvent(QCloseEvent* e) override; // funnel all Window X presses through reject()
-	void focusInEvent(QFocusEvent*) override;
 
 private slots:
 	// dialog controls
@@ -57,6 +57,26 @@ private: // NOLINT(readability-redundant-access-specifiers)
 	void updateUi();
 	void enableOrDisableControls();
 
+	void changeSetMode(ObjectOrientEditorDialogModel::SetMode mode);
+
+	// Every remaining control is a flat single value: after the live setter
+	// ran, this pushes one merging command whose apply re-runs the setter and
+	// refreshes the whole (signal-blocked) UI.
+	template <typename T, typename Setter>
+	void pushValueCommand(int fieldId, const QString& label, const T& before, const T& after, Setter&& setter)
+	{
+		if (before == after) {
+			return;
+		}
+
+		auto* cmd = new FieldEditCommand<T>(fieldId, nullptr, label, true);
+		cmd->addEntry(before, after, [this, setter](const T& v) {
+			setter(v);
+			updateUi();
+		});
+		_dialogStack->push(cmd);
+	}
+
 	// Boilerplate
 	std::unique_ptr<Ui::ObjectOrientEditorDialog> ui;
 	std::unique_ptr<ObjectOrientEditorDialogModel> _model;
@@ -67,6 +87,7 @@ private: // NOLINT(readability-redundant-access-specifiers)
 	// Group updates
 	void updatePosition();
 	void updateOrientation();
+	void updateModes();
 	void updatePointTo();
 	void updateComboBox();
 	void updateLocation();

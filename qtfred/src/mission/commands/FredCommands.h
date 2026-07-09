@@ -854,6 +854,22 @@ namespace FieldId {
     constexpr int Neb_NoiseScaleSub     = 7426;
     constexpr int Neb_NoiseIntensity    = 7427;
     constexpr int Neb_NoiseResolution   = 7428;
+    // Object Orientation editor (in-dialog stack). The absolute/relative
+    // set-mode radios rebase the displayed values (with rounding on both
+    // legs), so they are working-state snapshots rather than field commands.
+    constexpr int Orient_PosX          = 7501;
+    constexpr int Orient_PosY          = 7502;
+    constexpr int Orient_PosZ          = 7503;
+    constexpr int Orient_Pitch         = 7504;
+    constexpr int Orient_Bank          = 7505;
+    constexpr int Orient_Heading       = 7506;
+    constexpr int Orient_TransformMode = 7507;
+    constexpr int Orient_PointTo       = 7508;
+    constexpr int Orient_PointMode     = 7509;
+    constexpr int Orient_PointObject   = 7510;
+    constexpr int Orient_LocationX     = 7511;
+    constexpr int Orient_LocationY     = 7512;
+    constexpr int Orient_LocationZ     = 7513;
     // Briefing icon-edit snapshot merge ids (DialogSnapshotCommand): base +
     // (team * MAX_BRIEF_STAGES + stage) + firstSelectedIcon * 80, so edits to
     // a different stage or selection never merge.
