@@ -207,7 +207,10 @@ jobs:
           cmake --install . --config "$CONFIGURATION"
           ls -alR "$(pwd)/install"
       # Tree B: dynamic CRT (/MD) for QtFRED only (matches Qt's prebuilt /MD runtime)
+      # Skipped on Win32: Qt6 has no 32-bit Windows support, so CMake force-disables
+      # FSO_BUILD_QTFRED there and the qtfred target would not exist
       - name: Configure CMake (dynamic CRT /MD - QtFRED)
+        if: matrix.arch != 'Win32'
         env:
           CONFIGURATION: ${{ matrix.configuration }}
           ARCHITECTURE: ${{ matrix.arch }}
@@ -222,6 +225,7 @@ jobs:
             -DFSO_BUILD_QTFRED=ON -DFSO_BUILD_FRED2=OFF -DQT_USE_PRECOMPILED=ON \
             -G "Visual Studio 17 2022" -T "v143" -DCMAKE_BUILD_TYPE=$CONFIGURATION ..
       - name: Compile (dynamic CRT)
+        if: matrix.arch != 'Win32'
         working-directory: ./build-md
         env:
           CONFIGURATION: ${{ matrix.configuration }}
@@ -236,7 +240,10 @@ jobs:
         shell: bash
         run: |
           mkdir -p build/install
-          cp -r build-md/install/. build/install/
+          # build-md does not exist on Win32 (no QtFRED there)
+          if [ -d build-md/install ]; then
+             cp -r build-md/install/. build/install/
+          fi
           cp -r build-mt/install/. build/install/
           ls -alR build/install
       - name: Run Tests
