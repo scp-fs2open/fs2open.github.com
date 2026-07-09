@@ -484,7 +484,7 @@ void briefing_editor_dlg::update_data(int update)
 
 			string_copy(buf, m_icon_label, MAX_LABEL_LEN - 1);
 			lcl_fred_replace_stuff(buf, MAX_LABEL_LEN - 1);
-			if (stricmp(ptr->icons[m_last_icon].label, buf) && !m_change_local) {
+			if (strcmp(ptr->icons[m_last_icon].label, buf) && !m_change_local) {
 				set_modified();
 				reset_icon_loop(m_last_stage);
 				while (get_next_icon(m_id))
@@ -494,7 +494,7 @@ void briefing_editor_dlg::update_data(int update)
 
 			string_copy(buf, m_icon_closeup_label, MAX_LABEL_LEN - 1);
 			lcl_fred_replace_stuff(buf, MAX_LABEL_LEN - 1);
-			if (stricmp(ptr->icons[m_last_icon].closeup_label, buf) && !m_change_local) {
+			if (strcmp(ptr->icons[m_last_icon].closeup_label, buf) && !m_change_local) {
 				set_modified();
 				reset_icon_loop(m_last_stage);
 				while (get_next_icon(m_id))
@@ -958,6 +958,7 @@ void briefing_editor_dlg::copy_stage(int from, int to)
 		Briefing->stages[to].camera_time = 500;
 		Briefing->stages[to].num_icons = 0;
 		Briefing->stages[to].formula = Locked_sexp_true;
+		Briefing->stages[to].draw_grid = true;
 		Briefing->stages[to].grid_color = Color_briefing_grid;
 		return;
 	}
@@ -972,6 +973,7 @@ void briefing_editor_dlg::copy_stage(int from, int to)
 	Briefing->stages[to].num_icons = Briefing->stages[from].num_icons;
 	Briefing->stages[to].num_lines = Briefing->stages[from].num_lines;
 	Briefing->stages[to].formula = Briefing->stages[from].formula;
+	Briefing->stages[to].draw_grid = Briefing->stages[from].draw_grid;
 	// For now let's just always set this back to default. Eventually when we have a UI color picker in qtFRED, we can copy from stage to stage
 	Briefing->stages[to].grid_color = Color_briefing_grid;
 
@@ -1105,6 +1107,7 @@ void briefing_editor_dlg::OnMakeIcon()
 
 	strncpy(biconp->label, name, len);
 	biconp->label[len] = 0;
+	biconp->closeup_label[0] = 0;
 //	iconp->text[0] = 0;
 	biconp->type = 0;
 	biconp->team = team;
@@ -1316,9 +1319,12 @@ int briefing_editor_dlg::check_mouse_hit(int x, int y)
 	return -1;
 }
 
-void briefing_editor_dlg::OnPropagateIcons() 
+void briefing_editor_dlg::OnPropagateIcons()
 {
 	object *ptr;
+
+	// commit any pending edits in the icon fields before propagating the icons forward
+	update_data(1);
 
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
