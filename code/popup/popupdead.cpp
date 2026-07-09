@@ -535,7 +535,7 @@ int popupdead_do_frame(float  /*frametime*/)
 					break;
 
 				default:
-					UNREACHABLE("Invalid or unknown popupdead multi type!");
+					UNREACHABLE("Invalid or unknown popupdead multi type %d!", Popupdead_multi_type);
 					break;
 				}
 			}

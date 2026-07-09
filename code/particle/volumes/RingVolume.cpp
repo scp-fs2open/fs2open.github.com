@@ -6,15 +6,15 @@ namespace particle {
 	RingVolume::RingVolume() : m_radius(1.f), m_onEdge(false), m_modular_curve_instance(m_modular_curves.create_instance()) { };
 	RingVolume::RingVolume(float radius, bool onEdge) : m_radius(radius), m_onEdge(onEdge), m_modular_curve_instance(m_modular_curves.create_instance()) { };
 
-	vec3d RingVolume::sampleRandomPoint(const matrix &orientation, decltype(ParticleEffect::modular_curves_definition)::input_type_t source, float particlesFraction) {
+	vec3d RingVolume::sampleRandomPoint(const matrix &orientation, decltype(ParticleEffect::modular_curves_definition)::input_type_t source, float particlesFraction, const EffectHost& /*host*/) {
 		auto curveSource = std::tuple_cat(source, std::make_tuple(particlesFraction));
 		vec3d pos;
 		// get an unbiased random point in the sphere
 		vm_vec_random_in_circle(&pos, &vmd_zero_vector, &orientation, m_radius * m_modular_curves.get_output(VolumeModularCurveOutput::RADIUS, curveSource, &m_modular_curve_instance), m_onEdge);
 
 		return pointCompensateForOffsetAndRotOffset(pos, orientation,
-					m_modular_curves.get_output(VolumeModularCurveOutput::OFFSET_ROT, curveSource, &m_modular_curve_instance),
-					m_modular_curves.get_output(VolumeModularCurveOutput::POINT_TO_ROT, curveSource, &m_modular_curve_instance));
+			m_modular_curves.get_output_or_default(VolumeModularCurveOutput::OFFSET_ROT, curveSource, 0.f, &m_modular_curve_instance),
+			m_modular_curves.get_output_or_default(VolumeModularCurveOutput::POINT_TO_ROT, curveSource, 0.f, &m_modular_curve_instance));
 	}
 
 	void RingVolume::parse() {

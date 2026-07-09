@@ -3,6 +3,10 @@
 #include <utility>
 
 #include "render/3d.h"
+#include "particle/ParticleManager.h"
+#include "particle/hosts/EffectHostObject.h"
+#include "particle/hosts/EffectHostSubmodel.h"
+#include "particle/hosts/EffectHostVector.h"
 
 namespace animation {
 
@@ -75,7 +79,7 @@ namespace animation {
 		auto submodelOverride = ModelAnimationParseHelper::parseSubmodel();
 
 		ignore_white_space();
-		auto segment = std::shared_ptr<ModelAnimationSegmentSerial>(new ModelAnimationSegmentSerial());
+		auto segment = std::make_shared<ModelAnimationSegmentSerial>();
 
 		while (!optional_string("+End Segment")) {
 			if (submodelOverride)
@@ -149,7 +153,7 @@ namespace animation {
 		auto submodelOverride = ModelAnimationParseHelper::parseSubmodel();
 
 		ignore_white_space();
-		auto segment = std::shared_ptr<ModelAnimationSegmentParallel>(new ModelAnimationSegmentParallel());
+		auto segment = std::make_shared<ModelAnimationSegmentParallel>();
 
 		while (!optional_string("+End Segment")) {
 			if (submodelOverride)
@@ -177,7 +181,7 @@ namespace animation {
 		required_string("+Time:");
 		float time = 0.0f;
 		stuff_float(&time);
-		auto segment = std::shared_ptr<ModelAnimationSegmentWait>(new ModelAnimationSegmentWait(time));
+		auto segment = std::make_shared<ModelAnimationSegmentWait>(time);
 
 		return segment;
 	}
@@ -249,7 +253,7 @@ namespace animation {
 				error_display(1, "Set Orientation has no target submodel!");
 		}
 
-		auto segment = std::shared_ptr<ModelAnimationSegmentSetOrientation>(new ModelAnimationSegmentSetOrientation(submodel, angle, relationType));
+		auto segment = std::make_shared<ModelAnimationSegmentSetOrientation>(std::move(submodel), angle, relationType);
 
 		return segment;
 	}
@@ -304,7 +308,7 @@ namespace animation {
 				error_display(1, "Set Offset has no target submodel!");
 		}
 
-		auto segment = std::shared_ptr<ModelAnimationSegmentSetOffset>(new ModelAnimationSegmentSetOffset(submodel, target, relationType));
+		auto segment = std::make_shared<ModelAnimationSegmentSetOffset>(std::move(submodel), target, relationType);
 
 		return segment;
 	}
@@ -378,7 +382,7 @@ namespace animation {
 				error_display(1, "Set Angle has no target submodel!");
 		}
 
-		auto segment = std::shared_ptr<ModelAnimationSegmentSetAngle>(new ModelAnimationSegmentSetAngle(submodel, fl_radians(angle)));
+		auto segment = std::make_shared<ModelAnimationSegmentSetAngle>(std::move(submodel), fl_radians(angle));
 
 		return segment;
 	}
@@ -663,7 +667,7 @@ namespace animation {
 				error_display(1, "Rotation has no target submodel!");
 		}
 
-		auto segment = std::shared_ptr<ModelAnimationSegmentRotation>(new ModelAnimationSegmentRotation(submodel, angle, velocity, time, acceleration, relationType));
+		auto segment = std::make_shared<ModelAnimationSegmentRotation>(std::move(submodel), angle, velocity, time, acceleration, relationType);
 
 		return segment;
 	}
@@ -912,7 +916,7 @@ namespace animation {
 				error_display(1, "Rotation has no target submodel!");
 		}
 
-		auto segment = std::shared_ptr<ModelAnimationSegmentAxisRotation>(new ModelAnimationSegmentAxisRotation(submodel, angle, velocity, time, acceleration, axis));
+		auto segment = std::make_shared<ModelAnimationSegmentAxisRotation>(std::move(submodel), angle, velocity, time, acceleration, axis);
 
 		return segment;
 	}
@@ -1227,7 +1231,7 @@ namespace animation {
 				error_display(1, "Translation has no target submodel!");
 		}
 
-		auto segment = std::shared_ptr<ModelAnimationSegmentTranslation>(new ModelAnimationSegmentTranslation(submodel, offset, velocity, time, acceleration, coordSystem, relationType));
+		auto segment = std::make_shared<ModelAnimationSegmentTranslation>(std::move(submodel), offset, velocity, time, acceleration, coordSystem, relationType);
 
 		return segment;
 	}
@@ -1287,6 +1291,8 @@ namespace animation {
 			instance.interruptableSound = false;
 			instance.currentlyPlaying = sound_handle::invalid();
 		}
+
+		m_segment->forceStopAnimation(pmi_id);
 	}
 
 	void ModelAnimationSegmentSoundDuring::playLoopSnd(polymodel_instance* pmi) {
@@ -1375,7 +1381,119 @@ namespace animation {
 		bool flipIfReversed = optional_string("+Flip When Reversed");
 		bool abortSoundIfRunning = !optional_string("+Don't Interrupt Playing Sounds");
 
-		auto segment = std::shared_ptr<ModelAnimationSegmentSoundDuring>(new ModelAnimationSegmentSoundDuring(data->parseSegment(), start_sound, end_sound, loop_sound, flipIfReversed, abortSoundIfRunning, snd_rad, submodel, position));
+		auto segment = std::make_shared<ModelAnimationSegmentSoundDuring>(data->parseSegment(), start_sound, end_sound, loop_sound, flipIfReversed, abortSoundIfRunning, snd_rad, std::move(submodel), std::move(position));
+
+		return segment;
+	}
+
+
+	ModelAnimationSegmentParticlesDuring::ModelAnimationSegmentParticlesDuring(std::shared_ptr<ModelAnimationSegment> segment, particle::ParticleEffectHandle effect, float atTime, std::shared_ptr<ModelAnimationSubmodel> submodel, std::optional<vec3d> position, std::optional<matrix> orientation, std::optional<ModelAnimationDirection> limitDirection) :
+		m_segment(std::move(segment)), m_submodel(std::move(submodel)), m_position(std::move(position)), m_orientation(std::move(orientation)), m_limitDirection(std::move(limitDirection)), m_effect(effect), m_atTime(atTime) { }
+
+	ModelAnimationSegment* ModelAnimationSegmentParticlesDuring::copy() const {
+		auto newCopy = new ModelAnimationSegmentParticlesDuring(*this);
+		newCopy->m_segment = std::shared_ptr<ModelAnimationSegment>(newCopy->m_segment->copy());
+		return newCopy;
+	}
+
+	void ModelAnimationSegmentParticlesDuring::recalculate(ModelAnimationSubmodelBuffer& base, ModelAnimationSubmodelBuffer& currentAnimDelta, polymodel_instance* pmi) {
+		m_segment->recalculate(base, currentAnimDelta, pmi);
+		m_duration[pmi->id] = m_segment->getDuration(pmi->id);
+	}
+
+	void ModelAnimationSegmentParticlesDuring::calculateAnimation(ModelAnimationSubmodelBuffer& base, float time, int pmi_id) const {
+		m_segment->calculateAnimation(base, time, pmi_id);
+	}
+
+	void ModelAnimationSegmentParticlesDuring::executeAnimation(const ModelAnimationSubmodelBuffer& state, float timeboundLower, float timeboundUpper, ModelAnimationDirection direction, int pmi_id) {
+		float atTime = fminf(fmaxf(m_atTime, 0.0f), m_duration.at(pmi_id));
+		if (timeboundLower <= atTime && atTime <= timeboundUpper && (!m_limitDirection || direction == *m_limitDirection)) {
+		    createParticleSource(model_get_instance(pmi_id));
+		}
+		m_segment->executeAnimation(state, timeboundLower, timeboundUpper, direction, pmi_id);
+	}
+
+	void ModelAnimationSegmentParticlesDuring::exchangeSubmodelPointers(ModelAnimationSet& replaceWith) {
+		m_segment->exchangeSubmodelPointers(replaceWith);
+	}
+
+	void ModelAnimationSegmentParticlesDuring::forceStopAnimation(int pmi_id) {
+		m_segment->forceStopAnimation(pmi_id);
+	}
+
+	void ModelAnimationSegmentParticlesDuring::createParticleSource(polymodel_instance* pmi) const {
+		if (!m_effect.isValid())
+			return;
+
+		auto source = particle::ParticleManager::get()->createSource(m_effect);
+		if (!source)
+			return;
+
+		matrix orient = m_orientation.value_or(vmd_identity_matrix);
+		vec3d pos = m_position.value_or(vmd_zero_vector);
+
+		std::unique_ptr<EffectHost> host;
+
+		if (m_submodel != nullptr && pmi->objnum >= 0) {
+			auto submodel = m_submodel->findSubmodel(pmi);
+			if (submodel.first != nullptr) {
+				host = std::make_unique<EffectHostSubmodel>(&Objects[pmi->objnum], static_cast<int>(submodel.first - pmi->submodel), pos, orient);
+			}
+		}
+
+		if (!host && pmi->objnum >= 0) {
+			host = std::make_unique<EffectHostObject>(&Objects[pmi->objnum], pos, orient);
+		}
+
+		if (!host) {
+			host = std::make_unique<EffectHostVector>(pos, orient, vmd_zero_vector);
+		}
+
+		source->setHost(std::move(host));
+		source->finishCreation();
+	}
+
+	std::shared_ptr<ModelAnimationSegment> ModelAnimationSegmentParticlesDuring::parser(ModelAnimationParseHelper* data) {
+		auto submodel = ModelAnimationParseHelper::parseSubmodel();
+		if (!submodel) {
+			if (data->parentSubmodel)
+				submodel = data->parentSubmodel;
+		}
+
+		required_string("+Effect:");
+		auto effect = particle::util::parseEffect(data->m_animationName);
+
+		required_string("+At Time:");
+		float atTime = 0.0f;
+		stuff_float(&atTime);
+
+		std::optional<vec3d> position = std::nullopt;
+		if (optional_string("+Position:")) {
+			vec3d parse;
+			stuff_vec3d(&parse);
+			position = std::move(parse);
+		}
+
+		std::optional<matrix> orientation = std::nullopt;
+		if (optional_string("+Orientation:")) {
+			angles angle;
+			stuff_angles_deg_phb(&angle);
+			matrix mat;
+			vm_angles_2_matrix(&mat, &angle);
+			orientation = std::move(mat);
+		}
+
+		std::optional<ModelAnimationDirection> limitDirection = std::nullopt;
+		if (optional_string("+Limit Direction:")) {
+			SCP_string buf;
+			stuff_string(buf, F_NAME);
+			if (!stricmp(buf.c_str(), "FWD"))
+				limitDirection = ModelAnimationDirection::FWD;
+			else if (!stricmp(buf.c_str(), "RWD"))
+				limitDirection = ModelAnimationDirection::RWD;
+		}
+
+		auto segment = std::make_shared<ModelAnimationSegmentParticlesDuring>(data->parseSegment(), effect, atTime, submodel, position, orientation, limitDirection);
 
 		return segment;
 	}
@@ -1396,7 +1514,7 @@ namespace animation {
 	};
 	
 	void ModelAnimationSegmentIK::recalculate(ModelAnimationSubmodelBuffer& base, ModelAnimationSubmodelBuffer& currentAnimDelta, polymodel_instance* pmi) {
-		auto ik = std::unique_ptr<ik_solver>(new ik_solver_fabrik());
+		auto ik = std::make_unique<ik_solver_fabrik>();
 
 		polymodel* pm = model_get(pmi->model_num);
 		bsp_info* lastSubmodel = nullptr;
@@ -1414,7 +1532,7 @@ namespace animation {
 			ik->addNode(submodel, chainlink.constraint.get());
 		}
 		
-		ik->solve(m_targetPosition, &(*m_targetRotation));
+		ik->solve(m_targetPosition, m_targetRotation ? &*m_targetRotation : nullptr);
 		
 		auto chainlink_it = m_chain.cbegin();
 		for(const auto& solvedlink : *ik){
@@ -1460,8 +1578,8 @@ namespace animation {
 		float time;
 		stuff_float(&time);
 		
-		auto segment = std::shared_ptr<ModelAnimationSegmentIK>(new ModelAnimationSegmentIK(targetPosition, targetRotation));
-		auto parallel = std::shared_ptr<ModelAnimationSegmentParallel>(new ModelAnimationSegmentParallel());
+		auto segment = std::make_shared<ModelAnimationSegmentIK>(targetPosition, targetRotation);
+		auto parallel = std::make_shared<ModelAnimationSegmentParallel>();
 		segment->m_segment = parallel;
 		
 		while(optional_string("$Chain Link:")){
@@ -1489,7 +1607,7 @@ namespace animation {
 						required_string("Window");
 						required_string("+Window Size:");
 						stuff_angles_deg_phb(&window);
-						constraint = std::shared_ptr<ik_constraint>(new ik_constraint_window(window));
+						constraint = std::make_shared<ik_constraint_window>(window);
 						break;
 					}
 					case 1: { //Hinge
@@ -1498,7 +1616,7 @@ namespace animation {
 						required_string("+Axis:");
 						stuff_vec3d(&axis);
 						vm_vec_normalize(&axis);
-						constraint = std::shared_ptr<ik_constraint>(new ik_constraint_hinge(axis));
+						constraint = std::make_shared<ik_constraint_hinge>(axis);
 						break;
 					}
 					default:
@@ -1511,7 +1629,7 @@ namespace animation {
 			
 			auto rotation = std::make_shared<ModelAnimationSegmentRotation>(submodel, std::optional<angles>({0,0,0}), std::optional<angles>(), time, acceleration, ModelAnimationCoordinateRelation::ABSOLUTE_COORDS);
 			parallel->addSegment(rotation);
-			segment->m_chain.push_back({submodel, constraint, rotation});
+			segment->m_chain.push_back({std::move(submodel), std::move(constraint), std::move(rotation)});
 		}
 		
 		return segment;

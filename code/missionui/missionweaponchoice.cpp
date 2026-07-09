@@ -31,6 +31,7 @@
 #include "missionui/missionshipchoice.h"
 #include "missionui/missionweaponchoice.h"
 #include "model/model.h"
+#include "model/modelrender.h"
 #include "mod_table/mod_table.h"
 #include "network/multi.h"
 #include "network/multi_pmsg.h"
@@ -826,8 +827,10 @@ void draw_3d_overhead_view(int model_num,
 		Glowpoint_use_depth_buffer = false;
 
 		model_clear_instance(model_num);
-		int model_instance = model_create_instance(model_objnum_special::OBJNUM_NONE, model_num);
-		if (model_instance >= 0) {
+		int model_instance = -1;
+		auto cache_result = model_get_cached_ui_render_instance(model_num, &model_instance);
+		// Only set up the instance when it was freshly created; the cached instance persists across frames.
+		if (cache_result == TriStateBool::TRUE_) {
 			model_set_up_techroom_instance(sip, model_instance);
 		}
 		polymodel* pm = model_get(model_num);
@@ -841,11 +844,12 @@ void draw_3d_overhead_view(int model_num,
 			shadows_start_render(&vmd_identity_matrix,
 				&Eye_position,
 				Proj_fov,
+				Proj_fov,
 				gr_screen.clip_aspect,
-				-sip->closeup_pos.xyz.z + pm->rad,
+				SCP_vector {{-sip->closeup_pos.xyz.z + pm->rad,
 				-sip->closeup_pos.xyz.z + pm->rad + 200.0f,
 				-sip->closeup_pos.xyz.z + pm->rad + 2000.0f,
-				-sip->closeup_pos.xyz.z + pm->rad + 10000.0f);
+				-sip->closeup_pos.xyz.z + pm->rad + 10000.0f}});
 
 			render_info.set_flags(MR_NO_TEXTURING | MR_NO_LIGHTING | MR_AUTOCENTER);
 
@@ -871,9 +875,6 @@ void draw_3d_overhead_view(int model_num,
 		batching_render_all();
 
 		shadow_end_frame();
-		if (model_instance >= 0) {
-			model_delete_instance(model_instance);
-		}
 
 		// NOW render the lines for weapons
 		gr_reset_clip();
@@ -2909,7 +2910,7 @@ void weapon_select_do(float frametime)
 				if(icon->model_index != -1)
 				{
 					//Draw the model
-					draw_model_icon(icon->model_index, MR_NO_FOGGING | MR_NO_LIGHTING, wip->closeup_zoom / 2.5f, sx, sy, w, h, NULL, GR_RESIZE_MENU, &wip->closeup_pos);
+					draw_model_icon(icon->model_index, MR_NO_FOGGING | MR_NO_LIGHTING, sx, sy, w, h, nullptr, wip, 0.4f, GR_RESIZE_MENU);
 				}
 				else if(icon->laser_bmap != -1)
 				{
@@ -3132,6 +3133,9 @@ void wl_render_icon(int index, int x, int y, int num, int draw_num_flag, int hot
 	}
 	else
 	{
+		// the icon bitmap can be invalid without a color having been chosen, e.g. when the icon ani is missing frames
+		if (color_to_draw == nullptr)
+			color_to_draw = &Icon_colors[ICON_FRAME_NORMAL];
 		gr_set_color_fast(color_to_draw);
 
 		graphics::line_draw_list line_draw_list;
@@ -3141,7 +3145,7 @@ void wl_render_icon(int index, int x, int y, int num, int draw_num_flag, int hot
 		if(icon->model_index != -1)
 		{
 			//Draw the model
-			draw_model_icon(icon->model_index, MR_NO_FOGGING | MR_NO_LIGHTING, Weapon_info[index].closeup_zoom * 0.4f, x, y, 56, 24, NULL, GR_RESIZE_MENU);
+			draw_model_icon(icon->model_index, MR_NO_FOGGING | MR_NO_LIGHTING, x, y, 56, 24, nullptr, &Weapon_info[index], 0.4f, GR_RESIZE_MENU);
 		}
 		else if(icon->laser_bmap != -1)
 		{
@@ -4171,7 +4175,7 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 			{
 				SCP_string temp;
 				sprintf(temp, XSTR("%s is unable to carry %s weaponry", 1629), ship_name, wep_display_name);
-				error_messages.push_back(temp);
+				error_messages.push_back(std::move(temp));
 
 				error_flag = true;
 				continue;
@@ -4187,7 +4191,7 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 						sprintf(temp, XSTR("%s is unable to carry %s weaponry in primary bank %d", 1630), ship_name, wep_display_name, cur_bank+1);
 					else
 						sprintf(temp, XSTR("%s is unable to carry %s weaponry in secondary bank %d", 1631), ship_name, wep_display_name, cur_bank+1-MAX_SHIP_PRIMARY_BANKS);
-					error_messages.push_back(temp);
+					error_messages.push_back(std::move(temp));
 
 					error_flag = true;
 					continue;
@@ -4202,7 +4206,7 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 			{
 				SCP_string temp;
 				sprintf(temp, XSTR("Insufficient %s available to arm %s", 1632), Weapon_info[weapon_type_to_add].get_display_name(), ship_name);
-				error_messages.push_back(temp);
+				error_messages.push_back(std::move(temp));
 
 				error_flag = true;
 				continue;

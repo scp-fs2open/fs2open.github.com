@@ -39,6 +39,7 @@
 #include "missionui/missionshipchoice.h"
 #include "missionui/missionweaponchoice.h"
 #include "mod_table/mod_table.h"
+#include "model/modelrender.h"
 #include "network/multi.h"
 #include "network/multi_endgame.h"
 #include "network/multimsgs.h"
@@ -1059,8 +1060,13 @@ int common_scroll_up_pressed(int *start, int size, int max_show)
 //
 int common_scroll_down_pressed(int *start, int size, int max_show)
 {
-	// check if we even need to scroll at all
+	// if the whole list fits on screen, the start offset must be 0;
+	// reset a stale non-zero offset so the up arrow doesn't get stuck
 	if ( size <= max_show ) {
+		if ( *start > 0 ) {
+			*start = 0;
+			return 1;
+		}
 		return 0;
 	}
 
@@ -1552,15 +1558,18 @@ int restore_wss_data(ubyte *data)
 	return offset;
 }
 
-void draw_model_icon(int model_id, uint64_t flags, float closeup_zoom, int x, int y, int w, int h, ship_info *sip, int resize_mode, const vec3d *closeup_pos)
+void draw_model_icon(int model_id, uint64_t flags, int x, int y, int w, int h, ship_info* sip, weapon_info* wip, float zoom_multiplier, int resize_mode)
 {
+	// Can't draw a non-model
+	if (model_id < 0)
+		return;
+
 	lighting_profiles::set_non_mission_profile non_mission_lighting_profile;
-	
+
 	matrix	object_orient	= IDENTITY_MATRIX;
 	angles rot_angles = vmd_zero_angles;
-	float zoom = closeup_zoom * 2.5f;
 
-	if(sip == NULL)
+	if (sip == nullptr)
 	{
 		//Assume it's a weapon
 		rot_angles.h = -(PI_2);
@@ -1588,14 +1597,20 @@ void draw_model_icon(int model_id, uint64_t flags, float closeup_zoom, int x, in
 
 	gr_set_clip(x, y, w, h, resize_mode);
 	g3_start_frame(1);
-	if(sip != NULL)
+	if (sip != nullptr)
 	{
-		g3_set_view_matrix( &sip->closeup_pos, &vmd_identity_matrix, zoom);
+		const auto& closeup_pos = sip->icon_closeup_pos.value_or(sip->closeup_pos);
+		const auto closeup_zoom = sip->icon_closeup_zoom.value_or(sip->closeup_zoom);
+		const auto zoom = closeup_zoom * zoom_multiplier * 2.5f;
+
+		g3_set_view_matrix(&closeup_pos, &vmd_identity_matrix, zoom);
 
 		gr_set_proj_matrix(Proj_fov * 0.5f, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
 	}
 	else
 	{
+		Assertion(wip != nullptr, "Weapon is null, get a coder!");
+
 		polymodel *pm = model_get(model_id);
 		bsp_info *bs = NULL;	//tehe
 		for(int i = 0; i < pm->n_models; i++)
@@ -1612,24 +1627,23 @@ void draw_model_icon(int model_id, uint64_t flags, float closeup_zoom, int x, in
 			bs = &pm->submodel[0];
 		}
 
-		vec3d weap_closeup = *closeup_pos;
+		vec3d weap_closeup = wip->icon_closeup_pos.value_or(wip->closeup_pos);
 		float y_closeup;
-		float tm_zoom = closeup_zoom;
+		float tm_zoom = wip->icon_closeup_zoom.value_or(wip->closeup_zoom) * zoom_multiplier;
 
-		//Find the center of teh submodel
-		weap_closeup.xyz.x = -(bs->min.xyz.z + (bs->max.xyz.z - bs->min.xyz.z)/2.0f);
-		weap_closeup.xyz.y = -(bs->min.xyz.y + (bs->max.xyz.y - bs->min.xyz.y)/2.0f);
-		//weap_closeup.xyz.z = (weap_closeup.xyz.x/tanf(zoom / 2.0f));
-		weap_closeup.xyz.z = -(bs->rad/tanf(tm_zoom/2.0f));
+		if (!wip->icon_closeup_pos.has_value()) {
+			// Find the center of the submodel when no icon-specific position override is defined
+			weap_closeup.xyz.x = -(bs->min.xyz.z + (bs->max.xyz.z - bs->min.xyz.z) / 2.0f);
+			weap_closeup.xyz.y = -(bs->min.xyz.y + (bs->max.xyz.y - bs->min.xyz.y) / 2.0f);
+			weap_closeup.xyz.z = -(bs->rad / tanf(tm_zoom / 2.0f));
 
-		y_closeup = -(weap_closeup.xyz.y/tanf(tm_zoom / 2.0f));
-		if(y_closeup < weap_closeup.xyz.z)
-		{
-			weap_closeup.xyz.z = y_closeup;
-		}
-		if(bs->min.xyz.x < weap_closeup.xyz.z)
-		{
-			weap_closeup.xyz.z = bs->min.xyz.x;
+			y_closeup = -(weap_closeup.xyz.y / tanf(tm_zoom / 2.0f));
+			if (y_closeup < weap_closeup.xyz.z) {
+				weap_closeup.xyz.z = y_closeup;
+			}
+			if (bs->min.xyz.x < weap_closeup.xyz.z) {
+				weap_closeup.xyz.z = bs->min.xyz.x;
+			}
 		}
 		g3_set_view_matrix( &weap_closeup, &vmd_identity_matrix, tm_zoom);
 
@@ -1654,9 +1668,15 @@ void draw_model_icon(int model_id, uint64_t flags, float closeup_zoom, int x, in
 
 	Glowpoint_override = true;
 	model_clear_instance(model_id);
+	int model_instance = -1;
+	auto cache_result = model_get_cached_ui_render_instance(model_id, &model_instance);
+	// Only set up the instance when it was freshly created; the cached instance persists across frames.
+	if (sip != nullptr && cache_result == TriStateBool::TRUE_) {
+		model_set_up_techroom_instance(sip, model_instance);
+	}
 
 	render_info.set_flags(flags);
-	model_render_immediate(&render_info, model_id, &object_orient, &vmd_zero_vector);
+	model_render_immediate(&render_info, model_id, model_instance, &object_orient, &vmd_zero_vector);
 	Glowpoint_override = false;
 
 	gr_end_view_matrix();
@@ -1672,8 +1692,10 @@ void draw_model_rotating(model_render_params *render_info, int ship_class, int m
 	if (model_id < 0)
 		return;
 
-	int model_instance = model_create_instance(model_objnum_special::OBJNUM_NONE, model_id);
-	if (!(flags & MR_IS_MISSILE) && SCP_vector_inbounds(Ship_info, ship_class)) {
+	int model_instance = -1;
+	auto cache_result = model_get_cached_ui_render_instance(model_id, &model_instance);
+	// Only set up the instance when it was freshly created; the cached instance persists across frames.
+	if (!(flags & MR_IS_MISSILE) && SCP_vector_inbounds(Ship_info, ship_class) && cache_result == TriStateBool::TRUE_) {
 		model_set_up_techroom_instance(&Ship_info[ship_class], model_instance);
 	}
 
@@ -1827,9 +1849,9 @@ void draw_model_rotating(model_render_params *render_info, int ship_class, int m
 				shadow_render_info.set_flags(flags | MR_NO_TEXTURING | MR_NO_LIGHTING);
 
 				if ( flags & MR_IS_MISSILE )  {
-					shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, gr_screen.clip_aspect, -closeup_pos->xyz.z + pm->rad, -closeup_pos->xyz.z + pm->rad + 20.0f, -closeup_pos->xyz.z + pm->rad + 200.0f, -closeup_pos->xyz.z + pm->rad + 1000.0f);
+					shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, Proj_fov, gr_screen.clip_aspect, SCP_vector {{-closeup_pos->xyz.z + pm->rad, -closeup_pos->xyz.z + pm->rad + 20.0f, -closeup_pos->xyz.z + pm->rad + 200.0f, -closeup_pos->xyz.z + pm->rad + 1000.0f}});
 				} else {
-					shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, gr_screen.clip_aspect, -closeup_pos->xyz.z + pm->rad, -closeup_pos->xyz.z + pm->rad + 200.0f, -closeup_pos->xyz.z + pm->rad + 2000.0f, -closeup_pos->xyz.z + pm->rad + 10000.0f);
+					shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, Proj_fov, gr_screen.clip_aspect, SCP_vector {{-closeup_pos->xyz.z + pm->rad, -closeup_pos->xyz.z + pm->rad + 200.0f, -closeup_pos->xyz.z + pm->rad + 2000.0f, -closeup_pos->xyz.z + pm->rad + 10000.0f}});
 				}
 
 				model_render_immediate(&shadow_render_info, model_id, model_instance, &model_orient, &vmd_zero_vector);
@@ -1919,9 +1941,9 @@ void draw_model_rotating(model_render_params *render_info, int ship_class, int m
 		if(shadow_maybe_start_frame(shadow_disable_override))
 		{
 			if ( flags & MR_IS_MISSILE )  {
-				shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, gr_screen.clip_aspect, -closeup_pos->xyz.z + pm->rad, -closeup_pos->xyz.z + pm->rad + 20.0f, -closeup_pos->xyz.z + pm->rad + 200.0f, -closeup_pos->xyz.z + pm->rad + 1000.0f);
+				shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, Proj_fov, gr_screen.clip_aspect, SCP_vector {{-closeup_pos->xyz.z + pm->rad, -closeup_pos->xyz.z + pm->rad + 20.0f, -closeup_pos->xyz.z + pm->rad + 200.0f, -closeup_pos->xyz.z + pm->rad + 1000.0f}});
 			} else {
-				shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, gr_screen.clip_aspect, -closeup_pos->xyz.z + pm->rad, -closeup_pos->xyz.z + pm->rad + 200.0f, -closeup_pos->xyz.z + pm->rad + 2000.0f, -closeup_pos->xyz.z + pm->rad + 10000.0f);
+				shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, Proj_fov, gr_screen.clip_aspect, SCP_vector {{-closeup_pos->xyz.z + pm->rad, -closeup_pos->xyz.z + pm->rad + 200.0f, -closeup_pos->xyz.z + pm->rad + 2000.0f, -closeup_pos->xyz.z + pm->rad + 10000.0f}});
 			}
 
 			model_render_params shadow_render_info;
@@ -1958,9 +1980,6 @@ void draw_model_rotating(model_render_params *render_info, int ship_class, int m
 	}
 
 	shadow_end_frame();
-	if (model_instance >= 0) {
-		model_delete_instance(model_instance);
-	}
 }
 
 /**

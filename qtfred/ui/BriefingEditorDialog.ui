@@ -590,7 +590,7 @@
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_3">
           <item>
-           <widget class="fso::fred::sexp_tree" name="formulaTreeView">
+           <widget class="fso::fred::sexp_tree_view" name="formulaTreeView">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
               <horstretch>0</horstretch>
@@ -657,11 +657,7 @@
              </widget>
             </item>
             <item row="0" column="1">
-             <widget class="QComboBox" name="defaultMusicComboBox">
-              <property name="editable">
-               <bool>false</bool>
-              </property>
-             </widget>
+             <widget class="fso::fred::MusicComboWidget" name="defaultMusicWidget"/>
             </item>
             <item row="1" column="0">
              <widget class="QLabel" name="musicPackLabel">
@@ -674,7 +670,7 @@
              </widget>
             </item>
             <item row="1" column="1">
-             <widget class="QComboBox" name="musicPackComboBox"/>
+             <widget class="fso::fred::MusicComboWidget" name="musicPackWidget"/>
             </item>
            </layout>
           </widget>
@@ -772,9 +768,14 @@
  <layoutdefault spacing="6" margin="11"/>
  <customwidgets>
   <customwidget>
-   <class>fso::fred::sexp_tree</class>
+   <class>fso::fred::sexp_tree_view</class>
    <extends>QTreeView</extends>
-   <header>ui/widgets/sexp_tree.h</header>
+   <header>ui/widgets/sexp_tree_view.h</header>
+  </customwidget>
+  <customwidget>
+   <class>fso::fred::MusicComboWidget</class>
+   <extends>QWidget</extends>
+   <header>ui/widgets/MusicComboWidget.h</header>
   </customwidget>
  </customwidgets>
  <resources>

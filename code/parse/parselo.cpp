@@ -2568,6 +2568,7 @@ void coerce_to_utf8(SCP_string &buffer, const char *str)
 	if (isLatin1)
 	{
 		unicode::convert_encoding(buffer, str, unicode::Encoding::Encoding_iso8859_1, unicode::Encoding::Encoding_utf8);
+		return;
 	}
 
 	// unknown encoding, so just truncate
@@ -3648,7 +3649,7 @@ void pause_parse()
 	Mark.Warning_count = Warning_count;
 	Mark.Error_count = Error_count;
 
-	Bookmarks.push_back(Mark);
+	Bookmarks.push_back(std::move(Mark));
 }
 
 // unpause parsing to continue with previously parsing file
@@ -4977,8 +4978,8 @@ int parse_modular_table(const char *name_check, void (*parse_callback)(const cha
 	SCP_vector<SCP_string> tbl_file_names;
 	int i, num_files = 0;
 
-	if ( (name_check == NULL) || (parse_callback == NULL) || ((*name_check) != '*') ) {
-		UNREACHABLE("parse_modular_table() called with invalid arguments; get a coder!\n");
+	Assertion( (name_check != nullptr) && (parse_callback != nullptr) && ((*name_check) == '*'), "parse_modular_table() called with invalid arguments; get a coder!\n");
+	if ( (name_check == nullptr) || (parse_callback == nullptr) || ((*name_check) != '*') ) {
 		return 0;
 	}
 

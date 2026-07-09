@@ -36,6 +36,9 @@ class FredRenderer: public QObject {
 	EditorViewport* _viewport = nullptr;
 	os::Viewport* _targetView = nullptr;
 
+	int _volumetric_model_num = -1;
+	SCP_string _volumetric_cached_pof;
+
 	FredRenderer(const FredRenderer& other) = delete;
 	FredRenderer& operator=(const FredRenderer& other) = delete;
 
@@ -61,10 +64,13 @@ class FredRenderer: public QObject {
 	void render_compass();
 	void render_one_model_htl(object* objp, int cur_object_index);
 	void render_models(int cur_object_index);
+	void render_volumetric_overlay();
+	void freeVolumetricModel();
 	void render_frame(int cur_object_index,
-					  subsys_to_render& Render_subsys,
-					  bool box_marking,
-					  const Marking_box& marking_box);
+		subsys_to_render& Render_subsys,
+		bool box_marking,
+		const Marking_box& marking_box,
+		qreal scale);
 
  signals:
 	void scheduleUpdate();

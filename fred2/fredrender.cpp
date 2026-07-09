@@ -53,6 +53,9 @@
 #include "starfield/starfield.h"
 #include "weapon/weapon.h"
 
+#include <algorithm>
+#include <cmath>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -92,6 +95,14 @@ int Last_cursor_over = -1;
 int last_x = 0;
 int last_y = 0;
 int Lookat_mode = 0;
+
+// Orbit camera state
+vec3d Orbit_pivot = vmd_zero_vector;
+matrix Orbit_grid_orient = vmd_identity_matrix;
+float Orbit_distance = 200.0f;
+float Orbit_phi = 1.24f;
+float Orbit_theta = 2.25f;
+bool Orbit_active = false;
 int rendering_order[MAX_SHIPS];
 int render_count = 0;
 int Show_asteroid_field = 1;
@@ -103,6 +114,7 @@ int Show_horizon = 0;
 int Show_outlines = 0;
 bool Draw_outlines_on_selected_ships = true;
 bool Draw_outline_at_warpin_position = false;
+int Outline_lod = 1;
 bool Always_save_display_names = false;
 bool Error_checker_checks_potential_issues = true;
 bool Error_checker_checks_potential_issues_once = false;
@@ -211,12 +223,13 @@ int get_subsys_bounding_rect(object *ship_obj, ship_subsys *subsys, int *x1, int
  */
 void render_models(void);
 
+enum class subsystem_highlight { BOUNDING_BOX, LABEL };
 /**
  * @brief Renders the bounding box for the given subsystem with HTL
  *
  * @param[in] s2r Subsystem to render a box for
  */
-void fredhtl_render_subsystem_bounding_box(subsys_to_render * s2r);
+void fredhtl_render_subsystem_highlight(subsys_to_render *s2r, subsystem_highlight highlight);
 
 /**
  * @brief Draws the X from a elevation line on the grid
@@ -414,10 +427,18 @@ void display_active_ship_subsystem() {
 			if (Highlight_selectable_subsys) {
 				auto shipp = &Ships[objp->instance];
 
-				for (auto ss = GET_FIRST(&shipp->subsys_list); ss != END_OF_LIST(&shipp->subsys_list); ss = GET_NEXT(ss)) {
+				// first pass: draw all bounding boxes
+				for (auto ss : list_range(&shipp->subsys_list)) {
 					if (ss->system_info->subobj_num != -1) {
 						subsys_to_render s2r = { true, objp, ss };
-						fredhtl_render_subsystem_bounding_box(&s2r);
+						fredhtl_render_subsystem_highlight(&s2r, subsystem_highlight::BOUNDING_BOX);
+					}
+				}
+				// second pass: draw all labels
+				for (auto ss : list_range(&shipp->subsys_list)) {
+					if (ss->system_info->subobj_num != -1) {
+						subsys_to_render s2r = { true, objp, ss };
+						fredhtl_render_subsystem_highlight(&s2r, subsystem_highlight::LABEL);
 					}
 				}
 			}
@@ -430,7 +451,8 @@ void display_active_ship_subsystem() {
 				}
 
 				if (Render_subsys.do_render) {
-					fredhtl_render_subsystem_bounding_box(&Render_subsys);
+					fredhtl_render_subsystem_highlight(&Render_subsys, subsystem_highlight::BOUNDING_BOX);
+					fredhtl_render_subsystem_highlight(&Render_subsys, subsystem_highlight::LABEL);
 				} else {
 					cancel_display_active_ship_subsystem();
 				}
@@ -726,7 +748,7 @@ void draw_orient_sphere2(int col, object *obj, int r, int g, int b) {
 	}
 }
 
-void fredhtl_render_subsystem_bounding_box(subsys_to_render *s2r)
+void fredhtl_render_subsystem_highlight(subsys_to_render *s2r, subsystem_highlight highlight)
 {
 	vertex text_center;
 	SCP_string buf;
@@ -740,122 +762,75 @@ void fredhtl_render_subsystem_bounding_box(subsys_to_render *s2r)
 
 	auto bsp = &pm->submodel[subobj_num];
 
-	vec3d front_top_left = bsp->bounding_box[7];
-	vec3d front_top_right = bsp->bounding_box[6];
-	vec3d front_bot_left = bsp->bounding_box[4];
-	vec3d front_bot_right = bsp->bounding_box[5];
-	vec3d back_top_left = bsp->bounding_box[3];
-	vec3d back_top_right = bsp->bounding_box[2];
-	vec3d back_bot_left = bsp->bounding_box[0];
-	vec3d back_bot_right = bsp->bounding_box[1];
+	// transform bounding box corners from submodel-local space to world space
+	// and draw edges as thick camera-facing quads via g3_render_rod
+	color clr_red;
+	gr_init_color(&clr_red, 255, 32, 32);
+	float rod_width = 2.0f;
 
-	gr_set_color(255, 32, 32);
+	auto transform_and_draw_box = [&](const vec3d *bbox, int sobj_num) {
+		vec3d corners[8];
+		for (int i = 0; i < 8; i++)
+			model_instance_local_to_global_point(&corners[i], &bbox[i], pm, pmi, sobj_num, &objp->orient, &objp->pos);
 
-	fred_enable_htl();
+		// 12 edges of a box: front face, back face, connecting edges
+		// bounding_box indices: 0=BBL 1=BBR 2=BTR 3=BTL 4=FBL 5=FBR 6=FTR 7=FTL
+		static const int edges[12][2] = {
+			{7, 6}, {6, 5}, {5, 4}, {4, 7},  // front face
+			{3, 2}, {2, 1}, {1, 0}, {0, 3},  // back face
+			{7, 3}, {6, 2}, {4, 0}, {5, 1},  // connecting edges
+		};
 
-	// get into the frame of reference of the submodel
-	int g3_count = 1;
-	g3_start_instance_matrix(&objp->pos, &objp->orient, true);
-	int mn = subobj_num;
-	while ((mn >= 0) && (pm->submodel[mn].parent >= 0))
-	{
-		vec3d offset = pm->submodel[mn].offset;
-		vm_vec_add2(&offset, &pmi->submodel[mn].canonical_offset);
-
-		g3_start_instance_matrix(&offset, &pmi->submodel[mn].canonical_orient, true);
-		g3_count++;
-		mn = pm->submodel[mn].parent;
-	}
-
-
-	//draw a cube around the subsystem
-	g3_draw_htl_line(&front_top_left, &front_top_right);
-	g3_draw_htl_line(&front_top_right, &front_bot_right);
-	g3_draw_htl_line(&front_bot_right, &front_bot_left);
-	g3_draw_htl_line(&front_bot_left, &front_top_left);
-
-	g3_draw_htl_line(&back_top_left, &back_top_right);
-	g3_draw_htl_line(&back_top_right, &back_bot_right);
-	g3_draw_htl_line(&back_bot_right, &back_bot_left);
-	g3_draw_htl_line(&back_bot_left, &back_top_left);
-
-	g3_draw_htl_line(&front_top_left, &back_top_left);
-	g3_draw_htl_line(&front_top_right, &back_top_right);
-	g3_draw_htl_line(&front_bot_left, &back_bot_left);
-	g3_draw_htl_line(&front_bot_right, &back_bot_right);
-
-
-	//draw another cube around a gun for a two-part turret
-	if ((ss->system_info->turret_gun_sobj >= 0) && (ss->system_info->turret_gun_sobj != ss->system_info->subobj_num))
-	{
-		bsp_info *bsp_turret = &pm->submodel[ss->system_info->turret_gun_sobj];
-
-		front_top_left = bsp_turret->bounding_box[7];
-		front_top_right = bsp_turret->bounding_box[6];
-		front_bot_left = bsp_turret->bounding_box[4];
-		front_bot_right = bsp_turret->bounding_box[5];
-		back_top_left = bsp_turret->bounding_box[3];
-		back_top_right = bsp_turret->bounding_box[2];
-		back_bot_left = bsp_turret->bounding_box[0];
-		back_bot_right = bsp_turret->bounding_box[1];
-
-		g3_start_instance_matrix(&bsp_turret->offset, &pmi->submodel[ss->system_info->turret_gun_sobj].canonical_orient, true);
-
-		g3_draw_htl_line(&front_top_left, &front_top_right);
-		g3_draw_htl_line(&front_top_right, &front_bot_right);
-		g3_draw_htl_line(&front_bot_right, &front_bot_left);
-		g3_draw_htl_line(&front_bot_left, &front_top_left);
-
-		g3_draw_htl_line(&back_top_left, &back_top_right);
-		g3_draw_htl_line(&back_top_right, &back_bot_right);
-		g3_draw_htl_line(&back_bot_right, &back_bot_left);
-		g3_draw_htl_line(&back_bot_left, &back_top_left);
-
-		g3_draw_htl_line(&front_top_left, &back_top_left);
-		g3_draw_htl_line(&front_top_right, &back_top_right);
-		g3_draw_htl_line(&front_bot_left, &back_bot_left);
-		g3_draw_htl_line(&front_bot_right, &back_bot_right);
-
-		g3_done_instance(true);
-	}
-
-	for (int i = 0; i < g3_count; i++)
-		g3_done_instance(true);
-
-	fred_disable_htl();
-
-	// get text
-	buf = ss->system_info->subobj_name;
-
-	// add weapons if present
-	for (int i = 0; i < ss->weapons.num_primary_banks; ++i)
-	{
-		int wi = ss->weapons.primary_bank_weapons[i];
-		if (wi >= 0)
-		{
-			buf += "\n";
-			buf += Weapon_info[wi].name;
+		for (const auto& edge : edges) {
+			vec3d pts[2] = { corners[edge[0]], corners[edge[1]] };
+			g3_render_rod(&clr_red, 2, pts, rod_width);
 		}
-	}
-	for (int i = 0; i < ss->weapons.num_secondary_banks; ++i)
-	{
-		int wi = ss->weapons.secondary_bank_weapons[i];
-		if (wi >= 0)
-		{
-			buf += "\n";
-			buf += Weapon_info[wi].name;
-		}
-	}
+	};
 
-	//draw the text.  rotate the center of the subsystem into place before finding out where to put the text
-	vec3d center_pt;
-	vm_vec_unrotate(&center_pt, &bsp->offset, &objp->orient);
-	vm_vec_add2(&center_pt, &objp->pos);
-	g3_rotate_vertex(&text_center, &center_pt);
-	g3_project_vertex(&text_center);
-	if (!(text_center.flags & PF_OVERFLOW)) {
-		gr_set_color_fast(&colour_white);
-		gr_string((int)text_center.screen.xyw.x, (int)text_center.screen.xyw.y, buf.c_str());
+	if (highlight == subsystem_highlight::BOUNDING_BOX) {
+		fred_enable_htl();
+
+		// draw a box around the subsystem
+		transform_and_draw_box(bsp->bounding_box, subobj_num);
+
+		// draw another box around a gun for a two-part turret
+		if ((ss->system_info->turret_gun_sobj >= 0) && (ss->system_info->turret_gun_sobj != ss->system_info->subobj_num))
+			transform_and_draw_box(pm->submodel[ss->system_info->turret_gun_sobj].bounding_box, ss->system_info->turret_gun_sobj);
+
+		fred_disable_htl();
+	} else {
+		// get text
+		buf = ss->system_info->subobj_name;
+
+		// add weapons if present
+		for (int i = 0; i < ss->weapons.num_primary_banks; ++i)
+		{
+			int wi = ss->weapons.primary_bank_weapons[i];
+			if (wi >= 0)
+			{
+				buf += "\n";
+				buf += Weapon_info[wi].name;
+			}
+		}
+		for (int i = 0; i < ss->weapons.num_secondary_banks; ++i)
+		{
+			int wi = ss->weapons.secondary_bank_weapons[i];
+			if (wi >= 0)
+			{
+				buf += "\n";
+				buf += Weapon_info[wi].name;
+			}
+		}
+
+		//draw the text.  rotate the center of the subsystem into place before finding out where to put the text
+		vec3d center_pt;
+		vm_vec_unrotate(&center_pt, &bsp->offset, &objp->orient);
+		vm_vec_add2(&center_pt, &objp->pos);
+		g3_rotate_vertex(&text_center, &center_pt);
+		g3_project_vertex(&text_center);
+		if (!(text_center.flags & PF_OVERFLOW)) {
+			gr_string_outlined((int)text_center.screen.xyw.x, (int)text_center.screen.xyw.y, buf.c_str(), &colour_white, &colour_black, 2);
+		}
 	}
 }
 
@@ -1311,6 +1286,124 @@ void move_mouse(int btn, int mdx, int mdy) {
 	}
 }
 
+// ---------- Orbit camera functions ----------
+
+vec3d orbit_camera_get_pivot()
+{
+	vec3d pivot;
+
+	if (query_valid_object()) {
+		// Pivot on current object
+		pivot = Objects[cur_object_index].pos;
+	} else if (!The_grid) {
+		// Pivot on the origin, if no grid
+		pivot = ZERO_VECTOR;
+	} else {
+		// Intersect camera forward ray with the grid plane
+		vec3d *grid_normal = &The_grid->gmatrix.vec.uvec;
+		float denom = vm_vec_dot(grid_normal, &view_orient.vec.fvec);
+
+		if (fl_abs(denom) > 0.0001f) {
+			// t = -(dot(normal, view_pos) + planeD) / dot(normal, fvec)
+			float t = -(vm_vec_dot(grid_normal, &view_pos) + The_grid->planeD) / denom;
+			if (t > 0.0f) {
+				vm_vec_scale_add(&pivot, &view_pos, &view_orient.vec.fvec, t);
+			} else {
+				pivot = The_grid->center;
+			}
+		} else {
+			// Camera is parallel to grid plane; fall back to grid center
+			pivot = The_grid->center;
+		}
+	}
+	return pivot;
+}
+
+void orbit_camera_init_from_current_view(const vec3d *pivot, const matrix *grid_orient)
+{
+	Orbit_pivot = pivot ? *pivot : vmd_zero_vector;
+	Orbit_grid_orient = grid_orient ? *grid_orient : vmd_identity_matrix;
+
+	vec3d offset;
+	vm_vec_sub(&offset, &view_pos, &Orbit_pivot);
+
+	Orbit_distance = vm_vec_mag(&offset);
+	if (Orbit_distance < 1.0f)
+		Orbit_distance = 100.0f;
+
+	// Transform offset into grid-local frame for angle decomposition
+	// In local frame, Y is always "up" (the grid plane normal)
+	vec3d local_offset;
+	vm_vec_rotate(&local_offset, &offset, &Orbit_grid_orient);
+
+	Orbit_phi = acosf(std::clamp(local_offset.xyz.y / Orbit_distance, -1.0f, 1.0f));
+	Orbit_theta = atan2f(local_offset.xyz.z, local_offset.xyz.x);
+	Orbit_active = true;
+}
+
+void orbit_camera_apply()
+{
+	float sp = sinf(Orbit_phi);
+
+	// Build offset in grid-local coordinates (Y = up/normal)
+	vec3d local_pos;
+	local_pos.xyz.x = sp * cosf(Orbit_theta);
+	local_pos.xyz.y = cosf(Orbit_phi);
+	local_pos.xyz.z = sp * sinf(Orbit_theta);
+
+	// Transform back to world space
+	vec3d world_offset;
+	vm_vec_unrotate(&world_offset, &local_pos, &Orbit_grid_orient);
+
+	vm_vec_scale(&world_offset, Orbit_distance);
+	vm_vec_add(&view_pos, &Orbit_pivot, &world_offset);
+
+	// Point camera at pivot, using grid's up vector
+	vec3d look_dir;
+	vm_vec_sub(&look_dir, &Orbit_pivot, &view_pos);
+	if (vm_vec_mag(&look_dir) > 0.001f) {
+		vec3d grid_up = Orbit_grid_orient.vec.uvec;
+		vm_vector_2_matrix(&view_orient, &look_dir, &grid_up, nullptr);
+	}
+}
+
+void orbit_camera_rotate(int dx, int dy)
+{
+	float rot_scale = physics_rot / 300.0f;
+	Orbit_theta += dx / 100.0f * rot_scale;
+	Orbit_phi += dy / 100.0f * rot_scale;
+
+	CLAMP(Orbit_phi, 0.01f, PI - 0.01f);
+
+	orbit_camera_apply();
+}
+
+void orbit_camera_pan(int dx, int dy)
+{
+	float speed_factor = 1.0f + (physics_speed - 1) / 499.0f * 9.0f;
+	float pan_scale = Orbit_distance * 0.002f * speed_factor;
+
+	vec3d pan_delta;
+	vm_vec_copy_scale(&pan_delta, &view_orient.vec.rvec, -(float)dx * pan_scale);
+	vm_vec_scale_add2(&pan_delta, &view_orient.vec.uvec, (float)dy * pan_scale);
+
+	vm_vec_add2(&Orbit_pivot, &pan_delta);
+
+	orbit_camera_apply();
+}
+
+void orbit_camera_zoom(float delta)
+{
+	float zoom_speed = 1.0f + (physics_speed - 1) / 499.0f * 4.0f;
+	Orbit_distance *= powf(2.0f, delta * zoom_speed);
+
+	CLAMP(Orbit_distance, 1.0f, 10000000.0f);
+
+	orbit_camera_apply();
+}
+
+// ---------- End orbit camera functions ----------
+
 int object_check_collision(object *objp, vec3d *p0, vec3d *p1, vec3d *hitpos) {
 	mc_info mc;
 
@@ -1369,6 +1462,7 @@ int object_check_collision(object *objp, vec3d *p0, vec3d *p1, vec3d *hitpos) {
 
 void process_controls(vec3d *pos, matrix *orient, float frametime, int key, int mode) {
 	static std::unique_ptr<io::spacemouse::SpaceMouse> spacemouse = io::spacemouse::SpaceMouse::searchSpaceMice(0);
+	bool wantsUpdate = false;
 
 	if (Flying_controls_mode) {
 		grid_read_camera_controls(&view_controls, frametime);
@@ -1386,12 +1480,14 @@ void process_controls(vec3d *pos, matrix *orient, float frametime, int key, int 
 		if (key_get_shift_status())
 			memset(&view_controls, 0, sizeof(control_info));
 
-		if ((fabs(view_controls.pitch) > (frametime / 100)) &&
-			(fabs(view_controls.vertical) > (frametime / 100)) &&
-			(fabs(view_controls.heading) > (frametime / 100)) &&
-			(fabs(view_controls.sideways) > (frametime / 100)) &&
-			(fabs(view_controls.bank) > (frametime / 100)) &&
-			(fabs(view_controls.forward) > (frametime / 100)))
+		wantsUpdate = (fabs(view_controls.pitch) > (frametime / 100))
+		           || (fabs(view_controls.vertical) > (frametime / 100))
+		           || (fabs(view_controls.heading) > (frametime / 100))
+		           || (fabs(view_controls.sideways) > (frametime / 100))
+		           || (fabs(view_controls.bank) > (frametime / 100))
+		           || (fabs(view_controls.forward) > (frametime / 100));
+
+		if (wantsUpdate)
 			Update_window = 1;
 
 		flFrametime = frametime;
@@ -1424,7 +1520,16 @@ void process_controls(vec3d *pos, matrix *orient, float frametime, int key, int 
 		*orient = newmat;
 		if (rotangs.h && Universal_heading)
 			vm_transpose(orient);
+
+		wantsUpdate = !IS_VEC_NULL(&movement_vec)
+		           || rotangs.p != 0.0f
+		           || rotangs.h != 0.0f
+		           || rotangs.b != 0.0f;
 	}
+
+	// Invalidate orbit camera state when the user moves the camera another way
+	if (wantsUpdate)
+		Orbit_active = false;
 }
 
 void process_movement_keys(int key, vec3d *mvec, angles *angs) {
@@ -1889,9 +1994,14 @@ void render_one_model_htl(object *objp) {
 		prop* propp = prop_id_lookup(z);
 
 		if (Fred_outline) {
+			// use a different LOD for the wireframe to reduce visual clutter on high-poly models
+			int prop_model_num = Prop_info[propp->prop_info_index].model_num;
+			int outline_lod = std::min(Outline_lod, model_get(prop_model_num)->n_detail_levels - 1);
+			render_info.set_detail_level_lock(outline_lod);
 			render_info.set_color(Fred_outline >> 16, (Fred_outline >> 8) & 0xff, Fred_outline & 0xff);
 			render_info.set_flags(flags | MR_SHOW_OUTLINE_HTL | MR_NO_LIGHTING | MR_NO_POLYS | MR_NO_TEXTURING);
-			model_render_immediate(&render_info, Prop_info[propp->prop_info_index].model_num, propp->model_instance_num, &objp->orient, &objp->pos);
+			model_render_immediate(&render_info, prop_model_num, propp->model_instance_num, &objp->orient, &objp->pos);
+			render_info.set_detail_level_lock(-1);
 		}
 		//
 		render_info.set_flags(flags);
@@ -1930,9 +2040,14 @@ void render_one_model_htl(object *objp) {
 		render_info.set_replacement_textures(model_get_instance(Ships[z].model_instance_num)->texture_replace);
 		
 		if (Fred_outline) {
+			// use a different LOD for the wireframe to reduce visual clutter on high-poly models
+			int ship_model_num = Ship_info[Ships[z].ship_info_index].model_num;
+			int outline_lod = std::min(Outline_lod, model_get(ship_model_num)->n_detail_levels - 1);
+			render_info.set_detail_level_lock(outline_lod);
 			render_info.set_color(Fred_outline >> 16, (Fred_outline >> 8) & 0xff, Fred_outline & 0xff);
 			render_info.set_flags(flags | MR_SHOW_OUTLINE_HTL | MR_NO_LIGHTING | MR_NO_POLYS | MR_NO_TEXTURING);
-			model_render_immediate(&render_info, Ship_info[Ships[z].ship_info_index].model_num, Ships[z].model_instance_num, &objp->orient, &objp->pos);
+			model_render_immediate(&render_info, ship_model_num, Ships[z].model_instance_num, &objp->orient, &objp->pos);
+			render_info.set_detail_level_lock(-1);
 		}
 
 		if (Draw_outline_at_warpin_position

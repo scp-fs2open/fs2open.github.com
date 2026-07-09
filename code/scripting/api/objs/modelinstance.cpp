@@ -83,7 +83,7 @@ ADE_INDEXER(l_ModelInstanceTextures, "number/string IndexOrTextureFilename", "Ar
 
 	if (ADE_SETTING_VAR) {
 		if (pmi->texture_replace == nullptr) {
-			pmi->texture_replace = make_shared<model_texture_replace>();
+			pmi->texture_replace = std::make_shared<model_texture_replace>();
 		}
 
 		if (tdx != nullptr) {

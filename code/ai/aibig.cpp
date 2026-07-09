@@ -1198,70 +1198,78 @@ void ai_big_chase()
 		}
 
 		//	If a collision is expected, pull out!
-		float dist_normal_to_enemy;
+		if (!(The_mission.ai_profile->flags[AI::Profile_Flags::Kamikaze_no_collision_avoidance] && aip->ai_flags[AI::AI_Flags::Kamikaze])) {
 
-		if (vm_vec_mag_squared(&aip->big_attack_surface_normal) > 0.9) {
-			if (aip->ai_profile_flags[AI::Profile_Flags::Improved_subsystem_attack_pathing])
-				dist_normal_to_enemy = fl_abs((dist_to_enemy / vm_vec_dot(&vec_to_enemy, &aip->big_attack_surface_normal)));
-			else // I'm fairly sure this retail code VVV meant to use / instead of * 
-				dist_normal_to_enemy = fl_abs((dist_to_enemy * vm_vec_dot(&vec_to_enemy, &aip->big_attack_surface_normal)));
-		} else {
-			// don;t have normal so use a conservative value here
-			dist_normal_to_enemy = 0.3f * dist_to_enemy;
-		}
+			float dist_normal_to_enemy;
 
-//		float time_to_enemy = dist_normal_to_enemy / Pl_objp->phys_info.speed * fl_abs(vm_vec_dot(&Pl_objp->phys_info.vel, &aip->big_attack_surface_normal));
-//		if (Framecount % 30 == 1) {
-//			mprintf(("normal dist; %.1f, time: %.1f\n", dist_normal_to_enemy, time_to_enemy));
-//		}
-		
-		// since we're not in strafe and we may get a bad normal, cap dist_normal_to_enemy as MIN(0.3*dist_to_enemy, self)
-		// this will allow us to get closer on a bad normal
-		dist_normal_to_enemy = MAX(0.3f*dist_to_enemy, dist_normal_to_enemy);
-
-		if (dist_to_enemy < ATTACK_COLLIDE_BASE_DIST) {
-			// within 50m or 1sec
-			float time_to_enemy;
 			if (vm_vec_mag_squared(&aip->big_attack_surface_normal) > 0.9) {
-				if (Pl_objp->phys_info.speed > 0.1) {
-					time_to_enemy = dist_normal_to_enemy / fl_abs(vm_vec_dot(&Pl_objp->phys_info.vel, &aip->big_attack_surface_normal));
-				} else {
-					// a big time
-					time_to_enemy = 100.0f;
-				}
-			} else {
-				if (Pl_objp->phys_info.speed > 0.1) {
-					time_to_enemy = dist_normal_to_enemy / Pl_objp->phys_info.speed;
-				} else {
-					// a big time
-					time_to_enemy = 100.0f;
-				}
+				if (aip->ai_profile_flags[AI::Profile_Flags::Improved_subsystem_attack_pathing])
+					dist_normal_to_enemy = fl_abs((dist_to_enemy / vm_vec_dot(&vec_to_enemy, &aip->big_attack_surface_normal)));
+				else // I'm fairly sure this retail code VVV meant to use / instead of * 
+					dist_normal_to_enemy = fl_abs((dist_to_enemy * vm_vec_dot(&vec_to_enemy, &aip->big_attack_surface_normal)));
+			}
+			else {
+				// don;t have normal so use a conservative value here
+				dist_normal_to_enemy = 0.3f * dist_to_enemy;
 			}
 
-			float speed_dist = MAX(0.0f, (Pl_objp->phys_info.speed-50) * 2);
-			if ((dist_normal_to_enemy < ATTACK_COLLIDE_AVOID_DIST + speed_dist) || (time_to_enemy < ATTACK_COLLIDE_AVOID_TIME) ) {
-				// get away, simulate crsh recovery (don't use avoid)
-//				accelerate_ship(aip, -1.0f);
-				big_ship_collide_recover_start(Pl_objp, En_objp, nullptr);
-//				aip->submode = SM_AVOID;
-//				aip->submode_start_time = Missiontime;
-			} else if ((dist_normal_to_enemy < ATTACK_COLLIDE_SLOW_DIST) || (time_to_enemy < ATTACK_COLLIDE_SLOW_TIME) ) {
-				// slow down
-				accelerate_ship(aip, -1.0f);
-			}
-		}
+			//		float time_to_enemy = dist_normal_to_enemy / Pl_objp->phys_info.speed * fl_abs(vm_vec_dot(&Pl_objp->phys_info.vel, &aip->big_attack_surface_normal));
+			//		if (Framecount % 30 == 1) {
+			//			mprintf(("normal dist; %.1f, time: %.1f\n", dist_normal_to_enemy, time_to_enemy));
+			//		}
 
-		/*
-		if ((dot_to_enemy > 1.0f - 0.1f * En_objp->radius/(dist_to_enemy + 1.0f)) && (Pl_objp->phys_info.speed > dist_to_enemy/5.0f)) {
-			if (might_collide_with_ship(Pl_objp, En_objp, dot_to_enemy, dist_to_enemy, (aip->targeted_subsys == NULL)*2.0f + 1.5f)) {
-				if ((Missiontime - aip->last_hit_time > F1_0*4) && (dist_to_enemy < Pl_objp->radius*2 + En_objp->radius*2)) {
+					// since we're not in strafe and we may get a bad normal, cap dist_normal_to_enemy as MIN(0.3*dist_to_enemy, self)
+					// this will allow us to get closer on a bad normal
+			dist_normal_to_enemy = MAX(0.3f * dist_to_enemy, dist_normal_to_enemy);
+
+			if (dist_to_enemy < ATTACK_COLLIDE_BASE_DIST) {
+				// within 50m or 1sec
+				float time_to_enemy;
+				if (vm_vec_mag_squared(&aip->big_attack_surface_normal) > 0.9) {
+					if (Pl_objp->phys_info.speed > 0.1) {
+						time_to_enemy = dist_normal_to_enemy / fl_abs(vm_vec_dot(&Pl_objp->phys_info.vel, &aip->big_attack_surface_normal));
+					}
+					else {
+						// a big time
+						time_to_enemy = 100.0f;
+					}
+				}
+				else {
+					if (Pl_objp->phys_info.speed > 0.1) {
+						time_to_enemy = dist_normal_to_enemy / Pl_objp->phys_info.speed;
+					}
+					else {
+						// a big time
+						time_to_enemy = 100.0f;
+					}
+				}
+
+				float speed_dist = MAX(0.0f, (Pl_objp->phys_info.speed - 50) * 2);
+				if ((dist_normal_to_enemy < ATTACK_COLLIDE_AVOID_DIST + speed_dist) || (time_to_enemy < ATTACK_COLLIDE_AVOID_TIME)) {
+					// get away, simulate crsh recovery (don't use avoid)
+	//				accelerate_ship(aip, -1.0f);
+					big_ship_collide_recover_start(Pl_objp, En_objp, nullptr);
+					//				aip->submode = SM_AVOID;
+					//				aip->submode_start_time = Missiontime;
+				}
+				else if ((dist_normal_to_enemy < ATTACK_COLLIDE_SLOW_DIST) || (time_to_enemy < ATTACK_COLLIDE_SLOW_TIME)) {
+					// slow down
 					accelerate_ship(aip, -1.0f);
-				} else {
-					aip->submode = SM_AVOID;
-					aip->submode_start_time = Missiontime;
 				}
 			}
-		} */
+
+			/*
+			if ((dot_to_enemy > 1.0f - 0.1f * En_objp->radius/(dist_to_enemy + 1.0f)) && (Pl_objp->phys_info.speed > dist_to_enemy/5.0f)) {
+				if (might_collide_with_ship(Pl_objp, En_objp, dot_to_enemy, dist_to_enemy, (aip->targeted_subsys == NULL)*2.0f + 1.5f)) {
+					if ((Missiontime - aip->last_hit_time > F1_0*4) && (dist_to_enemy < Pl_objp->radius*2 + En_objp->radius*2)) {
+						accelerate_ship(aip, -1.0f);
+					} else {
+						aip->submode = SM_AVOID;
+						aip->submode_start_time = Missiontime;
+					}
+				}
+			} */
+		}
 	}
 
 	switch (aip->submode) {
@@ -1862,7 +1870,7 @@ void ai_big_strafe()
 
 /*
 	if ( aip->goal_objnum != aip->target_objnum ) {
-		UNREACHABLE("The goal objnum does not match the target objnum in ai_big_strafe(), please report to the SCP!");	// what is going on here? - Get Alan
+		Assertion(false, "The goal objnum does not match the target objnum in ai_big_strafe(), please report to the SCP!");	// what is going on here? - Get Alan
 		aip->mode = AIM_NONE;
 		return;
 	}

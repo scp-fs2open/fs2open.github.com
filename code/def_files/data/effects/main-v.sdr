@@ -32,16 +32,14 @@ layout (std140) uniform modelData {
 	mat4 viewMatrix;
 	mat4 projMatrix;
 	mat4 textureMatrix;
-	mat4 shadow_mv_matrix;
-	mat4 shadow_proj_matrix[4];
 
 	vec4 color;
 
 	model_light lights[MAX_LIGHTS];
 
 	float outlineWidth;
-	float fogStart;
-	float fogScale;
+	float fogNear;
+	float fogDensity;
 	int buffer_matrix_offset;
 
 	vec4 clip_equation;
@@ -79,11 +77,6 @@ layout (std140) uniform modelData {
 	float znear;
 	float zfar;
 
-	float veryneardist;
-	float neardist;
-	float middist;
-	float fardist;
-
 	int sGlowmapIndex;
 
 	int sSpecmapIndex;
@@ -94,6 +87,16 @@ layout (std140) uniform modelData {
 	float alphaMult;
 
 	int flags;
+};
+
+layout (std140) uniform shadowCascadeParams {
+	int cascade_offset;
+	int cascade_count;
+
+	mat4 shadow_mv_matrix;
+	mat4 shadow_proj_matrix[NUM_SHADOW_CASCADES];
+	vec4 cascade_distances[(NUM_SHADOW_CASCADES + 4 - 1) / 4];
+	vec4 smoothness_factors[(NUM_SHADOW_CASCADES + 4 - 1) / 4];
 };
 
 #prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_TRANSFORM
@@ -107,21 +110,12 @@ out VertexOutput {
 	float fogDist;
 #prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_FOG
 
-#ifdef MODEL_SDR_FLAG_SHADOW_MAP
- #if !defined(GL_ARB_gpu_shader5)
-	float instance;
- #endif
-	// This flag is needed to let the geometry shader know that it doesn't need to apply the
-	// shadow projection to gl_Position
-	float clipModel;
-#else
 	vec4 position;
-#endif
 	vec3 normal;
 	vec4 texCoord;
 
 #prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
-	vec4 shadowUV[4];
+	vec4 shadowUV[NUM_SHADOW_CASCADES];
 	vec4 shadowPos;
 #prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
 } vertOut;
@@ -162,25 +156,13 @@ void main()
 	// Transform the normal into eye space and normalize the result.
 	normal = normalize(mat3(modelViewMatrix) * mat3(orient) * vertNormal);
 	position = modelViewMatrix * orient * vertex;
-	#ifdef MODEL_SDR_FLAG_SHADOW_MAP
-		gl_Position = position;
-		#if !defined(GL_ARB_gpu_shader5)
-			#ifdef APPLE
-				vertOut.instance = float(gl_InstanceIDARB);
-			#else
-				vertOut.instance = float(gl_InstanceID);
-			#endif
-		#endif
-	#else
 		gl_Position = projMatrix * position;
-	#endif
 	#prereplace IF_FLAG MODEL_SDR_FLAG_SHADOWS
 		vec4 shadowPos = shadow_mv_matrix * modelMatrix * orient * vertPosition;
-		vertOut.shadowPos = shadow_mv_matrix * modelMatrix * orient * vertPosition;
-		vertOut.shadowUV[0] = transformToShadowMap(shadow_proj_matrix[0], 0, shadowPos);
-		vertOut.shadowUV[1] = transformToShadowMap(shadow_proj_matrix[1], 1, shadowPos);
-		vertOut.shadowUV[2] = transformToShadowMap(shadow_proj_matrix[2], 2, shadowPos);
-		vertOut.shadowUV[3] = transformToShadowMap(shadow_proj_matrix[3], 3, shadowPos);
+		vertOut.shadowPos = shadowPos;
+		for (int i = 0; i < NUM_SHADOW_CASCADES; i++) {
+			vertOut.shadowUV[i] = transformToShadowMap(shadow_proj_matrix[i], i, shadowPos);
+		}
 	#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_SHADOWS
 
 	// Setup stuff for normal maps and envmaps
@@ -189,7 +171,7 @@ void main()
 	vertOut.tangentMatrix = mat3(t, b, normal);
 
 	#prereplace IF_FLAG MODEL_SDR_FLAG_FOG
-		vertOut.fogDist = clamp((gl_Position.z - fogStart) * 0.75 * fogScale, 0.0, 1.0);
+		vertOut.fogDist = gl_Position.z - fogNear;
 	#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_FOG
 
 	#prereplace IF_FLAG MODEL_SDR_FLAG_TRANSFORM
@@ -197,9 +179,6 @@ void main()
 			// Clip this model by moving all vertices outside the clip volume
 			gl_Position = vec4(vec3(-2.0), 1.0);
 		}
-		#ifdef MODEL_SDR_FLAG_SHADOW_MAP
-			vertOut.clipModel = clipModel ? 1.0 : 0.0;
-		#endif
 	#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_TRANSFORM
 
 	if(use_clip_plane) {
@@ -208,12 +187,7 @@ void main()
 		gl_ClipDistance[0] = 1.0;
 	}
 
-	#ifndef MODEL_SDR_FLAG_SHADOW_MAP
-		vertOut.position = position;
-		vertOut.normal = normal;
-		vertOut.texCoord = texCoord;
-	#else
-		vertOut.normal = normal;
-		vertOut.texCoord = texCoord;
-	#endif
+	vertOut.position = position;
+	vertOut.normal = normal;
+	vertOut.texCoord = texCoord;
 }

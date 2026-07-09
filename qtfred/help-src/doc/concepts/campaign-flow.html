@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Campaign Flow - QtFRED Help</title>
+    <link rel="stylesheet" type="text/css" href="../css/help.css"/>
+</head>
+<body>
+<nav class="breadcrumb"><a href="../index.html">QtFRED Help</a> &rsaquo; Concepts &rsaquo; Campaign Flow</nav>
+<h1>Campaign Flow</h1>
+<p>A campaign is a sequence of missions linked together in the
+<a href="../dialogs/CampaignEditorDialog.html">Campaign Editor</a>. The campaign
+file controls which mission plays next, branches the story based on outcomes, and
+carries state between missions through goals and variables.</p>
+
+<h2>How missions end</h2>
+<p>A mission ends when the player reaches the debrief screen. There are two
+distinct end conditions that affect what state is saved:</p>
+<table>
+    <tr><th>Condition</th><th>When it occurs</th><th>What is saved</th></tr>
+    <tr><td>Mission completed</td><td>The player accepts the debriefing after
+        flying the mission.</td><td>Variables with <em>Save on Mission
+        Completed</em> persistence, plus all goal states.</td></tr>
+    <tr><td>Mission closed</td><td>The player exits the mission by any means,
+        including failure or replaying.</td><td>Variables with <em>Save on Mission
+        Close</em> persistence.</td></tr>
+</table>
+
+<h2>Goal states</h2>
+<p>Every mission goal ends in one of three states: complete, failed, or
+incomplete. The campaign SEXP tree reads these states using
+<code>goal-true</code> and <code>goal-false</code> operators to decide which
+mission to branch to next. This is how outcomes carry forward; whether an
+important ship survived, whether a bonus objective was met, and so on.</p>
+<p>Goals do not automatically determine success or failure. The campaign SEXPs
+are what interpret goal states and produce outcomes. A mission where all primary
+goals are complete can still branch to a "defeat" mission if the campaign logic
+is written that way.</p>
+
+<h2>Variables across missions</h2>
+<p>Variables set during a mission only persist into subsequent missions if their
+persistence is configured accordingly. See the
+<a href="../dialogs/VariablesAndContainersDialog.html">Variables &amp; Containers</a>
+dialog for the persistence options. Variables saved to the player file
+(<em>Eternal</em>) persist for the lifetime of the player profile, even across
+different campaigns.</p>
+
+<h2>Branching</h2>
+<p>The campaign editor arranges missions as nodes connected by branches. Each
+branch has a SEXP condition. After a mission completes, the engine evaluates the
+outgoing branches in order and follows the first one whose condition is true. If
+no branch condition is met, the player is returned to the main menu. To end the
+campaign properly (playing the end cutscene and triggering campaign completion)
+use the <code>end-campaign</code> SEXP.</p>
+<p>Common branching patterns include:</p>
+<ul>
+    <li>Checking whether a primary goal succeeded to route to a victory or
+        defeat mission.</li>
+    <li>Checking whether an optional goal was completed to unlock bonus
+        missions.</li>
+    <li>Reading a variable set earlier in the campaign to take a story
+        branch.</li>
+</ul>
+</body>
+</html>

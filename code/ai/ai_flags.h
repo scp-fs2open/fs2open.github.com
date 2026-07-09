@@ -132,6 +132,7 @@ namespace AI {
         Smart_shield_management,
         Smart_subsystem_targeting_for_turrets,
         Strict_turret_tagged_only_targeting,
+		Ships_intercept_mines,				// all AI-controlled ships autonomously engage hostile mines within mine_targetable_range of themselves
 		Support_dont_add_primaries, //Prevents support ship from equipping new primary as requested in https://scp.indiegames.us/mantis/view.php?id=3198
         Turrets_ignore_target_radius,
         Use_actual_primary_range,
@@ -189,6 +190,10 @@ namespace AI {
 		Do_not_set_override_when_assigning_form_on_wing,
 		Purge_player_issued_form_on_wing_after_subsequent_order,
 		Cancel_future_waves_of_any_wing_launched_from_an_exited_ship,
+		Fix_ignore_if_dead_flag,
+		Kamikaze_no_collision_avoidance,
+		Fix_big_ship_waypoint_completion,	// a) big ships complete a waypoint within their radius rather than sqrt(radius);
+											// b) completion no longer requires moving 0.1m in a single frame (framerate-dependent)
 
 		NUM_VALUES
 	};

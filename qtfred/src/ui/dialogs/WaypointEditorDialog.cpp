@@ -20,6 +20,12 @@ WaypointEditorDialog::WaypointEditorDialog(FredView* parent, EditorViewport* vie
 
 	ui->nameEdit->setMaxLength(NAME_LENGTH - 1);
 
+	// -1 is the "mixed selection" sentinel; shown as blank via specialValueText.
+	for (auto* sb : {ui->colorRSpinBox, ui->colorGSpinBox, ui->colorBSpinBox}) {
+		sb->setMinimum(-1);
+		sb->setSpecialValueText(" ");
+	}
+
 	initializeUi();
 	updateUi();
 
@@ -38,37 +44,49 @@ void WaypointEditorDialog::initializeUi()
 {
 	util::SignalBlockers blockers(this);
 
-	updateWaypointListComboBox();
-	bool enabled = _model->isEnabled();
-	ui->nameEdit->setEnabled(enabled);
-	ui->noDrawLinesCheck->setEnabled(enabled);
-	ui->customColorCheck->setEnabled(enabled);
-}
-
-void WaypointEditorDialog::updateWaypointListComboBox()
-{
-	ui->pathSelection->clear();
-
-	for (auto& wp : _model->getWaypointPathList()) {
-		ui->pathSelection->addItem(QString::fromStdString(wp.first), wp.second);
+	ui->layerCombo->clear();
+	for (const auto& name : _viewport->getLayerNames()) {
+		ui->layerCombo->addItem(QString::fromStdString(name), QString::fromStdString(name));
 	}
 
-	ui->pathSelection->setEnabled(!_model->getWaypointPathList().empty());
+	const bool enabled = _model->hasValidSelection();
+	const bool hasAny = _model->hasAnyPathsInMission();
+	const bool multiSelect = _model->hasMultipleSelection();
+
+	ui->nameEdit->setEnabled(enabled && !multiSelect);
+	ui->noDrawLinesCheck->setEnabled(enabled);
+	ui->customColorCheck->setEnabled(enabled);
+	ui->layerCombo->setEnabled(enabled);
+	ui->prevPathButton->setEnabled(hasAny);
+	ui->nextPathButton->setEnabled(hasAny);
+
+	if (multiSelect) {
+		setWindowTitle(QString("Edit %1 Waypoint Paths").arg(_model->getSelectionCount()));
+	} else {
+		setWindowTitle("Waypoint Path Editor");
+	}
 }
 
 void WaypointEditorDialog::updateUi()
 {
 	util::SignalBlockers blockers(this);
 	ui->nameEdit->setText(QString::fromStdString(_model->getCurrentName()));
-	ui->pathSelection->setCurrentIndex(ui->pathSelection->findData(_model->getCurrentlySelectedPath()));
+	ui->layerCombo->setCurrentIndex(ui->layerCombo->findData(QString::fromStdString(_model->getLayer())));
 
-	ui->noDrawLinesCheck->setChecked(_model->getNoDrawLines());
-	ui->customColorCheck->setChecked(_model->getHasCustomColor());
-	ui->colorRSpinBox->setValue(_model->getColorR());
-	ui->colorGSpinBox->setValue(_model->getColorG());
-	ui->colorBSpinBox->setValue(_model->getColorB());
+	const int noDrawState = _model->getNoDrawLinesState();
+	ui->noDrawLinesCheck->setTristate(noDrawState == Qt::PartiallyChecked);
+	ui->noDrawLinesCheck->setCheckState(static_cast<Qt::CheckState>(noDrawState));
 
-	bool colorEnabled = _model->isEnabled() && _model->getHasCustomColor();
+	const int customColorState = _model->getHasCustomColorState();
+	ui->customColorCheck->setTristate(customColorState == Qt::PartiallyChecked);
+	ui->customColorCheck->setCheckState(static_cast<Qt::CheckState>(customColorState));
+
+	ui->colorRSpinBox->setValue(_model->isColorRMixed() ? -1 : _model->getColorR());
+	ui->colorGSpinBox->setValue(_model->isColorGMixed() ? -1 : _model->getColorG());
+	ui->colorBSpinBox->setValue(_model->isColorBMixed() ? -1 : _model->getColorB());
+
+	const bool customResolved = customColorState == Qt::Checked;
+	const bool colorEnabled = _model->hasValidSelection() && customResolved;
 	ui->colorRSpinBox->setEnabled(colorEnabled);
 	ui->colorGSpinBox->setEnabled(colorEnabled);
 	ui->colorBSpinBox->setEnabled(colorEnabled);
@@ -78,6 +96,14 @@ void WaypointEditorDialog::updateUi()
 
 void WaypointEditorDialog::updateColorSwatch()
 {
+	if (_model->hasAnyColorMixed()) {
+		ui->colorSwatch->setText("?");
+		ui->colorSwatch->setAlignment(Qt::AlignCenter);
+		ui->colorSwatch->setStyleSheet("background: #888; color: white;"
+		                               "border: 1px solid #444; border-radius: 3px;");
+		return;
+	}
+	ui->colorSwatch->setText("");
 	ui->colorSwatch->setStyleSheet(QString("background: rgb(%1,%2,%3);"
 	                                       "border: 1px solid #444; border-radius: 3px;")
 	        .arg(_model->getColorR())
@@ -85,70 +111,61 @@ void WaypointEditorDialog::updateColorSwatch()
 	        .arg(_model->getColorB()));
 }
 
-void WaypointEditorDialog::on_pathSelection_currentIndexChanged(int index)
+void WaypointEditorDialog::on_prevPathButton_clicked()
 {
-	auto itemId = ui->pathSelection->itemData(index).value<int>();
-	_model->setCurrentlySelectedPath(itemId);
+	_model->selectPreviousPath();
 }
 
-// This will run any time an edit is finished which includes the entire window closing, losing focus,
-// the user clicking elsewhere in the dialog, or pressing Enter in the edit box.
-// This is ok here because this is literally the only field that can be edited but if this dialog
-// ever expands then it would be wise to change the whole thing to an ok/cancel type dialog.
+void WaypointEditorDialog::on_nextPathButton_clicked()
+{
+	_model->selectNextPath();
+}
+
 void WaypointEditorDialog::on_nameEdit_editingFinished()
 {
-	// Waypoint editor applies immediately when the name is changed
-	// so save the current, try to apply, if fails, restore the current
-	// and update the text in the edit box
-
-	SCP_string current = _model->getCurrentName();
-
-	SCP_string newText = ui->nameEdit->text().toUtf8().constData();
-	_model->setCurrentName(newText);
-
-	if (!_model->apply()) {
+	if (!_model->setCurrentName(ui->nameEdit->text().toUtf8().constData())) {
 		util::SignalBlockers blockers(this);
-		// If apply failed, restore the old name
-		ui->nameEdit->setText(QString::fromStdString(current));
-		_model->setCurrentName(current); // Restore the model's current name
+		ui->nameEdit->setText(QString::fromStdString(_model->getCurrentName()));
 	}
 }
 
-void WaypointEditorDialog::on_noDrawLinesCheck_toggled(bool checked)
+void WaypointEditorDialog::on_noDrawLinesCheck_clicked()
 {
-	_model->setNoDrawLines(checked);
-	_model->apply();
+	// clicked() (not toggled()) so a click on a tri-state PartiallyChecked box still routes here.
+	_model->setNoDrawLines(ui->noDrawLinesCheck->isChecked());
+	// User has resolved any partial state; refresh so tristate(true) is cleared.
+	updateUi();
 }
 
-void WaypointEditorDialog::on_customColorCheck_toggled(bool checked)
+void WaypointEditorDialog::on_customColorCheck_clicked()
 {
-	_model->setHasCustomColor(checked);
-	ui->colorRSpinBox->setEnabled(checked);
-	ui->colorGSpinBox->setEnabled(checked);
-	ui->colorBSpinBox->setEnabled(checked);
-	updateColorSwatch();
-	_model->apply();
+	_model->setHasCustomColor(ui->customColorCheck->isChecked());
+	updateUi();
 }
 
 void WaypointEditorDialog::on_colorRSpinBox_valueChanged(int value)
 {
 	_model->setColorR(value);
 	updateColorSwatch();
-	_model->apply();
 }
 
 void WaypointEditorDialog::on_colorGSpinBox_valueChanged(int value)
 {
 	_model->setColorG(value);
 	updateColorSwatch();
-	_model->apply();
 }
 
 void WaypointEditorDialog::on_colorBSpinBox_valueChanged(int value)
 {
 	_model->setColorB(value);
 	updateColorSwatch();
-	_model->apply();
+}
+
+void WaypointEditorDialog::on_layerCombo_currentIndexChanged(int index)
+{
+	if (index < 0)
+		return;
+	_model->setLayer(ui->layerCombo->itemData(index).toString().toUtf8().constData());
 }
 
 } // namespace fso::fred::dialogs

@@ -22,9 +22,10 @@ extern int Show_coordinates;        //!< Bool. If nonzero, draw the coordinates 
 extern int Show_outlines;           //!< Bool. If nonzero, draw each object's mesh. If models are shown, highlight them in white.
 extern bool Draw_outlines_on_selected_ships;	// If a ship is selected, draw mesh lines
 extern bool Draw_outline_at_warpin_position;	// Project an outline at the place where the ship will arrive after warping in
+extern int Outline_lod;				// The LOD to use for wireframe outlines (0 = highest detail, default 1)
 extern bool Always_save_display_names;	// When saving a mission, always write display names to the mission file even if the display name is not set.
 										// But ships in wings are excepted, because a display name will cause a ship to have the same name in every wave.
-										// In the future, a display name feature could be added to the wing dialog to handle this case.
+										// Wings now support display names, or the ship-change-display-name SEXP can be used, to handle that case.
 extern bool Error_checker_checks_potential_issues;	// Error checker checks not only outright errors but also potential issues
 extern bool Error_checker_checks_potential_issues_once;	// Same as above, but only once, and independent of the selected option
 extern int Show_stars;              //!< Bool. If nonzero, draw the starfield, nebulas, and suns. Might also handle skyboxes
@@ -35,6 +36,14 @@ extern int Flying_controls_mode;    //!< Bool. Unknown.
 extern int Group_rotate;            //!< Bool. If nonzero, each object rotates around the leader. If zero. rotate
 extern int Show_horizon;            //!< Bool. If nonzero, draw a line representing the horizon (XZ plane)
 extern int Lookat_mode;             //!< Bool. Unknown.
+
+// Orbit camera state
+extern vec3d Orbit_pivot;
+extern matrix Orbit_grid_orient;
+extern float Orbit_distance;
+extern float Orbit_phi;
+extern float Orbit_theta;
+extern bool Orbit_active;
 extern int True_rw;                 //!< Unsigned. The width of the render area
 extern int True_rh;                 //!< Unsigned. The height of the render area
 extern int Fixed_briefing_size;     //!< Bool. If nonzero then expand the briefing preview as much as we can, maintaining the aspect ratio.
@@ -93,3 +102,11 @@ void verticalize_controlled();
  * @return -1 if no object found
  */
 int select_object(int cx, int cy);
+
+// Orbit camera functions
+vec3d orbit_camera_get_pivot();
+void orbit_camera_init_from_current_view(const vec3d *pivot, const matrix *grid_orient);
+void orbit_camera_apply();
+void orbit_camera_rotate(int dx, int dy);
+void orbit_camera_pan(int dx, int dy);
+void orbit_camera_zoom(float delta);

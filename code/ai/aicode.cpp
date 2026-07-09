@@ -223,9 +223,11 @@ ai_flag_description Ai_flag_descriptions[] = {
 	{AI::AI_Flags::No_dynamic,				"Will stop allowing the AI to pursue dynamic goals (eg: chasing ships it was not ordered to)."},
 	{AI::AI_Flags::Free_afterburner_use,	"Will allow AI to use afterburners when attacking a big ship, flying to a target position, guarding a ship, and flying in formation."},
 	{AI::AI_Flags::Waypoints_no_formation,		"Ship will not form up with its wingmates while running waypoints with them." },
+	{AI::AI_Flags::Kamikaze,				"Ship will attack big ships by colliding with them and exploding."},
 };
 
 extern const int Num_ai_flag_names = sizeof(Ai_flag_names) / sizeof(ai_flag_name);
+extern const size_t Num_ai_flag_descriptions = sizeof(Ai_flag_descriptions) / sizeof(ai_flag_description);
 
 const char *Skill_level_names(int level, int translate)
 {
@@ -320,6 +322,18 @@ void ai_cleanup_dock_mode_objective(object *objp);
 // The object that is declared to be the leader of the group formation for
 // the "autopilot"
 object *Autopilot_flight_leader = NULL;
+
+static inline float ai_guard_threshold(const object* guarded_objp, float threshold)
+{
+	if (guarded_objp != nullptr && guarded_objp->type == OBJ_SHIP && guarded_objp->instance >= 0) {
+		const float configured = Ships[guarded_objp->instance].max_guard_radius;
+		if (configured > 0.0f) {
+			return configured;
+		}
+	}
+
+	return threshold;
+}
 
 /**
  * Sets the timestamp used to tell is it is a good time for this team to rearm.  
@@ -2720,8 +2734,8 @@ void ai_evade_object(object *evader, object *evaded)
 	Assert(evader->instance != -1);
 	Assert(Ships[evader->instance].ai_index != -1);
 
+	Assertion(evaded != evader, "Ship %s is trying to evade itself. Please report to the SCP!", Ships[evader->instance].ship_name);	//	Bogus!  Who tried to get me to evade myself!  Trace out and fix!
 	if (evaded == evader) {
-		UNREACHABLE("Ship %s is trying to evade itself. Please report to the SCP!", Ships[evader->instance].ship_name);	//	Bogus!  Who tried to get me to evade myself!  Trace out and fix!
 		return;
 	}
 
@@ -4293,7 +4307,7 @@ float ai_path_0()
 //	--------------------------------------------------------------------------
 //	Alternate version of ai_path
 //  1. 
-float ai_path_1()
+float ai_path_1_or_2(bool allow_path_shortcut)
 {
 	int		num_points;
 	float		dot, dist_to_goal, dist_to_next, dot_to_next;
@@ -4348,6 +4362,25 @@ float ai_path_1()
 		vm_vec_scale_add(&next_vec, cvp, &delvec, 10.0f);
 		nvp = &next_vec;
 	}
+
+	if (allow_path_shortcut) {
+		//	See if can reach next point (as opposed to current point)
+		//	However, don't do this if docking and next point is last point.
+		if ((aip->mode != AIM_DOCK) || ((aip->path_cur - aip->path_start) < num_points - 2)) {
+			if ((aip->path_cur + aip->path_dir > aip->path_start) &&
+				(aip->path_cur + aip->path_dir < aip->path_start + num_points - 2)) {
+				if (timestamp_elapsed(aip->path_next_check_time)) {
+					aip->path_next_check_time = timestamp(3000);
+					if (!pp_collide(&Pl_objp->pos, nvp, gobjp, 1.1f * Pl_objp->radius)) {
+						cvp = nvp;
+						aip->path_cur += aip->path_dir;
+						nvp = &Path_points[aip->path_cur].pos;
+					}
+				}
+			}
+		}
+	}
+
 	// Set pvp to the previous vertex of interest on the path (if there is one)
 	int prev_point = aip->path_cur - aip->path_dir;
 	if (prev_point >= aip->path_start && prev_point <= aip->path_start + num_points)
@@ -4464,7 +4497,10 @@ float ai_path()
 		return ai_path_0();
 		break;
 	case AI_PATH_MODE_ALT1:
-		return ai_path_1();
+		return ai_path_1_or_2(false);
+		break;
+	case AI_PATH_MODE_ALT2:
+		return ai_path_1_or_2(true);
 		break;
 	default:
 		Error(LOCATION, "Invalid path mode found: %d\n", The_mission.ai_profile->ai_path_mode);
@@ -4900,14 +4936,24 @@ void ai_fly_to_target_position(const vec3d* target_pos, bool* pl_done_p=NULL, bo
 	}
 
 	float dist_to_cover_this_frame = (Pl_objp->phys_info.speed * flFrametime);
-	if ( (dist_to_goal < MIN_DIST_TO_WAYPOINT_GOAL) || dist_to_cover_this_frame > 0.1f ) {
+
+	// Retail's completion distance of sqrt(radius) is only ~32m for a capital ship with a 1000m radius --
+	// far smaller than such a ship's turning circle -- and retail also skipped the completion check
+	// entirely unless the ship covered 0.1m in a single frame, a framerate-dependent gate that excludes
+	// exactly the slow speeds at which a big ship could aim precisely.  Together these could trap a
+	// capital ship in an endless overshoot-turnaround-miss loop at its final waypoint.  With the flag
+	// set, big ships complete a waypoint anywhere within their own radius of it, and the check always runs.
+	bool fix_waypoint_completion = The_mission.ai_profile->flags[AI::Profile_Flags::Fix_big_ship_waypoint_completion];
+	float waypoint_tolerance = MIN_DIST_TO_WAYPOINT_GOAL + ((fix_waypoint_completion && sip->is_big_or_huge()) ? Pl_objp->radius : fl_sqrt(Pl_objp->radius));
+
+	if ( fix_waypoint_completion || (dist_to_goal < MIN_DIST_TO_WAYPOINT_GOAL) || dist_to_cover_this_frame > 0.1f ) {
 		vec3d	nearest_point;
 		float		r;
 
 		r = find_nearest_point_on_line(&nearest_point, &Pl_objp->last_pos, &Pl_objp->pos, target_pos);
 
-		if ( (dist_to_goal < (MIN_DIST_TO_WAYPOINT_GOAL + fl_sqrt(Pl_objp->radius) + dist_to_cover_this_frame))
-			|| (((r >= 0.0f) && (r <= 1.0f)) && (vm_vec_dist_quick(&nearest_point, target_pos) < (MIN_DIST_TO_WAYPOINT_GOAL + fl_sqrt(Pl_objp->radius)))))
+		if ( (dist_to_goal < (waypoint_tolerance + dist_to_cover_this_frame))
+			|| (((r >= 0.0f) && (r <= 1.0f)) && (vm_vec_dist_quick(&nearest_point, target_pos) < waypoint_tolerance)))
 		{
 				int treat_as_ship;
 
@@ -4951,8 +4997,8 @@ void ai_waypoints()
 	ai_info	*aip = &Ai_info[Ships[Pl_objp->instance].ai_index];
 
 	// sanity checking for stuff that should never happen
+	Assertion(aip->wp_index != INVALID_WAYPOINT_POSITION, "Waypoints should have been started already!");
 	if (aip->wp_index == INVALID_WAYPOINT_POSITION) {
-		UNREACHABLE("Waypoints should have been started already!");
 		ai_start_waypoints(Pl_objp, (aip->wp_list_index < 0) ? 0 : aip->wp_list_index, WPF_REPEAT, 0);
 	}
 	
@@ -5115,9 +5161,10 @@ int maybe_resume_previous_mode(object *objp, ai_info *aip)
 
 			//	If guarding ship is far away from guardee and enemy is far away from guardee,
 			//	then stop chasing and resume guarding.
-			if (dist > (MAX_GUARD_DIST + guard_objp->radius) * 6) {
+			if (dist > ai_guard_threshold(guard_objp, (MAX_GUARD_DIST + guard_objp->radius) * 6))
+				{
 				if ((En_objp != NULL) && (En_objp->type == OBJ_SHIP)) {
-					if (vm_vec_dist_quick(&guard_objp->pos, &En_objp->pos) > (MAX_GUARD_DIST + guard_objp->radius) * 6) {
+					if (vm_vec_dist_quick(&guard_objp->pos, &En_objp->pos) > ai_guard_threshold(guard_objp, (MAX_GUARD_DIST + guard_objp->radius) * 6)) {
 						Assert(aip->previous_mode == AIM_GUARD);
 						aip->mode = aip->previous_mode;
 						aip->submode = AIS_GUARD_PATROL;
@@ -6469,6 +6516,11 @@ bool ai_select_secondary_weapon(object *objp, ship_weapon *swp, flagset<Weapon::
         ignore_mask.set(Weapon::Info_Flags::Bomber_plus);
 	}
 
+	// Ignore mines in normal combat... they must be explicitly prioritized via SEXP
+	if (!(prio1[Weapon::Info_Flags::Mine] || prio2[Weapon::Info_Flags::Mine])) {
+		ignore_mask.set(Weapon::Info_Flags::Mine);
+	}
+
 #ifndef NDEBUG
 	for (i=0; i<MAX_WEAPON_TYPES; i++) {
 		weapon_id_list[i] = -1;
@@ -7431,6 +7483,21 @@ void attack_set_accel(ai_info *aip, ship_info *sip, float dist_to_enemy, float d
 
 	if (wip != nullptr && wip->optimum_range > 0)
 		optimal_range = wip->optimum_range;
+
+	// Standoff for mines: keep at least 1.2x the target mine's proximity radius
+	// so we shoot it from outside its detonation zone.
+	if (En_objp->type == OBJ_WEAPON) {
+		weapon_info *target_wip = &Weapon_info[Weapons[En_objp->instance].weapon_info_index];
+		if (target_wip->is_mine() && target_wip->proximity_radius > 0.0f) {
+			float standoff = target_wip->proximity_radius * 1.2f;
+			// Don't stand off farther than our weapon can actually reach, or we'd hold
+			// position outside firing range and never destroy the mine. If the weapon
+			// can't outrange the detonation zone, close in and accept the risk.
+			if (wip != nullptr)
+				standoff = MIN(standoff, MIN(wip->max_speed * wip->lifetime, wip->weapon_range));
+			optimal_range = MAX(optimal_range, standoff);
+		}
+	}
 
 	if (dist_to_enemy > optimal_range + vm_vec_mag_quick(&En_objp->phys_info.vel) * dot_from_enemy + Pl_objp->phys_info.speed * speed_ratio) {
 		if (dist_to_enemy > optimal_range + 600.0f) {
@@ -10482,10 +10549,65 @@ void maybe_update_guard_object(object *hit_objp, object *hitter_objp)
 	}
 }
 
-// Scan missile list looking for bombs homing on guarded_objp
-// return 1 if bomb is found (and targeted by guarding_objp), otherwise return 0
+// Find the closest hostile mine threatening 'against_objp', ranked by distance from 'from_objp'.
+// If 'against_objp' is null, defaults to 'from_objp' (i.e. find mines threatening the searcher itself).
+// imminent_only: also requires the mine to be within proximity_radius * 1.5 of against_objp;
+// used to preempt a current target when the mine is about to detonate.
+static object *ai_find_nearby_mine_threat(object *from_objp, object *against_objp = nullptr, bool imminent_only = false)
+{
+	if (against_objp == nullptr)
+		against_objp = from_objp;
+
+	object *closest_mine = nullptr;
+	float closest_dist_from = std::numeric_limits<float>::max();
+
+	for (const auto *mo : list_range(&Missile_obj_list)) {
+		Assert(mo->objnum >= 0 && mo->objnum < MAX_OBJECTS);
+		object *mine_objp = &Objects[mo->objnum];
+		if (mine_objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
+		weapon *wp = &Weapons[mine_objp->instance];
+		weapon_info *wip = &Weapon_info[wp->weapon_info_index];
+
+		if (!wip->is_mine())
+			continue;
+
+		// Only engage destructible mines
+		if (!wip->wi_flags[Weapon::Info_Flags::Fighter_Interceptable])
+			continue;
+
+		// Only engage mines hostile to the threatened ship
+		if (!iff_x_attacks_y(wp->team, obj_team(against_objp)))
+			continue;
+
+		float dist_against = vm_vec_dist(&mine_objp->pos, &against_objp->pos);
+
+		// Mine must be within its own targetable range of the threatened ship
+		if (dist_against > wip->mine_targetable_range)
+			continue;
+
+		// Imminent gate: only consider mines about to detonate on the threatened ship.
+		// proximity_radius is always > 0 for mines (parser enforces).
+		if (imminent_only && dist_against > wip->proximity_radius * 1.5f)
+			continue;
+
+		float dist_from = (from_objp == against_objp) ? dist_against : vm_vec_dist(&mine_objp->pos, &from_objp->pos);
+		if (dist_from < closest_dist_from) {
+			closest_dist_from = dist_from;
+			closest_mine = mine_objp;
+		}
+	}
+
+	return closest_mine;
+}
+
+// Scan the missile list for a threat to guarded_objp and, if one is found, target it with guarding_objp.
+// Bombs homing on guarded_objp take priority; if none are found, fall back to the closest hostile mine
+// threatening guarded_objp (mines are stationary so they can't home, hence the lower priority).
+// Returns 1 if a threat was found and targeted, otherwise 0.
 int ai_guard_find_nearby_bomb(object *guarding_objp, object *guarded_objp)
-{	
+{
 	missile_obj	*mo;
 	object		*bomb_objp, *closest_bomb_objp=NULL;
 	float			dist, dist_to_guarding_obj,closest_dist_to_guarding_obj=999999.0f;
@@ -10515,7 +10637,7 @@ int ai_guard_find_nearby_bomb(object *guarding_objp, object *guarded_objp)
 
 		dist = vm_vec_dist_quick(&bomb_objp->pos, &guarded_objp->pos);
 
-		if (dist < (MAX_GUARD_DIST + guarded_objp->radius)*3) {
+		if (dist < ai_guard_threshold(guarded_objp, (MAX_GUARD_DIST + guarded_objp->radius) * 3)) {
 			dist_to_guarding_obj = vm_vec_dist_quick(&bomb_objp->pos, &guarding_objp->pos);
 			if ( dist_to_guarding_obj < closest_dist_to_guarding_obj ) {
 				closest_dist_to_guarding_obj = dist_to_guarding_obj;
@@ -10526,6 +10648,13 @@ int ai_guard_find_nearby_bomb(object *guarding_objp, object *guarded_objp)
 
 	if ( closest_bomb_objp ) {
 		guard_object_was_hit(guarding_objp, closest_bomb_objp);
+		return 1;
+	}
+
+	// No homing threat found... check for mines threatening the guarded ship.
+	// Mines are stationary so they won't home; handle them as a lower priority threat.
+	if (object *closest_mine_objp = ai_find_nearby_mine_threat(guarding_objp, guarded_objp)) {
+		guard_object_was_hit(guarding_objp, closest_mine_objp);
 		return 1;
 	}
 
@@ -10559,11 +10688,11 @@ void ai_guard_find_nearby_ship(object *guarding_objp, object *guarded_objp)
 			if (Ship_info[eshipp->ship_info_index].class_type >= 0 && (Ship_types[Ship_info[eshipp->ship_info_index].class_type].flags[Ship::Type_Info_Flags::AI_guards_attack]))
 			{
 				dist = vm_vec_dist_quick(&enemy_objp->pos, &guarded_objp->pos);
-				if (dist < (MAX_GUARD_DIST + guarded_objp->radius)*3)
+				if (dist < ai_guard_threshold(guarded_objp, (MAX_GUARD_DIST + guarded_objp->radius) * 3))
 				{
 					guard_object_was_hit(guarding_objp, enemy_objp);
-				}
-				else if ((dist < 3000.0f) && (Ai_info[eshipp->ai_index].target_objnum == guarding_aip->guard_objnum))
+				} else if ((dist < ai_guard_threshold(guarded_objp, 3000.0f)) &&
+						   (Ai_info[eshipp->ai_index].target_objnum == guarding_aip->guard_objnum))
 				{
 					guard_object_was_hit(guarding_objp, enemy_objp);
 				}
@@ -10590,7 +10719,7 @@ void ai_guard_find_nearby_asteroid(object *guarding_objp, object *guarded_objp)
 		if ( asteroid_objp->type == OBJ_ASTEROID ) {
 			// Attack asteroid if near guarded ship
 			dist = vm_vec_dist_quick(&asteroid_objp->pos, &guarded_objp->pos);
-			if ( dist < (MAX_GUARD_DIST + guarded_objp->radius)*2) {
+			if (dist < ai_guard_threshold(guarded_objp, (MAX_GUARD_DIST + guarded_objp->radius) * 2)) {
 				dist_to_self = vm_vec_dist_quick(&asteroid_objp->pos, &guarding_objp->pos);
 				if ( OBJ_INDEX(guarded_objp) == asteroid_collide_objnum(asteroid_objp) ) {
 					if( dist_to_self < closest_danger_asteroid_dist ) {
@@ -10638,6 +10767,13 @@ void ai_guard_find_nearby_object()
 		// if not attacking anything, go for asteroid close to guarded ship
 		if ( (aip->target_objnum == -1) && asteroid_count() ) {
 			ai_guard_find_nearby_asteroid(Pl_objp, guardobjp);
+		}
+
+		// if still not attacking anything and flag is set, engage mines near the guarding ship itself
+		if (aip->target_objnum == -1 && The_mission.ai_profile->flags[AI::Profile_Flags::Ships_intercept_mines]) {
+			object *mine_objp = ai_find_nearby_mine_threat(Pl_objp);
+			if (mine_objp)
+				guard_object_was_hit(Pl_objp, mine_objp);
 		}
 	}
 }
@@ -10884,8 +11020,8 @@ void ai_guard()
 
 	guard_objp = &Objects[aip->guard_objnum];
 
+	Assertion(guard_objp != Pl_objp, "The ship %s has been found to be guarding itself in ai_guard.  Please report to the SCP!", shipp->ship_name);		//	This seems illegal.  Why is a ship guarding itself?
 	if (guard_objp == Pl_objp) {
-		UNREACHABLE("The ship %s has been found to be guarding itself in ai_guard.  Please report to the SCP!", shipp->ship_name);		//	This seems illegal.  Why is a ship guarding itself?
 		aip->guard_objnum = -1;
 		return;
 	}
@@ -11123,6 +11259,12 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 		aip->ai_flags.remove(AI::AI_Flags::Awaiting_repair);
 		stamp = timestamp(-1);
 
+		if (repair_objp != nullptr && scripting::hooks::OnSupportRearmStarted->isActive()) {
+			scripting::hooks::OnSupportRearmStarted->run(
+				scripting::hook_param_list(scripting::hook_param("Support Ship", 'o', repair_objp),
+					scripting::hook_param("Target Ship", 'o', repaired_objp)));
+		}
+
 		// if this is a player ship, then subtract the repair penalty from this player's score
 		if ( repaired_objp->flags[Object::Object_Flags::Player_ship] ) {
 			if ( !(Game_mode & GM_MULTIPLAYER) ) {
@@ -11193,6 +11335,12 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 		// add log entry if this is a player
 		if ( repaired_objp->flags[Object::Object_Flags::Player_ship] ){
 			mission_log_add_entry(LOG_PLAYER_ABORTED_REARM, Ships[repaired_objp->instance].ship_name, NULL);
+		}
+
+		if (repair_objp != nullptr && scripting::hooks::OnSupportRearmFinished->isActive()) {
+			scripting::hooks::OnSupportRearmFinished->run(
+				scripting::hook_param_list(scripting::hook_param("Support Ship", 'o', repair_objp),
+					scripting::hook_param("Target Ship", 'o', repaired_objp)));
 		}
 
 		stamp = timestamp((int) ((30 + 10*frand()) * 1000));
@@ -13651,6 +13799,10 @@ void ai_manage_bay_doors(object *pl_objp, ai_info *aip, bool done)
 
 	ship *parent_ship = &Ships[shipp->bay_doors_parent_shipnum];
 
+	// the parent may have already been destroyed/departed, leaving stale bay door state behind
+	if (parent_ship->objnum < 0 || parent_ship->model_instance_num < 0)
+		return;
+
 	if (done)
 		parent_ship->bay_doors_wanting_open--;
 
@@ -13737,7 +13889,7 @@ int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, int allowed_path_
 		// Cyborg: to avoid divide by zero and avoid a logic path that should not exist check for 0 allowed paths -- Coverity 1523287
 		if (num_allowed_paths == 0) {
 			bay_path = Ai_last_arrive_path % bay->num_paths;
-			UNREACHABLE("Parent_shipp in ai_acquire_emerge_path somehow does not have any allowed bay paths!");
+			Assertion(false, "Parent_shipp in ai_acquire_emerge_path somehow does not have any allowed bay paths!");
 		} else {
 			// cycle through the allowed paths
 			bay_path = allowed_bay_paths[Ai_last_arrive_path % num_allowed_paths];
@@ -14230,7 +14382,7 @@ void ai_execute_behavior(ai_info *aip)
 		ai_lua(aip);
 		break;
 	default:
-		UNREACHABLE("Unknown AI Mode! Get a coder!");
+		UNREACHABLE("Unknown AI Mode %d! Get a coder!", aip->mode);
 		break;
 	}
 
@@ -14870,7 +15022,7 @@ int aas_1(object *objp, ai_info *aip, vec3d *safe_pos)
 		return 1;
 
 	} else {
-		UNREACHABLE("aas_1 has been passed an invalid object type of %d, please report to the SCP!", objp->type);
+		Assertion(false, "aas_1 has been passed an invalid object type of %d, please report to the SCP!", objp->type);
 	}
 
 	return 0;
@@ -15268,6 +15420,22 @@ void ai_frame(int objnum)
 
 	ai_maybe_depart(Pl_objp);
 
+	//	Imminent-mine override: even if we have a current target, swap to a mine
+	//	that is about to detonate on us (within proximity_radius * 1.5).
+	//	Skip departing ships (AIM_WARP_OUT/AIM_BAY_DEPART): ai_maybe_depart() ran just above and may
+	//	have committed this ship to leaving, so we must not divert it back to a mine here.
+	if (The_mission.ai_profile->flags[AI::Profile_Flags::Ships_intercept_mines]
+		&& aip->mode != AIM_GUARD && aip->mode != AIM_EVADE_WEAPON
+		&& aip->mode != AIM_WARP_OUT && aip->mode != AIM_BAY_DEPART
+		&& Ship_info[shipp->ship_info_index].class_type > -1
+		&& Ship_types[Ship_info[shipp->ship_info_index].class_type].flags[Ship::Type_Info_Flags::AI_auto_attacks]) {
+		object *imminent_mine = ai_find_nearby_mine_threat(Pl_objp, nullptr, true);
+		if (imminent_mine != nullptr && (target_objnum < 0 || &Objects[target_objnum] != imminent_mine)) {
+			aip->aspect_locked_time = 0.0f;
+			target_objnum = set_target_objnum(aip, OBJ_INDEX(imminent_mine));
+		}
+	}
+
 	//	Find an enemy if don't already have one.
 	En_objp = NULL;
 	if ( ai_need_new_target(Pl_objp, target_objnum) ) {
@@ -15286,6 +15454,14 @@ void ai_frame(int objnum)
 					if (target_objnum >= 0)
 					{
 						En_objp = &Objects[target_objnum];
+					}
+				} else if (aip->mode != AIM_GUARD && The_mission.ai_profile->flags[AI::Profile_Flags::Ships_intercept_mines]) {
+					// No enemy found so check for nearby hostile mines within their targetable range
+					object *mine_objp = ai_find_nearby_mine_threat(Pl_objp);
+					if (mine_objp) {
+						target_objnum = set_target_objnum(aip, OBJ_INDEX(mine_objp));
+						if (target_objnum >= 0)
+							En_objp = &Objects[target_objnum];
 					}
 				}
 			}
@@ -16222,7 +16398,7 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, const vec3d *hit_normal)
 			} else if (hit_objp->type == OBJ_SHIP) {
 				objp_hitter = hit_objp;
 			} else {
-				UNREACHABLE("Should never happen.");
+				Assertion(false, "ai_ship_hit has been passed an invalid object type of %d, please report to the SCP!", hit_objp->type);
 				return;
 			}
 			Assert(objp_hitter != nullptr);
@@ -16309,7 +16485,7 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, const vec3d *hit_normal)
 		objp_hitter = hit_objp;
 		hitter_objnum = OBJ_INDEX(hit_objp);
 	} else {
-		UNREACHABLE("ai_ship_hit has been passed an invalid object type of %d, please report to the SCP!", hit_objp->type);
+		Assertion(false, "ai_ship_hit has been passed an invalid object type of %d, please report to the SCP!", hit_objp->type);
 		return;
 	}
 
@@ -16440,7 +16616,7 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, const vec3d *hit_normal)
 	case AIM_LUA:
 		return;
 	default:
-		UNREACHABLE("Unknown AI Mode! Get a coder!");
+		UNREACHABLE("Unknown AI Mode %d! Get a coder!", aip->mode);
 	}
 
 	if (timestamp_elapsed(aip->ok_to_target_timestamp)) {

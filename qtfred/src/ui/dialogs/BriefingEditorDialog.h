@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ui/widgets/sexp_tree.h"
+#include "ui/widgets/sexp_tree_view.h"
 
 #include <mission/dialogs/BriefingEditorDialogModel.h>
 #include <ui/FredView.h>
@@ -24,7 +24,6 @@ class BriefingEditorDialog : public QDialog, public SexpTreeEditorInterface {
   public:
 	explicit BriefingEditorDialog(FredView* parent, EditorViewport* viewport);
 	~BriefingEditorDialog() override;
-	static bool isAnyDialogOpen();
 
 	void accept() override;
 	void reject() override;
@@ -83,17 +82,18 @@ class BriefingEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	void on_voiceFileLineEdit_textChanged(const QString& string);
 	void on_voiceFileBrowseButton_clicked();
 	void on_voiceFilePlayButton_clicked();
-	void on_formulaTreeView_nodeChanged(int newTree);
 
-	void on_defaultMusicComboBox_currentIndexChanged(int index);
-	void on_musicPackComboBox_currentIndexChanged(int /*index*/);
+	void on_defaultMusicWidget_currentIndexChanged(int spooledMusicIdx);
+	void on_musicPackWidget_currentIndexChanged(int spooledMusicIdx);
+	void on_defaultMusicWidget_playbackStarted();
+	void on_musicPackWidget_playbackStarted();
 
   private: // NOLINT(readability-redundant-access-specifiers)
 	std::unique_ptr<Ui::BriefingEditorDialog> ui;
 	std::unique_ptr<BriefingEditorDialogModel> _model;
 	EditorViewport* _viewport;
 	fso::fred::BriefingMapWidget* _mapWidget = nullptr;
-	static int _openDialogCount;
+	std::optional<EditorViewport::ViewportControlLock> _viewportLock;
 
 	void initializeUi();
 	void setupMapWidget();

@@ -11,6 +11,7 @@
 #include "graphics/2d.h"
 #include "graphics/light.h"
 #include "graphics/matrix.h"
+#include "graphics/shadows.h"
 #include "graphics/util/UniformAligner.h"
 #include "graphics/util/UniformBuffer.h"
 #include "graphics/util/uniform_structs.h"
@@ -20,8 +21,12 @@
 #include "mission/missionparse.h"
 #include "nebula/neb.h"
 #include "nebula/volumetrics.h"
+#include "mod_table/mod_table.h"
 #include "render/3d.h"
 #include "tracing/tracing.h"
+#ifdef USE_OPENGL_ES
+#include "es_compatibility.h"
+#endif
 
 #include <math/bitarray.h>
 
@@ -88,7 +93,6 @@ void gr_opengl_deferred_lighting_begin(bool clearNonColorBufs)
 		glDrawBuffer(GL_COLOR_ATTACHMENT4);
 		glReadBuffer(GL_COLOR_ATTACHMENT0);
 		glBlitFramebuffer(0, 0, gr_screen.max_w, gr_screen.max_h, 0, 0, gr_screen.max_w, gr_screen.max_h, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-
 	}
 	
 	glDrawBuffers(6, buffers);
@@ -131,7 +135,7 @@ void gr_opengl_deferred_lighting_msaa()
 		msaa_resolve_flags = SDR_FLAG_MSAA_SAMPLES_16;
 		break;
 	default:
-		UNREACHABLE("Disallowed MSAA shader sample count!");
+		Error(LOCATION, "Disallowed MSAA shader sample count %d!", Cmdline_msaa_enabled);
 		break;
 	}
 
@@ -228,7 +232,7 @@ void gr_opengl_deferred_lighting_finish()
 	// GL_state.DepthMask(GL_FALSE);
 
 	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_DEFERRED_LIGHTING, ENVMAP > 0 ? SDR_FLAG_ENV_MAP : 0));
-
+	
 	// Render on top of the composite buffer texture
 	glDrawBuffer(GL_COLOR_ATTACHMENT5);
 	glReadBuffer(GL_COLOR_ATTACHMENT4);
@@ -248,7 +252,7 @@ void gr_opengl_deferred_lighting_finish()
 	GL_state.Texture.Enable(2, GL_TEXTURE_2D, Scene_position_texture);
 	GL_state.Texture.Enable(3, GL_TEXTURE_2D, Scene_specular_texture);
 	if (Shadow_quality != ShadowQuality::Disabled) {
-		GL_state.Texture.Enable(4, GL_TEXTURE_2D_ARRAY, Shadow_map_texture);
+		GL_state.Texture.Enable(4, GL_TEXTURE_2D_ARRAY, Shadow_map_depth_texture);
 	}
 
 	if (ENVMAP > 0) {
@@ -301,7 +305,7 @@ void gr_opengl_deferred_lighting_finish()
 			cylinder_lights.push_back(l);
 			break;
 		case Light_Type::Ambient:
-			UNREACHABLE("Multiple ambient lights are not supported!");
+			Warning(LOCATION, "Multiple ambient lights are not supported!");
 		}
 	}
 	{
@@ -311,17 +315,10 @@ void gr_opengl_deferred_lighting_finish()
 
 		auto header = light_uniform_aligner.getHeader<deferred_global_data>();
 		if (Shadow_quality != ShadowQuality::Disabled) {
-			// Avoid this overhead when we are not going to use these values
-			header->shadow_mv_matrix = Shadow_view_matrix_light;
-			for (size_t i = 0; i < MAX_SHADOW_CASCADES; ++i) {
-				header->shadow_proj_matrix[i] = Shadow_proj_matrix[i];
-			}
-			header->veryneardist = Shadow_cascade_distances[0];
-			header->neardist = Shadow_cascade_distances[1];
-			header->middist = Shadow_cascade_distances[2];
-			header->fardist = Shadow_cascade_distances[3];
-
 			vm_inverse_matrix4(&header->inv_view_matrix, &Shadow_view_matrix_render);
+			int offset = (Lighting_mode == lighting_mode::COCKPIT) ? 0 : Num_cockpit_shadow_cascades;
+			int count  = (Lighting_mode == lighting_mode::COCKPIT) ? Num_cockpit_shadow_cascades : Num_shadow_cascades;
+			shadow_cascade_params_bind(offset, count);
 		}
 
 		header->invScreenWidth = 1.0f / gr_screen.max_w;
@@ -540,8 +537,8 @@ void gr_opengl_deferred_lighting_finish()
 		GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_composite_texture);
 		GL_state.Texture.Enable(1, GL_TEXTURE_2D, Scene_depth_texture);
 
-		float fog_near, fog_far, fog_density;
-		neb2_get_adjusted_fog_values(&fog_near, &fog_far, &fog_density);
+		float fog_near, fog_density;
+		neb2_get_adjusted_fog_values(&fog_near, &fog_density);
 		unsigned char r, g, b;
 		neb2_get_fog_color(&r, &g, &b);
 
@@ -556,6 +553,8 @@ void gr_opengl_deferred_lighting_finish()
 			data->fog_color.xyz.z = b / 255.f;
 			data->zNear           = Min_draw_distance;
 			data->zFar            = Max_draw_distance;
+			data->clip_inf_dist	  = Neb2_fog_skybox_clip_distance;
+			data->clip_dist       = Neb2_fog_clip_distance;
 		});
 
 		opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);

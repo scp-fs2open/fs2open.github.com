@@ -16,6 +16,11 @@ namespace fso::fred::dialogs {
 BackgroundEditorDialogModel::BackgroundEditorDialogModel(QObject* parent, EditorViewport* viewport)
 	: AbstractDialogModel(parent, viewport)
 {
+	initializeData();
+}
+
+void BackgroundEditorDialogModel::initializeData()
+{
 	auto& bg = getActiveBackground();
 	auto& bm_list = bg.bitmaps;
 	if (!bm_list.empty()) {
@@ -26,6 +31,13 @@ BackgroundEditorDialogModel::BackgroundEditorDialogModel(QObject* parent, Editor
 	if (!sun_list.empty()) {
 		_selectedSunIndex = 0;
 	}
+
+	_initial_fog_1000m_vis = Neb2_fog_1000m_visibility;
+	_initial_fog_near_dist = Neb2_fog_near_distance;
+	_initial_fog_skybox_clip = Neb2_fog_skybox_clip_distance;
+	_initial_fog_clip = Neb2_fog_clip_distance;
+
+	_modified = false;
 }
 
 bool BackgroundEditorDialogModel::apply()
@@ -48,9 +60,15 @@ void BackgroundEditorDialogModel::reject()
 void BackgroundEditorDialogModel::refreshBackgroundPreview()
 {
 	stars_load_background(Cur_background); // rebuild instances from Backgrounds[]
-	stars_set_background_model(The_mission.skybox_model, nullptr, The_mission.skybox_flags); // rebuild skybox
+
+	// The mission stores the base model name (no extension); the save code adds .pof when writing.
+	// model_load needs the .pof extension to find the file, so append it if missing.
+	SCP_string skybox_model = The_mission.skybox_model;
+	if (!skybox_model.empty() && skybox_model.find('.') == SCP_string::npos)
+		skybox_model += ".pof";
+
+	stars_set_background_model(skybox_model.c_str(), nullptr, The_mission.skybox_flags); // rebuild skybox
 	stars_set_background_orientation(&The_mission.skybox_orientation);
-	// TODO make this actually show the stars in the background
 	_editor->missionChanged();
 }
 
@@ -856,24 +874,55 @@ void BackgroundEditorDialogModel::setShipTrailsToggled(bool on)
 	set_modified();
 }
 
-float BackgroundEditorDialogModel::getFogNearMultiplier()
+float BackgroundEditorDialogModel::getFog1000mVisibility()
 {
-	return Neb2_fog_near_mult;
+	return Neb2_fog_1000m_visibility;
 }
 
-void BackgroundEditorDialogModel::setFogNearMultiplier(float v)
+void BackgroundEditorDialogModel::setFog1000mVisibility(float v)
 {
-	modify(Neb2_fog_near_mult, v);
+	modify(Neb2_fog_1000m_visibility, v);
 }
 
-float BackgroundEditorDialogModel::getFogFarMultiplier()
+float BackgroundEditorDialogModel::getFogNearDistance()
 {
-	return Neb2_fog_far_mult;
+	return Neb2_fog_near_distance;
 }
 
-void BackgroundEditorDialogModel::setFogFarMultiplier(float v)
+void BackgroundEditorDialogModel::setFogNearDistance(float v)
 {
-	modify(Neb2_fog_far_mult, v);
+	modify(Neb2_fog_near_distance, v);
+}
+
+float BackgroundEditorDialogModel::getFogSkyboxClipDistance()
+{
+	return Neb2_fog_skybox_clip_distance;
+}
+
+void BackgroundEditorDialogModel::setFogSkyboxClipDistance(float v)
+{
+	modify(Neb2_fog_skybox_clip_distance, v);
+}
+
+float BackgroundEditorDialogModel::getFogClipDistance()
+{
+	return Neb2_fog_clip_distance;
+}
+
+void BackgroundEditorDialogModel::setFogClipDistance(float v)
+{
+	modify(Neb2_fog_clip_distance, v);
+}
+
+void BackgroundEditorDialogModel::finalizeFogChanges()
+{
+	if (!fl_equal(Neb2_fog_1000m_visibility, _initial_fog_1000m_vis)
+		|| !fl_equal(Neb2_fog_near_distance, _initial_fog_near_dist)
+		|| !fl_equal(Neb2_fog_skybox_clip_distance, _initial_fog_skybox_clip)
+		|| !fl_equal(Neb2_fog_clip_distance, _initial_fog_clip))
+	{
+		modify(Neb2_fog_save_legacy_values, false);
+	}
 }
 
 bool BackgroundEditorDialogModel::getDisplayBackgroundBitmaps()

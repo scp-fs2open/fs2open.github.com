@@ -13,7 +13,7 @@ MissionGoalsDialog::MissionGoalsDialog(QWidget* parent, EditorViewport* viewport
 {
 	ui->setupUi(this);
 
-	ui->goalEventTree->initializeEditor(viewport->editor, this);
+	ui->goalEventTree->initializeEditor(viewport->editor, this, viewport);
 	_model->setTreeControl(ui->goalEventTree);
 
 	ui->goalName->setMaxLength(NAME_LENGTH - 1);
@@ -22,6 +22,7 @@ MissionGoalsDialog::MissionGoalsDialog(QWidget* parent, EditorViewport* viewport
 	ui->helpTextBox->setVisible(viewport->Show_sexp_help_mission_goals);
 
 	connect(_model.get(), &MissionGoalsDialogModel::modelChanged, this, &MissionGoalsDialog::updateUi);
+	connect(ui->goalEventTree, &sexp_tree_view::modified, this, [this] { _model->setModified(); });
 
 	_model->initializeData();
 
@@ -36,7 +37,6 @@ void MissionGoalsDialog::accept()
 {
 	// If apply() returns true, close the dialog
 	if (_model->apply()) {
-		_viewport->editor->autosave("goal editor");
 		QDialog::accept();
 	}
 	// else: validation failed, don't close
@@ -104,9 +104,9 @@ void MissionGoalsDialog::load_tree()
 	ui->goalEventTree->clear_tree();
 	auto& goals = _model->getGoals();
 	for (auto& goal : goals) {
-		goal.formula = ui->goalEventTree->load_sub_tree(goal.formula, true, "true");
+		goal.formula = ui->goalEventTree->_model.load_sub_tree(goal.formula, true, "true");
 	}
-	ui->goalEventTree->post_load();
+	ui->goalEventTree->_model.post_load();
 }
 void MissionGoalsDialog::recreate_tree()
 {
@@ -118,7 +118,7 @@ void MissionGoalsDialog::recreate_tree()
 		}
 
 		auto h = ui->goalEventTree->insert(goal.name.c_str());
-		h->setData(0, sexp_tree::FormulaDataRole, goal.formula);
+		h->setData(0, sexp_tree_view::FormulaDataRole, goal.formula);
 		ui->goalEventTree->add_sub_tree(goal.formula, h);
 	}
 
@@ -133,7 +133,7 @@ void MissionGoalsDialog::createNewObjective()
 	ui->goalEventTree->setCurrentItemIndex(-1);
 	ui->goalEventTree->add_operator("true", h);
 	auto index = goal.formula = ui->goalEventTree->getCurrentItemIndex();
-	h->setData(0, sexp_tree::FormulaDataRole, index);
+	h->setData(0, sexp_tree_view::FormulaDataRole, index);
 
 	ui->goalEventTree->setCurrentItem(h);
 }

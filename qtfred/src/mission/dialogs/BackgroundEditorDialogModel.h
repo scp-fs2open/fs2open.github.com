@@ -99,10 +99,16 @@ class BackgroundEditorDialogModel : public AbstractDialogModel {
 	void setSelectedPoofs(const SCP_vector<SCP_string>& names);
 	static bool getShipTrailsToggled();
 	void setShipTrailsToggled(bool on);
-	static float getFogNearMultiplier();
-	void setFogNearMultiplier(float v);
-	static float getFogFarMultiplier();
-	void setFogFarMultiplier(float v);
+	static float getFog1000mVisibility();
+	void setFog1000mVisibility(float v);
+	static float getFogNearDistance();
+	void setFogNearDistance(float v);
+	static float getFogSkyboxClipDistance();
+	void setFogSkyboxClipDistance(float v);
+	static float getFogClipDistance();
+	void setFogClipDistance(float v);
+
+	void finalizeFogChanges();
 	static bool getDisplayBackgroundBitmaps();
 	void setDisplayBackgroundBitmaps(bool on);
 	static bool getFogPaletteOverride();
@@ -170,6 +176,7 @@ class BackgroundEditorDialogModel : public AbstractDialogModel {
 	void setLightingProfileName(const SCP_string& name);
 
   private:
+	void initializeData();
 	void refreshBackgroundPreview();
 	static background_t& getActiveBackground();
 	starfield_list_entry* getActiveBitmap() const;
@@ -178,6 +185,11 @@ class BackgroundEditorDialogModel : public AbstractDialogModel {
 	int _selectedBitmapIndex = -1; // index into Backgrounds[Cur_background].bitmaps
 	int _selectedSunIndex = -1;    // index into Backgrounds[Cur_background].suns
 	int _swapIndex = 0;            // index of background to swap with
+
+	float _initial_fog_1000m_vis = 0.0f;
+	float _initial_fog_near_dist = 0.0f;
+	float _initial_fog_skybox_clip = 0.0f;
+	float _initial_fog_clip = 0.0f;
 
 };
 } // namespace fso::fred::dialogs

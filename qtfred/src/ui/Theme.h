@@ -24,4 +24,7 @@ void bindStandardIcon(QAbstractButton* btn, QStyle::StandardPixmap sp);
 // the current palette, and refreshes automatically when the theme changes.
 void bindThemeIcon(QAction* action, const QString& baseName);
 
+// Overload for QAbstractButton (e.g. QToolButton in the transform bar).
+void bindThemeIcon(QAbstractButton* btn, const QString& baseName);
+
 } // namespace fso::fred

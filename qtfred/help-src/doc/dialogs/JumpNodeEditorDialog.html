@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Jump Node Editor - QtFRED Help</title>
+    <link rel="stylesheet" type="text/css" href="../css/help.css"/>
+</head>
+<body>
+<nav class="breadcrumb"><a href="../index.html">QtFRED Help</a> &rsaquo; Objects &rsaquo; Jump Node Editor</nav>
+<h1>Jump Node Editor</h1>
+<p>Opens via <strong>Editors &rsaquo; Jump Node Editor</strong>.</p>
+<p>Creates and configures subspace jump nodes. Jump nodes are fixed points in space that
+ships can use to enter or exit subspace. They appear on the HUD radar and can be
+targeted.</p>
+
+<p>The dialog tracks the viewport selection. Select jump node objects in the viewport
+to edit their properties. When multiple nodes are selected, all edits except the
+node name apply to every selected node at once. Color channels and the hidden state
+display a mixed indicator when the selected nodes disagree, and editing one of them
+clears that mixed state.</p>
+
+<h2>Navigation</h2>
+<table>
+    <tr><th>Button</th><th>Description</th></tr>
+    <tr><td>Prev / Next</td><td>Cycles the viewport selection to the previous or next
+        jump node in the mission, allowing sequential editing without switching back
+        to the viewport.</td></tr>
+</table>
+
+<h2>Key fields</h2>
+<table>
+    <tr><th>Field</th><th>Description</th></tr>
+    <tr><td>Name</td><td>Internal identifier used in SEXPs and mission scripting.
+        Must be unique. When multiple nodes are selected, shows the name of the first
+        selected node and renames only that node.</td></tr>
+    <tr><td>Layer</td><td>The layer the jump node is assigned to. Applied to all
+        selected nodes.</td></tr>
+    <tr><td>Display name</td><td>Name shown to the player on the HUD and in targeting.
+        Set to <code>&lt;none&gt;</code> to fall back to the internal name. Applied to
+        all selected nodes; when nodes disagree the field shows blank until edited.</td></tr>
+    <tr><td>Model file</td><td>POF model rendered at the node's position. Applied to
+        all selected nodes; when nodes disagree the field shows blank until edited.</td></tr>
+    <tr><td>Node color (RGBA)</td><td>Color used to render the node model in the
+        mission. The color swatch next to the fields shows a live preview of the
+        current color. Applied to all selected nodes. Channels that differ across the
+        selection show blank until edited, and the swatch shows a "?" indicator.</td></tr>
+    <tr><td>Hidden by default</td><td>When checked, the node starts the mission hidden.
+        Applied to all selected nodes. Displays as a partially-checked tri-state when
+        nodes disagree, until the box is clicked.</td></tr>
+</table>
+
+</body>
+</html>

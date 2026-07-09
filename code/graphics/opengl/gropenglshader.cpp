@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
  * All source code herein is the property of Volition, Inc. You may not sell
@@ -27,6 +27,9 @@
 #include "math/vecmat.h"
 #include "mod_table/mod_table.h"
 #include "render/3d.h"
+#ifdef USE_OPENGL_ES
+#include "es_compatibility.h"
+#endif
 
 #include <jansson.h>
 #include <md5.h>
@@ -68,6 +71,7 @@ struct opengl_uniform_block_binding {
 opengl_uniform_block_binding GL_uniform_blocks[] = {
     {uniform_block_type::Lights, "lightData"},
     {uniform_block_type::ModelData, "modelData"},
+    {uniform_block_type::ShadowMapData, "shadowMapData"},
     {uniform_block_type::NanoVGData, "NanoVGUniformData"},
     {uniform_block_type::DecalInfo, "decalInfoData"},
     {uniform_block_type::DecalGlobals, "decalGlobalData"},
@@ -75,6 +79,7 @@ opengl_uniform_block_binding GL_uniform_blocks[] = {
     {uniform_block_type::Matrices, "matrixData"},
 	{uniform_block_type::MovieData, "movieData"},
     {uniform_block_type::GenericData, "genericData"},
+    {uniform_block_type::ShadowCascadeParams, "shadowCascadeParams"},
 };
 
 /**
@@ -175,6 +180,12 @@ static opengl_shader_type_t GL_shader_types[] = {
 
 	{ SDR_TYPE_IRRADIANCE_MAP_GEN, "post-v.sdr", "irrmap-f.sdr", nullptr,
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Irradiance Map Generation", false },
+
+	{ SDR_TYPE_SHADOW_MAP_GEN, "shadow_map-v.sdr", "shadow_map-f.sdr", "shadow_map-g.sdr",
+		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD, opengl_vert_attrib::NORMAL, opengl_vert_attrib::TANGENT, opengl_vert_attrib::MODEL_ID }, "Shadow Map Generation", false },
+
+	{ SDR_TYPE_GAMMA_BLIT, "post-v.sdr", "gamma-correct-f.sdr", nullptr,
+		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Gamma correct blit", false },
 };
 // clang-format on
 
@@ -212,7 +223,10 @@ static opengl_shader_variant_t GL_shader_variants[] = {
 
 	{SDR_TYPE_COPY_WORLD, false, SDR_FLAG_COPY_FROM_ARRAY, "COPY_ARRAY", {}, "Expects to copy from an array texture"},
 
-	{SDR_TYPE_POST_PROCESS_TONEMAPPING, false, SDR_FLAG_TONEMAPPING_LINEAR_OUT, "LINEAR_OUT", {}, "Will make the tonemapper output in linear color space and not in sRGB"}
+	{SDR_TYPE_POST_PROCESS_TONEMAPPING, false, SDR_FLAG_TONEMAPPING_LINEAR_OUT, "LINEAR_OUT", {}, "Will make the tonemapper output in linear color space and not in sRGB"},
+
+	{SDR_TYPE_SHADOW_MAP_GEN, true, SDR_FLAG_SHADOW_FALLBACK, "GEOMETRY_FALLBACK", {}, "Will make the shadow map generation shader fall back on geometry shaders if multi viewports are not avilable"}
+
 };
 
 static const int GL_num_shader_variants = sizeof(GL_shader_variants) / sizeof(opengl_shader_variant_t);
@@ -304,8 +318,11 @@ void opengl_shader_shutdown()
 static SCP_string opengl_shader_get_header(shader_type type_id, int flags, bool has_geo_shader) {
 	SCP_stringstream sflags;
 
+#ifndef USE_OPENGL_ES
 	sflags << "#version " << GLSL_version << " core\n";
-
+#else
+	sflags << "#version " << GLSL_version << " es\n";
+#endif
 	if (Detail.lighting < 3) {
 		sflags << "#define FLAG_LIGHT_MODEL_BLINN_PHONG\n";
 	}
@@ -503,8 +520,8 @@ static SCP_string handle_predefines(const char* filename, const SCP_string& orig
 	SCP_stringstream output;
 	SCP_unordered_map<SCP_string, SCP_string> defines;
 
-	//In any shader, define GLOBAL_FAR_Z
 	output << "#define GLOBAL_FAR_Z " << std::fixed << std::setprecision(2) << Max_draw_distance << std::defaultfloat << '\n';
+	output << "#define NUM_SHADOW_CASCADES " << (Num_shadow_cascades + Num_cockpit_shadow_cascades) << '\n';
 
 	const char* PREDEFINE_STRING = "#predefine";
 	const char* PREREPLACE_STRING = "#prereplace";
@@ -875,7 +892,7 @@ void opengl_compile_shader_actual(shader_type sdr, const uint &flags, opengl_sha
 		}
 		catch (const std::exception&) {
 			// Since all shaders are required a compilation failure is a fatal error
-			Error(LOCATION, "A shader failed to compile! Check the debug log for more information.");
+			Error(LOCATION, "A shader failed to compile! %s. Check the debug log for more information.", sdr_info->description );
 		}
 
 		cache_program_binary(program->getShaderHandle(), shader_hash);

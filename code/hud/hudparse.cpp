@@ -317,7 +317,7 @@ void parse_hud_gauges_tbl(const char *filename)
 					preset.g = rgb[1];
 					preset.b = rgb[2];
 
-					HC_colors[i] = preset;
+					HC_colors[i] = std::move(preset);
 					if (optional_string("+Default")) {
 						HC_default_color = i;
 					}

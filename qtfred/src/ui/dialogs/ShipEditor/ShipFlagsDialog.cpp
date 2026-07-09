@@ -14,14 +14,15 @@ ShipFlagsDialog::ShipFlagsDialog(QWidget* parent, EditorViewport* viewport)
 	  _viewport(viewport)
 {
 	ui->setupUi(this);
+	setAttribute(Qt::WA_AlwaysShowToolTips);
 
-
-	// Column One
-
-		connect(ui->flagList, &fso::fred::FlagListWidget::flagToggled, this, [this](const QString& name, bool checked) {
-		_model->setFlag(name.toUtf8().constData(), checked);
-		updateUI();
-	});
+	connect(ui->flagList, &fso::fred::FlagListWidget::flagsChanged, this,
+		[this](const QVector<std::pair<QString, int>>& snapshot) {
+			for (const auto& [name, state] : snapshot) {
+				_model->setFlag(name.toUtf8().constData(), state);
+			}
+			updateUi();
+		});
 
 	const auto& flags = _model->getFlagsList();
 
@@ -32,8 +33,19 @@ ShipFlagsDialog::ShipFlagsDialog(QWidget* parent, EditorViewport* viewport)
 		toWidget.append({name, p.second});
 	}
 
-	ui->flagList->setFlags(toWidget);
-	updateUI();
+	{
+		QSignalBlocker blocker(ui->flagList);
+		ui->flagList->setFlags(toWidget);
+
+		const auto descs = _model->getShipFlagDescriptions();
+		QVector<std::pair<QString, QString>> qtDescs;
+		qtDescs.reserve(static_cast<int>(descs.size()));
+		for (const auto& d : descs)
+			qtDescs.append({QString::fromUtf8(d.first.c_str()), QString::fromUtf8(d.second.c_str())});
+		ui->flagList->setFlagDescriptions(qtDescs);
+	}
+
+	updateUi();
 	// Resize the dialog to the minimum size
 	resize(QDialog::sizeHint());
 }
@@ -45,7 +57,7 @@ void ShipFlagsDialog::accept() {
 	if (_model->apply()) {
 		QDialog::accept();
 	}
-	// else: validation failed, don’t close
+	// else: validation failed, don't close
 }
 
 void ShipFlagsDialog::reject() {
@@ -83,20 +95,23 @@ void ShipFlagsDialog::on_kamikazeDamageSpinBox_valueChanged(int value)
 {
 	_model->setKamikazeDamage(value);
 }
-void ShipFlagsDialog::updateUI()
+void ShipFlagsDialog::updateUi()
 {
 	util::SignalBlockers blockers(this);
 	ui->destroySecondsSpinBox->setValue(_model->getDestroyTime());
-	ui->destroyedlabel->setVisible(_model->getFlag("Destroy before Mission")->second);
-	ui->destroySecondsSpinBox->setVisible(_model->getFlag("Destroy before Mission")->second);
-	ui->destroySecondsLabel->setVisible(_model->getFlag("Destroy before Mission")->second);
+	auto* destroyFlag = _model->getFlag("Destroy before Mission");
+	ui->destroyedlabel->setVisible(destroyFlag && destroyFlag->second);
+	ui->destroySecondsSpinBox->setVisible(destroyFlag && destroyFlag->second);
+	ui->destroySecondsLabel->setVisible(destroyFlag && destroyFlag->second);
 
+	auto* escortFlag = _model->getFlag("escort");
 	ui->escortPrioritySpinBox->setValue(_model->getEscortPriority());
-	ui->escortLabel->setVisible(_model->getFlag("escort")->second);
-	ui->escortPrioritySpinBox->setVisible(_model->getFlag("escort")->second);
+	ui->escortLabel->setVisible(escortFlag && escortFlag->second);
+	ui->escortPrioritySpinBox->setVisible(escortFlag && escortFlag->second);
 
+	auto* kamikazeFlag = _model->getFlag("kamikaze");
 	ui->kamikazeDamageSpinBox->setValue(_model->getKamikazeDamage());
-	ui->kamikazeLabel->setVisible(_model->getFlag("kamikaze")->second);
-	ui->kamikazeDamageSpinBox->setVisible(_model->getFlag("kamikaze")->second);
+	ui->kamikazeLabel->setVisible(kamikazeFlag && kamikazeFlag->second);
+	ui->kamikazeDamageSpinBox->setVisible(kamikazeFlag && kamikazeFlag->second);
 }
 } // namespace fso::fred::dialogs

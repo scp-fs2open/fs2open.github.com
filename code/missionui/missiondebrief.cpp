@@ -2277,7 +2277,8 @@ void debrief_do_frame(float frametime)
 {
 	int k=0, new_k=0;
 	const char *please_wait_str = XSTR("Please Wait", 1242);
-	char buf[256];
+	const size_t max_buf_len = 255;
+	char buf[max_buf_len+1];
 
 	Assert(Debrief_inited);	
 
@@ -2458,8 +2459,9 @@ void debrief_do_frame(float frametime)
 
 	// draw the title of the mission
 	gr_set_color_fast(&Color_bright_white);
-	strcpy_s(buf, The_mission.name);
-	font::force_fit_string(buf, 255, Debrief_title_coords[gr_screen.res][2]);
+	strncpy(buf, The_mission.name.c_str(), max_buf_len);
+	buf[max_buf_len] = '\0';
+	font::force_fit_string(buf, max_buf_len, Debrief_title_coords[gr_screen.res][2]);
 	gr_string(Debrief_title_coords[gr_screen.res][0], Debrief_title_coords[gr_screen.res][1], buf, GR_RESIZE_MENU);	
 
 #if !defined(NDEBUG)

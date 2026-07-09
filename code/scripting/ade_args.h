@@ -125,7 +125,7 @@ inline bool get_args_actual(lua_State* /*L*/, get_args_state& state, const char*
 			state.counted_args++;
 			break;
 		default:
-			UNREACHABLE("Invalid format string '%s'!", fmt);
+			Assertion(false, "Invalid format string '%s'!", fmt);
 			return false;
 		}
 

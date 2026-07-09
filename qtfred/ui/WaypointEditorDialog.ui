@@ -24,25 +24,23 @@
        <property name="labelAlignment">
         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
        </property>
-       <item row="0" column="0">
-        <widget class="QLabel" name="pathLabel">
-         <property name="text">
-          <string>Wa&amp;ypoint Path</string>
-         </property>
-         <property name="buddy">
-          <cstring>pathSelection</cstring>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="1">
-        <widget class="QComboBox" name="pathSelection">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-        </widget>
+       <item row="0" column="0" colspan="2">
+        <layout class="QHBoxLayout" name="navigationLayout">
+         <item>
+          <widget class="QPushButton" name="prevPathButton">
+           <property name="text">
+            <string>&amp;Prev</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="nextPathButton">
+           <property name="text">
+            <string>&amp;Next</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </item>
        <item row="1" column="0">
         <widget class="QLabel" name="nameLabel">
@@ -60,21 +58,38 @@
        <item row="1" column="1">
         <widget class="QLineEdit" name="nameEdit"/>
        </item>
-       <item row="2" column="0" colspan="2">
+       <item row="2" column="0">
+        <widget class="QLabel" name="layerLabel">
+         <property name="text">
+          <string>Layer</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="1">
+        <widget class="QComboBox" name="layerCombo">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="0" colspan="2">
         <widget class="QCheckBox" name="noDrawLinesCheck">
          <property name="text">
           <string>No Draw Lines</string>
          </property>
         </widget>
        </item>
-       <item row="3" column="0" colspan="2">
+       <item row="4" column="0" colspan="2">
         <widget class="QCheckBox" name="customColorCheck">
          <property name="text">
           <string>Custom Color</string>
          </property>
         </widget>
        </item>
-       <item row="4" column="0" colspan="2">
+       <item row="5" column="0" colspan="2">
         <layout class="QHBoxLayout" name="colorLayout">
          <item>
           <widget class="QLabel" name="colorRLabel">

@@ -1322,7 +1322,7 @@ static void handle_unix_modlist(char **modlist, size_t *len)
 
 	for (char *cur_mod = strtok(*modlist, ","); cur_mod != NULL; cur_mod = strtok(NULL, ",")) {
 		SCP_string path = get_real_mod_path(cur_mod);
-		mod_paths.push_back(path);
+		mod_paths.push_back(std::move(path));
 	}
 
 	// create new char[] to replace modlist
@@ -1414,7 +1414,7 @@ static json_t* json_get_v1() {
 		auto voices = speech_enumerate_voices();
 
 		for (auto& voice : voices) {
-			json_array_append_new(voices_array, json_string(voice.c_str()));
+			json_array_append_new(voices_array, json_string(voice.second.c_str()));
 		}
 
 		json_object_set_new(root, "voices", voices_array);

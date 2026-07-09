@@ -5,6 +5,7 @@
 #include <ui/FredView.h>
 
 #include <QAbstractButton>
+#include <QString>
 #include <QtWidgets/QDialog>
 
 
@@ -60,7 +61,7 @@ private: // NOLINT(readability-redundant-access-specifiers)
 	void updateUi();
 	void enableDisableControls();
 
-	static bool browseFile(QString* stringIn);
+	bool browseFile(QString* stringIn, const QString& settingsKey, const QString& defaultDir, const QString& filter);
 
 };
 } // namespace fso::fred::dialogs

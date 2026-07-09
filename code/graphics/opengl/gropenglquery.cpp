@@ -1,4 +1,6 @@
-
+#ifdef USE_OPENGL_ES
+#include "es_compatibility.h"
+#endif
 #include "graphics/opengl/gropenglquery.h"
 #include "graphics/opengl/gropengl.h"
 
@@ -50,7 +52,7 @@ void gr_opengl_query_value(int obj, QueryType type) {
 			glQueryCounter(slot.name, GL_TIMESTAMP);
 			break;
 		default:
-			UNREACHABLE("Unhandled enum value!");
+			UNREACHABLE("Unhandled enum value %d!", static_cast<int>(type));
 			break;
 	}
 }

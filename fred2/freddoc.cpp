@@ -36,6 +36,7 @@
 #include "localization/fhash.h"
 #include "localization/localize.h"
 #include "mission/missiongoals.h"
+#include "mission/missiongrid.h"
 #include "mission/missionparse.h"
 #include "object/object.h"
 #include "render/3d.h"
@@ -226,12 +227,20 @@ bool CFREDDoc::load_mission(const char *pathname, int flags) {
 	chdir(Fred_base_dir);
 
 	char name[512], *old_name;
-	int i, j, k, ob;
+	int i, j, ob;
 	int used_pool[MAX_WEAPON_TYPES];
 	object *objp;
 
 	Parse_viewer_pos = view_pos;
 	Parse_viewer_orient = view_orient;
+
+	// preserve the editor grid across the reload; it's display state, not part of the mission,
+	// but clear_mission() recreates it via fred_render_init().  (See the view_pos/view_orient handling above and below.)
+	matrix grid_orient = The_grid->gmatrix;
+	vec3d grid_center = The_grid->center;
+	int grid_nrows = The_grid->nrows;
+	int grid_ncols = The_grid->ncols;
+	float grid_square_size = The_grid->square_size;
 
 	// activate the localizer hash table
 	fhash_flush();
@@ -257,9 +266,9 @@ bool CFREDDoc::load_mission(const char *pathname, int flags) {
 	// message 2: unknown classes
 	if ((Num_unknown_ship_classes > 0) || (Num_unknown_prop_classes > 0) || (Num_unknown_weapon_classes > 0) || (Num_unknown_loadout_classes > 0)) {
 		if (flags & MPF_IMPORT_FSM) {
-			char msg[256];
-			sprintf(msg, "Fred encountered unknown ship/prop/weapon classes when importing \"%s\" (path \"%s\"). You will have to manually edit the converted mission to correct this.", The_mission.name, pathname);
-			Fred_view_wnd->MessageBox(msg);
+			SCP_string msg;
+			sprintf(msg, "Fred encountered unknown ship/prop/weapon classes when importing \"%s\" (path \"%s\"). You will have to manually edit the converted mission to correct this.", The_mission.name.c_str(), pathname);
+			Fred_view_wnd->MessageBox(msg.c_str());
 		} else {
 			Fred_view_wnd->MessageBox("Fred encountered unknown ship/prop/weapon classes when parsing the mission file. This may be due to mission disk data you do not have.");
 		}
@@ -317,17 +326,18 @@ bool CFREDDoc::load_mission(const char *pathname, int flags) {
 			if ((Objects[wing_objects[i][j]].type == OBJ_SHIP) || (Objects[wing_objects[i][j]].type == OBJ_START)) {  // don't change player ship names
 				wing_bash_ship_name(name, Wings[i].name, j + 1);
 				old_name = Ships[Wings[i].ship_index[j]].ship_name;
-				if (stricmp(name, old_name)) {  // need to fix name
+				if (stricmp(name, old_name) != 0) {  // need to fix name
 					update_sexp_references(old_name, name);
 					ai_update_goal_references(sexp_ref_type::SHIP, old_name, name);
 					update_texture_replacements(old_name, name);
-					for (k = 0; k < Num_reinforcements; k++)
-						if (!strcmp(old_name, Reinforcements[k].name)) {
-							Assert(strlen(name) < NAME_LENGTH);
-							strcpy_s(Reinforcements[k].name, name);
-						}
+					int k = find_item_with_string(Reinforcements, &reinforcements::name, old_name);
+					if (k >= 0) {
+						Assert(strlen(name) < NAME_LENGTH);
+						strcpy_s(Reinforcements[k].name, name);
+					}
 
-					strcpy_s(Ships[Wings[i].ship_index[j]].ship_name, name);
+					// bash it again so that we handle display names if needed
+					wing_bash_ship_name(&Ships[Wings[i].ship_index[j]], &Wings[i], j + 1, true);
 				}
 			}
 		}
@@ -391,6 +401,10 @@ bool CFREDDoc::load_mission(const char *pathname, int flags) {
 
 	view_pos = Parse_viewer_pos;
 	view_orient = Parse_viewer_orient;
+
+	// restore the editor grid that was preserved above
+	create_grid(The_grid, &grid_orient.vec.fvec, &grid_orient.vec.rvec, &grid_center, grid_nrows, grid_ncols, grid_square_size);
+
 	set_modified(0);
 	stars_post_level_init();
 
@@ -629,9 +643,9 @@ BOOL CFREDDoc::OnOpenDocument(LPCTSTR pathname)
 	SCP_string created = The_mission.created;
 	CFileLocation res = cf_find_file_location(pathname, CF_TYPE_ANY);
 	time_t modified = res.m_time;
+	Assertion(res.found, "Couldn't find path '%s' even though parse_main() succeeded!", pathname);
 	if (!res.found)
 	{
-		UNREACHABLE("Couldn't find path '%s' even though parse_main() succeeded!", pathname);
 		created = "";	// prevent any backup check from succeeding so we just load the actual specified file
 	}
 

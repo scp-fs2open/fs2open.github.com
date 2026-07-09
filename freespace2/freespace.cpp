@@ -122,6 +122,7 @@
 #include "missionui/missionweaponchoice.h"
 #include "missionui/redalert.h"
 #include "mod_table/mod_table.h"
+#include "model/modelrender.h"
 #include "model/modelreplace.h"
 #include "nebula/neb.h"
 #include "nebula/neblightning.h"
@@ -399,6 +400,7 @@ int Show_net_stats;
 bool Pre_player_entry = false;
 
 int	Fred_running = 0;
+int	Qtfred_running = 0;
 bool running_unittests = false;
 
 // required for hudtarget... kinda dumb, but meh
@@ -819,6 +821,21 @@ void game_sunspot_process(float frametime)
 }
 
 
+// Top/bottom bar height for the "dead view" / supernova letterbox
+static int dead_view_letterbox_yborder()
+{
+	return gr_screen.max_h / 4;
+}
+
+// Apply the clip rect for the "dead view" / supernova letterbox interior
+static void set_dead_view_letterbox_clip()
+{
+	int yborder = dead_view_letterbox_yborder();
+	//	Numeric constants encouraged by J "pig farmer" S, who shall remain semi-anonymous.
+	// J.S. I've changed my ways!! See the new "no constants" code!!!
+	gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - yborder*2, GR_RESIZE_NONE);
+}
+
 /**
  * Call once a frame to diminish the flash effect to 0.
  * @param frametime Period over which to dimish at ::DIMINISH_RATE
@@ -902,7 +919,18 @@ static void game_flash_diminish(float frametime)
 		if ( b < 0 ) b = 0; else if ( b > 255 ) b = 255;
 
 		if ( (r!=0) || (g!=0) || (b!=0) ) {
+			// the letterbox bars are drawn earlier in the frame, but game_render_hud calls gr_reset_clip()
+			// before this runs, so the flash would paint over the bars unless we re-apply the letterbox clip
+			bool letterbox_active = (Game_mode & GM_DEAD) || (supernova_stage() >= SUPERNOVA_STAGE::HIT);
+			if (letterbox_active) {
+				set_dead_view_letterbox_clip();
+			}
+
 			gr_flash( r, g, b );
+
+			if (letterbox_active) {
+				gr_reset_clip();
+			}
 		}
 	}
 	
@@ -956,7 +984,7 @@ void game_level_close()
 		particle::ParticleManager::get()->clearSources();
 		particle::close();
 		trail_level_close();
-		ship_close_cockpit_displays(Player_ship);
+		ship_level_close();
 		hud_level_close();
 		hud_escort_clear_all();
 		model_instance_free_all();
@@ -2573,18 +2601,15 @@ void game_set_view_clip(float  /*frametime*/)
 	if ((Game_mode & GM_DEAD) || (supernova_stage() >= SUPERNOVA_STAGE::HIT))
 	{
 		// Set the clip region for the letterbox "dead view"
-		int yborder = gr_screen.max_h/4;
-
 		if (g3_in_frame() == 0) {
+			int yborder = dead_view_letterbox_yborder();
 			// Ensure that the bars are black
 			gr_set_color(0,0,0);
 			gr_set_bitmap(0); // Valathil - Don't ask me why this has to be here but otherwise the black bars don't draw
 			gr_rect(0, 0, gr_screen.max_w, yborder, GR_RESIZE_NONE);
 			gr_rect(0, gr_screen.max_h-yborder, gr_screen.max_w, yborder, GR_RESIZE_NONE);
 		} else {
-			//	Numeric constants encouraged by J "pig farmer" S, who shall remain semi-anonymous.
-			// J.S. I've changed my ways!! See the new "no constants" code!!!
-			gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - yborder*2, GR_RESIZE_NONE );	
+			set_dead_view_letterbox_clip();
 		}
 	}
 	else {
@@ -2982,7 +3007,7 @@ void say_view_target()
 				}
 
 			default:
-				UNREACHABLE("Trying to view an invalid object!");
+				UNREACHABLE("Trying to view an invalid object %d!", Objects[Player_ai->target_objnum].type);
 				break;
 			}
 
@@ -3526,7 +3551,7 @@ void game_render_frame( camid cid, const vec3d* offset, const matrix* rot_offset
 		stars_draw(1,1,1,0,0);
 	}
 
-	shadows_render_all(Proj_fov, &Eye_matrix, &Eye_position);
+	shadows_render_all(Proj_fov, &Eye_matrix, &Eye_position, offset, rot_offset, fov_override);
 	obj_render_queue_all();
 
 	// render all ships with shader effects on them
@@ -4123,7 +4148,7 @@ void game_do_full_frame(DEBUG_TIMER_SIG const vec3d* offset = nullptr, const mat
 			if (fov_override)
 				g3_set_fov(*fov_override);
 
-			scripting::hooks::OnHudDraw->run(scripting::hooks::ObjectDrawConditions{ Viewer_obj }, scripting_param_list);
+			scripting::hooks::OnHudDraw->run(scripting::hooks::ObjectDrawConditions{ Viewer_obj }, std::move(scripting_param_list));
 		}
 	}
 
@@ -5262,6 +5287,10 @@ void game_leave_state( int old_state, int new_state )
 {
 	events::GameLeaveState(old_state, new_state);
 
+	// Clear cached UI model instances when changing game states.
+	// New state UI screens can lazily recreate any instances they need.
+	model_clear_cached_ui_render_instances();
+
 	int end_mission = 1;
 
 	switch (new_state) {
@@ -5433,7 +5462,7 @@ void game_leave_state( int old_state, int new_state )
 				common_select_close();
 			}
 
-			if (new_state != GS_STATE_CONTROL_CONFIG && new_state != GS_STATE_HUD_CONFIG) {
+			if (new_state != GS_STATE_CONTROL_CONFIG && new_state != GS_STATE_HUD_CONFIG && new_state != GS_STATE_INGAME_OPTIONS) {
 				// unpause all sounds, since we could be headed back to the game
 				// only unpause if we're in-mission; we could also be in the main hall
 				if (Game_mode & GM_IN_MISSION) {
@@ -5783,7 +5812,7 @@ void game_enter_state( int old_state, int new_state )
 
 	if(scripting::hooks::OnStateStart->isActive()) {
 		if (scripting::hooks::OnStateStart->isOverride(script_param_list)) {
-			scripting::hooks::OnStateStart->run(script_param_list);
+			scripting::hooks::OnStateStart->run(std::move(script_param_list));
 			return;
 		}
 	}
@@ -6731,7 +6760,7 @@ void game_spew_pof_info_sub(int model_num, polymodel *pm, int sm, CFILE *out, in
 
 	// find the # of faces for this _individual_ object	
 	total = submodel_get_num_polys(model_num, sm);
-	if(strstr(pm->submodel[sm].name, "-destroyed")){
+	if (submodel_is_destroyed_form(pm->submodel[sm].name)) {
 		sub_total_destroyed = total;
 	}
 	
@@ -7437,11 +7466,11 @@ void Do_model_timings_test()
 	int model_id[MAX_POLYGON_MODELS];
 
 	// Load them all
-	for (auto & sip : Ship_info) {
-		sip.model_num = model_load(sip.pof_file);
+	for (auto & si : Ship_info) {
+		si.model_num = model_load(&si, false);
 
-		model_used[sip.model_num % MAX_POLYGON_MODELS]++;
-		model_id[sip.model_num % MAX_POLYGON_MODELS] = sip.model_num;
+		model_used[si.model_num % MAX_POLYGON_MODELS]++;
+		model_id[si.model_num % MAX_POLYGON_MODELS] = si.model_num;
 	}
 
 	Texture_fp = fopen( NOX("ShipTextures.txt"), "wt" );

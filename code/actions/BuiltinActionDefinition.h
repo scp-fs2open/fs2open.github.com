@@ -30,7 +30,7 @@ class BuiltinActionDefinition : public ActionDefinition {
 		// This should have been caught earlier
 		Assertion(paramIter != parameterExpressions.cend(), "Could not find built-in parameter!");
 
-		return std::unique_ptr<Action>(new TAction(paramIter->second.template asTyped<ActionValueType>()));
+		return std::make_unique<TAction>(paramIter->second.template asTyped<ActionValueType>());
 	}
 };
 

@@ -247,6 +247,7 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/fxaa-v.sdr
 	def_files/data/effects/fxaapre-f.sdr
 	def_files/data/effects/gamma.sdr
+	def_files/data/effects/gamma-correct-f.sdr
 	def_files/data/effects/irrmap-f.sdr
 	def_files/data/effects/lighting.sdr
 	def_files/data/effects/ls-f.sdr
@@ -266,6 +267,9 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/post-v.sdr
 	def_files/data/effects/rocketui-f.sdr
 	def_files/data/effects/rocketui-v.sdr
+	def_files/data/effects/shadow_map-f.sdr
+	def_files/data/effects/shadow_map-g.sdr
+	def_files/data/effects/shadow_map-v.sdr
 	def_files/data/effects/shadows.sdr
 	def_files/data/effects/shield-impact-v.sdr
 	def_files/data/effects/shield-impact-f.sdr
@@ -469,6 +473,7 @@ add_file_folder("Graphics"
 	graphics/post_processing.h
 	graphics/render.cpp
 	graphics/render.h
+	graphics/render_queue.h
 	graphics/shadows.cpp
 	graphics/shadows.h
 	graphics/tmapper.h
@@ -515,6 +520,7 @@ if (FSO_BUILD_WITH_OPENGL)
 		graphics/opengl/ShaderProgram.h
 		graphics/opengl/SmaaAreaTex.h
 		graphics/opengl/SmaaSearchTex.h
+		graphics/opengl/es_compatibility.h
 	)
 endif()
 
@@ -847,6 +853,16 @@ add_file_folder("MissionEditor"
 	missioneditor/campaignsave.h
 	missioneditor/missionsave.cpp
 	missioneditor/missionsave.h
+	missioneditor/objectduplication.cpp
+	missioneditor/objectduplication.h
+	missioneditor/sexp_annotation_model.cpp
+	missioneditor/sexp_annotation_model.h
+	missioneditor/sexp_tree_model.cpp
+	missioneditor/sexp_tree_model.h
+	missioneditor/sexp_tree_opf.cpp
+	missioneditor/sexp_tree_opf.h
+	missioneditor/sexp_tree_actions.cpp
+	missioneditor/sexp_tree_actions.h
 )
 
 # MissionUI files
@@ -1154,6 +1170,8 @@ add_file_folder("Particle\\\\Volumes"
 	particle/volumes/ConeVolume.h
 	particle/volumes/LegacyAACuboidVolume.cpp
 	particle/volumes/LegacyAACuboidVolume.h
+	particle/volumes/ModelSurfaceVolume.cpp
+	particle/volumes/ModelSurfaceVolume.h
 	particle/volumes/PointVolume.cpp
 	particle/volumes/PointVolume.h
 	particle/volumes/RingVolume.cpp
@@ -1518,6 +1536,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/sound.h
 	scripting/api/objs/species.cpp
 	scripting/api/objs/species.h
+	scripting/api/objs/support_rearm_pool.cpp
+	scripting/api/objs/support_rearm_pool.h
 	scripting/api/objs/streaminganim.cpp
 	scripting/api/objs/streaminganim.h
 	scripting/api/objs/subsystem.cpp
@@ -1621,16 +1641,30 @@ add_file_folder("Sound"
 	sound/rtvoice.h
 	sound/sound.cpp
 	sound/sound.h
-	sound/speech.cpp
 	sound/speech.h
 	sound/voicerec.cpp
 	sound/voicerec.h
 )
 
-if (APPLE)
+if (WIN32)
 	add_file_folder("Sound"
 		${file_root_sound}
-		sound/speech.mm
+		sound/speech_win.cpp
+	)
+elseif (APPLE)
+	add_file_folder("Sound"
+		${file_root_sound}
+		sound/speech_mac.mm
+	)
+elseif (ANDROID)
+	add_file_folder("Sound"
+		${file_root_sound}
+		sound/speech_android.cpp
+	)
+elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+	add_file_folder("Sound"
+		${file_root_sound}
+		sound/speech_linux.cpp
 	)
 endif()
 
@@ -1731,6 +1765,7 @@ add_file_folder("Utils"
 	utils/Random.cpp
 	utils/Random.h
 	utils/RandomRange.h
+	utils/reset_on_move.h
 	utils/string_utils.cpp
 	utils/string_utils.h
 	utils/table_viewer.cpp
@@ -1776,4 +1811,10 @@ add_file_folder("Weapon"
 add_file_folder("Windows Stubs"
 	windows_stub/config.h
 	windows_stub/stubs.cpp
+)
+
+# ktx utils files
+add_file_folder("ktxutils"
+	ktxutils/ktxutils.cpp
+	ktxutils/ktxutils.h
 )

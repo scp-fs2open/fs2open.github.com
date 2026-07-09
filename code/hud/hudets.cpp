@@ -398,15 +398,9 @@ void set_recharge_rates(object* obj, int shields, int weapons, int engines) {
 
 // -------------------------------------------------------------------------------------------------
 // set_default_recharge_rates() will set the charge levels for the weapons, shields and
-// engines to their default levels
+// engines to their default levels (regardless of whether the ship has power or an ETS)
 void set_default_recharge_rates(object* obj)
 {
-	ship* ship_p = &Ships[obj->instance];
-	ship_info* ship_info_p = &Ship_info[ship_p->ship_info_index];
-
-	if ( ship_info_p->power_output == 0 )
-		return;
-
 	int ship_properties = ets_properties(obj);
 
 	// the default charge rate depends on what systems are on each ship
@@ -440,7 +434,7 @@ void set_default_recharge_rates(object* obj)
 			break;
 
 		default:
-			Int3();	// if no systems, power output should be zero, and this funtion shouldn't be called
+			set_recharge_rates(obj, ZERO_INDEX, ZERO_INDEX, ZERO_INDEX);
 			break;
 	} // end switch
 }

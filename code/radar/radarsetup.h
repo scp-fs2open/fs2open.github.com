@@ -89,10 +89,18 @@ enum RadarVisibility
 	DISTORTED //!< Visible but not fully
 };
 
+enum class RadarIconMode {
+	Off = 0,
+	On = 1,
+	TargetOnly = 2
+};
+extern RadarIconMode Radar_2d_icon_mode;
+
 void radar_frame_init();
 void radar_mission_init();
 void radar_plot_object( object *objp );
 RadarVisibility radar_is_visible( object *objp );
+void radar_check_2d_icon_options();
 
 extern sound_handle Radar_static_looping;
 

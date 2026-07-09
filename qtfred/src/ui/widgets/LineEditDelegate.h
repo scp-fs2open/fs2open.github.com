@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QPainter>
 #include <QStyledItemDelegate>
 
 namespace fso::fred::dialogs {
@@ -11,6 +12,8 @@ class LineEditDelegate : public QStyledItemDelegate {
 
 	QWidget*
 	createEditor(QWidget* parent, const QStyleOptionViewItem& /*option*/, const QModelIndex& index) const override;
+
+	void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override;
 };
 
 } // namespace fso::fred::dialogs

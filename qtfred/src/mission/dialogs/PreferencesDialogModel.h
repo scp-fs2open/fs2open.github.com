@@ -18,14 +18,27 @@ public:
 	void reject() override;
 
 	// General
+	bool getOfferAutosaveRecovery() const;
+	void setOfferAutosaveRecovery(bool value);
+
+	int  getAutosaveIntervalSeconds() const;
+	void setAutosaveIntervalSeconds(int value);
+
+	bool getCreateBakOnSave() const;
+	void setCreateBakOnSave(bool value);
+
 	bool getMoveShipsWhenUndocking() const;
 	void setMoveShipsWhenUndocking(bool value);
 
 	bool getAlwaysSaveDisplayNames() const;
 	void setAlwaysSaveDisplayNames(bool value);
 
-	bool getErrorCheckerChecksForPotentialIssues() const;
-	void setErrorCheckerChecksForPotentialIssues(bool value);
+	// Error Checker
+	bool getCheckPotentialIssues() const;
+	void setCheckPotentialIssues(bool value);
+
+	bool getApplyAutoCorrections() const;
+	void setApplyAutoCorrections(bool value);
 
 	bool getShowSexpHelpMissionEvents() const;
 	void setShowSexpHelpMissionEvents(bool value);
@@ -40,6 +53,9 @@ public:
 
 	bool getDarkMode() const;
 	void setDarkMode(bool value);
+
+	int  getToolbarIconSize() const;
+	void setToolbarIconSize(int size);
 
 	// Controls
 	QKeySequence getControlKey(ControlAction action) const;
@@ -60,15 +76,20 @@ public:
 
 private:
 	// General
+	bool _offerAutosaveRecovery;
+	int  _autosaveIntervalSeconds;
+	bool _createBakOnSave;
 	bool _moveShipsWhenUndocking;
 	bool _alwaysSaveDisplayNames;
-	bool _errorCheckerChecksForPotentialIssues;
+	bool _checkPotentialIssues;
+	bool _applyAutoCorrections;
 	bool _showSexpHelpMissionEvents;
 	bool _showSexpHelpMissionGoals;
 	bool _showSexpHelpMissionCutscenes;
 	bool _showSexpHelpShipEditor;
 	bool _showSexpHelpWingEditor;
 	bool _darkMode;
+	int  _toolbarIconSize;
 
 	// Controls
 	std::map<ControlAction, QKeySequence> _controlKeys;

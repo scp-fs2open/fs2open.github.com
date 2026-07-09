@@ -31,6 +31,7 @@
 #include "math/fvi.h"
 #include "math/vecmat.h"
 #include "model/model.h"
+#include "model/modelrender.h"
 #include "model/modelreplace.h"
 #include "model/modelsinc.h"
 #include "parse/parselo.h"
@@ -71,6 +72,10 @@ SCP_vector<polymodel_instance*> Polygon_model_instances;
 SCP_vector<bsp_collision_tree> Bsp_collision_tree_list;
 
 const ubyte* Macro_ubyte_bounds = nullptr;
+
+//If true, CPU-side vertex buffers are deleted once the model is on-GPU.
+//This is typically desired for memory reasons, but will prevent certain type of particles.
+bool Model_load_clear_CPU_buffers = true;
 
 static int model_initted = 0;
 
@@ -196,7 +201,7 @@ void model_free(polymodel* pm)
 
 			if (pm->submodel[i].collision_tree_index >= 0) {
 				model_remove_bsp_collision_tree(pm->submodel[i].collision_tree_index);
-				pm->submodel[i].collision_tree_index = 0;
+				pm->submodel[i].collision_tree_index = -1;
 			}
 		}
 	}
@@ -277,6 +282,15 @@ void model_unload(int modelnum, int force)
 	for (auto& si : Ship_info) {
 		if (pm->id == si.model_num) {
 			si.model_num = -1;
+
+			// also reset any subsystem model_num references that pointed to this model,
+			// otherwise stale ids can survive across missions and cause subsystems to fail
+			// to re-link when the model is reloaded with a different id.
+			for (int k = 0; k < si.n_subsystems; k++) {
+				if (si.subsystems[k].model_num == pm->id) {
+					si.subsystems[k].model_num = -1;
+				}
+			}
 		}
 
 		if (pm->id == si.cockpit_model_num) {
@@ -324,6 +338,10 @@ void model_free_all()
 void model_instance_free_all()
 {
 	size_t i;
+
+	// invalidate the UI render instance cache first so it doesn't retain stale references
+	// into Polygon_model_instances after the loop below
+	model_clear_cached_ui_render_instances();
 
 	// free any outstanding model instances
 	for ( i = 0; i < Polygon_model_instances.size(); ++i ) {
@@ -592,7 +610,11 @@ void model_copy_subsystems( int n_subsystems, model_subsystem *d_sp, model_subsy
 			}
 		}
 		if ( j == n_subsystems )
-			Int3();							// get allender -- something is amiss with models
+			Error(LOCATION, "Subsystem '%s' could not be matched between two ship classes that share a model. "
+				"The destination ship will be missing this subsystem at runtime. "
+				"Check that subsystem names are spelled identically on both ship classes, "
+				"and that any modular table extensions to one ship are mirrored on the other.",
+				source->subobj_name);
 
 	}
 }
@@ -1125,7 +1147,8 @@ void create_vertex_buffer(polymodel *pm, const model_read_deferred_tasks& deferr
 		interp_pack_vertex_buffers(pm, i);
 
 		// release temporary memory
-		pm->submodel[i].buffer.release();
+		if (Model_load_clear_CPU_buffers)
+			pm->submodel[i].buffer.release();
 		pm->submodel[i].trans_buffer.release();
 	}
 
@@ -1277,7 +1300,7 @@ void determine_submodel_movement(bool is_rotation, const char *filename, bsp_inf
 
 		if (in(p, props, axis_string))
 		{
-			if (get_user_vec3d_value(p + 20, movement_axis, true, sm->name, filename))
+			if (get_user_vec3d_value(p + strlen(axis_string), movement_axis, true, sm->name, filename))
 			{
 				if (!fl_near_zero(vm_vec_mag(movement_axis)))
 					vm_vec_normalize(movement_axis);
@@ -2075,7 +2098,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 					sm->flags.set(Model::Submodel_flags::Nocollide_this_only);
 				}
 
-				sm->flags.set(Model::Submodel_flags::Is_damaged, in(sm->name, "-destroyed"));
+				sm->flags.set(Model::Submodel_flags::Is_damaged, submodel_is_destroyed_form(sm->name));
 
 				break;
 			}
@@ -2571,10 +2594,10 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				{
 					char tmp_name[127];
 					cfread_string_len(tmp_name,127,fp);
-					constexpr int max_buffer_size = MAX_FILENAME_LEN - 8;	// leave room for the longest suffix, "-reflect"
+					const auto max_buffer_size = static_cast<size_t>(MAX_FILENAME_LEN) - model_texture_longest_suffix().size();
 					if (strlen(tmp_name) >= max_buffer_size)
 					{
-						Warning(LOCATION, "Model '%s', texture '%s' filename is too long!  Truncating to %d characters.", pm->filename, tmp_name, max_buffer_size - 1);
+						Warning(LOCATION, "Model '%s', texture '%s' filename is too long!  Truncating to %d characters.", pm->filename, tmp_name, static_cast<int>(max_buffer_size - 1));
 						tmp_name[max_buffer_size - 1] = '\0';
 					}
 					model_load_texture(pm, i, tmp_name);
@@ -2729,6 +2752,11 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 					// read in world offset
 					cfread_vector(&pm->ins[idx].offset, fp);
 
+					vec3d min = {{{FLT_MAX, FLT_MAX, FLT_MAX}}};
+					vec3d max = {{{-FLT_MAX, -FLT_MAX, -FLT_MAX}}};
+					vec3d avg_total = ZERO_VECTOR;
+					vec3d avg_normal = ZERO_VECTOR;
+
 					// read in all the faces
 					for(idx2=0; idx2<pm->ins[idx].num_faces; idx2++){
 						// read in 3 vertices
@@ -2740,18 +2768,37 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 						vec3d tempv;
 
 						//get three points (rotated) and compute normal
+						const vec3d& v1 = pm->ins[idx].vecs[pm->ins[idx].faces[idx2][0]];
+						const vec3d& v2 = pm->ins[idx].vecs[pm->ins[idx].faces[idx2][1]];
+						const vec3d& v3 = pm->ins[idx].vecs[pm->ins[idx].faces[idx2][2]];
 
 						vm_vec_perp(&tempv,
-							&pm->ins[idx].vecs[pm->ins[idx].faces[idx2][0]],
-							&pm->ins[idx].vecs[pm->ins[idx].faces[idx2][1]],
-							&pm->ins[idx].vecs[pm->ins[idx].faces[idx2][2]]);
+							&v1,
+							&v2,
+							&v3);
 
 						vm_vec_normalize_safe(&tempv);
 
 						pm->ins[idx].norm[idx2] = tempv;
-//						mprintf(("insignorm %.2f %.2f %.2f\n",pm->ins[idx].norm[idx2].xyz.x, pm->ins[idx].norm[idx2].xyz.y, pm->ins[idx].norm[idx2].xyz.z));
+	//					mprintf(("insignorm %.2f %.2f %.2f\n",pm->ins[idx].norm[idx2].xyz.x, pm->ins[idx].norm[idx2].xyz.y, pm->ins[idx].norm[idx2].xyz.z));
 
+
+						vm_vec_min(&min, &min, &v1);
+						vm_vec_min(&min, &min, &v2);
+						vm_vec_min(&min, &min, &v3);
+						vm_vec_max(&max, &max, &v1);
+						vm_vec_max(&max, &max, &v2);
+						vm_vec_max(&max, &max, &v3);
+
+						vec3d avg = (v1 + v2 + v3) * (1.0f / 3.0f);
+						avg_total += avg;
+						avg_normal += tempv;
 					}
+
+					pm->ins[idx].position = avg_total / static_cast<float>(num_faces) + pm->ins[idx].offset;
+					vec3d bb = max - min;
+					pm->ins[idx].diameter = std::max({bb.xyz.x, bb.xyz.y, bb.xyz.z});
+					vm_vector_2_matrix(&pm->ins[idx].orientation, &avg_normal, &vmd_z_vector);
 				}
 				break;
 
@@ -3061,7 +3108,7 @@ void model_load_texture(polymodel *pm, int i, const char *file)
 	else
 	{
 		// check if we should be transparent, include "-trans" but make sure to skip anything that might be "-transport"
-		if ( (strstr(tmp_name, "-trans") && !strstr(tmp_name, "-transpo")) || strstr(tmp_name, "shockwave") || !strcmp(tmp_name, "nameplate") ) {
+		if ((strstr(tmp_name, MODEL_TEXTURE_SUFFIX_TRANS.c_str()) && !strstr(tmp_name, "-transpo")) || strstr(tmp_name, "shockwave") || !strcmp(tmp_name, "nameplate")) {
 			tmap->is_transparent = true;
 		}
 
@@ -3086,7 +3133,7 @@ void model_load_texture(polymodel *pm, int i, const char *file)
 	else
 	{
 		strcpy_s(tmp_name, file);
-		strcat_s(tmp_name, "-glow" );
+		strcat_s(tmp_name, MODEL_TEXTURE_SUFFIXES.at(TM_GLOW_TYPE).c_str());
 		strlwr(tmp_name);
 
 		tglow->LoadTexture(tmp_name, pm->filename);
@@ -3105,14 +3152,14 @@ void model_load_texture(polymodel *pm, int i, const char *file)
 	{
 		// look for reflectance map
 		strcpy_s(tmp_name, file);
-		strcat_s(tmp_name, "-reflect");
+		strcat_s(tmp_name, MODEL_TEXTURE_SUFFIXES.at(TM_SPEC_GLOSS_TYPE).c_str());
 		strlwr(tmp_name);
 
 		tspecgloss->LoadTexture(tmp_name, pm->filename);
 
 		// look for a legacy shine map as well
 		strcpy_s(tmp_name, file);
-		strcat_s(tmp_name, "-shine");
+		strcat_s(tmp_name, MODEL_TEXTURE_SUFFIXES.at(TM_SPECULAR_TYPE).c_str());
 		strlwr(tmp_name);
 
 		tspec->LoadTexture(tmp_name, pm->filename);
@@ -3126,7 +3173,7 @@ void model_load_texture(polymodel *pm, int i, const char *file)
 		tnorm->clear();
 	} else {
 		strcpy_s(tmp_name, file);
-		strcat_s(tmp_name, "-normal");
+		strcat_s(tmp_name, MODEL_TEXTURE_SUFFIXES.at(TM_NORMAL_TYPE).c_str());
 		strlwr(tmp_name);
 
 		tnorm->LoadTexture(tmp_name, pm->filename);
@@ -3138,7 +3185,7 @@ void model_load_texture(polymodel *pm, int i, const char *file)
 		theight->clear();
 	} else {
 		strcpy_s(tmp_name, file);
-		strcat_s(tmp_name, "-height");
+		strcat_s(tmp_name, MODEL_TEXTURE_SUFFIXES.at(TM_HEIGHT_TYPE).c_str());
 		strlwr(tmp_name);
 
 		theight->LoadTexture(tmp_name, pm->filename);
@@ -3148,7 +3195,7 @@ void model_load_texture(polymodel *pm, int i, const char *file)
 	texture_info *tambient = &tmap->textures[TM_AMBIENT_TYPE];
 
 	strcpy_s(tmp_name, file);
-	strcat_s(tmp_name, "-ao");
+	strcat_s(tmp_name, MODEL_TEXTURE_SUFFIXES.at(TM_AMBIENT_TYPE).c_str());
 	strlwr(tmp_name);
 
 	tambient->LoadTexture(tmp_name, pm->filename);
@@ -3157,7 +3204,7 @@ void model_load_texture(polymodel *pm, int i, const char *file)
 	texture_info *tmisc = &tmap->textures[TM_MISC_TYPE];
 
 	strcpy_s(tmp_name, file);
-	strcat_s(tmp_name, "-misc");
+	strcat_s(tmp_name, MODEL_TEXTURE_SUFFIXES.at(TM_MISC_TYPE).c_str());
 	strlwr(tmp_name);
 
 	tmisc->LoadTexture(tmp_name, pm->filename);
@@ -3166,7 +3213,7 @@ void model_load_texture(polymodel *pm, int i, const char *file)
 
 	// See if we need to compile a new shader for this material
 	if (Shadow_quality != ShadowQuality::Disabled)
-		gr_maybe_create_shader(SDR_TYPE_MODEL, MODEL_SDR_FLAG_SHADOW_MAP);
+		gr_maybe_create_shader(SDR_TYPE_SHADOW_MAP_GEN, gr_is_capable(gr_capability::CAPABILITY_FAST_SHADOWS) ? 0 : SDR_FLAG_SHADOW_FALLBACK);
 
 	gr_maybe_create_shader(SDR_TYPE_MODEL, 0);
 
@@ -3208,6 +3255,8 @@ int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool
 			if (!stricmp(filename , Polygon_models[i]->filename) && !allow_redundant_load) {
 				// Model already loaded; just return.
 				Polygon_models[i]->used_this_mission++;
+				if (sip != nullptr)
+					sip->model_num = Polygon_models[i]->id;
 				return Polygon_models[i]->id;
 			}
 		} else if ( num == -1 )	{
@@ -3294,22 +3343,16 @@ int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool
 
 	// Set up the default values
 	for (i=0; i<pm->n_models; i++ )	{
-		pm->submodel[i].my_replacement = -1;	// assume nothing replaces this
-		pm->submodel[i].i_replace = -1;		// assume this doesn't replaces anything
+		pm->submodel[i].next_form = -1;		// assume nothing replaces this
+		pm->submodel[i].prev_form = -1;		// assume this doesn't replace anything
 	}
 
 	// Search for models that have destroyed versions
 	for (i=0; i<pm->n_models; i++ )	{
-		int j;
-		char destroyed_name[128];
-
-		strcpy_s( destroyed_name, pm->submodel[i].name );
-		strcat_s( destroyed_name, "-destroyed" );
-		for (j=0; j<pm->n_models; j++ )	{
-			if ( !stricmp( pm->submodel[j].name, destroyed_name ))	{
-				pm->submodel[i].my_replacement = j;
-				pm->submodel[j].i_replace = i;
-			}
+		int j = submodel_find_destroyed_form(pm->id, pm->submodel[i].name);
+		if (j >= 0) {
+			pm->submodel[i].next_form = j;
+			pm->submodel[j].prev_form = i;
 		}
 
 		// Search for models with live debris
@@ -3327,12 +3370,8 @@ int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool
 				Assert(pm->submodel[i].num_live_debris < MAX_LIVE_DEBRIS);
 				pm->submodel[i].live_debris[pm->submodel[i].num_live_debris++] = j;
 				pm->submodel[j].flags.set(Model::Submodel_flags::Is_live_debris);
-
-				// make sure live debris doesn't have a parent
-				pm->submodel[j].parent = -1;
 			}
 		}
-
 	}
 
 	// maybe generate vertex buffers
@@ -3418,6 +3457,7 @@ int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool
 					if (dl2 >= sm1->num_details ) sm1->num_details = dl2+1;
 					sm1->details[dl2] = j;
   				    mprintf(( "Submodel '%s' is detail level %d of '%s'\n", sm2->name, dl2 + 1, sm1->name ));
+					sm2->flags.set(Model::Submodel_flags::Is_lod);
 					lower_to_higher_detail_submodels.emplace(sm2->name, sm1->name);
 				}
 			}
@@ -3482,6 +3522,8 @@ int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool
 	model_set_bay_path_nums(pm);
 
 	unpause_parse();
+	if (sip != nullptr)
+		sip->model_num = pm->id;
 	return pm->id;
 }
 
@@ -3513,8 +3555,16 @@ int model_create_instance(int objnum, int model_num)
 	}
 	pmi->id = open_slot;
 
-	if (pm->n_models > 0)
+	if (pm->n_models > 0) {
 		pmi->submodel = new submodel_instance[pm->n_models];
+
+		// "damaged" submodels (like -destroyed variants, or debris) are blown-off by default
+		for (int i = 0; i < pm->n_models; i++) {
+			if (pm->submodel[i].flags[Model::Submodel_flags::Is_damaged]) {
+				pmi->submodel[i].blown_off = true;
+			}
+		}
+	}
 
 	// add intrinsic_motion instances if this model is intrinsic-moving
 	if (pm->flags & PM_FLAG_HAS_INTRINSIC_MOTION) {
@@ -3649,7 +3699,7 @@ void model_set_bay_path_nums(polymodel *pm)
 	*/
 
 	// malloc out storage for the path information
-	pm->ship_bay = make_shared<ship_bay_t>();
+	pm->ship_bay = std::make_shared<ship_bay_t>();
 
 	pm->ship_bay->num_paths = 0;
 	// TODO: determine if zeroing out here is affecting any earlier initializations
@@ -3936,6 +3986,28 @@ int subobj_find_2d_bound(float radius ,matrix * /*orient*/, vec3d * pos,int *x1,
 	return 0;
 }
 
+int submodel_find_destroyed_form(int model_num, const char *name_stem)
+{
+	const auto pm = model_get(model_num);
+	Assertion(pm, "model_num must be valid!");
+
+	SCP_string destroyed_name(name_stem);
+	destroyed_name += "-destroyed";
+
+	return find_item_with_string(pm->submodel.get(), i2sz(pm->n_models), &bsp_info::name, destroyed_name);
+}
+
+bool submodel_is_destroyed_form(const char *name)
+{
+	constexpr auto suffix = "-destroyed";
+	constexpr auto suffix_len = std::char_traits<char>::length(suffix);
+
+	auto len = strlen(name);
+	if (len <= suffix_len)
+		return false;
+
+	return stricmp(name + len - suffix_len, suffix) == 0;
+}
 
 // Given a rotating submodel, find the local and world axes of rotation.
 void model_get_rotating_submodel_axis(vec3d *model_axis, vec3d *world_axis, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient)
@@ -4003,7 +4075,7 @@ void submodel_canonicalize_translation(bsp_info *sm, submodel_instance *smi)
 	smi->canonical_prev_offset = smi->canonical_offset;
 
 	// get the vector
-	switch (sm->rotation_axis_id)
+	switch (sm->translation_axis_id)
 	{
 		case MOVEMENT_AXIS_X:
 			vm_vec_copy_scale(&smi->canonical_offset, &vmd_x_vector, smi->cur_offset);
@@ -4795,8 +4867,9 @@ void model_get_moving_submodel_list(SCP_vector<int> &submodel_vector, const obje
 		const auto& child_submodel = pm->submodel[submodel];
 		const auto& child_submodel_instance = pmi->submodel[submodel];
 
-		// Don't check it or its children if it is destroyed or it is a replacement (non-moving)
-		if (child_submodel.flags[Model::Submodel_flags::No_collisions] || child_submodel_instance.blown_off || child_submodel.i_replace != -1) {
+		// Don't check it or its children if it is destroyed or it is a replacement
+		// (we currently assume replacements are -destroyed versions of submodels that might otherwise move)
+		if (child_submodel.flags[Model::Submodel_flags::No_collisions] || child_submodel_instance.blown_off || child_submodel.prev_form != -1) {
 			skipChildren = true;
 			return;
 		}
@@ -4923,7 +4996,10 @@ void model_set_up_techroom_instance(ship_info *sip, int model_instance_num)
 
 	model_iterate_submodel_tree(pm, pm->detail[0], [&](int submodel, int /*level*/, bool /*isLeaf*/)
 		{
-			model_replicate_submodel_instance(pm, pmi, submodel, empty);
+			auto sm = &pm->submodel[submodel];
+
+			if (sm->flags[Model::Submodel_flags::Can_move])
+				model_replicate_submodel_instance(pm, pmi, submodel, empty);
 		});
 }
 
@@ -4944,17 +5020,21 @@ void model_replicate_submodel_instance_sub(polymodel *pm, polymodel_instance *pm
 
 	submodel_instance *smi = &pmi->submodel[submodel_num];
 	bsp_info *sm = &pm->submodel[submodel_num];
-	
-	// Set the "blown out" flags.
+
+	// Set the "blown off" flags
 	if ( flags[Ship::Subsystem_Flags::No_disappear] ) {
 		smi->blown_off = false;
 	} else if ( copy_from ) {
 		smi->blown_off = copy_from->blown_off;
 	}
 
+	// In the future, we could expand the submodel instance to have a "blown_off_index"
+	// to indicate which form is currently visible, but for now, we'll follow the retail
+	// convention of having just two forms, the second of which is opposite from the first.
+
 	if ( smi->blown_off )	{
-		if ( sm->my_replacement >= 0 && !(flags[Ship::Subsystem_Flags::No_replace]) ) {
-			auto r_smi = &pmi->submodel[sm->my_replacement];
+		if ( sm->next_form >= 0 && !(flags[Ship::Subsystem_Flags::No_replace]) ) {
+			auto r_smi = &pmi->submodel[sm->next_form];
 			r_smi->blown_off = false;
 			if ( copy_from ) {
 				r_smi->cur_angle = copy_from->cur_angle;
@@ -4975,10 +5055,10 @@ void model_replicate_submodel_instance_sub(polymodel *pm, polymodel_instance *pm
 			}
 		}
 	} else {
-		// If submodel isn't yet blown off and has a -destroyed replacement model, we prevent
-		// the replacement model from being drawn by marking it as having been blown off
-		if ( sm->my_replacement >= 0 && sm->my_replacement != submodel_num)	{
-			auto r_smi = &pmi->submodel[sm->my_replacement];
+		// If submodel isn't yet blown off and has a next form (like a -destroyed replacement model),
+		// we prevent the replacement model from being drawn by marking it as having been blown off
+		if ( sm->next_form >= 0 && sm->next_form != submodel_num)	{
+			auto r_smi = &pmi->submodel[sm->next_form];
 			r_smi->blown_off = true;
 		}
 	}
@@ -5298,7 +5378,7 @@ int model_create_bsp_collision_tree()
 	bsp_collision_tree tree{};
 
 	tree.used = true;
-	Bsp_collision_tree_list.push_back(tree);
+	Bsp_collision_tree_list.push_back(std::move(tree));
 
 	return (int)(Bsp_collision_tree_list.size() - 1);
 }

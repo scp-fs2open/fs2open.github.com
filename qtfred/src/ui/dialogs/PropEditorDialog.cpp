@@ -11,7 +11,7 @@
 namespace fso::fred::dialogs {
 
 PropEditorDialog::PropEditorDialog(FredView* parent, EditorViewport* viewport)
-	: QDialog(parent), ui(new ::Ui::PropEditorDialog()), _model(new PropEditorDialogModel(this, viewport)) {
+	: QDialog(parent), ui(new ::Ui::PropEditorDialog()), _model(new PropEditorDialogModel(this, viewport)), _viewport(viewport) {
 	ui->setupUi(this);
 
 	ui->propNameLineEdit->setMaxLength(NAME_LENGTH - 1);
@@ -24,20 +24,21 @@ PropEditorDialog::PropEditorDialog(FredView* parent, EditorViewport* viewport)
 		updateUi();
 	});
 
-	connect(ui->propFlagsListWidget, &fso::fred::FlagListWidget::flagToggled, this, [this](const QString& name, int checked) {
-		const auto& labels = _model->getFlagLabels();
-		for (size_t i = 0; i < labels.size(); ++i) {
-			if (name == QString::fromStdString(labels[i].first)) {
-				_model->setFlagState(i, checked);
-				break;
+	connect(ui->propFlagsListWidget, &fso::fred::FlagListWidget::flagsChanged, this,
+		[this](const QVector<std::pair<QString, int>>& snapshot) {
+			const auto& labels = _model->getFlagLabels();
+			for (const auto& [name, state] : snapshot) {
+				for (size_t i = 0; i < labels.size(); ++i) {
+					if (name == QString::fromStdString(labels[i].first)) {
+						_model->setFlagState(i, state);
+						break;
+					}
+				}
 			}
-		}
-
-		// Applying immediately can re-enter FlagListWidget while it is still processing
-		// itemChanged, which may invalidate the underlying item/model pointers.
-		// Queue the apply until the current signal stack unwinds.
-		QMetaObject::invokeMethod(this, [this]() { _model->apply(); }, Qt::QueuedConnection);
-	});
+			// Defer missionChanged to avoid re-entering FlagListWidget while it processes itemChanged,
+			// which could invalidate the underlying item/model pointers.
+			QMetaObject::invokeMethod(this, [this]() { _viewport->editor->missionChanged(); }, Qt::QueuedConnection);
+		});
 
 	resize(QDialog::sizeHint());
 }
@@ -55,8 +56,21 @@ void PropEditorDialog::initializeUi() {
 		toWidget.append({QString::fromStdString(labels[i].first), _model->getFlagState()[i]});
 	}
 	ui->propFlagsListWidget->setFlags(toWidget);
+
+	const auto& descs = _model->getPropFlagDescriptions();
+	QVector<std::pair<QString, QString>> qtDescs;
+	qtDescs.reserve(static_cast<int>(descs.size()));
+	for (const auto& d : descs)
+		qtDescs.append({QString::fromUtf8(d.first.c_str()), QString::fromUtf8(d.second.c_str())});
+	ui->propFlagsListWidget->setFlagDescriptions(qtDescs);
+
 	ui->propFlagsListWidget->setFilterVisible(true);
 	ui->propFlagsListWidget->setToolbarVisible(true);
+
+	ui->layerCombo->clear();
+	for (const auto& name : _viewport->getLayerNames()) {
+		ui->layerCombo->addItem(QString::fromStdString(name), QString::fromStdString(name));
+	}
 
 	const auto enable = _model->hasValidSelection();
 	const auto has_props = _model->hasAnyPropsInMission();
@@ -64,17 +78,18 @@ void PropEditorDialog::initializeUi() {
 	ui->propFlagsListWidget->setEnabled(enable);
 	ui->nextButton->setEnabled(has_props);
 	ui->prevButton->setEnabled(has_props);
+	ui->layerCombo->setEnabled(enable);
 }
 
 void PropEditorDialog::updateUi() {
 	util::SignalBlockers blockers(this);
 
 	ui->propNameLineEdit->setText(QString::fromStdString(_model->getPropName()));
+	ui->layerCombo->setCurrentIndex(ui->layerCombo->findData(QString::fromStdString(_model->getLayer())));
 }
 
 void PropEditorDialog::on_propNameLineEdit_editingFinished() {
-	_model->setPropName(ui->propNameLineEdit->text().toUtf8().constData());
-	if (!_model->apply()) {
+	if (!_model->setPropName(ui->propNameLineEdit->text().toUtf8().constData())) {
 		updateUi();
 	}
 }
@@ -85,6 +100,12 @@ void PropEditorDialog::on_nextButton_clicked() {
 
 void PropEditorDialog::on_prevButton_clicked() {
 	_model->selectPreviousProp();
+}
+
+void PropEditorDialog::on_layerCombo_currentIndexChanged(int index) {
+	if (index < 0)
+		return;
+	_model->setLayer(ui->layerCombo->itemData(index).toString().toUtf8().constData());
 }
 
 } // namespace fso::fred::dialogs

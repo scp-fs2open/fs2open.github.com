@@ -1,5 +1,4 @@
-#ifndef SHIPFLAGDIALOG_H
-#define SHIPFLAGDIALOG_H
+#pragma once
 
 #include <mission/dialogs/ShipEditor/ShipFlagsDialogModel.h>
 #include <ui/FredView.h>
@@ -33,8 +32,6 @@ class ShipFlagsDialog : public QDialog {
 	std::unique_ptr<Ui::ShipFlagsDialog> ui;
 	std::unique_ptr<ShipFlagsDialogModel> _model;
 	EditorViewport* _viewport;
-	void updateUI();
+	void updateUi();
 };
 } // namespace fso::fred::dialogs
-
-#endif // !SHIPFLAGDIALOG_H

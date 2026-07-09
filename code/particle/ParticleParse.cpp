@@ -7,6 +7,8 @@
 
 #include <anl.h>
 
+#include "volumes/ModelSurfaceVolume.h"
+
 namespace particle {
 
 	//
@@ -92,6 +94,12 @@ namespace particle {
 			}
 		}
 
+		static void parseLocalPositionScaling(ParticleEffect& effect) {
+			if (optional_string("+Local position scaling:")) {
+				effect.m_local_position_scaling = ::util::ParsedRandomFloatRange::parseRandomRange();
+			}
+		}
+
 		static void parseParentLocal(ParticleEffect& effect) {
 			if (optional_string("+Remain local to parent:")) {
 				stuff_boolean(&effect.m_parent_local);
@@ -125,7 +133,7 @@ namespace particle {
 
 		static std::shared_ptr<ParticleVolume> parseVolume() {
 
-			int type = required_string_one_of(4, "Spheroid", "Cone", "Ring", "Point"); //... and future volumes
+			int type = required_string_one_of(5, "Spheroid", "Cone", "Ring", "Point", "ModelSurface"); //... and future volumes
 			std::shared_ptr<ParticleVolume> volume;
 
 			switch (type) {
@@ -145,8 +153,13 @@ namespace particle {
 					required_string("Point");
 					volume = std::make_shared<PointVolume>();
 					break;
+				case 4:
+					required_string("ModelSurface");
+					volume = std::make_shared<ModelSurfaceVolume>();
+					break;
 				default:
-					UNREACHABLE("Invalid volume type specified!");
+					Warning(LOCATION, "Invalid volume type specified!");
+					return nullptr;
 			}
 			volume->parse();
 			return volume;
@@ -362,6 +375,25 @@ namespace particle {
 			}
 		}
 
+		static void parseModernDeathEffect(ParticleEffect& effect, bool top_layer) {
+			if (optional_string("$Death Effect:")) {
+				SCP_string name;
+				stuff_string(name, F_NAME);
+
+				effect.m_deathEffect = ParticleManager::get()->getEffectByName(name);
+			}
+			else if (top_layer && optional_string("$Death Inline Effect:")) {
+				SCP_string name;
+				stuff_string(name, F_NAME);
+
+				SCP_vector<ParticleEffect> death {constructModernEffect(name, false)};
+				while (optional_string("$Continue Death Effect:"))
+					death.emplace_back(constructModernEffect(name));
+
+				effect.m_deathEffect = ParticleManager::get()->addEffect(std::move(death));
+			}
+		}
+
 		static ParticleEffect constructModernEffect(const SCP_string& name, bool top_layer = true) {
 			ParticleEffect effect(name);
 
@@ -372,6 +404,7 @@ namespace particle {
 			parseRadius(effect);
 			parseLength(effect);
 			parseLifetime(effect);
+			parseLocalPositionScaling(effect);
 			parseParentLocal(effect);
 			parseLightEmissionSettings(effect);
 
@@ -395,6 +428,7 @@ namespace particle {
 			parseModularCurvesSource(effect);
 
 			parseModernTrail(effect, top_layer);
+			parseModernDeathEffect(effect, top_layer);
 
 			return effect;
 		}
@@ -587,7 +621,7 @@ namespace particle {
 				case ParticleEffectLegacyType::Sphere: {
 					parseParticleProperties(effect);
 
-					effect.m_velocityVolume = make_shared<SpheroidVolume>(1.f, 1.f, 1.f);
+					effect.m_velocityVolume = std::make_shared<SpheroidVolume>(1.f, 1.f, 1.f);
 
 					parseVelocityVolumeScale<false>(effect);
 					parseParticleNumber<false>(effect);
@@ -657,7 +691,7 @@ namespace particle {
 						}
 					}
 
-					effect.m_spawnVolume = make_shared<SpheroidVolume>(bias, stretch, radius);
+					effect.m_spawnVolume = std::make_shared<SpheroidVolume>(bias, stretch, radius);
 
 					parseVelocityInherit<false>(effect);
 					parseTiming<false>(effect);

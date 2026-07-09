@@ -64,7 +64,7 @@ void read_multi_stats(pilot::FileHandler* handler, scoring_special_t* scoring) {
 		ilist.index = ship_info_lookup(ilist.name.c_str());
 		ilist.val = handler->readInt("val");
 
-		scoring->ship_kills.push_back(ilist);
+		scoring->ship_kills.push_back(std::move(ilist));
 	}
 	handler->endArrayRead();
 
@@ -78,7 +78,7 @@ void read_multi_stats(pilot::FileHandler* handler, scoring_special_t* scoring) {
 		ilist.index = medals_info_lookup(ilist.name.c_str());
 		ilist.val = handler->readInt("val");
 
-		scoring->medals_earned.push_back(ilist);
+		scoring->medals_earned.push_back(std::move(ilist));
 	}
 	handler->endArrayRead();
 }
@@ -414,7 +414,7 @@ void pilotfile::plr_read_containers()
 				container.map_data.emplace(key, data);
 			}
 		} else {
-			UNREACHABLE("Unknown container type %d", (int)container.type);
+			UNREACHABLE("Unknown container type %d", static_cast<int>(container.type));
 		}
 
 		Assert(container.is_eternal());
@@ -457,7 +457,7 @@ void pilotfile::plr_write_containers()
 				++i;
 			}
 		} else {
-			UNREACHABLE("Unknown container type %d", (int)container.type);
+			UNREACHABLE("Unknown container type %d", static_cast<int>(container.type));
 		}
 
 		handler->endSectionWrite();

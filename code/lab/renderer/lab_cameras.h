@@ -30,10 +30,12 @@ public:
 	/// <param name="dx">Mouse delta on the x axis</param>
 	/// <param name="dy">Mouse delta on the y axis</param>
 	/// <param name="dz">Mouse wheel delta</param>
-	/// <param name="lmbDown">State of the left mouse button</param>
+	/// <param name="lmbDown">Whether the left mouse button is currently held</param>
+	/// <param name="lmbPressed">Whether the left mouse button was pressed this frame (rising edge only)</param>
 	/// <param name="rmbDown">State of the right mouse button</param>
 	/// <param name="modifierKeys">State of the various modifier keys. See keys.h</param>
-	virtual void handleInput(int dx, int dy, int dz, bool lmbDown, bool rmbDown, int modifierKeys) = 0;
+	virtual void handleInput(
+		int dx, int dy, int dz, bool lmbDown, bool lmbPressed, bool rmbDown, int modifierKeys, int mouseX, int mouseY) = 0;
 
 	/// <summary>
 	/// Called by the lab manager when the displayed object changes
@@ -57,10 +59,18 @@ public:
 
 	/// Returns the distance from the camera to the point of interest, used to size the orthographic frustum.
 	virtual float getCameraDistance() const { return 0.0f; }
+
+	/// Render any 2D overlays associated with this camera (e.g. orientation widgets).
+	virtual void renderOverlay() const {}
+
+	/// Returns true if the given screen-space point is over an interactive camera overlay control.
+	virtual bool isOverlayHit(int /*mouseX*/, int /*mouseY*/) const { return false; }
 };
 
 class OrbitCamera : public LabCamera {
 public:
+	enum class SnapDirection { Front, Back, Top, Bottom, Left, Right };
+
 	OrbitCamera() : LabCamera(cam_create("Lab orbit camera")) {}
 
 	SCP_string getUsageInfo() override {
@@ -77,7 +87,8 @@ public:
 		return ss.str();
 	}
 
-	void handleInput(int dx, int dy, int dz, bool /*lmbDown*/, bool rmbDown, int modifierKeys) override;
+	void handleInput(
+		int dx, int dy, int dz, bool /*lmbDown*/, bool lmbPressed, bool rmbDown, int modifierKeys, int mouseX, int mouseY) override;
 
 	void resetView() override;
 
@@ -88,11 +99,25 @@ public:
 	void updateCamera() override;
 
 	float getCameraDistance() const override { return distance; }
+	void renderOverlay() const override;
+	bool isOverlayHit(int mouseX, int mouseY) const override;
 
   private:
+	static constexpr int WIDGET_CUBE_HALF_SIZE = 30;
+	static constexpr int WIDGET_MARGIN = 14;
+
 	static constexpr float DEFAULT_DISTANCE = 100.0f;
 	static constexpr float DEFAULT_PHI = 1.24f;
 	static constexpr float DEFAULT_THETA = 2.25f;
+
+	struct WidgetLayout {
+		int size, left, top, center_x, center_y, cube_half;
+	};
+	static WidgetLayout getWidgetLayout();
+
+	bool handleOrientationWidgetClick(int mouseX, int mouseY);
+	void snapToDirection(SnapDirection direction);
+	static float getObjectFitDistance();
 
 	float distance = DEFAULT_DISTANCE;
 	float phi = DEFAULT_PHI;

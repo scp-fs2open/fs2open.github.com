@@ -14,6 +14,7 @@
 #include "localization/localize.h"
 #include "mission/missionmessage.h"
 #include "mission/mission_flags.h"
+#include "scripting/global_hooks.h"
 
 #include <QtWidgets>
 
@@ -67,8 +68,23 @@ void MissionSpecDialogModel::initializeData() {
 	_m_max_hull_repair_val = The_mission.support_ships.max_hull_repair_val;
 	_m_max_subsys_repair_val = The_mission.support_ships.max_subsys_repair_val;
 
+	_m_support_rearm_settings.disallowSupportShips = (The_mission.support_ships.max_support_ships == 0);
+	_m_support_rearm_settings.supportRepairsHull = The_mission.flags[Mission::Mission_Flags::Support_repairs_hull];
+	_m_support_rearm_settings.maxHullRepair = The_mission.support_ships.max_hull_repair_val;
+	_m_support_rearm_settings.maxSubsysRepair = The_mission.support_ships.max_subsys_repair_val;
+	_m_support_rearm_settings.disallowSupportRearm = The_mission.support_ships.disallow_rearm;
+	_m_support_rearm_settings.limitRearmToPool = The_mission.flags[Mission::Mission_Flags::Limited_support_rearm_pool];
+	_m_support_rearm_settings.rearmPoolFromLoadout = The_mission.support_ships.rearm_pool_from_loadout;
+	_m_support_rearm_settings.allowWeaponPrecedence = The_mission.support_ships.allow_rearm_weapon_precedence;
+	for (int team = 0; team < MAX_TVT_TEAMS; ++team) {
+		for (int i = 0; i < MAX_WEAPON_TYPES; ++i) {
+			_m_support_rearm_settings.rearmWeaponPool[team][i] = The_mission.support_ships.rearm_weapon_pool[team][i];
+		}
+	}
+
 	_m_contrail_threshold = The_mission.contrail_threshold;
 	_m_contrail_threshold_flag = (_m_contrail_threshold != CONTRAIL_THRESHOLD_DEFAULT);
+	_m_large_ship_no_collide_collision_group = The_mission.large_ship_no_collide_collision_group;
 
 	_m_custom_data = The_mission.custom_data;
 	_m_custom_strings = The_mission.custom_strings;
@@ -90,6 +106,7 @@ void MissionSpecDialogModel::initializeData() {
 	}
 
 	modelChanged();
+	_modified = false;
 }
 
 void MissionSpecDialogModel::prepareSquadLogoList()
@@ -120,9 +137,19 @@ bool MissionSpecDialogModel::apply() {
 	The_mission.num_respawns = _m_num_respawns;
 	The_mission.max_respawn_delay = _m_max_respawn_delay;
 	Entry_delay_time = fl2f(_m_player_entry_delay);
-	The_mission.support_ships.max_support_ships = (_m_disallow_support) ? 0 : -1;
-	The_mission.support_ships.max_hull_repair_val = _m_max_hull_repair_val;
-	The_mission.support_ships.max_subsys_repair_val = _m_max_subsys_repair_val;
+	The_mission.large_ship_no_collide_collision_group = _m_large_ship_no_collide_collision_group;
+
+	The_mission.support_ships.max_support_ships = (_m_support_rearm_settings.disallowSupportShips) ? 0 : -1;
+	The_mission.support_ships.max_hull_repair_val = _m_support_rearm_settings.maxHullRepair;
+	The_mission.support_ships.max_subsys_repair_val = _m_support_rearm_settings.maxSubsysRepair;
+	The_mission.support_ships.disallow_rearm = _m_support_rearm_settings.disallowSupportRearm;
+	The_mission.support_ships.allow_rearm_weapon_precedence = _m_support_rearm_settings.allowWeaponPrecedence;
+	The_mission.support_ships.rearm_pool_from_loadout = _m_support_rearm_settings.rearmPoolFromLoadout;
+	for (int team = 0; team < MAX_TVT_TEAMS; ++team) {
+		for (int i = 0; i < weapon_info_size(); ++i) {
+			The_mission.support_ships.rearm_weapon_pool[team][i] = _m_support_rearm_settings.rearmWeaponPool[team][i];
+		}
+	}
 	
 	// Copy mission flags
 	The_mission.flags = _m_flags;
@@ -145,7 +172,7 @@ bool MissionSpecDialogModel::apply() {
 	// puts "$End Notes:" on a different line to ensure it's not interpreted as part of a comment
 	Editor::pad_with_newline(_m_mission_notes, NOTES_LENGTH - 1);
 
-	strncpy(The_mission.name, _m_mission_title.c_str(), NAME_LENGTH-1);
+	The_mission.name = _m_mission_title;
 	The_mission.author = _m_designer_name;
 	strncpy(The_mission.loading_screen[GR_640], _m_loading_640.c_str(), NAME_LENGTH-1);
 	strncpy(The_mission.loading_screen[GR_1024], _m_loading_1024.c_str(), NAME_LENGTH-1);
@@ -201,6 +228,11 @@ bool MissionSpecDialogModel::apply() {
 	}
 
 	Editor::update_custom_wing_indexes();
+
+	// scripts may rebuild LuaEnums when custom data/strings change.
+	if (scripting::hooks::FredOnMissionSpecsSave->isActive()) {
+		scripting::hooks::FredOnMissionSpecsSave->run();
+	}
 
 	return true;
 }
@@ -317,6 +349,7 @@ SCP_string MissionSpecDialogModel::getHighResLoadingScren() {
 
 void MissionSpecDialogModel::setDisallowSupport(bool m_disallow_support) {
 	modify(_m_disallow_support, m_disallow_support);
+	_m_support_rearm_settings.disallowSupportShips = m_disallow_support;
 }
 
 bool MissionSpecDialogModel::getDisallowSupport() {
@@ -325,6 +358,7 @@ bool MissionSpecDialogModel::getDisallowSupport() {
 
 void MissionSpecDialogModel::setHullRepairMax(float m_max_hull_repair_val) {
 	modify(_m_max_hull_repair_val, m_max_hull_repair_val);
+	_m_support_rearm_settings.maxHullRepair = m_max_hull_repair_val;
 }
 
 int MissionSpecDialogModel::getHullRepairMax() {
@@ -337,6 +371,21 @@ void MissionSpecDialogModel::setSubsysRepairMax(float m_max_subsys_repair_val){
 
 int MissionSpecDialogModel::getSubsysRepairMax() {
 	return _m_max_subsys_repair_val;
+}
+
+SupportRearmSettings MissionSpecDialogModel::getSupportRearmSettings() const
+{
+	return _m_support_rearm_settings;
+}
+
+void MissionSpecDialogModel::setSupportRearmSettings(const SupportRearmSettings& settings)
+{
+	modify(_m_support_rearm_settings, settings);
+	_m_disallow_support = settings.disallowSupportShips;
+	_m_max_hull_repair_val = settings.maxHullRepair;
+	_m_max_subsys_repair_val = settings.maxSubsysRepair;
+	setMissionFlagDirect(Mission::Mission_Flags::Support_repairs_hull, settings.supportRepairsHull);
+	setMissionFlagDirect(Mission::Mission_Flags::Limited_support_rearm_pool, settings.limitRearmToPool);
 }
 
 void MissionSpecDialogModel::setTrailThresholdFlag(bool m_contrail_threshold_flag) {
@@ -411,25 +460,59 @@ void MissionSpecDialogModel::setMissionFlagDirect(Mission::Mission_Flags flag, b
 	}
 }
 
+void MissionSpecDialogModel::setLargeShipNoCollideCollisionGroup(int group)
+{
+	if (group < 0) {
+		group = 0;
+	} else if (group > 31) {
+		group = 31;
+	}
+
+	modify(_m_large_ship_no_collide_collision_group, group);
+}
+
+int MissionSpecDialogModel::getLargeShipNoCollideCollisionGroup() const
+{
+	return _m_large_ship_no_collide_collision_group;
+}
+
 bool MissionSpecDialogModel::getMissionFlag(Mission::Mission_Flags flag) const {
 	return _m_flags[flag];
 }
 
 const SCP_vector<std::pair<SCP_string, bool>>& MissionSpecDialogModel::getMissionFlagsList() {
-	if (_m_flag_data.empty()) {
-		for (size_t i = 0; i < Num_parse_mission_flags; ++i) {
-			auto flagDef = Parse_mission_flags[i];
+	_m_flag_data.clear();
+	for (size_t i = 0; i < Num_parse_mission_flags; ++i) {
+		auto flagDef = Parse_mission_flags[i];
 
-			// Skip flags that have checkboxes elsewhere than the flag list or are inactive
-			if (flagDef.is_special || !flagDef.in_use) {
-				continue;
-			}
-
-			bool checked = _m_flags[flagDef.def];
-			_m_flag_data.emplace_back(flagDef.name, checked);
+		// Skip flags that have checkboxes elsewhere than the flag list or are inactive
+		if (flagDef.is_special || !flagDef.in_use) {
+			continue;
 		}
+
+		bool checked = _m_flags[flagDef.def];
+		_m_flag_data.emplace_back(flagDef.name, checked);
 	}
 	return _m_flag_data;
+}
+
+SCP_vector<std::pair<SCP_string, SCP_string>> MissionSpecDialogModel::getMissionFlagDescriptions()
+{
+	const size_t num_descs = Num_parse_mission_flag_descriptions;
+	SCP_vector<std::pair<SCP_string, SCP_string>> descriptions;
+	descriptions.reserve(Num_parse_mission_flags);
+	for (size_t i = 0; i < Num_parse_mission_flags; ++i) {
+		const auto& flagDef = Parse_mission_flags[i];
+		if (flagDef.is_special || !flagDef.in_use)
+			continue;
+		for (size_t j = 0; j < num_descs; ++j) {
+			if (Parse_mission_flag_descriptions[j].def == flagDef.def) {
+				descriptions.emplace_back(flagDef.name, Parse_mission_flag_descriptions[j].flag_desc);
+				break;
+			}
+		}
+	}
+	return descriptions;
 }
 
 void MissionSpecDialogModel::setMissionFullWar(bool enabled) {

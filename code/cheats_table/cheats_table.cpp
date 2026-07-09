@@ -135,7 +135,7 @@ void parse_cheat_table(const char* filename) {
 			}
 			
 			if (shipSpawn) {
-				std::unique_ptr<CustomCheat> shipCheat(new SpawnShipCheat(code, msg, requireCheats, shipClass, shipName));
+				std::unique_ptr<CustomCheat> shipCheat(new SpawnShipCheat(code, std::move(msg), requireCheats, std::move(shipClass), std::move(shipName)));
 
 				if(customCheats.count(code) == 1) {
 					Warning(LOCATION, "A cheat for code '%s' already exists. It will be replaced.", code.c_str());
@@ -144,7 +144,7 @@ void parse_cheat_table(const char* filename) {
 					customCheats.emplace(code, std::move(shipCheat));
 				}
 			} else {
-				std::unique_ptr<CustomCheat> cheat(new CustomCheat(code, msg, requireCheats));
+				std::unique_ptr<CustomCheat> cheat(new CustomCheat(code, std::move(msg), requireCheats));
 
 				if(customCheats.count(code) == 1) {
 					Warning(LOCATION, "A cheat for code '%s' already exists. It will be replaced.", code.c_str());

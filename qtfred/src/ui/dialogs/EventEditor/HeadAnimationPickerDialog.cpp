@@ -1,12 +1,11 @@
 #include "HeadAnimationPickerDialog.h"
 
+#include "ui/util/default_dir.h"
 #include "ui/util/ImageRenderer.h"
 
 #include <bmpman/bmpman.h>
-#include <cfile/cfile.h>
 
 #include <QBoxLayout>
-#include <QDir>
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QLineEdit>
@@ -118,18 +117,15 @@ void HeadAnimationPickerDialog::onSelectionChanged()
 
 void HeadAnimationPickerDialog::onBrowse()
 {
-	// Start the file dialog in the FSO interface directory
-	int z = cfile_push_chdir(CF_TYPE_INTERFACE);
-	const QString interfacePath = QDir::currentPath();
-	if (!z) {
-		cfile_pop_dir();
-	}
+	const QString lastDir = fso::fred::util::getLastDir("headAnimation/animFile", CF_TYPE_INTERFACE);
 
 	const QString filters = "FSO Animations (*.ani *.eff *.png);;All Files (*.*)";
-	const QString filename = QFileDialog::getOpenFileName(this, tr("Select Head Animation"), interfacePath, filters);
+	const QString filename = QFileDialog::getOpenFileName(this, tr("Select Head Animation"), lastDir, filters);
 	if (filename.isEmpty()) {
 		return;
 	}
+
+	fso::fred::util::saveLastDir("headAnimation/animFile", filename);
 
 	// Store just the base name
 	const QString rawName = QFileInfo(filename).completeBaseName();

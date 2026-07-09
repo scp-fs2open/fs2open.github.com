@@ -38,11 +38,6 @@ waypoint::waypoint(const vec3d *position)
 	this->m_objnum = -1;
 }
 
-waypoint::~waypoint()
-{
-	// nothing to do
-}
-
 const vec3d *waypoint::get_pos() const
 {
 	if (m_objnum >= 0)
@@ -116,11 +111,6 @@ waypoint_list::waypoint_list(const char *name)
 	this->m_no_draw_lines = false;
 	this->m_has_custom_color = false;
 	this->m_color_r = this->m_color_g = this->m_color_b = 255;
-}
-
-waypoint_list::~waypoint_list()
-{
-	// nothing to do
 }
 
 const char *waypoint_list::get_name() const

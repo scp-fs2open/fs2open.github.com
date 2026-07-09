@@ -1,13 +1,18 @@
 #include "FredView.h"
 #include "ui_FredView.h"
 
+#include <ui/util/default_dir.h>
+
 #include <QDir>
 #include <QFileDialog>
+#include <QPointer>
 #include <QFileInfo>
+#include <QInputDialog>
 #include <QMessageBox>
 #include <QDebug>
 #include <QKeyEvent>
 #include <QProcess>
+#include <QSignalBlocker>
 #include <QSettings>
 
 #include <project.h>
@@ -17,12 +22,14 @@
 #include <ui/dialogs/ShipEditor/ShipEditorDialog.h>
 #include <ui/dialogs/WingEditorDialog.h>
 #include <ui/dialogs/PropEditorDialog.h>
+#include <ui/panels/SceneBrowserPanel.h>
 #include <ui/dialogs/MissionEventsDialog.h>
 #include <mission/dialogs/MissionEventsDialogModel.h>
 #include <ui/dialogs/AsteroidEditorDialog.h>
 #include <ui/dialogs/VolumetricNebulaDialog.h>
 #include <ui/dialogs/BriefingEditorDialog.h>
 #include <ui/dialogs/WaypointEditorDialog.h>
+#include <object/waypoint.h>
 #include <ui/dialogs/WaypointPathGeneratorDialog.h>
 #include <ui/dialogs/JumpNodeEditorDialog.h>
 #include <ui/dialogs/CampaignEditorDialog.h>
@@ -32,13 +39,13 @@
 #include <ui/dialogs/MissionCutscenesDialog.h>
 #include <ui/dialogs/FormWingDialog.h>
 #include <ui/dialogs/AboutDialog.h>
+#include <ui/dialogs/HelpTopicsDialog.h>
 #include <ui/dialogs/MissionStatsDialog.h>
 #include <ui/dialogs/BackgroundEditorDialog.h>
 #include <ui/dialogs/ShieldSystemDialog.h>
 #include <ui/dialogs/GlobalShipFlagsDialog.h>
 #include <ui/dialogs/VoiceActingManager.h>
 #include <globalincs/linklist.h>
-#include <ui/dialogs/SelectionDialog.h>
 #include <ui/dialogs/FictionViewerDialog.h>
 #include <ui/dialogs/CommandBriefingDialog.h>
 #include <ui/dialogs/DebriefingDialog.h>
@@ -51,6 +58,8 @@
 #include <ui/dialogs/TemplateBrowserDialog.h>
 #include <ui/dialogs/PreferencesDialog.h>
 #include <ui/dialogs/LayerManagerDialog.h>
+#include <ui/dialogs/ErrorCheckerDialog.h>
+#include <ui/util/ErrorChecker.h>
 #include <ui/ControlBindings.h>
 #include <iff_defs/iff_defs.h>
 
@@ -86,6 +95,7 @@ namespace fred {
 
 FredView::FredView(QWidget* parent) : QMainWindow(parent), ui(new Ui::FredView()) {
 	ui->setupUi(this);
+	enforceSideDockAreas();
 
 	setFocusPolicy(Qt::NoFocus);
 	setFocusProxy(ui->centralWidget);
@@ -95,7 +105,6 @@ FredView::FredView(QWidget* parent) : QMainWindow(parent), ui(new Ui::FredView()
 	ui->actionOpen->setShortcuts(QKeySequence::Open);
 	ui->actionSave->setShortcuts(QKeySequence::Save);
 	ui->actionExit->setShortcuts(QKeySequence::Quit);
-	ui->actionUndo->setShortcuts(QKeySequence::Undo);
 	ui->actionDelete->setShortcuts(QKeySequence::Delete);
 
 	connect(ui->actionOpen, &QAction::triggered, this, &FredView::openLoadMissionDialog);
@@ -119,10 +128,6 @@ FredView::FredView(QWidget* parent) : QMainWindow(parent), ui(new Ui::FredView()
 
 	initializeGroupActions();
 
-	auto propsAction = new QAction(tr("Props"), this);
-	connect(propsAction, &QAction::triggered, this, &FredView::on_actionProps_triggered);
-	ui->menuObjects->insertAction(ui->actionWaypoint_Paths, propsAction);
-
 	connect(ui->actionPreferences, &QAction::triggered, this, [this]() {
 		dialogs::PreferencesDialog preferencesDialog(this, _viewport);
 		preferencesDialog.exec();
@@ -139,14 +144,13 @@ FredView::FredView(QWidget* parent) : QMainWindow(parent), ui(new Ui::FredView()
 	bindThemeIcon(ui->actionSelect,        QStringLiteral("select"));
 	bindThemeIcon(ui->actionSelectMove,    QStringLiteral("selectmove"));
 	bindThemeIcon(ui->actionSelectRotate,  QStringLiteral("selectrot"));
-	bindThemeIcon(ui->actionRotateLocal,   QStringLiteral("rotlocal"));
 	bindThemeIcon(ui->actionConstrainX,    QStringLiteral("constx"));
 	bindThemeIcon(ui->actionConstrainY,    QStringLiteral("consty"));
 	bindThemeIcon(ui->actionConstrainZ,    QStringLiteral("constz"));
 	bindThemeIcon(ui->actionConstrainXZ,   QStringLiteral("constxz"));
 	bindThemeIcon(ui->actionConstrainYZ,   QStringLiteral("constyz"));
 	bindThemeIcon(ui->actionConstrainXY,   QStringLiteral("constxy"));
-	bindThemeIcon(ui->actionSelectionList, QStringLiteral("selectlist"));
+	bindThemeIcon(ui->actionSceneBrowser, QStringLiteral("selectlist"));
 	bindThemeIcon(ui->actionSelectionLock, QStringLiteral("selectlock"));
 	bindThemeIcon(ui->actionWingForm,      QStringLiteral("wingform"));
 	bindThemeIcon(ui->actionWingDisband,   QStringLiteral("wingdisband"));
@@ -158,7 +162,9 @@ FredView::FredView(QWidget* parent) : QMainWindow(parent), ui(new Ui::FredView()
 	bindThemeIcon(ui->actionUnhide_Layers, QStringLiteral("unhide"));
 }
 
-FredView::~FredView() {
+FredView::~FredView()
+{
+	disconnect(_browserPanel, &QDockWidget::visibilityChanged, this, nullptr);
 }
 
 void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
@@ -167,6 +173,8 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 
 	fred = editor;
 	_viewport = viewport;
+
+	setIconSize(QSize(_viewport->toolbar_icon_size, _viewport->toolbar_icon_size));
 
 	// Let the viewport use us for displaying dialogs
 	_viewport->dialogProvider = this;
@@ -180,7 +188,8 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 	ui->toolBar->addWidget(shipsLabel);
 	_shipClassBox = new ObjectComboBox(ui->toolBar);
 	_shipClassBox->setFixedWidth(150);
-	_shipClassBox->initForShips(_viewport);
+	_shipClassBox->setToolTip(tr("Ctrl+click in the viewport to place"));
+	_shipClassBox->initForShips();
 	ui->toolBar->addWidget(_shipClassBox);
 	connect(_shipClassBox, &ObjectComboBox::classSelected, this, &FredView::onShipClassSelected);
 
@@ -189,12 +198,46 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 	ui->toolBar->addWidget(propsLabel);
 	_propClassBox = new ObjectComboBox(ui->toolBar);
 	_propClassBox->setFixedWidth(150);
+	_propClassBox->setToolTip(tr("Ctrl+Shift+click in the viewport to place"));
 	_propClassBox->initForProps();
 	ui->toolBar->addWidget(_propClassBox);
 	connect(_propClassBox, &ObjectComboBox::classSelected, this, &FredView::onPropClassSelected);
 
+	auto otherLabel = new QLabel(tr("Other: "), ui->toolBar);
+	otherLabel->setContentsMargins(4, 0, 0, 0);
+	ui->toolBar->addWidget(otherLabel);
+	_otherClassBox = new ObjectComboBox(ui->toolBar);
+	_otherClassBox->setFixedWidth(150);
+	_otherClassBox->setToolTip(tr("Ctrl+Alt+click in the viewport to place"));
+	_otherClassBox->initForOther();
+	ui->toolBar->addWidget(_otherClassBox);
+	connect(_otherClassBox, &ObjectComboBox::classSelected, this, &FredView::onOtherKindSelected);
+
+	initializeContextToolbar();
+	initializeTransformBar();
+
+	// Restore per-mode Local preferences and camera speeds from last session.
+	{
+		QSettings settings;
+		_tbLocalMove   = settings.value("FredView/transformLocalMove",   false).toBool();
+		_tbLocalRotate = settings.value("FredView/transformLocalRotate", false).toBool();
+		_viewport->camera.setPhysicsSpeed(settings.value("FredView/cameraSpeedMove", 1).toInt());
+		_viewport->camera.setPhysicsRot(settings.value("FredView/cameraSpeedRot",  25).toInt());
+	}
+
 	connect(fred, &Editor::missionLoaded, this, &FredView::on_mission_loaded);
 	connect(fred, &Editor::missionChanged, this, [this]() { _missionModified = true; });
+	connect(fred, &Editor::autosaveDue, this, [this](const QString& savePath) {
+		Fred_mission_save save;
+		save.set_save_format(_missionSaveFormat);
+		save.set_always_save_display_names(_viewport->Always_save_display_names);
+		save.set_view_pos(_viewport->camera.view_pos);
+		save.set_view_orient(_viewport->camera.view_orient);
+		save.set_fred_alt_names(Fred_alt_names);
+		save.set_fred_callsigns(Fred_callsigns);
+		save.save_autosave_file(savePath.toUtf8().constData());
+	});
+	connect(fred, &Editor::layerListChanged, this, [this]() { _tbLayerComboDirty = true; });
 
 	// Sets the initial window title
 	on_mission_loaded("");
@@ -208,22 +251,61 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 	connect(this, &FredView::viewIdle, this, &FredView::onUpdateSelectionLock);
 	connect(this, &FredView::viewIdle, this, &FredView::onUpdateShipClassBox);
 	connect(this, &FredView::viewIdle, this, &FredView::onUpdatePropClassBox);
+	connect(this, &FredView::viewIdle, this, &FredView::onUpdateOtherClassBox);
 	connect(this, &FredView::viewIdle, this, &FredView::onUpdateEditorActions);
 	connect(this, &FredView::viewIdle, this, &FredView::onUpdateWingActionStatus);
+	connect(this, &FredView::viewIdle, this, &FredView::onUpdateContextToolbar);
+	connect(this, &FredView::viewIdle, this, &FredView::onUpdateTransformBar);
 	connect(this,
 			&FredView::viewIdle,
 			this,
 			[this]() { ui->actionZoomSelected->setEnabled(query_valid_object(fred->currentObject)); });
-	connect(this, &FredView::viewIdle, this, [this]() { ui->actionOrbitSelected->setChecked(_viewport->Lookat_mode); });
-	connect(this, &FredView::viewIdle, this, [this]() { ui->actionRotateLocal->setChecked(_viewport->Group_rotate); });
+	connect(this, &FredView::viewIdle, this, [this]() { ui->actionOrbitSelected->setChecked(_viewport->camera.getLookatMode()); });
 	connect(this,
 			&FredView::viewIdle,
 			this,
-			[this]() { ui->actionRestore_Camera_Pos->setEnabled(!IS_VEC_NULL(&_viewport->saved_cam_orient.vec.fvec)); });
+			[this]() { ui->actionRestore_Camera_Pos->setEnabled(_viewport->camera.hasSavedPosition()); });
 	connect(this, &FredView::viewIdle, this, [this]() { ui->actionRevert->setEnabled(!saveName.isEmpty()); });
-	connect(this, &FredView::viewIdle, this, [this]() { ui->actionUndo->setEnabled(fred->undoAvailable != 0); });
-	connect(this, &FredView::viewIdle, this, [this]() { ui->actionDisable_Undo->setChecked(fred->autosaveDisabled != 0); });
+	// Scene Browser dock panel
+	_browserPanel = new SceneBrowserPanel(this, _viewport);
+	addDockWidget(Qt::LeftDockWidgetArea, _browserPanel);
+	enforceSideDockAreas();
 
+	// Keep the Scene Browser toggle action in sync with the dock's visibility
+	ui->actionSceneBrowser->setChecked(_browserPanel->isVisible());
+	connect(_browserPanel, &QDockWidget::visibilityChanged, this, [this](bool visible) {
+		if (!ui || !ui->actionSceneBrowser) {
+			return;
+		}
+		QSignalBlocker blocker(ui->actionSceneBrowser);
+		ui->actionSceneBrowser->setChecked(visible);
+	});
+
+	// Restore dock/toolbar layout and window geometry from last session.
+	// restoreGeometry() must come after restoreState() so that the maximized flag
+	// (stored in geometry) wins over whatever size the toolbar restore implied.
+	QSettings settings;
+	const auto savedState    = settings.value("FredView/mainWindowState").toByteArray();
+	const auto savedGeometry = settings.value("FredView/geometry").toByteArray();
+	if (!savedState.isEmpty())
+		restoreState(savedState);
+	if (!savedGeometry.isEmpty())
+		restoreGeometry(savedGeometry);
+	enforceSideDockAreas();
+
+	// Keep the context bar on its own row below the primary toolbar.
+	// restoreState() can otherwise place or hide toolbars based on saved layout.
+	removeToolBar(ui->toolBar);
+	removeToolBar(ui->contextToolBar);
+	addToolBar(Qt::TopToolBarArea, ui->toolBar);
+	addToolBarBreak(Qt::TopToolBarArea);
+	addToolBar(Qt::TopToolBarArea, ui->contextToolBar);
+	ui->toolBar->setVisible(true);
+	ui->contextToolBar->setVisible(true);
+
+	// Lock the context toolbar to a fixed height so that adding/removing buttons
+	// doesn't resize the viewport. Use the primary toolbar's hint; fall back to 28px.
+	_contextToolBar->setFixedHeight(qMax(28, ui->toolBar->sizeHint().height()));
 }
 
 void FredView::loadMissionFile(const QString& pathName, int flags) {
@@ -239,12 +321,13 @@ void FredView::loadMissionFile(const QString& pathName, int flags) {
 		fred->clean_up_selections();
 
 		auto pathToLoad = pathName.toStdString();
-		if (!(flags & MPF_IS_TEMPLATE))
+		if (!(flags & MPF_IS_TEMPLATE) && _viewport->Offer_autosave_recovery)
 			fred->maybeUseAutosave(pathToLoad);
 
 		fred->loadMission(pathToLoad, flags);
 
 		QApplication::restoreOverrideCursor();
+		autoRunErrorChecker();
 	} catch (const fso::fred::mission_load_error&) {
 		QApplication::restoreOverrideCursor();
 
@@ -254,13 +337,15 @@ void FredView::loadMissionFile(const QString& pathName, int flags) {
 }
 
 void FredView::openLoadMissionDialog() {
-	qDebug() << "Loading from directory:" << QDir::currentPath();
-	QString pathName = QFileDialog::getOpenFileName(this, tr("Load mission"), QString(), tr("FS2 missions (*.fs2)"));
+	const QString lastDir = fso::fred::util::getLastDir("missions/loadMission", CF_TYPE_MISSIONS);
+
+	QString pathName = QFileDialog::getOpenFileName(this, tr("Load mission"), lastDir, tr("FS2 missions (*.fs2)"));
 
 	if (pathName.isEmpty()) {
 		return;
 	}
 
+	fso::fred::util::saveLastDir("missions/loadMission", pathName);
 	loadMissionFile(pathName.replace('/',DIR_SEPARATOR_CHAR));
 }
 
@@ -276,41 +361,152 @@ void FredView::on_actionSave_As_triggered(bool) {
 	saveMissionAs();
 }
 
+bool FredView::performPreSaveCheck(int* outFixCount) {
+	// Potentials are advisory and intentionally ignored at save time; fix counts
+	// report only actual problems (Error/Warning/InternalError).
+	auto countNonPotential = [](const SCP_vector<ErrorEntry>& entries) {
+		int n = 0;
+		for (const auto& e : entries)
+			if (e.severity != ErrorSeverity::Potential)
+				++n;
+		return n;
+	};
+
+	// Clamp flags for the pre-save scan: no mutations, no potential issues.
+	const bool savedPotential   = _viewport->Error_checker_checks_potential_issues;
+	const bool savedCorrections = _viewport->Error_checker_apply_auto_corrections;
+	_viewport->Error_checker_checks_potential_issues = false;
+	_viewport->Error_checker_apply_auto_corrections  = false;
+
+	// Use the normal error checker dialog in PreSave mode so the error cards are
+	// rendered identically to what the designer sees when running it manually.
+	dialogs::ErrorCheckerDialog dlg(this, _viewport, dialogs::ErrorCheckerDialog::Mode::PreSave);
+	const bool errors = dlg.runCheck(); // returns true when errors were found
+
+	// Restore flags before any further work (including the optional fix run below).
+	_viewport->Error_checker_checks_potential_issues = savedPotential;
+	_viewport->Error_checker_apply_auto_corrections  = savedCorrections;
+
+	if (!errors)
+		return true;
+
+	dlg.exec(); // modal — blocks until the designer clicks a button
+
+	switch (dlg.preSaveAction()) {
+	case dialogs::ErrorCheckerDialog::PreSaveAction::Cancel:
+		return false;
+
+	case dialogs::ErrorCheckerDialog::PreSaveAction::FixAndSave: {
+		const int beforeCount = countNonPotential(dlg.getErrors());
+
+		// Apply auto-corrections to in-memory data before the file is written.
+		_viewport->Error_checker_checks_potential_issues = false;
+		_viewport->Error_checker_apply_auto_corrections  = true;
+		{
+			ErrorChecker fixer(_viewport);
+			fixer.runFullCheck();
+		}
+		_viewport->Error_checker_apply_auto_corrections  = savedCorrections;
+
+		// Run a second clean check (no mutations) to see how many issues remain,
+		// so we can report to the designer exactly how many were resolved.
+		if (outFixCount) {
+			_viewport->Error_checker_checks_potential_issues = false;
+			ErrorChecker verifier(_viewport);
+			verifier.runFullCheck();
+			*outFixCount = beforeCount - countNonPotential(verifier.getErrors());
+		}
+
+		_viewport->Error_checker_checks_potential_issues = savedPotential;
+		return true;
+	}
+
+	case dialogs::ErrorCheckerDialog::PreSaveAction::SaveAsIs:
+	default:
+		return true;
+	}
+}
+
 bool FredView::saveMissionToCurrentPath() {
+	if (saveName.isEmpty())
+		return saveMissionAs();
+
+	int fixCount = -1;
+	if (!performPreSaveCheck(&fixCount))
+		return false;
+
 	Fred_mission_save save;
 	save.set_save_format(_missionSaveFormat);
 	save.set_always_save_display_names(_viewport->Always_save_display_names);
-	save.set_view_pos(_viewport->view_pos);
-	save.set_view_orient(_viewport->view_orient);
+	save.set_create_bak_file(_viewport->Create_bak_on_save);
+	save.set_view_pos(_viewport->camera.view_pos);
+	save.set_view_orient(_viewport->camera.view_orient);
 	save.set_fred_alt_names(Fred_alt_names);
 	save.set_fred_callsigns(Fred_callsigns);
-
-	if (saveName.isEmpty()) {
-		return saveMissionAs();
-	}
 
 	save.save_mission_file(saveName.replace('/', DIR_SEPARATOR_CHAR).toUtf8().constData());
 	_missionModified = false;
+
+	if (fixCount > 0)
+		QMessageBox::information(this, tr("Auto-corrections Applied"),
+			tr("%n issue(s) were automatically corrected before saving.", "", fixCount));
+	else if (fixCount == 0)
+		QMessageBox::information(this, tr("No Auto-corrections Applied"),
+			tr("No issues could be automatically corrected. The mission was saved with existing errors."));
+
+	// Keep the persistent error checker in sync if it is already open.
+	if (_errorCheckerDialog && _errorCheckerDialog->isVisible())
+		_errorCheckerDialog->runCheck();
+
 	return true;
 }
+
 bool FredView::saveMissionAs() {
+	// Run the pre-save check before the file dialog so that cancelling does not
+	// leave the designer with a half-chosen save path.
+	int fixCount = -1;
+	if (!performPreSaveCheck(&fixCount))
+		return false;
+
+	const QString lastDir = fso::fred::util::getLastDir("missions/saveMission", CF_TYPE_MISSIONS);
+	saveName = QFileDialog::getSaveFileName(this, tr("Save mission"), lastDir, tr("FS2 missions (*.fs2)"));
+	if (saveName.isEmpty())
+		return false;
+
+	fso::fred::util::saveLastDir("missions/saveMission", saveName);
+
 	Fred_mission_save save;
 	save.set_save_format(_missionSaveFormat);
 	save.set_always_save_display_names(_viewport->Always_save_display_names);
-	save.set_view_pos(_viewport->view_pos);
-	save.set_view_orient(_viewport->view_orient);
+	save.set_create_bak_file(_viewport->Create_bak_on_save);
+	save.set_view_pos(_viewport->camera.view_pos);
+	save.set_view_orient(_viewport->camera.view_orient);
 	save.set_fred_alt_names(Fred_alt_names);
 	save.set_fred_callsigns(Fred_callsigns);
 
-	saveName = QFileDialog::getSaveFileName(this, tr("Save mission"), QString(), tr("FS2 missions (*.fs2)"));
-
-	if (saveName.isEmpty()) {
-		return false;
-	}
-
-	save.save_mission_file(saveName.replace('/',DIR_SEPARATOR_CHAR).toUtf8().constData());
+	save.save_mission_file(saveName.replace('/', DIR_SEPARATOR_CHAR).toUtf8().constData());
 	_missionModified = false;
+
+	if (fixCount > 0)
+		QMessageBox::information(this, tr("Auto-corrections Applied"),
+			tr("%n issue(s) were automatically corrected before saving.", "", fixCount));
+	else if (fixCount == 0)
+		QMessageBox::information(this, tr("No Auto-corrections Applied"),
+			tr("No issues could be automatically corrected. The mission was saved with existing errors."));
+
+	// Keep the persistent error checker in sync if it is already open.
+	if (_errorCheckerDialog && _errorCheckerDialog->isVisible())
+		_errorCheckerDialog->runCheck();
+
+	fred->setCurrentMissionPath(saveName);
+	restartAutosaveTimer();
 	return true;
+}
+
+void FredView::restartAutosaveTimer() {
+	if (!fred || !_viewport)
+		return;
+	fred->startAutosaveTimer(_viewport->autosave_interval_seconds);
 }
 
 void FredView::saveAsTemplate() {
@@ -319,17 +515,21 @@ void FredView::saveAsTemplate() {
 	if (metaDialog.exec() != QDialog::Accepted)
 		return;
 
-	// Default to data/missions/templates/ and create it if needed
-	QString templatesDir = QDir::currentPath() + "/data/missions/templates";
-	QDir().mkpath(templatesDir);
+	// Ensure templates subdir exists; use missions dir as fallback default
+	const QString defaultTemplatesDir = fso::fred::util::fredDefaultDir(CF_TYPE_MISSIONS) + "/templates";
+	QDir().mkpath(defaultTemplatesDir);
+
+	const QString lastTemplatesDir = fso::fred::util::getLastDir("missions/saveTemplate", defaultTemplatesDir);
 
 	QString templateName = QFileDialog::getSaveFileName(this,
 		tr("Save As Template"),
-		templatesDir,
+		lastTemplatesDir,
 		tr("FS2 mission templates (*.fst)"));
 
 	if (templateName.isEmpty())
 		return;
+
+	fso::fred::util::saveLastDir("missions/saveTemplate", templateName);
 
 	if (!templateName.endsWith(".fst", Qt::CaseInsensitive))
 		templateName += ".fst";
@@ -344,7 +544,7 @@ void FredView::saveAsTemplate() {
 }
 
 void FredView::loadTemplate() {
-	QString templatesDir = QDir::currentPath() + "/data/missions/templates";
+	QString templatesDir = fso::fred::util::fredDefaultDir(CF_TYPE_MISSIONS) + "/templates";
 	QDir().mkpath(templatesDir);
 
 	dialogs::TemplateBrowserDialog browser(this, templatesDir);
@@ -391,23 +591,6 @@ void FredView::on_actionRevert_triggered(bool) {
 	loadMissionFile(saveName);
 }
 
-void FredView::on_actionUndo_triggered(bool) {
-	// Preserve camera state and saveName because autoload() triggers missionLoaded which would overwrite them
-	auto savedViewPos    = _viewport->view_pos;
-	auto savedViewOrient = _viewport->view_orient;
-	auto savedSaveName   = saveName;
-
-	fred->autoload();
-
-	_viewport->view_pos    = savedViewPos;
-	_viewport->view_orient = savedViewOrient;
-	saveName               = savedSaveName;
-}
-
-void FredView::on_actionDisable_Undo_triggered(bool checked) {
-	fred->autosaveDisabled = checked ? 1 : 0;
-}
-
 void FredView::on_actionFS2_Open_triggered(bool) {
 	_missionSaveFormat = MissionFormat::STANDARD;
 }
@@ -429,17 +612,22 @@ void FredView::on_actionFS1_Mission_triggered(bool) {
 
 	QStringList srcPaths = QFileDialog::getOpenFileNames(this,
 		tr("Select FS1 mission(s) to import"),
-		QString(),
+		fso::fred::util::getLastDir("missions/importFS1Source", QDir::homePath()),
 		tr("FreeSpace Missions (*.fsm)"));
 
 	if (srcPaths.isEmpty())
 		return;
 
+	fso::fred::util::saveLastDir("missions/importFS1Source", srcPaths.first());
+
 	QString destDir = QFileDialog::getExistingDirectory(this,
-		tr("Select destination folder for converted missions"));
+		tr("Select destination folder for converted missions"),
+		fso::fred::util::getLastDir("missions/importFS1Dest", CF_TYPE_MISSIONS));
 
 	if (destDir.isEmpty())
 		return;
+
+	fso::fred::util::saveLastDir("missions/importFS1Dest", destDir);
 
 	QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 
@@ -468,8 +656,9 @@ void FredView::on_actionFS1_Mission_triggered(bool) {
 		Fred_mission_save fileSave;
 		fileSave.set_save_format(_missionSaveFormat);
 		fileSave.set_always_save_display_names(_viewport->Always_save_display_names);
-		fileSave.set_view_pos(_viewport->view_pos);
-		fileSave.set_view_orient(_viewport->view_orient);
+		fileSave.set_create_bak_file(_viewport->Create_bak_on_save);
+		fileSave.set_view_pos(_viewport->camera.view_pos);
+		fileSave.set_view_orient(_viewport->camera.view_orient);
 		fileSave.set_fred_alt_names(Fred_alt_names);
 		fileSave.set_fred_callsigns(Fred_callsigns);
 
@@ -546,7 +735,7 @@ void FredView::on_actionRun_FreeSpace_2_Open_triggered(bool) {
 
 	QString args = QString::fromStdString(cmdline_build_string());
 
-	if (!QProcess::startDetached(exePath, args.split(' ', QString::SkipEmptyParts))) {
+	if (!QProcess::startDetached(exePath, args.split(' ', Qt::SkipEmptyParts))) {
 		QMessageBox::warning(this, tr("Run FreeSpace"),
 			tr("Failed to launch: %1").arg(exePath));
 	}
@@ -556,8 +745,13 @@ void FredView::on_mission_loaded(const std::string& filepath) {
 	// Clear browsed head ANIs so the new mission's message scan starts fresh.
 	fso::fred::dialogs::MissionEventsDialogModel::clearBrowsedHeadAnis();
 
+	if (_errorCheckerDialog) {
+		_errorCheckerDialog->clearErrors();
+	}
+
 	if (_viewport != nullptr) {
 		_viewport->reloadLayersFromMission();
+		_tbLayerComboDirty = true;
 	}
 
 	QString filename = "Untitled";
@@ -583,7 +777,17 @@ void FredView::on_mission_loaded(const std::string& filepath) {
 		saveName = QString();
 	}
 
+	// Update autosave path and start/stop timer based on whether we have a named file.
+	fred->setCurrentMissionPath(saveName);
+	restartAutosaveTimer();
+
 	_missionModified = false;
+
+	if (filepath.empty()) {
+		statusBar()->showMessage(tr("Every great mission starts here. No pressure."));
+	} else {
+		statusBar()->clearMessage();
+	}
 }
 
 QSurface* FredView::getRenderSurface() {
@@ -688,16 +892,660 @@ void FredView::syncViewOptions() {
 	connectActionToViewSetting(ui->actionShowDistances, &_viewport->view.Show_distances);
 
 	connect(ui->actionVisibility_Layers, &QAction::triggered, this, [this]() { openLayerManagerDialog(); });
+
+	// Outline LOD submenu — mutually exclusive options
+	QAction* outlineLodActions[] = {
+		ui->actionOutline_LOD_0, ui->actionOutline_LOD_1, ui->actionOutline_LOD_2,
+		ui->actionOutline_LOD_3, ui->actionOutline_LOD_4
+	};
+	for (int i = 0; i < 5; i++) {
+		auto action = outlineLodActions[i];
+		connect(this, &FredView::viewIdle, this, [action, this, i]() {
+			action->setChecked(_viewport->view.Outline_lod == i);
+		});
+		connect(action, &QAction::triggered, this, [this, i]() {
+			_viewport->view.Outline_lod = i;
+			_viewport->needsUpdate();
+		});
+	}
 }
 void FredView::initializeStatusBar() {
+	statusBar()->setContentsMargins(8, 1, 8, 1);
+
+	// Object count... non permanent so it sits on the left and expands to fill available space.
+	_statusBarObjectCount = new QLabel();
+	_statusBarObjectCount->setAlignment(Qt::AlignCenter);
+	statusBar()->addWidget(_statusBarObjectCount, 1);
+
 	_statusBarViewmode = new QLabel();
+	_statusBarViewmode->setContentsMargins(8, 0, 0, 0);
 	statusBar()->addPermanentWidget(_statusBarViewmode);
 
 	_statusBarUnitsLabel = new QLabel();
+	_statusBarUnitsLabel->setContentsMargins(16, 0, 0, 0);
 	statusBar()->addPermanentWidget(_statusBarUnitsLabel);
-
-	statusBar()->showMessage(tr("Every great mission starts here. No pressure."));
 }
+
+// ---------------------------------------------------------------------------
+// Context toolbar  (top, below the primary toolbar)
+// ---------------------------------------------------------------------------
+
+void FredView::initializeContextToolbar() {
+	_contextToolBar = ui->contextToolBar;
+	_contextToolBar->setContextMenuPolicy(Qt::PreventContextMenu);
+	_contextToolBar->setVisible(true);
+
+	_contextLabel = new QLabel(tr("No Selection"), _contextToolBar);
+	_contextLabel->setContentsMargins(6, 0, 8, 0);
+	_contextLabel->setMinimumWidth(240);
+	_contextToolBar->addWidget(_contextLabel);
+	_contextToolBar->addSeparator(); // actions[0]=label widget-action, actions[1]=separator
+}
+
+void FredView::onUpdateContextToolbar() {
+	const int  curObj   = fred->currentObject;
+	const int  numMarked = fred->getNumMarked();
+	const bool valid    = query_valid_object(curObj);
+	const int  rawType  = valid ? Objects[curObj].type : -1;
+	const bool isShip   = valid && (rawType == OBJ_SHIP || rawType == OBJ_START);
+	const int  wingNum  = isShip ? Ships[Objects[curObj].instance].wingnum : -1;
+	const bool inWing   = wingNum >= 0 && wingNum < MAX_WINGS;
+
+	// For multi-select, compute common type and shared wing in one pass.
+	// OBJ_START is treated as OBJ_SHIP throughout.
+	int multiCommonType = -1;
+	int multiSharedWing = -1;
+	waypoint_list* multiSharedWaypointList = nullptr;
+	if (numMarked > 1) {
+		int firstType    = -1;
+		bool allSameType = true;
+		int  sharedWingTmp = -2; // -2 = uninitialized
+		bool allSameWing   = true;
+		waypoint_list* sharedWpListTmp = nullptr;
+		bool firstWpListSet = false;
+		bool allSameWpList  = true;
+		for (object* p = GET_FIRST(&obj_used_list); p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p)) {
+			if (!p->flags[Object::Object_Flags::Marked]) continue;
+			int t = (p->type == OBJ_START) ? OBJ_SHIP : p->type;
+			if (firstType == -1) {
+				firstType = t;
+			} else if (t != firstType) {
+				allSameType = false;
+			}
+			if (t == OBJ_SHIP) {
+				int w = Ships[p->instance].wingnum;
+				if (sharedWingTmp == -2) {
+					sharedWingTmp = w;
+				} else if (w != sharedWingTmp) {
+					allSameWing = false;
+				}
+			}
+			if (t == OBJ_WAYPOINT) {
+				waypoint* wp = find_waypoint_with_instance(p->instance);
+				waypoint_list* wl = wp ? wp->get_parent_list() : nullptr;
+				if (!firstWpListSet) {
+					sharedWpListTmp = wl;
+					firstWpListSet  = true;
+				} else if (wl != sharedWpListTmp) {
+					allSameWpList = false;
+				}
+			}
+		}
+		if (allSameType && firstType != -1)
+			multiCommonType = firstType;
+		if (multiCommonType == OBJ_SHIP && allSameWing && sharedWingTmp >= 0 && sharedWingTmp < MAX_WINGS)
+			multiSharedWing = sharedWingTmp;
+		if (multiCommonType == OBJ_WAYPOINT && allSameWpList && firstWpListSet)
+			multiSharedWaypointList = sharedWpListTmp;
+	}
+
+	// Unified "effective" selection properties for single and multi
+	const int  effectiveType    = (numMarked <= 1) ? ((rawType == OBJ_START) ? OBJ_SHIP : rawType) : multiCommonType;
+	const bool effectiveIsShip  = (numMarked <= 1) ? isShip : (multiCommonType == OBJ_SHIP);
+	const int  effectiveWingNum = (numMarked <= 1) ? wingNum : multiSharedWing;
+	const bool effectiveInWing  = effectiveWingNum >= 0 && effectiveWingNum < MAX_WINGS;
+
+	// Always update label text
+	QString label;
+	if (!valid && numMarked == 0) {
+		label = tr("No Selection");
+	} else if (numMarked > 1) {
+		int ships = 0, waypoints = 0, jumpNodes = 0, props = 0;
+		for (object* p = GET_FIRST(&obj_used_list); p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p)) {
+			if (!p->flags[Object::Object_Flags::Marked]) continue;
+			if (p->type == OBJ_SHIP || p->type == OBJ_START) ++ships;
+			else if (p->type == OBJ_WAYPOINT)  ++waypoints;
+			else if (p->type == OBJ_JUMP_NODE) ++jumpNodes;
+			else if (p->type == OBJ_PROP)      ++props;
+		}
+		QStringList parts;
+		if (ships     > 0) parts << tr("%n ship(s)",      "", ships);
+		if (waypoints > 0) parts << tr("%n waypoint(s)",  "", waypoints);
+		if (jumpNodes > 0) parts << tr("%n jump node(s)", "", jumpNodes);
+		if (props     > 0) parts << tr("%n prop(s)",      "", props);
+		label = parts.join(", ") + tr(" selected");
+		if (effectiveInWing)
+			label += tr("  |  Wing: %1").arg(QString::fromUtf8(Wings[effectiveWingNum].name));
+		if (multiSharedWaypointList != nullptr)
+			label += tr("  |  List: %1").arg(QString::fromUtf8(multiSharedWaypointList->get_name()));
+	} else if (isShip) {
+		int si = Ships[Objects[curObj].instance].ship_info_index;
+		label = tr("Ship: %1 [%2]")
+			.arg(QString::fromUtf8(object_name(curObj)))
+			.arg(QString::fromUtf8(Ship_info[si].name));
+		if (inWing)
+			label += tr("  |  Wing: %1").arg(QString::fromUtf8(Wings[wingNum].name));
+	} else if (rawType == OBJ_WAYPOINT) {
+		label = tr("Waypoint: %1").arg(QString::fromUtf8(object_name(curObj)));
+		if (fred->cur_waypoint_list)
+			label += tr("  |  List: %1").arg(QString::fromUtf8(fred->cur_waypoint_list->get_name()));
+	} else if (rawType == OBJ_JUMP_NODE) {
+		label = tr("Jump Node: %1").arg(QString::fromUtf8(object_name(curObj)));
+	} else if (rawType == OBJ_PROP) {
+		label = tr("Prop: %1").arg(QString::fromUtf8(object_name(curObj)));
+	} else {
+		label = tr("No Selection");
+	}
+	_contextLabel->setText(label);
+
+	// Only rebuild buttons when effective selection state changes.
+	const bool needsRebuild = (curObj                  != _ctxCachedObj                ||
+	                           numMarked               != _ctxCachedMarked             ||
+	                           effectiveType           != _ctxCachedObjType            ||
+	                           effectiveInWing         != _ctxCachedInWing             ||
+	                           multiSharedWing         != _ctxCachedSharedWing         ||
+	                           multiSharedWaypointList != _ctxCachedSharedWaypointList);
+	if (!needsRebuild) return;
+
+	_ctxCachedObj                = curObj;
+	_ctxCachedMarked             = numMarked;
+	_ctxCachedObjType            = effectiveType;
+	_ctxCachedInWing             = effectiveInWing;
+	_ctxCachedSharedWing         = multiSharedWing;
+	_ctxCachedSharedWaypointList = multiSharedWaypointList;
+
+	// Tear down previous dynamic buttons, deleting them to avoid leaks.
+	// Toolbar layout: [0]=label widget-action, [1]=separator, [2..]=dynamic
+	auto acts = _contextToolBar->actions();
+	while (acts.size() > 2) {
+		QAction* a = acts.last();
+		_contextToolBar->removeAction(a);
+		delete a;
+		acts = _contextToolBar->actions();
+	}
+
+	auto addBtn = [this](const QString& text, auto slot) {
+		auto* act = new QAction(text, _contextToolBar);
+		connect(act, &QAction::triggered, this, slot);
+		_contextToolBar->addAction(act);
+	};
+
+	const bool anythingSelected = valid || numMarked > 0;
+
+	if (effectiveIsShip) {
+		if (numMarked <= 1)
+			addBtn(tr("Rename"),               &FredView::quickRenameCurrentObject);
+		addBtn(tr("Edit Ship"),            &FredView::on_actionShips_triggered);
+		if (effectiveInWing) {
+			_contextToolBar->addSeparator();
+			addBtn(tr("Edit Wing"), &FredView::on_actionWings_triggered);
+			auto* selWingAct = new QAction(tr("Select Wing"), _contextToolBar);
+			int capturedWing = effectiveWingNum;
+			connect(selWingAct, &QAction::triggered, this, [this, capturedWing]() {
+				fred->mark_wing(capturedWing);
+			});
+			_contextToolBar->addAction(selWingAct);
+		}
+	} else if (effectiveType == OBJ_WAYPOINT) {
+		addBtn(tr("Edit Waypoint Path"),   &FredView::on_actionWaypoint_Paths_triggered);
+	} else if (effectiveType == OBJ_JUMP_NODE) {
+		addBtn(tr("Edit Jump Node"),       &FredView::on_actionJump_Nodes_triggered);
+	} else if (effectiveType == OBJ_PROP) {
+		addBtn(tr("Edit Prop"),            &FredView::on_actionProps_triggered);
+	}
+
+	if (anythingSelected) {
+		_contextToolBar->addSeparator();
+		addBtn(tr("Position/Orientation"), &FredView::on_actionObject_Orientation_triggered);
+		if (numMarked <= 1)
+			addBtn(tr("Clone"), &FredView::on_actionClone_Marked_Objects_triggered);
+		addBtn(tr("Delete"), &FredView::on_actionDelete_triggered);
+	}
+}
+
+void FredView::quickRenameCurrentObject() {
+	const int obj = fred->currentObject;
+	if (!query_valid_object(obj)) return;
+
+	const QString current = QString::fromUtf8(object_name(obj));
+	bool ok = false;
+	QString newName = QInputDialog::getText(this, tr("Rename"), tr("New name:"), QLineEdit::Normal, current, &ok).trimmed();
+	if (!ok || newName.isEmpty() || newName == current) return;
+
+	if (Objects[obj].type == OBJ_SHIP || Objects[obj].type == OBJ_START) {
+		fred->rename_ship(Objects[obj].instance, newName.toUtf8().constData());
+	}
+	// Waypoints, props, and jump nodes open their editor (name field is front-and-center)
+	// Wing rename goes through Edit Wing since wings have no standalone scene object
+}
+
+
+// ---------------------------------------------------------------------------
+// Transform bar  (bottom, above the status bar)
+// ---------------------------------------------------------------------------
+
+void FredView::initializeTransformBar() {
+	_transformToolBar = ui->transformToolBar;
+	_transformToolBar->setContextMenuPolicy(Qt::PreventContextMenu);
+	_transformToolBar->setVisible(true);
+
+	// Helper: add a fixed-width spacer widget to the toolbar.
+	auto addFixedSpacer = [this](int w) {
+		auto* sp = new QWidget(_transformToolBar);
+		sp->setFixedWidth(w);
+		_transformToolBar->addWidget(sp);
+	};
+
+	// ---- Left section: camera move and rotation speed selectors ---------------
+	addFixedSpacer(8);
+
+	auto* moveSpeedLabel = new QLabel(tr("Camera Move:"), _transformToolBar);
+	moveSpeedLabel->setContentsMargins(0, 0, 4, 0);
+	_transformToolBar->addWidget(moveSpeedLabel);
+
+	_transformMoveSpeedCombo = new QComboBox(_transformToolBar);
+	_transformMoveSpeedCombo->setFixedWidth(72);
+	_transformMoveSpeedCombo->setToolTip(tr("Camera movement speed (mirrors the Speed > Movement menu)"));
+	for (int v : {1, 2, 3, 5, 8, 10, 50, 100})
+		_transformMoveSpeedCombo->addItem(tr("x%1").arg(v), v);
+	_transformToolBar->addWidget(_transformMoveSpeedCombo);
+	connect(_transformMoveSpeedCombo, QOverload<int>::of(&QComboBox::activated), this, [this](int idx) {
+		if (!_viewport) return;
+		_viewport->camera.setPhysicsSpeed(_transformMoveSpeedCombo->itemData(idx).toInt());
+	});
+
+	addFixedSpacer(8);
+
+	auto* rotSpeedLabel = new QLabel(tr("Camera Rot:"), _transformToolBar);
+	rotSpeedLabel->setContentsMargins(0, 0, 4, 0);
+	_transformToolBar->addWidget(rotSpeedLabel);
+
+	_transformRotSpeedCombo = new QComboBox(_transformToolBar);
+	_transformRotSpeedCombo->setFixedWidth(72);
+	_transformRotSpeedCombo->setToolTip(tr("Camera rotation speed (mirrors the Speed > Rotation menu)"));
+	// Labels match the existing menu (physics_rot / ~2 ≈ displayed multiplier)
+	for (auto [label, val] : std::initializer_list<std::pair<const char*, int>>{
+			{"x1", 2}, {"x5", 10}, {"x12", 25}, {"x25", 50}, {"x50", 100}})
+		_transformRotSpeedCombo->addItem(tr(label), val);
+	_transformToolBar->addWidget(_transformRotSpeedCombo);
+	connect(_transformRotSpeedCombo, QOverload<int>::of(&QComboBox::activated), this, [this](int idx) {
+		if (!_viewport) return;
+		_viewport->camera.setPhysicsRot(_transformRotSpeedCombo->itemData(idx).toInt());
+	});
+
+	addFixedSpacer(8);
+
+	// ---- Single expanding spacer pushes everything to the right side -------
+	auto* leftSpacer = new QWidget(_transformToolBar);
+	leftSpacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+	_transformToolBar->addWidget(leftSpacer);
+
+	// ---- IFF / Team selector -----------------------------------------------
+	// IFF items are populated lazily in onUpdateTransformBar() once Iff_info is loaded.
+	auto* iffLabel = new QLabel(tr("IFF:"), _transformToolBar);
+	iffLabel->setContentsMargins(0, 0, 4, 0);
+	_transformToolBar->addWidget(iffLabel);
+
+	_transformIffCombo = new QComboBox(_transformToolBar);
+	_transformIffCombo->setFixedWidth(130);
+	_transformIffCombo->setToolTip(tr("IFF of the selected ship(s). Changes apply to all marked ships."));
+	_transformToolBar->addWidget(_transformIffCombo);
+	connect(_transformIffCombo, QOverload<int>::of(&QComboBox::activated), this, [this](int idx) {
+		if (idx < 0 || !_viewport) return;
+		for (object* p = GET_FIRST(&obj_used_list); p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p)) {
+			if (!p->flags[Object::Object_Flags::Marked]) continue;
+			if (p->type == OBJ_SHIP || p->type == OBJ_START)
+				Ships[p->instance].team = idx;
+		}
+		fred->missionChanged();
+	});
+
+	addFixedSpacer(8);
+
+	// ---- Local-axes toggle ----
+	_transformLocalBtn = new QToolButton(_transformToolBar);
+	_transformLocalBtn->setCheckable(true);
+	_transformLocalBtn->setToolButtonStyle(Qt::ToolButtonIconOnly);
+	_transformLocalBtn->setFixedSize(28, 24);
+	_transformLocalBtn->setToolTip(tr("Local mode: in multi-selection, apply position/orientation as a delta to each object rather than setting all to the same absolute value."));
+	bindThemeIcon(_transformLocalBtn, QStringLiteral("rotlocal"));
+	_transformToolBar->addWidget(_transformLocalBtn);
+	connect(_transformLocalBtn, &QToolButton::toggled, this, [this](bool checked) {
+		if (!_viewport) return;
+		// Local ON  = each object rotates/moves individually -> Group_rotate = false
+		// Local OFF = formation (group orbits leader)        -> Group_rotate = true
+		_viewport->Group_rotate = !checked;
+		if (_viewport->Editing_mode == CursorMode::Moving)
+			_tbLocalMove = checked;
+		else if (_viewport->Editing_mode == CursorMode::Rotating)
+			_tbLocalRotate = checked;
+	});
+
+	addFixedSpacer(8);
+
+	// ---- Spin boxes (position or orientation) ------------------------------
+	_transformLabel = new QLabel(tr("Pos"), _transformToolBar);
+	_transformLabel->setContentsMargins(0, 0, 4, 0);
+	_transformLabel->setMinimumWidth(24);
+	_transformToolBar->addWidget(_transformLabel);
+
+	auto makeSpinBox = [this](QLabel*& lbl, const QString& axisName, QDoubleSpinBox*& sb) {
+		lbl = new QLabel(axisName, _transformToolBar);
+		lbl->setContentsMargins(4, 0, 2, 0);
+		_transformToolBar->addWidget(lbl);
+		sb = new QDoubleSpinBox(_transformToolBar);
+		sb->setDecimals(1);
+		sb->setRange(-99999.9, 99999.9);
+		sb->setFixedWidth(90);
+		sb->setKeyboardTracking(false);
+		_transformToolBar->addWidget(sb);
+		connect(sb, &QDoubleSpinBox::editingFinished, this, &FredView::onTransformEditingFinished);
+	};
+
+	makeSpinBox(_transformLabelA, tr("X"), _transformA);
+	makeSpinBox(_transformLabelB, tr("Y"), _transformB);
+	makeSpinBox(_transformLabelC, tr("Z"), _transformC);
+
+	// ---- Object radius (read-only) -----------------------------------------
+	addFixedSpacer(8);
+
+	auto* radiusStaticLabel = new QLabel(tr("Radius:"), _transformToolBar);
+	radiusStaticLabel->setContentsMargins(0, 0, 4, 0);
+	_transformToolBar->addWidget(radiusStaticLabel);
+
+	_transformRadiusLabel = new QLabel(tr("--"), _transformToolBar);
+	_transformRadiusLabel->setFixedWidth(64);
+	_transformRadiusLabel->setToolTip(tr("Bounding radius of the selected object"));
+	_transformToolBar->addWidget(_transformRadiusLabel);
+
+	addFixedSpacer(8);
+
+	// ---- Layer selector ----------------------------------------------------
+	auto* layerLabel = new QLabel(tr("Layer:"), _transformToolBar);
+	layerLabel->setContentsMargins(0, 0, 4, 0);
+	_transformToolBar->addWidget(layerLabel);
+
+	_transformLayerCombo = new QComboBox(_transformToolBar);
+	_transformLayerCombo->setFixedWidth(130);
+	_transformLayerCombo->setToolTip(tr("Layer of the selected object(s). Choosing a layer moves all marked objects to it."));
+	_transformToolBar->addWidget(_transformLayerCombo);
+	connect(_transformLayerCombo, QOverload<int>::of(&QComboBox::activated), this, [this](int idx) {
+		if (idx < 0 || !_viewport) return;
+		SCP_string layerName = _transformLayerCombo->itemText(idx).toUtf8().constData();
+		_viewport->moveMarkedObjectsToLayer(layerName, nullptr);
+		fred->missionChanged();
+	});
+
+	addFixedSpacer(12);
+
+	// addToolBar is intentionally NOT called here... added after restoreState() in setEditor().
+}
+
+void FredView::onUpdateTransformBar() {
+	const int  curObj     = fred->currentObject;
+	const int  numMarked  = fred->getNumMarked();
+	const bool valid      = query_valid_object(curObj);
+	const bool rotateMode = _viewport->Editing_mode == CursorMode::Rotating;
+	const bool selectMode = _viewport->Editing_mode == CursorMode::Selecting;
+	const int  rawType    = valid ? Objects[curObj].type : -1;
+	const bool isShip     = valid && (rawType == OBJ_SHIP || rawType == OBJ_START);
+
+	// ---- Spin box labels and ranges ----------------------------------------
+	if (rotateMode) {
+		_transformLabel->setText(tr("Ori"));
+		_transformLabelA->setText(tr("H"));
+		_transformLabelB->setText(tr("P"));
+		_transformLabelC->setText(tr("B"));
+		_transformA->setRange(-360.0, 360.0);
+		_transformB->setRange(-360.0, 360.0);
+		_transformC->setRange(-360.0, 360.0);
+	} else {
+		_transformLabel->setText(tr("Pos"));
+		_transformLabelA->setText(tr("X"));
+		_transformLabelB->setText(tr("Y"));
+		_transformLabelC->setText(tr("Z"));
+		_transformA->setRange(-99999.9, 99999.9);
+		_transformB->setRange(-99999.9, 99999.9);
+		_transformC->setRange(-99999.9, 99999.9);
+	}
+
+	const bool editable = valid && !selectMode;
+	_transformA->setEnabled(editable);
+	_transformB->setEnabled(editable);
+	_transformC->setEnabled(editable);
+
+	// ---- Local-axes toggle: per-mode preference + inverted Group_rotate mapping ----
+	// When the cursor mode changes, restore the last Local setting for that mode.
+	const int curModeInt = static_cast<int>(_viewport->Editing_mode);
+	if (curModeInt != _tbCachedCursorMode) {
+		_tbCachedCursorMode = curModeInt;
+		if (_viewport->Editing_mode == CursorMode::Moving)
+			_viewport->Group_rotate = !_tbLocalMove;
+		else if (_viewport->Editing_mode == CursorMode::Rotating)
+			_viewport->Group_rotate = !_tbLocalRotate;
+		// Select mode: leave Group_rotate unchanged
+	}
+	// Local ON = individual axes = Group_rotate false, so button reflects !Group_rotate
+	{
+		QSignalBlocker bl(_transformLocalBtn);
+		_transformLocalBtn->setChecked(!_viewport->Group_rotate);
+	}
+	_transformLocalBtn->setEnabled(editable);
+
+	// ---- IFF combo: populate lazily once Iff_info is loaded by the game tables --
+	if (!_tbIffPopulated && !Iff_info.empty()) {
+		_tbIffPopulated = true;
+		QSignalBlocker bl(_transformIffCombo);
+		for (const auto& iff : Iff_info)
+			_transformIffCombo->addItem(QString::fromUtf8(iff.iff_name));
+	}
+
+	// Find common IFF among marked ships; -1 means mixed or no ship selected.
+	int  iffIndex    = -1;
+	bool anyShip     = isShip;
+	if (numMarked > 1) {
+		anyShip = false;
+		int firstIff = -2;
+		bool allSame = true;
+		for (object* p = GET_FIRST(&obj_used_list); p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p)) {
+			if (!p->flags[Object::Object_Flags::Marked]) continue;
+			if (p->type != OBJ_SHIP && p->type != OBJ_START) continue;
+			anyShip = true;
+			int team = Ships[p->instance].team;
+			if (firstIff == -2) { firstIff = team; }
+			else if (team != firstIff) { allSame = false; }
+		}
+		if (anyShip && allSame && firstIff >= 0) iffIndex = firstIff;
+	} else if (isShip) {
+		iffIndex = Ships[Objects[curObj].instance].team;
+	}
+	_transformIffCombo->setEnabled(anyShip);
+	{
+		QSignalBlocker bl(_transformIffCombo);
+		_transformIffCombo->setCurrentIndex(iffIndex);  // -1 = blank for mixed
+	}
+
+	// ---- Radius display: object radius for single, selection bounding radius for multi --
+	if (valid && numMarked <= 1) {
+		_transformRadiusLabel->setText(QString::number(static_cast<double>(Objects[curObj].radius), 'f', 1));
+	} else if (numMarked > 1 && obj_used_list.next != nullptr) {
+		// Bounding radius of the selection: distance from centroid to the farthest object.
+		float cx = 0.0f, cy = 0.0f, cz = 0.0f;
+		int   cnt = 0;
+		for (object* p = GET_FIRST(&obj_used_list); p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p)) {
+			if (!p->flags[Object::Object_Flags::Marked]) continue;
+			cx += p->pos.xyz.x;
+			cy += p->pos.xyz.y;
+			cz += p->pos.xyz.z;
+			++cnt;
+		}
+		if (cnt > 0) {
+			cx /= cnt; cy /= cnt; cz /= cnt;
+			float maxDist = 0.0f;
+			for (object* p = GET_FIRST(&obj_used_list); p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p)) {
+				if (!p->flags[Object::Object_Flags::Marked]) continue;
+				float dx = p->pos.xyz.x - cx;
+				float dy = p->pos.xyz.y - cy;
+				float dz = p->pos.xyz.z - cz;
+				float d  = sqrtf(dx*dx + dy*dy + dz*dz);
+				if (d > maxDist) maxDist = d;
+			}
+			_transformRadiusLabel->setText(QString::number(static_cast<double>(maxDist), 'f', 1));
+		} else {
+			_transformRadiusLabel->setText(tr("--"));
+		}
+	} else {
+		_transformRadiusLabel->setText(tr("--"));
+	}
+
+	// ---- Layer combo -------------------------------------------------------
+	// Rebuild contents only when layer structure has changed.
+	if (_tbLayerComboDirty) {
+		const auto layerNames = _viewport->getLayerNames();
+		QSignalBlocker bl(_transformLayerCombo);
+		_transformLayerCombo->clear();
+		for (const auto& n : layerNames)
+			_transformLayerCombo->addItem(QString::fromUtf8(n.c_str()));
+		_tbLayerComboDirty = false;
+	}
+
+	const bool anySelected = valid || numMarked > 0;
+	_transformLayerCombo->setEnabled(anySelected);
+
+	// Find common layer index; -1 = blank for mixed layers.
+	int layerIdx = -1;
+	if (anySelected) {
+		if (numMarked <= 1 && valid) {
+			QString ln = QString::fromUtf8(_viewport->getObjectLayerName(curObj).c_str());
+			layerIdx = _transformLayerCombo->findText(ln);
+		} else if (numMarked > 1) {
+			int firstLyr = -2;
+			bool allSame = true;
+			for (object* p = GET_FIRST(&obj_used_list); p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p)) {
+				if (!p->flags[Object::Object_Flags::Marked]) continue;
+				int objIdx = static_cast<int>(p - Objects);
+				int idx = _transformLayerCombo->findText(
+					QString::fromUtf8(_viewport->getObjectLayerName(objIdx).c_str()));
+				if (firstLyr == -2) { firstLyr = idx; }
+				else if (idx != firstLyr) { allSame = false; break; }
+			}
+			if (allSame && firstLyr >= 0) layerIdx = firstLyr;
+		}
+	}
+	{
+		QSignalBlocker bl(_transformLayerCombo);
+		_transformLayerCombo->setCurrentIndex(layerIdx);
+	}
+
+	// ---- Spin box values (single selection only) ---------------------------
+	if (!valid) return;
+
+	auto setIfUnfocused = [](QDoubleSpinBox* sb, double val) {
+		if (!sb->hasFocus()) sb->setValue(val);
+	};
+
+	if (rotateMode) {
+		angles ang{};
+		vm_extract_angles_matrix(&ang, &Objects[curObj].orient);
+		setIfUnfocused(_transformA, fl_degrees(ang.h));
+		setIfUnfocused(_transformB, fl_degrees(ang.p));
+		setIfUnfocused(_transformC, fl_degrees(ang.b));
+	} else {
+		const vec3d& pos = Objects[curObj].pos;
+		setIfUnfocused(_transformA, pos.xyz.x);
+		setIfUnfocused(_transformB, pos.xyz.y);
+		setIfUnfocused(_transformC, pos.xyz.z);
+	}
+}
+
+void FredView::onTransformEditingFinished() {
+	const int  curObj      = fred->currentObject;
+	if (!query_valid_object(curObj)) return;
+
+	const bool rotateMode  = _viewport->Editing_mode == CursorMode::Rotating;
+	const bool localMode   = !_viewport->Group_rotate;  // Local ON = individual = !Group_rotate
+	const int  numMarked   = fred->getNumMarked();
+	const bool isMulti     = numMarked > 1;
+
+	if (rotateMode) {
+		if (isMulti && localMode) {
+			// Local delta: compute angle delta from curObj, apply to every marked object.
+			angles oldAng{};
+			vm_extract_angles_matrix(&oldAng, &Objects[curObj].orient);
+			const float dh = fl_radians(static_cast<float>(_transformA->value())) - oldAng.h;
+			const float dp = fl_radians(static_cast<float>(_transformB->value())) - oldAng.p;
+			const float db = fl_radians(static_cast<float>(_transformC->value())) - oldAng.b;
+			for (object* p = GET_FIRST(&obj_used_list); p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p)) {
+				if (!p->flags[Object::Object_Flags::Marked]) continue;
+				angles a{};
+				vm_extract_angles_matrix(&a, &p->orient);
+				a.h += dh; a.p += dp; a.b += db;
+				vm_angles_2_matrix(&p->orient, &a);
+			}
+		} else if (isMulti) {
+			// Global multi: align every marked object to the same absolute orientation.
+			angles ang{};
+			ang.h = fl_radians(static_cast<float>(_transformA->value()));
+			ang.p = fl_radians(static_cast<float>(_transformB->value()));
+			ang.b = fl_radians(static_cast<float>(_transformC->value()));
+			matrix m{};
+			vm_angles_2_matrix(&m, &ang);
+			for (object* p = GET_FIRST(&obj_used_list); p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p)) {
+				if (!p->flags[Object::Object_Flags::Marked]) continue;
+				p->orient = m;
+			}
+		} else {
+			// Single object.
+			angles ang{};
+			ang.h = fl_radians(static_cast<float>(_transformA->value()));
+			ang.p = fl_radians(static_cast<float>(_transformB->value()));
+			ang.b = fl_radians(static_cast<float>(_transformC->value()));
+			vm_angles_2_matrix(&Objects[curObj].orient, &ang);
+		}
+	} else {
+		if (isMulti && localMode) {
+			// Local delta: shift every marked object by the same offset relative to curObj.
+			const float dx = static_cast<float>(_transformA->value()) - Objects[curObj].pos.xyz.x;
+			const float dy = static_cast<float>(_transformB->value()) - Objects[curObj].pos.xyz.y;
+			const float dz = static_cast<float>(_transformC->value()) - Objects[curObj].pos.xyz.z;
+			for (object* p = GET_FIRST(&obj_used_list); p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p)) {
+				if (!p->flags[Object::Object_Flags::Marked]) continue;
+				p->pos.xyz.x += dx;
+				p->pos.xyz.y += dy;
+				p->pos.xyz.z += dz;
+			}
+		} else if (isMulti) {
+			// Global multi: move every marked object to the same absolute position.
+			const auto nx = static_cast<float>(_transformA->value());
+			const auto ny = static_cast<float>(_transformB->value());
+			const auto nz = static_cast<float>(_transformC->value());
+			for (object* p = GET_FIRST(&obj_used_list); p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p)) {
+				if (!p->flags[Object::Object_Flags::Marked]) continue;
+				p->pos.xyz.x = nx;
+				p->pos.xyz.y = ny;
+				p->pos.xyz.z = nz;
+			}
+		} else {
+			// Single object.
+			Objects[curObj].pos.xyz.x = static_cast<float>(_transformA->value());
+			Objects[curObj].pos.xyz.y = static_cast<float>(_transformB->value());
+			Objects[curObj].pos.xyz.z = static_cast<float>(_transformC->value());
+		}
+	}
+
+	fred->missionChanged();
+}
+
 void FredView::updateUI() {
 	if (!_viewport) {
 		// The following code requires a valid viewport
@@ -707,10 +1555,27 @@ void FredView::updateUI() {
 	_statusBarUnitsLabel->setText(tr("Units = %1 Meters").arg(_viewport->The_grid->square_size));
 	setWindowModified(isMissionModified());
 
-	if (_viewport->viewpoint == 1) {
-		_statusBarViewmode->setText(tr("Viewpoint: %1").arg(object_name(_viewport->view_obj)));
+	if (_viewport->camera.getViewpoint() == 1) {
+		_statusBarViewmode->setText(tr("Viewpoint: %1").arg(object_name(_viewport->camera.getViewObj())));
 	} else {
 		_statusBarViewmode->setText(tr("Viewpoint: Camera"));
+	}
+
+	// Mission object counts
+	// Guard: obj_used_list.next is nullptr before obj_init() runs; after init an
+	// empty list has next == &obj_used_list (sentinel).  Only iterate when ready.
+	if (obj_used_list.next != nullptr) {
+		int ships = 0, waypoints = 0, jumpNodes = 0;
+		for (object* p = GET_FIRST(&obj_used_list); p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p)) {
+			if      (p->type == OBJ_SHIP || p->type == OBJ_START) ++ships;
+			else if (p->type == OBJ_WAYPOINT)                     ++waypoints;
+			else if (p->type == OBJ_JUMP_NODE)                    ++jumpNodes;
+		}
+		QStringList parts;
+		parts << tr("Ships: %1").arg(ships);
+		if (waypoints > 0) parts << tr("WPs: %1").arg(waypoints);
+		if (jumpNodes > 0) parts << tr("Nodes: %1").arg(jumpNodes);
+		_statusBarObjectCount->setText(parts.join(tr("   ")));
 	}
 
 	viewIdle();
@@ -727,12 +1592,36 @@ void FredView::ensureViewportFocus() {
 		if (focusedWindow != nullptr && focusedWindow != this) {
 			return;
 		}
+
+		// Don't steal focus from dock widget children — the user is intentionally
+		// interacting with a panel (search bar, buttons, checkboxes, etc.).
+		QWidget* w = focusedWidget;
+		while (w != nullptr) {
+			if (qobject_cast<QDockWidget*>(w) != nullptr) {
+				return;
+			}
+			w = w->parentWidget();
+		}
 	}
 
 	if (focusedWidget != ui->centralWidget) {
 		ui->centralWidget->setFocus(Qt::OtherFocusReason);
 	}
 }
+
+void FredView::enforceSideDockAreas()
+{
+	const auto allowedAreas = Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea;
+	for (auto* dock : findChildren<QDockWidget*>()) {
+		dock->setAllowedAreas(allowedAreas);
+
+		const auto area = dockWidgetArea(dock);
+		if (area == Qt::TopDockWidgetArea || area == Qt::BottomDockWidgetArea || area == Qt::NoDockWidgetArea) {
+			addDockWidget(Qt::LeftDockWidgetArea, dock);
+		}
+	}
+}
+
 bool FredView::isMissionModified() const {
 	return _missionModified;
 }
@@ -777,6 +1666,7 @@ void FredView::connectActionToViewSetting(QAction* option, bool* destination) {
 
 		// View settings have changed so we need to update the window
 		_viewport->needsUpdate();
+		_viewport->saveSettings();
 	});
 }
 void FredView::connectActionToViewSetting(QAction* option, std::vector<bool>* vector, size_t idx) {
@@ -798,15 +1688,47 @@ void FredView::connectActionToViewSetting(QAction* option, std::vector<bool>* ve
 		});
 }
 
+static bool canObjectBeAssignedLayer(int objType) {
+	return (objType == OBJ_SHIP) || (objType == OBJ_START) || (objType == OBJ_PROP) ||
+	       (objType == OBJ_JUMP_NODE) || (objType == OBJ_WAYPOINT);
+}
+
+void FredView::showContextMenu(int objNum, const QPoint& globalPos) {
+	if (!query_valid_object(objNum)) return;
+	fred->selectObject(objNum);
+	const auto objType = Objects[objNum].type;
+	const bool canAssignLayer = canObjectBeAssignedLayer(objType);
+	_moveToLayerMenu->menuAction()->setVisible(canAssignLayer);
+	if (canAssignLayer)
+		populateMoveToLayerMenu(objNum);
+
+	const bool isShip = (objType == OBJ_SHIP) || (objType == OBJ_START);
+	const bool inWing = isShip && Ships[Objects[objNum].instance].wingnum >= 0;
+	_editWingAction->setVisible(isShip);
+	_editWingAction->setEnabled(inWing);
+	_selectWingAction->setVisible(isShip);
+	_selectWingAction->setEnabled(inWing);
+
+	SCP_string objName;
+	if (fred->getNumMarked() > 1) {
+		objName = "Marked Objects";
+	} else {
+		objName = object_name(objNum);
+	}
+	_editObjectAction->setText(tr("Edit %1").arg(objName.c_str()));
+	_editPopup->exec(globalPos);
+}
+
 void FredView::showContextMenu(const QPoint& globalPos) {
 	auto localPos = ui->centralWidget->mapFromGlobal(globalPos);
 	_lastContextMenuLocalPos = localPos;
 
-	auto obj = _viewport->select_object(localPos.x(), localPos.y());
+	auto obj =
+		_viewport->select_object(localPos.x() * this->devicePixelRatio(), localPos.y() * this->devicePixelRatio());
 	if (obj >= 0) {
 		fred->selectObject(obj);
 		const auto objType = Objects[obj].type;
-		const bool canAssignLayer = (objType == OBJ_SHIP) || (objType == OBJ_START) || (objType == OBJ_PROP);
+		const bool canAssignLayer = canObjectBeAssignedLayer(objType);
 		_moveToLayerMenu->menuAction()->setVisible(canAssignLayer);
 		if (canAssignLayer) {
 			populateMoveToLayerMenu(obj);
@@ -838,6 +1760,110 @@ void FredView::showContextMenu(const QPoint& globalPos) {
 		_viewPopup->exec(globalPos);
 	}
 }
+void FredView::showWingContextMenu(int wingIndex, const QPoint& globalPos)
+{
+	if (wingIndex < 0 || wingIndex >= MAX_WINGS) return;
+
+	// Find first valid wing member for layer population and current-object
+	int firstObjNum = -1;
+	fred->unmark_all();
+	for (int si = 0; si < Wings[wingIndex].wave_count; si++) {
+		int shipIdx = Wings[wingIndex].ship_index[si];
+		if (shipIdx < 0) continue;
+		int objNum = Ships[shipIdx].objnum;
+		if (objNum >= 0 && Objects[objNum].type != OBJ_NONE) {
+			fred->markObject(objNum);
+			if (firstObjNum < 0)
+				firstObjNum = objNum;
+		}
+	}
+	if (firstObjNum >= 0)
+		fred->selectObject(firstObjNum);
+
+	QString wingName = QString::fromUtf8(Wings[wingIndex].name);
+
+	QMenu menu;
+
+	auto* editAction = menu.addAction(tr("Edit %1").arg(wingName));
+	connect(editAction, &QAction::triggered, this, &FredView::on_actionWings_triggered);
+
+	menu.addSeparator();
+
+	auto* localLayerMenu = new QMenu(tr("Move to Layer"), &menu);
+	if (firstObjNum >= 0)
+		populateMoveToLayerMenu(firstObjNum, localLayerMenu);
+	menu.addMenu(localLayerMenu);
+
+	menu.addSeparator();
+
+	auto* zoomSelAction = menu.addAction(tr("Zoom to Selected"));
+	connect(zoomSelAction, &QAction::triggered, this, &FredView::on_actionZoomSelected_triggered);
+
+	auto* zoomExtAction = menu.addAction(tr("Zoom Extents"));
+	connect(zoomExtAction, &QAction::triggered, this, &FredView::on_actionZoomExtents_triggered);
+
+	menu.addSeparator();
+
+	auto* deleteAction = menu.addAction(tr("Delete %1").arg(wingName));
+	connect(deleteAction, &QAction::triggered, this, [this, wingIndex]() {
+		fred->delete_wing(wingIndex, 0);
+	});
+
+	menu.exec(globalPos);
+}
+
+void FredView::showWaypointPathContextMenu(int pathIndex, const QPoint& globalPos)
+{
+	if (!SCP_vector_inbounds(Waypoint_lists, pathIndex)) return;
+	auto& wl = Waypoint_lists[pathIndex];
+	if (wl.get_waypoints().empty()) return;
+
+	// Select all waypoints in the path
+	int firstObjNum = -1;
+	fred->unmark_all();
+	for (const auto& wp : wl.get_waypoints()) {
+		int objNum = wp.get_objnum();
+		if (objNum >= 0 && Objects[objNum].type != OBJ_NONE) {
+			fred->markObject(objNum);
+			if (firstObjNum < 0)
+				firstObjNum = objNum;
+		}
+	}
+	if (firstObjNum >= 0)
+		fred->selectObject(firstObjNum);
+
+	QString pathName = QString::fromUtf8(wl.get_name());
+
+	QMenu menu;
+
+	auto* editAction = menu.addAction(tr("Edit %1").arg(pathName));
+	connect(editAction, &QAction::triggered, this, &FredView::on_actionWaypoint_Paths_triggered);
+
+	menu.addSeparator();
+
+	auto* localLayerMenu = new QMenu(tr("Move to Layer"), &menu);
+	if (firstObjNum >= 0)
+		populateMoveToLayerMenu(firstObjNum, localLayerMenu);
+	menu.addMenu(localLayerMenu);
+
+	menu.addSeparator();
+
+	auto* zoomSelAction = menu.addAction(tr("Zoom to Selected"));
+	connect(zoomSelAction, &QAction::triggered, this, &FredView::on_actionZoomSelected_triggered);
+
+	auto* zoomExtAction = menu.addAction(tr("Zoom Extents"));
+	connect(zoomExtAction, &QAction::triggered, this, &FredView::on_actionZoomExtents_triggered);
+
+	menu.addSeparator();
+
+	auto* deleteAction = menu.addAction(tr("Delete %1").arg(pathName));
+	connect(deleteAction, &QAction::triggered, this, [this]() {
+		fred->delete_marked();
+	});
+
+	menu.exec(globalPos);
+}
+
 void FredView::initializePopupMenus() {
 	_viewPopup = new QMenu(this);
 
@@ -884,21 +1910,28 @@ void FredView::initializePopupMenus() {
 	});
 	_createSubmenu->addMenu(_createPropSubmenu);
 
-	auto* createWaypointAction = new QAction(tr("Waypoint"), _createSubmenu);
+	auto* createOtherSubmenu = new QMenu(tr("Other"), _createSubmenu);
+
+	auto* createWaypointAction = new QAction(tr("Waypoint"), createOtherSubmenu);
 	connect(createWaypointAction, &QAction::triggered, this, [this]() {
 		int waypoint_instance = -1;
 		if (fred->cur_waypoint != nullptr) {
 			waypoint_instance = Objects[fred->cur_waypoint->get_objnum()].instance;
 		}
-		_viewport->createWaypointAtScreenPos(_lastContextMenuLocalPos.x(), _lastContextMenuLocalPos.y(), waypoint_instance);
+		_viewport->createWaypointAtScreenPos(_lastContextMenuLocalPos.x() * this->devicePixelRatio(),
+			_lastContextMenuLocalPos.y() * this->devicePixelRatio(),
+			waypoint_instance);
 	});
-	_createSubmenu->addAction(createWaypointAction);
+	createOtherSubmenu->addAction(createWaypointAction);
 
-	auto* createJumpNodeAction = new QAction(tr("Jump Node"), _createSubmenu);
+	auto* createJumpNodeAction = new QAction(tr("Jump Node"), createOtherSubmenu);
 	connect(createJumpNodeAction, &QAction::triggered, this, [this]() {
-		_viewport->createJumpNodeAtScreenPos(_lastContextMenuLocalPos.x(), _lastContextMenuLocalPos.y());
+		_viewport->createJumpNodeAtScreenPos(_lastContextMenuLocalPos.x() * this->devicePixelRatio(),
+			_lastContextMenuLocalPos.y() * this->devicePixelRatio());
 	});
-	_createSubmenu->addAction(createJumpNodeAction);
+	createOtherSubmenu->addAction(createJumpNodeAction);
+
+	_createSubmenu->addMenu(createOtherSubmenu);
 
 	_viewPopup->addMenu(_createSubmenu);
 	_viewPopup->addSeparator();
@@ -974,7 +2007,8 @@ void FredView::populateCreateShipSubmenu() {
 		}
 		auto* action = new QAction(QString::fromUtf8(Ship_info[i].name), _createShipSubmenu);
 		connect(action, &QAction::triggered, this, [this, i]() {
-			_viewport->createShipAtScreenPos(_lastContextMenuLocalPos.x(), _lastContextMenuLocalPos.y(), i);
+			_viewport->createShipAtScreenPos(_lastContextMenuLocalPos.x() * this->devicePixelRatio(),
+				_lastContextMenuLocalPos.y() * this->devicePixelRatio(), i);
 		});
 		_createShipSubmenu->addAction(action);
 	}
@@ -987,21 +2021,24 @@ void FredView::populateCreatePropSubmenu() {
 		}
 		auto* action = new QAction(QString::fromStdString(Prop_info[i].name), _createPropSubmenu);
 		connect(action, &QAction::triggered, this, [this, i]() {
-			_viewport->createPropAtScreenPos(_lastContextMenuLocalPos.x(), _lastContextMenuLocalPos.y(), i);
+			_viewport->createPropAtScreenPos(_lastContextMenuLocalPos.x() * this->devicePixelRatio(),
+				_lastContextMenuLocalPos.y() * this->devicePixelRatio(),
+				i);
 		});
 		_createPropSubmenu->addAction(action);
 	}
 }
 
-void FredView::populateMoveToLayerMenu(int targetObject) {
-	_moveToLayerMenu->clear();
+void FredView::populateMoveToLayerMenu(int targetObject, QMenu* targetMenu) {
+	QMenu* dest = targetMenu ? targetMenu : _moveToLayerMenu;
+	dest->clear();
 
 	const auto layerNames = _viewport->getLayerNames();
 	for (const auto& layerName : layerNames) {
 		bool visible = true;
 		_viewport->getLayerVisibility(layerName, &visible);
 
-		auto* layerAction = new QAction(QString::fromStdString(layerName), _moveToLayerMenu);
+		auto* layerAction = new QAction(QString::fromStdString(layerName), dest);
 		layerAction->setCheckable(true);
 		layerAction->setChecked(_viewport->getObjectLayerName(targetObject) == layerName);
 		layerAction->setEnabled(visible);
@@ -1018,11 +2055,11 @@ void FredView::populateMoveToLayerMenu(int targetObject) {
 					showButtonDialog(DialogType::Error, "Layer Error", error, { DialogButton::Ok });
 				}
 			});
-		_moveToLayerMenu->addAction(layerAction);
+		dest->addAction(layerAction);
 	}
 
-	_moveToLayerMenu->addSeparator();
-	auto* manageAction = _moveToLayerMenu->addAction(tr("Manage Layers..."));
+	dest->addSeparator();
+	auto* manageAction = dest->addAction(tr("Manage Layers..."));
 	connect(manageAction, &QAction::triggered, this, [this]() { openLayerManagerDialog(); });
 }
 
@@ -1141,11 +2178,22 @@ void FredView::changeEvent(QEvent* event) {
 	}
 }
 void FredView::closeEvent(QCloseEvent* event) {
+	QSettings settings;
+	settings.setValue("FredView/mainWindowState",      saveState());
+	settings.setValue("FredView/geometry",             saveGeometry());
+	settings.setValue("FredView/transformLocalMove",   _tbLocalMove);
+	settings.setValue("FredView/transformLocalRotate", _tbLocalRotate);
+	if (_viewport) {
+		settings.setValue("FredView/cameraSpeedMove", _viewport->camera.getPhysicsSpeed());
+		settings.setValue("FredView/cameraSpeedRot",  _viewport->camera.getPhysicsRot());
+	}
+
 	if (!maybePromptToSaveMissionChanges(tr("closing QtFRED"))) {
 		event->ignore();
 		return;
 	}
-
+	disconnect();
+	shutdown();
 	QMainWindow::closeEvent(event);
 }
 void FredView::windowActivated() {
@@ -1167,129 +2215,136 @@ void FredView::on_actionUnlock_All_Objects_triggered(bool  /*enabled*/) {
 	fred->unlockAllObjects();
 }
 void FredView::onUpdateViewSpeeds() {
-	ui->actionx1->setChecked(_viewport->physics_speed == 1);
-	ui->actionx2->setChecked(_viewport->physics_speed == 2);
-	ui->actionx3->setChecked(_viewport->physics_speed == 3);
-	ui->actionx5->setChecked(_viewport->physics_speed == 5);
-	ui->actionx8->setChecked(_viewport->physics_speed == 8);
-	ui->actionx10->setChecked(_viewport->physics_speed == 10);
-	ui->actionx50->setChecked(_viewport->physics_speed == 50);
-	ui->actionx100->setChecked(_viewport->physics_speed == 100);
+	ui->actionx1->setChecked(_viewport->camera.getPhysicsSpeed() == 1);
+	ui->actionx2->setChecked(_viewport->camera.getPhysicsSpeed() == 2);
+	ui->actionx3->setChecked(_viewport->camera.getPhysicsSpeed() == 3);
+	ui->actionx5->setChecked(_viewport->camera.getPhysicsSpeed() == 5);
+	ui->actionx8->setChecked(_viewport->camera.getPhysicsSpeed() == 8);
+	ui->actionx10->setChecked(_viewport->camera.getPhysicsSpeed() == 10);
+	ui->actionx50->setChecked(_viewport->camera.getPhysicsSpeed() == 50);
+	ui->actionx100->setChecked(_viewport->camera.getPhysicsSpeed() == 100);
 
-	ui->actionRotx1->setChecked(_viewport->physics_rot == 2);
-	ui->actionRotx5->setChecked(_viewport->physics_rot == 10);
-	ui->actionRotx12->setChecked(_viewport->physics_rot == 25);
-	ui->actionRotx25->setChecked(_viewport->physics_rot == 50);
-	ui->actionRotx50->setChecked(_viewport->physics_rot == 100);
+	ui->actionRotx1->setChecked(_viewport->camera.getPhysicsRot() == 2);
+	ui->actionRotx5->setChecked(_viewport->camera.getPhysicsRot() == 10);
+	ui->actionRotx12->setChecked(_viewport->camera.getPhysicsRot() == 25);
+	ui->actionRotx25->setChecked(_viewport->camera.getPhysicsRot() == 50);
+	ui->actionRotx50->setChecked(_viewport->camera.getPhysicsRot() == 100);
+
+	// Keep the bottom-bar combos in sync (covers changes made via keyboard shortcuts or menu).
+	if (_transformMoveSpeedCombo) {
+		QSignalBlocker bl(_transformMoveSpeedCombo);
+		for (int i = 0; i < _transformMoveSpeedCombo->count(); ++i) {
+			if (_transformMoveSpeedCombo->itemData(i).toInt() == _viewport->camera.getPhysicsSpeed()) {
+				_transformMoveSpeedCombo->setCurrentIndex(i);
+				break;
+			}
+		}
+	}
+	if (_transformRotSpeedCombo) {
+		QSignalBlocker bl(_transformRotSpeedCombo);
+		for (int i = 0; i < _transformRotSpeedCombo->count(); ++i) {
+			if (_transformRotSpeedCombo->itemData(i).toInt() == _viewport->camera.getPhysicsRot()) {
+				_transformRotSpeedCombo->setCurrentIndex(i);
+				break;
+			}
+		}
+	}
 }
 void FredView::on_actionx1_triggered(bool enabled) {
 	if (enabled) {
-		_viewport->physics_speed = 1;
-		_viewport->resetViewPhysics();
+		_viewport->camera.setPhysicsSpeed(1);
 	}
 }
 void FredView::on_actionx2_triggered(bool enabled) {
 	if (enabled) {
-		_viewport->physics_speed = 2;
-		_viewport->resetViewPhysics();
+		_viewport->camera.setPhysicsSpeed(2);
 	}
 }
 void FredView::on_actionx3_triggered(bool enabled) {
 	if (enabled) {
-		_viewport->physics_speed = 3;
-		_viewport->resetViewPhysics();
+		_viewport->camera.setPhysicsSpeed(3);
 	}
 }
 void FredView::on_actionx5_triggered(bool enabled) {
 	if (enabled) {
-		_viewport->physics_speed = 5;
-		_viewport->resetViewPhysics();
+		_viewport->camera.setPhysicsSpeed(5);
 	}
 }
 void FredView::on_actionx8_triggered(bool enabled) {
 	if (enabled) {
-		_viewport->physics_speed = 8;
-		_viewport->resetViewPhysics();
+		_viewport->camera.setPhysicsSpeed(8);
 	}
 }
 void FredView::on_actionx10_triggered(bool enabled) {
 	if (enabled) {
-		_viewport->physics_speed = 10;
-		_viewport->resetViewPhysics();
+		_viewport->camera.setPhysicsSpeed(10);
 	}
 }
 void FredView::on_actionx50_triggered(bool enabled) {
 	if (enabled) {
-		_viewport->physics_speed = 50;
-		_viewport->resetViewPhysics();
+		_viewport->camera.setPhysicsSpeed(50);
 	}
 }
 void FredView::on_actionx100_triggered(bool enabled) {
 	if (enabled) {
-		_viewport->physics_speed = 100;
-		_viewport->resetViewPhysics();
+		_viewport->camera.setPhysicsSpeed(100);
 	}
 }
 void FredView::on_actionRotx1_triggered(bool enabled) {
 	if (enabled) {
-		_viewport->physics_rot = 2;
-		_viewport->resetViewPhysics();
+		_viewport->camera.setPhysicsRot(2);
 	}
 }
 void FredView::on_actionRotx5_triggered(bool enabled) {
 	if (enabled) {
-		_viewport->physics_rot = 10;
-		_viewport->resetViewPhysics();
+		_viewport->camera.setPhysicsRot(10);
 	}
 }
 void FredView::on_actionRotx12_triggered(bool enabled) {
 	if (enabled) {
-		_viewport->physics_rot = 25;
-		_viewport->resetViewPhysics();
+		_viewport->camera.setPhysicsRot(25);
 	}
 }
 void FredView::on_actionRotx25_triggered(bool enabled) {
 	if (enabled) {
-		_viewport->physics_rot = 50;
-		_viewport->resetViewPhysics();
+		_viewport->camera.setPhysicsRot(50);
 	}
 }
 void FredView::on_actionRotx50_triggered(bool enabled) {
 	if (enabled) {
-		_viewport->physics_rot = 100;
-		_viewport->resetViewPhysics();
+		_viewport->camera.setPhysicsRot(100);
 	}
 }
 void FredView::onUpdateCameraControlActions() {
-	ui->actionCamera->setChecked(_viewport->viewpoint == 0);
-	ui->actionCurrent_Ship->setChecked(_viewport->viewpoint == 1);
+	ui->actionCamera->setChecked(_viewport->camera.getViewpoint() == 0);
+	ui->actionCurrent_Ship->setChecked(_viewport->camera.getViewpoint() == 1);
 
-	_controlModeCamera->setChecked(_viewport->Control_mode == 0);
-	_controlModeCurrentShip->setChecked(_viewport->Control_mode == 1);
+	_controlModeCamera->setChecked(_viewport->camera.getControlMode() == 0);
+	_controlModeCurrentShip->setChecked(_viewport->camera.getControlMode() == 1);
 }
 void FredView::on_actionCamera_triggered(bool enabled) {
 	if (enabled) {
-		_viewport->viewpoint = 0;
+		_viewport->camera.setViewpoint(0);
 
 		_viewport->needsUpdate();
 	}
 }
 void FredView::on_actionCurrent_Ship_triggered(bool enabled) {
 	if (enabled) {
-		_viewport->viewpoint = 1;
-		_viewport->view_obj = fred->currentObject;
+		_viewport->camera.setViewpoint(1);
+		_viewport->camera.setViewObj(fred->currentObject);
 
 		_viewport->needsUpdate();
 	}
 }
 void FredView::on_actionControlModeCamera_triggered(bool enabled) {
 	if (enabled) {
-		_viewport->Control_mode = 0;
+		_viewport->camera.setControlMode(0);
 	}
 }
 void FredView::on_actionControlModeCurrentShip_triggered(bool enabled) {
 	if (enabled) {
-		_viewport->Control_mode = 1;
+		_viewport->camera.setControlMode(1);
 	}
 }
 
@@ -1339,15 +2394,22 @@ void FredView::onUpdatePropClassBox() {
 	}
 	_propClassBox->selectClass(_viewport->cur_prop_index);
 }
+void FredView::onUpdateOtherClassBox() {
+	_otherClassBox->selectClass(static_cast<int>(_viewport->cur_other_kind));
+}
 void FredView::onShipClassSelected(int ship_class) {
 	_viewport->cur_model_index = ship_class;
 }
 void FredView::onPropClassSelected(int prop_class) {
 	_viewport->cur_prop_index = prop_class;
 }
+void FredView::onOtherKindSelected(int other_kind) {
+	_viewport->cur_other_kind = static_cast<OtherKind>(other_kind);
+}
 void FredView::on_actionAsteroid_Field_triggered(bool) {
 	auto asteroidFieldEditor = new dialogs::AsteroidEditorDialog(this, _viewport);
 	asteroidFieldEditor->setAttribute(Qt::WA_DeleteOnClose);
+	connect(asteroidFieldEditor, &QDialog::finished, this, [this]() { fred->updateAllViewports(); });
 	asteroidFieldEditor->show();
 }
 void FredView::on_actionVolumetric_Nebula_triggered(bool)
@@ -1424,7 +2486,7 @@ void FredView::on_actionCampaign_triggered(bool) {
 	editorCampaign->setAttribute(Qt::WA_DeleteOnClose);
 	editorCampaign->show();
 }
-void FredView::on_actionObjects_triggered(bool) {
+void FredView::on_actionObject_Orientation_triggered(bool) {
 	orientEditorTriggered();
 }
 void FredView::on_actionCommand_Briefing_triggered(bool) {
@@ -1544,16 +2606,15 @@ void FredView::handleObjectEditor(int objNum) {
 				// If this is a waypoint, we need to show the waypoint editor
 				on_actionWaypoint_Paths_triggered(false);
 			}
-		} else if (Objects[objNum].type == OBJ_POINT) {
-			return;
 		} else {
-			UNREACHABLE("Unhandled object type!");
+			Assertion(false, "Unhandled object type %d!", Objects[objNum].type);
 		}
 	}
 }
 void FredView::mouseDoubleClickEvent(QMouseEvent* event) {
-	auto viewLocal = ui->centralWidget->mapFromGlobal(event->globalPos());
-	auto obj = _viewport->select_object(viewLocal.x(), viewLocal.y());
+	auto viewLocal = ui->centralWidget->mapFromGlobal(event->globalPosition()); 
+	auto obj =
+		_viewport->select_object(viewLocal.x() * this->devicePixelRatio(), viewLocal.y() * this->devicePixelRatio());
 
 	if (obj >= 0) {
 		handleObjectEditor(obj);
@@ -1569,7 +2630,7 @@ void FredView::orientEditorTriggered() {
 	dialog->exec();
 }
 void FredView::onUpdateEditorActions() {
-	ui->actionObjects->setEnabled(query_valid_object(fred->currentObject));
+	ui->actionObject_Orientation->setEnabled(query_valid_object(fred->currentObject));
 
 	const bool validObject = query_valid_object(fred->currentObject);
 	const bool hasMarked = fred->getNumMarked() > 0;
@@ -1582,7 +2643,7 @@ void FredView::onUpdateEditorActions() {
 	ui->actionDelete_Wing->setEnabled(fred->cur_wing >= 0);
 
 	// Objects editor — requires a selected object
-	ui->actionObjects->setEnabled(validObject);
+	ui->actionObject_Orientation->setEnabled(validObject);
 
 	// Level/Align — require something to be selected
 	ui->actionLevel_Object->setEnabled(validObject);
@@ -1634,14 +2695,11 @@ void FredView::on_actionWingForm_triggered(bool  /*enabled*/) {
 		}
 	}
 
-	if (fred->create_wing()) {
-		fred->autosave("form wing");
-	}
+	fred->create_wing();
 }
 void FredView::on_actionWingDisband_triggered(bool  /*enabled*/) {
 	if (fred->query_single_wing_marked()) {
 		fred->remove_wing(fred->cur_wing);
-		fred->autosave("wing disband");
 	} else {
 		showButtonDialog(DialogType::Error,
 						 "Error",
@@ -1708,56 +2766,46 @@ bool FredView::showModalDialog(IBaseDialog* dlg) {
 
 	return ret == QDialog::Accepted;
 }
-void FredView::on_actionSelectionList_triggered(bool) {
-	auto dialog = new dialogs::SelectionDialog(this, _viewport);
-	// This is a modal dialog
-	dialog->setAttribute(Qt::WA_DeleteOnClose);
-	dialog->exec();
+void FredView::on_actionSceneBrowser_triggered(bool checked) {
+	if (_browserPanel != nullptr) {
+		_browserPanel->setVisible(checked);
+	}
 }
 void FredView::on_actionOrbitSelected_triggered(bool enabled) {
-	_viewport->Lookat_mode = enabled;
-	if (_viewport->Lookat_mode && query_valid_object(fred->currentObject)) {
+	_viewport->camera.setLookatMode(enabled);
+	if (_viewport->camera.getLookatMode() && query_valid_object(fred->currentObject)) {
 		vec3d v, loc;
 		matrix m;
 
 		loc = Objects[fred->currentObject].pos;
-		vm_vec_sub(&v, &loc, &_viewport->view_pos);
+		vm_vec_sub(&v, &loc, &_viewport->camera.view_pos);
 
 		if (v.xyz.x || v.xyz.y || v.xyz.z) {
 			vm_vector_2_matrix(&m, &v, NULL, NULL);
-			_viewport->view_orient = m;
+			_viewport->camera.view_orient = m;
 		}
 	}
 }
-void FredView::on_actionRotateLocal_triggered(bool enabled) {
-	_viewport->Group_rotate = enabled;
-}
 void FredView::on_actionSave_Camera_Pos_triggered(bool) {
-	_viewport->saved_cam_pos = _viewport->view_pos;
-	_viewport->saved_cam_orient = _viewport->view_orient;
+	_viewport->camera.savePosition();
 }
 void FredView::on_actionRestore_Camera_Pos_triggered(bool) {
-	_viewport->view_pos = _viewport->saved_cam_pos;
-	_viewport->view_orient = _viewport->saved_cam_orient;
-
+	_viewport->camera.restorePosition();
 	_viewport->needsUpdate();
 }
 void FredView::on_actionClone_Marked_Objects_triggered(bool) {
 	if (fred->getNumMarked() > 0) {
 		_viewport->duplicate_marked_objects();
-		fred->autosave("clone marked");
 	}
 }
 void FredView::on_actionDelete_triggered(bool) {
 	if (fred->getNumMarked() > 0) {
 		fred->delete_marked();
-		fred->autosave("object delete");
 	}
 }
 void FredView::on_actionDelete_Wing_triggered(bool) {
 	if (fred->cur_wing >= 0) {
 		fred->delete_wing(fred->cur_wing, 0);
-		fred->autosave("wing delete");
 	}
 }
 void FredView::initializeGroupActions() {
@@ -1825,7 +2873,7 @@ void FredView::onSetGroup(int group) {
 	fred->updateAllViewports();
 }
 void FredView::on_actionControl_Object_triggered(bool) {
-	_viewport->Control_mode = (_viewport->Control_mode + 1) % 2;
+	_viewport->camera.toggleControlMode();
 }
 void FredView::on_actionLevel_Object_triggered(bool) {
 	_viewport->level_controlled();
@@ -1854,8 +2902,90 @@ void FredView::on_actionMark_Wing_triggered(bool) {
 	}
 }
 void FredView::on_actionError_Checker_triggered(bool) {
-	fred->global_error_check();
+	openAndRunErrorChecker();
 }
+
+void FredView::openAndRunErrorChecker() {
+	if (!_errorCheckerDialog) {
+		_errorCheckerDialog = new dialogs::ErrorCheckerDialog(this, _viewport);
+		_errorCheckerDialog->setAttribute(Qt::WA_DeleteOnClose);
+		connect(_errorCheckerDialog, &QObject::destroyed, this, [this]() {
+			_errorCheckerDialog = nullptr;
+		});
+	}
+	_errorCheckerDialog->show();
+	_errorCheckerDialog->raise();
+	_errorCheckerDialog->activateWindow();
+	_errorCheckerDialog->runCheck();
+}
+
+void FredView::autoRunErrorChecker() {
+	if (!_errorCheckerDialog) {
+		_errorCheckerDialog = new dialogs::ErrorCheckerDialog(this, _viewport);
+		_errorCheckerDialog->setAttribute(Qt::WA_DeleteOnClose);
+		connect(_errorCheckerDialog, &QObject::destroyed, this, [this]() {
+			_errorCheckerDialog = nullptr;
+		});
+	}
+
+	// Consume the one-shot "force review" flag (set e.g. after a data migration
+	// when the designer asked to review now). When set, we force the dialog open
+	// and override the display filter to include potentials for this session.
+	const bool forceReview = _viewport->Error_checker_force_display_potentials_once;
+	_viewport->Error_checker_force_display_potentials_once = false;
+	_errorCheckerDialog->setForcePotentialsDisplay(forceReview);
+
+	// Never silently mutate mission data on an automatic (load-triggered) check.
+	// The designer can apply auto-corrections explicitly via the error checker dialog.
+	const bool savedCorrections = _viewport->Error_checker_apply_auto_corrections;
+	_viewport->Error_checker_apply_auto_corrections = false;
+	bool errors = _errorCheckerDialog->runCheck();
+	_viewport->Error_checker_apply_auto_corrections = savedCorrections;
+
+	if (forceReview) {
+		_errorCheckerDialog->show();
+		_errorCheckerDialog->raise();
+		_errorCheckerDialog->activateWindow();
+		return;
+	}
+
+	if (_errorCheckerDialog->isVisible()) {
+		if (errors) {
+			_errorCheckerDialog->raise();
+			_errorCheckerDialog->activateWindow();
+		}
+		return;
+	}
+
+	if (!errors) {
+		return;
+	}
+
+	QMessageBox msgBox(this);
+	msgBox.setIcon(QMessageBox::Warning);
+	msgBox.setWindowTitle(tr("Mission Errors Detected"));
+	msgBox.setText(tr("Errors were detected in the mission."));
+	auto* showBtn = msgBox.addButton(tr("Show Errors"), QMessageBox::AcceptRole);
+	msgBox.addButton(tr("Dismiss"), QMessageBox::RejectRole);
+	msgBox.exec();
+
+	if (msgBox.clickedButton() == showBtn) {
+		_errorCheckerDialog->show();
+		_errorCheckerDialog->raise();
+		_errorCheckerDialog->activateWindow();
+	}
+}
+void FredView::on_actionHelp_Topics_triggered(bool) {
+	// Keep a single instance alive for the session.  The help engine's contentWidget(),
+	// indexWidget(), and search widgets are singletons owned by the engine.
+	static QPointer<dialogs::HelpTopicsDialog> s_helpDialog;
+	if (!s_helpDialog)
+		s_helpDialog = new dialogs::HelpTopicsDialog(this);
+	s_helpDialog->show();
+	s_helpDialog->raise();
+	s_helpDialog->activateWindow();
+}
+
 void FredView::on_actionAbout_triggered(bool) {
 	auto dialog = new dialogs::AboutDialog(this, _viewport);
 	dialog->setAttribute(Qt::WA_DeleteOnClose);
@@ -1920,6 +3050,5 @@ void FredView::on_actionWaypointPathGenerator_triggered(bool) {
 	dialog->setAttribute(Qt::WA_DeleteOnClose);
 	dialog->show();
 }
-
 } // namespace fred
 } // namespace fso

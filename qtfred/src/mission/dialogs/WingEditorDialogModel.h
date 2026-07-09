@@ -7,7 +7,7 @@
 #include <ship/ship.h>
 #include <playerman/player.h> // for max hotkeys
 #include <playerman/managepilot.h> // for squad logos
-#include "ui/widgets/sexp_tree.h"
+#include "ui/widgets/sexp_tree_view.h"
 
 #include "globalincs/pstypes.h"
 #include <utility>
@@ -18,128 +18,129 @@ namespace fso::fred::dialogs {
 	//TODO: This dialog currently works on the wing data directly instead of model members
 	// so it does not support temporary changes. This will need to be changed in a future PR
 
-/**
- * @brief QTFred's Wing Editor's Model
- */
 class WingEditorDialogModel : public AbstractDialogModel {
-		Q_OBJECT
+	Q_OBJECT
 
-	public:
-		WingEditorDialogModel(QObject* parent, EditorViewport* viewport);
-	
-		// The model in this dialog directly applies changes to the mission, so apply and reject are superfluous	
-		bool apply() override { return true; }
-		void reject() override {}
+  public:
+	WingEditorDialogModel(QObject* parent, EditorViewport* viewport);
 
-		int getCurrentWingIndex() const { return _currentWingIndex; };
+	// The model in this dialog directly applies changes to the mission, so apply and reject are superfluous
+	bool apply() override { return true; }
+	void reject() override {}
 
-		bool wingIsValid() const;
+	int getCurrentWingIndex() const { return _currentWingIndex; };
 
-		bool isPlayerWing() const;
-		bool containsPlayerStart() const;
-		bool wingAllFighterBombers() const;
+	bool wingIsValid() const;
 
-		bool arrivalIsDockBay() const;
-		bool arrivalNeedsTarget() const;
-		bool departureIsDockBay() const;
-		bool departureNeedsTarget() const;
-		int getMaxWaveThreshold() const;
-		int getMinArrivalDistance() const;
+	bool isPlayerWing() const;
+	bool containsPlayerStart() const;
+	bool wingAllFighterBombers() const;
 
-		std::pair<int, SCP_vector<SCP_string>> getLeaderList() const;
-		static std::vector<std::pair<int, std::string>> getHotkeyList();
-		static std::vector<std::pair<int, std::string>> getFormationList();
-		static std::vector<std::pair<int, std::string>> getArrivalLocationList();
-		static std::vector<std::pair<int, std::string>> getDepartureLocationList();
-		std::vector<std::pair<int, std::string>> getArrivalTargetList() const;
-		std::vector<std::pair<int, std::string>> getDepartureTargetList() const;
-		std::vector<std::string> getSquadLogoList() const { return squadLogoList; };
+	bool arrivalIsDockBay() const;
+	bool arrivalNeedsTarget() const;
+	bool arrivalNeedsDistance() const;
+	bool departureIsDockBay() const;
+	bool departureNeedsTarget() const;
+	int getMaxWaveThreshold() const;
+	int getMinArrivalDistance() const;
 
-		// Top section, first column
-		SCP_string getWingName() const;
-		void setWingName(const SCP_string& name);
-		int getWingLeaderIndex() const;
-		void setWingLeaderIndex(int newLeaderIndex);
-		int getNumberOfWaves() const;
-		void setNumberOfWaves(int newTotalWaves);
-		int getWaveThreshold() const;
-		void setWaveThreshold(int newThreshhold);
-		int getHotkey() const;
-		void setHotkey(int newHotkeyIndex);
+	std::pair<int, SCP_vector<SCP_string>> getLeaderList() const;
+	static SCP_vector<std::pair<int, SCP_string>> getHotkeyList();
+	static SCP_vector<std::pair<int, SCP_string>> getFormationList();
+	static SCP_vector<std::pair<int, SCP_string>> getArrivalLocationList();
+	static SCP_vector<std::pair<int, SCP_string>> getDepartureLocationList();
+	SCP_vector<std::pair<int, SCP_string>> getArrivalTargetList() const;
+	SCP_vector<std::pair<int, SCP_string>> getDepartureTargetList() const;
+	SCP_vector<SCP_string> getSquadLogoList() const { return _squadLogoList; };
 
-		// Top section, second column
-		int getFormationId() const;
-		void setFormationId(int newFormationId);
-		float getFormationScale() const;
-		void setFormationScale(float newScale);
-		void alignWingFormation();
-		SCP_string getSquadLogo() const;
-		void setSquadLogo(const SCP_string& filename);
+	// Top section, first column
+	SCP_string getWingName() const;
+	void setWingName(const SCP_string& name);
+	SCP_string getWingDisplayName() const;
+	void setWingDisplayName(const SCP_string& displayName);
+	int getWingLeaderIndex() const;
+	void setWingLeaderIndex(int newLeaderIndex);
+	int getNumberOfWaves() const;
+	void setNumberOfWaves(int newTotalWaves);
+	int getWaveThreshold() const;
+	void setWaveThreshold(int newThreshhold);
+	int getHotkey() const;
+	void setHotkey(int newHotkeyIndex);
 
-		// Top section, third column
-		void selectPreviousWing();
-		void selectNextWing();
-		void deleteCurrentWing();
-		void disbandCurrentWing();
-		// Initial orders is handled by its own dialog, so no model function here
-		std::vector<std::pair<SCP_string, bool>> getWingFlags() const;
-		void setWingFlags(const std::vector<std::pair<SCP_string, bool>>& newFlags);
-		
+	// Top section, second column
+	int getFormationId() const;
+	void setFormationId(int newFormationId);
+	float getFormationScale() const;
+	void setFormationScale(float newScale);
+	void alignWingFormation();
+	SCP_string getSquadLogo() const;
+	void setSquadLogo(const SCP_string& filename);
 
-		// Arrival controls
-		ArrivalLocation getArrivalType() const;
-		void setArrivalType(ArrivalLocation arrivalType);
-		int getArrivalDelay() const;
-		void setArrivalDelay(int delayIn);
-		int getMinWaveDelay() const;
-		void setMinWaveDelay(int newMin);
-		int getMaxWaveDelay() const;
-		void setMaxWaveDelay(int newMax);
-		int getArrivalTarget() const;
-		void setArrivalTarget(int targetIndex);
-		int getArrivalDistance() const;
-		void setArrivalDistance(int newDistance);
-		std::vector<std::pair<SCP_string, bool>> getArrivalPaths() const;
-		void setArrivalPaths(const std::vector<std::pair<SCP_string, bool>>& newFlags);
-		int getArrivalTree() const;
-		void setArrivalTree(int newTree);
-		bool getNoArrivalWarpFlag() const;
-		void setNoArrivalWarpFlag(bool flagIn);
-		bool getNoArrivalWarpAdjustFlag() const;
-		void setNoArrivalWarpAdjustFlag(bool flagIn);
+	// Top section, third column
+	void selectPreviousWing();
+	void selectNextWing();
+	void deleteCurrentWing();
+	void disbandCurrentWing();
+	// Initial orders is handled by its own dialog, so no model function here
+	SCP_vector<std::pair<SCP_string, bool>> getWingFlags() const;
+	void setWingFlags(const SCP_vector<std::pair<SCP_string, bool>>& newFlags);
+	static SCP_vector<std::pair<SCP_string, SCP_string>> getWingFlagDescriptions();
 
-		// Departure controls
-		DepartureLocation getDepartureType() const;
-		void setDepartureType(DepartureLocation departureType);
-		int getDepartureDelay() const;
-		void setDepartureDelay(int delayIn);
-		int getDepartureTarget() const;
-		void setDepartureTarget(int targetIndex);
-		std::vector<std::pair<SCP_string, bool>> getDeparturePaths() const;
-		void setDeparturePaths(const std::vector<std::pair<SCP_string, bool>>& newFlags);
-		int getDepartureTree() const;
-		void setDepartureTree(int newTree);
-		bool getNoDepartureWarpFlag() const;
-		void setNoDepartureWarpFlag(bool flagIn);
-		bool getNoDepartureWarpAdjustFlag() const;
-		void setNoDepartureWarpAdjustFlag(bool flagIn);
+	// Arrival controls
+	ArrivalLocation getArrivalType() const;
+	void setArrivalType(ArrivalLocation arrivalType);
+	int getArrivalDelay() const;
+	void setArrivalDelay(int delayIn);
+	int getMinWaveDelay() const;
+	void setMinWaveDelay(int newMin);
+	int getMaxWaveDelay() const;
+	void setMaxWaveDelay(int newMax);
+	int getArrivalTarget() const;
+	void setArrivalTarget(int targetIndex);
+	int getArrivalDistance() const;
+	void setArrivalDistance(int newDistance);
+	SCP_vector<std::pair<SCP_string, bool>> getArrivalPaths() const;
+	void setArrivalPaths(const SCP_vector<std::pair<SCP_string, bool>>& newFlags);
+	int getArrivalTree() const;
+	void setArrivalTree(int newTree);
+	bool getNoArrivalWarpFlag() const;
+	void setNoArrivalWarpFlag(bool flagIn);
+	bool getNoArrivalWarpAdjustFlag() const;
+	void setNoArrivalWarpAdjustFlag(bool flagIn);
 
-	signals:
-		void wingChanged();
+	// Departure controls
+	DepartureLocation getDepartureType() const;
+	void setDepartureType(DepartureLocation departureType);
+	int getDepartureDelay() const;
+	void setDepartureDelay(int delayIn);
+	int getDepartureTarget() const;
+	void setDepartureTarget(int targetIndex);
+	SCP_vector<std::pair<SCP_string, bool>> getDeparturePaths() const;
+	void setDeparturePaths(const SCP_vector<std::pair<SCP_string, bool>>& newFlags);
+	int getDepartureTree() const;
+	void setDepartureTree(int newTree);
+	bool getNoDepartureWarpFlag() const;
+	void setNoDepartureWarpFlag(bool flagIn);
+	bool getNoDepartureWarpAdjustFlag() const;
+	void setNoDepartureWarpAdjustFlag(bool flagIn);
 
-	private slots:
-		void onEditorSelectionChanged(int); // currentObjectChanged
-		void onEditorMissionChanged(); // missionChanged
+  signals:
+	void wingChanged();
 
-	private: // NOLINT(readability-redundant-access-specifiers)
-		void reloadFromCurWing();
-		wing* getCurrentWing() const;
-		static std::vector<std::pair<SCP_string, bool>> getDockBayPathsForWingMask(uint32_t mask, int anchorShipnum);
-		void prepareSquadLogoList();
+  private slots:
+	void onEditorSelectionChanged(int); // currentObjectChanged
+	void onEditorMissionChanged(); // missionChanged
 
-		int _currentWingIndex = -1;
-		SCP_string _currentWingName;
+  private: // NOLINT(readability-redundant-access-specifiers)
+	void initializeData();
+	void reloadFromCurWing();
+	wing* getCurrentWing() const;
+	static SCP_vector<std::pair<SCP_string, bool>> getDockBayPathsForWingMask(uint32_t mask, int anchorShipnum);
+	void prepareSquadLogoList();
 
-		SCP_vector<SCP_string> squadLogoList;
+	int _currentWingIndex = -1;
+	SCP_string _currentWingName;
+
+	SCP_vector<SCP_string> _squadLogoList;
 };
 } // namespace fso::fred::dialogs

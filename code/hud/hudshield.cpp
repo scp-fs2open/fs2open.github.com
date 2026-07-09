@@ -697,7 +697,6 @@ void HudGaugeShield::showShields(const object *objp, ShieldGaugeType mode, bool 
 			model_render_params render_info;
 
 			// If this comment is here then I have not tested this
-			int model_num = sip->model_num;
 			int model_instance_number = -1;
 
 			if (!config) {
@@ -705,15 +704,15 @@ void HudGaugeShield::showShields(const object *objp, ShieldGaugeType mode, bool 
 				render_info.set_replacement_textures(model_get_instance(model_instance_number)->texture_replace);
 			}
 
-			if (model_num < 0 && config) {
-				model_num = model_load(sip, false);
+			if (sip->model_num < 0 && config) {
+				sip->model_num = model_load(sip, false);
 			}
 
 			render_info.set_flags(MR_NO_LIGHTING | MR_AUTOCENTER | MR_NO_FOGGING);
 			render_info.set_detail_level_lock(1);
 			render_info.set_object_number(OBJ_INDEX(objp));
 
-			model_render_immediate( &render_info, model_num, model_instance_number, &object_orient, &vmd_zero_vector );
+			model_render_immediate( &render_info, sip->model_num, model_instance_number, &object_orient, &vmd_zero_vector );
 		}
 
 		//We're done

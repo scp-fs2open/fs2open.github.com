@@ -323,7 +323,7 @@ int ade_table_entry::SetTable(lua_State* L, int p_amt_ldx, int p_mtb_ldx)
 		}
 
 		default:
-			UNREACHABLE("Unhandled value type '%c'!", Type);
+			Assertion(false, "Unhandled value type '%c'!", Type);
 			break;
 		}
 
@@ -582,7 +582,7 @@ std::unique_ptr<DocumentationElement> ade_table_entry::ToDocumentationElement(
 				overloadArgList.simple.assign(overload);
 			}
 
-			obj->overloads.push_back(overloadArgList);
+			obj->overloads.push_back(std::move(overloadArgList));
 		}
 
 		if (ReturnDescription != nullptr) {
@@ -642,8 +642,8 @@ std::unique_ptr<DocumentationElement> ade_table_entry::ToDocumentationElement(
 	case 's':
 	case 'x':
 	default:
-		UNREACHABLE("Unknown Type %c was used used!", Type);
-		break;
+		Assertion(false, "Unknown Type %c was used used!", Type);
+		return {};
 	}
 
 	if (Name != nullptr) {

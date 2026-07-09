@@ -247,6 +247,7 @@ int script_state::CreateLuaState()
 		eh.index = Enumerations[i].def;
 		eh.value = Enumerations[i].value;
 		eh.is_constant = true;
+		eh.setName(Enumerations[i].name);
 
 		ade_set_args(L, "o", l_Enum.Set(eh));
 		lua_setglobal(L, Enumerations[i].name);
@@ -310,11 +311,26 @@ void script_state::OutputLuaDocumentation(ScriptingDocumentation& doc,
 
 	//***Enumerations
 	for (uint32_t i = 0; i < Num_enumerations; i++) {
+		if (is_deprecated_enum_name(Enumerations[i].name)) {
+			continue;
+		}
 		DocumentationEnum e;
 		e.name = Enumerations[i].name;
 		e.value = Enumerations[i].def;
+		auto group = get_enum_group_info(Enumerations[i].name);
+		if (group) {
+			e.group_id = group->id;
+			e.group_title = group->title;
+			e.group_description = group->description;
+		} else {
+			Warning(LOCATION, "Enumeration '%s' has no group entry in Enum_groups. Add a matching prefix entry to get_enum_group_info().", Enumerations[i].name);
+		}
+		const char* desc = get_enum_description(Enumerations[i].name);
+		if (desc != nullptr) {
+			e.description = desc;
+		}
 
-		doc.enumerations.push_back(e);
+		doc.enumerations.push_back(std::move(e));
 	}
 
 	auto& optionsList = options::OptionsManager::instance()->getOptions();
@@ -326,7 +342,7 @@ void script_state::OutputLuaDocumentation(ScriptingDocumentation& doc,
 		o.description = thisOpt->getDescription();
 		o.key = thisOpt->getConfigKey();
 
-		doc.options.push_back(o);
+		doc.options.push_back(std::move(o));
 	}
 }
 

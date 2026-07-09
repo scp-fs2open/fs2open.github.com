@@ -19,6 +19,8 @@ if (WIN32)
 endif()
 
 add_file_folder("Source/Mission"
+    src/mission/CameraController.cpp
+    src/mission/CameraController.h
     src/mission/Editor.cpp
 	src/mission/EditorWing.cpp
     src/mission/Editor.h
@@ -38,6 +40,8 @@ add_file_folder("Source/Mission"
 add_file_folder("Source/Mission/Dialogs"
     src/mission/dialogs/AbstractDialogModel.cpp
     src/mission/dialogs/AbstractDialogModel.h
+	src/mission/dialogs/SceneBrowserModel.cpp
+	src/mission/dialogs/SceneBrowserModel.h
 	src/mission/dialogs/AboutDialogModel.cpp
 	src/mission/dialogs/AboutDialogModel.h
 	src/mission/dialogs/AsteroidEditorDialogModel.cpp
@@ -54,6 +58,8 @@ add_file_folder("Source/Mission/Dialogs"
 	src/mission/dialogs/DebriefingDialogModel.h
     src/mission/dialogs/FictionViewerDialogModel.cpp
     src/mission/dialogs/FictionViewerDialogModel.h
+	src/mission/dialogs/ErrorCheckerDialogModel.cpp
+	src/mission/dialogs/ErrorCheckerDialogModel.h
 	src/mission/dialogs/FormWingDialogModel.cpp
 	src/mission/dialogs/FormWingDialogModel.h
 	src/mission/dialogs/GlobalShipFlagsDialogModel.cpp
@@ -84,8 +90,6 @@ add_file_folder("Source/Mission/Dialogs"
 	src/mission/dialogs/ReinforcementsEditorDialogModel.h
 	src/mission/dialogs/RelativeCoordinatesDialogModel.cpp
 	src/mission/dialogs/RelativeCoordinatesDialogModel.h
-	src/mission/dialogs/SelectionDialogModel.cpp
-	src/mission/dialogs/SelectionDialogModel.h
 	src/mission/dialogs/ShieldSystemDialogModel.cpp
 	src/mission/dialogs/ShieldSystemDialogModel.h
 	src/mission/dialogs/TeamLoadoutDialogModel.cpp
@@ -104,6 +108,8 @@ add_file_folder("Source/Mission/Dialogs"
 	src/mission/dialogs/WaypointPathGeneratorDialogModel.h
 	src/mission/dialogs/WingEditorDialogModel.cpp
 	src/mission/dialogs/WingEditorDialogModel.h
+	src/mission/dialogs/HelpTopicsDialogModel.cpp
+	src/mission/dialogs/HelpTopicsDialogModel.h
 )
 add_file_folder("Source/Mission/Dialogs/MissionSpecs"
 	src/mission/dialogs/MissionSpecs/CustomDataDialogModel.cpp
@@ -114,6 +120,8 @@ add_file_folder("Source/Mission/Dialogs/MissionSpecs"
 	src/mission/dialogs/MissionSpecs/CustomWingNamesDialogModel.h
 	src/mission/dialogs/MissionSpecs/SoundEnvironmentDialogModel.cpp
 	src/mission/dialogs/MissionSpecs/SoundEnvironmentDialogModel.h
+	src/mission/dialogs/MissionSpecs/SupportRearmDialogModel.cpp
+	src/mission/dialogs/MissionSpecs/SupportRearmDialogModel.h
 )
 add_file_folder("Source/Mission/Dialogs/ShipEditor"
 	src/mission/dialogs/ShipEditor/ShipEditorDialogModel.h
@@ -164,12 +172,16 @@ add_file_folder("Source/UI/Dialogs"
 	src/ui/dialogs/CommandBriefingDialog.h
 	src/ui/dialogs/DebriefingDialog.cpp
 	src/ui/dialogs/DebriefingDialog.h
+	src/ui/dialogs/ErrorCheckerDialog.cpp
+	src/ui/dialogs/ErrorCheckerDialog.h
 	src/ui/dialogs/FictionViewerDialog.cpp
 	src/ui/dialogs/FictionViewerDialog.h
 	src/ui/dialogs/FormWingDialog.cpp
 	src/ui/dialogs/FormWingDialog.h
 	src/ui/dialogs/GlobalShipFlagsDialog.cpp
 	src/ui/dialogs/GlobalShipFlagsDialog.h
+	src/ui/dialogs/HelpTopicsDialog.cpp
+	src/ui/dialogs/HelpTopicsDialog.h
 	src/ui/dialogs/JumpNodeEditorDialog.cpp
 	src/ui/dialogs/JumpNodeEditorDialog.h
 	src/ui/dialogs/LayerManagerDialog.cpp
@@ -196,8 +208,6 @@ add_file_folder("Source/UI/Dialogs"
 	src/ui/dialogs/RelativeCoordinatesDialog.h
 	src/ui/dialogs/SaveAsTemplateDialog.cpp
 	src/ui/dialogs/SaveAsTemplateDialog.h
-	src/ui/dialogs/SelectionDialog.cpp
-	src/ui/dialogs/SelectionDialog.h
 	src/ui/dialogs/ShieldSystemDialog.h
 	src/ui/dialogs/ShieldSystemDialog.cpp
 	src/ui/dialogs/TableViewerDialog.cpp
@@ -219,6 +229,7 @@ add_file_folder("Source/UI/Dialogs"
 	src/ui/dialogs/WingEditorDialog.cpp
 	src/ui/dialogs/WingEditorDialog.h
 )
+
 add_file_folder("Source/UI/Dialogs/BriefingEditor"
 	src/ui/dialogs/BriefingEditor/CameraCoordinatesDialog.cpp
 	src/ui/dialogs/BriefingEditor/CameraCoordinatesDialog.h
@@ -236,6 +247,8 @@ add_file_folder("Source/UI/Dialogs/MissionSpecs"
 	src/ui/dialogs/MissionSpecs/CustomWingNamesDialog.h
 	src/ui/dialogs/MissionSpecs/SoundEnvironmentDialog.cpp
 	src/ui/dialogs/MissionSpecs/SoundEnvironmentDialog.h
+	src/ui/dialogs/MissionSpecs/SupportRearmDialog.cpp
+	src/ui/dialogs/MissionSpecs/SupportRearmDialog.h
 )
 add_file_folder("Source/UI/Dialogs/ShipEditor"
 	src/ui/dialogs/ShipEditor/ShipEditorDialog.h
@@ -252,8 +265,6 @@ add_file_folder("Source/UI/Dialogs/ShipEditor"
 	src/ui/dialogs/ShipEditor/ShipTextureReplacementDialog.cpp
 	src/ui/dialogs/ShipEditor/ShipWeaponsDialog.cpp
 	src/ui/dialogs/ShipEditor/ShipWeaponsDialog.h
-	src/ui/dialogs/ShipEditor/BankModel.cpp
-	src/ui/dialogs/ShipEditor/BankModel.h
 	src/ui/dialogs/ShipEditor/ShipCustomWarpDialog.h
 	src/ui/dialogs/ShipEditor/ShipCustomWarpDialog.cpp
 	src/ui/dialogs/ShipEditor/ShipAltShipClass.h
@@ -270,7 +281,18 @@ add_file_folder("Source/UI/General"
 	src/ui/dialogs/General/ImagePickerDialog.h
 )
 
+add_file_folder("Source/UI/Panels"
+	src/ui/panels/FlowLayout.cpp
+	src/ui/panels/FlowLayout.h
+	src/ui/panels/SceneBrowserPanel.cpp
+	src/ui/panels/SceneBrowserPanel.h
+)
+
 add_file_folder("Source/UI/Util"
+	src/ui/util/default_dir.cpp
+	src/ui/util/default_dir.h
+	src/ui/util/ErrorChecker.cpp
+	src/ui/util/ErrorChecker.h
 	src/ui/util/ImageRenderer.cpp
 	src/ui/util/ImageRenderer.h
 	src/ui/util/menu.cpp
@@ -302,16 +324,16 @@ add_file_folder("Source/UI/Widgets"
 	src/ui/widgets/NoWheelSpinBox.h
 	src/ui/widgets/PersonaColorComboBox.cpp
 	src/ui/widgets/PersonaColorComboBox.h
-    src/ui/widgets/renderwidget.cpp
-    src/ui/widgets/renderwidget.h
-	src/ui/widgets/sexp_tree.cpp
-	src/ui/widgets/sexp_tree.h
+	src/ui/widgets/renderwidget.cpp
+	src/ui/widgets/renderwidget.h
+	src/ui/widgets/sexp_tree_view.cpp
+	src/ui/widgets/sexp_tree_view.h
 	src/ui/widgets/ShipFlagCheckbox.h
 	src/ui/widgets/ShipFlagCheckbox.cpp
 	src/ui/widgets/SimpleListSelectDialog.cpp
 	src/ui/widgets/SimpleListSelectDialog.h
-	src/ui/widgets/weaponList.cpp
-	src/ui/widgets/weaponList.h
+	src/ui/widgets/MusicComboWidget.cpp
+	src/ui/widgets/MusicComboWidget.h
 )
 
 add_file_folder("UI"
@@ -326,6 +348,7 @@ add_file_folder("UI"
 	ui/CustomStringsDialog.ui
 	ui/CustomWingNamesDialog.ui
 	ui/DebriefingDialog.ui
+	ui/ErrorCheckerDialog.ui
 	ui/FictionViewerDialog.ui
 	ui/FormWingDialog.ui
     ui/FredView.ui
@@ -344,9 +367,9 @@ add_file_folder("UI"
 	ui/PropEditorDialog.ui
 	ui/ReinforcementsDialog.ui
 	ui/RelativeCoordinatesDialog.ui
-	ui/SelectionDialog.ui
 	ui/ShieldSystemDialog.ui
 	ui/SoundEnvironmentDialog.ui
+	ui/SupportRearmDialog.ui
 	ui/TableViewerDialog.ui
 	ui/VoiceActingManager.ui
 	ui/VolumetricNebulaDialog.ui
@@ -362,8 +385,10 @@ add_file_folder("UI"
 	ui/ShipAltShipClass.ui
 	ui/ShipWeaponsDialog.ui
 	ui/VariableDialog.ui
+	ui/HelpTopicsDialog.ui
 	ui/WingEditorDialog.ui
 	ui/SaveAsTemplateDialog.ui
+	ui/SceneBrowserPanel.ui
 	ui/TemplateBrowserDialog.ui
 )
 

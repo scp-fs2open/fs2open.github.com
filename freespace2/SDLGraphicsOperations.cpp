@@ -21,7 +21,11 @@ void setOGLProperties(const os::ViewPortProperties& props)
 	SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, props.pixel_format.blue_size);
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, props.pixel_format.depth_size);
 	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, props.pixel_format.stencil_size);
+	#ifndef USE_OPENGL_ES
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+	#else
+	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 0);
+	#endif
 	// disabled due to issues with implementation; may be re-enabled in future
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 0);
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 0);
@@ -33,7 +37,9 @@ void setOGLProperties(const os::ViewPortProperties& props)
 	SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, props.gl_attributes.major_version);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, props.gl_attributes.minor_version);
-
+#ifdef USE_OPENGL_ES 
+	SDL_SetHint(SDL_HINT_OPENGL_ES_DRIVER, "1");
+#endif
 	int profile;
 	switch (props.gl_attributes.profile) {
 		case os::OpenGLProfile::Core:
@@ -42,8 +48,11 @@ void setOGLProperties(const os::ViewPortProperties& props)
 		case os::OpenGLProfile::Compatibility:
 			profile = SDL_GL_CONTEXT_PROFILE_COMPATIBILITY;
 			break;
+		case os::OpenGLProfile::ES:
+			profile = SDL_GL_CONTEXT_PROFILE_ES;
+			break;
 		default:
-			UNREACHABLE("Unhandled profile value!");
+			UNREACHABLE("Unhandled profile value %d!", static_cast<int>(props.gl_attributes.profile));
 			return;
 	}
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, profile);
@@ -122,7 +131,7 @@ class SDLWindowViewPort: public os::Viewport {
 				SDL_SetWindowFullscreen(_window, SDL_WINDOW_FULLSCREEN);
 				break;
 			default:
-				UNREACHABLE("Invalid window state!");
+				UNREACHABLE("Invalid window state %d!", static_cast<int>(state));
 				break;
 		}
 	}
@@ -275,7 +284,11 @@ std::unique_ptr<os::OpenGLContext> SDLGraphicsOperations::createOpenGLContext(os
 	Assertion(ImGui::GetCurrentContext() != nullptr, "Can't use ImGui without a valid context!");
 
 	ImGui_ImplSDL2_InitForOpenGL(viewport->toSDLWindow(), ctx);
+	#ifndef USE_OPENGL_ES
 	ImGui_ImplOpenGL3_Init();
+	#else
+	ImGui_ImplOpenGL3_Init("#version 300 es");
+	#endif
 
 	return std::unique_ptr<os::OpenGLContext>(new SDLOpenGLContext(ctx));
 }

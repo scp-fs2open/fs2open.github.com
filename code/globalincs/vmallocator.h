@@ -52,6 +52,7 @@ public:
 		return idx < this->size();
 	}
 };
+template<typename T> SCP_vector(std::initializer_list<T>) -> SCP_vector<T>;
 
 template <typename T>
 bool SCP_vector_contains(const SCP_vector<T>& vector, const T& item) {
@@ -89,7 +90,7 @@ public:
 		return std::find(this->begin(), this->end(), item) != this->end();
 	}
 };
-
+template<typename T> SCP_list(std::initializer_list<T>) -> SCP_list<T>;
 
 extern std::locale SCP_default_locale;
 
@@ -140,6 +141,7 @@ public:
 		return this->find(item) != this->end();
 	}
 };
+template<typename T> SCP_set(std::initializer_list<T>) -> SCP_set<T>;
 
 template <typename T, typename Less = std::less<T>>
 class SCP_multiset : public std::multiset<T, Less, std::allocator<T>>
@@ -152,6 +154,7 @@ public:
 		return this->find(item) != this->end();
 	}
 };
+template<typename T> SCP_multiset(std::initializer_list<T>) -> SCP_multiset<T>;
 
 // Now that the codebase is on C++17, we can use the standard hash.  (Enum classes are not hashable on C++ < 14.)
 template <typename T>
@@ -194,20 +197,13 @@ public:
 		return this->find(item) != this->end();
 	}
 };
+template<typename T> SCP_unordered_set(std::initializer_list<T>) -> SCP_unordered_set<T>;
 
-template <typename T, typename... Args>
-typename std::enable_if<!std::is_array<T>::value, std::unique_ptr<T>>::type make_unique(Args&&... args) {
-	return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
-}
 template <typename T, typename... Args>
 typename std::enable_if<std::is_array<T>::value, std::unique_ptr<T>>::type make_unique(std::size_t n) {
 	return std::unique_ptr<T>(new typename std::remove_extent<T>::type[n]());
 }
 
-template <typename T, typename... Args>
-typename std::enable_if<!std::is_array<T>::value, std::shared_ptr<T>>::type make_shared(Args&&... args) {
-	return std::shared_ptr<T>(new T(std::forward<Args>(args)...));
-}
 template <typename T, typename... Args>
 typename std::enable_if<std::is_array<T>::value, std::shared_ptr<T>>::type make_shared(std::size_t n) {
 	return std::shared_ptr<T>(new typename std::remove_extent<T>::type[n]());

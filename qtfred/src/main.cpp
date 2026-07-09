@@ -20,6 +20,7 @@
 #include "globalincs/pstypes.h"
 
 #include "ui/FredView.h"
+#include "ui/dialogs/HelpTopicsDialog.h"
 #include "ui/Theme.h"
 #include "FredApplication.h"
 
@@ -28,6 +29,7 @@
 
 // Globals needed by the engine when built in 'FRED' mode.
 int Fred_running = 1;
+int Qtfred_running = 1;
 int Show_cpu = 0;
 
 // Empty functions to make fred link with the sexp_mission_set_subspace
@@ -101,7 +103,7 @@ int main(int argc, char* argv[]) {
 	QCoreApplication::setApplicationName("qtFRED");
 
 	QApplication app(argc, argv);
-	QApplication::setAttribute(Qt::AA_DisableWindowContextHelpButton);
+	//QApplication::setAttribute(Qt::AA_DisableWindowContextHelpButton); //No longer needed set by default
 
 	// Use Fusion style unconditionally — required for reliable dynamic palette switching
 	QApplication::setStyle(QStyleFactory::create("Fusion"));
@@ -215,6 +217,10 @@ int main(int argc, char* argv[]) {
 
 	// Allow other parts of the code to execute code that needs to run after everything has been set up
 	fredApp->initializeComplete();
+
+	// Initialize the help engine and kick off search indexing in the background
+	// so the Search tab is ready before the user first opens Help Topics.
+	QTimer::singleShot(0, [] { fso::fred::dialogs::HelpTopicsDialog::prewarm(); });
 
 	if (Cmdline_start_mission) {
 		// Automatically load a mission if specified on the command line

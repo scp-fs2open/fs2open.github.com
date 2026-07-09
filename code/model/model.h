@@ -15,6 +15,7 @@
 #include "globalincs/globals.h" // for NAME_LENGTH
 #include "globalincs/pstypes.h"
 #include <array>
+#include <utility>
  
 #include "actions/Program.h"
 #include "gamesnd/gamesnd.h"
@@ -136,7 +137,7 @@ struct submodel_instance
 	float	shift_accel = 0.0f;
 	TIMESTAMP stepped_translation_started;
 
-	bool	blown_off = false;						// If set, this subobject is blown off
+	bool	blown_off = false;						// If set, this subobject is not rendered or used for collision
 
 	// These fields are the true standard reference for submodel rotation.  They should seldom be read directly
 	// and should almost never be written directly.  In most cases, coders should prefer cur_angle and prev_angle.
@@ -164,6 +165,26 @@ struct submodel_instance
 #define TM_NUM_TYPES		8		//WMC - Number of texture_info objects in texture_map
 									//Used by scripting - if you change this, do a search
 									//to update switch() statement in lua.cpp
+
+inline const SCP_map<int, SCP_string> MODEL_TEXTURE_SUFFIXES = {
+	{ TM_GLOW_TYPE,       "-glow" },
+	{ TM_SPECULAR_TYPE,   "-shine" },
+	{ TM_NORMAL_TYPE,     "-normal" },
+	{ TM_HEIGHT_TYPE,     "-height" },
+	{ TM_MISC_TYPE,       "-misc" },
+	{ TM_SPEC_GLOSS_TYPE, "-reflect" },
+	{ TM_AMBIENT_TYPE,    "-ao" }
+};
+
+inline const SCP_string MODEL_TEXTURE_SUFFIX_TRANS = "-trans"; // -trans is a special case as other suffixes can be appended to it
+
+inline const SCP_string& model_texture_longest_suffix() {
+	return std::max_element(MODEL_TEXTURE_SUFFIXES.begin(),
+		MODEL_TEXTURE_SUFFIXES.end(),
+		[](const std::pair<int, SCP_string>& left, const std::pair<int, SCP_string>& right) {
+			return left.second.size() < right.second.size();
+		})->second;
+}
 
 #define MAX_REPLACEMENT_TEXTURES MAX_MODEL_TEXTURES * TM_NUM_TYPES
 
@@ -413,7 +434,7 @@ class bsp_info
 public:
 	bsp_info()
 		: bsp_data_size(0), bsp_data(nullptr), collision_tree_index(-1),
-		rad(0.0f), my_replacement(-1), i_replace(-1), num_live_debris(0),
+		rad(0.0f), next_form(-1), prev_form(-1), num_live_debris(0),
 		parent(-1), num_children(0), first_child(-1), next_sibling(-1), num_details(0),
 		outline_buffer(nullptr), n_verts_outline(0), render_sphere_radius(0.0f), use_render_box(0),	use_render_sphere(0)
 	{
@@ -464,8 +485,8 @@ public:
 	vec3d	max;						// The max point of this object's geometry
 	vec3d	bounding_box[8];		// calculated fron min/max
 
-	int		my_replacement;		// If not -1 this subobject is what should get rendered instead of this one
-	int		i_replace;				// If this is not -1, then this subobject will replace i_replace when it is damaged
+	int		next_form;				// If not -1, this submodel can transform into it
+	int		prev_form;				// If not -1, another submodel that can transform into this one
 
 	int		num_live_debris;		// num live debris models assocaiated with a submodel
 	int		live_debris[MAX_LIVE_DEBRIS];	// array of live debris submodels for a submodel
@@ -543,17 +564,30 @@ struct w_bank
 		delete[] external_model_angle_offset;
 	}
 
-	w_bank& operator=(w_bank&& other) {
-		this->~w_bank();
-		num_slots = other.num_slots;
-		pnt = other.pnt;
-		norm = other.norm;
-		external_model_angle_offset = other.external_model_angle_offset;
-		other.pnt = nullptr;
-		other.norm = nullptr;
-		other.external_model_angle_offset = nullptr;
+	w_bank(w_bank&& other) noexcept
+		: num_slots(std::exchange(other.num_slots, 0)),
+		  pnt(std::exchange(other.pnt, nullptr)),
+		  norm(std::exchange(other.norm, nullptr)),
+		  external_model_angle_offset(std::exchange(other.external_model_angle_offset, nullptr))
+	{}
+
+	w_bank& operator=(w_bank&& other) noexcept {
+		if (this != &other) {
+			delete[] pnt;
+			delete[] norm;
+			delete[] external_model_angle_offset;
+			num_slots = std::exchange(other.num_slots, 0);
+			pnt = std::exchange(other.pnt, nullptr);
+			norm = std::exchange(other.norm, nullptr);
+			external_model_angle_offset = std::exchange(other.external_model_angle_offset, nullptr);
+		}
 		return *this;
 	}
+
+	// The copy constructor is shallow!  It exists for object_copy_including_array_member,
+	// which copy-constructs and then immediately replaces every owned array with a fresh
+	// allocation.  Do not copy-construct a w_bank in any other context, because the
+	// destructor will delete[] the aliased arrays.
 	w_bank(const w_bank& other) = default;
 	w_bank& operator=(const w_bank& other) = delete;
 };
@@ -735,6 +769,11 @@ typedef struct insignia {
 	vec3d vecs[MAX_INS_VECS];								// vertex list	
 	vec3d offset;	// global position offset for this insignia
 	vec3d norm[MAX_INS_VECS]	;					//normal of the insignia-Bobboau
+
+	// Computed fields for decal rendering
+	vec3d position;
+	matrix orientation;
+	float diameter;
 } insignia;
 
 #define PM_FLAG_ALLOW_TILING			(1<<0)					// Allow texture tiling
@@ -1000,9 +1039,11 @@ void model_free_all();
 void model_instance_free_all();
 
 // Alias to model_load, checks if a pof tech model exists and loads it if specified, otherwise loads the default pof. --wookieejedi
+// NOTE: Each time model_load is called with a ship_info pointer, which causes it to load subsystems, the model number is also assigned to the ship_info.
 int model_load(ship_info* sip, bool prefer_tech_model);
 
 // Loads a model from disk and returns the model number it loaded into.
+// NOTE: Each time model_load is called with a ship_info pointer, which causes it to load subsystems, the model number is also assigned to the ship_info.
 int model_load(const char *filename, ship_info* sip = nullptr, ErrorType error_type = ErrorType::FATAL_ERROR, bool allow_redundant_load = false);
 
 int model_create_instance(int objnum, int model_num);
@@ -1110,13 +1151,18 @@ extern int model_find_2d_bound_min(int model_num,matrix *orient, vec3d * pos,int
 // rect.
 int submodel_find_2d_bound_min(int model_num,int submodel, matrix *orient, vec3d * pos,int *x1, int *y1, int *x2, int *y2);
 
-
 // Returns zero is x1,y1,x2,y2 are valid
 // Returns 2 for point offscreen.
 // note that x1,y1,x2,y2 aren't clipped to 2d screen coordinates!
 // This function just looks at the radius, and not the orientation, so the
 // bounding box won't change depending on the obj's orient.
 int subobj_find_2d_bound(float radius, matrix *orient, vec3d * pos,int *x1, int *y1, int *x2, int *y2);
+
+// Returns the index of the -destroyed version of a submodel name, if it exists
+int submodel_find_destroyed_form(int model_num, const char *name_stem);
+
+// Returns whether this submodel name is a -destroyed version
+bool submodel_is_destroyed_form(const char *name);
 
 // stats variables
 #ifndef NDEBUG

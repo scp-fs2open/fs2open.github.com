@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>SEXPs - QtFRED Help</title>
+    <link rel="stylesheet" type="text/css" href="../css/help.css"/>
+</head>
+<body>
+<nav class="breadcrumb"><a href="../index.html">QtFRED Help</a> &rsaquo; Concepts &rsaquo; SEXPs</nav>
+<h1>SEXPs</h1>
+
+<p>A <strong>SEXP</strong> (Symbolic EXPression) is the scripting language built into
+FreeSpace missions. Every condition, trigger, and action in a mission &mdash; from
+checking whether a ship has been destroyed to playing a message &mdash; is expressed
+as a SEXP tree.</p>
+
+<h2>Structure</h2>
+<p>SEXPs use a Lisp-style prefix notation enclosed in parentheses:</p>
+<pre>(operator argument1 argument2 ...)</pre>
+
+<p>Operators can be nested, so arguments can themselves be SEXPs:</p>
+<pre>(when
+    (is-destroyed-delay 0 "Epsilon 1")
+    (send-message "" "Mission-Complete" "Command")
+)</pre>
+
+<p>Here <code>when</code> is the top-level operator. Its first argument is a condition
+(<code>is-destroyed-delay</code>) and its second argument is an action
+(<code>send-message</code>). When the condition becomes true the action fires.</p>
+
+<h2>Where SEXPs appear</h2>
+<p>SEXPs are used in:</p>
+<ul>
+    <li><strong>Mission Events</strong> &mdash; the primary place to author SEXP logic;
+        see the <a href="../dialogs/MissionEventsDialog.html">Mission Events dialog</a>.</li>
+    <li><strong>Mission Goals</strong> &mdash; the completion condition for each goal;
+        see the <a href="../dialogs/MissionGoalsDialog.html">Mission Goals dialog</a>.</li>
+    <li><strong>Ship arrival/departure cues</strong> &mdash; conditions on when ships
+        enter and leave the mission.</li>
+    <li><strong>Briefing and debriefing</strong> &mdash; stage-change conditions.</li>
+</ul>
+
+<h2>Editing SEXPs in QtFRED</h2>
+<p>The SEXP tree editor is embedded directly in the Mission Events and Mission Goals
+dialogs. Right-click any node in the tree to add, replace, or remove operators and
+arguments. Hover over an operator name for a brief description of what it does.</p>
+
+<div class="note">
+    <strong>Note:</strong> The full SEXP reference is maintained on the
+    <a href="https://wiki.hard-light.net/index.php/SEXPs">Hard Light Productions wiki</a>.
+</div>
+</body>
+</html>

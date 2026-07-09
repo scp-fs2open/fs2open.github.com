@@ -65,6 +65,7 @@
 #include "scripting/api/objs/ship.h"
 #include "scripting/api/objs/shipclass.h"
 #include "scripting/api/objs/sound.h"
+#include "scripting/api/objs/support_rearm_pool.h"
 #include "scripting/api/objs/team.h"
 #include "scripting/api/objs/vecmath.h"
 #include "scripting/api/objs/volumetric.h"
@@ -260,6 +261,42 @@ ADE_FUNC(runSEXP, l_Mission, "string", "Runs the defined SEXP script within a `w
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;
+}
+
+//****SUBLIBRARY: Mission/SupportRearmPools
+ADE_LIB_DERIV(l_Mission_SupportRearmPools,
+	"SupportRearmPools",
+	nullptr,
+	"Per-team mission support rearm pools (team indexed).",
+	l_Mission);
+
+ADE_INDEXER(l_Mission_SupportRearmPools,
+	"number TeamIndex",
+	"Gets support rearm pool handle for a specific team.",
+	"support_rearm_pool_team",
+	"Support rearm pool team handle, or invalid handle if index is out of range.")
+{
+	int idx = -1;
+	if (!ade_get_args(L, "*i", &idx)) {
+		return ade_set_error(L, "o", l_SupportRearmPoolTeam.Set(-1));
+	}
+
+	idx--; // Lua to C++ index
+	if (idx < 0 || idx >= Num_teams || idx >= MAX_TVT_TEAMS) {
+		return ade_set_error(L, "o", l_SupportRearmPoolTeam.Set(-1));
+	}
+
+	return ade_set_args(L, "o", l_SupportRearmPoolTeam.Set(idx));
+}
+
+ADE_FUNC(__len,
+	l_Mission_SupportRearmPools,
+	nullptr,
+	"The number of support rearm pool teams.",
+	"number",
+	"The number of TVT/loadout teams with support rearm pools.")
+{
+	return ade_set_args(L, "i", MIN(Num_teams, MAX_TVT_TEAMS));
 }
 
 //****SUBLIBRARY: Mission/Asteroids
@@ -1018,9 +1055,9 @@ int sendMessage_sub(lua_State* L, const void* sender, int messageSource, int mes
 
 ADE_FUNC(sendMessage,
 	l_Mission,
-	"string|ship sender, message message, [number delay=0.0, enumeration priority = MESSAGE_PRIORITY_NORMAL, boolean "
+	"string|ship sender, message message, [number delay=0.0, enumeration priority = MESSAGE_PRIORITY_NORMAL /* MESSAGE_PRIORITY_* */, boolean "
 	"fromCommand = false]",
-	"Sends a message from the given source or ship with the given priority, or optionally sends it from the "
+	"Sends a message from the given source or ship with the given MESSAGE_PRIORITY_* priority, or optionally sends it from the "
 	"mission's command source.<br>"
 	"If delay is specified, the message will be delayed by the specified time in seconds.<br>"
 	"If sender is <i>nil</i> the message will not have a sender.  If sender is a ship object the message will be sent from the ship; "
@@ -1229,10 +1266,10 @@ int getBuiltinMessageType(const enum_h* enumValue)
 
 ADE_FUNC(sendBuiltinMessage,
 	l_Mission,
-	"ship sender, ship subject, enumeration|string type_or_type_name",
+	"ship sender, ship subject, enumeration|string type_or_type_name /* BUILTIN_MESSAGE_* */",
 	"Sends one of the builtin messages from the given source or ship, taking the message subject into account."
 	"The subject can be nil or it can be the target of the message like a response to a destroy order."
-	"The type must be one of the BUILTIN_MESSAGE enumerations or a string matching a custom built-in message defined in messages.tbl.",
+	"The type must be one of the BUILTIN_MESSAGE_* enumerations or a string matching a custom built-in message defined in messages.tbl.",
 	"boolean",
 	"true if successful, false otherwise")
 {
@@ -1286,9 +1323,9 @@ ADE_FUNC(sendBuiltinMessage,
 
 ADE_FUNC(addMessageToScrollback,
 	l_Mission,
-	"string message, [team|enumeration source=HUD_SOURCE_COMPUTER]",
+	"string message, [team|enumeration source = SCROLLBACK_SOURCE_COMPUTER /* SCROLLBACK_* */]",
 	"Adds a string to the message log scrollback without sending it as a message first. Source should be either the team handle "
-	"or one of the SCROLLBACK_SOURCE enumerations.",
+	"or one of the SCROLLBACK_* enumerations.",
 	"boolean",
 	"true if successful, false otherwise")
 {
@@ -1857,8 +1894,8 @@ ADE_FUNC(getMissionFilename, l_Mission, NULL, "Gets mission filename", "string",
 
 ADE_FUNC(startMission,
 	l_Mission,
-	"string|enumeration mission /* Filename or MISSION_* enumeration */, [boolean Briefing = true]",
-	"Starts the defined mission",
+	"string|enumeration mission /* MISSION_* */, [boolean Briefing = true]",
+	"Starts the defined mission. Pass a filename string or a MISSION_* enumeration.",
 	"boolean",
 	"True, or false if the function fails")
 {
@@ -2295,24 +2332,63 @@ ADE_VIRTVAR(NebulaSensorRange, l_Mission, "number", "Gets or sets the Neb2_awacs
 	return ade_set_args(L, "f", Neb2_awacs);
 }
 
-ADE_VIRTVAR(NebulaNearMult, l_Mission, "number", "Gets or sets the multiplier of the near plane of the current nebula.", "number", "The multiplier of the near plane.")
+ADE_VIRTVAR_DEPRECATED(NebulaNearMult, l_Mission, "number", "Gets or sets the multiplier of the near plane of the current nebula.", "number", "The multiplier of the near plane.", gameversion::version(26, 0), "Deprecated in favor of NebulaNearDistance.")
 {
 	float fog_near = 0.0f;
 
 	if (ADE_SETTING_VAR && ade_get_args(L, "*f", &fog_near))
-		Neb2_fog_near_mult = fog_near;
+		Neb2_fog_near_distance = fog_near * 10.f;
 
-	return ade_set_args(L, "f", Neb2_fog_near_mult);
+	return ade_set_args(L, "f", Neb2_fog_near_distance / 10.f);
 }
 
-ADE_VIRTVAR(NebulaFarMult, l_Mission, "number", "Gets or sets the multiplier of the far plane of the current nebula.", "number", "The multiplier of the far plane.")
+ADE_VIRTVAR_DEPRECATED(NebulaFarMult, l_Mission, "number", "Gets or sets the multiplier of the far plane of the current nebula.", "number", "The multiplier of the far plane.", gameversion::version(26, 0), "Deprecated. Had no effect.")
 {
 	float fog_far = 0.0f;
 
-	if (ADE_SETTING_VAR && ade_get_args(L, "*f", &fog_far))
-		Neb2_fog_far_mult = fog_far;
+	if (ADE_SETTING_VAR && ade_get_args(L, "*f", &fog_far)) {}
 
-	return ade_set_args(L, "f", Neb2_fog_far_mult);
+	return ade_set_args(L, "f", 1.f);
+}
+
+ADE_VIRTVAR(NebulaNearDistance, l_Mission, "number", "Gets or sets the distance of the near plane of the current nebula.", "number", "The distance of the near plane.")
+{
+	float fog_near = 0.0f;
+
+	if (ADE_SETTING_VAR && ade_get_args(L, "*f", &fog_near))
+		Neb2_fog_near_distance = fog_near;
+
+	return ade_set_args(L, "f", Neb2_fog_near_distance);
+}
+
+ADE_VIRTVAR(NebulaClipDistance, l_Mission, "number", "Gets or sets the distance after which the nebula does not get thicker.", "number", "The clip distance of the nebula.")
+{
+	float fog_clip = 0.0f;
+
+	if (ADE_SETTING_VAR && ade_get_args(L, "*f", &fog_clip))
+		Neb2_fog_clip_distance = std::max(0.f, fog_clip);
+
+	return ade_set_args(L, "f", Neb2_fog_clip_distance);
+}
+
+ADE_VIRTVAR(NebulaSkyboxClipDistance, l_Mission, "number", "Gets or sets the distance of the skybox to the camera for the purposes of fogging.", "number", "The clip distance of the nebula for skyboxes.")
+{
+	float fog_clip = 0.0f;
+
+	if (ADE_SETTING_VAR && ade_get_args(L, "*f", &fog_clip))
+		Neb2_fog_skybox_clip_distance = std::max(0.f, fog_clip);
+
+	return ade_set_args(L, "f", Neb2_fog_skybox_clip_distance);
+}
+
+ADE_VIRTVAR(NebulaVisibility, l_Mission, "number", "Gets or sets the visibility of the nebula at 1000m nebula depth. 0 is fully opaque, 1 is fully transparent.", "number", "The nebula visibility.")
+{
+	float fog_visibility = 0.0f;
+
+	if (ADE_SETTING_VAR && ade_get_args(L, "*f", &fog_visibility))
+		Neb2_fog_1000m_visibility = std::clamp(fog_visibility, 0.0f, 1.0f);
+
+	return ade_set_args(L, "f", Neb2_fog_1000m_visibility);
 }
 
 ADE_FUNC(isSubspace, l_Mission, nullptr, "Get whether or not the current mission being played is set in subspace", "boolean", "true if in subspace, false if not")
@@ -2631,7 +2707,7 @@ ADE_FUNC(hasDebriefing,
 	return ade_set_args(L, "b", !(The_mission.flags[Mission::Mission_Flags::Toggle_debriefing]));
 }
 
-ADE_FUNC(getMusicScore, l_Mission, "enumeration score", "Returns the music.tbl entry name for the specified mission music score", "string", "The name, or nil if the score is invalid")
+ADE_FUNC(getMusicScore, l_Mission, "enumeration score /* SCORE_* */", "Returns the music.tbl entry name for the specified mission music score", "string", "The name, or nil if the score is invalid")
 {
 	enum_h score;
 	if (!ade_get_args(L, "o", l_Enum.Get(&score)))
@@ -2652,7 +2728,7 @@ ADE_FUNC(getMusicScore, l_Mission, "enumeration score", "Returns the music.tbl e
 	return ade_set_args(L, "s", name);
 }
 
-ADE_FUNC(setMusicScore, l_Mission, "enumeration score, string name", "Sets the music.tbl entry for the specified mission music score", nullptr, nullptr)
+ADE_FUNC(setMusicScore, l_Mission, "enumeration score /* SCORE_* */, string name", "Sets the music.tbl entry for the specified mission music score", nullptr, nullptr)
 {
 	enum_h score;
 	const char *name;
@@ -2893,7 +2969,7 @@ ADE_FUNC(addLuaEnum,
 		dynamic_sexp_enum_list this_list;
 		this_list.name = enum_name;
 
-		Dynamic_enums.push_back(this_list);
+		Dynamic_enums.push_back(std::move(this_list));
 
 		idx = get_dynamic_enum_position(enum_name);
 
@@ -3156,7 +3232,7 @@ ADE_FUNC(waitAsync,
 		{
 			// Keep checking the time until the timestamp is elapsed
 			auto self = shared_from_this();
-			auto cb = [this, self, resolver](
+			auto cb = [this, self, resolver = std::move(resolver)](
 						  executor::IExecutionContext::State contextState) {
 				if (contextState == executor::IExecutionContext::State::Invalid) {
 					mprintf(("waitAsync: Context is invalid, possibly due to a game state change (current state is %s).  Aborting asynchronous context %d.\n", GS_state_text[gameseq_get_state()], m_unique_id));

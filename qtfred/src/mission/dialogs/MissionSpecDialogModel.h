@@ -11,6 +11,32 @@
 
 namespace fso::fred::dialogs {
 
+struct SupportRearmSettings {
+	bool disallowSupportShips = false;
+	bool supportRepairsHull = true;
+	float maxHullRepair = 100.0f;
+	float maxSubsysRepair = 100.0f;
+	bool disallowSupportRearm = false;
+	bool limitRearmToPool = false;
+	bool rearmPoolFromLoadout = false;
+	bool allowWeaponPrecedence = false;
+	std::array<std::array<int, MAX_WEAPON_TYPES>, MAX_TVT_TEAMS> rearmWeaponPool{};
+
+	bool operator==(const SupportRearmSettings& rhs) const
+	{
+		return disallowSupportShips == rhs.disallowSupportShips && supportRepairsHull == rhs.supportRepairsHull &&
+			   maxHullRepair == rhs.maxHullRepair && maxSubsysRepair == rhs.maxSubsysRepair &&
+			   disallowSupportRearm == rhs.disallowSupportRearm && limitRearmToPool == rhs.limitRearmToPool &&
+			   rearmPoolFromLoadout == rhs.rearmPoolFromLoadout && allowWeaponPrecedence == rhs.allowWeaponPrecedence &&
+			   rearmWeaponPool == rhs.rearmWeaponPool;
+	}
+
+	bool operator!=(const SupportRearmSettings& rhs) const
+	{
+		return !(*this == rhs);
+	}
+};
+
 
 class MissionSpecDialogModel : public AbstractDialogModel {
 private:
@@ -42,6 +68,7 @@ private:
 	float		_m_max_subsys_repair_val;
 	bool		_m_contrail_threshold_flag;
 	int			_m_contrail_threshold;
+	int			_m_large_ship_no_collide_collision_group;
 	SCP_map<SCP_string, SCP_string> _m_custom_data;
 	SCP_vector<custom_string> _m_custom_strings;
 	sound_env	_m_sound_env;
@@ -55,6 +82,7 @@ private:
 	SCP_vector<SCP_string> _m_squadLogoList;
 
 	int _m_type;
+	SupportRearmSettings _m_support_rearm_settings;
 
 public:
 	MissionSpecDialogModel(QObject* parent, EditorViewport* viewport);
@@ -102,6 +130,9 @@ public:
 	void setSubsysRepairMax(float);
 	int getSubsysRepairMax();
 
+	SupportRearmSettings getSupportRearmSettings() const;
+	void setSupportRearmSettings(const SupportRearmSettings& settings);
+
 	void setTrailThresholdFlag(bool);
 	bool getTrailThresholdFlag();
 	void setTrailDisplaySpeed(int);
@@ -119,8 +150,11 @@ public:
 
 	void setMissionFlag(const SCP_string& flag_name, bool enabled);
 	void setMissionFlagDirect(Mission::Mission_Flags flag, bool enabled);
+	void setLargeShipNoCollideCollisionGroup(int group);
+	int getLargeShipNoCollideCollisionGroup() const;
 	bool getMissionFlag(Mission::Mission_Flags flag) const;
 	const SCP_vector<std::pair<SCP_string, bool>>& getMissionFlagsList();
+	static SCP_vector<std::pair<SCP_string, SCP_string>> getMissionFlagDescriptions();
 
 	void setMissionFullWar(bool enabled);
 

@@ -15,7 +15,8 @@
 namespace fso::fred::dialogs {
 
 WingEditorDialog::WingEditorDialog(FredView* parent, EditorViewport* viewport)
-	: QDialog(parent), ui(new Ui::WingEditorDialog()), _model(new WingEditorDialogModel(this, viewport)),
+	: QDialog(parent), SexpTreeEditorInterface(flagset<TreeFlags>()),
+	  ui(new Ui::WingEditorDialog()), _model(new WingEditorDialogModel(this, viewport)),
 	  _viewport(viewport)
 {
 	ui->setupUi(this);
@@ -24,6 +25,7 @@ WingEditorDialog::WingEditorDialog(FredView* parent, EditorViewport* viewport)
 	ui->helpText->setVisible(viewport->Show_sexp_help_wing_editor);
 
 	ui->wingNameEdit->setMaxLength(NAME_LENGTH - 1);
+	ui->wingDisplayNameEdit->setMaxLength(NAME_LENGTH - 1);
 
 	setWindowTitle(tr("Wing Editor"));
 	
@@ -33,6 +35,13 @@ WingEditorDialog::WingEditorDialog(FredView* parent, EditorViewport* viewport)
 		refreshAllDynamicCombos();
 		updateUi();
 	});
+
+	connect(ui->arrivalTree, &sexp_tree_view::modified, this, &WingEditorDialog::on_arrivalTree_modified);
+	connect(ui->arrivalTree, &sexp_tree_view::helpChanged, this, [this](const QString& help) { ui->helpText->setPlainText(help); });
+	connect(ui->arrivalTree, &sexp_tree_view::miniHelpChanged, this, [this](const QString& help) { ui->HelpTitle->setText(help); });
+	connect(ui->departureTree, &sexp_tree_view::modified, this, &WingEditorDialog::on_departureTree_modified);
+	connect(ui->departureTree, &sexp_tree_view::helpChanged, this, [this](const QString& help) { ui->helpText->setPlainText(help); });
+	connect(ui->departureTree, &sexp_tree_view::miniHelpChanged, this, [this](const QString& help) { ui->HelpTitle->setText(help); });
 
 	refreshAllDynamicCombos();
 	updateUi();
@@ -45,7 +54,6 @@ WingEditorDialog::~WingEditorDialog() = default;
 
 void WingEditorDialog::closeEvent(QCloseEvent* e)
 {
-	_viewport->editor->autosave("wing editor");
 	QDialog::closeEvent(e);
 }
 
@@ -58,6 +66,7 @@ void WingEditorDialog::updateUi()
 	
 	// Top section, first column
 	ui->wingNameEdit->setText(_model->getWingName().c_str());
+	ui->wingDisplayNameEdit->setText(_model->getWingDisplayName().c_str());
 	ui->wingLeaderCombo->setCurrentIndex(_model->getWingLeaderIndex());
 	ui->numWavesSpinBox->setValue(_model->getNumberOfWaves());
 	ui->waveThresholdSpinBox->setValue(_model->getWaveThreshold());
@@ -76,8 +85,9 @@ void WingEditorDialog::updateUi()
 	ui->arrivalTargetCombo->setCurrentIndex(ui->arrivalTargetCombo->findData(_model->getArrivalTarget()));
 	ui->arrivalDistanceSpinBox->setValue(_model->getArrivalDistance());
 
-	ui->arrivalTree->initializeEditor(_viewport->editor, this);
+	ui->arrivalTree->initializeEditor(_viewport->editor, this, _viewport);
 	ui->arrivalTree->load_tree(_model->getArrivalTree());
+	ui->arrivalTree->expandAll();
 	if (ui->arrivalTree->select_sexp_node != -1) {
 		ui->arrivalTree->hilite_item(ui->arrivalTree->select_sexp_node);
 	}
@@ -88,8 +98,9 @@ void WingEditorDialog::updateUi()
 	ui->departureLocationCombo->setCurrentIndex(static_cast<int>(_model->getDepartureType()));
 	ui->departureDelaySpinBox->setValue(_model->getDepartureDelay());
 	ui->departureTargetCombo->setCurrentIndex(ui->departureTargetCombo->findData(_model->getDepartureTarget()));
-	ui->departureTree->initializeEditor(_viewport->editor, this);
+	ui->departureTree->initializeEditor(_viewport->editor, this, _viewport);
 	ui->departureTree->load_tree(_model->getDepartureTree());
+	ui->departureTree->expandAll();
 	if (ui->departureTree->select_sexp_node != -1) {
 		ui->departureTree->hilite_item(ui->departureTree->select_sexp_node);
 	}
@@ -122,6 +133,7 @@ void WingEditorDialog::enableOrDisableControls()
 	auto enableAll = [&](bool on) {
 		// Top section, first column
 		ui->wingNameEdit->setEnabled(on);
+		ui->wingDisplayNameEdit->setEnabled(on);
 		ui->wingLeaderCombo->setEnabled(on);
 		ui->numWavesSpinBox->setEnabled(on);
 		ui->waveThresholdSpinBox->setEnabled(on);
@@ -194,7 +206,7 @@ void WingEditorDialog::enableOrDisableControls()
 	const bool arrivalNeedsTarget = _model->arrivalNeedsTarget();
 
 	ui->arrivalTargetCombo->setEnabled(arrivalEditable && arrivalNeedsTarget);
-	ui->arrivalDistanceSpinBox->setEnabled(arrivalEditable && arrivalNeedsTarget);
+	ui->arrivalDistanceSpinBox->setEnabled(arrivalEditable && _model->arrivalNeedsDistance());
 	ui->restrictArrivalPathsButton->setEnabled(arrivalEditable && arrivalIsDockBay);
 	ui->customWarpinButton->setEnabled(arrivalEditable && !arrivalIsDockBay);
 
@@ -228,6 +240,7 @@ void WingEditorDialog::clearGeneralFields()
 	util::SignalBlockers blockers(this);
 
 	ui->wingNameEdit->clear();
+	ui->wingDisplayNameEdit->clear();
 	ui->wingLeaderCombo->setCurrentIndex(-1);
 
 	ui->hotkeyCombo->setCurrentIndex(-1);
@@ -339,12 +352,14 @@ void WingEditorDialog::refreshAllDynamicCombos()
 
 void WingEditorDialog::on_hideCuesButton_clicked()
 {
+	const auto showHelp = _viewport->Show_sexp_help_wing_editor;
+	
 	_cues_hidden = !_cues_hidden;
 	
-	ui->arrivalGroupBox->setHidden(_cues_hidden);
-	ui->departureGroupBox->setHidden(_cues_hidden);
-	ui->helpText->setHidden(_cues_hidden);
-	ui->HelpTitle->setHidden(_cues_hidden);
+	ui->arrivalGroupBox->setVisible(!_cues_hidden);
+	ui->departureGroupBox->setVisible(!_cues_hidden);
+	ui->helpText->setVisible(!_cues_hidden && showHelp);
+	ui->HelpTitle->setVisible(!_cues_hidden && showHelp);
 	ui->hideCuesButton->setText(_cues_hidden ? "Show Cues" : "Hide Cues");
 
 	QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
@@ -355,6 +370,17 @@ void WingEditorDialog::on_wingNameEdit_editingFinished()
 {
 	const auto newName = ui->wingNameEdit->text().toStdString();
 	_model->setWingName(newName);
+
+	// rename_wing already auto-sets the display name from the hash; just sync the edit box
+	ui->wingDisplayNameEdit->setText(Editor::get_display_name_for_text_box(_model->getWingName()).c_str());
+}
+
+void WingEditorDialog::on_wingDisplayNameEdit_editingFinished()
+{
+	const auto newDisplayName = ui->wingDisplayNameEdit->text().toStdString();
+	if (newDisplayName != _model->getWingDisplayName()) {
+		_model->setWingDisplayName(newDisplayName);
+	}
 }
 
 void WingEditorDialog::on_wingLeaderCombo_currentIndexChanged(int index)
@@ -362,7 +388,7 @@ void WingEditorDialog::on_wingLeaderCombo_currentIndexChanged(int index)
 	_model->setWingLeaderIndex(index);
 }
 
-void WingEditorDialog::on_numberOfWavesSpinBox_valueChanged(int value)
+void WingEditorDialog::on_numWavesSpinBox_valueChanged(int value)
 {
 	_model->setNumberOfWaves(value);
 	ui->waveThresholdSpinBox->setMaximum(_model->getMaxWaveThreshold());
@@ -418,7 +444,7 @@ void WingEditorDialog::on_setSquadLogoButton_clicked()
 	if (dlg.exec() != QDialog::Accepted)
 		return;
 
-	const std::string chosen = dlg.selectedFile().toUtf8().constData();
+	const SCP_string chosen = dlg.selectedFile().toUtf8().constData();
 	_model->setSquadLogo(chosen);
 	updateLogoPreview();
 }
@@ -474,32 +500,24 @@ void WingEditorDialog::on_initialOrdersButton_clicked()
 
 void WingEditorDialog::on_wingFlagsButton_clicked()
 {
-	CheckBoxListDialog dlg(this);
-	dlg.setCaption("Select Wing Flags");
+	QVector<std::pair<QString, int>> qtFlags;
+	for (const auto& f : _model->getWingFlags())
+		qtFlags.append({QString::fromUtf8(f.first.c_str()), f.second ? Qt::Checked : Qt::Unchecked});
 
-	// Get our flag list and convert it to Qt's internal types
-	auto wingFlags = _model->getWingFlags();
+	QVector<std::pair<QString, QString>> qtDescs;
+	for (const auto& d : _model->getWingFlagDescriptions())
+		qtDescs.append({QString::fromUtf8(d.first.c_str()), QString::fromUtf8(d.second.c_str())});
 
-	QVector<std::pair<QString, bool>> checkbox_list;
-
-	for (const auto& flag : wingFlags) {
-		checkbox_list.append({flag.first.c_str(), flag.second});
-	}
-
-	dlg.setOptions(checkbox_list); // TODO upgrade checkbox to accept and display item descriptions
+	dialogs::CheckBoxListDialog dlg(this);
+	dlg.setCaption(tr("Wing Flags"));
+	dlg.setOptions(qtFlags);
+	dlg.setOptionDescriptions(qtDescs);
 
 	if (dlg.exec() == QDialog::Accepted) {
-		auto returned_values = dlg.getCheckedStates();
-
-		std::vector<std::pair<SCP_string, bool>> updatedFlags;
-
-		for (int i = 0; i < checkbox_list.size(); ++i) {
-			// Convert back to std::string
-			std::string name = checkbox_list[i].first.toUtf8().constData();
-			updatedFlags.emplace_back(name, returned_values[i]);
-		}
-
-		_model->setWingFlags(updatedFlags);
+		SCP_vector<std::pair<SCP_string, bool>> result;
+		for (const auto& f : dlg.getFlags())
+			result.emplace_back(f.first.toUtf8().constData(), f.second == Qt::Checked);
+		_model->setWingFlags(result);
 	}
 }
 
@@ -560,11 +578,10 @@ void WingEditorDialog::on_restrictArrivalPathsButton_clicked()
 	if (dlg.exec() == QDialog::Accepted) {
 		auto returned_values = dlg.getCheckedStates();
 
-		std::vector<std::pair<SCP_string, bool>> updatedFlags;
+		SCP_vector<std::pair<SCP_string, bool>> updatedFlags;
 
 		for (int i = 0; i < checkbox_list.size(); ++i) {
-			// Convert back to std::string
-			std::string name = checkbox_list[i].first.toUtf8().constData();
+			SCP_string name = checkbox_list[i].first.toUtf8().constData();
 			updatedFlags.emplace_back(name, returned_values[i]);
 		}
 
@@ -585,9 +602,10 @@ void WingEditorDialog::on_customWarpinButton_clicked()
 	dlg.exec();
 }
 
-void WingEditorDialog::on_arrivalTree_nodeChanged(int newTree)
+void WingEditorDialog::on_arrivalTree_modified()
 {
-	_model->setArrivalTree(newTree); //TODO This seems broken in a weird way. Will need followup
+	int new_sexp = ui->arrivalTree->_model.save_tree();
+	_model->setArrivalTree(new_sexp);
 }
 
 void WingEditorDialog::on_noArrivalWarpCheckBox_toggled(bool checked)
@@ -638,11 +656,10 @@ void WingEditorDialog::on_restrictDeparturePathsButton_clicked()
 	if (dlg.exec() == QDialog::Accepted) {
 		auto returned_values = dlg.getCheckedStates();
 
-		std::vector<std::pair<SCP_string, bool>> updatedFlags;
+		SCP_vector<std::pair<SCP_string, bool>> updatedFlags;
 
 		for (int i = 0; i < checkbox_list.size(); ++i) {
-			// Convert back to std::string
-			std::string name = checkbox_list[i].first.toUtf8().constData();
+			SCP_string name = checkbox_list[i].first.toUtf8().constData();
 			updatedFlags.emplace_back(name, returned_values[i]);
 		}
 
@@ -663,9 +680,10 @@ void WingEditorDialog::on_customWarpoutButton_clicked()
 	dlg.exec();
 }
 
-void WingEditorDialog::on_departureTree_nodeChanged(int newTree)
+void WingEditorDialog::on_departureTree_modified()
 {
-	_model->setDepartureTree(newTree); //TODO This seems broken in a weird way. Will need followup
+	int new_sexp = ui->departureTree->_model.save_tree();
+	_model->setDepartureTree(new_sexp);
 }
 
 void WingEditorDialog::on_noDepartureWarpCheckBox_toggled(bool checked)

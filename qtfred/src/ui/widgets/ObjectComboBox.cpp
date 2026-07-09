@@ -22,8 +22,7 @@ ObjectComboBox::ObjectComboBox(QWidget* parent) : QComboBox(parent) {
 			&ObjectComboBox::indexChanged);
 }
 
-void ObjectComboBox::initForShips(EditorViewport* viewport) {
-	_viewport = viewport;
+void ObjectComboBox::initForShips() {
 	fredApp->runAfterInit([this]() {
 		buildShipsModel();
 	});
@@ -32,6 +31,12 @@ void ObjectComboBox::initForShips(EditorViewport* viewport) {
 void ObjectComboBox::initForProps() {
 	fredApp->runAfterInit([this]() {
 		buildPropsModel();
+	});
+}
+
+void ObjectComboBox::initForOther() {
+	fredApp->runAfterInit([this]() {
+		buildOtherModel();
 	});
 }
 
@@ -50,16 +55,18 @@ void ObjectComboBox::buildShipsModel() {
 		model->appendRow(item);
 	}
 
-	auto separator = new QStandardItem();
-	separator->setData("separator", Qt::AccessibleDescriptionRole);
-	model->appendRow(separator);
+	setModel(model);
+}
+
+void ObjectComboBox::buildOtherModel() {
+	auto model = new QStandardItemModel();
 
 	auto waypoint = new QStandardItem("Waypoint");
-	waypoint->setData(_viewport->editor->Id_select_type_waypoint, Qt::UserRole);
+	waypoint->setData(static_cast<int>(OtherKind::Waypoint), Qt::UserRole);
 	model->appendRow(waypoint);
 
 	auto jumpNode = new QStandardItem("Jump Node");
-	jumpNode->setData(_viewport->editor->Id_select_type_jump_node, Qt::UserRole);
+	jumpNode->setData(static_cast<int>(OtherKind::JumpNode), Qt::UserRole);
 	model->appendRow(jumpNode);
 
 	setModel(model);

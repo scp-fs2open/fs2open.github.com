@@ -1515,7 +1515,7 @@ void ship_select_do(float frametime)
 
 			if(Ss_icons[Carried_ss_icon.ship_class].model_index != -1)
 			{
-				draw_model_icon(Ss_icons[Carried_ss_icon.ship_class].model_index, MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, sip->closeup_zoom / 1.25f, sx, sy, w, h, sip, GR_RESIZE_MENU);
+				draw_model_icon(Ss_icons[Carried_ss_icon.ship_class].model_index, MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, sx, sy, w, h, sip, nullptr, 0.8f, GR_RESIZE_MENU);
 			}
 		}
 	}
@@ -1697,6 +1697,9 @@ void draw_ship_icon_with_number(int screen_offset, int ship_class)
 			ss_icon->model_index = model_load(sip, true);
 			mprintf(("SL WARNING: Had to attempt to page in model for %s paged in manually! Result: %d\n", sip->name, ss_icon->model_index));
 		}
+		// the icon bitmap can be invalid without a color having been chosen, e.g. when the icon ani is missing frames
+		if (color_to_draw == nullptr)
+			color_to_draw = &Icon_colors[ICON_FRAME_NORMAL];
 		gr_set_color_fast(color_to_draw);
 
 		graphics::line_draw_list line_draw_list;
@@ -1705,7 +1708,7 @@ void draw_ship_icon_with_number(int screen_offset, int ship_class)
 
 		if(ss_icon->model_index != -1)
 		{
-			draw_model_icon(ss_icon->model_index, MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, sip->closeup_zoom / 1.25f, Ship_list_coords[gr_screen.res][screen_offset][0],Ship_list_coords[gr_screen.res][screen_offset][1], 32, 28, sip, GR_RESIZE_MENU);
+			draw_model_icon(ss_icon->model_index, MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, Ship_list_coords[gr_screen.res][screen_offset][0],Ship_list_coords[gr_screen.res][screen_offset][1], 32, 28, sip, nullptr, 0.8f, GR_RESIZE_MENU);
 		}
 	}
 
@@ -2173,19 +2176,18 @@ void draw_wing_block(int wb_num, int hot_slot, int selected_slot, int class_sele
 	
 	// print the wing name under the wing
 	wp = &Wings[wb->wingnum];
-	char name[NAME_LENGTH];
-	strcpy_s(name, wp->name);
-	end_string_at_first_hash_symbol(name);
-	gr_get_string_size(&w, &h, name);
+	auto wing_name = wp->get_display_name();
+	gr_get_string_size(&w, &h, wing_name);
 	sx = Wing_icon_coords[gr_screen.res][wb_num*MAX_WING_SLOTS][0] + 16 - w/2;
 	sy = Wing_icon_coords[gr_screen.res][wb_num*MAX_WING_SLOTS + 3][1] + 32 + h;
 	gr_set_color_fast(&Color_normal);
-	gr_string(sx, sy, name, GR_RESIZE_MENU);
+	gr_string(sx, sy, wing_name, GR_RESIZE_MENU);
 
 	for ( i = 0; i < MAX_WING_SLOTS; i++ ) {
 		GR_DEBUG_SCOPE("Single ship");
 
 		bitmap_to_draw = -1;
+		color_to_draw = nullptr;
 		ws = &wb->ss_slots[i];
 		slot_index = wb_num*MAX_WING_SLOTS + i;
 
@@ -2307,7 +2309,7 @@ void draw_wing_block(int wb_num, int hot_slot, int selected_slot, int class_sele
 			draw_brackets_square(&line_draw_list, Wing_icon_coords[gr_screen.res][slot_index][0], Wing_icon_coords[gr_screen.res][slot_index][1], Wing_icon_coords[gr_screen.res][slot_index][0] + 32, Wing_icon_coords[gr_screen.res][slot_index][1] + 28, GR_RESIZE_MENU);
 			line_draw_list.flush();
 
-			draw_model_icon(icon->model_index, MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, sip->closeup_zoom / 1.25f, Wing_icon_coords[gr_screen.res][slot_index][0], Wing_icon_coords[gr_screen.res][slot_index][1], 32, 28, sip, GR_RESIZE_MENU);
+			draw_model_icon(icon->model_index, MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, Wing_icon_coords[gr_screen.res][slot_index][0], Wing_icon_coords[gr_screen.res][slot_index][1], 32, 28, sip, nullptr, 0.8f, GR_RESIZE_MENU);
 		}
 	}
 }
@@ -2390,7 +2392,7 @@ void ss_blit_ship_icon(int x,int y,int ship_class,int bmap_num)
 				draw_brackets_square(&line_draw_list, x, y, x + 32, y + 28, GR_RESIZE_MENU);
 				line_draw_list.flush();
 
-				draw_model_icon(icon->model_index, MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, sip->closeup_zoom / 1.25f, x, y, 32, 28, sip, GR_RESIZE_MENU);
+				draw_model_icon(icon->model_index, MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, x, y, 32, 28, sip, nullptr, 0.8f, GR_RESIZE_MENU);
 			}
 		}
 	}
@@ -3309,9 +3311,17 @@ void ss_synch_interface()
 
 	init_active_list();	// build the list of pool ships
 
-	if ( old_list_start < SS_active_list_size ) {
-		SS_active_list_start = old_list_start;
+	// clamp the preserved scroll offset against the largest valid offset
+	// for the new list size, so the up arrow can still reach items at the
+	// top after a swap shrinks the active list (e.g., to <= MAX_ICONS_ON_SCREEN)
+	int max_start = SS_active_list_size - MAX_ICONS_ON_SCREEN;
+	if ( max_start < 0 ) {
+		max_start = 0;
 	}
+	if ( old_list_start > max_start ) {
+		old_list_start = max_start;
+	}
+	SS_active_list_start = old_list_start;
 
 	for ( i = 0; i < MAX_WSS_SLOTS; i++ ) {
 		slot = &Ss_wings[i/MAX_WING_SLOTS].ss_slots[i%MAX_WING_SLOTS];

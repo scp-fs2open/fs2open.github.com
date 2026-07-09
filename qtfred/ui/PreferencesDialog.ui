@@ -25,31 +25,142 @@
       </attribute>
       <layout class="QVBoxLayout" name="generalLayout">
        <item>
-        <widget class="QCheckBox" name="moveShipsWhenUndocking">
-         <property name="text">
-          <string>Move Ships When Undocking</string>
+        <widget class="QGroupBox" name="appearanceGroup">
+         <property name="title">
+          <string>Appearance</string>
          </property>
+         <layout class="QFormLayout" name="appearanceLayout">
+          <item row="0" column="0">
+           <widget class="QLabel" name="themeLabel">
+            <property name="text">
+             <string>Theme:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QComboBox" name="themeCombo">
+            <item>
+             <property name="text">
+              <string>Light</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Dark</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="toolbarIconSizeLabel">
+            <property name="text">
+             <string>Toolbar icon size:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QComboBox" name="toolbarIconSizeCombo">
+            <item>
+             <property name="text">
+              <string>Small (16px)</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Medium (24px)</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Large (32px)</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+         </layout>
         </widget>
        </item>
        <item>
-        <widget class="QCheckBox" name="alwaysSaveDisplayNames">
-         <property name="text">
-          <string>Always save Display Names</string>
+        <widget class="QGroupBox" name="missionEditingGroup">
+         <property name="title">
+          <string>Mission Editing</string>
          </property>
+         <layout class="QFormLayout" name="missionEditingLayout">
+          <item row="0" column="0" colspan="2">
+           <widget class="QCheckBox" name="offerAutosaveRecovery">
+            <property name="text">
+             <string>Offer to load autosave on mission open</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="autosaveIntervalLabel">
+            <property name="text">
+             <string>Autosave interval (seconds, 0 = disabled):</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QSpinBox" name="autosaveIntervalSeconds">
+            <property name="minimum">
+             <number>0</number>
+            </property>
+            <property name="maximum">
+             <number>3600</number>
+            </property>
+            <property name="singleStep">
+             <number>30</number>
+            </property>
+            <property name="value">
+             <number>300</number>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0" colspan="2">
+           <widget class="QCheckBox" name="moveShipsWhenUndocking">
+            <property name="text">
+             <string>Move Ships When Undocking</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0" colspan="2">
+           <widget class="QCheckBox" name="alwaysSaveDisplayNames">
+            <property name="text">
+             <string>Always save Display Names</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="0" colspan="2">
+           <widget class="QCheckBox" name="createBakOnSave">
+            <property name="text">
+             <string>Create .bak file when saving a mission</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </widget>
        </item>
        <item>
-        <widget class="QCheckBox" name="errorCheckerChecksForPotentialIssues">
-         <property name="text">
-          <string>Error checker checks for potential issues</string>
+        <widget class="QGroupBox" name="errorCheckerGroup">
+         <property name="title">
+          <string>Error Checker</string>
          </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QCheckBox" name="darkMode">
-         <property name="text">
-          <string>Dark mode</string>
-         </property>
+         <layout class="QVBoxLayout" name="errorCheckerLayout">
+          <item>
+           <widget class="QCheckBox" name="checkPotentialIssues">
+            <property name="text">
+             <string>Check potential issues</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="applyAutoCorrections">
+            <property name="text">
+             <string>Apply auto-corrections</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </widget>
        </item>
        <item>
@@ -261,7 +372,7 @@
       <enum>Qt::Horizontal</enum>
      </property>
      <property name="standardButtons">
-      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+      <set>QDialogButtonBox::Close</set>
      </property>
     </widget>
    </item>
@@ -269,22 +380,6 @@
  </widget>
  <resources/>
  <connections>
-  <connection>
-   <sender>buttonBox</sender>
-   <signal>accepted()</signal>
-   <receiver>fso::fred::dialogs::PreferencesDialog</receiver>
-   <slot>accept()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>248</x>
-     <y>390</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>157</x>
-     <y>410</y>
-    </hint>
-   </hints>
-  </connection>
   <connection>
    <sender>buttonBox</sender>
    <signal>rejected()</signal>

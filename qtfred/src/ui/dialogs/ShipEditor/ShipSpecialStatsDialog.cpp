@@ -15,9 +15,9 @@ ShipSpecialStatsDialog::ShipSpecialStatsDialog(QWidget* parent, EditorViewport* 
 {
 	ui->setupUi(this);
 
-	connect(_model.get(), &AbstractDialogModel::modelChanged, this, [this]() { updateUI(false); });
+	connect(_model.get(), &AbstractDialogModel::modelChanged, this, [this]() { updateUi(false); });
 
-	updateUI(true);
+	updateUi(true);
 
 	// Resize the dialog to the minimum size
 	resize(QDialog::sizeHint());
@@ -30,7 +30,7 @@ void ShipSpecialStatsDialog::accept()
 	if (_model->apply()) {
 		QDialog::accept();
 	}
-	// else: validation failed, don’t close
+	// else: validation failed, don't close
 }
 
 void ShipSpecialStatsDialog::reject()
@@ -109,7 +109,7 @@ void ShipSpecialStatsDialog::on_explodeCheckBox_toggled(bool value)
 {
 	_model->setSpecialExp(value);
 }
-void ShipSpecialStatsDialog::updateUI(bool first)
+void ShipSpecialStatsDialog::updateUi(bool first)
 {
 	util::SignalBlockers blockers(this);
 	if (first) {

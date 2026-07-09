@@ -45,6 +45,7 @@ wing_editor::wing_editor(CWnd* pParent /*=NULL*/)
 {
 	//{{AFX_DATA_INIT(wing_editor)
 	m_wing_name = _T("");
+	m_wing_display_name = _T("");
 	m_wing_squad_filename = _T("");
 	m_special_ship = -1;
 	m_waves = 0;
@@ -90,6 +91,7 @@ void wing_editor::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_SPIN_WAVE_THRESHOLD, m_threshold_spin);
 	DDX_Control(pDX, IDC_SPIN_WAVES, m_waves_spin);
 	DDX_Text(pDX, IDC_WING_NAME, m_wing_name);
+	DDX_Text(pDX, IDC_WING_DISPLAY_NAME, m_wing_display_name);
 	DDX_Text(pDX, IDC_WING_SQUAD_LOGO, m_wing_squad_filename);
 	DDX_CBIndex(pDX, IDC_WING_SPECIAL_SHIP, m_special_ship);
 	DDX_CBIndex(pDX, IDC_WING_FORMATION, m_formation);
@@ -182,6 +184,7 @@ BEGIN_MESSAGE_MAP(wing_editor, CDialog)
 	ON_BN_CLICKED(IDC_CUSTOM_WARPIN_PARAMS, OnBnClickedCustomWarpinParams)
 	ON_BN_CLICKED(IDC_CUSTOM_WARPOUT_PARAMS, OnBnClickedCustomWarpoutParams)
 	ON_BN_CLICKED(IDC_WING_FORMATION_ALIGN, OnWingFormationAlign)
+	ON_EN_CHANGE(IDC_WING_NAME, OnChangeWingName)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -214,9 +217,9 @@ BOOL wing_editor::Create()
 
 	m_hotkey = 0;
 	m_waves_spin.SetRange(1, 99);
-	m_arrival_tree.link_modified(&modified);  // provide way to indicate trees are modified in dialog
+	m_arrival_tree._model.modified = &modified;  // provide way to indicate trees are modified in dialog
 	m_arrival_tree.setup((CEdit *) GetDlgItem(IDC_HELP_BOX));
-	m_departure_tree.link_modified(&modified);
+	m_departure_tree._model.modified = &modified;
 	m_departure_tree.setup();
 	m_arrival_delay_spin.SetRange(0, 999);
 	m_departure_delay_spin.SetRange(0, 999);
@@ -287,6 +290,7 @@ void wing_editor::initialize_data_safe(int full_update)
 	m_ignore_count = 0;
 	if (cur_wing < 0) {
 		m_wing_squad_filename = _T("");
+		m_wing_display_name = _T("");
 		m_special_ship = -1;
 		m_formation = 0;
 		m_formation_scale = _T("1.0");
@@ -349,6 +353,7 @@ void wing_editor::initialize_data_safe(int full_update)
 				player_wing = 1;
 
 		m_wing_squad_filename = _T(Wings[cur_wing].wing_squad_filename);
+		m_wing_display_name = Wings[cur_wing].has_display_name() ? Wings[cur_wing].get_display_name() : "<none>";
 		m_special_ship = Wings[cur_wing].special_ship;
 		m_waves = Wings[cur_wing].num_waves;
 		m_threshold = Wings[cur_wing].threshold;
@@ -437,11 +442,9 @@ void wing_editor::initialize_data_safe(int full_update)
 			ptr->AddString(Ships[Wings[cur_wing].ship_index[i]].ship_name);
 
 		m_threshold_spin.SetRange(0, static_cast<short>(calc_max_wave_treshold()));
-		for (i=0; i<Num_reinforcements; i++)
-			if (!stricmp(Reinforcements[i].name, Wings[cur_wing].name))
-				break;
 
-		if (i < Num_reinforcements)
+		i = find_item_with_string(Reinforcements, &reinforcements::name, Wings[cur_wing].name);
+		if (i >= 0)
 			m_reinforcement = TRUE;
 		else
 			m_reinforcement = FALSE;
@@ -697,6 +700,25 @@ int wing_editor::update_data(int redraw)
 
 		strcpy_s(old_name, Wings[cur_wing].name);
 		string_copy(Wings[cur_wing].name, m_wing_name, NAME_LENGTH, 1);
+
+		lcl_fred_replace_stuff(m_wing_display_name);
+
+		// the display name was precalculated, so now just assign it
+		if (m_wing_display_name == m_wing_name || m_wing_display_name.CompareNoCase("<none>") == 0)
+		{
+			if (Wings[cur_wing].has_display_name())
+				set_modified();
+			Wings[cur_wing].display_name = "";
+			Wings[cur_wing].flags.remove(Ship::Wing_Flags::Has_display_name);
+		}
+		else
+		{
+			if (!Wings[cur_wing].has_display_name() || Wings[cur_wing].display_name != (LPCSTR)m_wing_display_name)
+				set_modified();
+			Wings[cur_wing].display_name = m_wing_display_name;
+			Wings[cur_wing].flags.set(Ship::Wing_Flags::Has_display_name);
+		}
+
 		update_data_safe();
 
 		update_custom_wing_indexes();
@@ -708,45 +730,24 @@ int wing_editor::update_data(int redraw)
 			update_sexp_references(old_name, str);
 			ai_update_goal_references(sexp_ref_type::WING, old_name, str);
 			update_texture_replacements(old_name, str);
-			for (i=0; i<Num_reinforcements; i++)
-				if (!strcmp(old_name, Reinforcements[i].name)) {
-					Assert(strlen(str) < NAME_LENGTH);
-					strcpy_s(Reinforcements[i].name, str);
-				}
+			i = find_item_with_string(Reinforcements, &reinforcements::name, old_name);
+			if (i >= 0)
+				strcpy_s(Reinforcements[i].name, str);
 
 			for (i=0; i<Wings[cur_wing].wave_count; i++) {
 				if ((Objects[wing_objects[cur_wing][i]].type == OBJ_SHIP) || (Objects[wing_objects[cur_wing][i]].type == OBJ_START)) {
 					wing_bash_ship_name(buf, str, i + 1);
 					rename_ship(Wings[cur_wing].ship_index[i], buf);
-					// clear display name if we have one hanging around
-					Ships[Wings[cur_wing].ship_index[i]].flags.remove(Ship::Ship_Flags::Has_display_name);
+					// bash it again for the display name
+					wing_bash_ship_name(&Ships[Wings[cur_wing].ship_index[i]], &Wings[cur_wing], i + 1, true);
 				}
 			}
 
 			Update_window = 1;
 		}
 
-		//Check if we're trying to add more and we've got too many.
-		if( (Num_reinforcements >= MAX_REINFORCEMENTS) && (m_reinforcement == 1))
-		{
-			if (bypass_errors)
-				return 1;
-
-			bypass_errors = 1;
-
-			char error_message[256];
-			sprintf(error_message, "Too many reinforcements; could not add wing '%s' to reinforcement list!", str); 
-			MessageBox(error_message, "Error", MB_ICONEXCLAMATION | MB_OK);
-
-			//clear the flag
-			m_reinforcement = 0;
-			UpdateData(FALSE);
-
-			return -1;
-
-		}
-		//Otherwise, just update as normal.
-		else if (set_reinforcement(str, m_reinforcement) == 1) 
+		// Update as normal.
+		if (set_reinforcement(str, m_reinforcement) == 1) 
 		{
 			free_sexp2(Wings[cur_wing].arrival_cue);
 			Wings[cur_wing].arrival_cue = Locked_sexp_false;
@@ -957,11 +958,11 @@ void wing_editor::update_data_safe()
 
 	if (Wings[cur_wing].arrival_cue >= 0)
 		free_sexp2(Wings[cur_wing].arrival_cue);
-	Wings[cur_wing].arrival_cue = m_arrival_tree.save_tree();
+	Wings[cur_wing].arrival_cue = m_arrival_tree._model.save_tree();
 
 	if (Wings[cur_wing].departure_cue >= 0)
 		free_sexp2(Wings[cur_wing].departure_cue);
-	Wings[cur_wing].departure_cue = m_departure_tree.save_tree();
+	Wings[cur_wing].departure_cue = m_departure_tree._model.save_tree();
 
 	// copy squad stuff
 	if(stricmp(m_wing_squad_filename, Wings[cur_wing].wing_squad_filename))
@@ -1474,9 +1475,24 @@ void wing_editor::OnWingFormationAlign()
 
 		get_absolute_wing_pos(&objp->pos, leader_objp, cur_wing, i, false);
 		objp->orient = leader_objp->orient;
+
+		// drag any docked partners along (no-op for undocked ships)
+		object_moved(objp);
 	}
 
 	// roll back temporary formation
 	wingp->formation = old_formation;
 	wingp->formation_scale = old_formation_scale;
+}
+
+void wing_editor::OnChangeWingName()
+{
+	// sync the edit box to the variable
+	UpdateData(TRUE);
+
+	// automatically determine or reset the display name
+	m_wing_display_name = get_display_name_for_text_box(m_wing_name);
+
+	// sync the variable to the edit box
+	UpdateData(FALSE);
 }

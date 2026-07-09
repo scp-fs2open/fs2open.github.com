@@ -30,13 +30,20 @@
 
 #define HUD_SOURCE_TEAM_OFFSET	8	// must be higher than any previous hud source
 
-typedef struct HUD_message_data {
+struct HUD_message_data
+{
 	SCP_string text;
 	int source;  // where this message came from so we can color code it
 	int x;
-} HUD_message_data;
 
-typedef struct line_node {
+	HUD_message_data() = default;
+	HUD_message_data(SCP_string _text, int _source, int _x)
+		: text(std::move(_text)), source(_source), x(_x)
+	{}
+};
+
+struct line_node
+{
 	fix time;  // timestamp when message was added
 	int timer_padding; // the mission timer padding, in seconds, at the time the message was added
 	int source;  // who/what the source of the message was (for color coding)
@@ -44,7 +51,11 @@ typedef struct line_node {
 	int y;
 	int underline_width;
 	SCP_string text;
-} line_node;
+
+	line_node(fix _time, int _timer_padding, int _source, int _x, int _y, int _underline_width, SCP_string _text)
+		: time(_time), timer_padding(_timer_padding), source(_source), x(_x), y(_y), underline_width(_underline_width), text(std::move(_text))
+	{}
+};
 
 extern SCP_vector<line_node> Msg_scrollback_vec;
 

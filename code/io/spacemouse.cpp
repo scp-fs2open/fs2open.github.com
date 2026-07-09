@@ -93,7 +93,7 @@ void SpaceMouse::poll() {
 			break;
 		}
 		default:
-			UNREACHABLE("Bad SpaceMouse protocol specified!");
+			UNREACHABLE("Bad SpaceMouse protocol %d specified!", static_cast<int>(m_definition.protocol));
 		}
 	} while (bytes_read > 0);
 }
@@ -165,6 +165,12 @@ std::unique_ptr<SpaceMouse> SpaceMouse::searchSpaceMice(int pollingFrequency) {
 	hid_free_enumeration(devices);
 
 	return mouse;
+}
+
+SpaceMouse* SpaceMouse::getSharedSpaceMouse(int pollingFrequency)
+{
+	static std::unique_ptr<SpaceMouse> sharedMouse = SpaceMouse::searchSpaceMice(pollingFrequency);
+	return sharedMouse.get();
 }
 
 #define HANDLE_NONLINEARITY(field, idx) field = copysignf(powf(field, std::get<0>(spacemouse_nonlinearity[idx])) * std::get<1>(spacemouse_nonlinearity[idx]), field)

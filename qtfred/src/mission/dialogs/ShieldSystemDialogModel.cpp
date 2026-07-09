@@ -15,10 +15,6 @@ void ShieldSystemDialogModel::initializeData() {
 	_currTeam = 0;
 	_currType = 0;
 
-	_editor->normalizeShieldSysData();
-
-	_editor->exportShieldSysData(_teams, _types);
-
 	for (const auto& info : Ship_info) {
 		_shipTypeOptions.emplace_back(info.name);
 	}
@@ -26,20 +22,23 @@ void ShieldSystemDialogModel::initializeData() {
 	for (const auto& iff : Iff_info) {
 		_teamOptions.emplace_back(iff.iff_name);
 	}
+
+	refresh();
+}
+
+void ShieldSystemDialogModel::refresh() {
+	_editor->normalizeShieldSysData();
+	_editor->exportShieldSysData(_teams, _types);
+	_modified = false;
 }
 
 bool ShieldSystemDialogModel::apply() {
-	if (query_modified()) {
-		_editor->importShieldSysData(_teams, _types);
-	}
+	// Each Apply button commits immediately; nothing to do at dialog close.
 	return true;
 }
+
 void ShieldSystemDialogModel::reject() {
 	// nothing to do
-}
-
-bool ShieldSystemDialogModel::query_modified() const {
-	return !_editor->compareShieldSysData(_teams, _types);
 }
 
 int ShieldSystemDialogModel::getCurrentTeam() const
@@ -53,12 +52,12 @@ int ShieldSystemDialogModel::getCurrentShipType() const
 void ShieldSystemDialogModel::setCurrentTeam(int team)
 {
 	Assertion(SCP_vector_inbounds(Iff_info, team), "Team index %d out of bounds (size: %d)", team, static_cast<int>(Iff_info.size()));
-	modify(_currTeam, team);
+	_currTeam = team;
 }
 void ShieldSystemDialogModel::setCurrentShipType(int type)
 {
 	Assertion(type >= 0 && type < MAX_SHIP_CLASSES, "Ship class index %d is invalid!", type); // NOLINT(readability-simplify-boolean-expr)
-	modify(_currType, type);
+	_currType = type;
 }
 
 GlobalShieldStatus ShieldSystemDialogModel::getCurrentTeamShieldSys() const
@@ -69,25 +68,23 @@ GlobalShieldStatus ShieldSystemDialogModel::getCurrentTypeShieldSys() const
 {
 	return _types[_currType];
 }
-void ShieldSystemDialogModel::setCurrentTeamShieldSys(bool value)
-{
-	// UI can only turn shields on or off, so just map to the appropriate enum value
 
-	if (value) {
-		modify(_teams[_currTeam], GlobalShieldStatus::HasShields);
-	} else {
-		modify(_teams[_currTeam], GlobalShieldStatus::NoShields);
-	}
+void ShieldSystemDialogModel::applyTeam(bool hasShields)
+{
+	// Mutate only the currently selected team entry. Other entries already
+	// reflect current per-ship state (refresh() ran on open / after last
+	// apply), so importShieldSysData is a no-op for them. Mixed entries
+	// stay Mixed, Has/No entries already match each ship's flag.
+	_teams[_currTeam] = hasShields ? GlobalShieldStatus::HasShields : GlobalShieldStatus::NoShields;
+	_editor->importShieldSysData(_teams, _types);
+	refresh();
 }
-void ShieldSystemDialogModel::setCurrentTypeShieldSys(bool value)
-{
-	// UI can only turn shields on or off, so just map to the appropriate enum value
 
-	if (value) {
-		modify(_types[_currType], GlobalShieldStatus::HasShields);
-	} else {
-		modify(_types[_currType], GlobalShieldStatus::NoShields);
-	}
+void ShieldSystemDialogModel::applyType(bool hasShields)
+{
+	_types[_currType] = hasShields ? GlobalShieldStatus::HasShields : GlobalShieldStatus::NoShields;
+	_editor->importShieldSysData(_teams, _types);
+	refresh();
 }
 
 const SCP_vector<SCP_string>& ShieldSystemDialogModel::getShipTypeOptions() const

@@ -290,9 +290,10 @@ UI_XSTR Brief_select_text[GR_NUM_RESOLUTIONS][BRIEF_SELECT_NUM_TEXT] = {
 };
 
 // coordinates for briefing title -- the x value is for the RIGHT side of the text
-static int Title_coords[GR_NUM_RESOLUTIONS][2] = {
-	{575, 117},		// GR_640
-	{918, 194}		// GR_1024
+// third coord is max width of area for it to fit into (it is force fit there)
+static int Title_coords[GR_NUM_RESOLUTIONS][3] = {
+	{575, 117, 370},	// GR_640
+	{918, 194, 588}		// GR_1024
 };
 
 // coordinates for briefing title in multiplayer briefings -- the x value is for the LEFT side of the text
@@ -820,7 +821,7 @@ void brief_compact_stages()
 
 			Briefing->stages[num].num_icons = 0;
 			for ( i = num+1; i < Briefing->num_stages; i++ ) {
-				Briefing->stages[i-1] = Briefing->stages[i];
+				swap(Briefing->stages[i-1], Briefing->stages[i]);
 			}
 			Briefing->num_stages--;
 			continue;
@@ -831,7 +832,7 @@ void brief_compact_stages()
 	// completely clear out the old entries (if any) so we don't access them by mistake - taylor
 	if ( before > Briefing->num_stages ) {
 		for ( i = Briefing->num_stages; i < before; i++ ) {
-			Briefing->stages[i] = brief_stage();
+			Briefing->stages[i].reset();
 		}
 	}
 }
@@ -1096,7 +1097,7 @@ void brief_render_closeup(int ship_class, float frametime)
 			auto pm = model_get(Closeup_icon->modelnum);
 
 			gr_reset_clip();
-			shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, gr_screen.clip_aspect, -Closeup_cam_pos.xyz.z + pm->rad, -Closeup_cam_pos.xyz.z + pm->rad + 200.0f, -Closeup_cam_pos.xyz.z + pm->rad + 2000.0f, -Closeup_cam_pos.xyz.z + pm->rad + 10000.0f);
+			shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, Proj_fov, gr_screen.clip_aspect, SCP_vector {{-Closeup_cam_pos.xyz.z + pm->rad, -Closeup_cam_pos.xyz.z + pm->rad + 200.0f, -Closeup_cam_pos.xyz.z + pm->rad + 2000.0f, -Closeup_cam_pos.xyz.z + pm->rad + 10000.0f}});
 			render_info.set_flags(MR_NO_TEXTURING | MR_NO_LIGHTING | MR_AUTOCENTER);
 
 			model_render_immediate(&render_info, Closeup_icon->modelnum, Closeup_icon->model_instance_num, &Closeup_orient, &Closeup_pos);
@@ -1158,7 +1159,7 @@ void brief_render(float frametime, bool api_access)
 			gr_printf_menu((gr_screen.clip_width_unscaled - w) / 2,200,XSTR( "No Briefing exists for mission: %s", 430), Game_current_mission_filename);
 
 			#ifndef NDEBUG
-			gr_get_string_size(&w, &h, The_mission.name);
+			gr_get_string_size(&w, &h, The_mission.name.c_str());
 			gr_set_color_fast(&Color_normal);
 			SCP_string debugText;
 			sprintf(debugText, NOX("[filename: %s, last mod: %s]"), Mission_filename, The_mission.modified);
@@ -1211,17 +1212,20 @@ void brief_render(float frametime, bool api_access)
 		gr_printf_menu(Brief_bmap_coords[gr_screen.res][0], Brief_bmap_coords[gr_screen.res][1]-title_y_offset, NOX("[name: %s, mod: %s]"), Mission_filename, The_mission.modified);
 #endif
 
+		// force-fit mission title if necessary
+		const size_t max_buf_len = 255;
+		char buf[max_buf_len + 1];
+		strncpy(buf, The_mission.name.c_str(), max_buf_len);
+		buf[max_buf_len] = '\0';
+		const int max_coords_width = (Game_mode & GM_MULTIPLAYER) ? Title_coords_multi[gr_screen.res][2] : Title_coords[gr_screen.res][2];
+		w = font::force_fit_string(buf, max_buf_len, max_coords_width);
+
 		// output mission title
 		gr_set_color_fast(&Color_bright_white);
-
 		if (Game_mode & GM_MULTIPLAYER) {
-			char buf[256];
-			strncpy(buf, The_mission.name, 255);
-			font::force_fit_string(buf, 255, Title_coords_multi[gr_screen.res][2]);
 			gr_string(Title_coords_multi[gr_screen.res][0], Title_coords_multi[gr_screen.res][1], buf, GR_RESIZE_MENU);
 		} else {
-			gr_get_string_size(&w, nullptr, The_mission.name);
-			gr_string(Title_coords[gr_screen.res][0] - w, Title_coords[gr_screen.res][1], The_mission.name, GR_RESIZE_MENU);
+			gr_string(Title_coords[gr_screen.res][0] - w, Title_coords[gr_screen.res][1], buf, GR_RESIZE_MENU);
 		}
 
 		// maybe do objectives

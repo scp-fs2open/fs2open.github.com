@@ -149,7 +149,7 @@ void debris_init()
 		particle::ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
 		::util::UniformFloatRange(1.f), //Velocity Inherit
 		false, //Velocity Inherit absolute?
-		make_unique<particle::LegacyAACuboidVolume>(0.3f, 1.f, true), //Velocity volume
+		std::make_unique<particle::LegacyAACuboidVolume>(0.3f, 1.f, true), //Velocity volume
 		::util::UniformFloatRange(0.f, 10.f), //Velocity volume multiplier
 		particle::ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
 		std::nullopt, //Orientation-based velocity
@@ -248,6 +248,7 @@ void debris_delete( object * obj )
 
 	if (db->model_instance_num >= 0) {
 		model_delete_instance(db->model_instance_num);
+		db->model_instance_num = -1;
 	}
 
 	if ( db->is_hull ) {
@@ -336,7 +337,7 @@ void debris_process_post(object * obj, float frame_time)
 						break;
 
 					default:
-						UNREACHABLE("Unhandled case %d for electrical arc creation in debris_process_post()!", n);
+						Assertion(false, "Unhandled case %d for electrical arc creation in debris_process_post()!", n);
 					}
 				}
 			}

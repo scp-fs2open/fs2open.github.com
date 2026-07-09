@@ -2388,7 +2388,7 @@ SCP_string ValToCID(CID id) {
 
 	if (it == mCIDNameToVal.cend()) {
 		// Shouldn't happen
-		Error(LOCATION, "Unknown CID value %i", id);
+		UNREACHABLE("Unknown CID value %i", id);
 		return "NONE";
 
 	} else {
@@ -2518,9 +2518,11 @@ SCP_string ValToJoy(const CC_bind &bind) {
 		if (it == mAxisNameToVal.end()) {
 			// should never happen
 			UNREACHABLE("Unknown error occured during reverse lookup of joy input string.");
-		} // else print out value
-
-		str = it->first;
+			str = "NONE";
+		} else {
+			// print out value
+			str = it->first;
+		}
 
 /*	} else if (bind.flags & CCF_HAT) {
 		// TODO Still currently encoded as buttons

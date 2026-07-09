@@ -65,9 +65,6 @@ const char* object_name(int obj) {
 		waypoint_stuff_name(text, Objects[obj].instance);
 		return text;
 
-	case OBJ_POINT:
-		return "Briefing icon";
-
 	case OBJ_JUMP_NODE: {
 		const CJumpNode* jnp = jumpnode_get_by_objnum(obj);
 		if (jnp != nullptr)

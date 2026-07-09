@@ -513,11 +513,15 @@ CampaignMissionGraph::CampaignMissionGraph(QWidget* parent) : QGraphicsView(pare
 	setAlignment(Qt::AlignLeft | Qt::AlignTop);
 
 	// Recolor graph when the application theme changes
-	connect(qApp, &QApplication::paletteChanged, this, [this](const QPalette& pal) {
-		applyTheme(pal.window().color().value() < 128);
-	});
+	qApp->installEventFilter(this);
 }
-
+bool CampaignMissionGraph::eventFilter(QObject* watched, QEvent* event)
+{
+	if (event->type() == QEvent::ApplicationPaletteChange) {
+		applyTheme(qApp->palette().window().color().value() < 128);
+	}
+	return QGraphicsView::eventFilter(watched, event);
+}
 void CampaignMissionGraph::onNodeMoved(int missionIndex, QPointF sceneTopLeft)
 {
 	if (!m_model)

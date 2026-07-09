@@ -7,7 +7,25 @@
 #include <QPixmap>
 
 namespace {
+class PaletteChangeFilter : public QObject {
+  public:
+	PaletteChangeFilter(QObject* parent, std::function<void()> callback)
+		: QObject(parent), m_callback(std::move(callback))
+	{
+	}
 
+  protected:
+	bool eventFilter(QObject* watched, QEvent* event) override
+	{
+		if (event->type() == QEvent::ApplicationPaletteChange) {
+			m_callback();
+		}
+		return QObject::eventFilter(watched, event);
+	}
+
+  private:
+	std::function<void()> m_callback;
+};
 const char* const LIGHT_BUTTON_QSS = R"(
 QPushButton {
     background-color: #e1e1e1;
@@ -23,6 +41,14 @@ QPushButton:hover {
 QPushButton:pressed {
     background-color: #cce4f7;
     border-color: #005499;
+}
+QPushButton:checked {
+    background-color: #cce4f7;
+    border-color: #005499;
+}
+QPushButton:checked:hover {
+    background-color: #d8ecf9;
+    border-color: #0078d7;
 }
 QPushButton:default {
     border-color: #0078d7;
@@ -54,6 +80,24 @@ QToolButton:checked:hover {
 QToolButton::menu-indicator {
     image: none;
 }
+QToolBar::separator {
+    background: #c0c0c0;
+    width: 1px;
+    margin: 4px 5px;
+}
+#contextToolBar QToolButton {
+    border: 1px solid #adadad;
+    border-radius: 3px;
+    padding: 2px 6px;
+}
+#contextToolBar QToolButton:hover {
+    background-color: #e5f1fb;
+    border-color: #0078d7;
+}
+#contextToolBar QToolButton:pressed {
+    background-color: #cce4f7;
+    border-color: #005499;
+}
 )";
 
 const char* const DARK_BUTTON_QSS = R"(
@@ -71,6 +115,15 @@ QPushButton:hover {
 QPushButton:pressed {
     background-color: #606060;
     border-color: #909090;
+}
+QPushButton:checked {
+    background-color: #2a82da;
+    border-color: #2a82da;
+    color: #ffffff;
+}
+QPushButton:checked:hover {
+    background-color: #3d92e6;
+    border-color: #3d92e6;
 }
 QPushButton:default {
     border-color: #2a82da;
@@ -101,6 +154,29 @@ QToolButton:checked:hover {
 }
 QToolButton::menu-indicator {
     image: none;
+}
+QToolBar::separator {
+    background: #666666;
+    width: 1px;
+    margin: 4px 5px;
+}
+#contextToolBar QToolButton {
+    border: 1px solid #555555;
+    border-radius: 3px;
+    padding: 2px 6px;
+}
+#contextToolBar QToolButton:hover {
+    background-color: #4a4a4a;
+    border-color: #888888;
+}
+#contextToolBar QToolButton:pressed {
+    background-color: #606060;
+    border-color: #909090;
+}
+QMenu::separator {
+    height: 1px;
+    background: #8f8f8f;
+    margin: 4px 8px;
 }
 )";
 
@@ -293,9 +369,8 @@ void bindStandardIcon(QAbstractButton* btn, QStyle::StandardPixmap sp)
 		btn->setIcon(makeThemedIcon(sp, color));
 	};
 	refresh();
-	QObject::connect(qApp, &QApplication::paletteChanged, btn, [refresh](const QPalette&) {
-		refresh();
-	});
+	auto* filter = new PaletteChangeFilter(btn, refresh);
+	qApp->installEventFilter(filter);
 }
 
 void bindThemeIcon(QAction* action, const QString& baseName)
@@ -308,9 +383,22 @@ void bindThemeIcon(QAction* action, const QString& baseName)
 		action->setIcon(QIcon(path));
 	};
 	refresh();
-	QObject::connect(qApp, &QApplication::paletteChanged, action, [refresh](const QPalette&) {
-		refresh();
-	});
+	auto* filter = new PaletteChangeFilter(action, refresh);
+	qApp->installEventFilter(filter);
+}
+
+void bindThemeIcon(QAbstractButton* btn, const QString& baseName)
+{
+	auto refresh = [btn, baseName]() {
+		const bool dark = qApp->palette().color(QPalette::Window).lightness() < 128;
+		const QString path = QStringLiteral(":/images/toolbar/") + baseName
+		                   + (dark ? QStringLiteral("-dark") : QStringLiteral("-light"))
+		                   + QStringLiteral(".png");
+		btn->setIcon(QIcon(path));
+	};
+	refresh();
+	auto* filter = new PaletteChangeFilter(btn, refresh);
+	qApp->installEventFilter(filter);
 }
 
 } // namespace fso::fred

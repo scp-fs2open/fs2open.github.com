@@ -20,6 +20,9 @@
 #include "graphics/opengl/gropenglstate.h"
 #include "graphics/opengl/ShaderProgram.h"
 #include "osapi/osapi.h"
+#ifdef USE_OPENGL_ES
+#include "es_compatibility.h"
+#endif
 
 #ifndef FS_OPENXR
 

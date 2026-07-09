@@ -6,7 +6,7 @@
 #include <QAbstractButton>
 #include <QtWidgets/QDialog>
 
-#include "ui/widgets/sexp_tree.h"
+#include "ui/widgets/sexp_tree_view.h"
 
 
 namespace fso::fred::dialogs {
@@ -47,11 +47,13 @@ private slots:
 	void on_voiceFileLineEdit_textChanged(const QString& string);
 	void on_voiceFileBrowseButton_clicked();
 	void on_voiceFilePlayButton_clicked();
-	void on_formulaTreeView_nodeChanged(int newTree);
 
-	void on_successMusicComboBox_currentIndexChanged(int index);
-	void on_averageMusicComboBox_currentIndexChanged(int index);
-	void on_failureMusicComboBox_currentIndexChanged(int index);
+	void on_successMusicWidget_currentIndexChanged(int spooledMusicIdx);
+	void on_averageMusicWidget_currentIndexChanged(int spooledMusicIdx);
+	void on_failureMusicWidget_currentIndexChanged(int spooledMusicIdx);
+	void on_successMusicWidget_playbackStarted();
+	void on_averageMusicWidget_playbackStarted();
+	void on_failureMusicWidget_playbackStarted();
 
 private: // NOLINT(readability-redundant-access-specifiers)
 	std::unique_ptr<Ui::DebriefingDialog> ui;
@@ -61,6 +63,5 @@ private: // NOLINT(readability-redundant-access-specifiers)
 	void initializeUi();
 	void updateUi();
 	void enableDisableControls();
-
 };
 } // namespace fso::fred::dialogs

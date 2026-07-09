@@ -674,14 +674,12 @@ bool model_material::is_batched() const
 	return Batched;
 }
 
-void model_material::set_fog(int r, int g, int b, float _near, float _far)
+void model_material::set_fog(int r, int g, int b)
 {
 	Fog_params.enabled = true;
 	Fog_params.r = r;
 	Fog_params.g = g;
 	Fog_params.b = b;
-	Fog_params.dist_near = _near;
-	Fog_params.dist_far = _far;
 }
 
 void model_material::set_fog()
@@ -736,9 +734,7 @@ uint model_material::get_shader_flags() const
     }
 
 	if (Shadow_casting) {
-		// if we're building the shadow map, we likely only need the flags here and above so bail
-		Shader_flags |= MODEL_SDR_FLAG_SHADOW_MAP;
-
+		// Shadow map generation now uses a dedicated shader (SDR_TYPE_MODEL_SHADOW_MAP)
 		return Shader_flags;
 	}
 

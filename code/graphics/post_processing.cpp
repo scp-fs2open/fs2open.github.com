@@ -162,7 +162,7 @@ bool PostProcessingManager::parse_table()
 
 				// Post_effects index is used for flag checks, so we can't have more than 32
 				if (m_postEffects.size() < 32) {
-					m_postEffects.push_back(eff);
+					m_postEffects.push_back(std::move(eff));
 				} else if (!warned) {
 					mprintf(("WARNING: post_processing.tbl can only have a max of 32 effects! Ignoring extra...\n"));
 					warned = true;

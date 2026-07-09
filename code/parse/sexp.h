@@ -25,6 +25,7 @@ class object;
 class waypoint;
 class p_object;
 struct ship_obj;
+class gamesnd_id;
 
 // bumped to 30 by Goober5000
 #define	OPERATOR_LENGTH	30  // if this ever exceeds TOKEN_LENGTH, let JasonH know!
@@ -653,7 +654,9 @@ enum : int {
 	OP_ROTATING_SUBSYS_SET_TURN_TIME,	// Goober5000
 	OP_PLAYER_USE_AI,	// Goober5000
 	OP_PLAYER_NOT_USE_AI,	// Goober5000
-	
+	OP_SET_PLAYER_TARGET, // LuytenKy
+	OP_CLEAR_PLAYER_TARGET, // LuytenKy
+
 	OP_HUD_DISABLE_EXCEPT_MESSAGES,	// Goober5000
 	OP_FORCE_JUMP,	// Goober5000
 	OP_HUD_SET_TEXT, //WMC
@@ -696,6 +699,7 @@ enum : int {
 	OP_JUMP_NODE_HIDE_JUMPNODE,	// WMC
 	OP_SHIP_GUARDIAN_THRESHOLD,	// Goober5000
 	OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD,	// Goober5000
+	OP_SET_GUARD_RANGE, //MjnMixael
 	OP_SET_SKYBOX_MODEL, // taylor
 	OP_SHIP_CREATE,
 	OP_PROP_CREATE,     // MjnMixael
@@ -896,6 +900,7 @@ enum : int {
 	OP_DESTROY_INSTANTLY_WITH_DEBRIS,	// Asteroth
 	OP_TRIGGER_ANIMATION_NEW,	// Lafiel
 	OP_UPDATE_MOVEABLE,	// Lafiel
+	OP_ADVANCE_MOVEABLE, // Lafiel
 	OP_NAV_SET_COLOR, 	// Goober5000
 	OP_NAV_SET_VISITED_COLOR, 	// Goober5000
 	OP_CONTAINER_ADD_TO_LIST,	// Karajorma/jg18
@@ -1477,6 +1482,7 @@ extern int run_sexp(const char* sexpression, bool run_eval_num = false, bool *is
 extern int stuff_sexp_variable_list();
 extern int eval_sexp(int cur_node, int referenced_node = -1);
 extern int eval_num(int n, bool &is_nan, bool &is_nan_forever);
+extern gamesnd_id sexp_get_sound_index(int node);
 extern bool is_sexp_true(int cur_node, int referenced_node = -1);
 extern bool map_opf_to_opr(sexp_opf_t opf_type, sexp_opr_t &opr_type);
 const char *opr_type_name(sexp_opr_t opr_type);

@@ -23,6 +23,9 @@
 #include "parse/parselo.h"
 #include "ship/ship.h"
 #include "tracing/tracing.h"
+#ifdef USE_OPENGL_ES
+#include "es_compatibility.h"
+#endif
 
 extern bool PostProcessing_override;
 extern int opengl_check_framebuffer();
@@ -627,9 +630,8 @@ void gr_opengl_post_process_end()
 //	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
 	GL_state.Texture.SetTarget(GL_TEXTURE_2D_ARRAY);
 //	GL_state.Texture.Enable(Shadow_map_depth_texture);
-	extern GLuint Shadow_map_texture;
 	extern GLuint Post_shadow_texture_id;
-	GL_state.Texture.Enable(Shadow_map_texture);
+	GL_state.Texture.Enable(Shadow_map_depth_texture);
 	glUniform1iARB( opengl_shader_get_uniform("shadow_map"), 0);
 	glUniform1iARB( opengl_shader_get_uniform("index"), 0);
 	//opengl_draw_textured_quad(-1.0f, -1.0f, 0.0f, 0.0f, -0.5f, -0.5f, Scene_texture_u_scale, Scene_texture_u_scale);
@@ -761,7 +763,7 @@ void gr_opengl_post_process_save_zbuffer()
 	GR_DEBUG_SCOPE("Save z-Buffer");
 	if (Post_initialized)
 	{
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, Cockpit_depth_texture, 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, Cockpit_depth_texture, 0);
 		gr_zbuffer_clear(TRUE);
 		zbuffer_saved = true;
 	}
@@ -777,7 +779,7 @@ void gr_opengl_post_process_restore_zbuffer()
 	GR_DEBUG_SCOPE("Restore z-Buffer");
 
 	if (zbuffer_saved) {
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, Scene_depth_texture, 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, Scene_depth_texture, 0);
 
 		zbuffer_saved = false;
 	}
@@ -820,7 +822,7 @@ static void set_fxaa_defines(SCP_stringstream& sflags)
 		sflags << "#define FXAA_QUALITY_SUBPIX 0.33\n";
 		break;
 	default:
-		UNREACHABLE("Unhandled FXAA mode!");
+		UNREACHABLE("Unhandled FXAA mode %d!", static_cast<int>(Gr_aa_mode));
 	}
 }
 void set_smaa_defines(SCP_stringstream& sflags)
@@ -846,7 +848,7 @@ void set_smaa_defines(SCP_stringstream& sflags)
 		sflags << "#define SMAA_PRESET_ULTRA\n";
 		break;
 	default:
-		UNREACHABLE("Unhandled SMAA mode!");
+		UNREACHABLE("Unhandled SMAA mode %d!", static_cast<int>(Gr_aa_mode));
 	}
 }
 void opengl_post_shader_header(SCP_stringstream& sflags, shader_type shader_t, int flags)
@@ -1111,9 +1113,11 @@ static bool opengl_post_init_framebuffer()
 
 	opengl_setup_bloom_textures();
 
-	if (Gr_aa_mode != AntiAliasMode::None) {
+	// Always set up SMAA resources so the user can switch to an SMAA preset
+	// at runtime even when starting with a non-SMAA AA mode, such as None.
+	//if (Gr_aa_mode != AntiAliasMode::None) {
 		setup_smaa_resources();
-	}
+	//}
 
 	GL_state.BindFrameBuffer(0);
 

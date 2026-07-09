@@ -158,6 +158,11 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_WM_SIZE()
 	ON_WM_MOUSEMOVE()
 	ON_WM_LBUTTONUP()
+	ON_WM_MBUTTONDOWN()
+	ON_WM_MBUTTONUP()
+	ON_WM_RBUTTONDOWN()
+	ON_WM_RBUTTONUP()
+	ON_WM_MOUSEWHEEL()
 	ON_COMMAND(ID_MISCSTUFF_SHOWSHIPSASICONS, OnMiscstuffShowshipsasicons)
 	ON_WM_CONTEXTMENU()
 	ON_COMMAND(ID_EDIT_POPUP_SHOW_SHIP_ICONS, OnEditPopupShowShipIcons)
@@ -171,6 +176,16 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_COMMAND(ID_CHANGE_VIEWPOINT_EXTERNAL, OnChangeViewpointExternal)
 	ON_UPDATE_COMMAND_UI(ID_CHANGE_VIEWPOINT_FOLLOW, OnUpdateChangeViewpointFollow)
 	ON_COMMAND(ID_CHANGE_VIEWPOINT_FOLLOW, OnChangeViewpointFollow)
+	ON_COMMAND(ID_OUTLINE_LOD_0, OnOutlineLod0)
+	ON_UPDATE_COMMAND_UI(ID_OUTLINE_LOD_0, OnUpdateOutlineLod0)
+	ON_COMMAND(ID_OUTLINE_LOD_1, OnOutlineLod1)
+	ON_UPDATE_COMMAND_UI(ID_OUTLINE_LOD_1, OnUpdateOutlineLod1)
+	ON_COMMAND(ID_OUTLINE_LOD_2, OnOutlineLod2)
+	ON_UPDATE_COMMAND_UI(ID_OUTLINE_LOD_2, OnUpdateOutlineLod2)
+	ON_COMMAND(ID_OUTLINE_LOD_3, OnOutlineLod3)
+	ON_UPDATE_COMMAND_UI(ID_OUTLINE_LOD_3, OnUpdateOutlineLod3)
+	ON_COMMAND(ID_OUTLINE_LOD_4, OnOutlineLod4)
+	ON_UPDATE_COMMAND_UI(ID_OUTLINE_LOD_4, OnUpdateOutlineLod4)
 	ON_COMMAND(ID_EDITORS_GOALS, OnEditorsGoals)
 	ON_COMMAND(ID_EDITORS_CUTSCENES, OnEditorsCutscenes)
 	ON_COMMAND(ID_SPEED1, OnSpeed1)
@@ -1038,7 +1053,7 @@ void CFREDView::OnLButtonDown(UINT nFlags, CPoint point)
 	CView::OnLButtonDown(nFlags, point);
 }
 
-void CFREDView::OnMouseMove(UINT nFlags, CPoint point) 
+void CFREDView::OnMouseMove(UINT nFlags, CPoint point)
 {
 	// RT point
 
@@ -1048,6 +1063,26 @@ void CFREDView::OnMouseMove(UINT nFlags, CPoint point)
 	last_mouse_y = marking_box.y2 = point.y;
 	Cursor_over = select_object(point.x, point.y);
 
+	// Orbit camera: middle button drag
+	if (m_orbit_dragging && (nFlags & MK_MBUTTON)) {
+		handle_orbit_drag(point, nFlags);
+		CView::OnMouseMove(nFlags, point);
+		return;
+	}
+
+	// Orbit camera: right button drag
+	if (m_rbutton_down && (nFlags & MK_RBUTTON) && viewpoint == 0 && Control_mode == 0) {
+		if (!m_rbutton_moved) {
+			if (abs(point.x - m_rbutton_down_point.x) > 2 || abs(point.y - m_rbutton_down_point.y) > 2)
+				m_rbutton_moved = true;
+		}
+		if (m_rbutton_moved) {
+			handle_orbit_drag(point, nFlags);
+			CView::OnMouseMove(nFlags, point);
+			return;
+		}
+	}
+
 	if (!(nFlags & MK_LBUTTON))
 		button_down = 0;
 
@@ -1056,7 +1091,7 @@ void CFREDView::OnMouseMove(UINT nFlags, CPoint point)
 	if (button_down && GetCapture() != this)
 		cancel_drag();
 
-	if (!button_down && GetCapture() == this)
+	if (!button_down && !m_orbit_dragging && !m_rbutton_down && GetCapture() == this)
 		ReleaseCapture();
 
 	if (button_down) {
@@ -1089,7 +1124,7 @@ void CFREDView::OnLButtonUp(UINT nFlags, CPoint point)
 	if (button_down && GetCapture() != this)
 		cancel_drag();
 
-	if (GetCapture() == this)
+	if (!m_orbit_dragging && !m_rbutton_down && GetCapture() == this)
 		ReleaseCapture();
 
 	if (button_down) {
@@ -1141,13 +1176,11 @@ void CFREDView::OnLButtonUp(UINT nFlags, CPoint point)
 							break;
 						}
 
-// Can't do player starts, since only player 1 is currently allowed to be in a wing
-
+						// Can't do player starts, since only player 1 is currently allowed to be in a wing
 						Assert(objp->type == OBJ_SHIP);
 						ship = objp->instance;
 						Assert(Ships[ship].wingnum == -1);
-						wing_bash_ship_name(Ships[ship].ship_name, Wings[Duped_wing].name,
-							Wings[Duped_wing].wave_count + 1);
+						wing_bash_ship_name(&Ships[ship], &Wings[Duped_wing], Wings[Duped_wing].wave_count + 1, true);
 
 						Wings[Duped_wing].ship_index[Wings[Duped_wing].wave_count] = ship;
 						Ships[ship].wingnum = Duped_wing;
@@ -1173,6 +1206,94 @@ void CFREDView::OnLButtonUp(UINT nFlags, CPoint point)
 
 	CView::OnLButtonUp(nFlags, point);
 }
+
+// ---------- Orbit camera mouse handlers ----------
+
+void CFREDView::handle_orbit_drag(CPoint point, UINT nFlags)
+{
+	int dx = point.x - m_orbit_last_mouse.x;
+	int dy = point.y - m_orbit_last_mouse.y;
+	m_orbit_last_mouse = point;
+
+	if (nFlags & MK_SHIFT)
+		orbit_camera_pan(dx, dy);
+	else
+		orbit_camera_rotate(dx, dy);
+	Update_window = 1;
+}
+
+void CFREDView::OnMButtonDown(UINT nFlags, CPoint point)
+{
+	if (viewpoint != 0 || Control_mode != 0)
+		return;
+
+	vec3d pivot = orbit_camera_get_pivot();
+	auto grid_orient = The_grid ? &The_grid->gmatrix : nullptr;
+	orbit_camera_init_from_current_view(&pivot, grid_orient);
+
+	m_orbit_dragging = true;
+	m_orbit_last_mouse = point;
+	SetCapture();
+}
+
+void CFREDView::OnMButtonUp(UINT nFlags, CPoint point)
+{
+	if (m_orbit_dragging) {
+		m_orbit_dragging = false;
+		if (GetCapture() == this && !m_rbutton_down)
+			ReleaseCapture();
+	}
+}
+
+void CFREDView::OnRButtonDown(UINT nFlags, CPoint point)
+{
+	m_rbutton_down = true;
+	m_rbutton_moved = false;
+	m_rbutton_down_point = point;
+	m_orbit_last_mouse = point;
+
+	if (viewpoint == 0 && Control_mode == 0) {
+		vec3d pivot = orbit_camera_get_pivot();
+		auto grid_orient = The_grid ? &The_grid->gmatrix : nullptr;
+		orbit_camera_init_from_current_view(&pivot, grid_orient);
+		SetCapture();
+	}
+}
+
+void CFREDView::OnRButtonUp(UINT nFlags, CPoint point)
+{
+	bool was_dragging = m_rbutton_moved;
+	m_rbutton_down = false;
+	m_rbutton_moved = false;
+
+	if (GetCapture() == this && !m_orbit_dragging)
+		ReleaseCapture();
+
+	if (!was_dragging) {
+		// No drag occurred — show context menu as normal
+		CPoint screen_point = point;
+		ClientToScreen(&screen_point);
+		OnContextMenu(this, screen_point);
+	}
+}
+
+BOOL CFREDView::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
+{
+	if (viewpoint != 0 || Control_mode != 0)
+		return CView::OnMouseWheel(nFlags, zDelta, pt);
+
+	if (!Orbit_active) {
+		vec3d pivot = orbit_camera_get_pivot();
+		auto grid_orient = The_grid ? &The_grid->gmatrix : nullptr;
+		orbit_camera_init_from_current_view(&pivot, grid_orient);
+	}
+
+	orbit_camera_zoom(zDelta / -200.0f);
+	Update_window = 1;
+	return TRUE;
+}
+
+// ---------- End orbit camera mouse handlers ----------
 
 //	This function never gets called because nothing causes
 //	the WM_GOODBYE event to occur.
@@ -1671,6 +1792,28 @@ void CFREDView::OnChangeViewpointFollow()
 	view_obj = cur_object_index;
 	Update_window = 1;
 }
+
+void CFREDView::OnOutlineLod(int lod)
+{
+	Outline_lod = lod;
+	Update_window = 1;
+}
+
+void CFREDView::OnUpdateOutlineLod(int lod, CCmdUI* pCmdUI)
+{
+	pCmdUI->SetCheck(Outline_lod == lod);
+}
+
+void CFREDView::OnOutlineLod0() { OnOutlineLod(0); }
+void CFREDView::OnOutlineLod1() { OnOutlineLod(1); }
+void CFREDView::OnOutlineLod2() { OnOutlineLod(2); }
+void CFREDView::OnOutlineLod3() { OnOutlineLod(3); }
+void CFREDView::OnOutlineLod4() { OnOutlineLod(4); }
+void CFREDView::OnUpdateOutlineLod0(CCmdUI* pCmdUI) { OnUpdateOutlineLod(0, pCmdUI); }
+void CFREDView::OnUpdateOutlineLod1(CCmdUI* pCmdUI) { OnUpdateOutlineLod(1, pCmdUI); }
+void CFREDView::OnUpdateOutlineLod2(CCmdUI* pCmdUI) { OnUpdateOutlineLod(2, pCmdUI); }
+void CFREDView::OnUpdateOutlineLod3(CCmdUI* pCmdUI) { OnUpdateOutlineLod(3, pCmdUI); }
+void CFREDView::OnUpdateOutlineLod4(CCmdUI* pCmdUI) { OnUpdateOutlineLod(4, pCmdUI); }
 
 void CFREDView::OnEditorsGoals()
 {
@@ -2475,10 +2618,6 @@ int CFREDView::global_error_check()
 	if ( The_mission.game_type & MISSION_TYPE_MULTI )
 		multi = 1;
 
-//	if (!stricmp(The_mission.name, "Untitled"))
-//		if (error("You haven't given this mission a title yet.\nThis is done from the Mission Specs Editor (Shift-N)."))
-//			return 1;
-
 	// cycle though all the objects and verify every possible aspect of them
 	obj_count = t = 0;
 	ptr = GET_FIRST(&obj_used_list);
@@ -2954,21 +3093,17 @@ int CFREDView::global_error_check()
 		}
 	}
 
-	if (Num_reinforcements > MAX_REINFORCEMENTS){
-		return internal_error("Number of reinforcements exceeds max limit");
-	}
-
-	for (i=0; i<Num_reinforcements; i++) {
+	for (const auto &reinforcement: Reinforcements) {
 		z = 0;
 		for (ship=0; ship<MAX_SHIPS; ship++){
-			if ((Ships[ship].objnum >= 0) && !stricmp(Ships[ship].ship_name, Reinforcements[i].name)) {
+			if ((Ships[ship].objnum >= 0) && !stricmp(Ships[ship].ship_name, reinforcement.name)) {
 				z = 1;
 				break;
 			}
 		}
 
 		for (wing=0; wing<MAX_WINGS; wing++){
-			if (Wings[wing].wave_count && !stricmp(Wings[wing].name, Reinforcements[i].name)) {
+			if (Wings[wing].wave_count && !stricmp(Wings[wing].name, reinforcement.name)) {
 				z = 1;
 				break;
 			}
@@ -4213,9 +4348,14 @@ void CFREDView::OnEditorsBriefing()
 
 void CFREDView::OnEditorsDebriefing() 
 {
-	debriefing_editor_dlg dlg;
+	if (!Debriefing_dialog) {
+		Debriefing_dialog = new debriefing_editor_dlg;
+		Debriefing_dialog->create();
+	}
 
-	dlg.DoModal();
+	Debriefing_dialog->SetWindowPos(&wndTop, 0, 0, 0, 0,
+		SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE);
+	Debriefing_dialog->ShowWindow(SW_RESTORE);
 }
 
 void CFREDView::OnSaveCamera() 
@@ -4908,9 +5048,9 @@ void CFREDView::OnUpdateViewFullDetail(CCmdUI *pCmdUI)
 	pCmdUI->SetCheck(FullDetail);
 }
 
-BOOL CFREDView::DestroyWindow() 
+BOOL CFREDView::DestroyWindow()
 {
-	// TODO: Add your specialized code here and/or call the base class
+	Fred_view_wnd = nullptr;
 	return CView::DestroyWindow();
 }
 

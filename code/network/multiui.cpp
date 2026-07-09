@@ -4793,7 +4793,8 @@ void multi_create_list_set_item(int abs_index, int mode) {
 			ng->max_players = mission_parse_get_multi_mission_info(ng->mission_name);
 
 			Assert(ng->max_players > 0);
-			strcpy_s(ng->title, The_mission.name);
+			strncpy(ng->title, The_mission.name.c_str(), NAME_LENGTH);
+			ng->title[NAME_LENGTH] = '\0';
 
 			// set the information area text
 			Multi_netgame_common_description = The_mission.mission_desc;

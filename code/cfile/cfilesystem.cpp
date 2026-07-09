@@ -532,7 +532,7 @@ void cf_build_pack_list( cf_root *root )
 			s_root.roottype = CF_ROOTTYPE_PACK;
 			s_root.cf_type = i;
 
-			temp_roots_sort.push_back(s_root);
+			temp_roots_sort.push_back(std::move(s_root));
 		}
 	}
 
@@ -1083,7 +1083,7 @@ void cf_search_root_pack(int root_index)
 						file.pathtype = path_type;
 						file.offset = find.offset;
 
-						files.push_back(file);
+						files.push_back(std::move(file));
 
 						//mprintf(( "Found pack file '%s'\n", find.filename ));
 					}
@@ -1356,7 +1356,7 @@ CFileLocation cf_find_file_location(const char* filespec, int pathtype, uint32_t
 				fclose(fp);
 
 				res.offset = 0;
-				res.full_name = longname;
+				res.full_name = std::move(longname);
 				res.name_ext = filespec;
 
 				return res;
@@ -1549,8 +1549,8 @@ CFileLocationExt cf_find_file_location_ext(const char *filename, const int ext_n
 				fclose(fp);
 
 				res.offset = 0;
-				res.full_name = longname;
-				res.name_ext = filespec_ext;
+				res.full_name = std::move(longname);
+				res.name_ext = std::move(filespec_ext);
 
 				return res;
 			}
@@ -2437,7 +2437,9 @@ int cf_create_default_path_string(SCP_string& path, int pathtype, const char* fi
 		}
 
 		if (!root) {
-			Assert( filename != NULL );
+			if (filename == nullptr) {
+				return 0;
+			}
 			path.assign(filename);
 			return 1;
 		}

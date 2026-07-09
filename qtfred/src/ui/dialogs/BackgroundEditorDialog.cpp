@@ -1,12 +1,12 @@
 #include "BackgroundEditorDialog.h"
 #include <QCloseEvent>
+#include "ui/util/default_dir.h"
 #include "ui/util/SignalBlockers.h"
 #include "ui/dialogs/General/ImagePickerDialog.h"
 #include "ui_BackgroundEditor.h"
 
 #include <globalincs/globals.h>
 #include <QMessageBox>
-#include <QSettings>
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QInputDialog>
@@ -32,7 +32,7 @@ BackgroundEditorDialog::~BackgroundEditorDialog() = default;
 
 void BackgroundEditorDialog::closeEvent(QCloseEvent* e)
 {
-	_viewport->editor->autosave("background editor");
+	_model->finalizeFogChanges();
 	QDialog::closeEvent(e);
 }
 
@@ -272,8 +272,10 @@ void BackgroundEditorDialog::updateNebulaControls()
 	ui->nebulaLightningCombo->setEnabled(enabled);
 	ui->poofsListWidget->setEnabled(enabled);
 	ui->shipTrailsCheckBox->setEnabled(enabled);
-	ui->fogNearDoubleSpinBox->setEnabled(enabled);
-	ui->fogFarDoubleSpinBox->setEnabled(enabled);
+	ui->fog1000mVisDoubleSpinBox->setEnabled(enabled);
+	ui->fogNearDistanceDoubleSpinBox->setEnabled(enabled);
+	ui->fogSkyboxClipDoubleSpinBox->setEnabled(enabled);
+	ui->fogClipDoubleSpinBox->setEnabled(enabled);
 	ui->displayBgsInNebulaCheckbox->setEnabled(enabled);
 	ui->overrideFogPaletteCheckBox->setEnabled(enabled);
 
@@ -296,8 +298,10 @@ void BackgroundEditorDialog::updateNebulaControls()
 	}
 
 	ui->shipTrailsCheckBox->setChecked(_model->getShipTrailsToggled());
-	ui->fogNearDoubleSpinBox->setValue(static_cast<double>(_model->getFogNearMultiplier()));
-	ui->fogFarDoubleSpinBox->setValue(static_cast<double>(_model->getFogFarMultiplier()));
+	ui->fog1000mVisDoubleSpinBox->setValue(static_cast<double>(_model->getFog1000mVisibility()));
+	ui->fogNearDistanceDoubleSpinBox->setValue(static_cast<double>(_model->getFogNearDistance()));
+	ui->fogSkyboxClipDoubleSpinBox->setValue(static_cast<double>(_model->getFogSkyboxClipDistance()));
+	ui->fogClipDoubleSpinBox->setValue(static_cast<double>(_model->getFogClipDistance()));
 	ui->displayBgsInNebulaCheckbox->setChecked(_model->getDisplayBackgroundBitmaps());
 	ui->overrideFogPaletteCheckBox->setChecked(override);
 	ui->fogOverrideRedSpinBox->setValue(_model->getFogR());
@@ -451,9 +455,12 @@ void BackgroundEditorDialog::on_removeButton_clicked()
 
 void BackgroundEditorDialog::on_importButton_clicked()
 {
-	const QString file = QFileDialog::getOpenFileName(this, "Import Backgrounds from File", QString(), "Freespace 2 Mission Files (*.fs2);;All Files (*)");
+	const QString importLastDir = util::getLastDir("background/importBackgrounds", CF_TYPE_MISSIONS);
+
+	const QString file = QFileDialog::getOpenFileName(this, "Import Backgrounds from File", importLastDir, "Freespace 2 Mission Files (*.fs2);;All Files (*)");
 	if (file.isEmpty())
 		return;
+	util::saveLastDir("background/importBackgrounds", file);
 	int count = _model->getImportableBackgroundCount(file.toUtf8().constData());
 
 	if (count <= 0) {
@@ -740,14 +747,24 @@ void BackgroundEditorDialog::on_shipTrailsCheckBox_toggled(bool checked)
 	_model->setShipTrailsToggled(checked);
 }
 
-void BackgroundEditorDialog::on_fogNearDoubleSpinBox_valueChanged(double arg1)
+void BackgroundEditorDialog::on_fog1000mVisDoubleSpinBox_valueChanged(double arg1)
 {
-	_model->setFogNearMultiplier(static_cast<float>(arg1));
+	_model->setFog1000mVisibility(static_cast<float>(arg1));
 }
 
-void BackgroundEditorDialog::on_fogFarDoubleSpinBox_valueChanged(double arg1)
+void BackgroundEditorDialog::on_fogNearDistanceDoubleSpinBox_valueChanged(double arg1)
 {
-	_model->setFogFarMultiplier(static_cast<float>(arg1));
+	_model->setFogNearDistance(static_cast<float>(arg1));
+}
+
+void BackgroundEditorDialog::on_fogSkyboxClipDoubleSpinBox_valueChanged(double arg1)
+{
+	_model->setFogSkyboxClipDistance(static_cast<float>(arg1));
+}
+
+void BackgroundEditorDialog::on_fogClipDoubleSpinBox_valueChanged(double arg1)
+{
+	_model->setFogClipDistance(static_cast<float>(arg1));
 }
 
 void BackgroundEditorDialog::on_displayBgsInNebulaCheckbox_toggled(bool checked)
@@ -852,19 +869,15 @@ void BackgroundEditorDialog::updateAmbientSwatch()
 
 void BackgroundEditorDialog::on_skyboxModelButton_clicked()
 {
-	QSettings settings("QtFRED", "BackgroundEditor");
-	const QString lastDir = settings.value("skybox/lastDir", QDir::homePath()).toString();
+	const QString lastDir = util::getLastDir("background/skyboxModel", CF_TYPE_MODELS);
 
 	const QString path =
 		QFileDialog::getOpenFileName(this, tr("Select Skybox Model"), lastDir, tr("FS2 Models (*.pof);;All Files (*)"));
 	if (path.isEmpty())
 		return;
 
-	const QFileInfo fi(path);
-	settings.setValue("skybox/lastDir", fi.absolutePath());
-
-	const QString baseName = fi.completeBaseName();
-	_model->setSkyboxModelName(baseName.toUtf8().constData());
+	util::saveLastDir("background/skyboxModel", path);
+	_model->setSkyboxModelName(QFileInfo(path).completeBaseName().toUtf8().constData());
 
 	updateSkyboxControls();
 }
@@ -920,7 +933,7 @@ void BackgroundEditorDialog::on_noCullCheckBox_toggled(bool checked)
 	_model->setSkyboxNoCull(checked);
 }
 
-void BackgroundEditorDialog::on_noGlowmapsCheckBox_toggled(bool checked)
+void BackgroundEditorDialog::on_noGlowMapsCheckBox_toggled(bool checked)
 {
 	_model->setSkyboxNoGlowmaps(checked);
 }
@@ -940,18 +953,15 @@ void BackgroundEditorDialog::on_subspaceCheckBox_toggled(bool checked)
 
 void BackgroundEditorDialog::on_envMapButton_clicked()
 {
-	QSettings settings("QtFRED", "BackgroundEditor");
-	const QString lastDir = settings.value("envmap/lastDir", QDir::homePath()).toString();
+	const QString lastDir = util::getLastDir("background/envMap", CF_TYPE_MAPS);
 	const QString path = QFileDialog::getOpenFileName(this,
 		tr("Select Environment Map"),
 		lastDir,
 		tr("Environment Maps (*.dds);;All Files (*)"));
 	if (path.isEmpty())
 		return;
-	const QFileInfo fi(path);
-	settings.setValue("envmap/lastDir", fi.absolutePath());
-	const QString baseName = fi.completeBaseName();
-	_model->setEnvironmentMapName(baseName.toUtf8().constData());
+	util::saveLastDir("background/envMap", path);
+	_model->setEnvironmentMapName(QFileInfo(path).completeBaseName().toUtf8().constData());
 	updateMiscControls();
 }
 

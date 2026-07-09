@@ -111,7 +111,7 @@ ADE_VIRTVAR(Category, l_Option, nullptr, "The category of this option. (read-onl
 	return ade_set_args(L, "s", opt->get()->getCategory().c_str());
 }
 ADE_VIRTVAR(Type, l_Option, nullptr, "The type of this option. One of the OPTION_TYPE_* values. (read-only)",
-            "enumeration", "The enum or nil on error")
+            "enumeration", "An OPTION_TYPE_* enumeration, or nil on error")
 {
 	option_h* opt;
 	if (!ade_get_args(L, "o", l_Option.GetPtr(&opt))) {

@@ -49,8 +49,6 @@ extern "C" {
 static char THIS_FILE[] = __FILE__;
 #endif
 
-#define MAX_PENDING_MESSAGES 16
-
 /**
 * @brief Our flavor of the About dialog
 *
@@ -92,20 +90,10 @@ protected:
 	DECLARE_MESSAGE_MAP()
 };
 
-typedef struct
-{
-	int frame_to_process;
-	HWND hwnd;
-	int id;
-	WPARAM wparam;
-	LPARAM lparam;
-} pending_message;
-
-pending_message Pending_messages[MAX_PENDING_MESSAGES];
-
 CFREDApp theApp;
 
 int Fred_running = 1;
+int Qtfred_running = 0;
 int FrameCount = 0;
 bool Fred_active = true;
 int Update_window = 1;
@@ -121,8 +109,9 @@ wing_editor          Wing_editor_dialog;
 waypoint_path_dlg    Waypoint_editor_dialog;
 jumpnode_dlg         Jumpnode_editor_dialog;
 music_player_dlg	 Music_player_dialog;
-bg_bitmap_dlg*       Bg_bitmap_dialog = NULL;
-briefing_editor_dlg* Briefing_dialog = NULL;
+bg_bitmap_dlg*       Bg_bitmap_dialog = nullptr;
+briefing_editor_dlg*   Briefing_dialog   = nullptr;
+debriefing_editor_dlg* Debriefing_dialog = nullptr;
 
 window_data Main_wnd_data;
 window_data Ship_wnd_data;
@@ -136,6 +125,7 @@ window_data Player_wnd_data;
 window_data Events_wnd_data;
 window_data Bg_wnd_data;
 window_data Briefing_wnd_data;
+window_data Debriefing_wnd_data;
 window_data Reinforcement_wnd_data;
 window_data Waypoint_wnd_data;
 window_data Jumpnode_wnd_data;
@@ -163,8 +153,6 @@ char *control_mode_text[] = {
 };
 
 
-// Process messages that needed to wait until a frame had gone by.
-void process_pending_messages(void);
 void show_control_mode(void);
 
 
@@ -246,6 +234,7 @@ BOOL CFREDApp::InitInstance() {
 	Draw_outlines_on_selected_ships = GetProfileInt("Preferences", "Draw outlines on selected ships", 1) != 0;
 	Point_using_uvec = GetProfileInt("Preferences", "Point using uvec", Point_using_uvec);
 	Draw_outline_at_warpin_position = GetProfileInt("Preferences", "Draw outline at warpin position", 0) != 0;
+	Outline_lod = GetProfileInt("Preferences", "Outline LOD", 1);
 	Always_save_display_names = GetProfileInt("Preferences", "Always save display names", 0) != 0;
 	Error_checker_checks_potential_issues = GetProfileInt("Preferences", "Error checker checks potential issues", 1) != 0;
 
@@ -472,8 +461,6 @@ BOOL CFREDApp::OnIdle(LONG lCount) {
 		Update_window--;
 	}
 
-	process_pending_messages();
-
 	FrameCount++;
 	return TRUE;
 }
@@ -546,6 +533,7 @@ void CFREDApp::write_ini_file(int degree) {
 	WriteProfileInt("Preferences", "Draw outlines on selected ships", Draw_outlines_on_selected_ships ? 1 : 0);
 	WriteProfileInt("Preferences", "Point using uvec", Point_using_uvec);
 	WriteProfileInt("Preferences", "Draw outline at warpin position", Draw_outline_at_warpin_position ? 1 : 0);
+	WriteProfileInt("Preferences", "Outline LOD", Outline_lod);
 	WriteProfileInt("Preferences", "Always save display names", Always_save_display_names ? 1 : 0);
 	WriteProfileInt("Preferences", "Error checker checks potential issues", Error_checker_checks_potential_issues ? 1 : 0);
 
@@ -596,39 +584,6 @@ void CFREDApp::write_window(char *name, window_data *wndd) {
 	WriteProfileInt(name, "rcNormalPosition.right", wndd->p.rcNormalPosition.right);
 	WriteProfileInt(name, "rcNormalPosition.bottom", wndd->p.rcNormalPosition.bottom);
 	WriteProfileInt(name, "Visible", wndd->visible);
-}
-
-void add_pending_message(HWND hwnd, int id, WPARAM wparam, LPARAM lparam, int skip_count) {
-	// Add a message to be processed to a buffer.
-	// Wait skip_count frames before processing.
-	for (int i = 0; i < MAX_PENDING_MESSAGES; i++) {
-		if (Pending_messages[i].frame_to_process == -1) {
-			Pending_messages[i].hwnd = hwnd;
-			Pending_messages[i].id = id;
-			Pending_messages[i].wparam = wparam;
-			Pending_messages[i].lparam = lparam;
-			Pending_messages[i].frame_to_process = FrameCount + skip_count;
-		}
-	}
-}
-
-void init_pending_messages(void) {
-	int	i;
-
-	for (i = 0; i < MAX_PENDING_MESSAGES; i++)
-		Pending_messages[i].frame_to_process = -1;
-}
-
-void process_pending_messages(void) {
-	int	i;
-
-	for (i = 0; i < MAX_PENDING_MESSAGES; i++)
-		if (Pending_messages[i].frame_to_process != -1)
-			if (Pending_messages[i].frame_to_process <= FrameCount) {
-				pending_message	*pmp = &Pending_messages[i];
-				PostMessage(pmp->hwnd, pmp->id, pmp->wparam, pmp->lparam);
-				Pending_messages[i].frame_to_process = -1;
-			}
 }
 
 void show_control_mode(void) {
@@ -708,7 +663,6 @@ void update_map_window() {
 		Update_window--;
 
 	show_control_mode();
-	process_pending_messages();
 
 	FrameCount++;
 }

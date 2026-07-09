@@ -2,70 +2,54 @@
 
 #include "ui_CheckBoxListDialog.h"
 
-#include <QCheckBox>
-#include <QScrollArea>
-#include <QVBoxLayout>
-
 namespace fso::fred::dialogs {
 
 CheckBoxListDialog::CheckBoxListDialog(QWidget* parent) : QDialog(parent), ui(new Ui::CheckBoxListDialog)
 {
 	ui->setupUi(this);
-
-	// Allow resizing
-	this->setSizeGripEnabled(true);
-
-	// clear placeholder layout contents if any
-	if (ui->checkboxContainer->layout()) {
-		QLayoutItem* item;
-		while ((item = ui->checkboxContainer->layout()->takeAt(0)) != nullptr) {
-			delete item->widget();
-			delete item;
-		}
-		delete ui->checkboxContainer->layout();
-	}
-
-	// Set a fresh layout
-	auto* layout = new QVBoxLayout(ui->checkboxContainer);
-	layout->setContentsMargins(0, 0, 0, 0);
-	layout->setSpacing(4);
+	setSizeGripEnabled(true);
 }
 
 void CheckBoxListDialog::setCaption(const QString& text)
 {
-	this->setWindowTitle(text);
+	setWindowTitle(text);
 }
 
 void CheckBoxListDialog::setOptions(const QVector<std::pair<QString, bool>>& options)
 {
-	// Clear previous checkboxes
-	for (auto* cb : _checkboxes) {
-		cb->deleteLater();
-	}
-	_checkboxes.clear();
+	QVector<std::pair<QString, int>> intOptions;
+	intOptions.reserve(options.size());
+	for (const auto& [name, checked] : options)
+		intOptions.append({name, checked ? Qt::Checked : Qt::Unchecked});
+	ui->flagList->setFlags(intOptions);
+}
 
-	auto* layout = qobject_cast<QVBoxLayout*>(ui->checkboxContainer->layout());
-	if (!layout) {
-		return;
-	}
+void CheckBoxListDialog::setOptions(const QVector<std::pair<QString, int>>& options)
+{
+	ui->flagList->setFlags(options);
+}
 
-	for (const auto& [label, checked] : options) {
-		auto* cb = new QCheckBox(label, this);
-		cb->setChecked(checked);
-		layout->addWidget(cb);
-		_checkboxes.append(cb);
-	}
-	// Add spacer to push items to top
-	layout->addStretch();
+void CheckBoxListDialog::setOptionDescriptions(const QVector<std::pair<QString, QString>>& descriptions)
+{
+	ui->flagList->setFlagDescriptions(descriptions);
+}
+
+void CheckBoxListDialog::setTristate(bool tristate)
+{
+	ui->flagList->setTristate(tristate);
 }
 
 QVector<bool> CheckBoxListDialog::getCheckedStates() const
 {
 	QVector<bool> states;
-	for (auto* cb : _checkboxes) {
-		states.append(cb->isChecked());
-	}
+	for (const auto& [name, state] : ui->flagList->getFlags())
+		states.append(state == Qt::Checked);
 	return states;
+}
+
+QVector<std::pair<QString, int>> CheckBoxListDialog::getFlags() const
+{
+	return ui->flagList->getFlags();
 }
 
 } // namespace fso::fred::dialogs

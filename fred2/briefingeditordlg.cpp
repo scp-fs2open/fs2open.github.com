@@ -83,10 +83,11 @@ briefing_editor_dlg::briefing_editor_dlg(CWnd* pParent /*=NULL*/)
 	m_use_wing = FALSE;
 	m_use_cargo = FALSE;
 	//}}AFX_DATA_INIT
+	m_play_icon = nullptr;
 	m_voice_id = -1;
 	m_cur_stage = 0;
 	m_last_stage = m_cur_icon = m_last_icon = -1;
-	m_tree.link_modified(&modified);  // provide way to indicate trees are modified in dialog
+	m_tree._model.modified = &modified;  // provide way to indicate trees are modified in dialog
 
 	// copy view initialization
 	m_copy_view_set = 0;
@@ -237,8 +238,8 @@ void briefing_editor_dlg::create()
 	for (auto &sm: Spooled_music)
 		box->AddString(sm.name);
 
-	m_play_bm.LoadBitmap(IDB_PLAY);
-	((CButton *) GetDlgItem(IDC_PLAY)) -> SetBitmap(m_play_bm);
+	m_play_icon = load_button_icon(IDB_PLAY, RGB(192, 192, 192));
+	((CButton *) GetDlgItem(IDC_PLAY)) -> SetIcon(m_play_icon);
 
 	m_current_briefing = 0;
 	Briefing = &Briefings[m_current_briefing];
@@ -253,19 +254,23 @@ void briefing_editor_dlg::create()
 
 void briefing_editor_dlg::focus_sexp(int select_sexp_node)
 {
-	int i, n;
+	int i, t, n;
 
 	n = m_tree.select_sexp_node = select_sexp_node;
-	if (n != -1) {
-		for (i=0; i<Briefing->num_stages; i++)
-			if (query_node_in_sexp(n, Briefing->stages[i].formula))
-				break;
+	if (n == -1)
+		return;
 
-		if (i < Briefing->num_stages) {
-			m_cur_stage = i;
-			update_data();
-			GetDlgItem(IDC_TREE) -> SetFocus();
-			m_tree.hilite_item(m_tree.select_sexp_node);
+	for (t = 0; t < Num_teams; t++) {
+		for (i = 0; i < Briefings[t].num_stages; i++) {
+			if (query_node_in_sexp(n, Briefings[t].stages[i].formula)) {
+				m_current_briefing = t;
+				Briefing = &Briefings[t];
+				m_cur_stage = i;
+				update_data();
+				GetDlgItem(IDC_TREE)->SetFocus();
+				m_tree.hilite_item(m_tree.select_sexp_node);
+				return;
+			}
 		}
 	}
 }
@@ -307,7 +312,7 @@ void briefing_editor_dlg::OnClose()
 
 	theApp.record_window_data(&Briefing_wnd_data, this);
 	ptr = Briefing_dialog;	// this juggling prevents a crash in certain situations
-	Briefing_dialog = NULL;
+	Briefing_dialog = nullptr;
 	delete ptr;
 
 	FREDDoc_ptr->autosave("briefing editor");
@@ -379,7 +384,7 @@ void briefing_editor_dlg::update_data(int update)
 			ptr->draw_grid = true;
 
 		MODIFY(ptr->flags, i);
-		ptr->formula = m_tree.save_tree();
+		ptr->formula = m_tree._model.save_tree();
 		switch (m_lines.GetCheck()) {
 			case 1:
 				// add lines between every pair of 2 marked icons if there isn't one already.
@@ -1193,7 +1198,7 @@ void briefing_editor_dlg::OnDeleteIcon()
 
 void briefing_editor_dlg::delete_icon(int num)
 {
-	int i, z;
+	int i, l, z;
 
 	if (num < 0)
 		num = m_cur_icon;
@@ -1212,6 +1217,24 @@ void briefing_editor_dlg::delete_icon(int num)
 	m_cur_icon = -1;
 	update_data(1);
 	obj_delete(icon_obj[num]);
+
+	// remove any lines that reference the icon being deleted
+	i = Briefing->stages[m_cur_stage].num_lines;
+	while (i--)
+		if ((Briefing->stages[m_cur_stage].lines[i].start_icon == num) || (Briefing->stages[m_cur_stage].lines[i].end_icon == num)) {
+			Briefing->stages[m_cur_stage].num_lines--;
+			for (l=i; l<Briefing->stages[m_cur_stage].num_lines; l++)
+				Briefing->stages[m_cur_stage].lines[l] = Briefing->stages[m_cur_stage].lines[l+1];
+		}
+
+	// fix the indexes of lines that reference the icons being shifted down
+	for (i=0; i<Briefing->stages[m_cur_stage].num_lines; i++) {
+		if (Briefing->stages[m_cur_stage].lines[i].start_icon > num)
+			Briefing->stages[m_cur_stage].lines[i].start_icon--;
+		if (Briefing->stages[m_cur_stage].lines[i].end_icon > num)
+			Briefing->stages[m_cur_stage].lines[i].end_icon--;
+	}
+
 	for (i=num+1; i<Briefing->stages[m_cur_stage].num_icons; i++) {
 		Briefing->stages[m_cur_stage].icons[i-1] = Briefing->stages[m_cur_stage].icons[i];
 		icon_obj[i-1] = icon_obj[i];
@@ -1404,9 +1427,10 @@ void briefing_editor_dlg::OnEndlabeleditTree(NMHDR* pNMHDR, LRESULT* pResult)
 	*pResult = m_tree.end_label_edit(pTVDispInfo->item);
 }
 
-BOOL briefing_editor_dlg::DestroyWindow() 
+BOOL briefing_editor_dlg::DestroyWindow()
 {
-	m_play_bm.DeleteObject();
+	Briefing_dialog = nullptr;
+	if (m_play_icon) DestroyIcon(m_play_icon);
 	audiostream_close_file(m_voice_id, 0);
 	return CDialog::DestroyWindow();
 }

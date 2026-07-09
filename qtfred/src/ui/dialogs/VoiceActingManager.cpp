@@ -4,6 +4,10 @@
 
 #include "missioneditor/common.h"
 
+#include <ui/util/default_dir.h>
+
+#include <QDir>
+#include <QFileInfo>
 #include <QMessageBox>
 #include <QFileDialog>
 
@@ -153,7 +157,7 @@ int VoiceActingManager::exportSelectionToIndex(ExportSelection sel)
 	case ExportSelection::Messages:
 		return 4;
 	default:
-		Assertion(false, "Invalid export selection!");
+		UNREACHABLE("Invalid export selection %d!", static_cast<int>(sel));
 		return 0;
 	}
 }
@@ -166,7 +170,7 @@ int VoiceActingManager::suffixToIndex(Suffix s)
 		case Suffix::OGG:
 			return 1;
 		default:
-			Assertion(false, "Invalid file type selected!");
+			UNREACHABLE("Invalid file type %d selected!", static_cast<int>(s));
 			return 0;
 	}
 }
@@ -179,7 +183,7 @@ Suffix VoiceActingManager::indexToSuffix(int idx)
 		case 1:
 			return Suffix::OGG;
 		default:
-			Assertion(false, "Invalid file type selected!");
+			UNREACHABLE("Invalid file type %d selected", idx);
 			return Suffix::WAV;
 	}
 }
@@ -293,12 +297,16 @@ void VoiceActingManager::on_generateFilenamesButton_clicked()
 }
 void VoiceActingManager::on_generateScriptButton_clicked()
 {
+	const QString lastDir = util::getLastDir("voiceActingManager/exportScript", QDir::homePath());
+
 	const QString path = QFileDialog::getSaveFileName(this,
 		tr("Export Voice Script"),
-		QString(),
+		lastDir,
 		tr("Text files (*.txt);;All files (*)"));
 	if (path.isEmpty())
 		return;
+
+	util::saveLastDir("voiceActingManager/exportScript", path);
 
 	const bool ok = _model->generateScript(path.toUtf8().constData());
 	if (ok) {

@@ -43,7 +43,6 @@ endif()
 
 if (USE_STATIC_LIBCXX)
 	set(CXX_BASE_FLAGS "${CXX_BASE_FLAGS} -static-libstdc++ -Qunused-arguments")
-	set(CLANG_USE_LIBCXX ON)
 endif()
 
 # For C and C++, the values can be overwritten independently

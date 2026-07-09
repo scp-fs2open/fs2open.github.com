@@ -1208,7 +1208,9 @@ void collide_mp_worker_thread(size_t threadIdx) {
 						check_collision = collide_ship_ship_check;
 						break;
 					default:
-						UNREACHABLE("Got non MP-compatible collision type!");
+						UNREACHABLE("Got non MP-compatible collision type %d!", collision_check.ctype);
+						thread.queue_length.fetch_sub(1, std::memory_order_release); // keep the counter balanced
+						continue;                                                    // skip the bad pair
 				}
 
 				auto&& [never_check_again, collision_data_maybe, collision_fnc] = check_collision(&collision_check.objs);

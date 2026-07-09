@@ -5,7 +5,7 @@
 #include <QDialog>
 #include <QListWidget>
 
-#include "ui/widgets/sexp_tree.h"
+#include "ui/widgets/sexp_tree_view.h"
 
 #include <mission/missiongoals.h>
 #include <mission/missionmessage.h>
@@ -31,7 +31,8 @@ class MissionEventsDialog: public QDialog, public SexpTreeEditorInterface {
 	void reject() override;
 
 	SCP_vector<SCP_string> getMessages() override;
-	bool hasDefaultMessageParamter() override;
+	bool hasDefaultMessageParameter() override;
+	int getRootReturnType() const override;
 
   protected:
 	void closeEvent(QCloseEvent* event) override;
@@ -51,6 +52,7 @@ private slots:
 	void on_intervalTimeBox_valueChanged(int value);
 	void on_chainedCheckBox_stateChanged(int state);
 	void on_chainedDelayBox_valueChanged(int value);
+	void on_useMsecsCheckBox_stateChanged(int state);
 	void on_scoreBox_valueChanged(int value);
 	void on_teamCombo_currentIndexChanged(int index);
 	
@@ -93,7 +95,6 @@ private slots:
 private: // NOLINT(readability-redundant-access-specifiers)
 	std::unique_ptr<Ui::MissionEventsDialog> ui;
 	EditorViewport* _viewport;
-	std::unique_ptr<IEventTreeOps> _treeOps;
 	std::unique_ptr<MissionEventsDialogModel> _model;
 
 	int m_last_message_node = -1;
@@ -122,7 +123,7 @@ private: // NOLINT(readability-redundant-access-specifiers)
 	void initEventWidgets();
 	void updateEventBitmap();
 
-	static SCP_vector<int> read_root_formula_order(sexp_tree* tree);
+	static SCP_vector<int> read_root_formula_order(sexp_tree_view* tree);
 };
 
 } // namespace fso::fred::dialogs

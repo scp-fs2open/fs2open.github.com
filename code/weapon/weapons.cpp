@@ -25,6 +25,7 @@
 #include "hud/hud.h"
 #include "hud/hudartillery.h"
 #include "iff_defs/iff_defs.h"
+#include "species_defs/species_defs.h"
 #include "io/joy_ff.h"
 #include "io/timer.h"
 #include "math/curve.h"
@@ -43,6 +44,7 @@
 #include "parse/parsehi.h"
 #include "parse/parselo.h"
 #include "scripting/global_hooks.h"
+#include "scripting/api/objs/vecmath.h"
 #include "particle/particle.h"
 #include "playerman/player.h"
 #include "radar/radar.h"
@@ -83,6 +85,11 @@ typedef struct delayed_ssm_index_data {
 } delayed_ssm_index_data;
 SCP_unordered_map<SCP_string, delayed_ssm_index_data> Delayed_SSM_indices_data;
 SCP_vector<SCP_string> Delayed_SSM_indices;
+
+// Temporary storage for proximity type/class names pending resolution after ship_init().
+// Keyed by weapon_info_index (not name) so a duplicate-named entry can't clobber another's pending list.
+static SCP_unordered_map<int, SCP_vector<SCP_string>> Pending_proximity_type_names;
+static SCP_unordered_map<int, SCP_vector<SCP_string>> Pending_proximity_class_names;
 
 
 #ifndef NDEBUG
@@ -260,6 +267,7 @@ special_flag_def_list_new<Weapon::Info_Flags, weapon_info*, flagset<Weapon::Info
 		}
 	}}, //special case
 	{"dogfight variant",                Weapon::Info_Flags::Dogfight_weapon,                    true},
+	{"mine",                            Weapon::Info_Flags::Mine,                               true},
 };
 
 const size_t num_weapon_info_flags = sizeof(Weapon_Info_Flags) / sizeof(special_flag_def_list_new<Weapon::Info_Flags, weapon_info*, flagset<Weapon::Info_Flags>&>);
@@ -691,7 +699,11 @@ static particle::ParticleEffectHandle convertLegacyPspewBuffer(const pspew_legac
 
 			auto vel_vol_temp = std::make_unique<particle::PointVolume>();
 			vel_vol_temp->posOffset = vec3d {{{pspew_buffer.particle_spew_scale, 0.f, 0.f}}};
-			vel_vol_temp->m_modular_curves.add_curve("Time Running", particle::PointVolume::VolumeModularCurveOutput::OFFSET_ROT, modular_curves_entry{curve_id, ::util::UniformFloatRange(1.f), ::util::UniformFloatRange(0.f, 1.f / pspew_buffer.particle_spew_rotation_rate), true});
+			float rot_rnd_min = 0.f;
+			float rot_rnd_max = 1.0f / pspew_buffer.particle_spew_rotation_rate;
+			if (rot_rnd_max < rot_rnd_min)
+				std::swap(rot_rnd_min, rot_rnd_max);
+			vel_vol_temp->m_modular_curves.add_curve("Time Running", particle::PointVolume::VolumeModularCurveOutput::OFFSET_ROT, modular_curves_entry{curve_id, ::util::UniformFloatRange(1.f), ::util::UniformFloatRange(rot_rnd_min, rot_rnd_max), true});
 			velocity_vol = std::move(vel_vol_temp);
 		}
 			break;
@@ -735,7 +747,7 @@ static particle::ParticleEffectHandle convertLegacyPspewBuffer(const pspew_legac
 			absolutePositionVelocityInherit = true;
 			break;
 		default:
-			UNREACHABLE("Invalid PSPEW legacy type!");
+			UNREACHABLE("Invalid PSPEW legacy type %d!", pspew_buffer.particle_spew_type);
 	}
 
 	return particle::ParticleManager::get()->addEffect(particle::ParticleEffect(
@@ -982,6 +994,24 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 		if (optional_string("+Closeup_zoom:")) {
 			stuff_float(&wip->closeup_zoom);
+		}
+	}
+
+	if (optional_string("+Icon_closeup_pos:")) {
+		vec3d icon_pos;
+		stuff_vec3d(&icon_pos);
+		wip->icon_closeup_pos = icon_pos;
+	}
+
+	if (optional_string("+Icon_closeup_zoom:")) {
+		float icon_zoom;
+		stuff_float(&icon_zoom);
+
+		if (icon_zoom <= 0.0f) {
+			mprintf(("Warning!  Weapon '%s' has a +Icon_closeup_zoom value that is less than or equal to 0 (%f). Ignoring value.\n", wip->name, icon_zoom));
+			wip->icon_closeup_zoom = std::nullopt;
+		} else {
+			wip->icon_closeup_zoom = icon_zoom;
 		}
 	}
 
@@ -1330,6 +1360,148 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 	if(optional_string("$Detonation Radius:")) {
 		stuff_float(&wip->det_radius);
+	}
+
+	// Generic proximity detonation. Any weapon (mine, flak, missile, etc.) can opt in by setting
+	// $Proximity Radius:. The mine-specific behavior (chase, sensors range, etc.) lives in $MineInfo:.
+	if (optional_string("$Proximity Radius:")) {
+		stuff_float(&wip->proximity_radius);
+		if (wip->proximity_radius <= 0.0f) {
+			wip->proximity_radius = 1.0f;
+			error_display(0, "Weapon '%s': $Proximity Radius must be positive. Setting to 1.\n", wip->name);
+		}
+
+		if (optional_string("+Proximity IFF:")) {
+			// Replace (not append) on a modular override, matching the Type/Class lists below.
+			wip->proximity_iff.clear();
+			SCP_vector<SCP_string> iff_names;
+			stuff_string_list(iff_names);
+			for (const SCP_string& iff_name : iff_names) {
+				int iff_idx = iff_lookup(iff_name.c_str());
+				if (iff_idx < 0)
+					error_display(0, "Weapon '%s': +Proximity IFF entry '%s' not found.\n", wip->name, iff_name.c_str());
+				else
+					wip->proximity_iff.push_back(iff_idx);
+			}
+		}
+
+		if (optional_string("+Proximity Species:")) {
+			wip->proximity_species.clear();
+			SCP_vector<SCP_string> species_names;
+			stuff_string_list(species_names);
+			for (const SCP_string& species_name : species_names) {
+				int species_idx = species_info_lookup(species_name.c_str());
+				if (species_idx < 0)
+					error_display(0, "Weapon '%s': +Proximity Species entry '%s' not found.\n", wip->name, species_name.c_str());
+				else
+					wip->proximity_species.push_back(species_idx);
+			}
+		}
+
+		const int wi_index = static_cast<int>(wip - Weapon_info.data());
+
+		if (optional_string("+Proximity Type:")) {
+			stuff_string_list(Pending_proximity_type_names[wi_index]);
+		}
+
+		if (optional_string("+Proximity Class:")) {
+			stuff_string_list(Pending_proximity_class_names[wi_index]);
+		}
+
+		// Launcher-relative filter: hostile/friendly/neutral, combinable. Default (no entry) = any relation.
+		if (optional_string("+Proximity Relation:")) {
+			// Rebuild from scratch on a modular override rather than OR-ing onto prior bits.
+			wip->proximity_relation_mask = 0;
+			SCP_vector<SCP_string> relation_names;
+			stuff_string_list(relation_names);
+			for (const SCP_string& rel : relation_names) {
+				if (!stricmp(rel.c_str(), "hostile"))
+					wip->proximity_relation_mask |= Weapon::Proximity::Relation_Hostile;
+				else if (!stricmp(rel.c_str(), "friendly"))
+					wip->proximity_relation_mask |= Weapon::Proximity::Relation_Friendly;
+				else if (!stricmp(rel.c_str(), "neutral"))
+					wip->proximity_relation_mask |= Weapon::Proximity::Relation_Neutral;
+				else
+					error_display(0, "Weapon '%s': +Proximity Relation entry '%s' is not one of hostile/friendly/neutral.\n", wip->name, rel.c_str());
+			}
+		}
+
+		if (optional_string("+Detonate Chance:")) {
+			stuff_float(&wip->proximity_detonate_chance);
+			if (wip->proximity_detonate_chance < 0.0f || wip->proximity_detonate_chance > 1.0f) {
+				CLAMP(wip->proximity_detonate_chance, 0.0f, 1.0f);
+				error_display(0, "Weapon '%s': +Detonate Chance must be in [0.0, 1.0]. Clamping.\n", wip->name);
+			}
+		}
+
+		if (optional_string("+Stealth Proximity Multiplier:")) {
+			stuff_float(&wip->proximity_stealth_multiplier);
+			if (wip->proximity_stealth_multiplier < 0.0f) {
+				wip->proximity_stealth_multiplier = 0.0f;
+				error_display(0, "Weapon '%s': +Stealth Proximity Multiplier cannot be negative. Setting to 0.\n", wip->name);
+			}
+		}
+	}
+
+	if (optional_string("$MineInfo:")) {
+		wip->wi_flags.set(Weapon::Info_Flags::Mine);
+
+		// Mines without an explicit $Proximity Radius: get the historical default
+		if (wip->proximity_radius <= 0.0f)
+			wip->proximity_radius = 50.0f;
+
+		if (optional_string("+Sensors Range:")) {
+			stuff_float(&wip->mine_sensors_range);
+			if (wip->mine_sensors_range < 0.0f) {
+				wip->mine_sensors_range = 0.0f;
+				error_display(0, "Mine weapon '%s': +Sensors Range cannot be negative. Setting to 0.\n", wip->name);
+			}
+		}
+
+		if (optional_string("+Targetable Range:")) {
+			stuff_float(&wip->mine_targetable_range);
+			if (wip->mine_targetable_range < 0.0f) {
+				wip->mine_targetable_range = 0.0f;
+				error_display(0, "Mine weapon '%s': +Targetable Range cannot be negative. Setting to 0.\n", wip->name);
+			}
+		}
+
+		// Mines must have finite detection ranges. Defaults scale off proximity_radius so a tiny
+		// proximity radius doesn't accidentally produce a galaxy-spanning blip.
+		if (wip->mine_sensors_range < 0.0f)
+			wip->mine_sensors_range = wip->proximity_radius * 60.0f;
+		if (wip->mine_targetable_range < 0.0f)
+			wip->mine_targetable_range = wip->proximity_radius * 30.0f;
+
+		if (optional_string("+Chase Duration:")) {
+			stuff_float(&wip->mine_chase_duration);
+			if (wip->mine_chase_duration < 0.0f) {
+				wip->mine_chase_duration = 0.0f;
+				error_display(0, "Mine weapon '%s': +Chase Duration cannot be negative. Setting to 0 (immediate detonation).\n", wip->name);
+			}
+		}
+
+		if (optional_string("+Detonates on Chase Timeout:")) {
+			stuff_boolean(&wip->mine_detonates_on_chase_timeout);
+		}
+
+		if (optional_string("+Chase Cooldown:")) {
+			stuff_float(&wip->mine_chase_cooldown);
+			if (wip->mine_chase_cooldown < 0.0f) {
+				wip->mine_chase_cooldown = 0.0f;
+				error_display(0, "Mine weapon '%s': +Chase Cooldown cannot be negative. Setting to 0.\n", wip->name);
+			}
+		}
+
+		// The sensors envelope must encompass the targetable range: anything close enough to lock
+		// must also be detectable. If a mine is authored with a larger targetable range, grow the
+		// sensors range to match so a mine can never be "targetable but beyond sensors range".
+		// (When the two ranges coincide there is simply no distorted-blip phase, which is fine.)
+		if (wip->mine_targetable_range > wip->mine_sensors_range) {
+			error_display(0, "Mine weapon '%s': +Targetable Range (%.1f) exceeds +Sensors Range (%.1f). Raising Sensors Range to match; the distorted blip state will never occur.\n",
+				wip->name, wip->mine_targetable_range, wip->mine_sensors_range);
+			wip->mine_sensors_range = wip->mine_targetable_range;
+		}
 	}
 
 	if(optional_string("$Flak Detonation Accuracy:")) {
@@ -1958,6 +2130,10 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			wip->reloaded_per_batch = REARM_NUM_BALLISTIC_PRIMARIES_PER_BATCH;
 		}
 	}
+
+	if (optional_string("$Disallow Support Rearm:")) {
+		stuff_boolean(&wip->disallow_rearm);
+	}
 	   
 	if (optional_string("+Weapon Range:")) {
 		stuff_float(&wip->weapon_range);
@@ -2363,7 +2539,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 					ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
 					::util::UniformFloatRange(1.f), //Velocity Inherit
 					false, //Velocity Inherit absolute?
-					make_unique<LegacyAACuboidVolume>(variance, 1.f, true), //Velocity volume
+					std::make_unique<LegacyAACuboidVolume>(variance, 1.f, true), //Velocity volume
 					::util::UniformFloatRange(MIN(0.5f * velocity, 2.0f * velocity), MAX(0.5f * velocity, 2.0f * velocity)), //Velocity volume multiplier
 					ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
 					std::nullopt, //Orientation-based velocity
@@ -2395,7 +2571,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 						ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
 						::util::UniformFloatRange(1.f), //Velocity Inherit
 						false, //Velocity Inherit absolute?
-						make_unique<LegacyAACuboidVolume>(variance, 1.f, true), //Velocity volume
+						std::make_unique<LegacyAACuboidVolume>(variance, 1.f, true), //Velocity volume
 						::util::UniformFloatRange(MIN(0.5f * back_velocity, 2.0f * back_velocity), MAX(0.5f * back_velocity, 2.0f * back_velocity)), //Velocity volume multiplier
 						ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
 						std::nullopt, //Orientation-based velocity
@@ -2766,6 +2942,36 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			wip->spawn_info[spawn_weap].spawn_effect = particle::util::parseEffect(wip->name);
 			spawn_weap++;
 		}
+	}
+
+	spawn_weap = 0;
+
+	while (optional_string("$Spawn Aimed:"))
+	{
+		bool dum_bool;
+		stuff_boolean(&dum_bool);
+		if (spawn_weap < MAX_SPAWN_TYPES_PER_WEAPON)
+			wip->spawn_info[spawn_weap++].spawn_aimed = dum_bool;
+	}
+
+	spawn_weap = 0;
+
+	while (optional_string("$Spawn Aim Lead:"))
+	{
+		stuff_float(&dum_float);
+		if (spawn_weap < MAX_SPAWN_TYPES_PER_WEAPON) {
+			if (dum_float < 0.0f) {
+				error_display(0, "Weapon '%s': $Spawn Aim Lead cannot be negative. Setting to 0.\n", wip->name);
+				dum_float = 0.0f;
+			}
+			wip->spawn_info[spawn_weap++].spawn_aim_lead = dum_float;
+		}
+	}
+
+	// Cross-validate aimed spawn fields
+	for (int si = 0; si < wip->num_spawn_weapons_defined; si++) {
+		if (wip->spawn_info[si].spawn_aim_lead > 0.0f && !wip->spawn_info[si].spawn_aimed)
+			error_display(0, "Weapon '%s' spawn %d: $Spawn Aim Lead is set but $Spawn Aimed is NO. Lead will be ignored.\n", wip->name, si);
 	}
 
 	if (optional_string("$Lifetime Variation Factor When Child:"))
@@ -3268,7 +3474,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 						ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
 						::util::UniformFloatRange(0.f), //Velocity Inherit
 						false, //Velocity Inherit absolute?
-						make_unique<SpheroidVolume>(1.f, 1.f, 1.f), //Velocity volume
+						std::make_unique<SpheroidVolume>(1.f, 1.f, 1.f), //Velocity volume
 						::util::UniformFloatRange(baseVelocity * variance), //Velocity volume multiplier
 						ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
 						::util::UniformFloatRange(MIN(baseVelocity, 2.0f * baseVelocity), MAX(baseVelocity, 2.0f * baseVelocity)), //Orientation-based velocity
@@ -3299,7 +3505,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 						ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
 						::util::UniformFloatRange(0.f), //Velocity Inherit
 						false, //Velocity Inherit absolute?
-						make_unique<SpheroidVolume>(1.f, 1.f, 1.f), //Velocity volume
+						std::make_unique<SpheroidVolume>(1.f, 1.f, 1.f), //Velocity volume
 						::util::UniformFloatRange(backVelocity * variance), //Velocity volume multiplier
 						ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
 						::util::UniformFloatRange(MIN(backVelocity, 2.0f * backVelocity), MAX(backVelocity, 2.0f * backVelocity)), //Orientation-based velocity
@@ -3941,13 +4147,20 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 	if (optional_string("$Weapon Hitpoints:")) {
 		stuff_int(&wip->weapon_hitpoints);
-	} else if (first_time && (wip->wi_flags[Weapon::Info_Flags::Turret_Interceptable, Weapon::Info_Flags::Fighter_Interceptable])) {
-		wip->weapon_hitpoints = 25;
+	} else if (first_time && (wip->wi_flags[Weapon::Info_Flags::Turret_Interceptable, Weapon::Info_Flags::Fighter_Interceptable, Weapon::Info_Flags::Mine])) {
+		wip->weapon_hitpoints = wip->is_mine() ? 50 : 25; // mines are tankier by default, like bombs
 	}
 
 	// making sure bombs get their hitpoints assigned
 	if ((wip->wi_flags[Weapon::Info_Flags::Bomb]) && (wip->weapon_hitpoints == 0)) {
 		wip->weapon_hitpoints = 50;
+	}
+
+	// mines with hitpoints are destructible, so let turrets and fighters intercept them
+	// (explicit "$Weapon Hitpoints: 0" leaves a mine indestructible and unflagged on purpose)
+	if (wip->is_mine() && wip->weapon_hitpoints > 0) {
+		wip->wi_flags.set(Weapon::Info_Flags::Turret_Interceptable);
+		wip->wi_flags.set(Weapon::Info_Flags::Fighter_Interceptable);
 	}
 
 	if (wip->weapon_hitpoints <= 0.0f && (wip->wi_flags[Weapon::Info_Flags::No_radius_doubling])) {
@@ -4922,6 +5135,41 @@ void weapon_do_post_parse()
 	translate_spawn_types();
 }
 
+// Called after ship_init() to resolve proximity ship type/class names into indices.
+void weapon_post_ship_init()
+{
+	const int num_weapons = static_cast<int>(Weapon_info.size());
+
+	for (const auto& entry : Pending_proximity_type_names) {
+		const int wi_index = entry.first;
+		Assertion(wi_index >= 0 && wi_index < num_weapons, "Pending proximity type entry has out-of-range weapon_info index %d (num_weapons=%d).", wi_index, num_weapons);
+		weapon_info& wip = Weapon_info[wi_index];
+		for (const SCP_string& type_name : entry.second) {
+			int idx = ship_type_name_lookup(type_name.c_str());
+			if (idx < 0)
+				Warning(LOCATION, "Weapon '%s': +Proximity Type entry '%s' not found.\n", wip.name, type_name.c_str());
+			else
+				wip.proximity_type.push_back(idx);
+		}
+	}
+
+	for (const auto& entry : Pending_proximity_class_names) {
+		const int wi_index = entry.first;
+		Assertion(wi_index >= 0 && wi_index < num_weapons, "Pending proximity class entry has out-of-range weapon_info index %d (num_weapons=%d).", wi_index, num_weapons);
+		weapon_info& wip = Weapon_info[wi_index];
+		for (const SCP_string& class_name : entry.second) {
+			int idx = ship_info_lookup(class_name.c_str());
+			if (idx < 0)
+				Warning(LOCATION, "Weapon '%s': +Proximity Class entry '%s' not found.\n", wip.name, class_name.c_str());
+			else
+				wip.proximity_class.push_back(idx);
+		}
+	}
+
+	Pending_proximity_type_names.clear();
+	Pending_proximity_class_names.clear();
+}
+
 /**
  * This will get called once at game startup
  */
@@ -5012,7 +5260,8 @@ void weapon_level_init()
 					case LockRestrictionType::CLASS: idx = ship_info_lookup(name); break;
 					case LockRestrictionType::SPECIES: idx = species_info_lookup(name); break;
 					case LockRestrictionType::IFF: idx = iff_lookup(name); break;
-					default: Assertion(false, "Unknown multi lock restriction type %d", (int)pair.first);
+					default:
+						UNREACHABLE("Unknown multi lock restriction type %d", static_cast<int>(pair.first));
 						idx = -1;
 				}
 				if ( idx >= 0 ) {
@@ -5092,8 +5341,10 @@ void weapon_delete(object *obj)
 	if (wp->hud_in_flight_snd_sig.isValid() && snd_is_playing(wp->hud_in_flight_snd_sig))
 		snd_stop(wp->hud_in_flight_snd_sig);
 
-	if (wp->model_instance_num >= 0)
+	if (wp->model_instance_num >= 0) {
 		model_delete_instance(wp->model_instance_num);
+		wp->model_instance_num = -1;
+	}
 
 	if (wp->cmeasure_ignore_list != nullptr) {
 		delete wp->cmeasure_ignore_list;
@@ -5590,8 +5841,21 @@ void weapon_home(object *obj, int num, float frame_time)
 	if (wp->homing_subsys != NULL) {
 		if (wp->homing_subsys->flags[Ship::Subsystem_Flags::Missiles_ignore_if_dead]) {
 			if ((wp->homing_subsys->max_hits > 0) && (wp->homing_subsys->current_hits <= 0)) {
-				wp->homing_object = &obj_used_list;
-				return;
+				if (The_mission.ai_profile->flags[AI::Profile_Flags::Fix_ignore_if_dead_flag]) {
+					// fixed way: clear dead subsys so the missile picks a hull attack point 
+					// or, for Javelins, re-acquire another engine
+					wp->homing_subsys = nullptr;
+					if (wip->wi_flags[Weapon::Info_Flags::Homing_javelin] && hobjp->type == OBJ_SHIP) {
+						int sindex = ship_get_by_signature(wp->target_sig);
+						if (sindex >= 0) {
+							wp->homing_subsys = ship_get_closest_subsys_in_sight(&Ships[sindex], SUBSYSTEM_ENGINE, &obj->pos);
+						}
+					}
+				} else {
+					// old way: resulted in weapon not homing
+					wp->homing_object = &obj_used_list;
+					return;
+				}
 			}
 		}
 	}
@@ -6051,6 +6315,177 @@ void weapon_process_pre( object *obj, float  frame_time)
 		}
 	}
 
+	// Mine chase/cooldown lifecycle: handle every frame for any mine, independent of proximity_radius
+	// (which can theoretically be cleared at runtime). The proximity scan itself is gated on
+	// proximity_radius > 0 below, so future non-mine weapons can opt into proximity detonation
+	// without inheriting the mine-specific chase state machine.
+	if (wip->is_mine()) {
+		// Chase timeout: check whether an active chase has expired
+		if (wp->mine_chase_expires.isFinite() && timestamp_elapsed(wp->mine_chase_expires)) {
+			if (wip->mine_detonates_on_chase_timeout) {
+				weapon_detonate(obj);
+				return;
+			}
+			// Give up: return to stationary at current position. State restored to "pre-chase"
+			// so the mine reappears on radar/sensors and is targetable as before.
+			// TODO: rather than insta-stopping, dampen velocity to a halt over a few frames for a smoother look.
+			vm_vec_zero(&obj->phys_info.vel);
+			vm_vec_zero(&obj->phys_info.desired_vel);
+			obj->phys_info.speed = 0.0f;
+			wp->weapon_max_vel = 0.0f;
+			wp->homing_object = &obj_used_list;
+			wp->target_num    = -1;
+			wp->target_sig    = -1;
+			wp->mine_chase_expires = TIMESTAMP::invalid();
+			if (wip->mine_chase_cooldown > 0.0f)
+				wp->mine_chase_cooldown_expires = _timestamp(fl2i(wip->mine_chase_cooldown * 1000.0f));
+			else
+				wp->mine_chase_cooldown_expires = TIMESTAMP::invalid();
+		}
+
+		// Cooldown lapsed - clear it so the field stays clean
+		if (wp->mine_chase_cooldown_expires.isFinite() && timestamp_elapsed(wp->mine_chase_cooldown_expires))
+			wp->mine_chase_cooldown_expires = TIMESTAMP::invalid();
+	}
+
+	// Proximity detonation: scan nearby ships and detonate if a qualifying one is within range.
+	// Gated on proximity_radius (not is_mine()) so future non-mine weapon types can use this path.
+	if (wip->proximity_radius > 0.0f) {
+		// Skip if mine is actively chasing
+		bool chasing = wp->mine_chase_expires.isFinite() && !timestamp_elapsed(wp->mine_chase_expires);
+		bool cooling_down = wp->mine_chase_cooldown_expires.isFinite();
+
+		// Arming gate: reuse the standard $Arm time: field - a proximity weapon won't trigger
+		// until this many fix-seconds after creation. weapon_armed() also enforces this for
+		// direct collisions; checking here additionally suppresses proximity triggers.
+		bool armed = !chasing && !cooling_down && (Missiontime - wp->creation_time) >= wip->arm_time;
+
+		// Roll detonate chance once per ~62ms time bucket (Missiontime >> 12)
+		// Within a bucket the result is sticky across frames and across all candidate ships.
+		// Deterministic in multiplayer because Missiontime is lockstep-synced; the multiplicative
+		// hash gives per-weapon variation that XOR alone couldn't (net_signature is 16-bit).
+		bool roll_passed = true;
+		if (armed && wip->proximity_detonate_chance < 1.0f) {
+			uint32_t roll_seed = (obj->net_signature * 2654435761u) ^ static_cast<uint32_t>(Missiontime >> 12);
+			roll_passed = (static_randf(static_cast<int>(roll_seed & 0x7FFFFFFFu)) < wip->proximity_detonate_chance);
+		}
+
+		if (armed && roll_passed) {
+			float base_prox = wip->proximity_radius;
+
+			for (const auto *sop : list_range(&Ship_obj_list)) {
+				object *check_obj = &Objects[sop->objnum];
+				if (check_obj->flags[Object::Object_Flags::Should_be_dead])
+					continue;
+
+				const ship *sp = &Ships[check_obj->instance];
+
+				// Dying or departing ships are no longer valid proximity targets
+				if (sp->flags[Ship::Ship_Flags::Dying]
+					|| sp->flags[Ship::Ship_Flags::Depart_warp])
+					continue;
+
+				// Protected ships are immune to mine proximity detonation
+				if (check_obj->flags[Object::Object_Flags::Protected])
+					continue;
+
+				// Stealth ships may have a reduced proximity trigger radius
+				float effective_prox = base_prox;
+				if (wip->proximity_stealth_multiplier < 1.0f &&
+				    sp->flags[Ship::Ship_Flags::Stealth]) {
+					effective_prox *= wip->proximity_stealth_multiplier;
+				}
+
+				// Distance check (cheap rejection)
+				if (vm_vec_dist_squared(&obj->pos, &check_obj->pos) > effective_prox * effective_prox)
+					continue;
+
+				// Apply filters: AND across categories, OR within each category. Empty category = pass all.
+				const ship_info* sip = &Ship_info[sp->ship_info_index];
+
+				if (!wip->proximity_iff.empty()) {
+					bool matched = false;
+					for (int iff_idx : wip->proximity_iff) {
+						if (sp->team == iff_idx) { matched = true; break; }
+					}
+					if (!matched) continue;
+				}
+
+				if (!wip->proximity_species.empty()) {
+					bool matched = false;
+					for (int spec_idx : wip->proximity_species) {
+						if (sip->species == spec_idx) { matched = true; break; }
+					}
+					if (!matched) continue;
+				}
+
+				if (!wip->proximity_type.empty()) {
+					bool matched = false;
+					for (int type_idx : wip->proximity_type) {
+						if (sip->class_type == type_idx) { matched = true; break; }
+					}
+					if (!matched) continue;
+				}
+
+				if (!wip->proximity_class.empty()) {
+					bool matched = false;
+					for (int class_idx : wip->proximity_class) {
+						if (sp->ship_info_index == class_idx) { matched = true; break; }
+					}
+					if (!matched) continue;
+				}
+
+				// Launcher-relative relation filter. Categories are mutually exclusive and exhaustive:
+				// friendly = same team; hostile = launcher attacks target; neutral = everything else.
+				if (wip->proximity_relation_mask != 0) {
+					bool is_friendly = (wp->team == sp->team);
+					bool is_hostile  = !is_friendly && iff_x_attacks_y(wp->team, sp->team);
+					bool is_neutral  = !is_friendly && !is_hostile;
+					bool matched =
+						((wip->proximity_relation_mask & Weapon::Proximity::Relation_Hostile)  && is_hostile) ||
+						((wip->proximity_relation_mask & Weapon::Proximity::Relation_Friendly) && is_friendly) ||
+						((wip->proximity_relation_mask & Weapon::Proximity::Relation_Neutral)  && is_neutral);
+					if (!matched) continue;
+				}
+
+				// A ship passed all proximity checks. Fire the overridable trigger hook before the weapon reacts
+				if (scripting::hooks::OnWeaponProximityTriggered->isActive()) {
+					auto proxParamList = scripting::hook_param_list(
+						scripting::hook_param("Weapon",   'o', obj),
+						scripting::hook_param("Ship",     'o', check_obj),
+						scripting::hook_param("Position", 'o', scripting::api::l_Vector.Set(obj->pos))
+					);
+					scripting::hooks::WeaponProximityTriggeredConditions proxConds{ wp, sp };
+					bool overridden = scripting::hooks::OnWeaponProximityTriggered->isOverride(proxConds, proxParamList);
+					scripting::hooks::OnWeaponProximityTriggered->run(proxConds, proxParamList);
+					if (overridden)
+						return;
+				}
+
+				// Set the triggering ship as the homing object and target. Both fields
+				// must be set: homing_object is used by weapon_has_homing_object(),
+				// and target_num is what weapon_set_tracking_info() actually receives.
+				wp->homing_object = check_obj;
+				wp->target_num    = OBJ_INDEX(check_obj);
+
+				if (wip->mine_chase_duration > 0.0f) {
+					// Chase mode: become a guided missile for the configured duration.
+					// Contact with the ship (handled by normal weapon collision) causes detonation.
+					// NOTE: chase reuses the existing homing-missile movement code, so the weapon must
+					// have a homing flag (Homing_aspect/Homing_heat/Homing_javelin) set in its table for
+					// it to actually move. A mine with mine_chase_duration > 0 but no homing flag will
+					// sit still until the chase timer expires - by design.
+					wp->mine_chase_expires = _timestamp(fl2i(wip->mine_chase_duration * 1000.0f));
+					wp->weapon_max_vel = wip->max_speed;
+				} else {
+					// Immediate detonation mode.
+					weapon_detonate(obj);
+				}
+				return;
+			}
+		}
+	}
+
 	// If this flag is false missile turning is evaluated in weapon_process_post()
 	if (Framerate_independent_turning) {
 		weapon_do_homing_behavior(obj, frame_time);
@@ -6130,7 +6565,7 @@ static void weapon_set_state(weapon_info* wip, weapon* wp, WeaponState state)
 	if ((map_entry != wip->state_effects.end()) && map_entry->second.isValid())
 	{
 		auto source = particle::ParticleManager::get()->createSource(map_entry->second);
-		source->setHost(make_unique<EffectHostObject>(&Objects[wp->objnum], vmd_zero_vector));
+		source->setHost(std::make_unique<EffectHostObject>(&Objects[wp->objnum], vmd_zero_vector));
 		source->finishCreation();
 	}
 
@@ -6214,9 +6649,12 @@ void weapon_process_post(object * obj, float frame_time)
 
 	wp = &Weapons[num];
 
-	wp->lifeleft -= frame_time;
-
 	wip = &Weapon_info[wp->weapon_info_index];
+
+	// Mines have infinite lifetime - skip the countdown
+	if (!wip->is_mine()) {
+		wp->lifeleft -= frame_time;
+	}
 
 	// do continuous spawns
 	if (wip->wi_flags[Weapon::Info_Flags::Spawn]) {
@@ -6280,7 +6718,7 @@ void weapon_process_post(object * obj, float frame_time)
 	}
 
 	// plot homing missiles on the radar
-	if (((wip->wi_flags[Weapon::Info_Flags::Bomb]) || (wip->wi_flags[Weapon::Info_Flags::Shown_on_radar])) && !(wip->wi_flags[Weapon::Info_Flags::Dont_show_on_radar])) {
+	if (((wip->wi_flags[Weapon::Info_Flags::Bomb]) || wip->is_mine() || (wip->wi_flags[Weapon::Info_Flags::Shown_on_radar])) && !(wip->wi_flags[Weapon::Info_Flags::Dont_show_on_radar])) {
 		if ( hud_gauge_active(HUD_RADAR) ) {
 			radar_plot_object( obj );
 		}
@@ -7023,6 +7461,15 @@ int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int
 			wp->launch_speed += pspeed;
 	}
 
+	// Mines are stationary: zero all velocity after all other velocity setup
+	if (wip->is_mine()) {
+		vm_vec_zero(&objp->phys_info.vel);
+		vm_vec_zero(&objp->phys_info.desired_vel);
+		objp->phys_info.speed = 0.0f;
+		wp->weapon_max_vel = 0.0f;
+		wp->launch_speed = 0.0f;
+	}
+
 	// create the corkscrew
 	if ( wip->wi_flags[Weapon::Info_Flags::Corkscrew] ) {
 		wp->cscrew_index = (short)cscrew_create(objp);
@@ -7093,6 +7540,9 @@ int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int
 				wp->last_spawn_time[i] = TIMESTAMP::invalid(); // never spawn
 		}
 	}
+
+	wp->mine_chase_expires          = TIMESTAMP::invalid();
+	wp->mine_chase_cooldown_expires = TIMESTAMP::invalid();
 
 	//	Set detail levels for POF-type weapons.
 	if (Weapon_info[wp->weapon_info_index].model_num != -1) {
@@ -7280,18 +7730,31 @@ void spawn_child_weapons(object *objp, int spawn_index_override)
 			matrix	orient;
 
 
-			// for multiplayer, use the static randvec functions based on the network signatures to provide
-			// the randomness so that it is the same on all machines.
-			if ( Game_mode & GM_MULTIPLAYER ) {
-				if (wip->spawn_info[i].spawn_min_angle <= 0)
-					static_rand_cone(objp->net_signature + j, &tvec, fvec, wip->spawn_info[i].spawn_angle);
-				else
-					static_rand_cone(objp->net_signature + j, &tvec, fvec, wip->spawn_info[i].spawn_min_angle, wip->spawn_info[i].spawn_angle);
+			// Compute spawn direction.
+			if (wip->spawn_info[i].spawn_aimed && wp != nullptr && weapon_has_homing_object(wp)) {
+				// Aimed spawn: point directly at the homing object with optional constant-velocity
+				// lead extrapolation.  wp != nullptr guard handles beam-spawned weapons (which have
+				// no weapon struct). They fall through to the random cone below.
+				// Direction is deterministic (derived from a known object position), so no
+				// static_rand seeding is needed for multiplayer consistency.
+				vec3d target_pos = wp->homing_object->pos;
+				if (wip->spawn_info[i].spawn_aim_lead > 0.0f)
+					vm_vec_scale_add2(&target_pos, &wp->homing_object->phys_info.vel, wip->spawn_info[i].spawn_aim_lead);
+				vm_vec_normalized_dir(&tvec, &target_pos, opos);
 			} else {
-				if(wip->spawn_info[i].spawn_min_angle <= 0)
-					vm_vec_random_cone(&tvec, fvec, wip->spawn_info[i].spawn_angle);
-				else
-					vm_vec_random_cone(&tvec, fvec, wip->spawn_info[i].spawn_min_angle, wip->spawn_info[i].spawn_angle);
+				// Standard random cone: for multiplayer, use static randvec functions keyed on
+				// network signatures so all machines produce the same spread.
+				if (Game_mode & GM_MULTIPLAYER) {
+					if (wip->spawn_info[i].spawn_min_angle <= 0)
+						static_rand_cone(objp->net_signature + j, &tvec, fvec, wip->spawn_info[i].spawn_angle);
+					else
+						static_rand_cone(objp->net_signature + j, &tvec, fvec, wip->spawn_info[i].spawn_min_angle, wip->spawn_info[i].spawn_angle);
+				} else {
+					if (wip->spawn_info[i].spawn_min_angle <= 0)
+						vm_vec_random_cone(&tvec, fvec, wip->spawn_info[i].spawn_angle);
+					else
+						vm_vec_random_cone(&tvec, fvec, wip->spawn_info[i].spawn_min_angle, wip->spawn_info[i].spawn_angle);
+				}
 			}
 			vm_vec_scale_add(&pos, opos, &tvec, objp->radius);
 
@@ -8809,7 +9272,7 @@ void shield_impact_explosion(const vec3d& hitpos, const vec3d& hitdir, const obj
 	vm_vec_unrotate(&hitdir_global, &hitdir, &objp->orient);
 
 	auto particleSource = particle::ParticleManager::get()->createSource(handle);
-	particleSource->setHost(make_unique<EffectHostObject>(objp, hitpos, localorient));
+	particleSource->setHost(std::make_unique<EffectHostObject>(objp, hitpos, localorient));
 	particleSource->setNormal(hitdir_global);
 	particleSource->setTriggerRadius(radius);
 	particleSource->setTriggerVelocity(vm_vec_mag_quick(&weapon_objp->phys_info.vel));
@@ -9396,6 +9859,8 @@ void weapon_info::reset()
 
 	vm_vec_zero(&this->closeup_pos);
 	this->closeup_zoom = 1.0f;
+	this->icon_closeup_pos = std::nullopt;
+	this->icon_closeup_zoom = std::nullopt;
 
 	memset(this->hud_filename, 0, sizeof(this->hud_filename));
 	this->hud_image_index = -1;
@@ -9453,6 +9918,19 @@ void weapon_info::reset()
 	this->arm_radius = 0.0f;
 	this->det_range = 0.0f;
 	this->det_radius = 0.0f;
+	this->proximity_radius = 0.0f;
+	this->proximity_iff.clear();
+	this->proximity_species.clear();
+	this->proximity_type.clear();
+	this->proximity_class.clear();
+	this->proximity_relation_mask = 0;
+	this->proximity_detonate_chance = 1.0f;
+	this->proximity_stealth_multiplier = 1.0f;
+	this->mine_sensors_range = -1.0f;
+	this->mine_targetable_range = -1.0f;
+	this->mine_chase_duration = 0.0f;
+	this->mine_detonates_on_chase_timeout = true;
+	this->mine_chase_cooldown = 5.0f;
 
 	this->flak_detonation_accuracy = 65.0f;
 	this->flak_targeting_accuracy = 60.0f; // Standard value as defined in flak.cpp
@@ -9475,6 +9953,7 @@ void weapon_info::reset()
 	this->cargo_size = 1.0f;
 	this->autoaim_fov = 0.0f;
 	this->rearm_rate = 1.0f;
+	this->disallow_rearm = false;
 	this->reloaded_per_batch = -1;
 	this->weapon_range = WEAPON_DEFAULT_TABLED_MAX_RANGE;
 	// *Minimum weapon range, default is 0 -Et1
@@ -9499,6 +9978,8 @@ void weapon_info::reset()
 		this->spawn_info[i].spawn_interval = -1.f;
 		this->spawn_info[i].spawn_interval_delay = -1.f;
 		this->spawn_info[i].spawn_chance = 1.f;
+		this->spawn_info[i].spawn_aimed = false;
+		this->spawn_info[i].spawn_aim_lead = 0.0f;
 	}
 
 	this->lifetime_variation_factor_when_child = 0.2f;
@@ -9782,12 +10263,12 @@ SCP_map<SCP_string, weapon_stat_value> weapon_get_stats(const weapon_info &wi)
 	stats["is_beam"] = is_beam;
 	stats["allowed_for_player"] = (bool)wi.wi_flags[Weapon::Info_Flags::Player_allowed];
 
-	// Velocity and range
+	// max_speed and range
 	if (is_beam) {
-		stats["velocity"] = 0.0f;
+		stats["max_speed"] = 0.0f;
 		stats["standard_range"] = wi.b_info.range;
 	} else {
-		stats["velocity"] = wi.max_speed;
+		stats["max_speed"] = wi.max_speed;
 		stats["standard_range"] = wi.max_speed * wi.lifetime;
 	}
 
@@ -9894,7 +10375,7 @@ SCP_string weapon_get_stats_text(const weapon_info &wi)
 	if (is_beam) {
 		sprintf(buf, "\tVelocity: N/A        Range: %.0f\n", std::get<float>(stats["standard_range"]));
 	} else {
-		sprintf(buf, "\tVelocity: %-11.0fRange: %.0f\n", std::get<float>(stats["velocity"]), std::get<float>(stats["standard_range"]));
+		sprintf(buf, "\tVelocity: %-11.0fRange: %.0f\n", std::get<float>(stats["max_speed"]), std::get<float>(stats["standard_range"]));
 	}
 	result += buf;
 
@@ -9961,7 +10442,7 @@ void weapon_spew_stats(WeaponSpewType type)
 	static const csv_column columns[] = {
 		{"Name",              nullptr},
 		{"Type",              "type"},
-		{"Velocity",          "velocity"},
+		{"Velocity",          "max_speed"},
 		{"Range",             "standard_range"},
 		{"Damage Hull",       "damage_hull"},
 		{"DPS Hull",          "dps_hull"},
@@ -9998,7 +10479,7 @@ void weapon_spew_stats(WeaponSpewType type)
 	auto is_blank = [](const char *key, bool primary, bool is_beam) -> bool {
 		if (!key)
 			return false;
-		if (is_beam && !strcmp(key, "velocity"))
+		if (is_beam && !strcmp(key, "max_speed"))
 			return true;
 		if (primary && (!strcmp(key, "reload_rate") || !strcmp(key, "reload_rate_reciprocal")))
 			return true;

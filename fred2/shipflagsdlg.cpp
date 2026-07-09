@@ -233,13 +233,8 @@ BOOL ship_flags_dlg::OnInitDialog()
 						m_respawn_priority.init(shipp->respawn_priority);
 					}
 
-					for (j=0; j<Num_reinforcements; j++) {
-						if (!stricmp(Reinforcements[j].name, shipp->ship_name)) {
-							break;
-						}
-					}
-
-					reinforcement = (j < Num_reinforcements) ? 1 : 0;
+					j = find_item_with_string(Reinforcements, &reinforcements::name, shipp->ship_name);
+					reinforcement = (j >= 0) ? 1 : 0;
 
 					// check if ship in wing
 					ship_in_wing = (shipp->wingnum != -1);;
@@ -299,12 +294,8 @@ BOOL ship_flags_dlg::OnInitDialog()
 						m_respawn_priority.init(shipp->respawn_priority);
 					}
 
-					for (j=0; j<Num_reinforcements; j++) {
-						if (!stricmp(Reinforcements[j].name, shipp->ship_name)) {
-							break;
-						}
-					}
-					reinforcement = tristate_set(j < Num_reinforcements, reinforcement);
+					j = find_item_with_string(Reinforcements, &reinforcements::name, shipp->ship_name);
+					reinforcement = tristate_set(j >= 0, reinforcement);
 
 					// check if ship in wing
 					ship_in_wing = (shipp->wingnum != -1);;
@@ -440,18 +431,7 @@ void ship_flags_dlg::update_ship(int shipnum)
 
 	if (m_reinforcement.GetCheck() != 2)
 	{
-		//Check if we're trying to add more and we've got too many.
-		if( (Num_reinforcements >= MAX_REINFORCEMENTS) && (m_reinforcement.GetCheck() == 1))
-		{
-			char error_message[256];
-			sprintf(error_message, "Too many reinforcements; could not add ship '%s' to reinforcement list!", shipp->ship_name); 
-			MessageBox(error_message);
-		}
-		//Otherwise, just update as normal.
-		else
-		{
-			set_reinforcement(shipp->ship_name, m_reinforcement.GetCheck());	
-		}
+		set_reinforcement(shipp->ship_name, m_reinforcement.GetCheck());	
 	}
 
 	switch (m_cargo_known.GetCheck()) {

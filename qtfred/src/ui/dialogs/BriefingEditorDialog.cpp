@@ -3,6 +3,7 @@
 
 #include "mission/util.h"
 #include "ui/Theme.h"
+#include <gamesnd/eventmusic.h>
 #include "ui/widgets/BriefingMapWidget.h"
 #include "BriefingEditor/CameraCoordinatesDialog.h"
 #include "BriefingEditor/IconFromShipDialog.h"
@@ -14,17 +15,16 @@
 
 #include <globalincs/globals.h>
 #include <globalincs/linklist.h>
-#include <mission/missionbriefcommon.h>
+#include <ui/util/default_dir.h>
 #include <ui/util/SignalBlockers.h>
 
 #include <QCloseEvent>
 #include <QCheckBox>
 #include <QFileDialog>
 #include <QVBoxLayout>
+#include <QFileInfo>
 
 namespace fso::fred::dialogs {
-
-int BriefingEditorDialog::_openDialogCount = 0;
 
 namespace {
 float movementSpeedScaleForIndex(int index) {
@@ -75,7 +75,7 @@ BriefingEditorDialog::BriefingEditorDialog(FredView* parent, EditorViewport* vie
 	: QDialog(parent), SexpTreeEditorInterface(flagset<TreeFlags>()), ui(new Ui::BriefingEditorDialog()),
 	  _model(new BriefingEditorDialogModel(this, viewport)), _viewport(viewport)
 {
-	++_openDialogCount;
+	_viewportLock.emplace(_viewport->acquireControlLock());
 
 	this->setFocus();
 	ui->setupUi(this);
@@ -97,19 +97,17 @@ BriefingEditorDialog::BriefingEditorDialog(FredView* parent, EditorViewport* vie
 }
 
 BriefingEditorDialog::~BriefingEditorDialog() {
-	_openDialogCount = std::max(0, _openDialogCount - 1);
-}
-
-bool BriefingEditorDialog::isAnyDialogOpen() {
-	return _openDialogCount > 0;
+	_viewportLock.reset();
 }
 
 void BriefingEditorDialog::accept()
 {
 	// If apply() returns true, close the dialog
 	if (_model->apply()) {
-		_viewport->editor->autosave("briefing editor");
+		ui->defaultMusicWidget->stopPlayback();
+		ui->musicPackWidget->stopPlayback();
 		QDialog::accept();
+		_viewportLock.reset(); // unlock before restoring the grid so the viewport can process controls again
 		create_default_grid(); // restore the grid back to the normal version
 	}
 	// else: validation failed, don't close
@@ -121,7 +119,10 @@ void BriefingEditorDialog::reject()
 	// If they do, it runs _model->apply() and returns the success value
 	// If they don't, it runs _model->reject() and returns true
 	if (rejectOrCloseHandler(this, _model.get(), _viewport)) {
+		ui->defaultMusicWidget->stopPlayback();
+		ui->musicPackWidget->stopPlayback();
 		QDialog::reject(); // actually close
+		_viewportLock.reset(); // unlock before restoring the grid so the viewport can process controls again
 		create_default_grid(); // restore the grid back to the normal version
 	}
 	// else: do nothing, don't close
@@ -216,6 +217,7 @@ void BriefingEditorDialog::applyMapWidgetAspectRatio()
 void BriefingEditorDialog::initializeUi()
 {
 	fso::fred::bindStandardIcon(ui->voiceFilePlayButton, QStyle::SP_MediaPlay);
+
 	util::SignalBlockers blockers(this);
 	ui->drawLinesCheckBox->setTristate(true);
 	ui->highlightCheckBox->setTristate(true);
@@ -246,14 +248,12 @@ void BriefingEditorDialog::initializeUi()
 		ui->iconTeamComboBox->addItem(iff.second.c_str(), iff.first);
 	}
 
-	auto musicList = _model->getMusicList();
-	for (const auto& m : musicList) {
-		ui->defaultMusicComboBox->addItem(m.c_str());
-		ui->musicPackComboBox->addItem(m.c_str());
-	}
-
 	// Initialize the formula tree editor
-	ui->formulaTreeView->initializeEditor(_viewport->editor, this);
+	ui->formulaTreeView->initializeEditor(_viewport->editor, this, _viewport);
+	_model->setTreeControl(ui->formulaTreeView);
+	connect(ui->formulaTreeView, &sexp_tree_view::modified, this, [this]() {
+		_model->setModified();
+	});
 
 	on_movementSpeedComboBox_currentIndexChanged(ui->movementSpeedComboBox->currentIndex());
 	on_rotationSpeedComboBox_currentIndexChanged(ui->rotationSpeedComboBox->currentIndex());
@@ -274,8 +274,18 @@ void BriefingEditorDialog::updateUi()
 
 	ui->stageTextPlainTextEdit->setPlainText(QString::fromStdString(_model->getStageText()));
 	ui->voiceFileLineEdit->setText(QString::fromStdString(_model->getSpeechFilename()));
-	ui->defaultMusicComboBox->setCurrentIndex(_model->getBriefingMusicIndex());
-	ui->musicPackComboBox->setCurrentIndex(ui->musicPackComboBox->findText(_model->getSubstituteBriefingMusicName().c_str()));
+	// getBriefingMusicIndex() is 1-based (0 = None); widget uses Spooled_music index (-1 = None)
+	ui->defaultMusicWidget->setCurrentMusicIndex(_model->getBriefingMusicIndex() - 1);
+
+	// Substitute music is stored by name; find the corresponding Spooled_music index
+	{
+		const SCP_string& subName = _model->getSubstituteBriefingMusicName();
+		int smIdx = -1;
+		for (int i = 0; i < static_cast<int>(Spooled_music.size()); ++i) {
+			if (stricmp(Spooled_music[i].name, subName.c_str()) == 0) { smIdx = i; break; }
+		}
+		ui->musicPackWidget->setCurrentMusicIndex(smIdx);
+	}
 
 	SCP_string stages = "No Stages";
 	int total = _model->getTotalStages();
@@ -290,6 +300,7 @@ void BriefingEditorDialog::updateUi()
 
 	// SEXP tree formula
 	ui->formulaTreeView->load_tree(_model->getFormula());
+	ui->formulaTreeView->expandAll();
 	if (ui->formulaTreeView->select_sexp_node != -1) {
 		ui->formulaTreeView->hilite_item(ui->formulaTreeView->select_sexp_node);
 	}
@@ -679,20 +690,17 @@ void BriefingEditorDialog::on_voiceFileLineEdit_textChanged(const QString& strin
 
 void BriefingEditorDialog::on_voiceFileBrowseButton_clicked()
 {
-	int dir_pushed = cfile_push_chdir(CF_TYPE_VOICE_DEBRIEFINGS);
+	const QString lastDir = util::getLastDir("briefing/voiceFile", CF_TYPE_VOICE_DEBRIEFINGS);
 
-	QFileDialog dlg(this, "Select Voice File", "", "Voice Files (*.ogg *.wav)");
+	QFileDialog dlg(this, "Select Voice File", lastDir, "Voice Files (*.ogg *.wav)");
 	if (dlg.exec() == QDialog::Accepted) {
 		QStringList files = dlg.selectedFiles();
 		if (!files.isEmpty()) {
-			QFileInfo fileInfo(files.first());
+			const QFileInfo fileInfo(files.first());
+			util::saveLastDir("briefing/voiceFile", files.first());
 			_model->setSpeechFilename(fileInfo.fileName().toUtf8().constData());
 			updateUi();
 		}
-	}
-
-	if (dir_pushed) {
-		cfile_pop_dir();
 	}
 }
 
@@ -701,19 +709,28 @@ void BriefingEditorDialog::on_voiceFilePlayButton_clicked()
 	_model->testSpeech();
 }
 
-void BriefingEditorDialog::on_formulaTreeView_nodeChanged(int newTree)
+void BriefingEditorDialog::on_defaultMusicWidget_currentIndexChanged(int spooledMusicIdx)
 {
-	_model->setFormula(newTree);
+	// Model uses 1-based index (0 = None); widget uses Spooled_music index (-1 = None)
+	_model->setBriefingMusicIndex(spooledMusicIdx + 1);
 }
 
-void BriefingEditorDialog::on_defaultMusicComboBox_currentIndexChanged(int index)
+void BriefingEditorDialog::on_musicPackWidget_currentIndexChanged(int spooledMusicIdx)
 {
-	_model->setBriefingMusicIndex(index);
+	SCP_string name = (spooledMusicIdx >= 0 && spooledMusicIdx < static_cast<int>(Spooled_music.size()))
+	                      ? Spooled_music[spooledMusicIdx].name
+	                      : "";
+	_model->setSubstituteBriefingMusicName(name);
 }
 
-void BriefingEditorDialog::on_musicPackComboBox_currentIndexChanged(int /*index*/)
+void BriefingEditorDialog::on_defaultMusicWidget_playbackStarted()
 {
-	_model->setSubstituteBriefingMusicName(ui->musicPackComboBox->currentText().toUtf8().constData());
+	ui->musicPackWidget->stopPlayback();
+}
+
+void BriefingEditorDialog::on_musicPackWidget_playbackStarted()
+{
+	ui->defaultMusicWidget->stopPlayback();
 }
 
 } // namespace fso::fred::dialogs

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Scene Browser - QtFRED Help</title>
+    <link rel="stylesheet" type="text/css" href="../css/help.css"/>
+</head>
+<body>
+<nav class="breadcrumb"><a href="../index.html">QtFRED Help</a> &rsaquo; Scene Browser</nav>
+<h1>Scene Browser</h1>
+<p>Opens via <strong>View &rsaquo; Scene Browser</strong>.</p>
+<p>Shows a complete list of every object in the mission, organized by layer and then by object
+type within each layer. Provides an alternative to clicking objects in the viewport for
+selection and contextual actions.</p>
+
+<h2>Selecting objects</h2>
+<p>Click any object in the list to select it. Hold <strong>Ctrl</strong> or <strong>Shift</strong>
+to add to the selection.</p>
+<p><strong>Right-click</strong> an object in the list to open the same context menu that
+appears when right-clicking that object in the viewport.</p>
+
+<h2>Filtering</h2>
+<p>Use the <strong>search box</strong> to show only objects whose names match the typed text.</p>
+<p>Use the <strong>IFF checkboxes</strong> to show or hide objects by IFF team. Unchecking
+an IFF removes all objects belonging to that team from the list.</p>
+
+<h2>Selection shortcuts</h2>
+<p>Three buttons act only on the objects currently visible in the filtered list. Objects
+hidden by the search or IFF filters are not affected:</p>
+<ul>
+    <li><strong>All</strong> - selects every visible object in the list.</li>
+    <li><strong>Clear</strong> - deselects everything.</li>
+    <li><strong>Invert</strong> - selects all currently unselected visible objects and
+        deselects all currently selected ones.</li>
+</ul>
+
+<h2>Layer visibility</h2>
+<p>Each layer row in the list has a checkbox. Uncheck it to hide all objects on that layer
+in the viewport; check it to show them again. This is the same visibility toggle available
+in the <a href="LayerManagerDialog.html">Layer Manager</a>.</p>
+
+<div class="note">Hiding objects via the layer checkbox does not delete or disable them.
+Hidden objects remain in the mission file and function normally in-game.</div>
+</body>
+</html>

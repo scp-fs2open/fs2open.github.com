@@ -28,7 +28,7 @@ ADE_VIRTVAR(Name, l_SEXPVariable, "string", "SEXP Variable name.", "string", "SE
 	return ade_set_args(L, "s", sv->variable_name);
 }
 
-ADE_VIRTVAR(Persistence, l_SEXPVariable, "enumeration", "SEXP Variable persistence, uses SEXPVAR_*_PERSISTENT enumerations", "enumeration", "SEXPVAR_*_PERSISTENT enumeration, or invalid numeration if handle is invalid")
+ADE_VIRTVAR(Persistence, l_SEXPVariable, "enumeration", "SEXP Variable persistence level, uses SEXPVAR_PERSIST_* enumerations", "enumeration", "A SEXPVAR_PERSIST_* enumeration, or invalid enumeration if handle is invalid")
 {
 	sexpvar_h *svh = NULL;
 	enum_h *type = NULL;
@@ -70,7 +70,7 @@ ADE_VIRTVAR(Persistence, l_SEXPVariable, "enumeration", "SEXP Variable persisten
 	return ade_set_args(L, "o", l_Enum.Set(ren));
 }
 
-ADE_VIRTVAR(Type, l_SEXPVariable, "enumeration", "SEXP Variable type, uses SEXPVAR_TYPE_* enumerations", "enumeration", "SEXPVAR_TYPE_* enumeration, or invalid numeration if handle is invalid")
+ADE_VIRTVAR(Type, l_SEXPVariable, "enumeration", "SEXP Variable value type, uses SEXPVAR_TYPE_* enumerations", "enumeration", "A SEXPVAR_TYPE_* enumeration, or invalid enumeration if handle is invalid")
 {
 	sexpvar_h *svh = NULL;
 	enum_h *type = NULL;

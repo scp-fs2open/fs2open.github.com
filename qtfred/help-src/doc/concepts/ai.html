@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>AI - QtFRED Help</title>
+    <link rel="stylesheet" type="text/css" href="../css/help.css"/>
+</head>
+<body>
+<nav class="breadcrumb"><a href="../index.html">QtFRED Help</a> &rsaquo; Concepts &rsaquo; AI</nav>
+<h1>AI</h1>
+<p>Ship AI behavior in FSO is controlled by three layered systems: the
+<strong>AI profile</strong>, the <strong>AI class</strong>, and
+<strong>AI goals and orders</strong>. Each layer handles a different aspect of
+behavior and they work together at runtime.</p>
+
+<h2>AI profile</h2>
+<p>The AI profile is a mission-wide setting chosen in
+<a href="../dialogs/MissionSpecsDialog.html">Mission Specs</a>. It is primarily a
+<strong>difficulty scaling system</strong>: it defines per-difficulty-level values
+for things like damage multipliers, weapon fire delays, turn time, shield recharge
+rates, and aim behavior; controlling how the mission feels across the Very Easy
+through Insane difficulty range. Profiles also contain a large set of behavioral
+flags that toggle specific AI behaviors on or off.</p>
+<p>Profiles are defined in <code>ai_profiles.tbl</code> and missions select from
+that list; custom profiles cannot be defined inside the mission file itself. If no
+profile is specified, the table's default profile is used. Most missions are fine
+with the default.</p>
+
+<h2>AI class</h2>
+<p>The AI class is a named skill preset assigned to individual ships. It controls
+the skill level of that specific ship within the envelope set by the profile;
+how well it aims, how it maneuvers, how it uses afterburners, and so on.</p>
+<p>Every ship class has a default AI class defined in its table entry. The
+<a href="../dialogs/ShipEditorDialog.html">Ship Editor</a> lets you override that
+default for a specific ship instance, and individual turrets can be given their
+own AI class in the <a href="../dialogs/ShipWeaponsDialog.html">Weapons</a>
+dialog.</p>
+
+<h2>AI goals and orders</h2>
+<p>Goals and orders are specific tasks assigned to a ship or wing: attack a
+target, guard a ship, dock with a vessel, fly a waypoint path, and so on. There
+are two ways to set them:</p>
+<ul>
+    <li><strong>Initial orders</strong> - set in the
+        <a href="../dialogs/ShipInitialOrdersDialog.html">Initial Orders</a>
+        dialog. These are the tasks a ship starts the mission with.</li>
+    <li><strong>Runtime goals</strong> - issued via SEXPs during the mission,
+        typically from events. These override or supplement initial orders.</li>
+</ul>
+<p>When a ship has multiple active goals, it pursues them in priority order.
+Priority is a value from 1 to 200 where higher values take precedence. Goals
+issued by the player via the comm menu use priorities in the 90–100 range, so
+goals with a priority above 89 may outrank player orders.</p>
+
+<h2>How the layers interact</h2>
+<p>Think of it as: the <strong>profile</strong> sets the rules of the game, the
+<strong>class</strong> sets how skilled the ship is within those rules, and the
+<strong>goals and orders</strong> tell the ship what to do. A high-skill AI
+class given a low-priority goal can still be overridden by a player order; a
+locked-in high-priority goal will hold regardless of player input.</p>
+</body>
+</html>
