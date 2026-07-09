@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>319</width>
-    <height>544</height>
+    <height>612</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -38,7 +38,7 @@
      <item row="0" column="2">
       <spacer name="horizontalSpacer_2">
        <property name="orientation">
-        <enum>Qt::Horizontal</enum>
+        <enum>Qt::Orientation::Horizontal</enum>
        </property>
        <property name="sizeHint" stdset="0">
         <size>
@@ -71,7 +71,7 @@
        </property>
       </widget>
      </item>
-     <item row="1" column="0" alignment="Qt::AlignRight">
+     <item row="1" column="0" alignment="Qt::AlignmentFlag::AlignRight">
       <widget class="QLabel" name="hullLabel">
        <property name="minimumSize">
         <size>
@@ -82,12 +82,15 @@
        <property name="text">
         <string>Hull Integrity</string>
        </property>
+       <property name="alignment">
+        <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+       </property>
       </widget>
      </item>
      <item row="1" column="2">
       <spacer name="horizontalSpacer_4">
        <property name="orientation">
-        <enum>Qt::Horizontal</enum>
+        <enum>Qt::Orientation::Horizontal</enum>
        </property>
        <property name="sizeHint" stdset="0">
         <size>
@@ -97,7 +100,7 @@
        </property>
       </spacer>
      </item>
-     <item row="0" column="0" alignment="Qt::AlignRight">
+     <item row="0" column="0" alignment="Qt::AlignmentFlag::AlignRight">
       <widget class="QLabel" name="velocityLabel">
        <property name="minimumSize">
         <size>
@@ -107,6 +110,9 @@
        </property>
        <property name="text">
         <string>Velocity</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
        </property>
       </widget>
      </item>
@@ -121,6 +127,9 @@
       <widget class="QLabel" name="label">
        <property name="text">
         <string>Guardian Threshold</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
        </property>
       </widget>
      </item>
@@ -155,7 +164,7 @@
    </item>
    <item>
     <layout class="QHBoxLayout" name="shieldLayout">
-     <item alignment="Qt::AlignRight">
+     <item alignment="Qt::AlignmentFlag::AlignRight">
       <widget class="QLabel" name="shieldHullLabel">
        <property name="text">
         <string>Shield Integrity</string>
@@ -181,7 +190,7 @@
      <item>
       <spacer name="shieldSpacer">
        <property name="orientation">
-        <enum>Qt::Horizontal</enum>
+        <enum>Qt::Orientation::Horizontal</enum>
        </property>
        <property name="sizeHint" stdset="0">
         <size>
@@ -254,12 +263,12 @@
       <item>
        <widget class="QListWidget" name="dockpointList">
         <property name="editTriggers">
-         <set>QAbstractItemView::NoEditTriggers</set>
+         <set>QAbstractItemView::EditTrigger::NoEditTriggers</set>
         </property>
        </widget>
       </item>
       <item>
-       <layout class="QVBoxLayout" name="dockpointVerticalLayout" stretch="0,1,1,0">
+       <layout class="QVBoxLayout" name="dockpointVerticalLayout" stretch="0,1,1,0,0">
         <item>
          <widget class="QLabel" name="dockeeLabel">
           <property name="text">
@@ -306,7 +315,7 @@
         <item>
          <spacer name="dockSpacer">
           <property name="orientation">
-           <enum>Qt::Vertical</enum>
+           <enum>Qt::Orientation::Vertical</enum>
           </property>
           <property name="sizeHint" stdset="0">
            <size>
@@ -363,7 +372,7 @@
           <item>
            <spacer name="SubsystemSpacer">
             <property name="orientation">
-             <enum>Qt::Vertical</enum>
+             <enum>Qt::Orientation::Vertical</enum>
             </property>
             <property name="sizeHint" stdset="0">
              <size>
@@ -380,7 +389,7 @@
       <item>
        <widget class="QLabel" name="subsysCargoHelpLabel">
         <property name="text">
-         <string>Enable &apos;Toggle Subsystem Scanning&apos; in the ship flags to edit subsystem cargo.</string>
+         <string>Enable 'Toggle Subsystem Scanning' in the ship flags to edit subsystem cargo.</string>
         </property>
         <property name="wordWrap">
          <bool>true</bool>
