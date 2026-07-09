@@ -83,8 +83,12 @@ public:
 	static bool isRootKey(int key) { return key <= -2; }
 	static int formulaFromRootKey(int key) { return -(key + 2); }
 
-private:
-	SCP_vector<event_annotation> m_annotations;
+	// ---------------------------------------------------------------
+	// Path conversion
+	// ---------------------------------------------------------------
+	// Public so editors can serialize annotations in a rebuild-stable form
+	// (annotation keys are tree_nodes[] indices, which do not survive a
+	// tree reload).
 
 	// Build a persistable path from an annotation key.
 	static SCP_list<int> buildPath(int key, const SCP_vector<sexp_tree_item>& tree_nodes, const SCP_vector<mission_event>& events);
@@ -92,4 +96,7 @@ private:
 	// Resolve a stored path back to an annotation key.
 	// Returns the key (>= 0 for regular nodes, <= -2 for root keys) or -1 on failure.
 	static int resolveFromPath(const SCP_list<int>& path, const SCP_vector<sexp_tree_item>& tree_nodes, const SCP_vector<mission_event>& events, const SCP_vector<int>& sig);
+
+private:
+	SCP_vector<event_annotation> m_annotations;
 };

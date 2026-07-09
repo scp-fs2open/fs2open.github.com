@@ -710,6 +710,38 @@ namespace FieldId {
     constexpr int Brief_CutToPrev   = 5500; // 5500–5579
     constexpr int Brief_DisableGrid = 5600; // 5600–5679
     constexpr int Brief_StageCamera = 5700; // 5700–5779
+    // Mission Events editor (in-dialog stack): event and message counts are
+    // unbounded, so per-item ids are index * FieldStride + the field constant.
+    constexpr int Event_FieldStride     = 32;
+    constexpr int Event_Name            = 300000; // + eventIndex * Event_FieldStride
+    constexpr int Event_RepeatCount     = 300001;
+    constexpr int Event_TriggerCount    = 300002;
+    constexpr int Event_Interval        = 300003;
+    constexpr int Event_Score           = 300004;
+    constexpr int Event_Chained         = 300005;
+    constexpr int Event_ChainDelay      = 300006;
+    constexpr int Event_UseMsecs        = 300007;
+    constexpr int Event_Team            = 300008;
+    constexpr int Event_DirectiveText   = 300009;
+    constexpr int Event_DirectiveKey    = 300010;
+    constexpr int Event_LogTrue         = 300011;
+    constexpr int Event_LogFalse        = 300012;
+    constexpr int Event_LogPrevious     = 300013;
+    constexpr int Event_LogAlwaysFalse  = 300014;
+    constexpr int Event_LogFirstRepeat  = 300015;
+    constexpr int Event_LogLastRepeat   = 300016;
+    constexpr int Event_LogFirstTrigger = 300017;
+    constexpr int Event_LogLastTrigger  = 300018;
+    constexpr int Msg_FieldStride       = 32;
+    constexpr int Msg_Name              = 400000; // + messageIndex * Msg_FieldStride
+    constexpr int Msg_Text              = 400001;
+    constexpr int Msg_Note              = 400002;
+    constexpr int Msg_Ani               = 400003;
+    constexpr int Msg_Persona           = 400004;
+    constexpr int Msg_Team              = 400005;
+    // Wave-file edits are message-scope snapshots (they can auto-select the
+    // persona and head ani as a side effect); merge id is base + messageIndex.
+    constexpr int Msg_SnapWave          = 500000;
     // Briefing icon-edit snapshot merge ids (DialogSnapshotCommand): base +
     // (team * MAX_BRIEF_STAGES + stage) + firstSelectedIcon * 80, so edits to
     // a different stage or selection never merge.

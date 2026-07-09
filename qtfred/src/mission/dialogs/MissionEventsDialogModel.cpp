@@ -91,6 +91,31 @@ bool MissionEventsDialogModel::apply()
 		m_messages[i].wave_info.name = nullptr;
 	}
 
+	// Invalidate sexp references to messages deleted this session. Deferred
+	// to apply so the rewrite hits the trees just copied from the dialog and
+	// Cancel stays a true no-op. Skipped when the name is in use again (the
+	// delete was undone, or another message took the name).
+	for (const auto& deletedName : m_deletedMessageNames) {
+		bool inUse = false;
+		for (const auto& msg : m_messages) {
+			if (!stricmp(msg.name, deletedName.c_str())) {
+				inUse = true;
+				break;
+			}
+		}
+		if (inUse)
+			continue;
+
+		SCP_string buf = "<" + deletedName + ">";
+
+		// force it to not be too long
+		if (SCP_truncate(buf, NAME_LENGTH - 1))
+			buf.back() = '>';
+
+		update_sexp_references(deletedName.c_str(), buf.c_str(), OPF_MESSAGE);
+		update_sexp_references(deletedName.c_str(), buf.c_str(), OPF_MESSAGE_OR_STRING);
+	}
+
 	applyAnnotations();
 
 	// Only fire the signal after the changes have been applied to make sure the other parts of the code see the updated
@@ -142,6 +167,15 @@ void MissionEventsDialogModel::initializeEvents()
 
 	m_tree_model.post_load();
 
+	rebuildTreeWidget();
+
+	initializeEventAnnotations();
+}
+
+// Rebuild the dialog's tree widget from m_events via the connected widget
+// operations. Used on initial load and on working-state restore.
+void MissionEventsDialogModel::rebuildTreeWidget()
+{
 	Q_EMIT treeCleared();
 	for (auto& event : m_events) {
 		// set the proper bitmap
@@ -160,8 +194,6 @@ void MissionEventsDialogModel::initializeEvents()
 
 		Q_EMIT subtreeAdded(event.name, image, event.formula);
 	}
-
-	initializeEventAnnotations();
 }
 
 void MissionEventsDialogModel::initializeEventAnnotations()
@@ -169,9 +201,15 @@ void MissionEventsDialogModel::initializeEventAnnotations()
 	m_annotation_model.loadFromGlobal(m_tree_model.tree_nodes, m_events, m_sig);
 	m_tree_model.annotation_model = &m_annotation_model;
 
-	// Emit for any annotation that resolved to a usable key: regular tree-node
-	// indices (>= 0) and root-label keys (<= -2 via SexpAnnotationModel::isRootKey).
-	// Unresolved annotations have node_index == -1 and are skipped.
+	emitAnnotations();
+}
+
+// Emit annotationApplied for any annotation that resolved to a usable key:
+// regular tree-node indices (>= 0) and root-label keys (<= -2 via
+// SexpAnnotationModel::isRootKey). Unresolved annotations have
+// node_index == -1 and are skipped.
+void MissionEventsDialogModel::emitAnnotations()
+{
 	for (const auto& ea : m_annotation_model.annotations()) {
 		if (ea.node_index >= 0 || SexpAnnotationModel::isRootKey(ea.node_index)) {
 			const bool hasColor = (ea.r != 255) || (ea.g != 255) || (ea.b != 255);
@@ -635,14 +673,26 @@ int MissionEventsDialogModel::getRepeatCount() const
 
 void MissionEventsDialogModel::setRepeatCount(int count)
 {
-	if (!SCP_vector_inbounds(m_events, m_cur_event)) {
+	setRepeatCountAt(m_cur_event, count);
+}
+
+void MissionEventsDialogModel::setEventNameAt(int index, const SCP_string& name)
+{
+	if (!SCP_vector_inbounds(m_events, index)) {
 		return;
 	}
-	auto& event = m_events[m_cur_event];
+	modify(m_events[index].name, name);
+}
+
+void MissionEventsDialogModel::setRepeatCountAt(int index, int count)
+{
+	if (!SCP_vector_inbounds(m_events, index)) {
+		return;
+	}
 	if (count < -1) {
 		count = -1;
 	}
-	modify(event.repeat_count, count);
+	modify(m_events[index].repeat_count, count);
 }
 
 int MissionEventsDialogModel::getTriggerCount() const
@@ -655,14 +705,18 @@ int MissionEventsDialogModel::getTriggerCount() const
 
 void MissionEventsDialogModel::setTriggerCount(int count)
 {
-	if (!SCP_vector_inbounds(m_events, m_cur_event)) {
+	setTriggerCountAt(m_cur_event, count);
+}
+
+void MissionEventsDialogModel::setTriggerCountAt(int index, int count)
+{
+	if (!SCP_vector_inbounds(m_events, index)) {
 		return;
 	}
-	auto& event = m_events[m_cur_event];
 	if (count < -1) {
 		count = -1;
 	}
-	modify(event.trigger_count, count);
+	modify(m_events[index].trigger_count, count);
 }
 
 int MissionEventsDialogModel::getIntervalTime() const
@@ -675,14 +729,18 @@ int MissionEventsDialogModel::getIntervalTime() const
 
 void MissionEventsDialogModel::setIntervalTime(int time)
 {
-	if (!SCP_vector_inbounds(m_events, m_cur_event)) {
+	setIntervalTimeAt(m_cur_event, time);
+}
+
+void MissionEventsDialogModel::setIntervalTimeAt(int index, int time)
+{
+	if (!SCP_vector_inbounds(m_events, index)) {
 		return;
 	}
-	auto& event = m_events[m_cur_event];
 	if (time < 0) {
 		time = 0;
 	}
-	modify(event.interval, time);
+	modify(m_events[index].interval, time);
 }
 
 bool MissionEventsDialogModel::getChained() const
@@ -716,14 +774,23 @@ int MissionEventsDialogModel::getChainDelay() const
 
 void MissionEventsDialogModel::setChainDelay(int delay)
 {
-	if (!SCP_vector_inbounds(m_events, m_cur_event)) {
-		return;
-	}
-	auto& event = m_events[m_cur_event];
+	setChainDelayAt(m_cur_event, delay);
+}
+
+void MissionEventsDialogModel::setChainDelayAt(int index, int delay)
+{
 	if (delay < 0) {
 		delay = 0;
 	}
-	modify(event.chain_delay, delay);
+	setChainDelayRawAt(index, delay);
+}
+
+void MissionEventsDialogModel::setChainDelayRawAt(int index, int delay)
+{
+	if (!SCP_vector_inbounds(m_events, index)) {
+		return;
+	}
+	modify(m_events[index].chain_delay, delay);
 }
 
 bool MissionEventsDialogModel::getUseMsecs() const
@@ -736,10 +803,15 @@ bool MissionEventsDialogModel::getUseMsecs() const
 
 void MissionEventsDialogModel::setUseMsecs(bool useMsecs)
 {
-	if (!SCP_vector_inbounds(m_events, m_cur_event)) {
+	setUseMsecsAt(m_cur_event, useMsecs);
+}
+
+void MissionEventsDialogModel::setUseMsecsAt(int index, bool useMsecs)
+{
+	if (!SCP_vector_inbounds(m_events, index)) {
 		return;
 	}
-	auto& event = m_events[m_cur_event];
+	auto& event = m_events[index];
 	if (useMsecs) {
 		event.flags |= MEF_USE_MSECS;
 	} else {
@@ -758,11 +830,15 @@ int MissionEventsDialogModel::getEventScore() const
 
 void MissionEventsDialogModel::setEventScore(int score)
 {
-	if (!SCP_vector_inbounds(m_events, m_cur_event)) {
+	setEventScoreAt(m_cur_event, score);
+}
+
+void MissionEventsDialogModel::setEventScoreAt(int index, int score)
+{
+	if (!SCP_vector_inbounds(m_events, index)) {
 		return;
 	}
-	auto& event = m_events[m_cur_event];
-	modify(event.score, score);
+	modify(m_events[index].score, score);
 }
 
 int MissionEventsDialogModel::getEventTeam() const
@@ -775,16 +851,19 @@ int MissionEventsDialogModel::getEventTeam() const
 
 void MissionEventsDialogModel::setEventTeam(int team)
 {
-	if (!SCP_vector_inbounds(m_events, m_cur_event)) {
+	setEventTeamAt(m_cur_event, team);
+}
+
+void MissionEventsDialogModel::setEventTeamAt(int index, int team)
+{
+	if (!SCP_vector_inbounds(m_events, index)) {
 		return;
 	}
-
-	auto& event = m_events[m_cur_event];
 
 	if (team < -1 || team >= MAX_TVT_TEAMS) {
 		team = -1;
 	}
-	modify(event.team, team);
+	modify(m_events[index].team, team);
 }
 
 SCP_string MissionEventsDialogModel::getEventDirectiveText() const
@@ -797,10 +876,15 @@ SCP_string MissionEventsDialogModel::getEventDirectiveText() const
 
 void MissionEventsDialogModel::setEventDirectiveText(const SCP_string& text)
 {
-	if (!SCP_vector_inbounds(m_events, m_cur_event)) {
+	setEventDirectiveTextAt(m_cur_event, text);
+}
+
+void MissionEventsDialogModel::setEventDirectiveTextAt(int index, const SCP_string& text)
+{
+	if (!SCP_vector_inbounds(m_events, index)) {
 		return;
 	}
-	auto& event = m_events[m_cur_event];
+	auto& event = m_events[index];
 	modify(event.objective_text, text);
 	lcl_fred_replace_stuff(event.objective_text);
 }
@@ -815,12 +899,31 @@ SCP_string MissionEventsDialogModel::getEventDirectiveKeyText() const
 
 void MissionEventsDialogModel::setEventDirectiveKeyText(const SCP_string& text)
 {
-	if (!SCP_vector_inbounds(m_events, m_cur_event)) {
+	setEventDirectiveKeyTextAt(m_cur_event, text);
+}
+
+void MissionEventsDialogModel::setEventDirectiveKeyTextAt(int index, const SCP_string& text)
+{
+	if (!SCP_vector_inbounds(m_events, index)) {
 		return;
 	}
-	auto& event = m_events[m_cur_event];
+	auto& event = m_events[index];
 	modify(event.objective_key_text, text);
 	lcl_fred_replace_stuff(event.objective_key_text);
+}
+
+void MissionEventsDialogModel::setEventLogFlagAt(int index, int mask, bool on)
+{
+	if (!SCP_vector_inbounds(m_events, index)) {
+		return;
+	}
+	auto& event = m_events[index];
+	if (on) {
+		event.mission_log_flags |= mask;
+	} else {
+		event.mission_log_flags &= ~mask;
+	}
+	set_modified();
 }
 
 bool MissionEventsDialogModel::getLogTrue() const
@@ -831,40 +934,12 @@ bool MissionEventsDialogModel::getLogTrue() const
 	return (m_events[m_cur_event].mission_log_flags & MLF_SEXP_TRUE) != 0;
 }
 
-void MissionEventsDialogModel::setLogTrue(bool log)
-{
-	if (!SCP_vector_inbounds(m_events, m_cur_event)) {
-		return;
-	}
-	auto& event = m_events[m_cur_event];
-	if (log) {
-		event.mission_log_flags |= MLF_SEXP_TRUE;
-	} else {
-		event.mission_log_flags &= ~MLF_SEXP_TRUE;
-	}
-	set_modified();
-}
-
 bool MissionEventsDialogModel::getLogFalse() const
 {
 	if (!SCP_vector_inbounds(m_events, m_cur_event)) {
 		return false;
 	}
 	return (m_events[m_cur_event].mission_log_flags & MLF_SEXP_FALSE) != 0;
-}
-
-void MissionEventsDialogModel::setLogFalse(bool log)
-{
-	if (!SCP_vector_inbounds(m_events, m_cur_event)) {
-		return;
-	}
-	auto& event = m_events[m_cur_event];
-	if (log) {
-		event.mission_log_flags |= MLF_SEXP_FALSE;
-	} else {
-		event.mission_log_flags &= ~MLF_SEXP_FALSE;
-	}
-	set_modified();
 }
 
 bool MissionEventsDialogModel::getLogLogPrevious() const
@@ -875,40 +950,12 @@ bool MissionEventsDialogModel::getLogLogPrevious() const
 	return (m_events[m_cur_event].mission_log_flags & MLF_STATE_CHANGE) != 0;
 }
 
-void MissionEventsDialogModel::setLogLogPrevious(bool log)
-{
-	if (!SCP_vector_inbounds(m_events, m_cur_event)) {
-		return;
-	}
-	auto& event = m_events[m_cur_event];
-	if (log) {
-		event.mission_log_flags |= MLF_STATE_CHANGE;
-	} else {
-		event.mission_log_flags &= ~MLF_STATE_CHANGE;
-	}
-	set_modified();
-}
-
 bool MissionEventsDialogModel::getLogAlwaysFalse() const
 {
 	if (!SCP_vector_inbounds(m_events, m_cur_event)) {
 		return false;
 	}
 	return (m_events[m_cur_event].mission_log_flags & MLF_SEXP_KNOWN_FALSE) != 0;
-}
-
-void MissionEventsDialogModel::setLogAlwaysFalse(bool log)
-{
-	if (!SCP_vector_inbounds(m_events, m_cur_event)) {
-		return;
-	}
-	auto& event = m_events[m_cur_event];
-	if (log) {
-		event.mission_log_flags |= MLF_SEXP_KNOWN_FALSE;
-	} else {
-		event.mission_log_flags &= ~MLF_SEXP_KNOWN_FALSE;
-	}
-	set_modified();
 }
 
 bool MissionEventsDialogModel::getLogFirstRepeat() const
@@ -919,40 +966,12 @@ bool MissionEventsDialogModel::getLogFirstRepeat() const
 	return (m_events[m_cur_event].mission_log_flags & MLF_FIRST_REPEAT_ONLY) != 0;
 }
 
-void MissionEventsDialogModel::setLogFirstRepeat(bool log)
-{
-	if (!SCP_vector_inbounds(m_events, m_cur_event)) {
-		return;
-	}
-	auto& event = m_events[m_cur_event];
-	if (log) {
-		event.mission_log_flags |= MLF_FIRST_REPEAT_ONLY;
-	} else {
-		event.mission_log_flags &= ~MLF_FIRST_REPEAT_ONLY;
-	}
-	set_modified();
-}
-
 bool MissionEventsDialogModel::getLogLastRepeat() const
 {
 	if (!SCP_vector_inbounds(m_events, m_cur_event)) {
 		return false;
 	}
 	return (m_events[m_cur_event].mission_log_flags & MLF_LAST_REPEAT_ONLY) != 0;
-}
-
-void MissionEventsDialogModel::setLogLastRepeat(bool log)
-{
-	if (!SCP_vector_inbounds(m_events, m_cur_event)) {
-		return;
-	}
-	auto& event = m_events[m_cur_event];
-	if (log) {
-		event.mission_log_flags |= MLF_LAST_REPEAT_ONLY;
-	} else {
-		event.mission_log_flags &= ~MLF_LAST_REPEAT_ONLY;
-	}
-	set_modified();
 }
 
 bool MissionEventsDialogModel::getLogFirstTrigger() const
@@ -963,40 +982,12 @@ bool MissionEventsDialogModel::getLogFirstTrigger() const
 	return (m_events[m_cur_event].mission_log_flags & MLF_FIRST_TRIGGER_ONLY) != 0;
 }
 
-void MissionEventsDialogModel::setLogFirstTrigger(bool log)
-{
-	if (!SCP_vector_inbounds(m_events, m_cur_event)) {
-		return;
-	}
-	auto& event = m_events[m_cur_event];
-	if (log) {
-		event.mission_log_flags |= MLF_FIRST_TRIGGER_ONLY;
-	} else {
-		event.mission_log_flags &= ~MLF_FIRST_TRIGGER_ONLY;
-	}
-	set_modified();
-}
-
 bool MissionEventsDialogModel::getLogLastTrigger() const
 {
 	if (!SCP_vector_inbounds(m_events, m_cur_event)) {
 		return false;
 	}
 	return (m_events[m_cur_event].mission_log_flags & MLF_LAST_TRIGGER_ONLY) != 0;
-}
-
-void MissionEventsDialogModel::setLogLastTrigger(bool log)
-{
-	if (!SCP_vector_inbounds(m_events, m_cur_event)) {
-		return;
-	}
-	auto& event = m_events[m_cur_event];
-	if (log) {
-		event.mission_log_flags |= MLF_LAST_TRIGGER_ONLY;
-	} else {
-		event.mission_log_flags &= ~MLF_LAST_TRIGGER_ONLY;
-	}
-	set_modified();
 }
 
 // 'key' is an annotation key in the SexpAnnotationModel sense: a tree_nodes[]
@@ -1096,9 +1087,10 @@ void MissionEventsDialogModel::deleteMessage()
 		m_messages[m_cur_msg].wave_info.name = nullptr;
 	}
 
-	SCP_string buf = "<" + SCP_string(m_messages[m_cur_msg].name) + ">";
-	update_sexp_references(m_messages[m_cur_msg].name, buf.c_str(), OPF_MESSAGE);
-	update_sexp_references(m_messages[m_cur_msg].name, buf.c_str(), OPF_MESSAGE_OR_STRING);
+	// Reference invalidation is deferred to apply(): rewriting Sexp_nodes here
+	// would corrupt the live event formulas on Cancel and be discarded on OK
+	// anyway (save_tree overwrites them from the dialog's own trees).
+	m_deletedMessageNames.emplace_back(m_messages[m_cur_msg].name);
 
 	m_messages.erase(m_messages.begin() + m_cur_msg);
 
@@ -1169,12 +1161,23 @@ void MissionEventsDialogModel::setMessageName(const SCP_string& name)
 		return;
 	}
 
-	auto& msg = m_messages[m_cur_msg];
-
 	if (!checkMessageNameConflict(name)) {
-		strncpy(msg.name, name.c_str(), NAME_LENGTH - 1);
-		set_modified();
+		setMessageNameAt(m_cur_msg, name);
 	}
+}
+
+// No conflict check: undo/redo applies values that were valid when captured,
+// and an interactive warning has no place inside a command setter.
+void MissionEventsDialogModel::setMessageNameAt(int index, const SCP_string& name)
+{
+	if (!SCP_vector_inbounds(m_messages, index)) {
+		return;
+	}
+
+	auto& msg = m_messages[index];
+	strncpy(msg.name, name.c_str(), NAME_LENGTH - 1);
+	msg.name[NAME_LENGTH - 1] = '\0';
+	set_modified();
 }
 
 SCP_string MissionEventsDialogModel::getMessageText() const
@@ -1187,13 +1190,19 @@ SCP_string MissionEventsDialogModel::getMessageText() const
 
 void MissionEventsDialogModel::setMessageText(const SCP_string& text)
 {
-	if (!SCP_vector_inbounds(m_messages, m_cur_msg)) {
+	setMessageTextAt(m_cur_msg, text);
+}
+
+void MissionEventsDialogModel::setMessageTextAt(int index, const SCP_string& text)
+{
+	if (!SCP_vector_inbounds(m_messages, index)) {
 		return;
 	}
 
-	auto& msg = m_messages[m_cur_msg];
+	auto& msg = m_messages[index];
 
 	strncpy(msg.message, text.c_str(), MESSAGE_LENGTH - 1);
+	msg.message[MESSAGE_LENGTH - 1] = '\0';
 	lcl_fred_replace_stuff(msg.message, MESSAGE_LENGTH - 1);
 
 	set_modified();
@@ -1209,13 +1218,16 @@ SCP_string MissionEventsDialogModel::getMessageNote() const
 
 void MissionEventsDialogModel::setMessageNote(const SCP_string& note)
 {
-	if (!SCP_vector_inbounds(m_messages, m_cur_msg)) {
+	setMessageNoteAt(m_cur_msg, note);
+}
+
+void MissionEventsDialogModel::setMessageNoteAt(int index, const SCP_string& note)
+{
+	if (!SCP_vector_inbounds(m_messages, index)) {
 		return;
 	}
 
-	auto& msg = m_messages[m_cur_msg];
-
-	modify(msg.note, note);
+	modify(m_messages[index].note, note);
 }
 
 SCP_string MissionEventsDialogModel::getMessageAni() const
@@ -1229,11 +1241,16 @@ SCP_string MissionEventsDialogModel::getMessageAni() const
 
 void MissionEventsDialogModel::setMessageAni(const SCP_string& ani)
 {
-	if (!SCP_vector_inbounds(m_messages, m_cur_msg)) {
+	setMessageAniAt(m_cur_msg, ani);
+}
+
+void MissionEventsDialogModel::setMessageAniAt(int index, const SCP_string& ani)
+{
+	if (!SCP_vector_inbounds(m_messages, index)) {
 		return;
 	}
 
-	auto& msg = m_messages[m_cur_msg];
+	auto& msg = m_messages[index];
 	const char* cur = msg.avi_info.name;
 	const SCP_string curStr = cur ? cur : "";
 
@@ -1329,13 +1346,16 @@ int MissionEventsDialogModel::getMessagePersona() const
 
 void MissionEventsDialogModel::setMessagePersona(int persona)
 {
-	if (!SCP_vector_inbounds(m_messages, m_cur_msg)) {
+	setMessagePersonaAt(m_cur_msg, persona);
+}
+
+void MissionEventsDialogModel::setMessagePersonaAt(int index, int persona)
+{
+	if (!SCP_vector_inbounds(m_messages, index)) {
 		return;
 	}
 
-	auto& msg = m_messages[m_cur_msg];
-
-	msg.persona_index = persona;
+	m_messages[index].persona_index = persona;
 	set_modified();
 }
 
@@ -1353,11 +1373,16 @@ int MissionEventsDialogModel::getMessageTeam() const
 
 void MissionEventsDialogModel::setMessageTeam(int team)
 {
-	if (!SCP_vector_inbounds(m_messages, m_cur_msg)) {
+	setMessageTeamAt(m_cur_msg, team);
+}
+
+void MissionEventsDialogModel::setMessageTeamAt(int index, int team)
+{
+	if (!SCP_vector_inbounds(m_messages, index)) {
 		return;
 	}
 
-	auto& msg = m_messages[m_cur_msg];
+	auto& msg = m_messages[index];
 
 	if (team >= MAX_TVT_TEAMS) {
 		msg.multi_team = -1;

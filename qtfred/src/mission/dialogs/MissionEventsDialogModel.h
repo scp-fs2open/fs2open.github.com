@@ -22,6 +22,16 @@ class MissionEventsDialogModel : public AbstractDialogModel {
 	QByteArray captureState() const override;
 	void restoreState(const QByteArray& state) override;
 
+	// Working-state serialization for the in-dialog undo stack, in two
+	// independent scopes: event/tree state (m_events, m_sig, annotations in
+	// path form) and message state (m_messages, current message). Restoring
+	// the event scope rebuilds the tree widget via the same signals
+	// initializeData uses.
+	QByteArray captureEventWorkingState() const;
+	void restoreEventWorkingState(const QByteArray& state);
+	QByteArray captureMessageWorkingState() const;
+	void restoreMessageWorkingState(const QByteArray& state);
+
 	bool eventIsValid() const;
 	bool messageIsValid() const;
 
@@ -74,23 +84,30 @@ class MissionEventsDialogModel : public AbstractDialogModel {
 	SCP_string getEventDirectiveKeyText() const;
 	void setEventDirectiveKeyText(const SCP_string& text);
 
-	// Event Logging
+	// Index-addressed setters for undo commands: undo must target the event
+	// that was edited even if the selection has moved since.
+	void setEventNameAt(int index, const SCP_string& name);
+	void setRepeatCountAt(int index, int count);
+	void setTriggerCountAt(int index, int count);
+	void setIntervalTimeAt(int index, int time);
+	void setEventScoreAt(int index, int score);
+	void setChainDelayAt(int index, int delay);
+	void setChainDelayRawAt(int index, int delay); // no clamping; -1 = unchained
+	void setUseMsecsAt(int index, bool useMsecs);
+	void setEventTeamAt(int index, int team);
+	void setEventDirectiveTextAt(int index, const SCP_string& text);
+	void setEventDirectiveKeyTextAt(int index, const SCP_string& text);
+	void setEventLogFlagAt(int index, int mask, bool on);
+
+	// Event Logging (writes go through setEventLogFlagAt)
 	bool getLogTrue() const;
-	void setLogTrue(bool log);
 	bool getLogFalse() const;
-	void setLogFalse(bool log);
 	bool getLogLogPrevious() const;
-	void setLogLogPrevious(bool log);
 	bool getLogAlwaysFalse() const;
-	void setLogAlwaysFalse(bool log);
 	bool getLogFirstRepeat() const;
-	void setLogFirstRepeat(bool log);
 	bool getLogLastRepeat() const;
-	void setLogLastRepeat(bool log);
 	bool getLogFirstTrigger() const;
-	void setLogFirstTrigger(bool log);
 	bool getLogLastTrigger() const;
-	void setLogLastTrigger(bool log);
 
 	// Event Annotations. 'key' is an annotation key as used by SexpAnnotationModel:
 	// a tree_nodes[] index (>= 0) for a regular node, or rootKey(formula) (<= -2)
@@ -121,6 +138,14 @@ class MissionEventsDialogModel : public AbstractDialogModel {
 	int getMessageTeam() const;
 	void setMessageTeam(int team);
 
+	// Index-addressed message setters for undo commands.
+	void setMessageNameAt(int index, const SCP_string& name);
+	void setMessageTextAt(int index, const SCP_string& text);
+	void setMessageNoteAt(int index, const SCP_string& note);
+	void setMessageAniAt(int index, const SCP_string& ani);
+	void setMessagePersonaAt(int index, int persona);
+	void setMessageTeamAt(int index, int team);
+
 	void autoSelectPersona();
 	void playMessageWave();
 	const SCP_vector<MMessage>& getMessageList() const;
@@ -144,6 +169,8 @@ class MissionEventsDialogModel : public AbstractDialogModel {
 
 	void initializeEvents();
 	void initializeEventAnnotations();
+	void emitAnnotations();
+	void rebuildTreeWidget();
 	void initializeTeamList();
 	static mission_event makeDefaultEvent();
 
@@ -169,6 +196,12 @@ class MissionEventsDialogModel : public AbstractDialogModel {
 	SCP_vector<MMessage> m_messages;
 	int m_cur_msg = -1;
 	int m_wave_id = -1;
+
+	// Names of messages deleted this session; apply() invalidates sexp
+	// references to any that are not back in use. Deliberately not part of
+	// the message working state: an undone delete puts the name back in
+	// m_messages, which is what apply() checks.
+	SCP_vector<SCP_string> m_deletedMessageNames;
 
 	SCP_vector<SCP_string> m_head_ani_list;
 	SCP_vector<SCP_string> m_wave_list;

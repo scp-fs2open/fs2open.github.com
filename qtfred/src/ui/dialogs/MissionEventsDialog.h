@@ -38,7 +38,6 @@ class MissionEventsDialog: public QDialog, public SexpTreeEditorInterface {
 
   protected:
 	void closeEvent(QCloseEvent* event) override;
-	void focusInEvent(QFocusEvent* e) override;
 
 private slots:
 	void on_okAndCancelButtons_accepted();
@@ -55,23 +54,23 @@ private slots:
 	void on_repeatCountBox_valueChanged(int value);
 	void on_triggerCountBox_valueChanged(int value);
 	void on_intervalTimeBox_valueChanged(int value);
-	void on_chainedCheckBox_stateChanged(int state);
+	void on_chainedCheckBox_toggled(bool checked);
 	void on_chainDelayBox_valueChanged(int value);
-	void on_useMsecsCheckBox_stateChanged(int state);
+	void on_useMsecsCheckBox_toggled(bool checked);
 	void on_scoreBox_valueChanged(int value);
 	void on_teamCombo_currentIndexChanged(int index);
-	
+
 	void on_editDirectiveText_textChanged(const QString& text);
 	void on_editDirectiveKeypressText_textChanged(const QString& text);
 
-	void on_checkLogTrue_stateChanged(int state);
-	void on_checkLogFalse_stateChanged(int state);
-	void on_checkLogPrevious_stateChanged(int state);
-	void on_checkLogAlwaysFalse_stateChanged(int state);
-	void on_checkLogFirstRepeat_stateChanged(int state);
-	void on_checkLogLastRepeat_stateChanged(int state);
-	void on_checkLogFirstTrigger_stateChanged(int state);
-	void on_checkLogLastTrigger_stateChanged(int state);
+	void on_checkLogTrue_toggled(bool checked);
+	void on_checkLogFalse_toggled(bool checked);
+	void on_checkLogPrevious_toggled(bool checked);
+	void on_checkLogAlwaysFalse_toggled(bool checked);
+	void on_checkLogFirstRepeat_toggled(bool checked);
+	void on_checkLogLastRepeat_toggled(bool checked);
+	void on_checkLogFirstTrigger_toggled(bool checked);
+	void on_checkLogLastTrigger_toggled(bool checked);
 
 	void on_messageList_currentRowChanged(int row);
 	void on_messageList_itemDoubleClicked(QListWidgetItem* item);
@@ -88,10 +87,10 @@ private slots:
 	void on_messageContent_textChanged();
 	void on_btnMsgNote_clicked();
 	void on_aniCombo_editingFinished();
-	void on_aniCombo_selectedIndexChanged(int index);
+	void on_aniCombo_currentIndexChanged(int index);
 	void on_btnAniBrowse_clicked();
 	void on_waveCombo_editingFinished();
-	void on_waveCombo_selectedIndexChanged(int index);
+	void on_waveCombo_currentIndexChanged(int index);
 	void on_btnBrowseWave_clicked();
 	void on_btnWavePlay_clicked();
 	void on_personaCombo_currentIndexChanged(int index);
@@ -108,6 +107,20 @@ private: // NOLINT(readability-redundant-access-specifiers)
 
 	int m_last_message_node = -1;
 	QString m_last_message_name;
+
+	// Running before-state for tree-edit snapshots: the tree mutates before
+	// modified() fires, so the cache holds the pre-edit capture.
+	QByteArray _workingStateCache;
+	bool _suppressTreeUndo = false;
+
+	void onEventTreeModified();
+	void pushEventStateSnapshot(const QByteArray& before, const QString& label);
+	void pushMessageStateSnapshot(const QByteArray& before, const QString& label, int mergeId = -1);
+	void pushEventLogFlagCommand(int fieldConst, int mask, bool checked);
+	void changeMessageAni(const SCP_string& name);
+	void changeMessageWave(const SCP_string& name);
+	void syncEventRootLabel(int eventIndex);
+	void updateEventBitmapAt(int eventIndex);
 
 	void updateEventUi();
 	void updateEventMoveButtons();
