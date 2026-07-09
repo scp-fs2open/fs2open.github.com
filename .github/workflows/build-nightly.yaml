@@ -126,31 +126,73 @@ jobs:
       - name: Set workspace as safe
         # This appears to be broken in current actions, so do it manually
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
-      - name: Configure CMake
+      # Tree A: static CRT (/MT) for FSO + FRED2 (no Qt dependency needed)
+      - name: Configure CMake (static CRT /MT - FSO + FRED2)
         env:
           CONFIGURATION: ${{ matrix.configuration }}
           ARCHITECTURE: ${{ matrix.arch }}
           SIMD: ${{ matrix.simd }}
         shell: bash
         run: |
-          mkdir build
-          cd build
+          mkdir build-mt
+          cd build-mt
           cmake -DCMAKE_INSTALL_PREFIX="$(pwd)/install" -DFSO_USE_SPEECH=ON \
             -DFSO_USE_VOICEREC=ON -DFORCED_SIMD_INSTRUCTIONS="$SIMD" \
             -DFSO_BUILD_TESTS=ON -DFSO_INSTALL_DEBUG_FILES=ON -A "$ARCHITECTURE" \
-            -DQT_USE_PRECOMPILED=ON -G "Visual Studio 17 2022" -T "v143" \
+            -DFSO_BUILD_QTFRED=OFF -G "Visual Studio 17 2022" -T "v143" \
             -DCMAKE_BUILD_TYPE=$CONFIGURATION ..
-      - name: Compile
-        working-directory: ./build
+      - name: Compile (static CRT)
+        working-directory: ./build-mt
         env:
           CONFIGURATION: ${{ matrix.configuration }}
           COMPILER: ${{ matrix.compiler }}
         shell: bash
         run: |
-          cmake --build . --config "$CONFIGURATION" --target INSTALL -- /verbosity:minimal
+          cmake --build . --config "$CONFIGURATION" -- /verbosity:minimal
+          cmake --install . --config "$CONFIGURATION"
           ls -alR "$(pwd)/install"
+      # Tree B: dynamic CRT (/MD) for QtFRED only (matches Qt's prebuilt /MD runtime)
+      # Skipped on Win32: Qt6 has no 32-bit Windows support, so CMake force-disables
+      # FSO_BUILD_QTFRED there and the qtfred target would not exist
+      - name: Configure CMake (dynamic CRT /MD - QtFRED)
+        if: matrix.arch != 'Win32'
+        env:
+          CONFIGURATION: ${{ matrix.configuration }}
+          ARCHITECTURE: ${{ matrix.arch }}
+          SIMD: ${{ matrix.simd }}
+        shell: bash
+        run: |
+          mkdir build-md
+          cd build-md
+          cmake -DCMAKE_INSTALL_PREFIX="$(pwd)/install" -DFSO_USE_SPEECH=ON \
+            -DFSO_USE_VOICEREC=ON -DFORCED_SIMD_INSTRUCTIONS="$SIMD" \
+            -DFSO_BUILD_TESTS=OFF -DFSO_INSTALL_DEBUG_FILES=ON -A "$ARCHITECTURE" \
+            -DFSO_BUILD_QTFRED=ON -DFSO_BUILD_FRED2=OFF -DQT_USE_PRECOMPILED=ON \
+            -G "Visual Studio 17 2022" -T "v143" -DCMAKE_BUILD_TYPE=$CONFIGURATION ..
+      - name: Compile (dynamic CRT)
+        if: matrix.arch != 'Win32'
+        working-directory: ./build-md
+        env:
+          CONFIGURATION: ${{ matrix.configuration }}
+          COMPILER: ${{ matrix.compiler }}
+        shell: bash
+        run: |
+          cmake --build . --config "$CONFIGURATION" --target qtfred -- /verbosity:minimal
+          cmake --install . --config "$CONFIGURATION" --component qtFRED
+          ls -alR "$(pwd)/install"
+      # Merge both trees into the single install dir the zip job consumes
+      - name: Merge installs
+        shell: bash
+        run: |
+          mkdir -p build/install
+          # build-md does not exist on Win32 (no QtFRED there)
+          if [ -d build-md/install ]; then
+             cp -r build-md/install/. build/install/
+          fi
+          cp -r build-mt/install/. build/install/
+          ls -alR build/install
       - name: Run Tests
-        working-directory: ./build
+        working-directory: ./build-mt
         env:
           CONFIGURATION: ${{ matrix.configuration }}
         shell: bash
