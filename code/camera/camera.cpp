@@ -56,6 +56,10 @@ APPLY_TO_FOV_T(-, sub)
 
 // Used to set the default value for in-game options
 static float fov_default = DEFAULT_FOV;
+static float cockpit_fov_default = DEFAULT_FOV;
+static bool cockpit_fov_toggle_default = false;
+
+bool Use_cockpit_fov = false;
 
 static SCP_string fov_display(float val)
 {
@@ -71,6 +75,21 @@ static void parse_fov_func()
 	stuff_float(&value);
 	CLAMP(value, 0.436332f, 1.5708f);
 	fov_default = value;
+}
+
+static void parse_cockpit_fov_func()
+{
+	float value;
+	stuff_float(&value);
+	CLAMP(value, 0.436332f, 1.5708f);
+	cockpit_fov_default = value;
+}
+
+static void parse_cockpit_fov_toggle_func()
+{
+	bool value;
+	stuff_boolean(&value);
+	cockpit_fov_toggle_default = value;
 }
 
 // coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
@@ -90,25 +109,6 @@ auto FovOption = options::OptionBuilder<float>("Graphics.FOV",
 					 .parser(parse_fov_func)
 					 .finish();
 
-bool Use_cockpit_fov = false;
-
-// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
-auto CockpitFOVToggleOption = options::OptionBuilder<bool>("Graphics.CockpitFOVToggle",
-					 std::pair<const char*, int>{"Cockpit FOV Toggle", 1838},
-					 std::pair<const char*, int>{"Whether or not to use a different FOV for cockpit rendering from normal rendering", 1839})
-					 .category(std::make_pair("Graphics", 1825))
-					 .default_val(false)
-					 .change_listener([](bool val, bool) {
-					      if (!val) {
-					           COCKPIT_ZOOM_DEFAULT = VIEWER_ZOOM_DEFAULT;
-					      }
-					      return true; // This option will always persist so we never return false
-					 })
-					 .level(options::ExpertLevel::Advanced)
-					 .bind_to(&Use_cockpit_fov)
-					 .importance(61)
-					 .finish();
-
 // coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
 auto CockpitFovOption = options::OptionBuilder<float>("Graphics.CockpitFOV",
 					 std::pair<const char*, int>{"Cockpit Field Of View", 1840},
@@ -124,9 +124,28 @@ auto CockpitFovOption = options::OptionBuilder<float>("Graphics.CockpitFOV",
 					      return true;
 					 })
 					 .display(fov_display)
-					 .default_val(fov_default)
+					 .default_func([]() { return cockpit_fov_default; })
 					 .level(options::ExpertLevel::Advanced)
 					 .importance(62)
+					 .parser(parse_cockpit_fov_func)
+					 .finish();
+
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+auto CockpitFOVToggleOption = options::OptionBuilder<bool>("Graphics.CockpitFOVToggle",
+					 std::pair<const char*, int>{"Cockpit FOV Toggle", 1838},
+					 std::pair<const char*, int>{"Whether or not to use a different FOV for cockpit rendering from normal rendering", 1839})
+					 .category(std::make_pair("Graphics", 1825))
+					 .default_func([]() {return cockpit_fov_toggle_default;})
+					 .change_listener([](bool val, bool) {
+					      if (!val) {
+					           COCKPIT_ZOOM_DEFAULT = VIEWER_ZOOM_DEFAULT;
+					      }
+					      return true; // This option will always persist so we never return false
+					 })
+					 .level(options::ExpertLevel::Advanced)
+					 .bind_to(&Use_cockpit_fov)
+					 .importance(61)
+					 .parser(parse_cockpit_fov_toggle_func)
 					 .finish();
 
 //*************************CLASS: camera*************************
