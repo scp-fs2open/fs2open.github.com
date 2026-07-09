@@ -27,7 +27,6 @@ public:
 
 protected:
 	void closeEvent(QCloseEvent* e) override; // funnel all Window X presses through reject()
-	void focusInEvent(QFocusEvent* e) override;
 
 private slots:
 	void on_okAndCancelButtons_accepted();
@@ -50,6 +49,13 @@ private:  // NOLINT(readability-redundant-access-specifiers)
 	EditorViewport* _viewport    = nullptr;
 	FredView*       _fredView    = nullptr;
 	QUndoStack*     _dialogStack = nullptr;
+
+	// Merge identity for spinbox snapshots: bumped when the chosen-list
+	// selection changes, so scrubs within one selection merge but edits after
+	// a re-selection never merge into them.
+	int _selectionGeneration = 0;
+
+	void pushWorkingStateSnapshot(const QByteArray& before, const QString& label, int mergeId = -1);
 
 	void updateUi();
 	void enableDisableControls();

@@ -804,6 +804,10 @@ namespace FieldId {
     constexpr int TL_CurrentTeam    = 7001;
     constexpr int TL_SkipValidation = 7002; // applies to all teams
     constexpr int TL_SnapCellBase   = 10000000; // + (table*8+column)*1000000 + generation%1000000
+    // Reinforcements editor (in-dialog stack): the use-count and delay
+    // spinboxes apply to the whole selection, so their edits are snapshots
+    // merged per control within one selection epoch.
+    constexpr int Reinf_SnapSpinBase = 50000000; // + control*1000000 + generation%1000000
     // Briefing icon-edit snapshot merge ids (DialogSnapshotCommand): base +
     // (team * MAX_BRIEF_STAGES + stage) + firstSelectedIcon * 80, so edits to
     // a different stage or selection never merge.

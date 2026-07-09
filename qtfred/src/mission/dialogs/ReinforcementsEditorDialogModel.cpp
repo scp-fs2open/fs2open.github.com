@@ -211,7 +211,7 @@ int ReinforcementsDialogModel::getBeforeArrivalDelay()
 }
 
 
-void ReinforcementsDialogModel::selectReinforcement(const SCP_vector<SCP_string>& namesIn) 
+void ReinforcementsDialogModel::selectReinforcement(const SCP_vector<SCP_string>& namesIn)
 {
 	_selectedReinforcements = namesIn;
 
@@ -219,7 +219,7 @@ void ReinforcementsDialogModel::selectReinforcement(const SCP_vector<SCP_string>
 
 	Assertion(namesIn.size() == _selectedReinforcementIndices.size(), "%d vs %d", static_cast<int>(namesIn.size()), static_cast<int>(_selectedReinforcementIndices.size()));
 
-	set_modified();
+	// Selection is view state, not a modification.
 }
 
 void ReinforcementsDialogModel::setUseCount(int count) 
