@@ -4936,14 +4936,24 @@ void ai_fly_to_target_position(const vec3d* target_pos, bool* pl_done_p=NULL, bo
 	}
 
 	float dist_to_cover_this_frame = (Pl_objp->phys_info.speed * flFrametime);
-	if ( (dist_to_goal < MIN_DIST_TO_WAYPOINT_GOAL) || dist_to_cover_this_frame > 0.1f ) {
+
+	// Retail's completion distance of sqrt(radius) is only ~32m for a capital ship with a 1000m radius --
+	// far smaller than such a ship's turning circle -- and retail also skipped the completion check
+	// entirely unless the ship covered 0.1m in a single frame, a framerate-dependent gate that excludes
+	// exactly the slow speeds at which a big ship could aim precisely.  Together these could trap a
+	// capital ship in an endless overshoot-turnaround-miss loop at its final waypoint.  With the flag
+	// set, big ships complete a waypoint anywhere within their own radius of it, and the check always runs.
+	bool fix_waypoint_completion = The_mission.ai_profile->flags[AI::Profile_Flags::Fix_big_ship_waypoint_completion];
+	float waypoint_tolerance = MIN_DIST_TO_WAYPOINT_GOAL + ((fix_waypoint_completion && sip->is_big_or_huge()) ? Pl_objp->radius : fl_sqrt(Pl_objp->radius));
+
+	if ( fix_waypoint_completion || (dist_to_goal < MIN_DIST_TO_WAYPOINT_GOAL) || dist_to_cover_this_frame > 0.1f ) {
 		vec3d	nearest_point;
 		float		r;
 
 		r = find_nearest_point_on_line(&nearest_point, &Pl_objp->last_pos, &Pl_objp->pos, target_pos);
 
-		if ( (dist_to_goal < (MIN_DIST_TO_WAYPOINT_GOAL + fl_sqrt(Pl_objp->radius) + dist_to_cover_this_frame))
-			|| (((r >= 0.0f) && (r <= 1.0f)) && (vm_vec_dist_quick(&nearest_point, target_pos) < (MIN_DIST_TO_WAYPOINT_GOAL + fl_sqrt(Pl_objp->radius)))))
+		if ( (dist_to_goal < (waypoint_tolerance + dist_to_cover_this_frame))
+			|| (((r >= 0.0f) && (r <= 1.0f)) && (vm_vec_dist_quick(&nearest_point, target_pos) < waypoint_tolerance)))
 		{
 				int treat_as_ship;
 
