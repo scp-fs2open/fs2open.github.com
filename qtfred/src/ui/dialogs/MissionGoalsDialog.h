@@ -27,7 +27,6 @@ public:
 
  protected:
 	void closeEvent(QCloseEvent* event) override;
-	void focusInEvent(QFocusEvent* e) override;
 
 private slots:
 	void on_okAndCancelButtons_accepted();
@@ -39,8 +38,8 @@ private slots:
 	void on_goalDescription_textChanged(const QString& text);
 	void on_goalScore_valueChanged(int value);
 	void on_goalTeamCombo_currentIndexChanged(int team);
-	void on_objectiveInvalidCheck_stateChanged(bool checked);
-	void on_noCompletionMusicCheck_stateChanged(bool checked);
+	void on_objectiveInvalidCheck_toggled(bool checked);
+	void on_noCompletionMusicCheck_toggled(bool checked);
 	void on_newObjectiveBtn_clicked();
 
 	void on_goalEventTree_selectedRootChanged(int formula);
@@ -61,6 +60,20 @@ private slots:
     QUndoStack*     _dialogStack = nullptr;
 	void load_tree();
 	void recreate_tree();
+
+	// In-dialog undo helpers. Tree edits and goal-structure ops go through
+	// working-state snapshots; field edits push merging FieldEditCommands.
+	// _workingStateCache is the before-state for the next tree edit (the tree
+	// mutates before modified() fires); it is refreshed on every stack index
+	// change so undo/redo keeps it coherent. _suppressTreeUndo guards
+	// programmatic tree changes (add objective, snapshot restore) so they
+	// don't push their own mislabeled tree-edit commands.
+	void onGoalTreeModified();
+	void pushWorkingStateSnapshot(const QByteArray& before, const QString& label);
+	void syncGoalRootLabel(int goalIndex);
+
+	QByteArray _workingStateCache;
+	bool       _suppressTreeUndo = false;
 };
 
 } // namespace fso::fred::dialogs

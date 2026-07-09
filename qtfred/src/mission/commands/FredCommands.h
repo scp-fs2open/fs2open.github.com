@@ -682,6 +682,17 @@ namespace FieldId {
     constexpr int Deb_StageText          = 4600; // 4600–4679
     constexpr int Deb_RecommendationText = 4680; // 4680–4759
     constexpr int Deb_VoiceFile          = 4760; // 4760–4839
+    // Mission Goals editor (in-dialog stack): goal count is unbounded, so
+    // per-goal ids are goalIndex * Goal_FieldStride + the field constant,
+    // starting well above the fixed ranges.
+    constexpr int Goal_DisplayFilter = 4900;
+    constexpr int Goal_FieldStride = 16;
+    constexpr int Goal_Name        = 100000; // + goalIndex * Goal_FieldStride
+    constexpr int Goal_Message     = 100001;
+    constexpr int Goal_Score       = 100002;
+    constexpr int Goal_Team        = 100003;
+    constexpr int Goal_Invalid     = 100004;
+    constexpr int Goal_NoMusic     = 100005;
 }
 
 // ---------------------------------------------------------------------------
