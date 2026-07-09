@@ -121,7 +121,13 @@ void gr_opengl_flip()
 	if (Cmdline_window_res) {
 		GL_state.PopFramebufferState();
 
-		glViewport(0, 0, Cmdline_window_res->first, Cmdline_window_res->second);
+		// Gamma-correct Back_texture into an offscreen scratch texture. This is an FBO -> FBO
+		// draw, the same class of operation as every other post-process pass. Presenting straight
+		// into the window-system default framebuffer from a shader draw that samples a
+		// just-rendered texture caused flicker on some drivers, so the hand-off to the screen
+		// always goes through glBlitFramebuffer instead.
+		GL_state.BindFrameBuffer(GammaBlit_framebuffer);
+		glViewport(0, 0, gr_screen.max_w, gr_screen.max_h);
 
 		opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_GAMMA_BLIT, 0));
 
@@ -137,6 +143,16 @@ void gr_opengl_flip()
 			});
 
 		opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
+
+		GL_state.BindFrameBuffer(0, GL_DRAW_FRAMEBUFFER);
+		GL_state.BindFrameBuffer(GammaBlit_framebuffer, GL_READ_FRAMEBUFFER);
+
+		glReadBuffer(GL_COLOR_ATTACHMENT0);
+		glDrawBuffer(GL_BACK);
+		glBlitFramebuffer(0, 0, gr_screen.max_w, gr_screen.max_h, 0, 0, Cmdline_window_res->first, Cmdline_window_res->second, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+		glDrawBuffer(GL_NONE);
+
+		GL_state.BindFrameBuffer(0, GL_READ_FRAMEBUFFER);
 	}
 
 	if (Cmdline_gl_finish)
