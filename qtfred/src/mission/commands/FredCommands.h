@@ -825,6 +825,35 @@ namespace FieldId {
     constexpr int Ast_DebrisSel    = 7309;
     constexpr int Ast_ShipSel      = 7310;
     constexpr int Ast_Box          = 7320; // + _box_line_edits constant (7320–7331)
+    // Volumetric Nebula editor (in-dialog stack)
+    constexpr int Neb_Enabled           = 7401;
+    constexpr int Neb_HullPof           = 7402;
+    constexpr int Neb_PosX              = 7403;
+    constexpr int Neb_PosY              = 7404;
+    constexpr int Neb_PosZ              = 7405;
+    constexpr int Neb_ColorR            = 7406;
+    constexpr int Neb_ColorG            = 7407;
+    constexpr int Neb_ColorB            = 7408;
+    constexpr int Neb_Opacity           = 7409;
+    constexpr int Neb_OpacityDistance   = 7410;
+    constexpr int Neb_Steps             = 7411;
+    constexpr int Neb_Resolution        = 7412;
+    constexpr int Neb_Oversampling      = 7413;
+    constexpr int Neb_Smoothing         = 7414;
+    constexpr int Neb_HenyeyGreenstein  = 7415;
+    constexpr int Neb_SunFalloff        = 7416;
+    constexpr int Neb_SunSteps          = 7417;
+    constexpr int Neb_EmissiveSpread    = 7418;
+    constexpr int Neb_EmissiveIntensity = 7419;
+    constexpr int Neb_EmissiveFalloff   = 7420;
+    constexpr int Neb_NoiseEnabled      = 7421;
+    constexpr int Neb_NoiseColorR       = 7422;
+    constexpr int Neb_NoiseColorG       = 7423;
+    constexpr int Neb_NoiseColorB       = 7424;
+    constexpr int Neb_NoiseScaleBase    = 7425;
+    constexpr int Neb_NoiseScaleSub     = 7426;
+    constexpr int Neb_NoiseIntensity    = 7427;
+    constexpr int Neb_NoiseResolution   = 7428;
     // Briefing icon-edit snapshot merge ids (DialogSnapshotCommand): base +
     // (team * MAX_BRIEF_STAGES + stage) + firstSelectedIcon * 80, so edits to
     // a different stage or selection never merge.

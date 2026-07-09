@@ -7,9 +7,10 @@
 #include <mission/commands/FredCommands.h>
 #include <mission/util.h>
 
+#include <ui/util/DialogUndo.h>
+
 #include <QFileDialog>
 #include <QFileInfo>
-#include <QFocusEvent>
 #include <QMessageBox>
 
 namespace fso::fred::dialogs {
@@ -23,6 +24,7 @@ VolumetricNebulaDialog::VolumetricNebulaDialog(FredView* parent, EditorViewport*
 
 	_dialogStack = new QUndoStack(this);
 	_fredView->undoGroup()->addStack(_dialogStack);
+	util::setupDialogUndo(this, _fredView->undoGroup(), _dialogStack, tr("Volumetric Nebula"));
 
 	ui->setModelLineEdit->setMaxLength(MAX_FILENAME_LEN - 1);
 
@@ -77,11 +79,6 @@ void VolumetricNebulaDialog::closeEvent(QCloseEvent* e)
 	}
 }
 
-void VolumetricNebulaDialog::focusInEvent(QFocusEvent* e)
-{
-	_fredView->undoGroup()->setActiveStack(_dialogStack);
-	QDialog::focusInEvent(e);
-}
 
 void VolumetricNebulaDialog::initializeUi()
 {
@@ -226,8 +223,19 @@ void VolumetricNebulaDialog::on_okAndCancelButtons_rejected()
 
 void VolumetricNebulaDialog::on_enabled_toggled(bool checked)
 {
+	const bool before = _model->getEnabled();
 	_model->setEnabled(checked);
 	enableDisableControls();
+	pushValueCommand(FieldId::Neb_Enabled, tr("Toggle Volumetric Nebula"), before, checked,
+		[this](const bool& v) { _model->setEnabled(v); });
+}
+
+void VolumetricNebulaDialog::changeHullPof(const SCP_string& name)
+{
+	const SCP_string before = _model->getHullPof();
+	_model->setHullPof(name);
+	pushValueCommand(FieldId::Neb_HullPof, tr("Change Nebula Model"), before, _model->getHullPof(),
+		[this](const SCP_string& v) { _model->setHullPof(v); });
 }
 
 void VolumetricNebulaDialog::on_setModelButton_clicked()
@@ -242,150 +250,228 @@ void VolumetricNebulaDialog::on_setModelButton_clicked()
 		return;
 
 	util::saveLastDir("volumetricNebula/pofModel", path);
-	_model->setHullPof(QFileInfo(path).fileName().toUtf8().constData());
+	changeHullPof(QFileInfo(path).fileName().toUtf8().constData());
 	updateUi();
 }
 
 void VolumetricNebulaDialog::on_setModelLineEdit_textChanged(const QString& text)
 {
-	_model->setHullPof(text.toUtf8().constData());
+	changeHullPof(text.toUtf8().constData());
 }
 
 void VolumetricNebulaDialog::on_positionXSpinBox_valueChanged(int v)
 {
+	const float before = _model->getPosX();
 	_model->setPosX(static_cast<float>(v));
+	pushValueCommand(FieldId::Neb_PosX, tr("Change Nebula Position"), before, _model->getPosX(),
+		[this](const float& val) { _model->setPosX(val); });
 }
 
 void VolumetricNebulaDialog::on_positionYSpinBox_valueChanged(int v)
 {
+	const float before = _model->getPosY();
 	_model->setPosY(static_cast<float>(v));
+	pushValueCommand(FieldId::Neb_PosY, tr("Change Nebula Position"), before, _model->getPosY(),
+		[this](const float& val) { _model->setPosY(val); });
 }
 
 void VolumetricNebulaDialog::on_positionZSpinBox_valueChanged(int v)
 {
+	const float before = _model->getPosZ();
 	_model->setPosZ(static_cast<float>(v));
+	pushValueCommand(FieldId::Neb_PosZ, tr("Change Nebula Position"), before, _model->getPosZ(),
+		[this](const float& val) { _model->setPosZ(val); });
 }
 
 void VolumetricNebulaDialog::on_colorRSpinBox_valueChanged(int v)
 {
+	const int before = _model->getColorR();
 	_model->setColorR(v);
 	updateColorSwatch();
+	pushValueCommand(FieldId::Neb_ColorR, tr("Change Nebula Color"), before, _model->getColorR(),
+		[this](const int& val) { _model->setColorR(val); });
 }
 
 void VolumetricNebulaDialog::on_colorGSpinBox_valueChanged(int v)
 {
+	const int before = _model->getColorG();
 	_model->setColorG(v);
 	updateColorSwatch();
+	pushValueCommand(FieldId::Neb_ColorG, tr("Change Nebula Color"), before, _model->getColorG(),
+		[this](const int& val) { _model->setColorG(val); });
 }
 
 void VolumetricNebulaDialog::on_colorBSpinBox_valueChanged(int v)
 {
+	const int before = _model->getColorB();
 	_model->setColorB(v);
 	updateColorSwatch();
+	pushValueCommand(FieldId::Neb_ColorB, tr("Change Nebula Color"), before, _model->getColorB(),
+		[this](const int& val) { _model->setColorB(val); });
 }
 
 void VolumetricNebulaDialog::on_opacityDoubleSpinBox_valueChanged(double v)
 {
+	const float before = _model->getOpacity();
 	_model->setOpacity(static_cast<float>(v));
+	pushValueCommand(FieldId::Neb_Opacity, tr("Change Opacity"), before, _model->getOpacity(),
+		[this](const float& val) { _model->setOpacity(val); });
 }
 
 void VolumetricNebulaDialog::on_opacityDistanceDoubleSpinBox_valueChanged(double v)
 {
+	const float before = _model->getOpacityDistance();
 	_model->setOpacityDistance(static_cast<float>(v));
+	pushValueCommand(FieldId::Neb_OpacityDistance, tr("Change Opacity Distance"), before, _model->getOpacityDistance(),
+		[this](const float& val) { _model->setOpacityDistance(val); });
 }
 
 void VolumetricNebulaDialog::on_renderQualityStepsSpinBox_valueChanged(int v)
 {
+	const int before = _model->getSteps();
 	_model->setSteps(v);
+	pushValueCommand(FieldId::Neb_Steps, tr("Change Quality Steps"), before, _model->getSteps(),
+		[this](const int& val) { _model->setSteps(val); });
 }
 
 void VolumetricNebulaDialog::on_resolutionSpinBox_valueChanged(int v)
 {
+	const int before = _model->getResolution();
 	_model->setResolution(v);
+	pushValueCommand(FieldId::Neb_Resolution, tr("Change Resolution"), before, _model->getResolution(),
+		[this](const int& val) { _model->setResolution(val); });
 }
 
 void VolumetricNebulaDialog::on_oversamplingSpinBox_valueChanged(int v)
 {
+	const int before = _model->getOversampling();
 	_model->setOversampling(v);
+	pushValueCommand(FieldId::Neb_Oversampling, tr("Change Oversampling"), before, _model->getOversampling(),
+		[this](const int& val) { _model->setOversampling(val); });
 }
 
 void VolumetricNebulaDialog::on_smoothingDoubleSpinBox_valueChanged(double v)
 {
+	const float before = _model->getSmoothing();
 	_model->setSmoothing(static_cast<float>(v));
+	pushValueCommand(FieldId::Neb_Smoothing, tr("Change Smoothing"), before, _model->getSmoothing(),
+		[this](const float& val) { _model->setSmoothing(val); });
 }
 
 void VolumetricNebulaDialog::on_henyeyGreensteinCoeffDoubleSpinBox_valueChanged(double v)
 {
+	const float before = _model->getHenyeyGreenstein();
 	_model->setHenyeyGreenstein(static_cast<float>(v));
+	pushValueCommand(FieldId::Neb_HenyeyGreenstein, tr("Change Henyey-Greenstein Coefficient"), before,
+		_model->getHenyeyGreenstein(), [this](const float& val) { _model->setHenyeyGreenstein(val); });
 }
 
 void VolumetricNebulaDialog::on_sunFalloffFactorDoubleSpinBox_valueChanged(double v)
 {
+	const float before = _model->getSunFalloffFactor();
 	_model->setSunFalloffFactor(static_cast<float>(v));
+	pushValueCommand(FieldId::Neb_SunFalloff, tr("Change Sun Falloff Factor"), before, _model->getSunFalloffFactor(),
+		[this](const float& val) { _model->setSunFalloffFactor(val); });
 }
 
 void VolumetricNebulaDialog::on_sunQualityStepsSpinBox_valueChanged(int v)
 {
+	const int before = _model->getSunSteps();
 	_model->setSunSteps(v);
+	pushValueCommand(FieldId::Neb_SunSteps, tr("Change Sun Quality Steps"), before, _model->getSunSteps(),
+		[this](const int& val) { _model->setSunSteps(val); });
 }
 
 void VolumetricNebulaDialog::on_emissiveLightDoubleSpinBox_valueChanged(double v)
 {
+	const float before = _model->getEmissiveSpread();
 	_model->setEmissiveSpread(static_cast<float>(v));
+	pushValueCommand(FieldId::Neb_EmissiveSpread, tr("Change Emissive Spread"), before, _model->getEmissiveSpread(),
+		[this](const float& val) { _model->setEmissiveSpread(val); });
 }
 
 void VolumetricNebulaDialog::on_emissiveLightIntensityDoubleSpinBox_valueChanged(double v)
 {
+	const float before = _model->getEmissiveIntensity();
 	_model->setEmissiveIntensity(static_cast<float>(v));
+	pushValueCommand(FieldId::Neb_EmissiveIntensity, tr("Change Emissive Intensity"), before,
+		_model->getEmissiveIntensity(), [this](const float& val) { _model->setEmissiveIntensity(val); });
 }
 
 void VolumetricNebulaDialog::on_emissiveLightFalloffDoubleSpinBox_valueChanged(double v)
 {
+	const float before = _model->getEmissiveFalloff();
 	_model->setEmissiveFalloff(static_cast<float>(v));
+	pushValueCommand(FieldId::Neb_EmissiveFalloff, tr("Change Emissive Falloff"), before, _model->getEmissiveFalloff(),
+		[this](const float& val) { _model->setEmissiveFalloff(val); });
 }
 
 void VolumetricNebulaDialog::on_enableNoiseCheckBox_toggled(bool enabled)
 {
+	const bool before = _model->getNoiseEnabled();
 	_model->setNoiseEnabled(enabled);
 	enableDisableControls();
+	pushValueCommand(FieldId::Neb_NoiseEnabled, tr("Toggle Nebula Noise"), before, enabled,
+		[this](const bool& v) { _model->setNoiseEnabled(v); });
 }
 
 void VolumetricNebulaDialog::on_noiseColorRSpinBox_valueChanged(int v)
 {
+	const int before = _model->getNoiseColorR();
 	_model->setNoiseColorR(v);
 	updateNoiseColorSwatch();
+	pushValueCommand(FieldId::Neb_NoiseColorR, tr("Change Noise Color"), before, _model->getNoiseColorR(),
+		[this](const int& val) { _model->setNoiseColorR(val); });
 }
 
 void VolumetricNebulaDialog::on_noiseColorGSpinBox_valueChanged(int v)
 {
+	const int before = _model->getNoiseColorG();
 	_model->setNoiseColorG(v);
 	updateNoiseColorSwatch();
+	pushValueCommand(FieldId::Neb_NoiseColorG, tr("Change Noise Color"), before, _model->getNoiseColorG(),
+		[this](const int& val) { _model->setNoiseColorG(val); });
 }
 
 void VolumetricNebulaDialog::on_noiseColorBSpinBox_valueChanged(int v)
 {
+	const int before = _model->getNoiseColorB();
 	_model->setNoiseColorB(v);
 	updateNoiseColorSwatch();
+	pushValueCommand(FieldId::Neb_NoiseColorB, tr("Change Noise Color"), before, _model->getNoiseColorB(),
+		[this](const int& val) { _model->setNoiseColorB(val); });
 }
 
 void VolumetricNebulaDialog::on_noiseScaleBaseDoubleSpinBox_valueChanged(double v)
 {
+	const float before = _model->getNoiseScaleBase();
 	_model->setNoiseScaleBase(static_cast<float>(v));
+	pushValueCommand(FieldId::Neb_NoiseScaleBase, tr("Change Noise Base Scale"), before, _model->getNoiseScaleBase(),
+		[this](const float& val) { _model->setNoiseScaleBase(val); });
 }
 
 void VolumetricNebulaDialog::on_noiseScaleSubDoubleSpinBox_valueChanged(double v)
 {
+	const float before = _model->getNoiseScaleSub();
 	_model->setNoiseScaleSub(static_cast<float>(v));
+	pushValueCommand(FieldId::Neb_NoiseScaleSub, tr("Change Noise Sub Scale"), before, _model->getNoiseScaleSub(),
+		[this](const float& val) { _model->setNoiseScaleSub(val); });
 }
 
 void VolumetricNebulaDialog::on_noiseIntensityDoubleSpinBox_valueChanged(double v)
 {
+	const float before = _model->getNoiseIntensity();
 	_model->setNoiseIntensity(static_cast<float>(v));
+	pushValueCommand(FieldId::Neb_NoiseIntensity, tr("Change Noise Intensity"), before, _model->getNoiseIntensity(),
+		[this](const float& val) { _model->setNoiseIntensity(val); });
 }
 
 void VolumetricNebulaDialog::on_noiseResolutionSpinBox_valueChanged(int v)
 {
+	const int before = _model->getNoiseResolution();
 	_model->setNoiseResolution(v);
+	pushValueCommand(FieldId::Neb_NoiseResolution, tr("Change Noise Resolution"), before, _model->getNoiseResolution(),
+		[this](const int& val) { _model->setNoiseResolution(val); });
 }
 
 void VolumetricNebulaDialog::on_setBaseNoiseFunctionButton_clicked()
