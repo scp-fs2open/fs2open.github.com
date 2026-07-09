@@ -6,7 +6,8 @@
 #include "mission/util.h"
 #include "ui/util/SignalBlockers.h"
 #include "ui_MissionCutscenesDialog.h"
-#include <QFocusEvent>
+#include <ui/util/DialogUndo.h>
+#include <QSignalBlocker>
 
 namespace fso::fred::dialogs {
 
@@ -19,6 +20,7 @@ MissionCutscenesDialog::MissionCutscenesDialog(FredView* parent, EditorViewport*
 
 	_dialogStack = new QUndoStack(this);
 	_fredView->undoGroup()->addStack(_dialogStack);
+	util::setupDialogUndo(this, _fredView->undoGroup(), _dialogStack, tr("Mission Cutscenes"));
 
 	populateCutsceneCombos();
 
@@ -37,13 +39,25 @@ MissionCutscenesDialog::MissionCutscenesDialog(FredView* parent, EditorViewport*
 	});
 
 	connect(_model.get(), &MissionCutscenesDialogModel::modelChanged, this, &MissionCutscenesDialog::updateUi);
-	connect(ui->cutsceneEventTree, &sexp_tree_view::modified, this, [this] { _model->setModified(); });
+	connect(ui->cutsceneEventTree, &sexp_tree_view::modified, this, &MissionCutscenesDialog::onCutsceneTreeModified);
 
 	_model->initializeData();
 
 	load_tree();
 
 	recreate_tree();
+
+	// The before-state for the next tree edit: the tree mutates before
+	// modified() fires, so a fresh capture at handler time would already
+	// contain the edit. indexChanged fires on every push/undo/redo, keeping
+	// the cache aligned with the current working state.
+	_workingStateCache = _model->captureWorkingState();
+	connect(_dialogStack, &QUndoStack::indexChanged, this, [this](int) {
+		// accept() moves _model into the ApplyDialogCommand and then clears
+		// the stack, which emits indexChanged with no model left.
+		if (_model)
+			_workingStateCache = _model->captureWorkingState();
+	});
 }
 
 MissionCutscenesDialog::~MissionCutscenesDialog() = default;
@@ -92,10 +106,46 @@ void MissionCutscenesDialog::closeEvent(QCloseEvent* e)
 	}
 }
 
-void MissionCutscenesDialog::focusInEvent(QFocusEvent* e)
+void MissionCutscenesDialog::onCutsceneTreeModified()
 {
-	_fredView->undoGroup()->setActiveStack(_dialogStack);
-	QDialog::focusInEvent(e);
+	_model->setModified();
+	if (_suppressTreeUndo)
+		return;
+
+	pushWorkingStateSnapshot(_workingStateCache, tr("Edit Cutscene Formula"));
+}
+
+void MissionCutscenesDialog::pushWorkingStateSnapshot(const QByteArray& before, const QString& label)
+{
+	const QByteArray after = _model->captureWorkingState();
+	if (after == before)
+		return;
+
+	_dialogStack->push(new DialogSnapshotCommand(before, after,
+		[this](const QByteArray& blob) {
+			_suppressTreeUndo = true;
+			_model->restoreWorkingState(blob);
+			recreate_tree();
+			updateUi();
+			_suppressTreeUndo = false;
+		},
+		label));
+}
+
+void MissionCutscenesDialog::syncCutsceneRootLabel(int cutsceneIndex)
+{
+	auto& cutscenes = _model->getCutscenes();
+	if (!SCP_vector_inbounds(cutscenes, cutsceneIndex))
+		return;
+
+	const int formula = cutscenes[cutsceneIndex].formula;
+	for (int i = 0; i < ui->cutsceneEventTree->topLevelItemCount(); ++i) {
+		auto* item = ui->cutsceneEventTree->topLevelItem(i);
+		if (item && item->data(0, sexp_tree_view::FormulaDataRole).toInt() == formula) {
+			item->setText(0, QString::fromUtf8(cutscenes[cutsceneIndex].filename));
+			break;
+		}
+	}
 }
 
 void MissionCutscenesDialog::updateUi()
@@ -164,8 +214,10 @@ void MissionCutscenesDialog::createNewCutscene()
 void MissionCutscenesDialog::changeCutsceneCategory(int type)
 {
 	if (_model->isCurrentCutsceneValid()) {
+		const QByteArray before = _model->captureWorkingState();
 		_model->setCurrentCutsceneType(type);
 		recreate_tree();
+		pushWorkingStateSnapshot(before, tr("Change Cutscene Type"));
 	}
 }
 
@@ -206,9 +258,25 @@ void MissionCutscenesDialog::on_okAndCancelButtons_rejected()
 
 void MissionCutscenesDialog::on_displayTypeCombo_currentIndexChanged(int index)
 {
+	const int before = _model->getSelectedCutsceneType();
+	if (before == index)
+		return;
+
 	_model->setCutsceneType(index);
 	setCutsceneTypeDescription();
 	recreate_tree();
+
+	auto* cmd = new FieldEditCommand<int>(FieldId::Cutscene_DisplayFilter, nullptr, tr("Change Cutscene Display Type"), true);
+	cmd->addEntry(before, index, [this](const int& v) {
+		_model->setCutsceneType(v);
+		{
+			QSignalBlocker blocker(ui->displayTypeCombo);
+			ui->displayTypeCombo->setCurrentIndex(v);
+		}
+		setCutsceneTypeDescription();
+		recreate_tree();
+	});
+	_dialogStack->push(cmd);
 }
 
 void MissionCutscenesDialog::on_cutsceneTypeCombo_currentIndexChanged(int index)
@@ -218,21 +286,35 @@ void MissionCutscenesDialog::on_cutsceneTypeCombo_currentIndexChanged(int index)
 
 void MissionCutscenesDialog::on_cutsceneFilename_textChanged(const QString& text)
 {
-	if (_model->isCurrentCutsceneValid()) {
-		_model->setCurrentCutsceneFilename(text.toUtf8().constData());
+	if (!_model->isCurrentCutsceneValid())
+		return;
 
-		auto item = ui->cutsceneEventTree->currentItem();
-		while (item->parent() != nullptr) {
-			item = item->parent();
-		}
+	const int index = _model->getCurrentCutsceneIndex();
+	const SCP_string before = _model->getCurrentCutscene().filename;
+	const SCP_string after  = text.toUtf8().constData();
+	if (before == after)
+		return;
 
-		item->setText(0, text);
-	}
+	_model->setCurrentCutsceneFilename(after.c_str());
+	syncCutsceneRootLabel(index);
+
+	auto* cmd = new FieldEditCommand<SCP_string>(
+	    FieldId::Cutscene_Filename + index * FieldId::Cutscene_FieldStride,
+	    nullptr, tr("Change Cutscene Filename"), true);
+	cmd->addEntry(before, after, [this, index](const SCP_string& v) {
+		_model->setCutsceneFilenameAt(index, v);
+		syncCutsceneRootLabel(index);
+	});
+	_dialogStack->push(cmd);
 }
 
 void MissionCutscenesDialog::on_newCutsceneBtn_clicked()
 {
+	const QByteArray before = _model->captureWorkingState();
+	_suppressTreeUndo = true;
 	createNewCutscene();
+	_suppressTreeUndo = false;
+	pushWorkingStateSnapshot(before, tr("Add Cutscene"));
 }
 
 void MissionCutscenesDialog::on_cutsceneEventTree_selectedRootChanged(int formula)
@@ -248,7 +330,13 @@ void MissionCutscenesDialog::on_cutsceneEventTree_selectedRootChanged(int formul
 
 void MissionCutscenesDialog::on_cutsceneEventTree_rootNodeDeleted(int node)
 {
+	// The widget has not freed the branch yet (it emits before free_node2),
+	// so a fresh capture still serializes the deleted cutscene's formula. The
+	// modified() the widget emits afterwards is absorbed by the snapshot
+	// equality check.
+	const QByteArray before = _model->captureWorkingState();
 	_model->deleteCutscene(node);
+	pushWorkingStateSnapshot(before, tr("Delete Cutscene"));
 }
 
 void MissionCutscenesDialog::on_cutsceneEventTree_rootNodeFormulaChanged(int old, int node)

@@ -26,7 +26,6 @@ public:
 
  protected:
 	void closeEvent(QCloseEvent* event) override;
-	void focusInEvent(QFocusEvent* e) override;
 
 private slots:
 	void on_okAndCancelButtons_accepted();
@@ -57,6 +56,19 @@ private slots:
     QUndoStack*     _dialogStack = nullptr;
 	void load_tree();
 	void recreate_tree();
+
+	// In-dialog undo helpers, mirroring MissionGoalsDialog: tree edits and
+	// cutscene-structure ops go through working-state snapshots; field edits
+	// push merging FieldEditCommands. _workingStateCache is the before-state
+	// for the next tree edit (the tree mutates before modified() fires),
+	// refreshed on every stack index change. _suppressTreeUndo guards
+	// programmatic tree changes (Add Cutscene, snapshot restore).
+	void onCutsceneTreeModified();
+	void pushWorkingStateSnapshot(const QByteArray& before, const QString& label);
+	void syncCutsceneRootLabel(int cutsceneIndex);
+
+	QByteArray _workingStateCache;
+	bool       _suppressTreeUndo = false;
 };
 
 } // namespace fso::fred::dialogs

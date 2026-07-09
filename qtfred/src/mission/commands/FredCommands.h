@@ -693,6 +693,11 @@ namespace FieldId {
     constexpr int Goal_Team        = 100003;
     constexpr int Goal_Invalid     = 100004;
     constexpr int Goal_NoMusic     = 100005;
+    // Mission Cutscenes editor (in-dialog stack): same unbounded-index scheme
+    // in its own range.
+    constexpr int Cutscene_DisplayFilter = 4901;
+    constexpr int Cutscene_FieldStride   = 16;
+    constexpr int Cutscene_Filename      = 200000; // + cutsceneIndex * Cutscene_FieldStride
 }
 
 // ---------------------------------------------------------------------------
