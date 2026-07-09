@@ -192,6 +192,76 @@ QByteArray BriefingEditorDialogModel::captureState() const
 	return data;
 }
 
+// ---------------------------------------------------------------------------
+// captureWorkingState / restoreWorkingState — same stage serialization, but
+// over the dialog's working copy (_wipBriefings) for the in-dialog undo
+// stack, plus the music selections and the current team/stage/icon so undo
+// restores the editing context.
+// ---------------------------------------------------------------------------
+
+QByteArray BriefingEditorDialogModel::captureWorkingState() const
+{
+	QByteArray data;
+	QDataStream ds(&data, QIODevice::WriteOnly);
+
+	for (const auto& b : _wipBriefings) {
+		ds << static_cast<qint32>(b.num_stages);
+
+		for (const auto& stage : b.stages)
+			writeStage(ds, stage);
+
+		for (int r = 0; r < GR_NUM_RESOLUTIONS; ++r) {
+			ds << QString::fromLatin1(b.background[r]);
+			ds << QString::fromLatin1(b.ship_select_background[r]);
+			ds << QString::fromLatin1(b.weapon_select_background[r]);
+		}
+	}
+
+	ds << static_cast<qint32>(_briefingMusicIndex);
+	ds << QString::fromStdString(_subBriefingMusic);
+	ds << static_cast<qint32>(_currentTeam);
+	ds << static_cast<qint32>(_currentStage);
+	ds << static_cast<qint32>(_currentIcon);
+
+	return data;
+}
+
+void BriefingEditorDialogModel::restoreWorkingState(const QByteArray& state)
+{
+	QDataStream ds(state);
+
+	for (auto& b : _wipBriefings) {
+		qint32 numStages;
+		ds >> numStages;
+		b.num_stages = static_cast<int>(numStages);
+
+		for (auto& stage : b.stages)
+			readStage(ds, stage); // frees and replaces the stage's formula
+
+		for (int r = 0; r < GR_NUM_RESOLUTIONS; ++r) {
+			QString bg, shipBg, wpnBg;
+			ds >> bg >> shipBg >> wpnBg;
+			strncpy(b.background[r],              bg.toLatin1().constData(),    MAX_FILENAME_LEN - 1);
+			b.background[r][MAX_FILENAME_LEN - 1] = '\0';
+			strncpy(b.ship_select_background[r],   shipBg.toLatin1().constData(), MAX_FILENAME_LEN - 1);
+			b.ship_select_background[r][MAX_FILENAME_LEN - 1] = '\0';
+			strncpy(b.weapon_select_background[r], wpnBg.toLatin1().constData(),  MAX_FILENAME_LEN - 1);
+			b.weapon_select_background[r][MAX_FILENAME_LEN - 1] = '\0';
+		}
+	}
+
+	qint32 music, team, stage, icon;
+	QString subMusic;
+	ds >> music >> subMusic >> team >> stage >> icon;
+	_briefingMusicIndex = static_cast<int>(music);
+	_subBriefingMusic   = subMusic.toStdString();
+	_currentTeam        = static_cast<int>(team);
+	_currentStage       = static_cast<int>(stage);
+	_currentIcon        = static_cast<int>(icon);
+
+	set_modified();
+}
+
 void BriefingEditorDialogModel::restoreState(const QByteArray& state)
 {
 	QDataStream ds(state);

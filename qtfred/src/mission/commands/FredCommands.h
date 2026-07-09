@@ -698,6 +698,28 @@ namespace FieldId {
     constexpr int Cutscene_DisplayFilter = 4901;
     constexpr int Cutscene_FieldStride   = 16;
     constexpr int Cutscene_Filename      = 200000; // + cutsceneIndex * Cutscene_FieldStride
+    // Briefing editor         5001–5999 (in-dialog stack; per-stage ids are
+    // offset by team * MAX_BRIEF_STAGES + stage)
+    constexpr int Brief_CurrentTeam = 5001;
+    constexpr int Brief_Music       = 5002;
+    constexpr int Brief_SubMusic    = 5003;
+    constexpr int Brief_StageText   = 5100; // 5100–5179
+    constexpr int Brief_VoiceFile   = 5200; // 5200–5279
+    constexpr int Brief_CameraTime  = 5300; // 5300–5379
+    constexpr int Brief_CutToNext   = 5400; // 5400–5479
+    constexpr int Brief_CutToPrev   = 5500; // 5500–5579
+    constexpr int Brief_DisableGrid = 5600; // 5600–5679
+    constexpr int Brief_StageCamera = 5700; // 5700–5779
+    // Briefing icon-edit snapshot merge ids (DialogSnapshotCommand): base +
+    // (team * MAX_BRIEF_STAGES + stage) + firstSelectedIcon * 80, so edits to
+    // a different stage or selection never merge.
+    constexpr int Brief_SnapIconLabel   = 600000;
+    constexpr int Brief_SnapIconCloseup = 610000;
+    constexpr int Brief_SnapIconId      = 620000;
+    constexpr int Brief_SnapIconScale   = 630000;
+    constexpr int Brief_SnapIconImage   = 640000;
+    constexpr int Brief_SnapIconShip    = 650000;
+    constexpr int Brief_SnapIconTeam    = 660000;
 }
 
 // ---------------------------------------------------------------------------
