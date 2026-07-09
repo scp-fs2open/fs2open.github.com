@@ -870,6 +870,35 @@ namespace FieldId {
     constexpr int Orient_LocationX     = 7511;
     constexpr int Orient_LocationY     = 7512;
     constexpr int Orient_LocationZ     = 7513;
+    // Mission Specs editor (in-dialog stack)
+    constexpr int Spec_Title           = 7601;
+    constexpr int Spec_Designer        = 7602;
+    constexpr int Spec_MissionType     = 7603;
+    constexpr int Spec_NumRespawns     = 7604;
+    constexpr int Spec_RespawnDelay    = 7605;
+    constexpr int Spec_EntryDelay      = 7606;
+    constexpr int Spec_SquadName       = 7607;
+    constexpr int Spec_SquadLogo       = 7608;
+    constexpr int Spec_WingNames       = 7609;
+    constexpr int Spec_LoadScreenLow   = 7610;
+    constexpr int Spec_LoadScreenHigh  = 7611;
+    constexpr int Spec_SupportRearm    = 7612;
+    constexpr int Spec_ToggleTrail     = 7613;
+    constexpr int Spec_SpeedDisplay    = 7614;
+    constexpr int Spec_MinDisplaySpeed = 7615;
+    constexpr int Spec_CommandSender   = 7616;
+    constexpr int Spec_CommandPersona  = 7617;
+    constexpr int Spec_OverrideHash    = 7618;
+    constexpr int Spec_EventMusic      = 7619;
+    constexpr int Spec_SubEventMusic   = 7620;
+    constexpr int Spec_LargeShipGroup  = 7621;
+    constexpr int Spec_AIProfile       = 7622;
+    constexpr int Spec_SoundEnv        = 7623;
+    constexpr int Spec_CustomData      = 7624;
+    constexpr int Spec_CustomStrings   = 7625;
+    constexpr int Spec_MissionDesc     = 7626;
+    constexpr int Spec_DesignerNotes   = 7627;
+    constexpr int Spec_MissionFlag     = 7700; // + flag list index
     // Briefing icon-edit snapshot merge ids (DialogSnapshotCommand): base +
     // (team * MAX_BRIEF_STAGES + stage) + firstSelectedIcon * 80, so edits to
     // a different stage or selection never merge.
