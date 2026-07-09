@@ -33,7 +33,6 @@ public:
 
   protected:
 	void closeEvent(QCloseEvent*) override;
-	void focusInEvent(QFocusEvent* e) override;
 
   private slots:
 	// dialog controls
@@ -75,6 +74,14 @@ public:
 	EditorViewport* _viewport    = nullptr;
 	FredView*       _fredView    = nullptr;
 	QUndoStack*     _dialogStack = nullptr;
+
+	// Merge identity for cell-edit snapshots: bumped whenever any table's
+	// selection changes, so edits within one selection merge (spinner scrubs)
+	// but edits after a re-selection never merge into them.
+	int _selectionGeneration = 0;
+
+	void pushWorkingStateSnapshot(const QByteArray& before, const QString& label, int mergeId = -1);
+	int cellMergeId(int table, int column) const;
 
 	void initializeUi();
 	void updateUi();

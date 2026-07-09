@@ -6,11 +6,12 @@
 #include <QtWidgets/QMenuBar>
 #include <qlist.h>
 #include <qtablewidget.h>
-#include <QFocusEvent>
+#include <QItemSelectionModel>
 #include <QListWidget>
 #include <QMessageBox>
 #include <QLineEdit>
 #include <QTimer>
+#include "ui/util/DialogUndo.h"
 #include "ui/util/SignalBlockers.h"
 #include "ui/widgets/NoWheelSpinBox.h"
 #include "ui/widgets/NoWheelComboBox.h"
@@ -40,9 +41,17 @@ TeamLoadoutDialog::TeamLoadoutDialog(FredView* parent, EditorViewport* viewport)
 
 	_dialogStack = new QUndoStack(this);
 	_fredView->undoGroup()->addStack(_dialogStack);
+	util::setupDialogUndo(this, _fredView->undoGroup(), _dialogStack, tr("Team Loadout"));
 
 	initializeUi();
 	updateUi();
+
+	// Any selection change starts a new merge epoch for cell-edit snapshots.
+	const auto bumpGeneration = [this]() { ++_selectionGeneration; };
+	connect(ui->shipsList->selectionModel(), &QItemSelectionModel::selectionChanged, this, bumpGeneration);
+	connect(ui->weaponsList->selectionModel(), &QItemSelectionModel::selectionChanged, this, bumpGeneration);
+	connect(ui->shipVarsList->selectionModel(), &QItemSelectionModel::selectionChanged, this, bumpGeneration);
+	connect(ui->weaponVarsList->selectionModel(), &QItemSelectionModel::selectionChanged, this, bumpGeneration);
 }
 
 TeamLoadoutDialog::~TeamLoadoutDialog() = default;
@@ -91,10 +100,23 @@ void TeamLoadoutDialog::closeEvent(QCloseEvent* e)
 	}
 }
 
-void TeamLoadoutDialog::focusInEvent(QFocusEvent* e)
+void TeamLoadoutDialog::pushWorkingStateSnapshot(const QByteArray& before, const QString& label, int mergeId)
 {
-	_fredView->undoGroup()->setActiveStack(_dialogStack);
-	QDialog::focusInEvent(e);
+	const QByteArray after = _model->captureWorkingState();
+	if (after == before)
+		return;
+
+	_dialogStack->push(new DialogSnapshotCommand(before, after,
+		[this](const QByteArray& blob) {
+			_model->restoreWorkingState(blob);
+			updateUi();
+		},
+		label, true, mergeId));
+}
+
+int TeamLoadoutDialog::cellMergeId(int table, int column) const
+{
+	return FieldId::TL_SnapCellBase + (table * 8 + column) * 1000000 + (_selectionGeneration % 1000000);
 }
 
 void TeamLoadoutDialog::initializeUi()
@@ -651,25 +673,38 @@ void TeamLoadoutDialog::on_currentTeamComboBox_currentIndexChanged(int index)
 	if (index < 0) {
 		return;
 	}
-	int team = ui->currentTeamComboBox->itemData(index).toInt();
-	_model->setCurrentTeam(team);
+	const int before = _model->getCurrentTeam();
+	const int after  = ui->currentTeamComboBox->itemData(index).toInt();
+	if (before == after) {
+		return;
+	}
 
+	_model->setCurrentTeam(after);
 	updateUi();
+
+	auto* cmd = new FieldEditCommand<int>(FieldId::TL_CurrentTeam, nullptr, tr("Change Team"), true);
+	cmd->addEntry(before, after, [this](const int& v) {
+		_model->setCurrentTeam(v);
+		updateUi();
+	});
+	_dialogStack->push(cmd);
 }
 
 void TeamLoadoutDialog::on_copyLoadoutToOtherTeamsButton_clicked()
 {
 	QMessageBox msgBox;
 	msgBox.setText("Are you sure that you want to overwrite the other team's loadout with this team's loadout?");
-	msgBox.setInformativeText("This can't be undone.");
 	msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::Cancel);
 	msgBox.setDefaultButton(QMessageBox::Cancel);
 	int ret = msgBox.exec();
 
 	switch (ret) {
-	case QMessageBox::Yes:
+	case QMessageBox::Yes: {
+		const QByteArray before = _model->captureWorkingState();
 		_model->copyToOtherTeams();
+		pushWorkingStateSnapshot(before, tr("Copy Loadout To Other Teams"));
 		break;
+	}
 	case QMessageBox::Cancel:
 		break;
 	default:
@@ -682,7 +717,20 @@ void TeamLoadoutDialog::on_copyLoadoutToOtherTeamsButton_clicked()
 
 void TeamLoadoutDialog::on_weaponValidationCheckbox_toggled(bool checked)
 {
-	_model->setSkipValidation(checked);
+	const bool before = _model->getSkipValidation();
+	if (before == checked) {
+		return;
+	}
+
+	_model->setSkipValidation(checked); // applies to all teams
+
+	auto* cmd = new FieldEditCommand<bool>(FieldId::TL_SkipValidation, nullptr, tr("Toggle Weapon Validation"), true);
+	cmd->addEntry(before, checked, [this](const bool& v) {
+		_model->setSkipValidation(v);
+		QSignalBlocker blocker(ui->weaponValidationCheckbox);
+		ui->weaponValidationCheckbox->setChecked(v);
+	});
+	_dialogStack->push(cmd);
 }
 
 void TeamLoadoutDialog::on_shipsFilterLineEdit_textChanged(const QString& filterText)
@@ -864,8 +912,14 @@ void TeamLoadoutDialog::on_shipsList_itemChanged(QTableWidgetItem* changed)
 	if (!applyToSelection)
 		selRows = {originRow};
 
+	// One undo entry per gesture, covering the whole selection.
+	const QByteArray before = _model->captureWorkingState();
+	QString label;
+	int mergeId = -1;
+
 	switch (col) {
 		case COL_ENABLED: {
+			label = tr("Toggle Ship Enabled");
 			const Qt::CheckState desired = changed->checkState();
 			for (int r : selRows) {
 				if (auto* chk = tbl->item(r, COL_ENABLED)) {
@@ -876,6 +930,8 @@ void TeamLoadoutDialog::on_shipsList_itemChanged(QTableWidgetItem* changed)
 			break;
 		}
 		case COL_EXTRA: {
+			label = tr("Change Extra Ships");
+			mergeId = cellMergeId(0, COL_EXTRA);
 			const int newVal = changed->data(Qt::EditRole).toInt();
 			const int clamped = std::max(0, newVal);
 
@@ -888,6 +944,8 @@ void TeamLoadoutDialog::on_shipsList_itemChanged(QTableWidgetItem* changed)
 			break;
 		}
 		case COL_COUNTVAR: {
+			label = tr("Change Ship Count Variable");
+			mergeId = cellMergeId(0, COL_COUNTVAR);
 			const int newVarIdx = changed->data(Qt::EditRole).toInt();
 			for (int r : selRows) {
 				if (auto* idItem = tbl->item(r, COL_COUNTVAR)) {
@@ -900,6 +958,8 @@ void TeamLoadoutDialog::on_shipsList_itemChanged(QTableWidgetItem* changed)
 		default:
 			return; // not a column we handle
 	}
+
+	pushWorkingStateSnapshot(before, label, mergeId);
 
 	// Now repaint only the affected rows from the model's *current* state.
 	refreshShipRows(selRows);
@@ -920,8 +980,14 @@ void TeamLoadoutDialog::on_weaponsList_itemChanged(QTableWidgetItem* changed)
 	if (!applyToSelection)
 		selRows = {originRow};
 
+	// One undo entry per gesture, covering the whole selection.
+	const QByteArray before = _model->captureWorkingState();
+	QString label;
+	int mergeId = -1;
+
 	switch (col) {
 		case COL_ENABLED: {
+			label = tr("Toggle Weapon Enabled");
 			const Qt::CheckState desired = changed->checkState();
 			for (int r : selRows) {
 				if (auto* chk = tbl->item(r, COL_ENABLED)) {
@@ -932,6 +998,8 @@ void TeamLoadoutDialog::on_weaponsList_itemChanged(QTableWidgetItem* changed)
 			break;
 		}
 		case COL_EXTRA: {
+			label = tr("Change Extra Weapons");
+			mergeId = cellMergeId(1, COL_EXTRA);
 			const int newVal = changed->data(Qt::EditRole).toInt();
 			const int clamped = std::max(0, newVal);
 
@@ -944,6 +1012,8 @@ void TeamLoadoutDialog::on_weaponsList_itemChanged(QTableWidgetItem* changed)
 			break;
 		}
 		case COL_COUNTVAR: {
+			label = tr("Change Weapon Count Variable");
+			mergeId = cellMergeId(1, COL_COUNTVAR);
 			const int newVarIdx = changed->data(Qt::EditRole).toInt();
 			for (int r : selRows) {
 				if (auto* idItem = tbl->item(r, COL_COUNTVAR)) {
@@ -954,6 +1024,7 @@ void TeamLoadoutDialog::on_weaponsList_itemChanged(QTableWidgetItem* changed)
 			break;
 		}
 		case COL_REQUIRED: {
+			label = tr("Toggle Weapon Required");
 			const bool isRequired = (changed->checkState() == Qt::Checked);
 			for (int r : selRows) {
 				if (auto* item = tbl->item(r, COL_REQUIRED)) {
@@ -966,6 +1037,8 @@ void TeamLoadoutDialog::on_weaponsList_itemChanged(QTableWidgetItem* changed)
 		default:
 			return; // not a column we handle
 	}
+
+	pushWorkingStateSnapshot(before, label, mergeId);
 
 	// Now repaint only the affected rows from the model's *current* state.
 	refreshWeaponRows(selRows);
@@ -986,8 +1059,14 @@ void TeamLoadoutDialog::on_shipVarsList_itemChanged(QTableWidgetItem* changed)
 	if (!applyToSelection)
 		selRows = {originRow};
 
+	// One undo entry per gesture, covering the whole selection.
+	const QByteArray before = _model->captureWorkingState();
+	QString label;
+	int mergeId = -1;
+
 	switch (col) {
 		case COL_ENABLED: {
+			label = tr("Toggle Ship Variable Enabled");
 			const Qt::CheckState desired = changed->checkState();
 			for (int r : selRows) {
 				if (auto* chk = tbl->item(r, COL_ENABLED)) {
@@ -998,6 +1077,8 @@ void TeamLoadoutDialog::on_shipVarsList_itemChanged(QTableWidgetItem* changed)
 			break;
 		}
 		case COL_EXTRA: {
+			label = tr("Change Extra Ships");
+			mergeId = cellMergeId(2, COL_EXTRA);
 			const int newVal = changed->data(Qt::EditRole).toInt();
 			const int clamped = std::max(0, newVal);
 
@@ -1010,6 +1091,8 @@ void TeamLoadoutDialog::on_shipVarsList_itemChanged(QTableWidgetItem* changed)
 			break;
 		}
 		case COL_COUNTVAR: {
+			label = tr("Change Ship Count Variable");
+			mergeId = cellMergeId(2, COL_COUNTVAR);
 			const int newVarIdx = changed->data(Qt::EditRole).toInt();
 			for (int r : selRows) {
 				if (auto* idItem = tbl->item(r, COL_COUNTVAR)) {
@@ -1022,6 +1105,8 @@ void TeamLoadoutDialog::on_shipVarsList_itemChanged(QTableWidgetItem* changed)
 		default:
 			return; // not a column we handle
 	}
+
+	pushWorkingStateSnapshot(before, label, mergeId);
 
 	// Now repaint only the affected rows from the model's *current* state.
 	refreshShipVarRows(selRows);
@@ -1042,8 +1127,14 @@ void TeamLoadoutDialog::on_weaponVarsList_itemChanged(QTableWidgetItem* changed)
 	if (!applyToSelection)
 		selRows = {originRow};
 
+	// One undo entry per gesture, covering the whole selection.
+	const QByteArray before = _model->captureWorkingState();
+	QString label;
+	int mergeId = -1;
+
 	switch (col) {
 		case COL_ENABLED: {
+			label = tr("Toggle Weapon Variable Enabled");
 			const Qt::CheckState desired = changed->checkState();
 			for (int r : selRows) {
 				if (auto* chk = tbl->item(r, COL_ENABLED)) {
@@ -1054,6 +1145,8 @@ void TeamLoadoutDialog::on_weaponVarsList_itemChanged(QTableWidgetItem* changed)
 			break;
 		}
 		case COL_EXTRA: {
+			label = tr("Change Extra Weapons");
+			mergeId = cellMergeId(3, COL_EXTRA);
 			const int newVal = changed->data(Qt::EditRole).toInt();
 			const int clamped = std::max(0, newVal);
 
@@ -1066,6 +1159,8 @@ void TeamLoadoutDialog::on_weaponVarsList_itemChanged(QTableWidgetItem* changed)
 			break;
 		}
 		case COL_COUNTVAR: {
+			label = tr("Change Weapon Count Variable");
+			mergeId = cellMergeId(3, COL_COUNTVAR);
 			const int newVarIdx = changed->data(Qt::EditRole).toInt();
 			for (int r : selRows) {
 				if (auto* idItem = tbl->item(r, COL_COUNTVAR)) {
@@ -1078,6 +1173,8 @@ void TeamLoadoutDialog::on_weaponVarsList_itemChanged(QTableWidgetItem* changed)
 		default:
 			return; // not a column we handle
 	}
+
+	pushWorkingStateSnapshot(before, label, mergeId);
 
 	// Now repaint only the affected rows from the model's *current* state.
 	refreshWeaponVarRows(selRows);

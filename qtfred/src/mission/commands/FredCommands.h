@@ -796,6 +796,14 @@ namespace FieldId {
     constexpr int Item_ContainerStride = 2048;
     constexpr int Item_ListValue       = 900000;  // containers 0–97
     constexpr int Item_MapValue        = 1100000; // containers 0–97
+    // Team Loadout editor (in-dialog stack). Table cell gestures are
+    // working-state snapshots (the model setters have creation and
+    // default-allocation side effects); their merge id groups one control
+    // (table, column) within one selection epoch, so spinner scrubs merge
+    // but edits made after the selection changes do not.
+    constexpr int TL_CurrentTeam    = 7001;
+    constexpr int TL_SkipValidation = 7002; // applies to all teams
+    constexpr int TL_SnapCellBase   = 10000000; // + (table*8+column)*1000000 + generation%1000000
     // Briefing icon-edit snapshot merge ids (DialogSnapshotCommand): base +
     // (team * MAX_BRIEF_STAGES + stage) + firstSelectedIcon * 80, so edits to
     // a different stage or selection never merge.

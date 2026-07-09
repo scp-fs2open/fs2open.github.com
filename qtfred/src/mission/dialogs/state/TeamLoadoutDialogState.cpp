@@ -103,4 +103,99 @@ void TeamLoadoutDialogModel::restoreState(const QByteArray& state)
 	}
 }
 
+// ---------------------------------------------------------------------------
+// Working-state capture/restore for the in-dialog undo stack: every team's
+// WIP loadout plus the current team context.
+// ---------------------------------------------------------------------------
+
+static void writeLoadoutItems(QDataStream& ds, const SCP_vector<LoadoutItem>& items)
+{
+	ds << static_cast<qint32>(items.size());
+	for (const auto& item : items) {
+		ds << static_cast<qint32>(item.infoIndex);
+		ds << static_cast<quint8>(item.enabled ? 1 : 0);
+		ds << static_cast<quint8>(item.required ? 1 : 0);
+		ds << static_cast<quint8>(item.fromVariable ? 1 : 0);
+		ds << static_cast<qint32>(item.countInWings);
+		ds << static_cast<qint32>(item.extraAllocated);
+		ds << static_cast<qint32>(item.varCountIndex);
+		ds << QString::fromStdString(item.name);
+	}
+}
+
+static void readLoadoutItems(QDataStream& ds, SCP_vector<LoadoutItem>& items)
+{
+	items.clear();
+	qint32 count;
+	ds >> count;
+	items.reserve(count);
+	for (int i = 0; i < count; ++i) {
+		auto& item = items.emplace_back();
+		qint32 infoIndex, countInWings, extraAllocated, varCountIndex;
+		quint8 enabled, required, fromVariable;
+		QString name;
+		ds >> infoIndex >> enabled >> required >> fromVariable;
+		ds >> countInWings >> extraAllocated >> varCountIndex >> name;
+		item.infoIndex      = static_cast<int>(infoIndex);
+		item.enabled        = (enabled != 0);
+		item.required       = (required != 0);
+		item.fromVariable   = (fromVariable != 0);
+		item.countInWings   = static_cast<int>(countInWings);
+		item.extraAllocated = static_cast<int>(extraAllocated);
+		item.varCountIndex  = static_cast<int>(varCountIndex);
+		item.name           = name.toStdString();
+	}
+}
+
+QByteArray TeamLoadoutDialogModel::captureWorkingState() const
+{
+	QByteArray data;
+	QDataStream ds(&data, QIODevice::WriteOnly);
+
+	ds << static_cast<qint32>(_teams.size());
+	for (const auto& team : _teams) {
+		ds << static_cast<qint32>(team.startingShipCount);
+		ds << static_cast<qint32>(team.largestPrimaryBankCount);
+		ds << static_cast<qint32>(team.largestSecondaryCapacity);
+		ds << static_cast<quint8>(team.skipValidation ? 1 : 0);
+		writeLoadoutItems(ds, team.ships);
+		writeLoadoutItems(ds, team.weapons);
+		writeLoadoutItems(ds, team.varShips);
+		writeLoadoutItems(ds, team.varWeapons);
+	}
+	ds << static_cast<qint32>(_currentTeam);
+
+	return data;
+}
+
+void TeamLoadoutDialogModel::restoreWorkingState(const QByteArray& state)
+{
+	QDataStream ds(state);
+
+	qint32 teamCount;
+	ds >> teamCount;
+	_teams.clear();
+	_teams.resize(teamCount);
+	for (int t = 0; t < teamCount; ++t) {
+		auto& team = _teams[t];
+		qint32 startingShips, largestPrimary, largestSecondary;
+		quint8 skipValidation;
+		ds >> startingShips >> largestPrimary >> largestSecondary >> skipValidation;
+		team.startingShipCount        = static_cast<int>(startingShips);
+		team.largestPrimaryBankCount  = static_cast<int>(largestPrimary);
+		team.largestSecondaryCapacity = static_cast<int>(largestSecondary);
+		team.skipValidation           = (skipValidation != 0);
+		readLoadoutItems(ds, team.ships);
+		readLoadoutItems(ds, team.weapons);
+		readLoadoutItems(ds, team.varShips);
+		readLoadoutItems(ds, team.varWeapons);
+	}
+
+	qint32 team;
+	ds >> team;
+	_currentTeam = static_cast<int>(team);
+
+	set_modified();
+}
+
 } // namespace fso::fred::dialogs
