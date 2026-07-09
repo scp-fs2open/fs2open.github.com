@@ -379,9 +379,16 @@ bool VulkanPostProcessor::init(vk::Device device, vk::PhysicalDevice physDevice,
 		}
 	}
 
-	// Create persistent UBO for the final output-encode pass (HDR10 leg only;
-	// the SDR leg is a blit or the UBO-less SDR_TYPE_COPY fallback)
+	// Create persistent UBO for the final output-encode pass. Shared by both
+	// legs of VulkanRenderer::encodeToSwapChain() (never run in the same
+	// frame): encodeOutput() writes hdr10_encode_data for the HDR10 leg,
+	// encodeOutputSdr() writes gamma_blit_data for the SDR leg -- both
+	// structs are exactly one vec4 (16 bytes), so a single allocation covers
+	// either.
 	{
+		static_assert(sizeof(graphics::generic_data::hdr10_encode_data) ==
+			sizeof(graphics::generic_data::gamma_blit_data),
+			"output-encode UBO allocation sized for hdr10_encode_data must also fit gamma_blit_data");
 		vk::BufferCreateInfo bufInfo;
 		bufInfo.size = sizeof(graphics::generic_data::hdr10_encode_data);
 		bufInfo.usage = vk::BufferUsageFlagBits::eUniformBuffer;
@@ -716,7 +723,7 @@ void VulkanPostProcessor::blitToSwapChain(vk::CommandBuffer cmd)
 
 void VulkanPostProcessor::encodeOutput(vk::CommandBuffer cmd, vk::RenderPass renderPass,
 	vk::Framebuffer framebuffer, vk::Extent2D extent, vk::ImageView sourceView, vk::Sampler sampler,
-	float paperwhiteNits, float peakNits)
+	float paperwhiteNits, float peakNits, float gamma)
 {
 	auto* pipelineMgr = getPipelineManager();
 	auto* descriptorMgr = getDescriptorManager();
@@ -726,8 +733,8 @@ void VulkanPostProcessor::encodeOutput(vk::CommandBuffer cmd, vk::RenderPass ren
 
 	GR_DEBUG_SCOPE("Draw scene texture");
 
-	// HDR10/PQ/BT.2020 encode only -- the SDR leg is handled by a blit
-	// (or encodeOutputPassthrough() as a fallback) instead of a shader draw.
+	// HDR10/PQ/BT.2020 encode (plus the user gamma slider) -- the SDR leg
+	// uses encodeOutputSdr() instead.
 	//
 	// Deliberately NOT routed through drawFullscreenTriangle()'s shared
 	// scratch UBO ring: this pass runs once, last, per frame -- after every
@@ -759,6 +766,7 @@ void VulkanPostProcessor::encodeOutput(vk::CommandBuffer cmd, vk::RenderPass ren
 		memset(mapped, 0, sizeof(graphics::generic_data::hdr10_encode_data));
 		mapped->hdr_paperwhite_nits = paperwhiteNits;
 		mapped->hdr_peak_nits = peakNits;
+		mapped->gamma = gamma;
 		m_ctx.memoryManager->unmapMemory(m_outputEncodeUBOAlloc);
 	}
 
@@ -814,17 +822,103 @@ void VulkanPostProcessor::encodeOutput(vk::CommandBuffer cmd, vk::RenderPass ren
 	cmd.endRenderPass();
 }
 
-void VulkanPostProcessor::encodeOutputPassthrough(vk::CommandBuffer cmd, vk::RenderPass renderPass,
-	vk::Framebuffer framebuffer, vk::Extent2D extent, vk::ImageView sourceView, vk::Sampler sampler)
+void VulkanPostProcessor::encodeOutputSdr(vk::CommandBuffer cmd, vk::RenderPass renderPass,
+	vk::Framebuffer framebuffer, vk::Extent2D extent, vk::ImageView sourceView, vk::Sampler sampler,
+	float gamma)
 {
+	auto* pipelineMgr = getPipelineManager();
+	auto* descriptorMgr = getDescriptorManager();
+	if (!pipelineMgr || !descriptorMgr || !m_outputEncodeUBO) {
+		return;
+	}
+
 	GR_DEBUG_SCOPE("Draw scene texture");
 
-	// SDR fallback for devices that can't blit HDR_COLOR_FORMAT -> the swap
-	// chain format directly (see VulkanRenderer::encodeToSwapChain()). Plain
-	// passthrough copy, no UBO -- the composition image already carries the
-	// final display-ready sRGB-encoded frame.
-	m_ctx.drawFullscreenTriangle(cmd, renderPass, framebuffer, extent,
-		SDR_TYPE_COPY, sourceView, sampler, nullptr, 0, ALPHA_BLEND_NONE);
+	// SDR leg of VulkanRenderer::encodeToSwapChain(): the composition image
+	// already carries the final display-ready sRGB-encoded frame (3D scene +
+	// menus/HUD alike), so this pass just applies the user gamma/brightness
+	// slider on the way into the swap chain image.
+	//
+	// Deliberately NOT routed through drawFullscreenTriangle()'s shared
+	// scratch UBO ring, for the same reason as encodeOutput(): this pass
+	// runs once, last, per frame. Uses the shared persistent
+	// m_outputEncodeUBO instead (see its allocation comment in init()).
+	PipelineConfig config;
+	config.shaderType = SDR_TYPE_GAMMA_BLIT;
+	config.vertexLayoutHash = 0;
+	config.primitiveType = PRIM_TYPE_TRIS;
+	config.depthMode = ZBUFFER_TYPE_NONE;
+	config.blendMode = ALPHA_BLEND_NONE;
+	config.cullEnabled = false;
+	config.depthWriteEnabled = false;
+	config.renderPass = renderPass;
+
+	vertex_layout emptyLayout;
+	vk::Pipeline pipeline = pipelineMgr->getPipeline(config, emptyLayout);
+	if (!pipeline) {
+		mprintf(("VulkanPostProcessor: Failed to get SDR output-encode pipeline!\n"));
+		return;
+	}
+	vk::PipelineLayout pipelineLayout = pipelineMgr->getPipelineLayout();
+
+	auto* mapped = static_cast<graphics::generic_data::gamma_blit_data*>(
+		m_ctx.memoryManager->mapMemory(m_outputEncodeUBOAlloc));
+	if (mapped) {
+		memset(mapped, 0, sizeof(graphics::generic_data::gamma_blit_data));
+		mapped->gamma = gamma;
+		m_ctx.memoryManager->unmapMemory(m_outputEncodeUBOAlloc);
+	}
+
+	vk::RenderPassBeginInfo rpBegin;
+	rpBegin.renderPass = renderPass;
+	rpBegin.framebuffer = framebuffer;
+	rpBegin.renderArea.offset = vk::Offset2D(0, 0);
+	rpBegin.renderArea.extent = extent;
+
+	cmd.beginRenderPass(rpBegin, vk::SubpassContents::eInline);
+	cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
+
+	vk::Viewport viewport;
+	viewport.x = 0.0f;
+	viewport.y = 0.0f;
+	viewport.width = static_cast<float>(extent.width);
+	viewport.height = static_cast<float>(extent.height);
+	viewport.minDepth = 0.0f;
+	viewport.maxDepth = 1.0f;
+	cmd.setViewport(0, viewport);
+
+	vk::Rect2D scissor;
+	scissor.offset = vk::Offset2D(0, 0);
+	scissor.extent = extent;
+	cmd.setScissor(0, scissor);
+
+	DescriptorWriter writer;
+	writer.reset(m_ctx.device, descriptorMgr->getFallbacks());
+
+	vk::DescriptorSet materialSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Material);
+	Verify(materialSet);
+	writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
+	{
+		std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texArrayInfos;
+		texArrayInfos.fill(descriptorMgr->getFallbacks().texture2D);
+		texArrayInfos[0].sampler = sampler;
+		texArrayInfos[0].imageView = sourceView;
+		writer.setImageArray(MaterialBinding::TextureArray, texArrayInfos);
+	}
+
+	vk::DescriptorSet perDrawSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::PerDraw);
+	Verify(perDrawSet);
+	writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
+	writer.setBuffer(PerDrawBinding::GenericData, {m_outputEncodeUBO, 0,
+		sizeof(graphics::generic_data::gamma_blit_data)});
+	writer.flush();
+
+	cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout,
+		static_cast<uint32_t>(DescriptorSetIndex::Material),
+		{materialSet, perDrawSet}, {});
+
+	cmd.draw(3, 1, 0, 0);
+	cmd.endRenderPass();
 }
 
 // No-op: In OpenGL, begin/end push/pop an FBO and run the post-processing

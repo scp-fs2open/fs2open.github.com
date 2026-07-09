@@ -322,7 +322,6 @@ class VulkanRenderer {
 	vk::UniqueSampler m_compositionSampler;
 	SCP_vector<vk::UniqueFramebuffer> m_encodeFramebuffers;
 	vk::UniqueRenderPass m_encodeRenderPass;
-	bool m_swapChainBlitSupported = false; // Device can blit HDR_COLOR_FORMAT -> m_swapChainImageFormat directly
 
 	uint32_t m_currentSwapChainImage = 0;
 	uint32_t m_previousSwapChainImage = UINT32_MAX;  // For saveScreen() readback of previous frame

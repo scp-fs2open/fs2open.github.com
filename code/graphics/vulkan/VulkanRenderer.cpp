@@ -5,6 +5,7 @@
 #include "VulkanTexture.h"
 #include "VulkanPostProcessing.h"
 
+#include "cmdline/cmdline.h"
 #include "graphics/grinternal.h"
 #include "graphics/post_processing.h"
 
@@ -29,23 +30,6 @@ VulkanRenderer::VulkanRenderer(std::unique_ptr<os::GraphicsOperations> graphicsO
 }
 void VulkanRenderer::createCompositionResources()
 {
-	// The SDR leg of encodeToSwapChain() blits the fp16 composition image
-	// straight into the swap chain image (skipping a shader draw entirely)
-	// when the device supports blitting between the two formats. Query once
-	// here (format doesn't change across swap chain recreation, but this is
-	// cheap and this function already reruns on resize).
-	{
-		vk::FormatProperties srcProps = m_physicalDevice.getFormatProperties(HDR_COLOR_FORMAT);
-		vk::FormatProperties dstProps = m_physicalDevice.getFormatProperties(m_swapChainImageFormat);
-		m_swapChainBlitSupported =
-			static_cast<bool>(srcProps.optimalTilingFeatures & vk::FormatFeatureFlagBits::eBlitSrc) &&
-			static_cast<bool>(dstProps.optimalTilingFeatures & vk::FormatFeatureFlagBits::eBlitDst);
-		if (!m_swapChainBlitSupported) {
-			mprintf(("Vulkan: device can't blit HDR_COLOR_FORMAT -> swap chain format; "
-			         "falling back to a shader copy for SDR output-encode\n"));
-		}
-	}
-
 	// Free any previous composition resources (swap chain recreation path)
 	m_compositionImageViews.clear();
 	m_compositionImages.clear();
@@ -199,12 +183,15 @@ void VulkanRenderer::encodeToSwapChain()
 	if (!m_postProcessor || m_currentSwapChainImage >= m_swapChainImages.size()) {
 		return;
 	}
+	if (m_currentSwapChainImage >= m_encodeFramebuffers.size()) {
+		return;
+	}
 
-	// HDR10: PQ/BT.2020 encode, must run as a shader (encodeOutput()).
+	const float gamma = Cmdline_no_set_gamma ? 1.0f : Gr_gamma;
+
+	// HDR10: PQ/BT.2020 encode plus the user gamma slider, must run as a
+	// shader (encodeOutput()).
 	if (m_hdrActive) {
-		if (m_currentSwapChainImage >= m_encodeFramebuffers.size()) {
-			return;
-		}
 		m_postProcessor->encodeOutput(
 			m_currentCommandBuffer,
 			m_encodeRenderPass.get(),
@@ -213,37 +200,24 @@ void VulkanRenderer::encodeToSwapChain()
 			m_compositionImageViews[m_currentSwapChainImage].get(),
 			m_compositionSampler.get(),
 			Gr_hdr_paperwhite_nits,
-			Gr_hdr_peak_nits);
+			Gr_hdr_peak_nits,
+			gamma);
 		return;
 	}
 
 	// SDR: the composition image already carries the final display-ready
-	// sRGB-encoded frame, so this is a value-preserving format conversion
-	// (fp16 -> BGRA8, no gamma reinterpretation -- m_swapChainImageFormat is
-	// deliberately plain UNORM, not _SRGB). Skip the shader/pipeline/render
-	// pass entirely and blit straight into the swap chain image when the
-	// device supports it.
-	if (m_swapChainBlitSupported) {
-		blitImageToImage(m_currentCommandBuffer,
-			m_compositionImages[m_currentSwapChainImage].get(),
-			vk::ImageLayout::eShaderReadOnlyOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
-			m_swapChainImages[m_currentSwapChainImage],
-			vk::ImageLayout::eUndefined, vk::ImageLayout::ePresentSrcKHR,
-			m_swapChainExtent);
-		return;
-	}
-
-	// Fallback for devices that can't blit between these formats.
-	if (m_currentSwapChainImage >= m_encodeFramebuffers.size()) {
-		return;
-	}
-	m_postProcessor->encodeOutputPassthrough(
+	// sRGB-encoded frame (3D scene + menus/HUD alike). Always run the
+	// gamma-encode shader here -- rather than a raw blit -- so the user
+	// gamma/brightness slider has a uniform, whole-frame effect regardless
+	// of device blit support.
+	m_postProcessor->encodeOutputSdr(
 		m_currentCommandBuffer,
 		m_encodeRenderPass.get(),
 		m_encodeFramebuffers[m_currentSwapChainImage].get(),
 		m_swapChainExtent,
 		m_compositionImageViews[m_currentSwapChainImage].get(),
-		m_compositionSampler.get());
+		m_compositionSampler.get(),
+		gamma);
 }
 vk::Format VulkanRenderer::findDepthFormat()
 {

@@ -723,28 +723,32 @@ public:
 	void blitToSwapChain(vk::CommandBuffer cmd);
 
 	/**
-	 * @brief Final output-encode pass: composition image -> swap chain image (HDR10 only)
+	 * @brief Final output-encode pass: composition image -> swap chain image (HDR10 leg)
 	 *
 	 * Begins/ends its own render pass on the swap chain framebuffer and draws a
 	 * fullscreen triangle that samples the fp16 composition image, applying the
-	 * PQ / BT.2020 (HDR10) transfer. Only called when the swap chain negotiated
-	 * HDR10 output -- the SDR leg is a direct blit (or encodeOutputPassthrough()
-	 * as a fallback), not a shader draw. See VulkanRenderer::encodeToSwapChain().
+	 * user gamma/brightness slider followed by the PQ / BT.2020 (HDR10)
+	 * transfer. Only called when the swap chain negotiated HDR10 output --
+	 * the SDR leg uses encodeOutputSdr() instead. See
+	 * VulkanRenderer::encodeToSwapChain().
 	 */
 	void encodeOutput(vk::CommandBuffer cmd, vk::RenderPass renderPass, vk::Framebuffer framebuffer,
 	                  vk::Extent2D extent, vk::ImageView sourceView, vk::Sampler sampler,
-	                  float paperwhiteNits, float peakNits);
+	                  float paperwhiteNits, float peakNits, float gamma);
 
 	/**
-	 * @brief SDR output-encode fallback: composition image -> swap chain image
+	 * @brief Final output-encode pass: composition image -> swap chain image (SDR leg)
 	 *
-	 * Plain passthrough copy (SDR_TYPE_COPY, no UBO) into the swap chain
-	 * framebuffer. Used only when the device can't blit HDR_COLOR_FORMAT
-	 * directly into the swap chain format -- otherwise VulkanRenderer does a
-	 * raw blit instead of calling this.
+	 * Begins/ends its own render pass on the swap chain framebuffer and draws a
+	 * fullscreen triangle (SDR_TYPE_GAMMA_BLIT) that samples the fp16
+	 * composition image -- which already carries the final display-ready
+	 * sRGB-encoded frame (3D scene + menus/HUD alike) -- and applies the user
+	 * gamma/brightness slider before writing it into the swap chain image.
+	 * Always used for the SDR leg; there is no shader-less fast path, so the
+	 * slider works uniformly regardless of device blit support.
 	 */
-	void encodeOutputPassthrough(vk::CommandBuffer cmd, vk::RenderPass renderPass, vk::Framebuffer framebuffer,
-	                  vk::Extent2D extent, vk::ImageView sourceView, vk::Sampler sampler);
+	void encodeOutputSdr(vk::CommandBuffer cmd, vk::RenderPass renderPass, vk::Framebuffer framebuffer,
+	                  vk::Extent2D extent, vk::ImageView sourceView, vk::Sampler sampler, float gamma);
 
 	/**
 	 * @brief Execute bloom post-processing passes
@@ -1114,32 +1118,6 @@ void copyImageToImage(
     vk::Extent2D extent,
     vk::ImageAspectFlags aspect = vk::ImageAspectFlagBits::eColor,
     uint32_t dstMipLevels = 1);
-
-/**
- * @brief Blit one image to another with automatic barrier management
- *
- * Same barrier structure as copyImageToImage(), but uses vkCmdBlitImage
- * (vk::Filter::eNearest) instead of vkCmdCopyImage, so src and dst may have
- * different formats/texel sizes (e.g. RGBA16F -> BGRA8) -- a plain image
- * copy requires matching texel size and can't do this. Intended for 1:1
- * resolution transfers only (nearest filtering, no scaling).
- *
- * @param cmd         Active command buffer (must be outside a render pass)
- * @param src         Source image
- * @param srcOldLayout Current layout of source image
- * @param srcNewLayout Desired layout of source image after the blit
- * @param dst         Destination image
- * @param dstOldLayout Current layout of destination image
- * @param dstNewLayout Desired layout of destination image after the blit
- * @param extent      Blit region (width x height), same for src and dst
- * @param aspect      Image aspect (eColor or eDepth)
- */
-void blitImageToImage(
-    vk::CommandBuffer cmd,
-    vk::Image src, vk::ImageLayout srcOldLayout, vk::ImageLayout srcNewLayout,
-    vk::Image dst, vk::ImageLayout dstOldLayout, vk::ImageLayout dstNewLayout,
-    vk::Extent2D extent,
-    vk::ImageAspectFlags aspect = vk::ImageAspectFlagBits::eColor);
 
 } // namespace graphics::vulkan
 

@@ -238,13 +238,14 @@ struct tonemapping_data {
 	float pad[3];
 };
 
-// Output-encode pass (hdr10-encode-f.sdr): HDR10 (PQ/BT.2020) encode only,
-// invoked once per frame instead of tonemapping_data's shader when the swap
-// chain negotiated HDR10 output.
+// Output-encode pass (hdr10-encode-f.sdr): HDR10 (PQ/BT.2020) encode plus the
+// user gamma/brightness slider, invoked once per frame instead of
+// tonemapping_data's shader when the swap chain negotiated HDR10 output.
 struct hdr10_encode_data {
 	float hdr_paperwhite_nits;
 	float hdr_peak_nits;
-	float pad[2];
+	float gamma;
+	float pad[1];
 };
 
 struct smaa_data {

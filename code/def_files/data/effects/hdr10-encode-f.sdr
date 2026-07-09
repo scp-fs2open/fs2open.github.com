@@ -19,18 +19,24 @@ layout(std140)
 uniform genericData {
 	float hdr_paperwhite_nits;
 	float hdr_peak_nits;
-	float pad[2];
+	float gamma;
+	float pad[1];
 };
 
 // HDR10 output-encode pass -- the only job this shader has. The input is the
 // fully composited frame in the shared extended-sRGB encoding produced by
-// tonemapping-f.sdr's HdrScene tonemapper (1.0 == paper white). Decode to
-// linear, scale to display nits, convert to BT.2020 primaries, apply PQ
-// (ST.2084). Invoked once per frame, only when the swap chain negotiated
-// HDR10 (BT.2020 + ST.2084) output.
+// tonemapping-f.sdr's HdrScene tonemapper (1.0 == paper white). Apply the user
+// gamma/brightness slider to that encoded value (same curve as the SDR leg's
+// gamma-correct-f.sdr, so the slider behaves consistently in both output
+// modes), then decode to linear, scale to display nits, convert to BT.2020
+// primaries, apply PQ (ST.2084). Invoked once per frame, only when the swap
+// chain negotiated HDR10 (BT.2020 + ST.2084) output.
 void main()
 {
 	vec4 color = texture(tex, fragTexCoord.xy);
+
+	float g = max(gamma, 0.001);
+	color.rgb = pow(max(color.rgb, vec3(0.0)), vec3(1.0 / g));
 
 	vec3 lin = srgb_to_linear(max(color.rgb, vec3(0.0)));
 	vec3 nits = min(lin * hdr_paperwhite_nits, vec3(hdr_peak_nits));
