@@ -241,6 +241,9 @@ namespace animation {
 		struct {
 			//Seamless_with_startup
 			float loopsFrom = 0.0f;
+			//WeaponReload: the time in seconds at which the external weapon model reappears (e.g. the moment
+			//an auto-reversing loader arm places the round), or -1 to reappear when the animation completes
+			float modelSpawnTime = -1.0f;
 		} m_flagData;
 
 	private:
@@ -361,6 +364,8 @@ namespace animation {
 			//Winds the animations down: looping animations stop once their current loop completes (entering their shutdown for seamless animations), others play in reverse
 			void startShutdown() const;
 			int getTime() const;
+			//Like getTime, but honors each animation's +Model Spawn Time: for when the external weapon model should reappear
+			int getModelSpawnTime() const;
 			//True once every animation in the list is fully started (see ModelAnimation::isFullyStarted); true for an empty list
 			bool isFullyStarted() const;
 			//True if any animation in the list has been triggered and has not yet fully reset

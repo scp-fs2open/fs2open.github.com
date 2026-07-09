@@ -1089,6 +1089,25 @@ namespace animation {
 		return (int)(duration * 1000.0f);
 	}
 
+	int ModelAnimationSet::AnimationList::getModelSpawnTime() const {
+		if (pmi_id < 0)
+			return 0;
+
+		float spawnTime = 0.0f;
+
+		for (const auto& anim : animations) {
+			if (anim->m_instances[pmi_id].state == ModelAnimationState::UNTRIGGERED)
+				continue;
+
+			//The spawn time is deliberately not capped to the duration: for an auto-reversing
+			//animation the return leg plays past the one-way duration that getTime() reports
+			float localTime = (anim->m_flagData.modelSpawnTime >= 0.0f) ? anim->m_flagData.modelSpawnTime : anim->m_instances[pmi_id].duration;
+			spawnTime = spawnTime < localTime ? localTime : spawnTime;
+		}
+
+		return (int)(spawnTime * 1000.0f);
+	}
+
 	void ModelAnimationSet::AnimationList::setFlag(Animation_Instance_Flags flag, bool set) const {
 		if (pmi_id < 0)
 			return;
@@ -1537,6 +1556,13 @@ namespace animation {
 				error_display(0, "Animation flag \"seamless forward shutdown\" requires \"seamless with startup\". Ignoring it.");
 				animation->m_flags.set(Animation_Flags::Seamless_forward_shutdown, false);
 			}
+		}
+
+		if (optional_string("+Model Spawn Time:")) {
+			stuff_float(&animation->m_flagData.modelSpawnTime);
+
+			if (type != ModelAnimationTriggerType::WeaponReload)
+				error_display(0, "+Model Spawn Time: is only used by %s animations.", Animation_types.at(ModelAnimationTriggerType::WeaponReload).first);
 		}
 
 		if (Animation_types.find(type)->second.second) {

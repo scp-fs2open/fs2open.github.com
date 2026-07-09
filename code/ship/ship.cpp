@@ -10779,7 +10779,7 @@ static void update_turret_external_weapon_models(ship *shipp, ship_subsys *pss)
 				if (reload_anims.start(animation::ModelAnimationDirection::FWD, true))
 				{
 					state = TurretExternalWeaponState::RELOADING;
-					pss->turret_external_weapon_reload_stamp[k] = timestamp(reload_anims.getTime());
+					pss->turret_external_weapon_reload_stamp[k] = timestamp(reload_anims.getModelSpawnTime());
 				}
 				else
 					state = TurretExternalWeaponState::LOADED;
@@ -14543,7 +14543,7 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 				auto reload_anims = sip->animations.getAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::WeaponReload, bank, true);
 				if (!reload_anims.isEmpty()) {
 					reload_anims.start(animation::ModelAnimationDirection::FWD, true);
-					shipp->secondary_point_reload_stamp.set(bank, pnt_index, timestamp(reload_anims.getTime()));
+					shipp->secondary_point_reload_stamp.set(bank, pnt_index, timestamp(reload_anims.getModelSpawnTime()));
 				}
 			}
 
