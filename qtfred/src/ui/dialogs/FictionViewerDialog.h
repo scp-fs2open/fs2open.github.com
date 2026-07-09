@@ -22,7 +22,6 @@ public:
 
  protected:
 	void closeEvent(QCloseEvent* e) override; // funnel all Window X presses through reject()
-	void focusInEvent(QFocusEvent* e) override;
 
 private slots:
 	// dialog controls

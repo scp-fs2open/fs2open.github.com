@@ -1,7 +1,7 @@
 
 #include <QCloseEvent>
-#include <QFocusEvent>
 #include "ui/dialogs/FictionViewerDialog.h"
+#include "ui/util/DialogUndo.h"
 #include "ui/util/SignalBlockers.h"
 #include "ui_FictionViewerDialog.h"
 #include "mission/util.h"
@@ -17,6 +17,7 @@ FictionViewerDialog::FictionViewerDialog(FredView* parent, EditorViewport* viewp
 
 	_dialogStack = new QUndoStack(this);
 	_fredView->undoGroup()->addStack(_dialogStack);
+	util::setupDialogUndo(this, _fredView->undoGroup(), _dialogStack, tr("Fiction Viewer"));
 
 	// Initial set up of the UI
 	initializeUi();
@@ -84,11 +85,6 @@ void FictionViewerDialog::closeEvent(QCloseEvent* e)
 	}
 }
 
-void FictionViewerDialog::focusInEvent(QFocusEvent* e)
-{
-	_fredView->undoGroup()->setActiveStack(_dialogStack);
-	QDialog::focusInEvent(e);
-}
 
 void FictionViewerDialog::initializeUi()
 {
@@ -120,22 +116,66 @@ void FictionViewerDialog::on_okAndCancelButtons_rejected()
 
 void FictionViewerDialog::on_storyFileEdit_textChanged(const QString& text)
 {
+	const SCP_string before = _model->getStoryFile();
 	_model->setStoryFile(text.toUtf8().constData());
+	const SCP_string after = _model->getStoryFile();
+	if (before == after)
+		return;
+
+	auto* cmd = new FieldEditCommand<SCP_string>(FieldId::FV_StoryFile, nullptr, tr("Change Story File"), true);
+	cmd->addEntry(before, after, [this](const SCP_string& v) {
+		_model->setStoryFile(v);
+		updateUi();
+	});
+	_dialogStack->push(cmd);
 }
 
 void FictionViewerDialog::on_fontFileEdit_textChanged(const QString& text)
 {
+	const SCP_string before = _model->getFontFile();
 	_model->setFontFile(text.toUtf8().constData());
+	const SCP_string after = _model->getFontFile();
+	if (before == after)
+		return;
+
+	auto* cmd = new FieldEditCommand<SCP_string>(FieldId::FV_FontFile, nullptr, tr("Change Font File"), true);
+	cmd->addEntry(before, after, [this](const SCP_string& v) {
+		_model->setFontFile(v);
+		updateUi();
+	});
+	_dialogStack->push(cmd);
 }
 
 void FictionViewerDialog::on_voiceFileEdit_textChanged(const QString& text)
 {
+	const SCP_string before = _model->getVoiceFile();
 	_model->setVoiceFile(text.toUtf8().constData());
+	const SCP_string after = _model->getVoiceFile();
+	if (before == after)
+		return;
+
+	auto* cmd = new FieldEditCommand<SCP_string>(FieldId::FV_VoiceFile, nullptr, tr("Change Voice File"), true);
+	cmd->addEntry(before, after, [this](const SCP_string& v) {
+		_model->setVoiceFile(v);
+		updateUi();
+	});
+	_dialogStack->push(cmd);
 }
 
 void FictionViewerDialog::on_musicWidget_currentIndexChanged(int spooledMusicIdx)
 {
+	const int before = _model->getFictionMusic();
+	if (before == spooledMusicIdx)
+		return;
+
 	_model->setFictionMusic(spooledMusicIdx);
+
+	auto* cmd = new FieldEditCommand<int>(FieldId::FV_Music, nullptr, tr("Change Fiction Music"), true);
+	cmd->addEntry(before, spooledMusicIdx, [this](const int& v) {
+		_model->setFictionMusic(v);
+		updateUi();
+	});
+	_dialogStack->push(cmd);
 }
 
 } // namespace fso::fred::dialogs

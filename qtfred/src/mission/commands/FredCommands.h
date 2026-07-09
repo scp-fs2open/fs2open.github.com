@@ -808,6 +808,11 @@ namespace FieldId {
     // spinboxes apply to the whole selection, so their edits are snapshots
     // merged per control within one selection epoch.
     constexpr int Reinf_SnapSpinBase = 50000000; // + control*1000000 + generation%1000000
+    // Fiction Viewer editor (in-dialog stack)
+    constexpr int FV_StoryFile = 7201;
+    constexpr int FV_FontFile  = 7202;
+    constexpr int FV_VoiceFile = 7203;
+    constexpr int FV_Music     = 7204;
     // Briefing icon-edit snapshot merge ids (DialogSnapshotCommand): base +
     // (team * MAX_BRIEF_STAGES + stage) + firstSelectedIcon * 80, so edits to
     // a different stage or selection never merge.
