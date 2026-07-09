@@ -432,7 +432,18 @@ void briefing_editor_dlg::update_data(int update)
 
 		if (m_last_icon >= 0) {
 			valid = (m_id != ptr->icons[m_last_icon].id);
-			if (m_id >= 0) {
+			if (m_id < 0) {
+				// briefing icon ids must never be negative; revert to the previous id
+				if (valid) {
+					char msg[1024];
+
+					sprintf(msg, "Icon ID #%d is invalid.  Briefing icon IDs cannot be negative.\n"
+						"Icon ID has been reset back to %d", m_id, ptr->icons[m_last_icon].id);
+
+					m_id = ptr->icons[m_last_icon].id;
+					MessageBox(msg);
+				}
+			} else {
 				if (valid && !m_change_local) {
 					for (i=m_last_stage+1; i<Briefing->num_stages; i++) {
 						if (find_icon(m_id, i) >= 0) {
@@ -1099,7 +1110,7 @@ void briefing_editor_dlg::OnMakeIcon()
 	biconp->team = team;
 	biconp->pos = pos;
 	biconp->flags = 0;
-	biconp->id = Cur_brief_id++;
+	biconp->id = get_unused_briefing_icon_id();
 	biconp->scale_factor = 1.0f;
 
 	biconp->modelnum = -1;
@@ -1346,6 +1357,26 @@ int briefing_editor_dlg::find_icon(int id, int stage)
 				return i;
 
 	return -1;
+}
+
+// is the given id already used by any icon in any stage of the current briefing?
+bool briefing_editor_dlg::briefing_icon_id_used(int id)
+{
+	for (int s=0; s<Briefing->num_stages; s++)
+		if (find_icon(id, s) >= 0)
+			return true;
+
+	return false;
+}
+
+// find an id that isn't already used by an icon in the current briefing, advancing
+// Cur_brief_id past any values that are already taken (e.g. from manual id edits)
+int briefing_editor_dlg::get_unused_briefing_icon_id()
+{
+	while (briefing_icon_id_used(Cur_brief_id))
+		Cur_brief_id++;
+
+	return Cur_brief_id++;
 }
 
 void briefing_editor_dlg::reset_icon_loop(int stage)
