@@ -202,6 +202,7 @@ SCP_list<int> SexpAnnotationModel::buildPath(int key, const SCP_vector<sexp_tree
 		return path; // root not found in events
 
 	path.push_back(event_idx);
+	path.push_back(0);	// child position under the event label: the top operator is its only child
 
 	// Collect child-position indices from the target node up to the root,
 	// then reverse them so the path reads top-down.
@@ -260,10 +261,16 @@ int SexpAnnotationModel::resolveFromPath(const SCP_list<int>& path, const SCP_ve
 	if (path.size() == 1)
 		return rootKey(formula);
 
-	// Walk down the tree from the formula node.
-	int node = formula;
 	auto it = path.begin();
 	++it; // skip event index
+
+	// A label has exactly one child; any other index fails.
+	if (*it != 0)
+		return -1;
+	++it;
+
+	// Walk down the tree from the formula node.
+	int node = formula;
 	for (; it != path.end() && node >= 0; ++it) {
 		int target = *it;
 		if (node < 0 || node >= static_cast<int>(tree_nodes.size()))
