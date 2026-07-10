@@ -60,7 +60,7 @@ Use Qt's signal/slot mechanism for event notification rather than the original F
 ### Dialog models should not do
 
 - Depend on Qt widgets or `.ui` objects.
-- Present dialogs or message boxes directly.
+- Present dialogs or message boxes directly. If user feedback is required, the model should report back to the UI with a Boolean, Enum, or other method and they the calling UI handle the issue from there.
 - Hide UI-specific concepts such as pixel sizes, control visibility, or tab ordering unless those concepts are true editor preferences.
 
 ## Dialog behavior patterns
