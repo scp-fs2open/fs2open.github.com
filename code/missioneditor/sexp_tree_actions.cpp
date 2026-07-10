@@ -1,4 +1,5 @@
 #include "missioneditor/sexp_tree_actions.h"
+#include "missioneditor/sexp_annotation_model.h"
 
 #include "parse/sexp.h"
 #include "parse/sexp_container.h"
@@ -506,6 +507,14 @@ int SexpTreeActions::insert_operator(int op, void* root_parent_handle)
 		if (_model._interface && _model._interface->getFlags()[TreeFlags::LabeledRoot]) {
 			parent_handle = root_parent_handle;
 			_model._interface->onRootInserted(wrapped_node, node);
+
+			// a root label's annotation is keyed to its formula node; re-key it
+			// so it follows the event across the formula change
+			if (_model.annotation_model) {
+				auto* ea = _model.annotation_model->getByKey(SexpAnnotationModel::rootKey(wrapped_node));
+				if (ea)
+					ea->node_index = SexpAnnotationModel::rootKey(node);
+			}
 		} else {
 			_model.root_item = node;
 		}

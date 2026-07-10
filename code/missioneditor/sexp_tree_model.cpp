@@ -396,9 +396,15 @@ void SexpTreeModel::free_node2(int node)
 	total_nodes--;
 
 	// Remove any annotation referencing this node so that if allocate_node()
-	// reuses this slot, the new node won't inherit a stale annotation.
-	if (annotation_model)
+	// reuses this slot, the new node won't inherit a stale annotation.  Also
+	// remove any root-label annotation keyed to this node as an event formula
+	// (rootKey), so that an event whose formula later lands in this slot won't
+	// inherit a deleted event's annotation.  The global Event_annotations are
+	// only rewritten at save, so annotations removed here still survive a Cancel.
+	if (annotation_model) {
 		annotation_model->removeByKey(node);
+		annotation_model->removeByKey(SexpAnnotationModel::rootKey(node));
+	}
 
 	// Recursively free children and following siblings.
 	if (tree_nodes[node].child != -1)
