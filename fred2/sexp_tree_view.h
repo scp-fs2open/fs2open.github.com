@@ -72,6 +72,7 @@ public:
 	virtual void edit_comment(HTREEITEM h);
 	virtual void edit_bg_color(HTREEITEM h);
 	virtual SCP_string get_node_comment(int node_index) const;
+	virtual SCP_string get_item_comment(HTREEITEM h, int node_index);
 	void right_clicked();
 	int ctree_size;
 	virtual void build_tree();
