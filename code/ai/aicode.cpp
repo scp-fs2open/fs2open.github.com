@@ -12320,7 +12320,7 @@ void ai_process_subobjects(int objnum)
 				// (previously in ship_evaluate_ai (previously in ship_process_post))
 				// Cyborg -- Unfortunately Ai info is not reliable and should just not be accessed here.
 				// It will have no real effect on gameplay, since the server decides when turrets fire
-				if (!MULTIPLAYER_CLIENT && // NOLINT(readability-simplify-boolean-expr)
+				if (!MULTIPLAYER_CLIENT && 
 					(aip->ai_flags.any_of(AI::AI_Flags::Being_repaired,AI::AI_Flags::Awaiting_repair)))
 				{
 					if (aip->support_ship_objnum >= 0)
@@ -13537,8 +13537,7 @@ void ai_maybe_evade_locked_missile(object *objp, ai_info *aip)
 		return;
 	}
 
-	if (aip->ai_flags.any_of(AI::AI_Flags::No_dynamic,AI::AI_Flags::Kamikaze)) { //	If not allowed to pursue dynamic objectives, don't evade.  Dumb?
-												 //Maybe change. -- MK, 3/15/98
+	if (aip->ai_flags.any_of(AI::AI_Flags::No_dynamic,AI::AI_Flags::Kamikaze)) { //	If not allowed to pursue dynamic objectives, don't evade.  Dumb? //Maybe change. -- MK, 3/15/98
 		return;
 	}
 
@@ -16504,8 +16503,7 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, const vec3d *hit_normal)
 
 	aip->last_hit_time = Missiontime;
 
-	if (aip->ai_flags.any_of(AI::AI_Flags::No_dynamic,AI::AI_Flags::Kamikaze)) //	If not allowed to pursue dynamic objectives, don't evade.  Dumb?
-											   //Maybe change. -- MK, 3/15/98
+	if (aip->ai_flags.any_of(AI::AI_Flags::No_dynamic,AI::AI_Flags::Kamikaze)) //	If not allowed to pursue dynamic objectives, don't evade.  Dumb? //Maybe change. -- MK, 3/15/98
 		return;
 
 	//	If this ship is awaiting repair, abort!

@@ -23,6 +23,7 @@ class flagset {
 			set(val);
 		}
 	}
+	// Returns true if any of the given flags are set.
 	template <typename... Ts>
 	bool any_of(T first, Ts... rest) const
 	{

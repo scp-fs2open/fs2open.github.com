@@ -946,23 +946,11 @@ struct weapon_info
     inline bool is_beam()               const { return subtype == WP_BEAM || wi_flags[Weapon::Info_Flags::Beam]; }
     inline bool is_non_beam_primary()   const { return subtype == WP_LASER && !wi_flags[Weapon::Info_Flags::Beam]; }
 
-    inline bool is_homing() const
-	{
-		return wi_flags.any_of(Weapon::Info_Flags::Homing_heat,Weapon::Info_Flags::Homing_aspect,Weapon::Info_Flags::Homing_javelin);
-	}
-	inline bool is_locked_homing() const
-	{
-		return wi_flags.any_of(Weapon::Info_Flags::Homing_aspect,Weapon::Info_Flags::Homing_javelin);
-	}
-	inline bool hurts_big_ships() const
-	{
-		return wi_flags.any_of(Weapon::Info_Flags::Bomb,Weapon::Info_Flags::Beam,Weapon::Info_Flags::Huge,Weapon::Info_Flags::Big_only);
-	}
-	inline bool is_interceptable() const
-	{
-		return wi_flags.any_of(Weapon::Info_Flags::Fighter_Interceptable,Weapon::Info_Flags::Turret_Interceptable);
-	}
-	inline bool is_mine()               const { return wi_flags[Weapon::Info_Flags::Mine]; }
+    inline bool is_homing() const { return wi_flags.any_of(Weapon::Info_Flags::Homing_heat,Weapon::Info_Flags::Homing_aspect,Weapon::Info_Flags::Homing_javelin); }
+	inline bool is_locked_homing() const { return wi_flags.any_of(Weapon::Info_Flags::Homing_aspect,Weapon::Info_Flags::Homing_javelin); }
+	inline bool hurts_big_ships() const { return wi_flags.any_of(Weapon::Info_Flags::Bomb,Weapon::Info_Flags::Beam,Weapon::Info_Flags::Huge,Weapon::Info_Flags::Big_only); }
+	inline bool is_interceptable() const { return wi_flags.any_of(Weapon::Info_Flags::Fighter_Interceptable,Weapon::Info_Flags::Turret_Interceptable); }
+	inline bool is_mine() const { return wi_flags[Weapon::Info_Flags::Mine]; }
 	
 	const char* get_display_name() const;
 	bool has_display_name() const;
