@@ -58,12 +58,12 @@ public:
 	HTREEITEM handle(int node);
 	int get_node(HTREEITEM h);
 	int get_type(HTREEITEM h);
-	void setup(CEdit *ptr = NULL);
+	void setup(CEdit *ptr = nullptr);
 	void move_root(HTREEITEM source, HTREEITEM dest, bool insert_before);
 	void move_branch(int source, int parent);
 	HTREEITEM move_branch(HTREEITEM source, HTREEITEM parent = TVI_ROOT, HTREEITEM after = TVI_LAST);
 	void copy_branch(HTREEITEM source, HTREEITEM parent = TVI_ROOT, HTREEITEM after = TVI_LAST);
-	void setup_selected(HTREEITEM h = NULL);
+	void setup_selected(HTREEITEM h = nullptr);
 	void ensure_visible(int node);
 	int node_error(int node, const char *msg, int *bypass);
 	void expand_branch(HTREEITEM h);
@@ -75,7 +75,7 @@ public:
 	void right_clicked();
 	int ctree_size;
 	virtual void build_tree();
-	void clear_tree(const char *op = NULL);
+	void clear_tree(const char *op = nullptr);
 	void reset_handles();
 	void load_tree(int index, const char *deflt = "true");
 	void add_operator(const char *op, HTREEITEM h = TVI_ROOT);

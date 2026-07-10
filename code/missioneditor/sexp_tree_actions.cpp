@@ -427,7 +427,7 @@ int SexpTreeActions::add_default_operator(int op_index, int argnum)
 		return -1;
 
 	if (item.type & SEXPT_OPERATOR) {
-		Assertion(SCP_vector_inbounds(Operators, item.op), "Invalid operator index %d (Operators size %zu)", item.op, Operators.size());
+		Assertion(SCP_vector_inbounds(Operators, item.op), "Invalid operator index %d (Operators size " SIZE_T_ARG ")", item.op, Operators.size());
 		add_or_replace_operator(item.op);
 		_model.item_index = saved_index;
 
@@ -487,7 +487,7 @@ int SexpTreeActions::add_default_operator(int op_index, int argnum)
 
 int SexpTreeActions::insert_operator(int op, void* root_parent_handle)
 {
-	Assertion(SCP_vector_inbounds(Operators, op), "Invalid operator index %d (Operators size %zu)", op, Operators.size());
+	Assertion(SCP_vector_inbounds(Operators, op), "Invalid operator index %d (Operators size " SIZE_T_ARG ")", op, Operators.size());
 	Assertion(_model.item_index >= 0, "Invalid selected node index %d", _model.item_index);
 
 	const int wrapped_node = _model.item_index;
