@@ -26,6 +26,12 @@ class SexpTreeOPF {
 public:
 	explicit SexpTreeOPF(SexpTreeModel& model);
 
+	// Non-copyable and non-movable: permanently bound to its owning model
+	SexpTreeOPF(const SexpTreeOPF&) = delete;
+	SexpTreeOPF& operator=(const SexpTreeOPF&) = delete;
+	SexpTreeOPF(SexpTreeOPF&&) = delete;
+	SexpTreeOPF& operator=(SexpTreeOPF&&) = delete;
+
 	// Master dispatcher — routes to the appropriate get_listing_opf_* based on opf type
 	sexp_list_item* get_listing_opf(int opf, int parent_node, int arg_index);
 
