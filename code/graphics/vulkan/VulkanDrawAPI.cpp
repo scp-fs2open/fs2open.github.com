@@ -273,6 +273,10 @@ void vulkan_copy_effect_texture()
 
 void vulkan_draw_sphere(material* material_def, float /*rad*/)
 {
+	// Set up uniform buffers before rendering (like OpenGL does)
+	gr_matrix_set_uniforms();
+	vulkan_set_default_material_uniforms(material_def);
+
 	auto* drawManager = getDrawManager();
 	drawManager->drawSphere(material_def);
 }
