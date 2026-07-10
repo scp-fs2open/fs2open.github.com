@@ -55,11 +55,15 @@ void SexpAnnotationModel::saveToGlobal(const SCP_vector<sexp_tree_item>& tree_no
 			int resolved = resolveFromPath(old_path, tree_nodes, events, sig);
 			if (resolved >= 0 || isRootKey(resolved)) {
 				ea.path = buildPath(resolved, tree_nodes, events);
-			} else {
-				// Truly gone; mark default for pruning.
-				ea.comment.clear();
-				ea.r = ea.g = ea.b = 255;
 			}
+		}
+
+		// If no path could be built, the annotated node no longer exists (e.g. its
+		// event was deleted); mark default so prune() removes it rather than letting
+		// an unattachable annotation survive in the global list.
+		if (ea.path.empty()) {
+			ea.comment.clear();
+			ea.r = ea.g = ea.b = 255;
 		}
 
 		// Reset transient field.
@@ -77,6 +81,11 @@ void SexpAnnotationModel::saveToGlobal(const SCP_vector<sexp_tree_item>& tree_no
 // Return the vector index of the annotation with the given key, or -1 if not found.
 int SexpAnnotationModel::findByKey(int key) const
 {
+	// -1 is the default/unresolved sentinel, not a real key; matching it would
+	// surface an unresolved annotation on any item that has no key of its own
+	if (key == -1)
+		return -1;
+
 	for (size_t i = 0; i < m_annotations.size(); ++i) {
 		if (m_annotations[i].node_index == key)
 			return static_cast<int>(i);

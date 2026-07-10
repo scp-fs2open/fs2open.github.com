@@ -617,6 +617,13 @@ SCP_string sexp_tree_view::get_node_comment(int /*node_index*/) const
 	return "";
 }
 
+// Returns the comment for a tree item.  The base class only has comments on model
+// nodes; event_sexp_tree overrides this to also resolve labeled event roots.
+SCP_string sexp_tree_view::get_item_comment(HTREEITEM /*h*/, int node_index)
+{
+	return get_node_comment(node_index);
+}
+
 // Handles completion of inline label editing. Validates the new text via
 // _model.validate_label_edit(), commits operator replacements or data changes,
 // and returns 0 if the edit was consumed, 1 if MFC should update the label.
@@ -1759,7 +1766,7 @@ void sexp_tree_view::update_help(HTREEITEM h)
 
 	// Build annotation comment
 	SCP_string nodeComment;
-	SCP_string raw_comment = get_node_comment(node_index);
+	SCP_string raw_comment = get_item_comment(h, node_index);
 	if (!raw_comment.empty()) {
 		nodeComment = "Node Comments:\r\n   " + raw_comment;
 	}

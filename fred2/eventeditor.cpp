@@ -1918,3 +1918,10 @@ SCP_string event_sexp_tree::get_node_comment(int node_index) const
 
 	return "";
 }
+
+SCP_string event_sexp_tree::get_item_comment(HTREEITEM h, int /*node_index*/)
+{
+	// resolves both regular nodes and root labels (which have no model node,
+	// so the base class's node_index would be -1 for them)
+	return get_node_comment(annotation_key_for_item(this, h));
+}
