@@ -153,6 +153,36 @@ void VulkanRenderer::flip()
 	// eShaderReadOnlyOptimal) and run the final output-encode pass that writes
 	// the actual swap chain image (SDR passthrough or HDR10 PQ/BT.2020).
 	m_currentCommandBuffer.endRenderPass();
+
+#ifdef __APPLE__
+	// MoltenVK: the render pass's automatic finalLayout transition +
+	// VK_SUBPASS_EXTERNAL subpass dependency (in createEncodeRenderPass()) is
+	// spec-legal and sufficient on desktop Vulkan drivers, but MoltenVK's
+	// translation of an implicit cross-render-pass layout transition into
+	// Metal fences/barriers has been unreliable in practice, showing up as
+	// tearing/garbage in the composition image once it's immediately sampled
+	// by the output-encode pass below. Insert an explicit, standalone barrier
+	// (same access/stage transition the automatic one already promises) so
+	// MoltenVK gets an unambiguous synchronization point instead of inferring
+	// one from the render pass boundary.
+	if (m_currentSwapChainImage < m_compositionImages.size()) {
+		vk::ImageMemoryBarrier compositionBarrier;
+		compositionBarrier.srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
+		compositionBarrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+		compositionBarrier.oldLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		compositionBarrier.newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		compositionBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		compositionBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		compositionBarrier.image = m_compositionImages[m_currentSwapChainImage].get();
+		compositionBarrier.subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
+
+		m_currentCommandBuffer.pipelineBarrier(
+			vk::PipelineStageFlagBits::eColorAttachmentOutput,
+			vk::PipelineStageFlagBits::eFragmentShader,
+			{}, nullptr, nullptr, compositionBarrier);
+	}
+#endif
+
 	encodeToSwapChain();
 	m_stateTracker->endFrame();
 	m_descriptorManager->endFrame();

@@ -375,6 +375,7 @@ bool VulkanPostProcessor::init(vk::Device device, vk::PhysicalDevice physDevice,
 			memset(mapped, 0, sizeof(graphics::generic_data::tonemapping_data));
 			mapped->exposure = 1.0f;
 			mapped->tonemapper = 0;  // Linear
+			m_ctx.memoryManager->flushMemory(m_tonemapUBOAlloc, 0, sizeof(graphics::generic_data::tonemapping_data));
 			m_ctx.memoryManager->unmapMemory(m_tonemapUBOAlloc);
 		}
 	}
@@ -598,6 +599,7 @@ void VulkanPostProcessor::updateTonemappingUBO()
 		mapped->sh_offsetY = ppc.sh_offsetY;
 		mapped->hdr_paperwhite_nits = 0.0f;
 		mapped->hdr_peak_nits = 0.0f;
+		m_ctx.memoryManager->flushMemory(m_tonemapUBOAlloc, 0, sizeof(graphics::generic_data::tonemapping_data));
 		m_ctx.memoryManager->unmapMemory(m_tonemapUBOAlloc);
 	}
 }
@@ -709,6 +711,7 @@ void VulkanPostProcessor::blitToSwapChain(vk::CommandBuffer cmd)
 		memset(mapped, 0, sizeof(graphics::generic_data::tonemapping_data));
 		mapped->exposure = 1.0f;
 		mapped->tonemapper = 0;  // Linear passthrough
+		m_ctx.memoryManager->flushMemory(m_tonemapUBOAlloc, 0, sizeof(graphics::generic_data::tonemapping_data));
 		m_ctx.memoryManager->unmapMemory(m_tonemapUBOAlloc);
 	}
 	writer.setBuffer(PerDrawBinding::GenericData, {m_tonemapUBO, 0,
@@ -767,6 +770,7 @@ void VulkanPostProcessor::encodeOutput(vk::CommandBuffer cmd, vk::RenderPass ren
 		mapped->hdr_paperwhite_nits = paperwhiteNits;
 		mapped->hdr_peak_nits = peakNits;
 		mapped->gamma = gamma;
+		m_ctx.memoryManager->flushMemory(m_outputEncodeUBOAlloc, 0, sizeof(graphics::generic_data::hdr10_encode_data));
 		m_ctx.memoryManager->unmapMemory(m_outputEncodeUBOAlloc);
 	}
 
@@ -866,6 +870,7 @@ void VulkanPostProcessor::encodeOutputSdr(vk::CommandBuffer cmd, vk::RenderPass 
 	if (mapped) {
 		memset(mapped, 0, sizeof(graphics::generic_data::gamma_blit_data));
 		mapped->gamma = gamma;
+		m_ctx.memoryManager->flushMemory(m_outputEncodeUBOAlloc, 0, sizeof(graphics::generic_data::gamma_blit_data));
 		m_ctx.memoryManager->unmapMemory(m_outputEncodeUBOAlloc);
 	}
 
