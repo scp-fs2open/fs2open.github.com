@@ -42,7 +42,7 @@ elseif(NOT Qt6_FOUND)
     if(NOT QT_USE_PRECOMPILED)
         message(STATUS "Qt6 libraries could not be found. Using prebuilt version...")
 
-        set(QT_USE_PRECOMPILED ON)
+        set(QT_USE_PRECOMPILED ON CACHE BOOL "Precompiled Qt usage forced ON" FORCE)
         get_prebuilt_path(PREBUILT_PATH)
         list(PREPEND CMAKE_PREFIX_PATH "${PREBUILT_PATH}/Qt6")
 
