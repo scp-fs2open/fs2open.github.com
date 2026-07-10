@@ -28,7 +28,7 @@ Download the Qt6 SDK available on their website.
 
 ### CMake configuration
 Configure the project as usual with CMake but make sure that `FSO_BUILD_QTFRED` is enabled in the CMake configuration. The
-variable `QT6_INSTALL_ROOT` is available for letting CMake know where it should look for the QT5 installation. This is
+variable `QT6_INSTALL_ROOT` is available for letting CMake know where it should look for the QT6 installation. This is
 especially important on Windows where the standard CMake `find_package` calls will likely fail.
 
 You need to set `QT6_INSTALL_ROOT` to the actual installation folder of a specific version. If you installed Qt to a path
