@@ -95,7 +95,8 @@ void PostProcessContext::drawFullscreenTriangle(vk::CommandBuffer cmd, vk::Rende
                                                   int blendMode,
                                                   unsigned int shaderFlags,
                                                   vk::SampleCountFlagBits sampleCount,
-                                                  bool bindGlobalSet)
+                                                  bool bindGlobalSet,
+                                                  const std::array<float, 4>* clearColor)
 {
 	GR_DEBUG_SCOPE("Draw full screen triangle");
 
@@ -137,6 +138,25 @@ void PostProcessContext::drawFullscreenTriangle(vk::CommandBuffer cmd, vk::Rende
 	rpBegin.renderArea.extent = extent;
 
 	cmd.beginRenderPass(rpBegin, vk::SubpassContents::eInline);
+
+	if (clearColor) {
+		// Explicit in-pass clear, independent of the render pass's own loadOp: needed
+		// for passes whose shader discards some pixels (e.g. SMAA edge detection),
+		// which can't rely on loadOp=eDontCare leaving them at any particular value.
+		vk::ClearAttachment clearAttachment;
+		clearAttachment.aspectMask = vk::ImageAspectFlagBits::eColor;
+		clearAttachment.colorAttachment = 0;
+		clearAttachment.clearValue.color = vk::ClearColorValue{*clearColor};
+
+		vk::ClearRect clearRect;
+		clearRect.rect.offset = vk::Offset2D(0, 0);
+		clearRect.rect.extent = extent;
+		clearRect.baseArrayLayer = 0;
+		clearRect.layerCount = 1;
+
+		cmd.clearAttachments(clearAttachment, clearRect);
+	}
+
 	cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
 
 	// Set viewport and scissor

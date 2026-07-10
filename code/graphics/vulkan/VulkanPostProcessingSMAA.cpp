@@ -209,12 +209,19 @@ void VulkanSMAA::execute(vk::CommandBuffer cmd)
 	{
 		GR_DEBUG_SCOPE("SMAA Detect Edges");
 
+		// The edge detection shader discards non-edge pixels, so Smaa_edges must be
+		// cleared every frame -- otherwise discarded pixels keep last frame's edges
+		// forever. Explicit clearColor (vkCmdClearAttachments) rather than relying on
+		// the render pass's own loadOp=eDontCare, which leaves those pixels undefined.
+		static const std::array<float, 4> kClearColor = {0.0f, 0.0f, 0.0f, 1.0f};
 		m_ctx->drawFullscreenTriangle(cmd, m_ldr->renderPass(),
 			m_smaaEdgesFB, m_ctx->sceneExtent,
 			SDR_TYPE_POST_PROCESS_SMAA_EDGE,
 			m_ldr->getAADetectionView(), m_ctx->linearSampler,
 			&smaaData, sizeof(smaaData),
-			ALPHA_BLEND_NONE);
+			ALPHA_BLEND_NONE,
+			0, vk::SampleCountFlagBits::e1, false,
+			&kClearColor);
 	}
 
 	// Pass 2: blending weight calculation. Smaa_edges + area + search -> Smaa_blend

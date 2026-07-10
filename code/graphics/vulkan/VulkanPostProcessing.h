@@ -69,6 +69,12 @@ struct PostProcessContext {
 	 *                      frame setup; pass true for draws that may run before
 	 *                      that binding happened this frame (e.g. mid-G-buffer-pass
 	 *                      copies that run ahead of any material draw).
+	 * @param clearColor When set, clears color attachment 0 to this RGBA value via
+	 *                   vkCmdClearAttachments immediately after beginning the render
+	 *                   pass, regardless of the render pass's own loadOp. For passes
+	 *                   whose shader discards some pixels (e.g. SMAA edge detection)
+	 *                   and therefore can't rely on loadOp=eDontCare leaving them at
+	 *                   any particular value.
 	 */
 	void drawFullscreenTriangle(vk::CommandBuffer cmd, vk::RenderPass renderPass,
 	                            vk::Framebuffer framebuffer, vk::Extent2D extent,
@@ -78,7 +84,8 @@ struct PostProcessContext {
 	                            int blendMode,
 	                            unsigned int shaderFlags = 0,
 	                            vk::SampleCountFlagBits sampleCount = vk::SampleCountFlagBits::e1,
-	                            bool bindGlobalSet = false);
+	                            bool bindGlobalSet = false,
+	                            const std::array<float, 4>* clearColor = nullptr);
 
 	/**
 	 * @brief Draw a fullscreen triangle sampling multiple textures
