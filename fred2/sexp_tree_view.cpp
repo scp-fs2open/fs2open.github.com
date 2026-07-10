@@ -60,6 +60,7 @@ sexp_tree_view::sexp_tree_view()
 	m_dragging = FALSE;
 	m_p_image_list = NULL;
 	help_box = NULL;
+	_model._interface = &m_default_interface;
 	clear_tree();
 
 	m_operator_popup_active = false;

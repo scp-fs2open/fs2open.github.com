@@ -140,6 +140,12 @@ protected:
 
 	int& flag = _model.flag;
 	int*& modified = _model.modified;
+
+	// Fallback editor interface installed at construction so _model._interface is never
+	// null (shared model/OPF code dereferences it unconditionally).  Dialogs that provide
+	// editor context (events, goals, cutscenes, campaign) overwrite it with themselves.
+	SexpTreeEditorInterface m_default_interface;
+
 	bool m_operator_popup_active;
 	bool m_operator_popup_created;
 	int m_font_height;
