@@ -289,7 +289,8 @@ class VulkanRenderer {
 	std::unique_ptr<os::GraphicsOperations> m_graphicsOps;
 
 	vk::UniqueInstance m_vkInstance;
-	vk::UniqueDebugReportCallbackEXT m_debugReport;
+	vk::UniqueDebugReportCallbackEXT m_debugReport;            // legacy fallback (no VK_EXT_debug_utils)
+	vk::UniqueDebugUtilsMessengerEXT m_debugMessenger;         // preferred debug callback
 
 	vk::UniqueSurfaceKHR m_vkSurface;
 

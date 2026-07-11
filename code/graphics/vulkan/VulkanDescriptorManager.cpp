@@ -150,6 +150,18 @@ void DescriptorWriter::writeSet(vk::DescriptorSet set, const DescriptorSetTempla
 	}
 }
 
+void DescriptorWriter::flush()
+{
+	if (m_writeCount > 0) {
+		m_device.updateDescriptorSets(m_writeCount, m_writes.data(), 0, nullptr);
+		getDescriptorManager()->noteDescriptorWrites(m_writeCount);
+	}
+	m_writeCount = 0;
+	m_bufferInfoCount = 0;
+	m_imageInfoCount = 0;
+	m_accelStructInfoCount = 0;
+}
+
 void DescriptorWriter::setBuffer(uint32_t binding, const vk::DescriptorBufferInfo& info)
 {
 	Verify(binding < MAX_BINDINGS_PER_SET);
@@ -280,6 +292,7 @@ vk::DescriptorSet VulkanDescriptorManager::allocateFrameSet(DescriptorSetIndex s
 
 	vk::DescriptorSetLayout layout = m_setLayouts[static_cast<size_t>(setIndex)].get();
 	auto& pools = m_framePools[m_currentFrame];
+	++m_setsAllocatedThisFrame;
 
 	// Try allocating from the last pool in the list
 	if (!pools.empty()) {
@@ -324,6 +337,10 @@ void VulkanDescriptorManager::beginFrame()
 	}
 
 	auto& pools = m_framePools[m_currentFrame];
+
+	// Reset per-frame diagnostic counters
+	m_setsAllocatedThisFrame = 0;
+	m_writesThisFrame = 0;
 
 	// Reset all pools for the current frame
 	for (auto& pool : pools) {

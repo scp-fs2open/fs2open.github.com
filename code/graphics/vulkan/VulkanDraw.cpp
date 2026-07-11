@@ -949,6 +949,15 @@ void VulkanDrawManager::printFrameStats()
 			m_frameStats.renderNanoVGCalls,
 			m_frameStats.renderRocketCalls,
 			m_frameStats.renderMovieCalls));
+		// Descriptor/pipeline pressure: baseline for the descriptor-reuse work and
+		// regression canary for pipeline-cache misses (unexpected growth = new
+		// pipeline permutations being created mid-mission).
+		auto* descMgr = getDescriptorManager();
+		auto* pipeMgr = getPipelineManager();
+		nprintf(("vulkanframe", "  DESC: sets=%u writes=%u | pipelines total=%zu\n",
+			descMgr->getSetsAllocatedThisFrame(),
+			descMgr->getWritesThisFrame(),
+			pipeMgr->getPipelineCount()));
 	}
 
 	m_frameStatsFrameNum++;

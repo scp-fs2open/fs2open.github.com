@@ -81,15 +81,7 @@ public:
 	void setImage(uint32_t binding, const vk::DescriptorImageInfo& info);
 	void setImageArray(uint32_t binding, ArrayView<vk::DescriptorImageInfo> infos);
 
-	void flush() {
-		if (m_writeCount > 0) {
-			m_device.updateDescriptorSets(m_writeCount, m_writes.data(), 0, nullptr);
-		}
-		m_writeCount = 0;
-		m_bufferInfoCount = 0;
-		m_imageInfoCount = 0;
-		m_accelStructInfoCount = 0;
-	}
+	void flush(); // defined in VulkanDescriptorManager.cpp (reports write stats to the manager)
 
 private:
 	// Per-binding lookup for the current writeSet, indexed by binding number.
@@ -275,6 +267,11 @@ public:
 	 */
 	uint32_t getCurrentFrame() const { return m_currentFrame; }
 
+	// ========== Per-frame diagnostics (reset in beginFrame) ==========
+	void noteDescriptorWrites(uint32_t count) { m_writesThisFrame += count; }
+	uint32_t getSetsAllocatedThisFrame() const { return m_setsAllocatedThisFrame; }
+	uint32_t getWritesThisFrame() const { return m_writesThisFrame; }
+
 	/**
 	 * @brief Get the Vulkan device (for DescriptorWriter)
 	 */
@@ -337,6 +334,10 @@ private:
 	uint32_t m_currentFrame = 0;
 	bool m_initialized = false;
 	bool m_raytracingEnabled = false;
+
+	// Per-frame diagnostic counters (see VulkanDrawManager::printFrameStats)
+	uint32_t m_setsAllocatedThisFrame = 0;
+	uint32_t m_writesThisFrame = 0;
 };
 
 // Global descriptor manager access

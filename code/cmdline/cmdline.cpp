@@ -528,6 +528,7 @@ cmdline_parm show_video_info("-show_video_info", NULL, AT_NONE); //Cmdline_show_
 cmdline_parm frame_profile_arg("-profile_frame_time", NULL, AT_NONE); //Cmdline_frame_profile
 cmdline_parm debug_window_arg("-debug_window", NULL, AT_NONE);	// Cmdline_debug_window
 cmdline_parm graphics_debug_output_arg("-gr_debug", nullptr, AT_NONE); // Cmdline_graphics_debug_output
+cmdline_parm gr_sync_validation_arg("-gr_sync_validation", nullptr, AT_NONE); // Cmdline_gr_sync_validation (implies -gr_debug)
 cmdline_parm log_to_stdout_arg("-stdout_log", nullptr, AT_NONE); // Cmdline_log_to_stdout
 cmdline_parm slow_frames_ok_arg("-slow_frames_ok", nullptr, AT_NONE);	// Cmdline_slow_frames_ok
 cmdline_parm fixed_seed_rand("-seed", nullptr, AT_INT);	// Cmdline_rng_seed,Cmdline_reuse_rng_seed;
@@ -569,6 +570,7 @@ bool Cmdline_frame_profile = false;
 bool Cmdline_show_video_info = false;
 bool Cmdline_debug_window = false;
 bool Cmdline_graphics_debug_output = false;
+bool Cmdline_gr_sync_validation = false;
 bool Cmdline_log_to_stdout = false;
 bool Cmdline_slow_frames_ok = false;
 bool Cmdline_lua_devmode = false;
@@ -2314,6 +2316,13 @@ bool SetCmdlineParams()
 	}
 
 	if (graphics_debug_output_arg.found()) {
+		Cmdline_graphics_debug_output = true;
+	}
+
+	if (gr_sync_validation_arg.found()) {
+		// Synchronization validation needs the validation layer + debug callbacks,
+		// which are only set up on the graphics-debug path, so imply -gr_debug.
+		Cmdline_gr_sync_validation = true;
 		Cmdline_graphics_debug_output = true;
 	}
 

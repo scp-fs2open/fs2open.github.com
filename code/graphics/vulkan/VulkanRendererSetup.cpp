@@ -43,6 +43,28 @@ VkBool32 VKAPI_PTR debugReportCallback(
 	nprintf(("vulkan", "Vulkan message: [%s]: %s\n", pLayerPrefix, pMessage));
 	return VK_FALSE;
 }
+
+VkBool32 VKAPI_PTR debugUtilsMessengerCallback(
+	vk::DebugUtilsMessageSeverityFlagBitsEXT severity,
+	vk::DebugUtilsMessageTypeFlagsEXT /*types*/,
+	const vk::DebugUtilsMessengerCallbackDataEXT* callbackData,
+	void* /*pUserData*/)
+{
+	const char* msgId = (callbackData != nullptr && callbackData->pMessageIdName != nullptr)
+	                        ? callbackData->pMessageIdName : "unknown";
+	const char* msg = (callbackData != nullptr && callbackData->pMessage != nullptr)
+	                      ? callbackData->pMessage : "";
+
+	if (severity == vk::DebugUtilsMessageSeverityFlagBitsEXT::eError ||
+		severity == vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning) {
+		// Errors and warnings (including all -gr_sync_validation hazards) go to the
+		// main log so they are visible without the "vulkan" debug filter enabled.
+		mprintf(("Vulkan validation: [%s]: %s\n", msgId, msg));
+	} else {
+		nprintf(("vulkan", "Vulkan message: [%s]: %s\n", msgId, msg));
+	}
+	return VK_FALSE;
+}
 #endif
 
 const SCP_vector<const char*> RequiredDeviceExtensions = {
@@ -601,6 +623,7 @@ bool VulkanRenderer::initializeInstance()
 	}
 
 	SCP_vector<const char*> layers;
+	bool khronosValidationEnabled = false;
 	const auto supportedLayers = vk::enumerateInstanceLayerProperties();
 	nprintf(("vulkan", "Instance layers:\n"));
 	for (const auto& layer : supportedLayers) {
@@ -614,6 +637,7 @@ bool VulkanRenderer::initializeInstance()
 		if (FSO_DEBUG || Cmdline_graphics_debug_output) {
 			if (!stricmp(layer.layerName, "VK_LAYER_KHRONOS_validation")) {
 				layers.push_back("VK_LAYER_KHRONOS_validation");
+				khronosValidationEnabled = true;
 			} else if (!stricmp(layer.layerName, "VK_LAYER_LUNARG_core_validation")) {
 				layers.push_back("VK_LAYER_LUNARG_core_validation");
 			}
@@ -634,11 +658,49 @@ bool VulkanRenderer::initializeInstance()
 																  vk::DebugReportFlagBitsEXT::ePerformanceWarning);
 	createInstanceReportInfo.pfnCallback = debugReportCallback;
 
-	vk::StructureChain<vk::InstanceCreateInfo, vk::DebugReportCallbackCreateInfoEXT> createInstanceChain(createInfo,
-		createInstanceReportInfo);
+	// Debug-utils messenger config. Chained into instance creation (so messages
+	// emitted during vkCreateInstance itself are captured) and reused below for
+	// the persistent messenger.
+	vk::DebugUtilsMessengerCreateInfoEXT messengerInfo;
+	messengerInfo.messageSeverity = vk::DebugUtilsMessageSeverityFlagBitsEXT::eError |
+	                                vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning;
+	messengerInfo.messageType = vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral |
+	                            vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation |
+	                            vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance;
+	messengerInfo.pfnUserCallback = debugUtilsMessengerCallback;
 
-	if (!m_debugReportEnabled) {
+	// Opt-in GPU synchronization validation (-gr_sync_validation). The struct is
+	// consumed by the Khronos validation layer, so it is only chained when that
+	// layer was actually enabled above.
+	const std::array<vk::ValidationFeatureEnableEXT, 1> enabledValidationFeatures = {
+		vk::ValidationFeatureEnableEXT::eSynchronizationValidation,
+	};
+	vk::ValidationFeaturesEXT validationFeatures;
+	validationFeatures.enabledValidationFeatureCount = static_cast<uint32_t>(enabledValidationFeatures.size());
+	validationFeatures.pEnabledValidationFeatures = enabledValidationFeatures.data();
+
+	vk::StructureChain<vk::InstanceCreateInfo,
+		vk::DebugReportCallbackCreateInfoEXT,
+		vk::DebugUtilsMessengerCreateInfoEXT,
+		vk::ValidationFeaturesEXT>
+		createInstanceChain(createInfo, createInstanceReportInfo, messengerInfo, validationFeatures);
+
+	// Prefer the debug-utils messenger; the deprecated debug-report callback is
+	// only a fallback for loaders without VK_EXT_debug_utils.
+	if (m_debugUtilsEnabled || !m_debugReportEnabled) {
 		createInstanceChain.unlink<vk::DebugReportCallbackCreateInfoEXT>();
+	}
+	if (!m_debugUtilsEnabled) {
+		createInstanceChain.unlink<vk::DebugUtilsMessengerCreateInfoEXT>();
+	}
+	if (Cmdline_gr_sync_validation && khronosValidationEnabled) {
+		mprintf(("Vulkan: Synchronization validation enabled (-gr_sync_validation)\n"));
+	} else {
+		if (Cmdline_gr_sync_validation) {
+			mprintf(("Vulkan: -gr_sync_validation requested but VK_LAYER_KHRONOS_validation is not available; "
+			         "synchronization validation disabled\n"));
+		}
+		createInstanceChain.unlink<vk::ValidationFeaturesEXT>();
 	}
 
 	vk::UniqueInstance instance = vk::createInstanceUnique(createInstanceChain.get<vk::InstanceCreateInfo>(), nullptr);
@@ -648,7 +710,9 @@ bool VulkanRenderer::initializeInstance()
 
 	VULKAN_HPP_DEFAULT_DISPATCHER.init(instance.get());
 
-	if (m_debugReportEnabled) {
+	if (m_debugUtilsEnabled) {
+		m_debugMessenger = instance->createDebugUtilsMessengerEXTUnique(messengerInfo);
+	} else if (m_debugReportEnabled) {
 		vk::DebugReportCallbackCreateInfoEXT reportCreateInfo(vk::DebugReportFlagBitsEXT::eError |
 															  vk::DebugReportFlagBitsEXT::eWarning |
 															  vk::DebugReportFlagBitsEXT::ePerformanceWarning);
