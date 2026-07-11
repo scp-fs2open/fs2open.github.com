@@ -6790,6 +6790,13 @@ vec3d get_submodel_offset(int model, int submodel){
 
 }
 
+// Defaulted here rather than in ship.h because the unique_ptr<WarpEffect>
+// members need the complete WarpEffect type at the point of definition.
+ship::ship() = default;
+ship::~ship() = default;
+ship::ship(ship &&) = default;				// NOLINT(performance-noexcept-move-constructor)
+ship &ship::operator=(ship &&) = default;	// NOLINT(performance-noexcept-move-constructor)
+
 // Reset all ship values to empty/unused.
 void ship::clear()
 {
@@ -6824,12 +6831,8 @@ void ship::clear()
 	really_final_death_time = timestamp(-1);
 	deathroll_rotvel = vmd_zero_vector;
 
-	if (warpin_effect != nullptr)
-		delete warpin_effect;
-	if (warpout_effect != nullptr)
-		delete warpout_effect;
-	warpin_effect = nullptr;
-	warpout_effect = nullptr;
+	warpin_effect.reset();
+	warpout_effect.reset();
 
 	warpin_params_index = -1;
 	warpout_params_index = -1;
@@ -16553,13 +16556,8 @@ void ship_close()
 	for (i=0; i<MAX_SHIPS; i++ )	{
 		ship *shipp = &Ships[i];
 
-		if(shipp->warpin_effect != NULL)
-			delete shipp->warpin_effect;
-		shipp->warpin_effect = NULL;
-
-		if(shipp->warpout_effect != NULL)
-			delete shipp->warpout_effect;
-		shipp->warpout_effect = NULL;
+		shipp->warpin_effect.reset();
+		shipp->warpout_effect.reset();
 	}
 
 	// free this too! -- Goober5000

@@ -358,9 +358,9 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info)
 		vec3d actual_world_hit_pos = mc.hit_point_world + heavy_obj->pos;
 
 		if (heavy_shipp->flags[Ship::Ship_Flags::Depart_warp] && heavy_shipp->warpout_effect != nullptr)
-			warp_effect = heavy_shipp->warpout_effect;
+			warp_effect = heavy_shipp->warpout_effect.get();
 		else if (heavy_shipp->flags[Ship::Ship_Flags::Arriving_stage_2] && heavy_shipp->warpin_effect != nullptr)
-			warp_effect = heavy_shipp->warpin_effect;
+			warp_effect = heavy_shipp->warpin_effect.get();
 
 		bool heavy_warp_no_collide = false;
 		if (warp_effect != nullptr)
@@ -368,9 +368,9 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info)
 
 		warp_effect = nullptr;
 		if (light_shipp->flags[Ship::Ship_Flags::Depart_warp] && light_shipp->warpout_effect != nullptr)
-			warp_effect = light_shipp->warpout_effect;
+			warp_effect = light_shipp->warpout_effect.get();
 		else if (light_shipp->flags[Ship::Ship_Flags::Arriving_stage_2] && light_shipp->warpin_effect != nullptr)
-			warp_effect = light_shipp->warpin_effect;
+			warp_effect = light_shipp->warpin_effect.get();
 
 		bool light_warp_no_collide = false;
 		if (warp_effect != nullptr)
