@@ -246,37 +246,8 @@ bool VulkanDeferredGBuffer::initMsaa()
 		return false;
 	}
 
-	// Create per-frame MSAA resolve UBO (persistently mapped)
-	// Two 256-byte slots (one per frame in flight) hold {int samples; float fov;} data.
-	{
-		vk::BufferCreateInfo bufInfo;
-		bufInfo.size = MAX_FRAMES_IN_FLIGHT * 256;
-		bufInfo.usage = vk::BufferUsageFlagBits::eUniformBuffer;
-		bufInfo.sharingMode = vk::SharingMode::eExclusive;
-
-		try {
-			m_msaaResolveUBO = m_ctx->device.createBuffer(bufInfo);
-		} catch (const vk::SystemError& e) {
-			nprintf(("vulkan", "VulkanPostProcessor: Failed to create MSAA resolve UBO: %s\n", e.what()));
-			shutdownMsaa();
-			return false;
-		}
-
-		if (!m_ctx->memoryManager->allocateBufferMemory(m_msaaResolveUBO, MemoryUsage::CpuToGpu, m_msaaResolveUBOAlloc)) {
-			nprintf(("vulkan", "VulkanPostProcessor: Failed to allocate MSAA resolve UBO memory!\n"));
-			m_ctx->device.destroyBuffer(m_msaaResolveUBO);
-			m_msaaResolveUBO = nullptr;
-			shutdownMsaa();
-			return false;
-		}
-
-		m_msaaResolveUBOMapped = m_ctx->memoryManager->mapMemory(m_msaaResolveUBOAlloc);
-		if (!m_msaaResolveUBOMapped) {
-			nprintf(("vulkan", "VulkanPostProcessor: Failed to map MSAA resolve UBO!\n"));
-			shutdownMsaa();
-			return false;
-		}
-	}
+	// The MSAA resolve pass's {samples, fov} UBO comes from the shared per-frame
+	// scratch ring (PostProcessContext::scratchRing) -- no dedicated buffer.
 
 	// Transition MSAA images to the render pass's initial layout at creation time.
 	// The validation layer tracks framebuffer attachment layouts from creation,
@@ -307,19 +278,6 @@ void VulkanDeferredGBuffer::shutdownMsaa()
 {
 	if (!m_ctx || !m_ctx->device) {
 		return;
-	}
-
-	// Destroy MSAA resolve UBO
-	if (m_msaaResolveUBOMapped) {
-		m_ctx->memoryManager->unmapMemory(m_msaaResolveUBOAlloc);
-		m_msaaResolveUBOMapped = nullptr;
-	}
-	if (m_msaaResolveUBO) {
-		m_ctx->device.destroyBuffer(m_msaaResolveUBO);
-		m_msaaResolveUBO = nullptr;
-	}
-	if (m_msaaResolveUBOAlloc.isValid()) {
-		m_ctx->memoryManager->freeAllocation(m_msaaResolveUBOAlloc);
 	}
 
 	if (m_msaaResolveFramebuffer) {

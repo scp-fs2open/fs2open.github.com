@@ -346,73 +346,12 @@ bool VulkanPostProcessor::init(vk::Device device, vk::PhysicalDevice physDevice,
 		}
 	}
 
-	// Create persistent UBO for tonemapping parameters
-	{
-		vk::BufferCreateInfo bufInfo;
-		bufInfo.size = sizeof(graphics::generic_data::tonemapping_data);
-		bufInfo.usage = vk::BufferUsageFlagBits::eUniformBuffer;
-		bufInfo.sharingMode = vk::SharingMode::eExclusive;
+	// Tonemap (blitToSwapChain) and output-encode UBO data comes from the shared
+	// per-frame scratch ring below -- no dedicated persistent UBOs. The previous
+	// single-instance buffers were rewritten every frame while the prior
+	// in-flight frame could still be reading them (review finding A2).
 
-		try {
-			m_tonemapUBO = m_ctx.device.createBuffer(bufInfo);
-		} catch (const vk::SystemError& e) {
-			nprintf(("vulkan", "VulkanPostProcessor: Failed to create tonemap UBO: %s\n", e.what()));
-			shutdown();
-			return false;
-		}
-
-		if (!m_ctx.memoryManager->allocateBufferMemory(m_tonemapUBO, MemoryUsage::CpuToGpu, m_tonemapUBOAlloc)) {
-			nprintf(("vulkan", "VulkanPostProcessor: Failed to allocate tonemap UBO memory!\n"));
-			m_ctx.device.destroyBuffer(m_tonemapUBO);
-			m_tonemapUBO = nullptr;
-			shutdown();
-			return false;
-		}
-
-		// Write default passthrough tonemapping data (linear, exposure=1.0)
-		auto* mapped = static_cast<graphics::generic_data::tonemapping_data*>(m_ctx.memoryManager->mapMemory(m_tonemapUBOAlloc));
-		if (mapped) {
-			memset(mapped, 0, sizeof(graphics::generic_data::tonemapping_data));
-			mapped->exposure = 1.0f;
-			mapped->tonemapper = 0;  // Linear
-			m_ctx.memoryManager->flushMemory(m_tonemapUBOAlloc, 0, sizeof(graphics::generic_data::tonemapping_data));
-			m_ctx.memoryManager->unmapMemory(m_tonemapUBOAlloc);
-		}
-	}
-
-	// Create persistent UBO for the final output-encode pass. Shared by both
-	// legs of VulkanRenderer::encodeToSwapChain() (never run in the same
-	// frame): encodeOutput() writes hdr10_encode_data for the HDR10 leg,
-	// encodeOutputSdr() writes gamma_blit_data for the SDR leg -- both
-	// structs are exactly one vec4 (16 bytes), so a single allocation covers
-	// either.
-	{
-		static_assert(sizeof(graphics::generic_data::hdr10_encode_data) ==
-			sizeof(graphics::generic_data::gamma_blit_data),
-			"output-encode UBO allocation sized for hdr10_encode_data must also fit gamma_blit_data");
-		vk::BufferCreateInfo bufInfo;
-		bufInfo.size = sizeof(graphics::generic_data::hdr10_encode_data);
-		bufInfo.usage = vk::BufferUsageFlagBits::eUniformBuffer;
-		bufInfo.sharingMode = vk::SharingMode::eExclusive;
-
-		try {
-			m_outputEncodeUBO = m_ctx.device.createBuffer(bufInfo);
-		} catch (const vk::SystemError& e) {
-			mprintf(("VulkanPostProcessor: Failed to create output-encode UBO: %s\n", e.what()));
-			shutdown();
-			return false;
-		}
-
-		if (!m_ctx.memoryManager->allocateBufferMemory(m_outputEncodeUBO, MemoryUsage::CpuToGpu, m_outputEncodeUBOAlloc)) {
-			mprintf(("VulkanPostProcessor: Failed to allocate output-encode UBO memory!\n"));
-			m_ctx.device.destroyBuffer(m_outputEncodeUBO);
-			m_outputEncodeUBO = nullptr;
-			shutdown();
-			return false;
-		}
-	}
-
-	// Create the shared scratch UBO (used by every subsystem's drawFullscreenTriangle)
+	// Create the shared scratch UBO ring (used by every subsystem's drawFullscreenTriangle)
 	if (!m_ctx.initScratchUBO()) {
 		nprintf(("vulkan", "VulkanPostProcessor: Failed to create scratch UBO!\n"));
 		shutdown();
@@ -480,22 +419,6 @@ void VulkanPostProcessor::shutdown()
 		if (m_ctx.mipmapSampler) {
 			m_ctx.device.destroySampler(m_ctx.mipmapSampler);
 			m_ctx.mipmapSampler = nullptr;
-		}
-
-		if (m_tonemapUBO) {
-			m_ctx.device.destroyBuffer(m_tonemapUBO);
-			m_tonemapUBO = nullptr;
-		}
-		if (m_tonemapUBOAlloc.isValid()) {
-			m_ctx.memoryManager->freeAllocation(m_tonemapUBOAlloc);
-		}
-
-		if (m_outputEncodeUBO) {
-			m_ctx.device.destroyBuffer(m_outputEncodeUBO);
-			m_outputEncodeUBO = nullptr;
-		}
-		if (m_outputEncodeUBOAlloc.isValid()) {
-			m_ctx.memoryManager->freeAllocation(m_outputEncodeUBOAlloc);
 		}
 
 		if (m_ctx.linearSampler) {
@@ -574,36 +497,6 @@ void VulkanPostProcessor::shutdown()
 	m_initialized = false;
 }
 
-void VulkanPostProcessor::updateTonemappingUBO()
-{
-	if (!m_tonemapUBO || !m_ctx.memoryManager) {
-		return;
-	}
-
-	namespace ltp = lighting_profiles;
-
-	auto* mapped = static_cast<graphics::generic_data::tonemapping_data*>(
-		m_ctx.memoryManager->mapMemory(m_tonemapUBOAlloc));
-	if (mapped) {
-		auto ppc = ltp::current_piecewise_intermediates();
-		mapped->exposure = ltp::current_exposure();
-		mapped->tonemapper = static_cast<int>(ltp::current_tonemapper());
-		mapped->x0 = ppc.x0;
-		mapped->y0 = ppc.y0;
-		mapped->x1 = ppc.x1;
-		mapped->toe_B = ppc.toe_B;
-		mapped->toe_lnA = ppc.toe_lnA;
-		mapped->sh_B = ppc.sh_B;
-		mapped->sh_lnA = ppc.sh_lnA;
-		mapped->sh_offsetX = ppc.sh_offsetX;
-		mapped->sh_offsetY = ppc.sh_offsetY;
-		mapped->hdr_paperwhite_nits = 0.0f;
-		mapped->hdr_peak_nits = 0.0f;
-		m_ctx.memoryManager->flushMemory(m_tonemapUBOAlloc, 0, sizeof(graphics::generic_data::tonemapping_data));
-		m_ctx.memoryManager->unmapMemory(m_tonemapUBOAlloc);
-	}
-}
-
 void VulkanPostProcessor::copyEffectTexture(vk::CommandBuffer cmd) const
 {
 	// Called mid-scene, outside a render pass.
@@ -633,11 +526,6 @@ void VulkanPostProcessor::blitToSwapChain(vk::CommandBuffer cmd)
 	// Blit from the latest post-processing result with passthrough settings.
 	// Otherwise, fall back to direct HDR→swap chain tonemapping.
 	bool useLdr = m_ldr.isInitialized();
-
-	if (!useLdr) {
-		// Update tonemapping parameters from engine lighting profile
-		updateTonemappingUBO();
-	}
 
 	auto* pipelineMgr = getPipelineManager();
 	auto* descriptorMgr = getDescriptorManager();
@@ -698,24 +586,39 @@ void VulkanPostProcessor::blitToSwapChain(vk::CommandBuffer cmd)
 		writer.setImageArray(MaterialBinding::TextureArray, texArrayInfos);
 	}
 
-	// Set 2: PerDraw — tonemapping UBO
+	// Set 2: PerDraw — tonemapping UBO (from the per-frame scratch ring)
 	vk::DescriptorSet perDrawSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::PerDraw);
 	Verify(perDrawSet);
 	writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
 
-	// When blitting LDR, use passthrough tonemapping (exposure=1, linear)
+	// LDR path: passthrough (tonemapping already ran). Fallback path: live
+	// parameters from the engine lighting profile.
+	graphics::generic_data::tonemapping_data tmData;
+	memset(&tmData, 0, sizeof(tmData));
 	if (useLdr) {
-		auto* mapped = static_cast<graphics::generic_data::tonemapping_data*>(
-			m_ctx.memoryManager->mapMemory(m_tonemapUBOAlloc));
-		Verify(mapped);
-		memset(mapped, 0, sizeof(graphics::generic_data::tonemapping_data));
-		mapped->exposure = 1.0f;
-		mapped->tonemapper = 0;  // Linear passthrough
-		m_ctx.memoryManager->flushMemory(m_tonemapUBOAlloc, 0, sizeof(graphics::generic_data::tonemapping_data));
-		m_ctx.memoryManager->unmapMemory(m_tonemapUBOAlloc);
+		tmData.exposure = 1.0f;
+		tmData.tonemapper = 0; // Linear passthrough
+	} else {
+		namespace ltp = lighting_profiles;
+		auto ppc = ltp::current_piecewise_intermediates();
+		tmData.exposure = ltp::current_exposure();
+		tmData.tonemapper = static_cast<int>(ltp::current_tonemapper());
+		tmData.x0 = ppc.x0;
+		tmData.y0 = ppc.y0;
+		tmData.x1 = ppc.x1;
+		tmData.toe_B = ppc.toe_B;
+		tmData.toe_lnA = ppc.toe_lnA;
+		tmData.sh_B = ppc.sh_B;
+		tmData.sh_lnA = ppc.sh_lnA;
+		tmData.sh_offsetX = ppc.sh_offsetX;
+		tmData.sh_offsetY = ppc.sh_offsetY;
 	}
-	writer.setBuffer(PerDrawBinding::GenericData, {m_tonemapUBO, 0,
-		sizeof(graphics::generic_data::tonemapping_data)});
+	{
+		vk::DeviceSize slotOffset =
+			m_ctx.scratchRing.alloc(descriptorMgr->getCurrentFrame(), &tmData, sizeof(tmData));
+		writer.setBuffer(PerDrawBinding::GenericData,
+			{m_ctx.scratchRing.buffer(), slotOffset, m_ctx.scratchRing.slotSize()});
+	}
 	writer.flush();
 	stateTracker->bindDescriptorSet(DescriptorSetIndex::Material, materialSet);
 	stateTracker->bindDescriptorSet(DescriptorSetIndex::PerDraw, perDrawSet);
@@ -730,20 +633,16 @@ void VulkanPostProcessor::encodeOutput(vk::CommandBuffer cmd, vk::RenderPass ren
 {
 	auto* pipelineMgr = getPipelineManager();
 	auto* descriptorMgr = getDescriptorManager();
-	if (!pipelineMgr || !descriptorMgr || !m_outputEncodeUBO) {
+	if (!pipelineMgr || !descriptorMgr || !m_ctx.scratchRing.isValid()) {
 		return;
 	}
 
 	GR_DEBUG_SCOPE("Draw scene texture");
 
 	// HDR10/PQ/BT.2020 encode (plus the user gamma slider) -- the SDR leg
-	// uses encodeOutputSdr() instead.
-	//
-	// Deliberately NOT routed through drawFullscreenTriangle()'s shared
-	// scratch UBO ring: this pass runs once, last, per frame -- after every
-	// other pass (tonemap/FXAA/SMAA/lightshafts/post-effects/bloom) has
-	// already consumed its slots -- so sharing the ring risks overflowing
-	// SCRATCH_UBO_MAX_SLOTS. Uses its own persistent m_outputEncodeUBO instead.
+	// uses encodeOutputSdr() instead. The UBO comes from the shared per-frame
+	// scratch ring; its per-frame budget covers every fullscreen pass of the
+	// frame including this final one.
 	PipelineConfig config;
 	config.shaderType = SDR_TYPE_POST_PROCESS_HDR10_ENCODE;
 	config.vertexLayoutHash = 0;
@@ -762,17 +661,12 @@ void VulkanPostProcessor::encodeOutput(vk::CommandBuffer cmd, vk::RenderPass ren
 	}
 	vk::PipelineLayout pipelineLayout = pipelineMgr->getPipelineLayout();
 
-	// Update encode parameters
-	auto* mapped = static_cast<graphics::generic_data::hdr10_encode_data*>(
-		m_ctx.memoryManager->mapMemory(m_outputEncodeUBOAlloc));
-	if (mapped) {
-		memset(mapped, 0, sizeof(graphics::generic_data::hdr10_encode_data));
-		mapped->hdr_paperwhite_nits = paperwhiteNits;
-		mapped->hdr_peak_nits = peakNits;
-		mapped->gamma = gamma;
-		m_ctx.memoryManager->flushMemory(m_outputEncodeUBOAlloc, 0, sizeof(graphics::generic_data::hdr10_encode_data));
-		m_ctx.memoryManager->unmapMemory(m_outputEncodeUBOAlloc);
-	}
+	// Encode parameters
+	graphics::generic_data::hdr10_encode_data encodeData;
+	memset(&encodeData, 0, sizeof(encodeData));
+	encodeData.hdr_paperwhite_nits = paperwhiteNits;
+	encodeData.hdr_peak_nits = peakNits;
+	encodeData.gamma = gamma;
 
 	vk::RenderPassBeginInfo rpBegin;
 	rpBegin.renderPass = renderPass;
@@ -814,8 +708,12 @@ void VulkanPostProcessor::encodeOutput(vk::CommandBuffer cmd, vk::RenderPass ren
 	vk::DescriptorSet perDrawSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::PerDraw);
 	Verify(perDrawSet);
 	writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
-	writer.setBuffer(PerDrawBinding::GenericData, {m_outputEncodeUBO, 0,
-		sizeof(graphics::generic_data::hdr10_encode_data)});
+	{
+		vk::DeviceSize slotOffset =
+			m_ctx.scratchRing.alloc(descriptorMgr->getCurrentFrame(), &encodeData, sizeof(encodeData));
+		writer.setBuffer(PerDrawBinding::GenericData,
+			{m_ctx.scratchRing.buffer(), slotOffset, m_ctx.scratchRing.slotSize()});
+	}
 	writer.flush();
 
 	cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout,
@@ -832,7 +730,7 @@ void VulkanPostProcessor::encodeOutputSdr(vk::CommandBuffer cmd, vk::RenderPass 
 {
 	auto* pipelineMgr = getPipelineManager();
 	auto* descriptorMgr = getDescriptorManager();
-	if (!pipelineMgr || !descriptorMgr || !m_outputEncodeUBO) {
+	if (!pipelineMgr || !descriptorMgr || !m_ctx.scratchRing.isValid()) {
 		return;
 	}
 
@@ -841,12 +739,8 @@ void VulkanPostProcessor::encodeOutputSdr(vk::CommandBuffer cmd, vk::RenderPass 
 	// SDR leg of VulkanRenderer::encodeToSwapChain(): the composition image
 	// already carries the final display-ready sRGB-encoded frame (3D scene +
 	// menus/HUD alike), so this pass just applies the user gamma/brightness
-	// slider on the way into the swap chain image.
-	//
-	// Deliberately NOT routed through drawFullscreenTriangle()'s shared
-	// scratch UBO ring, for the same reason as encodeOutput(): this pass
-	// runs once, last, per frame. Uses the shared persistent
-	// m_outputEncodeUBO instead (see its allocation comment in init()).
+	// slider on the way into the swap chain image. UBO from the shared
+	// per-frame scratch ring, same as encodeOutput().
 	PipelineConfig config;
 	config.shaderType = SDR_TYPE_GAMMA_BLIT;
 	config.vertexLayoutHash = 0;
@@ -865,14 +759,9 @@ void VulkanPostProcessor::encodeOutputSdr(vk::CommandBuffer cmd, vk::RenderPass 
 	}
 	vk::PipelineLayout pipelineLayout = pipelineMgr->getPipelineLayout();
 
-	auto* mapped = static_cast<graphics::generic_data::gamma_blit_data*>(
-		m_ctx.memoryManager->mapMemory(m_outputEncodeUBOAlloc));
-	if (mapped) {
-		memset(mapped, 0, sizeof(graphics::generic_data::gamma_blit_data));
-		mapped->gamma = gamma;
-		m_ctx.memoryManager->flushMemory(m_outputEncodeUBOAlloc, 0, sizeof(graphics::generic_data::gamma_blit_data));
-		m_ctx.memoryManager->unmapMemory(m_outputEncodeUBOAlloc);
-	}
+	graphics::generic_data::gamma_blit_data blitData;
+	memset(&blitData, 0, sizeof(blitData));
+	blitData.gamma = gamma;
 
 	vk::RenderPassBeginInfo rpBegin;
 	rpBegin.renderPass = renderPass;
@@ -914,8 +803,12 @@ void VulkanPostProcessor::encodeOutputSdr(vk::CommandBuffer cmd, vk::RenderPass 
 	vk::DescriptorSet perDrawSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::PerDraw);
 	Verify(perDrawSet);
 	writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
-	writer.setBuffer(PerDrawBinding::GenericData, {m_outputEncodeUBO, 0,
-		sizeof(graphics::generic_data::gamma_blit_data)});
+	{
+		vk::DeviceSize slotOffset =
+			m_ctx.scratchRing.alloc(descriptorMgr->getCurrentFrame(), &blitData, sizeof(blitData));
+		writer.setBuffer(PerDrawBinding::GenericData,
+			{m_ctx.scratchRing.buffer(), slotOffset, m_ctx.scratchRing.slotSize()});
+	}
 	writer.flush();
 
 	cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout,

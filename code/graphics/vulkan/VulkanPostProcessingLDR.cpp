@@ -295,17 +295,6 @@ void VulkanLDR::executeTonemap(vk::CommandBuffer cmd)
 
 	namespace ltp = lighting_profiles;
 
-	// Map bloom UBO for the tonemapping draw's UBO slot
-	m_ctx->scratchUBOMapped = m_ctx->memoryManager->mapMemory(m_ctx->scratchUBOAlloc);
-	if (!m_ctx->scratchUBOMapped) {
-		return;
-	}
-
-	// Reset cursor if bloom didn't run this frame (bloom resets to 0 when it runs)
-	if (gr_bloom_intensity() <= 0 || !m_bloom->isInitialized()) {
-		m_ctx->scratchUBOCursor = 0;
-	}
-
 	// Build tonemapping data directly from lighting profiles
 	graphics::generic_data::tonemapping_data tmData;
 	memset(&tmData, 0, sizeof(tmData));
@@ -354,9 +343,6 @@ void VulkanLDR::executeTonemap(vk::CommandBuffer cmd)
 			ALPHA_BLEND_NONE,
 			SDR_FLAG_COPY_CLAMP01);
 	}
-
-	m_ctx->memoryManager->unmapMemory(m_ctx->scratchUBOAlloc);
-	m_ctx->scratchUBOMapped = nullptr;
 }
 
 // Returns the buffer FXAA/SMAA edge detection should read for luma computation:
@@ -374,11 +360,6 @@ void VulkanLDR::executeFXAA(vk::CommandBuffer cmd)
 	}
 
 	GR_DEBUG_SCOPE("FXAA");
-
-	m_ctx->scratchUBOMapped = m_ctx->memoryManager->mapMemory(m_ctx->scratchUBOAlloc);
-	if (!m_ctx->scratchUBOMapped) {
-		return;
-	}
 
 	// FXAA prepass: Scene_ldr → Scene_luminance (real color passthrough + luma in
 	// alpha computed from the detection proxy, see getAADetectionView)
@@ -402,9 +383,6 @@ void VulkanLDR::executeFXAA(vk::CommandBuffer cmd)
 		m_sceneLuminance.view, m_ctx->linearSampler,
 		&fxaaData, sizeof(fxaaData),
 		ALPHA_BLEND_NONE);
-
-	m_ctx->memoryManager->unmapMemory(m_ctx->scratchUBOAlloc);
-	m_ctx->scratchUBOMapped = nullptr;
 }
 
 bool VulkanLDR::executePostEffects(vk::CommandBuffer cmd)
@@ -433,11 +411,6 @@ bool VulkanLDR::executePostEffects(vk::CommandBuffer cmd)
 	}
 
 	GR_DEBUG_SCOPE("Draw post effects");
-
-	m_ctx->scratchUBOMapped = m_ctx->memoryManager->mapMemory(m_ctx->scratchUBOAlloc);
-	if (!m_ctx->scratchUBOMapped) {
-		return false;
-	}
 
 	// Build the extended post_data UBO with effectFlags appended
 	struct PostEffectsUBOData {
@@ -510,9 +483,6 @@ bool VulkanLDR::executePostEffects(vk::CommandBuffer cmd)
 		&uboData, sizeof(uboData),
 		ALPHA_BLEND_NONE,
 		static_cast<unsigned int>(effectFlags));
-
-	m_ctx->memoryManager->unmapMemory(m_ctx->scratchUBOAlloc);
-	m_ctx->scratchUBOMapped = nullptr;
 
 	m_postEffectsApplied = true;
 	return true;
@@ -613,11 +583,6 @@ void VulkanLDR::executeLightshafts(vk::CommandBuffer cmd)
 	lsData.cp_intensity = Sun_spot * ls_params.cpintensity;
 	lsData.pad[0] = 0.0f;
 
-	m_ctx->scratchUBOMapped = m_ctx->memoryManager->mapMemory(m_ctx->scratchUBOAlloc);
-	if (!m_ctx->scratchUBOMapped) {
-		return;
-	}
-
 	// Additive blend lightshafts onto Scene_ldr
 	m_ctx->drawFullscreenTriangle(cmd, m_ldrLoadRenderPass,
 		m_sceneLdrFB, m_ctx->sceneExtent,
@@ -625,9 +590,6 @@ void VulkanLDR::executeLightshafts(vk::CommandBuffer cmd)
 		m_sceneDepth->view, m_ctx->linearSampler,
 		&lsData, sizeof(lsData),
 		ALPHA_BLEND_ADDITIVE);
-
-	m_ctx->memoryManager->unmapMemory(m_ctx->scratchUBOAlloc);
-	m_ctx->scratchUBOMapped = nullptr;
 }
 
 } // namespace graphics::vulkan

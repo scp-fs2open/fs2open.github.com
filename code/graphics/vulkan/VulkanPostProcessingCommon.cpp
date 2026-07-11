@@ -26,37 +26,12 @@ namespace graphics::vulkan {
 
 bool PostProcessContext::initScratchUBO()
 {
-	vk::BufferCreateInfo bufInfo;
-	bufInfo.size = SCRATCH_UBO_MAX_SLOTS * SCRATCH_UBO_SLOT_SIZE;
-	bufInfo.usage = vk::BufferUsageFlagBits::eUniformBuffer;
-	bufInfo.sharingMode = vk::SharingMode::eExclusive;
-
-	try {
-		scratchUBO = device.createBuffer(bufInfo);
-	} catch (const vk::SystemError& e) {
-		nprintf(("vulkan", "PostProcessContext: Failed to create scratch UBO: %s\n", e.what()));
-		return false;
-	}
-
-	if (!memoryManager->allocateBufferMemory(scratchUBO, MemoryUsage::CpuToGpu, scratchUBOAlloc)) {
-		nprintf(("vulkan", "PostProcessContext: Failed to allocate scratch UBO memory!\n"));
-		device.destroyBuffer(scratchUBO);
-		scratchUBO = nullptr;
-		return false;
-	}
-
-	return true;
+	return scratchRing.init(device, memoryManager, SCRATCH_UBO_MAX_SLOTS, SCRATCH_UBO_SLOT_SIZE);
 }
 
 void PostProcessContext::shutdownScratchUBO()
 {
-	if (scratchUBO) {
-		device.destroyBuffer(scratchUBO);
-		scratchUBO = nullptr;
-	}
-	if (scratchUBOAlloc.isValid()) {
-		memoryManager->freeAllocation(scratchUBOAlloc);
-	}
+	scratchRing.shutdown();
 }
 
 void PostProcessContext::generateMipmaps(vk::CommandBuffer cmd, vk::Image image,
@@ -203,12 +178,9 @@ void PostProcessContext::drawFullscreenTriangle(vk::CommandBuffer cmd, vk::Rende
 	vk::DescriptorSet perDrawSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::PerDraw);
 	Verify(perDrawSet);
 	writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
-	if (uboData && uboSize > 0 && scratchUBOMapped) {
-		Assertion(scratchUBOCursor < SCRATCH_UBO_MAX_SLOTS, "Scratch UBO slot overflow!");
-		uint32_t slotOffset = scratchUBOCursor * static_cast<uint32_t>(SCRATCH_UBO_SLOT_SIZE);
-		memcpy(static_cast<uint8_t*>(scratchUBOMapped) + slotOffset, uboData, uboSize);
-		scratchUBOCursor++;
-		writer.setBuffer(PerDrawBinding::GenericData, {scratchUBO, slotOffset, SCRATCH_UBO_SLOT_SIZE});
+	if (uboData != nullptr && uboSize > 0 && scratchRing.isValid()) {
+		vk::DeviceSize slotOffset = scratchRing.alloc(descriptorMgr->getCurrentFrame(), uboData, uboSize);
+		writer.setBuffer(PerDrawBinding::GenericData, {scratchRing.buffer(), slotOffset, scratchRing.slotSize()});
 	}
 	writer.flush();
 
@@ -305,12 +277,9 @@ void PostProcessContext::drawFullscreenTriangleMulti(vk::CommandBuffer cmd, vk::
 	vk::DescriptorSet perDrawSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::PerDraw);
 	Verify(perDrawSet);
 	writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
-	if (uboData && uboSize > 0 && scratchUBOMapped) {
-		Assertion(scratchUBOCursor < SCRATCH_UBO_MAX_SLOTS, "Scratch UBO slot overflow!");
-		uint32_t slotOffset = scratchUBOCursor * static_cast<uint32_t>(SCRATCH_UBO_SLOT_SIZE);
-		memcpy(static_cast<uint8_t*>(scratchUBOMapped) + slotOffset, uboData, uboSize);
-		scratchUBOCursor++;
-		writer.setBuffer(PerDrawBinding::GenericData, {scratchUBO, slotOffset, SCRATCH_UBO_SLOT_SIZE});
+	if (uboData != nullptr && uboSize > 0 && scratchRing.isValid()) {
+		vk::DeviceSize slotOffset = scratchRing.alloc(descriptorMgr->getCurrentFrame(), uboData, uboSize);
+		writer.setBuffer(PerDrawBinding::GenericData, {scratchRing.buffer(), slotOffset, scratchRing.slotSize()});
 	}
 	writer.flush();
 

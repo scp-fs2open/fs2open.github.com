@@ -133,6 +133,12 @@ void VulkanRenderer::setupFrame()
 	Assertion(m_stateTracker, "Vulkan StateTracker not initialized in setupFrame!");
 	m_stateTracker->beginFrame(m_currentCommandBuffer);
 
+	// Reset the post-processing scratch UBO ring cursor for this frame-in-flight
+	// slot (safe: acquireNextSwapChainImage already waited on this slot's fence)
+	if (m_postProcessor) {
+		m_postProcessor->beginFrame(m_currentFrame);
+	}
+
 	// Reset timestamp queries that were written last frame (must be outside render pass)
 	if (m_queryManager) {
 		m_queryManager->beginFrame(m_currentCommandBuffer);
@@ -244,7 +250,7 @@ void VulkanRenderer::flip()
 
 	// Set the frame index for the buffer manager immediately after incrementing
 	// This ensures any buffer operations that happen before setupFrame() use the correct frame
-	m_bufferManager->setCurrentFrame(m_currentFrame);
+	m_bufferManager->setCurrentFrame(m_currentFrame, m_frameNumber);
 
 	acquireNextSwapChainImage();
 

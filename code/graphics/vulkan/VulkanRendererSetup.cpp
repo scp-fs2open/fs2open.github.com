@@ -958,7 +958,7 @@ bool VulkanRenderer::createLogicalDevice(const PhysicalDeviceValues& deviceValue
 	}
 	setBufferManager(m_bufferManager.get());
 	// Set initial frame index for buffer manager
-	m_bufferManager->setCurrentFrame(m_currentFrame);
+	m_bufferManager->setCurrentFrame(m_currentFrame, m_frameNumber);
 
 	return true;
 }

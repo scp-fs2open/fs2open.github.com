@@ -53,6 +53,13 @@ struct VulkanBufferObject {
 	// to detect staleness after the heap resizes.
 	uint64_t generation = 0;
 
+	// Frame number of the most recent draw/bind that fetched this buffer via
+	// getVkBuffer() (static buffers only). Used to decide whether a full
+	// rewrite must orphan the VkBuffer instead of writing host-visible memory
+	// the GPU may still be reading from an in-flight frame. mutable: stamped
+	// from the const getVkBuffer() lookup path.
+	mutable uint64_t lastUsedFrameNumber = 0;
+
 	// Frame bump allocator sub-allocation (streaming/dynamic only)
 	vk::Buffer frameAllocBuffer;       // VkBuffer at upload time (may be old allocator buffer after growth)
 	size_t frameAllocOffset = 0;       // Byte offset within the frame allocator buffer
@@ -100,11 +107,13 @@ public:
 	void shutdown();
 
 	/**
-	 * @brief Set the current frame index and reset the bump allocator cursor
+	 * @brief Set the current frame and reset the bump allocator cursor
 	 * Must be called at the start of each frame before any buffer updates
 	 * @param frameIndex The current frame index (0 to MAX_FRAMES_IN_FLIGHT-1)
+	 * @param frameNumber The monotonic total frame number (for in-use tracking
+	 *        of static buffers; see VulkanBufferObject::lastUsedFrameNumber)
 	 */
-	void setCurrentFrame(uint32_t frameIndex);
+	void setCurrentFrame(uint32_t frameIndex, uint64_t frameNumber);
 
 	/**
 	 * @brief Get the current frame index
@@ -297,6 +306,7 @@ private:
 	uint32_t m_graphicsQueueFamily = 0;
 	uint32_t m_transferQueueFamily = 0;
 	uint32_t m_currentFrame = 0;
+	uint64_t m_currentFrameNumber = 0;
 
 	SCP_vector<VulkanBufferObject> m_buffers;
 	SCP_vector<int> m_freeIndices;  // Recycled buffer indices

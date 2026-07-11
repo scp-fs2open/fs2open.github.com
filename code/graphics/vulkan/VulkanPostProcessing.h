@@ -3,6 +3,7 @@
 #include "globalincs/pstypes.h"
 #include "VulkanMemory.h"
 #include "VulkanConstants.h"
+#include "VulkanPerFrameUbo.h"
 
 #include <array>
 #include <vulkan/vulkan.hpp>
@@ -37,14 +38,18 @@ struct PostProcessContext {
 	vk::Sampler mipmapSampler;   // mipmap support (bloom)
 
 	// Per-draw scratch UBO ring shared by all fullscreen effect passes.
-	// Each draw consumes one slot at scratchUBOCursor; callers reset the
-	// cursor when starting a fresh group of passes.
-	static constexpr size_t   SCRATCH_UBO_SLOT_SIZE = 256; // >= minUniformBufferOffsetAlignment
-	static constexpr uint32_t SCRATCH_UBO_MAX_SLOTS = 24;
-	vk::Buffer scratchUBO;
-	VulkanAllocation scratchUBOAlloc;
-	void* scratchUBOMapped = nullptr;
-	uint32_t scratchUBOCursor = 0;
+	// Per-frame-in-flight regions (see PerFrameUboRing) so the CPU never
+	// overwrites slots the previous frame's GPU work is still reading. The
+	// cursor is reset exactly once per frame in VulkanPostProcessor::beginFrame()
+	// -- the slot budget below covers ALL fullscreen passes of one frame
+	// (fog/volumetrics mid-scene + bloom/tonemap/AA/lightshafts/post-effects).
+	//
+	// Slot size must fit the largest fullscreen-pass UBO: volumetric_fog_data
+	// is 288 bytes (static_assert in VulkanPostProcessingFog.cpp), which
+	// silently overflowed the previous 256-byte slots.
+	static constexpr size_t   SCRATCH_UBO_SLOT_SIZE = 512; // multiple of minUniformBufferOffsetAlignment
+	static constexpr uint32_t SCRATCH_UBO_MAX_SLOTS = 32;
+	PerFrameUboRing scratchRing;
 
 	/**
 	 * @brief Create a single-mip 2D image + view backed by GPU-only memory
@@ -339,8 +344,6 @@ public:
 	vk::Image msaaSpecularImage() const { return m_msaaSpecular.image; }
 	vk::Image msaaEmissiveImage() const { return m_msaaEmissive.image; }
 	vk::Image msaaDepthImage() const { return m_msaaDepthImage; }
-	vk::Buffer msaaResolveUBO() const { return m_msaaResolveUBO; }
-	void* msaaResolveUBOMapped() const { return m_msaaResolveUBOMapped; }
 
 private:
 	struct GbufRenderPassConfig {
@@ -390,9 +393,6 @@ private:
 	vk::Framebuffer m_msaaResolveFramebuffer;
 	vk::RenderPass m_msaaEmissiveCopyRenderPass;   // 1 MS color att (for upsample)
 	vk::Framebuffer m_msaaEmissiveCopyFramebuffer;
-	vk::Buffer m_msaaResolveUBO;                // Per-frame {samples, fov}, persistently mapped
-	VulkanAllocation m_msaaResolveUBOAlloc;
-	void* m_msaaResolveUBOMapped = nullptr;
 	bool m_msaaInitialized = false;
 };
 
@@ -684,6 +684,16 @@ public:
 	 * @brief Shutdown and free all post-processing resources
 	 */
 	void shutdown();
+
+	/**
+	 * @brief Per-frame reset (called from VulkanRenderer::setupFrame after the frame fence wait)
+	 *
+	 * Resets the scratch UBO ring cursor for this frame-in-flight index. This is
+	 * the ONLY place the cursor is reset -- the per-frame slot budget covers every
+	 * fullscreen pass of the frame (mid-scene fog included), so subsystems must
+	 * not reset it themselves.
+	 */
+	void beginFrame(uint32_t frameIndex) { m_ctx.scratchRing.resetCursor(frameIndex); }
 
 	/**
 	 * @brief Get the HDR scene render pass (for 3D scene rendering)
@@ -985,8 +995,6 @@ public:
 	void renderVolumetricFog(vk::CommandBuffer cmd) { m_fog.renderVolumetric(cmd); }
 
 private:
-	void updateTonemappingUBO();
-
 	bool createImage(uint32_t width, uint32_t height, vk::Format format,
 	                 vk::ImageUsageFlags usage, vk::ImageAspectFlags aspect,
 	                 vk::Image& outImage, vk::ImageView& outView,
@@ -1042,19 +1050,6 @@ private:
 	vk::RenderPass m_sceneRenderPass;       // loadOp=eClear (initial scene begin)
 	vk::RenderPass m_sceneRenderPassLoad;   // loadOp=eLoad (resume after copy_effect_texture)
 	vk::Framebuffer m_sceneFramebuffer;     // Shared by both scene render passes (compatible)
-
-	// Persistent UBO for tonemapping shader parameters
-	vk::Buffer m_tonemapUBO;
-	VulkanAllocation m_tonemapUBOAlloc;
-
-	// Persistent UBO for the final output-encode pass. Deliberately NOT the
-	// shared per-frame scratch UBO ring (PostProcessContext::scratchUBO):
-	// encodeOutput() runs once, last, per frame -- after every other pass has
-	// already consumed its scratch slots -- so sharing the ring risks
-	// overflowing SCRATCH_UBO_MAX_SLOTS on frames where the other passes
-	// (tonemap+FXAA/SMAA+lightshafts+post-effects+bloom) already used all of it.
-	vk::Buffer m_outputEncodeUBO;
-	VulkanAllocation m_outputEncodeUBOAlloc;
 
 	// ---- Bloom (self-contained subsystem) ----
 	VulkanBloom m_bloom;

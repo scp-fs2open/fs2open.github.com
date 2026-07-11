@@ -206,10 +206,6 @@ void VulkanFog::renderScene(vk::CommandBuffer cmd)
 			{}, nullptr, nullptr, barrier);
 	}
 
-	// Map bloom UBO for fog UBO data
-	m_ctx->scratchUBOMapped = m_ctx->memoryManager->mapMemory(m_ctx->scratchUBOAlloc);
-	Verify(m_ctx->scratchUBOMapped);
-
 	// Fill fog UBO
 	graphics::generic_data::fog_data fogData;
 	{
@@ -243,8 +239,6 @@ void VulkanFog::renderScene(vk::CommandBuffer cmd)
 	vertex_layout emptyLayout;
 	vk::Pipeline pipeline = pipelineMgr->getPipeline(config, emptyLayout);
 	if (!pipeline) {
-		m_ctx->memoryManager->unmapMemory(m_ctx->scratchUBOAlloc);
-		m_ctx->scratchUBOMapped = nullptr;
 		return;
 	}
 
@@ -289,16 +283,15 @@ void VulkanFog::renderScene(vk::CommandBuffer cmd)
 	}
 	writer.setImage(MaterialBinding::DepthMap, {m_ctx->linearSampler, m_sceneDepthCopy->view, vk::ImageLayout::eShaderReadOnlyOptimal});
 
-	// Set 2: PerDraw — fog UBO
+	// Set 2: PerDraw — fog UBO (from the per-frame scratch ring)
 	vk::DescriptorSet perDrawSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::PerDraw);
 	Verify(perDrawSet);
 	writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
 	{
-		Assertion(m_ctx->scratchUBOCursor < PostProcessContext::SCRATCH_UBO_MAX_SLOTS, "Fog UBO slot overflow!");
-		uint32_t slotOffset = m_ctx->scratchUBOCursor * static_cast<uint32_t>(PostProcessContext::SCRATCH_UBO_SLOT_SIZE);
-		memcpy(static_cast<uint8_t*>(m_ctx->scratchUBOMapped) + slotOffset, &fogData, sizeof(fogData));
-		m_ctx->scratchUBOCursor++;
-		writer.setBuffer(PerDrawBinding::GenericData, {m_ctx->scratchUBO, slotOffset, PostProcessContext::SCRATCH_UBO_SLOT_SIZE});
+		vk::DeviceSize slotOffset =
+			m_ctx->scratchRing.alloc(descriptorMgr->getCurrentFrame(), &fogData, sizeof(fogData));
+		writer.setBuffer(PerDrawBinding::GenericData,
+			{m_ctx->scratchRing.buffer(), slotOffset, m_ctx->scratchRing.slotSize()});
 	}
 	writer.flush();
 
@@ -311,9 +304,6 @@ void VulkanFog::renderScene(vk::CommandBuffer cmd)
 	cmd.endRenderPass();
 
 	// Scene color is now in eColorAttachmentOptimal (fog render pass finalLayout)
-
-	m_ctx->memoryManager->unmapMemory(m_ctx->scratchUBOAlloc);
-	m_ctx->scratchUBOMapped = nullptr;
 }
 
 void VulkanFog::renderVolumetric(vk::CommandBuffer cmd)
@@ -449,9 +439,12 @@ void VulkanFog::renderVolumetric(vk::CommandBuffer cmd)
 			{}, nullptr, nullptr, barrier);
 	}
 
-	// Map bloom UBO for volumetric fog UBO data
-	m_ctx->scratchUBOMapped = m_ctx->memoryManager->mapMemory(m_ctx->scratchUBOAlloc);
-	Verify(m_ctx->scratchUBOMapped);
+	// volumetric_fog_data is the largest fullscreen-pass UBO; it dictates the
+	// scratch ring's slot size. With the previous 256-byte slots it silently
+	// overflowed (memcpy spilled into the neighboring slot and the shader's
+	// bound range ended before aspect/fov/noise fields).
+	static_assert(sizeof(graphics::generic_data::volumetric_fog_data) <= PostProcessContext::SCRATCH_UBO_SLOT_SIZE,
+		"volumetric_fog_data no longer fits a scratch UBO slot - grow SCRATCH_UBO_SLOT_SIZE");
 
 	// Fill volumetric fog UBO
 	graphics::generic_data::volumetric_fog_data volData;
@@ -537,8 +530,6 @@ void VulkanFog::renderVolumetric(vk::CommandBuffer cmd)
 	vertex_layout emptyLayout;
 	vk::Pipeline pipeline = pipelineMgr->getPipeline(config, emptyLayout);
 	if (!pipeline) {
-		m_ctx->memoryManager->unmapMemory(m_ctx->scratchUBOAlloc);
-		m_ctx->scratchUBOMapped = nullptr;
 		return;
 	}
 
@@ -595,16 +586,15 @@ void VulkanFog::renderVolumetric(vk::CommandBuffer cmd)
 		writer.setImage(MaterialBinding::DistortionMap, noiseInfo);
 	}
 
-	// Set 2: PerDraw — volumetric fog UBO
+	// Set 2: PerDraw — volumetric fog UBO (from the per-frame scratch ring)
 	vk::DescriptorSet perDrawSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::PerDraw);
 	Verify(perDrawSet);
 	writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
 	{
-		Assertion(m_ctx->scratchUBOCursor < PostProcessContext::SCRATCH_UBO_MAX_SLOTS, "Fog UBO slot overflow!");
-		uint32_t slotOffset = m_ctx->scratchUBOCursor * static_cast<uint32_t>(PostProcessContext::SCRATCH_UBO_SLOT_SIZE);
-		memcpy(static_cast<uint8_t*>(m_ctx->scratchUBOMapped) + slotOffset, &volData, sizeof(volData));
-		m_ctx->scratchUBOCursor++;
-		writer.setBuffer(PerDrawBinding::GenericData, {m_ctx->scratchUBO, slotOffset, PostProcessContext::SCRATCH_UBO_SLOT_SIZE});
+		vk::DeviceSize slotOffset =
+			m_ctx->scratchRing.alloc(descriptorMgr->getCurrentFrame(), &volData, sizeof(volData));
+		writer.setBuffer(PerDrawBinding::GenericData,
+			{m_ctx->scratchRing.buffer(), slotOffset, m_ctx->scratchRing.slotSize()});
 	}
 	writer.flush();
 
@@ -617,9 +607,6 @@ void VulkanFog::renderVolumetric(vk::CommandBuffer cmd)
 	cmd.endRenderPass();
 
 	// Scene color is now in eColorAttachmentOptimal (fog render pass finalLayout)
-
-	m_ctx->memoryManager->unmapMemory(m_ctx->scratchUBOAlloc);
-	m_ctx->scratchUBOMapped = nullptr;
 }
 
 } // namespace graphics::vulkan

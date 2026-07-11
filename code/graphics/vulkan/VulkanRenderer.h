@@ -134,9 +134,14 @@ class VulkanRenderer {
 	 * @brief Wait for a specific frame's GPU work to complete
 	 *
 	 * Waits on that frame's fence rather than stalling the entire device.
-	 * No-op if the frame has already completed.
+	 *
+	 * @param timeoutNs Maximum wait in nanoseconds (0 = poll)
+	 * @return true if the frame is known complete. false if the timeout expired,
+	 *         or if the frame has not been submitted yet (a fence taken during
+	 *         the currently-recording frame cannot complete until flip();
+	 *         waiting here would deadlock, so it reports "not complete").
 	 */
-	void waitForFrame(uint64_t frameNumber);
+	bool waitForFrame(uint64_t frameNumber, uint64_t timeoutNs = UINT64_MAX);
 
 	/**
 	 * @brief Wait for all GPU work to complete

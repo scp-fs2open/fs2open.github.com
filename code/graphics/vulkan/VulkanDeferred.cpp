@@ -396,13 +396,10 @@ void vulkan_deferred_lighting_msaa()
 			resolveData.samples = Cmdline_msaa_enabled;
 			resolveData.fov = g3_get_hfov(Proj_fov);
 
-			uint32_t frame = bufferMgr->getCurrentFrame();
-			uint32_t slotOffset = frame * 256;
-			memcpy(static_cast<uint8_t*>(pp->deferred().msaaResolveUBOMapped()) + slotOffset,
-				&resolveData, sizeof(resolveData));
-
-			writer.setBuffer(PerDrawBinding::GenericData,
-				{pp->deferred().msaaResolveUBO(), slotOffset, 256});
+			auto& ring = pp->context().scratchRing;
+			vk::DeviceSize slotOffset =
+				ring.alloc(descriptorMgr->getCurrentFrame(), &resolveData, sizeof(resolveData));
+			writer.setBuffer(PerDrawBinding::GenericData, {ring.buffer(), slotOffset, ring.slotSize()});
 			writer.flush();
 			cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
 				pipelineMgr->getPipelineLayout(),

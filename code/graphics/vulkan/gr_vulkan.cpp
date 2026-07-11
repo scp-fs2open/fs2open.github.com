@@ -214,7 +214,7 @@ gr_sync vulkan_sync_fence()
 	return static_cast<gr_sync>(sync);
 }
 
-bool vulkan_sync_wait(gr_sync sync, uint64_t /*timeoutns*/)
+bool vulkan_sync_wait(gr_sync sync, uint64_t timeoutns)
 {
 	if (!sync) {
 		return true;
@@ -223,9 +223,11 @@ bool vulkan_sync_wait(gr_sync sync, uint64_t /*timeoutns*/)
 	auto* renderer = getRendererInstance();
 	auto* syncObj = static_cast<VulkanSyncObject*>(sync);
 
-	// Wait on the specific frame's fence (no-op if already complete)
-	renderer->waitForFrame(syncObj->frameNumber);
-	return true;
+	// Wait on the specific frame's fence. Honestly reports "not complete" on
+	// timeout or when the fence was taken during the still-recording frame --
+	// callers (e.g. UniformBufferManager's segment fences) depend on this to
+	// know whether the GPU is done with a resource.
+	return renderer->waitForFrame(syncObj->frameNumber, timeoutns);
 }
 
 void vulkan_sync_delete(gr_sync sync)

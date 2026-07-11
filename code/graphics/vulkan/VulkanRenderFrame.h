@@ -2,6 +2,7 @@
 
 #include "globalincs/pstypes.h"
 
+#include <limits>
 #include <vulkan/vulkan.hpp>
 
 namespace graphics::vulkan {
@@ -16,7 +17,14 @@ class VulkanRenderFrame {
   public:
 	VulkanRenderFrame(vk::Device device, vk::SwapchainKHR swapChain, vk::Queue graphicsQueue, vk::Queue presentQueue);
 
-	void waitForFinish();
+	/**
+	 * @brief Wait for this frame's GPU work to complete
+	 * @param timeoutNs Maximum wait in nanoseconds (default: unbounded)
+	 * @return true if the frame is complete (or was never in flight); false if
+	 *         the timeout expired first (fence, callbacks, and in-flight state
+	 *         are left untouched so the wait can be retried)
+	 */
+	bool waitForFinish(uint64_t timeoutNs = std::numeric_limits<uint64_t>::max());
 
 	SwapChainStatus acquireSwapchainImage(uint32_t& outImageIndex);
 

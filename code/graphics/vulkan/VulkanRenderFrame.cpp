@@ -13,15 +13,17 @@ VulkanRenderFrame::VulkanRenderFrame(vk::Device device, vk::SwapchainKHR swapCha
 	m_renderingFinishedSemaphore = device.createSemaphoreUnique(semaphoreCreateInfo);
 	m_frameInFlightFence = device.createFenceUnique(fenceCreateInfo);
 }
-void VulkanRenderFrame::waitForFinish()
+bool VulkanRenderFrame::waitForFinish(uint64_t timeoutNs)
 {
 	if (!m_inFlight) {
-		return;
+		return true;
 	}
 
-	// waitForFences can theoretically return a timeout, but as this passes the maximum uint64_t value in microseconds,
-	// this won't happen in practice, and the result can be ignored.
-	(void)m_device.waitForFences(m_frameInFlightFence.get(), true, std::numeric_limits<uint64_t>::max());
+	auto result = m_device.waitForFences(m_frameInFlightFence.get(), true, timeoutNs);
+	if (result == vk::Result::eTimeout) {
+		// Leave everything pending so the wait can be retried
+		return false;
+	}
 	m_device.resetFences(m_frameInFlightFence.get());
 
 	// That frame is now definitely not in flight anymore so we can call the functions that depend on that
@@ -32,6 +34,7 @@ void VulkanRenderFrame::waitForFinish()
 
 	// Our fence has been signaled so we are no longer in flight and ready to be reused
 	m_inFlight = false;
+	return true;
 }
 void VulkanRenderFrame::onFrameFinished(std::function<void()> finishFunc)
 {

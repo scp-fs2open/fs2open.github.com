@@ -297,12 +297,8 @@ void VulkanBloom::execute(vk::CommandBuffer cmd)
 
 	GR_DEBUG_SCOPE("Bloom");
 
-	// Map shared scratch UBO for writing per-draw data
-	m_ctx->scratchUBOMapped = m_ctx->memoryManager->mapMemory(m_ctx->scratchUBOAlloc);
-	if (!m_ctx->scratchUBOMapped) {
-		return;
-	}
-	m_ctx->scratchUBOCursor = 0;
+	// Per-draw UBO slots come from the persistently-mapped scratch ring
+	// (cursor reset once per frame in VulkanPostProcessor::beginFrame()).
 
 	// 1. Bright pass: extract pixels brighter than 1.0 from scene color → bloom_tex[0] mip 0
 	{
@@ -397,10 +393,6 @@ void VulkanBloom::execute(vk::CommandBuffer cmd)
 	}
 
 	// Scene color is now in eShaderReadOnlyOptimal (from bloom composite render pass finalLayout)
-
-	// Unmap shared scratch UBO
-	m_ctx->memoryManager->unmapMemory(m_ctx->scratchUBOAlloc);
-	m_ctx->scratchUBOMapped = nullptr;
 }
 
 } // namespace graphics::vulkan

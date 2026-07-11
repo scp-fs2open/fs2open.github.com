@@ -300,9 +300,10 @@ void VulkanBufferManager::shutdown()
 	nprintf(("vulkan", "Vulkan Buffer Manager shutdown\n"));
 }
 
-void VulkanBufferManager::setCurrentFrame(uint32_t frameIndex)
+void VulkanBufferManager::setCurrentFrame(uint32_t frameIndex, uint64_t frameNumber)
 {
 	m_currentFrame = frameIndex % MAX_FRAMES_IN_FLIGHT;
+	m_currentFrameNumber = frameNumber;
 	// Reset bump cursor — safe because the GPU fence for this frame-in-flight
 	// was already waited on before setCurrentFrame is called.
 	m_frameAllocs[m_currentFrame].cursor = 0;
@@ -540,7 +541,34 @@ void VulkanBufferManager::updateBufferData(gr_buffer_handle handle, size_t size,
 			// Otherwise: same frame and size fits — keep current allocation
 		}
 	} else {
-		// Static / PersistentMapping path
+		// Static / PersistentMapping path.
+		//
+		// A full-content rewrite of a buffer the GPU may still be reading from an
+		// in-flight frame must not write the host-visible memory in place -- host
+		// writes are not synchronized against already-queued GPU reads. Orphan
+		// instead: defer the old VkBuffer to the deletion queue and write into a
+		// fresh one. Draws recorded afterwards pick up the new handle via
+		// getVkBuffer(); frames already using the old handle keep reading intact
+		// data until the deletion queue retires it.
+		//
+		// Offset writes (updateBufferDataOffset) intentionally do NOT orphan:
+		// their dominant caller is the GPU heap appending freshly-allocated,
+		// never-yet-drawn regions at model page-in, which is safe in place.
+		//
+		// PersistentMapping buffers are also exempt: the engine holds their
+		// mapped pointer long-term (mapBuffer) and synchronizes reuse itself
+		// via gr_sync fences, so swapping the VkBuffer underneath would leave
+		// the caller writing into the orphaned allocation.
+		if (data != nullptr && bufferObj.buffer && bufferObj.usage == BufferUsageHint::Static &&
+			m_currentFrameNumber < bufferObj.lastUsedFrameNumber + MAX_FRAMES_IN_FLIGHT) {
+			auto* deletionQueue = getDeletionQueue();
+			deletionQueue->queueBuffer(bufferObj.buffer, bufferObj.allocation);
+			m_totalBufferMemory -= bufferObj.dataSize;
+			bufferObj.buffer = nullptr;
+			bufferObj.allocation = {};
+			bufferObj.dataSize = 0;
+		}
+
 		Verify(createOrResizeBuffer(bufferObj, size));
 
 		// A null data pointer just allocates/resizes the buffer without writing
@@ -680,6 +708,9 @@ vk::Buffer VulkanBufferManager::getVkBuffer(gr_buffer_handle handle) const
 		Verify(bufferObj.frameAllocFrame == m_currentFrame);
 		return bufferObj.frameAllocBuffer;
 	} else {
+		// Record that this frame (potentially) references the buffer -- consulted
+		// by updateBufferData() to decide whether a rewrite must orphan.
+		bufferObj.lastUsedFrameNumber = m_currentFrameNumber;
 		return bufferObj.buffer;
 	}
 }

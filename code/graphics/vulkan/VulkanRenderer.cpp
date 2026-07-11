@@ -648,16 +648,27 @@ void VulkanRenderer::waitIdle()
 	}
 }
 
-void VulkanRenderer::waitForFrame(uint64_t frameNumber)
+bool VulkanRenderer::waitForFrame(uint64_t frameNumber, uint64_t timeoutNs)
 {
-	// Fast path: if enough frames have elapsed, the work is definitely done
+	// Fast path: if enough frames have elapsed, the work is definitely done --
+	// the frame's fence was waited before its slot was reused (see
+	// acquireNextSwapChainImage).
 	if (m_frameNumber >= frameNumber + MAX_FRAMES_IN_FLIGHT) {
-		return;
+		return true;
 	}
 
-	// Wait on the specific frame's fence
+	// Not submitted yet: flip() advances m_frameNumber only after submission,
+	// so frameNumber >= m_frameNumber means the fence was taken during the
+	// frame currently being recorded. Its work cannot be complete, and blocking
+	// here would deadlock (submission happens on this thread).
+	if (frameNumber >= m_frameNumber) {
+		return false;
+	}
+
+	// Remaining case: frameNumber < m_frameNumber < frameNumber + MAX_FRAMES_IN_FLIGHT,
+	// so the slot still belongs to exactly that frame -- wait on its fence.
 	auto frameIndex = static_cast<uint32_t>(frameNumber % MAX_FRAMES_IN_FLIGHT);
-	m_frames[frameIndex]->waitForFinish();
+	return m_frames[frameIndex]->waitForFinish(timeoutNs);
 }
 
 VkCommandBuffer VulkanRenderer::getVkCurrentCommandBuffer() const

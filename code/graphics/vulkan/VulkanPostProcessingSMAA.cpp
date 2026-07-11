@@ -193,11 +193,6 @@ void VulkanSMAA::execute(vk::CommandBuffer cmd)
 
 	GR_DEBUG_SCOPE("SMAA");
 
-	m_ctx->scratchUBOMapped = m_ctx->memoryManager->mapMemory(m_ctx->scratchUBOAlloc);
-	if (!m_ctx->scratchUBOMapped) {
-		return;
-	}
-
 	graphics::generic_data::smaa_data smaaData;
 	smaaData.smaa_rt_metrics.x = static_cast<float>(m_ctx->sceneExtent.width);
 	smaaData.smaa_rt_metrics.y = static_cast<float>(m_ctx->sceneExtent.height);
@@ -256,9 +251,6 @@ void VulkanSMAA::execute(vk::CommandBuffer cmd)
 			nullptr, 0,
 			ALPHA_BLEND_NONE);
 	}
-
-	m_ctx->memoryManager->unmapMemory(m_ctx->scratchUBOAlloc);
-	m_ctx->scratchUBOMapped = nullptr;
 }
 
 } // namespace graphics::vulkan
