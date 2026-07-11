@@ -35,87 +35,6 @@ bool VulkanDeferredGBuffer::initMsaa()
 		return false;
 	}
 
-	const uint32_t w = m_ctx->sceneExtent.width;
-	const uint32_t h = m_ctx->sceneExtent.height;
-	const vk::ImageUsageFlags msaaUsage =
-		vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled;
-
-	// Create MSAA color images (5 total: color, position, normal, specular, emissive)
-	struct MsaaTarget {
-		RenderTarget* target;
-		vk::Format format;
-		const char* name;
-	};
-
-	std::array<MsaaTarget, 5> targets = {{
-		{&m_msaaColor,    GBUF_FORMAT_COLOR,    "msaa-color"},
-		{&m_msaaPosition, GBUF_FORMAT_POSITION, "msaa-position"},
-		{&m_msaaNormal,   GBUF_FORMAT_NORMAL,   "msaa-normal"},
-		{&m_msaaSpecular, GBUF_FORMAT_SPECULAR, "msaa-specular"},
-		{&m_msaaEmissive, GBUF_FORMAT_EMISSIVE, "msaa-emissive"},
-	}};
-
-	for (auto& t : targets) {
-		if (!m_ctx->createImage(w, h, t.format, msaaUsage, vk::ImageAspectFlagBits::eColor,
-		                 t.target->image, t.target->view, t.target->allocation, msaaSamples)) {
-			nprintf(("vulkan", "VulkanPostProcessor: Failed to create %s image!\n", t.name));
-			shutdownMsaa();
-			return false;
-		}
-		t.target->format = t.format;
-		t.target->width = w;
-		t.target->height = h;
-	}
-
-	// Create MSAA depth image
-	{
-		vk::ImageCreateInfo imageInfo;
-		imageInfo.imageType = vk::ImageType::e2D;
-		imageInfo.format = m_ctx->depthFormat;
-		imageInfo.extent = vk::Extent3D(w, h, 1);
-		imageInfo.mipLevels = 1;
-		imageInfo.arrayLayers = 1;
-		imageInfo.samples = msaaSamples;
-		imageInfo.tiling = vk::ImageTiling::eOptimal;
-		imageInfo.usage = vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled;
-		imageInfo.sharingMode = vk::SharingMode::eExclusive;
-		imageInfo.initialLayout = vk::ImageLayout::eUndefined;
-
-		try {
-			m_msaaDepthImage = m_ctx->device.createImage(imageInfo);
-		} catch (const vk::SystemError& e) {
-			nprintf(("vulkan", "VulkanPostProcessor: Failed to create MSAA depth image: %s\n", e.what()));
-			shutdownMsaa();
-			return false;
-		}
-
-		if (!m_ctx->memoryManager->allocateImageMemory(m_msaaDepthImage, MemoryUsage::GpuOnly, m_msaaDepthAlloc)) {
-			nprintf(("vulkan", "VulkanPostProcessor: Failed to allocate MSAA depth memory!\n"));
-			m_ctx->device.destroyImage(m_msaaDepthImage);
-			m_msaaDepthImage = nullptr;
-			shutdownMsaa();
-			return false;
-		}
-
-		vk::ImageViewCreateInfo viewInfo;
-		viewInfo.image = m_msaaDepthImage;
-		viewInfo.viewType = vk::ImageViewType::e2D;
-		viewInfo.format = m_ctx->depthFormat;
-		viewInfo.subresourceRange.aspectMask = imageAspectFromFormat(m_ctx->depthFormat);
-		viewInfo.subresourceRange.baseMipLevel = 0;
-		viewInfo.subresourceRange.levelCount = 1;
-		viewInfo.subresourceRange.baseArrayLayer = 0;
-		viewInfo.subresourceRange.layerCount = 1;
-
-		try {
-			m_msaaDepthView = m_ctx->device.createImageView(viewInfo);
-		} catch (const vk::SystemError& e) {
-			nprintf(("vulkan", "VulkanPostProcessor: Failed to create MSAA depth view: %s\n", e.what()));
-			shutdownMsaa();
-			return false;
-		}
-	}
-
 	// MSAA G-buffer render pass (eClear) — 5 color + depth
 	try {
 		m_msaaGbufRenderPass = createGbufRenderPass({
@@ -142,15 +61,6 @@ bool VulkanDeferredGBuffer::initMsaa()
 		});
 	} catch (const vk::SystemError& e) {
 		nprintf(("vulkan", "VulkanPostProcessor: Failed to create MSAA G-buffer load render pass: %s\n", e.what()));
-		shutdownMsaa();
-		return false;
-	}
-
-	// MSAA G-buffer framebuffer (5 color + depth)
-	try {
-		m_msaaGbufFramebuffer = createGbufFramebuffer(m_msaaGbufRenderPass, false, true);
-	} catch (const vk::SystemError& e) {
-		nprintf(("vulkan", "VulkanPostProcessor: Failed to create MSAA G-buffer framebuffer: %s\n", e.what()));
 		shutdownMsaa();
 		return false;
 	}
@@ -201,26 +111,6 @@ bool VulkanDeferredGBuffer::initMsaa()
 		}
 	}
 
-	// Emissive copy framebuffer (MSAA emissive as sole attachment)
-	{
-		vk::ImageView att = m_msaaEmissive.view;
-		vk::FramebufferCreateInfo fbInfo;
-		fbInfo.renderPass = m_msaaEmissiveCopyRenderPass;
-		fbInfo.attachmentCount = 1;
-		fbInfo.pAttachments = &att;
-		fbInfo.width = w;
-		fbInfo.height = h;
-		fbInfo.layers = 1;
-
-		try {
-			m_msaaEmissiveCopyFramebuffer = m_ctx->device.createFramebuffer(fbInfo);
-		} catch (const vk::SystemError& e) {
-			nprintf(("vulkan", "VulkanPostProcessor: Failed to create MSAA emissive copy framebuffer: %s\n", e.what()));
-			shutdownMsaa();
-			return false;
-		}
-	}
-
 	// MSAA Resolve render pass — 5 non-MSAA color + depth (via gl_FragDepth)
 	// Writes to the non-MSAA G-buffer images. loadOp=eDontCare (fully overwritten).
 	try {
@@ -237,17 +127,136 @@ bool VulkanDeferredGBuffer::initMsaa()
 		return false;
 	}
 
+	// The MSAA resolve pass's {samples, fov} UBO comes from the shared per-frame
+	// scratch ring (PostProcessContext::scratchRing) -- no dedicated buffer.
+
+	if (!createMsaaTargets()) {
+		shutdownMsaa();
+		return false;
+	}
+
+	m_msaaInitialized = true;
+	nprintf(("vulkan", "VulkanPostProcessor: MSAA initialized (%ux%u, %dx samples, 5 color + depth)\n",
+		m_ctx->sceneExtent.width, m_ctx->sceneExtent.height, Cmdline_msaa_enabled));
+	return true;
+}
+
+bool VulkanDeferredGBuffer::createMsaaTargets()
+{
+	auto* renderer = getRendererInstance();
+	vk::SampleCountFlagBits msaaSamples = renderer->getMsaaSampleCount();
+
+	const uint32_t w = m_ctx->sceneExtent.width;
+	const uint32_t h = m_ctx->sceneExtent.height;
+	const vk::ImageUsageFlags msaaUsage =
+		vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled;
+
+	// Create MSAA color images (5 total: color, position, normal, specular, emissive)
+	struct MsaaTarget {
+		RenderTarget* target;
+		vk::Format format;
+		const char* name;
+	};
+
+	std::array<MsaaTarget, 5> targets = {{
+		{&m_msaaColor,    GBUF_FORMAT_COLOR,    "msaa-color"},
+		{&m_msaaPosition, GBUF_FORMAT_POSITION, "msaa-position"},
+		{&m_msaaNormal,   GBUF_FORMAT_NORMAL,   "msaa-normal"},
+		{&m_msaaSpecular, GBUF_FORMAT_SPECULAR, "msaa-specular"},
+		{&m_msaaEmissive, GBUF_FORMAT_EMISSIVE, "msaa-emissive"},
+	}};
+
+	for (auto& t : targets) {
+		if (!m_ctx->createImage(w, h, t.format, msaaUsage, vk::ImageAspectFlagBits::eColor,
+		                 t.target->image, t.target->view, t.target->allocation, msaaSamples)) {
+			nprintf(("vulkan", "VulkanPostProcessor: Failed to create %s image!\n", t.name));
+			return false;
+		}
+		t.target->format = t.format;
+		t.target->width = w;
+		t.target->height = h;
+	}
+
+	// Create MSAA depth image
+	{
+		vk::ImageCreateInfo imageInfo;
+		imageInfo.imageType = vk::ImageType::e2D;
+		imageInfo.format = m_ctx->depthFormat;
+		imageInfo.extent = vk::Extent3D(w, h, 1);
+		imageInfo.mipLevels = 1;
+		imageInfo.arrayLayers = 1;
+		imageInfo.samples = msaaSamples;
+		imageInfo.tiling = vk::ImageTiling::eOptimal;
+		imageInfo.usage = vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled;
+		imageInfo.sharingMode = vk::SharingMode::eExclusive;
+		imageInfo.initialLayout = vk::ImageLayout::eUndefined;
+
+		try {
+			m_msaaDepthImage = m_ctx->device.createImage(imageInfo);
+		} catch (const vk::SystemError& e) {
+			nprintf(("vulkan", "VulkanPostProcessor: Failed to create MSAA depth image: %s\n", e.what()));
+			return false;
+		}
+
+		if (!m_ctx->memoryManager->allocateImageMemory(m_msaaDepthImage, MemoryUsage::GpuOnly, m_msaaDepthAlloc)) {
+			nprintf(("vulkan", "VulkanPostProcessor: Failed to allocate MSAA depth memory!\n"));
+			m_ctx->device.destroyImage(m_msaaDepthImage);
+			m_msaaDepthImage = nullptr;
+			return false;
+		}
+
+		vk::ImageViewCreateInfo viewInfo;
+		viewInfo.image = m_msaaDepthImage;
+		viewInfo.viewType = vk::ImageViewType::e2D;
+		viewInfo.format = m_ctx->depthFormat;
+		viewInfo.subresourceRange.aspectMask = imageAspectFromFormat(m_ctx->depthFormat);
+		viewInfo.subresourceRange.baseMipLevel = 0;
+		viewInfo.subresourceRange.levelCount = 1;
+		viewInfo.subresourceRange.baseArrayLayer = 0;
+		viewInfo.subresourceRange.layerCount = 1;
+
+		try {
+			m_msaaDepthView = m_ctx->device.createImageView(viewInfo);
+		} catch (const vk::SystemError& e) {
+			nprintf(("vulkan", "VulkanPostProcessor: Failed to create MSAA depth view: %s\n", e.what()));
+			return false;
+		}
+	}
+
+	// MSAA G-buffer framebuffer (5 color + depth)
+	try {
+		m_msaaGbufFramebuffer = createGbufFramebuffer(m_msaaGbufRenderPass, false, true);
+	} catch (const vk::SystemError& e) {
+		nprintf(("vulkan", "VulkanPostProcessor: Failed to create MSAA G-buffer framebuffer: %s\n", e.what()));
+		return false;
+	}
+
+	// Emissive copy framebuffer (MSAA emissive as sole attachment)
+	{
+		vk::ImageView att = m_msaaEmissive.view;
+		vk::FramebufferCreateInfo fbInfo;
+		fbInfo.renderPass = m_msaaEmissiveCopyRenderPass;
+		fbInfo.attachmentCount = 1;
+		fbInfo.pAttachments = &att;
+		fbInfo.width = w;
+		fbInfo.height = h;
+		fbInfo.layers = 1;
+
+		try {
+			m_msaaEmissiveCopyFramebuffer = m_ctx->device.createFramebuffer(fbInfo);
+		} catch (const vk::SystemError& e) {
+			nprintf(("vulkan", "VulkanPostProcessor: Failed to create MSAA emissive copy framebuffer: %s\n", e.what()));
+			return false;
+		}
+	}
+
 	// MSAA Resolve framebuffer — references non-MSAA G-buffer images
 	try {
 		m_msaaResolveFramebuffer = createGbufFramebuffer(m_msaaResolveRenderPass, false, false);
 	} catch (const vk::SystemError& e) {
 		nprintf(("vulkan", "VulkanPostProcessor: Failed to create MSAA resolve framebuffer: %s\n", e.what()));
-		shutdownMsaa();
 		return false;
 	}
-
-	// The MSAA resolve pass's {samples, fov} UBO comes from the shared per-frame
-	// scratch ring (PostProcessContext::scratchRing) -- no dedicated buffer.
 
 	// Transition MSAA images to the render pass's initial layout at creation time.
 	// The validation layer tracks framebuffer attachment layouts from creation,
@@ -268,45 +277,22 @@ bool VulkanDeferredGBuffer::initMsaa()
 			vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthStencilAttachmentOptimal);
 	}
 
-	m_msaaInitialized = true;
-	nprintf(("vulkan", "VulkanPostProcessor: MSAA initialized (%ux%u, %dx samples, 5 color + depth)\n",
-		w, h, Cmdline_msaa_enabled));
 	return true;
 }
 
-void VulkanDeferredGBuffer::shutdownMsaa()
+void VulkanDeferredGBuffer::destroyMsaaTargets()
 {
-	if (!m_ctx || !m_ctx->device) {
-		return;
-	}
-
 	if (m_msaaResolveFramebuffer) {
 		m_ctx->device.destroyFramebuffer(m_msaaResolveFramebuffer);
 		m_msaaResolveFramebuffer = nullptr;
-	}
-	if (m_msaaResolveRenderPass) {
-		m_ctx->device.destroyRenderPass(m_msaaResolveRenderPass);
-		m_msaaResolveRenderPass = nullptr;
 	}
 	if (m_msaaEmissiveCopyFramebuffer) {
 		m_ctx->device.destroyFramebuffer(m_msaaEmissiveCopyFramebuffer);
 		m_msaaEmissiveCopyFramebuffer = nullptr;
 	}
-	if (m_msaaEmissiveCopyRenderPass) {
-		m_ctx->device.destroyRenderPass(m_msaaEmissiveCopyRenderPass);
-		m_msaaEmissiveCopyRenderPass = nullptr;
-	}
 	if (m_msaaGbufFramebuffer) {
 		m_ctx->device.destroyFramebuffer(m_msaaGbufFramebuffer);
 		m_msaaGbufFramebuffer = nullptr;
-	}
-	if (m_msaaGbufRenderPassLoad) {
-		m_ctx->device.destroyRenderPass(m_msaaGbufRenderPassLoad);
-		m_msaaGbufRenderPassLoad = nullptr;
-	}
-	if (m_msaaGbufRenderPass) {
-		m_ctx->device.destroyRenderPass(m_msaaGbufRenderPass);
-		m_msaaGbufRenderPass = nullptr;
 	}
 
 	// Destroy MSAA depth
@@ -320,6 +306,7 @@ void VulkanDeferredGBuffer::shutdownMsaa()
 	}
 	if (m_msaaDepthAlloc.isValid()) {
 		m_ctx->memoryManager->freeAllocation(m_msaaDepthAlloc);
+		m_msaaDepthAlloc = {};
 	}
 
 	// Destroy MSAA color targets
@@ -328,17 +315,33 @@ void VulkanDeferredGBuffer::shutdownMsaa()
 		&m_msaaSpecular, &m_msaaEmissive,
 	};
 	for (auto* rt : msaaTargets) {
-		if (rt->view) {
-			m_ctx->device.destroyImageView(rt->view);
-			rt->view = nullptr;
-		}
-		if (rt->image) {
-			m_ctx->device.destroyImage(rt->image);
-			rt->image = nullptr;
-		}
-		if (rt->allocation.isValid()) {
-			m_ctx->memoryManager->freeAllocation(rt->allocation);
-		}
+		m_ctx->destroyTarget(*rt);
+	}
+}
+
+void VulkanDeferredGBuffer::shutdownMsaa()
+{
+	if (!m_ctx || !m_ctx->device) {
+		return;
+	}
+
+	destroyMsaaTargets();
+
+	if (m_msaaResolveRenderPass) {
+		m_ctx->device.destroyRenderPass(m_msaaResolveRenderPass);
+		m_msaaResolveRenderPass = nullptr;
+	}
+	if (m_msaaEmissiveCopyRenderPass) {
+		m_ctx->device.destroyRenderPass(m_msaaEmissiveCopyRenderPass);
+		m_msaaEmissiveCopyRenderPass = nullptr;
+	}
+	if (m_msaaGbufRenderPassLoad) {
+		m_ctx->device.destroyRenderPass(m_msaaGbufRenderPassLoad);
+		m_msaaGbufRenderPassLoad = nullptr;
+	}
+	if (m_msaaGbufRenderPass) {
+		m_ctx->device.destroyRenderPass(m_msaaGbufRenderPass);
+		m_msaaGbufRenderPass = nullptr;
 	}
 
 	m_msaaInitialized = false;

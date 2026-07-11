@@ -8,6 +8,7 @@
 #include "cmdline/cmdline.h"
 #include "graphics/grinternal.h"
 #include "graphics/post_processing.h"
+#include "graphics/util/pixel_swizzle.h"
 
 #include "backends/imgui_impl_vulkan.h"
 #include "graphics/2d.h"
@@ -241,7 +242,16 @@ vk::Format VulkanRenderer::findDepthFormat()
 }
 void VulkanRenderer::createDepthResources()
 {
-	m_depthFormat = findDepthFormat();
+	const vk::Format depthFormat = findDepthFormat();
+	// The render passes (m_renderPass, scene/G-buffer passes, ...) bake in the
+	// depth format, and they are deliberately kept alive across swap chain
+	// recreation. A driver changing its supported depth formats mid-session
+	// would make them all incompatible with the new attachment.
+	if (m_depthFormat != vk::Format::eUndefined && depthFormat != m_depthFormat) {
+		Error(LOCATION, "Vulkan: depth format changed across swap chain recreation (%d -> %d)!",
+			static_cast<int>(m_depthFormat), static_cast<int>(depthFormat));
+	}
+	m_depthFormat = depthFormat;
 
 	// Create depth image
 	vk::ImageCreateInfo imageInfo;
@@ -278,6 +288,15 @@ void VulkanRenderer::createDepthResources()
 
 	nprintf(("vulkan", "Vulkan: Created depth buffer (%dx%d, format %d)\n",
 		m_swapChainExtent.width, m_swapChainExtent.height, static_cast<int>(m_depthFormat)));
+}
+void VulkanRenderer::destroyDepthResources()
+{
+	m_depthImageView.reset();
+	m_depthImage.reset();
+	if (m_memoryManager && m_depthImageMemory.isValid()) {
+		m_memoryManager->freeAllocation(m_depthImageMemory);
+		m_depthImageMemory = {};
+	}
 }
 void VulkanRenderer::createRenderPass()
 {
@@ -373,24 +392,6 @@ void VulkanRenderer::createPresentSyncObjects()
 	m_swapChainImageRenderImage.resize(m_swapChainImages.size(), nullptr);
 }
 
-static float half_to_float(uint16_t h)
-{
-	const auto sign = static_cast<uint32_t>(h & 0x8000u) << 16;
-	const auto exp  = (h >> 10u) & 0x1Fu;
-	const auto mant = static_cast<uint32_t>(h & 0x03FFu);
-	uint32_t f;
-	if (exp == 0u) {
-		f = sign; // zero or subnormal → round to zero
-	} else if (exp == 31u) {
-		f = sign | 0x7F800000u | (mant << 13u); // inf or NaN
-	} else {
-		f = sign | ((exp + (127u - 15u)) << 23u) | (mant << 13u);
-	}
-	float result;
-	memcpy(&result, &f, sizeof(result));
-	return result;
-}
-
 bool VulkanRenderer::readbackFramebuffer(ubyte** outPixels, uint32_t* outWidth, uint32_t* outHeight)
 {
 	*outPixels = nullptr;
@@ -407,30 +408,20 @@ bool VulkanRenderer::readbackFramebuffer(ubyte** outPixels, uint32_t* outWidth, 
 		return false;
 	}
 
-	// In HDR mode read the fp16 composition image (pre-encode) instead of the
-	// swap-chain image.  The swap-chain image is 10-bit PQ-packed; treating it
-	// as BGRA8 produces garbage, and drawing it back through encodeOutput would
-	// apply PQ a second time.  The composition image stores sRGB-encoded values
-	// (1.0 == paperwhite) in fp16 RGBA; we convert to BGRA8 on the CPU below.
-	const bool hdrReadback = m_hdrActive;
-	vk::Image srcImage;
-	vk::ImageLayout srcInitialLayout;
-	vk::PipelineStageFlags srcStageMask;
-	vk::AccessFlags srcAccessMask;
-	uint32_t bytesPerSrcPixel;
-	if (hdrReadback) {
-		srcImage         = m_compositionImages[m_previousSwapChainImage].get();
-		srcInitialLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		srcStageMask     = vk::PipelineStageFlagBits::eFragmentShader;
-		srcAccessMask    = vk::AccessFlagBits::eShaderRead;
-		bytesPerSrcPixel = 8; // fp16 RGBA = 4 × 2 bytes
-	} else {
-		srcImage         = m_swapChainImages[m_previousSwapChainImage];
-		srcInitialLayout = vk::ImageLayout::ePresentSrcKHR;
-		srcStageMask     = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-		srcAccessMask    = vk::AccessFlagBits::eColorAttachmentWrite;
-		bytesPerSrcPixel = 4; // BGRA8
-	}
+	// Read the previous frame's fp16 composition image in both SDR and HDR
+	// modes -- never the presented swap chain image. The swap chain image is
+	// owned by the presentation engine after present (reading it back violates
+	// its layout/ownership contract), and in HDR it's 10-bit PQ-packed anyway.
+	// The composition image is app-owned, stays in eShaderReadOnlyOptimal after
+	// the encode pass sampled it, and carries the final sRGB-encoded frame
+	// (1.0 == paper white) before the user gamma slider is applied -- the same
+	// fidelity class as OpenGL's back-buffer read. Converted to BGRA8 on the
+	// CPU below.
+	const vk::Image srcImage = m_compositionImages[m_previousSwapChainImage].get();
+	const vk::ImageLayout srcInitialLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+	const vk::PipelineStageFlags srcStageMask = vk::PipelineStageFlagBits::eFragmentShader;
+	const vk::AccessFlags srcAccessMask = vk::AccessFlagBits::eShaderRead;
+	const uint32_t bytesPerSrcPixel = 8; // fp16 RGBA = 4 x 2 bytes
 	uint32_t w = m_swapChainExtent.width;
 	uint32_t h = m_swapChainExtent.height;
 	vk::DeviceSize bufferSize = static_cast<vk::DeviceSize>(w) * h * bytesPerSrcPixel;
@@ -484,7 +475,7 @@ bool VulkanRenderer::readbackFramebuffer(ubyte** outPixels, uint32_t* outWidth, 
 		m_device->freeCommandBuffers(m_graphicsCommandPool.get(), cmdBuffers);
 
 		// Re-begin render pass so the frame can continue
-		rebeginSwapChainPassAfterReadback();
+		resumeSwapChainPass();
 		return false;
 	}
 
@@ -517,7 +508,10 @@ bool VulkanRenderer::readbackFramebuffer(ubyte** outPixels, uint32_t* outWidth, 
 
 	cmd.end();
 
-	// Submit one-shot command buffer and wait
+	// Submit one-shot command buffer and wait. The mid-frame fence stall is
+	// acceptable: readback is rare and user-triggered (save-screen/screenshot).
+	// A stall-free alternative (copy now, map after the next frame's fence)
+	// is possible but not worth the complexity today.
 	auto fence = m_device->createFence({});
 
 	vk::SubmitInfo submitInfo;
@@ -533,12 +527,10 @@ bool VulkanRenderer::readbackFramebuffer(ubyte** outPixels, uint32_t* outWidth, 
 	m_device->destroyFence(fence);
 	m_device->freeCommandBuffers(m_graphicsCommandPool.get(), cmdBuffers);
 
-	// Read back and convert pixels from staging buffer.
-	// SDR: raw BGRA8 from swap chain, memcpy directly.
-	// HDR: fp16 RGBA from composition image — convert to BGRA8.  The composition
-	//      image holds sRGB-encoded values (1.0 == paperwhite) so we just clamp to
-	//      [0,1] and scale; no gamma re-encoding needed.  Swap R↔B for BGRA output
-	//      and force alpha = 255 so the bitmap restores as fully opaque.
+	// Read back and convert pixels from staging buffer: fp16 RGBA -> BGRA8.
+	// The composition image holds sRGB-encoded values (1.0 == paper white) so we
+	// just clamp to [0,1] and scale; no gamma re-encoding needed. Swap R<->B for
+	// BGRA output and force alpha = 255 so the bitmap restores as fully opaque.
 	const uint32_t outStride = w * 4u; // always 4 bytes/pixel BGRA8 output
 	bool success = false;
 	auto* mappedPtr = static_cast<ubyte*>(m_memoryManager->mapMemory(stagingAlloc));
@@ -546,21 +538,17 @@ bool VulkanRenderer::readbackFramebuffer(ubyte** outPixels, uint32_t* outWidth, 
 	if (mappedPtr) {
 		auto* pixels = static_cast<ubyte*>(vm_malloc(static_cast<int>(outStride) * static_cast<int>(h)));
 		if (pixels) {
-			if (hdrReadback) {
-				// Clamp fp16 value to [0,1]; NaN-safe (all NaN comparisons yield false → 0).
-				auto hf = [](uint16_t v) -> float {
-					float f = half_to_float(v);
-					return (f >= 0.0f && f <= 1.0f) ? f : (f >= 1.0f ? 1.0f : 0.0f);
-				};
-				const auto* src = reinterpret_cast<const uint16_t*>(mappedPtr);
-				for (uint32_t i = 0; i < w * h; ++i) {
-					pixels[i * 4 + 0] = static_cast<ubyte>(hf(src[i * 4 + 2]) * 255.0f); // B ← src B
-					pixels[i * 4 + 1] = static_cast<ubyte>(hf(src[i * 4 + 1]) * 255.0f); // G ← src G
-					pixels[i * 4 + 2] = static_cast<ubyte>(hf(src[i * 4 + 0]) * 255.0f); // R ← src R
-					pixels[i * 4 + 3] = 255u;                                              // A = opaque
-				}
-			} else {
-				memcpy(pixels, mappedPtr, static_cast<size_t>(outStride) * h);
+			// Clamp fp16 value to [0,1]; NaN-safe (all NaN comparisons yield false → 0).
+			auto hf = [](uint16_t v) -> float {
+				float f = graphics::util::half_to_float(v);
+				return (f >= 0.0f && f <= 1.0f) ? f : (f >= 1.0f ? 1.0f : 0.0f);
+			};
+			const auto* src = reinterpret_cast<const uint16_t*>(mappedPtr);
+			for (uint32_t i = 0; i < w * h; ++i) {
+				pixels[i * 4 + 0] = static_cast<ubyte>(hf(src[i * 4 + 2]) * 255.0f); // B ← src B
+				pixels[i * 4 + 1] = static_cast<ubyte>(hf(src[i * 4 + 1]) * 255.0f); // G ← src G
+				pixels[i * 4 + 2] = static_cast<ubyte>(hf(src[i * 4 + 0]) * 255.0f); // R ← src R
+				pixels[i * 4 + 3] = 255u;                                              // A = opaque
 			}
 			*outPixels = pixels;
 			*outWidth = w;
@@ -574,30 +562,13 @@ bool VulkanRenderer::readbackFramebuffer(ubyte** outPixels, uint32_t* outWidth, 
 	m_device->destroyBuffer(stagingBuffer);
 	m_memoryManager->freeAllocation(stagingAlloc);
 
-	// Re-begin render pass on main command buffer
-	rebeginSwapChainPassAfterReadback();
+	// Resume the composition pass with loadOp=eLoad, preserving everything drawn
+	// into the composition image so far this frame. (The interrupted pass's
+	// finalLayout left it in eShaderReadOnlyOptimal, matching the load pass's
+	// initialLayout.)
+	resumeSwapChainPass();
 
 	return success;
-}
-
-// Shared resume path for readbackFramebuffer()'s success and failure exits.
-// FIXME(review A5.2, plan Phase 3.2): this uses m_renderPass (loadOp=eClear,
-// initialLayout=eUndefined), which discards everything drawn into the
-// composition image so far this frame. Kept for now so the Phase 1 helper
-// conversion stays behavior-identical; the Phase 3 readback rework switches
-// this to the loadOp=eLoad resume path.
-void VulkanRenderer::rebeginSwapChainPassAfterReadback()
-{
-	std::array<vk::ClearValue, 2> clearValues;
-	clearValues[0].color.setFloat32({0.0f, 0.0f, 0.0f, 1.0f});
-	clearValues[1].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
-
-	PassBeginDesc pass;
-	pass.renderPass = m_renderPass.get();
-	pass.framebuffer = m_swapChainFramebuffers[m_currentSwapChainImage].get();
-	pass.extent = m_swapChainExtent;
-	pass.clearValues = clearValues;
-	beginTrackedRenderPass(pass);
 }
 
 uint32_t VulkanRenderer::getMinUniformBufferOffsetAlignment() const
@@ -757,11 +728,7 @@ void VulkanRenderer::shutdown()
 	}
 
 	// Destroy depth resources before memory manager
-	m_depthImageView.reset();
-	m_depthImage.reset();
-	if (m_memoryManager && m_depthImageMemory.isValid()) {
-		m_memoryManager->freeAllocation(m_depthImageMemory);
-	}
+	destroyDepthResources();
 
 	// Destroy composition resources before memory manager
 	m_compositionImageViews.clear();

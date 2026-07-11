@@ -254,19 +254,21 @@ vk::SurfaceFormatKHR chooseSurfaceFormat(const PhysicalDeviceValues& values)
 
 vk::PresentModeKHR choosePresentMode(const PhysicalDeviceValues& values)
 {
-	vk::PresentModeKHR chosen = vk::PresentModeKHR::eFifo; // guaranteed to be supported
+	// With vsync requested, use FIFO: it is the only spec-guaranteed mode and
+	// the only one that actually caps the frame rate to the display. Mailbox is
+	// tear-free but uncapped ("fast vsync") and must not be silently substituted
+	// for requested vsync. Without vsync prefer Immediate (true uncapped), then
+	// Mailbox (uncapped but tear-free), then the guaranteed FIFO fallback.
+	vk::PresentModeKHR chosen = vk::PresentModeKHR::eFifo;
 
-	// Depending on if we want Vsync or not, choose the best mode
-	for (const auto& availablePresentMode : values.presentModes) {
-		if (Gr_enable_vsync) {
-			if (availablePresentMode == vk::PresentModeKHR::eMailbox) {
-				chosen = availablePresentMode;
-				break;
-			}
-		} else {
+	if (!Gr_enable_vsync) {
+		for (const auto& availablePresentMode : values.presentModes) {
 			if (availablePresentMode == vk::PresentModeKHR::eImmediate) {
 				chosen = availablePresentMode;
 				break;
+			}
+			if (availablePresentMode == vk::PresentModeKHR::eMailbox) {
+				chosen = availablePresentMode;
 			}
 		}
 	}
@@ -1037,52 +1039,9 @@ bool VulkanRenderer::createSwapChain(const PhysicalDeviceValues& deviceValues, v
 		m_swapChainImageViews.push_back(m_device->createImageViewUnique(viewCreateInfo));
 	}
 
-	// Transition new images eUndefined → ePresentSrcKHR so the render pass
-	// can use initialLayout=ePresentSrcKHR from the start.
-	{
-		vk::CommandBufferAllocateInfo allocInfo;
-		allocInfo.commandPool = m_graphicsCommandPool.get();
-		allocInfo.level = vk::CommandBufferLevel::ePrimary;
-		allocInfo.commandBufferCount = 1;
-
-		auto cmdBuffers = m_device->allocateCommandBuffers(allocInfo);
-		auto cmd = cmdBuffers.front();
-
-		vk::CommandBufferBeginInfo beginInfo;
-		beginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
-		cmd.begin(beginInfo);
-
-		for (auto& image : m_swapChainImages) {
-			vk::ImageMemoryBarrier barrier;
-			barrier.oldLayout = vk::ImageLayout::eUndefined;
-			barrier.newLayout = vk::ImageLayout::ePresentSrcKHR;
-			barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barrier.image = image;
-			barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
-			barrier.subresourceRange.baseMipLevel = 0;
-			barrier.subresourceRange.levelCount = 1;
-			barrier.subresourceRange.baseArrayLayer = 0;
-			barrier.subresourceRange.layerCount = 1;
-			barrier.srcAccessMask = {};
-			barrier.dstAccessMask = {};
-
-			cmd.pipelineBarrier(
-				vk::PipelineStageFlagBits::eTopOfPipe,
-				vk::PipelineStageFlagBits::eBottomOfPipe,
-				{}, nullptr, nullptr, barrier);
-		}
-
-		cmd.end();
-
-		vk::SubmitInfo submitInfo;
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &cmd;
-		m_graphicsQueue.submit(submitInfo, nullptr);
-		m_graphicsQueue.waitIdle();
-
-		m_device->freeCommandBuffers(m_graphicsCommandPool.get(), cmdBuffers);
-	}
+	// No layout transition needed for the new images: the only pass that writes
+	// them (m_encodeRenderPass) uses initialLayout=eUndefined with
+	// loadOp=eDontCare, so their first use never reads prior contents.
 
 	// Advertise HDR10 mastering/content metadata to the compositor when active.
 	if (m_hdrActive && m_hdrMetadataSupported) {
@@ -1132,18 +1091,55 @@ bool VulkanRenderer::recreateSwapChain()
 		return false;
 	}
 
-	// Recreate swap chain, image views, and framebuffers
-	// (createSwapChain clears old resources and transitions new images internally).
-	// The render passes (including m_encodeRenderPass) are intentionally NOT
-	// recreated so cached pipelines remain valid; only the size-dependent
-	// composition images and framebuffers are rebuilt.
+	// Recreate all size-dependent resources. The render passes (including
+	// m_encodeRenderPass) are intentionally NOT recreated so cached pipelines
+	// remain valid; only images, views, and framebuffers are rebuilt.
+	const vk::Format oldSwapChainFormat = m_swapChainImageFormat;
 	createSwapChain(freshValues, m_swapChain.get());
+
+	// Known limitation: if the surface format changes across recreation (e.g.
+	// the window moves to a display that flips HDR10 availability),
+	// m_encodeRenderPass and the post-processor's LDR format would need a full
+	// rebuild, which we don't support yet. Log it loudly.
+	if (m_swapChainImageFormat != oldSwapChainFormat) {
+		mprintf(("Vulkan: WARNING - swap chain surface format changed across recreation (%d -> %d); "
+		         "rendering may be broken until restart\n",
+			static_cast<int>(oldSwapChainFormat), static_cast<int>(m_swapChainImageFormat)));
+	}
+
+	// The depth buffer is extent-sized; recreate it before the framebuffers
+	// that attach its view. createDepthResources() verifies the format is stable
+	// (the kept render passes bake it in).
+	destroyDepthResources();
+	createDepthResources();
+
 	createCompositionResources();
 	createFrameBuffers();
 
-	// Update VulkanRenderFrame handles to point to the new swap chain
+	// Recreate the post-processor's extent-sized targets (scene color/depth,
+	// G-buffer, bloom chains, LDR/SMAA targets, ...). Its render passes and
+	// samplers are extent-independent and stay alive, keeping pipelines valid.
+	if (m_postProcessor && !m_postProcessor->resize(m_swapChainExtent)) {
+		mprintf(("Vulkan: post-processor resize failed, disabling post-processing!\n"));
+		setPostProcessor(nullptr);
+		m_postProcessor->shutdown();
+		m_postProcessor.reset();
+	}
+
+	// Drop renderer-side cached state that may reference destroyed views
+	if (m_drawManager) {
+		m_drawManager->onResize();
+	}
+	m_sceneDepthCopiedThisFrame = false;
+
+	// Update VulkanRenderFrame handles to point to the new swap chain, and
+	// recreate their semaphores: an acquire that succeeded against the old swap
+	// chain but was never consumed by a submit leaves the image-available
+	// semaphore signaled. All frames are idle here (waited above), so
+	// recreating is safe and unambiguous.
 	for (auto& frame : m_frames) {
 		frame->updateSwapChain(m_swapChain.get());
+		frame->recreateSyncObjects();
 	}
 
 	// Reset swap chain image tracking

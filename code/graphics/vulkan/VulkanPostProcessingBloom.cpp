@@ -28,75 +28,6 @@ bool VulkanBloom::init(PostProcessContext& ctx, const RenderTarget& sceneColor)
 	m_ctx = &ctx;
 	m_sceneColor = &sceneColor;
 
-	m_width = m_ctx->sceneExtent.width / 2;
-	m_height = m_ctx->sceneExtent.height / 2;
-
-	const uint32_t mipLevels = MAX_MIP_BLUR_LEVELS;
-
-	// Create 2 bloom textures (RGBA16F, half-res, 4 mip levels each)
-	for (size_t i = 0; i < m_tex.size(); i++) {
-		vk::ImageCreateInfo imageInfo;
-		imageInfo.imageType = vk::ImageType::e2D;
-		imageInfo.format = HDR_COLOR_FORMAT;
-		imageInfo.extent.width = m_width;
-		imageInfo.extent.height = m_height;
-		imageInfo.extent.depth = 1;
-		imageInfo.mipLevels = mipLevels;
-		imageInfo.arrayLayers = 1;
-		imageInfo.samples = vk::SampleCountFlagBits::e1;
-		imageInfo.tiling = vk::ImageTiling::eOptimal;
-		imageInfo.usage = vk::ImageUsageFlagBits::eColorAttachment
-		                | vk::ImageUsageFlagBits::eSampled
-		                | vk::ImageUsageFlagBits::eTransferSrc
-		                | vk::ImageUsageFlagBits::eTransferDst;
-		imageInfo.sharingMode = vk::SharingMode::eExclusive;
-		imageInfo.initialLayout = vk::ImageLayout::eUndefined;
-
-		try {
-			m_tex[i].image = m_ctx->device.createImage(imageInfo);
-		} catch (const vk::SystemError& e) {
-			nprintf(("vulkan", "VulkanBloom: Failed to create bloom image %zu: %s\n", i, e.what()));
-			return false;
-		}
-
-		if (!m_ctx->memoryManager->allocateImageMemory(m_tex[i].image, MemoryUsage::GpuOnly, m_tex[i].allocation)) {
-			nprintf(("vulkan", "VulkanBloom: Failed to allocate bloom image %zu memory!\n", i));
-			return false;
-		}
-
-		// Full image view (all mip levels, for textureLod sampling)
-		vk::ImageViewCreateInfo fullViewInfo;
-		fullViewInfo.image = m_tex[i].image;
-		fullViewInfo.viewType = vk::ImageViewType::e2D;
-		fullViewInfo.format = HDR_COLOR_FORMAT;
-		fullViewInfo.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
-		fullViewInfo.subresourceRange.baseMipLevel = 0;
-		fullViewInfo.subresourceRange.levelCount = mipLevels;
-		fullViewInfo.subresourceRange.baseArrayLayer = 0;
-		fullViewInfo.subresourceRange.layerCount = 1;
-
-		try {
-			m_tex[i].fullView = m_ctx->device.createImageView(fullViewInfo);
-		} catch (const vk::SystemError& e) {
-			nprintf(("vulkan", "VulkanBloom: Failed to create bloom %zu full view: %s\n", i, e.what()));
-			return false;
-		}
-
-		// Per-mip image views (for framebuffer attachment)
-		for (uint32_t mip = 0; mip < mipLevels; mip++) {
-			vk::ImageViewCreateInfo mipViewInfo = fullViewInfo;
-			mipViewInfo.subresourceRange.baseMipLevel = mip;
-			mipViewInfo.subresourceRange.levelCount = 1;
-
-			try {
-				m_tex[i].mipViews[mip] = m_ctx->device.createImageView(mipViewInfo);
-			} catch (const vk::SystemError& e) {
-				nprintf(("vulkan", "VulkanBloom: Failed to create bloom %zu mip %u view: %s\n", i, mip, e.what()));
-				return false;
-			}
-		}
-	}
-
 	// Create bloom render pass (color-only RGBA16F, loadOp=eDontCare for overwriting)
 	{
 		vk::AttachmentDescription att;
@@ -195,6 +126,87 @@ bool VulkanBloom::init(PostProcessContext& ctx, const RenderTarget& sceneColor)
 		}
 	}
 
+	if (!createTargets()) {
+		return false;
+	}
+
+	m_initialized = true;
+	nprintf(("vulkan", "VulkanBloom: Bloom initialized (%ux%u, %d mip levels)\n",
+		m_width, m_height, MAX_MIP_BLUR_LEVELS));
+	return true;
+}
+
+bool VulkanBloom::createTargets()
+{
+	m_width = m_ctx->sceneExtent.width / 2;
+	m_height = m_ctx->sceneExtent.height / 2;
+
+	const uint32_t mipLevels = MAX_MIP_BLUR_LEVELS;
+
+	// Create 2 bloom textures (RGBA16F, half-res, 4 mip levels each)
+	for (size_t i = 0; i < m_tex.size(); i++) {
+		vk::ImageCreateInfo imageInfo;
+		imageInfo.imageType = vk::ImageType::e2D;
+		imageInfo.format = HDR_COLOR_FORMAT;
+		imageInfo.extent.width = m_width;
+		imageInfo.extent.height = m_height;
+		imageInfo.extent.depth = 1;
+		imageInfo.mipLevels = mipLevels;
+		imageInfo.arrayLayers = 1;
+		imageInfo.samples = vk::SampleCountFlagBits::e1;
+		imageInfo.tiling = vk::ImageTiling::eOptimal;
+		imageInfo.usage = vk::ImageUsageFlagBits::eColorAttachment
+		                | vk::ImageUsageFlagBits::eSampled
+		                | vk::ImageUsageFlagBits::eTransferSrc
+		                | vk::ImageUsageFlagBits::eTransferDst;
+		imageInfo.sharingMode = vk::SharingMode::eExclusive;
+		imageInfo.initialLayout = vk::ImageLayout::eUndefined;
+
+		try {
+			m_tex[i].image = m_ctx->device.createImage(imageInfo);
+		} catch (const vk::SystemError& e) {
+			nprintf(("vulkan", "VulkanBloom: Failed to create bloom image %zu: %s\n", i, e.what()));
+			return false;
+		}
+
+		if (!m_ctx->memoryManager->allocateImageMemory(m_tex[i].image, MemoryUsage::GpuOnly, m_tex[i].allocation)) {
+			nprintf(("vulkan", "VulkanBloom: Failed to allocate bloom image %zu memory!\n", i));
+			return false;
+		}
+
+		// Full image view (all mip levels, for textureLod sampling)
+		vk::ImageViewCreateInfo fullViewInfo;
+		fullViewInfo.image = m_tex[i].image;
+		fullViewInfo.viewType = vk::ImageViewType::e2D;
+		fullViewInfo.format = HDR_COLOR_FORMAT;
+		fullViewInfo.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+		fullViewInfo.subresourceRange.baseMipLevel = 0;
+		fullViewInfo.subresourceRange.levelCount = mipLevels;
+		fullViewInfo.subresourceRange.baseArrayLayer = 0;
+		fullViewInfo.subresourceRange.layerCount = 1;
+
+		try {
+			m_tex[i].fullView = m_ctx->device.createImageView(fullViewInfo);
+		} catch (const vk::SystemError& e) {
+			nprintf(("vulkan", "VulkanBloom: Failed to create bloom %zu full view: %s\n", i, e.what()));
+			return false;
+		}
+
+		// Per-mip image views (for framebuffer attachment)
+		for (uint32_t mip = 0; mip < mipLevels; mip++) {
+			vk::ImageViewCreateInfo mipViewInfo = fullViewInfo;
+			mipViewInfo.subresourceRange.baseMipLevel = mip;
+			mipViewInfo.subresourceRange.levelCount = 1;
+
+			try {
+				m_tex[i].mipViews[mip] = m_ctx->device.createImageView(mipViewInfo);
+			} catch (const vk::SystemError& e) {
+				nprintf(("vulkan", "VulkanBloom: Failed to create bloom %zu mip %u view: %s\n", i, mip, e.what()));
+				return false;
+			}
+		}
+	}
+
 	// Create per-mip framebuffers for bloom textures
 	for (size_t i = 0; i < m_tex.size(); i++) {
 		for (uint32_t mip = 0; mip < mipLevels; mip++) {
@@ -236,18 +248,11 @@ bool VulkanBloom::init(PostProcessContext& ctx, const RenderTarget& sceneColor)
 		}
 	}
 
-	m_initialized = true;
-	nprintf(("vulkan", "VulkanBloom: Bloom initialized (%ux%u, %d mip levels)\n",
-		m_width, m_height, MAX_MIP_BLUR_LEVELS));
 	return true;
 }
 
-void VulkanBloom::shutdown()
+void VulkanBloom::destroyTargets()
 {
-	if (!m_initialized) {
-		return;
-	}
-
 	if (m_sceneColorFB) {
 		m_ctx->device.destroyFramebuffer(m_sceneColorFB);
 		m_sceneColorFB = nullptr;
@@ -274,8 +279,27 @@ void VulkanBloom::shutdown()
 		}
 		if (bt.allocation.isValid()) {
 			m_ctx->memoryManager->freeAllocation(bt.allocation);
+			bt.allocation = {};
 		}
 	}
+}
+
+bool VulkanBloom::resize()
+{
+	if (!m_initialized) {
+		return true;
+	}
+	destroyTargets();
+	return createTargets();
+}
+
+void VulkanBloom::shutdown()
+{
+	if (!m_initialized) {
+		return;
+	}
+
+	destroyTargets();
 
 	if (m_compositeRenderPass) {
 		m_ctx->device.destroyRenderPass(m_compositeRenderPass);

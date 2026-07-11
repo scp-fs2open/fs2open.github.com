@@ -1,5 +1,7 @@
 #include "graphics/util/pixel_swizzle.h"
 
+#include <cstring>
+
 namespace graphics::util {
 
 void swizzle_bgra_to_rgba(uint8_t* pixels, size_t count)
@@ -149,6 +151,24 @@ void expand_R8_to_RGB(const uint8_t* RESTRICT src, uint8_t* RESTRICT dst, size_t
 		dst[i * 3 + 1] = r;
 		dst[i * 3 + 2] = r;
 	}
+}
+
+float half_to_float(uint16_t h)
+{
+	const auto sign = static_cast<uint32_t>(h & 0x8000u) << 16;
+	const auto exp  = (h >> 10u) & 0x1Fu;
+	const auto mant = static_cast<uint32_t>(h & 0x03FFu);
+	uint32_t f;
+	if (exp == 0u) {
+		f = sign; // zero or subnormal → round to zero
+	} else if (exp == 31u) {
+		f = sign | 0x7F800000u | (mant << 13u); // inf or NaN
+	} else {
+		f = sign | ((exp + (127u - 15u)) << 23u) | (mant << 13u);
+	}
+	float result;
+	memcpy(&result, &f, sizeof(result));
+	return result;
 }
 
 } // namespace graphics::util

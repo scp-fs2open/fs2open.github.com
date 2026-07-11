@@ -273,6 +273,11 @@ class VulkanDrawManager {
 	void clearDistortionOverrides();
 
 	/**
+	 * @brief Drop cached state that may reference destroyed views (swap chain recreation)
+	 */
+	void onResize();
+
+	/**
 	 * @brief Get current texture addressing mode
 	 */
 	int getTextureAddressing() const

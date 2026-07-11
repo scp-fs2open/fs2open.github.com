@@ -44,6 +44,11 @@ void convert_BGRA1555_REV_to_RGBA8888(const uint16_t* RESTRICT src, uint8_t* RES
 // Note: BGRA1555_REV layout is identical to A1R5G5B5
 void convert_BGRA1555_REV_to_RGB888(const uint16_t* RESTRICT src, uint8_t* RESTRICT dst, size_t count);
 
+// ---- fp16 conversion ----
+
+// IEEE 754 half → float (subnormals round to zero, inf/NaN preserved)
+float half_to_float(uint16_t h);
+
 // ---- Greyscale expansion ----
 
 // R8 → RGBA8888 (R replicated to R/G/B, alpha = 255)

@@ -68,62 +68,11 @@ bool VulkanPostProcessor::init(vk::Device device, vk::PhysicalDevice physDevice,
 		}
 	}
 
-	// Create HDR scene color target (RGBA16F)
-	// eTransferSrc needed for copy_effect_texture (mid-scene snapshot)
-	// eTransferDst needed for deferred_lighting_finish (emissive→color copy)
-	if (!createImage(extent.width, extent.height, HDR_COLOR_FORMAT,
-	                 vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled
-	                 | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst,
-	                 vk::ImageAspectFlagBits::eColor,
-	                 m_sceneColor.image, m_sceneColor.view, m_sceneColor.allocation)) {
-		nprintf(("vulkan", "VulkanPostProcessor: Failed to create scene color image!\n"));
-		return false;
-	}
-	m_sceneColor.format = HDR_COLOR_FORMAT;
-	m_sceneColor.width = extent.width;
-	m_sceneColor.height = extent.height;
-
-	// Create scene depth target
-	if (!createImage(extent.width, extent.height, depthFormat,
-	                 vk::ImageUsageFlagBits::eDepthStencilAttachment
-	                 | vk::ImageUsageFlagBits::eSampled
-	                 | vk::ImageUsageFlagBits::eTransferSrc,
-	                 vk::ImageAspectFlagBits::eDepth,  // View uses depth-only aspect
-	                 m_sceneDepth.image, m_sceneDepth.view, m_sceneDepth.allocation)) {
-		nprintf(("vulkan", "VulkanPostProcessor: Failed to create scene depth image!\n"));
+	// Create the extent-sized scene targets (color, depth, effect, depth copy)
+	if (!createSceneTargets(extent)) {
 		shutdown();
 		return false;
 	}
-	m_sceneDepth.format = depthFormat;
-	m_sceneDepth.width = extent.width;
-	m_sceneDepth.height = extent.height;
-
-	// Create effect/composite texture (RGBA16F, snapshot of scene color for distortion/soft particles)
-	if (!createImage(extent.width, extent.height, HDR_COLOR_FORMAT,
-	                 vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
-	                 vk::ImageAspectFlagBits::eColor,
-	                 m_sceneEffect.image, m_sceneEffect.view, m_sceneEffect.allocation)) {
-		nprintf(("vulkan", "VulkanPostProcessor: Failed to create scene effect image!\n"));
-		shutdown();
-		return false;
-	}
-	m_sceneEffect.format = HDR_COLOR_FORMAT;
-	m_sceneEffect.width = extent.width;
-	m_sceneEffect.height = extent.height;
-
-	// Create scene depth copy (samplable copy for soft particles)
-	// Same depth format, usage: eTransferDst (copy target) + eSampled (fragment shader reads)
-	if (!createImage(extent.width, extent.height, depthFormat,
-	                 vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
-	                 vk::ImageAspectFlagBits::eDepth,
-	                 m_sceneDepthCopy.image, m_sceneDepthCopy.view, m_sceneDepthCopy.allocation)) {
-		nprintf(("vulkan", "VulkanPostProcessor: Failed to create scene depth copy image!\n"));
-		shutdown();
-		return false;
-	}
-	m_sceneDepthCopy.format = depthFormat;
-	m_sceneDepthCopy.width = extent.width;
-	m_sceneDepthCopy.height = extent.height;
 
 	// Create HDR scene render pass
 	// Attachment 0: Color (RGBA16F)
@@ -276,24 +225,9 @@ bool VulkanPostProcessor::init(vk::Device device, vk::PhysicalDevice physDevice,
 	}
 
 	// Create scene framebuffer
-	{
-		std::array<vk::ImageView, 2> fbAttachments = {m_sceneColor.view, m_sceneDepth.view};
-
-		vk::FramebufferCreateInfo fbInfo;
-		fbInfo.renderPass = m_sceneRenderPass;
-		fbInfo.attachmentCount = static_cast<uint32_t>(fbAttachments.size());
-		fbInfo.pAttachments = fbAttachments.data();
-		fbInfo.width = extent.width;
-		fbInfo.height = extent.height;
-		fbInfo.layers = 1;
-
-		try {
-			m_sceneFramebuffer = m_ctx.device.createFramebuffer(fbInfo);
-		} catch (const vk::SystemError& e) {
-			nprintf(("vulkan", "VulkanPostProcessor: Failed to create scene framebuffer: %s\n", e.what()));
-			shutdown();
-			return false;
-		}
+	if (!createSceneFramebuffer()) {
+		shutdown();
+		return false;
 	}
 
 	// Create linear sampler for post-processing texture reads
@@ -425,10 +359,8 @@ void VulkanPostProcessor::shutdown()
 			m_ctx.device.destroySampler(m_ctx.linearSampler);
 			m_ctx.linearSampler = nullptr;
 		}
-		if (m_sceneFramebuffer) {
-			m_ctx.device.destroyFramebuffer(m_sceneFramebuffer);
-			m_sceneFramebuffer = nullptr;
-		}
+		destroySceneTargets();
+
 		if (m_sceneRenderPassLoad) {
 			m_ctx.device.destroyRenderPass(m_sceneRenderPassLoad);
 			m_sceneRenderPassLoad = nullptr;
@@ -438,63 +370,162 @@ void VulkanPostProcessor::shutdown()
 			m_sceneRenderPass = nullptr;
 		}
 
-		// Destroy scene effect/composite target
-		if (m_sceneEffect.view) {
-			m_ctx.device.destroyImageView(m_sceneEffect.view);
-			m_sceneEffect.view = nullptr;
-		}
-		if (m_sceneEffect.image) {
-			m_ctx.device.destroyImage(m_sceneEffect.image);
-			m_sceneEffect.image = nullptr;
-		}
-		if (m_sceneEffect.allocation.isValid()) {
-			m_ctx.memoryManager->freeAllocation(m_sceneEffect.allocation);
-		}
-
-		// Destroy scene color target
-		if (m_sceneColor.view) {
-			m_ctx.device.destroyImageView(m_sceneColor.view);
-			m_sceneColor.view = nullptr;
-		}
-		if (m_sceneColor.image) {
-			m_ctx.device.destroyImage(m_sceneColor.image);
-			m_sceneColor.image = nullptr;
-		}
-		if (m_sceneColor.allocation.isValid()) {
-			m_ctx.memoryManager->freeAllocation(m_sceneColor.allocation);
-		}
-
-		// Destroy scene depth target
-		if (m_sceneDepth.view) {
-			m_ctx.device.destroyImageView(m_sceneDepth.view);
-			m_sceneDepth.view = nullptr;
-		}
-		if (m_sceneDepth.image) {
-			m_ctx.device.destroyImage(m_sceneDepth.image);
-			m_sceneDepth.image = nullptr;
-		}
-		if (m_sceneDepth.allocation.isValid()) {
-			m_ctx.memoryManager->freeAllocation(m_sceneDepth.allocation);
-		}
-
-		// Destroy scene depth copy target
-		if (m_sceneDepthCopy.view) {
-			m_ctx.device.destroyImageView(m_sceneDepthCopy.view);
-			m_sceneDepthCopy.view = nullptr;
-		}
-		if (m_sceneDepthCopy.image) {
-			m_ctx.device.destroyImage(m_sceneDepthCopy.image);
-			m_sceneDepthCopy.image = nullptr;
-		}
-		if (m_sceneDepthCopy.allocation.isValid()) {
-			m_ctx.memoryManager->freeAllocation(m_sceneDepthCopy.allocation);
-		}
-
 		// Destroy distortion textures
 		m_distortion.shutdown();
 	}
 
 	m_initialized = false;
+}
+
+bool VulkanPostProcessor::createSceneTargets(vk::Extent2D extent)
+{
+	// HDR scene color target (RGBA16F)
+	// eTransferSrc needed for copy_effect_texture (mid-scene snapshot)
+	// eTransferDst needed for deferred_lighting_finish (emissive→color copy)
+	if (!createImage(extent.width, extent.height, HDR_COLOR_FORMAT,
+	                 vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled
+	                 | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst,
+	                 vk::ImageAspectFlagBits::eColor,
+	                 m_sceneColor.image, m_sceneColor.view, m_sceneColor.allocation)) {
+		nprintf(("vulkan", "VulkanPostProcessor: Failed to create scene color image!\n"));
+		return false;
+	}
+	m_sceneColor.format = HDR_COLOR_FORMAT;
+	m_sceneColor.width = extent.width;
+	m_sceneColor.height = extent.height;
+
+	// Scene depth target
+	if (!createImage(extent.width, extent.height, m_ctx.depthFormat,
+	                 vk::ImageUsageFlagBits::eDepthStencilAttachment
+	                 | vk::ImageUsageFlagBits::eSampled
+	                 | vk::ImageUsageFlagBits::eTransferSrc,
+	                 vk::ImageAspectFlagBits::eDepth,  // View uses depth-only aspect
+	                 m_sceneDepth.image, m_sceneDepth.view, m_sceneDepth.allocation)) {
+		nprintf(("vulkan", "VulkanPostProcessor: Failed to create scene depth image!\n"));
+		return false;
+	}
+	m_sceneDepth.format = m_ctx.depthFormat;
+	m_sceneDepth.width = extent.width;
+	m_sceneDepth.height = extent.height;
+
+	// Effect/composite texture (RGBA16F, snapshot of scene color for distortion/soft particles)
+	if (!createImage(extent.width, extent.height, HDR_COLOR_FORMAT,
+	                 vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
+	                 vk::ImageAspectFlagBits::eColor,
+	                 m_sceneEffect.image, m_sceneEffect.view, m_sceneEffect.allocation)) {
+		nprintf(("vulkan", "VulkanPostProcessor: Failed to create scene effect image!\n"));
+		return false;
+	}
+	m_sceneEffect.format = HDR_COLOR_FORMAT;
+	m_sceneEffect.width = extent.width;
+	m_sceneEffect.height = extent.height;
+
+	// Scene depth copy (samplable copy for soft particles)
+	// Same depth format, usage: eTransferDst (copy target) + eSampled (fragment shader reads)
+	if (!createImage(extent.width, extent.height, m_ctx.depthFormat,
+	                 vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
+	                 vk::ImageAspectFlagBits::eDepth,
+	                 m_sceneDepthCopy.image, m_sceneDepthCopy.view, m_sceneDepthCopy.allocation)) {
+		nprintf(("vulkan", "VulkanPostProcessor: Failed to create scene depth copy image!\n"));
+		return false;
+	}
+	m_sceneDepthCopy.format = m_ctx.depthFormat;
+	m_sceneDepthCopy.width = extent.width;
+	m_sceneDepthCopy.height = extent.height;
+
+	return true;
+}
+
+void VulkanPostProcessor::destroySceneTargets()
+{
+	if (m_sceneFramebuffer) {
+		m_ctx.device.destroyFramebuffer(m_sceneFramebuffer);
+		m_sceneFramebuffer = nullptr;
+	}
+	m_ctx.destroyTarget(m_sceneEffect);
+	m_ctx.destroyTarget(m_sceneColor);
+	m_ctx.destroyTarget(m_sceneDepth);
+	m_ctx.destroyTarget(m_sceneDepthCopy);
+}
+
+bool VulkanPostProcessor::createSceneFramebuffer()
+{
+	std::array<vk::ImageView, 2> fbAttachments = {m_sceneColor.view, m_sceneDepth.view};
+
+	vk::FramebufferCreateInfo fbInfo;
+	fbInfo.renderPass = m_sceneRenderPass;
+	fbInfo.attachmentCount = static_cast<uint32_t>(fbAttachments.size());
+	fbInfo.pAttachments = fbAttachments.data();
+	fbInfo.width = m_ctx.sceneExtent.width;
+	fbInfo.height = m_ctx.sceneExtent.height;
+	fbInfo.layers = 1;
+
+	try {
+		m_sceneFramebuffer = m_ctx.device.createFramebuffer(fbInfo);
+	} catch (const vk::SystemError& e) {
+		nprintf(("vulkan", "VulkanPostProcessor: Failed to create scene framebuffer: %s\n", e.what()));
+		return false;
+	}
+	return true;
+}
+
+bool VulkanPostProcessor::resize(vk::Extent2D newExtent)
+{
+	if (!m_initialized) {
+		return false;
+	}
+	if (newExtent == m_ctx.sceneExtent) {
+		return true;
+	}
+
+	// Caller (recreateSwapChain) has already waited for the device to go idle.
+	m_ctx.sceneExtent = newExtent;
+
+	// Scene targets first: every subsystem framebuffer that wires scene
+	// color/depth needs the recreated views.
+	destroySceneTargets();
+	if (!createSceneTargets(newExtent) || !createSceneFramebuffer()) {
+		nprintf(("vulkan", "VulkanPostProcessor: Failed to recreate scene targets on resize!\n"));
+		return false;
+	}
+
+	// Subsystems recreate only their extent-sized targets/framebuffers; their
+	// render passes, samplers, and lookup textures are extent-independent.
+	// Failures are non-fatal and disable the subsystem, matching init().
+	if (m_bloom.isInitialized() && !m_bloom.resize()) {
+		nprintf(("vulkan", "VulkanPostProcessor: Bloom resize failed, disabling bloom\n"));
+		m_bloom.shutdown();
+	}
+	if (m_ldr.isInitialized() && !m_ldr.resize()) {
+		nprintf(("vulkan", "VulkanPostProcessor: LDR resize failed, disabling LDR + SMAA\n"));
+		m_smaa.shutdown();
+		m_ldr.shutdown();
+	}
+	if (m_smaa.isInitialized() && !m_smaa.resize()) {
+		nprintf(("vulkan", "VulkanPostProcessor: SMAA resize failed, disabling SMAA\n"));
+		m_smaa.shutdown();
+	}
+	if (m_deferred.isInitialized() && !m_deferred.resize()) {
+		nprintf(("vulkan", "VulkanPostProcessor: G-buffer resize failed, disabling deferred lighting\n"));
+		m_deferred.shutdownMsaa();
+		m_deferred.shutdown();
+	}
+	// The light-accumulation framebuffer attaches the (just recreated) G-buffer
+	// composite view — must come after the G-buffer resize.
+	if (!m_lighting.onResize()) {
+		nprintf(("vulkan", "VulkanPostProcessor: Deferred-lighting resize failed, disabling it\n"));
+		m_lighting.shutdown();
+	}
+	// The fog framebuffer attaches the (just recreated) scene color view.
+	if (!m_fog.onResize()) {
+		nprintf(("vulkan", "VulkanPostProcessor: Fog resize failed, disabling fog\n"));
+		m_fog.shutdown();
+	}
+	// Distortion (fixed 32x32) and the shadow map (sized from Shadow_quality)
+	// are extent-independent.
+
+	nprintf(("vulkan", "VulkanPostProcessor: Resized to %ux%u\n", newExtent.width, newExtent.height));
+	return true;
 }
 
 void VulkanPostProcessor::copyEffectTexture(vk::CommandBuffer cmd) const

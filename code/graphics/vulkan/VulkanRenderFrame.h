@@ -34,6 +34,15 @@ class VulkanRenderFrame {
 
 	void updateSwapChain(vk::SwapchainKHR swapChain);
 
+	/**
+	 * @brief Recreate the per-frame semaphores (frame must not be in flight)
+	 *
+	 * Called during swap chain recreation: an acquire that succeeded against the
+	 * old swap chain but was never consumed by a submit leaves the
+	 * image-available semaphore signaled, which would corrupt the next acquire.
+	 */
+	void recreateSyncObjects();
+
   private:
 	vk::Device m_device;
 	vk::SwapchainKHR m_swapChain;

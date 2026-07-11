@@ -295,11 +295,6 @@ class VulkanRenderer {
 	 */
 	void resumeScenePassAfterCopy();
 
-	/**
-	 * @brief Re-begin the composition pass after readbackFramebuffer() interrupted it
-	 */
-	void rebeginSwapChainPassAfterReadback();
-
 	bool initDisplayDevice() const;
 
 	bool initializeInstance();
@@ -322,6 +317,7 @@ class VulkanRenderer {
 	void encodeToSwapChain();
 
 	void createDepthResources();
+	void destroyDepthResources();
 
 	vk::Format findDepthFormat();
 

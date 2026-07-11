@@ -284,26 +284,52 @@ bool VulkanDeferredLighting::initLightAccumPass()
 	}
 
 	// Framebuffer using composite image as sole color attachment
-	{
-		std::array<vk::ImageView, 1> attachments = { m_gbuffer->compositeView() };
+	return createLightAccumFramebuffer();
+}
 
-		vk::FramebufferCreateInfo fbInfo;
-		fbInfo.renderPass = m_lightAccumRenderPass;
-		fbInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-		fbInfo.pAttachments = attachments.data();
-		fbInfo.width = m_ctx->sceneExtent.width;
-		fbInfo.height = m_ctx->sceneExtent.height;
-		fbInfo.layers = 1;
+bool VulkanDeferredLighting::createLightAccumFramebuffer()
+{
+	std::array<vk::ImageView, 1> attachments = { m_gbuffer->compositeView() };
 
-		try {
-			m_lightAccumFramebuffer = m_ctx->device.createFramebuffer(fbInfo);
-		} catch (const vk::SystemError& e) {
-			nprintf(("vulkan", "VulkanPostProcessor: Failed to create light accum framebuffer: %s\n", e.what()));
-			return false;
-		}
+	vk::FramebufferCreateInfo fbInfo;
+	fbInfo.renderPass = m_lightAccumRenderPass;
+	fbInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+	fbInfo.pAttachments = attachments.data();
+	fbInfo.width = m_ctx->sceneExtent.width;
+	fbInfo.height = m_ctx->sceneExtent.height;
+	fbInfo.layers = 1;
+
+	try {
+		m_lightAccumFramebuffer = m_ctx->device.createFramebuffer(fbInfo);
+	} catch (const vk::SystemError& e) {
+		nprintf(("vulkan", "VulkanPostProcessor: Failed to create light accum framebuffer: %s\n", e.what()));
+		return false;
+	}
+	return true;
+}
+
+bool VulkanDeferredLighting::onResize()
+{
+	if (!m_lightVolumesInitialized) {
+		// Lazy resources don't exist yet; first render picks up the new views.
+		return true;
 	}
 
-	return true;
+	// Only the framebuffer is extent/view-dependent: it attaches the G-buffer
+	// composite view, which the G-buffer resize just recreated. Meshes, the
+	// deferred UBO, and the render pass are unaffected.
+	if (m_lightAccumFramebuffer) {
+		m_ctx->device.destroyFramebuffer(m_lightAccumFramebuffer);
+		m_lightAccumFramebuffer = nullptr;
+	}
+
+	// If the G-buffer got disabled by a failed resize there is no composite
+	// view to attach anymore; disable deferred lighting too.
+	if (!m_gbuffer->isInitialized()) {
+		return false;
+	}
+
+	return createLightAccumFramebuffer();
 }
 
 namespace ltp = lighting_profiles;

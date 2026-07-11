@@ -39,45 +39,6 @@ bool VulkanLDR::init(PostProcessContext& ctx, const RenderTarget& sceneColor, co
 
 	const vk::Format ldrFormat = m_ctx->ldrFormat;
 
-	// Create Scene_ldr (full resolution) — tonemapped display-referred output.
-	// fp16 in HDR (carries values above paper white), 8-bit UNORM in SDR.
-	if (!m_ctx->createImage(m_ctx->sceneExtent.width, m_ctx->sceneExtent.height, ldrFormat,
-	                 vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled,
-	                 vk::ImageAspectFlagBits::eColor,
-	                 m_sceneLdr.image, m_sceneLdr.view, m_sceneLdr.allocation)) {
-		nprintf(("vulkan", "VulkanLDR: Failed to create Scene_ldr image!\n"));
-		return false;
-	}
-	m_sceneLdr.format = ldrFormat;
-	m_sceneLdr.width = m_ctx->sceneExtent.width;
-	m_sceneLdr.height = m_ctx->sceneExtent.height;
-
-	// Create Scene_luminance (full resolution) — LDR with luma in alpha for FXAA
-	if (!m_ctx->createImage(m_ctx->sceneExtent.width, m_ctx->sceneExtent.height, ldrFormat,
-	                 vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled,
-	                 vk::ImageAspectFlagBits::eColor,
-	                 m_sceneLuminance.image, m_sceneLuminance.view, m_sceneLuminance.allocation)) {
-		nprintf(("vulkan", "VulkanLDR: Failed to create Scene_luminance image!\n"));
-		return false;
-	}
-	m_sceneLuminance.format = ldrFormat;
-	m_sceneLuminance.width = m_ctx->sceneExtent.width;
-	m_sceneLuminance.height = m_ctx->sceneExtent.height;
-
-	// Create Scene_ldr_compressed (full resolution) — tonemapped to [0,1] using the
-	// real tone curve, purely for FXAA/SMAA edge detection while HDR output is
-	// active (see executeTonemap/getAADetectionView).
-	if (!m_ctx->createImage(m_ctx->sceneExtent.width, m_ctx->sceneExtent.height, ldrFormat,
-	                 vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled,
-	                 vk::ImageAspectFlagBits::eColor,
-	                 m_sceneLdrCompressed.image, m_sceneLdrCompressed.view, m_sceneLdrCompressed.allocation)) {
-		nprintf(("vulkan", "VulkanLDR: Failed to create Scene_ldr_compressed image!\n"));
-		return false;
-	}
-	m_sceneLdrCompressed.format = ldrFormat;
-	m_sceneLdrCompressed.width = m_ctx->sceneExtent.width;
-	m_sceneLdrCompressed.height = m_ctx->sceneExtent.height;
-
 	// Create LDR render pass (color-only, loadOp=eDontCare, finalLayout=eShaderReadOnlyOptimal)
 	{
 		vk::AttachmentDescription att;
@@ -123,40 +84,6 @@ bool VulkanLDR::init(PostProcessContext& ctx, const RenderTarget& sceneColor, co
 			m_ldrRenderPass = m_ctx->device.createRenderPass(rpInfo);
 		} catch (const vk::SystemError& e) {
 			nprintf(("vulkan", "VulkanLDR: Failed to create LDR render pass: %s\n", e.what()));
-			return false;
-		}
-	}
-
-	// Create framebuffers
-	{
-		vk::FramebufferCreateInfo fbInfo;
-		fbInfo.renderPass = m_ldrRenderPass;
-		fbInfo.attachmentCount = 1;
-		fbInfo.pAttachments = &m_sceneLdr.view;
-		fbInfo.width = m_ctx->sceneExtent.width;
-		fbInfo.height = m_ctx->sceneExtent.height;
-		fbInfo.layers = 1;
-
-		try {
-			m_sceneLdrFB = m_ctx->device.createFramebuffer(fbInfo);
-		} catch (const vk::SystemError& e) {
-			nprintf(("vulkan", "VulkanLDR: Failed to create Scene_ldr framebuffer: %s\n", e.what()));
-			return false;
-		}
-
-		fbInfo.pAttachments = &m_sceneLuminance.view;
-		try {
-			m_sceneLuminanceFB = m_ctx->device.createFramebuffer(fbInfo);
-		} catch (const vk::SystemError& e) {
-			nprintf(("vulkan", "VulkanLDR: Failed to create Scene_luminance framebuffer: %s\n", e.what()));
-			return false;
-		}
-
-		fbInfo.pAttachments = &m_sceneLdrCompressed.view;
-		try {
-			m_sceneLdrCompressedFB = m_ctx->device.createFramebuffer(fbInfo);
-		} catch (const vk::SystemError& e) {
-			nprintf(("vulkan", "VulkanLDR: Failed to create Scene_ldr_compressed framebuffer: %s\n", e.what()));
 			return false;
 		}
 	}
@@ -210,18 +137,98 @@ bool VulkanLDR::init(PostProcessContext& ctx, const RenderTarget& sceneColor, co
 		}
 	}
 
+	if (!createTargets()) {
+		return false;
+	}
+
 	m_initialized = true;
 	nprintf(("vulkan", "VulkanLDR: LDR targets initialized (%ux%u, RGBA8)\n",
 		m_ctx->sceneExtent.width, m_ctx->sceneExtent.height));
 	return true;
 }
 
-void VulkanLDR::shutdown()
+bool VulkanLDR::createTargets()
 {
-	if (!m_initialized) {
-		return;
+	const vk::Format ldrFormat = m_ctx->ldrFormat;
+
+	// Create Scene_ldr (full resolution) — tonemapped display-referred output.
+	// fp16 in HDR (carries values above paper white), 8-bit UNORM in SDR.
+	if (!m_ctx->createImage(m_ctx->sceneExtent.width, m_ctx->sceneExtent.height, ldrFormat,
+	                 vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled,
+	                 vk::ImageAspectFlagBits::eColor,
+	                 m_sceneLdr.image, m_sceneLdr.view, m_sceneLdr.allocation)) {
+		nprintf(("vulkan", "VulkanLDR: Failed to create Scene_ldr image!\n"));
+		return false;
+	}
+	m_sceneLdr.format = ldrFormat;
+	m_sceneLdr.width = m_ctx->sceneExtent.width;
+	m_sceneLdr.height = m_ctx->sceneExtent.height;
+
+	// Create Scene_luminance (full resolution) — LDR with luma in alpha for FXAA
+	if (!m_ctx->createImage(m_ctx->sceneExtent.width, m_ctx->sceneExtent.height, ldrFormat,
+	                 vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled,
+	                 vk::ImageAspectFlagBits::eColor,
+	                 m_sceneLuminance.image, m_sceneLuminance.view, m_sceneLuminance.allocation)) {
+		nprintf(("vulkan", "VulkanLDR: Failed to create Scene_luminance image!\n"));
+		return false;
+	}
+	m_sceneLuminance.format = ldrFormat;
+	m_sceneLuminance.width = m_ctx->sceneExtent.width;
+	m_sceneLuminance.height = m_ctx->sceneExtent.height;
+
+	// Create Scene_ldr_compressed (full resolution) — tonemapped to [0,1] using the
+	// real tone curve, purely for FXAA/SMAA edge detection while HDR output is
+	// active (see executeTonemap/getAADetectionView).
+	if (!m_ctx->createImage(m_ctx->sceneExtent.width, m_ctx->sceneExtent.height, ldrFormat,
+	                 vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled,
+	                 vk::ImageAspectFlagBits::eColor,
+	                 m_sceneLdrCompressed.image, m_sceneLdrCompressed.view, m_sceneLdrCompressed.allocation)) {
+		nprintf(("vulkan", "VulkanLDR: Failed to create Scene_ldr_compressed image!\n"));
+		return false;
+	}
+	m_sceneLdrCompressed.format = ldrFormat;
+	m_sceneLdrCompressed.width = m_ctx->sceneExtent.width;
+	m_sceneLdrCompressed.height = m_ctx->sceneExtent.height;
+
+	// Create framebuffers
+	{
+		vk::FramebufferCreateInfo fbInfo;
+		fbInfo.renderPass = m_ldrRenderPass;
+		fbInfo.attachmentCount = 1;
+		fbInfo.pAttachments = &m_sceneLdr.view;
+		fbInfo.width = m_ctx->sceneExtent.width;
+		fbInfo.height = m_ctx->sceneExtent.height;
+		fbInfo.layers = 1;
+
+		try {
+			m_sceneLdrFB = m_ctx->device.createFramebuffer(fbInfo);
+		} catch (const vk::SystemError& e) {
+			nprintf(("vulkan", "VulkanLDR: Failed to create Scene_ldr framebuffer: %s\n", e.what()));
+			return false;
+		}
+
+		fbInfo.pAttachments = &m_sceneLuminance.view;
+		try {
+			m_sceneLuminanceFB = m_ctx->device.createFramebuffer(fbInfo);
+		} catch (const vk::SystemError& e) {
+			nprintf(("vulkan", "VulkanLDR: Failed to create Scene_luminance framebuffer: %s\n", e.what()));
+			return false;
+		}
+
+		fbInfo.pAttachments = &m_sceneLdrCompressed.view;
+		try {
+			m_sceneLdrCompressedFB = m_ctx->device.createFramebuffer(fbInfo);
+		} catch (const vk::SystemError& e) {
+			nprintf(("vulkan", "VulkanLDR: Failed to create Scene_ldr_compressed framebuffer: %s\n", e.what()));
+			return false;
+		}
 	}
 
+	return true;
+}
+
+void VulkanLDR::destroyTargets()
+{
 	if (m_sceneLdrCompressedFB) {
 		m_ctx->device.destroyFramebuffer(m_sceneLdrCompressedFB);
 		m_sceneLdrCompressedFB = nullptr;
@@ -234,6 +241,29 @@ void VulkanLDR::shutdown()
 		m_ctx->device.destroyFramebuffer(m_sceneLdrFB);
 		m_sceneLdrFB = nullptr;
 	}
+
+	m_ctx->destroyTarget(m_sceneLdrCompressed);
+	m_ctx->destroyTarget(m_sceneLuminance);
+	m_ctx->destroyTarget(m_sceneLdr);
+}
+
+bool VulkanLDR::resize()
+{
+	if (!m_initialized) {
+		return true;
+	}
+	destroyTargets();
+	return createTargets();
+}
+
+void VulkanLDR::shutdown()
+{
+	if (!m_initialized) {
+		return;
+	}
+
+	destroyTargets();
+
 	if (m_ldrLoadRenderPass) {
 		m_ctx->device.destroyRenderPass(m_ldrLoadRenderPass);
 		m_ldrLoadRenderPass = nullptr;
@@ -241,45 +271,6 @@ void VulkanLDR::shutdown()
 	if (m_ldrRenderPass) {
 		m_ctx->device.destroyRenderPass(m_ldrRenderPass);
 		m_ldrRenderPass = nullptr;
-	}
-
-	// Scene_ldr_compressed
-	if (m_sceneLdrCompressed.view) {
-		m_ctx->device.destroyImageView(m_sceneLdrCompressed.view);
-		m_sceneLdrCompressed.view = nullptr;
-	}
-	if (m_sceneLdrCompressed.image) {
-		m_ctx->device.destroyImage(m_sceneLdrCompressed.image);
-		m_sceneLdrCompressed.image = nullptr;
-	}
-	if (m_sceneLdrCompressed.allocation.isValid()) {
-		m_ctx->memoryManager->freeAllocation(m_sceneLdrCompressed.allocation);
-	}
-
-	// Scene_luminance
-	if (m_sceneLuminance.view) {
-		m_ctx->device.destroyImageView(m_sceneLuminance.view);
-		m_sceneLuminance.view = nullptr;
-	}
-	if (m_sceneLuminance.image) {
-		m_ctx->device.destroyImage(m_sceneLuminance.image);
-		m_sceneLuminance.image = nullptr;
-	}
-	if (m_sceneLuminance.allocation.isValid()) {
-		m_ctx->memoryManager->freeAllocation(m_sceneLuminance.allocation);
-	}
-
-	// Scene_ldr
-	if (m_sceneLdr.view) {
-		m_ctx->device.destroyImageView(m_sceneLdr.view);
-		m_sceneLdr.view = nullptr;
-	}
-	if (m_sceneLdr.image) {
-		m_ctx->device.destroyImage(m_sceneLdr.image);
-		m_sceneLdr.image = nullptr;
-	}
-	if (m_sceneLdr.allocation.isValid()) {
-		m_ctx->memoryManager->freeAllocation(m_sceneLdr.allocation);
 	}
 
 	m_initialized = false;

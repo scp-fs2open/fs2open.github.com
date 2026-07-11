@@ -11,6 +11,8 @@
 
 namespace graphics::vulkan {
 
+struct RenderTarget;
+
 /**
  * @brief Shared drawing infrastructure for post-processing subsystems
  *
@@ -50,6 +52,13 @@ struct PostProcessContext {
 	static constexpr size_t   SCRATCH_UBO_SLOT_SIZE = 512; // multiple of minUniformBufferOffsetAlignment
 	static constexpr uint32_t SCRATCH_UBO_MAX_SLOTS = 32;
 	PerFrameUboRing scratchRing;
+
+	/**
+	 * @brief Destroy a RenderTarget's view/image/allocation and reset its fields
+	 *
+	 * Safe to call on a partially-created or already-destroyed target.
+	 */
+	void destroyTarget(RenderTarget& rt) const;
 
 	/**
 	 * @brief Create a single-mip 2D image + view backed by GPU-only memory
@@ -227,6 +236,14 @@ public:
 	void shutdown();
 
 	/**
+	 * @brief Recreate the extent-sized targets/framebuffers (render passes kept)
+	 *
+	 * Device must be idle. Returns false on failure (caller should shut the
+	 * subsystem down).
+	 */
+	bool resize();
+
+	/**
 	 * @brief Run the full bloom chain and composite it onto the scene color
 	 * @param cmd Active command buffer (must be outside a render pass)
 	 */
@@ -235,6 +252,9 @@ public:
 	bool isInitialized() const { return m_initialized; }
 
 private:
+	bool createTargets();
+	void destroyTargets();
+
 	struct BloomTarget {
 		vk::Image image;
 		VulkanAllocation allocation;
@@ -293,6 +313,12 @@ public:
 	 */
 	bool init(PostProcessContext& ctx, const RenderTarget& sceneColor, const RenderTarget& sceneDepth);
 	void shutdown();
+
+	/**
+	 * @brief Recreate all extent-sized G-buffer (and, if active, MSAA)
+	 * targets/framebuffers; render passes are kept. Device must be idle.
+	 */
+	bool resize();
 
 	/**
 	 * @brief Create the multisample G-buffer + resolve resources (lazy)
@@ -361,6 +387,11 @@ private:
 	vk::Framebuffer createGbufFramebuffer(vk::RenderPass renderPass, bool includeComposite,
 	                                      bool useMsaaImages);
 
+	bool createTargets();
+	void destroyTargets();
+	bool createMsaaTargets();
+	void destroyMsaaTargets();
+
 	PostProcessContext* m_ctx = nullptr;
 	const RenderTarget* m_sceneColor = nullptr;
 	const RenderTarget* m_sceneDepth = nullptr;
@@ -414,12 +445,22 @@ public:
 	void shutdown();
 
 	/**
+	 * @brief Recreate the light-accumulation framebuffer after a resize
+	 *
+	 * The framebuffer attaches the G-buffer composite view, which the G-buffer
+	 * resize just recreated. No-op while the lazy resources don't exist yet.
+	 */
+	bool onResize();
+
+	/**
 	 * @brief Accumulate all scene lights into the G-buffer composite
 	 * @param cmd Active command buffer (must be outside a render pass)
 	 */
 	void render(vk::CommandBuffer cmd);
 
 private:
+	bool createLightAccumFramebuffer();
+
 	// Light volume meshes (sphere + cylinder for positional lights)
 	struct LightVolumeMesh {
 		vk::Buffer vbo;
@@ -497,9 +538,20 @@ public:
 	 */
 	void renderVolumetric(vk::CommandBuffer cmd);
 
+	/**
+	 * @brief Rewire extent-sized lazy resources after a resize
+	 *
+	 * Recreates the fog framebuffer (attaches the recreated scene color view)
+	 * and drops the emissive mip chain so renderVolumetric() lazily rebuilds it
+	 * at the new extent. No-op for resources that don't exist yet.
+	 */
+	bool onResize();
+
 private:
 	bool initFogPass();
+	bool createFogFramebuffer();
 	void copySceneDepth(vk::CommandBuffer cmd);
+	void destroyEmissiveMipmapped();
 
 	PostProcessContext* m_ctx = nullptr;
 	const RenderTarget* m_sceneColor = nullptr;
@@ -537,6 +589,14 @@ public:
 	bool init(PostProcessContext& ctx, const RenderTarget& sceneColor, const RenderTarget& sceneDepth,
 	          const VulkanBloom& bloom);
 	void shutdown();
+
+	/**
+	 * @brief Recreate the extent-sized targets/framebuffers (render passes kept)
+	 *
+	 * Device must be idle. Returns false on failure (caller should shut the
+	 * subsystem down).
+	 */
+	bool resize();
 
 	bool isInitialized() const { return m_initialized; }
 
@@ -584,6 +644,9 @@ public:
 	vk::Framebuffer luminanceFramebuffer() const { return m_sceneLuminanceFB; }
 
 private:
+	bool createTargets();
+	void destroyTargets();
+
 	PostProcessContext* m_ctx = nullptr;
 	const RenderTarget* m_sceneColor = nullptr;
 	const RenderTarget* m_sceneDepth = nullptr;
@@ -623,6 +686,15 @@ public:
 	bool init(PostProcessContext& ctx, const VulkanLDR& ldr);
 	void shutdown();
 
+	/**
+	 * @brief Recreate the extent-sized edge/blend targets and framebuffers
+	 *
+	 * The static area/search lookup textures are extent-independent and kept.
+	 * Device must be idle. Returns false on failure (caller should shut the
+	 * subsystem down).
+	 */
+	bool resize();
+
 	bool isInitialized() const { return m_initialized; }
 
 	/**
@@ -632,6 +704,9 @@ public:
 	void execute(vk::CommandBuffer cmd);
 
 private:
+	bool createTargets();
+	void destroyTargets();
+
 	PostProcessContext* m_ctx = nullptr;
 	const VulkanLDR* m_ldr = nullptr;
 
@@ -684,6 +759,18 @@ public:
 	 * @brief Shutdown and free all post-processing resources
 	 */
 	void shutdown();
+
+	/**
+	 * @brief Recreate all extent-sized targets/framebuffers for a new resolution
+	 *
+	 * Called from VulkanRenderer::recreateSwapChain() after the device-idle
+	 * wait. Render passes, samplers, and the scratch UBO ring are extent-
+	 * independent and kept alive, so every cached pipeline stays valid.
+	 * Individual subsystem failures are non-fatal (the subsystem is disabled,
+	 * matching init()); returns false only if the core scene targets could not
+	 * be recreated.
+	 */
+	bool resize(vk::Extent2D newExtent);
 
 	/**
 	 * @brief Per-frame reset (called from VulkanRenderer::setupFrame after the frame fence wait)
@@ -995,6 +1082,10 @@ public:
 	void renderVolumetricFog(vk::CommandBuffer cmd) { m_fog.renderVolumetric(cmd); }
 
 private:
+	bool createSceneTargets(vk::Extent2D extent);
+	void destroySceneTargets();
+	bool createSceneFramebuffer();
+
 	bool createImage(uint32_t width, uint32_t height, vk::Format format,
 	                 vk::ImageUsageFlags usage, vk::ImageAspectFlags aspect,
 	                 vk::Image& outImage, vk::ImageView& outView,

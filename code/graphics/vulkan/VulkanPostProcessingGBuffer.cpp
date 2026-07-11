@@ -167,54 +167,6 @@ bool VulkanDeferredGBuffer::init(PostProcessContext& ctx, const RenderTarget& sc
 		return true;
 	}
 
-	const uint32_t w = m_ctx->sceneExtent.width;
-	const uint32_t h = m_ctx->sceneExtent.height;
-	const vk::ImageUsageFlags gbufUsage =
-		vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled
-		| vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst;
-
-	// Create G-buffer images (position, normal, specular, emissive, composite)
-	struct GbufTarget {
-		RenderTarget* target;
-		vk::Format format;
-		const char* name;
-	};
-
-	std::array<GbufTarget, 5> targets = {{
-		{&m_gbufPosition,  GBUF_FORMAT_POSITION,  "position"},
-		{&m_gbufNormal,    GBUF_FORMAT_NORMAL,    "normal"},
-		{&m_gbufSpecular,  GBUF_FORMAT_SPECULAR,  "specular"},
-		{&m_gbufEmissive,  GBUF_FORMAT_EMISSIVE,  "emissive"},
-		{&m_gbufComposite, GBUF_FORMAT_COMPOSITE, "composite"},
-	}};
-
-	for (auto& t : targets) {
-		if (!m_ctx->createImage(w, h, t.format, gbufUsage, vk::ImageAspectFlagBits::eColor,
-		                 t.target->image, t.target->view, t.target->allocation)) {
-			nprintf(("vulkan", "VulkanPostProcessor: Failed to create G-buffer %s image!\n", t.name));
-			shutdown();
-			return false;
-		}
-		t.target->format = t.format;
-		t.target->width = w;
-		t.target->height = h;
-	}
-
-	// Create samplable copy of G-buffer normal (for decal angle rejection)
-	{
-		vk::ImageUsageFlags copyUsage = vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst;
-		if (!m_ctx->createImage(w, h, GBUF_FORMAT_NORMAL, copyUsage,
-		                 vk::ImageAspectFlagBits::eColor,
-		                 m_gbufNormalCopy.image, m_gbufNormalCopy.view, m_gbufNormalCopy.allocation)) {
-			nprintf(("vulkan", "VulkanPostProcessor: Failed to create G-buffer normal copy!\n"));
-			shutdown();
-			return false;
-		}
-		m_gbufNormalCopy.format = GBUF_FORMAT_NORMAL;
-		m_gbufNormalCopy.width = w;
-		m_gbufNormalCopy.height = h;
-	}
-
 	// Create G-buffer render pass (eClear) — 6 color + depth
 	try {
 		m_gbufRenderPass = createGbufRenderPass({
@@ -243,17 +195,113 @@ bool VulkanDeferredGBuffer::init(PostProcessContext& ctx, const RenderTarget& sc
 		return false;
 	}
 
-	// Create G-buffer framebuffer (6 color + depth)
-	try {
-		m_gbufFramebuffer = createGbufFramebuffer(m_gbufRenderPass, true, false);
-	} catch (const vk::SystemError& e) {
-		nprintf(("vulkan", "VulkanPostProcessor: Failed to create G-buffer framebuffer: %s\n", e.what()));
+	if (!createTargets()) {
 		shutdown();
 		return false;
 	}
 
 	m_gbufInitialized = true;
-	nprintf(("vulkan", "VulkanPostProcessor: G-buffer initialized (%ux%u, 6 color + depth)\n", w, h));
+	nprintf(("vulkan", "VulkanPostProcessor: G-buffer initialized (%ux%u, 6 color + depth)\n",
+		m_ctx->sceneExtent.width, m_ctx->sceneExtent.height));
+	return true;
+}
+
+bool VulkanDeferredGBuffer::createTargets()
+{
+	const uint32_t w = m_ctx->sceneExtent.width;
+	const uint32_t h = m_ctx->sceneExtent.height;
+	const vk::ImageUsageFlags gbufUsage =
+		vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled
+		| vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst;
+
+	// Create G-buffer images (position, normal, specular, emissive, composite)
+	struct GbufTarget {
+		RenderTarget* target;
+		vk::Format format;
+		const char* name;
+	};
+
+	std::array<GbufTarget, 5> targets = {{
+		{&m_gbufPosition,  GBUF_FORMAT_POSITION,  "position"},
+		{&m_gbufNormal,    GBUF_FORMAT_NORMAL,    "normal"},
+		{&m_gbufSpecular,  GBUF_FORMAT_SPECULAR,  "specular"},
+		{&m_gbufEmissive,  GBUF_FORMAT_EMISSIVE,  "emissive"},
+		{&m_gbufComposite, GBUF_FORMAT_COMPOSITE, "composite"},
+	}};
+
+	for (auto& t : targets) {
+		if (!m_ctx->createImage(w, h, t.format, gbufUsage, vk::ImageAspectFlagBits::eColor,
+		                 t.target->image, t.target->view, t.target->allocation)) {
+			nprintf(("vulkan", "VulkanPostProcessor: Failed to create G-buffer %s image!\n", t.name));
+			return false;
+		}
+		t.target->format = t.format;
+		t.target->width = w;
+		t.target->height = h;
+	}
+
+	// Create samplable copy of G-buffer normal (for decal angle rejection)
+	{
+		vk::ImageUsageFlags copyUsage = vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst;
+		if (!m_ctx->createImage(w, h, GBUF_FORMAT_NORMAL, copyUsage,
+		                 vk::ImageAspectFlagBits::eColor,
+		                 m_gbufNormalCopy.image, m_gbufNormalCopy.view, m_gbufNormalCopy.allocation)) {
+			nprintf(("vulkan", "VulkanPostProcessor: Failed to create G-buffer normal copy!\n"));
+			return false;
+		}
+		m_gbufNormalCopy.format = GBUF_FORMAT_NORMAL;
+		m_gbufNormalCopy.width = w;
+		m_gbufNormalCopy.height = h;
+	}
+
+	// Create G-buffer framebuffer (6 color + depth)
+	try {
+		m_gbufFramebuffer = createGbufFramebuffer(m_gbufRenderPass, true, false);
+	} catch (const vk::SystemError& e) {
+		nprintf(("vulkan", "VulkanPostProcessor: Failed to create G-buffer framebuffer: %s\n", e.what()));
+		return false;
+	}
+
+	return true;
+}
+
+void VulkanDeferredGBuffer::destroyTargets()
+{
+	if (m_gbufFramebuffer) {
+		m_ctx->device.destroyFramebuffer(m_gbufFramebuffer);
+		m_gbufFramebuffer = nullptr;
+	}
+
+	std::array<RenderTarget*, 6> gbufTargets = {
+		&m_gbufPosition, &m_gbufNormal, &m_gbufSpecular,
+		&m_gbufEmissive, &m_gbufComposite, &m_gbufNormalCopy,
+	};
+	for (auto* rt : gbufTargets) {
+		m_ctx->destroyTarget(*rt);
+	}
+}
+
+bool VulkanDeferredGBuffer::resize()
+{
+	if (!m_gbufInitialized) {
+		return true;
+	}
+
+	// The MSAA resolve framebuffer references the single-sample G-buffer images,
+	// so the MSAA resources bracket the G-buffer recreation.
+	const bool msaaActive = m_msaaInitialized;
+	if (msaaActive) {
+		destroyMsaaTargets();
+	}
+
+	destroyTargets();
+	if (!createTargets()) {
+		return false;
+	}
+
+	if (msaaActive && !createMsaaTargets()) {
+		return false;
+	}
 	return true;
 }
 
@@ -263,10 +311,8 @@ void VulkanDeferredGBuffer::shutdown()
 		return;
 	}
 
-	if (m_gbufFramebuffer) {
-		m_ctx->device.destroyFramebuffer(m_gbufFramebuffer);
-		m_gbufFramebuffer = nullptr;
-	}
+	destroyTargets();
+
 	if (m_gbufRenderPassLoad) {
 		m_ctx->device.destroyRenderPass(m_gbufRenderPassLoad);
 		m_gbufRenderPassLoad = nullptr;
@@ -274,24 +320,6 @@ void VulkanDeferredGBuffer::shutdown()
 	if (m_gbufRenderPass) {
 		m_ctx->device.destroyRenderPass(m_gbufRenderPass);
 		m_gbufRenderPass = nullptr;
-	}
-
-	std::array<RenderTarget*, 6> gbufTargets = {
-		&m_gbufPosition, &m_gbufNormal, &m_gbufSpecular,
-		&m_gbufEmissive, &m_gbufComposite, &m_gbufNormalCopy,
-	};
-	for (auto* rt : gbufTargets) {
-		if (rt->view) {
-			m_ctx->device.destroyImageView(rt->view);
-			rt->view = nullptr;
-		}
-		if (rt->image) {
-			m_ctx->device.destroyImage(rt->image);
-			rt->image = nullptr;
-		}
-		if (rt->allocation.isValid()) {
-			m_ctx->memoryManager->freeAllocation(rt->allocation);
-		}
 	}
 
 	m_gbufInitialized = false;

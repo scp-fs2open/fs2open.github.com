@@ -111,21 +111,8 @@ bool VulkanFog::initFogPass()
 	}
 
 	// Create fog framebuffer (scene color as attachment)
-	{
-		vk::FramebufferCreateInfo fbInfo;
-		fbInfo.renderPass = m_fogRenderPass;
-		fbInfo.attachmentCount = 1;
-		fbInfo.pAttachments = &m_sceneColor->view;
-		fbInfo.width = m_ctx->sceneExtent.width;
-		fbInfo.height = m_ctx->sceneExtent.height;
-		fbInfo.layers = 1;
-
-		try {
-			m_fogFramebuffer = m_ctx->device.createFramebuffer(fbInfo);
-		} catch (const vk::SystemError& e) {
-			nprintf(("vulkan", "VulkanPostProcessor: Failed to create fog framebuffer: %s\n", e.what()));
-			return false;
-		}
+	if (!createFogFramebuffer()) {
+		return false;
 	}
 
 	m_fogInitialized = true;
@@ -133,27 +120,67 @@ bool VulkanFog::initFogPass()
 	return true;
 }
 
+bool VulkanFog::createFogFramebuffer()
+{
+	vk::FramebufferCreateInfo fbInfo;
+	fbInfo.renderPass = m_fogRenderPass;
+	fbInfo.attachmentCount = 1;
+	fbInfo.pAttachments = &m_sceneColor->view;
+	fbInfo.width = m_ctx->sceneExtent.width;
+	fbInfo.height = m_ctx->sceneExtent.height;
+	fbInfo.layers = 1;
+
+	try {
+		m_fogFramebuffer = m_ctx->device.createFramebuffer(fbInfo);
+	} catch (const vk::SystemError& e) {
+		nprintf(("vulkan", "VulkanPostProcessor: Failed to create fog framebuffer: %s\n", e.what()));
+		return false;
+	}
+	return true;
+}
+
+void VulkanFog::destroyEmissiveMipmapped()
+{
+	if (m_emissiveMipmappedFullView) {
+		m_ctx->device.destroyImageView(m_emissiveMipmappedFullView);
+		m_emissiveMipmappedFullView = nullptr;
+	}
+	m_ctx->destroyTarget(m_emissiveMipmapped);
+	m_emissiveMipLevels = 0;
+	m_emissiveMipmappedInitialized = false;
+}
+
+bool VulkanFog::onResize()
+{
+	if (!m_ctx || !m_ctx->device) {
+		return true;
+	}
+
+	// The emissive mip chain is extent-sized; drop it and let renderVolumetric()
+	// lazily rebuild it at the new extent.
+	destroyEmissiveMipmapped();
+
+	if (!m_fogInitialized) {
+		// Fog pass doesn't exist yet; lazy init picks up the new views.
+		return true;
+	}
+
+	// Recreate the framebuffer: it attaches the scene color view, which the
+	// post-processor resize just recreated. The render pass is kept.
+	if (m_fogFramebuffer) {
+		m_ctx->device.destroyFramebuffer(m_fogFramebuffer);
+		m_fogFramebuffer = nullptr;
+	}
+	return createFogFramebuffer();
+}
+
 void VulkanFog::shutdown()
 {
 	if (!m_ctx || !m_ctx->device) {
 		return;
 	}
-	if (m_emissiveMipmappedFullView) {
-		m_ctx->device.destroyImageView(m_emissiveMipmappedFullView);
-		m_emissiveMipmappedFullView = nullptr;
-	}
-	if (m_emissiveMipmapped.view) {
-		m_ctx->device.destroyImageView(m_emissiveMipmapped.view);
-		m_emissiveMipmapped.view = nullptr;
-	}
-	if (m_emissiveMipmapped.image) {
-		m_ctx->device.destroyImage(m_emissiveMipmapped.image);
-		m_emissiveMipmapped.image = nullptr;
-	}
-	if (m_emissiveMipmapped.allocation.isValid()) {
-		m_ctx->memoryManager->freeAllocation(m_emissiveMipmapped.allocation);
-	}
-	m_emissiveMipmappedInitialized = false;
+
+	destroyEmissiveMipmapped();
 
 	if (m_fogFramebuffer) {
 		m_ctx->device.destroyFramebuffer(m_fogFramebuffer);

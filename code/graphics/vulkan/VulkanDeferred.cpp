@@ -308,7 +308,6 @@ void vulkan_deferred_lighting_msaa()
 
 		auto* pipelineMgr = getPipelineManager();
 		auto* descriptorMgr = getDescriptorManager();
-		auto* bufferMgr = getBufferManager();
 		auto* texMgr = getTextureManager();
 
 		PipelineConfig config;

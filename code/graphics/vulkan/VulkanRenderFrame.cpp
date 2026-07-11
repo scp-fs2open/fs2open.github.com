@@ -121,7 +121,14 @@ SwapChainStatus VulkanRenderFrame::submitAndPresent(const SCP_vector<vk::Command
 	vk::Result res;
 	try {
 		res = m_presentQueue.presentKHR(presentInfo);
-	} catch (vk::OutOfDateKHRError&) {
+	} catch (const vk::OutOfDateKHRError&) {
+		return SwapChainStatus::eOutOfDate;
+	} catch (const vk::SystemError& e) {
+		// eErrorSurfaceLostKHR, device loss, etc. Map everything to eOutOfDate so
+		// the renderer recreates the swap chain (and fails visibly inside
+		// recreateSwapChain if the surface is really gone) instead of crashing on
+		// an uncaught exception here.
+		mprintf(("Vulkan: presentKHR failed (%s), flagging swap chain recreation\n", e.what()));
 		return SwapChainStatus::eOutOfDate;
 	}
 
@@ -133,6 +140,14 @@ SwapChainStatus VulkanRenderFrame::submitAndPresent(const SCP_vector<vk::Command
 void VulkanRenderFrame::updateSwapChain(vk::SwapchainKHR swapChain)
 {
 	m_swapChain = swapChain;
+}
+void VulkanRenderFrame::recreateSyncObjects()
+{
+	Assertion(!m_inFlight, "Cannot recreate sync objects while the frame is in flight.");
+
+	constexpr vk::SemaphoreCreateInfo semaphoreCreateInfo;
+	m_imageAvailableSemaphore = m_device.createSemaphoreUnique(semaphoreCreateInfo);
+	m_renderingFinishedSemaphore = m_device.createSemaphoreUnique(semaphoreCreateInfo);
 }
 
 } // namespace graphics::vulkan

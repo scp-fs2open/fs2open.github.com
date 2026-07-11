@@ -34,6 +34,24 @@ void PostProcessContext::shutdownScratchUBO()
 	scratchRing.shutdown();
 }
 
+void PostProcessContext::destroyTarget(RenderTarget& rt) const
+{
+	if (rt.view) {
+		device.destroyImageView(rt.view);
+		rt.view = nullptr;
+	}
+	if (rt.image) {
+		device.destroyImage(rt.image);
+		rt.image = nullptr;
+	}
+	if (rt.allocation.isValid()) {
+		memoryManager->freeAllocation(rt.allocation);
+		rt.allocation = {};
+	}
+	rt.width = 0;
+	rt.height = 0;
+}
+
 void PostProcessContext::generateMipmaps(vk::CommandBuffer cmd, vk::Image image,
                                            uint32_t width, uint32_t height, uint32_t mipLevels)
 {

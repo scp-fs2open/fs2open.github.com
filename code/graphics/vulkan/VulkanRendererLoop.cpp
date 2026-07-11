@@ -56,36 +56,33 @@ void VulkanRenderer::acquireNextSwapChainImage()
 {
 	m_frames[m_currentFrame]->waitForFinish();
 
-	// Recreate swap chain if flagged from a previous frame
-	if (m_swapChainNeedsRecreation) {
-		// Wait for minimized window (0x0 extent) before recreating
-		while (true) {
-			if (recreateSwapChain()) {
-				break;
+	// Acquire an image, recreating the swap chain as often as needed (bounded).
+	// The frame must never proceed without an acquired image: its image-available
+	// semaphore would never be signaled and the submit would deadlock/corrupt.
+	constexpr int MAX_ACQUIRE_ATTEMPTS = 5;
+	uint32_t imageIndex = 0;
+	SwapChainStatus status = SwapChainStatus::eOutOfDate;
+
+	for (int attempt = 0; attempt < MAX_ACQUIRE_ATTEMPTS; ++attempt) {
+		// Recreate if flagged (from a previous frame, a failed acquire below, or
+		// a suboptimal present). Waits out a minimized window (0x0 extent).
+		if (m_swapChainNeedsRecreation) {
+			while (!recreateSwapChain()) {
+				os_sleep(100);
+				SDL_PumpEvents();
 			}
-			// Window is minimized — wait and pump events until surface is valid again
-			os_sleep(100);
-			SDL_PumpEvents();
 		}
+
+		status = m_frames[m_currentFrame]->acquireSwapchainImage(imageIndex);
+		if (status != SwapChainStatus::eOutOfDate) {
+			break;
+		}
+		m_swapChainNeedsRecreation = true;
 	}
 
-	uint32_t imageIndex = 0;
-	auto status = m_frames[m_currentFrame]->acquireSwapchainImage(imageIndex);
-
 	if (status == SwapChainStatus::eOutOfDate) {
-		// Must recreate immediately and retry
-		while (true) {
-			if (recreateSwapChain()) {
-				break;
-			}
-			os_sleep(100);
-			SDL_PumpEvents();
-		}
-		status = m_frames[m_currentFrame]->acquireSwapchainImage(imageIndex);
-		if (status == SwapChainStatus::eOutOfDate) {
-			// If still failing after recreation, flag for next frame
-			m_swapChainNeedsRecreation = true;
-		}
+		Error(LOCATION, "Vulkan: failed to acquire a swap chain image after %d recreation attempts!",
+			MAX_ACQUIRE_ATTEMPTS);
 	}
 
 	if (status == SwapChainStatus::eSuboptimal) {

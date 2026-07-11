@@ -874,6 +874,15 @@ void VulkanDrawManager::clearDistortionOverrides()
 	m_distMapInfo    = vk::DescriptorImageInfo();
 }
 
+void VulkanDrawManager::onResize()
+{
+	// The cached override infos can reference views destroyed by the swap chain
+	// / post-processor resize; drop them so applyMaterial() falls back until the
+	// next frame sets fresh ones.
+	clearDepthTextureOverride();
+	clearDistortionOverrides();
+}
+
 void VulkanDrawManager::clearStates()
 {
 	auto* stateTracker = getStateTracker();
