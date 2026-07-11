@@ -436,7 +436,12 @@ void vulkan_deferred_lighting_msaa()
 	{
 		vk::ImageMemoryBarrier barrier;
 		barrier.srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
-		barrier.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
+		// eColorAttachmentRead as well as Write: the resumed non-MSAA G-buffer
+		// pass loads attachment 0 (scene color, loadOp=eLoad), a read that must
+		// be ordered after this transition (else READ_AFTER_WRITE vs the layout
+		// transition, flagged by -gr_sync_validation).
+		barrier.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite
+		                      | vk::AccessFlagBits::eColorAttachmentRead;
 		barrier.oldLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 		barrier.newLayout = vk::ImageLayout::eColorAttachmentOptimal;
 		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;

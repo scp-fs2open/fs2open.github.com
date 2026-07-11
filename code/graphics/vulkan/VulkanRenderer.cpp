@@ -341,14 +341,31 @@ void VulkanRenderer::createRenderPass()
 	subpass.pColorAttachments = &colorAttachRef;
 	subpass.pDepthStencilAttachment = &depthAttachRef;
 
+	// External dependency must make the PREVIOUS frame's writes to these
+	// attachments available before this frame writes them again. The depth
+	// buffer is a single shared image (one m_depthImage for every swap-chain
+	// framebuffer), so frame N+1's loadOp=eClear collides with frame N's depth
+	// writes (WRITE_AFTER_WRITE) unless srcAccessMask lists the prior depth
+	// write; likewise the composition color's store when a swap image repeats.
+	// (Detected by -gr_sync_validation as a cross-frame WAW hazard.)
 	vk::SubpassDependency dependency;
 	dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
 	dependency.dstSubpass = 0;
 	dependency.srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput
-	                        | vk::PipelineStageFlagBits::eEarlyFragmentTests;
+	                        | vk::PipelineStageFlagBits::eEarlyFragmentTests
+	                        | vk::PipelineStageFlagBits::eLateFragmentTests;
 	dependency.dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput
 	                        | vk::PipelineStageFlagBits::eEarlyFragmentTests;
+	dependency.srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite
+	                         | vk::AccessFlagBits::eDepthStencilAttachmentWrite;
+	// eColorAttachmentRead covers the loadOp=eLoad read in the m_renderPassLoad
+	// variant (which shares this dependency): its color initialLayout
+	// (eShaderReadOnlyOptimal) differs from the subpass layout, so begin performs
+	// an automatic layout transition (a write) that the load read must be ordered
+	// after -- otherwise a READ_AFTER_WRITE hazard vs the transition (flagged by
+	// -gr_sync_validation). Harmless for the eClear m_renderPass variant.
 	dependency.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite
+	                         | vk::AccessFlagBits::eColorAttachmentRead
 	                         | vk::AccessFlagBits::eDepthStencilAttachmentWrite;
 
 	std::array<vk::AttachmentDescription, 2> attachments = {colorAttachment, depthAttachment};

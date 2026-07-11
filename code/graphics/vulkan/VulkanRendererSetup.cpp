@@ -601,6 +601,13 @@ bool VulkanRenderer::initializeInstance()
 		return false;
 	}
 
+	// Enable the Vulkan validation layer + debug callbacks for a debug build,
+	// the engine graphics-debug switch (-gr_debug), or the standalone GPU
+	// synchronization-validation switch (-gr_sync_validation). The latter
+	// deliberately does NOT set Cmdline_graphics_debug_output, so it must be
+	// checked here explicitly.
+	const bool enableVulkanValidation = FSO_DEBUG || Cmdline_graphics_debug_output || Cmdline_gr_sync_validation;
+
 	const auto supportedExtensions = vk::enumerateInstanceExtensionProperties();
 	nprintf(("vulkan", "Instance extensions:\n"));
 	for (const auto& ext : supportedExtensions) {
@@ -612,7 +619,7 @@ bool VulkanRenderer::initializeInstance()
 			extensions.push_back(VK_EXT_SWAPCHAIN_COLOR_SPACE_EXTENSION_NAME);
 			mprintf(("  Enabling %s (HDR color space support)\n", VK_EXT_SWAPCHAIN_COLOR_SPACE_EXTENSION_NAME));
 		}
-		if (FSO_DEBUG || Cmdline_graphics_debug_output) {
+		if (enableVulkanValidation) {
 			if (!stricmp(ext.extensionName, VK_EXT_DEBUG_REPORT_EXTENSION_NAME)) {
 				extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
 				m_debugReportEnabled = true;
@@ -636,7 +643,7 @@ bool VulkanRenderer::initializeInstance()
 			VK_VERSION_MINOR(layer.specVersion),
 			VK_VERSION_PATCH(layer.specVersion),
 			layer.implementationVersion));
-		if (FSO_DEBUG || Cmdline_graphics_debug_output) {
+		if (enableVulkanValidation) {
 			if (!stricmp(layer.layerName, "VK_LAYER_KHRONOS_validation")) {
 				layers.push_back("VK_LAYER_KHRONOS_validation");
 				khronosValidationEnabled = true;

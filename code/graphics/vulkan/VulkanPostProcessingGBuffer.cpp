@@ -85,22 +85,40 @@ vk::RenderPass VulkanDeferredGBuffer::createGbufRenderPass(const GbufRenderPassC
 	dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
 	dependency.dstSubpass = 0;
 
+	// In all cases srcAccessMask must make the PREVIOUS frame's writes to these
+	// (single-instance, shared-across-frames) G-buffer attachments available
+	// before this frame writes them again -- eColorAttachmentWrite /
+	// eDepthStencilAttachmentWrite. Without it, frame N+1's beginRenderPass
+	// races frame N's color storeOp (cross-frame WRITE_AFTER_WRITE, flagged by
+	// -gr_sync_validation; visible as MSAA surface acne once timing shifts).
 	if (config.useResolveDependency) {
-		// MSAA resolve: previous pass read these textures as shader inputs
-		dependency.srcStageMask = vk::PipelineStageFlagBits::eFragmentShader;
+		// MSAA resolve: previous pass read these textures as shader inputs, and
+		// the prior frame's resolve wrote these same non-MSAA targets.
+		dependency.srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput
+		                        | vk::PipelineStageFlagBits::eEarlyFragmentTests
+		                        | vk::PipelineStageFlagBits::eLateFragmentTests
+		                        | vk::PipelineStageFlagBits::eFragmentShader;
 		dependency.dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput
 		                        | vk::PipelineStageFlagBits::eEarlyFragmentTests;
-		dependency.srcAccessMask = vk::AccessFlagBits::eShaderRead;
+		dependency.srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite
+		                         | vk::AccessFlagBits::eDepthStencilAttachmentWrite
+		                         | vk::AccessFlagBits::eShaderRead;
 		dependency.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite
 		                         | vk::AccessFlagBits::eDepthStencilAttachmentWrite;
 	} else {
-		// Standard G-buffer: previous pass may have done transfers (copies)
+		// Standard G-buffer: previous pass may have done transfers (copies), and
+		// the prior frame wrote these attachments as color/depth.
 		dependency.srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput
 		                        | vk::PipelineStageFlagBits::eEarlyFragmentTests
+		                        | vk::PipelineStageFlagBits::eLateFragmentTests
+		                        | vk::PipelineStageFlagBits::eFragmentShader
 		                        | vk::PipelineStageFlagBits::eTransfer;
 		dependency.dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput
 		                        | vk::PipelineStageFlagBits::eEarlyFragmentTests;
-		dependency.srcAccessMask = vk::AccessFlagBits::eTransferRead
+		dependency.srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite
+		                         | vk::AccessFlagBits::eDepthStencilAttachmentWrite
+		                         | vk::AccessFlagBits::eShaderRead
+		                         | vk::AccessFlagBits::eTransferRead
 		                         | vk::AccessFlagBits::eTransferWrite;
 		dependency.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite
 		                         | vk::AccessFlagBits::eDepthStencilAttachmentWrite
@@ -345,7 +363,12 @@ void VulkanDeferredGBuffer::transitionForResume(vk::CommandBuffer cmd)
 	std::array<vk::ImageMemoryBarrier, 5> barriers;
 	for (size_t i = 0; i < gbufImages.size(); ++i) {
 		barriers[i].srcAccessMask = {};
-		barriers[i].dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
+		// eColorAttachmentRead as well as Write: the resumed pass loads these
+		// attachments (loadOp=eLoad), a read that must be ordered after this
+		// transition -- otherwise a READ_AFTER_WRITE hazard between the loadOp
+		// and the layout transition (flagged by -gr_sync_validation).
+		barriers[i].dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite
+		                          | vk::AccessFlagBits::eColorAttachmentRead;
 		barriers[i].oldLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 		barriers[i].newLayout = vk::ImageLayout::eColorAttachmentOptimal;
 		barriers[i].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;

@@ -2320,10 +2320,13 @@ bool SetCmdlineParams()
 	}
 
 	if (gr_sync_validation_arg.found()) {
-		// Synchronization validation needs the validation layer + debug callbacks,
-		// which are only set up on the graphics-debug path, so imply -gr_debug.
+		// Enables the Vulkan validation layer + debug messenger + synchronization
+		// validation feature (see VulkanRenderer::initializeInstance), but NOT the
+		// engine-level graphics debug output: -gr_debug additionally draws debug
+		// overlays (e.g. output_uniform_debug_data), which are unrelated to GPU
+		// sync validation and would otherwise appear as spurious on-screen
+		// artifacts. Keep this a pure GPU-validation switch.
 		Cmdline_gr_sync_validation = true;
-		Cmdline_graphics_debug_output = true;
 	}
 
 	if (log_to_stdout_arg.found()) {

@@ -86,12 +86,20 @@ bool VulkanDeferredGBuffer::initMsaa()
 		subpass.colorAttachmentCount = 1;
 		subpass.pColorAttachments = &colorRef;
 
+		// srcAccessMask must make the PREVIOUS frame's write to the MSAA emissive
+		// image (this pass's attachment 0, storeOp=eStore from the MSAA G-buffer
+		// pass) available before this frame's begin re-transitions it from
+		// eUndefined -- otherwise a cross-frame WRITE_AFTER_WRITE between the
+		// begin layout transition and the prior storeOp (flagged by
+		// -gr_sync_validation).
 		vk::SubpassDependency dependency;
 		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
 		dependency.dstSubpass = 0;
-		dependency.srcStageMask = vk::PipelineStageFlagBits::eFragmentShader;
+		dependency.srcStageMask = vk::PipelineStageFlagBits::eFragmentShader
+		                        | vk::PipelineStageFlagBits::eColorAttachmentOutput;
 		dependency.dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-		dependency.srcAccessMask = vk::AccessFlagBits::eShaderRead;
+		dependency.srcAccessMask = vk::AccessFlagBits::eShaderRead
+		                         | vk::AccessFlagBits::eColorAttachmentWrite;
 		dependency.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
 
 		vk::RenderPassCreateInfo rpInfo;

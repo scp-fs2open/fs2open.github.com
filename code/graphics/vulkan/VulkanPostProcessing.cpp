@@ -127,12 +127,24 @@ bool VulkanPostProcessor::init(vk::Device device, vk::PhysicalDevice physDevice,
 		vk::SubpassDependency dependency;
 		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
 		dependency.dstSubpass = 0;
+		// srcAccessMask must make the PREVIOUS frame's writes to the (single-
+		// instance, shared-across-frames) scene color + depth available before
+		// this frame clears/loads them again -- otherwise frame N+1's
+		// vkCmdBeginRenderPass races frame N's color storeOp / depth writes
+		// (cross-frame WRITE_AFTER_WRITE, flagged by -gr_sync_validation). Also
+		// covers the prior frame's post-processing sample (eShaderRead) and
+		// copy_effect_texture transfer.
 		dependency.srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput
 		                        | vk::PipelineStageFlagBits::eEarlyFragmentTests
+		                        | vk::PipelineStageFlagBits::eLateFragmentTests
+		                        | vk::PipelineStageFlagBits::eFragmentShader
 		                        | vk::PipelineStageFlagBits::eTransfer;
 		dependency.dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput
 		                        | vk::PipelineStageFlagBits::eEarlyFragmentTests;
-		dependency.srcAccessMask = vk::AccessFlagBits::eTransferRead;
+		dependency.srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite
+		                         | vk::AccessFlagBits::eDepthStencilAttachmentWrite
+		                         | vk::AccessFlagBits::eShaderRead
+		                         | vk::AccessFlagBits::eTransferRead;
 		dependency.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite
 		                         | vk::AccessFlagBits::eDepthStencilAttachmentWrite
 		                         | vk::AccessFlagBits::eDepthStencilAttachmentRead;
@@ -197,12 +209,24 @@ bool VulkanPostProcessor::init(vk::Device device, vk::PhysicalDevice physDevice,
 		vk::SubpassDependency dependency;
 		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
 		dependency.dstSubpass = 0;
+		// srcAccessMask must make the PREVIOUS frame's writes to the (single-
+		// instance, shared-across-frames) scene color + depth available before
+		// this frame clears/loads them again -- otherwise frame N+1's
+		// vkCmdBeginRenderPass races frame N's color storeOp / depth writes
+		// (cross-frame WRITE_AFTER_WRITE, flagged by -gr_sync_validation). Also
+		// covers the prior frame's post-processing sample (eShaderRead) and
+		// copy_effect_texture transfer.
 		dependency.srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput
 		                        | vk::PipelineStageFlagBits::eEarlyFragmentTests
+		                        | vk::PipelineStageFlagBits::eLateFragmentTests
+		                        | vk::PipelineStageFlagBits::eFragmentShader
 		                        | vk::PipelineStageFlagBits::eTransfer;
 		dependency.dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput
 		                        | vk::PipelineStageFlagBits::eEarlyFragmentTests;
-		dependency.srcAccessMask = vk::AccessFlagBits::eTransferRead;
+		dependency.srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite
+		                         | vk::AccessFlagBits::eDepthStencilAttachmentWrite
+		                         | vk::AccessFlagBits::eShaderRead
+		                         | vk::AccessFlagBits::eTransferRead;
 		dependency.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite
 		                         | vk::AccessFlagBits::eDepthStencilAttachmentWrite
 		                         | vk::AccessFlagBits::eDepthStencilAttachmentRead;
