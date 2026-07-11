@@ -2808,7 +2808,7 @@ int SexpTreeOPF::query_default_argument_available(int op, int i) const
 
 // Determine and return the default value for operator argument position i.
 // Returns 0 on success, -1 if no default available.
-int SexpTreeOPF::get_default_value(sexp_list_item* item, char* text_buf, int op, int i)
+int SexpTreeOPF::get_default_value(sexp_list_item* item, int op, int i)
 {
 	const char* str = nullptr;
 	int type, index;
@@ -3082,10 +3082,6 @@ int SexpTreeOPF::get_default_value(sexp_list_item* item, char* text_buf, int op,
 	{
 		// copy the information from the list to the passed-in item
 		*item = *list;
-
-		// but use the provided text buffer
-		strcpy(text_buf, list->text.c_str());
-		item->text = text_buf;
 
 		// get rid of the list, since we're done with it
 		list->destroy();

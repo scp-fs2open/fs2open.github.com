@@ -26,6 +26,12 @@ class SexpTreeOPF {
 public:
 	explicit SexpTreeOPF(SexpTreeModel& model);
 
+	// Non-copyable and non-movable: permanently bound to its owning model
+	SexpTreeOPF(const SexpTreeOPF&) = delete;
+	SexpTreeOPF& operator=(const SexpTreeOPF&) = delete;
+	SexpTreeOPF(SexpTreeOPF&&) = delete;
+	SexpTreeOPF& operator=(SexpTreeOPF&&) = delete;
+
 	// Master dispatcher — routes to the appropriate get_listing_opf_* based on opf type
 	sexp_list_item* get_listing_opf(int opf, int parent_node, int arg_index);
 
@@ -156,7 +162,7 @@ public:
 	int query_default_argument_available(int op, int i) const;
 	//! Determine and populate the default value for argument position i of operator op.
 	//! Returns 0 on success, -1 if no default available.
-	int get_default_value(sexp_list_item* item, char* text_buf, int op, int i);
+	int get_default_value(sexp_list_item* item, int op, int i);
 
 private:
 	SexpTreeModel& _model;

@@ -428,6 +428,14 @@ public:
 	SexpTreeModel();
 	~SexpTreeModel();
 
+	// Non-copyable and non-movable: _opf holds a back-reference to this model,
+	// and UI layers keep long-lived pointers to it (views, dialog interfaces).
+	// A copy would silently leave the copy's _opf bound to the original model.
+	SexpTreeModel(const SexpTreeModel&) = delete;
+	SexpTreeModel& operator=(const SexpTreeModel&) = delete;
+	SexpTreeModel(SexpTreeModel&&) = delete;
+	SexpTreeModel& operator=(SexpTreeModel&&) = delete;
+
 	// Tree node storage
 	SCP_vector<sexp_tree_item> tree_nodes;
 	int total_nodes;

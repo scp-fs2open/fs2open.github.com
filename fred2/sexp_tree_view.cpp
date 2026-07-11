@@ -58,8 +58,9 @@ sexp_tree_view::sexp_tree_view()
 	select_sexp_node = -1;
 	root_item = -1;
 	m_dragging = FALSE;
-	m_p_image_list = NULL;
-	help_box = NULL;
+	m_p_image_list = nullptr;
+	help_box = nullptr;
+	_model._interface = &m_default_interface;
 	clear_tree();
 
 	m_operator_popup_active = false;
@@ -169,7 +170,7 @@ void sexp_tree_view::reset_handles()
 	uint i;
 
 	for (i=0; i<tree_nodes.size(); i++)
-		tree_nodes[i].handle = NULL;
+		tree_nodes[i].handle = nullptr;
 }
 
 // initializes and creates a tree from a given sexp startpoint.
@@ -254,11 +255,11 @@ void sexp_tree_view::right_clicked()
 	UINT _flags;
 	HTREEITEM h;
 	POINT click_point, mouse;
-	CMenu menu, *mptr, *popup_menu, *add_data_menu = NULL, *replace_data_menu = NULL;
+	CMenu menu, *mptr, *popup_menu, *add_data_menu = nullptr, *replace_data_menu = nullptr;
 	CMenu *add_op_menu, add_op_submenu[SEXP_TREE_MAX_OP_MENUS];
 	CMenu *replace_op_menu, replace_op_submenu[SEXP_TREE_MAX_OP_MENUS];
 	CMenu *insert_op_menu, insert_op_submenu[SEXP_TREE_MAX_OP_MENUS];
-	CMenu *replace_variable_menu = NULL;
+	CMenu *replace_variable_menu = nullptr;
 	CMenu *replace_container_name_menu = nullptr;
 	CMenu *replace_container_data_menu = nullptr;
 	CMenu add_op_subcategory_menu[SEXP_TREE_MAX_SUBMENUS];
@@ -276,10 +277,10 @@ void sexp_tree_view::right_clicked()
 	if (h && menu.LoadMenu(IDR_MENU_EDIT_SEXP_TREE)) {
 		update_help(h);
 		popup_menu = menu.GetSubMenu(0);
-		Assertion(popup_menu != NULL, "Invalid popup menu");
+		Assertion(popup_menu != nullptr, "Invalid popup menu");
 		//SelectDropTarget(h);  // WTF: Why was this here???
 
-		add_op_menu = replace_op_menu = insert_op_menu = NULL;
+		add_op_menu = replace_op_menu = insert_op_menu = nullptr;
 
 		// get pointers to several key popup menus we'll need to modify
 		i = popup_menu->GetMenuItemCount();
@@ -1346,11 +1347,7 @@ void sexp_tree_view::move_branch(int source, int parent)
 	if (source != -1) {
 		Assertion(parent > -1, "move_branch called with negative parent index %d (source %d)", parent, source);
 		_model.move_branch_data(source, parent);
-		if (parent > 0) {
-			move_branch(tree_item_handle(tree_nodes[source]), tree_item_handle(tree_nodes[parent]));
-		} else {
-			move_branch(tree_item_handle(tree_nodes[source]));
-		}
+		move_branch(tree_item_handle(tree_nodes[source]), tree_item_handle(tree_nodes[parent]));
 	}
 }
 
@@ -1466,12 +1463,12 @@ void sexp_tree_view::OnBegindrag(NMHDR* pNMHDR, LRESULT* pResult)
 
 	Assertion(!m_dragging, "Invalid drag state");
 	m_h_drag = HitTest(m_pt, &flags);
-	m_h_drop = NULL;
+	m_h_drop = nullptr;
 
 	if (!_model._interface || !_model._interface->getFlags()[TreeFlags::LabeledRoot] || GetParentItem(m_h_drag))
 		return;
 
-	Assertion(m_p_image_list == NULL, "Invalid image list");
+	Assertion(m_p_image_list == nullptr, "Invalid image list");
 	m_p_image_list = CreateDragImage(m_h_drag);  // get the image list for dragging
 	if (!m_p_image_list)
 		return;
@@ -1495,13 +1492,13 @@ void sexp_tree_view::OnLButtonDown(UINT nFlags, CPoint point)
 // Highlights potential drop-target root items during a drag operation.
 void sexp_tree_view::OnMouseMove(UINT nFlags, CPoint point)
 {
-	HTREEITEM hitem = NULL;
+	HTREEITEM hitem = nullptr;
 	UINT flags = 0;
 
 	if (m_dragging) {
-		Assertion(m_p_image_list != NULL, "Invalid image list");
+		Assertion(m_p_image_list != nullptr, "Invalid image list");
 		m_p_image_list->DragMove(point);
-		if ((hitem = HitTest(point, &flags)) != NULL)
+		if ((hitem = HitTest(point, &flags)) != nullptr)
 			if (!GetParentItem(hitem)) {
 				m_p_image_list->DragLeave(this);
 				SelectDropTarget(hitem);
@@ -1519,11 +1516,11 @@ void sexp_tree_view::OnLButtonUp(UINT nFlags, CPoint point)
 	int node1, node2;
 
 	if (m_dragging) {
-		Assertion(m_p_image_list != NULL, "Invalid image list");
+		Assertion(m_p_image_list != nullptr, "Invalid image list");
 		m_p_image_list->DragLeave(this);
 		m_p_image_list->EndDrag();
 		delete m_p_image_list;
-		m_p_image_list = NULL;
+		m_p_image_list = nullptr;
 
 		if (m_h_drop && m_h_drag != m_h_drop) {
 			Assertion(m_h_drag, "Invalid drag handle");
@@ -1555,7 +1552,7 @@ void sexp_tree_view::OnLButtonUp(UINT nFlags, CPoint point)
 
 		ReleaseCapture();
 		m_dragging = FALSE;
-		SelectDropTarget(NULL);
+		SelectDropTarget(nullptr);
 	}
 
 	CTreeCtrl::OnLButtonUp(nFlags, point);
