@@ -602,6 +602,8 @@ void MissionEventsDialog::updateEventBitmap() {
 		auto item = ui->eventTree->topLevelItem(i);
 
 		if (item->data(0, sexp_tree_view::FormulaDataRole).toInt() == _model->getFormula()) {
+			// Keep NodeImageRole in sync so a later theme change re-renders the correct icon.
+			item->setData(0, sexp_tree_view::NodeImageRole, static_cast<int>(bitmap));
 			item->setIcon(0, sexp_tree_view::convertNodeImageToIcon(bitmap));
 			return;
 		}

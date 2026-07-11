@@ -6,6 +6,7 @@
 #include <QKeySequenceEdit>
 
 #include "ui/util/SignalBlockers.h"
+#include "ui/widgets/sexp_tree_view.h"
 
 namespace fso::fred::dialogs {
 namespace {
@@ -87,6 +88,7 @@ void PreferencesDialog::updateUi() {
 	// General
 	ui->offerAutosaveRecovery->setChecked(_model->getOfferAutosaveRecovery());
 	ui->autosaveIntervalSeconds->setValue(_model->getAutosaveIntervalSeconds());
+	ui->sexpNumberEveryN->setValue(_model->getSexpNumberEveryN());
 	ui->createBakOnSave->setChecked(_model->getCreateBakOnSave());
 	ui->moveShipsWhenUndocking->setChecked(_model->getMoveShipsWhenUndocking());
 	ui->alwaysSaveDisplayNames->setChecked(_model->getAlwaysSaveDisplayNames());
@@ -132,6 +134,13 @@ void PreferencesDialog::on_offerAutosaveRecovery_toggled(bool checked) {
 
 void PreferencesDialog::on_autosaveIntervalSeconds_valueChanged(int value) {
 	_model->setAutosaveIntervalSeconds(value);
+}
+
+void PreferencesDialog::on_sexpNumberEveryN_valueChanged(int value) {
+	_model->setSexpNumberEveryN(value);
+	// setSexpNumberEveryN -> modelChanged -> applyChanges -> apply() has already committed the
+	// new value to the viewport by now, so re-icon any open trees to renumber them live.
+	sexp_tree_view::refreshAllInstances();
 }
 
 void PreferencesDialog::on_createBakOnSave_toggled(bool checked) {

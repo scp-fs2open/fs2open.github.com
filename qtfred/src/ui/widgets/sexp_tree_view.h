@@ -64,11 +64,18 @@ class sexp_tree_view: public QTreeWidget, public ISexpTreeUI {
 		 FormulaDataRole = Qt::UserRole + 1,
 		 SexpNodeIdRole = Qt::UserRole + 2,
 		 NoteRole = Qt::UserRole + 100,
-		 BgColorRole = Qt::UserRole + 101
+		 BgColorRole = Qt::UserRole + 101,
+		 NodeImageRole = Qt::UserRole + 102  //!< Base NodeImage stored on each item so numbered-data badges can renumber without a model lookup
 	 };
 
-	//! Converts a NodeImage enum value to a QIcon via resource path lookup.
- 	static QIcon convertNodeImageToIcon(NodeImage image);
+	//! Builds the QIcon for a NodeImage by colorizing the shared master art and applying a
+	//! uniform drop shadow. For a numbered data node, pass the 1-based argument position in
+	//! `number` to draw it on the badge; -1 (the default) means "no number".
+ 	static QIcon convertNodeImageToIcon(NodeImage image, int number = -1);
+
+	//! Refreshes the icons of every sexp_tree_view currently alive. Used to apply a changed
+	//! "number every N" preference to already-open trees without waiting for a rebuild.
+	static void refreshAllInstances();
 
 	explicit sexp_tree_view(QWidget* parent = nullptr);
 	~sexp_tree_view() override;
@@ -223,6 +230,13 @@ class sexp_tree_view: public QTreeWidget, public ISexpTreeUI {
 	//! Watches the operator popup for Hide/Close/Deactivate events to clear popup state.
 	bool eventFilter(QObject* obj, QEvent* ev) override;
 
+	//! Re-renders every node icon when the palette changes (light/dark toggle) so the
+	//! theme-adaptive icons (dots, chain, etc.) update while the tree is visible.
+	void changeEvent(QEvent* e) override;
+
+	//! Recomputes and re-applies the icon for every item from its stored NodeImageRole.
+	void refreshAllIcons();
+
 	//! Records drag start position and source root item for root-level drag-and-drop.
 	void mousePressEvent(QMouseEvent* e) override;
 
@@ -236,6 +250,19 @@ class sexp_tree_view: public QTreeWidget, public ISexpTreeUI {
 	//! the specified parent/after position. Blocks signals during creation to prevent spurious
 	//! itemChanged events.
 	QTreeWidgetItem* insertWithIcon(const QString& lpszItem, const QIcon& image, QTreeWidgetItem* hParent = nullptr, QTreeWidgetItem* hInsertAfter = nullptr);
+
+	//! Computes and sets the icon for a tree item. For numbered-data nodes this derives the
+	//! 1-based argument position from the item's sibling index and the "number every N"
+	//! preference, so the badge shows the argument count at every Nth position.
+	void applyNodeIcon(QTreeWidgetItem* item, NodeImage image);
+
+	//! Re-applies icons to all children of `parent`. Called after a data node is inserted or
+	//! removed so the numbered-data badges renumber to match the shifted sibling positions.
+	void refreshDataNumbers(QTreeWidgetItem* parent);
+
+	//! Returns the "number every N arguments" preference (0 = never number). Reads the value
+	//! from the EditorViewport, falling back to a default when no viewport is set.
+	int numberEveryN() const;
 
 	//! Slot for customContextMenuRequested. Gets the item at pos, builds and executes the context menu.
 	void customMenuHandler(const QPoint& pos);
