@@ -92,19 +92,19 @@ class sexp_tree_view: public QTreeWidget, public ISexpTreeUI {
 	QTreeWidgetItem* insert(const QString& lpszItem, NodeImage image = NodeImage::ROOT, QTreeWidgetItem* hParent = nullptr, QTreeWidgetItem* hInsertAfter = nullptr);
 
 	//! Returns the QTreeWidgetItem* handle for a given tree_nodes[] index.
-	QTreeWidgetItem* handle(int node);
+	QTreeWidgetItem* handle(int node) const;
 
 	//! Looks up the sexp type (SEXPT_OPERATOR, SEXPT_STRING, etc.) for the node matching handle h.
 	//! Performs a linear scan of tree_nodes[].
-	int get_type(QTreeWidgetItem* h);
+	int get_type(QTreeWidgetItem* h) const;
 
 	//! Returns the tree_nodes[] index for the node matching handle h.
 	//! Performs a linear scan of tree_nodes[].
-	int get_node(QTreeWidgetItem* h);
+	int get_node(QTreeWidgetItem* h) const;
 
 	//! Walks parent links from node up to find the root node index.
 	//! Uses _model.tree_nodes[].parent.
-	int get_root(int node);
+	int get_root(int node) const;
 
 	//! Reorders top-level (root) items by removing source and reinserting relative to dest.
 	//! Emits rootOrderChanged() and modified(). Pure Qt widget operation.
@@ -195,8 +195,8 @@ class sexp_tree_view: public QTreeWidget, public ISexpTreeUI {
 	void ui_delete_item(void* handle) override;                  //!< Deletes a QTreeWidgetItem
 	void ui_set_item_text(void* handle, const char* text) override;   //!< Sets display text via setText()
 	void ui_set_item_image(void* handle, NodeImage image) override;   //!< Sets icon via setIcon()
-	void* ui_get_child_item(void* handle) override;              //!< Returns first child item, or nullptr
-	bool ui_has_children(void* handle) override;                 //!< Returns true if childCount() > 0
+	void* ui_get_child_item(void* handle) const override;        //!< Returns first child item, or nullptr
+	bool ui_has_children(void* handle) const override;           //!< Returns true if childCount() > 0
 	void ui_expand_item(void* handle) override;                  //!< Expands a single item via setExpanded()
 	void ui_select_item(void* handle) override;                  //!< Selects item via setCurrentItem()
 	void ui_ensure_visible(void* handle) override;               //!< Scrolls to item via scrollToItem()
@@ -357,7 +357,7 @@ class sexp_tree_view: public QTreeWidget, public ISexpTreeUI {
 	//! Computes the list of valid operator names for a given node position. Queries
 	//! _model.find_argument_number(), _model.query_node_argument_type(), _model._opf.get_listing_opf(),
 	//! and _model._opf.query_default_argument_available().
-	QStringList validOperatorsForNode(int nodeIndex);
+	QStringList validOperatorsForNode(int nodeIndex) const;
 
 	//! Slot for itemChanged. Handles inline edit completion. For root labels: emits rootNodeRenamed().
 	//! For operators: validates via _model.validate_label_edit() and commits via _actions.add_or_replace_operator().

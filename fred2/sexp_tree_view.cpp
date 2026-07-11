@@ -95,12 +95,12 @@ void sexp_tree_view::ui_set_item_image(void* handle, NodeImage image)
 	SetItemImage(static_cast<HTREEITEM>(handle), img, img);
 }
 
-void* sexp_tree_view::ui_get_child_item(void* handle)
+void* sexp_tree_view::ui_get_child_item(void* handle) const
 {
 	return static_cast<void*>(GetChildItem(static_cast<HTREEITEM>(handle)));
 }
 
-bool sexp_tree_view::ui_has_children(void* handle)
+bool sexp_tree_view::ui_has_children(void* handle) const
 {
 	return ItemHasChildren(static_cast<HTREEITEM>(handle)) != 0;
 }
@@ -541,7 +541,7 @@ void sexp_tree_view::right_clicked()
 }
 
 // determine if an item should be editable.  This doesn't actually edit the label.
-int sexp_tree_view::edit_label(HTREEITEM h, bool *is_operator)
+int sexp_tree_view::edit_label(HTREEITEM h, bool *is_operator) const
 {
 	uint i;
 
@@ -619,7 +619,7 @@ SCP_string sexp_tree_view::get_node_comment(int /*node_index*/) const
 
 // Returns the comment for a tree item.  The base class only has comments on model
 // nodes; event_sexp_tree overrides this to also resolve labeled event roots.
-SCP_string sexp_tree_view::get_item_comment(HTREEITEM /*h*/, int node_index)
+SCP_string sexp_tree_view::get_item_comment(HTREEITEM /*h*/, int node_index) const
 {
 	return get_node_comment(node_index);
 }
@@ -1692,13 +1692,13 @@ void sexp_tree_view::OnDestroy()
 }
 
 // Returns the HTREEITEM handle for a given tree_nodes[] index.
-HTREEITEM sexp_tree_view::handle(int node)
+HTREEITEM sexp_tree_view::handle(int node) const
 {
 	return tree_item_handle(tree_nodes[node]);
 }
 
 // Returns the tree_nodes[] index for the node matching handle h, or -1 if not found.
-int sexp_tree_view::get_node(HTREEITEM h)
+int sexp_tree_view::get_node(HTREEITEM h) const
 {
 	for (int i = 0; i < static_cast<int>(tree_nodes.size()); i++) {
 		if (tree_nodes[i].handle == h)
@@ -1714,7 +1714,7 @@ const char *sexp_tree_view::help(int code)
 }
 
 // get type of item clicked on
-int sexp_tree_view::get_type(HTREEITEM h)
+int sexp_tree_view::get_type(HTREEITEM h) const
 {
 	uint i;
 

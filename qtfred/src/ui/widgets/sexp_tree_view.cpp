@@ -311,7 +311,7 @@ void sexp_tree_view::ui_set_item_image(void* handle, NodeImage image)
 }
 
 // Returns the first child QTreeWidgetItem, or nullptr. Called by _actions to traverse the tree.
-void* sexp_tree_view::ui_get_child_item(void* handle)
+void* sexp_tree_view::ui_get_child_item(void* handle) const
 {
 	auto* item = static_cast<QTreeWidgetItem*>(handle);
 	if (item->childCount() > 0)
@@ -320,7 +320,7 @@ void* sexp_tree_view::ui_get_child_item(void* handle)
 }
 
 // Returns true if the item has children. Called by _actions to check tree structure.
-bool sexp_tree_view::ui_has_children(void* handle)
+bool sexp_tree_view::ui_has_children(void* handle) const
 {
 	return static_cast<QTreeWidgetItem*>(handle)->childCount() > 0;
 }
@@ -939,7 +939,7 @@ QTreeWidgetItem* sexp_tree_view::insertWithIcon(const QString& lpszItem, const Q
 }
 
 // Returns the QTreeWidgetItem* handle for a given tree_nodes[] index.
-QTreeWidgetItem* sexp_tree_view::handle(int node) {
+QTreeWidgetItem* sexp_tree_view::handle(int node) const {
 	return tree_item_handle(tree_nodes[node]);
 }
 
@@ -950,7 +950,7 @@ const char* sexp_tree_view::help(int code) {
 
 // Returns the sexp type flags (SEXPT_OPERATOR, SEXPT_STRING, etc.) for the node matching
 // handle h. Performs a linear scan of tree_nodes[] to find the matching handle.
-int sexp_tree_view::get_type(QTreeWidgetItem* h) {
+int sexp_tree_view::get_type(QTreeWidgetItem* h) const {
 	uint i;
 
 	// get index into sexp_tree_view
@@ -970,7 +970,7 @@ int sexp_tree_view::get_type(QTreeWidgetItem* h) {
 
 // Returns the tree_nodes[] index for the node matching handle h.
 // Performs a linear scan of tree_nodes[]. Returns -1 if not found.
-int sexp_tree_view::get_node(QTreeWidgetItem* h) {
+int sexp_tree_view::get_node(QTreeWidgetItem* h) const {
 	uint i;
 
 	// get index into sexp_tree_view
@@ -989,7 +989,7 @@ int sexp_tree_view::get_node(QTreeWidgetItem* h) {
 }
 
 // Walks parent links from the given node up to find and return the root node index.
-int sexp_tree_view::get_root(int node) {
+int sexp_tree_view::get_root(int node) const {
 	while (tree_nodes[node].parent >= 0) {
 		node = tree_nodes[node].parent;
 	}
@@ -1454,7 +1454,7 @@ void sexp_tree_view::editDataActionHandler() {
 //   - _model._opf.query_default_argument_available() to filter operators that lack default args
 // Returns a sorted, deduplicated QStringList of operator names. Used by the operator
 // quick-search popup and openNodeEditor() to decide whether to show the popup.
-QStringList sexp_tree_view::validOperatorsForNode(int nodeIndex)
+QStringList sexp_tree_view::validOperatorsForNode(int nodeIndex) const
 {
 	QStringList out;
 	if (nodeIndex < 0 || nodeIndex >= static_cast<int>(tree_nodes.size()))
