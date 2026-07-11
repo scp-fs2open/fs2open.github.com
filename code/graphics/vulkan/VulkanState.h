@@ -250,6 +250,28 @@ class VulkanStateTracker {
 	}
 
 	/**
+	 * @brief Set the render area of the currently active render pass instance
+	 *
+	 * Updated whenever a render pass is begun (see VulkanRenderer::beginTrackedRenderPass).
+	 * vkCmdClearAttachments rects must lie entirely inside the render area, so all
+	 * in-pass clears clamp against this via clampToRenderArea().
+	 */
+	void setRenderArea(vk::Extent2D extent)
+	{
+		m_renderArea = extent;
+	}
+	vk::Extent2D getRenderArea() const
+	{
+		return m_renderArea;
+	}
+
+	/**
+	 * @brief Intersect a clear rect with the current render area
+	 * @return The clamped rect; extent 0x0 when the intersection is empty (caller must skip the clear)
+	 */
+	vk::Rect2D clampToRenderArea(const vk::Rect2D& rect) const;
+
+	/**
 	 * @brief Apply pending dynamic state to command buffer
 	 *
 	 * Must be called before every draw command to ensure dirty dynamic state
@@ -297,6 +319,7 @@ class VulkanStateTracker {
 	float m_alphaThreshold = 0.0f;
 	uint32_t m_colorAttachmentCount = 1;
 	vk::SampleCountFlagBits m_currentSampleCount = vk::SampleCountFlagBits::e1;
+	vk::Extent2D m_renderArea;  // Extent of the active render pass instance (initialized in init())
 
 	bool m_initialized = false;
 };

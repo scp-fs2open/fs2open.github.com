@@ -1,6 +1,8 @@
 #include "VulkanState.h"
 #include "VulkanDraw.h"
 
+#include <algorithm>
+
 
 namespace graphics::vulkan {
 
@@ -39,6 +41,10 @@ bool VulkanStateTracker::init(vk::Device device)
 	m_scissor.offset.y = 0;
 	m_scissor.extent.width = gr_screen.max_w;
 	m_scissor.extent.height = gr_screen.max_h;
+
+	// Default render area until the first render pass is begun
+	m_renderArea.width = gr_screen.max_w;
+	m_renderArea.height = gr_screen.max_h;
 
 	m_initialized = true;
 	mprintf(("VulkanStateTracker: Initialized\n"));
@@ -103,6 +109,30 @@ void VulkanStateTracker::setRenderPass(vk::RenderPass renderPass, uint32_t subpa
 	// different viewport/scissor values directly on the command buffer.
 	m_viewportDirty = true;
 	m_scissorDirty = true;
+}
+
+vk::Rect2D VulkanStateTracker::clampToRenderArea(const vk::Rect2D& rect) const
+{
+	// Intersect [offset, offset+extent) with [0, renderArea)
+	const int64_t reqX0 = rect.offset.x;
+	const int64_t reqY0 = rect.offset.y;
+	const int64_t reqX1 = reqX0 + rect.extent.width;
+	const int64_t reqY1 = reqY0 + rect.extent.height;
+
+	const int64_t x0 = std::max<int64_t>(reqX0, 0);
+	const int64_t y0 = std::max<int64_t>(reqY0, 0);
+	const int64_t x1 = std::min<int64_t>(reqX1, m_renderArea.width);
+	const int64_t y1 = std::min<int64_t>(reqY1, m_renderArea.height);
+
+	vk::Rect2D result;
+	if (x1 <= x0 || y1 <= y0) {
+		return result; // empty; caller skips the clear
+	}
+	result.offset.x = static_cast<int32_t>(x0);
+	result.offset.y = static_cast<int32_t>(y0);
+	result.extent.width = static_cast<uint32_t>(x1 - x0);
+	result.extent.height = static_cast<uint32_t>(y1 - y0);
+	return result;
 }
 
 void VulkanStateTracker::setViewport(float x, float y, float width, float height, float minDepth, float maxDepth)

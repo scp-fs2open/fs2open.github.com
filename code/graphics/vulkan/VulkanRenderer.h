@@ -32,6 +32,33 @@ struct QueueIndex {
 	uint32_t index = 0;
 };
 
+/**
+ * @brief Viewport handling when beginning a tracked render pass
+ */
+enum class PassViewport {
+	FlipY,  // Negative-height viewport for OpenGL-compatible Y-up NDC (scene/swap chain passes)
+	NoFlip, // Standard positive viewport (post-processing blits)
+	Keep,   // Leave the viewport untouched (off-screen RTs; the engine sets it via gr_set_viewport)
+};
+
+/**
+ * @brief Parameters for VulkanRenderer::beginTrackedRenderPass()
+ *
+ * Bundles everything a render-pass begin must keep in sync: the pass/framebuffer,
+ * the clear values, and the state-tracker bookkeeping (current pass, attachment
+ * count, sample count, render area, viewport). Every render-pass begin on the
+ * frame command buffer goes through this so no site can forget part of it.
+ */
+struct PassBeginDesc {
+	vk::RenderPass renderPass;
+	vk::Framebuffer framebuffer;
+	vk::Extent2D extent;
+	ArrayView<vk::ClearValue> clearValues; // may be empty for pure loadOp=eLoad passes
+	uint32_t colorAttachmentCount = 1;
+	vk::SampleCountFlagBits sampleCount = vk::SampleCountFlagBits::e1;
+	PassViewport viewport = PassViewport::FlipY;
+};
+
 struct PhysicalDeviceValues {
 	vk::PhysicalDevice device;
 	vk::PhysicalDeviceProperties properties;
@@ -249,6 +276,25 @@ class VulkanRenderer {
 	vk::SampleCountFlagBits getMsaaSampleCount() const { return m_msaaSampleCount; }
 
   private:
+	/**
+	 * @brief Begin a render pass on the frame command buffer with full state-tracker sync
+	 *
+	 * Records vkCmdBeginRenderPass and updates the state tracker (render pass,
+	 * color attachment count, sample count, render area, viewport) in one place.
+	 */
+	void beginTrackedRenderPass(const PassBeginDesc& desc);
+
+	/**
+	 * @brief Resume the scene (or G-buffer) render pass with loadOp=eLoad
+	 * after a mid-scene copy (copyEffectTexture / copySceneDepthForParticles)
+	 */
+	void resumeScenePassAfterCopy();
+
+	/**
+	 * @brief Re-begin the composition pass after readbackFramebuffer() interrupted it
+	 */
+	void rebeginSwapChainPassAfterReadback();
+
 	bool initDisplayDevice() const;
 
 	bool initializeInstance();

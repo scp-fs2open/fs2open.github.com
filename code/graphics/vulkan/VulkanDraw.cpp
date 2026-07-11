@@ -231,6 +231,13 @@ void VulkanDrawManager::clear()
 		clearRect.rect.extent = vk::Extent2D(static_cast<uint32_t>(gr_screen.max_w),
 		                                      static_cast<uint32_t>(gr_screen.max_h));
 	}
+	// gr_screen dimensions can exceed the active render pass when rendering to a
+	// smaller off-screen target; vkCmdClearAttachments requires rects inside the
+	// render area.
+	clearRect.rect = stateTracker->clampToRenderArea(clearRect.rect);
+	if (clearRect.rect.extent.width == 0 || clearRect.rect.extent.height == 0) {
+		return;
+	}
 	clearRect.baseArrayLayer = 0;
 	clearRect.layerCount = 1;
 
@@ -403,7 +410,7 @@ void VulkanDrawManager::zbufferClear(int mode)
 		m_zbufferMode = GR_ZBUFF_FULL;
 		stateTracker->setZBufferMode(ZBUFFER_TYPE_FULL);
 
-		// Clear depth buffer
+		// Clear depth buffer (clamped: gr_screen can exceed a smaller render target)
 		vk::ClearAttachment clearAttachment;
 		clearAttachment.aspectMask = vk::ImageAspectFlagBits::eDepth;
 		clearAttachment.clearValue.depthStencil.depth = 1.0f;
@@ -413,10 +420,13 @@ void VulkanDrawManager::zbufferClear(int mode)
 		clearRect.rect.offset = vk::Offset2D(0, 0);
 		clearRect.rect.extent = vk::Extent2D(static_cast<uint32_t>(gr_screen.max_w),
 		                                      static_cast<uint32_t>(gr_screen.max_h));
+		clearRect.rect = stateTracker->clampToRenderArea(clearRect.rect);
 		clearRect.baseArrayLayer = 0;
 		clearRect.layerCount = 1;
 
-		stateTracker->getCommandBuffer().clearAttachments(1, &clearAttachment, 1, &clearRect);
+		if (clearRect.rect.extent.width > 0 && clearRect.rect.extent.height > 0) {
+			stateTracker->getCommandBuffer().clearAttachments(1, &clearAttachment, 1, &clearRect);
+		}
 	} else {
 		// Disable zbuffering
 		gr_zbuffering = 0;
@@ -452,7 +462,7 @@ void VulkanDrawManager::stencilClear()
 	(void)this;
 	auto* stateTracker = getStateTracker();
 
-	// Clear stencil buffer
+	// Clear stencil buffer (clamped: gr_screen can exceed a smaller render target)
 	vk::ClearAttachment clearAttachment;
 	clearAttachment.aspectMask = vk::ImageAspectFlagBits::eStencil;
 	clearAttachment.clearValue.depthStencil.depth = 1.0f;
@@ -462,10 +472,13 @@ void VulkanDrawManager::stencilClear()
 	clearRect.rect.offset = vk::Offset2D(0, 0);
 	clearRect.rect.extent = vk::Extent2D(static_cast<uint32_t>(gr_screen.max_w),
 	                                      static_cast<uint32_t>(gr_screen.max_h));
+	clearRect.rect = stateTracker->clampToRenderArea(clearRect.rect);
 	clearRect.baseArrayLayer = 0;
 	clearRect.layerCount = 1;
 
-	stateTracker->getCommandBuffer().clearAttachments(1, &clearAttachment, 1, &clearRect);
+	if (clearRect.rect.extent.width > 0 && clearRect.rect.extent.height > 0) {
+		stateTracker->getCommandBuffer().clearAttachments(1, &clearAttachment, 1, &clearRect);
+	}
 }
 
 int VulkanDrawManager::setCull(int cull)

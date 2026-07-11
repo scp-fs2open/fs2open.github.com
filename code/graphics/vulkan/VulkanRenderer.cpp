@@ -484,23 +484,7 @@ bool VulkanRenderer::readbackFramebuffer(ubyte** outPixels, uint32_t* outWidth, 
 		m_device->freeCommandBuffers(m_graphicsCommandPool.get(), cmdBuffers);
 
 		// Re-begin render pass so the frame can continue
-		vk::RenderPassBeginInfo renderPassBegin;
-		renderPassBegin.renderPass = m_renderPass.get();
-		renderPassBegin.framebuffer = m_swapChainFramebuffers[m_currentSwapChainImage].get();
-		renderPassBegin.renderArea.offset.x = 0;
-		renderPassBegin.renderArea.offset.y = 0;
-		renderPassBegin.renderArea.extent = m_swapChainExtent;
-		std::array<vk::ClearValue, 2> clearValues;
-		clearValues[0].color.setFloat32({0.0f, 0.0f, 0.0f, 1.0f});
-		clearValues[1].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
-		renderPassBegin.clearValueCount = static_cast<uint32_t>(clearValues.size());
-		renderPassBegin.pClearValues = clearValues.data();
-		m_currentCommandBuffer.beginRenderPass(renderPassBegin, vk::SubpassContents::eInline);
-		m_stateTracker->setRenderPass(m_renderPass.get(), 0);
-		m_stateTracker->setViewport(0.0f,
-			static_cast<float>(m_swapChainExtent.height),
-			static_cast<float>(m_swapChainExtent.width),
-			-static_cast<float>(m_swapChainExtent.height));
+		rebeginSwapChainPassAfterReadback();
 		return false;
 	}
 
@@ -591,29 +575,29 @@ bool VulkanRenderer::readbackFramebuffer(ubyte** outPixels, uint32_t* outWidth, 
 	m_memoryManager->freeAllocation(stagingAlloc);
 
 	// Re-begin render pass on main command buffer
-	vk::RenderPassBeginInfo renderPassBegin;
-	renderPassBegin.renderPass = m_renderPass.get();
-	renderPassBegin.framebuffer = m_swapChainFramebuffers[m_currentSwapChainImage].get();
-	renderPassBegin.renderArea.offset.x = 0;
-	renderPassBegin.renderArea.offset.y = 0;
-	renderPassBegin.renderArea.extent = m_swapChainExtent;
+	rebeginSwapChainPassAfterReadback();
 
+	return success;
+}
+
+// Shared resume path for readbackFramebuffer()'s success and failure exits.
+// FIXME(review A5.2, plan Phase 3.2): this uses m_renderPass (loadOp=eClear,
+// initialLayout=eUndefined), which discards everything drawn into the
+// composition image so far this frame. Kept for now so the Phase 1 helper
+// conversion stays behavior-identical; the Phase 3 readback rework switches
+// this to the loadOp=eLoad resume path.
+void VulkanRenderer::rebeginSwapChainPassAfterReadback()
+{
 	std::array<vk::ClearValue, 2> clearValues;
 	clearValues[0].color.setFloat32({0.0f, 0.0f, 0.0f, 1.0f});
 	clearValues[1].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
 
-	renderPassBegin.clearValueCount = static_cast<uint32_t>(clearValues.size());
-	renderPassBegin.pClearValues = clearValues.data();
-
-	m_currentCommandBuffer.beginRenderPass(renderPassBegin, vk::SubpassContents::eInline);
-
-	m_stateTracker->setRenderPass(m_renderPass.get(), 0);
-	m_stateTracker->setViewport(0.0f,
-		static_cast<float>(m_swapChainExtent.height),
-		static_cast<float>(m_swapChainExtent.width),
-		-static_cast<float>(m_swapChainExtent.height));
-
-	return success;
+	PassBeginDesc pass;
+	pass.renderPass = m_renderPass.get();
+	pass.framebuffer = m_swapChainFramebuffers[m_currentSwapChainImage].get();
+	pass.extent = m_swapChainExtent;
+	pass.clearValues = clearValues;
+	beginTrackedRenderPass(pass);
 }
 
 uint32_t VulkanRenderer::getMinUniformBufferOffsetAlignment() const
