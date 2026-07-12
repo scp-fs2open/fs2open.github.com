@@ -188,7 +188,13 @@ void vulkan_deferred_lighting_begin(bool clearNonColorBufs)
 			std::array<vk::ImageMemoryBarrier, 2> barriers;
 
 			barriers[0].srcAccessMask = vk::AccessFlagBits::eTransferRead;
-			barriers[0].dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
+			// eColorAttachmentRead as well as Write: the resumed non-MSAA G-buffer
+			// pass loads attachment 0 (scene color, loadOp=eLoad), a read that must
+			// be ordered after this transition -- otherwise a READ_AFTER_WRITE vs
+			// the layout transition (flagged by -gr_sync_validation on the deferred
+			// forward/RocketUI path).
+			barriers[0].dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite
+			                          | vk::AccessFlagBits::eColorAttachmentRead;
 			barriers[0].oldLayout = vk::ImageLayout::eTransferSrcOptimal;
 			barriers[0].newLayout = vk::ImageLayout::eColorAttachmentOptimal;
 			barriers[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -765,7 +771,10 @@ void vulkan_shadow_map_end()
 			{
 				vk::ImageMemoryBarrier barrier;
 				barrier.srcAccessMask = {};
-				barrier.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
+				// eColorAttachmentRead too: the resumed G-buffer pass (renderPassLoad,
+				// loadOp=eLoad) reads this attachment; order the read after the transition.
+				barrier.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite
+				                      | vk::AccessFlagBits::eColorAttachmentRead;
 				barrier.oldLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 				barrier.newLayout = vk::ImageLayout::eColorAttachmentOptimal;
 				barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -848,7 +857,10 @@ void vulkan_start_decal_pass()
 	{
 		vk::ImageMemoryBarrier barrier;
 		barrier.srcAccessMask = {};
-		barrier.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
+		// eColorAttachmentRead too: the resumed G-buffer pass (renderPassLoad,
+		// loadOp=eLoad) reads this attachment; order the read after the transition.
+		barrier.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite
+		                      | vk::AccessFlagBits::eColorAttachmentRead;
 		barrier.oldLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 		barrier.newLayout = vk::ImageLayout::eColorAttachmentOptimal;
 		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;

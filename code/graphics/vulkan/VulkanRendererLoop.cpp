@@ -445,7 +445,11 @@ void VulkanRenderer::copySceneDepthForParticles()
 	{
 		vk::ImageMemoryBarrier barrier;
 		barrier.srcAccessMask = {};
-		barrier.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
+		// eColorAttachmentRead as well as Write: resumeScenePassAfterCopy() resumes
+		// the scene pass with loadOp=eLoad, which reads this attachment; the read
+		// must be ordered after the transition (else READ_AFTER_WRITE).
+		barrier.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite
+		                      | vk::AccessFlagBits::eColorAttachmentRead;
 		barrier.oldLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 		barrier.newLayout = vk::ImageLayout::eColorAttachmentOptimal;
 		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
