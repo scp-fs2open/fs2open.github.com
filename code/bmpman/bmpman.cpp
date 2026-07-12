@@ -195,7 +195,6 @@ float bitmap_lookup::map_texture_address(float address)
 float bitmap_lookup::get_channel_alpha(float u, float v)
 {
 	Assert( Bitmap_data != NULL );
-	Assertion(Num_channels > 3, "Checked alpha on a bitmap without an alpha channel");
 
 	// without an alpha channel there is nothing to look up, and indexing channel 3 would read out of bounds
 	if ( Num_channels < 4 ) {

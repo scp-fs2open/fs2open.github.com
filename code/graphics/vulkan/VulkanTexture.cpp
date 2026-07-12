@@ -288,10 +288,10 @@ void VulkanTextureManager::shutdown()
 	nprintf(("vulkan", "Vulkan Texture Manager shutdown\n"));
 }
 
-bool VulkanTextureManager::releaseAnimationSlotRef(tcache_slot_vulkan* ts) const
+bool VulkanTextureManager::releaseAnimationSlotRef(tcache_slot_vulkan* ts)
 {
 	// Non-array textures own their image outright — nothing to ref-count.
-	if (!(ts->arrayLayers > 1 && ts->bitmapHandle >= 0)) {
+	if (ts->arrayLayers <= 1 || ts->bitmapHandle < 0) {
 		return true;
 	}
 

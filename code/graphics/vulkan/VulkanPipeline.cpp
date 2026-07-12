@@ -3,6 +3,8 @@
 
 #include "cfile/cfile.h"
 
+#include <type_traits>
+
 
 namespace graphics::vulkan {
 
@@ -79,6 +81,18 @@ inline uint64_t maskBits(bool x, bool y, bool z, bool w)
 {
 	return (x ? 1u : 0u) | (y ? 2u : 0u) | (z ? 4u : 0u) | (w ? 8u : 0u);
 }
+// Non-dispatchable Vulkan handles (e.g. VkRenderPass) are pointers on 64-bit
+// platforms but plain uint64_t on 32-bit ones (VK_USE_64_BIT_PTR_DEFINES), so
+// the pointer/integer branch can't be collapsed into a single reinterpret_cast.
+template <typename T>
+inline uint64_t handleToU64(T handle)
+{
+	if constexpr (std::is_pointer_v<T>) {
+		return reinterpret_cast<uint64_t>(handle);
+	} else {
+		return static_cast<uint64_t>(handle);
+	}
+}
 } // namespace
 
 uint64_t PipelineConfig::hash() const
@@ -107,7 +121,7 @@ uint64_t PipelineConfig::hash() const
 	hashCombine(h, maskBits(colorWriteMask.x, colorWriteMask.y, colorWriteMask.z, colorWriteMask.w));
 	hashCombine(h, static_cast<uint64_t>(fillMode));
 	hashCombine(h, depthBiasEnabled ? 1u : 0u);
-	hashCombine(h, reinterpret_cast<uint64_t>(static_cast<VkRenderPass>(renderPass)));
+	hashCombine(h, handleToU64(static_cast<VkRenderPass>(renderPass)));
 	hashCombine(h, subpass);
 	hashCombine(h, colorAttachmentCount);
 	hashCombine(h, static_cast<uint64_t>(sampleCount));

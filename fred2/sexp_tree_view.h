@@ -56,7 +56,7 @@ public:
 	static const char *help(int code);
 	HTREEITEM insert(LPCTSTR lpszItem, int image = BITMAP_ROOT, int sel_image = BITMAP_ROOT, HTREEITEM hParent = TVI_ROOT, HTREEITEM hInsertAfter = TVI_LAST);
 	HTREEITEM handle(int node);
-	int get_node(HTREEITEM h);
+	int get_node(HTREEITEM h) const;
 	int get_type(HTREEITEM h);
 	void setup(CEdit *ptr = NULL);
 	void move_root(HTREEITEM source, HTREEITEM dest, bool insert_before);
@@ -101,8 +101,8 @@ public:
 	void ui_delete_item(void* handle) override;
 	void ui_set_item_text(void* handle, const char* text) override;
 	void ui_set_item_image(void* handle, NodeImage image) override;
-	void* ui_get_child_item(void* handle) override;
-	bool ui_has_children(void* handle) override;
+	void* ui_get_child_item(void* handle) const override;
+	bool ui_has_children(void* handle) const override;
 	void ui_expand_item(void* handle) override;
 	void ui_select_item(void* handle) override;
 	void ui_ensure_visible(void* handle) override;

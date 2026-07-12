@@ -94,12 +94,12 @@ void sexp_tree_view::ui_set_item_image(void* handle, NodeImage image)
 	SetItemImage(static_cast<HTREEITEM>(handle), img, img);
 }
 
-void* sexp_tree_view::ui_get_child_item(void* handle)
+void* sexp_tree_view::ui_get_child_item(void* handle) const
 {
 	return static_cast<void*>(GetChildItem(static_cast<HTREEITEM>(handle)));
 }
 
-bool sexp_tree_view::ui_has_children(void* handle)
+bool sexp_tree_view::ui_has_children(void* handle) const
 {
 	return ItemHasChildren(static_cast<HTREEITEM>(handle)) != 0;
 }
@@ -1694,7 +1694,7 @@ HTREEITEM sexp_tree_view::handle(int node)
 }
 
 // Returns the tree_nodes[] index for the node matching handle h, or -1 if not found.
-int sexp_tree_view::get_node(HTREEITEM h)
+int sexp_tree_view::get_node(HTREEITEM h) const
 {
 	for (int i = 0; i < static_cast<int>(tree_nodes.size()); i++) {
 		if (tree_nodes[i].handle == h)

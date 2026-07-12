@@ -326,7 +326,7 @@ private:
 	 * between flushTextures and bm_free_data), this only makes the shared-vs-last
 	 * decision. See C4 in the review-fixes plan.
 	 */
-	bool releaseAnimationSlotRef(tcache_slot_vulkan* ts) const;
+	static bool releaseAnimationSlotRef(tcache_slot_vulkan* ts);
 
 	/**
 	 * @brief Decode a get_bitmap_from_texture() readback buffer into data_out
