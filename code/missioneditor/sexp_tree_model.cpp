@@ -1265,7 +1265,7 @@ bool SexpTreeModel::is_operator_hidden(int op_value)
 // which operators are enabled for add/replace/insert, and which variables and
 // containers can be used as replacements. The UI layers use this state to build
 // their context menus without needing to duplicate any of the enabling logic.
-SexpContextMenuState SexpTreeModel::compute_context_menu_state()
+SexpContextMenuState SexpTreeModel::compute_context_menu_state() const
 {
 	SexpContextMenuState state;
 
@@ -1491,7 +1491,7 @@ void SexpTreeModel::ctx_compute_variable_menus(SexpContextMenuState& state) cons
 // Sets add_type (OPR_* return type for operator filtering), populates
 // add_data_list with valid data items, and enables can_add_number/can_add_string.
 // Handles both container data nodes and regular operator nodes.
-void SexpTreeModel::ctx_compute_add_type(SexpContextMenuState& state)
+void SexpTreeModel::ctx_compute_add_type(SexpContextMenuState& state) const
 {
 	state.add_type = 0;
 
@@ -1576,7 +1576,7 @@ void SexpTreeModel::ctx_compute_add_type(SexpContextMenuState& state)
 // replace_data_list, enables can_replace_number/can_replace_string, and may
 // disable can_delete if this argument can't be removed. Returns the OPF_* type
 // for the replace position (needed by ctx_validate_clipboard).
-int SexpTreeModel::ctx_compute_replace_type(SexpContextMenuState& state)
+int SexpTreeModel::ctx_compute_replace_type(SexpContextMenuState& state) const
 {
 	state.replace_type = 0;
 	int parent = tree_nodes[item_index].parent;

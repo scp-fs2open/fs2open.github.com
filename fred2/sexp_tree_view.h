@@ -55,9 +55,9 @@ public:
 	void update_help(HTREEITEM h);
 	static const char *help(int code);
 	HTREEITEM insert(LPCTSTR lpszItem, int image = BITMAP_ROOT, int sel_image = BITMAP_ROOT, HTREEITEM hParent = TVI_ROOT, HTREEITEM hInsertAfter = TVI_LAST);
-	HTREEITEM handle(int node);
-	int get_node(HTREEITEM h);
-	int get_type(HTREEITEM h);
+	HTREEITEM handle(int node) const;
+	int get_node(HTREEITEM h) const;
+	int get_type(HTREEITEM h) const;
 	void setup(CEdit *ptr = nullptr);
 	void move_root(HTREEITEM source, HTREEITEM dest, bool insert_before);
 	void move_branch(int source, int parent);
@@ -68,11 +68,11 @@ public:
 	int node_error(int node, const char *msg, int *bypass);
 	void expand_branch(HTREEITEM h);
 	int end_label_edit(TVITEMA &item);
-	int edit_label(HTREEITEM h, bool *is_operator = nullptr);
+	int edit_label(HTREEITEM h, bool *is_operator = nullptr) const;
 	virtual void edit_comment(HTREEITEM h);
 	virtual void edit_bg_color(HTREEITEM h);
 	virtual SCP_string get_node_comment(int node_index) const;
-	virtual SCP_string get_item_comment(HTREEITEM h, int node_index);
+	virtual SCP_string get_item_comment(HTREEITEM h, int node_index) const;
 	void right_clicked();
 	int ctree_size;
 	virtual void build_tree();
@@ -102,8 +102,8 @@ public:
 	void ui_delete_item(void* handle) override;
 	void ui_set_item_text(void* handle, const char* text) override;
 	void ui_set_item_image(void* handle, NodeImage image) override;
-	void* ui_get_child_item(void* handle) override;
-	bool ui_has_children(void* handle) override;
+	void* ui_get_child_item(void* handle) const override;
+	bool ui_has_children(void* handle) const override;
 	void ui_expand_item(void* handle) override;
 	void ui_select_item(void* handle) override;
 	void ui_ensure_visible(void* handle) override;
