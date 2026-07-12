@@ -2466,7 +2466,7 @@ int query_single_wing_marked()
 void CFREDView::OnDisbandWing() 
 {
 	if (query_single_wing_marked()) {
-		remove_wing(cur_wing);
+		disband_wing(cur_wing);
 		FREDDoc_ptr->autosave("wing disband");
 
 	} else

@@ -2694,7 +2694,7 @@ void FredView::on_actionWingForm_triggered(bool  /*enabled*/) {
 }
 void FredView::on_actionWingDisband_triggered(bool  /*enabled*/) {
 	if (fred->query_single_wing_marked()) {
-		fred->remove_wing(fred->cur_wing);
+		fred->disband_wing(fred->cur_wing);
 	} else {
 		showButtonDialog(DialogType::Error,
 						 "Error",
