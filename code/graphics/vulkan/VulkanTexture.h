@@ -309,6 +309,24 @@ private:
 	bool uploadTexture2D(int handle, bitmap* bm, int compType);
 
 	/**
+	 * @brief Ref-count release for a shared animation texture-array slot
+	 *
+	 * Shared animation frames all point at one array VkImage; the slot for the
+	 * triggering frame must not destroy that image while other frames still
+	 * reference it. Marks this slot unused and walks the frame range:
+	 *  - non-array slot (arrayLayers <= 1)                -> returns true (caller destroys normally)
+	 *  - shared array, another frame still in use         -> detaches this slot in place
+	 *                                                        (image/view/allocation cleared + reset),
+	 *                                                        returns false
+	 *  - shared array, this was the last live reference   -> returns true (caller destroys the shared image)
+	 *
+	 * The caller keeps ownership of the actual destruction sequence (it differs
+	 * between flushTextures and bm_free_data), this only makes the shared-vs-last
+	 * decision. See C4 in the review-fixes plan.
+	 */
+	bool releaseAnimationSlotRef(tcache_slot_vulkan* ts) const;
+
+	/**
 	 * @brief Decode a get_bitmap_from_texture() readback buffer into data_out
 	 *
 	 * Handles both the BC-compressed (block-decode via bcdec) and uncompressed

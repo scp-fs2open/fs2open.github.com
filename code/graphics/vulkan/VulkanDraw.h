@@ -437,8 +437,16 @@ class VulkanDrawManager {
 		int renderNanoVGCalls = 0;
 		int renderRocketCalls = 0;
 		int renderMovieCalls = 0;
+
+		// On-demand texture uploads triggered mid-frame from bindMaterialTextures
+		// (B6): a texture referenced by a material that wasn't resident, so it had
+		// to be locked + uploaded during scene recording. Should be ~0 in steady
+		// state (level preload covers residency); sustained nonzero counts flag a
+		// preload gap worth chasing.
+		int onDemandTextureUploads = 0;
 	};
-	FrameStats m_frameStats;
+	// Mutable so const paths (bindMaterialTextures) can bump instrumentation counters.
+	mutable FrameStats m_frameStats;
 	int m_frameStatsFrameNum = 0;
 
 	// ---- Per-frame Global (Set 0) descriptor memoization (B1) ----

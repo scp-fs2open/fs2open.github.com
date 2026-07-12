@@ -289,6 +289,54 @@ void VulkanTextureManager::shutdown()
 	nprintf(("vulkan", "Vulkan Texture Manager shutdown\n"));
 }
 
+bool VulkanTextureManager::releaseAnimationSlotRef(tcache_slot_vulkan* ts) const
+{
+	// Non-array textures own their image outright — nothing to ref-count.
+	if (!(ts->arrayLayers > 1 && ts->bitmapHandle >= 0)) {
+		return true;
+	}
+
+	// For shared animation texture arrays: mark this frame as unused, then check
+	// whether any other frame still references the shared image. We compute the
+	// base frame from slot data (bitmapHandle - arrayIndex) rather than calling
+	// bm_get_base_frame(), because during shutdown/mission-unload the bitmap
+	// entries may already be cleaned up, causing bm_get_base_frame() to return -1.
+	// That would skip ref-counting and every frame slot would independently queue
+	// the same shared resources for destruction (double-free).
+	ts->used = false;
+
+	int baseFrame = ts->bitmapHandle - static_cast<int>(ts->arrayIndex);
+	int numFrames = static_cast<int>(ts->arrayLayers);
+	vk::Image sharedImage = ts->image;
+
+	bool anyInUse = false;
+	for (int f = baseFrame; f < baseFrame + numFrames; f++) {
+		if (f == ts->bitmapHandle) {
+			continue;  // skip self (already marked unused)
+		}
+		auto* fSlot = bm_get_slot(f, true);
+		if (fSlot && fSlot->gr_info) {
+			auto* fTs = static_cast<tcache_slot_vulkan*>(fSlot->gr_info);
+			if (fTs->used && fTs->image == sharedImage) {
+				anyInUse = true;
+				break;
+			}
+		}
+	}
+
+	if (anyInUse) {
+		// Other frames still reference the shared image — just detach this slot.
+		ts->image = nullptr;
+		ts->imageView = nullptr;
+		ts->allocation = VulkanAllocation{};
+		ts->reset();
+		return false;
+	}
+
+	// Last live reference — caller destroys the shared image.
+	return true;
+}
+
 void VulkanTextureManager::flushTextures() const
 {
 	if (!m_initialized) {
@@ -316,38 +364,11 @@ void VulkanTextureManager::flushTextures() const
 				continue;
 			}
 
-			// For shared animation texture arrays: mark this frame as unused.
-			// Only destroy the actual image when no frame references it.
-			if (ts->arrayLayers > 1 && ts->bitmapHandle >= 0) {
-				ts->used = false;
-
-				int baseFrame = ts->bitmapHandle - static_cast<int>(ts->arrayIndex);
-				int numFrames = static_cast<int>(ts->arrayLayers);
-				vk::Image sharedImage = ts->image;
-
-				bool anyInUse = false;
-				for (int f = baseFrame; f < baseFrame + numFrames; f++) {
-					if (f == ts->bitmapHandle) {
-						continue;
-					}
-					auto* fSlot = bm_get_slot(f, true);
-					if (fSlot && fSlot->gr_info) {
-						auto* fTs = static_cast<tcache_slot_vulkan*>(fSlot->gr_info);
-						if (fTs->used && fTs->image == sharedImage) {
-							anyInUse = true;
-							break;
-						}
-					}
-				}
-				if (anyInUse) {
-					// Other frames still reference — just detach this slot
-					ts->image = nullptr;
-					ts->imageView = nullptr;
-					ts->allocation = VulkanAllocation{};
-					ts->reset();
-					continue;
-				}
-				// Last reference — fall through to destroy
+			// For shared animation texture arrays: only destroy the actual image
+			// when no other frame references it (detaches this slot in place and
+			// returns false otherwise).
+			if (!releaseAnimationSlotRef(ts)) {
+				continue;
 			}
 
 			// Queue deferred destruction of GPU resources
@@ -401,46 +422,15 @@ void VulkanTextureManager::bm_free_data(bitmap_slot* slot, bool release) const
 	auto* ts = static_cast<tcache_slot_vulkan*>(slot->gr_info);
 	auto* deletionQueue = getDeletionQueue();
 
-	// For shared animation texture arrays: check if any other frame still needs the image.
-	// We compute base frame from slot data (bitmapHandle - arrayIndex) rather than calling
-	// bm_get_base_frame(), because during shutdown/mission-unload the bitmap entries may
-	// already be cleaned up, causing bm_get_base_frame() to return -1. That would skip
-	// ref-counting and every frame slot would independently queue the same shared resources
-	// for destruction (double-free).
-	if (ts->arrayLayers > 1 && ts->bitmapHandle >= 0) {
-		ts->used = false;
-
-		int baseFrame = ts->bitmapHandle - static_cast<int>(ts->arrayIndex);
-		int numFrames = static_cast<int>(ts->arrayLayers);
-		vk::Image sharedImage = ts->image;
-
-		bool anyInUse = false;
-		for (int f = baseFrame; f < baseFrame + numFrames; f++) {
-			if (f == ts->bitmapHandle) {
-				continue;  // skip self (already marked unused)
-			}
-			auto* fSlot = bm_get_slot(f, true);
-			if (fSlot && fSlot->gr_info) {
-				auto* fTs = static_cast<tcache_slot_vulkan*>(fSlot->gr_info);
-				if (fTs->used && fTs->image == sharedImage) {
-					anyInUse = true;
-					break;
-				}
-			}
+	// For shared animation texture arrays: if another frame still references the
+	// shared image, detach this slot only (releaseAnimationSlotRef returns false);
+	// otherwise fall through to destroy the shared image.
+	if (!releaseAnimationSlotRef(ts)) {
+		if (release) {
+			delete ts;
+			slot->gr_info = nullptr;
 		}
-		if (anyInUse) {
-			// Other frames still use the shared image — just detach this slot
-			ts->image = nullptr;
-			ts->imageView = nullptr;
-			ts->allocation = VulkanAllocation{};
-			ts->reset();
-			if (release) {
-				delete ts;
-				slot->gr_info = nullptr;
-			}
-			return;
-		}
-		// No frames in use — fall through to destroy the shared image
+		return;
 	}
 
 	// Queue resources for deferred destruction to avoid destroying
@@ -905,23 +895,10 @@ bool VulkanTextureManager::upload3DTexture(int handle, bitmap* bm, int texDepth)
 	}
 
 	// Create staging buffer
-	vk::BufferCreateInfo bufferInfo;
-	bufferInfo.size = dataSize;
-	bufferInfo.usage = vk::BufferUsageFlagBits::eTransferSrc;
-	bufferInfo.sharingMode = vk::SharingMode::eExclusive;
-
 	vk::Buffer stagingBuffer;
 	VulkanAllocation stagingAllocation;
-
-	try {
-		stagingBuffer = m_device.createBuffer(bufferInfo);
-	} catch (const vk::SystemError& e) {
-		nprintf(("vulkan", "Failed to create staging buffer for 3D texture: %s\n", e.what()));
-		return false;
-	}
-
-	if (!m_memoryManager->allocateBufferMemory(stagingBuffer, MemoryUsage::CpuOnly, stagingAllocation)) {
-		m_device.destroyBuffer(stagingBuffer);
+	if (!createStagingBuffer(dataSize, stagingBuffer, stagingAllocation)) {
+		nprintf(("vulkan", "Failed to create staging buffer for 3D texture!\n"));
 		return false;
 	}
 
@@ -932,26 +909,9 @@ bool VulkanTextureManager::upload3DTexture(int handle, bitmap* bm, int texDepth)
 	m_memoryManager->flushMemory(stagingAllocation, 0, dataSize);
 	m_memoryManager->unmapMemory(stagingAllocation);
 
-	// Record transitions + copy and submit
-	vk::CommandBuffer cmd = beginSingleTimeCommands();
-
-	// Transition: eUndefined → eTransferDstOptimal
-	vk::ImageMemoryBarrier barrier;
-	barrier.srcAccessMask = {};
-	barrier.dstAccessMask = vk::AccessFlagBits::eTransferWrite;
-	barrier.oldLayout = vk::ImageLayout::eUndefined;
-	barrier.newLayout = vk::ImageLayout::eTransferDstOptimal;
-	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	barrier.image = ts->image;
-	barrier.subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
-
-	cmd.pipelineBarrier(
-		vk::PipelineStageFlagBits::eTopOfPipe,
-		vk::PipelineStageFlagBits::eTransfer,
-		{}, nullptr, nullptr, barrier);
-
-	// Copy buffer to 3D image
+	// Record transitions + copy and submit. Route through the shared
+	// recordUploadCommands path with a single copy region carrying the full 3D
+	// extent (depth = depth3D); the barrier sequence is identical to the 2D path.
 	vk::BufferImageCopy region;
 	region.bufferOffset = 0;
 	region.bufferRowLength = 0;
@@ -963,19 +923,9 @@ bool VulkanTextureManager::upload3DTexture(int handle, bitmap* bm, int texDepth)
 	region.imageOffset = vk::Offset3D(0, 0, 0);
 	region.imageExtent = vk::Extent3D(width, height, depth3D);
 
-	cmd.copyBufferToImage(stagingBuffer, ts->image, vk::ImageLayout::eTransferDstOptimal, region);
-
-	// Transition: eTransferDstOptimal → eShaderReadOnlyOptimal
-	barrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
-	barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
-	barrier.oldLayout = vk::ImageLayout::eTransferDstOptimal;
-	barrier.newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-
-	cmd.pipelineBarrier(
-		vk::PipelineStageFlagBits::eTransfer,
-		vk::PipelineStageFlagBits::eFragmentShader,
-		{}, nullptr, nullptr, barrier);
-
+	vk::CommandBuffer cmd = beginSingleTimeCommands();
+	recordUploadCommands(cmd, ts->image, stagingBuffer, format, width, height,
+	                     1, vk::ImageLayout::eUndefined, false, {region});
 	submitUploadAsync(cmd, stagingBuffer, stagingAllocation);
 
 	// Update slot info
@@ -1159,10 +1109,23 @@ bool VulkanTextureManager::uploadTexture2D(int handle, bitmap* bm, int compType)
 		}
 	}
 
-	// If texture already exists with same dimensions, just update data
-	if (ts->image && ts->width == width && ts->height == height && ts->format == format) {
-		// Update existing texture - would use staging buffer
-		// For now, recreate
+	// If the texture already exists with identical extent+format we could update
+	// it in place (transition from ts->currentLayout, copy, transition back — the
+	// exact pattern update_texture already uses) instead of orphaning the old
+	// image and creating a fresh one. That in-place path is a behavior change with
+	// a cross-frame write into a still-referenced image, so it's gated on evidence
+	// that this condition actually fires often enough to matter (C4/B6 follow-up in
+	// the review-fixes plan). Log the first few hits so a test run reveals the
+	// real trigger frequency; behavior is unchanged (fall through to recreate).
+	if (ts->image && ts->width == width && ts->height == height && ts->format == format &&
+	    ts->arrayLayers <= 1) {
+		static int reuploadLogCount = 0;
+		if (reuploadLogCount < 20) {
+			nprintf(("vulkan", "VulkanTextureManager::uploadTexture2D: re-upload of resident texture "
+				"handle=%d (%ux%u) — recreating (in-place update not yet implemented)\n",
+				handle, width, height));
+			reuploadLogCount++;
+		}
 	}
 
 	// Defer destruction of existing resources — they may still be referenced
@@ -1563,22 +1526,12 @@ void VulkanTextureManager::update_texture(int bitmap_handle, int bpp, const ubyt
 	size_t dataSize = w * h * dstBytesPerPixel;
 
 	// Create staging buffer
-	vk::BufferCreateInfo bufferInfo;
-	bufferInfo.size = dataSize;
-	bufferInfo.usage = vk::BufferUsageFlagBits::eTransferSrc;
-	bufferInfo.sharingMode = vk::SharingMode::eExclusive;
-
 	vk::Buffer stagingBuffer;
 	VulkanAllocation stagingAllocation;
-
-	try {
-		stagingBuffer = m_device.createBuffer(bufferInfo);
-	} catch (const vk::SystemError& e) {
-		nprintf(("vulkan", "VulkanTextureManager::update_texture: Failed to create staging buffer: %s\n", e.what()));
+	if (!createStagingBuffer(dataSize, stagingBuffer, stagingAllocation)) {
+		nprintf(("vulkan", "VulkanTextureManager::update_texture: Failed to create staging buffer\n"));
 		return;
 	}
-
-	Verify(m_memoryManager->allocateBufferMemory(stagingBuffer, MemoryUsage::CpuOnly, stagingAllocation));
 
 	// Copy data to staging buffer
 	void* mapped = m_memoryManager->mapMemory(stagingAllocation);

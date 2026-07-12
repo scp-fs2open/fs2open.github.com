@@ -252,7 +252,11 @@ void VulkanFog::renderScene(vk::CommandBuffer cmd)
 		fogData.clip_inf_dist = Neb2_fog_skybox_clip_distance;
 	}
 
-	// Custom descriptor writes to bind depth copy at binding 4
+	// Hand-rolled fullscreen pass rather than PostProcessContext::drawFullscreenTriangle
+	// (C7): the scene-fog shader samples the scene-depth copy at Material binding 4
+	// (DepthMap), which the shared helper doesn't bind — it only writes a single
+	// color texture into TextureArray[0]. The per-frame scratch-ring UBO plumbing (the
+	// A2/A3/B5/C7 win) is shared; only the custom Material-set binds stay local.
 	PipelineConfig config;
 	config.shaderType = SDR_TYPE_SCENE_FOG;
 	config.vertexLayoutHash = 0;
@@ -539,9 +543,13 @@ void VulkanFog::renderVolumetric(vk::CommandBuffer cmd)
 		volFogFlags |= SDR_FLAG_VOLUMETRICS_NOISE;
 	}
 
-	// We need to use a custom descriptor write because the volumetric shader uses sampler3D
-	// at bindings 5 and 6, which differs from the default drawFullscreenTriangle fallbacks (sampler2D).
-	// So we replicate the drawFullscreenTriangle pattern but customize the material set.
+	// Hand-rolled fullscreen pass rather than PostProcessContext::drawFullscreenTriangle
+	// (C7): the volumetric shader binds five Material-set textures the shared helper
+	// can't express — DepthMap (binding 4), a sampler3D volume texture (binding 5,
+	// reusing the SceneColor slot) and a sampler3D noise texture (binding 6, reusing
+	// DistortionMap), whose fallbacks are 3D not 2D. drawFullscreenTriangle only writes
+	// TextureArray[0]. The per-frame scratch-ring UBO plumbing is still shared; only the
+	// custom Material-set binds stay local.
 
 	PipelineConfig config;
 	config.shaderType = SDR_TYPE_VOLUMETRIC_FOG;

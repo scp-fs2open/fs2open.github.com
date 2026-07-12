@@ -982,10 +982,11 @@ void VulkanDrawManager::printFrameStats()
 		// pipeline permutations being created mid-mission).
 		auto* descMgr = getDescriptorManager();
 		auto* pipeMgr = getPipelineManager();
-		nprintf(("vulkanframe", "  DESC: sets=%u writes=%u | pipelines total=%zu\n",
+		nprintf(("vulkanframe", "  DESC: sets=%u writes=%u | pipelines total=%zu | onDemandTexUploads=%d\n",
 			descMgr->getSetsAllocatedThisFrame(),
 			descMgr->getWritesThisFrame(),
-			pipeMgr->getPipelineCount()));
+			pipeMgr->getPipelineCount(),
+			m_frameStats.onDemandTextureUploads));
 	}
 
 	m_frameStatsFrameNum++;
@@ -1090,6 +1091,7 @@ bool VulkanDrawManager::bindMaterialTextures(material* mat, DescriptorWriter* wr
 					texManager->bm_data(handle, bmp, bm_is_compressed(handle));
 					bm_unlock(handle);
 					texSlot = texManager->getTextureSlot(handle);
+					m_frameStats.onDemandTextureUploads++;
 				}
 			}
 			if (texSlot && texSlot->imageView) {
@@ -1195,6 +1197,7 @@ bool VulkanDrawManager::bindMaterialTextures(material* mat, DescriptorWriter* wr
 				// Upload texture
 				texManager->bm_data(textureHandle, bmp, bm_is_compressed(textureHandle));
 				bm_unlock(textureHandle);
+				m_frameStats.onDemandTextureUploads++;
 
 				// Re-get the slot after upload
 				texSlot = texManager->getTextureSlot(textureHandle);

@@ -583,6 +583,15 @@ void VulkanPostProcessor::copySceneDepth(vk::CommandBuffer cmd) const
 
 void VulkanPostProcessor::blitToSwapChain(vk::CommandBuffer cmd)
 {
+	// C8: unlike PostProcessContext::drawFullscreenTriangle (which begins and ends
+	// its OWN render pass), blitToSwapChain draws INTO the caller's already-active
+	// composition render pass — it keys the pipeline on
+	// stateTracker->getCurrentRenderPass() and goes through the state tracker
+	// (bindPipeline/setViewport) rather than raw cmd recording, because the HUD/2D
+	// draws that follow it in the same pass must see consistent tracker state. That
+	// in-pass, tracker-routed shape is why it can't be folded into the standalone
+	// helper.
+	//
 	// If LDR targets exist, executeTonemap()+executeFXAA() already ran.
 	// Blit from the latest post-processing result with passthrough settings.
 	// Otherwise, fall back to direct HDR→swap chain tonemapping.
