@@ -120,10 +120,13 @@ bool VulkanPostProcessor::init(vk::Device device, vk::PhysicalDevice physDevice,
 		subpass.pColorAttachments = &colorRef;
 		subpass.pDepthStencilAttachment = &depthRef;
 
-		// Dependency: external → subpass 0
-		// Includes eTransfer in srcStageMask so this render pass is compatible with
-		// m_sceneRenderPassLoad (which follows copy_effect_texture transfer ops).
-		// Vulkan requires render passes sharing a framebuffer to have identical dependencies.
+		// Dependency: external → subpass 0.
+		// Note: render-pass compatibility (sharing m_sceneFramebuffer between this
+		// pass and m_sceneRenderPassLoad, and binding pipelines across both) is
+		// defined only by attachment formats/samples and subpass structure --
+		// dependencies are NOT part of it. So each pass may carry the dependency it
+		// actually needs; they happen to be identical here only because both begin
+		// a frame's use of the same shared scene targets.
 		vk::SubpassDependency dependency;
 		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
 		dependency.dstSubpass = 0;
@@ -205,7 +208,10 @@ bool VulkanPostProcessor::init(vk::Device device, vk::PhysicalDevice physDevice,
 		subpass.pColorAttachments = &colorRef;
 		subpass.pDepthStencilAttachment = &depthRef;
 
-		// Must match m_sceneRenderPass dependency exactly for render pass compatibility
+		// Kept identical to m_sceneRenderPass's dependency because both passes begin
+		// a frame's use of the same shared scene targets and need the same
+		// cross-frame ordering -- NOT because compatibility requires it (it does
+		// not; compatibility ignores dependencies).
 		vk::SubpassDependency dependency;
 		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
 		dependency.dstSubpass = 0;

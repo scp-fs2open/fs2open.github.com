@@ -180,16 +180,17 @@ void VulkanRenderer::flip()
 	m_currentCommandBuffer.endRenderPass();
 
 #ifdef __APPLE__
-	// MoltenVK: the render pass's automatic finalLayout transition +
-	// VK_SUBPASS_EXTERNAL subpass dependency (in createEncodeRenderPass()) is
-	// spec-legal and sufficient on desktop Vulkan drivers, but MoltenVK's
-	// translation of an implicit cross-render-pass layout transition into
-	// Metal fences/barriers has been unreliable in practice, showing up as
-	// tearing/garbage in the composition image once it's immediately sampled
-	// by the output-encode pass below. Insert an explicit, standalone barrier
-	// (same access/stage transition the automatic one already promises) so
-	// MoltenVK gets an unambiguous synchronization point instead of inferring
-	// one from the render pass boundary.
+	// MoltenVK: the encode render pass's VK_SUBPASS_EXTERNAL dependency (see
+	// createEncodeRenderPass(): srcStage=eColorAttachmentOutput|eFragmentShader,
+	// srcAccess=eColorAttachmentWrite, dst covers the encode's eShaderRead) is
+	// spec-legal and sufficient on desktop Vulkan drivers, and -gr_sync_validation
+	// confirms the composition-image ordering is now clean there without this
+	// barrier. It is kept only because MoltenVK's translation of the implicit
+	// cross-render-pass sync into Metal fences/barriers has historically been
+	// unreliable (tearing/garbage in the composition image once the encode pass
+	// samples it). RE-TEST on macOS hardware after this Phase-4 dependency work;
+	// if MoltenVK now honors the subpass dependency, this explicit barrier can be
+	// removed. (Removal requires macOS hardware to verify -- tracked as a followup.)
 	if (m_currentSwapChainImage < m_compositionImages.size()) {
 		vk::ImageMemoryBarrier compositionBarrier;
 		compositionBarrier.srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;

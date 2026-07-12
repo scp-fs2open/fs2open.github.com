@@ -341,19 +341,22 @@ void VulkanRenderer::createRenderPass()
 	subpass.pColorAttachments = &colorAttachRef;
 	subpass.pDepthStencilAttachment = &depthAttachRef;
 
-	// External dependency must make the PREVIOUS frame's writes to these
-	// attachments available before this frame writes them again. The depth
-	// buffer is a single shared image (one m_depthImage for every swap-chain
-	// framebuffer), so frame N+1's loadOp=eClear collides with frame N's depth
-	// writes (WRITE_AFTER_WRITE) unless srcAccessMask lists the prior depth
-	// write; likewise the composition color's store when a swap image repeats.
-	// (Detected by -gr_sync_validation as a cross-frame WAW hazard.)
+	// External dependency must make the PREVIOUS frame's accesses to these
+	// attachments available/ordered before this frame writes them again. The
+	// depth buffer is a single shared image (one m_depthImage for every
+	// swap-chain framebuffer), so frame N+1's loadOp=eClear collides with frame
+	// N's depth writes (WRITE_AFTER_WRITE) unless srcAccessMask lists the prior
+	// depth write; likewise the composition color's store when a swap image
+	// repeats. eFragmentShader in srcStageMask additionally orders this write
+	// after the prior frame's output-encode pass sampling the composition color
+	// (a write-after-read). (All detected/verified via -gr_sync_validation.)
 	vk::SubpassDependency dependency;
 	dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
 	dependency.dstSubpass = 0;
 	dependency.srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput
 	                        | vk::PipelineStageFlagBits::eEarlyFragmentTests
-	                        | vk::PipelineStageFlagBits::eLateFragmentTests;
+	                        | vk::PipelineStageFlagBits::eLateFragmentTests
+	                        | vk::PipelineStageFlagBits::eFragmentShader;
 	dependency.dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput
 	                        | vk::PipelineStageFlagBits::eEarlyFragmentTests;
 	dependency.srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite
@@ -381,10 +384,22 @@ void VulkanRenderer::createRenderPass()
 	m_renderPass = m_device->createRenderPassUnique(renderPassInfo);
 
 	// Create a second render pass with loadOp=eLoad for resuming the composition
-	// pass after post-processing. Same formats/samples = render-pass-compatible with m_renderPass.
+	// pass after post-processing. Render-pass compatibility (which is what lets a
+	// pipeline built against m_renderPass bind under m_renderPassLoad, and lets
+	// both share m_swapChainFramebuffers) is defined ONLY by matching attachment
+	// formats/sample counts and subpass structure -- it deliberately ignores
+	// load/store ops, layouts, AND subpass dependencies. So this variant reuses
+	// the same renderPassInfo/dependency but only overrides the ops/layouts below.
 	colorAttachment.loadOp = vk::AttachmentLoadOp::eLoad;
 	colorAttachment.initialLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 
+	// Depth is deliberately re-cleared (loadOp=eClear) on resume: the resumed
+	// composition pass draws only HUD / 2D / UI on top of the already-composited
+	// post-processed color, none of which depends on the 3D scene's depth (that
+	// lives in the separate post-processor scene-depth target). initialLayout is
+	// eDepthStencilAttachmentOptimal (not eUndefined) so no cross-frame layout
+	// transition write occurs here -- the depth WAW is handled by the shared
+	// dependency's eDepthStencilAttachmentWrite srcAccessMask above.
 	depthAttachment.loadOp = vk::AttachmentLoadOp::eClear;
 	depthAttachment.initialLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
 
