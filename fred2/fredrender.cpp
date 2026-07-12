@@ -1424,21 +1424,29 @@ int object_check_collision(object *objp, vec3d *p0, vec3d *p1, vec3d *hitpos) {
 			return 0;
 	}
 
-	// PROP HERE?
+	if (objp->type == OBJ_PROP) {
+		if (!Props[objp->instance].has_value())
+			return 0;
+	}
 
 	if (objp->flags[Object::Object_Flags::Hidden, Object::Object_Flags::Locked_from_editing])
 		return 0;
 
-	if ((Show_ship_models || Show_outlines) && (objp->type == OBJ_SHIP)) {
-		mc.model_num = Ship_info[Ships[objp->instance].ship_info_index].model_num;			// Fill in the model to check
+	mc.model_instance_num = -1;
 
-	} else if ((Show_ship_models || Show_outlines) && (objp->type == OBJ_START)) {
-		mc.model_num = Ship_info[Ships[objp->instance].ship_info_index].model_num;			// Fill in the model to check
+	if ((Show_ship_models || Show_outlines) && (objp->type == OBJ_SHIP || objp->type == OBJ_START)) {
+		auto& shp = Ships[objp->instance];
+		mc.model_num = Ship_info[shp.ship_info_index].model_num;			// Fill in the model to check
+		mc.model_instance_num = shp.model_instance_num;
+
+	} else if ((Show_ship_models || Show_outlines) && (objp->type == OBJ_PROP)) {
+		auto& prp = Props[objp->instance].value();
+		mc.model_num = Prop_info[prp.prop_info_index].model_num;			// Fill in the model to check
+		mc.model_instance_num = prp.model_instance_num;
 
 	} else
 		return fvi_ray_sphere(hitpos, p0, p1, &objp->pos, (objp->radius > 0.1f) ? objp->radius : LOLLIPOP_SIZE);
 
-	mc.model_instance_num = -1;
 	mc.orient = &objp->orient;	// The object's orient
 	mc.pos = &objp->pos;			// The object's position
 	mc.p0 = p0;					// Point 1 of ray to check
