@@ -432,7 +432,18 @@ void briefing_editor_dlg::update_data(int update)
 
 		if (m_last_icon >= 0) {
 			valid = (m_id != ptr->icons[m_last_icon].id);
-			if (m_id >= 0) {
+			if (m_id < 0) {
+				// briefing icon ids must never be negative; revert to the previous id
+				if (valid) {
+					char msg[1024];
+
+					sprintf(msg, "Icon ID #%d is invalid.  Briefing icon IDs cannot be negative.\n"
+						"Icon ID has been reset back to %d", m_id, ptr->icons[m_last_icon].id);
+
+					m_id = ptr->icons[m_last_icon].id;
+					MessageBox(msg);
+				}
+			} else {
 				if (valid && !m_change_local) {
 					for (i=m_last_stage+1; i<Briefing->num_stages; i++) {
 						if (find_icon(m_id, i) >= 0) {
@@ -473,7 +484,7 @@ void briefing_editor_dlg::update_data(int update)
 
 			string_copy(buf, m_icon_label, MAX_LABEL_LEN - 1);
 			lcl_fred_replace_stuff(buf, MAX_LABEL_LEN - 1);
-			if (stricmp(ptr->icons[m_last_icon].label, buf) && !m_change_local) {
+			if (strcmp(ptr->icons[m_last_icon].label, buf) && !m_change_local) {
 				set_modified();
 				reset_icon_loop(m_last_stage);
 				while (get_next_icon(m_id))
@@ -483,7 +494,7 @@ void briefing_editor_dlg::update_data(int update)
 
 			string_copy(buf, m_icon_closeup_label, MAX_LABEL_LEN - 1);
 			lcl_fred_replace_stuff(buf, MAX_LABEL_LEN - 1);
-			if (stricmp(ptr->icons[m_last_icon].closeup_label, buf) && !m_change_local) {
+			if (strcmp(ptr->icons[m_last_icon].closeup_label, buf) && !m_change_local) {
 				set_modified();
 				reset_icon_loop(m_last_stage);
 				while (get_next_icon(m_id))
@@ -491,28 +502,33 @@ void briefing_editor_dlg::update_data(int update)
 			}
 			strcpy_s(ptr->icons[m_last_icon].closeup_label, buf);
 
-			if (m_icon_scale > 0)
-				ptr->icons[m_last_icon].scale_factor = m_icon_scale / 100.0f;
+			if (m_icon_scale > 0) {
+				float new_scale = m_icon_scale / 100.0f;
+				if ((ptr->icons[m_last_icon].scale_factor != new_scale) && !m_change_local) {
+					set_modified();
+					reset_icon_loop(m_last_stage);
+					while (get_next_icon(m_id))
+						iconp->scale_factor = new_scale;
+				}
+				ptr->icons[m_last_icon].scale_factor = new_scale;
+			}
 
-			if ( m_hilight )
-				ptr->icons[m_last_icon].flags |= BI_HIGHLIGHT;
-			else
-				ptr->icons[m_last_icon].flags &= ~BI_HIGHLIGHT;
+			// build the new flags for this icon from the checkboxes, preserving any non-editable bits
+			const int editable_flags = BI_HIGHLIGHT | BI_MIRROR_ICON | BI_USE_WING_ICON | BI_USE_CARGO_ICON;
+			int new_flags = ptr->icons[m_last_icon].flags;
+			if (m_hilight)   new_flags |= BI_HIGHLIGHT;      else new_flags &= ~BI_HIGHLIGHT;
+			if (m_flipicon)  new_flags |= BI_MIRROR_ICON;    else new_flags &= ~BI_MIRROR_ICON;
+			if (m_use_wing)  new_flags |= BI_USE_WING_ICON;  else new_flags &= ~BI_USE_WING_ICON;
+			if (m_use_cargo) new_flags |= BI_USE_CARGO_ICON; else new_flags &= ~BI_USE_CARGO_ICON;
 
-			if (m_flipicon)
-				ptr->icons[m_last_icon].flags |= BI_MIRROR_ICON;
-			else
-				ptr->icons[m_last_icon].flags &= ~BI_MIRROR_ICON;
-
-			if (m_use_wing)
-				ptr->icons[m_last_icon].flags |= BI_USE_WING_ICON;
-			else
-				ptr->icons[m_last_icon].flags &= ~BI_USE_WING_ICON;
-
-			if (m_use_cargo)
-				ptr->icons[m_last_icon].flags |= BI_USE_CARGO_ICON;
-			else
-				ptr->icons[m_last_icon].flags &= ~BI_USE_CARGO_ICON;
+			if ((ptr->icons[m_last_icon].flags != new_flags) && !m_change_local) {
+				set_modified();
+				reset_icon_loop(m_last_stage);
+				// apply only the editable bits to later icons, preserving their other flags
+				while (get_next_icon(m_id))
+					iconp->flags = (iconp->flags & ~editable_flags) | (new_flags & editable_flags);
+			}
+			ptr->icons[m_last_icon].flags = new_flags;
 
 			if ((ptr->icons[m_last_icon].type != m_icon_image) && !m_change_local) {
 				set_modified();
@@ -942,6 +958,7 @@ void briefing_editor_dlg::copy_stage(int from, int to)
 		Briefing->stages[to].camera_time = 500;
 		Briefing->stages[to].num_icons = 0;
 		Briefing->stages[to].formula = Locked_sexp_true;
+		Briefing->stages[to].draw_grid = true;
 		Briefing->stages[to].grid_color = Color_briefing_grid;
 		return;
 	}
@@ -956,6 +973,7 @@ void briefing_editor_dlg::copy_stage(int from, int to)
 	Briefing->stages[to].num_icons = Briefing->stages[from].num_icons;
 	Briefing->stages[to].num_lines = Briefing->stages[from].num_lines;
 	Briefing->stages[to].formula = Briefing->stages[from].formula;
+	Briefing->stages[to].draw_grid = Briefing->stages[from].draw_grid;
 	// For now let's just always set this back to default. Eventually when we have a UI color picker in qtFRED, we can copy from stage to stage
 	Briefing->stages[to].grid_color = Color_briefing_grid;
 
@@ -1089,12 +1107,13 @@ void briefing_editor_dlg::OnMakeIcon()
 
 	strncpy(biconp->label, name, len);
 	biconp->label[len] = 0;
+	biconp->closeup_label[0] = 0;
 //	iconp->text[0] = 0;
 	biconp->type = 0;
 	biconp->team = team;
 	biconp->pos = pos;
 	biconp->flags = 0;
-	biconp->id = Cur_brief_id++;
+	biconp->id = get_unused_briefing_icon_id();
 	biconp->scale_factor = 1.0f;
 
 	biconp->modelnum = -1;
@@ -1300,9 +1319,12 @@ int briefing_editor_dlg::check_mouse_hit(int x, int y)
 	return -1;
 }
 
-void briefing_editor_dlg::OnPropagateIcons() 
+void briefing_editor_dlg::OnPropagateIcons()
 {
 	object *ptr;
+
+	// commit any pending edits in the icon fields before propagating the icons forward
+	update_data(1);
 
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
@@ -1343,6 +1365,26 @@ int briefing_editor_dlg::find_icon(int id, int stage)
 	return -1;
 }
 
+// is the given id already used by any icon in any stage of the current briefing?
+bool briefing_editor_dlg::briefing_icon_id_used(int id)
+{
+	for (int s=0; s<Briefing->num_stages; s++)
+		if (find_icon(id, s) >= 0)
+			return true;
+
+	return false;
+}
+
+// find an id that isn't already used by an icon in the current briefing, advancing
+// Cur_brief_id past any values that are already taken (e.g. from manual id edits)
+int briefing_editor_dlg::get_unused_briefing_icon_id()
+{
+	while (briefing_icon_id_used(Cur_brief_id))
+		Cur_brief_id++;
+
+	return Cur_brief_id++;
+}
+
 void briefing_editor_dlg::reset_icon_loop(int stage)
 {
 	stage_loop = stage + 1;
@@ -1355,7 +1397,7 @@ int briefing_editor_dlg::get_next_icon(int id)
 		icon_loop++;
 		if (icon_loop >= Briefing->stages[stage_loop].num_icons) {
 			stage_loop++;
-			if (stage_loop > Briefing->num_stages)
+			if (stage_loop >= Briefing->num_stages)
 				return 0;
 
 			icon_loop = -1;
