@@ -688,9 +688,9 @@ void VulkanPostProcessor::blitToSwapChain(vk::CommandBuffer cmd)
 	cmd.draw(3, 1, 0, 0);
 }
 
-void VulkanPostProcessor::encodeOutput(vk::CommandBuffer cmd, vk::RenderPass renderPass,
+void VulkanPostProcessor::encodeToSwapChainPass(vk::CommandBuffer cmd, vk::RenderPass renderPass,
 	vk::Framebuffer framebuffer, vk::Extent2D extent, vk::ImageView sourceView, vk::Sampler sampler,
-	float paperwhiteNits, float peakNits, float gamma)
+	int shaderType, const void* uboData, size_t uboSize)
 {
 	auto* pipelineMgr = getPipelineManager();
 	auto* descriptorMgr = getDescriptorManager();
@@ -700,12 +700,10 @@ void VulkanPostProcessor::encodeOutput(vk::CommandBuffer cmd, vk::RenderPass ren
 
 	GR_DEBUG_SCOPE("Draw scene texture");
 
-	// HDR10/PQ/BT.2020 encode (plus the user gamma slider) -- the SDR leg
-	// uses encodeOutputSdr() instead. The UBO comes from the shared per-frame
-	// scratch ring; its per-frame budget covers every fullscreen pass of the
-	// frame including this final one.
+	// The UBO comes from the shared per-frame scratch ring; its per-frame budget
+	// covers every fullscreen pass of the frame including this final encode.
 	PipelineConfig config;
-	config.shaderType = SDR_TYPE_POST_PROCESS_HDR10_ENCODE;
+	config.shaderType = static_cast<shader_type>(shaderType);
 	config.vertexLayoutHash = 0;
 	config.primitiveType = PRIM_TYPE_TRIS;
 	config.depthMode = ZBUFFER_TYPE_NONE;
@@ -717,17 +715,10 @@ void VulkanPostProcessor::encodeOutput(vk::CommandBuffer cmd, vk::RenderPass ren
 	vertex_layout emptyLayout;
 	vk::Pipeline pipeline = pipelineMgr->getPipeline(config, emptyLayout);
 	if (!pipeline) {
-		mprintf(("VulkanPostProcessor: Failed to get output-encode pipeline!\n"));
+		mprintf(("VulkanPostProcessor: Failed to get output-encode pipeline (shaderType=%d)!\n", shaderType));
 		return;
 	}
 	vk::PipelineLayout pipelineLayout = pipelineMgr->getPipelineLayout();
-
-	// Encode parameters
-	graphics::generic_data::hdr10_encode_data encodeData;
-	memset(&encodeData, 0, sizeof(encodeData));
-	encodeData.hdr_paperwhite_nits = paperwhiteNits;
-	encodeData.hdr_peak_nits = peakNits;
-	encodeData.gamma = gamma;
 
 	vk::RenderPassBeginInfo rpBegin;
 	rpBegin.renderPass = renderPass;
@@ -771,7 +762,7 @@ void VulkanPostProcessor::encodeOutput(vk::CommandBuffer cmd, vk::RenderPass ren
 	writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
 	{
 		vk::DeviceSize slotOffset =
-			m_ctx.scratchRing.alloc(descriptorMgr->getCurrentFrame(), &encodeData, sizeof(encodeData));
+			m_ctx.scratchRing.alloc(descriptorMgr->getCurrentFrame(), uboData, uboSize);
 		writer.setBuffer(PerDrawBinding::GenericData,
 			{m_ctx.scratchRing.buffer(), slotOffset, m_ctx.scratchRing.slotSize()});
 	}
@@ -785,99 +776,32 @@ void VulkanPostProcessor::encodeOutput(vk::CommandBuffer cmd, vk::RenderPass ren
 	cmd.endRenderPass();
 }
 
+void VulkanPostProcessor::encodeOutput(vk::CommandBuffer cmd, vk::RenderPass renderPass,
+	vk::Framebuffer framebuffer, vk::Extent2D extent, vk::ImageView sourceView, vk::Sampler sampler,
+	float paperwhiteNits, float peakNits, float gamma)
+{
+	// HDR10/PQ/BT.2020 encode leg (plus the user gamma slider).
+	graphics::generic_data::hdr10_encode_data encodeData;
+	memset(&encodeData, 0, sizeof(encodeData));
+	encodeData.hdr_paperwhite_nits = paperwhiteNits;
+	encodeData.hdr_peak_nits = peakNits;
+	encodeData.gamma = gamma;
+	encodeToSwapChainPass(cmd, renderPass, framebuffer, extent, sourceView, sampler,
+		SDR_TYPE_POST_PROCESS_HDR10_ENCODE, &encodeData, sizeof(encodeData));
+}
+
 void VulkanPostProcessor::encodeOutputSdr(vk::CommandBuffer cmd, vk::RenderPass renderPass,
 	vk::Framebuffer framebuffer, vk::Extent2D extent, vk::ImageView sourceView, vk::Sampler sampler,
 	float gamma)
 {
-	auto* pipelineMgr = getPipelineManager();
-	auto* descriptorMgr = getDescriptorManager();
-	if (!pipelineMgr || !descriptorMgr || !m_ctx.scratchRing.isValid()) {
-		return;
-	}
-
-	GR_DEBUG_SCOPE("Draw scene texture");
-
-	// SDR leg of VulkanRenderer::encodeToSwapChain(): the composition image
-	// already carries the final display-ready sRGB-encoded frame (3D scene +
-	// menus/HUD alike), so this pass just applies the user gamma/brightness
-	// slider on the way into the swap chain image. UBO from the shared
-	// per-frame scratch ring, same as encodeOutput().
-	PipelineConfig config;
-	config.shaderType = SDR_TYPE_GAMMA_BLIT;
-	config.vertexLayoutHash = 0;
-	config.primitiveType = PRIM_TYPE_TRIS;
-	config.depthMode = ZBUFFER_TYPE_NONE;
-	config.blendMode = ALPHA_BLEND_NONE;
-	config.cullEnabled = false;
-	config.depthWriteEnabled = false;
-	config.renderPass = renderPass;
-
-	vertex_layout emptyLayout;
-	vk::Pipeline pipeline = pipelineMgr->getPipeline(config, emptyLayout);
-	if (!pipeline) {
-		mprintf(("VulkanPostProcessor: Failed to get SDR output-encode pipeline!\n"));
-		return;
-	}
-	vk::PipelineLayout pipelineLayout = pipelineMgr->getPipelineLayout();
-
+	// SDR leg: the composition image already carries the final display-ready
+	// sRGB-encoded frame (3D scene + menus/HUD alike); this just applies the user
+	// gamma/brightness slider on the way into the swap chain image.
 	graphics::generic_data::gamma_blit_data blitData;
 	memset(&blitData, 0, sizeof(blitData));
 	blitData.gamma = gamma;
-
-	vk::RenderPassBeginInfo rpBegin;
-	rpBegin.renderPass = renderPass;
-	rpBegin.framebuffer = framebuffer;
-	rpBegin.renderArea.offset = vk::Offset2D(0, 0);
-	rpBegin.renderArea.extent = extent;
-
-	cmd.beginRenderPass(rpBegin, vk::SubpassContents::eInline);
-	cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
-
-	vk::Viewport viewport;
-	viewport.x = 0.0f;
-	viewport.y = 0.0f;
-	viewport.width = static_cast<float>(extent.width);
-	viewport.height = static_cast<float>(extent.height);
-	viewport.minDepth = 0.0f;
-	viewport.maxDepth = 1.0f;
-	cmd.setViewport(0, viewport);
-
-	vk::Rect2D scissor;
-	scissor.offset = vk::Offset2D(0, 0);
-	scissor.extent = extent;
-	cmd.setScissor(0, scissor);
-
-	DescriptorWriter writer;
-	writer.reset(m_ctx.device, descriptorMgr->getFallbacks());
-
-	vk::DescriptorSet materialSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Material);
-	Verify(materialSet);
-	writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
-	{
-		std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texArrayInfos;
-		texArrayInfos.fill(descriptorMgr->getFallbacks().texture2D);
-		texArrayInfos[0].sampler = sampler;
-		texArrayInfos[0].imageView = sourceView;
-		writer.setImageArray(MaterialBinding::TextureArray, texArrayInfos);
-	}
-
-	vk::DescriptorSet perDrawSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::PerDraw);
-	Verify(perDrawSet);
-	writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
-	{
-		vk::DeviceSize slotOffset =
-			m_ctx.scratchRing.alloc(descriptorMgr->getCurrentFrame(), &blitData, sizeof(blitData));
-		writer.setBuffer(PerDrawBinding::GenericData,
-			{m_ctx.scratchRing.buffer(), slotOffset, m_ctx.scratchRing.slotSize()});
-	}
-	writer.flush();
-
-	cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout,
-		static_cast<uint32_t>(DescriptorSetIndex::Material),
-		{materialSet, perDrawSet}, {});
-
-	cmd.draw(3, 1, 0, 0);
-	cmd.endRenderPass();
+	encodeToSwapChainPass(cmd, renderPass, framebuffer, extent, sourceView, sampler,
+		SDR_TYPE_GAMMA_BLIT, &blitData, sizeof(blitData));
 }
 
 // No-op: In OpenGL, begin/end push/pop an FBO and run the post-processing
