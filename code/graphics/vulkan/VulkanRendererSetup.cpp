@@ -114,20 +114,11 @@ bool isDeviceUnsuitable(PhysicalDeviceValues& values, const vk::UniqueSurfaceKHR
 				values.graphicsQueueIndex.initialized = true;
 				values.graphicsQueueIndex.index = i;
 			}
-			// "All commands that are allowed on a queue that supports transfer operations
-			// are also allowed on a queue that supports either graphics or compute operations
-			if (!values.transferQueueIndex.initialized) {
-				values.transferQueueIndex.initialized = true;
-				values.transferQueueIndex.index = i;
-			}
 		}
-		if (queue.queueFlags & vk::QueueFlagBits::eTransfer &&
-			!(queue.queueFlags & vk::QueueFlagBits::eGraphics) &&
-			!(queue.queueFlags & vk::QueueFlagBits::eCompute)) {
-			// Found a dedicated transfer queue and we prefer that
-			values.transferQueueIndex.initialized = true;
-			values.transferQueueIndex.index = i;
-		}
+		// No dedicated transfer queue is selected: all uploads run on the graphics
+		// queue (which implicitly supports transfer). Async transfer on a separate
+		// queue is future work and must be reintroduced end-to-end, including
+		// queue-family ownership transfers -- not half-wired.
 		if (!values.presentQueueIndex.initialized && values.device.getSurfaceSupportKHR(i, surface.get())) {
 			values.presentQueueIndex.initialized = true;
 			values.presentQueueIndex.index = i;
@@ -138,12 +129,6 @@ bool isDeviceUnsuitable(PhysicalDeviceValues& values, const vk::UniqueSurfaceKHR
 
 	if (!values.graphicsQueueIndex.initialized) {
 		nprintf(("vulkan", "Rejecting %s (%d) because the device does not have a graphics queue.\n",
-			values.properties.deviceName.data(),
-			values.properties.deviceID));
-		return true;
-	}
-	if (!values.transferQueueIndex.initialized) {
-		nprintf(("vulkan", "Rejecting %s (%d) because the device does not have a transfer queue.\n",
 			values.properties.deviceName.data(),
 			values.properties.deviceID));
 		return true;
@@ -827,7 +812,6 @@ bool VulkanRenderer::createLogicalDevice(const PhysicalDeviceValues& deviceValue
 
 	SCP_vector<vk::DeviceQueueCreateInfo> queueInfos;
 	const std::set<uint32_t> familyIndices{deviceValues.graphicsQueueIndex.index,
-	                                       deviceValues.transferQueueIndex.index,
 	                                       deviceValues.presentQueueIndex.index};
 
 	queueInfos.reserve(familyIndices.size());
@@ -903,8 +887,28 @@ bool VulkanRenderer::createLogicalDevice(const PhysicalDeviceValues& deviceValue
 	// linked. The RT feature structs are always linked into the chain and
 	// unlinked when unsupported, mirroring the pattern used for the instance's
 	// optional debug report callback above.
+	// Enable ONLY the core device features the renderer actually uses, each gated
+	// on the device's support bit (deviceValues.features holds the queried support;
+	// an unsupported feature stays false and is therefore never requested). This
+	// replaces enabling every supported feature, which pulled in ones we never use
+	// -- notably robustBufferAccess (per-access bounds-checking cost), plus
+	// wideLines, imageCubeArray, geometryShader, etc.
+	//
+	// Usage was audited against the pipeline/sampler creation paths and the
+	// compiled shaders (see plan A9). Because this only ever REMOVES features,
+	// the failure mode is "a used feature is no longer enabled"; the reliable
+	// exit criterion is a -gr_sync_validation soak across the test matrix
+	// (deferred, MSAA, HDR, RT shadows, wireframe, RTT/env-map, decals) reporting
+	// zero "feature not enabled" messages -- static analysis can't prove
+	// completeness for shader-driven features.
 	vk::PhysicalDeviceFeatures2 deviceFeatures2;
-	deviceFeatures2.features = deviceValues.features;
+	const auto& supportedFeatures = deviceValues.features;
+	auto& enabledFeatures = deviceFeatures2.features;
+	enabledFeatures.samplerAnisotropy    = supportedFeatures.samplerAnisotropy;    // anisotropic texture filtering (VulkanTextureManager samplers)
+	enabledFeatures.independentBlend     = supportedFeatures.independentBlend;     // per-attachment blend states (deferred decal G-buffer write masks)
+	enabledFeatures.fillModeNonSolid     = supportedFeatures.fillModeNonSolid;     // wireframe (GR_FILL_MODE_WIRE -> vk::PolygonMode::eLine)
+	enabledFeatures.shaderClipDistance   = supportedFeatures.shaderClipDistance;   // gl_ClipDistance[] in main / shadow-map / default-material vertex shaders
+	enabledFeatures.textureCompressionBC = supportedFeatures.textureCompressionBC; // BC/DXT texture formats (optional; usage gated by isTextureCompressionBCSupported)
 
 	vk::PhysicalDeviceAccelerationStructureFeaturesKHR accelStructFeatures;
 	accelStructFeatures.accelerationStructure = VK_TRUE;
@@ -935,13 +939,11 @@ bool VulkanRenderer::createLogicalDevice(const PhysicalDeviceValues& deviceValue
 
 	// Create queues
 	m_graphicsQueue = m_device->getQueue(deviceValues.graphicsQueueIndex.index, 0);
-	m_transferQueue = m_device->getQueue(deviceValues.transferQueueIndex.index, 0);
 	m_presentQueue = m_device->getQueue(deviceValues.presentQueueIndex.index, 0);
 
 	// Store physical device and queue family indices for later use
 	m_physicalDevice = deviceValues.device;
 	m_graphicsQueueFamilyIndex = deviceValues.graphicsQueueIndex.index;
-	m_transferQueueFamilyIndex = deviceValues.transferQueueIndex.index;
 	m_presentQueueFamilyIndex = deviceValues.presentQueueIndex.index;
 
 	// Initialize memory manager
@@ -960,7 +962,7 @@ bool VulkanRenderer::createLogicalDevice(const PhysicalDeviceValues& deviceValue
 	// Initialize buffer manager
 	m_bufferManager = std::unique_ptr<VulkanBufferManager>(new VulkanBufferManager());
 	if (!m_bufferManager->init(m_device.get(), m_memoryManager.get(),
-	                           m_graphicsQueueFamilyIndex, m_transferQueueFamilyIndex,
+	                           m_graphicsQueueFamilyIndex,
 	                           getMinUniformBufferOffsetAlignment())) {
 		nprintf(("vulkan", "Failed to initialize Vulkan buffer manager!\n"));
 		return false;

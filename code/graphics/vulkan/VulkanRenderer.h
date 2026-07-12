@@ -81,7 +81,6 @@ struct PhysicalDeviceValues {
 
 	SCP_vector<vk::QueueFamilyProperties> queueProperties;
 	QueueIndex graphicsQueueIndex;
-	QueueIndex transferQueueIndex;
 	QueueIndex presentQueueIndex;
 };
 
@@ -344,7 +343,6 @@ class VulkanRenderer {
 	vk::UniqueDevice m_device;
 
 	vk::Queue m_graphicsQueue;
-	vk::Queue m_transferQueue;
 	vk::Queue m_presentQueue;
 
 	vk::UniqueSwapchainKHR m_swapChain;
@@ -401,7 +399,6 @@ class VulkanRenderer {
 	// Physical device info (needed for memory manager)
 	vk::PhysicalDevice m_physicalDevice;
 	uint32_t m_graphicsQueueFamilyIndex = 0;
-	uint32_t m_transferQueueFamilyIndex = 0;
 	uint32_t m_presentQueueFamilyIndex = 0;
 
 	// Memory, buffer, and texture management

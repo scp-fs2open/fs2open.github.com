@@ -91,14 +91,12 @@ public:
 	 * @param device The Vulkan logical device
 	 * @param memoryManager The memory manager for allocations
 	 * @param graphicsQueueFamily Graphics queue family index
-	 * @param transferQueueFamily Transfer queue family index
 	 * @param minUboAlignment Minimum uniform buffer offset alignment from device limits
 	 * @return true on success
 	 */
 	bool init(vk::Device device,
 	          VulkanMemoryManager* memoryManager,
 	          uint32_t graphicsQueueFamily,
-	          uint32_t transferQueueFamily,
 	          uint32_t minUboAlignment);
 
 	/**
@@ -304,7 +302,6 @@ private:
 	VulkanMemoryManager* m_memoryManager = nullptr;
 
 	uint32_t m_graphicsQueueFamily = 0;
-	uint32_t m_transferQueueFamily = 0;
 	uint32_t m_currentFrame = 0;
 	uint64_t m_currentFrameNumber = 0;
 

@@ -190,7 +190,6 @@ void VulkanBufferManager::growFrameAllocator()
 bool VulkanBufferManager::init(vk::Device device,
                                VulkanMemoryManager* memoryManager,
                                uint32_t graphicsQueueFamily,
-                               uint32_t transferQueueFamily,
                                uint32_t minUboAlignment)
 {
 	if (m_initialized) {
@@ -206,7 +205,6 @@ bool VulkanBufferManager::init(vk::Device device,
 	m_device = device;
 	m_memoryManager = memoryManager;
 	m_graphicsQueueFamily = graphicsQueueFamily;
-	m_transferQueueFamily = transferQueueFamily;
 	m_currentFrame = 0;
 	m_uboAlignment = minUboAlignment > 0 ? minUboAlignment : 256;
 
@@ -441,15 +439,10 @@ bool VulkanBufferManager::createOrResizeBuffer(VulkanBufferObject& bufferObj, si
 	bufferInfo.size = size;
 	bufferInfo.usage = getVkUsageFlags(bufferObj.type, bufferObj.rtCapable);
 
-	// Handle queue family sharing
-	uint32_t queueFamilies[] = {m_graphicsQueueFamily, m_transferQueueFamily};
-	if (m_graphicsQueueFamily != m_transferQueueFamily) {
-		bufferInfo.sharingMode = vk::SharingMode::eConcurrent;
-		bufferInfo.queueFamilyIndexCount = 2;
-		bufferInfo.pQueueFamilyIndices = queueFamilies;
-	} else {
-		bufferInfo.sharingMode = vk::SharingMode::eExclusive;
-	}
+	// Exclusive sharing: all buffer access happens on the graphics queue (there
+	// is no separate transfer queue). Reintroducing async transfer would require
+	// eConcurrent here (or explicit queue-family ownership transfers).
+	bufferInfo.sharingMode = vk::SharingMode::eExclusive;
 
 	try {
 		bufferObj.buffer = m_device.createBuffer(bufferInfo);
