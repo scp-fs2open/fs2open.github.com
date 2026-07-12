@@ -278,6 +278,15 @@ class VulkanDrawManager {
 	void onResize();
 
 	/**
+	 * @brief Invalidate the memoized per-frame Global (Set 0) descriptor set
+	 *
+	 * Call whenever a Global-set input changes outside applyMaterial's own tracking
+	 * (currently: the shadow TLAS, via setCurrentShadowTlas). Forces the next
+	 * applyMaterial() to rebuild + rewrite Set 0.
+	 */
+	void invalidateGlobalSet() { m_globalSetDirty = true; }
+
+	/**
 	 * @brief Get current texture addressing mode
 	 */
 	int getTextureAddressing() const
@@ -431,6 +440,20 @@ class VulkanDrawManager {
 	};
 	FrameStats m_frameStats;
 	int m_frameStatsFrameNum = 0;
+
+	// ---- Per-frame Global (Set 0) descriptor memoization (B1) ----
+	// applyMaterial() rebuilt + rebound the Global set on every draw even though
+	// its inputs change at most a few times per frame. Cache it and rebuild only
+	// when a Global input actually changes. Dynamic Global inputs are: the three
+	// pending Global UBOs (Lights/DeferredGlobals/ShadowCascadeParams, via
+	// setPendingUniformBinding), the shadow-map image (shadow lazy-init), and the
+	// TLAS (setCurrentShadowTlas). EnvMap/IrradianceMap are permanent dummy
+	// fallbacks here (real env/irr live in the deferred pass's own set), so they
+	// need no invalidation. The set is pool-allocated, so it is dropped every
+	// frame (resetFrameStats) when the frame pool is reset.
+	vk::DescriptorSet m_cachedGlobalSet = nullptr;
+	bool m_globalSetDirty = true;
+	bool m_cachedGlobalHadShadow = false; // shadow-init state the cached set was built with
 
 	// Texture overrides for material bindings 4-6.
 	vk::DescriptorImageInfo m_depthTextureInfo; // binding 4: depth/position for soft particles

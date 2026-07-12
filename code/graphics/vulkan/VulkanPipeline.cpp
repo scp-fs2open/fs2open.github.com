@@ -65,47 +65,58 @@ bool PipelineConfig::operator==(const PipelineConfig& other) const
 	       }();
 }
 
+namespace {
+// boost::hash_combine-style 64-bit fold (same pattern as vertex_layout::hash()).
+// Order-dependent and avalanches every field into all bits, unlike the previous
+// `h ^= hash(field) << shift` scheme whose overlapping/wrapping shifts collided
+// heavily. operator== remains the authority for equality; a better hash only
+// reduces bucket collisions (fewer operator== calls per lookup).
+inline void hashCombine(uint64_t& seed, uint64_t value)
+{
+	seed ^= value + 0x9e3779b97f4a7c15ull + (seed << 6) + (seed >> 2);
+}
+inline uint64_t maskBits(bool x, bool y, bool z, bool w)
+{
+	return (x ? 1u : 0u) | (y ? 2u : 0u) | (z ? 4u : 0u) | (w ? 8u : 0u);
+}
+} // namespace
+
 uint64_t PipelineConfig::hash() const
 {
 	uint64_t h = 0;
 
-	// Combine all fields into hash
-	h ^= std::hash<int>()(static_cast<int>(shaderType)) << 0;
-	h ^= std::hash<unsigned int>()(shaderFlags) << 4;
-	h ^= std::hash<size_t>()(vertexLayoutHash) << 8;
-	h ^= std::hash<int>()(static_cast<int>(primitiveType)) << 12;
-	h ^= std::hash<int>()(static_cast<int>(depthMode)) << 16;
-	h ^= std::hash<int>()(static_cast<int>(blendMode)) << 20;
-	h ^= std::hash<bool>()(cullEnabled) << 24;
-	h ^= std::hash<bool>()(frontFaceCW) << 25;
-	h ^= std::hash<bool>()(depthWriteEnabled) << 26;
-	h ^= std::hash<bool>()(stencilEnabled) << 27;
-	h ^= std::hash<int>()(static_cast<int>(stencilFunc)) << 28;
-	h ^= std::hash<uint32_t>()(stencilMask) << 31;
-	h ^= static_cast<uint64_t>(std::hash<int>()(static_cast<int>(frontStencilOp.stencilFailOperation))) << 33;
-	h ^= static_cast<uint64_t>(std::hash<int>()(static_cast<int>(frontStencilOp.depthFailOperation))) << 35;
-	h ^= static_cast<uint64_t>(std::hash<int>()(static_cast<int>(frontStencilOp.successOperation))) << 37;
-	h ^= static_cast<uint64_t>(std::hash<int>()(static_cast<int>(backStencilOp.stencilFailOperation))) << 39;
-	h ^= static_cast<uint64_t>(std::hash<int>()(static_cast<int>(backStencilOp.depthFailOperation))) << 41;
-	h ^= static_cast<uint64_t>(std::hash<int>()(static_cast<int>(backStencilOp.successOperation))) << 43;
-	h ^= static_cast<uint64_t>(std::hash<int>()((colorWriteMask.x ? 1 : 0) | (colorWriteMask.y ? 2 : 0) |
-	                      (colorWriteMask.z ? 4 : 0) | (colorWriteMask.w ? 8 : 0))) << 44;
-	h ^= static_cast<uint64_t>(std::hash<int>()(fillMode)) << 45;
-	h ^= static_cast<uint64_t>(std::hash<bool>()(depthBiasEnabled)) << 46;
-	h ^= static_cast<uint64_t>(std::hash<uint64_t>()(reinterpret_cast<uint64_t>
-													 (reinterpret_cast<void*>
-													  (static_cast<VkRenderPass>(renderPass))))) << 47;
-	h ^= static_cast<uint64_t>(std::hash<uint32_t>()(subpass)) << 51;
-	h ^= static_cast<uint64_t>(std::hash<uint32_t>()(colorAttachmentCount)) << 55;
-	h ^= static_cast<uint64_t>(std::hash<int>()(static_cast<int>(sampleCount))) << 56;
-	h ^= static_cast<uint64_t>(std::hash<bool>()(perAttachmentBlendEnabled)) << 57;
+	// Fold every field operator== compares, so equal configs always hash equal.
+	hashCombine(h, static_cast<uint64_t>(shaderType));
+	hashCombine(h, shaderFlags);
+	hashCombine(h, vertexLayoutHash);
+	hashCombine(h, static_cast<uint64_t>(primitiveType));
+	hashCombine(h, static_cast<uint64_t>(depthMode));
+	hashCombine(h, static_cast<uint64_t>(blendMode));
+	hashCombine(h, cullEnabled ? 1u : 0u);
+	hashCombine(h, frontFaceCW ? 1u : 0u);
+	hashCombine(h, depthWriteEnabled ? 1u : 0u);
+	hashCombine(h, stencilEnabled ? 1u : 0u);
+	hashCombine(h, static_cast<uint64_t>(stencilFunc));
+	hashCombine(h, stencilMask);
+	hashCombine(h, static_cast<uint64_t>(frontStencilOp.stencilFailOperation));
+	hashCombine(h, static_cast<uint64_t>(frontStencilOp.depthFailOperation));
+	hashCombine(h, static_cast<uint64_t>(frontStencilOp.successOperation));
+	hashCombine(h, static_cast<uint64_t>(backStencilOp.stencilFailOperation));
+	hashCombine(h, static_cast<uint64_t>(backStencilOp.depthFailOperation));
+	hashCombine(h, static_cast<uint64_t>(backStencilOp.successOperation));
+	hashCombine(h, maskBits(colorWriteMask.x, colorWriteMask.y, colorWriteMask.z, colorWriteMask.w));
+	hashCombine(h, static_cast<uint64_t>(fillMode));
+	hashCombine(h, depthBiasEnabled ? 1u : 0u);
+	hashCombine(h, reinterpret_cast<uint64_t>(static_cast<VkRenderPass>(renderPass)));
+	hashCombine(h, subpass);
+	hashCombine(h, colorAttachmentCount);
+	hashCombine(h, static_cast<uint64_t>(sampleCount));
+	hashCombine(h, perAttachmentBlendEnabled ? 1u : 0u);
 	if (perAttachmentBlendEnabled) {
 		for (uint32_t i = 0; i < colorAttachmentCount; ++i) {
-			h ^= static_cast<uint64_t>(std::hash<int>()(static_cast<int>(attachmentBlends[i].blendMode))) << (i * 3 + 2);
-			h ^= static_cast<uint64_t>(std::hash<int>()((attachmentBlends[i].writeMask.x ? 1 : 0) |
-			                      (attachmentBlends[i].writeMask.y ? 2 : 0) |
-			                      (attachmentBlends[i].writeMask.z ? 4 : 0) |
-			                      (attachmentBlends[i].writeMask.w ? 8 : 0))) << (i * 3 + 5);
+			hashCombine(h, static_cast<uint64_t>(attachmentBlends[i].blendMode));
+			hashCombine(h, maskBits(attachmentBlends[i].writeMask.x, attachmentBlends[i].writeMask.y,
+			                        attachmentBlends[i].writeMask.z, attachmentBlends[i].writeMask.w));
 		}
 	}
 

@@ -930,6 +930,14 @@ void VulkanDrawManager::setPendingUniformBinding(uniform_block_type blockType, g
 	m_pendingUniformBindings[index].offset = offset;
 	m_pendingUniformBindings[index].size = size;
 	m_pendingUniformBindings[index].valid = bufferHandle.isValid();
+
+	// The memoized Global (Set 0) descriptor set binds these three block types; a
+	// change to any of them must force a rebuild (B1).
+	if (blockType == uniform_block_type::Lights ||
+	    blockType == uniform_block_type::DeferredGlobals ||
+	    blockType == uniform_block_type::ShadowCascadeParams) {
+		m_globalSetDirty = true;
+	}
 }
 
 void VulkanDrawManager::clearPendingUniformBindings()
@@ -945,6 +953,13 @@ void VulkanDrawManager::clearPendingUniformBindings()
 void VulkanDrawManager::resetFrameStats()
 {
 	m_frameStats = {};
+
+	// Per-frame reset of the memoized Global (Set 0) descriptor set. Called from
+	// setupFrame() AFTER the descriptor manager reset its frame pool, so the
+	// cached VkDescriptorSet has just been freed -- drop it and force a rebuild
+	// on the frame's first applyMaterial().
+	m_cachedGlobalSet = nullptr;
+	m_globalSetDirty = true;
 }
 
 void VulkanDrawManager::printFrameStats()
@@ -1313,17 +1328,26 @@ bool VulkanDrawManager::applyMaterial(material* mat, primitive_type prim_type, v
 			}
 		};
 
-		// Set 0: Global
-		vk::DescriptorSet globalSet = descManager->allocateFrameSet(DescriptorSetIndex::Global);
-		Verify(globalSet);
-		writer.writeSet(globalSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Global));
-		bindPendingUBOs(DescriptorSetIndex::Global);
-		{
-			auto* pp = getPostProcessor();
-			if (pp && pp->shadow().isInitialized()) {
+		// Set 0: Global (memoized per frame — see m_cachedGlobalSet). Rebuilt only
+		// when a Global input changed: a pending Global UBO (m_globalSetDirty set in
+		// setPendingUniformBinding), the shadow TLAS (invalidateGlobalSet from
+		// setCurrentShadowTlas), or the shadow-map lazy-init transition (compared
+		// below). A descriptor set retains its written contents until overwritten
+		// or its pool is reset, so subsequent draws just rebind the cached set.
+		auto* pp = getPostProcessor();
+		const bool shadowReady = (pp && pp->shadow().isInitialized());
+		if (m_globalSetDirty || !m_cachedGlobalSet || shadowReady != m_cachedGlobalHadShadow) {
+			m_cachedGlobalSet = descManager->allocateFrameSet(DescriptorSetIndex::Global);
+			Verify(m_cachedGlobalSet);
+			writer.writeSet(m_cachedGlobalSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Global));
+			bindPendingUBOs(DescriptorSetIndex::Global);
+			if (shadowReady) {
 				writer.setImage(GlobalBinding::ShadowMap, pp->getShadowTextureInfo());
 			}
+			m_cachedGlobalHadShadow = shadowReady;
+			m_globalSetDirty = false;
 		}
+		vk::DescriptorSet globalSet = m_cachedGlobalSet;
 
 		// Set 1: Material
 		vk::DescriptorSet materialSet = descManager->allocateFrameSet(DescriptorSetIndex::Material);

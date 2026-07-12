@@ -91,6 +91,9 @@ void vulkan_build_shadow_tlas()
 		// this frame picks up the freshly built TLAS automatically -- see
 		// DescriptorFallbacks::shadowTlas.
 		getDescriptorManager()->setCurrentShadowTlas(rt->getTlasForShaderBinding());
+		// The memoized per-frame Global set (VulkanDrawManager) must rebuild so the
+		// new TLAS reaches subsequent draws' Set 0 instead of a cached stale one.
+		getDrawManager()->invalidateGlobalSet();
 	}
 }
 
