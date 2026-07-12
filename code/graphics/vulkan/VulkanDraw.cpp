@@ -1086,7 +1086,7 @@ bool VulkanDrawManager::bindMaterialTextures(material* mat, DescriptorWriter* wr
 			auto* texSlot = texManager->getTextureSlot(handle);
 			if (!texSlot || !texSlot->imageView) {
 				// Load on demand - YUV planes are 8bpp grayscale
-				bitmap* bmp = bm_lock(handle, 8, BMP_TEX_OTHER);
+				bitmap* bmp = bm_lock(handle, 8, BMP_AABITMAP);
 				if (bmp) {
 					texManager->bm_data(handle, bmp, bm_is_compressed(handle));
 					bm_unlock(handle);

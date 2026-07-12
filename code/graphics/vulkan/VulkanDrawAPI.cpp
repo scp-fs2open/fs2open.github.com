@@ -486,6 +486,18 @@ void vulkan_render_movie(movie_material* material_info,
 	gr_matrix_set_uniforms();
 	vulkan_set_default_material_uniforms(material_info);
 
+	// Movie shader reads alpha from the MovieData UBO (set 2, binding 4), not from
+	// GenericData - matches opengl_tnl_set_material_movie in gropengltnl.cpp.
+	auto uniform_buffer = gr_get_uniform_buffer(uniform_block_type::MovieData, 1);
+	auto& aligner = uniform_buffer.aligner();
+	auto movie_data = aligner.addTypedElement<movie_uniforms>();
+	movie_data->alpha = material_info->get_color().xyzw.w;
+	uniform_buffer.submitData();
+	gr_bind_uniform_buffer(uniform_block_type::MovieData,
+		uniform_buffer.getBufferOffset(0),
+		sizeof(movie_uniforms),
+		uniform_buffer.bufferHandle());
+
 	auto* drawManager = getDrawManager();
 	drawManager->renderMovie(material_info, prim_type, layout, n_verts, buffer, buffer_offset);
 }
