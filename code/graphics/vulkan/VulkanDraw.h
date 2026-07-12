@@ -455,6 +455,78 @@ class VulkanDrawManager {
 	bool m_globalSetDirty = true;
 	bool m_cachedGlobalHadShadow = false; // shadow-init state the cached set was built with
 
+	// ---- Material (Set 1) previous-set memoization (B1) ----
+	// Reuse the previous draw's Material set when EVERY input is unchanged
+	// (previous-only cache: rebuilt on any difference, so it is never stale).
+	// Hits on batched same-material runs (UI text glyphs, a model's submodels,
+	// batched effects) that also share a transform upload. Skips a frame-set
+	// allocation, a template write, the material texture resolution (incl. its
+	// on-demand upload side effect — safe to skip only because identical inputs
+	// mean the textures were already resolved on the previous draw), and the
+	// override/UBO writes.
+	struct MaterialSetInputs {
+		int texHandles[7] = {-1, -1, -1, -1, -1, -1, -1};
+		int textureAddressing = -1;
+		vk::Buffer transformBuffer = nullptr;
+		size_t transformOffset = 0;
+		size_t transformSize = 0;
+		vk::DescriptorImageInfo depthInfo;
+		vk::DescriptorImageInfo sceneColorInfo;
+		vk::DescriptorImageInfo distMapInfo;
+		// Pending Material UBOs (index 0 = ModelData, 1 = DecalGlobals)
+		int uboHandle[2] = {-1, -1};
+		vk::DeviceSize uboOffset[2] = {0, 0};
+		vk::DeviceSize uboSize[2] = {0, 0};
+		bool uboValid[2] = {false, false};
+
+		static bool imgEq(const vk::DescriptorImageInfo& a, const vk::DescriptorImageInfo& b)
+		{
+			return a.sampler == b.sampler && a.imageView == b.imageView && a.imageLayout == b.imageLayout;
+		}
+		bool operator==(const MaterialSetInputs& o) const
+		{
+			for (int i = 0; i < 7; ++i) {
+				if (texHandles[i] != o.texHandles[i]) return false;
+			}
+			for (int i = 0; i < 2; ++i) {
+				if (uboHandle[i] != o.uboHandle[i] || uboOffset[i] != o.uboOffset[i] ||
+				    uboSize[i] != o.uboSize[i] || uboValid[i] != o.uboValid[i]) return false;
+			}
+			return textureAddressing == o.textureAddressing && transformBuffer == o.transformBuffer &&
+			       transformOffset == o.transformOffset && transformSize == o.transformSize &&
+			       imgEq(depthInfo, o.depthInfo) && imgEq(sceneColorInfo, o.sceneColorInfo) &&
+			       imgEq(distMapInfo, o.distMapInfo);
+		}
+		bool operator!=(const MaterialSetInputs& o) const { return !(*this == o); }
+	};
+	vk::DescriptorSet m_cachedMaterialSet = nullptr;
+	MaterialSetInputs m_cachedMaterialInputs;
+	bool m_cachedMaterialValid = false;
+
+	// ---- PerDraw (Set 2) previous-set memoization (B1) ----
+	// PerDraw holds only the pending PerDraw UBO bindings (GenericData, Matrices,
+	// NanoVGData, DecalInfo, MovieData). In 3D these change per draw (no reuse);
+	// the win is UI/2D runs that share them. Previous-only cache, same contract
+	// as Material.
+	static constexpr int NUM_PERDRAW_UBOS = 5;
+	struct PerDrawSetInputs {
+		int uboHandle[NUM_PERDRAW_UBOS] = {-1, -1, -1, -1, -1};
+		vk::DeviceSize uboOffset[NUM_PERDRAW_UBOS] = {0, 0, 0, 0, 0};
+		vk::DeviceSize uboSize[NUM_PERDRAW_UBOS] = {0, 0, 0, 0, 0};
+		bool uboValid[NUM_PERDRAW_UBOS] = {false, false, false, false, false};
+		bool operator==(const PerDrawSetInputs& o) const
+		{
+			for (int i = 0; i < NUM_PERDRAW_UBOS; ++i) {
+				if (uboHandle[i] != o.uboHandle[i] || uboOffset[i] != o.uboOffset[i] ||
+				    uboSize[i] != o.uboSize[i] || uboValid[i] != o.uboValid[i]) return false;
+			}
+			return true;
+		}
+	};
+	vk::DescriptorSet m_cachedPerDrawSet = nullptr;
+	PerDrawSetInputs m_cachedPerDrawInputs;
+	bool m_cachedPerDrawValid = false;
+
 	// Texture overrides for material bindings 4-6.
 	vk::DescriptorImageInfo m_depthTextureInfo; // binding 4: depth/position for soft particles
 	vk::DescriptorImageInfo m_sceneColorInfo;   // binding 5: scene color for distortion

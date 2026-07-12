@@ -954,12 +954,16 @@ void VulkanDrawManager::resetFrameStats()
 {
 	m_frameStats = {};
 
-	// Per-frame reset of the memoized Global (Set 0) descriptor set. Called from
-	// setupFrame() AFTER the descriptor manager reset its frame pool, so the
-	// cached VkDescriptorSet has just been freed -- drop it and force a rebuild
-	// on the frame's first applyMaterial().
+	// Per-frame reset of the memoized descriptor sets. Called from setupFrame()
+	// AFTER the descriptor manager reset its frame pool, so the cached
+	// VkDescriptorSets have just been freed -- drop them and force a rebuild on
+	// the frame's first applyMaterial().
 	m_cachedGlobalSet = nullptr;
 	m_globalSetDirty = true;
+	m_cachedMaterialSet = nullptr;
+	m_cachedMaterialValid = false;
+	m_cachedPerDrawSet = nullptr;
+	m_cachedPerDrawValid = false;
 }
 
 void VulkanDrawManager::printFrameStats()
@@ -1349,30 +1353,94 @@ bool VulkanDrawManager::applyMaterial(material* mat, primitive_type prim_type, v
 		}
 		vk::DescriptorSet globalSet = m_cachedGlobalSet;
 
-		// Set 1: Material
-		vk::DescriptorSet materialSet = descManager->allocateFrameSet(DescriptorSetIndex::Material);
-		Verify(materialSet);
-		writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
-		bindPendingUBOs(DescriptorSetIndex::Material);
+		// Set 1: Material (previous-set memoized — see m_cachedMaterialSet).
+		// Snapshot every input; reuse the cached set only on an exact match.
+		MaterialSetInputs matInputs;
+		matInputs.texHandles[0] = mat->get_texture_map(TM_BASE_TYPE);
+		matInputs.texHandles[1] = mat->get_texture_map(TM_GLOW_TYPE);
+		int specMap = mat->get_texture_map(TM_SPEC_GLOSS_TYPE);
+		if (specMap < 0) {
+			specMap = mat->get_texture_map(TM_SPECULAR_TYPE);
+		}
+		matInputs.texHandles[2] = specMap;
+		matInputs.texHandles[3] = mat->get_texture_map(TM_NORMAL_TYPE);
+		matInputs.texHandles[4] = mat->get_texture_map(TM_HEIGHT_TYPE);
+		matInputs.texHandles[5] = mat->get_texture_map(TM_AMBIENT_TYPE);
+		matInputs.texHandles[6] = mat->get_texture_map(TM_MISC_TYPE);
+		matInputs.textureAddressing = m_textureAddressing;
 		{
-			uint32_t tfIdx = descManager->getCurrentFrame();
-			auto& tf = g_transformBuffers[tfIdx];
+			auto& tf = g_transformBuffers[descManager->getCurrentFrame()];
 			if (tf.buffer && tf.lastUploadSize > 0) {
-				writer.setBuffer(MaterialBinding::TransformSSBO, {tf.buffer,
-				                 static_cast<vk::DeviceSize>(tf.lastUploadOffset),
-				                 static_cast<vk::DeviceSize>(tf.lastUploadSize)});
+				matInputs.transformBuffer = tf.buffer;
+				matInputs.transformOffset = tf.lastUploadOffset;
+				matInputs.transformSize = tf.lastUploadSize;
 			}
 		}
-		writer.setImage(MaterialBinding::DepthMap, m_depthTextureInfo);
-		writer.setImage(MaterialBinding::SceneColor, m_sceneColorInfo);
-		writer.setImage(MaterialBinding::DistortionMap, m_distMapInfo);
-		bindMaterialTextures(mat, &writer);
+		matInputs.depthInfo = m_depthTextureInfo;
+		matInputs.sceneColorInfo = m_sceneColorInfo;
+		matInputs.distMapInfo = m_distMapInfo;
+		{
+			const auto& md = m_pendingUniformBindings[static_cast<size_t>(uniform_block_type::ModelData)];
+			const auto& dg = m_pendingUniformBindings[static_cast<size_t>(uniform_block_type::DecalGlobals)];
+			matInputs.uboHandle[0] = md.bufferHandle.value(); matInputs.uboOffset[0] = md.offset;
+			matInputs.uboSize[0] = md.size; matInputs.uboValid[0] = md.valid;
+			matInputs.uboHandle[1] = dg.bufferHandle.value(); matInputs.uboOffset[1] = dg.offset;
+			matInputs.uboSize[1] = dg.size; matInputs.uboValid[1] = dg.valid;
+		}
 
-		// Set 2: PerDraw
-		vk::DescriptorSet perDrawSet = descManager->allocateFrameSet(DescriptorSetIndex::PerDraw);
-		Verify(perDrawSet);
-		writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
-		bindPendingUBOs(DescriptorSetIndex::PerDraw);
+		vk::DescriptorSet materialSet;
+		if (m_cachedMaterialValid && m_cachedMaterialSet && matInputs == m_cachedMaterialInputs) {
+			// Identical to the previous draw: reuse the set (skips allocation, the
+			// template write, texture resolution/upload, and the override/UBO writes).
+			materialSet = m_cachedMaterialSet;
+		} else {
+			materialSet = descManager->allocateFrameSet(DescriptorSetIndex::Material);
+			Verify(materialSet);
+			writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
+			bindPendingUBOs(DescriptorSetIndex::Material);
+			if (matInputs.transformBuffer) {
+				writer.setBuffer(MaterialBinding::TransformSSBO,
+				                 {matInputs.transformBuffer,
+				                  static_cast<vk::DeviceSize>(matInputs.transformOffset),
+				                  static_cast<vk::DeviceSize>(matInputs.transformSize)});
+			}
+			writer.setImage(MaterialBinding::DepthMap, m_depthTextureInfo);
+			writer.setImage(MaterialBinding::SceneColor, m_sceneColorInfo);
+			writer.setImage(MaterialBinding::DistortionMap, m_distMapInfo);
+			bindMaterialTextures(mat, &writer);
+			m_cachedMaterialSet = materialSet;
+			m_cachedMaterialInputs = matInputs;
+			m_cachedMaterialValid = true;
+		}
+
+		// Set 2: PerDraw (previous-set memoized — see m_cachedPerDrawSet)
+		PerDrawSetInputs pdInputs;
+		{
+			static constexpr uniform_block_type pdTypes[NUM_PERDRAW_UBOS] = {
+				uniform_block_type::GenericData, uniform_block_type::Matrices,
+				uniform_block_type::NanoVGData, uniform_block_type::DecalInfo,
+				uniform_block_type::MovieData};
+			for (int i = 0; i < NUM_PERDRAW_UBOS; ++i) {
+				const auto& p = m_pendingUniformBindings[static_cast<size_t>(pdTypes[i])];
+				pdInputs.uboHandle[i] = p.bufferHandle.value();
+				pdInputs.uboOffset[i] = p.offset;
+				pdInputs.uboSize[i] = p.size;
+				pdInputs.uboValid[i] = p.valid;
+			}
+		}
+
+		vk::DescriptorSet perDrawSet;
+		if (m_cachedPerDrawValid && m_cachedPerDrawSet && pdInputs == m_cachedPerDrawInputs) {
+			perDrawSet = m_cachedPerDrawSet;
+		} else {
+			perDrawSet = descManager->allocateFrameSet(DescriptorSetIndex::PerDraw);
+			Verify(perDrawSet);
+			writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
+			bindPendingUBOs(DescriptorSetIndex::PerDraw);
+			m_cachedPerDrawSet = perDrawSet;
+			m_cachedPerDrawInputs = pdInputs;
+			m_cachedPerDrawValid = true;
+		}
 		writer.flush();
 		stateTracker->bindDescriptorSet(DescriptorSetIndex::Global, globalSet);
 		stateTracker->bindDescriptorSet(DescriptorSetIndex::Material, materialSet);
