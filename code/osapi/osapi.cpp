@@ -865,6 +865,37 @@ static jmethodID android_get_static_method(JNIEnv* e, jclass cls, const char* na
 	return m;
 }
 
+void os_set_flags_string(const char* json)
+{
+	//Get the JNI Environment pointer and current Activity instance via SDL
+	JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
+	jobject activity = (jobject)SDL_AndroidGetActivity();
+
+	if (env && activity) {
+		// Locate the Java class (FlagsActivity / GameActivity on KnossosNET)
+		jclass ga = env->GetObjectClass(activity);
+		if (ga) {
+			// void setFlagsJson(String) -> "(Ljava/lang/String;)V"
+			jmethodID methodId = android_get_static_method(env, ga, "setFlagsJson", "(Ljava/lang/String;)V");
+			if (methodId) {
+				jstring jstr = env->NewStringUTF(json ? json : "");
+				env->CallStaticVoidMethod(ga, methodId, jstr);
+				env->DeleteLocalRef(jstr);
+			}
+			else {
+				mprintf(("os_set_flags_string: Couldn't get the methodID.\n"));
+			}
+			env->DeleteLocalRef(ga);
+		}
+		else {
+			mprintf(("os_set_flags_string: Couldn't get java class.\n"));
+		}
+	}
+	else {
+		mprintf(("os_set_flags_string: Couldn't get JNI enviroment or activity.\n"));
+	}
+}
+
 SCP_string os_get_working_folder_path()
 {
 	SCP_string wfp{};

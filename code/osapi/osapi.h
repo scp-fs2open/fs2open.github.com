@@ -103,6 +103,9 @@ void os_touch_overlay_init();
 
 // Enable or disable the touch UI overlay
 void os_touch_overlay_toggle(bool status);
+
+// Send the JSON flags string to the Android Java layer
+void os_set_flags_string(const char* json);
 #endif
 
 namespace os
