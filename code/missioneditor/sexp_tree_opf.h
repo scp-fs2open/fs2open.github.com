@@ -26,19 +26,25 @@ class SexpTreeOPF {
 public:
 	explicit SexpTreeOPF(SexpTreeModel& model);
 
+	// Non-copyable and non-movable: permanently bound to its owning model
+	SexpTreeOPF(const SexpTreeOPF&) = delete;
+	SexpTreeOPF& operator=(const SexpTreeOPF&) = delete;
+	SexpTreeOPF(SexpTreeOPF&&) = delete;
+	SexpTreeOPF& operator=(SexpTreeOPF&&) = delete;
+
 	// Master dispatcher — routes to the appropriate get_listing_opf_* based on opf type
-	sexp_list_item* get_listing_opf(int opf, int parent_node, int arg_index);
+	sexp_list_item* get_listing_opf(int opf, int parent_node, int arg_index) const;
 
 	static sexp_list_item* get_listing_opf_null();
 	static sexp_list_item* get_listing_opf_flexible_argument();
-	sexp_list_item* get_listing_opf_bool(int parent_node = -1);
+	sexp_list_item* get_listing_opf_bool(int parent_node = -1) const;
 	static sexp_list_item* get_listing_opf_positive();
 	static sexp_list_item* get_listing_opf_number();
-	sexp_list_item* get_listing_opf_ship(int parent_node = -1);
+	sexp_list_item* get_listing_opf_ship(int parent_node = -1) const;
 	static sexp_list_item* get_listing_opf_prop();
 	static sexp_list_item* get_listing_opf_wing();
-	sexp_list_item* get_listing_opf_subsystem(int parent_node, int arg_index);
-	sexp_list_item* get_listing_opf_subsystem_type(int parent_node);
+	sexp_list_item* get_listing_opf_subsystem(int parent_node, int arg_index) const;
+	sexp_list_item* get_listing_opf_subsystem_type(int parent_node) const;
 	static sexp_list_item* get_listing_opf_point();
 	static sexp_list_item* get_listing_opf_iff();
 	static sexp_list_item* get_listing_opf_ai_class();
@@ -49,9 +55,9 @@ public:
 	static sexp_list_item* get_listing_opf_arrival_location();
 	static sexp_list_item* get_listing_opf_departure_location();
 	static sexp_list_item* get_listing_opf_arrival_anchor_all();
-	sexp_list_item* get_listing_opf_ai_goal(int parent_node);
-	sexp_list_item* get_listing_opf_docker_point(int parent_node, int arg_index);
-	sexp_list_item* get_listing_opf_dockee_point(int parent_node);
+	sexp_list_item* get_listing_opf_ai_goal(int parent_node) const;
+	sexp_list_item* get_listing_opf_docker_point(int parent_node, int arg_index) const;
+	sexp_list_item* get_listing_opf_dockee_point(int parent_node) const;
 	sexp_list_item* get_listing_opf_message() const;
 	static sexp_list_item* get_listing_opf_persona();
 	static sexp_list_item* get_listing_opf_font();
@@ -66,19 +72,19 @@ public:
 	static sexp_list_item* get_listing_opf_ship_effect();
 	static sexp_list_item* get_listing_opf_explosion_option();
 	static sexp_list_item* get_listing_opf_waypoint_path();
-	sexp_list_item* get_listing_opf_ship_point();
-	sexp_list_item* get_listing_opf_ship_wing_wholeteam();
-	sexp_list_item* get_listing_opf_ship_wing_shiponteam_point();
-	sexp_list_item* get_listing_opf_ship_wing_point();
-	sexp_list_item* get_listing_opf_ship_wing_point_or_none();
+	sexp_list_item* get_listing_opf_ship_point() const;
+	sexp_list_item* get_listing_opf_ship_wing_wholeteam() const;
+	sexp_list_item* get_listing_opf_ship_wing_shiponteam_point() const;
+	sexp_list_item* get_listing_opf_ship_wing_point() const;
+	sexp_list_item* get_listing_opf_ship_wing_point_or_none() const;
 	sexp_list_item* get_listing_opf_mission_name() const;
-	sexp_list_item* get_listing_opf_goal_name(int parent_node);
-	sexp_list_item* get_listing_opf_ship_wing();
-	sexp_list_item* get_listing_opf_ship_prop();
-	sexp_list_item* get_listing_opf_order_recipient();
+	sexp_list_item* get_listing_opf_goal_name(int parent_node) const;
+	sexp_list_item* get_listing_opf_ship_wing() const;
+	sexp_list_item* get_listing_opf_ship_prop() const;
+	sexp_list_item* get_listing_opf_order_recipient() const;
 	static sexp_list_item* get_listing_opf_ship_type();
 	static sexp_list_item* get_listing_opf_keypress();
-	sexp_list_item* get_listing_opf_event_name(int parent_node);
+	sexp_list_item* get_listing_opf_event_name(int parent_node) const;
 	static sexp_list_item* get_listing_opf_ai_order();
 	static sexp_list_item* get_listing_opf_skill_level();
 	static sexp_list_item* get_listing_opf_cargo();
@@ -90,9 +96,9 @@ public:
 	static sexp_list_item* get_listing_opf_prop_class_name();
 	static sexp_list_item* get_listing_opf_huge_weapon();
 	static sexp_list_item* get_listing_opf_ship_not_player();
-	sexp_list_item* get_listing_opf_ship_or_none();
-	sexp_list_item* get_listing_opf_subsystem_or_none(int parent_node, int arg_index);
-	sexp_list_item* get_listing_opf_subsys_or_generic(int parent_node, int arg_index);
+	sexp_list_item* get_listing_opf_ship_or_none() const;
+	sexp_list_item* get_listing_opf_subsystem_or_none(int parent_node, int arg_index) const;
+	sexp_list_item* get_listing_opf_subsys_or_generic(int parent_node, int arg_index) const;
 	static sexp_list_item* get_listing_opf_jump_nodes();
 	static sexp_list_item* get_listing_opf_variable_names();
 	static sexp_list_item* get_listing_opf_skybox_model();
@@ -120,17 +126,17 @@ public:
 	static sexp_list_item* get_listing_opf_motion_debris();
 	static sexp_list_item* get_listing_opf_game_snds();
 	static sexp_list_item* get_listing_opf_fireball();
-	sexp_list_item* get_listing_opf_species();
-	sexp_list_item* get_listing_opf_language();
-	sexp_list_item* get_listing_opf_functional_when_eval_type();
-	sexp_list_item* get_listing_opf_animation_name(int parent_node);
+	static sexp_list_item* get_listing_opf_species();
+	static sexp_list_item* get_listing_opf_language();
+	static sexp_list_item* get_listing_opf_functional_when_eval_type();
+	sexp_list_item* get_listing_opf_animation_name(int parent_node) const;
 	static sexp_list_item* get_listing_opf_sexp_containers(ContainerType con_type);
-	sexp_list_item* get_listing_opf_wing_formation();
+	static sexp_list_item* get_listing_opf_wing_formation();
 	static sexp_list_item* get_listing_opf_bolt_types();
 	static sexp_list_item* get_listing_opf_traitor_overrides();
 	static sexp_list_item* get_listing_opf_lua_general_orders();
 	static sexp_list_item* get_listing_opf_message_types();
-	sexp_list_item* get_listing_opf_lua_enum(int parent_node, int arg_index);
+	sexp_list_item* get_listing_opf_lua_enum(int parent_node, int arg_index) const;
 	static sexp_list_item* get_listing_opf_mission_custom_strings();
 	static sexp_list_item* check_for_dynamic_sexp_enum(int opf);
 
@@ -156,7 +162,7 @@ public:
 	int query_default_argument_available(int op, int i) const;
 	//! Determine and populate the default value for argument position i of operator op.
 	//! Returns 0 on success, -1 if no default available.
-	int get_default_value(sexp_list_item* item, char* text_buf, int op, int i);
+	int get_default_value(sexp_list_item* item, int op, int i) const;
 
 private:
 	SexpTreeModel& _model;
