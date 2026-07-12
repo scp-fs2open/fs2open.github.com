@@ -398,6 +398,11 @@ class VulkanRenderer {
 
 	// Physical device info (needed for memory manager)
 	vk::PhysicalDevice m_physicalDevice;
+	// Cached once at device selection (D-nit): the limit/feature getters below are
+	// hot-ish and querying the driver each call is wasteful. Populated alongside
+	// m_physicalDevice in createLogicalDevice().
+	vk::PhysicalDeviceProperties m_deviceProperties{};
+	vk::PhysicalDeviceFeatures m_deviceFeatures{};
 	uint32_t m_graphicsQueueFamilyIndex = 0;
 	uint32_t m_presentQueueFamilyIndex = 0;
 

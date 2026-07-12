@@ -449,6 +449,11 @@ class VulkanDrawManager {
 	mutable FrameStats m_frameStats;
 	int m_frameStatsFrameNum = 0;
 
+	// First-N debug-log counter for on-demand texture binds (D-nit): a member rather
+	// than a function-local static so it resets on renderer restart. mutable because
+	// bindMaterialTextures is const. Gates nprintf spam only.
+	mutable int m_texBindLogCount = 0;
+
 	// ---- Per-frame Global (Set 0) descriptor memoization (B1) ----
 	// applyMaterial() rebuilt + rebound the Global set on every draw even though
 	// its inputs change at most a few times per frame. Cache it and rebuild only

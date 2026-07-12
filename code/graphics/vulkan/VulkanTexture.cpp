@@ -126,7 +126,6 @@ void tcache_slot_vulkan::reset()
 	isCubemap = false;
 	for (auto& v : cubeFaceViews) v = nullptr;
 	for (auto& fb : cubeFaceFramebuffers) fb = nullptr;
-	cubeImageView = nullptr;
 	uScale = 1.0f;
 	vScale = 1.0f;
 }
@@ -449,10 +448,6 @@ void VulkanTextureManager::bm_free_data(bitmap_slot* slot, bool release) const
 			deletionQueue->queueImageView(v);
 			v = nullptr;
 		}
-	}
-	if (ts->cubeImageView) {
-		deletionQueue->queueImageView(ts->cubeImageView);
-		ts->cubeImageView = nullptr;
 	}
 	// If framebuffer was aliased to cubeFaceFramebuffers[0], it's already cleaned up
 	if (ts->isCubemap) {
@@ -949,10 +944,9 @@ bool VulkanTextureManager::upload3DTexture(int handle, bitmap* bm, int texDepth)
 
 bool VulkanTextureManager::bm_data(int handle, bitmap* bm, int compType)
 {
-	static int callCount = 0;
-	if (callCount < 20) {
+	if (m_bmDataLogCount < 20) {
 		nprintf(("vulkan", "VulkanTextureManager::bm_data #%d: handle=%d bm=%p bm->data=%p compType=%d\n",
-			callCount++, handle, bm, bm ? reinterpret_cast<void*>(bm->data) : nullptr, compType));
+			m_bmDataLogCount++, handle, bm, bm ? reinterpret_cast<void*>(bm->data) : nullptr, compType));
 	}
 
 	if (!m_initialized || !bm || !bm->data) {
@@ -1047,11 +1041,10 @@ bool VulkanTextureManager::uploadTexture2D(int handle, bitmap* bm, int compType)
 	bool isCompressed = (compType == DDS_DXT1 || compType == DDS_DXT3 ||
 	                     compType == DDS_DXT5 || compType == DDS_BC7);
 
-	static int fmtLogCount = 0;
-	if (fmtLogCount < 30) {
+	if (m_uploadFmtLogCount < 30) {
 		nprintf(("vulkan", "VulkanTextureManager::bm_data: handle=%d w=%d h=%d bpp=%d true_bpp=%d flags=0x%x compType=%d\n",
 			handle, bm->w, bm->h, bm->bpp, bm->true_bpp, bm->flags, compType));
-		fmtLogCount++;
+		m_uploadFmtLogCount++;
 	}
 
 	// Determine format and data size
@@ -1119,12 +1112,11 @@ bool VulkanTextureManager::uploadTexture2D(int handle, bitmap* bm, int compType)
 	// real trigger frequency; behavior is unchanged (fall through to recreate).
 	if (ts->image && ts->width == width && ts->height == height && ts->format == format &&
 	    ts->arrayLayers <= 1) {
-		static int reuploadLogCount = 0;
-		if (reuploadLogCount < 20) {
+		if (m_reuploadLogCount < 20) {
 			nprintf(("vulkan", "VulkanTextureManager::uploadTexture2D: re-upload of resident texture "
 				"handle=%d (%ux%u) — recreating (in-place update not yet implemented)\n",
 				handle, width, height));
-			reuploadLogCount++;
+			m_reuploadLogCount++;
 		}
 	}
 
@@ -1517,6 +1509,16 @@ void VulkanTextureManager::update_texture(int bitmap_handle, int bpp, const ubyt
 	vk::Format format = bppToVkFormat(bpp);
 	if (format == vk::Format::eUndefined) {
 		nprintf(("vulkan", "VulkanTextureManager::update_texture: Unsupported bpp %d\n", bpp));
+		return;
+	}
+
+	// The update path copies straight into the existing image with its baked-in
+	// format; a bpp implying a different format than the texture was created with
+	// would silently corrupt the copy. Reject the mismatch instead.
+	if (format != ts->format) {
+		nprintf(("vulkan", "VulkanTextureManager::update_texture: format mismatch for bpp %d "
+			"(bitmap implies %d, texture is %d) — skipping update\n",
+			bpp, static_cast<int>(format), static_cast<int>(ts->format)));
 		return;
 	}
 

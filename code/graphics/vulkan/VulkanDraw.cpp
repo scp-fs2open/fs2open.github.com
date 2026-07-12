@@ -1108,7 +1108,6 @@ bool VulkanDrawManager::bindMaterialTextures(material* mat, DescriptorWriter* wr
 	}
 
 	// Helper to set texture at a specific slot - loads on-demand if not present
-	static int texLogCount = 0;
 
 	// Get material's expected texture type for the base map
 	int materialTextureType = mat->get_texture_type();
@@ -1202,10 +1201,10 @@ bool VulkanDrawManager::bindMaterialTextures(material* mat, DescriptorWriter* wr
 				// Re-get the slot after upload
 				texSlot = texManager->getTextureSlot(textureHandle);
 
-				if (texLogCount < 20) {
+				if (m_texBindLogCount < 20) {
 					nprintf(("vulkan", "bindMaterialTextures: loaded tex %d (type=%d bpp=%d lockFlags=0x%x bmType=%d), slot=%p\n",
 						textureHandle, bitmapType, bpp, lockFlags, static_cast<int>(bm_get_type(textureHandle)), texSlot));
-					texLogCount++;
+					m_texBindLogCount++;
 				}
 			}
 		}
@@ -1213,10 +1212,10 @@ bool VulkanDrawManager::bindMaterialTextures(material* mat, DescriptorWriter* wr
 		if (texSlot && texSlot->imageView) {
 			textureInfos[slot].imageView = texSlot->imageView;
 		} else {
-			if (texLogCount < 20) {
+			if (m_texBindLogCount < 20) {
 				nprintf(("vulkan", "bindMaterialTextures: slot %u handle %d FAILED to load\n",
 					slot, textureHandle));
-				texLogCount++;
+				m_texBindLogCount++;
 			}
 		}
 	};
@@ -1442,7 +1441,16 @@ bool VulkanDrawManager::applyMaterial(material* mat, primitive_type prim_type, v
 	stateTracker->setCullMode(mat->get_cull_mode());
 
 	if (mat->is_stencil_enabled()) {
-		stateTracker->setStencilMode(GR_STENCIL_READ);
+		// Record the material's actual stencil intent rather than hardcoding READ:
+		// a WRITE if any of the front-face stencil ops modifies the stencil buffer
+		// (op != Keep), otherwise a READ (test-only). The pipeline itself is
+		// configured directly from the material's full stencil state above; this
+		// only keeps the tracker's GR_STENCIL_* bookkeeping honest.
+		const auto& op = mat->get_front_stencil_op();
+		const bool writesStencil = op.stencilFailOperation != StencilOperation::Keep ||
+			op.depthFailOperation != StencilOperation::Keep ||
+			op.successOperation != StencilOperation::Keep;
+		stateTracker->setStencilMode(writesStencil ? GR_STENCIL_WRITE : GR_STENCIL_READ);
 		stateTracker->setStencilReference(mat->get_stencil_func().ref);
 	} else {
 		stateTracker->setStencilMode(GR_STENCIL_NONE);

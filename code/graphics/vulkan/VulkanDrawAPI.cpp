@@ -591,9 +591,9 @@ void vulkan_calculate_irrmap()
 		return;
 	}
 	auto* envTs = static_cast<tcache_slot_vulkan*>(envSlot->gr_info);
-	// tcache_slot_vulkan::cubeImageView is never populated (dead field) -- both the
-	// render-target and static-file cubemap upload paths store the cube-sampling
-	// view in imageView, so that's what must be used here regardless of isCubemap.
+	// Both the render-target and static-file cubemap upload paths store the
+	// cube-sampling view in imageView, so that's what must be used here regardless
+	// of isCubemap.
 	vk::ImageView envmapView = envTs->imageView;
 	if (!envmapView) {
 		return;
@@ -672,7 +672,15 @@ void vulkan_calculate_irrmap()
 	for (int i = 0; i < 6; i++) {
 		*reinterpret_cast<int*>(mapped + (i * UBO_SLOT_SIZE)) = i;
 	}
+	// Flush before unmap — CpuToGpu memory is not guaranteed coherent, so without
+	// this the GPU could sample stale face indices. (No-op on coherent memory.)
+	memManager->flushMemory(faceUBOAlloc, 0, UBO_TOTAL_SIZE);
 	memManager->unmapMemory(faceUBOAlloc);
+
+	// This buffer is recreated per call (and queued for deletion at the end).
+	// vulkan_calculate_irrmap runs only on env-map (re)generation, not per frame,
+	// so the cold allocation isn't worth caching as renderer-lifetime state — and a
+	// function-lifetime static VkBuffer would dangle past device destruction.
 
 	vk::Extent2D irrExtent(irrTs->width, irrTs->height);
 

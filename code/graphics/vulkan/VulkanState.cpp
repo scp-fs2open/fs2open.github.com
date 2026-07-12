@@ -116,10 +116,15 @@ void VulkanStateTracker::setRenderPass(vk::RenderPass renderPass, uint32_t subpa
 		set = nullptr;
 	}
 
-	// Dynamic state must be re-applied after a render pass change.
-	// Vulkan doesn't preserve dynamic state across render pass instances,
-	// and mid-frame render passes (e.g. light accumulation) may have set
-	// different viewport/scissor values directly on the command buffer.
+	// Re-dirty viewport/scissor at the pass boundary. NOT because Vulkan drops
+	// dynamic state across render-pass instances -- it doesn't; dynamic state
+	// persists for the lifetime of the command buffer. The reason is the same as
+	// for the descriptor sets above: the raw recorders (drawFullscreenTriangle,
+	// encode, MSAA resolve, irrmap) and mid-frame passes set viewport/scissor
+	// directly on the command buffer behind this tracker, so the tracker's cached
+	// values may no longer match the command buffer's. Forcing a re-apply on the
+	// next tracked draw restores agreement. Once B9/6.4 removes the raw recorders,
+	// re-evaluate whether this is still needed.
 	m_viewportDirty = true;
 	m_scissorDirty = true;
 }

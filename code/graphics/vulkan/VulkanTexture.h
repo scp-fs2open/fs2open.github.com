@@ -50,7 +50,9 @@ public:
 	bool isCubemap = false;
 	std::array<vk::ImageView, 6> cubeFaceViews = {};  // Per-face 2D views for render-to-cubemap
 	std::array<vk::Framebuffer, 6> cubeFaceFramebuffers = {};  // Per-face framebuffers for render-to-cubemap
-	vk::ImageView cubeImageView;  // Cube view for sampling (viewType=eCube, layerCount=6)
+	// Note: the cube-sampling view (viewType=eCube, layerCount=6) lives in imageView
+	// for both the render-target and static-file cubemap paths — there is no separate
+	// cube view member.
 
 	// Texture scaling (for non-power-of-two handling)
 	float uScale = 1.0f;
@@ -339,6 +341,13 @@ private:
 
 	// Guard flag to prevent recursion when bm_lock calls bm_data during animation upload
 	bool m_uploadingAnimation = false;
+
+	// First-N debug-log counters (D-nit): members rather than function-local statics
+	// so they reset when the manager is recreated on a renderer restart, and aren't
+	// shared across a hypothetical second instance. Purely gate nprintf spam.
+	int m_bmDataLogCount = 0;       // bm_data entry trace
+	int m_uploadFmtLogCount = 0;    // uploadTexture2D format trace
+	int m_reuploadLogCount = 0;     // uploadTexture2D resident-texture re-upload notice
 
 	// Deferred command buffer free list
 	struct PendingCommandBuffer {

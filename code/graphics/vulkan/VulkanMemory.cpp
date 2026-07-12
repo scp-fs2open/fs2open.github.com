@@ -285,9 +285,12 @@ void VulkanMemoryManager::flushMemory(const VulkanAllocation& allocation, vk::De
 		return;
 	}
 
+	// Pass VK_WHOLE_SIZE straight through — VMA interprets it as "from offset to
+	// the end of the allocation". Substituting allocation.size here was wrong for a
+	// nonzero offset (it would flush [offset, offset + allocation.size), past the
+	// allocation end).
 	vmaFlushAllocation(m_allocator, allocation.vmaAlloc,
-		static_cast<VkDeviceSize>(offset),
-		(size == VK_WHOLE_SIZE) ? allocation.size : static_cast<VkDeviceSize>(size));
+		static_cast<VkDeviceSize>(offset), static_cast<VkDeviceSize>(size));
 }
 
 void VulkanMemoryManager::invalidateMemory(const VulkanAllocation& allocation, vk::DeviceSize offset, vk::DeviceSize size)
@@ -296,9 +299,9 @@ void VulkanMemoryManager::invalidateMemory(const VulkanAllocation& allocation, v
 		return;
 	}
 
+	// Pass VK_WHOLE_SIZE straight through (see flushMemory).
 	vmaInvalidateAllocation(m_allocator, allocation.vmaAlloc,
-		static_cast<VkDeviceSize>(offset),
-		(size == VK_WHOLE_SIZE) ? allocation.size : static_cast<VkDeviceSize>(size));
+		static_cast<VkDeviceSize>(offset), static_cast<VkDeviceSize>(size));
 }
 
 } // namespace graphics::vulkan

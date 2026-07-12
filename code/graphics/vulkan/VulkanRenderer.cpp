@@ -418,7 +418,7 @@ void VulkanRenderer::createCommandPool(const PhysicalDeviceValues& values)
 void VulkanRenderer::createPresentSyncObjects()
 {
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
-		m_frames[i].reset(new VulkanRenderFrame(m_device.get(), m_swapChain.get(), m_graphicsQueue, m_presentQueue));
+		m_frames[i] = std::make_unique<VulkanRenderFrame>(m_device.get(), m_swapChain.get(), m_graphicsQueue, m_presentQueue);
 	}
 
 	m_swapChainImageRenderImage.resize(m_swapChainImages.size(), nullptr);
@@ -610,8 +610,7 @@ uint32_t VulkanRenderer::getMinUniformBufferOffsetAlignment() const
 		return 256;
 	}
 
-	auto properties = m_physicalDevice.getProperties();
-	return static_cast<uint32_t>(properties.limits.minUniformBufferOffsetAlignment);
+	return static_cast<uint32_t>(m_deviceProperties.limits.minUniformBufferOffsetAlignment);
 }
 
 uint32_t VulkanRenderer::getMaxUniformBufferSize() const
@@ -620,8 +619,7 @@ uint32_t VulkanRenderer::getMaxUniformBufferSize() const
 		return 65536;
 	}
 
-	auto properties = m_physicalDevice.getProperties();
-	return properties.limits.maxUniformBufferRange;
+	return m_deviceProperties.limits.maxUniformBufferRange;
 }
 
 float VulkanRenderer::getMaxAnisotropy() const
@@ -630,8 +628,7 @@ float VulkanRenderer::getMaxAnisotropy() const
 		return 1.0f;
 	}
 
-	auto properties = m_physicalDevice.getProperties();
-	return properties.limits.maxSamplerAnisotropy;
+	return m_deviceProperties.limits.maxSamplerAnisotropy;
 }
 
 bool VulkanRenderer::isTextureCompressionBCSupported() const
@@ -640,8 +637,7 @@ bool VulkanRenderer::isTextureCompressionBCSupported() const
 		return false;
 	}
 
-	auto features = m_physicalDevice.getFeatures();
-	return features.textureCompressionBC == VK_TRUE;
+	return m_deviceFeatures.textureCompressionBC == VK_TRUE;
 }
 
 void VulkanRenderer::waitIdle()

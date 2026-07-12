@@ -234,6 +234,20 @@ vk::SurfaceFormatKHR chooseSurfaceFormat(const PhysicalDeviceValues& values)
 		}
 	}
 
+	// Fallback: no preferred format matched. Pick the first concrete format,
+	// defensively skipping any eUndefined entry (the legacy "any format allowed"
+	// sentinel), and log the actual choice so it's visible in the log.
+	for (const auto& availableFormat : values.surfaceFormats) {
+		if (availableFormat.format != vk::Format::eUndefined) {
+			nprintf(("vulkan", "Vulkan: no preferred surface format available; falling back to format=%d colorSpace=%d\n",
+				static_cast<int>(availableFormat.format), static_cast<int>(availableFormat.colorSpace)));
+			return availableFormat;
+		}
+	}
+
+	// Degenerate list (all eUndefined) — return the front entry and warn.
+	nprintf(("vulkan", "Vulkan: surface format list has no concrete entry; using front (format=%d)\n",
+		static_cast<int>(values.surfaceFormats.front().format)));
 	return values.surfaceFormats.front();
 }
 
@@ -383,7 +397,7 @@ bool VulkanRenderer::initialize()
 	createPresentSyncObjects();
 
 	// Initialize texture manager (needs command pool for uploads)
-	m_textureManager = std::unique_ptr<VulkanTextureManager>(new VulkanTextureManager());
+	m_textureManager = std::make_unique<VulkanTextureManager>();
 	if (!m_textureManager->init(m_device.get(), m_physicalDevice, m_memoryManager.get(),
 	                            m_graphicsCommandPool.get(), m_graphicsQueue)) {
 		nprintf(("vulkan", "Failed to initialize Vulkan texture manager!\n"));
@@ -392,7 +406,7 @@ bool VulkanRenderer::initialize()
 	setTextureManager(m_textureManager.get());
 
 	// Initialize shader manager
-	m_shaderManager = std::unique_ptr<VulkanShaderManager>(new VulkanShaderManager());
+	m_shaderManager = std::make_unique<VulkanShaderManager>();
 	if (!m_shaderManager->init(m_device.get())) {
 		nprintf(("vulkan", "Failed to initialize Vulkan shader manager!\n"));
 		return false;
@@ -403,7 +417,7 @@ bool VulkanRenderer::initialize()
 	// Must happen before the descriptor manager below, since the Global set's
 	// layout needs to know whether to include the TLAS binding, and the
 	// descriptor fallbacks need the raytracing manager's fallback TLAS.
-	m_raytracingManager = std::unique_ptr<VulkanRaytracingManager>(new VulkanRaytracingManager());
+	m_raytracingManager = std::make_unique<VulkanRaytracingManager>();
 	bool raytracingReady = m_raytracingManager->init(m_device.get(), m_physicalDevice, m_memoryManager.get(),
 	                                                  m_bufferManager.get(), m_graphicsCommandPool.get(),
 	                                                  m_graphicsQueue, m_supportsRaytracedShadows);
@@ -426,7 +440,7 @@ bool VulkanRenderer::initialize()
 	m_supportsRaytracedShadows = rtDescriptorSupport;
 
 	// Initialize descriptor manager
-	m_descriptorManager = std::unique_ptr<VulkanDescriptorManager>(new VulkanDescriptorManager());
+	m_descriptorManager = std::make_unique<VulkanDescriptorManager>();
 	if (!m_descriptorManager->init(m_device.get(), rtDescriptorSupport)) {
 		mprintf(("Failed to initialize Vulkan descriptor manager!\n"));
 		return false;
@@ -435,7 +449,7 @@ bool VulkanRenderer::initialize()
 	m_descriptorManager->buildFallbacks(m_bufferManager.get(), m_textureManager.get(), m_raytracingManager.get());
 
 	// Initialize pipeline manager
-	m_pipelineManager = std::unique_ptr<VulkanPipelineManager>(new VulkanPipelineManager());
+	m_pipelineManager = std::make_unique<VulkanPipelineManager>();
 	if (!m_pipelineManager->init(m_device.get(), m_shaderManager.get(), m_descriptorManager.get())) {
 		nprintf(("vulkan", "Failed to initialize Vulkan pipeline manager!\n"));
 		return false;
@@ -444,7 +458,7 @@ bool VulkanRenderer::initialize()
 	m_pipelineManager->loadPipelineCache("vulkan_pipeline.cache");
 
 	// Initialize state tracker
-	m_stateTracker = std::unique_ptr<VulkanStateTracker>(new VulkanStateTracker());
+	m_stateTracker = std::make_unique<VulkanStateTracker>();
 	if (!m_stateTracker->init(m_device.get())) {
 		nprintf(("vulkan", "Failed to initialize Vulkan state tracker!\n"));
 		return false;
@@ -452,7 +466,7 @@ bool VulkanRenderer::initialize()
 	setStateTracker(m_stateTracker.get());
 
 	// Initialize draw manager
-	m_drawManager = std::unique_ptr<VulkanDrawManager>(new VulkanDrawManager());
+	m_drawManager = std::make_unique<VulkanDrawManager>();
 	if (!m_drawManager->init(m_device.get())) {
 		nprintf(("vulkan", "Failed to initialize Vulkan draw manager!\n"));
 		return false;
@@ -460,7 +474,7 @@ bool VulkanRenderer::initialize()
 	setDrawManager(m_drawManager.get());
 
 	// Initialize post-processing
-	m_postProcessor = std::unique_ptr<VulkanPostProcessor>(new VulkanPostProcessor());
+	m_postProcessor = std::make_unique<VulkanPostProcessor>();
 	if (!m_postProcessor->init(m_device.get(), m_physicalDevice, m_memoryManager.get(),
 	                           m_swapChainExtent, m_depthFormat, m_hdrActive)) {
 		mprintf(("Warning: Failed to initialize Vulkan post-processor, post-processing will be disabled\n"));
@@ -472,7 +486,7 @@ bool VulkanRenderer::initialize()
 	// Initialize shared post-processing manager (bloom/lightshaft settings, post-effect table)
 	// This is renderer-agnostic; OpenGL creates it in opengl_post_process_init().
 	if (!graphics::Post_processing_manager) {
-		graphics::Post_processing_manager.reset(new graphics::PostProcessingManager());
+		graphics::Post_processing_manager = std::make_unique<graphics::PostProcessingManager>();
 		if (!graphics::Post_processing_manager->parse_table()) {
 			nprintf(("vulkan", "Warning: Unable to read post-processing table\n"));
 		}
@@ -483,7 +497,7 @@ bool VulkanRenderer::initialize()
 	gr_uniform_buffer_managers_init();
 
 	// Initialize query manager for GPU timestamp profiling
-	m_queryManager = std::unique_ptr<VulkanQueryManager>(new VulkanQueryManager());
+	m_queryManager = std::make_unique<VulkanQueryManager>();
 	if (!m_queryManager->init(m_device.get(), m_physicalDevice.getProperties().limits.timestampPeriod,
 	                          m_graphicsCommandPool.get(), m_graphicsQueue)) {
 		nprintf(("vulkan", "Warning: Failed to initialize Vulkan query manager, GPU profiling will be disabled\n"));
@@ -943,11 +957,14 @@ bool VulkanRenderer::createLogicalDevice(const PhysicalDeviceValues& deviceValue
 
 	// Store physical device and queue family indices for later use
 	m_physicalDevice = deviceValues.device;
+	// Cache properties + features once (the limit/feature getters read these).
+	m_deviceProperties = m_physicalDevice.getProperties();
+	m_deviceFeatures = m_physicalDevice.getFeatures();
 	m_graphicsQueueFamilyIndex = deviceValues.graphicsQueueIndex.index;
 	m_presentQueueFamilyIndex = deviceValues.presentQueueIndex.index;
 
 	// Initialize memory manager
-	m_memoryManager = std::unique_ptr<VulkanMemoryManager>(new VulkanMemoryManager());
+	m_memoryManager = std::make_unique<VulkanMemoryManager>();
 	if (!m_memoryManager->init(m_vkInstance.get(), m_physicalDevice, m_device.get(), m_supportsRaytracedShadows)) {
 		mprintf(("Failed to initialize Vulkan memory manager!\n"));
 		return false;
@@ -955,12 +972,12 @@ bool VulkanRenderer::createLogicalDevice(const PhysicalDeviceValues& deviceValue
 	setMemoryManager(m_memoryManager.get());
 
 	// Initialize deletion queue for deferred resource destruction
-	m_deletionQueue = std::unique_ptr<VulkanDeletionQueue>(new VulkanDeletionQueue());
+	m_deletionQueue = std::make_unique<VulkanDeletionQueue>();
 	m_deletionQueue->init(m_device.get(), m_memoryManager.get());
 	setDeletionQueue(m_deletionQueue.get());
 
 	// Initialize buffer manager
-	m_bufferManager = std::unique_ptr<VulkanBufferManager>(new VulkanBufferManager());
+	m_bufferManager = std::make_unique<VulkanBufferManager>();
 	if (!m_bufferManager->init(m_device.get(), m_memoryManager.get(),
 	                           m_graphicsQueueFamilyIndex,
 	                           getMinUniformBufferOffsetAlignment())) {
