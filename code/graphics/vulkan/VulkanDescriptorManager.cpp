@@ -356,10 +356,16 @@ void VulkanDescriptorManager::beginFrame()
 	}
 }
 
-void VulkanDescriptorManager::endFrame()
+void VulkanDescriptorManager::setCurrentFrame(uint32_t frameIndex)
 {
-	// Advance to next frame
-	m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+	// The renderer is the single source of the frame-in-flight index and advances
+	// it by exactly one (mod MAX_FRAMES_IN_FLIGHT) each flip(); assert that
+	// invariant so a drift between the renderer and this manager is caught loudly
+	// instead of silently corrupting descriptor pools / per-draw sets.
+	Assertion(frameIndex == (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT,
+		"VulkanDescriptorManager::setCurrentFrame: non-monotonic frame index (%u -> %u)",
+		m_currentFrame, frameIndex);
+	m_currentFrame = frameIndex;
 }
 
 ArrayView<VulkanDescriptorManager::UniformBindingEntry>

@@ -253,14 +253,19 @@ public:
 	vk::DescriptorSet allocateFrameSet(DescriptorSetIndex setIndex);
 
 	/**
+	 * @brief Set the current frame-in-flight index (single source: VulkanRenderer)
+	 *
+	 * Replaces the manager's old self-advancing counter. The renderer advances its
+	 * one frame index in flip() and pushes it here (alongside the buffer manager),
+	 * so every consumer of getCurrentFrame() agrees by construction rather than by
+	 * coincidence. Must be called exactly once per frame.
+	 */
+	void setCurrentFrame(uint32_t frameIndex);
+
+	/**
 	 * @brief Begin a new frame - reset current frame's pool
 	 */
 	void beginFrame();
-
-	/**
-	 * @brief End current frame - advance to next pool
-	 */
-	void endFrame();
 
 	/**
 	 * @brief Get current frame index

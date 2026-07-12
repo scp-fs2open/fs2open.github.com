@@ -211,7 +211,6 @@ void VulkanRenderer::flip()
 
 	encodeToSwapChain();
 	m_stateTracker->endFrame();
-	m_descriptorManager->endFrame();
 
 	// End command buffer
 	m_currentCommandBuffer.end();
@@ -242,13 +241,16 @@ void VulkanRenderer::flip()
 	m_currentCommandBuffers.clear();
 	m_frameInProgress = false;
 
-	// Advance counters to prepare for the next frame
+	// Advance the single frame-in-flight index and push it to every consumer that
+	// tracks it, so they all agree by construction (B4). Done immediately after
+	// incrementing so any buffer/descriptor operations before setupFrame() use the
+	// correct frame. (The descriptor manager previously self-advanced its own
+	// counter in endFrame(), which only coincidentally matched.)
 	m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 	++m_frameNumber;
 
-	// Set the frame index for the buffer manager immediately after incrementing
-	// This ensures any buffer operations that happen before setupFrame() use the correct frame
 	m_bufferManager->setCurrentFrame(m_currentFrame, m_frameNumber);
+	m_descriptorManager->setCurrentFrame(m_currentFrame);
 
 	acquireNextSwapChainImage();
 

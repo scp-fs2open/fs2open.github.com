@@ -103,6 +103,19 @@ void VulkanStateTracker::setRenderPass(vk::RenderPass renderPass, uint32_t subpa
 	// Pipeline needs to be rebound when render pass changes
 	m_currentPipeline = nullptr;
 
+	// Invalidate cached descriptor-set bindings at every render-pass boundary.
+	// This is the single recovery point for raw recorders (drawFullscreenTriangle,
+	// encodeOutput, the MSAA resolve, irradiance-map generation) that bind
+	// descriptor sets directly on the command buffer behind this tracker's back --
+	// they always run in their own render pass, so clearing here forces the first
+	// tracked draw of the NEXT pass to rebind. Because all pipelines share one
+	// VkPipelineLayout, sets otherwise survive pipeline binds by layout
+	// compatibility, so bindPipeline() no longer needs to clear them per-bind
+	// (B1) -- only this per-pass reset remains (until B9/6.4 removes raw recorders).
+	for (auto& set : m_boundDescriptorSets) {
+		set = nullptr;
+	}
+
 	// Dynamic state must be re-applied after a render pass change.
 	// Vulkan doesn't preserve dynamic state across render pass instances,
 	// and mid-frame render passes (e.g. light accumulation) may have set
@@ -212,10 +225,12 @@ void VulkanStateTracker::bindPipeline(vk::Pipeline pipeline, vk::PipelineLayout 
 		// After binding new pipeline, need to re-apply dynamic state
 		applyDynamicState();
 
-		// Clear bound descriptor sets since they need to be rebound with new layout
-		for (auto& set : m_boundDescriptorSets) {
-			set = nullptr;
-		}
+		// NOTE: descriptor sets are intentionally NOT cleared here. All graphics
+		// pipelines share one VkPipelineLayout, so already-bound sets remain valid
+		// across a pipeline bind (Vulkan pipeline-layout compatibility). Clearing
+		// on every pipeline change forced a redundant rebind of all sets per draw
+		// with a new pipeline (B1). Raw-recorder staleness is instead recovered at
+		// render-pass boundaries in setRenderPass().
 	}
 }
 
