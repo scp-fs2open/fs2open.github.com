@@ -116,6 +116,22 @@ private:
 
 	void destroyResource(const PendingResource& resource);
 
+	// Shared body for the handle-only queue methods (C6): drop null handles and
+	// push with a fresh frame countdown. queueBuffer/queueImage differ only in
+	// that they additionally carry a VulkanAllocation, so they stay separate.
+	template <typename T>
+	void queueHandle(T handle)
+	{
+		Assertion(m_initialized, "VulkanDeletionQueue::queue* called before initialization!");
+		if (!handle) {
+			return;
+		}
+		PendingDestruction pending;
+		pending.resource = handle;
+		pending.framesRemaining = FRAMES_TO_WAIT;
+		m_pendingDestructions.push_back(pending);
+	}
+
 	vk::Device m_device;
 	VulkanMemoryManager* m_memoryManager = nullptr;
 	SCP_vector<PendingDestruction> m_pendingDestructions;

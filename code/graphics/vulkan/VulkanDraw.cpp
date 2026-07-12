@@ -594,6 +594,35 @@ void VulkanDrawManager::renderRocketPrimitives(interface_material* material_info
 	drawIndexed(prim_type, n_indices, 0, 0);
 }
 
+// Shared indexed-draw parameters for model + shadow draws (C3). renderModel()
+// and renderShadowDraw() computed these identically from the same three sources;
+// the only per-call differences are the instance count (1 vs shadow cascade
+// count) and the frame-stats bookkeeping, which stay at the call sites.
+namespace {
+struct ModelDrawParams {
+	vk::IndexType indexType;
+	vk::DeviceSize indexBufferOffset; // vert_source->Index_offset (heap allocation offset)
+	uint32_t firstIndex;
+	int32_t baseVertex;
+	uint32_t indexCount;
+};
+ModelDrawParams computeModelDrawParams(const indexed_vertex_source* vs, const vertex_buffer* vb,
+                                       const buffer_data* datap)
+{
+	ModelDrawParams p;
+	p.indexType = (datap->flags & VB_FLAG_LARGE_INDEX) ? vk::IndexType::eUint32 : vk::IndexType::eUint16;
+	p.indexBufferOffset = static_cast<vk::DeviceSize>(vs->Index_offset);
+	// Base vertex: heap allocation position + per-mesh vertex offset (matches
+	// OpenGL's glDrawElementsBaseVertex). firstIndex converts the byte index
+	// offset to an index count for the active index width.
+	p.baseVertex = static_cast<int32_t>(vs->Base_vertex_offset + vb->vertex_num_offset);
+	const size_t idxSize = (p.indexType == vk::IndexType::eUint32) ? sizeof(uint32_t) : sizeof(uint16_t);
+	p.firstIndex = static_cast<uint32_t>(datap->index_offset / idxSize);
+	p.indexCount = static_cast<uint32_t>(datap->n_verts);
+	return p;
+}
+} // namespace
+
 void VulkanDrawManager::renderModel(model_material* material_info, indexed_vertex_source* vert_source,
                                      vertex_buffer* bufferp, size_t texi)
 {
@@ -642,42 +671,17 @@ void VulkanDrawManager::renderModel(model_material* material_info, indexed_verte
 	// The Base_vertex_offset in drawIndexed handles the heap allocation offset.
 	stateTracker->bindVertexBuffer(0, vbuffer, 0);
 
-	// Determine index type based on VB_FLAG_LARGE_INDEX flag
-	vk::IndexType indexType = (datap->flags & VB_FLAG_LARGE_INDEX) ?
-	                          vk::IndexType::eUint32 : vk::IndexType::eUint16;
+	const ModelDrawParams dp = computeModelDrawParams(vert_source, bufferp, datap);
+	stateTracker->bindIndexBuffer(ibuffer, dp.indexBufferOffset, dp.indexType);
 
-	// Bind index buffer at the model's heap allocation offset.
-	// The firstIndex (from datap->index_offset) handles per-mesh offset within the model.
-	stateTracker->bindIndexBuffer(ibuffer, static_cast<vk::DeviceSize>(vert_source->Index_offset), indexType);
-
-	// Base vertex offset: accounts for heap allocation position + per-mesh vertex offset.
-	// This matches OpenGL's glDrawElementsBaseVertex usage.
-	auto baseVertex = static_cast<int32_t>(vert_source->Base_vertex_offset + bufferp->vertex_num_offset);
-
-	// Calculate first index
-	// The index_offset in buffer_data is in bytes, need to convert to index count
-	uint32_t firstIndex;
-	if (indexType == vk::IndexType::eUint32) {
-		firstIndex = static_cast<uint32_t>(datap->index_offset / sizeof(uint32_t));
-	} else {
-		firstIndex = static_cast<uint32_t>(datap->index_offset / sizeof(uint16_t));
-	}
-
-	// Issue indexed draw call
+	// Issue indexed draw call (one instance)
 	m_frameStats.drawIndexedCalls++;
-	m_frameStats.totalIndices += static_cast<int>(datap->n_verts);
+	m_frameStats.totalIndices += static_cast<int>(dp.indexCount);
 
 	// Flush any dirty dynamic state before draw
 	stateTracker->applyDynamicState();
 
-	auto cmdBuffer = stateTracker->getCommandBuffer();
-	cmdBuffer.drawIndexed(
-		static_cast<uint32_t>(datap->n_verts),  // index count
-		1,                                       // instance count
-		firstIndex,                              // first index
-		baseVertex,                              // vertex offset
-		0                                        // first instance
-	);
+	stateTracker->getCommandBuffer().drawIndexed(dp.indexCount, 1, dp.firstIndex, dp.baseVertex, 0);
 }
 
 void VulkanDrawManager::renderShadowDraw(gr_buffer_handle ubo_handle, size_t ubo_offset, size_t ubo_size,
@@ -796,18 +800,8 @@ void VulkanDrawManager::renderShadowDraw(gr_buffer_handle ubo_handle, size_t ubo
 
 	stateTracker->bindVertexBuffer(0, vbuffer, 0);
 
-	vk::IndexType indexType = (datap->flags & VB_FLAG_LARGE_INDEX) ?
-	                          vk::IndexType::eUint32 : vk::IndexType::eUint16;
-	stateTracker->bindIndexBuffer(ibuffer, static_cast<vk::DeviceSize>(vert_src->Index_offset), indexType);
-
-	auto baseVertex = static_cast<int32_t>(vert_src->Base_vertex_offset + buffer->vertex_num_offset);
-
-	uint32_t firstIndex;
-	if (indexType == vk::IndexType::eUint32) {
-		firstIndex = static_cast<uint32_t>(datap->index_offset / sizeof(uint32_t));
-	} else {
-		firstIndex = static_cast<uint32_t>(datap->index_offset / sizeof(uint16_t));
-	}
+	const ModelDrawParams dp = computeModelDrawParams(vert_src, buffer, datap);
+	stateTracker->bindIndexBuffer(ibuffer, dp.indexBufferOffset, dp.indexType);
 
 	stateTracker->applyDynamicState();
 
@@ -816,14 +810,7 @@ void VulkanDrawManager::renderShadowDraw(gr_buffer_handle ubo_handle, size_t ubo
 	// gl_Layer directly, no geometry-shader fallback needed).
 	uint32_t instanceCount = static_cast<uint32_t>(std::max(Shadow_cascade_count, 1));
 
-	auto cmdBuffer = stateTracker->getCommandBuffer();
-	cmdBuffer.drawIndexed(
-		static_cast<uint32_t>(datap->n_verts),
-		instanceCount,
-		firstIndex,
-		baseVertex,
-		0
-	);
+	stateTracker->getCommandBuffer().drawIndexed(dp.indexCount, instanceCount, dp.firstIndex, dp.baseVertex, 0);
 }
 
 void VulkanDrawManager::setFillMode(int mode)

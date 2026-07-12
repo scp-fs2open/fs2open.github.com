@@ -67,69 +67,17 @@ void VulkanDeletionQueue::queueImage(vk::Image image, VulkanAllocation allocatio
 	m_pendingDestructions.push_back(pending);
 }
 
-void VulkanDeletionQueue::queueImageView(vk::ImageView imageView)
-{
-	Assertion(m_initialized, "VulkanDeletionQueue::queueImageView called before initialization!");
-	if (!imageView) {
-		return;
-	}
+void VulkanDeletionQueue::queueImageView(vk::ImageView imageView) { queueHandle(imageView); }
 
-	PendingDestruction pending;
-	pending.resource = imageView;
-	pending.framesRemaining = FRAMES_TO_WAIT;
-	m_pendingDestructions.push_back(pending);
-}
+void VulkanDeletionQueue::queueFramebuffer(vk::Framebuffer framebuffer) { queueHandle(framebuffer); }
 
-void VulkanDeletionQueue::queueFramebuffer(vk::Framebuffer framebuffer)
-{
-	Assertion(m_initialized, "VulkanDeletionQueue::queueFramebuffer called before initialization!");
-	if (!framebuffer) {
-		return;
-	}
+void VulkanDeletionQueue::queueRenderPass(vk::RenderPass renderPass) { queueHandle(renderPass); }
 
-	PendingDestruction pending;
-	pending.resource = framebuffer;
-	pending.framesRemaining = FRAMES_TO_WAIT;
-	m_pendingDestructions.push_back(pending);
-}
-
-void VulkanDeletionQueue::queueRenderPass(vk::RenderPass renderPass)
-{
-	Assertion(m_initialized, "VulkanDeletionQueue::queueRenderPass called before initialization!");
-	if (!renderPass) {
-		return;
-	}
-
-	PendingDestruction pending;
-	pending.resource = renderPass;
-	pending.framesRemaining = FRAMES_TO_WAIT;
-	m_pendingDestructions.push_back(pending);
-}
-
-void VulkanDeletionQueue::queueSampler(vk::Sampler sampler)
-{
-	Assertion(m_initialized, "VulkanDeletionQueue::queueSampler called before initialization!");
-	if (!sampler) {
-		return;
-	}
-
-	PendingDestruction pending;
-	pending.resource = sampler;
-	pending.framesRemaining = FRAMES_TO_WAIT;
-	m_pendingDestructions.push_back(pending);
-}
+void VulkanDeletionQueue::queueSampler(vk::Sampler sampler) { queueHandle(sampler); }
 
 void VulkanDeletionQueue::queueAccelerationStructure(vk::AccelerationStructureKHR accelStruct)
 {
-	Assertion(m_initialized, "VulkanDeletionQueue::queueAccelerationStructure called before initialization!");
-	if (!accelStruct) {
-		return;
-	}
-
-	PendingDestruction pending;
-	pending.resource = accelStruct;
-	pending.framesRemaining = FRAMES_TO_WAIT;
-	m_pendingDestructions.push_back(pending);
+	queueHandle(accelStruct);
 }
 
 void VulkanDeletionQueue::processDestructions()
