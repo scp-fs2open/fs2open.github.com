@@ -252,11 +252,11 @@ void VulkanFog::renderScene(vk::CommandBuffer cmd)
 		fogData.clip_inf_dist = Neb2_fog_skybox_clip_distance;
 	}
 
-	// Hand-rolled fullscreen pass rather than PostProcessContext::drawFullscreenTriangle
-	// (C7): the scene-fog shader samples the scene-depth copy at Material binding 4
+	// Hand-rolled fullscreen pass rather than PostProcessContext::drawFullscreenTriangle:
+	// the scene-fog shader samples the scene-depth copy at Material binding 4
 	// (DepthMap), which the shared helper doesn't bind — it only writes a single
-	// color texture into TextureArray[0]. The per-frame scratch-ring UBO plumbing (the
-	// A2/A3/B5/C7 win) is shared; only the custom Material-set binds stay local.
+	// color texture into TextureArray[0]. The per-frame scratch-ring UBO plumbing is
+	// shared; only the custom Material-set binds stay local.
 	PipelineConfig config;
 	config.shaderType = SDR_TYPE_SCENE_FOG;
 	config.vertexLayoutHash = 0;
@@ -471,9 +471,10 @@ void VulkanFog::renderVolumetric(vk::CommandBuffer cmd)
 	}
 
 	// volumetric_fog_data is the largest fullscreen-pass UBO; it dictates the
-	// scratch ring's slot size. With the previous 256-byte slots it silently
-	// overflowed (memcpy spilled into the neighboring slot and the shader's
-	// bound range ended before aspect/fov/noise fields).
+	// scratch ring's slot size. The static_assert below guards against silent
+	// overflow (memcpy spilling into the neighboring slot, with the shader's
+	// bound range ending before the aspect/fov/noise fields) if the struct
+	// ever grows past the slot size.
 	static_assert(sizeof(graphics::generic_data::volumetric_fog_data) <= PostProcessContext::SCRATCH_UBO_SLOT_SIZE,
 		"volumetric_fog_data no longer fits a scratch UBO slot - grow SCRATCH_UBO_SLOT_SIZE");
 
@@ -543,8 +544,8 @@ void VulkanFog::renderVolumetric(vk::CommandBuffer cmd)
 		volFogFlags |= SDR_FLAG_VOLUMETRICS_NOISE;
 	}
 
-	// Hand-rolled fullscreen pass rather than PostProcessContext::drawFullscreenTriangle
-	// (C7): the volumetric shader binds five Material-set textures the shared helper
+	// Hand-rolled fullscreen pass rather than PostProcessContext::drawFullscreenTriangle:
+	// the volumetric shader binds five Material-set textures the shared helper
 	// can't express — DepthMap (binding 4), a sampler3D volume texture (binding 5,
 	// reusing the SceneColor slot) and a sampler3D noise texture (binding 6, reusing
 	// DistortionMap), whose fallbacks are 3D not 2D. drawFullscreenTriangle only writes

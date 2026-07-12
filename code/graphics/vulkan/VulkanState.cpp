@@ -110,8 +110,8 @@ void VulkanStateTracker::setRenderPass(vk::RenderPass renderPass, uint32_t subpa
 	// they always run in their own render pass, so clearing here forces the first
 	// tracked draw of the NEXT pass to rebind. Because all pipelines share one
 	// VkPipelineLayout, sets otherwise survive pipeline binds by layout
-	// compatibility, so bindPipeline() no longer needs to clear them per-bind
-	// (B1) -- only this per-pass reset remains (until B9/6.4 removes raw recorders).
+	// compatibility, so bindPipeline() does not need to clear them per-bind --
+	// only this per-pass reset is needed while the raw recorders exist.
 	for (auto& set : m_boundDescriptorSets) {
 		set = nullptr;
 	}
@@ -123,8 +123,8 @@ void VulkanStateTracker::setRenderPass(vk::RenderPass renderPass, uint32_t subpa
 	// encode, MSAA resolve, irrmap) and mid-frame passes set viewport/scissor
 	// directly on the command buffer behind this tracker, so the tracker's cached
 	// values may no longer match the command buffer's. Forcing a re-apply on the
-	// next tracked draw restores agreement. Once B9/6.4 removes the raw recorders,
-	// re-evaluate whether this is still needed.
+	// next tracked draw restores agreement. This can be re-evaluated if the raw
+	// recorders are ever removed.
 	m_viewportDirty = true;
 	m_scissorDirty = true;
 }
@@ -233,8 +233,8 @@ void VulkanStateTracker::bindPipeline(vk::Pipeline pipeline, vk::PipelineLayout 
 		// NOTE: descriptor sets are intentionally NOT cleared here. All graphics
 		// pipelines share one VkPipelineLayout, so already-bound sets remain valid
 		// across a pipeline bind (Vulkan pipeline-layout compatibility). Clearing
-		// on every pipeline change forced a redundant rebind of all sets per draw
-		// with a new pipeline (B1). Raw-recorder staleness is instead recovered at
+		// them here would force a redundant rebind of all sets on every draw with
+		// a new pipeline. Raw-recorder staleness is instead recovered at
 		// render-pass boundaries in setRenderPass().
 	}
 }

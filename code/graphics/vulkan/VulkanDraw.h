@@ -438,8 +438,8 @@ class VulkanDrawManager {
 		int renderRocketCalls = 0;
 		int renderMovieCalls = 0;
 
-		// On-demand texture uploads triggered mid-frame from bindMaterialTextures
-		// (B6): a texture referenced by a material that wasn't resident, so it had
+		// On-demand texture uploads triggered mid-frame from bindMaterialTextures:
+		// a texture referenced by a material that wasn't resident, so it had
 		// to be locked + uploaded during scene recording. Should be ~0 in steady
 		// state (level preload covers residency); sustained nonzero counts flag a
 		// preload gap worth chasing.
@@ -449,15 +449,15 @@ class VulkanDrawManager {
 	mutable FrameStats m_frameStats;
 	int m_frameStatsFrameNum = 0;
 
-	// First-N debug-log counter for on-demand texture binds (D-nit): a member rather
+	// First-N debug-log counter for on-demand texture binds; a member rather
 	// than a function-local static so it resets on renderer restart. mutable because
 	// bindMaterialTextures is const. Gates nprintf spam only.
 	mutable int m_texBindLogCount = 0;
 
-	// ---- Per-frame Global (Set 0) descriptor memoization (B1) ----
-	// applyMaterial() rebuilt + rebound the Global set on every draw even though
-	// its inputs change at most a few times per frame. Cache it and rebuild only
-	// when a Global input actually changes. Dynamic Global inputs are: the three
+	// ---- Per-frame Global (Set 0) descriptor memoization ----
+	// Rebuilding and rebinding the Global set on every draw would be wasteful,
+	// since its inputs change at most a few times per frame. The cached set is
+	// rebuilt only when a Global input actually changes. Dynamic Global inputs are: the three
 	// pending Global UBOs (Lights/DeferredGlobals/ShadowCascadeParams, via
 	// setPendingUniformBinding), the shadow-map image (shadow lazy-init), and the
 	// TLAS (setCurrentShadowTlas). EnvMap/IrradianceMap are permanent dummy
@@ -468,7 +468,7 @@ class VulkanDrawManager {
 	bool m_globalSetDirty = true;
 	bool m_cachedGlobalHadShadow = false; // shadow-init state the cached set was built with
 
-	// ---- Material (Set 1) previous-set memoization (B1) ----
+	// ---- Material (Set 1) previous-set memoization ----
 	// Reuse the previous draw's Material set when EVERY input is unchanged
 	// (previous-only cache: rebuilt on any difference, so it is never stale).
 	// Hits on batched same-material runs (UI text glyphs, a model's submodels,
@@ -516,7 +516,7 @@ class VulkanDrawManager {
 	MaterialSetInputs m_cachedMaterialInputs;
 	bool m_cachedMaterialValid = false;
 
-	// ---- PerDraw (Set 2) previous-set memoization (B1) ----
+	// ---- PerDraw (Set 2) previous-set memoization ----
 	// PerDraw holds only the pending PerDraw UBO bindings (GenericData, Matrices,
 	// NanoVGData, DecalInfo, MovieData). In 3D these change per draw (no reuse);
 	// the win is UI/2D runs that share them. Previous-only cache, same contract

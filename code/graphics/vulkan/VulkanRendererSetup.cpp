@@ -903,15 +903,15 @@ bool VulkanRenderer::createLogicalDevice(const PhysicalDeviceValues& deviceValue
 	// optional debug report callback above.
 	// Enable ONLY the core device features the renderer actually uses, each gated
 	// on the device's support bit (deviceValues.features holds the queried support;
-	// an unsupported feature stays false and is therefore never requested). This
-	// replaces enabling every supported feature, which pulled in ones we never use
+	// an unsupported feature stays false and is therefore never requested). Enabling
+	// every supported feature would needlessly pull in ones this renderer never uses
 	// -- notably robustBufferAccess (per-access bounds-checking cost), plus
 	// wideLines, imageCubeArray, geometryShader, etc.
 	//
-	// Usage was audited against the pipeline/sampler creation paths and the
-	// compiled shaders (see plan A9). Because this only ever REMOVES features,
-	// the failure mode is "a used feature is no longer enabled"; the reliable
-	// exit criterion is a -gr_sync_validation soak across the test matrix
+	// Usage has been audited against the pipeline/sampler creation paths and the
+	// compiled shaders. Because this only ever narrows the enabled feature set,
+	// the failure mode of an audit gap is a used feature not being enabled; the
+	// reliable exit criterion is a -gr_sync_validation soak across the test matrix
 	// (deferred, MSAA, HDR, RT shadows, wireframe, RTT/env-map, decals) reporting
 	// zero "feature not enabled" messages -- static analysis can't prove
 	// completeness for shader-driven features.

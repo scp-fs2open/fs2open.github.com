@@ -184,13 +184,12 @@ void VulkanRenderer::flip()
 	// createEncodeRenderPass(): srcStage=eColorAttachmentOutput|eFragmentShader,
 	// srcAccess=eColorAttachmentWrite, dst covers the encode's eShaderRead) is
 	// spec-legal and sufficient on desktop Vulkan drivers, and -gr_sync_validation
-	// confirms the composition-image ordering is now clean there without this
+	// confirms the composition-image ordering is clean there without this
 	// barrier. It is kept only because MoltenVK's translation of the implicit
 	// cross-render-pass sync into Metal fences/barriers has historically been
 	// unreliable (tearing/garbage in the composition image once the encode pass
-	// samples it). RE-TEST on macOS hardware after this Phase-4 dependency work;
-	// if MoltenVK now honors the subpass dependency, this explicit barrier can be
-	// removed. (Removal requires macOS hardware to verify -- tracked as a followup.)
+	// samples it). RE-TEST on macOS hardware; if MoltenVK now honors the subpass
+	// dependency, this explicit barrier can be removed.
 	if (m_currentSwapChainImage < m_compositionImages.size()) {
 		vk::ImageMemoryBarrier compositionBarrier;
 		compositionBarrier.srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
@@ -242,10 +241,9 @@ void VulkanRenderer::flip()
 	m_frameInProgress = false;
 
 	// Advance the single frame-in-flight index and push it to every consumer that
-	// tracks it, so they all agree by construction (B4). Done immediately after
+	// tracks it, so they all agree by construction. Done immediately after
 	// incrementing so any buffer/descriptor operations before setupFrame() use the
-	// correct frame. (The descriptor manager previously self-advanced its own
-	// counter in endFrame(), which only coincidentally matched.)
+	// correct frame.
 	m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 	++m_frameNumber;
 

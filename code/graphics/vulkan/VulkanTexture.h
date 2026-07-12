@@ -324,7 +324,7 @@ private:
 	 *
 	 * The caller keeps ownership of the actual destruction sequence (it differs
 	 * between flushTextures and bm_free_data), this only makes the shared-vs-last
-	 * decision. See C4 in the review-fixes plan.
+	 * decision.
 	 */
 	static bool releaseAnimationSlotRef(tcache_slot_vulkan* ts);
 
@@ -342,7 +342,7 @@ private:
 	// Guard flag to prevent recursion when bm_lock calls bm_data during animation upload
 	bool m_uploadingAnimation = false;
 
-	// First-N debug-log counters (D-nit): members rather than function-local statics
+	// First-N debug-log counters: members rather than function-local statics
 	// so they reset when the manager is recreated on a renderer restart, and aren't
 	// shared across a hypothetical second instance. Purely gate nprintf spam.
 	int m_bmDataLogCount = 0;       // bm_data entry trace

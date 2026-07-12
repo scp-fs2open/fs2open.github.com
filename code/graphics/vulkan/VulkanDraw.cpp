@@ -594,10 +594,10 @@ void VulkanDrawManager::renderRocketPrimitives(interface_material* material_info
 	drawIndexed(prim_type, n_indices, 0, 0);
 }
 
-// Shared indexed-draw parameters for model + shadow draws (C3). renderModel()
-// and renderShadowDraw() computed these identically from the same three sources;
-// the only per-call differences are the instance count (1 vs shadow cascade
-// count) and the frame-stats bookkeeping, which stay at the call sites.
+// Shared indexed-draw parameters for model + shadow draws. renderModel() and
+// renderShadowDraw() need these computed identically from the same three
+// sources; the only per-call differences are the instance count (1 vs shadow
+// cascade count) and the frame-stats bookkeeping, which stay at the call sites.
 namespace {
 struct ModelDrawParams {
 	vk::IndexType indexType;
@@ -919,7 +919,7 @@ void VulkanDrawManager::setPendingUniformBinding(uniform_block_type blockType, g
 	m_pendingUniformBindings[index].valid = bufferHandle.isValid();
 
 	// The memoized Global (Set 0) descriptor set binds these three block types; a
-	// change to any of them must force a rebuild (B1).
+	// change to any of them must force a rebuild.
 	if (blockType == uniform_block_type::Lights ||
 	    blockType == uniform_block_type::DeferredGlobals ||
 	    blockType == uniform_block_type::ShadowCascadeParams) {

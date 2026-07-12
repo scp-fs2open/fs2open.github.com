@@ -1107,9 +1107,9 @@ bool VulkanTextureManager::uploadTexture2D(int handle, bitmap* bm, int compType)
 	// exact pattern update_texture already uses) instead of orphaning the old
 	// image and creating a fresh one. That in-place path is a behavior change with
 	// a cross-frame write into a still-referenced image, so it's gated on evidence
-	// that this condition actually fires often enough to matter (C4/B6 follow-up in
-	// the review-fixes plan). Log the first few hits so a test run reveals the
-	// real trigger frequency; behavior is unchanged (fall through to recreate).
+	// that this condition actually fires often enough to matter. Log the first few
+	// hits so a test run reveals the real trigger frequency; behavior is unchanged
+	// (fall through to recreate).
 	if (ts->image && ts->width == width && ts->height == height && ts->format == format &&
 	    ts->arrayLayers <= 1) {
 		if (m_reuploadLogCount < 20) {

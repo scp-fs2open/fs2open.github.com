@@ -47,8 +47,7 @@ struct PostProcessContext {
 	// (fog/volumetrics mid-scene + bloom/tonemap/AA/lightshafts/post-effects).
 	//
 	// Slot size must fit the largest fullscreen-pass UBO: volumetric_fog_data
-	// is 288 bytes (static_assert in VulkanPostProcessingFog.cpp), which
-	// silently overflowed the previous 256-byte slots.
+	// (guarded by a static_assert in VulkanPostProcessingFog.cpp).
 	static constexpr size_t   SCRATCH_UBO_SLOT_SIZE = 512; // multiple of minUniformBufferOffsetAlignment
 	static constexpr uint32_t SCRATCH_UBO_MAX_SLOTS = 32;
 	PerFrameUboRing scratchRing;
@@ -856,7 +855,7 @@ public:
 
   private:
 	/**
-	 * @brief Shared body of encodeOutput()/encodeOutputSdr() (C2)
+	 * @brief Shared body of encodeOutput()/encodeOutputSdr()
 	 *
 	 * Begins/ends the given render pass on the swap chain framebuffer and draws a
 	 * fullscreen triangle that samples sourceView, binding uboData into the

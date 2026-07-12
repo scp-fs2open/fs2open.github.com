@@ -116,7 +116,7 @@ private:
 
 	void destroyResource(const PendingResource& resource);
 
-	// Shared body for the handle-only queue methods (C6): drop null handles and
+	// Shared body for the handle-only queue methods: drop null handles and
 	// push with a fresh frame countdown. queueBuffer/queueImage differ only in
 	// that they additionally carry a VulkanAllocation, so they stay separate.
 	template <typename T>

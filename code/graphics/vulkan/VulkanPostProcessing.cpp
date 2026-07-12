@@ -311,9 +311,9 @@ bool VulkanPostProcessor::init(vk::Device device, vk::PhysicalDevice physDevice,
 	}
 
 	// Tonemap (blitToSwapChain) and output-encode UBO data comes from the shared
-	// per-frame scratch ring below -- no dedicated persistent UBOs. The previous
-	// single-instance buffers were rewritten every frame while the prior
-	// in-flight frame could still be reading them (review finding A2).
+	// per-frame scratch ring below -- no dedicated persistent UBOs. A single-
+	// instance buffer would risk being rewritten every frame while a prior
+	// in-flight frame's GPU work is still reading it.
 
 	// Create the shared scratch UBO ring (used by every subsystem's drawFullscreenTriangle)
 	if (!m_ctx.initScratchUBO()) {
