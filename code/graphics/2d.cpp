@@ -313,67 +313,48 @@ bool High_dynamic_range = false;
 // Note that a displays instance id could change, so don't cache it
 SDL_DisplayID gr_get_preferred_display()
 {
-	SDL_DisplayID display = SDL_GetPrimaryDisplay();
+	SDL_DisplayID display_id = SDL_GetPrimaryDisplay();
 	int count = 0;
 
-	auto preferred = static_cast<int>(os_config_read_uint("Video", "Display", 0));
+	auto preferred = os_config_read_uint("Video", "Display", 0);
 
-	if (preferred <= 0) {
-		return display;
-	}
-
-	auto displays = SDL_GetDisplays(&count);
-
-	if ( !displays || (count == 1) || (preferred >= count) ) {
-		if (displays) {
-			SDL_free(displays);
-		}
-
-		return display;
+	if (preferred == 0) {
+		return display_id;
 	}
 
 	// We're making the assumption here that displays will generally be in the
 	// same position between launches of FSO *and* that no display is unplugged
-	// or plugged in while FSO is running. But there is no guarantee that either
-	// of those things will happen.
+	// or plugged in while FSO is running.
 
-	// TODO: SDL3 => maybe sort displays based on x/y position for deterministic list?
+	auto displays = SDL_GetDisplays(&count);
 
-	for (int i = 0; displays[i]; ++i) {
-		if (i == preferred) {
-			display = displays[i];
-			break;
+	if (displays) {
+		if (preferred < count) {
+			display_id = displays[preferred];
 		}
+
+		SDL_free(displays);
 	}
 
-	SDL_free(displays);
-
-	return display;
+	return display_id;
 }
 
-static void set_preferred_display(SDL_DisplayID display)
+static void set_preferred_display(SDL_DisplayID display_id)
 {
 	int count = 0;
 
+	// We're making the assumption here that displays will generally be in the
+	// same position between launches of FSO *and* that no display is unplugged
+	// or plugged in while FSO is running.
+
 	auto displays = SDL_GetDisplays(&count);
 
-	if ( !displays || (count == 1) ) {
-		if (displays) {
-			SDL_free(displays);
-		}
-
+	if ( !displays ) {
 		return;
 	}
 
-	// We're making the assumption here that displays will generally be in the
-	// same position between launches of FSO *and* that no display is unplugged
-	// or plugged in while FSO is running. But there is no guarantee that either
-	// of those things will happen.
-
-	// TODO: SDL3 => maybe sort displays based on x/y position for deterministic list?
-
-	for (int i = 0; displays[i]; ++i) {
-		if (displays[i] == display) {
+	for (int i = 0; i < count; ++i) {
+		if (displays[i] == display_id) {
 			os_config_write_uint("Video", "Display", static_cast<uint32_t>(i));
 			break;
 		}
@@ -382,25 +363,47 @@ static void set_preferred_display(SDL_DisplayID display)
 	SDL_free(displays);
 }
 
-static int videodisplay_deserializer(const json_t* value)
+static SDL_DisplayID videodisplay_deserializer(const json_t* value)
 {
-	int id;
+	SDL_DisplayID display_id = SDL_GetPrimaryDisplay();
+	int index = 0, count = 0;
 
 	json_error_t err;
-	if (json_unpack_ex((json_t*)value, &err, 0, "i", &id) != 0) {
+	if (json_unpack_ex((json_t*)value, &err, 0, "i", &index) != 0) {
 		throw json_exception(err);
 	}
 
-	// a display id of zero is invalid in SDL3 but we need to support older
-	// builds so add 1 and hope it works out
-	return id+1;
+	auto displays = SDL_GetDisplays(&count);
+
+	if (displays) {
+		if (index < count) {
+			display_id = displays[index];
+		}
+
+		SDL_free(displays);
+	}
+
+	return display_id;
 }
 
-static json_t* videodisplay_serializer(SDL_DisplayID value)
+static json_t* videodisplay_serializer(SDL_DisplayID id)
 {
-	// a display id of zero is invalid in SDL3 but we need to support older
-	// builds so reduce by 1 and hope it works out
-	return json_pack("i", static_cast<int>(value)-1);
+	int value = 0;
+
+	auto displays = SDL_GetDisplays(nullptr);
+
+	if (displays) {
+		for (int i = 0; displays[i]; ++i) {
+			if (displays[i] == id) {
+				value = i;
+				break;
+			}
+		}
+
+		SDL_free(displays);
+	}
+
+	return json_pack("i", value);
 }
 
 static SCP_vector<SDL_DisplayID> videodisplay_enumerator()
