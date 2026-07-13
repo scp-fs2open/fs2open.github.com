@@ -149,7 +149,8 @@ def get_release_files(tag_name, config) -> Tuple[List[ReleaseFile], Dict[str, So
             # x64 is the Visual Studio name but for consistency we need Win64
             if platform == "x64":
                 platform = "Win64"
-            elif platform == "arm64":
+            elif platform.lower() == "arm64":
+                # Windows ARM packages are named "ARM64" (from the build arch); map to the Nebula key
                 platform = "WinARM64"
 
             binary_files.append(ReleaseFile(name, url, platform, group_match.group(3)))

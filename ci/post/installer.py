@@ -37,7 +37,7 @@ def _gen_hash(fileobj, hash_alg):
     return h.hexdigest()
 
 
-def get_hashed_file_list(file: ReleaseFile, session: requests.Session = None, hash_alg: str = "sha256"):
+def get_hashed_file_list(file: ReleaseFile, session: requests.Session = None, hash_alg: str = "sha256", after_hash=None):
     if session is None:
         session = requests.Session()
 
@@ -78,6 +78,12 @@ def get_hashed_file_list(file: ReleaseFile, session: requests.Session = None, ha
             return
 
         file.content_hashes = hash_list
+
+        # Reuse this single download for anything else that needs the bytes (e.g. uploading
+        # the archive into Nebula's storage). local_file is a seekable binary stream.
+        if after_hash is not None:
+            local_file.seek(0)
+            after_hash(file, local_file)
 
 
 def render_installer_config(version, groups, config):

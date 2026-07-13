@@ -1,5 +1,6 @@
 import os.path
 import sys
+import hashlib
 import traceback
 
 import requests
@@ -19,19 +20,19 @@ WINARM64_KEY = "WinARM64"
 
 metadata = {
     'type': 'engine',
-    'title': 'FSO',
+    'title': 'OFP',
     'notes': '',
-    'banner': 'https://fsnebula.org/storage/0d/e7/bf64bcdea9a9c115969cfb784e1ca457d24a7c2da4fc6f213521c3bb6abb.png',
+    'banner': '17c6709138d5a8959c5605a1d6f465d6c1a0dada9881f5b905c01336848bb8de',
     'screenshots': [],
     'videos': [],
-    'first_release': '2017-09-24',
+    'first_release': '2026-07-12',
     'cmdline': '',
-    'mod_flag': ['FSO'],
-    'tile': 'https://fsnebula.org/storage/ec/cc/0bf23e028c26d5175ff52d003bff85b0a17b0ddfc1130d65bdf6d36f6324.png',
+    'mod_flag': ['OFP'],
+    'tile': '12372e28d4654659b3f3a38f52b627a4ad37fb0af4fef63fa9dafa6afe5a27db',
     'logo': None,
     'release_thread': None,
     'description': '',
-    'id': 'FSO',
+    'id': 'OFP',
     'packages': [],
 }
 
@@ -71,6 +72,7 @@ def render_nebula_release(version, stability, files, config):
     meta = metadata.copy()
     meta['version'] = str(version)
     meta['stability'] = stability  # This can be one of ('stable', 'rc', 'nightly')
+    meta['private'] = config['nebula'].get('private', True)  # OFP: default private until explicitly published
 
     for file in files:
         if file.content_hashes is None:
@@ -83,17 +85,23 @@ def render_nebula_release(version, stability, files, config):
         if file.subgroup:
             group += '-' + file.subgroup
 
+        file_entry = {
+            'dest': platforms[group] + '/' + subdirs.get(group, ''),
+            'filesize': file.size,
+            'checksum': ['sha256', file.hash],
+            'filename': file.name
+        }
+        if config['nebula'].get('use_urls'):
+            # Option A: register externally-hosted (GitHub) URLs. Requires the account to be
+            # in Nebula's URLS_FOR allowlist. When off, the archive is uploaded to Nebula
+            # (Option B) and matched here by checksum instead.
+            file_entry['urls'] = [file.url] + file.mirrors
+
         pkg = {
             'name': group,
             'notes': '',
             'is_vp': False,
-            'files': [{
-                'dest': platforms[group] + '/' + subdirs.get(group, ''),
-                'filesize': file.size,
-                'checksum': ['sha256', file.hash],
-                'urls': [file.url] + file.mirrors,
-                'filename': file.name
-            }],
+            'files': [file_entry],
             'environment': envs.get(group),
             'filelist': [],
             'status': 'required',
@@ -218,6 +226,81 @@ def nebula_request(session, kind, path, **kwargs):
     request_args.update(kwargs)
 
     return session.request(kind, uri, **request_args)
+
+
+# Size of each chunk sent to Nebula's multiupload endpoint (Option B uploads).
+UPLOAD_CHUNK_SIZE = 10 * 1024 * 1024
+
+
+def login_session(config):
+    """! Opens a requests Session and logs into Nebula.
+
+    @returns (session, token). token is None if the login failed.
+    """
+    session = requests.Session()
+    result = nebula_request(session, 'post', 'login', data={
+        'user': config['nebula']['user'],
+        'password': config['nebula']['password']
+    })
+    if result.status_code != 200 or not result.json().get('result'):
+        return session, None
+    return session, result.json()['token']
+
+
+def upload_chunked(session, token, fileobj, checksum, filesize):
+    """! Uploads a file into Nebula's own storage via the multiupload API (Option B).
+
+    No-op if a file with this checksum is already present. `fileobj` must be a seekable
+    binary stream; `checksum` is its sha256 (also used as the upload id).
+
+    @returns True on success, False otherwise.
+    """
+    headers = {'X-KN-TOKEN': token}
+
+    # Skip if Nebula already has this exact file (re-runs, or shared across releases)
+    chk = nebula_request(session, 'post', 'upload/check', headers=headers,
+                         data={'checksum': checksum})
+    if chk.status_code == 200 and chk.json().get('result'):
+        print("  already on Nebula, skipping upload: {}".format(checksum))
+        return True
+
+    parts = max(1, (filesize + UPLOAD_CHUNK_SIZE - 1) // UPLOAD_CHUNK_SIZE)
+
+    start = nebula_request(session, 'post', 'multiupload/start', headers=headers,
+                          data={'id': checksum, 'size': str(filesize), 'parts': str(parts)})
+    if start.status_code != 200 or not start.json().get('result'):
+        print("  ERROR: multiupload/start failed for {}".format(checksum))
+        return False
+    finished = set(start.json().get('finished_parts', []))
+
+    fileobj.seek(0)
+    for idx in range(parts):
+        chunk = fileobj.read(UPLOAD_CHUNK_SIZE)
+        if idx in finished:
+            continue
+
+        part = nebula_request(session, 'post', 'multiupload/part', headers=headers,
+                             data={'id': checksum, 'part': str(idx)},
+                             files={'file': ('chunk', chunk)})
+        if part.status_code != 200:
+            print("  ERROR: multiupload/part {} failed for {}".format(idx, checksum))
+            return False
+
+        verify = nebula_request(session, 'post', 'multiupload/verify_part', headers=headers,
+                               data={'id': checksum, 'part': str(idx),
+                                     'checksum': hashlib.sha256(chunk).hexdigest()})
+        if verify.status_code != 200 or not verify.json().get('result'):
+            print("  ERROR: multiupload/verify_part {} failed for {}".format(idx, checksum))
+            return False
+
+    finish = nebula_request(session, 'post', 'multiupload/finish', headers=headers,
+                           data={'id': checksum, 'checksum': checksum})
+    if finish.status_code != 200 or not finish.json().get('result'):
+        print("  ERROR: multiupload/finish failed for {}: {}".format(checksum, finish.text[:200]))
+        return False
+
+    print("  uploaded to Nebula: {}".format(checksum))
+    return True
 
 
 def submit_release(meta, config):

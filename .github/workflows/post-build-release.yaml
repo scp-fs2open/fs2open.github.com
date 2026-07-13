@@ -27,17 +27,15 @@ on:
 
 env:
   GITHUB_REPO: ${{ github.repository }} # repo this workflow was called from
-  INDIEGAMES_USER: ${{ secrets.INDIEGAMES_USER }}
-  INDIEGAMES_SSHPASS: ${{ secrets.INDIEGAMES_PASSWORD }}
   NEBULA_USER: ${{ secrets.NEBULA_USER }}
   NEBULA_PASSWORD: ${{ secrets.NEBULA_PASSWORD }}
-  HLP_API: ${{ secrets.HLP_API }}
-  HLP_KEY: ${{ secrets.HLP_KEY }}
+  NEBULA_PRIVATE: ${{ vars.NEBULA_PRIVATE }} # 'false' publishes publicly; unset/anything else = private
+  NEBULA_USE_URLS: ${{ vars.NEBULA_USE_URLS }} # 'true' registers GitHub URLs (needs URLS_FOR); else upload to Nebula
   RELEASE_TAG: ${{ inputs.releaseTag }}
 
 jobs:
   post_builds:
-    name: Post builds on Nebula and the forums
+    name: Post builds on Nebula
     runs-on: ubuntu-latest
     steps:
       - name: Caller
@@ -62,12 +60,10 @@ jobs:
           WINDOWS_RESULT: ${{ inputs.windows_result }}
           MAC_RESULT: ${{ inputs.mac_result }}
           GITHUB_REPO: ${{ github.repository }} # repo this workflow was called from
-          INDIEGAMES_USER: ${{ secrets.INDIEGAMES_USER }}
-          INDIEGAMES_SSHPASS: ${{ secrets.INDIEGAMES_PASSWORD }}
           NEBULA_USER: ${{ secrets.NEBULA_USER }}
           NEBULA_PASSWORD: ${{ secrets.NEBULA_PASSWORD }}
-          HLP_API: ${{ secrets.HLP_API }}
-          HLP_KEY: ${{ secrets.HLP_KEY }}
+          NEBULA_PRIVATE: ${{ vars.NEBULA_PRIVATE }}
+          NEBULA_USE_URLS: ${{ vars.NEBULA_USE_URLS }}
           RELEASE_TAG: ${{ inputs.releaseTag }}
         run: python ci/post/main.py release
 

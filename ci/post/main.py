@@ -1,5 +1,5 @@
 # Post-build python script
-# Uploads build packages to Nebula and creates a forum post on https://www.hard-light.net
+# Uploads build packages to Nebula
 # Uses the following environment variables (Set by the github action workflow before execution)
 
 # FSO versioning
@@ -7,17 +7,10 @@
 # FSO_VERSION_MINOR
 # FSO_VERSION_BUILD
 
-# Credentials into IndieGames file host
-# INDIEGAMES_USER:
-# INDIEGAMES_SSHPASS:
-
 # Credentials into Nebula Mod Database
 # NEBULA_USER:
 # NEBULA_PASSWORD:
-
-# Credentials into hard-light.net for forum post
-# HLP_API:
-# HLP_KEY:
+# NEBULA_PRIVATE: "false" publishes publicly; anything else (or unset) uploads privately
 
 # LINUX_RESULT: bool, if the linux builds were successfully uploaded
 # WINDOWS_RESULT: bool, if the windows builds were successfully uploaded
@@ -35,7 +28,6 @@ import semantic_version
 import file_list
 import installer
 import nebula
-import forum
 
 # Compile regexes for extracting version components
 MAJOR_VERSION_PATTERN = re.compile("(?:set_if_not_defined|set)\(FSO_VERSION_MAJOR (\d+)\)")
@@ -76,48 +68,28 @@ def _match_version_str(text, regex):
 	
 
 def get_source_version(date_version: datetime, tag_name: str) -> semantic_version.Version:
-	"""! Retrieves the version string from version_override.cmake (and version.cmake)
+	"""! Derives the release version from the git tag.
 
-	@param[in] `date_version` Date this build is published for release
-	@param[in] `tag_name`     Tag of this release, used to determine if release, rc, or nightly
+	@param[in] `date_version` Unused; kept for signature compatibility.
+	@param[in] `tag_name`     Release tag, e.g. release_26_1_0-20260713
 
-	@return If release: `FSO_VERSION_MAJOR.FSO_VERSION_MINOR.FSO_VERSION_BUILD`
-	@return If rc:      `FSO_VERSION_MAJOR.FSO_VERSION_MINOR.FSO_VERSION_BUILD-FSO_VERSION_REVISION_STR`
-	@return If nightly: `FSO_VERSION_MAJOR.FSO_VERSION_MINOR.FSO_VERSION_BUILD-FSO_VERSION_REVISION_STR` (uses both version_override.cmake and version.cmake)
+	@return The version parsed from the tag: release_MAJOR_MINOR_BUILD[-SUFFIX] becomes
+	  MAJOR.MINOR.BUILD[-SUFFIX] (e.g. release_26_1_0-20260713 -> 26.1.0-20260713).
 
-	@note This is the version used to identify in Nebula and the forums.  version_override.cmake is used for the builds
-	  made by CI tools and version.cmake is used for builds made by devs.
+	@note OFP derives the Nebula version from the tag rather than from a generated
+	  version_override.cmake (which OFP's manual tagging does not produce).
 	"""
-
-	with open(os.path.join("..", "..", "version_override.cmake"), "r") as f:
-		filetext = f.read()
-		major = _match_version_number(filetext, MAJOR_VERSION_PATTERN)
-		minor = _match_version_number(filetext, MINOR_VERSION_PATTERN)
-		build = _match_version_number(filetext, BUILD_VERSION_PATTERN)
-		# revision = _match_version_number(filetext, REVISION_VERSION_PATTERN)
-		revision_str = _match_version_str(filetext, REVISION_STR_VERSION_PATTERN)
-
-	print("Parsing version_override.cmake...")
-	if "rc" in tag_name.lower():
-		version = semantic_version.Version("{}.{}.{}-{}".format(major, minor, build, revision_str))
-
-	elif "release" in tag_name.lower():
-		version = semantic_version.Version("{}.{}.{}".format(major, minor, build))
-
-	elif "nightly" in tag_name.lower():
-		# Nightly's version_override.cmake only has FSO_VERSION_REVISION and FSO_VERSION_REVISION_STR set
-		# So, we have to pull the rest of the version string from version.cmake
-		print("Parsing version.cmake...")
-		with open(os.path.join("..", "..", "cmake", "version.cmake"), "r") as f:
-			major = _match_version_number(filetext, MAJOR_VERSION_PATTERN)
-			minor = _match_version_number(filetext, MINOR_VERSION_PATTERN)
-			build = _match_version_number(filetext, BUILD_VERSION_PATTERN)
-		version = semantic_version.Version("{}.{}.{}-{}".format(major, minor, build, revision_str))
-	
-	else:	
+	m = re.match(r"^(?:release|nightly)_(.+)$", tag_name)
+	if not m:
 		print("  ERROR: malformed tag_name %s" % tag_name)
 		sys.exit(1)
 
+	numeric, _, suffix = m.group(1).partition("-")
+	ver = numeric.replace("_", ".")
+	if suffix:
+		ver = "{}-{}".format(ver, suffix)
+
+	version = semantic_version.Version(ver)
 	print("  version: {}".format(version))
 	print("  version.prerelease: {}".format(version.prerelease))
 	return version
@@ -131,33 +103,16 @@ def main():
 		"github": {
 			"repo": os.environ["GITHUB_REPO"],
 		},
-		"ftp": {
-			"host": "scp.indiegames.us",
-			"user": os.environ["INDIEGAMES_USER"],
-			"pass": os.environ["INDIEGAMES_SSHPASS"],
-			"path": "public_html/builds/{type}/{version}/",
-			"mirrors": (
-				"https://perses.feralhosting.com/datacorder/builds/{type}/{version}/{file}",
-				"https://scp.indiegames.us/builds/{type}/{version}/{file}",
-			),
-		},
 		"nebula": {
 			"user": os.environ["NEBULA_USER"],
 			"password": os.environ["NEBULA_PASSWORD"],
-		},
-		"hlp": {
-			"api": os.environ["HLP_API"],
-			"key": os.environ["HLP_KEY"],
-		},
-		"templates": {
-			"nightly": "nightly.mako",
-			"release": "release.mako",
-		},
-		"nightly": {
-			"hlp_board": 173,
-		},
-		"release": {
-			"hlp_board": 50,
+			# OFP: releases upload to Nebula privately by default; set repo variable
+			# NEBULA_PRIVATE=false to publish publicly (which also fires Nebula's announcement).
+			"private": os.environ.get("NEBULA_PRIVATE", "true").strip().lower() != "false",
+			# Option A (register GitHub URLs) needs Nebula's URLS_FOR allowlist. Default off:
+			# upload the archives into Nebula storage instead (Option B). Set NEBULA_USE_URLS=true
+			# once the account is allowlisted.
+			"use_urls": os.environ.get("NEBULA_USE_URLS", "false").strip().lower() == "true",
 		},
 	}
 
@@ -230,8 +185,26 @@ def main():
 		files, sources = file_list.get_release_files(tag_name, config)
 
 		print("Hashing files...")
-		for file in files:
-			installer.get_hashed_file_list(file)
+		if config["nebula"].get("use_urls"):
+			# Option A: archives stay on GitHub; we only register their URLs (needs URLS_FOR).
+			for file in files:
+				installer.get_hashed_file_list(file)
+		else:
+			# Option B: upload each archive into Nebula storage (no URLS_FOR needed), reusing
+			# the single download that content-hashing already performs.
+			print("Uploading build archives to Nebula...")
+			upload_session, upload_token = nebula.login_session(config)
+			if not upload_token:
+				print("ERROR: Nebula login failed; cannot upload archives.")
+				sys.exit(1)
+
+			def _upload_after_hash(f, local_file):
+				if not nebula.upload_chunked(upload_session, upload_token, local_file, f.hash, f.size):
+					print("ERROR: failed to upload %s to Nebula." % f.name)
+					sys.exit(1)
+
+			for file in files:
+				installer.get_hashed_file_list(file, after_hash=_upload_after_hash)
 
 		# Construct the file groups
 		# split the file list into a dictionary of {group: files} pairs using `groupby()`
@@ -270,37 +243,20 @@ def main():
 
 		# Publish release builds to Nebula
 		print("Publishing to Nebula...")
+		if not version.prerelease:
+			stability = "stable"
+		elif any("rc" in str(part).lower() for part in version.prerelease):
+			stability = "rc"
+		else:
+			stability = "nightly"
 		nebula.submit_release(
-			nebula.render_nebula_release(version, "rc" if version.prerelease else "stable", files, config),
+			nebula.render_nebula_release(version, stability, files, config),
 			config)
-
-		# Publish forum post, using the release.mako template
-		print("Publishing to Hard-light.net...")
-		fapi = forum.ForumAPI(config)
-		fapi.post_release(date.strftime(DATEFORMAT_FORUM), version, groups, sources)
 
 	else:
-		# Dead for now, nightly publish is done elsewhere
-		# Nightly specific action
-		print("Retrieving file list...")
-		files = file_list.get_ftp_files("nightly", tag_name, config)
-
-		print("Hashing files...")
-		for file in files:
-			installer.get_hashed_file_list(file)
-
-		print("Publishing to Nebula...")
-		nebula.submit_release(
-			nebula.render_nebula_release(version, "nightly", files, config),
-			config)
-
-		# Compile commit messages into a log with all commits between this nightly and the previous nightly
-		log = check_output(("git", "log", "%s^..%s^" % (previous_tag, tag_name), "--no-merges", "--stat", "--pretty=format:\"%s\"" % LOG_FORMAT.strip()))
-
-		# Publish forum post, using the nighty.mako template
-		print("Publishing to Hard-light.net...")
-		fapi = forum.ForumAPI(config)
-		fapi.post_nightly(date.strftime(DATEFORMAT_FORUM), os.environ["GITHUB_SHA"], files, log, (linux_success and windows_success))
+		# OFP does not publish nightlies through this script. Nightly builds are handled
+		# separately, and this path previously relied on SCP-specific FTP/forum infra.
+		print("Nightly publishing via ci/post is not used by OFP; nothing to do.")
 
 	print("Done!")
 
