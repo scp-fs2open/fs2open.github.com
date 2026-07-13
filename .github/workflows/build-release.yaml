@@ -9,6 +9,8 @@ jobs:
   create_release:
     name: Create GitHub release
     runs-on: ubuntu-latest
+    permissions:
+      contents: write   # required to create the GitHub release (repo default token is read-only)
     steps:
       - name: Create Release
         id: create_release
@@ -30,7 +32,8 @@ jobs:
           tag_name: ${{ github.ref }}
           release_name: Release ${{ github.ref }}
           draft: false
-          prerelease: false
+          # Any tag with a - suffix (RCs, date-stamped nightlies like 26_1_0-20260713) is a prerelease; a clean release_MM_mm_bb is a full release
+          prerelease: ${{ contains(github.ref_name, '-') }}
 
   build_linux:
     strategy:
@@ -98,6 +101,8 @@ jobs:
     needs: build_linux
     runs-on: ubuntu-latest
     container: ghcr.io/scp-fs2open/sftp_upload:sha-ab87451
+    permissions:
+      contents: write   # required to publish assets to the GitHub release
     strategy:
       matrix:
         arch: [x86_64, arm64]
@@ -231,6 +236,8 @@ jobs:
     needs: build_windows
     runs-on: ubuntu-latest
     container: ghcr.io/scp-fs2open/sftp_upload:sha-ab87451
+    permissions:
+      contents: write   # required to publish assets to the GitHub release
     strategy:
       fail-fast: false  # Run the other jobs in the matrix instead of failing them
       matrix:
@@ -370,6 +377,8 @@ jobs:
     needs: build_mac
     runs-on: ubuntu-latest
     container: ghcr.io/scp-fs2open/sftp_upload:sha-ab87451
+    permissions:
+      contents: write   # required to publish assets to the GitHub release
     strategy:
       matrix:
         arch: [x86_64, arm64]
