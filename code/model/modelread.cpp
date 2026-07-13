@@ -6025,6 +6025,11 @@ void parse_glowpoint_table(const char *filename)
 
 void glowpoint_init()
 {
+	// ship_info and prop_info store indices into glowpoint_bank_overrides
+	extern bool Ships_inited;
+	extern bool Props_inited;
+	Assertion(!Ships_inited && !Props_inited, "glowpoint_init() must be called before ship_init() and prop_init()");
+
 	glowpoint_bank_overrides.clear();
 	parse_glowpoint_table("glowpoints.tbl");
 	parse_modular_table(NOX("*-gpo.tbm"), parse_glowpoint_table);

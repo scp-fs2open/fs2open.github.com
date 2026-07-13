@@ -4953,8 +4953,9 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 				Warning(LOCATION, "Couldn't find preset %s in glowpoints.tbl when parsing ship: %s", name.data(), sip->name);
 				continue;
 			}
+			int gpo_index = (int)(gpo - glowpoint_bank_overrides.begin());
 			if(banks == "*") {
-				sip->glowpoint_bank_override_map[-1] = (void*)(&(*gpo));
+				sip->glowpoint_bank_override_map[-1] = gpo_index;
 				continue;
 			}
 			SCP_string banktoken;
@@ -4975,11 +4976,11 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 					ifrom = atoi(from.data()) - 1;
 					ito = atoi(to.data()) - 1;
 					for(int bank = ifrom; bank <= ito; ++bank) {
-						sip->glowpoint_bank_override_map[bank] = (void*)(&(*gpo));
+						sip->glowpoint_bank_override_map[bank] = gpo_index;
 					}
 				} else {
 					int bank = atoi(banktoken.data()) - 1;
-					sip->glowpoint_bank_override_map[bank] = (void*)(&(*gpo));
+					sip->glowpoint_bank_override_map[bank] = gpo_index;
 				}
 			} while(end !=SCP_string::npos);
 		}
@@ -11357,9 +11358,9 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 		for (int bank = 0; bank < pm->n_glow_point_banks; bank++) {
 			glow_point_bank_override* gpo = nullptr;
 
-			SCP_unordered_map<int, void*>::iterator gpoi = sip->glowpoint_bank_override_map.find(bank);
+			auto gpoi = sip->glowpoint_bank_override_map.find(bank);
 			if (gpoi != sip->glowpoint_bank_override_map.end()) {
-				gpo = (glow_point_bank_override*)sip->glowpoint_bank_override_map[bank];
+				gpo = &glowpoint_bank_overrides[gpoi->second];
 			}
 
 			if (gpo) {
@@ -11509,9 +11510,9 @@ static void ship_model_change(int n, int ship_type)
 		for (int bank = 0; bank < pm->n_glow_point_banks; bank++) {
 			glow_point_bank_override* gpo = nullptr;
 
-			SCP_unordered_map<int, void*>::iterator gpoi = sip->glowpoint_bank_override_map.find(bank);
+			auto gpoi = sip->glowpoint_bank_override_map.find(bank);
 			if (gpoi != sip->glowpoint_bank_override_map.end()) {
-				gpo = (glow_point_bank_override*)sip->glowpoint_bank_override_map[bank];
+				gpo = &glowpoint_bank_overrides[gpoi->second];
 			}
 
 			if (gpo) {

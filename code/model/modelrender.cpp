@@ -1946,7 +1946,6 @@ void model_render_set_glow_points(const polymodel *pm, int objnum)
 	int time = timestamp();
 	glow_point_bank_override *gpo = nullptr;
 	bool override_all = false;
-	SCP_unordered_map<int, void*>::iterator gpoi;
 	ship_info *sip = nullptr;
 	ship *shipp = nullptr;
 
@@ -1960,11 +1959,11 @@ void model_render_set_glow_points(const polymodel *pm, int objnum)
 		if ( objp != NULL && objp->type == OBJ_SHIP ) {
 			shipp = &Ships[Objects[objnum].instance];
 			sip = &Ship_info[shipp->ship_info_index];
-			gpoi = sip->glowpoint_bank_override_map.find(-1);
+			auto gpoi = sip->glowpoint_bank_override_map.find(-1);
 
 			if (gpoi != sip->glowpoint_bank_override_map.end()) {
 				override_all = true;
-				gpo = (glow_point_bank_override*)sip->glowpoint_bank_override_map[-1];
+				gpo = &glowpoint_bank_overrides[gpoi->second];
 			}
 		}
 	}
@@ -1973,12 +1972,12 @@ void model_render_set_glow_points(const polymodel *pm, int objnum)
 		glow_point_bank *bank = &pm->glow_point_banks[i];
 
 		if ( !override_all && sip ) {
-			gpoi = sip->glowpoint_bank_override_map.find(i);
+			auto gpoi = sip->glowpoint_bank_override_map.find(i);
 
 			if ( gpoi != sip->glowpoint_bank_override_map.end() ) {
-				gpo = (glow_point_bank_override*) sip->glowpoint_bank_override_map[i];
+				gpo = &glowpoint_bank_overrides[gpoi->second];
 			} else {
-				gpo = NULL;
+				gpo = nullptr;
 			}
 		}
 
@@ -2013,16 +2012,15 @@ void model_render_glow_points(const polymodel *pm, const polymodel_instance *pmi
 
 	glow_point_bank_override *gpo = nullptr;
 	bool override_all = false;
-	SCP_unordered_map<int, void*>::iterator gpoi;
 	ship_info *sip = nullptr;
 
 	if ( shipp ) {
 		sip = &Ship_info[shipp->ship_info_index];
-		gpoi = sip->glowpoint_bank_override_map.find(-1);
+		auto gpoi = sip->glowpoint_bank_override_map.find(-1);
 
 		if(gpoi != sip->glowpoint_bank_override_map.end()) {
 			override_all = true;
-			gpo = (glow_point_bank_override*) sip->glowpoint_bank_override_map[-1];
+			gpo = &glowpoint_bank_overrides[gpoi->second];
 		}
 	}
 
@@ -2030,9 +2028,9 @@ void model_render_glow_points(const polymodel *pm, const polymodel_instance *pmi
 		glow_point_bank *bank = &pm->glow_point_banks[i];
 
 		if(!override_all && sip) {
-			gpoi = sip->glowpoint_bank_override_map.find(i);
+			auto gpoi = sip->glowpoint_bank_override_map.find(i);
 			if(gpoi != sip->glowpoint_bank_override_map.end()) {
-				gpo = (glow_point_bank_override*) sip->glowpoint_bank_override_map[i];
+				gpo = &glowpoint_bank_overrides[gpoi->second];
 			} else {
 				gpo = nullptr;
 			}

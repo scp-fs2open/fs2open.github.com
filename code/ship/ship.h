@@ -1507,7 +1507,7 @@ public:
 
 	SCP_map<SCP_string, path_metadata> pathMetadata;
 
-	SCP_unordered_map<int, void*> glowpoint_bank_override_map;
+	SCP_unordered_map<int, int> glowpoint_bank_override_map;	// key: glowpoint bank (-1 = all banks); value: index into the growable global glowpoint_bank_overrides vector
 
 	animation::ModelAnimationSet animations;
 	animation::ModelAnimationSet cockpit_animations;

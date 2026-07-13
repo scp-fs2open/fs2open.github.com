@@ -547,7 +547,7 @@ int prop_create(const matrix* orient, const vec3d* pos, int prop_type, const cha
 
 			auto gpoi = pip->glowpoint_bank_override_map.find(bank);
 			if (gpoi != pip->glowpoint_bank_override_map.end()) {
-				gpo = (glow_point_bank_override*)pip->glowpoint_bank_override_map[bank];
+				gpo = &glowpoint_bank_overrides[gpoi->second];
 			}
 
 			if (gpo) {
@@ -637,7 +637,7 @@ static void prop_model_change(int n, int prop_type)
 
 			auto gpoi = sip->glowpoint_bank_override_map.find(bank);
 			if (gpoi != sip->glowpoint_bank_override_map.end()) {
-				gpo = (glow_point_bank_override*)sip->glowpoint_bank_override_map[bank];
+				gpo = &glowpoint_bank_overrides[gpoi->second];
 			}
 
 			if (gpo) {
