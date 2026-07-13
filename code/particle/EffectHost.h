@@ -35,13 +35,18 @@ namespace effects {
 		vec3d local_last_pos_to_global(const vec3d& last_pos) const;
 		bool is_valid() const;
 		bool is_not_attached() const;
+
+		//Note, a particle attachment's frame of reference is only an offset since particles DO NOT have an orientation.
+		//In rare circumstances, their global velocity is used to compute an orientation, but for all purposes of local
+		//frames of references, that is not the case.
 		std::pair<vec3d, matrix> get_frame(float interp = 0.0f) const;
 		std::optional<attachment_object> extract_object() const;
+
 		EffectAttachment resolve_true_parent() const;
 
 		constexpr EffectAttachment() : m_variant(std::monostate()) {};
 		EffectAttachment(const underlying_type& variant) : m_variant(variant) {};
-		EffectAttachment(underlying_type&& variant) : m_variant(variant) {};
+		EffectAttachment(underlying_type&& variant) : m_variant(std::move(variant)) {};
 	};
 }
 

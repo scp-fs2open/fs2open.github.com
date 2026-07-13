@@ -33,9 +33,10 @@ std::pair<vec3d, matrix> EffectHostParticle::getPositionAndOrientation(bool rela
 	if (!relativeToParent) {
 		orientation = m_orientationOverrideRelative ? m_orientationOverride * *vm_vector_2_matrix(&orientation, &particle_dir) : m_orientationOverride;
 	} else {
-		pos = getParentAttachment().global_pos_to_local(pos);
+		const auto& parent = getParentAttachment();
+		pos = parent.global_pos_to_local(pos);
 
-		const auto& [parent_pos, parent_orient] = getParentAttachment().get_frame(interp);
+		const auto& [parent_pos, parent_orient] = parent.get_frame(interp);
 		vm_vec_rotate(&particle_dir, &particle_dir, &parent_orient);
 
 		if (m_orientationOverrideRelative) {
@@ -57,6 +58,7 @@ vec3d EffectHostParticle::getVelocity() const {
 }
 
 effects::EffectAttachment EffectHostParticle::getParentAttachment() const {
+	Assertion(isValid(), "Tried to query particle attachment on an invalid particle");
 	return effects::EffectAttachment(effects::attachment_particle{m_particle}).resolve_true_parent();
 }
 

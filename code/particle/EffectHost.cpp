@@ -28,9 +28,9 @@ vec3d EffectAttachment::local_pos_to_global(const vec3d& local_pos, float interp
 		},
 		[&local_pos, interp, this](const attachment_particle& parent_part) {
 			const auto& parent = parent_part.particle.lock();
-			Assertion(!parent->parent_effect.getParticleEffect().m_parent_is_transitive, "Encountered live transitive parent in effect attachment.");
 			if (!parent)
 				return local_pos;
+			Assertion(!parent->parent_effect.getParticleEffect().m_parent_is_transitive, "Encountered live transitive parent in effect attachment.");
 
 			const auto& [parent_pos, parent_orient] = get_frame(interp);
 			vec3d pos;
@@ -57,9 +57,9 @@ vec3d EffectAttachment::global_pos_to_local(const vec3d& global_pos) const {
 		},
 		[&global_pos, this](const attachment_particle& parent_part) {
 			const auto& parent = parent_part.particle.lock();
-			Assertion(!parent->parent_effect.getParticleEffect().m_parent_is_transitive, "Encountered live transitive parent in effect attachment.");
 			if (!parent)
 				return global_pos;
+			Assertion(!parent->parent_effect.getParticleEffect().m_parent_is_transitive, "Encountered live transitive parent in effect attachment.");
 
 			const auto& [parent_pos, parent_orient] = get_frame();
 			vec3d pos = global_pos - parent_pos;
@@ -85,9 +85,9 @@ vec3d EffectAttachment::local_vel_to_global(const vec3d& local_vel) const {
 		},
 		[&local_vel, this](const attachment_particle& parent_part) {
 			const auto& parent = parent_part.particle.lock();
-			Assertion(!parent->parent_effect.getParticleEffect().m_parent_is_transitive, "Encountered live transitive parent in effect attachment.");
 			if (!parent)
 				return local_vel;
+			Assertion(!parent->parent_effect.getParticleEffect().m_parent_is_transitive, "Encountered live transitive parent in effect attachment.");
 
 			const auto& [parent_pos, parent_orient] = get_frame();
 			vec3d vel;
@@ -113,9 +113,9 @@ vec3d EffectAttachment::global_vel_to_local(const vec3d& global_vel) const {
 		},
 		[&global_vel, this](const attachment_particle& parent_part) {
 			const auto& parent = parent_part.particle.lock();
-			Assertion(!parent->parent_effect.getParticleEffect().m_parent_is_transitive, "Encountered live transitive parent in effect attachment.");
 			if (!parent)
 				return global_vel;
+			Assertion(!parent->parent_effect.getParticleEffect().m_parent_is_transitive, "Encountered live transitive parent in effect attachment.");
 
 			const auto& [parent_pos, parent_orient] = get_frame();
 			vec3d relative_vel = global_vel - parent->attachment.local_vel_to_global(parent->velocity);
@@ -141,9 +141,9 @@ vec3d EffectAttachment::local_last_pos_to_global(const vec3d& last_pos) const {
 		},
 		[&last_pos, this](const attachment_particle& parent_part) {
 			const auto& parent = parent_part.particle.lock();
-			Assertion(!parent->parent_effect.getParticleEffect().m_parent_is_transitive, "Encountered live transitive parent in effect attachment.");
 			if (!parent)
 				return last_pos;
+			Assertion(!parent->parent_effect.getParticleEffect().m_parent_is_transitive, "Encountered live transitive parent in effect attachment.");
 
 			const auto& [parent_pos, parent_orient] = get_frame();
 			vec3d pos;
@@ -187,9 +187,9 @@ std::pair<vec3d, matrix> EffectAttachment::get_frame(float interp) const {
 		},
 		[interp](const effects::attachment_particle& parent_part) -> std::pair<vec3d, matrix> {
 			const auto& parent = parent_part.particle.lock();
-			Assertion(!parent->parent_effect.getParticleEffect().m_parent_is_transitive, "Encountered live transitive parent in effect attachment.");
 			if (!parent)
 				return {ZERO_VECTOR, vmd_identity_matrix};
+			Assertion(!parent->parent_effect.getParticleEffect().m_parent_is_transitive, "Encountered live transitive parent in effect attachment.");
 
 			auto [parent_pos, orient] = parent->attachment.get_frame(interp);
 
@@ -228,6 +228,7 @@ EffectAttachment EffectAttachment::resolve_true_parent() const {
 			return {obj};
 		},
 		[](const attachment_particle& parent_part) -> EffectAttachment  {
+			Assertion(!parent_part.particle.expired() && parent_part.particle.lock() != nullptr, "Tried to resolve the true parent of an invalid particle.");
 			const auto& parent = parent_part.particle.lock();
 			const auto& effect = parent->parent_effect.getParticleEffect();
 			if (effect.m_parent_is_transitive) {
