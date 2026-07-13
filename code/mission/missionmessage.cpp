@@ -41,6 +41,8 @@
 #include "species_defs/species_defs.h"
 #include "utils/Random.h"
 
+#include <utility>	// for std::exchange
+
 bool Allow_generic_backup_messages = false;
 bool Always_loop_head_anis = false;
 bool Use_newer_head_ani_suffix = false;
@@ -72,14 +74,44 @@ builtin_message::builtin_message(const builtin_message& other)
 
 builtin_message& builtin_message::operator=(const builtin_message& other)
 {
-	name = other.used_strdup ? vm_strdup(other.name) : other.name;
-	occurrence_chance = other.occurrence_chance;
-	max_count = other.max_count;
-	min_delay = other.min_delay;
-	priority = other.priority;
-	timing = other.timing;
-	fallback = other.fallback;
-	used_strdup = other.used_strdup;
+	if (this != &other)
+	{
+		const char* new_name = other.used_strdup ? vm_strdup(other.name) : other.name;
+		if (used_strdup)
+			vm_free(const_cast<char*>(name));
+
+		name = new_name;
+		occurrence_chance = other.occurrence_chance;
+		max_count = other.max_count;
+		min_delay = other.min_delay;
+		priority = other.priority;
+		timing = other.timing;
+		fallback = other.fallback;
+		used_strdup = other.used_strdup;
+	}
+	return *this;
+}
+
+builtin_message::builtin_message(builtin_message&& other) noexcept
+	: name(std::exchange(other.name, nullptr)), occurrence_chance(other.occurrence_chance), max_count(other.max_count), min_delay(other.min_delay), priority(other.priority), timing(other.timing), fallback(other.fallback), used_strdup(std::exchange(other.used_strdup, false))
+{}
+
+builtin_message& builtin_message::operator=(builtin_message&& other) noexcept
+{
+	if (this != &other)
+	{
+		if (used_strdup)
+			vm_free(const_cast<char*>(name));
+
+		name = std::exchange(other.name, nullptr);
+		occurrence_chance = other.occurrence_chance;
+		max_count = other.max_count;
+		min_delay = other.min_delay;
+		priority = other.priority;
+		timing = other.timing;
+		fallback = other.fallback;
+		used_strdup = std::exchange(other.used_strdup, false);
+	}
 	return *this;
 }
 
