@@ -195,6 +195,7 @@ namespace AI {
 		Fix_big_ship_waypoint_completion,	// a) big ships complete a waypoint within their radius rather than sqrt(radius);
 											// b) completion no longer requires moving 0.1m in a single frame (framerate-dependent)
 		Fix_shockwave_expire_before_do_damage,	// shockwaves whose lifetime is shorter than one frame apply their area damage at least once before expiring
+		Fix_small_ai_recover_after_engines_repaired, // ensure small ship AI can switch back to useful AI modes if engines get repaired
 
 		NUM_VALUES
 	};

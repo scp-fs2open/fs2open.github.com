@@ -12431,7 +12431,7 @@ void ai_process_subobjects(int objnum)
 	}
 
 	//	Deal with a ship with blown out engines.
-	if (ship_subsystems_blown(shipp, SUBSYSTEM_ENGINE)) {
+	if (!The_mission.ai_profile->flags[AI::Profile_Flags::Fix_small_ai_recover_after_engines_repaired] && ship_subsystems_blown(shipp, SUBSYSTEM_ENGINE)) {
 		// Karajorma - if Player_use_ai is ever fixed to work on multiplayer it should be checked that any player ships 
 		// aren't under AI control here
 		if ((!(objp->flags[Object::Object_Flags::Player_ship])) && (sip->is_fighter_bomber()) && !(shipp->flags[Ship::Ship_Flags::Dying])) {
@@ -12445,7 +12445,14 @@ void ai_process_subobjects(int objnum)
 					aip->submode = SM_ATTACK_FOREVER;				//	Never leave attack submode, don't avoid, evade, etc.
 					aip->submode_start_time = Missiontime;
 				}
-			}
+			} 
+		}
+		// Goober5000 - conversely, if the engines are no longer blown (e.g. after repair), resume normal chase behavior.
+		// The rest of the AI assumes SM_ATTACK_FOREVER implies blown engines, 
+		// so don't leave the submode set after the engines recover, or the ship will never evade and will ignore being hit.
+		else if (The_mission.ai_profile->flags[AI::Profile_Flags::Fix_small_ai_recover_after_engines_repaired] && ((aip->mode == AIM_CHASE) && (aip->submode == SM_ATTACK_FOREVER))) {
+			aip->submode = SM_ATTACK;
+			aip->submode_start_time = Missiontime;
 		}
 	}
 }
