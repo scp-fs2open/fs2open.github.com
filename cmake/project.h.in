@@ -14,4 +14,8 @@
 #define FS_VERSION_FULL "@FSO_FULL_VERSION_STRING@"
 #define FS_PRODUCT_VERSION "@FSO_PRODUCT_VERSION_STRING@"
 
+// Fork identity: empty on stock builds, "OFP" on Origin FreeSpace Project builds.
+// Kept separate from the numeric version so mod version checks and Nebula semver are unaffected.
+#define FSO_BUILD_FORK_NAME "@FSO_BUILD_FORK_NAME@"
+
 #endif // __PROJECT_H

@@ -24,6 +24,7 @@
 #include "globalincs/systemvars.h"
 #include "cfile/cfilesystem.h"
 #include "parse/parselo.h"
+#include "project.h"   // FSO_BUILD_FORK_NAME
 
 static const char *FILTERS_ENABLED_BY_DEFAULT[] =
 {
@@ -300,6 +301,9 @@ void outwnd_init()
 			strftime(datestr, sizeof(datestr) - 1, "%a %b %d %H:%M:%S %Y", localtime(&timedate));
 
 			outwnd_printf("General", "Opened log '%s', %s ...\n", logpath.c_str(), datestr);
+			if (FSO_BUILD_FORK_NAME[0] != '\0') {
+				outwnd_printf("General", "This is an %s build.\n", FSO_BUILD_FORK_NAME);
+			}
 			mprintf(("Legacy config mode is %s.\nReason: %s\n", os_is_legacy_mode() ? "ENABLED" : "DISABLED",
 					 Osapi_legacy_mode_reason));
 		}

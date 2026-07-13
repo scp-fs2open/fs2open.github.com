@@ -193,7 +193,11 @@ SCP_string get_version_string()
 {
 	SCP_string str;
 
-	sprintf(str, "FreeSpace 2 Open v%s", FS_VERSION_FULL);
+	if (FSO_BUILD_FORK_NAME[0] != '\0') {
+		sprintf(str, "FreeSpace 2 Open (%s) v%s", FSO_BUILD_FORK_NAME, FS_VERSION_FULL);
+	} else {
+		sprintf(str, "FreeSpace 2 Open v%s", FS_VERSION_FULL);
+	}
 
 #ifndef NDEBUG
 	str += " Debug";

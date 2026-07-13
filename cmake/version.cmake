@@ -16,6 +16,11 @@ set_if_not_defined(FSO_VERSION_REVISION 0)
 # A generic revision string, can be anything
 set_if_not_defined(FSO_VERSION_REVISION_STR "${FSO_VERSION_REVISION}")
 
+# --- OFP fork identity (Origin FreeSpace Project) ---
+# Brands builds as OFP in the version string and log header WITHOUT changing the numeric
+# version, so mod required_fso_version checks and Nebula semver stay intact. Empty = stock build.
+set_if_not_defined(FSO_BUILD_FORK_NAME "OFP")
+
 if("${FSO_VERSION_REVISION}" STREQUAL "0" AND "${FSO_VERSION_REVISION_STR}" STREQUAL "${FSO_VERSION_REVISION}")
     set(FSO_VERSION_HAS_REVISION 0)
 else()
