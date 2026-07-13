@@ -187,7 +187,7 @@ void process_gpu_events() {
 				}
 				break;
 			default:
-				UNREACHABLE("Invalid event type!");
+				UNREACHABLE("Invalid event type %d!", static_cast<int>(first.base_evt.type));
 				gpu_events.pop();
 				break;
 		}

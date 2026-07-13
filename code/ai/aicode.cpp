@@ -2734,8 +2734,8 @@ void ai_evade_object(object *evader, object *evaded)
 	Assert(evader->instance != -1);
 	Assert(Ships[evader->instance].ai_index != -1);
 
+	Assertion(evaded != evader, "Ship %s is trying to evade itself. Please report to the SCP!", Ships[evader->instance].ship_name);	//	Bogus!  Who tried to get me to evade myself!  Trace out and fix!
 	if (evaded == evader) {
-		UNREACHABLE("Ship %s is trying to evade itself. Please report to the SCP!", Ships[evader->instance].ship_name);	//	Bogus!  Who tried to get me to evade myself!  Trace out and fix!
 		return;
 	}
 
@@ -4936,14 +4936,24 @@ void ai_fly_to_target_position(const vec3d* target_pos, bool* pl_done_p=NULL, bo
 	}
 
 	float dist_to_cover_this_frame = (Pl_objp->phys_info.speed * flFrametime);
-	if ( (dist_to_goal < MIN_DIST_TO_WAYPOINT_GOAL) || dist_to_cover_this_frame > 0.1f ) {
+
+	// Retail's completion distance of sqrt(radius) is only ~32m for a capital ship with a 1000m radius --
+	// far smaller than such a ship's turning circle -- and retail also skipped the completion check
+	// entirely unless the ship covered 0.1m in a single frame, a framerate-dependent gate that excludes
+	// exactly the slow speeds at which a big ship could aim precisely.  Together these could trap a
+	// capital ship in an endless overshoot-turnaround-miss loop at its final waypoint.  With the flag
+	// set, big ships complete a waypoint anywhere within their own radius of it, and the check always runs.
+	bool fix_waypoint_completion = The_mission.ai_profile->flags[AI::Profile_Flags::Fix_big_ship_waypoint_completion];
+	float waypoint_tolerance = MIN_DIST_TO_WAYPOINT_GOAL + ((fix_waypoint_completion && sip->is_big_or_huge()) ? Pl_objp->radius : fl_sqrt(Pl_objp->radius));
+
+	if ( fix_waypoint_completion || (dist_to_goal < MIN_DIST_TO_WAYPOINT_GOAL) || dist_to_cover_this_frame > 0.1f ) {
 		vec3d	nearest_point;
 		float		r;
 
 		r = find_nearest_point_on_line(&nearest_point, &Pl_objp->last_pos, &Pl_objp->pos, target_pos);
 
-		if ( (dist_to_goal < (MIN_DIST_TO_WAYPOINT_GOAL + fl_sqrt(Pl_objp->radius) + dist_to_cover_this_frame))
-			|| (((r >= 0.0f) && (r <= 1.0f)) && (vm_vec_dist_quick(&nearest_point, target_pos) < (MIN_DIST_TO_WAYPOINT_GOAL + fl_sqrt(Pl_objp->radius)))))
+		if ( (dist_to_goal < (waypoint_tolerance + dist_to_cover_this_frame))
+			|| (((r >= 0.0f) && (r <= 1.0f)) && (vm_vec_dist_quick(&nearest_point, target_pos) < waypoint_tolerance)))
 		{
 				int treat_as_ship;
 
@@ -4987,8 +4997,8 @@ void ai_waypoints()
 	ai_info	*aip = &Ai_info[Ships[Pl_objp->instance].ai_index];
 
 	// sanity checking for stuff that should never happen
+	Assertion(aip->wp_index != INVALID_WAYPOINT_POSITION, "Waypoints should have been started already!");
 	if (aip->wp_index == INVALID_WAYPOINT_POSITION) {
-		UNREACHABLE("Waypoints should have been started already!");
 		ai_start_waypoints(Pl_objp, (aip->wp_list_index < 0) ? 0 : aip->wp_list_index, WPF_REPEAT, 0);
 	}
 	
@@ -11010,8 +11020,8 @@ void ai_guard()
 
 	guard_objp = &Objects[aip->guard_objnum];
 
+	Assertion(guard_objp != Pl_objp, "The ship %s has been found to be guarding itself in ai_guard.  Please report to the SCP!", shipp->ship_name);		//	This seems illegal.  Why is a ship guarding itself?
 	if (guard_objp == Pl_objp) {
-		UNREACHABLE("The ship %s has been found to be guarding itself in ai_guard.  Please report to the SCP!", shipp->ship_name);		//	This seems illegal.  Why is a ship guarding itself?
 		aip->guard_objnum = -1;
 		return;
 	}
@@ -13879,7 +13889,7 @@ int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, int allowed_path_
 		// Cyborg: to avoid divide by zero and avoid a logic path that should not exist check for 0 allowed paths -- Coverity 1523287
 		if (num_allowed_paths == 0) {
 			bay_path = Ai_last_arrive_path % bay->num_paths;
-			UNREACHABLE("Parent_shipp in ai_acquire_emerge_path somehow does not have any allowed bay paths!");
+			Assertion(false, "Parent_shipp in ai_acquire_emerge_path somehow does not have any allowed bay paths!");
 		} else {
 			// cycle through the allowed paths
 			bay_path = allowed_bay_paths[Ai_last_arrive_path % num_allowed_paths];
@@ -14372,7 +14382,7 @@ void ai_execute_behavior(ai_info *aip)
 		ai_lua(aip);
 		break;
 	default:
-		UNREACHABLE("Unknown AI Mode! Get a coder!");
+		UNREACHABLE("Unknown AI Mode %d! Get a coder!", aip->mode);
 		break;
 	}
 
@@ -15012,7 +15022,7 @@ int aas_1(object *objp, ai_info *aip, vec3d *safe_pos)
 		return 1;
 
 	} else {
-		UNREACHABLE("aas_1 has been passed an invalid object type of %d, please report to the SCP!", objp->type);
+		Assertion(false, "aas_1 has been passed an invalid object type of %d, please report to the SCP!", objp->type);
 	}
 
 	return 0;
@@ -16388,7 +16398,7 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, const vec3d *hit_normal)
 			} else if (hit_objp->type == OBJ_SHIP) {
 				objp_hitter = hit_objp;
 			} else {
-				UNREACHABLE("Should never happen.");
+				Assertion(false, "ai_ship_hit has been passed an invalid object type of %d, please report to the SCP!", hit_objp->type);
 				return;
 			}
 			Assert(objp_hitter != nullptr);
@@ -16475,7 +16485,7 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, const vec3d *hit_normal)
 		objp_hitter = hit_objp;
 		hitter_objnum = OBJ_INDEX(hit_objp);
 	} else {
-		UNREACHABLE("ai_ship_hit has been passed an invalid object type of %d, please report to the SCP!", hit_objp->type);
+		Assertion(false, "ai_ship_hit has been passed an invalid object type of %d, please report to the SCP!", hit_objp->type);
 		return;
 	}
 
@@ -16606,7 +16616,7 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, const vec3d *hit_normal)
 	case AIM_LUA:
 		return;
 	default:
-		UNREACHABLE("Unknown AI Mode! Get a coder!");
+		UNREACHABLE("Unknown AI Mode %d! Get a coder!", aip->mode);
 	}
 
 	if (timestamp_elapsed(aip->ok_to_target_timestamp)) {

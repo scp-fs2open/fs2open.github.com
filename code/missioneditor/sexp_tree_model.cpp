@@ -396,9 +396,15 @@ void SexpTreeModel::free_node2(int node)
 	total_nodes--;
 
 	// Remove any annotation referencing this node so that if allocate_node()
-	// reuses this slot, the new node won't inherit a stale annotation.
-	if (annotation_model)
+	// reuses this slot, the new node won't inherit a stale annotation.  Also
+	// remove any root-label annotation keyed to this node as an event formula
+	// (rootKey), so that an event whose formula later lands in this slot won't
+	// inherit a deleted event's annotation.  The global Event_annotations are
+	// only rewritten at save, so annotations removed here still survive a Cancel.
+	if (annotation_model) {
 		annotation_model->removeByKey(node);
+		annotation_model->removeByKey(SexpAnnotationModel::rootKey(node));
+	}
 
 	// Recursively free children and following siblings.
 	if (tree_nodes[node].child != -1)
@@ -601,7 +607,7 @@ void SexpTreeModel::move_branch_data(int source, int parent)
 	// link source as child of new parent
 	tree_nodes[source].parent = parent;
 	tree_nodes[source].next = -1;
-	if (parent != -1 && parent != 0) {
+	if (parent != -1) {
 		if (tree_nodes[parent].child == -1) {
 			tree_nodes[parent].child = source;
 		} else {
@@ -1093,7 +1099,7 @@ int SexpTreeModel::get_modify_variable_type(int parent) const
 			return OPF_AMBIGUOUS;
 		}
 	} else {
-		UNREACHABLE("get_modify_variable_type called for operator %d, which is neither modify-variable nor set-variable-by-index", op_const);
+		Assertion(false, "get_modify_variable_type called for operator %d, which is neither modify-variable nor set-variable-by-index", op_const);
 	}
 
 	// if we don't have a valid variable, allow replacement with anything
@@ -1109,7 +1115,7 @@ int SexpTreeModel::get_modify_variable_type(int parent) const
 	} else if (var_type & SEXP_VARIABLE_STRING) {
 		return OPF_AMBIGUOUS;
 	} else {
-		UNREACHABLE("Sexp variable '%s' has unrecognized type flags 0x%x", Sexp_variables[sexp_var_index].variable_name, var_type);
+		Assertion(false, "Sexp variable '%s' has unrecognized type flags 0x%x", Sexp_variables[sexp_var_index].variable_name, var_type);
 		return 0;
 	}
 }
@@ -1259,7 +1265,7 @@ bool SexpTreeModel::is_operator_hidden(int op_value)
 // which operators are enabled for add/replace/insert, and which variables and
 // containers can be used as replacements. The UI layers use this state to build
 // their context menus without needing to duplicate any of the enabling logic.
-SexpContextMenuState SexpTreeModel::compute_context_menu_state()
+SexpContextMenuState SexpTreeModel::compute_context_menu_state() const
 {
 	SexpContextMenuState state;
 
@@ -1485,7 +1491,7 @@ void SexpTreeModel::ctx_compute_variable_menus(SexpContextMenuState& state) cons
 // Sets add_type (OPR_* return type for operator filtering), populates
 // add_data_list with valid data items, and enables can_add_number/can_add_string.
 // Handles both container data nodes and regular operator nodes.
-void SexpTreeModel::ctx_compute_add_type(SexpContextMenuState& state)
+void SexpTreeModel::ctx_compute_add_type(SexpContextMenuState& state) const
 {
 	state.add_type = 0;
 
@@ -1570,7 +1576,7 @@ void SexpTreeModel::ctx_compute_add_type(SexpContextMenuState& state)
 // replace_data_list, enables can_replace_number/can_replace_string, and may
 // disable can_delete if this argument can't be removed. Returns the OPF_* type
 // for the replace position (needed by ctx_validate_clipboard).
-int SexpTreeModel::ctx_compute_replace_type(SexpContextMenuState& state)
+int SexpTreeModel::ctx_compute_replace_type(SexpContextMenuState& state) const
 {
 	state.replace_type = 0;
 	int parent = tree_nodes[item_index].parent;

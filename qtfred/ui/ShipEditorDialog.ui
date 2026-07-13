@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>502</width>
-    <height>754</height>
+    <width>522</width>
+    <height>808</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -731,6 +731,13 @@
             </property>
            </widget>
           </item>
+          <item>
+           <widget class="fso::fred::ShipFlagCheckbox" name="dockWarpinCheckBox">
+            <property name="text">
+             <string>Dont Adjust Warp When Docked</string>
+            </property>
+           </widget>
+          </item>
          </layout>
         </widget>
        </item>
@@ -890,6 +897,13 @@
             </property>
             <property name="text">
              <string>No Warp Effect</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="fso::fred::ShipFlagCheckbox" name="dockWarpoutCheckBox">
+            <property name="text">
+             <string>Dont Adjust Warp When Docked</string>
             </property>
            </widget>
           </item>

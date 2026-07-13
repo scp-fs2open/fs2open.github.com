@@ -1,4 +1,5 @@
 #include "missioneditor/sexp_tree_actions.h"
+#include "missioneditor/sexp_annotation_model.h"
 
 #include "parse/sexp.h"
 #include "parse/sexp_container.h"
@@ -420,15 +421,14 @@ void SexpTreeActions::add_or_replace_operator(int op, int replace_flag)
 // Returns 0 on success, -1 if no default value was available.
 int SexpTreeActions::add_default_operator(int op_index, int argnum)
 {
-	char buf[256];
 	sexp_list_item item;
 
 	int saved_index = _model.item_index;
-	if (_model._opf.get_default_value(&item, buf, op_index, argnum))
+	if (_model._opf.get_default_value(&item, op_index, argnum))
 		return -1;
 
 	if (item.type & SEXPT_OPERATOR) {
-		Assertion(SCP_vector_inbounds(Operators, item.op), "Invalid operator index %d (Operators size %zu)", item.op, Operators.size());
+		Assertion(SCP_vector_inbounds(Operators, item.op), "Invalid operator index %d (Operators size " SIZE_T_ARG ")", item.op, Operators.size());
 		add_or_replace_operator(item.op);
 		_model.item_index = saved_index;
 
@@ -460,10 +460,9 @@ int SexpTreeActions::add_default_operator(int op_index, int argnum)
 		}
 		// modify-variable data type depends on type of variable being modified
 		else if (Operators[op_index].value == OP_MODIFY_VARIABLE) {
-			char buf2[256];
 			Assertion(argnum == 1, "Invalid argument number %d for modify-variable default (expected 1)", argnum);
 			sexp_list_item temp_item;
-			_model._opf.get_default_value(&temp_item, buf2, op_index, 0);
+			_model._opf.get_default_value(&temp_item, op_index, 0);
 			sexp_var_index = get_index_sexp_variable_name(temp_item.text);
 			Assertion(sexp_var_index != -1, "Invalid variable index for modify-variable default; lookup of '%s' failed", temp_item.text.c_str());
 
@@ -489,7 +488,7 @@ int SexpTreeActions::add_default_operator(int op_index, int argnum)
 
 int SexpTreeActions::insert_operator(int op, void* root_parent_handle)
 {
-	Assertion(SCP_vector_inbounds(Operators, op), "Invalid operator index %d (Operators size %zu)", op, Operators.size());
+	Assertion(SCP_vector_inbounds(Operators, op), "Invalid operator index %d (Operators size " SIZE_T_ARG ")", op, Operators.size());
 	Assertion(_model.item_index >= 0, "Invalid selected node index %d", _model.item_index);
 
 	const int wrapped_node = _model.item_index;
@@ -508,6 +507,14 @@ int SexpTreeActions::insert_operator(int op, void* root_parent_handle)
 		if (_model._interface && _model._interface->getFlags()[TreeFlags::LabeledRoot]) {
 			parent_handle = root_parent_handle;
 			_model._interface->onRootInserted(wrapped_node, node);
+
+			// a root label's annotation is keyed to its formula node; re-key it
+			// so it follows the event across the formula change
+			if (_model.annotation_model) {
+				auto* ea = _model.annotation_model->getByKey(SexpAnnotationModel::rootKey(wrapped_node));
+				if (ea)
+					ea->node_index = SexpAnnotationModel::rootKey(node);
+			}
 		} else {
 			_model.root_item = node;
 		}

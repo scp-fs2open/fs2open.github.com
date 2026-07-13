@@ -48,7 +48,7 @@ float samplePoissonPCSS(sampler2DArrayShadow shadow_map, vec4 shadowUV, float ma
 	for (int i=0; i<SAMPLES_PCSS; i++) {
 	    vec4 uv = shadowUV;
 	    uv.xy += poissonDisc[i] * maxUVOffset;
-		visibility += texture(shadow_map, uv).r;
+		visibility += texture(shadow_map, uv);
 	}
 	return visibility * (1.0f/float(SAMPLES_PCSS));
 }

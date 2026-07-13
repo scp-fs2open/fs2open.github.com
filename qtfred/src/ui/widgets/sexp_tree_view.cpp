@@ -6,6 +6,7 @@
 #include <ui/util/menu.h>
 #include <ui/util/SignalBlockers.h>
 #include <ui/dialogs/VariableDialog.h>
+#include <ui/Theme.h>
 
 #include <QtWidgets/QMessageBox>
 #include <QtWidgets/QMenu>
@@ -22,7 +23,13 @@
 #include <QRegularExpression>
 #include <QApplication>
 #include <QPainter>
+#include <QPixmap>
+#include <QPalette>
+#include <QFont>
+#include <QHash>
 #include <QDebug>
+
+#include <functional>
 
 extern SCP_vector<game_snd> Snds;
 
@@ -31,75 +38,105 @@ extern SCP_vector<game_snd> Snds;
 namespace fso::fred {
 
 namespace {
-// Maps a NodeImage enum value to the corresponding Qt resource path for the tree node icon.
-QString node_image_to_resource_name(NodeImage image) {
-	switch (image) {
-	case NodeImage::OPERATOR:
-		return ":/images/operator.png";
-	case NodeImage::DATA:
-		return ":/images/data.png";
-	case NodeImage::VARIABLE:
-		return ":/images/variable.png";
-	case NodeImage::ROOT:
-		return ":/images/root.png";
-	case NodeImage::ROOT_DIRECTIVE:
-		return ":/images/root_directive.png";
-	case NodeImage::CHAIN:
-		return ":/images/chained.png";
-	case NodeImage::CHAIN_DIRECTIVE:
-		return ":/images/chained_directive.png";
-	case NodeImage::GREEN_DOT:
-		return ":/images/green_do.png";
-	case NodeImage::BLACK_DOT:
-		return ":/images/black_do.png";
-	case NodeImage::DATA_00:
-		return ":/images/data00.png";
-	case NodeImage::DATA_05:
-		return ":/images/data05.png";
-	case NodeImage::DATA_10:
-		return ":/images/data10.png";
-	case NodeImage::DATA_15:
-		return ":/images/data15.png";
-	case NodeImage::DATA_20:
-		return ":/images/data20.png";
-	case NodeImage::DATA_25:
-		return ":/images/data25.png";
-	case NodeImage::DATA_30:
-		return ":/images/data30.png";
-	case NodeImage::DATA_35:
-		return ":/images/data35.png";
-	case NodeImage::DATA_40:
-		return ":/images/data40.png";
-	case NodeImage::DATA_45:
-		return ":/images/data45.png";
-	case NodeImage::DATA_50:
-		return ":/images/data50.png";
-	case NodeImage::DATA_55:
-		return ":/images/data55.png";
-	case NodeImage::DATA_60:
-		return ":/images/data60.png";
-	case NodeImage::DATA_65:
-		return ":/images/data65.png";
-	case NodeImage::DATA_70:
-		return ":/images/data70.png";
-	case NodeImage::DATA_75:
-		return ":/images/data75.png";
-	case NodeImage::DATA_80:
-		return ":/images/data80.png";
-	case NodeImage::DATA_85:
-		return ":/images/data85.png";
-	case NodeImage::DATA_90:
-		return ":/images/data90.png";
-	case NodeImage::DATA_95:
-		return ":/images/data95.png";
-	case NodeImage::COMMENT:
-		return ":/images/comment.png";
-	case NodeImage::CONTAINER_NAME:
-		return ":/images/container_name.png";
-	case NodeImage::CONTAINER_DATA:
-		return ":/images/container_data.png";
+
+// True for the numbered-data family: the plain data node plus the legacy DATA_00..DATA_95
+// variants. QtFRED ignores the model's fixed every-5th quantization and decides numbering
+// itself from the sibling position and the user's "number every N" preference.
+bool isDataFamily(NodeImage image) {
+	const int v = static_cast<int>(image);
+	return image == NodeImage::DATA
+		|| (v >= static_cast<int>(NodeImage::DATA_00) && v <= static_cast<int>(NodeImage::DATA_95));
+}
+
+// Loads a sexp icon master from the Qt resource system.
+QPixmap loadSexpMaster(const char* name) {
+	return {QStringLiteral(":/images/sexp_icons/") + QLatin1String(name) + QStringLiteral(".png")};
+}
+
+// Shrinks `src` by `factor` and re-centers it on a transparent canvas of the original size,
+// so a smaller icon still occupies the same cell as the others.
+QPixmap scaleCentered(const QPixmap& src, qreal factor) {
+	if (src.isNull() || factor >= 0.999)
+		return src;
+	const QSize inner(qRound(src.width() * factor), qRound(src.height() * factor));
+	const QPixmap scaled = src.scaled(inner, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+	QPixmap out(src.size());
+	out.fill(Qt::transparent);
+	QPainter p(&out);
+	p.drawPixmap((src.width() - scaled.width()) / 2, (src.height() - scaled.height()) / 2, scaled);
+	p.end();
+	return out;
+}
+
+// Draws `number` centered on the data_num badge in red, matching the classic numbered-data look.
+void drawBadgeNumber(QPixmap& badge, int number) {
+	QPainter p(&badge);
+	p.setRenderHint(QPainter::Antialiasing);
+	p.setRenderHint(QPainter::TextAntialiasing);
+	QFont f = p.font();
+	f.setBold(true);
+	f.setPixelSize(qRound(badge.height() * 0.40));
+	p.setFont(f);
+	p.setPen(QColor(200, 40, 40));
+	// The white box occupies roughly x[3..43] y[9..39] of the 50x50 master.
+	p.drawText(QRectF(3, 9, 40, 30), Qt::AlignCenter, QString::number(number));
+	p.end();
+}
+
+// Builds the fully-rendered pixmap for a node: colorizes the appropriate shared master
+// icon, draws the number badge when applicable, then applies the uniform drop shadow. 
+// See the tint helpers in Theme.cpp for the Multiply/Screen rules.
+QPixmap renderSexpPixmap(NodeImage image, int number) {
+	// The branch/plain-chain color follows the theme text color so it reads on both themes.
+	const QColor themeInk = qApp->palette().color(QPalette::WindowText);
+
+	// Cache by image/number/theme. The theme color is part of the key, so a palette change simply produces fresh entries.
+	static QHash<QString, QPixmap> cache;
+	const QString key = QStringLiteral("%1|%2|%3")
+		.arg(static_cast<int>(image)).arg(number).arg(themeInk.rgba());
+	const auto cached = cache.constFind(key);
+	if (cached != cache.constEnd())
+		return cached.value();
+
+	// The plain chain reads as a stark white silhouette in dark mode; soften it to grey there
+	// while keeping the near-black look in light mode.
+	const bool dark = qApp->palette().color(QPalette::Window).lightness() < 128;
+	const QColor blue(60, 110, 255);
+	const QColor red(210, 50, 50);
+	const QColor green(70, 180, 75);
+	const QColor chainInk = dark ? QColor(165, 165, 165) : themeInk;
+	const QColor variableRed(255, 120, 120); // Multiply -> reddish page, clearly distinct from plain data
+
+	QPixmap out;
+	qreal scale = 1.0;
+	if (isDataFamily(image)) {
+		if (number > 0) {
+			out = loadSexpMaster("data_num");
+			drawBadgeNumber(out, number);
+		} else {
+			// Screen-tinting the grayscale document with black is a no-op, so use it directly.
+			out = loadSexpMaster("data");
+		}
+	} else {
+		switch (image) {
+		case NodeImage::OPERATOR:        out = loadSexpMaster("operator"); break;        // baked red
+		case NodeImage::COMMENT:         out = loadSexpMaster("comment"); break;         // baked
+		case NodeImage::CONTAINER_NAME:  out = loadSexpMaster("container_name"); break;  // baked
+		case NodeImage::CONTAINER_DATA:  out = loadSexpMaster("container_data"); break;  // baked
+		case NodeImage::VARIABLE:        out = tintMultiply(loadSexpMaster("data"), variableRed); break;
+		case NodeImage::ROOT:            out = tintMultiply(loadSexpMaster("dot"), blue); scale = 0.65; break;
+		case NodeImage::ROOT_DIRECTIVE:  out = tintMultiply(loadSexpMaster("dot"), red); scale = 0.65; break;
+		case NodeImage::BLACK_DOT:       out = tintMultiply(loadSexpMaster("dot"), themeInk); scale = 0.65; break;
+		case NodeImage::GREEN_DOT:       out = tintMultiply(loadSexpMaster("dot"), green); scale = 0.65; break;
+		case NodeImage::CHAIN:           out = tintMultiply(loadSexpMaster("chain"), chainInk); break;
+		case NodeImage::CHAIN_DIRECTIVE: out = tintMultiply(loadSexpMaster("chain"), red); break;
+		default:                         out = loadSexpMaster("operator"); break;
+		}
 	}
-	return ":/images/operator.png";
+	out = scaleCentered(out, scale);
+	out = applyIconShadow(out);
+	cache.insert(key, out);
+	return out;
 }
 
 // Returns true if the item is a top-level (root) item in the tree widget.
@@ -109,9 +146,9 @@ bool isRoot(QTreeWidgetItem* it)
 }
 } // namespace
 
-// Converts a NodeImage enum to a QIcon by looking up the resource path.
-QIcon sexp_tree_view::convertNodeImageToIcon(NodeImage image) {
-	return QIcon(node_image_to_resource_name(image));
+// Builds a QIcon for a NodeImage by colorizing the shared master art (see renderSexpPixmap).
+QIcon sexp_tree_view::convertNodeImageToIcon(NodeImage image, int number) {
+	return {renderSexpPixmap(image, number)};
 }
 
 /**
@@ -183,6 +220,14 @@ sexp_tree_view::sexp_tree_view(QWidget* parent) : QTreeWidget(parent), _actions(
 
 	setHeaderHidden(true);
 
+	// Editing is always initiated explicitly (Space or the context menu's Edit Data),
+	// so disable Qt's automatic edit triggers. Otherwise a double-click on an editable
+	// item would start an inline edit and fight with the expand-on-double-click below.
+	setEditTriggers(QAbstractItemView::NoEditTriggers);
+	// We toggle expansion ourselves in the itemDoubleClicked handler, so turn off Qt's
+	// built-in double-click expansion to avoid toggling twice.
+	setExpandsOnDoubleClick(false);
+
 	select_sexp_node = -1;
 	root_item = -1;
 	clear_tree();
@@ -190,7 +235,13 @@ sexp_tree_view::sexp_tree_view(QWidget* parent) : QTreeWidget(parent), _actions(
 	connect(this, &QWidget::customContextMenuRequested, this, &sexp_tree_view::customMenuHandler);
 	connect(this, &QTreeWidget::itemChanged, this, &sexp_tree_view::handleItemChange);
 	connect(this, &QTreeWidget::itemSelectionChanged, this, &sexp_tree_view::handleNewItemSelected);
-	connect(this, &QTreeWidget::itemDoubleClicked, this, [this](QTreeWidgetItem* item, int /*column*/) {openNodeEditor(item);});
+	// Double-clicking a node toggles its expansion when it has children; a leaf node
+	// has nothing to expand, so double-clicking it does nothing.
+	connect(this, &QTreeWidget::itemDoubleClicked, this, [](QTreeWidgetItem* item, int /*column*/) {
+		if (item && item->childCount() > 0) {
+			item->setExpanded(!item->isExpanded());
+		}
+	});
 
 	setItemDelegateForColumn(0, new NoteBadgeDelegate(this));
 
@@ -230,13 +281,21 @@ void* sexp_tree_view::ui_insert_item(const char* text, NodeImage image, void* pa
 	auto* hParent = static_cast<QTreeWidgetItem*>(parent_handle);
 	auto* hAfter = static_cast<QTreeWidgetItem*>(insert_after);
 	auto* item = insert(QString::fromUtf8(text), image, hParent, hAfter);
+	// Inserting a data node can shift the argument positions of its siblings, so renumber them.
+	if (isDataFamily(image) && hParent)
+		refreshDataNumbers(hParent);
 	return static_cast<void*>(item);
 }
 
 // Deletes a QTreeWidgetItem from the tree. Called by _actions when removing nodes.
 void sexp_tree_view::ui_delete_item(void* handle)
 {
-	delete static_cast<QTreeWidgetItem*>(handle);
+	auto* item = static_cast<QTreeWidgetItem*>(handle);
+	QTreeWidgetItem* parent = item->parent();
+	delete item;
+	// Removing a data node shifts the argument positions of its siblings, so renumber them.
+	if (parent)
+		refreshDataNumbers(parent);
 }
 
 // Sets the display text on a QTreeWidgetItem. Called by _actions after data changes.
@@ -248,11 +307,11 @@ void sexp_tree_view::ui_set_item_text(void* handle, const char* text)
 // Sets the icon on a QTreeWidgetItem. Called by _actions after type/image changes.
 void sexp_tree_view::ui_set_item_image(void* handle, NodeImage image)
 {
-	static_cast<QTreeWidgetItem*>(handle)->setIcon(0, convertNodeImageToIcon(image));
+	applyNodeIcon(static_cast<QTreeWidgetItem*>(handle), image);
 }
 
 // Returns the first child QTreeWidgetItem, or nullptr. Called by _actions to traverse the tree.
-void* sexp_tree_view::ui_get_child_item(void* handle)
+void* sexp_tree_view::ui_get_child_item(void* handle) const
 {
 	auto* item = static_cast<QTreeWidgetItem*>(handle);
 	if (item->childCount() > 0)
@@ -261,7 +320,7 @@ void* sexp_tree_view::ui_get_child_item(void* handle)
 }
 
 // Returns true if the item has children. Called by _actions to check tree structure.
-bool sexp_tree_view::ui_has_children(void* handle)
+bool sexp_tree_view::ui_has_children(void* handle) const
 {
 	return static_cast<QTreeWidgetItem*>(handle)->childCount() > 0;
 }
@@ -504,11 +563,7 @@ void sexp_tree_view::move_branch(int source, int parent) {
 	if (source != -1) {
 		Assertion(parent > -1, "move_branch called with negative parent index %d (source %d)", parent, source);
 		_model.move_branch_data(source, parent);
-		if (parent > 0) {
-			move_branch(tree_item_handle(tree_nodes[source]), tree_item_handle(tree_nodes[parent]));
-		} else {
-			move_branch(tree_item_handle(tree_nodes[source]));
-		}
+		move_branch(tree_item_handle(tree_nodes[source]), tree_item_handle(tree_nodes[parent]));
 	}
 }
 
@@ -641,7 +696,49 @@ void sexp_tree_view::move_root(QTreeWidgetItem* source, QTreeWidgetItem* dest, b
 
 // Thin wrapper: converts a NodeImage enum to a QIcon and delegates to insertWithIcon().
 QTreeWidgetItem* sexp_tree_view::insert(const QString& lpszItem, NodeImage image, QTreeWidgetItem* hParent, QTreeWidgetItem* hInsertAfter) {
-	return insertWithIcon(lpszItem, convertNodeImageToIcon(image), hParent, hInsertAfter);
+	// Create the item first, then icon it: the numbered-data badge depends on the item's
+	// final sibling position, which only exists once it is inserted into the tree.
+	auto* item = insertWithIcon(lpszItem, QIcon(), hParent, hInsertAfter);
+	applyNodeIcon(item, image);
+	return item;
+}
+
+int sexp_tree_view::numberEveryN() const {
+	return _viewport ? _viewport->sexp_number_every_n : 5;
+}
+
+void sexp_tree_view::applyNodeIcon(QTreeWidgetItem* item, NodeImage image) {
+	if (!item)
+		return;
+
+	// Remember the base image so refreshDataNumbers() can renumber siblings without a model lookup.
+	item->setData(0, NodeImageRole, static_cast<int>(image));
+
+	int number = -1;
+	if (isDataFamily(image)) {
+		const int n = numberEveryN();
+		if (n > 0) {
+			QTreeWidgetItem* parent = item->parent();
+			const int pos = (parent ? parent->indexOfChild(item) : indexOfTopLevelItem(item)) + 1;
+			if (pos > 0 && (pos % n) == 0)
+				number = pos;
+		}
+	}
+	item->setIcon(0, convertNodeImageToIcon(image, number));
+}
+
+void sexp_tree_view::refreshDataNumbers(QTreeWidgetItem* parent) {
+	if (!parent)
+		return;
+	for (int i = 0; i < parent->childCount(); ++i) {
+		QTreeWidgetItem* child = parent->child(i);
+		const QVariant stored = child->data(0, NodeImageRole);
+		if (!stored.isValid())
+			continue;
+		const auto image = static_cast<NodeImage>(stored.toInt());
+		if (isDataFamily(image))
+			applyNodeIcon(child, image);
+	}
 }
 
 // Handles keyboard input. When the operator quick-search popup is active, routes keys:
@@ -681,9 +778,16 @@ void sexp_tree_view::keyPressEvent(QKeyEvent* e)
 		}
 	}
 
-	// Space opens the editor for the selected node
+	// Space enters "Edit Data" mode on the selected node. For editable data nodes this
+	// starts inline text editing. Operator nodes have no editable data of their own, 
+	// so they fall back to the operator quick-search popup.
 	if (e->key() == Qt::Key_Space && currentItem()) {
-		openNodeEditor(currentItem());
+		item_index = get_node(currentItem());
+		if (_model.compute_context_menu_state().can_edit_text) {
+			editDataActionHandler();
+		} else {
+			openNodeEditor(currentItem());
+		}
 		return;
 	}
 
@@ -709,6 +813,37 @@ bool sexp_tree_view::eventFilter(QObject* obj, QEvent* ev)
 		}
 	}
 	return QTreeWidget::eventFilter(obj, ev);
+}
+
+// Re-render all node icons on a palette change. The render cache keys on the theme
+// color, so convertNodeImageToIcon() naturally produces fresh pixmaps for the new theme.
+void sexp_tree_view::changeEvent(QEvent* e)
+{
+	QTreeWidget::changeEvent(e);
+	if (e->type() == QEvent::PaletteChange)
+		refreshAllIcons();
+}
+
+void sexp_tree_view::refreshAllIcons()
+{
+	std::function<void(QTreeWidgetItem*)> walk = [&](QTreeWidgetItem* it) {
+		const QVariant stored = it->data(0, NodeImageRole);
+		if (stored.isValid())
+			applyNodeIcon(it, static_cast<NodeImage>(stored.toInt()));
+		for (int i = 0; i < it->childCount(); ++i)
+			walk(it->child(i));
+	};
+	for (int i = 0; i < topLevelItemCount(); ++i)
+		walk(topLevelItem(i));
+}
+
+void sexp_tree_view::refreshAllInstances()
+{
+	const auto widgets = QApplication::allWidgets();
+	for (QWidget* w : widgets) {
+		if (auto* tree = qobject_cast<sexp_tree_view*>(w))
+			tree->refreshAllIcons();
+	}
 }
 
 // Records drag start position and source item for root-level drag-and-drop. Only root items
@@ -804,7 +939,7 @@ QTreeWidgetItem* sexp_tree_view::insertWithIcon(const QString& lpszItem, const Q
 }
 
 // Returns the QTreeWidgetItem* handle for a given tree_nodes[] index.
-QTreeWidgetItem* sexp_tree_view::handle(int node) {
+QTreeWidgetItem* sexp_tree_view::handle(int node) const {
 	return tree_item_handle(tree_nodes[node]);
 }
 
@@ -815,7 +950,7 @@ const char* sexp_tree_view::help(int code) {
 
 // Returns the sexp type flags (SEXPT_OPERATOR, SEXPT_STRING, etc.) for the node matching
 // handle h. Performs a linear scan of tree_nodes[] to find the matching handle.
-int sexp_tree_view::get_type(QTreeWidgetItem* h) {
+int sexp_tree_view::get_type(QTreeWidgetItem* h) const {
 	uint i;
 
 	// get index into sexp_tree_view
@@ -835,7 +970,7 @@ int sexp_tree_view::get_type(QTreeWidgetItem* h) {
 
 // Returns the tree_nodes[] index for the node matching handle h.
 // Performs a linear scan of tree_nodes[]. Returns -1 if not found.
-int sexp_tree_view::get_node(QTreeWidgetItem* h) {
+int sexp_tree_view::get_node(QTreeWidgetItem* h) const {
 	uint i;
 
 	// get index into sexp_tree_view
@@ -854,7 +989,7 @@ int sexp_tree_view::get_node(QTreeWidgetItem* h) {
 }
 
 // Walks parent links from the given node up to find and return the root node index.
-int sexp_tree_view::get_root(int node) {
+int sexp_tree_view::get_root(int node) const {
 	while (tree_nodes[node].parent >= 0) {
 		node = tree_nodes[node].parent;
 	}
@@ -1319,7 +1454,7 @@ void sexp_tree_view::editDataActionHandler() {
 //   - _model._opf.query_default_argument_available() to filter operators that lack default args
 // Returns a sorted, deduplicated QStringList of operator names. Used by the operator
 // quick-search popup and openNodeEditor() to decide whether to show the popup.
-QStringList sexp_tree_view::validOperatorsForNode(int nodeIndex)
+QStringList sexp_tree_view::validOperatorsForNode(int nodeIndex) const
 {
 	QStringList out;
 	if (nodeIndex < 0 || nodeIndex >= static_cast<int>(tree_nodes.size()))

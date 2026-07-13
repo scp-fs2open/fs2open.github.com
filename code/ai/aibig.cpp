@@ -1870,7 +1870,7 @@ void ai_big_strafe()
 
 /*
 	if ( aip->goal_objnum != aip->target_objnum ) {
-		UNREACHABLE("The goal objnum does not match the target objnum in ai_big_strafe(), please report to the SCP!");	// what is going on here? - Get Alan
+		Assertion(false, "The goal objnum does not match the target objnum in ai_big_strafe(), please report to the SCP!");	// what is going on here? - Get Alan
 		aip->mode = AIM_NONE;
 		return;
 	}

@@ -48,3 +48,8 @@ anchor_t target_to_anchor(int target);
 void generate_weaponry_usage_list_team(int team, int* arr);
 
 void generate_weaponry_usage_list_wing(int wing_num, int* arr);
+
+// If Player_start_shipnum no longer refers to a valid player start ship, repoint it to the
+// first remaining player start in the mission (or -1 if there are none).  Call this after
+// changing a ship to or from an OBJ_START via demotion, deletion, etc.
+void ensure_valid_player_start_shipnum();

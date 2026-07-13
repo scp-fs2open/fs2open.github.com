@@ -337,7 +337,7 @@ void debris_process_post(object * obj, float frame_time)
 						break;
 
 					default:
-						UNREACHABLE("Unhandled case %d for electrical arc creation in debris_process_post()!", n);
+						Assertion(false, "Unhandled case %d for electrical arc creation in debris_process_post()!", n);
 					}
 				}
 			}

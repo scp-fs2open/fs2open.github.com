@@ -29,7 +29,7 @@ static char THIS_FILE[] = __FILE__;
 #endif
 
 
-static int annotation_key_for_item(event_sexp_tree *tree, HTREEITEM h);
+static int annotation_key_for_item(const event_sexp_tree *tree, HTREEITEM h);
 
 BEGIN_MESSAGE_MAP(event_sexp_tree, sexp_tree_view)
 	//{{AFX_MSG_MAP(event_sexp_tree)
@@ -1657,7 +1657,7 @@ void event_editor::OnDblclkMessageList()
 // For regular nodes: their tree_nodes[] index (>= 0).
 // For root label nodes (event names): -(formula + 2), which is always <= -2,
 // avoiding collision with -1 (the default/unresolved sentinel).
-static int annotation_key_for_item(event_sexp_tree *tree, HTREEITEM h)
+static int annotation_key_for_item(const event_sexp_tree *tree, HTREEITEM h)
 {
 	int node = tree->get_node(h);
 	if (node >= 0)
@@ -1917,4 +1917,11 @@ SCP_string event_sexp_tree::get_node_comment(int node_index) const
 		return ea->comment;
 
 	return "";
+}
+
+SCP_string event_sexp_tree::get_item_comment(HTREEITEM h, int /*node_index*/) const
+{
+	// resolves both regular nodes and root labels (which have no model node,
+	// so the base class's node_index would be -1 for them)
+	return get_node_comment(annotation_key_for_item(this, h));
 }

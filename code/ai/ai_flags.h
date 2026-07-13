@@ -192,6 +192,9 @@ namespace AI {
 		Cancel_future_waves_of_any_wing_launched_from_an_exited_ship,
 		Fix_ignore_if_dead_flag,
 		Kamikaze_no_collision_avoidance,
+		Fix_big_ship_waypoint_completion,	// a) big ships complete a waypoint within their radius rather than sqrt(radius);
+											// b) completion no longer requires moving 0.1m in a single frame (framerate-dependent)
+		Fix_shockwave_expire_before_do_damage,	// shockwaves whose lifetime is shorter than one frame apply their area damage at least once before expiring
 
 		NUM_VALUES
 	};

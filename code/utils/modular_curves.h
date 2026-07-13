@@ -616,9 +616,7 @@ private:
 		float result = 1.f;
 		//GCC11+ and Clang will properly unroll this fold expression into a switch-case jumptable
 		bool matched_case = ((idx == input_index ? (result = std::tuple_element_t<idx, input_grabber_tuple>::template grab<std::tuple_element_t<idx, input_tuple_index>::value>(input)), true : false) || ...);
-		if (!matched_case) {
-			UNREACHABLE("Modular Curves requested Input %zu which has no grabber!", input_index);
-		}
+		Assertion(matched_case, "Modular Curves requested Input %zu which has no grabber!", input_index);
 		return result;
 	}
 

@@ -233,7 +233,7 @@ class Editor : public QObject {
 	 *
 	 * @param[in] wing_num Index of the wing
 	 */
-	void remove_wing(int wing_num);
+	void disband_wing(int wing_num);
 
 	void delete_marked();
 

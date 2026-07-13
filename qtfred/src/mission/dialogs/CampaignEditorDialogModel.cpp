@@ -441,7 +441,7 @@ void CampaignEditorDialogModel::sortMissions()
 
 void CampaignEditorDialogModel::stopSpeech()
 {
-	if (_waveId >= -1) {
+	if (_waveId >= 0) {
 		audiostream_close_file(_waveId, false);
 		_waveId = -1;
 	}

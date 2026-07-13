@@ -1,6 +1,9 @@
 #include "ui/Theme.h"
 
 #include <QApplication>
+#include <QGraphicsDropShadowEffect>
+#include <QGraphicsPixmapItem>
+#include <QGraphicsScene>
 #include <QPainter>
 #include <QPainterPath>
 #include <QPalette>
@@ -399,6 +402,64 @@ void bindThemeIcon(QAbstractButton* btn, const QString& baseName)
 	refresh();
 	auto* filter = new PaletteChangeFilter(btn, refresh);
 	qApp->installEventFilter(filter);
+}
+
+QPixmap tintMultiply(const QPixmap& src, const QColor& color)
+{
+	if (src.isNull())
+		return src;
+
+	QPixmap pm = src.copy();
+	QPainter p(&pm);
+	// Multiply the color into the artwork...
+	p.setCompositionMode(QPainter::CompositionMode_Multiply);
+	p.fillRect(pm.rect(), color);
+	// ...then clip back to the master's alpha so transparent areas stay transparent
+	// (the opaque fill would otherwise flood them).
+	p.setCompositionMode(QPainter::CompositionMode_DestinationIn);
+	p.drawPixmap(0, 0, src);
+	p.end();
+	return pm;
+}
+
+QPixmap tintScreen(const QPixmap& src, const QColor& color)
+{
+	if (src.isNull())
+		return src;
+
+	QPixmap pm = src.copy();
+	QPainter p(&pm);
+	p.setCompositionMode(QPainter::CompositionMode_Screen);
+	p.fillRect(pm.rect(), color);
+	p.setCompositionMode(QPainter::CompositionMode_DestinationIn);
+	p.drawPixmap(0, 0, src);
+	p.end();
+	return pm;
+}
+
+QPixmap applyIconShadow(const QPixmap& src)
+{
+	if (src.isNull())
+		return src;
+
+	// Use a graphics scene so we get a proper soft (blurred) drop shadow. The shadow
+	// is neutral and identical for every icon, which is what unifies the set.
+	QGraphicsScene scene;
+	auto* item = new QGraphicsPixmapItem(src); // owned by the scene
+	auto* effect = new QGraphicsDropShadowEffect;
+	effect->setBlurRadius(4.0);
+	effect->setColor(QColor(0, 0, 0, 110));
+	effect->setOffset(1.0, 1.4);
+	item->setGraphicsEffect(effect);
+	scene.addItem(item);
+
+	QPixmap out(src.size());
+	out.fill(Qt::transparent);
+	QPainter p(&out);
+	const QRectF box(0.0, 0.0, src.width(), src.height());
+	scene.render(&p, box, box);
+	p.end();
+	return out;
 }
 
 } // namespace fso::fred

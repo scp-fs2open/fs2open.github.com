@@ -751,6 +751,10 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$no collision avoidance for kamikaze fighters:", AI::Profile_Flags::Kamikaze_no_collision_avoidance);
 
+				set_flag(profile, "$fix big ship waypoint completion:", AI::Profile_Flags::Fix_big_ship_waypoint_completion);
+
+				set_flag(profile, "$fix shockwave expiring before dealing damage:", AI::Profile_Flags::Fix_shockwave_expire_before_do_damage);
+
 
 				// end of options ----------------------------------------
 
@@ -979,5 +983,7 @@ void ai_profile_t::reset()
 	}
 	if (mod_supports_version(26, 2, 0)) {
 		flags.set(AI::Profile_Flags::Kamikaze_no_collision_avoidance);
+		flags.set(AI::Profile_Flags::Fix_big_ship_waypoint_completion);
+		flags.set(AI::Profile_Flags::Fix_shockwave_expire_before_do_damage);
 	}
 }

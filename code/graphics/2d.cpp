@@ -1549,7 +1549,7 @@ static void gr_init_function_pointers(int mode) {
 		gr_stub_init_function_pointers();
 		break;
 	default:
-		UNREACHABLE("Invalid graphics mode requested"); // Invalid graphics mode
+		UNREACHABLE("Invalid graphics mode %d requested", mode); // Invalid graphics mode
 	}
 }
 

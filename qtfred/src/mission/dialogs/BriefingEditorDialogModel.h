@@ -74,7 +74,8 @@ class BriefingEditorDialogModel : public AbstractDialogModel {
 	vec3d getIconPosition() const;
 	void setIconPosition(const vec3d& pos);
 	int getIconId() const;
-	void setIconId(int id);
+	// returns false if the requested id was rejected (e.g. it collides with another icon)
+	bool setIconId(int id);
 	SCP_string getIconLabel() const;
 	void setIconLabel(const SCP_string& text);
 	SCP_string getIconCloseupLabel() const;

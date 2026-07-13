@@ -1550,7 +1550,7 @@ void pilotfile::csg_read_container(sexp_container& container)
 			container.map_data.emplace(temp_key, temp_buf);
 		}
 	} else {
-		UNREACHABLE("Unknown container type %d", (int)container.type);
+		UNREACHABLE("Unknown container type %d", static_cast<int>(container.type));
 	}
 }
 
@@ -1590,7 +1590,7 @@ void pilotfile::csg_write_container(const sexp_container &container)
 			cfwrite_string_len(key_data.second.c_str(), cfp);
 		}
 	} else {
-		UNREACHABLE("Unknown container type %d", (int)container.type);
+		UNREACHABLE("Unknown container type %d", static_cast<int>(container.type));
 	}
 }
 

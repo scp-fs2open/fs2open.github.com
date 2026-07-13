@@ -28,6 +28,7 @@ public:
 	void edit_comment(HTREEITEM h);
 	void edit_bg_color(HTREEITEM h);
 	SCP_string get_node_comment(int node_index) const override;
+	SCP_string get_item_comment(HTREEITEM h, int node_index) const override;
 
 	// Set by event_editor during initialization
 	SexpAnnotationModel* m_annotations = nullptr;

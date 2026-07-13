@@ -393,6 +393,10 @@ void ShipEditorDialogModel::initializeData()
 							// set routine local varaiables for ship/object flags
 							_noArrivalWarp = (Ships[i].flags[Ship::Ship_Flags::No_arrival_warp]) ? 2 : 0;
 							_noDepartureWarp = (Ships[i].flags[Ship::Ship_Flags::No_departure_warp]) ? 2 : 0;
+							_dockWarpoutChange =
+								(Ships[i].flags[Ship::Ship_Flags::Same_departure_warp_when_docked]) ? 2 : 0;
+							_dockWarpinChange =
+								(Ships[i].flags[Ship::Ship_Flags::Same_arrival_warp_when_docked]) ? 2 : 0;
 
 							base_ship = -1;
 							if (!_multiEdit)
@@ -430,6 +434,11 @@ void ShipEditorDialogModel::initializeData()
 								tristate_set(Ships[i].flags[Ship::Ship_Flags::No_arrival_warp], _noArrivalWarp);
 							_noDepartureWarp =
 								tristate_set(Ships[i].flags[Ship::Ship_Flags::No_departure_warp], _noDepartureWarp);
+							_dockWarpinChange =
+								tristate_set(Ships[i].flags[Ship::Ship_Flags::Same_arrival_warp_when_docked],
+									_dockWarpinChange);
+							_dockWarpoutChange =
+								tristate_set(Ships[i].flags[Ship::Ship_Flags::Same_departure_warp_when_docked], _dockWarpoutChange);
 						}
 					}
 				}
@@ -510,6 +519,8 @@ void ShipEditorDialogModel::initializeData()
 		_departureTarget = -1;
 		_noArrivalWarp = false;
 		_noDepartureWarp = false;
+		_dockWarpinChange = false;
+		_dockWarpoutChange = false;
 		_wing = "None";
 		_enable = false;
 		_arrivalPaths.clear();
@@ -1139,15 +1150,8 @@ void ShipEditorDialogModel::setPlayer(const bool m_player)
 			}
 		}
 	}
-	// Fix up Player_start_shipnum if it became invalid
-	if (Player_start_shipnum < 0 || Objects[Ships[Player_start_shipnum].objnum].type != OBJ_START) {
-		for (auto* p = GET_FIRST(&obj_used_list); p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p)) {
-			if (p->type == OBJ_START) {
-				Player_start_shipnum = p->instance;
-				break;
-			}
-		}
-	}
+	// fix up Player_start_shipnum if it became invalid
+	ensure_valid_player_start_shipnum();
 	setModified();
 	_editor->missionChanged();
 	modelChanged();
@@ -1416,6 +1420,30 @@ int ShipEditorDialogModel::getNoArrivalWarp() const
 	return _noArrivalWarp;
 }
 
+void ShipEditorDialogModel::setDockWarpinChange(const int state)
+{
+	if (_dockWarpinChange == state)
+		return;
+	_dockWarpinChange = state;
+	for (auto* ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
+		if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && (ptr->flags[Object::Object_Flags::Marked])) {
+			if (state) {
+				Ships[ptr->instance].flags.set(Ship::Ship_Flags::Same_arrival_warp_when_docked);
+			} else {
+				Ships[ptr->instance].flags.remove(Ship::Ship_Flags::Same_arrival_warp_when_docked);
+			}
+		}
+	}
+	setModified();
+	_editor->missionChanged();
+	modelChanged();
+}
+
+int ShipEditorDialogModel::getDockWarpinChange() const
+{
+	return _dockWarpinChange;
+}
+
 void ShipEditorDialogModel::setDepartureLocationIndex(const int value)
 {
 	if (_departureLocation == value)
@@ -1552,6 +1580,29 @@ void ShipEditorDialogModel::setNoDepartureWarp(const int value)
 int ShipEditorDialogModel::getNoDepartureWarp() const
 {
 	return _noDepartureWarp;
+}
+
+void ShipEditorDialogModel::setDockWarpoutChange(const int state) {
+	if (_dockWarpoutChange == state)
+		return;
+	_dockWarpoutChange = state;
+	for (auto* ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
+		if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && (ptr->flags[Object::Object_Flags::Marked])) {
+			if (state) {
+				Ships[ptr->instance].flags.set(Ship::Ship_Flags::Same_departure_warp_when_docked);
+			} else {
+				Ships[ptr->instance].flags.remove(Ship::Ship_Flags::Same_departure_warp_when_docked);
+			}
+		}
+	}
+	setModified();
+	_editor->missionChanged();
+	modelChanged();
+}
+
+int ShipEditorDialogModel::getDockWarpoutChange() const
+{
+	return _dockWarpoutChange;
 }
 
 void ShipEditorDialogModel::onPrevious()

@@ -223,6 +223,8 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 		_tbLocalRotate = settings.value("FredView/transformLocalRotate", false).toBool();
 		_viewport->camera.setPhysicsSpeed(settings.value("FredView/cameraSpeedMove", 1).toInt());
 		_viewport->camera.setPhysicsRot(settings.value("FredView/cameraSpeedRot",  25).toInt());
+		_lastSavedCameraSpeedMove = _viewport->camera.getPhysicsSpeed();
+		_lastSavedCameraSpeedRot  = _viewport->camera.getPhysicsRot();
 	}
 
 	connect(fred, &Editor::missionLoaded, this, &FredView::on_mission_loaded);
@@ -892,22 +894,6 @@ void FredView::syncViewOptions() {
 	connectActionToViewSetting(ui->actionShowDistances, &_viewport->view.Show_distances);
 
 	connect(ui->actionVisibility_Layers, &QAction::triggered, this, [this]() { openLayerManagerDialog(); });
-
-	// Outline LOD submenu — mutually exclusive options
-	QAction* outlineLodActions[] = {
-		ui->actionOutline_LOD_0, ui->actionOutline_LOD_1, ui->actionOutline_LOD_2,
-		ui->actionOutline_LOD_3, ui->actionOutline_LOD_4
-	};
-	for (int i = 0; i < 5; i++) {
-		auto action = outlineLodActions[i];
-		connect(this, &FredView::viewIdle, this, [action, this, i]() {
-			action->setChecked(_viewport->view.Outline_lod == i);
-		});
-		connect(action, &QAction::triggered, this, [this, i]() {
-			_viewport->view.Outline_lod = i;
-			_viewport->needsUpdate();
-		});
-	}
 }
 void FredView::initializeStatusBar() {
 	statusBar()->setContentsMargins(8, 1, 8, 1);
@@ -2183,10 +2169,7 @@ void FredView::closeEvent(QCloseEvent* event) {
 	settings.setValue("FredView/geometry",             saveGeometry());
 	settings.setValue("FredView/transformLocalMove",   _tbLocalMove);
 	settings.setValue("FredView/transformLocalRotate", _tbLocalRotate);
-	if (_viewport) {
-		settings.setValue("FredView/cameraSpeedMove", _viewport->camera.getPhysicsSpeed());
-		settings.setValue("FredView/cameraSpeedRot",  _viewport->camera.getPhysicsRot());
-	}
+	// Camera speeds are persisted on change in onUpdateViewSpeeds(), so no need to save them here.
 
 	if (!maybePromptToSaveMissionChanges(tr("closing QtFRED"))) {
 		event->ignore();
@@ -2248,6 +2231,18 @@ void FredView::onUpdateViewSpeeds() {
 				break;
 			}
 		}
+	}
+
+	// Persist immediately when a speed changes (via toolbar, menu, or keyboard) so the choice
+	// survives even an unclean exit. Only writes on an actual change to avoid per-idle churn.
+	const int moveSpeed = _viewport->camera.getPhysicsSpeed();
+	const int rotSpeed  = _viewport->camera.getPhysicsRot();
+	if (moveSpeed != _lastSavedCameraSpeedMove || rotSpeed != _lastSavedCameraSpeedRot) {
+		QSettings settings;
+		settings.setValue("FredView/cameraSpeedMove", moveSpeed);
+		settings.setValue("FredView/cameraSpeedRot",  rotSpeed);
+		_lastSavedCameraSpeedMove = moveSpeed;
+		_lastSavedCameraSpeedRot  = rotSpeed;
 	}
 }
 void FredView::on_actionx1_triggered(bool enabled) {
@@ -2607,7 +2602,7 @@ void FredView::handleObjectEditor(int objNum) {
 				on_actionWaypoint_Paths_triggered(false);
 			}
 		} else {
-			UNREACHABLE("Unhandled object type!");
+			Assertion(false, "Unhandled object type %d!", Objects[objNum].type);
 		}
 	}
 }
@@ -2699,7 +2694,7 @@ void FredView::on_actionWingForm_triggered(bool  /*enabled*/) {
 }
 void FredView::on_actionWingDisband_triggered(bool  /*enabled*/) {
 	if (fred->query_single_wing_marked()) {
-		fred->remove_wing(fred->cur_wing);
+		fred->disband_wing(fred->cur_wing);
 	} else {
 		showButtonDialog(DialogType::Error,
 						 "Error",

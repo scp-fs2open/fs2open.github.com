@@ -64,11 +64,18 @@ class sexp_tree_view: public QTreeWidget, public ISexpTreeUI {
 		 FormulaDataRole = Qt::UserRole + 1,
 		 SexpNodeIdRole = Qt::UserRole + 2,
 		 NoteRole = Qt::UserRole + 100,
-		 BgColorRole = Qt::UserRole + 101
+		 BgColorRole = Qt::UserRole + 101,
+		 NodeImageRole = Qt::UserRole + 102  //!< Base NodeImage stored on each item so numbered-data badges can renumber without a model lookup
 	 };
 
-	//! Converts a NodeImage enum value to a QIcon via resource path lookup.
- 	static QIcon convertNodeImageToIcon(NodeImage image);
+	//! Builds the QIcon for a NodeImage by colorizing the shared master art and applying a
+	//! uniform drop shadow. For a numbered data node, pass the 1-based argument position in
+	//! `number` to draw it on the badge; -1 (the default) means "no number".
+ 	static QIcon convertNodeImageToIcon(NodeImage image, int number = -1);
+
+	//! Refreshes the icons of every sexp_tree_view currently alive. Used to apply a changed
+	//! "number every N" preference to already-open trees without waiting for a rebuild.
+	static void refreshAllInstances();
 
 	explicit sexp_tree_view(QWidget* parent = nullptr);
 	~sexp_tree_view() override;
@@ -85,19 +92,19 @@ class sexp_tree_view: public QTreeWidget, public ISexpTreeUI {
 	QTreeWidgetItem* insert(const QString& lpszItem, NodeImage image = NodeImage::ROOT, QTreeWidgetItem* hParent = nullptr, QTreeWidgetItem* hInsertAfter = nullptr);
 
 	//! Returns the QTreeWidgetItem* handle for a given tree_nodes[] index.
-	QTreeWidgetItem* handle(int node);
+	QTreeWidgetItem* handle(int node) const;
 
 	//! Looks up the sexp type (SEXPT_OPERATOR, SEXPT_STRING, etc.) for the node matching handle h.
 	//! Performs a linear scan of tree_nodes[].
-	int get_type(QTreeWidgetItem* h);
+	int get_type(QTreeWidgetItem* h) const;
 
 	//! Returns the tree_nodes[] index for the node matching handle h.
 	//! Performs a linear scan of tree_nodes[].
-	int get_node(QTreeWidgetItem* h);
+	int get_node(QTreeWidgetItem* h) const;
 
 	//! Walks parent links from node up to find the root node index.
 	//! Uses _model.tree_nodes[].parent.
-	int get_root(int node);
+	int get_root(int node) const;
 
 	//! Reorders top-level (root) items by removing source and reinserting relative to dest.
 	//! Emits rootOrderChanged() and modified(). Pure Qt widget operation.
@@ -188,8 +195,8 @@ class sexp_tree_view: public QTreeWidget, public ISexpTreeUI {
 	void ui_delete_item(void* handle) override;                  //!< Deletes a QTreeWidgetItem
 	void ui_set_item_text(void* handle, const char* text) override;   //!< Sets display text via setText()
 	void ui_set_item_image(void* handle, NodeImage image) override;   //!< Sets icon via setIcon()
-	void* ui_get_child_item(void* handle) override;              //!< Returns first child item, or nullptr
-	bool ui_has_children(void* handle) override;                 //!< Returns true if childCount() > 0
+	void* ui_get_child_item(void* handle) const override;        //!< Returns first child item, or nullptr
+	bool ui_has_children(void* handle) const override;           //!< Returns true if childCount() > 0
 	void ui_expand_item(void* handle) override;                  //!< Expands a single item via setExpanded()
 	void ui_select_item(void* handle) override;                  //!< Selects item via setCurrentItem()
 	void ui_ensure_visible(void* handle) override;               //!< Scrolls to item via scrollToItem()
@@ -223,6 +230,13 @@ class sexp_tree_view: public QTreeWidget, public ISexpTreeUI {
 	//! Watches the operator popup for Hide/Close/Deactivate events to clear popup state.
 	bool eventFilter(QObject* obj, QEvent* ev) override;
 
+	//! Re-renders every node icon when the palette changes (light/dark toggle) so the
+	//! theme-adaptive icons (dots, chain, etc.) update while the tree is visible.
+	void changeEvent(QEvent* e) override;
+
+	//! Recomputes and re-applies the icon for every item from its stored NodeImageRole.
+	void refreshAllIcons();
+
 	//! Records drag start position and source root item for root-level drag-and-drop.
 	void mousePressEvent(QMouseEvent* e) override;
 
@@ -236,6 +250,19 @@ class sexp_tree_view: public QTreeWidget, public ISexpTreeUI {
 	//! the specified parent/after position. Blocks signals during creation to prevent spurious
 	//! itemChanged events.
 	QTreeWidgetItem* insertWithIcon(const QString& lpszItem, const QIcon& image, QTreeWidgetItem* hParent = nullptr, QTreeWidgetItem* hInsertAfter = nullptr);
+
+	//! Computes and sets the icon for a tree item. For numbered-data nodes this derives the
+	//! 1-based argument position from the item's sibling index and the "number every N"
+	//! preference, so the badge shows the argument count at every Nth position.
+	void applyNodeIcon(QTreeWidgetItem* item, NodeImage image);
+
+	//! Re-applies icons to all children of `parent`. Called after a data node is inserted or
+	//! removed so the numbered-data badges renumber to match the shifted sibling positions.
+	void refreshDataNumbers(QTreeWidgetItem* parent);
+
+	//! Returns the "number every N arguments" preference (0 = never number). Reads the value
+	//! from the EditorViewport, falling back to a default when no viewport is set.
+	int numberEveryN() const;
 
 	//! Slot for customContextMenuRequested. Gets the item at pos, builds and executes the context menu.
 	void customMenuHandler(const QPoint& pos);
@@ -256,6 +283,13 @@ class sexp_tree_view: public QTreeWidget, public ISexpTreeUI {
 					return;
 				if (currentItem() == nullptr)
 					return;
+				// Re-sync item_index to the currently selected item before computing
+				// menu state. Some mutations (like a paste that adds a child) move the
+				// model's item_index onto the newly created node without changing the
+				// visual selection, which would otherwise make a repeated hotkey act on
+				// the wrong node and fail its gate. The right-click menu re-derives
+				// item_index the same way, which is why the menu path can be repeated.
+				item_index = get_node(currentItem());
 				// item_index may be -1 in labeled-root mode (the user selected the
 				// label itself). compute_context_menu_state() handles that path and
 				// returns a state whose can_* flags already reflect what's legal
@@ -323,7 +357,7 @@ class sexp_tree_view: public QTreeWidget, public ISexpTreeUI {
 	//! Computes the list of valid operator names for a given node position. Queries
 	//! _model.find_argument_number(), _model.query_node_argument_type(), _model._opf.get_listing_opf(),
 	//! and _model._opf.query_default_argument_available().
-	QStringList validOperatorsForNode(int nodeIndex);
+	QStringList validOperatorsForNode(int nodeIndex) const;
 
 	//! Slot for itemChanged. Handles inline edit completion. For root labels: emits rootNodeRenamed().
 	//! For operators: validates via _model.validate_label_edit() and commits via _actions.add_or_replace_operator().

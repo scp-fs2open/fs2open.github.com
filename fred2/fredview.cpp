@@ -32,6 +32,7 @@
 #include "ai/aigoals.h"
 #include "ship/ship.h"	// for ship names
 #include "prop/prop.h" // for prop names
+#include "missioneditor/common.h"
 #include "MissionGoalsDlg.h"
 #include "MissionCutscenesDlg.h"
 #include "wing.h"
@@ -2466,7 +2467,7 @@ int query_single_wing_marked()
 void CFREDView::OnDisbandWing() 
 {
 	if (query_single_wing_marked()) {
-		remove_wing(cur_wing);
+		disband_wing(cur_wing);
 		FREDDoc_ptr->autosave("wing disband");
 
 	} else
@@ -2641,6 +2642,9 @@ int CFREDView::global_error_check()
 					ptr->type = OBJ_SHIP;
 					Player_starts--;
 					t--;
+
+					ensure_valid_player_start_shipnum();
+
 					if (error("Invalid ship type for a player.  Ship has been reset to non-player ship.")){
 						return 1;
 					}
@@ -3130,7 +3134,9 @@ int CFREDView::global_error_check()
 				return -1;
 	}*/
 
-	Assert((Player_start_shipnum >= 0) && (Player_start_shipnum < MAX_SHIPS) && (Ships[Player_start_shipnum].objnum >= 0));
+	if ((Player_start_shipnum < 0) || (Player_start_shipnum >= MAX_SHIPS) || (Ships[Player_start_shipnum].objnum < 0)){
+		return internal_error("Mission has no valid player start ship");
+	}
 	i = global_error_check_player_wings(multi);
 	if (i){
 		return i;

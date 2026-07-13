@@ -323,7 +323,7 @@ bool beam_has_valid_params(beam_fire_info* fire_info) {
 				return false;
 			break;		
 		default:
-			Assertion(false, "Unrecognized beam fire method in beam_has_valid_params");
+			UNREACHABLE("Unrecognized beam fire method %d in beam_has_valid_params", fire_info->fire_method);
 			return false;
 	}
 
@@ -356,8 +356,8 @@ int beam_fire(beam_fire_info *fire_info)
 	}
 
 	// make sure the beam_info_index is valid
+	Assertion((fire_info->beam_info_index >= 0) && (fire_info->beam_info_index < weapon_info_size()) && (Weapon_info[fire_info->beam_info_index].wi_flags[Weapon::Info_Flags::Beam]), "beam_info_index (%d) invalid (either <0, >= %d, or not actually a beam)!\n", fire_info->beam_info_index, weapon_info_size());
 	if ((fire_info->beam_info_index < 0) || (fire_info->beam_info_index >= weapon_info_size()) || !(Weapon_info[fire_info->beam_info_index].wi_flags[Weapon::Info_Flags::Beam])) {
-		UNREACHABLE("beam_info_index (%d) invalid (either <0, >= %d, or not actually a beam)!\n", fire_info->beam_info_index, weapon_info_size());
 		return -1;
 	}
 
@@ -2539,13 +2539,13 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 		if (b->flags & BF_IS_FIGHTER_BEAM) {
 			orient = b->objp->orient;
 		} else if (b->subsys) {
-			vec3d fvec, uvec, target_pos;
+			vec3d fvec, uvec, target_pos = vmd_zero_vector;
 			if (b->target)
 				target_pos = b->target->pos;
 			else if (b->flags & BF_TARGETING_COORDS)
 				target_pos = b->target_pos1;
 			else
-				UNREACHABLE("Turret beam fired without a target or target coordinates?");
+				Assertion(false, "Turret beam fired without a target or target coordinates?");
 			vm_vec_normalized_dir(&fvec, &target_pos, &turret_point);
 			vm_vec_unrotate(&uvec, &b->subsys->system_info->turret_norm, &b->objp->orient);
 			vm_vector_2_matrix_norm(&orient, &fvec, &uvec);
@@ -2968,7 +2968,7 @@ void beam_aim(beam *b)
 		break;
 
 	default:
-		UNREACHABLE("Impossible beam type (%d); get a coder!\n", (int)b->type);
+		UNREACHABLE("Impossible beam type (%d); get a coder!\n", static_cast<int>(b->type));
 	}
 
 	if (!Weapon_info[b->weapon_info_index].wi_flags[Weapon::Info_Flags::No_collide]) {

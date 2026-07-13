@@ -401,7 +401,7 @@ void CAddModifyContainerDlg::OnListerSelectionChange()
 		const SCP_string &key = m_lister_keys[index];
 		update_text_edit_boxes(key, container.map_data.at(key));
 	} else {
-		UNREACHABLE("Unknown container type %d", (int)container.type);
+		UNREACHABLE("Unknown container type %d", static_cast<int>(container.type));
 	}
 }
 
@@ -601,7 +601,7 @@ void CAddModifyContainerDlg::OnContainerUpdate()
 		key_edit->GetWindowText(key_str);
 		container.map_data[SCP_string(key_str)] = data_str;
 	} else {
-		UNREACHABLE("Unknown container type %d", (int)container.type);
+		UNREACHABLE("Unknown container type %d", static_cast<int>(container.type));
 	}
 
 	update_data_lister();
@@ -755,7 +755,7 @@ void CAddModifyContainerDlg::update_data_lister()
 					return std::atoi(str1.c_str()) < std::atoi(str2.c_str());
 				});
 		} else {
-			UNREACHABLE("Unknown container type %d", (int)container.type);
+			UNREACHABLE("Unknown container type %d", static_cast<int>(container.type));
 		}
 
 		for (const auto &key : m_lister_keys) {
@@ -763,7 +763,7 @@ void CAddModifyContainerDlg::update_data_lister()
 			m_container_data_lister.AddString(lister_entry.c_str());
 		}
 	} else {
-		UNREACHABLE("Unknown container type %d", (int)container.type);
+		UNREACHABLE("Unknown container type %d", static_cast<int>(container.type));
 	}
 
 	m_container_data_lister.EnableWindow(m_container_data_lister.GetCount() > 0);

@@ -27,7 +27,7 @@ int create_wing();
  *
  * @param[in] wing_num Index of the wing
  */
-void remove_wing(int wing_num);
+void disband_wing(int wing_num);
 
 /**
  * @brief Takes a ship out of a wing, deleting the wing if that was the only ship in it.
