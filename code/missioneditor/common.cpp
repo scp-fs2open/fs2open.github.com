@@ -1,7 +1,9 @@
 // methods and members common to any mission editor FSO may have
 #include "common.h"
+#include "globalincs/linklist.h"
 #include "mission/missionparse.h"
 #include "iff_defs/iff_defs.h"
+#include "object/object.h"
 #include "ship/ship.h"
 
 // to keep track of data
@@ -142,6 +144,25 @@ void generate_weaponry_usage_list_wing(int wing_num, int* arr)
 								   Weapon_info[swp->secondary_bank_weapons[j]].cargo_size) +
 							   0.5f);
 			}
+		}
+	}
+}
+
+void ensure_valid_player_start_shipnum()
+{
+	// nothing to do if the current player start is still valid
+	if (Player_start_shipnum >= 0 && Player_start_shipnum < MAX_SHIPS
+		&& Ships[Player_start_shipnum].objnum >= 0
+		&& Objects[Ships[Player_start_shipnum].objnum].type == OBJ_START) {
+		return;
+	}
+
+	// otherwise repoint to the first remaining player start, or -1 if there are none
+	Player_start_shipnum = -1;
+	for (auto *objp : list_range(&obj_used_list)) {
+		if (objp->type == OBJ_START) {
+			Player_start_shipnum = objp->instance;
+			break;
 		}
 	}
 }

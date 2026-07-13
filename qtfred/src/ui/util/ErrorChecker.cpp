@@ -254,6 +254,8 @@ int ErrorChecker::checkObjectList() {
 						ptr->type = OBJ_SHIP;
 						Player_starts--;
 						t--;
+
+						ensure_valid_player_start_shipnum();
 					}
 					warning("Invalid ship type for a player.%s",
 							_viewport->Error_checker_apply_auto_corrections
