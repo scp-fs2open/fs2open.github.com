@@ -407,7 +407,7 @@ namespace particle
 	/**
 	 * @brief Renders a single particle
 	 * @param part The particle to render
-	 * @return @c true if the particle has been added to the rendering batch, @c false otherwise
+	 * @return @c true if the particle has been added to the rendering batch (notably, this only includes main-render pass, alternative dispatch through decals is not true), @c false otherwise
 	 */
 	bool render_particle(particle* part) {
 		// skip back-facing particles (ripped from fullneb code)
@@ -425,12 +425,12 @@ namespace particle
 
 		bool part_has_length = part->length != 0.0f;
 
-		if (!part_has_length && vm_vec_dot_to_point(&Eye_matrix.vec.fvec, &Eye_position, &p_pos) <= 0.0f)
+		const auto& source_effect = part->parent_effect.getParticleEffect();
+
+		if (!source_effect.m_renderAsDecal && !part_has_length && vm_vec_dot_to_point(&Eye_matrix.vec.fvec, &Eye_position, &p_pos) <= 0.0f)
 		{
 			return false;
 		}
-		
-		const auto& source_effect = part->parent_effect.getParticleEffect();
 
 		//For anything apart from the velocity curve, "Post-Curves Velocity" is well defined. This is needed to facilitate complex but common particle scaling and appearance curves.
 		const auto& curve_input = std::forward_as_tuple(*part,
@@ -459,6 +459,10 @@ namespace particle
 		int actual_frame = cur_frame + framenum;
 
 		if (source_effect.m_renderAsDecal) {
+			if (!decals::decalSystemActive()) {
+				return false;
+			}
+
 			if (part->attached_objnum < 0 || Objects[part->attached_objnum].type != OBJ_SHIP) {
 				return false;
 			}
@@ -479,6 +483,7 @@ namespace particle
 			decalInfo.lifetime      = 1.0f;
 			decalInfo.position      = part->pos;
 			decalInfo.scale         = {{{ radius, radius, radius }}};
+			decalInfo.orig_obj_type = OBJ_SHIP;
 
 			switch (source_effect.m_decalOrientationMode) {
 			case ParticleEffect::DecalOrientationMode::TOWARDS_CENTER:
