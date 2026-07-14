@@ -235,13 +235,7 @@ sexp_tree_view::sexp_tree_view(QWidget* parent) : QTreeWidget(parent), _actions(
 	connect(this, &QWidget::customContextMenuRequested, this, &sexp_tree_view::customMenuHandler);
 	connect(this, &QTreeWidget::itemChanged, this, &sexp_tree_view::handleItemChange);
 	connect(this, &QTreeWidget::itemSelectionChanged, this, &sexp_tree_view::handleNewItemSelected);
-	// Double-clicking a node toggles its expansion when it has children; a leaf node
-	// has nothing to expand, so double-clicking it does nothing.
-	connect(this, &QTreeWidget::itemDoubleClicked, this, [](QTreeWidgetItem* item, int /*column*/) {
-		if (item && item->childCount() > 0) {
-			item->setExpanded(!item->isExpanded());
-		}
-	});
+	connect(this, &QTreeWidget::itemDoubleClicked, this, &sexp_tree_view::handleDoubleClick);
 
 	setItemDelegateForColumn(0, new NoteBadgeDelegate(this));
 
@@ -782,12 +776,7 @@ void sexp_tree_view::keyPressEvent(QKeyEvent* e)
 	// starts inline text editing. Operator nodes have no editable data of their own, 
 	// so they fall back to the operator quick-search popup.
 	if (e->key() == Qt::Key_Space && currentItem()) {
-		item_index = get_node(currentItem());
-		if (_model.compute_context_menu_state().can_edit_text) {
-			editDataActionHandler();
-		} else {
-			openNodeEditor(currentItem());
-		}
+		editActionHandlerHelper();
 		return;
 	}
 
@@ -1980,6 +1969,31 @@ void sexp_tree_view::handleNewItemSelected() {
 	}
 
 	selectedRootChanged(item->data(0, FormulaDataRole).toInt());
+}
+
+// Slot connected to itemDoubleClicked. Allows the item to either be expanded or for an editable item
+// to go into edit view.
+void sexp_tree_view::handleDoubleClick() {
+	auto clickedItem = currentItem();
+
+	// expand when there is a child to expand
+	if (clickedItem && clickedItem->childCount() > 0) {
+		clickedItem->setExpanded(!clickedItem->isExpanded());
+	// edit otherwise
+	} else {
+		editActionHandlerHelper();	
+	}
+}
+
+// Helper function for making sure that search and edit are initiated consistently 
+void sexp_tree_view::editActionHandlerHelper(){
+	item_index = get_node(currentItem());
+
+	if (_model.compute_context_menu_state().can_edit_text) {
+		editDataActionHandler();
+	} else {
+		openNodeEditor(currentItem());
+	}
 }
 
 // Public entry point for deleting the currently selected item. Simply delegates to deleteActionHandler().

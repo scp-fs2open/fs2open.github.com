@@ -304,6 +304,12 @@ class sexp_tree_view: public QTreeWidget, public ISexpTreeUI {
 	//! Slot for itemSelectionChanged. Updates help text, sets item_index, and emits selectedRootChanged().
 	void handleNewItemSelected();
 
+	//! Slot for double click which may either expand a tree or initiate edit mode
+	void handleDoubleClick();
+
+	//! Helper function to make sure search and editing is initiated consistently.
+	void editActionHandlerHelper();
+
 	//! Builds the full right-click context menu for a given item. Calls _model.compute_context_menu_state()
 	//! to determine all enabled/disabled states, then constructs menus for Delete, Edit, Cut/Copy/Paste,
 	//! Add/Replace/Insert Operator (categorized submenus), Add/Replace Data, Variables, and Containers.
