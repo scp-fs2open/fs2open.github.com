@@ -19551,7 +19551,7 @@ void sexp_set_guarder_range(int node)
 	if (is_nan || is_nan_forever) {
 		return;
 	}
-	float true_range = static_cast<float>(range);
+	auto true_range = static_cast<float>(range);
 	n = CDR(n);
 	for (; n != -1; n = CDR(n)) {
 		object_ship_wing_point_team oswpt;
@@ -19590,7 +19590,7 @@ void sexp_set_guard_range(int node)
 	if (is_nan || is_nan_forever)
 		return;
 	n = CDR(n);
-	float true_range = static_cast<float>(range);
+	auto true_range = static_cast<float>(range);
 	for (; n != -1; n = CDR(n)) {
 		auto ship_entry = eval_ship(n);
 		if (!ship_entry || !ship_entry->has_shipp()) {
