@@ -1143,6 +1143,8 @@ std::unique_ptr<QMenu> sexp_tree_view::buildContextMenu(QTreeWidgetItem* h) {
 	popup_menu->addSeparator();
 
 	auto replace_op_menu = popup_menu->addMenu(tr("Replace Operator"));
+	
+	popup_menu->addAction(tr("Search Operators"), this, [this]() { editActionHandlerHelper(); });
 
 	auto replace_data_menu = popup_menu->addMenu(tr("Replace Data"));
 	auto replace_number_act =
