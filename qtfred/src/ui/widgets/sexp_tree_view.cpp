@@ -1996,7 +1996,14 @@ void sexp_tree_view::handleDoubleClick() {
 
 // Helper function for making sure that search and edit are initiated consistently 
 void sexp_tree_view::editActionHandlerHelper(){
-	item_index = get_node(currentItem());
+	auto item = currentItem();
+	
+	// Just to be extra safe, early exit when an item is not selected
+	if (item == nullptr || !_interface) {
+		return;
+	}
+
+	item_index = get_node(item);
 
 	if (_model.compute_context_menu_state().can_edit_text) {
 		editDataActionHandler();
