@@ -121,36 +121,45 @@ void gr_opengl_flip()
 	if (Cmdline_window_res) {
 		GL_state.PopFramebufferState();
 
-		// Gamma-correct Back_texture into an offscreen scratch texture. This is an FBO -> FBO
-		// draw, the same class of operation as every other post-process pass. Presenting straight
-		// into the window-system default framebuffer from a shader draw that samples a
-		// just-rendered texture caused flicker on some drivers, so the hand-off to the screen
-		// always goes through glBlitFramebuffer instead.
-		GL_state.BindFrameBuffer(GammaBlit_framebuffer);
-		glViewport(0, 0, gr_screen.max_w, gr_screen.max_h);
+		const float gamma = Cmdline_no_set_gamma ? 1.0f : Gr_gamma;
+		GLuint present_source = Back_framebuffer;
 
-		opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_GAMMA_BLIT, 0));
+		// At gamma 1.0 the correction shader is an identity transform, so skip the extra
+		// fullscreen pass and present Back_framebuffer directly.
+		if (gamma != 1.0f) {
+			// Gamma-correct Back_texture into an offscreen scratch texture. This is an FBO -> FBO
+			// draw, the same class of operation as every other post-process pass. Presenting straight
+			// into the window-system default framebuffer from a shader draw that samples a
+			// just-rendered texture caused flicker on some drivers, so the hand-off to the screen
+			// always goes through glBlitFramebuffer instead.
+			GL_state.BindFrameBuffer(GammaBlit_framebuffer);
+			glViewport(0, 0, gr_screen.max_w, gr_screen.max_h);
 
-		GL_state.Texture.Enable(0, GL_TEXTURE_2D, Back_texture);
-		Current_shader->program->Uniforms.setTextureUniform("tex", 0);
+			opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_GAMMA_BLIT, 0));
 
-		GL_state.SetAlphaBlendMode(gr_alpha_blend::ALPHA_BLEND_NONE);
-		GL_state.SetZbufferType(ZBUFFER_TYPE_NONE);
-		// The last material of the frame may have left color writes disabled (e.g. a masked
-		// model pass in the briefing map render). The old blit-only present ignored the color
-		// mask, but this is a regular draw and needs color writes and no stencil to take effect.
-		GL_state.ColorMask(true, true, true, true);
-		GL_state.StencilTest(GL_FALSE);
+			GL_state.Texture.Enable(0, GL_TEXTURE_2D, Back_texture);
+			Current_shader->program->Uniforms.setTextureUniform("tex", 0);
 
-		opengl_set_generic_uniform_data<graphics::generic_data::gamma_blit_data>(
-			[](graphics::generic_data::gamma_blit_data* data) {
-				data->gamma = Cmdline_no_set_gamma ? 1.f : Gr_gamma;
-			});
+			GL_state.SetAlphaBlendMode(gr_alpha_blend::ALPHA_BLEND_NONE);
+			GL_state.SetZbufferType(ZBUFFER_TYPE_NONE);
+			// The last material of the frame may have left color writes disabled (e.g. a masked
+			// model pass in the briefing map render). The old blit-only present ignored the color
+			// mask, but this is a regular draw and needs color writes and no stencil to take effect.
+			GL_state.ColorMask(true, true, true, true);
+			GL_state.StencilTest(GL_FALSE);
 
-		opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
+			opengl_set_generic_uniform_data<graphics::generic_data::gamma_blit_data>(
+				[gamma](graphics::generic_data::gamma_blit_data* data) {
+					data->gamma = gamma;
+				});
+
+			opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
+
+			present_source = GammaBlit_framebuffer;
+		}
 
 		GL_state.BindFrameBuffer(0, GL_DRAW_FRAMEBUFFER);
-		GL_state.BindFrameBuffer(GammaBlit_framebuffer, GL_READ_FRAMEBUFFER);
+		GL_state.BindFrameBuffer(present_source, GL_READ_FRAMEBUFFER);
 
 		glReadBuffer(GL_COLOR_ATTACHMENT0);
 		glDrawBuffer(GL_BACK);
