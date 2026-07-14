@@ -252,7 +252,12 @@ void init() {
 	// Seed the runtime profiler-overlay toggle from -profile_frame_time (kept for backward
 	// compatibility); this also lazily constructs the FrameProfiler and folds
 	// Cmdline_json_profiling/Cmdline_frame_profile into do_trace_events.
-	set_frame_profiling_enabled(Cmdline_frame_profile);
+	// OR in Profiler_overlay_enabled rather than overwriting it outright: the "Game.ProfilerOverlay"
+	// option's loadInitialValues() call (see OptionsManager) runs before tracing::init(), so by the
+	// time we get here Profiler_overlay_enabled may already reflect a persisted "on" setting that
+	// -profile_frame_time knows nothing about. Overwriting would silently disable the overlay on
+	// startup until the option was re-toggled at runtime.
+	set_frame_profiling_enabled(Cmdline_frame_profile || Profiler_overlay_enabled);
 
 	do_gpu_queries = gr_is_capable(gr_capability::CAPABILITY_TIMESTAMP_QUERY);
 	queries_reusable = gr_is_capable(gr_capability::CAPABILITY_QUERIES_REUSABLE);
