@@ -591,22 +591,32 @@ void opengl_setup_scene_textures()
 		GL_state.BindFrameBuffer(GammaBlit_framebuffer);
 		opengl_set_object_label(GL_FRAMEBUFFER, GammaBlit_framebuffer, "Gamma blit framebuffer");
 
-		glGenTextures(1, &GammaBlit_texture);
+		if (Scene_ldr_texture != 0 && Scene_texture_width == gr_screen.max_w && Scene_texture_height == gr_screen.max_h) {
+			// Scene_ldr_texture is dead scratch by flip time: its consumers (tonemap, AA, the final
+			// post pass) all write before reading within gr_opengl_post_process_end(), which completes
+			// before the flip. Reuse it as the gamma pass target instead of allocating another
+			// screen-sized texture. GammaBlit_texture stays 0 so shutdown won't delete it.
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Scene_ldr_texture, 0);
+		} else {
+			// Scene textures are clamped to GL_max_renderbuffer_size and may not cover the screen;
+			// fall back to a dedicated texture in that case.
+			glGenTextures(1, &GammaBlit_texture);
 
-		GL_state.Texture.SetActiveUnit(0);
-		GL_state.Texture.SetTarget(GL_TEXTURE_2D);
-		GL_state.Texture.Enable(GammaBlit_texture);
+			GL_state.Texture.SetActiveUnit(0);
+			GL_state.Texture.SetTarget(GL_TEXTURE_2D);
+			GL_state.Texture.Enable(GammaBlit_texture);
 
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, gr_screen.max_w, gr_screen.max_h, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, nullptr);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, gr_screen.max_w, gr_screen.max_h, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, nullptr);
 
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, GammaBlit_texture, 0);
-		opengl_set_object_label(GL_TEXTURE, GammaBlit_texture, "Gamma blit texture");
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, GammaBlit_texture, 0);
+			opengl_set_object_label(GL_TEXTURE, GammaBlit_texture, "Gamma blit texture");
+		}
 
 		GL_state.BindFrameBuffer(Back_framebuffer);
 	}
