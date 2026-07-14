@@ -3170,20 +3170,23 @@ void gr_set_bitmap(int bitmap_num, int alphablend_mode, int bitblt_mode, float a
 	gr_screen.current_bitmap          = bitmap_num;
 }
 
-static void output_uniform_debug_data()
+gr_debug_stats gr_get_debug_stats()
 {
-	if (gr_screen.mode == GraphicsAPI::Stub) {
-		return;
+	gr_debug_stats stats;
+
+	if (!Cmdline_graphics_debug_output) {
+		return stats;
 	}
 
-	int line_height = gr_get_font_height() + 1;
+	if (UniformBufferManager) {
+		stats.uniform_buffer_valid = true;
+		stats.uniform_buffer_size = UniformBufferManager->getBufferSize();
+		stats.uniform_buffer_used = UniformBufferManager->getCurrentlyUsedSize();
+	}
 
-	gr_set_color_fast(&Color_bright_white);
+	gr_screen.gf_get_debug_stats(stats);
 
-	gr_printf_no_resize(gr_screen.center_offset_x + 20, gr_screen.center_offset_y + 160,
-	                    "Uniform buffer size: " SIZE_T_ARG, UniformBufferManager->getBufferSize());
-	gr_printf_no_resize(gr_screen.center_offset_x + 20, gr_screen.center_offset_y + 160 + line_height,
-	                    "Currently used data: " SIZE_T_ARG, UniformBufferManager->getCurrentlyUsedSize());
+	return stats;
 }
 
 void gr_imgui_begin_frame()
@@ -3224,10 +3227,6 @@ void gr_flip(bool execute_scripting)
 	}
 
 	model_process_cached_ui_render_instances();
-
-	if (Cmdline_graphics_debug_output) {
-		output_uniform_debug_data();
-	}
 
 	// IMPORTANT: No rendering may happen after this point until gf_flip()/gr_setup_frame().
 	// gr_reset_immediate_buffer() resets the write offset to 0, so any subsequent immediate

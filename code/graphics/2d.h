@@ -690,6 +690,32 @@ enum class BufferUsageHint { Static, Dynamic, Streaming, PersistentMapping };
  */
 typedef void* gr_sync;
 
+/**
+ * @brief Per-backend diagnostic counters, populated only when -gr_debug is active
+ *
+ * Each stat group carries its own "valid" flag since not every backend collects every
+ * group (e.g. per-draw-call counters currently only exist in the Vulkan backend). See
+ * gr_get_debug_stats().
+ */
+struct gr_debug_stats {
+	bool uniform_buffer_valid = false;
+	size_t uniform_buffer_size = 0;
+	size_t uniform_buffer_used = 0;
+
+	bool draw_stats_valid = false;
+	int draw_calls = 0;
+	int draw_indexed_calls = 0;
+	int total_vertices = 0;
+	int total_indices = 0;
+	int apply_material_calls = 0;
+	int apply_material_failures = 0;
+	int no_pipeline_skips = 0;
+	int descriptor_sets_allocated = 0;
+	int descriptor_writes = 0;
+	size_t pipeline_count = 0;
+	int on_demand_texture_uploads = 0;
+};
+
 typedef struct screen {
 	int max_w = 0, max_h = 0; // Width and height
 	int max_w_unscaled = 0, max_h_unscaled = 0;
@@ -963,6 +989,10 @@ typedef struct screen {
 	std::function<void(const char* name)> gf_push_debug_group;
 	std::function<void()> gf_pop_debug_group;
 
+	// Fills in whichever debug_stats groups this backend collects. Defaults to a no-op
+	// so backends without per-draw-call counters (OpenGL, stub) don't have to assign it.
+	std::function<void(gr_debug_stats& stats)> gf_get_debug_stats = [](gr_debug_stats&) {};
+
 	std::function<int()> gf_create_query_object;
 	std::function<void(int obj, QueryType type)> gf_query_value;
 	std::function<bool(int obj)> gf_query_value_available;
@@ -1152,6 +1182,14 @@ bool gr_is_screenshot_requested();
 
 //#define gr_flip				GR_CALL(gr_screen.gf_flip)
 void gr_flip(bool execute_scripting = true);
+
+/**
+ * @brief Collects whichever graphics-API debug stats are available for the active backend
+ *
+ * Returns a default-constructed (all-invalid) gr_debug_stats unless -gr_debug is active. Safe
+ * to call every frame regardless of backend or debug flag.
+ */
+gr_debug_stats gr_get_debug_stats();
 
 inline void gr_setup_frame() {
 	gr_screen.gf_setup_frame();
