@@ -19551,18 +19551,19 @@ void sexp_set_guarder_range(int node)
 	if (is_nan || is_nan_forever) {
 		return;
 	}
+	float true_range = static_cast<float>(range);
 	n = CDR(n);
 	for (; n != -1; n = CDR(n)) {
 		object_ship_wing_point_team oswpt;
 		eval_object_ship_wing_point_team(&oswpt, n);
 		if (oswpt.type == OSWPT_TYPE_SHIP) {
 			auto shipp = oswpt.shipp();
-			set_guard_range_ship(range, ship_entry, shipp);
+			set_guard_range_ship(true_range, ship_entry, shipp);
 		} else if (oswpt.type == OSWPT_TYPE_WING) {
 			for (int i = 0; i < oswpt.wingp()->current_count; ++i)
 			{
 				auto shipp = &Ships[oswpt.wingp()->ship_index[i]];
-				set_guard_range_ship(range, ship_entry, shipp);
+				set_guard_range_ship(true_range, ship_entry, shipp);
 			}
 		} else if (oswpt.type == OSWPT_TYPE_WHOLE_TEAM) {
 			ship_obj* so;
@@ -19572,7 +19573,7 @@ void sexp_set_guarder_range(int node)
 
 				auto shipp = &Ships[Objects[so->objnum].instance];
 				if (shipp->team == oswpt.team) {
-					set_guard_range_ship(range, ship_entry, shipp);
+					set_guard_range_ship(true_range, ship_entry, shipp);
 				}
 			}
 		} else {
@@ -19589,7 +19590,7 @@ void sexp_set_guard_range(int node)
 	if (is_nan || is_nan_forever)
 		return;
 	n = CDR(n);
-
+	float true_range = static_cast<float>(range);
 	for (; n != -1; n = CDR(n)) {
 		auto ship_entry = eval_ship(n);
 		if (!ship_entry || !ship_entry->has_shipp()) {
@@ -19605,7 +19606,7 @@ void sexp_set_guard_range(int node)
 
 			auto shipp = &Ships[Objects[so->objnum].instance];
 			if (shipp->team == ship_entry->shipp()->team) {
-				set_guard_range_ship(range, ship_entry, shipp);
+				set_guard_range_ship(true_range, ship_entry, shipp);
 			}
 		}
 	}
