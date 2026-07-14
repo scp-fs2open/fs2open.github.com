@@ -1162,22 +1162,39 @@ ADE_VIRTVAR(Orders, l_Ship, "shiporders", "Array of ship orders", "shiporders", 
 	return ade_set_args(L, "o", l_ShipOrders.Set(object_h(objh->objp())));
 }
 
-ADE_VIRTVAR(MaxGuardRadius, l_Ship, "number", "Sets the max range in meters at which any ships guarding this ship will engage with threats. If the value is <= 0, regular dynamic guard range behavior will resume.", "number", "Max range in meters, or 0 if handle is invalid")
+ADE_VIRTVAR(MaxGuardRadius,
+	l_Ship,
+	"number",
+	"Sets the max range in meters at which any ships guarding this ship will engage with threats. If the value is <= "
+	"0, regular dynamic guard range behavior will resume.", nullptr,
+	nullptr)
 {
 	object_h *objh;
 	float new_max_guard_radius = -1;
 	if (!ade_get_args(L, "o|f", l_Ship.GetPtr(&objh), &new_max_guard_radius))
-		return ade_set_error(L, "f", 0.0f);
+		return ADE_RETURN_NIL;
 
 	if(!objh->isValid())
-		return ade_set_error(L, "f", 0.0f);
+		return ADE_RETURN_NIL;
 
 	ship *shipp = &Ships[objh->objp()->instance];
+	auto ship_entry = ship_registry_get(shipp->ship_name);
+	if (!ship_entry)
+		return ADE_RETURN_NIL;
+	if (ADE_SETTING_VAR) {
+		// Apply to every ship on this ship's team, mirroring sexp_set_guard_range's
+		// "all potential guardians" behavior.
+		for (ship_obj* so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so)) {
+			if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+				continue;
 
-	if (ADE_SETTING_VAR)
-		shipp->max_guard_radius = new_max_guard_radius;
+			ship* guarding_shipp = &Ships[Objects[so->objnum].instance];
+			if (guarding_shipp->team == shipp->team)
+				set_guard_range_ship(new_max_guard_radius, ship_entry, guarding_shipp);
+		}
+	}
 
-	return ade_set_args(L, "f", shipp->max_guard_radius);
+	return ADE_RETURN_NIL;
 }
 
 ADE_VIRTVAR(WaypointSpeedCap, l_Ship, "number", "Waypoint speed cap", "number", "The limit on the ship's speed for traversing waypoints.  -1 indicates no speed cap.  0 will be returned if handle is invalid.")

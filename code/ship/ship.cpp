@@ -7249,7 +7249,7 @@ void ship::clear()
 	ship_max_hull_strength = 0.0f;
 
 	ship_guardian_threshold = 0;
-	max_guard_radius = -1.0f;
+	max_guard_ranges.clear();
 
 	ship_name[0] = 0;
 	display_name.clear();
@@ -20849,6 +20849,25 @@ int damage_type_add(const char *name)
 
 	Damage_types.push_back(dts);
 	return (int)(Damage_types.size() - 1);
+}
+
+void set_guard_range_ship(float range, const ship_registry_entry* ship_entry, ship* shipp) {
+	bool done = false;
+	for (auto exist : shipp->max_guard_ranges) {
+		if (exist.shipnum == ship_entry->shipnum) {
+			if (range > 0) {
+				exist.range = static_cast<float>(range);
+			} else {
+				exist.range = -1.0f;
+			}
+			done = true;
+			break;
+		}
+	}
+	if (!done) {
+		auto item = max_guard_radius(static_cast<float>(range), ship_entry->shipp()->ship_list_index);
+			shipp->max_guard_ranges.push_back(item);
+	}
 }
 
 void ArmorDamageType::clear()

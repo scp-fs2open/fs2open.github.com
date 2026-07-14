@@ -455,6 +455,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "validate-general-orders",        OP_VALIDATE_GENERAL_ORDERS,             2,  INT_MAX,    SEXP_ACTION_OPERATOR,   },  // MjnMixael
 	{ "cap-waypoint-speed",				OP_CAP_WAYPOINT_SPEED,					2,	2,			SEXP_ACTION_OPERATOR,	},
 	{ "set-wing-formation",				OP_SET_WING_FORMATION,					3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
+	{ "set-guard-range-new",			OP_SET_GUARDER_RANGE,					3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},  // The Force
 
 	//Ship Status Sub-Category
 	{ "protect-ship",					OP_PROTECT_SHIP,						1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
@@ -19537,13 +19538,53 @@ void sexp_ship_guardian_threshold(int node)
 		ship_entry->shipp()->ship_guardian_threshold = threshold;
 	}
 }
+void sexp_set_guarder_range(int node)
+{
+	int range, n = node;
+	bool is_nan, is_nan_forever;
+	auto ship_entry = eval_ship(n);
+	if (!ship_entry || !ship_entry->has_shipp()) {
+		return;
+	}
+	n = CDR(n);
+	range = eval_num(n, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever) {
+		return;
+	}
+	n = CDR(n);
+	for (; n != -1; n = CDR(n)) {
+		object_ship_wing_point_team oswpt;
+		eval_object_ship_wing_point_team(&oswpt, n);
+		if (oswpt.type == OSWPT_TYPE_SHIP) {
+			auto shipp = oswpt.shipp();
+			set_guard_range_ship(range, ship_entry, shipp);
+		} else if (oswpt.type == OSWPT_TYPE_WING) {
+			for (int i = 0; i < oswpt.wingp()->current_count; ++i)
+			{
+				auto shipp = &Ships[oswpt.wingp()->ship_index[i]];
+				set_guard_range_ship(range, ship_entry, shipp);
+			}
+		} else if (oswpt.type == OSWPT_TYPE_WHOLE_TEAM) {
+			ship_obj* so;
+			for (so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so)) {
+				if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+					continue;
 
+				auto shipp = &Ships[Objects[so->objnum].instance];
+				if (shipp->team == oswpt.team) {
+					set_guard_range_ship(range, ship_entry, shipp);
+				}
+			}
+		} else {
+			continue;
+		}
+	}
+}
 // MjnMixael
 void sexp_set_guard_range(int node)
 {
 	int range, n = node;
 	bool is_nan, is_nan_forever;
-
 	range = eval_num(n, is_nan, is_nan_forever);
 	if (is_nan || is_nan_forever)
 		return;
@@ -19557,7 +19598,16 @@ void sexp_set_guard_range(int node)
 
 		// Intentionally no lower bound validation beyond disabling at <= 0.
 		// Mission authors may choose very small positive values for highly restrictive escort behavior.
-		ship_entry->shipp()->max_guard_radius = (range > 0) ? static_cast<float>(range) : -1.0f;
+		ship_obj* so;
+		for (so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so)) {
+			if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+				continue;
+
+			auto shipp = &Ships[Objects[so->objnum].instance];
+			if (shipp->team == ship_entry->shipp()->team) {
+				set_guard_range_ship(range, ship_entry, shipp);
+			}
+		}
 	}
 }
 
@@ -28982,7 +29032,10 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_set_guard_range(node);
 				sexp_val = SEXP_TRUE;
 				break;
-
+			case OP_SET_GUARDER_RANGE:
+				sexp_set_guarder_range(node);
+				sexp_val = SEXP_TRUE;
+				break;
 			case OP_SHIP_SUBSYS_TARGETABLE:
 				sexp_ship_deal_with_subsystem_flag(cur_node, node, Ship::Subsystem_Flags::Untargetable, true, false);
 				sexp_val = SEXP_TRUE;
@@ -31740,6 +31793,7 @@ int query_operator_return_type(int op)
 		case OP_SHIP_GUARDIAN_THRESHOLD:
 		case OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD:
 		case OP_SET_GUARD_RANGE:
+		case OP_SET_GUARDER_RANGE:
 		case OP_SHIP_VANISH:
 		case OP_PROP_VANISH:
 		case OP_DESTROY_INSTANTLY:
@@ -32460,6 +32514,14 @@ int query_operator_argument_type(int op_index, int argnum)
 				return OPF_NUMBER;
 			else
 				return OPF_SHIP;
+
+		case OP_SET_GUARDER_RANGE:
+			if (argnum == 0)
+				return OPF_SHIP;
+			else if (argnum == 1)
+				return OPF_NUMBER;
+			else
+				return OPF_SHIP_WING_WHOLETEAM;
 
 		case OP_SHIP_SUBSYS_TARGETABLE:
 		case OP_SHIP_SUBSYS_UNTARGETABLE:
@@ -37053,6 +37115,7 @@ int get_category(int op_id)
 		case OP_SHIP_GUARDIAN_THRESHOLD:
 		case OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD:
 		case OP_SET_GUARD_RANGE:
+		case OP_SET_GUARDER_RANGE:
 		case OP_SET_SKYBOX_MODEL:
 		case OP_SHIP_CREATE:
 		case OP_PROP_CREATE:
@@ -37409,6 +37472,7 @@ int get_subcategory(int op_id)
 		case OP_SET_ORDER_ALLOWED_TARGET:
 		case OP_ENABLE_GENERAL_ORDERS:
 		case OP_VALIDATE_GENERAL_ORDERS:
+		case OP_SET_GUARDER_RANGE:
 			return CHANGE_SUBCATEGORY_AI_CONTROL;
 
 		case OP_ALTER_SHIP_FLAG:
@@ -41307,6 +41371,16 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t2: Formation multiplier, as a percentage (1x = 100)\r\n"
 		"\tRest: Wing that should fly this formation (wing does not need to be in-mission)\r\n"
 	},
+
+	// The Force
+	{ OP_SET_GUARDER_RANGE, "set-guard-range-new\r\n"
+		"\tLimits the range that selected ships or wings can move when guarding a specific ship\r\n"
+		"This range will override the default dynamic range behavior for ships obeying a guard order.\r\n"
+		"If the value is <= 0, regular dynamic guard range behavior will resume. Positive values are used as is with no size validation based on ship class.\r\n\r\n"
+		"Takes 3 or more arguments...\r\n"
+		"\t1:\tShip the escorts won't leave the range of if guarding (Ship must be in mission)\r\n"
+		"\t2:\tGuard range cap in meters (<= 0 disables cap)\r\n"
+		"\t3+:\tEscort ships and wing that the limit appies too" },
 
 	{ OP_TURRET_TAGGED_ONLY_ALL, "turret-tagged-only\r\n"
 		"\tMakes turrets target and hence fire strictly at tagged objects\r\n"
