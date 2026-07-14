@@ -100,13 +100,11 @@ void draw_pie_chart(const frame_overlay_snapshot& snapshot) {
 	static SCP_string label_storage[MAX_SLICES];
 	static const char* labels[MAX_SLICES];
 	double pct_values[MAX_SLICES];
-	double ms_values[MAX_SLICES];
 	int count = 0;
 
 	auto add_slice = [&](const SCP_string& name, uint64_t self_nanosec) {
 		label_storage[count] = name;
 		labels[count] = label_storage[count].c_str();
-		ms_values[count] = static_cast<double>(self_nanosec) / NANOSEC_PER_MS;
 		pct_values[count] = 100.0 * static_cast<double>(self_nanosec) / static_cast<double>(snapshot.total_nanosec);
 		count++;
 	};
@@ -151,10 +149,48 @@ void draw_pie_chart(const frame_overlay_snapshot& snapshot) {
 	for (int i = 0; i < count; i++) {
 		ImGui::ColorButton(labels[i], slice_colors[i], ImGuiColorEditFlags_NoTooltip, ImVec2(12, 12));
 		ImGui::SameLine();
-		ImGui::Text("%s: %.2f ms (%.1f%%)", labels[i], ms_values[i], pct_values[i]);
+		ImGui::Text("%s: %.1f%%", labels[i], pct_values[i]);
 	}
 
 	ImGui::Columns(1);
+}
+
+/**
+ * Draws whichever -gr_debug stat groups the active graphics backend collects (see
+ * gr_get_debug_stats()). Silently omits a group if its "valid" flag is unset, so this stays a
+ * no-op for backends (or builds) that don't populate a given group.
+ */
+void draw_graphics_debug_stats() {
+	gr_debug_stats stats = gr_get_debug_stats();
+
+	if (!stats.uniform_buffer_valid && !stats.draw_stats_valid) {
+		return;
+	}
+
+	ImGui::Separator();
+	ImGui::TextUnformatted("Graphics API stats (-gr_debug)");
+
+	if (stats.uniform_buffer_valid) {
+		ImGui::Text("Uniform buffer: " SIZE_T_ARG " / " SIZE_T_ARG " bytes used",
+			stats.uniform_buffer_used,
+			stats.uniform_buffer_size);
+	}
+
+	if (stats.draw_stats_valid) {
+		ImGui::Text("Draw calls: %d (%d indexed)", stats.draw_calls, stats.draw_indexed_calls);
+		ImGui::Text("Vertices: %d   Indices: %d", stats.total_vertices, stats.total_indices);
+		ImGui::Text("Material applies: %d (%d failed, %d no pipeline)",
+			stats.apply_material_calls,
+			stats.apply_material_failures,
+			stats.no_pipeline_skips);
+		ImGui::Text("Descriptor sets: %d   writes: %d   pipelines: " SIZE_T_ARG,
+			stats.descriptor_sets_allocated,
+			stats.descriptor_writes,
+			stats.pipeline_count);
+		if (stats.on_demand_texture_uploads > 0) {
+			ImGui::Text("On-demand texture uploads: %d", stats.on_demand_texture_uploads);
+		}
+	}
 }
 
 } // namespace
@@ -174,7 +210,7 @@ void profiler_overlay_draw() {
 	ImGui::NewFrame();
 
 	ImGui::SetNextWindowPos(ImVec2(20, 20), ImGuiCond_FirstUseEver);
-	ImGui::SetNextWindowSize(ImVec2(380, 420), ImGuiCond_FirstUseEver);
+	ImGui::SetNextWindowSize(ImVec2(380, 480), ImGuiCond_FirstUseEver);
 	ImGui::Begin("Frame Profiler", nullptr, ImGuiWindowFlags_NoFocusOnAppearing);
 
 	if (!frame_profiling_active() || History_ms.empty()) {
@@ -194,6 +230,8 @@ void profiler_overlay_draw() {
 
 		draw_pie_chart(get_frame_profiler_overlay_snapshot());
 	}
+
+	draw_graphics_debug_stats();
 
 	ImGui::End();
 
