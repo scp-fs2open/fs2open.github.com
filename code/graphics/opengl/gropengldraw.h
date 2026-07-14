@@ -39,6 +39,9 @@ extern GLuint Cockpit_depth_texture;
 extern GLuint Back_framebuffer;
 extern GLuint Back_texture;
 
+extern GLuint GammaBlit_framebuffer;
+extern GLuint GammaBlit_texture;
+
 void gr_opengl_update_distortion();
 
 void gr_opengl_sphere(material *material_def, float rad);
