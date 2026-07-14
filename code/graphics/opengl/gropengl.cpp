@@ -136,6 +136,11 @@ void gr_opengl_flip()
 
 		GL_state.SetAlphaBlendMode(gr_alpha_blend::ALPHA_BLEND_NONE);
 		GL_state.SetZbufferType(ZBUFFER_TYPE_NONE);
+		// The last material of the frame may have left color writes disabled (e.g. a masked
+		// model pass in the briefing map render). The old blit-only present ignored the color
+		// mask, but this is a regular draw and needs color writes and no stencil to take effect.
+		GL_state.ColorMask(true, true, true, true);
+		GL_state.StencilTest(GL_FALSE);
 
 		opengl_set_generic_uniform_data<graphics::generic_data::gamma_blit_data>(
 			[](graphics::generic_data::gamma_blit_data* data) {
