@@ -1608,11 +1608,18 @@ void sexp_tree_view::startOperatorQuickSearch(QTreeWidgetItem* item, const QStri
 void sexp_tree_view::filterOperatorPopup(const QString& text)
 {
 	_opList->clear();
+	SCP_set<QString> found_list;
+
 	if (text.isEmpty()) {
 		_opList->addItems(_opAll);
 	} else {
 		for (const auto& s : _opAll) {
-			if (s.contains(text, Qt::CaseInsensitive))
+			if (s.startsWith(text, Qt::CaseInsensitive))
+				_opList->addItem(s);
+		}
+
+		for (const auto& s : _opAll) {
+			if (s.contains(text, Qt::CaseInsensitive) && _opList->findItems(s, Qt::MatchExactly).isEmpty())
 				_opList->addItem(s);
 		}
 	}
