@@ -287,6 +287,25 @@ class VulkanDrawManager {
 	void invalidateGlobalSet() { m_globalSetDirty = true; }
 
 	/**
+	 * @brief Invalidate every memoized descriptor-set cache (Global + Material + PerDraw)
+	 *
+	 * These previous-set caches (see the class comments above m_cachedGlobalSet /
+	 * m_cachedMaterialSet / m_cachedPerDrawSet) assume nothing rebinds a *different*
+	 * descriptor set on the command buffer between applyMaterial() calls behind their
+	 * back. Code that renders directly on the command buffer without going through
+	 * applyMaterial (currently: ImGui's Vulkan backend, drawing into the same active
+	 * composition pass) breaks that assumption -- call this right afterward, alongside
+	 * VulkanStateTracker::invalidateExternalBindings(), so the next applyMaterial() rebuilds
+	 * and rebinds every set instead of trusting stale cached handles.
+	 */
+	void invalidateDrawStateCaches()
+	{
+		m_globalSetDirty = true;
+		m_cachedMaterialValid = false;
+		m_cachedPerDrawValid = false;
+	}
+
+	/**
 	 * @brief Get current texture addressing mode
 	 */
 	int getTextureAddressing() const
@@ -449,6 +468,14 @@ class VulkanDrawManager {
 	mutable FrameStats m_frameStats;
 	int m_frameStatsFrameNum = 0;
 
+  public:
+	/**
+	 * @brief Read-only access to this frame's diagnostic counters, e.g. for the ImGui profiler
+	 * overlay's -gr_debug section (see printFrameStats() for the nprintf equivalent)
+	 */
+	const FrameStats& getFrameStats() const { return m_frameStats; }
+
+  private:
 	// First-N debug-log counter for on-demand texture binds; a member rather
 	// than a function-local static so it resets on renderer restart. mutable because
 	// bindMaterialTextures is const. Gates nprintf spam only.
