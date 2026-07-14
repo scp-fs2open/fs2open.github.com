@@ -17,11 +17,15 @@ Events can repeat on a cooldown, depend on other events firing first, display ob
 on the HUD, trigger messages, and much more. The event list is the brain of a mission.</p>
 
 <h2>Event list and SEXP tree</h2>
-<p>The main area shows all events in the mission alongside their SEXP trees. Selecting an
-event expands its condition and action expressions for editing. Right-click any SEXP node
-to add, replace, or remove operators and arguments. See
+<p>The main area shows all events in the mission alongside their SEXP trees. 
+Clicking on the arrow of an event expands its condition and action expressions for editing.
+Right-click any SEXP node to add, replace, or remove operators and arguments. See
 <a href="../concepts/sexps.html">SEXPs</a> for a full overview of the expression
 language and the operators available.</p>
+<p>Several keyboard shortcuts are available for quick actions. Spacebar initiates edit
+or operator search. Double-clicking a leaf node (one that cannot be expanded) will do 
+the same. Double-clicking other nodes will only expand that part of the tree. Copy and
+pasting are also available.</p>
 <p>Events are evaluated in list order each frame. Order matters: events earlier in the
 list are processed first, which can affect timing when events interact.</p>
 
