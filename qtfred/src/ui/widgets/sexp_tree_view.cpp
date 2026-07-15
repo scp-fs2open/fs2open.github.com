@@ -2004,12 +2004,8 @@ void sexp_tree_view::editActionHandlerHelper(){
 	}
 
 	item_index = get_node(item);
-
-	if (_model.compute_context_menu_state().can_edit_text) {
-		editDataActionHandler();
-	} else {
-		openNodeEditor(currentItem());
-	}
+	// No longer gated to just certain types.
+	openNodeEditor(currentItem());
 }
 
 // Public entry point for deleting the currently selected item. Simply delegates to deleteActionHandler().
