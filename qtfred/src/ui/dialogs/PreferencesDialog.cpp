@@ -11,6 +11,31 @@
 namespace fso::fred::dialogs {
 namespace {
 
+int themeModeToIndex(ThemeMode mode)
+{
+	switch (mode) {
+	case ThemeMode::Light:
+		return 1;
+	case ThemeMode::Dark:
+		return 2;
+	case ThemeMode::System:
+		break;
+	}
+	return 0;
+}
+
+ThemeMode themeModeFromIndex(int index)
+{
+	switch (index) {
+	case 1:
+		return ThemeMode::Light;
+	case 2:
+		return ThemeMode::Dark;
+	default:
+		return ThemeMode::System;
+	}
+}
+
 class ControlKeySequenceEdit : public QKeySequenceEdit {
 public:
 	explicit ControlKeySequenceEdit(const QKeySequence& sequence, QWidget* parent)
@@ -94,7 +119,7 @@ void PreferencesDialog::updateUi() {
 	ui->alwaysSaveDisplayNames->setChecked(_model->getAlwaysSaveDisplayNames());
 	ui->checkPotentialIssues->setChecked(_model->getCheckPotentialIssues());
 	ui->applyAutoCorrections->setChecked(_model->getApplyAutoCorrections());
-	ui->themeCombo->setCurrentIndex(_model->getDarkMode() ? 1 : 0);
+	ui->themeCombo->setCurrentIndex(themeModeToIndex(_model->getThemeMode()));
 
 	const int iconSize = _model->getToolbarIconSize();
 	ui->toolbarIconSizeCombo->setCurrentIndex(iconSize <= 16 ? 0 : iconSize >= 32 ? 2 : 1);
@@ -173,7 +198,7 @@ void PreferencesDialog::on_outlineLodCombo_currentIndexChanged(int index) {
 }
 
 void PreferencesDialog::on_themeCombo_currentIndexChanged(int index) {
-	_model->setDarkMode(index == 1);
+	_model->setThemeMode(themeModeFromIndex(index));
 }
 
 void PreferencesDialog::on_showSexpHelpMissionEvents_toggled(bool checked) {

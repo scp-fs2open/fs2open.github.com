@@ -2,6 +2,7 @@
 
 #include "mission/dialogs/AbstractDialogModel.h"
 #include "ui/ControlBindings.h"
+#include "ui/ThemeMode.h"
 
 namespace fso::fred::dialogs {
 
@@ -54,8 +55,8 @@ public:
 	bool getShowSexpHelpWingEditor() const;
 	void setShowSexpHelpWingEditor(bool value);
 
-	bool getDarkMode() const;
-	void setDarkMode(bool value);
+	ThemeMode getThemeMode() const;
+	void setThemeMode(ThemeMode value);
 
 	int  getToolbarIconSize() const;
 	void setToolbarIconSize(int size);
@@ -100,7 +101,7 @@ private:
 	bool _showSexpHelpMissionCutscenes;
 	bool _showSexpHelpShipEditor;
 	bool _showSexpHelpWingEditor;
-	bool _darkMode;
+	ThemeMode _themeMode;
 	int  _toolbarIconSize;
 	int  _outlineLod;
 

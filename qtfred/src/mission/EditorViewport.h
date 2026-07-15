@@ -5,6 +5,7 @@
 #include "FredRenderer.h"
 #include "Editor.h"
 #include "IDialogProvider.h"
+#include "ui/ThemeMode.h"
 
 #include <object/object.h>
 
@@ -229,7 +230,7 @@ class EditorViewport {
 	bool Show_sexp_help_ship_editor = false;
 	bool Show_sexp_help_wing_editor = false;
 
-	bool Dark_mode = false;
+	ThemeMode Theme_mode = ThemeMode::System;
 
 	void saveSettings() const;
 

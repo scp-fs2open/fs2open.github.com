@@ -4,7 +4,6 @@
 
 #include <QApplication>
 #include <QDir>
-#include <QSettings>
 #include <QSplashScreen>
 #include <QStyleFactory>
 #include <QTimer>
@@ -107,12 +106,7 @@ int main(int argc, char* argv[]) {
 
 	// Use Fusion style unconditionally — required for reliable dynamic palette switching
 	QApplication::setStyle(QStyleFactory::create("Fusion"));
-	{
-		QSettings startupSettings;
-		startupSettings.beginGroup("Preferences");
-		fso::fred::applyEditorTheme(startupSettings.value("dark_mode", false).toBool());
-		startupSettings.endGroup();
-	}
+	fso::fred::applyEditorTheme(fso::fred::readThemeModeSetting());
 
 	// Expect that the platform library is in the same directory
 	QCoreApplication::addLibraryPath(QCoreApplication::applicationDirPath());	
