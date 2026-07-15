@@ -51,8 +51,8 @@ vec3d EffectHostObject::getVelocity() const {
 	return Objects[m_objnum].phys_info.vel;
 }
 
-std::pair<int, int> EffectHostObject::getParentObjAndSig() const {
-	return { m_objnum, m_objsig };
+effects::EffectAttachment EffectHostObject::getParentAttachment() const {
+	return {effects::attachment_object{m_objnum, m_objsig}};
 }
 
 float EffectHostObject::getHostRadius() const {

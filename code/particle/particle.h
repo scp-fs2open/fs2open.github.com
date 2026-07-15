@@ -16,6 +16,9 @@
 #include "object/object.h"
 
 #include <memory>
+#include <variant>
+
+#include "EffectHost.h"
 
 extern bool Randomize_particle_rotation;
 
@@ -69,6 +72,11 @@ namespace particle
 	extern int Anim_bitmap_id_smoke2;
 	extern int Anim_num_frames_smoke2;
 
+	struct particle;
+
+	typedef std::weak_ptr<particle> WeakParticlePtr;
+	typedef std::shared_ptr<particle> ParticlePtr;
+
 	typedef struct particle {
 		// old style data
 		vec3d	pos;				// position
@@ -81,8 +89,8 @@ namespace particle
 		int		nframes;			// If an ani, how many frames?	
 
 		// new style data
-		int		attached_objnum;	// if this is set, pos is relative to the attached object. velocity is ignored
-		int		attached_sig;		// to check for dead/nonexistent objects
+		effects::EffectAttachment attachment;
+
 		bool	reverse;			// play any animations in reverse
 		float   length;				// the length of the particle for laser-style rendering
 		float	angle;
@@ -90,9 +98,6 @@ namespace particle
 
 		ParticleSubeffectHandle parent_effect;
 	} particle;
-
-	typedef std::weak_ptr<particle> WeakParticlePtr;
-	typedef std::shared_ptr<particle> ParticlePtr;
 
 	/**
 	 * @brief Creates a non-persistent particle

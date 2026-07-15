@@ -104,6 +104,10 @@ namespace particle {
 			if (optional_string("+Remain local to parent:")) {
 				stuff_boolean(&effect.m_parent_local);
 			}
+			if (optional_string("+Intransitive parenting:")) {
+				stuff_boolean(&effect.m_parent_is_transitive);
+				effect.m_parent_is_transitive = !effect.m_parent_is_transitive;
+			}
 		}
 
 		template<bool modern = true> static void parseParticleNumber(ParticleEffect &effect) {
