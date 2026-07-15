@@ -747,6 +747,14 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$ships intercept mines:", AI::Profile_Flags::Ships_intercept_mines);
 
+				set_flag(profile, "$fix 'ignore if dead' flag:", AI::Profile_Flags::Fix_ignore_if_dead_flag);
+
+				set_flag(profile, "$no collision avoidance for kamikaze fighters:", AI::Profile_Flags::Kamikaze_no_collision_avoidance);
+
+				set_flag(profile, "$fix big ship waypoint completion:", AI::Profile_Flags::Fix_big_ship_waypoint_completion);
+
+				set_flag(profile, "$fix shockwave expiring before dealing damage:", AI::Profile_Flags::Fix_shockwave_expire_before_do_damage);
+
 
 				// end of options ----------------------------------------
 
@@ -969,5 +977,13 @@ void ai_profile_t::reset()
 		flags.set(AI::Profile_Flags::Fix_avoid_shockwave_bugs);
 		flags.set(AI::Profile_Flags::Purge_player_issued_form_on_wing_after_subsequent_order);
 		flags.set(AI::Profile_Flags::Cancel_future_waves_of_any_wing_launched_from_an_exited_ship);
+	}
+	if (mod_supports_version(26, 0, 0)) {
+		flags.set(AI::Profile_Flags::Fix_ignore_if_dead_flag);
+	}
+	if (mod_supports_version(26, 2, 0)) {
+		flags.set(AI::Profile_Flags::Kamikaze_no_collision_avoidance);
+		flags.set(AI::Profile_Flags::Fix_big_ship_waypoint_completion);
+		flags.set(AI::Profile_Flags::Fix_shockwave_expire_before_do_damage);
 	}
 }

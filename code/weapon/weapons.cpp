@@ -699,7 +699,11 @@ static particle::ParticleEffectHandle convertLegacyPspewBuffer(const pspew_legac
 
 			auto vel_vol_temp = std::make_unique<particle::PointVolume>();
 			vel_vol_temp->posOffset = vec3d {{{pspew_buffer.particle_spew_scale, 0.f, 0.f}}};
-			vel_vol_temp->m_modular_curves.add_curve("Time Running", particle::PointVolume::VolumeModularCurveOutput::OFFSET_ROT, modular_curves_entry{curve_id, ::util::UniformFloatRange(1.f), ::util::UniformFloatRange(0.f, 1.f / pspew_buffer.particle_spew_rotation_rate), true});
+			float rot_rnd_min = 0.f;
+			float rot_rnd_max = 1.0f / pspew_buffer.particle_spew_rotation_rate;
+			if (rot_rnd_max < rot_rnd_min)
+				std::swap(rot_rnd_min, rot_rnd_max);
+			vel_vol_temp->m_modular_curves.add_curve("Time Running", particle::PointVolume::VolumeModularCurveOutput::OFFSET_ROT, modular_curves_entry{curve_id, ::util::UniformFloatRange(1.f), ::util::UniformFloatRange(rot_rnd_min, rot_rnd_max), true});
 			velocity_vol = std::move(vel_vol_temp);
 		}
 			break;
@@ -743,7 +747,7 @@ static particle::ParticleEffectHandle convertLegacyPspewBuffer(const pspew_legac
 			absolutePositionVelocityInherit = true;
 			break;
 		default:
-			UNREACHABLE("Invalid PSPEW legacy type!");
+			UNREACHABLE("Invalid PSPEW legacy type %d!", pspew_buffer.particle_spew_type);
 	}
 
 	return particle::ParticleManager::get()->addEffect(particle::ParticleEffect(
@@ -5256,7 +5260,8 @@ void weapon_level_init()
 					case LockRestrictionType::CLASS: idx = ship_info_lookup(name); break;
 					case LockRestrictionType::SPECIES: idx = species_info_lookup(name); break;
 					case LockRestrictionType::IFF: idx = iff_lookup(name); break;
-					default: Assertion(false, "Unknown multi lock restriction type %d", (int)pair.first);
+					default:
+						UNREACHABLE("Unknown multi lock restriction type %d", static_cast<int>(pair.first));
 						idx = -1;
 				}
 				if ( idx >= 0 ) {
@@ -5336,8 +5341,10 @@ void weapon_delete(object *obj)
 	if (wp->hud_in_flight_snd_sig.isValid() && snd_is_playing(wp->hud_in_flight_snd_sig))
 		snd_stop(wp->hud_in_flight_snd_sig);
 
-	if (wp->model_instance_num >= 0)
+	if (wp->model_instance_num >= 0) {
 		model_delete_instance(wp->model_instance_num);
+		wp->model_instance_num = -1;
+	}
 
 	if (wp->cmeasure_ignore_list != nullptr) {
 		delete wp->cmeasure_ignore_list;
@@ -5834,8 +5841,21 @@ void weapon_home(object *obj, int num, float frame_time)
 	if (wp->homing_subsys != NULL) {
 		if (wp->homing_subsys->flags[Ship::Subsystem_Flags::Missiles_ignore_if_dead]) {
 			if ((wp->homing_subsys->max_hits > 0) && (wp->homing_subsys->current_hits <= 0)) {
-				wp->homing_object = &obj_used_list;
-				return;
+				if (The_mission.ai_profile->flags[AI::Profile_Flags::Fix_ignore_if_dead_flag]) {
+					// fixed way: clear dead subsys so the missile picks a hull attack point 
+					// or, for Javelins, re-acquire another engine
+					wp->homing_subsys = nullptr;
+					if (wip->wi_flags[Weapon::Info_Flags::Homing_javelin] && hobjp->type == OBJ_SHIP) {
+						int sindex = ship_get_by_signature(wp->target_sig);
+						if (sindex >= 0) {
+							wp->homing_subsys = ship_get_closest_subsys_in_sight(&Ships[sindex], SUBSYSTEM_ENGINE, &obj->pos);
+						}
+					}
+				} else {
+					// old way: resulted in weapon not homing
+					wp->homing_object = &obj_used_list;
+					return;
+				}
 			}
 		}
 	}

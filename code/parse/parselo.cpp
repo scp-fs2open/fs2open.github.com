@@ -4978,8 +4978,8 @@ int parse_modular_table(const char *name_check, void (*parse_callback)(const cha
 	SCP_vector<SCP_string> tbl_file_names;
 	int i, num_files = 0;
 
-	if ( (name_check == NULL) || (parse_callback == NULL) || ((*name_check) != '*') ) {
-		UNREACHABLE("parse_modular_table() called with invalid arguments; get a coder!\n");
+	Assertion( (name_check != nullptr) && (parse_callback != nullptr) && ((*name_check) == '*'), "parse_modular_table() called with invalid arguments; get a coder!\n");
+	if ( (name_check == nullptr) || (parse_callback == nullptr) || ((*name_check) != '*') ) {
 		return 0;
 	}
 

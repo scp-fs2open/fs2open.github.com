@@ -552,6 +552,116 @@ int dds_read_bitmap(const char *filename, ubyte *data, ubyte *bpp, int cf_type)
 	return DDS_ERROR_NONE;
 }
 
+int dds_decompress_top_mip_bgra(const char *filename, int cf_type,
+                                int *out_width, int *out_height,
+                                SCP_vector<ubyte> &out_pixels)
+{
+	Assert(filename != nullptr);
+
+	// normalize to a .dds extension, same as dds_read_bitmap
+	char real_name[MAX_FILENAME_LEN];
+	strcpy_s(real_name, filename);
+	char *p = strchr(real_name, '.');
+	if (p) { *p = 0; }
+	strcat_s(real_name, ".dds");
+
+	CFILE *cfp = cfopen(real_name, "rb", cf_type);
+	if (cfp == nullptr)
+		return DDS_ERROR_INVALID_FILENAME;
+
+	DDS_HEADER dds_header;
+	DDS_HEADER_DXT10 dx10_header;
+	int retval = _dds_read_header(cfp, dds_header, &dx10_header);
+	if (retval != DDS_ERROR_NONE) {
+		cfclose(cfp);
+		return retval;
+	}
+
+	// only 2D FOURCC-compressed images are supported here
+	if (!(dds_header.ddspf.dwFlags & DDPF_FOURCC) ||
+	    (dds_header.dwCaps2 & (DDSCAPS2_CUBEMAP | DDSCAPS2_VOLUME)) ||
+	    (dds_header.dwFlags & DDSD_DEPTH) ||
+	    (dds_header.dwDepth > 1)) {
+		cfclose(cfp);
+		return DDS_ERROR_UNSUPPORTED;
+	}
+
+	void (*decode)(const void *, void *, int) = nullptr;
+	int block_size = 0;
+	switch (dds_header.ddspf.dwFourCC) {
+		case FOURCC_DXT1: decode = bcdec_bc1; block_size = BCDEC_BC1_BLOCK_SIZE; break;
+		case FOURCC_DXT3: decode = bcdec_bc2; block_size = BCDEC_BC2_BLOCK_SIZE; break;
+		case FOURCC_DXT5: decode = bcdec_bc3; block_size = BCDEC_BC3_BLOCK_SIZE; break;
+		case FOURCC_DX10:
+			if (!valid_dx10_format(dx10_header) ||
+			    dx10_header.resourceDimension != D3D10_RESOURCE_DIMENSION::D3D10_RESOURCE_DIMENSION_TEXTURE2D ||
+			    dx10_header.arraySize > 1) {
+				cfclose(cfp);
+				return DDS_ERROR_UNSUPPORTED;
+			}
+			decode = bcdec_bc7;
+			block_size = BCDEC_BC7_BLOCK_SIZE;
+			break;
+		default:
+			cfclose(cfp);
+			return DDS_ERROR_UNSUPPORTED;
+	}
+
+	const int w = static_cast<int>(dds_header.dwWidth);
+	const int h = static_cast<int>(dds_header.dwHeight);
+	if (w <= 0 || h <= 0) {
+		cfclose(cfp);
+		return DDS_ERROR_INVALID_FORMAT;
+	}
+
+	// BCn data is stored as ceil(w/4) * ceil(h/4) 4x4 blocks; dimensions
+	// don't have to be multiples of 4.
+	const int blocks_w = (w + 3) / 4;
+	const int blocks_h = (h + 3) / 4;
+	const int padded_w = blocks_w * 4;
+	const int padded_h = blocks_h * 4;
+	const size_t compressed_size = static_cast<size_t>(blocks_w) * blocks_h * block_size;
+
+	// _dds_read_header leaves the file positioned right after the header
+	// (including the DX10 sub-header if present), so the next read is the
+	// top mip's pixel data.
+	SCP_vector<ubyte> compressed(compressed_size);
+	const int got = cfread(compressed.data(), 1, static_cast<int>(compressed_size), cfp);
+	cfclose(cfp);
+	if (got != static_cast<int>(compressed_size))
+		return DDS_ERROR_INVALID_FORMAT;
+
+	// Decode into a padded buffer so edge blocks have room, then crop to w*h.
+	SCP_vector<ubyte> decoded(static_cast<size_t>(padded_w) * padded_h * 4);
+	const int dec_stride = padded_w * 4;
+	const ubyte *src = compressed.data();
+
+	for (int by = 0; by < blocks_h; ++by) {
+		for (int bx = 0; bx < blocks_w; ++bx) {
+			ubyte *blk_dst = decoded.data() + (by * 4) * dec_stride + (bx * 4) * 4;
+			decode(src, blk_dst, dec_stride);
+			src += block_size;
+		}
+	}
+
+	out_pixels.assign(static_cast<size_t>(w) * h * 4, 0);
+	const int dst_stride = w * 4;
+	for (int y = 0; y < h; ++y) {
+		std::memcpy(out_pixels.data() + static_cast<size_t>(y) * dst_stride,
+		            decoded.data() + static_cast<size_t>(y) * dec_stride,
+		            static_cast<size_t>(dst_stride));
+	}
+
+	// bcdec outputs RGBA byte-order; swap to BGRA
+	for (size_t x = 0; x < out_pixels.size(); x += 4) {
+		std::swap(out_pixels[x], out_pixels[x + 2]);
+	}
+
+	if (out_width) *out_width = w;
+	if (out_height) *out_height = h;
+	return DDS_ERROR_NONE;
+}
+
 // save some image data as a DDS image
 // NOTE: we only support, uncompressed, 24-bit RGB and 32-bit RGBA images here!!
 void dds_save_image(int width, int height, int bpp, int num_mipmaps, ubyte *data, int cubemap, const char *filename)

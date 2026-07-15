@@ -83,16 +83,6 @@
     <property name="title">
      <string>&amp;View</string>
     </property>
-    <widget class="QMenu" name="menuOutline_LOD">
-     <property name="title">
-      <string>Outline LOD</string>
-     </property>
-     <addaction name="actionOutline_LOD_0"/>
-     <addaction name="actionOutline_LOD_1"/>
-     <addaction name="actionOutline_LOD_2"/>
-     <addaction name="actionOutline_LOD_3"/>
-     <addaction name="actionOutline_LOD_4"/>
-    </widget>
     <widget class="QMenu" name="menuViewpoint">
      <property name="title">
       <string>&amp;Viewpoint</string>
@@ -100,8 +90,9 @@
      <addaction name="actionCamera"/>
      <addaction name="actionCurrent_Ship"/>
     </widget>
+    <addaction name="actionSceneBrowser"/>
+    <addaction name="separator"/>
     <addaction name="actionVisibility_Layers"/>
-    <addaction name="menuOutline_LOD"/>
     <addaction name="separator"/>
     <addaction name="actionShow_Background"/>
     <addaction name="actionShow_Ship_Models"/>
@@ -308,7 +299,7 @@
    <addaction name="actionConstrainYZ"/>
    <addaction name="actionConstrainXY"/>
    <addaction name="separator"/>
-   <addaction name="actionSelectionList"/>
+   <addaction name="actionSceneBrowser"/>
    <addaction name="actionSelectionLock"/>
    <addaction name="separator"/>
    <addaction name="actionWingForm"/>
@@ -472,12 +463,15 @@
     <string>Constrain movement/rotation to XY plane</string>
    </property>
   </action>
-  <action name="actionSelectionList">
+  <action name="actionSceneBrowser">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
-    <string>SelectionList</string>
+    <string>Scene Browser</string>
    </property>
    <property name="toolTip">
-    <string>Selection List (H)</string>
+    <string>Toggle Scene Browser (H)</string>
    </property>
    <property name="shortcut">
     <string>H</string>
@@ -881,46 +875,6 @@
    </property>
    <property name="text">
     <string>Current &amp;Ship</string>
-   </property>
-  </action>
-  <action name="actionOutline_LOD_0">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>LOD 0 (highest detail)</string>
-   </property>
-  </action>
-  <action name="actionOutline_LOD_1">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>LOD 1</string>
-   </property>
-  </action>
-  <action name="actionOutline_LOD_2">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>LOD 2</string>
-   </property>
-  </action>
-  <action name="actionOutline_LOD_3">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>LOD 3</string>
-   </property>
-  </action>
-  <action name="actionOutline_LOD_4">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>LOD 4 (lowest detail)</string>
    </property>
   </action>
   <action name="actionx1">

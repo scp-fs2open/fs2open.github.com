@@ -39,11 +39,14 @@ extern GLuint Cockpit_depth_texture;
 extern GLuint Back_framebuffer;
 extern GLuint Back_texture;
 
+extern GLuint GammaBlit_framebuffer;
+extern GLuint GammaBlit_texture;
+
 void gr_opengl_update_distortion();
 
 void gr_opengl_sphere(material *material_def, float rad);
 
-void gr_opengl_shadow_map_start(matrix4 *shadow_view_matrix, const matrix *light_orient, vec3d* eye_pos);
+void gr_opengl_shadow_map_start(matrix4 *shadow_view_matrix, const matrix *light_orient, vec3d* eye_pos, bool first_pass);
 void gr_opengl_shadow_map_end();
 
 void gr_opengl_render_shield_impact(shield_material* material_info,

@@ -19,6 +19,7 @@
 #include "fireball/fireballs.h"
 #include "gamesequence/gamesequence.h"
 #include "gamesnd/gamesnd.h"
+#include "graphics/shadows.h"
 #include "hud/hudmessage.h"
 #include "io/timer.h"
 #include "lighting/lighting.h"
@@ -1556,10 +1557,6 @@ void shipfx_queue_render_ship_halves_and_debris(model_draw_list *scene, clip_shi
 	// set up render flags
 	uint64_t render_flags = MR_NORMAL;
 
-	if ( Rendering_to_shadow_map ) {
-		render_flags |= MR_NO_TEXTURING | MR_NO_LIGHTING;
-	}
-
 	if (shipp->flags[Ship::Ship_Flags::Glowmaps_disabled]) {
 		render_flags |= MR_NO_GLOWMAPS;
 	}
@@ -2045,6 +2042,39 @@ void shipfx_large_blowup_queue_render(model_draw_list *scene, ship* shipp)
 	}
 }
 
+void shipfx_shadow_render_blowup(shadow_render_list* shadow_list, ship* shipp)
+{
+	Assert(shipp->large_ship_blowup_index > -1);
+	Assert(shipp->large_ship_blowup_index < (int)Split_ships.size());
+
+	split_ship* the_split_ship = &Split_ships[shipp->large_ship_blowup_index];
+	Assert(the_split_ship->used);
+
+	auto pmi = model_get_instance(shipp->model_instance_num);
+	auto pm = model_get(pmi->model_num);
+
+	for (int half_idx = 0; half_idx < 2; half_idx++) {
+		clip_ship* half = (half_idx == 0) ? &the_split_ship->front_ship : &the_split_ship->back_ship;
+		if (half->length_left <= 0) continue;
+
+		vec3d clip_plane_norm, orig_ship_world_center, model_clip_plane_pt;
+		vm_vec_unrotate(&clip_plane_norm, &half->clip_plane_norm, &half->orient);
+		vm_vec_unrotate(&orig_ship_world_center, &half->model_center_disp_to_orig_center, &half->orient);
+		vm_vec_add2(&orig_ship_world_center, &half->local_pivot);
+
+		vec3d temp;
+		vm_vec_make(&temp, 0.0f, 0.0f, half->cur_clip_plane_pt);
+		vm_vec_unrotate(&model_clip_plane_pt, &temp, &half->orient);
+		vm_vec_add2(&model_clip_plane_pt, &orig_ship_world_center);
+
+		shadow_render_list::clip_plane_info clip;
+		clip.normal = clip_plane_norm;
+		clip.position = model_clip_plane_pt;
+
+		shadow_render_list::add_model_draws(shadow_list, pm, pmi, shipp->objnum, &half->local_pivot, &half->orient, &clip);
+	}
+}
+
 // ================== DO THE ELECTRIC ARCING STUFF =====================
 // Creates any new ones, moves old ones.
 
@@ -2273,7 +2303,7 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 					break;
 
 				default:
-					UNREACHABLE("Unhandled case %d for electrical arc creation in shipfx_do_lightning_arcs_frame()!", n);
+					Assertion(false, "Unhandled case %d for electrical arc creation in shipfx_do_lightning_arcs_frame()!", n);
 				}
 
 				// determine what kind of arc to create
@@ -2842,302 +2872,6 @@ void shipfx_stop_engine_wash_sound()
 		Player_engine_wash_loop = sound_handle::invalid();
 	}
 }
-
-class CombinedVariable
-{
-public:
-	static const int TYPE_NONE;
-	static const int TYPE_FLOAT;
-	static const int TYPE_IMAGE;
-	static const int TYPE_INT;
-	static const int TYPE_SOUND;
-	static const int TYPE_STRING;
-private:
-	int Type;
-	float	su_Float;
-	int		su_Image;
-	int		su_Int;
-	gamesnd_id su_Sound;
-	char	*su_String;
-public:
-	//TYPE_NONE
-	CombinedVariable();
-	//TYPE_FLOAT
-	CombinedVariable(float n_Float);
-	//TYPE_INT
-	CombinedVariable(int n_Int);
-	//TYPE_IMAGE
-	CombinedVariable(int n_Int, ubyte type_override);
-	//TYPE_SOUND
-	CombinedVariable(gamesnd_id n_snd);
-	//TYPE_STRING
-	CombinedVariable(char *n_String);
-	//All types
-	~CombinedVariable();
-
-	//Returns 1 if buffer was successfully written to
-	int getFloat(float *output);
-	//Returns handle or < 0 on failure/wrong type
-	int getHandle();
-	//Returns handle, or < 0 on failure/wrong type
-	int getImage();
-	//Returns 1 if buffer was successfully written to
-	int getInt(int *output);
-	//Returns handle, or < 0 on failure/wrong type
-	gamesnd_id getSound();
-	//Returns 1 if buffer was successfully written to (output_max includes the null terminator)
-	int getString(char *output, size_t output_max);
-
-	//Returns true if TYPE_NONE
-	bool isEmpty();
-};
-
-//Workaround for MSVC6
-const int CombinedVariable::TYPE_NONE=0;
-const int CombinedVariable::TYPE_FLOAT = 1;
-const int CombinedVariable::TYPE_IMAGE = 2;
-const int CombinedVariable::TYPE_INT = 3;
-const int CombinedVariable::TYPE_SOUND = 4;
-const int CombinedVariable::TYPE_STRING  = 5;
-
-//Member functions
-CombinedVariable::CombinedVariable()
-{
-	Type = TYPE_NONE;
-}
-
-CombinedVariable::CombinedVariable(float n_Float)
-{
-	Type = TYPE_FLOAT;
-	su_Float = n_Float;
-}
-
-CombinedVariable::CombinedVariable(int n_Int)
-{
-	Type = TYPE_INT;
-	su_Int = n_Int;
-}
-
-CombinedVariable::CombinedVariable(int n_Int, ubyte type_override)
-{
-	if(type_override == TYPE_IMAGE)
-	{
-		Type = TYPE_IMAGE;
-		su_Image = n_Int;
-	}
-	else
-	{
-		Type = TYPE_INT;
-		su_Int = n_Int;
-	}
-}
-CombinedVariable::CombinedVariable(gamesnd_id n_snd) {
-	Type = TYPE_SOUND;
-	su_Sound = n_snd;
-}
-
-CombinedVariable::CombinedVariable(char *n_String)
-{
-	Type = TYPE_STRING;
-	su_String = (char *)vm_malloc(strlen(n_String)+1);
-	strcpy(su_String, n_String);
-}
-
-CombinedVariable::~CombinedVariable()
-{
-	if(Type == TYPE_STRING)
-	{
-		vm_free(su_String);
-	}
-}
-
-int CombinedVariable::getFloat(float *output)
-{
-	if(Type == TYPE_FLOAT)
-	{
-		*output  = su_Float;
-		return 1;
-	}
-	if(Type == TYPE_IMAGE)
-	{
-		*output = i2fl(su_Image);
-		return 1;
-	}
-	if(Type == TYPE_INT)
-	{
-		*output = i2fl(su_Int);
-		return 1;
-	}
-	if(Type == TYPE_STRING)
-	{
-		*output = (float)atof(su_String);
-		return 1;
-	}
-	return 0;
-}
-int CombinedVariable::getHandle()
-{
-	int i = 0;
-	if(this->getInt(&i))
-		return i;
-	else
-		return -1;
-}
-int CombinedVariable::getImage()
-{
-	if(Type == TYPE_IMAGE)
-		return this->getHandle();
-	else
-		return -1;
-}
-int CombinedVariable::getInt(int *output)
-{
-	if(output == NULL)
-		return 0;
-
-	if(Type == TYPE_FLOAT)
-	{
-		*output  = fl2i(su_Float);
-		return 1;
-	}
-	if(Type == TYPE_IMAGE)
-	{
-		*output = su_Image;
-		return 1;
-	}
-	if(Type == TYPE_INT)
-	{
-		*output = su_Int;
-		return 1;
-	}
-	if(Type == TYPE_STRING)
-	{
-		*output = atoi(su_String);
-		return 1;
-	}
-
-	return 0;
-}
-gamesnd_id CombinedVariable::getSound()
-{
-	if(Type == TYPE_SOUND)
-		return su_Sound;
-	else
-		return {};
-}
-int CombinedVariable::getString(char *output, size_t output_max)
-{
-	if(output == NULL || output_max == 0)
-		return 0;
-
-	if(Type == TYPE_FLOAT)
-	{
-		snprintf(output, output_max, "%f", su_Float);
-		return 1;
-	}
-	if(Type == TYPE_IMAGE)
-	{
-		if(bm_is_valid(su_Image))
-			snprintf(output, output_max, "%s", bm_get_filename(su_Image));
-		return 1;
-	}
-	if(Type == TYPE_INT)
-	{
-		snprintf(output, output_max, "%i", su_Int);
-		return 1;
-	}
-	if(Type == TYPE_SOUND)
-	{
-		Error(LOCATION, "Sound CombinedVariables are not supported yet.");
-		/*if(snd_is_valid(su_Sound))
-			snprintf(output, output_max, "%s", snd_get_filename(su_Sound));*/
-		return 1;
-	}
-	if(Type == TYPE_STRING)
-	{
-		strncpy(output, su_String, output_max);
-		return 1;
-	}
-	return 0;
-}
-bool CombinedVariable::isEmpty()
-{
-	return (Type != TYPE_NONE);
-}
-
-void parse_combined_variable_list(CombinedVariable *dest, flag_def_list *src, size_t num)
-{
-	if(dest == NULL || src == NULL || num == 0)
-		return;
-
-	char buf[NAME_LENGTH*2];
-	buf[sizeof(buf)-1] = '\0';
-
-	flag_def_list *sp = NULL;
-	CombinedVariable *dp = NULL;
-	for(size_t i = 0; i < num; i++)
-	{
-		sp = &src[i];
-		dp = &dest[i];
-
-		snprintf(buf, sizeof(buf), "+%s:", sp->name);
-		if(optional_string(buf))
-		{
-			switch(sp->var)
-			{
-				case CombinedVariable::TYPE_FLOAT:
-				{
-					float f = 0.0f;
-					stuff_float(&f);
-					*dp = CombinedVariable(f);
-					break;
-				}
-				case CombinedVariable::TYPE_INT:
-				{
-					int myInt = 0;
-					stuff_int(&myInt);
-					*dp = CombinedVariable(myInt);
-					break;
-				}
-				case CombinedVariable::TYPE_IMAGE:
-				{
-					char buf2[MAX_FILENAME_LEN];
-					stuff_string(buf2, F_NAME, MAX_FILENAME_LEN);
-					int idx = bm_load(buf2);
-					*dp = CombinedVariable(idx, CombinedVariable::TYPE_IMAGE);
-					break;
-				}
-				case CombinedVariable::TYPE_SOUND:
-				{
-					char buf2[MAX_FILENAME_LEN];
-					stuff_string(buf2, F_NAME, MAX_FILENAME_LEN);
-					auto idx = gamesnd_get_by_name(buf);
-					*dp = CombinedVariable(idx);
-					break;
-				}
-				case CombinedVariable::TYPE_STRING:
-				{
-					char buf2[MAX_NAME_LEN + MAX_FILENAME_LEN];
-					stuff_string(buf2, F_NAME, MAX_FILENAME_LEN+MAX_NAME_LEN);
-					*dp = CombinedVariable(buf2);
-					break;
-				}
-			}
-		}
-	}
-}
-
-#define WV_ANIMATION		0
-#define WV_RADIUS			1
-#define WV_SPEED			2
-#define WV_TIME				3
-
-flag_def_list Warp_variables[] = {
-	{"Animation",		WV_ANIMATION,		CombinedVariable::TYPE_STRING},
-	{"Radius",			WV_RADIUS,			CombinedVariable::TYPE_FLOAT},
-	{"Speed",			WV_SPEED,			CombinedVariable::TYPE_FLOAT},
-	{"Time",			WV_TIME,			CombinedVariable::TYPE_FLOAT},
-};
 
 
 WarpParams::WarpParams()

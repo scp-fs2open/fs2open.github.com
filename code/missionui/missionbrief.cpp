@@ -821,7 +821,7 @@ void brief_compact_stages()
 
 			Briefing->stages[num].num_icons = 0;
 			for ( i = num+1; i < Briefing->num_stages; i++ ) {
-				Briefing->stages[i-1] = Briefing->stages[i];
+				swap(Briefing->stages[i-1], Briefing->stages[i]);
 			}
 			Briefing->num_stages--;
 			continue;
@@ -832,7 +832,7 @@ void brief_compact_stages()
 	// completely clear out the old entries (if any) so we don't access them by mistake - taylor
 	if ( before > Briefing->num_stages ) {
 		for ( i = Briefing->num_stages; i < before; i++ ) {
-			Briefing->stages[i] = brief_stage();
+			Briefing->stages[i].reset();
 		}
 	}
 }
@@ -1097,7 +1097,7 @@ void brief_render_closeup(int ship_class, float frametime)
 			auto pm = model_get(Closeup_icon->modelnum);
 
 			gr_reset_clip();
-			shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, gr_screen.clip_aspect, -Closeup_cam_pos.xyz.z + pm->rad, -Closeup_cam_pos.xyz.z + pm->rad + 200.0f, -Closeup_cam_pos.xyz.z + pm->rad + 2000.0f, -Closeup_cam_pos.xyz.z + pm->rad + 10000.0f);
+			shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, Proj_fov, gr_screen.clip_aspect, SCP_vector {{-Closeup_cam_pos.xyz.z + pm->rad, -Closeup_cam_pos.xyz.z + pm->rad + 200.0f, -Closeup_cam_pos.xyz.z + pm->rad + 2000.0f, -Closeup_cam_pos.xyz.z + pm->rad + 10000.0f}});
 			render_info.set_flags(MR_NO_TEXTURING | MR_NO_LIGHTING | MR_AUTOCENTER);
 
 			model_render_immediate(&render_info, Closeup_icon->modelnum, Closeup_icon->model_instance_num, &Closeup_orient, &Closeup_pos);

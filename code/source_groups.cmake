@@ -247,6 +247,7 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/fxaa-v.sdr
 	def_files/data/effects/fxaapre-f.sdr
 	def_files/data/effects/gamma.sdr
+	def_files/data/effects/gamma-correct-f.sdr
 	def_files/data/effects/irrmap-f.sdr
 	def_files/data/effects/lighting.sdr
 	def_files/data/effects/ls-f.sdr
@@ -266,6 +267,9 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/post-v.sdr
 	def_files/data/effects/rocketui-f.sdr
 	def_files/data/effects/rocketui-v.sdr
+	def_files/data/effects/shadow_map-f.sdr
+	def_files/data/effects/shadow_map-g.sdr
+	def_files/data/effects/shadow_map-v.sdr
 	def_files/data/effects/shadows.sdr
 	def_files/data/effects/shield-impact-v.sdr
 	def_files/data/effects/shield-impact-f.sdr
@@ -469,6 +473,7 @@ add_file_folder("Graphics"
 	graphics/post_processing.h
 	graphics/render.cpp
 	graphics/render.h
+	graphics/render_queue.h
 	graphics/shadows.cpp
 	graphics/shadows.h
 	graphics/tmapper.h
@@ -850,6 +855,14 @@ add_file_folder("MissionEditor"
 	missioneditor/missionsave.h
 	missioneditor/objectduplication.cpp
 	missioneditor/objectduplication.h
+	missioneditor/sexp_annotation_model.cpp
+	missioneditor/sexp_annotation_model.h
+	missioneditor/sexp_tree_model.cpp
+	missioneditor/sexp_tree_model.h
+	missioneditor/sexp_tree_opf.cpp
+	missioneditor/sexp_tree_opf.h
+	missioneditor/sexp_tree_actions.cpp
+	missioneditor/sexp_tree_actions.h
 )
 
 # MissionUI files
@@ -1125,6 +1138,7 @@ add_file_folder("Parse\\\\SEXP"
 # Particle files
 add_file_folder("Particle"
 	particle/EffectHost.h
+	particle/EffectHost.cpp
 	particle/particle.cpp
 	particle/particle.h
 	particle/ParticleEffect.cpp
@@ -1643,6 +1657,11 @@ elseif (APPLE)
 		${file_root_sound}
 		sound/speech_mac.mm
 	)
+elseif (ANDROID)
+	add_file_folder("Sound"
+		${file_root_sound}
+		sound/speech_android.cpp
+	)
 elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
 	add_file_folder("Sound"
 		${file_root_sound}
@@ -1747,6 +1766,7 @@ add_file_folder("Utils"
 	utils/Random.cpp
 	utils/Random.h
 	utils/RandomRange.h
+	utils/reset_on_move.h
 	utils/string_utils.cpp
 	utils/string_utils.h
 	utils/table_viewer.cpp

@@ -5,6 +5,7 @@
 #include "AbstractDialogModel.h"
 
 #include "mission/missionbriefcommon.h"
+#include "ui/widgets/sexp_tree_view.h"
 
 namespace fso::fred::dialogs {
 
@@ -32,7 +33,10 @@ class BriefingEditorDialogModel : public AbstractDialogModel {
 	SCP_string getSpeechFilename();
 	void setSpeechFilename(const SCP_string& speechFilename);
 	int getFormula() const;
-	void setFormula(int formula);
+
+	void setTreeControl(sexp_tree_view* tree) { _sexpTree = tree; }
+	void setModified() { set_modified(); }
+	void commitCurrentFormula();
 
 	void gotoPreviousStage();
 	void gotoNextStage();
@@ -70,7 +74,8 @@ class BriefingEditorDialogModel : public AbstractDialogModel {
 	vec3d getIconPosition() const;
 	void setIconPosition(const vec3d& pos);
 	int getIconId() const;
-	void setIconId(int id);
+	// returns false if the requested id was rejected (e.g. it collides with another icon)
+	bool setIconId(int id);
 	SCP_string getIconLabel() const;
 	void setIconLabel(const SCP_string& text);
 	SCP_string getIconCloseupLabel() const;
@@ -144,6 +149,7 @@ class BriefingEditorDialogModel : public AbstractDialogModel {
 	TriStateBool getSelectedIconFlagState(int flag) const;
 
 	briefing _wipBriefings[MAX_TVT_TEAMS];
+	sexp_tree_view* _sexpTree = nullptr;
 	int _briefingMusicIndex;
 	SCP_string _subBriefingMusic;
 

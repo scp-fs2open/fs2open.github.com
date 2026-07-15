@@ -11,6 +11,7 @@
 #include "ShipAltShipClass.h"
 
 #include <mission/dialogs/ShipEditor/ShipEditorDialogModel.h>
+#include <missioneditor/sexp_tree_model.h>
 #include <ui/FredView.h>
 #include <QtWidgets/QDialog>
 
@@ -80,19 +81,21 @@ class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	void on_arrivalDelaySpinBox_valueChanged(int);
 	void on_updateArrivalCueCheckBox_toggled(bool);
 	void on_noArrivalWarpCheckBox_stateChanged(int);
-	void on_arrivalTree_rootNodeFormulaChanged(int, int);
+	void on_arrivalTree_modified();
 	void on_arrivalTree_helpChanged(const QString&);
 	void on_arrivalTree_miniHelpChanged(const QString&);
+	void on_dockWarpinCheckBox_stateChanged(int);
 
 	//departure
 	void on_departureLocationCombo_currentIndexChanged(int);
 	void on_departureTargetCombo_currentIndexChanged(int);
 	void on_departureDelaySpinBox_valueChanged(int);
 	void on_updateDepartureCueCheckBox_toggled(bool);
-	void on_departureTree_rootNodeFormulaChanged(int, int);
+	void on_departureTree_modified();
 	void on_departureTree_helpChanged(const QString&);
 	void on_departureTree_miniHelpChanged(const QString&);
 	void on_noDepartureWarpCheckBox_stateChanged(int);
+	void on_dockWarpoutCheckBox_stateChanged(int);
   private: // NOLINT(readability-redundant-access-specifiers)
 	std::unique_ptr<Ui::ShipEditorDialog> ui;
 	std::unique_ptr<ShipEditorDialogModel> _model;

@@ -129,6 +129,7 @@ void EditorViewport::loadSettings() {
 	QSettings settings;
 	settings.beginGroup(SETTINGS_GROUP);
 	toolbar_icon_size                  = settings.value("toolbar_icon_size",                  toolbar_icon_size).toInt();
+	sexp_number_every_n                = settings.value("sexp_number_every_n",                sexp_number_every_n).toInt();
 	Offer_autosave_recovery            = settings.value("offer_autosave_recovery",            Offer_autosave_recovery).toBool();
 	autosave_interval_seconds         = settings.value("autosave_interval_seconds",          autosave_interval_seconds).toInt();
 	Create_bak_on_save                 = settings.value("create_bak_on_save",                 Create_bak_on_save).toBool();
@@ -165,6 +166,9 @@ void EditorViewport::loadSettings() {
 	view.Show_waypoints                    = settings.value("view_show_waypoints",                    view.Show_waypoints).toBool();
 	view.Show_compass                      = settings.value("view_show_compass",                      view.Show_compass).toBool();
 	view.Highlight_selectable_subsys       = settings.value("view_highlight_selectable_subsys",       view.Highlight_selectable_subsys).toBool();
+	view.Outline_lod                       = settings.value("view_outline_lod",                       view.Outline_lod).toInt();
+	camera.setInvertOrbitX(settings.value("camera_invert_orbit_x", camera.getInvertOrbitX()).toBool());
+	camera.setInvertOrbitY(settings.value("camera_invert_orbit_y", camera.getInvertOrbitY()).toBool());
 	settings.endGroup();
 }
 
@@ -172,6 +176,7 @@ void EditorViewport::saveSettings() const {
 	QSettings settings;
 	settings.beginGroup(SETTINGS_GROUP);
 	settings.setValue("toolbar_icon_size",                   toolbar_icon_size);
+	settings.setValue("sexp_number_every_n",                 sexp_number_every_n);
 	settings.setValue("offer_autosave_recovery",             Offer_autosave_recovery);
 	settings.setValue("autosave_interval_seconds",          autosave_interval_seconds);
 	settings.setValue("create_bak_on_save",                  Create_bak_on_save);
@@ -208,6 +213,9 @@ void EditorViewport::saveSettings() const {
 	settings.setValue("view_show_waypoints",                    view.Show_waypoints);
 	settings.setValue("view_show_compass",                      view.Show_compass);
 	settings.setValue("view_highlight_selectable_subsys",       view.Highlight_selectable_subsys);
+	settings.setValue("view_outline_lod",                       view.Outline_lod);
+	settings.setValue("camera_invert_orbit_x",                  camera.getInvertOrbitX());
+	settings.setValue("camera_invert_orbit_y",                  camera.getInvertOrbitY());
 	settings.endGroup();
 }
 void EditorViewport::needsUpdate() {
@@ -712,15 +720,19 @@ int EditorViewport::object_check_collision(object* objp, vec3d* p0, vec3d* p1, v
 		return 0;
 	}
 
-	if ((view.Show_ship_models || view.Show_outlines) && (objp->type == OBJ_SHIP)) {
-		mc.model_num = Ship_info[Ships[objp->instance].ship_info_index].model_num; // Fill in the model to check
-	} else if ((view.Show_ship_models || view.Show_outlines) && (objp->type == OBJ_START)) {
-		mc.model_num = Ship_info[Ships[objp->instance].ship_info_index].model_num; // Fill in the model to check
+	mc.model_instance_num = -1;
+
+	if ((view.Show_ship_models || view.Show_outlines) && (objp->type == OBJ_SHIP || objp->type == OBJ_START)) {
+		auto& shp = Ships[objp->instance];
+		mc.model_num = Ship_info[shp.ship_info_index].model_num;			// Fill in the model to check
+		mc.model_instance_num = shp.model_instance_num;
+	} else if ((view.Show_ship_models || view.Show_outlines) && (objp->type == OBJ_PROP)) {
+		auto& prp = Props[objp->instance].value();
+		mc.model_num = Prop_info[prp.prop_info_index].model_num;			// Fill in the model to check
+		mc.model_instance_num = prp.model_instance_num;
 	} else {
 		return fvi_ray_sphere(hitpos, p0, p1, &objp->pos, (objp->radius > 0.1f) ? objp->radius : LOLLIPOP_SIZE);
 	}
-
-	mc.model_instance_num = -1;
 	mc.orient = &objp->orient; // The object's orient
 	mc.pos = &objp->pos; // The object's position
 	mc.p0 = p0; // Point 1 of ray to check

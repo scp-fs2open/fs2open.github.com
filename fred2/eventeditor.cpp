@@ -15,7 +15,7 @@
 #include "EventEditor.h"
 #include "FREDView.h"
 #include "Management.h"
-#include "Sexp_tree.h"
+#include "sexp_tree_view.h"
 #include "textviewdlg.h"
 #include "mission/missionmessage.h"
 #include "cfile/cfile.h"
@@ -29,7 +29,9 @@ static char THIS_FILE[] = __FILE__;
 #endif
 
 
-BEGIN_MESSAGE_MAP(event_sexp_tree, sexp_tree)
+static int annotation_key_for_item(const event_sexp_tree *tree, HTREEITEM h);
+
+BEGIN_MESSAGE_MAP(event_sexp_tree, sexp_tree_view)
 	//{{AFX_MSG_MAP(event_sexp_tree)
 	ON_NOTIFY_EX_RANGE(TTN_NEEDTEXTW, 0, 0xFFFF, OnToolTipText)
 	ON_NOTIFY_EX_RANGE(TTN_NEEDTEXTA, 0, 0xFFFF, OnToolTipText)
@@ -41,7 +43,6 @@ END_MESSAGE_MAP()
 event_editor *Event_editor_dlg = NULL; // global reference needed by event tree class
 
 // this is just useful for comparing modified EAs to unmodified ones
-static event_annotation default_ea;
 
 int safe_stricmp(const char* one, const char* two)
 {
@@ -61,8 +62,63 @@ int safe_stricmp(const char* one, const char* two)
 /////////////////////////////////////////////////////////////////////////////
 // event_editor dialog
 
+int event_editor::getRootReturnType() const
+{
+	return OPR_NULL;
+}
+
+int event_editor::onRootDeleted(int formula_node)
+{
+	int i;
+
+	for (i = 0; i < (int)m_events.size(); i++) {
+		if (m_events[i].formula == formula_node) {
+			break;
+		}
+	}
+
+	Assert(i < (int)m_events.size());
+	m_events.erase(m_events.begin() + i);
+	m_sig.erase(m_sig.begin() + i);
+
+	if (i >= (int)m_events.size()) {
+		// if we have deleted the last event, i will be set to -1 which is what we want
+		i--;
+	}
+
+	cur_event = i;
+	update_cur_event();
+
+	return formula_node;
+}
+
+void event_editor::onRootRenamed(int formula_node, const char* new_name)
+{
+	int i;
+
+	for (i = 0; i < (int)m_events.size(); i++) {
+		if (m_events[i].formula == formula_node) {
+			break;
+		}
+	}
+
+	Assert(i < (int)m_events.size());
+	m_events[i].name = new_name;
+}
+
+void event_editor::onRootInserted(int old_formula, int new_formula)
+{
+	insert_handler(old_formula, new_formula);
+}
+
+void event_editor::onRootMoved(int node1, int node2, bool insert_before)
+{
+	move_handler(node1, node2, insert_before);
+}
+
 event_editor::event_editor(CWnd* pParent /*=NULL*/)
-	: CDialog(event_editor::IDD, pParent)
+	: CDialog(event_editor::IDD, pParent),
+	  SexpTreeEditorInterface({ TreeFlags::LabeledRoot, TreeFlags::RootDeletable, TreeFlags::RootEditable, TreeFlags::AnnotationsAllowed })
 {
 	//{{AFX_DATA_INIT(event_editor)
 	m_repeat_count = 0;
@@ -86,8 +142,8 @@ event_editor::event_editor(CWnd* pParent /*=NULL*/)
 	m_message_team = -1;
 	m_last_message_node = -1;
 	//}}AFX_DATA_INIT
-	m_event_tree.m_mode = MODE_EVENTS;
-	m_event_tree.link_modified(&modified);
+	m_event_tree._model._interface = this;
+	m_event_tree._model.modified = &modified;
 	modified = 0;
 	select_sexp_node = -1;
 	m_wave_id = -1;
@@ -99,6 +155,7 @@ event_editor::event_editor(CWnd* pParent /*=NULL*/)
 	m_log_1st_trigger = 0;
 	m_log_last_trigger = 0;
 	m_log_state_change = 0;
+	m_play_icon = nullptr;
 }
 
 void event_editor::DoDataExchange(CDataExchange* pDX)
@@ -203,8 +260,8 @@ BOOL event_editor::OnInitDialog()
 	MMessage msg; 
 
 	CDialog::OnInitDialog();  // let the base class do the default work
-	m_play_bm.LoadBitmap(IDB_PLAY);
-	((CButton *) GetDlgItem(IDC_PLAY)) -> SetBitmap(m_play_bm);
+	m_play_icon = load_button_icon(IDB_PLAY, RGB(192, 192, 192));
+	((CButton *) GetDlgItem(IDC_PLAY)) -> SetIcon(m_play_icon);
 
 	theApp.init_window(&Events_wnd_data, this, 0);
 	m_event_tree.setup((CEdit *) GetDlgItem(IDC_HELP_BOX));
@@ -219,20 +276,17 @@ BOOL event_editor::OnInitDialog()
 		r = FALSE;
 	}
 
-	// determine all the handles for event annotations
-	for (auto &ea : Event_annotations)
+	// load event annotations into local model and apply comment icons
+	m_annotation_model.loadFromGlobal(m_event_tree._model.tree_nodes, m_events, m_sig);
+	m_event_tree.m_annotations = &m_annotation_model;
+	m_event_tree._model.annotation_model = &m_annotation_model;
+	for (auto &ea : m_annotation_model.annotations())
 	{
-		auto h = traverse_path(ea);
-		if (h)
+		if (ea.node_index >= 0 && !ea.comment.empty())
 		{
-			ea.handle = h;
-			if (!ea.comment.empty())
+			HTREEITEM h = m_event_tree.handle(ea.node_index);
+			if (h)
 				event_annotation_swap_image(&m_event_tree, h, ea);
-		}
-		else
-		{
-			// event was probably deleted; clear the annotation so it will be deleted later
-			ea = default_ea;
 		}
 	}
 
@@ -360,7 +414,7 @@ void event_editor::load_tree()
 		if (m_events[i].name.empty())
 			m_events[i].name = "<Unnamed>";
 
-		m_events[i].formula = m_event_tree.load_sub_tree(Mission_events[i].formula, false, "do-nothing");
+		m_events[i].formula = m_event_tree._model.load_sub_tree(Mission_events[i].formula, false, "do-nothing");
 
 		// we must check for the case of the repeat count being 0.  This would happen if the repeat
 		// count is not specified in a mission
@@ -369,7 +423,7 @@ void event_editor::load_tree()
 		}
 	}
 
-	m_event_tree.post_load();
+	m_event_tree._model.post_load();
 	cur_event = -1;
 }
 
@@ -407,7 +461,7 @@ void event_editor::create_tree()
 void event_editor::OnRclickEventTree(NMHDR* pNMHDR, LRESULT* pResult) 
 {
 	save();
-	m_event_tree.right_clicked(MODE_EVENTS);
+	m_event_tree.right_clicked();
 	*pResult = 0;
 }
 
@@ -514,7 +568,7 @@ int event_editor::query_modified()
 			return 1;
 		if (safe_stricmp(local.avi_info.name, ref.avi_info.name) != 0)
 			return 1;
-		if (safe_stricmp(local.wave_info.name, ref.avi_info.name) != 0)
+		if (safe_stricmp(local.wave_info.name, ref.wave_info.name) != 0)
 			return 1;
 	}
 
@@ -563,36 +617,22 @@ void event_editor::OnButtonOk()
 	Mission_events.clear();
 	for (const auto &dialog_event: m_events) {
 		Mission_events.push_back(dialog_event);
-		Mission_events.back().formula = m_event_tree.save_tree(dialog_event.formula);
+		Mission_events.back().formula = m_event_tree._model.save_tree(dialog_event.formula);
 	}
 
 	// now update all sexp references
 	for (const auto &name_pair: names)
 		update_sexp_references(name_pair.first.c_str(), name_pair.second.c_str(), OPF_EVENT_NAME);
 
-	for (i=Num_builtin_messages; i<Num_messages; i++) {
-		if (Messages[i].avi_info.name)
-			free(Messages[i].avi_info.name);
-
-		if (Messages[i].wave_info.name)
-			free(Messages[i].wave_info.name);
-	}
+	for (i=Num_builtin_messages; i<Num_messages; i++)
+		message_free_media_names(Messages[i]);
 
 	Num_messages = (int)m_messages.size() + Num_builtin_messages;
 	Messages.resize(Num_messages);
 	for (i=0; i<(int)m_messages.size(); i++)
 		Messages[i + Num_builtin_messages] = m_messages[i];
 
-	event_annotation_prune();
-
-	// determine all the paths for the annotations that we want to keep
-	for (auto &ea : Event_annotations)
-	{
-		ea.path.clear();
-		if (ea.handle)
-			populate_path(ea, (HTREEITEM)ea.handle);
-		ea.handle = nullptr;
-	}
+	m_annotation_model.saveToGlobal(m_event_tree._model.tree_nodes, m_events, m_sig);
 
 	theApp.record_window_data(&Events_wnd_data, this);
 	delete Event_editor_dlg;
@@ -667,44 +707,6 @@ void event_editor::update_cur_message()
 	GetDlgItem(IDC_PERSONA_NAME)->EnableWindow(enable);
 	GetDlgItem(IDC_MESSAGE_TEAM)->EnableWindow(enable);
 	UpdateData(FALSE);
-}
-
-int event_editor::handler(int code, int node, const char *str)
-{
-	int i;
-
-	switch (code) {
-		case ROOT_DELETED:
-			for (i=0; i<(int)m_events.size(); i++)
-				if (m_events[i].formula == node)
-					break;
-
-			Assert(i < (int)m_events.size());
-			m_events.erase(m_events.begin() + i);
-			m_sig.erase(m_sig.begin() + i);
-
-			if (i >= (int)m_events.size())	// if we have deleted the last event,
-				i--;						// i will be set to -1 which is what we want
-
-			cur_event = i;
-			update_cur_event();
-
-			return node;
-
-		case ROOT_RENAMED:
-			for (i=0; i<(int)m_events.size(); i++)
-				if (m_events[i].formula == node)
-					break;
-
-			Assert(i < (int)m_events.size());
-			m_events[i].name = str;
-			return node;
-
-		default:
-			Int3();
-	}
-
-	return -1;
 }
 
 void event_editor::OnButtonNewEvent() 
@@ -835,8 +837,6 @@ void event_editor::OnButtonCancel()
 			return;
 		}
 	}
-
-	event_annotation_prune();
 
 	theApp.record_window_data(&Events_wnd_data, this);
 	delete Event_editor_dlg;
@@ -1520,12 +1520,14 @@ void event_editor::OnSelchangeWaveFilename()
 	update_persona();
 }
 
-BOOL event_editor::DestroyWindow() 
+BOOL event_editor::DestroyWindow()
 {
+	Event_editor_dlg = nullptr;
+
 	audiostream_close_file(m_wave_id, 0);
 	m_wave_id = -1;
 
-	m_play_bm.DeleteObject();
+	if (m_play_icon) DestroyIcon(m_play_icon);
 	return CDialog::DestroyWindow();
 }
 
@@ -1608,7 +1610,7 @@ void event_editor::OnDblclkMessageList()
 	list->GetText(cur_index, buffer);
 
 
-	num_messages = m_event_tree.find_text(buffer, message_nodes);
+	num_messages = m_event_tree._model.find_text(buffer, message_nodes, MAX_SEARCH_MESSAGE_DEPTH);
 
 	if (num_messages == 0) {
 		char message[256];
@@ -1651,34 +1653,24 @@ void event_editor::OnDblclkMessageList()
 	}
 }
 
-void event_annotation_prune()
+// Returns a unique annotation key for the given tree item.
+// For regular nodes: their tree_nodes[] index (>= 0).
+// For root label nodes (event names): -(formula + 2), which is always <= -2,
+// avoiding collision with -1 (the default/unresolved sentinel).
+static int annotation_key_for_item(const event_sexp_tree *tree, HTREEITEM h)
 {
-	Event_annotations.erase(
-		std::remove_if(Event_annotations.begin(), Event_annotations.end(), [](const event_annotation &ea)
-		{
-			return ea.comment == default_ea.comment
-				&& ea.r == default_ea.r
-				&& ea.g == default_ea.g
-				&& ea.b == default_ea.b;
-		}),
-		Event_annotations.end()
-	);
-}
+	int node = tree->get_node(h);
+	if (node >= 0)
+		return node;
 
-int event_annotation_lookup(HTREEITEM handle)
-{
-	for (size_t i = 0; i < Event_annotations.size(); ++i)
-	{
-		if (Event_annotations[i].handle == handle)
-			return (int)i;
+	// Root label: encode the formula stored in item data
+	if (!tree->GetParentItem(h)) {
+		int formula = (int)tree->GetItemData(h);
+		if (formula >= 0)
+			return -(formula + 2);
 	}
 
 	return -1;
-}
-
-void event_annotation_swap_image(event_sexp_tree *tree, HTREEITEM handle, int annotation_index)
-{
-	event_annotation_swap_image(tree, handle, Event_annotations[annotation_index]);
 }
 
 void event_annotation_swap_image(event_sexp_tree *tree, HTREEITEM handle, event_annotation &ea)
@@ -1758,28 +1750,24 @@ BOOL event_sexp_tree::OnToolTipText(UINT id, NMHDR *pNMHDR, LRESULT *pResult)
 	UINT nFlags;
 	HTREEITEM h = HitTest(pt, &nFlags); //Get item pointed by mouse
 
-	if (h)
+	if (h && m_annotations)
 	{
-		int ea_idx = event_annotation_lookup(h);
-		if (ea_idx >= 0)
+		int key = annotation_key_for_item(this, h);
+		auto ea = m_annotations->getByKey(key);
+		if (ea && !ea->comment.empty())
 		{
-			auto ea = &Event_annotations[ea_idx];
+			m_tooltiptextA = ea->comment.c_str();
+			m_tooltiptextW = ea->comment.c_str();
 
-			if (ea->comment != default_ea.comment && !ea->comment.empty())
+			if (pNMHDR->code == TTN_NEEDTEXTA)
 			{
-				m_tooltiptextA = ea->comment.c_str();
-				m_tooltiptextW = ea->comment.c_str();
-
-				if (pNMHDR->code == TTN_NEEDTEXTA)
-				{
-					pTTTA->lpszText = (LPSTR)(LPCSTR)m_tooltiptextA;
-					::SendMessage(pTTTA->hdr.hwndFrom, TTM_SETMAXTIPWIDTH, 0, 400);
-				}
-				else
-				{
-					pTTTW->lpszText = (LPWSTR)(LPCWSTR)m_tooltiptextW;
-					::SendMessage(pTTTW->hdr.hwndFrom, TTM_SETMAXTIPWIDTH, 0, 400);
-				}
+				pTTTA->lpszText = (LPSTR)(LPCSTR)m_tooltiptextA;
+				::SendMessage(pTTTA->hdr.hwndFrom, TTM_SETMAXTIPWIDTH, 0, 400);
+			}
+			else
+			{
+				pTTTW->lpszText = (LPWSTR)(LPCWSTR)m_tooltiptextW;
+				::SendMessage(pTTTW->hdr.hwndFrom, TTM_SETMAXTIPWIDTH, 0, 400);
 			}
 		}
 	}
@@ -1810,14 +1798,13 @@ void event_sexp_tree::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 			*pResult = CDRF_DODEFAULT;
 
 			HTREEITEM hItem = (HTREEITEM)pcd->nmcd.dwItemSpec;
-			if (hItem)
+			if (hItem && m_annotations)
 			{
-				int ea_idx = event_annotation_lookup(hItem);
-				if (ea_idx >= 0)
+				int key = annotation_key_for_item(this, hItem);
+				auto ea = m_annotations->getByKey(key);
+				if (ea)
 				{
-					auto ea = &Event_annotations[ea_idx];
-
-					if (ea->r != default_ea.r || ea->g != default_ea.g || ea->b != default_ea.b)
+					if (ea->r != 255 || ea->g != 255 || ea->b != 255)
 					{
 						// contrast color calculation taken from here:
 						// https://stackoverflow.com/questions/3942878/how-to-decide-font-color-in-white-or-black-depending-on-background-color
@@ -1858,12 +1845,16 @@ void event_sexp_tree::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 
 void event_sexp_tree::edit_comment(HTREEITEM h)
 {
+	if (!m_annotations)
+		return;
+
 	CString old_text = _T("");
 	CString new_text;
 
-	int i = event_annotation_lookup(h);
-	if (i >= 0)
-		old_text = (CString)Event_annotations[i].comment.c_str();
+	int key = annotation_key_for_item(this, h);
+	auto* ea = m_annotations->getByKey(key);
+	if (ea)
+		old_text = (CString)ea->comment.c_str();
 
 	TextViewDlg dlg;
 	dlg.SetText(old_text);
@@ -1876,30 +1867,27 @@ void event_sexp_tree::edit_comment(HTREEITEM h)
 	if (new_text == old_text)
 		return;
 
-	// maybe add the annotation
-	if (i < 0)
-	{
-		i = (int)Event_annotations.size();
-		Event_annotations.emplace_back();
-		Event_annotations[i].handle = h;
-	}
-
-	Event_annotations[i].comment = new_text;
+	auto& ann = m_annotations->ensureByKey(key);
+	ann.comment = (LPCSTR)new_text;
 
 	// see if we are either adding a new comment or removing an existing comment
 	// if so, change the icon
 	if (old_text.IsEmpty() || new_text.IsEmpty())
-		event_annotation_swap_image(this, h, i);
+		event_annotation_swap_image(this, h, ann);
 }
 
 void event_sexp_tree::edit_bg_color(HTREEITEM h)
 {
+	if (!m_annotations)
+		return;
+
 	COLORREF old_color = RGB(255, 255, 255);
 	COLORREF new_color;
 
-	int i = event_annotation_lookup(h);
-	if (i >= 0)
-		old_color = RGB(Event_annotations[i].r, Event_annotations[i].g, Event_annotations[i].b);
+	int key = annotation_key_for_item(this, h);
+	auto* ea = m_annotations->getByKey(key);
+	if (ea)
+		old_color = RGB(ea->r, ea->g, ea->b);
 
 	CColorDialog dlg(old_color);
 	if (dlg.DoModal() != IDOK)
@@ -1910,82 +1898,30 @@ void event_sexp_tree::edit_bg_color(HTREEITEM h)
 	if (new_color == old_color)
 		return;
 
-	// maybe add the annotation
-	if (i < 0)
-	{
-		i = (int)Event_annotations.size();
-		Event_annotations.emplace_back();
-		Event_annotations[i].handle = h;
-	}
-
-	Event_annotations[i].r = GetRValue(new_color);
-	Event_annotations[i].g = GetGValue(new_color);
-	Event_annotations[i].b = GetBValue(new_color);
+	auto& ann = m_annotations->ensureByKey(key);
+	ann.r = GetRValue(new_color);
+	ann.g = GetGValue(new_color);
+	ann.b = GetBValue(new_color);
 
 	// This is needed otherwise the color won't change until the user clicks something
 	RedrawWindow();
 }
 
-void event_editor::populate_path(event_annotation &ea, HTREEITEM h)
+SCP_string event_sexp_tree::get_node_comment(int node_index) const
 {
-	HTREEITEM parent = m_event_tree.GetParentItem(h);
+	if (!m_annotations)
+		return "";
 
-	// this is a node in the event tree
-	if (parent)
-	{
-		int child_num = 0;
-		HTREEITEM child = h;
-		while ((child = m_event_tree.GetPrevSiblingItem(child)) != nullptr)
-			++child_num;
+	auto* ea = m_annotations->getByKey(node_index);
+	if (ea && !ea->comment.empty())
+		return ea->comment;
 
-		// push the number and iterate up
-		ea.path.push_front(child_num);
-		populate_path(ea, parent);
-	}
-	// if this has no parent, it's an event, so find out which event it is
-	else
-	{
-		int event_num = get_event_num(h);
-		if (event_num >= 0)
-		{
-			ea.path.push_front(event_num);
-		}
-		else
-		{
-			Warning(LOCATION, "Could not find event for this handle!\n");
-			ea.path.clear();
-		}
-	}
+	return "";
 }
 
-HTREEITEM event_editor::traverse_path(const event_annotation &ea)
+SCP_string event_sexp_tree::get_item_comment(HTREEITEM h, int /*node_index*/) const
 {
-	if (ea.path.empty())
-		return nullptr;
-
-	int event_num = ea.path.front();
-	HTREEITEM h = get_event_handle(event_num);
-	if (!h)
-		return nullptr;
-
-	if (ea.path.size() > 1)
-	{
-		auto it = ea.path.begin();
-		for (++it; it != ea.path.end(); ++it)
-		{
-			int child_num = *it;
-
-			h = m_event_tree.GetChildItem(h);
-			while (child_num > 0 && h)
-			{
-				h = m_event_tree.GetNextSiblingItem(h);
-				--child_num;
-			}
-
-			if (!h)
-				return nullptr;
-		}
-	}
-
-	return h;
+	// resolves both regular nodes and root labels (which have no model node,
+	// so the base class's node_index would be -1 for them)
+	return get_node_comment(annotation_key_for_item(this, h));
 }

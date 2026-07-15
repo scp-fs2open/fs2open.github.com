@@ -74,7 +74,7 @@ class CampaignEditorDialogModel : public AbstractDialogModel {
   public:
 	// The constructor now takes our abstract interface
 	CampaignEditorDialogModel(QObject* parent, EditorViewport* viewportt, ICampaignEditorTreeOps& tree_ops);
-	~CampaignEditorDialogModel() override = default;
+	~CampaignEditorDialogModel() override;
 
 	// AbstractDialogModel implementation
 	bool apply() override;
@@ -159,8 +159,9 @@ class CampaignEditorDialogModel : public AbstractDialogModel {
 	void removeBranch(int mission_index, int branch_index);
 	void moveBranchUp();
 	void moveBranchDown();
-	void updateCurrentBranch(int internal_node_id);
 	bool getCurrentBranchIsSpecial() const;
+
+	void setModified() { set_modified(); }
 	int addBranchIdIfMissing(CampaignBranchData& b); // assigns a unique id once
 	CampaignBranchData* findBranchById(int missionIdx, int branchId);
 
@@ -197,7 +198,7 @@ class CampaignEditorDialogModel : public AbstractDialogModel {
 	int m_current_mission_index = -1;
 	int m_current_branch_index = -1;
 
-	int _waveId;
+	int _waveId = -1;
 
 	CampaignFormat m_save_format = CampaignFormat::FSO;
 
@@ -206,6 +207,7 @@ class CampaignEditorDialogModel : public AbstractDialogModel {
 	void loadAvailableMissions();
 	static void clearCampaignGlobal();
 	void commitWorkingCopyToGlobal();
+	void syncCampaignMissionList();
 	void sortMissions();
 	void stopSpeech();
 };

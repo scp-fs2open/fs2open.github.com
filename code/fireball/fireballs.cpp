@@ -1006,7 +1006,7 @@ int fireball_create(vec3d *pos, int fireball_type, int render_type, int parent_o
 			break;
 
 		default:
-			UNREACHABLE("Bad type set in fireball_create");
+			UNREACHABLE("Bad type %d set in fireball_create", new_fireball->fireball_render_type);
 			break;
 	}
 
@@ -1089,8 +1089,8 @@ void fireball_get_color(int idx, float *red, float *green, float *blue)
 {
 	Assert( red && blue && green );
 
+	Assertion(SCP_vector_inbounds(Fireball_info, idx), "idx is out of bounds!");
 	if (!SCP_vector_inbounds(Fireball_info, idx)) {
-		UNREACHABLE("idx is out of bounds!");
 		
 		*red = 1.0f;
 		*green = 1.0f;

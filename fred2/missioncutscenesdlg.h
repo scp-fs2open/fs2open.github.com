@@ -9,7 +9,7 @@
 
 
 
-#include "Sexp_tree.h"
+#include "sexp_tree_view.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // CMissionCutscenesDlg dialog
@@ -17,14 +17,18 @@
 #define OPERAND	0x01
 #define EDITABLE	0x02
 
-class cutscene_sexp_tree : public sexp_tree
+class cutscene_sexp_tree : public sexp_tree_view
 {
 };
 
-class CMissionCutscenesDlg : public CDialog
+class CMissionCutscenesDlg : public CDialog, public SexpTreeEditorInterface
 {
 // Construction
 public:
+	int onRootDeleted(int formula_node) override;
+	void onRootInserted(int old_formula, int new_formula) override;
+	void onRootMoved(int node1, int node2, bool insert_before) override;
+
 	void move_handler(int node1, int node2, bool insert_before);
 	int query_modified();
 	void OnCancel();
@@ -34,7 +38,6 @@ public:
 	void create_tree();
 	CMissionCutscenesDlg(CWnd* pParent = NULL); // standard constructor
 	BOOL OnInitDialog();
-	int handler(int code, int goal);
 	void insert_handler(int old, int node);
 	int select_sexp_node;
 
@@ -52,6 +55,8 @@ public:
 // Overrides
 	// ClassWizard generated virtual function overrides
 	//{{AFX_VIRTUAL(CMissionCutscenesDlg)
+	public:
+	virtual BOOL DestroyWindow();
 	protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
 	//}}AFX_VIRTUAL
@@ -79,4 +84,4 @@ protected:
 	int modified;
 };
 
-extern CMissionCutscenesDlg* Cutscene_editor_dlg; // global reference needed by sexp_tree class
+extern CMissionCutscenesDlg* Cutscene_editor_dlg; // global reference needed by sexp_tree_view class

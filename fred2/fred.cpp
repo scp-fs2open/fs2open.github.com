@@ -49,8 +49,6 @@ extern "C" {
 static char THIS_FILE[] = __FILE__;
 #endif
 
-#define MAX_PENDING_MESSAGES 16
-
 /**
 * @brief Our flavor of the About dialog
 *
@@ -91,17 +89,6 @@ protected:
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 };
-
-typedef struct
-{
-	int frame_to_process;
-	HWND hwnd;
-	int id;
-	WPARAM wparam;
-	LPARAM lparam;
-} pending_message;
-
-pending_message Pending_messages[MAX_PENDING_MESSAGES];
 
 CFREDApp theApp;
 
@@ -166,8 +153,6 @@ char *control_mode_text[] = {
 };
 
 
-// Process messages that needed to wait until a frame had gone by.
-void process_pending_messages(void);
 void show_control_mode(void);
 
 
@@ -476,8 +461,6 @@ BOOL CFREDApp::OnIdle(LONG lCount) {
 		Update_window--;
 	}
 
-	process_pending_messages();
-
 	FrameCount++;
 	return TRUE;
 }
@@ -603,39 +586,6 @@ void CFREDApp::write_window(char *name, window_data *wndd) {
 	WriteProfileInt(name, "Visible", wndd->visible);
 }
 
-void add_pending_message(HWND hwnd, int id, WPARAM wparam, LPARAM lparam, int skip_count) {
-	// Add a message to be processed to a buffer.
-	// Wait skip_count frames before processing.
-	for (int i = 0; i < MAX_PENDING_MESSAGES; i++) {
-		if (Pending_messages[i].frame_to_process == -1) {
-			Pending_messages[i].hwnd = hwnd;
-			Pending_messages[i].id = id;
-			Pending_messages[i].wparam = wparam;
-			Pending_messages[i].lparam = lparam;
-			Pending_messages[i].frame_to_process = FrameCount + skip_count;
-		}
-	}
-}
-
-void init_pending_messages(void) {
-	int	i;
-
-	for (i = 0; i < MAX_PENDING_MESSAGES; i++)
-		Pending_messages[i].frame_to_process = -1;
-}
-
-void process_pending_messages(void) {
-	int	i;
-
-	for (i = 0; i < MAX_PENDING_MESSAGES; i++)
-		if (Pending_messages[i].frame_to_process != -1)
-			if (Pending_messages[i].frame_to_process <= FrameCount) {
-				pending_message	*pmp = &Pending_messages[i];
-				PostMessage(pmp->hwnd, pmp->id, pmp->wparam, pmp->lparam);
-				Pending_messages[i].frame_to_process = -1;
-			}
-}
-
 void show_control_mode(void) {
 	CString	str;
 
@@ -713,7 +663,6 @@ void update_map_window() {
 		Update_window--;
 
 	show_control_mode();
-	process_pending_messages();
 
 	FrameCount++;
 }

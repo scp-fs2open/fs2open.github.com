@@ -324,10 +324,10 @@ add_file_folder("Source/UI/Widgets"
 	src/ui/widgets/NoWheelSpinBox.h
 	src/ui/widgets/PersonaColorComboBox.cpp
 	src/ui/widgets/PersonaColorComboBox.h
-    src/ui/widgets/renderwidget.cpp
-    src/ui/widgets/renderwidget.h
-	src/ui/widgets/sexp_tree.cpp
-	src/ui/widgets/sexp_tree.h
+	src/ui/widgets/renderwidget.cpp
+	src/ui/widgets/renderwidget.h
+	src/ui/widgets/sexp_tree_view.cpp
+	src/ui/widgets/sexp_tree_view.h
 	src/ui/widgets/ShipFlagCheckbox.h
 	src/ui/widgets/ShipFlagCheckbox.cpp
 	src/ui/widgets/SimpleListSelectDialog.cpp
@@ -404,10 +404,10 @@ if (WIN32)
 endif()
 
 add_file_folder("Resources/Images"
-    resources/images/operator.png
-    resources/images/black_do.png
-    resources/images/chained_directive.png
-    resources/images/chained.png
+    resources/images/cursor_rotate.png
+    resources/images/fred_about.png
+    resources/images/splash.png
+    resources/images/V_fred.ico
     resources/images/toolbar/layers-dark.png
     resources/images/toolbar/layers-light.png
     resources/images/toolbar/unhide-dark.png
@@ -424,34 +424,8 @@ add_file_folder("Resources/Images"
     resources/images/toolbar/constyz-light.png
     resources/images/toolbar/constz-dark.png
     resources/images/toolbar/constz-light.png
-    resources/images/cursor_rotate.png
-    resources/images/data00.png
-    resources/images/data05.png
-    resources/images/data10.png
-    resources/images/data15.png
-    resources/images/data20.png
-    resources/images/data25.png
-    resources/images/data30.png
-    resources/images/data35.png
-    resources/images/data40.png
-    resources/images/data45.png
-    resources/images/data50.png
-    resources/images/data55.png
-    resources/images/data60.png
-    resources/images/data65.png
-    resources/images/data70.png
-    resources/images/data75.png
-    resources/images/data80.png
-    resources/images/data85.png
-    resources/images/data90.png
-    resources/images/data95.png
-    resources/images/data.png
-	resources/images/fred_about.png
-    resources/images/green_do.png
     resources/images/toolbar/orbitsel-dark.png
     resources/images/toolbar/orbitsel-light.png
-    resources/images/root_directive.png
-    resources/images/root.png
     resources/images/toolbar/rotlocal-dark.png
     resources/images/toolbar/rotlocal-light.png
     resources/images/toolbar/select-dark.png
@@ -466,9 +440,6 @@ add_file_folder("Resources/Images"
     resources/images/toolbar/selectrot-light.png
     resources/images/toolbar/showdist-dark.png
     resources/images/toolbar/showdist-light.png
-    resources/images/splash.png
-    resources/images/V_fred.ico
-    resources/images/variable.png
     resources/images/toolbar/wingdisband-dark.png
     resources/images/toolbar/wingdisband-light.png
     resources/images/toolbar/wingform-dark.png
@@ -477,4 +448,15 @@ add_file_folder("Resources/Images"
     resources/images/toolbar/zoomext-light.png
     resources/images/toolbar/zoomsel-dark.png
     resources/images/toolbar/zoomsel-light.png
+)
+
+add_file_folder("Resources/Images/Sexp"
+    resources/images/sexp_icons/operator.png
+    resources/images/sexp_icons/data.png
+    resources/images/sexp_icons/data_num.png
+    resources/images/sexp_icons/dot.png
+    resources/images/sexp_icons/chain.png
+    resources/images/sexp_icons/comment.png
+    resources/images/sexp_icons/container_name.png
+    resources/images/sexp_icons/container_data.png
 )

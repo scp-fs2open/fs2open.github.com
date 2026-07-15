@@ -3,7 +3,6 @@
 #include "../AbstractDialogModel.h"
 #include "mission/util.h"
 #include "ship/ship.h"
-#include "ui/widgets/sexp_tree.h"
 
 namespace fso::fred::dialogs {
 
@@ -60,6 +59,7 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 
 	void setPlayer(bool isPlayer);
 	bool getPlayer() const;
+	void makeSolePlayerStart();
 
 	void setRespawn(int respawn);
 	int getRespawn() const;
@@ -84,11 +84,14 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	void setArrivalCue(bool updateCue);
 	bool getArrivalCue() const;
 
-	void setArrivalFormula(int formula, int objNum);
+	void setArrivalTreeDirty(int formula);
 	int getArrivalFormula() const;
 
 	void setNoArrivalWarp(int state);
 	int getNoArrivalWarp() const;
+
+	void setDockWarpinChange(const int state);
+	int getDockWarpinChange() const;
 
 	void setDepartureLocationIndex(int index);
 	int getDepartureLocationIndex() const;
@@ -104,10 +107,13 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	void setDepartureCue(bool updateCue);
 	bool getDepartureCue() const;
 
-	void setDepartureFormula(int formula, int objNum);
+	void setDepartureTreeDirty(int formula);
 	int getDepartureFormula() const;
 	void setNoDepartureWarp(int state);
 	int getNoDepartureWarp() const;
+
+	void setDockWarpoutChange(const int state);
+	int getDockWarpoutChange() const;
 
 	void onPrevious();
 	void onNext();
@@ -152,6 +158,8 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 
 	int _noDepartureWarp;
 	int _noArrivalWarp;
+	int _dockWarpoutChange;
+	int _dockWarpinChange;
 	bool _isPlayerShip;
 	int _departureTreeFormula;
 	int _arrivalTreeFormula;

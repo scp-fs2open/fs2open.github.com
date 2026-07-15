@@ -599,8 +599,8 @@ int bm_create_3d(int bpp, int w, int h, int d, void* data) {
 		return -1;
 
 	// make sure that we have valid data
+	Assertion(data != nullptr, "No valid data received for 3D Bitmap creation!");
 	if (data == nullptr) {
-		UNREACHABLE("No valid data received for 3D Bitmap creation!");
 		return -1;
 	}
 
@@ -1210,7 +1210,7 @@ static int bm_load_info(BM_TYPE type, const char *filename, CFILE *img_cfp, int 
 		}
 	}
 	else {
-		UNREACHABLE("Unknown file type specified! This is probably a coding error.");
+		UNREACHABLE("Unknown file type %d specified! This is probably a coding error.", type);
 
 		return -1;
 	}

@@ -140,7 +140,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void on_actionZoomSelected_triggered(bool);
 	void on_actionZoomExtents_triggered(bool);
 
-	void on_actionSelectionList_triggered(bool);
+	void on_actionSceneBrowser_triggered(bool);
 
 	void on_actionOrbitSelected_triggered(bool enabled);
 
@@ -331,6 +331,9 @@ class FredView: public QMainWindow, public IDialogProvider {
 	QDoubleSpinBox* _transformC          = nullptr;
 	QComboBox*      _transformMoveSpeedCombo = nullptr;
 	QComboBox*      _transformRotSpeedCombo  = nullptr;
+	// Last camera speeds written to QSettings; lets us persist on change instead of only on close.
+	int             _lastSavedCameraSpeedMove = -1;
+	int             _lastSavedCameraSpeedRot  = -1;
 	QComboBox*      _transformIffCombo   = nullptr;
 	QLabel*         _transformRadiusLabel = nullptr;
 	QToolButton*    _transformLocalBtn   = nullptr;

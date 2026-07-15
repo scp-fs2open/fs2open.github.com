@@ -4,6 +4,7 @@
 #include "iff_defs/iff_defs.h"
 #include "mission/missionhotkey.h"
 #include "mission/missionparse.h"
+#include "mission/object.h"
 #include "missioneditor/common.h"
 #include <QObject>
 #include <QMessageBox>
@@ -635,6 +636,9 @@ void WingEditorDialogModel::alignWingFormation()
 
 		get_absolute_wing_pos(&objp->pos, leader_objp, _currentWingIndex, i, false);
 		objp->orient = leader_objp->orient;
+
+		// drag any docked partners along (no-op for undocked ships)
+		object_moved(objp);
 	}
 
 	// roll back temporary formation
@@ -729,7 +733,7 @@ void WingEditorDialogModel::disbandCurrentWing()
 	if (!wingIsValid())
 		return;
 
-	_editor->remove_wing(_currentWingIndex);
+	_editor->disband_wing(_currentWingIndex);
 	reloadFromCurWing();
 }
 
@@ -1089,7 +1093,11 @@ void WingEditorDialogModel::setArrivalTree(int newTree)
 
 	auto* w = getCurrentWing();
 
-	modify(w->arrival_cue, newTree);
+	if (w->arrival_cue >= 0 && w->arrival_cue != newTree)
+		free_sexp2(w->arrival_cue);
+
+	w->arrival_cue = newTree;
+	set_modified();
 }
 
 bool WingEditorDialogModel::getNoArrivalWarpFlag() const
@@ -1329,7 +1337,11 @@ void WingEditorDialogModel::setDepartureTree(int newTree)
 
 	auto* w = getCurrentWing();
 
-	modify(w->departure_cue, newTree);
+	if (w->departure_cue >= 0 && w->departure_cue != newTree)
+		free_sexp2(w->departure_cue);
+
+	w->departure_cue = newTree;
+	set_modified();
 }
 
 bool WingEditorDialogModel::getNoDepartureWarpFlag() const

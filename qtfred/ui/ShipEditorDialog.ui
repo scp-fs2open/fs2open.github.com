@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>502</width>
-    <height>754</height>
+    <width>522</width>
+    <height>808</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -719,7 +719,7 @@
            </layout>
           </item>
           <item>
-           <widget class="fso::fred::sexp_tree" name="arrivalTree"/>
+           <widget class="fso::fred::sexp_tree_view" name="arrivalTree"/>
           </item>
           <item>
            <widget class="fso::fred::ShipFlagCheckbox" name="noArrivalWarpCheckBox">
@@ -728,6 +728,13 @@
             </property>
             <property name="text">
              <string>No Warp Effect</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="fso::fred::ShipFlagCheckbox" name="dockWarpinCheckBox">
+            <property name="text">
+             <string>Dont Adjust Warp When Docked</string>
             </property>
            </widget>
           </item>
@@ -881,7 +888,7 @@
            </layout>
           </item>
           <item>
-           <widget class="fso::fred::sexp_tree" name="departureTree"/>
+           <widget class="fso::fred::sexp_tree_view" name="departureTree"/>
           </item>
           <item>
            <widget class="fso::fred::ShipFlagCheckbox" name="noDepartureWarpCheckBox">
@@ -890,6 +897,13 @@
             </property>
             <property name="text">
              <string>No Warp Effect</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="fso::fred::ShipFlagCheckbox" name="dockWarpoutCheckBox">
+            <property name="text">
+             <string>Dont Adjust Warp When Docked</string>
             </property>
            </widget>
           </item>
@@ -932,9 +946,9 @@
    <header>ui/widgets/ShipFlagCheckbox.h</header>
   </customwidget>
   <customwidget>
-   <class>fso::fred::sexp_tree</class>
+   <class>fso::fred::sexp_tree_view</class>
    <extends>QTreeView</extends>
-   <header>ui/widgets/sexp_tree.h</header>
+   <header>ui/widgets/sexp_tree_view.h</header>
   </customwidget>
   <customwidget>
    <class>fso::fred::PersonaColorComboBox</class>

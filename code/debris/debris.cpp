@@ -248,6 +248,7 @@ void debris_delete( object * obj )
 
 	if (db->model_instance_num >= 0) {
 		model_delete_instance(db->model_instance_num);
+		db->model_instance_num = -1;
 	}
 
 	if ( db->is_hull ) {
@@ -336,7 +337,7 @@ void debris_process_post(object * obj, float frame_time)
 						break;
 
 					default:
-						UNREACHABLE("Unhandled case %d for electrical arc creation in debris_process_post()!", n);
+						Assertion(false, "Unhandled case %d for electrical arc creation in debris_process_post()!", n);
 					}
 				}
 			}

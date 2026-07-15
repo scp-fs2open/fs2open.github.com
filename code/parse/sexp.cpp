@@ -2024,7 +2024,7 @@ bool check_container_data_sexp_arg_type(ContainerType con_type, bool is_string, 
 	} else if (any(con_type & ContainerType::NUMBER_DATA)) {
 		return is_number;
 	} else {
-		UNREACHABLE("Unknown container data type %d", (int)con_type);
+		UNREACHABLE("Unknown container data type %d", static_cast<int>(con_type));
 		return false;
 	}
 }
@@ -2036,7 +2036,7 @@ bool check_map_container_key_sexp_arg_type(ContainerType con_type, bool is_strin
 	} else if (any(con_type & ContainerType::NUMBER_KEYS)) {
 		return is_number;
 	} else {
-		UNREACHABLE("Unknown map container key type %d", (int)con_type);
+		UNREACHABLE("Unknown map container key type %d", static_cast<int>(con_type));
 		return false;
 	}
 }
@@ -2366,7 +2366,7 @@ int check_sexp_syntax(int node, int desired_return_type, int recursive, int *bad
 						return SEXP_CHECK_WRONG_MAP_KEY_TYPE;
 					}
 				} else {
-					UNREACHABLE("Unknown container type %d", (int)data_container.type);
+					UNREACHABLE("Unknown container type %d", static_cast<int>(data_container.type));
 				}
 			}
 
@@ -3361,6 +3361,7 @@ int check_sexp_syntax(int node, int desired_return_type, int recursive, int *bad
 					} else if (desired_argument_type == OPF_EVENT_NAME) {
 						count = count_items_with_string(Campaign.missions[i].events, &mevent::name, CTEXT(node));
 					} else {
+						// constrained by the enclosing case
 						UNREACHABLE("desired_argument_type == %d; expected OPF_GOAL_NAME or OPF_EVENT_NAME", desired_argument_type);
 					}
 				} else if (desired_argument_type == OPF_GOAL_NAME) {
@@ -3376,6 +3377,7 @@ int check_sexp_syntax(int node, int desired_return_type, int recursive, int *bad
 
 					count = count_items_with_string(Mission_events, &mission_event::name, CTEXT(node));
 				} else {
+					// constrained by the enclosing case
 					UNREACHABLE("desired_argument_type == %d; expected OPF_GOAL_NAME or OPF_EVENT_NAME", desired_argument_type);
 				}
 
@@ -3452,7 +3454,7 @@ int check_sexp_syntax(int node, int desired_return_type, int recursive, int *bad
 							}
 							break;
 						} else {
-							UNREACHABLE("Unhandled case for OPF_DOCKER_POINT/OPF_DOCKEE_POINT");
+							Assertion(false, "Unhandled case for OPF_DOCKER_POINT/OPF_DOCKEE_POINT");
 						}
 					}
 					Assert(ship_node >= 0);
@@ -3970,18 +3972,22 @@ int check_sexp_syntax(int node, int desired_return_type, int recursive, int *bad
 			case OPF_GAME_SND:
 				if (node_subtype == SEXP_ATOM_NUMBER)
 				{
-					if (!gamesnd_get_by_tbl_index(atoi(CTEXT(node))).isValid())
-					{
-						return SEXP_CHECK_NUM_RANGE_INVALID;
-					}
+					int node_num = atoi(CTEXT(node));
+					if (node_num == -1)
+						break;	// explicitly allow a sound of -1, indicating either "no sound" or "default"
+					if (!gamesnd_get_by_tbl_index(node_num).isValid())
+						return SEXP_CHECK_INVALID_GAME_SND;
 				}
 				else if (node_subtype == SEXP_ATOM_STRING)
 				{
-					if (stricmp(CTEXT(node), SEXP_NONE_STRING) != 0 && !gamesnd_get_by_name(CTEXT(node)).isValid())
-					{
+					auto node_text = CTEXT(node);
+					if (stricmp(node_text, SEXP_NONE_STRING) == 0)
+						break;	// explicitly allow "no sound", although some sexps might interpret it as "default"
+					if (!gamesnd_get_by_name(node_text).isValid())
 						return SEXP_CHECK_INVALID_GAME_SND;
-					}
 				}
+				else if (node_subtype != SEXP_ATOM_LIST)
+					return SEXP_CHECK_INVALID_GAME_SND;
 				break;
 
 			case OPF_FIREBALL:
@@ -3989,17 +3995,15 @@ int check_sexp_syntax(int node, int desired_return_type, int recursive, int *bad
 				{
 					int num = atoi(CTEXT(node));
 					if (!SCP_vector_inbounds(Fireball_info, num))
-					{
-						return SEXP_CHECK_NUM_RANGE_INVALID;
-					}
+						return SEXP_CHECK_INVALID_FIREBALL;
 				}
 				else if (node_subtype == SEXP_ATOM_STRING)
 				{
 					if (fireball_info_lookup(CTEXT(node)) < 0)
-					{
 						return SEXP_CHECK_INVALID_FIREBALL;
-					}
 				}
+				else if (node_subtype != SEXP_ATOM_LIST)
+					return SEXP_CHECK_INVALID_FIREBALL;
 				break;
 
 			case OPF_SPECIES:
@@ -5279,7 +5283,7 @@ void stuff_sexp_text_string(SCP_string &dest, int node, int mode)
 			sprintf(dest, "\"@%s[%s]\" ", var_name, var_contents);
 		}
 		else
-			UNREACHABLE("SEXP variable nodes must be SEXP_ATOM_NUMBER or SEXP_ATOM_STRING!");
+			Assertion(false, "SEXP variable nodes must be SEXP_ATOM_NUMBER or SEXP_ATOM_STRING!");
 	}
 	// not a variable
 	else
@@ -7227,7 +7231,7 @@ void eval_object_ship_wing_point_team(object_ship_wing_point_team *oswpt, int no
 				break;
 
 			default:
-				UNREACHABLE("Unhandled ship registry entry status for %s: %d", ship_entry->name, (int)ship_entry->status);
+				UNREACHABLE("Unhandled ship registry entry status for %s: %d", ship_entry->name, static_cast<int>(ship_entry->status));
 		}
 
 		return;
@@ -11148,7 +11152,7 @@ int eval_perform_actions(int n, int op_num)
 	}
 	else
 	{
-		UNREACHABLE("Unsupported SEXP %d!", op_num);
+		Assertion(false, "Unsupported SEXP %d!", op_num);
 		return SEXP_NAN_FOREVER;
 	}
 
@@ -12173,7 +12177,7 @@ int eval_for_container(int arg_handler_node, int condition_node, int op_const, b
 			break;
 
 		default:
-			UNREACHABLE("Unhandled for-container SEXP (%d). Please report!", op_const);
+			Assertion(false, "Unhandled for-container SEXP (%d). Please report!", op_const);
 			break;
 	}
 
@@ -12806,7 +12810,7 @@ int sexp_is_iff_or_species(int n, bool iff)
 					// ship is in the EXITED state but probably in the process of exploding
 					else if (oswpt.has_shipp())
 					{
-						UNREACHABLE("With the addition of the ShipStatus::DEATH_ROLL state, this shouldn't happen");
+						Assertion(false, "With the addition of the ShipStatus::DEATH_ROLL state, this shouldn't happen");
 						return SEXP_KNOWN_FALSE;
 					}
 					// ship has vanished
@@ -15064,7 +15068,7 @@ void sexp_explosion_effect(int n)
 						break;
 	
 					default:
-						Assertion(false, "Object magically changed type after exploding!");
+						UNREACHABLE("Object magically changed type to %d after exploding!", objp->type);
 						break;
 				}
 			}	// end for
@@ -19985,7 +19989,7 @@ void sexp_ingame_ship_alt_name_or_display_name_or_callsign(ship *shipp, bool cle
 			shipp->flags.remove(Ship::Ship_Flags::Has_display_name);
 		}
 		else
-			UNREACHABLE("Unhandled op_num %d!", op_num);
+			Assertion(false, "Unhandled op_num %d!", op_num);
 
 		return;
 	}
@@ -20010,7 +20014,7 @@ void sexp_ingame_ship_alt_name_or_display_name_or_callsign(ship *shipp, bool cle
 		shipp->flags.set(Ship::Ship_Flags::Has_display_name);
 	}
 	else
-		UNREACHABLE("Unhandled op_num %d!", op_num);
+		Assertion(false, "Unhandled op_num %d!", op_num);
 }
 
 // Goober5000
@@ -20029,7 +20033,7 @@ void sexp_parse_ship_alt_name_or_display_name_or_callsign(p_object *parse_obj, b
 			parse_obj->flags.remove(Mission::Parse_Object_Flags::SF_Has_display_name);
 		}
 		else
-			UNREACHABLE("Unhandled op_num %d!", op_num);
+			Assertion(false, "Unhandled op_num %d!", op_num);
 
 		return;
 	}
@@ -20054,7 +20058,7 @@ void sexp_parse_ship_alt_name_or_display_name_or_callsign(p_object *parse_obj, b
 		parse_obj->flags.set(Mission::Parse_Object_Flags::SF_Has_display_name);
 	}
 	else
-		UNREACHABLE("Unhandled op_num %d!", op_num);
+		Assertion(false, "Unhandled op_num %d!", op_num);
 }
 
 // Goober5000
@@ -25099,7 +25103,7 @@ int process_special_sexps(int index)
 			return SEXP_FALSE;
 
 	default:
-		Assertion(false, "Special sexp processing code was called for an unsupported node type!");
+		Warning(LOCATION, "special-check SEXP was given an unsupported check number (%d)!", index);
 	}
 
 	return SEXP_FALSE;
@@ -32105,7 +32109,7 @@ int query_operator_return_type(int op)
 				return dynamicSEXP->getReturnType();
 			}
 
-			Assertion(false, "query_operator_return_type() called for unsupported operator type %d!", op);
+			UNREACHABLE("query_operator_return_type() called for unsupported operator type %d!", op);
 		}
 	}
 
@@ -33811,7 +33815,7 @@ int query_operator_argument_type(int op_index, int argnum)
 				case 4:
 					return OPF_BOOL;
 				default:
-					UNREACHABLE("Invalid argnum %d detected!", argnum);
+					Assertion(false, "Invalid argnum %d detected!", argnum);
 					return OPF_NULL;
 			}
 
@@ -35020,7 +35024,7 @@ int query_operator_argument_type(int op_index, int argnum)
 				return dynamicSEXP->getArgumentType(argnum);
 			}
 
-			Assertion(false, "query_operator_argument_type(%d, %d) called for unsupported operator type!", op_const, argnum);
+			UNREACHABLE("query_operator_argument_type(%d, %d) called for unsupported operator type!", op_const, argnum);
 		}
 	}
 
@@ -36000,7 +36004,7 @@ int copy_node_to_replacement_args(int node, int container_value_index)
 					Sexp_replacement_arguments.emplace_back(kv_pair.first.c_str(), -1);
 				}
 			} else {
-				UNREACHABLE("Container %s has invalid type (%d). Please report!", container_name, (int)container.type);
+				UNREACHABLE("Container %s has invalid type (%d). Please report!", container_name, static_cast<int>(container.type));
 			}
 
 			num_args = container.size();
@@ -36050,7 +36054,7 @@ int check_dynamic_value_node_type(int node, bool is_string, bool is_number)
 			return SEXP_CHECK_WRONG_CONTAINER_DATA_TYPE;
 		}
 	} else {
-		UNREACHABLE("Unhandled dynamic value node %s. Please report!", Sexp_nodes[node].text);
+		Assertion(false, "Unhandled dynamic value node %s. Please report!", Sexp_nodes[node].text);
 	}
 
 	return 0;

@@ -6,6 +6,7 @@
 #include <QKeySequenceEdit>
 
 #include "ui/util/SignalBlockers.h"
+#include "ui/widgets/sexp_tree_view.h"
 
 namespace fso::fred::dialogs {
 namespace {
@@ -87,6 +88,7 @@ void PreferencesDialog::updateUi() {
 	// General
 	ui->offerAutosaveRecovery->setChecked(_model->getOfferAutosaveRecovery());
 	ui->autosaveIntervalSeconds->setValue(_model->getAutosaveIntervalSeconds());
+	ui->sexpNumberEveryN->setValue(_model->getSexpNumberEveryN());
 	ui->createBakOnSave->setChecked(_model->getCreateBakOnSave());
 	ui->moveShipsWhenUndocking->setChecked(_model->getMoveShipsWhenUndocking());
 	ui->alwaysSaveDisplayNames->setChecked(_model->getAlwaysSaveDisplayNames());
@@ -96,6 +98,7 @@ void PreferencesDialog::updateUi() {
 
 	const int iconSize = _model->getToolbarIconSize();
 	ui->toolbarIconSizeCombo->setCurrentIndex(iconSize <= 16 ? 0 : iconSize >= 32 ? 2 : 1);
+	ui->outlineLodCombo->setCurrentIndex(_model->getOutlineLod());
 	ui->showSexpHelpMissionEvents->setChecked(_model->getShowSexpHelpMissionEvents());
 	ui->showSexpHelpMissionGoals->setChecked(_model->getShowSexpHelpMissionGoals());
 	ui->showSexpHelpMissionCutscenes->setChecked(_model->getShowSexpHelpMissionCutscenes());
@@ -118,6 +121,8 @@ void PreferencesDialog::updateUi() {
 	ui->gridCenterZ->setValue(_model->getGridCenterZ());
 
 	// Controls
+	ui->invertOrbitX->setChecked(_model->getInvertOrbitX());
+	ui->invertOrbitY->setChecked(_model->getInvertOrbitY());
 	for (const auto& entry : _controlEditors) {
 		entry.second->setKeySequence(_model->getControlKey(entry.first));
 	}
@@ -129,6 +134,13 @@ void PreferencesDialog::on_offerAutosaveRecovery_toggled(bool checked) {
 
 void PreferencesDialog::on_autosaveIntervalSeconds_valueChanged(int value) {
 	_model->setAutosaveIntervalSeconds(value);
+}
+
+void PreferencesDialog::on_sexpNumberEveryN_valueChanged(int value) {
+	_model->setSexpNumberEveryN(value);
+	// setSexpNumberEveryN -> modelChanged -> applyChanges -> apply() has already committed the
+	// new value to the viewport by now, so re-icon any open trees to renumber them live.
+	sexp_tree_view::refreshAllInstances();
 }
 
 void PreferencesDialog::on_createBakOnSave_toggled(bool checked) {
@@ -154,6 +166,10 @@ void PreferencesDialog::on_applyAutoCorrections_toggled(bool checked) {
 void PreferencesDialog::on_toolbarIconSizeCombo_currentIndexChanged(int index) {
 	static constexpr int sizes[] = { 16, 24, 32 };
 	_model->setToolbarIconSize(sizes[index]);
+}
+
+void PreferencesDialog::on_outlineLodCombo_currentIndexChanged(int index) {
+	_model->setOutlineLod(index);
 }
 
 void PreferencesDialog::on_themeCombo_currentIndexChanged(int index) {
@@ -208,6 +224,14 @@ void PreferencesDialog::on_gridCenterZ_valueChanged(int value) {
 
 void PreferencesDialog::on_resetGridButton_clicked() {
 	_model->resetGrid();
+}
+
+void PreferencesDialog::on_invertOrbitX_toggled(bool checked) {
+	_model->setInvertOrbitX(checked);
+}
+
+void PreferencesDialog::on_invertOrbitY_toggled(bool checked) {
+	_model->setInvertOrbitY(checked);
 }
 
 void PreferencesDialog::on_resetDefaultsButton_clicked() {

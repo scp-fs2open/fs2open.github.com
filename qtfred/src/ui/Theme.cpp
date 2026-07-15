@@ -1,13 +1,34 @@
 #include "ui/Theme.h"
 
 #include <QApplication>
+#include <QGraphicsDropShadowEffect>
+#include <QGraphicsPixmapItem>
+#include <QGraphicsScene>
 #include <QPainter>
 #include <QPainterPath>
 #include <QPalette>
 #include <QPixmap>
 
 namespace {
+class PaletteChangeFilter : public QObject {
+  public:
+	PaletteChangeFilter(QObject* parent, std::function<void()> callback)
+		: QObject(parent), m_callback(std::move(callback))
+	{
+	}
 
+  protected:
+	bool eventFilter(QObject* watched, QEvent* event) override
+	{
+		if (event->type() == QEvent::ApplicationPaletteChange) {
+			m_callback();
+		}
+		return QObject::eventFilter(watched, event);
+	}
+
+  private:
+	std::function<void()> m_callback;
+};
 const char* const LIGHT_BUTTON_QSS = R"(
 QPushButton {
     background-color: #e1e1e1;
@@ -351,9 +372,8 @@ void bindStandardIcon(QAbstractButton* btn, QStyle::StandardPixmap sp)
 		btn->setIcon(makeThemedIcon(sp, color));
 	};
 	refresh();
-	QObject::connect(qApp, &QApplication::paletteChanged, btn, [refresh](const QPalette&) {
-		refresh();
-	});
+	auto* filter = new PaletteChangeFilter(btn, refresh);
+	qApp->installEventFilter(filter);
 }
 
 void bindThemeIcon(QAction* action, const QString& baseName)
@@ -366,9 +386,8 @@ void bindThemeIcon(QAction* action, const QString& baseName)
 		action->setIcon(QIcon(path));
 	};
 	refresh();
-	QObject::connect(qApp, &QApplication::paletteChanged, action, [refresh](const QPalette&) {
-		refresh();
-	});
+	auto* filter = new PaletteChangeFilter(action, refresh);
+	qApp->installEventFilter(filter);
 }
 
 void bindThemeIcon(QAbstractButton* btn, const QString& baseName)
@@ -381,9 +400,66 @@ void bindThemeIcon(QAbstractButton* btn, const QString& baseName)
 		btn->setIcon(QIcon(path));
 	};
 	refresh();
-	QObject::connect(qApp, &QApplication::paletteChanged, btn, [refresh](const QPalette&) {
-		refresh();
-	});
+	auto* filter = new PaletteChangeFilter(btn, refresh);
+	qApp->installEventFilter(filter);
+}
+
+QPixmap tintMultiply(const QPixmap& src, const QColor& color)
+{
+	if (src.isNull())
+		return src;
+
+	QPixmap pm = src.copy();
+	QPainter p(&pm);
+	// Multiply the color into the artwork...
+	p.setCompositionMode(QPainter::CompositionMode_Multiply);
+	p.fillRect(pm.rect(), color);
+	// ...then clip back to the master's alpha so transparent areas stay transparent
+	// (the opaque fill would otherwise flood them).
+	p.setCompositionMode(QPainter::CompositionMode_DestinationIn);
+	p.drawPixmap(0, 0, src);
+	p.end();
+	return pm;
+}
+
+QPixmap tintScreen(const QPixmap& src, const QColor& color)
+{
+	if (src.isNull())
+		return src;
+
+	QPixmap pm = src.copy();
+	QPainter p(&pm);
+	p.setCompositionMode(QPainter::CompositionMode_Screen);
+	p.fillRect(pm.rect(), color);
+	p.setCompositionMode(QPainter::CompositionMode_DestinationIn);
+	p.drawPixmap(0, 0, src);
+	p.end();
+	return pm;
+}
+
+QPixmap applyIconShadow(const QPixmap& src)
+{
+	if (src.isNull())
+		return src;
+
+	// Use a graphics scene so we get a proper soft (blurred) drop shadow. The shadow
+	// is neutral and identical for every icon, which is what unifies the set.
+	QGraphicsScene scene;
+	auto* item = new QGraphicsPixmapItem(src); // owned by the scene
+	auto* effect = new QGraphicsDropShadowEffect;
+	effect->setBlurRadius(4.0);
+	effect->setColor(QColor(0, 0, 0, 110));
+	effect->setOffset(1.0, 1.4);
+	item->setGraphicsEffect(effect);
+	scene.addItem(item);
+
+	QPixmap out(src.size());
+	out.fill(Qt::transparent);
+	QPainter p(&out);
+	const QRectF box(0.0, 0.0, src.width(), src.height());
+	scene.render(&p, box, box);
+	p.end();
+	return out;
 }
 
 } // namespace fso::fred

@@ -13,16 +13,17 @@
 
 #include <QCloseEvent>
 #include <ui/dialogs/General/CheckBoxListDialog.h>
+#include <QVariant>
 
 namespace fso::fred::dialogs {
 
 ShipEditorDialog::ShipEditorDialog(FredView* parent, EditorViewport* viewport)
-	: QDialog(parent), ui(new Ui::ShipEditorDialog()), _model(new ShipEditorDialogModel(this, viewport)),
+	: QDialog(parent), SexpTreeEditorInterface(flagset<TreeFlags>()),
+	  ui(new Ui::ShipEditorDialog()), _model(new ShipEditorDialogModel(this, viewport)),
 	  _viewport(viewport)
 {
 	this->setFocus();
 	ui->setupUi(this);
-
 	ui->HelpTitle->setVisible(viewport->Show_sexp_help_ship_editor);
 	ui->helpText->setVisible(viewport->Show_sexp_help_ship_editor);
 
@@ -35,6 +36,13 @@ ShipEditorDialog::ShipEditorDialog(FredView* parent, EditorViewport* viewport)
 	connect(_model.get(), &AbstractDialogModel::modelChanged, this, [this] { updateUi(false); });
 	connect(viewport->editor, &Editor::currentObjectChanged, this, &ShipEditorDialog::update);
 	connect(viewport->editor, &Editor::objectMarkingChanged, this, &ShipEditorDialog::update);
+
+	connect(ui->arrivalTree, &sexp_tree_view::modified, this, &ShipEditorDialog::on_arrivalTree_modified);
+	connect(ui->arrivalTree, &sexp_tree_view::helpChanged, this, &ShipEditorDialog::on_arrivalTree_helpChanged);
+	connect(ui->arrivalTree, &sexp_tree_view::miniHelpChanged, this, &ShipEditorDialog::on_arrivalTree_miniHelpChanged);
+	connect(ui->departureTree, &sexp_tree_view::modified, this, &ShipEditorDialog::on_departureTree_modified);
+	connect(ui->departureTree, &sexp_tree_view::helpChanged, this, &ShipEditorDialog::on_departureTree_helpChanged);
+	connect(ui->departureTree, &sexp_tree_view::miniHelpChanged, this, &ShipEditorDialog::on_departureTree_miniHelpChanged);
 
 	// Column One
 
@@ -80,6 +88,7 @@ void ShipEditorDialog::hideEvent(QHideEvent* e)
 void ShipEditorDialog::showEvent(QShowEvent* e)
 {
 	_model->initializeData();
+	updateUi(true);
 	QDialog::showEvent(e);
 }
 
@@ -221,7 +230,8 @@ void ShipEditorDialog::updateColumnOne(bool overwrite)
 				ui->callsignCombo->clear();
 				ui->callsignCombo->addItem("<none>");
 				for (auto j = 0; j < Mission_callsign_count; j++) {
-					ui->callsignCombo->addItem(Mission_callsigns[j], QVariant(Mission_callsigns[j]));
+					SCP_string current = Mission_callsigns[j];
+					ui->callsignCombo->addItem(Mission_callsigns[j], current.c_str());
 				}
 				int callsignIdx = ui->callsignCombo->findText(QString(callsign.c_str()));
 				if (callsignIdx >= 0) {
@@ -316,7 +326,7 @@ void ShipEditorDialog::updateArrival(bool overwrite)
 
 		ui->updateArrivalCueCheckBox->setChecked(_model->getArrivalCue());
 
-		ui->arrivalTree->initializeEditor(_viewport->editor, this);
+		ui->arrivalTree->initializeEditor(_viewport->editor, this, _viewport);
 		if (_model->getNumSelectedShips()) {
 
 			if (_model->getIfMultipleShips()) {
@@ -324,6 +334,7 @@ void ShipEditorDialog::updateArrival(bool overwrite)
 			}
 			if (_model->getUseCue()) {
 				ui->arrivalTree->load_tree(_model->getArrivalFormula());
+				ui->arrivalTree->expandAll();
 			} else {
 				ui->arrivalTree->clear_tree("");
 			}
@@ -338,6 +349,7 @@ void ShipEditorDialog::updateArrival(bool overwrite)
 		}
 
 		ui->noArrivalWarpCheckBox->setCheckState(Qt::CheckState(_model->getNoArrivalWarp()));
+		ui->dockWarpinCheckBox->setCheckState(Qt::CheckState(_model->getDockWarpinChange()));
 	}
 }
 void ShipEditorDialog::updateDeparture(bool overwrite)
@@ -372,7 +384,7 @@ void ShipEditorDialog::updateDeparture(bool overwrite)
 	if (overwrite) {
 		ui->departureDelaySpinBox->setValue(_model->getDepartureDelay());
 
-		ui->departureTree->initializeEditor(_viewport->editor, this);
+		ui->departureTree->initializeEditor(_viewport->editor, this, _viewport);
 		if (_model->getNumSelectedShips()) {
 
 			if (_model->getIfMultipleShips()) {
@@ -380,6 +392,7 @@ void ShipEditorDialog::updateDeparture(bool overwrite)
 			}
 			if (_model->getUseCue()) {
 				ui->departureTree->load_tree(_model->getDepartureFormula(), "false");
+				ui->departureTree->expandAll();
 			} else {
 				ui->departureTree->clear_tree("");
 			}
@@ -395,6 +408,7 @@ void ShipEditorDialog::updateDeparture(bool overwrite)
 		}
 
 		ui->noDepartureWarpCheckBox->setCheckState(Qt::CheckState(_model->getNoDepartureWarp()));
+		ui->dockWarpoutCheckBox->setCheckState(Qt::CheckState(_model->getDockWarpoutChange()));
 
 		ui->updateDepartureCueCheckBox->setChecked(_model->getDepartureCue());
 	}
@@ -416,6 +430,9 @@ void ShipEditorDialog::enableDisable()
 
 		ui->noArrivalWarpCheckBox->setEnabled(false);
 		ui->noDepartureWarpCheckBox->setEnabled(false);
+
+		ui->dockWarpinCheckBox->setEnabled(false);
+		ui->dockWarpoutCheckBox->setEnabled(false);
 
 		ui->restrictArrivalPathsButton->setEnabled(false);
 		ui->restrictDeparturePathsButton->setEnabled(false);
@@ -457,8 +474,11 @@ void ShipEditorDialog::enableDisable()
 		ui->arrivalTree->setEnabled(_model->getUIEnable());
 		ui->departureDelaySpinBox->setEnabled(_model->getUIEnable());
 		ui->departureTree->setEnabled(_model->getUIEnable());
-		ui->noArrivalWarpCheckBox->setEnabled(_model->getUIEnable());
+		ui->noArrivalWarpCheckBox->setEnabled(_model->getUIEnable() && !_model->getPlayer());
 		ui->noDepartureWarpCheckBox->setEnabled(_model->getUIEnable());
+
+		ui->dockWarpinCheckBox->setEnabled(_model->getUIEnable() && !_model->getPlayer());
+		ui->dockWarpoutCheckBox->setEnabled(_model->getUIEnable());
 	}
 
 	if (_model->getNumSelectedObjects()) {
@@ -621,7 +641,7 @@ void ShipEditorDialog::on_textureReplacementButton_clicked()
 
 void ShipEditorDialog::on_playerShipButton_clicked()
 {
-	_model->setPlayer(true);
+	_model->makeSolePlayerStart();
 }
 void ShipEditorDialog::on_altShipClassButton_clicked()
 {
@@ -853,9 +873,9 @@ void ShipEditorDialog::on_noArrivalWarpCheckBox_stateChanged(int state)
 		return;
 	_model->setNoArrivalWarp(state);
 }
-void ShipEditorDialog::on_arrivalTree_rootNodeFormulaChanged(int old, int node)
+void ShipEditorDialog::on_arrivalTree_modified()
 {
-	_model->setArrivalFormula(old, node);
+	_model->setArrivalTreeDirty(ui->arrivalTree->_model.save_tree());
 }
 void ShipEditorDialog::on_arrivalTree_helpChanged(const QString& help)
 {
@@ -864,6 +884,12 @@ void ShipEditorDialog::on_arrivalTree_helpChanged(const QString& help)
 void ShipEditorDialog::on_arrivalTree_miniHelpChanged(const QString& help)
 {
 	ui->HelpTitle->setText(help);
+}
+void ShipEditorDialog::on_dockWarpinCheckBox_stateChanged(int state)
+{
+	if (state == Qt::PartiallyChecked)
+		return;
+	_model->setDockWarpinChange(state);
 }
 void ShipEditorDialog::on_departureLocationCombo_currentIndexChanged(int index)
 {
@@ -883,9 +909,9 @@ void ShipEditorDialog::on_updateDepartureCueCheckBox_toggled(bool value)
 {
 	_model->setDepartureCue(value);
 }
-void ShipEditorDialog::on_departureTree_rootNodeFormulaChanged(int old, int node)
+void fred::dialogs::ShipEditorDialog::on_departureTree_modified()
 {
-	_model->setDepartureFormula(old, node);
+	_model->setDepartureTreeDirty(ui->departureTree->_model.save_tree());
 }
 void ShipEditorDialog::on_departureTree_helpChanged(const QString& help)
 {
@@ -900,5 +926,11 @@ void ShipEditorDialog::on_noDepartureWarpCheckBox_stateChanged(int state)
 	if (state == Qt::PartiallyChecked)
 		return;
 	_model->setNoDepartureWarp(state);
+}
+void ShipEditorDialog::on_dockWarpoutCheckBox_stateChanged(int state)
+{
+	if (state == Qt::PartiallyChecked)
+		return;
+	_model->setDockWarpoutChange(state);
 }
 } // namespace fso::fred::dialogs

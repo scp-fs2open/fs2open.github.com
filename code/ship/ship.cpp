@@ -6029,7 +6029,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		case -1:	// Possible return value if -noparseerrors is used
 			break;
 		default:
-			UNREACHABLE("This should never happen.\n");	// Impossible return value from required_string_one_of.
+			UNREACHABLE("This should never happen");	// Impossible return value from required_string_one_of.
 		}
 	}
 
@@ -6912,6 +6912,25 @@ void ship_level_init()
 	shipfx_large_blowup_level_init();
 
 	Man_thruster_reset_timestamp = timestamp(0);
+}
+
+void ship_level_close()
+{
+	// at this point ships have all gone through ship_delete;
+	// clean up any ships that are still present so we don't
+	// leave any stray references behind (e.g. for sexps)
+	for (auto &ship_entry : Ship_registry)
+	{
+		if (ship_entry.status == ShipStatus::PRESENT || ship_entry.status == ShipStatus::DEATH_ROLL)
+		{
+			ship_entry.cleanup_mode = (ship_entry.status == ShipStatus::DEATH_ROLL) ? SHIP_DESTROYED : SHIP_PRESENT_AT_MISSION_END;
+			ship_entry.status = ShipStatus::EXITED;
+			ship_entry.objnum = -1;
+			ship_entry.shipnum = -1;
+		}
+	}
+
+	ship_close_cockpit_displays(Player_ship);
 }
 
 /**
@@ -8476,8 +8495,46 @@ static void ship_find_warping_ship_helper(object *objp, dock_function_info *info
 	}
 }
 
-//WMC - used for FTL and maneuvering thrusters
-extern bool Rendering_to_shadow_map;
+static bool ship_render_player_renderShipModel(const ship_info* sip) {
+	return sip->flags[Ship::Info_Flags::Show_ship_model]
+		&& (!Show_ship_only_if_cockpits_enabled || Cockpit_active)
+		&& (!Viewer_mode || (Viewer_mode & VM_PADLOCK_ANY) || (Viewer_mode & VM_OTHER_SHIP) || (Viewer_mode & VM_TRACK) || !(Viewer_mode & VM_EXTERNAL));
+}
+
+bool ship_render_player_ship_casts_shadow_on_cockpit() {
+	if (Viewer_obj == nullptr)
+		return false;
+
+	if (Shadow_disable_overrides.disable_cockpit)
+		return false;
+
+	ship* shipp = &Ships[Viewer_obj->instance];
+	ship_info* sip = &Ship_info[shipp->ship_info_index];
+
+	const bool hasCockpitModel = sip->cockpit_model_num >= 0;
+	const bool renderShipModel = ship_render_player_renderShipModel(sip);
+
+	//If we aren't sure whether cockpits and external models can share the same worldspace,
+	//we need to pre-render the external ship hull without shadows / deferred and give the cockpit precedence,
+	//unless this ship has no cockpit at all
+	const bool prerenderShipModel = hasCockpitModel && !Cockpit_shares_coordinate_space;
+	return renderShipModel && !prerenderShipModel;
+}
+
+bool ship_render_player_has_closeup_visuals() {
+	if (Viewer_obj == nullptr)
+		return false;
+
+	ship* shipp = &Ships[Viewer_obj->instance];
+	ship_info* sip = &Ship_info[shipp->ship_info_index];
+
+	const bool hasCockpitModel = sip->cockpit_model_num >= 0;
+
+	const bool renderCockpitModel = (Viewer_mode != VM_TOPDOWN) && hasCockpitModel && !Disable_cockpits;
+	const bool renderShipModel = ship_render_player_renderShipModel(sip);
+
+	return renderCockpitModel || renderShipModel;
+}
 
 void ship_render_player_ship(object* objp, const vec3d* cam_offset, const matrix* rot_offset, const fov_t* fov_override) {
 	ship* shipp = &Ships[objp->instance];
@@ -8487,10 +8544,7 @@ void ship_render_player_ship(object* objp, const vec3d* cam_offset, const matrix
 	const bool hasCockpitModel = sip->cockpit_model_num >= 0;
 
 	const bool renderCockpitModel = (Viewer_mode != VM_TOPDOWN) && hasCockpitModel && !Disable_cockpits;
-	const bool renderShipModel = ( 
-		sip->flags[Ship::Info_Flags::Show_ship_model])
-		&& (!Show_ship_only_if_cockpits_enabled || Cockpit_active)
-		&& (!Viewer_mode || (Viewer_mode & VM_PADLOCK_ANY) || (Viewer_mode & VM_OTHER_SHIP) || (Viewer_mode & VM_TRACK) || !(Viewer_mode & VM_EXTERNAL));
+	const bool renderShipModel = ship_render_player_renderShipModel(sip);
 	Cockpit_active = renderCockpitModel;
 
 	//Nothing to do
@@ -8574,45 +8628,19 @@ void ship_render_player_ship(object* objp, const vec3d* cam_offset, const matrix
 
 	gr_post_process_save_zbuffer();
 
-	//Deal with shadow if we have to
-	if (shadow_maybe_start_frame(Shadow_disable_overrides.disable_cockpit)) {
-		gr_reset_clip();
-		Shadow_override = false;
-
-		shadows_start_render(&eye_orient, &leaning_position, Proj_fov, gr_screen.clip_aspect,
-			std::get<0>(Shadow_distances_cockpit),
-			std::get<1>(Shadow_distances_cockpit),
-			std::get<2>(Shadow_distances_cockpit),
-			std::get<3>(Shadow_distances_cockpit));
-
-		if (deferredRenderShipModel) {
-			model_render_params shadow_render_info;
-			shadow_render_info.set_detail_level_lock(0);
-			//If we just want to recieve, we still have to write to the color buffer but not to the zbuffer, otherwise shadow recieving breaks
-			shadow_render_info.set_flags(MR_NO_TEXTURING | MR_NO_LIGHTING | (Show_ship_casts_shadow ? 0 : MR_NO_ZBUFFER));
-			shadow_render_info.set_object_number(OBJ_INDEX(objp));
-			model_render_immediate(&shadow_render_info, sip->model_num, shipp->model_instance_num, &objp->orient, &eye_offset, MODEL_RENDER_OPAQUE);
-		}
-		if (renderCockpitModel) {
-			model_render_params shadow_render_info;
-			shadow_render_info.set_detail_level_lock(0);
-			shadow_render_info.set_flags(MR_NO_TEXTURING | MR_NO_LIGHTING);
-			shadow_render_info.set_object_number(OBJ_INDEX(objp));
-			vec3d offset = sip->cockpit_offset;
-			vm_vec_unrotate(&offset, &offset, &objp->orient);
-			if (!Disable_cockpit_sway)
-				offset += sip->cockpit_sway_val * objp->phys_info.acceleration;
-			model_render_immediate(&shadow_render_info, sip->cockpit_model_num, shipp->cockpit_model_instance, &objp->orient, &offset, MODEL_RENDER_OPAQUE);
-		}
-
-		shadows_end_render();
-		gr_clear_states();
-	}
-
 	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance_cockpit, Max_draw_distance);
 	gr_set_view_matrix(&leaning_position, &eye_orient);
 
 	Shadow_view_matrix_render = gr_view_matrix;
+
+	matrix4 shadow_view_light_backup = Shadow_view_matrix_light;
+	if (shadow_maybe_start_frame(Shadow_disable_overrides.disable_cockpit)) {
+		Shadow_override = false;
+		Shadow_view_matrix_light.a1d[12] = 0;
+		Shadow_view_matrix_light.a1d[13] = 0;
+		Shadow_view_matrix_light.a1d[14] = 0;
+		shadow_cascade_params_bind(0, Num_cockpit_shadow_cascades);
+	}
 
 	if (light_deferredcockpit_enabled()) {
 		gr_deferred_lighting_begin(true);
@@ -8700,7 +8728,8 @@ void ship_render_player_ship(object* objp, const vec3d* cam_offset, const matrix
 	leaning_position = leaning_backup;
 	Proj_fov = fov_backup;
 
-	//Restore the Shadow_override
+	Shadow_view_matrix_light = shadow_view_light_backup;
+
 	shadow_end_frame();
 
 	gr_post_process_restore_zbuffer();
@@ -8745,6 +8774,7 @@ void ship_close_cockpit_displays(ship* shipp)
 {
 	if (shipp && shipp->cockpit_model_instance >= 0) {
 		model_delete_instance(shipp->cockpit_model_instance);
+		shipp->cockpit_model_instance = -1;
 	}
 
 	for ( int i = 0; i < (int)Player_displays.size(); i++ ) {
@@ -8986,12 +9016,16 @@ void ship_delete( object * obj )
 	ct_ship_delete(shipp);
 	
 	model_delete_instance(shipp->model_instance_num);
+	shipp->model_instance_num = -1;
 
 	// free up any weapon model instances
 	for (int i = 0; i < shipp->weapons.num_primary_banks; ++i)
 	{
 		if (shipp->weapons.primary_bank_external_model_instance[i] >= 0)
+		{
 			model_delete_instance(shipp->weapons.primary_bank_external_model_instance[i]);
+			shipp->weapons.primary_bank_external_model_instance[i] = -1;
+		}
 	}
 }
 
@@ -9137,7 +9171,7 @@ void wing_maybe_cleanup( wing *wingp, int team )
 						// TODO: I think this Int3() is triggered when a wing whose ships are all docked to ships of another
 						// wing departs.  It can be reliably seen in TVWP chapter 1 mission 7, when Torino and Iota wing depart.
 						// Not sure how to fix this. -- Goober5000
-						UNREACHABLE("A ship is still present even though its wing should be gone!");
+						Assertion(false, "A ship %s is still present even though its wing should be gone!", Ships[Objects[so->objnum].instance].ship_name);
 					}
 				}
 			}
@@ -14928,7 +14962,7 @@ bool ship_select_next_primary(object *objp, CycleDirection direction)
 	}
 	else if ( swp->num_primary_banks > MAX_SHIP_PRIMARY_BANKS )
 	{
-		UNREACHABLE("The ship %s has more primary banks than the maximum!", shipp->ship_name);
+		Assertion(false, "The ship %s has more primary banks than the maximum!", shipp->ship_name);
 		return false;
 	}
 
@@ -15233,8 +15267,8 @@ int get_available_secondary_weapons(object *objp, int *outlist, int *outbanklist
 				weapon_range_max = wepp->weapon_range;
 				//If weapon range is not set in the weapon info, derive it
 				if (weapon_range_max >= WEAPON_DEFAULT_TABLED_MAX_RANGE) {
+					Assertion(!wepp->is_beam(), "Since when do we have a beam that is a secondary weapon?");
 					if (wepp->is_beam()) {
-						UNREACHABLE("Since when do we have a beam that is a secondary weapon?");
 						weapon_range_max = wepp->b_info.range;
 					}
 					else {
@@ -17451,7 +17485,7 @@ int ship_get_random_ship_in_wing(int wingnum, int flags, float max_dist, int get
 // this function returns a random index into the Ship array of a ship of the given team
 // cargo containers are not counted as ships for the purposes of this function.  Why???
 // because now it is only used for getting a random ship for a message and cargo containers
-// can't send mesages.  This function is an example of kind of bad coding :-(
+// can't send messages.  This function is an example of kind of bad coding :-(
 // input:	max_dist	=>	OPTIONAL PARAMETER (default value 0.0f) max range ship can be from player
 int ship_get_random_team_ship(int team_mask, int flags, float max_dist )
 {
@@ -21763,8 +21797,6 @@ void ship_render_batch_thrusters(object *obj)
 	ship *shipp = &Ships[num];
 	ship_info *sip = &Ship_info[Ships[num].ship_info_index];
 
-	if ( Rendering_to_shadow_map ) return;
-
 	for (size_t i = 0; i < shipp->rcs_activity.size(); i++)
 	{
 		const auto mtp = &sip->rcs_thrusters[i];
@@ -21951,10 +21983,6 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 
 int ship_render_get_insignia(object* obj, ship* shipp)
 {
-	if ( Rendering_to_shadow_map ) {
-		return -1;
-	}
-
 	if ( Game_mode & GM_MULTIPLAYER ) {
 		// if its any player's object
 		int np_index = multi_find_player_by_object( obj );
@@ -21987,7 +22015,7 @@ int ship_render_get_insignia(object* obj, ship* shipp)
 
 void ship_render_set_animated_effect(model_render_params *render_info, ship *shipp, uint64_t * /*render_flags*/)
 {
-	if ( !shipp->shader_effect_timestamp.isValid() || Rendering_to_shadow_map ) {
+	if ( !shipp->shader_effect_timestamp.isValid() ) {
 		return;
 	}
 
@@ -22023,7 +22051,7 @@ void ship_render(object* obj, model_draw_list* scene)
 	ship_info *sip = &Ship_info[Ships[num].ship_info_index];
 	ship *warp_shipp = NULL;
 	bool is_first_stage_arrival = false;
-	bool show_thrusters = (!shipp->flags[Ship_Flags::No_thrusters]) && !Rendering_to_shadow_map;
+	bool show_thrusters = (!shipp->flags[Ship_Flags::No_thrusters]);
 	dock_function_info dfi;
 
 	MONITOR_INC( NumShipsRend, 1 );
@@ -22061,7 +22089,7 @@ void ship_render(object* obj, model_draw_list* scene)
 	}
 
 	model_render_params render_info;
-	if ( obj == Viewer_obj && !Rendering_to_shadow_map ) {
+	if ( obj == Viewer_obj ) {
 		if (!(Viewer_mode & VM_TOPDOWN))
 		{
 			render_info.set_object_number(OBJ_INDEX(obj));
@@ -22078,7 +22106,7 @@ void ship_render(object* obj, model_draw_list* scene)
 	model_instance_clear_arcs(pm, pmi);
 
 	// Only render electrical arcs if within 500m of the eye (for a 10m piece)
-	if ( vm_vec_dist_quick( &obj->pos, &Eye_position ) < obj->radius*50.0f && !Rendering_to_shadow_map ) {
+	if ( vm_vec_dist_quick( &obj->pos, &Eye_position ) < obj->radius*50.0f ) {
 		for (auto &arc: shipp->electrical_arcs)	{
 			if (arc.timestamp.isValid()) {
 				model_instance_add_arc(pm, pmi, -1, &arc.endpoint_1, &arc.endpoint_2, arc.persistent_arc_points.get(), arc.type, &arc.primary_color_1, &arc.primary_color_2, &arc.secondary_color, arc.width, arc.segment_depth);
@@ -22151,10 +22179,6 @@ void ship_render(object* obj, model_draw_list* scene)
 		render_flags |= MR_NO_LIGHTING;
 	}
 
-	if ( Rendering_to_shadow_map ) {
-		render_flags = MR_NO_TEXTURING | MR_NO_LIGHTING;
-	}
-
 	if (shipp->flags[Ship_Flags::Glowmaps_disabled]) {
 		render_flags |= MR_NO_GLOWMAPS;
 	}
@@ -22224,7 +22248,7 @@ void ship_render(object* obj, model_draw_list* scene)
 		model_render_queue(&render_info, scene, sip->model_num, &obj->orient, &obj->pos);
 	}
 
-	if (shipp->shield_hits && !Rendering_to_shadow_map) {
+	if (shipp->shield_hits) {
 		create_shield_explosion_all(obj);
 		shipp->shield_hits = 0;
 	}
@@ -22315,7 +22339,7 @@ bool ship::is_arriving(ship::warpstage stage, bool dock_leader_or_single) const
 	}
 
 	// should never reach here
-	Assertion(false, "ship::is_arriving didn't handle all possible states; get a coder!");
+	UNREACHABLE("ship::is_arriving didn't handle all possible states; get a coder!");
 	return false;
 }
 

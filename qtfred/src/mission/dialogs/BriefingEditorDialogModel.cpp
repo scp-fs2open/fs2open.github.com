@@ -2,6 +2,7 @@
 
 #include "gamesnd/eventmusic.h"
 #include "mission/missionparse.h"
+#include "parse/sexp.h"
 #include "sound/audiostr.h"
 #include "iff_defs/iff_defs.h"
 #include "ship/ship.h"
@@ -63,6 +64,10 @@ BriefingEditorDialogModel::~BriefingEditorDialogModel()
 	stopSpeech();
 	for (auto& wip : _wipBriefings) {
 		for (auto& stage : wip.stages) {
+			if (stage.formula >= 0) {
+				free_sexp2(stage.formula);
+				stage.formula = -1;
+			}
 			if (stage.icons != nullptr) {
 				vm_free(stage.icons);
 				stage.icons = nullptr;
@@ -79,8 +84,23 @@ bool BriefingEditorDialogModel::apply()
 {
 	stopSpeech();
 
+	// Capture any pending edits from the visible tree into _wipBriefings.
+	commitCurrentFormula();
+
 	for (int i = 0; i < MAX_TVT_TEAMS; i++) {
+		// Free Briefings's existing formulas before they get overwritten by the shallow copy.
+		for (auto& stage : Briefings[i].stages) {
+			if (stage.formula >= 0) {
+				free_sexp2(stage.formula);
+				stage.formula = -1;
+			}
+		}
 		copyBriefingData(Briefings[i], _wipBriefings[i]);
+		// Ownership of the formulas has transferred to Briefings; sever the
+		// _wipBriefings references so the destructor doesn't double-free.
+		for (auto& stage : _wipBriefings[i].stages) {
+			stage.formula = -1;
+		}
 	}
 
 	Mission_music[SCORE_BRIEFING] = _briefingMusicIndex - 1;
@@ -112,6 +132,13 @@ void BriefingEditorDialogModel::initializeData()
 			}
 		}
 		copyBriefingData(_wipBriefings[i], Briefings[i]);
+		// copyBriefingData does a shallow formula-index copy; give _wipBriefings
+		// its own sexp trees so edits/frees can't corrupt the live Briefings[].
+		for (auto& stage : _wipBriefings[i].stages) {
+			if (stage.formula >= 0) {
+				stage.formula = dup_sexp_chain(stage.formula);
+			}
+		}
 	}
 
 	_briefingMusicIndex = Mission_music[SCORE_BRIEFING] + 1;
@@ -249,6 +276,7 @@ void BriefingEditorDialogModel::gotoPreviousStage()
 		return;
 	}
 
+	commitCurrentFormula();
 	stopSpeech();
 	_currentStage--;
 }
@@ -265,12 +293,15 @@ void BriefingEditorDialogModel::gotoNextStage()
 		return;
 	}
 
+	commitCurrentFormula();
+
 	stopSpeech();
 	_currentStage++;
 }
 
 void BriefingEditorDialogModel::addStage()
 {
+	commitCurrentFormula();
 	stopSpeech();
 
 	if (_wipBriefings[_currentTeam].num_stages >= MAX_BRIEF_STAGES) {
@@ -290,6 +321,10 @@ void BriefingEditorDialogModel::addStage()
 		const brief_stage& prev = _wipBriefings[_currentTeam].stages[_currentStage - 1];
 
 		copyStageData(dst, prev); // start by copying stage data without aliasing storage, then clear fields that should not carry over by default
+		// copyStageData shallow-copied the formula index; give the new stage its own owned tree.
+		if (dst.formula >= 0) {
+			dst.formula = dup_sexp_chain(dst.formula);
+		}
 		dst.text = "<Text here>";
 		dst.voice[0] = '\0';
 	} else {
@@ -319,6 +354,7 @@ void BriefingEditorDialogModel::addStage()
 // copies the current stage as the next stage and then moves the rest of the stages over.
 void BriefingEditorDialogModel::insertStage()
 {
+	commitCurrentFormula();
 	stopSpeech();
 
 	if (_wipBriefings[_currentTeam].num_stages >= MAX_BRIEF_STAGES) {
@@ -327,10 +363,24 @@ void BriefingEditorDialogModel::insertStage()
 		return;
 	}
 
+	const int last = _wipBriefings[_currentTeam].num_stages; // new tail slot (post-increment index)
 	_wipBriefings[_currentTeam].num_stages++;
 
-	for (int i = _wipBriefings[_currentTeam].num_stages - 1; i > _currentStage; i--) {
+	// If the slot we're about to overwrite was owned, free it first.
+	if (_wipBriefings[_currentTeam].stages[last].formula >= 0) {
+		free_sexp2(_wipBriefings[_currentTeam].stages[last].formula);
+		_wipBriefings[_currentTeam].stages[last].formula = -1;
+	}
+
+	for (int i = last; i > _currentStage; i--) {
 		copyStageData(_wipBriefings[_currentTeam].stages[i], _wipBriefings[_currentTeam].stages[i - 1]);
+	}
+
+	// The shifted-up slot at _currentStage+1 now shares its formula index with
+	// _currentStage. Give it its own owned copy.
+	auto& inserted = _wipBriefings[_currentTeam].stages[_currentStage + 1];
+	if (inserted.formula >= 0) {
+		inserted.formula = dup_sexp_chain(inserted.formula);
 	}
 
 	_currentIcon = -1;
@@ -342,16 +392,26 @@ void BriefingEditorDialogModel::insertStage()
 
 void BriefingEditorDialogModel::deleteStage()
 {
+	commitCurrentFormula();
 	stopSpeech();
 
 	// Clear everything if we were on the last stage.
 	if (_wipBriefings[_currentTeam].num_stages <= 1) {
 		_wipBriefings[_currentTeam].num_stages = 0;
+		if (_wipBriefings[_currentTeam].stages[0].formula >= 0) {
+			free_sexp2(_wipBriefings[_currentTeam].stages[0].formula);
+		}
 		_wipBriefings[_currentTeam].stages[0].text.clear();
 		memset(_wipBriefings[_currentTeam].stages[0].voice, 0, CF_MAX_FILENAME_LENGTH);
 		_wipBriefings[_currentTeam].stages[0].formula = -1;
 		set_modified();
 		return;
+	}
+
+	// Free the formula at _currentStage before the loop overwrites it.
+	if (_wipBriefings[_currentTeam].stages[_currentStage].formula >= 0) {
+		free_sexp2(_wipBriefings[_currentTeam].stages[_currentStage].formula);
+		_wipBriefings[_currentTeam].stages[_currentStage].formula = -1;
 	}
 
 	// copy the stages backwards until we get to the stage we're on
@@ -361,7 +421,8 @@ void BriefingEditorDialogModel::deleteStage()
 
 	_wipBriefings[_currentTeam].num_stages--;
 
-	// Clear the tail
+	// Clear the tail. The last shift left it sharing its formula with the slot
+	// above it, so just sever the reference (no free — the slot above owns it now).
 	const int tail = _wipBriefings[_currentTeam].num_stages; // index of the old last element
 	_wipBriefings[_currentTeam].stages[tail].text.clear();
 	std::memset(_wipBriefings[_currentTeam].stages[tail].voice, 0, CF_MAX_FILENAME_LENGTH);
@@ -449,11 +510,25 @@ void BriefingEditorDialogModel::testSpeech()
 
 void BriefingEditorDialogModel::copyToOtherTeams()
 {
+	commitCurrentFormula();
 	stopSpeech();
 
 	for (int i = 0; i < MAX_TVT_TEAMS; i++) {
 		if (i != _currentTeam) {
+			// Free this team's existing formulas before they get overwritten.
+			for (auto& stage : _wipBriefings[i].stages) {
+				if (stage.formula >= 0) {
+					free_sexp2(stage.formula);
+					stage.formula = -1;
+				}
+			}
 			copyBriefingData(_wipBriefings[i], _wipBriefings[_currentTeam]);
+			// Shallow copy shared formula indices across teams; give each team its own copy.
+			for (auto& stage : _wipBriefings[i].stages) {
+				if (stage.formula >= 0) {
+					stage.formula = dup_sexp_chain(stage.formula);
+				}
+			}
 		}
 	}
 	set_modified();
@@ -476,6 +551,9 @@ int BriefingEditorDialogModel::getCurrentTeam() const
 
 void BriefingEditorDialogModel::setCurrentTeam(int teamIn)
 {
+	if (teamIn != _currentTeam) {
+		commitCurrentFormula();
+	}
 	modify(_currentTeam, teamIn);
 };
 
@@ -515,9 +593,21 @@ int BriefingEditorDialogModel::getFormula() const
 	return _wipBriefings[_currentTeam].stages[_currentStage].formula;
 }
 
-void BriefingEditorDialogModel::setFormula(int formula)
+void BriefingEditorDialogModel::commitCurrentFormula()
 {
-	modify(_wipBriefings[_currentTeam].stages[_currentStage].formula, formula);
+	if (_sexpTree == nullptr)
+		return;
+	if (_currentTeam < 0 || _currentTeam >= MAX_TVT_TEAMS)
+		return;
+	if (_currentStage < 0 || _currentStage >= _wipBriefings[_currentTeam].num_stages)
+		return;
+
+	int newFormula = _sexpTree->_model.save_tree();
+	auto& stage = _wipBriefings[_currentTeam].stages[_currentStage];
+	if (stage.formula >= 0 && stage.formula != newFormula) {
+		free_sexp2(stage.formula);
+	}
+	stage.formula = newFormula;
 }
 
 int BriefingEditorDialogModel::getCameraTransitionTime() const
@@ -695,9 +785,68 @@ int BriefingEditorDialogModel::getIconId() const
 	return s.icons[_currentIcon].id;
 }
 
-void BriefingEditorDialogModel::setIconId(int id)
+bool BriefingEditorDialogModel::setIconId(int id)
 {
-	applyToSelectedIconsCurrentAndForward([&](brief_icon& ic) { modify(ic.id, id); });
+	auto& briefing = _wipBriefings[_currentTeam];
+	if (briefing.num_stages <= 0 || _currentStage < 0 || _currentStage >= briefing.num_stages)
+		return true;
+
+	auto& stage = briefing.stages[_currentStage];
+	if (_currentIcon < 0 || _currentIcon >= stage.num_icons)
+		return true;
+
+	// an id applies to a single icon, so operate on the current icon rather than the
+	// whole selection; applying one id to several icons would itself create a collision
+	const int oldId = stage.icons[_currentIcon].id;
+	if (id == oldId)
+		return true; // no change
+
+	// briefing icon ids must never be negative (the spin box also enforces this)
+	if (id < 0)
+		return false;
+
+	// an icon id must be unique within its stage
+	for (int i = 0; i < stage.num_icons; ++i) {
+		if (i != _currentIcon && stage.icons[i].id == id) {
+			QMessageBox::warning(nullptr,
+				tr("Icon ID"),
+				tr("Icon ID %1 is already used by another icon in this stage.  The ID has not been changed.").arg(id));
+			return false;
+		}
+	}
+
+	// when propagating forward, the new id must not already be used by a different icon in a
+	// later stage, or the global rename would merge two distinct icon chains into one
+	if (!_changeLocally) {
+		for (int st = _currentStage + 1; st < briefing.num_stages; ++st) {
+			const auto& s = briefing.stages[st];
+			for (int i = 0; i < s.num_icons; ++i) {
+				if (s.icons[i].id == id) {
+					QMessageBox::warning(nullptr,
+						tr("Icon ID"),
+						tr("Icon ID %1 is already used in a later stage.  You can only change to that ID "
+						   "locally.  The ID has not been changed.").arg(id));
+					return false;
+				}
+			}
+		}
+	}
+
+	// apply the change to the current icon, and (unless local-only) to the same icon in later stages
+	stage.icons[_currentIcon].id = id;
+	if (!_changeLocally) {
+		for (int st = _currentStage + 1; st < briefing.num_stages; ++st) {
+			auto& s = briefing.stages[st];
+			for (int i = 0; i < s.num_icons; ++i) {
+				if (s.icons[i].id == oldId)
+					s.icons[i].id = id;
+			}
+		}
+	}
+
+	set_modified();
+	modelChanged();
+	return true;
 }
 
 SCP_string BriefingEditorDialogModel::getIconLabel() const

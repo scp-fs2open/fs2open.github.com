@@ -210,6 +210,7 @@ class EditorViewport {
 
 	bool Group_rotate = true;
 	int  toolbar_icon_size = 24;  ///< Toolbar icon size in pixels (16, 24, or 32)
+	int  sexp_number_every_n = 5; ///< Show a numbered badge on every Nth argument in sexp trees (0 = disabled)
 	bool Offer_autosave_recovery   = true;
 	int  autosave_interval_seconds = 300;  // 5 minutes; 0 = disabled
 	bool Create_bak_on_save        = true;

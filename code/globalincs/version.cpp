@@ -107,7 +107,7 @@ version::version(const SCP_string& semver, int missing) : major(missing), minor(
 			++has_fields;
 				break;
 			default:
-				UNREACHABLE("Version parsing broken, get a coder!");
+				Assertion(false, "Version parsing broken, get a coder!");
 				break;
 			}
 		}

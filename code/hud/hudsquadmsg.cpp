@@ -1227,7 +1227,7 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 	ordering_shipp = &Ships[ainfo->shipnum];
 
 	// a shortcut to save on repetitive coding.  If the order is a 'target' order, make the default
-	// mesage be "no target"
+	// message be "no target"
 	message = MESSAGE_NOSIR;
 	if (target_messages.count((size_t)command) > 0 && (ainfo->target_objnum == -1)) {
 		message = MESSAGE_NO_TARGET;

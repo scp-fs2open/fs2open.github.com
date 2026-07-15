@@ -630,9 +630,8 @@ void gr_opengl_post_process_end()
 //	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
 	GL_state.Texture.SetTarget(GL_TEXTURE_2D_ARRAY);
 //	GL_state.Texture.Enable(Shadow_map_depth_texture);
-	extern GLuint Shadow_map_texture;
 	extern GLuint Post_shadow_texture_id;
-	GL_state.Texture.Enable(Shadow_map_texture);
+	GL_state.Texture.Enable(Shadow_map_depth_texture);
 	glUniform1iARB( opengl_shader_get_uniform("shadow_map"), 0);
 	glUniform1iARB( opengl_shader_get_uniform("index"), 0);
 	//opengl_draw_textured_quad(-1.0f, -1.0f, 0.0f, 0.0f, -0.5f, -0.5f, Scene_texture_u_scale, Scene_texture_u_scale);
@@ -823,7 +822,7 @@ static void set_fxaa_defines(SCP_stringstream& sflags)
 		sflags << "#define FXAA_QUALITY_SUBPIX 0.33\n";
 		break;
 	default:
-		UNREACHABLE("Unhandled FXAA mode!");
+		UNREACHABLE("Unhandled FXAA mode %d!", static_cast<int>(Gr_aa_mode));
 	}
 }
 void set_smaa_defines(SCP_stringstream& sflags)
@@ -849,7 +848,7 @@ void set_smaa_defines(SCP_stringstream& sflags)
 		sflags << "#define SMAA_PRESET_ULTRA\n";
 		break;
 	default:
-		UNREACHABLE("Unhandled SMAA mode!");
+		UNREACHABLE("Unhandled SMAA mode %d!", static_cast<int>(Gr_aa_mode));
 	}
 }
 void opengl_post_shader_header(SCP_stringstream& sflags, shader_type shader_t, int flags)

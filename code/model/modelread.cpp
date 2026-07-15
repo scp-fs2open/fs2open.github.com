@@ -31,6 +31,7 @@
 #include "math/fvi.h"
 #include "math/vecmat.h"
 #include "model/model.h"
+#include "model/modelrender.h"
 #include "model/modelreplace.h"
 #include "model/modelsinc.h"
 #include "parse/parselo.h"
@@ -337,6 +338,10 @@ void model_free_all()
 void model_instance_free_all()
 {
 	size_t i;
+
+	// invalidate the UI render instance cache first so it doesn't retain stale references
+	// into Polygon_model_instances after the loop below
+	model_clear_cached_ui_render_instances();
 
 	// free any outstanding model instances
 	for ( i = 0; i < Polygon_model_instances.size(); ++i ) {
@@ -1295,7 +1300,7 @@ void determine_submodel_movement(bool is_rotation, const char *filename, bsp_inf
 
 		if (in(p, props, axis_string))
 		{
-			if (get_user_vec3d_value(p + 20, movement_axis, true, sm->name, filename))
+			if (get_user_vec3d_value(p + strlen(axis_string), movement_axis, true, sm->name, filename))
 			{
 				if (!fl_near_zero(vm_vec_mag(movement_axis)))
 					vm_vec_normalize(movement_axis);
@@ -3208,7 +3213,7 @@ void model_load_texture(polymodel *pm, int i, const char *file)
 
 	// See if we need to compile a new shader for this material
 	if (Shadow_quality != ShadowQuality::Disabled)
-		gr_maybe_create_shader(SDR_TYPE_MODEL, MODEL_SDR_FLAG_SHADOW_MAP);
+		gr_maybe_create_shader(SDR_TYPE_SHADOW_MAP_GEN, gr_is_capable(gr_capability::CAPABILITY_FAST_SHADOWS) ? 0 : SDR_FLAG_SHADOW_FALLBACK);
 
 	gr_maybe_create_shader(SDR_TYPE_MODEL, 0);
 
@@ -4070,7 +4075,7 @@ void submodel_canonicalize_translation(bsp_info *sm, submodel_instance *smi)
 	smi->canonical_prev_offset = smi->canonical_offset;
 
 	// get the vector
-	switch (sm->rotation_axis_id)
+	switch (sm->translation_axis_id)
 	{
 		case MOVEMENT_AXIS_X:
 			vm_vec_copy_scale(&smi->canonical_offset, &vmd_x_vector, smi->cur_offset);

@@ -46,6 +46,7 @@
 #include "mission/missionlog.h"
 #include "mission/missionmessage.h"
 #include "mission/missionparse.h"
+#include "missioneditor/sexp_annotation_model.h"
 #include "missionui/fictionviewer.h"
 #include "missionui/missioncmdbrief.h"
 #include "missionui/redalert.h"
@@ -3366,6 +3367,19 @@ p_object::~p_object()
 	dock_free_dock_list(this);
 }
 
+p_object &p_object::operator=(p_object &&other) noexcept
+{
+	if (this != &other) {
+		// free our dock list, which the memberwise assignment below would otherwise overwrite (and leak)
+		dock_free_dock_list(this);
+
+		// shallow memberwise copy, then transfer ownership of the dock list by nulling the source's handle
+		*this = other;
+		other.dock_list = nullptr;
+	}
+	return *this;
+}
+
 const char* p_object::get_display_name() {
 	if (has_display_name()) {
 		return display_name.c_str();
@@ -4809,6 +4823,12 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, 
 				Ship_registry.push_back(entry);
 				Ship_registry_map[p_objp->name] = static_cast<int>(Ship_registry.size() - 1);
 			}
+		}
+		// make sure we still handle wing display names in a single-wave wing
+		else if (wingp->has_display_name())
+		{
+			wing_bash_ship_name(p_objp->display_name, wingp->get_display_name(), wingp->total_arrived_count + wingp->red_alert_skipped_ships);
+			p_objp->flags.set(Mission::Parse_Object_Flags::SF_Has_display_name);
 		}
 
 		// also, if multiplayer, set the parse object's net signature to be wing's net signature
@@ -8210,6 +8230,7 @@ int mission_set_arrival_location(anchor_t anchor, ArrivalLocation location, int 
 				vm_vec_negate(&rand_vec);
 		} else {
 			UNREACHABLE("Unknown location type discovered when trying to parse %s -- Please let an SCP coder know!", Ships[shipnum].ship_name);
+			rand_vec = vmd_zero_vector;
 		}
 
 		// add in the radius of the two ships involved.  This will make the ship arrive further than
@@ -8260,7 +8281,7 @@ void mission_parse_mark_reinforcement_available(const char *name)
 		return;
 	}
 
-	Assertion(false, "Reinforcement '%s' not found!", name);
+	Warning(LOCATION, "Reinforcement '%s' not found!", name);
 }
 
 /**

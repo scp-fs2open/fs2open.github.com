@@ -984,7 +984,7 @@ void game_level_close()
 		particle::ParticleManager::get()->clearSources();
 		particle::close();
 		trail_level_close();
-		ship_close_cockpit_displays(Player_ship);
+		ship_level_close();
 		hud_level_close();
 		hud_escort_clear_all();
 		model_instance_free_all();
@@ -3007,7 +3007,7 @@ void say_view_target()
 				}
 
 			default:
-				UNREACHABLE("Trying to view an invalid object!");
+				UNREACHABLE("Trying to view an invalid object %d!", Objects[Player_ai->target_objnum].type);
 				break;
 			}
 
@@ -3551,7 +3551,7 @@ void game_render_frame( camid cid, const vec3d* offset, const matrix* rot_offset
 		stars_draw(1,1,1,0,0);
 	}
 
-	shadows_render_all(Proj_fov, &Eye_matrix, &Eye_position);
+	shadows_render_all(Proj_fov, &Eye_matrix, &Eye_position, offset, rot_offset, fov_override);
 	obj_render_queue_all();
 
 	// render all ships with shader effects on them

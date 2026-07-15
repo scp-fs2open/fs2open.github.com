@@ -28,6 +28,7 @@
 #include "mission/missionbriefcommon.h"
 #include "missioneditor/common.h"
 #include "missioneditor/objectduplication.h"
+#include "missioneditor/sexp_annotation_model.h"
 #include "model/modelreplace.h"
 #include "Management.h"
 #include "cfile/cfile.h"
@@ -271,7 +272,6 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	SDL_SetMainReady();
 
 	Random::seed(static_cast<unsigned int>(time(nullptr)));
-	init_pending_messages();
 
 	os_init(Osreg_class_name, Osreg_app_name);
 
@@ -616,7 +616,17 @@ int create_ship(matrix *orient, vec3d *pos, int ship_type)
 	}
 
 	Ai_info[shipp->ai_index].kamikaze_damage = (int) std::min(1000.0f, 200.0f + (temp_max_hull_strength / 4.0f));
-
+	auto replacements = sip->replacement_textures;
+	for (auto& tr : replacements) {
+		if (!stricmp(tr.new_texture, "invisible")) {
+			// invisible is a special case
+			tr.new_texture_id = REPLACE_WITH_INVISIBLE;
+		} else {
+			// try to load texture or anim as normal
+			tr.new_texture_id = bm_load_either(tr.new_texture);
+		}
+	}
+	shipp->apply_replacement_textures(replacements);
 	return obj;
 }
 
@@ -775,7 +785,7 @@ int create_object(vec3d *pos, int waypoint_instance, bool prop)
 	int obj, n;
 
 	if (prop) {
-		int prop_class = m_new_prop_type_combo_box.GetCurSel();
+		int prop_class = m_new_prop_type_combo_box.GetPropClass(m_new_prop_type_combo_box.GetCurSel());
 		if (prop_class < 0 || prop_class >= prop_info_size())
 			return -1;
 
@@ -1235,7 +1245,6 @@ int common_object_delete(int obj)
 	char msg[255];
 	const char *name;
 	int i, z, r, type;
-	object *objp;
 	SCP_list<CJumpNode>::iterator jnp;
 
 	type = Objects[obj].type;
@@ -1271,17 +1280,7 @@ int common_object_delete(int obj)
 			ai_do_objects_undocked_stuff(&Objects[obj], dock_get_first_docked_object(&Objects[obj]));
 		}
 
-		if (Player_start_shipnum == i) {  // need a new single player start.
-			objp = GET_FIRST(&obj_used_list);
-			while (objp != END_OF_LIST(&obj_used_list)) {
-				if (objp->type == OBJ_START) {
-					Player_start_shipnum = objp->instance;
-					break;
-				}
-
-				objp = GET_NEXT(objp);
-			}
-		}
+		ensure_valid_player_start_shipnum();  // may need a new single player start
 
 		Player_starts--;
 
@@ -2656,4 +2655,66 @@ void update_texture_replacements(const char *old_name, const char *new_name)
 		if (!stricmp(ii->ship_name, old_name))
 			strcpy_s(ii->ship_name, new_name);
 	}
+}
+
+HBITMAP load_btnface_mapped(UINT id)
+{
+	std::array<COLORMAP, 5> cmap;
+	cmap[0].from = RGB(255, 0, 255);			// magenta (transparent background)
+	cmap[0].to = GetSysColor(COLOR_BTNFACE);
+	cmap[1].from = RGB(192, 192, 192);			// dark gray (traditional background)
+	cmap[1].to = GetSysColor(COLOR_BTNFACE);
+	cmap[2].from = RGB(128, 128, 128);
+	cmap[2].to = GetSysColor(COLOR_BTNSHADOW);
+	cmap[3].from = RGB(255, 255, 255);
+	cmap[3].to = GetSysColor(COLOR_BTNHIGHLIGHT);
+	cmap[4].from = RGB(0, 0, 0);
+	cmap[4].to = GetSysColor(COLOR_BTNTEXT);
+	return CreateMappedBitmap(AfxGetResourceHandle(), id, 0, cmap.data(), sz2i(cmap.size()));
+}
+
+HICON load_button_icon(UINT id, COLORREF transparent)
+{
+	// Load the resource bitmap as a device-dependent bitmap.
+	HBITMAP color = (HBITMAP)::LoadBitmap(AfxGetResourceHandle(), MAKEINTRESOURCE(id));
+	if (color == nullptr)
+		return nullptr;
+
+	BITMAP bm;
+	::GetObject(color, sizeof(bm), &bm);
+
+	HDC screen_dc = ::GetDC(nullptr);
+	HDC color_dc = ::CreateCompatibleDC(screen_dc);
+	HDC mask_dc = ::CreateCompatibleDC(screen_dc);
+
+	// Build a 1-bpp mask: pixels matching the transparent key become white (1),
+	// everything else black (0).  This is the AND mask of the icon.
+	HBITMAP mask = ::CreateBitmap(bm.bmWidth, bm.bmHeight, 1, 1, nullptr);
+	HBITMAP old_color = (HBITMAP)::SelectObject(color_dc, color);
+	HBITMAP old_mask = (HBITMAP)::SelectObject(mask_dc, mask);
+
+	::SetBkColor(color_dc, transparent);
+	::BitBlt(mask_dc, 0, 0, bm.bmWidth, bm.bmHeight, color_dc, 0, 0, SRCCOPY);
+
+	// Punch the transparent pixels in the color bitmap to black (D & ~S), so the
+	// icon's XOR stage leaves the background untouched where the mask is set.
+	::BitBlt(color_dc, 0, 0, bm.bmWidth, bm.bmHeight, mask_dc, 0, 0, 0x00220326 /*DSna: D & ~S*/);
+
+	::SelectObject(color_dc, old_color);
+	::SelectObject(mask_dc, old_mask);
+	::DeleteDC(color_dc);
+	::DeleteDC(mask_dc);
+	::ReleaseDC(nullptr, screen_dc);
+
+	ICONINFO ii = {};
+	ii.fIcon = TRUE;
+	ii.hbmMask = mask;
+	ii.hbmColor = color;
+	HICON icon = ::CreateIconIndirect(&ii);
+
+	// CreateIconIndirect copies the bitmaps, so the originals can be freed.
+	::DeleteObject(mask);
+	::DeleteObject(color);
+
+	return icon;
 }

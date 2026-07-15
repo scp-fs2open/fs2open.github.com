@@ -134,4 +134,14 @@ extern int wing_is_player_wing(int wing);
 extern void update_custom_wing_indexes();
 extern void update_texture_replacements(const char* old_name, const char* new_name);
 
+// Load a button bitmap, remapping its background colors to system colors as needed.
+// This mirrors the color substitution MFC performs for toolbar bitmaps.  Caller owns
+// the returned HBITMAP.
+extern HBITMAP load_btnface_mapped(UINT id);
+
+// Build an icon from a button bitmap resource, treating the given color as transparent.
+// Icons, unlike bitmaps, render correctly grayed when the button is disabled.  Caller
+// owns the returned HICON and must call DestroyIcon on it when done.
+extern HICON load_button_icon(UINT id, COLORREF transparent);
+
 #endif

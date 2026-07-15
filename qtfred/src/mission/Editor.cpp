@@ -16,6 +16,7 @@
 #include <util.h>
 #include <mission/missionmessage.h>
 #include <missioneditor/common.h>
+#include <missioneditor/sexp_annotation_model.h>
 #include <missioneditor/missionsave.h>
 #include <missioneditor/objectduplication.h>
 #include <gamesnd/eventmusic.h>
@@ -766,7 +767,17 @@ int Editor::create_ship(matrix* orient, vec3d* pos, int ship_type) {
 	}
 
 	Ai_info[shipp->ai_index].kamikaze_damage = (int) std::min(1000.0f, 200.0f + (temp_max_hull_strength / 4.0f));
-
+	auto replacements = sip->replacement_textures;
+	for (auto& tr : replacements) {
+		if (!stricmp(tr.new_texture, "invisible")) {
+			// invisible is a special case
+			tr.new_texture_id = REPLACE_WITH_INVISIBLE;
+		} else {
+			// try to load texture or anim as normal
+			tr.new_texture_id = bm_load_either(tr.new_texture);
+		}
+	}
+	shipp->apply_replacement_textures(replacements);
 	missionChanged();
 
 	return obj;
@@ -973,7 +984,6 @@ int Editor::common_object_delete(int obj) {
 	char msg[255];
 	const char *name;
 	int i, z, r, type;
-	object* objp;
 	SCP_list<CJumpNode>::iterator jnp;
 
 	type = Objects[obj].type;
@@ -1012,17 +1022,7 @@ int Editor::common_object_delete(int obj) {
 			ai_do_objects_undocked_stuff(&Objects[obj], dock_get_first_docked_object(&Objects[obj]));
 		}
 
-		if (Player_start_shipnum == i) {  // need a new single player start.
-			objp = GET_FIRST(&obj_used_list);
-			while (objp != END_OF_LIST(&obj_used_list)) {
-				if (objp->type == OBJ_START) {
-					Player_start_shipnum = objp->instance;
-					break;
-				}
-
-				objp = GET_NEXT(objp);
-			}
-		}
+		ensure_valid_player_start_shipnum();  // may need a new single player start
 
 		Player_starts--;
 
@@ -1562,7 +1562,7 @@ int Editor::set_reinforcement(const char* name, int state) {
 
 	return 0;
 }
-void Editor::remove_wing(int wing_num) {
+void Editor::disband_wing(int wing_num) {
 
 	int i, total;
 	object* ptr;
@@ -1570,6 +1570,8 @@ void Editor::remove_wing(int wing_num) {
 	if (check_wing_dependencies(wing_num)) {
 		return;
 	}
+
+	delete_reinforcement(Wings[wing_num].name);
 
 	total = Wings[wing_num].wave_count;
 	for (i = 0; i < total; i++) {

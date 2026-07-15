@@ -4,6 +4,7 @@
 #include <QAction>
 #include <QColor>
 #include <QIcon>
+#include <QPixmap>
 #include <QString>
 #include <QStyle>
 
@@ -26,5 +27,24 @@ void bindThemeIcon(QAction* action, const QString& baseName);
 
 // Overload for QAbstractButton (e.g. QToolButton in the transform bar).
 void bindThemeIcon(QAbstractButton* btn, const QString& baseName);
+
+// --- Icon colorization + shadow helpers (used by the sexp tree icons) ---
+
+// Colorize a neutral master by multiplying `color` into its RGB while preserving
+// the master's alpha. White areas become the full color, darker areas become a
+// darker shade of it. Use for solid silhouettes that must take an arbitrary color
+// (including black/white), e.g. the dot and chain icons.
+QPixmap tintMultiply(const QPixmap& src, const QColor& color);
+
+// Colorize a neutral master by screening `color` over its RGB while preserving the
+// master's alpha. Light areas stay light (white stays white); dark areas take the
+// color. Use for two-tone icons whose light areas must be preserved, e.g. the data
+// document (black leaves it unchanged, red produces the "variable" look).
+QPixmap tintScreen(const QPixmap& src, const QColor& color);
+
+// Composite a subtle, uniform neutral drop shadow beneath an icon, returning a new
+// pixmap of the same size. Applied to every sexp tree icon so shadow styling stays
+// consistent and decoupled from the (tinted) artwork.
+QPixmap applyIconShadow(const QPixmap& src);
 
 } // namespace fso::fred
