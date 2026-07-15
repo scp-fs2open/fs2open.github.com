@@ -497,6 +497,12 @@ void Editor::unmarkObject(int obj) {
 }
 
 void Editor::clearMission(bool fast_reload) {
+	// drop cached model numbers while the models are still loaded; model_free_all() below invalidates
+	// them and the next mission reuses the slots, so a later unload would hit an unrelated model
+	for (auto& viewport : _viewports) {
+		viewport->renderer->freeVolumetricModel();
+	}
+
 	// clean up everything we need to before we reset back to defaults.
 	clean_up_selections();
 
