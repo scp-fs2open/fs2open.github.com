@@ -59,6 +59,7 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 
 	void setPlayer(bool isPlayer);
 	bool getPlayer() const;
+	void makeSolePlayerStart();
 
 	void setRespawn(int respawn);
 	int getRespawn() const;

@@ -641,7 +641,7 @@ void ShipEditorDialog::on_textureReplacementButton_clicked()
 
 void ShipEditorDialog::on_playerShipButton_clicked()
 {
-	_model->setPlayer(true);
+	_model->makeSolePlayerStart();
 }
 void ShipEditorDialog::on_altShipClassButton_clicked()
 {

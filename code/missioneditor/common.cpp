@@ -153,16 +153,64 @@ void ensure_valid_player_start_shipnum()
 	// nothing to do if the current player start is still valid
 	if (Player_start_shipnum >= 0 && Player_start_shipnum < MAX_SHIPS
 		&& Ships[Player_start_shipnum].objnum >= 0
-		&& Objects[Ships[Player_start_shipnum].objnum].type == OBJ_START) {
+		&& Objects[Ships[Player_start_shipnum].objnum].type == OBJ_START)
+	{
 		return;
 	}
 
 	// otherwise repoint to the first remaining player start, or -1 if there are none
 	Player_start_shipnum = -1;
-	for (auto *objp : list_range(&obj_used_list)) {
-		if (objp->type == OBJ_START) {
+	for (auto *objp : list_range(&obj_used_list))
+	{
+		if (objp->type == OBJ_START)
+		{
 			Player_start_shipnum = objp->instance;
 			break;
 		}
 	}
+}
+
+bool set_single_player_start(int objnum)
+{
+	if (objnum < 0 || objnum >= MAX_OBJECTS
+		|| (Objects[objnum].type != OBJ_SHIP && Objects[objnum].type != OBJ_START))
+	{
+		Assertion(false, "set_single_player_start() called for object %d, which is not a ship", objnum);
+		return false;
+	}
+
+	bool changed = false;
+
+	for (auto *objp : list_range(&obj_used_list))
+	{
+		if (objp->type != OBJ_SHIP && objp->type != OBJ_START)
+			continue;
+
+		if (OBJ_INDEX(objp) == objnum)
+		{
+			// set as player ship
+			if (objp->type != OBJ_START)
+			{
+				objp->type = OBJ_START;
+				Player_starts++;
+				changed = true;
+			}
+			objp->flags.set(Object::Object_Flags::Player_ship);
+		}
+		else
+		{
+			// set as regular ship
+			if (objp->type == OBJ_START)
+			{
+				objp->type = OBJ_SHIP;
+				Player_starts--;
+				changed = true;
+			}
+			objp->flags.remove(Object::Object_Flags::Player_ship);
+		}
+	}
+
+	ensure_valid_player_start_shipnum();
+
+	return changed;
 }
