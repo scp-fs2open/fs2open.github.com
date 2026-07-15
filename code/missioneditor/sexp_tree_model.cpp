@@ -952,9 +952,8 @@ SCP_string SexpTreeModel::match_closest_operator(const SCP_string& str, int node
 	opf = query_operator_argument_type(op, arg_num);
 
 	// find the best operator
-	int best = sexp_match_closest_operator(str, opf);
+	int best = sexp_match_closest_operator(str, opf, 10);
 	if (best < 0) {
-		Warning(LOCATION, "Unable to find an operator match for string '%s' and argument type %d", str.c_str(), opf);
 		return str;
 	}
 	return Operators[best].text;
