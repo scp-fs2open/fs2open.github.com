@@ -151,6 +151,7 @@ add_file_folder("Source/UI"
     src/ui/FredView.h
     src/ui/Theme.cpp
     src/ui/Theme.h
+    src/ui/ThemeMode.h
     src/ui/QtGraphicsOperations.cpp
     src/ui/QtGraphicsOperations.h
 )

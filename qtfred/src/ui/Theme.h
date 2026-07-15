@@ -1,5 +1,7 @@
 #pragma once
 
+#include "ui/ThemeMode.h"
+
 #include <QAbstractButton>
 #include <QAction>
 #include <QColor>
@@ -11,7 +13,14 @@
 namespace fso::fred {
 
 // Apply the Fusion-compatible light or dark palette and button stylesheet.
-void applyEditorTheme(bool darkMode);
+// System resolves against the OS color scheme, and the theme re-applies on its own
+// whenever the OS scheme changes while this mode is active.
+void applyEditorTheme(ThemeMode mode);
+
+// Read/write the theme mode preference. Both live here so the settings group and key
+// stay in one place: the startup path applies the theme before EditorViewport exists.
+ThemeMode readThemeModeSetting();
+void writeThemeModeSetting(ThemeMode mode);
 
 // Draw a palette-aware icon for a standard Qt pixmap using QPainter.
 // Falls back to the style's own icon for unhandled StandardPixmap values.
