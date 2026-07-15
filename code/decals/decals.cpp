@@ -494,7 +494,7 @@ void renderAll() {
 				break;
 			}
 
-			*iter = active_decals.back();
+			*iter = active_single_frame_decals.back();
 			active_single_frame_decals.pop_back();
 			continue;
 		}
