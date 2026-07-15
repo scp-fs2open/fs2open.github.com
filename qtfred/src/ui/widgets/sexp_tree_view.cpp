@@ -1144,9 +1144,9 @@ std::unique_ptr<QMenu> sexp_tree_view::buildContextMenu(QTreeWidgetItem* h) {
 
 	auto replace_op_menu = popup_menu->addMenu(tr("Replace Operator"));
 	
-	popup_menu->addAction(tr("Search Operators"), this, [this]() { editActionHandlerHelper(); });
-
 	auto replace_data_menu = popup_menu->addMenu(tr("Replace Data"));
+	popup_menu->addAction(tr("Search for Replacement"), QKeySequence(Qt::CTRL | Qt::Key_S), this, [this]() { editActionHandlerHelper(); });
+
 	auto replace_number_act =
 		replace_data_menu->addAction(tr("Number"), this, [this]() { replaceNumberDataHandler(); });
 	replace_number_act->setEnabled(false);
