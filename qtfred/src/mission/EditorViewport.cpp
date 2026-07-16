@@ -5,6 +5,7 @@
 #include <render/3d.h>
 #include <ship/ship.h>
 #include "ui/ControlBindings.h"
+#include "ui/Theme.h"
 
 #include "object.h"
 
@@ -142,7 +143,8 @@ void EditorViewport::loadSettings() {
 	Show_sexp_help_mission_cutscenes   = settings.value("show_sexp_help_mission_cutscenes",   Show_sexp_help_mission_cutscenes).toBool();
 	Show_sexp_help_ship_editor         = settings.value("show_sexp_help_ship_editor",         Show_sexp_help_ship_editor).toBool();
 	Show_sexp_help_wing_editor         = settings.value("show_sexp_help_wing_editor",         Show_sexp_help_wing_editor).toBool();
-	Dark_mode                          = settings.value("dark_mode",                          Dark_mode).toBool();
+	// Handles its own group, since main.cpp reads it before the viewport exists.
+	Theme_mode                         = readThemeModeSetting();
 
 	view.Universal_heading                 = settings.value("view_universal_heading",                 view.Universal_heading).toBool();
 	view.Show_stars                        = settings.value("view_show_stars",                        view.Show_stars).toBool();
@@ -189,7 +191,7 @@ void EditorViewport::saveSettings() const {
 	settings.setValue("show_sexp_help_mission_cutscenes",    Show_sexp_help_mission_cutscenes);
 	settings.setValue("show_sexp_help_ship_editor",          Show_sexp_help_ship_editor);
 	settings.setValue("show_sexp_help_wing_editor",          Show_sexp_help_wing_editor);
-	settings.setValue("dark_mode",                           Dark_mode);
+	writeThemeModeSetting(Theme_mode);
 
 	settings.setValue("view_universal_heading",                 view.Universal_heading);
 	settings.setValue("view_show_stars",                        view.Show_stars);

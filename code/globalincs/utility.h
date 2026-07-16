@@ -517,4 +517,10 @@ const T* coalesce(const T* possibly_null, const T* value_if_null)
 	return (possibly_null != nullptr) ? possibly_null : value_if_null;
 }
 
+template<typename... Ts>
+struct overloads : Ts... {
+	constexpr overloads(Ts... t) : Ts(t)... {}
+	using Ts::operator()...;
+};
+
 #endif

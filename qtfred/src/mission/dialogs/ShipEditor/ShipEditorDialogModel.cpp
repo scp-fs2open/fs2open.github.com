@@ -1162,6 +1162,24 @@ bool ShipEditorDialogModel::getPlayer() const
 	return _isPlayerShip;
 }
 
+void ShipEditorDialogModel::makeSolePlayerStart()
+{
+	// the ship being edited, which is either a player start or a regular ship
+	int shipnum = (_playerShipIndex >= 0) ? _playerShipIndex : _singleShip;
+	if (shipnum < 0)
+		return;
+
+	// since this is single player, clear all player ships and set only this one
+	if (set_single_player_start(Ships[shipnum].objnum))
+	{
+		setModified();
+		_editor->missionChanged();
+	}
+
+	_isPlayerShip = true;
+	modelChanged();
+}
+
 void ShipEditorDialogModel::setRespawn(const int value)
 {
 	if (_respawnPriority == value)

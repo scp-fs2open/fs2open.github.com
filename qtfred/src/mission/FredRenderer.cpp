@@ -271,9 +271,6 @@ void FredRenderer::setViewport(EditorViewport* viewport) {
 	Assertion(viewport != nullptr, "Invalid viewport specified!");
 
 	_viewport = viewport;
-
-	connect(_viewport->editor, &Editor::missionLoaded, this,
-		[this](const std::string&) { freeVolumetricModel(); });
 }
 
 void FredRenderer::freeVolumetricModel() {

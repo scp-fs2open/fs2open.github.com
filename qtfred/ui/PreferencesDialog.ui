@@ -40,8 +40,13 @@
           <item row="0" column="1">
            <widget class="QComboBox" name="themeCombo">
             <property name="toolTip">
-             <string>Overall color theme for the QtFRED interface. Dark applies a dark palette to the editor UI.</string>
+             <string>Overall color theme for the QtFRED interface. Follow system tracks your operating system's light/dark setting and switches automatically when it changes.</string>
             </property>
+            <item>
+             <property name="text">
+              <string>Follow system</string>
+             </property>
+            </item>
             <item>
              <property name="text">
               <string>Light</string>

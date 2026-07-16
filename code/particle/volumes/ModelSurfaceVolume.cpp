@@ -8,15 +8,16 @@ ModelSurfaceVolume::ModelSurfaceVolume() : m_modelScale(::util::UniformFloatRang
 };
 
 vec3d ModelSurfaceVolume::sampleRandomPoint(const matrix &orientation, decltype(ParticleEffect::modular_curves_definition)::input_type_t source, float particlesFraction, const EffectHost& host) {
-	int obj_num = host.getParentObjAndSig().first;
+	auto attachment = host.getParentAttachment();
+	auto obj = attachment.extract_object();
 	int submodel = host.getParentSubmodel();
 
 	vec3d point = ZERO_VECTOR;
 
 	auto curveSource = std::tuple_cat(source, std::make_tuple(particlesFraction));
 
-	if (obj_num >= 0) {
-		const polymodel* pm = object_get_model(&Objects[obj_num]);
+	if (obj) {
+		const polymodel* pm = object_get_model(&Objects[obj->objnum]);
 		if (pm != nullptr) {
 			if (submodel < 0) {
 				SCP_vector<int> eligible_submodels;

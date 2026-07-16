@@ -8,6 +8,8 @@
 #include <QPainterPath>
 #include <QPalette>
 #include <QPixmap>
+#include <QSettings>
+#include <QStyleHints>
 
 namespace {
 class PaletteChangeFilter : public QObject {
@@ -187,7 +189,29 @@ QMenu::separator {
 
 namespace fso::fred {
 
-void applyEditorTheme(bool darkMode)
+namespace {
+
+constexpr auto SETTINGS_GROUP = "Preferences";
+constexpr auto THEME_MODE_KEY = "theme_mode";
+
+ThemeMode Current_mode = ThemeMode::System;
+bool System_hook_installed = false;
+
+bool resolveDark(ThemeMode mode)
+{
+	switch (mode) {
+	case ThemeMode::Light:
+		return false;
+	case ThemeMode::Dark:
+		return true;
+	case ThemeMode::System:
+		// Unknown when the OS reports no scheme which lands on light theme
+		return QGuiApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark;
+	}
+	return false;
+}
+
+void applyPalette(bool darkMode)
 {
 	if (darkMode) {
 		QPalette p;
@@ -239,6 +263,60 @@ void applyEditorTheme(bool darkMode)
 		p.setColor(QPalette::Disabled, QPalette::ButtonText, QColor(160, 160, 160));
 		qApp->setPalette(p);
 		qApp->setStyleSheet(LIGHT_BUTTON_QSS);
+	}
+}
+
+} // namespace
+
+void applyEditorTheme(ThemeMode mode)
+{
+	Current_mode = mode;
+
+	// Installed once and left in place, since the mode can return to System later.
+	if (!System_hook_installed) {
+		QObject::connect(QGuiApplication::styleHints(),
+			&QStyleHints::colorSchemeChanged,
+			qApp,
+			[](Qt::ColorScheme) {
+				if (Current_mode == ThemeMode::System) {
+					applyPalette(resolveDark(ThemeMode::System));
+				}
+			});
+		System_hook_installed = true;
+	}
+
+	applyPalette(resolveDark(mode));
+}
+
+ThemeMode readThemeModeSetting()
+{
+	QSettings settings;
+	settings.beginGroup(SETTINGS_GROUP);
+
+	const auto value = settings.value(THEME_MODE_KEY).toString();
+	if (value == "light") {
+		return ThemeMode::Light;
+	}
+	if (value == "dark") {
+		return ThemeMode::Dark;
+	}
+	return ThemeMode::System;
+}
+
+void writeThemeModeSetting(ThemeMode mode)
+{
+	QSettings settings;
+	settings.beginGroup(SETTINGS_GROUP);
+	switch (mode) {
+	case ThemeMode::Light:
+		settings.setValue(THEME_MODE_KEY, "light");
+		break;
+	case ThemeMode::Dark:
+		settings.setValue(THEME_MODE_KEY, "dark");
+		break;
+	case ThemeMode::System:
+		settings.setValue(THEME_MODE_KEY, "system");
+		break;
 	}
 }
 

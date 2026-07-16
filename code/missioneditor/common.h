@@ -53,3 +53,8 @@ void generate_weaponry_usage_list_wing(int wing_num, int* arr);
 // first remaining player start in the mission (or -1 if there are none).  Call this after
 // changing a ship to or from an OBJ_START via demotion, deletion, etc.
 void ensure_valid_player_start_shipnum();
+
+// Make the given object the sole player start, per single-player semantics: promote it to
+// OBJ_START, demote every other player start to OBJ_SHIP, adjust Player_starts to match,
+// and repoint Player_start_shipnum.  Returns true if anything changed.
+bool set_single_player_start(int objnum);

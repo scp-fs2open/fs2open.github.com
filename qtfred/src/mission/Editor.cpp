@@ -497,6 +497,12 @@ void Editor::unmarkObject(int obj) {
 }
 
 void Editor::clearMission(bool fast_reload) {
+	// drop cached model numbers while the models are still loaded; model_free_all() below invalidates
+	// them and the next mission reuses the slots, so a later unload would hit an unrelated model
+	for (auto& viewport : _viewports) {
+		viewport->renderer->freeVolumetricModel();
+	}
+
 	// clean up everything we need to before we reset back to defaults.
 	clean_up_selections();
 
@@ -767,7 +773,17 @@ int Editor::create_ship(matrix* orient, vec3d* pos, int ship_type) {
 	}
 
 	Ai_info[shipp->ai_index].kamikaze_damage = (int) std::min(1000.0f, 200.0f + (temp_max_hull_strength / 4.0f));
-
+	auto replacements = sip->replacement_textures;
+	for (auto& tr : replacements) {
+		if (!stricmp(tr.new_texture, "invisible")) {
+			// invisible is a special case
+			tr.new_texture_id = REPLACE_WITH_INVISIBLE;
+		} else {
+			// try to load texture or anim as normal
+			tr.new_texture_id = bm_load_either(tr.new_texture);
+		}
+	}
+	shipp->apply_replacement_textures(replacements);
 	missionChanged();
 
 	return obj;
