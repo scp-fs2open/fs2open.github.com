@@ -12445,7 +12445,7 @@ void ai_process_subobjects(int objnum)
 					aip->submode = SM_ATTACK_FOREVER;				//	Never leave attack submode, don't avoid, evade, etc.
 					aip->submode_start_time = Missiontime;
 				}
-			} 
+			}
 		}
 	} 	
 	// Goober5000 and wookieejedi - conversely, if the engines are no longer blown (e.g. after repair), resume normal chase behavior.
