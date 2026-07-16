@@ -454,6 +454,77 @@ void bindStandardIcon(QAbstractButton* btn, QStyle::StandardPixmap sp)
 	qApp->installEventFilter(filter);
 }
 
+QIcon makeThemedIcon(CustomIcon icon, const QColor& color, int size)
+{
+	QPixmap pm(size, size);
+	pm.fill(Qt::transparent);
+	QPainter p(&pm);
+	p.setRenderHint(QPainter::Antialiasing);
+	p.setPen(Qt::NoPen);
+	p.setBrush(color);
+
+	const qreal m = size * 0.15;
+	const QRectF full(m, m, size - 2 * m, size - 2 * m);
+
+	const qreal barH = full.height() * 0.16; // thickness of the top/bottom "end" bar
+	const qreal gap  = full.height() * 0.10; // space between the bar and the arrow
+
+	// Fill a shaft+head arrow (single polygon, no seam) inside the given sub-rect.
+	auto drawArrow = [&](const QRectF& r, bool up) {
+		const qreal shaftW   = full.width() * 0.38;
+		const qreal shaftOff = (r.width() - shaftW) / 2.0;
+		const qreal headLen  = r.height() * 0.55;
+		const qreal cx = r.center().x();
+		QPainterPath path;
+		if (up) {
+			const qreal headY = r.top() + headLen;
+			path.moveTo(cx,                            r.top());    // tip
+			path.lineTo(r.right(),                     headY);      // head right corner
+			path.lineTo(r.left() + shaftOff + shaftW,  headY);      // shoulder right
+			path.lineTo(r.left() + shaftOff + shaftW,  r.bottom()); // shaft bottom right
+			path.lineTo(r.left() + shaftOff,           r.bottom()); // shaft bottom left
+			path.lineTo(r.left() + shaftOff,           headY);      // shoulder left
+			path.lineTo(r.left(),                      headY);      // head left corner
+		} else {
+			const qreal headY = r.bottom() - headLen;
+			path.moveTo(r.left() + shaftOff,           r.top());    // shaft top left
+			path.lineTo(r.left() + shaftOff + shaftW,  r.top());    // shaft top right
+			path.lineTo(r.left() + shaftOff + shaftW,  headY);      // shoulder right
+			path.lineTo(r.right(),                     headY);      // head right corner
+			path.lineTo(cx,                            r.bottom()); // tip
+			path.lineTo(r.left(),                      headY);      // head left corner
+			path.lineTo(r.left() + shaftOff,           headY);      // shoulder left
+		}
+		path.closeSubpath();
+		p.drawPath(path);
+	};
+
+	switch (icon) {
+	case CustomIcon::MoveToTop:
+		p.drawRect(QRectF(full.left(), full.top(), full.width(), barH));
+		drawArrow(QRectF(full.left(), full.top() + barH + gap, full.width(), full.height() - barH - gap), true);
+		break;
+	case CustomIcon::MoveToBottom:
+		p.drawRect(QRectF(full.left(), full.bottom() - barH, full.width(), barH));
+		drawArrow(QRectF(full.left(), full.top(), full.width(), full.height() - barH - gap), false);
+		break;
+	}
+
+	p.end();
+	return {pm};
+}
+
+void bindCustomIcon(QAbstractButton* btn, CustomIcon icon)
+{
+	auto refresh = [btn, icon]() {
+		const QColor color = qApp->palette().color(QPalette::ButtonText);
+		btn->setIcon(makeThemedIcon(icon, color));
+	};
+	refresh();
+	auto* filter = new PaletteChangeFilter(btn, refresh);
+	qApp->installEventFilter(filter);
+}
+
 void bindThemeIcon(QAction* action, const QString& baseName)
 {
 	auto refresh = [action, baseName]() {
