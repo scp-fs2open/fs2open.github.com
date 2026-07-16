@@ -260,6 +260,12 @@ sexp_tree_view::sexp_tree_view(QWidget* parent) : QTreeWidget(parent), _actions(
 	installShortcut(QKeySequence::Delete,
 		[](const SexpContextMenuState& s) { return s.can_delete; },
 		[this]() { deleteActionHandler(); });
+
+	// This keyboard shortcut does not need as much state checking because the helper 
+	// handles security checks and what to call, and any node should work here.
+	auto* shortcut = new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_S), this);
+	shortcut->setContext(Qt::WidgetShortcut);
+	connect(shortcut, &QShortcut::activated, this, &sexp_tree_view::editActionHandlerHelper);
 }
 
 
@@ -1999,7 +2005,7 @@ void sexp_tree_view::editActionHandlerHelper(){
 	auto item = currentItem();
 	
 	// Just to be extra safe, early exit when an item is not selected
-	if (item == nullptr || !_interface) {
+	if (_currently_editing || _opPopupActive || item == nullptr || !_interface) {
 		return;
 	}
 
