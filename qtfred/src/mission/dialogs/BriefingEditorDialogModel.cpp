@@ -785,9 +785,68 @@ int BriefingEditorDialogModel::getIconId() const
 	return s.icons[_currentIcon].id;
 }
 
-void BriefingEditorDialogModel::setIconId(int id)
+bool BriefingEditorDialogModel::setIconId(int id)
 {
-	applyToSelectedIconsCurrentAndForward([&](brief_icon& ic) { modify(ic.id, id); });
+	auto& briefing = _wipBriefings[_currentTeam];
+	if (briefing.num_stages <= 0 || _currentStage < 0 || _currentStage >= briefing.num_stages)
+		return true;
+
+	auto& stage = briefing.stages[_currentStage];
+	if (_currentIcon < 0 || _currentIcon >= stage.num_icons)
+		return true;
+
+	// an id applies to a single icon, so operate on the current icon rather than the
+	// whole selection; applying one id to several icons would itself create a collision
+	const int oldId = stage.icons[_currentIcon].id;
+	if (id == oldId)
+		return true; // no change
+
+	// briefing icon ids must never be negative (the spin box also enforces this)
+	if (id < 0)
+		return false;
+
+	// an icon id must be unique within its stage
+	for (int i = 0; i < stage.num_icons; ++i) {
+		if (i != _currentIcon && stage.icons[i].id == id) {
+			QMessageBox::warning(nullptr,
+				tr("Icon ID"),
+				tr("Icon ID %1 is already used by another icon in this stage.  The ID has not been changed.").arg(id));
+			return false;
+		}
+	}
+
+	// when propagating forward, the new id must not already be used by a different icon in a
+	// later stage, or the global rename would merge two distinct icon chains into one
+	if (!_changeLocally) {
+		for (int st = _currentStage + 1; st < briefing.num_stages; ++st) {
+			const auto& s = briefing.stages[st];
+			for (int i = 0; i < s.num_icons; ++i) {
+				if (s.icons[i].id == id) {
+					QMessageBox::warning(nullptr,
+						tr("Icon ID"),
+						tr("Icon ID %1 is already used in a later stage.  You can only change to that ID "
+						   "locally.  The ID has not been changed.").arg(id));
+					return false;
+				}
+			}
+		}
+	}
+
+	// apply the change to the current icon, and (unless local-only) to the same icon in later stages
+	stage.icons[_currentIcon].id = id;
+	if (!_changeLocally) {
+		for (int st = _currentStage + 1; st < briefing.num_stages; ++st) {
+			auto& s = briefing.stages[st];
+			for (int i = 0; i < s.num_icons; ++i) {
+				if (s.icons[i].id == oldId)
+					s.icons[i].id = id;
+			}
+		}
+	}
+
+	set_modified();
+	modelChanged();
+	return true;
 }
 
 SCP_string BriefingEditorDialogModel::getIconLabel() const

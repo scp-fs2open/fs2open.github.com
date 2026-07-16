@@ -15,6 +15,7 @@
 #include "globalincs/globals.h" // for NAME_LENGTH
 #include "globalincs/pstypes.h"
 #include <array>
+#include <utility>
  
 #include "actions/Program.h"
 #include "gamesnd/gamesnd.h"
@@ -563,17 +564,30 @@ struct w_bank
 		delete[] external_model_angle_offset;
 	}
 
-	w_bank& operator=(w_bank&& other) {
-		this->~w_bank();
-		num_slots = other.num_slots;
-		pnt = other.pnt;
-		norm = other.norm;
-		external_model_angle_offset = other.external_model_angle_offset;
-		other.pnt = nullptr;
-		other.norm = nullptr;
-		other.external_model_angle_offset = nullptr;
+	w_bank(w_bank&& other) noexcept
+		: num_slots(std::exchange(other.num_slots, 0)),
+		  pnt(std::exchange(other.pnt, nullptr)),
+		  norm(std::exchange(other.norm, nullptr)),
+		  external_model_angle_offset(std::exchange(other.external_model_angle_offset, nullptr))
+	{}
+
+	w_bank& operator=(w_bank&& other) noexcept {
+		if (this != &other) {
+			delete[] pnt;
+			delete[] norm;
+			delete[] external_model_angle_offset;
+			num_slots = std::exchange(other.num_slots, 0);
+			pnt = std::exchange(other.pnt, nullptr);
+			norm = std::exchange(other.norm, nullptr);
+			external_model_angle_offset = std::exchange(other.external_model_angle_offset, nullptr);
+		}
 		return *this;
 	}
+
+	// The copy constructor is shallow!  It exists for object_copy_including_array_member,
+	// which copy-constructs and then immediately replaces every owned array with a fresh
+	// allocation.  Do not copy-construct a w_bank in any other context, because the
+	// destructor will delete[] the aliased arrays.
 	w_bank(const w_bank& other) = default;
 	w_bank& operator=(const w_bank& other) = delete;
 };

@@ -1258,17 +1258,7 @@ int CShipEditorDlg::update_data(int redraw)
 		}
 	}
 
-	if (Player_start_shipnum < 0 || Objects[Ships[Player_start_shipnum].objnum].type != OBJ_START) {  // need a new single player start.
-		ptr = GET_FIRST(&obj_used_list);
-		while (ptr != END_OF_LIST(&obj_used_list)) {
-			if (ptr->type == OBJ_START) {
-				Player_start_shipnum = ptr->instance;
-				break;
-			}
-
-			ptr = GET_NEXT(ptr);
-		}
-	}
+	ensure_valid_player_start_shipnum();  // may need a new single player start
 
 	if (modified)
 		set_modified();
@@ -1518,7 +1508,9 @@ int CShipEditorDlg::update_ship(int ship)
 
 			Objects[Ships[ship].objnum].type = OBJ_SHIP;
 			break;
-	}	
+	}
+
+	ensure_valid_player_start_shipnum();
 
 	Update_ship = 1;
 	return 0;
@@ -2439,27 +2431,22 @@ void CShipEditorDlg::OnSetAsPlayerShip()
 		return;
 	}
 
-	// since this is single player, clear all player ships and set only this one
-	object *objp = GET_FIRST(&obj_used_list);
-	while (objp != END_OF_LIST(&obj_used_list))
+	// find the selected ship; there should only be one
+	object *marked_objp = nullptr;
+	for (auto objp: list_range(&obj_used_list))
 	{
-		if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START))
+		if (((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) && objp->flags[Object::Object_Flags::Marked])
 		{
-			if (objp->flags[Object::Object_Flags::Marked])	// there should only be one selected ship
-			{
-				// set as player ship
-				objp->type = OBJ_START;
-				objp->flags.set(Object::Object_Flags::Player_ship);
-			}
-			else
-			{
-				// set as regular ship
-				objp->type = OBJ_SHIP;
-				objp->flags.remove(Object::Object_Flags::Player_ship);
-			}
+			marked_objp = objp;
+			break;
 		}
-		objp = GET_NEXT(objp);
 	}
+	if (marked_objp == nullptr)
+		return;
+
+	// since this is single player, clear all player ships and set only this one
+	if (set_single_player_start(OBJ_INDEX(marked_objp)))
+		set_modified();
 
 	// finally set editor dialog
 	m_player_ship.SetCheck(1);

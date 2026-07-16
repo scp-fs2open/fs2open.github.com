@@ -55,11 +55,15 @@ void SexpAnnotationModel::saveToGlobal(const SCP_vector<sexp_tree_item>& tree_no
 			int resolved = resolveFromPath(old_path, tree_nodes, events, sig);
 			if (resolved >= 0 || isRootKey(resolved)) {
 				ea.path = buildPath(resolved, tree_nodes, events);
-			} else {
-				// Truly gone; mark default for pruning.
-				ea.comment.clear();
-				ea.r = ea.g = ea.b = 255;
 			}
+		}
+
+		// If no path could be built, the annotated node no longer exists (e.g. its
+		// event was deleted); mark default so prune() removes it rather than letting
+		// an unattachable annotation survive in the global list.
+		if (ea.path.empty()) {
+			ea.comment.clear();
+			ea.r = ea.g = ea.b = 255;
 		}
 
 		// Reset transient field.
@@ -77,6 +81,11 @@ void SexpAnnotationModel::saveToGlobal(const SCP_vector<sexp_tree_item>& tree_no
 // Return the vector index of the annotation with the given key, or -1 if not found.
 int SexpAnnotationModel::findByKey(int key) const
 {
+	// -1 is the default/unresolved sentinel, not a real key; matching it would
+	// surface an unresolved annotation on any item that has no key of its own
+	if (key == -1)
+		return -1;
+
 	for (size_t i = 0; i < m_annotations.size(); ++i) {
 		if (m_annotations[i].node_index == key)
 			return static_cast<int>(i);
@@ -202,6 +211,7 @@ SCP_list<int> SexpAnnotationModel::buildPath(int key, const SCP_vector<sexp_tree
 		return path; // root not found in events
 
 	path.push_back(event_idx);
+	path.push_back(0);	// child position under the event label: the top operator is its only child
 
 	// Collect child-position indices from the target node up to the root,
 	// then reverse them so the path reads top-down.
@@ -260,10 +270,16 @@ int SexpAnnotationModel::resolveFromPath(const SCP_list<int>& path, const SCP_ve
 	if (path.size() == 1)
 		return rootKey(formula);
 
-	// Walk down the tree from the formula node.
-	int node = formula;
 	auto it = path.begin();
 	++it; // skip event index
+
+	// A label has exactly one child; any other index fails.
+	if (*it != 0)
+		return -1;
+	++it;
+
+	// Walk down the tree from the formula node.
+	int node = formula;
 	for (; it != path.end() && node >= 0; ++it) {
 		int target = *it;
 		if (node < 0 || node >= static_cast<int>(tree_nodes.size()))

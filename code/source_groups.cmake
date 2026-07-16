@@ -1138,6 +1138,7 @@ add_file_folder("Parse\\\\SEXP"
 # Particle files
 add_file_folder("Particle"
 	particle/EffectHost.h
+	particle/EffectHost.cpp
 	particle/particle.cpp
 	particle/particle.h
 	particle/ParticleEffect.cpp
@@ -1656,6 +1657,11 @@ elseif (APPLE)
 		${file_root_sound}
 		sound/speech_mac.mm
 	)
+elseif (ANDROID)
+	add_file_folder("Sound"
+		${file_root_sound}
+		sound/speech_android.cpp
+	)
 elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
 	add_file_folder("Sound"
 		${file_root_sound}
@@ -1760,6 +1766,7 @@ add_file_folder("Utils"
 	utils/Random.cpp
 	utils/Random.h
 	utils/RandomRange.h
+	utils/reset_on_move.h
 	utils/string_utils.cpp
 	utils/string_utils.h
 	utils/table_viewer.cpp

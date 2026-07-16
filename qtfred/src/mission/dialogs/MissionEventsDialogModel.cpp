@@ -486,8 +486,10 @@ void MissionEventsDialogModel::reorderByRootFormulaOrder(const SCP_vector<int>& 
 	// Keep selection reasonable (select the first event after reorder)
 	setCurrentlySelectedEvent(m_events.empty() ? -1 : 0);
 
-	// Rebuild applied annotations against new node indices/order if needed
-	initializeEventAnnotations();
+	// Annotations are keyed by tree_nodes[] index (or by formula for root labels)
+	// and a root reorder changes neither, so the working annotation set is still
+	// valid.  Do NOT reload it from the global state here (initializeEventAnnotations):
+	// that would discard any annotation edits made since the dialog was opened.
 
 	set_modified();
 }

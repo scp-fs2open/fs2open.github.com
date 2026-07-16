@@ -59,6 +59,7 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 
 	void setPlayer(bool isPlayer);
 	bool getPlayer() const;
+	void makeSolePlayerStart();
 
 	void setRespawn(int respawn);
 	int getRespawn() const;
@@ -89,6 +90,9 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	void setNoArrivalWarp(int state);
 	int getNoArrivalWarp() const;
 
+	void setDockWarpinChange(const int state);
+	int getDockWarpinChange() const;
+
 	void setDepartureLocationIndex(int index);
 	int getDepartureLocationIndex() const;
 	void setDepartureLocation(DepartureLocation location);
@@ -107,6 +111,9 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	int getDepartureFormula() const;
 	void setNoDepartureWarp(int state);
 	int getNoDepartureWarp() const;
+
+	void setDockWarpoutChange(const int state);
+	int getDockWarpoutChange() const;
 
 	void onPrevious();
 	void onNext();
@@ -151,6 +158,8 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 
 	int _noDepartureWarp;
 	int _noArrivalWarp;
+	int _dockWarpoutChange;
+	int _dockWarpinChange;
 	bool _isPlayerShip;
 	int _departureTreeFormula;
 	int _arrivalTreeFormula;

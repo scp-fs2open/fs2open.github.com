@@ -193,7 +193,7 @@ const char* get_encoding_string(Encoding encoding) {
 		return "UTF-8";
 	case Encoding::Encoding_current:
 	default:
-		UNREACHABLE("Unknown encoding type was passed.\n");
+		UNREACHABLE("Unknown encoding type %d was passed.", static_cast<int>(encoding));
 		return "";
 	}
 }

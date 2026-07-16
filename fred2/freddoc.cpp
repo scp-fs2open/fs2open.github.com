@@ -36,6 +36,7 @@
 #include "localization/fhash.h"
 #include "localization/localize.h"
 #include "mission/missiongoals.h"
+#include "mission/missiongrid.h"
 #include "mission/missionparse.h"
 #include "object/object.h"
 #include "render/3d.h"
@@ -233,6 +234,14 @@ bool CFREDDoc::load_mission(const char *pathname, int flags) {
 	Parse_viewer_pos = view_pos;
 	Parse_viewer_orient = view_orient;
 
+	// preserve the editor grid across the reload; it's display state, not part of the mission,
+	// but clear_mission() recreates it via fred_render_init().  (See the view_pos/view_orient handling above and below.)
+	matrix grid_orient = The_grid->gmatrix;
+	vec3d grid_center = The_grid->center;
+	int grid_nrows = The_grid->nrows;
+	int grid_ncols = The_grid->ncols;
+	float grid_square_size = The_grid->square_size;
+
 	// activate the localizer hash table
 	fhash_flush();
 
@@ -392,6 +401,10 @@ bool CFREDDoc::load_mission(const char *pathname, int flags) {
 
 	view_pos = Parse_viewer_pos;
 	view_orient = Parse_viewer_orient;
+
+	// restore the editor grid that was preserved above
+	create_grid(The_grid, &grid_orient.vec.fvec, &grid_orient.vec.rvec, &grid_center, grid_nrows, grid_ncols, grid_square_size);
+
 	set_modified(0);
 	stars_post_level_init();
 
@@ -630,9 +643,9 @@ BOOL CFREDDoc::OnOpenDocument(LPCTSTR pathname)
 	SCP_string created = The_mission.created;
 	CFileLocation res = cf_find_file_location(pathname, CF_TYPE_ANY);
 	time_t modified = res.m_time;
+	Assertion(res.found, "Couldn't find path '%s' even though parse_main() succeeded!", pathname);
 	if (!res.found)
 	{
-		UNREACHABLE("Couldn't find path '%s' even though parse_main() succeeded!", pathname);
 		created = "";	// prevent any backup check from succeeding so we just load the actual specified file
 	}
 

@@ -135,7 +135,7 @@ void gr_opengl_deferred_lighting_msaa()
 		msaa_resolve_flags = SDR_FLAG_MSAA_SAMPLES_16;
 		break;
 	default:
-		UNREACHABLE("Disallowed MSAA shader sample count!");
+		Error(LOCATION, "Disallowed MSAA shader sample count %d!", Cmdline_msaa_enabled);
 		break;
 	}
 
@@ -305,7 +305,7 @@ void gr_opengl_deferred_lighting_finish()
 			cylinder_lights.push_back(l);
 			break;
 		case Light_Type::Ambient:
-			UNREACHABLE("Multiple ambient lights are not supported!");
+			Warning(LOCATION, "Multiple ambient lights are not supported!");
 		}
 	}
 	{

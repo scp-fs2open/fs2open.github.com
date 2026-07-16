@@ -984,7 +984,7 @@ void game_level_close()
 		particle::ParticleManager::get()->clearSources();
 		particle::close();
 		trail_level_close();
-		ship_close_cockpit_displays(Player_ship);
+		ship_level_close();
 		hud_level_close();
 		hud_escort_clear_all();
 		model_instance_free_all();
@@ -3007,7 +3007,7 @@ void say_view_target()
 				}
 
 			default:
-				UNREACHABLE("Trying to view an invalid object!");
+				UNREACHABLE("Trying to view an invalid object %d!", Objects[Player_ai->target_objnum].type);
 				break;
 			}
 

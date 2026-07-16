@@ -822,7 +822,7 @@ static void set_fxaa_defines(SCP_stringstream& sflags)
 		sflags << "#define FXAA_QUALITY_SUBPIX 0.33\n";
 		break;
 	default:
-		UNREACHABLE("Unhandled FXAA mode!");
+		UNREACHABLE("Unhandled FXAA mode %d!", static_cast<int>(Gr_aa_mode));
 	}
 }
 void set_smaa_defines(SCP_stringstream& sflags)
@@ -848,7 +848,7 @@ void set_smaa_defines(SCP_stringstream& sflags)
 		sflags << "#define SMAA_PRESET_ULTRA\n";
 		break;
 	default:
-		UNREACHABLE("Unhandled SMAA mode!");
+		UNREACHABLE("Unhandled SMAA mode %d!", static_cast<int>(Gr_aa_mode));
 	}
 }
 void opengl_post_shader_header(SCP_stringstream& sflags, shader_type shader_t, int flags)

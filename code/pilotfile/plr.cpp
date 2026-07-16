@@ -414,7 +414,7 @@ void pilotfile::plr_read_containers()
 				container.map_data.emplace(key, data);
 			}
 		} else {
-			UNREACHABLE("Unknown container type %d", (int)container.type);
+			UNREACHABLE("Unknown container type %d", static_cast<int>(container.type));
 		}
 
 		Assert(container.is_eternal());
@@ -457,7 +457,7 @@ void pilotfile::plr_write_containers()
 				++i;
 			}
 		} else {
-			UNREACHABLE("Unknown container type %d", (int)container.type);
+			UNREACHABLE("Unknown container type %d", static_cast<int>(container.type));
 		}
 
 		handler->endSectionWrite();

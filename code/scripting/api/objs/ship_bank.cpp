@@ -55,11 +55,12 @@ ADE_INDEXER(l_WeaponBankType, "number Index", "Array of weapon banks", "weaponba
 			idx--; //Lua->FS2
 
 			if(ADE_SETTING_VAR && newbank && newbank->isValid()) {
-				sb->sw->primary_bank_weapons[idx] = newbank->typeh.sw->primary_bank_weapons[idx];
-				sb->sw->next_primary_fire_stamp[idx] = timestamp(0);
-				sb->sw->primary_bank_ammo[idx] = newbank->typeh.sw->primary_bank_ammo[idx];
-				sb->sw->primary_bank_start_ammo[idx] = newbank->typeh.sw->primary_bank_start_ammo[idx];
-				sb->sw->primary_bank_capacity[idx] = newbank->typeh.sw->primary_bank_capacity[idx];
+				sb->sw->secondary_bank_weapons[idx] = newbank->typeh.sw->secondary_bank_weapons[idx];
+				sb->sw->next_secondary_fire_stamp[idx] = timestamp(0);
+				sb->sw->secondary_bank_ammo[idx] = newbank->typeh.sw->secondary_bank_ammo[idx];
+				sb->sw->secondary_bank_start_ammo[idx] = newbank->typeh.sw->secondary_bank_start_ammo[idx];
+				sb->sw->secondary_bank_capacity[idx] = newbank->typeh.sw->secondary_bank_capacity[idx];
+				sb->sw->secondary_bank_rearm_time[idx] = timestamp(0);
 			}
 			break;
 		case SWH_TERTIARY:

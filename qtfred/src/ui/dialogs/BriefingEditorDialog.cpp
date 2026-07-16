@@ -89,6 +89,10 @@ BriefingEditorDialog::BriefingEditorDialog(FredView* parent, EditorViewport* vie
 	ui->iconCloseupLabelLineEdit->setMaxLength(MAX_LABEL_LEN - 1);
 	ui->voiceFileLineEdit->setMaxLength(MAX_FILENAME_LEN - 1);
 
+	// validate the icon id when the edit is committed (focus-out/Enter) rather than on every
+	// keystroke, so a transient value while typing can't pop a collision warning
+	ui->iconIdSpinBox->setKeyboardTracking(false);
+
 	setupMapWidget();
 	initializeUi();
 	updateUi();
@@ -300,6 +304,7 @@ void BriefingEditorDialog::updateUi()
 
 	// SEXP tree formula
 	ui->formulaTreeView->load_tree(_model->getFormula());
+	ui->formulaTreeView->expandAll();
 	if (ui->formulaTreeView->select_sexp_node != -1) {
 		ui->formulaTreeView->hilite_item(ui->formulaTreeView->select_sexp_node);
 	}
@@ -561,7 +566,12 @@ void BriefingEditorDialog::on_disableGridCheckBox_toggled(bool checked)
 
 void BriefingEditorDialog::on_iconIdSpinBox_valueChanged(int arg1)
 {
-	_model->setIconId(arg1);
+	if (!_model->setIconId(arg1)) {
+		// the id was rejected; reset the spin box to the model's current value
+		ui->iconIdSpinBox->blockSignals(true);
+		ui->iconIdSpinBox->setValue(_model->getIconId());
+		ui->iconIdSpinBox->blockSignals(false);
+	}
 }
 
 void BriefingEditorDialog::on_iconLabelLineEdit_textChanged(const QString& string)

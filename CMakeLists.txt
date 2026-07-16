@@ -66,6 +66,13 @@ LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/finder")
 LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/external/rpavlik-cmake-modules")
 LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/external/cotire")
 
+# this must be set before include(toolchain)
+if(WIN32 AND CMAKE_SIZEOF_VOID_P EQUAL 4)
+	set(FSO_BUILD_QTFRED OFF CACHE INTERNAL "" FORCE)
+else()
+	OPTION(FSO_BUILD_QTFRED "Build qtFRED2 binary" ON)
+endif()
+
 INCLUDE(globals)
 INCLUDE(toolchain)
 include(embed_file)
@@ -83,7 +90,7 @@ IF(RESET_INSTALL_PREFIX)
 	ENDIF(NOT $ENV{FS2PATH} STREQUAL "")
 ENDIF(RESET_INSTALL_PREFIX)
 
-IF(WIN32 OR APPLE OR CMAKE_SYSTEM_NAME STREQUAL "Linux")
+IF(WIN32 OR APPLE OR ANDROID OR CMAKE_SYSTEM_NAME STREQUAL "Linux")
 	OPTION(FSO_USE_SPEECH "Use text-to-speach libraries" ON)
 ELSE()
 	OPTION(FSO_USE_SPEECH "Use text-to-speach libraries" OFF)
@@ -102,8 +109,6 @@ OPTION(FSO_BUILD_TOOLS "Build tools related to FSO" OFF)
 OPTION(FSO_BUILD_TESTS "Build unit tests" OFF)
 
 OPTION(FSO_DEVELOPMENT_MODE "Generate binaries in development mode, only use if you know what you're doing!" OFF)
-
-OPTION(FSO_BUILD_QTFRED "Build qtFRED2 binary" OFF)
 
 IF(WIN32 OR APPLE OR ANDROID)
 	# On windows, mac and android the default should be to always build the included libraries

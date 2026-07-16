@@ -268,7 +268,7 @@ int Fred_campaign_save::save_campaign_file(const char* pathname, const SCP_vecto
 						fout(")");
 					}
 					if (mission_fork) {
-						fout("Option: ", Campaign.missions[link.to].name);
+						fout("\n+Option: %s", Campaign.missions[link.to].name);
 					}
 				}
 			}

@@ -297,6 +297,7 @@ namespace animation {
 		std::shared_ptr<ModelAnimationSubmodel> m_submodel;
 		std::optional<vec3d> m_position;
 		std::optional<matrix> m_orientation;
+		std::optional<ModelAnimationDirection> m_limitDirection;
 
 		//configurables:
 	  public:
@@ -315,7 +316,7 @@ namespace animation {
 
 	  public:
 		static std::shared_ptr<ModelAnimationSegment> parser(ModelAnimationParseHelper* data);
-		ModelAnimationSegmentParticlesDuring(std::shared_ptr<ModelAnimationSegment> segment, particle::ParticleEffectHandle effect, float atTime, std::shared_ptr<ModelAnimationSubmodel> submodel = nullptr, std::optional<vec3d> position = std::nullopt, std::optional<matrix> orientation = std::nullopt);
+		ModelAnimationSegmentParticlesDuring(std::shared_ptr<ModelAnimationSegment> segment, particle::ParticleEffectHandle effect, float atTime, std::shared_ptr<ModelAnimationSubmodel> submodel = nullptr, std::optional<vec3d> position = std::nullopt, std::optional<matrix> orientation = std::nullopt, std::optional<ModelAnimationDirection> limitDirection = std::nullopt);
 
 	};
 

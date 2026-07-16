@@ -208,7 +208,7 @@ void mission_log_add_entry(LogType type, const char *pname, const char *sname, i
 			if (std::find_if(Log_entries.begin(), Log_entries.end(), [index](const log_entry& le) {
 				return (le.type == LOG_SHIP_DEPARTED) && (le.index == index);
 			}) == Log_entries.end()) {
-				UNREACHABLE("cannot find any departed ships from wing %s that supposedly departed.", Wings[index].name);	// get Allender
+				Assertion(false, "cannot find any departed ships from wing %s that supposedly departed.", Wings[index].name);	// get Allender
 			}
 		}
 #endif
@@ -719,7 +719,7 @@ void mission_log_init_scrollback(int pw, bool split_string)
 				break;
 			}	// matches case statement!
 			default:
-				UNREACHABLE("Unhandled enum value!");
+				UNREACHABLE("Unhandled enum value %d!", entry.type);
 				break;
 		}
 

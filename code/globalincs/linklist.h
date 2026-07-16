@@ -7,10 +7,12 @@
  *
 */ 
 
-#include <utility>	// for std::move
-
 #ifndef _LINKLIST_H
 #define _LINKLIST_H
+
+#include <cstddef>	// for std::ptrdiff_t
+#include <iterator>	// for std::bidirectional_iterator_tag
+#include <type_traits>	// for std::remove_pointer_t
 
 // Initializes a list of zero elements
 #define list_init( head )					\
@@ -60,8 +62,8 @@ do {												\
 do {												\
 	(elem)->prev->next = (elem)->next;	\
 	(elem)->next->prev = (elem)->prev;	\
-	(elem)->next = NULL;						\
-	(elem)->prev = NULL;						\
+	(elem)->next = nullptr;					\
+	(elem)->prev = nullptr;					\
 } while(false)
 
 // Moves elem to be after head
@@ -83,134 +85,111 @@ do {												\
 #define NOT_EMPTY(head)		((head)->next != (head))
 #define EMPTY(head)			((head) == nullptr || (head)->next == (head))
 
-// Note that since these iterators operate on pointer collections, the dereference of an iterator using operator* returns a pointer.
+// Adapter for iterating over the sentinel-headed circular lists managed by the macros
+// above using a range-based for loop, e.g. for (auto so : list_range(&Ship_obj_list)),
+// or a non-modifying <algorithm> function, e.g. std::find_if.
+//
+// Since these lists are intrusive, dereferencing an iterator using operator* returns a
+// pointer to the element rather than a reference to it.  (Consequently the iterators do
+// not strictly meet the standard's ForwardIterator requirements, but all mainstream
+// standard libraries accept them in non-modifying algorithms.)
+//
+// NOTE: An element may not be removed from the list (nor freed) inside the loop body,
+// because the iterator reads that element's next pointer when it advances.  Loops that
+// need to do this must use the GET_FIRST/GET_NEXT macros and save the next pointer
+// before the removal, as the object and ship code does.
 template <class T>
 class volition_linked_list
 {
 	T* head;
 
 public:
-	class iterator
+	// U is either T or const T
+	template <class U>
+	class basic_iterator
 	{
-		T* ptr;
+		U* ptr;
 
 	public:
-		iterator(T* x)
+		// iterator traits, to allow use with <algorithm>
+		// (note that value_type is a pointer, and operator* returns it by value)
+		using iterator_category = std::bidirectional_iterator_tag;
+		using value_type = U*;
+		using difference_type = std::ptrdiff_t;
+		using pointer = U*;
+		using reference = U*;
+
+		basic_iterator()
+			: ptr(nullptr)
+		{}
+
+		explicit basic_iterator(U* x)
 			: ptr(x)
 		{}
 
-		iterator(const iterator& it)
-			: ptr(it.ptr)
+		// Implicit conversion from iterator to const_iterator, as standard
+		// containers provide.  Enabled only when U is const V for non-const V,
+		// so it cannot be used to convert const_iterator to iterator, and does
+		// not duplicate the copy constructor.
+		template <class V, std::enable_if_t<std::is_same_v<U, const V> && !std::is_const_v<V>, int> = 0>
+		basic_iterator(const basic_iterator<V>& it)
+			: ptr(*it)
 		{}
 
-		iterator& operator++()
+		basic_iterator& operator++()
 		{
 			ptr = GET_NEXT(ptr);
 			return *this;
 		}
 
-		iterator operator++(int)
+		basic_iterator operator++(int)
 		{
-			iterator tmp(*this);
+			basic_iterator tmp(*this);
 			operator++();
 			return tmp;
 		}
 
-		iterator& operator--()
+		basic_iterator& operator--()
 		{
 			ptr = GET_PREV(ptr);
 			return *this;
 		}
 
-		iterator operator--(int)
+		basic_iterator operator--(int)
 		{
-			iterator tmp(*this);
+			basic_iterator tmp(*this);
 			operator--();
 			return tmp;
 		}
 
-		bool operator==(const iterator& rhs) const
+		// Comparisons accept both iterator and const_iterator, as standard
+		// containers allow (the underlying pointer comparison handles the
+		// mixed-constness case).
+		template <class V>
+		bool operator==(const basic_iterator<V>& rhs) const
 		{
-			return ptr == rhs.ptr;
-
+			return ptr == *rhs;
 		}
 
-		bool operator!=(const iterator& rhs) const
+		template <class V>
+		bool operator!=(const basic_iterator<V>& rhs) const
 		{
-			return ptr != rhs.ptr;
+			return ptr != *rhs;
 		}
 
-		T*& operator*()
+		U* operator*() const
 		{
 			return ptr;
 		}
 
-		T* operator->()
+		U* operator->() const
 		{
 			return ptr;
 		}
 	};
 
-	class const_iterator
-	{
-		const T* ptr;
-
-	public:
-		const_iterator(const T* x)
-			: ptr(x)
-		{}
-
-		const_iterator(const const_iterator& it)
-			: ptr(it.ptr)
-		{}
-
-		const_iterator& operator++()
-		{
-			ptr = GET_NEXT(ptr);
-			return *this;
-		}
-
-		const_iterator operator++(int)
-		{
-			const_iterator tmp(*this);
-			operator++();
-			return tmp;
-		}
-
-		const_iterator& operator--()
-		{
-			ptr = GET_PREV(ptr);
-			return *this;
-		}
-
-		const_iterator operator--(int)
-		{
-			const_iterator tmp(*this);
-			operator--();
-			return tmp;
-		}
-
-		bool operator==(const const_iterator& rhs) const
-		{
-			return ptr == rhs.ptr;
-
-		}
-
-		bool operator!=(const const_iterator& rhs) const
-		{
-			return ptr != rhs.ptr;
-		}
-
-		const T*& operator*()
-		{
-			return ptr;
-		}
-
-		const T* operator->()
-		{
-			return ptr;
-		}
-	};
+	using iterator = basic_iterator<T>;
+	using const_iterator = basic_iterator<const T>;
 
 	iterator begin() const
 	{
@@ -232,15 +211,21 @@ public:
 		return const_iterator(END_OF_LIST(head));
 	}
 
-	volition_linked_list(T* ptr)
+	explicit volition_linked_list(T* ptr)
 		: head(ptr)
 	{}
 };
 
 template <class T>
-volition_linked_list<T> list_range(T* head)
+auto list_range(T* head)
 {
-	return volition_linked_list<T>(head);
+	// Deduce the node type from the next pointer rather than from head itself,
+	// so that a list headed by a derived sentinel (e.g. ship_subsys_sentinel)
+	// iterates as its node type.  decltype yields the member's declared type,
+	// which never carries the head's constness, so restore that separately.
+	using node_t = std::remove_pointer_t<decltype(head->next)>;
+	using list_node_t = std::conditional_t<std::is_const_v<T>, const node_t, node_t>;
+	return volition_linked_list<list_node_t>(head);
 }
 
 #endif

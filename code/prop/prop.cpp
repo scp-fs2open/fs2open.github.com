@@ -83,8 +83,8 @@ int find_prop_empty_slot() {
 
 prop* prop_id_lookup(int id)
 {
+	Assertion(id >= 0 && id < static_cast<int>(Props.size()) && Props[id].has_value(), "Could not find prop for id %d", id);
 	if (id < 0 || id >= static_cast<int>(Props.size()) || !Props[id].has_value()) {
-		Assertion(false, "Could not find prop for id %d", id);
 		return nullptr;
 	}
 	return &Props[id].value();
@@ -102,8 +102,8 @@ int prop_category_id_lookup(const SCP_string& category)
 
 prop_category* prop_get_category(int index)
 {
+	Assertion(SCP_vector_inbounds(Prop_categories, index), "Invalid category index %d", index);
 	if (!SCP_vector_inbounds(Prop_categories, index)) {
-		Assertion(false, "Invalid category index %d", index);
 		return nullptr;
 	}
 	return &Prop_categories[index];
@@ -473,9 +473,8 @@ int prop_create(const matrix* orient, const vec3d* pos, int prop_type, const cha
 		Error(LOCATION, "Cannot create prop %s; pof file is not valid", pip->name.c_str());
 		return -1;
 	}
-	if (pip->model_num == -1) {
-		pip->model_num = model_load(pip->pof_file.c_str());
-	}
+
+	pip->model_num = model_load(pip->pof_file.c_str());
 
 	polymodel* pm = model_get(pip->model_num);
 
@@ -613,9 +612,7 @@ static void prop_model_change(int n, int prop_type)
 	//polymodel_instance* pmi = model_get_instance(sp->model_instance_num);
 
 	// get new model
-	if (sip->model_num == -1) {
-		sip->model_num = model_load(sip->pof_file.c_str());
-	}
+	sip->model_num = model_load(sip->pof_file.c_str());
 
 	polymodel* pm = model_get(sip->model_num);
 	Objects[sp->objnum].radius = model_get_radius(pm->id);
@@ -1069,7 +1066,7 @@ int prop_check_collision(object* prop_obj, object* other_obj, vec3d* hitpos, col
 				mc.radius = light_obj->radius;
 				break;
 			default:
-				UNREACHABLE("Unknown object type in prop_check_collision");
+				UNREACHABLE("Unknown object type %d in prop_check_collision", light_obj->type);
 			};
 
 			mc_ret_val = model_collide(&mc);

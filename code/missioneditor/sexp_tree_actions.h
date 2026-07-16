@@ -14,6 +14,12 @@ public:
 	// The model provides tree node data; the UI interface updates the visual widget.
 	SexpTreeActions(SexpTreeModel& model, ISexpTreeUI& ui);
 
+	// Non-copyable and non-movable: permanently bound to its model and UI
+	SexpTreeActions(const SexpTreeActions&) = delete;
+	SexpTreeActions& operator=(const SexpTreeActions&) = delete;
+	SexpTreeActions(SexpTreeActions&&) = delete;
+	SexpTreeActions& operator=(SexpTreeActions&&) = delete;
+
 	// --- Replace operations (modify current item_index node) ---
 
 	// Replace the current node with plain data (number or string).

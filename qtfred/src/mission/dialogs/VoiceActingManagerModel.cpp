@@ -127,7 +127,7 @@ SCP_vector<SCP_string> VoiceActingManagerModel::fileChoices()
 			out.emplace_back(".wav");
 			break;
 		default:
-			Assertion(false, "Invalid file type selected!");
+			UNREACHABLE("Invalid file type %d selected!", i);
 			break;
 		}
 	}
@@ -161,7 +161,7 @@ SCP_string VoiceActingManagerModel::getSuffixString() const
 		case Suffix::WAV:
 			return ".wav";
 		default:
-			Assertion(false, "Invalid file type selected!");
+			UNREACHABLE("Invalid file type %d selected!", static_cast<int>(_suffix));
 			return ".wav";
 	}
 }
@@ -194,7 +194,7 @@ SCP_string VoiceActingManagerModel::generateFilename(ExportSelection sel, int nu
 			prefix += _abbrevMessage;
 			break;
 		default:
-			Assertion(false, "Invalid export selection for filename generation!");
+			UNREACHABLE("Invalid export selection %d for filename generation!", static_cast<int>(sel));
 			prefix = ""; // Fallback, shouldn't happen
 	}
 

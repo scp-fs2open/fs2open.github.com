@@ -1313,8 +1313,8 @@ bool popup_conditional_create(int flags, ...)
 	char *format, *s;
 	va_list args;
 
+	Assertion(!Popup_is_active, "Can't create a conditional popup while another popup is open!");
 	if (Popup_is_active) {
-		UNREACHABLE("Can't create a conditional popup while another popup is open!");
 		return false;
 	}
 

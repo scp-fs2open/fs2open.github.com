@@ -227,7 +227,8 @@ int create_wing() {
 	}
 
 	count = 0;
-	if (Objects[Ships[Player_start_shipnum].objnum].flags[Object::Object_Flags::Marked])
+	if ((Player_start_shipnum >= 0) && (Player_start_shipnum < MAX_SHIPS) && (Ships[Player_start_shipnum].objnum >= 0)
+		&& Objects[Ships[Player_start_shipnum].objnum].flags[Object::Object_Flags::Marked])
 		count = 1;
 
 	ptr = GET_FIRST(&obj_used_list);
@@ -442,13 +443,15 @@ void remove_ship_from_wing(int ship, int min) {
 	rename_ship(ship, buf);
 }
 
-void remove_wing(int wing_num)
+void disband_wing(int wing_num)
 {
 	int i, total;
 	object *ptr;
 
 	if (check_wing_dependencies(wing_num))
 		return;
+
+	delete_reinforcement(Wings[wing_num].name);
 
 	Ship_editor_dialog.bypass_errors = Wing_editor_dialog.bypass_errors = 1;
 	Ship_editor_dialog.update_data(0);

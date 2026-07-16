@@ -249,9 +249,9 @@ public:
 	// Update the icon of a tree item
 	virtual void ui_set_item_image(void* handle, NodeImage image) = 0;
 	// Return the first child handle of the given tree item, or nullptr if none
-	virtual void* ui_get_child_item(void* handle) = 0;
+	virtual void* ui_get_child_item(void* handle) const = 0;
 	// Return true if the tree item has any children
-	virtual bool ui_has_children(void* handle) = 0;
+	virtual bool ui_has_children(void* handle) const = 0;
 	// Expand a single tree item to show its children
 	virtual void ui_expand_item(void* handle) = 0;
 	// Set the tree's current selection to this item
@@ -428,6 +428,14 @@ public:
 	SexpTreeModel();
 	~SexpTreeModel();
 
+	// Non-copyable and non-movable: _opf holds a back-reference to this model,
+	// and UI layers keep long-lived pointers to it (views, dialog interfaces).
+	// A copy would silently leave the copy's _opf bound to the original model.
+	SexpTreeModel(const SexpTreeModel&) = delete;
+	SexpTreeModel& operator=(const SexpTreeModel&) = delete;
+	SexpTreeModel(SexpTreeModel&&) = delete;
+	SexpTreeModel& operator=(SexpTreeModel&&) = delete;
+
 	// Tree node storage
 	SCP_vector<sexp_tree_item> tree_nodes;
 	int total_nodes;
@@ -580,7 +588,7 @@ public:
 	// Analyze the current selection and compute which context menu actions are available.
 	// The returned state includes operator enablement, variable/container menus, and
 	// clipboard paste validation. Returned state owns temporary lists and cleans them up automatically.
-	SexpContextMenuState compute_context_menu_state();
+	SexpContextMenuState compute_context_menu_state() const;
 	// Returns true if the given operator value should be hidden from menus (deprecated/hidden ops)
 	static bool is_operator_hidden(int op_value);
 
@@ -594,9 +602,9 @@ private:
 	// Build the variable and container replacement menu entries for the selected node
 	void ctx_compute_variable_menus(SexpContextMenuState& state) const;
 	// Determine what can be added as a new child of the selected node
-	void ctx_compute_add_type(SexpContextMenuState& state);
+	void ctx_compute_add_type(SexpContextMenuState& state) const;
 	// Determine what can replace the selected node; returns the OPF type for clipboard validation
-	int ctx_compute_replace_type(SexpContextMenuState& state);
+	int ctx_compute_replace_type(SexpContextMenuState& state) const;
 	// Determine the OPF type for inserting an operator before the selected node
 	void ctx_compute_insert_type(SexpContextMenuState& state) const;
 	// Pre-compute which operators are enabled for add/replace/insert

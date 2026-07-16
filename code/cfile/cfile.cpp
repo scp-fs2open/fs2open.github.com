@@ -85,7 +85,7 @@ cf_pathtype Pathtypes[CF_MAX_PATH_TYPES]  = {
 	{ CF_TYPE_INTEL_ANIMS,			"data" DIR_SEPARATOR_STR "intelanims",										".pcx .ani .eff .tga .jpg .png .dds .ktx",	CF_TYPE_DATA	},
 	{ CF_TYPE_SCRIPTS,				"data" DIR_SEPARATOR_STR "scripts",											".lua .lc .fnl",						CF_TYPE_DATA	},
 	{ CF_TYPE_FICTION,				"data" DIR_SEPARATOR_STR "fiction",											".txt",								CF_TYPE_DATA	}, 
-	{ CF_TYPE_FREDDOCS,				"data" DIR_SEPARATOR_STR "freddocs",										".html .qch .css .png .jpg",	CF_TYPE_DATA	}
+	{ CF_TYPE_FREDDOCS,				"data" DIR_SEPARATOR_STR "freddocs",										".html .css .png .jpg",	CF_TYPE_DATA	}
 };
 // clang-format on
 
@@ -837,7 +837,7 @@ static int cfget_cfile_block()
 	mprintf(("Out of cfile blocks! Currently opened files:\n"));
 	dump_opened_files();
 
-	UNREACHABLE("There are no more free cfile blocks. This means that there are too many files opened by FSO.\n"
+	Warning(LOCATION, "There are no more free cfile blocks. This means that there are too many files opened by FSO.\n"
 		"This is probably caused by a programming or scripting error where a file does not get closed."); // out of free cfile blocks
 	return -1;			
 }

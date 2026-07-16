@@ -308,7 +308,13 @@ void shockwave_move(object *shockwave_objp, float frametime)
 		CLAMP(sw->radius, 0.0f, sw->outer_radius);
 	}
 
-	if ( sw->time_elapsed > sw->total_time ) {
+	// It is possible the shockwave may have lifetime shorter than one frame (e.g. high speed, small radius), 
+	// which by default results in shockwave applying no damage.
+	// Provide optional fix to ensure shockwave is not killed until after this frame's damage pass has run.
+	bool sw_expired = sw->time_elapsed > sw->total_time;
+	bool sw_expire_fix = The_mission.ai_profile->flags[AI::Profile_Flags::Fix_shockwave_expire_before_do_damage];
+
+	if ( sw_expired && !sw_expire_fix ) {
         shockwave_objp->flags.set(Object::Object_Flags::Should_be_dead);
 		return;
 	}
@@ -443,6 +449,12 @@ void shockwave_move(object *shockwave_objp, float frametime)
 		}
 
 	}	// end for
+
+	// See the sw_expired check above: shockwave has now applied its final damage pass this frame, so let it die.  
+	// With the flag off we already returned before the loop.
+	if ( sw_expired && sw_expire_fix ) {
+        shockwave_objp->flags.set(Object::Object_Flags::Should_be_dead);
+	}
 }
 
 /**

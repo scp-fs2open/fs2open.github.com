@@ -243,6 +243,15 @@ namespace internal {
 		SCP_vector<int> handles;
 
 		for (auto const &name: bitmap_strings) {
+			// FRED never renders or pages in particle effects, 
+			// so skip the (potentially expensive) animation loading here.  
+			// Still record placeholder handle so the effect stays "defined" and 
+			// can be resolved by name from the weapons/ships tables without spurious errors.
+			if (Fred_running) {
+				handles.push_back(0);
+				continue;
+			}
+
 			auto handle = bm_load_animation(name.c_str());
 			if (handle >= 0) {
 				handles.push_back(handle);

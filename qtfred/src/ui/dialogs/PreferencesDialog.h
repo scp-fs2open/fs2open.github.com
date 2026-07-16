@@ -25,12 +25,14 @@ private slots:
 	// General
 	void on_offerAutosaveRecovery_toggled(bool checked);
 	void on_autosaveIntervalSeconds_valueChanged(int value);
+	void on_sexpNumberEveryN_valueChanged(int value);
 	void on_createBakOnSave_toggled(bool checked);
 	void on_moveShipsWhenUndocking_toggled(bool checked);
 	void on_alwaysSaveDisplayNames_toggled(bool checked);
 	void on_checkPotentialIssues_toggled(bool checked);
 	void on_applyAutoCorrections_toggled(bool checked);
 	void on_toolbarIconSizeCombo_currentIndexChanged(int index);
+	void on_outlineLodCombo_currentIndexChanged(int index);
 	void on_themeCombo_currentIndexChanged(int index);
 	void on_showSexpHelpMissionEvents_toggled(bool checked);
 	void on_showSexpHelpMissionGoals_toggled(bool checked);
@@ -50,6 +52,8 @@ private slots:
 	void on_resetGridButton_clicked();
 
 	// Controls
+	void on_invertOrbitX_toggled(bool checked);
+	void on_invertOrbitY_toggled(bool checked);
 	void on_resetDefaultsButton_clicked();
 
 private: // NOLINT(readability-redundant-access-specifiers)

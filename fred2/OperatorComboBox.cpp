@@ -149,7 +149,7 @@ void OperatorComboBox::filter_popup_operators(const SCP_string &filter_string)
 	}
 
 	// sort operators by cost
-	std::sort(filtered_operators.begin(), filtered_operators.end(), [](const std::pair<int, size_t> &a, const std::pair<int, size_t> &b)
+	std::stable_sort(filtered_operators.begin(), filtered_operators.end(), [](const std::pair<int, size_t> &a, const std::pair<int, size_t> &b)
 		{
 			// compare the size_t parts of both pairs
 			return std::get<1>(a) < std::get<1>(b);

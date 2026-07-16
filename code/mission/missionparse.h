@@ -23,6 +23,7 @@
 #include "object/object.h"
 #include "parse/sexp.h"
 #include "sound/sound.h"
+#include "utils/reset_on_move.h"
 #include "mission/mission_flags.h"
 #include "nebula/volumetrics.h"
 #include "ship/anchor_t.h"
@@ -480,7 +481,7 @@ public:
 	int	score = 0;
 	float assist_score_pct = 0.0f;					// percentage of the score which players who gain an assist will get when this ship is killed
 	SCP_set<size_t> orders_accepted;		// which orders this ship will accept from the player
-	p_dock_instance	*dock_list = nullptr;				// Goober5000 - parse objects this parse object is docked to
+	util::reset_on_move<p_dock_instance *> dock_list;	// Goober5000 - parse objects this parse object is docked to
 	object *created_object = nullptr;					// Goober5000
 	int collision_group_id = 0;							// Goober5000
 	int	group = -1;								// group object is within or -1 if none.
@@ -523,6 +524,18 @@ public:
 	SCP_map<std::pair<int, int>, int> alt_iff_color;
 
 	~p_object();
+
+	// The destructor frees dock_list, and a user-declared destructor suppresses
+	// the implicit move operations, so define them here.  Shallow copies are safe
+	// because parse code only copies p_objects before dock lists are built.
+	p_object() = default;
+	p_object(const p_object &) = default;
+	p_object &operator=(const p_object &) = default;
+	p_object(p_object &&) = default;
+
+	// not defaulted, because a memberwise move would overwrite (and leak) any
+	// dock list the assigned-to object owns; defined in missionparse.cpp
+	p_object &operator=(p_object &&other) noexcept;
 
 	const char* get_display_name();
 	bool has_display_name();

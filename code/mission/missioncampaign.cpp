@@ -989,7 +989,7 @@ void mission_campaign_store_goals_and_events()
 			else
 				stored_event.status = static_cast<int>(EventStatus::FAILED);
 		} else
-			UNREACHABLE("Mission event formula should be marked MEF_EVENT_IS_DONE at end-of-mission");
+			Assertion(false, "Mission event formula should be marked MEF_EVENT_IS_DONE at end-of-mission");
 	}
 }
 
@@ -1194,6 +1194,35 @@ void mission_campaign_mission_over(bool do_next_mission)
 		mission_campaign_next_mission();			// sets up whatever needs to be set to actually play next mission
 }
 
+void mission_campaign_free_mission_strings(cmission &cm)
+{
+	if (cm.name != nullptr) {
+		vm_free(cm.name);
+		cm.name = nullptr;
+	}
+
+	if (cm.notes != nullptr) {
+		vm_free(cm.notes);
+		cm.notes = nullptr;
+	}
+
+	// the next three are strdup'd return values from parselo.cpp - taylor
+	if (cm.mission_branch_desc != nullptr) {
+		vm_free(cm.mission_branch_desc);
+		cm.mission_branch_desc = nullptr;
+	}
+
+	if (cm.mission_branch_brief_anim != nullptr) {
+		vm_free(cm.mission_branch_brief_anim);
+		cm.mission_branch_brief_anim = nullptr;
+	}
+
+	if (cm.mission_branch_brief_sound != nullptr) {
+		vm_free(cm.mission_branch_brief_sound);
+		cm.mission_branch_brief_sound = nullptr;
+	}
+}
+
 /**
  * Called when the game closes -- to get rid of memory errors for Bounds checker
  * also called at campaign init and campaign load
@@ -1207,35 +1236,11 @@ void mission_campaign_clear()
 	// be sure to remove all old malloced strings of Mission_names
 	// we must also free any goal stuff that was from a previous campaign
 	for ( i=0; i<Campaign.num_missions; i++ ) {
-		if ( Campaign.missions[i].name != NULL ) {
-			vm_free(Campaign.missions[i].name);
-			Campaign.missions[i].name = NULL;
-		}
-
-		if (Campaign.missions[i].notes != NULL) {
-			vm_free(Campaign.missions[i].notes);
-			Campaign.missions[i].notes = NULL;
-		}
+		mission_campaign_free_mission_strings(Campaign.missions[i]);
 
 		Campaign.missions[i].goals.clear();
 		Campaign.missions[i].events.clear();
 		Campaign.missions[i].variables.clear();
-
-		// the next three are strdup'd return values from parselo.cpp - taylor
-		if (Campaign.missions[i].mission_branch_desc != NULL) {
-			vm_free(Campaign.missions[i].mission_branch_desc);
-			Campaign.missions[i].mission_branch_desc = NULL;
-		}
-
-		if (Campaign.missions[i].mission_branch_brief_anim != NULL) {
-			vm_free(Campaign.missions[i].mission_branch_brief_anim);
-			Campaign.missions[i].mission_branch_brief_anim = NULL;
-		}
-
-		if (Campaign.missions[i].mission_branch_brief_sound != NULL) {
-			vm_free(Campaign.missions[i].mission_branch_brief_sound);
-			Campaign.missions[i].mission_branch_brief_sound = NULL;
-		}
 
 		if ( !Fred_running ){
 			sexp_unmark_persistent(Campaign.missions[i].formula);		// free any sexpression nodes used by campaign.

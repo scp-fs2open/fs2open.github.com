@@ -6029,7 +6029,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		case -1:	// Possible return value if -noparseerrors is used
 			break;
 		default:
-			UNREACHABLE("This should never happen.\n");	// Impossible return value from required_string_one_of.
+			UNREACHABLE("This should never happen");	// Impossible return value from required_string_one_of.
 		}
 	}
 
@@ -6912,6 +6912,25 @@ void ship_level_init()
 	shipfx_large_blowup_level_init();
 
 	Man_thruster_reset_timestamp = timestamp(0);
+}
+
+void ship_level_close()
+{
+	// at this point ships have all gone through ship_delete;
+	// clean up any ships that are still present so we don't
+	// leave any stray references behind (e.g. for sexps)
+	for (auto &ship_entry : Ship_registry)
+	{
+		if (ship_entry.status == ShipStatus::PRESENT || ship_entry.status == ShipStatus::DEATH_ROLL)
+		{
+			ship_entry.cleanup_mode = (ship_entry.status == ShipStatus::DEATH_ROLL) ? SHIP_DESTROYED : SHIP_PRESENT_AT_MISSION_END;
+			ship_entry.status = ShipStatus::EXITED;
+			ship_entry.objnum = -1;
+			ship_entry.shipnum = -1;
+		}
+	}
+
+	ship_close_cockpit_displays(Player_ship);
 }
 
 /**
@@ -8755,6 +8774,7 @@ void ship_close_cockpit_displays(ship* shipp)
 {
 	if (shipp && shipp->cockpit_model_instance >= 0) {
 		model_delete_instance(shipp->cockpit_model_instance);
+		shipp->cockpit_model_instance = -1;
 	}
 
 	for ( int i = 0; i < (int)Player_displays.size(); i++ ) {
@@ -9151,7 +9171,7 @@ void wing_maybe_cleanup( wing *wingp, int team )
 						// TODO: I think this Int3() is triggered when a wing whose ships are all docked to ships of another
 						// wing departs.  It can be reliably seen in TVWP chapter 1 mission 7, when Torino and Iota wing depart.
 						// Not sure how to fix this. -- Goober5000
-						UNREACHABLE("A ship is still present even though its wing should be gone!");
+						Assertion(false, "A ship %s is still present even though its wing should be gone!", Ships[Objects[so->objnum].instance].ship_name);
 					}
 				}
 			}
@@ -14942,7 +14962,7 @@ bool ship_select_next_primary(object *objp, CycleDirection direction)
 	}
 	else if ( swp->num_primary_banks > MAX_SHIP_PRIMARY_BANKS )
 	{
-		UNREACHABLE("The ship %s has more primary banks than the maximum!", shipp->ship_name);
+		Assertion(false, "The ship %s has more primary banks than the maximum!", shipp->ship_name);
 		return false;
 	}
 
@@ -15247,8 +15267,8 @@ int get_available_secondary_weapons(object *objp, int *outlist, int *outbanklist
 				weapon_range_max = wepp->weapon_range;
 				//If weapon range is not set in the weapon info, derive it
 				if (weapon_range_max >= WEAPON_DEFAULT_TABLED_MAX_RANGE) {
+					Assertion(!wepp->is_beam(), "Since when do we have a beam that is a secondary weapon?");
 					if (wepp->is_beam()) {
-						UNREACHABLE("Since when do we have a beam that is a secondary weapon?");
 						weapon_range_max = wepp->b_info.range;
 					}
 					else {
@@ -17465,7 +17485,7 @@ int ship_get_random_ship_in_wing(int wingnum, int flags, float max_dist, int get
 // this function returns a random index into the Ship array of a ship of the given team
 // cargo containers are not counted as ships for the purposes of this function.  Why???
 // because now it is only used for getting a random ship for a message and cargo containers
-// can't send mesages.  This function is an example of kind of bad coding :-(
+// can't send messages.  This function is an example of kind of bad coding :-(
 // input:	max_dist	=>	OPTIONAL PARAMETER (default value 0.0f) max range ship can be from player
 int ship_get_random_team_ship(int team_mask, int flags, float max_dist )
 {
@@ -22319,7 +22339,7 @@ bool ship::is_arriving(ship::warpstage stage, bool dock_leader_or_single) const
 	}
 
 	// should never reach here
-	Assertion(false, "ship::is_arriving didn't handle all possible states; get a coder!");
+	UNREACHABLE("ship::is_arriving didn't handle all possible states; get a coder!");
 	return false;
 }
 

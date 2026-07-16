@@ -272,7 +272,6 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	SDL_SetMainReady();
 
 	Random::seed(static_cast<unsigned int>(time(nullptr)));
-	init_pending_messages();
 
 	os_init(Osreg_class_name, Osreg_app_name);
 
@@ -617,7 +616,17 @@ int create_ship(matrix *orient, vec3d *pos, int ship_type)
 	}
 
 	Ai_info[shipp->ai_index].kamikaze_damage = (int) std::min(1000.0f, 200.0f + (temp_max_hull_strength / 4.0f));
-
+	auto replacements = sip->replacement_textures;
+	for (auto& tr : replacements) {
+		if (!stricmp(tr.new_texture, "invisible")) {
+			// invisible is a special case
+			tr.new_texture_id = REPLACE_WITH_INVISIBLE;
+		} else {
+			// try to load texture or anim as normal
+			tr.new_texture_id = bm_load_either(tr.new_texture);
+		}
+	}
+	shipp->apply_replacement_textures(replacements);
 	return obj;
 }
 
@@ -776,7 +785,7 @@ int create_object(vec3d *pos, int waypoint_instance, bool prop)
 	int obj, n;
 
 	if (prop) {
-		int prop_class = m_new_prop_type_combo_box.GetCurSel();
+		int prop_class = m_new_prop_type_combo_box.GetPropClass(m_new_prop_type_combo_box.GetCurSel());
 		if (prop_class < 0 || prop_class >= prop_info_size())
 			return -1;
 
@@ -1236,7 +1245,6 @@ int common_object_delete(int obj)
 	char msg[255];
 	const char *name;
 	int i, z, r, type;
-	object *objp;
 	SCP_list<CJumpNode>::iterator jnp;
 
 	type = Objects[obj].type;
@@ -1272,17 +1280,7 @@ int common_object_delete(int obj)
 			ai_do_objects_undocked_stuff(&Objects[obj], dock_get_first_docked_object(&Objects[obj]));
 		}
 
-		if (Player_start_shipnum == i) {  // need a new single player start.
-			objp = GET_FIRST(&obj_used_list);
-			while (objp != END_OF_LIST(&obj_used_list)) {
-				if (objp->type == OBJ_START) {
-					Player_start_shipnum = objp->instance;
-					break;
-				}
-
-				objp = GET_NEXT(objp);
-			}
-		}
+		ensure_valid_player_start_shipnum();  // may need a new single player start
 
 		Player_starts--;
 

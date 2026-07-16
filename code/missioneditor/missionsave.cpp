@@ -733,6 +733,8 @@ void Fred_mission_save::save_ai_goals(ai_goal* goalp, int ship)
 
 				default:
 					UNREACHABLE("Goal %d not handled!", goalp[i].ai_mode);
+					valid = 0;
+					break;
 				}
 
 				if (valid)
@@ -3603,7 +3605,7 @@ int Fred_mission_save::save_objects()
 			fout(" %s", save_config.fred_alt_names[i]);
 		}
 
-		Assertion(save_config.fred_callsigns != nullptr, "save_config.fred_alt_names is null!");
+		Assertion(save_config.fred_callsigns != nullptr, "save_config.fred_callsigns is null!");
 
 		// optional callsign
 		if (save_config.save_format != MissionFormat::RETAIL && strlen(save_config.fred_callsigns[i])) {
@@ -4391,8 +4393,7 @@ int Fred_mission_save::save_players()
 	for (i = 0; i < Num_teams; i++) {
 		required_string_fred("$Starting Shipname:");
 		parse_comments();
-		Assert(Player_start_shipnum >= 0);
-		fout(" %s", Ships[Player_start_shipnum].ship_name);
+		fout(" %s", (Player_start_shipnum >= 0) ? Ships[Player_start_shipnum].ship_name : "<none>");
 
 		if (save_config.save_format != MissionFormat::RETAIL) {
 			if (Team_data[i].do_not_validate) {

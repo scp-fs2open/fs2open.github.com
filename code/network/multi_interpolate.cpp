@@ -249,8 +249,8 @@ void interpolation_manager::add_packet(int objnum, int frame, int packet_timesta
 // should never replace index 0
 void interpolation_manager::replace_packet(int index, vec3d* pos, matrix* orient, physics_info* pip) 
 {
+	Assertion(index >= 1, "Invalid replace interpolation packet index! (%d)", index);
 	if (index < 1) {
-		UNREACHABLE("Invalid replace interpolation packet index! (%d)", index);
 		return;
 	}
 
