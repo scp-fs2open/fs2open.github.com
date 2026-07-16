@@ -106,6 +106,7 @@ private: // NOLINT(readability-redundant-access-specifiers)
 
 	void updateEventUi();
 	void updateEventMoveButtons();
+	void setEventLogEnabled(bool enable);
 	void updateMessageUi();
 	void updateMessageMoveButtons();
 

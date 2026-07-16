@@ -371,6 +371,18 @@ void MissionEventsDialog::rebuildMessageList() {
 	}
 }
 
+// The log-state checkboxes only apply to a selected event, so gray them out (and
+// clear their stale state) when nothing is selected.
+void MissionEventsDialog::setEventLogEnabled(bool enable)
+{
+	for (auto* cb : {ui->checkLogTrue, ui->checkLogFalse, ui->checkLogPrevious, ui->checkLogAlwaysFalse,
+			ui->checkLogFirstRepeat, ui->checkLogLastRepeat, ui->checkLogFirstTrigger, ui->checkLogLastTrigger}) {
+		cb->setEnabled(enable);
+		if (!enable)
+			cb->setChecked(false);
+	}
+}
+
 void MissionEventsDialog::updateEventUi() {
 	util::SignalBlockers blockers(this);
 
@@ -394,6 +406,7 @@ void MissionEventsDialog::updateEventUi() {
 		ui->teamCombo->setEnabled(false);
 		ui->editDirectiveText->setEnabled(false);
 		ui->editDirectiveKeypressText->setEnabled(false);
+		setEventLogEnabled(false);
 		return;
 	}
 
@@ -436,6 +449,7 @@ void MissionEventsDialog::updateEventUi() {
 	ui->teamCombo->setEnabled(_model->getMissionIsMultiTeam());
 
 	// handle event log flags
+	setEventLogEnabled(true);
 	ui->checkLogTrue->setChecked(_model->getLogTrue());
 	ui->checkLogFalse->setChecked(_model->getLogFalse());
 	ui->checkLogPrevious->setChecked(_model->getLogLogPrevious());
