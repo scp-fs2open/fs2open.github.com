@@ -435,7 +435,9 @@ namespace particle
 				return false;
 			}
 
-			if (part->attached_objnum < 0 || Objects[part->attached_objnum].type != OBJ_SHIP) {
+			const auto& obj = part->attachment.extract_object();
+
+			if (!obj || obj->objnum < 0 || Objects[obj->objnum].signature != obj->sig || Objects[obj->objnum].type != OBJ_SHIP) {
 				return false;
 			}
 
@@ -449,7 +451,7 @@ namespace particle
 				decalInfo.definition_handle = std::tuple(actual_frame, -1, -1);
 			}
 
-			decalInfo.object        = &Objects[part->attached_objnum];
+			decalInfo.object        = &Objects[obj->objnum];
 			decalInfo.submodel      = -1;
 			decalInfo.creation_time = f2fl(Missiontime);
 			decalInfo.lifetime      = 1.0f;
