@@ -30,10 +30,13 @@ QIcon makeThemedIcon(QStyle::StandardPixmap sp, const QColor& color, int size = 
 void bindStandardIcon(QAbstractButton* btn, QStyle::StandardPixmap sp);
 
 // Palette-aware icons drawn by QPainter that have no QStyle::StandardPixmap equivalent.
-// MoveToTop/MoveToBottom are the "jump to end" arrows (an up/down arrow with a bar).
+// The MoveTo* values are "jump to end" arrows: an arrow with a bar across the end it
+// points toward (e.g. MoveToTop is an up arrow with a bar along the top).
 enum class CustomIcon {
 	MoveToTop,
 	MoveToBottom,
+	MoveToLeft,
+	MoveToRight,
 };
 
 // Draw a palette-aware icon for a CustomIcon using QPainter.

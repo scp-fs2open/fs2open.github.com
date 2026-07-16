@@ -1408,7 +1408,45 @@ void CampaignEditorDialogModel::moveBranchDown()
 	// Swap the selected branch with the one below it.
 	std::swap(mission.branches[m_current_branch_index], mission.branches[m_current_branch_index + 1]);
 	set_modified();
-	
+
+	m_current_branch_index = -1; // set no branch selected
+	// Rebuild the visual tree from the model's authoritative state
+	m_tree_ops.rebuildBranchTree(mission.branches, mission.filename);
+}
+
+void CampaignEditorDialogModel::moveBranchToTop()
+{
+	// Ensure a mission and a branch are currently selected.
+	if (!SCP_vector_inbounds(m_missions, m_current_mission_index)) {
+		return;
+	}
+	auto& mission = m_missions[m_current_mission_index];
+	if (!SCP_vector_inbounds(mission.branches, m_current_branch_index) || m_current_branch_index == 0) {
+		return;
+	}
+	// Rotate the selected branch to the front, preserving the order of the rest.
+	std::rotate(mission.branches.begin(), mission.branches.begin() + m_current_branch_index, mission.branches.begin() + m_current_branch_index + 1);
+	set_modified();
+
+	m_current_branch_index = -1; // set no branch selected
+	// Rebuild the visual tree from the model's authoritative state
+	m_tree_ops.rebuildBranchTree(mission.branches, mission.filename);
+}
+
+void CampaignEditorDialogModel::moveBranchToBottom()
+{
+	// Ensure a mission and a branch are currently selected.
+	if (!SCP_vector_inbounds(m_missions, m_current_mission_index)) {
+		return;
+	}
+	auto& mission = m_missions[m_current_mission_index];
+	if (!SCP_vector_inbounds(mission.branches, m_current_branch_index) || m_current_branch_index == static_cast<int>(mission.branches.size()) - 1) {
+		return;
+	}
+	// Rotate the selected branch to the back, preserving the order of the rest.
+	std::rotate(mission.branches.begin() + m_current_branch_index, mission.branches.begin() + m_current_branch_index + 1, mission.branches.end());
+	set_modified();
+
 	m_current_branch_index = -1; // set no branch selected
 	// Rebuild the visual tree from the model's authoritative state
 	m_tree_ops.rebuildBranchTree(mission.branches, mission.filename);
