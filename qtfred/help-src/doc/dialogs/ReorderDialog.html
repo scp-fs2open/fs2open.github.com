@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Reorder Objects - QtFRED Help</title>
+    <link rel="stylesheet" type="text/css" href="../css/help.css"/>
+</head>
+<body>
+<nav class="breadcrumb"><a href="../index.html">QtFRED Help</a> &rsaquo; Tools &rsaquo; Reorder Objects</nav>
+<h1>Reorder Objects</h1>
+<p>Opens via <strong>Tools &rsaquo; Reorder Objects</strong>.</p>
+<p>Changes the order in which ships, wings, props, waypoint lists, and jump nodes are
+stored. That order is what gets written to the mission file, and it controls how each
+type is listed in order-based UI such as the <a href="../general/SceneBrowserDialog.html">Scene
+Browser</a>. Reordering does not move anything in space, rename anything, or change any
+references. These objects are referred to by name everywhere else, so their references
+stay intact.</p>
+
+<div class="note">Moves apply immediately. There is no Apply or Cancel step: each
+move rewrites the stored order as soon as you make it, and closing the dialog keeps
+whatever order you have set.</div>
+
+<h2>Tabs</h2>
+<p>Each object type has its own tab. Switch tabs to reorder that type independently.</p>
+<table>
+    <tr><th>Tab</th><th>Reorders</th></tr>
+    <tr><td>Ships</td><td>The order of individual <a href="ShipEditorDialog.html">ships</a>,
+        including player starts.</td></tr>
+    <tr><td>Wings</td><td>The order of <a href="WingEditorDialog.html">wings</a>. Ships
+        remain assigned to their wings; only the wing order changes.</td></tr>
+    <tr><td>Props</td><td>The order of <a href="PropEditorDialog.html">props</a>.</td></tr>
+    <tr><td>Waypoint Lists</td><td>The order of <a href="WaypointEditorDialog.html">waypoint
+        paths</a>. The waypoints within each path keep their own order.</td></tr>
+    <tr><td>Jump Nodes</td><td>The order of <a href="JumpNodeEditorDialog.html">jump
+        nodes</a>.</td></tr>
+</table>
+
+<h2>Moving items</h2>
+<p>Select an item in the list, then use the buttons beside it to reposition it.
+The buttons act on the selected item and are disabled when a move would have no
+effect (for example, <strong>Move up</strong> on the top item).</p>
+<table>
+    <tr><th>Button</th><th>Action</th></tr>
+    <tr><td>Move to top</td><td>Moves the selected item to the first position.</td></tr>
+    <tr><td>Move up</td><td>Moves the selected item one position earlier.</td></tr>
+    <tr><td>Move down</td><td>Moves the selected item one position later.</td></tr>
+    <tr><td>Move to bottom</td><td>Moves the selected item to the last position.</td></tr>
+</table>
+</body>
+</html>

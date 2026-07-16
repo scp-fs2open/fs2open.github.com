@@ -4,7 +4,10 @@
 #include "globalincs/linklist.h"
 #include "mission/missionparse.h"
 #include "iff_defs/iff_defs.h"
+#include "jumpnode/jumpnode.h"
 #include "object/object.h"
+#include "object/waypoint.h"
+#include "prop/prop.h"
 #include "ship/ship.h"
 
 #include <algorithm>
@@ -485,4 +488,96 @@ void resort_ships_in_obj_used_list()
 	resort_obj_used_list_subset(
 		[](int t) { return t == OBJ_SHIP || t == OBJ_START; },
 		[](const object* o) { return o->instance; });
+}
+
+void resort_props_in_obj_used_list()
+{
+	resort_obj_used_list_subset(
+		[](int t) { return t == OBJ_PROP; },
+		[](const object* o) { return o->instance; });
+}
+
+void rotate_prop_slots(const SCP_vector<int>& slots, int from_pos, int to_pos)
+{
+	Assertion(Fred_running, "rotate_prop_slots is FRED-only: it re-points object instances only, not any game-context state");
+	if (from_pos == to_pos)
+		return;
+
+	int count = (int)slots.size();
+	Assertion(from_pos >= 0 && from_pos < count, "rotate_prop_slots: 'from' position %d out of range", from_pos);
+	Assertion(to_pos >= 0 && to_pos < count, "rotate_prop_slots: 'to' position %d out of range", to_pos);
+
+	// Permute the prop occupants among the slot indices, leaving any empty
+	// holes where they are.  Park the mover, shift the rest over by one, then drop
+	// the mover into the slot vacated at the far end.
+	std::optional<prop> moving = std::move(Props[slots[from_pos]]);
+	int step = (to_pos > from_pos) ? 1 : -1;
+	for (int j = from_pos; j != to_pos; j += step)
+		Props[slots[j]] = std::move(Props[slots[j + step]]);
+	Props[slots[to_pos]] = std::move(moving);
+
+	// Re-point each moved prop's object instance to its new Props[] index.  Only
+	// the occupants between the two positions changed slots.
+	int lo = std::min(from_pos, to_pos);
+	int hi = std::max(from_pos, to_pos);
+	for (int j = lo; j <= hi; ++j)
+	{
+		if (Props[slots[j]].has_value())
+			Objects[Props[slots[j]]->objnum].instance = slots[j];
+	}
+
+	// Keep obj_used_list prop order in sync with Props[] index order, so
+	// the Scene Browser reflects the new order too.
+	resort_props_in_obj_used_list();
+}
+
+void rotate_waypoint_lists(int from_pos, int to_pos)
+{
+	Assertion(Fred_running, "rotate_waypoint_lists is FRED-only: it re-points object instances only, not any game-context state");
+	if (from_pos == to_pos)
+		return;
+
+	int count = (int)Waypoint_lists.size();
+	Assertion(from_pos >= 0 && from_pos < count, "rotate_waypoint_lists: 'from' position %d out of range", from_pos);
+	Assertion(to_pos >= 0 && to_pos < count, "rotate_waypoint_lists: 'to' position %d out of range", to_pos);
+
+	// Reorder the lists themselves, preserving the relative order of the rest.
+	if (from_pos < to_pos)
+		std::rotate(Waypoint_lists.begin() + from_pos, Waypoint_lists.begin() + from_pos + 1, Waypoint_lists.begin() + to_pos + 1);
+	else
+		std::rotate(Waypoint_lists.begin() + to_pos, Waypoint_lists.begin() + from_pos, Waypoint_lists.begin() + from_pos + 1);
+
+	// A waypoint object encodes its list index, point index in its instance, so
+	// every waypoint in the shifted lists now sits at a new list index.  Rebuild
+	// all instances from the lists' current positions.
+	for (int li = 0; li < (int)Waypoint_lists.size(); ++li)
+	{
+		auto& waypoints = Waypoint_lists[li].get_waypoints();
+		for (int wi = 0; wi < (int)waypoints.size(); ++wi)
+		{
+			int objnum = waypoints[wi].get_objnum();
+			if (objnum >= 0)
+				Objects[objnum].instance = calc_waypoint_instance(li, wi);
+		}
+	}
+}
+
+void rotate_jump_nodes(const SCP_vector<int>& slots, int from_pos, int to_pos)
+{
+	Assertion(Fred_running, "rotate_jump_nodes is FRED-only: it reorders the editor's jump-node list only");
+	if (from_pos == to_pos)
+		return;
+
+	int count = (int)slots.size();
+	Assertion(from_pos >= 0 && from_pos < count, "rotate_jump_nodes: 'from' position %d out of range", from_pos);
+	Assertion(to_pos >= 0 && to_pos < count, "rotate_jump_nodes: 'to' position %d out of range", to_pos);
+
+	// Permute the node occupants among the fixed slot indices, leaving any
+	// detached entries in place.  Park the mover, shift the rest over by one, then
+	// drop the mover into the slot vacated at the far end.
+	CJumpNode moving = std::move(Jump_nodes[slots[from_pos]]);
+	int step = (to_pos > from_pos) ? 1 : -1;
+	for (int j = from_pos; j != to_pos; j += step)
+		Jump_nodes[slots[j]] = std::move(Jump_nodes[slots[j + step]]);
+	Jump_nodes[slots[to_pos]] = std::move(moving);
 }

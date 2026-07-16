@@ -79,6 +79,7 @@
                     <section title="Error Checker"                  ref="dialogs/ErrorCheckerDialog.html"/>
                     <section title="Global Ship Flags"              ref="dialogs/GlobalShipFlagsDialog.html"/>
                     <section title="Music Player"                   ref="dialogs/MusicPlayerDialog.html"/>
+                    <section title="Reorder Objects"                ref="dialogs/ReorderDialog.html"/>
                     <section title="Voice Acting Manager"           ref="dialogs/VoiceActingManager.html"/>
                     <section title="Waypoint Path Generator"        ref="dialogs/WaypointPathGeneratorDialog.html"/>
                 </section>
@@ -125,6 +126,7 @@
             <keyword name="Prop Editor"             id="PropEditorDialog"               ref="dialogs/PropEditorDialog.html"/>
             <keyword name="Calculate Relative Coordinates" id="RelativeCoordinatesDialog" ref="dialogs/RelativeCoordinatesDialog.html"/>
             <keyword name="Reinforcements"          id="ReinforcementsEditorDialog"     ref="dialogs/ReinforcementsEditorDialog.html"/>
+            <keyword name="Reorder Objects"         id="ReorderDialog"                  ref="dialogs/ReorderDialog.html"/>
             <keyword name="Shield System"           id="ShieldSystemDialog"             ref="dialogs/ShieldSystemDialog.html"/>
             <keyword name="Ship Editor"             id="ShipEditorDialog"               ref="dialogs/ShipEditorDialog.html"/>
             <keyword name="Ship Alt Class"          id="ShipAltShipClass"               ref="dialogs/ShipAltShipClass.html"/>
@@ -188,6 +190,7 @@
             <file>dialogs/PropEditorDialog.html</file>
             <file>dialogs/ReinforcementsEditorDialog.html</file>
             <file>dialogs/RelativeCoordinatesDialog.html</file>
+            <file>dialogs/ReorderDialog.html</file>
             <file>dialogs/ShieldSystemDialog.html</file>
             <file>dialogs/ShipEditorDialog.html</file>
             <file>dialogs/ShipAltShipClass.html</file>
