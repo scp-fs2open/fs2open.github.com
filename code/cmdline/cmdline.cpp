@@ -1522,6 +1522,7 @@ static json_t* json_get_v2() {
 	json_add_version(root);
 	json_add_easy_flags(root);
 	json_add_flags(root);
+	json_object_set_new(root, "pref_path", json_string(os_get_config_path().c_str()));
 
 	return root;
 }
