@@ -6,7 +6,6 @@
 #include <libs/ffmpeg/FFmpeg.h>
 
 #include <asteroid/asteroid.h>
-#include <cmdline/cmdline.h>
 #include <cutscene/cutscenes.h>
 #include <gamesnd/eventmusic.h>
 #include <globalincs/alphacolors.h>

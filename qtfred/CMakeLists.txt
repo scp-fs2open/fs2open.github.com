@@ -33,6 +33,16 @@ endif()
 #                Qt5::uic configuration FastDebug".
 set(CMAKE_MAP_IMPORTED_CONFIG_FASTDEBUG Debug Release "")
 
+# Must also be set before find_package -- the first find_package(Qt6Core) snapshots
+# this into the generated QtDeploySupport.cmake. Distro-built Qt plugins (e.g. on
+# Arch) don't have enough RPATH headroom in their ELF headers for the deploy
+# script's file(RPATH_SET) to write the new path, which fails the build. Skipping
+# the adjustment is safe with system Qt: the dynamic loader finds the distro's Qt
+# libraries through the default search paths anyway.
+if(PLATFORM_LINUX AND NOT QT_USE_PRECOMPILED)
+    set(QT_DEPLOY_FORCE_ADJUST_RPATHS OFF)
+endif()
+
 find_package(Qt6 COMPONENTS Core Widgets OpenGL Help)
 
 # fall back to precompiled version if system install not found
@@ -45,6 +55,10 @@ elseif(NOT Qt6_FOUND)
         set(QT_USE_PRECOMPILED ON CACHE BOOL "Precompiled Qt usage forced ON" FORCE)
         get_prebuilt_path(PREBUILT_PATH)
         list(PREPEND CMAKE_PREFIX_PATH "${PREBUILT_PATH}/Qt6")
+
+        # Prebuilt Qt plugins do have RPATH headroom, so let the deploy script
+        # adjust them as usual (the system-Qt override above no longer applies).
+        unset(QT_DEPLOY_FORCE_ADJUST_RPATHS)
 
         find_package(Qt6 REQUIRED COMPONENTS Core Widgets OpenGL Help)
     else()
@@ -284,6 +298,12 @@ elseif(PLATFORM_LINUX)
             eglfs linuxfb minimalegl minimal
             offscreen vkkhrdisplay vnc
             wayland xcb
+        # The KDE kimageformats plugins living in Qt's imageformats dir are
+        # built without an RPATH entry, so the deploy script's file(RPATH_SET)
+        # fails on them. We don't need them, so exclude them (matched as an
+        # end-anchored regex against the plugin base name).
+        EXCLUDE_PLUGINS
+            "kimg_[a-z0-9]+"
     )
 endif()
 
