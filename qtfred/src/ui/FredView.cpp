@@ -2507,6 +2507,7 @@ void FredView::on_actionLoadout_triggered(bool) {
 }
 void FredView::on_actionVariables_triggered(bool) {
 	auto editorDialog = new dialogs::VariableDialog(this, _viewport);
+	editorDialog->setAttribute(Qt::WA_DeleteOnClose);
 	editorDialog->show();
 }
 
