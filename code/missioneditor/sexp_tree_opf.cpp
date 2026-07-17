@@ -3,6 +3,7 @@
 
 #include "parse/sexp.h"
 #include "globalincs/linklist.h"
+#include "coordinate_points/coordinate_point.h"
 #include "object/object.h"
 #include "object/waypoint.h"
 #include "ship/ship.h"
@@ -224,6 +225,18 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_point()
 			waypoint_stuff_name(buf, jj);
 			head.add_data(buf);
 		}
+	}
+
+	return head.next;
+}
+
+sexp_list_item *SexpTreeOPF::get_listing_opf_coordinate_point()
+{
+	sexp_list_item head;
+
+	for (const auto &cp: Coordinate_points)
+	{
+		head.add_data(cp.name.c_str());
 	}
 
 	return head.next;
@@ -736,6 +749,7 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_ship_wing_point() const
 	head.add_list(get_listing_opf_ship());
 	head.add_list(get_listing_opf_wing());
 	head.add_list(get_listing_opf_point());
+	head.add_list(get_listing_opf_coordinate_point());
 
 	return head.next;
 }
@@ -2067,6 +2081,10 @@ sexp_list_item *SexpTreeOPF::get_listing_opf(int opf, int parent_node, int arg_i
 			list = get_listing_opf_point();
 			break;
 
+		case OPF_COORDINATE_POINT:
+			list = get_listing_opf_coordinate_point();
+			break;
+
 		case OPF_IFF:
 			list = get_listing_opf_iff();
 			break;
@@ -2560,6 +2578,7 @@ int SexpTreeOPF::query_default_argument_available(int op, int i) const
 		case OPF_PROP_CLASS_NAME:
 		case OPF_HUGE_WEAPON:
 		case OPF_JUMP_NODE_NAME:
+		case OPF_COORDINATE_POINT:
 		case OPF_AMBIGUOUS:
 		case OPF_CARGO:
 		case OPF_ARRIVAL_LOCATION:
@@ -3180,6 +3199,10 @@ int SexpTreeOPF::get_default_value(sexp_list_item* item, int op, int i) const
 
 		case OPF_JUMP_NODE_NAME:
 			str = "<Jump node name>";
+			break;
+
+		case OPF_COORDINATE_POINT:
+			str = "<coordinate point>";
 			break;
 
 		case OPF_NAV_POINT:

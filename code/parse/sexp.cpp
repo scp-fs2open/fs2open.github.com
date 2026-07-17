@@ -28,6 +28,7 @@
 #include "camera/camera.h"
 #include "camera/photomode.h"
 #include "cmdline/cmdline.h"
+#include "coordinate_points/coordinate_point.h"
 #include "debris/debris.h"
 #include "debugconsole/console.h"
 #include "fireball/fireballs.h"		// for explosion stuff
@@ -797,6 +798,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "set-jumpnode-model",				OP_JUMP_NODE_SET_JUMPNODE_MODEL,		3,	3,			SEXP_ACTION_OPERATOR,	},
 	{ "show-jumpnode",					OP_JUMP_NODE_SHOW_JUMPNODE,				1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "hide-jumpnode",					OP_JUMP_NODE_HIDE_JUMPNODE,				1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
+	{ "toggle-point-visibility",		OP_TOGGLE_POINT_VISIBILITY,				2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 
 	//Special Effects Sub-Category
 	{ "set-post-effect",				OP_SET_POST_EFFECT,						2,	5,			SEXP_ACTION_OPERATOR,	},	// Hery
@@ -896,6 +898,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "ignore-key",						OP_IGNORE_KEY,							2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Karajorma
 	{ "targeted",						OP_TARGETED,							1,	3,			SEXP_BOOLEAN_OPERATOR,	},
 	{ "node-targeted",					OP_NODE_TARGETED,						1,	2,			SEXP_BOOLEAN_OPERATOR,	},	// FUBAR
+	{ "point-targeted",					OP_POINT_TARGETED,						1,	2,			SEXP_BOOLEAN_OPERATOR,	},
 	{ "missile-locked",					OP_MISSILE_LOCKED,						1,	3,			SEXP_BOOLEAN_OPERATOR,	},	// Sesquipedalian
 	{ "speed",							OP_SPEED,								1,	1,			SEXP_BOOLEAN_OPERATOR,	},
 	{ "facing",							OP_FACING,								2,	2,			SEXP_BOOLEAN_OPERATOR,	},
@@ -2567,9 +2570,9 @@ int check_sexp_syntax(int node, int desired_return_type, int recursive, int *bad
 					break;
 				}
 
-				// only other possibility is waypoints
+				// only other possibilities are waypoints and coordinate points
 				if (desired_argument_type == OPF_SHIP_WING_SHIPONTEAM_POINT || desired_argument_type == OPF_SHIP_WING_POINT || desired_argument_type == OPF_SHIP_WING_POINT_OR_NONE) {
-					if (find_matching_waypoint(CTEXT(node)) == nullptr) {
+					if (find_matching_waypoint(CTEXT(node)) == nullptr && find_coordinate_point_by_name(CTEXT(node)) == nullptr) {
 						if (verify_vector(CTEXT(node))) {  // non-zero on verify vector mean invalid!
 							return (desired_argument_type == OPF_SHIP_WING_SHIPONTEAM_POINT) ? SEXP_CHECK_INVALID_SHIP_WING_SHIPONTEAM_POINT : SEXP_CHECK_INVALID_SHIP_WING_POINT;
 						}
@@ -3873,6 +3876,15 @@ int check_sexp_syntax(int node, int desired_return_type, int recursive, int *bad
 
 				if (jumpnode_get_by_name(CTEXT(node)) == nullptr)
 					return SEXP_CHECK_INVALID_JUMP_NODE;
+
+				break;
+
+			case OPF_COORDINATE_POINT:
+				if ( node_subtype != SEXP_ATOM_STRING )
+					return SEXP_CHECK_TYPE_MISMATCH;
+
+				if (find_coordinate_point_by_name(CTEXT(node)) == nullptr)
+					return SEXP_CHECK_INVALID_COORDINATE_POINT;
 
 				break;
 
@@ -7299,6 +7311,17 @@ void eval_object_ship_wing_point_team(object_ship_wing_point_team *oswpt, int no
 	}
 
 
+	// check if we have a coordinate point
+	auto cp = find_coordinate_point_by_name(node_ctext);
+	if ((cp != nullptr) && (cp->objnum >= 0))
+	{
+		oswpt->type = OSWPT_TYPE_COORDINATE_POINT;
+		oswpt->objnum = cp->objnum;
+
+		return;
+	}
+
+
 	// check if we have an "<any team>" type
 	int team = sexp_determine_team(node_ctext);
 	if (team >= 0)
@@ -8813,6 +8836,7 @@ int sexp_distance2(object *objp1, object_ship_wing_point_team *oswpt2, int(*dist
 		// check ships and points
 		case OSWPT_TYPE_SHIP:
 		case OSWPT_TYPE_WAYPOINT:
+		case OSWPT_TYPE_COORDINATE_POINT:
 		{
 			return distance_method(objp1, oswpt2->objp());
 		}
@@ -8899,6 +8923,7 @@ int sexp_distance(int n, int(*distance_method)(object*, object*))
 		// check ships and points
 		case OSWPT_TYPE_SHIP:
 		case OSWPT_TYPE_WAYPOINT:
+		case OSWPT_TYPE_COORDINATE_POINT:
 		{
 			return sexp_distance2(oswpt1.objp(), &oswpt2, distance_method);
 		}
@@ -9049,6 +9074,7 @@ int sexp_distance_subsystem(int n, int(*distance_method)(object*, vec3d*))
 		// check ships and points
 		case OSWPT_TYPE_SHIP:
 		case OSWPT_TYPE_WAYPOINT:
+		case OSWPT_TYPE_COORDINATE_POINT:
 		{
 			return distance_method(oswpt.objp(), &subsys_pos);
 		}
@@ -9381,6 +9407,7 @@ int sexp_get_object_coordinate(int n, int axis)
 		case OSWPT_TYPE_SHIP:
 		case OSWPT_TYPE_WING:
 		case OSWPT_TYPE_WAYPOINT:
+		case OSWPT_TYPE_COORDINATE_POINT:
 			pos = &oswpt.objp()->pos;
 			break;
 
@@ -9466,7 +9493,8 @@ int sexp_angle_fvec_target(int node)
 	{
 	case OSWPT_TYPE_SHIP:
 	case OSWPT_TYPE_WING:
-	case OSWPT_TYPE_WAYPOINT: {
+	case OSWPT_TYPE_WAYPOINT:
+	case OSWPT_TYPE_COORDINATE_POINT: {
 		const vec3d& pos2 = oswpt.objp()->pos;
 
 		if (vm_vec_equal(pos1, pos2))
@@ -9537,6 +9565,20 @@ void sexp_set_object_position(int n)
 		case OSWPT_TYPE_WAYPOINT:
 		{
 			oswpt.waypointp()->set_pos(&target_vec);
+			Current_sexp_network_packet.start_callback();
+			Current_sexp_network_packet.send_ushort(oswpt.objp()->net_signature);
+			Current_sexp_network_packet.send_float(target_vec.xyz.x);
+			Current_sexp_network_packet.send_float(target_vec.xyz.y);
+			Current_sexp_network_packet.send_float(target_vec.xyz.z);
+			Current_sexp_network_packet.end_callback();
+			break;
+		}
+
+		case OSWPT_TYPE_COORDINATE_POINT:
+		{
+			// coordinate points store their position directly on the object; they don't move
+			// under physics, so a plain assignment is enough
+			oswpt.objp()->pos = target_vec;
 			Current_sexp_network_packet.start_callback();
 			Current_sexp_network_packet.send_ushort(oswpt.objp()->net_signature);
 			Current_sexp_network_packet.send_float(target_vec.xyz.x);
@@ -9625,6 +9667,8 @@ void multi_sexp_set_object_position()
 	if (objp->type == OBJ_WAYPOINT) {
 		waypoint *wpt = find_waypoint_with_instance(objp->instance);
 		wpt->set_pos(&wp_vec);
+	} else if (objp->type == OBJ_COORDINATE_POINT) {
+		objp->pos = wp_vec;
 	}
 }
 
@@ -9759,6 +9803,7 @@ void sexp_stuff_oswpt_location(vec3d **location, object_ship_wing_point_team *os
 		case OSWPT_TYPE_SHIP:
 		case OSWPT_TYPE_WING:
 		case OSWPT_TYPE_WAYPOINT:
+		case OSWPT_TYPE_COORDINATE_POINT:
 			*location = &oswpt->objp()->pos;
 			break;
 
@@ -20428,6 +20473,32 @@ int sexp_node_targeted(int node)
 	return SEXP_TRUE;
 }
 
+int sexp_point_targeted(int node)
+{
+	int z;
+	bool is_nan, is_nan_forever;
+
+	auto cp = find_coordinate_point_by_name(CTEXT(node));
+
+	if (cp == nullptr || cp->objnum < 0 || !Player_ai || (cp->objnum != Players_target)){
+		return SEXP_FALSE;
+	}
+
+	if (CDR(node) >= 0) {
+		z = eval_num(CDR(node), is_nan, is_nan_forever);
+		if (is_nan)
+			return SEXP_FALSE;
+		if (is_nan_forever)
+			return SEXP_KNOWN_FALSE;
+
+		if (timestamp_since(Players_target_timestamp) < z * MILLISECONDS_PER_SECOND){
+			return SEXP_FALSE;
+		}
+	}
+
+	return SEXP_TRUE;
+}
+
 int sexp_speed(int node)
 {
 	int z;
@@ -26016,6 +26087,7 @@ void sexp_set_camera_facing_object(int n)
 		case OSWPT_TYPE_SHIP:
 		case OSWPT_TYPE_WING:
 		case OSWPT_TYPE_WAYPOINT:
+		case OSWPT_TYPE_COORDINATE_POINT:
 		{
 			pos = &oswpt.objp()->pos;
 			break;
@@ -26149,6 +26221,7 @@ object *sexp_camera_get_objsub(int node, int *o_submodel)
 		case OSWPT_TYPE_SHIP:
 		case OSWPT_TYPE_WING:
 		case OSWPT_TYPE_WAYPOINT:
+		case OSWPT_TYPE_COORDINATE_POINT:
 			objp = oswpt.objp();
 			break;
 
@@ -27145,6 +27218,42 @@ void multi_sexp_show_hide_jumpnode(bool show)
 	}
 }
 
+void sexp_toggle_point_visibility(int node)
+{
+	// first argument is the desired visibility state; the rest are coordinate point names
+	bool visible = is_sexp_true(node);
+
+	Current_sexp_network_packet.start_callback();
+	Current_sexp_network_packet.send_bool(visible);
+
+	for (int n = CDR(node); n >= 0; n = CDR(n))
+	{
+		auto cp = find_coordinate_point_by_name(CTEXT(n));
+		if (cp != nullptr)
+		{
+			cp->flags.set(CoordinatePoint::Flags::Visible_in_mission, visible);
+			Current_sexp_network_packet.send_string(CTEXT(n));
+		}
+	}
+
+	Current_sexp_network_packet.end_callback();
+}
+
+void multi_sexp_toggle_point_visibility()
+{
+	bool visible = false;
+	char point_name[TOKEN_LENGTH];
+
+	Current_sexp_network_packet.get_bool(visible);
+
+	while (Current_sexp_network_packet.get_string(point_name))
+	{
+		auto cp = find_coordinate_point_by_name(point_name);
+		if (cp != nullptr)
+			cp->flags.set(CoordinatePoint::Flags::Visible_in_mission, visible);
+	}
+}
+
 //WMC - This is a bit of a hack, however, it's easier than
 //coding in a whole new Script_system function.
 int sexp_script_eval(int node, int return_type, bool concat_args = false)
@@ -27427,6 +27536,7 @@ int sexp_is_in_box(int n)
 
 		case OSWPT_TYPE_SHIP:
 		case OSWPT_TYPE_WAYPOINT:
+		case OSWPT_TYPE_COORDINATE_POINT:
 			return test_point_within_box(&oswpt.objp()->pos, &box_corner_1, &box_corner_2, reference_ship_obj);
 
 		default:
@@ -29732,6 +29842,10 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_node_targeted(node);
 				break;
 
+			case OP_POINT_TARGETED:
+				sexp_val = sexp_point_targeted(node);
+				break;
+
 			case OP_SPEED:
 				sexp_val = sexp_speed(node);
 				break;
@@ -30545,6 +30659,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_TOGGLE_POINT_VISIBILITY:
+				sexp_toggle_point_visibility(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_SCRIPT_EVAL_BOOL:
 				sexp_val = sexp_script_eval(node, OPR_BOOL);
 				break;
@@ -31029,6 +31148,10 @@ void multi_sexp_eval()
 				multi_sexp_show_hide_jumpnode(op_num == OP_JUMP_NODE_SHOW_JUMPNODE);
 				break;
 
+			case OP_TOGGLE_POINT_VISIBILITY:
+				multi_sexp_toggle_point_visibility();
+				break;
+
 			case OP_CLEAR_SUBTITLES:
 				multi_sexp_clear_subtitles();
 				break;
@@ -31470,6 +31593,7 @@ int query_operator_return_type(int op)
 		case OP_KEY_PRESSED:
 		case OP_TARGETED:
 		case OP_NODE_TARGETED:
+		case OP_POINT_TARGETED:
 		case OP_SPEED:
 		case OP_FACING:
 		case OP_FACING2:
@@ -31931,6 +32055,7 @@ int query_operator_return_type(int op)
 		case OP_JUMP_NODE_SET_JUMPNODE_MODEL:
 		case OP_JUMP_NODE_SHOW_JUMPNODE:
 		case OP_JUMP_NODE_HIDE_JUMPNODE:
+		case OP_TOGGLE_POINT_VISIBILITY:
 		case OP_SET_OBJECT_SPEED_X:
 		case OP_SET_OBJECT_SPEED_Y:
 		case OP_SET_OBJECT_SPEED_Z:
@@ -32886,6 +33011,14 @@ int query_operator_argument_type(int op_index, int argnum)
 		case OP_NODE_TARGETED:
 			if (!argnum)
 				return OPF_JUMP_NODE_NAME;
+			else if (argnum == 1)
+				return OPF_POSITIVE;
+			else
+				return OPF_NONE;
+
+		case OP_POINT_TARGETED:
+			if (!argnum)
+				return OPF_COORDINATE_POINT;
 			else if (argnum == 1)
 				return OPF_POSITIVE;
 			else
@@ -34679,6 +34812,12 @@ int query_operator_argument_type(int op_index, int argnum)
 		case OP_JUMP_NODE_HIDE_JUMPNODE:
 				return OPF_JUMP_NODE_NAME;
 
+		case OP_TOGGLE_POINT_VISIBILITY:
+			if (argnum == 0)
+				return OPF_BOOL;
+			else
+				return OPF_COORDINATE_POINT;
+
 		case OP_CHANGE_BACKGROUND:
 			return OPF_POSITIVE;
 
@@ -35498,6 +35637,9 @@ const char *sexp_error_message(int num)
 
 		case SEXP_CHECK_INVALID_JUMP_NODE:
 			return "Invalid jump node";
+
+		case SEXP_CHECK_INVALID_COORDINATE_POINT:
+			return "Invalid coordinate point";
 
 		case SEXP_CHECK_UNKNOWN_ERROR:
 			return "Unknown error";
@@ -37050,6 +37192,7 @@ int get_category(int op_id)
 		case OP_JUMP_NODE_SET_JUMPNODE_MODEL:
 		case OP_JUMP_NODE_SHOW_JUMPNODE:
 		case OP_JUMP_NODE_HIDE_JUMPNODE:
+		case OP_TOGGLE_POINT_VISIBILITY:
 		case OP_SHIP_GUARDIAN_THRESHOLD:
 		case OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD:
 		case OP_SET_GUARD_RANGE:
@@ -37357,6 +37500,7 @@ int get_category(int op_id)
 		case OP_RESET_ORDERS:
 		case OP_QUERY_ORDERS:
 		case OP_NODE_TARGETED:
+		case OP_POINT_TARGETED:
 		case OP_IGNORE_KEY:
 			return OP_CATEGORY_TRAINING;
 
@@ -37595,6 +37739,7 @@ int get_subcategory(int op_id)
 		case OP_SHIP_LAT_MANEUVER:
 		case OP_SET_MOBILE:
 		case OP_SET_IMMOBILE:
+		case OP_TOGGLE_POINT_VISIBILITY:
 			return CHANGE_SUBCATEGORY_COORDINATE_MANIPULATION;
 
 		case OP_INVALIDATE_GOAL:
@@ -40003,6 +40148,13 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"or has been targeted for the specified amount of time.\r\n\r\n"
 		"Returns a boolean value.  Takes 1 to 2 arguments (first required, rest optional):\r\n"
 		"\t1:\tName of Jump Node to check if targeted by player.\r\n"
+		"\t2:\tLength of time target should have been kept for (optional)."},
+
+	{ OP_POINT_TARGETED, "Point-Targeted (Boolean training operator)\r\n"
+		"\tIs true as long as the player has the specified coordinate point targeted, "
+		"or has been targeted for the specified amount of time.\r\n\r\n"
+		"Returns a boolean value.  Takes 1 to 2 arguments (first required, rest optional):\r\n"
+		"\t1:\tName of the coordinate point to check if targeted by player.\r\n"
 		"\t2:\tLength of time target should have been kept for (optional)."},
 
 	// Sesquipedalian
@@ -42436,6 +42588,12 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_JUMP_NODE_HIDE_JUMPNODE, "hide-jumpnode\r\n"
 		"\tSets a jump node to not display on the screen.\r\n"
 		"\tAny:\tJump node to hide\r\n"
+	},
+
+	{ OP_TOGGLE_POINT_VISIBILITY, "toggle-point-visibility\r\n"
+		"\tShows or hides one or more coordinate points in the mission.  Takes 2 or more arguments:\r\n"
+		"\t1:\tWhether the points should be visible (true) or hidden (false).\r\n"
+		"\tRest:\tCoordinate points to show or hide.\r\n"
 	},
 
 	// taylor, with modifications by niffiwan and MageKing17

@@ -46,6 +46,7 @@ public:
 	sexp_list_item* get_listing_opf_subsystem(int parent_node, int arg_index) const;
 	sexp_list_item* get_listing_opf_subsystem_type(int parent_node) const;
 	static sexp_list_item* get_listing_opf_point();
+	static sexp_list_item* get_listing_opf_coordinate_point();
 	static sexp_list_item* get_listing_opf_iff();
 	static sexp_list_item* get_listing_opf_ai_class();
 	static sexp_list_item* get_listing_opf_support_ship_class();

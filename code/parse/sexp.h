@@ -62,6 +62,7 @@ enum sexp_opf_t : int {
 	OPF_SHIP_WING_SHIPONTEAM_POINT,	// name of a ship, wing, any ship on a team, or a point
 	OPF_SHIP_WING_POINT,
 	OPF_SHIP_WING_POINT_OR_NONE,	// WMC - Ship, wing, point or none
+	OPF_COORDINATE_POINT,			// name of a coordinate point (special point) only
 	OPF_SHIP_TYPE,					// type of ship (fighter/bomber/etc)... NOTE: the type "fighter/bomber" is allowed even though it's not a real ship type; SEXPs must account for this
 	OPF_KEYPRESS,					// a default key
 	OPF_EVENT_NAME,					// name of an event
@@ -695,8 +696,9 @@ enum : int {
 	OP_JUMP_NODE_SET_JUMPNODE_COLOR,	// WMC
 	OP_JUMP_NODE_SET_JUMPNODE_MODEL,	// WMC
 	OP_JUMP_NODE_SHOW_JUMPNODE,	// WMC
-	
+
 	OP_JUMP_NODE_HIDE_JUMPNODE,	// WMC
+	OP_TOGGLE_POINT_VISIBILITY,
 	OP_SHIP_GUARDIAN_THRESHOLD,	// Goober5000
 	OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD,	// Goober5000
 	OP_SET_GUARD_RANGE, //MjnMixael
@@ -1025,6 +1027,7 @@ enum : int {
 	OP_RESET_ORDERS, // Karajorma
 	OP_QUERY_ORDERS, // Karajorma
 	OP_NODE_TARGETED, // FUBAR
+	OP_POINT_TARGETED,
 	OP_IGNORE_KEY, // Karajorma
 	
 	// this should come after every operator
@@ -1299,6 +1302,7 @@ enum sexp_error_check
 	SEXP_CHECK_INVALID_SHIP_POINT,
 	SEXP_CHECK_INVALID_SHIP_WING_SHIPONTEAM_POINT,
 	SEXP_CHECK_INVALID_SHIP_WING_POINT,
+	SEXP_CHECK_INVALID_COORDINATE_POINT,
 	SEXP_CHECK_INVALID_ORDER_RECIPIENT,
 	SEXP_CHECK_INVALID_SHIP_WING_WHOLETEAM,
 	SEXP_CHECK_MUST_BE_INTEGER,
