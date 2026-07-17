@@ -179,9 +179,13 @@ void CoordinatePointEditorDialog::updateUi()
 	ui->innerRadiusSpinBox->setEnabled(starEnabled);
 
 	// Mixed sentinels: spinboxes whose minimum is set below the legal range render
-	// specialValueText (" ") when that minimum value is set.
-	ui->sidesSpinBox->setValue(_model->isSidesMixed() ? 2 : _model->getSides());
-	ui->pointsSpinBox->setValue(_model->isPointsMixed() ? 2 : _model->getPoints());
+	// specialValueText (" ") when that minimum value is set. We only drop the floor to the
+	// sentinel while the value is actually mixed; otherwise the minimum is the real lower bound
+	// so a single selection can't be spun down to the meaningless blank value.
+	ui->sidesSpinBox->setMinimum(_model->isSidesMixed() ? NGON_SIDES_MIN - 1 : NGON_SIDES_MIN);
+	ui->sidesSpinBox->setValue(_model->isSidesMixed() ? NGON_SIDES_MIN - 1 : _model->getSides());
+	ui->pointsSpinBox->setMinimum(_model->isPointsMixed() ? STAR_POINTS_MIN - 1 : STAR_POINTS_MIN);
+	ui->pointsSpinBox->setValue(_model->isPointsMixed() ? STAR_POINTS_MIN - 1 : _model->getPoints());
 	ui->innerRadiusSpinBox->setValue(_model->isInnerRadiusMixed() ? -0.01
 		: static_cast<double>(_model->getInnerRadius()));
 	// Angle is a free-rotation float; no sentinel needed -- on mixed we just show the first
