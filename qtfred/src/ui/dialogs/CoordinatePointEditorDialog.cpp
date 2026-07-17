@@ -33,6 +33,12 @@ CoordinatePointEditorDialog::CoordinatePointEditorDialog(FredView* parent, Edito
 	// render blank (specialValueText) when the selection's angles disagree.
 	ui->angleSpinBox->setMinimum(-361.0);
 	ui->angleSpinBox->setSpecialValueText(" ");
+	// Sides/Points/InnerRadius carry their sentinel minimum in the .ui, but a whitespace-only
+	// specialValueText there gets trimmed to empty (which disables the blank), so set it in code
+	// like the spinboxes above. Their minimums (from the .ui) are already correct.
+	ui->sidesSpinBox->setSpecialValueText(" ");
+	ui->pointsSpinBox->setSpecialValueText(" ");
+	ui->innerRadiusSpinBox->setSpecialValueText(" ");
 
 	// Block combo signals during initial populate. Without this, addItem() fires
 	// currentIndexChanged on the auto-connected slot and clobbers the model's value
