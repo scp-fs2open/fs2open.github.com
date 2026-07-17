@@ -14,6 +14,7 @@
 #include <QProcess>
 #include <QSignalBlocker>
 #include <QSettings>
+#include <QDateTime>
 
 #include <project.h>
 
@@ -448,6 +449,7 @@ bool FredView::saveMissionToCurrentPath() {
 
 	save.save_mission_file(saveName.replace('/', DIR_SEPARATOR_CHAR).toUtf8().constData());
 	_missionModified = false;
+	setLastSaved(QDateTime::currentDateTime());
 
 	if (fixCount > 0)
 		QMessageBox::information(this, tr("Auto-corrections Applied"),
@@ -488,6 +490,7 @@ bool FredView::saveMissionAs() {
 
 	save.save_mission_file(saveName.replace('/', DIR_SEPARATOR_CHAR).toUtf8().constData());
 	_missionModified = false;
+	setLastSaved(QDateTime::currentDateTime());
 
 	if (fixCount > 0)
 		QMessageBox::information(this, tr("Auto-corrections Applied"),
@@ -747,6 +750,9 @@ void FredView::on_mission_loaded(const std::string& filepath) {
 	// Clear browsed head ANIs so the new mission's message scan starts fresh.
 	fso::fred::dialogs::MissionEventsDialogModel::clearBrowsedHeadAnis();
 
+	// A freshly loaded or newly created mission has not been saved this session yet.
+	setLastSaved(QDateTime());
+
 	if (_errorCheckerDialog) {
 		_errorCheckerDialog->clearErrors();
 	}
@@ -903,6 +909,12 @@ void FredView::initializeStatusBar() {
 	_statusBarObjectCount->setAlignment(Qt::AlignCenter);
 	statusBar()->addWidget(_statusBarObjectCount, 1);
 
+	// Sits just right of the (centered, stretched) object count, near the middle.
+	_statusBarLastSaved = new QLabel();
+	_statusBarLastSaved->setContentsMargins(16, 0, 0, 0);
+	statusBar()->addWidget(_statusBarLastSaved);
+	setLastSaved(QDateTime());
+
 	_statusBarViewmode = new QLabel();
 	_statusBarViewmode->setContentsMargins(8, 0, 0, 0);
 	statusBar()->addPermanentWidget(_statusBarViewmode);
@@ -910,6 +922,17 @@ void FredView::initializeStatusBar() {
 	_statusBarUnitsLabel = new QLabel();
 	_statusBarUnitsLabel->setContentsMargins(16, 0, 0, 0);
 	statusBar()->addPermanentWidget(_statusBarUnitsLabel);
+}
+
+void FredView::setLastSaved(const QDateTime& when) {
+	if (!_statusBarLastSaved)
+		return;
+
+	if (when.isValid()) {
+		_statusBarLastSaved->setText(tr("Last Saved: %1").arg(when.toString(QStringLiteral("MMM d, yyyy h:mm:ss AP"))));
+	} else {
+		_statusBarLastSaved->setText(tr("Last Saved: Never"));
+	}
 }
 
 // ---------------------------------------------------------------------------
