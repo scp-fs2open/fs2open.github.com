@@ -12,20 +12,8 @@ layout (set = 2, binding = 1, std140) uniform matrixData {
 };
 
 layout (set = 2, binding = 0, std140) uniform genericData {
-	mat4 modelMatrix;
-
 	vec4 color;
-
-	vec4 clipEquation;
-
-	int baseMapIndex;
-	int alphaTexture;
-	int noTexturing;
-	int srgb;
-
 	float intensity;
-	float alphaThreshold;
-	uint clipEnabled;
 };
 #else
 in vec4 vertPosition;

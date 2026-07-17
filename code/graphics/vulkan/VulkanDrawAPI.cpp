@@ -534,7 +534,16 @@ void vulkan_render_primitives_batched(batched_bitmap_material* material_info,
 	gr_buffer_handle buffer_handle)
 {
 	gr_matrix_set_uniforms();
-	vulkan_set_default_material_uniforms(material_info);
+
+	// Set batched_data GenericData UBO (matching OpenGL's opengl_tnl_set_material_batched)
+	auto buffer = gr_get_uniform_buffer(uniform_block_type::GenericData, 1,
+	                                     sizeof(graphics::generic_data::batched_data));
+	auto* data = buffer.aligner().addTypedElement<graphics::generic_data::batched_data>();
+	data->intensity = material_info->get_color_scale();
+	data->color     = material_info->get_color();
+	buffer.submitData();
+	gr_bind_uniform_buffer(uniform_block_type::GenericData, buffer.getBufferOffset(0),
+	                       sizeof(graphics::generic_data::batched_data), buffer.bufferHandle());
 
 	auto* drawManager = getDrawManager();
 	drawManager->renderPrimitivesBatched(material_info, prim_type, layout, offset, n_verts, buffer_handle);
