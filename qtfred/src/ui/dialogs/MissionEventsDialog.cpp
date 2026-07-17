@@ -709,7 +709,7 @@ void MissionEventsDialog::on_chainedCheckBox_stateChanged(int state)
 	updateEventUi();
 }
 
-void MissionEventsDialog::on_chainedDelayBox_valueChanged(int value)
+void MissionEventsDialog::on_chainDelayBox_valueChanged(int value)
 {
 	_model->setChainDelay(value);
 }
