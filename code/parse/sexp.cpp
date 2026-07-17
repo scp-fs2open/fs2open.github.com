@@ -141,6 +141,7 @@
 #define OSWPT_TYPE_PARSE_OBJECT		oswpt_type::PARSE_OBJECT
 #define OSWPT_TYPE_EXITED			oswpt_type::EXITED
 #define OSWPT_TYPE_WING_NOT_PRESENT	oswpt_type::WING_NOT_PRESENT
+#define OSWPT_TYPE_COORDINATE_POINT	oswpt_type::COORDINATE_POINT
 // --------------------------------------------------------------------------------
 
 
