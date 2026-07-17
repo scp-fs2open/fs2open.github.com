@@ -534,7 +534,11 @@ bool VulkanTextureManager::uploadAnimationFrames(int handle, bitmap* bm, int com
 	size_t totalDataSize = layerDataSize * arrayLayerCount;
 
 	// Create multi-layer image
-	vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
+	// eTransferSrc: animation frames can also be hit by the
+	// get_bitmap_from_texture() readback (it copies a single array layer out
+	// via eTransferSrcOptimal).
+	vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled |
+	                            vk::ImageUsageFlagBits::eTransferSrc;
 	vk::Image image;
 	VulkanAllocation allocation;
 
@@ -1142,10 +1146,12 @@ bool VulkanTextureManager::uploadTexture2D(int handle, bitmap* bm, int compType)
 	}
 
 	// Create image
-	vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
-	if (autoGenerateMips) {
-		usage |= vk::ImageUsageFlagBits::eTransferSrc;  // Needed for vkCmdBlitImage mipmap generation
-	}
+	// eTransferSrc is always set: needed for vkCmdBlitImage mipmap generation
+	// (autoGenerateMips) and for the get_bitmap_from_texture() readback path
+	// (bitmap_lookup alpha queries during model load), which copies the image
+	// back to a buffer via eTransferSrcOptimal.
+	vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled |
+	                            vk::ImageUsageFlagBits::eTransferSrc;
 
 	if (!createImage(width, height, mipLevels, format, vk::ImageTiling::eOptimal,
 	                 usage, MemoryUsage::GpuOnly, ts->image, ts->allocation)) {

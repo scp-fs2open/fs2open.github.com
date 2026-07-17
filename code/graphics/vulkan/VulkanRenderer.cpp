@@ -531,11 +531,21 @@ bool VulkanRenderer::readbackFramebuffer(ubyte** outPixels, uint32_t* outWidth, 
 	postBarrier.image               = srcImage;
 	postBarrier.subresourceRange    = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
 	postBarrier.srcAccessMask       = vk::AccessFlagBits::eTransferRead;
-	postBarrier.dstAccessMask       = {};
+	// The dst scope must cover every later consumer of this image: the encode
+	// pass samples it (eShaderRead @ eFragmentShader), and the next composition
+	// pass targeting it performs a layout transition plus a loadOp=eLoad read at
+	// begin (read+write @ eColorAttachmentOutput). An empty dst scope here left
+	// this transition's write unordered against those loads (READ_AFTER_WRITE
+	// flagged by -gr_sync_validation); the fence wait below only synchronizes
+	// the host, not later GPU submissions.
+	postBarrier.dstAccessMask       = vk::AccessFlagBits::eShaderRead
+	                                | vk::AccessFlagBits::eColorAttachmentRead
+	                                | vk::AccessFlagBits::eColorAttachmentWrite;
 
 	cmd.pipelineBarrier(
 		vk::PipelineStageFlagBits::eTransfer,
-		vk::PipelineStageFlagBits::eBottomOfPipe,
+		vk::PipelineStageFlagBits::eFragmentShader
+			| vk::PipelineStageFlagBits::eColorAttachmentOutput,
 		{}, nullptr, nullptr, postBarrier);
 
 	cmd.end();

@@ -206,6 +206,13 @@ void vulkan_imgui_render_draw_data()
 	auto* renderer = getRendererInstance();
 	if (renderer) {
 		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), renderer->getVkCurrentCommandBuffer());
+
+		// ImGui recorded its own pipeline/descriptor/viewport/scissor binds
+		// directly on the command buffer, mid-pass. Anything the engine draws
+		// before the next pass boundary (e.g. gr_flip's debug overlay or cached
+		// UI model instances) would otherwise run with ImGui's pipeline still
+		// bound because the tracker believes its own pipeline is current.
+		getStateTracker()->invalidateExternalBindings();
 	}
 }
 

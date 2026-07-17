@@ -129,6 +129,18 @@ void VulkanStateTracker::setRenderPass(vk::RenderPass renderPass, uint32_t subpa
 	m_scissorDirty = true;
 }
 
+void VulkanStateTracker::invalidateExternalBindings()
+{
+	m_currentPipeline = nullptr;
+
+	for (auto& set : m_boundDescriptorSets) {
+		set = nullptr;
+	}
+
+	m_viewportDirty = true;
+	m_scissorDirty = true;
+}
+
 vk::Rect2D VulkanStateTracker::clampToRenderArea(const vk::Rect2D& rect) const
 {
 	// Intersect [offset, offset+extent) with [0, renderArea)

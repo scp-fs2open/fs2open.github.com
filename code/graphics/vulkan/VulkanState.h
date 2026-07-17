@@ -102,6 +102,19 @@ class VulkanStateTracker {
 	void bindPipeline(vk::Pipeline pipeline, vk::PipelineLayout layout);
 
 	/**
+	 * @brief Invalidate cached pipeline/descriptor/dynamic-state bindings after
+	 * external code recorded binds directly on the command buffer.
+	 *
+	 * Unlike the raw recorders (which run in their own render pass and are
+	 * recovered by setRenderPass()), ImGui draws into the middle of the current
+	 * pass, so its vkCmdBindPipeline/vkCmdBindDescriptorSets/vkCmdSetViewport/
+	 * vkCmdSetScissor calls leave this tracker's caches stale with no pass
+	 * boundary to fix them. Call this immediately after such external recording
+	 * so the next tracked draw rebinds everything.
+	 */
+	void invalidateExternalBindings();
+
+	/**
 	 * @brief Get currently bound pipeline
 	 */
 	vk::Pipeline getCurrentPipeline() const
