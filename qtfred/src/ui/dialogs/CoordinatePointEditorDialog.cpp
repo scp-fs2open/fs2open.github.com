@@ -29,6 +29,10 @@ CoordinatePointEditorDialog::CoordinatePointEditorDialog(FredView* parent, Edito
 	}
 	ui->escortPrioritySpinBox->setMinimum(-1);
 	ui->escortPrioritySpinBox->setSpecialValueText(" ");
+	// Angle's real range is [-360, 360]; drop the floor one step lower so that sentinel value can
+	// render blank (specialValueText) when the selection's angles disagree.
+	ui->angleSpinBox->setMinimum(-361.0);
+	ui->angleSpinBox->setSpecialValueText(" ");
 
 	// Block combo signals during initial populate. Without this, addItem() fires
 	// currentIndexChanged on the auto-connected slot and clobbers the model's value
@@ -178,19 +182,24 @@ void CoordinatePointEditorDialog::updateUi()
 	ui->innerRadiusLabel->setEnabled(starEnabled);
 	ui->innerRadiusSpinBox->setEnabled(starEnabled);
 
-	// Mixed sentinels: spinboxes whose minimum is set below the legal range render
-	// specialValueText (" ") when that minimum value is set. We only drop the floor to the
-	// sentinel while the value is actually mixed; otherwise the minimum is the real lower bound
-	// so a single selection can't be spun down to the meaningless blank value.
-	ui->sidesSpinBox->setMinimum(_model->isSidesMixed() ? NGON_SIDES_MIN - 1 : NGON_SIDES_MIN);
-	ui->sidesSpinBox->setValue(_model->isSidesMixed() ? NGON_SIDES_MIN - 1 : _model->getSides());
-	ui->pointsSpinBox->setMinimum(_model->isPointsMixed() ? STAR_POINTS_MIN - 1 : STAR_POINTS_MIN);
-	ui->pointsSpinBox->setValue(_model->isPointsMixed() ? STAR_POINTS_MIN - 1 : _model->getPoints());
+	// Sides/Points show a blank ("mixed") when the selection disagrees. QSpinBox only renders its
+	// specialValueText when the value equals the minimum, so we enable that sentinel one step below
+	// the real floor ONLY while mixed. When not mixed the minimum is the true lower bound (so a
+	// single selection can't spin to a meaningless value) and the special text is cleared (so a
+	// legitimate value sitting at the floor still shows its number).
+	const bool sidesMixed = _model->isSidesMixed();
+	ui->sidesSpinBox->setSpecialValueText(sidesMixed ? QStringLiteral(" ") : QString());
+	ui->sidesSpinBox->setMinimum(sidesMixed ? NGON_SIDES_MIN - 1 : NGON_SIDES_MIN);
+	ui->sidesSpinBox->setValue(sidesMixed ? NGON_SIDES_MIN - 1 : _model->getSides());
+
+	const bool pointsMixed = _model->isPointsMixed();
+	ui->pointsSpinBox->setSpecialValueText(pointsMixed ? QStringLiteral(" ") : QString());
+	ui->pointsSpinBox->setMinimum(pointsMixed ? STAR_POINTS_MIN - 1 : STAR_POINTS_MIN);
+	ui->pointsSpinBox->setValue(pointsMixed ? STAR_POINTS_MIN - 1 : _model->getPoints());
 	ui->innerRadiusSpinBox->setValue(_model->isInnerRadiusMixed() ? -0.01
 		: static_cast<double>(_model->getInnerRadius()));
-	// Angle is a free-rotation float; no sentinel needed -- on mixed we just show the first
-	// selection's value and let the next edit write through to all.
-	ui->angleSpinBox->setValue(static_cast<double>(_model->getAngle()));
+	// Angle shows blank (the -361 sentinel) when the selection's angles differ.
+	ui->angleSpinBox->setValue(_model->isAngleMixed() ? -361.0 : static_cast<double>(_model->getAngle()));
 
 	ui->sizeSpinBox->setValue(_model->isSizeMixed() ? -0.01 : static_cast<double>(_model->getSize()));
 	ui->escortPrioritySpinBox->setValue(_model->isEscortPriorityMixed() ? -1 : _model->getEscortPriority());

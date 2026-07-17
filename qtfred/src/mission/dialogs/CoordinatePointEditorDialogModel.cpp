@@ -433,8 +433,9 @@ bool  CoordinatePointEditorDialogModel::isAngleMixed() const { return _angleMixe
 
 void CoordinatePointEditorDialogModel::setAngle(float v)
 {
-	// Angle has no sentinel: it's a free-rotation field with no "mixed" interaction beyond
-	// the spinbox's specialValueText handling. The dialog filters mixed-state via its UI logic.
+	// The dialog uses a value one below the real -360 floor as the "mixed" blank sentinel; ignore
+	// it so a user landing on the blank value doesn't commit an out-of-range angle.
+	if (v < -360.0f) return;
 	_angle = v;
 	_angleMixed = false;
 	for (int objnum : _selectedObjnums) {
