@@ -182,27 +182,22 @@ void CoordinatePointEditorDialog::updateUi()
 	ui->innerRadiusLabel->setEnabled(starEnabled);
 	ui->innerRadiusSpinBox->setEnabled(starEnabled);
 
-	// Sides/Points show a blank ("mixed") when the selection disagrees. QSpinBox only renders its
-	// specialValueText when the value equals the minimum, so we enable that sentinel one step below
-	// the real floor ONLY while mixed. When not mixed the minimum is the true lower bound (so a
-	// single selection can't spin to a meaningless value) and the special text is cleared (so a
-	// legitimate value sitting at the floor still shows its number).
-	const bool sidesMixed = _model->isSidesMixed();
-	ui->sidesSpinBox->setSpecialValueText(sidesMixed ? QStringLiteral(" ") : QString());
-	ui->sidesSpinBox->setMinimum(sidesMixed ? NGON_SIDES_MIN - 1 : NGON_SIDES_MIN);
-	ui->sidesSpinBox->setValue(sidesMixed ? NGON_SIDES_MIN - 1 : _model->getSides());
-
-	const bool pointsMixed = _model->isPointsMixed();
-	ui->pointsSpinBox->setSpecialValueText(pointsMixed ? QStringLiteral(" ") : QString());
-	ui->pointsSpinBox->setMinimum(pointsMixed ? STAR_POINTS_MIN - 1 : STAR_POINTS_MIN);
-	ui->pointsSpinBox->setValue(pointsMixed ? STAR_POINTS_MIN - 1 : _model->getPoints());
-	ui->innerRadiusSpinBox->setValue(_model->isInnerRadiusMixed() ? -0.01
+	// Every value spinbox uses the same scheme as Size/Escort Priority: a below-range sentinel
+	// value renders blank via the spinbox's specialValueText, the model setter rejects it and
+	// clamps real edits, and each valueChanged handler re-runs updateUi() so a single selection
+	// snaps back to the real value. So here we only ever push the sentinel (mixed) or the value.
+	// For the mixed/blank case, push each spinbox's OWN minimum() rather than a literal sentinel:
+	// specialValueText renders only when value() == minimum() exactly, and a hardcoded double can
+	// miss that equality at the box's rounding precision (the QDoubleSpinBox blank-fails otherwise).
+	ui->sidesSpinBox->setValue(_model->isSidesMixed() ? ui->sidesSpinBox->minimum() : _model->getSides());
+	ui->pointsSpinBox->setValue(_model->isPointsMixed() ? ui->pointsSpinBox->minimum() : _model->getPoints());
+	ui->innerRadiusSpinBox->setValue(_model->isInnerRadiusMixed() ? ui->innerRadiusSpinBox->minimum()
 		: static_cast<double>(_model->getInnerRadius()));
-	// Angle shows blank (the -361 sentinel) when the selection's angles differ.
-	ui->angleSpinBox->setValue(_model->isAngleMixed() ? -361.0 : static_cast<double>(_model->getAngle()));
+	ui->angleSpinBox->setValue(_model->isAngleMixed() ? ui->angleSpinBox->minimum()
+		: static_cast<double>(_model->getAngle()));
 
-	ui->sizeSpinBox->setValue(_model->isSizeMixed() ? -0.01 : static_cast<double>(_model->getSize()));
-	ui->escortPrioritySpinBox->setValue(_model->isEscortPriorityMixed() ? -1 : _model->getEscortPriority());
+	ui->sizeSpinBox->setValue(_model->isSizeMixed() ? ui->sizeSpinBox->minimum() : static_cast<double>(_model->getSize()));
+	ui->escortPrioritySpinBox->setValue(_model->isEscortPriorityMixed() ? ui->escortPrioritySpinBox->minimum() : _model->getEscortPriority());
 	if (_model->isMultiTeamMixed()) {
 		ui->multiTeamCombo->setCurrentIndex(-1);  // blank when values differ across selection
 	} else {
@@ -215,10 +210,10 @@ void CoordinatePointEditorDialog::updateUi()
 
 	ui->layerCombo->setCurrentIndex(ui->layerCombo->findData(QString::fromStdString(_model->getLayer())));
 
-	ui->colorRSpinBox->setValue(_model->isColorRMixed() ? -1 : _model->getColorR());
-	ui->colorGSpinBox->setValue(_model->isColorGMixed() ? -1 : _model->getColorG());
-	ui->colorBSpinBox->setValue(_model->isColorBMixed() ? -1 : _model->getColorB());
-	ui->colorASpinBox->setValue(_model->isColorAMixed() ? -1 : _model->getColorA());
+	ui->colorRSpinBox->setValue(_model->isColorRMixed() ? ui->colorRSpinBox->minimum() : _model->getColorR());
+	ui->colorGSpinBox->setValue(_model->isColorGMixed() ? ui->colorGSpinBox->minimum() : _model->getColorG());
+	ui->colorBSpinBox->setValue(_model->isColorBMixed() ? ui->colorBSpinBox->minimum() : _model->getColorB());
+	ui->colorASpinBox->setValue(_model->isColorAMixed() ? ui->colorASpinBox->minimum() : _model->getColorA());
 
 	updateColorSwatch();
 }
@@ -310,21 +305,25 @@ void CoordinatePointEditorDialog::on_shapeCombo_currentIndexChanged(int index)
 void CoordinatePointEditorDialog::on_sidesSpinBox_valueChanged(int value)
 {
 	_model->setSides(value);
+	updateUi();
 }
 
 void CoordinatePointEditorDialog::on_pointsSpinBox_valueChanged(int value)
 {
 	_model->setPoints(value);
+	updateUi();
 }
 
 void CoordinatePointEditorDialog::on_innerRadiusSpinBox_valueChanged(double value)
 {
 	_model->setInnerRadius(static_cast<float>(value));
+	updateUi();
 }
 
 void CoordinatePointEditorDialog::on_angleSpinBox_valueChanged(double value)
 {
 	_model->setAngle(static_cast<float>(value));
+	updateUi();
 }
 
 void CoordinatePointEditorDialog::on_sizeSpinBox_valueChanged(double value)
@@ -363,25 +362,25 @@ void CoordinatePointEditorDialog::on_visibleInMissionCheck_clicked()
 void CoordinatePointEditorDialog::on_colorRSpinBox_valueChanged(int value)
 {
 	_model->setColorR(value);
-	updateColorSwatch();
+	updateUi();
 }
 
 void CoordinatePointEditorDialog::on_colorGSpinBox_valueChanged(int value)
 {
 	_model->setColorG(value);
-	updateColorSwatch();
+	updateUi();
 }
 
 void CoordinatePointEditorDialog::on_colorBSpinBox_valueChanged(int value)
 {
 	_model->setColorB(value);
-	updateColorSwatch();
+	updateUi();
 }
 
 void CoordinatePointEditorDialog::on_colorASpinBox_valueChanged(int value)
 {
 	_model->setColorA(value);
-	updateColorSwatch();
+	updateUi();
 }
 
 } // namespace fso::fred::dialogs
