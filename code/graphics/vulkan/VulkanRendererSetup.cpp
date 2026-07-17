@@ -194,7 +194,7 @@ bool compareDevices(const PhysicalDeviceValues& left, const PhysicalDeviceValues
 
 void printPhysicalDevice(const PhysicalDeviceValues& values)
 {
-	nprintf(("vulkan", "  Found %s (%d) of type %s. API version %d.%d.%d, Driver version %d.%d.%d. Scored as %" PRIu64 "\n",
+	mprintf(("  Found %s (%d) of type %s. API version %d.%d.%d, Driver version %d.%d.%d. Scored as %" PRIu64 "\n",
 		values.properties.deviceName.data(),
 		values.properties.deviceID,
 		to_string(values.properties.deviceType).c_str(),
@@ -280,7 +280,7 @@ vk::PresentModeKHR choosePresentMode(const PhysicalDeviceValues& values)
 		case vk::PresentModeKHR::eFifoRelaxed:   name = "FIFO Relaxed"; break;
 		default: break;
 	}
-	nprintf(("vulkan", "Vulkan: Present mode: %s (Gr_enable_vsync=%d)\n", name, Gr_enable_vsync ? 1 : 0));
+	mprintf(("Vulkan: Present mode: %s (Gr_enable_vsync=%d)\n", name, Gr_enable_vsync ? 1 : 0));
 
 	return chosen;
 }
@@ -304,7 +304,7 @@ vk::Extent2D chooseSwapChainExtent(const PhysicalDeviceValues& values, uint32_t 
 } // namespace
 bool VulkanRenderer::initialize()
 {
-	nprintf(("vulkan", "Initializing Vulkan graphics device at %ix%i with %i-bit color...\n",
+	mprintf(("Initializing Vulkan graphics device at %ix%i with %i-bit color...\n",
 		gr_screen.max_w,
 		gr_screen.max_h,
 		gr_screen.bits_per_pixel));
@@ -793,7 +793,7 @@ bool VulkanRenderer::pickPhysicalDevice(PhysicalDeviceValues& deviceValues)
 		return vals;
 	});
 
-	nprintf(("vulkan", "Physical Vulkan devices:\n"));
+	mprintf(("Physical Vulkan devices:\n"));
 	std::for_each(values.cbegin(), values.cend(), printPhysicalDevice);
 
 	// Remove devices that do not have the features we need
@@ -809,12 +809,12 @@ bool VulkanRenderer::pickPhysicalDevice(PhysicalDeviceValues& deviceValues)
 	std::sort(values.begin(), values.end(), compareDevices);
 
 	deviceValues = values.back();
-	nprintf(("vulkan", "Selected device %s (%d) as the primary Vulkan device.\n",
+	mprintf(("Selected device %s (%d) as the primary Vulkan device.\n",
 		deviceValues.properties.deviceName.data(),
 		deviceValues.properties.deviceID));
-	nprintf(("vulkan", "Device extensions:\n"));
+	mprintf(("Device extensions:\n"));
 	for (const auto& extProp : deviceValues.extensions) {
-		nprintf(("vulkan", "  Found support for %s version %" PRIu32 "\n", extProp.extensionName.data(), extProp.specVersion));
+		mprintf(("  Found support for %s version %" PRIu32 "\n", extProp.extensionName.data(), extProp.specVersion));
 	}
 
 	return true;
