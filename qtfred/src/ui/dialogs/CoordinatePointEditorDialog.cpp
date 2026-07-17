@@ -2,6 +2,8 @@
 #include "ui/util/SignalBlockers.h"
 #include "ui_CoordinatePointEditorDialog.h"
 
+#include <QRadioButton>
+
 #include <coordinate_points/coordinate_shapes.h>
 #include <globalincs/globals.h>
 #include <mission/missionparse.h>
@@ -48,12 +50,10 @@ CoordinatePointEditorDialog::CoordinatePointEditorDialog(FredView* parent, Edito
 		ui->sizeSpinBox->setSingleStep(0.1);
 		ui->sizeSpinBox->setSpecialValueText(" ");
 
-		// Populate the shape combo: NGon and Star as the two built-in primitives, then every
-		// tabled shape in load order. UserRole carries the "shape id" used by the model:
-		// NGon=-2, Star=-1, Tabled=table_index (>= 0).
+		// The shape kind (NGon / Star / Custom) is chosen by the radio buttons; this combo lists
+		// only the tabled shapes and is active when Custom is selected. UserRole carries the
+		// table index (the model's "shape id" for a tabled shape, >= 0).
 		ui->shapeCombo->clear();
-		ui->shapeCombo->addItem("NGon", -2);
-		ui->shapeCombo->addItem("Star", -1);
 		for (int i = 0; i < static_cast<int>(Coordinate_shapes.size()); ++i) {
 			ui->shapeCombo->addItem(QString::fromStdString(Coordinate_shapes[i].name), i);
 		}
@@ -87,7 +87,13 @@ void CoordinatePointEditorDialog::initializeUi()
 
 	ui->nameEdit->setEnabled(enabled && !multi);
 	ui->groupEdit->setEnabled(enabled);
-	ui->shapeCombo->setEnabled(enabled);
+	// Shape kind radios + the tabled-shape combo are gated in updateUi(): NGon/Star follow the
+	// selection, Custom additionally needs at least one tabled shape, and the combo is only live
+	// for Custom. Baseline-disable here so they grey out when no point is selected.
+	ui->shapeNGonRadio->setEnabled(false);
+	ui->shapeStarRadio->setEnabled(false);
+	ui->shapeCustomRadio->setEnabled(false);
+	ui->shapeCombo->setEnabled(false);
 	// Sides/Points/InnerRadius are gated per-kind in updateUi(); only the always-on rows are
 	// touched here, plus a default-disabled baseline so they grey out when no point is selected.
 	ui->sidesSpinBox->setEnabled(false);
@@ -128,25 +134,43 @@ void CoordinatePointEditorDialog::updateUi()
 		ui->groupEdit->setText(QString::fromStdString(_model->getGroup()));
 	}
 
-	// Shape: combo holds the kind+table_index encoded as the "shape id" (-2 = NGon, -1 = Star,
-	// >= 0 = tabled). Look up by data, not by index, so the combo's order is independent of
-	// the encoding.
-	if (_model->isShapeKindMixed()) {
-		ui->shapeCombo->setCurrentIndex(-1);
-	} else {
-		const int idx = ui->shapeCombo->findData(_model->getShapeId());
-		ui->shapeCombo->setCurrentIndex(idx);
+	// Shape kind is chosen by the NGon / Star / Custom radios; the combo lists the tabled shapes
+	// and is only live for Custom. When the kind is mixed across a multi-selection, no radio is
+	// checked (which needs a brief drop of auto-exclusivity to reach the all-off state).
+	const bool kindMixed = _model->isShapeKindMixed();
+	const auto kind = _model->getShapeKind();
+	const bool selectionEnabled = _model->hasValidSelection();
+	const bool hasTabled = !Coordinate_shapes.empty();
+	const bool ngonChecked   = !kindMixed && (kind == CoordinatePointShapeKind::NGon);
+	const bool starChecked   = !kindMixed && (kind == CoordinatePointShapeKind::Star);
+	const bool customChecked = !kindMixed && (kind == CoordinatePointShapeKind::Tabled);
+
+	const std::pair<QRadioButton*, bool> radios[] = {
+		{ui->shapeNGonRadio, ngonChecked},
+		{ui->shapeStarRadio, starChecked},
+		{ui->shapeCustomRadio, customChecked},
+	};
+	for (const auto& [rb, on] : radios) {
+		rb->setAutoExclusive(false);
+		rb->setChecked(on);
+		rb->setAutoExclusive(true);
 	}
+	ui->shapeNGonRadio->setEnabled(selectionEnabled);
+	ui->shapeStarRadio->setEnabled(selectionEnabled);
+	ui->shapeCustomRadio->setEnabled(selectionEnabled && hasTabled);
+
+	// Point the combo at the resolved tabled shape; it's only interactive for Custom.
+	if (customChecked) {
+		ui->shapeCombo->setCurrentIndex(ui->shapeCombo->findData(_model->getShapeTableIndex()));
+	}
+	ui->shapeCombo->setEnabled(selectionEnabled && customChecked);
 
 	// Per-kind parameter rows stay in place; we just disable the ones that don't apply to the
 	// resolved kind. When kind is mixed across a multi-selection, all three per-kind rows are
 	// disabled until the user picks a kind. Angle is always editable. Rows are also disabled
 	// up front when there's no valid selection (handled by initializeUi).
-	const bool kindMixed = _model->isShapeKindMixed();
-	const auto kind = _model->getShapeKind();
-	const bool selectionEnabled = _model->hasValidSelection();
-	const bool ngonEnabled = selectionEnabled && !kindMixed && (kind == CoordinatePointShapeKind::NGon);
-	const bool starEnabled = selectionEnabled && !kindMixed && (kind == CoordinatePointShapeKind::Star);
+	const bool ngonEnabled = selectionEnabled && ngonChecked;
+	const bool starEnabled = selectionEnabled && starChecked;
 	ui->sidesLabel->setEnabled(ngonEnabled);
 	ui->sidesSpinBox->setEnabled(ngonEnabled);
 	ui->pointsLabel->setEnabled(starEnabled);
@@ -228,10 +252,42 @@ void CoordinatePointEditorDialog::on_groupEdit_editingFinished()
 	updateUi();
 }
 
+void CoordinatePointEditorDialog::on_shapeNGonRadio_toggled(bool checked)
+{
+	if (!checked)
+		return;
+	_model->setShapeId(-2);
+	updateUi();
+}
+
+void CoordinatePointEditorDialog::on_shapeStarRadio_toggled(bool checked)
+{
+	if (!checked)
+		return;
+	_model->setShapeId(-1);
+	updateUi();
+}
+
+void CoordinatePointEditorDialog::on_shapeCustomRadio_toggled(bool checked)
+{
+	if (!checked)
+		return;
+	// Commit whichever tabled shape the combo currently shows. The combo lists the tabled shapes
+	// and the Custom radio is only enabled when at least one exists, so there is a valid entry.
+	int index = ui->shapeCombo->currentIndex();
+	if (index < 0 && ui->shapeCombo->count() > 0)
+		index = 0;
+	if (index >= 0)
+		_model->setShapeId(ui->shapeCombo->itemData(index).toInt());
+	updateUi();
+}
+
 void CoordinatePointEditorDialog::on_shapeCombo_currentIndexChanged(int index)
 {
 	if (index < 0)
 		return;
+	// The combo only holds tabled shapes; its data is the table index (the model's shape id for
+	// a Custom shape). It's only interactive while Custom is selected.
 	const int shape_id = ui->shapeCombo->itemData(index).toInt();
 	_model->setShapeId(shape_id);
 	// Toggle which per-kind parameter rows are visible.

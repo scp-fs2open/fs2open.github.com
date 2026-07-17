@@ -20,6 +20,9 @@ private slots:
 	void on_nextPointButton_clicked();
 	void on_nameEdit_editingFinished();
 	void on_groupEdit_editingFinished();
+	void on_shapeNGonRadio_toggled(bool checked);
+	void on_shapeStarRadio_toggled(bool checked);
+	void on_shapeCustomRadio_toggled(bool checked);
 	void on_shapeCombo_currentIndexChanged(int index);
 	void on_sidesSpinBox_valueChanged(int value);
 	void on_pointsSpinBox_valueChanged(int value);
