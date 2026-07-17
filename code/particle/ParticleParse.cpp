@@ -348,6 +348,35 @@ namespace particle {
 			}
 		}
 
+		static void parseRenderAsDecal(ParticleEffect &effect) {
+			if (optional_string("$Render As Decal:")) {
+				stuff_boolean(&effect.m_renderAsDecal);
+
+				if (effect.m_renderAsDecal) {
+					if (!effect.m_parent_local) {
+						error_display(0, "Particle must be local to parent for decal rendering. Disabling decal rendering.");
+						effect.m_renderAsDecal = false;
+						//We still parse the rest to allow parsing to properly complete for the other effects.
+					}
+
+					if (optional_string("+Orientation Mode:")) {
+						switch (required_string_one_of(1, "Towards Center")) {
+						case 0:
+							required_string("Towards Center");
+							effect.m_decalOrientationMode = ParticleEffect::DecalOrientationMode::TOWARDS_CENTER;
+							break;
+						default:
+							UNREACHABLE("Unexpected orientation mode");
+						}
+					}
+
+					if (optional_string("+Emissive:")) {
+						stuff_boolean(&effect.m_decalEmissive);
+					}
+				}
+			}
+		}
+
 		static void parseModularCurvesLifetime(ParticleEffect& effect) {
 			effect.m_lifetime_curves.parse("$Particle Lifetime Curve:");
 		}
@@ -410,6 +439,7 @@ namespace particle {
 			parseLifetime(effect);
 			parseLocalPositionScaling(effect);
 			parseParentLocal(effect);
+			parseRenderAsDecal(effect);
 			parseLightEmissionSettings(effect);
 
 			//Spawner Settings
