@@ -1413,15 +1413,20 @@ int opengl_get_texture( GLenum target, GLenum pixel_format, GLenum data_format, 
 	return m_offset;
 }
 
-void gr_opengl_get_bitmap_from_texture(void* data_out, int bitmap_num)
+ubyte* gr_opengl_get_bitmap_from_texture(int bitmap_num, int* width_out, int* height_out)
 {
+	*width_out = 0;
+	*height_out = 0;
+
 	float u,v;
 
 	uint32_t array_index = 0;
-	gr_opengl_tcache_set(bitmap_num, TCACHE_TYPE_NORMAL, &u, &v, &array_index);
+	if ( !gr_opengl_tcache_set(bitmap_num, TCACHE_TYPE_NORMAL, &u, &v, &array_index) ) {
+		return nullptr;
+	}
 
 	auto *ts = bm_get_gr_info<tcache_slot_opengl>(bitmap_num, true);
-	
+
 	GLenum pixel_format = GL_RGB;
 	GLenum data_format = GL_UNSIGNED_BYTE;
 	int bytes_per_pixel = 3 * sizeof(ubyte);
@@ -1431,24 +1436,40 @@ void gr_opengl_get_bitmap_from_texture(void* data_out, int bitmap_num)
 		bytes_per_pixel = 4 * sizeof(ubyte);
 	}
 
-	// We can't read a specific layer of the texture so we need to read the entire texture and then memcpy the right part from that...
-	int num_frames = 0;
-	bm_get_info(bitmap_num, nullptr, nullptr, nullptr, &num_frames);
-	if (!bm_is_texture_array(bitmap_num)) {
-		num_frames = 1;
+	Assertion(ts->texture_target == GL_TEXTURE_2D_ARRAY, "Unexpected texture target encountered!");
+
+	// The texture in graphics memory may not match the dimensions or frame count that bmpman reports for
+	// this handle, e.g. when mipmap levels are culled at lower texture detail settings, so size the
+	// readback from what OpenGL will actually write, not from the bitmap or the texture cache slot.
+	GLint gl_width = 0, gl_height = 0, gl_layers = 0;
+	glGetTexLevelParameteriv(ts->texture_target, 0, GL_TEXTURE_WIDTH, &gl_width);
+	glGetTexLevelParameteriv(ts->texture_target, 0, GL_TEXTURE_HEIGHT, &gl_height);
+	glGetTexLevelParameteriv(ts->texture_target, 0, GL_TEXTURE_DEPTH, &gl_layers);
+
+	if ( (gl_width < 1) || (gl_height < 1) || (gl_layers < 1) || (array_index >= static_cast<uint32_t>(gl_layers)) ) {
+		mprintf(("Cannot read bitmap %d (%s) back from its texture; OpenGL reports level 0 as %dx%d with %d layer(s) but layer %u is needed.\n",
+			bitmap_num, bm_get_filename(bitmap_num), gl_width, gl_height, gl_layers, array_index));
+		return nullptr;
 	}
 
-	// The size of a single frame in the array
-	auto slice_size = ts->w * ts->h * bytes_per_pixel;
-	std::unique_ptr<std::uint8_t[]> buffer(new std::uint8_t[num_frames * slice_size]);
+	// The size of a single layer in the array
+	size_t slice_size = static_cast<size_t>(gl_width) * gl_height * bytes_per_pixel;
 
-	Assertion(ts->texture_target == GL_TEXTURE_2D_ARRAY, "Unexpected texture target encountered!");
+	// We can't read a specific layer of the texture so we need to read the entire texture and then memcpy the right part from that...
+	// Some drivers write tiny compressed textures back in whole 4x4 block granularity, so pad each layer
+	// of the staging buffer to full blocks to keep any such overwrite within bounds.
+	size_t padded_slice_size = static_cast<size_t>((gl_width + 3) & ~3) * ((gl_height + 3) & ~3) * bytes_per_pixel;
+	std::unique_ptr<std::uint8_t[]> buffer(new std::uint8_t[padded_slice_size * gl_layers]);
 
 	// Copy the entire texture level into the bitmap
 	glGetTexImage(ts->texture_target, 0, pixel_format, data_format, buffer.get());
 
-	auto buffer_offset = array_index * slice_size;
-	memcpy(data_out, buffer.get() + buffer_offset, slice_size);
+	auto data_out = reinterpret_cast<ubyte*>(vm_malloc(slice_size));
+	memcpy(data_out, buffer.get() + array_index * slice_size, slice_size);
+
+	*width_out = gl_width;
+	*height_out = gl_height;
+	return data_out;
 }
 
 void gr_opengl_get_texture_scale(int bitmap_handle, float *u_scale, float *v_scale)

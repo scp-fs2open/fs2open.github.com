@@ -259,9 +259,11 @@ void gr_stub_update_texture(int  /*bitmap_handle*/, int  /*bpp*/, const ubyte * 
 {
 }
 
-void gr_stub_get_bitmap_from_texture(void*  /*data_out*/, int  /*bitmap_num*/)
+ubyte* gr_stub_get_bitmap_from_texture(int  /*bitmap_num*/, int* width_out, int* height_out)
 {
-
+	*width_out = 0;
+	*height_out = 0;
+	return nullptr;
 }
 
 int gr_stub_bm_make_render_target(int  /*n*/, int * /*width*/, int * /*height*/, int * /*bpp*/, int * /*mm_lvl*/, int  /*flags*/)

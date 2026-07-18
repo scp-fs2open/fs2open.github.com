@@ -840,7 +840,10 @@ typedef struct screen {
 	std::function<void()> gf_clear_states;
 
 	std::function<void(int bitmap_handle, int bpp, const ubyte* data, int width, int height)> gf_update_texture;
-	std::function<void(void* data_out, int bitmap_num)> gf_get_bitmap_from_texture;
+	// Reads the texture uploaded for a bitmap back from graphics memory.  Returns a vm_malloc'd buffer
+	// (freed by the caller with vm_free) and reports the dimensions of the returned data, which may be
+	// smaller than the bitmap if the texture was culled at upload; returns nullptr on failure.
+	std::function<ubyte*(int bitmap_num, int* width_out, int* height_out)> gf_get_bitmap_from_texture;
 
 	std::function<void(matrix4* shadow_view_matrix, const matrix* light_matrix, vec3d* eye_pos, bool first_pass)> gf_shadow_map_start;
 	std::function<void()> gf_shadow_map_end;
