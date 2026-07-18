@@ -33,16 +33,6 @@ endif()
 #                Qt5::uic configuration FastDebug".
 set(CMAKE_MAP_IMPORTED_CONFIG_FASTDEBUG Debug Release "")
 
-# Must also be set before find_package -- the first find_package(Qt6Core) snapshots
-# this into the generated QtDeploySupport.cmake. Distro-built Qt plugins (e.g. on
-# Arch) don't have enough RPATH headroom in their ELF headers for the deploy
-# script's file(RPATH_SET) to write the new path, which fails the build. Skipping
-# the adjustment is safe with system Qt: the dynamic loader finds the distro's Qt
-# libraries through the default search paths anyway.
-if(PLATFORM_LINUX AND NOT QT_USE_PRECOMPILED)
-    set(QT_DEPLOY_FORCE_ADJUST_RPATHS OFF)
-endif()
-
 find_package(Qt6 COMPONENTS Core Widgets OpenGL Help)
 
 # fall back to precompiled version if system install not found
@@ -56,14 +46,22 @@ elseif(NOT Qt6_FOUND)
         get_prebuilt_path(PREBUILT_PATH)
         list(PREPEND CMAKE_PREFIX_PATH "${PREBUILT_PATH}/Qt6")
 
-        # Prebuilt Qt plugins do have RPATH headroom, so let the deploy script
-        # adjust them as usual (the system-Qt override above no longer applies).
-        unset(QT_DEPLOY_FORCE_ADJUST_RPATHS)
-
         find_package(Qt6 REQUIRED COMPONENTS Core Widgets OpenGL Help)
     else()
         message(FATAL_ERROR "Required Qt6 libraries were not found!")
     endif()
+endif()
+
+# Deploying Qt next to the binary only matters when we're using the prebuilt Qt,
+# whose libraries live outside the default library search path. System Qt
+# installs (Linux) are already found by the dynamic loader, and Qt's deploy
+# script chokes on some distro Qt installs anyway (e.g. Arch: KDE's
+# kimageformats plugins ship without an RPATH, and some plugin RPATHs are too
+# short for the deploy script's file(RPATH_SET) to rewrite) -- so skip
+# deployment entirely there instead of working around it.
+set(QTFRED_DEPLOY_QT ON)
+if(PLATFORM_LINUX AND NOT QT_USE_PRECOMPILED)
+    set(QTFRED_DEPLOY_QT OFF)
 endif()
 
 if(CLANG_USE_LIBCXX AND NOT APPLE)
@@ -298,75 +296,71 @@ elseif(PLATFORM_LINUX)
             eglfs linuxfb minimalegl minimal
             offscreen vkkhrdisplay vnc
             wayland xcb
-        # The KDE kimageformats plugins living in Qt's imageformats dir are
-        # built without an RPATH entry, so the deploy script's file(RPATH_SET)
-        # fails on them. We don't need them, so exclude them (matched as an
-        # end-anchored regex against the plugin base name).
-        EXCLUDE_PLUGINS
-            "kimg_[a-z0-9]+"
     )
 endif()
 
-# create Qt deploy script to fixup Qt libs/plugins
-qt_generate_deploy_app_script(
-    TARGET qtfred
-    OUTPUT_SCRIPT QTFRED_DEPLOY_SCRIPT
-    NO_UNSUPPORTED_PLATFORM_ERROR
-    ${QTFRED_DEPLOY_OPTIONS}
-)
-
-if(PLATFORM_LINUX AND QT_USE_PRECOMPILED)
-    # Using prebuilt Qt libs on Linux poses a problem since the deploy script
-    # needs to be able to find the Qt libs, which aren't in a normal location.
-    # So to address this we need to modify the deploy script to change the RPATH
-    # of the QtFRED binary to include this alternate location, run the deployment
-    # and then reset the RPATH to it's original value.
-    #
-    # WARNING: We do this using undocumented internal functionality of CMake's
-    #          file() command, and requires CMake 3.21 or newer to work.
-
-    # save current RPATH to reset it later
-    get_target_property(install_rpath_old qtfred INSTALL_RPATH)
-    # fix delimiters
-    string(REPLACE ";" ":" QTFRED_RPATH_orig "${install_rpath_old}")
-
-    # set new RPATH to be written to binary
-    # Note: file(RPATH_SET ...) cannot extend RPATH length so we have to do it
-    # this way to reserve enough space for the modified script to work properly
-    set_target_properties(qtfred PROPERTIES
-        INSTALL_RPATH "${QTFRED_RPATH_orig}:${_QTFRED_QT_LIBS}"
+if(QTFRED_DEPLOY_QT)
+    # create Qt deploy script to fixup Qt libs/plugins
+    qt_generate_deploy_app_script(
+        TARGET qtfred
+        OUTPUT_SCRIPT QTFRED_DEPLOY_SCRIPT
+        NO_UNSUPPORTED_PLATFORM_ERROR
+        ${QTFRED_DEPLOY_OPTIONS}
     )
 
-    # swap script name so no other code needs to be changed to use it
-    set(QTFRED_DEPLOY_SCRIPT_orig ${QTFRED_DEPLOY_SCRIPT})
-    set(QTFRED_DEPLOY_SCRIPT "${QTFRED_DEPLOY_SCRIPT_orig}-libfix")
+    if(PLATFORM_LINUX AND QT_USE_PRECOMPILED)
+        # Using prebuilt Qt libs on Linux poses a problem since the deploy script
+        # needs to be able to find the Qt libs, which aren't in a normal location.
+        # So to address this we need to modify the deploy script to change the RPATH
+        # of the QtFRED binary to include this alternate location, run the deployment
+        # and then reset the RPATH to it's original value.
+        #
+        # WARNING: We do this using undocumented internal functionality of CMake's
+        #          file() command, and requires CMake 3.21 or newer to work.
 
-    # create modified deploy script with our RPATH fix/hack
-    file(GENERATE OUTPUT ${QTFRED_DEPLOY_SCRIPT} CONTENT
+        # save current RPATH to reset it later
+        get_target_property(install_rpath_old qtfred INSTALL_RPATH)
+        # fix delimiters
+        string(REPLACE ";" ":" QTFRED_RPATH_orig "${install_rpath_old}")
+
+        # set new RPATH to be written to binary
+        # Note: file(RPATH_SET ...) cannot extend RPATH length so we have to do it
+        # this way to reserve enough space for the modified script to work properly
+        set_target_properties(qtfred PROPERTIES
+            INSTALL_RPATH "${QTFRED_RPATH_orig}:${_QTFRED_QT_LIBS}"
+        )
+
+        # swap script name so no other code needs to be changed to use it
+        set(QTFRED_DEPLOY_SCRIPT_orig ${QTFRED_DEPLOY_SCRIPT})
+        set(QTFRED_DEPLOY_SCRIPT "${QTFRED_DEPLOY_SCRIPT_orig}-libfix")
+
+        # create modified deploy script with our RPATH fix/hack
+        file(GENERATE OUTPUT ${QTFRED_DEPLOY_SCRIPT} CONTENT
 "file(RPATH_SET FILE $<TARGET_FILE:qtfred> NEW_RPATH \"${QTFRED_RPATH_orig}:${_QTFRED_QT_LIBS}\")
 include(${QTFRED_DEPLOY_SCRIPT_orig})
 file(RPATH_SET FILE $<TARGET_FILE:qtfred> NEW_RPATH \"${QTFRED_RPATH_orig}\")\n"
+        )
+    endif()
+
+    # deploy Qt libs/plugins
+    add_custom_command(TARGET qtfred POST_BUILD
+        COMMAND ${CMAKE_COMMAND}
+            -D CMAKE_INSTALL_PREFIX=${QTFRED_DEPLOY_PREFIX}
+            -D QT_DEPLOY_PREFIX=${QTFRED_DEPLOY_PREFIX}
+            -D QT_DEPLOY_BIN_DIR=${BINARY_DESTINATION}
+            -D QT_DEPLOY_LIB_DIR=${LIBRAY_DESTINATION}
+            -P "${QTFRED_DEPLOY_SCRIPT}"
+        COMMENT "Running Qt deploy script..."
+        VERBATIM
     )
+
+    install(CODE "
+        set(QT_DEPLOY_BIN_DIR ${BINARY_DESTINATION})
+        set(QT_DEPLOY_LIB_DIR ${LIBRAY_DESTINATION})
+    " COMPONENT "qtFRED")
+
+    install(SCRIPT "${QTFRED_DEPLOY_SCRIPT}" COMPONENT "qtFRED")
 endif()
-
-# deploy Qt libs/plugins
-add_custom_command(TARGET qtfred POST_BUILD
-    COMMAND ${CMAKE_COMMAND}
-        -D CMAKE_INSTALL_PREFIX=${QTFRED_DEPLOY_PREFIX}
-        -D QT_DEPLOY_PREFIX=${QTFRED_DEPLOY_PREFIX}
-        -D QT_DEPLOY_BIN_DIR=${BINARY_DESTINATION}
-        -D QT_DEPLOY_LIB_DIR=${LIBRAY_DESTINATION}
-        -P "${QTFRED_DEPLOY_SCRIPT}"
-    COMMENT "Running Qt deploy script..."
-    VERBATIM
-)
-
-install(CODE "
-    set(QT_DEPLOY_BIN_DIR ${BINARY_DESTINATION})
-    set(QT_DEPLOY_LIB_DIR ${LIBRAY_DESTINATION})
-" COMPONENT "qtFRED")
-
-install(SCRIPT "${QTFRED_DEPLOY_SCRIPT}" COMPONENT "qtFRED")
 
 if (FSO_INSTALL_DEBUG_FILES AND MSVC)
     install(FILES "$<TARGET_PDB_FILE:qtfred>"
