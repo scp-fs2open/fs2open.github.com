@@ -146,6 +146,14 @@ struct shadow_cascade_static_data {
 	int cascade_count;
 	float rtShadowBiasMin;
 	float rtShadowBiasMax;
+	int rtShadowSampleCount;
+	int rtaoSampleCount;
+	float rtaoRadius;
+	float rtaoStrength;
+	// The scalars above come to exactly 32 bytes, so std140 puts the following mat4
+	// straight after them with no padding. Adding or removing a scalar here changes
+	// that -- keep the C++ layout in lockstep with the shadowCascadeParams block
+	// declarations in deferred-f/main-f/main-v/shadow_map-g/shadow_map-v.sdr.
 	matrix4 shadow_mv_matrix;
 };
 
