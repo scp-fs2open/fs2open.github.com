@@ -924,6 +924,12 @@ void parse_mod_table(const char *filename)
 				}
 			}
 
+			// Per-cascade shadow map filter radius, in shadow map UV units, for a
+			// Sol-sized sun. It is no longer the final width: shadow_cascade_params_bind()
+			// scales these by the sun's apparent size relative to Sol, so that the same
+			// $SunAngularSize: drives both shadow-mapped and raytraced softness. A mod that
+			// tuned these against retail/MediaVPs sun art keeps the look it tuned for --
+			// see shadow_smoothness_scale() in shadows.cpp for why Sol is the reference.
 			if (optional_string("$Shadow Smoothness Factor:")) {
 				SCP_vector<float> smoothness;
 				stuff_float_list(smoothness);
