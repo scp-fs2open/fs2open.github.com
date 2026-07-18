@@ -677,6 +677,8 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$fix standard strafe:", AI::Profile_Flags::Fix_standard_strafe);
 
+				set_flag(profile, "$fix target updating with strafe:", AI::Profile_Flags::Fix_target_updating_with_strafe);
+
 				set_flag(profile, "$standard strafe used more:", AI::Profile_Flags::Standard_strafe_used_more);
 
 				if (optional_string("$standard strafe triggers under this speed:")) {
