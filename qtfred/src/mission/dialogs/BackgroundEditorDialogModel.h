@@ -26,6 +26,7 @@ class BackgroundEditorDialogModel : public AbstractDialogModel {
 	static std::pair<float, float> getFloatOrientLimit() { return {0.f, DEGREE_UB}; }
 	static std::pair<float,float> getBitmapScaleLimit() { return {0.001f, 18.0f}; }
 	static std::pair<float,float> getSunScaleLimit() { return {0.1f,   50.0f}; }
+	static std::pair<float,float> getSunAngularSizeLimit() { return {0.0f, SUN_ANGULAR_SIZE_MAX}; }
 	static std::pair<int, int> getDivisionLimit() { return {1, 5}; }
 	static std::pair<int, int> getStarsLimit() { return {0, MAX_STARS}; }
 
@@ -82,6 +83,12 @@ class BackgroundEditorDialogModel : public AbstractDialogModel {
 	void setSunHeading(float deg);
 	float getSunScale() const; // uses scale_x for both x and y
 	void setSunScale(float v);
+	// Whether this mission sets the sun's apparent diameter at all. Off means the sun keeps
+	// its stars.tbl $SunAngularSize:, or the size measured from its bitmap.
+	bool getSunAngularSizeEnabled() const;
+	void setSunAngularSizeEnabled(bool enabled);
+	float getSunAngularSize() const; // apparent diameter in degrees
+	void setSunAngularSize(float v);
 
 	// nebula group
 	static SCP_vector<SCP_string> getLightningNames();

@@ -65,6 +65,32 @@ extern int Max_rt_shadow_local_lights;
 extern float Rt_shadow_bias_min;
 extern float Rt_shadow_bias_max;
 
+// Rays traced per pixel per shadowed light, for lights that have a source size --
+// suns from their drawn size, or from $SunAngularSize in stars.tbl when that
+// overrides it; local lights via their source_radius. 1 means the single hard ray
+// in traceShadowRayCone() (shadows.sdr); above that it samples a penumbra.
+//
+// This is a cost knob, not an appearance knob: how *wide* a penumbra is comes
+// solely from the light's source size, which is what also drives the shadow-map
+// path and keeps the two methods consistent for content authors. The sample count
+// only decides how well that penumbra resolves.
+//
+// Which is why it is not a setting of its own: it follows Shadow_quality
+// (Low/Medium/High/Ultra -> 1/4/8/16), the same tier that picks the shadow map's
+// resolution, so one control covers shadow cost whichever method is active.
+// Capped in-shader at RT_SHADOW_MAX_SAMPLES (16).
+int shadows_rt_sample_count();
+
+// Session-only override for shadows_rt_sample_count(), for iterating in the lab
+// without touching a persisted setting. <= 0 means "follow Shadow_quality".
+extern int Rt_shadow_samples_override;
+
+// Edge length, in texels, of one square cascade of the shadow map, as chosen by
+// Shadow_quality. Meaningless when Shadow_quality is Disabled (callers guard on that
+// first); the value returned in that case is only there to keep the result usable as a
+// divisor.
+int shadows_map_resolution();
+
 // Whether the current hardware/renderer can do anything with ShadowRenderMethod::Raytraced
 // at all (Vulkan + VK_KHR_acceleration_structure + VK_KHR_ray_query support). Independent
 // of which method is currently selected -- use this to decide whether to offer the choice.

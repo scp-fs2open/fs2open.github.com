@@ -34,14 +34,7 @@ bool VulkanShadowMap::init(PostProcessContext& ctx)
 		return false;
 	}
 
-	int size;
-	switch (Shadow_quality) {
-	case ShadowQuality::Low:    size = 512; break;
-	case ShadowQuality::Medium: size = 1024; break;
-	case ShadowQuality::High:   size = 2048; break;
-	case ShadowQuality::Ultra:  size = 4096; break;
-	default:                    size = 512; break;
-	}
+	const int size = shadows_map_resolution();
 
 	const auto layers = static_cast<uint32_t>(Num_shadow_cascades + Num_cockpit_shadow_cascades);
 	nprintf(("vulkan", "VulkanPostProcessor: Creating %dx%d shadow map (%d cascades)\n", size, size, layers));

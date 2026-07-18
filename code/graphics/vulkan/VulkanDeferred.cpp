@@ -19,6 +19,7 @@
 #include "graphics/matrix.h"
 #include "graphics/material.h"
 #include "graphics/grinternal.h"
+#include "graphics/rtao.h"
 #include "graphics/shadows.h"
 #include "lighting/lighting.h"
 #include "mission/missionparse.h"
@@ -535,10 +536,23 @@ void vulkan_deferred_lighting_finish()
 	auto* stateTracker = getStateTracker();
 	vk::CommandBuffer cmd = stateTracker->getCommandBuffer();
 
-	// 1. End G-buffer render pass
+	// TLAS for RTAO: when shadow rendering is off (Shadow_quality Disabled, or a
+	// frame that skips shadows_render_all entirely), nothing has built this
+	// frame's TLAS yet -- request it here. No-op when the shadow path already
+	// built it (buildTlas()'s per-frame guard). Acceleration-structure builds
+	// must be recorded outside a render pass, so this ends the G-buffer pass and
+	// clears it from the state tracker -- which is why step 1 below only ends
+	// the pass when it is still active.
+	if (rtao_enabled()) {
+		vulkan_build_shadow_tlas();
+	}
+
+	// 1. End G-buffer render pass (unless the RTAO TLAS build above already did)
 	// All 6 color attachments → eShaderReadOnlyOptimal
 	// Depth → eDepthStencilAttachmentOptimal
-	cmd.endRenderPass();
+	if (stateTracker->getCurrentRenderPass()) {
+		cmd.endRenderPass();
+	}
 
 	// 2. Copy emissive → composite (the emissive data becomes the base for light accumulation)
 	// Emissive → eShaderReadOnlyOptimal (done), composite → eColorAttachmentOptimal (for light accum)

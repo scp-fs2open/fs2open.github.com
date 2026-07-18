@@ -79,7 +79,7 @@ float getShadowValue(sampler2DArrayShadow shadow_map, float depth, vec4 shadowUV
 // in deferred-f.sdr/main-f.sdr references it regardless of which shadow method is active.
 const float RT_SHADOW_MAX_DISTANCE = 10000.0;
 
-#if defined(MODEL_SDR_FLAG_RT_SHADOWS) || defined(RT_SHADOWS)
+#if defined(MODEL_SDR_FLAG_RT_SHADOWS) || defined(RT_SHADOWS) || defined(RTAO)
 #extension GL_EXT_ray_query : require
 
 // Ray origin bias grows with distance from the camera, between the rtShadowBiasMin/
@@ -125,6 +125,176 @@ float traceShadowRay(accelerationStructureEXT tlas, vec3 worldPos, vec3 worldNor
 	while (rayQueryProceedEXT(rq)) {}
 
 	return (rayQueryGetIntersectionTypeEXT(rq, true) == gl_RayQueryCommittedIntersectionNoneEXT) ? 1.0 : 0.0;
+}
+
+// Penumbra/AO sampling: at most this many rays per fragment per light, matching
+// the disc pattern size below. rtShadowSampleCount/rtaoSampleCount
+// (shadowCascadeParams) are clamped against it, so a bad uniform value can't
+// index out of the pattern.
+#define RT_SHADOW_MAX_SAMPLES 16
+
+// Calibration factor applied to a *sun's* angular radius before it becomes a penumbra
+// cone, so that a given $SunAngularSize: reads as roughly the same softness whichever
+// shadow method is active. Local lights don't get it -- their penumbra is already
+// consistent, and they have no shadow-mapped counterpart to match.
+//
+// It exists because the two methods disagree about occluder distance. traceShadowRayCone()
+// uses the real one, so a Sol-sized sun gives a penumbra of only ~0.1 world units at the
+// 20-unit separations typical of a fighter shadowing itself. The shadow map has no blocker
+// search and can't: shadow_smoothness_scale() in shadows.cpp calibrates the tabled
+// $Shadow Smoothness Factor: values against a blocker distance pinned to the cascade's own
+// extent, which is a couple of hundred units out for the near cascade -- an order of
+// magnitude more, and a correspondingly wider penumbra. Scaling the ray cone up meets it
+// there.
+//
+// So this deliberately trades physical accuracy for cross-method consistency, and it is the
+// number to revisit if the shadow map ever grows a real blocker search -- at that point both
+// methods have a true occluder distance and the factor should go back to 1.
+const float RT_SHADOW_SUN_SIZE_CALIBRATION = 10.0;
+
+const vec2 rtPoissonDisc[RT_SHADOW_MAX_SAMPLES] = vec2[](
+	vec2(-0.76275, -0.3432573),
+	vec2(-0.5226235, -0.8277544),
+	vec2(-0.3780261, 0.01528688),
+	vec2(-0.7742821, 0.4245702),
+	vec2(0.04196143, -0.02622231),
+	vec2(-0.2974772, -0.4722782),
+	vec2(-0.516093, 0.71495),
+	vec2(-0.3257416, 0.3910343),
+	vec2(0.2705966, 0.6670476),
+	vec2(0.4918377, 0.1853267),
+	vec2(0.4428544, -0.6251478),
+	vec2(-0.09204347, 0.9267113),
+	vec2(0.391505, -0.2558275),
+	vec2(0.05605913, -0.7570801),
+	vec2(0.81772, -0.02475523),
+	vec2(0.6890262, 0.5191521)
+);
+
+// Orthonormal basis spanning the plane perpendicular to axis (a unit vector).
+void rtBuildOnb(vec3 axis, out vec3 tangent, out vec3 bitangent)
+{
+	vec3 up = (abs(axis.z) < 0.999) ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
+	tangent = normalize(cross(up, axis));
+	bitangent = cross(axis, tangent);
+}
+
+// Interleaved gradient noise (Jimenez 2014) -> per-fragment [0,1) value used to
+// rotate the shared disc pattern. Callers pass gl_FragCoord.xy as the seed; it is
+// a parameter rather than read here because this file is also compiled in vertex
+// stages, where gl_FragCoord doesn't exist.
+float rtInterleavedGradientNoise(vec2 seed)
+{
+	return fract(52.9829189 * fract(dot(seed, vec2(0.06711056, 0.00583715))));
+}
+
+// Soft (penumbra) variant of traceShadowRay: averages up to sampleCount occlusion
+// rays whose directions are jittered inside a cone of half-angle
+// atan(coneHalfAngleTan) around worldLightDir. Callers derive coneHalfAngleTan
+// from the light's source radius -- for directional lights the light's
+// source_radius IS the tangent of its angular radius (see $SunAngularSize in
+// stars.tbl / starfield.cpp), for local lights it's sourceRadius / lightDist --
+// so penumbras widen with occluder distance like a real area light's would.
+//
+// noiseSeed decorrelates the sample pattern between fragments (see
+// rtInterleavedGradientNoise() for why it's a parameter). There is no temporal
+// accumulation in the engine, so the penumbra must fully resolve in this one
+// pass: the disc pattern is fixed and only its per-fragment rotation is
+// randomized, trading a little visible grain for stable, flicker-free output.
+//
+// sampleCount <= 1 or coneHalfAngleTan <= 0.0 falls back to the single hard ray,
+// bit-identical to traceShadowRay() -- that keeps the pre-penumbra look and cost
+// as the default (mods opt in via source radii, users via the sample option).
+float traceShadowRayCone(accelerationStructureEXT tlas, vec3 worldPos, vec3 worldNormal, vec3 worldLightDir,
+	float tMax, float bias, float coneHalfAngleTan, int sampleCount, vec2 noiseSeed)
+{
+	if (sampleCount <= 1 || coneHalfAngleTan <= 0.0) {
+		return traceShadowRay(tlas, worldPos, worldNormal, worldLightDir, tMax, bias);
+	}
+
+	vec3 origin = worldPos + worldNormal * bias;
+	vec3 direction = normalize(worldLightDir);
+
+	vec3 tangent, bitangent;
+	rtBuildOnb(direction, tangent, bitangent);
+
+	float rotAngle = rtInterleavedGradientNoise(noiseSeed) * 6.2831853;
+	float cosR = cos(rotAngle);
+	float sinR = sin(rotAngle);
+
+	int samples = min(sampleCount, RT_SHADOW_MAX_SAMPLES);
+	float visibility = 0.0;
+	for (int i = 0; i < samples; ++i) {
+		vec2 p = rtPoissonDisc[i];
+		p = vec2(p.x * cosR - p.y * sinR, p.x * sinR + p.y * cosR);
+		vec3 sampleDir = normalize(direction + (tangent * p.x + bitangent * p.y) * coneHalfAngleTan);
+
+		rayQueryEXT rq;
+		rayQueryInitializeEXT(rq, tlas, gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT,
+			0xFF, origin, 0.001, sampleDir, tMax);
+		while (rayQueryProceedEXT(rq)) {}
+
+		if (rayQueryGetIntersectionTypeEXT(rq, true) == gl_RayQueryCommittedIntersectionNoneEXT) {
+			visibility += 1.0;
+		}
+	}
+	return visibility / float(samples);
+}
+
+// Raytraced ambient occlusion: averages up to sampleCount occlusion rays of
+// length `radius` over the hemisphere around worldNormal and returns ambient
+// visibility in [0,1] (1 = fully open), shaped by pow(visibility, strength).
+// Mapping the shared disc pattern up onto the hemisphere (z = sqrt(1-|p|^2))
+// makes the samples cosine-weighted, matching the diffuse ambient term being
+// occluded. radius/strength come from the mod's lighting profile ($RTAO Radius /
+// $RTAO Strength); scene scale varies too much (fighters vs. capships) for a
+// built-in constant.
+//
+// Hits accumulate with a (1 - t/radius) falloff so geometry entering the radius
+// occludes gradually instead of popping. That needs the *closest* hit's t, so
+// these rays deliberately omit gl_RayFlagsTerminateOnFirstHitEXT (any-hit t
+// would make the falloff arbitrary); the extra traversal cost is small because
+// tMax = radius keeps the rays short.
+//
+// sampleCount < 1, radius <= 0, or strength <= 0 returns 1.0 (no occlusion) --
+// callers gate on the RTAO shader variant, this just keeps bad uniforms benign.
+float traceAmbientOcclusion(accelerationStructureEXT tlas, vec3 worldPos, vec3 worldNormal,
+	float radius, float strength, int sampleCount, float bias, vec2 noiseSeed)
+{
+	if (sampleCount < 1 || radius <= 0.0 || strength <= 0.0) {
+		return 1.0;
+	}
+
+	vec3 origin = worldPos + worldNormal * bias;
+
+	vec3 tangent, bitangent;
+	rtBuildOnb(worldNormal, tangent, bitangent);
+
+	float rotAngle = rtInterleavedGradientNoise(noiseSeed) * 6.2831853;
+	float cosR = cos(rotAngle);
+	float sinR = sin(rotAngle);
+
+	int samples = min(sampleCount, RT_SHADOW_MAX_SAMPLES);
+	float occlusion = 0.0;
+	for (int i = 0; i < samples; ++i) {
+		vec2 p = rtPoissonDisc[i];
+		p = vec2(p.x * cosR - p.y * sinR, p.x * sinR + p.y * cosR);
+		vec3 sampleDir = normalize(tangent * p.x + bitangent * p.y
+			+ worldNormal * sqrt(max(1.0 - dot(p, p), 0.0)));
+
+		rayQueryEXT rq;
+		rayQueryInitializeEXT(rq, tlas, gl_RayFlagsOpaqueEXT,
+			0xFF, origin, 0.001, sampleDir, radius);
+		while (rayQueryProceedEXT(rq)) {}
+
+		if (rayQueryGetIntersectionTypeEXT(rq, true) != gl_RayQueryCommittedIntersectionNoneEXT) {
+			float hitT = rayQueryGetIntersectionTEXT(rq, true);
+			occlusion += 1.0 - clamp(hitT / radius, 0.0, 1.0);
+		}
+	}
+
+	float visibility = clamp(1.0 - occlusion / float(samples), 0.0, 1.0);
+	return pow(visibility, strength);
 }
 #endif
 

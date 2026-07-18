@@ -13,6 +13,7 @@
 #include "graphics/grinternal.h"
 #include "graphics/light.h"
 #include "graphics/matrix.h"
+#include "graphics/rtao.h"
 #include "graphics/shadows.h"
 #include "graphics/2d.h"
 #include "bmpman/bmpman.h"
@@ -688,6 +689,9 @@ void VulkanDeferredLighting::render(vk::CommandBuffer cmd)
 	unsigned int lightShaderFlags = 0;
 	if (rtShadowsActive) {
 		lightShaderFlags |= SDR_FLAG_DEFERRED_RT_SHADOWS;
+	}
+	if (rtao_enabled()) {
+		lightShaderFlags |= SDR_FLAG_DEFERRED_RTAO;
 	}
 	if (envMapAvailable) {
 		lightShaderFlags |= SDR_FLAG_ENV_MAP;

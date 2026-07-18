@@ -528,6 +528,32 @@ void LabUi::build_shadow_method_combobox()
 	}
 }
 
+static const char* rt_shadow_quality_settings[] = {
+	"Low (directional lights only)",
+	"High (also point/tube/cone lights)",
+};
+
+void LabUi::build_rt_shadow_quality_combobox()
+{
+	// Only meaningful when raytraced shadows are actually the active method.
+	if (!shadows_raytracing_supported() || Shadow_render_method != ShadowRenderMethod::Raytraced) {
+		return;
+	}
+
+	with_Combo("RT Shadow Quality", rt_shadow_quality_settings[static_cast<int>(Rt_shadow_quality)])
+	{
+		for (int n = 0; n < IM_ARRAYSIZE(rt_shadow_quality_settings); n++) {
+			bool is_selected = static_cast<int>(Rt_shadow_quality) == n;
+
+			if (Selectable(rt_shadow_quality_settings[n], is_selected))
+				LabRenderer::setRtShadowQuality(static_cast<RTShadowQuality>(n));
+
+			if (is_selected)
+				SetItemDefaultFocus();
+		}
+	}
+}
+
 void LabUi::build_max_rt_shadow_lights_slider()
 {
 	// Only meaningful when raytraced shadows are actually the active method.
@@ -538,6 +564,19 @@ void LabUi::build_max_rt_shadow_lights_slider()
 	int count = Max_rt_shadow_lights;
 	if (SliderInt("Max Raytraced Shadow Lights", &count, 1, 8)) {
 		LabRenderer::setMaxRtShadowLights(count);
+	}
+
+	// The local-light cap is only consulted at High quality, so don't offer it at Low --
+	// same as how the sun size slider only appears once its override is on.
+	if (Rt_shadow_quality != RTShadowQuality::High) {
+		return;
+	}
+
+	// 0 is a useful setting rather than a degenerate one: it turns local-light shadows off
+	// without leaving High, which isolates what the directional lights are contributing.
+	int local_count = Max_rt_shadow_local_lights;
+	if (SliderInt("Max Raytraced Local Shadow Lights", &local_count, 0, 64)) {
+		LabRenderer::setMaxRtShadowLocalLights(local_count);
 	}
 }
 
@@ -556,6 +595,74 @@ void LabUi::build_rt_shadow_bias_sliders()
 	float bias_max = Rt_shadow_bias_max;
 	if (SliderFloat("Max RT Shadow Bias", &bias_max, 0.5f, 16.0f)) {
 		LabRenderer::setRtShadowBiasMax(bias_max);
+	}
+}
+
+void LabUi::build_shadow_penumbra_sliders()
+{
+	// The sample count is a raytracing cost knob, so it only appears when raytraced shadows
+	// are actually the active method. The sun size below is deliberately not gated that way.
+	if (shadows_raytracing_supported() && Shadow_render_method == ShadowRenderMethod::Raytraced) {
+		// Starts at whatever Shadow_quality implies; moving it pins a session-only
+		// override, so the slider stops tracking the quality tier from then on.
+		int samples = shadows_rt_sample_count();
+		if (SliderInt("RT Shadow Samples", &samples, 1, 16)) {
+			LabRenderer::setRtShadowSamples(samples);
+		}
+	}
+
+	// Overrides whatever size the suns would otherwise use -- their $SunAngularSize, or
+	// the size measured from their bitmaps -- so penumbras can be tried out against any
+	// background; the checkbox's default slider value is Sol's apparent diameter.
+	//
+	// Shown for both shadow methods, because this is the one parameter that drives softness
+	// in both: it sizes the raytraced penumbra cone and scales the shadow map's filter width
+	// (see shadow_smoothness_scale() in shadows.cpp). Sitting on the slider and flipping the
+	// render method is the intended way to check the two against each other.
+	//
+	// It needs a mission background loaded to do anything: it overrides the size of drawn
+	// suns, and with no background the lab lights the scene from common_setup_room_lights()
+	// instead, which draws no suns for this to override.
+	if (Shadow_quality == ShadowQuality::Disabled) {
+		return;
+	}
+
+	bool override_sun = Sun_angular_size_override >= 0.0f;
+	if (Checkbox("Override Sun Angular Size", &override_sun)) {
+		LabRenderer::setSunAngularSizeOverride(override_sun ? SUN_ANGULAR_SIZE_SOL : SUN_ANGULAR_SIZE_UNSPECIFIED);
+	}
+	if (override_sun) {
+		float sun_size = Sun_angular_size_override;
+		if (SliderFloat("Sun Angular Size (deg)", &sun_size, 0.0f, 10.0f)) {
+			LabRenderer::setSunAngularSizeOverride(sun_size);
+		}
+	}
+}
+
+void LabUi::build_rtao_sliders()
+{
+	// Unlike the RT shadow sliders, RTAO is independent of the shadow method --
+	// it only needs ray-query support.
+	if (!rtao_supported()) {
+		return;
+	}
+
+	int samples = Rtao_samples;
+	if (SliderInt("RTAO Samples", &samples, 0, 16)) {
+		LabRenderer::setRtaoSamples(samples);
+	}
+
+	// Radius/strength are the mod-owned lighting-profile values ($RTAO Radius /
+	// $RTAO Strength); these override the active profile for this session only,
+	// same as the exposure/tonemapper controls below.
+	float radius = lighting_profiles::current_rtao_radius();
+	if (SliderFloat("RTAO Radius", &radius, 0.0f, 200.0f)) {
+		lighting_profiles::lab_set_rtao_radius(radius);
+	}
+
+	float strength = lighting_profiles::current_rtao_strength();
+	if (SliderFloat("RTAO Strength", &strength, 0.0f, 2.0f)) {
+		lighting_profiles::lab_set_rtao_strength(strength);
 	}
 }
 
@@ -658,9 +765,15 @@ void LabUi::show_render_options()
 
 			build_shadow_method_combobox();
 
+			build_rt_shadow_quality_combobox();
+
 			build_max_rt_shadow_lights_slider();
 
 			build_rt_shadow_bias_sliders();
+
+			build_shadow_penumbra_sliders();
+
+			build_rtao_sliders();
 
 			build_tone_mapper_combobox();
 
