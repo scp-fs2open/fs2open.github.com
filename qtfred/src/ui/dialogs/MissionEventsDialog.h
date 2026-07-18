@@ -44,8 +44,10 @@ private slots:
 	void on_btnNewEvent_clicked();
     void on_btnInsertEvent_clicked();
 	void on_btnDeleteEvent_clicked();
+	void on_eventMoveTopBtn_clicked();
 	void on_eventUpBtn_clicked();
 	void on_eventDownBtn_clicked();
+	void on_eventMoveBottomBtn_clicked();
 
 	void on_repeatCountBox_valueChanged(int value);
 	void on_triggerCountBox_valueChanged(int value);
@@ -74,8 +76,10 @@ private slots:
 	void on_btnNewMsg_clicked();
 	void on_btnInsertMsg_clicked();
 	void on_btnDeleteMsg_clicked();
+	void on_msgMoveTopBtn_clicked();
 	void on_msgUpBtn_clicked();
 	void on_msgDownBtn_clicked();
+	void on_msgMoveBottomBtn_clicked();
 
 	void on_messageName_textChanged(const QString& text);
 	void on_messageContent_textChanged();
@@ -102,6 +106,7 @@ private: // NOLINT(readability-redundant-access-specifiers)
 
 	void updateEventUi();
 	void updateEventMoveButtons();
+	void setEventLogEnabled(bool enable);
 	void updateMessageUi();
 	void updateMessageMoveButtons();
 
