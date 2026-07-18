@@ -106,7 +106,12 @@ void stub_clear_states() {}
 
 void stub_update_texture(int /*bitmap_handle*/, int /*bpp*/, const ubyte* /*data*/, int /*width*/, int /*height*/) {}
 
-void stub_get_bitmap_from_texture(void* /*data_out*/, int /*bitmap_num*/) {}
+ubyte* stub_get_bitmap_from_texture(int /*bitmap_num*/, int* width_out, int* height_out)
+{
+	*width_out = 0;
+	*height_out = 0;
+	return nullptr;
+}
 
 int stub_bm_make_render_target(int /*n*/, int* /*width*/, int* /*height*/, int* /*bpp*/, int* /*mm_lvl*/, int /*flags*/)
 {

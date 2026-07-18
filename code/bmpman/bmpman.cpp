@@ -83,7 +83,12 @@ static bool bm_inited = false;
 static uint Bm_next_signature = 0x1234;
 static int Bm_low_mem = 0;
 
-SCP_map<int,ubyte*> bm_lookup_cache;
+struct bm_lookup_cache_entry {
+	ubyte* data;
+	int width;
+	int height;
+};
+SCP_map<int, bm_lookup_cache_entry> bm_lookup_cache;
 
 /**
  * How much RAM bmpman can use for textures.
@@ -144,30 +149,31 @@ bitmap_slot* bm_get_slot(int handle, bool separate_ani_frames) {
 // Declaration of private functions and templates(declared as static type func(type param);)
 
 bitmap_lookup::bitmap_lookup(int bitmap_num):
-	Bitmap_data(NULL)
+	Bitmap_data(nullptr),
+	Width(0),
+	Height(0),
+	Num_channels(3)
 {
 	if ( !bm_is_valid(bitmap_num) ) return;
-
-	Num_channels = 3;
 
 	if ( bm_has_alpha_channel(bitmap_num) ) {
 		Num_channels = 4;
 	}
 
-	bitmap_entry *be = bm_get_entry(bitmap_num);
-	
-	Width = be->bm.w;
-	Height = be->bm.h;
-
-
 	auto cache_search = bm_lookup_cache.find(bitmap_num);
 	if (cache_search == bm_lookup_cache.end()) {
-		Bitmap_data = (ubyte*)vm_malloc(Width * Height * Num_channels * sizeof(ubyte));
+		// The texture in graphics memory may be smaller than the bitmap itself, e.g. when mipmap levels
+		// are culled at lower texture detail settings, so the readback reports the dimensions of the
+		// data it actually returns.
+		Bitmap_data = gr_get_bitmap_from_texture(bitmap_num, &Width, &Height);
 
-		gr_get_bitmap_from_texture((void*)Bitmap_data, bitmap_num);
-		bm_lookup_cache.insert({bitmap_num, Bitmap_data});
+		if (Bitmap_data != nullptr) {
+			bm_lookup_cache.insert({bitmap_num, {Bitmap_data, Width, Height}});
+		}
 	} else {
-		Bitmap_data = cache_search->second;
+		Bitmap_data = cache_search->second.data;
+		Width = cache_search->second.width;
+		Height = cache_search->second.height;
 	}
 }
 
@@ -190,6 +196,11 @@ float bitmap_lookup::get_channel_alpha(float u, float v)
 {
 	Assert( Bitmap_data != NULL );
 
+	// without an alpha channel there is nothing to look up, and indexing channel 3 would read out of bounds
+	if ( Num_channels < 4 ) {
+		return 1.0f;
+	}
+
 	int x = fl2i(map_texture_address(u) * (Width-1));
 	int y = fl2i(map_texture_address(v) * (Height-1));
 
@@ -198,7 +209,7 @@ float bitmap_lookup::get_channel_alpha(float u, float v)
 
 void clear_bm_lookup_cache() {
 	for(auto &iter: bm_lookup_cache) {
-		free(iter.second);
+		vm_free(iter.second.data);
 	}
 	bm_lookup_cache.clear();
 }
