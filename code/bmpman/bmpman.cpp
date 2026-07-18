@@ -196,6 +196,11 @@ float bitmap_lookup::get_channel_alpha(float u, float v)
 {
 	Assert( Bitmap_data != NULL );
 
+	// without an alpha channel there is nothing to look up, and indexing channel 3 would read out of bounds
+	if ( Num_channels < 4 ) {
+		return 1.0f;
+	}
+
 	int x = fl2i(map_texture_address(u) * (Width-1));
 	int y = fl2i(map_texture_address(v) * (Height-1));
 

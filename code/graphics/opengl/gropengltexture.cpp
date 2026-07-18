@@ -1452,6 +1452,12 @@ ubyte* gr_opengl_get_bitmap_from_texture(int bitmap_num, int* width_out, int* he
 		return nullptr;
 	}
 
+	// At maximum texture detail no culling occurs on upload, so the texture must match the dimensions
+	// recorded in the texture cache slot; if this trips, we have another slot mismatch.
+	Assertion((Detail.hardware_textures < 4) || ((gl_width == ts->w) && (gl_height == ts->h)),
+		"Texture readback size mismatch for bitmap %d (%s): OpenGL reports level 0 as %dx%d but the texture cache slot expects %dx%d.",
+		bitmap_num, bm_get_filename(bitmap_num), gl_width, gl_height, ts->w, ts->h);
+
 	// The size of a single layer in the array
 	size_t slice_size = static_cast<size_t>(gl_width) * gl_height * bytes_per_pixel;
 
