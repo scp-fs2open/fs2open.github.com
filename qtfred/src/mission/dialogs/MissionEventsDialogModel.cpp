@@ -609,8 +609,12 @@ void MissionEventsDialogModel::reorderByRootFormulaOrder(const SCP_vector<int>& 
 	// Keep selection reasonable (select the first event after reorder)
 	setCurrentlySelectedEvent(m_events.empty() ? -1 : 0);
 
-	// Rebuild applied annotations against new handles/order if needed
-	initializeEventAnnotations();
+	// A root reorder moves top-level items via take/insert, which preserves their
+	// handles (see sexp_tree::move_root), so the cached annotation handles are still
+	// valid and still point at the correct nodes.  Do NOT re-resolve handles from the
+	// stored paths here: the paths carry the pre-reorder event index, so re-resolving
+	// would re-point annotations at the wrong event.  applyAnnotations() rebuilds each
+	// path from its live handle at save time.
 
 	set_modified();
 }
@@ -1136,6 +1140,20 @@ void MissionEventsDialogModel::setNodeBgColor(IEventTreeOps::Handle h, int r, in
 	}
 	m_event_tree_ops.set_node_bg_color(h, r, g, b, has_color);
 	set_modified();
+}
+
+// The tree recreated (moved) or deleted the item for a node.  Re-point any
+// annotation on the old handle to the new one so it follows the node; a null
+// new_handle means the node was deleted, which clears the cached handle so
+// applyAnnotations() resolves it from the path (and drops it if the node is gone).
+void MissionEventsDialogModel::onNodeHandleChanged(IEventTreeOps::Handle old_handle, IEventTreeOps::Handle new_handle)
+{
+	if (!old_handle)
+		return;
+
+	for (auto& ea : m_event_annotations)
+		if (ea.handle == old_handle)
+			ea.handle = new_handle;
 }
 
 void MissionEventsDialogModel::createMessage()

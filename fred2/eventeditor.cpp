@@ -1674,6 +1674,21 @@ int event_annotation_lookup(HTREEITEM handle)
 	return -1;
 }
 
+// The tree recreated (moved) or deleted the item for a node.  Re-point any
+// annotation on the old handle to the new one so it follows the node; a null
+// new_handle means the node was deleted, which clears the handle.  The path is
+// left intact, so an annotation cleared this way is dropped at save (its path
+// can no longer be rebuilt) but survives a Cancel (the path still resolves).
+void event_sexp_tree::on_node_handle_changed(HTREEITEM old_handle, HTREEITEM new_handle)
+{
+	if (!old_handle)
+		return;
+
+	int i = event_annotation_lookup(old_handle);
+	if (i >= 0)
+		Event_annotations[i].handle = new_handle;
+}
+
 void event_annotation_swap_image(event_sexp_tree *tree, HTREEITEM handle, int annotation_index)
 {
 	event_annotation_swap_image(tree, handle, Event_annotations[annotation_index]);

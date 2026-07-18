@@ -479,6 +479,11 @@ void sexp_tree::free_node2(int node)
 	Assert(tree_nodes[node].type != SEXPT_UNUSED);
 	Assert(total_nodes > 0);
 	*modified = 1;
+
+	// the node is being deleted; let subclasses drop anything attached to its handle
+	if (tree_nodes[node].handle)
+		on_node_handle_changed(tree_nodes[node].handle, nullptr);
+
 	tree_nodes[node].type = SEXPT_UNUSED;
 	total_nodes--;
 	if (tree_nodes[node].child != -1)
@@ -2640,6 +2645,9 @@ void sexp_tree::NodeDelete()
 
 		Assert(theNode >= 0);
 		free_node2(theNode);
+		// the event-root item is not a tree_nodes entry, so free_node2 above does
+		// not cover an annotation attached to the event root itself
+		on_node_handle_changed(item_handle, nullptr);
 		DeleteItem(item_handle);
 		*modified = 1;
 		return;
@@ -4667,6 +4675,10 @@ HTREEITEM sexp_tree::move_branch(HTREEITEM source, HTREEITEM parent, HTREEITEM a
 			GetItemImage(source, image1, image2);
   			h = insert(GetItemText(source), image1, image2, parent, after);
 		}
+
+		// the item was recreated with a new handle; let subclasses follow it
+		// (covers both tree_nodes entries and the event-root item, which is not one)
+		on_node_handle_changed(source, h);
 
 		SetItemData(h, GetItemData(source));
 		child = GetChildItem(source);

@@ -245,6 +245,10 @@ void MissionEventsDialog::initEventWidgets() {
 		_model->setNodeBgColor(h, c.red(), c.green(), c.blue(), c.isValid());
 	});
 
+	connect(ui->eventTree, &sexp_tree::nodeHandleChanged, this, [this](void* old_h, void* new_h) {
+		_model->onNodeHandleChanged(old_h, new_h);
+	});
+
 	connect(ui->eventTree, &sexp_tree::rootOrderChanged, this, [this] {
 		SCP_vector<int> order;
 		order.reserve(ui->eventTree->topLevelItemCount());
