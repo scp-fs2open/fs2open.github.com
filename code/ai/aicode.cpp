@@ -12447,6 +12447,13 @@ void ai_process_subobjects(int objnum)
 				}
 			}
 		}
+	} 	
+	// Goober5000 and wookieejedi - conversely, if the engines are no longer blown (e.g. after repair), resume normal chase behavior.
+	// The rest of the AI assumes SM_ATTACK_FOREVER implies blown engines, 
+	// so don't leave the submode set after the engines recover, or the ship will never evade and will ignore being hit.
+	else if (The_mission.ai_profile->flags[AI::Profile_Flags::Fix_small_ai_recover_after_engines_repaired] && ((aip->mode == AIM_CHASE) && (aip->submode == SM_ATTACK_FOREVER))) {
+		aip->submode = SM_ATTACK;
+		aip->submode_start_time = Missiontime;
 	}
 }
 
