@@ -336,10 +336,10 @@ typedef struct lock_info {
 	float lock_gauge_time_elapsed;
 	float lock_anim_time_elapsed;
 } lock_info;
-struct max_guard_radius {
+struct guard_range_entry {
 	float range;
 	int shipnum;
-	max_guard_radius(float _range, int _shipnum) : range(_range), shipnum(_shipnum) {}
+	guard_range_entry(float _range, int _shipnum) : range(_range), shipnum(_shipnum) {}
 };
 // structure definition for a linked list of subsystems for a ship.  Each subsystem has a pointer
 // to the static data for the subsystem.  The obj_subsystem data is defined and read in the model
@@ -628,7 +628,7 @@ public:
 
 	int ship_guardian_threshold;	// Goober5000 - now also determines whether ship is guardian'd
 	
-	SCP_vector<max_guard_radius>
+	SCP_vector<guard_range_entry>
 		max_guard_ranges; // Optional clamp for guard engagement/resume ranges; <= 0 means unused
 
 

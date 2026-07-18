@@ -323,11 +323,12 @@ void ai_cleanup_dock_mode_objective(object *objp);
 // the "autopilot"
 object *Autopilot_flight_leader = NULL;
 
-static inline float ai_guard_threshold(const object* guarded_objp, float threshold, ship* guarder_objp)
+static inline float ai_guard_threshold(const object* guarded_objp, float threshold, const ship* guarder_ship)
 {
 	if (guarded_objp != nullptr && guarded_objp->type == OBJ_SHIP && guarded_objp->instance >= 0) {
-		for (auto range_entry : guarder_objp->max_guard_ranges) {
-			if (Ships[guarded_objp->instance].ship_list_index == range_entry.shipnum) {
+		for (const auto& range_entry : guarder_ship->max_guard_ranges) {
+			const int regester = ship_registry_get_index(Ships[guarded_objp->instance].ship_name);
+			if (regester == range_entry.shipnum) {
 				const float configured = range_entry.range;
 				if (configured > 0.0f) {
 					return configured;
