@@ -3,6 +3,7 @@
 #include "globalincs/pstypes.h"
 #include "globalincs/flagset.h"
 #include "graphics/2d.h"
+#include "graphics/rtao.h"
 #include "graphics/shadows.h"
 #include "lighting/lighting_profiles.h"
 #include "camera/camera.h"
@@ -131,9 +132,24 @@ public:
 	}
 
 	// Session-only override, same as setShadowRenderMethod -- does not touch the
+	// persisted Raytraced Shadow Quality option. Safe to change at any time: the
+	// only thing it gates is whether local lights are picked as shadow casters
+	// while filling the light uniforms, which happens fresh every frame, so
+	// nothing has to be rebuilt for the switch to take effect.
+	static void setRtShadowQuality(RTShadowQuality quality) {
+		Rt_shadow_quality = quality;
+	}
+
+	// Session-only override, same as setShadowRenderMethod -- does not touch the
 	// persisted Max Raytraced Shadow Lights option.
 	static void setMaxRtShadowLights(int count) {
 		Max_rt_shadow_lights = count;
+	}
+
+	// Session-only override, same as setMaxRtShadowLights -- does not touch the persisted
+	// Max Raytraced Local Shadow Lights option. Only consulted at RTShadowQuality::High.
+	static void setMaxRtShadowLocalLights(int count) {
+		Max_rt_shadow_local_lights = count;
 	}
 
 	// Session-only overrides, same as setMaxRtShadowLights -- do not touch the
@@ -145,6 +161,27 @@ public:
 
 	static void setRtShadowBiasMax(float bias) {
 		Rt_shadow_bias_max = bias;
+	}
+
+	// Ray count normally follows Shadow_quality (see shadows_rt_sample_count()), which is
+	// fixed at startup because the shadow map is sized then. The ray count isn't, so the
+	// lab can sweep it live through this session-only override. See
+	// Rt_shadow_samples_override in shadows.h.
+	static void setRtShadowSamples(int samples) {
+		Rt_shadow_samples_override = samples;
+	}
+
+	// Session-only override of every sun's $SunAngularSize (degrees of apparent
+	// diameter); pass a negative value to return to the stars.tbl values. See
+	// Sun_angular_size_override in starfield.h.
+	static void setSunAngularSizeOverride(float degrees) {
+		Sun_angular_size_override = degrees;
+	}
+
+	// Session-only override, same as setRtShadowSamples -- does not touch the
+	// persisted Raytraced Ambient Occlusion option. See Rtao_samples in rtao.h.
+	static void setRtaoSamples(int samples) {
+		Rtao_samples = samples;
 	}
 
 	static void setTonemapper(ltp::TonemapperAlgorithm mode) {

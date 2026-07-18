@@ -253,6 +253,10 @@ private:
 	// gated behind m_enabled/m_initialized so this only matters defensively.
 	uint32_t currentFrameIndex() const { return m_bufferManager != nullptr ? m_bufferManager->getCurrentFrame() : 0; }
 
+	// Monotonic frame number of the last buildTlas() that actually ran, for the
+	// per-frame idempotence guard (multiple callers may request a TLAS per frame).
+	uint64_t m_lastTlasBuildFrame = UINT64_MAX;
+
 	vk::Device m_device;
 	vk::PhysicalDevice m_physicalDevice;
 	VulkanMemoryManager* m_memoryManager = nullptr;

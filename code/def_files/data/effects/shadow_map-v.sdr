@@ -38,10 +38,14 @@ layout(set = 0, binding = 6, std140)
 layout(std140)
 #endif
 uniform shadowCascadeParams {
-    int cascade_offset;
-    int cascade_count;
-    float rtShadowBiasMin;
-    float rtShadowBiasMax;
+	int cascade_offset;
+	int cascade_count;
+	float rtShadowBiasMin;
+	float rtShadowBiasMax;
+	int rtShadowSampleCount;
+	int rtaoSampleCount;
+	float rtaoRadius;
+	float rtaoStrength;
 
 	mat4 shadow_mv_matrix;
 	mat4 shadow_proj_matrix[NUM_SHADOW_CASCADES];

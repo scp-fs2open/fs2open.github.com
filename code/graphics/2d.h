@@ -262,6 +262,7 @@ enum shader_type {
 
 #define SDR_FLAG_ENV_MAP (1 << 0)
 #define SDR_FLAG_DEFERRED_RT_SHADOWS (1 << 1)
+#define SDR_FLAG_DEFERRED_RTAO (1 << 2)
 
 #define SDR_FLAG_SHADOW_FALLBACK (1 << 0)
 
