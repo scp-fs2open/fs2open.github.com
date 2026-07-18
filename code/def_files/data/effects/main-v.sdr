@@ -125,6 +125,10 @@ uniform shadowCascadeParams {
 	int cascade_count;
 	float rtShadowBiasMin;
 	float rtShadowBiasMax;
+	int rtShadowSampleCount;
+	int rtaoSampleCount;
+	float rtaoRadius;
+	float rtaoStrength;
 
 	mat4 shadow_mv_matrix;
 
