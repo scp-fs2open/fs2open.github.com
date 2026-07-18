@@ -33,7 +33,15 @@ SupportRearmSettings SupportRearmDialog::settings() const
 void SupportRearmDialog::closeEvent(QCloseEvent* e)
 {
 	reject();
-	e->ignore();
+	// reject() hides the dialog when it actually closes. Let that close
+	// proceed (so a dialog created with WA_DeleteOnClose is destroyed),
+	// and only veto it when reject() decided to keep the dialog open (e.g.
+	// the user cancelled the unsaved-changes prompt).
+	if (isVisible()) {
+		e->ignore();
+	} else {
+		e->accept();
+	}
 }
 
 QString SupportRearmDialog::weaponEntryText(int weaponClass) const

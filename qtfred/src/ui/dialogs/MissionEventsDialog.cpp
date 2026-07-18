@@ -288,7 +288,15 @@ bool MissionEventsDialog::hasDefaultMessageParameter()
 void MissionEventsDialog::closeEvent(QCloseEvent* e)
 {
 	reject();
-	e->ignore(); // Don't let the base class close the window
+	// reject() hides the dialog when it actually closes. Let that close
+	// proceed (so a dialog created with WA_DeleteOnClose is destroyed),
+	// and only veto it when reject() decided to keep the dialog open (e.g.
+	// the user cancelled the unsaved-changes prompt).
+	if (isVisible()) {
+		e->ignore();
+	} else {
+		e->accept();
+	}
 }
 
 void MissionEventsDialog::initMessageWidgets() {
@@ -701,7 +709,7 @@ void MissionEventsDialog::on_chainedCheckBox_stateChanged(int state)
 	updateEventUi();
 }
 
-void MissionEventsDialog::on_chainedDelayBox_valueChanged(int value)
+void MissionEventsDialog::on_chainDelayBox_valueChanged(int value)
 {
 	_model->setChainDelay(value);
 }
