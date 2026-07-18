@@ -978,7 +978,11 @@ int opengl_create_texture(int bitmap_handle, int bitmap_type, tcache_slot_opengl
 
 	auto base_level = 0;
 	auto resize = false;
-	if ( (Detail.hardware_textures < 4) && (bitmap_type != TCACHE_TYPE_AABITMAP) && (bitmap_type != TCACHE_TYPE_INTERFACE)
+	// User bitmaps are excluded from culling because they are streaming surfaces (e.g. animations and
+	// video) that are updated through gr_update_texture() with the bitmap's own dimensions each frame,
+	// which requires the texture to match the bitmap's size.
+	if ( (Detail.hardware_textures < 4) && (bm_get_type(bitmap_handle) != BM_TYPE_USER)
+		&& (bitmap_type != TCACHE_TYPE_AABITMAP) && (bitmap_type != TCACHE_TYPE_INTERFACE)
 		&& (bitmap_type != TCACHE_TYPE_CUBEMAP) && (bitmap_type != TCACHE_TYPE_3DTEX)
 		&& ((bitmap_type != TCACHE_TYPE_COMPRESSED) || ((bitmap_type == TCACHE_TYPE_COMPRESSED) && (max_levels > 1))) )
 	{
@@ -1565,6 +1569,13 @@ void gr_opengl_update_texture(int bitmap_handle, int bpp, const ubyte* data, int
 	auto t = bm_get_gr_info<tcache_slot_opengl>(bitmap_handle);
 	if(!t->texture_id)
 		return;
+
+	// This overwrites the texture with data at the bitmap's own size, so the texture must not have been
+	// culled when it was created (user bitmaps are exempt from texture detail culling for this reason).
+	Assertion((t->w == width) && (t->h == height),
+		"gr_opengl_update_texture() called for bitmap %s with %dx%d data, but its texture is %dx%d.",
+		bm_get_filename(bitmap_handle), width, height, t->w, t->h);
+
 	int byte_mult = (bpp >> 3);
 	int true_byte_mult = (t->bpp >> 3);
 	ubyte* texmem = NULL;
