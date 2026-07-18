@@ -159,6 +159,8 @@ class CampaignEditorDialogModel : public AbstractDialogModel {
 	void removeBranch(int mission_index, int branch_index);
 	void moveBranchUp();
 	void moveBranchDown();
+	void moveBranchToTop();
+	void moveBranchToBottom();
 	bool getCurrentBranchIsSpecial() const;
 
 	void setModified() { set_modified(); }

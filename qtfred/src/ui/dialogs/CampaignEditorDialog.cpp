@@ -244,8 +244,10 @@ void CampaignEditorDialog::initializeUi()
 {
 	util::SignalBlockers blocker(this);
 
-	fso::fred::bindStandardIcon(ui->moveBranchUpButton,   QStyle::SP_ArrowUp);
-	fso::fred::bindStandardIcon(ui->moveBranchDownButton, QStyle::SP_ArrowDown);
+	fso::fred::bindCustomIcon(ui->moveBranchTopButton,     CustomIcon::MoveToTop);
+	fso::fred::bindStandardIcon(ui->moveBranchUpButton,    QStyle::SP_ArrowUp);
+	fso::fred::bindStandardIcon(ui->moveBranchDownButton,  QStyle::SP_ArrowDown);
+	fso::fred::bindCustomIcon(ui->moveBranchBottomButton,  CustomIcon::MoveToBottom);
 	fso::fred::bindStandardIcon(ui->testVoiceButton,      QStyle::SP_MediaPlay);
 
 	// setup the types combo box
@@ -395,8 +397,12 @@ void CampaignEditorDialog::enableDisableControls()
 	ui->debriefingPersonaSpinBox->setEnabled(has_mission);
 
 	bool branch_selected = (_model->getCurrentBranchSelection() >= 0);
-	ui->moveBranchUpButton->setEnabled(branch_selected && _model->getCurrentBranchSelection() > 0);
-	ui->moveBranchDownButton->setEnabled(branch_selected && _model->getCurrentBranchSelection() < _model->getNumBranches() -1);
+	bool can_move_up = branch_selected && _model->getCurrentBranchSelection() > 0;
+	bool can_move_down = branch_selected && _model->getCurrentBranchSelection() < _model->getNumBranches() - 1;
+	ui->moveBranchTopButton->setEnabled(can_move_up);
+	ui->moveBranchUpButton->setEnabled(can_move_up);
+	ui->moveBranchDownButton->setEnabled(can_move_down);
+	ui->moveBranchBottomButton->setEnabled(can_move_down);
 
 	bool special_branch_selected = _model->getCurrentBranchIsSpecial();
 	ui->loopDescriptionPlainTextEdit->setEnabled(special_branch_selected);
@@ -776,6 +782,16 @@ void CampaignEditorDialog::on_substituteMainhallComboBox_currentIndexChanged(con
 	_model->setCurrentMissionSubstituteMainhall(arg1.toUtf8().constData());
 }
 
+void CampaignEditorDialog::on_moveBranchTopButton_clicked()
+{
+	int mission_selection = _model->getCurrentMissionSelection(); // save now because rebuild clears it
+
+	_model->moveBranchToTop();
+	ui->graphView->rebuildAll();
+
+	ui->graphView->setSelectedMission(mission_selection);
+}
+
 void CampaignEditorDialog::on_moveBranchUpButton_clicked()
 {
 	int mission_selection = _model->getCurrentMissionSelection(); // save now because rebuild clears it
@@ -791,6 +807,16 @@ void CampaignEditorDialog::on_moveBranchDownButton_clicked()
 	int mission_selection = _model->getCurrentMissionSelection(); // save now because rebuild clears it
 	
 	_model->moveBranchDown();
+	ui->graphView->rebuildAll();
+
+	ui->graphView->setSelectedMission(mission_selection);
+}
+
+void CampaignEditorDialog::on_moveBranchBottomButton_clicked()
+{
+	int mission_selection = _model->getCurrentMissionSelection(); // save now because rebuild clears it
+
+	_model->moveBranchToBottom();
 	ui->graphView->rebuildAll();
 
 	ui->graphView->setSelectedMission(mission_selection);

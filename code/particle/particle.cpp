@@ -10,6 +10,7 @@
 
 
 #include "bmpman/bmpman.h"
+#include "decals/decals.h"
 #include "particle/particle.h"
 
 #include "freespace.h"
@@ -387,25 +388,89 @@ namespace particle
 	/**
 	 * @brief Renders a single particle
 	 * @param part The particle to render
-	 * @return @c true if the particle has been added to the rendering batch, @c false otherwise
+	 * @return @c true if the particle has been added to the rendering batch (notably, this only includes main-render pass, alternative dispatch through decals is not true), @c false otherwise
 	 */
-	static bool render_particle(particle* part) {
+	bool render_particle(particle* part) {
 		// skip back-facing particles (ripped from fullneb code)
 		// Wanderer - add support for attached particles
 		vec3d p_pos = part->attachment.local_pos_to_global(part->pos);
 
 		bool part_has_length = part->length != 0.0f;
 
-		if (!part_has_length && vm_vec_dot_to_point(&Eye_matrix.vec.fvec, &Eye_position, &p_pos) <= 0.0f)
+		const auto& source_effect = part->parent_effect.getParticleEffect();
+
+		if (!source_effect.m_renderAsDecal && !part_has_length && vm_vec_dot_to_point(&Eye_matrix.vec.fvec, &Eye_position, &p_pos) <= 0.0f)
 		{
 			return false;
 		}
-		
-		const auto& source_effect = part->parent_effect.getParticleEffect();
 
 		//For anything apart from the velocity curve, "Post-Curves Velocity" is well defined. This is needed to facilitate complex but common particle scaling and appearance curves.
 		const auto& curve_input = std::forward_as_tuple(*part,
 			vm_vec_mag_quick(&part->velocity) * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::VELOCITY_MULT, std::forward_as_tuple(*part, vm_vec_mag_quick(&part->velocity))));
+
+		// figure out which frame we should be using
+		int framenum;
+		int cur_frame;
+		if (part->nframes > 1) {
+			if (source_effect.m_lifetime_curves.has_curve(ParticleEffect::ParticleLifetimeCurvesOutput::ANIM_STATE)) {
+				cur_frame = fl2i(i2fl(part->nframes - 1) * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::ANIM_STATE, curve_input));
+			}
+			else {
+				framenum = bm_get_anim_frame(part->bitmap, part->age, part->max_life, part->looping);
+				cur_frame = part->reverse ? (part->nframes - framenum - 1) : framenum;
+			}
+		}
+		else
+		{
+			cur_frame = 0;
+		}
+
+		framenum = part->bitmap;
+		Assert( (cur_frame < part->nframes) || (part->nframes == 0 && cur_frame == 0) );
+
+		int actual_frame = cur_frame + framenum;
+
+		if (source_effect.m_renderAsDecal) {
+			if (!decals::decalSystemActive()) {
+				return false;
+			}
+
+			const auto& obj = part->attachment.extract_object();
+
+			if (!obj || obj->objnum < 0 || Objects[obj->objnum].signature != obj->sig || Objects[obj->objnum].type != OBJ_SHIP) {
+				return false;
+			}
+
+			float radius = part->radius * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::RADIUS_MULT, curve_input);
+
+			decals::Decal decalInfo;
+
+			if (source_effect.m_decalEmissive) {
+				decalInfo.definition_handle = std::tuple(-1, actual_frame, -1);
+			} else {
+				decalInfo.definition_handle = std::tuple(actual_frame, -1, -1);
+			}
+
+			decalInfo.object        = &Objects[obj->objnum];
+			decalInfo.submodel      = -1;
+			decalInfo.creation_time = f2fl(Missiontime);
+			decalInfo.lifetime      = 1.0f;
+			decalInfo.position      = part->pos;
+			decalInfo.scale         = {{{ radius, radius, radius }}};
+			decalInfo.orig_obj_type = OBJ_SHIP;
+
+			switch (source_effect.m_decalOrientationMode) {
+			case ParticleEffect::DecalOrientationMode::TOWARDS_CENTER:
+				vm_vector_2_matrix(&decalInfo.orientation, &part->pos, nullptr, nullptr);
+				break;
+			default:
+				decalInfo.orientation = vmd_identity_matrix;
+				break;
+			}
+
+			decals::addSingleFrameDecal(std::move(decalInfo));
+			return false;
+		}
 
 		vec3d p1 = vmd_x_vector;
 
@@ -450,36 +515,15 @@ namespace particle
 
 		g3_transfer_vertex(&pos, &p_pos);
 
-		// figure out which frame we should be using
-		int framenum;
-		int cur_frame;
-		if (part->nframes > 1) {
-			if (source_effect.m_lifetime_curves.has_curve(ParticleEffect::ParticleLifetimeCurvesOutput::ANIM_STATE)) {
-				cur_frame = fl2i(i2fl(part->nframes - 1) * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::ANIM_STATE, curve_input));
-			}
-			else {
-				framenum = bm_get_anim_frame(part->bitmap, part->age, part->max_life, part->looping);
-				cur_frame = part->reverse ? (part->nframes - framenum - 1) : framenum;
-			}
-		}
-		else
-		{
-			cur_frame = 0;
-		}
-
-		framenum = part->bitmap;
-
-		Assert( (cur_frame < part->nframes) || (part->nframes == 0 && cur_frame == 0) );
-
 		float radius = part->radius * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::RADIUS_MULT, curve_input);
 
 		if (part_has_length) {
 			vec3d p0 = p_pos;
-			batching_add_laser(framenum + cur_frame, &p0, radius, &p1, radius);
+			batching_add_laser(actual_frame, &p0, radius, &p1, radius);
 		}
 		else {
 			// it will subtract Physics_viewer_bank, so without the flag we counter that and make it screen-aligned again
-			batching_add_volume_bitmap_rotated(framenum + cur_frame, &pos, part->use_angle ? part->angle : Physics_viewer_bank, radius, alpha);
+			batching_add_volume_bitmap_rotated(actual_frame, &pos, part->use_angle ? part->angle : Physics_viewer_bank, radius, alpha);
 		}
 
 		return true;

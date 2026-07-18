@@ -1125,6 +1125,29 @@ void MissionEventsDialogModel::moveMessageDown()
 	set_modified();
 }
 
+void MissionEventsDialogModel::moveMessageToTop()
+{
+	if (!SCP_vector_inbounds(m_messages, m_cur_msg) || m_cur_msg == 0)
+		return;
+
+	// rotate the selected message to the front, preserving the order of the rest
+	std::rotate(m_messages.begin(), m_messages.begin() + m_cur_msg, m_messages.begin() + m_cur_msg + 1);
+	setCurrentlySelectedMessage(0);
+	set_modified();
+}
+
+void MissionEventsDialogModel::moveMessageToBottom()
+{
+	const int last = static_cast<int>(m_messages.size()) - 1;
+	if (!SCP_vector_inbounds(m_messages, m_cur_msg) || m_cur_msg >= last)
+		return;
+
+	// rotate the selected message to the back, preserving the order of the rest
+	std::rotate(m_messages.begin() + m_cur_msg, m_messages.begin() + m_cur_msg + 1, m_messages.end());
+	setCurrentlySelectedMessage(last);
+	set_modified();
+}
+
 
 SCP_string MissionEventsDialogModel::getMessageName() const
 {

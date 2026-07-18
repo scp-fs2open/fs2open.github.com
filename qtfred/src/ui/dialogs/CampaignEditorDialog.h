@@ -74,8 +74,10 @@ class CampaignEditorDialog : public QMainWindow, public SexpTreeEditorInterface 
 	void on_mainhallComboBox_currentIndexChanged(const QString& arg1);
 	void on_substituteMainhallComboBox_currentIndexChanged(const QString& arg1);
 
+	void on_moveBranchTopButton_clicked();
 	void on_moveBranchUpButton_clicked();
 	void on_moveBranchDownButton_clicked();
+	void on_moveBranchBottomButton_clicked();
 
 	void on_loopDescriptionPlainTextEdit_textChanged();
 	void on_loopAnimLineEdit_textChanged(const QString& arg1);

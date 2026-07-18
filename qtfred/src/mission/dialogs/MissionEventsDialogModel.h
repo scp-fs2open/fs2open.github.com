@@ -102,6 +102,8 @@ class MissionEventsDialogModel : public AbstractDialogModel {
 	void deleteMessage();
 	void moveMessageUp();
 	void moveMessageDown();
+	void moveMessageToTop();
+	void moveMessageToBottom();
 	SCP_string getMessageName() const;
 	void setMessageName(const SCP_string& name);
 	SCP_string getMessageText() const;

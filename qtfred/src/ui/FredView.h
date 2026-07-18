@@ -21,6 +21,7 @@
 #include <ui/widgets/ObjectComboBox.h>
 
 class waypoint_list;
+class QDateTime;
 
 namespace fso {
 namespace fred {
@@ -247,8 +248,12 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void onSetGroup(int group);
 
 	QLabel* _statusBarObjectCount = nullptr;
+	QLabel* _statusBarLastSaved   = nullptr;
 	QLabel* _statusBarViewmode    = nullptr;
 	QLabel* _statusBarUnitsLabel  = nullptr;
+
+	// Updates the "Last Saved" status bar label: pass an empty time to show "Never".
+	void setLastSaved(const QDateTime& when);
 
 	SceneBrowserPanel* _browserPanel = nullptr;
 

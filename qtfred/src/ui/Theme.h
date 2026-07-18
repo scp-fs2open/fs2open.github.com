@@ -29,6 +29,22 @@ QIcon makeThemedIcon(QStyle::StandardPixmap sp, const QColor& color, int size = 
 // Bind a palette-aware icon to a button and refresh it when the theme changes.
 void bindStandardIcon(QAbstractButton* btn, QStyle::StandardPixmap sp);
 
+// Palette-aware icons drawn by QPainter that have no QStyle::StandardPixmap equivalent.
+// The MoveTo* values are "jump to end" arrows: an arrow with a bar across the end it
+// points toward (e.g. MoveToTop is an up arrow with a bar along the top).
+enum class CustomIcon {
+	MoveToTop,
+	MoveToBottom,
+	MoveToLeft,
+	MoveToRight,
+};
+
+// Draw a palette-aware icon for a CustomIcon using QPainter.
+QIcon makeThemedIcon(CustomIcon icon, const QColor& color, int size = 16);
+
+// Bind a palette-aware CustomIcon to a button and refresh it when the theme changes.
+void bindCustomIcon(QAbstractButton* btn, CustomIcon icon);
+
 // Bind a theme-adaptive PNG icon to a toolbar action.
 // Loads :/images/toolbar/<baseName>-dark.png or <baseName>-light.png based on
 // the current palette, and refreshes automatically when the theme changes.

@@ -355,7 +355,20 @@
              <item>
               <layout class="QVBoxLayout" name="verticalLayout_3">
                <item>
+                <widget class="QPushButton" name="moveBranchTopButton">
+                 <property name="toolTip">
+                  <string>Move to top</string>
+                 </property>
+                 <property name="text">
+                  <string/>
+                 </property>
+                </widget>
+               </item>
+               <item>
                 <widget class="QPushButton" name="moveBranchUpButton">
+                 <property name="toolTip">
+                  <string>Move up</string>
+                 </property>
                  <property name="text">
                   <string/>
                  </property>
@@ -363,6 +376,19 @@
                </item>
                <item>
                 <widget class="QPushButton" name="moveBranchDownButton">
+                 <property name="toolTip">
+                  <string>Move down</string>
+                 </property>
+                 <property name="text">
+                  <string/>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="moveBranchBottomButton">
+                 <property name="toolTip">
+                  <string>Move to bottom</string>
+                 </property>
                  <property name="text">
                   <string/>
                  </property>

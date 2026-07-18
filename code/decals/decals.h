@@ -133,6 +133,8 @@ void loadBitmaps(const creation_info& info);
  */
 void pageInDecal(const creation_info& info);
 
+bool decalSystemActive();
+
 /**
  * @brief Shut down the decal system. Must be called from game_shutdown
  */
