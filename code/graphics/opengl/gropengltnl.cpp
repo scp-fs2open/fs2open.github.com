@@ -565,24 +565,7 @@ void opengl_tnl_init()
 	Transform_buffer_handle = opengl_create_texture_buffer_object();
 
 	if (Shadow_quality != ShadowQuality::Disabled) {
-		int size;
-		switch (Shadow_quality) {
-		case ShadowQuality::Low:
-			size = 512;
-			break;
-		case ShadowQuality::Medium:
-			size = 1024;
-			break;
-		case ShadowQuality::High:
-			size = 2048;
-			break;
-		case ShadowQuality::Ultra:
-			size = 4096;
-			break;
-		default:
-			size = 256;
-			break;
-		}
+		const int size = shadows_map_resolution();
 
 		if (!opengl_init_shadow_framebuffer(size)) {
 			mprintf(("Failed to create either shadow framebuffer. Disabling shadow support.\n"));

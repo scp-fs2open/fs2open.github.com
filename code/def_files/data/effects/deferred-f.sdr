@@ -24,7 +24,7 @@ layout(set = 0, binding = 3) uniform samplerCube sEnvmap;
 layout(set = 0, binding = 4) uniform samplerCube sIrrmap;
 #endif
 
-#ifdef RT_SHADOWS
+#if defined(RT_SHADOWS) || defined(RTAO)
 layout(set = 0, binding = 5) uniform accelerationStructureEXT shadow_tlas;
 #endif
 #else
@@ -63,6 +63,10 @@ uniform shadowCascadeParams {
 	int cascade_count;
 	float rtShadowBiasMin;
 	float rtShadowBiasMax;
+	int rtShadowSampleCount;
+	int rtaoSampleCount;
+	float rtaoRadius;
+	float rtaoStrength;
 
 	mat4 shadow_mv_matrix;
 	mat4 shadow_proj_matrix[NUM_SHADOW_CASCADES];
@@ -291,6 +295,17 @@ void main()
 
 	if (lightType == LT_AMBIENT) {
 		float ao = position_buffer.w;
+#ifdef RTAO
+		{
+			// Raytraced AO multiplies into the same ao term as the baked AO maps,
+			// so the env-map/IBL ambient below darkens consistently for free.
+			vec3 worldPos = (inv_view_matrix * vec4(position, 1.0)).xyz;
+			vec3 worldNormal = normalize((inv_view_matrix * vec4(normal, 0.0)).xyz);
+			float rtaoBias = computeRtShadowBias(length(position), rtShadowBiasMin, rtShadowBiasMax);
+			ao *= traceAmbientOcclusion(shadow_tlas, worldPos, worldNormal,
+				rtaoRadius, rtaoStrength, rtaoSampleCount, rtaoBias, gl_FragCoord.xy);
+		}
+#endif
 		fragmentColor.rgb = diffuseLightColor * diffColor * ao;
 
 #ifdef ENV_MAP
@@ -315,7 +330,15 @@ void main()
 			vec3 worldLightDir = normalize((inv_view_matrix * vec4(lightDir, 0.0)).xyz);
 
 			float rtShadowBias = computeRtShadowBias(length(position), rtShadowBiasMin, rtShadowBiasMax);
-			attenuation *= traceShadowRay(shadow_tlas, worldPos, worldNormal, worldLightDir, lightDist, rtShadowBias);
+			// Penumbra cone: for directional lights sourceRadius IS the tangent of the
+			// sun's angular radius ($SunAngularSize), scaled to match the shadow-mapped
+			// look (see RT_SHADOW_SUN_SIZE_CALIBRATION); for local lights the subtended
+			// half-angle follows from the physical source radius and the light distance.
+			float coneTan = (lightType == LT_DIRECTIONAL)
+				? sourceRadius * RT_SHADOW_SUN_SIZE_CALIBRATION
+				: sourceRadius / max(lightDist, 1e-3);
+			attenuation *= traceShadowRayCone(shadow_tlas, worldPos, worldNormal, worldLightDir, lightDist,
+				rtShadowBias, coneTan, rtShadowSampleCount, gl_FragCoord.xy);
 #else
 			vec4 fragShadowPos = shadow_mv_matrix * inv_view_matrix * vec4(position, 1.0);
 			vec4 fragShadowUV[NUM_SHADOW_CASCADES];

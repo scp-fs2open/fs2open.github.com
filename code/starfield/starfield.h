@@ -29,11 +29,35 @@
 
 
 // starfield list
+// A sun's apparent diameter, in degrees. Every layer that can supply one -- the mission file's
+// +AngularSize:, stars.tbl's $SunAngularSize:, and the LabUi session override -- uses this same
+// encoding, so "the first one that specifies a size wins" is all the precedence logic there is
+// (see sun_angular_radius_tangent() in starfield.cpp). Negative means that layer doesn't specify
+// a size; 0 asks for hard shadows outright. Only affects raytraced shadows.
+constexpr float SUN_ANGULAR_SIZE_UNSPECIFIED = -1.0f;
+
+// Sol's apparent diameter from Earth -- the one figure anyone has an intuition for, so it's what
+// the editors and the lab start from when switching a sun's size on.
+constexpr float SUN_ANGULAR_SIZE_SOL = 0.53f;
+
+// Well past anything plausible; the cap only exists to keep the value finite and non-negative.
+constexpr float SUN_ANGULAR_SIZE_MAX = 90.0f;
+
 typedef struct starfield_list_entry {
 	char filename[MAX_FILENAME_LEN];		// bitmap filename
 	float scale_x, scale_y;					// x and y scale
 	int div_x, div_y;						// # of x and y divisions
 	angles ang;								// angles from FRED
+	float angular_size;						// only for suns; see SUN_ANGULAR_SIZE_UNSPECIFIED
+
+	starfield_list_entry() : scale_x(1.0f), scale_y(1.0f), div_x(1), div_y(1),
+		angular_size(SUN_ANGULAR_SIZE_UNSPECIFIED)
+	{
+		filename[0] = '\0';
+		ang.p = 0.0f;
+		ang.b = 0.0f;
+		ang.h = 0.0f;
+	}
 } starfield_list_entry;
 
 // backgrounds
@@ -63,6 +87,11 @@ extern float Nmodel_alpha;
 
 extern bool Motion_debris_override;
 extern bool Motion_debris_enabled;
+
+// Session-only override (LabUi) of every sun's $SunAngularSize, in degrees of
+// apparent diameter -- sizes the penumbra of raytraced sun shadows. Negative
+// (the default) means no override: each sun uses its stars.tbl value.
+extern float Sun_angular_size_override;
 
 struct motion_debris_bitmaps {
 	int bm;

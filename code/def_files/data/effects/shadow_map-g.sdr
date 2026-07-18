@@ -7,11 +7,18 @@ layout (triangle_strip, max_vertices = 3) out;
 layout(invocations = NUM_SHADOW_CASCADES) in;
 #endif
 
-layout (std140) uniform shadowCascadeParams {
-    int cascade_offset;
-    int cascade_count;
-    float rtShadowBiasMin;
-    float rtShadowBiasMax;
+// OpenGL-only: the Vulkan backend has no geometry-shader stage, and disables the
+// shadow pass outright when it can't write gl_Layer from the vertex shader, so it
+// never requests GEOMETRY_FALLBACK. Hence no Vulkan set/binding qualifier here.
+layout(std140) uniform shadowCascadeParams {
+	int cascade_offset;
+	int cascade_count;
+	float rtShadowBiasMin;
+	float rtShadowBiasMax;
+	int rtShadowSampleCount;
+	int rtaoSampleCount;
+	float rtaoRadius;
+	float rtaoStrength;
 
 	mat4 shadow_mv_matrix;
 	mat4 shadow_proj_matrix[NUM_SHADOW_CASCADES];
