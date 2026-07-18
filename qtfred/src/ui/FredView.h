@@ -255,6 +255,9 @@ class FredView: public QMainWindow, public IDialogProvider {
 	// Updates the "Last Saved" status bar label: pass an empty time to show "Never".
 	void setLastSaved(const QDateTime& when);
 
+	// Sweeps a brief white gleam across the status bar to celebrate a save.
+	void triggerSaveShine();
+
 	SceneBrowserPanel* _browserPanel = nullptr;
 
 	QMenu* _viewPopup = nullptr;
