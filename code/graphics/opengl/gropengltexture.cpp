@@ -1521,7 +1521,7 @@ size_t opengl_export_render_target( int slot, int width, int height, int alpha, 
 		return 0;
 	}
 
-	if ( (ts->w != width) && (ts->h != height) ) {
+	if ( (ts->w != width) || (ts->h != height) ) {
 		mprintf(("OpenGL ERROR: Passed width and height do not match values for texture!\n"));
 		return 0;
 	}
