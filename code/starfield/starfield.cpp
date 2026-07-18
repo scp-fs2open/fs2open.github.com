@@ -17,7 +17,7 @@
 #include "cmdline/cmdline.h"
 #include "debugconsole/console.h"
 #include "graphics/matrix.h"
-#include "graphics/paths/PathRenderer.h"
+#include "graphics/render.h"
 #include "hud/hud.h"
 #include "hud/hudtarget.h"
 #include "io/timer.h"
@@ -1774,12 +1774,16 @@ void stars_draw_stars()
 	tmp_num_stars = (Detail.num_stars * Num_stars) / MAX_DETAIL_VALUE;
 	CLAMP(tmp_num_stars, 0, Num_stars);
 
-	auto path = graphics::paths::PathRenderer::instance();
-
-	path->saveState();
-	path->resetState();
-
-	path->beginFrame();
+	// Streaks are batched into a single colored line list; issuing an
+	// individual NanoVG path per star costs enough CPU per stroke to dominate
+	// the frame in star-heavy scenes.
+	struct star_streak_vertex {
+		vec2d position;
+		vec4 color;
+	};
+	static SCP_vector<star_streak_vertex> star_verts;
+	star_verts.clear();
+	star_verts.reserve(static_cast<size_t>(tmp_num_stars) * 2);
 
 	for (i = 0; i < tmp_num_stars; i++) {
 		sp = &Stars[i];
@@ -1852,17 +1856,41 @@ void stars_draw_stars()
 			col.blue = (ubyte)((float)col.blue / powf(len, 1.0f / 2.2f));
 			col.alpha = (ubyte)((float)col.alpha  / powf(len, 1.0f / 2.2f));
 		}
-		path->beginPath();
+		star_streak_vertex vtx;
+		vtx.color.xyzw.x = col.red / 255.0f;
+		vtx.color.xyzw.y = col.green / 255.0f;
+		vtx.color.xyzw.z = col.blue / 255.0f;
+		vtx.color.xyzw.w = col.alpha / 255.0f;
 
-		path->moveTo(p1.screen.xyw.x, p1.screen.xyw.y);
-		path->lineTo(p2.screen.xyw.x, p2.screen.xyw.y);
+		vtx.position.x = p1.screen.xyw.x;
+		vtx.position.y = p1.screen.xyw.y;
+		star_verts.push_back(vtx);
 
-		path->setStrokeColor(&col);
-		path->stroke();
+		vtx.position.x = p2.screen.xyw.x;
+		vtx.position.y = p2.screen.xyw.y;
+		star_verts.push_back(vtx);
 	}
-	path->endFrame();
-	
-	path->restoreState();
+
+	if (!star_verts.empty()) {
+		material line_mat;
+		line_mat.set_blend_mode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
+		line_mat.set_depth_mode(ZBUFFER_TYPE_NONE);
+		line_mat.set_cull_mode(false);
+		line_mat.set_color(1.0f, 1.0f, 1.0f, 1.0f); // color comes from the vertices
+
+		vertex_layout layout;
+		layout.add_vertex_component(vertex_format_data::POSITION2, sizeof(star_streak_vertex),
+			offsetof(star_streak_vertex, position));
+		layout.add_vertex_component(vertex_format_data::COLOR4F, sizeof(star_streak_vertex),
+			offsetof(star_streak_vertex, color));
+
+		gr_render_primitives_2d_immediate(&line_mat,
+			PRIM_TYPE_LINES,
+			&layout,
+			static_cast<int>(star_verts.size()),
+			star_verts.data(),
+			star_verts.size() * sizeof(star_streak_vertex));
+	}
 }
 
 void stars_draw_motion_debris()
