@@ -16,7 +16,9 @@
 #include "cmdline/cmdline.h"
 #include "debris/debris.h"
 #include "graphics/matrix.h"
+#include "graphics/rtao.h"
 #include "lighting/lighting.h"
+#include "lighting/lighting_profiles.h"
 #include "math/vecmat.h"
 #include "mod_table/mod_table.h"
 #include "model/model.h"
@@ -27,8 +29,12 @@
 #include "ship/ship.h"
 #include "ship/shipfx.h"
 #include "render/3d.h"
+#include "starfield/starfield.h"
+#include "starfield/sun_disc.h"
 #include "tracing/tracing.h"
 #include "util/uniform_structs.h"
+
+#include <algorithm>
 
 extern vec3d check_offsets[8];
 
@@ -222,9 +228,121 @@ auto RtShadowBiasMaxOption = options::OptionBuilder<float>("Graphics.RtShadowBia
                      .importance(74)
                      .finish();
 
+int Rt_shadow_samples_override = -1;
+
 bool shadows_raytracing_supported()
 {
 	return gr_is_capable(gr_capability::CAPABILITY_RAYTRACED_SHADOWS);
+}
+
+int shadows_map_resolution()
+{
+	switch (Shadow_quality) {
+	case ShadowQuality::Low:    return 512;
+	case ShadowQuality::Medium: return 1024;
+	case ShadowQuality::High:   return 2048;
+	case ShadowQuality::Ultra:  return 4096;
+	default:                    return 512;
+	}
+}
+
+int shadows_rt_sample_count()
+{
+	if (Rt_shadow_samples_override > 0) {
+		return Rt_shadow_samples_override;
+	}
+
+	// The same tiers that pick the shadow map's resolution pick the ray count, so one
+	// setting covers "how much am I willing to spend on shadows" for either method. Low
+	// stays at a single ray -- that is the hard-shadow, one-ray-per-light floor, matching
+	// how a 512 map is the cheap floor for the other method rather than a soft-shadow
+	// setting the user has to find separately.
+	switch (Shadow_quality) {
+	case ShadowQuality::Low:    return 1;
+	case ShadowQuality::Medium: return 4;
+	case ShadowQuality::High:   return 8;
+	case ShadowQuality::Ultra:  return 16;
+	default:                    return 1;
+	}
+}
+
+// The apparent sun size the $Shadow Smoothness Factor: values are taken to be tuned against.
+// Sol is the natural choice: measured across the sun art of retail, the MediaVPs and several
+// mods, the calibration in sun_disc.cpp lands median content near Sol, and the shipped
+// smoothness defaults (1/300 .. 1/200) work out to a Sol-sized sun's penumbra at a blocker
+// distance of roughly 0.7-1.1 cascade widths. So a Sol-sized sun reproduces the look every
+// existing mod already tuned for, and everything else scales from there.
+static float shadow_smoothness_reference_tangent()
+{
+	return sun_disc_tangent_from_diameter(SUN_ANGULAR_SIZE_SOL);
+}
+
+// Softness of the shadow-mapped sun relative to that reference, i.e. the factor the tabled
+// smoothness values get scaled by.
+//
+// This is what makes shadow softness method-agnostic: the shadow map and the raytracer are
+// driven by the same number -- the tangent of the sun's angular radius, from $SunAngularSize:
+// or measured off the sun bitmap (see sun_angular_radius_tangent() in starfield.cpp). Doubling
+// a sun's apparent size doubles the raytraced penumbra cone and this filter width alike, so a
+// mission author tunes one parameter and both methods follow.
+//
+// What it does *not* reproduce is contact hardening. traceShadowRayCone() gets penumbra width
+// proportional to occluder distance for free; samplePoissonPCSS() (shadows.sdr) is fixed-width
+// PCF with no blocker search, so it has no occluder distance to scale by. The tabled per-cascade
+// values stand in for that: they are effectively a blocker distance pinned to the cascade's own
+// extent. Sizing them off the sun binds the two methods' softness, not their falloff shape --
+// closing that gap needs a real blocker search.
+//
+// That standin blocker distance is also much larger than the separations a raytraced shadow
+// actually measures, which is why the two methods still needed a constant factor between them
+// to look alike -- see RT_SHADOW_SUN_SIZE_CALIBRATION in shadows.sdr, and change the two
+// together.
+//
+// Uses Static_light.front(), the same light shadows_start_render() builds the cascades from.
+// Every directional light that reaches this point carries a source radius: suns get theirs in
+// stars_draw_sun(), and common_setup_room_lights() -- the only other producer -- gives its
+// stand-in lights a sun's. A zero radius therefore means a genuinely sizeless source (a mod's
+// deliberately blank sun bitmap, say), which asks for a hard edge; the shadow map answers with
+// the narrowest filter it can, see shadow_clamp_smoothness().
+static float shadow_smoothness_scale()
+{
+	if (Static_light.empty()) {
+		return 1.0f;
+	}
+
+	const float reference = shadow_smoothness_reference_tangent();
+	if (reference <= 0.0f) {
+		return 1.0f;
+	}
+
+	// For directional lights source_radius is the tangent of the angular radius, not a
+	// world-space size -- see light_add_directional() in starfield.cpp's stars_draw_sun().
+	return Static_light.front().source_radius / reference;
+}
+
+// Keeps a derived filter width inside what the shadow map can actually represent.
+//
+// The floor is one texel: a sun small enough to want a sub-texel penumbra can't get one out of
+// a shadow map, and dropping below a texel only collapses all 16 Poisson taps into the same
+// texel -- paying for the taps and getting an aliased edge for it. (A raytraced shadow *does*
+// go properly hard there; this is a limit of the method, not of the parameter.)
+//
+// The ceiling bounds how far the taps spread. Missions set +AngularSize: freely, and a large
+// enough sun would scatter the 16 taps far enough apart to read as separate blobs, while the
+// comparison depth stays at the receiver and turns the widened filter into acne.
+//
+// Note the floor also applies to the tabled values themselves, so a mod that asked for a very
+// small $Shadow Smoothness Factor: gets widened to a texel at low shadow-map resolutions. That
+// value was already sub-texel there -- i.e. already doing nothing except cost taps -- so this
+// trades a hair of extra blur for an antialiased edge.
+static float shadow_clamp_smoothness(float smoothness)
+{
+	// shadows_map_resolution() is 512 at its smallest, so the floor always stays below the
+	// ceiling and std::clamp()'s lo <= hi precondition holds.
+	const float min_smoothness = 1.0f / static_cast<float>(shadows_map_resolution());
+	constexpr float max_smoothness = 0.02f;
+
+	return std::clamp(smoothness, min_smoothness, max_smoothness);
 }
 
 void shadows_remove_unsupported_options()
@@ -1056,6 +1174,10 @@ void shadow_cascade_params_bind(int cascade_offset, int cascade_count) {
 	static_data.cascade_count = cascade_count;
 	static_data.rtShadowBiasMin = Rt_shadow_bias_min;
 	static_data.rtShadowBiasMax = Rt_shadow_bias_max;
+	static_data.rtShadowSampleCount = shadows_rt_sample_count();
+	static_data.rtaoSampleCount = Rtao_samples;
+	static_data.rtaoRadius = lighting_profiles::current_rtao_radius();
+	static_data.rtaoStrength = lighting_profiles::current_rtao_strength();
 	static_data.shadow_mv_matrix = Shadow_view_matrix_light;
 
 	Shadow_cascade_count = cascade_count;
@@ -1075,9 +1197,13 @@ void shadow_cascade_params_bind(int cascade_offset, int cascade_count) {
 	}
 	offset += sizeof(float) * padding;
 
+	// Scaled by the sun's apparent size so shadow-mapped and raytraced shadows soften
+	// together -- see shadow_smoothness_scale().
+	const float smoothness_scale = shadow_smoothness_scale();
+
 	for (int i = 0; i < num_cascades; i++) {
 		auto& smoothness_factor = *reinterpret_cast<float*>(buffer.data() + offset);
-		smoothness_factor = Shadow_smoothness_factor[i];
+		smoothness_factor = shadow_clamp_smoothness(Shadow_smoothness_factor[i] * smoothness_scale);
 		offset += sizeof(float);
 	}
 	offset += sizeof(float) * padding;

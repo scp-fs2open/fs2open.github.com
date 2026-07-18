@@ -101,6 +101,10 @@ uniform shadowCascadeParams {
 	int cascade_count;
 	float rtShadowBiasMin;
 	float rtShadowBiasMax;
+	int rtShadowSampleCount;
+	int rtaoSampleCount;
+	float rtaoRadius;
+	float rtaoStrength;
 
 	mat4 shadow_mv_matrix;
 	mat4 shadow_proj_matrix[NUM_SHADOW_CASCADES];
@@ -248,7 +252,12 @@ vec3 CalculateLighting(vec3 normal, vec3 diffuseMaterial, vec3 specularMaterial,
 		if (rtShadowsActive && lights[i].light_type == LT_DIRECTIONAL && shadowedDirectionalCount < MAX_RT_SHADOW_LIGHTS) {
 			vec3 worldSunDir = normalize((invView * vec4(lights[i].position.xyz, 0.0)).xyz);
 			float rtShadowBias = computeRtShadowBias(length(vertIn.position.xyz), rtShadowBiasMin, rtShadowBiasMax);
-			shadow = traceShadowRay(shadow_tlas, worldPos, worldNormal, worldSunDir, RT_SHADOW_MAX_DISTANCE, rtShadowBias);
+			// For directional lights ml_sourceRadius is the tangent of the sun's
+			// angular radius ($SunAngularSize) -- 0 keeps hard shadows. Scaled to match
+			// the shadow-mapped look, see RT_SHADOW_SUN_SIZE_CALIBRATION.
+			shadow = traceShadowRayCone(shadow_tlas, worldPos, worldNormal, worldSunDir, RT_SHADOW_MAX_DISTANCE,
+				rtShadowBias, lights[i].ml_sourceRadius * RT_SHADOW_SUN_SIZE_CALIBRATION,
+				rtShadowSampleCount, gl_FragCoord.xy);
 			++shadowedDirectionalCount;
 		} else {
 			shadow = 1.0;

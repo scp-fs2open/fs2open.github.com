@@ -33,6 +33,8 @@
 #include "io/timer.h"
 #include "lighting/lighting.h"
 #include "lighting/lighting_profiles.h"
+#include "starfield/starfield.h"
+#include "starfield/sun_disc.h"
 #include "missionui/chatbox.h"
 #include "missionui/missionbrief.h"
 #include "missionui/missionscreencommon.h"
@@ -1977,16 +1979,23 @@ void draw_model_rotating(model_render_params *render_info, int ship_class, int m
  */
 void common_setup_room_lights()
 {
+	// These stand in for a sun rather than for a point source, so they get a sun's apparent
+	// size: for a directional light source_radius is the tangent of the angular radius, and
+	// it is what sizes both the raytraced penumbra cone and the shadow map's filter width
+	// (see shadow_smoothness_scale() in shadows.cpp). Leaving it at 0 would read as a light
+	// with no extent at all and give these rooms hard, aliased shadow edges.
+	const float room_light_source_radius = sun_disc_tangent_from_diameter(SUN_ANGULAR_SIZE_SOL);
+
 	light_reset();
 	auto tempv = vm_vec_new(-1.0f,0.3f,-1.0f);
 	auto tempc = hdr_color(1.0f,0.95f,0.9f, 0.0f, 1.5f);
-	light_add_directional(&tempv,-1,false,&tempc);
+	light_add_directional(&tempv,-1,false,&tempc,room_light_source_radius);
 	tempv.xyz={-0.4f,0.4f,1.1f};
 	tempc = hdr_color(0.788f,0.886f,1.0f,0.0f,1.5f);
-	light_add_directional(&tempv,-1,false,&tempc);
+	light_add_directional(&tempv,-1,false,&tempc,room_light_source_radius);
 	tempv.xyz={0.4f,0.1f,0.4f};
 	tempc = hdr_color(1.0f,1.0f,1.0f,0.0f,0.4f);
-	light_add_directional(&tempv,-1,false,&tempc);
+	light_add_directional(&tempv,-1,false,&tempc,room_light_source_radius);
 	gr_set_ambient_light(53, 53, 53);
 	light_rotate_all();
 }
