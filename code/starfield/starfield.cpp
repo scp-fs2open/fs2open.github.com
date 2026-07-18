@@ -33,6 +33,7 @@
 #include "render/batching.h"
 #include "starfield/nebula.h"
 #include "starfield/starfield.h"
+#include "starfield/sun_disc.h"
 #include "starfield/supernova.h"
 #include "tracing/tracing.h"
 #include "utils/Random.h"
@@ -91,6 +92,11 @@ typedef struct starfield_bitmap {
 	int glow_fps;
 	int xparent;
 	float r, g, b, i;		// only for suns
+	float angular_size;								// only for suns -- this sun's apparent diameter from stars.tbl;
+													// see SUN_ANGULAR_SIZE_UNSPECIFIED
+	float disc_fraction;							// only for suns -- cached sun_disc_measure_bitmap() result for
+													// disc_measured_for; negative means "not measured yet"
+	int disc_measured_for;							// only for suns -- bitmap_id disc_fraction was measured from
 	int glare;										// only for suns
 	int flare;										// Is there a lens-flare for this sun?
 	flare_info flare_infos[MAX_FLARE_COUNT];		// each flare can use a texture in flare_bmp, with different scale
@@ -106,11 +112,14 @@ typedef struct starfield_bitmap_instance {
 	float scale_x, scale_y;							// x and y scale
 	int div_x, div_y;								// # of x and y divisions
 	angles ang;										// angles from FRED
+	float angular_size;								// only for suns -- this mission's apparent diameter for the sun,
+													// in degrees; see SUN_ANGULAR_SIZE_UNSPECIFIED
 	int star_bitmap_index;							// index into starfield_bitmap array
 	int n_verts;
 	vertex *verts;
 
-	starfield_bitmap_instance() : scale_x(1.0f), scale_y(1.0f), div_x(1), div_y(1), star_bitmap_index(0), n_verts(0), verts(NULL) {
+	starfield_bitmap_instance() : scale_x(1.0f), scale_y(1.0f), div_x(1), div_y(1),
+		angular_size(SUN_ANGULAR_SIZE_UNSPECIFIED), star_bitmap_index(0), n_verts(0), verts(nullptr) {
 		ang.p = 0.0f;
 		ang.b = 0.0f;
 		ang.h = 0.0f;
@@ -123,6 +132,8 @@ static SCP_vector<starfield_bitmap_instance> Starfield_bitmap_instances;
 
 // sun bitmaps and sun glow bitmaps
 static SCP_vector<starfield_bitmap> Sun_bitmaps;
+
+float Sun_angular_size_override = -1.0f;
 static SCP_vector<starfield_bitmap_instance> Suns;
 
 // Goober5000
@@ -399,6 +410,9 @@ static void starfield_bitmap_entry_init(starfield_bitmap *sbm)
 	sbm->bitmap_id = -1;
 	sbm->glow_bitmap = -1;
 	sbm->glow_n_frames = 1;
+	sbm->angular_size = SUN_ANGULAR_SIZE_UNSPECIFIED;
+	sbm->disc_fraction = -1.0f;
+	sbm->disc_measured_for = -1;
 
 	for (i = 0; i < MAX_FLARE_BMP; i++) {
 		sbm->flare_bitmaps[i].bitmap_id = -1;
@@ -494,6 +508,20 @@ void parse_startbl(const char *filename)
 						mprintf(("%s\n", warning.c_str()));				// default case is not significant
 					else
 						Warning(LOCATION, "%s", warning.c_str());		// customized case is significant
+				}
+
+				// apparent diameter of the sun's disc in degrees (Sol is ~0.53). Only affects
+				// raytraced shadows, which get a penumbra sized to match. Left out, the size is
+				// measured from the sun bitmap instead -- see sun_angular_radius_tangent() -- so
+				// use 0 to ask for hard shadows and "derived" to say "measure it" outright.
+				if (optional_string("$SunAngularSize:")) {
+					if ( !optional_string("derived") ) {
+						stuff_float(&sbm.angular_size);
+						if (sbm.angular_size < 0.0f) {
+							error_display(0, "$SunAngularSize: for sun '%s' must be >= 0 (got %f); measuring the bitmap instead.", sbm.filename, sbm.angular_size);
+							sbm.angular_size = SUN_ANGULAR_SIZE_UNSPECIFIED;
+						}
+					}
 				}
 
 				// lens flare stuff
@@ -853,6 +881,14 @@ void stars_pre_level_init(bool clear_backgrounds)
 				bm_release(sb.bitmap_id);
 				sb.bitmap_id = -1;
 			}
+
+			// drop any derived angular size along with the bitmap it was measured from. The
+			// handle check in sun_angular_radius_tangent() can't be relied on for this: bm_load()
+			// hands back a recycled slot index, so a reloaded bitmap can come back on the handle
+			// it had before. This is what makes a size change take effect when the background
+			// changes -- which, outside of a mission, is every time the lab switches backgrounds.
+			sb.disc_fraction = -1.0f;
+			sb.disc_measured_for = -1;
 
 			if (sb.glow_bitmap > 0) {
 				bm_release(sb.glow_bitmap);
@@ -1261,6 +1297,84 @@ void stars_get_sun_pos(int sun_n, vec3d *pos)
 	vm_vec_unrotate(pos, &temp, &rot);
 }
 
+/**
+ * @brief The apparent diameter this sun should use, in degrees, or negative if nothing sets one
+ *
+ * @param mission_angular_size this sun instance's +AngularSize: from the mission file
+ */
+static float sun_explicit_angular_size(const starfield_bitmap *bm, float mission_angular_size)
+{
+	// the first layer that specifies a size wins: the LabUi session override, then the
+	// mission's value for this sun instance, then the sun's stars.tbl entry
+	for (float degrees : {Sun_angular_size_override, mission_angular_size, bm->angular_size}) {
+		if (degrees >= 0.0f) {
+			return degrees;
+		}
+	}
+
+	return SUN_ANGULAR_SIZE_UNSPECIFIED;
+}
+
+/**
+ * @brief How much of this sun's bitmap is its emitting disc, measuring it on first use
+ *
+ * @return the disc fraction, or 0 for a sun whose bitmap has no measurable disc
+ */
+static float sun_measured_disc_fraction(starfield_bitmap *bm)
+{
+	// measuring reads the bitmap's pixels, so it happens once and is cached against the
+	// handle it was measured from
+	if ( (bm->disc_fraction >= 0.0f) && (bm->disc_measured_for == bm->bitmap_id) ) {
+		return bm->disc_fraction;
+	}
+
+	const float measured = sun_disc_measure_bitmap(bm->bitmap_id);
+
+	// both a bitmap we couldn't read and one with no drawn disc at all fall back to hard
+	// shadows, but they are very different things -- keep them apart in the log, or a broken
+	// read reads as "working as intended". Neither is worth a Warning(): this runs for every
+	// sun in every mission, not just for content that asked for it, and hard shadows are a
+	// perfectly serviceable outcome
+	if (measured < 0.0f) {
+		mprintf(("Sun '%s': could not read the bitmap to measure it, using hard shadows\n", bm->filename));
+	} else if (measured == 0.0f) {
+		// mods ship blank sun bitmaps to get a light source without a visible sun
+		mprintf(("Sun '%s': no drawn disc, using hard shadows\n", bm->filename));
+	} else {
+		// logged once per sun bitmap, not per frame -- this is what a mod tunes its suns
+		// against. The size is quoted at +Scale: 1.0 since the measurement is a property of
+		// the bitmap; a mission scaling its sun scales this with it.
+		mprintf(("Sun '%s': measured disc fraction %.3f (%.2f degrees at +Scale: 1.0)\n", bm->filename, measured,
+			fl_degrees(2.0f * atanf(sun_disc_tangent_from_fraction(measured, 1.0f)))));
+	}
+
+	bm->disc_fraction = (measured > 0.0f) ? measured : 0.0f;
+	bm->disc_measured_for = bm->bitmap_id;
+
+	return bm->disc_fraction;
+}
+
+/**
+ * @brief Tangent of a sun's angular radius, which is what a directional light's source_radius is
+ *
+ * See traceShadowRayCone() in shadows.sdr: for directional lights the source radius *is* the
+ * tangent of the angular radius, so the penumbra widens with occluder distance the way a real
+ * area light's would. 0 means a point source, i.e. hard shadows.
+ *
+ * @param scale_x the mission's +Scale: for this sun instance
+ * @param mission_angular_size this sun instance's +AngularSize: from the mission file
+ */
+static float sun_angular_radius_tangent(starfield_bitmap *bm, float scale_x, float mission_angular_size)
+{
+	const float specified = sun_explicit_angular_size(bm, mission_angular_size);
+
+	if (specified >= 0.0f) {
+		return sun_disc_tangent_from_diameter(specified);
+	}
+
+	return sun_disc_tangent_from_fraction(sun_measured_disc_fraction(bm), scale_x);
+}
+
 // draw sun
 void stars_draw_sun(int show_sun)
 {	
@@ -1309,9 +1423,13 @@ void stars_draw_sun(int show_sun)
 		sun_dir = sun_pos;
 		vm_vec_normalize(&sun_dir);
 
-		// add the light source corresponding to the sun, except when rendering to an envmap
-		if ( !Rendering_to_env )
-			light_add_directional(&sun_dir, idx, !bm->glare, bm->i, bm->r, bm->g, bm->b);
+		// add the light source corresponding to the sun, except when rendering to an envmap.
+		// For directional lights, source_radius carries the tangent of the sun's angular
+		// radius (see traceShadowRayCone() in shadows.sdr), sizing its shadow penumbra.
+		if ( !Rendering_to_env ) {
+			light_add_directional(&sun_dir, idx, !bm->glare, bm->i, bm->r, bm->g, bm->b,
+				sun_angular_radius_tangent(bm, Suns[idx].scale_x, Suns[idx].angular_size));
+		}
 
 		// if supernova
 		if ( supernova_active() && (idx == 0) )
@@ -2440,6 +2558,20 @@ int stars_find_bitmap(const char *name)
 	return -1;
 }
 
+// The mission-side list entry and the in-world instance carry the same fields, so keeping the
+// copy in one place is what stops the three call sites drifting apart. angular_size is only
+// meaningful for suns, but copying it for bitmaps too is harmless and keeps every caller
+// identical -- which beats being selectively correct in a way no reader can verify.
+static void starfield_copy_entry_to_instance(const starfield_list_entry *sle, starfield_bitmap_instance &sbi)
+{
+	sbi.ang = sle->ang;
+	sbi.scale_x = sle->scale_x;
+	sbi.scale_y = sle->scale_y;
+	sbi.div_x = sle->div_x;
+	sbi.div_y = sle->div_y;
+	sbi.angular_size = sle->angular_size;
+}
+
 // lookup a sun by bitmap filename, return index or -1 on fail
 int stars_find_sun(const char *name)
 {
@@ -2472,6 +2604,7 @@ void stars_get_data(bool is_sun, int idx, starfield_list_entry& sle)
 	sle.div_y = item.div_y;
 	sle.scale_x = item.scale_x;
 	sle.scale_y = item.scale_y;
+	sle.angular_size = item.angular_size;
 }
 
 void stars_set_data(bool is_sun, int idx, starfield_list_entry& sle)
@@ -2488,6 +2621,7 @@ void stars_set_data(bool is_sun, int idx, starfield_list_entry& sle)
 	item.div_y = sle.div_y;
 	item.scale_x = sle.scale_x;
 	item.scale_y = sle.scale_y;
+	item.angular_size = sle.angular_size;
 
 	// this is necessary when modifying bitmaps, but not when modifying suns
 	if (!is_sun)
@@ -2503,13 +2637,7 @@ int stars_add_sun_entry(starfield_list_entry *sun_ptr)
 	Assert(sun_ptr != NULL);
 
 	// copy information
-	sbi.ang.p = sun_ptr->ang.p;
-	sbi.ang.b = sun_ptr->ang.b;
-	sbi.ang.h = sun_ptr->ang.h;
-	sbi.scale_x = sun_ptr->scale_x;
-	sbi.scale_y = sun_ptr->scale_y;
-	sbi.div_x = sun_ptr->div_x;
-	sbi.div_y = sun_ptr->div_y;
+	starfield_copy_entry_to_instance(sun_ptr, sbi);
 
 	int idx = stars_find_sun(sun_ptr->filename);
 
@@ -2599,13 +2727,7 @@ int stars_add_bitmap_entry(starfield_list_entry *sle)
 	Assert(sle != NULL);
 
 	// copy information
-	sbi.ang.p = sle->ang.p;
-	sbi.ang.b = sle->ang.b;
-	sbi.ang.h = sle->ang.h;
-	sbi.scale_x = sle->scale_x;
-	sbi.scale_y = sle->scale_y;
-	sbi.div_x = sle->div_x;
-	sbi.div_y = sle->div_y;
+	starfield_copy_entry_to_instance(sle, sbi);
 
 	idx = stars_find_bitmap(sle->filename);
 
@@ -2867,13 +2989,7 @@ void stars_modify_entry_FRED(int index, const char *name, starfield_list_entry *
 	Assert( sbi_new != NULL );
 
     // copy information
-    sbi.ang.p = sbi_new->ang.p;
-	sbi.ang.b = sbi_new->ang.b;
-	sbi.ang.h = sbi_new->ang.h;
-	sbi.scale_x = sbi_new->scale_x;
-	sbi.scale_y = sbi_new->scale_y;
-	sbi.div_x = sbi_new->div_x;
-	sbi.div_y = sbi_new->div_y;
+	starfield_copy_entry_to_instance(sbi_new, sbi);
 
 	if (is_a_sun) {
 		idx = stars_find_sun((char*)name);

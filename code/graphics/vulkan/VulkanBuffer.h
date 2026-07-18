@@ -119,6 +119,12 @@ public:
 	uint32_t getCurrentFrame() const { return m_currentFrame; }
 
 	/**
+	 * @brief Get the monotonic frame number set by setCurrentFrame (total frames
+	 * rendered, never wraps back -- unlike getCurrentFrame()'s in-flight slot index)
+	 */
+	uint64_t getCurrentFrameNumber() const { return m_currentFrameNumber; }
+
+	/**
 	 * @brief Get the Vulkan logical device
 	 */
 	vk::Device getDevice() const { return m_device; }
