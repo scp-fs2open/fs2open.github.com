@@ -594,6 +594,8 @@ if (FSO_BUILD_WITH_VULKAN)
 	add_file_folder("Graphics\\\\Vulkan"
 		graphics/vulkan/gr_vulkan.cpp
 		graphics/vulkan/gr_vulkan.h
+		graphics/vulkan/VulkanBarrier.cpp
+		graphics/vulkan/VulkanBarrier.h
 		graphics/vulkan/VulkanBuffer.cpp
 		graphics/vulkan/VulkanBuffer.h
 		graphics/vulkan/VulkanConvert.cpp

@@ -2,6 +2,7 @@
 
 #include <array>
 
+#include "VulkanBarrier.h"
 #include "VulkanRenderer.h"
 #include "VulkanBuffer.h"
 #include "VulkanTexture.h"
@@ -55,26 +56,23 @@ void PostProcessContext::destroyTarget(RenderTarget& rt) const
 void PostProcessContext::generateMipmaps(vk::CommandBuffer cmd, vk::Image image,
                                            uint32_t width, uint32_t height, uint32_t mipLevels)
 {
-	// Transition mip 0 from eShaderReadOnlyOptimal (after brightpass) to eTransferSrcOptimal
+	// Transition mip 0 from eShaderReadOnlyOptimal (after brightpass) to
+	// eTransferSrcOptimal (source for the blit chain below)
 	{
-		vk::ImageMemoryBarrier barrier;
-		barrier.srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
-		barrier.dstAccessMask = vk::AccessFlagBits::eTransferRead;
+		ImageBarrier2 barrier;
+		barrier.image = image;
+		barrier.baseMipLevel = 0;
+		barrier.levelCount = 1;
+		barrier.baseArrayLayer = 0;
+		barrier.layerCount = 1;
 		barrier.oldLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 		barrier.newLayout = vk::ImageLayout::eTransferSrcOptimal;
-		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.image = image;
-		barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
-		barrier.subresourceRange.baseMipLevel = 0;
-		barrier.subresourceRange.levelCount = 1;
-		barrier.subresourceRange.baseArrayLayer = 0;
-		barrier.subresourceRange.layerCount = 1;
+		barrier.srcStage = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
+		barrier.srcAccess = vk::AccessFlagBits2::eColorAttachmentWrite;
+		barrier.dstStage = vk::PipelineStageFlagBits2::eBlit;
+		barrier.dstAccess = vk::AccessFlagBits2::eTransferRead;
 
-		cmd.pipelineBarrier(
-			vk::PipelineStageFlagBits::eColorAttachmentOutput,
-			vk::PipelineStageFlagBits::eTransfer,
-			{}, {}, {}, barrier);
+		cmdImageBarrier(cmd, barrier);
 	}
 
 	vulkan_generate_mipmap_chain(cmd, image, width, height, mipLevels);
@@ -373,32 +371,32 @@ bool PostProcessContext::createImage(uint32_t width, uint32_t height, vk::Format
 // pre/post barriers used by copyImageToImage().
 // 'leaving' = true for srcAccessMask (flushing writes before transition),
 // false for dstAccessMask (making data available after transition).
-static std::pair<vk::AccessFlags, vk::PipelineStageFlags> transferLayoutInfo(vk::ImageLayout layout, bool leaving)
+static std::pair<vk::AccessFlags2, vk::PipelineStageFlags2> transferLayoutInfo(vk::ImageLayout layout, bool leaving)
 {
 	switch (layout) {
 	case vk::ImageLayout::eUndefined:
-		return {{}, vk::PipelineStageFlagBits::eTopOfPipe};
+		return {{}, vk::PipelineStageFlagBits2::eTopOfPipe};
 	case vk::ImageLayout::eShaderReadOnlyOptimal:
-		return {leaving ? vk::AccessFlags{} : vk::AccessFlagBits::eShaderRead,
-		        vk::PipelineStageFlagBits::eFragmentShader};
+		return {leaving ? vk::AccessFlags2{} : vk::AccessFlagBits2::eShaderSampledRead,
+		        vk::PipelineStageFlagBits2::eFragmentShader};
 	case vk::ImageLayout::eColorAttachmentOptimal:
-		return {leaving ? vk::AccessFlagBits::eColorAttachmentWrite
-		               : (vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite),
-		        vk::PipelineStageFlagBits::eColorAttachmentOutput};
+		return {leaving ? vk::AccessFlagBits2::eColorAttachmentWrite
+		               : (vk::AccessFlagBits2::eColorAttachmentRead | vk::AccessFlagBits2::eColorAttachmentWrite),
+		        vk::PipelineStageFlagBits2::eColorAttachmentOutput};
 	case vk::ImageLayout::eDepthStencilAttachmentOptimal:
-		return {leaving ? vk::AccessFlagBits::eDepthStencilAttachmentWrite
-		               : (vk::AccessFlagBits::eDepthStencilAttachmentRead | vk::AccessFlagBits::eDepthStencilAttachmentWrite),
-		        leaving ? vk::PipelineStageFlagBits::eLateFragmentTests
-		                : vk::PipelineStageFlagBits::eEarlyFragmentTests};
+		return {leaving ? vk::AccessFlagBits2::eDepthStencilAttachmentWrite
+		               : (vk::AccessFlagBits2::eDepthStencilAttachmentRead | vk::AccessFlagBits2::eDepthStencilAttachmentWrite),
+		        leaving ? vk::PipelineStageFlagBits2::eLateFragmentTests
+		                : vk::PipelineStageFlagBits2::eEarlyFragmentTests};
 	case vk::ImageLayout::ePresentSrcKHR:
-		return {leaving ? vk::AccessFlags{} : vk::AccessFlags{}, vk::PipelineStageFlagBits::eBottomOfPipe};
+		return {leaving ? vk::AccessFlags2{} : vk::AccessFlags2{}, vk::PipelineStageFlagBits2::eBottomOfPipe};
 	case vk::ImageLayout::eTransferSrcOptimal:
-		return {vk::AccessFlagBits::eTransferRead, vk::PipelineStageFlagBits::eTransfer};
+		return {vk::AccessFlagBits2::eTransferRead, vk::PipelineStageFlagBits2::eTransfer};
 	case vk::ImageLayout::eTransferDstOptimal:
-		return {vk::AccessFlagBits::eTransferWrite, vk::PipelineStageFlagBits::eTransfer};
+		return {vk::AccessFlagBits2::eTransferWrite, vk::PipelineStageFlagBits2::eTransfer};
 	default:
 		Assertion(false, "transferLayoutInfo: unsupported layout %d", static_cast<int>(layout));
-		return {{}, vk::PipelineStageFlagBits::eAllCommands};
+		return {{}, vk::PipelineStageFlagBits2::eAllCommands};
 	}
 }
 
@@ -413,34 +411,36 @@ void copyImageToImage(
 	auto layoutInfo = transferLayoutInfo;
 
 	// 1. Pre-barriers: transition src → eTransferSrcOptimal, dst → eTransferDstOptimal
+	// (destination stage is eCopy: both barriers exist to feed the cmd.copyImage() below)
 	{
 		auto [srcAccess, srcStage] = layoutInfo(srcOldLayout, true);
 		auto [dstAccess, dstStage] = layoutInfo(dstOldLayout, true);
 
-		std::array<vk::ImageMemoryBarrier, 2> barriers;
+		std::array<ImageBarrier2, 2> barriers;
 
-		barriers[0].srcAccessMask = srcAccess;
-		barriers[0].dstAccessMask = vk::AccessFlagBits::eTransferRead;
+		barriers[0].image = src;
+		barriers[0].aspectMask = aspect;
+		barriers[0].levelCount = 1;
+		barriers[0].layerCount = 1;
 		barriers[0].oldLayout = srcOldLayout;
 		barriers[0].newLayout = vk::ImageLayout::eTransferSrcOptimal;
-		barriers[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barriers[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barriers[0].image = src;
-		barriers[0].subresourceRange = {aspect, 0, 1, 0, 1};
+		barriers[0].srcStage = srcStage;
+		barriers[0].srcAccess = srcAccess;
+		barriers[0].dstStage = vk::PipelineStageFlagBits2::eCopy;
+		barriers[0].dstAccess = vk::AccessFlagBits2::eTransferRead;
 
-		barriers[1].srcAccessMask = dstAccess;
-		barriers[1].dstAccessMask = vk::AccessFlagBits::eTransferWrite;
+		barriers[1].image = dst;
+		barriers[1].aspectMask = aspect;
+		barriers[1].levelCount = dstMipLevels;
+		barriers[1].layerCount = 1;
 		barriers[1].oldLayout = dstOldLayout;
 		barriers[1].newLayout = vk::ImageLayout::eTransferDstOptimal;
-		barriers[1].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barriers[1].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barriers[1].image = dst;
-		barriers[1].subresourceRange = {aspect, 0, dstMipLevels, 0, 1};
+		barriers[1].srcStage = dstStage;
+		barriers[1].srcAccess = dstAccess;
+		barriers[1].dstStage = vk::PipelineStageFlagBits2::eCopy;
+		barriers[1].dstAccess = vk::AccessFlagBits2::eTransferWrite;
 
-		cmd.pipelineBarrier(
-			srcStage | dstStage,
-			vk::PipelineStageFlagBits::eTransfer,
-			{}, nullptr, nullptr, barriers);
+		cmdImageBarriers(cmd, ArrayView<const ImageBarrier2>(barriers.data(), barriers.size()));
 	}
 
 	// 2. Copy (always mip 0, layer 0)
@@ -466,43 +466,40 @@ void copyImageToImage(
 			return;
 		}
 
-		std::array<vk::ImageMemoryBarrier, 2> barriers;
+		std::array<ImageBarrier2, 2> barriers;
 		uint32_t count = 0;
-		vk::PipelineStageFlags postDstStage = {};
 
 		if (!skipSrc) {
 			auto [access, stage] = layoutInfo(srcNewLayout, false);
-			barriers[count].srcAccessMask = vk::AccessFlagBits::eTransferRead;
-			barriers[count].dstAccessMask = access;
+			barriers[count].image = src;
+			barriers[count].aspectMask = aspect;
+			barriers[count].levelCount = 1;
+			barriers[count].layerCount = 1;
 			barriers[count].oldLayout = vk::ImageLayout::eTransferSrcOptimal;
 			barriers[count].newLayout = srcNewLayout;
-			barriers[count].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barriers[count].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barriers[count].image = src;
-			barriers[count].subresourceRange = {aspect, 0, 1, 0, 1};
+			barriers[count].srcStage = vk::PipelineStageFlagBits2::eCopy;
+			barriers[count].srcAccess = vk::AccessFlagBits2::eTransferRead;
+			barriers[count].dstStage = stage;
+			barriers[count].dstAccess = access;
 			count++;
-			postDstStage |= stage;
 		}
 
 		if (!skipDst) {
 			auto [access, stage] = layoutInfo(dstNewLayout, false);
-			barriers[count].srcAccessMask = vk::AccessFlagBits::eTransferWrite;
-			barriers[count].dstAccessMask = access;
+			barriers[count].image = dst;
+			barriers[count].aspectMask = aspect;
+			barriers[count].levelCount = dstMipLevels;
+			barriers[count].layerCount = 1;
 			barriers[count].oldLayout = vk::ImageLayout::eTransferDstOptimal;
 			barriers[count].newLayout = dstNewLayout;
-			barriers[count].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barriers[count].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barriers[count].image = dst;
-			barriers[count].subresourceRange = {aspect, 0, dstMipLevels, 0, 1};
+			barriers[count].srcStage = vk::PipelineStageFlagBits2::eCopy;
+			barriers[count].srcAccess = vk::AccessFlagBits2::eTransferWrite;
+			barriers[count].dstStage = stage;
+			barriers[count].dstAccess = access;
 			count++;
-			postDstStage |= stage;
 		}
 
-		cmd.pipelineBarrier(
-			vk::PipelineStageFlagBits::eTransfer,
-			postDstStage,
-			{}, nullptr, nullptr,
-			vk::ArrayProxy<const vk::ImageMemoryBarrier>(count, barriers.data()));
+		cmdImageBarriers(cmd, ArrayView<const ImageBarrier2>(barriers.data(), count));
 	}
 }
 

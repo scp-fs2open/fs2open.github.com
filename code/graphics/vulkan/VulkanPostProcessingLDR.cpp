@@ -3,6 +3,7 @@
 #include <array>
 
 #include "VulkanRenderer.h"
+#include "VulkanBarrier.h"
 #include "VulkanDescriptorManager.h"
 #include "graphics/util/uniform_structs.h"
 #include "graphics/post_processing.h"
@@ -519,46 +520,35 @@ void VulkanLDR::executeLightshafts(vk::CommandBuffer cmd)
 
 	// Transition scene depth from eDepthStencilAttachmentOptimal to eShaderReadOnlyOptimal for sampling
 	{
-		vk::ImageMemoryBarrier barrier;
-		barrier.srcAccessMask = vk::AccessFlagBits::eDepthStencilAttachmentWrite;
-		barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+		ImageBarrier2 barrier;
+		barrier.image = m_sceneDepth->image;
+		barrier.aspectMask = imageAspectFromFormat(m_ctx->depthFormat);
+		barrier.levelCount = 1;
+		barrier.layerCount = 1;
 		barrier.oldLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
 		barrier.newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.image = m_sceneDepth->image;
-		barrier.subresourceRange.aspectMask = imageAspectFromFormat(m_ctx->depthFormat);
-		barrier.subresourceRange.baseMipLevel = 0;
-		barrier.subresourceRange.levelCount = 1;
-		barrier.subresourceRange.baseArrayLayer = 0;
-		barrier.subresourceRange.layerCount = 1;
+		barrier.srcStage = vk::PipelineStageFlagBits2::eLateFragmentTests;
+		barrier.srcAccess = vk::AccessFlagBits2::eDepthStencilAttachmentWrite;
+		barrier.dstStage = vk::PipelineStageFlagBits2::eFragmentShader;
+		barrier.dstAccess = vk::AccessFlagBits2::eShaderSampledRead;
 
-		cmd.pipelineBarrier(
-			vk::PipelineStageFlagBits::eLateFragmentTests,
-			vk::PipelineStageFlagBits::eFragmentShader,
-			{}, {}, {}, barrier);
+		cmdImageBarrier(cmd, barrier);
 	}
 
 	// Transition Scene_ldr to eColorAttachmentOptimal for loadOp=eLoad render pass
 	{
-		vk::ImageMemoryBarrier barrier;
-		barrier.srcAccessMask = vk::AccessFlagBits::eShaderRead;
-		barrier.dstAccessMask = vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite;
+		ImageBarrier2 barrier;
+		barrier.image = m_sceneLdr.image;
+		barrier.levelCount = 1;
+		barrier.layerCount = 1;
 		barrier.oldLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 		barrier.newLayout = vk::ImageLayout::eColorAttachmentOptimal;
-		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.image = m_sceneLdr.image;
-		barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
-		barrier.subresourceRange.baseMipLevel = 0;
-		barrier.subresourceRange.levelCount = 1;
-		barrier.subresourceRange.baseArrayLayer = 0;
-		barrier.subresourceRange.layerCount = 1;
+		barrier.srcStage = vk::PipelineStageFlagBits2::eFragmentShader;
+		barrier.srcAccess = vk::AccessFlagBits2::eShaderSampledRead;
+		barrier.dstStage = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
+		barrier.dstAccess = vk::AccessFlagBits2::eColorAttachmentRead | vk::AccessFlagBits2::eColorAttachmentWrite;
 
-		cmd.pipelineBarrier(
-			vk::PipelineStageFlagBits::eFragmentShader,
-			vk::PipelineStageFlagBits::eColorAttachmentOutput,
-			{}, {}, {}, barrier);
+		cmdImageBarrier(cmd, barrier);
 	}
 
 	// Build lightshaft UBO data

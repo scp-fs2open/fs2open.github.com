@@ -3,6 +3,7 @@
 #include <array>
 
 #include "gr_vulkan.h"
+#include "VulkanBarrier.h"
 #include "VulkanRenderer.h"
 #include "VulkanBuffer.h"
 #include "VulkanTexture.h"
@@ -217,20 +218,18 @@ void VulkanFog::renderScene(vk::CommandBuffer cmd)
 
 	// Transition scene color: eShaderReadOnlyOptimal -> eColorAttachmentOptimal
 	{
-		vk::ImageMemoryBarrier barrier;
-		barrier.srcAccessMask = {};
-		barrier.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
+		ImageBarrier2 barrier;
+		barrier.image = m_sceneColor->image;
+		barrier.levelCount = 1;
+		barrier.layerCount = 1;
 		barrier.oldLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 		barrier.newLayout = vk::ImageLayout::eColorAttachmentOptimal;
-		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.image = m_sceneColor->image;
-		barrier.subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
+		barrier.srcStage = vk::PipelineStageFlagBits2::eTopOfPipe;
+		barrier.srcAccess = {};
+		barrier.dstStage = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
+		barrier.dstAccess = vk::AccessFlagBits2::eColorAttachmentWrite;
 
-		cmd.pipelineBarrier(
-			vk::PipelineStageFlagBits::eTopOfPipe,
-			vk::PipelineStageFlagBits::eColorAttachmentOutput,
-			{}, nullptr, nullptr, barrier);
+		cmdImageBarrier(cmd, barrier);
 	}
 
 	// Fill fog UBO
@@ -454,20 +453,18 @@ void VulkanFog::renderVolumetric(vk::CommandBuffer cmd)
 	// Scene color may be in eShaderReadOnlyOptimal (volumetric-only) or
 	// eColorAttachmentOptimal (after scene fog + copySceneColorToComposite).
 	{
-		vk::ImageMemoryBarrier barrier;
-		barrier.srcAccessMask = {};
-		barrier.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
+		ImageBarrier2 barrier;
+		barrier.image = m_sceneColor->image;
+		barrier.levelCount = 1;
+		barrier.layerCount = 1;
 		barrier.oldLayout = vk::ImageLayout::eUndefined;
 		barrier.newLayout = vk::ImageLayout::eColorAttachmentOptimal;
-		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.image = m_sceneColor->image;
-		barrier.subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
+		barrier.srcStage = vk::PipelineStageFlagBits2::eTopOfPipe;
+		barrier.srcAccess = {};
+		barrier.dstStage = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
+		barrier.dstAccess = vk::AccessFlagBits2::eColorAttachmentWrite;
 
-		cmd.pipelineBarrier(
-			vk::PipelineStageFlagBits::eTopOfPipe,
-			vk::PipelineStageFlagBits::eColorAttachmentOutput,
-			{}, nullptr, nullptr, barrier);
+		cmdImageBarrier(cmd, barrier);
 	}
 
 	// volumetric_fog_data is the largest fullscreen-pass UBO; it dictates the

@@ -1,5 +1,6 @@
 
 #include "VulkanRenderer.h"
+#include "VulkanBarrier.h"
 #include "VulkanMemory.h"
 #include "VulkanBuffer.h"
 #include "VulkanTexture.h"
@@ -451,8 +452,8 @@ bool VulkanRenderer::readbackFramebuffer(ubyte** outPixels, uint32_t* outWidth, 
 	// CPU below.
 	const vk::Image srcImage = m_compositionImages[m_previousSwapChainImage].get();
 	const vk::ImageLayout srcInitialLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-	const vk::PipelineStageFlags srcStageMask = vk::PipelineStageFlagBits::eFragmentShader;
-	const vk::AccessFlags srcAccessMask = vk::AccessFlagBits::eShaderRead;
+	const vk::PipelineStageFlags2 srcStageMask = vk::PipelineStageFlagBits2::eFragmentShader;
+	const vk::AccessFlags2 srcAccessMask = vk::AccessFlagBits2::eShaderSampledRead;
 	const uint32_t bytesPerSrcPixel = 8; // fp16 RGBA = 4 x 2 bytes
 	uint32_t w = m_swapChainExtent.width;
 	uint32_t h = m_swapChainExtent.height;
@@ -475,21 +476,20 @@ bool VulkanRenderer::readbackFramebuffer(ubyte** outPixels, uint32_t* outWidth, 
 	beginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
 	cmd.begin(beginInfo);
 
-	// Transition source image to eTransferSrcOptimal for readback
-	vk::ImageMemoryBarrier preBarrier;
-	preBarrier.oldLayout           = srcInitialLayout;
-	preBarrier.newLayout           = vk::ImageLayout::eTransferSrcOptimal;
-	preBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	preBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	preBarrier.image               = srcImage;
-	preBarrier.subresourceRange    = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
-	preBarrier.srcAccessMask       = srcAccessMask;
-	preBarrier.dstAccessMask       = vk::AccessFlagBits::eTransferRead;
+	// Transition source image to eTransferSrcOptimal for readback (dest stage is
+	// eCopy: this barrier exists solely to feed the cmd.copyImageToBuffer() below)
+	ImageBarrier2 preBarrier;
+	preBarrier.image = srcImage;
+	preBarrier.levelCount = 1;
+	preBarrier.layerCount = 1;
+	preBarrier.oldLayout = srcInitialLayout;
+	preBarrier.newLayout = vk::ImageLayout::eTransferSrcOptimal;
+	preBarrier.srcStage = srcStageMask;
+	preBarrier.srcAccess = srcAccessMask;
+	preBarrier.dstStage = vk::PipelineStageFlagBits2::eCopy;
+	preBarrier.dstAccess = vk::AccessFlagBits2::eTransferRead;
 
-	cmd.pipelineBarrier(
-		srcStageMask,
-		vk::PipelineStageFlagBits::eTransfer,
-		{}, nullptr, nullptr, preBarrier);
+	cmdImageBarrier(cmd, preBarrier);
 
 	// Create staging buffer for readback
 	vk::BufferCreateInfo bufferCreateInfo;
@@ -523,30 +523,28 @@ bool VulkanRenderer::readbackFramebuffer(ubyte** outPixels, uint32_t* outWidth, 
 	cmd.copyImageToBuffer(srcImage, vk::ImageLayout::eTransferSrcOptimal, stagingBuffer, region);
 
 	// Transition source image back to its original layout
-	vk::ImageMemoryBarrier postBarrier;
-	postBarrier.oldLayout           = vk::ImageLayout::eTransferSrcOptimal;
-	postBarrier.newLayout           = srcInitialLayout;
-	postBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	postBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	postBarrier.image               = srcImage;
-	postBarrier.subresourceRange    = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
-	postBarrier.srcAccessMask       = vk::AccessFlagBits::eTransferRead;
+	ImageBarrier2 postBarrier;
+	postBarrier.image = srcImage;
+	postBarrier.levelCount = 1;
+	postBarrier.layerCount = 1;
+	postBarrier.oldLayout = vk::ImageLayout::eTransferSrcOptimal;
+	postBarrier.newLayout = srcInitialLayout;
+	postBarrier.srcStage = vk::PipelineStageFlagBits2::eCopy;
+	postBarrier.srcAccess = vk::AccessFlagBits2::eTransferRead;
 	// The dst scope must cover every later consumer of this image: the encode
-	// pass samples it (eShaderRead @ eFragmentShader), and the next composition
-	// pass targeting it performs a layout transition plus a loadOp=eLoad read at
-	// begin (read+write @ eColorAttachmentOutput). An empty dst scope here left
-	// this transition's write unordered against those loads (READ_AFTER_WRITE
-	// flagged by -gr_sync_validation); the fence wait below only synchronizes
-	// the host, not later GPU submissions.
-	postBarrier.dstAccessMask       = vk::AccessFlagBits::eShaderRead
-	                                | vk::AccessFlagBits::eColorAttachmentRead
-	                                | vk::AccessFlagBits::eColorAttachmentWrite;
+	// pass samples it (eShaderSampledRead @ eFragmentShader), and the next
+	// composition pass targeting it performs a layout transition plus a
+	// loadOp=eLoad read at begin (read+write @ eColorAttachmentOutput). An
+	// empty dst scope here left this transition's write unordered against
+	// those loads (READ_AFTER_WRITE flagged by -gr_sync_validation); the fence
+	// wait below only synchronizes the host, not later GPU submissions.
+	postBarrier.dstStage = vk::PipelineStageFlagBits2::eFragmentShader
+	                     | vk::PipelineStageFlagBits2::eColorAttachmentOutput;
+	postBarrier.dstAccess = vk::AccessFlagBits2::eShaderSampledRead
+	                      | vk::AccessFlagBits2::eColorAttachmentRead
+	                      | vk::AccessFlagBits2::eColorAttachmentWrite;
 
-	cmd.pipelineBarrier(
-		vk::PipelineStageFlagBits::eTransfer,
-		vk::PipelineStageFlagBits::eFragmentShader
-			| vk::PipelineStageFlagBits::eColorAttachmentOutput,
-		{}, nullptr, nullptr, postBarrier);
+	cmdImageBarrier(cmd, postBarrier);
 
 	cmd.end();
 

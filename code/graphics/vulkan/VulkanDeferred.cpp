@@ -4,6 +4,7 @@
 #include <array>
 
 #include "VulkanRenderer.h"
+#include "VulkanBarrier.h"
 #include "VulkanBuffer.h"
 #include "VulkanTexture.h"
 #include "VulkanDescriptorManager.h"
@@ -41,12 +42,12 @@ bool s_vulkanOverrideFog = false;
  */
 static void transitionMsaaImages(vk::CommandBuffer cmd, VulkanPostProcessor* pp,
                                   vk::ImageLayout colorOldLayout, vk::ImageLayout colorNewLayout,
-                                  vk::AccessFlags colorSrcAccess, vk::AccessFlags colorDstAccess,
+                                  vk::AccessFlags2 colorSrcAccess, vk::AccessFlags2 colorDstAccess,
                                   vk::ImageLayout depthOldLayout, vk::ImageLayout depthNewLayout,
-                                  vk::AccessFlags depthSrcAccess, vk::AccessFlags depthDstAccess,
-                                  vk::PipelineStageFlags srcStage, vk::PipelineStageFlags dstStage)
+                                  vk::AccessFlags2 depthSrcAccess, vk::AccessFlags2 depthDstAccess,
+                                  vk::PipelineStageFlags2 srcStage, vk::PipelineStageFlags2 dstStage)
 {
-	std::array<vk::ImageMemoryBarrier, 6> barriers;
+	std::array<ImageBarrier2, 6> barriers;
 
 	std::array<vk::Image, 5> msaaImages = {
 		pp->deferred().msaaColorImage(),
@@ -56,26 +57,29 @@ static void transitionMsaaImages(vk::CommandBuffer cmd, VulkanPostProcessor* pp,
 		pp->deferred().msaaEmissiveImage(),
 	};
 	for (size_t i = 0; i < msaaImages.size(); ++i) {
-		barriers[i].srcAccessMask = colorSrcAccess;
-		barriers[i].dstAccessMask = colorDstAccess;
+		barriers[i].image = msaaImages[i];
+		barriers[i].levelCount = 1;
+		barriers[i].layerCount = 1;
 		barriers[i].oldLayout = colorOldLayout;
 		barriers[i].newLayout = colorNewLayout;
-		barriers[i].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barriers[i].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barriers[i].image = msaaImages[i];
-		barriers[i].subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
+		barriers[i].srcStage = srcStage;
+		barriers[i].srcAccess = colorSrcAccess;
+		barriers[i].dstStage = dstStage;
+		barriers[i].dstAccess = colorDstAccess;
 	}
 
-	barriers[5].srcAccessMask = depthSrcAccess;
-	barriers[5].dstAccessMask = depthDstAccess;
+	barriers[5].image = pp->deferred().msaaDepthImage();
+	barriers[5].aspectMask = imageAspectFromFormat(pp->getDepthFormat());
+	barriers[5].levelCount = 1;
+	barriers[5].layerCount = 1;
 	barriers[5].oldLayout = depthOldLayout;
 	barriers[5].newLayout = depthNewLayout;
-	barriers[5].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	barriers[5].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	barriers[5].image = pp->deferred().msaaDepthImage();
-	barriers[5].subresourceRange = {imageAspectFromFormat(pp->getDepthFormat()), 0, 1, 0, 1};
+	barriers[5].srcStage = srcStage;
+	barriers[5].srcAccess = depthSrcAccess;
+	barriers[5].dstStage = dstStage;
+	barriers[5].dstAccess = depthDstAccess;
 
-	cmd.pipelineBarrier(srcStage, dstStage, {}, nullptr, nullptr, barriers);
+	cmdImageBarriers(cmd, ArrayView<const ImageBarrier2>(barriers.data(), barriers.size()));
 }
 
 // ========== Deferred Lighting ==========
@@ -120,30 +124,29 @@ void vulkan_deferred_lighting_begin(bool clearNonColorBufs)
 		// (will be sampled inside MSAA pass to fill emissive)
 		// Transition non-MSAA emissive: eTransferDstOptimal → eShaderReadOnlyOptimal (preserved for later)
 		{
-			std::array<vk::ImageMemoryBarrier, 2> barriers;
+			std::array<ImageBarrier2, 2> barriers;
 
-			barriers[0].srcAccessMask = vk::AccessFlagBits::eTransferRead;
-			barriers[0].dstAccessMask = vk::AccessFlagBits::eShaderRead;
+			barriers[0].image = pp->getSceneColorImage();
+			barriers[0].levelCount = 1;
+			barriers[0].layerCount = 1;
 			barriers[0].oldLayout = vk::ImageLayout::eTransferSrcOptimal;
 			barriers[0].newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-			barriers[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barriers[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barriers[0].image = pp->getSceneColorImage();
-			barriers[0].subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
+			barriers[0].srcStage = vk::PipelineStageFlagBits2::eTransfer;
+			barriers[0].srcAccess = vk::AccessFlagBits2::eTransferRead;
+			barriers[0].dstStage = vk::PipelineStageFlagBits2::eFragmentShader;
+			barriers[0].dstAccess = vk::AccessFlagBits2::eShaderSampledRead;
 
-			barriers[1].srcAccessMask = vk::AccessFlagBits::eTransferWrite;
-			barriers[1].dstAccessMask = {};
+			barriers[1].image = pp->deferred().emissiveImage();
+			barriers[1].levelCount = 1;
+			barriers[1].layerCount = 1;
 			barriers[1].oldLayout = vk::ImageLayout::eTransferDstOptimal;
 			barriers[1].newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-			barriers[1].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barriers[1].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barriers[1].image = pp->deferred().emissiveImage();
-			barriers[1].subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
+			barriers[1].srcStage = vk::PipelineStageFlagBits2::eTransfer;
+			barriers[1].srcAccess = vk::AccessFlagBits2::eTransferWrite;
+			barriers[1].dstStage = vk::PipelineStageFlagBits2::eFragmentShader;
+			barriers[1].dstAccess = {};
 
-			cmd.pipelineBarrier(
-				vk::PipelineStageFlagBits::eTransfer,
-				vk::PipelineStageFlagBits::eFragmentShader,
-				{}, nullptr, nullptr, barriers);
+			cmdImageBarriers(cmd, ArrayView<const ImageBarrier2>(barriers.data(), barriers.size()));
 		}
 
 		// Transition MSAA images to expected initial layouts
@@ -185,36 +188,35 @@ void vulkan_deferred_lighting_begin(bool clearNonColorBufs)
 		// Transition scene color back to eColorAttachmentOptimal.
 		// Transition emissive to eShaderReadOnlyOptimal (where transitionGbufForResume expects it).
 		{
-			std::array<vk::ImageMemoryBarrier, 2> barriers;
+			std::array<ImageBarrier2, 2> barriers;
 
-			barriers[0].srcAccessMask = vk::AccessFlagBits::eTransferRead;
+			barriers[0].image = pp->getSceneColorImage();
+			barriers[0].levelCount = 1;
+			barriers[0].layerCount = 1;
+			barriers[0].oldLayout = vk::ImageLayout::eTransferSrcOptimal;
+			barriers[0].newLayout = vk::ImageLayout::eColorAttachmentOptimal;
+			barriers[0].srcStage = vk::PipelineStageFlagBits2::eTransfer;
+			barriers[0].srcAccess = vk::AccessFlagBits2::eTransferRead;
+			barriers[0].dstStage = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
 			// eColorAttachmentRead as well as Write: the resumed non-MSAA G-buffer
 			// pass loads attachment 0 (scene color, loadOp=eLoad), a read that must
 			// be ordered after this transition -- otherwise a READ_AFTER_WRITE vs
 			// the layout transition (flagged by -gr_sync_validation on the deferred
 			// forward/RocketUI path).
-			barriers[0].dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite
-			                          | vk::AccessFlagBits::eColorAttachmentRead;
-			barriers[0].oldLayout = vk::ImageLayout::eTransferSrcOptimal;
-			barriers[0].newLayout = vk::ImageLayout::eColorAttachmentOptimal;
-			barriers[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barriers[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barriers[0].image = pp->getSceneColorImage();
-			barriers[0].subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
+			barriers[0].dstAccess = vk::AccessFlagBits2::eColorAttachmentWrite
+			                      | vk::AccessFlagBits2::eColorAttachmentRead;
 
-			barriers[1].srcAccessMask = vk::AccessFlagBits::eTransferWrite;
-			barriers[1].dstAccessMask = {};
+			barriers[1].image = pp->deferred().emissiveImage();
+			barriers[1].levelCount = 1;
+			barriers[1].layerCount = 1;
 			barriers[1].oldLayout = vk::ImageLayout::eTransferDstOptimal;
 			barriers[1].newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-			barriers[1].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barriers[1].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barriers[1].image = pp->deferred().emissiveImage();
-			barriers[1].subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
+			barriers[1].srcStage = vk::PipelineStageFlagBits2::eTransfer;
+			barriers[1].srcAccess = vk::AccessFlagBits2::eTransferWrite;
+			barriers[1].dstStage = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
+			barriers[1].dstAccess = {};
 
-			cmd.pipelineBarrier(
-				vk::PipelineStageFlagBits::eTransfer,
-				vk::PipelineStageFlagBits::eColorAttachmentOutput,
-				{}, nullptr, nullptr, barriers);
+			cmdImageBarriers(cmd, ArrayView<const ImageBarrier2>(barriers.data(), barriers.size()));
 		}
 
 		// Transition G-buffer attachments 1-5 from eShaderReadOnlyOptimal → eColorAttachmentOptimal
@@ -291,11 +293,11 @@ void vulkan_deferred_lighting_msaa()
 	// ensure the validation layer tracks the layout changes correctly.
 	transitionMsaaImages(cmd, pp,
 		vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
-		vk::AccessFlagBits::eColorAttachmentWrite, vk::AccessFlagBits::eShaderRead,
+		vk::AccessFlagBits2::eColorAttachmentWrite, vk::AccessFlagBits2::eShaderSampledRead,
 		vk::ImageLayout::eDepthStencilAttachmentOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
-		vk::AccessFlagBits::eDepthStencilAttachmentWrite, vk::AccessFlagBits::eShaderRead,
-		vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eLateFragmentTests,
-		vk::PipelineStageFlagBits::eFragmentShader);
+		vk::AccessFlagBits2::eDepthStencilAttachmentWrite, vk::AccessFlagBits2::eShaderSampledRead,
+		vk::PipelineStageFlagBits2::eColorAttachmentOutput | vk::PipelineStageFlagBits2::eLateFragmentTests,
+		vk::PipelineStageFlagBits2::eFragmentShader);
 
 	// Begin resolve render pass (non-MSAA, writes to standard G-buffer images)
 	{
@@ -426,11 +428,11 @@ void vulkan_deferred_lighting_msaa()
 	// match the validation layer's tracking state for the next frame.
 	transitionMsaaImages(cmd, pp,
 		vk::ImageLayout::eShaderReadOnlyOptimal, vk::ImageLayout::eColorAttachmentOptimal,
-		vk::AccessFlagBits::eShaderRead, vk::AccessFlagBits::eColorAttachmentWrite,
+		vk::AccessFlagBits2::eShaderSampledRead, vk::AccessFlagBits2::eColorAttachmentWrite,
 		vk::ImageLayout::eShaderReadOnlyOptimal, vk::ImageLayout::eDepthStencilAttachmentOptimal,
-		vk::AccessFlagBits::eShaderRead, vk::AccessFlagBits::eDepthStencilAttachmentWrite,
-		vk::PipelineStageFlagBits::eFragmentShader,
-		vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eEarlyFragmentTests);
+		vk::AccessFlagBits2::eShaderSampledRead, vk::AccessFlagBits2::eDepthStencilAttachmentWrite,
+		vk::PipelineStageFlagBits2::eFragmentShader,
+		vk::PipelineStageFlagBits2::eColorAttachmentOutput | vk::PipelineStageFlagBits2::eEarlyFragmentTests);
 
 	// After resolve, the non-MSAA G-buffer has properly resolved data.
 	// Color attachments 0-4 are in eShaderReadOnlyOptimal (from resolve pass finalLayout).
@@ -440,25 +442,23 @@ void vulkan_deferred_lighting_msaa()
 	// Transition scene color from eShaderReadOnlyOptimal → eColorAttachmentOptimal
 	// (deferred_lighting_end resumes the non-MSAA gbuf pass and needs scene color writable)
 	{
-		vk::ImageMemoryBarrier barrier;
-		barrier.srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
+		ImageBarrier2 barrier;
+		barrier.image = pp->getSceneColorImage();
+		barrier.levelCount = 1;
+		barrier.layerCount = 1;
+		barrier.oldLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		barrier.newLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		barrier.srcStage = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
+		barrier.srcAccess = vk::AccessFlagBits2::eColorAttachmentWrite;
+		barrier.dstStage = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
 		// eColorAttachmentRead as well as Write: the resumed non-MSAA G-buffer
 		// pass loads attachment 0 (scene color, loadOp=eLoad), a read that must
 		// be ordered after this transition (else READ_AFTER_WRITE vs the layout
 		// transition, flagged by -gr_sync_validation).
-		barrier.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite
-		                      | vk::AccessFlagBits::eColorAttachmentRead;
-		barrier.oldLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		barrier.newLayout = vk::ImageLayout::eColorAttachmentOptimal;
-		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.image = pp->getSceneColorImage();
-		barrier.subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
+		barrier.dstAccess = vk::AccessFlagBits2::eColorAttachmentWrite
+		                  | vk::AccessFlagBits2::eColorAttachmentRead;
 
-		cmd.pipelineBarrier(
-			vk::PipelineStageFlagBits::eColorAttachmentOutput,
-			vk::PipelineStageFlagBits::eColorAttachmentOutput,
-			{}, nullptr, nullptr, barrier);
+		cmdImageBarrier(cmd, barrier);
 	}
 
 	// Composite is not part of the resolve framebuffer, so its layout is
@@ -467,20 +467,18 @@ void vulkan_deferred_lighting_msaa()
 	// to transition it regardless of current state — content will be fully
 	// overwritten by emissive→composite copy in deferred_lighting_finish().
 	{
-		vk::ImageMemoryBarrier barrier;
-		barrier.srcAccessMask = {};
-		barrier.dstAccessMask = {};
+		ImageBarrier2 barrier;
+		barrier.image = pp->deferred().compositeImage();
+		barrier.levelCount = 1;
+		barrier.layerCount = 1;
 		barrier.oldLayout = vk::ImageLayout::eUndefined;
 		barrier.newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.image = pp->deferred().compositeImage();
-		barrier.subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
+		barrier.srcStage = vk::PipelineStageFlagBits2::eTopOfPipe;
+		barrier.srcAccess = {};
+		barrier.dstStage = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
+		barrier.dstAccess = {};
 
-		cmd.pipelineBarrier(
-			vk::PipelineStageFlagBits::eTopOfPipe,
-			vk::PipelineStageFlagBits::eColorAttachmentOutput,
-			{}, nullptr, nullptr, barrier);
+		cmdImageBarrier(cmd, barrier);
 	}
 
 	// Transition G-buffer attachments 1-5 for resume
@@ -769,23 +767,21 @@ void vulkan_shadow_map_end()
 			// Transition scene color: eShaderReadOnlyOptimal → eColorAttachmentOptimal
 			// (Scene color was in eShaderReadOnlyOptimal from ending G-buffer pass before shadow start)
 			{
-				vk::ImageMemoryBarrier barrier;
-				barrier.srcAccessMask = {};
-				// eColorAttachmentRead too: the resumed G-buffer pass (renderPassLoad,
-				// loadOp=eLoad) reads this attachment; order the read after the transition.
-				barrier.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite
-				                      | vk::AccessFlagBits::eColorAttachmentRead;
+				ImageBarrier2 barrier;
+				barrier.image = pp->getSceneColorImage();
+				barrier.levelCount = 1;
+				barrier.layerCount = 1;
 				barrier.oldLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 				barrier.newLayout = vk::ImageLayout::eColorAttachmentOptimal;
-				barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-				barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-				barrier.image = pp->getSceneColorImage();
-				barrier.subresourceRange = { vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 };
+				barrier.srcStage = vk::PipelineStageFlagBits2::eTopOfPipe;
+				barrier.srcAccess = {};
+				barrier.dstStage = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
+				// eColorAttachmentRead too: the resumed G-buffer pass (renderPassLoad,
+				// loadOp=eLoad) reads this attachment; order the read after the transition.
+				barrier.dstAccess = vk::AccessFlagBits2::eColorAttachmentWrite
+				                  | vk::AccessFlagBits2::eColorAttachmentRead;
 
-				cmd.pipelineBarrier(
-					vk::PipelineStageFlagBits::eTopOfPipe,
-					vk::PipelineStageFlagBits::eColorAttachmentOutput,
-					{}, nullptr, nullptr, barrier);
+				cmdImageBarrier(cmd, barrier);
 			}
 
 			// Transition G-buffer attachments 1-5 for resume
@@ -855,23 +851,21 @@ void vulkan_start_decal_pass()
 
 	// Transition scene color: eShaderReadOnlyOptimal → eColorAttachmentOptimal
 	{
-		vk::ImageMemoryBarrier barrier;
-		barrier.srcAccessMask = {};
-		// eColorAttachmentRead too: the resumed G-buffer pass (renderPassLoad,
-		// loadOp=eLoad) reads this attachment; order the read after the transition.
-		barrier.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite
-		                      | vk::AccessFlagBits::eColorAttachmentRead;
+		ImageBarrier2 barrier;
+		barrier.image = pp->getSceneColorImage();
+		barrier.levelCount = 1;
+		barrier.layerCount = 1;
 		barrier.oldLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 		barrier.newLayout = vk::ImageLayout::eColorAttachmentOptimal;
-		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.image = pp->getSceneColorImage();
-		barrier.subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
+		barrier.srcStage = vk::PipelineStageFlagBits2::eTopOfPipe;
+		barrier.srcAccess = {};
+		barrier.dstStage = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
+		// eColorAttachmentRead too: the resumed G-buffer pass (renderPassLoad,
+		// loadOp=eLoad) reads this attachment; order the read after the transition.
+		barrier.dstAccess = vk::AccessFlagBits2::eColorAttachmentWrite
+		                  | vk::AccessFlagBits2::eColorAttachmentRead;
 
-		cmd.pipelineBarrier(
-			vk::PipelineStageFlagBits::eTopOfPipe,
-			vk::PipelineStageFlagBits::eColorAttachmentOutput,
-			{}, nullptr, nullptr, barrier);
+		cmdImageBarrier(cmd, barrier);
 	}
 
 	// Transition G-buffer attachments 1-5 for render pass resume

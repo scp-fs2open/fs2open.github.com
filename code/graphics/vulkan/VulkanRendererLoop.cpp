@@ -1,5 +1,6 @@
 
 #include "VulkanRenderer.h"
+#include "VulkanBarrier.h"
 #include "VulkanBuffer.h"
 #include "VulkanTexture.h"
 
@@ -191,20 +192,18 @@ void VulkanRenderer::flip()
 	// samples it). RE-TEST on macOS hardware; if MoltenVK now honors the subpass
 	// dependency, this explicit barrier can be removed.
 	if (m_currentSwapChainImage < m_compositionImages.size()) {
-		vk::ImageMemoryBarrier compositionBarrier;
-		compositionBarrier.srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
-		compositionBarrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+		ImageBarrier2 compositionBarrier;
+		compositionBarrier.image = m_compositionImages[m_currentSwapChainImage].get();
+		compositionBarrier.levelCount = 1;
+		compositionBarrier.layerCount = 1;
 		compositionBarrier.oldLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 		compositionBarrier.newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		compositionBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		compositionBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		compositionBarrier.image = m_compositionImages[m_currentSwapChainImage].get();
-		compositionBarrier.subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
+		compositionBarrier.srcStage = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
+		compositionBarrier.srcAccess = vk::AccessFlagBits2::eColorAttachmentWrite;
+		compositionBarrier.dstStage = vk::PipelineStageFlagBits2::eFragmentShader;
+		compositionBarrier.dstAccess = vk::AccessFlagBits2::eShaderSampledRead;
 
-		m_currentCommandBuffer.pipelineBarrier(
-			vk::PipelineStageFlagBits::eColorAttachmentOutput,
-			vk::PipelineStageFlagBits::eFragmentShader,
-			{}, nullptr, nullptr, compositionBarrier);
+		cmdImageBarrier(m_currentCommandBuffer, compositionBarrier);
 	}
 #endif
 
@@ -441,28 +440,22 @@ void VulkanRenderer::copySceneDepthForParticles()
 	// (needed for the resumed render pass with loadOp=eLoad, which expects
 	// initialLayout=eColorAttachmentOptimal; copySceneDepth only touches depth)
 	{
-		vk::ImageMemoryBarrier barrier;
-		barrier.srcAccessMask = {};
+		ImageBarrier2 barrier;
+		barrier.image = m_postProcessor->getSceneColorImage();
+		barrier.levelCount = 1;
+		barrier.layerCount = 1;
+		barrier.oldLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		barrier.newLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		barrier.srcStage = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
+		barrier.srcAccess = {};
+		barrier.dstStage = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
 		// eColorAttachmentRead as well as Write: resumeScenePassAfterCopy() resumes
 		// the scene pass with loadOp=eLoad, which reads this attachment; the read
 		// must be ordered after the transition (else READ_AFTER_WRITE).
-		barrier.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite
-		                      | vk::AccessFlagBits::eColorAttachmentRead;
-		barrier.oldLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		barrier.newLayout = vk::ImageLayout::eColorAttachmentOptimal;
-		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.image = m_postProcessor->getSceneColorImage();
-		barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
-		barrier.subresourceRange.baseMipLevel = 0;
-		barrier.subresourceRange.levelCount = 1;
-		barrier.subresourceRange.baseArrayLayer = 0;
-		barrier.subresourceRange.layerCount = 1;
+		barrier.dstAccess = vk::AccessFlagBits2::eColorAttachmentWrite
+		                  | vk::AccessFlagBits2::eColorAttachmentRead;
 
-		m_currentCommandBuffer.pipelineBarrier(
-			vk::PipelineStageFlagBits::eColorAttachmentOutput,
-			vk::PipelineStageFlagBits::eColorAttachmentOutput,
-			{}, {}, {}, barrier);
+		cmdImageBarrier(m_currentCommandBuffer, barrier);
 	}
 
 	// If G-buffer is active, transition attachments 1-5 for render pass resume
@@ -519,24 +512,18 @@ void VulkanRenderer::endRenderTarget(tcache_slot_vulkan* ts)
 	if (ts && ts->mipLevels > 1) {
 		uint32_t layers = ts->isCubemap ? 6u : ts->arrayLayers;
 
-		vk::ImageMemoryBarrier barrier;
-		barrier.srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
-		barrier.dstAccessMask = vk::AccessFlagBits::eTransferRead;
+		ImageBarrier2 barrier;
+		barrier.image = ts->image;
+		barrier.levelCount = 1;
+		barrier.layerCount = layers;
 		barrier.oldLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 		barrier.newLayout = vk::ImageLayout::eTransferSrcOptimal;
-		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.image = ts->image;
-		barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
-		barrier.subresourceRange.baseMipLevel = 0;
-		barrier.subresourceRange.levelCount = 1;
-		barrier.subresourceRange.baseArrayLayer = 0;
-		barrier.subresourceRange.layerCount = layers;
+		barrier.srcStage = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
+		barrier.srcAccess = vk::AccessFlagBits2::eColorAttachmentWrite;
+		barrier.dstStage = vk::PipelineStageFlagBits2::eBlit;
+		barrier.dstAccess = vk::AccessFlagBits2::eTransferRead;
 
-		m_currentCommandBuffer.pipelineBarrier(
-			vk::PipelineStageFlagBits::eColorAttachmentOutput,
-			vk::PipelineStageFlagBits::eTransfer,
-			{}, {}, {}, barrier);
+		cmdImageBarrier(m_currentCommandBuffer, barrier);
 
 		vulkan_generate_mipmap_chain(m_currentCommandBuffer, ts->image, ts->width, ts->height, ts->mipLevels, layers);
 	}

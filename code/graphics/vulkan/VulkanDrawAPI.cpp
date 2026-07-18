@@ -4,6 +4,7 @@
 #include <array>
 
 #include "VulkanState.h"
+#include "VulkanBarrier.h"
 #include "VulkanBuffer.h"
 #include "VulkanPipeline.h"
 #include "VulkanShader.h"
@@ -786,24 +787,18 @@ void vulkan_calculate_irrmap()
 	// (high-frequency normals/silhouettes push the derivative-based LOD up)
 	// would otherwise be left uninitialized above mip 0.
 	if (irrTs->mipLevels > 1) {
-		vk::ImageMemoryBarrier barrier;
-		barrier.srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
-		barrier.dstAccessMask = vk::AccessFlagBits::eTransferRead;
+		ImageBarrier2 barrier;
+		barrier.image = irrTs->image;
+		barrier.levelCount = 1;
+		barrier.layerCount = 6;
 		barrier.oldLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 		barrier.newLayout = vk::ImageLayout::eTransferSrcOptimal;
-		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.image = irrTs->image;
-		barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
-		barrier.subresourceRange.baseMipLevel = 0;
-		barrier.subresourceRange.levelCount = 1;
-		barrier.subresourceRange.baseArrayLayer = 0;
-		barrier.subresourceRange.layerCount = 6;
+		barrier.srcStage = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
+		barrier.srcAccess = vk::AccessFlagBits2::eColorAttachmentWrite;
+		barrier.dstStage = vk::PipelineStageFlagBits2::eBlit;
+		barrier.dstAccess = vk::AccessFlagBits2::eTransferRead;
 
-		cmd.pipelineBarrier(
-			vk::PipelineStageFlagBits::eColorAttachmentOutput,
-			vk::PipelineStageFlagBits::eTransfer,
-			{}, {}, {}, barrier);
+		cmdImageBarrier(cmd, barrier);
 
 		vulkan_generate_mipmap_chain(cmd, irrTs->image, irrTs->width, irrTs->height, irrTs->mipLevels, 6);
 	}

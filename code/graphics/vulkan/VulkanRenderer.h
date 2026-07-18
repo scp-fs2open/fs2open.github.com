@@ -73,6 +73,11 @@ struct PhysicalDeviceValues {
 	bool rayQueryFeatureSupported = false;
 	bool bufferDeviceAddressFeatureSupported = false;
 
+	// VK_KHR_synchronization2's feature bit. The extension itself is required
+	// (RequiredDeviceExtensions), so this only guards against a device that
+	// exposes the extension without the feature -- see isDeviceUnsuitable().
+	bool synchronization2FeatureSupported = false;
+
 	SCP_vector<vk::ExtensionProperties> extensions;
 
 	vk::SurfaceCapabilitiesKHR surfaceCapabilities;

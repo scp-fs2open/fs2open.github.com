@@ -3,6 +3,7 @@
 #include <array>
 
 #include "gr_vulkan.h"
+#include "VulkanBarrier.h"
 #include "VulkanRenderer.h"
 #include "VulkanDescriptorManager.h"
 #include "graphics/util/uniform_structs.h"
@@ -376,25 +377,19 @@ void VulkanBloom::execute(vk::CommandBuffer cmd)
 
 	// 4. Transition scene color for bloom composite (eShaderReadOnlyOptimal → eColorAttachmentOptimal)
 	{
-		vk::ImageMemoryBarrier barrier;
-		barrier.srcAccessMask = vk::AccessFlagBits::eShaderRead;
-		barrier.dstAccessMask = vk::AccessFlagBits::eColorAttachmentRead
-		                      | vk::AccessFlagBits::eColorAttachmentWrite;
+		ImageBarrier2 barrier;
+		barrier.image = m_sceneColor->image;
+		barrier.levelCount = 1;
+		barrier.layerCount = 1;
 		barrier.oldLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 		barrier.newLayout = vk::ImageLayout::eColorAttachmentOptimal;
-		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.image = m_sceneColor->image;
-		barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
-		barrier.subresourceRange.baseMipLevel = 0;
-		barrier.subresourceRange.levelCount = 1;
-		barrier.subresourceRange.baseArrayLayer = 0;
-		barrier.subresourceRange.layerCount = 1;
+		barrier.srcStage = vk::PipelineStageFlagBits2::eFragmentShader;
+		barrier.srcAccess = vk::AccessFlagBits2::eShaderSampledRead;
+		barrier.dstStage = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
+		barrier.dstAccess = vk::AccessFlagBits2::eColorAttachmentRead
+		                  | vk::AccessFlagBits2::eColorAttachmentWrite;
 
-		cmd.pipelineBarrier(
-			vk::PipelineStageFlagBits::eFragmentShader,
-			vk::PipelineStageFlagBits::eColorAttachmentOutput,
-			{}, {}, {}, barrier);
+		cmdImageBarrier(cmd, barrier);
 	}
 
 	// 5. Bloom composite: additively blend blurred bloom onto scene color

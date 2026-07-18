@@ -69,6 +69,11 @@ VkBool32 VKAPI_PTR debugUtilsMessengerCallback(
 
 const SCP_vector<const char*> RequiredDeviceExtensions = {
 	VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+	// Barrier submission across this renderer is written entirely against
+	// VK_KHR_synchronization2 (see VulkanBarrier.h) -- there is no legacy
+	// vkCmdPipelineBarrier fallback, so the extension is required rather than
+	// optionally negotiated.
+	VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
 };
 
 bool checkDeviceExtensionSupport(PhysicalDeviceValues& values)
@@ -142,6 +147,17 @@ bool isDeviceUnsuitable(PhysicalDeviceValues& values, const vk::UniqueSurfaceKHR
 
 	if (!checkDeviceExtensionSupport(values)) {
 		nprintf(("vulkan", "Rejecting %s (%d) because the device does not support our required extensions.\n",
+			values.properties.deviceName.data(),
+			values.properties.deviceID));
+		return true;
+	}
+
+	// VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME is in RequiredDeviceExtensions
+	// above, but its feature bit still has to be checked independently -- a
+	// device could theoretically expose the extension without enabling the
+	// feature (same reasoning as bufferDeviceAddress's separate feature check).
+	if (!values.synchronization2FeatureSupported) {
+		nprintf(("vulkan", "Rejecting %s (%d) because the device does not support the synchronization2 feature.\n",
 			values.properties.deviceName.data(),
 			values.properties.deviceID));
 		return true;
@@ -779,7 +795,8 @@ bool VulkanRenderer::pickPhysicalDevice(PhysicalDeviceValues& deviceValues)
 		auto featureChain = dev.getFeatures2<vk::PhysicalDeviceFeatures2,
 			vk::PhysicalDeviceAccelerationStructureFeaturesKHR,
 			vk::PhysicalDeviceRayQueryFeaturesKHR,
-			vk::PhysicalDeviceBufferDeviceAddressFeatures>();
+			vk::PhysicalDeviceBufferDeviceAddressFeatures,
+			vk::PhysicalDeviceSynchronization2Features>();
 		vals.features = featureChain.get<vk::PhysicalDeviceFeatures2>().features;
 		vals.accelerationStructureFeatureSupported =
 			featureChain.get<vk::PhysicalDeviceAccelerationStructureFeaturesKHR>().accelerationStructure != VK_FALSE;
@@ -787,6 +804,8 @@ bool VulkanRenderer::pickPhysicalDevice(PhysicalDeviceValues& deviceValues)
 			featureChain.get<vk::PhysicalDeviceRayQueryFeaturesKHR>().rayQuery != VK_FALSE;
 		vals.bufferDeviceAddressFeatureSupported =
 			featureChain.get<vk::PhysicalDeviceBufferDeviceAddressFeatures>().bufferDeviceAddress != VK_FALSE;
+		vals.synchronization2FeatureSupported =
+			featureChain.get<vk::PhysicalDeviceSynchronization2Features>().synchronization2 != VK_FALSE;
 
 		auto qprops = dev.getQueueFamilyProperties();
 		vals.queueProperties.assign(qprops.begin(), qprops.end());
@@ -933,12 +952,20 @@ bool VulkanRenderer::createLogicalDevice(const PhysicalDeviceValues& deviceValue
 	vk::PhysicalDeviceBufferDeviceAddressFeatures bufferDeviceAddressFeatures;
 	bufferDeviceAddressFeatures.bufferDeviceAddress = VK_TRUE;
 
+	// VK_KHR_synchronization2 is required (RequiredDeviceExtensions,
+	// isDeviceUnsuitable() already rejected devices without the feature bit),
+	// so this is always linked -- unlike the RT trio below, it's never unlinked.
+	vk::PhysicalDeviceSynchronization2Features sync2Features;
+	sync2Features.synchronization2 = VK_TRUE;
+
 	vk::StructureChain<vk::DeviceCreateInfo,
 		vk::PhysicalDeviceFeatures2,
 		vk::PhysicalDeviceAccelerationStructureFeaturesKHR,
 		vk::PhysicalDeviceRayQueryFeaturesKHR,
-		vk::PhysicalDeviceBufferDeviceAddressFeatures>
-		deviceCreateChain(deviceCreate, deviceFeatures2, accelStructFeatures, rayQueryFeatures, bufferDeviceAddressFeatures);
+		vk::PhysicalDeviceBufferDeviceAddressFeatures,
+		vk::PhysicalDeviceSynchronization2Features>
+		deviceCreateChain(deviceCreate, deviceFeatures2, accelStructFeatures, rayQueryFeatures,
+			bufferDeviceAddressFeatures, sync2Features);
 
 	if (!m_supportsRaytracedShadows) {
 		deviceCreateChain.unlink<vk::PhysicalDeviceAccelerationStructureFeaturesKHR>();

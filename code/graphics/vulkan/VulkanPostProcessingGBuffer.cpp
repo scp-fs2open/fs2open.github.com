@@ -3,6 +3,7 @@
 #include <array>
 
 #include "VulkanRenderer.h"
+#include "VulkanBarrier.h"
 #include "lighting/lighting_profiles.h"
 #include "lighting/lighting.h"
 #include "nebula/neb.h"
@@ -360,31 +361,25 @@ void VulkanDeferredGBuffer::transitionForResume(vk::CommandBuffer cmd)
 		m_gbufComposite.image,
 	};
 
-	std::array<vk::ImageMemoryBarrier, 5> barriers;
+	std::array<ImageBarrier2, 5> barriers;
 	for (size_t i = 0; i < gbufImages.size(); ++i) {
-		barriers[i].srcAccessMask = {};
+		barriers[i].image = gbufImages[i];
+		barriers[i].levelCount = 1;
+		barriers[i].layerCount = 1;
+		barriers[i].oldLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		barriers[i].newLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		barriers[i].srcStage = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
+		barriers[i].srcAccess = {};
+		barriers[i].dstStage = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
 		// eColorAttachmentRead as well as Write: the resumed pass loads these
 		// attachments (loadOp=eLoad), a read that must be ordered after this
 		// transition -- otherwise a READ_AFTER_WRITE hazard between the loadOp
 		// and the layout transition (flagged by -gr_sync_validation).
-		barriers[i].dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite
-		                          | vk::AccessFlagBits::eColorAttachmentRead;
-		barriers[i].oldLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		barriers[i].newLayout = vk::ImageLayout::eColorAttachmentOptimal;
-		barriers[i].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barriers[i].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barriers[i].image = gbufImages[i];
-		barriers[i].subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
-		barriers[i].subresourceRange.baseMipLevel = 0;
-		barriers[i].subresourceRange.levelCount = 1;
-		barriers[i].subresourceRange.baseArrayLayer = 0;
-		barriers[i].subresourceRange.layerCount = 1;
+		barriers[i].dstAccess = vk::AccessFlagBits2::eColorAttachmentWrite
+		                      | vk::AccessFlagBits2::eColorAttachmentRead;
 	}
 
-	cmd.pipelineBarrier(
-		vk::PipelineStageFlagBits::eColorAttachmentOutput,
-		vk::PipelineStageFlagBits::eColorAttachmentOutput,
-		{}, nullptr, nullptr, barriers);
+	cmdImageBarriers(cmd, ArrayView<const ImageBarrier2>(barriers.data(), barriers.size()));
 }
 
 void VulkanDeferredGBuffer::copyNormal(vk::CommandBuffer cmd)

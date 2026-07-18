@@ -7,6 +7,7 @@
 // selection evolves.
 
 #include "VulkanRaytracing.h"
+#include "VulkanBarrier.h"
 #include "VulkanDeletionQueue.h"
 
 #include "VulkanState.h"
@@ -417,21 +418,12 @@ void VulkanRaytracingManager::buildTlas()
 	cmd.buildAccelerationStructuresKHR(1, &buildInfo, &pRange);
 
 	// Acceleration structure write -> future shader reads (the fragment shaders
-	// that ray-query against the TLAS via GlobalBinding::Tlas).  Legacy
-	// (non-sync2) barrier since VK_KHR_synchronization2 isn't negotiated by
-	// this renderer.
-	vk::MemoryBarrier barrier;
-	barrier.srcAccessMask = vk::AccessFlagBits::eAccelerationStructureWriteKHR;
-	barrier.dstAccessMask = vk::AccessFlagBits::eAccelerationStructureReadKHR;
-	cmd.pipelineBarrier(vk::PipelineStageFlagBits::eAccelerationStructureBuildKHR,
-		vk::PipelineStageFlagBits::eFragmentShader,
-		vk::DependencyFlags(),
-		1,
-		&barrier,
-		0,
-		nullptr,
-		0,
-		nullptr);
+	// that ray-query against the TLAS via GlobalBinding::Tlas).
+	cmdMemoryBarrier(cmd,
+		vk::PipelineStageFlagBits2::eAccelerationStructureBuildKHR,
+		vk::AccessFlagBits2::eAccelerationStructureWriteKHR,
+		vk::PipelineStageFlagBits2::eFragmentShader,
+		vk::AccessFlagBits2::eAccelerationStructureReadKHR);
 }
 
 } // namespace graphics::vulkan

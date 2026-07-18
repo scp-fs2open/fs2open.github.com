@@ -2,6 +2,7 @@
 
 #include <array>
 
+#include "VulkanBarrier.h"
 #include "VulkanConstants.h"
 #include "VulkanDeletionQueue.h"
 #include "VulkanRenderer.h"
@@ -101,39 +102,42 @@ void VulkanDistortion::update(vk::CommandBuffer cmd, float frametime)
 	// On first update, images are still in eUndefined layout
 	vk::ImageLayout srcOldLayout = m_firstUpdate
 		? vk::ImageLayout::eUndefined : vk::ImageLayout::eShaderReadOnlyOptimal;
-	vk::AccessFlags srcOldAccess = m_firstUpdate
-		? vk::AccessFlags{} : vk::AccessFlagBits::eShaderRead;
+	vk::AccessFlags2 srcOldAccess = m_firstUpdate
+		? vk::AccessFlags2{} : vk::AccessFlagBits2::eShaderSampledRead;
 
-	// Transition both distortion textures for transfer operations
+	// Transition both distortion textures for transfer operations. dst is
+	// written by three different-stage ops below -- clearColorImage (eClear),
+	// blitImage as dst (eBlit), and (conditionally) copyBufferToImage for the
+	// noise column (eCopy) -- so its dst scope must cover all three, not just
+	// the first one issued. src only feeds the blitImage() as source (eBlit).
 	{
-		std::array<vk::ImageMemoryBarrier, 2> barriers;
+		std::array<ImageBarrier2, 2> barriers;
 
 		// dst: eShaderReadOnlyOptimal (or eUndefined on first use) → eTransferDstOptimal
-		barriers[0].srcAccessMask = srcOldAccess;
-		barriers[0].dstAccessMask = vk::AccessFlagBits::eTransferWrite;
+		barriers[0].image = m_tex[dst].image;
+		barriers[0].levelCount = 1;
+		barriers[0].layerCount = 1;
 		barriers[0].oldLayout = srcOldLayout;
 		barriers[0].newLayout = vk::ImageLayout::eTransferDstOptimal;
-		barriers[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barriers[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barriers[0].image = m_tex[dst].image;
-		barriers[0].subresourceRange = vk::ImageSubresourceRange(
-			vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
+		barriers[0].srcStage = vk::PipelineStageFlagBits2::eFragmentShader;
+		barriers[0].srcAccess = srcOldAccess;
+		barriers[0].dstStage = vk::PipelineStageFlagBits2::eClear
+		                     | vk::PipelineStageFlagBits2::eBlit
+		                     | vk::PipelineStageFlagBits2::eCopy;
+		barriers[0].dstAccess = vk::AccessFlagBits2::eTransferWrite;
 
 		// src: eShaderReadOnlyOptimal (or eUndefined on first use) → eTransferSrcOptimal
-		barriers[1].srcAccessMask = srcOldAccess;
-		barriers[1].dstAccessMask = vk::AccessFlagBits::eTransferRead;
+		barriers[1].image = m_tex[src].image;
+		barriers[1].levelCount = 1;
+		barriers[1].layerCount = 1;
 		barriers[1].oldLayout = srcOldLayout;
 		barriers[1].newLayout = vk::ImageLayout::eTransferSrcOptimal;
-		barriers[1].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barriers[1].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barriers[1].image = m_tex[src].image;
-		barriers[1].subresourceRange = vk::ImageSubresourceRange(
-			vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
+		barriers[1].srcStage = vk::PipelineStageFlagBits2::eFragmentShader;
+		barriers[1].srcAccess = srcOldAccess;
+		barriers[1].dstStage = vk::PipelineStageFlagBits2::eBlit;
+		barriers[1].dstAccess = vk::AccessFlagBits2::eTransferRead;
 
-		cmd.pipelineBarrier(
-			vk::PipelineStageFlagBits::eFragmentShader,
-			vk::PipelineStageFlagBits::eTransfer,
-			{}, {}, {}, barriers);
+		cmdImageBarriers(cmd, ArrayView<const ImageBarrier2>(barriers.data(), barriers.size()));
 	}
 
 	// Clear dest to mid-gray (0.5, 0.5, 0.0, 1.0) = no distortion
@@ -222,34 +226,36 @@ void VulkanDistortion::update(vk::CommandBuffer cmd, float frametime)
 skip_noise:
 	// Transition both textures back to eShaderReadOnlyOptimal
 	{
-		std::array<vk::ImageMemoryBarrier, 2> barriers;
+		std::array<ImageBarrier2, 2> barriers;
 
-		// dst: eTransferDstOptimal → eShaderReadOnlyOptimal
-		barriers[0].srcAccessMask = vk::AccessFlagBits::eTransferWrite;
-		barriers[0].dstAccessMask = vk::AccessFlagBits::eShaderRead;
+		// dst: eTransferDstOptimal → eShaderReadOnlyOptimal. srcStage covers
+		// both possible producers: the blit above always writes it, and the
+		// noise copyBufferToImage() conditionally also writes it (skipped via
+		// goto on staging-buffer failure) -- both are known code paths in this
+		// function, not an unknown caller, so this is a precise union rather
+		// than a generic catch-all.
+		barriers[0].image = m_tex[dst].image;
+		barriers[0].levelCount = 1;
+		barriers[0].layerCount = 1;
 		barriers[0].oldLayout = vk::ImageLayout::eTransferDstOptimal;
 		barriers[0].newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		barriers[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barriers[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barriers[0].image = m_tex[dst].image;
-		barriers[0].subresourceRange = vk::ImageSubresourceRange(
-			vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
+		barriers[0].srcStage = vk::PipelineStageFlagBits2::eBlit | vk::PipelineStageFlagBits2::eCopy;
+		barriers[0].srcAccess = vk::AccessFlagBits2::eTransferWrite;
+		barriers[0].dstStage = vk::PipelineStageFlagBits2::eFragmentShader;
+		barriers[0].dstAccess = vk::AccessFlagBits2::eShaderSampledRead;
 
-		// src: eTransferSrcOptimal → eShaderReadOnlyOptimal
-		barriers[1].srcAccessMask = vk::AccessFlagBits::eTransferRead;
-		barriers[1].dstAccessMask = vk::AccessFlagBits::eShaderRead;
+		// src: eTransferSrcOptimal → eShaderReadOnlyOptimal (only the blit reads it)
+		barriers[1].image = m_tex[src].image;
+		barriers[1].levelCount = 1;
+		barriers[1].layerCount = 1;
 		barriers[1].oldLayout = vk::ImageLayout::eTransferSrcOptimal;
 		barriers[1].newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		barriers[1].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barriers[1].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barriers[1].image = m_tex[src].image;
-		barriers[1].subresourceRange = vk::ImageSubresourceRange(
-			vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
+		barriers[1].srcStage = vk::PipelineStageFlagBits2::eBlit;
+		barriers[1].srcAccess = vk::AccessFlagBits2::eTransferRead;
+		barriers[1].dstStage = vk::PipelineStageFlagBits2::eFragmentShader;
+		barriers[1].dstAccess = vk::AccessFlagBits2::eShaderSampledRead;
 
-		cmd.pipelineBarrier(
-			vk::PipelineStageFlagBits::eTransfer,
-			vk::PipelineStageFlagBits::eFragmentShader,
-			{}, {}, {}, barriers);
+		cmdImageBarriers(cmd, ArrayView<const ImageBarrier2>(barriers.data(), barriers.size()));
 	}
 
 	m_switch = !m_switch;
