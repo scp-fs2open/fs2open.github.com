@@ -149,10 +149,10 @@ void vulkan_update_texture(int bitmap_handle, int bpp, const ubyte* data, int wi
 	texManager->update_texture(bitmap_handle, bpp, data, width, height);
 }
 
-void vulkan_get_bitmap_from_texture(void* data_out, int bitmap_num)
+ubyte* vulkan_get_bitmap_from_texture(const int bitmap_num, int* width_out, int* height_out)
 {
 	auto* texManager = getTextureManager();
-	texManager->get_bitmap_from_texture(data_out, bitmap_num);
+	return texManager->get_bitmap_from_texture(bitmap_num, width_out, height_out);
 }
 
 } // namespace graphics::vulkan

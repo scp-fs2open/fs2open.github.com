@@ -1563,15 +1563,18 @@ void VulkanTextureManager::update_texture(int bitmap_handle, int bpp, const ubyt
 	ts->currentLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 }
 
-void VulkanTextureManager::get_bitmap_from_texture(void* data_out, int bitmap_num)
+ubyte* VulkanTextureManager::get_bitmap_from_texture(int bitmap_num, int* width_out, int* height_out)
 {
-	if (!m_initialized || !data_out) {
-		return;
+	if (!m_initialized || !width_out || !height_out) {
+		return nullptr;
 	}
+
+	*width_out = 0;
+	*height_out = 0;
 
 	auto* ts = bm_get_gr_info<tcache_slot_vulkan>(bitmap_num, true);
 	if (!ts) {
-		return;
+		return nullptr;
 	}
 
 	// Ensure the texture is uploaded to the GPU.  At model load time the
@@ -1584,7 +1587,7 @@ void VulkanTextureManager::get_bitmap_from_texture(void* data_out, int bitmap_nu
 		// Re-fetch slot after preload (bm_data may have replaced the image)
 		ts = bm_get_gr_info<tcache_slot_vulkan>(bitmap_num, true);
 		if (!ts || !ts->image) {
-			return;
+			return nullptr;
 		}
 
 		// bm_data submits uploads asynchronously via submitUploadAsync.
@@ -1634,7 +1637,7 @@ void VulkanTextureManager::get_bitmap_from_texture(void* data_out, int bitmap_nu
 		case vk::Format::eBc2UnormBlock: blockSize = BCDEC_BC2_BLOCK_SIZE; break;
 		case vk::Format::eBc3UnormBlock: blockSize = BCDEC_BC3_BLOCK_SIZE; break;
 		case vk::Format::eBc7UnormBlock: blockSize = BCDEC_BC7_BLOCK_SIZE; break;
-		default: return;
+		default: return nullptr;
 		}
 		blockW = (w + 3) / 4;
 		blockH = (h + 3) / 4;
@@ -1644,10 +1647,15 @@ void VulkanTextureManager::get_bitmap_from_texture(void* data_out, int bitmap_nu
 		case vk::Format::eB8G8R8A8Unorm: srcBytesPerPixel = 4; break;
 		case vk::Format::eR8Unorm:        srcBytesPerPixel = 1; break;
 		case vk::Format::eA1R5G5B5UnormPack16: srcBytesPerPixel = 2; break;
-		default: return;
+		default: return nullptr;
 		}
 		srcBufferSize = static_cast<size_t>(pixelCount) * srcBytesPerPixel;
 	}
+
+	// Output buffer: tightly packed w*h pixels at outChannels (3 or 4) bytes each,
+	// matching the layout gr_opengl_get_bitmap_from_texture() hands back. Caller
+	// owns this and frees it with vm_free (see bmpman.cpp's bm_lookup_cache).
+	auto* data_out = static_cast<ubyte*>(vm_malloc(static_cast<size_t>(pixelCount) * outChannels));
 
 	// ---- create readback staging buffer ----
 	vk::Buffer stagingBuffer;
@@ -1662,12 +1670,14 @@ void VulkanTextureManager::get_bitmap_from_texture(void* data_out, int bitmap_nu
 			stagingBuffer = m_device.createBuffer(bufferInfo);
 		} catch (const vk::SystemError& e) {
 			mprintf(("get_bitmap_from_texture: failed to create readback buffer: %s\n", e.what()));
-			return;
+			vm_free(data_out);
+			return nullptr;
 		}
 
 		if (!m_memoryManager->allocateBufferMemory(stagingBuffer, MemoryUsage::GpuToCpu, stagingAlloc)) {
 			m_device.destroyBuffer(stagingBuffer);
-			return;
+			vm_free(data_out);
+			return nullptr;
 		}
 	}
 
@@ -1740,6 +1750,15 @@ void VulkanTextureManager::get_bitmap_from_texture(void* data_out, int bitmap_nu
 
 	m_device.destroyBuffer(stagingBuffer);
 	m_memoryManager->freeAllocation(stagingAlloc);
+
+	if (!mapped) {
+		vm_free(data_out);
+		return nullptr;
+	}
+
+	*width_out = ts->width;
+	*height_out = ts->height;
+	return data_out;
 }
 
 void VulkanTextureManager::decodeReadbackBuffer(const void* mapped, vk::Format format, bool isCompressed,

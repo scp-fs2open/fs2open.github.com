@@ -137,8 +137,13 @@ public:
 
 	/**
 	 * @brief Read texture data back to CPU
+	 *
+	 * Mirrors gr_opengl_get_bitmap_from_texture(): returns a newly
+	 * vm_malloc()'d buffer of tightly packed RGB/RGBA8 pixels (caller frees
+	 * with vm_free), sized from the texture's actual GPU dimensions written
+	 * to width_out/height_out. Returns nullptr on failure.
 	 */
-	void get_bitmap_from_texture(void* data_out, int bitmap_num);
+	ubyte* get_bitmap_from_texture(int bitmap_num, int* width_out, int* height_out);
 
 	// Sampler management
 
@@ -420,7 +425,7 @@ void vulkan_bm_page_in_start();
 int vulkan_bm_make_render_target(int handle, int* width, int* height, int* bpp, int* mm_lvl, int flags);
 int vulkan_bm_set_render_target(int handle, int face);
 void vulkan_update_texture(int bitmap_handle, int bpp, const ubyte* data, int width, int height);
-void vulkan_get_bitmap_from_texture(void* data_out, int bitmap_num);
+ubyte* vulkan_get_bitmap_from_texture(int bitmap_num, int* width_out, int* height_out);
 
 } // namespace graphics::vulkan
 
