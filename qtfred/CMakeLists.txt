@@ -299,49 +299,49 @@ elseif(PLATFORM_LINUX)
     )
 endif()
 
-if(QTFRED_DEPLOY_QT)
-    # create Qt deploy script to fixup Qt libs/plugins
-    qt_generate_deploy_app_script(
-        TARGET qtfred
-        OUTPUT_SCRIPT QTFRED_DEPLOY_SCRIPT
-        NO_UNSUPPORTED_PLATFORM_ERROR
-        ${QTFRED_DEPLOY_OPTIONS}
+# create Qt deploy script to fixup Qt libs/plugins
+qt_generate_deploy_app_script(
+    TARGET qtfred
+    OUTPUT_SCRIPT QTFRED_DEPLOY_SCRIPT
+    NO_UNSUPPORTED_PLATFORM_ERROR
+    ${QTFRED_DEPLOY_OPTIONS}
+)
+
+if(PLATFORM_LINUX AND QT_USE_PRECOMPILED)
+    # Using prebuilt Qt libs on Linux poses a problem since the deploy script
+    # needs to be able to find the Qt libs, which aren't in a normal location.
+    # So to address this we need to modify the deploy script to change the RPATH
+    # of the QtFRED binary to include this alternate location, run the deployment
+    # and then reset the RPATH to it's original value.
+    #
+    # WARNING: We do this using undocumented internal functionality of CMake's
+    #          file() command, and requires CMake 3.21 or newer to work.
+
+    # save current RPATH to reset it later
+    get_target_property(install_rpath_old qtfred INSTALL_RPATH)
+    # fix delimiters
+    string(REPLACE ";" ":" QTFRED_RPATH_orig "${install_rpath_old}")
+
+    # set new RPATH to be written to binary
+    # Note: file(RPATH_SET ...) cannot extend RPATH length so we have to do it
+    # this way to reserve enough space for the modified script to work properly
+    set_target_properties(qtfred PROPERTIES
+        INSTALL_RPATH "${QTFRED_RPATH_orig}:${_QTFRED_QT_LIBS}"
     )
 
-    if(PLATFORM_LINUX AND QT_USE_PRECOMPILED)
-        # Using prebuilt Qt libs on Linux poses a problem since the deploy script
-        # needs to be able to find the Qt libs, which aren't in a normal location.
-        # So to address this we need to modify the deploy script to change the RPATH
-        # of the QtFRED binary to include this alternate location, run the deployment
-        # and then reset the RPATH to it's original value.
-        #
-        # WARNING: We do this using undocumented internal functionality of CMake's
-        #          file() command, and requires CMake 3.21 or newer to work.
+    # swap script name so no other code needs to be changed to use it
+    set(QTFRED_DEPLOY_SCRIPT_orig ${QTFRED_DEPLOY_SCRIPT})
+    set(QTFRED_DEPLOY_SCRIPT "${QTFRED_DEPLOY_SCRIPT_orig}-libfix")
 
-        # save current RPATH to reset it later
-        get_target_property(install_rpath_old qtfred INSTALL_RPATH)
-        # fix delimiters
-        string(REPLACE ";" ":" QTFRED_RPATH_orig "${install_rpath_old}")
-
-        # set new RPATH to be written to binary
-        # Note: file(RPATH_SET ...) cannot extend RPATH length so we have to do it
-        # this way to reserve enough space for the modified script to work properly
-        set_target_properties(qtfred PROPERTIES
-            INSTALL_RPATH "${QTFRED_RPATH_orig}:${_QTFRED_QT_LIBS}"
-        )
-
-        # swap script name so no other code needs to be changed to use it
-        set(QTFRED_DEPLOY_SCRIPT_orig ${QTFRED_DEPLOY_SCRIPT})
-        set(QTFRED_DEPLOY_SCRIPT "${QTFRED_DEPLOY_SCRIPT_orig}-libfix")
-
-        # create modified deploy script with our RPATH fix/hack
-        file(GENERATE OUTPUT ${QTFRED_DEPLOY_SCRIPT} CONTENT
+    # create modified deploy script with our RPATH fix/hack
+    file(GENERATE OUTPUT ${QTFRED_DEPLOY_SCRIPT} CONTENT
 "file(RPATH_SET FILE $<TARGET_FILE:qtfred> NEW_RPATH \"${QTFRED_RPATH_orig}:${_QTFRED_QT_LIBS}\")
 include(${QTFRED_DEPLOY_SCRIPT_orig})
 file(RPATH_SET FILE $<TARGET_FILE:qtfred> NEW_RPATH \"${QTFRED_RPATH_orig}\")\n"
-        )
-    endif()
+    )
+endif()
 
+if(QTFRED_DEPLOY_QT)
     # deploy Qt libs/plugins
     add_custom_command(TARGET qtfred POST_BUILD
         COMMAND ${CMAKE_COMMAND}
