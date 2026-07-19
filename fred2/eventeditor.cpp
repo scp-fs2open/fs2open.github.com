@@ -156,6 +156,10 @@ event_editor::event_editor(CWnd* pParent /*=NULL*/)
 	m_log_last_trigger = 0;
 	m_log_state_change = 0;
 	m_play_icon = nullptr;
+	m_move_to_top_icon = nullptr;
+	m_move_up_icon = nullptr;
+	m_move_down_icon = nullptr;
+	m_move_to_bottom_icon = nullptr;
 }
 
 void event_editor::DoDataExchange(CDataExchange* pDX)
@@ -227,6 +231,7 @@ BEGIN_MESSAGE_MAP(event_editor, CDialog)
 	ON_BN_CLICKED(IDC_INSERT, OnInsert)
 	ON_LBN_SELCHANGE(IDC_MESSAGE_LIST, OnSelchangeMessageList)
 	ON_BN_CLICKED(IDC_NEW_MSG, OnNewMsg)
+	ON_BN_CLICKED(IDC_INSERT_MSG, OnInsertMsg)
 	ON_BN_CLICKED(IDC_DELETE_MSG, OnDeleteMsg)
 	ON_BN_CLICKED(IDC_NEW_NOTE, OnMsgNote)
 	ON_BN_CLICKED(IDC_BROWSE_AVI, OnBrowseAvi)
@@ -238,6 +243,14 @@ BEGIN_MESSAGE_MAP(event_editor, CDialog)
 	ON_CBN_SELCHANGE(IDC_EVENT_TEAM, OnSelchangeTeam)
 	ON_CBN_SELCHANGE(IDC_MESSAGE_TEAM, OnSelchangeMessageTeam)
 	ON_LBN_DBLCLK(IDC_MESSAGE_LIST, OnDblclkMessageList)
+	ON_BN_CLICKED(IDC_EVENT_MOVE_TO_TOP, OnEventMoveToTop)
+	ON_BN_CLICKED(IDC_EVENT_MOVE_UP, OnEventMoveUp)
+	ON_BN_CLICKED(IDC_EVENT_MOVE_DOWN, OnEventMoveDown)
+	ON_BN_CLICKED(IDC_EVENT_MOVE_TO_BOTTOM, OnEventMoveToBottom)
+	ON_BN_CLICKED(IDC_MESSAGE_MOVE_TO_TOP, OnMessageMoveToTop)
+	ON_BN_CLICKED(IDC_MESSAGE_MOVE_UP, OnMessageMoveUp)
+	ON_BN_CLICKED(IDC_MESSAGE_MOVE_DOWN, OnMessageMoveDown)
+	ON_BN_CLICKED(IDC_MESSAGE_MOVE_TO_BOTTOM, OnMessageMoveToBottom)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -262,6 +275,22 @@ BOOL event_editor::OnInitDialog()
 	CDialog::OnInitDialog();  // let the base class do the default work
 	m_play_icon = load_button_icon(IDB_PLAY, RGB(192, 192, 192));
 	((CButton *) GetDlgItem(IDC_PLAY)) -> SetIcon(m_play_icon);
+
+	// reorder arrows; one icon is shared between the event and message buttons.
+	// Icons carry a transparency mask, so they blend with the button face and
+	// gray out correctly when disabled (see load_button_icon).
+	m_move_to_top_icon = load_button_icon(IDB_MOVE_TO_TOP, RGB(255, 0, 255));
+	m_move_up_icon = load_button_icon(IDB_MOVE_UP, RGB(255, 0, 255));
+	m_move_down_icon = load_button_icon(IDB_MOVE_DOWN, RGB(255, 0, 255));
+	m_move_to_bottom_icon = load_button_icon(IDB_MOVE_TO_BOTTOM, RGB(255, 0, 255));
+	((CButton *) GetDlgItem(IDC_EVENT_MOVE_TO_TOP)) -> SetIcon(m_move_to_top_icon);
+	((CButton *) GetDlgItem(IDC_EVENT_MOVE_UP)) -> SetIcon(m_move_up_icon);
+	((CButton *) GetDlgItem(IDC_EVENT_MOVE_DOWN)) -> SetIcon(m_move_down_icon);
+	((CButton *) GetDlgItem(IDC_EVENT_MOVE_TO_BOTTOM)) -> SetIcon(m_move_to_bottom_icon);
+	((CButton *) GetDlgItem(IDC_MESSAGE_MOVE_TO_TOP)) -> SetIcon(m_move_to_top_icon);
+	((CButton *) GetDlgItem(IDC_MESSAGE_MOVE_UP)) -> SetIcon(m_move_up_icon);
+	((CButton *) GetDlgItem(IDC_MESSAGE_MOVE_DOWN)) -> SetIcon(m_move_down_icon);
+	((CButton *) GetDlgItem(IDC_MESSAGE_MOVE_TO_BOTTOM)) -> SetIcon(m_move_to_bottom_icon);
 
 	theApp.init_window(&Events_wnd_data, this, 0);
 	m_event_tree.setup((CEdit *) GetDlgItem(IDC_HELP_BOX));
@@ -706,6 +735,7 @@ void event_editor::update_cur_message()
 	GetDlgItem(IDC_DELETE_MSG)->EnableWindow(enable);
 	GetDlgItem(IDC_PERSONA_NAME)->EnableWindow(enable);
 	GetDlgItem(IDC_MESSAGE_TEAM)->EnableWindow(enable);
+	update_move_buttons();
 	UpdateData(FALSE);
 }
 
@@ -1050,6 +1080,7 @@ void event_editor::update_cur_event()
 		GetDlgItem(IDC_MISSION_LOG_LAST_TRIGGER)->EnableWindow(FALSE);
 		GetDlgItem(IDC_MISSION_LOG_STATE_CHANGE)->EnableWindow(FALSE);
 
+		update_move_buttons();
 		UpdateData(FALSE);
 		return;
 	}
@@ -1116,6 +1147,7 @@ void event_editor::update_cur_event()
 	m_log_last_trigger = (m_events[cur_event].mission_log_flags & MLF_LAST_TRIGGER_ONLY) ? TRUE : FALSE;
 	m_log_state_change = (m_events[cur_event].mission_log_flags & MLF_STATE_CHANGE) ? TRUE : FALSE;
 
+	update_move_buttons();
 	UpdateData(FALSE);
 }
 
@@ -1191,7 +1223,121 @@ void event_editor::move_handler(int node1, int node2, bool insert_before)
 	update_cur_event();
 }
 
-void event_editor::OnChained() 
+// Enable/disable the event and message reorder arrows based on the current
+// selection and its position in the list.
+void event_editor::update_move_buttons()
+{
+	int ecount = (int)m_events.size();
+	BOOL e_up = (cur_event > 0 && cur_event < ecount) ? TRUE : FALSE;
+	BOOL e_down = (cur_event >= 0 && cur_event < ecount - 1) ? TRUE : FALSE;
+	GetDlgItem(IDC_EVENT_MOVE_TO_TOP)->EnableWindow(e_up);
+	GetDlgItem(IDC_EVENT_MOVE_UP)->EnableWindow(e_up);
+	GetDlgItem(IDC_EVENT_MOVE_DOWN)->EnableWindow(e_down);
+	GetDlgItem(IDC_EVENT_MOVE_TO_BOTTOM)->EnableWindow(e_down);
+
+	int mcount = (int)m_messages.size();
+	BOOL m_up = (m_cur_msg > 0 && m_cur_msg < mcount) ? TRUE : FALSE;
+	BOOL m_down = (m_cur_msg >= 0 && m_cur_msg < mcount - 1) ? TRUE : FALSE;
+	GetDlgItem(IDC_MESSAGE_MOVE_TO_TOP)->EnableWindow(m_up);
+	GetDlgItem(IDC_MESSAGE_MOVE_UP)->EnableWindow(m_up);
+	GetDlgItem(IDC_MESSAGE_MOVE_DOWN)->EnableWindow(m_down);
+	GetDlgItem(IDC_MESSAGE_MOVE_TO_BOTTOM)->EnableWindow(m_down);
+}
+
+// Reorder the currently-selected event.  'up'/'all_the_way' are interpreted as:
+// move up one, move to top, move down one, move to bottom.
+void event_editor::move_event(bool up, bool all_the_way)
+{
+	int count = (int)m_events.size();
+	if (cur_event < 0 || cur_event >= count)
+		return;
+
+	int from = cur_event;
+	int to;
+	if (up)
+		to = all_the_way ? 0 : from - 1;
+	else
+		to = all_the_way ? count - 1 : from + 1;
+
+	if (to < 0 || to >= count || to == from)
+		return;
+
+	// Perform the move exactly as a drag-and-drop would: move_root shifts the
+	// tree item in place (the on_node_handle_changed hook keeps annotations
+	// attached, and the expanded state is preserved), and move_handler reorders
+	// m_events/m_sig to match (it also calls save() and update_cur_event()).
+	HTREEITEM source = get_event_handle(from);
+	HTREEITEM dest = get_event_handle(to);
+	int node1 = m_events[from].formula;
+	int node2 = m_events[to].formula;
+	bool insert_before = (to < from);
+
+	m_event_tree.move_root(source, dest, insert_before);
+	move_handler(node1, node2, insert_before);
+
+	update_move_buttons();
+}
+
+// Reorder the currently-selected message.  'up'/'all_the_way' are interpreted
+// as: move up one, move to top, move down one, move to bottom.
+void event_editor::move_message(bool up, bool all_the_way)
+{
+	// commit any pending edits first
+	save();
+
+	int count = (int)m_messages.size();
+	if (m_cur_msg < 0 || m_cur_msg >= count)
+		return;
+
+	int from = m_cur_msg;
+	int to;
+	if (up)
+		to = all_the_way ? 0 : from - 1;
+	else
+		to = all_the_way ? count - 1 : from + 1;
+
+	if (to < 0 || to >= count || to == from)
+		return;
+
+	// Rotate m_messages so the item at 'from' lands at 'to'.  MMessage has move
+	// semantics, so this transfers the media-name pointers without copying.
+	MMessage m = std::move(m_messages[from]);
+	if (from < to)
+	{
+		for (int i = from; i < to; ++i)
+			m_messages[i] = std::move(m_messages[i + 1]);
+	}
+	else
+	{
+		for (int i = from; i > to; --i)
+			m_messages[i] = std::move(m_messages[i - 1]);
+	}
+	m_messages[to] = std::move(m);
+
+	// Rebuild the listbox to match the new order.
+	CListBox *list = (CListBox *) GetDlgItem(IDC_MESSAGE_LIST);
+	list->ResetContent();
+	for (const auto &msg : m_messages)
+		list->AddString(msg.name);
+
+	m_cur_msg = to;
+	list->SetCurSel(to);
+
+	update_cur_message();
+	update_move_buttons();
+	modified = 1;
+}
+
+void event_editor::OnEventMoveToTop()    { move_event(true, true); }
+void event_editor::OnEventMoveUp()       { move_event(true, false); }
+void event_editor::OnEventMoveDown()     { move_event(false, false); }
+void event_editor::OnEventMoveToBottom() { move_event(false, true); }
+void event_editor::OnMessageMoveToTop()    { move_message(true, true); }
+void event_editor::OnMessageMoveUp()       { move_message(true, false); }
+void event_editor::OnMessageMoveDown()     { move_message(false, false); }
+void event_editor::OnMessageMoveToBottom() { move_message(false, true); }
+
+void event_editor::OnChained()
 {
 	int image;
 	HTREEITEM h;
@@ -1336,7 +1482,39 @@ void event_editor::OnNewMsg()
 	update_cur_message();
 }
 
-void event_editor::OnDeleteMsg() 
+void event_editor::OnInsertMsg()
+{
+	// with no current message there's nothing to insert ahead of, so just append
+	if (m_cur_msg < 0 || m_messages.empty()) {
+		OnNewMsg();
+		return;
+	}
+
+	save();
+
+	MMessage msg;
+	strcpy_s(msg.name, "<new message>");
+	strcpy_s(msg.message, "<put description here>");
+	msg.avi_info.name = nullptr;
+	msg.wave_info.name = nullptr;
+	msg.persona_index = -1;
+	msg.multi_team = -1;
+
+	// insert ahead of the current message; the new one takes its slot
+	m_messages.insert(m_messages.begin() + m_cur_msg, std::move(msg));
+
+	// rebuild the listbox to match the new order
+	CListBox *list = (CListBox *) GetDlgItem(IDC_MESSAGE_LIST);
+	list->ResetContent();
+	for (const auto &m : m_messages)
+		list->AddString(m.name);
+	list->SetCurSel(m_cur_msg);
+
+	modified = 1;
+	update_cur_message();
+}
+
+void event_editor::OnDeleteMsg()
 {
 	char buf[256];
 
@@ -1528,6 +1706,10 @@ BOOL event_editor::DestroyWindow()
 	m_wave_id = -1;
 
 	if (m_play_icon) DestroyIcon(m_play_icon);
+	if (m_move_to_top_icon) DestroyIcon(m_move_to_top_icon);
+	if (m_move_up_icon) DestroyIcon(m_move_up_icon);
+	if (m_move_down_icon) DestroyIcon(m_move_down_icon);
+	if (m_move_to_bottom_icon) DestroyIcon(m_move_to_bottom_icon);
 	return CDialog::DestroyWindow();
 }
 
