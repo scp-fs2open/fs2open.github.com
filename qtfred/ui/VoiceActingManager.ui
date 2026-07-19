@@ -156,9 +156,9 @@
        </widget>
       </item>
       <item>
-       <widget class="QCheckBox" name="replaceCheckBox">
+       <widget class="QCheckBox" name="noReplaceCheckBox">
         <property name="text">
-         <string>Replace existing file names</string>
+         <string>Don't replace existing file names</string>
         </property>
        </widget>
       </item>
