@@ -605,12 +605,16 @@ void gr_opengl_deferred_lighting_finish()
 			float u_scale, v_scale;
 			uint32_t array_index;
 			gr_set_texture_addressing(TMAP_ADDRESS_CLAMP);
-			gr_opengl_tcache_set(neb.getVolumeBitmapHandle(), TCACHE_TYPE_3DTEX, &u_scale, &v_scale, &array_index, 3);
-			glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			// only set the filter parameter if the bind succeeded, or else it is applied to whatever
+			// texture was previously bound to this unit
+			if (gr_opengl_tcache_set(neb.getVolumeBitmapHandle(), TCACHE_TYPE_3DTEX, &u_scale, &v_scale, &array_index, 3)) {
+				glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			}
 			if (neb.getNoiseActive()) {
 				gr_set_texture_addressing(TMAP_ADDRESS_WRAP);
-				gr_opengl_tcache_set(neb.getNoiseVolumeBitmapHandle(), TCACHE_TYPE_3DTEX, &u_scale, &v_scale, &array_index, 4);
-				glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+				if (gr_opengl_tcache_set(neb.getNoiseVolumeBitmapHandle(), TCACHE_TYPE_3DTEX, &u_scale, &v_scale, &array_index, 4)) {
+					glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+				}
 			}
 		}
 
