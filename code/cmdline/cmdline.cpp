@@ -514,7 +514,7 @@ cmdline_parm deprecated_res_arg("-res", "Deprecated, resolution, formatted like 
 cmdline_parm render_res_arg("-render_res", "Resolution, formatted like 1600x900", AT_STRING);
 cmdline_parm window_res_arg("-window_res", "Window resolution, formatted like 1600x900.", AT_STRING);
 cmdline_parm center_res_arg("-center_res", "Resolution of center monitor, formatted like 1600x900", AT_STRING);
-cmdline_parm hdr_nits_arg("-hdr", "HDR paper white and peak luminance in nits, formatted like 400,1500. Overrides the in-game HDR nits settings.", AT_STRING);
+cmdline_parm hdr_nits_arg("-hdr", "Forces HDR output on, overriding the in-game HDR setting. Optionally takes paper white and peak luminance in nits, formatted like 400,1500, overriding the in-game HDR nits settings.", AT_STRING);
 cmdline_parm verify_vps_arg("-verify_vps", NULL, AT_NONE);	// Cmdline_verify_vps  -- spew VP crcs to vp_crcs.txt
 cmdline_parm parse_cmdline_only(PARSE_COMMAND_LINE_STRING, "Ignore any cmdline_fso.cfg files", AT_NONE);
 cmdline_parm reparse_mainhall_arg("-reparse_mainhall", NULL, AT_NONE); //Cmdline_reparse_mainhall
@@ -1828,12 +1828,19 @@ bool SetCmdlineParams()
 		Cmdline_center_res = center_res_arg.str();
 	}
 	if (hdr_nits_arg.found()) {
-		float paperwhite_nits = 0.0f, peak_nits = 0.0f;
-		if (sscanf(hdr_nits_arg.str(), "%f,%f", &paperwhite_nits, &peak_nits) == 2 && paperwhite_nits > 0.0f && peak_nits > 0.0f) {
-			Gr_hdr_paperwhite_nits = paperwhite_nits;
-			Gr_hdr_peak_nits = peak_nits;
-		} else {
-			Warning(LOCATION, "Failed to parse -hdr parameter \"%s\". Must be in format \"<paperwhite_nits>,<peak_nits>\".\n", hdr_nits_arg.str());
+		// presence of the flag alone forces HDR output on, overriding the in-game HDR setting
+		options::OptionsManager::instance()->setOverride("Graphics.HDR", "true");
+
+		if (hdr_nits_arg.has_param()) {
+			float paperwhite_nits = 0.0f, peak_nits = 0.0f;
+			if (sscanf(hdr_nits_arg.str(), "%f,%f", &paperwhite_nits, &peak_nits) == 2 && paperwhite_nits > 0.0f && peak_nits > 0.0f) {
+				// std::to_string always includes a decimal point, so this is a valid JSON real
+				// (json_unpack's "f" format rejects a bare integer like "400")
+				options::OptionsManager::instance()->setOverride("Graphics.HDRPaperWhite", std::to_string(paperwhite_nits));
+				options::OptionsManager::instance()->setOverride("Graphics.HDRPeakLuminance", std::to_string(peak_nits));
+			} else {
+				Warning(LOCATION, "Failed to parse -hdr parameter \"%s\". Must be in format \"<paperwhite_nits>,<peak_nits>\".\n", hdr_nits_arg.str());
+			}
 		}
 	}
 	if(almission_arg.found()){//DTP for autoload mission // developer oritentated
