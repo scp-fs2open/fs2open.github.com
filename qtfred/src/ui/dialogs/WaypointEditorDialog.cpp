@@ -42,6 +42,7 @@ WaypointEditorDialog::WaypointEditorDialog(FredView* parent, EditorViewport* vie
 		this,
 		[]() {
 			std::vector<util::SelectMenuEntry> entries;
+				entries.reserve(Waypoint_lists.size());
 			for (int i = 0; i < static_cast<int>(Waypoint_lists.size()); i++) {
 				entries.push_back({QString::fromUtf8(Waypoint_lists[i].get_name()), i});
 			}
