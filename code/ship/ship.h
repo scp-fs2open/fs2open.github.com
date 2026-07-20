@@ -27,6 +27,7 @@
 #include "weapon/trails.h"
 #include "ship/anchor_t.h"
 #include "ship/ship_flags.h"
+#include "utils/reset_on_move.h"
 #include "weapon/weapon_flags.h"
 #include "weapon/weapon.h"
 #include "ai/ai.h"
@@ -1269,8 +1270,10 @@ public:
 	int			    generic_debris_spew_num;
 
 	// subsystem information
-	int		n_subsystems;						// this number comes from ships.tbl
-    model_subsystem *subsystems;				// see model.h for structure definition
+	// (n_subsystems describes the subsystems array; the wrapper keeps it
+	// consistent with the array by resetting it to 0 in a moved-from ship_info)
+	util::reset_on_move<int> n_subsystems;			// this number comes from ships.tbl
+	std::unique_ptr<model_subsystem[]> subsystems;	// see model.h for structure definition
 	particle::ParticleEffectHandle default_subsys_death_effect;
 
 	// Energy Transfer System fields
@@ -1504,7 +1507,7 @@ public:
 
 	SCP_map<SCP_string, path_metadata> pathMetadata;
 
-	SCP_unordered_map<int, void*> glowpoint_bank_override_map;
+	SCP_unordered_map<int, int> glowpoint_bank_override_map;	// key: glowpoint bank (-1 = all banks); value: index into the growable global glowpoint_bank_overrides vector
 
 	animation::ModelAnimationSet animations;
 	animation::ModelAnimationSet cockpit_animations;
@@ -1512,12 +1515,15 @@ public:
 	SCP_vector<ship_passive_arc_info> ship_passive_arcs;
 
 	ship_info();
-	~ship_info();
+	~ship_info() = default;
 	void clone(const ship_info& other);
 
-	ship_info(ship_info&& other) noexcept;
+	ship_info(ship_info&& other) = default;					// NOLINT(performance-noexcept-move-constructor) - not declared noexcept because the implicit exception specification differs by standard library
+	ship_info &operator=(ship_info&& other) = default;		// NOLINT(performance-noexcept-move-constructor) - ditto
 
-	ship_info &operator=(ship_info&& other) noexcept;
+	// Deleted so nobody copies a ship class by accident; use clone() for a deliberate deep copy.
+	ship_info(const ship_info& other) = delete;
+	ship_info &operator=(const ship_info& other) = delete;
 
     //Helper functions
     
@@ -1534,12 +1540,6 @@ public:
 	const char* get_display_name() const;
 	bool has_display_name() const;
 
-private:
-	void move(ship_info&& other);
-
-	// Private and unimplemented so nobody tries to use them by accident.
-	ship_info(const ship_info& other);
-	const ship_info &operator=(const ship_info& other);
 };
 
 extern flag_def_list_new<Ship::Info_Flags> Ship_flags[];
