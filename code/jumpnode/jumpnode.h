@@ -47,18 +47,22 @@ private:
 	color m_display_color;			// Color node will be shown in (Default:0/255/0/255)
 	SCP_string m_fred_layer = "Default";	// FRED view layer assignment
 
-	CJumpNode(const CJumpNode&);
-	CJumpNode& operator=(const CJumpNode&) = delete;
+	// jumpnode_delete() detaches the node from its object by resetting m_objnum
+	friend void jumpnode_delete(object *objp);
+
 public:
 	//Constructors
 	CJumpNode();
 	CJumpNode(const vec3d *position);
-	CJumpNode(CJumpNode&& other) noexcept;
 
-	CJumpNode& operator=(CJumpNode&&) noexcept;
+	// Following the pattern of other object types, a CJumpNode does not free its object or model
+	// resources on destruction; that is done by jumpnode_delete(), via obj_delete().  So jump nodes
+	// can be safely moved around, e.g. by SCP_vector operations.
+	CJumpNode(CJumpNode&&) noexcept = default;
+	CJumpNode& operator=(CJumpNode&&) noexcept = default;
 
-	//Destructor
-	~CJumpNode();
+	CJumpNode(const CJumpNode&) = delete;
+	CJumpNode& operator=(const CJumpNode&) = delete;
 
 	//Getting
 	const char *GetName() const;
@@ -78,6 +82,9 @@ public:
 	void SetDisplayName(const char* new_name);
 	void SetVisibility(bool enabled);
 
+	//Resource management
+	void FreeModelResources();
+
 	//Getting/Setting FRED layer
 	const SCP_string& GetFredLayer() const { return m_fred_layer; }
 	void SetFredLayer(const SCP_string& layer) { m_fred_layer = layer; }
@@ -94,15 +101,17 @@ public:
 };
 
 //-----Globals------
-extern SCP_list<CJumpNode> Jump_nodes;
+extern SCP_vector<CJumpNode> Jump_nodes;
 
 //-----Functions-----
 CJumpNode *jumpnode_get_by_name(const char *name);
+      int  jumpnode_lookup(const char *name);
 CJumpNode *jumpnode_get_by_objnum(int objnum);
 CJumpNode *jumpnode_get_by_objp(const object *objp);
 CJumpNode *jumpnode_get_which_in(const object *objp);
 
 void jumpnode_render_all();
 void jumpnode_level_close();
+void jumpnode_delete(object *objp);
 
 #endif

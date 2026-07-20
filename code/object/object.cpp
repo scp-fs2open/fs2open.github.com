@@ -735,7 +735,8 @@ void obj_delete(int objnum)
 	case OBJ_POINT:
 		break;  // requires no action, handled by the Fred code.
 	case OBJ_JUMP_NODE:
-		break;  // requires no further action, handled by jumpnode deconstructor.
+		jumpnode_delete(objp);
+		break;
 	case OBJ_DEBRIS:
 		debris_delete( objp );
 		break;
@@ -1940,15 +1941,17 @@ void obj_queue_render(object* obj, model_draw_list* scene)
 	case OBJ_ASTEROID:
 		asteroid_render(obj, scene);
 		break;
-	case OBJ_JUMP_NODE:
-		for ( SCP_list<CJumpNode>::iterator jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp ) {
-			if ( jnp->GetSCPObject() != obj ) {
+	case OBJ_JUMP_NODE: {
+		int objnum = OBJ_INDEX(obj);
+		for ( auto &jnp : Jump_nodes ) {
+			if ( jnp.GetSCPObjectNumber() != objnum ) {
 				continue;
 			}
 
-			jnp->Render(scene, &obj->pos, &Eye_position);
+			jnp.Render(scene, &obj->pos, &Eye_position);
 		}
 		break;
+	}
 	case OBJ_WAYPOINT:
 		// 		if (Show_waypoints)	{
 		// 			gr_set_color( 128, 128, 128 );

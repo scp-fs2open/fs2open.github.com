@@ -10,6 +10,7 @@
 
 
 #include "stdafx.h"
+#include <algorithm>
 #include "FRED.h"
 #include "MainFrm.h"
 #include "FREDDoc.h"
@@ -1245,7 +1246,7 @@ int common_object_delete(int obj)
 	char msg[255];
 	const char *name;
 	int i, z, r, type;
-	SCP_list<CJumpNode>::iterator jnp;
+	auto jnp = Jump_nodes.end();
 
 	type = Objects[obj].type;
 	if (type == OBJ_START) {
@@ -1360,6 +1361,7 @@ int common_object_delete(int obj)
 
 	} else if (type == OBJ_PROP) {
 		// Delete briefing icons maybe?
+
 	} else if (type == OBJ_POINT) {
 		Assert(Briefing_dialog);
 		Briefing_dialog->delete_icon(Objects[obj].instance);
@@ -1367,31 +1369,21 @@ int common_object_delete(int obj)
 		return 0;
 
 	} else if (type == OBJ_JUMP_NODE) {
-		for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
-			if(jnp->GetSCPObject() == &Objects[obj])
-				break;
-		}
-
-		// come on, WMC, we don't want to call obj_delete twice...
-		// fool the destructor into not calling obj_delete yet
-		Objects[obj].type = OBJ_NONE;
-		
-		// now call the destructor
-		if (jnp != Jump_nodes.end())
-			Jump_nodes.erase(jnp);
-
-		// now restore the jump node type so that the below unmark and obj_delete will work
-		Objects[obj].type = OBJ_JUMP_NODE;
+		// find the jump node while the object still exists; the defunct entry is removed below
+		jnp = std::find_if(Jump_nodes.begin(), Jump_nodes.end(),
+			[obj](const CJumpNode &jn) { return jn.GetSCPObjectNumber() == obj; });
 	}
 
 	unmark_object(obj);
 
-	//we need to call obj_delete() even if obj is a jump node
-	//the statement "delete Objects[obj].jnp" deletes the jnp object
-	//obj_delete() frees up the object slot where the node used to reside.
-	//if we don't call this then the node will still show up in fred and you can try to delete it twice
-	//this causes an ugly crash.
+	//obj_delete() handles all type-specific cleanup and frees up the object slot where the object used to reside
 	obj_delete(obj);
+
+	//for jump nodes, obj_delete() frees the node's resources via jumpnode_delete(), but the
+	//editor is responsible for removing the defunct entry from the Jump_nodes vector
+	if (jnp != Jump_nodes.end())
+		Jump_nodes.erase(jnp);
+
 	set_modified();
 	Update_window = 1;
 	return 0;
