@@ -644,7 +644,7 @@ void VulkanPostProcessor::blitToSwapChain(vk::CommandBuffer cmd)
 
 	// Set 1: Material — source texture at array slot 0
 	vk::DescriptorSet materialSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Material);
-	Verify(materialSet);
+	Assert(materialSet);
 	writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
 	{
 		std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texArrayInfos;
@@ -658,7 +658,7 @@ void VulkanPostProcessor::blitToSwapChain(vk::CommandBuffer cmd)
 
 	// Set 2: PerDraw — tonemapping UBO (from the per-frame scratch ring)
 	vk::DescriptorSet perDrawSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::PerDraw);
-	Verify(perDrawSet);
+	Assert(perDrawSet);
 	writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
 
 	// LDR path: passthrough (tonemapping already ran). Fallback path: live
@@ -699,7 +699,7 @@ void VulkanPostProcessor::blitToSwapChain(vk::CommandBuffer cmd)
 
 void VulkanPostProcessor::encodeToSwapChainPass(vk::CommandBuffer cmd, vk::RenderPass renderPass,
 	vk::Framebuffer framebuffer, vk::Extent2D extent, vk::ImageView sourceView, vk::Sampler sampler,
-	int shaderType, const void* uboData, size_t uboSize)
+	int shaderType, unsigned int shaderFlags, const void* uboData, size_t uboSize)
 {
 	auto* pipelineMgr = getPipelineManager();
 	auto* descriptorMgr = getDescriptorManager();
@@ -713,6 +713,7 @@ void VulkanPostProcessor::encodeToSwapChainPass(vk::CommandBuffer cmd, vk::Rende
 	// covers every fullscreen pass of the frame including this final encode.
 	PipelineConfig config;
 	config.shaderType = static_cast<shader_type>(shaderType);
+	config.shaderFlags = shaderFlags; // selects the SDR vs HDR10_OUTPUT gamma-correct variant
 	config.vertexLayoutHash = 0;
 	config.primitiveType = PRIM_TYPE_TRIS;
 	config.depthMode = ZBUFFER_TYPE_NONE;
@@ -756,7 +757,7 @@ void VulkanPostProcessor::encodeToSwapChainPass(vk::CommandBuffer cmd, vk::Rende
 	writer.reset(m_ctx.device, descriptorMgr->getFallbacks());
 
 	vk::DescriptorSet materialSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Material);
-	Verify(materialSet);
+	Assert(materialSet);
 	writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
 	{
 		std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texArrayInfos;
@@ -767,7 +768,7 @@ void VulkanPostProcessor::encodeToSwapChainPass(vk::CommandBuffer cmd, vk::Rende
 	}
 
 	vk::DescriptorSet perDrawSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::PerDraw);
-	Verify(perDrawSet);
+	Assert(perDrawSet);
 	writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
 	{
 		vk::DeviceSize slotOffset =
@@ -789,14 +790,15 @@ void VulkanPostProcessor::encodeOutput(vk::CommandBuffer cmd, vk::RenderPass ren
 	vk::Framebuffer framebuffer, vk::Extent2D extent, vk::ImageView sourceView, vk::Sampler sampler,
 	float paperwhiteNits, float peakNits, float gamma)
 {
-	// HDR10/PQ/BT.2020 encode leg (plus the user gamma slider).
-	graphics::generic_data::hdr10_encode_data encodeData;
+	// HDR10/PQ/BT.2020 encode leg (plus the user gamma slider): the HDR10_OUTPUT
+	// variant of the shared gamma-correct shader.
+	graphics::generic_data::gamma_encode_data encodeData;
 	memset(&encodeData, 0, sizeof(encodeData));
+	encodeData.gamma = gamma;
 	encodeData.hdr_paperwhite_nits = paperwhiteNits;
 	encodeData.hdr_peak_nits = peakNits;
-	encodeData.gamma = gamma;
 	encodeToSwapChainPass(cmd, renderPass, framebuffer, extent, sourceView, sampler,
-		SDR_TYPE_POST_PROCESS_HDR10_ENCODE, &encodeData, sizeof(encodeData));
+		SDR_TYPE_GAMMA_BLIT, SDR_FLAG_GAMMA_HDR10, &encodeData, sizeof(encodeData));
 }
 
 void VulkanPostProcessor::encodeOutputSdr(vk::CommandBuffer cmd, vk::RenderPass renderPass,
@@ -806,11 +808,11 @@ void VulkanPostProcessor::encodeOutputSdr(vk::CommandBuffer cmd, vk::RenderPass 
 	// SDR leg: the composition image already carries the final display-ready
 	// sRGB-encoded frame (3D scene + menus/HUD alike); this just applies the user
 	// gamma/brightness slider on the way into the swap chain image.
-	graphics::generic_data::gamma_blit_data blitData;
+	graphics::generic_data::gamma_encode_data blitData;
 	memset(&blitData, 0, sizeof(blitData));
 	blitData.gamma = gamma;
 	encodeToSwapChainPass(cmd, renderPass, framebuffer, extent, sourceView, sampler,
-		SDR_TYPE_GAMMA_BLIT, &blitData, sizeof(blitData));
+		SDR_TYPE_GAMMA_BLIT, 0, &blitData, sizeof(blitData));
 }
 
 // No-op: In OpenGL, begin/end push/pop an FBO and run the post-processing

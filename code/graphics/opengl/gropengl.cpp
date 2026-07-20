@@ -150,8 +150,8 @@ void gr_opengl_flip()
 			GL_state.ColorMask(true, true, true, true);
 			GL_state.StencilTest(GL_FALSE);
 
-			opengl_set_generic_uniform_data<graphics::generic_data::gamma_blit_data>(
-				[gamma](graphics::generic_data::gamma_blit_data* data) {
+			opengl_set_generic_uniform_data<graphics::generic_data::gamma_encode_data>(
+				[gamma](graphics::generic_data::gamma_encode_data* data) {
 					data->gamma = gamma;
 				});
 

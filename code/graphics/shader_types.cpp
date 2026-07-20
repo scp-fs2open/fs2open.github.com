@@ -46,9 +46,6 @@ static ShaderTypeInfo SHADER_TYPES[] = {
 	{ SDR_TYPE_POST_PROCESS_TONEMAPPING, "post-v.sdr", "tonemapping-f.sdr", nullptr,
 		{ VATTRIB_POSITION, VATTRIB_TEXCOORD }, "Tonemapping", false },
 
-	{ SDR_TYPE_POST_PROCESS_HDR10_ENCODE, "post-v.sdr", "hdr10-encode-f.sdr", nullptr,
-		{ VATTRIB_POSITION, VATTRIB_TEXCOORD }, "HDR10 Output Encode", false },
-
 	{ SDR_TYPE_DEFERRED_LIGHTING, "deferred-v.sdr", "deferred-f.sdr", nullptr,
 		{ VATTRIB_POSITION }, "Deferred Lighting", false },
 
@@ -159,6 +156,8 @@ static ShaderVariantInfo SHADER_VARIANTS[] = {
 	{SDR_TYPE_COPY, false, SDR_FLAG_COPY_CLAMP01, "CLAMP01", {}, "Clamp copy to [0,1] (HDR edge-detection proxy)"},
 
 	{SDR_TYPE_POST_PROCESS_TONEMAPPING, false, SDR_FLAG_TONEMAPPING_LINEAR_OUT, "LINEAR_OUT", {}, "Will make the tonemapper output in linear color space and not in sRGB"},
+
+	{SDR_TYPE_GAMMA_BLIT, false, SDR_FLAG_GAMMA_HDR10, "HDR10_OUTPUT", {}, "Encode the gamma-corrected frame for HDR10 (PQ / BT.2020) output instead of SDR"},
 
 	{SDR_TYPE_SHADOW_MAP_GEN, true, SDR_FLAG_SHADOW_FALLBACK, "GEOMETRY_FALLBACK", {}, "Use a geometry shader to select the cascade layer instead of writing gl_Layer from the vertex shader"}
 };

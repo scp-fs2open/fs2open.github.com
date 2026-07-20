@@ -1,3 +1,5 @@
+#include "gamma.sdr"
+
 #ifdef VULKAN
 layout(location = 0) in vec2 fragTexCoord;
 layout(location = 0) out vec4 fragOut0;
@@ -15,19 +17,39 @@ layout(std140)
 #endif
 uniform genericData {
 	float gamma;
-	float pad[3];
+	float hdr_paperwhite_nits; // HDR10_OUTPUT only
+	float hdr_peak_nits;       // HDR10_OUTPUT only
+	float pad[1];
 };
 
-// Final whole-frame output-encode pass (SDR leg): applies the user
-// gamma/brightness slider to the fully composited, already display-ready
-// sRGB-encoded frame (3D scene + menus/HUD alike) right before it's written
-// into the swap chain image. See VulkanRenderer::encodeToSwapChain().
+// Final whole-frame output-encode pass: applies the user gamma/brightness
+// slider to the fully composited, display-ready frame (3D scene + menus/HUD
+// alike) right before it's written into the swap chain image. The gamma curve
+// is shared between the two output legs so the slider behaves consistently:
+//
+//   * SDR (default, both backends): the input is already sRGB-encoded, so just
+//     apply the gamma slider. See VulkanRenderer::encodeToSwapChain().
+//   * HDR10_OUTPUT (Vulkan only, when the swap chain negotiated HDR10 =
+//     BT.2020 + ST.2084): the input is the shared extended-sRGB encoding from
+//     tonemapping-f.sdr's HdrScene tonemapper (1.0 == paper white). After the
+//     gamma slider, decode to linear, scale to display nits, convert to BT.2020
+//     primaries and apply PQ (ST.2084).
 void main()
 {
 	vec4 color = texture(tex, fragTexCoord.xy);
 
 	float g = max(gamma, 0.001);
+
+#ifdef HDR10_OUTPUT
+	color.rgb = pow(max(color.rgb, vec3(0.0)), vec3(1.0 / g));
+
+	vec3 lin = srgb_to_linear(max(color.rgb, vec3(0.0)));
+	vec3 nits = min(lin * hdr_paperwhite_nits, vec3(hdr_peak_nits));
+	vec3 rec2020 = bt709_to_bt2020(nits / 10000.0);
+	fragOut0 = vec4(linear_to_pq(rec2020), 1.0);
+#else
 	color.rgb = pow(color.rgb, vec3(1.0 / g));
 
 	fragOut0 = color;
+#endif
 }

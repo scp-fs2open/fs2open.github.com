@@ -747,12 +747,12 @@ void vulkan_calculate_irrmap()
 
 		// Set 0: Global (all fallback)
 		vk::DescriptorSet globalSet = descManager->allocateFrameSet(DescriptorSetIndex::Global);
-		Verify(globalSet);
+		Assert(globalSet);
 		writer.writeSet(globalSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Global));
 
 		// Set 1: Material (envmap cubemap at element 0 of texture array)
 		vk::DescriptorSet materialSet = descManager->allocateFrameSet(DescriptorSetIndex::Material);
-		Verify(materialSet);
+		Assert(materialSet);
 		writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
 		{
 			std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texImages;
@@ -763,7 +763,7 @@ void vulkan_calculate_irrmap()
 
 		// Set 2: PerDraw (face UBO at binding 0)
 		vk::DescriptorSet perDrawSet = descManager->allocateFrameSet(DescriptorSetIndex::PerDraw);
-		Verify(perDrawSet);
+		Assert(perDrawSet);
 		writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
 		writer.setBuffer(PerDrawBinding::GenericData, {faceUBO,
 			static_cast<vk::DeviceSize>(face) * UBO_SLOT_SIZE, UBO_SLOT_SIZE});

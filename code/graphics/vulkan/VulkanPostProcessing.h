@@ -864,12 +864,13 @@ public:
 	 *
 	 * Begins/ends the given render pass on the swap chain framebuffer and draws a
 	 * fullscreen triangle that samples sourceView, binding uboData into the
-	 * per-draw GenericData slot from the scratch ring. The two public legs differ
-	 * only in shaderType + UBO struct.
+	 * per-draw GenericData slot from the scratch ring. The two public legs share
+	 * the gamma-correct shader and differ only in shaderFlags (SDR vs
+	 * HDR10_OUTPUT) + the UBO values.
 	 */
 	void encodeToSwapChainPass(vk::CommandBuffer cmd, vk::RenderPass renderPass, vk::Framebuffer framebuffer,
 	                           vk::Extent2D extent, vk::ImageView sourceView, vk::Sampler sampler,
-	                           int shaderType, const void* uboData, size_t uboSize);
+	                           int shaderType, unsigned int shaderFlags, const void* uboData, size_t uboSize);
 
   public:
 

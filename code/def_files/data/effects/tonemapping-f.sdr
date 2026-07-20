@@ -127,8 +127,9 @@ vec3 linearToneMapping(vec3 hdr_color)
 // Display-referred, paper-white-relative. Unlike every other tonemapper here,
 // this one does not compress to [0,1] -- it keeps linear values with
 // head-room above paper white (up to peak_nits/paperwhite_nits), stored in
-// the shared extended-sRGB encoding that hdr10-encode-f.sdr later expects as
-// its input. Only ever selected via TonemapperAlgorithm::HdrScene, which
+// the shared extended-sRGB encoding that the HDR10 output-encode pass
+// (gamma-correct-f.sdr's HDR10_OUTPUT variant) later expects as its input.
+// Only ever selected via TonemapperAlgorithm::HdrScene, which
 // current_tonemapper() forces exclusively whenever HDR10 output is active.
 vec3 hdrSceneToneMapping(vec3 hdr_color)
 {

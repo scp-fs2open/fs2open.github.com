@@ -186,11 +186,11 @@ void VulkanDistortion::update(vk::CommandBuffer cmd, float frametime)
 			goto skip_noise;
 		}
 
-		Verify(m_ctx->memoryManager->allocateBufferMemory(stagingBuf, MemoryUsage::CpuOnly, stagingAlloc));
+		Assert(m_ctx->memoryManager->allocateBufferMemory(stagingBuf, MemoryUsage::CpuOnly, stagingAlloc));
 
 		{
 			auto* pixels = static_cast<uint8_t*>(m_ctx->memoryManager->mapMemory(stagingAlloc));
-			Verify(pixels);
+			Assert(pixels);
 			for (int i = 0; i < 32; i++) {
 				pixels[(i * 4) + 0] = static_cast<uint8_t>(::util::Random::next(256));  // R
 				pixels[(i * 4) + 1] = static_cast<uint8_t>(::util::Random::next(256));  // G

@@ -94,14 +94,14 @@ const vk::DescriptorImageInfo& DescriptorFallbacks::getImage(vk::ImageViewType t
 
 void DescriptorWriter::writeSet(vk::DescriptorSet set, const DescriptorSetTemplate& tmpl)
 {
-	Verify(m_fallbacks);
+	Assert(m_fallbacks);
 
 	// Clear binding slots for this set
 	m_bindingSlots = {};
 
 	for (const auto& b : tmpl) {
-		Verify(m_writeCount < MAX_WRITES);
-		Verify(b.binding < MAX_BINDINGS_PER_SET);
+		Assert(m_writeCount < MAX_WRITES);
+		Assert(b.binding < MAX_BINDINGS_PER_SET);
 
 		auto& w = m_writes[m_writeCount++];
 		w = vk::WriteDescriptorSet();
@@ -117,7 +117,7 @@ void DescriptorWriter::writeSet(vk::DescriptorSet set, const DescriptorSetTempla
 		bool isImage = (b.type == vk::DescriptorType::eCombinedImageSampler);
 		bool isAccelStruct = (b.type == vk::DescriptorType::eAccelerationStructureKHR);
 		if (isImage) {
-			Verify(m_imageInfoCount + b.count <= MAX_IMAGE_INFOS);
+			Assert(m_imageInfoCount + b.count <= MAX_IMAGE_INFOS);
 			auto* dst = &m_imageInfos[m_imageInfoCount];
 			const auto& fallbackImg = m_fallbacks->getImage(b.viewType);
 			for (uint32_t j = 0; j < b.count; ++j) {
@@ -129,8 +129,8 @@ void DescriptorWriter::writeSet(vk::DescriptorSet set, const DescriptorSetTempla
 		} else if (isAccelStruct) {
 			// No setAccelStruct() override step needed: m_fallbacks->shadowTlas IS
 			// the live value, kept fresh once per frame by setCurrentShadowTlas().
-			Verify(b.count == 1);
-			Verify(m_accelStructInfoCount < MAX_ACCEL_STRUCT_INFOS);
+			Assert(b.count == 1);
+			Assert(m_accelStructInfoCount < MAX_ACCEL_STRUCT_INFOS);
 			auto* dst = &m_accelStructInfos[m_accelStructInfoCount];
 			*dst = m_fallbacks->shadowTlas;
 
@@ -142,7 +142,7 @@ void DescriptorWriter::writeSet(vk::DescriptorSet set, const DescriptorSetTempla
 			w.pNext = &asInfo;
 			m_accelStructInfoCount++;
 		} else {
-			Verify(m_bufferInfoCount < MAX_BUFFER_INFOS);
+			Assert(m_bufferInfoCount < MAX_BUFFER_INFOS);
 			m_bufferInfos[m_bufferInfoCount] = m_fallbacks->buffer;
 			w.pBufferInfo = &m_bufferInfos[m_bufferInfoCount];
 			slot.bufferInfo = &m_bufferInfos[m_bufferInfoCount++];
@@ -164,9 +164,9 @@ void DescriptorWriter::flush()
 
 void DescriptorWriter::setBuffer(uint32_t binding, const vk::DescriptorBufferInfo& info)
 {
-	Verify(binding < MAX_BINDINGS_PER_SET);
+	Assert(binding < MAX_BINDINGS_PER_SET);
 	auto& slot = m_bindingSlots[binding];
-	Verify(slot.bufferInfo);
+	Assert(slot.bufferInfo);
 	if (info.buffer) {
 		*slot.bufferInfo = info;
 	} else {
@@ -176,9 +176,9 @@ void DescriptorWriter::setBuffer(uint32_t binding, const vk::DescriptorBufferInf
 
 void DescriptorWriter::setImage(uint32_t binding, const vk::DescriptorImageInfo& info)
 {
-	Verify(binding < MAX_BINDINGS_PER_SET);
+	Assert(binding < MAX_BINDINGS_PER_SET);
 	auto& slot = m_bindingSlots[binding];
-	Verify(slot.imageInfo);
+	Assert(slot.imageInfo);
 	if (info.imageView) {
 		*slot.imageInfo = info;
 	} else {
@@ -188,10 +188,10 @@ void DescriptorWriter::setImage(uint32_t binding, const vk::DescriptorImageInfo&
 
 void DescriptorWriter::setImageArray(uint32_t binding, ArrayView<vk::DescriptorImageInfo> infos)
 {
-	Verify(binding < MAX_BINDINGS_PER_SET);
+	Assert(binding < MAX_BINDINGS_PER_SET);
 	auto& slot = m_bindingSlots[binding];
-	Verify(slot.imageInfo);
-	Verify(infos.size <= slot.count);
+	Assert(slot.imageInfo);
+	Assert(infos.size <= slot.count);
 	memcpy(slot.imageInfo, infos.data, infos.size * sizeof(vk::DescriptorImageInfo));
 }
 

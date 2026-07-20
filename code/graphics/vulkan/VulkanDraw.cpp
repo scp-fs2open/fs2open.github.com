@@ -115,14 +115,14 @@ void vulkan_update_transform_buffer(void* data, size_t size)
 			return;
 		}
 
-		Verify(memManager->allocateBufferMemory(newBuffer, MemoryUsage::CpuToGpu, newAllocation));
+		Assert(memManager->allocateBufferMemory(newBuffer, MemoryUsage::CpuToGpu, newAllocation));
 
 		// Copy data already written this frame from old buffer
 		if (tb.buffer && tb.writeOffset > 0) {
 			void* oldMapped = memManager->mapMemory(tb.allocation);
 			void* newMapped = memManager->mapMemory(newAllocation);
-			Verify(oldMapped);
-			Verify(newMapped);
+			Assert(oldMapped);
+			Assert(newMapped);
 			memcpy(newMapped, oldMapped, tb.writeOffset);
 			memManager->unmapMemory(tb.allocation);
 			memManager->unmapMemory(newAllocation);
@@ -141,7 +141,7 @@ void vulkan_update_transform_buffer(void* data, size_t size)
 
 	// Upload new data at the aligned offset
 	void* mapped = memManager->mapMemory(tb.allocation);
-	Verify(mapped);
+	Assert(mapped);
 	memcpy(static_cast<char*>(mapped) + alignedOffset, data, size);
 	memManager->flushMemory(tb.allocation, alignedOffset, size);
 	memManager->unmapMemory(tb.allocation);
@@ -754,7 +754,7 @@ void VulkanDrawManager::renderShadowDraw(gr_buffer_handle ubo_handle, size_t ubo
 		writer.reset(descManager->getDevice(), descManager->getFallbacks());
 
 		vk::DescriptorSet globalSet = descManager->allocateFrameSet(DescriptorSetIndex::Global);
-		Verify(globalSet);
+		Assert(globalSet);
 		writer.writeSet(globalSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Global));
 		{
 			const auto& pending = getPendingUniformBinding(static_cast<size_t>(uniform_block_type::ShadowCascadeParams));
@@ -767,7 +767,7 @@ void VulkanDrawManager::renderShadowDraw(gr_buffer_handle ubo_handle, size_t ubo
 		}
 
 		vk::DescriptorSet materialSet = descManager->allocateFrameSet(DescriptorSetIndex::Material);
-		Verify(materialSet);
+		Assert(materialSet);
 		writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
 		{
 			vk::Buffer buf = bufferManager->getVkBuffer(ubo_handle);
@@ -787,7 +787,7 @@ void VulkanDrawManager::renderShadowDraw(gr_buffer_handle ubo_handle, size_t ubo
 		}
 
 		vk::DescriptorSet perDrawSet = descManager->allocateFrameSet(DescriptorSetIndex::PerDraw);
-		Verify(perDrawSet);
+		Assert(perDrawSet);
 		writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
 		writer.flush();
 
@@ -1335,7 +1335,7 @@ bool VulkanDrawManager::applyMaterial(material* mat, primitive_type prim_type, v
 		const bool shadowReady = (pp && pp->shadow().isInitialized());
 		if (m_globalSetDirty || !m_cachedGlobalSet || shadowReady != m_cachedGlobalHadShadow) {
 			m_cachedGlobalSet = descManager->allocateFrameSet(DescriptorSetIndex::Global);
-			Verify(m_cachedGlobalSet);
+			Assert(m_cachedGlobalSet);
 			writer.writeSet(m_cachedGlobalSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Global));
 			bindPendingUBOs(DescriptorSetIndex::Global);
 			if (shadowReady) {
@@ -1388,7 +1388,7 @@ bool VulkanDrawManager::applyMaterial(material* mat, primitive_type prim_type, v
 			materialSet = m_cachedMaterialSet;
 		} else {
 			materialSet = descManager->allocateFrameSet(DescriptorSetIndex::Material);
-			Verify(materialSet);
+			Assert(materialSet);
 			writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
 			bindPendingUBOs(DescriptorSetIndex::Material);
 			if (matInputs.transformBuffer) {
@@ -1427,7 +1427,7 @@ bool VulkanDrawManager::applyMaterial(material* mat, primitive_type prim_type, v
 			perDrawSet = m_cachedPerDrawSet;
 		} else {
 			perDrawSet = descManager->allocateFrameSet(DescriptorSetIndex::PerDraw);
-			Verify(perDrawSet);
+			Assert(perDrawSet);
 			writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
 			bindPendingUBOs(DescriptorSetIndex::PerDraw);
 			m_cachedPerDrawSet = perDrawSet;

@@ -303,7 +303,7 @@ void VulkanFog::renderScene(vk::CommandBuffer cmd)
 
 	// Set 1: Material
 	vk::DescriptorSet materialSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Material);
-	Verify(materialSet);
+	Assert(materialSet);
 	writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
 	{
 		std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texArrayInfos;
@@ -315,7 +315,7 @@ void VulkanFog::renderScene(vk::CommandBuffer cmd)
 
 	// Set 2: PerDraw — fog UBO (from the per-frame scratch ring)
 	vk::DescriptorSet perDrawSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::PerDraw);
-	Verify(perDrawSet);
+	Assert(perDrawSet);
 	writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
 	{
 		vk::DeviceSize slotOffset =
@@ -420,7 +420,7 @@ void VulkanFog::renderVolumetric(vk::CommandBuffer cmd)
 			return;
 		}
 
-		Verify(m_ctx->memoryManager->allocateImageMemory(m_emissiveMipmapped.image, MemoryUsage::GpuOnly, m_emissiveMipmapped.allocation));
+		Assert(m_ctx->memoryManager->allocateImageMemory(m_emissiveMipmapped.image, MemoryUsage::GpuOnly, m_emissiveMipmapped.allocation));
 
 		// Create full-mip-chain view for LOD sampling
 		vk::ImageViewCreateInfo viewInfo;
@@ -612,7 +612,7 @@ void VulkanFog::renderVolumetric(vk::CommandBuffer cmd)
 
 	// Set 1: Material
 	vk::DescriptorSet materialSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Material);
-	Verify(materialSet);
+	Assert(materialSet);
 	writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
 	{
 		std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texArrayInfos;
@@ -636,7 +636,7 @@ void VulkanFog::renderVolumetric(vk::CommandBuffer cmd)
 
 	// Set 2: PerDraw — volumetric fog UBO (from the per-frame scratch ring)
 	vk::DescriptorSet perDrawSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::PerDraw);
-	Verify(perDrawSet);
+	Assert(perDrawSet);
 	writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
 	{
 		vk::DeviceSize slotOffset =

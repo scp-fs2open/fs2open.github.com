@@ -238,16 +238,6 @@ struct tonemapping_data {
 	float pad[3];
 };
 
-// Output-encode pass (hdr10-encode-f.sdr): HDR10 (PQ/BT.2020) encode plus the
-// user gamma/brightness slider, invoked once per frame instead of
-// tonemapping_data's shader when the swap chain negotiated HDR10 output.
-struct hdr10_encode_data {
-	float hdr_paperwhite_nits;
-	float hdr_peak_nits;
-	float gamma;
-	float pad[1];
-};
-
 struct smaa_data {
 	vec2d smaa_rt_metrics;
 
@@ -426,9 +416,15 @@ struct irrmap_data {
 	int face;
 };
 
-struct gamma_blit_data {
+// Final output-encode pass (gamma-correct-f.sdr). The SDR leg uses only `gamma`;
+// the HDR10 leg (SDR_FLAG_GAMMA_HDR10 / HDR10_OUTPUT variant) additionally uses
+// the paper-white and peak nits. `gamma` is field 0 so both legs read it from
+// the same std140 offset.
+struct gamma_encode_data {
 	float gamma;
-	float pad[3];
+	float hdr_paperwhite_nits; // HDR10_OUTPUT only
+	float hdr_peak_nits;       // HDR10_OUTPUT only
+	float pad[1];
 };
 
 } // namespace generic_data

@@ -904,7 +904,7 @@ bool VulkanTextureManager::upload3DTexture(int handle, bitmap* bm, int texDepth)
 
 	// Copy data to staging buffer
 	void* mapped = m_memoryManager->mapMemory(stagingAllocation);
-	Verify(mapped);
+	Assert(mapped);
 	memcpy(mapped, reinterpret_cast<const void*>(bm->data), dataSize);
 	m_memoryManager->flushMemory(stagingAllocation, 0, dataSize);
 	m_memoryManager->unmapMemory(stagingAllocation);
@@ -1184,7 +1184,7 @@ bool VulkanTextureManager::uploadTexture2D(int handle, bitmap* bm, int compType)
 
 	// Copy data to staging buffer
 	void* mapped = m_memoryManager->mapMemory(stagingAllocation);
-	Verify(mapped);
+	Assert(mapped);
 	if (isCompressed) {
 		// Compressed data: copy raw block data directly (includes all mip levels)
 		memcpy(mapped, reinterpret_cast<const void*>(bm->data), dataSize);
@@ -1544,7 +1544,7 @@ void VulkanTextureManager::update_texture(int bitmap_handle, int bpp, const ubyt
 
 	// Copy data to staging buffer
 	void* mapped = m_memoryManager->mapMemory(stagingAllocation);
-	Verify(mapped);
+	Assert(mapped);
 	if (bpp == 24) {
 		graphics::util::expand_BGR_to_BGRA(data, static_cast<uint8_t*>(mapped), w * h);
 	} else {

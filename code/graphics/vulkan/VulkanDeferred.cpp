@@ -368,13 +368,13 @@ void vulkan_deferred_lighting_msaa()
 
 			// Global set (fallback — resolve shader doesn't use global bindings)
 			vk::DescriptorSet globalSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Global);
-			Verify(globalSet);
+			Assert(globalSet);
 			writer.writeSet(globalSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Global));
 
 			// Material set: All 6 MSAA textures in binding 1 array (elements 0-5)
 			// [0]=color, [1]=position, [2]=normal, [3]=specular, [4]=emissive, [5]=depth
 			vk::DescriptorSet materialSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Material);
-			Verify(materialSet);
+			Assert(materialSet);
 			writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
 
 			// Build texture array: elements 0-5 are MSAA textures, 6-15 are fallback
@@ -396,7 +396,7 @@ void vulkan_deferred_lighting_msaa()
 
 			// PerDraw set: GenericData UBO with {samples, fov} at binding 0
 			vk::DescriptorSet perDrawSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::PerDraw);
-			Verify(perDrawSet);
+			Assert(perDrawSet);
 			writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
 
 			struct MsaaResolveData {
@@ -985,12 +985,12 @@ void vulkan_render_decals(decal_material* material_info,
 
 	// Set 0: Global (all fallback)
 	vk::DescriptorSet globalSet = descManager->allocateFrameSet(DescriptorSetIndex::Global);
-	Verify(globalSet);
+	Assert(globalSet);
 	writer.writeSet(globalSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Global));
 
 	// Set 1: Material
 	vk::DescriptorSet materialSet = descManager->allocateFrameSet(DescriptorSetIndex::Material);
-	Verify(materialSet);
+	Assert(materialSet);
 	writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
 
 	// Binding 2: DecalGlobals UBO
@@ -1024,7 +1024,7 @@ void vulkan_render_decals(decal_material* material_info,
 
 	// Set 2: PerDraw
 	vk::DescriptorSet perDrawSet = descManager->allocateFrameSet(DescriptorSetIndex::PerDraw);
-	Verify(perDrawSet);
+	Assert(perDrawSet);
 	writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
 	writer.setBuffer(PerDrawBinding::Matrices,
 		getPendingBufInfo(static_cast<size_t>(uniform_block_type::Matrices)));

@@ -174,13 +174,13 @@ void PostProcessContext::drawFullscreenTriangle(vk::CommandBuffer cmd, vk::Rende
 	vk::DescriptorSet globalSet;
 	if (bindGlobalSet) {
 		globalSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Global);
-		Verify(globalSet);
+		Assert(globalSet);
 		writer.writeSet(globalSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Global));
 	}
 
 	// Set 1: Material
 	vk::DescriptorSet materialSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Material);
-	Verify(materialSet);
+	Assert(materialSet);
 	writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
 	{
 		std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texArrayInfos;
@@ -192,7 +192,7 @@ void PostProcessContext::drawFullscreenTriangle(vk::CommandBuffer cmd, vk::Rende
 
 	// Set 2: PerDraw
 	vk::DescriptorSet perDrawSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::PerDraw);
-	Verify(perDrawSet);
+	Assert(perDrawSet);
 	writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
 	if (uboData != nullptr && uboSize > 0 && scratchRing.isValid()) {
 		vk::DeviceSize slotOffset = scratchRing.alloc(descriptorMgr->getCurrentFrame(), uboData, uboSize);
@@ -279,7 +279,7 @@ void PostProcessContext::drawFullscreenTriangleMulti(vk::CommandBuffer cmd, vk::
 	writer.reset(device, descriptorMgr->getFallbacks());
 
 	vk::DescriptorSet materialSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Material);
-	Verify(materialSet);
+	Assert(materialSet);
 	writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
 	{
 		std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texArrayInfos;
@@ -291,7 +291,7 @@ void PostProcessContext::drawFullscreenTriangleMulti(vk::CommandBuffer cmd, vk::
 	}
 
 	vk::DescriptorSet perDrawSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::PerDraw);
-	Verify(perDrawSet);
+	Assert(perDrawSet);
 	writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
 	if (uboData != nullptr && uboSize > 0 && scratchRing.isValid()) {
 		vk::DeviceSize slotOffset = scratchRing.alloc(descriptorMgr->getCurrentFrame(), uboData, uboSize);
