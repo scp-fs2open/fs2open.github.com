@@ -5,6 +5,8 @@
 
 #include <globalincs/globals.h>
 #include <mission/util.h>
+#include <object/waypoint.h>
+#include <ui/util/menu.h>
 
 namespace fso::fred::dialogs {
 
@@ -33,6 +35,21 @@ WaypointEditorDialog::WaypointEditorDialog(FredView* parent, EditorViewport* vie
 		initializeUi();
 		updateUi();
 	});
+
+	// "Select Waypoint Path" menu: jump the editor to any path in the mission.
+	auto* model = _model.get();
+	util::installSelectMenu(
+		this,
+		[]() {
+			std::vector<util::SelectMenuEntry> entries;
+			for (int i = 0; i < static_cast<int>(Waypoint_lists.size()); i++) {
+				entries.push_back({QString::fromUtf8(Waypoint_lists[i].get_name()), i});
+			}
+			return entries;
+		},
+		[model]() { return model->hasMultipleSelection() ? -1 : model->getSelectedPathIndex(); },
+		[model](int idx) { model->selectWaypointPathByIndex(idx); },
+		tr("&Select Waypoint Path"));
 
 	// Resize the dialog to the minimum size
 	resize(QDialog::sizeHint());

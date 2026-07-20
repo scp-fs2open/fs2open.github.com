@@ -45,6 +45,8 @@ public:
 
 	void selectNextPath();
 	void selectPreviousPath();
+	void selectWaypointPathByIndex(int idx);
+	int getSelectedPathIndex() const;
 
 signals:
 	void waypointPathMarkingChanged();
@@ -58,7 +60,6 @@ private: // NOLINT(readability-redundant-access-specifiers)
 	void initializeData();
 	void showErrorDialogNoCancel(const SCP_string& message);
 	bool validateName(const SCP_string& name);
-	void selectWaypointPathByIndex(int idx);
 
 	SCP_vector<int> _selectedWaypointPaths; // indices into Waypoint_lists
 	SCP_string _currentName;
