@@ -1372,11 +1372,12 @@ void obj_move_all_post(object *objp, float frametime)
 
 					light_color.multiply_rgbai(r_mult, g_mult, b_mult, 1.f, intensity_mult);
 
-					if(light_radius > 0.0f && intensity_mult > 0.0f && light_color.i() > 0.0f)
+					if(light_radius > 0.0f && intensity_mult > 0.0f && light_color.i() > 0.0f) {
 						// LASER-rendered weapons (the common case: primary bolts) fire far more often
 						// than missiles, so excluding them from raytraced-shadow candidacy is a large,
 						// cheap cut to the number of lights that pass through that selection each frame.
 						light_add_point(&objp->pos, light_radius, light_radius, &light_color, source_radius, wi->render_type == WRT_LASER);
+					}
 				}
 			}
 
