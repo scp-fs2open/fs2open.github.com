@@ -29,6 +29,12 @@ enum class OtherKind {
 	JumpNode,
 };
 
+enum class SexpDataMenuStyle {
+	Auto = 0,
+	Columns = 1,
+	Searchable = 2,
+};
+
 struct ViewSettings {
 	bool Universal_heading = false;
 	bool Show_stars = true;
@@ -231,6 +237,8 @@ class EditorViewport {
 	bool Show_sexp_help_wing_editor = false;
 
 	ThemeMode Theme_mode = ThemeMode::System;
+
+	SexpDataMenuStyle Sexp_data_menu_style = SexpDataMenuStyle::Auto;
 
 	void saveSettings() const;
 

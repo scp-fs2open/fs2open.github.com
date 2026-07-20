@@ -34,6 +34,7 @@ private slots:
 	void on_toolbarIconSizeCombo_currentIndexChanged(int index);
 	void on_outlineLodCombo_currentIndexChanged(int index);
 	void on_themeCombo_currentIndexChanged(int index);
+	void on_sexpDataMenuStyleCombo_currentIndexChanged(int index);
 	void on_showSexpHelpMissionEvents_toggled(bool checked);
 	void on_showSexpHelpMissionGoals_toggled(bool checked);
 	void on_showSexpHelpMissionCutscenes_toggled(bool checked);

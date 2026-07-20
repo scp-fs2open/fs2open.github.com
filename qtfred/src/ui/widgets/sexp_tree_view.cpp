@@ -1,12 +1,14 @@
 #include "sexp_tree_view.h"
 #include "mission/util.h"
 #include "mission/Editor.h"
+#include "mission/EditorViewport.h"
 #include "mission/object.h"
 
 #include <ui/util/menu.h>
 #include <ui/util/SignalBlockers.h>
 #include <ui/dialogs/VariableDialog.h>
 #include <ui/Theme.h>
+#include <ui/widgets/sexp_data_menu.h>
 
 #include <QtWidgets/QMessageBox>
 #include <QtWidgets/QMenu>
@@ -1325,32 +1327,30 @@ std::unique_ptr<QMenu> sexp_tree_view::buildContextMenu(QTreeWidgetItem* h) {
 	replace_number_act->setEnabled(state.can_replace_number);
 	replace_string_act->setEnabled(state.can_replace_string);
 
-	// Build add data menu items
-	if (state.add_data_list) {
-		sexp_list_item* ptr = state.add_data_list;
+	const SexpDataMenuStyle dataMenuStyle = _viewport ? _viewport->Sexp_data_menu_style : SexpDataMenuStyle::Columns;
+
+	auto collectDataItems = [](sexp_list_item* head) {
+		std::vector<SexpDataMenuItem> out;
+		sexp_list_item* ptr = head;
 		int data_idx = 0;
 		while (ptr) {
 			if (ptr->op < 0) {
-				add_data_menu->addAction(QString::fromStdString(ptr->text),
-					this, [this, data_idx]() { addReplaceTypedDataHandler(data_idx, false); });
+				out.push_back({QString::fromStdString(ptr->text), data_idx});
 			}
 			data_idx++;
 			ptr = ptr->next;
 		}
+		return out;
+	};
+
+	if (state.add_data_list) {
+		populateSexpDataSubmenu(add_data_menu, collectDataItems(state.add_data_list), dataMenuStyle,
+			[this](int data_idx) { addReplaceTypedDataHandler(data_idx, false); });
 	}
 
-	// Build replace data menu items
 	if (state.replace_data_list) {
-		sexp_list_item* ptr = state.replace_data_list;
-		int data_idx = 0;
-		while (ptr) {
-			if (ptr->op < 0) {
-				replace_data_menu->addAction(QString::fromStdString(ptr->text),
-					this, [this, data_idx]() { addReplaceTypedDataHandler(data_idx, true); });
-			}
-			data_idx++;
-			ptr = ptr->next;
-		}
+		populateSexpDataSubmenu(replace_data_menu, collectDataItems(state.replace_data_list), dataMenuStyle,
+			[this](int data_idx) { addReplaceTypedDataHandler(data_idx, true); });
 	}
 
 	// Clipboard and copy operations
