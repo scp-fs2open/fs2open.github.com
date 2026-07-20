@@ -178,6 +178,11 @@ class VulkanRenderer {
 	bool isTextureCompressionBCSupported() const;
 
 	/**
+	 * @brief Check if depth clamping is supported (used by the shadow pass)
+	 */
+	bool isDepthClampSupported() const;
+
+	/**
 	 * @brief Check if vertex shader layer output is supported (for shadow cascades)
 	 */
 	bool supportsShaderViewportLayerOutput() const { return m_supportsShaderViewportLayerOutput; }

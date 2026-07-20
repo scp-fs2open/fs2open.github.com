@@ -23,7 +23,12 @@ class VulkanQueryManager {
 	void deleteQueryObject(int obj);
 
   private:
-	static const uint32_t POOL_CAPACITY = 4096;
+	// Number of query slots backing the VkQueryPool. Each in-flight timestamp/
+	// occlusion query consumes one slot until its result is read back; slots are
+	// recycled on deleteQueryObject/beginFrame. 4096 comfortably covers the
+	// per-frame query volume the engine issues (HUD/effect timers, occlusion
+	// tests) with headroom; raise it if createQueryObject ever starts failing.
+	static constexpr uint32_t POOL_CAPACITY = 4096;
 
 	struct QuerySlot {
 		bool inUse = false;      // true after createQueryObject, false after deleteQueryObject

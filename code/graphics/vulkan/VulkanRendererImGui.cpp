@@ -4,14 +4,6 @@
 
 #include "backends/imgui_impl_vulkan.h"
 #include "graphics/2d.h"
-#include "lighting/lighting.h"
-#include "mod_table/mod_table.h"
-
-#if SDL_VERSION_ATLEAST(2, 0, 6)
-#endif
-
-
-extern float flFrametime;
 
 namespace graphics::vulkan {
 

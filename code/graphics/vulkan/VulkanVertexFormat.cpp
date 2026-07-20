@@ -43,6 +43,10 @@ const VertexFormatMapping* getVertexFormatMapping(vertex_format_data::vertex_for
 			return &i;
 		}
 	}
+	// A missing mapping means a new vertex_format was added without a matching
+	// entry in VERTEX_FORMAT_MAPPINGS above -- a coding error, not bad user data.
+	// Catch it in debug; release still returns nullptr so callers fall back safely.
+	Assertion(false, "No Vulkan vertex format mapping for vertex_format %d", static_cast<int>(format));
 	return nullptr;
 }
 

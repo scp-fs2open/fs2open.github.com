@@ -2024,6 +2024,11 @@ void VulkanTextureManager::transitionImageLayout(vk::Image image, vk::Format for
 		barrier.dstAccess = vk::AccessFlagBits2::eMemoryRead;
 		barrier.srcStage = vk::PipelineStageFlagBits2::eAllCommands;
 		barrier.dstStage = vk::PipelineStageFlagBits2::eAllCommands;
+		// This path is currently unreached; if it fires, a specific, narrower
+		// transition entry should be added for this layout pair above.
+		nprintf(("vulkan", "VulkanTexture: generic (conservative) layout transition %d -> %d; "
+		                   "consider adding a dedicated barrier for this pair\n",
+			static_cast<int>(oldLayout), static_cast<int>(newLayout)));
 	}
 
 	cmdImageBarrier(commandBuffer, barrier);

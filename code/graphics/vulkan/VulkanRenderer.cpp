@@ -578,6 +578,8 @@ bool VulkanRenderer::readbackFramebuffer(ubyte** outPixels, uint32_t* outWidth, 
 	if (mappedPtr) {
 		auto* pixels = static_cast<ubyte*>(vm_malloc(static_cast<int>(outStride) * static_cast<int>(h)));
 		if (pixels) {
+			// TODO: support true HDR10 screenshots. The scene is rendered in fp16, but
+			// screenshots are currently tonemapped/clamped down to 8-bit LDR PNG here.
 			// Clamp fp16 value to [0,1]; NaN-safe (all NaN comparisons yield false → 0).
 			auto hf = [](uint16_t v) -> float {
 				float f = graphics::util::half_to_float(v);
@@ -646,6 +648,15 @@ bool VulkanRenderer::isTextureCompressionBCSupported() const
 	}
 
 	return m_deviceFeatures.textureCompressionBC == VK_TRUE;
+}
+
+bool VulkanRenderer::isDepthClampSupported() const
+{
+	if (!m_physicalDevice) {
+		return false;
+	}
+
+	return m_deviceFeatures.depthClamp == VK_TRUE;
 }
 
 void VulkanRenderer::waitIdle()

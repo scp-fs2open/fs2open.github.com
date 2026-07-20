@@ -152,6 +152,10 @@ void VulkanDeletionQueue::destroyResource(const PendingResource& resource)
 			if (res) {
 				m_device.destroyAccelerationStructureKHR(res);
 			}
+		} else {
+			// A new type was added to the PendingResource variant without a
+			// destruction handler here -- fail to compile so it can't leak.
+			static_assert(!std::is_same_v<T, T>, "Unhandled resource type in VulkanDeletionQueue::destroyResource");
 		}
 	}, resource);
 }

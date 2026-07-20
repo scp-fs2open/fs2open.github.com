@@ -237,11 +237,12 @@ vk::PipelineRasterizationStateCreateInfo createRasterizationState(
 	bool cullEnabled,
 	int fillMode,
 	bool frontFaceCW,
-	bool depthBiasEnabled)
+	bool depthBiasEnabled,
+	bool depthClampEnabled)
 {
 	vk::PipelineRasterizationStateCreateInfo info;
 
-	info.depthClampEnable = VK_FALSE;
+	info.depthClampEnable = depthClampEnabled ? VK_TRUE : VK_FALSE;
 	info.rasterizerDiscardEnable = VK_FALSE;
 
 	// Fill mode

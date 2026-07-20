@@ -236,6 +236,9 @@ void vulkan_deferred_lighting_begin(bool clearNonColorBufs)
 			rpBegin.pClearValues = clearValues.data();
 			cmd.beginRenderPass(rpBegin, vk::SubpassContents::eInline);
 			stateTracker->setRenderPass(pp->deferred().renderPassLoad(), 0);
+			// The G-buffer pass has multiple color attachments; pipelines built while
+			// it is bound must match, or deferred-on cockpits render incorrectly.
+			stateTracker->setColorAttachmentCount(VulkanDeferredGBuffer::GBUF_COLOR_ATTACHMENT_COUNT);
 		}
 
 		// Optionally clear non-color G-buffer attachments

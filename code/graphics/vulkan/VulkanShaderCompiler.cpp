@@ -246,7 +246,7 @@ SCP_vector<uint32_t> VulkanShaderCompiler::compile(const SCP_string& filename,
 			SCP_vector<uint32_t> spirv(fileSize / 4);
 			if (cfread(spirv.data(), 1, fileSize, cacheFile) == fileSize) {
 				cfclose(cacheFile);
-				nprintf(("Vulkan", "VulkanShaderCompiler: Cache hit for %s (flags=0x%x)\n",
+				nprintf(("vulkan", "VulkanShaderCompiler: Cache hit for %s (flags=0x%x)\n",
 				         filename.c_str(), flags));
 				return spirv;
 			}

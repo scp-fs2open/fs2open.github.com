@@ -449,7 +449,20 @@ void VulkanDeferredLighting::render(vk::CommandBuffer cmd)
 	uint32_t totalUBOSize = matrixDataOffset + (static_cast<uint32_t>(total_lights) * matrixDataSize);
 
 	if (totalUBOSize > DEFERRED_UBO_SIZE) {
-		nprintf(("vulkan", "VulkanPostProcessor: Deferred UBO overflow (%u > %u), skipping lights\n", totalUBOSize, DEFERRED_UBO_SIZE));
+		// Fire a release-visible warning once so a user who hits this knows to
+		// report it and we know to bump DEFERRED_MAX_LIGHTS / DEFERRED_UBO_SIZE.
+		// Subsequent overflows this session only log quietly to avoid spam.
+		static bool warned_deferred_ubo_overflow = false;
+		if (!warned_deferred_ubo_overflow) {
+			warned_deferred_ubo_overflow = true;
+			ReleaseWarning(LOCATION,
+				"Deferred lighting UBO overflow: needed %u bytes but the buffer is only %u "
+				"(%d lights this frame). Some lights will not be rendered. Please report this so "
+				"the deferred light budget (DEFERRED_MAX_LIGHTS) can be increased.",
+				totalUBOSize, DEFERRED_UBO_SIZE, static_cast<int>(total_lights));
+		} else {
+			nprintf(("vulkan", "VulkanPostProcessor: Deferred UBO overflow (%u > %u), skipping lights\n", totalUBOSize, DEFERRED_UBO_SIZE));
+		}
 		m_ctx->memoryManager->unmapMemory(m_deferredUBOAlloc);
 		return;
 	}

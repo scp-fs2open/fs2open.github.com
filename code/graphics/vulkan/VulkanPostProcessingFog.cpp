@@ -359,9 +359,18 @@ void VulkanFog::renderVolumetric(vk::CommandBuffer cmd)
 	const volumetric_nebula& neb = *The_mission.volumetrics;
 	Assertion(neb.isVolumeBitmapValid(), "Volumetric nebula was not properly initialized!");
 
-	// Get 3D texture handles
+	// Get 3D texture handles. The volume textures may not be resident yet, so
+	// upload them on demand (same pattern as the main texture binds in VulkanDraw).
 	int volHandle = neb.getVolumeBitmapHandle();
 	auto* volSlot = texMgr->getTextureSlot(volHandle);
+	if (!volSlot || !volSlot->imageView) {
+		bitmap* bmp = bm_lock(volHandle, 32, BMP_TEX_XPARENT);
+		if (bmp) {
+			texMgr->bm_data(volHandle, bmp, bm_is_compressed(volHandle));
+			bm_unlock(volHandle);
+			volSlot = texMgr->getTextureSlot(volHandle);
+		}
+	}
 	if (!volSlot || !volSlot->imageView) {
 		nprintf(("vulkan", "VulkanFog::renderVolumetric: Volume texture not available\n"));
 		return;
@@ -372,6 +381,14 @@ void VulkanFog::renderVolumetric(vk::CommandBuffer cmd)
 	if (noiseActive) {
 		int noiseHandle = neb.getNoiseVolumeBitmapHandle();
 		noiseSlot = texMgr->getTextureSlot(noiseHandle);
+		if (!noiseSlot || !noiseSlot->imageView) {
+			bitmap* bmp = bm_lock(noiseHandle, 32, BMP_TEX_XPARENT);
+			if (bmp) {
+				texMgr->bm_data(noiseHandle, bmp, bm_is_compressed(noiseHandle));
+				bm_unlock(noiseHandle);
+				noiseSlot = texMgr->getTextureSlot(noiseHandle);
+			}
+		}
 	}
 
 	// Prepare mipmapped emissive copy for LOD sampling
@@ -478,12 +495,10 @@ void VulkanFog::renderVolumetric(vk::CommandBuffer cmd)
 	// Fill volumetric fog UBO
 	graphics::generic_data::volumetric_fog_data volData;
 	{
-		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
-		gr_set_view_matrix(&Eye_position, &Eye_matrix);
+		// The projection/view matrices are already set at this point; setting them
+		// again here trips an assert, so just read the current matrices.
 		vm_inverse_matrix4(&volData.p_inv, &gr_projection_matrix);
 		vm_inverse_matrix4(&volData.v_inv, &gr_view_matrix);
-		gr_end_view_matrix();
-		gr_end_proj_matrix();
 
 		volData.zNear = Min_draw_distance;
 		volData.zFar = Max_draw_distance;

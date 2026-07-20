@@ -36,6 +36,7 @@ struct PipelineConfig {
 	bool cullEnabled = true;
 	bool frontFaceCW = false;  // Match OpenGL default (CCW); models override to CW
 	bool depthWriteEnabled = true;
+	bool depthClampEnabled = false;  // clamp depth to [near,far] instead of clipping (used by shadow render)
 
 	// Stencil state
 	bool stencilEnabled = false;

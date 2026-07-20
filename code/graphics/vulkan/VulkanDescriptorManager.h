@@ -179,6 +179,17 @@ class VulkanDescriptorManager {
 public:
 	static constexpr uint32_t MAX_TEXTURE_BINDINGS = 16;  // Texture array size
 
+	// Per-frame descriptor pool sizing. These are not hard limits: createFramePool()
+	// allocates one pool chunk of this size, and additional chunks are created
+	// automatically when a chunk is exhausted (see allocateSet's OutOfPoolMemory /
+	// FragmentedPool fallthrough). The number is a growth-granularity tradeoff --
+	// larger chunks waste memory, smaller chunks allocate pools more often.
+	// MAX_SETS_PER_POOL supports ~330 draw calls (3 sets each) per chunk; the per-
+	// type multipliers cover the worst-case bindings a single set can request.
+	static constexpr uint32_t MAX_SETS_PER_POOL = 1024;
+	static constexpr uint32_t MAX_UNIFORM_BUFFERS_PER_POOL = MAX_SETS_PER_POOL * 9;   // up to 9 UBOs per draw
+	static constexpr uint32_t MAX_SAMPLERS_PER_POOL = MAX_SETS_PER_POOL * 16;         // up to 16 samplers per material set
+
 	VulkanDescriptorManager() = default;
 	~VulkanDescriptorManager() = default;
 

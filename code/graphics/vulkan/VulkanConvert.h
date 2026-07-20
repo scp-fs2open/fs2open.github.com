@@ -91,13 +91,16 @@ vk::PipelineDepthStencilStateCreateInfo createDepthStencilState(
  * @param cullEnabled Whether back-face culling is enabled
  * @param fillMode Polygon fill mode (0 = fill, 1 = line, 2 = point)
  * @param frontFace Front face winding (true = CW, false = CCW)
+ * @param depthBiasEnabled Whether depth bias (polygon offset) is enabled
+ * @param depthClampEnabled Whether depth clamping (vs. clipping) is enabled
  * @return Vulkan rasterization state create info
  */
 vk::PipelineRasterizationStateCreateInfo createRasterizationState(
 	bool cullEnabled = true,
 	int fillMode = 0,
 	bool frontFaceCW = true,
-	bool depthBiasEnabled = false);
+	bool depthBiasEnabled = false,
+	bool depthClampEnabled = false);
 
 } // namespace graphics::vulkan
 

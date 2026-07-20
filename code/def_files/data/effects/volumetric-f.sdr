@@ -70,7 +70,13 @@ part of the volumetrics is adapted from Andrew Schneider's 2015 SIGGRAPH talk "T
 
 void main()
 {
+#ifdef VULKAN
+	// Vulkan's clip space has an inverted Y relative to OpenGL, so flip the
+	// reconstructed NDC Y when building the eye-space ray direction.
+	vec4 eyeDirection = p_inv * vec4(fragTexCoord.x * 2.0 - 1.0, -fragTexCoord.y * 2.0 + 1.0, -1, 1);
+#else
 	vec4 eyeDirection = p_inv * vec4(fragTexCoord.xy * 2.0 - 1.0, -1, 1);
+#endif
     eyeDirection.w = 0;
     vec3 rayDirection = normalize((v_inv * eyeDirection).xyz);
 

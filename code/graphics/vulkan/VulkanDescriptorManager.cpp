@@ -306,8 +306,10 @@ vk::DescriptorSet VulkanDescriptorManager::allocateFrameSet(DescriptorSetIndex s
 			return sets[0];
 		} catch (const vk::OutOfPoolMemoryError&) {
 			// Pool exhausted, fall through to create a new one
+			nprintf(("vulkan", "VulkanDescriptorManager: frame pool exhausted, allocating an additional pool chunk\n"));
 		} catch (const vk::FragmentedPoolError&) {
 			// Pool fragmented, fall through to create a new one
+			nprintf(("vulkan", "VulkanDescriptorManager: frame pool fragmented, allocating an additional pool chunk\n"));
 		}
 	}
 
@@ -397,15 +399,12 @@ void VulkanDescriptorManager::createSetLayouts()
 
 vk::UniqueDescriptorPool VulkanDescriptorManager::createFramePool()
 {
-	// Pool sizes per chunk - supports ~330 draw calls (3 sets each)
-	// If more are needed, additional pools are created automatically
-	constexpr uint32_t MAX_SETS_PER_POOL = 1024;
-	constexpr uint32_t MAX_UNIFORM_BUFFERS = MAX_SETS_PER_POOL * 9;   // up to 9 UBOs per draw
-	constexpr uint32_t MAX_SAMPLERS = MAX_SETS_PER_POOL * 16;         // up to 16 samplers per material set
-
+	// Pool sizing constants (with rationale) live next to the other descriptor
+	// constants in VulkanDescriptorManager.h. Additional pool chunks are created
+	// automatically when one is exhausted.
 	SCP_vector<vk::DescriptorPoolSize> poolSizes = {
-		{ vk::DescriptorType::eUniformBuffer, MAX_UNIFORM_BUFFERS },
-		{ vk::DescriptorType::eCombinedImageSampler, MAX_SAMPLERS },
+		{ vk::DescriptorType::eUniformBuffer, MAX_UNIFORM_BUFFERS_PER_POOL },
+		{ vk::DescriptorType::eCombinedImageSampler, MAX_SAMPLERS_PER_POOL },
 		{ vk::DescriptorType::eStorageBuffer, MAX_SETS_PER_POOL },
 	};
 	if (m_raytracingEnabled) {

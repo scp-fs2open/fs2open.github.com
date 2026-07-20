@@ -48,6 +48,7 @@ bool PipelineConfig::operator==(const PipelineConfig& other) const
 	       colorWriteMask.w == other.colorWriteMask.w &&
 	       fillMode == other.fillMode &&
 	       depthBiasEnabled == other.depthBiasEnabled &&
+	       depthClampEnabled == other.depthClampEnabled &&
 	       renderPass == other.renderPass &&
 	       subpass == other.subpass &&
 	       colorAttachmentCount == other.colorAttachmentCount &&
@@ -121,6 +122,7 @@ uint64_t PipelineConfig::hash() const
 	hashCombine(h, maskBits(colorWriteMask.x, colorWriteMask.y, colorWriteMask.z, colorWriteMask.w));
 	hashCombine(h, static_cast<uint64_t>(fillMode));
 	hashCombine(h, depthBiasEnabled ? 1u : 0u);
+	hashCombine(h, depthClampEnabled ? 1u : 0u);
 	hashCombine(h, handleToU64(static_cast<VkRenderPass>(renderPass)));
 	hashCombine(h, subpass);
 	hashCombine(h, colorAttachmentCount);
@@ -405,7 +407,7 @@ vk::UniquePipeline VulkanPipelineManager::createPipeline(const PipelineConfig& c
 
 	// Rasterization state
 	vk::PipelineRasterizationStateCreateInfo rasterizer = createRasterizationState(
-		config.cullEnabled, config.fillMode, config.frontFaceCW, config.depthBiasEnabled);
+		config.cullEnabled, config.fillMode, config.frontFaceCW, config.depthBiasEnabled, config.depthClampEnabled);
 
 	// Multisample state
 	vk::PipelineMultisampleStateCreateInfo multisampling;

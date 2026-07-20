@@ -487,8 +487,13 @@ private:
 	// each independently rounded up to minUniformBufferOffsetAlignment (device-
 	// dependent, queried at runtime in render()) -- 256 bytes is a conservative
 	// upper bound seen in practice, so budget worst-case 2x that per light.
-	static constexpr uint32_t DEFERRED_MAX_LIGHTS = 4096;
-	static constexpr uint32_t DEFERRED_UBO_SIZE = 64 * 1024 + DEFERRED_MAX_LIGHTS * 512; // ~2.06MB
+	//
+	// Sized well above the ~5000-object limit because particles, glowpoints, etc.
+	// can each contribute lights, so the effective ceiling is much higher than the
+	// object count. At ~8MB the buffer is cheap next to the frame's render targets,
+	// so we over-provision rather than risk the all-or-nothing overflow above.
+	static constexpr uint32_t DEFERRED_MAX_LIGHTS = 16384;
+	static constexpr uint32_t DEFERRED_UBO_SIZE = 64 * 1024 + DEFERRED_MAX_LIGHTS * 512; // ~8.06MB
 
 	PostProcessContext* m_ctx = nullptr;
 	const RenderTarget* m_sceneColor = nullptr;

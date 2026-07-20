@@ -724,6 +724,10 @@ void VulkanDrawManager::renderShadowDraw(gr_buffer_handle ubo_handle, size_t ubo
 	config.blendMode = ALPHA_BLEND_NONE;
 	config.colorWriteMask = {false, false, false, false};
 	config.depthBiasEnabled = true;
+	// Clamp depth in the shadow pass so geometry beyond the light frustum's far
+	// plane still writes depth instead of being clipped away. depthClamp is an
+	// optional device feature, so fall back to clipping where it's unsupported.
+	config.depthClampEnabled = getRendererInstance()->isDepthClampSupported();
 	config.renderPass = stateTracker->getCurrentRenderPass();
 	config.colorAttachmentCount = stateTracker->getColorAttachmentCount();
 	config.sampleCount = stateTracker->getCurrentSampleCount();
