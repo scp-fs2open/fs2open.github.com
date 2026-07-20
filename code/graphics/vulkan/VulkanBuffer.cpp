@@ -113,7 +113,8 @@ bool VulkanBufferManager::createFrameAllocBuffer(FrameBumpAllocator& alloc, size
 void VulkanBufferManager::initFrameAllocators()
 {
 	for (auto & m_frameAlloc : m_frameAllocs) {
-		Assert(createFrameAllocBuffer(m_frameAlloc, FRAME_ALLOC_INITIAL_SIZE));
+		Verification(createFrameAllocBuffer(m_frameAlloc, FRAME_ALLOC_INITIAL_SIZE),
+			"Failed to create Vulkan frame-allocator buffer during initialization");
 	}
 	nprintf(("vulkan", "Frame bump allocators initialized: %u x %zuKB\n",
 		MAX_FRAMES_IN_FLIGHT, FRAME_ALLOC_INITIAL_SIZE / 1024));
@@ -182,7 +183,7 @@ void VulkanBufferManager::growFrameAllocator()
 
 	// Create new buffer
 	alloc = {};
-	Assert(createFrameAllocBuffer(alloc, newCapacity));
+	Verification(createFrameAllocBuffer(alloc, newCapacity), "Failed to grow Vulkan frame-allocator buffer");
 }
 
 // ========== Init / Shutdown ==========
@@ -562,7 +563,7 @@ void VulkanBufferManager::updateBufferData(gr_buffer_handle handle, size_t size,
 			bufferObj.dataSize = 0;
 		}
 
-		Assert(createOrResizeBuffer(bufferObj, size));
+		Verification(createOrResizeBuffer(bufferObj, size), "Failed to create or resize Vulkan buffer");
 
 		// A null data pointer just allocates/resizes the buffer without writing
 		if (data) {

@@ -115,7 +115,8 @@ void vulkan_update_transform_buffer(void* data, size_t size)
 			return;
 		}
 
-		Assert(memManager->allocateBufferMemory(newBuffer, MemoryUsage::CpuToGpu, newAllocation));
+		Verification(memManager->allocateBufferMemory(newBuffer, MemoryUsage::CpuToGpu, newAllocation),
+			"Failed to allocate memory for Vulkan transform buffer");
 
 		// Copy data already written this frame from old buffer
 		if (tb.buffer && tb.writeOffset > 0) {

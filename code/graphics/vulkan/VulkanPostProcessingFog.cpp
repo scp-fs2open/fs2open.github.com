@@ -420,7 +420,8 @@ void VulkanFog::renderVolumetric(vk::CommandBuffer cmd)
 			return;
 		}
 
-		Assert(m_ctx->memoryManager->allocateImageMemory(m_emissiveMipmapped.image, MemoryUsage::GpuOnly, m_emissiveMipmapped.allocation));
+		Verification(m_ctx->memoryManager->allocateImageMemory(m_emissiveMipmapped.image, MemoryUsage::GpuOnly, m_emissiveMipmapped.allocation),
+			"Failed to allocate memory for mipmapped emissive image");
 
 		// Create full-mip-chain view for LOD sampling
 		vk::ImageViewCreateInfo viewInfo;

@@ -186,7 +186,8 @@ void VulkanDistortion::update(vk::CommandBuffer cmd, float frametime)
 			goto skip_noise;
 		}
 
-		Assert(m_ctx->memoryManager->allocateBufferMemory(stagingBuf, MemoryUsage::CpuOnly, stagingAlloc));
+		Verification(m_ctx->memoryManager->allocateBufferMemory(stagingBuf, MemoryUsage::CpuOnly, stagingAlloc),
+			"Failed to allocate staging buffer memory for distortion noise");
 
 		{
 			auto* pixels = static_cast<uint8_t*>(m_ctx->memoryManager->mapMemory(stagingAlloc));
