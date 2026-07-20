@@ -2861,22 +2861,29 @@ int Fred_mission_save::save_mission_info()
 	// this is compatible with non-SCP variants - Goober5000
 	fout(" %d", (The_mission.support_ships.max_support_ships == 0) ? 1 : 0);
 
+	// version-gated support options; see also check_for_25_1_data()
+	auto more_support_options_version = gameversion::version(25, 1);
+
 	if (save_config.save_format != MissionFormat::RETAIL) {
-		if (optional_string_fred("+Disallow Support Rearm:")) {
-			parse_comments(2);
-		} else {
-			fout("\n+Disallow Support Rearm:");
+		if (The_mission.required_fso_version >= more_support_options_version) {
+			if (optional_string_fred("+Disallow Support Rearm:")) {
+				parse_comments(2);
+			} else {
+				fout("\n+Disallow Support Rearm:");
+			}
+
+			fout(" %d", The_mission.support_ships.disallow_rearm ? 1 : 0);
 		}
 
-		fout(" %d", The_mission.support_ships.disallow_rearm ? 1 : 0);
+		if (The_mission.required_fso_version >= more_support_options_version) {
+			if (optional_string_fred("+Allow Support Rearm Weapon Precedence:")) {
+				parse_comments(2);
+			} else {
+				fout("\n+Allow Support Rearm Weapon Precedence:");
+			}
 
-		if (optional_string_fred("+Allow Support Rearm Weapon Precedence:")) {
-			parse_comments(2);
-		} else {
-			fout("\n+Allow Support Rearm Weapon Precedence:");
+			fout(" %d", The_mission.support_ships.allow_rearm_weapon_precedence ? 1 : 0);
 		}
-
-		fout(" %d", The_mission.support_ships.allow_rearm_weapon_precedence ? 1 : 0);
 	}
 
 	// here be WMCoolmon's hull and subsys repair stuff
@@ -2895,12 +2902,14 @@ int Fred_mission_save::save_mission_info()
 		}
 		fout(" %f", The_mission.support_ships.max_subsys_repair_val);
 
-		if (optional_string_fred("+Support Rearm Pool From Loadout:")) {
-			parse_comments(1);
-		} else {
-			fout("\n+Support Rearm Pool From Loadout:");
+		if (The_mission.required_fso_version >= more_support_options_version) {
+			if (optional_string_fred("+Support Rearm Pool From Loadout:")) {
+				parse_comments(1);
+			} else {
+				fout("\n+Support Rearm Pool From Loadout:");
+			}
+			fout(" %d", The_mission.support_ships.rearm_pool_from_loadout ? 1 : 0);
 		}
-		fout(" %d", The_mission.support_ships.rearm_pool_from_loadout ? 1 : 0);
 	}
 
 	if (Mission_all_attack) {
@@ -4511,7 +4520,23 @@ int Fred_mission_save::save_players()
 
 		fout(")");
 
-		if (save_config.save_format != MissionFormat::RETAIL && !The_mission.support_ships.rearm_pool_from_loadout) {
+		// version-gated support options; see also check_for_25_1_data()
+		auto more_support_options_version = gameversion::version(25, 1);
+
+		bool has_rearm_pool_entries = false;
+		if (save_config.save_format != MissionFormat::RETAIL && The_mission.required_fso_version >= more_support_options_version && !The_mission.support_ships.rearm_pool_from_loadout) {
+			for (j = 0; j < weapon_info_size(); j++) {
+				// mirror the skip conditions used when writing the pool below
+				if (!Weapon_info[j].wi_flags[Weapon::Info_Flags::Player_allowed] || Weapon_info[j].disallow_rearm) {
+					continue;
+				}
+				if (The_mission.support_ships.rearm_weapon_pool[i][j] != -1) {
+					has_rearm_pool_entries = true;
+					break;
+				}
+			}
+		}
+		if (has_rearm_pool_entries) {
 			if (optional_string_fred("+Support Rearm Pool:", "$Starting Shipname:")) {
 				parse_comments(2);
 			} else {
