@@ -15,6 +15,9 @@
 #include <QSignalBlocker>
 #include <QSettings>
 #include <QDateTime>
+#include <QPainter>
+#include <QVariantAnimation>
+#include <QEasingCurve>
 
 #include <project.h>
 
@@ -88,6 +91,47 @@ void copyActionSettings(QAction* action, T* target) {
 	// Double negate so that integers get promoted to a "true" boolean
 	action->setChecked(!!(*target));
 }
+
+// A translucent overlay that sweeps a soft white gleam left-to-right across
+// the status bar as its progress goes 0 -> 1. Used to celebrate a mission save.
+class StatusShineOverlay : public QWidget {
+public:
+	explicit StatusShineOverlay(QWidget* parent) : QWidget(parent) {
+		setAttribute(Qt::WA_TransparentForMouseEvents);
+		setAttribute(Qt::WA_NoSystemBackground);
+		setAttribute(Qt::WA_TranslucentBackground);
+	}
+
+	void setProgress(qreal p) {
+		_p = p;
+		update();
+	}
+
+protected:
+	void paintEvent(QPaintEvent*) override {
+		if (_p <= 0.0 || _p >= 1.0 || width() <= 0)
+			return;
+
+		const qreal w = width();
+		const qreal bandW = w * 0.5;    // width of the gleam
+		const qreal half = bandW / 2.0;
+		// The band center travels from fully off the left edge to fully off the
+		// right, so the gleam completely leaves the bar before the overlay vanishes.
+		const qreal center = -half + _p * (w + bandW);
+
+		QLinearGradient grad(center - half, 0.0, center + half, 0.0);
+
+		grad.setColorAt(0.0, QColor(255, 255, 255, 0));
+		grad.setColorAt(0.5, QColor(255, 255, 255, 170));
+		grad.setColorAt(1.0, QColor(255, 255, 255, 0));
+
+		QPainter painter(this);
+		painter.fillRect(rect(), grad);
+	}
+
+private:
+	qreal _p = 0.0;
+};
 
 }
 
@@ -930,9 +974,34 @@ void FredView::setLastSaved(const QDateTime& when) {
 
 	if (when.isValid()) {
 		_statusBarLastSaved->setText(tr("Last Saved: %1").arg(when.toString(QStringLiteral("MMM d, yyyy h:mm:ss AP"))));
+		triggerSaveShine();
 	} else {
 		_statusBarLastSaved->setText(tr("Last Saved: Never"));
 	}
+}
+
+void FredView::triggerSaveShine() {
+	auto* bar = statusBar();
+	if (!bar)
+		return;
+
+	auto* overlay = new StatusShineOverlay(bar);
+	overlay->setGeometry(bar->rect());
+	overlay->show();
+	overlay->raise();
+
+	auto* anim = new QVariantAnimation(overlay);
+	anim->setStartValue(0.0);
+	anim->setEndValue(1.0);
+	anim->setDuration(1000);
+	anim->setEasingCurve(QEasingCurve::InOutSine);
+	connect(anim, &QVariantAnimation::valueChanged, overlay, [overlay](const QVariant& v) {
+		overlay->setProgress(v.toReal());
+	});
+	connect(anim, &QVariantAnimation::finished, overlay, [overlay]() {
+		overlay->deleteLater();
+	});
+	anim->start(QAbstractAnimation::DeleteWhenStopped);
 }
 
 // ---------------------------------------------------------------------------
