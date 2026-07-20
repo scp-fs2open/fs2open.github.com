@@ -77,8 +77,10 @@ void LayerManagerDialog::updateUi() {
 
 	_refreshing = false;
 
-	// Update delete button based on selection
-	ui->deleteLayerButton->setEnabled(ui->layerList->currentRow() > 0);
+	// Update rename/delete buttons based on selection (row 0 is the default layer)
+	const bool nonDefaultSelected = ui->layerList->currentRow() > 0;
+	ui->renameLayerButton->setEnabled(nonDefaultSelected);
+	ui->deleteLayerButton->setEnabled(nonDefaultSelected);
 }
 
 void LayerManagerDialog::on_addLayerButton_clicked() {
@@ -106,6 +108,42 @@ void LayerManagerDialog::on_addLayerButton_clicked() {
 	}
 }
 
+void LayerManagerDialog::on_renameLayerButton_clicked() {
+	auto* item = ui->layerList->currentItem();
+	if (item == nullptr) {
+		return;
+	}
+
+	const QString oldName = item->text();
+	if (_model->isDefaultLayer(oldName.toUtf8().constData())) {
+		QMessageBox::warning(this, tr("Layer Error"), tr("The default layer cannot be renamed."));
+		return;
+	}
+
+	bool ok = false;
+	auto newName = QInputDialog::getText(this, tr("Rename Layer"), tr("Layer name:"), QLineEdit::Normal, oldName, &ok).trimmed();
+	if (!ok || newName == oldName) {
+		if (ok && newName.isEmpty()) {
+			QMessageBox::warning(this, tr("Layer Error"), tr("Layer name cannot be empty."));
+		}
+		return;
+	}
+
+	SCP_string error;
+	if (!_model->renameLayer(oldName.toUtf8().constData(), newName.toUtf8().constData(), &error)) {
+		QMessageBox::warning(this, tr("Layer Error"), QString::fromStdString(error));
+		return;
+	}
+
+	// Keep the renamed layer selected
+	for (int i = 0; i < ui->layerList->count(); ++i) {
+		if (ui->layerList->item(i)->text() == newName) {
+			ui->layerList->setCurrentRow(i);
+			break;
+		}
+	}
+}
+
 void LayerManagerDialog::on_deleteLayerButton_clicked() {
 	auto* item = ui->layerList->currentItem();
 	if (item == nullptr) {
@@ -125,6 +163,7 @@ void LayerManagerDialog::on_deleteLayerButton_clicked() {
 }
 
 void LayerManagerDialog::on_layerList_currentRowChanged(int row) {
+	ui->renameLayerButton->setEnabled(row > 0);
 	ui->deleteLayerButton->setEnabled(row > 0);
 }
 

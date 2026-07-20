@@ -37,6 +37,13 @@
           </widget>
          </item>
          <item>
+          <widget class="QPushButton" name="renameLayerButton">
+           <property name="text">
+            <string>Rename Layer</string>
+           </property>
+          </widget>
+         </item>
+         <item>
           <widget class="QPushButton" name="deleteLayerButton">
            <property name="text">
             <string>Delete Layer</string>

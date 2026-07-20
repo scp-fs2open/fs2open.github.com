@@ -2117,8 +2117,11 @@ void FredView::populateMoveToLayerMenu(int targetObject, QMenu* targetMenu) {
 		_viewport->getLayerVisibility(layerName, &visible);
 
 		auto* layerAction = new QAction(QString::fromStdString(layerName), dest);
-		layerAction->setCheckable(true);
-		layerAction->setChecked(_viewport->getObjectLayerName(targetObject) == layerName);
+		if (_viewport->getObjectLayerName(targetObject) == layerName) {
+			auto font = layerAction->font();
+			font.setBold(true);
+			layerAction->setFont(font);
+		}
 		layerAction->setEnabled(visible);
 
 		connect(layerAction, &QAction::triggered, this, [this, layerName, targetObject]() {

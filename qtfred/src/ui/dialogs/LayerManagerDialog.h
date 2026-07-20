@@ -23,6 +23,7 @@ public:
 
 private slots:
 	void on_addLayerButton_clicked();
+	void on_renameLayerButton_clicked();
 	void on_deleteLayerButton_clicked();
 	void on_layerList_currentRowChanged(int row);
 	void on_layerList_itemChanged(QListWidgetItem* item);

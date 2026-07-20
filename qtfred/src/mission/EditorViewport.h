@@ -127,6 +127,7 @@ class EditorViewport {
 	SCP_vector<SCP_string> getLayerNames() const;
 	bool addLayer(const SCP_string& name, SCP_string* errorMessage = nullptr);
 	bool deleteLayer(const SCP_string& name, SCP_string* errorMessage = nullptr);
+	bool renameLayer(const SCP_string& oldName, const SCP_string& newName, SCP_string* errorMessage = nullptr);
 	bool setLayerVisibility(const SCP_string& name, bool visible, SCP_string* errorMessage = nullptr);
 	bool getLayerVisibility(const SCP_string& name, bool* visible, SCP_string* errorMessage = nullptr) const;
 	void showAllLayers();
