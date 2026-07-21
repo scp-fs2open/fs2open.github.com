@@ -60,11 +60,20 @@ struct DescriptorFallbacks {
  */
 class DescriptorWriter {
 public:
-	static constexpr uint32_t MAX_WRITES = 32;
-	static constexpr uint32_t MAX_BUFFER_INFOS = 20;
-	static constexpr uint32_t MAX_IMAGE_INFOS = 24;
-	static constexpr uint32_t MAX_ACCEL_STRUCT_INFOS = 2;
-	static constexpr uint32_t MAX_BINDINGS_PER_SET = 16;
+	// Fixed capacities for the stack-allocated staging arrays below — NOT Vulkan
+	// hardware limits. They bound a single vkUpdateDescriptorSets batch (one
+	// writeSet), sized to comfortably cover the largest descriptor set layout the
+	// engine builds. Because the backing arrays live on the stack (see m_writes
+	// etc.), the numbers carry no runtime cost beyond that fixed footprint; the
+	// only failure mode is under-sizing, which is Assert-guarded at fill time in
+	// DescriptorWriter::writeSet (e.g. `Assert(m_writeCount < MAX_WRITES)`) so an
+	// oversized layout trips loudly in debug rather than silently overflowing.
+	// Raise these if a future set layout legitimately needs more bindings/infos.
+	static constexpr uint32_t MAX_WRITES = 32;           // distinct bindings written per batch
+	static constexpr uint32_t MAX_BUFFER_INFOS = 20;     // buffer descriptors staged per batch
+	static constexpr uint32_t MAX_IMAGE_INFOS = 24;      // image/sampler descriptors staged per batch
+	static constexpr uint32_t MAX_ACCEL_STRUCT_INFOS = 2; // TLAS descriptors staged per batch (RT)
+	static constexpr uint32_t MAX_BINDINGS_PER_SET = 16; // highest binding number addressable in a set
 
 	void reset(vk::Device device, const DescriptorFallbacks& fallbacks) {
 		m_device = device;
