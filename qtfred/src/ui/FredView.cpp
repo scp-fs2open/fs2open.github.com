@@ -2222,16 +2222,26 @@ void FredView::initializePopupMenus() {
 		if (fred->cur_waypoint != nullptr) {
 			waypoint_instance = Objects[fred->cur_waypoint->get_objnum()].instance;
 		}
-		_viewport->createWaypointAtScreenPos(_lastContextMenuLocalPos.x() * this->devicePixelRatio(),
+		const int objNum = _viewport->createWaypointAtScreenPos(_lastContextMenuLocalPos.x() * this->devicePixelRatio(),
 			_lastContextMenuLocalPos.y() * this->devicePixelRatio(),
 			waypoint_instance);
+		if (objNum >= 0) {
+			_mainStack->push(new fso::fred::CreateObjectCommand(Objects[objNum].pos,
+				_viewport->cur_model_index, _viewport->cur_prop_index, waypoint_instance,
+				CreateKind::Other, OtherKind::Waypoint, objNum, fred, _viewport)); // first redo() is a no-op
+		}
 	});
 	createOtherSubmenu->addAction(createWaypointAction);
 
 	auto* createJumpNodeAction = new QAction(tr("Jump Node"), createOtherSubmenu);
 	connect(createJumpNodeAction, &QAction::triggered, this, [this]() {
-		_viewport->createJumpNodeAtScreenPos(_lastContextMenuLocalPos.x() * this->devicePixelRatio(),
+		const int objNum = _viewport->createJumpNodeAtScreenPos(_lastContextMenuLocalPos.x() * this->devicePixelRatio(),
 			_lastContextMenuLocalPos.y() * this->devicePixelRatio());
+		if (objNum >= 0) {
+			_mainStack->push(new fso::fred::CreateObjectCommand(Objects[objNum].pos,
+				_viewport->cur_model_index, _viewport->cur_prop_index, -1,
+				CreateKind::Other, OtherKind::JumpNode, objNum, fred, _viewport)); // first redo() is a no-op
+		}
 	});
 	createOtherSubmenu->addAction(createJumpNodeAction);
 
@@ -2311,8 +2321,13 @@ void FredView::populateCreateShipSubmenu() {
 		}
 		auto* action = new QAction(QString::fromUtf8(Ship_info[i].name), _createShipSubmenu);
 		connect(action, &QAction::triggered, this, [this, i]() {
-			_viewport->createShipAtScreenPos(_lastContextMenuLocalPos.x() * this->devicePixelRatio(),
+			const int objNum = _viewport->createShipAtScreenPos(_lastContextMenuLocalPos.x() * this->devicePixelRatio(),
 				_lastContextMenuLocalPos.y() * this->devicePixelRatio(), i);
+			if (objNum >= 0) {
+				_mainStack->push(new fso::fred::CreateObjectCommand(Objects[objNum].pos,
+					i, _viewport->cur_prop_index, -1,
+					CreateKind::Ship, _viewport->cur_other_kind, objNum, fred, _viewport)); // first redo() is a no-op
+			}
 		});
 		_createShipSubmenu->addAction(action);
 	}
@@ -2325,9 +2340,14 @@ void FredView::populateCreatePropSubmenu() {
 		}
 		auto* action = new QAction(QString::fromStdString(Prop_info[i].name), _createPropSubmenu);
 		connect(action, &QAction::triggered, this, [this, i]() {
-			_viewport->createPropAtScreenPos(_lastContextMenuLocalPos.x() * this->devicePixelRatio(),
+			const int objNum = _viewport->createPropAtScreenPos(_lastContextMenuLocalPos.x() * this->devicePixelRatio(),
 				_lastContextMenuLocalPos.y() * this->devicePixelRatio(),
 				i);
+			if (objNum >= 0) {
+				_mainStack->push(new fso::fred::CreateObjectCommand(Objects[objNum].pos,
+					_viewport->cur_model_index, i, -1,
+					CreateKind::Prop, _viewport->cur_other_kind, objNum, fred, _viewport)); // first redo() is a no-op
+			}
 		});
 		_createPropSubmenu->addAction(action);
 	}
