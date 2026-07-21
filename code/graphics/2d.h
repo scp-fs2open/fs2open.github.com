@@ -1054,9 +1054,9 @@ extern const char *Resolution_prefixes[GR_NUM_RESOLUTIONS];
 extern bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, GraphicsAPI d_mode = GraphicsAPI::Default,
 					int d_width = GR_DEFAULT, int d_height = GR_DEFAULT, int d_depth = GR_DEFAULT);
 
-// The render API (GR_OPENGL/GR_VULKAN) selected via the "Graphics.RenderAPI" in-game option (or a mod's
+// The render API (GraphicsAPI::OpenGL/GraphicsAPI::Vulkan) selected via the "Graphics.RenderAPI" in-game option (or a mod's
 // default settings table). Does not account for the -vulkan command line override; see Cmdline_vulkan for that.
-extern int gr_get_configured_render_api();
+extern GraphicsAPI gr_get_configured_render_api();
 
 extern void gr_screen_resize(int width, int height);
 extern int gr_get_resolution_class(int width, int height);

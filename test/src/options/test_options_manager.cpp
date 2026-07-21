@@ -126,22 +126,22 @@ TEST(OptionsManagerOverride, EnumIntOverrideRoundTrips)
 
 // Graphics.RenderAPI only exists in builds compiled with Vulkan support (code/graphics/2d.cpp gates the whole
 // option definition on #ifdef WITH_VULKAN) -- in an OpenGL-only build there's nothing to choose between, so
-// gr_get_configured_render_api() just returns GR_DEFAULT and no option is registered at all.
+// gr_get_configured_render_api() just returns GraphicsAPI::Default and no option is registered at all.
 #ifdef WITH_VULKAN
 
 TEST(OptionsManagerOverride, RenderAPIOverrideRoundTrips)
 {
 	auto* opt = OptionsManager::instance()->getOptionByKey("Graphics.RenderAPI");
 	ASSERT_NE(opt, nullptr);
-	auto* typedOpt = static_cast<const Option<int>*>(opt);
+	auto* typedOpt = static_cast<const Option<GraphicsAPI>*>(opt);
 
 	// Exactly the payload shape built in cmdline.cpp's -vulkan handling.
 	SCP_string override;
-	sprintf(override, "%d", GR_VULKAN);
+	sprintf(override, "%d", static_cast<int>(GraphicsAPI::Vulkan));
 	OptionsManager::instance()->setOverride("Graphics.RenderAPI", override, "-vulkan");
 
-	ASSERT_EQ(typedOpt->getValue(), GR_VULKAN);
-	ASSERT_EQ(gr_get_configured_render_api(), GR_VULKAN);
+	ASSERT_EQ(typedOpt->getValue(), GraphicsAPI::Vulkan);
+	ASSERT_EQ(gr_get_configured_render_api(), GraphicsAPI::Vulkan);
 }
 
 TEST(OptionsManagerOverride, RenderAPIMenuInitPathDoesNotThrow)
@@ -155,10 +155,12 @@ TEST(OptionsManagerOverride, RenderAPIMenuInitPathDoesNotThrow)
 	ASSERT_EQ(opt->getType(), OptionType::Selection);
 	ASSERT_EQ(opt->getValidValues().size(), 2u);
 
-	OptionsManager::instance()->setOverride("Graphics.RenderAPI", std::to_string(GR_OPENGL), "-test");
+	OptionsManager::instance()->setOverride("Graphics.RenderAPI",
+		std::to_string(static_cast<int>(GraphicsAPI::OpenGL)), "-test");
 	ASSERT_EQ(opt->getCurrentValueDescription().display, "OpenGL");
 
-	OptionsManager::instance()->setOverride("Graphics.RenderAPI", std::to_string(GR_VULKAN), "-vulkan");
+	OptionsManager::instance()->setOverride("Graphics.RenderAPI",
+		std::to_string(static_cast<int>(GraphicsAPI::Vulkan)), "-vulkan");
 	ASSERT_EQ(opt->getCurrentValueDescription().display, "Vulkan");
 }
 
@@ -167,7 +169,7 @@ TEST(OptionsManagerOverride, RenderAPIMenuInitPathDoesNotThrow)
 TEST(OptionsManagerOverride, RenderAPIIsAbsentWithoutVulkanSupport)
 {
 	ASSERT_EQ(OptionsManager::instance()->getOptionByKey("Graphics.RenderAPI"), nullptr);
-	ASSERT_EQ(gr_get_configured_render_api(), GR_DEFAULT);
+	ASSERT_EQ(gr_get_configured_render_api(), GraphicsAPI::Default);
 }
 
 #endif
