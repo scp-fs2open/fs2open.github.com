@@ -1676,11 +1676,11 @@ void model_render_glowpoint_bitmap(int point_num, const vec3d *pos, const matrix
 
 		if ((shipp->is_arriving()) && (shipp->warpin_effect != nullptr)
 			&& Warp_params[shipp->warpin_params_index].warp_type != WT_HYPERSPACE) {
-			warp_effect = shipp->warpin_effect;
+			warp_effect = shipp->warpin_effect.get();
 		}
 		else if ((shipp->flags[Ship::Ship_Flags::Depart_warp]) && (shipp->warpout_effect != nullptr) 
 			&& Warp_params[shipp->warpout_params_index].warp_type != WT_HYPERSPACE) {
-			warp_effect = shipp->warpout_effect;
+			warp_effect = shipp->warpout_effect.get();
 		}
 
 		if (warp_effect != nullptr && point_is_clipped_by_warp(&world_pnt, warp_effect))
@@ -1835,10 +1835,10 @@ void model_render_glowpoint_add_light(int point_num, const vec3d *pos, const mat
 		WarpEffect* warp_effect = nullptr;
 
 		if ((shipp->is_arriving()) && Warp_params[shipp->warpin_params_index].warp_type != WT_HYPERSPACE) {
-			warp_effect = shipp->warpin_effect;
+			warp_effect = shipp->warpin_effect.get();
 		}
 		else if ((shipp->flags[Ship::Ship_Flags::Depart_warp]) && Warp_params[shipp->warpout_params_index].warp_type != WT_HYPERSPACE) {
-			warp_effect = shipp->warpout_effect;
+			warp_effect = shipp->warpout_effect.get();
 		}
 
 		if (warp_effect != nullptr && point_is_clipped_by_warp(&world_pnt, warp_effect))
@@ -2248,11 +2248,11 @@ void model_queue_render_thrusters(const model_render_params *interp, const polym
 
 				if ((shipp->is_arriving()) && (shipp->warpin_effect != nullptr)
 					&& Warp_params[shipp->warpin_params_index].warp_type != WT_HYPERSPACE) {
-					warp_effect = shipp->warpin_effect;
+					warp_effect = shipp->warpin_effect.get();
 				}
 				else if ((shipp->flags[Ship::Ship_Flags::Depart_warp]) && (shipp->warpout_effect != nullptr)
 					&& Warp_params[shipp->warpout_params_index].warp_type != WT_HYPERSPACE) {
-					warp_effect = shipp->warpout_effect;
+					warp_effect = shipp->warpout_effect.get();
 				}
 
 				if (warp_effect != nullptr && point_is_clipped_by_warp(&world_pnt, warp_effect))

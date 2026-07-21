@@ -537,8 +537,8 @@ static bool shadow_obj_clip_plane(const object* objp, shadow_render_list::clip_p
 
 	if (dfi.maintained_variables.bool_value) {
 		auto* dship = &Ships[dfi.maintained_variables.objp_value->instance];
-		WarpEffect* warp_effect = dship->is_arriving(ship::warpstage::BOTH, true)
-			? dship->warpin_effect : dship->warpout_effect;
+		auto* warp_effect = (dship->is_arriving(ship::warpstage::BOTH, true)
+			? dship->warpin_effect : dship->warpout_effect).get();
 		model_render_params dummy;
 		if (warp_effect->warpShipClip(&dummy)) {
 			clip->normal = dummy.get_clip_plane_normal();

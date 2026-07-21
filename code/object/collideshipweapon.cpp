@@ -435,9 +435,9 @@ static std::tuple<bool, bool, ship_weapon_collision_data> ship_weapon_check_coll
 		WarpEffect* warp_effect = nullptr;
 
 		if (shipp->flags[Ship::Ship_Flags::Depart_warp] && shipp->warpout_effect != nullptr) 
-			warp_effect = shipp->warpout_effect;
+			warp_effect = shipp->warpout_effect.get();
 		else if (shipp->flags[Ship::Ship_Flags::Arriving_stage_2] && shipp->warpin_effect != nullptr)
-			warp_effect = shipp->warpin_effect;
+			warp_effect = shipp->warpin_effect.get();
 
 		bool hull_no_collide, shield_no_collide;
 		hull_no_collide = shield_no_collide = false;

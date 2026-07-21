@@ -2617,29 +2617,6 @@ int wing_is_player_wing(int wing)
 }
 
 // Goober5000
-// This must be done when either the wing name or the custom name is changed.
-// (It's also duplicated in FS2, in post_process_mission, for setting the indexes at mission load.)
-void update_custom_wing_indexes()
-{
-	int i;
-
-	for (i = 0; i < MAX_STARTING_WINGS; i++)
-	{
-		Starting_wings[i] = wing_name_lookup(Starting_wing_names[i], 1);
-	}
-
-	for (i = 0; i < MAX_SQUADRON_WINGS; i++)
-	{
-		Squadron_wings[i] = wing_name_lookup(Squadron_wing_names[i], 1);
-	}
-
-	for (i = 0; i < MAX_TVT_WINGS; i++)
-	{
-		TVT_wings[i] = wing_name_lookup(TVT_wing_names[i], 1);
-	}
-}
-
-// Goober5000
 void update_texture_replacements(const char *old_name, const char *new_name)
 {
 	for (SCP_vector<texture_replace>::iterator ii = Fred_texture_replacements.begin(); ii != Fred_texture_replacements.end(); ++ii)

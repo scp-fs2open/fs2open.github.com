@@ -1491,14 +1491,6 @@
 #define ID_EDITORS_WAYPOINT             32979
 #define ID_VIEW_OUTLINES                32980
 #define ID_NEW_SHIP_TYPE                32981
-#define ID_NEW_PROP_TYPE                33104
-#define ID_STATIC_SHIP_LABEL            33105
-#define ID_STATIC_PROP_LABEL            33106
-#define ID_OUTLINE_LOD_0                33107
-#define ID_OUTLINE_LOD_1                33108
-#define ID_OUTLINE_LOD_2                33109
-#define ID_OUTLINE_LOD_3                33110
-#define ID_OUTLINE_LOD_4                33111
 #define ID_VIEW_OUTLINES_ON_SELECTED    32982
 #define ID_SHOW_STARFIELD               32983
 #define ID_ASTEROID_EDITOR              32984
@@ -1613,6 +1605,15 @@
 #define ID_MISC_POINTUSINGUVEC          33101
 #define ID_MUSIC_PLAYER                 33102
 #define ID_EDITORS_VOLUMETRICS          33103
+#define ID_NEW_PROP_TYPE                33104
+#define ID_STATIC_SHIP_LABEL            33105
+#define ID_STATIC_PROP_LABEL            33106
+#define ID_OUTLINE_LOD_0                33107
+#define ID_OUTLINE_LOD_1                33108
+#define ID_OUTLINE_LOD_2                33109
+#define ID_OUTLINE_LOD_3                33110
+#define ID_OUTLINE_LOD_4                33111
+#define ID_REORDER                      33112
 #define ID_INDICATOR_MODE               59142
 #define ID_INDICATOR_LEFT               59143
 #define ID_INDICATOR_RIGHT              59144
@@ -1626,7 +1627,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        340
 #define _APS_NEXT_CONTROL_VALUE         1747
-#define _APS_NEXT_COMMAND_VALUE         33112
+#define _APS_NEXT_COMMAND_VALUE         33113
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif

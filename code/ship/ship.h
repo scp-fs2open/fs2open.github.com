@@ -450,6 +450,64 @@ public:
 	void clear();
 };
 
+// The head sentinel of a ship's intrusive subsystem list.  The sentinel's
+// address is meaningful: the first node's prev and the last node's next point
+// back at it, and an empty list is self-referential (after list_init) or
+// null-linked (after construction or ship::clear).  Moving a ship would
+// otherwise leave the bookend nodes pointing at the old sentinel address, so
+// the move operations re-link them.  Copying is deleted: a copied sentinel
+// would alias another list's nodes.
+struct ship_subsys_sentinel : public ship_subsys
+{
+	ship_subsys_sentinel() = default;
+
+	ship_subsys_sentinel(const ship_subsys_sentinel &) = delete;
+	ship_subsys_sentinel &operator=(const ship_subsys_sentinel &) = delete;
+
+	ship_subsys_sentinel(ship_subsys_sentinel &&other) noexcept
+	{
+		take_links_from(other);
+	}
+
+	ship_subsys_sentinel &operator=(ship_subsys_sentinel &&other) noexcept
+	{
+		if (this != &other)
+		{
+			Assertion(next == nullptr || next == this, "Move-assigning over a sentinel whose subsystem list is not empty!  The destination's subsystems would be orphaned.");
+			take_links_from(other);
+		}
+		return *this;
+	}
+
+private:
+	void take_links_from(ship_subsys_sentinel &other) noexcept
+	{
+		if (other.next == nullptr)
+		{
+			// other was never list_init'd; match that state
+			next = nullptr;
+			prev = nullptr;
+		}
+		else if (other.next == &other)
+		{
+			// other is an initialized empty list
+			next = this;
+			prev = this;
+		}
+		else
+		{
+			// take ownership of the chain and re-point the bookends
+			next = other.next;
+			prev = other.prev;
+			next->prev = this;
+			prev->next = this;
+		}
+		// leave other as an initialized empty list, which is safe to iterate
+		other.next = &other;
+		other.prev = &other;
+	}
+};
+
 // structure for subsystems which tells us the total count of a particular type of subsystem (i.e.
 // we might have 3 engines), and the relative strength of the subsystem.  The #defines in model.h
 // for SUBSYSTEM_xxx will be used as indices into this array.
@@ -592,8 +650,8 @@ public:
 	int	really_final_death_time;	// Time until ship breaks up and disappears
 	vec3d	deathroll_rotvel;			// Desired death rotational velocity
 
-	WarpEffect *warpin_effect;
-	WarpEffect *warpout_effect;
+	std::unique_ptr<WarpEffect> warpin_effect;
+	std::unique_ptr<WarpEffect> warpout_effect;
 
 	int warpin_params_index;
 	int warpout_params_index;
@@ -655,7 +713,7 @@ public:
 	// of a particular subsystem, like engines).  The subsys_info struct is information for particular
 	// types of subsystems.  (i.e. the list might contain 3 engines.  There will be one subsys_info entry
 	// describing the state of all engines combined) -- MWA 4/1/97
-	ship_subsys	subsys_list;									//	linked list of subsystems for this ship.
+	ship_subsys_sentinel	subsys_list;						//	linked list of subsystems for this ship.
 	std::unique_ptr<ship_subsys*[]> subsys_list_indexer;		//	provides random-access lookup to the linked list
 	ship_subsys	*last_targeted_subobject[MAX_PLAYERS];	// Last subobject that has been targeted.  NULL if none;(player specific)
 	ship_subsys_info	subsys_info[SUBSYSTEM_MAX];		// info on particular generic types of subsystems	
@@ -850,6 +908,28 @@ public:
 		STAGE2,
 		BOTH,
 	};
+
+	// Ships support moving but not copying.  The defaulted moves are correct
+	// because the members carry the smarts: the subsys_list sentinel re-links
+	// its bookend nodes, and the owning pointers are unique_ptrs.  Callers must
+	// still fix up external back-references (Objects[].instance,
+	// Ai_info[].shipnum, etc.) -- see reassign_ship_slot in
+	// missioneditor/common.cpp.
+	// All the defaulted special member functions are defaulted in ship.cpp
+	// rather than here because they need the complete WarpEffect type.
+	// The moves are not declared noexcept because the implicit exception
+	// specification differs by standard library: MSVC and clang compute
+	// nothrow, but libstdc++ computes potentially-throwing for some members,
+	// making an explicit noexcept ill-formed there (a defaulted redeclaration
+	// may not strengthen the implicit specification).  The NOLINTs suppress
+	// clang-tidy's performance-noexcept-move-constructor, which only sees
+	// clang's computation.
+	ship();
+	~ship();
+	ship(const ship &) = delete;
+	ship &operator=(const ship &) = delete;
+	ship(ship &&);				// NOLINT(performance-noexcept-move-constructor)
+	ship &operator=(ship &&);	// NOLINT(performance-noexcept-move-constructor)
 
 	// reset to a completely blank ship
 	void clear();

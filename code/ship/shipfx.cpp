@@ -1264,9 +1264,9 @@ void shipfx_emit_spark( int n, int sn )
 	WarpEffect* warp_effect = nullptr;
 
 	if ((shipp->is_arriving()) && (shipp->warpin_effect))
-		warp_effect = shipp->warpin_effect;
+		warp_effect = shipp->warpin_effect.get();
 	else if ((shipp->flags[Ship::Ship_Flags::Depart_warp]) && (shipp->warpout_effect))
-		warp_effect = shipp->warpout_effect;
+		warp_effect = shipp->warpout_effect.get();
 
 	if (warp_effect != nullptr && point_is_clipped_by_warp(&outpnt, warp_effect))
 		return;
@@ -2950,50 +2950,44 @@ void ship_set_warp_effects(object *objp)
 	if (warpout_type & WT_DEFAULT_WITH_FIREBALL)
 		warpout_type = WT_DEFAULT;
 
-	if (shipp->warpin_effect != nullptr)
-		delete shipp->warpin_effect;
-
 	switch (warpin_type)
 	{
 		case WT_DEFAULT:
 		case WT_KNOSSOS:
 		case WT_DEFAULT_THEN_KNOSSOS:
-			shipp->warpin_effect = new WE_Default(objnum, WarpDirection::WARP_IN);
+			shipp->warpin_effect = std::make_unique<WE_Default>(objnum, WarpDirection::WARP_IN);
 			break;
 		case WT_IN_PLACE_ANIM:
-			shipp->warpin_effect = new WE_BSG(objnum, WarpDirection::WARP_IN);
+			shipp->warpin_effect = std::make_unique<WE_BSG>(objnum, WarpDirection::WARP_IN);
 			break;
 		case WT_SWEEPER:
-			shipp->warpin_effect = new WE_Homeworld(objnum, WarpDirection::WARP_IN);
+			shipp->warpin_effect = std::make_unique<WE_Homeworld>(objnum, WarpDirection::WARP_IN);
 			break;
 		case WT_HYPERSPACE:
-			shipp->warpin_effect = new WE_Hyperspace(objnum, WarpDirection::WARP_IN);
+			shipp->warpin_effect = std::make_unique<WE_Hyperspace>(objnum, WarpDirection::WARP_IN);
 			break;
 		default:
-			shipp->warpin_effect = new WarpEffect();
+			shipp->warpin_effect = std::make_unique<WarpEffect>();
 	}
-
-	if (shipp->warpout_effect != nullptr)
-		delete shipp->warpout_effect;
 
 	switch (warpout_type)
 	{
 		case WT_DEFAULT:
 		case WT_KNOSSOS:
 		case WT_DEFAULT_THEN_KNOSSOS:
-			shipp->warpout_effect = new WE_Default(objnum, WarpDirection::WARP_OUT);
+			shipp->warpout_effect = std::make_unique<WE_Default>(objnum, WarpDirection::WARP_OUT);
 			break;
 		case WT_IN_PLACE_ANIM:
-			shipp->warpout_effect = new WE_BSG(objnum, WarpDirection::WARP_OUT);
+			shipp->warpout_effect = std::make_unique<WE_BSG>(objnum, WarpDirection::WARP_OUT);
 			break;
 		case WT_SWEEPER:
-			shipp->warpout_effect = new WE_Homeworld(objnum, WarpDirection::WARP_OUT);
+			shipp->warpout_effect = std::make_unique<WE_Homeworld>(objnum, WarpDirection::WARP_OUT);
 			break;
 		case WT_HYPERSPACE:
-			shipp->warpout_effect = new WE_Hyperspace(objnum, WarpDirection::WARP_OUT);
+			shipp->warpout_effect = std::make_unique<WE_Hyperspace>(objnum, WarpDirection::WARP_OUT);
 			break;
 		default:
-			shipp->warpout_effect = new WarpEffect();
+			shipp->warpout_effect = std::make_unique<WarpEffect>();
 	}
 }
 

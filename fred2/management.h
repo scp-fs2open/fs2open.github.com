@@ -131,7 +131,6 @@ extern void management_add_ships_to_combo(CComboBox* box, int flags);
 
 // Goober5000
 extern int wing_is_player_wing(int wing);
-extern void update_custom_wing_indexes();
 extern void update_texture_replacements(const char* old_name, const char* new_name);
 
 // Load a button bitmap, remapping its background colors to system colors as needed.

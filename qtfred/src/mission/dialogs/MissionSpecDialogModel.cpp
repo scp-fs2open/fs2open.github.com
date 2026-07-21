@@ -12,6 +12,7 @@
 
 #include "cfile/cfile.h"
 #include "localization/localize.h"
+#include "missioneditor/common.h"
 #include "mission/missionmessage.h"
 #include "mission/mission_flags.h"
 #include "scripting/global_hooks.h"
@@ -227,7 +228,7 @@ bool MissionSpecDialogModel::apply() {
 		strcpy_s(TVT_wing_names[i], _m_custom_tvt_wings[i].c_str());
 	}
 
-	Editor::update_custom_wing_indexes();
+	update_custom_wing_indexes();
 
 	// scripts may rebuild LuaEnums when custom data/strings change.
 	if (scripting::hooks::FredOnMissionSpecsSave->isActive()) {
