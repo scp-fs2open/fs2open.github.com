@@ -277,7 +277,7 @@
         <item>
          <layout class="QVBoxLayout" name="sunLeftLayout">
           <item>
-           <widget class="QListWidget" name="sunsListWidget"/>
+           <widget class="QListWidget" name="sunListWidget"/>
           </item>
           <item>
            <layout class="QHBoxLayout" name="sunsButtonsLayout">

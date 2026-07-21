@@ -401,22 +401,6 @@ void MissionSpecDialog::on_supportRearmOptionsButton_clicked()
 	}
 }
 
-void MissionSpecDialog::on_toggleSupportShip_toggled(bool enabled) {
-	_model->setDisallowSupport(enabled);
-}
-
-void MissionSpecDialog::on_toggleHullRepair_toggled(bool enabled) {
-	_model->setMissionFlagDirect(Mission::Mission_Flags::Support_repairs_hull, enabled);
-}
-
-void MissionSpecDialog::on_hullRepairMax_valueChanged(double value) {
-	_model->setHullRepairMax((float)value);
-}
-
-void MissionSpecDialog::on_subsysRepairMax_valueChanged(double value) {
-	_model->setSubsysRepairMax((float)value);
-}
-
 void MissionSpecDialog::on_toggleTrail_toggled(bool enabled) {
 	_model->setMissionFlagDirect(Mission::Mission_Flags::Toggle_ship_trails, enabled);
 }
