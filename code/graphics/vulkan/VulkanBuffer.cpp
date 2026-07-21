@@ -462,7 +462,19 @@ bool VulkanBufferManager::createOrResizeBuffer(VulkanBufferObject& bufferObj, si
 		return false;
 	}
 
-	// Copy existing data from old buffer
+	// Preserve existing contents across the grow.
+	//
+	// This is intentionally a CPU-side copy across two host mappings, not a
+	// GPU-side vkCmdCopyBuffer. It is correct here because everything reaching
+	// createOrResizeBuffer is a static buffer, and getMemoryUsage() maps static
+	// usage to CpuToGpu (host-visible) memory — so both allocations are always
+	// mappable (the Asserts below cannot trip on this path) and their contents
+	// are CPU-authored, meaning the CPU already holds the authoritative bytes.
+	// Resize is grow-only (see the size check above), so this one-time copy is
+	// amortized. A device-local-only (GpuOnly) buffer could not be mapped and
+	// would require a vkCmdCopyBuffer with command-buffer synchronization; if
+	// such a usage is ever routed here, the Assert(oldMapped) will fire loudly
+	// rather than silently corrupting.
 	if (oldBuffer && oldDataSize > 0) {
 		void* oldMapped = m_memoryManager->mapMemory(oldAllocation);
 		void* newMapped = m_memoryManager->mapMemory(bufferObj.allocation);
@@ -470,6 +482,11 @@ bool VulkanBufferManager::createOrResizeBuffer(VulkanBufferObject& bufferObj, si
 		Assert(newMapped);
 
 		size_t copySize = std::min(oldDataSize, size);
+		// Mirror the post-write flush below: on non-coherent memory the source
+		// must be invalidated before the CPU reads it. This is a no-op on the
+		// coherent, CPU-authored buffers this path handles today, kept for
+		// correctness-by-construction if a non-coherent usage is ever added.
+		m_memoryManager->invalidateMemory(oldAllocation, 0, copySize);
 		memcpy(newMapped, oldMapped, copySize);
 		m_memoryManager->flushMemory(bufferObj.allocation, 0, copySize);
 
