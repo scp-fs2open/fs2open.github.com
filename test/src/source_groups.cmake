@@ -27,6 +27,12 @@ add_file_folder("Graphics"
 	   graphics/test_font.cpp
 )
 
+if (FSO_BUILD_WITH_VULKAN)
+	add_file_folder("Graphics\\\\Vulkan"
+		graphics/vulkan/test_vulkan_raytracing.cpp
+	)
+endif()
+
 add_file_folder("Math"
     math/test_vecmat.cpp
 )

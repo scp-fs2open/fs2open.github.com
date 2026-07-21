@@ -7,6 +7,7 @@
  * as the "mod table", and contains many misc FSO specific settings.
  */
 
+#include "cmdline/cmdline.h"
 #include "gamesnd/eventmusic.h"
 #include "def_files/def_files.h"
 #include "globalincs/version.h"

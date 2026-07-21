@@ -17,11 +17,6 @@ if [ "$RUNNER_OS" = "macOS" ]; then
     CXXFLAGS="-mtune=generic -pipe -Wno-unknown-pragmas"
     CFLAGS="-mtune=generic -pipe -Wno-unknown-pragmas"
     export CMAKE_OSX_ARCHITECTURES="$ARCHITECTURE"
-    # the ccache-action should install via homebrew, which means that we can't
-    # hardcode the correct path in the workflow and must override it instead
-    if [ ! "$CCACHE_PATH" = "" ]; then
-        CCACHE_PATH="$(brew --prefix)/bin/ccache"
-    fi
 else
     PLATFORM_CMAKE_OPTIONS="-DFSO_BUILD_APPIMAGE=ON -DFORCED_SIMD_INSTRUCTIONS=SSE2"
 
@@ -39,13 +34,16 @@ if [[ "$COMPILER" =~ ^clang.*$ ]]; then
     CMAKE_OPTIONS="$CMAKE_OPTIONS -DCLANG_USE_LIBCXX=${CLANG_USE_LIBCXX:-OFF}"
 fi
 
+if [ ! "$CCACHE_PATH" = "" ] && [ ! -x "$CCACHE_PATH" ]; then
+    # The configured path doesn't exist on this runner (e.g. macOS runners on Apple
+    # Silicon hosts install Homebrew under /opt/homebrew instead of /usr/local),
+    # so fall back to whatever ccache is actually on PATH.
+    CCACHE_PATH="$(command -v ccache || true)"
+fi
+
 if [ ! "$CCACHE_PATH" = "" ]; then
-    if [ -x "$CCACHE_PATH" ]; then
-        echo "Using ccache at $CCACHE_PATH"
-        CMAKE_OPTIONS="$CMAKE_OPTIONS -DCMAKE_C_COMPILER_LAUNCHER=$CCACHE_PATH -DCMAKE_CXX_COMPILER_LAUNCHER=$CCACHE_PATH"
-    else
-        echo "Invalid or missing ccache binary: $CCACHE_PATH"
-    fi
+    echo "Using ccache at $CCACHE_PATH"
+    CMAKE_OPTIONS="$CMAKE_OPTIONS -DCMAKE_C_COMPILER_LAUNCHER=$CCACHE_PATH -DCMAKE_CXX_COMPILER_LAUNCHER=$CCACHE_PATH"
 fi
 
 if [ -n "${ENABLE_QTFRED:-}" ]; then

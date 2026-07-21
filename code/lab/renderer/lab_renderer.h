@@ -3,6 +3,7 @@
 #include "globalincs/pstypes.h"
 #include "globalincs/flagset.h"
 #include "graphics/2d.h"
+#include "graphics/shadows.h"
 #include "lighting/lighting_profiles.h"
 #include "camera/camera.h"
 #include "cmdline/cmdline.h"
@@ -120,6 +121,30 @@ public:
 		Gr_aa_mode = mode;
 
 		Motion_debris_override = false;
+	}
+
+	// Session-only override, same as setAAMode -- does not touch the persisted
+	// Shadow Method option. Only meaningful when the caller has already checked
+	// gr_is_capable(CAPABILITY_RAYTRACED_SHADOWS).
+	static void setShadowRenderMethod(ShadowRenderMethod method) {
+		Shadow_render_method = method;
+	}
+
+	// Session-only override, same as setShadowRenderMethod -- does not touch the
+	// persisted Max Raytraced Shadow Lights option.
+	static void setMaxRtShadowLights(int count) {
+		Max_rt_shadow_lights = count;
+	}
+
+	// Session-only overrides, same as setMaxRtShadowLights -- do not touch the
+	// persisted Min/Max Raytraced Shadow Bias options. See Rt_shadow_bias_min/max
+	// in shadows.h.
+	static void setRtShadowBiasMin(float bias) {
+		Rt_shadow_bias_min = bias;
+	}
+
+	static void setRtShadowBiasMax(float bias) {
+		Rt_shadow_bias_max = bias;
 	}
 
 	static void setTonemapper(ltp::TonemapperAlgorithm mode) {

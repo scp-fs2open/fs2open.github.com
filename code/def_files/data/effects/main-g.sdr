@@ -41,7 +41,7 @@ layout (std140) uniform modelData {
 	vec4 clip_equation;
 
 	float thruster_scale;
-	bool use_clip_plane;
+	int use_clip_plane;
 	int n_lights;
 	float defaultGloss;
 
@@ -53,10 +53,10 @@ layout (std140) uniform modelData {
 
 	vec3 emissionFactor;
 
-	bool alphaGloss;
+	int alphaGloss;
 
-	bool gammaSpec;
-	bool envGloss;
+	int gammaSpec;
+	int envGloss;
 	int effect_num;
 	int sBasemapIndex;
 
@@ -69,7 +69,7 @@ layout (std140) uniform modelData {
 	float vpwidth;
 
 	float vpheight;
-	bool team_glow_enabled;
+	int team_glow_enabled;
 	float znear;
 	float zfar;
 
@@ -165,7 +165,7 @@ out VertexOutput {
                 	vertOut.shadowPos = vertIn[vert].shadowPos;
                 #prereplace ENDIF_FLAG //MODEL_SDR_FLAG_SHADOWS
 
-				if (use_clip_plane) {
+				if (use_clip_plane != 0) {
 					gl_ClipDistance[0] = gl_in[vert].gl_ClipDistance[0];
 				}
 				EmitVertex();

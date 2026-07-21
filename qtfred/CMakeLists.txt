@@ -52,6 +52,18 @@ elseif(NOT Qt6_FOUND)
     endif()
 endif()
 
+# Deploying Qt next to the binary only matters when we're using the prebuilt Qt,
+# whose libraries live outside the default library search path. System Qt
+# installs (Linux) are already found by the dynamic loader, and Qt's deploy
+# script chokes on some distro Qt installs anyway (e.g. Arch: KDE's
+# kimageformats plugins ship without an RPATH, and some plugin RPATHs are too
+# short for the deploy script's file(RPATH_SET) to rewrite) -- so skip
+# deployment entirely there instead of working around it.
+set(QTFRED_DEPLOY_QT ON)
+if(PLATFORM_LINUX AND NOT QT_USE_PRECOMPILED)
+    set(QTFRED_DEPLOY_QT OFF)
+endif()
+
 if(CLANG_USE_LIBCXX AND NOT APPLE)
     if(QT_USE_PRECOMPILED)
         message(FATAL_ERROR "Prebuilt Qt6 libraries are not compatible with clang's libc++!")
@@ -329,24 +341,26 @@ file(RPATH_SET FILE $<TARGET_FILE:qtfred> NEW_RPATH \"${QTFRED_RPATH_orig}\")\n"
     )
 endif()
 
-# deploy Qt libs/plugins
-add_custom_command(TARGET qtfred POST_BUILD
-    COMMAND ${CMAKE_COMMAND}
-        -D CMAKE_INSTALL_PREFIX=${QTFRED_DEPLOY_PREFIX}
-        -D QT_DEPLOY_PREFIX=${QTFRED_DEPLOY_PREFIX}
-        -D QT_DEPLOY_BIN_DIR=${BINARY_DESTINATION}
-        -D QT_DEPLOY_LIB_DIR=${LIBRAY_DESTINATION}
-        -P "${QTFRED_DEPLOY_SCRIPT}"
-    COMMENT "Running Qt deploy script..."
-    VERBATIM
-)
+if(QTFRED_DEPLOY_QT)
+    # deploy Qt libs/plugins
+    add_custom_command(TARGET qtfred POST_BUILD
+        COMMAND ${CMAKE_COMMAND}
+            -D CMAKE_INSTALL_PREFIX=${QTFRED_DEPLOY_PREFIX}
+            -D QT_DEPLOY_PREFIX=${QTFRED_DEPLOY_PREFIX}
+            -D QT_DEPLOY_BIN_DIR=${BINARY_DESTINATION}
+            -D QT_DEPLOY_LIB_DIR=${LIBRAY_DESTINATION}
+            -P "${QTFRED_DEPLOY_SCRIPT}"
+        COMMENT "Running Qt deploy script..."
+        VERBATIM
+    )
 
-install(CODE "
-    set(QT_DEPLOY_BIN_DIR ${BINARY_DESTINATION})
-    set(QT_DEPLOY_LIB_DIR ${LIBRAY_DESTINATION})
-" COMPONENT "qtFRED")
+    install(CODE "
+        set(QT_DEPLOY_BIN_DIR ${BINARY_DESTINATION})
+        set(QT_DEPLOY_LIB_DIR ${LIBRAY_DESTINATION})
+    " COMPONENT "qtFRED")
 
-install(SCRIPT "${QTFRED_DEPLOY_SCRIPT}" COMPONENT "qtFRED")
+    install(SCRIPT "${QTFRED_DEPLOY_SCRIPT}" COMPONENT "qtFRED")
+endif()
 
 if (FSO_INSTALL_DEBUG_FILES AND MSVC)
     install(FILES "$<TARGET_PDB_FILE:qtfred>"

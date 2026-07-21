@@ -12,6 +12,7 @@
 
 #include <cctype>
 
+#include "cmdline/cmdline.h"
 #include "cfile/cfile.h"
 #include "localization/localize.h"
 #include "osapi/osregistry.h"

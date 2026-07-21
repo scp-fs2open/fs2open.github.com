@@ -2,8 +2,8 @@
 #include "mission/management.h"
 
 #include "object.h"
-#include <project.h>
-#include <libs/ffmpeg/FFmpeg.h>
+
+#include "cmdline/cmdline.h"
 
 #include <asteroid/asteroid.h>
 #include <cutscene/cutscenes.h>
@@ -13,6 +13,7 @@
 #include <iff_defs/iff_defs.h>
 #include <io/key.h>
 #include <io/mouse.h>
+#include <libs/ffmpeg/FFmpeg.h>
 #include <lighting/lighting_profiles.h>
 #include <localization/fhash.h>
 #include <localization/localize.h>
@@ -26,9 +27,10 @@
 #include <nebula/neblightning.h>
 #include <parse/sexp.h>
 #include <parse/sexp/sexp_lookup.h>
+#include <project.h>
 #include <prop/prop.h>
-#include <scripting/scripting.h>
 #include <scripting/global_hooks.h>
+#include <scripting/scripting.h>
 #include <sound/audiostr.h>
 #include <starfield/starfield.h>
 #include <stats/medals.h>

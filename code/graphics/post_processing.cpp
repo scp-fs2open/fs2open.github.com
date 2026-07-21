@@ -260,7 +260,7 @@ void PostProcessingManager::setBloomShadersOk(bool ok)
 
 bool gr_lightshafts_enabled()
 {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return false;
 	}
 
@@ -278,7 +278,7 @@ bool gr_lightshafts_enabled()
 
 bool gr_sunglare_enabled()
 {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return false;
 	}
 
@@ -292,7 +292,7 @@ bool gr_sunglare_enabled()
 
 int gr_bloom_intensity()
 {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return 0;
 	}
 
@@ -305,7 +305,7 @@ int gr_bloom_intensity()
 
 void gr_set_bloom_intensity(int intensity)
 {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 

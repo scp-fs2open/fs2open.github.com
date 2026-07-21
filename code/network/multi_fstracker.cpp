@@ -11,6 +11,7 @@
 #include <netinet/in.h>
 #endif
 
+#include "cmdline/cmdline.h"
 #include "freespace.h"
 #include "io/timer.h"
 #include "gamesequence/gamesequence.h"

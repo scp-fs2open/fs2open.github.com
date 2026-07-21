@@ -77,7 +77,6 @@ static opengl_vertex_bind GL_array_binding_data[] =
 		{ vertex_format_data::POSITION4,	4, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::POSITION	},
 		{ vertex_format_data::POSITION3,	3, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::POSITION	},
 		{ vertex_format_data::POSITION2,	2, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::POSITION	},
-		{ vertex_format_data::SCREEN_POS,	2, GL_INT,				GL_FALSE, opengl_vert_attrib::POSITION	},
 		{ vertex_format_data::COLOR3,		3, GL_UNSIGNED_BYTE,	GL_TRUE, opengl_vert_attrib::COLOR		},
 		{ vertex_format_data::COLOR4,		4, GL_UNSIGNED_BYTE,	GL_TRUE, opengl_vert_attrib::COLOR		},
 		{ vertex_format_data::COLOR4F,		4, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::COLOR		},
@@ -371,8 +370,10 @@ void gr_opengl_delete_buffer(gr_buffer_handle handle)
 	glDeleteBuffers(1, &buffer_obj.buffer_id);
 }
 
-gr_buffer_handle gr_opengl_create_buffer(BufferType type, BufferUsageHint usage)
+gr_buffer_handle gr_opengl_create_buffer(BufferType type, BufferUsageHint usage, bool /*rt_capable*/)
 {
+	// rt_capable is a Vulkan-only concept (acceleration structure build input
+	// usage flags); OpenGL has no raytracing backend, so it is ignored here.
 	return opengl_create_buffer_object(convertBufferType(type), convertUsageHint(usage), usage);
 }
 
@@ -1002,11 +1003,6 @@ void opengl_tnl_set_model_material(model_material *material_info)
 
 	if ( material_info->is_batched() ) {
 		GL_state.Texture.Enable(10, GL_TEXTURE_BUFFER, opengl_get_transform_buffer_texture());
-	}
-
-	if ( Deferred_lighting ) {
-		// don't blend if we're drawing to the g-buffers
-		GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
 	}
 }
 

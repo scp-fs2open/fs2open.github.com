@@ -1213,11 +1213,7 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 		if ( use_blending ) {
 			use_depth_test = true;
 		} else {
-			if ( (model_flags & MR_NO_ZBUFFER) || (model_flags & MR_ALL_XPARENT) ) {
-				use_depth_test = false;
-			} else {
-				use_depth_test = true;
-			}
+			use_depth_test = !((model_flags & MR_NO_ZBUFFER) || (model_flags & MR_ALL_XPARENT));
 		}
 
 		gr_alpha_blend blend_mode = model_render_determine_blend_mode(texture_maps[TM_BASE_TYPE], use_blending);
@@ -1228,7 +1224,7 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 		}
 
 		rendering_material->set_depth_mode(depth_mode);
-		rendering_material->set_blend_mode(blend_mode);
+		rendering_material->set_blend_mode(depth_mode == ZBUFFER_TYPE_FULL ? ALPHA_BLEND_NONE : blend_mode);
 		
 		color clr = interp->get_color();
 		model_render_determine_color(&clr, alpha, blend_mode, no_texturing ? true : false, rendering_material->is_desaturated());

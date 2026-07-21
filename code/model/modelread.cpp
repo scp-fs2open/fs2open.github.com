@@ -271,6 +271,8 @@ void model_unload(int modelnum, int force)
 
 	mprintf(("Unloading model '%s' from slot '%i'\n", pm->filename, num));
 
+	gr_model_unloaded(pm->id);
+
 	// so that the textures can be released
 	pm->used_this_mission = 0;
 
@@ -3524,6 +3526,9 @@ int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool
 	unpause_parse();
 	if (sip != nullptr)
 		sip->model_num = pm->id;
+
+	gr_model_loaded(pm->id);
+
 	return pm->id;
 }
 

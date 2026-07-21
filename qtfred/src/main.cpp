@@ -1,6 +1,4 @@
-#include <unordered_map>
-#include <memory>
-#include <functional>
+#include "cmdline/cmdline.h"
 
 #include <QApplication>
 #include <QDir>
@@ -8,6 +6,9 @@
 #include <QStyleFactory>
 #include <QTimer>
 #include <QtCore/QLoggingCategory>
+#include <functional>
+#include <memory>
+#include <unordered_map>
 
 #ifdef _WIN32
 #include "globalincs/mspdb_callstack.h"

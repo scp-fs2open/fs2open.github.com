@@ -43,7 +43,7 @@ struct opengl_vertex_bind {
 	opengl_vert_attrib::attrib_id attribute_id;
 };
 
-gr_buffer_handle gr_opengl_create_buffer(BufferType type, BufferUsageHint usage);
+gr_buffer_handle gr_opengl_create_buffer(BufferType type, BufferUsageHint usage, bool rt_capable);
 
 void opengl_bind_buffer_object(gr_buffer_handle handle);
 void gr_opengl_update_buffer_data(gr_buffer_handle handle, size_t size, const void* data);

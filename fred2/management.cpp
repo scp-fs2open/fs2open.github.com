@@ -333,7 +333,7 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
  // 	Cmdline_noglow = 1;
  	Cmdline_window = 1;
 
-	gr_init(std::move(graphicsOps), GR_OPENGL, 640, 480, 32);
+	gr_init(std::move(graphicsOps), GraphicsAPI::OpenGL, 640, 480, 32);
 	gr_set_gamma(3.0f);
 
 	io::mouse::CursorManager::get()->showCursor(false);

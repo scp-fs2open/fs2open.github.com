@@ -4,8 +4,10 @@
 #include "lab_ui_helpers.h"
 
 #include "asteroid/asteroid.h"
+#include "graphics/2d.h"
 #include "graphics/debug_sphere.h"
 #include "graphics/matrix.h"
+#include "graphics/shadows.h"
 #include "lab/labv2_internal.h"
 #include "lighting/lighting_profiles.h"
 #include "ship/shiphit.h"
@@ -250,9 +252,9 @@ void LabUi::build_background_list()
 
 	// Remove any ignored missions from the list
 	SCP_vector<SCP_string> missions;
-	for (int i = 0; i < (int)t_missions.size(); i++) {
-		if (!mission_is_ignored(t_missions[i].c_str())) {
-			missions.push_back(t_missions[i]);
+	for (const auto & t_mission : t_missions) {
+		if (!mission_is_ignored(t_mission.c_str())) {
+			missions.push_back(t_mission);
 		}
 	}
 
@@ -416,7 +418,7 @@ void LabUi::show_controls_reference()
 	}
 }
 
-const char* antialiasing_settings[] = {
+static const char* antialiasing_settings[] = {
 	"None",
 	"FXAA Low",
 	"FXAA Medium",
@@ -427,7 +429,7 @@ const char* antialiasing_settings[] = {
 	"SMAA Ultra",
 };
 
-SCP_string tonemappers[] = {
+static SCP_string tonemappers[] = {
 	"Linear",
 	"Uncharted",
 	"ACES",
@@ -439,7 +441,7 @@ SCP_string tonemappers[] = {
 	"Reinhard Jodie",
 };
 
-const char* texture_quality_settings[] = {
+static const char* texture_quality_settings[] = {
 	"Minimum",
 	"Low",
 	"Medium",
@@ -490,18 +492,86 @@ void LabUi::build_antialiasing_combobox()
 			bool is_selected = static_cast<int>(Gr_aa_mode) == n;
 
 			if (Selectable(antialiasing_settings[n], is_selected))
-				getLabManager()->Renderer->setAAMode(static_cast<AntiAliasMode>(n));
+				LabRenderer::setAAMode(static_cast<AntiAliasMode>(n));
 
 			if (is_selected)
 				SetItemDefaultFocus();
 		}
 	}
 }
+
+static const char* shadow_render_method_settings[] = {
+	"Shadow Maps",
+	"Raytraced",
+};
+
+void LabUi::build_shadow_method_combobox()
+{
+	// Only offer this control at all when the hardware/renderer can actually do
+	// something with it -- same gate the in-game Shadow Method option's
+	// enumerator uses.
+	if (!shadows_raytracing_supported()) {
+		return;
+	}
+
+	with_Combo("Shadow method", shadow_render_method_settings[static_cast<int>(Shadow_render_method)])
+	{
+		for (int n = 0; n < IM_ARRAYSIZE(shadow_render_method_settings); n++) {
+			bool is_selected = static_cast<int>(Shadow_render_method) == n;
+
+			if (Selectable(shadow_render_method_settings[n], is_selected))
+				LabRenderer::setShadowRenderMethod(static_cast<ShadowRenderMethod>(n));
+
+			if (is_selected)
+				SetItemDefaultFocus();
+		}
+	}
+}
+
+void LabUi::build_max_rt_shadow_lights_slider()
+{
+	// Only meaningful when raytraced shadows are actually the active method.
+	if (!shadows_raytracing_supported() || Shadow_render_method != ShadowRenderMethod::Raytraced) {
+		return;
+	}
+
+	int count = Max_rt_shadow_lights;
+	if (SliderInt("Max Raytraced Shadow Lights", &count, 1, 8)) {
+		LabRenderer::setMaxRtShadowLights(count);
+	}
+}
+
+void LabUi::build_rt_shadow_bias_sliders()
+{
+	// Only meaningful when raytraced shadows are actually the active method.
+	if (!shadows_raytracing_supported() || Shadow_render_method != ShadowRenderMethod::Raytraced) {
+		return;
+	}
+
+	float bias_min = Rt_shadow_bias_min;
+	if (SliderFloat("Min RT Shadow Bias", &bias_min, 0.0f, 4.0f)) {
+		LabRenderer::setRtShadowBiasMin(bias_min);
+	}
+
+	float bias_max = Rt_shadow_bias_max;
+	if (SliderFloat("Max RT Shadow Bias", &bias_max, 0.5f, 16.0f)) {
+		LabRenderer::setRtShadowBiasMax(bias_max);
+	}
+}
+
+
 namespace ltp = lighting_profiles;
 using namespace ltp;
 
 void LabUi::build_tone_mapper_combobox()
 {
+	// current_tonemapper() forces TonemapperAlgorithm::HdrScene while HDR10
+	// output is active, ignoring whatever's stored -- so there's nothing
+	// meaningful left to pick here.
+	if (Gr_hdr_output_active) {
+		return;
+	}
+
 	with_Combo("Tonemapper", ltp::tonemapper_to_name(ltp::current_tonemapper()).c_str())
 	{
 		for (int n = 0; n < IM_ARRAYSIZE(tonemappers); n++) {
@@ -585,6 +655,12 @@ void LabUi::show_render_options()
 			SliderInt("Bloom level", &bloom_level, 0, 200);
 
 			build_antialiasing_combobox();
+
+			build_shadow_method_combobox();
+
+			build_max_rt_shadow_lights_slider();
+
+			build_rt_shadow_bias_sliders();
 
 			build_tone_mapper_combobox();
 
@@ -697,12 +773,12 @@ void LabUi::show_render_options()
 		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::NoParticles, no_particles);
 		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::UseOrthographicProjection, use_orthographic_projection);
 		getLabManager()->Renderer->setShowOrientationWidget(show_orientation_widget);
-		getLabManager()->Renderer->setEmissiveFactor(emissive_factor);
-		getLabManager()->Renderer->setAmbientFactor(ambient_factor);
-		getLabManager()->Renderer->setLightFactor(light_factor);
+		LabRenderer::setEmissiveFactor(emissive_factor);
+		LabRenderer::setAmbientFactor(ambient_factor);
+		LabRenderer::setLightFactor(light_factor);
 		getLabManager()->Renderer->setBloomLevel(bloom_level);
 		getLabManager()->Renderer->setExposureLevel(exposure_level);
-		getLabManager()->Renderer->setPPCValues(ppcv);
+		LabRenderer::setPPCValues(ppcv);
 	}
 }
 
@@ -742,7 +818,7 @@ static void build_ship_table_info_txtbox(ship_info* sip)
 		static SCP_string table_text;
 		static int old_class = getLabManager()->CurrentClass;
 
-		if (table_text.length() == 0 || old_class != getLabManager()->CurrentClass) {
+		if (table_text.empty() || old_class != getLabManager()->CurrentClass) {
 			table_text = get_ship_table_text(sip);
 			old_class = getLabManager()->CurrentClass;
 		}
@@ -763,7 +839,7 @@ static void build_weapon_table_info_txtbox(weapon_info* wip)
 		static SCP_string table_text;
 		static int old_class = getLabManager()->CurrentClass;
 
-		if (table_text.length() == 0 || old_class != getLabManager()->CurrentClass) {
+		if (table_text.empty() || old_class != getLabManager()->CurrentClass) {
 			table_text = get_weapon_table_text(wip);
 			old_class = getLabManager()->CurrentClass;
 		}
@@ -799,7 +875,7 @@ void LabUi::build_model_info_box(ship_info* sip, polymodel* pm) const {
 	}
 }
 
-void render_subsystem(ship_subsys* ss, object* objp)
+static void render_subsystem(ship_subsys* ss, object* objp)
 {
 	SCP_string buf;
 
@@ -854,7 +930,7 @@ void render_subsystem(ship_subsys* ss, object* objp)
 		// draw another cube around a gun for a two-part turret
 		if ((ss->system_info->turret_gun_sobj >= 0) &&
 			(ss->system_info->turret_gun_sobj != ss->system_info->subobj_num)) {
-			bsp_info* bsp_turret = &pm->submodel[ss->system_info->turret_gun_sobj];
+			bsp_info const* bsp_turret = &pm->submodel[ss->system_info->turret_gun_sobj];
 
 			front_top_left = bsp_turret->bounding_box[7];
 			front_top_right = bsp_turret->bounding_box[6];
@@ -1130,16 +1206,16 @@ void LabUi::build_weapon_options(ship* shipp) const {
 
 void LabUi::build_primary_weapon_combobox(SCP_string& text,
 	weapon_info* wip,
-	int& primary_slot) const
+	int& primary_slot)
 {
 	with_Combo(text.c_str(), wip->name)
 	{
 		for (size_t i = 0; i < Weapon_info.size(); i++) {
 			if (Weapon_info[i].subtype == WP_MISSILE)
 				continue;
-			bool is_selected = i == (size_t)primary_slot;
+			bool is_selected = i == static_cast<size_t>(primary_slot);
 			if (Selectable(Weapon_info[i].name, is_selected))
-				primary_slot = (int)i;
+				primary_slot = static_cast<int>(i);
 			if (is_selected)
 				SetItemDefaultFocus();
 		}
