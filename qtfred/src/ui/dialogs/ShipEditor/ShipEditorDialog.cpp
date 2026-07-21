@@ -109,7 +109,7 @@ void ShipEditorDialog::on_initialStatusButton_clicked()
 void ShipEditorDialog::on_initialOrdersButton_clicked()
 {
 	auto dialog =
-		new dialogs::ShipGoalsDialog(this, _viewport, getIfMultipleShips(), Ships[getSingleShip()].objnum, -1);
+		new dialogs::ShipGoalsDialog(this, _viewport, getIfMultipleShips(), getSingleShip(), -1);
 	dialog->setAttribute(Qt::WA_DeleteOnClose);
 	dialog->show();
 }
