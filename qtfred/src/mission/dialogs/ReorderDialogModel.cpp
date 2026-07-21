@@ -60,7 +60,7 @@ SCP_vector<int> ReorderDialogModel::getSlots(Type type)
 	return slotList;
 }
 
-SCP_vector<SCP_string> ReorderDialogModel::getItemNames(Type type) const
+SCP_vector<SCP_string> ReorderDialogModel::getItemNames(Type type)
 {
 	SCP_vector<SCP_string> names;
 	for (int slot : getSlots(type)) {

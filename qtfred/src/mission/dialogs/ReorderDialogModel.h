@@ -24,7 +24,7 @@ public:
 	void reject() override;
 
 	// Display names for the given type, in current storage (mission-file) order.
-	SCP_vector<SCP_string> getItemNames(Type type) const;
+	static SCP_vector<SCP_string> getItemNames(Type type);
 
 	// Move the item at display position from_pos to to_pos for the given type,
 	// applying the reorder to the mission immediately.  No-op if from_pos == to_pos
