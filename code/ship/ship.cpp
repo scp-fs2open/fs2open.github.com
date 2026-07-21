@@ -14259,6 +14259,37 @@ static bool ship_fire_secondary_detonate(object *obj, ship_weapon *swp)
 
 extern void ai_maybe_announce_shockwave_weapon(object *firing_objp, int weapon_index);
 
+// Determines whether this secondary bank is currently capable of dual fire.  Note that the
+// Secondary_dual_fire flag can legitimately be set even when this returns false: the flag is
+// ignored rather than cleared so that the player's dual fire preference isn't lost when
+// cycling through banks or weapons.  All code that acts on the flag should check this too.
+bool ship_secondary_bank_can_dual_fire(const ship *shipp, int bank)
+{
+	if (bank < 0 || bank >= shipp->weapons.num_secondary_banks)
+		return false;
+
+	int weapon_class = shipp->weapons.secondary_bank_weapons[bank];
+	if (weapon_class < 0)
+		return false;
+
+	if (Weapon_info[weapon_class].wi_flags[Weapon::Info_Flags::No_doublefire])
+		return false;
+
+	if (shipp->objnum == OBJ_INDEX(Player_obj))
+	{
+		if (The_mission.ai_profile->flags[AI::Profile_Flags::Disable_player_secondary_doublefire])
+			return false;
+	}
+	else
+	{
+		if (The_mission.ai_profile->flags[AI::Profile_Flags::Disable_ai_secondary_doublefire])
+			return false;
+	}
+
+	polymodel *pm = model_get(Ship_info[shipp->ship_info_index].model_num);
+	return pm->missile_banks[bank].num_slots > 1;
+}
+
 //	Object *obj fires its secondary weapon, if it can.
 //	If its most recently fired weapon is a remotely detonatable weapon, detonate it.
 //	Returns number of weapons fired.  Note, for swarmers, returns 1 if it is allowed
@@ -14621,25 +14652,14 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 			goto done_secondary;
 		}
 
-		// Handle the optional disabling of dual fire
-		// dual fire/doublefire can be disabled for individual weapons, for players, or for AIs
-		// if any of these apply to the current weapon, unset the dual fire flag on the ship 
-		// then proceed as normal.
-		// This is only handled at firing time so dualfire isn't lost when cycling through weapons
-		if (shipp->flags[Ship_Flags::Secondary_dual_fire] &&
-			( wip->wi_flags[Weapon::Info_Flags::No_doublefire] || 
-			( The_mission.ai_profile->flags[AI::Profile_Flags::Disable_ai_secondary_doublefire] && 
-				shipp->objnum != OBJ_INDEX(Player_obj) ) ||
-			( The_mission.ai_profile->flags[AI::Profile_Flags::Disable_player_secondary_doublefire] &&
-				shipp->objnum == OBJ_INDEX(Player_obj) ))
-			) {
-			shipp->flags.remove(Ship_Flags::Secondary_dual_fire);
-		}
-
 		int start_slot, end_slot;
 		no_energy = shipp->weapon_energy < 2 * wip->energy_consumed; // whether there's enough energy for at least 1 shot was checked above
 
-		if ( shipp->flags[Ship_Flags::Secondary_dual_fire] && num_slots > 1) {
+		// Dual fire can be unavailable for this bank because it has only one firepoint, because
+		// the weapon disallows it, or because of an ai_profiles restriction.  In any of these
+		// cases the flag is ignored rather than cleared so the dual fire preference isn't lost
+		// when cycling through banks or weapons.
+		if ( shipp->flags[Ship_Flags::Secondary_dual_fire] && ship_secondary_bank_can_dual_fire(shipp, bank) ) {
 			start_slot = swp->secondary_next_slot[bank];
 			// AL 11-19-97: Ensure enough ammo remains when firing linked secondary weapons
 			if ( check_ammo && ((swp->secondary_bank_ammo[bank] < 2 && !no_ammo_needed) || no_energy) ) {
@@ -14648,9 +14668,6 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 				end_slot = start_slot+1;
 			}
 		} else {
-			// de-set the flag just in case dual-fire was set but couldn't be used
-			// because there's less than two firepoints
-			shipp->flags.remove(Ship_Flags::Secondary_dual_fire);
 			start_slot = swp->secondary_next_slot[bank];
 			end_slot = start_slot;
 		}

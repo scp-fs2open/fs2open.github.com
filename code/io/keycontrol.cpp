@@ -1935,15 +1935,22 @@ int button_function_critical(int n, net_player *p = NULL)
 
 			int firepoints = pm->missile_banks[Ships[objp->instance].weapons.current_secondary_bank].num_slots;
 
-            if (Ships[objp->instance].flags[Ship::Ship_Flags::Secondary_dual_fire] || firepoints < 2) {
-                Ships[objp->instance].flags.remove(Ship::Ship_Flags::Secondary_dual_fire);
+			if (firepoints < 2) {
+				// leave the dual fire preference alone; it is ignored rather than cleared for banks that can't use it
+				if(at_self) {
+					HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "This secondary bank cannot fire dual missiles", 1932));
+					gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
+					hud_gauge_popup_start(HUD_WEAPONS_GAUGE);
+				}
+			} else if (Ships[objp->instance].flags[Ship::Ship_Flags::Secondary_dual_fire]) {
+				Ships[objp->instance].flags.remove(Ship::Ship_Flags::Secondary_dual_fire);
 				if(at_self) {
 					HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "Secondary weapon set to normal fire mode", 34));
 					snd_play( gamesnd_get_game_sound(ship_get_sound(Player_obj, GameSounds::SECONDARY_CYCLE)) );
 					hud_gauge_popup_start(HUD_WEAPONS_GAUGE);
 				}
 			} else {
-                Ships[objp->instance].flags.set(Ship::Ship_Flags::Secondary_dual_fire);
+				Ships[objp->instance].flags.set(Ship::Ship_Flags::Secondary_dual_fire);
 				if(at_self) {
 					HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "Secondary weapon set to dual fire mode", 35));
 					snd_play( gamesnd_get_game_sound(ship_get_sound(Player_obj, GameSounds::SECONDARY_CYCLE)) );
