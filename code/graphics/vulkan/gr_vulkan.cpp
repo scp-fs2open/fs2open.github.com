@@ -115,7 +115,15 @@ bool vulkan_is_capable(gr_capability capability)
 	case gr_capability::CAPABILITY_DEFERRED_LIGHTING:
 		return light_deferred_enabled();
 	case gr_capability::CAPABILITY_SHADOWS:
-		return getRendererInstance()->supportsShaderViewportLayerOutput();
+		// Depth clamp is a hard requirement, not a nice-to-have: the shadow pass
+		// relies on it so geometry beyond the light frustum's far plane still
+		// writes depth instead of being clipped, otherwise nearby shadows break
+		// up. It's an optional Vulkan device feature (unlike OpenGL, where it's
+		// core since 3.2), so when it's unavailable we report no shadow support
+		// at all and let gr_init disable shadows gracefully rather than render
+		// them broken.
+		return getRendererInstance()->supportsShaderViewportLayerOutput() &&
+		       getRendererInstance()->isDepthClampSupported();
 	case gr_capability::CAPABILITY_THICK_OUTLINE:
 		return false;
 	case gr_capability::CAPABILITY_BATCHED_SUBMODELS:

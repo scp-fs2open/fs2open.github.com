@@ -726,9 +726,12 @@ void VulkanDrawManager::renderShadowDraw(gr_buffer_handle ubo_handle, size_t ubo
 	config.colorWriteMask = {false, false, false, false};
 	config.depthBiasEnabled = true;
 	// Clamp depth in the shadow pass so geometry beyond the light frustum's far
-	// plane still writes depth instead of being clipped away. depthClamp is an
-	// optional device feature, so fall back to clipping where it's unsupported.
-	config.depthClampEnabled = getRendererInstance()->isDepthClampSupported();
+	// plane still writes depth instead of being clipped away (without this,
+	// nearby shadows break up). Always enabled here: depth clamp is a hard
+	// requirement for correct shadows, so CAPABILITY_SHADOWS is gated on the
+	// device feature being present (see vulkan_is_capable). If it were missing,
+	// gr_init would have disabled shadows and this path would be unreachable.
+	config.depthClampEnabled = true;
 	config.renderPass = stateTracker->getCurrentRenderPass();
 	config.colorAttachmentCount = stateTracker->getColorAttachmentCount();
 	config.sampleCount = stateTracker->getCurrentSampleCount();
