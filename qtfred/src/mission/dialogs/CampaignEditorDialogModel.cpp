@@ -498,10 +498,10 @@ void CampaignEditorDialogModel::loadCampaignFromFile(const SCP_string& filename)
 	syncCampaignMissionList();
 }
 
-void CampaignEditorDialogModel::saveCampaign(const SCP_string& filename)
+bool CampaignEditorDialogModel::saveCampaign(const SCP_string& filename)
 {
 	stopSpeech();
-	
+
 	SCP_string target_filename = filename.empty() ? m_campaign_filename : filename;
 
 	// First, validate the filename itself.
@@ -511,11 +511,11 @@ void CampaignEditorDialogModel::saveCampaign(const SCP_string& filename)
 			"Save Error",
 			"No filename provided.",
 			{DialogButton::Ok});
-		return;
+		return false;
 	}
 
 	if (!checkValidity()) {
-		return;
+		return false;
 	}
 
 	// Copy our working data to the global Campaign struct.
@@ -587,18 +587,23 @@ void CampaignEditorDialogModel::saveCampaign(const SCP_string& filename)
 			"Save Error",
 			"An error occurred while saving the campaign.",
 			{DialogButton::Ok});
-	}else{
-		// On success, update our internal state.
-		modify(m_campaign_filename, target_filename);
-
-		// Clean up the global struct now that the save is complete.
-		clearCampaignGlobal();
-
-		// clearCampaignGlobal() zeroed Campaign.num_missions, but the dialog is still
-		// open and the sexp tree relies on that count for is-previous-event-*/
-		// is-previous-goal-* operator availability.
-		syncCampaignMissionList();
+		return false;
 	}
+
+	// On success, update our internal state. Everything is on disk now, so
+	// the working copy is no longer modified.
+	m_campaign_filename = target_filename;
+	_modified = false;
+
+	// Clean up the global struct now that the save is complete.
+	clearCampaignGlobal();
+
+	// clearCampaignGlobal() zeroed Campaign.num_missions, but the dialog is still
+	// open and the sexp tree relies on that count for is-previous-event-*/
+	// is-previous-goal-* operator availability.
+	syncCampaignMissionList();
+
+	return true;
 }
 
 bool CampaignEditorDialogModel::checkValidity()
@@ -1099,12 +1104,16 @@ SCP_string CampaignEditorDialogModel::getCurrentMissionBriefingCutscene() const
 
 void CampaignEditorDialogModel::setCurrentMissionBriefingCutscene(const SCP_string& cutscene)
 {
-	if (!SCP_vector_inbounds(m_missions, m_current_mission_index)) {
+	setMissionBriefingCutsceneAt(m_current_mission_index, cutscene);
+}
+
+void CampaignEditorDialogModel::setMissionBriefingCutsceneAt(int missionIndex, const SCP_string& cutscene)
+{
+	if (!SCP_vector_inbounds(m_missions, missionIndex)) {
 		return;
 	}
 
-	auto& mission = m_missions[m_current_mission_index];
-	modify(mission.briefing_cutscene, cutscene.substr(0, NAME_LENGTH - 1));
+	modify(m_missions[missionIndex].briefing_cutscene, cutscene.substr(0, NAME_LENGTH - 1));
 }
 
 SCP_string CampaignEditorDialogModel::getCurrentMissionMainhall() const
@@ -1120,12 +1129,16 @@ SCP_string CampaignEditorDialogModel::getCurrentMissionMainhall() const
 
 void CampaignEditorDialogModel::setCurrentMissionMainhall(const SCP_string& mainhall)
 {
-	if (!SCP_vector_inbounds(m_missions, m_current_mission_index)) {
+	setMissionMainhallAt(m_current_mission_index, mainhall);
+}
+
+void CampaignEditorDialogModel::setMissionMainhallAt(int missionIndex, const SCP_string& mainhall)
+{
+	if (!SCP_vector_inbounds(m_missions, missionIndex)) {
 		return;
 	}
 
-	auto& mission = m_missions[m_current_mission_index];
-	modify(mission.main_hall, mainhall);
+	modify(m_missions[missionIndex].main_hall, mainhall);
 }
 
 SCP_string CampaignEditorDialogModel::getCurrentMissionSubstituteMainhall() const
@@ -1141,12 +1154,16 @@ SCP_string CampaignEditorDialogModel::getCurrentMissionSubstituteMainhall() cons
 
 void CampaignEditorDialogModel::setCurrentMissionSubstituteMainhall(const SCP_string& mainhall)
 {
-	if (!SCP_vector_inbounds(m_missions, m_current_mission_index)) {
+	setMissionSubstituteMainhallAt(m_current_mission_index, mainhall);
+}
+
+void CampaignEditorDialogModel::setMissionSubstituteMainhallAt(int missionIndex, const SCP_string& mainhall)
+{
+	if (!SCP_vector_inbounds(m_missions, missionIndex)) {
 		return;
 	}
 
-	auto& mission = m_missions[m_current_mission_index];
-	modify(mission.substitute_main_hall, mainhall);
+	modify(m_missions[missionIndex].substitute_main_hall, mainhall);
 }
 
 int CampaignEditorDialogModel::getCurrentMissionDebriefingPersona() const
@@ -1159,12 +1176,29 @@ int CampaignEditorDialogModel::getCurrentMissionDebriefingPersona() const
 
 void CampaignEditorDialogModel::setCurrentMissionDebriefingPersona(int persona_index)
 {
-	if (!SCP_vector_inbounds(m_missions, m_current_mission_index)) {
+	setMissionDebriefingPersonaAt(m_current_mission_index, persona_index);
+}
+
+void CampaignEditorDialogModel::setMissionDebriefingPersonaAt(int missionIndex, int persona_index)
+{
+	if (!SCP_vector_inbounds(m_missions, missionIndex)) {
 		return;
 	}
 
-	auto& mission = m_missions[m_current_mission_index];
-	modify(mission.debrief_persona_index, persona_index);
+	modify(m_missions[missionIndex].debrief_persona_index, persona_index);
+}
+
+int CampaignEditorDialogModel::findMissionIndexByFilename(const SCP_string& filename) const
+{
+	if (filename.empty()) {
+		return -1;
+	}
+	for (int i = 0; i < static_cast<int>(m_missions.size()); ++i) {
+		if (m_missions[i].filename == filename) {
+			return i;
+		}
+	}
+	return -1;
 }
 
 SCP_string CampaignEditorDialogModel::getCurrentBranchLoopDescription() const
@@ -1187,15 +1221,20 @@ SCP_string CampaignEditorDialogModel::getCurrentBranchLoopDescription() const
 
 void CampaignEditorDialogModel::setCurrentBranchLoopDescription(const SCP_string& descr)
 {
-	if (!SCP_vector_inbounds(m_missions, m_current_mission_index)) {
+	setBranchLoopDescriptionAt(m_current_mission_index, m_current_branch_index, descr);
+}
+
+void CampaignEditorDialogModel::setBranchLoopDescriptionAt(int missionIndex, int branchIndex, const SCP_string& descr)
+{
+	if (!SCP_vector_inbounds(m_missions, missionIndex)) {
 		return;
 	}
-	auto& mission = m_missions[m_current_mission_index];
-	if (!SCP_vector_inbounds(mission.branches, m_current_branch_index)) {
+	auto& mission = m_missions[missionIndex];
+	if (!SCP_vector_inbounds(mission.branches, branchIndex)) {
 		return;
 	}
 
-	auto& branch = mission.branches[m_current_branch_index];
+	auto& branch = mission.branches[branchIndex];
 	if (!branch.is_loop && !branch.is_fork) {
 		return;
 	}
@@ -1223,15 +1262,20 @@ SCP_string CampaignEditorDialogModel::getCurrentBranchLoopAnim() const
 
 void CampaignEditorDialogModel::setCurrentBranchLoopAnim(const SCP_string& anim)
 {
-	if (!SCP_vector_inbounds(m_missions, m_current_mission_index)) {
+	setBranchLoopAnimAt(m_current_mission_index, m_current_branch_index, anim);
+}
+
+void CampaignEditorDialogModel::setBranchLoopAnimAt(int missionIndex, int branchIndex, const SCP_string& anim)
+{
+	if (!SCP_vector_inbounds(m_missions, missionIndex)) {
 		return;
 	}
-	auto& mission = m_missions[m_current_mission_index];
-	if (!SCP_vector_inbounds(mission.branches, m_current_branch_index)) {
+	auto& mission = m_missions[missionIndex];
+	if (!SCP_vector_inbounds(mission.branches, branchIndex)) {
 		return;
 	}
 
-	auto& branch = mission.branches[m_current_branch_index];
+	auto& branch = mission.branches[branchIndex];
 	if (!branch.is_loop && !branch.is_fork) {
 		return;
 	}
@@ -1259,15 +1303,20 @@ SCP_string CampaignEditorDialogModel::getCurrentBranchLoopVoice() const
 
 void CampaignEditorDialogModel::setCurrentBranchLoopVoice(const SCP_string& voice)
 {
-	if (!SCP_vector_inbounds(m_missions, m_current_mission_index)) {
+	setBranchLoopVoiceAt(m_current_mission_index, m_current_branch_index, voice);
+}
+
+void CampaignEditorDialogModel::setBranchLoopVoiceAt(int missionIndex, int branchIndex, const SCP_string& voice)
+{
+	if (!SCP_vector_inbounds(m_missions, missionIndex)) {
 		return;
 	}
-	auto& mission = m_missions[m_current_mission_index];
-	if (!SCP_vector_inbounds(mission.branches, m_current_branch_index)) {
+	auto& mission = m_missions[missionIndex];
+	if (!SCP_vector_inbounds(mission.branches, branchIndex)) {
 		return;
 	}
 
-	auto& branch = mission.branches[m_current_branch_index];
+	auto& branch = mission.branches[branchIndex];
 	if (!branch.is_loop && !branch.is_fork) {
 		return;
 	}
@@ -1295,6 +1344,22 @@ void CampaignEditorDialogModel::testCurrentBranchLoopVoice()
 
 	_waveId = audiostream_open(branch.loop_briefing_sound.c_str(), ASF_EVENTMUSIC);
 	audiostream_play(_waveId, 1.0f, 0);
+}
+
+// A tree edit can replace a branch condition's root node, which changes the
+// internal tree id the branch is keyed by. Keep the branch's sexp_formula in
+// step so later saves and captures don't walk a stale id.
+void CampaignEditorDialogModel::changeBranchFormula(int old_formula, int new_formula)
+{
+	for (auto& mission : m_missions) {
+		for (auto& branch : mission.branches) {
+			if (branch.sexp_formula == old_formula) {
+				branch.sexp_formula = new_formula;
+				set_modified();
+				return;
+			}
+		}
+	}
 }
 
 void CampaignEditorDialogModel::removeBranchByTreeId(int formula_id)
@@ -1591,6 +1656,14 @@ SCP_vector<std::tuple<SCP_string, int, bool>> CampaignEditorDialogModel::getAllo
 	return ship_list;
 }
 
+bool CampaignEditorDialogModel::getAllowedShip(int ship_class_index) const
+{
+	if (!SCP_vector_inbounds(m_ships_allowed, ship_class_index)) {
+		return false;
+	}
+	return m_ships_allowed[ship_class_index];
+}
+
 void CampaignEditorDialogModel::setAllowedShip(int ship_class_index, bool allowed)
 {
 	if (SCP_vector_inbounds(m_ships_allowed, ship_class_index)) {
@@ -1610,6 +1683,14 @@ SCP_vector<std::tuple<SCP_string, int, bool>> CampaignEditorDialogModel::getAllo
 		}
 	}
 	return weapon_list;
+}
+
+bool CampaignEditorDialogModel::getAllowedWeapon(int weapon_class_index) const
+{
+	if (!SCP_vector_inbounds(m_weapons_allowed, weapon_class_index)) {
+		return false;
+	}
+	return m_weapons_allowed[weapon_class_index];
 }
 
 void CampaignEditorDialogModel::setAllowedWeapon(int weapon_class_index, bool allowed)

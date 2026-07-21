@@ -59,9 +59,17 @@ private: // NOLINT(readability-redundant-access-specifiers)
 	std::unique_ptr<Ui::DebriefingDialog> ui;
 	std::unique_ptr<DebriefingDialogModel> _model;
 	EditorViewport* _viewport;
+	FredView*       _fredView    = nullptr;
+	QUndoStack*     _dialogStack = nullptr;
 
 	void initializeUi();
 	void updateUi();
 	void enableDisableControls();
+
+	// In-dialog undo helpers. Tree edits and stage-structure ops go through
+	// working-state snapshots; field edits push merging FieldEditCommands.
+	void onFormulaTreeModified();
+	void pushWorkingStateSnapshot(const QByteArray& before, const QString& label);
+	void changeVoiceFilename(const SCP_string& newFilename);
 };
 } // namespace fso::fred::dialogs

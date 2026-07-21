@@ -1,9 +1,11 @@
 #include "VariableDialog.h"
 #include "ui_VariableDialog.h"
+#include "mission/commands/FredCommands.h"
+#include "mission/util.h"
 #include "ui/Theme.h"
-#include <ui/util/SignalBlockers.h>
 #include "ui/widgets/LineEditDelegate.h"
-#include <mission/util.h>
+#include <ui/util/DialogUndo.h>
+#include <ui/util/SignalBlockers.h>
 #include <QApplication>
 #include <QEvent>
 #include <QMessageBox>
@@ -30,12 +32,19 @@ enum ItemCol {
 	ItemValue = 1
 };
 
-VariableDialog::VariableDialog(QWidget* parent, EditorViewport* viewport, Tab initialTab)
-	: QDialog(parent), _viewport(viewport), ui(new Ui::VariableEditorDialog()),
+VariableDialog::VariableDialog(QWidget* parent, EditorViewport* viewport, FredView* fredView, Tab initialTab)
+	: QDialog(parent), _viewport(viewport), _fredView(fredView), ui(new Ui::VariableEditorDialog()),
 	  _model(new VariableDialogModel(this, viewport))
 {
+	Assertion(_fredView != nullptr, "VariableDialog requires a FredView!");
+
 	this->setFocus();
 	ui->setupUi(this);
+
+	_dialogStack = new QUndoStack(this);
+	_fredView->undoGroup()->addStack(_dialogStack);
+	util::setupDialogUndo(this, _fredView->undoGroup(), _dialogStack, tr("Variables"));
+
 	initializeUi();
 	updateUi();
 	ui->tabWidget->setCurrentIndex(static_cast<int>(initialTab));
@@ -67,22 +76,74 @@ void VariableDialog::changeEvent(QEvent* e)
 
 void VariableDialog::accept()
 {
-	// If apply() returns true, close the dialog
+	QByteArray stateBefore = _model->captureState();
 	if (_model->apply()) {
+		QByteArray stateAfter = _model->captureState();
+		_model->setParent(nullptr);
+		_fredView->mainUndoStack()->push(
+			new ApplyDialogCommand(std::move(_model), stateBefore, stateAfter,
+			                       _viewport->editor, tr("Edit Variables")));
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
 		QDialog::accept();
 	}
-	// else: validation failed, don't close
 }
 
 void VariableDialog::reject()
 {
-	// Asks the user if they want to save changes, if any
-	// If they do, it runs _model->apply() and returns the success value
-	// If they don't, it runs _model->reject() and returns true
-	if (rejectOrCloseHandler(this, _model.get(), _viewport)) {
-		QDialog::reject(); // actually close
+	if (!_model) {
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
+		QDialog::reject();
+		return;
 	}
-	// else: do nothing, don't close
+	if (rejectOrCloseHandler(this, _model.get(), _viewport)) {
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
+		QDialog::reject();
+	}
+}
+
+void VariableDialog::pushWorkingStateSnapshot(const QByteArray& before, const QString& label)
+{
+	const QByteArray after = _model->captureWorkingState();
+	if (after == before)
+		return;
+
+	_dialogStack->push(new DialogSnapshotCommand(before, after,
+		[this](const QByteArray& blob) {
+			_model->restoreWorkingState(blob);
+			updateUi();
+		},
+		label));
+}
+
+void VariableDialog::pushVariableFlagsCommand(int index, int fieldConst, const QString& label, int beforeFlags)
+{
+	const int after = _model->getVariables()[index].flags;
+	if (after == beforeFlags)
+		return;
+
+	auto* cmd = new FieldEditCommand<int>(fieldConst + index * FieldId::Var_FieldStride, nullptr, label, true);
+	cmd->addEntry(beforeFlags, after, [this, index](const int& v) {
+		_model->setVariableFlagsAt(index, v);
+		updateVariableControls();
+	});
+	_dialogStack->push(cmd);
+}
+
+void VariableDialog::pushContainerFlagsCommand(int index, int fieldConst, const QString& label, int beforeFlags)
+{
+	const int after = _model->getContainers()[index].flags;
+	if (after == beforeFlags)
+		return;
+
+	auto* cmd = new FieldEditCommand<int>(fieldConst + index * FieldId::Cont_FieldStride, nullptr, label, true);
+	cmd->addEntry(beforeFlags, after, [this, index](const int& v) {
+		_model->setContainerFlagsAt(index, v);
+		updateContainerControls();
+	});
+	_dialogStack->push(cmd);
 }
 
 void VariableDialog::closeEvent(QCloseEvent* e)
@@ -501,7 +562,20 @@ void VariableDialog::on_variablesTable_cellChanged(int row, int column)
 	if (column == VarName) {
 		SCP_string name = ui->variablesTable->item(row, VarName)->text().toUtf8().constData();
 		if (_model->isVariableNameUnique(name, model_idx)) {
+			const SCP_string before = _model->getVariableName(model_idx);
 			_model->setVariableName(model_idx, name);
+			// The setter truncates, so read the stored value back.
+			const SCP_string after = _model->getVariableName(model_idx);
+			if (before != after) {
+				auto* cmd = new FieldEditCommand<SCP_string>(
+				    FieldId::Var_Name + model_idx * FieldId::Var_FieldStride,
+				    nullptr, tr("Change Variable Name"), true);
+				cmd->addEntry(before, after, [this, model_idx](const SCP_string& v) {
+					_model->setVariableName(model_idx, v);
+					updateVariableList();
+				});
+				_dialogStack->push(cmd);
+			}
 		} else {
 			QMessageBox::warning(this, "Duplicate Name", "A variable with that name already exists.");
 			// Revert to previous name
@@ -528,7 +602,20 @@ void VariableDialog::on_variablesTable_cellChanged(int row, int column)
 				return;
 			}
 		}
+		const SCP_string before = _model->getVariableValue(model_idx);
 		_model->setVariableValue(model_idx, ui->variablesTable->item(row, column)->text().toUtf8().constData());
+		// The setter truncates/sanitizes, so read the stored value back.
+		const SCP_string after = _model->getVariableValue(model_idx);
+		if (before != after) {
+			auto* cmd = new FieldEditCommand<SCP_string>(
+			    FieldId::Var_Value + model_idx * FieldId::Var_FieldStride,
+			    nullptr, tr("Change Variable Value"), true);
+			cmd->addEntry(before, after, [this, model_idx](const SCP_string& v) {
+				_model->setVariableValue(model_idx, v);
+				updateVariableList();
+			});
+			_dialogStack->push(cmd);
+		}
 	}
 
 	updateVariableControls();
@@ -586,7 +673,20 @@ void VariableDialog::on_containersTable_cellChanged(int row, int column)
 	if (model_idx < 0)
 		return;
 
+	const SCP_string before = _model->getContainerName(model_idx);
 	_model->setContainerName(model_idx, ui->containersTable->item(row, column)->text().toUtf8().constData());
+	// The setter truncates, so read the stored value back.
+	const SCP_string after = _model->getContainerName(model_idx);
+	if (before != after) {
+		auto* cmd = new FieldEditCommand<SCP_string>(
+		    FieldId::Cont_Name + model_idx * FieldId::Cont_FieldStride,
+		    nullptr, tr("Change Container Name"), true);
+		cmd->addEntry(before, after, [this, model_idx](const SCP_string& v) {
+			_model->setContainerName(model_idx, v);
+			updateContainerList();
+		});
+		_dialogStack->push(cmd);
+	}
 
 	updateContainerControls();
 }
@@ -638,12 +738,30 @@ void VariableDialog::on_containerContentsTable_cellChanged(int row, int column)
 
 	const SCP_string new_text = ui->containerContentsTable->item(row, column)->text().toUtf8().constData();
 	const bool is_list = _model->getContainerType(m_currentContainerIndex);
+	const int containerIndex = m_currentContainerIndex;
 
 	if (is_list) {
-		_model->setListItemValue(m_currentContainerIndex, item_idx, new_text);
+		const SCP_string before = _model->getListItemValue(containerIndex, item_idx);
+		_model->setListItemValue(containerIndex, item_idx, new_text);
+		// The setter truncates/sanitizes, so read the stored value back.
+		const SCP_string after = _model->getListItemValue(containerIndex, item_idx);
+		if (before != after) {
+			auto* cmd = new FieldEditCommand<SCP_string>(
+			    FieldId::Item_ListValue + containerIndex * FieldId::Item_ContainerStride + item_idx,
+			    nullptr, tr("Change List Item"), true);
+			cmd->addEntry(before, after, [this, containerIndex, item_idx](const SCP_string& v) {
+				_model->setListItemValue(containerIndex, item_idx, v);
+				updateItemList();
+			});
+			_dialogStack->push(cmd);
+		}
 	} else { // Is a map
 		if (column == ItemKey) {
+			// A key edit re-sorts the map and shifts item indices, so it is a
+			// snapshot rather than an index-keyed field command.
+			const QByteArray beforeState = _model->captureWorkingState();
 			_model->setMapItemKey(m_currentContainerIndex, item_idx, new_text);
+			pushWorkingStateSnapshot(beforeState, tr("Change Map Key"));
 
 			// After changing a key, we must refresh the entire item list because the sort order may have changed.
 			updateItemList();
@@ -658,7 +776,19 @@ void VariableDialog::on_containerContentsTable_cellChanged(int row, int column)
 				}
 			}
 		} else if (column == ItemValue) {
-			_model->setMapItemValue(m_currentContainerIndex, item_idx, new_text);
+			const SCP_string before = _model->getMapItemValue(containerIndex, item_idx);
+			_model->setMapItemValue(containerIndex, item_idx, new_text);
+			const SCP_string after = _model->getMapItemValue(containerIndex, item_idx);
+			if (before != after) {
+				auto* cmd = new FieldEditCommand<SCP_string>(
+				    FieldId::Item_MapValue + containerIndex * FieldId::Item_ContainerStride + item_idx,
+				    nullptr, tr("Change Map Value"), true);
+				cmd->addEntry(before, after, [this, containerIndex, item_idx](const SCP_string& v) {
+					_model->setMapItemValue(containerIndex, item_idx, v);
+					updateItemList();
+				});
+				_dialogStack->push(cmd);
+			}
 		}
 	}
 }
@@ -698,7 +828,9 @@ void VariableDialog::on_containerItemFilterLineEdit_textChanged(const QString& t
 
 void VariableDialog::on_addVariableButton_clicked()
 {
+	const QByteArray before = _model->captureWorkingState();
 	_model->addNewVariable();
+	pushWorkingStateSnapshot(before, tr("Add Variable"));
 	updateUi();
 
 	int last_row = ui->variablesTable->rowCount() - 1;
@@ -714,7 +846,9 @@ void VariableDialog::on_copyVariableButton_clicked()
 		return;
 	}
 
+	const QByteArray before = _model->captureWorkingState();
 	_model->copyVariable(m_currentVariableIndex);
+	pushWorkingStateSnapshot(before, tr("Copy Variable"));
 
 	updateUi();
 
@@ -730,11 +864,13 @@ void VariableDialog::on_deleteVariableButton_clicked()
 		QMessageBox::StandardButton reply;
 		reply = QMessageBox::question(this,
 			"Confirm Deletion",
-			"Are you sure you want to delete this variable? This cannot be undone!",
+			"Are you sure you want to delete this variable?",
 			QMessageBox::Yes | QMessageBox::No);
 		if (reply == QMessageBox::Yes) {
+			const QByteArray before = _model->captureWorkingState();
 			int index_to_delete = m_currentVariableIndex;
 			_model->markVariableForDeletion(index_to_delete);
+			pushWorkingStateSnapshot(before, tr("Delete Variable"));
 			m_currentVariableIndex = index_to_delete - 1;
 			updateUi();
 		}
@@ -744,7 +880,10 @@ void VariableDialog::on_deleteVariableButton_clicked()
 void VariableDialog::on_setVariableAsStringRadio_toggled(bool checked)
 {
 	if (checked && m_currentVariableIndex != -1) {
+		// Type changes convert the value (lossy round trip), so snapshot.
+		const QByteArray before = _model->captureWorkingState();
 		_model->setVariableType(m_currentVariableIndex, true);
+		pushWorkingStateSnapshot(before, tr("Change Variable Type"));
 		updateVariableList(); // Need to update value column
 	}
 }
@@ -752,7 +891,9 @@ void VariableDialog::on_setVariableAsStringRadio_toggled(bool checked)
 void VariableDialog::on_setVariableAsNumberRadio_toggled(bool checked)
 {
 	if (checked && m_currentVariableIndex != -1) {
+		const QByteArray before = _model->captureWorkingState();
 		_model->setVariableType(m_currentVariableIndex, false);
+		pushWorkingStateSnapshot(before, tr("Change Variable Type"));
 		updateVariableList(); // Need to update value column
 	}
 }
@@ -760,46 +901,58 @@ void VariableDialog::on_setVariableAsNumberRadio_toggled(bool checked)
 void VariableDialog::on_doNotSaveVariableRadio_toggled(bool checked)
 {
 	if (checked && m_currentVariableIndex != -1) {
+		const int before = _model->getVariables()[m_currentVariableIndex].flags;
 		_model->setVariablePersistenceType(m_currentVariableIndex, 0); // 0 = None
 		updateVariableControls();
+		pushVariableFlagsCommand(m_currentVariableIndex, FieldId::Var_Persistence, tr("Change Variable Persistence"), before);
 	}
 }
 
 void VariableDialog::on_saveVariableOnMissionCompletedRadio_toggled(bool checked)
 {
 	if (checked && m_currentVariableIndex != -1) {
+		const int before = _model->getVariables()[m_currentVariableIndex].flags;
 		_model->setVariablePersistenceType(m_currentVariableIndex, 1); // 1 = Campaign/Progress
 		updateVariableControls();
+		pushVariableFlagsCommand(m_currentVariableIndex, FieldId::Var_Persistence, tr("Change Variable Persistence"), before);
 	}
 }
 
 void VariableDialog::on_saveVariableOnMissionCloseRadio_toggled(bool checked)
 {
 	if (checked && m_currentVariableIndex != -1) {
+		const int before = _model->getVariables()[m_currentVariableIndex].flags;
 		_model->setVariablePersistenceType(m_currentVariableIndex, 2); // 2 = Player/Close
 		updateVariableControls();
+		pushVariableFlagsCommand(m_currentVariableIndex, FieldId::Var_Persistence, tr("Change Variable Persistence"), before);
 	}
 }
 
 void VariableDialog::on_networkVariableCheckbox_toggled(bool checked)
 {
 	if (m_currentVariableIndex != -1) {
+		const int before = _model->getVariables()[m_currentVariableIndex].flags;
 		_model->setVariableNetwork(m_currentVariableIndex, checked);
 		updateVariableControls();
+		pushVariableFlagsCommand(m_currentVariableIndex, FieldId::Var_Network, tr("Toggle Variable Network"), before);
 	}
 }
 
 void VariableDialog::on_setVariableAsEternalcheckbox_toggled(bool checked)
 {
 	if (m_currentVariableIndex != -1) {
+		const int before = _model->getVariables()[m_currentVariableIndex].flags;
 		_model->setVariableEternal(m_currentVariableIndex, checked);
 		updateVariableControls();
+		pushVariableFlagsCommand(m_currentVariableIndex, FieldId::Var_Eternal, tr("Toggle Variable Eternal"), before);
 	}
 }
 
 void VariableDialog::on_addContainerButton_clicked()
 {
+	const QByteArray before = _model->captureWorkingState();
 	_model->addNewContainer();
+	pushWorkingStateSnapshot(before, tr("Add Container"));
 	updateUi();
 
 	// After updating, select the new item, which is now the last row.
@@ -816,7 +969,9 @@ void VariableDialog::on_copyContainerButton_clicked()
 		return;
 	}
 
+	const QByteArray before = _model->captureWorkingState();
 	_model->copyContainer(m_currentContainerIndex);
+	pushWorkingStateSnapshot(before, tr("Copy Container"));
 
 	updateUi();
 
@@ -839,11 +994,13 @@ void VariableDialog::on_deleteContainerButton_clicked()
 	QMessageBox::StandardButton reply;
 	reply = QMessageBox::question(this,
 		"Confirm Deletion",
-		"Are you sure you want to delete this container? This cannot be undone!",
+		"Are you sure you want to delete this container?",
 		QMessageBox::Yes | QMessageBox::No);
 
 	if (reply == QMessageBox::Yes) {
+		const QByteArray before = _model->captureWorkingState();
 		_model->markContainerForDeletion(m_currentContainerIndex);
+		pushWorkingStateSnapshot(before, tr("Delete Container"));
 		updateUi();
 
 		// After the UI is updated, intelligently select the next logical row.
@@ -878,7 +1035,9 @@ void VariableDialog::on_setContainerAsListRadio_toggled(bool checked)
 			}
 		}
 
+		const QByteArray before = _model->captureWorkingState();
 		_model->setContainerType(m_currentContainerIndex, true); // true = is_list
+		pushWorkingStateSnapshot(before, tr("Change Container Type"));
 		updateContainerList();
 	}
 }
@@ -886,8 +1045,11 @@ void VariableDialog::on_setContainerAsListRadio_toggled(bool checked)
 void VariableDialog::on_setContainerAsMapRadio_toggled(bool checked)
 {
 	if (checked && m_currentContainerIndex != -1) {
-		// Changing a list to a map is not destructive, so no confirmation is needed.
+		// Changing a list to a map is not destructive, so no confirmation is
+		// needed, but it generates default keys — snapshot for the round trip.
+		const QByteArray before = _model->captureWorkingState();
 		_model->setContainerType(m_currentContainerIndex, false); // false = is_list
+		pushWorkingStateSnapshot(before, tr("Change Container Type"));
 		updateContainerList();
 	}
 }
@@ -895,17 +1057,36 @@ void VariableDialog::on_setContainerAsMapRadio_toggled(bool checked)
 void VariableDialog::on_setContainerKeyAsStringRadio_toggled(bool checked)
 {
 	if (checked && m_currentContainerIndex != -1) {
-		_model->setContainerKeyType(m_currentContainerIndex, true); // true = keys_are_strings
-		updateContainerControls();
+		changeContainerKeyType(true); // true = keys_are_strings
 	}
 }
 
 void VariableDialog::on_setContainerKeyAsNumberRadio_toggled(bool checked)
 {
 	if (checked && m_currentContainerIndex != -1) {
-		_model->setContainerKeyType(m_currentContainerIndex, false); // false = keys_are_strings
-		updateContainerControls();
+		changeContainerKeyType(false); // false = keys_are_strings
 	}
+}
+
+void VariableDialog::changeContainerKeyType(bool keys_are_strings)
+{
+	const int index = m_currentContainerIndex;
+	const bool before = _model->getContainerKeyType(index);
+	_model->setContainerKeyType(index, keys_are_strings);
+	// The setter refuses for lists, so read the stored value back.
+	const bool after = _model->getContainerKeyType(index);
+	updateContainerControls();
+	if (before == after)
+		return;
+
+	auto* cmd = new FieldEditCommand<bool>(
+	    FieldId::Cont_KeyType + index * FieldId::Cont_FieldStride,
+	    nullptr, tr("Change Container Key Type"), true);
+	cmd->addEntry(before, after, [this, index](const bool& v) {
+		_model->setContainerKeyType(index, v);
+		updateContainerList(); // the type column shows the key type
+	});
+	_dialogStack->push(cmd);
 }
 
 void VariableDialog::on_setContainerAsStringRadio_toggled(bool checked)
@@ -929,8 +1110,10 @@ void VariableDialog::on_setContainerAsStringRadio_toggled(bool checked)
 			}
 		}
 
+		const QByteArray before = _model->captureWorkingState();
 		_model->setContainerValueType(m_currentContainerIndex, true); // true = values_are_strings
-		updateItemList();
+		pushWorkingStateSnapshot(before, tr("Change Container Value Type"));
+		updateContainerList(); // the type column shows the value type
 	}
 }
 
@@ -955,50 +1138,62 @@ void VariableDialog::on_setContainerAsNumberRadio_toggled(bool checked)
 			}
 		}
 
+		const QByteArray before = _model->captureWorkingState();
 		_model->setContainerValueType(m_currentContainerIndex, false); // false = values_are_strings
-		updateItemList();
+		pushWorkingStateSnapshot(before, tr("Change Container Value Type"));
+		updateContainerList(); // the type column shows the value type
 	}
 }
 
 void VariableDialog::on_doNotSaveContainerRadio_toggled(bool checked)
 {
 	if (checked && m_currentContainerIndex != -1) {
+		const int before = _model->getContainers()[m_currentContainerIndex].flags;
 		_model->setContainerPersistenceType(m_currentContainerIndex, 0); // 0 = None
 		updateContainerControls();
+		pushContainerFlagsCommand(m_currentContainerIndex, FieldId::Cont_Persistence, tr("Change Container Persistence"), before);
 	}
 }
 
 void VariableDialog::on_saveContainerOnMissionCompletedRadio_toggled(bool checked)
 {
 	if (checked && m_currentContainerIndex != -1) {
+		const int before = _model->getContainers()[m_currentContainerIndex].flags;
 		_model->setContainerPersistenceType(m_currentContainerIndex, 1); // 1 = Campaign/Progress
 		updateContainerControls();
+		pushContainerFlagsCommand(m_currentContainerIndex, FieldId::Cont_Persistence, tr("Change Container Persistence"), before);
 	}
 }
 
 void VariableDialog::on_saveContainerOnMissionCloseRadio_toggled(bool checked)
 {
 	if (checked && m_currentContainerIndex != -1) {
+		const int before = _model->getContainers()[m_currentContainerIndex].flags;
 		_model->setContainerPersistenceType(m_currentContainerIndex, 2); // 2 = Player/Close
 		updateContainerControls();
+		pushContainerFlagsCommand(m_currentContainerIndex, FieldId::Cont_Persistence, tr("Change Container Persistence"), before);
 	}
 }
 
 void VariableDialog::on_networkContainerCheckbox_toggled(bool checked)
 {
 	if (m_currentContainerIndex != -1) {
+		const int before = _model->getContainers()[m_currentContainerIndex].flags;
 		_model->setContainerNetwork(m_currentContainerIndex, checked);
 		updateContainerControls();
+		pushContainerFlagsCommand(m_currentContainerIndex, FieldId::Cont_Network, tr("Toggle Container Network"), before);
 	}
 }
 
 void VariableDialog::on_setContainerAsEternalCheckbox_toggled(bool checked)
 {
 	if (m_currentContainerIndex != -1) {
+		const int before = _model->getContainers()[m_currentContainerIndex].flags;
 		_model->setContainerEternal(m_currentContainerIndex, checked);
 		// We must update the controls here to sync the checkbox
 		// with the true state, as the model might have rejected the change.
 		updateContainerControls();
+		pushContainerFlagsCommand(m_currentContainerIndex, FieldId::Cont_Eternal, tr("Toggle Container Eternal"), before);
 	}
 }
 
@@ -1008,12 +1203,16 @@ void VariableDialog::on_addContainerItemButton_clicked()
 		return;
 	}
 
+	const QByteArray before = _model->captureWorkingState();
+
 	// The model knows whether it's a list or map and will add the correct item type.
 	if (_model->getContainerType(m_currentContainerIndex)) {
 		_model->addListItem(m_currentContainerIndex);
 	} else {
 		_model->addMapItem(m_currentContainerIndex);
 	}
+
+	pushWorkingStateSnapshot(before, tr("Add Container Item"));
 
 	// Refresh the item list to show the new entry
 	updateItemList();
@@ -1026,8 +1225,10 @@ void VariableDialog::on_copyContainerItemButton_clicked()
 	}
 
 	// The model duplicates the item and returns the index of the new copy.
+	const QByteArray before = _model->captureWorkingState();
 	int new_item_index = _model->copyListItem(m_currentContainerIndex, m_currentItemIndex);
 	if (new_item_index != -1) {
+		pushWorkingStateSnapshot(before, tr("Copy Container Item"));
 		// Set our selection tracker to this new index.
 		m_currentItemIndex = new_item_index;
 		// Refresh the item list, which will select the new row.
@@ -1048,11 +1249,13 @@ void VariableDialog::on_deleteContainerItemButton_clicked()
 		QMessageBox::Yes | QMessageBox::No);
 
 	if (reply == QMessageBox::Yes) {
+		const QByteArray before = _model->captureWorkingState();
 		if (_model->getContainerType(m_currentContainerIndex)) {
 			_model->removeListItem(m_currentContainerIndex, m_currentItemIndex);
 		} else {
 			_model->removeMapItem(m_currentContainerIndex, m_currentItemIndex);
 		}
+		pushWorkingStateSnapshot(before, tr("Delete Container Item"));
 		updateItemList();
 	}
 }
@@ -1065,7 +1268,10 @@ void VariableDialog::on_shiftItemUpButton_clicked()
 
 	// This operation is only valid for lists.
 	if (_model->getContainerType(m_currentContainerIndex)) {
+		const QByteArray before = _model->captureWorkingState();
 		_model->moveListItem(m_currentContainerIndex, m_currentItemIndex, true); // true = up
+		pushWorkingStateSnapshot(before, tr("Move Container Item"));
+		m_currentItemIndex--; // follow the moved item
 		updateItemList();
 	}
 }
@@ -1078,7 +1284,10 @@ void VariableDialog::on_shiftItemDownButton_clicked()
 
 	// This operation is only valid for lists.
 	if (_model->getContainerType(m_currentContainerIndex)) {
+		const QByteArray before = _model->captureWorkingState();
 		_model->moveListItem(m_currentContainerIndex, m_currentItemIndex, false); // false = down
+		pushWorkingStateSnapshot(before, tr("Move Container Item"));
+		m_currentItemIndex++; // follow the moved item
 		updateItemList();
 	}
 }
@@ -1094,13 +1303,14 @@ void VariableDialog::on_swapKeysAndValuesButton_clicked()
 		QMessageBox::StandardButton reply;
 		reply = QMessageBox::question(this,
 			"Confirm Swap",
-			"This will swap all keys and values in the map, which may convert data types and cannot be undone easily. "
-			"Are you sure?",
+			"This will swap all keys and values in the map, which may convert data types. Are you sure?",
 			QMessageBox::Yes | QMessageBox::No);
 
 		if (reply == QMessageBox::Yes) {
+			const QByteArray before = _model->captureWorkingState();
 			_model->swapMapKeysAndValues(m_currentContainerIndex);
-			updateItemList();
+			pushWorkingStateSnapshot(before, tr("Swap Keys And Values"));
+			updateContainerList(); // the type column shows key/value types
 		}
 	}
 }

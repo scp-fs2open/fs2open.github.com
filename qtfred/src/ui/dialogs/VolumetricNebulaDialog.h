@@ -3,6 +3,7 @@
 #include <QDialog>
 
 #include <mission/dialogs/VolumetricNebulaDialogModel.h>
+#include <mission/commands/FredCommands.h>
 #include <ui/FredView.h>
 
 namespace fso::fred::dialogs {
@@ -91,10 +92,32 @@ private: // NOLINT(readability-redundant-access-specifiers)
 	void updateColorSwatch();
 	void updateNoiseColorSwatch();
 
+	void changeHullPof(const SCP_string& name);
+
+	// Every control here is a flat single value: after the live setter ran,
+	// this pushes one merging command whose apply re-runs the setter and
+	// refreshes the whole (signal-blocked) UI.
+	template <typename T, typename Setter>
+	void pushValueCommand(int fieldId, const QString& label, const T& before, const T& after, Setter&& setter)
+	{
+		if (before == after) {
+			return;
+		}
+
+		auto* cmd = new FieldEditCommand<T>(fieldId, nullptr, label, true);
+		cmd->addEntry(before, after, [this, setter](const T& v) {
+			setter(v);
+			updateUi();
+		});
+		_dialogStack->push(cmd);
+	}
+
 	// Boilerplate
 	EditorViewport* _viewport = nullptr;
 	std::unique_ptr<Ui::VolumetricNebulaDialog> ui;
 	std::unique_ptr<VolumetricNebulaDialogModel> _model;
+	FredView*   _fredView    = nullptr;
+	QUndoStack* _dialogStack = nullptr;
 };
 
 

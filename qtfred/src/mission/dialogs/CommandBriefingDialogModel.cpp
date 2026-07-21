@@ -221,7 +221,20 @@ SCP_string CommandBriefingDialogModel::getBriefingText()
 
 void CommandBriefingDialogModel::setBriefingText(const SCP_string& briefingText)
 {
-	modify(_wipCommandBrief[_currentTeam].stage[_currentStage].text, briefingText);
+	setBriefingTextAt(_currentTeam, _currentStage, briefingText);
+}
+
+static bool cmdBriefStageInBounds(int team, int stage)
+{
+	return team >= 0 && team < MAX_TVT_TEAMS && stage >= 0 && stage < CMD_BRIEF_STAGES_MAX;
+}
+
+void CommandBriefingDialogModel::setBriefingTextAt(int team, int stage, const SCP_string& text)
+{
+	if (!cmdBriefStageInBounds(team, stage)) {
+		return;
+	}
+	modify(_wipCommandBrief[team].stage[stage].text, text);
 }
 
 SCP_string CommandBriefingDialogModel::getAnimationFilename() 
@@ -231,7 +244,15 @@ SCP_string CommandBriefingDialogModel::getAnimationFilename()
 
 void CommandBriefingDialogModel::setAnimationFilename(const SCP_string& animationFilename)
 {
-	strcpy_s(_wipCommandBrief[_currentTeam].stage[_currentStage].ani_filename, animationFilename.c_str());
+	setAnimationFilenameAt(_currentTeam, _currentStage, animationFilename);
+}
+
+void CommandBriefingDialogModel::setAnimationFilenameAt(int team, int stage, const SCP_string& name)
+{
+	if (!cmdBriefStageInBounds(team, stage)) {
+		return;
+	}
+	strcpy_s(_wipCommandBrief[team].stage[stage].ani_filename, name.c_str());
 	set_modified();
 }
 
@@ -242,7 +263,15 @@ SCP_string CommandBriefingDialogModel::getSpeechFilename()
 
 void CommandBriefingDialogModel::setSpeechFilename(const SCP_string& speechFilename)
 {
-	strcpy_s(_wipCommandBrief[_currentTeam].stage[_currentStage].wave_filename, speechFilename.c_str());
+	setSpeechFilenameAt(_currentTeam, _currentStage, speechFilename);
+}
+
+void CommandBriefingDialogModel::setSpeechFilenameAt(int team, int stage, const SCP_string& name)
+{
+	if (!cmdBriefStageInBounds(team, stage)) {
+		return;
+	}
+	strcpy_s(_wipCommandBrief[team].stage[stage].wave_filename, name.c_str());
 	set_modified();
 }
 
@@ -253,7 +282,15 @@ SCP_string CommandBriefingDialogModel::getLowResolutionFilename()
 
 void CommandBriefingDialogModel::setLowResolutionFilename(const SCP_string& lowResolutionFilename)
 {
-	strcpy_s(_wipCommandBrief[_currentTeam].background[0], lowResolutionFilename.c_str());
+	setLowResolutionFilenameAt(_currentTeam, lowResolutionFilename);
+}
+
+void CommandBriefingDialogModel::setLowResolutionFilenameAt(int team, const SCP_string& name)
+{
+	if (team < 0 || team >= MAX_TVT_TEAMS) {
+		return;
+	}
+	strcpy_s(_wipCommandBrief[team].background[0], name.c_str());
 	set_modified();
 }
 
@@ -262,9 +299,17 @@ SCP_string CommandBriefingDialogModel::getHighResolutionFilename()
 	return _wipCommandBrief[_currentTeam].background[1];
 }
 
-void CommandBriefingDialogModel::setHighResolutionFilename(const SCP_string& highResolutionFilename) 
-{ 
-	strcpy_s(_wipCommandBrief[_currentTeam].background[1], highResolutionFilename.c_str()); 
+void CommandBriefingDialogModel::setHighResolutionFilename(const SCP_string& highResolutionFilename)
+{
+	setHighResolutionFilenameAt(_currentTeam, highResolutionFilename);
+}
+
+void CommandBriefingDialogModel::setHighResolutionFilenameAt(int team, const SCP_string& name)
+{
+	if (team < 0 || team >= MAX_TVT_TEAMS) {
+		return;
+	}
+	strcpy_s(_wipCommandBrief[team].background[1], name.c_str());
 	set_modified();
 }
 

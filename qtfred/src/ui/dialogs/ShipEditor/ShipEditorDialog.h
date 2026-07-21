@@ -34,6 +34,7 @@ class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 
   protected:
 	void closeEvent(QCloseEvent*) override;
+	void changeEvent(QEvent*) override;
 	void hideEvent(QHideEvent*) override;
 	void showEvent(QShowEvent*) override;
   private slots:
@@ -100,6 +101,7 @@ class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	std::unique_ptr<Ui::ShipEditorDialog> ui;
 	std::unique_ptr<ShipEditorDialogModel> _model;
 	EditorViewport* _viewport;
+	FredView* _fredView;
 
 	bool _cues_hidden = false;
 

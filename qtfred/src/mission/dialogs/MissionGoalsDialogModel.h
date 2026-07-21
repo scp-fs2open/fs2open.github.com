@@ -15,6 +15,17 @@ class MissionGoalsDialogModel: public AbstractDialogModel {
 	bool apply() override;
 	void reject() override;
 
+	QByteArray captureState() const override;
+	void restoreState(const QByteArray& state) override;
+
+	// Serialize/restore the dialog's WORKING state (m_goals + m_sig, with each
+	// goal's formula branch serialized from the tree widget) for the in-dialog
+	// undo stack. Selection and the display-type filter are view state and are
+	// not captured. The dialog rebuilds the visual tree (recreate_tree) after
+	// a restore.
+	QByteArray captureWorkingState() const;
+	void restoreWorkingState(const QByteArray& state);
+
 	mission_goal& getCurrentGoal();
 
 	bool isCurrentGoalValid() const;
@@ -44,6 +55,15 @@ class MissionGoalsDialogModel: public AbstractDialogModel {
 	void setCurrentGoalInvalid(bool invalid);
 	void setCurrentGoalNoMusic(bool noMusic);
 	void setCurrentGoalTeam(int team);
+
+	// Indexed setters for undo commands: a command captured on one goal must
+	// still restore that goal after the user selects another.
+	void setGoalNameAt(int index, const SCP_string& name);
+	void setGoalMessageAt(int index, const SCP_string& message);
+	void setGoalScoreAt(int index, int score);
+	void setGoalTeamAt(int index, int team);
+	void setGoalInvalidAt(int index, bool invalid);
+	void setGoalNoMusicAt(int index, bool noMusic);
 
 	// TODO HACK: This does not belong here since it is a UI specific control. Once the model based SEXP tree is implemented
 	// this should be replaced

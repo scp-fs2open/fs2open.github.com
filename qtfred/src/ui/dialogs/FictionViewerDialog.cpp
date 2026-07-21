@@ -1,17 +1,23 @@
 
 #include <QCloseEvent>
 #include "ui/dialogs/FictionViewerDialog.h"
+#include "ui/util/DialogUndo.h"
 #include "ui/util/SignalBlockers.h"
 #include "ui_FictionViewerDialog.h"
 #include "mission/util.h"
+#include <mission/commands/FredCommands.h>
 
 namespace fso::fred::dialogs {
 
 FictionViewerDialog::FictionViewerDialog(FredView* parent, EditorViewport* viewport) :
-	QDialog(parent), _viewport(viewport), ui(new Ui::FictionViewerDialog()), _model(new FictionViewerDialogModel(this, viewport))
+	QDialog(parent), _viewport(viewport), ui(new Ui::FictionViewerDialog()),
+	_model(new FictionViewerDialogModel(this, viewport)), _fredView(parent)
 {
-
 	ui->setupUi(this);
+
+	_dialogStack = new QUndoStack(this);
+	_fredView->undoGroup()->addStack(_dialogStack);
+	util::setupDialogUndo(this, _fredView->undoGroup(), _dialogStack, tr("Fiction Viewer"));
 
 	// Initial set up of the UI
 	initializeUi();
@@ -35,24 +41,34 @@ FictionViewerDialog::~FictionViewerDialog() = default;
 
 void FictionViewerDialog::accept()
 {
-	// If apply() returns true, close the dialog
+	QByteArray stateBefore = _model->captureState();
 	if (_model->apply()) {
 		ui->musicWidget->stopPlayback();
+		QByteArray stateAfter = _model->captureState();
+		_model->setParent(nullptr);
+		_fredView->mainUndoStack()->push(
+			new ApplyDialogCommand(std::move(_model), stateBefore, stateAfter,
+			                       _viewport->editor, tr("Edit Fiction Viewer")));
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
 		QDialog::accept();
 	}
-	// else: validation failed, don't close
 }
 
 void FictionViewerDialog::reject()
 {
-	// Asks the user if they want to save changes, if any
-	// If they do, it runs _model->apply() and returns the success value
-	// If they don't, it runs _model->reject() and returns true
+	if (!_model) {
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
+		QDialog::reject();
+		return;
+	}
 	if (rejectOrCloseHandler(this, _model.get(), _viewport)) {
 		ui->musicWidget->stopPlayback();
-		QDialog::reject(); // actually close
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
+		QDialog::reject();
 	}
-	// else: do nothing, don't close
 }
 
 void FictionViewerDialog::closeEvent(QCloseEvent* e)
@@ -68,6 +84,7 @@ void FictionViewerDialog::closeEvent(QCloseEvent* e)
 		e->accept();
 	}
 }
+
 
 void FictionViewerDialog::initializeUi()
 {
@@ -99,22 +116,66 @@ void FictionViewerDialog::on_okAndCancelButtons_rejected()
 
 void FictionViewerDialog::on_storyFileEdit_textChanged(const QString& text)
 {
+	const SCP_string before = _model->getStoryFile();
 	_model->setStoryFile(text.toUtf8().constData());
+	const SCP_string after = _model->getStoryFile();
+	if (before == after)
+		return;
+
+	auto* cmd = new FieldEditCommand<SCP_string>(FieldId::FV_StoryFile, nullptr, tr("Change Story File"), true);
+	cmd->addEntry(before, after, [this](const SCP_string& v) {
+		_model->setStoryFile(v);
+		updateUi();
+	});
+	_dialogStack->push(cmd);
 }
 
 void FictionViewerDialog::on_fontFileEdit_textChanged(const QString& text)
 {
+	const SCP_string before = _model->getFontFile();
 	_model->setFontFile(text.toUtf8().constData());
+	const SCP_string after = _model->getFontFile();
+	if (before == after)
+		return;
+
+	auto* cmd = new FieldEditCommand<SCP_string>(FieldId::FV_FontFile, nullptr, tr("Change Font File"), true);
+	cmd->addEntry(before, after, [this](const SCP_string& v) {
+		_model->setFontFile(v);
+		updateUi();
+	});
+	_dialogStack->push(cmd);
 }
 
 void FictionViewerDialog::on_voiceFileEdit_textChanged(const QString& text)
 {
+	const SCP_string before = _model->getVoiceFile();
 	_model->setVoiceFile(text.toUtf8().constData());
+	const SCP_string after = _model->getVoiceFile();
+	if (before == after)
+		return;
+
+	auto* cmd = new FieldEditCommand<SCP_string>(FieldId::FV_VoiceFile, nullptr, tr("Change Voice File"), true);
+	cmd->addEntry(before, after, [this](const SCP_string& v) {
+		_model->setVoiceFile(v);
+		updateUi();
+	});
+	_dialogStack->push(cmd);
 }
 
 void FictionViewerDialog::on_musicWidget_currentIndexChanged(int spooledMusicIdx)
 {
+	const int before = _model->getFictionMusic();
+	if (before == spooledMusicIdx)
+		return;
+
 	_model->setFictionMusic(spooledMusicIdx);
+
+	auto* cmd = new FieldEditCommand<int>(FieldId::FV_Music, nullptr, tr("Change Fiction Music"), true);
+	cmd->addEntry(before, spooledMusicIdx, [this](const int& v) {
+		_model->setFictionMusic(v);
+		updateUi();
+	});
+	_dialogStack->push(cmd);
 }
 
 } // namespace fso::fred::dialogs

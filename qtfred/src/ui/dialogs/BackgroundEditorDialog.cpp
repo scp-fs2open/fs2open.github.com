@@ -1,4 +1,5 @@
 #include "BackgroundEditorDialog.h"
+#include <ui/util/DialogUndo.h>
 #include <QCloseEvent>
 #include "ui/util/default_dir.h"
 #include "ui/util/SignalBlockers.h"
@@ -6,21 +7,89 @@
 #include "ui_BackgroundEditor.h"
 
 #include <globalincs/globals.h>
+#include <mission/commands/FredCommands.h>
 #include <QMessageBox>
 #include <QFileDialog>
+#include <QPointer>
+#include <QToolButton>
 #include <QFileInfo>
 #include <QInputDialog>
 #include <QStringList>
 
 namespace fso::fred::dialogs {
 
-BackgroundEditorDialog::BackgroundEditorDialog(FredView* parent, EditorViewport* viewport) : QDialog(parent), 
-	ui(new Ui::BackgroundEditor()), _model(new BackgroundEditorDialogModel(this, viewport)), _viewport(viewport) {
-    
+namespace {
+
+class BackgroundEditCommand : public QUndoCommand {
+	// The command lives on the main stack and outlives the dialog, so it
+	// restores through the model's static path and only uses the (guarded)
+	// model pointer to resync the dialog while it is still open.
+	QPointer<BackgroundEditorDialogModel> _model;
+	Editor* _editor;
+	QByteArray _before, _after;
+	int _fieldId;
+	bool _skipFirstRedo;
+
+	void apply(const QByteArray& data) {
+		const auto selection = BackgroundEditorDialogModel::restoreGlobalState(data, _editor);
+		if (_model) {
+			_model->applyRestoredSelection(selection.first, selection.second);
+		}
+	}
+
+public:
+	BackgroundEditCommand(BackgroundEditorDialogModel* model, Editor* editor,
+	                      QByteArray before, QByteArray after,
+	                      int fieldId, const QString& text,
+	                      bool skipFirstRedo = true)
+		: QUndoCommand(text), _model(model), _editor(editor), _before(std::move(before)),
+		  _after(std::move(after)), _fieldId(fieldId), _skipFirstRedo(skipFirstRedo) {}
+
+	void undo() override { apply(_before); }
+	void redo() override {
+		if (_skipFirstRedo) { _skipFirstRedo = false; return; }
+		apply(_after);
+	}
+
+	bool mergeWith(const QUndoCommand* other) override {
+		if (_fieldId < 0) return false;
+		if (typeid(*other) != typeid(*this)) return false;
+		const auto* o = static_cast<const BackgroundEditCommand*>(other);
+		if (o->_fieldId != _fieldId) return false;
+		_after = o->_after;
+		return true;
+	}
+
+	int id() const override { return _fieldId; }
+};
+
+} // anonymous namespace
+
+// Helper macro to reduce boilerplate for simple setter slots
+#define BG_PUSH(fieldId, setter, text) \
+	do { \
+		const QByteArray before = _model->captureState(); \
+		setter; \
+		const QByteArray after = _model->captureState(); \
+		if (before != after) \
+			_fredView->mainUndoStack()->push( \
+				new BackgroundEditCommand(_model.get(), _viewport->editor, before, after, FieldId::fieldId, tr(text))); \
+	} while (false)
+
+BackgroundEditorDialog::BackgroundEditorDialog(FredView* parent, EditorViewport* viewport) : QDialog(parent),
+	ui(new Ui::BackgroundEditor()), _model(new BackgroundEditorDialogModel(this, viewport)),
+	_viewport(viewport), _fredView(parent) {
+
+
 	ui->setupUi(this);
+	util::installMainStackUndoShortcuts(this, _fredView->mainUndoStack());
 
 	ui->skyboxEdit->setMaxLength(MAX_FILENAME_LEN - 1);
 	ui->envMapEdit->setMaxLength(MAX_FILENAME_LEN - 1);
+
+	connect(_model.get(), &BackgroundEditorDialogModel::modelDataChanged, this, [this]() {
+		updateUi();
+	});
 
 	initializeUi();
 
@@ -29,6 +98,13 @@ BackgroundEditorDialog::BackgroundEditorDialog(FredView* parent, EditorViewport*
 }
 
 BackgroundEditorDialog::~BackgroundEditorDialog() = default;
+
+void BackgroundEditorDialog::changeEvent(QEvent* e)
+{
+	if (e->type() == QEvent::ActivationChange && isActiveWindow())
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
+	QDialog::changeEvent(e);
+}
 
 void BackgroundEditorDialog::closeEvent(QCloseEvent* e)
 {
@@ -95,7 +171,13 @@ void BackgroundEditorDialog::initializeUi()
 
 	updateNebulaControls();
 
-	// Old nebula
+	// Old nebula — legacy FS1 system, collapsed by default
+	connect(ui->legacyNebulaToggle, &QToolButton::toggled, this, [this](bool expanded) {
+		ui->legacyNebulaToggle->setArrowType(expanded ? Qt::DownArrow : Qt::RightArrow);
+		ui->oldNebulaGroupBox->setVisible(expanded);
+		adjustSize();
+	});
+
 	const auto& old_nebula_names = _model->getOldNebulaPatternOptions();
 	for (const auto& s : old_nebula_names) {
 		ui->oldNebulaPatternCombo->addItem(QString::fromStdString(s));
@@ -148,6 +230,7 @@ void BackgroundEditorDialog::updateBackgroundControls()
 	util::SignalBlockers blockers(this);
 
 	ui->backgroundSelectionCombo->clear();
+	ui->swapWithCombo->clear();
 	const auto names = _model->getBackgroundNames();
 	for (const auto& s : names){
 		ui->backgroundSelectionCombo->addItem(QString::fromStdString(s));
@@ -163,10 +246,10 @@ void BackgroundEditorDialog::updateBackgroundControls()
 void BackgroundEditorDialog::refreshBitmapList()
 {
 	util::SignalBlockers blockers(this);
-	
+
 	const auto names = _model->getMissionBitmapNames();
 
-	const int oldRow = ui->bitmapListWidget->currentRow();
+	const int targetRow = _model->getSelectedBitmapIndex();
 	ui->bitmapListWidget->setUpdatesEnabled(false);
 	ui->bitmapListWidget->clear();
 
@@ -177,7 +260,7 @@ void BackgroundEditorDialog::refreshBitmapList()
 	ui->bitmapListWidget->addItems(items);
 
 	if (!items.isEmpty()) {
-		const int clamped = qBound(0, oldRow, ui->bitmapListWidget->count() - 1);
+		const int clamped = qBound(0, targetRow, ui->bitmapListWidget->count() - 1);
 		ui->bitmapListWidget->setCurrentRow(clamped);
 	}
 
@@ -189,9 +272,9 @@ void BackgroundEditorDialog::refreshBitmapList()
 void BackgroundEditorDialog::updateBitmapControls()
 {
 	util::SignalBlockers blockers(this);
-	
+
 	bool enabled = (_model->getSelectedBitmapIndex() >= 0);
-	
+
 	ui->changeBitmapButton->setEnabled(enabled);
 	ui->deleteBitmapButton->setEnabled(enabled);
 	ui->bitmapTypeCombo->setEnabled(enabled);
@@ -221,9 +304,9 @@ void BackgroundEditorDialog::refreshSunList()
 
 	const auto names = _model->getMissionSunNames();
 
-	const int oldRow = ui->sunListWidget->currentRow();
-	ui->sunListWidget->setUpdatesEnabled(false);
-	ui->sunListWidget->clear();
+	const int targetRow = _model->getSelectedSunIndex();
+	ui->sunsListWidget->setUpdatesEnabled(false);
+	ui->sunsListWidget->clear();
 
 	QStringList items;
 	items.reserve(static_cast<int>(names.size()));
@@ -232,8 +315,8 @@ void BackgroundEditorDialog::refreshSunList()
 	ui->sunListWidget->addItems(items);
 
 	if (!items.isEmpty()) {
-		const int clamped = qBound(0, oldRow, ui->sunListWidget->count() - 1);
-		ui->sunListWidget->setCurrentRow(clamped);
+		const int clamped = qBound(0, targetRow, ui->sunsListWidget->count() - 1);
+		ui->sunsListWidget->setCurrentRow(clamped);
 	}
 
 	ui->sunListWidget->setUpdatesEnabled(true);
@@ -265,7 +348,7 @@ void BackgroundEditorDialog::updateSunControls()
 void BackgroundEditorDialog::updateNebulaControls()
 {
 	util::SignalBlockers blockers(this);
-	
+
 	bool enabled = _model->getFullNebulaEnabled();
 	ui->rangeSpinBox->setEnabled(enabled);
 	ui->nebulaPatternCombo->setEnabled(enabled);
@@ -289,6 +372,7 @@ void BackgroundEditorDialog::updateNebulaControls()
 	ui->nebulaPatternCombo->setCurrentIndex(ui->nebulaPatternCombo->findText(QString::fromStdString(_model->getNebulaFullPattern())));
 	ui->nebulaLightningCombo->setCurrentIndex(ui->nebulaLightningCombo->findText(QString::fromStdString(_model->getLightning())));
 
+	ui->poofsListWidget->clearSelection();
 	const auto& selected_poofs = _model->getSelectedPoofs();
 	for (auto& poof : selected_poofs) {
 		auto items = ui->poofsListWidget->findItems(QString::fromStdString(poof), Qt::MatchExactly);
@@ -328,15 +412,24 @@ void BackgroundEditorDialog::updateFogSwatch()
 void BackgroundEditorDialog::updateOldNebulaControls()
 {
 	util::SignalBlockers blockers(this);
-	
-	const bool enabled = !_model->getFullNebulaEnabled();
-	const bool old_enabled = _model->getOldNebulaPattern() != "<None>";
 
-	ui->oldNebulaPatternCombo->setEnabled(enabled);
-	ui->oldNebulaColorCombo->setEnabled(enabled && old_enabled);
-	ui->oldNebulaPitchSpinBox->setEnabled(enabled && old_enabled);
-	ui->oldNebulaBankSpinBox->setEnabled(enabled && old_enabled);
-	ui->oldNebulaHeadingSpinBox->setEnabled(enabled && old_enabled);
+	const bool fullNeb = _model->getFullNebulaEnabled();
+	const bool hasLegacy = !fullNeb && _model->getOldNebulaPattern() != "<None>";
+	const bool patternSet = _model->getOldNebulaPattern() != "<None>";
+
+	// Drive toggle button and group box visibility from the model.
+	// SignalBlockers prevents toggled from re-entering; sync arrow type manually.
+	ui->legacyNebulaToggle->setChecked(hasLegacy);
+	ui->legacyNebulaToggle->setArrowType(hasLegacy ? Qt::DownArrow : Qt::RightArrow);
+	ui->oldNebulaGroupBox->setVisible(hasLegacy);
+
+	// Always apply enabled states — controls must be correct if the user manually
+	// expanded the section while pattern is still <None>.
+	ui->oldNebulaPatternCombo->setEnabled(!fullNeb);
+	ui->oldNebulaColorCombo->setEnabled(!fullNeb && patternSet);
+	ui->oldNebulaPitchSpinBox->setEnabled(!fullNeb && patternSet);
+	ui->oldNebulaBankSpinBox->setEnabled(!fullNeb && patternSet);
+	ui->oldNebulaHeadingSpinBox->setEnabled(!fullNeb && patternSet);
 
 	ui->oldNebulaPatternCombo->setCurrentIndex(ui->oldNebulaPatternCombo->findText(QString::fromStdString(_model->getOldNebulaPattern())));
 	ui->oldNebulaColorCombo->setCurrentIndex(ui->oldNebulaColorCombo->findText(QString::fromStdString(_model->getOldNebulaColorName())));
@@ -348,7 +441,7 @@ void BackgroundEditorDialog::updateOldNebulaControls()
 void BackgroundEditorDialog::updateAmbientLightControls()
 {
 	util::SignalBlockers blockers(this);
-	
+
 	const int r = _model->getAmbientR();
 	const int g = _model->getAmbientG();
 	const int b = _model->getAmbientB();
@@ -371,7 +464,7 @@ void BackgroundEditorDialog::updateAmbientLightControls()
 void BackgroundEditorDialog::updateSkyboxControls()
 {
 	util::SignalBlockers blockers(this);
-	
+
 	bool enabled = !_model->getSkyboxModelName().empty();
 
 	ui->skyboxPitchSpin->setEnabled(enabled);
@@ -399,7 +492,7 @@ void BackgroundEditorDialog::updateSkyboxControls()
 void BackgroundEditorDialog::updateMiscControls()
 {
 	util::SignalBlockers blockers(this);
-	
+
 	QString text = "Number of stars: " + QString::number(_model->getNumStars());
 	ui->numStarsLabel->setText(text);
 	ui->numStarsSlider->setValue(_model->getNumStars());
@@ -432,6 +525,8 @@ int BackgroundEditorDialog::pickBackgroundIndexDialog(QWidget* parent, int count
 	return items.indexOf(sel);
 }
 
+// ---- Backgrounds (structural — fieldId=-1, no merging) ----
+
 void BackgroundEditorDialog::on_backgroundSelectionCombo_currentIndexChanged(int index)
 {
 	if (index < 0)
@@ -443,13 +538,23 @@ void BackgroundEditorDialog::on_backgroundSelectionCombo_currentIndexChanged(int
 
 void BackgroundEditorDialog::on_addButton_clicked()
 {
+	const QByteArray before = _model->captureState();
 	_model->addBackground();
+	const QByteArray after = _model->captureState();
+	if (before != after)
+		_fredView->mainUndoStack()->push(
+			new BackgroundEditCommand(_model.get(), _viewport->editor, before, after, -1, tr("Add Background")));
 	updateUi();
 }
 
 void BackgroundEditorDialog::on_removeButton_clicked()
 {
+	const QByteArray before = _model->captureState();
 	_model->removeActiveBackground();
+	const QByteArray after = _model->captureState();
+	if (before != after)
+		_fredView->mainUndoStack()->push(
+			new BackgroundEditCommand(_model.get(), _viewport->editor, before, after, -1, tr("Remove Background")));
 	updateUi();
 }
 
@@ -473,30 +578,44 @@ void BackgroundEditorDialog::on_importButton_clicked()
 	if (which < 0)
 		return;
 
+	const QByteArray before = _model->captureState();
 	_model->importBackgroundFromMission(file.toUtf8().constData(), which);
+	const QByteArray after = _model->captureState();
+	if (before != after)
+		_fredView->mainUndoStack()->push(
+			new BackgroundEditCommand(_model.get(), _viewport->editor, before, after, -1, tr("Import Background")));
 
 	updateUi();
 }
 
 void BackgroundEditorDialog::on_swapWithButton_clicked()
 {
+	const QByteArray before = _model->captureState();
 	_model->swapBackgrounds();
+	const QByteArray after = _model->captureState();
+	if (before != after)
+		_fredView->mainUndoStack()->push(
+			new BackgroundEditCommand(_model.get(), _viewport->editor, before, after, -1, tr("Swap Backgrounds")));
 
 	updateUi();
 }
 
 void BackgroundEditorDialog::on_swapWithCombo_currentIndexChanged(int index)
 {
+	// Navigation only — no undo entry
 	_model->setSwapWithIndex(index);
 }
 
 void BackgroundEditorDialog::on_useCorrectAngleFormatCheckBox_toggled(bool checked)
 {
-	_model->setSaveAnglesCorrectFlag(checked);
+	BG_PUSH(BG_AngleFormat, _model->setSaveAnglesCorrectFlag(checked), "Change Angle Format");
 }
+
+// ---- Bitmaps ----
 
 void BackgroundEditorDialog::on_bitmapListWidget_currentRowChanged(int row)
 {
+	// Navigation only — no undo entry
 	_model->setSelectedBitmapIndex(row);
 	updateBitmapControls();
 }
@@ -507,43 +626,43 @@ void BackgroundEditorDialog::on_bitmapTypeCombo_currentIndexChanged(int index)
 		return;
 
 	const QString text = ui->bitmapTypeCombo->itemText(index);
-	_model->setBitmapName(text.toUtf8().constData());
+	BG_PUSH(BG_BitmapName, _model->setBitmapName(text.toUtf8().constData()), "Change Bitmap");
 	refreshBitmapList();
 }
 
 void BackgroundEditorDialog::on_bitmapPitchSpin_valueChanged(double arg1)
 {
-	_model->setBitmapPitch(static_cast<float>(arg1));
+	BG_PUSH(BG_BitmapPitch, _model->setBitmapPitch(static_cast<float>(arg1)), "Change Bitmap Pitch");
 }
 
 void BackgroundEditorDialog::on_bitmapBankSpin_valueChanged(double arg1)
 {
-	_model->setBitmapBank(static_cast<float>(arg1));
+	BG_PUSH(BG_BitmapBank, _model->setBitmapBank(static_cast<float>(arg1)), "Change Bitmap Bank");
 }
 
 void BackgroundEditorDialog::on_bitmapHeadingSpin_valueChanged(double arg1)
 {
-	_model->setBitmapHeading(static_cast<float>(arg1));
+	BG_PUSH(BG_BitmapHeading, _model->setBitmapHeading(static_cast<float>(arg1)), "Change Bitmap Heading");
 }
 
 void BackgroundEditorDialog::on_bitmapScaleXDoubleSpinBox_valueChanged(double arg1)
 {
-	_model->setBitmapScaleX(static_cast<float>(arg1));
+	BG_PUSH(BG_BitmapScaleX, _model->setBitmapScaleX(static_cast<float>(arg1)), "Change Bitmap Scale X");
 }
 
 void BackgroundEditorDialog::on_bitmapScaleYDoubleSpinBox_valueChanged(double arg1)
 {
-	_model->setBitmapScaleY(static_cast<float>(arg1));
+	BG_PUSH(BG_BitmapScaleY, _model->setBitmapScaleY(static_cast<float>(arg1)), "Change Bitmap Scale Y");
 }
 
 void BackgroundEditorDialog::on_bitmapDivXSpinBox_valueChanged(int arg1)
 {
-	_model->setBitmapDivX(arg1);
+	BG_PUSH(BG_BitmapDivX, _model->setBitmapDivX(arg1), "Change Bitmap Divisions X");
 }
 
 void BackgroundEditorDialog::on_bitmapDivYSpinBox_valueChanged(int arg1)
 {
-	_model->setBitmapDivY(arg1);
+	BG_PUSH(BG_BitmapDivY, _model->setBitmapDivY(arg1), "Change Bitmap Divisions Y");
 }
 
 void BackgroundEditorDialog::on_addBitmapButton_clicked()
@@ -567,7 +686,12 @@ void BackgroundEditorDialog::on_addBitmapButton_clicked()
 		return;
 
 	const SCP_string chosen = dlg.selectedFile().toUtf8().constData();
+	const QByteArray before = _model->captureState();
 	_model->addMissionBitmapByName(chosen);
+	const QByteArray after = _model->captureState();
+	if (before != after)
+		_fredView->mainUndoStack()->push(
+			new BackgroundEditCommand(_model.get(), _viewport->editor, before, after, -1, tr("Add Bitmap")));
 
 	refreshBitmapList();
 }
@@ -596,19 +720,27 @@ void BackgroundEditorDialog::on_changeBitmapButton_clicked()
 		return;
 
 	const SCP_string chosen = dlg.selectedFile().toUtf8().constData();
-	_model->setBitmapName(chosen);
+	BG_PUSH(BG_BitmapName, _model->setBitmapName(chosen), "Change Bitmap");
 
 	refreshBitmapList();
 }
 
 void BackgroundEditorDialog::on_deleteBitmapButton_clicked()
 {
+	const QByteArray before = _model->captureState();
 	_model->removeMissionBitmap();
+	const QByteArray after = _model->captureState();
+	if (before != after)
+		_fredView->mainUndoStack()->push(
+			new BackgroundEditCommand(_model.get(), _viewport->editor, before, after, -1, tr("Delete Bitmap")));
 	refreshBitmapList();
 }
 
-void BackgroundEditorDialog::on_sunListWidget_currentRowChanged(int row)
+// ---- Suns ----
+
+void BackgroundEditorDialog::on_sunsListWidget_currentRowChanged(int row)
 {
+	// Navigation only — no undo entry
 	_model->setSelectedSunIndex(row);
 	updateSunControls();
 }
@@ -619,23 +751,23 @@ void BackgroundEditorDialog::on_sunSelectionCombo_currentIndexChanged(int index)
 		return;
 
 	const QString text = ui->sunSelectionCombo->itemText(index);
-	_model->setSunName(text.toUtf8().constData());
+	BG_PUSH(BG_SunName, _model->setSunName(text.toUtf8().constData()), "Change Sun");
 	refreshSunList();
 }
 
 void BackgroundEditorDialog::on_sunPitchSpin_valueChanged(double arg1)
 {
-	_model->setSunPitch(static_cast<float>(arg1));
+	BG_PUSH(BG_SunPitch, _model->setSunPitch(static_cast<float>(arg1)), "Change Sun Pitch");
 }
 
 void BackgroundEditorDialog::on_sunHeadingSpin_valueChanged(double arg1)
 {
-	_model->setSunHeading(static_cast<float>(arg1));
+	BG_PUSH(BG_SunHeading, _model->setSunHeading(static_cast<float>(arg1)), "Change Sun Heading");
 }
 
 void BackgroundEditorDialog::on_sunScaleDoubleSpinBox_valueChanged(double arg1)
 {
-	_model->setSunScale(static_cast<float>(arg1));
+	BG_PUSH(BG_SunScale, _model->setSunScale(static_cast<float>(arg1)), "Change Sun Scale");
 }
 
 void BackgroundEditorDialog::on_addSunButton_clicked()
@@ -659,7 +791,12 @@ void BackgroundEditorDialog::on_addSunButton_clicked()
 		return;
 
 	const SCP_string chosen = dlg.selectedFile().toUtf8().constData();
+	const QByteArray before = _model->captureState();
 	_model->addMissionSunByName(chosen);
+	const QByteArray after = _model->captureState();
+	if (before != after)
+		_fredView->mainUndoStack()->push(
+			new BackgroundEditCommand(_model.get(), _viewport->editor, before, after, -1, tr("Add Sun")));
 
 	refreshSunList();
 }
@@ -688,26 +825,33 @@ void BackgroundEditorDialog::on_changeSunButton_clicked()
 		return;
 
 	const SCP_string chosen = dlg.selectedFile().toUtf8().constData();
-	_model->setSunName(chosen);
+	BG_PUSH(BG_SunName, _model->setSunName(chosen), "Change Sun");
 
 	refreshSunList();
 }
 
 void BackgroundEditorDialog::on_deleteSunButton_clicked()
 {
+	const QByteArray before = _model->captureState();
 	_model->removeMissionSun();
+	const QByteArray after = _model->captureState();
+	if (before != after)
+		_fredView->mainUndoStack()->push(
+			new BackgroundEditCommand(_model.get(), _viewport->editor, before, after, -1, tr("Delete Sun")));
 	refreshSunList();
 }
 
+// ---- Nebula ----
+
 void BackgroundEditorDialog::on_fullNebulaCheckBox_toggled(bool checked)
 {
-	_model->setFullNebulaEnabled(checked);
+	BG_PUSH(BG_FullNebula, _model->setFullNebulaEnabled(checked), "Toggle Full Nebula");
 	updateNebulaControls();
 }
 
 void BackgroundEditorDialog::on_rangeSpinBox_valueChanged(int arg1)
 {
-	_model->setFullNebulaRange(static_cast<float>(arg1));
+	BG_PUSH(BG_NebulaRange, _model->setFullNebulaRange(static_cast<float>(arg1)), "Change Nebula Range");
 }
 
 void BackgroundEditorDialog::on_nebulaPatternCombo_currentIndexChanged(int index)
@@ -716,7 +860,7 @@ void BackgroundEditorDialog::on_nebulaPatternCombo_currentIndexChanged(int index
 		return;
 
 	const QString text = ui->nebulaPatternCombo->itemText(index);
-	_model->setNebulaFullPattern(text.toUtf8().constData());
+	BG_PUSH(BG_NebulaPattern, _model->setNebulaFullPattern(text.toUtf8().constData()), "Change Nebula Pattern");
 }
 
 void BackgroundEditorDialog::on_nebulaLightningCombo_currentIndexChanged(int index)
@@ -725,7 +869,7 @@ void BackgroundEditorDialog::on_nebulaLightningCombo_currentIndexChanged(int ind
 		return;
 
 	const QString text = ui->nebulaLightningCombo->itemText(index);
-	_model->setLightning(text.toUtf8().constData());
+	BG_PUSH(BG_Lightning, _model->setLightning(text.toUtf8().constData()), "Change Lightning");
 }
 
 void BackgroundEditorDialog::on_poofsListWidget_itemSelectionChanged()
@@ -739,69 +883,71 @@ void BackgroundEditorDialog::on_poofsListWidget_itemSelectionChanged()
 	for (const auto& s : selected) {
 		selected_std.emplace_back(s.toUtf8().constData());
 	}
-	_model->setSelectedPoofs(selected_std);
+	BG_PUSH(BG_Poofs, _model->setSelectedPoofs(selected_std), "Change Nebula Poofs");
 }
 
 void BackgroundEditorDialog::on_shipTrailsCheckBox_toggled(bool checked)
 {
-	_model->setShipTrailsToggled(checked);
+	BG_PUSH(BG_ShipTrails, _model->setShipTrailsToggled(checked), "Toggle Ship Trails");
 }
 
 void BackgroundEditorDialog::on_fog1000mVisDoubleSpinBox_valueChanged(double arg1)
 {
-	_model->setFog1000mVisibility(static_cast<float>(arg1));
+	BG_PUSH(BG_Fog1000m, _model->setFog1000mVisibility(static_cast<float>(arg1)), "Change Fog 1000m Visibility");
 }
 
 void BackgroundEditorDialog::on_fogNearDistanceDoubleSpinBox_valueChanged(double arg1)
 {
-	_model->setFogNearDistance(static_cast<float>(arg1));
+	BG_PUSH(BG_FogNear, _model->setFogNearDistance(static_cast<float>(arg1)), "Change Fog Near Distance");
 }
 
 void BackgroundEditorDialog::on_fogSkyboxClipDoubleSpinBox_valueChanged(double arg1)
 {
-	_model->setFogSkyboxClipDistance(static_cast<float>(arg1));
+	BG_PUSH(BG_FogSkybox, _model->setFogSkyboxClipDistance(static_cast<float>(arg1)), "Change Fog Skybox Clip");
 }
 
 void BackgroundEditorDialog::on_fogClipDoubleSpinBox_valueChanged(double arg1)
 {
-	_model->setFogClipDistance(static_cast<float>(arg1));
+	BG_PUSH(BG_FogClip, _model->setFogClipDistance(static_cast<float>(arg1)), "Change Fog Clip Distance");
 }
 
 void BackgroundEditorDialog::on_displayBgsInNebulaCheckbox_toggled(bool checked)
 {
-	_model->setDisplayBackgroundBitmaps(checked);
+	BG_PUSH(BG_DisplayBgInNeb, _model->setDisplayBackgroundBitmaps(checked), "Toggle Display Backgrounds in Nebula");
 }
 
 void BackgroundEditorDialog::on_overrideFogPaletteCheckBox_toggled(bool checked)
 {
-	_model->setFogPaletteOverride(checked);
+	BG_PUSH(BG_FogOverride, _model->setFogPaletteOverride(checked), "Toggle Fog Palette Override");
 	updateNebulaControls();
 }
 
 void BackgroundEditorDialog::on_fogOverrideRedSpinBox_valueChanged(int arg1)
 {
-	_model->setFogR(arg1);
+	BG_PUSH(BG_FogR, _model->setFogR(arg1), "Change Fog Red");
 	updateFogSwatch();
 }
 
 void BackgroundEditorDialog::on_fogOverrideGreenSpinBox_valueChanged(int arg1)
 {
-	_model->setFogG(arg1);
+	BG_PUSH(BG_FogG, _model->setFogG(arg1), "Change Fog Green");
 	updateFogSwatch();
 }
 
 void BackgroundEditorDialog::on_fogOverrideBlueSpinBox_valueChanged(int arg1)
 {
-	_model->setFogB(arg1);
+	BG_PUSH(BG_FogB, _model->setFogB(arg1), "Change Fog Blue");
 	updateFogSwatch();
 }
+
+// ---- Old Nebula ----
 
 void BackgroundEditorDialog::on_oldNebulaPatternCombo_currentIndexChanged(int index)
 {
 	if (index < 0)
 		return;
 	const QString text = ui->oldNebulaPatternCombo->itemText(index);
-	_model->setOldNebulaPattern(text.toUtf8().constData());
+	BG_PUSH(BG_OldNebPattern, _model->setOldNebulaPattern(text.toUtf8().constData()), "Change Old Nebula Pattern");
 	updateOldNebulaControls();
 }
 
@@ -810,28 +956,30 @@ void BackgroundEditorDialog::on_oldNebulaColorCombo_currentIndexChanged(int inde
 	if (index < 0)
 		return;
 	const QString text = ui->oldNebulaColorCombo->itemText(index);
-	_model->setOldNebulaColorName(text.toUtf8().constData());
+	BG_PUSH(BG_OldNebColor, _model->setOldNebulaColorName(text.toUtf8().constData()), "Change Old Nebula Color");
 }
 
 void BackgroundEditorDialog::on_oldNebulaPitchSpinBox_valueChanged(int arg1)
 {
-	_model->setOldNebulaPitch(arg1);
+	BG_PUSH(BG_OldNebPitch, _model->setOldNebulaPitch(arg1), "Change Old Nebula Pitch");
 }
 
 void BackgroundEditorDialog::on_oldNebulaBankSpinBox_valueChanged(int arg1)
 {
-	_model->setOldNebulaBank(arg1);
+	BG_PUSH(BG_OldNebBank, _model->setOldNebulaBank(arg1), "Change Old Nebula Bank");
 }
 
 void BackgroundEditorDialog::on_oldNebulaHeadingSpinBox_valueChanged(int arg1)
 {
-	_model->setOldNebulaHeading(arg1);
+	BG_PUSH(BG_OldNebHeading, _model->setOldNebulaHeading(arg1), "Change Old Nebula Heading");
 }
+
+// ---- Ambient Light ----
 
 void BackgroundEditorDialog::on_ambientLightRedSlider_valueChanged(int value)
 {
-	_model->setAmbientR(value);
-	
+	BG_PUSH(BG_AmbientR, _model->setAmbientR(value), "Change Ambient Red");
+
 	QString text = "R: " + QString::number(value);
 	ui->ambientLightRedLabel->setText(text);
 	updateAmbientSwatch();
@@ -839,8 +987,8 @@ void BackgroundEditorDialog::on_ambientLightRedSlider_valueChanged(int value)
 
 void BackgroundEditorDialog::on_ambientLightGreenSlider_valueChanged(int value)
 {
-	_model->setAmbientG(value);
-	
+	BG_PUSH(BG_AmbientG, _model->setAmbientG(value), "Change Ambient Green");
+
 	QString text = "G: " + QString::number(value);
 	ui->ambientLightGreenLabel->setText(text);
 	updateAmbientSwatch();
@@ -848,7 +996,7 @@ void BackgroundEditorDialog::on_ambientLightGreenSlider_valueChanged(int value)
 
 void BackgroundEditorDialog::on_ambientLightBlueSlider_valueChanged(int value)
 {
-	_model->setAmbientB(value);
+	BG_PUSH(BG_AmbientB, _model->setAmbientB(value), "Change Ambient Blue");
 
 	QString text = "B: " + QString::number(value);
 	ui->ambientLightBlueLabel->setText(text);
@@ -867,6 +1015,8 @@ void BackgroundEditorDialog::updateAmbientSwatch()
 			.arg(b));
 }
 
+// ---- Skybox ----
+
 void BackgroundEditorDialog::on_skyboxModelButton_clicked()
 {
 	const QString lastDir = util::getLastDir("background/skyboxModel", CF_TYPE_MODELS);
@@ -877,65 +1027,68 @@ void BackgroundEditorDialog::on_skyboxModelButton_clicked()
 		return;
 
 	util::saveLastDir("background/skyboxModel", path);
-	_model->setSkyboxModelName(QFileInfo(path).completeBaseName().toUtf8().constData());
+	const SCP_string chosen = QFileInfo(path).completeBaseName().toUtf8().constData();
+	BG_PUSH(BG_SkyboxModel, _model->setSkyboxModelName(chosen), "Change Skybox Model");
 
 	updateSkyboxControls();
 }
 
 void BackgroundEditorDialog::on_skyboxEdit_textChanged(const QString& arg1)
 {
-	_model->setSkyboxModelName(arg1.toUtf8().constData());
+	BG_PUSH(BG_SkyboxModel, _model->setSkyboxModelName(arg1.toUtf8().constData()), "Change Skybox Model");
 	updateSkyboxControls();
 }
 
 void BackgroundEditorDialog::on_skyboxPitchSpin_valueChanged(double arg1)
 {
-	_model->setSkyboxPitch(static_cast<float>(arg1));
+	BG_PUSH(BG_SkyboxPitch, _model->setSkyboxPitch(static_cast<float>(arg1)), "Change Skybox Pitch");
 }
 
 void BackgroundEditorDialog::on_skyboxBankSpin_valueChanged(double arg1)
 {
-	_model->setSkyboxBank(static_cast<float>(arg1));
+	BG_PUSH(BG_SkyboxBank, _model->setSkyboxBank(static_cast<float>(arg1)), "Change Skybox Bank");
 }
 
 void BackgroundEditorDialog::on_skyboxHeadingSpin_valueChanged(double arg1)
 {
-	_model->setSkyboxHeading(static_cast<float>(arg1));
+	BG_PUSH(BG_SkyboxHeading, _model->setSkyboxHeading(static_cast<float>(arg1)), "Change Skybox Heading");
 }
 
 void BackgroundEditorDialog::on_noLightingCheckBox_toggled(bool checked)
 {
-	_model->setSkyboxNoLighting(checked);
+	BG_PUSH(BG_SkyboxFlags, _model->setSkyboxNoLighting(checked), "Change Skybox Flags");
 }
 
 void BackgroundEditorDialog::on_transparentCheckBox_toggled(bool checked)
 {
-	_model->setSkyboxAllTransparent(checked);
+	BG_PUSH(BG_SkyboxFlags, _model->setSkyboxAllTransparent(checked), "Change Skybox Flags");
 }
 
 void BackgroundEditorDialog::on_forceClampCheckBox_toggled(bool checked)
 {
-	_model->setSkyboxForceClamp(checked);
+	BG_PUSH(BG_SkyboxFlags, _model->setSkyboxForceClamp(checked), "Change Skybox Flags");
 }
 
 void BackgroundEditorDialog::on_noZBufferCheckBox_toggled(bool checked)
 {
-	_model->setSkyboxNoZbuffer(checked);
+	BG_PUSH(BG_SkyboxFlags, _model->setSkyboxNoZbuffer(checked), "Change Skybox Flags");
 }
 
 void BackgroundEditorDialog::on_noCullCheckBox_toggled(bool checked)
 {
-	_model->setSkyboxNoCull(checked);
+	BG_PUSH(BG_SkyboxFlags, _model->setSkyboxNoCull(checked), "Change Skybox Flags");
 }
 
 void BackgroundEditorDialog::on_noGlowMapsCheckBox_toggled(bool checked)
 {
-	_model->setSkyboxNoGlowmaps(checked);
+	BG_PUSH(BG_SkyboxFlags, _model->setSkyboxNoGlowmaps(checked), "Change Skybox Flags");
 }
+
+// ---- Misc ----
 
 void BackgroundEditorDialog::on_numStarsSlider_valueChanged(int value)
 {
-	_model->setNumStars(value);
+	BG_PUSH(BG_NumStars, _model->setNumStars(value), "Change Number of Stars");
 
 	QString text = "Number of stars: " + QString::number(value);
 	ui->numStarsLabel->setText(text);
@@ -943,7 +1096,7 @@ void BackgroundEditorDialog::on_numStarsSlider_valueChanged(int value)
 
 void BackgroundEditorDialog::on_subspaceCheckBox_toggled(bool checked)
 {
-	_model->setTakesPlaceInSubspace(checked);
+	BG_PUSH(BG_Subspace, _model->setTakesPlaceInSubspace(checked), "Toggle Subspace");
 }
 
 void BackgroundEditorDialog::on_envMapButton_clicked()
@@ -956,13 +1109,14 @@ void BackgroundEditorDialog::on_envMapButton_clicked()
 	if (path.isEmpty())
 		return;
 	util::saveLastDir("background/envMap", path);
-	_model->setEnvironmentMapName(QFileInfo(path).completeBaseName().toUtf8().constData());
+	const SCP_string chosen = QFileInfo(path).completeBaseName().toUtf8().constData();
+	BG_PUSH(BG_EnvMap, _model->setEnvironmentMapName(chosen), "Change Environment Map");
 	updateMiscControls();
 }
 
 void BackgroundEditorDialog::on_envMapEdit_textChanged(const QString& arg1)
 {
-	_model->setEnvironmentMapName(arg1.toUtf8().constData());
+	BG_PUSH(BG_EnvMap, _model->setEnvironmentMapName(arg1.toUtf8().constData()), "Change Environment Map");
 }
 
 void BackgroundEditorDialog::on_lightingProfileCombo_currentIndexChanged(int index)
@@ -971,7 +1125,7 @@ void BackgroundEditorDialog::on_lightingProfileCombo_currentIndexChanged(int ind
 		return;
 
 	const QString text = ui->lightingProfileCombo->itemText(index);
-	_model->setLightingProfileName(text.toUtf8().constData());
+	BG_PUSH(BG_LightProfile, _model->setLightingProfileName(text.toUtf8().constData()), "Change Lighting Profile");
 }
 
 } // namespace fso::fred::dialogs

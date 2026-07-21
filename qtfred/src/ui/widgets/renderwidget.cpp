@@ -15,6 +15,7 @@
 #include <QtGui/QtGui>
 #include <QtWidgets/QHBoxLayout>
 #include <mission/object.h>
+#include <object/object.h>
 #include <ship/ship.h>
 #include <globalincs/linklist.h>
 #include <QtWidgets/QMessageBox>
@@ -25,6 +26,7 @@
 #include "starfield/starfield.h"
 
 #include "mission/Editor.h"
+#include "mission/commands/FredCommands.h"
 #include "FredApplication.h"
 #include "ui/FredView.h"
 
@@ -152,6 +154,13 @@ void RenderWidget::contextMenuEvent(QContextMenuEvent* event) {
 	parentView->showContextMenu(event->globalPos());
 }
 
+void RenderWidget::focusInEvent(QFocusEvent* e) {
+	if (_fredView) {
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
+	}
+	QWidget::focusInEvent(e);
+}
+
 void RenderWidget::keyPressEvent(QKeyEvent* key) {
 	if (_viewport != nullptr && key->key() == Qt::Key_Escape && _viewport->button_down) {
 		_viewport->cancel_drag();
@@ -237,6 +246,9 @@ void RenderWidget::mousePressEvent(QMouseEvent* event) {
 	_markingBox.x1 = event->position().x() * _window->devicePixelRatio();
 	_markingBox.y1 = event->position().y() * _window->devicePixelRatio();
 	_viewport->Dup_drag = 0;
+	_wasDupDrag = false;
+	_wasInsertDrag = false;
+	_preCloneSourceSignatures.clear();
 
 	_viewport->on_object = _viewport->select_object(event->position().x() * _window->devicePixelRatio(),
 		event->position().y() * _window->devicePixelRatio());
@@ -254,14 +266,38 @@ void RenderWidget::mousePressEvent(QMouseEvent* event) {
 				kind = CreateKind::Prop;
 			}
 			_viewport->on_object = _viewport->create_object_on_grid(event->position().x() * _window->devicePixelRatio(), event->position().y() * _window->devicePixelRatio(), waypoint_instance, kind);
-
+			if (_viewport->on_object >= 0) {
+				auto* cmd = new fso::fred::CreateObjectCommand(
+				    Objects[_viewport->on_object].pos,
+				    _viewport->cur_model_index,
+				    _viewport->cur_prop_index,
+				    waypoint_instance,
+				    kind,
+				    _viewport->cur_other_kind,
+				    _viewport->on_object,
+				    fred,
+				    _viewport);
+				_fredView->mainUndoStack()->push(cmd); // first redo() is a no-op
+			}
 		} else {
 			// Ctrl+drag: duplicate marked objects (waypoints start a new path).
 			// Ctrl+Shift+drag: same, except marked waypoints insert into their
 			// source path instead of starting a new one.
-			_viewport->Dup_drag = event->modifiers().testFlag(Qt::ShiftModifier)
-				? EditorViewport::DUP_DRAG_INSERT
-				: 1;
+			_wasInsertDrag = event->modifiers().testFlag(Qt::ShiftModifier);
+			_viewport->Dup_drag = _wasInsertDrag ? EditorViewport::DUP_DRAG_INSERT : 1;
+
+			// Capture pre-clone state so mouseReleaseEvent can build CloneDragCommand.
+			_wasDupDrag         = true;
+			_preCloneCurrentObj = fred->currentObject;
+			_preCloneSourceSignatures.clear();
+			for (const object* p = GET_FIRST(&obj_used_list);
+			     p != END_OF_LIST(&obj_used_list);
+			     p = GET_NEXT(p))
+			{
+				if (p->flags[Object::Object_Flags::Marked]) {
+					_preCloneSourceSignatures.push_back(p->signature);
+				}
+			}
 		}
 
 	} else if (!_viewport->Selection_lock) {
@@ -429,21 +465,93 @@ void RenderWidget::mouseReleaseEvent(QMouseEvent* event) {
 			_viewport->moved = true;
 		}
 
+		// True if this gesture was an object drag (not a selection-box sweep).
+		const bool wasDragMode = (_viewport->on_object != -1) || _viewport->Selection_lock;
+		const bool isMoveOrRotate = _viewport->Editing_mode == CursorMode::Moving
+		                         || _viewport->Editing_mode == CursorMode::Rotating;
+
 		if (_viewport->moved) {
-			if ((_viewport->on_object != -1) || _viewport->Selection_lock) {
+			if (wasDragMode) {
 				if (_viewport->Editing_mode == CursorMode::Moving) {
 					_viewport->drag_objects(event->position().x() * _window->devicePixelRatio(),
 						event->position().y() * _window->devicePixelRatio());
 				} else if (_viewport->Editing_mode == CursorMode::Rotating) {
 					_viewport->drag_rotate_objects(0, 0);
 				}
-
-				fred->missionChanged();
-
 			} else {
 				_usingMarkingBox = true;
 			}
 		}
+
+		// Dup_drag is reset to 0 (or DUP_DRAG_OF_WING) inside drag_objects() once the
+		// clone succeeds. If it's still 1 / DUP_DRAG_INSERT here, no clone happened.
+		const bool cloneSucceeded = _wasDupDrag
+		    && _viewport->moved
+		    && _viewport->Dup_drag != 1
+		    && _viewport->Dup_drag != EditorViewport::DUP_DRAG_INSERT;
+
+		fso::fred::CloneDragCommand* cloneCmd = nullptr;
+		if (cloneSucceeded) {
+			// Build CloneDragCommand: clone + final position in one undo step.
+			// rotation_backup holds the clones' initial positions (written by
+			// drag_rotate_save_backup() immediately after duplicate_marked_objects()).
+			SCP_vector<fso::fred::CloneDragEntry> entries;
+			int si = 0;
+			for (const object* p = GET_FIRST(&obj_used_list);
+			     p != END_OF_LIST(&obj_used_list);
+			     p = GET_NEXT(p))
+			{
+				if (!p->flags[Object::Object_Flags::Marked]) continue;
+				if (si >= static_cast<int>(_preCloneSourceSignatures.size())) break;
+				fso::fred::CloneDragEntry e;
+				e.sourceSignature = _preCloneSourceSignatures[si++];
+				e.cloneSignature  = p->signature;
+				const int n       = OBJ_INDEX(p);
+				e.initialPos      = _viewport->rotation_backup[n].pos;
+				e.initialOrient   = _viewport->rotation_backup[n].orient;
+				e.finalPos        = Objects[n].pos;
+				e.finalOrient     = Objects[n].orient;
+				entries.push_back(e);
+			}
+			if (!entries.empty()) {
+				cloneCmd = new fso::fred::CloneDragCommand(
+				    std::move(entries),
+				    _preCloneCurrentObj,
+				    _wasInsertDrag,
+				    fred,
+				    _viewport);
+				_fredView->mainUndoStack()->push(cloneCmd);
+			}
+		} else if (wasDragMode && isMoveOrRotate) {
+			// Normal move (no clone): build MoveObjectsCommand outside the moved-guard
+			// so that the Selection_lock press-teleport is also captured for undo.
+			SCP_vector<fso::fred::ObjectTransform> transforms;
+			for (const object* p = GET_FIRST(&obj_used_list);
+			     p != END_OF_LIST(&obj_used_list);
+			     p = GET_NEXT(p))
+			{
+				if (!p->flags[Object::Object_Flags::Marked]) continue;
+				const int i = OBJ_INDEX(p);
+				const auto& before = _viewport->rotation_backup[i];
+				if (vm_vec_cmp(&before.pos, &p->pos) || vm_matrix_cmp(&before.orient, &p->orient)) {
+					fso::fred::ObjectTransform t;
+					t.signature     = p->signature;
+					t.posBefore     = before.pos;
+					t.orientBefore  = before.orient;
+					t.posAfter      = p->pos;
+					t.orientAfter   = p->orient;
+					transforms.push_back(t);
+				}
+			}
+			if (!transforms.empty()) {
+				_fredView->mainUndoStack()->push(
+				    new fso::fred::MoveObjectsCommand(std::move(transforms), fred, _viewport));
+			}
+		}
+
+		_wasDupDrag = false;
+		_wasInsertDrag = false;
+		_preCloneSourceSignatures.clear();
 
 		if (_usingMarkingBox) {
 			_viewport->select_objects(_markingBox);
@@ -464,6 +572,7 @@ void RenderWidget::mouseReleaseEvent(QMouseEvent* event) {
 
 			QString msg = tr("Add cloned ships to wing %1?").arg(Wings[_viewport->Duped_wing].name);
 			if (QMessageBox::question(this, tr("Query"), msg) == QMessageBox::Yes) {
+				bool addedAny = false;
 				objp = GET_FIRST(&obj_used_list);
 				while (objp != END_OF_LIST(&obj_used_list)) {
 					if (objp->flags[Object::Object_Flags::Marked]) {
@@ -484,10 +593,13 @@ void RenderWidget::mouseReleaseEvent(QMouseEvent* event) {
 						fred->wing_objects[_viewport->Duped_wing][Wings[_viewport->Duped_wing].wave_count] =
 							OBJ_INDEX(objp);
 						Wings[_viewport->Duped_wing].wave_count++;
+						addedAny = true;
 					}
 
 					objp = GET_NEXT(objp);
 				}
+				if (addedAny && cloneCmd)
+					cloneCmd->recordWingAdd(_viewport->Duped_wing);
 			}
 		}
 	}
@@ -518,6 +630,7 @@ void RenderWidget::setEditor(Editor* editor, EditorViewport* viewport) {
 
 	fred = editor;
 	_viewport = viewport;
+	_fredView = static_cast<FredView*>(parentWidget());
 
 	_window->setEditor(editor, _viewport->renderer);
 }

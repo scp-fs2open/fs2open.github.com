@@ -73,6 +73,10 @@ public:
 signals:
 	void iconSelected(int index, bool toggleSelection);
 	void cameraChanged(vec3d pos, matrix orient);
+	// Bracket an icon drag gesture so the editor can capture undo state at
+	// the start and push one command at the end.
+	void iconDragStarted(int index);
+	void iconDragFinished(int index);
 
 protected:
 	bool event(QEvent* evt) override;

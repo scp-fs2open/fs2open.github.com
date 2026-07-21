@@ -1,6 +1,8 @@
 #include "FredView.h"
 #include "ui_FredView.h"
 
+#include <algorithm>
+
 #include <ui/util/default_dir.h>
 
 #include <QDir>
@@ -11,6 +13,8 @@
 #include <QMessageBox>
 #include <QDebug>
 #include <QKeyEvent>
+#include <QLineEdit>
+#include <QApplication>
 #include <QProcess>
 #include <QSignalBlocker>
 #include <QSettings>
@@ -34,6 +38,7 @@
 #include <ui/dialogs/BriefingEditorDialog.h>
 #include <ui/dialogs/WaypointEditorDialog.h>
 #include <ui/dialogs/ReorderDialog.h>
+#include <object/object.h>
 #include <object/waypoint.h>
 #include <ui/dialogs/WaypointPathGeneratorDialog.h>
 #include <ui/dialogs/JumpNodeEditorDialog.h>
@@ -69,6 +74,8 @@
 #include <iff_defs/iff_defs.h>
 
 #include "mission/Editor.h"
+#include "mission/commands/CameraTransformCommand.h"
+#include "mission/commands/FredCommands.h"
 #include "mission/management.h"
 #include "ui/Theme.h"
 #include <prop/prop.h>
@@ -146,6 +153,66 @@ FredView::FredView(QWidget* parent) : QMainWindow(parent), ui(new Ui::FredView()
 	setFocusPolicy(Qt::NoFocus);
 	setFocusProxy(ui->centralWidget);
 
+	// Undo/Redo infrastructure — stacks created here so dialogs can register before setEditor() is called
+	_undoGroup   = new QUndoGroup(this);
+	_mainStack   = new QUndoStack(_undoGroup);
+	_cameraStack = new QUndoStack(this);
+	_undoGroup->setActiveStack(_mainStack);
+
+	// These actions' shortcuts are window-scoped (the default): every editing
+	// window owns its own Ctrl+Z/Ctrl+Y — modal dialogs via setupDialogUndo(),
+	// direct-edit dialogs via installMainStackUndoShortcuts() — so shortcut
+	// delivery never depends on reaching another window's actions.
+	_undoAction  = _undoGroup->createUndoAction(this, tr("&Undo"));
+	_undoAction->setShortcuts(QKeySequence::Undo);
+	_redoAction  = _undoGroup->createRedoAction(this, tr("&Redo"));
+	_redoAction->setShortcuts(QKeySequence::Redo);
+	// QKeySequence::Redo includes Ctrl+Shift+Z on Windows and Linux, which conflicts
+	// with the camera undo shortcut below. Strip it so only Ctrl+Y remains.
+	{
+		QList<QKeySequence> redoShortcuts = _redoAction->shortcuts();
+		redoShortcuts.removeAll(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_Z));
+		_redoAction->setShortcuts(redoShortcuts);
+	}
+
+	// Text editors (QLineEdit, and the editors inside spin boxes / editable combos) claim
+	// Ctrl+Z/Y by accepting the ShortcutOverride event, which would shadow the mission undo.
+	// This filter lets a focused field keep its own text undo only while it actually has
+	// something to undo; once its local history is empty the keystroke falls through to the
+	// window's mission/dialog undo actions. See eventFilter() below.
+	qApp->installEventFilter(this);
+
+	// Camera undo/redo are plain actions (not createUndoAction) so their
+	// enabled state can be gated: camera history is main-viewport state, so
+	// the shortcuts and menu items are only live while the main stack is
+	// active — a focused dialog must not move the camera behind itself.
+	_undoCameraAction = new QAction(tr("Undo View Change"), this);
+	_undoCameraAction->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_Z));
+	connect(_undoCameraAction, &QAction::triggered, this, [this]() { _cameraStack->undo(); });
+	_redoCameraAction = new QAction(tr("Redo View Change"), this);
+	_redoCameraAction->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_Y));
+	connect(_redoCameraAction, &QAction::triggered, this, [this]() { _cameraStack->redo(); });
+
+	auto updateCameraUndoActions = [this]() {
+		const bool mainActive = _undoGroup->activeStack() == _mainStack;
+		_undoCameraAction->setEnabled(mainActive && _cameraStack->canUndo());
+		_redoCameraAction->setEnabled(mainActive && _cameraStack->canRedo());
+	};
+	connect(_cameraStack, &QUndoStack::canUndoChanged, this, updateCameraUndoActions);
+	connect(_cameraStack, &QUndoStack::canRedoChanged, this, updateCameraUndoActions);
+	connect(_undoGroup, &QUndoGroup::activeStackChanged, this, updateCameraUndoActions);
+	updateCameraUndoActions();
+
+	// Insert Undo/Redo before the first item in menuEdit
+	ui->menuEdit->insertAction(ui->menuEdit->actions().first(), _redoAction);
+	ui->menuEdit->insertAction(_redoAction, _undoAction);
+	ui->menuEdit->insertSeparator(ui->menuEdit->actions().at(2)); // separator after Redo
+
+	// Insert camera undo/redo after actionRestore_Camera_Pos in menuView
+	QAction* insertAfter = ui->actionRestore_Camera_Pos;
+	ui->menuView->insertAction(ui->menuView->actions().at(ui->menuView->actions().indexOf(insertAfter) + 1), _redoCameraAction);
+	ui->menuView->insertAction(_redoCameraAction, _undoCameraAction);
+
 	// This is not possible to do with the designer
 	ui->actionNew->setShortcuts(QKeySequence::New);
 	ui->actionOpen->setShortcuts(QKeySequence::Open);
@@ -177,6 +244,17 @@ FredView::FredView(QWidget* parent) : QMainWindow(parent), ui(new Ui::FredView()
 	connect(ui->actionPreferences, &QAction::triggered, this, [this]() {
 		dialogs::PreferencesDialog preferencesDialog(this, _viewport);
 		preferencesDialog.exec();
+		if (_viewport) {
+			// Qt ignores setUndoLimit() on a non-empty stack; a new depth takes
+			// effect at the next mission load (see on_mission_loaded), which is
+			// the only point the stacks are guaranteed empty.
+			if (_mainStack->count() == 0) {
+				_mainStack->setUndoLimit(_viewport->undo_stack_depth);
+			}
+			if (_cameraStack->count() == 0) {
+				_cameraStack->setUndoLimit(_viewport->undo_stack_depth);
+			}
+		}
 	});
 
 	connect(ui->actionManage_Layers, &QAction::triggered, this, [this]() { openLayerManagerDialog(); });
@@ -219,6 +297,10 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 
 	fred = editor;
 	_viewport = viewport;
+
+	fred->setUndoStack(_mainStack);
+	_mainStack->setUndoLimit(_viewport->undo_stack_depth);
+	_cameraStack->setUndoLimit(_viewport->undo_stack_depth);
 
 	setIconSize(QSize(_viewport->toolbar_icon_size, _viewport->toolbar_icon_size));
 
@@ -286,6 +368,31 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 		save.save_autosave_file(savePath.toUtf8().constData());
 	});
 	connect(fred, &Editor::layerListChanged, this, [this]() { _tbLayerComboDirty = true; });
+
+	// Camera undo: fires from any input source (keyboard, SpaceMouse, future mouse camera)
+	// via CameraController::onViewChanged. An idle timer collapses continuous movement
+	// (held key, SpaceMouse pan) into a single undo step.
+	_cameraIdleTimer = new QTimer(this);
+	_cameraIdleTimer->setSingleShot(true);
+	_cameraIdleTimer->setInterval(250);
+
+	_viewport->camera.onViewChanged = [this]() {
+		if (!_cameraIdleTimer->isActive()) {
+			_cameraPosBeforeGesture    = _viewport->camera.view_pos;
+			_cameraOrientBeforeGesture = _viewport->camera.view_orient;
+		}
+		_cameraIdleTimer->start();
+	};
+
+	connect(_cameraIdleTimer, &QTimer::timeout, this, [this]() {
+		if (vm_vec_cmp(&_viewport->camera.view_pos, &_cameraPosBeforeGesture)
+			|| vm_matrix_cmp(&_viewport->camera.view_orient, &_cameraOrientBeforeGesture)) {
+			_cameraStack->push(new CameraTransformCommand(
+				&_viewport->camera,
+				_cameraPosBeforeGesture, _cameraOrientBeforeGesture,
+				_viewport->camera.view_pos, _viewport->camera.view_orient));
+		}
+	});
 
 	// Sets the initial window title
 	on_mission_loaded("");
@@ -792,6 +899,15 @@ void FredView::on_actionRun_FreeSpace_2_Open_triggered(bool) {
 }
 
 void FredView::on_mission_loaded(const std::string& filepath) {
+	_cameraStack->clear();
+
+	// Both stacks are empty now (the editor cleared the main stack before
+	// teardown), so a preferences change made mid-session can be applied.
+	if (_viewport != nullptr) {
+		_mainStack->setUndoLimit(_viewport->undo_stack_depth);
+		_cameraStack->setUndoLimit(_viewport->undo_stack_depth);
+	}
+
 	// Clear browsed head ANIs so the new mission's message scan starts fresh.
 	fso::fred::dialogs::MissionEventsDialogModel::clearBrowsedHeadAnis();
 
@@ -967,6 +1083,31 @@ void FredView::initializeStatusBar() {
 	_statusBarUnitsLabel = new QLabel();
 	_statusBarUnitsLabel->setContentsMargins(16, 0, 0, 0);
 	statusBar()->addPermanentWidget(_statusBarUnitsLabel);
+
+	// Passive indicator of which undo stack Ctrl+Z currently targets — the
+	// main mission stack or a focused dialog's internal stack (named via
+	// setupDialogUndo).
+	_statusBarUndoScope = new QLabel();
+	_statusBarUndoScope->setContentsMargins(16, 0, 0, 0);
+	statusBar()->addPermanentWidget(_statusBarUndoScope);
+
+	connect(_undoGroup, &QUndoGroup::activeStackChanged, this, &FredView::updateUndoStatusIndicator);
+	updateUndoStatusIndicator();
+}
+
+void FredView::updateUndoStatusIndicator()
+{
+	auto* stack = _undoGroup->activeStack();
+	if (stack == nullptr) {
+		_statusBarUndoScope->clear();
+		return;
+	}
+
+	QString scope = (stack == _mainStack) ? tr("Mission") : stack->objectName();
+	if (scope.isEmpty())
+		scope = tr("Dialog");
+
+	_statusBarUndoScope->setText(tr("Undo: %1").arg(scope));
 }
 
 void FredView::setLastSaved(const QDateTime& when) {
@@ -1176,10 +1317,14 @@ void FredView::onUpdateContextToolbar() {
 			_contextToolBar->addAction(selWingAct);
 		}
 	} else if (effectiveType == OBJ_WAYPOINT) {
+		addBtn(tr("Rename"),               &FredView::quickRenameCurrentObject);
 		addBtn(tr("Edit Waypoint Path"),   &FredView::on_actionWaypoint_Paths_triggered);
 	} else if (effectiveType == OBJ_JUMP_NODE) {
+		addBtn(tr("Rename"),               &FredView::quickRenameCurrentObject);
 		addBtn(tr("Edit Jump Node"),       &FredView::on_actionJump_Nodes_triggered);
 	} else if (effectiveType == OBJ_PROP) {
+		if (numMarked <= 1)
+			addBtn(tr("Rename"),           &FredView::quickRenameCurrentObject);
 		addBtn(tr("Edit Prop"),            &FredView::on_actionProps_triggered);
 	}
 
@@ -1196,16 +1341,44 @@ void FredView::quickRenameCurrentObject() {
 	const int obj = fred->currentObject;
 	if (!query_valid_object(obj)) return;
 
+	const int type = Objects[obj].type;
+
+	// For waypoint paths, rename the whole path (not the individual waypoint point).
+	// The path has no single object number, so we pass -1 to RenameObjectCommand and
+	// identify it by name.
+	if (type == OBJ_WAYPOINT) {
+		waypoint_list* wl = find_waypoint_list_with_instance(Objects[obj].instance, nullptr);
+		if (!wl) return;
+		const QString current = QString::fromUtf8(wl->get_name());
+		bool ok = false;
+		const QString newName = QInputDialog::getText(
+		    this, tr("Rename"), tr("New path name:"), QLineEdit::Normal, current, &ok).trimmed();
+		if (!ok || newName.isEmpty() || newName == current) return;
+		_mainStack->push(new fso::fred::RenameObjectCommand(
+		    -1,
+		    current.toUtf8().constData(),
+		    newName.toUtf8().constData(),
+		    fred));
+		return;
+	}
+
+	if (type != OBJ_SHIP && type != OBJ_START &&
+	    type != OBJ_JUMP_NODE && type != OBJ_PROP) {
+		return; // wings use their editor dialog
+	}
+
 	const QString current = QString::fromUtf8(object_name(obj));
 	bool ok = false;
-	QString newName = QInputDialog::getText(this, tr("Rename"), tr("New name:"), QLineEdit::Normal, current, &ok).trimmed();
+	const QString newName = QInputDialog::getText(
+	    this, tr("Rename"), tr("New name:"), QLineEdit::Normal, current, &ok).trimmed();
 	if (!ok || newName.isEmpty() || newName == current) return;
 
-	if (Objects[obj].type == OBJ_SHIP || Objects[obj].type == OBJ_START) {
-		fred->rename_ship(Objects[obj].instance, newName.toUtf8().constData());
-	}
-	// Waypoints, props, and jump nodes open their editor (name field is front-and-center)
-	// Wing rename goes through Edit Wing since wings have no standalone scene object
+	// QUndoStack::push() calls redo() immediately, which applies the rename.
+	_mainStack->push(new fso::fred::RenameObjectCommand(
+	    obj,
+	    current.toUtf8().constData(),
+	    newName.toUtf8().constData(),
+	    fred));
 }
 
 
@@ -1281,10 +1454,16 @@ void FredView::initializeTransformBar() {
 	_transformToolBar->addWidget(_transformIffCombo);
 	connect(_transformIffCombo, QOverload<int>::of(&QComboBox::activated), this, [this](int idx) {
 		if (idx < 0 || !_viewport) return;
+		SCP_vector<fso::fred::ShipIFFChange> changes;
 		for (object* p = GET_FIRST(&obj_used_list); p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p)) {
 			if (!p->flags[Object::Object_Flags::Marked]) continue;
-			if (p->type == OBJ_SHIP || p->type == OBJ_START)
+			if (p->type == OBJ_SHIP || p->type == OBJ_START) {
+				changes.push_back({p->signature, Ships[p->instance].team, idx});
 				Ships[p->instance].team = idx;
+			}
+		}
+		if (!changes.empty()) {
+			_mainStack->push(new fso::fred::ChangeIFFCommand(std::move(changes), fred));
 		}
 		fred->missionChanged();
 	});
@@ -1361,8 +1540,18 @@ void FredView::initializeTransformBar() {
 	connect(_transformLayerCombo, QOverload<int>::of(&QComboBox::activated), this, [this](int idx) {
 		if (idx < 0 || !_viewport) return;
 		SCP_string layerName = _transformLayerCombo->itemText(idx).toUtf8().constData();
+		SCP_vector<fso::fred::ObjectLayerChange> changes;
+		for (object* p = GET_FIRST(&obj_used_list); p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p)) {
+			if (!p->flags[Object::Object_Flags::Marked]) continue;
+			SCP_string before = _viewport->getObjectLayerName(OBJ_INDEX(p));
+			if (before != layerName)
+				changes.push_back({p->signature, std::move(before), layerName});
+		}
 		_viewport->moveMarkedObjectsToLayer(layerName, nullptr);
-		fred->missionChanged();
+		if (!changes.empty())
+			_mainStack->push(new fso::fred::MoveLayerCommand(std::move(changes), _viewport, fred));
+		else
+			fred->missionChanged();
 	});
 
 	addFixedSpacer(12);
@@ -1556,6 +1745,17 @@ void FredView::onTransformEditingFinished() {
 	const int  numMarked   = fred->getNumMarked();
 	const bool isMulti     = numMarked > 1;
 
+	// Snapshot before-state for all marked objects.
+	SCP_vector<fso::fred::ObjectTransform> transforms;
+	for (const object* p = GET_FIRST(&obj_used_list); p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p)) {
+		if (!p->flags[Object::Object_Flags::Marked]) continue;
+		fso::fred::ObjectTransform t{};
+		t.signature    = p->signature;
+		t.posBefore    = p->pos;
+		t.orientBefore = p->orient;
+		transforms.push_back(t);
+	}
+
 	if (rotateMode) {
 		if (isMulti && localMode) {
 			// Local delta: compute angle delta from curObj, apply to every marked object.
@@ -1622,7 +1822,25 @@ void FredView::onTransformEditingFinished() {
 		}
 	}
 
-	fred->missionChanged();
+	// Capture after-state and discard entries where nothing changed.
+	for (auto& t : transforms) {
+		const int cur = obj_get_by_signature(t.signature);
+		if (cur >= 0) {
+			t.posAfter    = Objects[cur].pos;
+			t.orientAfter = Objects[cur].orient;
+		}
+	}
+	transforms.erase(std::remove_if(transforms.begin(), transforms.end(),
+	    [](const fso::fred::ObjectTransform& t) {
+	        return vm_vec_cmp(&t.posBefore, &t.posAfter) == 0 &&
+	               vm_matrix_cmp(&t.orientBefore, &t.orientAfter) == 0;
+	    }), transforms.end());
+
+	if (!transforms.empty()) {
+		_mainStack->push(new fso::fred::MoveObjectsCommand(std::move(transforms), fred, _viewport));
+	} else {
+		fred->missionChanged();
+	}
 }
 
 void FredView::updateUI() {
@@ -1885,7 +2103,14 @@ void FredView::showWingContextMenu(int wingIndex, const QPoint& globalPos)
 
 	auto* deleteAction = menu.addAction(tr("Delete %1").arg(wingName));
 	connect(deleteAction, &QAction::triggered, this, [this, wingIndex]() {
-		fred->delete_wing(wingIndex, 0);
+		// Capture before the delete, push only if it wasn't canceled at the
+		// reference check (first redo() is a no-op either way).
+		auto* cmd = new DeleteWingCommand(wingIndex, fred, _viewport);
+		if (fred->delete_wing(wingIndex, 0) == 0) {
+			_mainStack->push(cmd);
+		} else {
+			delete cmd;
+		}
 	});
 
 	menu.exec(globalPos);
@@ -1937,7 +2162,7 @@ void FredView::showWaypointPathContextMenu(int pathIndex, const QPoint& globalPo
 
 	auto* deleteAction = menu.addAction(tr("Delete %1").arg(pathName));
 	connect(deleteAction, &QAction::triggered, this, [this]() {
-		fred->delete_marked();
+		on_actionDelete_triggered(false);
 	});
 
 	menu.exec(globalPos);
@@ -2126,17 +2351,28 @@ void FredView::populateMoveToLayerMenu(int targetObject, QMenu* targetMenu) {
 		layerAction->setEnabled(visible);
 
 		connect(layerAction, &QAction::triggered, this, [this, layerName, targetObject]() {
+			SCP_vector<fso::fred::ObjectLayerChange> changes;
 			SCP_string error;
 			if (Objects[targetObject].flags[Object::Object_Flags::Marked] && fred->getNumMarked() > 1) {
+				for (object* p = GET_FIRST(&obj_used_list); p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p)) {
+					if (!p->flags[Object::Object_Flags::Marked]) continue;
+					SCP_string before = _viewport->getObjectLayerName(OBJ_INDEX(p));
+					if (before != layerName)
+						changes.push_back({p->signature, std::move(before), layerName});
+				}
 				_viewport->moveMarkedObjectsToLayer(layerName, &error);
 			} else {
+				SCP_string before = _viewport->getObjectLayerName(targetObject);
+				if (before != layerName)
+					changes.push_back({Objects[targetObject].signature, std::move(before), layerName});
 				_viewport->moveObjectToLayer(targetObject, layerName, &error);
 			}
-
-				if (!error.empty()) {
-					showButtonDialog(DialogType::Error, "Layer Error", error, { DialogButton::Ok });
-				}
-			});
+			if (!error.empty()) {
+				showButtonDialog(DialogType::Error, "Layer Error", error, { DialogButton::Ok });
+			} else if (!changes.empty()) {
+				_mainStack->push(new fso::fred::MoveLayerCommand(std::move(changes), _viewport, fred));
+			}
+		});
 		dest->addAction(layerAction);
 	}
 
@@ -2251,12 +2487,41 @@ bool FredView::event(QEvent* event) {
 		return QMainWindow::event(event);
 	}
 }
+bool FredView::eventFilter(QObject* watched, QEvent* event) {
+	// Decide, per Ctrl+Z/Y press, whether a focused text editor should keep the key for its own
+	// text undo or whether it should fall through to the application-wide mission undo/redo.
+	if (event->type() == QEvent::ShortcutOverride) {
+		auto* keyEvent = static_cast<QKeyEvent*>(event);
+		const bool isUndo = keyEvent->matches(QKeySequence::Undo);
+		const bool isRedo = keyEvent->matches(QKeySequence::Redo);
+		if (isUndo || isRedo) {
+			// Spin boxes and editable combos delegate focus to an internal QLineEdit, so the
+			// focus widget is the line edit in all three cases.
+			auto* lineEdit = qobject_cast<QLineEdit*>(QApplication::focusWidget());
+			if (lineEdit != nullptr) {
+				const bool fieldCanHandle = isUndo ? lineEdit->isUndoAvailable() : lineEdit->isRedoAvailable();
+				if (!fieldCanHandle) {
+					// Field has nothing to undo/redo: swallow the override so Qt activates the
+					// application-wide undo/redo action instead of handing the key to the field.
+					return true;
+				}
+				// Otherwise let the field accept the override and undo/redo its own text.
+			}
+		}
+	}
+	return QMainWindow::eventFilter(watched, event);
+}
 void FredView::changeEvent(QEvent* event) {
 	QMainWindow::changeEvent(event);
 	// Force menubar repaint when reenabled after a modal dialog closes.
 	// Without this, menu items stay grey until the user mouses over them.
 	if (event->type() == QEvent::EnabledChange && isEnabled()) {
 		menuBar()->update();
+	}
+	// When the main window regains focus, point undo/redo back at the main stack. This restores
+	// main-stack undo after interacting with a modeless dialog that may have changed the active stack.
+	if (event->type() == QEvent::ActivationChange && isActiveWindow()) {
+		_undoGroup->setActiveStack(_mainStack);
 	}
 }
 void FredView::closeEvent(QCloseEvent* event) {
@@ -2476,6 +2741,19 @@ DialogT* showSingleInstanceDialog(FredView* parent, EditorViewport* viewport) {
 	dialog->setAttribute(Qt::WA_DeleteOnClose);
 	dialog->show();
 	return dialog;
+// The editors are modeless; a second instance of the same editor would let two
+// apply-undo commands interleave on the main stack (whichever OKs last silently
+// clobbers the other). Reuse the already-open instance instead.
+template <typename DialogT>
+bool raiseExistingEditor(const QWidget* parent)
+{
+	auto* existing = parent->findChild<DialogT*>(QString(), Qt::FindDirectChildrenOnly);
+	if (existing != nullptr && existing->isVisible()) {
+		existing->raise();
+		existing->activateWindow();
+		return true;
+	}
+	return false;
 }
 } // namespace
 
@@ -2485,6 +2763,17 @@ void FredView::on_actionMission_Events_triggered(bool) {
 void FredView::on_actionMission_Cutscenes_triggered(bool)
 {
 	showSingleInstanceDialog<dialogs::MissionCutscenesDialog>(this, _viewport);
+	if (raiseExistingEditor<dialogs::MissionEventsDialog>(this)) return;
+	auto eventEditor = new dialogs::MissionEventsDialog(this, _viewport);
+	eventEditor->setAttribute(Qt::WA_DeleteOnClose);
+	eventEditor->show();
+}
+void FredView::on_actionMission_Cutscenes_triggered(bool)
+{
+	if (raiseExistingEditor<dialogs::MissionCutscenesDialog>(this)) return;
+	auto cutsceneEditor = new dialogs::MissionCutscenesDialog(this, _viewport);
+	cutsceneEditor->setAttribute(Qt::WA_DeleteOnClose);
+	cutsceneEditor->show();
 }
 void FredView::on_actionSelectionLock_triggered(bool enabled) {
 	_viewport->Selection_lock = enabled;
@@ -2537,6 +2826,43 @@ void FredView::on_actionReorder_Objects_triggered(bool) {
 void FredView::on_actionJump_Nodes_triggered(bool)
 {
 	showSingleInstanceDialog<dialogs::JumpNodeEditorDialog>(this, _viewport);
+	if (raiseExistingEditor<dialogs::AsteroidEditorDialog>(this)) return;
+	auto asteroidFieldEditor = new dialogs::AsteroidEditorDialog(this, _viewport);
+	asteroidFieldEditor->setAttribute(Qt::WA_DeleteOnClose);
+	connect(asteroidFieldEditor, &QDialog::finished, this, [this]() { fred->updateAllViewports(); });
+	asteroidFieldEditor->show();
+}
+void FredView::on_actionVolumetric_Nebula_triggered(bool)
+{
+	if (raiseExistingEditor<dialogs::VolumetricNebulaDialog>(this)) return;
+	auto volumetricNebulaEditor = new dialogs::VolumetricNebulaDialog(this, _viewport);
+	volumetricNebulaEditor->setAttribute(Qt::WA_DeleteOnClose);
+	volumetricNebulaEditor->show();
+}
+void FredView::on_actionBriefing_triggered(bool) {
+	if (raiseExistingEditor<dialogs::BriefingEditorDialog>(this)) return;
+	auto eventEditor = new dialogs::BriefingEditorDialog(this, _viewport);
+	eventEditor->setAttribute(Qt::WA_DeleteOnClose);
+	eventEditor->show();
+}
+void FredView::on_actionMission_Specs_triggered(bool) {
+	if (raiseExistingEditor<dialogs::MissionSpecDialog>(this)) return;
+	auto missionSpecEditor = new dialogs::MissionSpecDialog(this, _viewport);
+	missionSpecEditor->setAttribute(Qt::WA_DeleteOnClose);
+	missionSpecEditor->show();
+}
+void FredView::on_actionWaypoint_Paths_triggered(bool) {
+	if (raiseExistingEditor<dialogs::WaypointEditorDialog>(this)) return;
+	auto editorDialog = new dialogs::WaypointEditorDialog(this, _viewport);
+	editorDialog->setAttribute(Qt::WA_DeleteOnClose);
+	editorDialog->show();
+}
+void FredView::on_actionJump_Nodes_triggered(bool)
+{
+	if (raiseExistingEditor<dialogs::JumpNodeEditorDialog>(this)) return;
+	auto editorDialog = new dialogs::JumpNodeEditorDialog(this, _viewport);
+	editorDialog->setAttribute(Qt::WA_DeleteOnClose);
+	editorDialog->show();
 }
 void FredView::on_actionShips_triggered(bool)
 {
@@ -2582,6 +2908,10 @@ void FredView::on_actionProps_triggered(bool)
 void FredView::on_actionCampaign_triggered(bool) {
 	//TODO: Save if Changes
 	showSingleInstanceDialog<dialogs::CampaignEditorDialog>(this, _viewport);
+	if (raiseExistingEditor<dialogs::CampaignEditorDialog>(this)) return;
+	auto editorCampaign = new dialogs::CampaignEditorDialog(this, _viewport);
+	editorCampaign->setAttribute(Qt::WA_DeleteOnClose);
+	editorCampaign->show();
 }
 void FredView::on_actionObject_Orientation_triggered(bool) {
 	orientEditorTriggered();
@@ -2601,6 +2931,35 @@ void FredView::on_actionLoadout_triggered(bool) {
 }
 void FredView::on_actionVariables_triggered(bool) {
 	showSingleInstanceDialog<dialogs::VariableDialog>(this, _viewport);
+	if (raiseExistingEditor<dialogs::CommandBriefingDialog>(this)) return;
+	auto editorDialog = new dialogs::CommandBriefingDialog(this, _viewport);
+	editorDialog->setAttribute(Qt::WA_DeleteOnClose);
+	editorDialog->show();
+}
+void FredView::on_actionDebriefing_triggered(bool)
+{
+	if (raiseExistingEditor<dialogs::DebriefingDialog>(this)) return;
+	auto editorDialog = new dialogs::DebriefingDialog(this, _viewport);
+	editorDialog->setAttribute(Qt::WA_DeleteOnClose);
+	editorDialog->show();
+}
+void FredView::on_actionReinforcements_triggered(bool) {
+	if (raiseExistingEditor<dialogs::ReinforcementsDialog>(this)) return;
+	auto editorDialog = new dialogs::ReinforcementsDialog(this, _viewport);
+	editorDialog->setAttribute(Qt::WA_DeleteOnClose);
+	editorDialog->show();
+}
+void FredView::on_actionLoadout_triggered(bool) {
+	if (raiseExistingEditor<dialogs::TeamLoadoutDialog>(this)) return;
+	auto editorDialog = new dialogs::TeamLoadoutDialog(this, _viewport);
+	editorDialog->setAttribute(Qt::WA_DeleteOnClose);
+	editorDialog->show();
+}
+void FredView::on_actionVariables_triggered(bool) {
+	if (raiseExistingEditor<dialogs::VariableDialog>(this)) return;
+	auto editorDialog = new dialogs::VariableDialog(this, _viewport, this);
+	editorDialog->setAttribute(Qt::WA_DeleteOnClose);
+	editorDialog->show();
 }
 
 DialogButton FredView::showButtonDialog(DialogType type,
@@ -2783,11 +3142,41 @@ void FredView::on_actionWingForm_triggered(bool  /*enabled*/) {
 		}
 	}
 
-	fred->create_wing();
+	// Capture pre-formation ship names BEFORE create_wing() renames them.
+	SCP_map<int, SCP_string> preFormationNames;
+	for (object* pIter = GET_FIRST(&obj_used_list);
+	     pIter != END_OF_LIST(&obj_used_list);
+	     pIter = GET_NEXT(pIter))
+	{
+		if ((pIter->type == OBJ_SHIP || pIter->type == OBJ_START)
+		    && pIter->flags[Object::Object_Flags::Marked]) {
+			preFormationNames[pIter->instance] = Ships[pIter->instance].ship_name;
+		}
+	}
+
+	if (fred->create_wing() == 0 && fred->cur_wing >= 0) {
+		const int wingNum = fred->cur_wing;
+		SCP_vector<WingMemberPreState> members;
+		for (int i = 0; i < Wings[wingNum].wave_count; i++) {
+			WingMemberPreState m;
+			m.shipIndex = Wings[wingNum].ship_index[i];
+			strcpy_s(m.preName, preFormationNames.count(m.shipIndex)
+			         ? preFormationNames[m.shipIndex].c_str()
+			         : Ships[m.shipIndex].ship_name);
+			members.push_back(m);
+		}
+		_mainStack->push(new FormWingCommand(wingNum, std::move(members), fred, _viewport));
+	}
 }
 void FredView::on_actionWingDisband_triggered(bool  /*enabled*/) {
 	if (fred->query_single_wing_marked()) {
-		fred->disband_wing(fred->cur_wing);
+		const int wingNum = fred->cur_wing;
+		auto* cmd = new DisbandWingCommand(wingNum, fred, _viewport);
+		if (fred->disband_wing(wingNum) == 0) {
+			_mainStack->push(cmd);
+		} else {
+			delete cmd;
+		}
 	} else {
 		showButtonDialog(DialogType::Error,
 						 "Error",
@@ -2883,17 +3272,30 @@ void FredView::on_actionRestore_Camera_Pos_triggered(bool) {
 }
 void FredView::on_actionClone_Marked_Objects_triggered(bool) {
 	if (fred->getNumMarked() > 0) {
-		_viewport->duplicate_marked_objects();
+		auto* cmd = new fso::fred::CloneMarkedObjectsCommand(fred, _viewport);
+		_mainStack->push(cmd); // redo() calls duplicate_marked_objects()
 	}
 }
 void FredView::on_actionDelete_triggered(bool) {
-	if (fred->getNumMarked() > 0) {
-		fred->delete_marked();
+	if (fred->getNumMarked() <= 0) return;
+	auto* cmd = new fso::fred::DeleteObjectsCommand(fred, _viewport);
+	fred->delete_marked();
+	// Only push undo if all marked objects were actually removed (no reference-check abort).
+	if (!cmd->isEmpty() && fred->getNumMarked() == 0) {
+		_mainStack->push(cmd); // first redo() is a no-op
+	} else {
+		delete cmd;
 	}
 }
 void FredView::on_actionDelete_Wing_triggered(bool) {
 	if (fred->cur_wing >= 0) {
-		fred->delete_wing(fred->cur_wing, 0);
+		const int wingNum = fred->cur_wing;
+		auto* cmd = new DeleteWingCommand(wingNum, fred, _viewport);
+		if (fred->delete_wing(wingNum, 0) == 0) {
+			_mainStack->push(cmd);
+		} else {
+			delete cmd;
+		}
 	}
 }
 void FredView::initializeGroupActions() {
@@ -2964,10 +3366,50 @@ void FredView::on_actionControl_Object_triggered(bool) {
 	_viewport->camera.toggleControlMode();
 }
 void FredView::on_actionLevel_Object_triggered(bool) {
+	// Snapshot before state for all marked objects.
+	SCP_vector<fso::fred::ObjectOrientChange> changes;
+	for (const object* p = GET_FIRST(&obj_used_list);
+	     p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p))
+	{
+		if (p->flags[Object::Object_Flags::Marked]) {
+			changes.push_back({p->signature, p->orient, {}});
+		}
+	}
 	_viewport->level_controlled();
+	// Capture after state and filter unchanged entries.
+	for (auto& c : changes) {
+		const int cur = obj_get_by_signature(c.signature);
+		if (cur >= 0) c.orientAfter = Objects[cur].orient;
+	}
+	changes.erase(std::remove_if(changes.begin(), changes.end(),
+	    [](const fso::fred::ObjectOrientChange& c) {
+	        return vm_matrix_cmp(&c.orientBefore, &c.orientAfter) == 0;
+	    }), changes.end());
+	if (!changes.empty()) {
+		_mainStack->push(new fso::fred::LevelObjectsCommand(std::move(changes), fred, _viewport));
+	}
 }
 void FredView::on_actionAlign_Object_triggered(bool) {
+	SCP_vector<fso::fred::ObjectOrientChange> changes;
+	for (const object* p = GET_FIRST(&obj_used_list);
+	     p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p))
+	{
+		if (p->flags[Object::Object_Flags::Marked]) {
+			changes.push_back({p->signature, p->orient, {}});
+		}
+	}
 	_viewport->verticalize_controlled();
+	for (auto& c : changes) {
+		const int cur = obj_get_by_signature(c.signature);
+		if (cur >= 0) c.orientAfter = Objects[cur].orient;
+	}
+	changes.erase(std::remove_if(changes.begin(), changes.end(),
+	    [](const fso::fred::ObjectOrientChange& c) {
+	        return vm_matrix_cmp(&c.orientBefore, &c.orientAfter) == 0;
+	    }), changes.end());
+	if (!changes.empty()) {
+		_mainStack->push(new fso::fred::AlignObjectsCommand(std::move(changes), fred, _viewport));
+	}
 }
 void FredView::on_actionNext_Subsystem_triggered(bool) {
 	fred->select_next_subsystem();
@@ -3098,6 +3540,37 @@ void FredView::on_actionVoice_Acting_Manager_triggered(bool) {
 }
 void FredView::on_actionMission_Goals_triggered(bool) {
 	showSingleInstanceDialog<dialogs::MissionGoalsDialog>(this, _viewport);
+	if (raiseExistingEditor<dialogs::BackgroundEditorDialog>(this)) return;
+	auto dialog = new dialogs::BackgroundEditorDialog(this, _viewport);
+	dialog->setAttribute(Qt::WA_DeleteOnClose);
+	dialog->show();
+}
+
+void FredView::on_actionShield_System_triggered(bool) {
+	if (raiseExistingEditor<dialogs::ShieldSystemDialog>(this)) return;
+	auto dialog = new dialogs::ShieldSystemDialog(this, _viewport);
+	dialog->setAttribute(Qt::WA_DeleteOnClose);
+	dialog->show();
+}
+
+void FredView::on_actionSet_Global_Ship_Flags_triggered(bool) {
+	if (raiseExistingEditor<dialogs::GlobalShipFlagsDialog>(this)) return;
+	auto dialog = new dialogs::GlobalShipFlagsDialog(this, _viewport);
+	dialog->setAttribute(Qt::WA_DeleteOnClose);
+	dialog->show();
+}
+
+void FredView::on_actionVoice_Acting_Manager_triggered(bool) {
+	if (raiseExistingEditor<dialogs::VoiceActingManager>(this)) return;
+	auto dialog = new dialogs::VoiceActingManager(this, _viewport);
+	dialog->setAttribute(Qt::WA_DeleteOnClose);
+	dialog->show();
+}
+void FredView::on_actionMission_Goals_triggered(bool) {
+	if (raiseExistingEditor<dialogs::MissionGoalsDialog>(this)) return;
+	auto dialog = new dialogs::MissionGoalsDialog(this, _viewport);
+	dialog->setAttribute(Qt::WA_DeleteOnClose);
+	dialog->show();
 }
 
 void FredView::on_actionMusic_Player_triggered(bool)
@@ -3115,6 +3588,17 @@ void FredView::on_actionFiction_Viewer_triggered(bool) {
 
 void FredView::on_actionWaypointPathGenerator_triggered(bool) {
 	showSingleInstanceDialog<dialogs::WaypointPathGeneratorDialog>(this, _viewport);
+	if (raiseExistingEditor<dialogs::FictionViewerDialog>(this)) return;
+	auto dialog = new dialogs::FictionViewerDialog(this, _viewport);
+	dialog->setAttribute(Qt::WA_DeleteOnClose);
+	dialog->show();
+}
+
+void FredView::on_actionWaypointPathGenerator_triggered(bool) {
+	if (raiseExistingEditor<dialogs::WaypointPathGeneratorDialog>(this)) return;
+	auto dialog = new dialogs::WaypointPathGeneratorDialog(this, _viewport);
+	dialog->setAttribute(Qt::WA_DeleteOnClose);
+	dialog->show();
 }
 } // namespace fred
 } // namespace fso

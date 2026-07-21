@@ -19,6 +19,7 @@ public:
 
 protected:
 	void closeEvent(QCloseEvent* event) override;
+	void focusInEvent(QFocusEvent* e) override;
 	bool eventFilter(QObject* obj, QEvent* ev) override;
 
 private slots:
@@ -57,6 +58,7 @@ private slots:
 	void on_checkAnyWingmanButton_clicked();
 
 private: // NOLINT(readability-redundant-access-specifiers)
+	FredView*       _fredView  = nullptr;
 	EditorViewport* _viewport;
 	std::unique_ptr<Ui::VoiceActingManager> ui;
 	std::unique_ptr<VoiceActingManagerModel> _model;

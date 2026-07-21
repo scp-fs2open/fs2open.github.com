@@ -32,22 +32,25 @@ void JumpNodeEditorDialogModel::initializeData()
 	_redMixed = _greenMixed = _blueMixed = _alphaMixed = false;
 	_hiddenMixed = false;
 
-	// Collect all marked OBJ_JUMP_NODE objects
+	// Collect all marked OBJ_JUMP_NODE objects whose JN entry still exists.
+	// Guard against mid-delete notifications where the object lingers in obj_used_list
+	// but the jump node has already been removed (e.g. during undo of CreateObjectCommand).
 	for (auto* ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
-		if (ptr->type == OBJ_JUMP_NODE && ptr->flags[Object::Object_Flags::Marked]) {
+		if (ptr->type == OBJ_JUMP_NODE && ptr->flags[Object::Object_Flags::Marked] &&
+		    jumpnode_get_by_objnum(OBJ_INDEX(ptr)) != nullptr) {
 			_selectedJumpNodes.push_back(OBJ_INDEX(ptr));
 		}
 	}
 
 	// Fall back to currentObject if nothing is marked
 	if (_selectedJumpNodes.empty() && query_valid_object(_editor->currentObject) &&
-	    Objects[_editor->currentObject].type == OBJ_JUMP_NODE) {
+	    Objects[_editor->currentObject].type == OBJ_JUMP_NODE &&
+	    jumpnode_get_by_objnum(_editor->currentObject) != nullptr) {
 		_selectedJumpNodes.push_back(_editor->currentObject);
 	}
 
 	if (!_selectedJumpNodes.empty()) {
 		auto* jnp = jumpnode_get_by_objnum(_selectedJumpNodes.front());
-		Assertion(jnp != nullptr, "Jump node not found for selected object!");
 
 		_name = jnp->GetName();
 		_display = jnp->HasDisplayName() ? jnp->GetDisplayName() : "<none>";

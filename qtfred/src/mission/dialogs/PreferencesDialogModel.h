@@ -31,6 +31,9 @@ public:
 	bool getCreateBakOnSave() const;
 	void setCreateBakOnSave(bool value);
 
+	int  getUndoStackDepth() const;
+	void setUndoStackDepth(int value);
+
 	bool getMoveShipsWhenUndocking() const;
 	void setMoveShipsWhenUndocking(bool value);
 
@@ -95,6 +98,7 @@ private:
 	int  _autosaveIntervalSeconds;
 	int  _sexpNumberEveryN;
 	bool _createBakOnSave;
+	int  _undoStackDepth;
 	bool _moveShipsWhenUndocking;
 	bool _alwaysSaveDisplayNames;
 	bool _checkPotentialIssues;

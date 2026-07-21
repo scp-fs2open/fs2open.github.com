@@ -3,10 +3,12 @@
 #include "ui/Theme.h"
 
 #include <globalincs/globals.h>
+#include "mission/commands/FredCommands.h"
 #include "mission/missioncampaign.h"
 #include "ui/widgets/sexp_tree_view.h"
 #include "ui/widgets/SimpleListSelectDialog.h"
 #include "ui/util/default_dir.h"
+#include "ui/util/DialogUndo.h"
 #include "ui/util/SignalBlockers.h"
 #include "mission/util.h"
 #include <ui/dialogs/MissionSpecs/CustomDataDialog.h>
@@ -19,11 +21,18 @@
 
 namespace fso::fred::dialogs {
 
-CampaignEditorDialog::CampaignEditorDialog(QWidget* parent, EditorViewport* viewport)
+CampaignEditorDialog::CampaignEditorDialog(FredView* parent, EditorViewport* viewport)
 	: QMainWindow(parent), SexpTreeEditorInterface({TreeFlags::LabeledRoot, TreeFlags::RootDeletable}),
-	  ui(new Ui::CampaignEditorDialog), _viewport(viewport)
+	  ui(new Ui::CampaignEditorDialog), _viewport(viewport), _fredView(parent)
 {
 	ui->setupUi(this);
+
+	// The campaign editor is file-scoped: no apply step, so the stack is the
+	// only undo history and is cleared on New/Open/Save/close. setupDialogUndo
+	// adds Edit -> Undo/Redo to the existing menu bar.
+	_dialogStack = new QUndoStack(this);
+	_fredView->undoGroup()->addStack(_dialogStack);
+	util::setupDialogUndo(this, _fredView->undoGroup(), _dialogStack, tr("Campaign"));
 
 	ui->nameLineEdit->setMaxLength(NAME_LENGTH - 1);
 	ui->loopAnimLineEdit->setMaxLength(MAX_FILENAME_LEN - 1);
@@ -57,6 +66,13 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget* parent, EditorViewport* view
 		{
 			// A default branch is just a "true" condition. We load it from an invalid index.
 			return tree._model.load_sub_tree(-1, true, "true");
+		}
+
+		void clearTree() override
+		{
+			// Drops both the internal nodes and the visuals; used before a
+			// working-state restore reloads every branch of every mission.
+			tree.clear_tree("");
 		}
 
 		void rebuildBranchTree(const SCP_vector<CampaignBranchData>& branches, const SCP_string& currentMissionName) override
@@ -104,7 +120,7 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget* parent, EditorViewport* view
 
 	_treeOps = std::make_unique<QtCampaignTreeOps>(QtCampaignTreeOps{*ui->sxtBranches});
 
-	ui->sxtBranches->initializeEditor(_viewport->editor, this, _viewport);
+	ui->sxtBranches->initializeEditor(_viewport->editor, this, _viewport, parent);
 	ui->sxtBranches->clear_tree();
 	ui->sxtBranches->_model.post_load();
 
@@ -113,10 +129,19 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget* parent, EditorViewport* view
 
 	ui->mainTabs->setCurrentIndex(0); // Ensure the first tab is selected
 
-	_model = std::make_unique<CampaignEditorDialogModel>(this, _viewport, *_treeOps); // model exists now
 	ui->graphView->setModel(_model.get());
 
-	// Connect sexp tree signals
+	// Connect sexp tree signals. A branch delete is handled in two stages:
+	// this direct handler runs at emit time, before the widget frees the
+	// branch, so it can capture the pre-delete state for the undo snapshot
+	// and mute the modified() the widget emits after freeing.
+	connect(ui->sxtBranches, &sexp_tree_view::rootNodeDeleted, this, [this](int) {
+		_branchDeleteBefore = _model->captureWorkingState();
+		_branchDeletePending = true;
+	});
+
+	// Stage two runs queued, outside the widget's delete handler, and does
+	// the model/UI work before pushing the snapshot.
 	connect(
 		ui->sxtBranches,
 		&sexp_tree_view::rootNodeDeleted,
@@ -132,8 +157,17 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget* parent, EditorViewport* view
 			ui->graphView->setSelectedMission(mission_selection);
 
 			updateLoopDetails();
+
+			_branchDeletePending = false;
+			pushWorkingStateSnapshot(_branchDeleteBefore, tr("Delete Branch"));
+			_branchDeleteBefore.clear();
 		},
 		Qt::QueuedConnection);
+
+	// A tree edit can replace a branch condition's root node; keep the
+	// branch's stored tree id in step.
+	connect(ui->sxtBranches, &sexp_tree_view::rootNodeFormulaChanged, this,
+		[this](int old_id, int new_id) { _model->changeBranchFormula(old_id, new_id); });
 
 	connect(ui->sxtBranches,
 		&QTreeWidget::currentItemChanged,
@@ -154,12 +188,65 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget* parent, EditorViewport* view
 			updateLoopDetails();
 		});
 
-	connect(ui->sxtBranches, &sexp_tree_view::modified, this, [this]() {
-		_model->setModified();
-	});
+	connect(ui->sxtBranches, &sexp_tree_view::modified, this, &CampaignEditorDialog::onBranchTreeModified);
 
 	initializeUi();
 	updateUi();
+
+	// The before-state for the next tree edit: the tree mutates before
+	// modified() fires, so a fresh capture at handler time would already
+	// contain the edit. indexChanged fires on every push/undo/redo, keeping
+	// the cache aligned with the current working state.
+	_workingStateCache = _model->captureWorkingState();
+	connect(_dialogStack, &QUndoStack::indexChanged, this, [this](int) {
+		if (_model)
+			_workingStateCache = _model->captureWorkingState();
+	});
+
+	// Saving marks the stack's current index clean rather than clearing the
+	// history; undoing or redoing back onto that index means the working
+	// copy matches the file on disk again.
+	connect(_dialogStack, &QUndoStack::cleanChanged, this, [this](bool clean) {
+		if (clean && _model)
+			_model->setUnmodified();
+	});
+}
+
+void CampaignEditorDialog::onBranchTreeModified()
+{
+	_model->setModified();
+	if (_suppressTreeUndo || _branchDeletePending)
+		return;
+
+	pushWorkingStateSnapshot(_workingStateCache, tr("Edit Branch Formula"));
+}
+
+void CampaignEditorDialog::pushWorkingStateSnapshot(const QByteArray& before, const QString& label)
+{
+	const QByteArray after = _model->captureWorkingState();
+	if (after == before)
+		return;
+
+	_dialogStack->push(new DialogSnapshotCommand(before, after,
+		[this](const QByteArray& blob) {
+			_suppressTreeUndo = true;
+			// Selections are not part of the blob; re-select the same mission
+			// by filename if it still exists after the restore.
+			const SCP_string selected = _model->getCurrentMissionFilename();
+			const auto expanded = ui->sxtBranches->captureExpansionState();
+			_model->restoreWorkingState(blob);
+			updateUi(); // specs, tech lists, available missions, graph
+			const int idx = _model->findMissionIndexByFilename(selected);
+			if (idx >= 0) {
+				ui->graphView->setSelectedMission(idx);
+				_model->setCurrentMissionSelection(idx); // rebuilds the branch tree
+				ui->sxtBranches->restoreExpansionState(expanded);
+			}
+			updateMissionDetails();
+			updateLoopDetails();
+			_suppressTreeUndo = false;
+		},
+		label));
 }
 CampaignEditorDialog::~CampaignEditorDialog() = default;
 
@@ -233,6 +320,8 @@ void CampaignEditorDialog::closeEvent(QCloseEvent* e)
 	// First, ask the user if they want to save any pending changes.
 	if (questionSaveChanges()) {
 		// If the user didn't cancel, it's safe to accept the close event.
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
 		e->accept();
 	} else {
 		// If the user cancelled, we ignore the close event to keep the window open.
@@ -285,6 +374,17 @@ void CampaignEditorDialog::initializeUi()
 	ui->briefCutsceneComboBox->addItems(cutsceneList);
 
 	// setup the main hall lists
+	refreshMainhallCombos();
+
+	ui->fredMissionButton->setHidden(true); // TODO activate this when QtFRED is closer to completion
+}
+
+// The main hall choices depend on the save format (retail campaigns only
+// know halls "0" and "1"), so the combos are rebuilt when the format toggles.
+void CampaignEditorDialog::refreshMainhallCombos()
+{
+	util::SignalBlockers blocker(this);
+
 	auto mainhalls = _model->getMainhallList();
 	QStringList mainhallList;
 	for (const auto& mh : mainhalls) {
@@ -295,8 +395,30 @@ void CampaignEditorDialog::initializeUi()
 	ui->mainhallComboBox->addItems(mainhallList);
 	ui->substituteMainhallComboBox->clear();
 	ui->substituteMainhallComboBox->addItems(mainhallList);
+}
 
-	ui->fredMissionButton->setHidden(true); // TODO activate this when QtFRED is closer to completion
+void CampaignEditorDialog::syncShipListItem(int shipClassIndex)
+{
+	QSignalBlocker blocker(ui->shipsListWidget);
+	for (int i = 0; i < ui->shipsListWidget->count(); ++i) {
+		auto* item = ui->shipsListWidget->item(i);
+		if (item && item->data(Qt::UserRole).toInt() == shipClassIndex) {
+			item->setCheckState(_model->getAllowedShip(shipClassIndex) ? Qt::Checked : Qt::Unchecked);
+			break;
+		}
+	}
+}
+
+void CampaignEditorDialog::syncWeaponListItem(int weaponClassIndex)
+{
+	QSignalBlocker blocker(ui->weaponsListWidget);
+	for (int i = 0; i < ui->weaponsListWidget->count(); ++i) {
+		auto* item = ui->weaponsListWidget->item(i);
+		if (item && item->data(Qt::UserRole).toInt() == weaponClassIndex) {
+			item->setCheckState(_model->getAllowedWeapon(weaponClassIndex) ? Qt::Checked : Qt::Unchecked);
+			break;
+		}
+	}
 }
 
 void CampaignEditorDialog::updateUi()
@@ -432,10 +554,12 @@ bool CampaignEditorDialog::questionSaveChanges()
 	}
 
 	if (reply == QMessageBox::Save) {
-		on_actionSave_triggered();
+		// Abort the operation if the save fails (validity errors, a canceled
+		// Save As, a write failure) — proceeding would discard the changes.
+		return doSave();
 	}
 
-	// If we get here, the user chose Save or Discard.
+	// If we get here, the user chose Discard.
 	return true;
 }
 
@@ -447,6 +571,7 @@ void CampaignEditorDialog::on_actionNew_triggered()
 	}
 
 	_model->createNewCampaign();
+	_dialogStack->clear(); // the history refers to the previous campaign
 	updateUi();
 	ui->graphView->zoomToFitAll();
 }
@@ -471,24 +596,39 @@ void CampaignEditorDialog::on_actionOpen_triggered()
 	QString nativePath = QDir::toNativeSeparators(pathName);
 
 	_model->loadCampaignFromFile(nativePath.toUtf8().constData());
+	_dialogStack->clear(); // the history refers to the previous campaign
 	updateUi();
 	ui->graphView->zoomToFitAll();
 }
 
 void CampaignEditorDialog::on_actionSave_triggered()
 {
-	// This action saves to the currently known filename.
-	// If the filename is empty (because it's a new campaign), this will
-	// delegate to the Save As logic.
-	if (_model->getCampaignFilename().empty()) {
-		on_actionSave_As_triggered();
-		return;
-	}
-
-	_model->saveCampaign(""); // Pass empty string to use the current filename.
+	doSave();
 }
 
 void CampaignEditorDialog::on_actionSave_As_triggered()
+{
+	doSaveAs();
+}
+
+bool CampaignEditorDialog::doSave()
+{
+	// This saves to the currently known filename. If the filename is empty
+	// (because it's a new campaign), this delegates to the Save As logic.
+	if (_model->getCampaignFilename().empty()) {
+		return doSaveAs();
+	}
+
+	const bool saved = _model->saveCampaign(""); // Empty string = use the current filename.
+	if (saved) {
+		// Keep the history; mark this point as the saved state so the
+		// modified flag tracks undo/redo across the save point.
+		_dialogStack->setClean();
+	}
+	return saved;
+}
+
+bool CampaignEditorDialog::doSaveAs()
 {
 	// Open a file dialog to let the user choose a save location and filename.
 	const QString lastDir = util::getLastDir("campaign/saveCampaign", CF_TYPE_MISSIONS);
@@ -496,13 +636,17 @@ void CampaignEditorDialog::on_actionSave_As_triggered()
 	QString pathName = QFileDialog::getSaveFileName(this, "Save Campaign As", lastDir, "FS2 Campaigns (*.fc2)");
 
 	if (pathName.isEmpty()) {
-		return; // User cancelled the file dialog.
+		return false; // User cancelled the file dialog.
 	}
 
 	util::saveLastDir("campaign/saveCampaign", pathName);
 
 	// The model will handle the actual save operation.
-	_model->saveCampaign(pathName.toUtf8().constData());
+	const bool saved = _model->saveCampaign(pathName.toUtf8().constData());
+	if (saved) {
+		_dialogStack->setClean();
+	}
+	return saved;
 }
 
 void CampaignEditorDialog::on_actionExit_triggered()
@@ -512,20 +656,68 @@ void CampaignEditorDialog::on_actionExit_triggered()
 
 void CampaignEditorDialog::on_nameLineEdit_textChanged(const QString& arg1)
 {
+	const SCP_string before = _model->getCampaignName();
 	_model->setCampaignName(arg1.toUtf8().constData());
+	// The setter truncates, so read the stored value back.
+	const SCP_string after = _model->getCampaignName();
+	if (before == after)
+		return;
+
+	auto* cmd = new FieldEditCommand<SCP_string>(FieldId::Camp_Name, nullptr, tr("Change Campaign Name"), true);
+	cmd->addEntry(before, after, [this](const SCP_string& v) {
+		_model->setCampaignName(v);
+		QSignalBlocker blocker(ui->nameLineEdit);
+		ui->nameLineEdit->setText(QString::fromStdString(v));
+	});
+	_dialogStack->push(cmd);
 }
 
 void CampaignEditorDialog::on_typeComboBox_currentIndexChanged(int index)
 {
 	// The model should have a list of campaign types matching the combo box.
-	if (SCP_vector_inbounds(_model->getCampaignTypes(), index)) {
-		_model->setCampaignType(index);
+	if (!SCP_vector_inbounds(_model->getCampaignTypes(), index)) {
+		return;
 	}
+
+	const int before = _model->getCampaignType();
+	_model->setCampaignType(index); // refuses (with an error dialog) once missions exist
+	const int after = _model->getCampaignType();
+	if (before == after) {
+		// Rejected or no-op: put the combo back in step with the model.
+		QSignalBlocker blocker(ui->typeComboBox);
+		ui->typeComboBox->setCurrentIndex(after);
+		return;
+	}
+
+	updateAvailableMissionsList(); // the compatibility filter changed
+
+	auto* cmd = new FieldEditCommand<int>(FieldId::Camp_Type, nullptr, tr("Change Campaign Type"), true);
+	cmd->addEntry(before, after, [this](const int& v) {
+		_model->setCampaignType(v);
+		{
+			QSignalBlocker blocker(ui->typeComboBox);
+			ui->typeComboBox->setCurrentIndex(v);
+		}
+		updateAvailableMissionsList();
+	});
+	_dialogStack->push(cmd);
 }
 
 void CampaignEditorDialog::on_resetTechAtStartCheckBox_toggled(bool checked)
 {
+	const bool before = _model->getCampaignTechReset();
+	if (before == checked)
+		return;
+
 	_model->setCampaignTechReset(checked);
+
+	auto* cmd = new FieldEditCommand<bool>(FieldId::Camp_TechReset, nullptr, tr("Toggle Tech Database Reset"), true);
+	cmd->addEntry(before, checked, [this](const bool& v) {
+		_model->setCampaignTechReset(v);
+		QSignalBlocker blocker(ui->resetTechAtStartCheckBox);
+		ui->resetTechAtStartCheckBox->setChecked(v);
+	});
+	_dialogStack->push(cmd);
 }
 
 void CampaignEditorDialog::on_campaignCustomDataButton_clicked()
@@ -533,14 +725,38 @@ void CampaignEditorDialog::on_campaignCustomDataButton_clicked()
 	CustomDataDialog dlg(this, _viewport);
 	dlg.setInitial(_model->getCustomData());
 
-	if (dlg.exec() == QDialog::Accepted) {
-		_model->setCustomData(dlg.items());
+	if (dlg.exec() != QDialog::Accepted) {
+		return;
 	}
+
+	const SCP_map<SCP_string, SCP_string> before = _model->getCustomData();
+	_model->setCustomData(dlg.items());
+	const SCP_map<SCP_string, SCP_string> after = _model->getCustomData();
+	if (before == after)
+		return;
+
+	auto* cmd = new FieldEditCommand<SCP_map<SCP_string, SCP_string>>(
+	    FieldId::Camp_CustomData, nullptr, tr("Edit Custom Data"), true);
+	cmd->setNoMerge(); // each subdialog visit is a discrete action
+	cmd->addEntry(before, after, [this](const SCP_map<SCP_string, SCP_string>& v) { _model->setCustomData(v); });
+	_dialogStack->push(cmd);
 }
 
 void CampaignEditorDialog::on_descriptionPlainTextEdit_textChanged()
 {
+	const SCP_string before = _model->getCampaignDescription();
 	_model->setCampaignDescription(ui->descriptionPlainTextEdit->toPlainText().toUtf8().constData());
+	const SCP_string after = _model->getCampaignDescription();
+	if (before == after)
+		return;
+
+	auto* cmd = new FieldEditCommand<SCP_string>(FieldId::Camp_Description, nullptr, tr("Change Campaign Description"), true);
+	cmd->addEntry(before, after, [this](const SCP_string& v) {
+		_model->setCampaignDescription(v);
+		QSignalBlocker blocker(ui->descriptionPlainTextEdit);
+		ui->descriptionPlainTextEdit->setPlainText(QString::fromStdString(v));
+	});
+	_dialogStack->push(cmd);
 }
 
 void CampaignEditorDialog::on_shipsListWidget_itemChanged(QListWidgetItem* item)
@@ -551,7 +767,19 @@ void CampaignEditorDialog::on_shipsListWidget_itemChanged(QListWidgetItem* item)
 
 	const int ship_class_index = item->data(Qt::UserRole).toInt();
 	const bool is_allowed = (item->checkState() == Qt::Checked);
+	const bool before = _model->getAllowedShip(ship_class_index);
+	if (before == is_allowed)
+		return;
+
 	_model->setAllowedShip(ship_class_index, is_allowed);
+
+	auto* cmd = new FieldEditCommand<bool>(
+	    FieldId::Camp_ShipAllowed + ship_class_index, nullptr, tr("Toggle Allowed Ship"), true);
+	cmd->addEntry(before, is_allowed, [this, ship_class_index](const bool& v) {
+		_model->setAllowedShip(ship_class_index, v);
+		syncShipListItem(ship_class_index);
+	});
+	_dialogStack->push(cmd);
 }
 
 void CampaignEditorDialog::on_weaponsListWidget_itemChanged(QListWidgetItem* item)
@@ -562,7 +790,19 @@ void CampaignEditorDialog::on_weaponsListWidget_itemChanged(QListWidgetItem* ite
 
 	const int weapon_class_index = item->data(Qt::UserRole).toInt();
 	const bool is_allowed = (item->checkState() == Qt::Checked);
+	const bool before = _model->getAllowedWeapon(weapon_class_index);
+	if (before == is_allowed)
+		return;
+
 	_model->setAllowedWeapon(weapon_class_index, is_allowed);
+
+	auto* cmd = new FieldEditCommand<bool>(
+	    FieldId::Camp_WeaponAllowed + weapon_class_index, nullptr, tr("Toggle Allowed Weapon"), true);
+	cmd->addEntry(before, is_allowed, [this, weapon_class_index](const bool& v) {
+		_model->setAllowedWeapon(weapon_class_index, v);
+		syncWeaponListItem(weapon_class_index);
+	});
+	_dialogStack->push(cmd);
 }
 
 void CampaignEditorDialog::on_errorCheckerButton_clicked()
@@ -587,6 +827,11 @@ void CampaignEditorDialog::on_availableMissionsListWidget_itemSelectionChanged()
 	
 	// Get the currently selected item
 	QListWidgetItem* selected_item = ui->availableMissionsListWidget->currentItem();
+	if (!selected_item) {
+		ui->missionNameLineEdit->clear();
+		ui->missionDescriptionPlainTextEdit->clear();
+		return;
+	}
 
 	// Get the filename from the item's text
 	SCP_string filename = selected_item->text().toUtf8().constData();
@@ -641,8 +886,10 @@ void CampaignEditorDialog::on_graphView_missionSelected(int missionIndex) {
 
 void CampaignEditorDialog::on_graphView_specialModeToggleRequested(int missionIndex)
 {
+	const QByteArray before = _model->captureWorkingState();
 	_model->toggleMissionSpecialMode(missionIndex);
 	ui->graphView->rebuildAll();
+	pushWorkingStateSnapshot(before, tr("Toggle Special Branch Mode"));
 }
 
 void CampaignEditorDialog::on_graphView_addMissionHereRequested(QPointF sceneTopLeft)
@@ -673,6 +920,7 @@ void CampaignEditorDialog::on_graphView_addMissionHereRequested(QPointF sceneTop
 	}
 
 	// add
+	const QByteArray before = _model->captureWorkingState();
 	_model->addMission(filename, 0, 0);
 
 	// New mission index is the last element now
@@ -687,21 +935,26 @@ void CampaignEditorDialog::on_graphView_addMissionHereRequested(QPointF sceneTop
 	ui->graphView->setSelectedMission(idx);
 
 	updateAvailableMissionsList();
+	pushWorkingStateSnapshot(before, tr("Add Mission"));
 }
 
 void CampaignEditorDialog::on_graphView_deleteMissionRequested(int missionIndex)
 {
+	const QByteArray before = _model->captureWorkingState();
 	ui->graphView->clearSelectedMission();
 	updateMissionDetails();
 	_model->removeMission(missionIndex);
 	ui->graphView->rebuildAll();
 	updateAvailableMissionsList();
+	pushWorkingStateSnapshot(before, tr("Delete Mission"));
 }
 
 void CampaignEditorDialog::on_graphView_addRepeatBranchRequested(int missionIndex)
 {
+	const QByteArray before = _model->captureWorkingState();
 	_model->addBranch(missionIndex, missionIndex);
 	ui->graphView->rebuildAll();
+	pushWorkingStateSnapshot(before, tr("Add Repeat Branch"));
 }
 
 void CampaignEditorDialog::on_graphView_createMissionAtAndConnectRequested(QPointF sceneTopLeft, int fromIndex, bool isSpecial)
@@ -725,6 +978,7 @@ void CampaignEditorDialog::on_graphView_createMissionAtAndConnectRequested(QPoin
 		return; // user canceled
 
 	// Add the mission to the model
+	const QByteArray before = _model->captureWorkingState();
 	_model->addMission(picked, /*level*/ 0, /*position*/ 0);
 
 	// New mission index (last)
@@ -746,10 +1000,12 @@ void CampaignEditorDialog::on_graphView_createMissionAtAndConnectRequested(QPoin
 	ui->graphView->rebuildAll();
 	ui->graphView->setSelectedMission(newIdx);
 	updateAvailableMissionsList();
+	pushWorkingStateSnapshot(before, tr("Add Mission"));
 }
 
 void CampaignEditorDialog::on_graphView_setFirstMissionRequested(int missionIndex)
 {
+	const QByteArray before = _model->captureWorkingState();
 	int current_selection = _model->getCurrentMissionSelection(); // save now because rebuild clears it
 	_model->setMissionAsFirst(missionIndex);
 	ui->graphView->rebuildAll();
@@ -760,26 +1016,156 @@ void CampaignEditorDialog::on_graphView_setFirstMissionRequested(int missionInde
 	}
 
 	ui->graphView->setSelectedMission(current_selection);
+	pushWorkingStateSnapshot(before, tr("Set First Mission"));
+}
+
+void CampaignEditorDialog::on_graphView_branchConnectRequested(int fromIndex, int toIndex, bool isSpecial)
+{
+	const QByteArray before = _model->captureWorkingState();
+	if (isSpecial) {
+		_model->addSpecialBranch(fromIndex, toIndex);
+	} else {
+		_model->addBranch(fromIndex, toIndex);
+	}
+	// Duplicate/conflicting connections are rejected by the model; the
+	// snapshot equality check absorbs those into no-ops.
+	pushWorkingStateSnapshot(before, tr("Add Branch"));
+}
+
+void CampaignEditorDialog::on_graphView_endBranchConnectRequested(int fromIndex)
+{
+	const QByteArray before = _model->captureWorkingState();
+	_model->addEndBranch(fromIndex);
+	pushWorkingStateSnapshot(before, tr("Add Branch"));
+}
+
+void CampaignEditorDialog::on_graphView_nodeDragStarted(int missionIndex)
+{
+	// Only the first movement of each node in a gesture records its position.
+	if (_nodeDragBefore.find(missionIndex) == _nodeDragBefore.end()) {
+		_nodeDragBefore[missionIndex] = {_model->getMissionGraphX(missionIndex),
+		                                 _model->getMissionGraphY(missionIndex)};
+	}
+}
+
+void CampaignEditorDialog::on_graphView_nodeDragFinished(int /*missionIndex*/)
+{
+	// Collect every node moved during the gesture — a multi-select drag moves
+	// all selected nodes but only the cursor node emits nodeDragFinished.
+	SCP_vector<std::pair<int, std::pair<int, int>>> moved; // (missionIndex, before)
+	for (const auto& [idx, before] : _nodeDragBefore) {
+		const std::pair<int, int> after{_model->getMissionGraphX(idx), _model->getMissionGraphY(idx)};
+		if (before != after) {
+			moved.emplace_back(idx, before);
+		}
+	}
+	_nodeDragBefore.clear();
+	if (moved.empty())
+		return;
+
+	auto* cmd = new FieldEditCommand<std::pair<int, int>>(
+	    FieldId::Camp_MissionNodePos + moved.front().first * FieldId::Camp_MissionFieldStride,
+	    nullptr, tr("Move Mission Node"), true);
+	cmd->setNoMerge(); // one command per drag gesture
+	for (const auto& [idx, before] : moved) {
+		const std::pair<int, int> after{_model->getMissionGraphX(idx), _model->getMissionGraphY(idx)};
+		cmd->addEntry(before, after, [this, idx = idx](const std::pair<int, int>& v) {
+			_model->setMissionGraphX(idx, v.first);
+			_model->setMissionGraphY(idx, v.second);
+			const int sel = _model->getCurrentMissionSelection();
+			ui->graphView->rebuildAll();
+			ui->graphView->setSelectedMission(sel);
+		});
+	}
+	_dialogStack->push(cmd);
 }
 
 void CampaignEditorDialog::on_briefCutsceneComboBox_currentIndexChanged(const QString& arg1)
 {
+	if (_model->getCurrentMissionSelection() < 0)
+		return;
+
+	const int missionIndex  = _model->getCurrentMissionSelection();
+	const SCP_string before = _model->getCurrentMissionBriefingCutscene();
 	_model->setCurrentMissionBriefingCutscene(arg1.toUtf8().constData());
+	const SCP_string after = _model->getCurrentMissionBriefingCutscene();
+	if (before == after)
+		return;
+
+	auto* cmd = new FieldEditCommand<SCP_string>(
+	    FieldId::Camp_MissionCutscene + missionIndex * FieldId::Camp_MissionFieldStride,
+	    nullptr, tr("Change Briefing Cutscene"), true);
+	cmd->addEntry(before, after, [this, missionIndex](const SCP_string& v) {
+		_model->setMissionBriefingCutsceneAt(missionIndex, v);
+		updateMissionDetails();
+	});
+	_dialogStack->push(cmd);
 }
 
 void CampaignEditorDialog::on_debriefingPersonaSpinBox_valueChanged(int arg1)
 {
+	if (_model->getCurrentMissionSelection() < 0)
+		return;
+
+	const int missionIndex = _model->getCurrentMissionSelection();
+	const int before       = _model->getCurrentMissionDebriefingPersona();
 	_model->setCurrentMissionDebriefingPersona(arg1);
+	const int after = _model->getCurrentMissionDebriefingPersona();
+	if (before == after)
+		return;
+
+	auto* cmd = new FieldEditCommand<int>(
+	    FieldId::Camp_MissionPersona + missionIndex * FieldId::Camp_MissionFieldStride,
+	    nullptr, tr("Change Debriefing Persona"), true);
+	cmd->addEntry(before, after, [this, missionIndex](const int& v) {
+		_model->setMissionDebriefingPersonaAt(missionIndex, v);
+		updateMissionDetails();
+	});
+	_dialogStack->push(cmd);
 }
 
 void CampaignEditorDialog::on_mainhallComboBox_currentIndexChanged(const QString& arg1)
 {
+	if (_model->getCurrentMissionSelection() < 0)
+		return;
+
+	const int missionIndex  = _model->getCurrentMissionSelection();
+	const SCP_string before = _model->getCurrentMissionMainhall();
 	_model->setCurrentMissionMainhall(arg1.toUtf8().constData());
+	const SCP_string after = _model->getCurrentMissionMainhall();
+	if (before == after)
+		return;
+
+	auto* cmd = new FieldEditCommand<SCP_string>(
+	    FieldId::Camp_MissionMainhall + missionIndex * FieldId::Camp_MissionFieldStride,
+	    nullptr, tr("Change Main Hall"), true);
+	cmd->addEntry(before, after, [this, missionIndex](const SCP_string& v) {
+		_model->setMissionMainhallAt(missionIndex, v);
+		updateMissionDetails();
+	});
+	_dialogStack->push(cmd);
 }
 
 void CampaignEditorDialog::on_substituteMainhallComboBox_currentIndexChanged(const QString& arg1)
 {
+	if (_model->getCurrentMissionSelection() < 0)
+		return;
+
+	const int missionIndex  = _model->getCurrentMissionSelection();
+	const SCP_string before = _model->getCurrentMissionSubstituteMainhall();
 	_model->setCurrentMissionSubstituteMainhall(arg1.toUtf8().constData());
+	const SCP_string after = _model->getCurrentMissionSubstituteMainhall();
+	if (before == after)
+		return;
+
+	auto* cmd = new FieldEditCommand<SCP_string>(
+	    FieldId::Camp_MissionSubMainhall + missionIndex * FieldId::Camp_MissionFieldStride,
+	    nullptr, tr("Change Substitute Main Hall"), true);
+	cmd->addEntry(before, after, [this, missionIndex](const SCP_string& v) {
+		_model->setMissionSubstituteMainhallAt(missionIndex, v);
+		updateMissionDetails();
+	});
+	_dialogStack->push(cmd);
 }
 
 void CampaignEditorDialog::on_moveBranchTopButton_clicked()
@@ -794,22 +1180,26 @@ void CampaignEditorDialog::on_moveBranchTopButton_clicked()
 
 void CampaignEditorDialog::on_moveBranchUpButton_clicked()
 {
+	const QByteArray before = _model->captureWorkingState();
 	int mission_selection = _model->getCurrentMissionSelection(); // save now because rebuild clears it
 
 	_model->moveBranchUp();
 	ui->graphView->rebuildAll();
 
 	ui->graphView->setSelectedMission(mission_selection);
+	pushWorkingStateSnapshot(before, tr("Move Branch"));
 }
 
 void CampaignEditorDialog::on_moveBranchDownButton_clicked()
 {
+	const QByteArray before = _model->captureWorkingState();
 	int mission_selection = _model->getCurrentMissionSelection(); // save now because rebuild clears it
-	
+
 	_model->moveBranchDown();
 	ui->graphView->rebuildAll();
 
 	ui->graphView->setSelectedMission(mission_selection);
+	pushWorkingStateSnapshot(before, tr("Move Branch"));
 }
 
 void CampaignEditorDialog::on_moveBranchBottomButton_clicked()
@@ -824,51 +1214,102 @@ void CampaignEditorDialog::on_moveBranchBottomButton_clicked()
 
 void CampaignEditorDialog::on_loopDescriptionPlainTextEdit_textChanged()
 {
+	if (!_model->getCurrentBranchIsSpecial())
+		return;
+
+	const int missionIndex  = _model->getCurrentMissionSelection();
+	const int branchIndex   = _model->getCurrentBranchSelection();
+	const SCP_string before = _model->getCurrentBranchLoopDescription();
 	_model->setCurrentBranchLoopDescription(ui->loopDescriptionPlainTextEdit->toPlainText().toUtf8().constData());
+	const SCP_string after = _model->getCurrentBranchLoopDescription();
+	if (before == after)
+		return;
+
+	auto* cmd = new FieldEditCommand<SCP_string>(
+	    FieldId::Camp_LoopDescription +
+	        (missionIndex * FieldId::Camp_BranchesPerMission + branchIndex) * FieldId::Camp_BranchFieldStride,
+	    nullptr, tr("Change Loop Description"), true);
+	cmd->addEntry(before, after, [this, missionIndex, branchIndex](const SCP_string& v) {
+		_model->setBranchLoopDescriptionAt(missionIndex, branchIndex, v);
+		updateLoopDetails();
+	});
+	_dialogStack->push(cmd);
 }
 
 void CampaignEditorDialog::on_loopAnimLineEdit_textChanged(const QString& arg1)
 {
-	_model->setCurrentBranchLoopAnim(arg1.toUtf8().constData());
+	if (!_model->getCurrentBranchIsSpecial())
+		return;
 
-	bool enable_playback = _model->getCurrentBranchIsSpecial() && !_model->getCurrentBranchLoopVoice().empty();
-	ui->testVoiceButton->setEnabled(enable_playback);
+	const int missionIndex  = _model->getCurrentMissionSelection();
+	const int branchIndex   = _model->getCurrentBranchSelection();
+	const SCP_string before = _model->getCurrentBranchLoopAnim();
+	_model->setCurrentBranchLoopAnim(arg1.toUtf8().constData());
+	const SCP_string after = _model->getCurrentBranchLoopAnim();
+	enableDisableControls();
+	if (before == after)
+		return;
+
+	auto* cmd = new FieldEditCommand<SCP_string>(
+	    FieldId::Camp_LoopAnim +
+	        (missionIndex * FieldId::Camp_BranchesPerMission + branchIndex) * FieldId::Camp_BranchFieldStride,
+	    nullptr, tr("Change Loop Animation"), true);
+	cmd->addEntry(before, after, [this, missionIndex, branchIndex](const SCP_string& v) {
+		_model->setBranchLoopAnimAt(missionIndex, branchIndex, v);
+		updateLoopDetails();
+	});
+	_dialogStack->push(cmd);
 }
 
 void CampaignEditorDialog::on_loopVoiceLineEdit_textChanged(const QString& arg1)
 {
+	if (!_model->getCurrentBranchIsSpecial())
+		return;
+
+	const int missionIndex  = _model->getCurrentMissionSelection();
+	const int branchIndex   = _model->getCurrentBranchSelection();
+	const SCP_string before = _model->getCurrentBranchLoopVoice();
 	_model->setCurrentBranchLoopVoice(arg1.toUtf8().constData());
+	const SCP_string after = _model->getCurrentBranchLoopVoice();
+	enableDisableControls();
+	if (before == after)
+		return;
+
+	auto* cmd = new FieldEditCommand<SCP_string>(
+	    FieldId::Camp_LoopVoice +
+	        (missionIndex * FieldId::Camp_BranchesPerMission + branchIndex) * FieldId::Camp_BranchFieldStride,
+	    nullptr, tr("Change Loop Voice"), true);
+	cmd->addEntry(before, after, [this, missionIndex, branchIndex](const SCP_string& v) {
+		_model->setBranchLoopVoiceAt(missionIndex, branchIndex, v);
+		updateLoopDetails();
+	});
+	_dialogStack->push(cmd);
 }
 
 void CampaignEditorDialog::on_loopAnimBrowseButton_clicked()
 {
-	util::SignalBlockers blocker(this);
-
 	const QString lastDir = util::getLastDir("campaign/loopAnim", CF_TYPE_INTERFACE);
 
 	const QString filter = "FSO Animations (*.ani *.eff *.png);;All Files (*.*)";
 	const QString fileName = QFileDialog::getOpenFileName(this, "Select Loop Animation", lastDir, filter);
 	if (!fileName.isEmpty()) {
 		util::saveLastDir("campaign/loopAnim", fileName);
-		ui->loopAnimLineEdit->setText(fileName);
+		// Store the bare filename; the resulting textChanged updates the
+		// model and pushes the undo entry.
+		ui->loopAnimLineEdit->setText(QFileInfo(fileName).fileName());
 	}
 }
 
 void CampaignEditorDialog::on_loopVoiceBrowseButton_clicked()
 {
-	util::SignalBlockers blocker(this);
-
 	const QString lastDir = util::getLastDir("campaign/loopVoice", CF_TYPE_VOICE_SPECIAL);
 
 	const QString filter = "Audio Files (*.wav *.ogg);;All Files (*.*)";
 	const QString fileName = QFileDialog::getOpenFileName(this, "Select Loop Voice", lastDir, filter);
 	if (!fileName.isEmpty()) {
 		util::saveLastDir("campaign/loopVoice", fileName);
-		ui->loopVoiceLineEdit->setText(fileName);
+		ui->loopVoiceLineEdit->setText(QFileInfo(fileName).fileName());
 	}
-
-	bool enable_playback = _model->getCurrentBranchIsSpecial() && !_model->getCurrentBranchLoopVoice().empty();
-	ui->testVoiceButton->setEnabled(enable_playback);
 }
 
 void CampaignEditorDialog::on_testVoiceButton_clicked()
@@ -878,7 +1319,25 @@ void CampaignEditorDialog::on_testVoiceButton_clicked()
 
 void CampaignEditorDialog::on_retailFormatCheckbox_toggled(bool checked)
 {
+	const bool before = (_model->getSaveFormat() == CampaignFormat::Retail);
+	if (before == checked)
+		return;
+
 	_model->setSaveFormat(checked ? CampaignFormat::Retail : CampaignFormat::FSO);
+	refreshMainhallCombos(); // the format decides which main hall names are valid
+	updateMissionDetails();
+
+	auto* cmd = new FieldEditCommand<bool>(FieldId::Camp_RetailFormat, nullptr, tr("Toggle Retail Format"), true);
+	cmd->addEntry(before, checked, [this](const bool& v) {
+		_model->setSaveFormat(v ? CampaignFormat::Retail : CampaignFormat::FSO);
+		{
+			QSignalBlocker blocker(ui->retailFormatCheckbox);
+			ui->retailFormatCheckbox->setChecked(v);
+		}
+		refreshMainhallCombos();
+		updateMissionDetails();
+	});
+	_dialogStack->push(cmd);
 }
 
 } // namespace fso::fred::dialogs

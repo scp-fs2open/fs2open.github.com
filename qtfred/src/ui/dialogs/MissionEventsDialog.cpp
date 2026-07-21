@@ -4,11 +4,14 @@
 #include "ui/util/default_dir.h"
 #include "ui/util/SignalBlockers.h"
 #include "ui/dialogs/EventEditor/HeadAnimationPickerDialog.h"
+#include "mission/commands/FredCommands.h"
 
 #include "mission/util.h"
 
 #include <sound/audiostr.h>
 #include <localization/localize.h>
+
+#include <ui/util/DialogUndo.h>
 
 #include <QInputDialog>
 #include <QMessageBox>
@@ -44,12 +47,17 @@ static int annotation_key_for_qt_item(sexp_tree_view* tree, QTreeWidgetItem* h)
 	return -1;
 }
 
-MissionEventsDialog::MissionEventsDialog(QWidget* parent, EditorViewport* viewport) :
+MissionEventsDialog::MissionEventsDialog(FredView* parent, EditorViewport* viewport) :
 	QDialog(parent),
 	SexpTreeEditorInterface({ TreeFlags::LabeledRoot, TreeFlags::RootDeletable, TreeFlags::RootEditable, TreeFlags::AnnotationsAllowed }),
-	  ui(new Ui::MissionEventsDialog()), _viewport(viewport)
+	  ui(new Ui::MissionEventsDialog()), _viewport(viewport), _fredView(parent)
 {
+	_dialogStack = new QUndoStack(this);
+	_fredView->undoGroup()->addStack(_dialogStack);
+
 	ui->setupUi(this);
+
+	util::setupDialogUndo(this, _fredView->undoGroup(), _dialogStack, tr("Mission Events"));
 
 	// Give the tree panel preference on resize but let the user rebalance via the splitter.
 	// Both panels get stretch>0 so QSplitter distributes extra space proportionally to
@@ -72,7 +80,7 @@ MissionEventsDialog::MissionEventsDialog(QWidget* parent, EditorViewport* viewpo
 	ui->editDirectiveText->setMaxLength(NAME_LENGTH - 1);
 	ui->editDirectiveKeypressText->setMaxLength(NAME_LENGTH - 1);
 
-	ui->eventTree->initializeEditor(viewport->editor, this, viewport);
+	ui->eventTree->initializeEditor(viewport->editor, this, viewport, parent);
 	ui->eventTree->clear_tree();
 	ui->eventTree->_model.post_load();
 
@@ -193,6 +201,18 @@ MissionEventsDialog::MissionEventsDialog(QWidget* parent, EditorViewport* viewpo
 	initMessageWidgets();
 
 	initEventWidgets();
+
+	// The before-state for the next tree edit: the tree mutates before
+	// modified() fires, so a fresh capture at handler time would already
+	// contain the edit. indexChanged fires on every push/undo/redo, keeping
+	// the cache aligned with the current working state.
+	_workingStateCache = _model->captureEventWorkingState();
+	connect(_dialogStack, &QUndoStack::indexChanged, this, [this](int) {
+		// accept() moves _model into the ApplyDialogCommand and then clears
+		// the stack, which emits indexChanged with no model left.
+		if (_model)
+			_workingStateCache = _model->captureEventWorkingState();
+	});
 }
 
 MissionEventsDialog::~MissionEventsDialog() = default;
@@ -207,7 +227,7 @@ void MissionEventsDialog::initEventWidgets() {
 	ui->helpBox->setVisible(_viewport->Show_sexp_help_mission_events);
 
 	// connect the sexp tree stuff
-	connect(ui->eventTree, &sexp_tree_view::modified, this, [this]() { _model->setModified(); });
+	connect(ui->eventTree, &sexp_tree_view::modified, this, &MissionEventsDialog::onEventTreeModified);
 	connect(ui->eventTree, &sexp_tree_view::rootNodeDeleted, this, &MissionEventsDialog::rootNodeDeleted);
 	connect(ui->eventTree, &sexp_tree_view::rootNodeRenamed, this, &MissionEventsDialog::rootNodeRenamed);
 	connect(ui->eventTree, &sexp_tree_view::rootNodeFormulaChanged, this, &MissionEventsDialog::rootNodeFormulaChanged);
@@ -221,14 +241,18 @@ void MissionEventsDialog::initEventWidgets() {
 		const int key = annotation_key_for_qt_item(ui->eventTree, static_cast<QTreeWidgetItem*>(h));
 		if (key != -1) {
 			SCP_string text = note.toUtf8().constData();
+			const QByteArray before = _model->captureEventWorkingState();
 			_model->setNodeAnnotation(key, text);
+			pushEventStateSnapshot(before, tr("Edit Node Note"));
 		}
 	});
 
 	connect(ui->eventTree, &sexp_tree_view::nodeBgColorChanged, this, [this](void* h, const QColor& c) {
 		const int key = annotation_key_for_qt_item(ui->eventTree, static_cast<QTreeWidgetItem*>(h));
 		if (key != -1) {
+			const QByteArray before = _model->captureEventWorkingState();
 			_model->setNodeBgColor(key, c.red(), c.green(), c.blue(), c.isValid());
+			pushEventStateSnapshot(before, tr("Change Node Color"));
 		}
 	});
 
@@ -239,8 +263,13 @@ void MissionEventsDialog::initEventWidgets() {
 			auto* it = ui->eventTree->topLevelItem(i);
 			order.push_back(it->data(0, sexp_tree_view::FormulaDataRole).toInt());
 		}
+		// The widget has only moved items visually at this point (the
+		// modified() it emitted first was a no-op capture), so a fresh
+		// capture still holds the pre-reorder event order.
+		const QByteArray before = _model->captureEventWorkingState();
 		_model->reorderByRootFormulaOrder(order);
 		m_last_message_node = -1;
+		pushEventStateSnapshot(before, tr("Move Event"));
 	});
 
 	_model->setCurrentlySelectedEvent(-1);
@@ -255,22 +284,77 @@ int MissionEventsDialog::getRootReturnType() const
 
 void MissionEventsDialog::accept()
 {
-	// If apply() returns true, close the dialog
+	QByteArray stateBefore = _model->captureState();
 	if (_model->apply()) {
+		QByteArray stateAfter = _model->captureState();
+		_model->setParent(nullptr);
+		_fredView->mainUndoStack()->push(
+			new ApplyDialogCommand(std::move(_model), stateBefore, stateAfter,
+			                       _viewport->editor, tr("Edit Mission Events")));
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
 		QDialog::accept();
 	}
-	// else: validation failed, don't close
 }
 
 void MissionEventsDialog::reject()
 {
-	// Asks the user if they want to save changes, if any
-	// If they do, it runs _model->apply() and returns the success value
-	// If they don't, it runs _model->reject() and returns true
-	if (rejectOrCloseHandler(this, _model.get(), _viewport)) {
-		QDialog::reject(); // actually close
+	if (!_model) {
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
+		QDialog::reject();
+		return;
 	}
-	// else: do nothing, don't close
+	if (rejectOrCloseHandler(this, _model.get(), _viewport)) {
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
+		QDialog::reject();
+	}
+}
+
+void MissionEventsDialog::onEventTreeModified()
+{
+	_model->setModified();
+	if (_suppressTreeUndo)
+		return;
+
+	pushEventStateSnapshot(_workingStateCache, tr("Edit Event Formula"));
+}
+
+void MissionEventsDialog::pushEventStateSnapshot(const QByteArray& before, const QString& label)
+{
+	const QByteArray after = _model->captureEventWorkingState();
+	if (after == before)
+		return;
+
+	_dialogStack->push(new DialogSnapshotCommand(before, after,
+		[this](const QByteArray& blob) {
+			_suppressTreeUndo = true;
+			const auto expanded = ui->eventTree->captureExpansionState();
+			// Rebuilds the tree widget through the model's treeCleared/
+			// subtreeAdded/annotationApplied/rootSelected signals.
+			_model->restoreEventWorkingState(blob);
+			ui->eventTree->restoreExpansionState(expanded);
+			m_last_message_node = -1;
+			updateEventUi();
+			_suppressTreeUndo = false;
+		},
+		label));
+}
+
+void MissionEventsDialog::pushMessageStateSnapshot(const QByteArray& before, const QString& label, int mergeId)
+{
+	const QByteArray after = _model->captureMessageWorkingState();
+	if (after == before)
+		return;
+
+	_dialogStack->push(new DialogSnapshotCommand(before, after,
+		[this](const QByteArray& blob) {
+			_model->restoreMessageWorkingState(blob);
+			rebuildMessageList();
+			updateMessageUi();
+		},
+		label, true, mergeId));
 }
 
 SCP_vector<SCP_string> MissionEventsDialog::getMessages()
@@ -327,7 +411,12 @@ void MissionEventsDialog::initMessageWidgets() {
 }
 
 void MissionEventsDialog::rootNodeDeleted(int node) {
+	// The widget emits before freeing the branch, so this capture still
+	// serializes the deleted event's formula and annotations. The modified()
+	// it emits afterwards is absorbed by the snapshot equality check.
+	const QByteArray before = _model->captureEventWorkingState();
 	_model->deleteRootNode(node);
+	pushEventStateSnapshot(before, tr("Delete Event"));
 }
 
 void MissionEventsDialog::rootNodeRenamed(int node) {
@@ -344,7 +433,47 @@ void MissionEventsDialog::rootNodeRenamed(int node) {
 
 	SCP_string newText = item->text(0).toUtf8().constData();
 
+	const auto& events = _model->getEventList();
+	int index = -1;
+	for (int i = 0; i < static_cast<int>(events.size()); ++i) {
+		if (events[i].formula == node) {
+			index = i;
+			break;
+		}
+	}
+	if (index < 0)
+		return;
+
+	const SCP_string before = events[index].name;
 	_model->renameRootNode(node, newText);
+	const SCP_string after = _model->getEventList()[index].name;
+	if (before == after)
+		return;
+
+	auto* cmd = new FieldEditCommand<SCP_string>(
+	    FieldId::Event_Name + index * FieldId::Event_FieldStride,
+	    nullptr, tr("Rename Event"), true);
+	cmd->addEntry(before, after, [this, index](const SCP_string& v) {
+		_model->setEventNameAt(index, v);
+		syncEventRootLabel(index);
+	});
+	_dialogStack->push(cmd);
+}
+
+void MissionEventsDialog::syncEventRootLabel(int eventIndex)
+{
+	const auto& events = _model->getEventList();
+	if (!SCP_vector_inbounds(events, eventIndex))
+		return;
+
+	const int formula = events[eventIndex].formula;
+	for (int i = 0; i < ui->eventTree->topLevelItemCount(); ++i) {
+		auto* item = ui->eventTree->topLevelItem(i);
+		if (item && item->data(0, sexp_tree_view::FormulaDataRole).toInt() == formula) {
+			item->setText(0, QString::fromStdString(events[eventIndex].name));
+			break;
+		}
+	}
 }
 
 void MissionEventsDialog::rootNodeFormulaChanged(int old, int node) {
@@ -490,6 +619,8 @@ void MissionEventsDialog::updateEventMoveButtons()
 }
 
 void MissionEventsDialog::initHeadCombo() {
+	QSignalBlocker blocker(ui->aniCombo);
+
 	auto list = _model->getHeadAniList();
 
 	ui->aniCombo->clear();
@@ -500,6 +631,8 @@ void MissionEventsDialog::initHeadCombo() {
 }
 
 void MissionEventsDialog::initWaveFilenames() {
+	QSignalBlocker blocker(ui->waveCombo);
+
 	auto list = _model->getWaveList();
 
 	ui->waveCombo->clear();
@@ -510,7 +643,7 @@ void MissionEventsDialog::initWaveFilenames() {
 }
 
 void MissionEventsDialog::initPersonas() {
-	auto list = _model->getPersonaList();
+	QSignalBlocker blocker(ui->personaCombo);
 
 	ui->personaCombo->clear();
 
@@ -520,29 +653,33 @@ void MissionEventsDialog::initPersonas() {
 }
 
 void MissionEventsDialog::initMessageTeams() {
-	auto list = _model->getTeamList();
+	QSignalBlocker blocker(ui->messageTeamCombo);
 
 	ui->messageTeamCombo->clear();
 
-	for (const auto& team : list) {
+	for (const auto& team : _model->getTeamList()) {
 		ui->messageTeamCombo->addItem(QString::fromStdString(team.first), team.second);
 	}
-
 }
 
 void MissionEventsDialog::initEventTeams()
 {
-	auto list = _model->getTeamList();
+	QSignalBlocker blocker(ui->teamCombo);
 
 	ui->teamCombo->clear();
 
-	for (const auto& team : list) {
+	for (const auto& team : _model->getTeamList()) {
 		ui->teamCombo->addItem(QString::fromStdString(team.first), team.second);
 	}
 }
 
 void MissionEventsDialog::updateMessageUi()
 {
+	// Block child signals: setText/setPlainText/combo updates below would
+	// otherwise re-enter the edit slots and mark the mission modified on a
+	// mere selection change.
+	util::SignalBlockers blockers(this);
+
 	bool enable = true;
 
 	if (!_model->messageIsValid()) {
@@ -611,8 +748,17 @@ SCP_vector<int> MissionEventsDialog::read_root_formula_order(sexp_tree_view* tre
 }
 
 void MissionEventsDialog::updateEventBitmap() {
-	auto chained = _model->getChained();
-	auto hasObjectiveText = !_model->getEventDirectiveText().empty();
+	updateEventBitmapAt(_model->getCurrentlySelectedEvent());
+}
+
+void MissionEventsDialog::updateEventBitmapAt(int eventIndex) {
+	const auto& events = _model->getEventList();
+	if (!SCP_vector_inbounds(events, eventIndex))
+		return;
+	const auto& event = events[eventIndex];
+
+	const bool chained = (event.chain_delay >= 0);
+	const bool hasObjectiveText = !event.objective_text.empty();
 
 	NodeImage bitmap;
 	if (chained) {
@@ -631,7 +777,7 @@ void MissionEventsDialog::updateEventBitmap() {
 	for (int i = 0; i < ui->eventTree->topLevelItemCount(); ++i) {
 		auto item = ui->eventTree->topLevelItem(i);
 
-		if (item->data(0, sexp_tree_view::FormulaDataRole).toInt() == _model->getFormula()) {
+		if (item->data(0, sexp_tree_view::FormulaDataRole).toInt() == event.formula) {
 			// Keep NodeImageRole in sync so a later theme change re-renders the correct icon.
 			item->setData(0, sexp_tree_view::NodeImageRole, static_cast<int>(bitmap));
 			item->setIcon(0, sexp_tree_view::convertNodeImageToIcon(bitmap));
@@ -652,16 +798,24 @@ void MissionEventsDialog::on_okAndCancelButtons_rejected()
 
 void MissionEventsDialog::on_btnNewEvent_clicked()
 {
+	const QByteArray before = _model->captureEventWorkingState();
+	_suppressTreeUndo = true;
 	_model->createEvent();
+	_suppressTreeUndo = false;
 
 	updateEventUi();
+	pushEventStateSnapshot(before, tr("Add Event"));
 }
 
 void MissionEventsDialog::on_btnInsertEvent_clicked()
 {
+	const QByteArray before = _model->captureEventWorkingState();
+	_suppressTreeUndo = true;
 	_model->insertEvent();
+	_suppressTreeUndo = false;
 
 	updateEventUi();
+	pushEventStateSnapshot(before, tr("Insert Event"));
 }
 
 void MissionEventsDialog::on_btnDeleteEvent_clicked()
@@ -744,99 +898,271 @@ void MissionEventsDialog::on_eventMoveBottomBtn_clicked()
 
 void MissionEventsDialog::on_repeatCountBox_valueChanged(int value)
 {
+	if (!_model->eventIsValid())
+		return;
+
+	const int index  = _model->getCurrentlySelectedEvent();
+	const int before = _model->getRepeatCount();
 	_model->setRepeatCount(value);
+	const int after = _model->getRepeatCount();
 	updateEventUi();
+	if (before == after)
+		return;
+
+	auto* cmd = new FieldEditCommand<int>(
+	    FieldId::Event_RepeatCount + index * FieldId::Event_FieldStride,
+	    nullptr, tr("Change Repeat Count"), true);
+	cmd->addEntry(before, after, [this, index](const int& v) { _model->setRepeatCountAt(index, v); updateEventUi(); });
+	_dialogStack->push(cmd);
 }
 
 void MissionEventsDialog::on_triggerCountBox_valueChanged(int value)
 {
+	if (!_model->eventIsValid())
+		return;
+
+	const int index  = _model->getCurrentlySelectedEvent();
+	const int before = _model->getTriggerCount();
 	_model->setTriggerCount(value);
+	const int after = _model->getTriggerCount();
 	updateEventUi();
+	if (before == after)
+		return;
+
+	auto* cmd = new FieldEditCommand<int>(
+	    FieldId::Event_TriggerCount + index * FieldId::Event_FieldStride,
+	    nullptr, tr("Change Trigger Count"), true);
+	cmd->addEntry(before, after, [this, index](const int& v) { _model->setTriggerCountAt(index, v); updateEventUi(); });
+	_dialogStack->push(cmd);
 }
 
 void MissionEventsDialog::on_intervalTimeBox_valueChanged(int value)
 {
+	if (!_model->eventIsValid())
+		return;
+
+	const int index  = _model->getCurrentlySelectedEvent();
+	const int before = _model->getIntervalTime();
 	_model->setIntervalTime(value);
+	const int after = _model->getIntervalTime();
+	if (before == after)
+		return;
+
+	auto* cmd = new FieldEditCommand<int>(
+	    FieldId::Event_Interval + index * FieldId::Event_FieldStride,
+	    nullptr, tr("Change Interval Time"), true);
+	cmd->addEntry(before, after, [this, index](const int& v) { _model->setIntervalTimeAt(index, v); updateEventUi(); });
+	_dialogStack->push(cmd);
 }
 
-void MissionEventsDialog::on_chainedCheckBox_stateChanged(int state)
+void MissionEventsDialog::on_chainedCheckBox_toggled(bool checked)
 {
-	_model->setChained(state == Qt::Checked);
+	if (!_model->eventIsValid())
+		return;
+
+	// Track chain_delay itself rather than a bool so undoing an uncheck
+	// restores the delay the event had, not a reset-to-zero one.
+	const int index  = _model->getCurrentlySelectedEvent();
+	const int before = _model->getChainDelay();
+	const int after  = checked ? 0 : -1;
+	if (before == after)
+		return;
+
+	_model->setChained(checked);
 	updateEventBitmap();
 	updateEventUi();
+
+	auto* cmd = new FieldEditCommand<int>(
+	    FieldId::Event_Chained + index * FieldId::Event_FieldStride,
+	    nullptr, tr("Toggle Event Chained"), true);
+	cmd->addEntry(before, after, [this, index](const int& v) {
+		_model->setChainDelayRawAt(index, v);
+		updateEventBitmapAt(index);
+		updateEventUi();
+	});
+	_dialogStack->push(cmd);
 }
 
 void MissionEventsDialog::on_chainDelayBox_valueChanged(int value)
 {
+	if (!_model->eventIsValid())
+		return;
+
+	const int index  = _model->getCurrentlySelectedEvent();
+	const int before = _model->getChainDelay();
 	_model->setChainDelay(value);
+	const int after = _model->getChainDelay();
+	if (before == after)
+		return;
+
+	auto* cmd = new FieldEditCommand<int>(
+	    FieldId::Event_ChainDelay + index * FieldId::Event_FieldStride,
+	    nullptr, tr("Change Chain Delay"), true);
+	cmd->addEntry(before, after, [this, index](const int& v) { _model->setChainDelayAt(index, v); updateEventUi(); });
+	_dialogStack->push(cmd);
 }
 
-void MissionEventsDialog::on_useMsecsCheckBox_stateChanged(int state)
+void MissionEventsDialog::on_useMsecsCheckBox_toggled(bool checked)
 {
-	_model->setUseMsecs(state == Qt::Checked);
+	if (!_model->eventIsValid())
+		return;
+
+	const int index   = _model->getCurrentlySelectedEvent();
+	const bool before = _model->getUseMsecs();
+	if (before == checked)
+		return;
+
+	_model->setUseMsecs(checked);
+
+	auto* cmd = new FieldEditCommand<bool>(
+	    FieldId::Event_UseMsecs + index * FieldId::Event_FieldStride,
+	    nullptr, tr("Toggle Interval In Milliseconds"), true);
+	cmd->addEntry(before, checked, [this, index](const bool& v) { _model->setUseMsecsAt(index, v); updateEventUi(); });
+	_dialogStack->push(cmd);
 }
 
 void MissionEventsDialog::on_scoreBox_valueChanged(int value)
 {
+	if (!_model->eventIsValid())
+		return;
+
+	const int index  = _model->getCurrentlySelectedEvent();
+	const int before = _model->getEventScore();
 	_model->setEventScore(value);
+	const int after = _model->getEventScore();
+	if (before == after)
+		return;
+
+	auto* cmd = new FieldEditCommand<int>(
+	    FieldId::Event_Score + index * FieldId::Event_FieldStride,
+	    nullptr, tr("Change Event Score"), true);
+	cmd->addEntry(before, after, [this, index](const int& v) { _model->setEventScoreAt(index, v); updateEventUi(); });
+	_dialogStack->push(cmd);
 }
 
 void MissionEventsDialog::on_teamCombo_currentIndexChanged(int index)
 {
+	if (!_model->eventIsValid())
+		return;
+
+	const int eventIndex = _model->getCurrentlySelectedEvent();
+	const int before     = _model->getEventTeam();
 	_model->setEventTeam(ui->teamCombo->itemData(index).toInt());
+	const int after = _model->getEventTeam();
+	if (before == after)
+		return;
+
+	auto* cmd = new FieldEditCommand<int>(
+	    FieldId::Event_Team + eventIndex * FieldId::Event_FieldStride,
+	    nullptr, tr("Change Event Team"), true);
+	cmd->addEntry(before, after, [this, eventIndex](const int& v) { _model->setEventTeamAt(eventIndex, v); updateEventUi(); });
+	_dialogStack->push(cmd);
 }
 
 void MissionEventsDialog::on_editDirectiveText_textChanged(const QString& text)
 {
-	SCP_string dir = text.toUtf8().constData();
-	_model->setEventDirectiveText(dir);
+	if (!_model->eventIsValid())
+		return;
+
+	const int index         = _model->getCurrentlySelectedEvent();
+	const SCP_string before = _model->getEventDirectiveText();
+	_model->setEventDirectiveText(text.toUtf8().constData());
+	// The setter localizes the text, so read the stored value back.
+	const SCP_string after = _model->getEventDirectiveText();
 	updateEventBitmap();
+	if (before == after)
+		return;
+
+	auto* cmd = new FieldEditCommand<SCP_string>(
+	    FieldId::Event_DirectiveText + index * FieldId::Event_FieldStride,
+	    nullptr, tr("Change Directive Text"), true);
+	cmd->addEntry(before, after, [this, index](const SCP_string& v) {
+		_model->setEventDirectiveTextAt(index, v);
+		updateEventBitmapAt(index);
+		updateEventUi();
+	});
+	_dialogStack->push(cmd);
 }
 
 void MissionEventsDialog::on_editDirectiveKeypressText_textChanged(const QString& text)
 {
-	SCP_string dir = text.toUtf8().constData();
-	_model->setEventDirectiveKeyText(dir);
+	if (!_model->eventIsValid())
+		return;
+
+	const int index         = _model->getCurrentlySelectedEvent();
+	const SCP_string before = _model->getEventDirectiveKeyText();
+	_model->setEventDirectiveKeyText(text.toUtf8().constData());
+	const SCP_string after = _model->getEventDirectiveKeyText();
+	if (before == after)
+		return;
+
+	auto* cmd = new FieldEditCommand<SCP_string>(
+	    FieldId::Event_DirectiveKey + index * FieldId::Event_FieldStride,
+	    nullptr, tr("Change Directive Keypress Text"), true);
+	cmd->addEntry(before, after, [this, index](const SCP_string& v) {
+		_model->setEventDirectiveKeyTextAt(index, v);
+		updateEventUi();
+	});
+	_dialogStack->push(cmd);
 }
 
-void MissionEventsDialog::on_checkLogTrue_stateChanged(int state)
+void MissionEventsDialog::pushEventLogFlagCommand(int fieldConst, int mask, bool checked)
 {
-	_model->setLogTrue(state == Qt::Checked);
+	if (!_model->eventIsValid())
+		return;
+
+	const int index   = _model->getCurrentlySelectedEvent();
+	const bool before = (_model->getEventList()[index].mission_log_flags & mask) != 0;
+	if (before == checked)
+		return;
+
+	_model->setEventLogFlagAt(index, mask, checked);
+
+	auto* cmd = new FieldEditCommand<bool>(
+	    fieldConst + index * FieldId::Event_FieldStride,
+	    nullptr, tr("Toggle Event Log Flag"), true);
+	cmd->addEntry(before, checked, [this, index, mask](const bool& v) { _model->setEventLogFlagAt(index, mask, v); updateEventUi(); });
+	_dialogStack->push(cmd);
 }
 
-void MissionEventsDialog::on_checkLogFalse_stateChanged(int state)
+void MissionEventsDialog::on_checkLogTrue_toggled(bool checked)
 {
-	_model->setLogFalse(state == Qt::Checked);
+	pushEventLogFlagCommand(FieldId::Event_LogTrue, MLF_SEXP_TRUE, checked);
 }
 
-void MissionEventsDialog::on_checkLogPrevious_stateChanged(int state)
+void MissionEventsDialog::on_checkLogFalse_toggled(bool checked)
 {
-	_model->setLogLogPrevious(state == Qt::Checked);
+	pushEventLogFlagCommand(FieldId::Event_LogFalse, MLF_SEXP_FALSE, checked);
 }
 
-void MissionEventsDialog::on_checkLogAlwaysFalse_stateChanged(int state)
+void MissionEventsDialog::on_checkLogPrevious_toggled(bool checked)
 {
-	_model->setLogAlwaysFalse(state == Qt::Checked);
+	pushEventLogFlagCommand(FieldId::Event_LogPrevious, MLF_STATE_CHANGE, checked);
 }
 
-void MissionEventsDialog::on_checkLogFirstRepeat_stateChanged(int state)
+void MissionEventsDialog::on_checkLogAlwaysFalse_toggled(bool checked)
 {
-	_model->setLogFirstRepeat(state == Qt::Checked);
+	pushEventLogFlagCommand(FieldId::Event_LogAlwaysFalse, MLF_SEXP_KNOWN_FALSE, checked);
 }
 
-void MissionEventsDialog::on_checkLogLastRepeat_stateChanged(int state)
+void MissionEventsDialog::on_checkLogFirstRepeat_toggled(bool checked)
 {
-	_model->setLogLastRepeat(state == Qt::Checked);
+	pushEventLogFlagCommand(FieldId::Event_LogFirstRepeat, MLF_FIRST_REPEAT_ONLY, checked);
 }
 
-void MissionEventsDialog::on_checkLogFirstTrigger_stateChanged(int state)
+void MissionEventsDialog::on_checkLogLastRepeat_toggled(bool checked)
 {
-	_model->setLogFirstTrigger(state == Qt::Checked);
+	pushEventLogFlagCommand(FieldId::Event_LogLastRepeat, MLF_LAST_REPEAT_ONLY, checked);
 }
 
-void MissionEventsDialog::on_checkLogLastTrigger_stateChanged(int state)
+void MissionEventsDialog::on_checkLogFirstTrigger_toggled(bool checked)
 {
-	_model->setLogLastTrigger(state == Qt::Checked);
+	pushEventLogFlagCommand(FieldId::Event_LogFirstTrigger, MLF_FIRST_TRIGGER_ONLY, checked);
+}
+
+void MissionEventsDialog::on_checkLogLastTrigger_toggled(bool checked)
+{
+	pushEventLogFlagCommand(FieldId::Event_LogLastTrigger, MLF_LAST_TRIGGER_ONLY, checked);
 }
 
 void MissionEventsDialog::on_messageList_currentRowChanged(int row)
@@ -882,27 +1208,32 @@ void MissionEventsDialog::on_messageList_itemDoubleClicked(QListWidgetItem* item
 
 void MissionEventsDialog::on_btnNewMsg_clicked()
 {
+	const QByteArray before = _model->captureMessageWorkingState();
 	_model->createMessage();
 
 	rebuildMessageList();
 	updateMessageUi();
+<<<<<<< HEAD
 
 	// Let the user name the new message right away: focus the name field and
 	// select its placeholder text so typing immediately replaces it.
 	ui->messageName->setFocus();
 	ui->messageName->selectAll();
+=======
+	pushMessageStateSnapshot(before, tr("Add Message"));
+>>>>>>> f691debbd (Qtfred full undo system. (#18))
 }
 
 void MissionEventsDialog::on_btnInsertMsg_clicked()
 {
+	const QByteArray before = _model->captureMessageWorkingState();
 	_model->insertMessage();
 
-	// Refresh list UI (replace with your actual refresh)
 	rebuildMessageList();
 
 	// Keep selection/visibility in sync
-	const int sel = _model->getCurrentlySelectedMessage(); // or expose accessor
-	if (auto* w = ui->messageList) {                            // your list widget id
+	const int sel = _model->getCurrentlySelectedMessage();
+	if (auto* w = ui->messageList) {
 		w->setCurrentRow(sel);
 		if (auto* it = w->item(sel))
 			w->scrollToItem(it);
@@ -913,18 +1244,22 @@ void MissionEventsDialog::on_btnInsertMsg_clicked()
 	// select its placeholder text so typing immediately replaces it.
 	ui->messageName->setFocus();
 	ui->messageName->selectAll();
+	pushMessageStateSnapshot(before, tr("Insert Message"));
 }
 
 void MissionEventsDialog::on_btnDeleteMsg_clicked()
 {
+	const QByteArray before = _model->captureMessageWorkingState();
 	_model->deleteMessage();
 
 	rebuildMessageList();
 	updateMessageUi();
+	pushMessageStateSnapshot(before, tr("Delete Message"));
 }
 
 void MissionEventsDialog::on_msgMoveTopBtn_clicked()
 {
+	const QByteArray before = _model->captureMessageWorkingState();
 	_model->moveMessageToTop();
 	rebuildMessageList();
 	const int sel = _model->getCurrentlySelectedMessage();
@@ -934,10 +1269,12 @@ void MissionEventsDialog::on_msgMoveTopBtn_clicked()
 			w->scrollToItem(it);
 	}
 	updateMessageUi();
+	pushMessageStateSnapshot(before, tr("Move Message"));
 }
 
 void MissionEventsDialog::on_msgUpBtn_clicked()
 {
+	const QByteArray before = _model->captureMessageWorkingState();
 	_model->moveMessageUp();
 	rebuildMessageList();
 	const int sel = _model->getCurrentlySelectedMessage();
@@ -947,10 +1284,12 @@ void MissionEventsDialog::on_msgUpBtn_clicked()
 			w->scrollToItem(it);
 	}
 	updateMessageUi();
+	pushMessageStateSnapshot(before, tr("Move Message"));
 }
 
 void MissionEventsDialog::on_msgDownBtn_clicked()
 {
+	const QByteArray before = _model->captureMessageWorkingState();
 	_model->moveMessageDown();
 	rebuildMessageList();
 	const int sel = _model->getCurrentlySelectedMessage();
@@ -960,10 +1299,12 @@ void MissionEventsDialog::on_msgDownBtn_clicked()
 			w->scrollToItem(it);
 	}
 	updateMessageUi();
+	pushMessageStateSnapshot(before, tr("Move Message"));
 }
 
 void MissionEventsDialog::on_msgMoveBottomBtn_clicked()
 {
+	const QByteArray before = _model->captureMessageWorkingState();
 	_model->moveMessageToBottom();
 	rebuildMessageList();
 	const int sel = _model->getCurrentlySelectedMessage();
@@ -973,20 +1314,56 @@ void MissionEventsDialog::on_msgMoveBottomBtn_clicked()
 			w->scrollToItem(it);
 	}
 	updateMessageUi();
+	pushMessageStateSnapshot(before, tr("Move Message"));
 }
 
 void MissionEventsDialog::on_messageName_textChanged(const QString& text)
 {
-	SCP_string name = text.toUtf8().constData();
-	_model->setMessageName(name);
+	if (!_model->messageIsValid())
+		return;
+
+	const int index         = _model->getCurrentlySelectedMessage();
+	const SCP_string before = _model->getMessageName();
+	// The live setter keeps the interactive name-conflict check.
+	_model->setMessageName(text.toUtf8().constData());
+	const SCP_string after = _model->getMessageName();
+	if (before == after)
+		return;
 
 	rebuildMessageList();
+
+	auto* cmd = new FieldEditCommand<SCP_string>(
+	    FieldId::Msg_Name + index * FieldId::Msg_FieldStride,
+	    nullptr, tr("Change Message Name"), true);
+	cmd->addEntry(before, after, [this, index](const SCP_string& v) {
+		_model->setMessageNameAt(index, v);
+		rebuildMessageList();
+		updateMessageUi();
+	});
+	_dialogStack->push(cmd);
 }
 
 void MissionEventsDialog::on_messageContent_textChanged()
 {
-	SCP_string content = ui->messageContent->toPlainText().toUtf8().constData();
-	_model->setMessageText(content);
+	if (!_model->messageIsValid())
+		return;
+
+	const int index         = _model->getCurrentlySelectedMessage();
+	const SCP_string before = _model->getMessageText();
+	_model->setMessageText(ui->messageContent->toPlainText().toUtf8().constData());
+	// The setter truncates and localizes, so read the stored value back.
+	const SCP_string after = _model->getMessageText();
+	if (before == after)
+		return;
+
+	auto* cmd = new FieldEditCommand<SCP_string>(
+	    FieldId::Msg_Text + index * FieldId::Msg_FieldStride,
+	    nullptr, tr("Change Message Text"), true);
+	cmd->addEntry(before, after, [this, index](const SCP_string& v) {
+		_model->setMessageTextAt(index, v);
+		updateMessageUi();
+	});
+	_dialogStack->push(cmd);
 }
 
 void MissionEventsDialog::on_btnMsgNote_clicked()
@@ -1013,6 +1390,8 @@ void MissionEventsDialog::on_btnMsgNote_clicked()
 	if (dlg.exec() != QDialog::Accepted)
 		return;
 
+	const int index         = _model->getCurrentlySelectedMessage();
+	const SCP_string before = _model->getMessageNote();
 	SCP_string note = edit->toPlainText().toUtf8().constData();
 	_model->setMessageNote(note);
 
@@ -1022,21 +1401,81 @@ void MissionEventsDialog::on_btnMsgNote_clicked()
 	} else {
 		ui->btnMsgNote->setText("Edit Note");
 	}
+
+	if (before == note)
+		return;
+
+	auto* cmd = new FieldEditCommand<SCP_string>(
+	    FieldId::Msg_Note + index * FieldId::Msg_FieldStride,
+	    nullptr, tr("Edit Message Note"), true);
+	cmd->setNoMerge(); // each note dialog visit is a discrete action
+	cmd->addEntry(before, note, [this, index](const SCP_string& v) {
+		_model->setMessageNoteAt(index, v);
+		updateMessageUi();
+	});
+	_dialogStack->push(cmd);
+}
+
+// Shared by typing (editingFinished), dropdown selection, and the browse
+// picker: applies the ani, refreshes the combo list, and pushes one merging
+// command per message.
+void MissionEventsDialog::changeMessageAni(const SCP_string& name)
+{
+	if (!_model->messageIsValid())
+		return;
+
+	const int index         = _model->getCurrentlySelectedMessage();
+	const SCP_string before = _model->getMessageAni();
+	_model->setMessageAni(name);
+	// The setter normalizes "<None>"/empty, so read the stored value back.
+	const SCP_string after = _model->getMessageAni();
+
+	initHeadCombo();
+	ui->aniCombo->setCurrentText(QString::fromStdString(after));
+
+	if (before == after)
+		return;
+
+	auto* cmd = new FieldEditCommand<SCP_string>(
+	    FieldId::Msg_Ani + index * FieldId::Msg_FieldStride,
+	    nullptr, tr("Change Message Animation"), true);
+	cmd->addEntry(before, after, [this, index](const SCP_string& v) {
+		_model->setMessageAniAt(index, v);
+		initHeadCombo();
+		updateMessageUi();
+	});
+	_dialogStack->push(cmd);
+}
+
+// Wave changes are message-scope snapshots rather than field commands: the
+// setter can auto-select a persona and head ani as a side effect, and undo
+// must restore those too.
+void MissionEventsDialog::changeMessageWave(const SCP_string& name)
+{
+	if (!_model->messageIsValid())
+		return;
+
+	const int index         = _model->getCurrentlySelectedMessage();
+	const QByteArray before = _model->captureMessageWorkingState();
+	_model->setMessageWave(name);
+
+	initWaveFilenames();
+	ui->waveCombo->setCurrentText(QString::fromStdString(_model->getMessageWave()));
+	updateMessageUi(); // the persona and head ani may have changed
+
+	pushMessageStateSnapshot(before, tr("Change Wave File"), FieldId::Msg_SnapWave + index);
 }
 
 void MissionEventsDialog::on_aniCombo_editingFinished()
 {
-	SCP_string name = ui->aniCombo->currentText().toUtf8().constData();
-	_model->setMessageAni(name);
-
-	initHeadCombo();
-	ui->aniCombo->setCurrentText(QString::fromStdString(name));
+	changeMessageAni(ui->aniCombo->currentText().toUtf8().constData());
 }
 
-void MissionEventsDialog::on_aniCombo_selectedIndexChanged(int index)
+void MissionEventsDialog::on_aniCombo_currentIndexChanged(int index)
 {
-	SCP_string name = ui->aniCombo->itemText(index).toUtf8().constData();
-	_model->setMessageAni(name);
+	if (index < 0)
+		return;
+	changeMessageAni(ui->aniCombo->itemText(index).toUtf8().constData());
 }
 
 void MissionEventsDialog::on_btnAniBrowse_clicked()
@@ -1061,24 +1500,19 @@ void MissionEventsDialog::on_btnAniBrowse_clicked()
 	// the picker whenever this mission editor is open
 	MissionEventsDialogModel::addExtraHeadAni(selectedStd);
 
-	_model->setMessageAni(selectedStd);
-	initHeadCombo();
-	ui->aniCombo->setCurrentText(selected);
+	changeMessageAni(selectedStd);
 }
 
 void MissionEventsDialog::on_waveCombo_editingFinished()
 {
-	SCP_string name = ui->waveCombo->currentText().toUtf8().constData();
-	_model->setMessageWave(name);
-
-	initWaveFilenames();
-	ui->waveCombo->setCurrentText(QString::fromStdString(name));
+	changeMessageWave(ui->waveCombo->currentText().toUtf8().constData());
 }
 
-void MissionEventsDialog::on_waveCombo_selectedIndexChanged(int index)
+void MissionEventsDialog::on_waveCombo_currentIndexChanged(int index)
 {
-	SCP_string name = ui->waveCombo->itemText(index).toUtf8().constData();
-	_model->setMessageWave(name);
+	if (index < 0)
+		return;
+	changeMessageWave(ui->waveCombo->itemText(index).toUtf8().constData());
 }
 
 void MissionEventsDialog::on_btnBrowseWave_clicked()
@@ -1107,10 +1541,7 @@ void MissionEventsDialog::on_btnBrowseWave_clicked()
 
 	SCP_string file_name = info.fileName().toUtf8().constData();
 
-	_model->setMessageWave(file_name);
-
-	initWaveFilenames();
-	ui->waveCombo->setCurrentText(QString::fromStdString(file_name));
+	changeMessageWave(file_name);
 }
 
 void MissionEventsDialog::on_btnWavePlay_clicked()
@@ -1120,11 +1551,31 @@ void MissionEventsDialog::on_btnWavePlay_clicked()
 
 void MissionEventsDialog::on_personaCombo_currentIndexChanged(int index)
 {
+	if (!_model->messageIsValid())
+		return;
+
+	const int msgIndex = _model->getCurrentlySelectedMessage();
+	const int before   = _model->getMessagePersona();
 	_model->setMessagePersona(ui->personaCombo->itemData(index).toInt());
+	const int after = _model->getMessagePersona();
+	if (before == after)
+		return;
+
+	auto* cmd = new FieldEditCommand<int>(
+	    FieldId::Msg_Persona + msgIndex * FieldId::Msg_FieldStride,
+	    nullptr, tr("Change Message Persona"), true);
+	cmd->addEntry(before, after, [this, msgIndex](const int& v) {
+		_model->setMessagePersonaAt(msgIndex, v);
+		updateMessageUi();
+	});
+	_dialogStack->push(cmd);
 }
 
 void MissionEventsDialog::on_btnUpdateStuff_clicked()
 {
+	if (!_model->messageIsValid())
+		return;
+
 	auto result = _viewport->dialogProvider->showButtonDialog(
 		DialogType::Question,
 		"Update Message Stuff",
@@ -1132,15 +1583,34 @@ void MissionEventsDialog::on_btnUpdateStuff_clicked()
 		   "Are you sure you want to do this?",
 		{DialogButton::Yes, DialogButton::No});
 
-	if (result != DialogButton::Yes) {
+	if (result == DialogButton::Yes) {
+		const QByteArray before = _model->captureMessageWorkingState();
 		_model->autoSelectPersona();
 		updateMessageUi();
+		pushMessageStateSnapshot(before, tr("Update Message Persona"));
 	}
 }
 
 void MissionEventsDialog::on_messageTeamCombo_currentIndexChanged(int index)
 {
+	if (!_model->messageIsValid())
+		return;
+
+	const int msgIndex = _model->getCurrentlySelectedMessage();
+	const int before   = _model->getMessageTeam();
 	_model->setMessageTeam(ui->messageTeamCombo->itemData(index).toInt());
+	const int after = _model->getMessageTeam();
+	if (before == after)
+		return;
+
+	auto* cmd = new FieldEditCommand<int>(
+	    FieldId::Msg_Team + msgIndex * FieldId::Msg_FieldStride,
+	    nullptr, tr("Change Message Team"), true);
+	cmd->addEntry(before, after, [this, msgIndex](const int& v) {
+		_model->setMessageTeamAt(msgIndex, v);
+		updateMessageUi();
+	});
+	_dialogStack->push(cmd);
 }
 
 } // namespace fso::fred::dialogs

@@ -28,12 +28,13 @@ class ShieldSystemDialogModel: public AbstractDialogModel {
 	void applyTeam(bool hasShields);
 	void applyType(bool hasShields);
 
+	void refresh();
+
 	const SCP_vector<SCP_string>& getShipTypeOptions() const;
 	const SCP_vector<SCP_string>& getTeamOptions() const;
 
  private:
 	void initializeData();
-	void refresh();
 
 	SCP_vector<SCP_string> _shipTypeOptions;
 	SCP_vector<SCP_string> _teamOptions;

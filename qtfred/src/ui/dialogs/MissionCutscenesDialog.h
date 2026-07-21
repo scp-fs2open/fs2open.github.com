@@ -4,6 +4,7 @@
 
 #include "mission/EditorViewport.h"
 #include "mission/dialogs/MissionCutscenesDialogModel.h"
+#include "ui/FredView.h"
 
 #include "ui/widgets/sexp_tree_view.h"
 
@@ -17,7 +18,7 @@ class MissionCutscenesDialog : public QDialog, public SexpTreeEditorInterface {
     Q_OBJECT
 
 public:
-	explicit MissionCutscenesDialog(QWidget* parent, EditorViewport* viewport);
+	explicit MissionCutscenesDialog(FredView* parent, EditorViewport* viewport);
   ~MissionCutscenesDialog() override;
 
 	void accept() override;
@@ -50,9 +51,24 @@ private slots:
     std::unique_ptr<Ui::MissionCutscenesDialog> ui;
 	std::unique_ptr<MissionCutscenesDialogModel> _model;
 
-    EditorViewport* _viewport = nullptr;
+    EditorViewport* _viewport    = nullptr;
+    FredView*       _fredView    = nullptr;
+    QUndoStack*     _dialogStack = nullptr;
 	void load_tree();
 	void recreate_tree();
+
+	// In-dialog undo helpers, mirroring MissionGoalsDialog: tree edits and
+	// cutscene-structure ops go through working-state snapshots; field edits
+	// push merging FieldEditCommands. _workingStateCache is the before-state
+	// for the next tree edit (the tree mutates before modified() fires),
+	// refreshed on every stack index change. _suppressTreeUndo guards
+	// programmatic tree changes (Add Cutscene, snapshot restore).
+	void onCutsceneTreeModified();
+	void pushWorkingStateSnapshot(const QByteArray& before, const QString& label);
+	void syncCutsceneRootLabel(int cutsceneIndex);
+
+	QByteArray _workingStateCache;
+	bool       _suppressTreeUndo = false;
 };
 
 } // namespace fso::fred::dialogs

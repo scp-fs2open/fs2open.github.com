@@ -1,6 +1,9 @@
 #include <localization/localize.h>
 #include "MissionGoalsDialogModel.h"
+#include "state/DialogStateHelpers.h"
 
+#include <QDataStream>
+#include <QIODevice>
 
 namespace fso::fred::dialogs {
 
@@ -64,6 +67,70 @@ bool MissionGoalsDialogModel::apply()
 void MissionGoalsDialogModel::reject() {
 	// Nothing to do here
 }
+QByteArray MissionGoalsDialogModel::captureWorkingState() const
+{
+	QByteArray data;
+	QDataStream ds(&data, QIODevice::WriteOnly);
+
+	ds << static_cast<qint32>(m_goals.size());
+	for (size_t i = 0; i < m_goals.size(); ++i) {
+		const mission_goal& g = m_goals[i];
+		ds << static_cast<qint32>(m_sig[i]);
+		ds << QString::fromStdString(g.name);
+		ds << static_cast<qint32>(g.type);
+		ds << static_cast<qint32>(g.satisfied);
+		ds << QString::fromStdString(g.message);
+		// g.formula is a tree-widget node id; round-trip the branch through
+		// Sexp_nodes to serialize its content.
+		const int sexp = _sexp_tree->_model.save_tree(g.formula);
+		fso::fred::state::writeSexp(ds, sexp);
+		fso::fred::state::freeSexpFormula(sexp);
+		ds << static_cast<qint32>(g.score);
+		ds << static_cast<qint32>(g.flags);
+		ds << static_cast<qint32>(g.team);
+	}
+
+	return data;
+}
+
+void MissionGoalsDialogModel::restoreWorkingState(const QByteArray& state)
+{
+	QDataStream ds(state);
+
+	m_goals.clear();
+	m_sig.clear();
+	_sexp_tree->clear_tree(); // resets tree_nodes; the dialog rebuilds the visuals
+
+	qint32 count;
+	ds >> count;
+	for (int i = 0; i < count; ++i) {
+		mission_goal g;
+		qint32 sig, type, satisfied, score, flags, team;
+		QString name, message;
+
+		ds >> sig >> name >> type >> satisfied >> message;
+		const int sexp = fso::fred::state::readSexp(ds);
+		g.formula = _sexp_tree->_model.load_sub_tree(sexp, true, "true");
+		fso::fred::state::freeSexpFormula(sexp);
+		ds >> score >> flags >> team;
+
+		g.name      = name.toStdString();
+		g.type      = static_cast<int>(type);
+		g.satisfied = static_cast<int>(satisfied);
+		g.message   = message.toStdString();
+		g.score     = static_cast<int>(score);
+		g.flags     = static_cast<int>(flags);
+		g.team      = static_cast<int>(team);
+
+		m_goals.push_back(g);
+		m_sig.push_back(static_cast<int>(sig));
+	}
+	_sexp_tree->_model.post_load();
+
+	cur_goal = -1;
+	set_modified();
+}
+
 mission_goal& MissionGoalsDialogModel::getCurrentGoal() {
 	Assertion(SCP_vector_inbounds(m_goals, cur_goal), "Current goal index is not valid!");
 
@@ -204,6 +271,62 @@ void MissionGoalsDialogModel::setCurrentGoalTeam(int team) {
 	getCurrentGoal().team = team;
 
 	set_modified();
+}
+
+void MissionGoalsDialogModel::setGoalNameAt(int index, const SCP_string& name) {
+	if (!SCP_vector_inbounds(m_goals, index))
+		return;
+	m_goals[index].name = name;
+	set_modified();
+	modelChanged();
+}
+
+void MissionGoalsDialogModel::setGoalMessageAt(int index, const SCP_string& message) {
+	if (!SCP_vector_inbounds(m_goals, index))
+		return;
+	m_goals[index].message = message;
+	set_modified();
+	modelChanged();
+}
+
+void MissionGoalsDialogModel::setGoalScoreAt(int index, int score) {
+	if (!SCP_vector_inbounds(m_goals, index))
+		return;
+	m_goals[index].score = score;
+	set_modified();
+	modelChanged();
+}
+
+void MissionGoalsDialogModel::setGoalTeamAt(int index, int team) {
+	if (!SCP_vector_inbounds(m_goals, index))
+		return;
+	m_goals[index].team = team;
+	set_modified();
+	modelChanged();
+}
+
+void MissionGoalsDialogModel::setGoalInvalidAt(int index, bool invalid) {
+	if (!SCP_vector_inbounds(m_goals, index))
+		return;
+	if (invalid) {
+		m_goals[index].type |= INVALID_GOAL;
+	} else {
+		m_goals[index].type &= ~INVALID_GOAL;
+	}
+	set_modified();
+	modelChanged();
+}
+
+void MissionGoalsDialogModel::setGoalNoMusicAt(int index, bool noMusic) {
+	if (!SCP_vector_inbounds(m_goals, index))
+		return;
+	if (noMusic) {
+		m_goals[index].flags |= MGF_NO_MUSIC;
+	} else {
+		m_goals[index].flags &= ~MGF_NO_MUSIC;
+	}
+	set_modified();
+	modelChanged();
 }
 
 } // namespace fso::fred::dialogs

@@ -18,6 +18,7 @@
 #include <QtWidgets/QStyleOptionViewItem>
 #include <QKeyEvent>
 #include <QShortcut>
+#include <QTreeWidgetItemIterator>
 #include <QVBoxLayout>
 #include <QAbstractItemView>
 #include <QScrollBar>
@@ -272,6 +273,7 @@ sexp_tree_view::~sexp_tree_view() = default;
 // Each casts void* handles to QTreeWidgetItem* and delegates to Qt operations.
 
 // Creates a new QTreeWidgetItem with the given text and icon. Called by _actions when adding nodes.
+// The parent is expanded so a newly added node is always visible.
 void* sexp_tree_view::ui_insert_item(const char* text, NodeImage image, void* parent_handle, void* insert_after)
 {
 	auto* hParent = static_cast<QTreeWidgetItem*>(parent_handle);
@@ -280,6 +282,8 @@ void* sexp_tree_view::ui_insert_item(const char* text, NodeImage image, void* pa
 	// Inserting a data node can shift the argument positions of its siblings, so renumber them.
 	if (isDataFamily(image) && hParent)
 		refreshDataNumbers(hParent);
+	if (hParent)
+		hParent->setExpanded(true);
 	return static_cast<void*>(item);
 }
 
@@ -398,13 +402,56 @@ void sexp_tree_view::reset_handles() {
 	}
 }
 
+// Builds the row/text path key identifying an item across rebuilds, e.g.
+// "0|and/2|is-destroyed-delay/". Both the row and the text of every ancestor
+// must match for a rebuilt item to inherit the recorded expansion state.
+QString sexp_tree_view::itemPathKey(const QTreeWidgetItem* item) const
+{
+	QString key;
+	const QTreeWidgetItem* cur = item;
+	while (cur != nullptr) {
+		QTreeWidgetItem* parent = cur->parent();
+		const int row = parent ? parent->indexOfChild(const_cast<QTreeWidgetItem*>(cur))
+		                       : indexOfTopLevelItem(const_cast<QTreeWidgetItem*>(cur));
+		key.prepend(QStringLiteral("%1|%2/").arg(row).arg(cur->text(0)));
+		cur = parent;
+	}
+	return key;
+}
+
+QSet<QString> sexp_tree_view::captureExpansionState() const
+{
+	QSet<QString> expanded;
+	QTreeWidgetItemIterator it(const_cast<sexp_tree_view*>(this));
+	while (*it) {
+		if ((*it)->isExpanded() && (*it)->childCount() > 0)
+			expanded.insert(itemPathKey(*it));
+		++it;
+	}
+	return expanded;
+}
+
+void sexp_tree_view::restoreExpansionState(const QSet<QString>& expanded)
+{
+	QTreeWidgetItemIterator it(this);
+	while (*it) {
+		if ((*it)->childCount() > 0)
+			(*it)->setExpanded(expanded.contains(itemPathKey(*it)));
+		++it;
+	}
+}
+
 // Loads sexp data from the game's Sexp_nodes[] array into the model via _model.load_tree_data(),
 // then clears the Qt widget and rebuilds the visual tree. The index parameter is the starting
 // sexp node index; deflt is the default expression text if index is -1.
+// Expansion state carries over: reloads triggered by undo/redo (or any editor
+// refresh) keep whatever the user had expanded or collapsed.
 void sexp_tree_view::load_tree(int index, const char* deflt) {
+	const QSet<QString> expanded = captureExpansionState();
 	_model.load_tree_data(index, deflt);
 	clear();  // QTreeWidget::clear() - clear visual tree
 	build_tree();
+	restoreExpansionState(expanded);
 }
 
 
@@ -872,7 +919,7 @@ void sexp_tree_view::mouseMoveEvent(QMouseEvent* e)
 	_dragging = true;
 	if (auto* over = itemAt(e->pos())) {
 		if (isRoot(over))
-			setCurrentItem(over); // simple visual cue like OG�s SelectDropTarget
+			setCurrentItem(over); // simple visual cue like FRED2's SelectDropTarget
 	}
 
 	// No QDrag payload; we�ll do the move on mouse release to keep logic simple.
@@ -887,8 +934,8 @@ void sexp_tree_view::mouseReleaseEvent(QMouseEvent* e)
 	if (_dragging && _dragSourceRoot) {
 		auto* dropTarget = itemAt(e->pos());
 		if (dropTarget && isRoot(dropTarget) && dropTarget != _dragSourceRoot) {
-			// OG rule: if moving up, insert_before=true; if moving down, insert_after
-			// (so we end up where we dropped). :contentReference[oaicite:1]{index=1}
+			// FRED2 rule: if moving up, insert_before=true; if moving down,
+			// insert after (so we end up where we dropped).
 			const int srcIdx = indexOfTopLevelItem(_dragSourceRoot);
 			const int dstIdx = indexOfTopLevelItem(dropTarget);
 			const bool insert_before = (srcIdx > dstIdx);
@@ -1035,7 +1082,7 @@ void sexp_tree_view::update_help(QTreeWidgetItem* h) {
 // Stores the Editor and SexpTreeEditorInterface pointers. If no custom interface is provided,
 // creates a default SexpTreeEditorInterface. The interface controls tree behavior flags
 // (e.g. RootDeletable, RootEditable, LabeledRoot).
-void sexp_tree_view::initializeEditor(::fso::fred::Editor* edit, SexpTreeEditorInterface* editorInterface, EditorViewport* viewport) {
+void sexp_tree_view::initializeEditor(::fso::fred::Editor* edit, SexpTreeEditorInterface* editorInterface, EditorViewport* viewport, FredView* fredView) {
 	if (editorInterface == nullptr) {
 		// If there is no special interface then we supply the default implementation
 		_owned_interface.reset(new SexpTreeEditorInterface());
@@ -1045,6 +1092,7 @@ void sexp_tree_view::initializeEditor(::fso::fred::Editor* edit, SexpTreeEditorI
 	_editor = edit;
 	_interface = editorInterface;
 	_viewport = viewport;
+	_fredView = fredView;
 }
 
 // Slot connected to customContextMenuRequested. Gets the QTreeWidgetItem at the click position,
@@ -1158,8 +1206,8 @@ std::unique_ptr<QMenu> sexp_tree_view::buildContextMenu(QTreeWidgetItem* h) {
 	popup_menu->addSection("Variables");
 
 	auto modify_variable_act = popup_menu->addAction(tr("Add/Modify Variable"), this, [this]() {
-		if (_viewport) {
-			auto* dlg = new dialogs::VariableDialog(this, _viewport, dialogs::VariableDialog::VariablesTab);
+		if (_viewport && _fredView) {
+			auto* dlg = new dialogs::VariableDialog(this, _viewport, _fredView, dialogs::VariableDialog::VariablesTab);
 			dlg->setAttribute(Qt::WA_DeleteOnClose);
 			dlg->show();
 		}
@@ -1171,13 +1219,13 @@ std::unique_ptr<QMenu> sexp_tree_view::buildContextMenu(QTreeWidgetItem* h) {
 	popup_menu->addSection("Containers");
 
 	auto add_modify_container_act = popup_menu->addAction(tr("Add/Modify Container"), this, [this]() {
-		if (_viewport) {
-			auto* dlg = new dialogs::VariableDialog(this, _viewport, dialogs::VariableDialog::ContainersTab);
+		if (_viewport && _fredView) {
+			auto* dlg = new dialogs::VariableDialog(this, _viewport, _fredView, dialogs::VariableDialog::ContainersTab);
 			dlg->setAttribute(Qt::WA_DeleteOnClose);
 			dlg->show();
 		}
 	});
-	add_modify_container_act->setEnabled(_viewport != nullptr);
+	add_modify_container_act->setEnabled(_viewport != nullptr && _fredView != nullptr);
 	auto replace_container_name_menu = popup_menu->addMenu(tr("Replace Container Name"));
 	auto replace_container_data_menu = popup_menu->addMenu(tr("Replace Container Data"));
 
@@ -1212,7 +1260,7 @@ std::unique_ptr<QMenu> sexp_tree_view::buildContextMenu(QTreeWidgetItem* h) {
 		}
 	}
 
-	modify_variable_act->setEnabled(_viewport != nullptr);
+	modify_variable_act->setEnabled(_viewport != nullptr && _fredView != nullptr);
 
 	// add popup menus for all the operator categories
 	QMenu* add_op_submenu[SEXP_TREE_MAX_OP_MENUS];

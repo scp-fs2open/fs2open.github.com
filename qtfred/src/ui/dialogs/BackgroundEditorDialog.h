@@ -44,7 +44,7 @@ private slots:
 	void on_deleteBitmapButton_clicked();
 
 	// Suns
-	void on_sunListWidget_currentRowChanged(int row);
+	void on_sunsListWidget_currentRowChanged(int row);
 	void on_sunSelectionCombo_currentIndexChanged(int index);
 	void on_sunPitchSpin_valueChanged(double arg1);
 	void on_sunHeadingSpin_valueChanged(double arg1);
@@ -103,12 +103,14 @@ private slots:
 	void on_lightingProfileCombo_currentIndexChanged(int index);
 
 protected:
+	void changeEvent(QEvent* e) override;
 	void closeEvent(QCloseEvent* e) override;
 
 private: // NOLINT(readability-redundant-access-specifiers)
     std::unique_ptr<Ui::BackgroundEditor> ui;
 	std::unique_ptr<BackgroundEditorDialogModel> _model;
 	EditorViewport* _viewport;
+	FredView* _fredView;
 
 	void initializeUi();
 	void updateUi();

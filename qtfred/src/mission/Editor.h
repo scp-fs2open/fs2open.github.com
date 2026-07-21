@@ -12,6 +12,7 @@
 #include <QObject>
 #include <QString>
 #include <QTimer>
+#include <QUndoStack>
 #include <functional>
 #include <memory>
 #include <stdexcept>
@@ -73,6 +74,9 @@ class Editor : public QObject {
 	void stopAutosaveTimer();
 	void setCurrentMissionPath(const QString& path);
 	const QString& autosaveDirectory() const { return _autosaveDirectory; }
+
+	void setUndoStack(QUndoStack* stack) { _undoStack = stack; }
+	QUndoStack* undoStack() const { return _undoStack; }
 
 	/*! Load a mission. */
 	bool loadMission(const std::string& filepath, int flags = 0);
@@ -183,6 +187,13 @@ class Editor : public QObject {
 	int cur_wing = -1;
 	int cur_ship = -1;
 
+	// When set, reference_handler() proceeds as if the user confirmed "delete
+	// it anyway" instead of prompting. Set (via AutoConfirmReferences in
+	// FredCommands.cpp) while replaying delete commands in undo/redo: the user
+	// already consented at the original action, and a cancelable modal inside
+	// QUndoStack::undo()/redo() would desync the stack from the mission state.
+	bool auto_confirm_reference_deletion = false;
+
 	waypoint* cur_waypoint = nullptr;
 	waypoint_list* cur_waypoint_list = nullptr;
 
@@ -223,12 +234,18 @@ class Editor : public QObject {
 	// DA 1/7/99 These ship names are not variables
 	int rename_ship(int ship, const char* name);
 
+	void rename_jump_node(int objNum, const char* name);
+	void rename_prop(int objNum, const char* name);
+	void rename_waypoint_list(const char* old_name, const char* new_name);
+
 	/**
 	 * @brief Delete a whole wing, leaving ships intact but wingless.
 	 *
 	 * @param[in] wing_num Index of the wing
+	 *
+	 * @return 0 on success, nonzero if the user canceled at the reference check
 	 */
-	void disband_wing(int wing_num);
+	int disband_wing(int wing_num);
 
 	void delete_marked();
 
@@ -262,7 +279,8 @@ class Editor : public QObject {
 	void performTimedAutosave();
 
   private: // NOLINT(readability-redundant-access-specifiers)
-	QTimer*  _autosaveTimer        = nullptr;
+	QTimer*      _autosaveTimer    = nullptr;
+	QUndoStack*  _undoStack        = nullptr;
 	QString  _autosaveDirectory;
 	QString  _currentMissionPath;
 

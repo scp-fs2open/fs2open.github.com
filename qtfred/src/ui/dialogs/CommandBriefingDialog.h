@@ -47,8 +47,8 @@ private slots:
 
 	void on_actionChangeTeams_currentIndexChanged(int index);
 	void on_actionBriefingTextEditor_textChanged();
-	void on_animationFilename_textChanged(const QString& string);
-	void on_speechFilename_textChanged(const QString& string);
+	void on_animationFileName_textChanged(const QString& string);
+	void on_speechFileName_textChanged(const QString& string);
 	void on_actionLowResolutionFilenameEdit_textChanged(const QString& string);
 	void on_actionHighResolutionFilenameEdit_textChanged(const QString& string);
 
@@ -56,6 +56,12 @@ private: // NOLINT(readability-redundant-access-specifiers)
 	std::unique_ptr<Ui::CommandBriefingDialog> ui;
 	std::unique_ptr<CommandBriefingDialogModel> _model;
 	EditorViewport* _viewport;
+	FredView*       _fredView    = nullptr;
+	QUndoStack*     _dialogStack = nullptr;
+
+	void pushWorkingStateSnapshot(const QByteArray& before, const QString& label);
+	void changeAnimationFilename(const SCP_string& newFilename);
+	void changeSpeechFilename(const SCP_string& newFilename);
 
 	void initializeUi();
 	void updateUi();

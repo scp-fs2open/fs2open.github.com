@@ -12,10 +12,13 @@
 #include <QTreeView>
 #include <QTreeWidgetItem>
 #include <QListWidget>
+#include <QSet>
 #include <QShortcut>
 #include <QKeySequence>
 
 namespace fso::fred {
+
+class FredView;
 
 // Bring shared types into the fso::fred namespace so existing code compiles unchanged
 using ::sexp_tree_item;
@@ -154,8 +157,18 @@ class sexp_tree_view: public QTreeWidget, public ISexpTreeUI {
 	//! Nulls out all tree_nodes[].handle pointers. Used before a visual rebuild.
 	void reset_handles();
 
+	//! Records which items are currently expanded, keyed by row/text path from
+	//! the root, so expansion survives a full visual rebuild (e.g. the tree
+	//! reloads triggered by undo/redo).
+	QSet<QString> captureExpansionState() const;
+
+	//! Reapplies a captureExpansionState() snapshot: items whose path matches
+	//! the snapshot are expanded, all others are collapsed.
+	void restoreExpansionState(const QSet<QString>& expanded);
+
 	//! Loads sexp data from the game's Sexp_nodes[] into the model via _model.load_tree_data(),
-	//! then clears and rebuilds the visual tree.
+	//! then clears and rebuilds the visual tree, preserving the expansion state
+	//! of items that survive the reload.
 	void load_tree(int index, const char* deflt = "true");
 
 	//! Adds an operator node under the current position. Delegates to _actions.add_operator().
@@ -178,8 +191,9 @@ class sexp_tree_view: public QTreeWidget, public ISexpTreeUI {
 	int& select_sexp_node = _model.select_sexp_node;  //!< Used to pre-select a node on dialog open.
 
 	//! Stores the Editor and SexpTreeEditorInterface pointers. If no interface is provided,
-	//! creates a default SexpTreeEditorInterface.
-	void initializeEditor(Editor* edit, SexpTreeEditorInterface* editorInterface = nullptr, EditorViewport* viewport = nullptr);
+	//! creates a default SexpTreeEditorInterface. fredView is needed by context menu
+	//! actions that open dialogs participating in the undo stack (Add/Modify Variable).
+	void initializeEditor(Editor* edit, SexpTreeEditorInterface* editorInterface = nullptr, EditorViewport* viewport = nullptr, FredView* fredView = nullptr);
 
 	//! Public entry point for deleting the currently selected item. Calls deleteActionHandler().
 	void deleteCurrentItem();
@@ -264,6 +278,10 @@ class sexp_tree_view: public QTreeWidget, public ISexpTreeUI {
 	//! from the EditorViewport, falling back to a default when no viewport is set.
 	int numberEveryN() const;
 
+	//! Builds the row/text path key identifying an item across rebuilds.
+	//! Used by captureExpansionState()/restoreExpansionState().
+	QString itemPathKey(const QTreeWidgetItem* item) const;
+
 	//! Slot for customContextMenuRequested. Gets the item at pos, builds and executes the context menu.
 	void customMenuHandler(const QPoint& pos);
 
@@ -327,6 +345,7 @@ class sexp_tree_view: public QTreeWidget, public ISexpTreeUI {
 
 	Editor* _editor = nullptr;                                   //!< The FRED Editor instance
 	EditorViewport* _viewport = nullptr;                         //!< The EditorViewport (set by initializeEditor)
+	FredView* _fredView = nullptr;                               //!< The main window (set by initializeEditor)
 	SexpTreeEditorInterface*& _interface = _model._interface;    //!< Alias for _model._interface (flags for tree behavior)
 	std::unique_ptr<SexpTreeEditorInterface> _owned_interface;   //!< Default interface if none is supplied externally
 

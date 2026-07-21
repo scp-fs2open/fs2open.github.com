@@ -489,6 +489,11 @@ void AsteroidEditorDialogModel::setShipSelections(const QVector<bool>& selected)
 	shipOptions.clear();
 }
 
+void AsteroidEditorDialogModel::setShipTargetNames(const SCP_vector<SCP_string>& names)
+{
+	modify(_field_target_names, names);
+}
+
 QVector<std::pair<QString, bool>> AsteroidEditorDialogModel::getShipSelections()
 {
 	// Ships can be placed while the Asteroid field editor is open so we need to initialize this every time

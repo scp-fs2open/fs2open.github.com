@@ -5,7 +5,9 @@
 #include <gamesnd/eventmusic.h>
 #include <globalincs/globals.h>
 #include <globalincs/linklist.h>
+#include <mission/commands/FredCommands.h>
 #include <ui/util/default_dir.h>
+#include <ui/util/DialogUndo.h>
 #include <ui/util/SignalBlockers.h>
 #include <QCloseEvent>
 #include <QFileDialog>
@@ -14,11 +16,16 @@
 namespace fso::fred::dialogs {
 
 DebriefingDialog::DebriefingDialog(FredView* parent, EditorViewport* viewport)
-	: QDialog(parent), SexpTreeEditorInterface(flagset<TreeFlags>()), 
-	  ui(new Ui::DebriefingDialog()), _model(new DebriefingDialogModel(this, viewport)), _viewport(viewport)
+	: QDialog(parent), SexpTreeEditorInterface(flagset<TreeFlags>()),
+	  ui(new Ui::DebriefingDialog()), _model(new DebriefingDialogModel(this, viewport)),
+	  _viewport(viewport), _fredView(parent)
 {
 	this->setFocus();
 	ui->setupUi(this);
+
+	_dialogStack = new QUndoStack(this);
+	_fredView->undoGroup()->addStack(_dialogStack);
+	util::setupDialogUndo(this, _fredView->undoGroup(), _dialogStack, tr("Debriefing"));
 
 	ui->voiceFileLineEdit->setMaxLength(MAX_FILENAME_LEN - 1);
 
@@ -26,35 +33,44 @@ DebriefingDialog::DebriefingDialog(FredView* parent, EditorViewport* viewport)
 	updateUi();
 
 	resize(QDialog::sizeHint());
-
 }
 
 DebriefingDialog::~DebriefingDialog() = default;
 
 void DebriefingDialog::accept()
 {
-	// If apply() returns true, close the dialog
+	QByteArray stateBefore = _model->captureState();
 	if (_model->apply()) {
 		ui->successMusicWidget->stopPlayback();
 		ui->averageMusicWidget->stopPlayback();
 		ui->failureMusicWidget->stopPlayback();
+		QByteArray stateAfter = _model->captureState();
+		_model->setParent(nullptr);
+		_fredView->mainUndoStack()->push(
+			new ApplyDialogCommand(std::move(_model), stateBefore, stateAfter,
+			                       _viewport->editor, tr("Edit Debriefing")));
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
 		QDialog::accept();
 	}
-	// else: validation failed, don't close
 }
 
 void DebriefingDialog::reject()
 {
-	// Asks the user if they want to save changes, if any
-	// If they do, it runs _model->apply() and returns the success value
-	// If they don't, it runs _model->reject() and returns true
+	if (!_model) {
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
+		QDialog::reject();
+		return;
+	}
 	if (rejectOrCloseHandler(this, _model.get(), _viewport)) {
 		ui->successMusicWidget->stopPlayback();
 		ui->averageMusicWidget->stopPlayback();
 		ui->failureMusicWidget->stopPlayback();
-		QDialog::reject(); // actually close
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
+		QDialog::reject();
 	}
-	// else: do nothing, don't close
 }
 
 void DebriefingDialog::closeEvent(QCloseEvent* e)
@@ -86,11 +102,34 @@ void DebriefingDialog::initializeUi()
 	}
 
 	// Initialize the formula tree editor
-	ui->formulaTreeView->initializeEditor(_viewport->editor, this, _viewport);
+	ui->formulaTreeView->initializeEditor(_viewport->editor, this, _viewport, _fredView);
 	_model->setTreeControl(ui->formulaTreeView);
-	connect(ui->formulaTreeView, &sexp_tree_view::modified, this, [this]() {
-		_model->setModified();
-	});
+	connect(ui->formulaTreeView, &sexp_tree_view::modified, this, &DebriefingDialog::onFormulaTreeModified);
+}
+
+void DebriefingDialog::onFormulaTreeModified()
+{
+	// Tree edits only reach the working copy via commitCurrentFormula(), so
+	// at this point the WIP still holds the pre-edit formula: capture the
+	// before-state first, then commit the widget's tree into the WIP.
+	const QByteArray before = _model->captureWorkingState();
+	_model->commitCurrentFormula();
+	_model->setModified();
+	pushWorkingStateSnapshot(before, tr("Edit Stage Formula"));
+}
+
+void DebriefingDialog::pushWorkingStateSnapshot(const QByteArray& before, const QString& label)
+{
+	const QByteArray after = _model->captureWorkingState();
+	if (after == before)
+		return;
+
+	_dialogStack->push(new DialogSnapshotCommand(before, after,
+		[this](const QByteArray& blob) {
+			_model->restoreWorkingState(blob);
+			updateUi();
+		},
+		label));
 }
 
 void DebriefingDialog::updateUi()
@@ -178,48 +217,120 @@ void DebriefingDialog::on_actionNextStage_clicked()
 	updateUi();
 }
 
-void DebriefingDialog::on_actionAddStage_clicked() 
-{ 
+void DebriefingDialog::on_actionAddStage_clicked()
+{
+	const QByteArray before = _model->captureWorkingState();
 	_model->addStage();
+	pushWorkingStateSnapshot(before, tr("Add Stage"));
 	updateUi();
 }
 
-void DebriefingDialog::on_actionInsertStage_clicked() 
-{ 
+void DebriefingDialog::on_actionInsertStage_clicked()
+{
+	const QByteArray before = _model->captureWorkingState();
 	_model->insertStage();
+	pushWorkingStateSnapshot(before, tr("Insert Stage"));
 	updateUi();
 }
 
-void DebriefingDialog::on_actionDeleteStage_clicked() 
-{ 
+void DebriefingDialog::on_actionDeleteStage_clicked()
+{
+	const QByteArray before = _model->captureWorkingState();
 	_model->deleteStage();
+	pushWorkingStateSnapshot(before, tr("Delete Stage"));
 	updateUi();
 }
 
 void DebriefingDialog::on_actionCopyToOtherTeams_clicked()
 {
+	const QByteArray before = _model->captureWorkingState();
 	_model->copyToOtherTeams();
+	pushWorkingStateSnapshot(before, tr("Copy To Other Teams"));
 }
 
 void DebriefingDialog::on_actionChangeTeams_currentIndexChanged(int index)
 {
-	_model->setCurrentTeam(ui->actionChangeTeams->itemData(index).toInt());
+	const int before = _model->getCurrentTeam();
+	const int after  = ui->actionChangeTeams->itemData(index).toInt();
+	if (before == after)
+		return;
+
+	_model->setCurrentTeam(after);
 	updateUi();
+
+	auto* cmd = new FieldEditCommand<int>(FieldId::Deb_CurrentTeam, nullptr, tr("Change Team"), true);
+	cmd->addEntry(before, after, [this](const int& v) {
+		_model->setCurrentTeam(v);
+		updateUi();
+	});
+	_dialogStack->push(cmd);
 }
 
 void DebriefingDialog::on_debriefingTextEdit_textChanged()
 {
-	_model->setStageText(ui->debriefingTextEdit->toPlainText().toUtf8().constData());
+	const int team  = _model->getCurrentTeam();
+	const int stage = _model->getCurrentStage();
+	const SCP_string before = _model->getStageText();
+	const SCP_string after  = ui->debriefingTextEdit->toPlainText().toUtf8().constData();
+	if (before == after)
+		return;
+
+	_model->setStageText(after);
+
+	auto* cmd = new FieldEditCommand<SCP_string>(
+	    FieldId::Deb_StageText + team * MAX_DEBRIEF_STAGES + stage,
+	    nullptr, tr("Change Debriefing Text"), true);
+	cmd->addEntry(before, after, [this, team, stage](const SCP_string& v) {
+		_model->setStageTextAt(team, stage, v);
+		updateUi();
+	});
+	_dialogStack->push(cmd);
 }
 
 void DebriefingDialog::on_recommendationTextEdit_textChanged()
 {
-	_model->setRecommendationText(ui->recommendationTextEdit->toPlainText().toUtf8().constData());
+	const int team  = _model->getCurrentTeam();
+	const int stage = _model->getCurrentStage();
+	const SCP_string before = _model->getRecommendationText();
+	const SCP_string after  = ui->recommendationTextEdit->toPlainText().toUtf8().constData();
+	if (before == after)
+		return;
+
+	_model->setRecommendationText(after);
+
+	auto* cmd = new FieldEditCommand<SCP_string>(
+	    FieldId::Deb_RecommendationText + team * MAX_DEBRIEF_STAGES + stage,
+	    nullptr, tr("Change Recommendation Text"), true);
+	cmd->addEntry(before, after, [this, team, stage](const SCP_string& v) {
+		_model->setRecommendationTextAt(team, stage, v);
+		updateUi();
+	});
+	_dialogStack->push(cmd);
+}
+
+void DebriefingDialog::changeVoiceFilename(const SCP_string& newFilename)
+{
+	const int team  = _model->getCurrentTeam();
+	const int stage = _model->getCurrentStage();
+	const SCP_string before = _model->getSpeechFilename();
+	if (before == newFilename)
+		return;
+
+	_model->setSpeechFilename(newFilename);
+
+	auto* cmd = new FieldEditCommand<SCP_string>(
+	    FieldId::Deb_VoiceFile + team * MAX_DEBRIEF_STAGES + stage,
+	    nullptr, tr("Change Voice File"), true);
+	cmd->addEntry(before, newFilename, [this, team, stage](const SCP_string& v) {
+		_model->setSpeechFilenameAt(team, stage, v);
+		updateUi();
+	});
+	_dialogStack->push(cmd);
 }
 
 void DebriefingDialog::on_voiceFileLineEdit_textChanged(const QString& string)
 {
-	_model->setSpeechFilename(string.toUtf8().constData());
+	changeVoiceFilename(string.toUtf8().constData());
 }
 
 void DebriefingDialog::on_voiceFileBrowseButton_clicked()
@@ -232,7 +343,7 @@ void DebriefingDialog::on_voiceFileBrowseButton_clicked()
 		if (!files.isEmpty()) {
 			const QFileInfo fileInfo(files.first());
 			util::saveLastDir("debriefing/voiceFile", files.first());
-			_model->setSpeechFilename(fileInfo.fileName().toUtf8().constData());
+			changeVoiceFilename(fileInfo.fileName().toUtf8().constData());
 			updateUi();
 		}
 	}
@@ -245,17 +356,50 @@ void DebriefingDialog::on_voiceFilePlayButton_clicked()
 
 void DebriefingDialog::on_successMusicWidget_currentIndexChanged(int spooledMusicIdx)
 {
+	const int before = _model->getSuccessMusicTrack();
+	if (before == spooledMusicIdx)
+		return;
+
 	_model->setSuccessMusicTrack(spooledMusicIdx);
+
+	auto* cmd = new FieldEditCommand<int>(FieldId::Deb_SuccessMusic, nullptr, tr("Change Success Music"), true);
+	cmd->addEntry(before, spooledMusicIdx, [this](const int& v) {
+		_model->setSuccessMusicTrack(v);
+		updateUi();
+	});
+	_dialogStack->push(cmd);
 }
 
 void DebriefingDialog::on_averageMusicWidget_currentIndexChanged(int spooledMusicIdx)
 {
+	const int before = _model->getAverageMusicTrack();
+	if (before == spooledMusicIdx)
+		return;
+
 	_model->setAverageMusicTrack(spooledMusicIdx);
+
+	auto* cmd = new FieldEditCommand<int>(FieldId::Deb_AverageMusic, nullptr, tr("Change Average Music"), true);
+	cmd->addEntry(before, spooledMusicIdx, [this](const int& v) {
+		_model->setAverageMusicTrack(v);
+		updateUi();
+	});
+	_dialogStack->push(cmd);
 }
 
 void DebriefingDialog::on_failureMusicWidget_currentIndexChanged(int spooledMusicIdx)
 {
+	const int before = _model->getFailureMusicTrack();
+	if (before == spooledMusicIdx)
+		return;
+
 	_model->setFailureMusicTrack(spooledMusicIdx);
+
+	auto* cmd = new FieldEditCommand<int>(FieldId::Deb_FailureMusic, nullptr, tr("Change Failure Music"), true);
+	cmd->addEntry(before, spooledMusicIdx, [this](const int& v) {
+		_model->setFailureMusicTrack(v);
+		updateUi();
+	});
+	_dialogStack->push(cmd);
 }
 
 void DebriefingDialog::on_successMusicWidget_playbackStarted()

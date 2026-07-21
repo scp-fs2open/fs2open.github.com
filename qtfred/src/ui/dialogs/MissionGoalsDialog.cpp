@@ -2,18 +2,26 @@
 #include "MissionGoalsDialog.h"
 
 #include "ui/util/SignalBlockers.h"
+#include "mission/commands/FredCommands.h"
 #include "mission/util.h"
 #include "ui_MissionGoalsDialog.h"
+#include <ui/util/DialogUndo.h>
+#include <QSignalBlocker>
 
 namespace fso::fred::dialogs {
 
-MissionGoalsDialog::MissionGoalsDialog(QWidget* parent, EditorViewport* viewport)
+MissionGoalsDialog::MissionGoalsDialog(FredView* parent, EditorViewport* viewport)
 	: QDialog(parent), SexpTreeEditorInterface({TreeFlags::LabeledRoot, TreeFlags::RootDeletable}),
-	  ui(new Ui::MissionGoalsDialog()), _model(new MissionGoalsDialogModel(this, viewport)), _viewport(viewport)
+	  ui(new Ui::MissionGoalsDialog()), _model(new MissionGoalsDialogModel(this, viewport)),
+	  _viewport(viewport), _fredView(parent)
 {
 	ui->setupUi(this);
 
-	ui->goalEventTree->initializeEditor(viewport->editor, this, viewport);
+	_dialogStack = new QUndoStack(this);
+	_fredView->undoGroup()->addStack(_dialogStack);
+	util::setupDialogUndo(this, _fredView->undoGroup(), _dialogStack, tr("Mission Goals"));
+
+	ui->goalEventTree->initializeEditor(viewport->editor, this, viewport, parent);
 	_model->setTreeControl(ui->goalEventTree);
 
 	ui->goalName->setMaxLength(NAME_LENGTH - 1);
@@ -22,35 +30,57 @@ MissionGoalsDialog::MissionGoalsDialog(QWidget* parent, EditorViewport* viewport
 	ui->helpTextBox->setVisible(viewport->Show_sexp_help_mission_goals);
 
 	connect(_model.get(), &MissionGoalsDialogModel::modelChanged, this, &MissionGoalsDialog::updateUi);
-	connect(ui->goalEventTree, &sexp_tree_view::modified, this, [this] { _model->setModified(); });
+	connect(ui->goalEventTree, &sexp_tree_view::modified, this, &MissionGoalsDialog::onGoalTreeModified);
 
 	_model->initializeData();
 
 	load_tree();
 
 	recreate_tree();
+
+	// The before-state for the next tree edit: the tree mutates before
+	// modified() fires, so a fresh capture at handler time would already
+	// contain the edit. indexChanged fires on every push/undo/redo, keeping
+	// the cache aligned with the current working state.
+	_workingStateCache = _model->captureWorkingState();
+	connect(_dialogStack, &QUndoStack::indexChanged, this, [this](int) {
+		// accept() moves _model into the ApplyDialogCommand and then clears
+		// the stack, which emits indexChanged with no model left.
+		if (_model)
+			_workingStateCache = _model->captureWorkingState();
+	});
 }
 
 MissionGoalsDialog::~MissionGoalsDialog() = default;
 
 void MissionGoalsDialog::accept()
 {
-	// If apply() returns true, close the dialog
+	QByteArray stateBefore = _model->captureState();
 	if (_model->apply()) {
+		QByteArray stateAfter = _model->captureState();
+		_model->setParent(nullptr);
+		_fredView->mainUndoStack()->push(
+			new ApplyDialogCommand(std::move(_model), stateBefore, stateAfter,
+			                       _viewport->editor, tr("Edit Mission Goals")));
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
 		QDialog::accept();
 	}
-	// else: validation failed, don't close
 }
 
 void MissionGoalsDialog::reject()
 {
-	// Asks the user if they want to save changes, if any
-	// If they do, it runs _model->apply() and returns the success value
-	// If they don't, it runs _model->reject() and returns true
-	if (rejectOrCloseHandler(this, _model.get(), _viewport)) {
-		QDialog::reject(); // actually close
+	if (!_model) {
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
+		QDialog::reject();
+		return;
 	}
-	// else: do nothing, don't close
+	if (rejectOrCloseHandler(this, _model.get(), _viewport)) {
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
+		QDialog::reject();
+	}
 }
 
 void MissionGoalsDialog::closeEvent(QCloseEvent* e)
@@ -64,6 +94,48 @@ void MissionGoalsDialog::closeEvent(QCloseEvent* e)
 		e->ignore();
 	} else {
 		e->accept();
+	}
+}
+
+void MissionGoalsDialog::onGoalTreeModified()
+{
+	_model->setModified();
+	if (_suppressTreeUndo)
+		return;
+
+	pushWorkingStateSnapshot(_workingStateCache, tr("Edit Objective Formula"));
+}
+
+void MissionGoalsDialog::pushWorkingStateSnapshot(const QByteArray& before, const QString& label)
+{
+	const QByteArray after = _model->captureWorkingState();
+	if (after == before)
+		return;
+
+	_dialogStack->push(new DialogSnapshotCommand(before, after,
+		[this](const QByteArray& blob) {
+			_suppressTreeUndo = true;
+			_model->restoreWorkingState(blob);
+			recreate_tree();
+			updateUi();
+			_suppressTreeUndo = false;
+		},
+		label));
+}
+
+void MissionGoalsDialog::syncGoalRootLabel(int goalIndex)
+{
+	auto& goals = _model->getGoals();
+	if (!SCP_vector_inbounds(goals, goalIndex))
+		return;
+
+	const int formula = goals[goalIndex].formula;
+	for (int i = 0; i < ui->goalEventTree->topLevelItemCount(); ++i) {
+		auto* item = ui->goalEventTree->topLevelItem(i);
+		if (item && item->data(0, sexp_tree_view::FormulaDataRole).toInt() == formula) {
+			item->setText(0, QString::fromStdString(goals[goalIndex].name));
+			break;
+		}
 	}
 }
 
@@ -95,7 +167,7 @@ void MissionGoalsDialog::updateUi()
 	ui->goalDescription->setText(QString::fromUtf8(goal.message.c_str()));
 	ui->goalTypeCombo->setCurrentIndex(goal.type & GOAL_TYPE_MASK);
 	ui->objectiveInvalidCheck->setChecked((goal.type & INVALID_GOAL) != 0);
-	ui->noCompletionMusicCheck->setChecked((goal.type & MGF_NO_MUSIC) != 0);
+	ui->noCompletionMusicCheck->setChecked((goal.flags & MGF_NO_MUSIC) != 0);
 	ui->goalScore->setValue(goal.score);
 	ui->goalTeamCombo->setCurrentIndex(goal.team);
 
@@ -148,8 +220,10 @@ void MissionGoalsDialog::createNewObjective()
 void MissionGoalsDialog::changeGoalCategory(int type)
 {
 	if (_model->isCurrentGoalValid()) {
+		const QByteArray before = _model->captureWorkingState();
 		_model->setCurrentGoalCategory(type);
 		recreate_tree();
+		pushWorkingStateSnapshot(before, tr("Change Objective Category"));
 	}
 }
 
@@ -165,8 +239,23 @@ void MissionGoalsDialog::on_okAndCancelButtons_rejected()
 
 void MissionGoalsDialog::on_displayTypeCombo_currentIndexChanged(int index)
 {
+	const int before = _model->m_display_goal_types;
+	if (before == index)
+		return;
+
 	_model->setGoalDisplayType(index);
 	recreate_tree();
+
+	auto* cmd = new FieldEditCommand<int>(FieldId::Goal_DisplayFilter, nullptr, tr("Change Goal Display Type"), true);
+	cmd->addEntry(before, index, [this](const int& v) {
+		_model->setGoalDisplayType(v);
+		{
+			QSignalBlocker blocker(ui->displayTypeCombo);
+			ui->displayTypeCombo->setCurrentIndex(v);
+		}
+		recreate_tree();
+	});
+	_dialogStack->push(cmd);
 }
 
 void MissionGoalsDialog::on_goalTypeCombo_currentIndexChanged(int index)
@@ -176,54 +265,131 @@ void MissionGoalsDialog::on_goalTypeCombo_currentIndexChanged(int index)
 
 void MissionGoalsDialog::on_goalName_textChanged(const QString& text)
 {
-	if (_model->isCurrentGoalValid()) {
-		_model->setCurrentGoalName(text.toUtf8().constData());
+	if (!_model->isCurrentGoalValid())
+		return;
 
-		auto item = ui->goalEventTree->currentItem();
-		while (item->parent() != nullptr) {
-			item = item->parent();
-		}
+	const int index = _model->cur_goal;
+	const SCP_string before = _model->getCurrentGoal().name;
+	const SCP_string after  = text.toUtf8().constData();
+	if (before == after)
+		return;
 
-		item->setText(0, text);
-	}
+	_model->setCurrentGoalName(after.c_str());
+	syncGoalRootLabel(index);
+
+	auto* cmd = new FieldEditCommand<SCP_string>(
+	    FieldId::Goal_Name + index * FieldId::Goal_FieldStride,
+	    nullptr, tr("Change Objective Name"), true);
+	cmd->addEntry(before, after, [this, index](const SCP_string& v) {
+		_model->setGoalNameAt(index, v);
+		syncGoalRootLabel(index);
+	});
+	_dialogStack->push(cmd);
 }
 
 void MissionGoalsDialog::on_goalDescription_textChanged(const QString& text)
 {
+	if (!_model->isCurrentGoalValid())
+		return;
+
+	const int index = _model->cur_goal;
+	const SCP_string before = _model->getCurrentGoal().message;
 	_model->setCurrentGoalMessage(text.toUtf8().constData());
+	// The setter localizes the text, so read the stored value back for the command.
+	const SCP_string after = _model->getCurrentGoal().message;
+	if (before == after)
+		return;
+
+	auto* cmd = new FieldEditCommand<SCP_string>(
+	    FieldId::Goal_Message + index * FieldId::Goal_FieldStride,
+	    nullptr, tr("Change Objective Text"), true);
+	cmd->addEntry(before, after, [this, index](const SCP_string& v) { _model->setGoalMessageAt(index, v); });
+	_dialogStack->push(cmd);
 }
 
 void MissionGoalsDialog::on_goalScore_valueChanged(int value)
 {
-	if (_model->isCurrentGoalValid()) {
-		_model->setCurrentGoalScore(value);
-	}
+	if (!_model->isCurrentGoalValid())
+		return;
+
+	const int index  = _model->cur_goal;
+	const int before = _model->getCurrentGoal().score;
+	if (before == value)
+		return;
+
+	_model->setCurrentGoalScore(value);
+
+	auto* cmd = new FieldEditCommand<int>(
+	    FieldId::Goal_Score + index * FieldId::Goal_FieldStride,
+	    nullptr, tr("Change Objective Score"), true);
+	cmd->addEntry(before, value, [this, index](const int& v) { _model->setGoalScoreAt(index, v); });
+	_dialogStack->push(cmd);
 }
 
 void MissionGoalsDialog::on_goalTeamCombo_currentIndexChanged(int team)
 {
-	if (_model->isCurrentGoalValid()) {
-		_model->setCurrentGoalTeam(team);
-	}
+	if (!_model->isCurrentGoalValid())
+		return;
+
+	const int index  = _model->cur_goal;
+	const int before = _model->getCurrentGoal().team;
+	if (before == team)
+		return;
+
+	_model->setCurrentGoalTeam(team);
+
+	auto* cmd = new FieldEditCommand<int>(
+	    FieldId::Goal_Team + index * FieldId::Goal_FieldStride,
+	    nullptr, tr("Change Objective Team"), true);
+	cmd->addEntry(before, team, [this, index](const int& v) { _model->setGoalTeamAt(index, v); });
+	_dialogStack->push(cmd);
 }
 
-void MissionGoalsDialog::on_objectiveInvalidCheck_stateChanged(bool checked)
+void MissionGoalsDialog::on_objectiveInvalidCheck_toggled(bool checked)
 {
-	if (_model->isCurrentGoalValid()) {
-		_model->setCurrentGoalInvalid(checked);
-	}
+	if (!_model->isCurrentGoalValid())
+		return;
+
+	const int index   = _model->cur_goal;
+	const bool before = (_model->getCurrentGoal().type & INVALID_GOAL) != 0;
+	if (before == checked)
+		return;
+
+	_model->setCurrentGoalInvalid(checked);
+
+	auto* cmd = new FieldEditCommand<bool>(
+	    FieldId::Goal_Invalid + index * FieldId::Goal_FieldStride,
+	    nullptr, tr("Toggle Objective Invalid"), true);
+	cmd->addEntry(before, checked, [this, index](const bool& v) { _model->setGoalInvalidAt(index, v); });
+	_dialogStack->push(cmd);
 }
 
-void MissionGoalsDialog::on_noCompletionMusicCheck_stateChanged(bool checked)
+void MissionGoalsDialog::on_noCompletionMusicCheck_toggled(bool checked)
 {
-	if (_model->isCurrentGoalValid()) {
-		_model->setCurrentGoalNoMusic(checked);
-	}
+	if (!_model->isCurrentGoalValid())
+		return;
+
+	const int index   = _model->cur_goal;
+	const bool before = (_model->getCurrentGoal().flags & MGF_NO_MUSIC) != 0;
+	if (before == checked)
+		return;
+
+	_model->setCurrentGoalNoMusic(checked);
+
+	auto* cmd = new FieldEditCommand<bool>(
+	    FieldId::Goal_NoMusic + index * FieldId::Goal_FieldStride,
+	    nullptr, tr("Toggle Objective No Music"), true);
+	cmd->addEntry(before, checked, [this, index](const bool& v) { _model->setGoalNoMusicAt(index, v); });
+	_dialogStack->push(cmd);
 }
 
 void MissionGoalsDialog::on_newObjectiveBtn_clicked()
 {
+	const QByteArray before = _model->captureWorkingState();
+	_suppressTreeUndo = true;
 	createNewObjective();
+	_suppressTreeUndo = false;
+	pushWorkingStateSnapshot(before, tr("Add Objective"));
 }
 
 void MissionGoalsDialog::on_goalEventTree_selectedRootChanged(int formula)
@@ -239,7 +405,13 @@ void MissionGoalsDialog::on_goalEventTree_selectedRootChanged(int formula)
 
 void MissionGoalsDialog::on_goalEventTree_rootNodeDeleted(int node)
 {
+	// The widget has not freed the branch yet (it emits before free_node2),
+	// so a fresh capture still serializes the deleted goal's formula. The
+	// modified() the widget emits afterwards is absorbed by the snapshot
+	// equality check.
+	const QByteArray before = _model->captureWorkingState();
 	_model->deleteGoal(node);
+	pushWorkingStateSnapshot(before, tr("Delete Objective"));
 }
 
 void MissionGoalsDialog::on_goalEventTree_rootNodeFormulaChanged(int old, int node)

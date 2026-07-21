@@ -144,10 +144,6 @@ class EditorViewport {
 	bool moveObjectToLayer(int objectIndex, const SCP_string& layerName, SCP_string* errorMessage = nullptr);
 	void moveMarkedObjectsToLayer(const SCP_string& layerName, SCP_string* errorMessage = nullptr);
 
-	// Sync the _objectLayers map for a freshly-created object by reading its
-	// per-object fred_layer string (or the parent waypoint list's, for waypoints).
-	// Call this after creating a new ship/prop/jump-node/waypoint outside of
-	// the normal mission-load path (e.g. when duplicating objects).
 	void registerObjectInLayer(int objectIndex);
 
 	bool isObjectVisibleInLayer(const object* objp) const;
@@ -222,6 +218,9 @@ class EditorViewport {
 	bool Offer_autosave_recovery   = true;
 	int  autosave_interval_seconds = 300;  // 5 minutes; 0 = disabled
 	bool Create_bak_on_save        = true;
+	// QUndoStack limit; 0 = unlimited, but we default to 200 until memory impact
+	// of large object/dialog commands on big missions has been measured.
+	int  undo_stack_depth          = 200;
 	bool Move_ships_when_undocking = true;
 	bool Always_save_display_names = false;
 	bool Error_checker_checks_potential_issues = true;

@@ -115,6 +115,7 @@ void PreferencesDialog::updateUi() {
 	ui->autosaveIntervalSeconds->setValue(_model->getAutosaveIntervalSeconds());
 	ui->sexpNumberEveryN->setValue(_model->getSexpNumberEveryN());
 	ui->createBakOnSave->setChecked(_model->getCreateBakOnSave());
+	ui->undoStackDepth->setValue(_model->getUndoStackDepth());
 	ui->moveShipsWhenUndocking->setChecked(_model->getMoveShipsWhenUndocking());
 	ui->alwaysSaveDisplayNames->setChecked(_model->getAlwaysSaveDisplayNames());
 	ui->checkPotentialIssues->setChecked(_model->getCheckPotentialIssues());
@@ -171,6 +172,10 @@ void PreferencesDialog::on_sexpNumberEveryN_valueChanged(int value) {
 
 void PreferencesDialog::on_createBakOnSave_toggled(bool checked) {
 	_model->setCreateBakOnSave(checked);
+}
+
+void PreferencesDialog::on_undoStackDepth_valueChanged(int value) {
+	_model->setUndoStackDepth(value);
 }
 
 void PreferencesDialog::on_moveShipsWhenUndocking_toggled(bool checked) {

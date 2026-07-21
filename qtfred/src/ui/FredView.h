@@ -3,6 +3,10 @@
 #include <QMainWindow>
 #include <QAction>
 #include <QActionGroup>
+#include <QTimer>
+#include <QUndoGroup>
+#include <QUndoStack>
+#include <math/vecmat.h>
 #include <QtGui/QSurfaceFormat>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QComboBox>
@@ -192,6 +196,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void viewWindowActivated();
  protected:
  bool event(QEvent* event) override;
+	bool eventFilter(QObject* watched, QEvent* event) override;
 	void changeEvent(QEvent* event) override;
  	void closeEvent(QCloseEvent* event) override;
 
@@ -237,6 +242,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void updateUI();
 
 	void initializeStatusBar();
+	void updateUndoStatusIndicator();
 	void initializePopupMenus();
 	void populateMoveToLayerMenu(int targetObject, QMenu* targetMenu = nullptr);
 	void populateCreateShipSubmenu();
@@ -252,6 +258,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 	QLabel* _statusBarLastSaved   = nullptr;
 	QLabel* _statusBarViewmode    = nullptr;
 	QLabel* _statusBarUnitsLabel  = nullptr;
+	QLabel* _statusBarUndoScope   = nullptr;
 
 	// Updates the "Last Saved" status bar label: pass an empty time to show "Never".
 	void setLastSaved(const QDateTime& when);
@@ -287,6 +294,18 @@ class FredView: public QMainWindow, public IDialogProvider {
 	ObjectComboBox* _shipClassBox = nullptr;
 	ObjectComboBox* _propClassBox = nullptr;
 	ObjectComboBox* _otherClassBox = nullptr;
+
+	QUndoGroup* _undoGroup    = nullptr;
+	QUndoStack* _mainStack    = nullptr;
+	QUndoStack* _cameraStack  = nullptr;
+	QAction*    _undoAction        = nullptr;
+	QAction*    _redoAction        = nullptr;
+	QAction*    _undoCameraAction  = nullptr;
+	QAction*    _redoCameraAction  = nullptr;
+
+	QTimer* _cameraIdleTimer             = nullptr;
+	vec3d   _cameraPosBeforeGesture      = {};
+	matrix  _cameraOrientBeforeGesture   = {};
 
 	Editor* fred = nullptr;
 	EditorViewport* _viewport = nullptr;
@@ -370,6 +389,10 @@ class FredView: public QMainWindow, public IDialogProvider {
 								  const SCP_string& title,
 								  const SCP_string& message,
 								  const flagset<DialogButton>& buttons) override;
+
+	QUndoGroup* undoGroup()       const { return _undoGroup; }
+	QUndoStack* mainUndoStack()   const { return _mainStack; }
+	QUndoStack* cameraUndoStack() const { return _cameraStack; }
 
 	std::unique_ptr<IDialog<dialogs::FormWingDialogModel>> createFormWingDialog() override;
 

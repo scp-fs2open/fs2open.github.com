@@ -39,8 +39,16 @@ void WingEditorDialogModel::reloadFromCurWing()
 {
 	int w = _editor->cur_wing;
 
-	if (w == _currentWingIndex)
-		return; // no change
+	// Also reload when the wing's name changed (e.g. after undo/redo of a rename).
+	const bool nameChanged = (w == _currentWingIndex && w >= 0 && w < MAX_WINGS
+	                          && Wings[w].wave_count > 0
+	                          && _currentWingName != Wings[w].name);
+	if (w == _currentWingIndex && !nameChanged) {
+		// Same wing, no structural change — but field data may have changed via
+		// undo/redo direct writes, so refresh the UI without resetting selection.
+		Q_EMIT modelChanged();
+		return;
+	}
 
 	_currentWingIndex = w;
 
@@ -716,24 +724,6 @@ void WingEditorDialogModel::selectNextWing()
 
 	_editor->unmark_all();
 	_editor->mark_wing(nxt);
-	reloadFromCurWing();
-}
-
-void WingEditorDialogModel::deleteCurrentWing()
-{
-	if (!wingIsValid())
-		return;
-
-	_editor->delete_wing(_currentWingIndex);
-	reloadFromCurWing();
-}
-
-void WingEditorDialogModel::disbandCurrentWing()
-{
-	if (!wingIsValid())
-		return;
-
-	_editor->disband_wing(_currentWingIndex);
 	reloadFromCurWing();
 }
 

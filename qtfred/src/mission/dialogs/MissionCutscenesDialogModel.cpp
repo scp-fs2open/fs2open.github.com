@@ -1,5 +1,8 @@
 #include "MissionCutscenesDialogModel.h"
+#include "state/DialogStateHelpers.h"
 
+#include <QDataStream>
+#include <QIODevice>
 
 namespace fso::fred::dialogs {
 
@@ -34,6 +37,59 @@ void MissionCutscenesDialogModel::reject()
 {
 	// Nothing to do here
 }
+QByteArray MissionCutscenesDialogModel::captureWorkingState() const
+{
+	QByteArray data;
+	QDataStream ds(&data, QIODevice::WriteOnly);
+
+	ds << static_cast<qint32>(m_cutscenes.size());
+	for (size_t i = 0; i < m_cutscenes.size(); ++i) {
+		const mission_cutscene& c = m_cutscenes[i];
+		ds << static_cast<qint32>(m_sig[i]);
+		ds << static_cast<qint32>(c.type);
+		ds << QString::fromUtf8(c.filename);
+		// c.formula is a tree-widget node id; round-trip the branch through
+		// Sexp_nodes to serialize its content.
+		const int sexp = _sexp_tree->_model.save_tree(c.formula);
+		fso::fred::state::writeSexp(ds, sexp);
+		fso::fred::state::freeSexpFormula(sexp);
+	}
+
+	return data;
+}
+
+void MissionCutscenesDialogModel::restoreWorkingState(const QByteArray& state)
+{
+	QDataStream ds(state);
+
+	m_cutscenes.clear();
+	m_sig.clear();
+	_sexp_tree->clear_tree(); // resets tree_nodes; the dialog rebuilds the visuals
+
+	qint32 count;
+	ds >> count;
+	for (int i = 0; i < count; ++i) {
+		mission_cutscene c;
+		qint32 sig, type;
+		QString filename;
+
+		ds >> sig >> type >> filename;
+		const int sexp = fso::fred::state::readSexp(ds);
+		c.formula = _sexp_tree->_model.load_sub_tree(sexp, true, "true");
+		fso::fred::state::freeSexpFormula(sexp);
+
+		c.type = static_cast<int>(type);
+		strcpy_s(c.filename, NAME_LENGTH, filename.toUtf8().constData());
+
+		m_cutscenes.push_back(c);
+		m_sig.push_back(static_cast<int>(sig));
+	}
+	_sexp_tree->_model.post_load();
+
+	cur_cutscene = -1;
+	set_modified();
+}
+
 mission_cutscene& MissionCutscenesDialogModel::getCurrentCutscene()
 {
 	Assertion(SCP_vector_inbounds(m_cutscenes, cur_cutscene), "Current cutscene index is not valid!");
@@ -143,6 +199,16 @@ void MissionCutscenesDialogModel::setCurrentCutsceneFilename(const char* filenam
 {
 	Assertion(isCurrentCutsceneValid(), "Current cutscene is not valid!");
 	strcpy_s(getCurrentCutscene().filename, NAME_LENGTH, filename);
+
+	set_modified();
+	modelChanged();
+}
+
+void MissionCutscenesDialogModel::setCutsceneFilenameAt(int index, const SCP_string& filename)
+{
+	if (!SCP_vector_inbounds(m_cutscenes, index))
+		return;
+	strcpy_s(m_cutscenes[index].filename, NAME_LENGTH, filename.c_str());
 
 	set_modified();
 	modelChanged();

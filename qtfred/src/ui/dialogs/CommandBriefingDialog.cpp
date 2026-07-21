@@ -4,7 +4,9 @@
 #include "mission/util.h"
 #include <globalincs/globals.h>
 #include <globalincs/linklist.h>
+#include <mission/commands/FredCommands.h>
 #include <ui/util/default_dir.h>
+#include <ui/util/DialogUndo.h>
 #include <ui/util/SignalBlockers.h>
 #include <QCloseEvent>
 #include <QFileDialog>
@@ -14,13 +16,17 @@ namespace fso::fred::dialogs {
 
 CommandBriefingDialog::CommandBriefingDialog(FredView* parent, EditorViewport* viewport)
 : QDialog(parent), ui(new Ui::CommandBriefingDialog()), _model(new CommandBriefingDialogModel(this, viewport)),
-_viewport(viewport)
+_viewport(viewport), _fredView(parent)
 {
 	this->setFocus();
 	ui->setupUi(this);
 
-	ui->speechFilename->setMaxLength(NAME_LENGTH - 1);
-	ui->animationFilename->setMaxLength(NAME_LENGTH - 1);
+	_dialogStack = new QUndoStack(this);
+	_fredView->undoGroup()->addStack(_dialogStack);
+	util::setupDialogUndo(this, _fredView->undoGroup(), _dialogStack, tr("Command Briefing"));
+
+	ui->speechFileName->setMaxLength(NAME_LENGTH - 1);
+	ui->animationFileName->setMaxLength(NAME_LENGTH - 1);
 	ui->actionHighResolutionFilenameEdit->setMaxLength(NAME_LENGTH - 1);
 	ui->actionLowResolutionFilenameEdit->setMaxLength(NAME_LENGTH - 1);
 
@@ -28,29 +34,38 @@ _viewport(viewport)
 	updateUi();
 
 	resize(QDialog::sizeHint());
-
 }
 
 CommandBriefingDialog::~CommandBriefingDialog() = default;
 
 void CommandBriefingDialog::accept()
 {
-	// If apply() returns true, close the dialog
+	QByteArray stateBefore = _model->captureState();
 	if (_model->apply()) {
+		QByteArray stateAfter = _model->captureState();
+		_model->setParent(nullptr);
+		_fredView->mainUndoStack()->push(
+			new ApplyDialogCommand(std::move(_model), stateBefore, stateAfter,
+			                       _viewport->editor, tr("Edit Command Briefing")));
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
 		QDialog::accept();
 	}
-	// else: validation failed, don't close
 }
 
 void CommandBriefingDialog::reject()
 {
-	// Asks the user if they want to save changes, if any
-	// If they do, it runs _model->apply() and returns the success value
-	// If they don't, it runs _model->reject() and returns true
-	if (rejectOrCloseHandler(this, _model.get(), _viewport)) {
-		QDialog::reject(); // actually close
+	if (!_model) {
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
+		QDialog::reject();
+		return;
 	}
-	// else: do nothing, don't close
+	if (rejectOrCloseHandler(this, _model.get(), _viewport)) {
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
+		QDialog::reject();
+	}
 }
 
 void CommandBriefingDialog::closeEvent(QCloseEvent* e)
@@ -65,6 +80,20 @@ void CommandBriefingDialog::closeEvent(QCloseEvent* e)
 	} else {
 		e->accept();
 	}
+}
+
+void CommandBriefingDialog::pushWorkingStateSnapshot(const QByteArray& before, const QString& label)
+{
+	const QByteArray after = _model->captureWorkingState();
+	if (after == before)
+		return;
+
+	_dialogStack->push(new DialogSnapshotCommand(before, after,
+		[this](const QByteArray& blob) {
+			_model->restoreWorkingState(blob);
+			updateUi();
+		},
+		label));
 }
 
 void CommandBriefingDialog::initializeUi()
@@ -154,27 +183,35 @@ void CommandBriefingDialog::on_actionNextStage_clicked()
 	updateUi();
 }
 
-void CommandBriefingDialog::on_actionAddStage_clicked() 
-{ 
+void CommandBriefingDialog::on_actionAddStage_clicked()
+{
+	const QByteArray before = _model->captureWorkingState();
 	_model->addStage();
+	pushWorkingStateSnapshot(before, tr("Add Stage"));
 	updateUi();
 }
 
-void CommandBriefingDialog::on_actionInsertStage_clicked() 
-{ 
+void CommandBriefingDialog::on_actionInsertStage_clicked()
+{
+	const QByteArray before = _model->captureWorkingState();
 	_model->insertStage();
+	pushWorkingStateSnapshot(before, tr("Insert Stage"));
 	updateUi();
 }
 
-void CommandBriefingDialog::on_actionDeleteStage_clicked() 
-{ 
+void CommandBriefingDialog::on_actionDeleteStage_clicked()
+{
+	const QByteArray before = _model->captureWorkingState();
 	_model->deleteStage();
+	pushWorkingStateSnapshot(before, tr("Delete Stage"));
 	updateUi();
 }
 
 void CommandBriefingDialog::on_actionCopyToOtherTeams_clicked()
 {
+	const QByteArray before = _model->captureWorkingState();
 	_model->copyToOtherTeams();
+	pushWorkingStateSnapshot(before, tr("Copy To Other Teams"));
 }
 
 void CommandBriefingDialog::on_actionBrowseAnimation_clicked()
@@ -182,7 +219,7 @@ void CommandBriefingDialog::on_actionBrowseAnimation_clicked()
 	QString filename;
 
 	if (browseFile(&filename, "commandBriefing/animation", util::fredDefaultDir(CF_TYPE_INTERFACE), "FSO Animations (*.ani *.eff *.png);;All Files (*.*)")) {
-		_model->setAnimationFilename(filename.toUtf8().constData());
+		changeAnimationFilename(filename.toUtf8().constData());
 	}
 	updateUi();
 }
@@ -192,7 +229,7 @@ void CommandBriefingDialog::on_actionBrowseSpeechFile_clicked()
 	QString filename;
 
 	if (browseFile(&filename, "commandBriefing/speechFile", util::fredDefaultDir(CF_TYPE_VOICE), "Voice Files (*.ogg *.wav);;All Files (*.*)")) {
-		_model->setSpeechFilename(filename.toUtf8().constData());
+		changeSpeechFilename(filename.toUtf8().constData());
 	}
 	updateUi();
 }
@@ -207,7 +244,9 @@ void CommandBriefingDialog::on_actionLowResolutionBrowse_clicked()
 	QString filename;
 
 	if (browseFile(&filename, "commandBriefing/lowRes", util::fredDefaultDir(CF_TYPE_INTERFACE), "FSO Animations (*.ani *.eff *.png);;All Files (*.*)")) {
-		_model->setLowResolutionFilename(filename.toUtf8().constData());
+		// Update the line edit unblocked; the resulting textChanged applies
+		// the value to the model and pushes the undo entry.
+		ui->actionLowResolutionFilenameEdit->setText(filename);
 	}
 	updateUi();
 }
@@ -217,40 +256,139 @@ void CommandBriefingDialog::on_actionHighResolutionBrowse_clicked()
 	QString filename;
 
 	if (browseFile(&filename, "commandBriefing/highRes", util::fredDefaultDir(CF_TYPE_INTERFACE), "FSO Animations (*.ani *.eff *.png);;All Files (*.*)")) {
-		_model->setHighResolutionFilename(filename.toUtf8().constData());
+		ui->actionHighResolutionFilenameEdit->setText(filename);
 	}
 	updateUi();
 }
 
 void CommandBriefingDialog::on_actionChangeTeams_currentIndexChanged(int index)
 {
-	_model->setCurrentTeam(ui->actionChangeTeams->itemData(index).toInt());
+	const int before = _model->getCurrentTeam();
+	const int after  = ui->actionChangeTeams->itemData(index).toInt();
+	if (before == after)
+		return;
+
+	_model->setCurrentTeam(after);
 	updateUi();
+
+	auto* cmd = new FieldEditCommand<int>(FieldId::CmdBrief_CurrentTeam, nullptr, tr("Change Team"), true);
+	cmd->addEntry(before, after, [this](const int& v) {
+		_model->setCurrentTeam(v);
+		updateUi();
+	});
+	_dialogStack->push(cmd);
 }
 
 void CommandBriefingDialog::on_actionBriefingTextEditor_textChanged()
 {
-	_model->setBriefingText(ui->actionBriefingTextEditor->document()->toPlainText().toUtf8().constData());
+	const int team  = _model->getCurrentTeam();
+	const int stage = _model->getCurrentStage();
+	const SCP_string before = _model->getBriefingText();
+	const SCP_string after  = ui->actionBriefingTextEditor->document()->toPlainText().toUtf8().constData();
+	if (before == after)
+		return;
+
+	_model->setBriefingText(after);
+
+	auto* cmd = new FieldEditCommand<SCP_string>(
+	    FieldId::CmdBrief_StageText + team * CMD_BRIEF_STAGES_MAX + stage,
+	    nullptr, tr("Change Briefing Text"), true);
+	cmd->addEntry(before, after, [this, team, stage](const SCP_string& v) {
+		_model->setBriefingTextAt(team, stage, v);
+		updateUi();
+	});
+	_dialogStack->push(cmd);
 }
 
-void CommandBriefingDialog::on_animationFilename_textChanged(const QString& string)
+// Shared by typing and the browse button: applies the animation filename and
+// pushes one merging command per stage.
+void CommandBriefingDialog::changeAnimationFilename(const SCP_string& newFilename)
 {
-	_model->setAnimationFilename(string.toUtf8().constData());
+	const int team  = _model->getCurrentTeam();
+	const int stage = _model->getCurrentStage();
+	const SCP_string before = _model->getAnimationFilename();
+	if (before == newFilename)
+		return;
+
+	_model->setAnimationFilename(newFilename);
+
+	auto* cmd = new FieldEditCommand<SCP_string>(
+	    FieldId::CmdBrief_AniFile + team * CMD_BRIEF_STAGES_MAX + stage,
+	    nullptr, tr("Change Animation File"), true);
+	cmd->addEntry(before, newFilename, [this, team, stage](const SCP_string& v) {
+		_model->setAnimationFilenameAt(team, stage, v);
+		updateUi();
+	});
+	_dialogStack->push(cmd);
 }
 
-void CommandBriefingDialog::on_speechFilename_textChanged(const QString& string)
+void CommandBriefingDialog::changeSpeechFilename(const SCP_string& newFilename)
 {
-	_model->setSpeechFilename(string.toUtf8().constData());
+	const int team  = _model->getCurrentTeam();
+	const int stage = _model->getCurrentStage();
+	const SCP_string before = _model->getSpeechFilename();
+	if (before == newFilename)
+		return;
+
+	_model->setSpeechFilename(newFilename);
+	enableDisableControls(); // the speech test button follows the filename
+
+	auto* cmd = new FieldEditCommand<SCP_string>(
+	    FieldId::CmdBrief_WaveFile + team * CMD_BRIEF_STAGES_MAX + stage,
+	    nullptr, tr("Change Speech File"), true);
+	cmd->addEntry(before, newFilename, [this, team, stage](const SCP_string& v) {
+		_model->setSpeechFilenameAt(team, stage, v);
+		updateUi();
+	});
+	_dialogStack->push(cmd);
+}
+
+void CommandBriefingDialog::on_animationFileName_textChanged(const QString& string)
+{
+	changeAnimationFilename(string.toUtf8().constData());
+}
+
+void CommandBriefingDialog::on_speechFileName_textChanged(const QString& string)
+{
+	changeSpeechFilename(string.toUtf8().constData());
 }
 
 void CommandBriefingDialog::on_actionLowResolutionFilenameEdit_textChanged(const QString& string)
 {
-	_model->setLowResolutionFilename(string.toStdString());
+	const int team = _model->getCurrentTeam();
+	const SCP_string before = _model->getLowResolutionFilename();
+	const SCP_string after  = string.toStdString();
+	if (before == after)
+		return;
+
+	_model->setLowResolutionFilename(after);
+
+	auto* cmd = new FieldEditCommand<SCP_string>(
+	    FieldId::CmdBrief_LowResBg + team, nullptr, tr("Change Low Resolution Background"), true);
+	cmd->addEntry(before, after, [this, team](const SCP_string& v) {
+		_model->setLowResolutionFilenameAt(team, v);
+		updateUi();
+	});
+	_dialogStack->push(cmd);
 }
 
 void CommandBriefingDialog::on_actionHighResolutionFilenameEdit_textChanged(const QString& string)
 {
-	_model->setHighResolutionFilename(string.toStdString());
+	const int team = _model->getCurrentTeam();
+	const SCP_string before = _model->getHighResolutionFilename();
+	const SCP_string after  = string.toStdString();
+	if (before == after)
+		return;
+
+	_model->setHighResolutionFilename(after);
+
+	auto* cmd = new FieldEditCommand<SCP_string>(
+	    FieldId::CmdBrief_HighResBg + team, nullptr, tr("Change High Resolution Background"), true);
+	cmd->addEntry(before, after, [this, team](const SCP_string& v) {
+		_model->setHighResolutionFilenameAt(team, v);
+		updateUi();
+	});
+	_dialogStack->push(cmd);
 }
 
 // string in returns the file name, and the function returns true for success or false for fail.

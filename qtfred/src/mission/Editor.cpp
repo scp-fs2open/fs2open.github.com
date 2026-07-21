@@ -208,6 +208,12 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 	// activate the localizer hash table
 	fhash_flush();
 
+	// Clear the undo history before tearing down the current mission: command
+	// destructors free captured sexp chains, which must happen while the pool
+	// they were allocated from is still alive. This also covers fast reloads —
+	// history captured against the previous mission is invalid either way.
+	if (_undoStack) _undoStack->clear();
+
 	clearMission(flags & MPF_FAST_RELOAD);
 
 	std::string filepath = mission_name;
@@ -430,10 +436,6 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 	// which will then allow them to update any LuaEnums that may be related to sexps
 	if (scripting::hooks::FredOnMissionLoad->isActive()) {
 		scripting::hooks::FredOnMissionLoad->run();
-	}
-
-	if (!(flags & MPF_FAST_RELOAD)) {
-		// TODO(Phase 3): _undoStack->clear()
 	}
 
 	return true;
@@ -813,10 +815,11 @@ void Editor::fix_ship_name(int ship) {
 }
 
 void Editor::createNewMission() {
+	// Must precede clearMission() — see loadMission().
+	if (_undoStack) _undoStack->clear();
 	clearMission();
 	create_player(&vmd_zero_vector, &vmd_identity_matrix);
 	stars_post_level_init();
-	// TODO(Phase 3): _undoStack->clear()
 	missionLoaded("");
 }
 void Editor::hideMarkedObjects() {
@@ -1034,6 +1037,12 @@ int Editor::common_object_delete(int obj) {
 		Player_starts--;
 
 	} else if (type == OBJ_WAYPOINT) {
+		// Clear cur_waypoint/cur_waypoint_list before waypoint_remove() mutates the
+		// Waypoint_lists vector. Any raw pointer into Waypoint_lists or its elements
+		// (including cur_waypoint) is invalid after the removal.
+		cur_waypoint      = nullptr;
+		cur_waypoint_list = nullptr;
+
 		waypoint* wpt = find_waypoint_with_instance(Objects[obj].instance);
 		Assert(wpt != NULL);
 		waypoint_list* wp_list = wpt->get_parent_list();
@@ -1144,6 +1153,11 @@ void Editor::setActiveViewport(EditorViewport* viewport) {
 }
 
 int Editor::reference_handler(const char* name, sexp_ref_type type, int obj) {
+
+	// Undo/redo replay: skip the prompt and proceed with the deletion.
+	if (auto_confirm_reference_deletion) {
+		return 0;
+	}
 
 	char msg[2048], text[128], type_name[128];
 	int r, node;
@@ -1478,6 +1492,50 @@ int Editor::rename_ship(int ship, const char* name) {
 
 	return 0;
 }
+
+void Editor::rename_jump_node(int objNum, const char* name)
+{
+	for (auto& jn : Jump_nodes) {
+		if (jn.GetSCPObjectNumber() == objNum) {
+			char oldName[NAME_LENGTH];
+			strcpy_s(oldName, jn.GetName());
+			jn.SetName(name);
+			if (strcmp(oldName, name) != 0)
+				update_sexp_references(oldName, name);
+			break;
+		}
+	}
+	missionChanged();
+}
+
+void Editor::rename_prop(int objNum, const char* name)
+{
+	prop* p = prop_id_lookup(Objects[objNum].instance);
+	if (p)
+		strcpy_s(p->prop_name, name);
+	missionChanged();
+}
+
+void Editor::rename_waypoint_list(const char* old_name, const char* new_name)
+{
+	waypoint_list* wl = find_matching_waypoint_list(old_name);
+	if (!wl || strcmp(old_name, new_name) == 0) return;
+
+	wl->set_name(new_name);
+	update_sexp_references(old_name, new_name);
+	ai_update_goal_references(sexp_ref_type::WAYPOINT_PATH, old_name, new_name);
+
+	for (auto& wpt : wl->get_waypoints()) {
+		char old_buf[NAME_LENGTH], new_buf[NAME_LENGTH];
+		waypoint_stuff_name(old_buf, old_name, wpt.get_index() + 1);
+		waypoint_stuff_name(new_buf, new_name, wpt.get_index() + 1);
+		update_sexp_references(old_buf, new_buf);
+		ai_update_goal_references(sexp_ref_type::WAYPOINT, old_buf, new_buf);
+	}
+
+	missionChanged();
+}
+
 void Editor::delete_reinforcement(const char* name) {
 	int i = find_item_with_string(Reinforcements, &reinforcements::name, name);
 	if (i < 0)
@@ -1557,13 +1615,14 @@ int Editor::set_reinforcement(const char* name, int state) {
 
 	return 0;
 }
-void Editor::disband_wing(int wing_num) {
+int Editor::disband_wing(int wing_num) {
 
-	int i, total;
+	int i, total, r;
 	object* ptr;
 
-	if (check_wing_dependencies(wing_num)) {
-		return;
+	r = check_wing_dependencies(wing_num);
+	if (r) {
+		return r;
 	}
 
 	delete_reinforcement(Wings[wing_num].name);
@@ -1596,6 +1655,7 @@ void Editor::disband_wing(int wing_num) {
 	update_custom_wing_indexes();
 
 	missionChanged();
+	return 0;
 }
 void Editor::generate_wing_weaponry_usage_list(int* arr, int wing) {
 	int i, j;

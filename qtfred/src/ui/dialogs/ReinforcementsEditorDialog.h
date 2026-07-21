@@ -46,7 +46,16 @@ private slots:
 private:  // NOLINT(readability-redundant-access-specifiers)
 	std::unique_ptr<Ui::ReinforcementsDialog> ui;
 	std::unique_ptr<ReinforcementsDialogModel> _model;
-	EditorViewport* _viewport;
+	EditorViewport* _viewport    = nullptr;
+	FredView*       _fredView    = nullptr;
+	QUndoStack*     _dialogStack = nullptr;
+
+	// Merge identity for spinbox snapshots: bumped when the chosen-list
+	// selection changes, so scrubs within one selection merge but edits after
+	// a re-selection never merge into them.
+	int _selectionGeneration = 0;
+
+	void pushWorkingStateSnapshot(const QByteArray& before, const QString& label, int mergeId = -1);
 
 	void updateUi();
 	void enableDisableControls();

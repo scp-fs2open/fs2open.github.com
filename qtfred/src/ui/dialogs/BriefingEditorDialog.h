@@ -92,6 +92,8 @@ class BriefingEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	std::unique_ptr<Ui::BriefingEditorDialog> ui;
 	std::unique_ptr<BriefingEditorDialogModel> _model;
 	EditorViewport* _viewport;
+	FredView*       _fredView    = nullptr;
+	QUndoStack*     _dialogStack = nullptr;
 	fso::fred::BriefingMapWidget* _mapWidget = nullptr;
 	std::optional<EditorViewport::ViewportControlLock> _viewportLock;
 
@@ -107,5 +109,30 @@ class BriefingEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	int _resetCameraTeam = -1;
 	int _resetCameraStage = -1;
 	bool _resetCameraValid = false;
+
+	// In-dialog undo helpers. Stage-local fields push merging
+	// FieldEditCommands with indexed setters; icon edits (which can propagate
+	// across stages), stage structure ops, and tree edits push working-state
+	// snapshots; camera moves push lightweight merging pose commands driven
+	// by the camera-pose cache (which filters the map widget's per-frame
+	// cameraChanged reports down to real model changes).
+	struct CameraPose {
+		vec3d  pos;
+		matrix orient;
+	};
+
+	void onFormulaTreeModified();
+	void onMapCameraChanged();
+	void onIconDragStarted();
+	void onIconDragFinished();
+	void pushWorkingStateSnapshot(const QByteArray& before, const QString& label, int mergeId = -1);
+	void pushCameraPoseCommand(const QString& label, const CameraPose& before, const CameraPose& after, bool allowMerge);
+	int iconSnapshotMergeId(int base) const;
+	void resetCameraPoseCache();
+	void changeVoiceFilename(const SCP_string& newFilename);
+
+	CameraPose _camPoseCache {};
+	bool       _camPoseCacheValid = false;
+	QByteArray _iconDragBefore;
 };
 } // namespace fso::fred::dialogs

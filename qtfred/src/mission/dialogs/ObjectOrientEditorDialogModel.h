@@ -42,6 +42,15 @@ class ObjectOrientEditorDialogModel : public AbstractDialogModel {
 	bool apply() override;
 	void reject() override;
 
+	QByteArray captureState() const override;
+	void restoreState(const QByteArray& state) override;
+
+	// Working-state serialization for the in-dialog undo stack: the edit
+	// fields, modes, and the relative-mode rebase baseline (the set-mode
+	// transform rounds on both legs, so undoing it needs an exact snapshot).
+	QByteArray captureWorkingState() const;
+	void restoreWorkingState(const QByteArray& state);
+
 	bool isOrientationEnabledForType() const {return _orientationEnabledForType;};
 	const SCP_vector<ObjectEntry>& getPointToObjectList() const {return _pointToObjectList;};
 	int getNumObjectsMarked() const {return _editor->getNumMarked();}

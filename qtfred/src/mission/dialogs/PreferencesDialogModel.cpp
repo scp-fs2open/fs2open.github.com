@@ -13,6 +13,7 @@ PreferencesDialogModel::PreferencesDialogModel(QObject* parent, EditorViewport* 
 	, _autosaveIntervalSeconds(viewport->autosave_interval_seconds)
 	, _sexpNumberEveryN(viewport->sexp_number_every_n)
 	, _createBakOnSave(viewport->Create_bak_on_save)
+	, _undoStackDepth(viewport->undo_stack_depth)
 	, _moveShipsWhenUndocking(viewport->Move_ships_when_undocking)
 	, _alwaysSaveDisplayNames(viewport->Always_save_display_names)
 	, _checkPotentialIssues(viewport->Error_checker_checks_potential_issues)
@@ -55,6 +56,7 @@ bool PreferencesDialogModel::apply() {
 	_viewport->autosave_interval_seconds = _autosaveIntervalSeconds;
 	_viewport->sexp_number_every_n       = _sexpNumberEveryN;
 	_viewport->Create_bak_on_save        = _createBakOnSave;
+	_viewport->undo_stack_depth          = _undoStackDepth;
 	_viewport->Move_ships_when_undocking = _moveShipsWhenUndocking;
 	_viewport->Always_save_display_names                = _alwaysSaveDisplayNames;
 	_viewport->Error_checker_checks_potential_issues    = _checkPotentialIssues;
@@ -144,6 +146,9 @@ void PreferencesDialogModel::setSexpNumberEveryN(int value) { modify(_sexpNumber
 
 bool PreferencesDialogModel::getCreateBakOnSave() const { return _createBakOnSave; }
 void PreferencesDialogModel::setCreateBakOnSave(bool value) { modify(_createBakOnSave, value); }
+
+int  PreferencesDialogModel::getUndoStackDepth() const { return _undoStackDepth; }
+void PreferencesDialogModel::setUndoStackDepth(int value) { modify(_undoStackDepth, value); }
 
 bool PreferencesDialogModel::getMoveShipsWhenUndocking() const { return _moveShipsWhenUndocking; }
 void PreferencesDialogModel::setMoveShipsWhenUndocking(bool value) { modify(_moveShipsWhenUndocking, value); }

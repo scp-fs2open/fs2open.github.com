@@ -4193,6 +4193,22 @@ void mission_parse_maybe_create_parse_object(p_object *pobjp)
 	}
 }
 
+// ---------------------------------------------------------------------------
+// CROSS-REFERENCE MAINTENANCE
+// ---------------------------------------------------------------------------
+// Every field parsed here must stay in sync with the three other places that
+// read or write per-object mission data:
+//
+//   qtfred/src/mission/commands/ObjectCapture.cpp
+//       captureShip(), restoreShip()
+//
+//   code/missioneditor/missionsave.cpp
+//       save_objects(), save_common_object_data(),
+//       save_warp_params(), save_turret_info(), save_single_dock_instance()
+//
+// When a new field is added anywhere in those files (or here), update ALL
+// three locations so that undo/redo, save, and load remain consistent.
+// ---------------------------------------------------------------------------
 void parse_common_object_data(p_object *p_objp)
 {
 	int i;

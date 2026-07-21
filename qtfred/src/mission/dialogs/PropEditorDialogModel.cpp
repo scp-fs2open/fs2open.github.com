@@ -26,7 +26,7 @@ void PropEditorDialogModel::reject() {}
 void PropEditorDialogModel::initializeData() {
 	_flagLabels.clear();
 	_flagState.clear();
-	_selectedPropObjects = getSelectedPropObjects();
+	_selectedPropObjects = computeSelectedPropObjects();
 
 	for (size_t i = 0; i < Num_parse_prop_flags; ++i) {
 		_flagLabels.emplace_back(Parse_prop_flags[i].name, i);
@@ -109,7 +109,11 @@ void PropEditorDialogModel::selectFirstPropInMission() {
 	}
 }
 
-SCP_vector<int> PropEditorDialogModel::getSelectedPropObjects() const {
+const SCP_vector<int>& PropEditorDialogModel::getSelectedPropObjects() const {
+	return _selectedPropObjects;
+}
+
+SCP_vector<int> PropEditorDialogModel::computeSelectedPropObjects() const {
 	SCP_vector<int> selected;
 	for (auto* ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
 		if (ptr->type == OBJ_PROP && ptr->flags[Object::Object_Flags::Marked]) {

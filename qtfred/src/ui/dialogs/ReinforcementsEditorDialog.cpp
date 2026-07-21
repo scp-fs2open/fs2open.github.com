@@ -1,10 +1,13 @@
 #include "ReinforcementsEditorDialog.h"
 #include "ui_ReinforcementsDialog.h"
-#include "ui/Theme.h"
+#include "mission/commands/FredCommands.h"
 #include "mission/util.h"
+#include "ui/Theme.h"
 #include <globalincs/linklist.h>
+#include <ui/util/DialogUndo.h>
 #include <ui/util/SignalBlockers.h>
 #include <QCloseEvent>
+#include <QItemSelectionModel>
 #include <qlineedit.h>
 
 namespace fso::fred::dialogs {
@@ -12,10 +15,19 @@ namespace fso::fred::dialogs {
 
 ReinforcementsDialog::ReinforcementsDialog(FredView* parent, EditorViewport* viewport)
 	: QDialog(parent), ui(new Ui::ReinforcementsDialog()), _model(new ReinforcementsDialogModel(this, viewport)),
-	_viewport(viewport)
+	  _viewport(viewport), _fredView(parent)
 {
 	this->setFocus();
-	ui->setupUi(this);		
+	ui->setupUi(this);
+
+	_dialogStack = new QUndoStack(this);
+	_fredView->undoGroup()->addStack(_dialogStack);
+	util::setupDialogUndo(this, _fredView->undoGroup(), _dialogStack, tr("Reinforcements"));
+
+	// Any chosen-list selection change starts a new merge epoch for the
+	// spinbox snapshots.
+	connect(ui->chosenShipsList->selectionModel(), &QItemSelectionModel::selectionChanged, this,
+		[this]() { ++_selectionGeneration; });
 
 	fso::fred::bindStandardIcon(ui->moveSelectionUp, QStyle::SP_ArrowUp);
 	ui->moveSelectionUp->setText(QString());
@@ -32,22 +44,32 @@ ReinforcementsDialog::~ReinforcementsDialog() = default;
 
 void ReinforcementsDialog::accept()
 {
-	// If apply() returns true, close the dialog
+	QByteArray stateBefore = _model->captureState();
 	if (_model->apply()) {
+		QByteArray stateAfter = _model->captureState();
+		_model->setParent(nullptr);
+		_fredView->mainUndoStack()->push(
+			new ApplyDialogCommand(std::move(_model), stateBefore, stateAfter,
+			                       _viewport->editor, tr("Edit Reinforcements")));
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
 		QDialog::accept();
 	}
-	// else: validation failed, don't close
 }
 
 void ReinforcementsDialog::reject()
 {
-	// Asks the user if they want to save changes, if any
-	// If they do, it runs _model->apply() and returns the success value
-	// If they don't, it runs _model->reject() and returns true
-	if (rejectOrCloseHandler(this, _model.get(), _viewport)) {
-		QDialog::reject(); // actually close
+	if (!_model) {
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
+		QDialog::reject();
+		return;
 	}
-	// else: do nothing, don't close
+	if (rejectOrCloseHandler(this, _model.get(), _viewport)) {
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
+		QDialog::reject();
+	}
 }
 
 void ReinforcementsDialog::closeEvent(QCloseEvent* e)
@@ -62,6 +84,20 @@ void ReinforcementsDialog::closeEvent(QCloseEvent* e)
 	} else {
 		e->accept();
 	}
+}
+
+void ReinforcementsDialog::pushWorkingStateSnapshot(const QByteArray& before, const QString& label, int mergeId)
+{
+	const QByteArray after = _model->captureWorkingState();
+	if (after == before)
+		return;
+
+	_dialogStack->push(new DialogSnapshotCommand(before, after,
+		[this](const QByteArray& blob) {
+			_model->restoreWorkingState(blob);
+			updateUi();
+		},
+		label, true, mergeId));
 }
 
 
@@ -92,7 +128,7 @@ void ReinforcementsDialog::updateUi()
 	}
 
 	QSet<QString> possible;
-	for (auto* it : ui->chosenShipsList->selectedItems()) {
+	for (auto* it : ui->possibleShipsList->selectedItems()) {
 		possible.insert(it->text());
 	}
 
@@ -170,7 +206,9 @@ void ReinforcementsDialog::on_actionRemoveShip_clicked()
 
 	const SCP_vector<SCP_string> selectedItemsOut = selectedItems;
 
+	const QByteArray before = _model->captureWorkingState();
 	_model->removeFromReinforcements(selectedItemsOut);
+	pushWorkingStateSnapshot(before, tr("Remove Reinforcement"));
 
 	updateUi();
 }
@@ -198,20 +236,26 @@ void ReinforcementsDialog::on_actionAddShip_clicked()
 
 	const SCP_vector<SCP_string> selectedItemsOut = selectedItems;
 
+	const QByteArray before = _model->captureWorkingState();
 	_model->addToReinforcements(selectedItemsOut);
+	pushWorkingStateSnapshot(before, tr("Add Reinforcement"));
 
 	updateUi();
 }
 
-void ReinforcementsDialog::on_moveSelectionUp_clicked() 
+void ReinforcementsDialog::on_moveSelectionUp_clicked()
 {
+	const QByteArray before = _model->captureWorkingState();
 	_model->moveReinforcementsUp();
+	pushWorkingStateSnapshot(before, tr("Move Reinforcement"));
 	updateUi();
 }
 
-void ReinforcementsDialog::on_moveSelectionDown_clicked() 
+void ReinforcementsDialog::on_moveSelectionDown_clicked()
 {
+	const QByteArray before = _model->captureWorkingState();
 	_model->moveReinforcementsDown();
+	pushWorkingStateSnapshot(before, tr("Move Reinforcement"));
 	updateUi();
 }
 
@@ -225,7 +269,12 @@ void ReinforcementsDialog::on_useSpinBox_valueChanged(int val)
 			util::SignalBlockers blockers(this);
 			ui->useSpinBox->setValue(val);
 		}
+		// The setter applies to the whole model-tracked selection, so this is
+		// a snapshot; scrubs within one selection merge into one entry.
+		const QByteArray before = _model->captureWorkingState();
 		_model->setUseCount(val);
+		pushWorkingStateSnapshot(before, tr("Change Use Count"),
+			FieldId::Reinf_SnapSpinBase + 0 * 1000000 + (_selectionGeneration % 1000000));
 	}
 }
 
@@ -239,7 +288,10 @@ void ReinforcementsDialog::on_delaySpinBox_valueChanged(int val)
 			util::SignalBlockers blockers(this);
 			ui->delaySpinBox->setValue(val);
 		}
+		const QByteArray before = _model->captureWorkingState();
 		_model->setBeforeArrivalDelay(val);
+		pushWorkingStateSnapshot(before, tr("Change Arrival Delay"),
+			FieldId::Reinf_SnapSpinBase + 1 * 1000000 + (_selectionGeneration % 1000000));
 	}
 }
 

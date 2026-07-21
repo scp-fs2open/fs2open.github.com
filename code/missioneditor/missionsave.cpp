@@ -1446,10 +1446,23 @@ void Fred_mission_save::fso_comment_pop(bool pop_all)
 	fso_ver_comment.pop_back();
 }
 
-// Per-ship field handling here MUST stay in sync with:
-//   parse_create_object_sub() in missionparse.cpp
-//   clone_ship_instance_data() in missioneditor/objectduplication.cpp
-// When you add a new editable ship field, touch all three.
+// ---------------------------------------------------------------------------
+// CROSS-REFERENCE MAINTENANCE
+// ---------------------------------------------------------------------------
+// Every field written here must stay in sync with:
+//
+//   code/mission/missionparse.cpp
+//       parse_object(), parse_create_object_sub(), parse_common_object_data()
+//
+//   code/missioneditor/objectduplication.cpp
+//       clone_ship_instance_data() and related clone helpers
+//
+//   qtfred/src/mission/commands/ObjectCapture.cpp
+//       captureShip(), restoreShip()
+//
+// When a new field is added anywhere in those files (or here), update ALL
+// locations so that save, load, clone, and undo/redo remain consistent.
+// ---------------------------------------------------------------------------
 int Fred_mission_save::save_common_object_data(object* objp, ship* shipp)
 {
 	int j, z;

@@ -122,6 +122,10 @@ int WaypointEditorDialogModel::getSelectionCount() const {
 	return static_cast<int>(_selectedWaypointPaths.size());
 }
 
+const SCP_vector<int>& WaypointEditorDialogModel::getSelectedPathIndices() const {
+	return _selectedWaypointPaths;
+}
+
 bool WaypointEditorDialogModel::validateName(const SCP_string& name) {
 	if (name.empty()) {
 		showErrorDialogNoCancel("Waypoint path name cannot be empty.");

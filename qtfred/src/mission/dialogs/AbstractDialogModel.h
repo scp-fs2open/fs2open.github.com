@@ -51,6 +51,8 @@ class AbstractDialogModel: public QObject {
 	 */
 	virtual void reject() = 0;
 
+	virtual QByteArray captureState() const { return {}; }
+	virtual void restoreState(const QByteArray& /*state*/) {}
 
 	bool query_modified() const;
 

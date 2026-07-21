@@ -12,6 +12,15 @@ class ReinforcementsDialogModel : public AbstractDialogModel {
 	bool apply() override;
 	void reject() override;
 
+	QByteArray captureState() const override;
+	void restoreState(const QByteArray& state) override;
+
+	// Working-state serialization for the in-dialog undo stack: the
+	// reinforcement list and the remaining ship/wing pool. The selection is
+	// excluded; restore re-resolves it against the restored list.
+	QByteArray captureWorkingState() const;
+	void restoreWorkingState(const QByteArray& state);
+
 	void initializeData();
 
 	SCP_vector<SCP_string> getShipPoolList();

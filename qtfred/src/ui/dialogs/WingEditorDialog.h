@@ -74,10 +74,12 @@ class WingEditorDialog : public QDialog, public SexpTreeEditorInterface {
 
   protected:
 	void closeEvent(QCloseEvent* e) override;
+	void changeEvent(QEvent* e) override;
 
   private: // NOLINT(readability-redundant-access-specifiers)
 	std::unique_ptr<Ui::WingEditorDialog> ui;
 	std::unique_ptr<WingEditorDialogModel> _model;
+	FredView*       _fredView;
 	EditorViewport* _viewport;
 
 	bool _cues_hidden = false;
