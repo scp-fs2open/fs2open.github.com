@@ -7148,9 +7148,15 @@ int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int
 		Assertion( position != NULL, "'%s' is trying to fire a weapon that is not selected", Ships[parent_objp->instance].ship_name );
 
 		size_t curr_pos = *position;
-		if (((Weapon_info[weapon_type].subtype == WP_LASER && parent_shipp->flags[Ship::Ship_Flags::Primary_linked]) ||
-			 (Weapon_info[weapon_type].subtype == WP_MISSILE && parent_shipp->flags[Ship::Ship_Flags::Secondary_dual_fire])) &&
-			 (curr_pos > 0)) {
+		// only advance the pattern once per linked/paired shot rather than once per projectile
+		bool paired_shot = false;
+		if (Weapon_info[weapon_type].subtype == WP_LASER) {
+			paired_shot = parent_shipp->flags[Ship::Ship_Flags::Primary_linked];
+		} else if (Weapon_info[weapon_type].subtype == WP_MISSILE && !src_turret && parent_shipp->flags[Ship::Ship_Flags::Secondary_dual_fire]) {
+			// for dual fire, also check whether the armed bank can actually use it, since the flag is ignored rather than cleared for banks that can't
+			paired_shot = ship_secondary_bank_can_dual_fire(parent_shipp, parent_shipp->weapons.current_secondary_bank);
+		}
+		if (paired_shot && (curr_pos > 0)) {
 			curr_pos--;
 		}
 		++(*position);
