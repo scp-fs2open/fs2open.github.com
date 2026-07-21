@@ -1834,15 +1834,15 @@ bool SetCmdlineParams()
 	}
 	if (hdr_nits_arg.found()) {
 		// presence of the flag alone forces HDR output on, overriding the in-game HDR setting
-		options::OptionsManager::instance()->setOverride("Graphics.HDR", "true");
+		options::OptionsManager::instance()->setOverride("Graphics.HDR", "true", "-hdr");
 
 		if (hdr_nits_arg.has_param()) {
 			float paperwhite_nits = 0.0f, peak_nits = 0.0f;
 			if (sscanf(hdr_nits_arg.str(), "%f,%f", &paperwhite_nits, &peak_nits) == 2 && paperwhite_nits > 0.0f && peak_nits > 0.0f) {
 				// std::to_string always includes a decimal point, so this is a valid JSON real
 				// (json_unpack's "f" format rejects a bare integer like "400")
-				options::OptionsManager::instance()->setOverride("Graphics.HDRPaperWhite", std::to_string(paperwhite_nits));
-				options::OptionsManager::instance()->setOverride("Graphics.HDRPeakLuminance", std::to_string(peak_nits));
+				options::OptionsManager::instance()->setOverride("Graphics.HDRPaperWhite", std::to_string(paperwhite_nits), "-hdr");
+				options::OptionsManager::instance()->setOverride("Graphics.HDRPeakLuminance", std::to_string(peak_nits), "-hdr");
 			} else {
 				Warning(LOCATION, "Failed to parse -hdr parameter \"%s\". Must be in format \"<paperwhite_nits>,<peak_nits>\".\n", hdr_nits_arg.str());
 			}
@@ -2325,6 +2325,10 @@ bool SetCmdlineParams()
 		// has no effect if the renderer/hardware doesn't support
 		// CAPABILITY_RAYTRACED_SHADOWS -- the CSM path is used either way.
 		Shadow_render_method = ShadowRenderMethod::Raytraced;
+
+		SCP_string override;
+		sprintf(override, "%d", static_cast<int>(ShadowRenderMethod::Raytraced));
+		options::OptionsManager::instance()->setOverride("Graphics.ShadowRenderMethod", override, "-rt_shadows");
 	}
 
 	if( no_deferred_lighting_arg.found() )
@@ -2432,11 +2436,13 @@ bool SetCmdlineParams()
 
 	if (vulkan.found()) {
 		Cmdline_graphics_api = GraphicsAPI::Vulkan;
-		options::OptionsManager::instance()->setOverride("Graphics.RenderAPI", override, "-vulkan");
+		options::OptionsManager::instance()->setOverride("Graphics.RenderAPI",
+			std::to_string(static_cast<int>(GraphicsAPI::Vulkan)), "-vulkan");
 	}
 	else if (opengl.found()) {
 		Cmdline_graphics_api = GraphicsAPI::OpenGL;
-		options::OptionsManager::instance()->setOverride("Graphics.RenderAPI", override, "-opengl");
+		options::OptionsManager::instance()->setOverride("Graphics.RenderAPI",
+			std::to_string(static_cast<int>(GraphicsAPI::OpenGL)), "-opengl");
 	}
 
 	//Deprecated flags - CommanderDJ
