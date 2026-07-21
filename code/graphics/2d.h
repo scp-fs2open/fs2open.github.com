@@ -1081,7 +1081,7 @@ extern int gr_get_dynamic_font_lines(int number_default_lines);
 extern io::mouse::Cursor* Web_cursor;
 
 // Called by OS when application gets/looses focus
-extern void gr_activate(int active);
+extern void gr_activate(bool active);
 
 #define GR_CALL(x) (x)
 
@@ -1509,6 +1509,7 @@ void gr_get_post_process_effect_names(SCP_vector<SCP_string> &names);
 bool gr_is_viewport_window();
 
 void gr_uniform_buffer_managers_init();
+SDL_DisplayID gr_get_preferred_display();
 
 // Include this last to make the 2D rendering function available everywhere
 #include "graphics/render.h"

@@ -6,7 +6,7 @@ MFCViewport::MFCViewport(HWND hwnd, HDC dc): _windowHandle(hwnd), _device_contex
 	Assertion(hwnd != nullptr, "Invalid window handle!");
 	Assertion(dc != nullptr, "Invalid device context handle!");
 
-	if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0) {
+	if ( !SDL_InitSubSystem(SDL_INIT_VIDEO) ) {
 		Error(LOCATION, "Couldn't init SDL video: %s", SDL_GetError());
 		return;
 	}
@@ -63,7 +63,7 @@ HDC MFCViewport::getHDC()
 	return _device_context;
 }
 
-void* MFCOpenGLContext::_oglDllHandle = nullptr;
+SDL_SharedObject* MFCOpenGLContext::_oglDllHandle = nullptr;
 size_t MFCOpenGLContext::_oglDllReferenceCount = 0;
 
 MFCOpenGLContext::MFCOpenGLContext(HGLRC hglrc): _render_context(hglrc)

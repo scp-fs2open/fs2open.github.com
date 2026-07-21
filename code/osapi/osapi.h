@@ -27,7 +27,6 @@
 #include <functional>
 #include <memory>
 
-#include <SDL_events.h>
 
 // --------------------------------------------------------------------------------------------------
 // OSAPI DEFINES/VARS
@@ -212,7 +211,7 @@ namespace os
 
 		flagset<ViewPortFlags> flags;
 
-		uint32_t display;
+		SDL_DisplayID display;
 	};
 
 	/**
@@ -284,6 +283,27 @@ namespace os
 		 * @note Implementation may ignore invocations of this function
 		 */
 		virtual void restore() = 0;
+
+		/**
+		 * @brief Get coordinate scale value for high-dpi displays
+		 *
+		 * @return Scale value as float
+		 */
+		virtual float getCoordScale() { return 1.0f; }
+
+		/**
+		 * @brief Returns passed value scaled for high-dpi
+		 *
+		 * @param val The value to be scaled
+		 *
+		 * @return Scaled value as float
+		 */
+		virtual float getScaled(float val) { return val; }
+
+		/**
+		 * @brief Updates scaling setup based on dpi changes
+		 */
+		virtual void updateScaling() {};
 	};
 
 	/**

@@ -19,19 +19,12 @@
 #ifdef _WIN32
 #include <io.h>
 #include <direct.h>
-#include <windows.h>
-#include <winbase.h>		/* needed for memory mapping of file functions */
-#include <shlwapi.h>
-#include <sys/stat.h>
+#include <shlwapi.h>	// for PathIsRealtive()
 #endif
 
 #ifdef SCP_UNIX
 #include <sys/types.h>
-#include <dirent.h>
-#include <fnmatch.h>
 #include <sys/stat.h>
-#include <unistd.h>
-#include <libgen.h>
 #endif
 
 #include "cfile/cfile.h"
@@ -58,10 +51,8 @@ typedef struct cf_root {
 	int		roottype;						// CF_ROOTTYPE_PATH  = Path, CF_ROOTTYPE_PACK =Pack file, CF_ROOTTYPE_MEMORY=In memory
 	uint32_t location_flags;
 
-#ifdef SCP_UNIX
 	// map of existing case sensitive paths
 	SCP_unordered_map<int, SCP_string> pathTypeToRealPath;
-#endif
 
 	cf_root() : roottype(-1), location_flags(0) {}
 } cf_root;
@@ -224,6 +215,9 @@ static size_t cf_get_list_of_files(const SCP_string &in_path, SCP_vector<_file_l
 {
 	_file_list_t nfile;
 	SCP_string path = in_path;
+	SDL_PathInfo pinfo{};
+	SCP_string filepath;
+	int count = 0;
 
 	if (path.back() != DIR_SEPARATOR_CHAR) {
 		path += DIR_SEPARATOR_CHAR;
@@ -234,80 +228,34 @@ static size_t cf_get_list_of_files(const SCP_string &in_path, SCP_vector<_file_l
 		path += DIR_SEPARATOR_CHAR;
 	}
 
-#if defined _WIN32
+	// "*.*" requires a period in the name and a null filter goes nuts, so just do "*"
+	if ( !filter || !SDL_strcmp(filter, "*.*") ) {
+		filter = "*";
+	}
 
-	intptr_t find_handle;
-	_finddata_t find;
+	// TODO: SDL3 => NOTE: If filter isn't * then recursion doesn't work properly
+	//               since directory names would also have to match. That shouldn't
+	//               affect current behavior but it may need a FIXME in the future.
 
-	// make sure we return all entries by default
-	path += "*";
+	auto list = SDL_GlobDirectory(path.c_str(), filter, SDL_GLOB_CASEINSENSITIVE, &count);
 
-	find_handle = _findfirst(path.c_str(), &find);
+	if ( !list || !count ) {
+		if (list) {
+			SDL_free(list);
+		}
 
-	if (find_handle == -1) {
 		return 0;
 	}
 
-	do {
-
-		if (find.attrib & _A_SUBDIR) {
-			if ( recursive && strcmp(find.name, ".") && strcmp(find.name, "..") ) {
-				SCP_string sub;
-
-				if (subpath) {
-					sub = subpath;
-					sub += DIR_SEPARATOR_CHAR;
-				}
-
-				sub += find.name;
-
-				cf_get_list_of_files(in_path, files, filter, recursive, sub.c_str());
-			}
-
-			continue;
-		}
-
-		if (filter && !PathMatchSpec(find.name, filter)) {
-			continue;
-		}
-
-		nfile.name = find.name;
-		nfile.m_time = find.time_write;
-		nfile.size = find.size;
-
-		if (subpath) {
-			nfile.sub_path = subpath;
-			nfile.sub_path += DIR_SEPARATOR_CHAR;
-		}
-
-		files.push_back(nfile);
-	} while ( !_findnext(find_handle, &find) );
-
-	_findclose(find_handle);
-
-#elif defined SCP_UNIX
-
-	DIR *dirp;
-	struct dirent *dir;
-	SCP_string filepath;
-
-	dirp = opendir(path.c_str());
-
-	if ( !dirp ) {
-		return 0;
-	}
-
-	while ((dir = readdir(dirp)) != nullptr) {
+	for (int i = 0; list[i]; ++i) {
 		filepath = path;
-		filepath += dir->d_name;
+		filepath += list[i];
 
-		struct stat buf;
-
-		if (stat(filepath.c_str(), &buf) == -1) {
+		if ( !SDL_GetPathInfo(filepath.c_str(), &pinfo) ) {
 			continue;
 		}
 
-		if ( recursive && S_ISDIR(buf.st_mode) && strcmp(dir->d_name, ".") && strcmp(dir->d_name, "..") ) {
+		if (recursive && (pinfo.type == SDL_PATHTYPE_DIRECTORY)) {
 			SCP_string sub;
 
 			if (subpath) {
@@ -315,29 +263,25 @@ static size_t cf_get_list_of_files(const SCP_string &in_path, SCP_vector<_file_l
 				sub += DIR_SEPARATOR_CHAR;
 			}
 
-			sub += dir->d_name;
+			sub += list[i];
 
 			cf_get_list_of_files(in_path, files, filter, recursive, sub.c_str());
 
 			continue;
 		}
 
-		if ( !S_ISREG(buf.st_mode) ) {
+		if (pinfo.type != SDL_PATHTYPE_FILE) {
 			continue;
 		}
 
 		// zero byte files shouldn't be indexed, but that breaks unit tests
-		// if ( !buf.st_size ) {
+		// if ( !pinfo.size ) {
 		// 	continue;
 		// }
 
-		if (filter && fnmatch(filter, dir->d_name, 0)) {
-			continue;
-		}
-
-		nfile.name = dir->d_name;
-		nfile.m_time = buf.st_mtime;
-		nfile.size = buf.st_size;
+		nfile.name = list[i];
+		nfile.m_time = pinfo.modify_time;
+		nfile.size = static_cast<size_t>(pinfo.size);
 
 		if (subpath) {
 			nfile.sub_path = subpath;
@@ -347,9 +291,7 @@ static size_t cf_get_list_of_files(const SCP_string &in_path, SCP_vector<_file_l
 		files.push_back(nfile);
 	}
 
-	closedir(dirp);
-
-#endif
+	SDL_free(list);
 
 	if ( !subpath ) {
 		std::sort(files.begin(), files.end(), sort_file_list);
@@ -382,14 +324,61 @@ static bool cf_should_scan_subdirs(int pathtype)
 }
 
 
+// try to guess whether a given path/filesystem is case-sensitive or not
+static bool is_case_sensitive(const SCP_string &path)
+{
+	const SCP_string case_file = "tmpFSOCASETEST.tmp";
+	bool cs = false;	// not case-sensitive
+
+	SCP_string fn = path + case_file;
+
+	auto fp = fopen(fn.c_str(), "wb");
+
+	if ( !fp ) {
+		// might be read-only, but it's only safe to assume case-sensitive
+		return true;
+	}
+
+	fclose(fp);
+
+	SCP_string lcase = case_file;
+	SCP_tolower(lcase);
+
+	fn = path + lcase;
+
+	fp = fopen(fn.c_str(), "rb");
+
+	if ( !fp ) {
+		// definitely case-sensitive
+		cs = true;
+	} else {
+		fclose(fp);
+	}
+
+	// clean up
+	fn = path + case_file;
+	SDL_RemovePath(fn.c_str());
+
+	return cs;
+}
+
+// lower-case first
+static int sort_case_names(const void *a, const void *b)
+{
+	int rc = SDL_strcmp(*(const char **)a, *(const char **)b);
+
+	return rc ? -rc : 0;
+}
+
+// deal with case-sensitive filesystems
 static void cf_init_root_pathtypes(cf_root *root)
 {
 	Assertion(root != nullptr, "Root must be specified!");
 
-#ifdef SCP_UNIX
-	DIR *dirp;
-	struct dirent *dir;
-	struct stat buf;
+	if (root->roottype != CF_ROOTTYPE_PATH) {
+		return;
+	}
+
 	SCP_string base_path = root->path;
 
 	root->pathTypeToRealPath.clear();
@@ -398,11 +387,18 @@ static void cf_init_root_pathtypes(cf_root *root)
 		base_path += DIR_SEPARATOR_CHAR;
 	}
 
+	if ( !is_case_sensitive(base_path) ) {
+		return;
+	}
+
 	for (int i = CF_TYPE_DATA; i < CF_MAX_PATH_TYPES; ++i) {
 		SCP_string full_path;
 		SCP_string path;
 		SCP_string search_name;
 		SCP_string fn;
+		SDL_PathInfo pinfo{};
+		int count = 0;
+		bool special_parent = false;
 
 		auto parentPathIter = root->pathTypeToRealPath.find(Pathtypes[i].parent_index);
 
@@ -410,6 +406,7 @@ static void cf_init_root_pathtypes(cf_root *root)
 			path = Pathtypes[Pathtypes[i].parent_index].path;
 		} else {
 			path = parentPathIter->second;
+			special_parent = true;
 		}
 
 		if ( !path.empty() && path.back() != DIR_SEPARATOR_CHAR) {
@@ -428,42 +425,48 @@ static void cf_init_root_pathtypes(cf_root *root)
 
 		full_path = base_path + path;
 
-		dirp = opendir(full_path.c_str());
+		auto results = SDL_GlobDirectory(full_path.c_str(), search_name.c_str(), SDL_GLOB_CASEINSENSITIVE, &count);
 
-		if ( !dirp ) {
-			continue;
+		if (results) {
+			// sort results such that lower-case names are first
+			if (count > 1) {
+				SDL_qsort(results, count, sizeof(char*), sort_case_names);
+			}
+
+			for (int idx = 0; results[idx]; ++idx) {
+				fn = full_path + results[idx];
+
+				if ( !SDL_GetPathInfo(fn.c_str(), &pinfo) ) {
+					continue;
+				}
+
+				if (pinfo.type != SDL_PATHTYPE_DIRECTORY) {
+					continue;
+				}
+
+				// only add if the case is other than expected
+				if (special_parent || (search_name != results[idx])) {
+					root->pathTypeToRealPath.insert(std::make_pair(i, path + results[idx]));
+				}
+
+				// don't process more than one entry
+				break;
+			}
+
+			SDL_free(results);
 		}
-
-		while ((dir = readdir(dirp)) != nullptr) {
-			if (stricmp(search_name.c_str(), dir->d_name)) {
-				continue;
-			}
-
-			fn = full_path + dir->d_name;
-
-			if (stat(fn.c_str(), &buf) == -1) {
-				continue;
-			}
-
-			if (S_ISDIR(buf.st_mode)) {
-				root->pathTypeToRealPath.insert(std::make_pair(i, path + dir->d_name));
-			}
-		}
-
-		closedir(dirp);
 	}
-#endif
 }
 
-static SCP_string cf_get_root_pathtype(__UNUSED const cf_root *root, const int type)
+static SCP_string cf_get_root_pathtype(const cf_root *root, const int type)
 {
-#ifdef SCP_UNIX
-	auto parentPathIter = root->pathTypeToRealPath.find(type);
+	if ( !root->pathTypeToRealPath.empty() ) {
+		auto parentPathIter = root->pathTypeToRealPath.find(type);
 
-	if (parentPathIter != root->pathTypeToRealPath.end()) {
-		return parentPathIter->second;
+		if (parentPathIter != root->pathTypeToRealPath.end()) {
+			return parentPathIter->second;
+		}
 	}
-#endif
 
 	return Pathtypes[type].path;
 }
@@ -490,11 +493,7 @@ void cf_build_pack_list( cf_root *root )
 	SCP_string fullpath;
 	int i;
 
-#ifdef _WIN32
 	const SCP_vector<SCP_string> filters = { "*.vpc", "*.vp" };
-#else
-	const SCP_vector<SCP_string> filters = { "*.[vV][pP][cC]", "*.[vV][pP]" };
-#endif
 
 	// now just setup all the root info
 	for (i = CF_TYPE_ROOT; i < CF_MAX_PATH_TYPES; i++) {
