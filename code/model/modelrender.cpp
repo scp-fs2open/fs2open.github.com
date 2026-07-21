@@ -162,6 +162,7 @@ model_render_params::model_render_params() :
 	Objnum(-1),
 	Detail_level_locked(-1),
 	Depth_scale(1500.0f),
+	Attached_model_draw_distance(-1.0f),
 	Warp_bitmap(-1),
 	Warp_alpha(-1.0f),
 	Xparent_alpha(1.0f),
@@ -214,8 +215,13 @@ int model_render_params::get_detail_level_lock() const
 }
 
 float model_render_params::get_depth_scale() const
-{ 
-	return Depth_scale; 
+{
+	return Depth_scale;
+}
+
+float model_render_params::get_attached_model_draw_distance() const
+{
+	return Attached_model_draw_distance;
 }
 
 int model_render_params::get_warp_bitmap() const
@@ -380,6 +386,11 @@ void model_render_params::set_warp_params(int bitmap, float alpha, const vec3d &
 void model_render_params::set_depth_scale(float scale)
 {
 	Depth_scale = scale;
+}
+
+void model_render_params::set_attached_model_draw_distance(float distance)
+{
+	Attached_model_draw_distance = distance;
 }
 
 void model_render_params::set_debug_flags(uint flags)
@@ -906,10 +917,13 @@ void model_render_add_lightning(model_draw_list *scene, const model_render_param
 	}
 }
 
-float model_render_determine_depth(int obj_num, int model_num, const matrix* orient, const vec3d* pos, int detail_level_locked)
+float model_render_determine_depth(int obj_num, int model_num, const matrix* orient, const vec3d* pos, int detail_level_locked, const vec3d* eye_pos)
 {
+	if (eye_pos == nullptr)
+		eye_pos = &Eye_position;
+
 	vec3d closest_pos;
-	float depth = model_find_closest_point( &closest_pos, model_num, -1, orient, pos, &Eye_position );
+	float depth = model_find_closest_point( &closest_pos, model_num, -1, orient, pos, eye_pos );
 
 	if ( detail_level_locked < 0 ) {
 		switch (Detail.detail_distance) {
@@ -2759,22 +2773,28 @@ void model_render_queue(const model_render_params* interp, model_draw_list* scen
 	bool is_outlines_only = (model_flags & MR_NO_POLYS) && ((model_flags & MR_SHOW_OUTLINE_PRESET) || (model_flags & MR_SHOW_OUTLINE));
 	bool is_outlines_only_htl = (model_flags & MR_NO_POLYS) && (model_flags & MR_SHOW_OUTLINE_HTL);
 
+	float depth;
+	if (interp->get_attached_model_draw_distance() >= 0.0f) {
+		// this is an attached weapon model, rendered inside its parent's pushed transform, so pos
+		// is in the parent's frame; measure the depth from the eye position in that same frame
+		vec3d local_eye = scene->get_view_position();
+		depth = model_render_determine_depth(objnum, model_num, orient, pos, interp->get_detail_level_lock(), &local_eye);
+
+		// don't render weapon models beyond the ship's tabled Weapon Model Draw Distance (which defaults to 200)
+		if (depth > interp->get_attached_model_draw_distance()) {
+			return;
+		}
+	} else {
+		depth = model_render_determine_depth(objnum, model_num, orient, pos, interp->get_detail_level_lock());
+	}
+
 	scene->push_transform(pos, orient);
 
-	float depth = model_render_determine_depth(objnum, model_num, orient, pos, interp->get_detail_level_lock());
 	int detail_level = model_render_determine_detail(depth, model_num, interp->get_detail_level_lock());
 
 	// Send the detail level to the lab for displaying
 	if (gameseq_get_state() == GS_STATE_LAB) {
 		Lab_object_detail_level = detail_level;
-	}
-
-	// If we're rendering attached weapon models, check against the ships' tabled Weapon Model Draw Distance (which defaults to 200)
-	if ( model_flags & MR_ATTACHED_MODEL && shipp != NULL ) {
-		if (depth > Ship_info[shipp->ship_info_index].weapon_model_draw_distance) {
-			scene->pop_transform();
-			return;
-		}
 	}
 
 // #ifndef NDEBUG

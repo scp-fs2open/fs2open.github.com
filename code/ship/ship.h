@@ -103,7 +103,7 @@ public:
 	int secondary_bank_weapons[MAX_SHIP_SECONDARY_BANKS];		// Weapon_info[] index for the weapon in the bank
 
 	int primary_bank_external_model_instance[MAX_SHIP_PRIMARY_BANKS];
-	bool primary_bank_model_instance_check[MAX_SHIP_PRIMARY_BANKS];
+	int primary_bank_model_instance_weapon[MAX_SHIP_PRIMARY_BANKS];	// the weapon the model instance was created for, or -1 if not yet checked
 
 	int current_primary_bank;			// currently selected primary bank
 	int current_secondary_bank;		// currently selected secondary bank
@@ -1733,6 +1733,9 @@ extern void ship_actually_depart(int shipnum, int method = SHIP_DEPARTED_WARP);
 extern bool in_autoaim_fov(ship *shipp, int bank_to_fire, object *obj);
 extern int ship_stop_fire_primary(object * obj);
 extern int ship_fire_primary(object * objp, int force = 0, bool rollback_shot = false);
+extern vec3d ship_get_external_model_fp_offset(ship_weapon *swp, const weapon_info *wip, const polymodel *weapon_model, int fp_counter_index, bool advance_counter, int sub_shot = 0);
+extern void ship_get_weapon_model_slot_transform(const w_bank *bank, int slot, float reload_slide_back, vec3d *outpnt, matrix *outorient);
+extern int ship_get_external_weapon_model_instance(ship_weapon *swp, int bank);
 extern int ship_fire_secondary(object * objp, int allow_swarm = 0, bool rollback_shot = false );
 bool ship_start_secondary_fire(object* objp);
 bool ship_stop_secondary_fire(object* objp);
