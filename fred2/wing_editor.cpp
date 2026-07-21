@@ -15,15 +15,11 @@
 #include "FREDDoc.h"
 #include "Management.h"
 #include "wing.h"
-#include "globalincs/linklist.h"
 #include "ai/aigoals.h"
 #include "FREDView.h"
-#include "starfield/starfield.h"
-#include "jumpnode/jumpnode.h"
 #include "missioneditor/common.h"
 #include "cfile/cfile.h"
 #include "restrictpaths.h"
-#include "iff_defs/iff_defs.h"
 #include "warpparamsdlg.h"
 #include "ship/ship.h"
 
@@ -580,7 +576,6 @@ int wing_editor::update_data(int redraw)
 {
 	char *str, old_name[255], buf[512];
 	int i, z;
-	object *ptr;
 
 	nprintf(("Fred routing", "Wing dialog save\n"));
 	if (!GetSafeHwnd())
@@ -593,103 +588,15 @@ int wing_editor::update_data(int redraw)
 	m_wing_name.TrimRight(); 
 
 	if (cur_wing >= 0) {
-		for (i=0; i<MAX_WINGS; i++)
-			if (Wings[i].wave_count && !stricmp(Wings[i].name, m_wing_name) && (i != cur_wing)) {
-				if (bypass_errors)
-					return 1;
-
-				bypass_errors = 1;
-				z = MessageBox("This wing name is already being used by another wing\n"
-					"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
-
-				if (z == IDCANCEL)
-					return -1;
-
-				m_wing_name = _T(Wings[cur_wing].name);
-				UpdateData(FALSE);
-			}
-
-		ptr = GET_FIRST(&obj_used_list);
-		while (ptr != END_OF_LIST(&obj_used_list)) {
-			if ((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) {
-				if (!stricmp(m_wing_name, Ships[ptr->instance].ship_name)) {
-					if (bypass_errors)
-						return 1;
-
-					bypass_errors = 1;
-					z = MessageBox("This wing name is already being used by a ship\n"
-						"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
-
-					if (z == IDCANCEL)
-						return -1;
-
-					m_wing_name = _T(Wings[cur_wing].name);
-					UpdateData(FALSE);
-				}
-			}
-
-			ptr = GET_NEXT(ptr);
-		}
-
-		// We don't need to check teams.  "Unknown" is a valid name and also an IFF.
-
-		for ( i=0; i < (int)Ai_tp_list.size(); i++) {
-			if (!stricmp(m_wing_name, Ai_tp_list[i].name)) 
-			{
-				if (bypass_errors)
-					return 1;
-
-				bypass_errors = 1;
-				z = MessageBox("This wing name is already being used by a target priority group.\n"
-					"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
-
-				if (z == IDCANCEL)
-					return -1;
-
-				m_wing_name = _T(Wings[cur_wing].name);
-				UpdateData(FALSE);
-			}
-		}
-
-		if (find_matching_waypoint_list((LPCSTR) m_wing_name) != NULL)
-		{
+		SCP_string conflict = check_name_conflict("wing", m_wing_name, -1, cur_wing);
+		if (!conflict.empty()) {
 			if (bypass_errors)
 				return 1;
 
 			bypass_errors = 1;
-			z = MessageBox("This wing name is already being used by a waypoint path\n"
-				"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
-
-			if (z == IDCANCEL)
-				return -1;
-
-			m_wing_name = _T(Wings[cur_wing].name);
-			UpdateData(FALSE);
-		}
-
-		if(jumpnode_get_by_name(m_wing_name) != NULL)
-		{
-			if (bypass_errors)
-				return 1;
-
-			bypass_errors = 1;
-			z = MessageBox("This wing name is already being used by a jump node\n"
-				"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
-
-			if (z == IDCANCEL)
-				return -1;
-
-			m_wing_name = _T(Wings[cur_wing].name);
-			UpdateData(FALSE);
-		}
-
-		if (!stricmp(m_wing_name.Left(1), "<")) {
-			if (bypass_errors)
-				return 1;
-
-			bypass_errors = 1;
-			z = MessageBox("Wing names not allowed to begin with <\n"
-				"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
+			CString msg;
+			msg.Format("%s\nPress OK to restore old name", conflict.c_str());
+			z = MessageBox(msg, "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
 
 			if (z == IDCANCEL)
 				return -1;

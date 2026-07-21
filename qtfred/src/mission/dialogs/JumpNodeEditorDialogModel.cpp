@@ -7,6 +7,7 @@
 #include <mission/object.h>
 #include <model/model.h>
 #include <ship/ship.h>
+#include "missioneditor/common.h"
 
 namespace fso::fred::dialogs {
 
@@ -134,51 +135,17 @@ void JumpNodeEditorDialogModel::showErrorDialogNoCancel(const SCP_string& messag
 }
 
 bool JumpNodeEditorDialogModel::validateName(const SCP_string& name) {
-	if (name.empty()) {
-		showErrorDialogNoCancel("A jump node name cannot be empty.");
+	int exclude_jn = -1;
+	if (!_selectedJumpNodes.empty()) {
+		auto* jnp = jumpnode_get_by_objnum(_selectedJumpNodes.front());
+		if (jnp)
+			exclude_jn = static_cast<int>(jnp - Jump_nodes.data());
+	}
+	SCP_string reason = check_name_conflict("jump node", name.c_str(), -1, -1, -1, exclude_jn);
+	if (!reason.empty()) {
+		showErrorDialogNoCancel(reason);
 		return false;
 	}
-
-	if (name[0] == '<') {
-		showErrorDialogNoCancel("Jump node names are not allowed to begin with '<'.");
-		return false;
-	}
-
-	for (auto& wing : Wings) {
-		if (!stricmp(wing.name, name.c_str())) {
-			showErrorDialogNoCancel("This jump node name is already being used by a wing.");
-			return false;
-		}
-	}
-
-	for (auto* ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
-		if (ptr->type == OBJ_SHIP || ptr->type == OBJ_START) {
-			if (!stricmp(name.c_str(), Ships[ptr->instance].ship_name)) {
-				showErrorDialogNoCancel("This jump node name is already being used by a ship.");
-				return false;
-			}
-		}
-	}
-
-	for (auto& ai : Ai_tp_list) {
-		if (!stricmp(name.c_str(), ai.name)) {
-			showErrorDialogNoCancel("This jump node name is already being used by a target priority group.");
-			return false;
-		}
-	}
-
-	if (find_matching_waypoint_list(name.c_str()) != nullptr) {
-		showErrorDialogNoCancel("This jump node name is already being used by a waypoint path.");
-		return false;
-	}
-
-	auto* current_jnp = _selectedJumpNodes.empty() ? nullptr : jumpnode_get_by_objnum(_selectedJumpNodes.front());
-	auto* found = jumpnode_get_by_name(name.c_str());
-	if (found != nullptr && found != current_jnp) {
-		showErrorDialogNoCancel("This jump node name is already being used by another jump node.");
-		return false;
-	}
-
 	return true;
 }
 

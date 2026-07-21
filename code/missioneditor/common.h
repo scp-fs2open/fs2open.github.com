@@ -58,3 +58,10 @@ void ensure_valid_player_start_shipnum();
 // OBJ_START, demote every other player start to OBJ_SHIP, adjust Player_starts to match,
 // and repoint Player_start_shipnum.  Returns true if anything changed.
 bool set_single_player_start(int objnum);
+
+// Check whether the given name is empty, starts with '<', or conflicts with an existing ship,
+// wing, waypoint path, jump node, or target priority group.
+// Returns an empty string if the name is valid, otherwise a self-contained reason string
+// (e.g. "The name is already being used by a wing").  The exclude parameters prevent matching
+// against the entity currently being renamed.
+SCP_string check_name_conflict(const char *entity_type, const char *name, int exclude_ship = -1, int exclude_wing = -1, int exclude_waypoint_list = -1, int exclude_jump_node = -1);
