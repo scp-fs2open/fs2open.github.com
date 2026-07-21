@@ -35,7 +35,7 @@ private: // NOLINT(readability-redundant-access-specifiers)
 	// The occupied storage indices for the given type, in display order.  For
 	// ships/wings/props/jump nodes these are the live Ships[]/Wings[]/Props[]/
 	// Jump_nodes[] slots; for waypoint lists they are simply 0..N-1.
-	SCP_vector<int> getSlots(Type type) const;
+	static SCP_vector<int> getSlots(Type type);
 };
 
 } // namespace fso::fred::dialogs

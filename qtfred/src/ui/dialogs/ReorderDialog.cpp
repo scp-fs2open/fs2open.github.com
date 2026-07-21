@@ -45,7 +45,7 @@ void ReorderDialog::setupTab(const Tab& tab)
 	connect(tab.up, &QAbstractButton::clicked, this, [this, tab] { move(tab, true, false); });
 	connect(tab.down, &QAbstractButton::clicked, this, [this, tab] { move(tab, false, false); });
 	connect(tab.bottom, &QAbstractButton::clicked, this, [this, tab] { move(tab, false, true); });
-	connect(tab.list, &QListWidget::currentRowChanged, this, [this, tab] { updateButtons(tab); });
+	connect(tab.list, &QListWidget::currentRowChanged, this, [tab] { updateButtons(tab); });
 
 	rebuildList(tab);
 	// Select the first item so the move buttons start in a sensible state.

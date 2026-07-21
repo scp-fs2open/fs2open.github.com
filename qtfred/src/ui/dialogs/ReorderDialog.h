@@ -36,7 +36,7 @@ private: // NOLINT(readability-redundant-access-specifiers)
 
 	void setupTab(const Tab& tab);
 	void rebuildList(const Tab& tab);
-	void updateButtons(const Tab& tab);
+	static void updateButtons(const Tab& tab);
 	void move(const Tab& tab, bool up, bool all_the_way);
 
 	EditorViewport* _viewport = nullptr;

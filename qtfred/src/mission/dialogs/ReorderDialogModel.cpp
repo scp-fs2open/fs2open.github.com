@@ -6,11 +6,8 @@
 #include "prop/prop.h"
 #include "ship/ship.h"
 
-// FRED-side parallel arrays that reassign_ship_slot keeps in sync (see
-// missioneditor/common.h).  Reached the same way the ship editor and
-// object-duplication code do.
-extern char Fred_alt_names[MAX_SHIPS][NAME_LENGTH + 1];
-extern char Fred_callsigns[MAX_SHIPS][NAME_LENGTH + 1];
+// Fred_alt_names[] / Fred_callsigns[] are the FRED-side parallel arrays that
+// reassign_ship_slot keeps in sync; they are declared extern in Editor.h.
 
 namespace fso::fred::dialogs {
 
@@ -31,7 +28,7 @@ void ReorderDialogModel::reject()
 	// Direct-edit dialog: nothing to roll back.
 }
 
-SCP_vector<int> ReorderDialogModel::getSlots(Type type) const
+SCP_vector<int> ReorderDialogModel::getSlots(Type type)
 {
 	SCP_vector<int> slotList;
 	switch (type) {
