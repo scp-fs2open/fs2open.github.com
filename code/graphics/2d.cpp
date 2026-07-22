@@ -2130,6 +2130,18 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, GraphicsAPI 
 		Shadow_quality = ShadowQuality::Disabled;
 	}
 
+	// Drop options that have no meaning for the renderer we ended up with, so they don't
+	// appear in the options menu. HDR10 output is Vulkan-only; the raytraced-shadow options
+	// are gated on raytracing support (removed below). The bound globals keep their
+	// defaults, so nothing about the rendering path changes.
+	if (gr_screen.mode != GraphicsAPI::Vulkan) {
+		auto* options_mgr = options::OptionsManager::instance();
+		options_mgr->removeOption(HDROption);
+		options_mgr->removeOption(HDRPaperWhiteOption);
+		options_mgr->removeOption(HDRPeakOption);
+	}
+	shadows_remove_unsupported_options();
+
 	if(Cmdline_enable_vr)
 		openxr_init();
 

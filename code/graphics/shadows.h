@@ -70,6 +70,12 @@ extern float Rt_shadow_bias_max;
 // of which method is currently selected -- use this to decide whether to offer the choice.
 bool shadows_raytracing_supported();
 
+// Removes the raytraced-shadow options (method selector, light counts, bias) from the
+// options menu when the current renderer/hardware can't do raytraced shadows, so they don't
+// clutter the UI with settings that have no effect. Call once after the renderer is up
+// (gr_init), when shadows_raytracing_supported() is meaningful.
+void shadows_remove_unsupported_options();
+
 // Whether shading should actually sample the raytraced-shadow TLAS right now, i.e. both
 // the user has selected it AND the hardware supports it. This is the single source of
 // truth for that decision -- gate any new raytraced-shadow shader-flag or resource-binding
