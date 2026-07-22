@@ -161,6 +161,19 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>tabWidget</tabstop>
+  <tabstop>layerList</tabstop>
+  <tabstop>addLayerButton</tabstop>
+  <tabstop>deleteLayerButton</tabstop>
+  <tabstop>showShipsCheck</tabstop>
+  <tabstop>showPropsCheck</tabstop>
+  <tabstop>showStartsCheck</tabstop>
+  <tabstop>showJumpNodesCheck</tabstop>
+  <tabstop>showWaypointsCheck</tabstop>
+  <tabstop>iffScrollArea</tabstop>
+ </tabstops>
+ <resources/>
  <connections>
   <connection>
    <sender>buttonBox</sender>

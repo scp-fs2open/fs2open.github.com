@@ -200,6 +200,14 @@
    <header>ui/widgets/sexp_tree_view.h</header>
   </customwidget>
  </customwidgets>
+ <tabstops>
+  <tabstop>newCutsceneBtn</tabstop>
+  <tabstop>cutsceneTypeCombo</tabstop>
+  <tabstop>cutsceneFilename</tabstop>
+  <tabstop>cutsceneEventTree</tabstop>
+  <tabstop>displayTypeCombo</tabstop>
+  <tabstop>helpTextBox</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

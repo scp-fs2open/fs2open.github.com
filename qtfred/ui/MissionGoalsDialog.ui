@@ -257,6 +257,19 @@
    <header>ui/widgets/sexp_tree_view.h</header>
   </customwidget>
  </customwidgets>
+ <tabstops>
+  <tabstop>newObjectiveBtn</tabstop>
+  <tabstop>goalTypeCombo</tabstop>
+  <tabstop>goalName</tabstop>
+  <tabstop>goalDescription</tabstop>
+  <tabstop>goalScore</tabstop>
+  <tabstop>goalTeamCombo</tabstop>
+  <tabstop>objectiveInvalidCheck</tabstop>
+  <tabstop>noCompletionMusicCheck</tabstop>
+  <tabstop>displayTypeCombo</tabstop>
+  <tabstop>goalEventTree</tabstop>
+  <tabstop>helpTextBox</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

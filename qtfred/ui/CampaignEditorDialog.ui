@@ -609,6 +609,39 @@
    <header>ui/widgets/CampaignMissionGraph.h</header>
   </customwidget>
  </customwidgets>
+ <tabstops>
+  <tabstop>mainTabs</tabstop>
+  <tabstop>nameLineEdit</tabstop>
+  <tabstop>typeComboBox</tabstop>
+  <tabstop>descriptionPlainTextEdit</tabstop>
+  <tabstop>resetTechAtStartCheckBox</tabstop>
+  <tabstop>campaignCustomDataButton</tabstop>
+  <tabstop>shipsListWidget</tabstop>
+  <tabstop>weaponsListWidget</tabstop>
+  <tabstop>availableMissionsListWidget</tabstop>
+  <tabstop>fredMissionButton</tabstop>
+  <tabstop>missionNameLineEdit</tabstop>
+  <tabstop>missionDescriptionPlainTextEdit</tabstop>
+  <tabstop>briefCutsceneComboBox</tabstop>
+  <tabstop>debriefingPersonaSpinBox</tabstop>
+  <tabstop>mainhallComboBox</tabstop>
+  <tabstop>substituteMainhallComboBox</tabstop>
+  <tabstop>sxtBranches</tabstop>
+  <tabstop>moveBranchTopButton</tabstop>
+  <tabstop>moveBranchUpButton</tabstop>
+  <tabstop>moveBranchDownButton</tabstop>
+  <tabstop>moveBranchBottomButton</tabstop>
+  <tabstop>loopDescriptionPlainTextEdit</tabstop>
+  <tabstop>loopAnimLineEdit</tabstop>
+  <tabstop>loopAnimBrowseButton</tabstop>
+  <tabstop>loopVoiceLineEdit</tabstop>
+  <tabstop>loopVoiceBrowseButton</tabstop>
+  <tabstop>testVoiceButton</tabstop>
+  <tabstop>availableMissionsFilterLineEdit</tabstop>
+  <tabstop>graphView</tabstop>
+  <tabstop>retailFormatCheckbox</tabstop>
+  <tabstop>errorCheckerButton</tabstop>
+ </tabstops>
  <resources>
   <include location="../resources/resources.qrc"/>
  </resources>

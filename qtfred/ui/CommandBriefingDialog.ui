@@ -301,11 +301,10 @@
  </widget>
  <tabstops>
   <tabstop>actionAddStage</tabstop>
-  <tabstop>actionPrevStage</tabstop>
-  <tabstop>actionNextStage</tabstop>
   <tabstop>actionInsertStage</tabstop>
   <tabstop>actionDeleteStage</tabstop>
-  <tabstop>actionCopyToOtherTeams</tabstop>
+  <tabstop>actionPrevStage</tabstop>
+  <tabstop>actionNextStage</tabstop>
   <tabstop>actionBriefingTextEditor</tabstop>
   <tabstop>animationFilename</tabstop>
   <tabstop>actionBrowseAnimation</tabstop>
@@ -316,6 +315,8 @@
   <tabstop>actionLowResolutionBrowse</tabstop>
   <tabstop>actionHighResolutionFilenameEdit</tabstop>
   <tabstop>actionHighResolutionBrowse</tabstop>
+  <tabstop>actionChangeTeams</tabstop>
+  <tabstop>actionCopyToOtherTeams</tabstop>
  </tabstops>
  <resources>
   <include location="../resources/resources.qrc"/>

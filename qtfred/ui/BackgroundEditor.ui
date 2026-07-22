@@ -1134,6 +1134,66 @@
    <header>ui/widgets/IntegerSnapDoubleSpinBox.h</header>
   </customwidget>
  </customwidgets>
+ <tabstops>
+  <tabstop>backgroundSelectionCombo</tabstop>
+  <tabstop>addButton</tabstop>
+  <tabstop>removeButton</tabstop>
+  <tabstop>importButton</tabstop>
+  <tabstop>swapWithButton</tabstop>
+  <tabstop>swapWithCombo</tabstop>
+  <tabstop>bitmapListWidget</tabstop>
+  <tabstop>addBitmapButton</tabstop>
+  <tabstop>changeBitmapButton</tabstop>
+  <tabstop>deleteBitmapButton</tabstop>
+  <tabstop>bitmapTypeCombo</tabstop>
+  <tabstop>bitmapScaleXDoubleSpinBox</tabstop>
+  <tabstop>bitmapScaleYDoubleSpinBox</tabstop>
+  <tabstop>bitmapDivXSpinBox</tabstop>
+  <tabstop>bitmapDivYSpinBox</tabstop>
+  <tabstop>sunListWidget</tabstop>
+  <tabstop>addSunButton</tabstop>
+  <tabstop>changeSunButton</tabstop>
+  <tabstop>deleteSunButton</tabstop>
+  <tabstop>sunSelectionCombo</tabstop>
+  <tabstop>sunScaleDoubleSpinBox</tabstop>
+  <tabstop>useCorrectAngleFormatCheckBox</tabstop>
+  <tabstop>fullNebulaCheckBox</tabstop>
+  <tabstop>poofsListWidget</tabstop>
+  <tabstop>rangeSpinBox</tabstop>
+  <tabstop>nebulaPatternCombo</tabstop>
+  <tabstop>nebulaLightningCombo</tabstop>
+  <tabstop>shipTrailsCheckBox</tabstop>
+  <tabstop>fog1000mVisDoubleSpinBox</tabstop>
+  <tabstop>fogNearDistanceDoubleSpinBox</tabstop>
+  <tabstop>fogSkyboxClipDoubleSpinBox</tabstop>
+  <tabstop>fogClipDoubleSpinBox</tabstop>
+  <tabstop>displayBgsInNebulaCheckbox</tabstop>
+  <tabstop>overrideFogPaletteCheckBox</tabstop>
+  <tabstop>fogOverrideRedSpinBox</tabstop>
+  <tabstop>fogOverrideGreenSpinBox</tabstop>
+  <tabstop>fogOverrideBlueSpinBox</tabstop>
+  <tabstop>ambientLightRedSlider</tabstop>
+  <tabstop>ambientLightGreenSlider</tabstop>
+  <tabstop>ambientLightBlueSlider</tabstop>
+  <tabstop>skyboxModelButton</tabstop>
+  <tabstop>skyboxEdit</tabstop>
+  <tabstop>noLightingCheckBox</tabstop>
+  <tabstop>transparentCheckBox</tabstop>
+  <tabstop>forceClampCheckBox</tabstop>
+  <tabstop>noZBufferCheckBox</tabstop>
+  <tabstop>noCullCheckBox</tabstop>
+  <tabstop>noGlowMapsCheckBox</tabstop>
+  <tabstop>numStarsSlider</tabstop>
+  <tabstop>subspaceCheckBox</tabstop>
+  <tabstop>envMapButton</tabstop>
+  <tabstop>envMapEdit</tabstop>
+  <tabstop>lightingProfileCombo</tabstop>
+  <tabstop>oldNebulaPatternCombo</tabstop>
+  <tabstop>oldNebulaColorCombo</tabstop>
+  <tabstop>oldNebulaPitchSpinBox</tabstop>
+  <tabstop>oldNebulaBankSpinBox</tabstop>
+  <tabstop>oldNebulaHeadingSpinBox</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>
