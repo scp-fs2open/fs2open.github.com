@@ -42,6 +42,14 @@ public:
 	vk::RenderPass renderPass;  // Render pass compatible with this target
 	bool isRenderTarget = false;
 
+	// Optional depth/stencil attachment (BMP_FLAG_RENDER_TARGET_DEPTH_ATTACHMENT).
+	// Without this, models drawn into the target get no z-testing: the Vulkan spec
+	// ignores the pipeline's depth/stencil state when the subpass has no depth
+	// attachment, so depth-tested geometry renders in submission order.
+	vk::Image depthImage;
+	vk::ImageView depthImageView;
+	VulkanAllocation depthAllocation;
+
 	// 3D texture support
 	bool is3D = false;
 	uint32_t depth = 1;

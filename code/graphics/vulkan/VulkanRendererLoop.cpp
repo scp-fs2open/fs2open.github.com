@@ -473,14 +473,18 @@ void VulkanRenderer::beginRenderTarget(tcache_slot_vulkan* ts, int face)
 	vk::Framebuffer fb = (ts->isCubemap && face >= 0 && face < 6)
 	                    ? ts->cubeFaceFramebuffers[face] : ts->framebuffer;
 
-	vk::ClearValue clearValue;
-	clearValue.color = m_stateTracker->getClearColor();
+	// Clear values must match the render pass attachments: color at index 0, and
+	// depth at index 1 when this target has a depth attachment.
+	std::array<vk::ClearValue, 2> clearValues;
+	clearValues[0].color = m_stateTracker->getClearColor();
+	clearValues[1].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+	const bool hasDepth = static_cast<bool>(ts->depthImage);
 
 	PassBeginDesc pass;
 	pass.renderPass = ts->renderPass;
 	pass.framebuffer = fb;
 	pass.extent = vk::Extent2D(ts->width, ts->height);
-	pass.clearValues = ArrayView<vk::ClearValue>(&clearValue, 1);
+	pass.clearValues = ArrayView<vk::ClearValue>(clearValues.data(), hasDepth ? 2 : 1);
 	// The engine sets the RTT viewport itself via gr_set_viewport (positive
 	// height; the RTT projection matrix handles the Y-flip), so keep it.
 	pass.viewport = PassViewport::Keep;

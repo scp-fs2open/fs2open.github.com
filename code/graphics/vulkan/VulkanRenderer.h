@@ -289,6 +289,15 @@ class VulkanRenderer {
 	 */
 	vk::SampleCountFlagBits getMsaaSampleCount() const { return m_msaaSampleCount; }
 
+	/**
+	 * @brief Get the depth/stencil format chosen at device init
+	 *
+	 * Used by render targets created with BMP_FLAG_RENDER_TARGET_DEPTH_ATTACHMENT so
+	 * their depth buffer matches the swap-chain depth format. Returns eUndefined if
+	 * depth resources have not been created yet.
+	 */
+	vk::Format getDepthFormat() const { return m_depthFormat; }
+
   private:
 	/**
 	 * @brief Begin a render pass on the frame command buffer with full state-tracker sync

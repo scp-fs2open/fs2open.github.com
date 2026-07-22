@@ -181,6 +181,10 @@ class VulkanStateTracker {
 		float fr = static_cast<float>(gr_screen.current_clear_color.red) / 255.0f;
 		float fg = static_cast<float>(gr_screen.current_clear_color.green) / 255.0f;
 		float fb = static_cast<float>(gr_screen.current_clear_color.blue) / 255.0f;
+		// Honor the requested clear alpha rather than forcing opaque. Render-to-texture
+		// targets (e.g. SCPUI) clear with alpha 0 to get a transparent background;
+		// hardcoding 1.0 here left those targets pure black.
+		float fa = static_cast<float>(gr_screen.current_clear_color.alpha) / 255.0f;
 		// Apply HDR gamma if needed
 		if (High_dynamic_range) {
 			const float SRGB_GAMMA = 2.2f;
@@ -188,7 +192,7 @@ class VulkanStateTracker {
 			fg = powf(fg, SRGB_GAMMA);
 			fb = powf(fb, SRGB_GAMMA);
 		}
-		return {fr, fg, fb, 1.0f};
+		return {fr, fg, fb, fa};
 	}
 
 	// ========== Render State Tracking ==========
