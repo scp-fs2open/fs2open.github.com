@@ -1629,7 +1629,7 @@ void sexp_tree_view::filterOperatorPopup(const QString& text)
 		}
 
 		for (const auto& s : _opAll) {
-			if (!found_list.insert(s).second && s.contains(text, Qt::CaseInsensitive))
+			if (found_list.insert(s).second && s.contains(text, Qt::CaseInsensitive))
 				_opList->addItem(s);
 		}
 	}
