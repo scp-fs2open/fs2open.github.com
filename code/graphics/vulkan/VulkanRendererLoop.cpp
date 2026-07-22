@@ -544,4 +544,26 @@ void VulkanRenderer::resumeSwapChainPass()
 	beginTrackedRenderPass(pass);
 }
 
+void VulkanRenderer::resumeRenderTargetPass(tcache_slot_vulkan* ts)
+{
+	// loadOp=eLoad on color keeps whatever was already drawn into the target; depth (if
+	// any) still clears. Only the depth clear value is consumed, but supply both so the
+	// index layout matches the pass attachments.
+	std::array<vk::ClearValue, 2> clearValues;
+	clearValues[0].color = m_stateTracker->getClearColor();
+	clearValues[1].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+	const bool hasDepth = static_cast<bool>(ts->depthImage);
+
+	PassBeginDesc pass;
+	pass.renderPass = ts->renderPassLoad;
+	pass.framebuffer = ts->framebuffer;
+	pass.extent = vk::Extent2D(ts->width, ts->height);
+	pass.clearValues = ArrayView<vk::ClearValue>(clearValues.data(), hasDepth ? 2 : 1);
+	// Match beginRenderTarget: the engine drives the RTT viewport via gr_set_viewport.
+	pass.viewport = PassViewport::Keep;
+	beginTrackedRenderPass(pass);
+
+	m_renderTargetActive = true;
+}
+
 } // namespace graphics::vulkan

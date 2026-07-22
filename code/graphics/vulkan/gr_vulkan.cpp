@@ -346,6 +346,30 @@ SCP_string vulkan_blob_screen()
 {
 	ubyte* pixels = nullptr;
 	uint32_t w, h;
+
+	// If an off-screen render target is bound (e.g. SCPUI generating ship/weapon icons via
+	// gr.setTarget + gr.screenToBlob), capture that target rather than the on-screen frame.
+	// Its color image is R8G8B8A8_UNORM, already in RGBA order with real alpha, so it needs
+	// no BGRA swizzle. Reading the framebuffer here instead would grab whatever is currently
+	// on screen (and force it opaque), which is exactly the icon corruption bug.
+	auto* texManager = getTextureManager();
+	const int rtHandle = texManager ? texManager->getCurrentRenderTarget() : -1;
+	if (rtHandle >= 0) {
+		static bool logged_rt_capture = false;
+		if (!logged_rt_capture) {
+			logged_rt_capture = true;
+			mprintf(("Vulkan: gr.screenToBlob capturing active render target (handle %i) instead of the "
+			         "framebuffer (logged once).\n", rtHandle));
+		}
+		auto* ts = texManager->getTextureSlot(rtHandle);
+		if (ts && renderer_instance->readbackRenderTarget(ts, &pixels, &w, &h)) {
+			SCP_string result = png_b64_bitmap(w, h, false, pixels);
+			vm_free(pixels);
+			return "data:image/png;base64," + result;
+		}
+		return "";
+	}
+
 	if (!renderer_instance->readbackFramebuffer(&pixels, &w, &h)) {
 		return "";
 	}

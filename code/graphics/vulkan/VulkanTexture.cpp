@@ -121,6 +121,7 @@ void tcache_slot_vulkan::reset()
 	framebuffer = nullptr;
 	framebufferView = nullptr;
 	renderPass = nullptr;
+	renderPassLoad = nullptr;
 	isRenderTarget = false;
 	depthImage = nullptr;
 	depthImageView = nullptr;
@@ -466,6 +467,11 @@ void VulkanTextureManager::bm_free_data(bitmap_slot* slot, bool release) const
 	if (ts->renderPass) {
 		deletionQueue->queueRenderPass(ts->renderPass);
 		ts->renderPass = nullptr;
+	}
+
+	if (ts->renderPassLoad) {
+		deletionQueue->queueRenderPass(ts->renderPassLoad);
+		ts->renderPassLoad = nullptr;
 	}
 
 	if (ts->imageView) {
@@ -1444,6 +1450,43 @@ int VulkanTextureManager::bm_make_render_target(int handle, int* width, int* hei
 		return 0;
 	}
 
+	// Load-variant of the render pass (color loadOp=eLoad) so a mid-frame readback can
+	// resume rendering into this target without clearing what was already drawn. Only
+	// flat targets are read back via gr.screenToBlob, so skip it for cubemaps.
+	if (!isCubemapRT) {
+		vk::AttachmentDescription loadColorAttachment = colorAttachment;
+		loadColorAttachment.loadOp = vk::AttachmentLoadOp::eLoad;
+		std::array<vk::AttachmentDescription, 2> loadAttachments = {loadColorAttachment, depthAttachment};
+
+		vk::RenderPassCreateInfo loadPassInfo;
+		loadPassInfo.attachmentCount = hasDepth ? 2u : 1u;
+		loadPassInfo.pAttachments = loadAttachments.data();
+		loadPassInfo.subpassCount = 1;
+		loadPassInfo.pSubpasses = &subpass;
+
+		try {
+			ts->renderPassLoad = m_device.createRenderPass(loadPassInfo);
+		} catch (const vk::SystemError& e) {
+			nprintf(("vulkan", "Failed to create load-variant render pass: %s\n", e.what()));
+			m_device.destroyRenderPass(ts->renderPass);
+			ts->renderPass = nullptr;
+			if (hasDepth) {
+				m_device.destroyImageView(ts->depthImageView);
+				m_device.destroyImage(ts->depthImage);
+				ts->depthImageView = nullptr;
+				ts->depthImage = nullptr;
+				m_memoryManager->freeAllocation(ts->depthAllocation);
+				ts->depthAllocation = VulkanAllocation{};
+			}
+			m_device.destroyImageView(ts->imageView);
+			m_device.destroyImage(ts->image);
+			ts->image = nullptr;
+			ts->imageView = nullptr;
+			m_memoryManager->freeAllocation(ts->allocation);
+			return 0;
+		}
+	}
+
 	if (isCubemapRT) {
 		// Create per-face framebuffers
 		for (size_t face = 0; face < ts->cubeFaceFramebuffers.size(); face++) {
@@ -1492,6 +1535,10 @@ int VulkanTextureManager::bm_make_render_target(int handle, int* width, int* hei
 				ts->depthAllocation = VulkanAllocation{};
 			}
 			m_device.destroyRenderPass(ts->renderPass);
+			if (ts->renderPassLoad) {
+				m_device.destroyRenderPass(ts->renderPassLoad);
+				ts->renderPassLoad = nullptr;
+			}
 			m_device.destroyImageView(ts->imageView);
 			m_device.destroyImage(ts->image);
 			ts->image = nullptr;
