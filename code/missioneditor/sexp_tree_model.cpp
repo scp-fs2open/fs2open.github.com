@@ -28,6 +28,7 @@
 // Used by both FRED2 (MFC) and QtFRED (Qt) sexp tree implementations.
 
 constexpr int TREE_NODE_INCREMENT = 100;
+constexpr int MIN_SEXP_SEARCH_COST = 10;
 
 // -----------------------------------------------------------------------
 // sexp_list_item implementation
@@ -952,7 +953,7 @@ SCP_string SexpTreeModel::match_closest_operator(const SCP_string& str, int node
 	opf = query_operator_argument_type(op, arg_num);
 
 	// find the best operator
-	int best = sexp_match_closest_operator(str, opf, 10);
+	int best = sexp_match_closest_operator(str, opf, MIN_SEXP_SEARCH_COST);
 	if (best < 0) {
 		return str;
 	}

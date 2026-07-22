@@ -1622,12 +1622,14 @@ void sexp_tree_view::filterOperatorPopup(const QString& text)
 		_opList->addItems(_opAll);
 	} else {
 		for (const auto& s : _opAll) {
-			if (s.startsWith(text, Qt::CaseInsensitive))
+			if (s.startsWith(text, Qt::CaseInsensitive)){
 				_opList->addItem(s);
+				found_list.insert(s);
+			}
 		}
 
 		for (const auto& s : _opAll) {
-			if (s.contains(text, Qt::CaseInsensitive) && _opList->findItems(s, Qt::MatchExactly).isEmpty())
+			if (!found_list.insert(s).second && s.contains(text, Qt::CaseInsensitive))
 				_opList->addItem(s);
 		}
 	}
@@ -2011,7 +2013,7 @@ void sexp_tree_view::editActionHandlerHelper(){
 
 	item_index = get_node(item);
 	// No longer gated to just certain types.
-	openNodeEditor(currentItem());
+	openNodeEditor(item);
 }
 
 // Public entry point for deleting the currently selected item. Simply delegates to deleteActionHandler().
